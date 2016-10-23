@@ -17,9 +17,9 @@ namespace ngbla
   template <typename T> class DoubleSliceMatrix;
 
   ///
-  extern void CheckMatRange(int h, int w, int i);
+  extern void CheckMatRange(size_t h, size_t w, size_t i);
   ///
-  extern void CheckMatRange(int h, int w, int i, int j);
+  extern void CheckMatRange(size_t h, size_t w, size_t i, size_t j);
 
 
 
@@ -28,15 +28,15 @@ namespace ngbla
      Has height, width and data-pointer. 
      No memory allocation/deallocation. User must provide memory.
   */
-  template <typename T, ORDERING ORD>
-  class FlatMatrix : public CMCPMatExpr<FlatMatrix<T,ORD> >
+  template <typename T, ORDERING ORD, typename TIND>
+  class FlatMatrix : public CMCPMatExpr<FlatMatrix<T,ORD,TIND> >
                      // class FlatMatrix : public CMCPMatExpr<FlatMatrix<T> >
   {
   protected:
     /// the height
-    int h;
+    TIND h;
     /// the width
-    int w;
+    TIND w;
     /// the data
     T * __restrict data;
   public:
@@ -51,19 +51,19 @@ namespace ngbla
     INLINE FlatMatrix () = default; // { ; }
   
     /// set height, width, and mem
-    INLINE FlatMatrix (int ah, int aw, T * adata) 
+    INLINE FlatMatrix (TIND ah, TIND aw, T * adata) 
       : h(ah), w(aw), data(adata) { ; }
   
     /// set height = width, and mem
-    INLINE FlatMatrix (int ah, T * adata) 
+    INLINE FlatMatrix (TIND ah, T * adata) 
       : h(ah), w(ah), data(adata) { ; }
 
     /// allocates at local heap
-    INLINE FlatMatrix (int ah, int aw, LocalHeap & lh) 
+    INLINE FlatMatrix (TIND ah, TIND aw, LocalHeap & lh) 
       : h(ah), w(aw), data (lh.Alloc<T>(ah*aw)) { ; }
   
     /// allocates at local heap
-    INLINE FlatMatrix (int ah, LocalHeap & lh) 
+    INLINE FlatMatrix (TIND ah, LocalHeap & lh) 
       : h(ah), w(ah), data(lh.Alloc<T>(ah*ah)) { ; }
   
     /// copy constructor. copies pointers, not contents
@@ -100,7 +100,7 @@ namespace ngbla
     // ~FlatMatrix () throw() { ; }
 
     /// set size, and assign mem
-    INLINE void AssignMemory (int ah, int aw, LocalHeap & lh)  
+    INLINE void AssignMemory (TIND ah, TIND aw, LocalHeap & lh)  
     {
       h = ah;
       w = aw;
@@ -108,7 +108,7 @@ namespace ngbla
     }
   
     /// set size, and assign mem
-    INLINE void AssignMemory (int ah, int aw, T * mem) throw()
+    INLINE void AssignMemory (TIND ah, TIND aw, T * mem) throw()
     {
       h = ah;
       w = aw;
@@ -133,7 +133,8 @@ namespace ngbla
     /// assign constant
     INLINE const FlatMatrix & operator= (TSCAL s) const 
     {
-      for (int i = 0; i < h*w; i++) data[i] = s; 
+      // for (int i = 0; i < h*w; i++) data[i] = s;
+      for (auto i : Range(h*w)) data[i] = s;
       return *this;
     }
 
@@ -157,38 +158,31 @@ namespace ngbla
     }
 
     /// access operator
-    template<typename IND,
-             typename std::enable_if<std::is_convertible<IND,int>::value, int>::type = 0>    
-    INLINE TELEM & operator() (IND i, IND j) const
+    template<typename TI1, typename TI2,
+             typename std::enable_if<std::is_convertible<TI1,int>::value, int>::type = 0,
+             typename std::enable_if<std::is_convertible<TI2,int>::value, int>::type = 0>
+    INLINE TELEM & operator() (TI1 i, TI2 j) const
     {
 #ifdef CHECK_RANGE
       CheckMatRange(h,w,i,j);
 #endif
-      return data[i*IND(w)+j];
+      return data[i*w+j];
     }
 
     /// the height
-    INLINE int Height () const { return h; }
-
+    INLINE auto Height () const { return h; }
     /// the width
-    INLINE int Width () const { return w; }
+    INLINE auto Width () const { return w; }
 
-    INLINE const FlatVector<T> Row (int i) const
+    INLINE const FlatVector<T> Row (TIND i) const
     {
-      return FlatVector<T> (w, &data[i*size_t(w)]);
+      return FlatVector<T> (w, &data[i*w]);
     }
 
-#ifdef FLATVECTOR_WITH_DIST
-    INLINE const FlatVector<T> Col (int i) const
-    {
-      return FlatVector<T> (h, w, &data[i]);
-    }
-#else
-    INLINE const SliceVector<T> Col (int i) const
+    INLINE const SliceVector<T> Col (TIND i) const
     {
       return SliceVector<T> (h, w, &data[i]);
     }
-#endif
 
     INLINE const SliceVector<T> Diag () const
     {
@@ -198,12 +192,12 @@ namespace ngbla
     using CMCPMatExpr<FlatMatrix<T> >::Rows;
     using CMCPMatExpr<FlatMatrix<T> >::Cols;
 
-    INLINE FlatMatrix Rows (int first, int next) const
+    INLINE FlatMatrix Rows (size_t first, size_t next) const
     {
       return FlatMatrix (next-first, w, data+first*w);
     }
 
-    INLINE SliceMatrix<T> Cols (int first, int next) const
+    INLINE SliceMatrix<T> Cols (size_t first, size_t next) const
     {
       return SliceMatrix<T> (h, next-first, w, data+first);
     }
@@ -348,18 +342,18 @@ namespace ngbla
     }
 
     /// the height
-    INLINE int Height () const { return h; }
+    INLINE auto Height () const { return h; }
 
     /// the width
-    INLINE int Width () const { return w; }
+    INLINE auto Width () const { return w; }
 
 
-    INLINE const FlatVector<T> Col (int i) const
+    INLINE const FlatVector<T> Col (size_t i) const
     {
       return FlatVector<T> (h, &data[i*size_t(h)]);
     }
 
-    INLINE const SliceVector<T> Row (int i) const
+    INLINE const SliceVector<T> Row (size_t i) const
     {
       return SliceVector<T> (w, h, &data[i]);
     }
@@ -371,7 +365,7 @@ namespace ngbla
     }
     */
 
-    INLINE const FlatMatrix Cols (int first, int next) const
+    INLINE const FlatMatrix Cols (size_t first, size_t next) const
     {
       return FlatMatrix (h, next-first, data+first*h);
     }
@@ -382,7 +376,7 @@ namespace ngbla
     }
 
 
-    INLINE const SliceMatrix<T,ColMajor> Rows (int first, int next) const
+    INLINE const SliceMatrix<T,ColMajor> Rows (size_t first, size_t next) const
     {
       return SliceMatrix<T,ColMajor> (next-first, w, h, data+first);
     }
@@ -1393,14 +1387,15 @@ namespace ngbla
     }
 
     /// access operator
-    template<typename IND,
-             typename std::enable_if<std::is_convertible<IND,int>::value, int>::type = 0>
-      INLINE TELEM & operator() (IND i, IND j) const
+    template<typename TI1, typename TI2,
+             typename std::enable_if<std::is_convertible<TI1,int>::value, int>::type = 0,
+             typename std::enable_if<std::is_convertible<TI2,int>::value, int>::type = 0>
+    INLINE TELEM & operator() (TI1 i, TI2 j) const
     {
 #ifdef CHECK_RANGE
       CheckMatRange(h,w,i,j);
 #endif
-      return data[i*IND(dist)+j]; 
+      return data[i*dist+j]; 
     }
 
     /// access operator, linear access
@@ -1757,7 +1752,7 @@ namespace ngbla
       return ret;
     }
 
-    Scalar2ElemMatrix Rows(int first, int next) const
+    Scalar2ElemMatrix Rows(size_t first, size_t next) const
     {
       return Scalar2ElemMatrix(mat.Rows(H*first, H*next));
     }

@@ -3,7 +3,7 @@
 namespace ngbla
 {
 
-  void CheckMatRange(int h, int w, int i)
+  void CheckMatRange(size_t h, size_t w, size_t i)
   {
     if (i < 0 || i > h*w)
       {
@@ -13,7 +13,7 @@ namespace ngbla
       }
   }
 
-  void CheckMatRange(int h, int w, int i, int j)
+  void CheckMatRange(size_t h, size_t w, size_t i, size_t j)
   {
     if (i < 0 || i > h || j < 0 || j > w)
       {
@@ -23,7 +23,7 @@ namespace ngbla
       }
   }
 
-  void CheckVecRange(int s, int i) 
+  void CheckVecRange(size_t s, size_t i) 
   {
     if (i < 0 || i > s)
       {
@@ -33,7 +33,7 @@ namespace ngbla
       }
   }
   
-  void CheckVecRange(int s, int i, int j) 
+  void CheckVecRange(size_t s, size_t i, size_t j) 
   {
     if (i < 0 || i > s || j != 0)
       {

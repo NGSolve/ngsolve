@@ -2464,7 +2464,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   void CompoundFESpace::TransformMat (int elnr, bool boundary,
 				      MAT & mat, TRANSFORM_TYPE tt) const
   {
-    int base = 0;
+    size_t base = 0;
     LocalHeapMem<100005> lh("CompoundFESpace - transformmat");
     for (int i = 0; i < spaces.Size(); i++)
       {
@@ -2474,7 +2474,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  : spaces[i]->GetFE(elnr, lh).GetNDof();
         */
         HeapReset hr(lh);
-        int nd = spaces[i]->GetFE(ElementId(boundary?BND:VOL, elnr), lh).GetNDof();
+        size_t nd = spaces[i]->GetFE(ElementId(boundary?BND:VOL, elnr), lh).GetNDof();
 
 	spaces[i]->TransformMat (elnr, boundary, mat.Rows(base, base+nd), TRANSFORM_MAT_LEFT);
 	spaces[i]->TransformMat (elnr, boundary, mat.Cols(base, base+nd), TRANSFORM_MAT_RIGHT);
