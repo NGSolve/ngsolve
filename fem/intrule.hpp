@@ -1699,7 +1699,7 @@ namespace ngfem
 
 
   
-  class SIMD_IntegrationRule : public Array<SIMD<IntegrationPoint>,size_t>
+  class SIMD_IntegrationRule : public Array<SIMD<IntegrationPoint>>
   {
     int dimension = -1;
     size_t nip = -47;
@@ -1715,7 +1715,7 @@ namespace ngfem
     SIMD_IntegrationRule & operator= (SIMD_IntegrationRule &&) = default;
     
     SIMD_IntegrationRule (size_t asize, SIMD<IntegrationPoint> * pip)
-      : Array<SIMD<IntegrationPoint>,size_t> (asize, pip) { ; }
+      : Array<SIMD<IntegrationPoint>> (asize, pip) { ; }
 
     size_t GetNIP() const { return nip; } // Size()*SIMD<double>::Size(); }
     void SetNIP(size_t _nip) { nip = _nip; }

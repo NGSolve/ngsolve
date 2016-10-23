@@ -250,7 +250,7 @@ void NGS_DLL_HEADER ExportNgla() {
                                    {
                                      return self.Range(from,to);
                                    }))
-    .def("FV", FunctionPointer( [] (BaseVector & self) -> FlatVector<double,int>
+    .def("FV", FunctionPointer( [] (BaseVector & self) -> FlatVector<double>
                                 {
                                   return self.FVDouble();
                                 }))

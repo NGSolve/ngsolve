@@ -1037,8 +1037,8 @@ namespace ngla
             task_manager -> CreateJob
                          ( [&] (const TaskInfo & ti)
                            {
-                             int br = ti.task_nr % nr;
-                             int bc = ti.task_nr / nr;
+                             size_t br = ti.task_nr % nr;
+                             size_t bc = ti.task_nr / nr;
                              // auto rowr = Range(c.Height()).Split (br, nr);
                              // auto colr = Range(c.Width()).Split (bc, nc);
                              auto rowr = Range(BH*br, min(BH*(br+1), c.Height()));
