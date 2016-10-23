@@ -14,11 +14,9 @@
 
 namespace ngbla
 {
-  
-  // not yet functional
   enum ORDERING { ColMajor, RowMajor };
 
-  template <typename T = double, ORDERING ORD = RowMajor, typename TIND = size_t> class FlatMatrix;
+  template <typename T = double, ORDERING ORD = RowMajor, typename TIND = int> class FlatMatrix;
   template <typename T = double, ORDERING ORD = RowMajor> class Matrix;
 
   template <int H, int W, typename T> class Mat;

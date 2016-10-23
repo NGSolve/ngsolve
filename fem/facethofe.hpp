@@ -53,7 +53,7 @@ namespace ngfem
     
 
     virtual void CalcFacetShapeVolIP(int fnr, const IntegrationPoint & ip, 
-				     SliceVector<> shape) const
+				     BareSliceVector<> shape) const
     {
       double pt[DIM];
       for (int i = 0; i < DIM; i++) pt[i] = ip(i);

@@ -759,7 +759,7 @@ static Matrix<> trans3;
     ///
     using ScalarFiniteElement<2>::CalcShape;
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    SliceVector<> shape) const;
+			    BareSliceVector<> shape) const;
 			  
     virtual void CalcDShape (const IntegrationPoint & ip, 
 			     SliceMatrix<> dshape) const;
@@ -1003,7 +1003,7 @@ static Matrix<> trans;
 
     using ScalarFiniteElement<2>::CalcShape;
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    SliceVector<> shape) const override;
+			    BareSliceVector<> shape) const override;
     virtual void CalcDShape (const IntegrationPoint & ip, 
 			     SliceMatrix<> dshape) const override;
   }; 

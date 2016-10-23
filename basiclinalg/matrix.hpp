@@ -126,14 +126,13 @@ namespace ngbla
     /// copy contents
     INLINE const FlatMatrix & operator= (const FlatMatrix & m) const 
     {
-      for (int i = 0; i < h*w; i++) data[i] = m(i);
+      for (size_t i = 0; i < h*w; i++) data[i] = m(i);
       return *this;
     }
 
     /// assign constant
     INLINE const FlatMatrix & operator= (TSCAL s) const 
     {
-      // for (int i = 0; i < h*w; i++) data[i] = s;
       for (auto i : Range(h*w)) data[i] = s;
       return *this;
     }
@@ -149,7 +148,7 @@ namespace ngbla
 
 
     /// access operator, linear access
-    INLINE TELEM & operator() (int i) const 
+    INLINE TELEM & operator() (size_t i) const 
     { 
 #ifdef CHECK_RANGE
       CheckMatRange(h,w,i);
@@ -158,10 +157,7 @@ namespace ngbla
     }
 
     /// access operator
-    template<typename TI1, typename TI2,
-             typename std::enable_if<std::is_convertible<TI1,int>::value, int>::type = 0,
-             typename std::enable_if<std::is_convertible<TI2,int>::value, int>::type = 0>
-    INLINE TELEM & operator() (TI1 i, TI2 j) const
+    INLINE TELEM & operator() (size_t i, size_t j) const
     {
 #ifdef CHECK_RANGE
       CheckMatRange(h,w,i,j);
@@ -179,12 +175,12 @@ namespace ngbla
       return FlatVector<T> (w, &data[i*w]);
     }
 
-    INLINE const SliceVector<T> Col (TIND i) const
+    INLINE const SliceVector<T,TIND> Col (size_t i) const
     {
       return SliceVector<T> (h, w, &data[i]);
     }
 
-    INLINE const SliceVector<T> Diag () const
+    INLINE const SliceVector<T,TIND> Diag () const
     {
       return SliceVector<T> (h, w+1, &data[0]);
     }
@@ -227,12 +223,12 @@ namespace ngbla
 
 
 
-  template <typename T>
-  class FlatMatrix<T,ColMajor> : public CMCPMatExpr<FlatMatrix<T,ColMajor> >
+  template <typename T, typename TIND>
+  class FlatMatrix<T,ColMajor,TIND> : public CMCPMatExpr<FlatMatrix<T,ColMajor,TIND> >
   {
   protected:
-    int h;
-    int w;
+    TIND h;
+    TIND w;
     T * __restrict data;
   public:
     enum { IS_LINEAR = 0 };
@@ -303,14 +299,14 @@ namespace ngbla
     /// copy contents
     INLINE const FlatMatrix & operator= (const FlatMatrix & m) const 
     {
-      for (int i = 0; i < h*w; i++) data[i] = m(i);
+      for (size_t i = 0; i < size_t(h)*size_t(w); i++) data[i] = m(i);
       return *this;
     }
 
     /// assign constant
     INLINE const FlatMatrix & operator= (TSCAL s) const 
     {
-      for (int i = 0; i < h*w; i++) data[i] = s; 
+      for (size_t i = 0; i < size_t(h)*size_t(w); i++) data[i] = s; 
       return *this;
     }
 
@@ -324,7 +320,7 @@ namespace ngbla
     }
 
     /// access operator, linear access
-    INLINE TELEM & operator() (int i) const 
+    INLINE TELEM & operator() (size_t i) const 
     { 
 #ifdef CHECK_RANGE
       CheckMatRange(h,w,i);
@@ -333,7 +329,7 @@ namespace ngbla
     }
 
     /// access operator
-    INLINE TELEM & operator() (int i, int j) const
+    INLINE TELEM & operator() (size_t i, size_t j) const
     {
 #ifdef CHECK_RANGE
       CheckMatRange(h,w,i,j);
@@ -342,10 +338,10 @@ namespace ngbla
     }
 
     /// the height
-    INLINE auto Height () const { return h; }
+    INLINE size_t Height () const { return h; }
 
     /// the width
-    INLINE auto Width () const { return w; }
+    INLINE size_t Width () const { return w; }
 
 
     INLINE const FlatVector<T> Col (size_t i) const

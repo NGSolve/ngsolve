@@ -2009,15 +2009,16 @@ namespace ngla
  
                              if (task.solveL)
                                {
-                                 for (int i = range.end()-1; i >= range.begin(); i--)
+                                 // for (int i = range.end()-1; i >= range.begin(); i--)
+                                 for (size_t i = range.end()-1; i-- > range.begin(); )
                                    {
-                                     int size = range.end()-i-1;
+                                     size_t size = range.end()-i-1;
                                      if (size == 0) continue;
                                      FlatVector<TM> vlfact(size, &lfact[firstinrow[i]]);
                                      auto hyr = hy.Range(i+1, range.end());
 
                                      TVX hyi = hy(i);
-                                     for (int j = 0; j < vlfact.Size(); j++)
+                                     for (size_t j = 0; j < vlfact.Size(); j++)
                                        hyi -= vlfact(j) * hyr(j);
                                      hy(i) = hyi;
                                    }
@@ -2034,7 +2035,7 @@ namespace ngla
                                      auto extdofs = all_extdofs.Range(myr);
                                      
                                      VectorMem<520,TVX> temp(extdofs.Size());
-                                     for (int j : Range(extdofs))
+                                     for (auto j : Range(extdofs))
                                        temp(j) = hy(extdofs[j]);
     
                                      for (auto i : range)
@@ -2043,7 +2044,7 @@ namespace ngla
                                          FlatVector<TM> ext_lfact (all_extdofs.Size(), &lfact[first]);
     
                                          TVX val(0.0);
-                                         for (int j : Range(extdofs))
+                                         for (auto j : Range(extdofs))
                                            val += ext_lfact(myr.begin()+j) * temp(j);
                                          MyAtomicAdd (hy(i), -val);
                                        }

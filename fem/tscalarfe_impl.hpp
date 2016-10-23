@@ -26,7 +26,7 @@ namespace ngfem
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
-  CalcShape (const IntegrationPoint & ip, SliceVector<> shape) const
+  CalcShape (const IntegrationPoint & ip, BareSliceVector<> shape) const
   {
     /*
     Vec<DIM> pt = ip.Point();
@@ -71,7 +71,7 @@ namespace ngfem
   
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   double T_ScalarFiniteElement<FEL,ET,BASE> :: 
-  Evaluate (const IntegrationPoint & ip, SliceVector<double> x) const
+  Evaluate (const IntegrationPoint & ip, BareSliceVector<double> x) const
   {
     // Vec<DIM> pt = ip.Point();
 
@@ -83,7 +83,7 @@ namespace ngfem
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
-  Evaluate (const IntegrationRule & ir, SliceVector<double> coefs, FlatVector<double> vals) const
+  Evaluate (const IntegrationRule & ir, BareSliceVector<double> coefs, FlatVector<double> vals) const
   {
     for (int i = 0; i < ir.GetNIP(); i++)
       {
@@ -407,9 +407,9 @@ namespace ngfem
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
-  EvaluateTrans (const IntegrationRule & ir, FlatVector<> vals, SliceVector<double> coefs) const
+  EvaluateTrans (const IntegrationRule & ir, FlatVector<> vals, BareSliceVector<double> coefs) const
   {
-    coefs = 0.0;
+    coefs.AddSize(ndof) = 0.0;
     for (int i = 0; i < ir.GetNIP(); i++)
       {
         // Vec<DIM> pt = ir[i].Point();
@@ -612,7 +612,7 @@ namespace ngfem
   
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   auto T_ScalarFiniteElement<FEL,ET,BASE> :: 
-  EvaluateGrad (const IntegrationPoint & ip, SliceVector<double> coefs) const -> Vec<DIM>
+  EvaluateGrad (const IntegrationPoint & ip, BareSliceVector<double> coefs) const -> Vec<DIM>
   {
     // Vec<DIM, AutoDiff<DIM>> adp = ip;
     TIP<DIM,AutoDiff<DIM>> tip = ip;
@@ -627,7 +627,7 @@ namespace ngfem
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
-  EvaluateGrad (const IntegrationRule & ir, SliceVector<double> coefs, 
+  EvaluateGrad (const IntegrationRule & ir, BareSliceVector<double> coefs, 
                 FlatMatrixFixWidth<DIM> vals) const
   {
     for (int i = 0; i < ir.GetNIP(); i++)
@@ -701,9 +701,9 @@ namespace ngfem
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   EvaluateGradTrans (const IntegrationRule & ir, 
-                     FlatMatrixFixWidth<DIM> vals, SliceVector<double> coefs) const
+                     FlatMatrixFixWidth<DIM> vals, BareSliceVector<double> coefs) const
   {
-    coefs = 0.0;
+    coefs.AddSize(ndof) = 0.0;
     for (int i = 0; i < ir.GetNIP(); i++)
       {
         Vec<DIM, AutoDiff<DIM>> adp = ir[i];
