@@ -157,7 +157,7 @@ namespace ngstd
   }
 
   template <typename TFUNC>
-  INLINE void ParallelFor (int n, TFUNC f, 
+  INLINE void ParallelFor (size_t n, TFUNC f, 
                            int antasks = task_manager ? task_manager->GetNumThreads() : 0)
   {
     ParallelFor (IntRange (n), f, antasks);
@@ -183,7 +183,7 @@ namespace ngstd
   }
 
   template <typename TFUNC>
-  INLINE void ParallelForRange (int n, TFUNC f, 
+  INLINE void ParallelForRange (size_t n, TFUNC f, 
                                 int antasks = task_manager ? task_manager->GetNumThreads() : 0)
   {
     ParallelForRange (IntRange(n), f, antasks);
@@ -249,7 +249,7 @@ namespace ngstd
 
   class Partitioning
   {
-    Array<int> part;
+    Array<size_t> part;
   public:
     Partitioning () { ; }
 
@@ -262,7 +262,7 @@ namespace ngstd
 
 
     template <typename TFUNC>
-    void Calc (int n, TFUNC costs, int size = task_manager ? task_manager->GetNumThreads() : 1)
+    void Calc (size_t n, TFUNC costs, int size = task_manager ? task_manager->GetNumThreads() : 1)
     {
       Array<size_t> prefix (n);
 
@@ -280,9 +280,9 @@ namespace ngstd
         part[i] = BinSearch (prefix, sum*i/size);      
     }
     
-    int Size() const { return part.Size()-1; }
-    T_Range<int> operator[] (int i) const { return ngstd::Range(part[i], part[i+1]); }
-    T_Range<int> Range() const { return ngstd::Range(part[0], part[Size()]); }
+    size_t Size() const { return part.Size()-1; }
+    IntRange operator[] (size_t i) const { return ngstd::Range(part[i], part[i+1]); }
+    IntRange Range() const { return ngstd::Range(part[0], part[Size()]); }
 
 
 
@@ -308,7 +308,7 @@ namespace ngstd
     }
   };
 
-
+  
   inline ostream & operator<< (ostream & ost, const Partitioning & part)
   {
     for (int i : Range(part.Size()))

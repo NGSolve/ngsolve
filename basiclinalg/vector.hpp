@@ -16,7 +16,7 @@ namespace ngbla
   template <class T> class SysVector;
   template <class T> class FlatVector;
   template <class T> class Vector;
-  template <class T = double, class TIND = size_t> class SliceVector;
+  template <class T = double, class TIND = int> class SliceVector;
   template <int DIST, typename T> class FixSliceVector;
 
 
@@ -1179,7 +1179,7 @@ namespace ngbla
      No memory allocation/deallocation. User must provide memory.
   */
   template <typename T, typename TIND>
-  class SliceVector : public CMCPMatExpr<SliceVector<T> > 
+  class SliceVector : public CMCPMatExpr<SliceVector<T,TIND> > 
   {
   protected:
     /// vector size
@@ -1347,20 +1347,28 @@ namespace ngbla
 
   
   template <class T = double>
-  class BareSliceVector
+  class BareSliceVector : public CMCPMatExpr<BareSliceVector<T> > 
   {
     T * __restrict data;
     size_t dist;
-  public:
     BareSliceVector(T * _data, size_t _dist) : data(_data), dist(_dist) { ; }
+  public:
     BareSliceVector(SliceVector<T> vec) : data(&vec(0)), dist(vec.Dist()) { ; }
     template <int D>
     BareSliceVector(FixSliceVector<D,T> vec) : data(&vec(0)), dist(D) { ; }
-    BareSliceVector(FlatVector<T> vec) : data(&vec(0)), dist(1) { ; } 
+    BareSliceVector(FlatVector<T> vec) : data(&vec(0)), dist(1) { ; }
+    template <int D>
+    BareSliceVector(Vec<D,T> & vec) : data(&vec(0)), dist(1) { ; } 
     BareSliceVector(const BareSliceVector &) = default;
 
     size_t Dist () const { return dist; }
-    double & operator() (size_t i) const { return data[i*dist];  }
+    SliceVector<T,size_t> AddSize(size_t size) const { return SliceVector<T,size_t> (size, dist, data); }
+    
+    T & operator() (size_t i) const { return data[i*dist];  }
+    T & operator() (size_t i, size_t j) const { return data[i*dist];  }
+    T & operator[] (size_t i) const { return data[i*dist];  }
+    BareSliceVector<T> operator+(size_t i) const { return BareSliceVector<T> (data+i*dist, dist); }
+    T * Addr (size_t i) const { return data+i*dist; }
     BareSliceVector Range (size_t first, size_t next) const
     {
       return BareSliceVector (data+first*dist, dist);

@@ -118,10 +118,10 @@ namespace ngfem
 
   void BaseScalarFiniteElement ::
   CalcShape (const IntegrationPoint & ip, 
-             SliceVector<Complex> shape) const
+             BareSliceVector<Complex> shape) const
   {
-    CalcShape (ip, SliceVector<double> (shape.Size(), 2*shape.Dist(), reinterpret_cast<double*> (&shape(0))));
-    auto imag_part = SliceVector<double> (shape.Size(), 2*shape.Dist(), reinterpret_cast<double*> (&shape(0))+1);
+    CalcShape (ip, SliceVector<double> (ndof, 2*shape.Dist(), reinterpret_cast<double*> (&shape(0))));
+    SliceVector<double> imag_part(ndof, 2*shape.Dist(), reinterpret_cast<double*> (&shape(0))+1);
     imag_part = 0.0;
   }
 
@@ -186,7 +186,7 @@ namespace ngfem
   */
 
   double BaseScalarFiniteElement :: 
-  Evaluate (const IntegrationPoint & ip, SliceVector<double> x) const
+  Evaluate (const IntegrationPoint & ip, BareSliceVector<double> x) const
   {
     VectorMem<20, double> shape(ndof);
     CalcShape (ip, shape);
@@ -195,7 +195,7 @@ namespace ngfem
   
   template<int D>
   Vec<D> ScalarFiniteElement<D> :: 
-  EvaluateGrad (const IntegrationPoint & ip, SliceVector<double> x) const
+  EvaluateGrad (const IntegrationPoint & ip, BareSliceVector<double> x) const
   {
     MatrixFixWidth<D> dshape(ndof);
     CalcDShape (ip, dshape);
@@ -205,7 +205,7 @@ namespace ngfem
 
 
   void BaseScalarFiniteElement :: 
-  Evaluate (const IntegrationRule & ir, SliceVector<double> coefs, FlatVector<double> vals) const
+  Evaluate (const IntegrationRule & ir, BareSliceVector<double> coefs, FlatVector<double> vals) const
   {
     for (int i = 0; i < ir.GetNIP(); i++)
       vals(i) = Evaluate (ir[i], coefs);
@@ -239,7 +239,7 @@ namespace ngfem
 
   template<int D>
   void ScalarFiniteElement<D> :: 
-  EvaluateGrad (const IntegrationRule & ir, SliceVector<double> coefs, FlatMatrixFixWidth<D,double> vals) const
+  EvaluateGrad (const IntegrationRule & ir, BareSliceVector<double> coefs, FlatMatrixFixWidth<D,double> vals) const
   {
     for (int i = 0; i < ir.GetNIP(); i++)
       vals.Row(i) = EvaluateGrad (ir[i], coefs);
@@ -261,14 +261,14 @@ namespace ngfem
 
 
   void BaseScalarFiniteElement :: 
-  EvaluateTrans (const IntegrationRule & ir, FlatVector<double> vals, SliceVector<double> coefs) const
+  EvaluateTrans (const IntegrationRule & ir, FlatVector<double> vals, BareSliceVector<double> coefs) const
   {
     VectorMem<20, double> shape(ndof);
-    coefs = 0.0;
+    coefs.AddSize(ndof) = 0.0;
     for (int i = 0; i < ir.GetNIP(); i++)
       {
 	CalcShape (ir[i], shape);
-	coefs += vals(i) * shape;
+	coefs.AddSize(ndof) += vals(i) * shape;
       }
   }
 
@@ -289,14 +289,14 @@ namespace ngfem
   template<int D>
   void ScalarFiniteElement<D> :: 
   EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<D,double> vals, 
-                     SliceVector<double> coefs) const
+                     BareSliceVector<double> coefs) const
   {
     MatrixFixWidth<D> dshape(ndof);
-    coefs = 0.0;
+    coefs.AddSize(ndof) = 0.0;
     for (int i = 0; i < ir.GetNIP(); i++)
       {
 	CalcDShape (ir[i], dshape);
-	coefs += dshape * vals.Row(i);
+	coefs.AddSize(ndof) += dshape * vals.Row(i);
       }
   }
 

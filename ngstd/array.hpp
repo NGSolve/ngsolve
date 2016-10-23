@@ -214,7 +214,7 @@ namespace ngstd
     // INLINE operator IntRange () const { return IntRange(first,next); }
   };
 
-  using IntRange = T_Range<int>;
+  using IntRange = T_Range<size_t>;
 
   template <typename T>
   INLINE T_Range<T> Range (T a, T b)
@@ -261,7 +261,8 @@ namespace ngstd
     return IntRange (scale*range.First(), scale*range.Next());
   }
 
-  inline ostream & operator<< (ostream & s, const IntRange & ir)
+  template <typename TI>
+  inline ostream & operator<< (ostream & s, T_Range<TI> ir)
   {
     s << "[" << ir.First() << "," << ir.Next() << ")";
     return s;
