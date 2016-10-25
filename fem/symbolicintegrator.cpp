@@ -543,7 +543,8 @@ namespace ngfem
         typedef double SCAL;
         // static Timer t("symbolicLFI - CalcElementVector", 2); RegionTimer reg(t);
         HeapReset hr(lh);
-        IntegrationRule ir(trafo.GetElementType(), 2*fel.Order());
+        // IntegrationRule ir(trafo.GetElementType(), 2*fel.Order());
+        IntegrationRule ir = fel.GetIR(2*fel.Order());
         BaseMappedIntegrationRule & mir = trafo(ir, lh);
         
         FlatVector<SCAL> elvec1(elvec.Size(), lh);
@@ -748,7 +749,8 @@ namespace ngfem
     elmat = 0;
 
 
-    IntegrationRule ir(trafo.GetElementType(), intorder);
+    // IntegrationRule ir(trafo.GetElementType(), intorder);
+    IntegrationRule ir = fel.GetIR(intorder);
     BaseMappedIntegrationRule & mir = trafo(ir, lh);
     
     ProxyUserData ud;
