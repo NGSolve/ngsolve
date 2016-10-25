@@ -1344,21 +1344,41 @@ namespace ngbla
     }
   };
 
+#ifdef DEBUG
+  // Record with and height for classes that usually have no such information
+  class DummySize {
+    size_t height;
+    size_t width;
+  public:
+    size_t Height() const { return height; }
+    size_t Width() const { return width; }
+    DummySize( size_t aheight, size_t awidth=1 ) :
+      width(awidth), height(aheight) {;}
+  };
+#else 
+  class DummySize {
+  public:
+    static INLINE size_t Height() { return 0; }
+    static INLINE size_t Width() { return 0; }
+    DummySize( size_t aheight, size_t awidth=1 ) {}
+  };
+#endif
 
-  
   template <class T = double>
-  class BareSliceVector : public CMCPMatExpr<BareSliceVector<T> > 
+  class BareSliceVector : public CMCPMatExpr<BareSliceVector<T> >, DummySize
   {
     T * __restrict data;
     size_t dist;
-    BareSliceVector(T * _data, size_t _dist) : data(_data), dist(_dist) { ; }
+    BareSliceVector(T * _data, size_t _dist) : data(_data), dist(_dist), DummySize(0,0) { ; }
   public:
-    BareSliceVector(SliceVector<T> vec) : data(&vec(0)), dist(vec.Dist()) { ; }
+    using DummySize::Width;
+    using DummySize::Height;
+    BareSliceVector(SliceVector<T> vec) : data(&vec(0)), dist(vec.Dist()), DummySize( vec.Size() ) { ; }
     template <int D>
-    BareSliceVector(FixSliceVector<D,T> vec) : data(&vec(0)), dist(D) { ; }
-    BareSliceVector(FlatVector<T> vec) : data(&vec(0)), dist(1) { ; }
+    BareSliceVector(FixSliceVector<D,T> vec) : data(&vec(0)), dist(D), DummySize( vec.Size() ) { ; }
+    BareSliceVector(FlatVector<T> vec) : data(&vec(0)), dist(1), DummySize( vec.Size() ) { ; }
     template <int D>
-    BareSliceVector(Vec<D,T> & vec) : data(&vec(0)), dist(1) { ; } 
+    BareSliceVector(Vec<D,T> & vec) : data(&vec(0)), dist(1), DummySize( vec.Size() ) { ; } 
     BareSliceVector(const BareSliceVector &) = default;
 
     size_t Dist () const { return dist; }
