@@ -359,7 +359,7 @@ namespace ngfem
 
   template<int D>
   void ScalarFiniteElement<D> :: CalcMappedDDShape (const MappedIntegrationPoint<D,D> & mip, 
-                                                    FlatMatrix<> ddshape) const
+                                                    SliceMatrix<> ddshape) const
   {
     int nd = GetNDof();
 
