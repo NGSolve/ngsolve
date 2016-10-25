@@ -779,7 +779,7 @@ protected:
     mask = size-1;
     // cout << "mask = " << mask << endl;
     invalid = -1;
-    for (int i = 0; i < size; i++)
+    for (size_t i = 0; i < size; i++)
       hash[i].I1() = invalid;
   }
 
