@@ -1353,8 +1353,9 @@ void NGS_DLL_HEADER ExportNgcomp()
               {
                 auto diffop = self->GetFESpace()->GetAdditionalEvaluators()[name];
                 cout << "diffop is " << typeid(*diffop).name() << endl;
-                PyCF coef(make_shared<GridFunctionCoefficientFunction> (self.Get(), diffop));
-                return bp::object(coef);
+                auto coef = make_shared<GridFunctionCoefficientFunction> (self.Get(), diffop);
+                coef->SetDimension(diffop->Dim());
+                return bp::object(PyCF(coef));
               }
             return bp::object(); //  shared_ptr<CoefficientFunction>();
           }))

@@ -2031,7 +2031,6 @@ namespace ngcomp
                   {
                     if (!bfi2d[j]->DefinedOn(eltrans.GetElementIndex())) continue;
                     isdefined = true;
-                    
                     FlatMatrix<SCAL> flux(npts, bfi2d[j]->DimFlux(), lh);
                     bfi2d[j]->CalcFlux (fel, mir, elu, flux, applyd, lh);
 

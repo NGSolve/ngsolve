@@ -910,6 +910,27 @@ namespace ngcomp
     if (ma->GetDimension() == 3)
       dnums += GetFaceDofs (ngel.faces[0]);
   }
+
+  
+  SymbolTable<shared_ptr<DifferentialOperator>>
+  H1HighOrderFESpace :: GetAdditionalEvaluators () const
+  {
+    SymbolTable<shared_ptr<DifferentialOperator>> additional;
+    switch (ma->GetDimension())
+      {
+      case 1:
+        additional.Set ("hesse", make_shared<T_DifferentialOperator<DiffOpHesse<1>>> ()); break;
+      case 2:
+        additional.Set ("hesse", make_shared<T_DifferentialOperator<DiffOpHesse<2>>> ()); break;
+      case 3:
+        additional.Set ("hesse", make_shared<T_DifferentialOperator<DiffOpHesse<3>>> ()); break;
+      default:
+        ;
+      }
+    return additional;
+  }
+
+
   
   Table<int> * H1HighOrderFESpace :: 
   CreateSmoothingBlocks (const Flags & precflags) const

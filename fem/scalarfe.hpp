@@ -170,7 +170,7 @@ namespace ngfem
     
     /// compute dshape, matrix: ndof x (spacedim spacedim)
     NGS_DLL_HEADER virtual void CalcMappedDDShape (const MappedIntegrationPoint<D,D> & mip, 
-                                                   FlatMatrix<> ddshape) const;
+                                                   SliceMatrix<> ddshape) const;
 
 
 
