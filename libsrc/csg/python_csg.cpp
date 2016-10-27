@@ -252,7 +252,28 @@ DLL_HEADER void ExportCSG()
            }))
     ;
 
-  bp::class_<SplineSurface, shared_ptr<SplineSurface>,boost::noncopyable> ("SplineSurface")
+  bp::class_<SplineSurface, shared_ptr<SplineSurface>,boost::noncopyable> ("SplineSurface",
+			 "A surface for co dim 2 integrals on the splines", bp::no_init)
+    .def("__init__", bp::make_constructor (FunctionPointer
+					   ([](const shared_ptr<SPSolid> base, bp::list cuts)
+	     {
+	       auto primitive = dynamic_cast<OneSurfacePrimitive*> (base->GetSolid()->GetPrimitive());
+	       auto acuts = new Array<OneSurfacePrimitive*>();
+	       for(int i = 0; i<bp::len(cuts);i++)
+		 {
+		   bp::extract<shared_ptr<SPSolid>> sps(cuts[i]);
+		   if(!sps.check())
+		     throw NgException("Cut must be SurfacePrimitive in constructor of SplineSurface!");
+		   auto sp = dynamic_cast<OneSurfacePrimitive*>(sps()->GetSolid()->GetPrimitive());
+		   if(sp)
+		     acuts->Append(sp);
+		   else
+		     throw NgException("Cut must be SurfacePrimitive in constructor of SplineSurface!");
+		 }
+	       if(!primitive)
+		 throw NgException("Base is not a SurfacePrimitive in constructor of SplineSurface!");
+	       return make_shared<SplineSurface>(primitive,acuts);
+	     }),bp::default_call_policies(),(bp::arg("base"), bp::arg("cuts")=bp::list())))
     .def("AddPoint", FunctionPointer
 	 ([] (SplineSurface & self, double x, double y, double z, bool hpref)
 	  {
@@ -261,12 +282,12 @@ DLL_HEADER void ExportCSG()
 	  }),
 	 (bp::arg("self"),bp::arg("x"),bp::arg("y"),bp::arg("z"),bp::arg("hpref")=false))
     .def("AddSegment", FunctionPointer
-	 ([] (SplineSurface & self, int i1, int i2, string bcname)
+	 ([] (SplineSurface & self, int i1, int i2, string bcname, double maxh)
 	  {
 	    auto str = new string(bcname);
-	    self.AppendSegment(new LineSeg<3>(self.GetPoint(i1),self.GetPoint(i2)),str);
+	    self.AppendSegment(new LineSeg<3>(self.GetPoint(i1),self.GetPoint(i2)),str,maxh);
 	  }),
-	 (bp::arg("self"),bp::arg("pnt1"),bp::arg("pnt2"),bp::arg("bcname")="default"))
+	 (bp::arg("self"),bp::arg("pnt1"),bp::arg("pnt2"),bp::arg("bcname")="default", bp::arg("maxh")=-1.))
     ;
   
 #if (BOOST_VERSION >= 106000) && (BOOST_VERSION < 106100)
@@ -450,13 +471,15 @@ DLL_HEADER void ExportCSG()
     .def("AddSplineSurface", FunctionPointer
 	 ([] (CSGeometry & self, shared_ptr<SplineSurface> surf)
 	  {
-	    auto planes = surf->CreatePlanes();
+	    auto cuttings = surf->CreateCuttingSurfaces();
 	    auto spsol = make_shared<SPSolid>(new Solid(&*surf));
-	    for(auto plane : (*planes)){
-	      spsol = make_shared<SPSolid>(SPSolid::SECTION,spsol,make_shared<SPSolid>(new Solid(plane)));
+	    for(auto cut : (*cuttings)){
+	      spsol = make_shared<SPSolid>(SPSolid::SECTION,spsol,make_shared<SPSolid>(new Solid(cut)));
 	    }
 	    spsol->AddSurfaces(self);
 	    int tlonr = self.SetTopLevelObject(spsol->GetSolid(), &*surf);
+	    for(auto p : surf->GetPoints())
+		self.AddUserPoint(p);
 	  }),
 	 (bp::arg("self"), bp::arg("SplineSurface")))
 
