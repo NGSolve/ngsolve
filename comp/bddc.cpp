@@ -166,6 +166,7 @@ namespace ngcomp
 
       if (coarse)
       {
+	flags.SetFlag("notUseA");
         inv = GetPreconditionerClasses().GetPreconditioner(coarsetype)->creatorbf (bfa, flags, "wirebasket"+coarsetype);
         dynamic_pointer_cast<Preconditioner>(inv) -> InitLevel(wb_free_dofs);
       }
@@ -526,11 +527,13 @@ namespace ngcomp
     BDDCPreconditioner (shared_ptr<BilinearForm> abfa, const Flags & aflags,
                         const string aname = "bddcprecond")
       : Preconditioner (abfa, aflags, aname)
-    {
+    { 
       bfa = dynamic_pointer_cast<S_BilinearForm<SCAL>> (abfa);
       bfa -> SetPreconditioner (this);
       inversetype = flags.GetStringFlag("inverse", "sparsecholesky");
       coarsetype = flags.GetStringFlag("coarsetype", "none");
+      if(coarsetype=="myamg_hcurl")
+	(dynamic_pointer_cast<HCurlHighOrderFESpace>(bfa->GetFESpace()))->DoCouplingDofUpgrade(false);
       if (flags.GetDefineFlag("refelement")) Exception ("refelement - BDDC not supported");
       block = flags.GetDefineFlag("block");
       hypre = flags.GetDefineFlag("usehypre");

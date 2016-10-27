@@ -293,7 +293,6 @@ namespace ngfem
       template <typename FEL1, typename MIP, typename MAT>
 	static void GenerateMatrix (const FEL1 & fel, const MIP & mip, MAT & mat, LocalHeap &lh)
       {
-	cout << "use bboundarydiffop" << endl;
       mat = Trans (mip.GetJacobianInverse ()) * 
 	Trans (static_cast<const FEL&> (fel).GetShape(mip.IP(),lh));
       }
@@ -316,7 +315,6 @@ namespace ngfem
 			    LocalHeap & lh) 
     {
       typedef typename TVX::TSCAL TSCAL;
-      *testout << "in ttrace applytrans" << endl;
       Vec<DIM_ELEMENT,TSCAL> hx;
       hx = mip.GetJacobianInverse() * x;
       y = static_cast<const FEL&> (fel).GetShape (mip.IP(),lh) * hx;
@@ -331,7 +329,6 @@ namespace ngfem
     static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
                                 ABareMatrix<double> y, BareSliceVector<double> x)
     {
-      *testout << "in applytrans simd " << endl;
        static_cast<const FEL&> (fel).AddTrans (mir, y, x);
     }    
       
@@ -376,7 +373,6 @@ namespace ngfem
 			    LocalHeap & lh) 
     {
       typedef typename TVX::TSCAL TSCAL;
-      *testout << "in applytrans boundary!" << endl;
       Vec<DIM_ELEMENT,TSCAL> hx;
       hx = mip.GetJacobianInverse() * x;
       y = static_cast<const FEL&> (fel).GetShape (mip.IP(),lh) * hx;
@@ -396,7 +392,6 @@ namespace ngfem
     static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
                                 ABareMatrix<double> y, BareSliceVector<double> x)
     {
-      *testout << "in applytrans simd boundary!" << endl;
        static_cast<const FEL&> (fel).AddTrans (mir, y, x);
     }    
     
