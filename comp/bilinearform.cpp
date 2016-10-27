@@ -1201,7 +1201,6 @@ namespace ngcomp
 		  }
 	      }
 
-	    
 	    RegionTimer reg(mattimer2);
 
 	    //simplify
@@ -1813,7 +1812,6 @@ namespace ngcomp
 
             bool assembledspecialelements = false;
             
-            
             int nspecel = 0;
             ParallelForRange( IntRange(fespace->specialelements.Size()), [&] ( IntRange r )
                               {
@@ -1853,6 +1851,7 @@ namespace ngcomp
             });
             if(assembledspecialelements) cout << "\rassemble special element " 
                                               << fespace->specialelements.Size() << "/" << fespace->specialelements.Size() << endl;
+
             
           
             // add eps to avoid empty lines
@@ -2037,11 +2036,13 @@ namespace ngcomp
                   GetName() + string("'\n"));
         throw;
       }
+    
     catch (exception & e)
       {
         throw (Exception (string(e.what()) +
                           string("\n in Assemble BilinearForm '" + GetName() + "'\n")));
       }
+    
   }
 
   

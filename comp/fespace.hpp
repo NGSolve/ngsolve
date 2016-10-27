@@ -403,6 +403,7 @@ namespace ngcomp
     
     void CheckCouplingTypes() const;
 
+
     /// get dof-nrs of the element of certain coupling type
     void GetDofNrs (int elnr, Array<int> & dnums, COUPLING_TYPE ctype) const;    
 
@@ -619,7 +620,6 @@ void TransformVec (int elnr, VorB vb,
     /// returns function-evaluator
     shared_ptr<DifferentialOperator> GetEvaluator (VorB vb = VOL) const
     {
-      *testout << "in get evaluator vb = " << vb << endl;
       if (vb == BND)
 	return boundary_evaluator; 
       if (vb == BBND)
@@ -1060,6 +1060,8 @@ void TransformVec (int elnr, VorB vb,
     ///
     virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
     ///
+    
+    virtual void GetCD2DofNrs (int cd2elnr, Array<int> & dnums) const;
     virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const;
     virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const;
     virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const;

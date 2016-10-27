@@ -599,7 +599,7 @@ namespace ngcomp
         if (wb_loedge)
 	  ctofdof[range.First()] = WIREBASKET_DOF;
       }
-      
+    
     // faces 
     if (ma->GetDimension() == 3)
       for (int face = 0; face < ma->GetNFaces(); face++)
@@ -706,7 +706,7 @@ namespace ngcomp
 	
 	if (eltype == ET_PYRAMID) upgrade = true;
 	
-	if (upgrade)
+	if (upgrade && ctupgrade)
 	  {
 	    GetDofNrs (el, dnums);
 	    for (int j = 0; j < dnums.Size(); j++)
@@ -714,7 +714,14 @@ namespace ngcomp
 		ctofdof[dnums[j]] = WIREBASKET_DOF;
 	  }
       }
+    
+
   }
+
+  void HCurlHighOrderFESpace :: DoCouplingDofUpgrade(bool actupgrade) {
+      ctupgrade = actupgrade;
+      UpdateCouplingDofArray();
+    }
 
   
   const FiniteElement & HCurlHighOrderFESpace :: GetFE (int elnr, LocalHeap & lh) const

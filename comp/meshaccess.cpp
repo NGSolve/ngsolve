@@ -901,8 +901,9 @@ namespace ngcomp
     for (int i=0; i< ncd2e; i++)
       {
 	int elindex = GetCD2ElIndex(i);
-	if (elindex < 0) throw Exception ("mesh with negative cd2 condition number");
-	nbboundaries = max2(nbboundaries, elindex);
+	//if (elindex < 0) throw Exception ("mesh with negative cd2 condition number");
+	if (elindex >=0)
+	  nbboundaries = max2(nbboundaries, elindex);
       }
     nbboundaries++;
     nbboundaries = MyMPI_AllReduce(nbboundaries, MPI_MAX);
@@ -1486,7 +1487,6 @@ namespace ngcomp
       else
 	{
 	  mask = BitArray(mesh->GetNBBoundaries());
-	  (*testout) << "nbboundaries: " << mesh->GetNBBoundaries() << endl;
 	  mask.Clear();
 	  regex re_pattern(pattern);
 	  for(int i : Range(mask))

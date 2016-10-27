@@ -2491,6 +2491,23 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
   }
 
+  
+  void CompoundFESpace :: GetCD2DofNrs (int cd2elnr, Array<int> & dnums) const
+  {
+    ArrayMem<int,500> hdnums;
+    dnums.SetSize(0);
+    for (int i = 0; i < spaces.Size(); i++)
+      {
+	spaces[i]->GetCD2DofNrs (cd2elnr, hdnums);
+	for (int j = 0; j < hdnums.Size(); j++)
+	  if (hdnums[j] != -1)
+	    dnums.Append (hdnums[j]+cummulative_nd[i]);
+	  else
+	    dnums.Append (-1);
+      }
+  }
+
+
 
 
 

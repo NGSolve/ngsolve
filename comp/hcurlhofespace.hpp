@@ -72,6 +72,8 @@ namespace ngcomp
     bool discontinuous;
     bool type1;        // first family
     bool wb_loedge;    // keep linear on edge as wb-dof
+    bool ctupgrade = true;  // set WIREBASKET_DOF on badly shaped elements
+    
   public:
 
     HCurlHighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags=false);
@@ -143,7 +145,9 @@ namespace ngcomp
     virtual void UpdateDofTables(); 
     virtual void UpdateCouplingDofArray();
     int GetMaxOrder() const {return maxorder;}; 
-    int GetMinOrder() const {return minorder;}; 
+    int GetMinOrder() const {return minorder;};
+
+    void DoCouplingDofUpgrade(bool actupgrade);
 
 
     virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const override;
