@@ -791,7 +791,7 @@ namespace ngbla
     /// the data
     T *  __restrict data;
     /// the height
-    int h;
+    size_t h;
   public:
     /// entry type
     typedef T TELEM;
@@ -804,11 +804,11 @@ namespace ngbla
     INLINE FlatMatrixFixWidth () { ; }
   
     /// set height and mem
-    INLINE FlatMatrixFixWidth (int ah, T * adata) throw()
+    INLINE FlatMatrixFixWidth (size_t ah, T * adata) throw()
       : data(adata), h(ah) { ; }
 
     /// allocates at local heap
-    INLINE FlatMatrixFixWidth (int ah, LocalHeap & lh) 
+    INLINE FlatMatrixFixWidth (size_t ah, LocalHeap & lh) 
       : data(lh.Alloc<T>(ah*DIST)), h(ah) { ; }
   
     /// copy constructor. copies pointers, not contents
@@ -827,14 +827,14 @@ namespace ngbla
     { ; }  
 
     /// set size, and assign mem
-    INLINE void AssignMemory (int ah, LocalHeap & lh) 
+    INLINE void AssignMemory (size_t ah, LocalHeap & lh) 
     {
       h = ah;
       data = lh.Alloc<T> (h*DIST);
     }
   
     /// set size, and assign mem
-    INLINE void AssignMemory (int ah, T * mem) throw()
+    INLINE void AssignMemory (size_t ah, T * mem) throw()
     {
       h = ah;
       data = mem;
@@ -852,11 +852,11 @@ namespace ngbla
     INLINE const FlatMatrixFixWidth & operator= (const FlatMatrixFixWidth & m) const throw()
     {
       if (W == DIST)
-        for (int i = 0; i < h*W; i++)
+        for (size_t i = 0; i < h*W; i++)
           data[i] = m(i);
       else
-        for (int i = 0; i < h; i++)
-          for (int j = 0; j < W; j++)
+        for (size_t i = 0; i < h; i++)
+          for (size_t j = 0; j < W; j++)
             (*this)(i,j) = m(i,j);
         
       return *this;
@@ -866,11 +866,11 @@ namespace ngbla
     INLINE const FlatMatrixFixWidth & operator= (TSCAL s) const throw()
     {
       if (W == DIST)
-        for (int i = 0; i < h*W; i++)
+        for (size_t i = 0; i < h*W; i++)
           data[i] = s; 
       else
-        for (int i = 0; i < h; i++)
-          for (int j = 0; j < W; j++)
+        for (size_t i = 0; i < h; i++)
+          for (size_t j = 0; j < W; j++)
             (*this)(i,j) = s;
         
       return *this;
@@ -885,7 +885,7 @@ namespace ngbla
     }
 
     /// access operator, linear access
-    INLINE TELEM & operator() (int i) const
+    INLINE TELEM & operator() (size_t i) const
     {
 #ifdef CHECK_RANGE
       CheckMatRange(h,W,i);
@@ -894,7 +894,7 @@ namespace ngbla
     }
 
     /// access operator
-    INLINE TELEM & operator() (int i, int j) const
+    INLINE TELEM & operator() (size_t i, size_t j) const
     {
 #ifdef CHECK_RANGE
       CheckMatRange(h,W,i,j);
@@ -903,21 +903,21 @@ namespace ngbla
     }
 
     /// the height
-    INLINE int Height () const throw() { return h; }
+    INLINE size_t Height () const throw() { return h; }
 
     /// the width
-    INLINE int Width () const throw() { return W; }
+    INLINE size_t Width () const throw() { return W; }
 
     ///
     INLINE operator const FlatMatrix<T>() const { return FlatMatrix<T> (h, W, data); }
 
     ///
-    INLINE const FlatVec<W,T> Row (int i) const
+    INLINE const FlatVec<W,T> Row (size_t i) const
     {
       return FlatVec<W,T> (&(*this)(i,0));
     }
 
-    INLINE const FixSliceVector<DIST,T> Col (int i) const
+    INLINE const FixSliceVector<DIST,T> Col (size_t i) const
     {
       return FixSliceVector<DIST,T> (h, &data[i]);
     }
@@ -925,12 +925,12 @@ namespace ngbla
     using CMCPMatExpr<FlatMatrixFixWidth<W,T,DIST> >::Rows;
     using CMCPMatExpr<FlatMatrixFixWidth<W,T,DIST> >::Cols;
 
-    INLINE const FlatMatrixFixWidth Rows (int first, int next) const
+    INLINE const FlatMatrixFixWidth Rows (size_t first, size_t next) const
     {
       return FlatMatrixFixWidth (next-first, data+first*DIST);
     }
 
-    INLINE const SliceMatrix<T> Cols (int first, int next) const
+    INLINE const SliceMatrix<T> Cols (size_t first, size_t next) const
     {
       return SliceMatrix<T> (h, next-first, DIST, data+first);
     }
