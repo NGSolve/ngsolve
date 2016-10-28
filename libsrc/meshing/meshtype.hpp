@@ -251,6 +251,8 @@ namespace netgen
       singular = 0; 
     }
 
+    void Scale(double factor) { *testout << "before: " << x[0] << endl; x[0] *= factor; x[1] *= factor; x[2] *= factor; *testout << "after: " << x[0] << endl;}
+
     int GetLayer() const { return layer; }
 
     POINTTYPE Type() const { return type; }

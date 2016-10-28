@@ -1410,7 +1410,6 @@ namespace netgen
 	    seg.surfnr2 = refedges.Get(k).surfnr2;
 	    seg.seginfo = 0;
 	    if (k == 1) seg.seginfo = (refedgesinv.Get(k)) ? 2 : 1;
-	*testout << "add segment at 3" << endl;
 	    mesh.AddSegment (seg);
 	    //(*testout) << "add seg " << mesh[seg.p1] << "-" << mesh[seg.p2] << endl;
 	    //(*testout) << "refedge " << k << " surf1 " << seg.surfnr1 << " surf2 " << seg.surfnr2 << " inv " << refedgesinv.Get(k) << endl;
@@ -1579,7 +1578,6 @@ namespace netgen
 	seg.surfnr2 = refedges.Get(k).surfnr2;
 	seg.seginfo = 0;
 	if (k == 1) seg.seginfo = (refedgesinv.Get(k)) ? 2 : 1;
-	*testout << "add segment at 1" << endl;
 	mesh.AddSegment (seg);
 	//	  (*testout) << "add seg " << seg[0] << "-" << seg[1] << endl;
       }
@@ -1711,7 +1709,6 @@ namespace netgen
 	    seg.surfnr2 = refedges.Get(k).surfnr2;
 	    seg.seginfo = 0;
 	    if (k == 1) seg.seginfo = refedgesinv.Get(k) ? 2 : 1;
-	*testout << "add segment at 2" << endl;
 	    mesh.AddSegment (seg);
 	    //	  (*testout) << "copy seg " << seg[0] << "-" << seg[1] << endl;
 #ifdef DEVELOP

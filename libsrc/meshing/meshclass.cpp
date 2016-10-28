@@ -1120,7 +1120,7 @@ namespace netgen
 		  {
 		    Segment & seg = LineSegment(i);
 		    if ( seg.cd2i <= n )
-		      seg.SetBCName (cd2names[seg.cd2i-1]);
+		      seg.SetBCName (cd2names[seg.edgenr-1]);
 		    else
 		      seg.SetBCName(0);
 		  }
@@ -1407,7 +1407,9 @@ namespace netgen
                 if(seg.surfnr2 >= 0)  seg.surfnr2 = seg.surfnr2 + max_surfnr;
                 seg[0] = seg[0] +oldnp;
                 seg[1] = seg[1] +oldnp;
+		*testout << "old edgenr: " << seg.edgenr << endl;
                 seg.edgenr = seg.edgenr + oldne;
+		*testout << "new edgenr: " << seg.edgenr << endl;
                 seg.epgeominfo[1].edgenr = seg.epgeominfo[1].edgenr + oldne;
 
                 AddSegment (seg);

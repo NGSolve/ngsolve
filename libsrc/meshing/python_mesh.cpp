@@ -216,6 +216,7 @@ DLL_HEADER void ExportNetgenMeshing()
                                  tmp->surfnr1 = bp::extract<int>(surfaces[0]);
                                  tmp->surfnr2 = bp::extract<int>(surfaces[1]);
                                }
+			     tmp->edgenr = index;
                              return tmp;
                            }),
           bp::default_call_policies(),      
@@ -242,6 +243,10 @@ DLL_HEADER void ExportNetgenMeshing()
                                      li.append (self.surfnr2);
                                      return li;
                                    }))
+    .add_property("index", FunctionPointer([](const Segment &self) -> size_t
+		  {
+		    return self.edgenr;
+		  }))
     ;
 
 
@@ -465,6 +470,11 @@ DLL_HEADER void ExportNetgenMeshing()
     .def ("SetMaterial", &Mesh::SetMaterial)
     .def ("GetMaterial", FunctionPointer([](Mesh & self, int domnr)
                                          { return string(self.GetMaterial(domnr)); }))
+
+    .def ("SetCD2Name", &Mesh::SetCD2Name)
+    .def ("GetCD2Name", FunctionPointer([](Mesh & self, int nr) -> string
+					{ return self.GetCD2Name(nr); }))
+    .def ("GetNCD2Names", &Mesh::GetNCD2Names)
  
     .def ("GenerateVolumeMesh", FunctionPointer
           ([](Mesh & self)
@@ -564,6 +574,12 @@ DLL_HEADER void ExportNetgenMeshing()
              GenerateBoundaryLayer (self, blp);
            }
            ))
+
+    .def ("Scale", FunctionPointer([](Mesh & self, double factor)
+				   {
+				     for(auto i = 0; i<self.GetNP();i++)
+				       self.Point(i).Scale(factor);
+				   }))
                                             
     ;
   
