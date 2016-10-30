@@ -50,8 +50,9 @@ namespace ngfem
     
     ///
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const;
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const;
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const;    
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<Complex> values) const;
+    virtual void Evaluate1 (const SIMD_BaseMappedIntegrationRule & ir, ABareMatrix<double> values) const;
 
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const;
     // virtual void EvaluateSoA (const BaseMappedIntegrationRule & ir, AFlatMatrix<Complex> values) const;
@@ -315,8 +316,9 @@ namespace ngfem
     
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const;
     
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
-    { values = val; }
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const;
+    virtual void Evaluate1 (const SIMD_BaseMappedIntegrationRule & ir, ABareMatrix<double> values) const;
+    
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
                            AFlatMatrix<double> values) const
     { values = val; }
@@ -1167,13 +1169,26 @@ public:
     for (int i = 0; i < values.Height()*values.VWidth(); i++)
       values.Get(i) = lam (values.Get(i), temp.Get(i));
   }
-  
+
+  virtual void Evaluate1 (const SIMD_BaseMappedIntegrationRule & ir, ABareMatrix<double> values) const
+  {
+    size_t nv = values.Dist();
+    size_t mydim = Dimension();
+    STACK_ARRAY(SIMD<double>, hmem, nv*mydim);
+    // AFlatMatrix<double> temp(mydim, 4*nv, &hmem[0]);
+    ABareMatrix<double> temp(&hmem[0], nv, values.Height(), values.Width());
+    c1->Evaluate1 (ir, values);
+    c2->Evaluate1 (ir, temp);
+    for (size_t i = 0; i < nv*mydim; i++)
+      values.Get(i) = lam (values.Get(i), temp.Get(i));
+  }
+    
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
                          AFlatMatrix<double> values) const
   {
     auto in0 = *input[0];
     auto in1 = *input[1];
-    for (int i = 0; i < values.Height()*values.VWidth(); i++)
+    for (size_t i = 0; i < values.Height()*values.VWidth(); i++)
       values.Get(i) = lam (in0.Get(i), in1.Get(i));
   }
 
