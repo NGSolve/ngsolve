@@ -224,6 +224,41 @@ namespace ngfem
   }
 
   void ProxyFunction ::
+  Evaluate1 (const SIMD_BaseMappedIntegrationRule & mir,
+             ABareMatrix<double> result) const
+  {
+    ProxyUserData * ud = (ProxyUserData*)mir.GetTransformation().userdata;
+    if (!ud) 
+      throw Exception ("cannot evaluate ProxyFunction without userdata");
+    size_t dist = result.Dist();
+    if (!testfunction && ud->fel)
+      {
+        // result = ud->GetAMemory (this);
+        ABareMatrix<> precomp = ud->GetAMemory (this);
+        for (size_t i = 0; i < Dimension()*dist; i++)
+          result.Get(i) = precomp.Get(i);
+        return;
+      }
+
+    for (size_t i = 0; i < Dimension()*dist; i++) result.Get(i) = 0;
+    if (ud->testfunction == this)
+      {
+        auto row = result.Row(ud->test_comp);
+        for (size_t j = 0; j < dist; j++)
+          row.Get(j) = 1;
+        // result.Row(ud->test_comp) = 1;
+      }
+    if (ud->trialfunction == this)
+      {
+        auto row = result.Row(ud->trial_comp);
+        for (size_t j = 0; j < dist; j++)
+          row.Get(j) = 1;
+        // result.Row(ud->trial_comp) = 1;
+      }
+  }
+
+  
+  void ProxyFunction ::
   Evaluate (const SIMD_BaseMappedIntegrationRule & mir,
             FlatArray<AFlatMatrix<double>*> input,
             AFlatMatrix<double> result) const
@@ -1934,11 +1969,11 @@ namespace ngfem
           ud.fel = &fel;
           ud.elx = &elx;
           ud.lh = &lh;
-          // tstart.Stop();
-          // tapply.Start();
           for (ProxyFunction * proxy : trial_proxies)
             ud.AssignMemory (proxy, simd_ir.GetNIP(), proxy->Dimension(), lh);
           
+          // tstart.Stop();
+          // tapply.Start();
           for (ProxyFunction * proxy : trial_proxies)
             proxy->Evaluator()->Apply(fel_trial, simd_mir, elx, ud.GetAMemory(proxy)); // , lh);
           // tapply.Stop();
