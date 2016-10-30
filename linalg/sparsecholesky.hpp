@@ -176,7 +176,8 @@ public:
     {
     public:
       int blocknr;
-      bool solveL;
+      enum BT { L_BLOCK, B_BLOCK, LB_BLOCK };
+      BT type; // bool solveL;
       int bblock;
       int nbblocks;
     };
