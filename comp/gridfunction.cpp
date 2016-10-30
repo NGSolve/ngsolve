@@ -1912,6 +1912,18 @@ namespace ngcomp
 
 
 
+  template <class SCAL>
+  bool VisualizeGridFunction<SCAL> ::
+  GetMultiSurfValue (size_t selnr, size_t facetnr, size_t npts,
+                     const __m256d * xref, 
+                     const __m256d * x, 
+                     const __m256d * dxdxref, 
+                     __m256d * values)
+  {
+    cout << "GetMultiSurf - gf not implemented" << endl;
+    return false;
+  }
+
 
 
 
@@ -2473,6 +2485,111 @@ namespace ngcomp
     return false;
   }
 
+  bool VisualizeCoefficientFunction ::    
+  GetMultiSurfValue (size_t selnr, size_t facetnr, size_t npts,
+                     const __m256d * xref, 
+                     const __m256d * x, 
+                     const __m256d * dxdxref, 
+                     __m256d * values)
+  {
+    /*
+    if (npts > 100)
+      {
+        bool isdefined = false;
+        for (size_t i = 0; i < npts; i += 100)
+          {
+            size_t npi = min2 (100, npts-i);
+            isdefined = GetMultiSurfValue (selnr, facetnr, npi, 
+                                           xref+i*2, x+i*3, dxdxref+i*6,
+                                           values+i, svalues);
+          }
+        return isdefined;
+      }
+    */
+    
+    try
+      {
+        static Timer t("VisualizeCoefficientFunction::GetMultiSurfValue simd", 2); RegionTimer reg(t);
+        static Timer t2("VisualizeCoefficientFunction::GetMultiSurfValue simd evaluate", 2);
+
+        /*   todo
+        if (cf -> IsComplex())
+          {
+            for (int i = 0; i < npts; i++)
+              GetSurfValue (selnr, facetnr, xref[i*sxref], xref[i*sxref+1], &values[i*svalues]);
+            return true;
+          }
+        */
+        
+        bool bound = (ma->GetDimension() == 3);
+        ElementId ei(bound ? BND : VOL, selnr);
+        
+        LocalHeapMem<100000> lh("viscf::getmultisurfvalue");
+        ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
+
+        AFlatMatrix<> mvalues(GetComponents(), SIMD<double>::Size()*npts, (double*)values);
+
+        SIMD_IntegrationRule ir(4*npts, lh);
+        for (size_t i = 0; i < npts; i++)
+          {
+            ir[i](0) = xref[2*i];
+            ir[i](1) = xref[2*i+1];
+            ir[i].FacetNr() = facetnr;
+          }
+
+        if (bound)
+          {
+            SIMD_MappedIntegrationRule<2,3> mir(ir, eltrans /* , 1*/ , lh);
+            /*
+            for (int k = 0; k < npts; k++)
+              {
+                Mat<2,3> & mdxdxref = *new((double*)(dxdxref+k*sdxdxref)) Mat<2,3>;
+                FlatVec<3> vx( (double*)x + k*sx);
+                mir[k] = MappedIntegrationPoint<2,3> (ir[k], eltrans, vx, mdxdxref);
+              }
+            */
+            RegionTimer r2(t2);
+            cf -> Evaluate (mir, mvalues);
+          }
+        else
+          {
+            if (!ma->GetDeformation())
+              {
+                SIMD_MappedIntegrationRule<2,2> mir(ir, eltrans/* , 1 */, lh);
+
+                /*
+                for (int k = 0; k < npts; k++)
+                  {
+                    Mat<2,2> & mdxdxref = *new((double*)(dxdxref+k*sdxdxref)) Mat<2,2>;
+                    FlatVec<2> vx( (double*)x + k*sx);
+                    mir[k] = MappedIntegrationPoint<2,2> (ir[k], eltrans, vx, mdxdxref);
+                  }
+                */
+
+                RegionTimer r2(t2);
+                cf -> Evaluate (mir, mvalues);
+              }
+            else
+              {
+                ;
+                // MappedIntegrationRule<2,2> mir(ir, eltrans, lh);
+                // cf -> Evaluate (mir, mvalues1);
+              }
+          }
+        
+        // SliceMatrix<> mvalues(npts, GetComponents(), svalues, values);
+        // mvalues = mvalues1;
+        return true;
+      }
+    catch (Exception & e)
+      {
+        cout << "VisualizeCoefficientFunction::GetMultiSurfValue caught exception: " << endl
+             << e.What();
+        return 0;
+      }
+  }
+
+  
   bool VisualizeCoefficientFunction ::  
   GetMultiSurfValue (int selnr, int facetnr, int npts,
 		     const double * xref, int sxref,
