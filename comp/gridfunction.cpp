@@ -1911,7 +1911,7 @@ namespace ngcomp
   }
 
 
-
+#ifdef __AVX__
   template <class SCAL>
   bool VisualizeGridFunction<SCAL> ::
   GetMultiSurfValue (size_t selnr, size_t facetnr, size_t npts,
@@ -1923,7 +1923,7 @@ namespace ngcomp
     cout << "GetMultiSurf - gf not implemented" << endl;
     return false;
   }
-
+#endif
 
 
 
@@ -2485,6 +2485,8 @@ namespace ngcomp
     return false;
   }
 
+
+#ifdef __AVX__  
   bool VisualizeCoefficientFunction ::    
   GetMultiSurfValue (size_t selnr, size_t facetnr, size_t npts,
                      const __m256d * xref, 
@@ -2524,7 +2526,7 @@ namespace ngcomp
         bool bound = (ma->GetDimension() == 3);
         ElementId ei(bound ? BND : VOL, selnr);
         
-        LocalHeapMem<100000> lh("viscf::getmultisurfvalue");
+        LocalHeapMem<1000000> lh("viscf::getmultisurfvalue");
         ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
 
         AFlatMatrix<> mvalues(GetComponents(), SIMD<double>::Size()*npts, (double*)values);
@@ -2555,16 +2557,16 @@ namespace ngcomp
           {
             if (!ma->GetDeformation())
               {
-                SIMD_MappedIntegrationRule<2,2> mir(ir, eltrans/* , 1 */, lh);
+                SIMD_MappedIntegrationRule<2,2> mir(ir, eltrans, 1, lh);
 
-                /*
                 for (int k = 0; k < npts; k++)
                   {
-                    Mat<2,2> & mdxdxref = *new((double*)(dxdxref+k*sdxdxref)) Mat<2,2>;
-                    FlatVec<2> vx( (double*)x + k*sx);
-                    mir[k] = MappedIntegrationPoint<2,2> (ir[k], eltrans, vx, mdxdxref);
+                    // Mat<2,2> & mdxdxref = *new((double*)(dxdxref+k*sdxdxref)) Mat<2,2>;
+                    const Mat<2,2,SIMD<double>> & mdxdxref = *reinterpret_cast<const Mat<2,2,SIMD<double>>*> (&dxdxref[6*k]);
+                    const Vec<2,SIMD<double>> & vx = *reinterpret_cast<const Vec<2,SIMD<double>>*> (&x[3*k]);
+                    // FlatVec<2,SIMD<double>> vx(SIMD<double>  x+3*k);
+                    mir[k] = SIMD<MappedIntegrationPoint<2,2>> (ir[k], eltrans, vx, mdxdxref);
                   }
-                */
 
                 RegionTimer r2(t2);
                 cf -> Evaluate (mir, mvalues);
@@ -2588,7 +2590,8 @@ namespace ngcomp
         return 0;
       }
   }
-
+#endif
+  
   
   bool VisualizeCoefficientFunction ::  
   GetMultiSurfValue (int selnr, int facetnr, int npts,

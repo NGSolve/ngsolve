@@ -1499,6 +1499,17 @@ namespace ngstd
           int /* dummy */)
       : SIMD<ngfem::DimMappedIntegrationPoint<DIMR>> (aip, aeltrans)
       { ; }
+
+    SIMD (const SIMD<ngfem::IntegrationPoint> & aip,
+          const ngfem::ElementTransformation & aeltrans,
+          const Vec<DIMR, SIMD<double>> ax,
+          const Mat<DIMR, DIMS, SIMD<double> > & adxdxi)
+      : SIMD<ngfem::DimMappedIntegrationPoint<DIMR>> (aip, aeltrans)
+    {
+      this->point = ax;
+      dxdxi = adxdxi;
+      Compute();
+    }
     
     const Mat<DIMR,DIMS,SIMD<double>> & GetJacobian() const { return dxdxi; }
     Mat<DIMR,DIMS,SIMD<double>> & Jacobian() { return dxdxi; }
@@ -1787,6 +1798,20 @@ namespace ngfem
     SIMD_MappedIntegrationRule (const SIMD_IntegrationRule & ir, 
                                 const ElementTransformation & aeltrans, 
                                 Allocator & lh);
+    SIMD_MappedIntegrationRule (const SIMD_IntegrationRule & ir, 
+                                const ElementTransformation & aeltrans,
+                                int dummy, 
+                                Allocator & lh)
+      : SIMD_BaseMappedIntegrationRule (ir, aeltrans), mips(ir.Size(), lh)
+      {
+        dim_element = DIM_ELEMENT;
+        dim_space = DIM_SPACE;
+        baseip = (char*)(void*)(SIMD<BaseMappedIntegrationPoint>*)(&mips[0]);
+        incr = sizeof (SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>>);
+
+        for (int i = 0; i < ir.Size(); i++)
+          new (&mips[i]) SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>> (ir[i], eltrans, -1);
+      }
 
     virtual void ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr);
     SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>> & operator[] (int i) const
