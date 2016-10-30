@@ -182,6 +182,9 @@ public:
   {
     to = m * from;
   }
+
+  Point<D> operator() (Point<D> from) const { Point<D> to; Transform(from, to); return to; }
+  Vec<D> operator() (Vec<D> from) const { Vec<D> to; Transform(from, to); return to; }
 };
 
 template <int D>

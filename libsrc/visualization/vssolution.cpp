@@ -1256,8 +1256,16 @@ namespace netgen
     Array<double> values(npt);
 
     Array<double> mvalues(npt);
+#ifdef __AVX__
+    Array<Point<2,SIMD<double>> > simd_pref ( (npt+SIMD<double>::Size()-1)/SIMD<double>::Size() );
+    Array<Point<3,SIMD<double>> > simd_points ( (npt+SIMD<double>::Size()-1)/SIMD<double>::Size() );
+    Array<Mat<3,2,SIMD<double>> > simd_dxdxis ( (npt+SIMD<double>::Size()-1)/SIMD<double>::Size() );
+    Array<Vec<3,SIMD<double>> > simd_nvs( (npt+SIMD<double>::Size()-1)/SIMD<double>::Size() );
+    Array<SIMD<double>> simd_values( (npt+SIMD<double>::Size()-1)/SIMD<double>::Size() * sol->components);
+#endif
+    
     if (sol && sol->draw_surface) mvalues.SetSize (npt * sol->components);
-
+      
     Array<complex<double> > valuesc(npt);
 
     for (SurfaceElementIndex sei = 0; sei < nse; sei++)
@@ -1436,6 +1444,93 @@ namespace netgen
         
         if ( el.GetType() == TRIG || el.GetType() == TRIG6 )
           {
+#ifdef __AVX_try_it_out__
+	    bool curved = curv.IsSurfaceElementCurved(sei);
+            
+            for (int iy = 0, ii = 0; iy <= n; iy++)
+              for (int ix = 0; ix <= n-iy; ix++, ii++)
+                pref[ii] = Point<2> (ix*invn, iy*invn);
+
+            constexpr size_t simd_size = SIMD<double>::Size();
+            size_t simd_npt = (npt+simd_size-1)/simd_size;
+
+            for (size_t i = 0; i < simd_npt; i++)
+              {
+                simd_pref[i](0).SIMD_function ([&] (size_t j) { size_t ii = i*simd_size+j; return (ii < npt) ? pref[ii](0) : 0; }, std::true_type());
+                simd_pref[i](1).SIMD_function ([&] (size_t j) { size_t ii = i*simd_size+j; return (ii < npt) ? pref[ii](1) : 0; }, std::true_type());
+              }
+
+            if (curved)
+              {
+                mesh->GetCurvedElements().
+                  CalcMultiPointSurfaceTransformation<3> (sei, simd_npt,
+                                                          &simd_pref[0](0), 2,
+                                                          &simd_points[0](0), 3,
+                                                          &simd_dxdxis[0](0,0), 6);
+                
+                for (size_t ii = 0; ii < simd_npt; ii++)
+                  simd_nvs[ii] = Cross (simd_dxdxis[ii].Col(0), simd_dxdxis[ii].Col(1)).Normalize();
+              }
+            else
+              {
+		Point<3,SIMD<double>> p1 = mesh->Point (el[0]);
+		Point<3,SIMD<double>> p2 = mesh->Point (el[1]);
+		Point<3,SIMD<double>> p3 = mesh->Point (el[2]);
+
+                Vec<3,SIMD<double>> vx = p1-p3;
+                Vec<3,SIMD<double>> vy = p2-p3;
+                for (size_t ii = 0; ii < simd_npt; ii++)
+                  {
+                    simd_points[ii] = p3 + simd_pref[ii](0) * vx + simd_pref[ii](1) * vy;
+                    for (size_t j = 0; j < 3; j++)
+                      {
+                        simd_dxdxis[ii](j,0) = vx(j);
+                        simd_dxdxis[ii](j,1) = vy(j);
+                      }
+                  }
+
+                Vec<3,SIMD<double>> nv = Cross (vx, vy).Normalize();
+                for (size_t ii = 0; ii < simd_npt; ii++)
+                  simd_nvs[ii] = nv;
+              }
+
+            bool drawelem = false;
+            if (sol && sol->draw_surface) 
+              {
+		drawelem = sol->solclass->GetMultiSurfValue (sei, -1, simd_npt, 
+                                                             &simd_pref[0](0).Data(),
+                                                             &simd_points[0](0).Data(),
+                                                             &simd_dxdxis[0](0).Data(),
+                                                             &simd_values[0].Data());
+
+                for (size_t j = 0; j < sol->components; j++)
+                  for (size_t i = 0; i < npt; i++)
+                    mvalues[i*sol->components+j] = ((double*)&simd_values[j*simd_npt])[i];
+
+                if (usetexture == 2)
+		  for (int ii = 0; ii < npt; ii++)
+		    valuesc[ii] = ExtractValueComplex(sol, scalcomp, &mvalues[ii*sol->components]);
+                else
+		  for (int ii = 0; ii < npt; ii++)
+		    values[ii] = ExtractValue(sol, scalcomp, &mvalues[ii*sol->components]);
+              }
+
+            for (size_t i = 0; i < npt; i++)
+              {
+                size_t ii = i/4;
+                size_t r = i%4;
+                for (int j = 0; j < 2; j++)
+                  pref[i](j) = simd_pref[ii](j)[r];
+                for (int j = 0; j < 3; j++)
+                  points[i](j) = simd_points[ii](j)[r];
+                for (int j = 0; j < 3; j++)
+                  nvs[i](j) = simd_nvs[ii](j)[r];
+              }
+
+            if (deform)
+              for (int ii = 0; ii < npt; ii++)
+                points[ii] += GetSurfDeformation (sei, -1, pref[ii](0), pref[ii](1));
+#else
 	    bool curved = curv.IsSurfaceElementCurved(sei);
 
             for (int iy = 0, ii = 0; iy <= n; iy++)
@@ -1492,7 +1587,8 @@ namespace netgen
             if (deform)
               for (int ii = 0; ii < npt; ii++)
                 points[ii] += GetSurfDeformation (sei, -1, pref[ii](0), pref[ii](1));
-
+#endif
+            
             int save_usetexture = usetexture;
             if (!drawelem)
               {

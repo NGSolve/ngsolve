@@ -54,8 +54,18 @@ namespace netgen
 
 #ifdef __AVX__
 
+  template <typename T>
+  class AlignedAlloc
+  {
+  public:
+    void * operator new (size_t s) { return  _mm_malloc(s, alignof(T)); }
+    void * operator new[] (size_t s) { return  _mm_malloc(s, alignof(T)); }
+    void operator delete (void * p) { _mm_free(p); }
+    void operator delete[] (void * p) { _mm_free(p); }
+  };
+  
   template<>
-  class alignas(32) SIMD<double>
+  class alignas(32) SIMD<double> : public AlignedAlloc<SIMD<double>>
   {
     __m256d data;
     
