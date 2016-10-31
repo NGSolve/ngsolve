@@ -64,11 +64,12 @@ namespace ngfem
   }
 
   void CoefficientFunction ::   
-  Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
+  Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const
   {
     throw ExceptionNOSIMD (string("CF :: simd-Evaluate not implemented for class ") + typeid(*this).name());
   }
 
+  /*
   void CoefficientFunction ::   
   Evaluate1 (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const
   {
@@ -80,6 +81,7 @@ namespace ngfem
       }
     Evaluate (ir, AFlatMatrix<>(Dimension(), ir.IR().GetNIP(), &values.Get(0,0)));
   }
+  */
 
   void CoefficientFunction ::   
   Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<Complex> values) const
@@ -138,13 +140,14 @@ namespace ngfem
   }
 
 
+  /*
   void ConstantCoefficientFunction :: Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
   {
     for (size_t i = 0; i < ir.Size(); i++)
       values.Get(0,i) = val;
   }
-  
-  void ConstantCoefficientFunction :: Evaluate1 (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const
+  */
+  void ConstantCoefficientFunction :: Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const
   {
     size_t nv = ir.Size();    
     __assume (nv > 0);
@@ -244,11 +247,11 @@ namespace ngfem
   }
 
   
-  void DomainConstantCoefficientFunction :: Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
+  void DomainConstantCoefficientFunction :: Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const
   {
     int elind = ir[0].GetTransformation().GetElementIndex();
     CheckRange (elind);        
-    values = val[elind];
+    values.AddVSize(Dimension(), ir.Size()) = val[elind];
   }
   
 
@@ -904,10 +907,10 @@ public:
   }
 
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
-                         AFlatMatrix<double> values) const
+                         ABareSliceMatrix<double> values) const
   {
     c1->Evaluate (ir, values);
-    values *= scal;
+    values.AddVSize(Dimension(), ir.Size()) *= scal;
   }
 
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
@@ -1171,7 +1174,7 @@ public:
       result.Row(i) *= temp1(i,0);
   }
 
-
+  /*
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
   {
     STACK_ARRAY(SIMD<double>, hmem1, values.Width());
@@ -1184,16 +1187,16 @@ public:
       for (size_t i = 0; i < values.VWidth(); i++)
         values.Get(j,i) *= temp1.Get(0,i);
   }
-  
-  virtual void Evaluate1 (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const
+  */
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const
   {
     size_t w = ir.Size();
     __assume (w > 0);
     STACK_ARRAY(SIMD<double>, hmem1, w);
-    ABareMatrix<double> temp1(&hmem1[0], w, 1, w);
+    ABareMatrix<double> temp1(&hmem1[0], w, 1, w*SIMD<double>::Size());
     
-    c1->Evaluate1 (ir, temp1);
-    c2->Evaluate1 (ir, values);
+    c1->Evaluate (ir, temp1);
+    c2->Evaluate (ir, values);
 
     for (size_t j = 0; j < Dimension(); j++)
       for (size_t i = 0; i < w; i++)
@@ -1563,10 +1566,11 @@ public:
 
     c1->Evaluate(ir, temp1);
     c2->Evaluate(ir, temp2);
-    for (int i = 0; i < ir.Size(); i++)
+
+    for (size_t i = 0; i < ir.Size(); i++)
       result(i,0) = InnerProduct(temp1.Row(i), temp2.Row(i));
   }
-
+  /*
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
   {
     STACK_ARRAY(SIMD<double>, hmem1, DIM*values.Width());
@@ -1585,18 +1589,22 @@ public:
         values.Get(i) = sum; 
       }
   }
-  
-  virtual void Evaluate1 (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<> values) const
+  */
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<> values) const
   {
     size_t w = ir.Size();
     __assume (w > 0);
     
     STACK_ARRAY(SIMD<double>, hmem, 2*DIM*w);
+    /*
     ABareMatrix<double> temp1(&hmem[0], w, DIM, w*SIMD<double>::Size());
     ABareMatrix<double> temp2(&hmem[DIM*w], w, DIM, w*SIMD<double>::Size());
+    */
+    AFlatMatrix<double> temp1(DIM, w*SIMD<double>::Size(), &hmem[0]);
+    AFlatMatrix<double> temp2(DIM, w*SIMD<double>::Size(), &hmem[DIM*w]);
     
-    c1->Evaluate1 (ir, temp1);
-    c2->Evaluate1 (ir, temp2);
+    c1->Evaluate (ir, temp1);
+    c2->Evaluate (ir, temp2);
 
     for (size_t i = 0; i < w; i++)
       {
@@ -1853,7 +1861,7 @@ public:
   { return c1->ElementwiseConstant(); }
 
 
-  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const
   {
     if (typeid(TIN)==typeid(Complex)) throw ExceptionNOSIMD("CF Norm of complex cannot use simds");
     STACK_ARRAY(SIMD<double>,hmem,ir.Size()*dim1);
@@ -2003,7 +2011,7 @@ public:
       }
   }
 
-  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & mir, AFlatMatrix<double> values) const
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & mir, ABareSliceMatrix<double> values) const
   {
     FlatArray<int> hdims = Dimensions();    
     STACK_ARRAY(SIMD<double>, hmem1, mir.IR().Size()*hdims[0]*inner_dim);
@@ -2012,7 +2020,7 @@ public:
     AFlatMatrix<double> vb(hdims[1]*inner_dim, mir.IR().GetNIP(), &hmem2[0]);
     c1->Evaluate (mir, va);
     c2->Evaluate (mir, vb);
-    values = 0.0;
+    values.AddVSize(Dimension(),mir.Size()) = 0.0;
 
     size_t d1 = hdims[1];
     size_t mir_size = mir.Size();
@@ -2377,7 +2385,7 @@ public:
       }
   }
 
-  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const
   {
     FlatArray<int> hdims = Dimensions();    
     STACK_ARRAY(SIMD<double>, hmem1, (ir.IR().GetNIP()+8)*hdims[0]*inner_dim);
@@ -2386,7 +2394,7 @@ public:
     AFlatMatrix<double> temp2(inner_dim, ir.IR().GetNIP(), &hmem2[0]);
     c1->Evaluate (ir, temp1);
     c2->Evaluate (ir, temp2);
-    values = 0.0;
+    values.AddVSize(Dimension(),ir.Size()) = 0.0;
     for (int i = 0; i < hdims[0]; i++)
       for (int j = 0; j < inner_dim; j++)
         for (int k = 0; k < ir.Size(); k++)
@@ -2631,7 +2639,7 @@ public:
   }  
 
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & mir,
-                         AFlatMatrix<double> result) const
+                         ABareSliceMatrix<double> result) const
   {
     FlatArray<int> hdims = Dimensions();    
     c1->Evaluate (mir, result);
@@ -3083,13 +3091,13 @@ public:
     result.Col(0) = temp.Col(comp);
   }  
 
-  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const
   {
     STACK_ARRAY(SIMD<double>, hmem, ir.Size()*dim1);
     AFlatMatrix<double> temp(dim1, ir.IR().GetNIP(), &hmem[0]);
     
     c1->Evaluate (ir, temp);
-    values.Row(0) = temp.Row(comp);
+    values.Row(0).AddVSize(ir.Size()) = temp.Row(comp);
   }
 
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
@@ -3329,13 +3337,13 @@ public:
       values = 0.0;
   }
 
-  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const
   {
     int matindex = ir.GetTransformation().GetElementIndex();
     if (matindex < ci.Size() && ci[matindex])
       ci[matindex] -> Evaluate (ir, values);
     else
-      values = 0.0;
+      values.AddVSize(Dimension(), ir.Size()) = 0.0;
   }
 
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
@@ -3458,21 +3466,22 @@ public:
     }
 
 
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const
     {
-      STACK_ARRAY(SIMD<double>, hmem1, ir.Size());
-      AFlatMatrix<double> if_values(1, values.Width(), &hmem1[0]);
-      STACK_ARRAY(SIMD<double>, hmem2, ir.Size()*values.Height());
-      AFlatMatrix<double> then_values(values.Height(), values.Width(), &hmem2[0]);
-      STACK_ARRAY(SIMD<double>, hmem3, ir.Size()*values.Height());
-      AFlatMatrix<double> else_values(values.Height(), values.Width(), &hmem3[0]);
+      size_t nv = ir.Size(), dim = Dimension();
+      STACK_ARRAY(SIMD<double>, hmem1, nv);
+      AFlatMatrix<double> if_values(1, nv, &hmem1[0]);
+      STACK_ARRAY(SIMD<double>, hmem2, nv*dim);
+      AFlatMatrix<double> then_values(dim, nv, &hmem2[0]);
+      STACK_ARRAY(SIMD<double>, hmem3, nv*dim);
+      AFlatMatrix<double> else_values(dim, nv, &hmem3[0]);
       
       cf_if->Evaluate (ir, if_values);
       cf_then->Evaluate (ir, then_values);
       cf_else->Evaluate (ir, else_values);
 
-      for (int k = 0; k < values.Height(); k++)
-        for (int i = 0; i < values.VWidth(); i++)
+      for (size_t k = 0; k < dim; k++)
+        for (size_t i = 0; i < nv; i++)
           values.Get(k,i) = ngstd::IfPos (if_values.Get(i),
                                           then_values.Get(k,i),
                                           else_values.Get(k,i)); // .Data();
@@ -3658,7 +3667,7 @@ class VectorialCoefficientFunction : public CoefficientFunction
   Array<std::tuple<CoefficientFunction*, size_t>> both; 
 public:
   VectorialCoefficientFunction (Array<shared_ptr<CoefficientFunction>> aci)
-    : CoefficientFunction(0, false), ci(aci), dimi(aci.Size()), both(aci.Size())
+    : CoefficientFunction(0, false), ci(aci), dimi(aci.Size()), both(aci.Size()+1)
   {
     int hdim = 0;
     for (int i : Range(ci))
@@ -3667,6 +3676,7 @@ public:
         both[i] = make_tuple(aci[i].get(), hdim);
         hdim += dimi[i];
       }
+    both[ci.Size()] = make_tuple(nullptr, hdim);
     
     for (auto cf : ci)
       if (cf && cf->IsComplex())
@@ -3756,7 +3766,8 @@ public:
         base += dimi;
       }
   }
-  
+
+  /*
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
   {
     int base = 0;
@@ -3766,15 +3777,12 @@ public:
         base += dimi[i];
       }
   }
-  
-  virtual void Evaluate1 (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const
+  */
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const
   {
-    // size_t base = 0;
-    FlatArray<shared_ptr<CoefficientFunction>> hci = ci;
-    FlatArray<size_t> hdimi = dimi;
     FlatArray<std::tuple<CoefficientFunction*, size_t>> hboth = both;
-    for (size_t i : Range(hboth))
-      get<0>(hboth[i])->Evaluate1(ir, values.Rows(get<1>(hboth[i]), 0));
+    for (size_t i = 0; i < hboth.Size()-1; i++)
+      get<0>(hboth[i])->Evaluate(ir, values.Rows(get<1>(hboth[i]), get<1>(hboth[i+1])));
   }
 
 
@@ -3977,7 +3985,7 @@ public:
   class CompiledCoefficientFunction : public CoefficientFunction
   {
     typedef void (*lib_function)(const ngfem::BaseMappedIntegrationRule &, ngbla::FlatMatrix<double>);
-    typedef void (*lib_function_simd)(const ngfem::SIMD_BaseMappedIntegrationRule &, AFlatMatrix<double>);
+    typedef void (*lib_function_simd)(const ngfem::SIMD_BaseMappedIntegrationRule &, ABareSliceMatrix<double>);
     typedef void (*lib_function_deriv)(const ngfem::BaseMappedIntegrationRule &, ngbla::FlatMatrix<double>, ngbla::FlatMatrix<double>);
     typedef void (*lib_function_simd_deriv)(const ngfem::SIMD_BaseMappedIntegrationRule &, AFlatMatrix<double>, AFlatMatrix<double>);
     typedef void (*lib_function_dderiv)(const ngfem::BaseMappedIntegrationRule &, ngbla::FlatMatrix<double>, ngbla::FlatMatrix<double>, ngbla::FlatMatrix<double>);
@@ -4179,7 +4187,7 @@ public:
       // t2.Stop();
     }
 
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const
     {
       if(compiled_function_simd)
       {
@@ -4208,7 +4216,7 @@ public:
           steps[i] -> Evaluate (ir, in.Range(0, inputi.Size()), temp[i]);
           // timers[i]->Stop();                    
         }
-      values = temp.Last();
+      values.AddVSize(Dimension(), ir.Size()) = temp.Last();
     }
 
 

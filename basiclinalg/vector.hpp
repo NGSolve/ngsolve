@@ -1380,7 +1380,7 @@ namespace ngbla
     template <int D>
     BareSliceVector(Vec<D,T> & vec) :  DummySize( vec.Size() ), data(&vec(0)), dist(1) { ; } 
     BareSliceVector(const BareSliceVector &) = default;
-
+    BareSliceVector & operator= (const BareSliceVector&) = delete;
     size_t Dist () const { return dist; }
     SliceVector<T,size_t> AddSize(size_t size) const { return SliceVector<T,size_t> (size, dist, data); }
     

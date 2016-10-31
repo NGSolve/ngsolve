@@ -273,10 +273,10 @@ struct GenericConj {
           code.body += Var(index,i).Assign(nv(i));
     }
 
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const
     {
-      for (int i = 0; i < ir.Size(); i++)
-        for (int j = 0; j < D; j++)
+      for (size_t i = 0; i < ir.Size(); i++)
+        for (size_t j = 0; j < D; j++)
           values.Get(j,i) = static_cast<const SIMD<DimMappedIntegrationPoint<D>>&>(ir[i]).GetNV()(j).Data();
     }
 
@@ -334,7 +334,7 @@ struct GenericConj {
         if(dir==2) code.body += v.Assign(CodeExpr("ip.GetPoint()(2)"));
     }
 
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const
     {
       auto points = ir.GetPoints();
       for (int i = 0; i < ir.Size(); i++)
@@ -611,7 +611,7 @@ void ExportCoefficientFunction()
         if(dir==2) code.body += v.Assign(CodeExpr("ip.GetPoint()(2)"));
     }
 
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const
     {
       auto points = ir.GetPoints();
       for (int i = 0; i < ir.Size(); i++)
@@ -666,13 +666,13 @@ void ExportCoefficientFunction()
       // return pow(ip.GetMeasure(), 1.0/(ip.Dim());
     }
 
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const
     {
       if (ir[0].IP().FacetNr() != -1)
-        for(int i : Range(ir))
+        for(size_t i : Range(ir))
           values.Get(i) =  fabs (ir[i].GetJacobiDet()) / ir[i].GetMeasure();
       else
-        for(int i : Range(ir))
+        for(size_t i : Range(ir))
           values.Get(i) =  pow(fabs (ir[i].GetJacobiDet()), 1.0/ir.DimElement()).Data();
     }
 

@@ -86,11 +86,11 @@ namespace ngfem
 
     HD NGS_DLL_HEADER virtual void EvaluateGrad (const SIMD_BaseMappedIntegrationRule & ir,
                                                  BareSliceVector<> coefs,
-                                                 ABareMatrix<double> values) const;
+                                                 ABareSliceMatrix<double> values) const;
 
     HD NGS_DLL_HEADER virtual void EvaluateGrad (const SIMD_IntegrationRule & ir,
                                                  BareSliceVector<> coefs,
-                                                 ABareMatrix<double> values) const;
+                                                 ABareSliceMatrix<double> values) const;
 
     HD NGS_DLL_HEADER virtual void EvaluateGradTrans (const IntegrationRule & ir, 
                                                       FlatMatrixFixWidth<DIM> vals, 

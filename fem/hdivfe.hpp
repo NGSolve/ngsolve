@@ -107,7 +107,7 @@ namespace ngfem
 	}
     }
     */
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, ABareMatrix<double> values) const
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, ABareSliceMatrix<double> values) const
     {
       cout << "HDivFE::Evaluate (simd) not overloaded" << endl;
     }

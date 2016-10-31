@@ -141,11 +141,11 @@ public:
   virtual void Evaluate (const BaseMappedIntegrationRule & ir,
                          FlatMatrix<Complex> result) const;
 
-  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
-                         AFlatMatrix<double> values) const;
+  // virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
+  // AFlatMatrix<double> values) const;
 
-  virtual void Evaluate1 (const SIMD_BaseMappedIntegrationRule & ir,
-                          ABareSliceMatrix<double> values) const;
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
+                         ABareSliceMatrix<double> values) const;
 
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
                          FlatArray<AFlatMatrix<double>*> input,
@@ -349,7 +349,7 @@ public:
   Apply (const FiniteElement & bfel,
          const SIMD_BaseMappedIntegrationRule & bmir,
          BareSliceVector<double> x, 
-         ABareMatrix<double> flux) const
+         ABareSliceMatrix<double> flux) const
   {
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
     IntRange r = BlockDim() * fel.GetRange(comp);
