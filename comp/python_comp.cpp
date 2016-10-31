@@ -423,7 +423,7 @@ void NGS_DLL_HEADER ExportNgcomp()
     static
     bp::tuple getinitargs(bp::object obj)
     {
-      auto & fes = bp::extract<FESpace const&>(obj)();
+      auto & fes = *(bp::extract<PyWrapper<FESpace>>(obj)().Get());
       bp::object m (fes.GetMeshAccess());
       bp::object flags = obj.attr("__dict__")["flags"];
       flags["dim"] = fes.GetDimension();
