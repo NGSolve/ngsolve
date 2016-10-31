@@ -330,7 +330,7 @@ namespace ngfem
     }
 
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
-                             BareSliceVector<double> x, ABareMatrix<double> y)
+                             BareSliceVector<double> x, ABareSliceMatrix<double> y)
     {
       static_cast<const FEL&> (fel).Evaluate (mir, x, y);
     }    
