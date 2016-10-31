@@ -981,7 +981,7 @@ namespace ngcomp
   {
     string mycode_simd = R"CODE_( 
       STACK_ARRAY(SIMD<double>, {hmem}, mir.Size()*{dim});
-      AFlatMatrix<double>  {values}({dim}, mir.IR().GetNIP(), &{hmem}[0].Data());
+      AFlatMatrix<double>  {values}({dim}, mir.IR().GetNIP(), &{hmem}[0] /* .Data() */);
       {
       LocalHeapMem<100000> lh2("{values}");
       const GridFunction & gf = *reinterpret_cast<GridFunction*>({gf_ptr});
@@ -1315,7 +1315,7 @@ namespace ngcomp
 
     if (!trafo.BelongsToMesh ((void*)(fes.GetMeshAccess().get())))
       {
-        throw Exception ("SIMD - evaluation not available for different meshes");
+        throw ExceptionNOSIMD ("SIMD - evaluation not available for different meshes");
         // for (int i = 0; i < ir.Size(); i++)
         // Evaluate (ir[i], values.Row(i));
         return;

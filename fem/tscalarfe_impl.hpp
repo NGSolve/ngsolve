@@ -55,17 +55,20 @@ namespace ngfem
   CalcShape (const IntegrationRule & ir, SliceMatrix<> shape) const
   {
     for (int i = 0; i < ir.Size(); i++)
-      {
-        /*
-	Vec<DIM> pt = ir[i].Point();
-	T_CalcShape (TIP<DIM,double> (pt), shape.Col(i));
-        */
-        // TIP<DIM,double> pt = ir[i];
-	T_CalcShape (TIP<DIM,double> (ir[i]), shape.Col(i));        
-      }
+      T_CalcShape (TIP<DIM,double> (ir[i]), shape.Col(i));        
   }
 
-
+  template <class FEL, ELEMENT_TYPE ET, class BASE>
+  void T_ScalarFiniteElement<FEL,ET,BASE> :: 
+  CalcShape (const SIMD_IntegrationRule & ir, ABareMatrix<> shapes) const
+  {
+    for (size_t i = 0; i < ir.Size(); i++)
+      T_CalcShape (ir[i].TIp<DIM>(),
+                   SBLambda([&](size_t j, SIMD<double> shape)
+                            { shapes.Get(j,i) = shape; } ));
+  }
+  
+  
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   double T_ScalarFiniteElement<FEL,ET,BASE> :: 
   Evaluate (const IntegrationPoint & ip, SliceVector<double> x) const
@@ -649,14 +652,23 @@ namespace ngfem
     if ((DIM == 3) || (bmir.DimSpace() == DIM))
       {
         auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
-        for (int i = 0; i < mir.Size(); i++)
+        for (size_t i = 0; i < mir.Size(); i++)
           {
-            Vec<DIM, AutoDiff<DIM,SIMD<double>>> adp = mir[i];
+            double *pcoefs = &coefs(0);
+            const size_t dist = coefs.Dist();
+            
             Vec<DIM,SIMD<double>> sum(0.0);
-            T_CalcShape (TIP<DIM,AutoDiff<DIM,SIMD<double>>>(adp),
-                         SBLambda ([&] (int j, AD2Vec<DIM,SIMD<double>> shape)
-                                   { sum += coefs(j) * shape; }));
-            for (int k = 0; k < DIM; k++)
+            TIP<DIM,AutoDiffRec<DIM,SIMD<double>>>adp = GetTIP(mir[i]);
+            // GetTIP(mir[i], adp);
+            T_CalcShape (adp,
+                         SBLambda ([&] (size_t j, AutoDiffRec<DIM,SIMD<double>> shape)
+                                   { 
+                                   Iterate<DIM> ( [&] (auto ii) {
+                                       sum(ii.value) += *pcoefs * shape.DValue(ii.value); 
+                                       });
+                                     pcoefs += dist;
+                                   }));
+            for (size_t k = 0; k < DIM; k++)
               values.Get(k,i) = sum(k).Data();
           }
       }
@@ -729,16 +741,21 @@ namespace ngfem
     if ((DIM == 3) || (bmir.DimSpace() == DIM))
       {
         auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
-        for (int i = 0; i < mir.Size(); i++)
+        for (size_t i = 0; i < mir.Size(); i++)
           {
-            Vec<DIM, AutoDiff<DIM,SIMD<double>>> adp = mir[i];
-            T_CalcShape (TIP<DIM, AutoDiff<DIM,SIMD<double> >> (adp),
-                         SBLambda ([&] (int j, AD2Vec<DIM,SIMD<double>> shape)
+            TIP<DIM,AutoDiffRec<DIM,SIMD<double>>>adp;
+            GetTIP(mir[i], adp);
+            double * pcoef = &coefs(0);
+            size_t dist = coefs.Dist();            
+            T_CalcShape (adp,
+                         SBLambda ([&] (size_t j, AutoDiffRec<DIM,SIMD<double>> shape)
                                    {
                                      SIMD<double> sum = 0.0;
-                                     for (int k = 0; k < DIM; k++)
-                                       sum += shape(k) * values.Get(k,i);
-                                     coefs(j) += HSum(sum);
+                                     for (size_t k = 0; k < DIM; k++)
+                                       sum += shape.DValue(k) * values.Get(k,i);
+                                     // coefs(j) += HSum(sum);
+                                     *pcoef += HSum(sum);
+                                     pcoef += dist;
                                    }));
           }
       }
@@ -815,6 +832,37 @@ namespace ngfem
       T_ScalarFiniteElement::CalcMappedDShape (mir[i], dshape.Cols(i*DIM,(i+1)*DIM));
   }
 
+
+  template <class FEL, ELEMENT_TYPE ET, class BASE>
+  void T_ScalarFiniteElement<FEL,ET,BASE> :: 
+  CalcMappedDShape (const SIMD_BaseMappedIntegrationRule & bmir, 
+                    ABareMatrix<> dshapes) const
+  {
+   if (bmir.DimSpace() == DIM)
+      {
+        auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
+        for (size_t i = 0; i < mir.Size(); i++)
+          {
+            SIMD<double> * pdshapes = &dshapes.Get(0,i);
+            const size_t dist = dshapes.Dist();
+            
+            TIP<DIM,AutoDiffRec<DIM,SIMD<double>>> adp = GetTIP(mir[i]);
+            T_CalcShape (adp,
+                         SBLambda ([&] (size_t j, AutoDiffRec<DIM,SIMD<double>> shape)
+                                   { 
+                                     Iterate<DIM> ( [&] (auto ii) {
+                                         *pdshapes = shape.DValue(ii.value);
+                                         pdshapes += dist;
+                                       });
+                                   }));
+          }
+      }
+   else
+     {
+       cout << "EvaluateGrad(simd) called for boudnary (not implemented)" << endl;        
+     }
+  }
+  
 
   /*
     ... not yet working
