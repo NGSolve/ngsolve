@@ -23,11 +23,11 @@ namespace ngfem
     /// compute shape
     HD NGS_DLL_HEADER 
     virtual void CalcShape (const IntegrationPoint & ip, 
-                            SliceVector<> shape) const = 0;
+                            BareSliceVector<> shape) const = 0;
 
     HD NGS_DLL_HEADER 
     virtual void CalcShape (const IntegrationPoint & ip, 
-                            SliceVector<Complex> shape) const;
+                            BareSliceVector<Complex> shape) const;
     
     /// compute dshape, matrix: ndof x spacedim
     HD NGS_DLL_HEADER 
@@ -60,14 +60,14 @@ namespace ngfem
        Evaluates function in integration point ip.
        Vector x provides coefficient vector.
      */
-    HD NGS_DLL_HEADER virtual double Evaluate (const IntegrationPoint & ip, SliceVector<> x) const;
+    HD NGS_DLL_HEADER virtual double Evaluate (const IntegrationPoint & ip, BareSliceVector<> x) const;
 
 
     /**
        Evaluate function in points of integrationrule ir.
        Vector x provides coefficient vector.
      */
-    HD NGS_DLL_HEADER virtual void Evaluate (const IntegrationRule & ir, SliceVector<> coefs, FlatVector<> values) const;
+    HD NGS_DLL_HEADER virtual void Evaluate (const IntegrationRule & ir, BareSliceVector<> coefs, FlatVector<> values) const;
     HD NGS_DLL_HEADER virtual void Evaluate (const SIMD_IntegrationRule & ir, BareSliceVector<> coefs, ABareVector<double> values) const;
     HD NGS_DLL_HEADER virtual void Evaluate (const SIMD_IntegrationRule & ir, SliceMatrix<> coefs, ABareMatrix<double> values) const;
 
@@ -80,7 +80,7 @@ namespace ngfem
        Evaluate function in points of integrationrule ir, transpose operation.
        Vector x provides coefficient vector.
      */
-    HD NGS_DLL_HEADER virtual void EvaluateTrans (const IntegrationRule & ir, FlatVector<> values, SliceVector<> coefs) const;
+    HD NGS_DLL_HEADER virtual void EvaluateTrans (const IntegrationRule & ir, FlatVector<> values, BareSliceVector<> coefs) const;
     HD NGS_DLL_HEADER virtual void AddTrans (const SIMD_IntegrationRule & ir, ABareVector<double> values, BareSliceVector<> coefs) const;
     HD NGS_DLL_HEADER virtual void AddTrans (const SIMD_IntegrationRule & ir, ABareMatrix<double> values, SliceMatrix<> coefs) const; 
   };
@@ -112,8 +112,8 @@ namespace ngfem
       return dshape;
     }
 
-    using  BaseScalarFiniteElement::CalcShape;
-    using  BaseScalarFiniteElement::CalcDShape;
+    using BaseScalarFiniteElement::CalcShape;
+    using BaseScalarFiniteElement::CalcDShape;
 
     
 /*    
@@ -170,7 +170,7 @@ namespace ngfem
     
     /// compute dshape, matrix: ndof x (spacedim spacedim)
     NGS_DLL_HEADER virtual void CalcMappedDDShape (const MappedIntegrationPoint<D,D> & mip, 
-                                                   FlatMatrix<> ddshape) const;
+                                                   SliceMatrix<> ddshape) const;
 
 
 
@@ -178,7 +178,7 @@ namespace ngfem
        Evaluates gradient in integration point ip.
        Vector x provides coefficient vector.
      */
-    HD NGS_DLL_HEADER virtual Vec<D> EvaluateGrad (const IntegrationPoint & ip, SliceVector<> x) const;
+    HD NGS_DLL_HEADER virtual Vec<D> EvaluateGrad (const IntegrationPoint & ip, BareSliceVector<> x) const;
 
     using BaseScalarFiniteElement::Evaluate;
 
@@ -186,17 +186,17 @@ namespace ngfem
        Evaluate gradient in points of integrationrule ir.
        Vector x provides coefficient vector.
      */
-    HD NGS_DLL_HEADER virtual void EvaluateGrad (const IntegrationRule & ir, SliceVector<> coefs, FlatMatrixFixWidth<D> values) const;
-    HD NGS_DLL_HEADER virtual void EvaluateGrad (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, ABareMatrix<double> values) const;
+    HD NGS_DLL_HEADER virtual void EvaluateGrad (const IntegrationRule & ir, BareSliceVector<> coefs, FlatMatrixFixWidth<D> values) const;
+    HD NGS_DLL_HEADER virtual void EvaluateGrad (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, ABareSliceMatrix<double> values) const;
     // needed for ALE-trafo
-    HD NGS_DLL_HEADER virtual void EvaluateGrad (const SIMD_IntegrationRule & ir, BareSliceVector<> coefs, ABareMatrix<double> values) const;
+    HD NGS_DLL_HEADER virtual void EvaluateGrad (const SIMD_IntegrationRule & ir, BareSliceVector<> coefs, ABareSliceMatrix<double> values) const;
 
 
     /**
        Evaluate gradient in points of integrationrule ir, transpose operation.
        Vector x provides coefficient vector.
      */
-    HD NGS_DLL_HEADER virtual void EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<D> values, SliceVector<> coefs) const;
+    HD NGS_DLL_HEADER virtual void EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<D> values, BareSliceVector<> coefs) const;
 
     HD NGS_DLL_HEADER virtual void EvaluateGradTrans (const IntegrationRule & ir, SliceMatrix<> values, SliceMatrix<> coefs) const;
     HD NGS_DLL_HEADER virtual void AddGradTrans (const SIMD_BaseMappedIntegrationRule & ir, ABareMatrix<double> values,

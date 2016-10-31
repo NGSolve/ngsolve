@@ -428,19 +428,19 @@ void NGS_DLL_HEADER ExportNgbla() {
 
     ExportVector< FVD, VD, double>("FlatVectorD")
         .def(bp::init<int, double *>())
-        .def("Range",    static_cast</* const */ FVD (FVD::*)(int,int) const> (&FVD::Range ) )
+        .def("Range",    static_cast</* const */ FVD (FVD::*)(size_t,size_t) const> (&FVD::Range ) )
       ;
     ExportVector< FVC, VC, Complex>("FlatVectorC")
         .def(bp::self*=double())
         .def(bp::init<int, Complex *>())
-        .def("Range",    static_cast</* const */ FVC (FVC::*)(int,int) const> (&FVC::Range ) )
+        .def("Range",    static_cast</* const */ FVC (FVC::*)(size_t,size_t) const> (&FVC::Range ) )
         ;
 
     ExportVector< SVD, VD, double>("SliceVectorD")
-        .def("Range",    static_cast<const SVD (SVD::*)(int,int) const> (&SVD::Range ) )
+        .def("Range",    static_cast<const SVD (SVD::*)(size_t,size_t) const> (&SVD::Range ) )
         ;
     ExportVector< SVC, VC, Complex>("SliceVectorC")
-        .def("Range",    static_cast<const SVC (SVC::*)(int,int) const> (&SVC::Range ) )
+        .def("Range",    static_cast<const SVC (SVC::*)(size_t,size_t) const> (&SVC::Range ) )
         .def(bp::self*=double())
         ;
 

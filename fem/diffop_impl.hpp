@@ -153,7 +153,7 @@ namespace ngfem
   Apply (const FiniteElement & bfel,
          const SIMD_BaseMappedIntegrationRule & bmir,
          BareSliceVector<double> x, 
-         ABareMatrix<double> flux) const
+         ABareSliceMatrix<double> flux) const
   // LocalHeap & lh) const
   {
     // const SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =

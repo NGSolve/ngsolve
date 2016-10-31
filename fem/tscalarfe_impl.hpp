@@ -26,7 +26,7 @@ namespace ngfem
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
-  CalcShape (const IntegrationPoint & ip, SliceVector<> shape) const
+  CalcShape (const IntegrationPoint & ip, BareSliceVector<> shape) const
   {
     /*
     Vec<DIM> pt = ip.Point();
@@ -71,7 +71,7 @@ namespace ngfem
   
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   double T_ScalarFiniteElement<FEL,ET,BASE> :: 
-  Evaluate (const IntegrationPoint & ip, SliceVector<double> x) const
+  Evaluate (const IntegrationPoint & ip, BareSliceVector<double> x) const
   {
     // Vec<DIM> pt = ip.Point();
 
@@ -83,7 +83,7 @@ namespace ngfem
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
-  Evaluate (const IntegrationRule & ir, SliceVector<double> coefs, FlatVector<double> vals) const
+  Evaluate (const IntegrationRule & ir, BareSliceVector<double> coefs, FlatVector<double> vals) const
   {
     for (int i = 0; i < ir.GetNIP(); i++)
       {
@@ -407,9 +407,9 @@ namespace ngfem
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
-  EvaluateTrans (const IntegrationRule & ir, FlatVector<> vals, SliceVector<double> coefs) const
+  EvaluateTrans (const IntegrationRule & ir, FlatVector<> vals, BareSliceVector<double> coefs) const
   {
-    coefs = 0.0;
+    coefs.AddSize(ndof) = 0.0;
     for (int i = 0; i < ir.GetNIP(); i++)
       {
         // Vec<DIM> pt = ir[i].Point();
@@ -612,7 +612,7 @@ namespace ngfem
   
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   auto T_ScalarFiniteElement<FEL,ET,BASE> :: 
-  EvaluateGrad (const IntegrationPoint & ip, SliceVector<double> coefs) const -> Vec<DIM>
+  EvaluateGrad (const IntegrationPoint & ip, BareSliceVector<double> coefs) const -> Vec<DIM>
   {
     // Vec<DIM, AutoDiff<DIM>> adp = ip;
     TIP<DIM,AutoDiff<DIM>> tip = ip;
@@ -627,7 +627,7 @@ namespace ngfem
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
-  EvaluateGrad (const IntegrationRule & ir, SliceVector<double> coefs, 
+  EvaluateGrad (const IntegrationRule & ir, BareSliceVector<double> coefs, 
                 FlatMatrixFixWidth<DIM> vals) const
   {
     for (int i = 0; i < ir.GetNIP(); i++)
@@ -647,7 +647,7 @@ namespace ngfem
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   EvaluateGrad (const SIMD_BaseMappedIntegrationRule & bmir,
                 BareSliceVector<> coefs,
-                ABareMatrix<double> values) const
+                ABareSliceMatrix<double> values) const
   {
     if ((DIM == 3) || (bmir.DimSpace() == DIM))
       {
@@ -683,7 +683,7 @@ namespace ngfem
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   EvaluateGrad (const SIMD_IntegrationRule & ir,
                 BareSliceVector<> coefs,
-                ABareMatrix<double> values) const
+                ABareSliceMatrix<double> values) const
   {
     for (int i = 0; i < ir.Size(); i++)
       {
@@ -701,9 +701,9 @@ namespace ngfem
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   EvaluateGradTrans (const IntegrationRule & ir, 
-                     FlatMatrixFixWidth<DIM> vals, SliceVector<double> coefs) const
+                     FlatMatrixFixWidth<DIM> vals, BareSliceVector<double> coefs) const
   {
-    coefs = 0.0;
+    coefs.AddSize(ndof) = 0.0;
     for (int i = 0; i < ir.GetNIP(); i++)
       {
         Vec<DIM, AutoDiff<DIM>> adp = ir[i];
@@ -844,14 +844,14 @@ namespace ngfem
         for (size_t i = 0; i < mir.Size(); i++)
           {
             SIMD<double> * pdshapes = &dshapes.Get(0,i);
-            const size_t dist = dshapes.Dist();
+            size_t dist = dshapes.Dist();
             
             TIP<DIM,AutoDiffRec<DIM,SIMD<double>>> adp = GetTIP(mir[i]);
             T_CalcShape (adp,
                          SBLambda ([&] (size_t j, AutoDiffRec<DIM,SIMD<double>> shape)
                                    { 
-                                     Iterate<DIM> ( [&] (auto ii) {
-                                         *pdshapes = shape.DValue(ii.value);
+                                     Iterate<DIM> ( [&] (size_t ii) {
+                                         *pdshapes = shape.DValue(ii);
                                          pdshapes += dist;
                                        });
                                    }));

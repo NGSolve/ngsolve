@@ -11,7 +11,8 @@
 
 namespace ngfem
 {
-  
+
+  /*
   Array<int> ProxyFunction ::
   Dimensions() const
   {
@@ -22,6 +23,7 @@ namespace ngfem
     else
       return Array<int> ({dim/blockdim, blockdim});
   }
+  */
 
   void ProxyFunction ::
   GenerateCode(Code &code, FlatArray<int> inputs, int index) const
@@ -141,6 +143,10 @@ namespace ngfem
 
     if (!testfunction && ud->fel)
       {
+        static bool first = true;
+        if (first) cerr << "ProxyFunction::Evaluate ... should not be here" << endl;
+        first = false;
+        
         evaluator->Apply (*ud->fel, mip, *ud->elx, result, *ud->lh);
         return;
       }
@@ -180,6 +186,7 @@ namespace ngfem
   Evaluate (const BaseMappedIntegrationRule & ir,
             FlatMatrix<Complex> result) const
   {
+    size_t dim = Dimension();
     STACK_ARRAY(double, hmem, ir.Size()*dim);
     FlatMatrix<> temp(ir.Size(), dim, &hmem[0]);
     Evaluate (ir, temp);
@@ -189,7 +196,7 @@ namespace ngfem
 
   void ProxyFunction ::
   Evaluate (const SIMD_BaseMappedIntegrationRule & mir,
-            AFlatMatrix<double> result) const
+            ABareSliceMatrix<double> result) const
   {
     ProxyUserData * ud = (ProxyUserData*)mir.GetTransformation().userdata;
     if (!ud) 
@@ -198,25 +205,31 @@ namespace ngfem
     if (!testfunction && ud->fel)
       {
         if (ud->HasMemory (this))
-          result = ud->GetAMemory (this);
+          result.AddVSize(Dimension(), mir.Size()) = ud->GetAMemory (this);
         else
-          evaluator->Apply (*ud->fel, mir, *ud->elx, result); // , *ud->lh);
+          {
+            static bool first = true;
+            if (first) cerr << "ProxyFunction::Evaluate(simd_mir) ... should not be here" << endl;
+            first = false;
+            evaluator->Apply (*ud->fel, mir, *ud->elx, result); // , *ud->lh);
+          }
         return;
       }
 
-    result = 0;
+    result.AddVSize(Dimension(), mir.Size()) = 0;
     if (ud->testfunction == this)
-      result.Row(ud->test_comp) = 1;
+      result.Row(ud->test_comp).AddVSize(mir.Size()) = 1;
     if (ud->trialfunction == this)
-      result.Row(ud->trial_comp) = 1;
+      result.Row(ud->trial_comp).AddVSize(mir.Size()) = 1;
   }
 
+  
   void ProxyFunction ::
   Evaluate (const SIMD_BaseMappedIntegrationRule & mir,
             FlatArray<AFlatMatrix<double>*> input,
             AFlatMatrix<double> result) const
   {
-    Evaluate (mir, result);
+    ProxyFunction::Evaluate (mir, result);
   }
 
   
@@ -226,7 +239,6 @@ namespace ngfem
   {
     STACK_ARRAY(double, hmem, result.Size());
     FlatVector<> result_double(result.Size(), &hmem[0]);
-    // Vector<> result_double(result.Size());
     Evaluate (ip, result_double);
     result = result_double;
   }
@@ -250,7 +262,12 @@ namespace ngfem
         if (ud->HasMemory(this))
           result = ud->GetMemory (this);          
         else
-          evaluator->Apply (*ud->fel, mir, *ud->elx, result, *ud->lh);
+          {
+            static bool first = true;
+            if (first) cerr << "ProxyFunction::EvaluateDeriv ... should not be here" << endl;
+            first = false;
+            evaluator->Apply (*ud->fel, mir, *ud->elx, result, *ud->lh);
+          }
       }
     t.Stop();
     
@@ -280,14 +297,79 @@ namespace ngfem
         if (ud->HasMemory (this))
           result = ud->GetMemory (this);
         else
-          evaluator->Apply (*ud->fel, mir, *ud->elx, result, *ud->lh);
+          {
+            static bool first = true;
+            if (first) cerr << "ProxyFunction::EvaluateDDeriv ... should not be here" << endl;
+            first = false;
+            evaluator->Apply (*ud->fel, mir, *ud->elx, result, *ud->lh);
+          }
       }
     if (ud->testfunction == this)
       deriv.Col(ud->test_comp) = 1;
     if (ud->trialfunction == this)
       deriv.Col(ud->trial_comp) = 1;
   }
+  
+  void ProxyFunction ::
+  EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & mir, 
+                 AFlatMatrix<double> result, AFlatMatrix<double> deriv) const
+  {
+    ProxyUserData * ud = (ProxyUserData*)mir.GetTransformation().userdata;
+    if (!ud) 
+      throw Exception ("cannot evaluate ProxyFunction");
 
+    result = 0;
+    deriv = 0;
+
+    if (!testfunction && ud->fel)
+      {
+        if (ud->HasMemory (this))
+          result = ud->GetAMemory (this);
+        else
+          {
+            static bool first = true;
+            if (first) cerr << "ProxyFunction::EvaluateDDeriv ... should not be here" << endl;
+            first = false;
+            evaluator->Apply (*ud->fel, mir, *ud->elx, result);
+          }
+      }
+    if (ud->testfunction == this)
+      deriv.Row(ud->test_comp) = 1;
+    if (ud->trialfunction == this)
+      deriv.Row(ud->trial_comp) = 1;
+  }
+  
+  void ProxyFunction ::
+  EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & mir, 
+                  AFlatMatrix<double> result, AFlatMatrix<double> deriv,
+                  AFlatMatrix<double> dderiv) const
+  {
+    ProxyUserData * ud = (ProxyUserData*)mir.GetTransformation().userdata;
+    if (!ud) 
+      throw Exception ("cannot evaluate ProxyFunction");
+
+    result = 0;
+    deriv = 0;
+    dderiv = 0;
+
+    if (!testfunction && ud->fel)
+      {
+        if (ud->HasMemory (this))
+          result = ud->GetAMemory (this);
+        else
+          {
+            static bool first = true;
+            if (first) cerr << "ProxyFunction::EvaluateDDeriv ... should not be here" << endl;
+            first = false;
+            evaluator->Apply (*ud->fel, mir, *ud->elx, result);
+          }
+      }
+    if (ud->testfunction == this)
+      deriv.Row(ud->test_comp) = 1;
+    if (ud->trialfunction == this)
+      deriv.Row(ud->trial_comp) = 1;
+  }
+  
   void ProxyFunction ::  
   NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
   {
@@ -465,7 +547,8 @@ namespace ngfem
         typedef double SCAL;
         // static Timer t("symbolicLFI - CalcElementVector", 2); RegionTimer reg(t);
         HeapReset hr(lh);
-        IntegrationRule ir(trafo.GetElementType(), 2*fel.Order());
+        // IntegrationRule ir(trafo.GetElementType(), 2*fel.Order());
+        IntegrationRule ir = fel.GetIR(2*fel.Order());
         BaseMappedIntegrationRule & mir = trafo(ir, lh);
         
         FlatVector<SCAL> elvec1(elvec.Size(), lh);
@@ -672,7 +755,8 @@ namespace ngfem
     elmat = 0;
 
 
-    IntegrationRule ir(trafo.GetElementType(), intorder);
+    // IntegrationRule ir(trafo.GetElementType(), intorder);
+    IntegrationRule ir = fel.GetIR(intorder);
     BaseMappedIntegrationRule & mir = trafo(ir, lh);
     
     ProxyUserData ud;
@@ -905,7 +989,6 @@ namespace ngfem
     if (et == ET_TRIG || et == ET_TET)
       intorder -= test_difforder+trial_difforder;
     elmat = 0;
-    // simd_evaluate = false;
     if (simd_evaluate)
       try
         {
@@ -960,7 +1043,6 @@ namespace ngfem
                                   cf -> Evaluate (mir, proxyvalues.Rows(kk,kk+1));
                                 }
                               else
-                                // proxyvalues(STAR,k,l) = 0.0;
                                 proxyvalues.Row(kk) = 0.0;
                             }
                       else
@@ -1010,7 +1092,7 @@ namespace ngfem
                           HeapReset hr(lh);
                           // int bs = min2(int(BS), mir.Size()-i);
                           AFlatMatrix<SCAL_SHAPES> bbmat1(elmat.Width()*proxy1->Dimension(), ir.GetNIP(), lh);
-                          AFlatMatrix<SCAL> bdbmat1(elmat.Width()*proxy2->Dimension(), 4*ir.Size(), lh);
+                          AFlatMatrix<SCAL> bdbmat1(elmat.Width()*proxy2->Dimension(), ir.GetNIP(), lh);
                           AFlatMatrix<SCAL_SHAPES> bbmat2 = samediffop ?
                             bbmat1 : AFlatMatrix<SCAL_SHAPES>(elmat.Height()*proxy2->Dimension(), ir.GetNIP(), lh);
                           
@@ -1018,11 +1100,11 @@ namespace ngfem
                                                             &bdbmat1.Get(0,0));
                           AFlatMatrix<SCAL_SHAPES> hbbmat2(elmat.Height(), proxy2->Dimension()*SIMD<double>::Size()*ir.Size(),
                                                            &bbmat2.Get(0,0));
-                          
+
                           // tb.Start();
                           // BaseMappedIntegrationRule & bmir = mir.Range(i, i+bs, lh);
-                          // bbmat1 = 0.0;
-                          // bbmat2 = 0.0;
+                          bbmat1 = 0.0;
+                          bbmat2 = 0.0;
                           proxy1->Evaluator()->CalcMatrix(fel, mir, bbmat1);
                           
                           if (!samediffop)
@@ -1051,17 +1133,18 @@ namespace ngfem
                                     {
                                       auto res = bdbmat1.Row(i*proxy2->Dimension()+j);
                                       auto a = bbmat1.Row(i*proxy1->Dimension()+k);
-                                      auto b = proxyvalues.Row(j*proxy2->Dimension()+k);
+                                      auto b = proxyvalues.Row(k*proxy2->Dimension()+j);
                                       for (size_t l = 0; l < mir.Size(); l++)
                                         res.Get(l) += a.Get(l) * b.Get(l);
                                     }
                             }
+
                           // tdb.Stop();
                           
                           // tlapack.Start();
                           // elmat.Rows(r2).Cols(r1) += bbmat2.Rows(r2) * Trans(bdbmat1.Rows(r1));
                           // AddABt (bbmat2.Rows(r2), bdbmat1.Rows(r1), elmat.Rows(r2).Cols(r1));
-                          
+
                           symmetric_so_far &= samediffop && is_diagonal;
                           if (symmetric_so_far)
                             AddABtSym (hbbmat2.Rows(r2), hbdbmat1.Rows(r1), part_elmat);
@@ -1518,16 +1601,12 @@ namespace ngfem
     ud.lh = &lh;
     for (ProxyFunction * proxy : trial_proxies)
       {
-        // ud.remember[proxy] = Matrix<> (ir.Size(), proxy->Dimension());
-        // proxy->Evaluator()->Apply(fel, mir, elveclin, ud.remember[proxy], lh);
         ud.AssignMemory (proxy, ir.Size(), proxy->Dimension(), lh);
         proxy->Evaluator()->Apply(fel, mir, elveclin, ud.GetMemory(proxy), lh);
       }
     
-    FlatMatrix<> val(mir.Size(), 1,lh), deriv(mir.Size(), 1,lh);
-    
+    FlatMatrix<> val(mir.Size(), 1, lh), deriv(mir.Size(), 1, lh);
     elmat = 0;
-               
     
     for (int k1 : Range(trial_proxies))
       for (int l1 : Range(test_proxies))
@@ -1540,7 +1619,8 @@ namespace ngfem
           
           for (int k = 0; k < proxy1->Dimension(); k++)
             for (int l = 0; l < proxy2->Dimension(); l++)
-              if (nonzeros(test_cum[l1]+l, trial_cum[k1]+k))
+              // if (nonzeros(test_cum[l1]+l, trial_cum[k1]+k))
+              if (true)
                 {
                   ud.trialfunction = proxy1;
                   ud.trial_comp = k;
@@ -1584,11 +1664,6 @@ namespace ngfem
               IntRange r2 = proxy2->Evaluator()->UsedDofs(fel);
               elmat.Rows(r2).Cols(r1) += Trans (bbmat2.Cols(r2)) * bdbmat1.Cols(r1) | Lapack;
             }
-
-
-
-
-          
         }
   }
 
@@ -1617,8 +1692,6 @@ namespace ngfem
     */
     elmat = 0;
 
-
-
       auto eltype = trafo.GetElementType();
       int nfacet = ElementTopology::GetNFacets(eltype);
 
@@ -1631,12 +1704,17 @@ namespace ngfem
         
           IntegrationRule ir_facet(etfacet, 2*fel.Order());
           IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
-          const BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
+          BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
+          mir.ComputeNormalsAndMeasure(eltype, k);
           
           ProxyUserData ud(trial_proxies.Size(), lh);          
           const_cast<ElementTransformation&>(trafo).userdata = &ud;
-          FlatVector<> measure(mir.Size(), lh);
+          ud.fel = &fel;
+          ud.elx = &elveclin;
+          ud.lh = &lh;
           
+          /*
+          FlatVector<> measure(mir.Size(), lh);
           for (int i = 0; i < mir.Size(); i++)
             {
               double len;
@@ -1673,7 +1751,7 @@ namespace ngfem
 		}
               measure(i) = len;
             }
-
+          */
 
           for (ProxyFunction * proxy : trial_proxies)
             {
@@ -1694,7 +1772,8 @@ namespace ngfem
                 
                 for (int k = 0; k < proxy1->Dimension(); k++)
                   for (int l = 0; l < proxy2->Dimension(); l++)
-                    if (nonzeros(test_cum[l1]+l, trial_cum[k1]+k))
+                    // if (nonzeros(test_cum[l1]+l, trial_cum[k1]+k))
+                    if (true)
                       {
                         ud.trialfunction = proxy1;
                         ud.trial_comp = k;
@@ -1710,7 +1789,7 @@ namespace ngfem
                 td.Stop();
 
                 for (int i = 0; i < mir.Size(); i++)
-                  proxyvalues(i,STAR,STAR) *= ir_facet[i].Weight() * measure(i);
+                  proxyvalues(i,STAR,STAR) *= ir_facet[i].Weight() * mir[i].GetMeasure(); 
                 
                 t.AddFlops (double (mir.Size()) * proxy1->Dimension()*elmat.Width()*elmat.Height());
                 
@@ -1837,64 +1916,49 @@ namespace ngfem
     if (simd_evaluate)
       try
         {
-          static Timer tall("SymbolicBFI::Apply - all", 2); RegionTimer rall(tall);
-          static Timer tstart("SymbolicBFI::Apply - startup", 2);
-          static Timer tir("SymbolicBFI::Apply - integration rule", 2);
-          static Timer tmir("SymbolicBFI::Apply - mapped ir", 2);
-          static Timer tapply("SymbolicBFI::Apply - apply", 2);
-          static Timer tcoef("SymbolicBFI::Apply - coef", 2);
-          static Timer tapplyt("SymbolicBFI::Apply - apply-trans", 2); 
+          static Timer tall("SymbolicBFI::Apply - all", 4); RegionTimer rall(tall);
 
           const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fel);
           const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : fel;
           const FiniteElement & fel_test = mixedfe ? mixedfe->FETest() : fel;
           
           HeapReset hr(lh);
-          tstart.Start();
-          tir.Start();
+
           SIMD_IntegrationRule simd_ir(trafo.GetElementType(), fel_trial.Order()+fel_test.Order());
-          tir.Stop();
-          tmir.Start();
           auto & simd_mir = trafo(simd_ir, lh);
-          tmir.Stop();
           
           ProxyUserData ud(trial_proxies.Size(), lh);
           const_cast<ElementTransformation&>(trafo).userdata = &ud;
           ud.fel = &fel;
           ud.elx = &elx;
           ud.lh = &lh;
-          tstart.Stop();
-          tapply.Start();
           for (ProxyFunction * proxy : trial_proxies)
             ud.AssignMemory (proxy, simd_ir.GetNIP(), proxy->Dimension(), lh);
           
           for (ProxyFunction * proxy : trial_proxies)
             proxy->Evaluator()->Apply(fel_trial, simd_mir, elx, ud.GetAMemory(proxy)); // , lh);
-          tapply.Stop();
           
           ely = 0;
           for (auto proxy : test_proxies)
             {
               HeapReset hr(lh);
-              tcoef.Start();
+
               AFlatMatrix<double> simd_proxyvalues(proxy->Dimension(), simd_ir.GetNIP(), lh);
               for (int k = 0; k < proxy->Dimension(); k++)
                 {
                   ud.testfunction = proxy;
                   ud.test_comp = k;
-                  cf -> Evaluate (simd_mir, simd_proxyvalues.Rows(k,k+1));            
+                  cf -> Evaluate (simd_mir, simd_proxyvalues.Rows(k,k+1));
                 }
               
-              for (int i = 0; i < simd_proxyvalues.Height(); i++)
+              for (size_t i = 0; i < simd_proxyvalues.Height(); i++)
                 {
                   auto row = simd_proxyvalues.Row(i);
-                  for (int j = 0; j < row.VSize(); j++)
+                  for (size_t j = 0; j < row.VSize(); j++)
                     row.Get(j) *= simd_mir[j].GetMeasure().Data() * simd_ir[j].Weight().Data();
                 }
-              tcoef.Stop();
-              tapplyt.Start();
+
               proxy->Evaluator()->AddTrans(fel_test, simd_mir, simd_proxyvalues, ely); // , lh);
-              tapplyt.Stop();
             }
           return;
         }
@@ -3329,11 +3393,11 @@ namespace ngfem
                                         void * precomputed,
                                         LocalHeap & lh) const
   {
-    static Timer t("SymbolicEnergy::ApplyElementMatrix"); 
-    static Timer ts("SymbolicEnergy::ApplyElementMatrix start");
-    static Timer ta("SymbolicEnergy::ApplyElementMatrix apply");
-    static Timer tc("SymbolicEnergy::ApplyElementMatrix coef");
-    static Timer tt("SymbolicEnergy::ApplyElementMatrix applyT"); 
+    static Timer t("SymbolicEnergy::ApplyElementMatrix", 2); 
+    static Timer ts("SymbolicEnergy::ApplyElementMatrix start", 2);
+    static Timer ta("SymbolicEnergy::ApplyElementMatrix apply", 2);
+    static Timer tc("SymbolicEnergy::ApplyElementMatrix coef", 2);
+    static Timer tt("SymbolicEnergy::ApplyElementMatrix applyT", 2); 
     
     ProxyUserData ud(trial_proxies.Size(), lh);        
     const_cast<ElementTransformation&>(trafo).userdata = &ud;

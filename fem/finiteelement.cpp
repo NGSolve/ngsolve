@@ -20,7 +20,12 @@ namespace ngfem
   {
     return "FiniteElement"; 
   }
-
+  
+  IntegrationRule FiniteElement :: GetIR (int order) const
+  {
+    return IntegrationRule(ElementType(), order);
+  }
+    
   void FiniteElement :: Print (ostream & ost) const
   {
     ost << ClassName() << ", tpye = " << ElementType() << ", order = " << Order() << ", ndof = " << ndof << endl;

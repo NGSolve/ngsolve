@@ -58,6 +58,8 @@ namespace ngfem
     /// the name of the element family
     virtual string ClassName() const;
 
+    virtual IntegrationRule GetIR (int order) const;
+
     /// precomputes shape for integrationrule
     virtual void PrecomputeShapes (const IntegrationRule & ir);
     

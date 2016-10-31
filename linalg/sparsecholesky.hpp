@@ -143,24 +143,24 @@ public:
     size_t nze;
 
     // the reordering (original dofnr i -> order[i])
-    Array<int, int> order;
+    Array<int> order;
     
     // L-factor in compressed storage
     // Array<TM, size_t> lfact;
     NumaInterleavedArray<TM> lfact;
 
     // index-array to lfact
-    Array<size_t, size_t> firstinrow;
+    Array<size_t> firstinrow;
 
     // diagonal 
-    Array<TM, size_t> diag;
+    Array<TM> diag;
 
 
     // row-indices of non-zero entries
     // all row-indices within one block are identic, and stored just once
-    Array<int, size_t> rowindex2;
+    Array<int> rowindex2;
     // index-array to rowindex
-    Array<size_t, size_t> firstinrow_ri;
+    Array<size_t> firstinrow_ri;
     
     // blocknr of dof
     Array<int> blocknrs;
@@ -176,7 +176,8 @@ public:
     {
     public:
       int blocknr;
-      bool solveL;
+      enum BT { L_BLOCK, B_BLOCK, LB_BLOCK };
+      BT type; // bool solveL;
       int bblock;
       int nbblocks;
     };

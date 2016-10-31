@@ -100,7 +100,7 @@ namespace ngcomp
     ///
     virtual void GetSDofNrs (int selnr, Array<int> & dnums) const override;
     virtual void GetCD2DofNrs (int cd2elnr, Array<int> & dnums) const override;
-  
+  virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const override;
     virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const override; 
     // virtual void CreateSmoothingBlocks2 (SmoothingBlocksCreator & sbc, const Flags & precflags) const; 
     ///

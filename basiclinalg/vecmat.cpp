@@ -3,42 +3,42 @@
 namespace ngbla
 {
 
-  void CheckMatRange(int h, int w, int i)
+  void CheckMatRange(size_t h, size_t w, size_t i)
   {
-    if (i < 0 || i > h*w)
+    if ( /* i < 0 || */ i > h*w)
       {
         stringstream st;
-        st << "FlatMatrix: " << i << "out of range (0, " << h*w << ")" << endl;
+        st << "Matrix: " << i << "out of range [0, " << h*w << ")" << endl;
         throw Exception (st.str());
       }
   }
 
-  void CheckMatRange(int h, int w, int i, int j)
+  void CheckMatRange(size_t h, size_t w, size_t i, size_t j)
   {
-    if (i < 0 || i > h || j < 0 || j > w)
+    if ( /* i < 0 || */ i > h ||  /* j < 0 || */j > w)
       {
 	stringstream st;
-	st << "FlatMatrix: (" << i << ", " << j << ") out of range (0, " << h << ") x (0, " << w << ")" << endl;
+	st << "FlatMatrix: (" << i << ", " << j << ") out of range [0, " << h << ") x [0, " << w << ")" << endl;
 	throw Exception (st.str());
       }
   }
 
-  void CheckVecRange(int s, int i) 
+  void CheckVecRange(size_t s, size_t i) 
   {
-    if (i < 0 || i > s)
+    if (/* i < 0 || */ i > s)
       {
 	stringstream st;
-	st << "Vec: " << i << "out of range (0, " << s << ")" << endl;
+	st << "Vec: " << i << "out of range [0, " << s << ")" << endl;
 	throw Exception (st.str());
       }
   }
   
-  void CheckVecRange(int s, int i, int j) 
+  void CheckVecRange(size_t s, size_t i, size_t j) 
   {
-    if (i < 0 || i > s || j != 0)
+    if (/* i < 0 || */ i > s || j != 0)
       {
 	stringstream st;
-	st << "Vec: (" << i << ", " << j << ") out of range (0, " << s << ") x (0,0)" << endl;
+	st << "Vec: (" << i << ", " << j << ") out of range [0, " << s << ") x [0,1)" << endl;
 	throw Exception (st.str());
       }
   }

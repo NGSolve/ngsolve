@@ -258,7 +258,7 @@ namespace ngfem
     Apply (const FiniteElement & bfel,
 	   const SIMD_BaseMappedIntegrationRule & bmir,
 	   BareSliceVector<double> x, 
-	   ABareMatrix<double> flux) const;
+	   ABareSliceMatrix<double> flux) const;
     // LocalHeap & lh) const;
     
     NGS_DLL_HEADER virtual void
@@ -347,7 +347,7 @@ namespace ngfem
     Apply (const FiniteElement & bfel,
 	   const SIMD_BaseMappedIntegrationRule & bmir,
 	   BareSliceVector<double> x, 
-	   ABareMatrix<double> flux) const;
+	   ABareSliceMatrix<double> flux) const;
     // LocalHeap & lh) const;
     
     NGS_DLL_HEADER virtual void
@@ -419,7 +419,7 @@ namespace ngfem
 		SliceMatrix<double,ColMajor> mat, 
 		LocalHeap & lh) const;
 
-    NGS_DLL_HEADER virtual void
+    virtual void
     CalcMatrix (const FiniteElement & fel,
 		const SIMD_BaseMappedIntegrationRule & mir,
 		ABareMatrix<double> mat) const;
@@ -457,7 +457,7 @@ namespace ngfem
     Apply (const FiniteElement & bfel,
 	   const SIMD_BaseMappedIntegrationRule & bmir,
 	   BareSliceVector<double> x, 
-	   ABareMatrix<double> flux) const;
+	   ABareSliceMatrix<double> flux) const;
     // LocalHeap & lh) const;
 
     virtual void
