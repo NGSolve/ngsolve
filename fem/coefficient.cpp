@@ -72,6 +72,12 @@ namespace ngfem
     throw ExceptionNOSIMD (string("CF :: simd-Evaluate not implemented for class ") + typeid(*this).name());
   }
 
+  void CoefficientFunction ::   
+  Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<Complex> values) const
+  {
+    throw ExceptionNOSIMD (string("CF :: simd-Evaluate (complex) not implemented for class ") + typeid(*this).name());
+  }
+
   
   void CoefficientFunction :: 
   Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const
@@ -961,6 +967,23 @@ public:
     dderiv = scal * ddv1;
   }
 
+  virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & mir, 
+                              AFlatMatrix<double> values, AFlatMatrix<double> deriv) const
+  {
+    c1 -> EvaluateDeriv (mir, values, deriv);
+    values *= scal;
+    deriv *= scal;
+  }  
+  virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & mir, 
+                               AFlatMatrix<double> values, AFlatMatrix<double> deriv,
+                               AFlatMatrix<double> dderiv) const
+  {
+    c1 -> EvaluateDDeriv (mir, values, deriv, dderiv);
+    values *= scal;
+    deriv *= scal;
+    dderiv *= scal;
+  }
+  
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
   {
     c1->NonZeroPattern (ud, nonzero);
@@ -2863,8 +2886,11 @@ public:
                              FlatMatrix<> result,
                              FlatMatrix<> deriv) const
   {
-    Matrix<> v1(mir.Size(), c1->Dimension());
-    Matrix<> dv1(mir.Size(), c1->Dimension());
+    STACK_ARRAY(double, hmem, mir.Size()*dim1);
+    FlatMatrix<> v1(mir.Size(), dim1, hmem);
+    STACK_ARRAY(double, hdmem, mir.Size()*dim1);
+    FlatMatrix<> dv1(mir.Size(), dim1, hdmem);
+
     c1->EvaluateDeriv (mir, v1, dv1);
     result.Col(0) = v1.Col(comp);
     deriv.Col(0) = dv1.Col(comp);
@@ -2875,9 +2901,13 @@ public:
                               FlatMatrix<> deriv,
                               FlatMatrix<> dderiv) const
   {
-    Matrix<> v1(mir.Size(), c1->Dimension());
-    Matrix<> dv1(mir.Size(), c1->Dimension());
-    Matrix<> ddv1(mir.Size(), c1->Dimension());
+    STACK_ARRAY(double, hmem, mir.Size()*dim1);
+    FlatMatrix<> v1(mir.Size(), dim1, hmem);
+    STACK_ARRAY(double, hdmem, mir.Size()*dim1);
+    FlatMatrix<> dv1(mir.Size(), dim1, hdmem);
+    STACK_ARRAY(double, hddmem, mir.Size()*dim1);
+    FlatMatrix<> ddv1(mir.Size(), dim1, hddmem);
+
     c1->EvaluateDDeriv (mir, v1, dv1, ddv1);
     result.Col(0) = v1.Col(comp);
     deriv.Col(0) = dv1.Col(comp);
@@ -2909,8 +2939,6 @@ public:
     deriv.Col(0) = dv1.Col(comp);
    }  
 
-
-  
   virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & mir,
                                FlatArray<FlatMatrix<>*> input,
                                FlatArray<FlatMatrix<>*> dinput,
@@ -2928,6 +2956,39 @@ public:
     dderiv.Col(0) = ddv1.Col(comp);
    }  
 
+
+    virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & mir, 
+                                AFlatMatrix<double> values, AFlatMatrix<double> deriv) const
+    {
+      STACK_ARRAY(SIMD<double>, hmem, mir.Size()*dim1);
+      AFlatMatrix<> v1(dim1, mir.Size(), hmem);
+      STACK_ARRAY(SIMD<double>, hdmem, mir.Size()*dim1);
+      AFlatMatrix<> dv1(dim1, mir.Size(), hdmem);
+      
+      c1->EvaluateDeriv (mir, v1, dv1);
+      values.Row(0) = v1.Row(comp);
+      deriv.Row(0) = dv1.Row(comp);
+    }
+
+    virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & mir, 
+                                 AFlatMatrix<double> values, AFlatMatrix<double> deriv,
+                                 AFlatMatrix<double> dderiv) const
+    {
+      STACK_ARRAY(SIMD<double>, hmem, mir.Size()*dim1);
+      AFlatMatrix<> v1(dim1, mir.Size(), hmem);
+      STACK_ARRAY(SIMD<double>, hdmem, mir.Size()*dim1);
+      AFlatMatrix<> dv1(dim1, mir.Size(), hdmem);
+      STACK_ARRAY(SIMD<double>, hddmem, mir.Size()*dim1);
+      AFlatMatrix<> ddv1(dim1, mir.Size(), hddmem);
+      
+      c1->EvaluateDDeriv (mir, v1, dv1, ddv1);
+      values.Row(0) = v1.Row(comp);
+      deriv.Row(0) = dv1.Row(comp);
+      dderiv.Row(0) = ddv1.Row(comp);
+    }
+  
+
+  
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
   {
     Vector<bool> v1(c1->Dimension());
@@ -3463,7 +3524,7 @@ public:
                      if(ideriv>=1) code.body += "DValue(0)";
                      else code.body += "Value()";
                    }
-                   if(simd) code.body +=".Data()";
+                   // if(simd) code.body +=".Data()";
                    code.body += ";\n";
                  }
                  ii++;

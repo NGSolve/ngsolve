@@ -50,7 +50,11 @@ namespace ngfem
         DOP::GenerateMatrix (fel, mir[i], mat.Rows(i*DOP::DIM_DMAT, (i+1)*DOP::DIM_DMAT), lh);
     }
 
-
+    template <typename FEL, typename MIR>
+    static void GenerateMatrixSIMDIR (const FEL & fel, const MIR & mir, ABareMatrix<> mat)
+    {
+      throw ExceptionNOSIMD (string("generate matrix simdir not implemented for diffop ") + typeid(DOP).name());
+    }
     /**
        Applies the B-matrix.
        Computes matrix-vector product with the B-matrix
@@ -218,6 +222,11 @@ namespace ngfem
 		LocalHeap & lh) const;
     
     NGS_DLL_HEADER virtual void
+    CalcMatrix (const FiniteElement & fel,
+		const SIMD_BaseMappedIntegrationRule & mir,
+		ABareMatrix<double> mat) const;
+
+    NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & fel,
 	   const BaseMappedIntegrationPoint & mip,
 	   FlatVector<double> x, 
@@ -323,6 +332,11 @@ namespace ngfem
 		LocalHeap & lh) const;    
 
     NGS_DLL_HEADER virtual void
+    CalcMatrix (const FiniteElement & fel,
+		const SIMD_BaseMappedIntegrationRule & mir,
+		ABareMatrix<double> mat) const;
+    
+    NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & fel,
 	   const BaseMappedIntegrationPoint & mip,
 	   FlatVector<double> x, 
@@ -404,6 +418,11 @@ namespace ngfem
 		const BaseMappedIntegrationRule & bmir,
 		SliceMatrix<double,ColMajor> mat, 
 		LocalHeap & lh) const;
+
+    NGS_DLL_HEADER virtual void
+    CalcMatrix (const FiniteElement & fel,
+		const SIMD_BaseMappedIntegrationRule & mir,
+		ABareMatrix<double> mat) const;
     
 #ifndef FASTCOMPILE
     virtual void

@@ -56,7 +56,7 @@ void NGS_DLL_HEADER ExportNgla() {
       static
       bp::tuple getinitargs(const BaseVector & v)
       {
-        return bp::make_tuple(v.Size(), v.IsComplex()); 
+        return bp::make_tuple(v.Size(), v.IsComplex(), v.EntrySize()); 
       }
 
       static
@@ -99,15 +99,23 @@ void NGS_DLL_HEADER ExportNgla() {
   REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<BaseVector>);
   bp::class_<BaseVector, shared_ptr<BaseVector>, boost::noncopyable>("BaseVector", bp::no_init)
     .def("__init__", bp::make_constructor 
-         (FunctionPointer ([](int size, bool is_complex) -> shared_ptr<BaseVector>
+         (FunctionPointer ([](int size, bool is_complex, int es) -> shared_ptr<BaseVector>
                            {
-                             if (is_complex)
+			     if(es > 1)
+			       {
+				 if(is_complex)
+				   return make_shared<S_BaseVectorPtr<Complex>> (size, es);
+				 else
+				   return make_shared<S_BaseVectorPtr<double>> (size, es);
+			       }
+			     
+			     if (is_complex)
                                return make_shared<VVector<Complex>> (size);
                              else
-                               return make_shared<VVector<double>> (size);                               
+                               return make_shared<VVector<double>> (size);
                            }),
           bp::default_call_policies(),        // need it to use argumentso
-          (bp::arg("size"), bp::arg("complex")=false)
+          (bp::arg("size"), bp::arg("complex")=false, bp::arg("entrysize")=1)
           ))
     .def_pickle(BaseVector_pickle_suite())
     .def("__ngsid__", FunctionPointer( [] ( BaseVector & self)
@@ -353,10 +361,13 @@ void NGS_DLL_HEADER ExportNgla() {
                                      { return m.InverseMatrix(); }))
     .def("Transpose", FunctionPointer( [](BM &m)->shared_ptr<BaseMatrix>
                                        { return make_shared<Transpose> (m); }))
+    .def("Update", FunctionPointer( [](BM &m) { m.Update(); }));
     // bp::return_value_policy<bp::manage_new_object>())
     ;
 
-
+  REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<Projector>);
+  bp::class_<Projector, shared_ptr<Projector>,bp::bases<BaseMatrix>,boost::noncopyable> ("Projector", bp::init<const BitArray&,bool>())
+    ;
 
   REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<CGSolver<double>>);
   bp::class_<CGSolver<double>, shared_ptr<CGSolver<double>>,bp::bases<BaseMatrix>,boost::noncopyable> ("CGSolverD", bp::no_init)

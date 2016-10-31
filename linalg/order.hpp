@@ -48,7 +48,7 @@ namespace ngla
 
   public:
     ///
-    int * connected;
+    int * connected = nullptr;
     ///
     int nconnected;
 

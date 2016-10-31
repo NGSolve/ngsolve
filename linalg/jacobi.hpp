@@ -42,7 +42,7 @@ namespace ngla
 
     ///
     JacobiPrecond (const SparseMatrix<TM,TV_ROW,TV_COL> & amat, 
-		   const BitArray * ainner = NULL);
+		   const BitArray * ainner = NULL, bool use_par = true);
 
     ///
     virtual ~JacobiPrecond ();
@@ -92,7 +92,7 @@ namespace ngla
 
     ///
     JacobiPrecondSymmetric (const SparseMatrixSymmetric<TM,TV> & amat, 
-			    const BitArray * ainner = NULL);
+			    const BitArray * ainner = NULL, bool use_par = true);
 
     ///
     virtual void GSSmooth (BaseVector & x, const BaseVector & b) const;
@@ -102,6 +102,7 @@ namespace ngla
 
     ///
     virtual void GSSmoothBack (BaseVector & x, const BaseVector & b) const;
+    virtual void GSSmoothBack (BaseVector & x, const BaseVector & b, BaseVector & y) const;
 
     ///
     virtual void GSSmoothNumbering (BaseVector & x, const BaseVector & b,

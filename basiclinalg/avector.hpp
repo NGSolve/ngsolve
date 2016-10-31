@@ -54,8 +54,8 @@ namespace ngbla
   using AMatrix = typename FooAMatrixType<T,ORD>::type;
 
 
-  template <typename T> class ABareVector;
-  template <typename T> class ABareMatrix;
+  template <typename T = double> class ABareVector;
+  template <typename T = double> class ABareMatrix;
 
 
 
@@ -533,6 +533,7 @@ namespace ngbla
     {
       return ((double*)data)[SIMD<double>::Size()*i*dist+j]; 
     }
+    size_t Dist() const { return dist; }
     SIMD<double> & Get(size_t i, size_t j) const { return data[i*dist+j]; }
     ABareVector<double> Row(size_t i) const { return ABareVector<double> (data+i*dist); }
     ABareMatrix<double> Rows(size_t first, size_t /* next */) const { return ABareMatrix<double> (data+first*dist, dist); }

@@ -798,7 +798,8 @@ namespace ngbla
   class Vec : public MatExpr<Vec<S,T> > // , protected BaseVec
   {
     /// the values
-    T data[S];
+    // T data[S];
+    HTArray<S,T> data;
   public:
     /// type of the elements
     typedef T TELEM;

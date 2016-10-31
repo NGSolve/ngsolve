@@ -135,6 +135,13 @@ namespace ngfem
       CalcShape (ir[i], shape.Col(i));
   }
 
+  void BaseScalarFiniteElement :: 
+  CalcShape (const SIMD_IntegrationRule & ir, 
+             ABareMatrix<> shape) const
+  {
+    throw ExceptionNOSIMD("SIMD - CalcShape not overloaded");
+  }
+
 
   template<int D>
   void ScalarFiniteElement<D> :: 
@@ -158,6 +165,14 @@ namespace ngfem
   {
     for (int i = 0; i < mir.Size(); i++)
       CalcMappedDShape (mir[i], dshapes.Cols(i*D,(i+1)*D));
+  }
+
+  template<int D>
+  void ScalarFiniteElement<D> :: 
+  CalcMappedDShape (const SIMD_BaseMappedIntegrationRule & mir, 
+                    ABareMatrix<> dshapes) const
+  {
+    throw ExceptionNOSIMD("SIMD - CalcDShape not overloaded");    
   }
 
  /*

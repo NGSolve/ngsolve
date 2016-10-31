@@ -126,6 +126,14 @@ public:
 };
 
 template <>
+class Cl_Iterate<-1>
+{
+public:
+  template <typename FUNC>
+  static INLINE void Do (FUNC f)  { }
+};
+
+template <>
 class Cl_Iterate<0>
 {
 public:

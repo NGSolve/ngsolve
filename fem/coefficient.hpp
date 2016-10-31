@@ -32,6 +32,7 @@ namespace ngfem
     ///
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const;
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const;
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<Complex> values) const;
 
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const;
     // virtual void EvaluateSoA (const BaseMappedIntegrationRule & ir, AFlatMatrix<Complex> values) const;
@@ -1164,6 +1165,74 @@ public:
         }
   }
   
+  virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & mir, 
+                              AFlatMatrix<double> values, AFlatMatrix<double> deriv) const
+  {
+    int dim = values.Height();
+    STACK_ARRAY(SIMD<double>, ha, mir.Size()*dim);
+    STACK_ARRAY(SIMD<double>, hb, mir.Size()*dim);
+    AFlatMatrix<double> ra(dim, mir.Size(), ha);
+    AFlatMatrix<double> rb(dim, mir.Size(), hb);
+
+    STACK_ARRAY(SIMD<double>, hda, mir.Size()*dim);
+    STACK_ARRAY(SIMD<double>, hdb, mir.Size()*dim);
+    AFlatMatrix<double> da(dim, mir.Size(), hda);
+    AFlatMatrix<double> db(dim, mir.Size(), hdb);
+
+    c1->EvaluateDeriv (mir, ra, da);
+    c2->EvaluateDeriv (mir, rb, db);
+    for (int k = 0; k < mir.Size(); k++)
+      for (int i = 0; i < values.Height(); i++)
+        {
+          AutoDiff<1,SIMD<double>> a(ra.Get(i,k));
+          a.DValue(0) = da.Get(i,k);
+          AutoDiff<1,SIMD<double>> b(rb.Get(i,k));
+          b.DValue(0) = db.Get(i,k);
+
+          AutoDiff<1,SIMD<double>> res = lam(a,b);
+          values.Get(i,k) = res.Value();
+          deriv.Get(i,k) = res.DValue(0);
+        }
+  }
+  
+  virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & mir, 
+                               AFlatMatrix<double> values, AFlatMatrix<double> deriv,
+                               AFlatMatrix<double> dderiv) const
+  {
+    int dim = values.Height();
+    STACK_ARRAY(SIMD<double>, ha, mir.Size()*dim);
+    STACK_ARRAY(SIMD<double>, hb, mir.Size()*dim);
+    AFlatMatrix<double> ra(dim, mir.Size(), ha);
+    AFlatMatrix<double> rb(dim, mir.Size(), hb);
+
+    STACK_ARRAY(SIMD<double>, hda, mir.Size()*dim);
+    STACK_ARRAY(SIMD<double>, hdb, mir.Size()*dim);
+    AFlatMatrix<double> da(dim, mir.Size(), hda);
+    AFlatMatrix<double> db(dim, mir.Size(), hdb);
+
+    STACK_ARRAY(SIMD<double>, hdda, mir.Size()*dim);
+    STACK_ARRAY(SIMD<double>, hddb, mir.Size()*dim);
+    AFlatMatrix<double> dda(dim, mir.Size(), hdda);
+    AFlatMatrix<double> ddb(dim, mir.Size(), hddb);
+
+    c1->EvaluateDDeriv (mir, ra, da, dda);
+    c2->EvaluateDDeriv (mir, rb, db, ddb);
+    for (int k = 0; k < mir.Size(); k++)
+      for (int i = 0; i < values.Height(); i++)
+        {
+          AutoDiffDiff<1,SIMD<double>> a(ra.Get(i,k));
+          a.DValue(0) = da.Get(i,k);
+          a.DDValue(0) = dda.Get(i,k);
+          AutoDiffDiff<1,SIMD<double>> b(rb.Get(i,k));
+          b.DValue(0) = db.Get(i,k);
+          b.DDValue(0) = ddb.Get(i,k);
+
+          AutoDiffDiff<1,SIMD<double>> res = lam(a,b);
+          values.Get(i,k) = res.Value();
+          deriv.Get(i,k) = res.DValue(0);
+          dderiv.Get(i,k) = res.DDValue(0);
+        } 
+  }
 
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
   {

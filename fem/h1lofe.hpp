@@ -49,7 +49,7 @@ namespace ngfem
   template<> template<typename Tx, typename TFA>  
   void ScalarFE<ET_POINT,0> :: T_CalcShape (TIP<0,Tx> ip, TFA & shape) 
   {
-    shape[0] = 1.0;
+    shape[0] = Tx(1.0);
   }
   using FE_Point = ScalarFE<ET_POINT,0>;
 
@@ -68,7 +68,7 @@ namespace ngfem
   template<> template<typename Tx, typename TFA>  
   void ScalarFE<ET_SEGM,0> :: T_CalcShape (TIP<1,Tx> ip, TFA & shape) 
   {
-    shape[0] = 1.0;
+    shape[0] = Tx(1.0);
   }
   using FE_Segm0 = ScalarFE<ET_SEGM,0>;
 
@@ -146,7 +146,7 @@ namespace ngfem
     template<typename Tx, typename TFA>  
     static INLINE void T_CalcShape (TIP<1,Tx> ip, TFA & shape) 
     {
-      shape[0] = 1;
+      shape[0] = Tx(1.0);
       shape[1] = 2*ip.x-1;
     }
   }; 
@@ -160,7 +160,7 @@ namespace ngfem
     {
       Tx x = ip.x;
 
-      shape[0] = 1;
+      shape[0] = Tx(1.0);
       shape[1] = 2*x-1;
       shape[2] = (2*x-1)*(2*x-1)-1.0/3.0;
     }
@@ -173,7 +173,7 @@ namespace ngfem
     template<typename Tx, typename TFA>  
     static INLINE void T_CalcShape (TIP<1,Tx> ip, TFA & shape) 
     {
-      shape[0] = 1;
+      shape[0] = Tx(1.0);
     }
   }; 
 
@@ -209,7 +209,7 @@ namespace ngfem
       // very primitive ...
       // shape = 0;
       
-      if (ORDER >= 0) shape[0] = 1;
+      if (ORDER >= 0) shape[0] = Tx(1.0);
       if (ORDER >= 1) shape[1] = 2*x-1;
       if (ORDER >= 2) shape[2] = (2*x-1)*(2*x-1)-1.0/3.0;
       if (ORDER >= 3) shape[3] = (2*x-1)*(2*x-1)*(2*x-1);
@@ -246,7 +246,7 @@ namespace ngfem
   template<> template<typename Tx, typename TFA>  
   void ScalarFE<ET_TRIG,0> :: T_CalcShape (TIP<2,Tx> ip, TFA & shape) 
   {
-    shape[0] = 1.0;
+    shape[0] = Tx(1.0);
   }
   using FE_Trig0 = ScalarFE<ET_TRIG,0>;
 
@@ -363,7 +363,7 @@ namespace ngfem
   template<> template<typename Tx, typename TFA>  
   void ScalarFE<ET_QUAD,0> :: T_CalcShape (TIP<2,Tx> ip, TFA & shape) 
   {
-    shape[0] = 1.0;
+    shape[0] = Tx(1.0);
   }
 
   /*
@@ -473,7 +473,7 @@ namespace ngfem
   template<> template<typename Tx, typename TFA>  
   void ScalarFE<ET_TET,0> :: T_CalcShape (TIP<3,Tx> ip, TFA & shape) 
   {
-    shape[0] = 1.0;
+    shape[0] = Tx(1.0);
   }
 
   template<> template<typename Tx, typename TFA>  
@@ -766,7 +766,7 @@ namespace ngfem
     template<typename Tx, typename TFA>  
     static INLINE void T_CalcShape (TIP<3,Tx> ip, TFA & shape) 
     {
-      shape[0] = 1;
+      shape[0] = Tx(1.0);
     }
   };
 
