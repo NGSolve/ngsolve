@@ -145,7 +145,7 @@ public:
                          AFlatMatrix<double> values) const;
 
   virtual void Evaluate1 (const SIMD_BaseMappedIntegrationRule & ir,
-                          ABareMatrix<double> values) const;
+                          ABareSliceMatrix<double> values) const;
 
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
                          FlatArray<AFlatMatrix<double>*> input,

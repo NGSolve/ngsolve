@@ -70,7 +70,7 @@ namespace ngfem
   }
 
   void CoefficientFunction ::   
-  Evaluate1 (const SIMD_BaseMappedIntegrationRule & ir, ABareMatrix<double> values) const
+  Evaluate1 (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const
   {
     static bool firsttime = true;
     if (firsttime)
@@ -144,9 +144,9 @@ namespace ngfem
       values.Get(0,i) = val;
   }
   
-  void ConstantCoefficientFunction :: Evaluate1 (const SIMD_BaseMappedIntegrationRule & ir, ABareMatrix<double> values) const
+  void ConstantCoefficientFunction :: Evaluate1 (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const
   {
-    size_t nv = values.Dist();    
+    size_t nv = ir.Size();    
     __assume (nv > 0);
     for (size_t i = 0; i < nv; i++)
       values.Get(0,i) = val;
@@ -228,34 +228,18 @@ namespace ngfem
     val[i] = aval[i];
     }
   */
- 
+  
   double DomainConstantCoefficientFunction :: Evaluate (const BaseMappedIntegrationPoint & ip) const
   {
     int elind = ip.GetTransformation().GetElementIndex();
-    
-    if (elind < 0 || elind >= val.Size())
-      {
-	ostringstream ost;
-	ost << "DomainConstantCoefficientFunction: Element index "
-	    << elind << " out of range 0 - " << val.Size()-1 << endl;
-	throw Exception (ost.str());
-      }
-    
+    CheckRange (elind);
     return val[elind]; 
   }
 
   void DomainConstantCoefficientFunction :: Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
   {
     int elind = ir[0].GetTransformation().GetElementIndex();
-    
-    if (elind < 0 || elind >= val.Size())
-      {
-	ostringstream ost;
-	ost << "DomainConstantCoefficientFunction: Element index "
-	    << elind << " out of range 0 - " << val.Size()-1 << endl;
-	throw Exception (ost.str());
-      }
-    
+    CheckRange (elind);    
     values = val[elind];
   }
 
@@ -263,15 +247,7 @@ namespace ngfem
   void DomainConstantCoefficientFunction :: Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
   {
     int elind = ir[0].GetTransformation().GetElementIndex();
-    
-    if (elind < 0 || elind >= val.Size())
-      {
-	ostringstream ost;
-	ost << "DomainConstantCoefficientFunction: Element index "
-	    << elind << " out of range 0 - " << val.Size()-1 << endl;
-	throw Exception (ost.str());
-      }
-    
+    CheckRange (elind);        
     values = val[elind];
   }
   
@@ -279,15 +255,7 @@ namespace ngfem
   void DomainConstantCoefficientFunction :: Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const
   {
     int elind = ir[0].GetTransformation().GetElementIndex();
-    
-    if (elind < 0 || elind >= val.Size())
-      {
-	ostringstream ost;
-	ost << "DomainConstantCoefficientFunction: Element index "
-	    << elind << " out of range 0 - " << val.Size()-1 << endl;
-	throw Exception (ost.str());
-      }
-    
+    CheckRange (elind);            
     values = val[elind]; 
   }
 
@@ -308,8 +276,6 @@ namespace ngfem
   DomainConstantCoefficientFunction :: 
   ~DomainConstantCoefficientFunction ()
   { ; }
-
-
 
   DomainVariableCoefficientFunction ::
   DomainVariableCoefficientFunction (const EvalFunction & afun)
@@ -1219,11 +1185,12 @@ public:
         values.Get(j,i) *= temp1.Get(0,i);
   }
   
-  virtual void Evaluate1 (const SIMD_BaseMappedIntegrationRule & ir, ABareMatrix<double> values) const
+  virtual void Evaluate1 (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const
   {
-    size_t w = values.Dist();
+    size_t w = ir.Size();
+    __assume (w > 0);
     STACK_ARRAY(SIMD<double>, hmem1, w);
-    ABareMatrix<double> temp1(&hmem1[0], w, 1, values.Width());
+    ABareMatrix<double> temp1(&hmem1[0], w, 1, w);
     
     c1->Evaluate1 (ir, temp1);
     c2->Evaluate1 (ir, values);
@@ -1619,14 +1586,14 @@ public:
       }
   }
   
-  virtual void Evaluate1 (const SIMD_BaseMappedIntegrationRule & ir, ABareMatrix<> values) const
+  virtual void Evaluate1 (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<> values) const
   {
-    size_t w = values.Dist();
+    size_t w = ir.Size();
     __assume (w > 0);
+    
     STACK_ARRAY(SIMD<double>, hmem, 2*DIM*w);
-    // STACK_ARRAY(SIMD<double>, hmem2, DIM*w);
-    ABareMatrix<double> temp1(&hmem[0], w, values.Height(), values.Width());
-    ABareMatrix<double> temp2(&hmem[DIM*w], w, values.Height(), values.Width());
+    ABareMatrix<double> temp1(&hmem[0], w, DIM, w*SIMD<double>::Size());
+    ABareMatrix<double> temp2(&hmem[DIM*w], w, DIM, w*SIMD<double>::Size());
     
     c1->Evaluate1 (ir, temp1);
     c2->Evaluate1 (ir, temp2);
@@ -1636,7 +1603,7 @@ public:
         SIMD<double> sum = 0.0;
         for (size_t j = 0; j < DIM; j++)
           sum += temp1.Get(j,i) * temp2.Get(j,i);
-        values.Get(i) = sum; 
+        values.Get(0,i) = sum; 
       }
   }
 
@@ -3800,20 +3767,14 @@ public:
       }
   }
   
-  virtual void Evaluate1 (const SIMD_BaseMappedIntegrationRule & ir, ABareMatrix<double> values) const
+  virtual void Evaluate1 (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const
   {
     // size_t base = 0;
     FlatArray<shared_ptr<CoefficientFunction>> hci = ci;
     FlatArray<size_t> hdimi = dimi;
     FlatArray<std::tuple<CoefficientFunction*, size_t>> hboth = both;
     for (size_t i : Range(hboth))
-      {
-        /*
-        hci[i]->Evaluate1(ir, values.Rows(base,base+hdimi[i]));
-        base += hdimi[i];
-        */
-        get<0>(hboth[i])->Evaluate1(ir, values.Rows(get<1>(hboth[i]), 0));
-      }
+      get<0>(hboth[i])->Evaluate1(ir, values.Rows(get<1>(hboth[i]), 0));
   }
 
 
