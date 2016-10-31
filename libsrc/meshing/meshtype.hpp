@@ -1134,12 +1134,26 @@ namespace netgen
     MeshingParameters ();
     ///
     MeshingParameters (const MeshingParameters & mp2) = default;
+    MeshingParameters (MeshingParameters && mp2) = default;
     ///
     void Print (ostream & ost) const;
     /// 
     // void CopyFrom(const MeshingParameters & other);
-    
 
+    class MeshSizePoint
+    {
+    public:
+      Point<3> pnt;
+      double h;
+      MeshSizePoint (Point<3> _pnt, double _h) : pnt(_pnt), h(_h) { ; }
+      MeshSizePoint () = default;
+      MeshSizePoint (const MeshSizePoint &) = default;
+      MeshSizePoint (MeshSizePoint &&) = default;
+      MeshSizePoint & operator= (const MeshSizePoint &) = default;
+      MeshSizePoint & operator= (MeshSizePoint &&) = default;      
+    };
+    Array<MeshSizePoint> meshsize_points;
+    
     void (*render_function)(bool) = NULL;
     void Render(bool blocking = false)
     {

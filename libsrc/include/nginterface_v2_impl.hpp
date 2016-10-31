@@ -70,6 +70,10 @@ NGX_INLINE DLL_HEADER Ng_Element Ngx_Mesh :: GetElement<1> (int nr) const
     ret.index = el.si;
   else
     ret.index = el.edgenr;
+  if (mesh->GetDimension() == 2)
+    ret.mat = mesh->GetBCNamePtr(el.si-1);
+  else
+    ret.mat = nullptr;
   ret.points.num = el.GetNP();
   ret.points.ptr = (int*)&(el[0]);
 
