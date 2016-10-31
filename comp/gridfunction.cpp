@@ -1309,12 +1309,12 @@ namespace ngcomp
 
   void GridFunctionCoefficientFunction ::   
   Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
-            AFlatMatrix<double> values) const
+            ABareSliceMatrix<double> bvalues) const
   {
     LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evalute 3");
     // static Timer timer ("GFCoeffFunc::Eval-vec", 2);
     // RegionTimer reg (timer);
-
+    auto values = bvalues.AddVSize(Dimension(), ir.Size());
     const ElementTransformation & trafo = ir.GetTransformation();
     
     int elnr = trafo.GetElementNr();
@@ -2536,7 +2536,7 @@ namespace ngcomp
                     mir[k] = SIMD<MappedIntegrationPoint<2,3>> (ir[k], eltrans, vx, mdxdxref);
                   }
                 
-                cf -> Evaluate1 (mir, mvalues.VCols(base, base+ni));
+                cf -> Evaluate (mir, mvalues.VCols(base, base+ni));
               }
             else
               {
@@ -2551,12 +2551,12 @@ namespace ngcomp
                         mir[k] = SIMD<MappedIntegrationPoint<2,2>> (ir[k], eltrans, vx, mdxdxref);
                       }
                     
-                    cf -> Evaluate1 (mir, mvalues.VCols(base, base+ni));
+                    cf -> Evaluate (mir, mvalues.VCols(base, base+ni));
                   }
                 else
                   {
                     SIMD_MappedIntegrationRule<2,2> mir(ir, eltrans, lh);
-                    cf -> Evaluate1 (mir, mvalues.VCols(base, base+ni));
+                    cf -> Evaluate (mir, mvalues.VCols(base, base+ni));
                   }
               }
           }

@@ -56,6 +56,7 @@ namespace ngbla
 
   template <typename T = double> class ABareVector;
   template <typename T = double> class ABareMatrix;
+  template <typename T = double> class ASliceMatrix;
   template <typename T = double> class ABareSliceMatrix;
 
 
@@ -588,12 +589,14 @@ namespace ngbla
     {
       return ((double*)data)[i]; 
     }
-
+    
     double & operator() (size_t i, size_t j) const
     {
       return ((double*)data)[i]; 
     }
     SIMD<double> & Get(size_t i) const { return data[i]; }
+    AFlatVector<> AddSize(size_t s) const { return AFlatVector<> (s, data); }
+    AFlatVector<> AddVSize(size_t s) const { return AFlatVector<> (s*SIMD<double>::Size(), data); }
   };
 
   template <>
@@ -611,7 +614,8 @@ namespace ngbla
       : DummySize(mat.Height(), mat.Width()),
         data(&mat.Get(0,0)), dist(&mat.Get(1,0)-&mat.Get(0,0)) { ; }
     ABareMatrix(const ABareMatrix &) = default;
-
+    ABareMatrix & operator= (const ABareMatrix&) = delete;
+    
     double & operator() (size_t i, size_t j) const
     { return ((double*)data)[SIMD<double>::Size()*i*dist+j]; }
     size_t Dist() const { return dist; }
@@ -623,6 +627,90 @@ namespace ngbla
     ABareMatrix<double> RowSlice(size_t first, size_t adist) const { return ABareMatrix<double> (data+first*dist, dist*adist); } 
   };
 
+
+  template <>
+  class ASliceMatrix<double> 
+  {
+    SIMD<double> * __restrict data;
+    size_t dist;   // dist in simds
+    size_t h, w;
+  public:
+    enum { IS_LINEAR = false };
+    enum { IS_LINEAR_VEC = false };
+    
+    ASliceMatrix(size_t ah, size_t aw, size_t _dist, SIMD<double> * _data)
+      : data(_data), dist(_dist), h(ah), w(aw) { ; }
+    ASliceMatrix(AFlatMatrix<double> mat)
+      : data(&mat.Get(0,0)), dist(&mat.Get(1,0)-&mat.Get(0,0)), h(mat.Height()), w(mat.Width()) { ; }
+    ASliceMatrix(const ASliceMatrix &) = default;
+
+    auto & operator= (const ASliceMatrix<> & m2)
+    {
+      auto vw = VWidth(); 
+      for (size_t i = 0; i < h; i++)
+        for (size_t j = 0; j < vw; j++)
+          data[i*dist+j] = m2.Get(i,j);
+      return *this;
+    }
+
+    auto & operator= (const AFlatMatrix<> & m2)
+    {
+      *this = ASliceMatrix(m2);
+      return *this;
+    }
+    
+    auto & operator= (double d)
+    {
+      auto vw = VWidth(); 
+      for (size_t i = 0; i < h; i++)
+        for (size_t j = 0; j < vw; j++)
+          data[i*dist+j] = SIMD<double>(d);
+      return *this;
+    }
+    
+    auto & operator*= (double d)
+    {
+      auto vw = VWidth(); 
+      for (size_t i = 0; i < h; i++)
+        for (size_t j = 0; j < vw; j++)
+          data[i*dist+j] *= SIMD<double>(d);
+      return *this;
+    }
+
+    template<typename TB>
+    auto & operator= (const Expr<TB> & v) const
+    {
+      for (size_t i = 0; i < h; i++)
+        for (size_t j = 0; j < w; j++)
+          (*this)(i,j) = v.Spec()(i,j);
+      return *this;
+    }
+    
+    template<typename TB>
+    auto & operator= (const SIMDExpr<TB> & v) const
+    {
+      for (size_t i = 0; i < h; i++)
+        for (size_t j = 0; j < VWidth(); j++)
+          Get(i,j) = v.Spec().Get(i,j);
+      return *this;
+    }
+
+    size_t Height() const { return h; }
+    size_t Width() const { return w; }
+    size_t VWidth() const { return (w+SIMD<double>::Size()-1)/SIMD<double>::Size(); }
+    
+    double & operator() (size_t i, size_t j) const
+    { return ((double*)data)[SIMD<double>::Size()*i*dist+j]; }
+    size_t Dist() const { return dist; }
+    SIMD<double> & Get(size_t i, size_t j) const { return data[i*dist+j]; }
+    SIMD<double> & Get(size_t i) const { return data[i]; }
+    AFlatVector<double> Row(size_t i) const { return AFlatVector<double> (w, data+i*dist); }
+    ASliceMatrix<double> Rows(size_t first, size_t next) const { return ASliceMatrix<double> (next-first, w, dist, data+first*dist); }
+    ASliceMatrix<double> Rows(IntRange r) const { return Rows(r.First(), r.Next()); } 
+    // ASliceMatrix<double> RowSlice(size_t first, size_t adist) const { return ABareSliceMatrix<double> (data+first*dist, dist*adist); } 
+  };
+
+  
   
   template <>
   class ABareSliceMatrix<double> : public DummySize
@@ -640,11 +728,19 @@ namespace ngbla
         data(&mat.Get(0,0)), dist(&mat.Get(1,0)-&mat.Get(0,0)) { ; }
     ABareSliceMatrix(ABareMatrix<double> mat)
       : DummySize(mat), data(&mat.Get(0,0)), dist(&mat.Get(1,0)-&mat.Get(0,0)) { ; }
+    ABareSliceMatrix(ASliceMatrix<double> mat)
+      : DummySize(mat.Height(), mat.Width()),
+        data(&mat.Get(0,0)), dist(&mat.Get(1,0)-&mat.Get(0,0)) { ; }
     ABareSliceMatrix(const ABareSliceMatrix &) = default;
 
+    ABareSliceMatrix & operator= (const ABareSliceMatrix&) = delete;
     double & operator() (size_t i, size_t j) const
     { return ((double*)data)[SIMD<double>::Size()*i*dist+j]; }
     size_t Dist() const { return dist; }
+    ASliceMatrix<> AddSize(size_t h, size_t w) const
+    { return ASliceMatrix<> (h,w,dist,data); }
+    ASliceMatrix<> AddVSize(size_t h, size_t vw) const
+    { return ASliceMatrix<> (h,SIMD<double>::Size()*vw,dist,data); }
     SIMD<double> & Get(size_t i, size_t j) const { return data[i*dist+j]; }
     SIMD<double> & Get(size_t i) const { return data[i]; }
     ABareVector<double> Row(size_t i) const { return ABareVector<double> (data+i*dist); }

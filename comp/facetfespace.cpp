@@ -35,7 +35,7 @@ namespace ngcomp
     }
 
     static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
-                             BareSliceVector<double> x, ABareMatrix<double> y)
+                             BareSliceVector<double> x, ABareSliceMatrix<double> y)
     {
       // Cast(fel).Evaluate (mir.IR(), x, y.Row(0));
 

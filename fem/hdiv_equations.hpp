@@ -119,7 +119,7 @@ public:
 
   
   static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
-                           BareSliceVector<double> x, ABareMatrix<double> y)
+                           BareSliceVector<double> x, ABareSliceMatrix<double> y)
   {
     Cast(fel).Evaluate (mir, x, y);
   }    
@@ -202,7 +202,7 @@ public:
 
   
   static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
-                           BareSliceVector<double> x, ABareMatrix<double> y)
+                           BareSliceVector<double> x, ABareSliceMatrix<double> y)
   {
     Cast(fel).EvaluateDiv (mir, x, y.Row(0));
   }    

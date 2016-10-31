@@ -102,7 +102,7 @@ namespace ngfem
 
   template <class FEL, ELEMENT_TYPE ET>
   void T_HDivFiniteElement<FEL,ET> :: 
-  Evaluate (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<> coefs, ABareMatrix<double> values) const
+  Evaluate (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<> coefs, ABareSliceMatrix<double> values) const
   {
     auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
     for (int i = 0; i < mir.Size(); i++)

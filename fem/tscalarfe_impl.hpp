@@ -647,7 +647,7 @@ namespace ngfem
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   EvaluateGrad (const SIMD_BaseMappedIntegrationRule & bmir,
                 BareSliceVector<> coefs,
-                ABareMatrix<double> values) const
+                ABareSliceMatrix<double> values) const
   {
     if ((DIM == 3) || (bmir.DimSpace() == DIM))
       {
@@ -683,7 +683,7 @@ namespace ngfem
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   EvaluateGrad (const SIMD_IntegrationRule & ir,
                 BareSliceVector<> coefs,
-                ABareMatrix<double> values) const
+                ABareSliceMatrix<double> values) const
   {
     for (int i = 0; i < ir.Size(); i++)
       {
