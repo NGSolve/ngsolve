@@ -52,7 +52,7 @@ namespace ngfem
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const;
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const;    
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<Complex> values) const;
-    virtual void Evaluate1 (const SIMD_BaseMappedIntegrationRule & ir, ABareMatrix<double> values) const;
+    virtual void Evaluate1 (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const;
 
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const;
     // virtual void EvaluateSoA (const BaseMappedIntegrationRule & ir, AFlatMatrix<Complex> values) const;
@@ -317,7 +317,7 @@ namespace ngfem
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const;
     
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const;
-    virtual void Evaluate1 (const SIMD_BaseMappedIntegrationRule & ir, ABareMatrix<double> values) const;
+    virtual void Evaluate1 (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const;
     
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
                            AFlatMatrix<double> values) const
@@ -450,21 +450,28 @@ namespace ngfem
     ///
 
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const;
-
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const;
-
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const;
 
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const;
+    virtual void Evaluate1 (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const;
     
-    virtual double EvaluateConst () const
-    {
-      return val[0];
-    }
-
+    virtual double EvaluateConst () const { return val[0]; }
     double operator[] (int i) const { return val[i]; }
 
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
+    
+  protected:
+    void CheckRange (int elind) const
+    {
+      if (elind < 0 || elind >= val.Size())
+        {
+          ostringstream ost;
+          ost << "DomainConstantCoefficientFunction: Element index "
+              << elind << " out of range 0 - " << val.Size()-1 << endl;
+          throw Exception (ost.str());
+        }
+    }
   };
 
 
@@ -1170,17 +1177,17 @@ public:
       values.Get(i) = lam (values.Get(i), temp.Get(i));
   }
 
-  virtual void Evaluate1 (const SIMD_BaseMappedIntegrationRule & ir, ABareMatrix<double> values) const
+  virtual void Evaluate1 (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const
   {
-    size_t nv = values.Dist();
+    size_t nv = ir.Size();
     size_t mydim = Dimension();
     STACK_ARRAY(SIMD<double>, hmem, nv*mydim);
-    // AFlatMatrix<double> temp(mydim, 4*nv, &hmem[0]);
-    ABareMatrix<double> temp(&hmem[0], nv, values.Height(), values.Width());
+    ABareMatrix<double> temp(&hmem[0], nv, mydim, SIMD<double>::Size()*nv);
     c1->Evaluate1 (ir, values);
     c2->Evaluate1 (ir, temp);
-    for (size_t i = 0; i < nv*mydim; i++)
-      values.Get(i) = lam (values.Get(i), temp.Get(i));
+    for (size_t i = 0; i < mydim; i++)
+      for (size_t j = 0; j < nv; j++)
+        values.Get(i,j) = lam (values.Get(i,j), temp.Get(i,j));
   }
     
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,

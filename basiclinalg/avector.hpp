@@ -56,6 +56,7 @@ namespace ngbla
 
   template <typename T = double> class ABareVector;
   template <typename T = double> class ABareMatrix;
+  template <typename T = double> class ABareSliceMatrix;
 
 
 
@@ -478,6 +479,8 @@ namespace ngbla
     }
     SliceMatrix<> Cols(IntRange r) const
     { return Cols(r.begin(), r.end()); }
+    
+    INLINE ABareSliceMatrix<> VCols (size_t begin, size_t end) const;
   };
 
   class AMatrixD : public AFlatMatrixD
@@ -599,6 +602,9 @@ namespace ngbla
     SIMD<double> * __restrict data;
     size_t dist;   // dist in simds
   public:
+    enum { IS_LINEAR = false };
+    enum { IS_LINEAR_VEC = true };
+    
     ABareMatrix(SIMD<double> * _data, size_t _dist, size_t ah = -1, size_t aw = -1)
       : DummySize(ah, aw), data(_data), dist(_dist) { ; }
     ABareMatrix(AFlatMatrix<double> mat)
@@ -617,6 +623,39 @@ namespace ngbla
     ABareMatrix<double> RowSlice(size_t first, size_t adist) const { return ABareMatrix<double> (data+first*dist, dist*adist); } 
   };
 
+  
+  template <>
+  class ABareSliceMatrix<double> : public DummySize
+  {
+    SIMD<double> * __restrict data;
+    size_t dist;   // dist in simds
+  public:
+    enum { IS_LINEAR = false };
+    enum { IS_LINEAR_VEC = false };
+    
+    ABareSliceMatrix(SIMD<double> * _data, size_t _dist, size_t ah = -1, size_t aw = -1)
+      : DummySize(ah, aw), data(_data), dist(_dist) { ; }
+    ABareSliceMatrix(AFlatMatrix<double> mat)
+      : DummySize(mat.Height(), mat.Width()),
+        data(&mat.Get(0,0)), dist(&mat.Get(1,0)-&mat.Get(0,0)) { ; }
+    ABareSliceMatrix(ABareMatrix<double> mat)
+      : DummySize(mat), data(&mat.Get(0,0)), dist(&mat.Get(1,0)-&mat.Get(0,0)) { ; }
+    ABareSliceMatrix(const ABareSliceMatrix &) = default;
+
+    double & operator() (size_t i, size_t j) const
+    { return ((double*)data)[SIMD<double>::Size()*i*dist+j]; }
+    size_t Dist() const { return dist; }
+    SIMD<double> & Get(size_t i, size_t j) const { return data[i*dist+j]; }
+    SIMD<double> & Get(size_t i) const { return data[i]; }
+    ABareVector<double> Row(size_t i) const { return ABareVector<double> (data+i*dist); }
+    ABareSliceMatrix<double> Rows(size_t first, size_t /* next */) const { return ABareSliceMatrix<double> (data+first*dist, dist); }
+    ABareSliceMatrix<double> Rows(IntRange r) const { return Rows(r.First(), r.Next()); } 
+    ABareSliceMatrix<double> RowSlice(size_t first, size_t adist) const { return ABareSliceMatrix<double> (data+first*dist, dist*adist); } 
+  };
+
+  
+  ABareSliceMatrix<> AFlatMatrixD::VCols (size_t begin, size_t end) const
+  { return ABareSliceMatrix<> (data+begin, VWidth(), Height(), Width()); }
 
 
 

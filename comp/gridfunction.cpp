@@ -2494,26 +2494,8 @@ namespace ngcomp
                      const __m256d * dxdxref, 
                      __m256d * values)
   {
-    /*
-    if (npts > 100)
-      {
-        bool isdefined = false;
-        for (size_t i = 0; i < npts; i += 100)
-          {
-            size_t npi = min2 (100, npts-i);
-            isdefined = GetMultiSurfValue (selnr, facetnr, npi, 
-                                           xref+i*2, x+i*3, dxdxref+i*6,
-                                           values+i, svalues);
-          }
-        return isdefined;
-      }
-    */
-    
     try
       {
-        static Timer t("VisualizeCoefficientFunction::GetMultiSurfValue simd", 2); RegionTimer reg(t);
-        static Timer t2("VisualizeCoefficientFunction::GetMultiSurfValue simd evaluate", 2);
-
         /*   todo
         if (cf -> IsComplex())
           {
@@ -2531,56 +2513,53 @@ namespace ngcomp
 
         AFlatMatrix<> mvalues(GetComponents(), SIMD<double>::Size()*npts, (double*)values);
 
-        SIMD_IntegrationRule ir(4*npts, lh);
-        for (size_t i = 0; i < npts; i++)
+        constexpr size_t BS = 64;
+        for (size_t base = 0; base < npts; base +=BS)
           {
-            ir[i](0) = xref[2*i];
-            ir[i](1) = xref[2*i+1];
-            ir[i].FacetNr() = facetnr;
-          }
-
-        if (bound)
-          {
-            SIMD_MappedIntegrationRule<2,3> mir(ir, eltrans /* , 1*/ , lh);
-            /*
-            for (int k = 0; k < npts; k++)
+            size_t ni = min2(npts-base, BS);
+            
+            SIMD_IntegrationRule ir(SIMD<double>::Size()*ni, lh);
+            for (size_t i = 0; i < ni; i++)
               {
-                Mat<2,3> & mdxdxref = *new((double*)(dxdxref+k*sdxdxref)) Mat<2,3>;
-                FlatVec<3> vx( (double*)x + k*sx);
-                mir[k] = MappedIntegrationPoint<2,3> (ir[k], eltrans, vx, mdxdxref);
+                ir[i](0) = xref[2*(base+i)];
+                ir[i](1) = xref[2*(base+i)+1];
+                ir[i].FacetNr() = facetnr;
               }
-            */
-            RegionTimer r2(t2);
-            cf -> Evaluate (mir, mvalues);
-          }
-        else
-          {
-            if (!ma->GetDeformation())
+
+            if (bound)
               {
-                SIMD_MappedIntegrationRule<2,2> mir(ir, eltrans, 1, lh);
-
-                for (int k = 0; k < npts; k++)
+                SIMD_MappedIntegrationRule<2,3> mir(ir, eltrans, 1, lh);
+                for (size_t k = 0; k < ni; k++)
                   {
-                    // Mat<2,2> & mdxdxref = *new((double*)(dxdxref+k*sdxdxref)) Mat<2,2>;
-                    const Mat<2,2,SIMD<double>> & mdxdxref = *reinterpret_cast<const Mat<2,2,SIMD<double>>*> (&dxdxref[6*k]);
-                    const Vec<2,SIMD<double>> & vx = *reinterpret_cast<const Vec<2,SIMD<double>>*> (&x[3*k]);
-                    // FlatVec<2,SIMD<double>> vx(SIMD<double>  x+3*k);
-                    mir[k] = SIMD<MappedIntegrationPoint<2,2>> (ir[k], eltrans, vx, mdxdxref);
+                    const Mat<2,3,SIMD<double>> & mdxdxref = reinterpret_cast<const Mat<2,3,SIMD<double>>&> (dxdxref[6*(k+base)]);
+                    const Vec<3,SIMD<double>> & vx = reinterpret_cast<const Vec<3,SIMD<double>>&> (x[3*(k+base)]);
+                    mir[k] = SIMD<MappedIntegrationPoint<2,3>> (ir[k], eltrans, vx, mdxdxref);
                   }
-
-                RegionTimer r2(t2);
-                cf -> Evaluate (mir, mvalues);
+                
+                cf -> Evaluate1 (mir, mvalues.VCols(base, base+ni));
               }
             else
               {
-                ;
-                // MappedIntegrationRule<2,2> mir(ir, eltrans, lh);
-                // cf -> Evaluate (mir, mvalues1);
+                if (!ma->GetDeformation())
+                  {
+                    SIMD_MappedIntegrationRule<2,2> mir(ir, eltrans, 1, lh);
+                    
+                    for (size_t k = 0; k < ni; k++)
+                      {
+                        auto & mdxdxref = reinterpret_cast<const Mat<2,2,SIMD<double>>&> (dxdxref[6*(k+base)]);
+                        auto & vx = reinterpret_cast<const Vec<2,SIMD<double>>&> (x[3*(k+base)]);
+                        mir[k] = SIMD<MappedIntegrationPoint<2,2>> (ir[k], eltrans, vx, mdxdxref);
+                      }
+                    
+                    cf -> Evaluate1 (mir, mvalues.VCols(base, base+ni));
+                  }
+                else
+                  {
+                    SIMD_MappedIntegrationRule<2,2> mir(ir, eltrans, lh);
+                    cf -> Evaluate1 (mir, mvalues.VCols(base, base+ni));
+                  }
               }
           }
-        
-        // SliceMatrix<> mvalues(npts, GetComponents(), svalues, values);
-        // mvalues = mvalues1;
         return true;
       }
     catch (Exception & e)

@@ -225,7 +225,7 @@ namespace ngfem
 
   void ProxyFunction ::
   Evaluate1 (const SIMD_BaseMappedIntegrationRule & mir,
-             ABareMatrix<double> result) const
+             ABareSliceMatrix<double> result) const
   {
     ProxyUserData * ud = (ProxyUserData*)mir.GetTransformation().userdata;
     if (!ud) 

@@ -1357,9 +1357,10 @@ namespace ngbla
 #else 
   class DummySize {
   public:
+    DummySize( size_t aheight, size_t awidth=1 ) {}
+  protected:
     static INLINE size_t Height() { return 0; }
     static INLINE size_t Width() { return 0; }
-    DummySize( size_t aheight, size_t awidth=1 ) {}
   };
 #endif
 
