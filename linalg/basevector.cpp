@@ -298,9 +298,9 @@ namespace ngla
 
 
   template<>
-  FlatVector<Complex,size_t> S_BaseVector<Complex> :: FVComplex () const
+  FlatVector<Complex> S_BaseVector<Complex> :: FVComplex () const
   {
-    FlatVector<Complex,size_t> fv = FVScal();
+    FlatVector<Complex> fv = FVScal();
     return FlatVector<Complex> (fv.Size() * sizeof(Complex)/sizeof(Complex),
                                 reinterpret_cast<Complex*> (&fv(0)));
   }
@@ -619,13 +619,13 @@ namespace ngla
 
 
   template <class SCAL>
-  FlatVector<double,size_t> S_BaseVector<SCAL> :: FVDouble () const 
+  FlatVector<double> S_BaseVector<SCAL> :: FVDouble () const 
   {
-    return FlatVector<double,size_t> (size * entrysize, Memory());
+    return FlatVector<double> (size * entrysize, Memory());
   }
 
   template <class SCAL>
-  FlatVector<Complex,size_t> S_BaseVector<SCAL> :: FVComplex () const
+  FlatVector<Complex> S_BaseVector<SCAL> :: FVComplex () const
   {
     throw Exception ("FVComplex called for real vector");
   }
@@ -633,11 +633,11 @@ namespace ngla
 
 
   template<>
-  FlatVector<double,size_t> S_BaseVector<Complex> :: FVDouble () const
+  FlatVector<double> S_BaseVector<Complex> :: FVDouble () const
   {
-    FlatVector<Complex,size_t> fv = FVScal();
-    return FlatVector<double,size_t> (fv.Size() * sizeof(Complex)/sizeof(double),
-                                      reinterpret_cast<double*> (&fv(0)));
+    FlatVector<Complex> fv = FVScal();
+    return FlatVector<double> (fv.Size() * sizeof(Complex)/sizeof(double),
+                               reinterpret_cast<double*> (&fv(0)));
   }
 
 

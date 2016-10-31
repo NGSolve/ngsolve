@@ -14,33 +14,28 @@ namespace ngbla
   template <int S, class T> class Vec;
   template <int S, typename T> class FlatVec;
   template <class T> class SysVector;
-  template <class T, class TIND = int> class FlatVector;
+  template <class T> class FlatVector;
   template <class T> class Vector;
-  template <class T> class SliceVector;
+  template <class T = double, class TIND = int> class SliceVector;
   template <int DIST, typename T> class FixSliceVector;
 
 
-  extern void CheckVecRange(int s, int i);
-  extern void CheckVecRange(int s, int i, int j);
+  extern void CheckVecRange(size_t s, size_t i);
+  extern void CheckVecRange(size_t s, size_t i, size_t j);
 
 
 
   /**
-     new option: 
-     A FlatVector becomes the old SliceVector ! 
-     overhead can be neglected, but needs more testing, results are welcome ...
-
      A simple vector.
      Has size and generic data-pointer. 
      No memory allocation/deallocation. User must provide memory.
   */
-  template <typename T = double, typename TIND>
-  class FlatVector : public CMCPMatExpr<FlatVector<T,TIND> > 
+  template <typename T = double>
+  class FlatVector : public CMCPMatExpr<FlatVector<T> > 
   {
   protected:
     /// vector size
-    TIND size;
-    // enum { dist = 1 };
+    size_t size;
     /// the data
     T * __restrict data;
   public:
@@ -49,22 +44,20 @@ namespace ngbla
     // typedef T& TREF;
     /// scalar of element type
     typedef typename mat_traits<T>::TSCAL TSCAL;
-    enum { IS_LINEAR = 0 };
+    enum { IS_LINEAR = 1 };
 
     /// default constructor does nothing
     FlatVector () = default;
     ~FlatVector () = default;
     /// set size and mem
-    INLINE FlatVector (unsigned int as, T * adata) : size(as), data(adata)
+    INLINE FlatVector (size_t as, T * adata) : size(as), data(adata)
     { ; }
 
     ///
-    template <typename TIND2>
-    INLINE FlatVector (const FlatVector<T,TIND2> & fv2) : size(fv2.Size()), data(fv2.Data()) { ; }
     FlatVector (const FlatVector &) = default;
     
     /// set size and mem
-    INLINE FlatVector (unsigned int as, void * adata) : size(as), data(static_cast<TELEM*> (adata)) 
+    INLINE FlatVector (size_t as, void * adata) : size(as), data(static_cast<TELEM*> (adata)) 
     {  ; }
 
     /// put FlatVector over fixed size vector
@@ -79,7 +72,7 @@ namespace ngbla
     { ; }
 
     /// allocate FlatVector on local heap
-    INLINE FlatVector (TIND as, LocalHeap & lh) 
+    INLINE FlatVector (size_t as, LocalHeap & lh) 
       : size(as), data(lh.Alloc<T> (as)) 
     { ; }
 
@@ -103,18 +96,18 @@ namespace ngbla
       // does not copy FlatVectors and don't know why
       // CMCPMatExpr<FlatVector<T> >::operator= (m2.A()); 
 
-      for (int j = 0; j < size; j++) data[j] = m2.A()(j);
+      for (size_t j = 0; j < size; j++) data[j] = m2.A()(j);
     }
 
     /// assign memory for vector on local heap
-    INLINE void AssignMemory (int as, LocalHeap & lh) 
+    INLINE void AssignMemory (size_t as, LocalHeap & lh) 
     {
       size = as;
       data = lh.Alloc<T>(size);
     }
 
     /// assign memory for vector
-    void AssignMemory (int as, T * mem) 
+    void AssignMemory (size_t as, T * mem) 
     {
       size = as;
       data = mem;
@@ -145,9 +138,9 @@ namespace ngbla
 
     INLINE const FlatVector & operator= (initializer_list<T> list) const
     {
-      int cnt = 0;
-      for (auto i = list.begin(); cnt < size; i++, cnt++)
-        data[cnt] = *i;
+      size_t cnt = 0;
+      for (auto val : list)
+        data[cnt++] = val;
       return *this;
     }
 
@@ -155,47 +148,31 @@ namespace ngbla
     INLINE const FlatVector & operator+= (const Expr<TB> & v) const
     {
       if (TB::IS_LINEAR)
-	for (int i = 0; i < size; i++)
-	  data[i] += v.Spec()(i);
+        for (auto i : Range())
+          data[i] += v.Spec()(i);
       else
-	for (int i = 0; i < size; i++)
-	  data[i] += v.Spec()(i,0);
+        for (auto i : Range())        
+          data[i] += v.Spec()(i,0);
       return *this;
     }
 
 
     /// constant element access
-    template<typename TIND2, typename std::enable_if<std::is_integral<TIND2>::value, int>::type = 0>
-    INLINE TELEM & operator() (TIND2 i) const
+    INLINE TELEM & operator() (size_t i) const
     {
 #ifdef CHECK_RANGE
       CheckVecRange(size,i);
 #endif
       return data[i]; 
     }
-
-    /*
-    INLINE TELEM & operator() (int i) const
-    {
-#ifdef CHECK_RANGE
-      CheckVecRange(size,i);
-#endif
-      return data[i]; 
-    }
-    /// 
-    INLINE TELEM & operator() (size_t i) const { return data[i]; }
-    INLINE TELEM & operator() (unsigned int i) const { return data[i]; }
-    INLINE TELEM & operator() (long int i) const { return data[i]; }
-    */
-
+ 
     INLINE RowsArrayExpr<FlatVector> operator() (FlatArray<int> rows) const
     { 
       return RowsArrayExpr<FlatVector> (*this, rows);
     }
     
-    
     /// element access. index j is ignored
-    INLINE TELEM & operator() (int i, int j) const
+    INLINE TELEM & operator() (size_t i, size_t j) const
     {
 #ifdef CHECK_RANGE 
       CheckVecRange(size,i);
@@ -204,8 +181,7 @@ namespace ngbla
     }
 
     /// constant element access
-    template<typename TIND2, typename std::enable_if<std::is_integral<TIND2>::value, int>::type = 0>
-    INLINE TELEM & operator[] (TIND2 i) const
+    INLINE TELEM & operator[] (size_t i) const
     {
 #ifdef CHECK_RANGE
       CheckVecRange(size,i);
@@ -215,42 +191,42 @@ namespace ngbla
 
     // shape functions had a problem with icc v9.1
     // const CArray<T> Addr(int i) const { return CArray<T> (data+i*dist); }
-    INLINE T * Addr(int i) const { return data+i; }
+    INLINE T * Addr(size_t i) const { return data+i; }
     /*
     const CArray<T> operator+(int i) const
     { return CArray<T> (data+i*dist); }
     */
 
-    T * operator+(int i) const { return data+i; }
+    T * operator+(size_t i) const { return data+i; }
 
     /// sub-vector of size next-first, starting at first
-    INLINE FlatVector<T> Range (int first, int next) const
-    { return FlatVector<T> (next-first, data+first); }
+    INLINE FlatVector Range (size_t first, size_t next) const
+    { return FlatVector (next-first, data+first); }
 
     /// sub-vector given by range
-    INLINE FlatVector<T> Range (IntRange range) const
+    INLINE FlatVector Range (T_Range<size_t> range) const
     { return Range (range.First(), range.Next()); }
     
 
     /// vector size
-    INLINE TIND Size () const { return size; }
+    INLINE size_t Size () const { return size; }
 
     /// vector is matrix of height size
-    INLINE TIND Height () const { return size; }
+    INLINE size_t Height () const { return size; }
 
     /// vector is matrix of with 1
-    INLINE int Width () const { return 1; }
+    INLINE size_t Width () const { return 1; }
     
-    INLINE IntRange Range () const
-    { return IntRange (0, size); }
+    INLINE T_Range<size_t> Range () const
+    { return T_Range<size_t> (0, size); }
 
     /// take a slice of the vector. Take elements first+i * dist. 
-    INLINE const SliceVector<T> Slice (int first, int dist2) const
+    INLINE const SliceVector<T> Slice (size_t first, size_t dist2) const
     {
       return SliceVector<T> (size/dist2, dist2, data+first);
     }
 
-    INLINE FlatMatrix<T> AsMatrix (int h, int w)
+    INLINE FlatMatrix<T> AsMatrix (size_t h, size_t w)
     {
       return FlatMatrix<T> (h,w, data);
     }
@@ -266,9 +242,9 @@ namespace ngbla
     class Iterator
     {
       FlatVector vec;
-      TIND ind;
+      size_t ind;
     public:
-      INLINE Iterator (FlatVector avec, TIND ai) : vec(avec), ind(ai) { ; }
+      INLINE Iterator (FlatVector avec, size_t ai) : vec(avec), ind(ai) { ; }
       INLINE Iterator operator++ (int) { return Iterator(vec, ind++); }
       INLINE Iterator operator++ () { return Iterator(vec, ++ind); }
       INLINE TELEM operator*() const { return vec[ind]; }
@@ -286,12 +262,12 @@ namespace ngbla
 
 
 
-  template <int S, typename T, typename TIND>
-  class FlatVector<Vec<S, T>,TIND> : public CMCPMatExpr<FlatVector<Vec<S, T>,TIND> > 
+  template <int S, typename T>
+  class FlatVector<Vec<S, T>> : public CMCPMatExpr<FlatVector<Vec<S, T>> > 
   {
   protected:
     /// vector size
-    TIND size;
+    size_t size;
     /// the data
     T *  __restrict data;
   public:
@@ -305,13 +281,12 @@ namespace ngbla
     FlatVector () { ; }  
     /// copy pointer
     // FlatVector (const FlatVector & v2) : size(v2.size), data(v2.data) { ; }
-    template <typename TIND2>
-    INLINE FlatVector (const FlatVector<Vec<S,T>,TIND2> & fv2) : size(fv2.Size()), data((T*)fv2.Data()) { ; }
+    INLINE FlatVector (const FlatVector<Vec<S,T>> & fv2) : size(fv2.Size()), data((T*)fv2.Data()) { ; }
     /// set size and mem
-    FlatVector (unsigned int as, T * adata) : size(as), data(adata) { ; }
+    FlatVector (size_t as, T * adata) : size(as), data(adata) { ; }
     
     /// set size and mem
-    FlatVector (unsigned int as, void * adata) : size(as), data(static_cast<T*> (adata)) { ; }
+    FlatVector (size_t as, void * adata) : size(as), data(static_cast<T*> (adata)) { ; }
     
     /*
     /// put FlatVector over fixed size vector
@@ -322,7 +297,7 @@ namespace ngbla
     */
 
     /// allocate FlatVector on local heap
-    FlatVector (int as, LocalHeap & lh) 
+    FlatVector (size_t as, LocalHeap & lh) 
       : size(as), data((T*)lh.Alloc(size*S*sizeof(T))) { ; }
 
     /*
@@ -336,14 +311,14 @@ namespace ngbla
     */
 
     /// assign memory for vector on local heap
-    void AssignMemory (int as, LocalHeap & lh) 
+    void AssignMemory (size_t as, LocalHeap & lh) 
     {
       size = as;
       data = (T*)lh.Alloc(size*S*sizeof(T));
     }
 
     /// assign memory for vector
-    void AssignMemory (int as, T * mem) 
+    void AssignMemory (size_t as, T * mem) 
     {
       size = as;
       data = mem;
@@ -352,7 +327,7 @@ namespace ngbla
     /// copy vector. sizes must match
     const FlatVector & operator= (const FlatVector & v) const
     {
-      for (int i = 0; i < size; i++)
+      for (size_t i = 0; i < size; i++)
 	(*this)(i) = v(i);
       return *this;
     }
@@ -367,7 +342,7 @@ namespace ngbla
     /// assign constant value
     const FlatVector & operator= (TSCAL scal) const
     {
-      for (int i = 0; i < size; i++)
+      for (size_t i = 0; i < size; i++)
 	(*this)(i) = scal; 
       return *this;
     }
@@ -376,28 +351,28 @@ namespace ngbla
     ALWAYS_INLINE const FlatVector & operator+= (const Expr<TB> & v) const
     {
       if (TB::IS_LINEAR)
-	for (int i = 0; i < size; i++)
-	  (*this)(i) += v.Spec()(i);
+        for (auto i : ::Range(size))
+          (*this)(i) += v.Spec()(i);
       else
-	for (int i = 0; i < size; i++)
+	for (size_t i = 0; i < size; i++)
 	  (*this)(i) += v.Spec()(i,0);
       return *this;
     }
 
     /// constant element access
-    const FlatVec<S,T> operator() (int i) const
+    const FlatVec<S,T> operator() (size_t i) const
     {
       return FlatVec<S,T> (data+i*S); 
     }
 
     /// element access. index j is ignored
-    const FlatVec<S,T> operator() (int i, int j) const
+    const FlatVec<S,T> operator() (size_t i, size_t j) const
     {
       return FlatVec<S,T> (data+i*S); 
     }
 
     /// constant element access
-    const FlatVec<S,T> operator[] (int i) const
+    const FlatVec<S,T> operator[] (size_t i) const
     {
       return FlatVec<S,T> (data+i*S); 
     }
@@ -408,7 +383,7 @@ namespace ngbla
     }
 
     // shape functions had a problem with icc v9.1
-    Vec<S,T> * Addr(int i) const
+    Vec<S,T> * Addr(size_t i) const
     {
       return static_cast<Vec<S,T>*> ((void*) (data+i*S)); 
     }
@@ -427,7 +402,7 @@ namespace ngbla
     */
 
     /// sub-vector of size next-first, starting at first
-    /* const */ FlatVector<Vec<S,T> > Range (int first, int next) const
+    /* const */ FlatVector<Vec<S,T> > Range (size_t first, size_t next) const
     { return FlatVector<Vec<S,T> > (next-first, data+S*first); }
 
     /// sub-vector given by range
@@ -435,16 +410,16 @@ namespace ngbla
     { return FlatVector<Vec<S,T> > (range.Next()-range.First(), data+S*range.First()); }
 
     /// vector size
-    INLINE TIND Size () const { return size; }
+    INLINE size_t Size () const { return size; }
 
     /// vector is matrix of height size
-    INLINE TIND Height () const { return size; }
+    INLINE size_t Height () const { return size; }
 
     /// vector is matrix of with 1
-    INLINE int Width () const { return 1; }
+    INLINE size_t Width () const { return 1; }
 
 
-    INLINE SliceVector<T> Comp (int comp) const
+    INLINE SliceVector<T> Comp (size_t comp) const
     {
       return SliceVector<T> (size, S, data+comp);
     }
@@ -496,7 +471,7 @@ namespace ngbla
     Vector () : FlatVector<T> (0, (T*)nullptr) { ; }
 
     /// allocate vector
-    explicit Vector (int as) : FlatVector<T> (as, new T[as]) { ; }
+    explicit Vector (size_t as) : FlatVector<T> (as, new T[as]) { ; }
 
 
     /// allocate and copy matrix  
@@ -518,9 +493,14 @@ namespace ngbla
     Vector (initializer_list<T> list) 
       : FlatVector<T> (list.size(), new T[list.size()])
     {
+      /*
       int cnt = 0;
       for (auto i = list.begin(); i < list.end(); i++, cnt++)
         data[cnt] = *i;
+      */
+      size_t cnt = 0;
+      for (auto val : list)
+        data[cnt++] = val;
     }
 
 
@@ -535,7 +515,7 @@ namespace ngbla
     }
 
     /// set vector size
-    void SetSize(int as)
+    void SetSize(size_t as)
     {
       if (this->size == as) return;
       delete [] this->data;
@@ -593,7 +573,7 @@ namespace ngbla
     Vector () : FlatVector<Vec<S,T> > (0, (T*)0) { ; }
 
     /// allocate vector
-    explicit Vector (int as) : FlatVector<Vec<S,T> > (as, new T[as*S]) { ; }
+    explicit Vector (size_t as) : FlatVector<Vec<S,T> > (as, new T[as*S]) { ; }
 
 
     /// allocate and copy matrix  
@@ -622,7 +602,7 @@ namespace ngbla
     }
 
     /// set vector size
-    void SetSize(int as)
+    void SetSize(size_t as)
     {
       if (this->size == as) return;
       delete [] this->data;
@@ -670,9 +650,9 @@ namespace ngbla
     /** allocate vector. 
 	If the dynamic size fits into the static size, use static memory. Otherwise use dynamic alloation
     */
-    explicit INLINE VectorMem (int as) : FlatVector<T> (as, (as <= S) ? 
-							static_cast<void*> (&mem[0]) : 
-							static_cast<void*> (new T[as])) { ; }
+    explicit INLINE VectorMem (size_t as) : FlatVector<T> (as, (as <= S) ? 
+                                                           static_cast<void*> (&mem[0]) : 
+                                                           static_cast<void*> (new T[as])) { ; }
 
     /// deallocates dynamic memory
     INLINE ~VectorMem() { if (this->size > S) delete [] this->data; }
@@ -712,17 +692,17 @@ namespace ngbla
   class FlatSysVector : public MatExpr<FlatSysVector<T> >
   {
   protected:
-    int s;
-    int blocksize;
+    size_t s;
+    size_t blocksize;
     T *  __restrict data;
   public:
     typedef FlatVector<T> TELEM;
     typedef typename mat_traits<T>::TSCAL TSCAL;
     
-    INLINE FlatSysVector (int as, int bs, T * adata) 
+    INLINE FlatSysVector (size_t as, size_t bs, T * adata) 
       : s(as), blocksize(bs), data(adata) { ; }
   
-    INLINE FlatSysVector (int as, int bs, LocalHeap & lh) 
+    INLINE FlatSysVector (size_t as, size_t bs, LocalHeap & lh) 
       : s(as), blocksize(bs), data (new (lh) T[as*bs])
     { ; }
   
@@ -738,7 +718,7 @@ namespace ngbla
   
     INLINE FlatSysVector & operator= (const FlatSysVector & v)
     {
-      for (int i = 0; i < this->s * this->blocksize; i++)
+      for (size_t i = 0; i < this->s * this->blocksize; i++)
 	data[i] = v.data[i];
       return *this;
     }
@@ -751,41 +731,41 @@ namespace ngbla
   
     INLINE FlatSysVector & operator= (TSCAL s)
     {
-      for (int i = 0; i < this->s*this->blocksize; i++)
+      for (size_t i = 0; i < this->s*this->blocksize; i++)
 	data[i] = s;
       return *this;
     }
 
   
 
-    INLINE TELEM operator() (int i) 
+    INLINE TELEM operator() (size_t i) 
     {
       return FlatVector<T> (blocksize, &data[i*blocksize]); 
     }
 
-    INLINE const TELEM operator() (int i) const
+    INLINE const TELEM operator() (size_t i) const
     {
       return FlatVector<T> (blocksize, &data[i*blocksize]); 
     }
 
-    INLINE const TELEM operator() (int i, int j) const
+    INLINE const TELEM operator() (size_t i, size_t j) const
     {
       return FlatVector<T> (blocksize, &data[i*blocksize]); 
     }
 
-    INLINE SliceVector<T> Comp (int comp) const
+    INLINE SliceVector<T> Comp (size_t comp) const
     {
       return SliceVector<T> (s, blocksize, data+comp);
     }
 
-    INLINE FlatSysVector<T> Range(int first, int last)
+    INLINE FlatSysVector<T> Range(size_t first, size_t last)
     { return FlatSysVector<T> (last-first+1, blocksize, data+(first*blocksize)); }
-    INLINE /* const */ FlatSysVector<T> Range(int first, int last) const
+    INLINE /* const */ FlatSysVector<T> Range(size_t first, size_t last) const
     { return FlatSysVector<T> (last-first+1, blocksize, data+(first*blocksize)); }
 
-    INLINE int Size () const { return s; }
-    INLINE int Height () const { return s; }
-    INLINE int Width () const { return 1; }
+    INLINE size_t Size () const { return s; }
+    INLINE size_t Height () const { return s; }
+    INLINE size_t Width () const { return 1; }
   };
 
 
@@ -821,14 +801,14 @@ namespace ngbla
     /// copy vector
     INLINE Vec (const Vec & v) : MatExpr<Vec> ()
     {
-      for (int i = 0; i < S; i++)
+      for (size_t i = 0; i < S; i++)
 	data[i] = v.data[i];
     }
 
     /// initialize with values
     INLINE Vec (const TELEM & scal)
     {
-      for (int i = 0; i < S; i++)
+      for (size_t i = 0; i < S; i++)
 	data[i] = scal;
     }
 
@@ -871,7 +851,7 @@ namespace ngbla
     /// copy vector
     INLINE Vec & operator= (const Vec & v)
     {
-      for (int i = 0; i < S; i++)
+      for (size_t i = 0; i < S; i++)
 	data[i] = v.data[i];
       return *this;
     }
@@ -880,7 +860,7 @@ namespace ngbla
     /// assign scalar value
     INLINE Vec & operator= (const TELEM & scal)
     {
-      for (int i = 0; i < S; i++)
+      for (size_t i = 0; i < S; i++)
 	data[i] = scal;
       return *this;
     }
@@ -889,13 +869,13 @@ namespace ngbla
     template<typename TB>
     INLINE Vec & operator= (const Expr<TB> & v)
     {
-      for (int i = 0; i < S; i++)
+      for (size_t i = 0; i < S; i++)
 	data[i] = v.Spec()(i,0);
       return *this;
     }
 
     /// access vector
-    INLINE TELEM & operator() (int i) 
+    INLINE TELEM & operator() (size_t i) 
     {
 #ifdef CHECK_RANGE
       CheckVecRange(S,i);
@@ -904,7 +884,7 @@ namespace ngbla
     }
 
     /// access vector
-    INLINE const TELEM & operator() (int i) const 
+    INLINE const TELEM & operator() (size_t i) const 
     {
 #ifdef CHECK_RANGE
       CheckVecRange(S,i);
@@ -914,7 +894,7 @@ namespace ngbla
 
 
     /// access vector
-    INLINE TELEM & operator[] (int i) 
+    INLINE TELEM & operator[] (size_t i) 
     {
 #ifdef CHECK_RANGE
       CheckVecRange(S,i);
@@ -923,7 +903,7 @@ namespace ngbla
     }
 
     /// access vector
-    INLINE const TELEM & operator[] (int i) const 
+    INLINE const TELEM & operator[] (size_t i) const 
     {
 #ifdef CHECK_RANGE
       CheckVecRange(S,i);
@@ -932,7 +912,7 @@ namespace ngbla
     }
 
     /// access vector
-    INLINE TELEM & operator() (int i, int j) 
+    INLINE TELEM & operator() (size_t i, size_t j) 
     {
 #ifdef CHECK_RANGE
       CheckVecRange(S,i);
@@ -941,7 +921,7 @@ namespace ngbla
     }
 
     /// access vector
-    INLINE const TELEM & operator() (int i, int j) const 
+    INLINE const TELEM & operator() (size_t i, size_t j) const 
     {
 #ifdef CHECK_RANGE
       CheckVecRange(S,i);
@@ -950,16 +930,16 @@ namespace ngbla
     }
 
     /// vector size
-    INLINE int Size () const { return S; }
+    INLINE size_t Size () const { return S; }
     /// corresponding matrix height
-    INLINE int Height () const { return S; }
+    INLINE size_t Height () const { return S; }
     /// corresponding matrix with
-    INLINE int Width () const { return 1; }
+    INLINE size_t Width () const { return 1; }
 
-    INLINE /* const */ FlatVector<const T> Range(int first, int next) const
+    INLINE /* const */ FlatVector<const T> Range(size_t first, size_t next) const
     { return FlatVector<const T> (next-first, data+first); }
 
-    INLINE /* const */ FlatVector<T> Range(int first, int next) 
+    INLINE /* const */ FlatVector<T> Range(size_t first, size_t next) 
     { return FlatVector<T> (next-first, data+first); }
   };
 
@@ -1198,14 +1178,14 @@ namespace ngbla
      Has size and generic data-pointer. 
      No memory allocation/deallocation. User must provide memory.
   */
-  template <typename T = double>
-  class SliceVector : public CMCPMatExpr<SliceVector<T> > 
+  template <typename T, typename TIND>
+  class SliceVector : public CMCPMatExpr<SliceVector<T,TIND> > 
   {
   protected:
     /// vector size
-    int s;
+    TIND s;
     /// distance between entries
-    int dist;
+    TIND dist;
     /// the data
     T *  __restrict data;
   public:
@@ -1218,13 +1198,13 @@ namespace ngbla
     enum { IS_LINEAR = 0 };
 
     /// set size, distance and memory
-    INLINE SliceVector (unsigned int as, unsigned int ad, T * adata) 
+    INLINE SliceVector (TIND as, TIND ad, T * adata) 
       : s(as), dist(ad), data(adata) { ; }
     
     /// SV from FlatVector
     INLINE SliceVector (FlatVector<T> fv)
       : s(fv.Size()), dist(&fv(1)-&fv(0)), data((T*)fv.Data()) { ; }
-
+    
     /// SV from FlatVector
     template <int D>
     INLINE SliceVector (Vec<D,T> & fv)
@@ -1246,16 +1226,16 @@ namespace ngbla
     /// assignes constant value
     INLINE const SliceVector & operator= (TSCAL scal) const
     {
-      for (int i = 0; i < s; i++)
-	data[i*dist] = scal; 
+      for (size_t i = 0; i < s; i++)
+        data[i*size_t(dist)] = scal; 
       return *this;
     }
 
     /// copies contents of vector
     INLINE const SliceVector & operator= (const SliceVector & v2) const
     {
-      for (int i = 0; i < s; i++)
-	data[i*dist] = v2(i);
+      for (size_t i = 0; i < s; i++)
+	data[i*size_t(dist)] = v2(i);
       return *this;
     }
 
@@ -1264,65 +1244,63 @@ namespace ngbla
     INLINE const SliceVector & operator+= (const Expr<TB> & v) const
     {
       if (TB::IS_LINEAR)
-	for (int i = 0; i < s; i++)
-	  data[i*dist] += v.Spec()(i);
+	for (size_t i = 0; i < s; i++)
+	  data[i*size_t(dist)] += v.Spec()(i);
       else
-	for (int i = 0; i < s; i++)
-	  data[i*dist] += v.Spec()(i,0);
+	for (size_t i = 0; i < s; i++)
+	  data[i*size_t(dist)] += v.Spec()(i,0);
       return *this;
     }
 
 
 
     /// access element
-    template<typename IND,
-             typename std::enable_if<std::is_convertible<IND,int>::value, int>::type = 0>
-    INLINE TELEM & operator() (IND i) 
+    INLINE TELEM & operator() (size_t i) 
     {
 #ifdef CHECK_RANGE
       CheckVecRange(s,i);
 #endif
-      return data[i*dist]; 
+      return data[i*size_t(dist)]; 
     }
 
     /// access element
-    INLINE TELEM & operator() (int i) const
+    INLINE TELEM & operator() (size_t i) const
     {
 #ifdef CHECK_RANGE
       CheckVecRange(s,i);
 #endif
-      return data[i*dist]; 
+      return data[i*size_t(dist)]; 
     }
 
     /// access element, index j is unused
-    INLINE TELEM & operator() (int i, int j) const
+    INLINE TELEM & operator() (size_t i, size_t j) const
     {
 #ifdef CHECK_RANGE
       CheckVecRange(s,i);
 #endif
-      return data[i*dist]; 
+      return data[i*size_t(dist)]; 
     }
 
     /// access element, index j is unused
-    INLINE TELEM & operator() (int i, int j) 
+    INLINE TELEM & operator() (size_t i, size_t j) 
     {
 #ifdef CHECK_RANGE
       CheckVecRange(s,i);
 #endif
-      return data[i*dist]; 
+      return data[i*size_t(dist)]; 
     }
 
     /// access element
-    INLINE TELEM & operator[] (int i) 
+    INLINE TELEM & operator[] (size_t i) 
     {
 #ifdef CHECK_RANGE
       CheckVecRange(s,i);
 #endif
-      return data[i*dist]; 
+      return data[i*size_t(dist)]; 
     }
 
     /// access element
-    INLINE TELEM & operator[] (int i) const
+    INLINE TELEM & operator[] (size_t i) const
     {
 #ifdef CHECK_RANGE
       CheckVecRange(s,i);
@@ -1331,27 +1309,24 @@ namespace ngbla
     }
 
     
-    INLINE SliceVector<T> operator+(int i) const { return SliceVector<T> (s-i, dist, data+i*dist); }
+    INLINE SliceVector<T> operator+(int i) const { return SliceVector<T> (s-i, dist, data+i*size_t(dist)); }
 
-
-    INLINE TELEM * Addr (int i) const
+    INLINE TELEM * Addr (size_t i) const
     {
-      return data+i*dist;
+      return data+i*size_t(dist);
     }
 
-
     /// vector size
-    INLINE int Size () const { return s; }
-    INLINE int Dist () const { return dist; }
+    INLINE size_t Size () const { return s; }
+    INLINE size_t Dist () const { return dist; }
     /// vector is a matrix of hight size
-    INLINE int Height () const { return s; }
+    INLINE size_t Height () const { return s; }
     /// vector is a matrix of width 1
-    INLINE int Width () const { return 1; }
+    INLINE size_t Width () const { return 1; }
 
     INLINE T * Data () const { return data; }
 
-
-    INLINE const SliceVector<T> Range (int first, int next) const
+    INLINE const SliceVector<T> Range (size_t first, size_t next) const
     {
       return SliceVector<T> (next-first, dist, data+first*dist);
     }
@@ -1361,42 +1336,70 @@ namespace ngbla
       return Range (range.First(), range.Next());
     }
 
-
-    INLINE const SliceVector<T> Slice (int first, int adist) const
+    INLINE const SliceVector<T> Slice (size_t first, size_t adist) const
     {
       return SliceVector<T> (s/adist, dist*adist, data+first*dist);
     }
   };
 
-
   
+#ifdef DEBUG
+  // Record with and height for classes that usually have no such information
+  class DummySize {
+    size_t height;
+    size_t width;
+  public:
+    size_t Height() const { return height; }
+    size_t Width() const { return width; }
+    DummySize( size_t aheight, size_t awidth=1 ) :
+      width(awidth), height(aheight) {;}
+  };
+#else 
+  class DummySize {
+  public:
+    DummySize( size_t aheight, size_t awidth=1 ) {}
+  protected:
+    static INLINE size_t Height() { return 0; }
+    static INLINE size_t Width() { return 0; }
+  };
+#endif
+
   template <class T = double>
-  class BareSliceVector
+  class BareSliceVector : public CMCPMatExpr<BareSliceVector<T> >, DummySize
   {
     T * __restrict data;
-    int dist;
+    size_t dist;
+    BareSliceVector(T * _data, size_t _dist) : DummySize(0,0), data(_data), dist(_dist) { ; }
   public:
-    BareSliceVector(T * _data, int _dist) : data(_data), dist(_dist) { ; }
-    BareSliceVector(SliceVector<T> vec) : data(&vec(0)), dist(vec.Dist()) { ; }
+    using DummySize::Width;
+    using DummySize::Height;
+    BareSliceVector(SliceVector<T> vec) : DummySize( vec.Size() ), data(&vec(0)), dist(vec.Dist()) { ; }
     template <int D>
-    BareSliceVector(FixSliceVector<D,T> vec) : data(&vec(0)), dist(D) { ; }
-    BareSliceVector(FlatVector<T> vec) : data(&vec(0)), dist(1) { ; } 
+    BareSliceVector(FixSliceVector<D,T> vec) : DummySize( vec.Size() ), data(&vec(0)), dist(D)  { ; }
+    BareSliceVector(FlatVector<T> vec) : DummySize( vec.Size() ), data(&vec(0)), dist(1)  { ; }
+    template <int D>
+    BareSliceVector(Vec<D,T> & vec) :  DummySize( vec.Size() ), data(&vec(0)), dist(1) { ; } 
     BareSliceVector(const BareSliceVector &) = default;
-
-    int Dist () const { return dist; }
-    template<typename TIND2, typename std::enable_if<std::is_integral<TIND2>::value, int>::type = 0>
-    double & operator() (TIND2 i) const { return data[i*dist];  }
-    BareSliceVector<> Range (int first, int next) const
+    BareSliceVector & operator= (const BareSliceVector&) = delete;
+    size_t Dist () const { return dist; }
+    SliceVector<T,size_t> AddSize(size_t size) const { return SliceVector<T,size_t> (size, dist, data); }
+    
+    T & operator() (size_t i) const { return data[i*dist];  }
+    T & operator() (size_t i, size_t j) const { return data[i*dist];  }
+    T & operator[] (size_t i) const { return data[i*dist];  }
+    BareSliceVector<T> operator+(size_t i) const { return BareSliceVector<T> (data+i*dist, dist); }
+    T * Addr (size_t i) const { return data+i*dist; }
+    BareSliceVector Range (size_t first, size_t next) const
     {
-      return BareSliceVector<T> (data+first*dist, dist);
+      return BareSliceVector (data+first*dist, dist);
     }
-    BareSliceVector<> Range (IntRange range) const
+    BareSliceVector Range (T_Range<size_t> range) const
     {
       return Range(range.First(), range.Next());
     }    
-    BareSliceVector<T> Slice (int first, int adist) const
+    BareSliceVector Slice (size_t first, size_t adist) const
     {
-      return BareSliceVector<T> (data+first*dist, dist*adist);
+      return BareSliceVector (data+first*dist, dist*adist);
     }
 
   };

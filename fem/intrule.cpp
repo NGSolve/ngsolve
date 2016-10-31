@@ -2091,7 +2091,10 @@ namespace ngfem
     // ************************************
 
     pointrule.Append (IntegrationPoint (0, 0, 0, 1));
-
+    // cout << "simd_pointrule: " << simd_pointrule << endl;
+    simd_pointrule = SIMD_IntegrationRule (pointrule);
+    // cout << "simd_pointrule: " << simd_pointrule << endl;
+    
     // ************************************
     // ** Segment integration rules
     // ************************************
@@ -2967,7 +2970,7 @@ namespace ngfem
   }
 
   SIMD_IntegrationRule::SIMD_IntegrationRule (const IntegrationRule & ir)
-    : Array<SIMD<IntegrationPoint>, size_t> (0, nullptr)
+    : Array<SIMD<IntegrationPoint>> (0, nullptr)
   {
     nip = ir.GetNIP();
     this->size = (ir.Size()+SIMD<IntegrationPoint>::Size()-1) / SIMD<IntegrationPoint>::Size();
@@ -2983,7 +2986,7 @@ namespace ngfem
   }
 
   SIMD_IntegrationRule::SIMD_IntegrationRule (const IntegrationRule & ir, LocalHeap & lh)
-    : Array<SIMD<IntegrationPoint>, size_t> ( (ir.Size()+SIMD<IntegrationPoint>::Size()-1) / SIMD<IntegrationPoint>::Size(), lh)
+    : Array<SIMD<IntegrationPoint>> ( (ir.Size()+SIMD<IntegrationPoint>::Size()-1) / SIMD<IntegrationPoint>::Size(), lh)
   {
     nip = ir.GetNIP();
     dimension = ir.Dim();
@@ -2993,7 +2996,7 @@ namespace ngfem
   }
 
   SIMD_IntegrationRule::SIMD_IntegrationRule (int _nip, LocalHeap & lh)
-    : Array<SIMD<IntegrationPoint>, size_t> ( (_nip+SIMD<IntegrationPoint>::Size()-1) / SIMD<IntegrationPoint>::Size(), lh)
+    : Array<SIMD<IntegrationPoint>> ( (_nip+SIMD<IntegrationPoint>::Size()-1) / SIMD<IntegrationPoint>::Size(), lh)
   {
     nip = _nip;
   }

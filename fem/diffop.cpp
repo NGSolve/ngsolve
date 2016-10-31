@@ -125,7 +125,7 @@ namespace ngfem
   Apply (const FiniteElement & bfel,
          const SIMD_BaseMappedIntegrationRule & bmir,
          BareSliceVector<double> x, 
-         ABareMatrix<double> flux) const
+         ABareSliceMatrix<double> flux) const
   // LocalHeap & lh) const
   {
     throw Exception (string("DifferentialOperator :: Apply ( ... SIMD ... ) not overloaded for class ")
@@ -281,7 +281,7 @@ namespace ngfem
   Apply (const FiniteElement & fel,
          const SIMD_BaseMappedIntegrationRule & mir,
          BareSliceVector<double> x, 
-         ABareMatrix<double> flux) const
+         ABareSliceMatrix<double> flux) const
   // LocalHeap & lh) const
   {
     if (comp == -1)

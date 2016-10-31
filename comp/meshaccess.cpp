@@ -824,6 +824,24 @@ namespace ngcomp
   }
   */
 
+  void MeshAccess :: GetSElNeighbouringDomains(const int elnr, int & in, int & out) const
+  {
+    ArrayMem<int, 1> elnums;
+    ArrayMem<int, 2> fnums;
+    GetSElFacets(elnr, fnums);
+    GetFacetElements ( fnums[0], elnums );
+    if (elnums.Size()==1)
+    {
+      in = GetElIndex(elnums[0])+1;
+      out = 0;
+    }
+    else
+    {
+      out = GetElIndex(elnums[0])+1;
+      in = GetElIndex(elnums[1])+1;
+    }
+  }
+
 
   void MeshAccess :: UpdateBuffers()
   {

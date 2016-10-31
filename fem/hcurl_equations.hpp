@@ -73,6 +73,10 @@ namespace ngfem
       static_cast<const FEL&> (fel).CalcMappedShape (mir, Trans(mat));
     }
 
+    static void GenerateMatrixSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir, ABareMatrix<> mat)
+    {
+      static_cast<const FEL&>(fel).CalcMappedShape (mir, mat);      
+    }
 
 
     template <typename FEL1, typename MIP, class TVX, class TVY>
@@ -124,7 +128,7 @@ namespace ngfem
 
 
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
-                             BareSliceVector<double> x, ABareMatrix<double> y)
+                             BareSliceVector<double> x, ABareSliceMatrix<double> y)
     {
       static_cast<const FEL&> (fel).Evaluate (mir, x, y);
     }    
@@ -227,6 +231,11 @@ namespace ngfem
                                   SliceMatrix<double,ColMajor> mat, LocalHeap & lh)
     {
       static_cast<const FEL&> (fel).CalcMappedCurlShape (mir, Trans(mat));
+    }
+    
+    static void GenerateMatrixSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir, ABareMatrix<> mat)
+    {
+      static_cast<const FEL&>(fel).CalcMappedCurlShape (mir, mat);      
     }
 
 
@@ -384,7 +393,7 @@ namespace ngfem
       */
     }
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
-                             BareSliceVector<double> x, ABareMatrix<double> y)
+                             BareSliceVector<double> x, ABareSliceMatrix<double> y)
     {
       static_cast<const FEL&> (fel).Evaluate (mir, x, y);
     }    

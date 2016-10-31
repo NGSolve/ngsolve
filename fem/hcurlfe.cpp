@@ -145,7 +145,14 @@ namespace ngfem
       CalcMappedShape (mir[i], shape.Cols(i*D, (i+1)*D));
   }
   
-
+  template <int D>
+  void HCurlFiniteElement<D> ::
+  CalcMappedShape (const SIMD_BaseMappedIntegrationRule & mir, 
+                   ABareMatrix<> dshapes) const
+  {
+    throw ExceptionNOSIMD("SIMD - HCurlFE::CalcShape not overloaded");
+  }
+  
 
   /// compute curl of shape
   template <int D>
@@ -177,6 +184,15 @@ namespace ngfem
     for (int i = 0; i < mir.Size(); i++)
       CalcMappedCurlShape (mir[i], curlshape.Cols(i*DIM_CURL_(D), (i+1)*DIM_CURL_(D)));
   }
+  
+  template <int D>
+  void HCurlFiniteElement<D> ::
+  CalcMappedCurlShape (const SIMD_BaseMappedIntegrationRule & mir, 
+                       ABareMatrix<> dshapes) const
+  {
+    throw ExceptionNOSIMD("SIMD - HCurlFE::CalcMappedCurlShape not overloaded");
+  }
+  
   
 
   template <int D>
@@ -518,13 +534,13 @@ namespace ngfem
     ///
     using ScalarFiniteElement<2>::CalcShape;
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    SliceVector<> shape) const
+			    BareSliceVector<> shape) const
     {
       double x = ip(0);
       double y = ip(1);
       double l3 = 1-x-y;
 
-      shape = 0.0; //!
+      shape.AddSize(ndof) = 0.0; //!
 
       shape(0) = x * l3;
       shape(1) = x * (x-l3) * l3;
@@ -1478,9 +1494,9 @@ namespace ngfem
 
     using ScalarFiniteElement<3>::CalcShape;
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    SliceVector<> shape) const override
+			    BareSliceVector<> shape) const override
     {
-      shape = 0.0; //!
+      shape.AddSize(ndof) = 0.0; //!
       double x = ip(0);
       double y = ip(1);
       double z = ip(2);
@@ -2751,7 +2767,7 @@ namespace ngfem
   }
 
   void FE_Trig3Pot :: CalcShape (const IntegrationPoint & ip, 
-				 SliceVector<> shape) const
+				 BareSliceVector<> shape) const
 				 
   {
     double x = ip.Point()[0];
@@ -4202,13 +4218,13 @@ namespace ngfem
     ///
     using  ScalarFiniteElement<3>::CalcShape;
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    SliceVector<> shape) const override
+			    BareSliceVector<> shape) const override
     {
       double x = ip(0);
       double y = ip(1);
       double z = ip(2);
     
-      shape = 0.0; //!
+      shape.AddSize(ndof) = 0.0; //!
       int ii = 0;
 
       double fac = z * (1-z);
@@ -4390,13 +4406,13 @@ namespace ngfem
 
     using ScalarFiniteElement<3>::CalcShape;
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    SliceVector<> shape) const override
+			    BareSliceVector<> shape) const override
     {
       double x = ip(0);
       double y = ip(1);
       double z = ip(2);
     
-      shape = 0.0; //!
+      shape.AddSize(ndof) = 0.0; //!
       int ii = 0;
 
       double fac = z * (1-z) * (1-z);
@@ -4428,7 +4444,7 @@ namespace ngfem
   }
 
   void FE_Quad3 :: CalcShape (const IntegrationPoint & ip, 
-			      SliceVector<> shape) const
+			      BareSliceVector<> shape) const
     
   {
     double x = ip(0);

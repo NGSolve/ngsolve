@@ -19,7 +19,7 @@ namespace ngstd
 
 
 
-  template class Array<int,int>;
+  template class Array<int>;
 
 
 }

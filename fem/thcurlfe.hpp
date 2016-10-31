@@ -50,12 +50,18 @@ namespace ngfem
     virtual void CalcMappedShape (const MappedIntegrationRule<DIM,DIM> & mir, 
                                   SliceMatrix<> shape) const;
 
+    virtual void CalcMappedShape (const SIMD_BaseMappedIntegrationRule & mir, 
+                                  ABareMatrix<> shapes) const;
+
     virtual void CalcMappedCurlShape (const MappedIntegrationPoint<DIM,DIM> & mip,
                                       SliceMatrix<> curlshape) const;
 
     virtual void CalcMappedCurlShape (const MappedIntegrationRule<DIM,DIM> & mir, 
                                       SliceMatrix<> curlshape) const;
 
+    virtual void CalcMappedCurlShape (const SIMD_BaseMappedIntegrationRule & mir, 
+                                      ABareMatrix<> curlshapes) const;
+    
     virtual Vec <DIM_CURL_(DIM)>
     EvaluateCurlShape (const IntegrationPoint & ip, 
                        FlatVector<double> x,
@@ -65,8 +71,8 @@ namespace ngfem
     EvaluateCurl (const IntegrationRule & ir, FlatVector<> coefs, FlatMatrixFixWidth<DIM_CURL_(DIM)> curl) const;
 #endif
 
-    HD NGS_DLL_HEADER virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, ABareMatrix<double> values) const;    
-    HD NGS_DLL_HEADER virtual void EvaluateCurl (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, ABareMatrix<double> values) const;
+    HD NGS_DLL_HEADER virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, ABareSliceMatrix<double> values) const;    
+    HD NGS_DLL_HEADER virtual void EvaluateCurl (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, ABareSliceMatrix<double> values) const;
 
     HD NGS_DLL_HEADER virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, ABareMatrix<double> values,
                                              BareSliceVector<> coefs) const;

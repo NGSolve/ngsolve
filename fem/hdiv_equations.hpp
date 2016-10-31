@@ -63,6 +63,13 @@ public:
       (mip.GetJacobian() * Trans (Cast(fel).GetShape(mip.IP(), lh)));
   }
 
+  static void GenerateMatrixSIMDIR (const FiniteElement & fel,
+                                    const SIMD_BaseMappedIntegrationRule & mir, ABareMatrix<> mat)
+  {
+    Cast(fel).CalcMappedShape (mir, mat);      
+  }
+
+  
   template <typename AFEL, typename MIP, class TVX, class TVY>
   static void Apply (const AFEL & fel, const MIP & mip,
                      const TVX & x, TVY & y,
@@ -112,7 +119,7 @@ public:
 
   
   static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
-                           BareSliceVector<double> x, ABareMatrix<double> y)
+                           BareSliceVector<double> x, ABareSliceMatrix<double> y)
   {
     Cast(fel).Evaluate (mir, x, y);
   }    
@@ -162,6 +169,12 @@ public:
       (static_cast<const FEL&>(fel).GetDivShape(mip.IP(), lh));
   }
 
+  static void GenerateMatrixSIMDIR (const FiniteElement & fel,
+                                    const SIMD_BaseMappedIntegrationRule & mir, ABareMatrix<> mat)
+  {
+    Cast(fel).CalcMappedDivShape (mir, mat);      
+  }
+
 
   template <typename AFEL, typename MIP, class TVX, class TVY>
   static void Apply (const AFEL & fel, const MIP & mip,
@@ -189,7 +202,7 @@ public:
 
   
   static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
-                           BareSliceVector<double> x, ABareMatrix<double> y)
+                           BareSliceVector<double> x, ABareSliceMatrix<double> y)
   {
     Cast(fel).EvaluateDiv (mir, x, y.Row(0));
   }    

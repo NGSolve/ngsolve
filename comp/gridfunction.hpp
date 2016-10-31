@@ -47,7 +47,7 @@ namespace ngcomp
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, 
 			   FlatMatrix<double> values) const;
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
-                           AFlatMatrix<double> values) const;
+                           ABareSliceMatrix<double> values) const;
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
                            AFlatMatrix<double> values) const
     { Evaluate (ir, values); }
@@ -355,6 +355,13 @@ namespace ngcomp
                                     const double * dxdxref, int sdxdxref,
                                     double * values, int svalues);
 
+#ifdef __AVX__
+    virtual bool GetMultiSurfValue (size_t selnr, size_t facetnr, size_t npts,
+                                    const __m256d * xref, 
+                                    const __m256d * x, 
+                                    const __m256d * dxdxref, 
+                                    __m256d * values);
+#endif
 
     virtual bool GetSegmentValue (int segnr, double xref, double * values);
 
@@ -420,6 +427,14 @@ namespace ngcomp
                                     const double * x, int sx,
                                     const double * dxdxref, int sdxdxref,
                                     double * values, int svalues);
+
+#ifdef __AVX__
+    virtual bool GetMultiSurfValue (size_t selnr, size_t facetnr, size_t npts,
+                                    const __m256d * xref, 
+                                    const __m256d * x, 
+                                    const __m256d * dxdxref, 
+                                    __m256d * values);
+#endif
 
 
     void Analyze(Array<double> & minima, Array<double> & maxima, Array<double> & averages, int component = -1);

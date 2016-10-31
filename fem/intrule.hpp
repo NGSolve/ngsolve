@@ -1511,6 +1511,17 @@ namespace ngstd
           int /* dummy */)
       : SIMD<ngfem::DimMappedIntegrationPoint<DIMR>> (aip, aeltrans)
       { ; }
+
+    SIMD (const SIMD<ngfem::IntegrationPoint> & aip,
+          const ngfem::ElementTransformation & aeltrans,
+          const Vec<DIMR, SIMD<double>> ax,
+          const Mat<DIMR, DIMS, SIMD<double> > & adxdxi)
+      : SIMD<ngfem::DimMappedIntegrationPoint<DIMR>> (aip, aeltrans)
+    {
+      this->point = ax;
+      dxdxi = adxdxi;
+      Compute();
+    }
     
     const Mat<DIMR,DIMS,SIMD<double>> & GetJacobian() const { return dxdxi; }
     Mat<DIMR,DIMS,SIMD<double>> & Jacobian() { return dxdxi; }
@@ -1711,7 +1722,7 @@ namespace ngfem
 
 
   
-  class SIMD_IntegrationRule : public Array<SIMD<IntegrationPoint>,size_t>
+  class SIMD_IntegrationRule : public Array<SIMD<IntegrationPoint>>
   {
     int dimension = -1;
     size_t nip = -47;
@@ -1723,9 +1734,11 @@ namespace ngfem
     SIMD_IntegrationRule (const IntegrationRule & ir, LocalHeap & lh);
     SIMD_IntegrationRule (int nip, LocalHeap & lh);
     NGS_DLL_HEADER ~SIMD_IntegrationRule ();
+    SIMD_IntegrationRule & operator= (const SIMD_IntegrationRule &) = delete;
+    SIMD_IntegrationRule & operator= (SIMD_IntegrationRule &&) = default;
     
     SIMD_IntegrationRule (size_t asize, SIMD<IntegrationPoint> * pip)
-      : Array<SIMD<IntegrationPoint>,size_t> (asize, pip) { ; }
+      : Array<SIMD<IntegrationPoint>> (asize, pip) { ; }
 
     size_t GetNIP() const { return nip; } // Size()*SIMD<double>::Size(); }
     void SetNIP(size_t _nip) { nip = _nip; }
@@ -1797,6 +1810,20 @@ namespace ngfem
     SIMD_MappedIntegrationRule (const SIMD_IntegrationRule & ir, 
                                 const ElementTransformation & aeltrans, 
                                 Allocator & lh);
+    SIMD_MappedIntegrationRule (const SIMD_IntegrationRule & ir, 
+                                const ElementTransformation & aeltrans,
+                                int dummy, 
+                                Allocator & lh)
+      : SIMD_BaseMappedIntegrationRule (ir, aeltrans), mips(ir.Size(), lh)
+      {
+        dim_element = DIM_ELEMENT;
+        dim_space = DIM_SPACE;
+        baseip = (char*)(void*)(SIMD<BaseMappedIntegrationPoint>*)(&mips[0]);
+        incr = sizeof (SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>>);
+
+        for (int i = 0; i < ir.Size(); i++)
+          new (&mips[i]) SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>> (ir[i], eltrans, -1);
+      }
 
     virtual void ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr);
     SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>> & operator[] (int i) const

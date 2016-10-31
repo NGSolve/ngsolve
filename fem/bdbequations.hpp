@@ -106,7 +106,7 @@ namespace ngfem
     }
 
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
-                             BareSliceVector<double> x, ABareMatrix<double> y)
+                             BareSliceVector<double> x, ABareSliceMatrix<double> y)
     {
       Cast(fel).EvaluateGrad (mir, x, y);
     }    
@@ -291,7 +291,7 @@ namespace ngfem
     }
     
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
-                             BareSliceVector<double> x, ABareMatrix<double> y)
+                             BareSliceVector<double> x, ABareSliceMatrix<double> y)
     {
       Cast(fel).Evaluate (mir.IR(), x, y.Row(0));
     }
@@ -468,7 +468,29 @@ namespace ngfem
 
 
 
-
+  template <int D>
+  class DiffOpHesse : public DiffOp<DiffOpHesse<D>>
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D };
+    enum { DIM_DMAT = D*D };
+    enum { DIFFORDER = 2 };
+    
+    static string Name() { return "hesse"; }
+    
+    static auto & Cast (const FiniteElement & fel) 
+    { return static_cast<const ScalarFiniteElement<D>&> (fel); }
+    
+    template <typename MIP, typename MAT>
+    static void GenerateMatrix (const FiniteElement & fel, const MIP & mip,
+                                MAT && mat, LocalHeap & lh)
+    {
+      HeapReset hr(lh);
+      Cast(fel).CalcMappedDDShape(mip, Trans(mat));
+    }
+  };
 
 
 

@@ -6,7 +6,8 @@ install(FILES
 
 install(FILES
         mixed.py hybrid_mixed.py hybrid_dg.py nonlin.py taskmanager.py
-        pickling.py
+        pickling.py DG/timeDG-skeleton.py DG/timeDGwave.py
+        DG/timeDG.py DG/timeDGlap.py
         DESTINATION share/ngsolve/py_tutorials/howto
         COMPONENT ngsolve_devel
        )

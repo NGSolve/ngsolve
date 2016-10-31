@@ -4,6 +4,7 @@
 /* Date:   6. Feb. 2003                                              */
 /*********************************************************************/
 
+#define FILE_L2HOFE_CPP
 
 #include <fem.hpp>
 #include <tscalarfe_impl.hpp>
@@ -12,6 +13,7 @@
 
 namespace ngfem
 {
+  
   template class L2HighOrderFE<ET_TRIG>;  
   template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_TRIG>, ET_TRIG, DGFiniteElement<2> >;
   
