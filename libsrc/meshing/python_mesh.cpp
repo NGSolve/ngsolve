@@ -477,14 +477,21 @@ DLL_HEADER void ExportNetgenMeshing()
     .def ("GetNCD2Names", &Mesh::GetNCD2Names)
  
     .def ("GenerateVolumeMesh", FunctionPointer
-          ([](Mesh & self)
+          ([](Mesh & self, bp::object pymp)
            {
              cout << "generate vol mesh" << endl;
              MeshingParameters mp;
-             mp.optsteps3d = 5;
+             if (bp::extract<MeshingParameters>(pymp).check())
+               mp = bp::extract<MeshingParameters>(pymp)();
+             else
+               {
+                 mp.optsteps3d = 5;
+               }
              MeshVolume (mp, self);
              OptimizeVolume (mp, self);
-           }))
+           }),
+          (bp::arg("self"), bp::arg("mp")=bp::object())
+          )
 
    .def ("OptimizeVolumeMesh", FunctionPointer
          ([](Mesh & self)

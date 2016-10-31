@@ -167,6 +167,9 @@ namespace netgen
   extern CSGeometry * ParseCSG (istream & istr);
 }
 
+
+static Transformation<3> global_trafo(Vec<3> (0,0,0));
+
 DLL_HEADER void ExportCSG() 
 {
   ModuleScope module("csg");
@@ -186,10 +189,22 @@ DLL_HEADER void ExportCSG()
     ;
 
   bp::def ("Pnt", FunctionPointer
-           ([](double x, double y, double z) { return Point<3>(x,y,z); }));
+           ([](double x, double y, double z) { return global_trafo(Point<3>(x,y,z)); }));
   bp::def ("Pnt", FunctionPointer
            ([](double x, double y) { return Point<2>(x,y); }));
 
+  bp::def ("SetTransformation", FunctionPointer
+           ([](int dir, double angle)
+            {
+              if (dir > 0)
+                global_trafo.SetAxisRotation (dir, angle*M_PI/180);
+              else
+                global_trafo = Transformation<3> (Vec<3>(0,0,0));
+            }),
+           (bp::arg("dir")=int(0), bp::arg("angle")=0));
+
+           
+  
   bp::class_<Vec<2>> ("Vec2d", bp::init<double,double>()) 
     .def ("__str__", &ToString<Vec<3>>)
     .def(bp::self+bp::self)
@@ -209,7 +224,7 @@ DLL_HEADER void ExportCSG()
     ;
 
   bp::def ("Vec", FunctionPointer
-           ([] (double x, double y, double z) { return Vec<3>(x,y,z); }));
+           ([] (double x, double y, double z) { return global_trafo(Vec<3>(x,y,z)); }));
   bp::def ("Vec", FunctionPointer
            ([] (double x, double y) { return Vec<2>(x,y); }));
 
