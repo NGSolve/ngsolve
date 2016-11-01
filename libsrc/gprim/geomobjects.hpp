@@ -47,9 +47,10 @@ namespace netgen
     { for (int i = 0; i < D; i++) x[i] = v(i); }
 
 
-    Point & operator= (const Point<D> & p2)
+    template <typename T2>
+    Point & operator= (const Point<D,T2> & p2)
     {
-      for (int i = 0; i < D; i++) x[i] = p2.x[i]; 
+      for (int i = 0; i < D; i++) x[i] = p2(i);
       return *this;
     }
 
@@ -98,10 +99,10 @@ namespace netgen
     { for(int i=0; i<D; i++) x[i] = p2(i)-p1(1); }
   
 
-
-    Vec & operator= (const Vec & p2)
+    template <typename T2>
+    Vec & operator= (const Vec<D,T2> & p2)
     {
-      for (int i = 0; i < D; i++) x[i] = p2.x[i]; 
+      for (int i = 0; i < D; i++) x[i] = p2(i);
       return *this;
     }
 
