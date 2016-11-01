@@ -874,15 +874,17 @@ public:
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const
   {
     c1->Evaluate (ir, values);
+    size_t vw = ir.Size();
+    for (size_t i = 0; i < Dimension(); i++)
+      for (size_t j = 0; j < vw; j++)
+        values.Get(i,j) = lam (values.Get(i,j));
     /*
-    for (int i = 0; i < values.Height()*values.VWidth(); i++)
-      values.Get(i) = lam (values.Get(i));
-    */
     // not vectorized ... 
     int w = ir.IR().GetNIP();
     for (int i = 0; i < Dimension(); i++)
       for (int j = 0; j < w; j++)
         values(i,j) = lam (values(i,j));
+    */
   }
   
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
