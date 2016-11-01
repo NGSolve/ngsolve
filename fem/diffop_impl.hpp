@@ -154,10 +154,7 @@ namespace ngfem
          const SIMD_BaseMappedIntegrationRule & bmir,
          BareSliceVector<double> x, 
          ABareSliceMatrix<double> flux) const
-  // LocalHeap & lh) const
   {
-    // const SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
-    // static_cast<const SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
     DIFFOP::ApplySIMDIR (bfel, bmir, x, flux);
   }
 

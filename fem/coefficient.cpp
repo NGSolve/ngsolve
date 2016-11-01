@@ -4100,6 +4100,7 @@ public:
 
             // Function parameters
             string param_type = simd ? "AFlatMatrix<double> " : "FlatMatrix<> ";
+            if (simd && deriv == 0) param_type = "ABareSliceMatrix<> ";
             s << "( " << (simd?"SIMD_":"") << "BaseMappedIntegrationRule &mir";
             for(auto i : Range(deriv+1))
               s << ", " << param_type << parameters[i];
