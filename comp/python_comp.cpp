@@ -1031,7 +1031,7 @@ void NGS_DLL_HEADER ExportNgcomp()
 
     .add_property ("ndofglobal", FunctionPointer([](PyFES & self) { return self->GetNDofGlobal(); }), 
                    "global number of dofs on MPI-distributed mesh")
-    .def("__str__", &ToString<FESpace>)
+    .def("__str__", FunctionPointer([](PyFES & self) { return ToString<FESpace>(*self.Get());}))
 
     // .add_property("mesh", FunctionPointer ([](FESpace & self) -> shared_ptr<MeshAccess>
     // { return self.GetMeshAccess(); }))
@@ -1261,7 +1261,7 @@ void NGS_DLL_HEADER ExportNgcomp()
     .def_pickle(GF_pickle_suite())    
     .def("__ngsid__", FunctionPointer( [] ( PyGF self)
         { return reinterpret_cast<std::uintptr_t>(self.Get().get()); } ) )
-    .def("__str__", &ToString<GF>)
+    .def("__str__", FunctionPointer([] (PyGF & self) { return ToString<GF>(*self.Get()); }))
     .add_property("space", FunctionPointer([](bp::object self) -> bp::object
                                            {
                                              bp::dict d = bp::extract<bp::dict>(self.attr("__dict__"))();
