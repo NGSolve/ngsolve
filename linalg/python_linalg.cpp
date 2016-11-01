@@ -60,7 +60,10 @@ void NGS_DLL_HEADER ExportNgla() {
       static
       bp::tuple getinitargs(const BaseVector & v)
       {
-        return bp::make_tuple(v.Size(), v.IsComplex(), v.EntrySize()); 
+	int es = v.EntrySize();
+	if(v.IsComplex())
+	  es /= 2;
+        return bp::make_tuple(v.Size(), v.IsComplex(), es); 
       }
 
       static
