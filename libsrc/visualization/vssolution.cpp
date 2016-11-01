@@ -8,7 +8,9 @@
 
 // #include <parallel.hpp>
 #include <visual.hpp>
-
+#ifdef WIN32
+#include <GL/glew.hpp>
+#endif
 #include <limits>
 namespace netgen
 {
