@@ -380,6 +380,25 @@ INLINE ngstd::SIMD<double> pow (ngstd::SIMD<double> a, double x) {
   return ngstd::SIMD<double>([&](int i)->double { return pow(a[i],x); } );
 }
 
+  using std::sin;
+INLINE ngstd::SIMD<double> sin (ngstd::SIMD<double> a) {
+  return ngstd::SIMD<double>([&](int i)->double { return sin(a[i]); } );
+}
+  
+  using std::cos;
+INLINE ngstd::SIMD<double> cos (ngstd::SIMD<double> a) {
+  return ngstd::SIMD<double>([&](int i)->double { return cos(a[i]); } );
+}
+
+  using std::tan;
+INLINE ngstd::SIMD<double> tan (ngstd::SIMD<double> a) {
+  return ngstd::SIMD<double>([&](int i)->double { return tan(a[i]); } );
+}
+
+  using std::atan;
+INLINE ngstd::SIMD<double> atan (ngstd::SIMD<double> a) {
+  return ngstd::SIMD<double>([&](int i)->double { return atan(a[i]); } );
+}
 
 
   template <int D, typename T>

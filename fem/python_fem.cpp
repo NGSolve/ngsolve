@@ -196,6 +196,8 @@ struct GenericBSpline {
   GenericBSpline( shared_ptr<BSpline> asp ) : sp(asp) {;}
   template <typename T> T operator() (T x) const { return (*sp)(x); }
   Complex operator() (Complex x) const { return (*sp)(x.real()); }
+  SIMD<double> operator() (SIMD<double> x) const
+  { return SIMD<double>([&](int i)->double { return (*sp)(x[i]); } );}
 };
 struct GenericSin {
   template <typename T> T operator() (T x) const { return sin(x); }
@@ -228,6 +230,7 @@ struct GenericSqrt {
 struct GenericConj {
   template <typename T> T operator() (T x) const { return Conj(x); } // from bla
   static string Name() { return "conj"; }
+  SIMD<double> operator() (SIMD<double> x) const { return x; }
   AutoDiff<1> operator() (AutoDiff<1> x) const { throw Exception ("Conj(..) is not complex differentiable"); }
   AutoDiffDiff<1> operator() (AutoDiffDiff<1> x) const { throw Exception ("Conj(..) is not complex differentiable"); }
 };
