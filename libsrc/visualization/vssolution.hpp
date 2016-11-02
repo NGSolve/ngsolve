@@ -43,9 +43,12 @@ class DLL_HEADER VisualSceneSolution : public VisualScene
     Point<3> p;
   };
 
+  // #define USE_BUFFERS
+#ifdef USE_BUFFERS
   bool has_surfel_vbo = false;
   GLuint surfel_vbo[4]; //
   size_t surfel_vbo_size;
+#endif
   int surfellist;
   int linelist;
   int element1dlist;
