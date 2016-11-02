@@ -409,12 +409,12 @@ namespace ngcomp
 		for(int facet = 0; facet < ma->GetNFacets(); facet++)
 		{
 			ctofdof[GetFacetDofs(facet)] = INTERFACE_DOF;
-			if(fine_facet[facet]) // for first dof, overwrite INTERFACE_DOF with  WIREBASKET_DOF
+			if(fine_facet[facet]) // for first dof, overwrite INTERFACE_DOF with  WIREBASKET_DOF!
 				ctofdof[first_facet_dof[facet]] = nowirebasket ? INTERFACE_DOF : WIREBASKET_DOF;
 		}
 
 		}
-
+		
 		if(highest_order_dc)
 			ctofdof.Range(first_inner_dof[0],ndof) = LOCAL_DOF;
 
