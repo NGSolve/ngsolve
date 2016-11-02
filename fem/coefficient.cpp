@@ -3468,13 +3468,13 @@ public:
 
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const
     {
-      size_t nv = ir.Size(), dim = Dimension(), nip = ir.IR().GetNIP();
+      size_t nv = ir.Size(), dim = Dimension();
       STACK_ARRAY(SIMD<double>, hmem1, nv);
-      AFlatMatrix<double> if_values(1, nip, &hmem1[0]);
+      ABareMatrix<double> if_values(&hmem1[0], nv);
       STACK_ARRAY(SIMD<double>, hmem2, nv*dim);
-      AFlatMatrix<double> then_values(dim, nip, &hmem2[0]);
+      ABareMatrix<double> then_values(&hmem2[0], nv);
       STACK_ARRAY(SIMD<double>, hmem3, nv*dim);
-      AFlatMatrix<double> else_values(dim, nip, &hmem3[0]);
+      ABareMatrix<double> else_values(&hmem3[0], nv);
       
       cf_if->Evaluate (ir, if_values);
       cf_then->Evaluate (ir, then_values);
