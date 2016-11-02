@@ -45,7 +45,7 @@ namespace ngcomp
     bool var_order; 
     bool highest_order_dc;
     bool nowirebasket;
-		bool all_dofs_together;
+    bool all_dofs_together;
   public:
     ///
     FacetFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags=false);
@@ -137,9 +137,9 @@ namespace ngcomp
     {
       dnums.SetSize(0);
     }
-
-		bool AllDofsTogether(){return all_dofs_together;};
-
+    
+    bool AllDofsTogether(){return all_dofs_together;};
+    
   };
 
 
