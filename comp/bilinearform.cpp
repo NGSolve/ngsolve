@@ -2095,7 +2095,6 @@ namespace ngcomp
 
 
             bool hasbound = false;
-            // bool hasinner = false;
             
             if (volume_parts.Size())
               IterateElements 
