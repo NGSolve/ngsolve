@@ -29,7 +29,7 @@ namespace ngcomp
     virtual void Apply (const FiniteElement & fel,
                         const SIMD_BaseMappedIntegrationRule & mir,
                         BareSliceVector<double> x, 
-                        ABareMatrix<double> flux) const
+                        ABareSliceMatrix<double> flux) const
     {
       if (comp == -1)
         static_cast<const BaseScalarFiniteElement&> (fel).

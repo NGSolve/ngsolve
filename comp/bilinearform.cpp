@@ -2095,8 +2095,7 @@ namespace ngcomp
 
 
             bool hasbound = false;
-            bool hasinner = false;
-
+            // bool hasinner = false;
             
             if (volume_parts.Size())
               IterateElements 
@@ -2113,7 +2112,6 @@ namespace ngcomp
                    fespace2->GetDofNrs (ei, dnums2);
           
                    FlatMatrix<SCAL> elmat(dnums2.Size(), dnums1.Size(), lh);
-                   // for (int j = 0; j < NumIntegrators(); j++)
                    for (auto & bfi : volume_parts)
                      {
                        MixedFiniteElement fel(fel1, fel2);

@@ -859,11 +859,12 @@ namespace ngfem
                 FlatMatrix<SCAL_SHAPES,ColMajor> bmat2(proxy2->Dimension(), elmat.Height(), lh);
 
                 
-                enum { BS = 16 };
-                for (int i = 0; i < mir.Size(); i+=BS)
+                // enum { BS = 16 };
+                constexpr size_t BS = 16;
+                for (size_t i = 0; i < mir.Size(); i+=BS)
                   {
                     HeapReset hr(lh);
-                    int bs = min2(int(BS), mir.Size()-i);
+                    size_t bs = min2(size_t(BS), mir.Size()-i);
                     
                     AFlatMatrix<SCAL_SHAPES> bbmat1(elmat.Width(), bs*proxy1->Dimension(), lh);
                     AFlatMatrix<SCAL> bdbmat1(elmat.Width(), bs*proxy2->Dimension(), lh);
@@ -1286,11 +1287,12 @@ namespace ngfem
                 FlatMatrix<SCAL_SHAPES,ColMajor> bmat2(proxy2->Dimension(), elmat.Height(), lh);
 
                 
-                enum { BS = 16 };
+                // enum { BS = 16 };
+                constexpr size_t BS = 16;
                 for (int i = 0; i < mir.Size(); i+=BS)
                   {
                     HeapReset hr(lh);
-                    int bs = min2(int(BS), mir.Size()-i);
+                    int bs = min2(size_t(BS), mir.Size()-i);
                     
                     AFlatMatrix<SCAL_SHAPES> bbmat1(elmat.Width(), bs*proxy1->Dimension(), lh);
                     AFlatMatrix<SCAL> bdbmat1(elmat.Width(), bs*proxy2->Dimension(), lh);
@@ -1479,11 +1481,12 @@ namespace ngfem
                 IntRange r1 = proxy1->Evaluator()->UsedDofs(fel_trial);
                 IntRange r2 = proxy2->Evaluator()->UsedDofs(fel_test);
                 SliceMatrix<SCAL> part_elmat = elmat.Rows(r2).Cols(r1);
-                enum { BS = 16 };
-                for (int i = 0; i < mir.Size(); i+=BS)
+                // enum { BS = 16 };
+                constexpr size_t BS = 16;
+                for (size_t i = 0; i < mir.Size(); i+=BS)
                   {
                     HeapReset hr(lh);
-                    int bs = min2(int(BS), mir.Size()-i);
+                    int bs = min2(BS, mir.Size()-i);
                     
                     AFlatMatrix<SCAL_SHAPES> bbmat1(elmat.Width(), bs*proxy1->Dimension(), lh);
                     AFlatMatrix<SCAL> bdbmat1(elmat.Width(), bs*proxy2->Dimension(), lh);
@@ -1609,10 +1612,11 @@ namespace ngfem
           FlatMatrix<double,ColMajor> bmat1(proxy1->Dimension(), elmat.Width(), lh);
           FlatMatrix<double,ColMajor> bmat2(proxy2->Dimension(), elmat.Height(), lh);
 
-          enum { BS = 16 };
+          // enum { BS = 16 };
+          constexpr size_t BS = 16;
           for (int i = 0; i < mir.Size(); i+=BS)
             {
-              int rest = min2(int(BS), mir.Size()-i);
+              int rest = min2(size_t(BS), mir.Size()-i);
               HeapReset hr(lh);
               FlatMatrix<double,ColMajor> bdbmat1(rest*proxy2->Dimension(), elmat.Width(), lh);
               FlatMatrix<double,ColMajor> bbmat2(rest*proxy2->Dimension(), elmat.Height(), lh);
@@ -1761,10 +1765,11 @@ namespace ngfem
                 FlatMatrix<double,ColMajor> bmat1(proxy1->Dimension(), elmat.Width(), lh);
                 FlatMatrix<double,ColMajor> bmat2(proxy2->Dimension(), elmat.Height(), lh);
                 
-                enum { BS = 16 };
+                // enum { BS = 16 };
+                constexpr size_t BS = 16;
                 for (int i = 0; i < mir.Size(); i+=BS)
                   {
-                    int rest = min2(int(BS), mir.Size()-i);
+                    int rest = min2(BS, mir.Size()-i);
                     HeapReset hr(lh);
                     FlatMatrix<double,ColMajor> bdbmat1(rest*proxy2->Dimension(), elmat.Width(), lh);
                     FlatMatrix<double,ColMajor> bbmat2(rest*proxy2->Dimension(), elmat.Height(), lh);
@@ -2334,10 +2339,11 @@ namespace ngfem
           FlatMatrix<double,ColMajor> bmat1(proxy1->Dimension(), loc_elmat.Width(), lh);
           FlatMatrix<double,ColMajor> bmat2(proxy2->Dimension(), loc_elmat.Height(), lh);
 
-          enum { BS = 16 };
+          // enum { BS = 16 };
+          constexpr size_t BS = 16;
           for (int i = 0; i < mir1.Size(); i+=BS)
             {
-              int rest = min2(int(BS), mir1.Size()-i);
+              int rest = min2(size_t(BS), mir1.Size()-i);
               HeapReset hr(lh);
               FlatMatrix<double,ColMajor> bdbmat1(rest*proxy2->Dimension(), loc_elmat.Width(), lh);
               FlatMatrix<double,ColMajor> bbmat2(rest*proxy2->Dimension(), loc_elmat.Height(), lh);
@@ -2467,10 +2473,11 @@ namespace ngfem
           FlatMatrix<double,ColMajor> bmat1(proxy1->Dimension(), elmat.Width(), lh);
           FlatMatrix<double,ColMajor> bmat2(proxy2->Dimension(), elmat.Height(), lh);
 
-          enum { BS = 16 };
+          // enum { BS = 16 };
+          constexpr size_t BS = 16;          
           for (int i = 0; i < mir1.Size(); i+=BS)
             {
-              int rest = min2(int(BS), mir1.Size()-i);
+              int rest = min2(size_t(BS), mir1.Size()-i);
               HeapReset hr(lh);
               FlatMatrix<double,ColMajor> bdbmat1(rest*proxy2->Dimension(), elmat.Width(), lh);
               FlatMatrix<double,ColMajor> bbmat2(rest*proxy2->Dimension(), elmat.Height(), lh);
@@ -3114,7 +3121,8 @@ namespace ngfem
                   IntRange r2 = proxy2->Evaluator()->UsedDofs(fel);
                   SliceMatrix<> part_elmat = elmat.Rows(r2).Cols(r1);
                   
-                  enum { BS = 16 };
+                  // enum { BS = 16 };
+                  constexpr size_t BS = 16;
                   for ( ; i < ir.GetNIP(); i+=BS)
                     {
                       HeapReset hr(lh);
@@ -3253,7 +3261,8 @@ namespace ngfem
           FlatMatrix<double,ColMajor> bmat2(proxy2->Dimension(), elmat.Height(), lh);
           int i = 0;
 
-          enum { BS = 16 };
+          // enum { BS = 16 };
+          constexpr size_t BS = 16;
           for ( ; i+BS <= mir.Size(); i+=BS)
             {
               HeapReset hr(lh);

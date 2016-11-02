@@ -69,7 +69,7 @@ namespace ngfem
      */
     HD NGS_DLL_HEADER virtual void Evaluate (const IntegrationRule & ir, BareSliceVector<> coefs, FlatVector<> values) const;
     HD NGS_DLL_HEADER virtual void Evaluate (const SIMD_IntegrationRule & ir, BareSliceVector<> coefs, ABareVector<double> values) const;
-    HD NGS_DLL_HEADER virtual void Evaluate (const SIMD_IntegrationRule & ir, SliceMatrix<> coefs, ABareMatrix<double> values) const;
+    HD NGS_DLL_HEADER virtual void Evaluate (const SIMD_IntegrationRule & ir, SliceMatrix<> coefs, ABareSliceMatrix<double> values) const;
 
     /**
        Each column a vector ...
