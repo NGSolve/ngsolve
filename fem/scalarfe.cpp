@@ -167,8 +167,7 @@ namespace ngfem
       CalcMappedDShape (mir[i], dshapes.Cols(i*D,(i+1)*D));
   }
 
-  template<int D>
-  void ScalarFiniteElement<D> :: 
+  void BaseScalarFiniteElement :: 
   CalcMappedDShape (const SIMD_BaseMappedIntegrationRule & mir, 
                     ABareMatrix<> dshapes) const
   {
