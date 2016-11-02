@@ -89,8 +89,9 @@ namespace ngcomp
     if ( this->IsComplex() )
       loflags.SetFlag("complex");
 
-    low_order_space = 0;
-
+    low_order_space = 0; // never used?
+    all_dofs_together = flags.GetDefineFlag ("all_dofs_together");
+		cout << "setting all_dofs_together " << all_dofs_together << endl;
     // Variable order space: 
     //      in case of (var_order && order) or (relorder) 
     var_order = flags.GetDefineFlag("variableorder");  
@@ -271,7 +272,8 @@ namespace ngcomp
 
     // distribute dofs
     ncfa = 0; 
-    ndof = nfa; // low_order space
+    //ndof = nfa; // low_order space
+    ndof = all_dofs_together ? 0 : nfa;
     
     first_facet_dof.SetSize(nfa+1); 
     first_facet_dof = nfa;
@@ -286,54 +288,58 @@ namespace ngcomp
           }
         first_facet_dof[nfa] = ndof;
       }
-    else if (ma->GetDimension() == 2)
+    else if(ma->GetDimension() == 2)
       {
-        for (int i = 0; i < nfa; i++)
+        for(int i = 0; i < nfa; i++)
           {
             first_facet_dof[i] = ndof;
+            if (!fine_facet[i]) continue;
             ndof += order_facet[i][0];
-	    if (highest_order_dc && order_facet[i][0] > 0) ndof--;
+            if (all_dofs_together) ndof++;  // include lowest-order dof
+            if(highest_order_dc && order_facet[i][0] > 0) ndof--;
           }
         first_facet_dof[nfa] = ndof;
-
-	if (highest_order_dc)
-	  {
-	    int ne = ma->GetNE();
-	    first_inner_dof.SetSize(ne+1);
-	    for (int i = 0; i < ne; i++)
-	      {
-		first_inner_dof[i] = ndof;
-		ELEMENT_TYPE eltype = ma->GetElType(i);
-		if (eltype == ET_TRIG)
-		  ndof += 3;
-		else
-		  ndof += 4;
-	      }
-	    first_inner_dof[ne] = ndof;
-	  }
-	
+        
+        if(highest_order_dc)
+          {
+            int ne = ma->GetNE();
+            first_inner_dof.SetSize(ne+1);
+            for(int i = 0; i < ne; i++)
+              {
+                first_inner_dof[i] = ndof;
+                ELEMENT_TYPE eltype = ma->GetElType(i);
+                if(eltype == ET_TRIG)
+                  ndof += 3;
+                else
+                  ndof += 4;
+              }
+            first_inner_dof[ne] = ndof;
+          }
+        
       } // 2D
     else  // 3D
       {
         int inci = 0;
         Array<int> pnums;
-        for (int i=0; i< nfa; i++)
+        for(int i=0; i< nfa; i++)
           {
+            if (!fine_facet[i]) continue;
             int p = order_facet[i][0];
-	    if (highest_order_dc  && order_facet[i][0] > 0) p--;
+            if(highest_order_dc  && order_facet[i][0] > 0) p--;
             ma->GetFacePNums(i,pnums);
-
+            
+            int n_lowest_order_dofs = all_dofs_together ? 0 : 1;
             switch(pnums.Size())
               {
-              case 3: inci = ((p+1)*(p+2))/2 - 1; break;
-              case 4: inci= (p+1)*(p+1) - 1; break;
+              case 3: inci = ((p+1)*(p+2))/2 - n_lowest_order_dofs; break;
+              case 4: inci= (p+1)*(p+1) - n_lowest_order_dofs; break;
               }
             first_facet_dof[i] = ndof;
             ndof+= inci;
           }
         first_facet_dof[nfa] = ndof;
-
-	if (highest_order_dc)
+        
+        if(highest_order_dc)
 	  {
 	    int ne = ma->GetNE();
 	    first_inner_dof.SetSize(ne+1);
@@ -353,7 +359,7 @@ namespace ngcomp
 	    first_inner_dof[ne] = ndof;
 	  }
       } // 3D
-
+    
 
     while (ma->GetNLevels() > ndlevel.Size())
       ndlevel.Append (ndof);
@@ -376,34 +382,47 @@ namespace ngcomp
   {
     ctofdof.SetSize(ndof);
     ctofdof = INTERFACE_DOF;
-
+    
     Array<bool> fine_facet(ma->GetNFacets());
     fine_facet = false;
-
-    if (ma->GetDimension() == 3)
-      for (ElementId ei : ma->Elements<VOL>())
-        fine_facet[(*ma)[ei].Faces()] = true;
-    else
-      for (ElementId ei : ma->Elements<VOL>())
-        fine_facet[(*ma)[ei].Edges()] = true;      
-
-    for (int facet = 0; facet < ma->GetNFacets(); facet++)
-      {
-        if (fine_facet[facet])
-          ctofdof[facet] = nowirebasket ? INTERFACE_DOF : WIREBASKET_DOF;
-        else
-          ctofdof[facet] = UNUSED_DOF;
-	ctofdof[GetFacetDofs(facet)] = INTERFACE_DOF;
-      }
-
-    if (highest_order_dc)
-      ctofdof.Range(first_inner_dof[0], ndof) = LOCAL_DOF;
     
-    if (print)
+    if(ma->GetDimension() == 3)
+      for(ElementId ei : ma->Elements<VOL>())
+				fine_facet[(*ma)[ei].Faces()] = true;
+    else
+      for(ElementId ei : ma->Elements<VOL>())
+        fine_facet[(*ma)[ei].Edges()] = true;
+    
+    if (!AllDofsTogether())
+      {
+        for(int facet = 0; facet < ma->GetNFacets(); facet++)
+          {
+            if(fine_facet[facet])
+              ctofdof[facet] = nowirebasket ? INTERFACE_DOF : WIREBASKET_DOF;
+            else
+              ctofdof[facet] = UNUSED_DOF;
+            ctofdof[GetFacetDofs(facet)] = INTERFACE_DOF;
+          }
+      }
+    else // AllDofsTogether
+      {
+        for(int facet = 0; facet < ma->GetNFacets(); facet++)
+          {
+            ctofdof[GetFacetDofs(facet)] = INTERFACE_DOF;
+            if(fine_facet[facet]) // for first dof, overwrite INTERFACE_DOF with  WIREBASKET_DOF!
+              ctofdof[first_facet_dof[facet]] = nowirebasket ? INTERFACE_DOF : WIREBASKET_DOF;
+          }
+        
+      }
+    
+    if(highest_order_dc)
+      ctofdof.Range(first_inner_dof[0],ndof) = LOCAL_DOF;
+    
+    if(print)
       *testout << "FacetFESpace, ctofdof = " << endl << ctofdof << endl;
   }
-
-
+  
+  
   // ------------------------------------------------------------------------
   const FiniteElement & FacetFESpace :: GetFE (int elnr, LocalHeap & lh) const
   {
@@ -555,78 +574,86 @@ namespace ngcomp
     if (!DefinedOn (ei)) return;
     Ngs_Element ngel = ma->GetElement(ei);
     
+    
     if (ma->GetDimension() == 2)
       for (int e : ngel.Edges())
         {
-          dranges.Append (IntRange (e,e+1));
+          if (!all_dofs_together)  
+            {
+              dranges.Append (IntRange (e,e+1));
+            }
           dranges.Append (GetFacetDofs(e));
         }
     else
       for (int f : ngel.Faces())
         {
-          dranges.Append (IntRange (f, f+1));
+           if (!all_dofs_together)  
+             {
+               dranges.Append (IntRange (f,f+1));
+             }
           dranges.Append (GetFacetDofs(f));
         }
+
   }
 
   // ------------------------------------------------------------------------
   void FacetFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
     ArrayMem<int,6> fanums;
-    ma->GetElFacets (elnr, fanums);
-
+    ma->GetElFacets (elnr,fanums);
+    
     dnums.SetSize(0);
-
-    if (!highest_order_dc)
+    
+    if(!highest_order_dc)
       {
-	for(int i=0; i<fanums.Size(); i++)
-	  {
-	    dnums.Append(fanums[i]); // low_order
-	    dnums += GetFacetDofs (fanums[i]);
-	  }
+        for(int i=0; i<fanums.Size(); i++)
+          {
+            if (!all_dofs_together)
+              dnums.Append(fanums[i]); // low_order
+            dnums += GetFacetDofs (fanums[i]);
+          }
       }
     else
       {
-	int innerdof = first_inner_dof[elnr];
-	ELEMENT_TYPE eltype = ma->GetElType (elnr);
-
-	for(int i=0; i<fanums.Size(); i++)
-	  {
-	    int facetdof = first_facet_dof[fanums[i]];
-
-	    if (ma->GetDimension()==2)
-	      {
-		for (int j = 0; j <= order; j++)
-		  {
-		    if (j == 0) dnums.Append (fanums[i]);
-		    else if (j == order) dnums.Append (innerdof++);
-		    else dnums.Append (facetdof++);
-		  }
-	      }
-	    else
-	      {
-		if (ElementTopology::GetFacetType(eltype, i) == ET_TRIG)
-		  for (int j = 0; j <= order; j++)
-		    for (int k = 0; k <= order-j; k++)
-		      {
-			if (j + k == 0) dnums.Append (fanums[i]);
-			else if (j + k == order) dnums.Append (innerdof++);
-			else dnums.Append (facetdof++);
-		      }
-		else
-		  for (int j = 0; j <= order; j++)
-		    for (int k = 0; k <= order; k++)
-		      {
-			if (j + k == 0) dnums.Append (fanums[i]);
-			else if (j == order || k == order) dnums.Append (innerdof++);
-			else dnums.Append (facetdof++);
-		      }
-	      }
-		  
-	  }
+        int innerdof = first_inner_dof[elnr];
+        ELEMENT_TYPE eltype = ma->GetElType (elnr);
+        
+        for(int i=0; i<fanums.Size(); i++)
+          {
+            int facetdof = first_facet_dof[fanums[i]];
+            
+            if(ma->GetDimension()==2)
+              {
+                for(int j = 0; j <= order; j++)
+                  {
+                    if(j == 0 && !all_dofs_together) dnums.Append (fanums[i]);
+                    else if(j == order) dnums.Append (innerdof++);
+                    else dnums.Append (facetdof++);
+                  }
+              }
+            else
+              {
+                if(ElementTopology::GetFacetType(eltype,i) == ET_TRIG)
+                  for(int j = 0; j <= order; j++)
+                    for(int k = 0; k <= order-j; k++)
+                      {
+                        if(j + k == 0 && !all_dofs_together) dnums.Append (fanums[i]);
+                        else if(j + k == order) dnums.Append (innerdof++);
+                        else dnums.Append (facetdof++);
+                      } else
+                  for(int j = 0; j <= order; j++)
+                    for(int k = 0; k <= order; k++)
+                      {
+                        if(j + k == 0 && !all_dofs_together) dnums.Append (fanums[i]);
+                        else if(j == order || k == order) dnums.Append (innerdof++);
+                        else dnums.Append (facetdof++);
+                      }
+              }
+            
+          }
       }
   }
-
+  
   // ------------------------------------------------------------------------
   void FacetFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
   {
@@ -642,13 +669,16 @@ namespace ngcomp
     else
       fnum = ma->GetSElFace(selnr);
       
-    dnums.Append (fnum);
+    if (!all_dofs_together) dnums.Append (fnum);
     dnums += GetFacetDofs(fnum);
   }
 
   // ------------------------------------------------------------------------
   Table<int> * FacetFESpace :: CreateSmoothingBlocks (const Flags & precflags) const
   {
+		if (all_dofs_together)
+			throw Exception("FacetFESpace ::CreateSmoothingBlocks not implemented for case all_dofs_together!");
+
     int ncnt;
 
     // 1 x low order + faces/edges
@@ -683,7 +713,10 @@ namespace ngcomp
   
   Array<int> * FacetFESpace :: CreateDirectSolverClusters (const Flags & precflags) const
   {
-    Array<int> & clusters = *new Array<int> (GetNDof());
+		if (all_dofs_together)
+			throw Exception("FacetFESpace ::CreateDirectSolverClusters not implemented for case all_dofs_together!");
+
+		Array<int> & clusters = *new Array<int> (GetNDof());
 
     clusters.SetSize(ndof);
     clusters = 0;
