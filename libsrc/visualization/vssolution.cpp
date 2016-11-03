@@ -8,7 +8,6 @@
 
 // #include <parallel.hpp>
 #include <visual.hpp>
-
 #include <limits>
 namespace netgen
 {
@@ -439,10 +438,20 @@ namespace netgen
 	// glEnable(GL_BLEND); 
 	glDisable(GL_BLEND); 
 	glCallList (surfellist);
+        
+#ifdef USE_BUFFERS
         static int timer = NgProfiler::CreateTimer ("Solution::drawing - DrawSurfaceElements VBO");
         NgProfiler::StartTimer(timer);
+        glEnableClientState(GL_VERTEX_ARRAY);
+        glEnableClientState(GL_NORMAL_ARRAY);
+        glEnableClientState(GL_TEXTURE_COORD_ARRAY);
         glDrawElements(GL_TRIANGLES, surfel_vbo_size, GL_UNSIGNED_INT, 0);
+        glDisableClientState(GL_VERTEX_ARRAY);
+        glDisableClientState(GL_NORMAL_ARRAY);
+        glDisableClientState(GL_TEXTURE_COORD_ARRAY);
         NgProfiler::StopTimer(timer);
+#endif
+        
 	glDisable(GL_BLEND); 
 	/*
 	// transparent test ...
@@ -1287,26 +1296,28 @@ namespace netgen
     if (sol && sol->draw_surface) mvalues.SetSize (npt * sol->components);
       
     Array<complex<double> > valuesc(npt);
-
+    
+#ifdef USE_BUFFERS
     if (has_surfel_vbo)
       glDeleteBuffers (4, &surfel_vbo[0]);
     glGenBuffers (4, &surfel_vbo[0]);
+
     has_surfel_vbo = true;
     glBindBuffer (GL_ARRAY_BUFFER, surfel_vbo[0]);
     glBufferData (GL_ARRAY_BUFFER,
                   nse*npt*sizeof(Point<3,double>),
                   NULL, GL_STATIC_DRAW);
     glVertexPointer(3, GL_DOUBLE, 0, 0); 
-    glEnableClientState(GL_VERTEX_ARRAY);
+    // glEnableClientState(GL_VERTEX_ARRAY);
     
     glBindBuffer (GL_ARRAY_BUFFER, surfel_vbo[1]);
     glBufferData (GL_ARRAY_BUFFER,
                   nse*npt*sizeof(Vec<3,double>),
                   NULL, GL_STATIC_DRAW);
-    glEnableClientState(GL_NORMAL_ARRAY);
+    // glEnableClientState(GL_NORMAL_ARRAY);
     glNormalPointer(GL_DOUBLE, 0, 0);  
 
-    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    // glEnableClientState(GL_TEXTURE_COORD_ARRAY);
     glBindBuffer (GL_ARRAY_BUFFER, surfel_vbo[2]);
     glBufferData (GL_ARRAY_BUFFER, nse*npt*sizeof(double), NULL, GL_STATIC_DRAW);
     glTexCoordPointer(1, GL_DOUBLE, 0, 0);
@@ -1314,6 +1325,7 @@ namespace netgen
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, surfel_vbo[3]);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, nse*npt*6*sizeof(int), NULL, GL_STATIC_DRAW);
     surfel_vbo_size = 0;
+#endif
     
     
     NgProfiler::StopTimer(timerstart);
@@ -1677,6 +1689,7 @@ namespace netgen
 
             NgProfiler::StartTimer(timer2);
 
+#ifdef USE_BUFFERS
             if (drawelem && usetexture == 1 && !logscale)
               {
                 glBindBuffer (GL_ARRAY_BUFFER, surfel_vbo[0]);            
@@ -1700,7 +1713,7 @@ namespace netgen
               }
               
             else
-              
+#endif
               for (int iy = 0, ii = 0; iy < n; iy++)
                 {
                   glBegin (GL_TRIANGLE_STRIP);
