@@ -59,6 +59,7 @@ namespace ngfem
   void CoefficientFunction :: 
   Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
   {
+    // cout << "switching from rule to point, cf = " << typeid(*this).name() << endl;
     for (int i = 0; i < ir.Size(); i++)
       Evaluate (ir[i], values.Row(i)); 
   }
@@ -1859,6 +1860,17 @@ public:
   
   virtual bool ElementwiseConstant () const
   { return c1->ElementwiseConstant(); }
+
+  
+  virtual void Evaluate(const BaseMappedIntegrationRule & ir,
+                        FlatMatrix <> result) const
+  {
+    STACK_ARRAY(double,hmem,ir.Size()*dim1*sizeof(TIN)/sizeof(double));
+    FlatMatrix<TIN> inval(ir.IR().GetNIP(), dim1, reinterpret_cast<TIN*>(&hmem[0]));
+    c1->Evaluate (ir, inval);
+    for (size_t i = 0; i < result.Height(); i++)
+      result(i,0) = L2Norm(inval.Row(i));
+  }
 
 
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const
