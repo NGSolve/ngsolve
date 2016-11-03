@@ -306,7 +306,7 @@ namespace ngfem
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   Evaluate (const SIMD_IntegrationRule & ir,
             SliceMatrix<> coefs,
-            ABareMatrix<double> values) const
+            ABareSliceMatrix<double> values) const
   {
     FlatArray<SIMD<IntegrationPoint>> hir = ir;    
     size_t j = 0;

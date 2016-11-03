@@ -233,9 +233,9 @@ namespace ngfem
   }
   */
 
-  IntegrationRule :: IntegrationRule (int asize, double (*pts)[3], double * weights)
+  IntegrationRule :: IntegrationRule (size_t asize, double (*pts)[3], double * weights)
   {
-    for (int i = 0; i < asize; i++)
+    for (size_t i = 0; i < asize; i++)
       {
 	IntegrationPoint ip(pts[i], weights[i]);
 	ip.SetNr(i);
@@ -246,7 +246,7 @@ namespace ngfem
 
   ostream & operator<< (ostream & ost, const IntegrationRule & ir)
   {
-    for (int i = 0; i < ir.GetNIP(); i++)
+    for (size_t i = 0; i < ir.GetNIP(); i++)
       ost << ir[i] << endl;
     return ost;
   }

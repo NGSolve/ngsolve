@@ -1932,18 +1932,9 @@ namespace ngcomp
 
 
             bool hasbound = false;
-            bool hasinner = false;
-
-            for (int j = 0; j < NumIntegrators(); j++)
-              {
-                const BilinearFormIntegrator & bfi = *GetIntegrator(j);
-                if (bfi.BoundaryForm())
-                  hasbound = true;
-                else
-                  hasinner = true;
-              }
+            // bool hasinner = false;
             
-            if (hasinner)
+            if (volume_parts.Size())
               IterateElements 
                 (*fespace, VOL, clh,          // coloring for 1 space is enough
                  [&] (ElementId ei, LocalHeap & lh)
@@ -1958,24 +1949,14 @@ namespace ngcomp
                    fespace2->GetDofNrs (ei, dnums2);
           
                    FlatMatrix<SCAL> elmat(dnums2.Size(), dnums1.Size(), lh);
-                   for (int j = 0; j < NumIntegrators(); j++)
+                   for (auto & bfi : volume_parts)
                      {
-                       const BilinearFormIntegrator & bfi = *GetIntegrator(j);
-                       if (bfi.BoundaryForm()) continue;
-
-                       // ArrayMem<const FiniteElement*,2> fea = { &fel1, &fel2 };
-                       ArrayMem<const FiniteElement*,2> fea(2);
-                       fea[0] = &fel1;
-                       fea[1] = &fel2;
-                       CompoundFiniteElement cfel(fea);
-
-                       bfi.CalcElementMatrix (cfel, eltrans, elmat, lh);
-
+                       MixedFiniteElement fel(fel1, fel2);
+                       bfi->CalcElementMatrix (fel, eltrans, elmat, lh);
                        /*
                         fespace->Transform (i, true, elmat, TRANSFORM_MAT_RIGHT);
                         fespace2->Transform (i, true, elmat, TRANFORM_MAT_LEFT);
                        */
-
                        AddElementMatrix (dnums2, dnums1, elmat, ei, lh);
                      }
                  });
@@ -4523,8 +4504,14 @@ namespace ngcomp
         else 
           return make_shared<S_BilinearFormNonAssemble<double>> (space, space2, name, flags);
       }
-
-    throw Exception ("cannot craeate mixes-space without nonassemble - flag");
+    else
+      {
+        if ( space->IsComplex() )
+          return make_shared<T_BilinearForm<Complex>> (space, space2, name, flags);
+        else 
+          return make_shared<T_BilinearForm<double>> (space, space2, name, flags);
+      }
+    // throw Exception ("cannot craeate mixes-space without nonassemble - flag");
   }
   
   /*

@@ -2395,9 +2395,9 @@ public:
     c1->Evaluate (ir, temp1);
     c2->Evaluate (ir, temp2);
     values.AddVSize(Dimension(),ir.Size()) = 0.0;
-    for (int i = 0; i < hdims[0]; i++)
-      for (int j = 0; j < inner_dim; j++)
-        for (int k = 0; k < ir.Size(); k++)
+    for (size_t i = 0; i < hdims[0]; i++)
+      for (size_t j = 0; j < inner_dim; j++)
+        for (size_t k = 0; k < ir.Size(); k++)
           values.Get(i,k) += temp1.Get(i*inner_dim+j, k) * temp2.Get(j,k);
   }
   
@@ -3470,11 +3470,11 @@ public:
     {
       size_t nv = ir.Size(), dim = Dimension();
       STACK_ARRAY(SIMD<double>, hmem1, nv);
-      AFlatMatrix<double> if_values(1, nv, &hmem1[0]);
+      ABareMatrix<double> if_values(&hmem1[0], nv);
       STACK_ARRAY(SIMD<double>, hmem2, nv*dim);
-      AFlatMatrix<double> then_values(dim, nv, &hmem2[0]);
+      ABareMatrix<double> then_values(&hmem2[0], nv);
       STACK_ARRAY(SIMD<double>, hmem3, nv*dim);
-      AFlatMatrix<double> else_values(dim, nv, &hmem3[0]);
+      ABareMatrix<double> else_values(&hmem3[0], nv);
       
       cf_if->Evaluate (ir, if_values);
       cf_then->Evaluate (ir, then_values);
@@ -3484,7 +3484,7 @@ public:
         for (size_t i = 0; i < nv; i++)
           values.Get(k,i) = ngstd::IfPos (if_values.Get(i),
                                           then_values.Get(k,i),
-                                          else_values.Get(k,i)); // .Data();
+                                          else_values.Get(k,i));
     }
 
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,

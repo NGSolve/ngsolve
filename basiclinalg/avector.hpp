@@ -629,7 +629,7 @@ namespace ngbla
 
 
   template <>
-  class ASliceMatrix<double> 
+  class ASliceMatrix<double> : public SIMDExpr<ASliceMatrix<double>>
   {
     SIMD<double> * __restrict data;
     size_t dist;   // dist in simds
