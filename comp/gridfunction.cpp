@@ -71,7 +71,6 @@ namespace ngcomp
     nested = flags.GetDefineFlag ("nested");
     visual = !flags.GetDefineFlag ("novisual");
     multidim = int (flags.GetNumFlag ("multidim", 1));
-    cout << "end constructor " << endl;
     // level_updated = -1;
     // cacheblocksize = 1;
   }
