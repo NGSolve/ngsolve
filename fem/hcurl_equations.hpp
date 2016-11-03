@@ -261,6 +261,19 @@ namespace ngfem
       hx = (1.0/mip.GetJacobiDet()) * (Trans (mip.GetJacobian()) * x);
       y = static_cast<const FEL&>(fel).GetCurlShape(mip.IP(), lh) * hx;
     }
+
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, ABareSliceMatrix<double> y)
+    {
+      static_cast<const FEL&> (fel).EvaluateCurl (mir, x, y);
+    }    
+
+    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                                ABareMatrix<double> y, BareSliceVector<double> x)
+    {
+       static_cast<const FEL&> (fel).AddCurlTrans (mir, y, x);
+    }    
+    
   };
 
 
