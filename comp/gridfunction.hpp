@@ -21,6 +21,9 @@ namespace ngcomp
     shared_ptr<DifferentialOperator> trace_diffop;
     shared_ptr<BilinearFormIntegrator> bfi;
     int comp;
+    GridFunctionCoefficientFunction (shared_ptr<DifferentialOperator> adiffop,
+                                     shared_ptr<DifferentialOperator> atrace_diffop = nullptr,
+                                     int acomp = 0);
   public:
     GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, int acomp = 0);
     GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, 

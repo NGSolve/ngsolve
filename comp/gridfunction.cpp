@@ -60,17 +60,18 @@ namespace ngcomp
 				const Flags & flags)
     : NGS_Object (afespace->GetMeshAccess(), name), 
       // GridFunctionCoefficientFunction (shared_ptr<GridFunction>(this, NOOP_Deleter), afespace->GetEvaluator()),
-      GridFunctionCoefficientFunction (shared_ptr<GridFunction>(this, NOOP_Deleter),
-                                       shared_ptr<DifferentialOperator>(),
+      GridFunctionCoefficientFunction (shared_ptr<DifferentialOperator>(),
                                        shared_ptr<DifferentialOperator>()), // gridfunction-CF with null-ptr diffop
       fespace(afespace)
   {
+    gf = shared_ptr<GridFunction>(this,NOOP_Deleter);
     is_complex = fespace->IsComplex();
     if (fespace->GetEvaluator(VOL) || fespace->GetEvaluator(BND))
       SetDimensions (GridFunctionCoefficientFunction::Dimensions());
     nested = flags.GetDefineFlag ("nested");
     visual = !flags.GetDefineFlag ("novisual");
     multidim = int (flags.GetNumFlag ("multidim", 1));
+    cout << "end constructor " << endl;
     // level_updated = -1;
     // cacheblocksize = 1;
   }
@@ -936,16 +937,26 @@ namespace ngcomp
   }
 
   GridFunctionCoefficientFunction :: 
-  GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, 
-				   shared_ptr<DifferentialOperator> adiffop,
+  GridFunctionCoefficientFunction (shared_ptr<DifferentialOperator> adiffop,
                                    shared_ptr<DifferentialOperator> atrace_diffop,
                                    int acomp)
     : CoefficientFunction(1, false),
-      gf(agf), diffop (adiffop), trace_diffop(atrace_diffop), comp (acomp) 
+     diffop (adiffop), trace_diffop(atrace_diffop), comp (acomp) 
   {
     ; // SetDimensions (gf->Dimensions());    
   }
 
+  GridFunctionCoefficientFunction :: 
+  GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf,
+				   shared_ptr<DifferentialOperator> adiffop,
+                                   shared_ptr<DifferentialOperator> atrace_diffop,
+                                   int acomp)
+    : CoefficientFunction(1,agf->IsComplex()),
+      gf(agf), diffop (adiffop), trace_diffop(atrace_diffop), comp (acomp) 
+  {
+    //SetDimensions (gf->Dimensions());    
+  }
+  
   GridFunctionCoefficientFunction :: 
   GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, 
 				   shared_ptr<BilinearFormIntegrator> abfi, int acomp)
