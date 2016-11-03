@@ -1372,7 +1372,7 @@ void NGS_DLL_HEADER ExportNgcomp()
                                                                     self->GetFESpace()->GetFluxEvaluator(BND));
             // sp->SetComplex(self->GetFESpace()->IsComplex()); 
             sp->SetDimensions(sp->Dimensions());
-            return PyCF (sp);
+            return PyCF(sp);
           }))
 
     .def("Operator", FunctionPointer

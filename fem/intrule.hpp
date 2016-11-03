@@ -526,11 +526,11 @@ namespace ngfem
       : Array<IntegrationPoint> (ir2.Size(), &ir2[0]), dimension(ir2.dimension)
     { ; }
 
-    INLINE NGS_DLL_HEADER IntegrationRule (int asize, LocalHeap & lh)
+    INLINE NGS_DLL_HEADER IntegrationRule (size_t asize, LocalHeap & lh)
       : Array<IntegrationPoint> (asize, lh)
     { ; }
 
-    INLINE NGS_DLL_HEADER IntegrationRule (int asize, double (*pts)[3], double * weights);
+    INLINE NGS_DLL_HEADER IntegrationRule (size_t asize, double (*pts)[3], double * weights);
 
     // make it polymorphic
     HD virtual ~IntegrationRule() { ; }
@@ -542,9 +542,9 @@ namespace ngfem
     }
 
     /// number of integration points
-    INLINE int GetNIP() const { return Size(); }
+    INLINE size_t GetNIP() const { return Size(); }
 
-    INLINE IntegrationRule Range (int first, int next) const
+    INLINE IntegrationRule Range (size_t first, size_t next) const
     {
       return IntegrationRule (next-first, &(*this)[first]);
     }
@@ -1219,7 +1219,7 @@ namespace ngfem
     IntegrationRule ir;
     const ElementTransformation & eltrans;
     char * baseip;
-    int incr;
+    size_t incr;
     
   public:
     INLINE BaseMappedIntegrationRule (const IntegrationRule & air,
@@ -1229,14 +1229,14 @@ namespace ngfem
     {
       ir.NothingToDelete();
     }
-    INLINE int Size() const { return ir.Size(); }
+    INLINE size_t Size() const { return ir.Size(); }
     INLINE const IntegrationRule & IR() const { return ir; }
     INLINE const ElementTransformation & GetTransformation () const { return eltrans; }
 
-    INLINE BaseMappedIntegrationPoint & operator[] (int i) const
+    INLINE BaseMappedIntegrationPoint & operator[] (size_t i) const
     { return *static_cast<BaseMappedIntegrationPoint*> ((void*)(baseip+i*incr)); }
 
-    virtual BaseMappedIntegrationRule & Range(int first, int next, LocalHeap & lh) const = 0;
+    virtual BaseMappedIntegrationRule & Range(size_t first, size_t next, LocalHeap & lh) const = 0;
     /*
     {
       BaseMappedIntegrationRule mir(ir.Range(first,next), eltrans);
@@ -1281,18 +1281,18 @@ namespace ngfem
         incr = 0;
     }
     
-    INLINE MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE> & operator[] (int i) const
+    INLINE MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE> & operator[] (size_t i) const
     { 
       // return mips[i];
       return static_cast<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE> &> (BaseMappedIntegrationRule::operator[] (i));
     }
 
-    INLINE MappedIntegrationRule Range(int first, int next) const
+    INLINE MappedIntegrationRule Range(size_t first, size_t next) const
     {
       return MappedIntegrationRule (ir.Range(first,next), eltrans, mips.Range(first,next));
     }
 
-    virtual BaseMappedIntegrationRule & Range(int first, int next, LocalHeap & lh) const
+    virtual BaseMappedIntegrationRule & Range(size_t first, size_t next, LocalHeap & lh) const
     {
       return *new (lh) MappedIntegrationRule (ir.Range(first,next), eltrans, mips.Range(first,next));
     }
@@ -1345,12 +1345,12 @@ namespace ngfem
       return mips[i]; 
     }
 
-    INLINE MappedIntegrationRule Range(int first, int next) const
+    INLINE MappedIntegrationRule Range(size_t first, size_t next) const
     {
       return MappedIntegrationRule (ir.Range(first,next), eltrans, mips.Range(first,next));
     }
 
-    virtual BaseMappedIntegrationRule & Range(int first, int next, LocalHeap & lh) const
+    virtual BaseMappedIntegrationRule & Range(size_t first, size_t next, LocalHeap & lh) const
     {
       return *new (lh) MappedIntegrationRule (ir.Range(first,next), eltrans, mips.Range(first,next));
     }
@@ -1371,7 +1371,7 @@ namespace ngfem
   template <int DIM_ELEMENT, int DIM_SPACE, typename SCAL>
   inline ostream & operator<< (ostream & ost, const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE,SCAL> & ir)
   {
-    for (int i = 0; i < ir.Size(); i++)
+    for (size_t i = 0; i < ir.Size(); i++)
       ost << ir[i] << endl;
     return ost;
   }
@@ -1389,7 +1389,7 @@ namespace ngstd
     SIMD<double> x[3], weight;
     int facetnr = -1;
   public:
-    static constexpr int Size() { return SIMD<double>::Size(); }
+    static constexpr size_t Size() { return SIMD<double>::Size(); }
 
     SIMD() = default;
     SIMD (const SIMD &) = default;
@@ -1414,11 +1414,11 @@ namespace ngstd
       return hp;
     }
     
-    const SIMD<double> & operator() (int i) const { return x[i]; }
-    SIMD<double> & operator() (int i) { return x[i]; }
+    const SIMD<double> & operator() (size_t i) const { return x[i]; }
+    SIMD<double> & operator() (size_t i) { return x[i]; }
     SIMD<double> Weight() const { return weight; }
     SIMD<double> & Weight() { return weight; }
-    ngfem::IntegrationPoint operator[] (int i) const
+    ngfem::IntegrationPoint operator[] (size_t i) const
     { return ngfem::IntegrationPoint(x[0][i], x[1][i], x[2][i], weight[i]); }
 
     int FacetNr() const { return facetnr; }
@@ -1821,21 +1821,17 @@ namespace ngfem
         baseip = (char*)(void*)(SIMD<BaseMappedIntegrationPoint>*)(&mips[0]);
         incr = sizeof (SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>>);
 
-        for (int i = 0; i < ir.Size(); i++)
+        for (size_t i = 0; i < ir.Size(); i++)
           new (&mips[i]) SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>> (ir[i], eltrans, -1);
       }
 
     virtual void ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr);
-    SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>> & operator[] (int i) const
+    SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>> & operator[] (size_t i) const
     { 
       return mips[i]; 
     }
     virtual ABareMatrix<double> GetPoints() const
     {
-      /*
-      return ABareMatrix<double> (&mips[0].Point()(0),
-                                  &mips[1].Point()(0)-&mips[0].Point()(0));
-      */
       return ABareMatrix<double> (&mips[0].Point()(0),
                                   sizeof(SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>>)/sizeof(SIMD<double>));
     }
