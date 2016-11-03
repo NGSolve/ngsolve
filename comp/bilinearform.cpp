@@ -1934,7 +1934,7 @@ namespace ngcomp
             bool hasbound = false;
             // bool hasinner = false;
             
-            if (volume_parts.Size())
+            if (VB_parts[VOL].Size())
               IterateElements 
                 (*fespace, VOL, clh,          // coloring for 1 space is enough
                  [&] (ElementId ei, LocalHeap & lh)
@@ -1949,7 +1949,7 @@ namespace ngcomp
                    fespace2->GetDofNrs (ei, dnums2);
           
                    FlatMatrix<SCAL> elmat(dnums2.Size(), dnums1.Size(), lh);
-                   for (auto & bfi : volume_parts)
+                   for (auto & bfi : VB_parts[VOL])
                      {
                        MixedFiniteElement fel(fel1, fel2);
                        bfi->CalcElementMatrix (fel, eltrans, elmat, lh);
