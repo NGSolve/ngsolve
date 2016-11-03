@@ -234,15 +234,8 @@ namespace ngfem
             T_CalcShape (&adp(0), SBLambda ([&] (int j, HCurl_Shape<DIM1,SIMD<double>> shape)
                                             {
                                               double coef = coefs(j);
-                                              Iterate<DIM1> ( [&] (auto ii) {
-                                                  sum(ii.value) += coef * shape(ii.value);
-                                                });
-                                              /*
-                                              SIMD<double> sum = 0.0;
                                               for (int k = 0; k < DIM1; k++)
-                                                sum += shape(k) * values.Get(k,i);
-                                              coefs(j) += HSum(sum);
-                                              */
+                                                sum(k) += coef * shape(k);
                                             }));
             for (size_t k = 0; k < DIM1; k++)
               values.Get(k,i) = sum(k).Data();
@@ -267,9 +260,8 @@ namespace ngfem
             T_CalcShape (&adp(0), SBLambda ([&] (int j, HCurl_CurlShape<DIM,SIMD<double>> shape)
                                             {
                                               double coef = coefs(j);
-                                              Iterate<DIM_CURL> ( [&] (auto ii) {
-                                                  sum(ii.value) += coef * shape(ii.value);
-                                                });
+                                              for (int k = 0; k < DIM_CURL; k++)
+                                                sum(k) += coef * shape(k);
                                             }));
             for (size_t k = 0; k < DIM_CURL; k++)
               values.Get(k,i) = sum(k).Data();
@@ -287,9 +279,8 @@ namespace ngfem
             T_CalcShape (&adp(0), SBLambda ([&] (int j, HCurl_CurlShape<DIM1,SIMD<double>> shape)
                                             {
                                               double coef = coefs(j);
-                                              Iterate<DIM_CURL> ( [&] (auto ii) {
-                                                  sum(ii.value) += coef * shape(ii.value);
-                                                });
+                                              for (int k = 0; k < DIM_CURL; k++)
+                                                sum(k) += coef * shape(k);
                                             }));
             for (size_t k = 0; k < DIM_CURL; k++)
               values.Get(k,i) = sum(k).Data();
