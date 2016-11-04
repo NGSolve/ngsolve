@@ -187,9 +187,9 @@ DLL_HEADER void ExportCSG(py::module &m)
     .def(py::self-Vec<3>())
     ;
 
-  bp::def ("Pnt", FunctionPointer
+  py::def ("Pnt", FunctionPointer
            ([](double x, double y, double z) { return global_trafo(Point<3>(x,y,z)); }));
-  bp::def ("Pnt", FunctionPointer
+  py::def ("Pnt", FunctionPointer
            ([](double x, double y) { return Point<2>(x,y); }));
 
            
@@ -206,7 +206,7 @@ DLL_HEADER void ExportCSG(py::module &m)
               else
                 global_trafo = Transformation<3> (Vec<3>(0,0,0));
             }),
-           bp::arg("dir")=int(0), bp::arg("angle")=0);
+           py::arg("dir")=int(0), py::arg("angle")=0);
 
   py::class_<Vec<2>> (m, "Vec2d")
     .def(py::init<double,double>())
