@@ -373,12 +373,13 @@ void ExportCoefficientFunction(py::module &m)
          [](PyCF *instance, py::object val, py::object dims)
                            {
                              auto coef = new (instance) PyCF(MakeCoefficient(val));
-                             auto dims_list = py::extract<py::list>(dims);
-                             if (dims_list.check())
+                             if (dims)
                                {
-                                 Array<int> cdims = makeCArray<int> (dims_list());
-                                 // dynamic_pointer_cast<VectorialCoefficientFunction> (coef->Get())->SetDimensions(cdims);
-                                 coef->Get()->SetDimensions(cdims);
+                                 try {
+                                   Array<int> cdims = makeCArray<int> (dims);
+                                   coef->Get()->SetDimensions(cdims);
+                                 }
+                                 catch (py::type_error){ }
                                }
                            },
           py::arg("coef"),py::arg("dims")=DummyArgument(),
