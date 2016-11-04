@@ -42,12 +42,13 @@ from ngslib import *
 
 ngstd.__all__ = ['ArrayD', 'ArrayI', 'BitArray', 'Flags', 'HeapReset', 'IntRange', 'LocalHeap', 'Timers', 'RunWithTaskManager', 'TaskManager', 'SetNumThreads']
 bla.__all__ = ['Matrix', 'Vector', 'InnerProduct', 'Norm']
-la.__all__ = ['BaseMatrix', 'BaseVector', 'InnerProduct', 'CGSolver', 'QMRSolver', 'ArnoldiSolver', 'Projector']
+la.__all__ = ['BaseMatrix', 'BaseVector', 'InnerProduct', 'CGSolver', 'QMRSolver', 'GMRESSolver', 'ArnoldiSolver', 'Projector']
 fem.__all__ =  ['BFI', 'CoefficientFunction',  'DomainConstantCF',  'Parameter', 'CoordCF', 'ET', 'ElementTransformation', 'ElementTopology', 'FiniteElement', 'ScalarFE', 'H1FE', 'HEX', 'L2FE', 'LFI', 'POINT', 'PRISM', 'PYRAMID', 'QUAD', 'SEGM', 'TET', 'TRIG', 'VERTEX', 'EDGE', 'FACE', 'CELL', 'ELEMENT', 'FACET', 'VariableCF', 'SetPMLParameters', 'sin', 'cos', 'tan', 'atan', 'exp', 'log', 'sqrt', 'Conj', 'specialcf', \
            'BlockBFI', 'BlockLFI', 'CompoundBFI', 'CompoundLFI', 'ConstantCF', 'BSpline', \
            'IntegrationRule', 'IfPos' \
            ]
-comp.__all__ =  ['BND', 'BilinearForm', 'COUPLING_TYPE', 'CompoundFESpace', 'ElementId', 'BndElementId', 'FESpace', 'GridFunction', 'LinearForm', 'CMesh', 'Preconditioner', 'VOL', 'PDE', 'Integrate', 'SymbolicLFI', 'SymbolicBFI', 'SymbolicEnergy', 'VTKOutput', 'SetHeapSize', 'SetTestoutFile', 'ngsglobals']           
+# TODO: fem:'PythonCF' comp:'PyNumProc'
+comp.__all__ =  ['BND', 'BilinearForm', 'COUPLING_TYPE', 'CompoundFESpace', 'ElementId', 'BndElementId', 'FESpace', 'GridFunction', 'LinearForm', 'Mesh', 'Preconditioner', 'VOL', 'NumProc', 'PDE', 'Integrate', 'SymbolicLFI', 'SymbolicBFI', 'SymbolicEnergy', 'VTKOutput', 'SetHeapSize', 'SetTestoutFile', 'ngsglobals']           
 solve.__all__ =  ['Redraw', 'BVP', 'CalcFlux', 'Draw', 'DrawFlux', 'SetVisualization']
 
 from ngsolve.ngstd import *
@@ -58,7 +59,6 @@ from ngsolve.comp import *
 from ngsolve.solve import *
 from ngsolve.utils import *
 
-comp.Mesh = Mesh
 from . import __expr
 BaseVector.expr = property(__expr.VecExpr)
 BaseVector.data = property(__expr.Expr, __expr.expr_data)

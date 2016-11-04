@@ -6,13 +6,6 @@ x = CoordCF(0)
 y = CoordCF(1)
 z = CoordCF(2)
 
-def Mesh( mesh ):
-    if isinstance(mesh, str):
-        return CMesh(mesh)
-    else:
-        mesh.Save("temp.vol")
-        return Mesh("temp.vol")
-
 def Laplace (coef):
     return BFI("laplace", coef=coef)
 
