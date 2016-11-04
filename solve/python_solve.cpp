@@ -40,7 +40,8 @@ void NGS_DLL_HEADER ExportNgsolve() {
 
 
     bp::def("SetVisualization", FunctionPointer
-            ([](bp::object deformation, bp::object min, bp::object max)
+            ([](bp::object deformation, bp::object min, bp::object max,
+                /* bp::object clippnt, */ bp::object clipnormal, bp::object clipping)
              {
                bool need_redraw = false;
                if (bp::extract<bool>(deformation).check())
@@ -64,12 +65,37 @@ void NGS_DLL_HEADER ExportNgsolve() {
                    Ng_TclCmd ("Ng_Vis_Set parameters;\n");                   
                    need_redraw = true;
                  }
+               if (bp::extract<bp::tuple>(clipnormal).check())
+                 {
+                   bp::tuple norm = bp::extract<bp::tuple>(clipnormal)();
+                   if (bp::len(norm)==3)
+                     {
+                       cout << "setting clipping normal" << endl;
+                       // tclstring << "set ::viewoptions.clipping.enable 1" << endl
+                       Ng_TclCmd ("set ::viewoptions.clipping.nx "+ToString(bp::extract<double>(norm[0])())+";\n");
+                       Ng_TclCmd ("set ::viewoptions.clipping.ny "+ToString(bp::extract<double>(norm[1])())+";\n");
+                       Ng_TclCmd ("set ::viewoptions.clipping.nz "+ToString(bp::extract<double>(norm[2])())+";\n");
+                       // << "set ::viewoptions.clipping.dist " << clipdist << endl;
+                       need_redraw = true;
+                     }
+                 }
+               if (bp::extract<bool>(clipping).check())
+                 {
+                   bool clip = bp::extract<bool>(clipping)();
+                   Ng_TclCmd ("set ::viewoptions.clipping.enable "+ToString(int(clip))+";\n");
+                   Ng_TclCmd ("Ng_SetVisParameters");
+                   
+                   need_redraw = true;
+                 }
                if (need_redraw)
                  Ng_Redraw(true);
              }),
             (bp::arg("deformation")=bp::object(),
              bp::arg("min")=bp::object(),
-             bp::arg("max")=bp::object()
+             bp::arg("max")=bp::object(),
+             // bp::arg("clippnt")=bp::object(),
+             bp::arg("clipnormal")=bp::object(),
+             bp::arg("clipping")=bp::object()
              )
             )
       ;
