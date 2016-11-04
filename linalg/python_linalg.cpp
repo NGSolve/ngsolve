@@ -396,6 +396,30 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
           )
     ;
 
+  py::class_<PyWrapper<GMRESSolver<double>>, PyBaseMatrix> (m, "GMRESSolverD")
+    ;
+  py::class_<PyWrapper<GMRESSolver<Complex>>, PyBaseMatrix> (m, "GMRESSolverC")
+    ;
+
+  m.def("GMRESSolver", [](const PyBaseMatrix & mat, const PyBaseMatrix & pre,
+                                           bool printrates, 
+                                           double precision, int maxsteps) -> PyBaseMatrix
+                                        {
+                                          KrylovSpaceSolver * solver;
+                                          if (!mat->IsComplex())
+                                            solver = new GMRESSolver<double> (*mat, *pre);
+                                          else
+                                            solver = new GMRESSolver<Complex> (*mat, *pre);                                            
+                                          solver->SetPrecision(precision);
+                                          solver->SetMaxSteps(maxsteps);
+                                          solver->SetPrintRates (printrates);
+                                          return solver;
+                                        },
+          "GMRES Solver", py::arg("mat"), py::arg("pre"), py::arg("printrates")=true,
+           py::arg("precision")=1e-8, py::arg("maxsteps")=200
+          )
+    ;
+  
   py::class_<PyWrapper<QMRSolver<double>>, PyBaseMatrix> (m, "QMRSolverD")
     ;
   py::class_<PyWrapper<QMRSolver<Complex>>, PyBaseMatrix> (m, "QMRSolverC")

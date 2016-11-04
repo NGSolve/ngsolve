@@ -430,7 +430,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
   //////////////////////////////////////////////////////////////////////////////////////////
   
   
-  py::class_<MeshAccess, shared_ptr<MeshAccess>>(m, "CMesh", "the mesh", py::dynamic_attr())
+  py::class_<MeshAccess, shared_ptr<MeshAccess>>(m, "Mesh", "the mesh", py::dynamic_attr())
     .def(py::init<shared_ptr<netgen::Mesh>>())
     .def("__ngsid__", [] ( MeshAccess & self)
         { return reinterpret_cast<std::uintptr_t>(&self); }  )

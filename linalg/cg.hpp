@@ -376,6 +376,14 @@ namespace ngstd
     typedef PyWrapperDerived<ngla::CGSolver<Complex>, ngla::BaseMatrix> type;
   };
   template <>
+  struct PyWrapperTraits<ngla::GMRESSolver<double>> {
+    typedef PyWrapperDerived<ngla::GMRESSolver<double>, ngla::BaseMatrix> type;
+  };
+  template <>
+  struct PyWrapperTraits<ngla::GMRESSolver<Complex>> {
+    typedef PyWrapperDerived<ngla::GMRESSolver<Complex>, ngla::BaseMatrix> type;
+  };
+  template <>
   struct PyWrapperTraits<ngla::QMRSolver<double>> {
     typedef PyWrapperDerived<ngla::QMRSolver<double>, ngla::BaseMatrix> type;
   };
