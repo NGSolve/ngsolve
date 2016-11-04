@@ -96,7 +96,7 @@ DLL_HEADER void ExportGeom2d(py::module &m)
               seg->bc = self.GetNSplines()+1;
             self.AppendSegment(seg);
             return self.GetNSplines()-1;
-	  }), py::arg("point_indices"), py::arg("leftdomain") = 1, py::arg("rightdomain") = 0,
+	  }), py::arg("point_indices"), py::arg("leftdomain") = 1, py::arg("rightdomain") = py::int_(0),
                py::arg("bc")=NGDummyArgument(), py::arg("copy")=NGDummyArgument(), py::arg("maxh")=1e99, py::arg("hpref")=false
                )
 
@@ -124,7 +124,7 @@ DLL_HEADER void ExportGeom2d(py::module &m)
 		  seg->reffak = 1;
 		  seg->copyfrom = -1;
 		  self.AppendSegment(seg);
-		}), py::arg("point_indices"), py::arg("leftdomain") = 1, py::arg("rightdomain") = 0)
+                  }), py::arg("point_indices"), py::arg("leftdomain") = 1, py::arg("rightdomain") = py::int_(0))
 	//.def("AppendSegment", FunctionPointer([](SplineGeometry2d &self, int point_index1, int point_index2)//, int leftdomain, int rightdomain)
 	//  {
 	//	  LineSeg<2> * l = new LineSeg<2>(self.GetPoint(point_index1), self.GetPoint(point_index2));

@@ -267,8 +267,8 @@ DLL_HEADER void ExportNetgenMeshing(py::module &m)
                            },
            py::arg("surfnr")=1, 
            py::arg("domin")=1,
-           py::arg("domout")=0,
-           py::arg("bc")=0,
+           py::arg("domout")=py::int_(0),
+           py::arg("bc")=py::int_(0),
          "create facedescriptor")
     .def("__str__", &ToString<FaceDescriptor>)
     .def("__repr__", &ToString<FaceDescriptor>)
