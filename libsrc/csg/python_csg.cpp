@@ -187,9 +187,9 @@ DLL_HEADER void ExportCSG(py::module &m)
     .def(py::self-Vec<3>())
     ;
 
-  py::def ("Pnt", FunctionPointer
+  m.def ("Pnt", FunctionPointer
            ([](double x, double y, double z) { return global_trafo(Point<3>(x,y,z)); }));
-  py::def ("Pnt", FunctionPointer
+  m.def ("Pnt", FunctionPointer
            ([](double x, double y) { return Point<2>(x,y); }));
 
            
@@ -229,7 +229,7 @@ DLL_HEADER void ExportCSG(py::module &m)
     ;
 
   m.def ("Vec", FunctionPointer
-           ([] (double x, double y, double z) { return global_trafo<3>(x,y,z); }));
+           ([] (double x, double y, double z) { return global_trafo(Vec<3>(x,y,z)); }));
   m.def ("Vec", FunctionPointer
            ([] (double x, double y) { return Vec<2>(x,y); }));
 
