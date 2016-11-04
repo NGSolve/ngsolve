@@ -1258,7 +1258,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
     
     .def("Set", FunctionPointer
          ([](PyGF self, PyCF cf,
-             bool boundary, py::object definedon, int heapsize, py::object heap)
+             VorB boundary, py::object definedon, int heapsize, py::object heap)
           {
             Region * reg = nullptr;
             if (py::extract<Region&> (definedon).check())
@@ -1286,7 +1286,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
               SetValues (cf.Get(), *self.Get(), boundary, NULL, glh);
           }),
           py::arg("coefficient"),
-          py::arg("boundary")=false,
+          py::arg("VOL_or_BND")=VOL,
           py::arg("definedon")=DummyArgument(),
           py::arg("heapsize")=1000000, py::arg("heap")=DummyArgument(),
          "Set values"
