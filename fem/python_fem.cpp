@@ -262,6 +262,13 @@ struct GenericConj {
       for (int i = 0; i < ir.Size(); i++)
         resD.Row(i) = static_cast<const DimMappedIntegrationPoint<D>&>(ir[i]).GetNV();
     }
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> res) const 
+    {
+      if (ir[0].Dim() != D)
+        throw Exception("illegal dim of normal vector");
+      for (int i = 0; i < ir.Size(); i++)
+        res.Row(i) = static_cast<const DimMappedIntegrationPoint<D>&>(ir[i]).GetNV();
+    }
 
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {
         string miptype;
@@ -328,6 +335,11 @@ struct GenericConj {
       for (int i = 0; i < ir.Size(); i++)
         result(i,0) = ir[i].GetPoint()(dir);
       */
+    }
+    virtual void Evaluate(const BaseMappedIntegrationRule & ir,
+                          FlatMatrix<Complex> result) const
+    {
+      result.Col(0) = ir.GetPoints().Col(dir);
     }
 
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {
@@ -605,6 +617,11 @@ void ExportCoefficientFunction()
       for (int i = 0; i < ir.Size(); i++)
         result(i,0) = ir[i].GetPoint()(dir);
       */
+    }
+    virtual void Evaluate(const BaseMappedIntegrationRule & ir,
+                          FlatMatrix<Complex> result) const
+    {
+      result.Col(0) = ir.GetPoints().Col(dir);
     }
 
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {

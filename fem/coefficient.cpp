@@ -140,6 +140,11 @@ namespace ngfem
     values = val;
   }
 
+  void ConstantCoefficientFunction :: Evaluate (const BaseMappedIntegrationRule & ir,
+                                                FlatMatrix<Complex> values) const
+  {
+    values = val;
+  }
 
   /*
   void ConstantCoefficientFunction :: Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
@@ -4053,7 +4058,6 @@ public:
                  inputs.Add (mypos, steps.Pos(incf));
              }
          });
-
       cout << IM(3) << "inputs = " << endl << inputs << endl;
 
       if(realcompile)
