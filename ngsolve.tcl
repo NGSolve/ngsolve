@@ -406,50 +406,50 @@ if { [catch { NGS_GetData } ] == 0 } {
         #$w.tree insert {} end -id widgets -text "Widget Tour"
         ttk::treeview $w.tree
         pack $w.tree -fill both -expand y
-        $w.tree insert {} end -id treeconstants -text "Constants"
-        $w.tree insert {} end -id treevariables -text "Variables"
-        $w.tree insert {} end -id treecoefficients -text "Coefficients"
-        $w.tree insert {} end -id treespaces -text "Spaces"
-        $w.tree insert {} end -id treebiforms -text "Bilinear-forms"
-        $w.tree insert {} end -id treeliforms -text "Linear-forms"
-        $w.tree insert {} end -id treegfs -text "Grid-functions"
-        $w.tree insert {} end -id treepreconds -text "Preconditioners"
-        $w.tree insert {} end -id treenps -text "NumProcs"
+        $w.tree insert {} end -id constants -text "Constants"
+        $w.tree insert {} end -id variables -text "Variables"
+        $w.tree insert {} end -id coefficients -text "Coefficients"
+        $w.tree insert {} end -id spaces -text "Spaces"
+        $w.tree insert {} end -id biforms -text "Bilinear-forms"
+        $w.tree insert {} end -id liforms -text "Linear-forms"
+        $w.tree insert {} end -id gfs -text "Grid-functions"
+        $w.tree insert {} end -id preconds -text "Preconditioners"
+        $w.tree insert {} end -id nps -text "NumProcs"
         set constants [NGS_GetData constants]
 	    foreach co $constants {
-        $w.tree insert {treeconstants} end -text $co
+        $w.tree insert {constants} end -text $co
 	    }
         set variables [NGS_GetData variableswithval]
 	    foreach va $variables {
-        $w.tree insert {treevariables} end -text $va
+        $w.tree insert {variables} end -text $va
 	    }
 	    set coefs [NGS_GetData coefficients]
 	    foreach coef $coefs {
-		$w.tree insert {treecoefficients} end -text $coef
+		$w.tree insert {coefficients} end -text $coef
 	    }        
 	    set spaces [NGS_GetData spaces]
 	    foreach space $spaces {
-		$w.tree insert {treespaces} end -text $space
+		$w.tree insert {spaces} end -text $space
 	    }
 	    set biforms [NGS_GetData bilinearforms]
 	    foreach biform $biforms {
-		$w.tree insert {treebiforms} end -text $biform
+		$w.tree insert {biforms} end -text $biform
 	    }
 	    set liforms [NGS_GetData linearforms]
 	    foreach liform $liforms {
-		$w.tree insert {treeliforms} end -text $liform
+		$w.tree insert {liforms} end -text $liform
 	    }
 	    set gridfuns [NGS_GetData gridfunctions]
 	    foreach gridfun $gridfuns {
-		$w.tree insert {treegfs} end -text $gridfun
+		$w.tree insert {gfs} end -text $gridfun
 	    }
 	    set preconds [NGS_GetData preconditioners]
 	    foreach precond $preconds {
-		$w.tree insert {treepreconds} end -text $precond
+		$w.tree insert {preconds} end -text $precond
 	    }
 	    set numprocs [NGS_GetData numprocs]
 	    foreach numproc $numprocs {
-		$w.tree insert {treenps} end -text $numproc        
+		$w.tree insert {nps} end -text $numproc        
         }
         #$w.tree configure -color black
 	    # tixTree $w.mtre -options { separator "\\" }
@@ -585,15 +585,18 @@ if { [catch { NGS_GetData } ] == 0 } {
 		# }
 	    # }
 
-        # old version end
-        #new version
-        bind $w.tree <Double-1> {
-        set name [.components_dlg.tree item [.components_dlg.tree selection] -text ]
-        set field [.components_dlg.tree item [.components_dlg.tree parent [.components_dlg.tree selection] ] -text]
-        puts "field = $field, name = $name"
-        NGS_PrintPDE $field $name
-        }
-        #new version end
+            # old version end
+            #new version
+            bind $w.tree <Double-1> {
+                set name [.components_dlg.tree item [.components_dlg.tree selection] -text ]
+                # set field [.components_dlg.tree item [.components_dlg.tree parent [.components_dlg.tree selection] ] -text]
+                set field [.components_dlg.tree parent [.components_dlg.tree selection] ]
+                
+                NGS_PrintPDE $field $name
+                # puts "field = $field, name = $name"
+                
+            }
+            #new version end
         
 	    button $w.cl -text "Close" -command {
 		destroy .components_dlg
