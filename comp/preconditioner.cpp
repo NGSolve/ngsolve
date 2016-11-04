@@ -33,6 +33,9 @@ namespace ngcomp
       }
 
     on_proc = int ( flags.GetNumFlag("only_on", -1));
+
+    if (!flags.GetDefineFlag ("not_register_for_auto_update"))
+      apde->GetBilinearForm (flags.GetStringFlag ("bilinearform"))->SetPreconditioner(this);
   }
 
 
@@ -50,6 +53,8 @@ namespace ngcomp
     if ( uselapack ) test = 1;
 
     on_proc = int ( flags.GetNumFlag("only_on", -1));
+    if (!flags.GetDefineFlag ("not_register_for_auto_update"))
+      bfa->SetPreconditioner(this);
   }
   
 
@@ -282,7 +287,7 @@ namespace ngcomp
 
     shared_ptr<MeshAccess> ma = pde.GetMeshAccess();
     bfa = pde.GetBilinearForm (flags.GetStringFlag ("bilinearform", NULL));
-    bfa -> SetPreconditioner (this);
+    // bfa -> SetPreconditioner (this);
 
     shared_ptr<LinearForm> lfconstraint = 
       pde.GetLinearForm (flags.GetStringFlag ("constraint", ""),1);
@@ -380,7 +385,7 @@ namespace ngcomp
 
     shared_ptr<MeshAccess> ma = abfa->GetMeshAccess();
     bfa = abfa;
-    bfa -> SetPreconditioner (this);
+    // bfa -> SetPreconditioner (this);
 
 
     // shared_ptr<LinearForm> lfconstraint = pde.GetLinearForm (flags.GetStringFlag ("constraint", ""),1);
@@ -621,7 +626,7 @@ namespace ngcomp
       : Preconditioner(&pde,aflags,aname)
     {
       bfa = pde.GetBilinearForm (flags.GetStringFlag ("bilinearform", NULL));
-      bfa -> SetPreconditioner (this);
+      // bfa -> SetPreconditioner (this);
       inversetype = flags.GetStringFlag("inverse", GetInverseName (default_inversetype));
     }
 
@@ -629,7 +634,7 @@ namespace ngcomp
 			  const string aname = "directprecond")
       : Preconditioner(abfa,aflags,aname), bfa(abfa)
     {
-      bfa -> SetPreconditioner (this);
+      // bfa -> SetPreconditioner (this);
       inversetype = flags.GetStringFlag("inverse", GetInverseName (default_inversetype));
     }
 
@@ -816,7 +821,7 @@ namespace ngcomp
     : Preconditioner (&pde,aflags,aname)
   {
     bfa = pde.GetBilinearForm (flags.GetStringFlag ("bilinearform", NULL));
-    bfa -> SetPreconditioner (this);
+    // bfa -> SetPreconditioner (this);
 
     block = flags.GetDefineFlag ("block");
     locprectest = flags.GetDefineFlag ("mgtest");
@@ -846,7 +851,7 @@ namespace ngcomp
 
     : Preconditioner (abfa,aflags,aname), bfa(abfa)
   {
-    bfa -> SetPreconditioner (this);
+    // bfa -> SetPreconditioner (this);
 
     block = flags.GetDefineFlag ("block");
     locprectest = flags.GetDefineFlag ("mgtest");
