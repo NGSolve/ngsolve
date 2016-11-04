@@ -3494,11 +3494,11 @@ public:
 #include "../ngstd/python_ngstd.hpp"
 
 using namespace ngsolve;
-void ExportDrawFlux()
+void ExportDrawFlux(py::module &m)
 {
   cout << "exporting CalcFlux and DrawFlux numproc" << endl;
 
-  bp::def ("CalcFlux", FunctionPointer
+  m.def ("CalcFlux", FunctionPointer
            ([](shared_ptr<PDE> pde,
                shared_ptr<BilinearForm> bfa,
                shared_ptr<GridFunction> gfu,
@@ -3508,10 +3508,10 @@ void ExportDrawFlux()
             {
               return make_shared<NumProcCalcFlux> (pde, bfa, gfu, gfflux, applyd);
             }),
-           (bp::arg("pde"), bp::arg("bf"), bp::arg("gf"),
-            bp::arg("flux"), bp::arg("applyd")=false)
+            py::arg("pde"), py::arg("bf"), py::arg("gf"),
+            py::arg("flux"), py::arg("applyd")=false
 	   );
-  bp::def ("DrawFlux", FunctionPointer
+  m.def ("DrawFlux", FunctionPointer
            ([](shared_ptr<BilinearForm> bfa,
                shared_ptr<GridFunction> gfu,
                const string & alabel,
@@ -3521,8 +3521,8 @@ void ExportDrawFlux()
             {
               return make_shared<NumProcDrawFlux> (bfa, gfu, alabel, applyd, useall);
             }),
-           (bp::arg("bf"), bp::arg("gf"), 
-            bp::arg("label")="flux", bp::arg("applyd")=false, bp::arg("useall")=false)
+            py::arg("bf"), py::arg("gf"), 
+            py::arg("label")="flux", py::arg("applyd")=false, py::arg("useall")=false
 	   );
 
 

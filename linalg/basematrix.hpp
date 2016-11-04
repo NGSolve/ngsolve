@@ -331,4 +331,11 @@ namespace ngla
 
 }
 
+namespace ngstd
+{
+  template <>
+  struct PyWrapperTraits<ngla::BaseMatrix> {
+    typedef PyWrapperClass<ngla::BaseMatrix> type;
+  };
+}
 #endif

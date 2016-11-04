@@ -448,6 +448,13 @@ namespace ngcomp
 
 }
 
+namespace ngstd
+{
+  template <>
+  struct PyWrapperTraits<ngcomp::GridFunction> {
+    typedef PyWrapperDerived<ngcomp::GridFunction, ngfem::CoefficientFunction> type;
+  };
+}
 
 
 

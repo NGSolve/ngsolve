@@ -1690,5 +1690,24 @@ namespace ngfem
 
 
 }
+namespace ngstd
+{
+  template <>
+  struct PyWrapperTraits<ngfem::LinearFormIntegrator > {
+    typedef PyWrapperClass<ngfem::LinearFormIntegrator> type;
+  };
+  template <>
+  struct PyWrapperTraits<ngfem::BilinearFormIntegrator > {
+    typedef PyWrapperClass<ngfem::BilinearFormIntegrator> type;
+  };
+  template <>
+  struct PyWrapperTraits<ngfem::CompoundBilinearFormIntegrator > {
+    typedef PyWrapperDerived<ngfem::CompoundBilinearFormIntegrator , ngfem::BilinearFormIntegrator > type;
+  };
+  template <>
+  struct PyWrapperTraits<ngfem::BlockBilinearFormIntegrator > {
+    typedef PyWrapperDerived<ngfem::BlockBilinearFormIntegrator , ngfem::BilinearFormIntegrator > type;
+  };
+}
 
 #endif
