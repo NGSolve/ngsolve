@@ -1,35 +1,41 @@
 #ifdef NG_PYTHON
 
-#include <boost/python.hpp>
-namespace bp = boost::python;
+#include <pybind11/pybind11.h>
+#include <pybind11/operators.h>
+namespace py = pybind11;
 #include <iostream>
+#include <sstream>
+
+namespace pybind11 {
+template<typename T>
+bool CheckCast( py::handle obj ) {
+  try{
+    obj.cast<T>();
+    return true;
+  }
+  catch (py::cast_error &e) {
+    return false;
+  }
+}
+
+
+template <typename T>
+struct extract
+{
+  py::handle obj;
+  extract( py::handle aobj ) : obj(aobj) {}
+
+  bool check() { return CheckCast<T>(obj); }
+  T operator()() { return obj.cast<T>(); }
+};
+}
+
+struct NGDummyArgument {};
+
+inline void NOOP_Deleter(void *) { ; }
 
 namespace netgen
 {
-
-	class ModuleScope  {
-		bp::scope *local_scope;
-	public:
-		ModuleScope(const std::string name) : local_scope(nullptr) {
-			std::string nested_name = name;
-			if (bp::scope())
-				nested_name = bp::extract<std::string>(bp::scope().attr("__name__") + "." + name);
-
-			bp::object module(bp::handle<>(bp::borrowed(PyImport_AddModule(nested_name.c_str()))));
-
-			std::cout << "exporting " << nested_name << std::endl;
-			bp::object parent = bp::scope() ? bp::scope() : bp::import("__main__");
-			parent.attr(name.c_str()) = module;
-
-			local_scope = new bp::scope(module);
-		}
-
-		~ModuleScope() {
-			if (local_scope)
-				delete (local_scope);
-		}
-		
-	};
 
   //////////////////////////////////////////////////////////////////////
   // Lambda to function pointer conversion

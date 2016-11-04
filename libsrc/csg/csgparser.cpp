@@ -822,11 +822,17 @@ namespace netgen
   /*
     Main parsing function for CSG geometry
   */
-  CSGeometry * ParseCSG (istream & istr)
+  CSGeometry * ParseCSG (istream & istr, CSGeometry * instance=nullptr)
   {
     CSGScanner scan(istr);
     
-    geom = new CSGeometry;
+    if (instance)
+    {
+      new (instance) CSGeometry;
+      geom = instance;
+    }
+    else
+      geom = new CSGeometry;
 
     scan.ReadNext();
     if (scan.GetToken() != TOK_RECO)  // keyword 'algebraic3d'
