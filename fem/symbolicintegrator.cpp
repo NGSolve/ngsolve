@@ -415,7 +415,8 @@ namespace ngfem
                        FlatVector<SCAL> elvec,
                        LocalHeap & lh) const
   {
-    // static Timer t("symbolicLFI - CalcElementVector", 2); RegionTimer reg(t);
+     static Timer t("symbolicLFI - CalcElementVector", 2); RegionTimer reg(t);
+     static Timer t2("eval coef *************************************", 2);
     
     HeapReset hr(lh);
     IntegrationRule ir(trafo.GetElementType(), 2*fel.Order());
@@ -436,8 +437,8 @@ namespace ngfem
           {
             ud.testfunction = proxy;
             ud.test_comp = k;
-            
-            cf -> Evaluate (mir, values);
+
+	     cf -> Evaluate (mir, values);
             for (int i = 0; i < mir.Size(); i++)
               proxyvalues(i,k) = mir[i].GetWeight() * values(i,0);
           }

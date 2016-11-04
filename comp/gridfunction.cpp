@@ -1120,7 +1120,6 @@ namespace ngcomp
   
   bool GridFunctionCoefficientFunction::IsComplex() const
   {
-    cout << "check for complex" << endl;
     return gf->GetFESpace()->IsComplex(); 
   }
 
@@ -1316,6 +1315,58 @@ namespace ngcomp
       throw Exception ("don't know how I shall evaluate");
   }
 
+  void GridFunctionCoefficientFunction :: 
+  Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const
+  {
+    LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evalute 3");
+    // static Timer timer ("GFCoeffFunc::Eval-vec", 2);
+    // RegionTimer reg (timer);
+
+    const ElementTransformation & trafo = ir.GetTransformation();
+    
+    int elnr = trafo.GetElementNr();
+    VorB vb = trafo.VB();
+    ElementId ei(vb, elnr);
+
+    const FESpace & fes = *gf->GetFESpace();
+
+    if (!trafo.BelongsToMesh ((void*)(fes.GetMeshAccess().get())))
+      {
+        for (int i = 0; i < ir.Size(); i++)
+          Evaluate (ir[i], values.Row(i));
+        return;
+      }
+    
+    if (!fes.DefinedOn(vb, trafo.GetElementIndex())) 
+      { 
+        values = 0.0; 
+        return;
+      }
+    
+    const FiniteElement & fel = fes.GetFE (ei, lh2);
+    int dim = fes.GetDimension();
+
+    ArrayMem<int, 50> dnums;
+    fes.GetDofNrs (ei, dnums);
+    
+    VectorMem<50,Complex> elu(dnums.Size()*dim);
+
+    gf->GetElementVector (comp, dnums, elu);
+    fes.TransformVec (elnr, vb, elu, TRANSFORM_SOL);
+
+    if (diffop && vb==VOL)
+      diffop->Apply (fel, ir, elu, values, lh2);
+    else if (trace_diffop && vb==BND)
+      trace_diffop->Apply (fel, ir, elu, values, lh2);
+    else if (bfi)
+      bfi->CalcFlux (fel, ir, elu, values, true, lh2);
+    else if (fes.GetEvaluator(vb==BND))
+      fes.GetEvaluator(vb==BND) -> Apply (fel, ir, elu, values, lh2);
+    else if (fes.GetIntegrator(vb==BND))
+      fes.GetIntegrator(vb==BND) ->CalcFlux (fel, ir, elu, values, false, lh2);
+    else
+      throw Exception ("don't know how I shall evaluate");
+  }
 
   void GridFunctionCoefficientFunction ::   
   Evaluate (const SIMD_BaseMappedIntegrationRule & ir,

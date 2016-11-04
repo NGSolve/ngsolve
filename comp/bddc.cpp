@@ -170,7 +170,10 @@ namespace ngcomp
       if (coarse)
       {
         flags.SetFlag ("not_register_for_auto_update");
-        inv = GetPreconditionerClasses().GetPreconditioner(coarsetype)->creatorbf (bfa, flags, "wirebasket"+coarsetype);
+	auto creator = GetPreconditionerClasses().GetPreconditioner(coarsetype);
+	if(creator == nullptr)
+	  throw Exception("Nothing known about preconditioner " + coarsetype);
+        inv = creator->creatorbf (bfa, flags, "wirebasket"+coarsetype);
         dynamic_pointer_cast<Preconditioner>(inv) -> InitLevel(wb_free_dofs);
       }
     }
