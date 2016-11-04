@@ -991,7 +991,8 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 
     .def_property_readonly ("ndofglobal", [](PyFES & self) { return self->GetNDofGlobal(); }, 
                    "global number of dofs on MPI-distributed mesh")
-    .def("__str__", &ToString<FESpace>)
+    // .def("__str__", &ToString<FESpace>)
+    .def("__str__", [] (PyFES & self) { return ToString(*self.Get()); } )
 
     // .def_property_readonly("mesh", FunctionPointer ([](FESpace & self) -> shared_ptr<MeshAccess>
     // { return self.GetMeshAccess(); }))
@@ -1227,7 +1228,8 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
          py::object self_object = py::cast(self);
          py::cast(&self).attr("__dict__")["flags"] = t[3];
          })
-    .def("__str__", &ToString<GF>)
+    // .def("__str__", &ToString<GF>)
+    .def("__str__", [] (PyGF & self) { return ToString(*self.Get()); } )
     .def_property_readonly("space", FunctionPointer([](py::object self) -> py::object
                                            {
                                              py::dict d = py::extract<py::dict>(self.attr("__dict__"))();
@@ -1884,7 +1886,8 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                           }))
     */
 
-    .def("__str__", &ToString<PDE>)
+    // .def("__str__", &ToString<PDE>)
+    .def("__str__", [] (PyPDE & self) { return ToString(*self.Get()); } )
 
     .def("Mesh",  [](PyPDE self, int meshnr)
         {
