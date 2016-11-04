@@ -3529,18 +3529,11 @@ namespace netgen
 
 
 #ifdef NG_PYTHON
-#include <boost/python.hpp>
 #include <../general/ngpython.hpp>
-namespace bp = boost::python;
 
-#if defined(_MSC_FULL_VER) && _MSC_FULL_VER == 190024213
-namespace boost { template<> const volatile netgen::VisualSceneMesh* get_pointer(const volatile netgen::VisualSceneMesh* p) { return p; } }
-#endif
-
-DLL_HEADER void ExportMeshVis()
+DLL_HEADER void ExportMeshVis(py::module &m)
 {
   using namespace netgen;
-  ModuleScope myscope("meshvis");
   vispar.drawcolorbar = true;
   vispar.drawnetgenlogo = true;
   vispar.drawcoordinatecross = true;
@@ -3550,12 +3543,12 @@ DLL_HEADER void ExportMeshVis()
   vispar.drawtets = true;
   vispar.drawprisms = true;
   vispar.drawoutline = true;
-  bp::class_<VisualSceneMesh, shared_ptr<VisualSceneMesh>>
-    ("VisualSceneMesh", bp::no_init)
+  py::class_<VisualSceneMesh, shared_ptr<VisualSceneMesh>>
+    (m, "VisualSceneMesh")
     .def("Draw", &VisualSceneMesh::DrawScene)
     ;
 
-  bp::def("VS", FunctionPointer
+  m.def("VS", FunctionPointer
           ([](shared_ptr<Mesh> mesh)
            {
              auto vs = make_shared<VisualSceneMesh>();
@@ -3564,23 +3557,23 @@ DLL_HEADER void ExportMeshVis()
              return vs;
            }));
 
-  bp::def("MouseMove", FunctionPointer
+  m.def("MouseMove", FunctionPointer
           ([](VisualSceneMesh &vsmesh, int oldx, int oldy, int newx, int 
               newy, char mode)
            {
              vsmesh.MouseMove(oldx, oldy, newx, newy, mode);
            }));
-  bp::def("SelectFace", FunctionPointer
+  m.def("SelectFace", FunctionPointer
       ([] (int facenr) {
        vsmesh.SetSelectedFace(facenr);
        }));
-  bp::def("GetGlobalMesh", FunctionPointer
+  m.def("GetGlobalMesh", FunctionPointer
       ([] () {
        return vsmesh.GetMesh();
        }));
 }
-BOOST_PYTHON_MODULE(libvisual)
-{
-  ExportMeshVis();
-}
+// BOOST_PYTHON_MODULE(libvisual)
+// {
+//   ExportMeshVis();
+// }
 #endif
