@@ -969,5 +969,12 @@ namespace ngla
 }
 
 
+namespace ngstd
+{
+  template <>
+  struct PyWrapperTraits<ngla::BaseVector> {
+    typedef PyWrapperClass<ngla::BaseVector> type;
+  };
+}
 
 #endif

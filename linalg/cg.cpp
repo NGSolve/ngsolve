@@ -247,15 +247,15 @@ namespace ngla
         */
       }
 
-    catch (exception & e)
-      {
-	throw Exception(e.what() +
-			string ("\ncaught in CGSolver::Mult\n"));
-      }
     catch (Exception & e)
       {
 	e.Append ("in caught in CGSolver::Mult\n");
 	throw;
+      }
+    catch (exception & e)
+      {
+	throw Exception(e.what() +
+			string ("\ncaught in CGSolver::Mult\n"));
       }
   }
 
@@ -498,15 +498,15 @@ namespace ngla
 	delete smalla;
       }
 
-    catch (exception & e)
-      {
-	throw Exception(e.what() +
-			string ("\ncaught in CGSolver::Mult\n"));
-      }
     catch (Exception & e)
       {
 	e.Append ("in caught in CGSolver::Mult\n");
 	throw;
+      }
+    catch (exception & e)
+      {
+	throw Exception(e.what() +
+			string ("\ncaught in CGSolver::Mult\n"));
       }
   }
 
@@ -632,15 +632,15 @@ namespace ngla
 	const_cast<int&> (steps) = n;
       }
 
-    catch (exception & e)
-      {
-	throw Exception(e.what() +
-			string ("\ncaught in CGSolver::Mult\n"));
-      }
     catch (Exception & e)
       {
 	e.Append ("in caught in CGSolver::Mult\n");
 	throw;
+      }
+    catch (exception & e)
+      {
+	throw Exception(e.what() +
+			string ("\ncaught in CGSolver::Mult\n"));
       }
   }
 
@@ -764,15 +764,15 @@ namespace ngla
 	const_cast<int&> (steps) = n;
       }
 
-    catch (exception & e)
-      {
-	throw Exception(e.what() +
-			string ("\ncaught in BiCGStabSolver::Mult\n"));
-      }
     catch (Exception & e)
       {
 	e.Append ("in caught in BiCGStabSolver::Mult\n");
 	throw;
+      }
+    catch (exception & e)
+      {
+	throw Exception(e.what() +
+			string ("\ncaught in BiCGStabSolver::Mult\n"));
       }
   }
 
@@ -828,15 +828,15 @@ namespace ngla
 	const_cast<int&> (steps) = n;
       }
 
-    catch (exception & e)
-      {
-	throw Exception(e.what() +
-			string ("\ncaught in SimpleIterationSolver::Mult\n"));
-      }
     catch (Exception & e)
       {
 	e.Append ("in caught in SimpleIterationSolver::Mult\n");
 	throw;
+      }
+    catch (exception & e)
+      {
+	throw Exception(e.what() +
+			string ("\ncaught in SimpleIterationSolver::Mult\n"));
       }
   }
 
@@ -1010,15 +1010,15 @@ namespace ngla
         */
       }
 
-    catch (exception & e)
-      {
-	throw Exception(e.what() +
-			string ("\ncaught in GMRESSolver::Mult\n"));
-      }
     catch (Exception & e)
       {
 	e.Append ("in caught in GMRESSolver::Mult\n");
 	throw;
+      }
+    catch (exception & e)
+      {
+	throw Exception(e.what() +
+			string ("\ncaught in GMRESSolver::Mult\n"));
       }
   }
 
@@ -1298,16 +1298,16 @@ void QMRSolver<SCAL> :: Mult (const BaseVector & b, BaseVector & x) const
     }
 
   
-  catch (exception & e)
-    {
-      throw Exception(e.what() +
-		      string ("\ncaught in QMRSolver::Mult\n"));
-    }
 
   catch (Exception & e)
     {
       e.Append ("in caught in QMRSolver::Mult\n"); 
       throw;
+    }
+  catch (exception & e)
+    {
+      throw Exception(e.what() +
+		      string ("\ncaught in QMRSolver::Mult\n"));
     }
 }
   
