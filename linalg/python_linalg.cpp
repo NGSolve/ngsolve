@@ -259,14 +259,17 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def_property_readonly("width", [] ( PyBaseMatrix & self)
         { return self->Width(); } )
 
-    .def("CreateMatrix", &BaseMatrix::CreateMatrix)
+    // .def("CreateMatrix", &BaseMatrix::CreateMatrix)
+    .def("CreateMatrix", [] ( PyBaseMatrix & self) -> PyBaseMatrix
+        { return self->CreateMatrix(); } )
 
+    
     .def("CreateRowVector", [] ( PyBaseMatrix & self) -> PyBaseVector
         { return shared_ptr<BaseVector>(self->CreateRowVector()); } )
     .def("CreateColVector", [] ( PyBaseMatrix & self) -> PyBaseVector
         { return shared_ptr<BaseVector>(self->CreateColVector()); } )
 
-    .def("AsVector", [] (BM & m)
+    .def("AsVector", [] (BM & m) -> PyBaseVector
                                       {
                                         return shared_ptr<BaseVector> (&m->AsVector(), NOOP_Deleter);
                                       })
