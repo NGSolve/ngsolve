@@ -144,9 +144,11 @@ namespace ngfem
     if (!testfunction && ud->fel)
       {
         static bool first = true;
-        if (first) cerr << "ProxyFunction::Evaluate ... should not be here" << endl;
+        if (first) cerr << "ProxyFunction::Evaluate (mip) ... should not be here" << endl;
         first = false;
-        
+        // if (ud->HasMemory (this))
+        // result = ud->GetMemory (this);
+        // else
         evaluator->Apply (*ud->fel, mip, *ud->elx, result, *ud->lh);
         return;
       }

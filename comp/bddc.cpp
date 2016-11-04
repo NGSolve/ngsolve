@@ -169,7 +169,7 @@ namespace ngcomp
 
       if (coarse)
       {
-	flags.SetFlag("notUseA");
+        flags.SetFlag ("not_register_for_auto_update");
         inv = GetPreconditionerClasses().GetPreconditioner(coarsetype)->creatorbf (bfa, flags, "wirebasket"+coarsetype);
         dynamic_pointer_cast<Preconditioner>(inv) -> InitLevel(wb_free_dofs);
       }
@@ -532,7 +532,7 @@ namespace ngcomp
       : Preconditioner (abfa, aflags, aname)
     {
       bfa = dynamic_pointer_cast<S_BilinearForm<SCAL>> (abfa);
-      bfa -> SetPreconditioner (this);
+      // bfa -> SetPreconditioner (this);
       inversetype = flags.GetStringFlag("inverse", "sparsecholesky");
       coarsetype = flags.GetStringFlag("coarsetype", "none");
       if(coarsetype=="myamg_hcurl")

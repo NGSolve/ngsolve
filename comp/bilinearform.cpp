@@ -243,6 +243,14 @@ namespace ngcomp
       low_order_bilinear_form -> SetElmatEigenValues (ee);
   }
 
+  void BilinearForm :: SetPreconditioner (Preconditioner * pre)
+  {
+    if (preconditioners.Contains(pre))
+      throw Exception (string("preconditioner ")+typeid(*pre).name()+ " already registered in bfa");
+    if (pre->GetFlags().GetDefineFlag("not_register_for_auto_update"))
+      throw Exception (string("'not_register_for_auto_update' set, but preconditioner") + typeid(*pre).name() +" registers anyway");
+    preconditioners.Append (pre);
+  }
 
 
   MatrixGraph * BilinearForm :: GetGraph (int level, bool symmetric)
@@ -1932,7 +1940,6 @@ namespace ngcomp
 
 
             bool hasbound = false;
-            // bool hasinner = false;
             
             if (VB_parts[VOL].Size())
               IterateElements 
