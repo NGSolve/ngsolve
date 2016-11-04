@@ -765,40 +765,40 @@ namespace ngsolve
 #include "../ngstd/python_ngstd.hpp"
 
 using namespace ngsolve;
-void ExportBVP()
+void ExportBVP(py::module &m)
 {
   cout << "exporting bvp numproc" << endl;
 
-  bp::def ("BVP", FunctionPointer
+  m.def ("BVP", FunctionPointer
            ([](shared_ptr<PDE> pde,
                PyWrapper<BilinearForm> bfa,
                PyWrapper<LinearForm> lff,
-               PyWrapperDerived<GridFunction, CoefficientFunction> gfu,
-               shared_ptr<Preconditioner> pre,
+               PyWrapper<GridFunction> gfu,
+               PyWrapper<Preconditioner> pre,
                int maxsteps,
                double prec) -> shared_ptr<NumProc>
             
             {
-              return make_shared<NumProcBVP> (bfa.Get(), lff.Get(), gfu.Get(), pre, maxsteps, prec);
+              return make_shared<NumProcBVP> (bfa.Get(), lff.Get(), gfu.Get(), pre.Get(), maxsteps, prec);
             }),
-           (bp::arg("pde")=NULL,
-            bp::arg("bf"), bp::arg("lf"), bp::arg("gf"), 
-            bp::arg("pre")=NULL, bp::arg("maxsteps")=100, bp::arg("prec")=1e-8)
+            py::arg("pde"),
+            py::arg("bf"), py::arg("lf"), py::arg("gf"), 
+            py::arg("pre")=DummyArgument(), py::arg("maxsteps")=100, py::arg("prec")=1e-8
 	   );
 
-  bp::def ("BVP", FunctionPointer
+  m.def ("BVP", FunctionPointer
            ([](PyWrapper<BilinearForm> bfa,
                PyWrapper<LinearForm> lff,
-               PyWrapperDerived<GridFunction, CoefficientFunction> gfu,
-               shared_ptr<Preconditioner> pre,
+               PyWrapper<GridFunction> gfu,
+               PyWrapper<Preconditioner> pre,
                int maxsteps,
                double prec) -> shared_ptr<NumProc>
             
             {
-              return make_shared<NumProcBVP> (bfa.Get(), lff.Get(), gfu.Get(), pre, maxsteps, prec);
+              return make_shared<NumProcBVP> (bfa.Get(), lff.Get(), gfu.Get(), pre.Get(), maxsteps, prec);
             }),
-           (bp::arg("bf"), bp::arg("lf"), bp::arg("gf"), 
-            bp::arg("pre")=NULL, bp::arg("maxsteps")=100, bp::arg("prec")=1e-8)
+            py::arg("bf"), py::arg("lf"), py::arg("gf"), 
+            py::arg("pre"), py::arg("maxsteps")=100, py::arg("prec")=1e-8
 	   );
 
 

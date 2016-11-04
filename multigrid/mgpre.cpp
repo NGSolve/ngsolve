@@ -207,15 +207,15 @@ namespace ngmg
 	y = 0;
 	MGM (ma.GetNLevels()-1, y, x);
       }
-    catch (exception & e)
-      {
-	throw Exception(e.what() +
-			string ("\ncaught in MultigridPreconditioner::Mult\n"));
-      }
     catch (Exception & e)
       {
 	e.Append ("in MultigridPreconditioner::Mult\n");
 	throw;
+      }
+    catch (exception & e)
+      {
+	throw Exception(e.what() +
+			string ("\ncaught in MultigridPreconditioner::Mult\n"));
       }
   }
 

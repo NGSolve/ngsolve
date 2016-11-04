@@ -1545,5 +1545,28 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
   shared_ptr<CoefficientFunction> Compile (shared_ptr<CoefficientFunction> c, bool realcompile=false);
 }
 
+namespace ngstd
+{
+  template <>
+  struct PyWrapperTraits<ngfem::CoefficientFunction> {
+    typedef PyWrapperClass<ngfem::CoefficientFunction> type;
+  };
+  template <>
+  struct PyWrapperTraits<ngfem::ConstantCoefficientFunction> {
+    typedef PyWrapperDerived<ngfem::ConstantCoefficientFunction, ngfem::CoefficientFunction> type;
+  };
+  template <>
+  struct PyWrapperTraits<ngfem::ParameterCoefficientFunction> {
+    typedef PyWrapperDerived<ngfem::ParameterCoefficientFunction, ngfem::CoefficientFunction> type;
+  };
+  template <>
+  struct PyWrapperTraits<ngfem::DomainVariableCoefficientFunction> {
+    typedef PyWrapperDerived<ngfem::DomainVariableCoefficientFunction, ngfem::CoefficientFunction> type;
+  };
+  template <>
+  struct PyWrapperTraits<ngfem::DomainConstantCoefficientFunction> {
+    typedef PyWrapperDerived<ngfem::DomainConstantCoefficientFunction, ngfem::CoefficientFunction> type;
+  };
+}
 
 #endif

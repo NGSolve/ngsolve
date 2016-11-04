@@ -882,17 +882,17 @@ namespace ngcomp
 	for (int i = 0; i < compgfs.Size(); i++)
 	  compgfs[i]->Update();
       }
+    catch (Exception & e)
+      {
+	e.Append ("In GridFunction::Update()\n");
+	throw e;
+      }    
     catch (exception & e)
       {
 	Exception e2 (e.what());
 	e2.Append ("\nIn GridFunction::Update()\n");
 	throw e2;
       }
-    catch (Exception & e)
-      {
-	e.Append ("In GridFunction::Update()\n");
-	throw e;
-      }    
   }
 
   /*

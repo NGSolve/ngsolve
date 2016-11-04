@@ -82,4 +82,13 @@ namespace ngla
 
 }
 
+namespace ngstd
+{
+  template <>
+  struct PyWrapperTraits<ngla::Projector> {
+    typedef PyWrapperDerived<ngla::Projector, ngla::BaseMatrix> type;
+  };
+}
+
+
 #endif
