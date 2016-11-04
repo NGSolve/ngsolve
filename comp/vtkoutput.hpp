@@ -90,3 +90,12 @@ namespace ngcomp
   };
   
 }
+
+namespace ngstd
+{
+  template <>
+  struct PyWrapperTraits<ngcomp::BaseVTKOutput> {
+    typedef PyWrapperClass<ngcomp::BaseVTKOutput> type;
+  };
+}
+

@@ -741,16 +741,17 @@ namespace ngcomp
 
                 string command = pyname  + " = " + npid + " (pde,flags) \n";
 		try{
-		   pyenv["pde"] = pde;
-		   pyenv["flags"] = make_shared<Flags>(flags);
+                  // TODO:
+// 		   pyenv["pde"] = pde;
+// 		   pyenv["flags"] = make_shared<Flags>(flags);
 		}
-		catch (bp::error_already_set const &) {
+		catch (py::error_already_set const &) {
 		  PyErr_Print();
 		}
                 pyenv.exec (command);
-                bp::object pynp = pyenv[pyname.c_str()];
+                py::object pynp = pyenv[pyname.c_str()];
 
-                bp::extract<shared_ptr<NumProc>> np(pynp);
+                py::extract<shared_ptr<NumProc>> np(pynp);
                 if(np.check())
                   pde->AddNumProc (name, np());
                 else

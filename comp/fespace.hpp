@@ -1172,5 +1172,13 @@ namespace ngstd
 }
 #endif
 
+namespace ngstd
+{
+  template <>
+  struct PyWrapperTraits<ngcomp::FESpace> {
+    typedef PyWrapperClass<ngcomp::FESpace> type;
+  };
+}
+
 
 #endif
