@@ -440,7 +440,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
                 unsigned check = 0;
                 for (auto d : el.GetDofs())
-                  if (d != -1) check |= mask[d];
+                  if (d != -1 && !IsAtomicDof(d)) check |= mask[d];
 
                 if (check != UINT_MAX) // 0xFFFFFFFF)
                   {
@@ -457,7 +457,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
                     if (color > maxcolor) maxcolor = color;
 		
                     for (auto d : el.GetDofs())
-                      if (d != -1) mask[d] |= checkbit;
+                      if (d != -1 && !IsAtomicDof(d)) mask[d] |= checkbit;
                   }
               }
             
@@ -2215,8 +2215,27 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     
     
-
-
+    bool has_atomic = false;
+    for (auto & space : spaces)
+      if (space->HasAtomicDofs())
+        has_atomic = true;
+    if (has_atomic)
+      {
+        is_atomic_dof = BitArray(GetNDof());
+        is_atomic_dof = false;
+        for (int i = 0; i < spaces.Size(); i++)
+          {
+            FESpace & spacei = *spaces[i];
+            IntRange r(cummulative_nd[i], cummulative_nd[i+1]);
+            if (spacei.HasAtomicDofs())
+              {
+                for (size_t j = 0; j < r.Size(); j++)
+                  if (spacei.IsAtomicDof(j))
+                    is_atomic_dof.Set(r.begin()+j);
+              }
+          }       
+      }
+    cout << "AtomicDofs = " << endl << is_atomic_dof << endl;
 
     prol -> Update();
 

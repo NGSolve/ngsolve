@@ -52,7 +52,7 @@ namespace ngfem
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const;
     // virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const;    
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const;
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<Complex> values) const;
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<Complex> values) const;
 
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const;
     // virtual void EvaluateSoA (const BaseMappedIntegrationRule & ir, AFlatMatrix<Complex> values) const;
@@ -291,19 +291,34 @@ namespace ngfem
   }
 
 
+  template <typename TCF>
+  class T_CoefficientFunction : public CoefficientFunction
+  {
+  public:
+    using CoefficientFunction::CoefficientFunction;
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const
+    { static_cast<const TCF*>(this) -> T_Evaluate (ir, values); }
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<Complex> values) const
+    { static_cast<const TCF*>(this) -> T_Evaluate (ir, values); }
+  };
 
+  
+
+  
 
   /// The coefficient is constant everywhere
-  class NGS_DLL_HEADER ConstantCoefficientFunction : public CoefficientFunction
+  class NGS_DLL_HEADER ConstantCoefficientFunction : public T_CoefficientFunction<ConstantCoefficientFunction>
   {
     ///
     double val;
+    typedef T_CoefficientFunction<ConstantCoefficientFunction> BASE;
   public:
     ///
     ConstantCoefficientFunction (double aval);
     ///
     virtual ~ConstantCoefficientFunction ();
     ///
+    using BASE::Evaluate;
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
     {
       return val;
@@ -315,9 +330,9 @@ namespace ngfem
     }
     
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const;
-    
-    // virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const;
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const;
+
+    template <typename T>
+    void T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<T> values) const;
     
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
                            AFlatMatrix<double> values) const
@@ -346,6 +361,7 @@ namespace ngfem
     virtual void PrintReport (ostream & ost) const;
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
   };
+
 
 
   /// The coefficient is constant everywhere

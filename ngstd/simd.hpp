@@ -537,7 +537,7 @@ INLINE ngstd::SIMD<double> atan (ngstd::SIMD<double> a) {
   {
     return MultiSIMD<D,double> (FMA (a.Head(), b.Head(), c.Head()), FMA (a.Tail(), b.Tail(), c.Tail()));
   }
-
+  
   template <int D>
   INLINE MultiSIMD<D,double> FMA(const double & a, MultiSIMD<D,double> b, MultiSIMD<D,double> c)
   {
@@ -545,8 +545,125 @@ INLINE ngstd::SIMD<double> atan (ngstd::SIMD<double> a) {
   }
 
 
+#ifdef __AVX__
+#if defined(__AVX2__)
+  INLINE __m256i my_mm256_cmpgt_epi64 (__m256i a, __m256i b)
+  {
+    return _mm256_cmpgt_epi64 (a,b);
+  }
+#else
+  INLINE __m256i my_mm256_cmpgt_epi64 (__m256i a, __m256i b)
+  {
+    __m128i rlo = _mm_cmpgt_epi64(_mm256_extractf128_si256(a, 0),
+                                  _mm256_extractf128_si256(b, 0));
+    __m128i rhi = _mm_cmpgt_epi64(_mm256_extractf128_si256(a, 1),
+                                  _mm256_extractf128_si256(b, 1));
+    return _mm256_insertf128_si256 (_mm256_castsi128_si256(rlo), rhi, 1);
+  }
+#endif
+#endif
+  
 
- class ExceptionNOSIMD : public Exception
+  typedef std::complex<double> Complex;
+    
+  template <>
+  class SIMD<Complex>
+  {
+    SIMD<double> re, im;
+  public:
+    SIMD () = default;
+    SIMD (SIMD<double> _r, SIMD<double> _i = 0.0) : re(_r), im(_i) { ; }
+    SIMD (Complex c) : re(c.real()), im(c.imag()) { ; }
+    SIMD (double d) : re(d), im(0.0) { ; }
+    static constexpr int Size() { return SIMD<double>::Size(); }
+
+    SIMD<double> real() const { return re; }
+    SIMD<double> imag() const { return im; }
+    SIMD<double> & real() { return re; }
+    SIMD<double> & imag() { return im; }
+    
+#if defined (__AVX__)
+    void Load (Complex * p)
+    {
+      __m256d c1 = _mm256_loadu_pd((double*)p);
+      __m256d c2 = _mm256_loadu_pd((double*)(p+2));
+      re = _mm256_unpacklo_pd(c1,c2);
+      im = _mm256_unpackhi_pd(c1,c2);
+    }
+    void Store (Complex * p) const
+    {
+      _mm256_storeu_pd ((double*)p, _mm256_unpacklo_pd(re.Data(),im.Data()));
+      _mm256_storeu_pd ((double*)(p+2), _mm256_unpackhi_pd(re.Data(),im.Data()));
+    }
+
+    void Load (Complex * p, size_t mask)
+    {
+      __m256i mask1 = my_mm256_cmpgt_epi64(_mm256_set1_epi64x(mask&3),
+                                           _mm256_set_epi64x(1, 1, 0, 0));
+      __m256i mask2 = my_mm256_cmpgt_epi64(_mm256_set1_epi64x(mask&3),
+                                           _mm256_set_epi64x(3, 3, 2, 2));
+      
+      __m256d c1 = _mm256_maskload_pd((double*)p, mask1);
+      __m256d c2 = _mm256_maskload_pd((double*)(p+2), mask2);
+      re = _mm256_unpacklo_pd(c1,c2);
+      im = _mm256_unpackhi_pd(c1,c2);
+    }
+    void Store (Complex * p, size_t mask) const
+    {
+      __m256i mask1 = my_mm256_cmpgt_epi64(_mm256_set1_epi64x(mask&3),
+                                           _mm256_set_epi64x(1, 1, 0, 0));
+      __m256i mask2 = my_mm256_cmpgt_epi64(_mm256_set1_epi64x(mask&3),
+                                           _mm256_set_epi64x(3, 3, 2, 2));
+
+      _mm256_maskstore_pd ((double*)p, mask1, _mm256_unpacklo_pd(re.Data(),im.Data()));
+      _mm256_maskstore_pd ((double*)(p+2), mask2, _mm256_unpackhi_pd(re.Data(),im.Data()));
+    }
+#else
+    void Load (Complex * p)
+    {
+      Complex c = *p;
+      re = c.real();
+      im = c.imag();
+    }
+    void Store (Complex * p) const
+    {
+      *p = Complex(re.Data(), im.Data());
+    }
+#endif
+    
+  };
+    
+  INLINE SIMD<Complex> operator+ (SIMD<Complex> a, SIMD<Complex> b)
+  { return SIMD<Complex> (a.real()+b.real(), a.imag()+b.imag()); }
+  INLINE SIMD<Complex> & operator+= (SIMD<Complex> & a, SIMD<Complex> b)
+  { a.real()+=b.real(); a.imag()+=b.imag(); return a; }
+  INLINE SIMD<Complex> operator- (SIMD<Complex> a, SIMD<Complex> b)
+  { return SIMD<Complex> (a.real()-b.real(), a.imag()-b.imag()); }
+  INLINE SIMD<Complex> operator* (SIMD<Complex> a, SIMD<Complex> b)
+    { return SIMD<Complex> (a.real()*b.real()-a.imag()*b.imag(),
+                            a.real()*b.imag()+a.imag()*b.real()); }
+  INLINE SIMD<Complex> operator* (SIMD<double> a, SIMD<Complex> b)
+  { return SIMD<Complex> (a*b.real(), a*b.imag()); }
+  INLINE SIMD<Complex> operator* (SIMD<Complex> b, SIMD<double> a)
+  { return SIMD<Complex> (a*b.real(), a*b.imag()); }
+  INLINE SIMD<Complex> & operator*= (SIMD<Complex> & a, SIMD<double> b)
+  { a.real()*= b; a.imag() *= b; return a; }
+
+  INLINE Complex HSum (SIMD<Complex> sc)
+  {
+    return Complex (HSum(sc.real()), HSum(sc.imag()));
+  }
+
+  
+  INLINE ostream & operator<< (ostream & ost, SIMD<Complex> c)
+  {
+    ost << c.real() << ", " << c.imag();
+    return ost;
+  }
+  
+
+
+  class ExceptionNOSIMD : public Exception
   {
   public:
     using Exception :: Exception;

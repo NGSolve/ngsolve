@@ -312,11 +312,13 @@ struct GenericConj {
   };
 
 
-  class CoordCoefficientFunction : public CoefficientFunction
+class CoordCoefficientFunction : public T_CoefficientFunction<CoordCoefficientFunction>
   {
     int dir;
+    typedef T_CoefficientFunction<CoordCoefficientFunction> BASE;
   public:
-    CoordCoefficientFunction (int adir) : CoefficientFunction(1, false), dir(adir) { ; }
+    CoordCoefficientFunction (int adir) : BASE(1, false), dir(adir) { ; }
+    using BASE::Evaluate;
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
     {
       return ip.GetPoint()(dir);
@@ -338,11 +340,14 @@ struct GenericConj {
         if(dir==2) code.body += v.Assign(CodeExpr("ip.GetPoint()(2)"));
     }
 
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const
+    template <typename T>
+    void T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<T> values) const
     {
       auto points = ir.GetPoints();
-      for (int i = 0; i < ir.Size(); i++)
-        values.Get(i) = points.Get(i, dir);
+      size_t nv = ir.Size();
+      __assume (nv > 0);
+      for (size_t i = 0; i < nv; i++)
+        values.Get(i) = SIMD<double> (points.Get(i, dir));
     }
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
                            AFlatMatrix<double> values) const

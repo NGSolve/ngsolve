@@ -1586,46 +1586,6 @@ namespace ngla
     x += y;
   }
   */
-  using ngstd::MyAtomicAdd;
-  inline void MyAtomicAdd (Complex & x, Complex y)
-  {
-    /*
-    auto real = y.real();
-#pragma omp atomic
-    reinterpret_cast<double(&)[2]>(x)[0] += real;
-    auto imag = y.imag();
-#pragma omp atomic
-    reinterpret_cast<double(&)[2]>(x)[1] += imag;
-    */
-    auto real = y.real();
-    ngstd::MyAtomicAdd (reinterpret_cast<double(&)[2]>(x)[0], real);
-    auto imag = y.imag();
-    ngstd::MyAtomicAdd (reinterpret_cast<double(&)[2]>(x)[1], imag);
-  }
-
-  template <int DIM, typename SCAL, typename TANY>
-  inline void MyAtomicAdd (Vec<DIM,SCAL> & x, TANY y)
-  {
-    for (int i = 0; i < DIM; i++)
-      MyAtomicAdd (x(i), y(i));
-  }
-  
-  template <int DIM, typename SCAL, typename TANY>
-  inline void MyAtomicAdd (FlatVec<DIM,SCAL> x, TANY y)
-  {
-    for (int i = 0; i < DIM; i++)
-      MyAtomicAdd (x(i), y(i));
-  }
-  
-
-
-
-
-
-
-
-
-
 
 
 

@@ -403,7 +403,8 @@ public:
 
     virtual void AddElementMatrix(FlatArray<int> dnums1, 
                                   FlatArray<int> dnums2, 
-                                  FlatMatrix<TSCAL> elmat);
+                                  FlatMatrix<TSCAL> elmat,
+                                  bool use_atomic = false);
 
     virtual BaseVector & AsVector() 
     {
@@ -594,13 +595,14 @@ public:
 
   public:
     typedef typename mat_traits<TM>::TSCAL TSCAL;
-    virtual void AddElementMatrix(FlatArray<int> dnums, FlatMatrix<TSCAL> elmat);
+    virtual void AddElementMatrix(FlatArray<int> dnums, FlatMatrix<TSCAL> elmat, bool use_atomic = false);
 
     virtual void AddElementMatrix(FlatArray<int> dnums1, 
 				  FlatArray<int> dnums2, 
-				  FlatMatrix<TSCAL> elmat)
+				  FlatMatrix<TSCAL> elmat,
+                                  bool use_atomic = false)
     {
-      AddElementMatrix (dnums1, elmat);
+      AddElementMatrix (dnums1, elmat, use_atomic);
     }
   };
 
