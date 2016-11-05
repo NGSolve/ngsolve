@@ -187,6 +187,28 @@ void ExportStdMathFunction(py::module &m, string name)
             });
 }
 
+template <typename FUNC>
+void ExportStdMathFunction2(py::module &m, string name)
+{
+  m.def (name.c_str(), 
+         [] (py::object x, py::object y) -> py::object
+         {
+           FUNC func;
+           if (py::extract<PyCF>(x).check() || py::extract<PyCF>(y).check())
+             {
+               auto cx = MakeCoefficient(x);
+               auto cy = MakeCoefficient(y);
+               return py::cast(PyCF(BinaryOpCF(cx.Get(), cy.Get(), func, func, func, func,
+                                               [](bool a, bool b) { return a||b; }, 'X' /* FUNC::Name() */)));
+             }
+           py::extract<double> dx(x), dy(y);
+           if (dx.check() && dy.check()) return py::cast(func(dx(), dy()));
+           // py::extract<Complex> cx(x), cy(y);
+           // if (cx.check() && cy.check()) return py::cast(func(cx(), cy()));
+           throw py::type_error ("can't compute math-function");
+         });
+}
+
 
 
 
@@ -235,6 +257,27 @@ struct GenericConj {
   AutoDiff<1> operator() (AutoDiff<1> x) const { throw Exception ("Conj(..) is not complex differentiable"); }
   AutoDiffDiff<1> operator() (AutoDiffDiff<1> x) const { throw Exception ("Conj(..) is not complex differentiable"); }
 };
+
+struct GenericATan2 {
+  double operator() (double x, double y) const { return atan2(x,y); }
+  double operator() (double x, double y, double & dx, double & dy) const { throw Exception ("atan2 deriv not available");  }
+  double operator() (double x, double y, double & ddx, double & dxdy, double & ddy ) const
+  { throw Exception ("atan2 dderiv not available");  }
+  template <typename T1, typename T2> T1 operator() (T1 x, T2 y) const { throw Exception ("atan2 not available");  }
+  static string Name() { return "atan2"; }
+};
+
+struct GenericPow {
+  double operator() (double x, double y) const { return pow(x,y); }
+  double operator() (double x, double y, double & dx, double & dy) const { throw Exception ("pow deriv not available");  }
+  double operator() (double x, double y, double & ddx, double & dxdy, double & ddy ) const
+  { throw Exception ("pow dderiv not available");  }
+  template <typename T1, typename T2> T1 operator() (T1 x, T2 y) const { throw Exception ("pow not available");  }
+  static string Name() { return "pow"; }
+};
+
+
+
 
 
   template <int D>
@@ -562,6 +605,9 @@ void ExportCoefficientFunction(py::module &m)
   ExportStdMathFunction<GenericATan>(m, "atan");
   ExportStdMathFunction<GenericSqrt>(m, "sqrt");
   ExportStdMathFunction<GenericConj>(m, "Conj");
+
+  ExportStdMathFunction2<GenericATan2>(m, "atan2");
+  ExportStdMathFunction2<GenericPow>(m, "pow");
   
   m.def ("IfPos", FunctionPointer 
            ([] (PyCF c1, py::object then_obj, py::object else_obj) -> PyCF
