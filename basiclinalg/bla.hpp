@@ -24,7 +24,7 @@ namespace ngbla
   typedef MyComplex<double> Complex;
   inline double fabs (Complex v) { return ngstd::abs (v); }
 #else
-  typedef std::complex<double> Complex;
+  // typedef std::complex<double> Complex;
   inline double fabs (Complex v) { return std::abs (v); }
 #endif
 
