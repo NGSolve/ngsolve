@@ -28,18 +28,23 @@ namespace ngcomp
       mat(0,0) = 1;
     }
 
+    using DiffOp<NumberDiffOp>::ApplySIMDIR;
+    /*
     template <typename FEL, class MIR, class TVX, class TVY>
     static void ApplySIMDIR (const FEL & fel, const MIR & mir,
                              const TVX & x, TVY & y)
+    */
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, ABareSliceMatrix<double> y)
     {
       for (int i = 0; i < mir.IR().GetNIP(); i++)
         y(0,i) = x(0);
     }
 
+    using DiffOp<NumberDiffOp>::AddTransSIMDIR;
     /// Computes Transpose (B-matrix) times point value    
-    template <typename FEL, class MIR, class TVX, class TVY>
-    static void AddTransSIMDIR (const FEL & fel, const MIR & mir,
-                                const TVX & x, TVY & y)
+    static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                                ABareSliceMatrix<double> x, BareSliceVector<double> y)
     {
       double sum = 0.0;
       for (int i = 0; i < mir.IR().GetNIP(); i++)
@@ -61,6 +66,8 @@ namespace ngcomp
     { 
       evaluator = make_shared<T_DifferentialOperator<NumberDiffOp>>();
       boundary_evaluator = make_shared<T_DifferentialOperator<NumberDiffOp>>();
+      is_atomic_dof = BitArray(1);
+      is_atomic_dof = true;
     }
 
     virtual int GetNDof() const { return 1; }

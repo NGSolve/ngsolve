@@ -74,7 +74,7 @@ namespace ngfem
                                              BareSliceVector<> coefs) const;
 #ifdef __AVX__
     HD NGS_DLL_HEADER virtual void AddTrans (const SIMD_IntegrationRule & ir,
-                                             ABareMatrix<double> values,
+                                             ABareSliceMatrix<double> values,
                                              SliceMatrix<> coefs) const; 
 #endif
     HD NGS_DLL_HEADER virtual Vec<DIM> EvaluateGrad (const IntegrationPoint & ip, 
@@ -101,7 +101,7 @@ namespace ngfem
                                                       SliceMatrix<> coefs) const;
 
     HD NGS_DLL_HEADER virtual void AddGradTrans (const SIMD_BaseMappedIntegrationRule & ir,
-                                                 ABareMatrix<double> values,
+                                                 ABareSliceMatrix<double> values,
                                                  BareSliceVector<> coefs) const;
 
 /*    

@@ -1374,7 +1374,69 @@ namespace ngcomp
       throw Exception ("GridFunctionCoefficientFunction: SIMD: don't know how I shall evaluate");    
   }
 
+  void GridFunctionCoefficientFunction ::   
+  Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
+            ABareSliceMatrix<Complex> bvalues) const
+  {
+    LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evalute 3");
 
+    auto values = bvalues.AddVSize(Dimension(), ir.Size());
+    const ElementTransformation & trafo = ir.GetTransformation();
+    
+    int elnr = trafo.GetElementNr();
+    bool boundary = trafo.Boundary();
+    ElementId ei(boundary ? BND : VOL, elnr);
+
+    const FESpace & fes = *gf->GetFESpace();
+
+    if (!trafo.BelongsToMesh ((void*)(fes.GetMeshAccess().get())))
+      {
+        throw ExceptionNOSIMD ("SIMD - evaluation not available for different meshes");
+        // for (int i = 0; i < ir.Size(); i++)
+        // Evaluate (ir[i], values.Row(i));
+        return;
+      }
+    
+    if (!fes.DefinedOn(trafo.GetElementIndex(), boundary)) 
+      { 
+        values = 0.0; 
+        return;
+      }
+    
+    const FiniteElement & fel = fes.GetFE (ei, lh2);
+    int dim = fes.GetDimension();
+
+    ArrayMem<int, 50> dnums;
+    fes.GetDofNrs (ei, dnums);
+    
+    VectorMem<50, Complex> elu(dnums.Size()*dim);
+
+    gf->GetElementVector (comp, dnums, elu);
+    fes.TransformVec (elnr, boundary, elu, TRANSFORM_SOL);
+
+    if (diffop && !boundary)
+      diffop->Apply (fel, ir, elu, values); // , lh2);
+    else if (trace_diffop && boundary)
+      trace_diffop->Apply (fel, ir, elu, values); // , lh2);
+    else if (bfi)
+      throw Exception ("GridFunctionCoefficientFunction: SIMD evaluate not possible 1");
+      // bfi->CalcFlux (fel, ir, elu, values, true, lh2);
+    else if (fes.GetEvaluator(boundary))
+      fes.GetEvaluator(boundary) -> Apply (fel, ir, elu, values); // , lh2);
+    else if (fes.GetIntegrator(boundary))
+      throw Exception ("GridFunctionCoefficientFunction: SIMD evaluate not possible 2");
+      // fes.GetIntegrator(boundary) ->CalcFlux (fel, ir, elu, values, false, lh2);
+    else
+      throw Exception ("GridFunctionCoefficientFunction: SIMD: don't know how I shall evaluate");    
+  }
+
+
+
+
+
+
+
+  
 
   template <class SCAL>
   VisualizeGridFunction<SCAL> ::

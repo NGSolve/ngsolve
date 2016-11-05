@@ -2046,7 +2046,8 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                              VorB vb, int order, 
                              bool region_wise, bool element_wise)
                           {
-                            static mutex addcomplex_mutex;
+                            static Timer t("Integrate CF"); RegionTimer reg(t);
+                            // static mutex addcomplex_mutex;
                             LocalHeap lh(1000000, "lh-Integrate");
                             
                             if (!cf->IsComplex())
@@ -2075,7 +2076,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                                              AFlatMatrix<> values(1, ir.GetNIP(), lh);
                                              cf.Get() -> Evaluate (mir, values);
                                              SIMD<double> vsum = 0;
-                                             for (int i = 0; i < values.VWidth(); i++)
+                                             for (size_t i = 0; i < values.VWidth(); i++)
                                                vsum += mir[i].GetWeight() * values.Get(0,i);
                                              hsum = HSum(vsum);
                                            }
@@ -2118,26 +2119,53 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                                 Vector<Complex> element_sum(element_wise ? ma->GetNE(vb) : 0);
                                 region_sum = 0;
                                 element_sum = 0;
+
+                                bool use_simd = true;
                                 
                                 ma->IterateElements
                                   (vb, lh, [&] (Ngs_Element el, LocalHeap & lh)
                                    {
                                      auto & trafo = ma->GetTrafo (el, lh);
-                                     IntegrationRule ir(trafo.GetElementType(), order);
-                                     BaseMappedIntegrationRule & mir = trafo(ir, lh);
-                                     FlatMatrix<Complex> values(ir.Size(), 1, lh);
-                                     cf.Get() -> Evaluate (mir, values);
                                      Complex hsum = 0;
-                                     for (int i = 0; i < values.Height(); i++)
-                                       hsum += mir[i].GetWeight() * values(i,0);
-                                     {
-                                       lock_guard<mutex> guard(addcomplex_mutex);
-                                       sum += hsum;
-                                       region_sum(el.GetIndex()) += hsum;
-                                     }
+                                     
+                                     bool this_simd = use_simd;
+
+                                     if (this_simd)
+                                       {
+                                         try
+                                           {
+                                             SIMD_IntegrationRule ir(trafo.GetElementType(), order);
+                                             auto & mir = trafo(ir, lh);
+                                             AFlatMatrix<Complex> values(1, ir.GetNIP(), lh);
+                                             cf.Get() -> Evaluate (mir, values);
+                                             SIMD<Complex> vsum = 0.0;
+                                             for (size_t i = 0; i < values.VWidth(); i++)
+                                               vsum += mir[i].GetWeight() * values.Get(0,i);
+                                             hsum = HSum(vsum);
+                                           }
+                                         catch (ExceptionNOSIMD e)
+                                           {
+                                             this_simd = false;
+                                             use_simd = false;
+                                             hsum = 0.0;
+                                           }
+                                       }
+                                     if (!this_simd)
+                                       {
+                                         IntegrationRule ir(trafo.GetElementType(), order);
+                                         BaseMappedIntegrationRule & mir = trafo(ir, lh);
+                                         FlatMatrix<Complex> values(ir.Size(), 1, lh);
+                                         cf.Get() -> Evaluate (mir, values);
+                                         for (int i = 0; i < values.Height(); i++)
+                                           hsum += mir[i].GetWeight() * values(i,0);
+                                       }
+                                     
+                                     MyAtomicAdd (sum, hsum);
+                                     MyAtomicAdd (region_sum(el.GetIndex()), hsum);
                                      if (element_wise)
                                        element_sum(el.Nr()) = hsum;
                                    });
+                                
                                 py::object result;
                                 if (region_wise)
                                   result = py::list(py::cast(region_sum));

@@ -1502,10 +1502,14 @@ namespace ngcomp
 	}
     }
 
-
+    using DiffOp<DiffOpGradientHdiv<D>>::ApplySIMDIR;
+    /*
     template <typename AFEL, class MIR, class TVX, class TVY>
     static void ApplySIMDIR (const AFEL & fel, const MIR & bmir,
                              const TVX & x, TVY & y)
+    */
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
+                             BareSliceVector<double> x, ABareSliceMatrix<double> y)
     {
       int size = (bmir.Size()+1)*2000;
       STACK_ARRAY(char, data, size);
@@ -1562,10 +1566,9 @@ namespace ngcomp
         }
     }
 
-    
-    template <typename AFEL, class MIR, class TVX, class TVY>
-    static void AddTransSIMDIR (const AFEL & fel, const MIR & bmir,
-                                const TVX & x, TVY & y)
+    using DiffOp<DiffOpGradientHdiv<D>>::AddTransSIMDIR;    
+    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
+                                ABareSliceMatrix<double> x, BareSliceVector<double> y)
     {
       int size = (bmir.Size()+1)*2000;
       STACK_ARRAY(char, data, size);

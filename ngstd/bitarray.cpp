@@ -18,14 +18,14 @@ namespace ngstd
     data = NULL;
   }
 
-  BitArray :: BitArray (int asize)
+  BitArray :: BitArray (size_t asize)
   {
     size = 0;
     data = NULL;
     SetSize (asize);
   }
 
-  BitArray :: BitArray (int asize, LocalHeap & lh)
+  BitArray :: BitArray (size_t asize, LocalHeap & lh)
   {
     size = asize;
     data = new (lh) unsigned char [Addr (size)+1];
@@ -45,7 +45,7 @@ namespace ngstd
       delete [] data;
   }
 
-  void BitArray :: SetSize (int asize)
+  void BitArray :: SetSize (size_t asize)
   {
     if (size == asize) return;
     if (owns_data) delete [] data;
@@ -57,14 +57,14 @@ namespace ngstd
   void BitArray :: Set () throw()
   {
     if (!size) return;
-    for (int i = 0; i <= Addr (size); i++)
+    for (size_t i = 0; i <= Addr (size); i++)
       data[i] = UCHAR_MAX;
   }
 
   void BitArray :: Clear () throw()
   {
     if (!size) return;
-    for (int i = 0; i <= Addr (size); i++)
+    for (size_t i = 0; i <= Addr (size); i++)
       data[i] = 0;
   }
 
@@ -73,7 +73,7 @@ namespace ngstd
   BitArray & BitArray :: Invert ()
   {
     if (!size) return *this;
-    for (int i = 0; i <= Addr (size); i++)
+    for (size_t i = 0; i <= Addr (size); i++)
       data[i] ^= 255;
     return *this;
   }
@@ -81,7 +81,7 @@ namespace ngstd
   BitArray & BitArray :: And (const BitArray & ba2)
   {
     if (!size) return *this;
-    for (int i = 0; i <= Addr (size); i++)
+    for (size_t i = 0; i <= Addr (size); i++)
       data[i] &= ba2.data[i];
         return *this;
   }
@@ -90,7 +90,7 @@ namespace ngstd
   BitArray & BitArray :: Or (const BitArray & ba2)
   {
     if (!size) return *this;
-    for (int i = 0; i <= Addr (size); i++)
+    for (size_t i = 0; i <= Addr (size); i++)
       data[i] |= ba2.data[i];
     return *this;
   }
@@ -101,15 +101,15 @@ namespace ngstd
     SetSize (ba2.Size());
     if (!size) 
       return *this;
-    for (int i = 0; i <= Addr (size); i++)
+    for (size_t i = 0; i <= Addr (size); i++)
       data[i] = ba2.data[i];
     return *this;
   }
 
   ostream & operator<<(ostream & s, const BitArray & ba)
   {
-    int n = ba.Size();
-    for (int i = 0; i < n; i++)
+    size_t n = ba.Size();
+    for (size_t i = 0; i < n; i++)
       {
 	if (i % 50 == 0) s << i << ": ";
 	s << int(ba[i]);
@@ -119,10 +119,10 @@ namespace ngstd
     return s;
   }
 
-  int BitArray :: NumSet () const
+  size_t BitArray :: NumSet () const
   {
-    int cnt = 0;
-    for (int i = 0; i < Size(); i++)
+    size_t cnt = 0;
+    for (size_t i = 0; i < Size(); i++)
       if (Test(i)) cnt++;
     return cnt;
   }
@@ -132,7 +132,7 @@ namespace ngstd
     if (archive.Output())
       {
         archive << ba.Size();
-        for (int i = 0; i < ba.Size(); i++)
+        for (size_t i = 0; i < ba.Size(); i++)
           archive << ba[i];
       }
     else
@@ -141,7 +141,7 @@ namespace ngstd
         archive & size;
         ba.SetSize (size);
         ba.Clear();
-        for (int i = 0; i < size; i++)
+        for (size_t i = 0; i < size; i++)
           {
             bool b;
             archive & b;

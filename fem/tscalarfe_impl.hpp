@@ -527,7 +527,7 @@ namespace ngfem
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   AddTrans (const SIMD_IntegrationRule & ir,
-            ABareMatrix<double> values,
+            ABareSliceMatrix<double> values,
             SliceMatrix<> coefs) const
   {
     FlatArray<SIMD<IntegrationPoint>> hir = ir;    
@@ -735,7 +735,7 @@ namespace ngfem
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   AddGradTrans (const SIMD_BaseMappedIntegrationRule & bmir,
-                ABareMatrix<double> values,
+                ABareSliceMatrix<double> values,
                 BareSliceVector<> coefs) const
   {
     if ((DIM == 3) || (bmir.DimSpace() == DIM))
