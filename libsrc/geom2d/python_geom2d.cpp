@@ -1,41 +1,34 @@
 #ifdef NG_PYTHON
 
-#include <boost/python.hpp>
 #include <../general/ngpython.hpp>
 
 #include <meshing.hpp>
 #include <geometry2d.hpp>
 
 using namespace netgen;
-namespace bp = boost::python;
-
-#if defined(_MSC_FULL_VER) && _MSC_FULL_VER == 190024213
-namespace boost { template<> const volatile SplineGeometry2d* get_pointer(const volatile SplineGeometry2d* p) { return p; } }
-#endif
 
 namespace netgen
 {
   extern std::shared_ptr<NetgenGeometry> ng_geometry;
 }
 
-DLL_HEADER void ExportGeom2d() 
-{
-  ModuleScope module("geom2d");
 
-  bp::class_<SplineGeometry2d, shared_ptr<SplineGeometry2d>, boost::noncopyable>
-    ("SplineGeometry",
+DLL_HEADER void ExportGeom2d(py::module &m) 
+{
+
+  py::class_<SplineGeometry2d, shared_ptr<SplineGeometry2d>>
+    (m, "SplineGeometry",
      "a 2d boundary representation geometry model by lines and splines")
-    .def("__init__", bp::make_constructor 
-         (FunctionPointer
-          ([](const string & filename)
+    .def(py::init<>())
+    .def("__init__",
+          [](SplineGeometry2d *instance, const string & filename)
            {
              cout << "load geometry";
              ifstream ist(filename);
-             auto geom = make_shared<SplineGeometry2d>();
-             geom->Load (filename.c_str());
-             ng_geometry = geom;
-             return geom;
-           })))
+             new (instance) SplineGeometry2d();
+             instance->Load (filename.c_str());
+             ng_geometry = shared_ptr<SplineGeometry2d>(instance, NOOP_Deleter);
+           })
     
 	.def("Load",&SplineGeometry2d::Load)
     .def("AppendPoint", FunctionPointer
@@ -50,17 +43,17 @@ DLL_HEADER void ExportGeom2d()
             self.geompoints.Append(gp);
             return self.geompoints.Size()-1;
 	  }),
-         (bp::arg("self"), bp::arg("x"), bp::arg("y"), bp::arg("maxh") = 1e99, bp::arg("hpref")=false))
-    .def("Append", FunctionPointer([](SplineGeometry2d &self, bp::list segment, int leftdomain, int rightdomain,
-                                      bp::object bc, bp::object copy, double maxh, bool hpref)
+         py::arg("x"), py::arg("y"), py::arg("maxh") = 1e99, py::arg("hpref")=false)
+    .def("Append", FunctionPointer([](SplineGeometry2d &self, py::list segment, int leftdomain, int rightdomain,
+                                      py::object bc, py::object copy, double maxh, bool hpref)
 	  {
-            bp::extract<std::string> segtype(segment[0]);
+            py::extract<std::string> segtype(segment[0]);
             
             SplineSegExt * seg;
             if (segtype().compare("line") == 0)
               {
-                bp::extract<int> point_index1(segment[1]);
-                bp::extract<int> point_index2(segment[2]);
+                py::extract<int> point_index1(segment[1]);
+                py::extract<int> point_index2(segment[2]);
                 //point_index1.check()
                 
                 LineSeg<2> * l = new LineSeg<2>(self.GetPoint(point_index1()), self.GetPoint(point_index2()));
@@ -68,9 +61,9 @@ DLL_HEADER void ExportGeom2d()
               }
             else if (segtype().compare("spline3") == 0)
               {
-                bp::extract<int> point_index1(segment[1]);
-                bp::extract<int> point_index2(segment[2]);
-                bp::extract<int> point_index3(segment[3]);
+                py::extract<int> point_index1(segment[1]);
+                py::extract<int> point_index2(segment[2]);
+                py::extract<int> point_index3(segment[3]);
                 
                 SplineSeg3<2> * seg3 = new SplineSeg3<2>(self.GetPoint(point_index1()), self.GetPoint(point_index2()), self.GetPoint(point_index3()));
                 seg = new SplineSegExt(*seg3);
@@ -86,14 +79,14 @@ DLL_HEADER void ExportGeom2d()
             seg->hpref_right = hpref;
             seg->reffak = 1;
             seg->copyfrom = -1;
-            if (bp::extract<int>(copy).check())
-              seg->copyfrom = bp::extract<int>(copy)()+1;
+            if (py::extract<int>(copy).check())
+              seg->copyfrom = py::extract<int>(copy)()+1;
               
-            if (bp::extract<int>(bc).check())
-              seg->bc = bp::extract<int>(bc)();
-            else if (bp::extract<string>(bc).check())
+            if (py::extract<int>(bc).check())
+              seg->bc = py::extract<int>(bc)();
+            else if (py::extract<string>(bc).check())
               {
-                string bcname = bp::extract<string>(bc)();
+                string bcname = py::extract<string>(bc)();
                 int bcnum = self.GetBCNumber(bcname);
                 if (bcnum == 0)
                   bcnum = self.AddBCName(bcname);
@@ -103,25 +96,25 @@ DLL_HEADER void ExportGeom2d()
               seg->bc = self.GetNSplines()+1;
             self.AppendSegment(seg);
             return self.GetNSplines()-1;
-	  }), (bp::arg("self"), bp::arg("point_indices"), bp::arg("leftdomain") = 1, bp::arg("rightdomain") = 0,
-               bp::arg("bc")=bp::object(), bp::arg("copy")=bp::object(), bp::arg("maxh")=1e99, bp::arg("hpref")=false
-               ))
+	  }), py::arg("point_indices"), py::arg("leftdomain") = 1, py::arg("rightdomain") = py::int_(0),
+               py::arg("bc")=NGDummyArgument(), py::arg("copy")=NGDummyArgument(), py::arg("maxh")=1e99, py::arg("hpref")=false
+               )
 
     
-    .def("AppendSegment", FunctionPointer([](SplineGeometry2d &self, bp::list point_indices, int leftdomain, int rightdomain)
+    .def("AppendSegment", FunctionPointer([](SplineGeometry2d &self, py::list point_indices, int leftdomain, int rightdomain)
                                           {
-		  int npts = bp::len(point_indices);
+		  int npts = py::len(point_indices);
 		  SplineSegExt * seg;
-		  //int a = bp::extract<int>(point_indices[0]);
+		  //int a = py::extract<int>(point_indices[0]);
 		  if (npts == 2)
 		  {
-			  LineSeg<2> * l = new LineSeg<2>(self.GetPoint(bp::extract<int>(point_indices[0])), self.GetPoint(bp::extract<int>(point_indices[1])));
+			  LineSeg<2> * l = new LineSeg<2>(self.GetPoint(py::extract<int>(point_indices[0])()), self.GetPoint(py::extract<int>(point_indices[1])()));
 			  seg = new SplineSegExt(*l);
 			  
 		  }
 		  else if (npts == 3)
 		  {
-			  SplineSeg3<2> * seg3 = new SplineSeg3<2>(self.GetPoint(bp::extract<int>(point_indices[0])), self.GetPoint(bp::extract<int>(point_indices[1])), self.GetPoint(bp::extract<int>(point_indices[2])));
+			  SplineSeg3<2> * seg3 = new SplineSeg3<2>(self.GetPoint(py::extract<int>(point_indices[0])()), self.GetPoint(py::extract<int>(point_indices[1])()), self.GetPoint(py::extract<int>(point_indices[2])()));
 			  seg = new SplineSegExt(*seg3);
 
 		  }
@@ -131,7 +124,7 @@ DLL_HEADER void ExportGeom2d()
 		  seg->reffak = 1;
 		  seg->copyfrom = -1;
 		  self.AppendSegment(seg);
-		}), (bp::arg("self"), bp::arg("point_indices"), bp::arg("leftdomain") = 1, bp::arg("rightdomain") = 0) )
+                  }), py::arg("point_indices"), py::arg("leftdomain") = 1, py::arg("rightdomain") = py::int_(0))
 	//.def("AppendSegment", FunctionPointer([](SplineGeometry2d &self, int point_index1, int point_index2)//, int leftdomain, int rightdomain)
 	//  {
 	//	  LineSeg<2> * l = new LineSeg<2>(self.GetPoint(point_index1), self.GetPoint(point_index2));
@@ -143,7 +136,7 @@ DLL_HEADER void ExportGeom2d()
 	//	  seg->copyfrom = -1;
 
 	//	  self.AppendSegment(seg);
-	//  }))//, (bp::arg("self"), bp::arg("point_index1"), bp::arg("point_index2"), bp::arg("leftdomain") = 1, bp::arg("rightdomain") = 0) )
+	//  }))//, (py::arg("self"), py::arg("point_index1"), py::arg("point_index2"), py::arg("leftdomain") = 1, py::arg("rightdomain") = 0) )
 	//.def("AppendSegment", FunctionPointer([](SplineGeometry2d &self, int point_index1, int point_index2, int point_index3)//, int leftdomain, int rightdomain)
 	//  {
 	//	  SplineSeg3<2> * seg3 = new SplineSeg3<2>(self.GetPoint(point_index1), self.GetPoint(point_index2), self.GetPoint(point_index3));
@@ -154,7 +147,7 @@ DLL_HEADER void ExportGeom2d()
 	//	  seg->reffak = 1;
 	//	  seg->copyfrom = -1;
 	//	  self.AppendSegment(seg);
-	//  }))//, (bp::arg("self"), bp::arg("point_index1"), bp::arg("point_index2"), bp::arg("point_index3"), bp::arg("leftdomain") = 1, bp::arg("rightdomain") = 0 ) )
+	//  }))//, (py::arg("self"), py::arg("point_index1"), py::arg("point_index2"), py::arg("point_index3"), py::arg("leftdomain") = 1, py::arg("rightdomain") = 0 ) )
 
 
     .def("SetMaterial", &SplineGeometry2d::SetMaterial)
@@ -169,22 +162,22 @@ DLL_HEADER void ExportGeom2d()
 		  Box<2> box(self.GetBoundingBox());
 		  double xdist = box.PMax()(0) - box.PMin()(0);
 		  double ydist = box.PMax()(1) - box.PMin()(1);
-		  bp::tuple xlim = bp::make_tuple(box.PMin()(0) - 0.1*xdist, box.PMax()(0) + 0.1*xdist);
-		  bp::tuple ylim = bp::make_tuple(box.PMin()(1) - 0.1*ydist, box.PMax()(1) + 0.1*ydist);
+		  py::tuple xlim = py::make_tuple(box.PMin()(0) - 0.1*xdist, box.PMax()(0) + 0.1*xdist);
+		  py::tuple ylim = py::make_tuple(box.PMin()(1) - 0.1*ydist, box.PMax()(1) + 0.1*ydist);
 
-		  bp::list xpoints, ypoints;
+		  py::list xpoints, ypoints;
 
 		  for (int i = 0; i < self.splines.Size(); i++)
 		  {
-			  bp::list xp, yp;
+			  py::list xp, yp;
 			  if (self.splines[i]->GetType().compare("line")==0)
 			  {
 				  GeomPoint<2> p1 = self.splines[i]->StartPI();
 				  GeomPoint<2> p2 = self.splines[i]->EndPI();
-				  xp.append(p1(0));
-				  xp.append(p2(0));
-				  yp.append(p1(1));
-				  yp.append(p2(1));
+				  xp.append(py::cast(p1(0)));
+				  xp.append(py::cast(p2(0)));
+				  yp.append(py::cast(p1(1)));
+				  yp.append(py::cast(p2(1)));
 			  }
 			  else if (self.splines[i]->GetType().compare("spline3")==0)
 			  {
@@ -194,37 +187,37 @@ DLL_HEADER void ExportGeom2d()
 				  for (int j = 0; j <= n; j++)
 				  {
 					  GeomPoint<2> point = self.splines[i]->GetPoint(j*1./n);
-					  xp.append(point(0));
-					  yp.append(point(1));
+					  xp.append(py::cast(point(0)));
+					  yp.append(py::cast(point(1)));
 				  }
 			  }
 			  else
 			  {
 				  cout << "spline is neither line nor spline3" << endl;
 			  }
-			  xpoints.append(xp);
-			  ypoints.append(yp);
+			  xpoints.append(py::cast(xp));
+			  ypoints.append(py::cast(yp));
 				  
 		  }
-		  return bp::tuple(bp::make_tuple(xlim, ylim, xpoints, ypoints));
+		  return py::tuple(py::make_tuple(xlim, ylim, xpoints, ypoints));
 
 	  }))
 	.def("PointData", FunctionPointer([](SplineGeometry2d &self)
 	  {
-		  bp::list xpoints, ypoints, pointindex;
+		  py::list xpoints, ypoints, pointindex;
 		  
 		  for (int i = 0; i < self.geompoints.Size(); i++)
 		  {
-			  pointindex.append(i);
-			  xpoints.append(self.geompoints[i][0]);
-			  ypoints.append(self.geompoints[i][1]);
+			  pointindex.append(py::cast(i));
+			  xpoints.append(py::cast(self.geompoints[i][0]));
+			  ypoints.append(py::cast(self.geompoints[i][1]));
 		  }
-		  return bp::tuple(bp::make_tuple(xpoints, ypoints, pointindex));
+		  return py::tuple(py::make_tuple(xpoints, ypoints, pointindex));
 		  
 	  }))
 	.def("SegmentData", FunctionPointer([](SplineGeometry2d &self)
 	  {
-		  bp::list leftpoints, rightpoints, leftdom, rightdom;
+		  py::list leftpoints, rightpoints, leftdom, rightdom;
 
 		  for (int i = 0; i < self.splines.Size(); i++)
 		  {
@@ -234,13 +227,13 @@ DLL_HEADER void ExportGeom2d()
 			  normal(0) = normal(1);
 			  normal(1) = -temp;
 
-			  leftdom.append(self.GetSpline(i).leftdom);
-			  rightdom.append(self.GetSpline(i).rightdom);
+			  leftdom.append(py::cast(self.GetSpline(i).leftdom));
+			  rightdom.append(py::cast(self.GetSpline(i).rightdom));
 
-			  rightpoints.append(bp::make_tuple(point(0), point(1), normal(0)<0, normal(1)<0));
-			  leftpoints.append(bp::make_tuple(point(0), point(1), normal(0)<0, normal(1)<0));
+			  rightpoints.append(py::make_tuple(point(0), point(1), normal(0)<0, normal(1)<0));
+			  leftpoints.append(py::make_tuple(point(0), point(1), normal(0)<0, normal(1)<0));
 		  }
-		  return bp::tuple(bp::make_tuple(leftpoints, rightpoints, leftdom, rightdom));
+		  return py::tuple(py::make_tuple(leftpoints, rightpoints, leftdom, rightdom));
 
 	  }))
 	.def("Print", FunctionPointer([](SplineGeometry2d &self)
@@ -273,8 +266,10 @@ DLL_HEADER void ExportGeom2d()
   
 }
 
-BOOST_PYTHON_MODULE(libgeom2d) {
-	ExportGeom2d();
+PYBIND11_PLUGIN(libgeom2d) {
+  py::module m("geom2d", "pybind geom2d");
+  ExportGeom2d(m);
+  return m.ptr();
 }
 
 #endif

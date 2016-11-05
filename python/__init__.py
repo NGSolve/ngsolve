@@ -10,10 +10,14 @@ if __platform.startswith('darwin'):
 
  
 # from libngpy import *
-import libngpy 
+import libngpy
+# from libngpy import *
 
-from . import csg
-from . import meshing
+# import libngpy 
+
+# from . import csg
+# from . import meshing
+# from . import geom2d
 
 del environ
 del path

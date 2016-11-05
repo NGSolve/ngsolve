@@ -488,29 +488,21 @@ namespace netgen
 
 
 #ifdef NG_PYTHON
-#include <boost/python.hpp>
 #include <../general/ngpython.hpp>
-namespace bp = boost::python;
 
-#if defined(_MSC_FULL_VER) && _MSC_FULL_VER == 190024213
-namespace boost { template<> const volatile netgen::VisualSceneGeometry* get_pointer(const volatile netgen::VisualSceneGeometry* p) { return p; } }
-#endif
-
-DLL_HEADER void ExportCSGVis()
+DLL_HEADER void ExportCSGVis(py::module &m)
 {
 	using namespace netgen;
 
-	ModuleScope module("csgvis");
-
-	bp::class_<VisualSceneGeometry, shared_ptr<VisualSceneGeometry>>
-		("VisualSceneGeometry", bp::no_init)
+	py::class_<VisualSceneGeometry, shared_ptr<VisualSceneGeometry>>
+		(m, "VisualSceneGeometry")
 		.def("Draw", &VisualSceneGeometry::DrawScene)
 		;
 
-    bp::def("SetBackGroundColor", &VisualSceneGeometry::SetBackGroundColor);
+    m.def("SetBackGroundColor", &VisualSceneGeometry::SetBackGroundColor);
 
-	bp::def("VS", FunctionPointer
-		([](CSGeometry & geom)
+	m.def("VS",
+		[](CSGeometry & geom)
 	{
 		geom.FindIdenticSurfaces(1e-6);
 		geom.CalcTriangleApproximation(0.01, 20);
@@ -518,17 +510,19 @@ DLL_HEADER void ExportCSGVis()
 
 		vs->SetGeometry(&geom);
 		return vs;
-	}));
+	});
 
-	bp::def("MouseMove", FunctionPointer
-		([](VisualSceneGeometry &vsgeom, int oldx, int oldy, int newx, int newy, char mode)
+	m.def("MouseMove",
+		[](VisualSceneGeometry &vsgeom, int oldx, int oldy, int newx, int newy, char mode)
 	{
 		vsgeom.MouseMove(oldx, oldy, newx, newy, mode);
-	}));
+	});
 }
-BOOST_PYTHON_MODULE(libcsgvis) 
-{
-	ExportCSGVis();  
+
+PYBIND11_PLUGIN(libcsgvis) {
+  py::module m("csg", "pybind csg");
+  ExportCSGVis(m);
+  return m.ptr();
 }
 #endif
 

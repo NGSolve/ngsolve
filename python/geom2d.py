@@ -1,5 +1,5 @@
-from libngpy.geom2d import *
-from libngpy.meshing import *
+from libngpy._geom2d import *
+from libngpy._meshing import *
 
 tmp_generate_mesh = SplineGeometry.GenerateMesh
 
@@ -42,8 +42,8 @@ def MakeCircle (geo, c, r, **args):
     
 SplineGeometry.AddCircle = lambda geo, c, r, **args : MakeCircle(geo, c, r, **args)
 SplineGeometry.AddRectangle = lambda geo, p1, p2, **args : MakeRectangle(geo, p1, p2, **args)
-SplineGeometry.AddSegment = SplineGeometry.Append
-SplineGeometry.AddPoint = SplineGeometry.AppendPoint
+SplineGeometry.AddSegment = lambda *args, **kwargs : SplineGeometry.Append(*args, **kwargs)
+SplineGeometry.AddPoint = lambda *args, **kwargs : SplineGeometry.AppendPoint(*args, **kwargs)
 
 
 __all__ = ['SplineGeometry', 'unit_square']

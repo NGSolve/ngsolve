@@ -58,6 +58,7 @@ namespace netgen
   class AlignedAlloc
   {
   public:
+    void * operator new (size_t s, void *p) { return p; }
     void * operator new (size_t s) { return  _mm_malloc(s, alignof(T)); }
     void * operator new[] (size_t s) { return  _mm_malloc(s, alignof(T)); }
     void operator delete (void * p) { _mm_free(p); }

@@ -1,7 +1,5 @@
 #ifdef NG_PYTHON
 
-#include <boost/python.hpp>
-#include <boost/python/slice.hpp>
 #include <../general/ngpython.hpp>
 
 #include <mystdlib.h>
@@ -12,7 +10,6 @@
 
 
 using namespace netgen;
-namespace bp = boost::python;
 
 namespace netgen
 {
@@ -21,23 +18,19 @@ namespace netgen
 
 
 template <typename T, int BASE = 0, typename TIND = int>
-void ExportArray ()
+void ExportArray (py::module &m)
 {
   string name = string("Array_") + typeid(T).name();
-  bp::class_<Array<T,BASE,TIND>,boost::noncopyable>(name.c_str())
-    .def ("__len__", &Array<T,BASE,TIND>::Size)
+  py::class_<Array<T,BASE,TIND>>(m, name.c_str())
+    .def ("__len__", [] ( Array<T,BASE,TIND> &self ) { return self.Size(); } )
     .def ("__getitem__", 
           FunctionPointer ([](Array<T,BASE,TIND> & self, TIND i) -> T&
                            {
                              if (i < BASE || i >= BASE+self.Size())
-                               bp::exec("raise IndexError()\n");
+                               throw py::index_error();
                              return self[i];
                            }),
-          bp::return_value_policy<bp::reference_existing_object>())
-
-    .def ("__iter__", 
-          bp::range (FunctionPointer([](Array<T,BASE,TIND> & self) { return &self[BASE]; }),
-                     FunctionPointer([](Array<T,BASE,TIND> & self) { return &self[BASE+self.Size()]; })))
+          py::return_value_policy::reference)
 
     ;
 }
@@ -49,45 +42,46 @@ void TranslateException (const NgException & ex)
 }
 
 
-DLL_HEADER void ExportNetgenMeshing() 
+DLL_HEADER void ExportNetgenMeshing(py::module &m) 
 {
   
-  ModuleScope module("meshing");
-
-  bp::register_exception_translator<NgException>(&TranslateException);
   
-  bp::class_<PointIndex>("PointId", bp::init<int>())
+  py::class_<PointIndex>(m, "PointId")
+    .def(py::init<int>())
     .def("__repr__", &ToString<PointIndex>)
     .def("__str__", &ToString<PointIndex>)
-    .add_property("nr", &PointIndex::operator int)
+    .def_property_readonly("nr", &PointIndex::operator int)
     .def("__eq__" , FunctionPointer( [](PointIndex &self, PointIndex &other)
                   { return static_cast<int>(self)==static_cast<int>(other); }) )
     .def("__hash__" , FunctionPointer( [](PointIndex &self ) { return static_cast<int>(self); }) )
     ;
 
-  bp::class_<ElementIndex>("ElementId3D", bp::init<int>())
+  py::class_<ElementIndex>(m, "ElementId3D")
+    .def(py::init<int>())
     .def("__repr__", &ToString<ElementIndex>)
     .def("__str__", &ToString<ElementIndex>)
-    .add_property("nr", &ElementIndex::operator int)
+    .def_property_readonly("nr", &ElementIndex::operator int)
     .def("__eq__" , FunctionPointer( [](ElementIndex &self, ElementIndex &other)
                   { return static_cast<int>(self)==static_cast<int>(other); }) )
     .def("__hash__" , FunctionPointer( [](ElementIndex &self ) { return static_cast<int>(self); }) )
     ;
 
 
-  bp::class_<SurfaceElementIndex>("ElementId2D", bp::init<int>())
+  py::class_<SurfaceElementIndex>(m, "ElementId2D")
+    .def(py::init<int>())
     .def("__repr__", &ToString<SurfaceElementIndex>)
     .def("__str__", &ToString<SurfaceElementIndex>)
-    .add_property("nr", &SurfaceElementIndex::operator int)
+    .def_property_readonly("nr", &SurfaceElementIndex::operator int)
     .def("__eq__" , FunctionPointer( [](SurfaceElementIndex &self, SurfaceElementIndex &other)
                   { return static_cast<int>(self)==static_cast<int>(other); }) )
     .def("__hash__" , FunctionPointer( [](SurfaceElementIndex &self ) { return static_cast<int>(self); }) )
     ;
 
-  bp::class_<SegmentIndex>("ElementId1D", bp::init<int>())
+  py::class_<SegmentIndex>(m, "ElementId1D")
+    .def(py::init<int>())
     .def("__repr__", &ToString<SegmentIndex>)
     .def("__str__", &ToString<SegmentIndex>)
-    .add_property("nr", &SegmentIndex::operator int)
+    .def_property_readonly("nr", &SegmentIndex::operator int)
     .def("__eq__" , FunctionPointer( [](SegmentIndex &self, SegmentIndex &other)
                   { return static_cast<int>(self)==static_cast<int>(other); }) )
     .def("__hash__" , FunctionPointer( [](SegmentIndex &self ) { return static_cast<int>(self); }) )
@@ -96,181 +90,166 @@ DLL_HEADER void ExportNetgenMeshing()
 
 
   /*  
-  bp::class_<Point<3>> ("Point")
-    .def(bp::init<double,double,double>())
+  py::class_<Point<3>> ("Point")
+    .def(py::init<double,double,double>())
     ;
   */
 
-  bp::class_<MeshPoint /* ,bp::bases<Point<3>> */ >("MeshPoint")
-    .def(bp::init<Point<3>>())
+  py::class_<MeshPoint /* ,py::bases<Point<3>> */ >(m, "MeshPoint")
+    .def(py::init<Point<3>>())
     .def("__str__", &ToString<MeshPoint>)
     .def("__repr__", &ToString<MeshPoint>)
-    .add_property("p", FunctionPointer([](const MeshPoint & self)
-                                        {
-                                          bp::list l;
-                                          l.append ( self[0] );
-                                          l.append ( self[1] );
-                                          l.append ( self[2] );
-                                          return bp::tuple(l);
+    .def_property_readonly("p", FunctionPointer([](const MeshPoint & self)
+                                       {
+                                         py::list l;
+                                         l.append ( py::cast(self[0]) );
+                                         l.append ( py::cast(self[1]) );
+                                         l.append ( py::cast(self[2]) );
+                                         return py::tuple(l);
                                        }))
     .def("__getitem__", FunctionPointer([](const MeshPoint & self, int index) {
 	  if(index<0 || index>2)
-	    bp::exec("raise IndexError()\n");
+              throw py::index_error();
 	  return self[index];
 	}))
     ;
   
-  bp::class_<Element>("Element3D")
-    .def("__init__", bp::make_constructor
-         (FunctionPointer ([](int index, bp::list vertices)
+  py::class_<Element>(m, "Element3D")
+    .def("__init__", [](Element *instance, int index, py::list vertices)
                            {
-                             if (bp::len(vertices) == 4)
+                             if (py::len(vertices) == 4)
                                {
-                                 Element * tmp = new Element(TET);
+                                 new (instance) Element(TET);
                                  for (int i = 0; i < 4; i++)
-                                   (*tmp)[i] = bp::extract<PointIndex>(vertices[i]);
-                                 tmp->SetIndex(index);
-                                 return tmp;
+                                   (*instance)[i] = py::extract<PointIndex>(vertices[i])();
+                                 instance->SetIndex(index);
                                }
-                             if (bp::len(vertices) == 6)
+                             if (py::len(vertices) == 6)
                                {
-                                 Element * tmp = new Element(PRISM);
+                                 new (instance) Element(PRISM);
                                  for (int i = 0; i < 6; i++)
-                                   (*tmp)[i] = bp::extract<PointIndex>(vertices[i]);
-                                 tmp->SetIndex(index);
-                                 return tmp;
+                                   (*instance)[i] = py::extract<PointIndex>(vertices[i])();
+                                 instance->SetIndex(index);
                                }
-                             if (bp::len(vertices) == 8)
+                             if (py::len(vertices) == 8)
                                {
-                                 Element * tmp = new Element(HEX);
+                                 new (instance) Element(HEX);
                                  for (int i = 0; i < 8; i++)
-                                   (*tmp)[i] = bp::extract<PointIndex>(vertices[i]);
-                                 tmp->SetIndex(index);
-                                 return tmp;
+                                   (*instance)[i] = py::extract<PointIndex>(vertices[i])();
+                                 instance->SetIndex(index);
                                }
                              throw NgException ("cannot create element");                             
-                           }),
-          bp::default_call_policies(),        // need it to use arguments
-          (bp::arg("index")=1,bp::arg("vertices"))),
+                           },
+          py::arg("index")=1,py::arg("vertices"),
          "create volume element"
          )
     .def("__repr__", &ToString<Element>)
-    .add_property("index", &Element::GetIndex, &Element::SetIndex)
-    .add_property("vertices", 
-                  FunctionPointer ([](const Element & self) -> bp::list
+    .def_property("index", &Element::GetIndex, &Element::SetIndex)
+    .def_property_readonly("vertices", 
+                  FunctionPointer ([](const Element & self) -> py::list
                                    {
-                                     bp::list li;
+                                     py::list li;
                                      for (int i = 0; i < self.GetNV(); i++)
-                                       li.append (self[i]);
+                                       li.append (py::cast(self[i]));
                                      return li;
                                    }))
     ;
 
-  bp::class_<Element2d>("Element2D")
-    .def("__init__", bp::make_constructor
-         (FunctionPointer ([](int index, bp::list vertices)
+  py::class_<Element2d>(m, "Element2D")
+    .def("__init__", 
+         [](Element2d *instance, int index, py::list vertices)
                            {
-                             if (bp::len(vertices) == 3)
+                             if (py::len(vertices) == 3)
                                {
-                                 Element2d * tmp = new Element2d(TRIG);
+                                 new (instance) Element2d(TRIG);
                                  for (int i = 0; i < 3; i++)
-                                   (*tmp)[i] = bp::extract<PointIndex>(vertices[i]);
-                                 tmp->SetIndex(index);
-                                 return tmp;
+                                   (*instance)[i] = py::extract<PointIndex>(vertices[i])();
+                                 instance->SetIndex(index);
                                }
                              else
                                {
-                                 Element2d * tmp = new Element2d(QUAD);
+                                 new (instance) Element2d(QUAD);
                                  for (int i = 0; i < 4; i++)
-                                   (*tmp)[i] = bp::extract<PointIndex>(vertices[i]);
-                                 tmp->SetIndex(index);
-                                 return tmp;
+                                   (*instance)[i] = py::extract<PointIndex>(vertices[i])();
+                                 instance->SetIndex(index);
                                }
                                
-                           }),
-          bp::default_call_policies(),        // need it to use arguments
-          (bp::arg("index")=1,bp::arg("vertices"))),
+                           },
+          py::arg("index")=1,py::arg("vertices"),
          "create surface element"
          )
-    .add_property("index", &Element2d::GetIndex, &Element2d::SetIndex)
-    .add_property("vertices",
-                  FunctionPointer([](const Element2d & self) -> bp::list
+    .def_property("index", &Element2d::GetIndex, &Element2d::SetIndex)
+    .def_property_readonly("vertices",
+                  FunctionPointer([](const Element2d & self) -> py::list
                                   {
-                                    bp::list li;
+                                    py::list li;
                                     for (int i = 0; i < self.GetNV(); i++)
-                                      li.append(self[i]);
+                                      li.append(py::cast(self[i]));
                                     return li;
                                   }))
     ;
 
-  bp::class_<Segment>("Element1D")
-    .def("__init__", bp::make_constructor
-         (FunctionPointer ([](bp::list vertices, bp::list surfaces, int index)
+  py::class_<Segment>(m, "Element1D")
+    .def("__init__",
+         [](Segment *instance, py::list vertices, py::list surfaces, int index)
                            {
-                             Segment * tmp = new Segment;
+                             new (instance) Segment();
                              for (int i = 0; i < 2; i++)
-                               (*tmp)[i] = bp::extract<PointIndex>(vertices[i]);
-                             tmp -> si = index;
+                               (*instance)[i] = py::extract<PointIndex>(vertices[i])();
+                             instance -> si = index;
                              if (len(surfaces))
                                {
-                                 tmp->surfnr1 = bp::extract<int>(surfaces[0]);
-                                 tmp->surfnr2 = bp::extract<int>(surfaces[1]);
+                                 instance->surfnr1 = py::extract<int>(surfaces[0])();
+                                 instance->surfnr2 = py::extract<int>(surfaces[1])();
                                }
-			     tmp->edgenr = index;
-                             return tmp;
-                           }),
-          bp::default_call_policies(),      
-          (bp::arg("vertices"),
-           bp::arg("surfaces")=bp::list(),
-           bp::arg("index")=1
-           )),
+                           },
+          py::arg("vertices"),
+           py::arg("surfaces")=py::list(),
+           py::arg("index")=1,
          "create segment element"
          )
     .def("__repr__", &ToString<Segment>)
-    .add_property("vertices", 
-                  FunctionPointer ([](const Segment & self) -> bp::list
+    .def_property_readonly("vertices", 
+                  FunctionPointer ([](const Segment & self) -> py::list
                                    {
-                                     bp::list li;
+                                     py::list li;
                                      for (int i = 0; i < 2; i++)
-                                       li.append (self[i]);
+                                       li.append (py::cast(self[i]));
                                      return li;
                                    }))
-    .add_property("surfaces", 
-                  FunctionPointer ([](const Segment & self) -> bp::list
+    .def_property_readonly("surfaces", 
+                  FunctionPointer ([](const Segment & self) -> py::list
                                    {
-                                     bp::list li;
-                                     li.append (self.surfnr1);
-                                     li.append (self.surfnr2);
+                                     py::list li;
+                                     li.append (py::cast(self.surfnr1));
+                                     li.append (py::cast(self.surfnr2));
                                      return li;
                                    }))
-    .add_property("index", FunctionPointer([](const Segment &self) -> size_t
+    .def_property_readonly("index", FunctionPointer([](const Segment &self) -> size_t
 		  {
 		    return self.edgenr;
 		  }))
     ;
 
 
-  bp::class_<Element0d>("Element0D")
-    .def("__init__", bp::make_constructor
-         (FunctionPointer ([](PointIndex vertex, int index)
+  py::class_<Element0d>(m, "Element0D")
+    .def("__init__",
+         [](Element0d *instance, PointIndex vertex, int index)
                            {
-                             Element0d * tmp = new Element0d;
-                             tmp->pnum = vertex;
-                             tmp->index = index;
-                             return tmp;
-                           }),
-          bp::default_call_policies(),      
-          (bp::arg("vertex"),
-           bp::arg("index")=1
-           )),
+                             new (instance) Element0d;
+                             instance->pnum = vertex;
+                             instance->index = index;
+                           },
+         py::arg("vertex"),
+         py::arg("index")=1,
          "create point element"
          )
     .def("__repr__", &ToString<Element0d>)
-    .add_property("vertices", 
-                  FunctionPointer ([](const Element0d & self) -> bp::list
+    .def_property_readonly("vertices", 
+                  FunctionPointer ([](const Element0d & self) -> py::list
                                    {
-                                     bp::list li;
-                                     li.append (self.pnum);
+                                     py::list li;
+                                     li.append (py::cast(self.pnum));
                                      return li;
                                    }))
     ;
@@ -279,70 +258,61 @@ DLL_HEADER void ExportNetgenMeshing()
   
 
 
-  bp::class_<FaceDescriptor>("FaceDescriptor")
-    .def(bp::init<const FaceDescriptor&>())
-    .def("__init__", bp::make_constructor
-         (FunctionPointer ([](int surfnr, int domin, int domout, int bc)
+  py::class_<FaceDescriptor>(m, "FaceDescriptor")
+    .def(py::init<const FaceDescriptor&>())
+    .def("__init__", 
+         [](FaceDescriptor *instance, int surfnr, int domin, int domout, int bc)
                            {
-                             auto fd = new FaceDescriptor();
-                             fd->SetSurfNr(surfnr);
-                             fd->SetDomainIn(domin);
-                             fd->SetDomainOut(domout);
-                             fd->SetBCProperty(bc);
-                             return fd;
-                           }),
-          bp::default_call_policies(),        // need it to use arguments
-          (bp::arg("surfnr")=1, 
-           bp::arg("domin")=1,
-           bp::arg("domout")=0,
-           bp::arg("bc")=0
-           )),
+                             new (instance) FaceDescriptor();
+                             instance->SetSurfNr(surfnr);
+                             instance->SetDomainIn(domin);
+                             instance->SetDomainOut(domout);
+                             instance->SetBCProperty(bc);
+                           },
+           py::arg("surfnr")=1, 
+           py::arg("domin")=1,
+           py::arg("domout")=py::int_(0),
+           py::arg("bc")=py::int_(0),
          "create facedescriptor")
     .def("__str__", &ToString<FaceDescriptor>)
     .def("__repr__", &ToString<FaceDescriptor>)
-    .add_property("surfnr", &FaceDescriptor::SurfNr, &FaceDescriptor::SetSurfNr)
-    .add_property("domin", &FaceDescriptor::DomainIn, &FaceDescriptor::SetDomainIn)
-    .add_property("domout", &FaceDescriptor::DomainOut, &FaceDescriptor::SetDomainOut)
-    .add_property("bc", &FaceDescriptor::BCProperty, &FaceDescriptor::SetBCProperty)
-    .add_property("bcname", FunctionPointer ([](FaceDescriptor & self) -> string { return self.GetBCName(); }))
-    .def("SetSurfaceColor", FunctionPointer ([](FaceDescriptor & self, bp::list color )
+    .def_property("surfnr", &FaceDescriptor::SurfNr, &FaceDescriptor::SetSurfNr)
+    .def_property("domin", &FaceDescriptor::DomainIn, &FaceDescriptor::SetDomainIn)
+    .def_property("domout", &FaceDescriptor::DomainOut, &FaceDescriptor::SetDomainOut)
+    .def_property("bc", &FaceDescriptor::BCProperty, &FaceDescriptor::SetBCProperty)
+    .def_property_readonly("bcname", FunctionPointer ([](FaceDescriptor & self) -> string { return self.GetBCName(); }))
+    .def("SetSurfaceColor", [](FaceDescriptor & self, py::list color )
           {
             Vec3d c;
-            c.X() = bp::extract<double>(color[0])();
-            c.Y() = bp::extract<double>(color[1])();
-            c.Z() = bp::extract<double>(color[2])();
+            c.X() = py::extract<double>(color[0])();
+            c.Y() = py::extract<double>(color[1])();
+            c.Z() = py::extract<double>(color[2])();
             self.SetSurfColour(c);
-          }))
+          })
     ;
 
   
 
-  ExportArray<Element>();
-  ExportArray<Element2d>();
-  ExportArray<Segment>();
-  ExportArray<Element0d>();
-  ExportArray<MeshPoint,PointIndex::BASE,PointIndex>();
-  ExportArray<FaceDescriptor>();
-  ;
-  
-#if (BOOST_VERSION >= 106000) && (BOOST_VERSION < 106100)  
-  bp::register_ptr_to_python<shared_ptr<Mesh>>();
-#endif
-  bp::class_<Mesh,shared_ptr<Mesh>,boost::noncopyable>("Mesh", bp::no_init)
-    // .def(bp::init<>("create empty mesh"))
+  ExportArray<Element>(m);
+  ExportArray<Element2d>(m);
+  ExportArray<Segment>(m);
+  ExportArray<Element0d>(m);
+  ExportArray<MeshPoint,PointIndex::BASE,PointIndex>(m);
+  ExportArray<FaceDescriptor>(m);
 
-    .def("__init__", bp::make_constructor 
-         (FunctionPointer ([](int dim)
+  py::implicitly_convertible< int, PointIndex>();
+  
+  py::class_<Mesh,shared_ptr<Mesh>>(m, "Mesh")
+    // .def(py::init<>("create empty mesh"))
+
+    .def("__init__",
+         [](Mesh *instance, int dim)
                            {
-                             auto mesh = make_shared<Mesh>();
-                             mesh->SetDimension(dim);
-                             return mesh;
-                           }),
-          bp::default_call_policies(),     // need it to use named arguments
-          (
-           bp::arg("dim")=3
-           )
-          ))
+                             new (instance) Mesh();
+                             instance->SetDimension(dim);
+                           },
+           py::arg("dim")=3
+          )
 
     
     .def("__str__", &ToString<Mesh>)
@@ -384,8 +354,8 @@ DLL_HEADER void ExportNetgenMeshing()
 	  }))
     // static_cast<void(Mesh::*)(const string & name)>(&Mesh::Load))
     .def("Save", static_cast<void(Mesh::*)(const string & name)const>(&Mesh::Save))
-    .def("Export", FunctionPointer
-         ([] (Mesh & self, string filename, string format)
+    .def("Export",
+         [] (Mesh & self, string filename, string format)
           {
             if (WriteUserFormat (format, self, *self.GetGeometry(), filename))
               {
@@ -397,35 +367,35 @@ DLL_HEADER void ExportNetgenMeshing()
                   err += string("'") + name + "'\n";
                 throw NgException (err);
               }
-          }),
-         (bp::arg("self"), bp::arg("filename"), bp::arg("format")))
+          },
+         py::arg("filename"), py::arg("format"))
     
-    .add_property("dim", &Mesh::GetDimension, &Mesh::SetDimension)
+    .def_property("dim", &Mesh::GetDimension, &Mesh::SetDimension)
 
     .def("Elements3D", 
          static_cast<Array<Element>&(Mesh::*)()> (&Mesh::VolumeElements),
-         bp::return_value_policy<bp::reference_existing_object>())
+         py::return_value_policy::reference)
 
     .def("Elements2D", 
          static_cast<Array<Element2d>&(Mesh::*)()> (&Mesh::SurfaceElements),
-         bp::return_value_policy<bp::reference_existing_object>())
+         py::return_value_policy::reference)
 
     .def("Elements1D", 
          static_cast<Array<Segment>&(Mesh::*)()> (&Mesh::LineSegments),
-         bp::return_value_policy<bp::reference_existing_object>())
+         py::return_value_policy::reference)
 
     .def("Elements0D", FunctionPointer([] (Mesh & self) -> Array<Element0d>&
                                        {
                                          return self.pointelements;
                                        } ),
-         bp::return_value_policy<bp::reference_existing_object>())
+         py::return_value_policy::reference)
 
     .def("Points", 
          static_cast<Mesh::T_POINTS&(Mesh::*)()> (&Mesh::Points),
-         bp::return_value_policy<bp::reference_existing_object>())
+         py::return_value_policy::reference)
 
     .def("FaceDescriptor", static_cast<FaceDescriptor&(Mesh::*)(int)> (&Mesh::GetFaceDescriptor),
-         bp::return_value_policy<bp::reference_existing_object>())
+         py::return_value_policy::reference)
     .def("GetNFaceDescriptors", &Mesh::GetNFD)
     
 
@@ -471,27 +441,22 @@ DLL_HEADER void ExportNetgenMeshing()
     .def ("GetMaterial", FunctionPointer([](Mesh & self, int domnr)
                                          { return string(self.GetMaterial(domnr)); }))
 
-    .def ("SetCD2Name", &Mesh::SetCD2Name)
-    .def ("GetCD2Name", FunctionPointer([](Mesh & self, int nr) -> string
-					{ return self.GetCD2Name(nr); }))
-    .def ("GetNCD2Names", &Mesh::GetNCD2Names)
- 
-    .def ("GenerateVolumeMesh", FunctionPointer
-          ([](Mesh & self, bp::object pymp)
+    .def ("GenerateVolumeMesh",
+          [](Mesh & self, py::object pymp)
            {
              cout << "generate vol mesh" << endl;
+
              MeshingParameters mp;
-             if (bp::extract<MeshingParameters>(pymp).check())
-               mp = bp::extract<MeshingParameters>(pymp)();
+             if (py::extract<MeshingParameters>(pymp).check())
+               mp = py::extract<MeshingParameters>(pymp)();
              else
                {
                  mp.optsteps3d = 5;
                }
              MeshVolume (mp, self);
              OptimizeVolume (mp, self);
-           }),
-          (bp::arg("self"), bp::arg("mp")=bp::object())
-          )
+           },
+          py::arg("mp")=NGDummyArgument())
 
    .def ("OptimizeVolumeMesh", FunctionPointer
          ([](Mesh & self)
@@ -516,18 +481,19 @@ DLL_HEADER void ExportNetgenMeshing()
              self.SetGeometry(geo);
            }))
 
-    .def ("SetGeometry", FunctionPointer
-          ([](Mesh & self, shared_ptr<SplineGeometry2d> geo)
-           {
-             self.SetGeometry(geo);
-           }))
+    // TODO: fix this dependency on libgeom2d.so
+//     .def ("SetGeometry", FunctionPointer
+//           ([](Mesh & self, shared_ptr<SplineGeometry2d> geo)
+//            {
+//              self.SetGeometry(geo);
+//            }))
 
     .def ("BuildSearchTree", &Mesh::BuildElementSearchTree)
 
     .def ("BoundaryLayer", FunctionPointer 
-          ([](Mesh & self, int bc, bp::list thicknesses, int volnr, bp::list materials)
+          ([](Mesh & self, int bc, py::list thicknesses, int volnr, py::list materials)
            {
-             int n = bp::len(thicknesses);
+             int n = py::len(thicknesses);
              BoundaryLayerParameters blp;
 
              for (int i = 1; i <= self.GetNFD(); i++)
@@ -546,9 +512,9 @@ DLL_HEADER void ExportNetgenMeshing()
              cout << "maxind = " << maxind << endl;
              for ( int i=0; i<n; i++ )
                {
-                 blp.heights.Append( bp::extract<double>(thicknesses[i])()) ;
+                 blp.heights.Append( py::extract<double>(thicknesses[i])()) ;
                  blp.new_matnrs.Append( maxind+1+i );
-                 self.SetMaterial (maxind+1+i, bp::extract<string>(materials[i])().c_str());
+                 self.SetMaterial (maxind+1+i, py::extract<string>(materials[i])().c_str());
                }
              blp.bulk_matnr = volnr;
              GenerateBoundaryLayer (self, blp);
@@ -592,28 +558,26 @@ DLL_HEADER void ExportNetgenMeshing()
   
 
   typedef MeshingParameters MP;
-  bp::class_<MP> ("MeshingParameters", bp::init<>())
-    .def("__init__", bp::make_constructor
-         (FunctionPointer ([](double maxh, bool quad_dominated, int optsteps2d, int optsteps3d)
+  py::class_<MP> (m, "MeshingParameters")
+    .def(py::init<>())
+    .def("__init__",
+         [](MP *instance, double maxh, bool quad_dominated, int optsteps2d, int optsteps3d)
                            {
-                             auto tmp = new MeshingParameters;
-                             tmp->maxh = maxh;
-                             tmp->quad = int(quad_dominated);
-                             tmp->optsteps2d = optsteps2d;
-                             tmp->optsteps3d = optsteps3d;
-                             return tmp;
-                           }),
-          bp::default_call_policies(),        // need it to use arguments
-          (
-           bp::arg("maxh")=1000,
-           bp::arg("quad_dominated")=false,
-           bp::arg("optsteps2d") = 3,
-           bp::arg("optsteps3d") = 3
-           )),
+                             new (instance) MeshingParameters;
+                             instance->maxh = maxh;
+                             instance->quad = int(quad_dominated);
+                             instance->optsteps2d = optsteps2d;
+                             instance->optsteps3d = optsteps3d;
+                           },
+           py::arg("maxh")=1000,
+           py::arg("quad_dominated")=false,
+           py::arg("optsteps2d") = 3,
+           py::arg("optsteps3d") = 3
+           ,
          "create meshing parameters"
           )
     .def("__str__", &ToString<MP>)
-    .add_property("maxh", 
+    .def_property("maxh", 
                   FunctionPointer ([](const MP & mp ) { return mp.maxh; }),
                   FunctionPointer ([](MP & mp, double maxh) { return mp.maxh = maxh; }))
     .def("RestrictH", FunctionPointer
@@ -621,17 +585,17 @@ DLL_HEADER void ExportNetgenMeshing()
           {
             mp.meshsize_points.Append ( MeshingParameters::MeshSizePoint (Point<3> (x,y,z), h));
           }),
-         (bp::arg("x"), bp::arg("y"), bp::arg("z"), bp::arg("h"))
+         py::arg("x"), py::arg("y"), py::arg("z"), py::arg("h")
          )
     ;
 
-  bp::def("SetTestoutFile", FunctionPointer ([] (const string & filename)
+  m.def("SetTestoutFile", FunctionPointer ([] (const string & filename)
                                              {
                                                delete testout;
                                                testout = new ofstream (filename);
                                              }));
 
-  bp::def("SetMessageImportance", FunctionPointer ([] (int importance)
+  m.def("SetMessageImportance", FunctionPointer ([] (int importance)
                                                    {
                                                      int old = printmessage_importance;
                                                      printmessage_importance = importance;
@@ -639,14 +603,11 @@ DLL_HEADER void ExportNetgenMeshing()
                                                    }));
 }
 
-
-
-BOOST_PYTHON_MODULE(libmesh) {
-  ExportNetgenMeshing();
+PYBIND11_PLUGIN(libmesh) {
+  py::module m("mesh", "pybind mesh");
+  ExportNetgenMeshing(m);
+  return m.ptr();
 }
-
-
-
 #endif
 
 
