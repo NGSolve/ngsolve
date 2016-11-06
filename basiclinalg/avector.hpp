@@ -1140,6 +1140,11 @@ namespace ngbla
     ABareSliceMatrix(ASliceMatrix<double> mat)
       : DummySize(mat.Height(), mat.Width()),
         data(&mat.Get(0,0)), dist(&mat.Get(1,0)-&mat.Get(0,0)) { ; }
+    ABareSliceMatrix(FlatMatrix<SIMD<double>> mat)
+      : DummySize(-1, -1), data(&mat(0,0)), dist(&mat(1,0)-&mat(0,0)) { ; } 
+    ABareSliceMatrix(BareSliceMatrix<SIMD<double>> mat)
+      : DummySize(-1, -1), data(&mat(0,0)), dist(mat.Dist()) { ; } 
+    
     ABareSliceMatrix(const ABareSliceMatrix &) = default;
 
     ABareSliceMatrix & operator= (const ABareSliceMatrix&) = delete;
@@ -1155,7 +1160,8 @@ namespace ngbla
     ABareVector<double> Row(size_t i) const { return ABareVector<double> (data+i*dist); }
     ABareSliceMatrix<double> Rows(size_t first, size_t /* next */) const { return ABareSliceMatrix<double> (data+first*dist, dist); }
     ABareSliceMatrix<double> Rows(IntRange r) const { return Rows(r.First(), r.Next()); } 
-    ABareSliceMatrix<double> RowSlice(size_t first, size_t adist) const { return ABareSliceMatrix<double> (data+first*dist, dist*adist); } 
+    ABareSliceMatrix<double> RowSlice(size_t first, size_t adist) const { return ABareSliceMatrix<double> (data+first*dist, dist*adist); }
+    operator BareSliceMatrix<SIMD<double>> () const { return BareSliceMatrix<SIMD<double>> (dist, data); }
   };
 
 
@@ -1174,7 +1180,11 @@ namespace ngbla
         data(&mat.Get(0,0)), dist(&mat.Get(1,0)-&mat.Get(0,0)) { ; }
     ABareSliceMatrix(ASliceMatrix<Complex> mat)
       : DummySize(mat.Height(), mat.Width()),
-        data(&mat.Get(0,0)), dist(&mat.Get(1,0)-&mat.Get(0,0)) { ; }    
+        data(&mat.Get(0,0)), dist(&mat.Get(1,0)-&mat.Get(0,0)) { ; }
+    ABareSliceMatrix(FlatMatrix<SIMD<Complex>> mat)
+      : DummySize(-1, -1), data(&mat(0,0)), dist(&mat(1,0)-&mat(0,0)) { ; }     
+    ABareSliceMatrix(BareSliceMatrix<SIMD<Complex>> mat)
+      : DummySize(-1, -1), data(&mat(0,0)), dist(mat.Dist()) { ; }     
     ABareSliceMatrix(SIMD<Complex> * _data, size_t _dist, size_t ah = -1, size_t aw = -1)
       : DummySize(ah, aw), data(_data), dist(_dist) { ; }
 
@@ -1188,7 +1198,9 @@ namespace ngbla
     ABareVector<Complex> Row (size_t i) const { return ABareVector<Complex> (data+i*dist); }
     ABareSliceMatrix<Complex> Rows (size_t first, size_t /* next */) const { return ABareSliceMatrix<Complex> (data+first*dist, dist); }
     ABareSliceMatrix<Complex> Rows (IntRange r) const { return Rows(r.First(), r.Next()); } 
-    ABareSliceMatrix<Complex> RowSlice (size_t first, size_t adist) const { return ABareSliceMatrix<Complex> (data+first*dist, dist*adist); } 
+    ABareSliceMatrix<Complex> RowSlice (size_t first, size_t adist) const { return ABareSliceMatrix<Complex> (data+first*dist, dist*adist); }
+    operator BareSliceMatrix<SIMD<Complex>> () const { return BareSliceMatrix<SIMD<Complex>> (dist, data); }
+
   };
 
 
