@@ -571,10 +571,10 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
     .def("GetBBoundaries", FunctionPointer
 	 ([](const MeshAccess & ma)
 	  {
-	    Array<string> bboundaries(ma.GetNBBoundaries());
-	    for (int i : bboundaries.Range())
-	      bboundaries[i] = ma.GetCD2NumCD2Name(i);
-	    return bp::list(bboundaries);
+	    py::list bboundaries(ma.GetNBBoundaries());
+	    for (int i : Range(ma.GetNBBoundaries()))
+	      bboundaries[i] = py::cast(ma.GetCD2NumCD2Name(i));
+	    return bboundaries;
 	  }),
 	 (py::arg("self")),
 	 "returns list of boundary conditions for co dimension 2"
@@ -586,7 +586,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 	  }),
 	 (py::arg("self"), py::arg("pattern")),
 	 "returns co dim 2 boundary mesh-region matching the given regex pattern",
-	 bp::return_value_policy<bp::manage_new_object>()
+	 py::return_value_policy::take_ownership
 	 )
 
     .def("Refine",

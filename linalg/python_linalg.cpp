@@ -3,33 +3,15 @@
 #include "../ngstd/python_ngstd.hpp"
 using namespace ngla;
 
-MSVC2015_UPDATE3_GET_PTR_FIX(ngla::BaseMatrix)
-MSVC2015_UPDATE3_GET_PTR_FIX(ngla::BaseVector)
-MSVC2015_UPDATE3_GET_PTR_FIX(ngla::CGSolver<class std::complex<double> >)
-MSVC2015_UPDATE3_GET_PTR_FIX(ngla::CGSolver<double>)
-MSVC2015_UPDATE3_GET_PTR_FIX(ngla::QMRSolver<double>)
-MSVC2015_UPDATE3_GET_PTR_FIX(ngla::QMRSolver<Complex>)
-MSVC2015_UPDATE3_GET_PTR_FIX(ngla::GMRESSolver<double>)
-MSVC2015_UPDATE3_GET_PTR_FIX(ngla::GMRESSolver<Complex>)
-MSVC2015_UPDATE3_GET_PTR_FIX(ngla::Projector)
-
-static void InitSlice( const bp::slice &inds, int len, int &start, int &step, int &n ) {
-    bp::object indices = inds.attr("indices")(len);
-    start = 0;
-    step = 1;
-    n = 0;
-
-    try {
-        start = bp::extract<int>(indices[0]);
-        int stop  = bp::extract<int>(indices[1]);
-        step  = bp::extract<int>(indices[2]);
-        n = (stop-start+step-1) / step;
-        if(step>1)
-            bp::exec("raise IndexError('slices with step>1 not supported')\n");
-    }
-    catch (bp::error_already_set const &) {
-        cout << "Error in InitSlice(slice,...): " << endl;
-        PyErr_Print();
+shared_ptr<BaseVector> CreateBaseVector(int size, bool is_complex, int es)
+{
+  shared_ptr<BaseVector> res;
+  if(es > 1)
+    {
+      if(is_complex)
+        res = make_shared<S_BaseVectorPtr<Complex>> (size, es);
+      else
+        res = make_shared<S_BaseVectorPtr<double>> (size, es);
     }
 
   if (is_complex)
@@ -51,7 +33,10 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 //       static
 //       py::tuple getinitargs(const BaseVector & v)
 //       {
-//         return py::make_tuple(v.Size(), v.IsComplex(), v.EntrySize()); 
+// 	int es = v.EntrySize();
+// 	if(v.IsComplex())
+// 	  es /= 2;
+//      return bp::make_tuple(v.Size(), v.IsComplex(), es); 
 //       }
 // 
 //       static
@@ -91,190 +76,207 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     
     
   
-  REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<BaseVector>);
-  bp::class_<BaseVector, shared_ptr<BaseVector>, boost::noncopyable>("BaseVector", bp::no_init)
-    .def("__init__", bp::make_constructor 
-         (FunctionPointer ([](int size, bool is_complex, int es) -> shared_ptr<BaseVector>
+    typedef PyWrapper<BaseVector> PyBaseVector;
+    typedef PyWrapper<BaseMatrix> PyBaseMatrix;
+  py::class_<PyBaseVector>(m, "BaseVector",
+        py::dynamic_attr() // add dynamic attributes
+      )
+    .def("__init__", 
+         [](PyBaseVector *instance, int size, bool is_complex, int es)
                            {
-			     if(es > 1)
-			       {
-				 if(is_complex)
-				   return make_shared<S_BaseVectorPtr<Complex>> (size, es);
-				 else
-				   return make_shared<S_BaseVectorPtr<double>> (size, es);
-			       }
-			     
-			     if (is_complex)
-                               return make_shared<VVector<Complex>> (size);
-                             else
-                               return make_shared<VVector<double>> (size);
-                           }),
-          bp::default_call_policies(),        // need it to use argumentso
-          (bp::arg("size"), bp::arg("complex")=false, bp::arg("entrysize")=1)
-          ))
-    .def_pickle(BaseVector_pickle_suite())
-    .def("__ngsid__", FunctionPointer( [] ( BaseVector & self)
-        { return reinterpret_cast<std::uintptr_t>(&self); } ) )
+                             auto vec = CreateBaseVector(size, is_complex, es);
+                             new (instance) PyBaseVector(vec);
+                           },
+          py::arg("size"), py::arg("complex")=false, py::arg("entrysize")=1
+          )
+  .def("__ngsid__", FunctionPointer( [] ( PyBaseVector & self)
+      { return reinterpret_cast<std::uintptr_t>(self.Get().get()); } ) )
     
-    .def("__str__", &ToString<BaseVector>)
-    .add_property("size", &BaseVector::Size)
-    .def("__len__", &BaseVector::Size)
-    .def("CreateVector", FunctionPointer( [] ( BaseVector & self)
-        { return shared_ptr<BaseVector>(self.CreateVector()); } ))
+    .def("__str__", [](PyBaseVector self) { return ToString<BaseVector>(*self.Get()); } )
+    .def("__repr__", [](PyBaseVector self) { return "basevector"; } )
+    .def_property_readonly("size", py::cpp_function( [] (PyBaseVector self) { return self->Size(); } ) )
+    .def("__len__", [] (PyBaseVector self) { return self->Size(); })
+    .def("__getstate__", [] (py::object self_object) {
+        auto self = self_object.cast<PyBaseVector>();
+        auto dict = self_object.attr("__dict__");
+        auto vec = self->FV<double>();
+        py::list values;
+        for (int i : Range(vec))
+          values.append (py::cast(vec(i)));
+       return py::make_tuple( vec.Size(), self->IsComplex(), self->EntrySize(), values, dict );
+     })
+    .def("__setstate__", [] (PyBaseVector &self, py::tuple t) {
+         auto vec = CreateBaseVector( t[0].cast<int>(), t[1].cast<bool>(), t[2].cast<int>());
+         new (&self) PyBaseVector(vec);
+         py::object vec_object = py::cast(self);
+         auto fvec = vec->FVDouble();
+         py::list values = t[3].cast<py::list>();
+         for (int i : Range(fvec.Size()))
+                fvec[i] = values[i].cast<double>();
+         // restore dynamic attributes (necessary for persistent id in NgsPickler)
+         vec_object.attr("__dict__") = t[4];
+     })
+    .def("CreateVector", [] ( PyBaseVector & self) -> PyBaseVector
+        { return shared_ptr<BaseVector>(self->CreateVector()); } )
 
     /*
-    .def("Assign", FunctionPointer([](BaseVector & self, BaseVector & v2, double s)->void { self.Set(s, v2); }))
-    .def("Add", FunctionPointer([](BaseVector & self, BaseVector & v2, double s)->void { self.Add(s, v2); }))
-    .def("Assign", FunctionPointer([](BaseVector & self, BaseVector & v2, Complex s)->void { self.Set(s, v2); }))
-    .def("Add", FunctionPointer([](BaseVector & self, BaseVector & v2, Complex s)->void { self.Add(s, v2); }))
+    .def("Assign", FunctionPointer([](PyBaseVector & self, BaseVector & v2, double s)->void { self->Set(s, v2); }))
+    .def("Add", FunctionPointer([](PyBaseVector & self, BaseVector & v2, double s)->void { self->Add(s, v2); }))
+    .def("Assign", FunctionPointer([](PyBaseVector & self, BaseVector & v2, Complex s)->void { self->Set(s, v2); }))
+    .def("Add", FunctionPointer([](PyBaseVector & self, BaseVector & v2, Complex s)->void { self->Add(s, v2); }))
     */
-    .def("Assign", FunctionPointer([](BaseVector & self, BaseVector & v2, bp::object s)->void 
+    .def("Assign",[](PyBaseVector & self, PyBaseVector & v2, py::object s)->void 
                                    { 
-                                     if ( bp::extract<double>(s).check() )
+                                     if ( py::extract<double>(s).check() )
                                        {
-                                         self.Set (bp::extract<double>(s)(), v2);
+                                         self->Set (py::extract<double>(s)(), *v2);
                                          return;
                                        }
-                                     if ( bp::extract<Complex>(s).check() )
+                                     if ( py::extract<Complex>(s).check() )
                                        {
-                                         self.Set (bp::extract<Complex>(s)(), v2);
+                                         self->Set (py::extract<Complex>(s)(), *v2);
                                          return;
                                        }
                                      throw Exception ("BaseVector::Assign called with non-scalar type");
-                                   }))
-    .def("Add", FunctionPointer([](BaseVector & self, BaseVector & v2, bp::object s)->void 
+                                   })
+    .def("Add",[](PyBaseVector & self, PyBaseVector & v2, py::object s)->void 
                                    { 
-                                     if ( bp::extract<double>(s).check() )
+                                     if ( py::extract<double>(s).check() )
                                        {
-                                         self.Add (bp::extract<double>(s)(), v2);
+                                         self->Add (py::extract<double>(s)(), *v2);
                                          return;
                                        }
-                                     if ( bp::extract<Complex>(s).check() )
+                                     if ( py::extract<Complex>(s).check() )
                                        {
-                                         self.Add (bp::extract<Complex>(s)(), v2);
+                                         self->Add (py::extract<Complex>(s)(), *v2);
                                          return;
                                        }
                                      throw Exception ("BaseVector::Assign called with non-scalar type");
-                                   }))
+                                   })
 
 
-    .add_property("expr", bp::object(expr_namespace["VecExpr"]) )
-    .add_property("data", bp::object(expr_namespace["VecExpr"]), bp::object(expr_namespace["expr_data"] ))
-    .def("__add__" , bp::object(expr_namespace["expr_add"]) )
-    .def("__sub__" , bp::object(expr_namespace["expr_sub"]) )
-    .def("__rmul__" , bp::object(expr_namespace["expr_rmul"]) )
-    .def("__getitem__", FunctionPointer
-         ( [](BaseVector & self,  int ind )
+    // TODO
+//     .add_property("expr", py::object(expr_namespace["VecExpr"]) )
+//     .add_property("data", py::object(expr_namespace["VecExpr"]), py::object(expr_namespace["expr_data"] ))
+//     .def("__add__" , py::object(expr_namespace["expr_add"]) )
+//     .def("__sub__" , py::object(expr_namespace["expr_sub"]) )
+//     .def("__rmul__" , py::object(expr_namespace["expr_rmul"]) )
+    .def("__getitem__",
+          [](PyBaseVector & self,  int ind )
            {
-             if (ind < 0 || ind >= self.Size()) 
-               bp::exec("raise IndexError()\n");
-             int entrysize = self.EntrySize();
-             if( self.IsComplex() ) entrysize/=2;
+             if (ind < 0 || ind >= self->Size()) 
+               throw py::index_error();
+             int entrysize = self->EntrySize();
+             if( self->IsComplex() ) entrysize/=2;
              if(entrysize == 1)
              {
-                 if( !self.IsComplex() )
-                     return bp::object(self.FVDouble()[ind]);
+                 if( !self->IsComplex() )
+                     return py::cast(self->FVDouble()[ind]);
                  else
-                     return bp::object(self.FVComplex()[ind]);
+                     return py::cast(self->FVComplex()[ind]);
              }
              else
              {
                  // return FlatVector<T>
-                 if( self.IsComplex() )
-                   return bp::object(self.SV<Complex>()(ind));
+                 if( self->IsComplex() )
+                   return py::cast(self->SV<Complex>()(ind));
                  else
-                   return bp::object(self.SV<double>()(ind));
+                   return py::cast(self->SV<double>()(ind));
              }
-           } ))
-    .def("__getitem__", FunctionPointer( [](BaseVector & self,  bp::slice inds )
+           } )
+    .def("__getitem__", [](PyBaseVector & self,  py::slice inds )
       {
-          int start, step, n;
-          InitSlice( inds, self.Size(), start, step, n );
-          return shared_ptr<BaseVector>(self.Range(start, start+n));
-      } ))
-    .def("__setitem__", FunctionPointer( [](BaseVector & self,  int ind, Complex z )
+          size_t start, step, n;
+          InitSlice( inds, self->Size(), start, step, n );
+          return shared_ptr<BaseVector>(self->Range(start, start+n));
+      } )
+    .def("__setitem__", [](PyBaseVector & self,  int ind, Complex z )
       {
-          self.Range(ind,ind+1) = z;
-      } ))
-    .def("__setitem__", FunctionPointer( [](BaseVector & self,  int ind, double d )
+          self->Range(ind,ind+1) = z;
+      } )
+    .def("__setitem__", [](PyBaseVector & self,  int ind, double d )
       {
-          self.Range(ind,ind+1) = d;
-      } ))
-    .def("__setitem__", FunctionPointer( [](BaseVector & self,  bp::slice inds, Complex z )
+          self->Range(ind,ind+1) = d;
+      } )
+    .def("__setitem__", [](PyBaseVector & self,  py::slice inds, Complex z )
       {
-          int start, step, n;
-          InitSlice( inds, self.Size(), start, step, n );
-          self.Range(start,start+n) = z;
-      } ))
-    .def("__setitem__", FunctionPointer( [](BaseVector & self,  bp::slice inds, double d )
+          size_t start, step, n;
+          InitSlice( inds, self->Size(), start, step, n );
+          self->Range(start,start+n) = z;
+      } )
+    .def("__setitem__", [](PyBaseVector & self,  py::slice inds, double d )
       {
-          int start, step, n;
-          InitSlice( inds, self.Size(), start, step, n );
-          self.Range(start,start+n) = d;
-      } ))
-    .def("__setitem__", FunctionPointer( [](BaseVector & self,  int ind, FlatVector<Complex> & v )
+          size_t start, step, n;
+          InitSlice( inds, self->Size(), start, step, n );
+          self->Range(start,start+n) = d;
+      } )
+    .def("__setitem__", [](PyBaseVector & self,  int ind, FlatVector<Complex> & v )
       {
-          if( self.IsComplex() )
-            self.SV<Complex>()(ind) = v;
+          if( self->IsComplex() )
+            self->SV<Complex>()(ind) = v;
           else
-            bp::exec("raise IndexError('cannot assign complex values to real vector')\n");
-      } ))
-    .def("__setitem__", FunctionPointer( [](BaseVector & self,  int ind, FlatVector<double> & v )
+            throw py::index_error("cannot assign complex values to real vector");
+      } )
+    .def("__setitem__", [](PyBaseVector & self,  int ind, FlatVector<double> & v )
       {
-          if( self.IsComplex() )
-            self.SV<Complex>()(ind) = v;
+          if( self->IsComplex() )
+            self->SV<Complex>()(ind) = v;
           else
-            self.SV<double>()(ind) = v;
-      } ))
-    .def(bp::self+=bp::self)
-    .def(bp::self-=bp::self)
-    .def(bp::self*=double())
-    .def("InnerProduct", FunctionPointer( [](BaseVector & self, BaseVector & other)
+            self->SV<double>()(ind) = v;
+      } )
+//     .def(py::self+=py::self)
+//     .def(py::self-=py::self)
+//     .def(py::self*=double())
+    .def("InnerProduct", [](PyBaseVector & self, PyBaseVector & other)
                                           {
-                                            if (self.IsComplex())
-                                              return bp::object (S_InnerProduct<ComplexConjugate> (self, other));
+                                            if (self->IsComplex())
+                                              return py::cast (S_InnerProduct<ComplexConjugate> (*self, *other));
                                             else
-                                              return bp::object (InnerProduct (self, other));
-                                          }))
-    .def("Norm", FunctionPointer ( [](BaseVector & self) { return self.L2Norm(); }))
-    .def("Range", FunctionPointer( [](BaseVector & self, int from, int to) -> shared_ptr<BaseVector>
+                                              return py::cast (InnerProduct (*self, *other));
+                                          })
+    .def("Norm",  [](PyBaseVector & self) { return self->L2Norm(); })
+    .def("Range", [](PyBaseVector & self, int from, int to) -> shared_ptr<BaseVector>
                                    {
-                                     return self.Range(from,to);
-                                   }))
-    .def("FV", FunctionPointer( [] (BaseVector & self) -> FlatVector<double>
+                                     return self->Range(from,to);
+                                   })
+    .def("FV", FunctionPointer( [] (PyBaseVector & self) -> FlatVector<double>
                                 {
-                                  return self.FVDouble();
+                                  return self->FVDouble();
                                 }))
     ;       
 
-  // bp::def("InnerProduct", FunctionPointer([](BaseVector & v1, BaseVector & v2)->double { return InnerProduct(v1,v2); }))
-  bp::def ("InnerProduct",
-           FunctionPointer( [] (bp::object x, bp::object y) -> bp::object
-                            { return x.attr("InnerProduct") (y); }));
+  // m.def("InnerProduct",[](BaseVector & v1, BaseVector & v2)->double { return InnerProduct(v1,v2); })
+  m.def ("InnerProduct",
+           [] (py::object x, py::object y) -> py::object
+                            { return py::handle(x.attr("InnerProduct")) (y); });
   ;
   
 
-  typedef BaseMatrix BM;
+  typedef PyBaseMatrix BM;
   typedef BaseVector BV;
 
-  REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<BaseMatrix>);
-  bp::class_<BaseMatrix, shared_ptr<BaseMatrix>, boost::noncopyable>("BaseMatrix", bp::no_init)
+  py::class_<PyBaseMatrix>(m, "BaseMatrix")
     .def("__str__", &ToString<BaseMatrix>)
-    .add_property("height", &BaseMatrix::Height)
-    .add_property("width", &BaseMatrix::Width)
+    .def_property_readonly("height", [] ( PyBaseMatrix & self)
+        { return self->Height(); } )
+    .def_property_readonly("width", [] ( PyBaseMatrix & self)
+        { return self->Width(); } )
 
-    .def("CreateMatrix", &BaseMatrix::CreateMatrix)
+    // .def("CreateMatrix", &BaseMatrix::CreateMatrix)
+    .def("CreateMatrix", [] ( PyBaseMatrix & self) -> PyBaseMatrix
+        { return self->CreateMatrix(); } )
 
-    .def("CreateRowVector", FunctionPointer( [] ( BaseMatrix & self)
-        { return shared_ptr<BaseVector>(self.CreateRowVector()); } ))
-    .def("CreateColVector", FunctionPointer( [] ( BaseMatrix & self)
-        { return shared_ptr<BaseVector>(self.CreateColVector()); } ))
+    
+    .def("CreateRowVector", [] ( PyBaseMatrix & self) -> PyBaseVector
+        { return shared_ptr<BaseVector>(self->CreateRowVector()); } )
+    .def("CreateColVector", [] ( PyBaseMatrix & self) -> PyBaseVector
+        { return shared_ptr<BaseVector>(self->CreateColVector()); } )
 
-    .def("AsVector", FunctionPointer( [] (BM & m)
+    .def("AsVector", [] (BM & m) -> PyBaseVector
                                       {
-                                        return shared_ptr<BaseVector> (&m.AsVector(), NOOP_Deleter);
-                                      }))
-    .def("COO", FunctionPointer( [] (BM & m) -> bp::object
+                                        return shared_ptr<BaseVector> (&m->AsVector(), NOOP_Deleter);
+                                      })
+    .def("COO", [] (BM & m) -> py::object
                                  {
                                    SparseMatrix<double> * sp = dynamic_cast<SparseMatrix<double>*> (&m);
                                    if (sp)
@@ -293,10 +295,10 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                              }
                                          }
 
-                                       bp::list pyri (ri);
-                                       bp::list pyci (ci);
-                                       bp::list pyvals (vals);
-                                       return bp::make_tuple (pyri, pyci, pyvals);
+                                       py::object pyri = py::cast(ri);
+                                       py::object pyci = py::cast(ci);
+                                       py::object pyvals = py::cast(vals);
+                                       return py::make_tuple (pyri, pyci, pyvals);
                                      }
 				   
 				   SparseMatrix<Complex> * spc
@@ -318,152 +320,146 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 						 vals.Append (rv[j]);
 					       }
 					   }
-					 bp::list pyri (ri);
-					 bp::list pyci (ci);
-					 bp::list pyvals(vals);
-					 return bp::make_tuple (pyri, pyci, pyvals);
+					 py::object pyri  = py::cast(ri);
+					 py::object pyci  = py::cast(ci);
+					 py::object pyvals = py::cast(vals);
+					 return py::make_tuple (pyri, pyci, pyvals);
 				     }
 				   
 				   throw Exception ("COO needs real or complex-valued sparse matrix");
-                                 }))
+                                 })
 
-    .def("Mult",        FunctionPointer( [](BM &m, BV &x, BV &y, double s) { m.Mult (x,y); y *= s; }) )
-    .def("MultAdd",     FunctionPointer( [](BM &m, BV &x, BV &y, double s) { m.MultAdd (s, x, y); }))
-    // .def("MultTrans",   FunctionPointer( [](BM &m, BV &x, BV &y, double s) { y  = s*Trans(m)*x; }) )
-    // .def("MultTransAdd",FunctionPointer( [](BM &m, BV &x, BV &y, double s) { y += s*Trans(m)*x; }) )
+    .def("Mult",        FunctionPointer( [](BM &m, PyBaseVector &x, PyBaseVector &y, double s) { m->Mult (*x,*y); *y *= s; }) )
+    .def("MultAdd",     FunctionPointer( [](BM &m, PyBaseVector &x, PyBaseVector &y, double s) { m->MultAdd (s, *x, *y); }))
+    // .def("MultTrans",   FunctionPointer( [](BM &m, PyBaseVector &x, PyBaseVector &y, double s) { y  = s*Trans(m)*x; }) )
+    // .def("MultTransAdd",FunctionPointer( [](BM &m, PyBaseVector &x, PyBaseVector &y, double s) { y += s*Trans(m)*x; }) )
 
-    .add_property("expr", bp::object(expr_namespace["MatExpr"]) )
-    .def("__mul__" , bp::object(expr_namespace["expr_mul"]) )
-    .def("__rmul__" , bp::object(expr_namespace["expr_rmul"]) )
+//     .add_property("expr", py::object(expr_namespace["MatExpr"]) )
+//     .def("__mul__" , py::object(expr_namespace["expr_mul"]) )
+//     .def("__rmul__" , py::object(expr_namespace["expr_rmul"]) )
 
-    .def("__iadd__", FunctionPointer( [] (BM &m, BM &m2) { 
-        m.AsVector()+=m2.AsVector();
-    }))
+    .def("__iadd__", [] (BM &m, BM &m2) { 
+        m->AsVector()+=m2->AsVector();
+    })
 
-    .def("GetInverseType", FunctionPointer( [](BM & m)
+    .def("GetInverseType", [](BM & m)
                                             {
-                                              return GetInverseName( m.GetInverseType());
-                                            }))
+                                              return GetInverseName( m->GetInverseType());
+                                            })
 
-    .def("Inverse", FunctionPointer( [](BM &m, BitArray * freedofs, string inverse)
-                                     ->shared_ptr<BaseMatrix>
+    .def("Inverse", [](BM &m, BitArray * freedofs, string inverse)
+                                     -> PyBaseMatrix
                                      { 
-                                       if (inverse != "") m.SetInverseType(inverse);
-                                       return m.InverseMatrix(freedofs);
-                                     }),
-         (bp::arg("self"), bp::arg("freedofs"), bp::arg("inverse")=""))
-    .def("Inverse", FunctionPointer( [](BM &m)->shared_ptr<BaseMatrix>
-                                     { return m.InverseMatrix(); }))
-    .def("Transpose", FunctionPointer( [](BM &m)->shared_ptr<BaseMatrix>
-                                       { return make_shared<Transpose> (m); }))
-    .def("Update", FunctionPointer( [](BM &m) { m.Update(); }));
-    // bp::return_value_policy<bp::manage_new_object>())
+                                       if (inverse != "") m->SetInverseType(inverse);
+                                       return m->InverseMatrix(freedofs);
+                                     }
+         ,"Inverse", py::arg("freedofs"), py::arg("inverse")=py::str("")
+         )
+    .def("Inverse", [](BM &m)-> PyBaseMatrix
+                                     { return m->InverseMatrix(); })
+    .def("Transpose", [](BM &m)-> PyBaseMatrix
+                                       { return make_shared<Transpose> (*m); })
+    // py::return_value_policy<py::manage_new_object>())
     ;
 
-  REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<Projector>);
-  bp::class_<Projector, shared_ptr<Projector>,bp::bases<BaseMatrix>,boost::noncopyable> ("Projector", bp::init<const BitArray&,bool>())
+  typedef PyWrapper<Projector> PyProjector;
+  py::class_<PyProjector, PyBaseMatrix> (m, "Projector")
+  .def("__init__", []( PyProjector *instance, const BitArray &array, bool b ) {
+      new (instance) PyProjector(make_shared<Projector>(array, b));
+      })
     ;
 
-  REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<CGSolver<double>>);
-  bp::class_<CGSolver<double>, shared_ptr<CGSolver<double>>,bp::bases<BaseMatrix>,boost::noncopyable> ("CGSolverD", bp::no_init)
+  py::class_<PyWrapper<CGSolver<double>> ,PyBaseMatrix> (m, "CGSolverD")
     .def("GetSteps", &CGSolver<double>::GetSteps)
     ;
 
-  REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<CGSolver<Complex>>);
-  bp::class_<CGSolver<Complex>, shared_ptr<CGSolver<Complex>>,bp::bases<BaseMatrix>,boost::noncopyable> ("CGSolverC", bp::no_init)
+  py::class_<PyWrapper<CGSolver<Complex>> ,PyBaseMatrix> (m, "CGSolverC")
     .def("GetSteps", &CGSolver<Complex>::GetSteps)
     ;
 
-  bp::def("CGSolver", FunctionPointer ([](const BaseMatrix & mat, const BaseMatrix & pre,
+  m.def("CGSolver", [](const PyBaseMatrix & mat, const PyBaseMatrix & pre,
                                           bool iscomplex, bool printrates, 
-                                          double precision, int maxsteps) -> BaseMatrix *
+                                          double precision, int maxsteps) -> PyBaseMatrix 
                                        {
                                          KrylovSpaceSolver * solver;
-                                         if(mat.IsComplex()) iscomplex = true;
+                                         if(mat->IsComplex()) iscomplex = true;
                                          
                                          if (iscomplex)
-                                           solver = new CGSolver<Complex> (mat, pre);
+                                           solver = new CGSolver<Complex> (*mat, *pre);
                                          else
-                                           solver = new CGSolver<double> (mat, pre);
+                                           solver = new CGSolver<double> (*mat, *pre);
                                          solver->SetPrecision(precision);
                                          solver->SetMaxSteps(maxsteps);
                                          solver->SetPrintRates (printrates);
                                          return solver;
-                                       }),
-          (bp::arg("mat"), bp::arg("pre"), bp::arg("complex") = false, bp::arg("printrates")=true,
-           bp::arg("precision")=1e-8, bp::arg("maxsteps")=200),
-          bp::return_value_policy<bp::manage_new_object>()
+                                       },
+          "CG Solver", py::arg("mat"), py::arg("pre"), py::arg("complex") = false, py::arg("printrates")=true,
+           py::arg("precision")=1e-8, py::arg("maxsteps")=200
+//           py::return_value_policy<py::manage_new_object>()
           )
     ;
 
-  REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<QMRSolver<double>>);
-  bp::class_<QMRSolver<double>, shared_ptr<QMRSolver<double>>,bp::bases<BaseMatrix>,boost::noncopyable> ("QMRSolverD", bp::no_init)
+  py::class_<PyWrapper<GMRESSolver<double>>, PyBaseMatrix> (m, "GMRESSolverD")
     ;
-  REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<QMRSolver<Complex>>);
-  bp::class_<QMRSolver<Complex>, shared_ptr<QMRSolver<Complex>>,bp::bases<BaseMatrix>,boost::noncopyable> ("QMRSolverC", bp::no_init)
+  py::class_<PyWrapper<GMRESSolver<Complex>>, PyBaseMatrix> (m, "GMRESSolverC")
     ;
-  bp::def("QMRSolver", FunctionPointer ([](const BaseMatrix & mat, const BaseMatrix & pre,
+
+  m.def("GMRESSolver", [](const PyBaseMatrix & mat, const PyBaseMatrix & pre,
                                            bool printrates, 
-                                           double precision, int maxsteps) -> BaseMatrix *
+                                           double precision, int maxsteps) -> PyBaseMatrix
                                         {
                                           KrylovSpaceSolver * solver;
-                                          if (!mat.IsComplex())
-                                            solver = new QMRSolver<double> (mat, pre);
+                                          if (!mat->IsComplex())
+                                            solver = new GMRESSolver<double> (*mat, *pre);
                                           else
-                                            solver = new QMRSolver<Complex> (mat, pre);                                            
+                                            solver = new GMRESSolver<Complex> (*mat, *pre);                                            
                                           solver->SetPrecision(precision);
                                           solver->SetMaxSteps(maxsteps);
                                           solver->SetPrintRates (printrates);
                                           return solver;
-                                        }),
-          (bp::arg("mat"), bp::arg("pre"), bp::arg("printrates")=true,
-           bp::arg("precision")=1e-8, bp::arg("maxsteps")=200),
-          bp::return_value_policy<bp::manage_new_object>()
+                                        },
+          "GMRES Solver", py::arg("mat"), py::arg("pre"), py::arg("printrates")=true,
+           py::arg("precision")=1e-8, py::arg("maxsteps")=200
           )
     ;
-
-
-  REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<GMRESSolver<double>>);
-  bp::class_<GMRESSolver<double>, shared_ptr<GMRESSolver<double>>,bp::bases<BaseMatrix>,boost::noncopyable> ("GMRESSolverD", bp::no_init)
+  
+  py::class_<PyWrapper<QMRSolver<double>>, PyBaseMatrix> (m, "QMRSolverD")
     ;
-  REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<GMRESSolver<Complex>>);
-  bp::class_<GMRESSolver<Complex>, shared_ptr<GMRESSolver<Complex>>,bp::bases<BaseMatrix>,boost::noncopyable> ("GMRESSolverC", bp::no_init)
+  py::class_<PyWrapper<QMRSolver<Complex>>, PyBaseMatrix> (m, "QMRSolverC")
     ;
-  bp::def("GMRESSolver", FunctionPointer ([](const BaseMatrix & mat, const BaseMatrix & pre,
+
+  m.def("QMRSolver", [](const PyBaseMatrix & mat, const PyBaseMatrix & pre,
                                            bool printrates, 
-                                           double precision, int maxsteps) -> BaseMatrix *
+                                           double precision, int maxsteps) -> PyBaseMatrix
                                         {
                                           KrylovSpaceSolver * solver;
-                                          if (!mat.IsComplex())
-                                            solver = new GMRESSolver<double> (mat, pre);
+                                          if (!mat->IsComplex())
+                                            solver = new QMRSolver<double> (*mat, *pre);
                                           else
-                                            solver = new GMRESSolver<Complex> (mat, pre);                                            
+                                            solver = new QMRSolver<Complex> (*mat, *pre);                                            
                                           solver->SetPrecision(precision);
                                           solver->SetMaxSteps(maxsteps);
                                           solver->SetPrintRates (printrates);
                                           return solver;
-                                        }),
-          (bp::arg("mat"), bp::arg("pre"), bp::arg("printrates")=true,
-           bp::arg("precision")=1e-8, bp::arg("maxsteps")=200),
-          bp::return_value_policy<bp::manage_new_object>()
+                                        },
+          "QMR Solver", py::arg("mat"), py::arg("pre"), py::arg("printrates")=true,
+           py::arg("precision")=1e-8, py::arg("maxsteps")=200
           )
     ;
   
-
-  
-  bp::def("ArnoldiSolver", FunctionPointer ([](BaseMatrix & mata, BaseMatrix & matm, const BitArray & freedofs,
-                                               bp::list vecs, bp::object bpshift)
+  m.def("ArnoldiSolver", [](PyBaseMatrix & mata, PyBaseMatrix & matm, const BitArray & freedofs,
+                                               py::list vecs, py::object bpshift)
                                             {
-                                              if (mata.IsComplex())
+                                              if (mata->IsComplex())
                                                 {
-                                                  Arnoldi<Complex> arnoldi (mata, matm, &freedofs);
+                                                  Arnoldi<Complex> arnoldi (*mata, *matm, &freedofs);
                                                   Complex shift = 0.0;
-                                                  if (bp::extract<Complex>(bpshift).check())
-                                                    shift = bp::extract<Complex>(bpshift)();
+//                                                   if (py::cast<Complex>(bpshift).check())
+                                                    shift = py::cast<Complex>(bpshift);
                                                   cout << "shift = " << shift << endl;
                                                   arnoldi.SetShift (shift);
                                                   
-                                                  int nev = bp::len(vecs);
+                                                  int nev = py::len(vecs);
                                                   cout << "num vecs: " << nev << endl;
                                                   Array<shared_ptr<BaseVector>> evecs(nev);
                                                   
@@ -471,7 +467,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                                   arnoldi.Calc (2*nev+1, lam, nev, evecs, 0);
                                             
                                                   for (int i = 0; i < nev; i++)
-                                                    * bp::extract<shared_ptr<BaseVector>>(vecs[i])() = *evecs[i];
+                                                    * py::extract<shared_ptr<BaseVector>>(vecs[i])() = *evecs[i];
 
                                                   Vector<Complex> vlam(nev);
                                                   for (int i = 0; i < nev; i++)
@@ -482,27 +478,25 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                               cout << "real Arnoldi not supported" << endl;
                                               Vector<Complex> lam(5);
                                               return lam;
-                                            }),
-          (bp::arg("mata"), bp::arg("matm"), bp::arg("freedofs"), bp::arg("vecs"), bp::arg("shift")=bp::object())
-          // bp::return_value_policy<bp::manage_new_object>()
+                                            },
+          "Arnoldi Solver", py::arg("mata"), py::arg("matm"), py::arg("freedofs"), py::arg("vecs"), py::arg("shift")=DummyArgument()
           )
     ;
 
   
 
-  bp::def("DoArchive" , FunctionPointer( [](shared_ptr<Archive> & arch, BaseMatrix & mat) 
+  m.def("DoArchive" , [](shared_ptr<Archive> & arch, PyBaseMatrix & mat) 
                                          { cout << "output basematrix" << endl;
-                                           mat.DoArchive(*arch); return arch; }));
+                                           mat->DoArchive(*arch); return arch; });
                                            
 }
 
 
 
-void ExportNgbla();
-
-BOOST_PYTHON_MODULE(libngla) {
-  // ExportNgbla();
-  ExportNgla();
+PYBIND11_PLUGIN(libngla) {
+  py::module m("la", "pybind la");
+  ExportNgla(m);
+  return m.ptr();
 }
 
 
