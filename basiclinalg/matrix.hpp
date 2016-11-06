@@ -1560,6 +1560,110 @@ namespace ngbla
 
 
 
+  template <typename T, ORDERING ORD = RowMajor>
+  class BareSliceMatrix : public CMCPMatExpr<BareSliceMatrix<T,ORD>>
+  {
+  protected:
+    /// the height
+    // size_t h;
+    /// the width
+    // size_t w;
+    /// the distance
+    size_t dist;
+    /// the data
+    T * __restrict data;
+  public:
+
+    /// element type
+    typedef T TELEM;
+    /// scalar type of elements (double or Complex)
+    typedef typename mat_traits<T>::TSCAL TSCAL;
+    enum { IS_LINEAR = 0 };
+
+    // 
+    BareSliceMatrix() = delete;
+    INLINE BareSliceMatrix(const BareSliceMatrix &) = default;
+
+    BareSliceMatrix (const FlatMatrix<T> & mat)
+      : dist(mat.Width()), data(&mat(0,0))
+    { ; }
+
+    BareSliceMatrix (const SliceMatrix<T> & mat)
+      : dist(mat.Width()), data(&mat(0,0))
+    { ; }
+
+    BareSliceMatrix (size_t adist, T * adata) : dist(adist), data(adata) { ; } 
+    
+    BareSliceMatrix & operator= (const BareSliceMatrix & m) = delete;
+
+    /// access operator
+    INLINE TELEM & operator() (size_t i, size_t j) const
+    {
+      return data[i*dist+j]; 
+    }
+
+    /*
+    /// the height
+    INLINE size_t Height () const throw() { return h; }
+
+    /// the width
+    INLINE size_t Width () const throw() { return w; }
+    */
+    
+    /// 
+    INLINE size_t Dist () const throw() { return dist; }
+
+    SliceMatrix<T> AddSize (size_t h, size_t w) const
+    { return SliceMatrix<T> (h, w, dist, data); } 
+    
+    INLINE const BareSliceMatrix Rows (size_t first, size_t next) const
+    {
+      return BareSliceMatrix ( /* next-first, w, */ dist, data+first*dist);
+    }
+
+    /*
+    INLINE const FlatVector<T> Row (size_t i) const
+    {
+      return FlatVector<T> (w, &data[i*dist]);
+    }
+
+    INLINE const FlatVector<T> Diag (size_t i) const
+    {
+      return SliceVector<T> (h, dist+1, data);
+    }
+
+    INLINE const SliceVector<T> Col (size_t i) const
+    {
+      return SliceVector<T> (h, dist, &data[i]);
+    }
+    */
+    INLINE const BareSliceMatrix Cols (size_t first, size_t next) const
+    {
+      return BareSliceMatrix (dist, data+first);
+    }
+
+    INLINE const BareSliceMatrix Rows (IntRange range) const
+    {
+      return Rows (range.First(), range.Next());
+    }
+
+    INLINE const BareSliceMatrix<T> Cols (IntRange range) const
+    {
+      return Cols (range.First(), range.Next());
+    }
+    /*
+    INLINE const SliceVector<T> Diag () const
+    {
+      return SliceVector<T> (h, dist+1, &data[0]);
+    }
+    */
+  };
+
+
+
+
+  
+
 
   template <typename T = double>
   class DoubleSliceMatrix : public CMCPMatExpr<DoubleSliceMatrix<T> >
