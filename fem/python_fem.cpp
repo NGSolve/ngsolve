@@ -221,6 +221,8 @@ struct GenericBSpline {
   Complex operator() (Complex x) const { return (*sp)(x.real()); }
   SIMD<double> operator() (SIMD<double> x) const
   { return SIMD<double>([&](int i)->double { return (*sp)(x[i]); } );}
+  SIMD<Complex> operator() (SIMD<Complex> x) const
+  { return SIMD<double>([&](int i)->double { return (*sp)(x.real()[i]); } );}
 };
 struct GenericSin {
   template <typename T> T operator() (T x) const { return sin(x); }

@@ -798,19 +798,20 @@ namespace ngfem
   // *************************** CoefficientFunction Algebra ********************************
 #ifndef __AVX512F__
 template <typename OP, typename OPC> 
-class cl_UnaryOpCF : public CoefficientFunction
+class cl_UnaryOpCF : public T_CoefficientFunction<cl_UnaryOpCF<OP,OPC>>
 {
   shared_ptr<CoefficientFunction> c1;
   OP lam;
   OPC lamc;
   string name;
+  typedef  T_CoefficientFunction<cl_UnaryOpCF<OP,OPC>> BASE;
 public:
   cl_UnaryOpCF (shared_ptr<CoefficientFunction> ac1, 
                 OP alam, OPC alamc, string aname="undefined")
-    : CoefficientFunction(ac1->Dimension(), ac1->IsComplex()),
+    : BASE(ac1->Dimension(), ac1->IsComplex()),
       c1(ac1), lam(alam), lamc(alamc), name(aname)
   {
-    SetDimensions (c1->Dimensions());
+    this->SetDimensions (c1->Dimensions());
   }
   
   // virtual bool IsComplex() const { return c1->IsComplex(); }
@@ -822,11 +823,11 @@ public:
     return false;
   }
   
-  virtual int Dimension() const { return c1->Dimension(); }
+  // virtual int Dimension() const { return c1->Dimension(); }
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
-    TraverseDimensions( Dimensions(), [&](int ind, int i, int j) {
+    TraverseDimensions( this->Dimensions(), [&](int ind, int i, int j) {
         code.body += Var(index,i,j).Assign( Var(inputs[0],i,j).Func(name) );
         });
   }
@@ -839,7 +840,8 @@ public:
 
   virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
   { return Array<CoefficientFunction*>({ c1.get() }); }
-  
+
+  using BASE::Evaluate;
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
   {
     return lam (c1->Evaluate(ip));
@@ -886,29 +888,23 @@ public:
     for (int i = 0; i < result.Height()*result.Width(); i++)
       result(i) = lamc(result(i));
   }
-  
-  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const
+
+  template <typename T>
+  void T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<T> values) const
   {
     c1->Evaluate (ir, values);
     size_t vw = ir.Size();
-    for (size_t i = 0; i < Dimension(); i++)
+    for (size_t i = 0; i < this->Dimension(); i++)
       for (size_t j = 0; j < vw; j++)
         values.Get(i,j) = lam (values.Get(i,j));
-    /*
-    // not vectorized ... 
-    int w = ir.IR().GetNIP();
-    for (int i = 0; i < Dimension(); i++)
-      for (int j = 0; j < w; j++)
-        values(i,j) = lam (values(i,j));
-    */
   }
   
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
                          AFlatMatrix<double> values) const
   {
     auto in0 = *input[0];
-    for (int i = 0; i < values.Height(); i++)
-      for (int j = 0; j < values.Width(); j++)
+    for (size_t i = 0; i < values.Height(); i++)
+      for (size_t j = 0; j < values.Width(); j++)
         values(i,j) = lam (in0(i,j));
   }
   

@@ -115,6 +115,7 @@ namespace ngstd
 #include "profiler.hpp"
 
 #include "simd.hpp"
+#include "simd_complex.hpp"
 #include "tuple.hpp"
 #include "array.hpp"
 #include "table.hpp"
