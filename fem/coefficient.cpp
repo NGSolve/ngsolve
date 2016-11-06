@@ -1079,6 +1079,15 @@ public:
     c1->Evaluate (ir, result);
     result *= scal;
   }
+
+  
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
+                         ABareSliceMatrix<Complex> values) const
+  {
+    c1->Evaluate (ir, values);
+    values.AddVSize(Dimension(), ir.Size()) *= scal;
+  }
+  
   
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
   {
@@ -1089,14 +1098,15 @@ public:
 
 // ***********************************************************************************
 
-class MultScalVecCoefficientFunction : public CoefficientFunction
+class MultScalVecCoefficientFunction : public T_CoefficientFunction<MultScalVecCoefficientFunction>
 {
   shared_ptr<CoefficientFunction> c1;  // scalar
   shared_ptr<CoefficientFunction> c2;  // vector
+  typedef T_CoefficientFunction<MultScalVecCoefficientFunction> BASE;
 public:
   MultScalVecCoefficientFunction (shared_ptr<CoefficientFunction> ac1,
                                   shared_ptr<CoefficientFunction> ac2)
-    : CoefficientFunction(ac2->Dimension(), ac1->IsComplex() || ac2->IsComplex()),
+    : BASE(ac2->Dimension(), ac1->IsComplex() || ac2->IsComplex()),
       c1(ac1), c2(ac2)
   {
     SetDimensions (c2->Dimensions());
@@ -1122,7 +1132,8 @@ public:
       code.body += Var(index,i,j).Assign( Var(inputs[0]) * Var(inputs[1],i,j) );
     });
   }
-  
+
+  using BASE::Evaluate;
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
   {
     throw Exception ("double MultScalVecCF::Evaluate called");
@@ -1184,12 +1195,13 @@ public:
         values.Get(j,i) *= temp1.Get(0,i);
   }
   */
-  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const
+  template <typename T>
+  void T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<T> values) const
   {
     size_t w = ir.Size();
     __assume (w > 0);
-    STACK_ARRAY(SIMD<double>, hmem1, w);
-    ABareMatrix<double> temp1(&hmem1[0], w, 1, w*SIMD<double>::Size());
+    STACK_ARRAY(SIMD<T>, hmem1, w);
+    AFlatMatrix<T> temp1(1, w*SIMD<double>::Size(), &hmem1[0]);
     
     c1->Evaluate (ir, temp1);
     c2->Evaluate (ir, values);

@@ -1071,6 +1071,15 @@ namespace ngbla
           data[i*dist+j] *= SIMD<double>(d);
       return *this;
     }
+    
+    auto & operator*= (Complex d)
+    {
+      auto vw = VWidth(); 
+      for (size_t i = 0; i < h; i++)
+        for (size_t j = 0; j < vw; j++)
+          data[i*dist+j] *= SIMD<Complex>(d);
+      return *this;
+    }
 
     /*
     template<typename TB>
