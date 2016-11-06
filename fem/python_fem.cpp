@@ -1,6 +1,7 @@
 #ifdef NGS_PYTHON
 #include "../ngstd/python_ngstd.hpp"
 #include "../ngstd/bspline.hpp"
+#include <pybind11/complex.h>
 #include <fem.hpp>
 #include <mutex>
 using namespace ngfem;
@@ -20,7 +21,7 @@ struct PythonCoefficientFunction : public CoefficientFunction {
 
     virtual double EvaluateXYZ (double x, double y, double z) const = 0;
 
-    bp::list GetCoordinates(const BaseMappedIntegrationPoint &bip ) {
+    py::list GetCoordinates(const BaseMappedIntegrationPoint &bip ) {
         double x[3]{0};
         int dim = bip.GetTransformation().SpaceDim();
         const DimMappedIntegrationPoint<1,double> *ip1;
@@ -46,7 +47,7 @@ struct PythonCoefficientFunction : public CoefficientFunction {
             default:
                 break;
         }
-        bp::list list;
+        py::list list;
         int i;
         for(i=0; i<dim; i++)
             list.append(x[i]);
@@ -56,7 +57,7 @@ struct PythonCoefficientFunction : public CoefficientFunction {
     }
 };
 
-class PythonCFWrap : public PythonCoefficientFunction , public bp::wrapper<PythonCoefficientFunction> {
+class PythonCFWrap : public PythonCoefficientFunction , public py::wrapper<PythonCoefficientFunction> {
     static std::mutex m;
     public:
         PythonCFWrap () : PythonCoefficientFunction() { ; }
@@ -64,26 +65,6 @@ class PythonCFWrap : public PythonCoefficientFunction , public bp::wrapper<Pytho
             return this->get_override("EvaluateXYZ")(x,y,z);
         }
 
-        double Evaluate (const BaseMappedIntegrationPoint & bip) const {
-            double ret = 0;
-            m.lock();
-            try { 
-                ret = this->get_override("Evaluate")(boost::ref(bip)); 
-            }
-            catch (bp::error_already_set const &) {
-                PyErr_Print();
-            }
-            catch(...) {
-                cout << "caught Exception in PythonCoefficientFunction::Evaluate" << endl;
-            }
-            m.unlock();
-            return ret;
-        }
-};
-
-std::mutex PythonCFWrap::m;
-
-MSVC2015_UPDATE3_GET_PTR_FIX(PythonCFWrap)
 
 
 
@@ -107,29 +88,29 @@ shared_ptr<CoefficientFunction> MakeCoefficient (bp::object py_coef)
 typedef CoefficientFunction CF;
 typedef PyWrapper<CoefficientFunction> PyCF;
 
-PyCF MakeCoefficient (bp::object val)
+PyCF MakeCoefficient (py::object val)
 {
-  bp::extract<PyCF> ecf(val);
+  py::extract<PyCF> ecf(val);
   if (ecf.check()) return ecf();
 
-  bp::extract<double> ed(val);
+  py::extract<double> ed(val);
   if (ed.check()) 
     return PyCF(make_shared<ConstantCoefficientFunction> (ed()));
 
-  bp::extract<Complex> ec(val);
+  py::extract<Complex> ec(val);
   if (ec.check()) 
     return PyCF(make_shared<ConstantCoefficientFunctionC> (ec()));
 
-  bp::extract<bp::list> el(val);
+  py::extract<py::list> el(val);
   if (el.check())
     {
-      Array<shared_ptr<CoefficientFunction>> cflist(bp::len(el()));
+      Array<shared_ptr<CoefficientFunction>> cflist(py::len(el()));
       for (int i : Range(cflist))
         cflist[i] = MakeCoefficient(el()[i]).Get();
       return PyCF(MakeDomainWiseCoefficientFunction(move(cflist)));
     }
 
-  bp::extract<bp::tuple> et(val);
+  py::extract<py::tuple> et(val);
   if (et.check())
     {
       Array<shared_ptr<CoefficientFunction>> cflist(bp::len(et()));
@@ -363,6 +344,12 @@ struct GenericConj {
     
   };
 
+namespace ngstd {
+  template <>
+  struct PyWrapperTraits<CoordCoefficientFunction> {
+    typedef PyWrapperDerived<CoordCoefficientFunction, ngfem::CoefficientFunction> type;
+  };
+}
 
 
 void ExportCoefficientFunction()
@@ -600,56 +587,11 @@ void ExportCoefficientFunction()
   // <shared_ptr<ParameterCoefficientFunction>, shared_ptr<CoefficientFunction> >(); 
 
   
-  class CoordCoefficientFunction : public CoefficientFunction
-  {
-    int dir;
-  public:
-    CoordCoefficientFunction (int adir) : CoefficientFunction(1, false), dir(adir) { ; }
-    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
-    {
-      return ip.GetPoint()(dir);
-    }
-    virtual void Evaluate(const BaseMappedIntegrationRule & ir,
-                          FlatMatrix<> result) const
-    {
-      result.Col(0) = ir.GetPoints().Col(dir);
-      /*
-      for (int i = 0; i < ir.Size(); i++)
-        result(i,0) = ir[i].GetPoint()(dir);
-      */
-    }
-    virtual void Evaluate(const BaseMappedIntegrationRule & ir,
-                          FlatMatrix<Complex> result) const
-    {
-      result.Col(0) = ir.GetPoints().Col(dir);
-    }
-
-    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {
-        auto v = Var(index);
-        if(dir==0) code.body += v.Assign(CodeExpr("ip.GetPoint()(0)"));
-        if(dir==1) code.body += v.Assign(CodeExpr("ip.GetPoint()(1)"));
-        if(dir==2) code.body += v.Assign(CodeExpr("ip.GetPoint()(2)"));
-    }
-
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const
-    {
-      auto points = ir.GetPoints();
-      for (int i = 0; i < ir.Size(); i++)
-        values.Get(i) = points.Get(i, dir);
-    }
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
-                           AFlatMatrix<double> values) const
-    {
-      Evaluate (ir, values);
-    }
-    
-  };
-
-  typedef PyWrapperDerived<CoordCoefficientFunction, CoefficientFunction> PyCoordCF;
-  bp::class_<PyCoordCF,bp::bases<PyCF>>
-    ("CoordCF", "CoefficientFunction for x, y, z")
-     .def("__init__", bp::make_constructor
-          (FunctionPointer ([](int direction) -> PyCoordCF *
+  typedef PyWrapper<CoordCoefficientFunction> PyCoordCF;
+  py::class_<PyCoordCF,PyCF>
+    (m, "CoordCF", "CoefficientFunction for x, y, z")
+     .def("__init__",
+          [](PyCoordCF *instance, int direction)
                              {
                                return new PyCoordCF(make_shared<CoordCoefficientFunction>(direction));
                              })))
@@ -787,24 +729,6 @@ void ExportCoefficientFunction()
 }
 
 
-
-MSVC2015_UPDATE3_GET_PTR_FIX(ngfem::BaseScalarFiniteElement)
-MSVC2015_UPDATE3_GET_PTR_FIX(ngfem::BilinearFormIntegrator)
-MSVC2015_UPDATE3_GET_PTR_FIX(ngfem::BlockBilinearFormIntegrator)
-MSVC2015_UPDATE3_GET_PTR_FIX(ngfem::BlockLinearFormIntegrator)
-MSVC2015_UPDATE3_GET_PTR_FIX(ngfem::CoefficientFunction)
-MSVC2015_UPDATE3_GET_PTR_FIX(ngfem::CompoundBilinearFormIntegrator)
-MSVC2015_UPDATE3_GET_PTR_FIX(ngfem::CompoundLinearFormIntegrator)
-MSVC2015_UPDATE3_GET_PTR_FIX(ngfem::ConstantCoefficientFunction)
-MSVC2015_UPDATE3_GET_PTR_FIX(ngfem::ParameterCoefficientFunction)
-MSVC2015_UPDATE3_GET_PTR_FIX(ngfem::DifferentialOperator)
-MSVC2015_UPDATE3_GET_PTR_FIX(ngfem::DomainConstantCoefficientFunction)
-MSVC2015_UPDATE3_GET_PTR_FIX(ngfem::DomainVariableCoefficientFunction)
-MSVC2015_UPDATE3_GET_PTR_FIX(ngfem::ElementTransformation)
-MSVC2015_UPDATE3_GET_PTR_FIX(ngfem::FiniteElement)
-MSVC2015_UPDATE3_GET_PTR_FIX(ngfem::LinearFormIntegrator)
-MSVC2015_UPDATE3_GET_PTR_FIX(ngfem::ProxyFunction)
-MSVC2015_UPDATE3_GET_PTR_FIX(CoordCoefficientFunction)
 
 
 // *************************************** Export FEM ********************************
@@ -1079,12 +1003,11 @@ void NGS_DLL_HEADER ExportNgfem() {
                                default:
                                  throw Exception ("cannot create ElementTransformation");
                                }
-                           }),
-          bp::default_call_policies(),        // need it to use named arguments
-          (bp::arg("et")=ET_TRIG,bp::arg("vertices"))))
-    .add_property("VB", &ElementTransformation::VB)
-    .add_property("spacedim", &ElementTransformation::SpaceDim)
-    .add_property("elementid", &ElementTransformation::GetElementId)
+                           },
+          py::arg("et")=ET_TRIG,py::arg("vertices"))
+    .def_property_readonly("VB", &ElementTransformation::VB)
+    .def_property_readonly("spacedim", &ElementTransformation::SpaceDim)
+    .def_property_readonly("elementid", &ElementTransformation::GetElementId)
     .def ("__call__", FunctionPointer
           ([] (ElementTransformation & self, double x, double y, double z)
            {
@@ -1343,9 +1266,18 @@ void NGS_DLL_HEADER ExportNgfem() {
   bp::class_<PyWrapperDerived<CompoundLinearFormIntegrator, LinearFormIntegrator>,bp::bases<PyBFI>>
       ("CompoundLinearFormIntegrator", bp::no_init);
 
-  bp::class_<PyWrapperDerived<BlockLinearFormIntegrator, LinearFormIntegrator>,bp::bases<PyBFI>>
-      ("BlockLinearFormIntegrator", bp::no_init);
-
+//   typedef PyWrapperDerived<PythonCFWrap, CoefficientFunction> PythonCFWrapWrap;
+//   py::class_<PythonCFWrapWrap ,PyCF>(m, "PythonCF")
+//     .def("Evaluate",
+//         py::pure_virtual( FunctionPointer( [] ( PythonCFWrapWrap self, const BaseMappedIntegrationPoint & ip )
+//         {
+//           return static_cast<CoefficientFunction &>(*self.Get()).Evaluate(ip);
+//         } )))
+//     .def("GetCoordinates", FunctionPointer( [] ( PythonCFWrapWrap self, const BaseMappedIntegrationPoint & ip ) 
+//         {
+//           return self->GetCoordinates(ip);
+//         }))
+//     ;
 
   ExportCoefficientFunction ();
 
