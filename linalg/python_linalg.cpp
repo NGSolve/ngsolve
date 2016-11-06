@@ -1,7 +1,6 @@
 #ifdef NGS_PYTHON
-#include "../ngstd/python_ngstd.hpp"
-#include <boost/python/slice.hpp>
 #include <la.hpp>
+#include "../ngstd/python_ngstd.hpp"
 using namespace ngla;
 
 MSVC2015_UPDATE3_GET_PTR_FIX(ngla::BaseMatrix)
@@ -33,73 +32,62 @@ static void InitSlice( const bp::slice &inds, int len, int &start, int &step, in
         PyErr_Print();
     }
 
+  if (is_complex)
+    res = make_shared<VVector<Complex>> (size);
+  else
+    res = make_shared<VVector<double>> (size);
+  return res;
 }
 
-
-void NGS_DLL_HEADER ExportNgla() {
-    std::string nested_name = "la";
-    if( bp::scope() )
-         nested_name = bp::extract<std::string>(bp::scope().attr("__name__") + ".la");
-    
-    bp::object module(bp::handle<>(bp::borrowed(PyImport_AddModule(nested_name.c_str()))));
-
-    cout << IM(1) << "exporting la as " << nested_name << endl;
-    bp::object parent = bp::scope() ? bp::scope() : bp::import("__main__");
-    parent.attr("la") = module ;
-
-    bp::scope ngla_scope(module);
-
-    bp::object expr_module = bp::import("ngsolve.__expr");
-    bp::object expr_namespace = expr_module.attr("__dict__");
+void NGS_DLL_HEADER ExportNgla(py::module &m) {
+    cout << IM(1) << "exporting linalg" << endl;
+    // TODO
+//     py::object expr_module = py::import("ngsolve.__expr");
+//     py::object expr_namespace = expr_module.attr("__dict__");
 
 
-
-
-    struct BaseVector_pickle_suite : bp::pickle_suite
-    {
-      static
-      bp::tuple getinitargs(const BaseVector & v)
-      {
-	int es = v.EntrySize();
-	if(v.IsComplex())
-	  es /= 2;
-        return bp::make_tuple(v.Size(), v.IsComplex(), es); 
-      }
-
-      static
-      bp::tuple getstate(bp::object obj)
-      {
-        /*
-        const BaseVector & vec = bp::extract<BaseVector const&>(obj)();
-        bp::list data;
-        for (int i : Range(vec))
-          data.append (vec.FV<double>()(i));
-        */
-        auto vec = bp::extract<BaseVector const&>(obj)().FV<double>();
-        bp::list data;
-        for (int i : Range(vec))
-          data.append (vec(i));
-        return bp::make_tuple (obj.attr("__dict__"), data);
-      }
-    
-      static
-      void setstate(bp::object obj, bp::tuple state)
-      {
-        bp::dict d = bp::extract<bp::dict>(obj.attr("__dict__"))();
-        d.update(state[0]);
-        bp::list data = bp::extract<bp::list>(state[1]);
-        auto vec = bp::extract<BaseVector const&>(obj)().FV<double>();
-        for (int i : Range(vec))
-          vec(i) = bp::extract<double> (data[i]);
-        /*
-        BaseVector & vec = bp::extract<BaseVector&>(obj)();
-        for (int i : Range(vec))
-          vec.FV<double>()(i) = bp::extract<double> (data[i]);
-        */
-      }
-
-    static bool getstate_manages_dict() { return true; }
-  };
+//     struct BaseVector_pickle_suite : py::pickle_suite
+//     {
+//       static
+//       py::tuple getinitargs(const BaseVector & v)
+//       {
+//         return py::make_tuple(v.Size(), v.IsComplex(), v.EntrySize()); 
+//       }
+// 
+//       static
+//       py::tuple getstate(py::object obj)
+//       {
+//         /*
+//         const BaseVector & vec = py::extract<BaseVector const&>(obj)();
+//         py::list data;
+//         for (int i : Range(vec))
+//           data.append (vec.FV<double>()(i));
+//         */
+//         auto vec = py::extract<BaseVector const&>(obj)().FV<double>();
+//         py::list data;
+//         for (int i : Range(vec))
+//           data.append (vec(i));
+//         return py::make_tuple (obj.attr("__dict__"), data);
+//       }
+//     
+//       static
+//       void setstate(py::object obj, py::tuple state)
+//       {
+//         py::dict d = py::extract<py::dict>(obj.attr("__dict__"))();
+//         d.update(state[0]);
+//         py::list data = py::extract<py::list>(state[1]);
+//         auto vec = py::extract<BaseVector const&>(obj)().FV<double>();
+//         for (int i : Range(vec))
+//           vec(i) = py::extract<double> (data[i]);
+//         /*
+//         BaseVector & vec = py::extract<BaseVector&>(obj)();
+//         for (int i : Range(vec))
+//           vec.FV<double>()(i) = py::extract<double> (data[i]);
+//         */
+//       }
+// 
+//     static bool getstate_manages_dict() { return true; }
+//   };
     
     
   
@@ -516,8 +504,6 @@ BOOST_PYTHON_MODULE(libngla) {
   // ExportNgbla();
   ExportNgla();
 }
-
-
 
 
 

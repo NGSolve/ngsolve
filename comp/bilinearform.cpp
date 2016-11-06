@@ -536,17 +536,17 @@ namespace ngcomp
       {
         AllocateMatrix ();
       }
-    catch (exception & e)
-      {
-        throw Exception (e.what() + 
-                         string ("\nthrown by allocate matrix ") +
-                         string (GetName()));
-      }
     catch (Exception & e)
       {
         e.Append (string ("\nthrown by allocate matrix ") +
                   string (GetName()));
         throw;
+      }
+    catch (exception & e)
+      {
+        throw Exception (e.what() + 
+                         string ("\nthrown by allocate matrix ") +
+                         string (GetName()));
       }
 
 

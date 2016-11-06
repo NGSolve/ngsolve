@@ -749,6 +749,14 @@ namespace ngcomp
           }
 
 
+        catch (Exception & e)
+          {
+            e.Append ("\nthrown by update ");
+            e.Append (todo[pc]->GetClassName());
+            e.Append (" ");
+            e.Append (todo[pc]->GetName());
+            throw;
+          }
         catch (exception & e)
           {
             throw Exception (string(e.what()) + 
@@ -769,14 +777,6 @@ namespace ngcomp
           }
 # endif // MSVC_EXPRESS
 #endif
-        catch (Exception & e)
-          {
-            e.Append ("\nthrown by update ");
-            e.Append (todo[pc]->GetClassName());
-            e.Append (" ");
-            e.Append (todo[pc]->GetName());
-            throw;
-          }
 
         
 	AddVariable ("timing.level", WallTime()-starttime, 6);

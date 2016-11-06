@@ -66,7 +66,7 @@ void SpawnPython (string initfile)
                       pyenv.exec_file(init_file_.c_str());
                       Ng_SetRunning (0); 
                     }
-                    catch (bp::error_already_set const &) {
+                    catch (py::error_already_set const &) {
                       PyErr_Print();
                     }
                     cout << "Python shell finished." << endl;
@@ -462,7 +462,7 @@ int NGS_LoadPDE (ClientData clientData,
             cout << "set python object 'pde'" << endl;
             cout << "Type 'help(pde)' or 'print(pde)' for more information" << endl;
             AcquireGIL gil_lock;
-            pyenv["pde"] = bp::ptr(&*pde);
+            pyenv["pde"] = py::cast(pde);
           }
 #endif
 
@@ -531,6 +531,9 @@ int NGS_LoadPy (ClientData clientData,
 	  cout << "(should) load python file '" << filename << "'" << endl;
 
 #ifdef NGS_PYTHON
+#ifdef PARALLEL
+  MyMPI_SendCmd ("ngs_py " + ifstream(filename).read());
+#endif // PARALLEL
 	  {
         std::thread([](string init_file_) 
           {
@@ -549,7 +552,7 @@ int NGS_LoadPy (ClientData clientData,
               pyenv.exec_file(init_file_.c_str());
               Ng_SetRunning (0); 
             }
-            catch (bp::error_already_set const &) {
+            catch (py::error_already_set const &) {
               PyErr_Print();
             }
             cout << "Finished executing " << init_file_ << endl;
@@ -774,7 +777,7 @@ int NGS_RestorePDE (ClientData clientData,
 #ifdef NGS_PYTHON
       {
         AcquireGIL gil_lock;
-        pyenv["pde"] = bp::ptr(&*pde);
+        pyenv["pde"] = py::cast(pde);
       }
 #endif
       return TCL_OK;
@@ -810,7 +813,7 @@ int NGS_SocketLoad (ClientData clientData,
 #ifdef NGS_PYTHON
 	  {
 	    AcquireGIL gil_lock;
-	    pyenv["pde"] = bp::ptr(&*pde);
+	    pyenv["pde"] = py::cast(pde);
 	  }
 #endif
 
@@ -1264,24 +1267,27 @@ int NGSolve_Init (Tcl_Interp * interp)
   Py_Initialize();
   PyEval_InitThreads();
   
-  pyenv = PythonEnvironment (bp::import("__main__"));
+  py::module main_module = py::module::import("__main__");
+  pyenv = PythonEnvironment (main_module);
   
   {
-    bp::scope sc(bp::import("__main__"));
-    bp::def ("SetDefaultPDE", 
-             FunctionPointer([](shared_ptr<PDE> apde) 
+    main_module.def ("SetDefaultPDE", 
+            [](shared_ptr<PDE> apde) 
                              {  
                                pde = apde;
                                pde->GetMeshAccess()->SelectMesh();
                                Ng_Redraw();
                                return; 
-                             }));
+                             });
   }
 
   if (MyMPI_GetId() == 0) 
     {
       pyenv.exec("from ngsolve import *");
-      PyEval_ReleaseLock();
+//       PyEval_ReleaseLock();
+      // Release GIL on this thread and reset thread state
+      // to enable python operations on other threads
+      PyEval_SaveThread();
 
 //       SpawnPython (initfile);
       // Dummy SpawnPython (to avoid nasty Python GIL error)
@@ -1292,7 +1298,7 @@ int NGSolve_Init (Tcl_Interp * interp)
                     pyenv.exec("from ngsolve import *");
                     pyenv.exec("from netgen import *");
                     }
-                    catch (bp::error_already_set const &) {
+                    catch (py::error_already_set const &) {
                       PyErr_Print();
                     }
                   }, initfile).detach();
@@ -1455,19 +1461,19 @@ void Parallel_InitPython ()
       cout << "ini python" << endl;
       Py_Initialize();
       PyEval_InitThreads();
-      pyenv = PythonEnvironment (bp::import("__main__"));
+      py::module = py::module::import("__main__");
+      pyenv = PythonEnvironment (m);
       {
-	bp::scope sc(bp::import("__main__"));
-	bp::def ("SetDefaultPDE", 
+	py::def ("SetDefaultPDE", 
 		 FunctionPointer([](shared_ptr<PDE> apde) 
 				 {  
 				   pde = apde;
 				   pde->GetMeshAccess()->SelectMesh();
 				   Ng_Redraw();
 				   return; 
-				 }));
-	bp::def ("Redraw", 
-		 FunctionPointer([]() {Ng_Redraw();}));
+				 });
+	m.def ("Redraw", 
+		[]() {Ng_Redraw();});
       }
       
       cout << "ini python complete" << endl;	  
@@ -1538,7 +1544,7 @@ void NGS_ParallelRun (const string & message)
       cout << "set python mesh" << endl;
       {
         AcquireGIL gil_lock;
-        pyenv["pde"] = bp::ptr(&*pde);
+        pyenv["pde"] = py::cast(pde);
       }
 #endif
 

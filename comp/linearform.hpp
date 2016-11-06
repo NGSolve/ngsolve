@@ -234,6 +234,14 @@ namespace ngcomp
 
 }
 
+namespace ngstd
+{
+  template <>
+  struct PyWrapperTraits<ngcomp::LinearForm> {
+    typedef PyWrapperClass<ngcomp::LinearForm> type;
+  };
+}
+
 #endif
 
 
