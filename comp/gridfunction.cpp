@@ -60,8 +60,11 @@ namespace ngcomp
 				const Flags & flags)
     : NGS_Object (afespace->GetMeshAccess(), name), 
       // GridFunctionCoefficientFunction (shared_ptr<GridFunction>(this, NOOP_Deleter), afespace->GetEvaluator()),
+      /*
       GridFunctionCoefficientFunction (shared_ptr<DifferentialOperator>(),
                                        shared_ptr<DifferentialOperator>()), // gridfunction-CF with null-ptr diffop
+      */
+      GridFunctionCoefficientFunction (afespace->GetEvaluator(VOL), afespace->GetEvaluator(BND)),
       fespace(afespace)
   {
     gf = shared_ptr<GridFunction>(this,NOOP_Deleter);
