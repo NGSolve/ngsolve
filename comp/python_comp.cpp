@@ -2066,6 +2066,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
     .def_property_readonly ("preconditioners", FunctionPointer([](PyPDE self) { return py::cast(self->GetPreconditionerTable()); }))
     .def_property_readonly ("numprocs", FunctionPointer([](PyPDE self) { return py::cast(self->GetNumProcTable()); }))
     ;
+
   
   m.def("Integrate", 
           [](PyCF cf,
