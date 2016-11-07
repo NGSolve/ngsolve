@@ -6,6 +6,11 @@
 
 #include "python_ngstd.hpp"
 
+#ifdef PARALLEL
+bool MPIManager::initialized_by_me = false;
+static MPIManager mpiman;
+#endif
+
 PythonEnvironment pyenv;
 
 
@@ -81,6 +86,15 @@ void SetFlag(Flags &flags, string s, py::object value)
 }
 
 void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
+
+  py::class_<MPIManager>(m, "MPIManager")
+    .def("InitMPI", &MPIManager::InitMPIB)
+    .def("Barrier", &MPIManager::Barrier)
+    .def("GetWT", &MPIManager::GetWT)
+    .def("GetRank", &MPIManager::GetRank)
+    .def("GetNP", &MPIManager::GetNP)
+    ;
+
   std::string nested_name = "ngstd";
 
   m.def("TestFlags", [] (py::dict const &d) { cout << py::extract<Flags>(d)() << endl; } );

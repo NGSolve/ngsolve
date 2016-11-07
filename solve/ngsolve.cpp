@@ -532,7 +532,9 @@ int NGS_LoadPy (ClientData clientData,
 
 #ifdef NGS_PYTHON
 #ifdef PARALLEL
-  MyMPI_SendCmd ("ngs_py " + ifstream(filename).read());
+	  stringstream buf;
+	  buf << "ngs_py " << ifstream(filename).rdbuf();
+	  MyMPI_SendCmd (buf.str().c_str());
 #endif // PARALLEL
 	  {
         std::thread([](string init_file_) 
@@ -1458,28 +1460,29 @@ void Parallel_InitPython ()
   static bool python_initialized = false;
   if (!python_initialized)
     {
-      cout << "ini python" << endl;
+      cout << "ini (parallel) python" << endl;
       Py_Initialize();
       PyEval_InitThreads();
-      py::module = py::module::import("__main__");
+      py::module m = py::module::import("__main__");
       pyenv = PythonEnvironment (m);
       {
-	py::def ("SetDefaultPDE", 
-		 FunctionPointer([](shared_ptr<PDE> apde) 
-				 {  
-				   pde = apde;
-				   pde->GetMeshAccess()->SelectMesh();
-				   Ng_Redraw();
-				   return; 
-				 });
+	m.def ("SetDefaultPDE", 
+	       FunctionPointer([](shared_ptr<PDE> apde) 
+			       {  
+				 pde = apde;
+				 pde->GetMeshAccess()->SelectMesh();
+				 Ng_Redraw();
+				 return; 
+			       }));
 	m.def ("Redraw", 
-		[]() {Ng_Redraw();});
+	       []() {Ng_Redraw();});
       }
       
       cout << "ini python complete" << endl;	  
 
       pyenv.exec("from ngsolve import *");
-      PyEval_ReleaseLock();
+      //PyEval_ReleaseLock();
+      PyEval_SaveThread();
 
       python_initialized = true;
     }
@@ -1586,8 +1589,11 @@ void NGS_ParallelRun (const string & message)
 
       string command = message.substr(7);
       AcquireGIL gil_lock;
+      cout << "gil acquired " << endl;
+      cout << "run command " << endl << command << endl;
       // PythonEnvironment & py_env = PythonEnvironment::getInstance();
       pyenv.exec(command);
+      cout << "command run " << endl;
     }
 #endif
   return;
