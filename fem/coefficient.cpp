@@ -831,14 +831,15 @@ void FileCoefficientFunction :: StopWriteIps(const string & infofilename)
 
 
   
-class ScaleCoefficientFunction : public CoefficientFunction
+class ScaleCoefficientFunction : public T_CoefficientFunction<ScaleCoefficientFunction>
 {
   double scal;
   shared_ptr<CoefficientFunction> c1;
+  typedef T_CoefficientFunction<ScaleCoefficientFunction> BASE;
 public:
   ScaleCoefficientFunction (double ascal, 
                             shared_ptr<CoefficientFunction> ac1)
-    : CoefficientFunction(ac1->Dimension(), ac1->IsComplex()),
+    : BASE(ac1->Dimension(), ac1->IsComplex()),
       scal(ascal), c1(ac1)
   {
     SetDimensions(c1->Dimensions());
@@ -873,7 +874,8 @@ public:
   virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
   { return Array<CoefficientFunction*>({ c1.get() }); }
 
-  
+
+  using BASE::Evaluate;
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
   {
     return scal * c1->Evaluate(ip);
@@ -907,11 +909,12 @@ public:
     values *= scal;
   }
 
-  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
-                         ABareSliceMatrix<double> values) const
+  template <typename T>
+  void T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
+                   BareSliceMatrix<SIMD<T>> values) const
   {
     c1->Evaluate (ir, values);
-    values.AddVSize(Dimension(), ir.Size()) *= scal;
+    values.AddSize(Dimension(), ir.Size()) *= scal;
   }
 
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
