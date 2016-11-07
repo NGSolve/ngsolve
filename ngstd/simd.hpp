@@ -505,7 +505,7 @@ INLINE ngstd::SIMD<double> atan (ngstd::SIMD<double> a) {
 
   template <typename T1, typename T2, typename T3>
   // a*b+c
-  auto FMA(T1 a, T2 b, T3 c)
+  INLINE auto FMA(T1 a, T2 b, T3 c)
   {
     return a*b+c;
   }
