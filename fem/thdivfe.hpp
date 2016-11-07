@@ -473,7 +473,7 @@ namespace ngfem
 
 
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, ABareSliceMatrix<double> values) const;
-    virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, ABareMatrix<double> values,
+    virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values,
                            BareSliceVector<> coefs) const;
 
     virtual void EvaluateDiv (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, ABareVector<double> values) const;

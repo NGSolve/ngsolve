@@ -112,7 +112,7 @@ namespace ngfem
       cout << "HDivFE::Evaluate (simd) not overloaded" << endl;
     }
     
-    virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, ABareMatrix<double> values,
+    virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values,
                            BareSliceVector<> coefs) const
     {
       cout << "HDivFE::AddTrans (simd) not overloaded" << endl;

@@ -938,9 +938,10 @@ namespace ngcomp
   GridFunctionCoefficientFunction :: 
   GridFunctionCoefficientFunction (shared_ptr<DifferentialOperator> adiffop,
                                    shared_ptr<DifferentialOperator> atrace_diffop,
+				   shared_ptr<DifferentialOperator> attrace_diffop,
                                    int acomp)
     : CoefficientFunction(1, false),
-     diffop (adiffop), trace_diffop(atrace_diffop), comp (acomp) 
+      diffop (adiffop), trace_diffop(atrace_diffop), ttrace_diffop(attrace_diffop), comp (acomp) 
   {
     ; // SetDimensions (gf->Dimensions());    
   }
@@ -949,9 +950,10 @@ namespace ngcomp
   GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf,
 				   shared_ptr<DifferentialOperator> adiffop,
                                    shared_ptr<DifferentialOperator> atrace_diffop,
+				   shared_ptr<DifferentialOperator> attrace_diffop,
                                    int acomp)
     : CoefficientFunction(1,agf->IsComplex()),
-      gf(agf), diffop (adiffop), trace_diffop(atrace_diffop), comp (acomp) 
+      gf(agf), diffop (adiffop), trace_diffop(atrace_diffop), ttrace_diffop(attrace_diffop), comp (acomp) 
   {
     //SetDimensions (gf->Dimensions());    
   }
@@ -1425,7 +1427,71 @@ namespace ngcomp
       throw Exception ("GridFunctionCoefficientFunction: SIMD: don't know how I shall evaluate");    
   }
 
+  void GridFunctionCoefficientFunction ::   
+  Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
+            ABareSliceMatrix<Complex> bvalues) const
+  {
+    LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evalute 3");
 
+    auto values = bvalues.AddVSize(Dimension(), ir.Size());
+    const ElementTransformation & trafo = ir.GetTransformation();
+    
+    int elnr = trafo.GetElementNr();
+    VorB vb = trafo.VB();
+    ElementId ei(vb, elnr);
+
+    const FESpace & fes = *gf->GetFESpace();
+
+    if (!trafo.BelongsToMesh ((void*)(fes.GetMeshAccess().get())))
+      {
+        throw ExceptionNOSIMD ("SIMD - evaluation not available for different meshes");
+        // for (int i = 0; i < ir.Size(); i++)
+        // Evaluate (ir[i], values.Row(i));
+        return;
+      }
+    
+    if (!fes.DefinedOn(trafo.GetElementIndex(), vb)) 
+      { 
+        values = 0.0; 
+        return;
+      }
+    
+    const FiniteElement & fel = fes.GetFE (ei, lh2);
+    int dim = fes.GetDimension();
+
+    ArrayMem<int, 50> dnums;
+    fes.GetDofNrs (ei, dnums);
+    
+    VectorMem<50, Complex> elu(dnums.Size()*dim);
+
+    gf->GetElementVector (comp, dnums, elu);
+    fes.TransformVec (elnr, trafo.VB(), elu, TRANSFORM_SOL);
+
+    if (diffop && vb==VOL)
+      diffop->Apply (fel, ir, elu, values); // , lh2);
+    else if (trace_diffop && vb==BND)
+      trace_diffop->Apply (fel, ir, elu, values); // , lh2);
+    else if (ttrace_diffop && vb==BBND)
+      ttrace_diffop->Apply(fel,ir,elu,values);
+    else if (bfi)
+      throw Exception ("GridFunctionCoefficientFunction: SIMD evaluate not possible 1");
+      // bfi->CalcFlux (fel, ir, elu, values, true, lh2);
+    else if (fes.GetEvaluator(vb))
+      fes.GetEvaluator(vb) -> Apply (fel, ir, elu, values); // , lh2);
+    else if (fes.GetIntegrator(vb))
+      throw Exception ("GridFunctionCoefficientFunction: SIMD evaluate not possible 2");
+      // fes.GetIntegrator(boundary) ->CalcFlux (fel, ir, elu, values, false, lh2);
+    else
+      throw Exception ("GridFunctionCoefficientFunction: SIMD: don't know how I shall evaluate");    
+  }
+
+
+
+
+
+
+
+  
 
   template <class SCAL>
   VisualizeGridFunction<SCAL> ::

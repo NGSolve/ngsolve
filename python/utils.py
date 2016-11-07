@@ -36,10 +36,10 @@ def L2(mesh, **args):
 class HCurl(HCurlFunctionsWrap):
     def __init__(self,mesh,*args,**kwargs):
         # fix for pickling
-        if mesh=="hcurlho":
-            FESpace.__init__(self,mesh,*args,**kwargs)
-        else:
-            FESpace.__init__(self,"hcurlho",mesh,*args,**kwargs)
+        #if mesh=="hcurlho":
+        #    FESpace.__init__(self,mesh,*args,**kwargs)
+        #else:
+        FESpace.__init__(self,"hcurlho",mesh,*args,**kwargs)
 
 #def HCurl(mesh, **args):
 #    """ Create H(curl) finite element space. """

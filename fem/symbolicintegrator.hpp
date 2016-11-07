@@ -155,6 +155,8 @@ public:
 
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
                          ABareSliceMatrix<double> values) const;
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
+                         ABareSliceMatrix<Complex> values) const;
 
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
                          FlatArray<AFlatMatrix<double>*> input,
@@ -396,7 +398,7 @@ public:
   NGS_DLL_HEADER virtual void
   AddTrans (const FiniteElement & bfel,
             const SIMD_BaseMappedIntegrationRule & bmir,
-            ABareMatrix<double> flux,
+            ABareSliceMatrix<double> flux,
             BareSliceVector<double> x) const
   {
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);

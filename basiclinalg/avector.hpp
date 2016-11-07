@@ -19,15 +19,25 @@ namespace ngbla
   };
 
   class AFlatVectorD;
+  class AFlatVectorC;
+  
   class AFlatMatrixD;
+  class AFlatMatrixC;
   class AVectorD;
   class AMatrixD;
+  class AMatrixC;
   class AMatrixDCol;
 
   template <> struct FooAVectorType<double>
   {
     typedef AFlatVectorD flattype;
     typedef AVectorD type;
+  };
+
+  template <> struct FooAVectorType<Complex>
+  {
+    typedef AFlatVectorC flattype;
+    // typedef AVectorC type;
   };
 
   template <> struct FooAMatrixType<double,RowMajor>
@@ -42,7 +52,14 @@ namespace ngbla
     typedef AMatrixDCol type;
   };
 
+  template <> struct FooAMatrixType<Complex,RowMajor>
+  {
+    typedef AFlatMatrixC flattype;
+    typedef AMatrixC type;
+  };
+  
 
+  
   template <typename T = double> 
   using AFlatVector = typename FooAVectorType<T>::flattype;
   template <typename T = double, ORDERING ORD = RowMajor> 
@@ -348,6 +365,120 @@ namespace ngbla
     AVectorD & operator= (AVectorD && av2) { Swap(size, av2.size); Swap (data, av2.data); return *this; }
   };
 
+
+
+
+
+
+  class AFlatVectorC : public SIMDExpr<AFlatVectorC>
+  {
+  protected:
+    size_t size; 
+    size_t vsize() const { return (size+SIMD<double>::Size()-1) / SIMD<double>::Size(); }
+    SIMD<Complex> * __restrict data;  
+  public:
+    AFlatVectorC(size_t asize, LocalHeap & lh)
+    {
+      size = asize;
+      data = lh.Alloc<SIMD<Complex>> (vsize());
+    }
+
+    AFlatVectorC (size_t as, SIMD<Complex> * adata)
+      : size(as), data(adata)
+    { ; }
+
+    enum { IS_LINEAR = true };
+    enum { IS_LINEAR_VEC = true };
+    
+    size_t Size () const { return size; }
+    size_t VSize () const { return vsize(); }
+    size_t Height () const { return size; }
+    size_t Width () const { return 1; }
+
+    /*
+    double & operator() (size_t i) const
+    {
+      return ((double*)data)[i]; 
+    }
+
+    double & operator() (size_t i, size_t j) const
+    {
+      return ((double*)data)[i]; 
+    }
+    */
+    
+    SIMD<Complex> & Get(size_t i) const { return data[i]; }
+
+    INLINE const AFlatVectorC & operator= (const AFlatVectorC & v2) const
+    {
+      for (size_t i = 0; i < vsize(); i++)
+        data[i] = v2.data[i];
+      return *this;
+    }
+  
+    AFlatVectorC & operator= (double d)
+    {
+      for (size_t i = 0; i < vsize(); i++)
+        data[i] = SIMD<double> (d);
+      return *this;
+    }
+    
+    AFlatVectorC & operator*= (double d)
+    {
+      for (size_t i = 0; i < vsize(); i++) data[i] *= d;
+      return *this;
+    }
+
+    /*
+    template<typename TB>
+    INLINE const AFlatVectorD & operator= (const Expr<TB> & v) const
+    {
+      for (size_t i = 0; i < size; i++)
+        ((double*)data)[i] = v.Spec()(i);
+      return *this;
+    }
+
+    template<typename TB>
+    INLINE const AFlatVectorD & operator= (const SIMDExpr<TB> & v) const
+    {
+      for (size_t i = 0; i < vsize(); i++)
+        data[i] = v.Spec().Get(i);
+      return *this;
+    }
+
+    template<typename TB>
+    INLINE const AFlatVectorD & operator+= (const SIMDExpr<TB> & v) const
+    {
+      for (size_t i = 0; i < vsize(); i++)
+        data[i] += v.Spec().Get(i);
+      return *this;
+    }
+    */
+    AFlatVectorC Range (size_t begin, size_t end) const
+    {
+      return AFlatVectorC (end-begin, data+begin);
+    }
+  };
+
+  class AVectorC : public AFlatVectorC
+  {
+  public:
+    AVectorC (size_t as)
+      : AFlatVectorC (as, new SIMD<Complex>[(as+SIMD<double>::Size()-1) / SIMD<double>::Size()]) { ; }
+    AVectorC () : AFlatVectorC (0, (SIMD<Complex>*)nullptr) { ; }
+    AVectorC (AVectorC && av2) : AFlatVectorC (0, (SIMD<Complex>*)nullptr) { Swap(size, av2.size); Swap (data, av2.data); }
+    ~AVectorC() { delete data; }
+    using AFlatVectorC::operator=;
+    AVectorC & operator= (AVectorC && av2) { Swap(size, av2.size); Swap (data, av2.data); return *this; }
+  };
+
+
+
+
+
+  
+
+  
   class AFlatMatrixD : public SIMDExpr<AFlatMatrixD>
   {
   protected:
@@ -462,7 +593,8 @@ namespace ngbla
 
     AFlatVector<double> Row (size_t r) const
     {
-      return AFlatVector<double> (w, (double*)&Get(r,0));
+      // return AFlatVector<double> (w, (double*)&Get(r,0));
+      return AFlatVector<double> (w, &Get(r,0));
     }
   
     AFlatMatrixD Rows(size_t begin, size_t end) const
@@ -559,6 +691,171 @@ namespace ngbla
   
   
 
+
+
+
+
+ 
+  class AFlatMatrixC : public SIMDExpr<AFlatMatrixC>
+  {
+  protected:
+    size_t h, w;
+    SIMD<Complex> * __restrict data;
+  public:
+    AFlatMatrixC () = default;
+    AFlatMatrixC (const AFlatMatrixC &) = default;
+    AFlatMatrixC (size_t ah, size_t aw, LocalHeap & lh)
+    {
+      h = ah;
+      w = aw;
+      data = lh.Alloc<SIMD<Complex>> (h* ((w+SIMD<double>::Size()-1)/SIMD<double>::Size()));
+    }
+    
+    AFlatMatrixC(size_t ah, size_t aw, SIMD<Complex> * mem)
+      : h(ah), w(aw), data(mem) { ; } 
+    
+    void AssignMemory (size_t ah, size_t aw, SIMD<Complex> * mem)
+    {
+      h = ah;
+      w = aw;
+      data = mem;
+    }
+    
+    enum { IS_LINEAR = false };
+    enum { IS_LINEAR_VEC = true };
+    
+    // size_t Size () const { return h*w; }
+    size_t Height () const { return h; }
+    size_t Width () const { return w; }
+    // unsigned int VWidth() const { return (unsigned(w)+3)/4; }
+    size_t VWidth() const { return (w+SIMD<double>::Size()-1)/SIMD<double>::Size(); }
+    /*
+    double & operator() (size_t i) const
+    {
+      return ((double*)data)[i]; 
+    }
+
+    double & operator() (size_t i, size_t j) const
+    {
+      size_t vw = VWidth(); // (w+3)/4;
+      return ((double*)data)[SIMD<double>::Size()*i*vw+j]; 
+    }
+    */
+
+    SIMD<Complex> & Get(size_t i) const { return data[i]; }
+    SIMD<Complex> & Get(size_t i, size_t j) const { return data[i*VWidth()+j]; }
+
+    /*
+    const AFlatMatrixD & operator= (const AFlatMatrixD & m2) const
+    {
+      size_t els = h*VWidth();
+      SIMD<double> * hdata = data;
+      SIMD<double> * hdata2 = m2.data;
+      for (size_t i = 0; i < els; i++)
+        hdata[i] = hdata2[i];
+      return *this;
+    }
+
+    AFlatMatrixD & operator= (double d)
+    {
+      auto vw = VWidth(); //  (unsigned(w)+3)/4;
+      size_t els = h*vw; 
+      for (size_t i = 0; i < els; i++)
+        data[i] = SIMD<double>(d);
+      return *this;
+    }
+
+    template<typename TB>
+    INLINE const AFlatMatrixD & operator= (const Expr<TB> & v) const
+    {
+      for (size_t i = 0; i < h; i++)
+        for (size_t j = 0; j < w; j++)
+          (*this)(i,j) = v.Spec()(i,j);
+      return *this;
+    }
+
+    template<typename TB>
+    INLINE const AFlatMatrixD & operator= (const SIMDExpr<TB> & v) const
+    {
+      if (TB::IS_LINEAR_VEC)
+        for (size_t i = 0; i < h*VWidth(); i++)
+          Get(i) = v.Spec().Get(i);
+      else
+        for (size_t i = 0; i < h; i++)
+          for (size_t j = 0; j < VWidth(); j++)
+            Get(i,j) = v.Spec().Get(i,j);
+      return *this;
+    }
+
+    AFlatMatrixD & operator*= (double d)
+    {
+      size_t vw = VWidth(); //  (w+3)/4;
+      for (size_t i = 0; i < h*vw; i++)
+        data[i] *= SIMD<double>(d);
+      return *this;
+    }
+    */
+
+    /*
+    operator SliceMatrix<double> () const
+    {
+      size_t vw = VWidth(); // (w+3)/4;
+      return SliceMatrix<double> (h, w, SIMD<double>::Size()*vw, (double*)data);
+    }
+   
+    SliceVector<> Col (size_t c) const
+    {
+      size_t vw = VWidth(); // (w+3)/4;    
+      return SliceVector<> (h, SIMD<double>::Size()*vw, ((double*)data)+c);
+    }
+    */
+    AFlatVector<Complex> Row (size_t r) const
+    {
+      return AFlatVector<Complex> (w, &Get(r,0));
+    }
+  
+    AFlatMatrixC Rows(size_t begin, size_t end) const
+    {
+      size_t vw = VWidth(); 
+      return AFlatMatrixC(end-begin, w, data+begin*vw);
+    }
+    /*
+    AFlatMatrixD Rows(IntRange r) const
+    { return Rows(r.begin(), r.end()); }
+
+    SliceMatrix<> Cols(size_t begin, size_t end) const
+    {
+      size_t vw = VWidth(); 
+      return SliceMatrix<>(h, end-begin, SIMD<double>::Size()*vw, ((double*)data)+begin);
+    }
+    SliceMatrix<> Cols(IntRange r) const
+    { return Cols(r.begin(), r.end()); }
+    
+    INLINE ABareSliceMatrix<> VCols (size_t begin, size_t end) const;
+    */
+  };
+
+  class AMatrixC : public AFlatMatrixC
+  {
+  public:
+    AMatrixC (size_t ah, size_t aw)
+      : AFlatMatrixC (ah, aw, new SIMD<Complex>[ah* ((aw+SIMD<double>::Size()-1)/SIMD<double>::Size())]) { ; }
+    ~AMatrixC ()
+    {
+      delete data;
+    }
+    using AFlatMatrixC::operator=;
+  };
+
+
+
+
+
+
+
+
+
+  
   /*
     template <typename T>
     INLINE void AddABt (AFlatMatrix<T> a, AFlatMatrix<T> b, SliceMatrix<T> c)
@@ -599,6 +896,21 @@ namespace ngbla
     AFlatVector<> AddVSize(size_t s) const { return AFlatVector<> (s*SIMD<double>::Size(), data); }
   };
 
+  template <>
+  class ABareVector<Complex>
+  {
+    SIMD<Complex> * __restrict data;
+  public:
+    ABareVector(SIMD<Complex> * _data) : data(_data) { ; }
+    ABareVector(const ABareVector &) = default;
+
+    SIMD<Complex> & Get(size_t i) const { return data[i]; }
+    AFlatVector<Complex> AddSize(size_t s) const { return AFlatVector<Complex> (s, data); }
+    AFlatVector<Complex> AddVSize(size_t s) const { return AFlatVector<Complex> (s*SIMD<Complex>::Size(), data); }
+  };
+
+
+  
   template <>
   class ABareMatrix<double> : public DummySize
   {
@@ -710,6 +1022,103 @@ namespace ngbla
     // ASliceMatrix<double> RowSlice(size_t first, size_t adist) const { return ABareSliceMatrix<double> (data+first*dist, dist*adist); } 
   };
 
+
+  template <>
+  class ASliceMatrix<Complex> : public SIMDExpr<ASliceMatrix<Complex>>
+  {
+    SIMD<Complex> * __restrict data;
+    size_t dist;   // dist in simds
+    size_t h, w;
+  public:
+    enum { IS_LINEAR = false };
+    enum { IS_LINEAR_VEC = false };
+    
+    ASliceMatrix(size_t ah, size_t aw, size_t _dist, SIMD<Complex> * _data)
+      : data(_data), dist(_dist), h(ah), w(aw) { ; }
+    ASliceMatrix(AFlatMatrix<Complex> mat)
+      : data(&mat.Get(0,0)), dist(&mat.Get(1,0)-&mat.Get(0,0)), h(mat.Height()), w(mat.Width()) { ; }
+    ASliceMatrix(const ASliceMatrix &) = default;
+
+    auto & operator= (const ASliceMatrix & m2)
+    {
+      auto vw = VWidth(); 
+      for (size_t i = 0; i < h; i++)
+        for (size_t j = 0; j < vw; j++)
+          data[i*dist+j] = SIMD<Complex> (m2.Get(i,j));
+      return *this;
+    }
+
+    auto & operator= (const AFlatMatrix<Complex> & m2)
+    {
+      *this = ASliceMatrix(m2);
+      return *this;
+    }
+    
+    auto & operator= (Complex d)
+    {
+      auto vw = VWidth(); 
+      for (size_t i = 0; i < h; i++)
+        for (size_t j = 0; j < vw; j++)
+          data[i*dist+j] = SIMD<Complex>(d);
+      return *this;
+    }
+    
+    auto & operator*= (double d)
+    {
+      auto vw = VWidth(); 
+      for (size_t i = 0; i < h; i++)
+        for (size_t j = 0; j < vw; j++)
+          data[i*dist+j] *= SIMD<double>(d);
+      return *this;
+    }
+    
+    auto & operator*= (Complex d)
+    {
+      auto vw = VWidth(); 
+      for (size_t i = 0; i < h; i++)
+        for (size_t j = 0; j < vw; j++)
+          data[i*dist+j] *= SIMD<Complex>(d);
+      return *this;
+    }
+
+    /*
+    template<typename TB>
+    auto & operator= (const Expr<TB> & v) const
+    {
+      for (size_t i = 0; i < h; i++)
+        for (size_t j = 0; j < w; j++)
+          (*this)(i,j) = v.Spec()(i,j);
+      return *this;
+    }
+    */
+    template<typename TB>
+    auto & operator= (const SIMDExpr<TB> & v) const
+    {
+      for (size_t i = 0; i < h; i++)
+        for (size_t j = 0; j < VWidth(); j++)
+          Get(i,j) = v.Spec().Get(i,j);
+      return *this;
+    }
+
+    size_t Height() const { return h; }
+    size_t Width() const { return w; }
+    size_t VWidth() const { return (w+SIMD<double>::Size()-1)/SIMD<double>::Size(); }
+    
+    // double & operator() (size_t i, size_t j) const
+    // { return ((double*)data)[SIMD<double>::Size()*i*dist+j]; }
+    size_t Dist() const { return dist; }
+    SIMD<Complex> & Get(size_t i, size_t j) const { return data[i*dist+j]; }
+    SIMD<Complex> & Get(size_t i) const { return data[i]; }
+    AFlatVector<Complex> Row(size_t i) const { return AFlatVector<Complex> (w, data+i*dist); }
+    ASliceMatrix<Complex> Rows(size_t first, size_t next) const { return ASliceMatrix<Complex> (next-first, w, dist, data+first*dist); }
+    ASliceMatrix<Complex> Rows(IntRange r) const { return Rows(r.First(), r.Next()); } 
+    // ASliceMatrix<double> RowSlice(size_t first, size_t adist) const { return ABareSliceMatrix<double> (data+first*dist, dist*adist); } 
+  };
+
+
+
+
+
   
   
   template <>
@@ -731,6 +1140,11 @@ namespace ngbla
     ABareSliceMatrix(ASliceMatrix<double> mat)
       : DummySize(mat.Height(), mat.Width()),
         data(&mat.Get(0,0)), dist(&mat.Get(1,0)-&mat.Get(0,0)) { ; }
+    ABareSliceMatrix(FlatMatrix<SIMD<double>> mat)
+      : DummySize(-1, -1), data(&mat(0,0)), dist(&mat(1,0)-&mat(0,0)) { ; } 
+    ABareSliceMatrix(BareSliceMatrix<SIMD<double>> mat)
+      : DummySize(-1, -1), data(&mat(0,0)), dist(mat.Dist()) { ; } 
+    
     ABareSliceMatrix(const ABareSliceMatrix &) = default;
 
     ABareSliceMatrix & operator= (const ABareSliceMatrix&) = delete;
@@ -746,8 +1160,51 @@ namespace ngbla
     ABareVector<double> Row(size_t i) const { return ABareVector<double> (data+i*dist); }
     ABareSliceMatrix<double> Rows(size_t first, size_t /* next */) const { return ABareSliceMatrix<double> (data+first*dist, dist); }
     ABareSliceMatrix<double> Rows(IntRange r) const { return Rows(r.First(), r.Next()); } 
-    ABareSliceMatrix<double> RowSlice(size_t first, size_t adist) const { return ABareSliceMatrix<double> (data+first*dist, dist*adist); } 
+    ABareSliceMatrix<double> RowSlice(size_t first, size_t adist) const { return ABareSliceMatrix<double> (data+first*dist, dist*adist); }
+    operator BareSliceMatrix<SIMD<double>> () const { return BareSliceMatrix<SIMD<double>> (dist, data); }
   };
+
+
+
+  template <>
+  class ABareSliceMatrix<Complex> : public DummySize
+  {
+    SIMD<Complex> * __restrict data;
+    size_t dist;   // dist in simds
+  public:
+    enum { IS_LINEAR = false };
+    enum { IS_LINEAR_VEC = false };
+    
+    ABareSliceMatrix(AFlatMatrix<Complex> mat)
+      : DummySize(mat.Height(), mat.Width()),
+        data(&mat.Get(0,0)), dist(&mat.Get(1,0)-&mat.Get(0,0)) { ; }
+    ABareSliceMatrix(ASliceMatrix<Complex> mat)
+      : DummySize(mat.Height(), mat.Width()),
+        data(&mat.Get(0,0)), dist(&mat.Get(1,0)-&mat.Get(0,0)) { ; }
+    ABareSliceMatrix(FlatMatrix<SIMD<Complex>> mat)
+      : DummySize(-1, -1), data(&mat(0,0)), dist(&mat(1,0)-&mat(0,0)) { ; }     
+    ABareSliceMatrix(BareSliceMatrix<SIMD<Complex>> mat)
+      : DummySize(-1, -1), data(&mat(0,0)), dist(mat.Dist()) { ; }     
+    ABareSliceMatrix(SIMD<Complex> * _data, size_t _dist, size_t ah = -1, size_t aw = -1)
+      : DummySize(ah, aw), data(_data), dist(_dist) { ; }
+
+    ABareSliceMatrix & operator= (const ABareSliceMatrix&) = delete;
+    // Complex operator() (size_t i, size_t j) const { return ((double*)data)[SIMD<double>::Size()*i*dist+j]; }
+    size_t Dist() const { return dist; }
+    // ASliceMatrix<> AddSize(size_t h, size_t w) const { return ASliceMatrix<> (h,w,dist,data); }
+    ASliceMatrix<Complex> AddVSize(size_t h, size_t vw) const { return ASliceMatrix<Complex> (h,SIMD<double>::Size()*vw,dist,data); }
+    SIMD<Complex> & Get (size_t i, size_t j) const { return data[i*dist+j]; }
+    SIMD<Complex> & Get (size_t i) const { return data[i]; }
+    ABareVector<Complex> Row (size_t i) const { return ABareVector<Complex> (data+i*dist); }
+    ABareSliceMatrix<Complex> Rows (size_t first, size_t /* next */) const { return ABareSliceMatrix<Complex> (data+first*dist, dist); }
+    ABareSliceMatrix<Complex> Rows (IntRange r) const { return Rows(r.First(), r.Next()); } 
+    ABareSliceMatrix<Complex> RowSlice (size_t first, size_t adist) const { return ABareSliceMatrix<Complex> (data+first*dist, dist*adist); }
+    operator BareSliceMatrix<SIMD<Complex>> () const { return BareSliceMatrix<SIMD<Complex>> (dist, data); }
+
+  };
+
+
+
 
   
   ABareSliceMatrix<> AFlatMatrixD::VCols (size_t begin, size_t end) const
