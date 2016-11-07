@@ -151,7 +151,8 @@
 //#define INLINE inline
 
 
-#ifdef __clang__
+// #ifdef __clang__
+#ifdef __GNUC__
 namespace std
 {
   // avoid expensive call to complex mult by using the grammar school implementation
