@@ -33,7 +33,8 @@ namespace ngcomp
         fel_facet.Facet(facetnr).CalcShape(mip.IP(), 
                                            mat.Row(0).Range(fel_facet.GetFacetDofs(facetnr)));
     }
-
+    
+    using DiffOp<DiffOpIdFacet<D>>::ApplySIMDIR;          
     static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
                              BareSliceVector<double> x, ABareSliceMatrix<double> y)
     {
@@ -50,8 +51,9 @@ namespace ngcomp
                                           y.Row(0));
     }
 
+    using DiffOp<DiffOpIdFacet<D>>::AddTransSIMDIR;          
     static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
-                                ABareMatrix<double> y, BareSliceVector<double> x)
+                                ABareSliceMatrix<double> y, BareSliceVector<double> x)
     {
       // Cast(fel).AddTrans (mir.IR(), y.Row(0), x);
       const FacetVolumeFiniteElement<D> & fel_facet = static_cast<const FacetVolumeFiniteElement<D>&> (bfel);

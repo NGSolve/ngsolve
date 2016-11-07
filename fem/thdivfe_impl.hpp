@@ -122,8 +122,8 @@ namespace ngfem
 
   template <class FEL, ELEMENT_TYPE ET>
   void T_HDivFiniteElement<FEL,ET> :: 
-  AddTrans (const SIMD_BaseMappedIntegrationRule & bmir, ABareMatrix<double> values,
-                           BareSliceVector<> coefs) const
+  AddTrans (const SIMD_BaseMappedIntegrationRule & bmir, ABareSliceMatrix<double> values,
+            BareSliceVector<> coefs) const
   {
     auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
     for (int i = 0; i < mir.Size(); i++)

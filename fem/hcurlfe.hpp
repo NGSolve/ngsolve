@@ -128,14 +128,23 @@ namespace ngfem
 
     HD NGS_DLL_HEADER virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, ABareSliceMatrix<double> values) const
     { cout << "HCurlFE - simd eval not overloaded" << endl; }
+    HD NGS_DLL_HEADER virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<Complex> coefs, ABareSliceMatrix<Complex> values) const
+    { cout << "HCurlFE - simd<complex> eval not overloaded" << endl; }
     HD NGS_DLL_HEADER virtual void EvaluateCurl (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, ABareSliceMatrix<double> values) const
-    { cout << "HCurlFE - simd evalcurl not overloaded" << endl; }      
+    { cout << "HCurlFE - simd evalcurl not overloaded" << endl; }    
+    HD NGS_DLL_HEADER virtual void EvaluateCurl (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<Complex> coefs, ABareSliceMatrix<Complex> values) const
+    { cout << "HCurlFE - simd evalcurl not overloaded" << endl; }    
 
-    HD NGS_DLL_HEADER virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, ABareMatrix<double> values,
+    HD NGS_DLL_HEADER virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values,
                                              BareSliceVector<> coefs) const
     { cout << "HCurlFE - simd addtrans not overloaded" << endl; }
-    HD NGS_DLL_HEADER virtual void AddCurlTrans (const SIMD_BaseMappedIntegrationRule & ir, ABareMatrix<double> values,
+    HD NGS_DLL_HEADER virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<Complex> values,
+                                             BareSliceVector<Complex> coefs) const
+    { cout << "HCurlFE - simd addtrans complex not overloaded" << endl; }
+    HD NGS_DLL_HEADER virtual void AddCurlTrans (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values,
                                                  BareSliceVector<> coefs) const
+    { cout << "HCurlFE - simd addcurltrans not overloaded" << endl; }
+    HD NGS_DLL_HEADER virtual void AddCurlTrans (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<Complex> values, BareSliceVector<Complex> coefs) const
     { cout << "HCurlFE - simd addcurltrans not overloaded" << endl; }
 
   protected:

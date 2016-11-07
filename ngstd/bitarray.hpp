@@ -19,7 +19,7 @@ namespace ngstd
 class BitArray
 {
   /// number of bits
-  int size;
+  size_t size;
 
   /// the data
   unsigned char * data;
@@ -29,9 +29,9 @@ public:
   /// empty array
   NGS_DLL_HEADER BitArray ();
   /// array of asize bits
-  NGS_DLL_HEADER BitArray (int asize);
+  NGS_DLL_HEADER BitArray (size_t asize);
   /// array of asize bits
-  NGS_DLL_HEADER BitArray (int asize, LocalHeap & lh);
+  NGS_DLL_HEADER BitArray (size_t asize, LocalHeap & lh);
   ///
   NGS_DLL_HEADER BitArray (const BitArray & ba2);
 
@@ -49,12 +49,10 @@ public:
   NGS_DLL_HEADER ~BitArray ();
 
   /// Set size, loose values
-  NGS_DLL_HEADER void SetSize (int asize);
+  NGS_DLL_HEADER void SetSize (size_t asize);
 
   /// the size
-  int Size () const
-  { return size; }
-
+  size_t Size () const { return size; }
 
   /// set all bits
   NGS_DLL_HEADER void Set () throw();
@@ -63,7 +61,7 @@ public:
   NGS_DLL_HEADER void Clear () throw();
 
   /// set bit i
-  void Set (int i)
+  void Set (size_t i)
   {
 #ifdef DEBUG
     if (i < 0 || i >= size)
@@ -72,17 +70,12 @@ public:
     unsigned char * p = data+Addr(i);
     unsigned char mask = Mask(i);
 
-    /*
-#pragma omp atomic
-    (*p) |= mask;
-    */
     AsAtomic(*p) |= mask;
-    
     // data[Addr(i)] |= Mask(i); 
   }
 
   /// clear bit i
-  void Clear (int i)
+  void Clear (size_t i)
   { 
 #ifdef DEBUG
     if (i < 0 || i >= size)
@@ -92,7 +85,7 @@ public:
   }
 
   /// check bit i
-  bool Test (int i) const
+  bool Test (size_t i) const
   {
     // return (data[i / CHAR_BIT] & (char(1) << (i % CHAR_BIT) ) ) ? 1 : 0;
     return (data[Addr(i)] & Mask(i)) ? true : false;
@@ -107,7 +100,7 @@ public:
   }
   
   /// check bit i
-  bool operator[] (int i) const
+  bool operator[] (size_t i) const
   {
     return Test(i);
   }
@@ -125,16 +118,15 @@ public:
   /// copy from ba2
   NGS_DLL_HEADER BitArray & operator= (const BitArray & ba2);
 
-  int NumSet () const;
+  size_t NumSet () const;
 private:
   ///
-  unsigned char Mask (unsigned int i) const
+  unsigned char Mask (size_t i) const
   { return char(1) << (i % CHAR_BIT); }
     
   ///
-  int Addr (unsigned int i) const
+  size_t Addr (size_t i) const
   { return (i / CHAR_BIT); }
-
 
 };
 

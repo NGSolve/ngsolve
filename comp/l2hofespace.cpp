@@ -40,7 +40,7 @@ namespace ngcomp
     virtual void
     AddTrans (const FiniteElement & fel,
               const SIMD_BaseMappedIntegrationRule & mir,
-              ABareMatrix<double> flux,
+              ABareSliceMatrix<double> flux,
               BareSliceVector<double> x) const
     {
     if (comp == -1)

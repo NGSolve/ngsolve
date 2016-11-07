@@ -171,6 +171,8 @@ namespace ngcomp
     bool no_low_order_space;
 
     int et_bonus_order[30]; // order increase for element-type
+
+    BitArray is_atomic_dof;
   public:
     string type;
 
@@ -403,7 +405,6 @@ namespace ngcomp
     
     void CheckCouplingTypes() const;
 
-
     /// get dof-nrs of the element of certain coupling type
     void GetDofNrs (int elnr, Array<int> & dnums, COUPLING_TYPE ctype) const;    
 
@@ -532,8 +533,10 @@ namespace ngcomp
     virtual Array<int> & DirectElementClusters(void)
     { return directelementclusters; }
 
-     
-    //[[deprecated("(Use TransformMat(int, VorB,const SliceMatrix<double>&,TRANSFORM_TYPE) instead")]]
+    bool IsAtomicDof (size_t nr) const { return (is_atomic_dof.Size() != 0) && is_atomic_dof[nr]; }
+    bool HasAtomicDofs () const { return is_atomic_dof.Size() != 0; }
+
+    
     void TransformMat (int elnr, bool boundary,
 		       const SliceMatrix<double> & mat, TRANSFORM_TYPE type) const
     {
@@ -651,6 +654,7 @@ void TransformVec (int elnr, VorB vb,
       else
 	return flux_evaluator;
     }
+
     virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const
     { return SymbolTable<shared_ptr<DifferentialOperator>>(); } 
 

@@ -537,7 +537,7 @@ INLINE ngstd::SIMD<double> atan (ngstd::SIMD<double> a) {
   {
     return MultiSIMD<D,double> (FMA (a.Head(), b.Head(), c.Head()), FMA (a.Tail(), b.Tail(), c.Tail()));
   }
-
+  
   template <int D>
   INLINE MultiSIMD<D,double> FMA(const double & a, MultiSIMD<D,double> b, MultiSIMD<D,double> c)
   {
@@ -545,8 +545,25 @@ INLINE ngstd::SIMD<double> atan (ngstd::SIMD<double> a) {
   }
 
 
-
- class ExceptionNOSIMD : public Exception
+#ifdef __AVX__
+#if defined(__AVX2__)
+  INLINE __m256i my_mm256_cmpgt_epi64 (__m256i a, __m256i b)
+  {
+    return _mm256_cmpgt_epi64 (a,b);
+  }
+#else
+  INLINE __m256i my_mm256_cmpgt_epi64 (__m256i a, __m256i b)
+  {
+    __m128i rlo = _mm_cmpgt_epi64(_mm256_extractf128_si256(a, 0),
+                                  _mm256_extractf128_si256(b, 0));
+    __m128i rhi = _mm_cmpgt_epi64(_mm256_extractf128_si256(a, 1),
+                                  _mm256_extractf128_si256(b, 1));
+    return _mm256_insertf128_si256 (_mm256_castsi128_si256(rlo), rhi, 1);
+  }
+#endif
+#endif
+  
+  class ExceptionNOSIMD : public Exception
   {
   public:
     using Exception :: Exception;

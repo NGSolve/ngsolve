@@ -1001,7 +1001,7 @@ namespace ngla
   template <class TM>
   void SparseMatrixTM<TM> ::
   AddElementMatrix(FlatArray<int> dnums1, FlatArray<int> dnums2, 
-                   FlatMatrix<TSCAL> elmat1)
+                   FlatMatrix<TSCAL> elmat1, bool use_atomic)
   {
     ArrayMem<int, 50> map(dnums2.Size());
     for (int i = 0; i < map.Size(); i++) map[i] = i;
@@ -1584,7 +1584,7 @@ namespace ngla
 
   template <class TM>
   void SparseMatrixSymmetricTM<TM> ::
-  AddElementMatrix(FlatArray<int> dnums, FlatMatrix<TSCAL> elmat1)
+  AddElementMatrix(FlatArray<int> dnums, FlatMatrix<TSCAL> elmat1, bool use_atomic)
   {
     static Timer timer ("SparseMatrixSymmetric::AddElementMatrix", 2);
     RegionTimer reg (timer);
@@ -1614,23 +1614,12 @@ namespace ngla
 		if (k >= rowind.Size())
 		  throw Exception ("SparseMatrixSymmetricTM::AddElementMatrix: illegal dnums");
 	      }
-            // rowvals(k) += elmat(map[i1], map[j1]);
-            rowvals(k) += elmat_row(0, map[j1]);
+            if (use_atomic)
+              // rowvals(k) += elmat_row(0, map[j1]);
+              MyAtomicAdd (rowvals(k), elmat_row(0, map[j1]));
+            else
+              rowvals(k) += elmat_row(0, map[j1]);
 	  }
-
-        /*
-        int j1 = first_used;
-        for (int k = 0; k < rowind.Size(); k++)
-          {
-            if (rowind[k] == dnums[map[j1]])
-              {
-                rowvals(k) += elmat_row(0, map[j1]);                
-                j1++;
-              }
-          }
-        if (j1 <= i1)
-          throw Exception ("SparseMatrixSymmetricTM::AddElementMatrix: illegal dnums");          
-        */
       }
   }
   
