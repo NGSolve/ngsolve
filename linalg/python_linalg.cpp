@@ -190,19 +190,13 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
           InitSlice( inds, self->Size(), start, step, n );
           return shared_ptr<BaseVector>(self->Range(start, start+n));
       } )
-    .def("__setitem__", [](PyBaseVector & self,  int ind, Complex z )
-      {
-          self->Range(ind,ind+1) = z;
-      } )
     .def("__setitem__", [](PyBaseVector & self,  int ind, double d )
       {
           self->Range(ind,ind+1) = d;
       } )
-    .def("__setitem__", [](PyBaseVector & self,  py::slice inds, Complex z )
+    .def("__setitem__", [](PyBaseVector & self,  int ind, Complex z ) -> void
       {
-          size_t start, step, n;
-          InitSlice( inds, self->Size(), start, step, n );
-          self->Range(start,start+n) = z;
+        self->Range(ind,ind+1) = z;
       } )
     .def("__setitem__", [](PyBaseVector & self,  py::slice inds, double d )
       {
@@ -210,12 +204,11 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
           InitSlice( inds, self->Size(), start, step, n );
           self->Range(start,start+n) = d;
       } )
-    .def("__setitem__", [](PyBaseVector & self,  int ind, FlatVector<Complex> & v )
+    .def("__setitem__", [](PyBaseVector & self,  py::slice inds, Complex z )
       {
-          if( self->IsComplex() )
-            self->SV<Complex>()(ind) = v;
-          else
-            throw py::index_error("cannot assign complex values to real vector");
+          size_t start, step, n;
+          InitSlice( inds, self->Size(), start, step, n );
+          self->Range(start,start+n) = z;
       } )
     .def("__setitem__", [](PyBaseVector & self,  int ind, FlatVector<double> & v )
       {
@@ -223,6 +216,13 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
             self->SV<Complex>()(ind) = v;
           else
             self->SV<double>()(ind) = v;
+      } )
+    .def("__setitem__", [](PyBaseVector & self,  int ind, FlatVector<Complex> & v )
+      {
+          if( self->IsComplex() )
+            self->SV<Complex>()(ind) = v;
+          else
+            throw py::index_error("cannot assign complex values to real vector");
       } )
 //     .def(py::self+=py::self)
 //     .def(py::self-=py::self)
