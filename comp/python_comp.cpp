@@ -2071,13 +2071,23 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
   m.def("Integrate", 
           [](PyCF cf,
                              shared_ptr<MeshAccess> ma, 
-                             VorB vb, int order, 
+	     VorB vb, int order, py::object definedon,
                              bool region_wise, bool element_wise)
                           {
                             static Timer t("Integrate CF"); RegionTimer reg(t);
                             // static mutex addcomplex_mutex;
                             LocalHeap lh(1000000, "lh-Integrate");
-                            
+
+			    py::extract<Region> defon_region(definedon);
+			    if (defon_region.check())
+			      vb = VorB(defon_region());
+			    BitArray mask(ma->GetNRegions(vb));
+			    mask.Set();
+			    if(defon_region.check())
+			      for(auto i : Range(ma->GetNRegions(vb)))
+				if(!defon_region().Mask().Test(i))
+				  mask.Clear(i);
+			    
                             if (!cf->IsComplex())
                               {
                                 atomic<double> sum(0.0);
@@ -2087,10 +2097,12 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                                 element_sum = 0;
 
                                 bool use_simd = true;
+				
                                 
                                 ma->IterateElements
                                   (vb, lh, [&] (Ngs_Element el, LocalHeap & lh)
                                    {
+				     if(!mask.Test(el.GetIndex()))  return; 
                                      auto & trafo = ma->GetTrafo (el, lh);
                                      double hsum = 0.0;
                                      bool this_simd = use_simd;
@@ -2153,6 +2165,8 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                                 ma->IterateElements
                                   (vb, lh, [&] (Ngs_Element el, LocalHeap & lh)
                                    {
+				     if(!mask.Test(el.GetIndex()))
+				       return;
                                      auto & trafo = ma->GetTrafo (el, lh);
                                      Complex hsum = 0;
                                      
@@ -2205,7 +2219,8 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                               }
                           },
            py::arg("cf"), py::arg("mesh"), py::arg("VOL_or_BND")=VOL, 
-           py::arg("order")=5, 
+           py::arg("order")=5,
+	py::arg("definedon") = py::object(),
            py::arg("region_wise")=false,
            py::arg("element_wise")=false)
     ;
