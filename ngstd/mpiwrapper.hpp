@@ -319,13 +319,13 @@ namespace ngstd
 
   inline void MyMPI_SendCmd (const char * cmd)
   {
-    char buf[100];
+    char buf[10000];
     strcpy (buf, cmd);
 
     int ntasks;
     MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
     for (int dest = 1; dest < ntasks; dest++)
-      MPI_Send( &buf, 100, MPI_CHAR, dest, MPI_TAG_CMD, MPI_COMM_WORLD);
+      MPI_Send( &buf, 10000, MPI_CHAR, dest, MPI_TAG_CMD, MPI_COMM_WORLD);
     // changed from BSend (for VSC)
   }
 
@@ -349,7 +349,51 @@ public:
   }
 };
 
+  class MPIManager
+  {
+  public:
+    static bool initialized_by_me;
+    MPIManager(){ }
+    static void InitMPI(int argc = 0, char*** argv = NULL)
+    {
+      int is_init = -1;
+      MPI_Initialized(&is_init);
+      if(!is_init)
+	{
+	  if(argc==0)
+	    {
+	      const char * progname = "ngslib";
+	      typedef const char * pchar;
+	      pchar ptrs[2] = { progname, nullptr };
+	      pchar * pptr = &ptrs[0];
+	      int argc2 = 1;
+	      MPI_Init (&argc2, (char***)&pptr);
+	    }
+	  else
+	    {
+	      int argc2 = argc;
+	      MPI_Init(&argc2, argv);
+	    }
+	  initialized_by_me = true;
+	}
+      ngs_comm = MPI_COMM_WORLD;
+      NGSOStream::SetGlobalActive (MyMPI_GetId() == 0);
+      if (MyMPI_GetNTasks (MPI_COMM_WORLD) > 1)
+	TaskManager::SetNumThreads (1);
+    }
 
+    ~MPIManager()
+    {
+      if(initialized_by_me)
+	MPI_Finalize();
+    }
+
+    static void InitMPIB(){ InitMPI(); }
+    static void Barrier() { MPI_Barrier(MPI_COMM_WORLD); }
+    static double GetWT() { return MPI_Wtime(); }
+    static int GetRank() { return MyMPI_GetId(); }
+    static int GetNP() { return MyMPI_GetNTasks(); }
+  };
 
 
 #else
@@ -393,6 +437,19 @@ public:
   enum { MPI_LOR = 4711 };
   enum { MPI_SUM = 4711 };
   enum { MPI_MAX = 4711 };
+
+ class MPIManager
+ {
+ public:
+   MPIManager(){};
+   ~MPIManager(){};
+   static void InitMPIB(){};
+   static void Barrier(){};
+   static double GetWT(){ return -1.0; }
+   static int GetRank() { return 0; }
+   static int GetNP() { return 1; }
+ };
+
 #endif
 
   
