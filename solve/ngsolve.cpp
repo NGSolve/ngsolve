@@ -1589,11 +1589,8 @@ void NGS_ParallelRun (const string & message)
 
       string command = message.substr(7);
       AcquireGIL gil_lock;
-      cout << "gil acquired " << endl;
-      cout << "run command " << endl << command << endl;
       // PythonEnvironment & py_env = PythonEnvironment::getInstance();
       pyenv.exec(command);
-      cout << "command run " << endl;
     }
 #endif
   return;
