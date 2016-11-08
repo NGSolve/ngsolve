@@ -386,13 +386,13 @@ class CoordCoefficientFunction : public T_CoefficientFunction<CoordCoefficientFu
     }
 
     template <typename T>
-    void T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<T> values) const
+    void T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<T>> values) const
     {
       auto points = ir.GetPoints();
       size_t nv = ir.Size();
       __assume (nv > 0);
       for (size_t i = 0; i < nv; i++)
-        values.Get(i) = SIMD<double> (points.Get(i, dir));
+        values(i) = SIMD<double> (points.Get(i, dir));
     }
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
                            AFlatMatrix<double> values) const
