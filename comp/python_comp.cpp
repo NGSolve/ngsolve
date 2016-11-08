@@ -2136,11 +2136,11 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                                            {
                                              SIMD_IntegrationRule ir(trafo.GetElementType(), order);
                                              auto & mir = trafo(ir, lh);
-                                             AFlatMatrix<Complex> values(1, ir.GetNIP(), lh);
+                                             FlatMatrix<SIMD<Complex>> values(1, ir.GetNIP(), lh);
                                              cf.Get() -> Evaluate (mir, values);
                                              SIMD<Complex> vsum = 0.0;
-                                             for (size_t i = 0; i < values.VWidth(); i++)
-                                               vsum += mir[i].GetWeight() * values.Get(0,i);
+                                             for (size_t i = 0; i < values.Width(); i++)
+                                               vsum += mir[i].GetWeight() * values(0,i);
                                              hsum = HSum(vsum);
                                            }
                                          catch (ExceptionNOSIMD e)

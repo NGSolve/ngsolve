@@ -127,25 +127,25 @@ namespace ngfem
 
 
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
-                             BareSliceVector<double> x, ABareSliceMatrix<double> y)
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
       static_cast<const FEL&> (fel).Evaluate (mir, x, y);
     }    
 
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
-                             BareSliceVector<Complex> x, ABareSliceMatrix<Complex> y)
+                             BareSliceVector<Complex> x, BareSliceMatrix<SIMD<Complex>> y)
     {
       static_cast<const FEL&> (fel).Evaluate (mir, x, y);
     }    
 
     static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
-                                ABareSliceMatrix<double> y, BareSliceVector<double> x)
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
        static_cast<const FEL&> (fel).AddTrans (mir, y, x);
     }    
     
     static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
-                                ABareSliceMatrix<Complex> y, BareSliceVector<Complex> x)
+                                BareSliceMatrix<SIMD<Complex>> y, BareSliceVector<Complex> x)
     {
        static_cast<const FEL&> (fel).AddTrans (mir, y, x);
     }    
