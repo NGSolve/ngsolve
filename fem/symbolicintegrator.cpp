@@ -198,7 +198,7 @@ namespace ngfem
 
   void ProxyFunction ::
   Evaluate (const SIMD_BaseMappedIntegrationRule & mir,
-            ABareSliceMatrix<double> result) const
+            BareSliceMatrix<SIMD<double>> result) const
   {
     ProxyUserData * ud = (ProxyUserData*)mir.GetTransformation().userdata;
     if (!ud) 
@@ -207,7 +207,7 @@ namespace ngfem
     if (!testfunction && ud->fel)
       {
         if (ud->HasMemory (this))
-          result.AddVSize(Dimension(), mir.Size()) = ud->GetAMemory (this);
+          result.AddSize(Dimension(), mir.Size()) = ud->GetAMemory (this);
         else
           {
             static bool first = true;
@@ -218,16 +218,16 @@ namespace ngfem
         return;
       }
 
-    result.AddVSize(Dimension(), mir.Size()) = 0;
+    result.AddSize(Dimension(), mir.Size()) = 0;
     if (ud->testfunction == this)
-      result.Row(ud->test_comp).AddVSize(mir.Size()) = 1;
+      result.Row(ud->test_comp).AddSize(mir.Size()) = 1;
     if (ud->trialfunction == this)
-      result.Row(ud->trial_comp).AddVSize(mir.Size()) = 1;
+      result.Row(ud->trial_comp).AddSize(mir.Size()) = 1;
   }
 
   void ProxyFunction ::
   Evaluate (const SIMD_BaseMappedIntegrationRule & mir,
-            ABareSliceMatrix<Complex> result) const
+            BareSliceMatrix<SIMD<Complex>> result) const
   {
     ProxyUserData * ud = (ProxyUserData*)mir.GetTransformation().userdata;
     if (!ud) 
@@ -236,7 +236,7 @@ namespace ngfem
     if (!testfunction && ud->fel)
       {
         if (ud->HasMemory (this))
-          result.AddVSize(Dimension(), mir.Size()) = ud->GetAMemory (this);
+          result.AddSize(Dimension(), mir.Size()) = ud->GetAMemory (this);
         else
           {
             throw ExceptionNOSIMD ("ProxyFunction :: Evaluate(SIMD<Complex>) without precomputed trial values");
@@ -244,11 +244,11 @@ namespace ngfem
         return;
       }
 
-    result.AddVSize(Dimension(), mir.Size()) = 0;
+    result.AddSize(Dimension(), mir.Size()) = 0;
     if (ud->testfunction == this)
-      result.Row(ud->test_comp).AddVSize(mir.Size()) = 1;
+      result.Row(ud->test_comp).AddSize(mir.Size()) = 1;
     if (ud->trialfunction == this)
-      result.Row(ud->trial_comp).AddVSize(mir.Size()) = 1;
+      result.Row(ud->trial_comp).AddSize(mir.Size()) = 1;
   }
 
   

@@ -145,9 +145,9 @@ public:
   // AFlatMatrix<double> values) const;
 
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
-                         ABareSliceMatrix<double> values) const;
+                         BareSliceMatrix<SIMD<double>> values) const;
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
-                         ABareSliceMatrix<Complex> values) const;
+                         BareSliceMatrix<SIMD<Complex>> values) const;
 
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
                          FlatArray<AFlatMatrix<double>*> input,
@@ -213,7 +213,8 @@ public:
   ProxyUserData ()
     : remember_first(0,nullptr), remember_second(0,nullptr), remember_asecond(0,nullptr) { ; }
   ProxyUserData (int ntrial, LocalHeap & lh)
-    : remember_first(ntrial, lh), remember_second(ntrial, lh), remember_asecond(ntrial, lh)
+    : remember_first(ntrial, lh), remember_second(ntrial, lh),
+      remember_asecond(ntrial, lh)
   { remember_first = nullptr; }
   
   void AssignMemory (const ProxyFunction * proxy, int h, int w, LocalHeap & lh)
@@ -351,7 +352,7 @@ public:
   Apply (const FiniteElement & bfel,
          const SIMD_BaseMappedIntegrationRule & bmir,
          BareSliceVector<double> x, 
-         ABareSliceMatrix<double> flux) const
+         BareSliceMatrix<SIMD<double>> flux) const
   {
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
     IntRange r = BlockDim() * fel.GetRange(comp);
@@ -389,7 +390,7 @@ public:
   NGS_DLL_HEADER virtual void
   AddTrans (const FiniteElement & bfel,
             const SIMD_BaseMappedIntegrationRule & bmir,
-            ABareSliceMatrix<double> flux,
+            BareSliceMatrix<SIMD<double>> flux,
             BareSliceVector<double> x) const
   {
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);

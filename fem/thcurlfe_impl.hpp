@@ -203,7 +203,7 @@ namespace ngfem
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
   void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
   Evaluate (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<> coefs,
-            ABareSliceMatrix<double> values) const
+            BareSliceMatrix<SIMD<double>> values) const
   {
     if ((DIM == 3) || (bmir.DimSpace() == DIM))
       {
@@ -220,7 +220,7 @@ namespace ngfem
                                                 });
                                             }));
             for (size_t k = 0; k < DIM; k++)
-              values.Get(k,i) = sum(k).Data();
+              values(k,i) = sum(k).Data();
           }
       }
     else
@@ -238,7 +238,7 @@ namespace ngfem
                                                 sum(k) += coef * shape(k);
                                             }));
             for (size_t k = 0; k < DIM1; k++)
-              values.Get(k,i) = sum(k).Data();
+              values(k,i) = sum(k).Data();
           }
       }
   }
@@ -246,7 +246,7 @@ namespace ngfem
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
   void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
   Evaluate (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<Complex> coefs,
-            ABareSliceMatrix<Complex> values) const
+            BareSliceMatrix<SIMD<Complex>> values) const
   {
     if ((DIM == 3) || (bmir.DimSpace() == DIM))
       {
@@ -263,7 +263,7 @@ namespace ngfem
                                                 });
                                             }));
             for (size_t k = 0; k < DIM; k++)
-              values.Get(k,i) = sum(k);
+              values(k,i) = sum(k);
           }
       }
     else
@@ -281,14 +281,14 @@ namespace ngfem
                                                 sum(k) += shape(k) * coef;
                                             }));
             for (size_t k = 0; k < DIM1; k++)
-              values.Get(k,i) = sum(k);
+              values(k,i) = sum(k);
           }
       }
   }
 
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
   void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
-  EvaluateCurl (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<> coefs, ABareSliceMatrix<double> values) const
+  EvaluateCurl (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const
   {
     // throw ExceptionNOSIMD ("thcurlfe - simd - evaluate curl not implemeted");
 
@@ -307,7 +307,7 @@ namespace ngfem
                                                 sum(k) += shape(k) * coef;
                                             }));
             for (size_t k = 0; k < DIM_CURL; k++)
-              values.Get(k,i) = sum(k).Data();
+              values(k,i) = sum(k).Data();
           }
       }
     else
@@ -326,7 +326,7 @@ namespace ngfem
                                                 sum(k) += coef * shape(k);
                                             }));
             for (size_t k = 0; k < DIM_CURL; k++)
-              values.Get(k,i) = sum(k).Data();
+              values(k,i) = sum(k).Data();
           }
       }
 
@@ -334,7 +334,7 @@ namespace ngfem
 
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
   void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
-  AddTrans (const SIMD_BaseMappedIntegrationRule & bmir, ABareSliceMatrix<double> values,
+  AddTrans (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> values,
             BareSliceVector<> coefs) const
   {
     if ((DIM == 3) || (bmir.DimSpace() == DIM))
@@ -347,7 +347,7 @@ namespace ngfem
                                             {
                                               SIMD<double> sum = 0.0;
                                               for (int k = 0; k < DIM; k++)
-                                                sum += shape(k) * values.Get(k,i);
+                                                sum += shape(k) * values(k,i);
                                               coefs(j) += HSum(sum);
                                             }));
           }
@@ -363,7 +363,7 @@ namespace ngfem
                                             {
                                               SIMD<double> sum = 0.0;
                                               for (int k = 0; k < DIM1; k++)
-                                                sum += shape(k) * values.Get(k,i);
+                                                sum += shape(k) * values(k,i);
                                               coefs(j) += HSum(sum);
                                             }));
           }
@@ -372,7 +372,7 @@ namespace ngfem
 
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
   void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
-  AddTrans (const SIMD_BaseMappedIntegrationRule & bmir, ABareSliceMatrix<Complex> values,
+  AddTrans (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<Complex>> values,
             BareSliceVector<Complex> coefs) const
   {
     if ((DIM == 3) || (bmir.DimSpace() == DIM))
@@ -385,7 +385,7 @@ namespace ngfem
                                             {
                                               SIMD<Complex> sum = 0.0;
                                               for (int k = 0; k < DIM; k++)
-                                                sum += shape(k) * values.Get(k,i);
+                                                sum += shape(k) * values(k,i);
                                               coefs(j) += HSum(sum);
                                             }));
           }
@@ -401,7 +401,7 @@ namespace ngfem
                                             {
                                               SIMD<Complex> sum = 0.0;
                                               for (int k = 0; k < DIM1; k++)
-                                                sum += shape(k) * values.Get(k,i);
+                                                sum += shape(k) * values(k,i);
                                               coefs(j) += HSum(sum);
                                             }));
           }
@@ -414,7 +414,7 @@ namespace ngfem
   
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
   void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
-  AddCurlTrans (const SIMD_BaseMappedIntegrationRule & bmir, ABareSliceMatrix<double> values,
+  AddCurlTrans (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> values,
                 BareSliceVector<> coefs) const
   {
     // throw ExceptionNOSIMD ("thcurlfe - simd - add curl trans not implemeted");        
@@ -429,7 +429,7 @@ namespace ngfem
                                             {
                                               SIMD<double> sum = 0.0;
                                               for (int k = 0; k < DIM_CURL; k++)
-                                                sum += shape(k) * values.Get(k,i);
+                                                sum += shape(k) * values(k,i);
                                               coefs(j) += HSum(sum);
                                             }));
           }
@@ -446,7 +446,7 @@ namespace ngfem
                                             {
                                               SIMD<double> sum = 0.0;
                                               for (int k = 0; k < DIM_CURL; k++)
-                                                sum += shape(k) * values.Get(k,i);
+                                                sum += shape(k) * values(k,i);
                                               coefs(j) += HSum(sum);
                                             }));
           }

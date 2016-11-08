@@ -250,7 +250,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
   
 
   typedef PyBaseMatrix BM;
-  typedef BaseVector BV;
+  // typedef BaseVector BV;
 
   py::class_<PyBaseMatrix>(m, "BaseMatrix")
     .def("__str__", &ToString<BaseMatrix>)

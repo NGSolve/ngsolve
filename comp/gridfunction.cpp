@@ -1322,12 +1322,12 @@ namespace ngcomp
 
   void GridFunctionCoefficientFunction ::   
   Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
-            ABareSliceMatrix<double> bvalues) const
+            BareSliceMatrix<SIMD<double>> bvalues) const
   {
     LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evalute 3");
     // static Timer timer ("GFCoeffFunc::Eval-vec", 2);
     // RegionTimer reg (timer);
-    auto values = bvalues.AddVSize(Dimension(), ir.Size());
+    auto values = bvalues.AddSize(Dimension(), ir.Size());
     const ElementTransformation & trafo = ir.GetTransformation();
     
     int elnr = trafo.GetElementNr();
@@ -1379,11 +1379,11 @@ namespace ngcomp
 
   void GridFunctionCoefficientFunction ::   
   Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
-            ABareSliceMatrix<Complex> bvalues) const
+            BareSliceMatrix<SIMD<Complex>> bvalues) const
   {
     LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evalute 3");
 
-    auto values = bvalues.AddVSize(Dimension(), ir.Size());
+    auto values = bvalues.AddSize(Dimension(), ir.Size());
     const ElementTransformation & trafo = ir.GetTransformation();
     
     int elnr = trafo.GetElementNr();
