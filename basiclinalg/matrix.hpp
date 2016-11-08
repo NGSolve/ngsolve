@@ -1601,6 +1601,11 @@ namespace ngbla
     {
       return data[i*dist+j]; 
     }
+    /// access operator
+    INLINE TELEM & operator() (size_t i) const
+    {
+      return data[i]; 
+    }
 
     /*
     /// the height
@@ -1621,12 +1626,12 @@ namespace ngbla
       return BareSliceMatrix ( /* next-first, w, */ dist, data+first*dist);
     }
 
-    /*
-    INLINE const FlatVector<T> Row (size_t i) const
+    INLINE BareVector<T> Row (size_t i) const
     {
-      return FlatVector<T> (w, &data[i*dist]);
+      return BareVector<T> (data+i*dist);
     }
 
+    /*
     INLINE const FlatVector<T> Diag (size_t i) const
     {
       return SliceVector<T> (h, dist+1, data);
@@ -1657,6 +1662,11 @@ namespace ngbla
       return SliceVector<T> (h, dist+1, &data[0]);
     }
     */
+    BareSliceMatrix<T> RowSlice(size_t first, size_t adist) const
+    {
+      return BareSliceMatrix<T> (dist*adist, data+first*dist);
+    }
+    
   };
 
 

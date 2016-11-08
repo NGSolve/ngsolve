@@ -153,7 +153,7 @@ namespace ngfem
   Apply (const FiniteElement & bfel,
          const SIMD_BaseMappedIntegrationRule & bmir,
          BareSliceVector<double> x, 
-         ABareSliceMatrix<double> flux) const
+         BareSliceMatrix<SIMD<double>> flux) const
   {
     DIFFOP::ApplySIMDIR (bfel, bmir, x, flux);
   }
@@ -163,7 +163,7 @@ namespace ngfem
   Apply (const FiniteElement & bfel,
          const SIMD_BaseMappedIntegrationRule & bmir,
          BareSliceVector<Complex> x, 
-         ABareSliceMatrix<Complex> flux) const
+         BareSliceMatrix<SIMD<Complex>> flux) const
   {
     DIFFOP::ApplySIMDIR (bfel, bmir, x, flux);
   }
@@ -227,7 +227,7 @@ namespace ngfem
   void T_DifferentialOperator<DIFFOP> ::
   AddTrans (const FiniteElement & bfel,
             const SIMD_BaseMappedIntegrationRule & bmir,
-            ABareSliceMatrix<double> flux,
+            BareSliceMatrix<SIMD<double>> flux,
             BareSliceVector<double> x) const
   {
     DIFFOP::AddTransSIMDIR (bfel, bmir, flux, x);
@@ -237,7 +237,7 @@ namespace ngfem
   void T_DifferentialOperator<DIFFOP> ::
   AddTrans (const FiniteElement & bfel,
             const SIMD_BaseMappedIntegrationRule & bmir,
-            ABareSliceMatrix<Complex> flux,
+            BareSliceMatrix<SIMD<Complex>> flux,
             BareSliceVector<Complex> x) const
   {
     DIFFOP::AddTransSIMDIR (bfel, bmir, flux, x);

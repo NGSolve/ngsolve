@@ -125,7 +125,7 @@ namespace ngfem
   Apply (const FiniteElement & bfel,
          const SIMD_BaseMappedIntegrationRule & bmir,
          BareSliceVector<double> x, 
-         ABareSliceMatrix<double> flux) const
+         BareSliceMatrix<SIMD<double>> flux) const
   {
     throw ExceptionNOSIMD (string("DifferentialOperator :: Apply ( ... SIMD ... ) not overloaded for class ")
                            + typeid(*this).name());
@@ -135,7 +135,7 @@ namespace ngfem
   Apply (const FiniteElement & bfel,
          const SIMD_BaseMappedIntegrationRule & bmir,
          BareSliceVector<Complex> x, 
-         ABareSliceMatrix<Complex> flux) const
+         BareSliceMatrix<SIMD<Complex>> flux) const
   {
     throw ExceptionNOSIMD (string("DifferentialOperator :: Apply ( ... SIMD<Complex> ... ) not overloaded for class ")
                            + typeid(*this).name());
@@ -213,7 +213,7 @@ namespace ngfem
   void DifferentialOperator ::
   AddTrans (const FiniteElement & bfel,
             const SIMD_BaseMappedIntegrationRule & bmir,
-            ABareSliceMatrix<double> flux,
+            BareSliceMatrix<SIMD<double>> flux,
             BareSliceVector<double> x) const
   {
     throw ExceptionNOSIMD (string("DifferentialOperator :: AddTrans ( ... SIMD ... ) not overloaded") +
@@ -223,7 +223,7 @@ namespace ngfem
   void DifferentialOperator ::
   AddTrans (const FiniteElement & bfel,
             const SIMD_BaseMappedIntegrationRule & bmir,
-            ABareSliceMatrix<Complex> flux,
+            BareSliceMatrix<SIMD<Complex>> flux,
             BareSliceVector<Complex> x) const
   {
     throw ExceptionNOSIMD (string("DifferentialOperator :: AddTrans ( ... SIMD<Complex> ... ) not overloaded") +
@@ -299,7 +299,7 @@ namespace ngfem
   Apply (const FiniteElement & fel,
          const SIMD_BaseMappedIntegrationRule & mir,
          BareSliceVector<double> x, 
-         ABareSliceMatrix<double> flux) const
+         BareSliceMatrix<SIMD<double>> flux) const
   // LocalHeap & lh) const
   {
     if (comp == -1)
@@ -372,7 +372,7 @@ namespace ngfem
   void BlockDifferentialOperator ::
   AddTrans (const FiniteElement & fel,
             const SIMD_BaseMappedIntegrationRule & mir,
-            ABareSliceMatrix<double> flux,
+            BareSliceMatrix<SIMD<double>> flux,
             BareSliceVector<double> x) const
   {
     if (comp == -1)
@@ -385,7 +385,7 @@ namespace ngfem
   void BlockDifferentialOperator ::
   AddTrans (const FiniteElement & fel,
             const SIMD_BaseMappedIntegrationRule & mir,
-            ABareSliceMatrix<Complex> flux,
+            BareSliceMatrix<SIMD<Complex>> flux,
             BareSliceVector<Complex> x) const
   {
     if (comp == -1)
