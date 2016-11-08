@@ -21,7 +21,7 @@ puts "togl-version : $toglversion"
 set toglok 0
 if { [Ng_GetToglVersion] == 2 } {
     # Togl 2.x
-    if {[catch {togl .ndraw -width 400 -height 300  -rgba true -double true -depth true -privatecmap false -stereo false -indirect true  -create init  -display draw -reshape reshape }] } {    
+    if {[catch {togl .ndraw -width 400 -height 300  -rgba true -double true -depth true -privatecmap false -stereo false -indirect false  -create init  -display draw -reshape reshape }] } {    
         puts "no OpenGL" 
     } {
         # puts "have Togl 2.1"        
@@ -29,7 +29,7 @@ if { [Ng_GetToglVersion] == 2 } {
     }
 } {
     # Togl 1.7
-    if {[catch {togl .ndraw -width 400 -height 300  -rgba true -double true -depth true -privatecmap false -stereo false -indirect true  }] } {    
+    if {[catch {togl .ndraw -width 400 -height 300  -rgba true -double true -depth true -privatecmap false -stereo false -indirect false  }] } {    
         puts "no OpenGL" 
     } {
         # puts "have Togl 1.7"

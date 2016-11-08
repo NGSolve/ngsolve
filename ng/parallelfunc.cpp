@@ -138,7 +138,7 @@ void ParallelRun()
 	  string redraw_cmd;
 	  // MyMPI_Recv (redraw_cmd, 0, MPI_TAG_VIS);
 	  redraw_cmd = MyMPI_RecvCmd();
-
+	  
 	  // PrintMessage (1, "Redraw - ", redraw_cmd);
                   
 	  static string displname;
@@ -147,16 +147,17 @@ void ParallelRun()
 	  static Display * display = NULL;
 	  static GLXContext context;
 	  static XVisualInfo * visinfo = 0;
-
+	  
 	  // if (!display)
 	  if (redraw_cmd == "init")
 	    {
 	      MyMPI_Recv (displname, 0, MPI_TAG_VIS);
 	      MyMPI_Recv (curDrawable, 0, MPI_TAG_VIS);
 	      MyMPI_Recv (contextid, 0, MPI_TAG_VIS);
-
+	      
 	      display = XOpenDisplay (displname.c_str());
 
+	      
 	      /*
 		PrintMessage (3, "displ - name = ", displname);
 		PrintMessage (3, "display = ", display,
@@ -179,8 +180,8 @@ void ParallelRun()
 	      
 		cout << "P" << id << ": window-props:  x = " << wx << ", y = " << wy 
 		<< ", w = " << ww << ", h = " << wh << ", depth = " << depth << endl;
-	      */	      
-		
+	      */
+	      
 #define VISUAL
 #ifdef VISUAL
 
@@ -269,20 +270,22 @@ void ParallelRun()
 	      // context = glXCreateContext( display, visinfo, 0, /* curContext, */ False );
 	      context = glXCreateContext( display, visinfo, glXImportContextEXT ( display, contextid ), False);
 	      glXMakeCurrent (display, curDrawable, context);
+
+
 #else
 	      // try to get GLXcontext from the master. 
 	      // this needs an indirect context (BUT DOES NOT WORK ????)
+
 	      context = glXImportContextEXT ( display, contextid );
 
-	      //PrintMessage (1, "GLX-contextid = " , contextid,
-	      //	    " imported context ", context);
+	      PrintMessage (1, "GLX-contextid = " , contextid,
+			    " imported context ", context);
 
 	      glXMakeCurrent (display, curDrawable, context);
 #endif
 
 	      // PrintMessage (1, "redraw - init complete");
 	    }
-
 	  
 	  if (redraw_cmd == "broadcast")
 	    {
