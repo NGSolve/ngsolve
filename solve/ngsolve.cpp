@@ -457,14 +457,19 @@ int NGS_LoadPDE (ClientData clientData,
           LoadPDE (pde, argv[1]);
 	  pde->PrintReport (*testout);
 
-#ifdef NGS_PYTHON
-          {
-            cout << "set python object 'pde'" << endl;
-            cout << "Type 'help(pde)' or 'print(pde)' for more information" << endl;
-            AcquireGIL gil_lock;
-            pyenv["pde"] = py::cast(pde);
-          }
-#endif
+// #ifdef NGS_PYTHON
+//           {
+//             try {
+//               cout << "set python object 'pde'" << endl;
+//               cout << "Type 'help(pde)' or 'print(pde)' for more information" << endl;
+//               AcquireGIL gil_lock;
+//               pyenv["pde"] = py::cast(pde);
+//             }
+//             catch (py::error_already_set const &) {
+//               PyErr_Print();
+//             }
+//           }
+// #endif
 
           int port = pde -> GetConstant ("port", true);
           if (port)
