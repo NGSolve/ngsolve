@@ -77,6 +77,7 @@ void ParallelRun()
   while ( true )
     {
       message = MyMPI_RecvCmd();
+
       if ( message.compare(0, 3, "ngs") == 0 ) 
         {
           // PrintMessage ( 1, "Starting NgSolve routine ", message ) ;
@@ -137,7 +138,7 @@ void ParallelRun()
 	  string redraw_cmd;
 	  // MyMPI_Recv (redraw_cmd, 0, MPI_TAG_VIS);
 	  redraw_cmd = MyMPI_RecvCmd();
-	  
+
 	  // PrintMessage (1, "Redraw - ", redraw_cmd);
                   
 	  static string displname;
@@ -155,6 +156,7 @@ void ParallelRun()
 	      MyMPI_Recv (contextid, 0, MPI_TAG_VIS);
 
 	      display = XOpenDisplay (displname.c_str());
+
 	      /*
 		PrintMessage (3, "displ - name = ", displname);
 		PrintMessage (3, "display = ", display,
@@ -163,20 +165,21 @@ void ParallelRun()
 		" , h = ", XDisplayHeight (display, 0));
 	      */
 
-	      // Window win;
-	      // int wx, wy;
-	      // unsigned int ww, wh, bw, depth;
-	      // cout << "got drawable: " << curDrawable << ", contextid: " << contextid <<  endl;
+	      /*
+		Window win;
+		int wx, wy;
+		unsigned int ww, wh, bw, depth;
+		cout << "got drawable: " << curDrawable << ", contextid: " << contextid <<  endl;
 		
-	      // cout << "get geometriy..." << endl;
-	      // XGetGeometry(display, curDrawable, &win,
-	      // 		   &wx, &wy, &ww, &wh,
-	      // 		   &bw, &depth);
-	      // cout << "have!" << endl;
+		cout << "get geometriy..." << endl;
+		XGetGeometry(display, curDrawable, &win,
+		&wx, &wy, &ww, &wh,
+		&bw, &depth);
+		cout << "have!" << endl;
 	      
-	      // cout << "P" << id << ": window-props:  x = " << wx << ", y = " << wy 
-	      // 	   << ", w = " << ww << ", h = " << wh << ", depth = " << depth << endl;
-	      
+		cout << "P" << id << ": window-props:  x = " << wx << ", y = " << wy 
+		<< ", w = " << ww << ", h = " << wh << ", depth = " << depth << endl;
+	      */	      
 		
 #define VISUAL
 #ifdef VISUAL
@@ -221,29 +224,23 @@ void ParallelRun()
 		  attrib_list[attrib_count++] = GLX_DOUBLEBUFFER;
 
 		  attrib_list[attrib_count++] = None;
-		  
-		  {
-		    int hi = 0;
-		    std::cout << "min attribs = ";
-		    while (attrib_list[hi] != None)
-		      std::cout << attrib_list[hi++] << " ";
-		    std::cout << std::endl;
-		  }
-		  
-		  cout << "choose visual!!" << endl;
-		  visinfo = NULL;
+
 		  visinfo = glXChooseVisual(display, 0, 
 					    attrib_list);
 		  cout << "have vis?" << endl;
+
 		  if (visinfo) {
 		    /* found a GLX visual! */
+		    // cout << "found VISINFO !!!" << endl;
 		    cout << "found VISINFO !!!" << endl;
 
+		    /*
 		    int hi = 0;
 		    std::cout << "attribs = ";
 		    while (attrib_list[hi] != None)
 		      std::cout << attrib_list[hi++] << " ";
 		    std::cout << std::endl;
+		    */
 		    
 		    break;
 		  }
@@ -251,17 +248,15 @@ void ParallelRun()
 	      if (!visinfo)
 		cerr << "no VISINFO found" << endl;
 
-
 #else
-	      //get all confs
+	      //get all possible confs
 	      int nconfs;
 	      auto cptr = glXGetFBConfigs (display,0, &nconfs);
-	      cout << "found " << nconfs << " valid confs " << endl;
 	      Array<int> conf_ids(nconfs);
 	      for(int k=0;k<nconfs;k++)
 		glXGetFBConfigAttrib(display, cptr[k], GLX_FBCONFIG_ID, &(conf_ids[k]));
 	      
-	      //get drawable->FBConfig->visual and try with that
+	      //get drawable->FBConfig->visual
 	      unsigned int d_fbc_id;
 	      glXQueryDrawable( display, curDrawable, GLX_FBCONFIG_ID, &d_fbc_id); 
 	      GLXFBConfig d_fbc;
@@ -287,7 +282,8 @@ void ParallelRun()
 
 	      // PrintMessage (1, "redraw - init complete");
 	    }
-	    
+
+	  
 	  if (redraw_cmd == "broadcast")
 	    {
 	      vsmesh.Broadcast ();

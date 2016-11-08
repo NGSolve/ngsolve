@@ -18,7 +18,6 @@ namespace netgen
   {
     char buf[10000];
     strcpy (buf, cmd);
-    
     // MPI_Bcast (&buf, 100, MPI_CHAR, 0, MPI_COMM_WORLD);
 
     for (int dest = 1; dest < ntasks; dest++)
