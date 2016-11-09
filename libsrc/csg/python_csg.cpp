@@ -275,7 +275,7 @@ DLL_HEADER void ExportCSG(py::module &m)
 
   py::class_<SplineSurface, shared_ptr<SplineSurface>> (m, "SplineSurface",
 			 "A surface for co dim 2 integrals on the splines")
-    .def("__init__", FunctionPointer  ([](const shared_ptr<SPSolid> base, py::list cuts)
+    .def("__init__", FunctionPointer  ([](SplineSurface* instance, shared_ptr<SPSolid> base, py::list cuts)
 	     {
 	       auto primitive = dynamic_cast<OneSurfacePrimitive*> (base->GetSolid()->GetPrimitive());
 	       auto acuts = new Array<OneSurfacePrimitive*>();
@@ -292,8 +292,8 @@ DLL_HEADER void ExportCSG(py::module &m)
 		 }
 	       if(!primitive)
 		 throw NgException("Base is not a SurfacePrimitive in constructor of SplineSurface!");
-	       return make_shared<SplineSurface>(primitive,acuts);
-	     }),(py::arg("base"), py::arg("cuts")=py::list()))
+	       new (instance) SplineSurface(primitive,acuts);
+	     }),py::arg("base"), py::arg("cuts")=py::list())
     .def("AddPoint", FunctionPointer
 	 ([] (SplineSurface & self, double x, double y, double z, bool hpref)
 	  {
