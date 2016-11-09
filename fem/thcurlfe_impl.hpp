@@ -334,7 +334,7 @@ namespace ngfem
 
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
   void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
-  EvaluateCurl (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<Complex> coefs, ABareSliceMatrix<Complex> values) const
+  EvaluateCurl (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<Complex> coefs, BareSliceMatrix<SIMD<Complex>> values) const
   {
     // throw ExceptionNOSIMD ("thcurlfe - simd - evaluate curl not implemeted");
 
@@ -354,7 +354,7 @@ namespace ngfem
 						});
                                             }));
             for (size_t k = 0; k < DIM_CURL; k++)
-              values.Get(k,i) = sum(k);
+              values(k,i) = sum(k);
           }
       }
     else
@@ -373,7 +373,7 @@ namespace ngfem
                                                 sum(k) += coef * shape(k);
                                             }));
             for (size_t k = 0; k < DIM_CURL; k++)
-              values.Get(k,i) = sum(k);
+              values(k,i) = sum(k);
           }
       }
 
@@ -502,7 +502,7 @@ namespace ngfem
   
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
   void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
-  AddCurlTrans (const SIMD_BaseMappedIntegrationRule & bmir, ABareSliceMatrix<Complex> values,
+  AddCurlTrans (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<Complex>> values,
                 BareSliceVector<Complex> coefs) const
   {
     // throw ExceptionNOSIMD ("thcurlfe - simd - add curl trans not implemeted");        
@@ -517,7 +517,7 @@ namespace ngfem
                                             {
                                               SIMD<Complex> sum = 0.0;
                                               for (int k = 0; k < DIM_CURL; k++)
-                                                sum += shape(k) * values.Get(k,i);
+                                                sum += shape(k) * values(k,i);
                                               coefs(j) += HSum(sum);
                                             }));
           }
@@ -534,7 +534,7 @@ namespace ngfem
                                             {
                                               SIMD<Complex> sum = 0.0;
                                               for (int k = 0; k < DIM_CURL; k++)
-                                                sum += shape(k) * values.Get(k,i);
+                                                sum += shape(k) * values(k,i);
                                               coefs(j) += HSum(sum);
                                             }));
           }
