@@ -181,7 +181,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                    return py::cast(self->SV<double>()(ind));
              }
            } )
-    .def("__getitem__", [](PyBaseVector & self,  py::slice inds )
+    .def("__getitem__", [](PyBaseVector & self,  py::slice inds ) -> PyBaseVector
       {
           size_t start, step, n;
           InitSlice( inds, self->Size(), start, step, n );
@@ -253,7 +253,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
   // typedef BaseVector BV;
 
   py::class_<PyBaseMatrix>(m, "BaseMatrix")
-    .def("__str__", &ToString<BaseMatrix>)
+    .def("__str__", [](PyBaseMatrix self) { return ToString<BaseMatrix>(*self.Get()); } )
     .def_property_readonly("height", [] ( PyBaseMatrix & self)
         { return self->Height(); } )
     .def_property_readonly("width", [] ( PyBaseMatrix & self)
