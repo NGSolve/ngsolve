@@ -119,14 +119,14 @@ public:
 
   using DiffOp<DiffOpIdHDiv<D,FEL>>::ApplySIMDIR;        
   static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
-                           BareSliceVector<double> x, ABareSliceMatrix<double> y)
+                           BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
   {
     Cast(fel).Evaluate (mir, x, y);
   }    
 
   using DiffOp<DiffOpIdHDiv<D,FEL>>::AddTransSIMDIR;          
   static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
-                              ABareSliceMatrix<double> y, BareSliceVector<double> x)
+                              BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
   {
     Cast(fel).AddTrans (mir, y, x);
   }    
@@ -203,14 +203,14 @@ public:
 
   using DiffOp<DiffOpDivHDiv<D,FEL>>::ApplySIMDIR;          
   static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
-                           BareSliceVector<double> x, ABareSliceMatrix<double> y)
+                           BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
   {
     Cast(fel).EvaluateDiv (mir, x, y.Row(0));
   }    
 
   using DiffOp<DiffOpDivHDiv<D,FEL>>::AddTransSIMDIR;            
   static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
-                              ABareSliceMatrix<double> y, BareSliceVector<double> x)
+                              BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
   {
     Cast(fel).AddDivTrans (mir, y.Row(0), x);
   }    
