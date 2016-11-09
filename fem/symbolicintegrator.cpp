@@ -207,7 +207,7 @@ namespace ngfem
     if (!testfunction && ud->fel)
       {
         if (ud->HasMemory (this))
-          result.AddSize(Dimension(), mir.Size()) = ud->GetAMemory (this);
+          result.AddSize(Dimension(), mir.Size()) = BareSliceMatrix<SIMD<double>> (ud->GetAMemory (this));
         else
           {
             static bool first = true;
@@ -236,7 +236,7 @@ namespace ngfem
     if (!testfunction && ud->fel)
       {
         if (ud->HasMemory (this))
-          result.AddSize(Dimension(), mir.Size()) = ud->GetAMemory (this);
+          result.AddSize(Dimension(), mir.Size()) = BareSliceMatrix<SIMD<double>> (ud->GetAMemory (this));
         else
           {
             throw ExceptionNOSIMD ("ProxyFunction :: Evaluate(SIMD<Complex>) without precomputed trial values");
