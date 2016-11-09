@@ -258,13 +258,13 @@ namespace ngfem
     Apply (const FiniteElement & bfel,
 	   const SIMD_BaseMappedIntegrationRule & bmir,
 	   BareSliceVector<double> x, 
-	   ABareSliceMatrix<double> flux) const;
+	   BareSliceMatrix<SIMD<double>> flux) const;
 
     NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & bfel,
 	   const SIMD_BaseMappedIntegrationRule & bmir,
 	   BareSliceVector<Complex> x, 
-	   ABareSliceMatrix<Complex> flux) const;
+	   BareSliceMatrix<SIMD<Complex>> flux) const;
 
     
     NGS_DLL_HEADER virtual void
@@ -298,13 +298,13 @@ namespace ngfem
     NGS_DLL_HEADER virtual void
     AddTrans (const FiniteElement & bfel,
               const SIMD_BaseMappedIntegrationRule & bmir,
-              ABareSliceMatrix<double> flux,
+              BareSliceMatrix<SIMD<double>> flux,
               BareSliceVector<double> x) const;
 
     NGS_DLL_HEADER virtual void
     AddTrans (const FiniteElement & bfel,
               const SIMD_BaseMappedIntegrationRule & bmir,
-              ABareSliceMatrix<Complex> flux,
+              BareSliceMatrix<SIMD<Complex>> flux,
               BareSliceVector<Complex> x) const;
 
   };
@@ -359,8 +359,7 @@ namespace ngfem
     Apply (const FiniteElement & bfel,
 	   const SIMD_BaseMappedIntegrationRule & bmir,
 	   BareSliceVector<double> x, 
-	   ABareSliceMatrix<double> flux) const;
-    // LocalHeap & lh) const;
+	   BareSliceMatrix<SIMD<double>> flux) const;
     
     NGS_DLL_HEADER virtual void
     ApplyTrans (const FiniteElement & fel,
@@ -379,13 +378,13 @@ namespace ngfem
     virtual void
     AddTrans (const FiniteElement & bfel,
               const SIMD_BaseMappedIntegrationRule & bmir,
-              ABareSliceMatrix<double> flux,
+              BareSliceMatrix<SIMD<double>> flux,
               BareSliceVector<double> x) const;
 
     virtual void
     AddTrans (const FiniteElement & bfel,
               const SIMD_BaseMappedIntegrationRule & bmir,
-              ABareSliceMatrix<Complex> flux,
+              BareSliceMatrix<SIMD<Complex>> flux,
               BareSliceVector<Complex> x) const;
   };
 
@@ -474,13 +473,13 @@ namespace ngfem
     Apply (const FiniteElement & bfel,
 	   const SIMD_BaseMappedIntegrationRule & bmir,
 	   BareSliceVector<double> x, 
-	   ABareSliceMatrix<double> flux) const;
+	   BareSliceMatrix<SIMD<double>> flux) const;
 
     virtual void
     Apply (const FiniteElement & bfel,
 	   const SIMD_BaseMappedIntegrationRule & bmir,
 	   BareSliceVector<Complex> x, 
-	   ABareSliceMatrix<Complex> flux) const;
+	   BareSliceMatrix<SIMD<Complex>> flux) const;
 
 
     virtual void
@@ -514,13 +513,13 @@ namespace ngfem
     virtual void
     AddTrans (const FiniteElement & bfel,
               const SIMD_BaseMappedIntegrationRule & bmir,
-              ABareSliceMatrix<double> flux,
+              BareSliceMatrix<SIMD<double>> flux,
               BareSliceVector<double> x) const;
 
     virtual void
     AddTrans (const FiniteElement & bfel,
               const SIMD_BaseMappedIntegrationRule & bmir,
-              ABareSliceMatrix<Complex> flux,
+              BareSliceMatrix<SIMD<Complex>> flux,
               BareSliceVector<Complex> x) const;
 
 #endif
