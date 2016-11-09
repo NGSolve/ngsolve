@@ -2126,6 +2126,8 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                                   result = py::list(py::cast(region_sum));
                                 else if (element_wise)
                                   result = py::cast(element_sum);
+                                else if(dim==1)
+				    result = py::cast(sum(0));
                                 else
                                   result = py::cast(sum);
                                 return result;
