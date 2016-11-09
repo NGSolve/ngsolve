@@ -1,7 +1,6 @@
 #ifdef NGS_PYTHON
 #include "../ngstd/python_ngstd.hpp"
 #include "../ngstd/bspline.hpp"
-#include <pybind11/complex.h>
 #include <fem.hpp>
 #include <mutex>
 using namespace ngfem;
