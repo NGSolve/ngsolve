@@ -90,9 +90,7 @@ namespace ngcomp
     ///
     virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
     ///
-    virtual void GetDofNrs (int elnr, Array<int> & dnums) const override;
-    ///
-    virtual void GetSDofNrs (int selnr, Array<int> & dnums) const override;
+    virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const override;
     ///
     virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const override;
     /// 

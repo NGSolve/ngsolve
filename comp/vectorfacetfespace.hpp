@@ -68,10 +68,8 @@ namespace ngcomp
 
     virtual int GetNFacetDofs ( int felnr ) const;
 
-    virtual void GetDofNrs ( int elnr, Array<int> & dnums ) const;
+    virtual void GetDofNrs ( ElementId ei, Array<int> & dnums ) const;
 
-    virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
-    ///
     virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const;
     ///
     virtual Array<int> * CreateDirectSolverClusters (const Flags & precflags) const;

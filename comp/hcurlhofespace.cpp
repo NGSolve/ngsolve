@@ -121,23 +121,23 @@ namespace ngcomp
 
     // Evaluator
     static ConstantCoefficientFunction one(1);
-    integrator = GetIntegrators().CreateBFI("massedge", ma->GetDimension(), &one);
+    integrator[VOL] = GetIntegrators().CreateBFI("massedge", ma->GetDimension(), &one);
     if (!discontinuous)
-      boundary_integrator = GetIntegrators().CreateBFI("robinedge", ma->GetDimension(), &one); 
+      integrator[BND] = GetIntegrators().CreateBFI("robinedge", ma->GetDimension(), &one); 
     
     if (ma->GetDimension() == 2)
       {
-        boundary_evaluator = make_shared<T_DifferentialOperator<DiffOpIdBoundaryEdge<2>>>();
-        evaluator = make_shared<T_DifferentialOperator<DiffOpIdEdge<2>>>();
-        flux_evaluator = make_shared<T_DifferentialOperator<DiffOpCurlEdge<2>>>();
+        evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundaryEdge<2>>>();
+        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdEdge<2>>>();
+        flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpCurlEdge<2>>>();
       }
     else
       {
-        boundary_evaluator = make_shared<T_DifferentialOperator<DiffOpIdBoundaryEdge<3>>>();
-        evaluator = make_shared<T_DifferentialOperator<DiffOpIdEdge<3>>>();
-        flux_evaluator = make_shared<T_DifferentialOperator<DiffOpCurlEdge<3>>>();
-        boundary_flux_evaluator = make_shared<T_DifferentialOperator<DiffOpCurlBoundaryEdgeVec<>>>();
-	bboundary_evaluator = make_shared<T_DifferentialOperator<DiffOpIdBBoundaryEdge<3>>>();
+        evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundaryEdge<3>>>();
+        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdEdge<3>>>();
+        flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpCurlEdge<3>>>();
+        flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpCurlBoundaryEdgeVec<>>>();
+	evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpIdBBoundaryEdge<3>>>();
       }
   }
   
@@ -1116,17 +1116,17 @@ namespace ngcomp
   }
 
 
-  void HCurlHighOrderFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
+  void HCurlHighOrderFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
     dnums.SetSize(0);
-    if (!DefinedOn (ma->GetElIndex (elnr))) return;
+    if (!DefinedOn (ei)) return;
 
     // ordering of shape functions
     // (1*e1),.. (1*e_ne)  
     // (p_t)*tang_e1, ... p_t*tang_ne
     // p_n * el1, p_i * el1, ... , p_n * ne_n , p_i *el_ne 
 
-    Ngs_Element ngel = ma->GetElement (elnr);
+    Ngs_Element ngel = ma->GetElement (ei);
      
     //Nedelec0
     if ( !discontinuous )
@@ -1141,46 +1141,11 @@ namespace ngcomp
     if (ma->GetDimension() == 3)
       for (auto face : ngel.Faces())
         dnums += GetFaceDofs(face);
-        
-    dnums += GetElementDofs (elnr); 
+
+    if(ei.VB()==VOL)
+      dnums += GetElementDofs (ei.Nr()); 
   }
  
-
-
-
-  void HCurlHighOrderFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
-  {
-    dnums.SetSize(0);
-    if (!DefinedOnBoundary (ma->GetSElIndex (selnr))) return;
-
-    ArrayMem<int,4> ednums;
-    ma->GetSElEdges (selnr, ednums);
-    int fnum = ma->GetSElFace (selnr); 
-
-    if ( !discontinuous )
-      //Nedelec
-      for (int i = 0; i < ednums.Size(); i++) 
-	dnums.Append (ednums[i]);
-    
-    for (int i = 0; i < ednums.Size(); i++)
-      dnums += GetEdgeDofs (ednums[i]);
-
-    if(first_face_dof.Size()>1)		       
-      dnums += GetFaceDofs (fnum);
-  }
-
-  void HCurlHighOrderFESpace :: GetCD2DofNrs (int cd2elnr, Array<int> & dnums) const
-  {
-    dnums.SetSize(0);
-    if (!DefinedOn(BBND,ma->GetElIndex(ElementId(BBND,cd2elnr)))) return;
-
-    const Ngs_Element & ngel = ma->GetCD2Element(cd2elnr);
-    if(!ngel.edges.Size()==1)
-      throw Exception("CoDim2 elment must be edge!");
-    if(!discontinuous)
-      dnums.Append(ngel.edges[0]);
-    dnums += GetEdgeDofs(ngel.edges[0]);
-  }
 
 
   void HCurlHighOrderFESpace ::

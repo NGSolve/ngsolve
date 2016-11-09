@@ -234,7 +234,7 @@ namespace ngcomp
     else
       {
 	bfi3d = fespace->GetIntegrator();
-	bfi2d = fespace->GetBoundaryIntegrator();
+	bfi2d = fespace->GetIntegrator(BND);
       }
 
     if (bfi2d || bfi3d)

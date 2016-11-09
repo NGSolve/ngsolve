@@ -50,8 +50,8 @@ namespace ngcomp
     // Integrator for shape tester 
 
     static ConstantCoefficientFunction one(1);
-    integrator = GetIntegrators().CreateBFI("massedge", ma->GetDimension(), &one);
-    boundary_integrator = GetIntegrators().CreateBFI("robinedge", ma->GetDimension(), &one);
+    integrator[VOL] = GetIntegrators().CreateBFI("massedge", ma->GetDimension(), &one);
+    integrator[BND] = GetIntegrators().CreateBFI("robinedge", ma->GetDimension(), &one);
 
     /*
     static ConstantCoefficientFunction one(1);
@@ -349,37 +349,13 @@ namespace ngcomp
   }
 
   
-  void NedelecFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
+  void NedelecFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
-    if (DefinedOn (ma->GetElIndex (elnr)))
-      ma->GetElEdges (elnr, dnums);
+    if (DefinedOn (ei))
+      ma->GetElEdges (ei, dnums);
     else
       dnums.SetSize(0);
-
-    /*
-    ma->GetElEdges (elnr, dnums);
-    if (!DefinedOn (ma->GetElIndex (elnr)))
-      dnums = -1;
-    */
   }
-
-
-  void NedelecFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
-  {
-    ma->GetSElEdges (selnr, dnums);
-    if (!DefinedOnBoundary (ma->GetSElIndex (selnr)))
-      dnums = -1;
-  }
-
-  
-  void NedelecFESpace :: GetCD2DofNrs (int cd2elnr, Array<int> & dnums) const
-  {
-    dnums.SetSize(0);
-    const auto & ngel = ma->GetCD2Element(cd2elnr);
-    if(!DefinedOn(BBND,ngel.GetIndex())) return;
-    dnums.Append(ngel.edges[0]);
-  }
-
 
 
 
@@ -885,14 +861,14 @@ namespace ngcomp
       {
 	Array<shared_ptr<CoefficientFunction>> coeffs(1);
 	coeffs[0] = shared_ptr<CoefficientFunction> (new ConstantCoefficientFunction(1));
-	integrator = GetIntegrators().CreateBFI("massedge", 2, coeffs);
+	integrator[VOL] = GetIntegrators().CreateBFI("massedge", 2, coeffs);
       }
     else if(ma->GetDimension() == 3) 
       {
 	Array<shared_ptr<CoefficientFunction>> coeffs(1); 
 	coeffs[0] = shared_ptr<CoefficientFunction> (new ConstantCoefficientFunction(1)); 
-	integrator = GetIntegrators().CreateBFI("massedge",3,coeffs); 
-	boundary_integrator = GetIntegrators().CreateBFI("robinedge",3,coeffs); 
+	integrator[VOL] = GetIntegrators().CreateBFI("massedge",3,coeffs); 
+	integrator[BND] = GetIntegrators().CreateBFI("robinedge",3,coeffs); 
 	
       }
 
@@ -1114,315 +1090,313 @@ namespace ngcomp
   }
 
   
-  void NedelecFESpace2 :: GetDofNrs (int elnr, Array<int> & dnums) const
+  void NedelecFESpace2 :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
-    // int eled, elfa;
-    int j;
-
-    ArrayMem<int,6> fnums, forient;
-    ArrayMem<int,12> enums;
-
-    ma->GetElEdges (elnr, enums);
-    ma->GetElFaces (elnr, fnums, forient);
-
-    LocalHeapMem<1000> lh("NedelecFESpace2, GetDofNrs");
-    int nd = GetFE (elnr, lh).GetNDof();
-    dnums.SetSize(nd);
-    dnums = -1;
-
-    int index = ma->GetElIndex (elnr);
-
-    if (!DefinedOn (index)) return;
-
-    bool graddom = gradientdomains[index];
-
-    switch (ma->GetElType(elnr))
+    if(ei.VB()==VOL)
       {
-      case ET_TRIG:
-	{
-	  switch (order)
+	// int eled, elfa;
+	int j;
+
+	ArrayMem<int,6> fnums, forient;
+	ArrayMem<int,12> enums;
+	
+	ma->GetElEdges (ei.Nr(), enums);
+	ma->GetElFaces (ei.Nr(), fnums, forient);
+	
+	LocalHeapMem<1000> lh("NedelecFESpace2, GetDofNrs");
+	int nd = GetFE (ei.Nr(), lh).GetNDof();
+	dnums.SetSize(nd);
+	dnums = -1;
+	
+	int index = ma->GetElIndex (ei.Nr());
+	
+	if (!DefinedOn (index)) return;
+	
+	bool graddom = gradientdomains[index];
+	
+	switch (ma->GetElType(ei.Nr()))
+	  {
+	  case ET_TRIG:
 	    {
-	    case 2:
-	      {
-		for (j = 0; j < 3; j++)
+	      switch (order)
+		{
+		case 2:
 		  {
-		    dnums[j] = enums[j];
-		    if (gradientedge[enums[j]])
-		      dnums[j+3] = enums[j] + ned;
-		  }
-		break;
-	      }	
-	    case 3:
-	      {
-		for (j = 0; j < 3; j++)
-		  {
-		    int edgenr = enums[j];
-		    dnums[j] = edgenr;
-		    if (gradientedge[edgenr])
+		    for (j = 0; j < 3; j++)
 		      {
-			dnums[j+3] = edgenr + ned;
-			dnums[j+6] = edgenr + 2*ned;
+			dnums[j] = enums[j];
+			if (gradientedge[enums[j]])
+			  dnums[j+3] = enums[j] + ned;
 		      }
-		  }
-		int nfd = gradientface[elnr] ? 3 : 2;
-		for (j = 0; j < nfd; j++)
-		  dnums[9+j] = first_el_dof[elnr];
-		break;
-	      }
-	    }
-	  break;
-	}
-      case ET_TET:
-	{
-	  switch (order)
-	    {
-	    case 2:
-	      {
-		for (j = 0; j < 6; j++)
+		    break;
+		  }	
+		case 3:
 		  {
-		    dnums[j] = enums[j];
-		    if (gradientedge[enums[j]])
-		      dnums[j+6] = enums[j] + ned;
-		  }
-		break;
-	      }
-	    case 3:
-	      {
-		for (j = 0; j < 6; j++)
-		  dnums[j] = enums[j];
-
-		int base = 6;
-
-		if (nd == 30)
-		  {
-		    for (j = 0; j < 6; j++)
+		    for (j = 0; j < 3; j++)
 		      {
 			int edgenr = enums[j];
-			if (gradientedge[edgenr] && nd == 30)
+			dnums[j] = edgenr;
+			if (gradientedge[edgenr])
 			  {
-			    dnums[base+j]  = edgenr + ned;
-			    dnums[base+6+j] = edgenr + 2*ned;
+			    dnums[j+3] = edgenr + ned;
+			    dnums[j+6] = edgenr + 2*ned;
 			  }
 		      }
-		    base += 12;
+		    int nfd = gradientface[ei.Nr()] ? 3 : 2;
+		    for (j = 0; j < nfd; j++)
+		      dnums[9+j] = first_el_dof[ei.Nr()];
+		    break;
 		  }
-
-		for (j = 0; j < 4; j++)
-		  {
-		    int facedir = forient[j];
-		  
-		    static const int reorder[8][3] =
-		      { { 1, 2, 3 }, { 2, 1, 3 }, { 1, 3, 2 }, { 2, 3, 1 },
-			{ 2, 1, 3 }, { 1, 2, 3 }, { 3, 1, 2 }, { 3, 2, 1 } };
-		  
-		    int facebase = first_face_dof[fnums[j]];
-
-		    dnums[base + 3*j+reorder[facedir][0]-1] = facebase;
-		    dnums[base + 3*j+reorder[facedir][1]-1] = facebase + 1;
-		    if (gradientface[fnums[j]])
-		      dnums[base + 3*j+reorder[facedir][2]-1] = facebase + 2;
-		  }	  
-		break;
-	      }
+		}
+	      break;
 	    }
-	  break;
-	}
-      case ET_PRISM:
-	{
-	  switch (order)
+	  case ET_TET:
 	    {
-	    case 2:
-	      {
-		int j, k, ii = 0;
-		// all edges
-		for (j = 0; j < 9; j++)
-		  dnums[ii++] = enums[j];
-
-		// horizontal edges
-		for (j = 0; j < 6; j++)
-		  dnums[ii++] = 
-		    (gradientedge[enums[j]]) ? enums[j] + ned : -1;
-
-		// vertical edges
-		for (j = 6; j < 9; j++)
-		  for (k = 0; k < zorder-1; k++)
-		    dnums[ii++] = 
-		      (gradientedge[enums[j]]) ? enums[j] + ned*(k+1) : -1;
-
-		// quad faces:
-		for (j = 0; j < 3; j++)
+	      switch (order)
+		{
+		case 2:
 		  {
-		    int facebase = first_face_dof[fnums[j+2]];
-		    for (k = 0; k < n_quad_face_dofs; k++)
-		      dnums[ii++] = facebase + k;
-		  }		    
-		break;
-	      }
-
-	    case 3:
-	      {
-		int j, k, ii = 0;
-
-		// all edges
-		for (j = 0; j < 9; j++)
-		  dnums[ii++] = enums[j];
-
-		if (graddom)
+		    for (j = 0; j < 6; j++)
+		      {
+			dnums[j] = enums[j];
+			if (gradientedge[enums[j]])
+			  dnums[j+6] = enums[j] + ned;
+		      }
+		    break;
+		  }
+		case 3:
 		  {
+		    for (j = 0; j < 6; j++)
+		      dnums[j] = enums[j];
+		    
+		    int base = 6;
+		    
+		    if (nd == 30)
+		      {
+			for (j = 0; j < 6; j++)
+			  {
+			    int edgenr = enums[j];
+			    if (gradientedge[edgenr] && nd == 30)
+			      {
+				dnums[base+j]  = edgenr + ned;
+			    dnums[base+6+j] = edgenr + 2*ned;
+			      }
+			  }
+			base += 12;
+		      }
+		    
+		    for (j = 0; j < 4; j++)
+		      {
+			int facedir = forient[j];
+			
+			static const int reorder[8][3] =
+			  { { 1, 2, 3 }, { 2, 1, 3 }, { 1, 3, 2 }, { 2, 3, 1 },
+			    { 2, 1, 3 }, { 1, 2, 3 }, { 3, 1, 2 }, { 3, 2, 1 } };
+			
+			int facebase = first_face_dof[fnums[j]];
+			
+			dnums[base + 3*j+reorder[facedir][0]-1] = facebase;
+			dnums[base + 3*j+reorder[facedir][1]-1] = facebase + 1;
+			if (gradientface[fnums[j]])
+			  dnums[base + 3*j+reorder[facedir][2]-1] = facebase + 2;
+		      }	  
+		    break;
+		  }
+		}
+	      break;
+	    }
+	  case ET_PRISM:
+	    {
+	      switch (order)
+		{
+		case 2:
+		  {
+		    int j, k, ii = 0;
+		    // all edges
+		    for (j = 0; j < 9; j++)
+		      dnums[ii++] = enums[j];
+		    
 		    // horizontal edges
 		    for (j = 0; j < 6; j++)
-		      if (gradientedge[enums[j]])
-			{
-			  dnums[ii++] = enums[j] + ned;
-			  dnums[ii++] = enums[j] + 2*ned;
-			}
-		      else ii+=2;
-		  
+		      dnums[ii++] = 
+			(gradientedge[enums[j]]) ? enums[j] + ned : -1;
+		    
 		    // vertical edges
 		    for (j = 6; j < 9; j++)
+		      for (k = 0; k < zorder-1; k++)
+			dnums[ii++] = 
+			  (gradientedge[enums[j]]) ? enums[j] + ned*(k+1) : -1;
+		    
+		    // quad faces:
+		    for (j = 0; j < 3; j++)
+		      {
+			int facebase = first_face_dof[fnums[j+2]];
+			for (k = 0; k < n_quad_face_dofs; k++)
+			  dnums[ii++] = facebase + k;
+		      }		    
+		    break;
+		  }
+		  
+		case 3:
+		  {
+		    int j, k, ii = 0;
+		    
+		    // all edges
+		    for (j = 0; j < 9; j++)
+		      dnums[ii++] = enums[j];
+		    
+		    if (graddom)
+		      {
+			// horizontal edges
+			for (j = 0; j < 6; j++)
+			  if (gradientedge[enums[j]])
+			    {
+			      dnums[ii++] = enums[j] + ned;
+			      dnums[ii++] = enums[j] + 2*ned;
+			    }
+			  else ii+=2;
+			
+			// vertical edges
+			for (j = 6; j < 9; j++)
+			  if (gradientedge[enums[j]])
+			    for (k = 0; k < zorder-1; k++)
+			      dnums[ii++] = enums[j] + ned*(k+1);
+			  else
+			    ii += zorder-1;
+		      }
+		    
+		    // trig faces:
+		    for (j = 0; j < 2; j++)
+		      {
+			int facedir = forient[j];
+			
+			static const int reorder[8][3] =
+			  { { 1, 2, 3 }, { 2, 1, 3 }, { 1, 3, 2 }, { 2, 3, 1 },
+			    { 2, 1, 3 }, { 1, 2, 3 }, { 3, 1, 2 }, { 3, 2, 1 } };
+			
+			int facebase = first_face_dof[fnums[j]];
+			
+			dnums[ii+reorder[facedir][0]-1] = facebase;
+			dnums[ii+reorder[facedir][1]-1] = facebase + 1;
+			if (gradientface[fnums[j]])
+			  dnums[ii+reorder[facedir][2]-1] = facebase + 2;
+			ii += 3;
+		      }
+		    
+		    // quad faces:
+		    for (j = 0; j < 3; j++)
+		      {
+			int facebase = first_face_dof[fnums[j+2]];
+			for (k = 0; k < n_quad_face_dofs; k++)
+			  dnums[ii++] = facebase + k;
+			if (!gradientface[fnums[j+2]]) dnums[ii-1] = -1;
+		      }		    
+		    
+		    // vol dofs:
+		    int elbase = first_el_dof[ei.Nr()];
+		    int next = first_el_dof[ei.Nr()+1];
+		    for (k = elbase; k < next; k++)
+		      dnums[ii++] = k;
+		    
+		    break;
+		  }
+		}
+	      break;
+	    }
+	    
+	    
+	  case ET_PYRAMID:
+	    {
+	      switch (order)
+		{
+		case 2:
+		  {
+		    int j, k; 
+		    // all edges
+		    for (j = 0; j < 8; j++)
+		      dnums[j] = enums[j];
+		    for (j = 0; j < 8; j++)
 		      if (gradientedge[enums[j]])
-			for (k = 0; k < zorder-1; k++)
-			  dnums[ii++] = enums[j] + ned*(k+1);
-		      else
-			ii += zorder-1;
+			dnums[8+j] = enums[j] + ned;
+		    
+		    // quad face:
+		    int facebase = first_face_dof[fnums[4]];
+		    for (k = 0; k < 4; k++)
+		      dnums[16+k] = facebase + k;
+		    
+		    break;
 		  }
-	      
-		// trig faces:
-		for (j = 0; j < 2; j++)
+		case 3:
 		  {
-		    int facedir = forient[j];
-		  
-		    static const int reorder[8][3] =
-		      { { 1, 2, 3 }, { 2, 1, 3 }, { 1, 3, 2 }, { 2, 3, 1 },
-			{ 2, 1, 3 }, { 1, 2, 3 }, { 3, 1, 2 }, { 3, 2, 1 } };
-		  
-		    int facebase = first_face_dof[fnums[j]];
-		  
-		    dnums[ii+reorder[facedir][0]-1] = facebase;
-		    dnums[ii+reorder[facedir][1]-1] = facebase + 1;
-		    if (gradientface[fnums[j]])
-		      dnums[ii+reorder[facedir][2]-1] = facebase + 2;
-		    ii += 3;
-		  }
-
-		// quad faces:
-		for (j = 0; j < 3; j++)
-		  {
-		    int facebase = first_face_dof[fnums[j+2]];
+		    int j, k;
+		    for (j = 0; j < 8; j++)
+		      {
+			int edgenr = enums[j];
+			dnums[j] = edgenr;
+			if (gradientedge[edgenr])
+			  {
+			    dnums[j+8] = edgenr + ned;
+			    dnums[j+16] = edgenr + 2*ned;
+			  }
+		      }
+		    int ii = 24;
+		    
+		    for (j = 0; j < 4; j++)
+		      {
+			int facedir = forient[j];
+			
+			static const int reorder[8][3] =
+			  { { 1, 2, 3 }, { 2, 1, 3 }, { 1, 3, 2 }, { 2, 3, 1 },
+			    { 2, 1, 3 }, { 1, 2, 3 }, { 3, 1, 2 }, { 3, 2, 1 } };
+			
+			int facebase = first_face_dof[fnums[j]];
+			
+			dnums[ii + reorder[facedir][0]-1] = facebase;
+			dnums[ii + reorder[facedir][1]-1] = facebase + 1;
+			if (gradientface[fnums[j]])
+			  dnums[ii + reorder[facedir][2]-1] = facebase + 2;
+			ii += 3;
+		      }	  
+		    
+		    // quad face:
+		    int facebase = first_face_dof[fnums[4]];
 		    for (k = 0; k < n_quad_face_dofs; k++)
 		      dnums[ii++] = facebase + k;
-		    if (!gradientface[fnums[j+2]]) dnums[ii-1] = -1;
-		  }		    
-
-		// vol dofs:
-		int elbase = first_el_dof[elnr];
-		int next = first_el_dof[elnr+1];
-		for (k = elbase; k < next; k++)
-		  dnums[ii++] = k;
-
-		break;
-	      }
-	    }
-	  break;
-	}
-
-
-      case ET_PYRAMID:
-	{
-	  switch (order)
-	    {
-	    case 2:
-	      {
-		int j, k; 
-		// all edges
-		for (j = 0; j < 8; j++)
-		  dnums[j] = enums[j];
-		for (j = 0; j < 8; j++)
-		  if (gradientedge[enums[j]])
-		    dnums[8+j] = enums[j] + ned;
-
-		// quad face:
-		int facebase = first_face_dof[fnums[4]];
-		for (k = 0; k < 4; k++)
-		  dnums[16+k] = facebase + k;
-
-		break;
-	      }
-	    case 3:
-	      {
-		int j, k;
-		for (j = 0; j < 8; j++)
-		  {
-		    int edgenr = enums[j];
-		    dnums[j] = edgenr;
-		    if (gradientedge[edgenr])
-		      {
-			dnums[j+8] = edgenr + ned;
-			dnums[j+16] = edgenr + 2*ned;
-		      }
+		    if (!gradientface[fnums[4]]) dnums[ii-1] = -1;
+		    
+		    for (k = 0; k < n_pyramid_el_dofs; k++)
+		      dnums[ii++] = first_el_dof[ei.Nr()]+k;
+		    
+		    break;
 		  }
-		int ii = 24;
-
-		for (j = 0; j < 4; j++)
-		  {
-		    int facedir = forient[j];
-		  
-		    static const int reorder[8][3] =
-		      { { 1, 2, 3 }, { 2, 1, 3 }, { 1, 3, 2 }, { 2, 3, 1 },
-			{ 2, 1, 3 }, { 1, 2, 3 }, { 3, 1, 2 }, { 3, 2, 1 } };
-		  
-		    int facebase = first_face_dof[fnums[j]];
-
-		    dnums[ii + reorder[facedir][0]-1] = facebase;
-		    dnums[ii + reorder[facedir][1]-1] = facebase + 1;
-		    if (gradientface[fnums[j]])
-		      dnums[ii + reorder[facedir][2]-1] = facebase + 2;
-		    ii += 3;
-		  }	  
-
-		// quad face:
-		int facebase = first_face_dof[fnums[4]];
-		for (k = 0; k < n_quad_face_dofs; k++)
-		  dnums[ii++] = facebase + k;
-		if (!gradientface[fnums[4]]) dnums[ii-1] = -1;
-	      
-		for (k = 0; k < n_pyramid_el_dofs; k++)
-		  dnums[ii++] = first_el_dof[elnr]+k;
-
-		break;
-	      }
+		}
+	      break;
 	    }
-	  break;
-	}
-      default:
-	{
-	  cerr << "NedelecFE2, GetDofNrs, unkown element" << endl;
-	}
+	  default:
+	    {
+	      cerr << "NedelecFE2, GetDofNrs, unkown element" << endl;
+	    }
+	  }
       }
+    if(ei.VB()==BND)
+      {
 
-    //  (*testout) << "el = " << elnr << ", dnums = " << dnums << endl;
-  }
-
-
-
-  void NedelecFESpace2 :: GetSDofNrs (int selnr, Array<int> & dnums) const
-  {
     int fnum, forient;
     int ena[4];
     Array<int> enums(4, ena);
 
-    ma->GetSElFace (selnr, fnum, forient);
-    ma->GetSElEdges (selnr, enums);
+    ma->GetSElFace (ei.Nr(), fnum, forient);
+    ma->GetSElEdges (ei.Nr(), enums);
 
     LocalHeapMem<1000> lh("NedelecFESpace2, GetSDofNrs");
-    int nd = GetSFE (selnr, lh).GetNDof();
+    int nd = GetSFE (ei.Nr(), lh).GetNDof();
     dnums.SetSize(nd);
     dnums = -1;
 
-    if (!DefinedOnBoundary (ma->GetSElIndex (selnr)))
+    if (!DefinedOnBoundary (ma->GetSElIndex (ei.Nr())))
       return;
 
-    switch (ma->GetSElType(selnr))
+    switch (ma->GetSElType(ei.Nr()))
       {
       case ET_TRIG:
 	{
@@ -1542,8 +1516,12 @@ namespace ngcomp
 	}
       }
 
-    //  (*testout) << "sel = " << selnr << ", dnums = " << dnums << endl;
+      }
+    if(ei.VB()==BBND)
+      throw Exception("Nedelec FESpace2 not implemented for BBND elements");
+    //  (*testout) << "el = " << elnr << ", dnums = " << dnums << endl;
   }
+
 
 
 

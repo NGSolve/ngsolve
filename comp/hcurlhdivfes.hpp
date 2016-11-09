@@ -58,12 +58,7 @@ public:
   virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
 
   ///
-  virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
-  ///
-  virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
-  ///
-  virtual void GetCD2DofNrs (int cd2elnr, Array<int> & dnums) const;
-
+  virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const;
   ///
   int EdgePoint1 (int ednr) const { return edgepoints[ednr][0]; }
   ///
@@ -217,10 +212,8 @@ public:
   virtual int GetNDofLevel (int level) const;
 
   ///
-  virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
+  virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const;
 
-  ///
-  virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
 
   virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
 

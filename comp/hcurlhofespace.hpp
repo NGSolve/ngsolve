@@ -107,12 +107,8 @@ namespace ngcomp
     template <ELEMENT_TYPE ET>
       const FiniteElement & T_GetCD2FE(int cd2elnr, LocalHeap & lh) const;
     
-    virtual void GetDofNrs (int elnr, Array<int> & dnums) const override;
+    virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const override;
     ///
-    virtual void GetSDofNrs (int selnr, Array<int> & dnums) const override;
-    ///
-    virtual void GetCD2DofNrs(int cd2elnr, Array<int> & dnums) const override;
-
 
     ///
     void SetGradientDomains (const BitArray & adoms);
