@@ -2220,7 +2220,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                           },
            py::arg("cf"), py::arg("mesh"), py::arg("VOL_or_BND")=VOL, 
            py::arg("order")=5,
-	py::arg("definedon") = py::object(),
+	py::arg("definedon") = DummyArgument(),
            py::arg("region_wise")=false,
            py::arg("element_wise")=false)
     ;
