@@ -1123,7 +1123,6 @@ namespace ngcomp
   
   bool GridFunctionCoefficientFunction::IsComplex() const
   {
-    cout << "check for complex" << endl;
     return gf->GetFESpace()->IsComplex(); 
   }
 
