@@ -352,7 +352,7 @@ namespace ngfem
     if (!testfunction && ud->fel)
       {
         if (ud->HasMemory (this))
-          result = ud->GetAMemory (this);
+          result = ABareSliceMatrix<> (ud->GetAMemory (this));
         else
           {
             static bool first = true;
@@ -383,7 +383,7 @@ namespace ngfem
     if (!testfunction && ud->fel)
       {
         if (ud->HasMemory (this))
-          result = ud->GetAMemory (this);
+          result = ABareSliceMatrix<> (ud->GetAMemory (this));
         else
           {
             static bool first = true;

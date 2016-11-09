@@ -199,7 +199,7 @@ class ProxyUserData
 {
   FlatArray<const ProxyFunction*> remember_first;
   FlatArray<FlatMatrix<double>> remember_second;
-  FlatArray<AFlatMatrix<double>> remember_asecond;
+  FlatArray<FlatMatrix<SIMD<double>>> remember_asecond;
 public:
   class ProxyFunction * testfunction = nullptr;
   int test_comp;
@@ -225,7 +225,7 @@ public:
           {
             remember_first[i] = proxy;
             new (&remember_second[i]) FlatMatrix<> (h, w, lh);
-            new (&remember_asecond[i]) AFlatMatrix<double> (w, h, lh);
+            new (&remember_asecond[i]) FlatMatrix<SIMD<double>> ( (w+SIMD<double>::Size()-1)/SIMD<double>::Size(), h, lh);
             return;
           }
       }
@@ -239,7 +239,7 @@ public:
   {
     return remember_second[remember_first.Pos(proxy)];
   }
-  AFlatMatrix<double> GetAMemory (const ProxyFunction * proxy) const
+  FlatMatrix<SIMD<double>> GetAMemory (const ProxyFunction * proxy) const
   {
     return remember_asecond[remember_first.Pos(proxy)];
   }

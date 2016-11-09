@@ -107,23 +107,23 @@ namespace ngfem
 	}
     }
     */
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, ABareSliceMatrix<double> values) const
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const
     {
       cout << "HDivFE::Evaluate (simd) not overloaded" << endl;
     }
     
-    virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values,
+    virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
                            BareSliceVector<> coefs) const
     {
       cout << "HDivFE::AddTrans (simd) not overloaded" << endl;
     }
       
-    virtual void EvaluateDiv (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, ABareVector<double> values) const
+    virtual void EvaluateDiv (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareVector<SIMD<double>> values) const
     {
       cout << "HDivFE::EvaluateDiv (simd) not overloaded" << endl;
     }
     
-    virtual void AddDivTrans (const SIMD_BaseMappedIntegrationRule & ir, ABareVector<double> values,
+    virtual void AddDivTrans (const SIMD_BaseMappedIntegrationRule & ir, BareVector<SIMD<double>> values,
                               BareSliceVector<> coefs) const
     {
       cout << "HDivFE::AddDivTrans (simd) not overloaded" << endl;
