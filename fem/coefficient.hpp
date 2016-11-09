@@ -51,8 +51,8 @@ namespace ngfem
     ///
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const;
     // virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const;    
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const;
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<Complex> values) const;
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const;
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values) const;
 
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const;
     // virtual void EvaluateSoA (const BaseMappedIntegrationRule & ir, AFlatMatrix<Complex> values) const;
@@ -296,20 +296,20 @@ namespace ngfem
   {
   public:
     using CoefficientFunction::CoefficientFunction;
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const
     { static_cast<const TCF*>(this) -> template T_Evaluate<double> (ir, values); }
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<Complex> values) const
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values) const
     {
       if (IsComplex())
         static_cast<const TCF*>(this) -> template T_Evaluate<Complex> (ir, values);
       else
         {
-          BareSliceMatrix<SIMD<double>> overlay(2*values.Dist(), &values.Get(0,0).real());
+          BareSliceMatrix<SIMD<double>> overlay(2*values.Dist(), &values(0,0).real());
           Evaluate (ir, overlay);
           size_t nv = ir.Size();
           for (size_t i = 0; i < Dimension(); i++)
             for (size_t j = nv; j-- > 0; )
-              values.Get(i,j) = overlay(i,j);
+              values(i,j) = overlay(i,j);
         }
     }
   };
@@ -428,8 +428,8 @@ namespace ngfem
     }
     
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const;
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const
-    { values.AddVSize(Dimension(), ir.Size()) = val; }
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const
+    { values.AddSize(Dimension(), ir.Size()) = val; }
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
                            AFlatMatrix<double> values) const
     { values = val; }
@@ -480,7 +480,7 @@ namespace ngfem
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const;
 
     // virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const;
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const;
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const;
     
     virtual double EvaluateConst () const { return val[0]; }
     double operator[] (int i) const { return val[i]; }

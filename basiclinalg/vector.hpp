@@ -1364,6 +1364,53 @@ namespace ngbla
   };
 #endif
 
+
+
+  
+  template <class T = double>
+  class BareVector : public CMCPMatExpr<BareVector<T> >, DummySize
+  {
+    T * __restrict data;
+  public:
+    using DummySize::Width;
+    using DummySize::Height;
+    BareVector(T * _data) : DummySize(0,0), data(_data) { ; }
+    // BareSliceVector(SliceVector<T> vec) : DummySize( vec.Size() ), data(&vec(0)), dist(vec.Dist()) { ; }
+    // template <int D>
+    // BareSliceVector(FixSliceVector<D,T> vec) : DummySize( vec.Size() ), data(&vec(0)), dist(D)  { ; }
+    // BareSliceVector(FlatVector<T> vec) : DummySize( vec.Size() ), data(&vec(0)), dist(1)  { ; }
+    // template <int D>
+    // BareSliceVector(Vec<D,T> & vec) :  DummySize( vec.Size() ), data(&vec(0)), dist(1) { ; } 
+    // BareSliceVector(const BareSliceVector &) = default;
+    // BareSliceVector & operator= (const BareSliceVector&) = delete;
+    // size_t Dist () const { return dist; }
+    FlatVector<T> AddSize(size_t size) const { return FlatVector<T> (size, data); }
+    
+    T & operator() (size_t i) const { return data[i];  }
+    T & operator() (size_t i, size_t j) const { return data[i];  }
+    T & operator[] (size_t i) const { return data[i];  }
+    // BareSliceVector<T> operator+(size_t i) const { return BareSliceVector<T> (data+i*dist, dist); }
+    /*
+    T * Addr (size_t i) const { return data+i*dist; }
+    BareSliceVector Range (size_t first, size_t next) const
+    {
+      return BareSliceVector (data+first*dist, dist);
+    }
+    BareSliceVector Range (T_Range<size_t> range) const
+    {
+      return Range(range.First(), range.Next());
+    }    
+    BareSliceVector Slice (size_t first, size_t adist) const
+    {
+      return BareSliceVector (data+first*dist, dist*adist);
+    }
+    */
+  };
+
+
+
+
+  
   template <class T = double>
   class BareSliceVector : public CMCPMatExpr<BareSliceVector<T> >, DummySize
   {

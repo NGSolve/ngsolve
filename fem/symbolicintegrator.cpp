@@ -198,7 +198,7 @@ namespace ngfem
 
   void ProxyFunction ::
   Evaluate (const SIMD_BaseMappedIntegrationRule & mir,
-            ABareSliceMatrix<double> result) const
+            BareSliceMatrix<SIMD<double>> result) const
   {
     ProxyUserData * ud = (ProxyUserData*)mir.GetTransformation().userdata;
     if (!ud) 
@@ -207,7 +207,7 @@ namespace ngfem
     if (!testfunction && ud->fel)
       {
         if (ud->HasMemory (this))
-          result.AddVSize(Dimension(), mir.Size()) = ud->GetAMemory (this);
+          result.AddSize(Dimension(), mir.Size()) = ud->GetAMemory (this);
         else
           {
             static bool first = true;
@@ -218,16 +218,16 @@ namespace ngfem
         return;
       }
 
-    result.AddVSize(Dimension(), mir.Size()) = 0;
+    result.AddSize(Dimension(), mir.Size()) = 0;
     if (ud->testfunction == this)
-      result.Row(ud->test_comp).AddVSize(mir.Size()) = 1;
+      result.Row(ud->test_comp).AddSize(mir.Size()) = 1;
     if (ud->trialfunction == this)
-      result.Row(ud->trial_comp).AddVSize(mir.Size()) = 1;
+      result.Row(ud->trial_comp).AddSize(mir.Size()) = 1;
   }
 
   void ProxyFunction ::
   Evaluate (const SIMD_BaseMappedIntegrationRule & mir,
-            ABareSliceMatrix<Complex> result) const
+            BareSliceMatrix<SIMD<Complex>> result) const
   {
     ProxyUserData * ud = (ProxyUserData*)mir.GetTransformation().userdata;
     if (!ud) 
@@ -236,7 +236,7 @@ namespace ngfem
     if (!testfunction && ud->fel)
       {
         if (ud->HasMemory (this))
-          result.AddVSize(Dimension(), mir.Size()) = ud->GetAMemory (this);
+          result.AddSize(Dimension(), mir.Size()) = ud->GetAMemory (this);
         else
           {
             throw ExceptionNOSIMD ("ProxyFunction :: Evaluate(SIMD<Complex>) without precomputed trial values");
@@ -244,11 +244,11 @@ namespace ngfem
         return;
       }
 
-    result.AddVSize(Dimension(), mir.Size()) = 0;
+    result.AddSize(Dimension(), mir.Size()) = 0;
     if (ud->testfunction == this)
-      result.Row(ud->test_comp).AddVSize(mir.Size()) = 1;
+      result.Row(ud->test_comp).AddSize(mir.Size()) = 1;
     if (ud->trialfunction == this)
-      result.Row(ud->trial_comp).AddVSize(mir.Size()) = 1;
+      result.Row(ud->trial_comp).AddSize(mir.Size()) = 1;
   }
 
   
@@ -545,7 +545,7 @@ namespace ngfem
             elvec = 0;
             for (auto proxy : proxies)
               {
-                AFlatMatrix<SCAL> proxyvalues(proxy->Dimension(), ir.GetNIP(), lh);
+                FlatMatrix<SIMD<SCAL>> proxyvalues(proxy->Dimension(), ir.GetNIP(), lh);
                 for (int k = 0; k < proxy->Dimension(); k++)
                   {
                     ud.testfunction = proxy;
@@ -553,7 +553,7 @@ namespace ngfem
                     
                     cf -> Evaluate (mir, proxyvalues.Rows(k,k+1));
                     for (size_t i = 0; i < mir.Size(); i++)
-                      proxyvalues.Get(k,i) *= mir[i].GetWeight().Data();
+                      proxyvalues(k,i) *= mir[i].GetWeight().Data();
                   }
                 
                 proxy->Evaluator()->AddTrans(fel, mir, proxyvalues, elvec);
@@ -719,7 +719,8 @@ namespace ngfem
     cout << IM(3) << "nonzeros: " << endl << nonzeros << endl;
     cout << IM(3) << "nonzeros_proxies: " << endl << nonzeros_proxies << endl;
   }
-  
+
+  /*
   template <typename T> 
   struct HMatType {
     typedef FlatMatrix<T> tmat;
@@ -730,7 +731,7 @@ namespace ngfem
     typedef AFlatMatrix<double> tmat;
     typedef AFlatVector<double> tvec;
   };
-    
+  */
   
   template <typename SCAL, typename SCAL_SHAPES>
   void SymbolicBilinearFormIntegrator ::
@@ -903,10 +904,10 @@ namespace ngfem
                     HeapReset hr(lh);
                     size_t bs = min2(size_t(BS), mir.Size()-i);
                     
-                    typename HMatType<SCAL_SHAPES>::tmat bbmat1(elmat.Width(), bs*proxy1->Dimension(), lh);
-                    typename HMatType<SCAL>::tmat bdbmat1(elmat.Width(), bs*proxy2->Dimension(), lh);
-                    typename HMatType<SCAL_SHAPES>::tmat bbmat2 = samediffop ?
-                      bbmat1 : typename HMatType<SCAL_SHAPES>::tmat(elmat.Height(), bs*proxy2->Dimension(), lh);
+                    AFlatMatrix<SCAL_SHAPES> bbmat1(elmat.Width(), bs*proxy1->Dimension(), lh);
+                    AFlatMatrix<SCAL> bdbmat1(elmat.Width(), bs*proxy2->Dimension(), lh);
+                    AFlatMatrix<SCAL_SHAPES> bbmat2 = samediffop ?
+                      bbmat1 : AFlatMatrix<SCAL_SHAPES>(elmat.Height(), bs*proxy2->Dimension(), lh);
 
                     // tb.Start();
                     BaseMappedIntegrationRule & bmir = mir.Range(i, i+bs, lh);
@@ -919,7 +920,7 @@ namespace ngfem
                     // tdb.Start();
                     if (is_diagonal)
                       {
-                        typename HMatType<SCAL>::tvec diagd(bs*proxy1->Dimension(), lh);
+                        AFlatVector<SCAL> diagd(bs*proxy1->Dimension(), lh);
                         diagd = diagproxyvalues.Range(i*proxy1->Dimension(),
                                                       (i+bs)*proxy1->Dimension());
                         
@@ -1526,9 +1527,9 @@ namespace ngfem
                     HeapReset hr(lh);
                     int bs = min2(BS, mir.Size()-i);
                     
-                    typename HMatType<SCAL_SHAPES>::tmat bbmat1(elmat.Width(), bs*proxy1->Dimension(), lh);
-                    typename HMatType<SCAL>::tmat bdbmat1(elmat.Width(), bs*proxy2->Dimension(), lh);
-                    typename HMatType<SCAL_SHAPES>::tmat bbmat2(elmat.Height(), bs*proxy2->Dimension(), lh);
+                    AFlatMatrix<SCAL_SHAPES> bbmat1(elmat.Width(), bs*proxy1->Dimension(), lh);
+                    AFlatMatrix<SCAL> bdbmat1(elmat.Width(), bs*proxy2->Dimension(), lh);
+                    AFlatMatrix<SCAL_SHAPES> bbmat2(elmat.Height(), bs*proxy2->Dimension(), lh);
 
                     // tb.Start();
                     BaseMappedIntegrationRule & bmir = mir.Range(i, i+bs, lh);

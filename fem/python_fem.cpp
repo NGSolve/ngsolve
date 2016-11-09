@@ -329,11 +329,11 @@ struct GenericPow {
           code.body += Var(index,i).Assign(nv(i));
     }
 
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const
     {
       for (size_t i = 0; i < ir.Size(); i++)
         for (size_t j = 0; j < D; j++)
-          values.Get(j,i) = static_cast<const SIMD<DimMappedIntegrationPoint<D>>&>(ir[i]).GetNV()(j).Data();
+          values(j,i) = static_cast<const SIMD<DimMappedIntegrationPoint<D>>&>(ir[i]).GetNV()(j).Data();
     }
 
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
@@ -398,13 +398,13 @@ class CoordCoefficientFunction : public T_CoefficientFunction<CoordCoefficientFu
     }
 
     template <typename T>
-    void T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<T> values) const
+    void T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<T>> values) const
     {
       auto points = ir.GetPoints();
       size_t nv = ir.Size();
       __assume (nv > 0);
       for (size_t i = 0; i < nv; i++)
-        values.Get(i) = SIMD<double> (points.Get(i, dir));
+        values(i) = SIMD<double> (points.Get(i, dir));
     }
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
                            AFlatMatrix<double> values) const
@@ -706,14 +706,14 @@ void ExportCoefficientFunction(py::module &m)
       // return pow(ip.GetMeasure(), 1.0/(ip.Dim());
     }
 
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const
     {
       if (ir[0].IP().FacetNr() != -1)
         for(size_t i : Range(ir))
-          values.Get(i) =  fabs (ir[i].GetJacobiDet()) / ir[i].GetMeasure();
+          values(i) =  fabs (ir[i].GetJacobiDet()) / ir[i].GetMeasure();
       else
         for(size_t i : Range(ir))
-          values.Get(i) =  pow(fabs (ir[i].GetJacobiDet()), 1.0/ir.DimElement()).Data();
+          values(i) =  pow(fabs (ir[i].GetJacobiDet()), 1.0/ir.DimElement()).Data();
     }
 
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {

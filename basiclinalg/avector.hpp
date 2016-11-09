@@ -19,13 +19,13 @@ namespace ngbla
   };
 
   class AFlatVectorD;
-  class AFlatVectorC;
+  // class AFlatVectorC;
   
   class AFlatMatrixD;
-  class AFlatMatrixC;
+  // class AFlatMatrixC;
   class AVectorD;
   class AMatrixD;
-  class AMatrixC;
+  // class AMatrixC;
   class AMatrixDCol;
 
   template <> struct FooAVectorType<double>
@@ -34,12 +34,14 @@ namespace ngbla
     typedef AVectorD type;
   };
 
+  /*
   template <> struct FooAVectorType<Complex>
   {
     typedef AFlatVectorC flattype;
     // typedef AVectorC type;
   };
-
+  */
+  
   template <> struct FooAMatrixType<double,RowMajor>
   {
     typedef AFlatMatrixD flattype;
@@ -52,12 +54,13 @@ namespace ngbla
     typedef AMatrixDCol type;
   };
 
+  /*
   template <> struct FooAMatrixType<Complex,RowMajor>
   {
     typedef AFlatMatrixC flattype;
     typedef AMatrixC type;
   };
-  
+  */
 
   
   template <typename T = double> 
@@ -81,9 +84,6 @@ namespace ngbla
 
   template <typename T>
   class SIMDExpr : public Expr<T> { };
-
-
-
 
 
 
@@ -368,7 +368,7 @@ namespace ngbla
 
 
 
-
+#ifdef NONE
 
   class AFlatVectorC : public SIMDExpr<AFlatVectorC>
   {
@@ -472,7 +472,8 @@ namespace ngbla
     AVectorC & operator= (AVectorC && av2) { Swap(size, av2.size); Swap (data, av2.data); return *this; }
   };
 
-
+#endif
+  
 
 
 
@@ -614,6 +615,7 @@ namespace ngbla
     { return Cols(r.begin(), r.end()); }
     
     INLINE ABareSliceMatrix<> VCols (size_t begin, size_t end) const;
+    operator BareSliceMatrix<SIMD<double>> () const { return BareSliceMatrix<SIMD<double>> (VWidth(), data); }
   };
 
   class AMatrixD : public AFlatMatrixD
@@ -694,7 +696,7 @@ namespace ngbla
 
 
 
-
+#ifdef NONE
  
   class AFlatMatrixC : public SIMDExpr<AFlatMatrixC>
   {
@@ -833,6 +835,7 @@ namespace ngbla
     
     INLINE ABareSliceMatrix<> VCols (size_t begin, size_t end) const;
     */
+    operator BareSliceMatrix<SIMD<Complex>> () const { return BareSliceMatrix<SIMD<Complex>> (VWidth(), data); }    
   };
 
   class AMatrixC : public AFlatMatrixC
@@ -847,7 +850,8 @@ namespace ngbla
     using AFlatMatrixC::operator=;
   };
 
-
+#endif
+  
 
 
 
@@ -896,6 +900,8 @@ namespace ngbla
     AFlatVector<> AddVSize(size_t s) const { return AFlatVector<> (s*SIMD<double>::Size(), data); }
   };
 
+
+#ifdef NONE
   template <>
   class ABareVector<Complex>
   {
@@ -908,7 +914,7 @@ namespace ngbla
     AFlatVector<Complex> AddSize(size_t s) const { return AFlatVector<Complex> (s, data); }
     AFlatVector<Complex> AddVSize(size_t s) const { return AFlatVector<Complex> (s*SIMD<Complex>::Size(), data); }
   };
-
+#endif
 
   
   template <>
@@ -936,7 +942,8 @@ namespace ngbla
     ABareVector<double> Row(size_t i) const { return ABareVector<double> (data+i*dist); }
     ABareMatrix<double> Rows(size_t first, size_t /* next */) const { return ABareMatrix<double> (data+first*dist, dist); }
     ABareMatrix<double> Rows(IntRange r) const { return Rows(r.First(), r.Next()); } 
-    ABareMatrix<double> RowSlice(size_t first, size_t adist) const { return ABareMatrix<double> (data+first*dist, dist*adist); } 
+    ABareMatrix<double> RowSlice(size_t first, size_t adist) const { return ABareMatrix<double> (data+first*dist, dist*adist); }
+    operator BareSliceMatrix<SIMD<double>> () const { return BareSliceMatrix<SIMD<double>> (dist, data); }
   };
 
 
@@ -1023,6 +1030,7 @@ namespace ngbla
   };
 
 
+#ifdef NONE
   template <>
   class ASliceMatrix<Complex> : public SIMDExpr<ASliceMatrix<Complex>>
   {
@@ -1114,7 +1122,7 @@ namespace ngbla
     ASliceMatrix<Complex> Rows(IntRange r) const { return Rows(r.First(), r.Next()); } 
     // ASliceMatrix<double> RowSlice(size_t first, size_t adist) const { return ABareSliceMatrix<double> (data+first*dist, dist*adist); } 
   };
-
+#endif
 
 
 
@@ -1122,7 +1130,7 @@ namespace ngbla
   
   
   template <>
-  class ABareSliceMatrix<double> : public DummySize
+  class ABareSliceMatrix<double> : public DummySize, public SIMDExpr<ABareSliceMatrix<double>>
   {
     SIMD<double> * __restrict data;
     size_t dist;   // dist in simds
@@ -1165,7 +1173,7 @@ namespace ngbla
   };
 
 
-
+  /*
   template <>
   class ABareSliceMatrix<Complex> : public DummySize
   {
@@ -1196,13 +1204,13 @@ namespace ngbla
     SIMD<Complex> & Get (size_t i, size_t j) const { return data[i*dist+j]; }
     SIMD<Complex> & Get (size_t i) const { return data[i]; }
     ABareVector<Complex> Row (size_t i) const { return ABareVector<Complex> (data+i*dist); }
-    ABareSliceMatrix<Complex> Rows (size_t first, size_t /* next */) const { return ABareSliceMatrix<Complex> (data+first*dist, dist); }
+    ABareSliceMatrix<Complex> Rows (size_t first, size_t ) const { return ABareSliceMatrix<Complex> (data+first*dist, dist); }
     ABareSliceMatrix<Complex> Rows (IntRange r) const { return Rows(r.First(), r.Next()); } 
     ABareSliceMatrix<Complex> RowSlice (size_t first, size_t adist) const { return ABareSliceMatrix<Complex> (data+first*dist, dist*adist); }
     operator BareSliceMatrix<SIMD<Complex>> () const { return BareSliceMatrix<SIMD<Complex>> (dist, data); }
 
   };
-
+*/
 
 
 
