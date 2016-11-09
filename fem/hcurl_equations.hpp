@@ -276,14 +276,14 @@ namespace ngfem
 
     using DiffOp<DiffOpCurlEdge<3> >::ApplySIMDIR;        
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
-                             BareSliceVector<double> x, ABareSliceMatrix<double> y)
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
       static_cast<const FEL&> (fel).EvaluateCurl (mir, x, y);
     }    
 
     using DiffOp<DiffOpCurlEdge<3> >::AddTransSIMDIR;        
     static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
-                                ABareSliceMatrix<double> y, BareSliceVector<double> x)
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
        static_cast<const FEL&> (fel).AddCurlTrans (mir, y, x);
     }    
