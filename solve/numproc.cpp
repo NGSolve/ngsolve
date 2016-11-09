@@ -1246,7 +1246,7 @@ namespace ngsolve
 	    typestring = ".surf";
 
 	    Integrator_ptr = NULL;
-	    BoundaryIntegrator_ptr = fes.GetBoundaryIntegrator();
+	    BoundaryIntegrator_ptr = fes.GetIntegrator(BND);
 	    ndomains = shared_ptr<PDE>(pde)->GetMeshAccess()->GetNBoundaries();
 	  }
 

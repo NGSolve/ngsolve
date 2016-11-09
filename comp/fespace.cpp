@@ -229,17 +229,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
     dummy_segm = new DummyFE<ET_SEGM>();
     dummy_point = new DummyFE<ET_POINT>();
 
-    evaluator = NULL; 
-    boundary_evaluator = NULL;
-    flux_evaluator = NULL;
-    boundary_flux_evaluator = NULL;
-    bboundary_evaluator = NULL;
-    bboundary_flux_evaluator = NULL;
-    
-
-    integrator = NULL;
-    boundary_integrator = NULL;
-    bboundary_integrator = NULL;
+    for(auto vb : {VOL,BND,BBND})
+      {
+	evaluator[vb] = nullptr;
+	flux_evaluator[vb] = nullptr;
+	integrator[vb] = nullptr;
+      }
     low_order_space = NULL;
     prol = NULL;
 
@@ -416,9 +411,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if (low_order_space)
       {
-        element_coloring = Table<int> (low_order_space->element_coloring);
-        selement_coloring = Table<int> (low_order_space->selement_coloring);
-	bbelement_coloring = Table<int> (low_order_space->bbelement_coloring);
+	for(auto vb : {VOL, BND, BBND})
+	  element_coloring[vb] = Table<int>(low_order_space->element_coloring[vb]);
       }
     else
       // for (auto vb = VOL; vb <= BND; vb++)
@@ -529,7 +523,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
         for (ElementId el : Elements(vb))
           cntcol[col[el.Nr()]]++;
         
-        Table<int> & coloring = (vb == VOL) ? element_coloring : ((vb==BND) ? selement_coloring : bbelement_coloring);
+        Table<int> & coloring = element_coloring[vb];
         coloring = Table<int> (cntcol);
 
 	cntcol = 0;
@@ -811,27 +805,21 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
     cout << "check dofs" << endl;
-    for (ElementId id : ma->Elements<VOL>())
-      {
-        GetDofNrs (id, dnums);
-        for (auto d : dnums)
-          if (d < 0 || d >= ndof)
-            cout << "dof out of range: " << d << endl;
-      }
-    for (ElementId id : ma->Elements<BND>())
-      {
-        GetDofNrs (id, dnums);
-        for (auto d : dnums)
-          if (d < 0 || d >= ndof)
-            cout << "dof out of range: " << d << endl;
-      }
+    for(auto vb : {VOL,BND,BBND})
+      for (ElementId id : ma->Elements(vb))
+	{
+	  GetDofNrs (id, dnums);
+	  for (auto d : dnums)
+	    if (d < 0 || d >= ndof)
+	      cout << "dof out of range: " << d << endl;
+	}
   }
 
 
   void FESpace :: GetDofNrs (int elnr, Array<int> & dnums, COUPLING_TYPE ctype) const
   {
     ArrayMem<int,100> alldnums; 
-    GetDofNrs(elnr, alldnums);
+    GetDofNrs(ElementId(VOL,elnr), alldnums);
 
     dnums.SetSize(0);
     if (ctofdof.Size() == 0)
@@ -893,7 +881,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
 
-
+ 
 
   const FiniteElement & FESpace :: GetSFE (int selnr, LocalHeap & lh) const
   {
@@ -1524,19 +1512,19 @@ lot of new non-zero entries in the matrix!\n" << endl;
     auto one = make_shared<ConstantCoefficientFunction> (1);
     if (ma->GetDimension() == 2)
       {
-	integrator = make_shared<MassIntegrator<2>> (one);
-        boundary_integrator = make_shared<RobinIntegrator<2>> (one);
+	integrator[VOL] = make_shared<MassIntegrator<2>> (one);
+        integrator[BND] = make_shared<RobinIntegrator<2>> (one);
       }
     else
       {
-	integrator = make_shared<MassIntegrator<3>> (one);
-	boundary_integrator = make_shared<RobinIntegrator<3>> (one);
+	integrator[VOL] = make_shared<MassIntegrator<3>> (one);
+	integrator[BND] = make_shared<RobinIntegrator<3>> (one);
       }
     
     if (dimension > 1)
       {
-	integrator = make_shared<BlockBilinearFormIntegrator> (integrator, dimension);
-	boundary_integrator = make_shared<BlockBilinearFormIntegrator> (boundary_integrator, dimension);  
+	integrator[VOL] = make_shared<BlockBilinearFormIntegrator> (integrator[VOL], dimension);
+	integrator[BND] = make_shared<BlockBilinearFormIntegrator> (integrator[BND], dimension);  
       }
 
 
@@ -1544,36 +1532,34 @@ lot of new non-zero entries in the matrix!\n" << endl;
       {
       case 1:
         {
-          evaluator = make_shared<T_DifferentialOperator<DiffOpId<1>>>();
-          flux_evaluator = make_shared<T_DifferentialOperator<DiffOpGradient<1>>>();
-          boundary_evaluator = make_shared<T_DifferentialOperator<DiffOpIdBoundary<1>>>();
+          evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<1>>>();
+	  evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<1>>>();
+	  flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<1>>>();
           break;
         }
       case 2:
         {
-          evaluator = make_shared<T_DifferentialOperator<DiffOpId<2>>>();
-          flux_evaluator = make_shared<T_DifferentialOperator<DiffOpGradient<2>>>();
-          boundary_evaluator = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
-          boundary_flux_evaluator = make_shared<T_DifferentialOperator<DiffOpGradientBoundary<2>>>();
+          evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<2>>>();
+	  evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
+          flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<2>>>();
+	  flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpGradientBoundary<2>>>();
           break;
         }
       case 3:
         {
-          evaluator = make_shared<T_DifferentialOperator<DiffOpId<3>>>();
-          flux_evaluator = make_shared<T_DifferentialOperator<DiffOpGradient<3>>>();
-          boundary_evaluator = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
-          boundary_flux_evaluator = make_shared<T_DifferentialOperator<DiffOpGradientBoundary<3>>>();
+          evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<3>>>();
+	  evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
+          flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<3>>>();
+	  flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpGradientBoundary<3>>>();
           break;
         }
       }
     if (dimension > 1)
       {
-	evaluator = make_shared<BlockDifferentialOperator> (evaluator, dimension);
-	flux_evaluator = make_shared<BlockDifferentialOperator> (flux_evaluator, dimension);
-	boundary_evaluator = 
-	  make_shared<BlockDifferentialOperator> (boundary_evaluator, dimension);
-	boundary_flux_evaluator = 
-	  make_shared<BlockDifferentialOperator> (boundary_flux_evaluator, dimension);
+	evaluator[VOL] = make_shared<BlockDifferentialOperator> (evaluator[VOL], dimension);
+	evaluator[BND] = make_shared<BlockDifferentialOperator> (evaluator[BND], dimension);
+	flux_evaluator[VOL] = make_shared<BlockDifferentialOperator> (flux_evaluator[VOL], dimension);
+	flux_evaluator[BND] = make_shared<BlockDifferentialOperator> (flux_evaluator[BND], dimension);
       }
 
     
@@ -1658,56 +1644,14 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
  
-  void NodalFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
+  void NodalFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
-    if (order == 1)
-      ma->GetElVertices (elnr, dnums);
-    else
-      ma->GetElPNums (elnr, dnums);
+    dnums = ma->GetElement(ei).Vertices();
 
-    if (!DefinedOn (ElementId (VOL, elnr))) dnums = -1;
+    if (!DefinedOn (ei)) dnums = -1;
   }
 
 
-  void NodalFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
-  {
-    ma->GetSElPNums (selnr, dnums);
-
-    if (order == 1)
-      { // Ng-mesh may be second order, but FE space is 1st order
-	int np = dnums.Size();
-	switch (ma->GetSElType(selnr))
-	  {
-	  case ET_SEGM: np = 2; break;
-	  case ET_TRIG: np = 3; break;
-	  case ET_QUAD: np = 4; break;
-          default:
-            ;
-	  }
-	if (dnums.Size() > np) dnums.SetSize (np);
-      }
-
-    if (!DefinedOn(BND,ma->GetSElIndex (selnr)))
-      dnums = -1;
-  }
-  
-  void NodalFESpace :: GetCD2DofNrs(int elnr, Array<int> & dnums) const
-  {
-    Ngs_Element ngel = ma->GetCD2Element(elnr);
-    dnums = ngel.Vertices();
-    if(order == 1)
-      {
-	int np = dnums.Size();
-	if(ma->GetCD2Element(elnr).GetType() == ET_SEGM)
-	  np = 2;
-	else
-	  np = 1;
-	if (dnums.Size()>np) dnums.SetSize(np);
-      }
-
-    if(!DefinedOn(BBND,ma->GetCD2ElIndex(elnr)))
-      dnums = -1;
-  }
 
   void NodalFESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
   {
@@ -1790,22 +1734,22 @@ lot of new non-zero entries in the matrix!\n" << endl;
     auto one = make_shared<ConstantCoefficientFunction> (1);
     if (ma->GetDimension() == 2)
       {
-	integrator = make_shared<MassIntegrator<2>> (one);
-        boundary_integrator = make_shared<RobinIntegrator<2>> (one);
-        evaluator = make_shared<T_DifferentialOperator<DiffOpId<2>>>();
-        flux_evaluator = make_shared<T_DifferentialOperator<DiffOpGradient<2>>>();
-        boundary_evaluator = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
+	integrator[VOL] = make_shared<MassIntegrator<2>> (one);
+        integrator[BND] = make_shared<RobinIntegrator<2>> (one);
+        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<2>>>();
+        flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<2>>>();
+        evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
       }
     else
       {
-	integrator.reset (new MassIntegrator<3> (new ConstantCoefficientFunction(1)));
-	boundary_integrator.reset (new RobinIntegrator<3> (new ConstantCoefficientFunction(1)));
+	integrator[VOL].reset (new MassIntegrator<3> (new ConstantCoefficientFunction(1)));
+	integrator[BND].reset (new RobinIntegrator<3> (new ConstantCoefficientFunction(1)));
       }
 
     if (dimension > 1)
       {
-	integrator = make_shared<BlockBilinearFormIntegrator> (integrator, dimension);
-	boundary_integrator = make_shared<BlockBilinearFormIntegrator> (boundary_integrator, dimension);
+	integrator[VOL] = make_shared<BlockBilinearFormIntegrator> (integrator[VOL], dimension);
+	integrator[BND] = make_shared<BlockBilinearFormIntegrator> (integrator[BND], dimension);
       }
   }
 
@@ -1870,23 +1814,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
     */
   }
 
- 
-  void NonconformingFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
+  void NonconformingFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
-    ma->GetElEdges (elnr, dnums);
-    if (!DefinedOn (VOL,ma->GetElIndex (elnr)))
+    ma->GetElEdges(ei,dnums);
+    if (!DefinedOn(ei))
       dnums = -1;
   }
-
-
-  void NonconformingFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
-  {
-    ma->GetSElEdges (selnr, dnums);
-    if (!DefinedOn (BND,ma->GetSElIndex (selnr)))
-      dnums = -1;
-  }
-  
-
 
 
 
@@ -1937,19 +1870,19 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if (ma->GetDimension() == 2)
       {
-        integrator.reset (new MassIntegrator<2> (&one));
-        boundary_integrator = 0;
-        evaluator = make_shared<T_DifferentialOperator<DiffOpId<2>>>();
+        integrator[VOL].reset (new MassIntegrator<2> (&one));
+        integrator[BND] = 0;
+        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<2>>>();
       }
     else
       {
-        integrator.reset (new MassIntegrator<3> (&one));
-        boundary_integrator = 0;
-        evaluator = make_shared<T_DifferentialOperator<DiffOpId<3>>>();
+        integrator[VOL].reset (new MassIntegrator<3> (&one));
+	integrator[BND] = 0;
+        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<3>>>();
       }
     
     if (dimension > 1)
-      integrator = make_shared<BlockBilinearFormIntegrator> (integrator, dimension);
+      integrator[VOL] = make_shared<BlockBilinearFormIntegrator> (integrator[VOL], dimension);
   }
   
   ElementFESpace :: ~ElementFESpace ()
@@ -1969,16 +1902,17 @@ lot of new non-zero entries in the matrix!\n" << endl;
     archive & ndlevel & n_el_dofs;
   }
 
-  void ElementFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
+  void ElementFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
+    if(ei.VB()!=VOL) { dnums.SetSize(0); return; }
     if (order == 0)
       {
 	dnums.SetSize(1);
-	dnums[0] = elnr;
+	dnums[0] = ei.Nr();
       }
     else if (order == 1)
       {
-	switch (ma->GetElType(elnr))
+	switch (ma->GetElType(ei))
 	  {
 	  case ET_TRIG:
 	    dnums.SetSize(3);
@@ -2001,12 +1935,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  }
 
 	for (int i = 0; i < dnums.Size(); i++)
-	  dnums[i] = n_el_dofs*elnr+i;
+	  dnums[i] = n_el_dofs*ei.Nr()+i;
       }
-  }
-  void ElementFESpace :: GetSDofNrs (int elnr, Array<int> & dnums) const
-  {
-    dnums.SetSize(0);
   }
   int ElementFESpace :: GetNDofLevel (int level) const
   {
@@ -2064,10 +1994,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
         n_el_dofs = 9;
     }
 
-    boundary_integrator.reset (new RobinIntegrator<3> (new ConstantCoefficientFunction(1)));
+    integrator[BND].reset (new RobinIntegrator<3> (new ConstantCoefficientFunction(1)));
 
     if (dimension > 1)
-      boundary_integrator = make_shared<BlockBilinearFormIntegrator> (boundary_integrator, dimension);
+      integrator[BND] = make_shared<BlockBilinearFormIntegrator> (integrator[BND], dimension);
   }
 
   
@@ -2090,27 +2020,17 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
 
   
-  void SurfaceElementFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
+  void SurfaceElementFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
-    dnums.SetSize (0);
-  }
-
-  int SurfaceElementFESpace :: GetNDofLevel (int level) const
-  {
-    return ndlevel[level];
-  }
-
-
-  void SurfaceElementFESpace :: GetSDofNrs (int elnr, Array<int> & dnums) const
-  {
+    if(ei.VB()!=BND) {dnums.SetSize (0); return; }
     if (order == 0)
       {
 	dnums.SetSize(1);
-	dnums[0] = elnr;
+	dnums[0] = ei.Nr();
       }
     else if (order == 1)
       {
-	switch (ma->GetSElType(elnr))
+	switch (ma->GetSElType(ei.Nr()))
 	  {
 	  case ET_SEGM:
 	    dnums.SetSize(2);
@@ -2126,11 +2046,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    break;
 	  }
 	for (int i = 0; i < dnums.Size(); i++)
-	  dnums[i] = n_el_dofs*elnr+i;
+	  dnums[i] = n_el_dofs*ei.Nr()+i;
       }
     else if (order == 2)
       {
-	switch (ma->GetSElType(elnr))
+	switch (ma->GetSElType(ei.Nr()))
 	  {
 	  case ET_SEGM:
 	    dnums.SetSize(3);
@@ -2146,18 +2066,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    break;
 	  }
 	for (int i = 0; i < dnums.Size(); i++)
-	  dnums[i] = n_el_dofs*elnr+i;
+	  dnums[i] = n_el_dofs*ei.Nr()+i;
       }
+    
   }
 
-
-
-
-
- 
-
-
-
+  int SurfaceElementFESpace :: GetNDofLevel (int level) const
+  {
+    return ndlevel[level];
+  }
 
 
 
@@ -2371,13 +2288,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
 
   
-  void CompoundFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
+  void CompoundFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
     ArrayMem<int,500> hdnums;
     dnums.SetSize0();
     for (int i = 0; i < spaces.Size(); i++)
       {
-	spaces[i]->GetDofNrs (elnr, hdnums);
+	spaces[i]->GetDofNrs (ei, hdnums);
         int base = dnums.Size();
         int base_cum = cummulative_nd[i];
         dnums.SetSize(base+hdnums.Size());
@@ -2494,37 +2411,14 @@ lot of new non-zero entries in the matrix!\n" << endl;
     return *new (lh) CompoundFiniteElement (fea);
   }
 
-
-  void CompoundFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
+  const FiniteElement & CompoundFESpace :: GetCD2FE (int elnr, LocalHeap & lh) const
   {
-    ArrayMem<int,500> hdnums;
-    dnums.SetSize(0);
-    for (int i = 0; i < spaces.Size(); i++)
-      {
-	spaces[i]->GetSDofNrs (selnr, hdnums);
-	for (int j = 0; j < hdnums.Size(); j++)
-	  if (hdnums[j] != -1)
-	    dnums.Append (hdnums[j]+cummulative_nd[i]);
-	  else
-	    dnums.Append (-1);
-      }
+    FlatArray<const FiniteElement*> fea(spaces.Size(), lh);
+    for (int i = 0; i < fea.Size(); i++)
+      fea[i] = &spaces[i]->GetCD2FE(elnr, lh);
+    return *new (lh) CompoundFiniteElement (fea);
   }
 
-  
-  void CompoundFESpace :: GetCD2DofNrs (int cd2elnr, Array<int> & dnums) const
-  {
-    ArrayMem<int,500> hdnums;
-    dnums.SetSize(0);
-    for (int i = 0; i < spaces.Size(); i++)
-      {
-	spaces[i]->GetCD2DofNrs (cd2elnr, hdnums);
-	for (int j = 0; j < hdnums.Size(); j++)
-	  if (hdnums[j] != -1)
-	    dnums.Append (hdnums[j]+cummulative_nd[i]);
-	  else
-	    dnums.Append (-1);
-      }
-  }
 
 
 

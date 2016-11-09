@@ -30,15 +30,14 @@ namespace ngcomp
     ma->PushStatus ("Post-processing");
     
 
-    bool bound = bli->BoundaryForm();
+    auto vb = bli->VB();
 
-    int ne      = bound ? ma->GetNSE() : ma->GetNE();
+    int ne      = ma->GetNE(vb);
     int dim     = fes.GetDimension();
     int dimflux = fesflux.GetDimension();
     int dimfluxvec = bli->DimFlux(); 
 
-    shared_ptr<BilinearFormIntegrator> fluxbli =
-      bound ? (fesflux.GetBoundaryIntegrator()) : (fesflux.GetIntegrator());
+    shared_ptr<BilinearFormIntegrator> fluxbli = fesflux.GetIntegrator(vb);
 
     Array<int> cnti(fesflux.GetNDof());
     cnti = 0;
@@ -56,7 +55,7 @@ namespace ngcomp
     */
     
     IterateElements  
-      (fesflux, VorB(bound), clh, 
+      (fesflux, vb, clh, 
        [&] (Ngs_Element ei, LocalHeap & lh)
        {
          HeapReset hr(lh);
@@ -347,11 +346,10 @@ namespace ngcomp
 
     ma->PushStatus ("setvalues");
 
-    if (reg) bound = reg->IsBoundary();
-    VorB vorb = VorB(bound);
+    auto vb = reg->VB();
     int dim   = fes.GetDimension();
 
-    shared_ptr<BilinearFormIntegrator> bli = fes.GetIntegrator(bound);
+    shared_ptr<BilinearFormIntegrator> bli = fes.GetIntegrator(vb);
     if (!bli)
       throw Exception ("no integrator available");
 
@@ -364,10 +362,10 @@ namespace ngcomp
 
     u.GetVector() = 0.0;
 
-    ProgressOutput progress (ma, "setvalues element", ma->GetNE(vorb));
+    ProgressOutput progress (ma, "setvalues element", ma->GetNE(vb));
 
     IterateElements 
-      (fes, vorb, clh, 
+      (fes, vb, clh, 
        [&] (FESpace::Element ei, LocalHeap & lh)
        {
           progress.Update ();
@@ -525,7 +523,7 @@ namespace ngcomp
     int dimflux = fesflux.GetDimension();
     int dimfluxvec = bli->DimFlux(); // fesflux.GetDimension();
 
-    shared_ptr<BilinearFormIntegrator> fluxbli = vb==BND ? fesflux.GetBoundaryIntegrator() : fesflux.GetIntegrator();
+    shared_ptr<BilinearFormIntegrator> fluxbli = fesflux.GetIntegrator(vb);
 
     Array<int> dnums;
     Array<int> dnumsflux;

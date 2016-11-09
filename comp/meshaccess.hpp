@@ -633,6 +633,9 @@ namespace ngcomp
     void GetSElVertices (int selnr, Array<int> & vnums) const
     { vnums = GetSElement(selnr).Vertices(); }
 
+    void GetElEdges(ElementId ei, Array<int> & ednums) const
+    { ednums = GetElement(ei).Edges(); }
+
     /// returns the edges of an element
     void GetElEdges (int elnr, Array<int> & ednums) const
     { ednums = GetElement(elnr).Edges(); }
@@ -692,6 +695,7 @@ namespace ngcomp
     /// facets are edges (2D) or faces (3D)
     int GetNFacets() const { return nnodes_cd[1]; } 
     /// facets of an element
+    void GetElFacets (ElementId ei, Array<int> & fnums) const;
     void GetElFacets (int elnr, Array<int> & fnums) const;
     /// facet of a surface element
     void GetSElFacets (int selnr, Array<int> & fnums) const;
@@ -959,6 +963,7 @@ namespace ngcomp
       : mesh(amesh), vb(avb), mask(amask) { ; }
     Region (const Region &) = default;
     explicit operator VorB () const { return vb; }
+    VorB VB() const { return vb; }
     bool IsVolume () const { return vb == VOL; }
     bool IsBoundary () const { return vb == BND; }
     bool IsCoDim2() const { return vb == BBND; }

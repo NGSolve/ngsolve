@@ -77,9 +77,7 @@ namespace ngcomp
 
     virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
 
-    virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
-    ///
-    virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
+    virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const;
     ///
     virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const;
     /// 
@@ -156,9 +154,7 @@ namespace ngcomp
     ///
     virtual const FiniteElement & GetSFE (int elnr, LocalHeap & lh) const;
     ///
-    virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
-    ///
-    virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
+    virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const;
   
     virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const;
     /// 

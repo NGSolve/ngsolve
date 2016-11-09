@@ -1195,6 +1195,19 @@ namespace ngcomp
     pnums[1] -= 1;
   }
 
+  void MeshAccess :: GetElFacets (ElementId ei, Array<int> & fnums) const
+  {
+    switch (dim)
+      {
+      case 1:
+	fnums = GetElement(ei).Vertices(); break;
+      case 2:
+	fnums = GetElement(ei).Edges(); break;
+      default:
+	fnums = GetElement(ei).Faces();
+      }
+  }
+
   // some utility for Facets
   void MeshAccess :: GetElFacets (int elnr, Array<int> & fnums) const
   {

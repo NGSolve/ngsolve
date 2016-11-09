@@ -142,46 +142,46 @@ namespace ngcomp
       {
       case 1:
         {
-          evaluator = make_shared<T_DifferentialOperator<DiffOpId<1>>>();
-          flux_evaluator = make_shared<T_DifferentialOperator<DiffOpGradient<1>>>();
-          boundary_evaluator = make_shared<T_DifferentialOperator<DiffOpIdBoundary<1>>>();
+          evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<1>>>();
+          flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<1>>>();
+          evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<1>>>();
           break;
         }
       case 2:
         {
-          evaluator = make_shared<T_DifferentialOperator<DiffOpId<2>>>();
-          flux_evaluator = make_shared<T_DifferentialOperator<DiffOpGradient<2>>>();
-          boundary_evaluator = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
-          boundary_flux_evaluator = make_shared<T_DifferentialOperator<DiffOpGradientBoundary<2>>>();
+          evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<2>>>();
+          flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<2>>>();
+          evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
+          flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpGradientBoundary<2>>>();
           break;
         }
       case 3:
         {
-          evaluator = make_shared<T_DifferentialOperator<DiffOpId<3>>>();
-          flux_evaluator = make_shared<T_DifferentialOperator<DiffOpGradient<3>>>();
-          boundary_evaluator = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
-          boundary_flux_evaluator = make_shared<T_DifferentialOperator<DiffOpGradientBoundary<3>>>();
+          evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<3>>>();
+          flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<3>>>();
+          evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
+          flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpGradientBoundary<3>>>();
           break;
         }
       }
     if (dimension > 1)
       {
-	evaluator = make_shared<BlockDifferentialOperator> (evaluator, dimension);
-	flux_evaluator = make_shared<BlockDifferentialOperator> (flux_evaluator, dimension);
-	boundary_evaluator = 
-	  make_shared<BlockDifferentialOperator> (boundary_evaluator, dimension);
-	boundary_flux_evaluator = 
-	  make_shared<BlockDifferentialOperator> (boundary_flux_evaluator, dimension);
+	evaluator[VOL] = make_shared<BlockDifferentialOperator> (evaluator[VOL], dimension);
+	flux_evaluator[VOL] = make_shared<BlockDifferentialOperator> (flux_evaluator[VOL], dimension);
+	evaluator[BND] = 
+	  make_shared<BlockDifferentialOperator> (evaluator[BND], dimension);
+	flux_evaluator[BND] = 
+	  make_shared<BlockDifferentialOperator> (flux_evaluator[BND], dimension);
       }
 
     auto one = make_shared<ConstantCoefficientFunction> (1);
-    integrator = CreateBFI("mass", ma->GetDimension(), one);
-    boundary_integrator = CreateBFI("robin", ma->GetDimension(), one);
+    integrator[VOL] = CreateBFI("mass", ma->GetDimension(), one);
+    integrator[BND] = CreateBFI("robin", ma->GetDimension(), one);
 
     if (dimension > 1)
       {
-	integrator = make_shared<BlockBilinearFormIntegrator> (integrator, dimension);
-        boundary_integrator = make_shared<BlockBilinearFormIntegrator> (boundary_integrator, dimension);
+	integrator[VOL] = make_shared<BlockBilinearFormIntegrator> (integrator[VOL], dimension);
+        integrator[BND] = make_shared<BlockBilinearFormIntegrator> (integrator[BND], dimension);
       }
 
     prol = make_shared<LinearProlongation> (*this);
@@ -840,11 +840,11 @@ namespace ngcomp
   }
 
 
-  void H1HighOrderFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
+  void H1HighOrderFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
-    Ngs_Element ngel = ma->GetElement(elnr);
+    Ngs_Element ngel = ma->GetElement(ei);
 
-    if (!DefinedOn (ngel.GetIndex()))
+    if (!DefinedOn (ei))
       {
 	dnums.SetSize0();
 	return;
@@ -859,8 +859,8 @@ namespace ngcomp
     if (ma->GetDimension() == 3)
       for (auto face : ngel.Faces())
         dnums += GetFaceDofs (face);
-
-    dnums += GetElementDofs (elnr);
+    if(ei.VB()==VOL)
+      dnums += GetElementDofs (ei.Nr());
   }
 
 
@@ -917,38 +917,6 @@ namespace ngcomp
     dnums = GetElementDofs (elnr);
   }
 
-  void H1HighOrderFESpace :: 
-  GetSDofNrs (int elnr, Array<int> & dnums) const
-  {
-    if (!DefinedOnBoundary (ma->GetSElIndex (elnr)))
-      {
-	dnums.SetSize0();
-	return;
-      }
-
-    Ngs_Element ngel = ma->GetSElement(elnr);
-
-    dnums = ngel.Vertices();
-
-    for (int i = 0; i < ngel.edges.Size(); i++)
-      dnums += GetEdgeDofs (ngel.edges[i]);
-
-    if (ma->GetDimension() == 3)
-      dnums += GetFaceDofs (ngel.faces[0]);
-  }
-void H1HighOrderFESpace ::
-  GetCD2DofNrs (int elnr, Array<int> & dnums) const
-  {
-    if(!DefinedOnCoDim2(ma->GetCD2ElIndex(elnr)))
-      {
-	dnums.SetSize0();
-	return;
-      }
-    const Ngs_Element & ngel = ma->GetCD2Element(elnr);
-    dnums = ngel.Vertices();
-    for (int i = 0; i< ngel.edges.Size(); i++)
-      dnums += GetEdgeDofs(ngel.edges[i]);
-  }
   
   SymbolTable<shared_ptr<DifferentialOperator>>
   H1HighOrderFESpace :: GetAdditionalEvaluators () const
