@@ -1310,7 +1310,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
     .def_property_readonly("vecs", FunctionPointer
                   ([](PyGF self)-> py::list
                    { 
-                     py::tuple vecs(self->GetMultiDim());
+                     py::list vecs(self->GetMultiDim());
                      for (int i = 0; i < self->GetMultiDim(); i++)
                        vecs[i] = py::cast(PyBaseVector(self->GetVectorPtr(i)));
                      return vecs;
