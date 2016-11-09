@@ -1312,7 +1312,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                    { 
                      py::tuple vecs(self->GetMultiDim());
                      for (int i = 0; i < self->GetMultiDim(); i++)
-                       vecs[i] = py::cast(self->GetVectorPtr(i));
+                       vecs[i] = py::cast(PyBaseVector(self->GetVectorPtr(i)));
                      return vecs;
                    }),
                   "list of coefficient vectors for multi-dim gridfunction")
