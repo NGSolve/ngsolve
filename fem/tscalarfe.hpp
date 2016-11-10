@@ -46,7 +46,7 @@ namespace ngfem
     /// compute shape, row is shape nr, col is ip nr
     HD NGS_DLL_HEADER 
     virtual void CalcShape (const SIMD_IntegrationRule & ir, 
-                            ABareMatrix<> shape) const;
+                            BareSliceMatrix<SIMD<double>> shape) const;
     
     HD NGS_DLL_HEADER virtual double Evaluate (const IntegrationPoint & ip, 
 					       BareSliceVector<double> x) const;
@@ -117,7 +117,7 @@ namespace ngfem
 
     HD NGS_DLL_HEADER 
     virtual void CalcMappedDShape (const SIMD_BaseMappedIntegrationRule & mir, 
-                                   ABareMatrix<> dshapes) const;
+                                   BareSliceMatrix<SIMD<double>> dshapes) const;
     
 #endif
 

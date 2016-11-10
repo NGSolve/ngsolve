@@ -63,7 +63,9 @@ namespace ngfem
       Cast(fel).CalcMappedDShape (mir, Trans(mat));
     }
 
-    static void GenerateMatrixSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir, ABareMatrix<> mat)
+    static void GenerateMatrixSIMDIR (const FiniteElement & fel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> mat)
     {
       Cast(fel).CalcMappedDShape (mir, mat);      
     }
@@ -251,7 +253,7 @@ namespace ngfem
 
     static void GenerateMatrixSIMDIR (const FiniteElement & fel,
                                       const SIMD_BaseMappedIntegrationRule & mir,
-                                      ABareMatrix<> mat)
+                                      BareSliceMatrix<SIMD<double>> mat)
     {
       Cast(fel).CalcShape (mir.IR(), mat);      
     }

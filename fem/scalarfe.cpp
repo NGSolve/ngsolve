@@ -137,7 +137,7 @@ namespace ngfem
 
   void BaseScalarFiniteElement :: 
   CalcShape (const SIMD_IntegrationRule & ir, 
-             ABareMatrix<> shape) const
+             BareSliceMatrix<SIMD<double>> shape) const
   {
     throw ExceptionNOSIMD("SIMD - CalcShape not overloaded");
   }
@@ -169,7 +169,7 @@ namespace ngfem
 
   void BaseScalarFiniteElement :: 
   CalcMappedDShape (const SIMD_BaseMappedIntegrationRule & mir, 
-                    ABareMatrix<> dshapes) const
+                    BareSliceMatrix<SIMD<double>> dshapes) const
   {
     throw ExceptionNOSIMD("SIMD - CalcDShape not overloaded");    
   }
@@ -258,7 +258,7 @@ namespace ngfem
     throw ExceptionNOSIMD (string("EvaluateGrad (simd) not implemented for class ")+typeid(*this).name());
   }
 
-
+  
   void BaseScalarFiniteElement :: 
   EvaluateTrans (const IntegrationRule & ir, FlatVector<double> vals, BareSliceVector<double> coefs) const
   {

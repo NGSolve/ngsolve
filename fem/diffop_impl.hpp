@@ -86,7 +86,7 @@ namespace ngfem
   void T_DifferentialOperator<DIFFOP> ::
   CalcMatrix (const FiniteElement & bfel,
               const SIMD_BaseMappedIntegrationRule & bmir,
-              ABareMatrix<double> mat) const
+              BareSliceMatrix<SIMD<double>> mat) const
   {
     DIFFOP::GenerateMatrixSIMDIR (bfel, bmir, mat);
   }

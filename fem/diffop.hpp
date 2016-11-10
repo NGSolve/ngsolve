@@ -51,7 +51,7 @@ namespace ngfem
     }
 
     template <typename FEL, typename MIR>
-    static void GenerateMatrixSIMDIR (const FEL & fel, const MIR & mir, ABareMatrix<> mat)
+    static void GenerateMatrixSIMDIR (const FEL & fel, const MIR & mir, BareSliceMatrix<SIMD<double>> mat)
     {
       throw ExceptionNOSIMD (string("generate matrix simdir not implemented for diffop ") + typeid(DOP).name());
     }
@@ -218,7 +218,7 @@ namespace ngfem
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
 		const SIMD_BaseMappedIntegrationRule & mir,
-		ABareMatrix<double> mat) const;
+		BareSliceMatrix<SIMD<double>> mat) const;
 
     NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & fel,
@@ -340,7 +340,7 @@ namespace ngfem
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
 		const SIMD_BaseMappedIntegrationRule & mir,
-		ABareMatrix<double> mat) const;
+		BareSliceMatrix<SIMD<double>> mat) const;
     
     NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & fel,
@@ -432,7 +432,7 @@ namespace ngfem
     virtual void
     CalcMatrix (const FiniteElement & fel,
 		const SIMD_BaseMappedIntegrationRule & mir,
-		ABareMatrix<double> mat) const;
+		BareSliceMatrix<SIMD<double>> mat) const;
     
 #ifndef FASTCOMPILE
     virtual void

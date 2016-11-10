@@ -64,7 +64,7 @@ public:
   }
 
   static void GenerateMatrixSIMDIR (const FiniteElement & fel,
-                                    const SIMD_BaseMappedIntegrationRule & mir, ABareMatrix<> mat)
+                                    const SIMD_BaseMappedIntegrationRule & mir, BareSliceMatrix<SIMD<double>> mat)
   {
     Cast(fel).CalcMappedShape (mir, mat);      
   }
@@ -171,7 +171,7 @@ public:
   }
 
   static void GenerateMatrixSIMDIR (const FiniteElement & fel,
-                                    const SIMD_BaseMappedIntegrationRule & mir, ABareMatrix<> mat)
+                                    const SIMD_BaseMappedIntegrationRule & mir, BareSliceMatrix<SIMD<double>> mat)
   {
     Cast(fel).CalcMappedDivShape (mir, mat);      
   }
