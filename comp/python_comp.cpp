@@ -1087,7 +1087,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
              if (!compspace)
                throw py::type_error("'Range' is available only for product spaces");
              IntRange r = compspace->GetRange(comp);
-             return py::slice(py::int_(r.First()), py::int_(r.Next()));
+             return py::slice(py::int_(r.First()), py::int_(r.Next()),1);
            }))
 
     .def_property_readonly("components", FunctionPointer
