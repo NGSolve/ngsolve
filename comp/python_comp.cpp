@@ -901,7 +901,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                              fes->Update(lh);
                              fes->FinalizeUpdate(lh);
                              new (instance) PyFES(fes);
-                             py::cast(*instance).attr("__dict__")["flags"] = py::cast(flags);
+                             py::cast(*instance).attr("__dict__")["flags"] = py::cast(bpflags);
                              };
 
   py::class_<PyFES>(m, "FESpace",  "a finite element space", py::dynamic_attr())
@@ -953,6 +953,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                              fes->Update(lh);
                              fes->FinalizeUpdate(lh);
                              new (instance) PyFES(fes);
+                             py::cast(*instance)["__dict__"]["flags"] = bpflags;
                            },
           py::arg("spaces"), py::arg("flags") = py::dict(),
          "construct compound-FESpace from list of component spaces"
@@ -1207,7 +1208,6 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                             auto gf = CreateGridFunction (fespace.Get(), name, flags);
                             gf->Update();
                             new (instance) PyGF(gf);
-                            py::cast(*instance).attr("__dict__")["flags"] = py::cast(flags);
                           },
          py::arg("space"), py::arg("name")="gfu", py::arg("multidim")=DummyArgument(),
          "creates a gridfunction in finite element space"
@@ -1216,17 +1216,17 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
         { return reinterpret_cast<std::uintptr_t>(self.Get().get()); } ) )
     .def("__getstate__", [] (py::object self_object) {
         auto self = self_object.cast<PyGF>();
-        py::object dict = self_object.attr("__dict__");
         auto vec = PyBaseVector(self->GetVectorPtr());
-        return py::make_tuple(PyFES(self->GetFESpace()), self->GetName(), vec, dict);
+        return py::make_tuple(PyFES(self->GetFESpace()), self->GetName(), vec, self->GetMultiDim());
         })
     .def("__setstate__", [] (PyGF &self, py::tuple t) {
          auto fespace = t[0].cast<PyFES>();
-         auto gf = CreateGridFunction (fespace.Get(), t[1].cast<string>(), t[3]["flags"].cast<Flags>());
+         Flags flags;
+         flags.SetFlag ("multidim", py::extract<int>(t[3])());
+         auto gf = CreateGridFunction (fespace.Get(), t[1].cast<string>(), flags);
          gf->Update();
          new (&self) PyGF(gf);
          py::object self_object = py::cast(self);
-         py::cast(&self).attr("__dict__")["flags"] = t[3];
          })
     // .def("__str__", &ToString<GF>)
     .def("__str__", [] (PyGF & self) { return ToString(*self.Get()); } )
