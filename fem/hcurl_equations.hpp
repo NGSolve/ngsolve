@@ -380,7 +380,7 @@ namespace ngfem
       y = static_cast<const FEL&> (fel).GetShape (mip.IP(),lh) * hx;
     }
 
-    //using DiffOp<DiffOpIdBBoundaryEdge<D, FEL> >::ApplySIMDIR; 
+    using DiffOp<DiffOpIdBBoundaryEdge<D, FEL> >::ApplySIMDIR; 
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
@@ -391,19 +391,20 @@ namespace ngfem
     {
       static_cast<const FEL&> (fel).Evaluate (mir, x, y);
     }    
-
+    
     //using DiffOp<DiffOpIdBBoundaryEdge<D, FEL> >::AddTransSIMDIR;  
     static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
        static_cast<const FEL&> (fel).AddTrans (mir, y, x);
-    }    
+    }  
+      
     static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
                                 BareSliceMatrix<SIMD<Complex>> y, BareSliceVector<Complex> x)
     {
        static_cast<const FEL&> (fel).AddTrans (mir, y, x);
     }   
-      
+    
     
     };
 
