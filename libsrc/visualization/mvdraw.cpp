@@ -776,13 +776,16 @@ namespace netgen
 	  {
 	    string displname;
 	    
-	    // Display * dpy = glXGetCurrentDisplay();
+	    Display * dpy = glXGetCurrentDisplay();
 	    GLXDrawable drawable = glXGetCurrentDrawable();
 	    GLXContext ctx = glXGetCurrentContext();
 	    GLXContextID xid = glXGetContextIDEXT (ctx);
 	    
 	    displname = XDisplayName (0);
 
+	    if( glXIsDirect ( dpy, ctx ) )
+	      cout << "WARNING: direct rendering enabled; this might break mpi-parallel netgen (especially if X-forwarding is used! (to disable, change -indirect to true in ng/drawing.tcl)" << endl;
+	      
 	    /*
 	    cout << "Init Parallel GL" << endl;
 	    cout << "DisplayName = " << displname << endl;

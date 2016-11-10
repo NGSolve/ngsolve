@@ -17,8 +17,10 @@ namespace netgen
     Vec<3> v_axis;
 
     int id;
-  
+
+    // coefficient for implicizt polynomial
     mutable Vector spline_coefficient;
+    mutable Vector spline_coefficient_shifted;
 
 
     Array < Vec<2>* > checklines_vec;
@@ -74,7 +76,7 @@ namespace netgen
 
     const SplineSeg<2> & GetSpline(void) const {return *spline;}
 
-    INSOLID_TYPE PointInFace (const Point<3> & p, const double eps) const;
+    /* INSOLID_TYPE */ bool PointInFace (const Point<3> & p, const double eps) const;
 
     void GetRawData(Array<double> & data) const;
 
@@ -125,6 +127,10 @@ namespace netgen
     virtual INSOLID_TYPE BoxInSolid (const BoxSphere<3> & box) const;
     virtual INSOLID_TYPE PointInSolid (const Point<3> & p,
 				       double eps) const;
+
+    virtual void GetTangentialSurfaceIndices (const Point<3> & p, 
+					      Array<int> & surfind, double eps) const;
+    
     virtual INSOLID_TYPE VecInSolid (const Point<3> & p,
 				     const Vec<3> & v,
 				     double eps) const;

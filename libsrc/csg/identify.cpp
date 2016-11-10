@@ -1079,6 +1079,7 @@ void CloseSurfaceIdentification :: IdentifyFaces (class Mesh & mesh)
   
   for (int i = 1; i <= mesh.GetNFD(); i++)
     {
+      auto & fdi = mesh.GetFaceDescriptor(i);
       int surfi = mesh.GetFaceDescriptor(i).SurfNr();
       if (s1rep != surfi) continue;
 
@@ -1090,12 +1091,21 @@ void CloseSurfaceIdentification :: IdentifyFaces (class Mesh & mesh)
 
       for (int j = 1; j <= mesh.GetNFD(); j++)
 	{
+          auto & fdj = mesh.GetFaceDescriptor(j);          
 	  int surfj = mesh.GetFaceDescriptor(j).SurfNr();
 
 	  if (surfi == surfj) continue;
 	  if (s2rep != surfj) continue;
 
-  
+          bool have_common = false;
+          if (fdi.DomainIn() != 0)
+            if (fdi.DomainIn() == fdj.DomainIn() || fdi.DomainIn() == fdj.DomainOut())
+              have_common = true;
+          if (fdi.DomainOut() != 0)
+            if (fdi.DomainOut() == fdj.DomainIn() || fdi.DomainOut() == fdj.DomainOut())
+              have_common = true;
+          if (!have_common) continue;
+          
 	  int idok = 1;
 	  
 	  for (side = 1; side <= 2 && idok; side++)

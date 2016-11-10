@@ -1,7 +1,8 @@
-from libngpy.csg import *
+import libngpy
+from libngpy._csg import *
 import libngpy.csgvis as csgvis
 from libngpy.csgvis import MouseMove
-from libngpy.meshing import MeshingParameters
+from libngpy._meshing import MeshingParameters
 
 
 CSGeometry.VS = csgvis.VS
@@ -14,7 +15,11 @@ def VS (obj):
 
 
 def csg_meshing_func (geom, **args):
-    return GenerateMesh (geom, MeshingParameters (**args))
+    if "mp" in args:
+        return GenerateMesh (geom, args["mp"])
+    else:
+        return GenerateMesh (geom, MeshingParameters (**args))
+#     return GenerateMesh (geom, MeshingParameters (**args))
 
 CSGeometry.GenerateMesh = csg_meshing_func
 

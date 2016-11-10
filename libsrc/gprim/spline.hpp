@@ -85,6 +85,7 @@ namespace netgen
     void PrintCoeff (ostream & ost) const;
 
     virtual void GetCoeff (Vector & coeffs) const = 0;
+    virtual void GetCoeff (Vector & coeffs, Point<D> p0) const { ; } 
 
     virtual void GetPoints (int n, Array<Point<D> > & points) const;
 
@@ -94,6 +95,9 @@ namespace netgen
     virtual void LineIntersections (const double a, const double b, const double c,
 				    Array < Point<D> > & points, const double eps) const
     {points.SetSize(0);}
+
+    // is the point in the convex hull (increased by eps) of the spline ?
+    virtual bool InConvexHull (Point<D> p, double eps) const = 0; 
 
     virtual double MaxCurvature(void) const = 0;
 
@@ -135,12 +139,18 @@ namespace netgen
     virtual const GeomPoint<D> & EndPI () const { return p2; }
     ///
     virtual void GetCoeff (Vector & coeffs) const;
-
+    virtual void GetCoeff (Vector & coeffs, Point<D> p0) const;
+    
     virtual string GetType(void) const {return "line";}
 
     virtual void LineIntersections (const double a, const double b, const double c,
 				    Array < Point<D> > & points, const double eps) const;
-
+    
+    virtual bool InConvexHull (Point<D> p, double eps) const
+    {
+      return MinDistLP2 (p1, p2, p) < sqr(eps);
+    }
+    
     virtual double MaxCurvature(void) const {return 0;}
 
     virtual void Project (const Point<D> point, Point<D> & point_on_curve, double & t) const;
@@ -178,13 +188,19 @@ namespace netgen
     virtual const GeomPoint<D> & EndPI () const { return p3; }
     ///
     virtual void GetCoeff (Vector & coeffs) const;
-
+    virtual void GetCoeff (Vector & coeffs, Point<D> p0) const;
+    
     virtual string GetType(void) const {return "spline3";}
 
     const GeomPoint<D> & TangentPoint (void) const { return p2; }
 
     DLL_HEADER virtual void LineIntersections (const double a, const double b, const double c,
 				    Array < Point<D> > & points, const double eps) const;
+
+    virtual bool InConvexHull (Point<D> p, double eps) const
+    {
+      return MinDistTP2 (p1, p2, p3, p) < sqr(eps);
+    }
 
     DLL_HEADER virtual double MaxCurvature(void) const;
 
@@ -232,6 +248,11 @@ namespace netgen
     virtual void LineIntersections (const double a, const double b, const double c,
 				    Array < Point<D> > & points, const double eps) const;
 
+    virtual bool InConvexHull (Point<D> p, double eps) const
+    {
+      return (Dist2 (p, pm) < sqr(radius+eps));
+    }
+
     virtual double MaxCurvature(void) const {return 1./radius;}
   };
 
@@ -261,6 +282,10 @@ namespace netgen
     virtual void GetCoeff (Vector & coeffs) const {;}
 
     virtual double MaxCurvature(void) const {return 1;}
+
+    // needs implementation ...
+    virtual bool InConvexHull (Point<D> p, double eps) const
+    { return true; }
   };
 
 
@@ -372,6 +397,19 @@ namespace netgen
     coeffs[5] = -dx * p1(1) + dy * p1(0);
   }
 
+  template<int D>
+  void LineSeg<D> :: GetCoeff (Vector & coeffs, Point<D> p) const
+  {
+    coeffs.SetSize(6);
+
+    double dx = p2(0) - p1(0);
+    double dy = p2(1) - p1(1);
+
+    coeffs[0] = coeffs[1] = coeffs[2] = 0;
+    coeffs[3] = -dy;
+    coeffs[4] = dx;
+    coeffs[5] = -dx * (p1(1)-p(1)) + dy * (p1(0)-p(0));
+  }
 
 
   template<int D>
@@ -597,6 +635,10 @@ namespace netgen
     virtual void GetCoeff (Vector & coeffs) const {;}
 
     virtual double MaxCurvature(void) const {return 1;}
+
+    // needs implementation ...
+    virtual bool InConvexHull (Point<D> p, double eps) const
+    { return true; }    
   };
 
   // Constructor

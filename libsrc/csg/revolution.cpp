@@ -156,25 +156,42 @@ namespace netgen
   {
     if(spline_coefficient.Size() == 0)
       spline->GetCoeff(spline_coefficient);
+    if(spline_coefficient_shifted.Size() == 0)
+        spline->GetCoeff(spline_coefficient_shifted, spline->StartPI());
 
     Point<2> p;
     CalcProj(point,p);
 
-    return spline_coefficient(0)*p(0)*p(0) + spline_coefficient(1)*p(1)*p(1)
+    double val = spline_coefficient(0)*p(0)*p(0) + spline_coefficient(1)*p(1)*p(1)
       + spline_coefficient(2)*p(0)*p(1) + spline_coefficient(3)*p(0)
       + spline_coefficient(4)*p(1) + spline_coefficient(5);
+
+    Vec<2> pr = p-spline->StartPI();
+
+
+    // cout << "spline_coefficinet = " << spline_coefficient << endl;
+    // cout << "shifted = " << spline_coefficient_shifted << endl;
+    
+    double val2 = spline_coefficient_shifted(0)*pr(0)*pr(0) + spline_coefficient_shifted(1)*pr(1)*pr(1)
+      + spline_coefficient_shifted(2)*pr(0)*pr(1) + spline_coefficient_shifted(3)*pr(0)
+      + spline_coefficient_shifted(4)*pr(1) + spline_coefficient_shifted(5);
+
+    // cout << "val = " << val << " =?= " << val2 << endl;
+    return val2;
   }
 
   void RevolutionFace :: CalcGradient (const Point<3> & point, Vec<3> & grad) const
   {
     if(spline_coefficient.Size() == 0)
       spline->GetCoeff(spline_coefficient);
+    if(spline_coefficient_shifted.Size() == 0)
+        spline->GetCoeff(spline_coefficient_shifted, spline->StartPI());
 
     Vec<3> point_minus_p0 = point-p0;
 
     Point<2> p;
     CalcProj0(point_minus_p0,p);
-
+    /*
     const double dFdxbar = 2.*spline_coefficient(0)*p(0) + spline_coefficient(2)*p(1) + spline_coefficient(3);
 
     if(fabs(p(1)) > 1e-10)
@@ -193,6 +210,27 @@ namespace netgen
 	grad(2) = dFdxbar*v_axis(2);
 	//(*testout) << "grad2("<<point<<") = " << grad << endl;
       }
+    */
+    Vec<2> pr = p-spline->StartPI();
+    const double dFdxbar = 2.*spline_coefficient_shifted(0)*pr(0) + spline_coefficient_shifted(2)*pr(1) + spline_coefficient_shifted(3);
+
+    if(fabs(p(1)) > 1e-10)
+      {
+	const double dFdybar = 2.*spline_coefficient_shifted(1)*pr(1) + spline_coefficient_shifted(2)*pr(0) + spline_coefficient_shifted(4);
+
+	grad(0) = dFdxbar*v_axis(0) + dFdybar * ( point_minus_p0(0)-v_axis(0)*p(0) )/p(1);
+	grad(1) = dFdxbar*v_axis(1) + dFdybar * ( point_minus_p0(1)-v_axis(1)*p(0) )/p(1);
+	grad(2) = dFdxbar*v_axis(2) + dFdybar * ( point_minus_p0(2)-v_axis(2)*p(0) )/p(1);
+	//(*testout) << "grad1("<<point<<") = " << grad << endl;
+      }
+    else
+      {
+	grad(0) = dFdxbar*v_axis(0);
+	grad(1) = dFdxbar*v_axis(1);
+	grad(2) = dFdxbar*v_axis(2);
+	//(*testout) << "grad2("<<point<<") = " << grad << endl;
+      }
+    
   }
 
   
@@ -551,21 +589,35 @@ namespace netgen
   }  
   */
   
-
-  INSOLID_TYPE RevolutionFace :: PointInFace (const Point<3> & p, const double eps) const
+  
+  /* INSOLID_TYPE */ bool RevolutionFace :: PointInFace (const Point<3> & p, const double eps) const
   {
     Point<2> p2d;
     CalcProj(p,p2d);
 
+    if (!spline -> InConvexHull(p2d, eps)) return false;
+
+    /*
     double val = spline_coefficient(0)*p2d(0)*p2d(0) + spline_coefficient(1)*p2d(1)*p2d(1) + spline_coefficient(2)*p2d(0)*p2d(1) +
       spline_coefficient(3)*p2d(0) + spline_coefficient(4)*p2d(1) + spline_coefficient(5);
-
+    */
+    Vec<2> pr = p2d - spline->StartPI();
+    double val = spline_coefficient_shifted(0)*pr(0)*pr(0)
+      + spline_coefficient_shifted(1)*pr(1)*pr(1)
+      + spline_coefficient_shifted(2)*pr(0)*pr(1) 
+      + spline_coefficient_shifted(3)*pr(0)
+      + spline_coefficient_shifted(4)*pr(1)
+      + spline_coefficient_shifted(5);
+    
+    return (fabs(val) < eps);
+      /*
     if(val > eps)
       return IS_OUTSIDE;
     if(val < -eps)
       return IS_INSIDE;
      
     return DOES_INTERSECT;
+      */
   }
 
   
@@ -748,6 +800,15 @@ namespace netgen
       return IS_INSIDE;
   }
 
+  void Revolution :: GetTangentialSurfaceIndices (const Point<3> & p, 
+                                                 Array<int> & surfind, double eps) const
+  {
+    for (int j = 0; j < faces.Size(); j++)
+      if (faces[j] -> PointInFace(p, eps))
+        if (!surfind.Contains (GetSurfaceId(j)))
+          surfind.Append (GetSurfaceId(j));
+  }
+
   INSOLID_TYPE Revolution :: VecInSolid (const Point<3> & p,
 					 const Vec<3> & v,
 					 double eps) const
@@ -763,7 +824,7 @@ namespace netgen
     Array<int> intersecting_faces;
 
     for(int i=0; i<faces.Size(); i++)
-      if(faces[i]->PointInFace(p,eps) == DOES_INTERSECT)
+      if(faces[i]->PointInFace(p,eps)) //  == DOES_INTERSECT)
 	intersecting_faces.Append(i);
 
      Vec<3> hv;

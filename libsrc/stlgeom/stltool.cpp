@@ -615,7 +615,7 @@ STLChart :: STLChart(STLGeometry * ageometry)
 
   geometry = ageometry;
 
-  if ( (stlparam.usesearchtree == 1))
+  if ( stlparam.usesearchtree == 1)
     searchtree = new Box3dTree (geometry->GetBoundingBox().PMin() - Vec3d(1,1,1),
 				geometry->GetBoundingBox().PMax() + Vec3d(1,1,1));
   else
@@ -1044,7 +1044,8 @@ int STLBoundary :: TestSeg(const Point<3>& p1, const Point<3> & p2, const Vec<3>
 	}
       
 
-      if (possible && 0)
+      // if (possible && 0)
+      if (false)
 
 	for (i = 0; i <= divisions; i++)
 	  {

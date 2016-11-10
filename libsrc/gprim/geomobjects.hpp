@@ -17,7 +17,7 @@ namespace netgen
 
 
   template <int D, typename T>
-  class Point
+  class Point : public AlignedAlloc<Point<D,T>>
   {
 
   protected:
@@ -39,16 +39,18 @@ namespace netgen
     Point (T ax, T ay, T az, T au)
     { x[0] = ax; x[1] = ay; x[2] = az; x[3] = au;}
 
-    Point (const Point<D> & p2)
-    { for (int i = 0; i < D; i++) x[i] = p2.x[i]; }
+    template <typename T2>
+    Point (const Point<D,T2> & p2)
+    { for (int i = 0; i < D; i++) x[i] = p2(i); }
 
     explicit Point (const Vec<D> & v)
     { for (int i = 0; i < D; i++) x[i] = v(i); }
 
 
-    Point & operator= (const Point<D> & p2)
+    template <typename T2>
+    Point & operator= (const Point<D,T2> & p2)
     {
-      for (int i = 0; i < D; i++) x[i] = p2.x[i]; 
+      for (int i = 0; i < D; i++) x[i] = p2(i);
       return *this;
     }
 
@@ -65,7 +67,7 @@ namespace netgen
   };
 
   template <int D, typename T>
-  class Vec
+  class Vec : public AlignedAlloc<Vec<D,T>>
   {
 
   protected:
@@ -90,17 +92,17 @@ namespace netgen
     Vec (const Vec<D> & p2)
     { for (int i = 0; i < D; i++) x[i] = p2.x[i]; }
 
-    explicit Vec (const Point<D> & p)
+    explicit Vec (const Point<D,T> & p)
     { for (int i = 0; i < D; i++) x[i] = p(i); }
 
-    Vec (const Vec<D> & p1, const Vec<D> & p2)
+    Vec (const Vec & p1, const Vec & p2)
     { for(int i=0; i<D; i++) x[i] = p2(i)-p1(1); }
   
 
-
-    Vec & operator= (const Vec<D> & p2)
+    template <typename T2>
+    Vec & operator= (const Vec<D,T2> & p2)
     {
-      for (int i = 0; i < D; i++) x[i] = p2.x[i]; 
+      for (int i = 0; i < D; i++) x[i] = p2(i);
       return *this;
     }
 
@@ -131,12 +133,12 @@ namespace netgen
       return l;
     }
 
-    const Vec<D> & Normalize ()
+    Vec & Normalize ()
     {
       T l = Length();
-      if (l != 0)
-	for (int i = 0; i < D; i++)
-	  x[i] /= l;
+      // if (l != 0)
+      for (int i = 0; i < D; i++)
+        x[i] /= (l+1e-40);
       return *this;
     }
 
@@ -148,7 +150,7 @@ namespace netgen
 
 
   template <int H, int W=H, typename T = double>
-  class Mat
+  class Mat : public AlignedAlloc<Mat<H,W,T>>
   {
 
   protected:

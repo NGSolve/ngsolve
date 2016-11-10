@@ -136,7 +136,7 @@ build_ubuntu_1604:
     paths:
       - build/
       - src/
-    key: "netgen_win32"
+    key: "netgen_win32_${CI_BUILD_REF_NAME}"
 
 test_netgen_win64:
   <<: *win64
@@ -145,7 +145,7 @@ test_netgen_win64:
     paths:
       - build/
       - src/
-    key: "netgen_win64"
+    key: "netgen_win64_${CI_BUILD_REF_NAME}"
 
 # Linux
 .template_test_linux: &test_linux

@@ -189,6 +189,51 @@ namespace netgen
     if (tang * gradn < 0) u *= -1;
   }
 
+
+  template<int D>
+  void SplineSeg3<D> :: GetCoeff (Vector & u, Point<D> pref) const
+  {
+    DenseMatrix a(6, 6);
+    DenseMatrix ata(6, 6);
+    Vector f(6);
+
+    u.SetSize(6);
+
+    //  ata.SetSymmetric(1);
+
+    double t = 0;
+    for (int i = 0; i < 5; i++, t += 0.25)
+      {
+	Vec<D> p = GetPoint (t)-pref;
+	a(i, 0) = p(0) * p(0);
+	a(i, 1) = p(1) * p(1);
+	a(i, 2) = p(0) * p(1);
+	a(i, 3) = p(0);
+	a(i, 4) = p(1);
+	a(i, 5) = 1;
+      }
+    a(5, 0) = 1;
+
+    CalcAtA (a, ata);
+
+    u = 0;
+    u(5) = 1;
+    a.MultTrans (u, f);
+    ata.Solve (f, u);
+
+    // the sign
+    Point<D> p0 = GetPoint(0);
+    Vec<D> ht = GetTangent(0);
+    Vec<2> tang(ht(0), ht(1));
+
+    double gradx = u(3);
+    double grady = u(4);
+    // double gradx = 2.*u(0)*p0(0) + u(2)*p0(1) + u(3);
+    // double grady = 2.*u(1)*p0(1) + u(2)*p0(0) + u(4);
+    Vec<2> gradn (grady, -gradx);
+  
+    if (tang * gradn < 0) u *= -1;
+  }
   
 
 
@@ -197,11 +242,25 @@ namespace netgen
   {
     double t_old = -1;
 
+    /*
     if(proj_latest_t > 0. && proj_latest_t < 1.)
       t = proj_latest_t;
     else
       t = 0.5;
-	
+    */
+    double tmin = 1;
+    double dist_min2 = Dist2 (GetPoint(tmin), point);
+    for (double ti = 0; ti < 0.99; ti += 0.25)
+      {
+        double di = Dist2(GetPoint(ti), point);
+        if (di < dist_min2)
+          {
+            tmin = ti;
+            dist_min2 = di;
+          }
+      }
+    t = tmin;
+    
     Point<D> phi;
     Vec<D> phip,phipp,phimp;
     

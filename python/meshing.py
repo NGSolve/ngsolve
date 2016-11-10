@@ -1,1 +1,1 @@
-from libngpy.meshing import *
+from libngpy._meshing import *

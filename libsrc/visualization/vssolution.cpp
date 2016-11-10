@@ -8,10 +8,7 @@
 
 // #include <parallel.hpp>
 #include <visual.hpp>
-
 #include <limits>
-
-
 namespace netgen
 {
 
@@ -441,6 +438,20 @@ namespace netgen
 	// glEnable(GL_BLEND); 
 	glDisable(GL_BLEND); 
 	glCallList (surfellist);
+        
+#ifdef USE_BUFFERS
+        static int timer = NgProfiler::CreateTimer ("Solution::drawing - DrawSurfaceElements VBO");
+        NgProfiler::StartTimer(timer);
+        glEnableClientState(GL_VERTEX_ARRAY);
+        glEnableClientState(GL_NORMAL_ARRAY);
+        glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+        glDrawElements(GL_TRIANGLES, surfel_vbo_size, GL_UNSIGNED_INT, 0);
+        glDisableClientState(GL_VERTEX_ARRAY);
+        glDisableClientState(GL_NORMAL_ARRAY);
+        glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+        NgProfiler::StopTimer(timer);
+#endif
+        
 	glDisable(GL_BLEND); 
 	/*
 	// transparent test ...
@@ -1182,6 +1193,17 @@ namespace netgen
     shared_ptr<Mesh> mesh = GetMesh();
 
     static int timer = NgProfiler::CreateTimer ("Solution::DrawSurfaceElements");
+    static int timerstart = NgProfiler::CreateTimer ("Solution::DrawSurfaceElements start");
+    static int timerloops = NgProfiler::CreateTimer ("Solution::DrawSurfaceElements loops");
+    static int timerlist = NgProfiler::CreateTimer ("Solution::DrawSurfaceElements list");
+    static int timerbuffer = NgProfiler::CreateTimer ("Solution::DrawSurfaceElements buffer");
+    static int timer1 = NgProfiler::CreateTimer ("Solution::DrawSurfaceElements 1");
+    static int timer1a = NgProfiler::CreateTimer ("Solution::DrawSurfaceElements 1a");
+    static int timer1b = NgProfiler::CreateTimer ("Solution::DrawSurfaceElements 1b");
+    static int timer1c = NgProfiler::CreateTimer ("Solution::DrawSurfaceElements 1c");
+    static int timer2 = NgProfiler::CreateTimer ("Solution::DrawSurfaceElements 2");
+    static int timer2a = NgProfiler::CreateTimer ("Solution::DrawSurfaceElements 2a");
+    static int timer2b = NgProfiler::CreateTimer ("Solution::DrawSurfaceElements 2b");
     NgProfiler::RegionTimer reg (timer);
   
     
@@ -1213,7 +1235,7 @@ namespace netgen
       }
 #endif
 
-
+    NgProfiler::StartTimer(timerstart);
 
     if (surfellist)
       glDeleteLists (surfellist, 1);
@@ -1256,10 +1278,58 @@ namespace netgen
     Array<double> values(npt);
 
     Array<double> mvalues(npt);
+    int sol_comp = (sol && sol->draw_surface) ? sol->components : 0;
+#ifdef __AVX__
+    Array<Point<2,SIMD<double>> > simd_pref ( (npt+SIMD<double>::Size()-1)/SIMD<double>::Size() );
+    Array<Point<3,SIMD<double>> > simd_points ( (npt+SIMD<double>::Size()-1)/SIMD<double>::Size() );
+    Array<Mat<3,2,SIMD<double>> > simd_dxdxis ( (npt+SIMD<double>::Size()-1)/SIMD<double>::Size() );
+    Array<Vec<3,SIMD<double>> > simd_nvs( (npt+SIMD<double>::Size()-1)/SIMD<double>::Size() );
+    Array<SIMD<double>> simd_values( (npt+SIMD<double>::Size()-1)/SIMD<double>::Size() * sol_comp);
+
+    
+#endif
+    
+    // Array<Point<3,float>> glob_pnts;
+    // Array<Vec<3,float>> glob_nvs;
+    // Array<double> glob_values;
+    
     if (sol && sol->draw_surface) mvalues.SetSize (npt * sol->components);
-
+      
     Array<complex<double> > valuesc(npt);
+    
+#ifdef USE_BUFFERS
+    if (has_surfel_vbo)
+      glDeleteBuffers (4, &surfel_vbo[0]);
+    glGenBuffers (4, &surfel_vbo[0]);
 
+    has_surfel_vbo = true;
+    glBindBuffer (GL_ARRAY_BUFFER, surfel_vbo[0]);
+    glBufferData (GL_ARRAY_BUFFER,
+                  nse*npt*sizeof(Point<3,double>),
+                  NULL, GL_STATIC_DRAW);
+    glVertexPointer(3, GL_DOUBLE, 0, 0); 
+    // glEnableClientState(GL_VERTEX_ARRAY);
+    
+    glBindBuffer (GL_ARRAY_BUFFER, surfel_vbo[1]);
+    glBufferData (GL_ARRAY_BUFFER,
+                  nse*npt*sizeof(Vec<3,double>),
+                  NULL, GL_STATIC_DRAW);
+    // glEnableClientState(GL_NORMAL_ARRAY);
+    glNormalPointer(GL_DOUBLE, 0, 0);  
+
+    // glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    glBindBuffer (GL_ARRAY_BUFFER, surfel_vbo[2]);
+    glBufferData (GL_ARRAY_BUFFER, nse*npt*sizeof(double), NULL, GL_STATIC_DRAW);
+    glTexCoordPointer(1, GL_DOUBLE, 0, 0);
+    
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, surfel_vbo[3]);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, nse*npt*6*sizeof(int), NULL, GL_STATIC_DRAW);
+    surfel_vbo_size = 0;
+#endif
+    
+    
+    NgProfiler::StopTimer(timerstart);
+    
     for (SurfaceElementIndex sei = 0; sei < nse; sei++)
       {
         const Element2d & el = (*mesh)[sei];
@@ -1413,7 +1483,38 @@ namespace netgen
     n = 1 << subdivisions;
     double invn = 1.0 / n;
     npt = (n+1)*(n+2)/2;
+    NgProfiler::StartTimer(timerloops);
+    size_t base_pi = 0;
 
+#ifdef __AVX__
+    for (int iy = 0, ii = 0; iy <= n; iy++)
+      for (int ix = 0; ix <= n-iy; ix++, ii++)
+        pref[ii] = Point<2> (ix*invn, iy*invn);
+    
+    constexpr size_t simd_size = SIMD<double>::Size();
+    size_t simd_npt = (npt+simd_size-1)/simd_size;
+    
+    for (size_t i = 0; i < simd_npt; i++)
+      {
+        simd_pref[i](0).SIMD_function ([&] (size_t j) { size_t ii = i*simd_size+j; return (ii < npt) ? pref[ii](0) : 0; }, std::true_type());
+        simd_pref[i](1).SIMD_function ([&] (size_t j) { size_t ii = i*simd_size+j; return (ii < npt) ? pref[ii](1) : 0; }, std::true_type());
+      }
+#endif
+
+    Array<int> ind_reftrig;
+    for (int iy = 0, ii = 0; iy < n; iy++,ii++)
+      for (int ix = 0; ix < n-iy; ix++, ii++)
+        {
+          int nv = (ix+iy+1 < n) ? 6 : 3;
+          int ind[] = { ii, ii+1, ii+n-iy+1,  
+                        ii+n-iy+1, ii+1, ii+n-iy+2 };
+          for (int j = 0; j < nv; j++)
+            ind_reftrig.Append (ind[j]);
+        }
+    Array<int> glob_ind;
+    glob_ind.SetSize(ind_reftrig.Size());    
+
+    
     for(SurfaceElementIndex sei = 0; sei < nse; sei++)
       {
         const Element2d & el = (*mesh)[sei];
@@ -1436,6 +1537,90 @@ namespace netgen
         
         if ( el.GetType() == TRIG || el.GetType() == TRIG6 )
           {
+            NgProfiler::StartTimer(timer1);
+#ifdef __AVX_try_it_out__
+            // NgProfiler::StartTimer(timer1a);            
+	    bool curved = curv.IsSurfaceElementCurved(sei);
+            
+            if (curved)
+              {
+                mesh->GetCurvedElements().
+                  CalcMultiPointSurfaceTransformation<3> (sei, simd_npt,
+                                                          &simd_pref[0](0), 2,
+                                                          &simd_points[0](0), 3,
+                                                          &simd_dxdxis[0](0,0), 6);
+                
+                for (size_t ii = 0; ii < simd_npt; ii++)
+                  simd_nvs[ii] = Cross (simd_dxdxis[ii].Col(0), simd_dxdxis[ii].Col(1)).Normalize();
+              }
+            else
+              {
+		Point<3,SIMD<double>> p1 = mesh->Point (el[0]);
+		Point<3,SIMD<double>> p2 = mesh->Point (el[1]);
+		Point<3,SIMD<double>> p3 = mesh->Point (el[2]);
+
+                Vec<3,SIMD<double>> vx = p1-p3;
+                Vec<3,SIMD<double>> vy = p2-p3;
+                for (size_t ii = 0; ii < simd_npt; ii++)
+                  {
+                    simd_points[ii] = p3 + simd_pref[ii](0) * vx + simd_pref[ii](1) * vy;
+                    for (size_t j = 0; j < 3; j++)
+                      {
+                        simd_dxdxis[ii](j,0) = vx(j);
+                        simd_dxdxis[ii](j,1) = vy(j);
+                      }
+                  }
+
+                Vec<3,SIMD<double>> nv = Cross (vx, vy).Normalize();
+                for (size_t ii = 0; ii < simd_npt; ii++)
+                  simd_nvs[ii] = nv;
+              }
+
+
+            bool drawelem = false;
+            if (sol && sol->draw_surface) 
+              {
+                // NgProfiler::StopTimer(timer1a);
+                // NgProfiler::StartTimer(timer1b);            
+		drawelem = sol->solclass->GetMultiSurfValue (sei, -1, simd_npt, 
+                                                             &simd_pref[0](0).Data(),
+                                                             &simd_points[0](0).Data(),
+                                                             &simd_dxdxis[0](0).Data(),
+                                                             &simd_values[0].Data());
+                // NgProfiler::StopTimer(timer1b);
+                // NgProfiler::StartTimer(timer1c);            
+
+                for (size_t j = 0; j < sol->components; j++)
+                  for (size_t i = 0; i < npt; i++)
+                    mvalues[i*sol->components+j] = ((double*)&simd_values[j*simd_npt])[i];
+
+                if (usetexture == 2)
+		  for (int ii = 0; ii < npt; ii++)
+		    valuesc[ii] = ExtractValueComplex(sol, scalcomp, &mvalues[ii*sol->components]);
+                else
+		  for (int ii = 0; ii < npt; ii++)
+		    values[ii] = ExtractValue(sol, scalcomp, &mvalues[ii*sol->components]);
+              }
+
+            for (size_t i = 0; i < npt; i++)
+              {
+                size_t ii = i/4;
+                size_t r = i%4;
+                for (int j = 0; j < 2; j++)
+                  pref[i](j) = simd_pref[ii](j)[r];
+                for (int j = 0; j < 3; j++)
+                  points[i](j) = simd_points[ii](j)[r];
+                for (int j = 0; j < 3; j++)
+                  nvs[i](j) = simd_nvs[ii](j)[r];
+              }
+
+            if (deform)
+              for (int ii = 0; ii < npt; ii++)
+                points[ii] += GetSurfDeformation (sei, -1, pref[ii](0), pref[ii](1));
+
+            // NgProfiler::StopTimer(timer1c);
+            
+#else
 	    bool curved = curv.IsSurfaceElementCurved(sei);
 
             for (int iy = 0, ii = 0; iy <= n; iy++)
@@ -1492,6 +1677,8 @@ namespace netgen
             if (deform)
               for (int ii = 0; ii < npt; ii++)
                 points[ii] += GetSurfDeformation (sei, -1, pref[ii](0), pref[ii](1));
+#endif
+            NgProfiler::StopTimer(timer1);
 
             int save_usetexture = usetexture;
             if (!drawelem)
@@ -1500,108 +1687,62 @@ namespace netgen
                 SetTextureMode (usetexture);
               }
 
-            for (int iy = 0, ii = 0; iy < n; iy++)
+            NgProfiler::StartTimer(timer2);
+
+#ifdef USE_BUFFERS
+            if (drawelem && usetexture == 1 && !logscale)
               {
-                glBegin (GL_TRIANGLE_STRIP);
-                for (int ix = 0; ix <= n-iy; ix++, ii++)
-                  for (int k = 0; k < 2; k++)
-                    {
-                      if (ix+iy+k > n) continue;
-                      int hi = (k == 0) ? ii : ii+n-iy+1;
-                      
-                      if (drawelem)
-                        {
-                          if (usetexture != 2)
-                            SetOpenGlColor (values[hi]); 
-                          else
-                            glTexCoord2f ( valuesc[hi].real(), valuesc[hi].imag() );
-                        }
-                      else
-                        glColor4fv (col_grey);
-                      
-                      glNormal3dv (nvs[hi]);
-                      glVertex3dv (points[hi]);
-                    }
-                glEnd();
+                glBindBuffer (GL_ARRAY_BUFFER, surfel_vbo[0]);            
+                glBufferSubData (GL_ARRAY_BUFFER, base_pi*sizeof(Point<3,double>),
+                                 npt*sizeof(Point<3,double>), &points[0][0]);
+                glBindBuffer (GL_ARRAY_BUFFER, surfel_vbo[1]);            
+                glBufferSubData (GL_ARRAY_BUFFER, base_pi*sizeof(Vec<3,double>),
+                                 npt*sizeof(Vec<3,double>), &nvs[0][0]);
+                glBindBuffer (GL_ARRAY_BUFFER, surfel_vbo[2]);            
+                glBufferSubData (GL_ARRAY_BUFFER, base_pi*sizeof(double),
+                                 npt*sizeof(double), &values[0]);
+                
+                for (size_t i = 0; i < ind_reftrig.Size(); i++)
+                  glob_ind[i] = base_pi+ind_reftrig[i];
+                
+                glBindBuffer (GL_ELEMENT_ARRAY_BUFFER, surfel_vbo[3]);            
+                glBufferSubData (GL_ELEMENT_ARRAY_BUFFER, surfel_vbo_size*sizeof(int),
+                                 ind_reftrig.Size()*sizeof(int), &glob_ind[0]);
+                surfel_vbo_size += ind_reftrig.Size();
+                base_pi += npt;
               }
+              
+            else
+#endif
+              for (int iy = 0, ii = 0; iy < n; iy++)
+                {
+                  glBegin (GL_TRIANGLE_STRIP);
+                  for (int ix = 0; ix <= n-iy; ix++, ii++)
+                    for (int k = 0; k < 2; k++)
+                      {
+                        if (ix+iy+k > n) continue;
+                        int hi = (k == 0) ? ii : ii+n-iy+1;
+                        if (drawelem)
+                          {
+                            if (usetexture != 2)
+                              SetOpenGlColor (values[hi]); 
+                            else
+                              glTexCoord2f ( valuesc[hi].real(), valuesc[hi].imag() );
+                          }
+                        else
+                          glColor4fv (col_grey);
+                        
+                        glNormal3dv (nvs[hi]);
+                        glVertex3dv (points[hi]);
+                      }
+                  glEnd();
+                }
+            
+            NgProfiler::StopTimer(timer2);            
 
 
-	    /*
 
- 	    GLuint vboId[3];
- 	    glGenBuffersARB (3, &vboId[0]);
-// 	    cout << "vboId = " << vboId << endl;
-
- 	    glBindBufferARB (GL_ARRAY_BUFFER_ARB, vboId[0]);
- 	    glBufferDataARB (GL_ARRAY_BUFFER_ARB, points.Size()*sizeof(Point<3>), 
- 			     &points[0][0], GL_STATIC_DRAW_ARB);
-
-
-	    // not so fast as old-fashened style
-	    glEnableClientState(GL_VERTEX_ARRAY);
-	    // glVertexPointer(3, GL_DOUBLE, 0, &points[0][0]);
-	    glVertexPointer(3, GL_DOUBLE, 0, 0);  //ARB
-
- 	    glBindBufferARB (GL_ARRAY_BUFFER_ARB, vboId[1]);
- 	    glBufferDataARB (GL_ARRAY_BUFFER_ARB, nvs.Size()*sizeof(Point<3>), 
- 			     &nvs[0][0], GL_STATIC_DRAW_ARB);
-
-	    glEnableClientState(GL_NORMAL_ARRAY);
-	    // glNormalPointer(GL_DOUBLE, 0, &nvs[0][0]);
-	    glNormalPointer(GL_DOUBLE, 0, 0);  // ARB
-
-	    // if (drawelem && usetexture == 1)
-	      {
-		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		// glTexCoordPointer(1, GL_DOUBLE, 0, &values[0]);
-
-		glBindBufferARB (GL_ARRAY_BUFFER_ARB, vboId[2]);
-		glBufferDataARB (GL_ARRAY_BUFFER_ARB, values.Size()*sizeof(double), 
-				 &values[0], GL_STATIC_DRAW_ARB);
-		glTexCoordPointer(1, GL_DOUBLE, 0, 0);
-	      }
-
-	    Array<int> gind;
-
-            for (int iy = 0, ii = 0; iy < n; iy++,ii++)
-              {
-                for (int ix = 0; ix < n-iy; ix++, ii++)
-                    {
-                      int nv = (ix+iy+1 < n) ? 6 : 3;
-
-		      int ind[] = { ii, ii+1, ii+n-iy+1,  
-				    ii+n-iy+1, ii+1, ii+n-iy+2 };
-
-// 		      if (ix == 0 && iy == 0)
-// 		      for (int l = 0; l < 3; l++)
-// 			{
-// 			  if (drawelem)
-// 			    {
-// 			      if (usetexture != 2)
-// 				// SetOpenGlColor (values[ind[l]]); 
-// 				glTexCoord1f ( values[ind[l]] );
-// 			      else
-// 				glTexCoord2f ( valuesc[ind[l]].real(), valuesc[ind[l]].imag() );
-// 			    }
-// 			  else
-// 			    glColor3fv (col_grey);
-// 			}
-
-		      for (int j = 0; j < nv; j++)
-			gind.Append(ind[j]);
-		      // glDrawElements(GL_TRIANGLES, nv, GL_UNSIGNED_INT, &ind[0]);
-                    }
-              }
-	    glDrawElements(GL_TRIANGLES, gind.Size(), GL_UNSIGNED_INT, &gind[0]);
-
-	    glDisableClientState(GL_VERTEX_ARRAY);
-	    glDisableClientState(GL_NORMAL_ARRAY);
-	    glDisableClientState(GL_TEXTURE_COORD_ARRAY);	    
-	    
- 	    glDeleteBuffersARB (3, &vboId[0]);
-	    */
-	    
-
+            
             if (!drawelem && (usetexture != save_usetexture))
               {
                 usetexture = save_usetexture;
@@ -1609,9 +1750,32 @@ namespace netgen
               }
 	  }
       }
+    NgProfiler::StopTimer(timerloops);
+
+    NgProfiler::StartTimer(timerbuffer);
+
+    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, surfel_vbo[3]);
+    // glBufferData(GL_ELEMENT_ARRAY_BUFFER, glob_ind.Size()*sizeof(int), &glob_ind[0], GL_STATIC_DRAW);
+    // surfel_vbo_size = glob_ind.Size();
+ 
+    NgProfiler::StopTimer(timerbuffer);        
+
+    // glDrawElements(GL_TRIANGLES, surfel_vbo_size, GL_UNSIGNED_INT, 0);
+
+    // glDrawElements(GL_TRIANGLES, glob_ind.Size(), GL_UNSIGNED_INT, &glob_ind[0]);
+    
+    // glDisableClientState(GL_VERTEX_ARRAY);
+    // glDisableClientState(GL_NORMAL_ARRAY);
+    // glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+
+    // glDeleteBuffers (1, &IndexVBOID);    
+    // glDeleteBuffers (4, &vboId[0]);
+
+    
+    NgProfiler::StartTimer(timerlist);
     glEndList ();
-
-
+    NgProfiler::StopTimer(timerlist);
+    
 #ifdef PARALLELGL
     glFinish();
     if (id > 0)
@@ -2492,12 +2656,14 @@ namespace netgen
                   if(minv_local < minv)
                     {
                       lock_guard<mutex> guard(min_mutex);
-                      minv = minv_local;
+                      if(minv_local < minv)                      
+                        minv = minv_local;
                     }
                   if(maxv_local > maxv)
                     {
                       lock_guard<mutex> guard(max_mutex);
-                      maxv = maxv_local;
+                      if(maxv_local > maxv)                      
+                        maxv = maxv_local;
                     }
                 });
             }
