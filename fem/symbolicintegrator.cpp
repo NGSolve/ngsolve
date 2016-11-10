@@ -1014,7 +1014,7 @@ namespace ngfem
       }
   }
 
-#define SIMD_CALCMATRIX
+  // #define SIMD_CALCMATRIX
 #ifdef SIMD_CALCMATRIX
   template <>
   void SymbolicBilinearFormIntegrator ::
