@@ -7,8 +7,6 @@
 #include <csg.hpp>
 #include <geometry2d.hpp>
 #include <../interface/writeuser.hpp>
-#include <nginterface.h>
-#include <nginterface_v2.hpp>
 
 
 using namespace netgen;
@@ -300,10 +298,6 @@ DLL_HEADER void ExportNetgenMeshing(py::module &m)
 
   py::implicitly_convertible< int, PointIndex>();
   
-  py::class_<Ngx_Mesh>(m, "Ngx_Mesh")
-    .def(py::init<shared_ptr<Mesh>>())
-    .def_property_readonly("ngmesh", &Ngx_Mesh::GetMesh)
-    ;
   py::class_<Mesh,shared_ptr<Mesh>>(m, "Mesh")
     // .def(py::init<>("create empty mesh"))
 
@@ -551,7 +545,6 @@ DLL_HEADER void ExportNetgenMeshing(py::module &m)
            ))
                                             
     ;
-  py::implicitly_convertible< shared_ptr<Mesh>, Ngx_Mesh >();
   
 
   typedef MeshingParameters MP;
