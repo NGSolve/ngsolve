@@ -60,7 +60,7 @@ namespace ngfem
   void DifferentialOperator ::
   CalcMatrix (const FiniteElement & fel,
               const SIMD_BaseMappedIntegrationRule & mir,
-              ABareMatrix<double> mat) const
+              BareSliceMatrix<SIMD<double>> mat) const
   {
     throw ExceptionNOSIMD(string("Error: DifferentialOperator::CalcMatrix does not support SIMD, type = ")
                           + typeid(*this).name());
@@ -260,7 +260,7 @@ namespace ngfem
   void BlockDifferentialOperator ::
   CalcMatrix (const FiniteElement & fel,
               const SIMD_BaseMappedIntegrationRule & mir,
-              ABareMatrix<double> mat) const
+              BareSliceMatrix<SIMD<double>> mat) const
   {
     throw ExceptionNOSIMD("BlockDifferentialOperator::CalcMatrix does not support SIMD");
   }

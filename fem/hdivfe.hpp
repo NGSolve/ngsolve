@@ -54,14 +54,14 @@ namespace ngfem
                                   SliceMatrix<> shape) const;
 
     virtual void CalcMappedShape (const SIMD_BaseMappedIntegrationRule & mir, 
-                                  ABareMatrix<> shapes) const;
+                                  BareSliceMatrix<SIMD<double>> shapes) const;
 
     /// compute div of shape
     virtual void CalcMappedDivShape (const MappedIntegrationPoint<DIM,DIM> & sip,
 				     SliceVector<> divshape) const;
 
     virtual void CalcMappedDivShape (const SIMD_BaseMappedIntegrationRule & mir, 
-                                     ABareMatrix<> divshapes) const;
+                                     BareSliceMatrix<SIMD<double>> divshapes) const;
 
 
     INLINE const FlatMatrixFixWidth<DIM> GetShape (const IntegrationPoint & ip,

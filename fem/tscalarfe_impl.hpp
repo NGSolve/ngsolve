@@ -60,12 +60,12 @@ namespace ngfem
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
-  CalcShape (const SIMD_IntegrationRule & ir, ABareMatrix<> shapes) const
+  CalcShape (const SIMD_IntegrationRule & ir, BareSliceMatrix<SIMD<double>> shapes) const
   {
     for (size_t i = 0; i < ir.Size(); i++)
       T_CalcShape (ir[i].TIp<DIM>(),
                    SBLambda([&](size_t j, SIMD<double> shape)
-                            { shapes.Get(j,i) = shape; } ));
+                            { shapes(j,i) = shape; } ));
   }
   
   
@@ -836,14 +836,14 @@ namespace ngfem
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   CalcMappedDShape (const SIMD_BaseMappedIntegrationRule & bmir, 
-                    ABareMatrix<> dshapes) const
+                    BareSliceMatrix<SIMD<double>> dshapes) const
   {
    if (bmir.DimSpace() == DIM)
       {
         auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
         for (size_t i = 0; i < mir.Size(); i++)
           {
-            SIMD<double> * pdshapes = &dshapes.Get(0,i);
+            SIMD<double> * pdshapes = &dshapes(0,i);
             size_t dist = dshapes.Dist();
             
             TIP<DIM,AutoDiffRec<DIM,SIMD<double>>> adp = GetTIP(mir[i]);

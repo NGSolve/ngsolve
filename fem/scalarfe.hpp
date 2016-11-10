@@ -54,13 +54,13 @@ namespace ngfem
     /// compute shape, row is shape nr, col is ip nr
     HD NGS_DLL_HEADER 
     virtual void CalcShape (const SIMD_IntegrationRule & ir, 
-                            ABareMatrix<> shape) const;
+                            BareSliceMatrix<SIMD<double>> shape) const;
 
     // rows dim*ndof, cols .. nip
     // rows:  phi0/dx, phi0/dy, phi0/dz, phi1/dx ... 
     HD NGS_DLL_HEADER 
     virtual void CalcMappedDShape (const SIMD_BaseMappedIntegrationRule & mir, 
-                                   ABareMatrix<> dshapes) const;
+                                   BareSliceMatrix<SIMD<double>> dshapes) const;
 
     
     /**
