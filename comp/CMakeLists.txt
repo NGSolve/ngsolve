@@ -22,14 +22,6 @@ add_library( ngcomp ${NGS_LIB_TYPE}
 if(NOT WIN32)
     target_link_libraries (ngcomp interface ngfem ngla ngbla ngstd ${TCL_LIBRARY} ${MPI_CXX_LIBRARIES} ${PYTHON_LIBS} ${LAPACK_LIBRARIES})
     install( TARGETS ngcomp ${ngs_install_dir} )
-
-    if(NOT USE_NATIVE_ARCH)
-        add_library(ngcomp_avx2 ${NGS_LIB_TYPE} $<TARGET_PROPERTY:ngcomp,SOURCES> )
-        target_link_libraries(ngcomp_avx2 $<TARGET_PROPERTY:ngcomp,INTERFACE_LINK_LIBRARIES> )
-        target_compile_options(ngcomp_avx2 PUBLIC ${AVX2_FLAG})
-        install( TARGETS ngcomp_avx2 ${ngs_install_dir} )
-    endif(NOT USE_NATIVE_ARCH)
-
 endif(NOT WIN32)
 
 install( FILES
