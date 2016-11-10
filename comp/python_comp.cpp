@@ -901,7 +901,6 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                              fes->Update(lh);
                              fes->FinalizeUpdate(lh);
                              new (instance) PyFES(fes);
-                             py::cast(*instance).attr("__dict__")["flags"] = py::cast(bpflags);
                              };
 
   py::class_<PyFES>(m, "FESpace",  "a finite element space", py::dynamic_attr())
@@ -913,6 +912,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                           {
                             shared_ptr<MeshAccess> ma = py::extract<shared_ptr<MeshAccess>>(bp_ma)();
                             fes_dummy_init(instance, ma, type, bp_flags, order, is_complex, dirichlet, definedon, dim);
+                             py::cast(*instance).attr("flags") = py::cast(bp_flags);
                            },
          py::arg("type"), py::arg("mesh"), py::arg("flags") = py::dict(), 
            py::arg("order")=-1, 
@@ -953,7 +953,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                              fes->Update(lh);
                              fes->FinalizeUpdate(lh);
                              new (instance) PyFES(fes);
-                             py::cast(*instance)["__dict__"]["flags"] = bpflags;
+                             py::cast(*instance).attr("flags") = bpflags;
                            },
           py::arg("spaces"), py::arg("flags") = py::dict(),
          "construct compound-FESpace from list of component spaces"
@@ -963,13 +963,10 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
     .def("__getstate__", [] (py::object self_object) {
         auto self = self_object.cast<PyFES>();
         auto dict = self_object.attr("__dict__");
-        cout << dict.str() << endl;
         auto mesh = self->GetMeshAccess();
         return py::make_tuple( self->type, mesh, dict );
      })
     .def("__setstate__", [] (PyFES &self, py::tuple t) {
-        cout << "setstate" << endl;
-        cout << t[2].str() << endl;
         auto flags = t[2]["flags"].cast<Flags>();
         auto fes = CreateFESpace (t[0].cast<string>(), t[1].cast<shared_ptr<MeshAccess>>(), flags);
         LocalHeap lh (1000000, "FESpace::Update-heap");
@@ -1208,6 +1205,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                             auto gf = CreateGridFunction (fespace.Get(), name, flags);
                             gf->Update();
                             new (instance) PyGF(gf);
+			    py::cast(*instance).attr("__dict__")["space"] = bp_fespace;
                           },
          py::arg("space"), py::arg("name")="gfu", py::arg("multidim")=DummyArgument(),
          "creates a gridfunction in finite element space"
@@ -1217,7 +1215,9 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
     .def("__getstate__", [] (py::object self_object) {
         auto self = self_object.cast<PyGF>();
         auto vec = PyBaseVector(self->GetVectorPtr());
-        return py::make_tuple(PyFES(self->GetFESpace()), self->GetName(), vec, self->GetMultiDim());
+	auto fes = self_object.attr("space");
+	auto perid  = self_object.attr("__persistent_id__");
+        return py::make_tuple(fes, self->GetName(), vec, self->GetMultiDim(),perid);
         })
     .def("__setstate__", [] (PyGF &self, py::tuple t) {
          auto fespace = t[0].cast<PyFES>();
@@ -1225,8 +1225,10 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
          flags.SetFlag ("multidim", py::extract<int>(t[3])());
          auto gf = CreateGridFunction (fespace.Get(), t[1].cast<string>(), flags);
          gf->Update();
+	 gf->GetVector() = *t[2].cast<PyBaseVector>().Get();
          new (&self) PyGF(gf);
          py::object self_object = py::cast(self);
+	 self_object.attr("__persistent_id__") = t[4];
          })
     // .def("__str__", &ToString<GF>)
     .def("__str__", [] (PyGF & self) { return ToString(*self.Get()); } )
