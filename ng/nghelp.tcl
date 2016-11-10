@@ -54,7 +54,7 @@ proc show_menu_help { entry } {
 }
 
 
-tixBalloon .balloon -statusbar .helpline
+#tixBalloon .balloon -statusbar .helpline
 
 proc set_control_help { control helpmsg } {
     bind $control <Enter> "show_control_help {$helpmsg}"
