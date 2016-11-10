@@ -2122,7 +2122,7 @@ namespace ngcomp
                          sum_elmat += elmat;
                        }
                 
-                     fespace->TransformMat (ei.Nr(), false, sum_elmat, TRANSFORM_MAT_LEFT_RIGHT);
+                     fespace->TransformMat (ei.Nr(), VOL, sum_elmat, TRANSFORM_MAT_LEFT_RIGHT);
                      
                      if (idofs.Size())
                        {
@@ -2206,6 +2206,8 @@ namespace ngcomp
     static Timer timer ("Assemble Linearization");
     static Timer timervol ("Assemble Linearization - volume");
     static Timer timerbound ("Assemble Linearization - boundary");
+    static Timer timerbbound ("Assemble Linearization - co dim 2");
+    static Timer timerVB[] = { timervol, timerbound, timerbbound };
 
     static mutex addelmatboundary1_mutex;
 
@@ -2236,10 +2238,12 @@ namespace ngcomp
       
         for (int j = 0; j < NumIntegrators(); j++)
           {
-            if (parts[j] -> BoundaryForm())
+            if (parts[j] -> VB()==VOL)
               hasbound = true;
-            else
+            else if(parts[j] ->VB()==BND)
               hasinner = true;
+	    else
+	      throw Exception("Assemble Linearization for BBND objects not implemented yet!");
           }
       
 
@@ -3336,10 +3340,12 @@ namespace ngcomp
         for (int j = 0; j < NumIntegrators(); j++)
           {
             const BilinearFormIntegrator & bfi = *GetIntegrator(j);
-            if (bfi.BoundaryForm())
+            if (bfi.VB()==BND)
               hasbound = true;
-            else
+            else if(bfi.VB()==VOL)
               hasinner = true;
+	    else
+	      throw Exception("Energy not implemented for BBND objects yet!");
           }
 
         if (hasinner)

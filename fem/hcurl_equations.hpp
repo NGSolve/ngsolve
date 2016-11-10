@@ -380,26 +380,26 @@ namespace ngfem
       y = static_cast<const FEL&> (fel).GetShape (mip.IP(),lh) * hx;
     }
 
-    using DiffOp<DiffOpIdBBoundaryEdge<D, FEL> >::ApplySIMDIR; 
+    //using DiffOp<DiffOpIdBBoundaryEdge<D, FEL> >::ApplySIMDIR; 
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
-                             BareSliceVector<double> x, BareSliceMatrix<double> y)
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
       static_cast<const FEL&> (fel).Evaluate (mir, x, y);
     }    
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
-                             BareSliceVector<Complex> x, BareSliceMatrix<Complex> y)
+                             BareSliceVector<Complex> x, BareSliceMatrix<SIMD<Complex>> y)
     {
       static_cast<const FEL&> (fel).Evaluate (mir, x, y);
     }    
 
-    using DiffOp<DiffOpIdBBoundaryEdge<D, FEL> >::AddTransSIMDIR;  
+    //using DiffOp<DiffOpIdBBoundaryEdge<D, FEL> >::AddTransSIMDIR;  
     static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
-                                BareSliceMatrix<double> y, BareSliceVector<double> x)
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
        static_cast<const FEL&> (fel).AddTrans (mir, y, x);
     }    
     static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
-                                BareSliceMatrix<Complex> y, BareSliceVector<Complex> x)
+                                BareSliceMatrix<SIMD<Complex>> y, BareSliceVector<Complex> x)
     {
        static_cast<const FEL&> (fel).AddTrans (mir, y, x);
     }   
@@ -457,26 +457,26 @@ namespace ngfem
       */
     }
 
-    using DiffOp<DiffOpIdBoundaryEdge<D, FEL> >::ApplySIMDIR;        
+    //using DiffOp<DiffOpIdBoundaryEdge<D, FEL> >::ApplySIMDIR;        
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
-                             BareSliceVector<double> x, BareSliceMatrix<double> y)
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
       static_cast<const FEL&> (fel).Evaluate (mir, x, y);
     }          
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
-                             BareSliceVector<Complex> x, BareSliceMatrix<Complex> y)
+                             BareSliceVector<Complex> x, BareSliceMatrix<SIMD<Complex>> y)
     {
       static_cast<const FEL&> (fel).Evaluate (mir, x, y);
     }    
 
-    using DiffOp<DiffOpIdBoundaryEdge<D, FEL> >::AddTransSIMDIR;            
+    //using DiffOp<DiffOpIdBoundaryEdge<D, FEL> >::AddTransSIMDIR;            
     static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
-                                BareSliceMatrix<double> y, BareSliceVector<double> x)
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
        static_cast<const FEL&> (fel).AddTrans (mir, y, x);
     }      
     static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
-                                BareSliceMatrix<Complex> y, BareSliceVector<Complex> x)
+                                BareSliceMatrix<SIMD<Complex>> y, BareSliceVector<Complex> x)
     {
        static_cast<const FEL&> (fel).AddTrans (mir, y, x);
     }    
