@@ -235,7 +235,8 @@ endif (USE_MKL)
 if (USE_MUMPS)
     add_definitions(-DUSE_MUMPS)
     find_package(MUMPS REQUIRED)
-    include_directories(${MUMPS_DIR}/include)
+    set(MUMPS_INCLUDE_DIR ${MUMPS_DIR}/include)
+    include_directories(${MUMPS_INCLUDE_DIR})
     link_directories(${MUMPS_DIR}/lib)
 endif (USE_MUMPS)
 
@@ -365,6 +366,7 @@ add_subdirectory(python)
 add_subdirectory(pde_tutorial)
 add_subdirectory(py_tutorials)
 add_subdirectory(tests)
+add_subdirectory(external_dependencies)
 
 #######################################################################
 # generate ngscxx compiler wrapper
@@ -385,7 +387,11 @@ foreach( d ${ngscxx_defines} )
 endforeach()
 
 # include directories
-set(ngscxx_include_dirs ${INSTALL_DIR}/include ${TCL_INCLUDE_PATH} ${MPI_CXX_INCLUDE_PATH} ${MKL_INCLUDE_DIRS} ${MUMPS_DIR}/include ${PYTHON_INCLUDE_DIRS} ${PYBIND_INCLUDE_DIR} ${UMFPACK_INCLUDE_DIR} ${VTUNE_INCLUDE_DIR} ${NETGEN_INTERNAL_INCLUDE_DIR})
+set(ngscxx_include_dirs ${INSTALL_DIR}/include ${TCL_INCLUDE_PATH} ${MPI_CXX_INCLUDE_PATH} ${MKL_INCLUDE_DIRS} ${MUMPS_INCLUDE_DIR}/include ${PYTHON_INCLUDE_DIRS} ${UMFPACK_INCLUDE_DIR} ${VTUNE_INCLUDE_DIR})
+if(NOT INSTALL_DEPENDENCIES) 
+    set(ngscxx_include_dirs ${ngscxx_include_dirs} ${NETGEN_INTERNAL_INCLUDE_DIR})
+endif(NOT INSTALL_DEPENDENCIES) 
+
 
 foreach( d ${ngscxx_include_dirs} )
   if(WIN32)
