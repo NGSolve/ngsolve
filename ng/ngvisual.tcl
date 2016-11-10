@@ -880,8 +880,8 @@ proc fieldlinesdialog { } {
 
 	set g $w.nb.settings
 
-	frame $g.linesettings -relief groove -borderwidth 3
-	label $g.linesettings.title -text "\nLine Settings\n"
+	ttk::frame $g.linesettings -relief groove -borderwidth 3
+	ttk::label $g.linesettings.title -text "\nLine Settings\n"
 	# tixControl $g.linesettings.length -label "rel. Length: " -integer false \
 	    # -variable visoptions.fieldlineslength -min 0.00001 -max 10000 -step 0.1 \
 	    # -options {
@@ -934,8 +934,8 @@ proc fieldlinesdialog { } {
 
 	global visoptions.fieldlinestolerance
 
-	frame $g.odesettings -relief groove -borderwidth 3
-	label $g.odesettings.title -text "\nODE Settings\n"
+	ttk::frame $g.odesettings -relief groove -borderwidth 3
+	ttk::label $g.odesettings.title -text "\nODE Settings\n"
 	# tixControl $g.odesettings.tol -label "rel. Tolerance: " -integer false \
 	    # -variable visoptions.fieldlinestolerance -min 0.00001 -max 1 -step 0.01 \
 	    # -options {
