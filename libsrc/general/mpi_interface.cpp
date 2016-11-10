@@ -16,17 +16,17 @@ namespace netgen
   
   void MyMPI_SendCmd (const char * cmd)
   {
-    char buf[100];
+    char buf[10000];
     strcpy (buf, cmd);
     // MPI_Bcast (&buf, 100, MPI_CHAR, 0, MPI_COMM_WORLD);
 
     for (int dest = 1; dest < ntasks; dest++)
-      MPI_Bsend( &buf, 100, MPI_CHAR, dest, MPI_TAG_CMD, MPI_COMM_WORLD);
+      MPI_Send( &buf, 10000, MPI_CHAR, dest, MPI_TAG_CMD, MPI_COMM_WORLD);
   }
 
   string MyMPI_RecvCmd ()
   {
-    char buf[100];
+    char buf[10000];
     // MPI_Bcast (&buf, 100, MPI_CHAR, 0, MPI_COMM_WORLD);
 
     // VT_OFF();
@@ -44,7 +44,7 @@ namespace netgen
     while (!flag);
     // VT_ON();
 
-    MPI_Recv( &buf, 100, MPI_CHAR, 0, MPI_TAG_CMD, MPI_COMM_WORLD, &status);
+    MPI_Recv( &buf, 10000, MPI_CHAR, 0, MPI_TAG_CMD, MPI_COMM_WORLD, &status);
     
     return string(buf);
   }

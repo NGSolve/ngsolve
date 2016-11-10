@@ -138,7 +138,7 @@ void ParallelRun()
 	  string redraw_cmd;
 	  // MyMPI_Recv (redraw_cmd, 0, MPI_TAG_VIS);
 	  redraw_cmd = MyMPI_RecvCmd();
-	    
+	  
 	  // PrintMessage (1, "Redraw - ", redraw_cmd);
                   
 	  static string displname;
@@ -147,17 +147,17 @@ void ParallelRun()
 	  static Display * display = NULL;
 	  static GLXContext context;
 	  static XVisualInfo * visinfo = 0;
-	    
+	  
 	  // if (!display)
 	  if (redraw_cmd == "init")
 	    {
 	      MyMPI_Recv (displname, 0, MPI_TAG_VIS);
 	      MyMPI_Recv (curDrawable, 0, MPI_TAG_VIS);
 	      MyMPI_Recv (contextid, 0, MPI_TAG_VIS);
-		
+	      
 	      display = XOpenDisplay (displname.c_str());
-		
 
+	      
 	      /*
 		PrintMessage (3, "displ - name = ", displname);
 		PrintMessage (3, "display = ", display,
@@ -166,23 +166,27 @@ void ParallelRun()
 		" , h = ", XDisplayHeight (display, 0));
 	      */
 
-	      Window win;
-	      int wx, wy;
-	      unsigned int ww, wh, bw, depth;
-	      // cout << "got drawable: " << curDrawable << endl;
-		
-	      XGetGeometry(display, curDrawable, &win,
-			   &wx, &wy, &ww, &wh,
-			   &bw, &depth);
-		
 	      /*
+		Window win;
+		int wx, wy;
+		unsigned int ww, wh, bw, depth;
+		cout << "got drawable: " << curDrawable << ", contextid: " << contextid <<  endl;
+		
+		cout << "get geometriy..." << endl;
+		XGetGeometry(display, curDrawable, &win,
+		&wx, &wy, &ww, &wh,
+		&bw, &depth);
+		cout << "have!" << endl;
+	      
 		cout << "P" << id << ": window-props:  x = " << wx << ", y = " << wy 
 		<< ", w = " << ww << ", h = " << wh << ", depth = " << depth << endl;
 	      */
-		
+	      
 #define VISUAL
 #ifdef VISUAL
-		
+
+#ifdef VISINFO_OLD
+	      //this does not seem to work anymore (but might still be with togl1.7?)
 	      // make a new GLXContext
 	      // first, generate a visual (copied from togl)
 		
@@ -221,51 +225,68 @@ void ParallelRun()
 		  attrib_list[attrib_count++] = GLX_DOUBLEBUFFER;
 
 		  attrib_list[attrib_count++] = None;
-                    
+
 		  visinfo = glXChooseVisual(display, 0, 
 					    attrib_list);
+		  cout << "have vis?" << endl;
+
 		  if (visinfo) {
 		    /* found a GLX visual! */
 		    // cout << "found VISINFO !!!" << endl;
+		    cout << "found VISINFO !!!" << endl;
 
 		    /*
-		      int hi = 0;
-		      std::cout << "attribs = ";
-		      while (attrib_list[hi] != None)
+		    int hi = 0;
+		    std::cout << "attribs = ";
+		    while (attrib_list[hi] != None)
 		      std::cout << attrib_list[hi++] << " ";
-		      std::cout << std::endl;
+		    std::cout << std::endl;
 		    */
-
+		    
 		    break;
 		  }
 		}
 	      if (!visinfo)
 		cerr << "no VISINFO found" << endl;
 
+#else
+	      //get all possible confs
+	      int nconfs;
+	      auto cptr = glXGetFBConfigs (display,0, &nconfs);
+	      Array<int> conf_ids(nconfs);
+	      for(int k=0;k<nconfs;k++)
+		glXGetFBConfigAttrib(display, cptr[k], GLX_FBCONFIG_ID, &(conf_ids[k]));
+	      
+	      //get drawable->FBConfig->visual
+	      unsigned int d_fbc_id;
+	      glXQueryDrawable( display, curDrawable, GLX_FBCONFIG_ID, &d_fbc_id); 
+	      GLXFBConfig d_fbc;
+	      for(int k=0;k<nconfs;k++)
+		if(d_fbc_id==conf_ids[k])
+		  d_fbc = cptr[k];
+	      visinfo = glXGetVisualFromFBConfig(display,d_fbc);
+#endif
+
 	      // context = glXCreateContext( display, visinfo, 0, /* curContext, */ False );
 	      context = glXCreateContext( display, visinfo, glXImportContextEXT ( display, contextid ), False);
-	      // cout << "context = " << context << endl;
-		
 	      glXMakeCurrent (display, curDrawable, context);
 
 
 #else
 	      // try to get GLXcontext from the master. 
 	      // this needs an indirect context (BUT DOES NOT WORK ????)
-		
-	      context = glXImportContextEXT ( display, contextid );
 
+	      context = glXImportContextEXT ( display, contextid );
 
 	      PrintMessage (1, "GLX-contextid = " , contextid,
 			    " imported context ", context);
-
 
 	      glXMakeCurrent (display, curDrawable, context);
 #endif
 
 	      // PrintMessage (1, "redraw - init complete");
 	    }
-	    
+	  
 	  if (redraw_cmd == "broadcast")
 	    {
 	      vsmesh.Broadcast ();
@@ -282,7 +303,6 @@ void ParallelRun()
 	    {
 	      vsmesh.BuildFilledList (false);
 	    }
-
 
 	  if (redraw_cmd == "solsurfellist")
 	    {
