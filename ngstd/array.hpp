@@ -878,6 +878,22 @@ namespace ngstd
     */
   };
 
+  template <class T,> 
+  INLINE void Array<T> :: ResetSize (size_t new_size)
+  {
+    if(new_size<=allocsize)
+      {
+	size = new_size;
+	return;
+      }
+
+    delete [] mem_to_delete;
+    data = new T[new_size];
+    allocsize = new_size;
+    size = new_size;
+    mem_to_delete = data;
+  }
+  
   template <class T, class TSIZE> 
   INLINE void Array<T,TSIZE> :: ResetSize (TSIZE new_size)
   {
