@@ -225,7 +225,7 @@ public:
           {
             remember_first[i] = proxy;
             new (&remember_second[i]) FlatMatrix<> (h, w, lh);
-            new (&remember_asecond[i]) FlatMatrix<SIMD<double>> ( (w+SIMD<double>::Size()-1)/SIMD<double>::Size(), h, lh);
+            new (&remember_asecond[i]) FlatMatrix<SIMD<double>> (w, (h+SIMD<double>::Size()-1)/SIMD<double>::Size(), lh);
             return;
           }
       }
@@ -460,6 +460,9 @@ public:
     virtual bool IsSymmetric() const { return true; }  // correct would be: don't know
     virtual string Name () const { return string ("Symbolic BFI"); }
 
+    IntegrationRule GetIntegrationRule (const FiniteElement & fel) const;
+    SIMD_IntegrationRule Get_SIMD_IntegrationRule (const FiniteElement & fel) const;
+    
     virtual void 
     CalcElementMatrix (const FiniteElement & fel,
 		       const ElementTransformation & trafo, 

@@ -1718,6 +1718,8 @@ namespace ngfem
   public:
     SIMD_IntegrationRule () = default;
     inline SIMD_IntegrationRule (ELEMENT_TYPE eltype, int order);
+    SIMD_IntegrationRule (const SIMD_IntegrationRule & ir) = delete;
+    SIMD_IntegrationRule (SIMD_IntegrationRule && ir) = default;
     SIMD_IntegrationRule (const IntegrationRule & ir);
     SIMD_IntegrationRule (const IntegrationRule & ir, LocalHeap & lh);
     SIMD_IntegrationRule (int nip, LocalHeap & lh);
