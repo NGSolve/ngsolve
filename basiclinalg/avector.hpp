@@ -518,6 +518,7 @@ namespace ngbla
     size_t AllocSize() const { return h*VWidth()*SIMD<double>::Size(); }
 
     size_t Height () const { return h; }
+    
     size_t Width () const { return w; }
     // unsigned int VWidth() const { return (unsigned(w)+3)/4; }
     size_t VWidth() const { return (w+SIMD<double>::Size()-1)/SIMD<double>::Size(); }

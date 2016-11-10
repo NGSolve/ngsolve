@@ -878,8 +878,8 @@ namespace ngstd
     */
   };
 
-  template <class T, class TSIZE> 
-  INLINE void Array<T,TSIZE> :: ResetSize (TSIZE new_size)
+  template <class T,> 
+  INLINE void Array<T> :: ResetSize (size_t new_size)
   {
     if(new_size<=allocsize)
       {
@@ -891,8 +891,9 @@ namespace ngstd
     data = new T[new_size];
     allocsize = new_size;
     size = new_size;
+    mem_to_delete = data;
   }
-  
+    
   /// resize array, at least to size minsize. copy contents
   template <class T> 
   INLINE void Array<T> :: ReSize (size_t minsize)
