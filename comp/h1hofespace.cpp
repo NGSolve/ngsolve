@@ -21,25 +21,25 @@ using namespace ngmg;
 #include "../parallel/dump.hpp"
 
 
-template <NODE_TYPE NT, typename TELEM, typename TSIZE>
+template <NODE_TYPE NT, typename TELEM>
 class NodalArray
 {
   const MeshAccess & ma;
-  Array<TELEM,TSIZE> & a;
+  Array<TELEM> & a;
 public:
-  NodalArray (const MeshAccess & ama, Array<TELEM,TSIZE> & aa) : ma(ama), a(aa) { ; }
+  NodalArray (const MeshAccess & ama, Array<TELEM> & aa) : ma(ama), a(aa) { ; }
   const MeshAccess & GetMeshAccess() const { return ma; }
-  Array<TELEM,TSIZE> & A() { return a; }
+  Array<TELEM> & A() { return a; }
 };
 
-template <NODE_TYPE NT, typename TELEM, typename TSIZE>
-auto NodalData (const MeshAccess & ama, Array<TELEM,TSIZE> & a) -> NodalArray<NT,TELEM,TSIZE> 
-{ return NodalArray<NT,TELEM,TSIZE> (ama, a); }
+template <NODE_TYPE NT, typename TELEM>
+auto NodalData (const MeshAccess & ama, Array<TELEM> & a) -> NodalArray<NT,TELEM> 
+{ return NodalArray<NT,TELEM> (ama, a); }
 
 
 
-template <NODE_TYPE NT, typename T, typename TSIZE> 
-Archive & operator & (Archive & archive, NodalArray<NT,T,TSIZE> && a)
+template <NODE_TYPE NT, typename T> 
+Archive & operator & (Archive & archive, NodalArray<NT,T> && a)
 {
   if (MyMPI_GetNTasks() == 1) return archive & a.A();
   
