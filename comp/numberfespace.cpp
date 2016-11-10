@@ -5,10 +5,11 @@ namespace ngcomp
 
   class NumberFiniteElement : public FiniteElement
   {
+    ELEMENT_TYPE et;
   public:
-    NumberFiniteElement ()
+    NumberFiniteElement (ELEMENT_TYPE _et)
       : FiniteElement(1, 0) { ; }
-    HD virtual ELEMENT_TYPE ElementType() const { return ET_POINT; }
+    HD virtual ELEMENT_TYPE ElementType() const { return et; }
   };
 
 

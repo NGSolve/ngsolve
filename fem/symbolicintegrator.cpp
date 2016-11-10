@@ -732,6 +732,47 @@ namespace ngfem
     typedef AFlatVector<double> tvec;
   };
   */
+
+  IntegrationRule SymbolicBilinearFormIntegrator :: GetIntegrationRule (const FiniteElement & fel) const
+  {
+    const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fel);
+    const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : fel;
+    const FiniteElement & fel_test = mixedfe ? mixedfe->FETest() : fel;
+
+    int trial_difforder = 99, test_difforder = 99;
+    for (auto proxy : trial_proxies)
+      trial_difforder = min2(trial_difforder, proxy->Evaluator()->DiffOrder());
+    for (auto proxy : test_proxies)
+      test_difforder = min2(test_difforder, proxy->Evaluator()->DiffOrder());
+
+    int intorder = fel_trial.Order()+fel_test.Order();
+    auto et = fel.ElementType();
+    if (et == ET_TRIG || et == ET_TET)
+      intorder -= test_difforder+trial_difforder;
+    return IntegrationRule (et, intorder);
+  }
+    
+  SIMD_IntegrationRule SymbolicBilinearFormIntegrator :: Get_SIMD_IntegrationRule (const FiniteElement & fel) const
+  {
+    const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fel);
+    const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : fel;
+    const FiniteElement & fel_test = mixedfe ? mixedfe->FETest() : fel;
+
+    int trial_difforder = 99, test_difforder = 99;
+    for (auto proxy : trial_proxies)
+      trial_difforder = min2(trial_difforder, proxy->Evaluator()->DiffOrder());
+    for (auto proxy : test_proxies)
+      test_difforder = min2(test_difforder, proxy->Evaluator()->DiffOrder());
+
+    int intorder = fel_trial.Order()+fel_test.Order();
+    auto et = fel.ElementType();
+    if (et == ET_TRIG || et == ET_TET)
+      intorder -= test_difforder+trial_difforder;
+    return SIMD_IntegrationRule (et, intorder);
+  }
+
+
+
   
   template <typename SCAL, typename SCAL_SHAPES>
   void SymbolicBilinearFormIntegrator ::
@@ -779,6 +820,7 @@ namespace ngfem
     const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : fel;
     const FiniteElement & fel_test = mixedfe ? mixedfe->FETest() : fel;
 
+    /*
     int trial_difforder = 99, test_difforder = 99;
     for (auto proxy : trial_proxies)
       trial_difforder = min2(trial_difforder, proxy->Evaluator()->DiffOrder());
@@ -789,11 +831,11 @@ namespace ngfem
     auto et = trafo.GetElementType();
     if (et == ET_TRIG || et == ET_TET)
       intorder -= test_difforder+trial_difforder;
+    */
     elmat = 0;
 
-
-    // IntegrationRule ir(trafo.GetElementType(), intorder);
-    IntegrationRule ir = fel_trial.GetIR(intorder);
+    IntegrationRule ir = GetIntegrationRule (fel);
+    // IntegrationRule ir = fel_trial.GetIR(intorder);
     BaseMappedIntegrationRule & mir = trafo(ir, lh);
     
     ProxyUserData ud;
@@ -1599,8 +1641,29 @@ namespace ngfem
     static Timer t("symbolicbfi - calclinearized", 2);
     static Timer td("symbolicbfi - calclinearized dmats", 2);
     RegionTimer reg(t);
+
+
+
+    const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fel);
+    const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : fel;
+    const FiniteElement & fel_test = mixedfe ? mixedfe->FETest() : fel;
+
+    /*
+    int trial_difforder = 99, test_difforder = 99;
+    for (auto proxy : trial_proxies)
+      trial_difforder = min2(trial_difforder, proxy->Evaluator()->DiffOrder());
+    for (auto proxy : test_proxies)
+      test_difforder = min2(test_difforder, proxy->Evaluator()->DiffOrder());
+
+    int intorder = fel_trial.Order()+fel_test.Order();
+    auto et = trafo.GetElementType();
+    if (et == ET_TRIG || et == ET_TET)
+      intorder -= test_difforder+trial_difforder;
+    */
     
-    IntegrationRule ir(trafo.GetElementType(), 2*fel.Order());
+    // IntegrationRule ir(trafo.GetElementType(), intorder);
+    IntegrationRule ir = GetIntegrationRule (fel);
+    // IntegrationRule ir(trafo.GetElementType(), 2*fel.Order());
     BaseMappedIntegrationRule & mir = trafo(ir, lh);
 
     ProxyUserData ud(trial_proxies.Size(), lh);
@@ -1611,7 +1674,7 @@ namespace ngfem
     for (ProxyFunction * proxy : trial_proxies)
       {
         ud.AssignMemory (proxy, ir.Size(), proxy->Dimension(), lh);
-        proxy->Evaluator()->Apply(fel, mir, elveclin, ud.GetMemory(proxy), lh);
+        proxy->Evaluator()->Apply(fel_trial, mir, elveclin, ud.GetMemory(proxy), lh);
       }
     
     FlatMatrix<> val(mir.Size(), 1, lh), deriv(mir.Size(), 1, lh);
@@ -1664,8 +1727,8 @@ namespace ngfem
                 {
                   int ii = i+j;
                   IntRange r2 = proxy2->Dimension() * IntRange(j,j+1);
-                  proxy1->Evaluator()->CalcMatrix(fel, mir[ii], bmat1, lh);
-                  proxy2->Evaluator()->CalcMatrix(fel, mir[ii], bmat2, lh);
+                  proxy1->Evaluator()->CalcMatrix(fel_trial, mir[ii], bmat1, lh);
+                  proxy2->Evaluator()->CalcMatrix(fel_test, mir[ii], bmat2, lh);
                   bdbmat1.Rows(r2) = proxyvalues(ii,STAR,STAR) * bmat1;
                   bbmat2.Rows(r2) = bmat2;
                 }
@@ -1930,10 +1993,22 @@ namespace ngfem
           const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fel);
           const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : fel;
           const FiniteElement & fel_test = mixedfe ? mixedfe->FETest() : fel;
-          
-          HeapReset hr(lh);
 
-          SIMD_IntegrationRule simd_ir(trafo.GetElementType(), fel_trial.Order()+fel_test.Order());
+          /*
+          int trial_difforder = 99, test_difforder = 99;
+          for (auto proxy : trial_proxies)
+            trial_difforder = min2(trial_difforder, proxy->Evaluator()->DiffOrder());
+          for (auto proxy : test_proxies)
+            test_difforder = min2(test_difforder, proxy->Evaluator()->DiffOrder());
+          int intorder = fel_trial.Order()+fel_test.Order();
+          auto et = trafo.GetElementType();
+          if (et == ET_TRIG || et == ET_TET)
+            intorder -= test_difforder+trial_difforder;
+          */
+          HeapReset hr(lh);
+          // cout << "apply order = " << intorder << endl;
+          // SIMD_IntegrationRule simd_ir(trafo.GetElementType(), intorder);
+          SIMD_IntegrationRule simd_ir = Get_SIMD_IntegrationRule (fel);
           auto & simd_mir = trafo(simd_ir, lh);
           
           ProxyUserData ud(trial_proxies.Size(), lh);
@@ -1967,7 +2042,7 @@ namespace ngfem
                     row.Get(j) *= simd_mir[j].GetMeasure().Data() * simd_ir[j].Weight().Data();
                 }
 
-              proxy->Evaluator()->AddTrans(fel_test, simd_mir, simd_proxyvalues, ely); // , lh);
+              proxy->Evaluator()->AddTrans(fel_test, simd_mir, simd_proxyvalues, ely); 
             }
           return;
         }
@@ -1993,7 +2068,9 @@ namespace ngfem
     ud.elx = &elx;
     ud.lh = &lh;
 
-    IntegrationRule ir(trafo.GetElementType(), fel_trial.Order()+fel_test.Order());
+    // IntegrationRule ir(trafo.GetElementType(), fel_trial.Order()+fel_test.Order());
+    IntegrationRule ir = GetIntegrationRule (fel);
+
     BaseMappedIntegrationRule & mir = trafo(ir, lh);
 
     for (ProxyFunction * proxy : trial_proxies)
