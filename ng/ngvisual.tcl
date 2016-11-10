@@ -227,35 +227,48 @@ proc lineplotdialog { } {
 	}
 	
 
-	tixOptionMenu $w.filesettings.latestevals -label "Use Evaluate Results: " \
-	    -options {
-		label.width  25
-		label.anchor e
-		menubutton.width 40
-	    } 
+	# tixOptionMenu $w.filesettings.latestevals -label "Use Evaluate Results: " \
+	    # -options {
+		# label.width  25
+		# label.anchor e
+		# menubutton.width 40
+	    # } 
 	
+	# for {set i 0} {$i < [llength ${visoptions.evaluatefilenames}]} {incr i} {
+	    # $w.filesettings.latestevals add command $i \
+		# -label "[lindex ${visoptions.evaluatefiledescriptions} $i] ([lindex ${visoptions.evaluatefilenames} $i])"
+	# }
+	# $w.filesettings.latestevals config -variable visoptions.lineplotselectedeval
+
+	# pack $w.filesettings.latestevals
+    ttk::frame $w.filesettings.latestevals
+    ttk::label  $w.filesettings.latestevals.lab -text "Use Evaluate Results: "
+    ttk::menubutton $w.filesettings.latestevals.but -menu $w.filesettings.latestevals.menu -text "coarse" -width 40
+
+    menu $w.filesettings.latestevals.menu -tearoff 0
 	for {set i 0} {$i < [llength ${visoptions.evaluatefilenames}]} {incr i} {
-	    $w.filesettings.latestevals add command $i \
-		-label "[lindex ${visoptions.evaluatefiledescriptions} $i] ([lindex ${visoptions.evaluatefilenames} $i])"
+	    $w.filesettings.latestevals.menu add command -label $i\
+                -command "set visoptions.lineplotselectedeval $i ; $w.filesettings.latestevals.but configure -text \"[lindex ${visoptions.evaluatefiledescriptions} $i] ([lindex ${visoptions.evaluatefilenames} $i])\""
 	}
-	$w.filesettings.latestevals config -variable visoptions.lineplotselectedeval
+   $w.filesettings.latestevals.menu invoke ${visoptions.lineplotselectedeval}               
 
+
+    grid $w.filesettings.latestevals.lab $w.filesettings.latestevals.but -sticky nw
 	pack $w.filesettings.latestevals
-	
-	frame $w.filesettings.sfn
+	ttk::frame $w.filesettings.sfn
 
-	button $w.filesettings.sfn.bb -text "Browse" \
+	ttk::button $w.filesettings.sfn.bb -text "Browse" \
 	    -command { set visoptions.lineplotfile [tk_getOpenFile] }
 
 	
-	entry $w.filesettings.sfn.fn -width 50 -relief sunken \
+	ttk::entry $w.filesettings.sfn.fn -width 50 \
 	    -textvariable visoptions.lineplotfile
 
 	pack $w.filesettings.sfn.bb $w.filesettings.sfn.fn -side left
 
 	pack $w.filesettings.sfn
 
-	button $w.filesettings.refresh -text "Refresh" -command {
+	ttk::button $w.filesettings.refresh -text "Refresh" -command {
 	    if { ${visoptions.lineplotselectedeval} != 0} {
 		set visoptions.lineplotfile [lindex ${visoptions.evaluatefilenames} ${visoptions.lineplotselectedeval}]
 	    }
@@ -308,32 +321,61 @@ proc lineplotdialog { } {
 	pack $w.filesettings.refresh
 
 
-	frame $w.filesettings.using
+	ttk::frame $w.filesettings.using
 
 	global visoptions.lineplotdatadescr
-	
-	tixOptionMenu $w.filesettings.using.xco -label "X-Coord:"\
-	    -options {
-		label.width  8
-		label.anchor e
-		menubutton.width 15
-	    } 
-	for { set i 0 } { $i < [llength ${visoptions.lineplotdatadescr}] } { incr i } {
-	    $w.filesettings.using.xco add command $i -label [lindex ${visoptions.lineplotdatadescr} $i]
-	}
-	$w.filesettings.using.xco config -variable visoptions.lineplotusingx
-	
-	tixOptionMenu $w.filesettings.using.yco -label "Y-Coord:"\
-	    -options {
-		label.width  8
-		label.anchor e
-		menubutton.width 15
-	    } 
-	for { set i 0 } { $i < [llength ${visoptions.lineplotdatadescr}] } { incr i } {
-	    $w.filesettings.using.yco add command $i -label [lindex ${visoptions.lineplotdatadescr} $i]
-	}
-	$w.filesettings.using.yco config -variable visoptions.lineplotusingy
 
+	# tixOptionMenu $w.filesettings.using.xco -label "X-Coord:"\
+	    # -options {
+		# label.width  8
+		# label.anchor e
+		# menubutton.width 15
+	    # } 
+	# for { set i 0 } { $i < [llength ${visoptions.lineplotdatadescr}] } { incr i } {
+	    # $w.filesettings.using.xco add command $i -label [lindex ${visoptions.lineplotdatadescr} $i]
+	# }
+    
+    ttk::frame $w.filesettings.using.xco
+    ttk::label  $w.filesettings.using.xco.lab -text "X-Coord:"
+    ttk::menubutton $w.filesettings.using.xco.but -menu $w.filesettings.using.xco.menu -text "" -width 15
+
+    menu $w.filesettings.using.xco.menu -tearoff 0
+	for {set i 0} {$i < [llength ${visoptions.lineplotdatadescr}]} {incr i} {
+	    $w.filesettings.using.xco.menu add command -label [lindex ${visoptions.lineplotdatadescr} $i]\
+                -command "set visoptions.lineplotusingx $i ; $w.filesettings.using.xco.but configure -text \"[lindex ${visoptions.lineplotdatadescr} $i]\""
+	}
+   $w.filesettings.using.xco.menu invoke [lindex ${visoptions.lineplotdatadescr} 0]
+
+
+    grid $w.filesettings.using.xco.lab $w.filesettings.using.xco.but -sticky nw
+	#pack $w.filesettings.using.xco    
+    
+    
+    
+	# $w.filesettings.using.xco config -variable visoptions.lineplotusingx
+	
+	# tixOptionMenu $w.filesettings.using.yco -label "Y-Coord:"\
+	    # -options {
+		# label.width  8
+		# label.anchor e
+		# menubutton.width 15
+	    # } 
+	# for { set i 0 } { $i < [llength ${visoptions.lineplotdatadescr}] } { incr i } {
+	    # $w.filesettings.using.yco add command $i -label [lindex ${visoptions.lineplotdatadescr} $i]
+	# }
+	# $w.filesettings.using.yco config -variable visoptions.lineplotusingy
+    ttk::frame $w.filesettings.using.yco
+    ttk::label  $w.filesettings.using.yco.lab -text "Y-Coord:"
+    ttk::menubutton $w.filesettings.using.yco.but -menu $w.filesettings.using.yco.menu -text "" -width 15
+
+    menu $w.filesettings.using.yco.menu -tearoff 0
+	for {set i 0} {$i < [llength ${visoptions.lineplotdatadescr}]} {incr i} {
+	    $w.filesettings.using.yco.menu add command -label [lindex ${visoptions.lineplotdatadescr} $i]\
+                -command "set visoptions.lineplotusingy $i ; $w.filesettings.using.yco.but configure -text \"[lindex ${visoptions.lineplotdatadescr} $i]\""
+	}
+   $w.filesettings.using.yco.menu invoke [lindex ${visoptions.lineplotdatadescr} 0]
+   grid $w.filesettings.using.yco.lab $w.filesettings.using.yco.but -sticky nw
+    
 	global visoptions.lineplotxcoordselector
 	global visoptions.lineplotycoordselector
 	set visoptions.lineplotxcoordselector $w.filesettings.using.xco
@@ -347,89 +389,136 @@ proc lineplotdialog { } {
 	
 	ttk::frame $w.settings -relief  groove -borderwidth 3
 	ttk::label $w.settings.title -text "\nSettings\n"
-	pack $w.settings.title
+	pack $w.settings.title 
 
 	ttk::frame $w.settings.minmax 
 	ttk::checkbutton $w.settings.minmax.autoscale -text "Autoscale" -variable visoptions.lineplotautoscale
-	tixControl $w.settings.minmax.xmin -label "Min. x: " \
-	    -integer false -variable visoptions.lineplotxmin \
-	    -options {
-		entry.width 6
-		label.width 8
-		label.anchor e
-	    }	
-	tixControl $w.settings.minmax.xmax -label "Max. x: " \
-	    -integer false -variable visoptions.lineplotxmax \
-	    -options {
-		entry.width 6
-		label.width 8
-		label.anchor e
-	    }	
-	tixControl $w.settings.minmax.ymin -label "Min. y: " \
-	    -integer false -variable visoptions.lineplotymin \
-	    -options {
-		entry.width 6
-		label.width 8
-		label.anchor e
-	    }	
-	tixControl $w.settings.minmax.ymax -label "Max. y: " \
-	    -integer false -variable visoptions.lineplotymax \
-	    -options {
-		entry.width 6
-		label.width 8
-		label.anchor e
-	    }	
-	    
+	# tixControl $w.settings.minmax.xmin -label "Min. x: " \
+	    # -integer false -variable visoptions.lineplotxmin \
+	    # -options {
+		# entry.width 6
+		# label.width 8
+		# label.anchor e
+	    # }	
+    ttk::frame $w.settings.minmax.xmin
+    ttk::label $w.settings.minmax.xmin.label -text "Min. x: "
+    ttk::spinbox $w.settings.minmax.xmin.sp -textvariable visoptions.lineplotxmin -width 6 -increment 0.1 -validate focus -validatecommand "my_validatespinbox %W %P 3" \
+        -invalidcommand "my_invalidspinbox %W" -from -1e9 -to 1e9 
 
+        # tixControl $w.settings.minmax.xmax -label "Max. x: " \
+	    # -integer false -variable visoptions.lineplotxmax \
+	    # -options {
+		# entry.width 6
+		# label.width 8
+		# label.anchor e
+	    # }	
+    ttk::frame $w.settings.minmax.xmax
+    ttk::label $w.settings.minmax.xmax.label -text "Max. x: "
+    ttk::spinbox $w.settings.minmax.xmax.sp -textvariable visoptions.lineplotxmax -width 6 -increment 0.1 -validate focus -validatecommand "my_validatespinbox %W %P 3" \
+        -invalidcommand "my_invalidspinbox %W" -from -1e9 -to 1e9 
+        
+	# tixControl $w.settings.minmax.ymin -label "Min. y: " \
+	    # -integer false -variable visoptions.lineplotymin \
+	    # -options {
+		# entry.width 6
+		# label.width 8
+		# label.anchor e
+	    # }	
+    ttk::frame $w.settings.minmax.ymin
+    ttk::label $w.settings.minmax.ymin.label -text "Min. y: "
+    ttk::spinbox $w.settings.minmax.ymin.sp -textvariable visoptions.lineplotymin -width 6 -increment 0.1 -validate focus -validatecommand "my_validatespinbox %W %P 3" \
+        -invalidcommand "my_invalidspinbox %W" -from -1e9 -to 1e9 
+        
+	# tixControl $w.settings.minmax.ymax -label "Max. y: " \
+	    # -integer false -variable visoptions.lineplotymax \
+	    # -options {
+		# entry.width 6
+		# label.width 8
+		# label.anchor e
+	    # }	
+    ttk::frame $w.settings.minmax.ymax
+    ttk::label $w.settings.minmax.ymax.label -text "Max. y: "
+    ttk::spinbox $w.settings.minmax.ymax.sp -textvariable visoptions.lineplotymax -width 6 -increment 0.1 -validate focus -validatecommand "my_validatespinbox %W %P 3" \
+        -invalidcommand "my_invalidspinbox %W" -from -1e9 -to 1e9 
+    pack $w.settings.minmax.xmin.label $w.settings.minmax.xmin.sp
+    pack $w.settings.minmax.xmax.label $w.settings.minmax.xmax.sp
+    pack $w.settings.minmax.ymin.label $w.settings.minmax.ymin.sp
+    pack $w.settings.minmax.ymax.label $w.settings.minmax.ymax.sp
 	pack $w.settings.minmax.autoscale $w.settings.minmax.xmin $w.settings.minmax.xmax \
 	    $w.settings.minmax.ymin $w.settings.minmax.ymax -side left
 
 	pack $w.settings.minmax
 
 	
-	label $w.settings.empty1 -text ""
+	ttk::label $w.settings.empty1 -text ""
 	pack $w.settings.empty1
 
-	frame $w.settings.plotsize
+	ttk::frame $w.settings.plotsize
 
-	tixControl $w.settings.plotsize.xsize -label "Plotsize  x: "\
-	    -integer true -variable visoptions.lineplotsizex \
-	    -options {
-		entry.width 6
-		label.width 13
-		label.anchor e
-	    }	
-	tixControl $w.settings.plotsize.ysize -label "y: "\
-	    -integer true -variable visoptions.lineplotsizey \
-	    -options {
-		entry.width 6
-		label.width 3
-		label.anchor e
-	    }	
+	# tixControl $w.settings.plotsize.xsize -label "Plotsize  x: "\
+	    # -integer true -variable visoptions.lineplotsizex \
+	    # -options {
+		# entry.width 6
+		# label.width 13
+		# label.anchor e
+	    # }
+        
+    ttk::frame $w.settings.plotsize.xsize
+    ttk::label $w.settings.plotsize.xsize.label -text "Plotsize  x: "
+    ttk::spinbox $w.settings.plotsize.xsize.sp -textvariable visoptions.lineplotsizex -width 6 -increment 1 -validate focus -validatecommand "my_validatespinbox %W %P 0" \
+        -invalidcommand "my_invalidspinbox %W" -from -1e9 -to 1e9
+    pack $w.settings.plotsize.xsize.label $w.settings.plotsize.xsize.sp
+    
+	# tixControl $w.settings.plotsize.ysize -label "y: "\
+	    # -integer true -variable visoptions.lineplotsizey \
+	    # -options {
+		# entry.width 6
+		# label.width 3
+		# label.anchor e
+	    # }	
+    
+    ttk::frame $w.settings.plotsize.ysize
+    ttk::label $w.settings.plotsize.ysize.label -text "Plotsize  y: "
+    ttk::spinbox $w.settings.plotsize.ysize.sp -textvariable visoptions.lineplotsizey -width 6 -increment 1 -validate focus -validatecommand "my_validatespinbox %W %P 0" \
+        -invalidcommand "my_invalidspinbox %W" -from -1e9 -to 1e9
+    pack $w.settings.plotsize.ysize.label $w.settings.plotsize.ysize.sp
 
 	pack $w.settings.plotsize.xsize $w.settings.plotsize.ysize -side left
 
 	pack $w.settings.plotsize
 
-	label $w.settings.empty2 -text ""
+	ttk::label $w.settings.empty2 -text ""
 	pack $w.settings.empty2
 	
+	# tixOptionMenu $w.settings.color -label "Linecolor: " \
+	    # -options {
+		# label.width  19
+		# label.anchor e
+		# menubutton.width 15
+	    # }
+	# foreach step { red black blue green yellow } {
+	    # $w.settings.color add command $step -label $step
+	# }
+	# $w.settings.color config -variable visoptions.lineplotcolor
+    ttk::frame $w.settings.color
+    ttk::label  $w.settings.color.lab -text "Linecolor: "
+    ttk::menubutton $w.settings.color.but -menu $w.settings.color.menu -text "" -width 15
 
-	tixOptionMenu $w.settings.color -label "Linecolor: " \
-	    -options {
-		label.width  19
-		label.anchor e
-		menubutton.width 15
-	    } 
+    menu $w.settings.color.menu -tearoff 0
 	foreach step { red black blue green yellow } {
-	    $w.settings.color add command $step -label $step
-	}
-	$w.settings.color config -variable visoptions.lineplotcolor
-
+	    $w.settings.color.menu add command -label $step -command "set visoptions.lineplotcolor $step; $w.settings.color.but configure -text \"$step\""
+    }
+	# for {set i 0} {$i < [llength ${visoptions.lineplotdatadescr}]} {incr i} {
+	    # $w.filesettings.using.yco.menu add command -label [lindex ${visoptions.lineplotdatadescr} $i]\
+                # -command "set visoptions.lineplotusingy $i ; $w.filesettings.using.yco.but configure -text \"[lindex ${visoptions.lineplotdatadescr} $i]\""
+	# }
+   $w.settings.color.menu invoke "red"
+   grid $w.settings.color.lab $w.settings.color.but -sticky nw    
+    
 	pack $w.settings.color
 
 
-	pack $w.settings
+	pack $w.settings -fill x 
 
 	set datax ""
 	set datay ""
@@ -438,24 +527,33 @@ proc lineplotdialog { } {
 	set ymin 0
 	set ymax 0
 
-	frame $w.plots -relief  groove -borderwidth 3
+	ttk::frame $w.plots -relief  groove -borderwidth 3
 
-	tixOptionMenu $w.plots.selplot -label "Selected Plot: " \
-	    -options {
-		label.width  19
-		label.anchor e
-		menubutton.width 15
-	    } 
-	$w.plots.selplot add command none -label "None"
+	# tixOptionMenu $w.plots.selplot -label "Selected Plot: " \
+	    # -options {
+		# label.width  19
+		# label.anchor e
+		# menubutton.width 15
+	    # } 
+	# $w.plots.selplot add command none -label "None"
 
-	$w.plots.selplot config -variable visoptions.lineplotselected
+	# $w.plots.selplot config -variable visoptions.lineplotselected
 
+    ttk::frame $w.plots.selplot
+    ttk::label  $w.plots.selplot.lab -text "Linecolor: "
+    ttk::menubutton $w.plots.selplot.but -menu $w.plots.selplot.menu -text "" -width 15
+
+    menu $w.plots.selplot.menu -tearoff 0
+	$w.plots.selplot.menu add command -label "None" -command "set visoptions.lineplotselected \"None\"; $w.plots.selplot.but configure -text \"None\""
+    grid $w.plots.selplot.lab $w.plots.selplot.but -sticky nw    
+    $w.plots.selplot.menu invoke "None"
+    
 	global visoptions.lineplotselector
-	set visoptions.lineplotselector $w.plots.selplot
+	set visoptions.lineplotselector $w.plots.selplot.menu
 
 	
 
-	button $w.plots.new -text "Generate New Plot" -command {
+	ttk::button $w.plots.new -text "Generate New Plot" -command {
 	    if { ${visoptions.lineplotselectedeval} != 0} {
 		set visoptions.lineplotfile [lindex ${visoptions.evaluatefilenames} ${visoptions.lineplotselectedeval}]
 	    }
@@ -491,7 +589,7 @@ proc lineplotdialog { } {
 	    addplotline $ident $datax $datay $plotinfo ${visoptions.lineplotcolor}
 	}
 	
-	button $w.plots.addto -text "Add to Selected Plot" -command {
+	ttk::button $w.plots.addto -text "Add to Selected Plot" -command {
 	    if { ${visoptions.lineplotselectedeval} != 0} {
 		set visoptions.lineplotfile [lindex ${visoptions.evaluatefilenames} ${visoptions.lineplotselectedeval}]
 	    }
@@ -516,7 +614,7 @@ proc lineplotdialog { } {
 	
 
 
-	button $w.close -text "Close" -command "destroy $w"
+	ttk::button $w.close -text "Close" -command "destroy $w"
 	pack $w.close
 	
 	wm withdraw $w
@@ -784,30 +882,48 @@ proc fieldlinesdialog { } {
 
 	frame $g.linesettings -relief groove -borderwidth 3
 	label $g.linesettings.title -text "\nLine Settings\n"
-	tixControl $g.linesettings.length -label "rel. Length: " -integer false \
-	    -variable visoptions.fieldlineslength -min 0.00001 -max 10000 -step 0.1 \
-	    -options {
-		entry.width 6
-		label.width 25
-		label.anchor e
-	    }
+	# tixControl $g.linesettings.length -label "rel. Length: " -integer false \
+	    # -variable visoptions.fieldlineslength -min 0.00001 -max 10000 -step 0.1 \
+	    # -options {
+		# entry.width 6
+		# label.width 25
+		# label.anchor e
+	    # }
 
-	tixControl $g.linesettings.maxpoints -label "max. Points: " -integer true \
-	    -variable visoptions.fieldlinesmaxpoints -min 0 -max 10000 -step 1 \
-	    -options {
-		entry.width 6
-		label.width 25
-		label.anchor e
-	    }
+    ttk::frame $g.linesettings.length
+    ttk::label $g.linesettings.length.lab -text "rel. Length: "
+    ttk::spinbox $g.linesettings.length.sp -textvariable visoptions.fieldlineslength -width 6 -increment 0.1 -validate focus -validatecommand "my_validatespinbox %W %P 0" \
+        -invalidcommand "my_invalidspinbox %W" -from 0.00001 -to 10000
+    grid $g.linesettings.length.lab $g.linesettings.length.sp -sticky nw
+        
+	# tixControl $g.linesettings.maxpoints -label "max. Points: " -integer true \
+	    # -variable visoptions.fieldlinesmaxpoints -min 0 -max 10000 -step 1 \
+	    # -options {
+		# entry.width 6
+		# label.width 25
+		# label.anchor e
+	    # }
+    ttk::frame $g.linesettings.maxpoints
+    ttk::label $g.linesettings.maxpoints.lab -text "max. Points: "
+    ttk::spinbox $g.linesettings.maxpoints.sp -textvariable visoptions.fieldlinesmaxpoints -width 6 -increment 1 -validate focus -validatecommand "my_validatespinbox %W %P 0" \
+        -invalidcommand "my_invalidspinbox %W" -from 0 -to 10000
+    grid $g.linesettings.maxpoints.lab $g.linesettings.maxpoints.sp -sticky nw
 
-	tixControl $g.linesettings.thick -label "rel. Thickness: " -integer false \
-	    -variable visoptions.fieldlinesthickness -min 1e-10 -max 0.5 -step 0.001 \
-	    -options {
-		entry.width 6
-		label.width 25
-		label.anchor e
-	    }
-
+        
+	# tixControl $g.linesettings.thick -label "rel. Thickness: " -integer false \
+	    # -variable visoptions.fieldlinesthickness -min 1e-10 -max 0.5 -step 0.001 \
+	    # -options {
+		# entry.width 6
+		# label.width 25
+		# label.anchor e
+	    # }
+        
+    ttk::frame $g.linesettings.thick
+    ttk::label $g.linesettings.thick.lab -text "rel. Thickness: "
+    ttk::spinbox $g.linesettings.thick.sp -textvariable visoptions.fieldlinesthickness -width 6 -increment 0.001 -validate focus -validatecommand "my_validatespinbox %W %P 0" \
+        -invalidcommand "my_invalidspinbox %W" -from 1e-10 -to 0.5
+    grid $g.linesettings.thick.lab $g.linesettings.thick.sp -stick nw
+    
 	pack $g.linesettings.title $g.linesettings.length $g.linesettings.maxpoints $g.linesettings.thick
 
 	pack $g.linesettings -fill x -ipady 3
@@ -820,15 +936,21 @@ proc fieldlinesdialog { } {
 
 	frame $g.odesettings -relief groove -borderwidth 3
 	label $g.odesettings.title -text "\nODE Settings\n"
-	tixControl $g.odesettings.tol -label "rel. Tolerance: " -integer false \
-	    -variable visoptions.fieldlinestolerance -min 0.00001 -max 1 -step 0.01 \
-	    -options {
-		entry.width 6
-		label.width 25
-		label.anchor e
-	    }	
+	# tixControl $g.odesettings.tol -label "rel. Tolerance: " -integer false \
+	    # -variable visoptions.fieldlinestolerance -min 0.00001 -max 1 -step 0.01 \
+	    # -options {
+		# entry.width 6
+		# label.width 25
+		# label.anchor e
+	    # }	
+    
+    ttk::frame $g.odesettings.tol
+    ttk::label $g.odesettings.tol.lab -text "rel. Thickness: "
+    ttk::spinbox $g.odesettings.tol.sp -textvariable visoptions.fieldlinesthickness -width 6 -increment 0.01 -validate focus -validatecommand "my_validatespinbox %W %P 0" \
+        -invalidcommand "my_invalidspinbox %W" -from 0.00001 -to 1
+    grid $g.odesettings.tol.lab $g.odesettings.tol.sp -stick nw
 
-
+        
 	tixOptionMenu $g.odesettings.rktype -label "RK-Type " \
 	    -options {
 		label.width  20
@@ -873,8 +995,16 @@ proc fieldlinesdialog { } {
 	    } {
 		toplevel .fieldlines_help
 
-		tixScrolledText .fieldlines_help.ht -scrollbar y
-		set text .fieldlines_help.ht.text
+        set f [frame .fieldlines_help.ht]
+        #ttk::scrollbar $f.hsb -orient horizontal -command [list $f.t xview]
+        ttk::scrollbar $f.vsb -orient vertical -command [list $f.t yview]
+        text $f.t -yscrollcommand [list $f.vsb set] 
+        grid $f.t -row 0 -column 0 -sticky nsew
+        grid $f.vsb -row 0 -column 1 -sticky nsew
+        grid columnconfigure $f 0 -weight 1
+        grid rowconfigure $f 0 -weight 1
+		#tixScrolledText .fieldlines_help.ht -scrollbar y
+		set text $f.t
 
 		$text configure -setgrid true -wrap word 
 

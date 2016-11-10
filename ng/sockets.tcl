@@ -33,24 +33,24 @@ proc clientsocketdialog { } {
 	global sockets.serverhost
 	global sockets.serverport
 
-	frame $w.general
-	frame $w.host
-	label $w.host.lab -text "Serverhost: "
-	entry $w.host.name -width 30 -relief sunken -textvariable sockets.serverhost
+	ttk::frame $w.general
+	ttk::frame $w.host
+	ttk::label $w.host.lab -text "Serverhost: "
+	ttk::entry $w.host.name -width 30 -textvariable sockets.serverhost
 
 	pack $w.host.lab $w.host.name -side left
 	pack $w.host
 
-	frame $w.ports
-	label $w.ports.lab1 -text "Serverport: "
-	entry $w.ports.statport -width 6 -relief sunken -textvariable sockets.serverport
+	ttk::frame $w.ports
+	ttk::label $w.ports.lab1 -text "Serverport: "
+	ttk::entry $w.ports.statport -width 6 -textvariable sockets.serverport
 	
 	pack $w.ports.lab1 $w.ports.statport -side left
 	pack $w.ports
 
-	frame $w.listboxes
+	ttk::frame $w.listboxes
 
-	frame $w.listboxes.choosesocketframe
+	ttk::frame $w.listboxes.choosesocketframe
 
 	tixScrolledListBox $w.listboxes.choosesocketframe.choosesocket -scrollbar auto
 
@@ -62,21 +62,21 @@ proc clientsocketdialog { } {
 	${sockets.serverlistbox} configure -selectmode browse
 	${sockets.serverlistbox} configure -exportselection false
 
-	button $w.addserver -text "Add ServerSocket" -command {
+	ttk::button $w.addserver -text "Add ServerSocket" -command {
 	    Ng_Socket addserver ${sockets.serverport} ${sockets.serverhost}
 	    updateserverlist
 	}
 	
 	pack $w.addserver
 
-	label $w.linefeed -text "\n"
+	ttk::label $w.linefeed -text "\n"
 	pack $w.linefeed
 	
-	frame $w.clientidframe
-	label $w.clientidframe.lab -text "Client ID: ";
+	ttk::frame $w.clientidframe
+	ttk::label $w.clientidframe.lab -text "Client ID: ";
 	global sockets.myidlabel
-	entry $w.clientidframe.val -width 5 -relief sunken -textvariable sockets.myidlabel
-	button $w.clientidframe.but -text "Set" -command {
+	ttk::entry $w.clientidframe.val -width 5 -textvariable sockets.myidlabel
+	ttk::button $w.clientidframe.but -text "Set" -command {
 	    set opsel [${sockets.serverlistbox} curselection]
 	    if {[llength $opsel] > 0} {
 		set opserver [lindex $opsel 0]
@@ -95,13 +95,13 @@ proc clientsocketdialog { } {
 #	pack $w.clientidlabel
 
 
-	label $w.listboxes.choosesocketframe.chooselab -text [format "\n\n%-16s    %6s  %6s                       " Host Socket MyID ]
+	ttk::label $w.listboxes.choosesocketframe.chooselab -text [format "\n\n%-16s    %6s  %6s                       " Host Socket MyID ]
 	pack $w.listboxes.choosesocketframe.chooselab
 	pack $w.listboxes.choosesocketframe.choosesocket
 
-	frame $w.listboxes.choosesocketframe.serverbuttons
+	ttk::frame $w.listboxes.choosesocketframe.serverbuttons
 
-	button $w.listboxes.choosesocketframe.serverbuttons.save -text "Save" -command {
+	ttk::button $w.listboxes.choosesocketframe.serverbuttons.save -text "Save" -command {
 	    Ng_Socket saveserverlist
 	}
 
@@ -109,7 +109,7 @@ proc clientsocketdialog { } {
 	Ng_Socket loadserverlist
 	updateserverlist
 
-	button $w.listboxes.choosesocketframe.serverbuttons.delete -text "Delete" -command {
+	ttk::button $w.listboxes.choosesocketframe.serverbuttons.delete -text "Delete" -command {
 	   set opsel [${sockets.serverlistbox} curselection]
 	    if {[llength $opsel] > 0} {
 		Ng_Socket deletesocket [lindex $opsel 0]
@@ -120,17 +120,17 @@ proc clientsocketdialog { } {
 	pack $w.listboxes.choosesocketframe.serverbuttons.save $w.listboxes.choosesocketframe.serverbuttons.delete -side left
 	pack $w.listboxes.choosesocketframe.serverbuttons
 
-	frame $w.listboxes.statusframe
+	ttk::frame $w.listboxes.statusframe
 
-	label $w.listboxes.statusframe.statuslabel1 -text "\n\njobqueue"
+	ttk::label $w.listboxes.statusframe.statuslabel1 -text "\n\njobqueue"
 
 	tixScrolledListBox $w.listboxes.statusframe.queuestatus -scrollbar auto
 
-	label $w.listboxes.statusframe.statuslabel2 -text "\ncurrent job"
+	ttk::label $w.listboxes.statusframe.statuslabel2 -text "\ncurrent job"
 
 	tixScrolledListBox $w.listboxes.statusframe.currentjobstatus -scrollbar auto
 
-	label $w.listboxes.statusframe.statuslabel3 -text "\nanswers"
+	ttk::label $w.listboxes.statusframe.statuslabel3 -text "\nanswers"
 
 	tixScrolledListBox $w.listboxes.statusframe.answers -scrollbar auto
 
@@ -157,7 +157,7 @@ proc clientsocketdialog { } {
 	${sockets.answerlistbox} configure -selectmode browse
 	${sockets.answerlistbox} configure -exportselection false
 
-	button $w.listboxes.statusframe.updatebutton -text "Update" -command {
+	ttk::button $w.listboxes.statusframe.updatebutton -text "Update" -command {
 	    set opsel [${sockets.serverlistbox} curselection]
 	    if {[llength $opsel] > 0} {
 		set opserver [lindex $opsel 0]
@@ -199,14 +199,14 @@ proc clientsocketdialog { } {
 	
 	pack $w.listboxes
 
-	label $w.lab1 -text "\n"
+	ttk::label $w.lab1 -text "\n"
 	pack $w.lab1
 
 
-	frame $w.buttons1
-	frame $w.buttons2
+	ttk::frame $w.buttons1
+	ttk::frame $w.buttons2
 	
-	button $w.buttons1.getid -text "Get ID" -command {
+	ttk::button $w.buttons1.getid -text "Get ID" -command {
 	    set opsel [${sockets.serverlistbox} curselection]
 	    if {[llength $opsel] > 0} {
 		set opserver [lindex $opsel 0]
@@ -216,7 +216,7 @@ proc clientsocketdialog { } {
 	    }
 	}
 
-	button $w.buttons1.killjob -text "Kill Cur. Job" -command {
+	ttk::button $w.buttons1.killjob -text "Kill Cur. Job" -command {
 	    set opsel [${sockets.serverlistbox} curselection]
 	    if {[llength $opsel] > 0} {
 		set opserver [lindex $opsel 0]
@@ -224,7 +224,7 @@ proc clientsocketdialog { } {
 	    }
 	}
 
-	button $w.buttons2.sendmesh -text "Send Mesh" -command {
+	ttk::button $w.buttons2.sendmesh -text "Send Mesh" -command {
 	    set opsel [${sockets.serverlistbox} curselection]
 	    if {[llength $opsel] > 0} {
 		set opserver [lindex $opsel 0]
@@ -233,7 +233,7 @@ proc clientsocketdialog { } {
 	    }
 	}
 
-	button $w.buttons2.sendpde -text "Send PDE" -command {
+	ttk::button $w.buttons2.sendpde -text "Send PDE" -command {
 	    set opsel [${sockets.serverlistbox} curselection]
 	    if {[llength $opsel] > 0} {
 		set opserver [lindex $opsel 0]
@@ -241,7 +241,7 @@ proc clientsocketdialog { } {
 	    }
 	}
 
-	button $w.buttons2.solvepde -text "Solve PDE" -command {
+	ttk::button $w.buttons2.solvepde -text "Solve PDE" -command {
 	    set opsel [${sockets.serverlistbox} curselection]
 	    if {[llength $opsel] > 0} {
 		set opserver [lindex $opsel 0]
@@ -249,7 +249,7 @@ proc clientsocketdialog { } {
 	    }
 	}
 
-	button $w.buttons2.writesol -text "Write Solution" -command {
+	ttk::button $w.buttons2.writesol -text "Write Solution" -command {
 	    set opsel [${sockets.serverlistbox} curselection]
 	    if {[llength $opsel] > 0} {
 		set opserver [lindex $opsel 0]
@@ -257,7 +257,7 @@ proc clientsocketdialog { } {
 	    }
 	}
 
-	button $w.buttons2.sendsol -text "Receive Solution" -command {
+	ttk::button $w.buttons2.sendsol -text "Receive Solution" -command {
 	    set opsel [${sockets.serverlistbox} curselection]
 	    if {[llength $opsel] > 0} {
 		set opserver [lindex $opsel 0]
@@ -265,7 +265,7 @@ proc clientsocketdialog { } {
 	    }
 	}
 
-	button $w.buttons1.blockserver -text "Block Server" -command {
+	ttk::button $w.buttons1.blockserver -text "Block Server" -command {
 	    set opsel [${sockets.serverlistbox} curselection]
 	    if {[llength $opsel] > 0} {
 		set opserver [lindex $opsel 0]
@@ -273,7 +273,7 @@ proc clientsocketdialog { } {
 	    }
 	}
 
-	button $w.buttons1.unblockserver -text "UnBlock Server" -command {
+	ttk::button $w.buttons1.unblockserver -text "UnBlock Server" -command {
 	    set opsel [${sockets.serverlistbox} curselection]
 	    if {[llength $opsel] > 0} {
 		set opserver [lindex $opsel 0]
@@ -299,5 +299,5 @@ proc clientsocketdialog { } {
 
 }
 
-.ngmenu.special add command -label "Client Socket" \
+#.ngmenu.special add command -label "Client Socket" \
     -command { clientsocketdialog }
