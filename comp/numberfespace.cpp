@@ -76,7 +76,7 @@ namespace ngcomp
     virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const
     {
       if (DefinedOn(ei))
-        return *new (lh) NumberFiniteElement();
+        return *new (lh) NumberFiniteElement(ma->GetElType(ei));
       else
         return *new (lh) DummyFE<ET_POINT>();
     }

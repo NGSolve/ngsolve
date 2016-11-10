@@ -1014,7 +1014,7 @@ namespace ngfem
       }
   }
 
-  // #define SIMD_CALCMATRIX
+#define SIMD_CALCMATRIX
 #ifdef SIMD_CALCMATRIX
   template <>
   void SymbolicBilinearFormIntegrator ::
@@ -1063,6 +1063,7 @@ namespace ngfem
     const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : fel;
     const FiniteElement & fel_test = mixedfe ? mixedfe->FETest() : fel;
 
+    /*
     int trial_difforder = 99, test_difforder = 99;
     for (auto proxy : trial_proxies)
       trial_difforder = min2(trial_difforder, proxy->Evaluator()->DiffOrder());
@@ -1073,12 +1074,15 @@ namespace ngfem
     auto et = trafo.GetElementType();
     if (et == ET_TRIG || et == ET_TET)
       intorder -= test_difforder+trial_difforder;
+    */
+    
     elmat = 0;
     if (simd_evaluate)
       try
         {
           RegionTimer reg(tsimd);          
-          SIMD_IntegrationRule ir(trafo.GetElementType(), intorder);
+          // SIMD_IntegrationRule ir(trafo.GetElementType(), intorder);
+          SIMD_IntegrationRule ir = Get_SIMD_IntegrationRule (fel);
           SIMD_BaseMappedIntegrationRule & mir = trafo(ir, lh);
 
           ProxyUserData ud;
@@ -1264,7 +1268,8 @@ namespace ngfem
         }
     
 
-    IntegrationRule ir(trafo.GetElementType(), intorder);
+    // IntegrationRule ir(trafo.GetElementType(), intorder);
+    IntegrationRule ir = GetIntegrationRule (fel);    
     BaseMappedIntegrationRule & mir = trafo(ir, lh);
     
     ProxyUserData ud;
@@ -1785,51 +1790,12 @@ namespace ngfem
           ud.fel = &fel;
           ud.elx = &elveclin;
           ud.lh = &lh;
-          
-          /*
-          FlatVector<> measure(mir.Size(), lh);
-          for (int i = 0; i < mir.Size(); i++)
-            {
-              double len;
-              if (!trafo.Boundary())
-                {
-                  FlatVector< Vec<D> > normals = ElementTopology::GetNormals<D>(eltype);
-                  Vec<D> normal_ref = normals[k];
-                  auto & mip = static_cast<const MappedIntegrationPoint<D,D>&> (mir[i]);
-                  Mat<D> inv_jac = mip.GetJacobianInverse();
-                  double det = mip.GetMeasure();
-                  Vec<D> normal = det * Trans (inv_jac) * normal_ref;       
-                  len = L2Norm (normal);    // that's the surface measure 
-                  normal /= len;                   // normal vector on physical element
-                  
-                  const_cast<MappedIntegrationPoint<D,D>&> (mip).SetNV(normal);
-                }
-              else
-                {
-                  if (D != 3)
-                    throw Exception ("element boundary for surface elements is only possible in 3D");
-                  FlatVector< Vec<D-1> > normals = ElementTopology::GetNormals<D-1>(eltype);
-                  Vec<D-1> normal_ref = normals[k];
-
-                  auto & mip = static_cast<const MappedIntegrationPoint<2,3>&> (mir[i]);
-                  Mat<2,3> inv_jac = mip.GetJacobianInverse();
-                  double det = mip.GetMeasure();
-                  Vec<3> normal = det * Trans (inv_jac) * normal_ref;       
-                  len = L2Norm (normal);    // that's the surface measure
-                  normal /= len;                   // normal vector on physical element
-                  Vec<3> tang = Cross(normal, mip.GetNV());
-                  const_cast<MappedIntegrationPoint<2,3>&> (mip).SetTV(tang);
-                }
-              measure(i) = len;
-            }
-          */
 
           for (ProxyFunction * proxy : trial_proxies)
             {
               ud.AssignMemory (proxy, mir.Size(), proxy->Dimension(), lh);
               proxy->Evaluator()->Apply(fel, mir, elveclin, ud.GetMemory(proxy), lh);
             }
-    
     
           FlatMatrix<> val(mir.Size(), 1,lh), deriv(mir.Size(), 1,lh);
           for (int k1 : Range(trial_proxies))
@@ -2020,7 +1986,7 @@ namespace ngfem
             ud.AssignMemory (proxy, simd_ir.GetNIP(), proxy->Dimension(), lh);
           
           for (ProxyFunction * proxy : trial_proxies)
-            proxy->Evaluator()->Apply(fel_trial, simd_mir, elx, ud.GetAMemory(proxy)); // , lh);
+            proxy->Evaluator()->Apply(fel_trial, simd_mir, elx, ud.GetAMemory(proxy)); 
           
           ely = 0;
           for (auto proxy : test_proxies)
@@ -2153,43 +2119,6 @@ namespace ngfem
         for (ProxyFunction * proxy : trial_proxies)
           proxy->Evaluator()->Apply(fel, mir, elx, ud.GetMemory(proxy), lh);
         
-        /*
-        FlatVector<> measure(mir.Size(), lh);
-        for (int i = 0; i < mir.Size(); i++)
-          {
-            double len;
-            if (!trafo.Boundary())
-              {
-                FlatVector< Vec<D> > normals = ElementTopology::GetNormals<D>(eltype);
-                Vec<D> normal_ref = normals[k];
-                auto & mip = static_cast<const MappedIntegrationPoint<D,D>&> (mir[i]);
-                Mat<D> inv_jac = mip.GetJacobianInverse();
-                double det = mip.GetMeasure();
-                Vec<D> normal = det * Trans (inv_jac) * normal_ref;       
-                len = L2Norm (normal);    // that's the surface measure 
-                normal /= len;                   // normal vector on physical element
-                
-                const_cast<MappedIntegrationPoint<D,D>&> (mip).SetNV(normal);
-              }
-            else
-              {
-                if (D != 3)
-                  throw Exception ("element boundary for surface elements is only possible in 3D");
-                FlatVector< Vec<D-1> > normals = ElementTopology::GetNormals<D-1>(eltype);
-                Vec<D-1> normal_ref = normals[k];
-                
-                auto & mip = static_cast<const MappedIntegrationPoint<2,3>&> (mir[i]);
-                Mat<2,3> inv_jac = mip.GetJacobianInverse();
-                double det = mip.GetMeasure();
-                Vec<3> normal = det * Trans (inv_jac) * normal_ref;       
-                len = L2Norm (normal);    // that's the surface measure
-                normal /= len;                   // normal vector on physical element
-                Vec<3> tang = Cross(normal, mip.GetNV());
-                const_cast<MappedIntegrationPoint<2,3>&> (mip).SetTV(tang);
-              }
-            measure(i) = len;
-          }
-        */
         mir.ComputeNormalsAndMeasure (eltype, k);
         
         FlatVector<> ely1(ely.Size(), lh);
@@ -2206,8 +2135,7 @@ namespace ngfem
                 proxyvalues.Col(k) = val.Col(0);
               }
             
-            for (int i = 0; i < mir.Size(); i++)
-              // proxyvalues.Row(i) *= ir_facet[i].Weight() * measure(i);
+            for (size_t i = 0; i < mir.Size(); i++)
               proxyvalues.Row(i) *= ir_facet[i].Weight() * mir[i].GetMeasure();
             
             proxy->Evaluator()->ApplyTrans(fel, mir, proxyvalues, ely1, lh);
