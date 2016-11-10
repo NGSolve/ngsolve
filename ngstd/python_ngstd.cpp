@@ -318,16 +318,6 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
     .def("__exit__", &ParallelContextManager::Exit)
     ;
 
-
-
-  bp::class_<MPIManager>("MPIManager", bp::no_init)
-    .def("InitMPI", &MPIManager::InitMPIB)
-    .def("Barrier", &MPIManager::Barrier)
-    .def("GetWT", &MPIManager::GetWT)
-    .def("GetRank", &MPIManager::GetRank)
-    .def("GetNP", &MPIManager::GetNP)
-    ;
-
 }
 
 
