@@ -9,33 +9,36 @@
 
 #include <immintrin.h>
 
-#ifdef WIN32
-INLINE __m128d operator- (__m128d a) { return _mm_xor_pd(a, _mm_set1_pd(-0.0)); }
-INLINE __m128d operator+ (__m128d a, __m128d b) { return _mm_add_pd(a,b); }
-INLINE __m128d operator- (__m128d a, __m128d b) { return _mm_sub_pd(a,b); }
-INLINE __m128d operator* (__m128d a, __m128d b) { return _mm_mul_pd(a,b); }
-INLINE __m128d operator/ (__m128d a, __m128d b) { return _mm_div_pd(a,b); }
-INLINE __m128d operator* (double a, __m128d b) { return _mm_set1_pd(a)*b; }
-INLINE __m128d operator* (__m128d b, double a) { return _mm_set1_pd(a)*b; }
-
-INLINE __m128d operator+= (__m128d &a, __m128d b) { return a = a+b; }
-INLINE __m128d operator-= (__m128d &a, __m128d b) { return a = a-b; }
-INLINE __m128d operator*= (__m128d &a, __m128d b) { return a = a*b; }
-INLINE __m128d operator/= (__m128d &a, __m128d b) { return a = a/b; }
-
-INLINE __m256d operator- (__m256d a) { return _mm256_xor_pd(a, _mm256_set1_pd(-0.0)); }
-INLINE __m256d operator+ (__m256d a, __m256d b) { return _mm256_add_pd(a,b); }
-INLINE __m256d operator- (__m256d a, __m256d b) { return _mm256_sub_pd(a,b); }
-INLINE __m256d operator* (__m256d a, __m256d b) { return _mm256_mul_pd(a,b); }
-INLINE __m256d operator/ (__m256d a, __m256d b) { return _mm256_div_pd(a,b); }
-INLINE __m256d operator* (double a, __m256d b) { return _mm256_set1_pd(a)*b; }
-INLINE __m256d operator* (__m256d b, double a) { return _mm256_set1_pd(a)*b; }
-
-INLINE __m256d operator+= (__m256d &a, __m256d b) { return a = a+b; }
-INLINE __m256d operator-= (__m256d &a, __m256d b) { return a = a-b; }
-INLINE __m256d operator*= (__m256d &a, __m256d b) { return a = a*b; }
-INLINE __m256d operator/= (__m256d &a, __m256d b) { return a = a/b; }
-#endif
+// Not needed anymore since we force to enable the option HAVE_NETGEN_SOURCES
+// (NETGEN_SOURCE_DIR from CMake). This means that mysimd.hpp gets included with
+// the operators defined.
+// #ifdef WIN32
+// INLINE __m128d operator- (__m128d a) { return _mm_xor_pd(a, _mm_set1_pd(-0.0)); }
+// INLINE __m128d operator+ (__m128d a, __m128d b) { return _mm_add_pd(a,b); }
+// INLINE __m128d operator- (__m128d a, __m128d b) { return _mm_sub_pd(a,b); }
+// INLINE __m128d operator* (__m128d a, __m128d b) { return _mm_mul_pd(a,b); }
+// INLINE __m128d operator/ (__m128d a, __m128d b) { return _mm_div_pd(a,b); }
+// INLINE __m128d operator* (double a, __m128d b) { return _mm_set1_pd(a)*b; }
+// INLINE __m128d operator* (__m128d b, double a) { return _mm_set1_pd(a)*b; }
+// 
+// INLINE __m128d operator+= (__m128d &a, __m128d b) { return a = a+b; }
+// INLINE __m128d operator-= (__m128d &a, __m128d b) { return a = a-b; }
+// INLINE __m128d operator*= (__m128d &a, __m128d b) { return a = a*b; }
+// INLINE __m128d operator/= (__m128d &a, __m128d b) { return a = a/b; }
+// 
+// INLINE __m256d operator- (__m256d a) { return _mm256_xor_pd(a, _mm256_set1_pd(-0.0)); }
+// INLINE __m256d operator+ (__m256d a, __m256d b) { return _mm256_add_pd(a,b); }
+// INLINE __m256d operator- (__m256d a, __m256d b) { return _mm256_sub_pd(a,b); }
+// INLINE __m256d operator* (__m256d a, __m256d b) { return _mm256_mul_pd(a,b); }
+// INLINE __m256d operator/ (__m256d a, __m256d b) { return _mm256_div_pd(a,b); }
+// INLINE __m256d operator* (double a, __m256d b) { return _mm256_set1_pd(a)*b; }
+// INLINE __m256d operator* (__m256d b, double a) { return _mm256_set1_pd(a)*b; }
+// 
+// INLINE __m256d operator+= (__m256d &a, __m256d b) { return a = a+b; }
+// INLINE __m256d operator-= (__m256d &a, __m256d b) { return a = a-b; }
+// INLINE __m256d operator*= (__m256d &a, __m256d b) { return a = a*b; }
+// INLINE __m256d operator/= (__m256d &a, __m256d b) { return a = a/b; }
+// #endif
 
 
 
