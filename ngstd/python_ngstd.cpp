@@ -204,7 +204,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
          py::dict d(obj);
          new (&f) Flags();
          SetFlag(f, "", d);
-         cout << f << endl;
+         // cout << f << endl;
      })
     .def("Set",[](Flags & self,const py::dict & aflags)->Flags&
     {      
