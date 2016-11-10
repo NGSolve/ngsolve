@@ -775,12 +775,20 @@ proc fieldlinesdialog { } {
 	ttk::frame $f.phasesettings
 
 	ttk::checkbutton $f.phasesettings.onephase -text "Fix Phase" -variable visoptions.fieldlinesonlyonephase
-	scale $f.phasesettings.phase -orient horizontal -length 300 -from 0 -to 360 \
-	    -label "phi" \
-	    -resolution 1 \
-	    -variable visoptions.fieldlinesphase \
-	    -command { popupcheckredraw3 fieldlinesdialog_pop1 }
+	# scale $f.phasesettings.phase -orient horizontal -length 300 -from 0 -to 360 \
+	    # -label "phi" \
+	    # -resolution 1 \
+	    # -variable visoptions.fieldlinesphase \
+	    # -command { popupcheckredraw3 fieldlinesdialog_pop1 }
 
+    ttk::frame $f.phasesettings.phase
+    ttk::label $f.phasesettings.phase.lab -text "phi"
+    ttk::scale $f.phasesettings.phase.sc -orient horizontal -length 100 -from 0 -to 360 -variable visoptions.fieldlinesphase \
+        -command "roundscale $f.phasesettings.phase.sc 0; popupcheckredraw3 fieldlinesdialog_pop1"
+    ttk::entry $f.phasesettings.phase.ent -width 4 -textvariable visoptions.fieldlinesphase -validate focus -takefocus 0 \
+        -validatecommand "popupcheckredraw3 fieldlinesdialog_pop1;my_validate %W 0 1 %P 0" \
+        -invalidcommand "my_invalid %W;popupcheckredraw3 fieldlinesdialog_pop1"
+    grid $f.phasesettings.phase.lab $f.phasesettings.phase.sc $f.phasesettings.phase.ent -sticky nw -ipadx 4
 	pack $f.phasesettings.onephase $f.phasesettings.phase -side left
 	
 	pack $f.phasesettings
@@ -909,7 +917,7 @@ proc fieldlinesdialog { } {
 
     ttk::frame $g.linesettings.length
     ttk::label $g.linesettings.length.lab -text "rel. Length: "
-    ttk::spinbox $g.linesettings.length.sp -textvariable visoptions.fieldlineslength -width 6 -increment 0.1 -validate focus -validatecommand "my_validatespinbox %W %P 0" \
+    ttk::spinbox $g.linesettings.length.sp -textvariable visoptions.fieldlineslength -width 6 -increment 0.1 -validate focus -validatecommand "my_validatespinbox %W %P 5" \
         -invalidcommand "my_invalidspinbox %W" -from 0.00001 -to 10000
     grid $g.linesettings.length.lab $g.linesettings.length.sp -sticky nw
         
@@ -937,7 +945,7 @@ proc fieldlinesdialog { } {
         
     ttk::frame $g.linesettings.thick
     ttk::label $g.linesettings.thick.lab -text "rel. Thickness: "
-    ttk::spinbox $g.linesettings.thick.sp -textvariable visoptions.fieldlinesthickness -width 6 -increment 0.001 -validate focus -validatecommand "my_validatespinbox %W %P 0" \
+    ttk::spinbox $g.linesettings.thick.sp -textvariable visoptions.fieldlinesthickness -width 6 -increment 0.001 -validate focus -validatecommand "my_validatespinbox %W %P 6" \
         -invalidcommand "my_invalidspinbox %W" -from 1e-10 -to 0.5
     grid $g.linesettings.thick.lab $g.linesettings.thick.sp -stick nw
     
@@ -963,7 +971,7 @@ proc fieldlinesdialog { } {
     
     ttk::frame $g.odesettings.tol
     ttk::label $g.odesettings.tol.lab -text "rel. Thickness: "
-    ttk::spinbox $g.odesettings.tol.sp -textvariable visoptions.fieldlinesthickness -width 6 -increment 0.01 -validate focus -validatecommand "my_validatespinbox %W %P 0" \
+    ttk::spinbox $g.odesettings.tol.sp -textvariable visoptions.fieldlinestolerance -width 6 -increment 0.01 -validate focus -validatecommand "my_validatespinbox %W %P 5" \
         -invalidcommand "my_invalidspinbox %W" -from 0.00001 -to 1
     grid $g.odesettings.tol.lab $g.odesettings.tol.sp -stick nw
 
