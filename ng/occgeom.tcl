@@ -237,11 +237,11 @@ proc occdialog { } {
 		}
 	    }
 	    
-	    button $w.cl -text "Close" -command {
+	    ttk::button $w.cl -text "Close" -command {
 		destroy .occ_dlg
 	    }
 	    
-	    button $w.show -text "Show" -command {
+	    ttk::button $w.show -text "Show" -command {
 		set solname [[.occ_dlg.mtre subwidget hlist] info selection]
 		set entityname [[.occ_dlg.mtre subwidget hlist] info data $solname]
 		set spacepos [string first " " $entityname]
@@ -255,7 +255,7 @@ proc occdialog { } {
 		#	    Ng_SetVisParameters
 		redraw
 	    }
-	    button $w.hide -text "Hide" -command {
+	    ttk::button $w.hide -text "Hide" -command {
 		set solname [[.occ_dlg.mtre subwidget hlist] info selection]
 		set entityname [[.occ_dlg.mtre subwidget hlist] info data $solname]
 		set spacepos [string first " " $entityname]
@@ -288,7 +288,7 @@ proc occdialog { } {
 		occdialogbuildtree	
 	    }
 
-	    button $w.marksingular -text "Mark/Unmark as singular" -command {
+	    ttk::button $w.marksingular -text "Mark/Unmark as singular" -command {
 		set solname [[.occ_dlg.mtre subwidget hlist] info selection]
 		set entityname [[.occ_dlg.mtre subwidget hlist] info data $solname]
 		set spacepos [string first " " $entityname]
@@ -337,7 +337,7 @@ proc occdialog { } {
 	    }
 
 
-	    checkbutton $w.zoomtohighlightedentity -text "Zoom to highlighted entity" \
+	    ttk::checkbutton $w.zoomtohighlightedentity -text "Zoom to highlighted entity" \
 		-variable occoptions.zoomtohighlightedentity \
 		-command {
 		    Ng_SetOCCVisParameters
@@ -353,9 +353,9 @@ proc occdialog { } {
 
 
 
-	    frame $w.healing -relief groove -borderwidth 3
+	    ttk::frame $w.healing -relief groove -borderwidth 3
 
-	    button $w.healing.checkentities -text "Analyze geometry" -command {
+	    ttk::button $w.healing.checkentities -text "Analyze geometry" -command {
 		set irregent [Ng_OCCCommand findsmallentities]
 
 		set w .occ_dlg
@@ -377,30 +377,36 @@ proc occdialog { } {
 		$w.mtre autosetmode
 	    }
 
-	    tixControl $w.healing.tolerance -label "Healing tolerance: " -integer false \
-		-variable occoptions.tolerance -min 1e-9 -max 1e6 \
-		-options {
-		    entry.width 6
-		    label.width 25
-		    label.anchor e
-		}	
-
-	    checkbutton $w.healing.fixsmalledges -text "Fix small edges" \
+	    # tixControl $w.healing.tolerance -label "Healing tolerance: " -integer false \
+		# -variable occoptions.tolerance -min 1e-9 -max 1e6 \
+		# -options {
+		    # entry.width 6
+		    # label.width 25
+		    # label.anchor e
+		# }	
+        
+        ttk::frame $w.healing.tolerance
+        ttk::label $w.healing.tolerance.label -text "Healing tolerance: "
+        ttk::spinbox $w.healing.tolerance.sp -textvariable occoptions.tolerance -width 6 -increment 0.01 -validate focus -validatecommand "my_validatespinbox %W %P 12" \
+        -invalidcommand "my_invalidspinbox %W" -from -1e-9 -to 1e6 
+        grid $w.healing.tolerance.label $w.healing.tolerance.sp
+        
+	    ttk::checkbutton $w.healing.fixsmalledges -text "Fix small edges" \
 		-variable occoptions.fixsmalledges
 	    
-	    checkbutton $w.healing.fixspotstripfaces -text "Fix spot/strip faces" \
+	    ttk::checkbutton $w.healing.fixspotstripfaces -text "Fix spot/strip faces" \
 		-variable occoptions.fixspotstripfaces
 	    
-	    checkbutton $w.healing.sewfaces -text "Sew faces" \
+	    ttk::checkbutton $w.healing.sewfaces -text "Sew faces" \
 		-variable occoptions.sewfaces
 	    
-	    checkbutton $w.healing.makesolids -text "Make solids" \
+	    ttk::checkbutton $w.healing.makesolids -text "Make solids" \
 		-variable occoptions.makesolids
 	    
-	    checkbutton $w.healing.splitpartitions -text "Split partitions" \
+	    ttk::checkbutton $w.healing.splitpartitions -text "Split partitions" \
 		-variable occoptions.splitpartitions
 	    
-	    button $w.healing.heal -text "Heal geometry" -command { 
+	    ttk::button $w.healing.heal -text "Heal geometry" -command { 
 		.occ_dlg.healing.tolerance invoke
 		Ng_OCCCommand shapehealing
 		redraw 

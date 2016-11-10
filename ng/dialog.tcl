@@ -893,7 +893,6 @@ proc viewingoptionsdialog { } {
         
 	# stl geometry 
 	set f $w.nb.stl
-
 	ttk::labelframe $f.show -relief groove -borderwidth 3 -text "STL viewing options"
 	pack $f.show -fill x -pady 15
 	ttk::checkbutton $f.show.showtrias -text "Show STL-Triangles" \
@@ -935,7 +934,7 @@ proc viewingoptionsdialog { } {
             -validatecommand "Ng_SetVisParameters; redraw;my_validate %W [$f.fn.scale3 cget -from] [$f.fn.scale3 cget -to] %P 0" \
             -invalidcommand "my_invalid %W;Ng_SetVisParameters; redraw;"
             
-	grid $f.fn.scale3 $f.fn.ent3 $f.fn.lab3 -stick nw -padx 4        
+	grid $f.fn.scale3 $f.fn.ent3 $f.fn.lab3 -sticky nw -padx 4        
         
 	
 	#frame $f.fo -relief groove -borderwidth 3
@@ -2229,17 +2228,17 @@ proc stloptionsdialog { } {
 }
 
 proc stldoctordialog { } {
-
+    Ng_STLDoctor 0 0
     set wd .stldoctor_dlg
 
     if {[winfo exists .stldoctor_dlg] == 1} {
+    
 	wm withdraw $wd
 	wm deiconify $wd
 	focus $wd 
     } {
 	
     toplevel $wd
-
     pack [ttk::notebook $wd.nb] -fill both -fill both -side top
     $wd.nb add [ttk::frame $wd.nb.general] -text "General" -underline 0
     $wd.nb add [ttk::frame $wd.nb.topology] -text "Edit Topology" -underline 5
@@ -2695,45 +2694,52 @@ proc meshdoctordialog { } {
 	Ng_MeshDoctor;
 
 
-	frame $w.vis -relief groove -borderwidth 3
+	ttk::frame $w.vis -relief groove -borderwidth 3
 	pack $w.vis
 
-	checkbutton $w.vis.showfilledtrigs -text "Show filled triangles" \
+	ttk::checkbutton $w.vis.showfilledtrigs -text "Show filled triangles" \
 	-variable viewoptions.drawfilledtrigs \
 	-command { Ng_SetVisParameters; redraw }
 	
-	checkbutton $w.vis.showedges -text "Show edges" \
+	ttk::checkbutton $w.vis.showedges -text "Show edges" \
 	-variable viewoptions.drawedges \
 	-command { Ng_SetVisParameters; redraw }
 	
 
-	checkbutton $w.vis.showoutline -text "Show Triangle Outline" \
+	ttk::checkbutton $w.vis.showoutline -text "Show Triangle Outline" \
 	-variable viewoptions.drawoutline \
 	-command { Ng_SetVisParameters; redraw }
 
 	pack $w.vis.showfilledtrigs  $w.vis.showoutline $w.vis.showedges
 
-	tixControl $w.markedgedist -label "Mark edge dist: " -integer true \
-	    -min 0 -max 999  \
-	    -variable meshdoc.markedgedist \
-	    -options {
-		entry.width 3
-		label.width 20
-		label.anchor e
-	    } \
-	    -command {
-		Ng_MeshDoctor markedgedist ${meshdoc.markedgedist}
-		redraw
-	    }
+    ttk::frame $w.markedgedist
+    ttk::label $w.markedgedist.l -text "Mark edge dist: "
+    ttk::spinbox $w.markedgedist.s -from 0 -to 999 -width 5 -increment 1 -validate focus -validatecommand "my_validatespinbox %W %P 0" \
+    -invalidcommand "my_invalidspinbox %W" -command {Ng_MeshDoctor markedgedist ${meshdoc.markedgedist};redraw} -textvariable meshdoc.markedgedist
+    #pack $f.grading -fill x
+    pack $w.markedgedist.l $w.markedgedist.s -side left
+    
+	# tixControl $w.markedgedist -label "Mark edge dist: " -integer true \
+	    # -min 0 -max 999  \
+	    # -variable meshdoc.markedgedist \
+	    # -options {
+		# entry.width 3
+		# label.width 20
+		# label.anchor e
+	    # } \
+	    # -command {
+		# Ng_MeshDoctor markedgedist ${meshdoc.markedgedist}
+		# redraw
+	    # }
 	pack $w.markedgedist
 	
-	button $w.deledge -text "Delete marked segments" -command {
+	ttk::button $w.deledge -text "Delete marked segments" -command {
 	    Ng_MeshDoctor deletemarkedsegments
 	    redraw
 	}
 	pack $w.deledge
 	
-	button $w.close -text "Close" -command { 
+	ttk::button $w.close -text "Close" -command { 
 	    set meshdoctor.active 0;
 	    Ng_MeshDoctor;
 	    destroy .meshdoc_dlg 
