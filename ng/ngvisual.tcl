@@ -727,26 +727,43 @@ proc fieldlinesdialog { } {
 
 
 	
-	tixOptionMenu $f.vecfun -label "Vector Function: " \
-	    -options {
-		label.width  18
-		label.anchor e
-		menubutton.width 12
-	    }
-	$f.vecfun add command none -label None 
-	for { set i 1 } { $i <= [Ng_Vis_Field getnfieldnames] } { incr i } {
-	    set fname [Ng_Vis_Field getfieldname $i]
-	    set fcomp [Ng_Vis_Field getfieldcomponents $i]
-	    set iscomplex [Ng_Vis_Field iscomplex $i]
-	    set sdim [Ng_Vis_Field getdimension]
-	    if { $iscomplex == 1 } { set fcomp [expr $fcomp / 2] }
-	    if { ($fcomp == $sdim) || ($fcomp == 3) } {
-		$f.vecfun add command $fname -label $fname
-	    } 
-	}
-	$f.vecfun configure -variable visoptions.fieldlinesvecfunction
-	$f.vecfun configure -command { Ng_Vis_Set parameters; redraw }
-
+	# tixOptionMenu $f.vecfun -label "Vector Function: " \
+	    # -options {
+		# label.width  18
+		# label.anchor e
+		# menubutton.width 12
+	    # }
+	# $f.vecfun add command none -label None 
+	# for { set i 1 } { $i <= [Ng_Vis_Field getnfieldnames] } { incr i } {
+	    # set fname [Ng_Vis_Field getfieldname $i]
+	    # set fcomp [Ng_Vis_Field getfieldcomponents $i]
+	    # set iscomplex [Ng_Vis_Field iscomplex $i]
+	    # set sdim [Ng_Vis_Field getdimension]
+	    # if { $iscomplex == 1 } { set fcomp [expr $fcomp / 2] }
+	    # if { ($fcomp == $sdim) || ($fcomp == 3) } {
+		# $f.vecfun add command $fname -label $fname
+	    # } 
+	# }
+	# $f.vecfun configure -variable visoptions.fieldlinesvecfunction
+	# $f.vecfun configure -command { Ng_Vis_Set parameters; redraw }
+    ttk::frame $f.vecfun
+    ttk::label  $f.vecfun.lab -text "Vector Function: "     
+    ttk::menubutton $f.vecfun.but -menu $f.vecfun.menu -text "" -width 12     
+    menu $f.vecfun.menu -tearoff 0 	
+    # for {set i 0} {$i < [llength ${visoptions.evaluatefilenames}]} {incr i} {
+    # $w.filesettings.latestevals.menu add command -label $i\                 
+    # -command "set visoptions.lineplotselectedeval $i ; $w.filesettings.latestevals.but configure -text \"[lindex ${visoptions.evaluatefiledescriptions} $i] ([lindex ${visoptions.evaluatefilenames} $i])\"" 	
+    # } 	
+    for { set i 1 } { $i <= [Ng_Vis_Field getnfieldnames] } { incr i } {
+    set fname [Ng_Vis_Field getfieldname $i] 	    
+    set fcomp [Ng_Vis_Field getfieldcomponents $i] 	    
+    set iscomplex [Ng_Vis_Field iscomplex $i] 	    
+    set sdim [Ng_Vis_Field getdimension] 	    
+    if { $iscomplex == 1 } { set fcomp [expr $fcomp / 2] } 	    
+    if { ($fcomp == $sdim) || ($fcomp == 3) } {
+    $f.vecfun.menu add command -label $fname -command "set visoptions.fieldlinesvecfunction $fname;Ng_Vis_Set parameters; redraw;$f.vecfun.but configure -text \"$fname\" " 	    }         
+    }
+    grid $f.vecfun.lab $f.vecfun.but -sticky nw
 	pack $f.vecfun
 	
 
@@ -951,18 +968,29 @@ proc fieldlinesdialog { } {
     grid $g.odesettings.tol.lab $g.odesettings.tol.sp -stick nw
 
         
-	tixOptionMenu $g.odesettings.rktype -label "RK-Type " \
-	    -options {
-		label.width  20
-		label.anchor e
-		menubutton.width 25
-	    }
-	$g.odesettings.rktype add command euler -label "Euler, order 1"
-	$g.odesettings.rktype add command eulercauchy -label "Euler-Cauchy, order 2"
-	$g.odesettings.rktype add command simpson -label "Simpson, order 3"
-	$g.odesettings.rktype add command crungekutta -label "classical Runge-Kutta, order 4"
-	$g.odesettings.rktype configure -variable visoptions.fieldlinesrktype
-	$g.odesettings.rktype configure -command { Ng_Vis_Set parameters; redraw }
+	# tixOptionMenu $g.odesettings.rktype -label "RK-Type " \
+	    # -options {
+		# label.width  20
+		# label.anchor e
+		# menubutton.width 25
+	    # }
+	# $g.odesettings.rktype add command euler -label "Euler, order 1"
+	# $g.odesettings.rktype add command eulercauchy -label "Euler-Cauchy, order 2"
+	# $g.odesettings.rktype add command simpson -label "Simpson, order 3"
+	# $g.odesettings.rktype add command crungekutta -label "classical Runge-Kutta, order 4"
+	# $g.odesettings.rktype configure -variable visoptions.fieldlinesrktype
+	# $g.odesettings.rktype configure -command { Ng_Vis_Set parameters; redraw }
+    ttk::frame $g.odesettings.rktype     
+    ttk::label  $g.odesettings.rktype.lab -text "RK-Type "     
+    ttk::menubutton $g.odesettings.rktype.but -menu $g.odesettings.rktype.menu -text "" -width 25     
+    menu $g.odesettings.rktype.menu -tearoff 0     
+    $g.odesettings.rktype.menu add command -label "Euler, order 1" -command "set visoptions.fieldlinesrktype \"euler\" ;Ng_Vis_Set parameters; redraw;$g.odesettings.rktype.but configure -text \"Euler,order 1\" "     
+    $g.odesettings.rktype.menu add command -label "Euler-Cauchy, order 2" -command "set visoptions.fieldlinesrktype \"eulercauchy\" ;Ng_Vis_Set parameters; redraw;$g.odesettings.rktype.but configure -text \"Euler-Cauchy,order 2\" "     
+    $g.odesettings.rktype.menu add command -label "Simpson, order 3" -command "set visoptions.fieldlinesrktype \"simpson\" ;Ng_Vis_Set parameters; redraw;$g.odesettings.rktype.but configure -text \"Simpson,order 3\""     
+    $g.odesettings.rktype.menu add command -label "classical Runge-Kutta, order 4" -command "set visoptions.fieldlinesrktype \"crungekutta\" ;Ng_Vis_Set parameters; redraw; $g.odesettings.rktype.but configure -text \"classical Runge-Kutta,order 4\""        
+    $g.odesettings.rktype.menu invoke "classical Runge-Kutta, order 4"     
+    
+    grid $g.odesettings.rktype.lab $g.odesettings.rktype.but -sticky nw 	
 	
 	pack $g.odesettings.title $g.odesettings.tol $g.odesettings.rktype
 
