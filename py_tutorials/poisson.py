@@ -3,11 +3,17 @@
 
 from ngsolve import *
 from netgen.geom2d import unit_square
+from ngsolve.ngstd import MPIManager
+import netgen.meshing as netgen
+MPIManager.InitMPI()
 
 ngsglobals.msg_level = 1
 
 # generate a triangular mesh of mesh-size 0.2
-mesh = Mesh (unit_square.GenerateMesh(maxh=0.2))
+ngmesh = netgen.Mesh(dim=2)
+ngmesh.Load("square.vol.gz")
+#mesh = Mesh (unit_square.GenerateMesh(maxh=0.2))
+mesh = Mesh (ngmesh)
 
 # H1-conforming finite element space
 V = H1(mesh, order=3, dirichlet=[1,2,3,4])
@@ -25,7 +31,7 @@ f.Assemble()
 
 # the solution field 
 u = GridFunction (V)
-u.vec.data = a.mat.Inverse(V.FreeDofs(), inverse="sparsecholesky") * f.vec
+u.vec.data = a.mat.Inverse(V.FreeDofs(), inverse="mumps") * f.vec
 # print (u.vec)
 
 
