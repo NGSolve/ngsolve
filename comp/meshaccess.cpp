@@ -1645,7 +1645,7 @@ namespace ngcomp
 
   void NGSolveTaskManager (function<void(int,int)> func)
   {
-    cout << "call ngsolve taskmanager from netgen, tm = " << task_manager << endl;
+    // cout << "call ngsolve taskmanager from netgen, tm = " << task_manager << endl;
     if (!task_manager)
       func(0,1);
     else
