@@ -973,8 +973,8 @@ pack .statbar.selslabel .statbar.selsval -side left -ipady 3p
 # }
 
 
-tixMeter .statbar.per -value 0 -text 0%
-#ttk::progressbar .statbar.per -value 0
+#tixMeter .statbar.per -value 0 -text 0%
+ttk::progressbar .statbar.per -value 0 -maximum 1
 #.statbar.per configure -fillcolor blue
 
 pack .statbar.per -side right
