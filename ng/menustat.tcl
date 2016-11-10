@@ -1030,7 +1030,8 @@ proc timer2 { } {
     # set mem_moveable [Ng_MemInfo moveable]
 
 
-    .statbar.per configure -value [expr $status_percent/100] -text [format %2.1f [expr 0.1*int(10*$status_percent)]]%
+    .statbar.per configure -value [expr $status_percent/100]
+#    -text [format %2.1f [expr 0.1*int(10*$status_percent)]]%
 
 
     if { $multithread_running } {
