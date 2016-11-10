@@ -727,35 +727,13 @@ proc fieldlinesdialog { } {
 
 
 	
-	# tixOptionMenu $f.vecfun -label "Vector Function: " \
-	    # -options {
-		# label.width  18
-		# label.anchor e
-		# menubutton.width 12
-	    # }
-	# $f.vecfun add command none -label None 
-	# for { set i 1 } { $i <= [Ng_Vis_Field getnfieldnames] } { incr i } {
-	    # set fname [Ng_Vis_Field getfieldname $i]
-	    # set fcomp [Ng_Vis_Field getfieldcomponents $i]
-	    # set iscomplex [Ng_Vis_Field iscomplex $i]
-	    # set sdim [Ng_Vis_Field getdimension]
-	    # if { $iscomplex == 1 } { set fcomp [expr $fcomp / 2] }
-	    # if { ($fcomp == $sdim) || ($fcomp == 3) } {
-		# $f.vecfun add command $fname -label $fname
-	    # } 
-	# }
-	# $f.vecfun configure -variable visoptions.fieldlinesvecfunction
-	# $f.vecfun configure -command { Ng_Vis_Set parameters; redraw }
-
-    ttk::frame $f.vecfun
-    ttk::label  $f.vecfun.lab -text "Vector Function: "
-    ttk::menubutton $f.vecfun.but -menu $f.vecfun.menu -text "" -width 12
-
-    menu $f.vecfun.menu -tearoff 0
-	# for {set i 0} {$i < [llength ${visoptions.evaluatefilenames}]} {incr i} {
-	    # $w.filesettings.latestevals.menu add command -label $i\
-                # -command "set visoptions.lineplotselectedeval $i ; $w.filesettings.latestevals.but configure -text \"[lindex ${visoptions.evaluatefiledescriptions} $i] ([lindex ${visoptions.evaluatefilenames} $i])\""
-	# }
+	tixOptionMenu $f.vecfun -label "Vector Function: " \
+	    -options {
+		label.width  18
+		label.anchor e
+		menubutton.width 12
+	    }
+	$f.vecfun add command none -label None 
 	for { set i 1 } { $i <= [Ng_Vis_Field getnfieldnames] } { incr i } {
 	    set fname [Ng_Vis_Field getfieldname $i]
 	    set fcomp [Ng_Vis_Field getfieldcomponents $i]
@@ -763,11 +741,12 @@ proc fieldlinesdialog { } {
 	    set sdim [Ng_Vis_Field getdimension]
 	    if { $iscomplex == 1 } { set fcomp [expr $fcomp / 2] }
 	    if { ($fcomp == $sdim) || ($fcomp == 3) } {
-		$f.vecfun.menu add command -label $fname -command "set visoptions.fieldlinesvecfunction $fname;Ng_Vis_Set parameters; redraw;$f.vecfun.but configure -text \"$fname\" "
-	    }     
-    }
+		$f.vecfun add command $fname -label $fname
+	    } 
+	}
+	$f.vecfun configure -variable visoptions.fieldlinesvecfunction
+	$f.vecfun configure -command { Ng_Vis_Set parameters; redraw }
 
-    grid $f.vecfun.lab $f.vecfun.but -sticky nw
 	pack $f.vecfun
 	
 
@@ -913,7 +892,7 @@ proc fieldlinesdialog { } {
 
     ttk::frame $g.linesettings.length
     ttk::label $g.linesettings.length.lab -text "rel. Length: "
-    ttk::spinbox $g.linesettings.length.sp -textvariable visoptions.fieldlineslength -width 6 -increment 0.1 -validate focus -validatecommand "my_validatespinbox %W %P 4" \
+    ttk::spinbox $g.linesettings.length.sp -textvariable visoptions.fieldlineslength -width 6 -increment 0.1 -validate focus -validatecommand "my_validatespinbox %W %P 0" \
         -invalidcommand "my_invalidspinbox %W" -from 0.00001 -to 10000
     grid $g.linesettings.length.lab $g.linesettings.length.sp -sticky nw
         
@@ -941,7 +920,7 @@ proc fieldlinesdialog { } {
         
     ttk::frame $g.linesettings.thick
     ttk::label $g.linesettings.thick.lab -text "rel. Thickness: "
-    ttk::spinbox $g.linesettings.thick.sp -textvariable visoptions.fieldlinesthickness -width 6 -increment 0.001 -validate focus -validatecommand "my_validatespinbox %W %P 5" \
+    ttk::spinbox $g.linesettings.thick.sp -textvariable visoptions.fieldlinesthickness -width 6 -increment 0.001 -validate focus -validatecommand "my_validatespinbox %W %P 0" \
         -invalidcommand "my_invalidspinbox %W" -from 1e-10 -to 0.5
     grid $g.linesettings.thick.lab $g.linesettings.thick.sp -stick nw
     
@@ -967,36 +946,24 @@ proc fieldlinesdialog { } {
     
     ttk::frame $g.odesettings.tol
     ttk::label $g.odesettings.tol.lab -text "rel. Thickness: "
-    ttk::spinbox $g.odesettings.tol.sp -textvariable visoptions.fieldlinestolerance -width 6 -increment 0.01 -validate focus -validatecommand "my_validatespinbox %W %P 2" \
+    ttk::spinbox $g.odesettings.tol.sp -textvariable visoptions.fieldlinesthickness -width 6 -increment 0.01 -validate focus -validatecommand "my_validatespinbox %W %P 0" \
         -invalidcommand "my_invalidspinbox %W" -from 0.00001 -to 1
     grid $g.odesettings.tol.lab $g.odesettings.tol.sp -stick nw
 
         
-	# tixOptionMenu $g.odesettings.rktype -label "RK-Type " \
-	    # -options {
-		# label.width  20
-		# label.anchor e
-		# menubutton.width 25
-	    # }
-                
-	# $g.odesettings.rktype add command euler -label "Euler, order 1"
-	# $g.odesettings.rktype add command eulercauchy -label "Euler-Cauchy, order 2"
-	# $g.odesettings.rktype add command simpson -label "Simpson, order 3"
-	# $g.odesettings.rktype add command crungekutta -label "classical Runge-Kutta, order 4"
-	# $g.odesettings.rktype configure -variable visoptions.fieldlinesrktype
-	# $g.odesettings.rktype configure -command { Ng_Vis_Set parameters; redraw }
+	tixOptionMenu $g.odesettings.rktype -label "RK-Type " \
+	    -options {
+		label.width  20
+		label.anchor e
+		menubutton.width 25
+	    }
+	$g.odesettings.rktype add command euler -label "Euler, order 1"
+	$g.odesettings.rktype add command eulercauchy -label "Euler-Cauchy, order 2"
+	$g.odesettings.rktype add command simpson -label "Simpson, order 3"
+	$g.odesettings.rktype add command crungekutta -label "classical Runge-Kutta, order 4"
+	$g.odesettings.rktype configure -variable visoptions.fieldlinesrktype
+	$g.odesettings.rktype configure -command { Ng_Vis_Set parameters; redraw }
 	
-    ttk::frame $g.odesettings.rktype
-    ttk::label  $g.odesettings.rktype.lab -text "RK-Type "
-    ttk::menubutton $g.odesettings.rktype.but -menu $g.odesettings.rktype.menu -text "" -width 25
-
-    menu $g.odesettings.rktype.menu -tearoff 0
-    $g.odesettings.rktype.menu add command -label "Euler, order 1" -command "set visoptions.fieldlinesrktype \"euler\" ;Ng_Vis_Set parameters; redraw;$g.odesettings.rktype.but configure -text \"Euler,order 1\" "
-    $g.odesettings.rktype.menu add command -label "Euler-Cauchy, order 2" -command "set visoptions.fieldlinesrktype \"eulercauchy\" ;Ng_Vis_Set parameters; redraw;$g.odesettings.rktype.but configure -text \"Euler-Cauchy,order 2\" "
-    $g.odesettings.rktype.menu add command -label "Simpson, order 3" -command "set visoptions.fieldlinesrktype \"simpson\" ;Ng_Vis_Set parameters; redraw;$g.odesettings.rktype.but configure -text \"Simpson,order 3\""
-    $g.odesettings.rktype.menu add command -label "classical Runge-Kutta, order 4" -command "set visoptions.fieldlinesrktype \"crungekutta\" ;Ng_Vis_Set parameters; redraw; $g.odesettings.rktype.but configure -text \"classical Runge-Kutta,order 4\""    
-    $g.odesettings.rktype.menu invoke "classical Runge-Kutta, order 4"
-    grid $g.odesettings.rktype.lab $g.odesettings.rktype.but -sticky nw
 	pack $g.odesettings.title $g.odesettings.tol $g.odesettings.rktype
 
 	pack $g.odesettings -fill x -ipady 3
@@ -1028,8 +995,16 @@ proc fieldlinesdialog { } {
 	    } {
 		toplevel .fieldlines_help
 
-		tixScrolledText .fieldlines_help.ht -scrollbar y
-		set text .fieldlines_help.ht.text
+        set f [frame .fieldlines_help.ht]
+        #ttk::scrollbar $f.hsb -orient horizontal -command [list $f.t xview]
+        ttk::scrollbar $f.vsb -orient vertical -command [list $f.t yview]
+        text $f.t -yscrollcommand [list $f.vsb set] 
+        grid $f.t -row 0 -column 0 -sticky nsew
+        grid $f.vsb -row 0 -column 1 -sticky nsew
+        grid columnconfigure $f 0 -weight 1
+        grid rowconfigure $f 0 -weight 1
+		#tixScrolledText .fieldlines_help.ht -scrollbar y
+		set text $f.t
 
 		$text configure -setgrid true -wrap word 
 
@@ -1651,177 +1626,177 @@ proc visual_dialog { } {
 
 
 
-# proc reset_visual_dialog { } {
+proc reset_visual_dialog { } {
     
-    # set w .visoptions_dlg
+    set w .visoptions_dlg
     
-      # if {[winfo exists .visoptions_dlg] == 1} {
+      if {[winfo exists .visoptions_dlg] == 1} {
     
     
-	  # destroy $w.scalfun $w.vecfun $w.evaluate $w.multidimcomp
-	  # destroy $w.imaginary $w.logscale $w.texframe.usetexture $w.texframe.lintexture
-          # destroy $w.texframe
-          # destroy $w.invcolor $w.redrawperiodic
-	  # destroy $w.bu  -pady 5
-	  # destroy $w.bu.showsol $w.bu.clipping $w.bu.fieldlines $w.bu.lineplot $w.bu.done -side left -expand yes
+	  destroy $w.scalfun $w.vecfun $w.evaluate $w.multidimcomp
+	  destroy $w.imaginary $w.logscale $w.texframe.usetexture $w.texframe.lintexture
+          destroy $w.texframe
+          destroy $w.invcolor $w.redrawperiodic
+	  destroy $w.bu  -pady 5
+	  destroy $w.bu.showsol $w.bu.clipping $w.bu.fieldlines $w.bu.lineplot $w.bu.done -side left -expand yes
 	  
 	  
-	  # checkbutton $w.imaginary -text "Imaginary Part" \
-	      # -variable visoptions.imaginary \
-	      # -command { Ng_Vis_Set parameters; redraw }
+	  checkbutton $w.imaginary -text "Imaginary Part" \
+	      -variable visoptions.imaginary \
+	      -command { Ng_Vis_Set parameters; redraw }
 
-	  # frame $w.texframe
+	  frame $w.texframe
 
-	  # checkbutton $w.texframe.usetexture -text "Use Textures (" \
-	      # -variable visoptions.usetexture \
-	      # -command { Ng_Vis_Set parameters; redraw }
+	  checkbutton $w.texframe.usetexture -text "Use Textures (" \
+	      -variable visoptions.usetexture \
+	      -command { Ng_Vis_Set parameters; redraw }
 
-	  # checkbutton $w.texframe.lintexture -text "Linear )" \
-	      # -variable visoptions.lineartexture \
-	      # -command { Ng_Vis_Set parameters; redraw }
+	  checkbutton $w.texframe.lintexture -text "Linear )" \
+	      -variable visoptions.lineartexture \
+	      -command { Ng_Vis_Set parameters; redraw }
 
 
 
 	  
 	  
-	  # checkbutton $w.invcolor -text "Inverse Color" \
-	      # -variable visoptions.invcolor \
-	      # -command { Ng_Vis_Set parameters; redraw }
+	  checkbutton $w.invcolor -text "Inverse Color" \
+	      -variable visoptions.invcolor \
+	      -command { Ng_Vis_Set parameters; redraw }
 
-	  # checkbutton $w.logscale -text "Log Scale" \
-	      # -variable visoptions.logscale \
-	      # -command { Ng_Vis_Set parameters; redraw }
+	  checkbutton $w.logscale -text "Log Scale" \
+	      -variable visoptions.logscale \
+	      -command { Ng_Vis_Set parameters; redraw }
 	  
 
 	  
-	  # checkbutton $w.redrawperiodic -text "Animate periodic" \
-	      # -variable visoptions.redrawperiodic \
-	      # -command { 
-		  # redrawperiodic
-		  # Ng_Vis_Set parameters; 
-		  # redraw 
-	      # }
+	  checkbutton $w.redrawperiodic -text "Animate periodic" \
+	      -variable visoptions.redrawperiodic \
+	      -command { 
+		  redrawperiodic
+		  Ng_Vis_Set parameters; 
+		  redraw 
+	      }
 	  
 
-	# tixOptionMenu $w.scalfun -label "Scalar Function: " \
-	    # -options {
-		# label.width  18
-		# label.anchor e
-		# menubutton.width 12
-	    # }
+	tixOptionMenu $w.scalfun -label "Scalar Function: " \
+	    -options {
+		label.width  18
+		label.anchor e
+		menubutton.width 12
+	    }
 
-	# tixOptionMenu $w.vecfun -label "Vector Function: " \
-	    # -options {
-		# label.width  18
-		# label.anchor e
-		# menubutton.width 12
-	    # }
-
-
-
-	# $w.scalfun add command none -label None
-	# for { set i 1 } { $i <= [Ng_Vis_Field getnfieldnames] } { incr i } {
-	    # set fname [Ng_Vis_Field getfieldname $i]
-	    # set fcomp [Ng_Vis_Field getfieldcomponents $i]
-	    # if { $fcomp == 1 } {
-		# $w.scalfun add command $fname.1 -label $fname
-	    # } {
-		# for { set j 1 } { $j <= $fcomp } { incr j } {
-		    # $w.scalfun add command $fname.$j -label "$fname ($j)"
-		# }
-		# $w.scalfun add command $fname.0 -label "func ($fname)"
-	    # }
-	# }
-
-	# $w.vecfun add command none -label None 
-	# for { set i 1 } { $i <= [Ng_Vis_Field getnfieldnames] } { incr i } {
-	    # set fname [Ng_Vis_Field getfieldname $i]
-	    # set fcomp [Ng_Vis_Field getfieldcomponents $i]
-	    # set iscomplex [Ng_Vis_Field iscomplex $i]
-	    # set sdim [Ng_Vis_Field getdimension]
-	    # if { $iscomplex == 1 } { set fcomp [expr $fcomp / 2] }
-	    # if { ($fcomp == $sdim) || ($fcomp == 3) } {
-		# $w.vecfun add command $fname -label $fname
-	    # } 
-	# }
+	tixOptionMenu $w.vecfun -label "Vector Function: " \
+	    -options {
+		label.width  18
+		label.anchor e
+		menubutton.width 12
+	    }
 
 
 
-	# $w.scalfun configure -variable visoptions.scalfunction 
-	# $w.scalfun configure -command { Ng_Vis_Set parameters; redraw }
-	# $w.vecfun configure -variable visoptions.vecfunction
-	# $w.vecfun configure -command { Ng_Vis_Set parameters; redraw }
+	$w.scalfun add command none -label None
+	for { set i 1 } { $i <= [Ng_Vis_Field getnfieldnames] } { incr i } {
+	    set fname [Ng_Vis_Field getfieldname $i]
+	    set fcomp [Ng_Vis_Field getfieldcomponents $i]
+	    if { $fcomp == 1 } {
+		$w.scalfun add command $fname.1 -label $fname
+	    } {
+		for { set j 1 } { $j <= $fcomp } { incr j } {
+		    $w.scalfun add command $fname.$j -label "$fname ($j)"
+		}
+		$w.scalfun add command $fname.0 -label "func ($fname)"
+	    }
+	}
+
+	$w.vecfun add command none -label None 
+	for { set i 1 } { $i <= [Ng_Vis_Field getnfieldnames] } { incr i } {
+	    set fname [Ng_Vis_Field getfieldname $i]
+	    set fcomp [Ng_Vis_Field getfieldcomponents $i]
+	    set iscomplex [Ng_Vis_Field iscomplex $i]
+	    set sdim [Ng_Vis_Field getdimension]
+	    if { $iscomplex == 1 } { set fcomp [expr $fcomp / 2] }
+	    if { ($fcomp == $sdim) || ($fcomp == 3) } {
+		$w.vecfun add command $fname -label $fname
+	    } 
+	}
 
 
-# #	puts "sclfunction = ${visoptions.scalfunction}"
+
+	$w.scalfun configure -variable visoptions.scalfunction 
+	$w.scalfun configure -command { Ng_Vis_Set parameters; redraw }
+	$w.vecfun configure -variable visoptions.vecfunction
+	$w.vecfun configure -command { Ng_Vis_Set parameters; redraw }
 
 
-	# tixOptionMenu $w.evaluate -label "Evaluate: " \
-	    # -options {
-		# label.width  18
-		# label.anchor e
-		# menubutton.width 12
-	    # }	
-	# $w.evaluate add command abs -label "|.|"
-	# $w.evaluate add command abstens -label "|tensor|"
-	# $w.evaluate add command mises -label "Mises"
-	# $w.evaluate add command main  -label "Main"
-	# $w.evaluate configure -variable visoptions.evaluate
-	# $w.evaluate configure -command { 
-	    # Ng_Vis_Set parameters; 
-	    # redraw 
-	# }
-
-	# pack $w.scalfun $w.vecfun $w.evaluate
-
-	# tixControl $w.multidimcomp -label "multidim-component: " -integer true \
-	    # -variable visoptions.multidimcomponent -min 0 \
-	    # -command { Ng_Vis_Set parameters; redraw } \
-	    # -options {
-		# entry.width 6
-		# label.width 18
-		# label.anchor e
-	    # }	
+#	puts "sclfunction = ${visoptions.scalfunction}"
 
 
-          # pack $w.multidimcomp
+	tixOptionMenu $w.evaluate -label "Evaluate: " \
+	    -options {
+		label.width  18
+		label.anchor e
+		menubutton.width 12
+	    }	
+	$w.evaluate add command abs -label "|.|"
+	$w.evaluate add command abstens -label "|tensor|"
+	$w.evaluate add command mises -label "Mises"
+	$w.evaluate add command main  -label "Main"
+	$w.evaluate configure -variable visoptions.evaluate
+	$w.evaluate configure -command { 
+	    Ng_Vis_Set parameters; 
+	    redraw 
+	}
 
-          # pack $w.imaginary $w.logscale $w.texframe $w.invcolor $w.redrawperiodic
-          # pack $w.texframe.usetexture $w.texframe.lintexture  -side left -expand yes
+	pack $w.scalfun $w.vecfun $w.evaluate
 
-
-	# frame $w.bu
-	# pack $w.bu  -pady 5
-
-	# button $w.bu.showsol -text "Show Solution" -command { 
-	    # set selectvisual solution
-	    # Ng_SetVisParameters
-	    # redraw
-	# }
-	# button $w.bu.clipping -text "Clipping" -command { 
-	    # clippingdialog; 
-	# }
-	# button $w.bu.fieldlines -text "Fieldlines" -command { 
-	    # fieldlinesdialog; 
-	# }
-
-	# button $w.bu.lineplot -text "2D Lineplot" -command {
-	    # lineplotdialog;
-	# }
-
-	# button $w.bu.done -text "Close" -command { 
-	    # destroy .visoptions_dlg
-	# }
-
-	# pack $w.bu.showsol $w.bu.clipping $w.bu.fieldlines $w.bu.lineplot $w.bu.done -side left -expand yes
-
-	# wm withdraw $w
-	# wm deiconify $w
+	tixControl $w.multidimcomp -label "multidim-component: " -integer true \
+	    -variable visoptions.multidimcomponent -min 0 \
+	    -command { Ng_Vis_Set parameters; redraw } \
+	    -options {
+		entry.width 6
+		label.width 18
+		label.anchor e
+	    }	
 
 
-      # }
+          pack $w.multidimcomp
 
-# }
+          pack $w.imaginary $w.logscale $w.texframe $w.invcolor $w.redrawperiodic
+          pack $w.texframe.usetexture $w.texframe.lintexture  -side left -expand yes
+
+
+	frame $w.bu
+	pack $w.bu  -pady 5
+
+	button $w.bu.showsol -text "Show Solution" -command { 
+	    set selectvisual solution
+	    Ng_SetVisParameters
+	    redraw
+	}
+	button $w.bu.clipping -text "Clipping" -command { 
+	    clippingdialog; 
+	}
+	button $w.bu.fieldlines -text "Fieldlines" -command { 
+	    fieldlinesdialog; 
+	}
+
+	button $w.bu.lineplot -text "2D Lineplot" -command {
+	    lineplotdialog;
+	}
+
+	button $w.bu.done -text "Close" -command { 
+	    destroy .visoptions_dlg
+	}
+
+	pack $w.bu.showsol $w.bu.clipping $w.bu.fieldlines $w.bu.lineplot $w.bu.done -side left -expand yes
+
+	wm withdraw $w
+	wm deiconify $w
+
+
+      }
+
+}
 
 
 
