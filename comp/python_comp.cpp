@@ -853,13 +853,22 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                            {
                              Flags flags = py::extract<Flags> (bpflags)();
 
-                             if (order > -1) flags.SetFlag ("order", order);
-                             if (dim > -1) flags.SetFlag ("dim", dim);
-                             if (is_complex) flags.SetFlag ("complex");
+                             if (order > -1) {
+			       flags.SetFlag ("order", order);
+			       bpflags["order"] = py::cast(order); }
+                             if (dim > -1) {
+			       flags.SetFlag ("dim", dim);
+			       bpflags["dim"] = py::cast(dim); }
+                             if (is_complex) {
+			       flags.SetFlag ("complex");
+			       bpflags["complex"] = py::cast(is_complex);
+			     }
 
                              py::extract<py::list> dirlist(dirichlet);
-                             if (dirlist.check())
+                             if (dirlist.check()){ 
                                flags.SetFlag("dirichlet", makeCArray<double>(dirlist()));
+			       bpflags["dirichlet"] = dirlist();
+			     }
 
                              py::extract<string> dirstring(dirichlet);
                              if (dirstring.check())
@@ -870,6 +879,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                                    if (std::regex_match (ma->GetBCNumBCName(i), pattern))
                                      dirlist.Append (i+1);
                                  flags.SetFlag("dirichlet", dirlist);
+				 bpflags["dirichlet"] = py::cast(dirlist);
                                }
 
                              py::extract<string> definedon_string(definedon);
@@ -881,6 +891,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                                    if (regex_match(ma->GetDomainMaterial(i), definedon_pattern))
                                      defonlist.Append(i+1);
                                  flags.SetFlag ("definedon", defonlist);
+				 bpflags["definedon"] = py::cast(defonlist);
                                }
                              py::extract<py::list> definedon_list(definedon);
                              if (definedon_list.check())
@@ -893,6 +904,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                                    if (definedon_reg().Mask().Test(i))
                                      defonlist.Append(i+1);
                                  flags.SetFlag ("definedon", defonlist);
+				 bpflags["definedon"] = py::cast(defonlist);
                                }
                              
                              
@@ -913,6 +925,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                             shared_ptr<MeshAccess> ma = py::extract<shared_ptr<MeshAccess>>(bp_ma)();
                             fes_dummy_init(instance, ma, type, bp_flags, order, is_complex, dirichlet, definedon, dim);
                              py::cast(*instance).attr("flags") = py::cast(bp_flags);
+			     
                            },
          py::arg("type"), py::arg("mesh"), py::arg("flags") = py::dict(), 
            py::arg("order")=-1, 
