@@ -39,65 +39,79 @@ proc occdialogbuildtree {} {
     global entities
 
     set w .occ_dlg
-    set hlist [$w.mtre subwidget hlist]
+    #set hlist [$w.mtre subwidget hlist]
 
     set entities [Ng_GetOCCData getentities]
     set nrentities [expr [llength $entities]]
 
 
     if {$nrentities != 0} {
-
-	$hlist add Topology -itemtype text -text "Topology"
+    
+	#$hlist add Topology -itemtype text -text "Topology"
 	
-	$hlist add Topology/CompSolids   -itemtype text -text "Composite Solids" -data "Composite Solids"
-	$hlist add Topology/FreeSolids   -itemtype text -text "Free Solids" -data "Free Solids"
-	$hlist add Topology/FreeShells   -itemtype text -text "Free Shells" -data "Free Shells"
-	$hlist add Topology/FreeFaces    -itemtype text -text "Free Faces" -data "Free Faces"
-	$hlist add Topology/FreeWires    -itemtype text -text "Free Wires" -data "Free Wires"
-	$hlist add Topology/FreeEdges    -itemtype text -text "Free Edges" -data "Free Edges"
-	$hlist add Topology/FreeVertices -itemtype text -text "Free Vertices" -data "Free Vertices"
-
+	#$hlist add Topology/CompSolids   -itemtype text -text "Composite Solids" -data "Composite Solids"
+	#$hlist add Topology/FreeSolids   -itemtype text -text "Free Solids" -data "Free Solids"
+	#$hlist add Topology/FreeShells   -itemtype text -text "Free Shells" -data "Free Shells"
+	#$hlist add Topology/FreeFaces    -itemtype text -text "Free Faces" -data "Free Faces"
+	#$hlist add Topology/FreeWires    -itemtype text -text "Free Wires" -data "Free Wires"
+	#$hlist add Topology/FreeEdges    -itemtype text -text "Free Edges" -data "Free Edges"
+	#$hlist add Topology/FreeVertices -itemtype text -text "Free Vertices" -data "Free Vertices"
+    $w.tree insert {Topology} end -id "CompSolids" -text "Composite Solids"
+    $w.tree insert {Topology} end -id "FreeSolids" -text "Free Solids"
+    $w.tree insert {Topology} end -id "FreeShells" -text "Free Shells"
+    $w.tree insert {Topology} end -id "FreeFaces" -text "Free Faces"
+    $w.tree insert {Topology} end -id "FreeWires" -text "Free Wires"
+    $w.tree insert {Topology} end -id "FreeEdges" -text "Free Edges"
+    $w.tree insert {Topology} end -id "FreeVertices" -text "Free Vertices"
+    
 	#	$hlist add SingularEntities -itemtype text -text "Entities marked as singular"
-	
+    $w.tree item "Topology" -open true
 	set i [expr 0]
 	while {$i < $nrentities} {
 	    set entity [lindex $entities [expr $i]]
 	    incr i 1
 	    set entityname [lindex $entities [expr $i]]
-	    $hlist add Topology/$entity -text $entityname -data $entityname
+	    #$hlist add Topology/$entity -text $entityname -data $entityname
+        set myroot [string range $entity 0 [string last / $entity]-1]
+        $w.tree insert $myroot end -id $entity -text $entityname
 	    incr i 1
-	    $w.mtre close Topology/$entity
+	    #$w.mtre close Topology/$entity
 	}
 	
-	$w.mtre autosetmode
+	#$w.mtre autosetmode
 	
-	$w.mtre open Topology
-	$w.mtre close Topology/CompSolids
-	$w.mtre close Topology/FreeSolids
-	$w.mtre close Topology/FreeShells
-	$w.mtre close Topology/FreeFaces
-	$w.mtre close Topology/FreeWires
-	$w.mtre close Topology/FreeEdges
-	$w.mtre close Topology/FreeVertices
+	#$w.mtre open Topology
+	#$w.mtre close Topology/CompSolids
+	#$w.mtre close Topology/FreeSolids
+	#$w.mtre close Topology/FreeShells
+	#$w.mtre close Topology/FreeFaces
+	#$w.mtre close Topology/FreeWires
+	#$w.mtre close Topology/FreeEdges
+	#$w.mtre close Topology/FreeVertices
 	
 	set i [expr 0]
 	while {$i < $nrentities} {
 	    set entity [lindex $entities [expr $i]]
-	    $w.mtre close Topology/$entity
+	    #$w.mtre close Topology/$entity
+        $w.tree item $entity -open false
 	    incr i 2
 	}
 	
 	set faces [Ng_OCCCommand getunmeshedfaceinfo]    
 	set nrfaces [expr [llength $faces]]
 	if {$nrfaces >= 2} {
-	    $hlist add ErrorFaces -itemtype text -text "Faces with surface meshing error"
-	    $w.mtre open ErrorFaces
+	    #$hlist add ErrorFaces -itemtype text -text "Faces with surface meshing error"
+        $w.tree insert {} -id ErrorFaces -text "Faces with surface meshing error"
+	    #$w.mtre open ErrorFaces
+        $w.tree item ErrorFaces -open true
 	    set i [expr 0]
 	    while {$i < $nrfaces} {
 		set entity [lindex $faces [expr $i]]
+        set myroot [string range $entity 0 [string last / $entity]-1]
 		incr i 1
 		set entityname [lindex $faces [expr $i]]
-		$hlist add ErrorFaces/$entity -text $entityname -data $entityname
+		#$hlist add ErrorFaces/$entity -text $entityname -data $entityname
+        $w.tree insert {ErrorFaces} end -id $entity -text $entityname        
 		incr i 1
 	    }
 	}
@@ -106,20 +120,24 @@ proc occdialogbuildtree {} {
 	set faces [Ng_OCCCommand getnotdrawablefaces]    
 	set nrfaces [expr [llength $faces]]
 	if {$nrfaces >= 2} {
-	    $hlist add NotDrawableFaces -itemtype text -text "Faces impossible to visualize"
-	    $w.mtre open NotDrawableFaces
+	    #$hlist add NotDrawableFaces -itemtype text -text "Faces impossible to visualize"
+        $w.tree insert {} -id NotDrawableFaces -text "Faces impossible to visualize"
+	    #$w.mtre open NotDrawableFaces
+        $w.tree item NotDrawableFaces -open true
 	    set i [expr 0]
 	    while {$i < $nrfaces} {
 		set entity [lindex $faces [expr $i]]
+        set myroot [string range $entity 0 [string last / $entity]-1]
 		incr i 1
 		set entityname [lindex $faces [expr $i]]
-		$hlist add NotDrawableFaces/$entity -text $entityname -data $entityname
+		#$hlist add NotDrawableFaces/$entity -text $entityname -data $entityname
+        $w.tree insert $myroot end -id $entity -text $entityname        
 		incr i 1
 	    }
 	}
 
 
-	$w.mtre autosetmode
+	#$w.mtre autosetmode
 
 	puts "done"
     }
@@ -128,7 +146,8 @@ proc occdialogbuildtree {} {
 
 proc rebuildoccdialog {} {
     if {[winfo exists .occ_dlg] == 1} {
-	[.occ_dlg.mtre subwidget hlist] delete all
+    .occ_dlg.tree delete [.occ_dlg.tree children Topology]
+	#[.occ_dlg.mtre subwidget hlist] delete all
 	occdialogbuildtree 
     }
 }
@@ -160,19 +179,19 @@ proc selectentity { entityname } {
 	set entityname2 [string range $entityname2 0 [expr [string length $entityname]-1]]
 	
 	if {$entityname == $entityname2} {
-	    set hlist [.occ_dlg.mtre subwidget hlist]
-	    .occ_dlg.mtre open Topology
+	    #set hlist [.occ_dlg.mtre subwidget hlist]
+	    #.occ_dlg.mtre open Topology
 	    set slashpos [string last "/" $entity2]
 	    set entity3 [string range $entity2 0 [expr $slashpos-1]]
 	    while {$slashpos != -1} {
-		.occ_dlg.mtre open Topology/$entity3
+		#.occ_dlg.mtre open Topology/$entity3
 		
 		set slashpos [string last "/" $entity3]
 		set entity3 [string range $entity3 0 [expr $slashpos-1]]
 	    }
-	    $hlist selection clear
-	    $hlist see Topology/$entity2
-	    $hlist selection set Topology/$entity2
+	    #$hlist selection clear
+	    #$hlist see Topology/$entity2
+	    #$hlist selection set Topology/$entity2
 	} 
     }	    
 }
@@ -197,31 +216,62 @@ proc occdialog { } {
 	} {	
 	    toplevel $w
 
-	    tixTree $w.mtre -options { separator "/" }
-	    pack $w.mtre -fill both -expand yes
-
+	    #tixTree $w.mtre -options { separator "/" }
+        ttk::treeview $w.tree
+        $w.tree insert {} end -id "Topology" -text "Topology"
+	    #pack $w.mtre -fill both -expand yes
+        pack $w.tree -fill both -expand yes
 	    occdialogbuildtree
 
-	    set hlist [$w.mtre subwidget hlist]
-            $hlist configure -selectforeground black
-            $hlist configure -selectbackground grey
+	    #set hlist [$w.mtre subwidget hlist]
+        #    $hlist configure -selectforeground black
+        #    $hlist configure -selectbackground grey
 
-	    set solname {""}
+	    #set solname {""}
 
 	    
-	    bind $hlist <Double-1> {
-		set oldsolname {$solname}
-		set solname [[.occ_dlg.mtre subwidget hlist] info selection]
-		if {$solname != "" && $oldsolname != $solname } {
-		    set seppos [string first "/" $solname]
-		    set rootname [string range $solname 0 [expr $seppos-1]]
+	    # bind $hlist <Double-1> {
+		# set oldsolname {$solname}
+		# set solname [[.occ_dlg.mtre subwidget hlist] info selection]
+        # puts $solname
+		# if {$solname != "" && $oldsolname != $solname } {
+		    # set seppos [string first "/" $solname]
+		    # set rootname [string range $solname 0 [expr $seppos-1]]
 
-		    set entityname [[.occ_dlg.mtre subwidget hlist] info data $solname]
+		    # set entityname [[.occ_dlg.mtre subwidget hlist] info data $solname]
+		    # set spacepos [string first " " $entityname]
+		    # set entitytype [string range $entityname 0 [expr $spacepos-1]]
+		    # set helpstring [string range $entityname [expr $spacepos+1] [expr [string length $entityname]-1]]
+		    # set spacepos2 [string first " " $helpstring]
+		    # set entitynumber [string range $helpstring 0 [expr $spacepos2-1]]
+            # puts "Ent name = "
+            # puts $entityname
+            # puts $rootname
+		    # if {$rootname == "Topology"} {
+			# Ng_OCCCommand highlightentity $entitytype $entitynumber
+			# set selectvisual geometry
+			# redraw
+		    # } {
+			# set brackpos [string first " (" $entityname]
+			# if {$brackpos != -1} {
+			    # set entityname [string range $entityname 0 $brackpos]
+                # puts "entityname = "
+                # puts $entityname
+			# }
+
+			# selectentity $entityname
+		    # }
+		# }
+	    # }
+        
+        bind $w.tree <Double-1> {
+            set entityname [.occ_dlg.tree item [.occ_dlg.tree selection] -text ]
+            set rootname "Topology"
 		    set spacepos [string first " " $entityname]
-		    set entitytype [string range $entityname 0 [expr $spacepos-1]]
+		    set entitytype [string range $entityname 0 [expr $spacepos-1]]            
 		    set helpstring [string range $entityname [expr $spacepos+1] [expr [string length $entityname]-1]]
 		    set spacepos2 [string first " " $helpstring]
-		    set entitynumber [string range $helpstring 0 [expr $spacepos2-1]]
+		    set entitynumber [string range $helpstring 0 [expr $spacepos2-1]]            
 		    if {$rootname == "Topology"} {
 			Ng_OCCCommand highlightentity $entitytype $entitynumber
 			set selectvisual geometry
@@ -231,19 +281,17 @@ proc occdialog { } {
 			if {$brackpos != -1} {
 			    set entityname [string range $entityname 0 $brackpos]
 			}
-
 			selectentity $entityname
 		    }
-		}
-	    }
-	    
+            }	    
 	    ttk::button $w.cl -text "Close" -command {
 		destroy .occ_dlg
 	    }
 	    
 	    ttk::button $w.show -text "Show" -command {
-		set solname [[.occ_dlg.mtre subwidget hlist] info selection]
-		set entityname [[.occ_dlg.mtre subwidget hlist] info data $solname]
+		#set solname [[.occ_dlg.mtre subwidget hlist] info selection]
+		#set entityname [[.occ_dlg.mtre subwidget hlist] info data $solname]
+        set entityname [.occ_dlg.tree item [.occ_dlg.tree selection] -text ]
 		set spacepos [string first " " $entityname]
 		set entitytype [string range $entityname 0 [expr $spacepos-1]]
 		set helpstring [string range $entityname [expr $spacepos+1] [expr [string length $entityname]-1]]
@@ -256,8 +304,9 @@ proc occdialog { } {
 		redraw
 	    }
 	    ttk::button $w.hide -text "Hide" -command {
-		set solname [[.occ_dlg.mtre subwidget hlist] info selection]
-		set entityname [[.occ_dlg.mtre subwidget hlist] info data $solname]
+		#set solname [[.occ_dlg.mtre subwidget hlist] info selection]
+		#set entityname [[.occ_dlg.mtre subwidget hlist] info data $solname]
+        set entityname [.occ_dlg.tree item [.occ_dlg.tree selection] -text ]        
 		set spacepos [string first " " $entityname]
 		set entitytype [string range $entityname 0 [expr $spacepos-1]]
 		set helpstring [string range $entityname [expr $spacepos+1] [expr [string length $entityname]-1]]
@@ -270,9 +319,10 @@ proc occdialog { } {
 		redraw
 	    }
 
-	    button $w.swaporientation -text "Swap orientation" -command {
-		set solname [[.occ_dlg.mtre subwidget hlist] info selection]
-		set entityname [[.occ_dlg.mtre subwidget hlist] info data $solname]
+	    ttk::button $w.swaporientation -text "Swap orientation" -command {
+		#set solname [[.occ_dlg.mtre subwidget hlist] info selection]
+		#set entityname [[.occ_dlg.mtre subwidget hlist] info data $solname]
+        set entityname [.occ_dlg.tree item [.occ_dlg.tree selection] -text ]                
 		set spacepos [string first " " $entityname]
 		set entitytype [string range $entityname 0 [expr $spacepos-1]]
 		set helpstring [string range $entityname [expr $spacepos+1] [expr [string length $entityname]-1]]
@@ -283,14 +333,15 @@ proc occdialog { } {
 		set selectvisual geometry
 		#	    Ng_SetVisParameters
 		redraw
-
-		[.occ_dlg.mtre subwidget hlist] delete all
+        .occ_dlg.tree delete [.occ_dlg.tree children Topology]
+		#[.occ_dlg.mtre subwidget hlist] delete all
 		occdialogbuildtree	
 	    }
 
 	    ttk::button $w.marksingular -text "Mark/Unmark as singular" -command {
-		set solname [[.occ_dlg.mtre subwidget hlist] info selection]
-		set entityname [[.occ_dlg.mtre subwidget hlist] info data $solname]
+		#set solname [[.occ_dlg.mtre subwidget hlist] info selection]
+		#set entityname [[.occ_dlg.mtre subwidget hlist] info data $solname]
+        set entityname [.occ_dlg.tree item [.occ_dlg.tree selection] -text ]
 		set spacepos [string first " " $entityname]
 		if { $spacepos != 0 } {
 		    set entitytype [string range $entityname 0 [expr $spacepos-1]]
@@ -302,17 +353,25 @@ proc occdialog { } {
 			global ismarkedsingular
 			Ng_OCCCommand marksingular $entitytype $entitynumber
 			
-			set hlist [$w.mtre subwidget hlist]
+			#set hlist [$w.mtre subwidget hlist]
 			
 			#	    $hlist entryconfigure $solname -text "hallo"
 			#	    set style1 [tixDisplayStyle imagetext -font 8x13]
-			set style1 [tixDisplayStyle imagetext -foreground black -background white -selectforeground white -selectbackground blue]
-			set style2 [tixDisplayStyle imagetext -foreground red -background white -selectforeground red -selectbackground blue]
+			# set style1 [tixDisplayStyle imagetext -foreground black -background white -selectforeground white -selectbackground blue]
+			# set style2 [tixDisplayStyle imagetext -foreground red -background white -selectforeground red -selectbackground blue]
 			
 			if { $ismarkedsingular == 0 } {
-			    $hlist entryconfigure $solname -style $style1
+			    #$hlist entryconfigure $solname -style $style1
+                .occ_dlg.tree tag add "Color" [.occ_dlg.tree selection]
+                .occ_dlg.tree tag configure "Color" -foreground "black"
+                .occ_dlg.tree tag configure "Color" -background "white"                
+                #.occ_dlg.tree delete "Topology"
 			} {
-			    $hlist entryconfigure $solname -style $style2
+                .occ_dlg.tree tag add "Color" [.occ_dlg.tree selection]
+                .occ_dlg.tree tag configure "Color" -foreground "red"
+                .occ_dlg.tree tag configure "Color" -background "blue"
+                #.occ_dlg.tree delete "Topology"
+			    #$hlist entryconfigure $solname -style $style2
 			}
 
 			#		    set hlist [$w.mtre subwidget hlist]
@@ -331,9 +390,10 @@ proc occdialog { } {
 		#	    set selectvisual geometry
 		#	    Ng_SetVisParameters
 		#	    redraw
-
-		#	    [.occ_dlg.mtre subwidget hlist] delete all
-		#	    occdialogbuildtree	
+                # .occ_dlg.tree delete [.occ_dlg.tree children Topology]
+			    # #[.occ_dlg.mtre subwidget hlist] delete all
+			    # occdialogbuildtree	
+                
 	    }
 
 
@@ -359,10 +419,10 @@ proc occdialog { } {
 		set irregent [Ng_OCCCommand findsmallentities]
 
 		set w .occ_dlg
-		set hlist [$w.mtre subwidget hlist]
+		#set hlist [$w.mtre subwidget hlist]
 		
-		$hlist add ProblematicEntities -text "Problematic Entities"
-		$hlist delete offsprings ProblematicEntities
+		#$hlist add ProblematicEntities -text "Problematic Entities"
+		#$hlist delete offsprings ProblematicEntities
 
 		set nritems [expr [llength $irregent]]
 		set i [expr 0]
@@ -370,11 +430,11 @@ proc occdialog { } {
 		    set entity [lindex $irregent [expr $i]]
 		    incr i 1
 		    set entityname [lindex $irregent [expr $i]]
-		    $hlist add ProblematicEntities/$entity -text $entityname -data $entityname
+		    #$hlist add ProblematicEntities/$entity -text $entityname -data $entityname
 		    incr i 1
 		}
-		$w.mtre open ProblematicEntities
-		$w.mtre autosetmode
+		#$w.mtre open ProblematicEntities
+		#$w.mtre autosetmode
 	    }
 
 	    # tixControl $w.healing.tolerance -label "Healing tolerance: " -integer false \
@@ -410,7 +470,8 @@ proc occdialog { } {
 		.occ_dlg.healing.tolerance invoke
 		Ng_OCCCommand shapehealing
 		redraw 
-		[.occ_dlg.mtre subwidget hlist] delete all
+        .occ_dlg.tree delete [.occ_dlg.tree children Topology]        
+		#[.occ_dlg.mtre subwidget hlist] delete all        
 		occdialogbuildtree
 	    }
 
