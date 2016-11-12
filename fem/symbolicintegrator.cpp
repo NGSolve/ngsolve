@@ -1026,8 +1026,8 @@ namespace ngfem
   {
     typedef double SCAL;
     typedef double SCAL_SHAPES;
-    static Timer t("symbolicBFI - CalcElementMatrix", 2);
-    static Timer tsimd("symbolicBFI - CalcElementMatrix - simd", 2);
+    // static Timer t("symbolicBFI - CalcElementMatrix", 2);
+    // static Timer tsimd("symbolicBFI - CalcElementMatrix - simd", 2);
     // static Timer tstart("symboliBFI - CalcElementMatrix startup", 2);
     // static Timer tstart1("symboliBFI - CalcElementMatrix startup 1", 2);
     // static Timer tmain("symboliBFI - CalcElementMatrix main", 2);
@@ -1057,7 +1057,7 @@ namespace ngfem
           }
       }
     
-    RegionTimer reg(t);
+    // RegionTimer reg(t);
 
     const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fel);
     const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : fel;
@@ -1080,7 +1080,7 @@ namespace ngfem
     if (simd_evaluate)
       try
         {
-          RegionTimer reg(tsimd);          
+          // RegionTimer reg(tsimd);          
           // SIMD_IntegrationRule ir(trafo.GetElementType(), intorder);
           SIMD_IntegrationRule ir = Get_SIMD_IntegrationRule (fel);
           SIMD_BaseMappedIntegrationRule & mir = trafo(ir, lh);
