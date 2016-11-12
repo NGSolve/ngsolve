@@ -935,8 +935,8 @@ namespace ngcomp
                          
                          try
                            {
-                             static Timer elementtimer ("Element matrix integration", 2);
-                             elementtimer.Start();
+                             // static Timer elementtimer ("Element matrix integration", 2);
+                             // elementtimer.Start();
                              if (!diagonal)
                                bfi.CalcElementMatrix (fel, eltrans, elmat, lh);
                              else
@@ -947,7 +947,7 @@ namespace ngcomp
                                  elmat.Diag() = diag;
                                }
 
-                             elementtimer.Stop();
+                             // elementtimer.Stop();
 
                              if (printelmat)
                                {
