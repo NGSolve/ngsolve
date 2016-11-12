@@ -738,9 +738,9 @@ namespace ngcomp
     static Timer mattimer_vol("Matrix assembling vol");
     static Timer mattimer_bound("Matrix assembling bound");
 
-    static Timer timer1 ("Matrix assembling - 1", 2);
-    static Timer timer2 ("Matrix assembling - 2", 2);
-    static Timer timer3 ("Matrix assembling - 3", 2);
+    // static Timer timer1 ("Matrix assembling - 1", 2);
+    // static Timer timer2 ("Matrix assembling - 2", 2);
+    // static Timer timer3 ("Matrix assembling - 3", 2);
 
     static Timer timerb1 ("Matrix assembling bound - 1", 2);
     static Timer timerb2 ("Matrix assembling bound - 2", 2);
@@ -889,7 +889,7 @@ namespace ngcomp
                      
                      progress.Update ();
                      
-                     timer1.Start();
+                     // timer1.Start();
                      
                      const FiniteElement & fel = fespace->GetFE (el, lh);
                      const ElementTransformation & eltrans = ma->GetTrafo (el, lh);
@@ -914,8 +914,8 @@ namespace ngcomp
                      FlatMatrix<SCAL> sum_elmat(elmat_size, lh);
                      sum_elmat = 0;
 
-                     timer1.Stop();
-                     timer2.Start();
+                     // timer1.Stop();
+                     // timer2.Start();
 
                      /*
                      for (int j = 0; j < NumIntegrators(); j++)
@@ -981,8 +981,8 @@ namespace ngcomp
                          sum_elmat += elmat;
                        }
 
-                     timer2.Stop();
-                     timer3.Start();
+                     // timer2.Stop();
+                     // timer3.Start();
                      fespace->TransformMat (el.Nr(), false, sum_elmat, TRANSFORM_MAT_LEFT_RIGHT);
 
 
@@ -1174,7 +1174,7 @@ namespace ngcomp
                      for (auto d : dnums)
                        if (d != -1) useddof[d] = true;
 
-                     timer3.Stop();
+                     // timer3.Stop();
                    });
                 progress.Done();
                 
