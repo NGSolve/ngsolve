@@ -223,27 +223,28 @@ namespace ngla
 
 	cout << "now build matrix" << endl;
 
-	SparseMatrixSymmetric<TM> matrix(els_per_row);
+	// SparseMatrixSymmetric<TM> matrix(els_per_row);
+        auto matrix = make_shared<SparseMatrixSymmetric<TM>> (els_per_row);
 
 	for (int i = 0; i < rows.Size(); i++)
 	  {
 	    int r = rows[i], c = cols[i];
 	    if (r < c) swap (r, c);
-	    matrix.CreatePosition(r, c);
+	    matrix->CreatePosition(r, c);
 	  }
-	matrix.AsVector() = 0.0;
+	matrix->AsVector() = 0.0;
 
 	for (int i = 0; i < rows.Size(); i++)
 	  {
 	    int r = rows[i], c = cols[i];
 	    if (r < c) swap (r, c);
-	    matrix(r,c) += vals[i];
+	    (*matrix)(r,c) += vals[i];
 	  }
 
 	cout << "have matrix, now invert" << endl;
 
-	matrix.SetInverseType (mat.GetInverseType());
-	inv = matrix.InverseMatrix ();
+	matrix->SetInverseType (mat.GetInverseType());
+	inv = matrix->InverseMatrix ();
       }
 
     // MPI_Barrier (ngs_comm);
