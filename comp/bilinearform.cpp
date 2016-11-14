@@ -2853,8 +2853,8 @@ namespace ngcomp
         bool hasskeletonbound = boundary_skeleton_parts.Size();
         bool hasskeletoninner = volume_skeleton_parts.Size();
 
-	cout << "has: bound | inner | skel-b | skel-i" << endl;
-	cout << boundary_parts.Size() << " | " << volume_parts.Size() << " | " << boundary_skeleton_parts.Size() << " | " << volume_skeleton_parts.Size() << endl;
+	//cout << "has: bound | inner | skel-b | skel-i" << endl;
+	//cout << boundary_parts.Size() << " | " << volume_parts.Size() << " | " << boundary_skeleton_parts.Size() << " | " << volume_skeleton_parts.Size() << endl;
 
         /*
         bool hasbound = false;
@@ -2951,8 +2951,8 @@ namespace ngcomp
                             // throw Exception ("No BilinearFormApplication-Implementation for Facet-Integrators yet");
                         }
 
-		    cout << "needs_facet_loop " << needs_facet_loop << endl;
-		    cout << "needs_element_boundary_loop " << needs_element_boundary_loop << endl;
+		    //cout << "needs_facet_loop " << needs_facet_loop << endl;
+		    //cout << "needs_element_boundary_loop " << needs_element_boundary_loop << endl;
 
                     /*
                     // do we need locks for neighbor - testfunctions ?
@@ -2966,9 +2966,9 @@ namespace ngcomp
                         }
                     */
 
-		    cout << "mesh np nv nel nsel nedegs nfaces " << endl;
-		    cout << ma->GetNP() << " " << ma->GetNV() << " " << ma->GetNE() << " " << ma->GetNSE() << " " << ma->GetNEdges() << " " << ma->GetNFaces() << endl;
-		    cout << "fes parallel?" << fespace->IsParallel() << endl;
+		    // cout << "mesh np nv nel nsel nedegs nfaces " << endl;
+		    // cout << ma->GetNP() << " " << ma->GetNV() << " " << ma->GetNE() << " " << ma->GetNSE() << " " << ma->GetNEdges() << " " << ma->GetNFaces() << endl;
+		    // cout << "fes parallel?" << fespace->IsParallel() << endl;
 		    
                     if (needs_facet_loop && !fespace->UsesDGCoupling())
                       throw Exception ("skeleton-form needs \"dgjumps\" : True flag for FESpace");
@@ -3004,8 +3004,8 @@ namespace ngcomp
                                  if (elnums.Size()<2)
                                    {   
 #ifdef PARALLEL                      
-                                     if( (ma->GetDistantProcs (Node(NT_FACET, facet)).Size() > 0) && (mympi_np>1) )
-				       cout << "SKIP FACET " << facet << ", (mpi-subdomain-interface-facet)" << endl;
+                                     // if( (ma->GetDistantProcs (Node(NT_FACET, facet)).Size() > 0) && (mympi_np>1) )
+				     //   cout << "SKIP FACET " << facet << ", (mpi-subdomain-interface-facet)" << endl;
                                      if( (ma->GetDistantProcs (Node(NT_FACET, facet)).Size() > 0) && (mympi_np>1) )
 				       continue;
 #endif
@@ -3111,7 +3111,7 @@ namespace ngcomp
 		    //skeleton/el-boundary formulation equivalent for mpi-facets
 		    if ( (needs_facet_loop || needs_element_boundary_loop) && (MyMPI_GetNTasks()>1) )
 		      {
-			cout << "NEEDS PARALLEL FACET LOOP" << endl;
+			//cout << "NEEDS PARALLEL FACET LOOP" << endl;
 			//TODO: the order of interface-faces should be consistent 
 			//for a "vanilla" mesh but parallel refinement probably 
 			//messes this up...do mpi-comm with consistent tags or sth like that
@@ -3135,10 +3135,11 @@ namespace ngcomp
 			Array<int> elnums(2, lh), fnums(6, lh), vnums(8, lh);
 			for (int loop = 1; loop <= 3; loop++)
 			  {
-			    cout << "loop " << loop << endl;
+			    //cout << "loop " << loop << endl;
 			    cnt = 0;
 			    for (size_t i : Range(0, ma->GetNFacets()))
 			      {
+				HeapReset hr(lh);
 				if (ma->GetDistantProcs (Node(NT_FACET, i)).Size() == 0)
 				  continue;
 				
@@ -3182,14 +3183,17 @@ namespace ngcomp
 				      }
 				    else if (loop == 2)
 				      {
-					FlatVector<SCAL> tmp(trace_values.Size(), &(send_table[d][cnt[d]]));
+					FlatVector<SCAL> tmp(trace_values.Size(), &( send_table[d][cnt[d]] ));
 					tmp = trace_values;
+					// cout << "tmp | tr-v:" << endl;
+					// for(auto l:Range(trace_values.Size()))
+					//   cout << l << ": " << tmp[l] << " " << trace_values[l] << endl;
 					cnt[d] += trace_values.Size();
 				      }
 				    else
 				      {
 					//FlatVector<SCAL> mine (dnums.Size(), send_table[d][cnt[d]]);
-					FlatVector<SCAL> other(trace_values.Size(), &(recv_table[d][cnt[d]]));
+					FlatVector<SCAL> other(trace_values.Size(), &( recv_table[d][cnt[d]] ));
 					cnt[d]+= trace_values.Size();
 					FlatVector<SCAL> ely(dnums.Size()*this->fespace->GetDimension(), lh);
 					
@@ -3197,18 +3201,20 @@ namespace ngcomp
 					//   ApplyFromTraceValues(fel,facetnr,eltrans,vnums, trace_values, other, ely, lh);
 					
 				
+					// cout << "ely is : " << ely.Size() << endl << ely << endl;
 					
 					dynamic_cast<const FacetBilinearFormIntegrator*>(igt.get())->  
 					  ApplyFromTraceValues(fel,facetnr,eltrans,vnums, trace_values, other, ely, lh);
+					//cout << "ely:" << endl << ely << endl;
 
 					// cout << "ely is : " << ely.Size() << endl << ely << endl;
-					// cout << "trace MY | OTHER: " << endl;
-					// cout << "sizes: " << trace_values.Size() << " " << other.Size() << endl;
-					// for(auto jj:Range(trace_values.Size()))
-					//   cout << jj << ": " << trace_values[jj] << " | " << other[jj] << endl;
+					//cout << "AFTER trace MY (" << MyMPI_GetId() << ")| OTHER (" << d << "): " << endl;
+					//cout << "sizes: " << trace_values.Size() << " " << other.Size() << endl;
+					//for(auto jj:Range(trace_values.Size()))
+					//cout << jj << ": " << trace_values[jj] << " | " << other[jj] << endl;
 					
-					// int hjo;
-					// cin>>hjo;
+					int hjo;
+					//cin>>hjo;
 					
 					y.AddIndirect(dnums, ely);
 
@@ -3218,12 +3224,17 @@ namespace ngcomp
 			
 			    if (loop == 1)
 			      {
-				// cout << "CNT IS: " << endl << cnt << endl;
+				//cout << "CNT IS: " << endl << cnt << endl;
 				send_table = Table<SCAL> (cnt);
 				recv_table = Table<SCAL> (cnt);
+				for(auto r:send_table)
+				  r = -1;
+				for(auto r:recv_table)
+				  r = -2;
 			      }
 			    else if (loop == 2)
 			      {
+				//cout << "send-table:" << endl << send_table << endl;
 				//mpi - exchange ..
 				for(auto dp:Range(mnp))
 				  if(send_table[dp].Size())
@@ -3231,15 +3242,22 @@ namespace ngcomp
 				      // cout << "rank " << mrank << ", send/recv " << send_table[dp].Size() << " to/from " << dp << endl;
 				      reqs.Append(MyMPI_ISend(send_table[dp], dp, MPI_TAG_SOLVE, mcomm));
 				      reqr.Append(MyMPI_IRecv(recv_table[dp], dp, MPI_TAG_SOLVE, mcomm));
-				      // cout << "wait for " << reqr.Size() << " recvs !!" << endl;
-				      MyMPI_WaitAll(reqr);
-				      // cout << "have!!" << endl;
 				    }
+				cout << "wait for " << reqr.Size() << " recvs !!";
+				for(auto k:Range(mnp))
+				  cout << (send_table[k].Size()) << " " << (recv_table[k].Size()) << " | ";
+				cout << endl;
+				MyMPI_WaitAll(reqr);
+				cout << "have!!" << endl;
+				//cout << "recv-table:" << endl << recv_table << endl;
 			      }
 			  }
 			    //??...
+			cout << "wait req_send" << endl;
 			MyMPI_WaitAll(reqs);
+			cout << "send done" << endl;
 		      }		  
+		    cout << "par-facet section done!" << endl;
 #endif
 
                     // element-boundary formulation
@@ -3278,8 +3296,8 @@ namespace ngcomp
                                {
 #ifdef PARALLEL
 				 int facet_nr = fnums1[facnr1];
-				  if( (ma->GetDistantProcs (Node(NT_FACET, facet_nr)).Size() > 0) && (mympi_np>1) )
-				    cout << "SKIP FACET " << facet_nr << ", (mpi-subdomain-interface-facet)" << endl;
+				 // if( (ma->GetDistantProcs (Node(NT_FACET, facet_nr)).Size() > 0) && (mympi_np>1) )
+				 //   cout << "SKIP FACET " << facet_nr << ", (mpi-subdomain-interface-facet)" << endl;
 
 				 //cout << "distprocs facnr1 " << facet_nr << ":" << endl << ma->GetDistantProcs (Node(NT_FACET, facet_nr) ) << endl;
 													      
