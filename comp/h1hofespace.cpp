@@ -575,6 +575,31 @@ namespace ngcomp
 
     try
       {
+        if (fixed_order && eltype == ET_TRIG)
+          {
+            switch (order)
+              {
+              case 1: return *(new (alloc) H1HighOrderFEFO<ET_TRIG,1> ()) -> SetVertexNumbers(ngel.vertices);
+              case 2: return *(new (alloc) H1HighOrderFEFO<ET_TRIG,2> ()) -> SetVertexNumbers(ngel.vertices);
+              case 3: return *(new (alloc) H1HighOrderFEFO<ET_TRIG,3> ()) -> SetVertexNumbers(ngel.vertices);
+              default:
+                ; 
+              }
+          }
+        
+        if (fixed_order && eltype == ET_TET)
+          {
+            switch (order)
+              {
+              case 1: return *(new (alloc) H1HighOrderFEFO<ET_TET,1> ()) -> SetVertexNumbers(ngel.vertices);
+              case 2: return *(new (alloc) H1HighOrderFEFO<ET_TET,2> ()) -> SetVertexNumbers(ngel.vertices);
+              case 3: return *(new (alloc) H1HighOrderFEFO<ET_TET,3> ()) -> SetVertexNumbers(ngel.vertices);
+              default:
+                ; 
+              }
+          }
+        
+        
         int elnr = ei.Nr();
         if (ei.IsVolume())
           {
