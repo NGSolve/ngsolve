@@ -367,7 +367,7 @@ namespace ngcomp
         Ngs_Element ngel = ma->GetElement(elnr);
         ELEMENT_TYPE eltype = ngel.GetType();
         
-        if (!DefinedOn (ngel.index))
+        if (!DefinedOn (ngel.GetIndex()))
           {
             switch (eltype)
               {
