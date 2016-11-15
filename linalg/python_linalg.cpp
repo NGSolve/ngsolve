@@ -275,7 +275,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                       })
     .def("COO", [] (BM & m) -> py::object
                                  {
-                                   SparseMatrix<double> * sp = dynamic_cast<SparseMatrix<double>*> (&m);
+                                   SparseMatrix<double> * sp = dynamic_cast<SparseMatrix<double>*> (m.Get().get());
                                    if (sp)
                                      {
                                        Array<int> ri, ci;
@@ -299,7 +299,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                      }
 				   
 				   SparseMatrix<Complex> * spc
-				     = dynamic_cast<SparseMatrix<Complex>*> (&m);
+				     = dynamic_cast<SparseMatrix<Complex>*> (m.Get().get());
 				   if (spc)
 				     {
 					 Array<int> ri, ci;
