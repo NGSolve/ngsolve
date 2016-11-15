@@ -32,6 +32,7 @@ option( USE_VTUNE        "include vtune pause/resume numproc")
 option( USE_NUMA         "compile with NUMA-aware code")
 option( USE_CCACHE       "use ccache")
 option( INSTALL_DEPENDENCIES "install dependencies like netgen or solver libs, useful for packaging" OFF )
+option( USE_HYPRE "use hypre by llnl" OFF)
 
 #######################################################################
 if(USE_CCACHE)
@@ -239,6 +240,14 @@ if (USE_MUMPS)
     include_directories(${MUMPS_INCLUDE_DIR})
     link_directories(${MUMPS_DIR}/lib)
 endif (USE_MUMPS)
+
+#######################################################################
+if (USE_HYPRE)
+    add_definitions(-DHYPRE)
+    find_package(HYPRE REQUIRED)
+    include_directories(${HYPRE_DIR}/include)
+    link_directories(${HYPRE_DIR}/lib)
+endif(USE_HYPRE)
 
 #######################################################################
 if (USE_PYTHON)
