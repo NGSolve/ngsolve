@@ -298,7 +298,7 @@ namespace ngfem
     // using ApplySIMDIR;
     using DiffOp<DiffOpId<D, FEL> >::ApplySIMDIR;    
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
-                             BareSliceVector<double> x, ABareSliceMatrix<double> y)
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
       Cast(fel).Evaluate (mir.IR(), x, y.Row(0));
     }
