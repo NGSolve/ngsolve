@@ -1540,6 +1540,7 @@ namespace ngcomp
                       if(elnums.Size()<2) continue;
                       el2 = elnums[1];
 
+                      if (!fespace->DefinedOn (ma->GetElIndex (el1)) || !fespace->DefinedOn (ma->GetElIndex (el2))) continue;
                       ma->GetElFacets(el1,fnums);
                       int facnr1 = fnums.Pos(i);
 
@@ -1573,8 +1574,8 @@ namespace ngcomp
                         {
                           cout << "facet, neighbouring fel(1): GetNDof() = " << fel1.GetNDof() << endl;
                           cout << "facet, neighbouring fel(2): GetNDof() = " << fel2.GetNDof() << endl;
-                          cout << "facet, neighbouring fel(1): dnums.Size() = " << fel1.GetNDof() << endl;
-                          cout << "facet, neighbouring fel(2): dnums.Size() = " << fel2.GetNDof() << endl;
+                          cout << "facet, neighbouring fel(1): dnums.Size() = " << dnums1.Size() << endl;
+                          cout << "facet, neighbouring fel(2): dnums.Size() = " << dnums2.Size() << endl;
                           throw Exception ( "Inconsistent number of degrees of freedom " );
                         }
                       for (int j = 0; j < NumIntegrators(); j++)
@@ -1839,8 +1840,8 @@ namespace ngcomp
                                    {
                                      cout << "facet, neighbouring fel(1): GetNDof() = " << fel1.GetNDof() << endl;
                                      cout << "facet, neighbouring fel(2): GetNDof() = " << fel2.GetNDof() << endl;
-                                     cout << "facet, neighbouring fel(1): dnums.Size() = " << fel1.GetNDof() << endl;
-                                     cout << "facet, neighbouring fel(2): dnums.Size() = " << fel2.GetNDof() << endl;
+                                     cout << "facet, neighbouring fel(1): dnums.Size() = " << dnums1.Size() << endl;
+                                     cout << "facet, neighbouring fel(2): dnums.Size() = " << dnums2.Size() << endl;
                                      throw Exception ( "Inconsistent number of degrees of freedom " );
                                    }
                                  for (int j = 0; j < NumIntegrators(); j++)
@@ -3215,8 +3216,8 @@ namespace ngcomp
                                    {
                                      cout << "facet, neighbouring fel(1): GetNDof() = " << fel1.GetNDof() << endl;
                                      cout << "facet, neighbouring fel(2): GetNDof() = " << fel2.GetNDof() << endl;
-                                     cout << "facet, neighbouring fel(1): dnums.Size() = " << fel1.GetNDof() << endl;
-                                     cout << "facet, neighbouring fel(2): dnums.Size() = " << fel2.GetNDof() << endl;
+                                     cout << "facet, neighbouring fel(1): dnums.Size() = " << dnums1.Size() << endl;
+                                     cout << "facet, neighbouring fel(2): dnums.Size() = " << dnums2.Size() << endl;
                                      throw Exception ( "Inconsistent number of degrees of freedom " );
                                    }
 
