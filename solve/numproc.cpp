@@ -3527,12 +3527,4 @@ void ExportDrawFlux(py::module &m)
 
 
 }
-
-namespace ngstd
-{
-  template <>
-  struct PyWrapperTraits<ngsolve::NumProc> {
-    typedef PyWrapperClass<ngsolve::NumProc> type;
-  };
-}
 #endif
