@@ -634,7 +634,7 @@ namespace ngcomp
                            */
                            SIMD_IntegrationRule ir(fel.ElementType(), 2*fel.Order());
                            auto & mir = trafo(ir, lh);
-                           AFlatVector<> pntvals(ir.GetNIP(), lh);
+                           FlatVector<SIMD<double>> pntvals(ir.Size(), lh);
                            
                            for (int i = 0; i < melx.Height(); i++)
                              melx.Row(i) /= diag_mass(i);
@@ -642,7 +642,7 @@ namespace ngcomp
                              {
                                static_cast<const BaseScalarFiniteElement&> (fel).Evaluate (ir, melx.Col(comp), pntvals);
                                for (int i = 0; i < ir.Size(); i++)
-                                 pntvals.Get(i) *= (ir[i].Weight() / mir[i].GetMeasure()).Data();
+                                 pntvals(i) *= (ir[i].Weight() / mir[i].GetMeasure()).Data();
                                melx.Col(comp) = 0.0;
                                static_cast<const BaseScalarFiniteElement&> (fel).AddTrans (ir, pntvals, melx.Col(comp));
                              }
