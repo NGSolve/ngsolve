@@ -2043,17 +2043,30 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
   m.def("Integrate", 
           [](PyCF cf,
                              shared_ptr<MeshAccess> ma, 
-                             VorB vb, int order, 
+	     VorB vb, int order, py::object definedon,
                              bool region_wise, bool element_wise)
                           {
                             static Timer t("Integrate CF"); RegionTimer reg(t);
                             // static mutex addcomplex_mutex;
                             LocalHeap lh(1000000, "lh-Integrate");
-                            
+                           py::extract<Region> defon_region(definedon);
+                           if (defon_region.check())
+                             vb = VorB(defon_region());
+                           BitArray mask(ma->GetNRegions(vb));
+                           mask.Set();
+                           if(defon_region.check())
+                             for(auto i : Range(ma->GetNRegions(vb)))
+                               if(!defon_region().Mask().Test(i))
+                                 mask.Clear(i);
+			   int dim = cf.Get()->Dimension();
+			   if((region_wise || element_wise) && dim != 1)
+			     throw Exception("region_wise and element_wise only implemented for 1 dimensional coefficientfunctions");
+
                             if (!cf->IsComplex())
                               {
-                                atomic<double> sum(0.0);
-                                Vector<> region_sum(ma->GetNRegions(vb));
+                                Vector<> sum(dim);
+				sum = 0.0;
+			        Vector<> region_sum(region_wise ? ma->GetNRegions(vb) : 0);
                                 Vector<> element_sum(element_wise ? ma->GetNE(vb) : 0);
                                 region_sum = 0;
                                 element_sum = 0;
@@ -2063,8 +2076,10 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                                 ma->IterateElements
                                   (vb, lh, [&] (Ngs_Element el, LocalHeap & lh)
                                    {
+				     if(!mask.Test(el.GetIndex())) return;
                                      auto & trafo = ma->GetTrafo (el, lh);
-                                     double hsum = 0.0;
+                                     Vector<> hsum(dim);
+				     hsum = 0.0;
                                      bool this_simd = use_simd;
                                      
                                      if (this_simd)
@@ -2073,12 +2088,15 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                                            {
                                              SIMD_IntegrationRule ir(trafo.GetElementType(), order);
                                              auto & mir = trafo(ir, lh);
-                                             AFlatMatrix<> values(1, ir.GetNIP(), lh);
+                                             AFlatMatrix<> values(dim,ir.GetNIP(), lh);
                                              cf.Get() -> Evaluate (mir, values);
-                                             SIMD<double> vsum = 0;
+                                             Vector<SIMD<double>> vsum(dim);
+					     vsum = 0;
+					     
                                              for (size_t i = 0; i < values.VWidth(); i++)
-                                               vsum += mir[i].GetWeight() * values.Get(0,i);
-                                             hsum = HSum(vsum);
+                                               vsum += mir[i].GetWeight() * values.Col(i);
+					     for(int i = 0; i< dim; i++)
+					       hsum[i] = HSum(vsum[i]);
                                            }
                                          catch (ExceptionNOSIMD e)
                                            {
@@ -2091,31 +2109,34 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                                        {
                                          IntegrationRule ir(trafo.GetElementType(), order);
                                          BaseMappedIntegrationRule & mir = trafo(ir, lh);
-                                         FlatMatrix<> values(ir.Size(), 1, lh);
+                                         FlatMatrix<> values(ir.Size(), dim, lh);
                                          cf.Get() -> Evaluate (mir, values);
                                          for (int i = 0; i < values.Height(); i++)
-                                           hsum += mir[i].GetWeight() * values(i,0);
+                                           hsum += mir[i].GetWeight() * values.Row(i);
                                        }
-
-                                     sum += hsum;
-                                     double & rsum = region_sum(el.GetIndex());
-				     AsAtomic(rsum) += hsum;
+				     for(size_t i = 0; i<dim;i++)
+				       AsAtomic(sum(i)) += hsum(i);
+				     if(region_wise)
+				       AsAtomic(region_sum(el.GetIndex())) += hsum(0);
                                      if (element_wise)
-                                       element_sum(el.Nr()) = hsum;
+                                       element_sum(el.Nr()) = hsum(0);
                                    });
                                 py::object result;
                                 if (region_wise)
                                   result = py::list(py::cast(region_sum));
                                 else if (element_wise)
                                   result = py::cast(element_sum);
+                                else if(dim==1)
+				    result = py::cast(sum(0));
                                 else
-                                  result = py::cast(sum.load());
+                                  result = py::cast(sum);
                                 return result;
                               }
                             else
                               {
-                                Complex sum = 0;
-                                Vector<Complex> region_sum(ma->GetNRegions(vb));
+                                Vector<Complex> sum(dim);
+				sum = 0;
+                                Vector<Complex> region_sum(region_wise ? ma->GetNRegions(vb) : 0);
                                 Vector<Complex> element_sum(element_wise ? ma->GetNE(vb) : 0);
                                 region_sum = 0;
                                 element_sum = 0;
@@ -2125,8 +2146,10 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                                 ma->IterateElements
                                   (vb, lh, [&] (Ngs_Element el, LocalHeap & lh)
                                    {
+				     if(!mask.Test(el.GetIndex())) return;
                                      auto & trafo = ma->GetTrafo (el, lh);
-                                     Complex hsum = 0;
+                                     Vector<Complex> hsum(dim);
+				     hsum = 0;
                                      
                                      bool this_simd = use_simd;
 
@@ -2136,12 +2159,16 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                                            {
                                              SIMD_IntegrationRule ir(trafo.GetElementType(), order);
                                              auto & mir = trafo(ir, lh);
-                                             FlatMatrix<SIMD<Complex>> values(1, ir.GetNIP(), lh);
+                                             FlatMatrix<SIMD<Complex>> values(dim, ir.GetNIP(), lh);
                                              cf.Get() -> Evaluate (mir, values);
-                                             SIMD<Complex> vsum = 0.0;
+                                             Vector<SIMD<Complex>> vsum(dim);
+					     vsum = 0.0;
                                              for (size_t i = 0; i < values.Width(); i++)
-                                               vsum += mir[i].GetWeight() * values(0,i);
-                                             hsum = HSum(vsum);
+					       vsum += mir[i].GetWeight() * values.Col(i);
+					     // for(size_t j = 0; j < values.Height(); j++)
+					     //	 vsum[j] += mir[i].GetWeight() * values(j,i);
+					     for(size_t i =0; i < dim; i++)
+					       hsum[i] = HSum(vsum[i]);
                                            }
                                          catch (ExceptionNOSIMD e)
                                            {
@@ -2154,16 +2181,17 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                                        {
                                          IntegrationRule ir(trafo.GetElementType(), order);
                                          BaseMappedIntegrationRule & mir = trafo(ir, lh);
-                                         FlatMatrix<Complex> values(ir.Size(), 1, lh);
+                                         FlatMatrix<Complex> values(ir.Size(), dim, lh);
                                          cf.Get() -> Evaluate (mir, values);
                                          for (int i = 0; i < values.Height(); i++)
-                                           hsum += mir[i].GetWeight() * values(i,0);
+                                           hsum += mir[i].GetWeight() * values.Row(i);
                                        }
-                                     
-                                     MyAtomicAdd (sum, hsum);
-                                     MyAtomicAdd (region_sum(el.GetIndex()), hsum);
+                                     for(size_t i = 0; i<dim; i++)
+				       MyAtomicAdd (sum(i), hsum(i));
+				     if(region_wise)
+				       MyAtomicAdd (region_sum(el.GetIndex()), hsum(0));
                                      if (element_wise)
-                                       element_sum(el.Nr()) = hsum;
+                                       element_sum(el.Nr()) = hsum(0);
                                    });
                                 
                                 py::object result;
@@ -2171,13 +2199,16 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                                   result = py::list(py::cast(region_sum));
                                 else if (element_wise)
                                   result = py::cast(element_sum);
-                                else
+                                else if(dim==1)
+				  result = py::cast(sum(0));
+				else
                                   result = py::cast(sum);
                                 return result;
                               }
                           },
            py::arg("cf"), py::arg("mesh"), py::arg("VOL_or_BND")=VOL, 
-           py::arg("order")=5, 
+           py::arg("order")=5,
+	py::arg("definedon")=DummyArgument(),
            py::arg("region_wise")=false,
            py::arg("element_wise")=false)
     ;
