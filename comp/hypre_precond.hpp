@@ -24,8 +24,11 @@ namespace ngcomp
   
 class HyprePreconditioner : public Preconditioner
 {
-  const S_BilinearForm<double> * bfa;
-
+  shared_ptr<BilinearForm> dummy = nullptr;
+  
+  //const S_BilinearForm<double> * bfa;
+  shared_ptr<BilinearForm> bfa;
+  
   HYPRE_Solver precond;
   HYPRE_IJMatrix A;
   HYPRE_ParCSRMatrix parcsr_A;
@@ -39,6 +42,8 @@ public:
     
   HyprePreconditioner (const PDE & pde, const Flags & flags, const string & name);
   HyprePreconditioner (const BaseMatrix & matrix, const BitArray * afreedofs); 
+  HyprePreconditioner (shared_ptr<BilinearForm> bfa, const Flags & aflags,
+		       const string aname = "precond");
 
   ~HyprePreconditioner ();
 	

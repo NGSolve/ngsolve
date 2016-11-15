@@ -9,25 +9,31 @@
 
 #include <solve.hpp>
 
-extern ngsolve::PDE * pde;
 namespace ngcomp
 {
 
 
-  HyprePreconditioner :: HyprePreconditioner (const PDE & pde, const Flags & flags, const string & name)  
+
+  HyprePreconditioner :: HyprePreconditioner (const PDE & pde, const Flags & aflags, const string & aname)  
     : Preconditioner (&pde, flags)
   {
-    bfa = dynamic_cast<const S_BilinearForm<double>*>
-      (pde.GetBilinearForm (flags.GetStringFlag ("bilinearform", NULL)));
+    bfa = pde.GetBilinearForm (flags.GetStringFlag ("bilinearform", NULL));
   }
   
 
   HyprePreconditioner :: HyprePreconditioner (const BaseMatrix & matrix, const BitArray * afreedofs)
-    : Preconditioner (pde, Flags()), freedofs(afreedofs)
+    : Preconditioner(dummy, Flags())
   {
     Setup (matrix);
   }
   
+  HyprePreconditioner :: HyprePreconditioner (shared_ptr<BilinearForm> abfa, const Flags & aflags,
+					      const string aname)
+    : Preconditioner(abfa, aflags, aname)
+  {
+    bfa = abfa;
+  }
+
 
   HyprePreconditioner :: ~HyprePreconditioner ()
   {
@@ -38,7 +44,7 @@ namespace ngcomp
   
   void HyprePreconditioner :: Update()
   {
-    freedofs = bfa->GetFESpace().GetFreeDofs (bfa->UsesEliminateInternal());
+    freedofs = bfa->GetFESpace()->GetFreeDofs(bfa->UsesEliminateInternal());
     Setup (bfa->GetMatrix());
   }
   
