@@ -211,7 +211,7 @@ namespace ngfem
   }
 
   void BaseScalarFiniteElement :: 
-  Evaluate (const SIMD_IntegrationRule & ir, BareSliceVector<> coefs, ABareVector<double> values) const
+  Evaluate (const SIMD_IntegrationRule & ir, BareSliceVector<> coefs, BareVector<SIMD<double>> values) const
   {
     throw ExceptionNOSIMD (string("Evaluate (simd) not implemented for class ")+typeid(*this).name());
   }
@@ -272,13 +272,13 @@ namespace ngfem
   }
 
   void BaseScalarFiniteElement :: 
-  AddTrans (const SIMD_IntegrationRule & ir, ABareVector<double> values, BareSliceVector<> coefs) const
+  AddTrans (const SIMD_IntegrationRule & ir, BareVector<SIMD<double>> values, BareSliceVector<> coefs) const
   {
     throw ExceptionNOSIMD (string("AddTrans (simd) not implemented for class ")+typeid(*this).name());    
   }
 
   void BaseScalarFiniteElement :: 
-  AddTrans (const SIMD_IntegrationRule & ir, ABareSliceMatrix<double> values, SliceMatrix<> coefs) const
+  AddTrans (const SIMD_IntegrationRule & ir, BareSliceMatrix<SIMD<double>> values, SliceMatrix<> coefs) const
   {
     for (int i = 0; i < coefs.Width(); i++)
       AddTrans (ir, values.Row(i), coefs.Col(i));
@@ -311,7 +311,7 @@ namespace ngfem
 
   template<int D>
   void ScalarFiniteElement<D> :: 
-  AddGradTrans (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values,
+  AddGradTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
                 BareSliceVector<> coefs) const
   {
     throw ExceptionNOSIMD (string("AddGradTrans (simd) not implemented for class ")+typeid(*this).name());
