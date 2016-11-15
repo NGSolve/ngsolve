@@ -217,7 +217,7 @@ namespace ngfem
   }
 
   void BaseScalarFiniteElement :: 
-  Evaluate (const SIMD_IntegrationRule & ir, SliceMatrix<> coefs, ABareSliceMatrix<double> values) const
+  Evaluate (const SIMD_IntegrationRule & ir, SliceMatrix<> coefs, BareSliceMatrix<SIMD<double>> values) const
   {
     for (size_t i = 0; i < coefs.Width(); i++)
       Evaluate (ir, coefs.Col(i), values.Row(i));
@@ -246,14 +246,14 @@ namespace ngfem
 
   template<int D>
   void ScalarFiniteElement<D> :: 
-  EvaluateGrad (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, ABareSliceMatrix<double> values) const
+  EvaluateGrad (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const
   {
     throw ExceptionNOSIMD (string("EvaluateGrad (simd) not implemented for class ")+typeid(*this).name());
   }
 
   template<int D>
   void ScalarFiniteElement<D> :: 
-  EvaluateGrad (const SIMD_IntegrationRule & ir, BareSliceVector<> coefs, ABareSliceMatrix<double> values) const
+  EvaluateGrad (const SIMD_IntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const
   {
     throw ExceptionNOSIMD (string("EvaluateGrad (simd) not implemented for class ")+typeid(*this).name());
   }
