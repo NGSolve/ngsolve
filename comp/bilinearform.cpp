@@ -2955,6 +2955,7 @@ namespace ngcomp
                int facnr_x = fnums1_x.Pos(facet_x);
                int sel = elnums_x[0];
                spaces[0]->GetMeshAccess()->GetElVertices (el1_x, vnums1);
+               spaces[0]->GetMeshAccess()->GetSElVertices (sel, vnums2);
                //Array<int> indices(2);
                //indices[0] = el1_x; indices[1] = j;
                ElementTransformation & eltrans = tpfes->GetTrafo (ElementId(VOL,el1), lh);
@@ -2971,7 +2972,7 @@ namespace ngcomp
                  if (!bfi.SkeletonForm()) continue;
                  if (bfi.GetDGFormulation().element_boundary) continue;
                  FacetBilinearFormIntegrator * fbfi = dynamic_cast<FacetBilinearFormIntegrator*>(&bfi);
-                 fbfi->ApplyFacetMatrix(fel,facnr_x,eltrans,vnums1, seltrans, elx, ely, lh);
+                 fbfi->ApplyFacetMatrix(fel,facnr_x,eltrans,vnums1, seltrans, vnums2, elx, ely, lh);
                  y.AddIndirect(dnums, ely);
                }
              }
@@ -3065,6 +3066,7 @@ namespace ngcomp
                int facnr_y = fnums1_y.Pos(facet_y);
                int sel = elnums_y[0];
                spaces[1]->GetMeshAccess()->GetElVertices (el1_y, vnums1);
+               spaces[1]->GetMeshAccess()->GetSElVertices (sel, vnums2);
                ElementTransformation & eltrans = tpfes->GetTrafo (ElementId(VOL,el1), lh);
                ElementTransformation & seltrans = spaces[1]->GetMeshAccess()->GetTrafo (sel, BND, lh);
                const FiniteElement & fel = tpfes->GetFE (el1, lh);
@@ -3079,7 +3081,7 @@ namespace ngcomp
                  if (!bfi.SkeletonForm()) continue;
                  if (bfi.GetDGFormulation().element_boundary) continue;
                  FacetBilinearFormIntegrator * fbfi = dynamic_cast<FacetBilinearFormIntegrator*>(&bfi);
-                 fbfi->ApplyFacetMatrix (fel,facnr_y+10,eltrans,vnums1, seltrans, elx, ely, lh);
+                 fbfi->ApplyFacetMatrix (fel,facnr_y+10,eltrans,vnums1, seltrans, vnums2, elx, ely, lh);
                  y.AddIndirect(dnums, ely);
                }
              }
@@ -3337,7 +3339,7 @@ namespace ngcomp
                                      const FiniteElement & fel = fespace->GetFE (el1, lh);
                                      Array<int> dnums(fel.GetNDof(), lh);
                                      ma->GetElVertices (el1, vnums1);
-                                     ma->GetSElVertices (sel, vnums2);     
+                                     ma->GetSElVertices (sel, vnums2);
 
                                      ElementTransformation & eltrans = ma->GetTrafo (el1, VOL, lh);
                                      ElementTransformation & seltrans = ma->GetTrafo (sel, BND, lh);
