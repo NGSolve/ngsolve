@@ -681,21 +681,21 @@ namespace ngcomp
     static Timer mattimer_bbound("Matrix assembling co dim 2");
     static Timer mattimer_VB[] = {mattimer_vol, mattimer_bound, mattimer_bbound};
 
-    static Timer timer1 ("Matrix assembling - 1", 2);
-    static Timer timer2 ("Matrix assembling - 2", 2);
-    static Timer timer3 ("Matrix assembling - 3", 2);
+    // static Timer timer1 ("Matrix assembling - 1", 2);
+    // static Timer timer2 ("Matrix assembling - 2", 2);
+    // static Timer timer3 ("Matrix assembling - 3", 2);
 
-    static Timer timerb1 ("Matrix assembling bound - 1", 2);
-    static Timer timerb2 ("Matrix assembling bound - 2", 2);
-    static Timer timerb3 ("Matrix assembling bound - 3", 2);
+    // static Timer timerb1 ("Matrix assembling bound - 1", 2);
+    // static Timer timerb2 ("Matrix assembling bound - 2", 2);
+    // static Timer timerb3 ("Matrix assembling bound - 3", 2);
 
-    static Timer timerbb1 ("Matrix assembling codim2 - 1", 2);
-    static Timer timerbb2 ("Matrix assembling codim2 - 2", 2);
-    static Timer timerbb3 ("Matrix assembling codim2 - 3", 2);
+    // static Timer timerbb1 ("Matrix assembling codim2 - 1", 2);
+    // static Timer timerbb2 ("Matrix assembling codim2 - 2", 2);
+    // static Timer timerbb3 ("Matrix assembling codim2 - 3", 2);
 
-    static Timer timer1_VB[] = {timer1, timerb1, timerbb1};
-    static Timer timer2_VB[] = {timer2, timerb2, timerbb2};
-    static Timer timer3_VB[] = {timer3, timerb3, timerbb3};
+    // static Timer timer1_VB[] = {timer1, timerb1, timerbb1};
+    // static Timer timer2_VB[] = {timer2, timerb2, timerbb2};
+    // static Timer timer3_VB[] = {timer3, timerb3, timerbb3};
     
     static mutex addelemfacbnd_mutex;
     static mutex addelemfacin_mutex;
@@ -725,7 +725,6 @@ namespace ngcomp
 		throw Exception("FESpace is not suitable for those integrators (try -dgjumps)");
 	  }
       }
-
     mattimer1.Stop();    
     
     try
@@ -873,7 +872,7 @@ namespace ngcomp
 		      }
 		    else
 		      {
-			RegionTimer reg(mattimer_VB[vb]);
+			// RegionTimer reg(mattimer_VB[vb]);
 
 			string str_vb = vb == VOL ? "VOL" : (vb==BND ? "BND" : "BBND");
 			ProgressOutput progress(ma,string("assemble ") + str_vb + string(" element"), ma->GetNE(vb));
@@ -902,7 +901,7 @@ namespace ngcomp
 			     
 			     progress.Update ();
 			     
-			     timer1_VB[vb].Start();
+			     // timer1_VB[vb].Start();
                      
 			     const FiniteElement & fel = fespace->GetFE (el, lh);
 			     const ElementTransformation & eltrans = ma->GetTrafo (el, lh);
@@ -927,8 +926,8 @@ namespace ngcomp
 			     FlatMatrix<SCAL> sum_elmat(elmat_size, lh);
 			     sum_elmat = 0;
 			     
-			     timer1_VB[vb].Stop();
-			     timer2_VB[vb].Start();
+			     // timer1_VB[vb].Stop();
+			     // timer2_VB[vb].Start();
 
 			     for(int d : dnums)
 			       if(d != -1) useddof[d] = true;
@@ -942,7 +941,7 @@ namespace ngcomp
 				 
 				 try
 				   {
-				     timer2_VB[vb].Start();
+				     // timer2_VB[vb].Start();
 				     if (!diagonal || vb != VOL)
 				       bfi.CalcElementMatrix (fel, eltrans, elmat, lh);
 				     else
@@ -954,7 +953,7 @@ namespace ngcomp
 					 elmat.Diag() = diag;
 				       }
 				     
-				     timer2_VB[vb].Stop();
+				     // timer2_VB[vb].Stop();
 				     
 				     if (printelmat)
 				       {
@@ -996,7 +995,7 @@ namespace ngcomp
 				 sum_elmat += elmat;
 			       }
 			     
-			     timer3_VB[vb].Start();
+			     // timer3_VB[vb].Start();
 			     fespace->TransformMat (el.Nr(), vb, sum_elmat, TRANSFORM_MAT_LEFT_RIGHT);
 			     
 			     // do it twice??
@@ -1188,7 +1187,7 @@ namespace ngcomp
 			     for (auto d : dnums)
 			       if (d != -1) useddof[d] = true;
 			     
-			     timer3_VB[vb].Stop();
+			     // timer3_VB[vb].Stop();
 			   });
 			progress.Done();
 			
@@ -1820,6 +1819,7 @@ namespace ngcomp
 
             bool assembledspecialelements = false;
             
+            
             int nspecel = 0;
             ParallelForRange( IntRange(fespace->specialelements.Size()), [&] ( IntRange r )
                               {
@@ -2191,6 +2191,9 @@ namespace ngcomp
                           string("\n in ComputeInternal\n")));
       }
   }
+
+
+
 
 
 
@@ -3051,8 +3054,8 @@ namespace ngcomp
                                    {
                                      cout << "facet, neighbouring fel(1): GetNDof() = " << fel1.GetNDof() << endl;
                                      cout << "facet, neighbouring fel(2): GetNDof() = " << fel2.GetNDof() << endl;
-                                     cout << "facet, neighbouring fel(1): dnums.Size() = " << fel1.GetNDof() << endl;
-                                     cout << "facet, neighbouring fel(2): dnums.Size() = " << fel2.GetNDof() << endl;
+                                     cout << "facet, neighbouring fel(1): dnums.Size() = " << dnums1.Size() << endl;
+                                     cout << "facet, neighbouring fel(2): dnums.Size() = " << dnums2.Size() << endl;
                                      throw Exception ( "Inconsistent number of degrees of freedom " );
                                    }
 

@@ -74,7 +74,7 @@ namespace ngfem
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
   void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
   CalcMappedShape (const SIMD_BaseMappedIntegrationRule & bmir, 
-                   ABareMatrix<> shapes) const
+                   BareSliceMatrix<SIMD<double>> shapes) const
   {
     if ((DIM == 3) || (bmir.DimSpace() == DIM))
       {
@@ -85,7 +85,7 @@ namespace ngfem
             T_CalcShape (&adp(0), SBLambda ([&] (size_t j, HCurl_Shape<DIM,SIMD<double>> shape)
                                             {
                                               for (size_t k = 0; k < DIM; k++)
-                                                shapes.Get(j*DIM+k, i) = shape(k);
+                                                shapes(j*DIM+k, i) = shape(k);
                                             }));
           }
       }
@@ -99,7 +99,7 @@ namespace ngfem
             T_CalcShape (&adp(0), SBLambda ([&] (size_t j, HCurl_Shape<DIM1,SIMD<double>> shape)
                                             {
                                               for (size_t k = 0; k < DIM1; k++)
-                                                shapes.Get(j*DIM1+k,i) = shape(k);
+                                                shapes(j*DIM1+k,i) = shape(k);
                                             }));
           }
       }
@@ -142,7 +142,7 @@ namespace ngfem
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
   void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
   CalcMappedCurlShape (const SIMD_BaseMappedIntegrationRule & bmir, 
-                       ABareMatrix<> shapes) const
+                       BareSliceMatrix<SIMD<double>> shapes) const
   {
     if ((DIM == 3) || (bmir.DimSpace() == DIM))
       {
@@ -154,7 +154,7 @@ namespace ngfem
             T_CalcShape (&adp(0), SBLambda ([&] (size_t j, HCurl_CurlShape<DIM,SIMD<double>> cshape)
                                             {
                                               for (size_t k = 0; k < DIM_CURL; k++)
-                                                shapes.Get(j*DIM_CURL+k, i) = cshape(k);
+                                                shapes(j*DIM_CURL+k, i) = cshape(k);
                                             }));
           }
       }
@@ -169,7 +169,7 @@ namespace ngfem
             T_CalcShape (&adp(0), SBLambda ([&] (size_t j, HCurl_CurlShape<DIM1,SIMD<double>> cshape)
                                             {
                                               for (size_t k = 0; k < DIM_CURL; k++)
-                                                shapes.Get(j*DIM_CURL+k,i) = cshape(k);
+                                                shapes(j*DIM_CURL+k,i) = cshape(k);
                                             }));
           }
       }

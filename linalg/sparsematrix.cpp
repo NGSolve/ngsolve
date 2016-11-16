@@ -1586,8 +1586,8 @@ namespace ngla
   void SparseMatrixSymmetricTM<TM> ::
   AddElementMatrix(FlatArray<int> dnums, FlatMatrix<TSCAL> elmat1, bool use_atomic)
   {
-    static Timer timer ("SparseMatrixSymmetric::AddElementMatrix", 2);
-    RegionTimer reg (timer);
+    // static Timer timer ("SparseMatrixSymmetric::AddElementMatrix", 2);
+    // RegionTimer reg (timer);
 
     // ArrayMem<int, 50> map(dnums.Size());
     STACK_ARRAY(int, hmap, dnums.Size());

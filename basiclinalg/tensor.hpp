@@ -219,7 +219,7 @@ public:
 
   template <typename ... ARG>
   auto operator() (int i, ARG ... args)
-    -> decltype (ReduceTensor0 (braces(i,args...)))
+    -> decltype (ReduceTensor0 (this->braces(i,args...)))
   {
     return ReduceTensor0 (braces(i,args...));
   }
