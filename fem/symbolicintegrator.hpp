@@ -208,7 +208,7 @@ class ProxyUserData
 {
   FlatArray<const ProxyFunction*> remember_first;
   FlatArray<FlatMatrix<double>> remember_second;
-  FlatArray<AFlatMatrix<double>> remember_asecond;
+  FlatArray<FlatMatrix<SIMD<double>>> remember_asecond;
 public:
   class ProxyFunction * testfunction = nullptr;
   int test_comp;
@@ -234,7 +234,7 @@ public:
           {
             remember_first[i] = proxy;
             new (&remember_second[i]) FlatMatrix<> (h, w, lh);
-            new (&remember_asecond[i]) AFlatMatrix<double> (w, h, lh);
+            new (&remember_asecond[i]) FlatMatrix<SIMD<double>> (w, (h+SIMD<double>::Size()-1)/SIMD<double>::Size(), lh);
             return;
           }
       }
@@ -248,7 +248,7 @@ public:
   {
     return remember_second[remember_first.Pos(proxy)];
   }
-  AFlatMatrix<double> GetAMemory (const ProxyFunction * proxy) const
+  FlatMatrix<SIMD<double>> GetAMemory (const ProxyFunction * proxy) const
   {
     return remember_asecond[remember_first.Pos(proxy)];
   }
@@ -336,7 +336,7 @@ public:
   NGS_DLL_HEADER virtual void
   CalcMatrix (const FiniteElement & bfel,
               const SIMD_BaseMappedIntegrationRule & mir,
-              ABareMatrix<double> mat) const
+              BareSliceMatrix<SIMD<double>> mat) const
   {
     // mat = 0;   // take care: unused elements not zerod !!!!
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
@@ -469,6 +469,9 @@ public:
     virtual bool IsSymmetric() const { return true; }  // correct would be: don't know
     virtual string Name () const { return string ("Symbolic BFI"); }
 
+    IntegrationRule GetIntegrationRule (const FiniteElement & fel) const;
+    SIMD_IntegrationRule Get_SIMD_IntegrationRule (const FiniteElement & fel) const;
+    
     virtual void 
     CalcElementMatrix (const FiniteElement & fel,
 		       const ElementTransformation & trafo, 

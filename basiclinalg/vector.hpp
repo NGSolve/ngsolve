@@ -1375,7 +1375,7 @@ namespace ngbla
     using DummySize::Width;
     using DummySize::Height;
     BareVector(T * _data) : DummySize(0,0), data(_data) { ; }
-    // BareSliceVector(SliceVector<T> vec) : DummySize( vec.Size() ), data(&vec(0)), dist(vec.Dist()) { ; }
+    BareVector(FlatVector<T> vec) : DummySize( vec.Size() ), data(&vec(0)) { ; }
     // template <int D>
     // BareSliceVector(FixSliceVector<D,T> vec) : DummySize( vec.Size() ), data(&vec(0)), dist(D)  { ; }
     // BareSliceVector(FlatVector<T> vec) : DummySize( vec.Size() ), data(&vec(0)), dist(1)  { ; }

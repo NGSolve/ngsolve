@@ -51,19 +51,6 @@ endif(INTEL_MIC)
 #######################################################################
 if(USE_NATIVE_ARCH)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
-else(USE_NATIVE_ARCH)
-     message("***********************************")
-     message("${CMAKE_CXX_COMPILER_VERSION}")
-    if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
-        set(AVX2_FLAG "-march=core-avx2")
-    else()
-        # assume gcc
-        if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.9.0")
-            set(AVX2_FLAG "-march=core-avx2")
-        else()
-            set(AVX2_FLAG "-march=haswell")
-        endif()
-    endif()
 endif(USE_NATIVE_ARCH)
 
 #######################################################################
@@ -248,7 +235,8 @@ endif (USE_MKL)
 if (USE_MUMPS)
     add_definitions(-DUSE_MUMPS)
     find_package(MUMPS REQUIRED)
-    include_directories(${MUMPS_DIR}/include)
+    set(MUMPS_INCLUDE_DIR ${MUMPS_DIR}/include)
+    include_directories(${MUMPS_INCLUDE_DIR})
     link_directories(${MUMPS_DIR}/lib)
 endif (USE_MUMPS)
 
@@ -353,13 +341,14 @@ endif(USE_VTUNE)
 #######################################################################
 if(NETGEN_SOURCE_DIR)
     find_path(NETGEN_INTERNAL_INCLUDE_DIR nginterface_v2_impl.hpp PATHS ${NETGEN_SOURCE_DIR} ${NETGEN_SOURCE_DIR}/libsrc/include)
-    if (NOT NETGEN_INTERNAL_INCLUDE_DIR)
-      message(FATAL_ERROR "Could not find Netgen source directory")
-    endif()
     add_definitions(-DHAVE_NETGEN_SOURCES)
     include_directories(AFTER ${NETGEN_INTERNAL_INCLUDE_DIR})
 endif(NETGEN_SOURCE_DIR)
 
+if (NOT NETGEN_INTERNAL_INCLUDE_DIR)
+    message(FATAL_ERROR "Could not find Netgen source directory, please provide it by setting NETGEN_SOURCE_DIR:
+    cmake -DNETGEN_SOURCE_DIR=path_to_netgen_sources ...")
+endif()
 
 
 #######################################################################
@@ -377,6 +366,7 @@ add_subdirectory(python)
 add_subdirectory(pde_tutorial)
 add_subdirectory(py_tutorials)
 add_subdirectory(tests)
+add_subdirectory(external_dependencies)
 
 #######################################################################
 # generate ngscxx compiler wrapper
@@ -397,7 +387,11 @@ foreach( d ${ngscxx_defines} )
 endforeach()
 
 # include directories
-set(ngscxx_include_dirs ${INSTALL_DIR}/include ${TCL_INCLUDE_PATH} ${MPI_CXX_INCLUDE_PATH} ${MKL_INCLUDE_DIRS} ${MUMPS_DIR}/include ${PYTHON_INCLUDE_DIRS} ${PYBIND_INCLUDE_DIR} ${UMFPACK_INCLUDE_DIR} ${VTUNE_INCLUDE_DIR} ${NETGEN_INTERNAL_INCLUDE_DIR})
+set(ngscxx_include_dirs ${INSTALL_DIR}/include ${TCL_INCLUDE_PATH} ${MPI_CXX_INCLUDE_PATH} ${MKL_INCLUDE_DIRS} ${MUMPS_INCLUDE_DIR}/include ${PYTHON_INCLUDE_DIRS} ${UMFPACK_INCLUDE_DIR} ${VTUNE_INCLUDE_DIR})
+if(NOT INSTALL_DEPENDENCIES) 
+    set(ngscxx_include_dirs ${ngscxx_include_dirs} ${NETGEN_INTERNAL_INCLUDE_DIR})
+endif(NOT INSTALL_DEPENDENCIES) 
+
 
 foreach( d ${ngscxx_include_dirs} )
   if(WIN32)
@@ -488,24 +482,6 @@ if(UNIX)
     set(CPACK_PACKAGE_NAME ${CPACK_PACKAGE_NAME})
     set(CPACK_DEBIAN_PACKAGE_NAME ${CPACK_PACKAGE_NAME})
     set(CPACK_PACKAGE_FILE_NAME "ngsolve-${PACKAGE_VERSION}_${CPACK_DEBIAN_PACKAGE_ARCHITECTURE}")
-
-    set(postinstall ${CMAKE_CURRENT_BINARY_DIR}/postinst )
-    file(WRITE  ${postinstall} "#!/bin/bash\n")
-    file(APPEND ${postinstall} "source /etc/profile.d/netgen.sh\n")
-    file(APPEND ${postinstall} "if [ `grep -c avx2 /proc/cpuinfo` != \"0\" ]\nthen\n")
-    file(APPEND ${postinstall} "mv $NETGENDIR/../lib/libngfem.so $NETGENDIR/../lib/libngfem_generic.so\n")
-    file(APPEND ${postinstall} "ln -s $NETGENDIR/../lib/libngfem_avx2.so $NETGENDIR/../lib/libngfem.so\n")
-    file(APPEND ${postinstall} "mv $NETGENDIR/../lib/libngbla.so $NETGENDIR/../lib/libngbla_generic.so\n")
-    file(APPEND ${postinstall} "ln -s $NETGENDIR/../lib/libngbla_avx2.so $NETGENDIR/../lib/libngbla.so\n")
-    file(APPEND ${postinstall} "mv $NETGENDIR/../lib/libngcomp.so $NETGENDIR/../lib/libngcomp_generic.so\n")
-    file(APPEND ${postinstall} "ln -s $NETGENDIR/../lib/libngcomp_avx2.so $NETGENDIR/../lib/libngcomp.so\n")
-    string(ASCII 27 Esc)
-    file(APPEND ${postinstall} "echo '${Esc}[0;32m*************************************************'\n")
-    file(APPEND ${postinstall} "echo 'Detected avx2 support, using optimized libraries.'\n")
-    file(APPEND ${postinstall} "echo '*************************************************${Esc}[m'\n")
-    file(APPEND ${postinstall} "fi;\n")
-    set( CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_BINARY_DIR}/postinst")
-
 endif(UNIX)
 if(WIN32)
     set(CPACK_GENERATOR "NSIS")

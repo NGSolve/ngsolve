@@ -2186,7 +2186,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
               }
           }       
       }
-    cout << "AtomicDofs = " << endl << is_atomic_dof << endl;
+    // cout << "AtomicDofs = " << endl << is_atomic_dof << endl;
 
     prol -> Update();
 

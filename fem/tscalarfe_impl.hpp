@@ -60,12 +60,12 @@ namespace ngfem
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
-  CalcShape (const SIMD_IntegrationRule & ir, ABareMatrix<> shapes) const
+  CalcShape (const SIMD_IntegrationRule & ir, BareSliceMatrix<SIMD<double>> shapes) const
   {
     for (size_t i = 0; i < ir.Size(); i++)
       T_CalcShape (ir[i].TIp<DIM>(),
                    SBLambda([&](size_t j, SIMD<double> shape)
-                            { shapes.Get(j,i) = shape; } ));
+                            { shapes(j,i) = shape; } ));
   }
   
   
@@ -98,7 +98,7 @@ namespace ngfem
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
-  Evaluate (const SIMD_IntegrationRule & ir, BareSliceVector<> coefs, ABareVector<double> values) const
+  Evaluate (const SIMD_IntegrationRule & ir, BareSliceVector<> coefs, BareVector<SIMD<double>> values) const
   {
     // static Timer t("ScalarFE::Evaluate", 2); RegionTimer reg(t);
     // t.AddFlops (ir.GetNIP()*ndof);
@@ -176,8 +176,8 @@ namespace ngfem
                                   pcoefs += dist; }
                                 ));
         
-        values.Get(i) = sum.template Get<0>().Data();
-        values.Get(i+1) = sum.template Get<1>().Data();          
+        values(i) = sum.template Get<0>().Data();
+        values(i+1) = sum.template Get<1>().Data();          
       }
 
     if (i < hir.Size())
@@ -190,7 +190,7 @@ namespace ngfem
         T_CalcShape (pt, // TIP<DIM,SIMD<double>> (hir[i]), 
                      SBLambda ( [&](int j, SIMD<double> shape)
                                 { sum += (*pcoefs)*shape; pcoefs += dist; } ));
-        values.Get(i) = sum.Data();
+        values(i) = sum.Data();
       }
     
     /*
@@ -306,7 +306,7 @@ namespace ngfem
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   Evaluate (const SIMD_IntegrationRule & ir,
             SliceMatrix<> coefs,
-            ABareSliceMatrix<double> values) const
+            BareSliceMatrix<SIMD<double>> values) const
   {
     FlatArray<SIMD<IntegrationPoint>> hir = ir;    
     size_t j = 0;
@@ -327,10 +327,10 @@ namespace ngfem
                                       sum4 += pcoefs[3]*shape;
                                       pcoefs += dist;
                                     } ));
-            values.Get(j,i) = sum1.Data();
-            values.Get(j+1,i) = sum2.Data();
-            values.Get(j+2,i) = sum3.Data();
-            values.Get(j+3,i) = sum4.Data();
+            values(j,i) = sum1.Data();
+            values(j+1,i) = sum2.Data();
+            values(j+2,i) = sum3.Data();
+            values(j+3,i) = sum4.Data();
           }
       }
     switch (coefs.Width()&3)
@@ -352,8 +352,8 @@ namespace ngfem
                                         sum2 += pcoefs[1]*shape;
                                         pcoefs += dist;
                                       } ));
-              values.Get(j,i) = sum1.Data();
-              values.Get(j+1,i) = sum2.Data();
+              values(j,i) = sum1.Data();
+              values(j+1,i) = sum2.Data();
             }
           break;
         case 3:
@@ -372,9 +372,9 @@ namespace ngfem
                                           sum3 += pcoefs[2]*shape;
                                           pcoefs += dist;
                                         } ));
-                values.Get(j,i) = sum1.Data();
-                values.Get(j+1,i) = sum2.Data();
-                values.Get(j+2,i) = sum3.Data();
+                values(j,i) = sum1.Data();
+                values(j+1,i) = sum2.Data();
+                values(j+2,i) = sum3.Data();
               }
             break;
           }
@@ -422,7 +422,7 @@ namespace ngfem
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
-  AddTrans (const SIMD_IntegrationRule & ir, ABareVector<double> values,
+  AddTrans (const SIMD_IntegrationRule & ir, BareVector<SIMD<double>> values,
             BareSliceVector<> coefs) const
   {
     FlatArray<SIMD<IntegrationPoint>> hir = ir;
@@ -443,7 +443,7 @@ namespace ngfem
         TIP<DIM,SIMD<double>> tip2 = hir[i+1].TIp<DIM>();
         TIP<DIM,MultiSIMD<2,double>> tip(tip1,tip2);
 
-        MultiSIMD<2,double> val (values.Get(i), values.Get(i+1));
+        MultiSIMD<2,double> val (values(i), values(i+1));
         // i+1 < hir.Size() ? values.Get(i+1) : SIMD<double> (0.0));
 
         // T_CalcShape (&pt(0), SBLambda ( [&](int j, MultiSIMD<2,double> shape) { coefs(j) += HSum(val*shape); } ));
@@ -475,7 +475,7 @@ namespace ngfem
     for ( ; i < hir.Size(); i++)
       {
         TIP<DIM,SIMD<double>> tip = hir[i].TIp<DIM>();
-        SIMD<double> val (values.Get(i));
+        SIMD<double> val (values(i));
 
         double * pcoefs = &coefs(0);
         size_t dist = coefs.Dist();
@@ -527,7 +527,7 @@ namespace ngfem
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   AddTrans (const SIMD_IntegrationRule & ir,
-            ABareSliceMatrix<double> values,
+            BareSliceMatrix<SIMD<double>> values,
             SliceMatrix<> coefs) const
   {
     FlatArray<SIMD<IntegrationPoint>> hir = ir;    
@@ -537,10 +537,10 @@ namespace ngfem
         for (size_t i = 0; i < hir.Size(); i++)
           {
             TIP<DIM,SIMD<double>> pt = hir[i].TIp<DIM>();
-            SIMD<double> val1 = values.Get(j,i);
-            SIMD<double> val2 = values.Get(j+1,i);
-            SIMD<double> val3 = values.Get(j+2,i);
-            SIMD<double> val4 = values.Get(j+3,i);
+            SIMD<double> val1 = values(j,i);
+            SIMD<double> val2 = values(j+1,i);
+            SIMD<double> val3 = values(j+2,i);
+            SIMD<double> val4 = values(j+3,i);
             double * pcoefs = &coefs(j);
             size_t dist = coefs.Dist();
             T_CalcShape (pt, 
@@ -562,8 +562,8 @@ namespace ngfem
           for (size_t i = 0; i < hir.Size(); i++)
             {
               TIP<DIM,SIMD<double>> pt = hir[i].TIp<DIM>();
-              SIMD<double> val1 = values.Get(j,i);
-              SIMD<double> val2 = values.Get(j+1,i);
+              SIMD<double> val1 = values(j,i);
+              SIMD<double> val2 = values(j+1,i);
               __m256i mask = _mm256_set_epi64x(0, 0, -1, -1);
               double * pcoefs = &coefs(j);
               size_t dist = coefs.Dist();
@@ -583,9 +583,9 @@ namespace ngfem
           for (size_t i = 0; i < hir.Size(); i++)
             {
               TIP<DIM,SIMD<double>> pt = hir[i].TIp<DIM>();
-              SIMD<double> val1 = values.Get(j,i);
-              SIMD<double> val2 = values.Get(j+1,i);
-              SIMD<double> val3 = values.Get(j+2,i);
+              SIMD<double> val1 = values(j,i);
+              SIMD<double> val2 = values(j+1,i);
+              SIMD<double> val3 = values(j+2,i);
               __m256i mask = _mm256_set_epi64x(0, -1, -1, -1);
               double * pcoefs = &coefs(j);
               size_t dist = coefs.Dist();
@@ -647,7 +647,7 @@ namespace ngfem
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   EvaluateGrad (const SIMD_BaseMappedIntegrationRule & bmir,
                 BareSliceVector<> coefs,
-                ABareSliceMatrix<double> values) const
+                BareSliceMatrix<SIMD<double>> values) const
   {
     if ((DIM == 3) || (bmir.DimSpace() == DIM))
       {
@@ -669,7 +669,7 @@ namespace ngfem
                                      pcoefs += dist;
                                    }));
             for (size_t k = 0; k < DIM; k++)
-              values.Get(k,i) = sum(k).Data();
+              values(k,i) = sum(k).Data();
           }
       }
     else
@@ -683,7 +683,7 @@ namespace ngfem
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   EvaluateGrad (const SIMD_IntegrationRule & ir,
                 BareSliceVector<> coefs,
-                ABareSliceMatrix<double> values) const
+                BareSliceMatrix<SIMD<double>> values) const
   {
     for (int i = 0; i < ir.Size(); i++)
       {
@@ -693,7 +693,7 @@ namespace ngfem
                      SBLambda ([&] (int j, AD2Vec<DIM,SIMD<double>> shape)
                                { sum += coefs(j) * shape; }));
         for (int k = 0; k < DIM; k++)
-          values.Get(k,i) = sum(k).Data();
+          values(k,i) = sum(k).Data();
       }
   }
 
@@ -735,7 +735,7 @@ namespace ngfem
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   AddGradTrans (const SIMD_BaseMappedIntegrationRule & bmir,
-                ABareSliceMatrix<double> values,
+                BareSliceMatrix<SIMD<double>> values,
                 BareSliceVector<> coefs) const
   {
     if ((DIM == 3) || (bmir.DimSpace() == DIM))
@@ -752,7 +752,7 @@ namespace ngfem
                                    {
                                      SIMD<double> sum = 0.0;
                                      for (size_t k = 0; k < DIM; k++)
-                                       sum += shape.DValue(k) * values.Get(k,i);
+                                       sum += shape.DValue(k) * values(k,i);
                                      // coefs(j) += HSum(sum);
                                      *pcoef += HSum(sum);
                                      pcoef += dist;
@@ -836,14 +836,14 @@ namespace ngfem
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   CalcMappedDShape (const SIMD_BaseMappedIntegrationRule & bmir, 
-                    ABareMatrix<> dshapes) const
+                    BareSliceMatrix<SIMD<double>> dshapes) const
   {
    if (bmir.DimSpace() == DIM)
       {
         auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
         for (size_t i = 0; i < mir.Size(); i++)
           {
-            SIMD<double> * pdshapes = &dshapes.Get(0,i);
+            SIMD<double> * pdshapes = &dshapes(0,i);
             size_t dist = dshapes.Dist();
             
             TIP<DIM,AutoDiffRec<DIM,SIMD<double>>> adp = GetTIP(mir[i]);

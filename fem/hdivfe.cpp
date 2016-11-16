@@ -120,7 +120,7 @@ namespace ngfem
   template <int D>
   void HDivFiniteElement<D> ::
   CalcMappedShape (const SIMD_BaseMappedIntegrationRule & mir, 
-                   ABareMatrix<> shapes) const
+                   BareSliceMatrix<SIMD<double>> shapes) const
   {
     throw ExceptionNOSIMD("SIMD - HDivFE::CalcMappedShape not overloaded");
   }
@@ -139,7 +139,7 @@ namespace ngfem
   template <int D>
   void HDivFiniteElement<D> ::
   CalcMappedDivShape (const SIMD_BaseMappedIntegrationRule & mir, 
-                      ABareMatrix<> shapes) const
+                      BareSliceMatrix<SIMD<double>> shapes) const
   {
     throw ExceptionNOSIMD("SIMD - HDivFE::CalcMappedDivShape not overloaded");
   }

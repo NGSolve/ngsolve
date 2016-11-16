@@ -58,7 +58,7 @@ namespace ngfem
 
     template <typename AFEL>
     static void GenerateMatrix2 (const AFEL & fel, 
-                                 const MappedIntegrationPoint<DIM_ELEMENT,D> & mip,
+                                 const MappedIntegrationPoint<D,D> & mip,
                                  SliceMatrix<> mat, LocalHeap & lh)
     {
       static_cast<const FEL&> (fel).CalcMappedShape (mip, mat);  
@@ -66,13 +66,15 @@ namespace ngfem
 
 
     static void GenerateMatrixIR (const FiniteElement & fel, 
-                                  const MappedIntegrationRule<DIM_ELEMENT,D> & mir,
+                                  const MappedIntegrationRule<D,D> & mir,
                                   SliceMatrix<double,ColMajor> mat, LocalHeap & lh)
     {
       static_cast<const FEL&> (fel).CalcMappedShape (mir, Trans(mat));
     }
 
-    static void GenerateMatrixSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir, ABareMatrix<> mat)
+    static void GenerateMatrixSIMDIR (const FiniteElement & fel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> mat)
     {
       static_cast<const FEL&>(fel).CalcMappedShape (mir, mat);      
     }
@@ -85,18 +87,18 @@ namespace ngfem
     {
       typedef typename TVX::TSCAL TSCAL;
       HeapReset hr(lh);
-      Vec<DIM_ELEMENT,TSCAL> hx;
+      Vec<D,TSCAL> hx;
       hx = Trans (static_cast<const FEL&> (fel).GetShape (mip.IP(), lh)) * x;
       y = Trans (mip.GetJacobianInverse()) * hx;
     }
 
     template <typename FEL1, class TVX, class TVY>
-    static void Apply (const FEL1 & fel, const MappedIntegrationPoint<DIM_ELEMENT,D> & mip,
+    static void Apply (const FEL1 & fel, const MappedIntegrationPoint<D,D> & mip,
 		       const TVX & x, TVY && y,
 		       LocalHeap & lh) 
     {
       HeapReset hr(lh);
-      FlatMatrixFixWidth<DIM_ELEMENT> shape(fel.GetNDof(), lh);
+      FlatMatrixFixWidth<D> shape(fel.GetNDof(), lh);
       static_cast<const FEL&> (fel).CalcMappedShape (mip, shape);
       y = Trans(shape) * x;
     }
@@ -109,18 +111,18 @@ namespace ngfem
     {
       typedef typename TVX::TSCAL TSCAL;
       HeapReset hr(lh);
-      Vec<DIM_ELEMENT,TSCAL> hx;
+      Vec<D,TSCAL> hx;
       hx = mip.GetJacobianInverse() * x;
       y = static_cast<const FEL&> (fel).GetShape (mip.IP(),lh) * hx;
     }
 
     template <typename FEL1, class TVX, class TVY>
-    static void ApplyTrans (const FEL1 & fel, const MappedIntegrationPoint<DIM_ELEMENT,D> & mip,
+    static void ApplyTrans (const FEL1 & fel, const MappedIntegrationPoint<D,D> & mip,
 			    const TVX & x, TVY & y,
 			    LocalHeap & lh) 
     {
       HeapReset hr(lh);
-      FlatMatrixFixWidth<DIM_ELEMENT> shape(fel.GetNDof(), lh);
+      FlatMatrixFixWidth<D> shape(fel.GetNDof(), lh);
       static_cast<const FEL&> (fel).CalcMappedShape (mip, shape);
       y = shape * x;
     }
@@ -244,7 +246,9 @@ namespace ngfem
       static_cast<const FEL&> (fel).CalcMappedCurlShape (mir, Trans(mat));
     }
     
-    static void GenerateMatrixSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir, ABareMatrix<> mat)
+    static void GenerateMatrixSIMDIR (const FiniteElement & fel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> mat)
     {
       static_cast<const FEL&>(fel).CalcMappedCurlShape (mir, mat);      
     }
@@ -276,24 +280,14 @@ namespace ngfem
 
     using DiffOp<DiffOpCurlEdge<3> >::ApplySIMDIR;        
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
-                             BareSliceVector<double> x, BareSliceMatrix<double> y)
-    {
-      static_cast<const FEL&> (fel).EvaluateCurl (mir, x, y);
-    }      
-    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
-                             BareSliceVector<Complex> x, BareSliceMatrix<Complex> y)
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
       static_cast<const FEL&> (fel).EvaluateCurl (mir, x, y);
     }    
 
     using DiffOp<DiffOpCurlEdge<3> >::AddTransSIMDIR;        
     static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
-                                BareSliceMatrix<double> y, BareSliceVector<double> x)
-    {
-       static_cast<const FEL&> (fel).AddCurlTrans (mir, y, x);
-    }    
-    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
-                                BareSliceMatrix<Complex> y, BareSliceVector<Complex> x)
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
        static_cast<const FEL&> (fel).AddCurlTrans (mir, y, x);
     }    
@@ -339,24 +333,25 @@ namespace ngfem
   };
 
   
-  /// identity on codim 2
-  template <int D, typename FEL = HCurlFiniteElement<D-2>>
-    class DiffOpIdBBoundaryEdge : public DiffOp<DiffOpIdBBoundaryEdge<D,FEL>>
-    {
-    public:
-      enum { DIM = 1 };
-      enum { DIM_SPACE = D };
-      enum { DIM_ELEMENT = D-2 };
-      enum { DIM_DMAT = 3 };
-      enum { DIFFORDER = 0 };
+  /// Identity on codim 2
+  template <int D, typename FEL = HCurlFiniteElement<D-2> >
+  class DiffOpIdBBoundaryEdge : public DiffOp<DiffOpIdBBoundaryEdge<D,FEL> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D-2 };
+    enum { DIM_DMAT = D };
+    enum { DIFFORDER = 0 };
 
-      template <typename FEL1, typename MIP, typename MAT>
-	static void GenerateMatrix (const FEL1 & fel, const MIP & mip, MAT & mat, LocalHeap &lh)
-      {
+    template <typename FEL1, typename MIP, typename MAT>
+    static void GenerateMatrix (const FEL1 & fel, const MIP & mip,
+				MAT & mat, LocalHeap & lh)
+    {
       mat = Trans (mip.GetJacobianInverse ()) * 
 	Trans (static_cast<const FEL&> (fel).GetShape(mip.IP(),lh));
-      }
-      
+    }
+
     template <typename FEL1, typename MIP, class TVX, class TVY>
     static void Apply (const FEL1 & fel, const MIP & mip,
 		       const TVX & x, TVY & y,
@@ -368,47 +363,52 @@ namespace ngfem
       hx = Trans (static_cast<const FEL&> (fel).GetShape (mip.IP(),lh)) * x;
       y = Trans (mip.GetJacobianInverse()) * hx;
     }
-      
+
     template <typename FEL1, typename MIP, class TVX, class TVY>
     static void ApplyTrans (const FEL1 & fel, const MIP & mip,
 			    const TVX & x, TVY & y,
 			    LocalHeap & lh) 
     {
       typedef typename TVX::TSCAL TSCAL;
+
       Vec<DIM_ELEMENT,TSCAL> hx;
       hx = mip.GetJacobianInverse() * x;
       y = static_cast<const FEL&> (fel).GetShape (mip.IP(),lh) * hx;
+
+      /*
+      FlatMatrixFixWidth<DIM_ELEMENT> mshape (y.Height(), &hv(0)); 
+      FlatMatrix<> mshape2 (y.Height(), DIM_ELEMENT, &hv(0)); 
+      y = mshape2 * hx; 
+      */
     }
 
-    using DiffOp<DiffOpIdBBoundaryEdge<D, FEL> >::ApplySIMDIR; 
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
       static_cast<const FEL&> (fel).Evaluate (mir, x, y);
     }    
+           
+    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+       static_cast<const FEL&> (fel).AddTrans (mir, y, x);
+    }    
+    
+    
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
                              BareSliceVector<Complex> x, BareSliceMatrix<SIMD<Complex>> y)
     {
       static_cast<const FEL&> (fel).Evaluate (mir, x, y);
     }    
-    
-    //using DiffOp<DiffOpIdBBoundaryEdge<D, FEL> >::AddTransSIMDIR;  
-    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
-                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
-    {
-       static_cast<const FEL&> (fel).AddTrans (mir, y, x);
-    }  
-      
+           
     static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
                                 BareSliceMatrix<SIMD<Complex>> y, BareSliceVector<Complex> x)
     {
        static_cast<const FEL&> (fel).AddTrans (mir, y, x);
-    }   
+    }    
     
     
-    };
-
-
+  };
   /// Identity on boundary
   template <int D, typename FEL = HCurlFiniteElement<D-1> >
   class DiffOpIdBoundaryEdge : public DiffOp<DiffOpIdBoundaryEdge<D,FEL> >
@@ -457,31 +457,31 @@ namespace ngfem
       y = mshape2 * hx; 
       */
     }
-
-    //using DiffOp<DiffOpIdBoundaryEdge<D, FEL> >::ApplySIMDIR;        
+  
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
       static_cast<const FEL&> (fel).Evaluate (mir, x, y);
-    }          
+    }    
+           
+    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+       static_cast<const FEL&> (fel).AddTrans (mir, y, x);
+    }    
+    
+    
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
                              BareSliceVector<Complex> x, BareSliceMatrix<SIMD<Complex>> y)
     {
       static_cast<const FEL&> (fel).Evaluate (mir, x, y);
     }    
-
-    //using DiffOp<DiffOpIdBoundaryEdge<D, FEL> >::AddTransSIMDIR;            
-    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
-                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
-    {
-       static_cast<const FEL&> (fel).AddTrans (mir, y, x);
-    }      
+           
     static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
                                 BareSliceMatrix<SIMD<Complex>> y, BareSliceVector<Complex> x)
     {
        static_cast<const FEL&> (fel).AddTrans (mir, y, x);
     }    
-    
     
   };
 
@@ -896,7 +896,6 @@ public:
   HCURL_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdEdge<3> >;
   HCURL_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdBoundaryEdge<2> >;
   HCURL_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdBoundaryEdge<3> >;
-  HCURL_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdBBoundaryEdge<3> >;
   HCURL_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpCurlEdge<2> >;
   HCURL_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpCurlEdge<3> >;
   HCURL_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpCurlBoundaryEdge<> >;
