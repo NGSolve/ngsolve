@@ -561,7 +561,7 @@ namespace ngfem
           }
         catch (ExceptionNOSIMD e)
           {
-            cout << e.What() << endl
+            cout << IM(4) << e.What() << endl
                  << "switching back to standard evaluation" << endl;
             simd_evaluate = false;
             T_CalcElementVector (fel, trafo, elvec, lh);
@@ -1260,7 +1260,7 @@ namespace ngfem
         }
       catch (ExceptionNOSIMD e)
         {
-          cout << e.What() << endl
+          cout << IM(4) << e.What() << endl
                << "switching to scalar evaluation" << endl;
           simd_evaluate = false;
           T_CalcElementMatrix (fel, trafo, elmat, lh);
@@ -2014,7 +2014,7 @@ namespace ngfem
         }
       catch (ExceptionNOSIMD e)
         {
-          cout << e.What() << endl
+          cout << IM(4) << e.What() << endl
                << "switching to scalar evaluation" << endl;
           simd_evaluate = false;
           ApplyElementMatrix (fel, trafo, elx, ely, precomputed, lh);
@@ -2657,7 +2657,7 @@ namespace ngfem
           }
         catch (ExceptionNOSIMD e)
           {
-            cout << "caught in SymbolicFacetInegtrator::Apply: " << endl
+            cout << IM(4) << "caught in SymbolicFacetInegtrator::Apply: " << endl
                  << e.What() << endl;
             simd_evaluate = false;
             ApplyFacetMatrix (fel1, LocalFacetNr1, trafo1, ElVertices1,
@@ -2905,7 +2905,7 @@ namespace ngfem
           }
         catch (ExceptionNOSIMD e)
           {
-            cout << "caught in SymbolicFacetInegtrator::ApplyBnd: " << endl
+            cout << IM(4) << "caught in SymbolicFacetInegtrator::ApplyBnd: " << endl
                  << e.What() << endl;
             simd_evaluate = false;
             ApplyFacetMatrix (fel1, LocalFacetNr, trafo1, ElVertices,
@@ -3202,7 +3202,7 @@ namespace ngfem
         
         catch (ExceptionNOSIMD e)
           {
-            cout << e.What() << endl
+            cout << IM(4) << e.What() << endl
                  << "switching back to standard evaluation (in SymbolicEnergy::CalcLinearized)" << endl;
             simd_evaluate = false;
             CalcLinearizedElementMatrix (fel, trafo, elveclin, elmat, lh);
@@ -3471,7 +3471,7 @@ namespace ngfem
           }
         catch (ExceptionNOSIMD e)
           {
-            cout << e.What() << endl
+            cout << IM(4) << e.What() << endl
                  << "switching back to standard evaluation (in SymbolicEnergy::CalcLinearized)" << endl;              
             simd_evaluate = false;
             ApplyElementMatrix (fel, trafo, elx, ely, precomputed, lh);
