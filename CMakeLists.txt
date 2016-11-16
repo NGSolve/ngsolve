@@ -596,6 +596,7 @@ message("
     INTEL_MIC: ......... ${INTEL_MIC}
     VTUNE: ............. ${USE_VTUNE}
     VAMPIRTRACE: ....... ${USE_VT}
+    HYPRE: ............. ${USE_HYPRE}
 
 
   Building:
