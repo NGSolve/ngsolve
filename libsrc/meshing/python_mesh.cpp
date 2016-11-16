@@ -443,7 +443,20 @@ DLL_HEADER void ExportNetgenMeshing(py::module &m)
     .def ("GetMaterial", FunctionPointer([](Mesh & self, int domnr)
                                          { return string(self.GetMaterial(domnr)); }))
 
-    .def ("GenerateVolumeMesh",
+    .def ("AddPointIdentification", [](Mesh & self, py::object pindex1, py::object pindex2, int identnr, int type)
+                           {
+			     if(py::extract<PointIndex>(pindex1).check() && py::extract<PointIndex>(pindex2).check())
+			       {
+				 self.GetIdentifications().Add (py::extract<PointIndex>(pindex1)(), py::extract<PointIndex>(pindex2)(), identnr);
+				 self.GetIdentifications().SetType(identnr, Identifications::ID_TYPE(type)); // type = 2 ... periodic
+			       }
+                           },
+          //py::default_call_policies(),
+          py::arg("pid1"),
+           py::arg("pid2"),
+           py::arg("identnr"),
+           py::arg("type"))
+    .def ("GenerateVolumeMesh", 
           [](Mesh & self, py::object pymp)
            {
              cout << "generate vol mesh" << endl;
