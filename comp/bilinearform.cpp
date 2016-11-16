@@ -8,7 +8,7 @@ namespace ngcomp
 {
   extern void IterateElementsTP (const FESpace & fes, 
                 VorB vb, LocalHeap & clh, 
-			    const function<void(FESpace::Element,FESpace::Element,LocalHeap&)> & func); 
+			    const function<void(ElementId,ElementId,LocalHeap&)> & func); 
   // dummy function header 
   void CalcEigenSystem (FlatMatrix<Complex> & elmat, 
                         FlatVector<Complex> & lami, 
@@ -2869,7 +2869,6 @@ namespace ngcomp
          FlatVector<SCAL> elvecx (dnums.Size() * this->fespace->GetDimension(), lh);
          FlatVector<SCAL> elvecy (dnums.Size() * this->fespace->GetDimension(), lh);
          x.GetIndirect (dnums, elvecx);
- 
          int type = 0;
          this->fespace->TransformVec (elnr, (type == 1), elvecx, TRANSFORM_SOL);
          for (int j = 0; j < this->NumIntegrators(); j++)
@@ -2877,8 +2876,8 @@ namespace ngcomp
            BilinearFormIntegrator & bfi = *this->parts[j];
            if (bfi.SkeletonForm()) continue;
            if (type == 0 && bfi.BoundaryForm()) continue;
-           if (type == 0 && !bfi.DefinedOn (tpfes->Space(0)->GetMeshAccess()->GetElIndex (ei0.Nr()))) continue;
-           if (type == 0 && !bfi.DefinedOn (tpfes->Space(1)->GetMeshAccess()->GetElIndex (ei1.Nr()))) continue;
+           //if (type == 0 && !bfi.DefinedOn (tpfes->Space(0)->GetMeshAccess()->GetElIndex (ei0.Nr()))) continue;
+           //if (type == 0 && !bfi.DefinedOn (tpfes->Space(1)->GetMeshAccess()->GetElIndex (ei1.Nr()))) continue;
            if (this->precompute)
              bfi.ApplyElementMatrix (fel, eltrans, elvecx, elvecy, 
                                 this->precomputed_data[elnr*this->NumIntegrators()+j], lh);
@@ -2904,12 +2903,6 @@ namespace ngcomp
            if (dgform.element_boundary)
              needs_element_boundary_loop = true;
          }
- 
- 
- 
- 
- 
- 
        // do we need locks for neighbor - testfunctions ?
        for (int j = 0; j < NumIntegrators(); j++)
          if (parts[j] -> SkeletonForm())
@@ -2937,12 +2930,24 @@ namespace ngcomp
            for(int j=0;j<nels[1];j++)
            {
              HeapReset hr(lh);
-             Array<int> elnums_x(2, lh), fnums1_x(6, lh), fnums2_x(6, lh), vnums1(8, lh), vnums2(8, lh);
+             Array<int> elnums_x(2, lh), elnums_per_x(2,lh), fnums1_x(6, lh), fnums2_x(6, lh), vnums1(8, lh), vnums2(8, lh);
              int facet_x = colfacets[i];
+             int facet2_x = colfacets[i];
              // Horzontal edge - get facet elements w.r.t. first direction
              spaces[0]->GetMeshAccess()->GetFacetElements (facet_x, elnums_x);
              int el1_x = elnums_x[0];
              int el1 = tpfes->GetIndex(el1_x,j);
+             if(elnums_x.Size() < 2)
+             {
+               facet2_x = spaces[0]->GetMeshAccess()->GetPeriodicFacet(facet_x);
+               if(facet2_x > facet_x)
+               {
+                 ma->GetFacetElements (facet2_x, elnums_per_x);
+                 elnums_x.Append(elnums_per_x[0]);
+               }
+               else if(facet2_x < facet_x)
+                 continue;
+             }             
              if(elnums_x.Size() < 2)
              {
                spaces[0]->GetMeshAccess()->GetFacetSurfaceElements(facet_x, elnums_x);
@@ -2984,7 +2989,8 @@ namespace ngcomp
                spaces[0]->GetMeshAccess()->GetElFacets(el2_x,fnums2_x);
                // Local position of the facets
                int facnr1_x = fnums1_x.Pos(facet_x);
-               int facnr2_x = fnums2_x.Pos(facet_x);
+               int facnr2_x = fnums2_x.Pos(facet2_x);
+               //int facnr2_x = fnums2_x.Pos(facet_x);
                // Element transformations and elements for both spaces
                ElementTransformation & eltrans1 = tpfes->GetTrafo (ei1, lh);
                ElementTransformation & eltrans2 = tpfes->GetTrafo (ei2, lh);
@@ -3034,12 +3040,24 @@ namespace ngcomp
            {
              //LocalHeap & lh(clh);
              HeapReset hr(lh);
-             Array<int> elnums_y(2, lh), fnums1_y(6, lh), fnums2_y(6, lh), vnums1(8, lh), vnums2(8, lh);
+             Array<int> elnums_y(2, lh), elnums_per_y(2,lh), fnums1_y(6, lh), fnums2_y(6, lh), vnums1(8, lh), vnums2(8, lh);
              int facet_y = j;
+             int facet2_y = j;
              // Horzontal edge - get facet elements w.r.t. first direction
              spaces[1]->GetMeshAccess()->GetFacetElements (facet_y, elnums_y);
              int el1_y = elnums_y[0];
              int el1 = tpfes->GetIndex(colels[i],el1_y);
+             if(elnums_y.Size() < 2)
+ 				   {
+ 				     facet2_y = spaces[1]->GetMeshAccess()->GetPeriodicFacet(facet_y);
+ 				     if(facet2_y > facet_y)
+ 				       {
+ 					 ma->GetFacetElements (facet2_y, elnums_per_y);
+ 					 elnums_y.Append(elnums_per_y[0]);
+ 				       }
+ 				     else if(facet2_y < facet_y)
+ 				       continue;
+             }
              if(elnums_y.Size() < 2)
              {
                spaces[1]->GetMeshAccess()->GetFacetSurfaceElements (facet_y, elnums_y);
@@ -3079,7 +3097,7 @@ namespace ngcomp
                spaces[1]->GetMeshAccess()->GetElFacets(el2_y,fnums2_y);
                // Local position of the facets
                int facnr1_y = fnums1_y.Pos(facet_y);
-               int facnr2_y = fnums2_y.Pos(facet_y);
+               int facnr2_y = fnums2_y.Pos(facet2_y);
                // Element transformations and elements for both spaces
                ElementTransformation & eltrans1 = tpfes->GetTrafo (ei1, lh);
                ElementTransformation & eltrans2 = tpfes->GetTrafo (ei2, lh);

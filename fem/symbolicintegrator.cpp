@@ -1548,22 +1548,13 @@ namespace ngfem
              throw Exception ("Illegal space dimension" + ToString(trafo.SpaceDim()));
            }
        }
-     // no simd
-     // static Timer tstartnosimd("SymbolicBFI::Apply - startup", 2);
-     // static Timer tirnosimd("SymbolicBFI::Apply - integration rule", 2);
-     // static Timer tmirnosimd("SymbolicBFI::Apply - mapped ir", 2);
-     // static Timer tapplynosimd("SymbolicBFI::Apply - apply", 2);
-     // static Timer tcoefnosimd("SymbolicBFI::Apply - coef", 2);
-     // static Timer tapplytnosimd("SymbolicBFI::Apply - apply-trans", 2);
      HeapReset hr(lh);
      ely = 0;
      ArrayMem<const IntegrationRule *,2> irs(2);
      const IntegrationRule ir0 = SelectIntegrationRule(tpfel.elements[0]->ElementType(),2*tpfel.elements[0]->Order());
      const IntegrationRule ir1 = SelectIntegrationRule(tpfel.elements[1]->ElementType(),2*tpfel.elements[1]->Order());
-     //tirnosimd.Stop();
      irs[0] = &ir0;
      irs[1] = &ir1;
-     //irs[1] = &ir1;
      TPIntegrationRule ir(irs);
      BaseMappedIntegrationRule & mir = trafo(ir, lh);
      int niptp = ir0.Size()*ir1.Size();
@@ -1576,12 +1567,10 @@ namespace ngfem
        ud.AssignMemory (proxy, niptp, proxy->Dimension(), lh);
      for (ProxyFunction * proxy : trial_proxies)
          proxy->Evaluator()->Apply(fel, mir, elx, ud.GetMemory(proxy), lh);
-     //tapplynosimd.Stop();
      FlatVector<> ely1(ely.Size(), lh);
      FlatMatrix<> val(niptp, 1,lh);
      for (auto proxy : test_proxies)
        {
-         //tcoefnosimd.Start();
          HeapReset hr(lh);
          FlatMatrix<> proxyvalues(niptp, proxy->Dimension(), lh);
          for (int k = 0; k < proxy->Dimension(); k++)
@@ -1591,17 +1580,13 @@ namespace ngfem
              cf -> Evaluate (mir, val);
              proxyvalues.Col(k) = val.Col(0);
            }
-         //tcoefnosimd.Stop();
-         //tapplytnosimd.Start();
-         int ii=0;
          TPMappedIntegrationRule & tpmir = dynamic_cast<TPMappedIntegrationRule& >(mir);
-         for(int i=0;i<tpmir.GetIRs()[0]->Size();i++)
-           for(int j=0;j<tpmir.GetIRs()[1]->Size();j++)
-             proxyvalues.Row(ii++) *= tpmir.GetIRs()[0]->operator[](i).GetWeight()*tpmir.GetIRs()[1]->operator[](j).GetWeight();
- 
+         for(int i=0,ii=0;i<tpmir.GetIRs()[0]->Size();i++)
+           for(int j=0;j<tpmir.GetIRs()[1]->Size();j++,ii++)
+             proxyvalues.Row(ii) *= tpmir.GetIRs()[0]->operator[](i).GetWeight()*tpmir.GetIRs()[1]->operator[](j).GetWeight();
+         
          proxy->Evaluator()->ApplyTrans(fel, mir, proxyvalues, ely1, lh);
          ely += ely1;
-         //tapplytnosimd.Stop();
        }
    }  
    
@@ -2628,8 +2613,13 @@ void SymbolicFacetBilinearFormIntegrator ::
                        FlatVector<double> elx, FlatVector<double> ely, int facet_x_y,
                        LocalHeap & lh) const
    {
-     static Timer tall("SymbolicFacetBFI::ApplyFacetMatrixTP, inner facet"); RegionTimer rall(tall);  
+     static Timer tall("SymbolicFacetBFI::ApplyFacetMatrixTP, inner facet total"); RegionTimer rall(tall);
+     static Timer ttrialproxy("SymbolicFacetBFI::ApplyFacetMatrixTP, inner facet eval trial proxies");
+     static Timer ttestproxy("SymbolicFacetBFI::ApplyFacetMatrixTP, inner facet eval test proxies");
+     static Timer tcoeff("SymbolicFacetBFI::ApplyFacetMatrixTP, inner facet eval coeff");
+     static Timer tstartup("SymbolicFacetBFI::ApplyFacetMatrixTP, inner facet startup");
      //RegionTracer(TaskManager::GetThreadId(), tall);
+     tstartup.Start();
      HeapReset hr(lh);
      const TPElementTransformation & eltrans1 = dynamic_cast<const TPElementTransformation &>(trafo1);
      const TPElementTransformation & eltrans2 = dynamic_cast<const TPElementTransformation &>(trafo2);
@@ -2642,9 +2632,10 @@ void SymbolicFacetBilinearFormIntegrator ::
      int maxorder2 = max2 (volumefel1.elements[1-facet_x_y]->Order(), volumefel2.elements[1-facet_x_y]->Order());
      auto eltype1 = eltrans1.GetTrafo(facet_x_y).GetElementType();
      auto eltype2 = eltrans2.GetTrafo(facet_x_y).GetElementType();
+
      auto eltypevol = eltrans1.GetTrafo(1-facet_x_y).GetElementType();
      auto etfacet = ElementTopology::GetFacetType (eltype1, LocalFacetNr1);
-     //tirnosimd.Start();
+
      const IntegrationRule & ir_facet = SelectIntegrationRule(etfacet, 2*maxorder1);
      const IntegrationRule & ir_vol1 = SelectIntegrationRule(eltypevol, 2*maxorder2);
      Facet2ElementTrafo transform1(eltype1, ElVertices1);
@@ -2667,17 +2658,39 @@ void SymbolicFacetBilinearFormIntegrator ::
      ud.fel = &volumefel1;   // necessary to check remember-map
      // ud.elx = &elx;
      ud.lh = &lh;
+     FlatVector<> coef_temp(volumefel2.GetNDof(),lh),elx1(volumefel2.GetNDof(),lh);
      for (ProxyFunction * proxy : trial_proxies)
        ud.AssignMemory (proxy, tpmir1.Size(), proxy->Dimension(), lh);
-     //tapplynosimd.Start();
+     tstartup.Stop();
+     ttrialproxy.Start();
+     FlatVector<> coef(elx.Size(),lh);
      for (ProxyFunction * proxy : trial_proxies)
      {
+       /*
+       coef = elx;
+       if(dynamic_cast<const HM_ElementTransformation *>(&eltrans2.GetTrafo(1)))
+       {
+         coef_temp = elx.Range(proxy->Evaluator()->BlockDim()*volumefel1.GetNDof(), elx.Size());
+         double T_old = dynamic_cast<HM_ElementTransformation &>(dynamic_cast<const TPElementTransformation &>(eltrans2).GetTrafo(1)).GetAnsatzT();
+         double T_new = dynamic_cast<HM_ElementTransformation &>(dynamic_cast<const TPElementTransformation &>(eltrans1).GetTrafo(1)).GetAnsatzT();
+         Vec<1> V_old = dynamic_cast<HM_ElementTransformation &>(dynamic_cast<const TPElementTransformation &>(eltrans2).GetTrafo(1)).GetAnsatzV();
+         Vec<1> V_new = dynamic_cast<HM_ElementTransformation &>(dynamic_cast<const TPElementTransformation &>(eltrans1).GetTrafo(1)).GetAnsatzV();
+         dynamic_cast<const Distribution<1> *>(volumefel1.elements[1])->Project(coef_temp,elx1,T_old,T_new,V_old,V_new,lh);
+         coef.Range(proxy->Evaluator()->BlockDim()*volumefel1.GetNDof(), elx.Size()) = elx1;
+       }
        IntRange trial_range  = proxy->IsOther() ? IntRange(proxy->Evaluator()->BlockDim()*volumefel1.GetNDof(), elx.Size()) : IntRange(0, proxy->Evaluator()->BlockDim()*volumefel1.GetNDof());
+       if (proxy->IsOther()) 
+         proxy->Evaluator()->Apply(volumefel2, tpmir2, coef.Range(trial_range), ud.GetMemory(proxy), lh);
+       else
+         proxy->Evaluator()->Apply(volumefel1, tpmir1, coef.Range(trial_range), ud.GetMemory(proxy), lh);
+       */
+       IntRange trial_range  = proxy->IsOther() ? IntRange(proxy->Evaluator()->BlockDim()*volumefel1.GetNDof(), elx.Size()) : IntRange(0, proxy->Evaluator()->BlockDim()*volumefel1.GetNDof());       
        if (proxy->IsOther()) 
          proxy->Evaluator()->Apply(volumefel2, tpmir2, elx.Range(trial_range), ud.GetMemory(proxy), lh);
        else
-         proxy->Evaluator()->Apply(volumefel1, tpmir1, elx.Range(trial_range), ud.GetMemory(proxy), lh);
+         proxy->Evaluator()->Apply(volumefel1, tpmir1, elx.Range(trial_range), ud.GetMemory(proxy), lh);       
      }
+     ttrialproxy.Stop();
      dynamic_cast<TPMappedIntegrationRule &>(tpmir1).GetIRs()[facet_x_y]->ComputeNormalsAndMeasure (eltype1, LocalFacetNr1);
      FlatMatrixFixWidth<1> val(tpmir1.Size(),lh);
      for (auto proxy : test_proxies)
@@ -2686,6 +2699,7 @@ void SymbolicFacetBilinearFormIntegrator ::
        FlatMatrix<> proxyvalues(tpmir1.Size(), proxy->Dimension(), lh);
        for (int k = 0; k < proxy->Dimension(); k++)
        {
+         tcoeff.Start();
          ud.testfunction = proxy;
          ud.test_comp = k;
          cf -> Evaluate (tpmir1, val);
@@ -2696,15 +2710,32 @@ void SymbolicFacetBilinearFormIntegrator ::
        for(int i=0;i<ttpmir.GetIRs()[0]->Size();i++)
          for(int j=0;j<ttpmir.GetIRs()[1]->Size();j++)
            proxyvalues.Row(ii++) *= (*ttpmir.GetIRs()[0])[i].GetWeight()*(*ttpmir.GetIRs()[1])[j].GetWeight();
- 
+       tcoeff.Stop();
+       ttestproxy.Start();
        ely1 = 0.0;
        IntRange test_range  = proxy->IsOther() ? IntRange(proxy->Evaluator()->BlockDim()*volumefel1.GetNDof(), elx.Size()) : IntRange(0, proxy->Evaluator()->BlockDim()*volumefel1.GetNDof());
        if (proxy->IsOther())
+       {
          proxy->Evaluator()->ApplyTrans(volumefel2, tpmir2, proxyvalues, ely1.Range(test_range), lh);
+         /*
+         if(dynamic_cast<const HM_ElementTransformation *>(&eltrans2.GetTrafo(1)))
+         {
+           FlatVector<> elytemp(test_range.Size(),lh);
+           elytemp = ely1.Range(test_range);
+           double T_old = dynamic_cast<HM_ElementTransformation &>(dynamic_cast<const TPElementTransformation &>(eltrans2).GetTrafo(1)).GetAnsatzT();
+           double T_new = dynamic_cast<HM_ElementTransformation &>(dynamic_cast<const TPElementTransformation &>(eltrans1).GetTrafo(1)).GetAnsatzT();
+           Vec<1> V_old = dynamic_cast<HM_ElementTransformation &>(dynamic_cast<const TPElementTransformation &>(eltrans2).GetTrafo(1)).GetAnsatzV();
+           Vec<1> V_new = dynamic_cast<HM_ElementTransformation &>(dynamic_cast<const TPElementTransformation &>(eltrans1).GetTrafo(1)).GetAnsatzV();
+           dynamic_cast<const Distribution<1> *>(volumefel1.elements[1])->ProjectTrans(elytemp,ely1.Range(test_range),T_new,T_old,V_new,V_old,lh);
+         } 
+        */         
+       }
        else
          proxy->Evaluator()->ApplyTrans(volumefel1, tpmir1, proxyvalues, ely1.Range(test_range), lh);
        ely += ely1;
+       ttestproxy.Stop();
      }
+     //cout << "ely = "<<ely<<endl;
    }
  
    void SymbolicFacetBilinearFormIntegrator :: 
