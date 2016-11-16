@@ -224,9 +224,10 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
           else
             throw py::index_error("cannot assign complex values to real vector");
       } )
-//     .def(py::self+=py::self)
-//     .def(py::self-=py::self)
-//     .def(py::self*=double())
+    .def("__iadd__", [](PyBaseVector & self,  PyBaseVector & other) { *self += *other; return self;})
+    .def("__isub__", [](PyBaseVector & self,  PyBaseVector & other) { *self -= *other; return self;})
+    .def("__imul__", [](PyBaseVector & self,  double scal) { *self *= scal; return self;})
+    .def("__imul__", [](PyBaseVector & self,  Complex scal) { *self *= scal; return self;})
     .def("InnerProduct", [](PyBaseVector & self, PyBaseVector & other)
                                           {
                                             if (self->IsComplex())
