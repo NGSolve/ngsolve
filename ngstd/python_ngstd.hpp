@@ -249,7 +249,9 @@ public:
   static void Export (py::module &m)
   {
     string name = string("PyIterator")+GetPyName<T>();
-    py::class_<PyIterator<T, TELEM> >(m, name.c_str()).def("__next__", &PyIterator<T, TELEM>::Next);
+    py::class_<PyIterator<T, TELEM> >(m, name.c_str())
+    .def("__next__", &PyIterator<T, TELEM>::Next)
+    .def("__iter__", [](PyIterator<T, TELEM> &self) { return self; });
   }
 };
 
@@ -303,6 +305,7 @@ void PyDefIterable2( py::module &m, TCLASS &c )
     string itername = string("PyIterator2_")+GetPyName<T>();
     py::class_<PyIterator2<T>> citer(m, itername.c_str());
     citer.def("__next__", &PyIterator2<T>::Next);
+    citer.def("__iter__", [] (PyIterator2<T> &self) { return self; });
     c.def("__iter__", [](const T & c) { return PyIterator2<T>(c); });
 }
 
