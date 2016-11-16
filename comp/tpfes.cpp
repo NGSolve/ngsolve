@@ -59,7 +59,15 @@ namespace ngcomp
     Array<shared_ptr<DifferentialOperator>> evaluators(nmeshes);
     for (int i : Range(nmeshes))
       evaluators[i] = spaces[i]->GetEvaluator();
-    evaluator = shared_ptr<DifferentialOperator>( new TPDifferentialOperator(evaluators) );
+    int dim = 0;
+    for (auto eval : evaluators)
+      dim = max2(dim, eval->Dim());
+    int difforder = evaluators[0]->DiffOrder();
+    for (auto eval : evaluators)
+      difforder = min2(difforder, eval->DiffOrder());
+    int blockdim = 1;
+    bool bnd = false;
+    evaluator = shared_ptr<DifferentialOperator>( new TPDifferentialOperator(evaluators, dim, blockdim, bnd, difforder) );
   }
 
   TPHighOrderFESpace::TPHighOrderFESpace (shared_ptr<FESpace> aspace_x,FlatArray<shared_ptr<FESpace>> aspaces_y, const Flags & flags, bool parseflags, Array<int> * el_counts)
@@ -118,7 +126,15 @@ namespace ngcomp
     
     evaluators[0] = space_x->GetEvaluator();
     evaluators[1] = spaces_y[0]->GetEvaluator();
-    evaluator = shared_ptr<DifferentialOperator>( new TPDifferentialOperator(evaluators) );
+    int dim = 0;
+    for (auto eval : evaluators)
+      dim = max2(dim, eval->Dim());
+    int difforder = evaluators[0]->DiffOrder();
+    for (auto eval : evaluators)
+      difforder = min2(difforder, eval->DiffOrder());
+    int blockdim = 1;
+    bool bnd = false;    
+    evaluator = shared_ptr<DifferentialOperator>( new TPDifferentialOperator(evaluators, dim, blockdim, bnd, difforder) );
   }
 
   TPHighOrderFESpace::~TPHighOrderFESpace () { ; }
@@ -132,8 +148,22 @@ namespace ngcomp
     gradx[1] = spaces_y[0]->GetEvaluator();
     grady[0] = space_x->GetEvaluator();
     grady[1] = spaces_y[0]->GetFluxEvaluator();
-    ops.Set("gradx", make_shared<TPDifferentialOperator>( gradx ));
-    ops.Set("grady", make_shared<TPDifferentialOperator>( grady ));
+    int dim = 0;
+    for (auto eval : gradx)
+      dim = max2(dim, eval->Dim());
+    int difforder = gradx[0]->DiffOrder();
+    for (auto eval : gradx)
+      difforder = min2(difforder, eval->DiffOrder());
+    int blockdim = 1;
+    bool bnd = false;
+    ops.Set("gradx", make_shared<TPDifferentialOperator>( gradx, dim, blockdim, bnd, difforder ));
+    dim = 0;
+    for (auto eval : grady)
+      dim = max2(dim, eval->Dim());
+    difforder = grady[0]->DiffOrder();
+    for (auto eval : grady)
+      difforder = min2(difforder, eval->DiffOrder());
+    ops.Set("grady", make_shared<TPDifferentialOperator>( grady,dim,blockdim,bnd,difforder ));
     return ops;
   } 
 

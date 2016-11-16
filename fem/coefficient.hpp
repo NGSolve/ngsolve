@@ -50,8 +50,9 @@ namespace ngfem
     
     ///
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const;
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const;
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<Complex> values) const;
+    // virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const;    
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const;
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values) const;
 
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const;
     // virtual void EvaluateSoA (const BaseMappedIntegrationRule & ir, AFlatMatrix<Complex> values) const;
@@ -290,19 +291,46 @@ namespace ngfem
   }
 
 
+  template <typename TCF>
+  class T_CoefficientFunction : public CoefficientFunction
+  {
+  public:
+    using CoefficientFunction::CoefficientFunction;
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const
+    { static_cast<const TCF*>(this) -> template T_Evaluate<double> (ir, values); }
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values) const
+    {
+      if (IsComplex())
+        static_cast<const TCF*>(this) -> template T_Evaluate<Complex> (ir, values);
+      else
+        {
+          BareSliceMatrix<SIMD<double>> overlay(2*values.Dist(), &values(0,0).real());
+          Evaluate (ir, overlay);
+          size_t nv = ir.Size();
+          for (size_t i = 0; i < Dimension(); i++)
+            for (size_t j = nv; j-- > 0; )
+              values(i,j) = overlay(i,j);
+        }
+    }
+  };
 
+  
+
+  
 
   /// The coefficient is constant everywhere
-  class NGS_DLL_HEADER ConstantCoefficientFunction : public CoefficientFunction
+  class NGS_DLL_HEADER ConstantCoefficientFunction : public T_CoefficientFunction<ConstantCoefficientFunction>
   {
     ///
     double val;
+    typedef T_CoefficientFunction<ConstantCoefficientFunction> BASE;
   public:
     ///
     ConstantCoefficientFunction (double aval);
     ///
     virtual ~ConstantCoefficientFunction ();
     ///
+    using BASE::Evaluate;
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
     {
       return val;
@@ -314,9 +342,10 @@ namespace ngfem
     }
     
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const;
+
+    template <typename T>
+      void T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<T>> values) const;
     
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
-    { values = val; }
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
                            AFlatMatrix<double> values) const
     { values = val; }
@@ -344,6 +373,7 @@ namespace ngfem
     virtual void PrintReport (ostream & ost) const;
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
   };
+
 
 
   /// The coefficient is constant everywhere
@@ -400,8 +430,8 @@ namespace ngfem
     }
     
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const;
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
-    { values = val; }
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const
+    { values.AddSize(Dimension(), ir.Size()) = val; }
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
                            AFlatMatrix<double> values) const
     { values = val; }
@@ -448,21 +478,28 @@ namespace ngfem
     ///
 
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const;
-
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const;
-
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const;
 
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const;
+    // virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const;
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const;
     
-    virtual double EvaluateConst () const
-    {
-      return val[0];
-    }
-
+    virtual double EvaluateConst () const { return val[0]; }
     double operator[] (int i) const { return val[i]; }
 
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
+    
+  protected:
+    void CheckRange (int elind) const
+    {
+      if (elind < 0 || elind >= val.Size())
+        {
+          ostringstream ost;
+          ost << "DomainConstantCoefficientFunction: Element index "
+              << elind << " out of range 0 - " << val.Size()-1 << endl;
+          throw Exception (ost.str());
+        }
+    }
   };
 
 
@@ -773,19 +810,20 @@ namespace ngfem
   // *************************** CoefficientFunction Algebra ********************************
 #ifndef __AVX512F__
 template <typename OP, typename OPC> 
-class cl_UnaryOpCF : public CoefficientFunction
+class cl_UnaryOpCF : public T_CoefficientFunction<cl_UnaryOpCF<OP,OPC>>
 {
   shared_ptr<CoefficientFunction> c1;
   OP lam;
   OPC lamc;
   string name;
+  typedef  T_CoefficientFunction<cl_UnaryOpCF<OP,OPC>> BASE;
 public:
   cl_UnaryOpCF (shared_ptr<CoefficientFunction> ac1, 
                 OP alam, OPC alamc, string aname="undefined")
-    : CoefficientFunction(ac1->Dimension(), ac1->IsComplex()),
+    : BASE(ac1->Dimension(), ac1->IsComplex()),
       c1(ac1), lam(alam), lamc(alamc), name(aname)
   {
-    SetDimensions (c1->Dimensions());
+    this->SetDimensions (c1->Dimensions());
   }
   
   // virtual bool IsComplex() const { return c1->IsComplex(); }
@@ -797,11 +835,11 @@ public:
     return false;
   }
   
-  virtual int Dimension() const { return c1->Dimension(); }
+  // virtual int Dimension() const { return c1->Dimension(); }
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
-    TraverseDimensions( Dimensions(), [&](int ind, int i, int j) {
+    TraverseDimensions( this->Dimensions(), [&](int ind, int i, int j) {
         code.body += Var(index,i,j).Assign( Var(inputs[0],i,j).Func(name) );
         });
   }
@@ -814,7 +852,8 @@ public:
 
   virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
   { return Array<CoefficientFunction*>({ c1.get() }); }
-  
+
+  using BASE::Evaluate;
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
   {
     return lam (c1->Evaluate(ip));
@@ -861,26 +900,23 @@ public:
     for (int i = 0; i < result.Height()*result.Width(); i++)
       result(i) = lamc(result(i));
   }
-  
-  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
+
+  template <typename T>
+  void T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<T>> values) const
   {
     c1->Evaluate (ir, values);
-    /*
-    for (int i = 0; i < values.Height()*values.VWidth(); i++)
-      values.Get(i) = lam (values.Get(i));
-    */
-    // not vectorized ...
-    for (int i = 0; i < values.Height(); i++)
-      for (int j = 0; j < values.Width(); j++)
+    size_t vw = ir.Size();
+    for (size_t i = 0; i < this->Dimension(); i++)
+      for (size_t j = 0; j < vw; j++)
         values(i,j) = lam (values(i,j));
-    
   }
+  
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
                          AFlatMatrix<double> values) const
   {
     auto in0 = *input[0];
-    for (int i = 0; i < values.Height(); i++)
-      for (int j = 0; j < values.Width(); j++)
+    for (size_t i = 0; i < values.Height(); i++)
+      for (size_t j = 0; j < values.Width(); j++)
         values(i,j) = lam (in0(i,j));
   }
   
@@ -1022,8 +1058,9 @@ shared_ptr<CoefficientFunction> UnaryOpCF(shared_ptr<CoefficientFunction> c1,
   // extern int myglobalvar_eval;
   
   template <typename OP, typename OPC, typename DERIV, typename DDERIV, typename NONZERO> 
-class cl_BinaryOpCF : public CoefficientFunction
+  class cl_BinaryOpCF : public T_CoefficientFunction<cl_BinaryOpCF<OP,OPC,DERIV,DDERIV,NONZERO>>
 {
+  typedef T_CoefficientFunction<cl_BinaryOpCF<OP,OPC,DERIV,DDERIV,NONZERO>> BASE;
   shared_ptr<CoefficientFunction> c1, c2;
   OP lam;
   OPC lamc;
@@ -1033,11 +1070,15 @@ class cl_BinaryOpCF : public CoefficientFunction
   // int dim;
   char opname;
   bool is_complex;
+  using BASE::Dimension;
+  using BASE::SetDimension;
+  using BASE::SetDimensions;
+  using BASE::Evaluate;  
 public:
   cl_BinaryOpCF (shared_ptr<CoefficientFunction> ac1, 
                  shared_ptr<CoefficientFunction> ac2, 
                  OP alam, OPC alamc, DERIV alam_deriv, DDERIV alam_dderiv, NONZERO alam_nonzero, char aopname)
-    : CoefficientFunction(ac1->Dimension(), ac1->IsComplex() || ac2->IsComplex()),
+    : BASE(ac1->Dimension(), ac1->IsComplex() || ac2->IsComplex()),
       c1(ac1), c2(ac2), lam(alam), lamc(alamc),
       lam_deriv(alam_deriv), lam_dderiv(alam_dderiv),
       lam_nonzero(alam_nonzero),
@@ -1157,6 +1198,7 @@ public:
       result(i) = lamc (result(i), temp(i));
   }
 
+  /*
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
   {
     STACK_ARRAY(SIMD<double>, hmem, values.Height()*values.VWidth());
@@ -1167,13 +1209,45 @@ public:
     for (int i = 0; i < values.Height()*values.VWidth(); i++)
       values.Get(i) = lam (values.Get(i), temp.Get(i));
   }
+  */
+
+  /*
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const
+  {
+    size_t nv = ir.Size();
+    size_t mydim = Dimension();
+    STACK_ARRAY(SIMD<double>, hmem, nv*mydim);
+    ABareMatrix<double> temp(&hmem[0], nv, mydim, SIMD<double>::Size()*nv);
+    c1->Evaluate (ir, values);
+    c2->Evaluate (ir, temp);
+    for (size_t i = 0; i < mydim; i++)
+      for (size_t j = 0; j < nv; j++)
+        values.Get(i,j) = lam (values.Get(i,j), temp.Get(i,j));
+  }
+  */
+
+  template <typename T>
+  void T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<T>> values) const
+  {
+    size_t nv = ir.Size();
+    size_t mydim = Dimension();
+    STACK_ARRAY(SIMD<T>, hmem, nv*mydim);
+    FlatMatrix<SIMD<T>> temp(mydim, nv, &hmem[0]);
+    c1->Evaluate (ir, values);
+    c2->Evaluate (ir, temp);
+    for (size_t i = 0; i < mydim; i++)
+      for (size_t j = 0; j < nv; j++)
+        values(i,j) = lam (values(i,j), temp(i,j));
+  }
+
+
   
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
                          AFlatMatrix<double> values) const
   {
     auto in0 = *input[0];
     auto in1 = *input[1];
-    for (int i = 0; i < values.Height()*values.VWidth(); i++)
+    for (size_t i = 0; i < values.Height()*values.VWidth(); i++)
       values.Get(i) = lam (in0.Get(i), in1.Get(i));
   }
 
@@ -1518,5 +1592,28 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
   shared_ptr<CoefficientFunction> Compile (shared_ptr<CoefficientFunction> c, bool realcompile=false);
 }
 
+namespace ngstd
+{
+  template <>
+  struct PyWrapperTraits<ngfem::CoefficientFunction> {
+    typedef PyWrapperClass<ngfem::CoefficientFunction> type;
+  };
+  template <>
+  struct PyWrapperTraits<ngfem::ConstantCoefficientFunction> {
+    typedef PyWrapperDerived<ngfem::ConstantCoefficientFunction, ngfem::CoefficientFunction> type;
+  };
+  template <>
+  struct PyWrapperTraits<ngfem::ParameterCoefficientFunction> {
+    typedef PyWrapperDerived<ngfem::ParameterCoefficientFunction, ngfem::CoefficientFunction> type;
+  };
+  template <>
+  struct PyWrapperTraits<ngfem::DomainVariableCoefficientFunction> {
+    typedef PyWrapperDerived<ngfem::DomainVariableCoefficientFunction, ngfem::CoefficientFunction> type;
+  };
+  template <>
+  struct PyWrapperTraits<ngfem::DomainConstantCoefficientFunction> {
+    typedef PyWrapperDerived<ngfem::DomainConstantCoefficientFunction, ngfem::CoefficientFunction> type;
+  };
+}
 
 #endif

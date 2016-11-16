@@ -386,7 +386,7 @@ namespace ngsolve
 	  << " = " << endl << mata << endl;
 	*/
 
-	for (int i = 0; i < min2 (gfu->GetMultiDim(), reorder.Size()); i++)
+	for (int i = 0; i < min2 (size_t(gfu->GetMultiDim()), reorder.Size()); i++)
 	  {
 	    FlatVector<Complex> vu = gfu->GetVector(i).FVComplex();
 	    for (int j = 0; j < n; j++)
@@ -450,7 +450,7 @@ namespace ngsolve
 	      out << i << "  " << omegai.real() << "  " << omegai.imag() << endl;
 	    }
 
-	for (int i = 0; i < min2 (gfu->GetMultiDim(), reorder.Size()); i++)
+	for (int i = 0; i < min2 (size_t(gfu->GetMultiDim()), reorder.Size()); i++)
 	  {
 	    for (int k = 0; k < postit; k++)
 	      {

@@ -36,13 +36,13 @@ namespace ngfem
 
     using ScalarFiniteElement<D>::CalcShape;
     HD virtual void CalcShape (const IntegrationPoint & ip, 
-                               SliceVector<> shape) const
+                               BareSliceVector<> shape) const
     {
       fe.CalcFacetShapeVolIP(fnr, ip, shape);
     }
     
     HD virtual void CalcDShape (const IntegrationPoint & ip, 
-			     SliceMatrix<> dshape) const
+                                SliceMatrix<> dshape) const
     {
       throw Exception ("facetfe - calcdshape not olverloaded");
     }
@@ -108,7 +108,7 @@ namespace ngfem
 
 
     virtual void CalcFacetShapeVolIP (int fnr, const IntegrationPoint & ip, 
-				      SliceVector<> shape) const = 0;
+				      BareSliceVector<> shape) const = 0;
 
     virtual void EvaluateFacetVolIp (int fnr, const SIMD_IntegrationRule & ir, BareSliceVector<> coefs, ABareVector<double> values) const = 0;
     virtual void AddTransFacetVolIp (int fnr, const SIMD_IntegrationRule & ir, ABareVector<double> values, BareSliceVector<> coefs) const = 0;

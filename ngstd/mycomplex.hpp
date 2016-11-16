@@ -1,12 +1,6 @@
 #ifndef COMPLEX_H_INCLUDED
 #define COMPLEX_H_INCLUDED
 
-/*
-#include <cmath>
-#include <iostream>
-#include <fstream>
-#include <iomanip>
-*/
 
 namespace ngstd
 {
@@ -361,9 +355,6 @@ INLINE T MyComplex<T>::normalize(void)
 
   return l;
 }
-
-
-typedef MyComplex<double> Complex;
 
 }
 

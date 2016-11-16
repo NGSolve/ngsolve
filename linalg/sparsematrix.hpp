@@ -72,14 +72,14 @@ namespace ngla
 
 #ifdef USE_NUMA
 template <typename T>
-class NumaDistributedArray : public Array<T,size_t>
+class NumaDistributedArray : public Array<T>
 {
   T * numa_ptr;
   size_t numa_size;
 public:
   NumaDistributedArray () { numa_size = 0; numa_ptr = nullptr; }
   NumaDistributedArray (size_t s)
-    : Array<T,size_t> (s, (T*)numa_alloc_local(s*sizeof(T)))
+    : Array<T> (s, (T*)numa_alloc_local(s*sizeof(T)))
   {
     numa_ptr = this->data;
     numa_size = s;
@@ -109,7 +109,7 @@ public:
 
   NumaDistributedArray & operator= (NumaDistributedArray && a2)
   {
-    Array<T,size_t>::operator= ((Array<T,size_t>&&)a2);  
+    Array<T>::operator= ((Array<T>&&)a2);  
   /*
     ngstd::Swap (this->size, a2.size);
     ngstd::Swap (this->data, a2.data);
@@ -123,7 +123,7 @@ public:
 
   void Swap (NumaDistributedArray & b)
   {
-    Array<T,size_t>::Swap(b);    
+    Array<T>::Swap(b);    
     ngstd::Swap (numa_ptr, b.numa_ptr);
     ngstd::Swap (numa_size, b.numa_size);
   }
@@ -131,7 +131,7 @@ public:
   void SetSize (size_t size)
   {
     cerr << "************************* NumaDistArray::SetSize not overloaded" << endl;
-    Array<T,size_t>::SetSize(size);
+    Array<T>::SetSize(size);
   }
 };
 #else
@@ -403,7 +403,8 @@ public:
 
     virtual void AddElementMatrix(FlatArray<int> dnums1, 
                                   FlatArray<int> dnums2, 
-                                  FlatMatrix<TSCAL> elmat);
+                                  FlatMatrix<TSCAL> elmat,
+                                  bool use_atomic = false);
 
     virtual BaseVector & AsVector() 
     {
@@ -594,13 +595,14 @@ public:
 
   public:
     typedef typename mat_traits<TM>::TSCAL TSCAL;
-    virtual void AddElementMatrix(FlatArray<int> dnums, FlatMatrix<TSCAL> elmat);
+    virtual void AddElementMatrix(FlatArray<int> dnums, FlatMatrix<TSCAL> elmat, bool use_atomic = false);
 
     virtual void AddElementMatrix(FlatArray<int> dnums1, 
 				  FlatArray<int> dnums2, 
-				  FlatMatrix<TSCAL> elmat)
+				  FlatMatrix<TSCAL> elmat,
+                                  bool use_atomic = false)
     {
-      AddElementMatrix (dnums1, elmat);
+      AddElementMatrix (dnums1, elmat, use_atomic);
     }
   };
 

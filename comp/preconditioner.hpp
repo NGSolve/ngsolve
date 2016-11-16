@@ -108,6 +108,7 @@ namespace ngcomp
     void Test () const;
     void Timing () const;
     void ThrowPreconditionerNotReady() const;
+    const Flags & GetFlags() const { return flags; }
   };
 
 
@@ -368,6 +369,15 @@ namespace ngcomp
   };
 
 }
+
+namespace ngstd
+{
+  template <>
+  struct PyWrapperTraits<ngcomp::Preconditioner> {
+    typedef PyWrapperDerived<ngcomp::Preconditioner, ngla::BaseMatrix> type;
+  };
+}
+
 
 #endif
 

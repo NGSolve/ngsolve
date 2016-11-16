@@ -70,6 +70,7 @@ stages:
   stage: build
   script:
     - if not exist build MKDIR build
+    - git clone git@data.asc.tuwien.ac.at:jschoeberl/netgen.git
     - cd build
     - DEL CMakeCache.txt
     - RD /S CMakeFiles
@@ -83,6 +84,7 @@ stages:
         -DUSE_MKL=ON
         -DMKL_STATIC=ON
         -DCMAKE_CXX_FLAGS_RELEASE="/W0"
+        -DNETGEN_SOURCE_DIR=../netgen
     - cmake --build . --target INSTALL --config Release
 
 .build_win32:

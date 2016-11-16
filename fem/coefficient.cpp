@@ -59,18 +59,33 @@ namespace ngfem
   void CoefficientFunction :: 
   Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
   {
+    // cout << "switching from rule to point, cf = " << typeid(*this).name() << endl;
     for (int i = 0; i < ir.Size(); i++)
       Evaluate (ir[i], values.Row(i)); 
   }
 
   void CoefficientFunction ::   
-  Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
+  Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const
   {
     throw ExceptionNOSIMD (string("CF :: simd-Evaluate not implemented for class ") + typeid(*this).name());
   }
 
+  /*
   void CoefficientFunction ::   
-  Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<Complex> values) const
+  Evaluate1 (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const
+  {
+    static bool firsttime = true;
+    if (firsttime)
+      {
+        cerr << "Eval1 not implemented for class " << typeid(*this).name() << endl;
+        firsttime = false;
+      }
+    Evaluate (ir, AFlatMatrix<>(Dimension(), ir.IR().GetNIP(), &values.Get(0,0)));
+  }
+  */
+
+  void CoefficientFunction ::   
+  Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values) const
   {
     throw ExceptionNOSIMD (string("CF :: simd-Evaluate (complex) not implemented for class ") + typeid(*this).name());
   }
@@ -107,7 +122,7 @@ namespace ngfem
   ///
   ConstantCoefficientFunction ::   
   ConstantCoefficientFunction (double aval) 
-    : CoefficientFunction(1, false), val(aval) 
+    : BASE(1, false), val(aval) 
   { ; }
 
   ConstantCoefficientFunction ::
@@ -125,6 +140,17 @@ namespace ngfem
     values = val;
   }
 
+
+  template <typename T>
+  void ConstantCoefficientFunction ::
+  T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<T>> values) const
+  {
+    size_t nv = ir.Size();    
+    __assume (nv > 0);
+    for (size_t i = 0; i < nv; i++)
+      values(0,i) = val;
+  }
+  
   void ConstantCoefficientFunction :: GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
     string type = "double";
@@ -201,66 +227,34 @@ namespace ngfem
     val[i] = aval[i];
     }
   */
- 
+  
   double DomainConstantCoefficientFunction :: Evaluate (const BaseMappedIntegrationPoint & ip) const
   {
     int elind = ip.GetTransformation().GetElementIndex();
-    
-    if (elind < 0 || elind >= val.Size())
-      {
-	ostringstream ost;
-	ost << "DomainConstantCoefficientFunction: Element index "
-	    << elind << " out of range 0 - " << val.Size()-1 << endl;
-	throw Exception (ost.str());
-      }
-    
+    CheckRange (elind);
     return val[elind]; 
   }
 
   void DomainConstantCoefficientFunction :: Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
   {
     int elind = ir[0].GetTransformation().GetElementIndex();
-    
-    if (elind < 0 || elind >= val.Size())
-      {
-	ostringstream ost;
-	ost << "DomainConstantCoefficientFunction: Element index "
-	    << elind << " out of range 0 - " << val.Size()-1 << endl;
-	throw Exception (ost.str());
-      }
-    
+    CheckRange (elind);    
     values = val[elind];
   }
 
   
-  void DomainConstantCoefficientFunction :: Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
+  void DomainConstantCoefficientFunction :: Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const
   {
     int elind = ir[0].GetTransformation().GetElementIndex();
-    
-    if (elind < 0 || elind >= val.Size())
-      {
-	ostringstream ost;
-	ost << "DomainConstantCoefficientFunction: Element index "
-	    << elind << " out of range 0 - " << val.Size()-1 << endl;
-	throw Exception (ost.str());
-      }
-    
-    values = val[elind];
+    CheckRange (elind);        
+    values.AddSize(Dimension(), ir.Size()) = val[elind];
   }
   
 
   void DomainConstantCoefficientFunction :: Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const
   {
     int elind = ir[0].GetTransformation().GetElementIndex();
-    
-    if (elind < 0 || elind >= val.Size())
-      {
-	ostringstream ost;
-	ost << "DomainConstantCoefficientFunction: Element index "
-	    << elind << " out of range 0 - " << val.Size()-1 << endl;
-	throw Exception (ost.str());
-      }
-    
+    CheckRange (elind);            
     values = val[elind]; 
   }
 
@@ -281,8 +275,6 @@ namespace ngfem
   DomainConstantCoefficientFunction :: 
   ~DomainConstantCoefficientFunction ()
   { ; }
-
-
 
   DomainVariableCoefficientFunction ::
   DomainVariableCoefficientFunction (const EvalFunction & afun)
@@ -834,14 +826,15 @@ void FileCoefficientFunction :: StopWriteIps(const string & infofilename)
 
 
   
-class ScaleCoefficientFunction : public CoefficientFunction
+class ScaleCoefficientFunction : public T_CoefficientFunction<ScaleCoefficientFunction>
 {
   double scal;
   shared_ptr<CoefficientFunction> c1;
+  typedef T_CoefficientFunction<ScaleCoefficientFunction> BASE;
 public:
   ScaleCoefficientFunction (double ascal, 
                             shared_ptr<CoefficientFunction> ac1)
-    : CoefficientFunction(ac1->Dimension(), ac1->IsComplex()),
+    : BASE(ac1->Dimension(), ac1->IsComplex()),
       scal(ascal), c1(ac1)
   {
     SetDimensions(c1->Dimensions());
@@ -876,7 +869,8 @@ public:
   virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
   { return Array<CoefficientFunction*>({ c1.get() }); }
 
-  
+
+  using BASE::Evaluate;
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
   {
     return scal * c1->Evaluate(ip);
@@ -910,11 +904,12 @@ public:
     values *= scal;
   }
 
-  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
-                         AFlatMatrix<double> values) const
+  template <typename T>
+  void T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
+                   BareSliceMatrix<SIMD<T>> values) const
   {
     c1->Evaluate (ir, values);
-    values *= scal;
+    values.AddSize(Dimension(), ir.Size()) *= scal;
   }
 
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
@@ -1087,6 +1082,15 @@ public:
     c1->Evaluate (ir, result);
     result *= scal;
   }
+
+  
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
+                         BareSliceMatrix<SIMD<Complex>> values) const
+  {
+    c1->Evaluate (ir, values);
+    values.AddSize(Dimension(), ir.Size()) *= scal;
+  }
+  
   
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
   {
@@ -1097,14 +1101,15 @@ public:
 
 // ***********************************************************************************
 
-class MultScalVecCoefficientFunction : public CoefficientFunction
+class MultScalVecCoefficientFunction : public T_CoefficientFunction<MultScalVecCoefficientFunction>
 {
   shared_ptr<CoefficientFunction> c1;  // scalar
   shared_ptr<CoefficientFunction> c2;  // vector
+  typedef T_CoefficientFunction<MultScalVecCoefficientFunction> BASE;
 public:
   MultScalVecCoefficientFunction (shared_ptr<CoefficientFunction> ac1,
                                   shared_ptr<CoefficientFunction> ac2)
-    : CoefficientFunction(ac2->Dimension(), ac1->IsComplex() || ac2->IsComplex()),
+    : BASE(ac2->Dimension(), ac1->IsComplex() || ac2->IsComplex()),
       c1(ac1), c2(ac2)
   {
     SetDimensions (c2->Dimensions());
@@ -1130,7 +1135,8 @@ public:
       code.body += Var(index,i,j).Assign( Var(inputs[0]) * Var(inputs[1],i,j) );
     });
   }
-  
+
+  using BASE::Evaluate;
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
   {
     throw Exception ("double MultScalVecCF::Evaluate called");
@@ -1178,7 +1184,7 @@ public:
       result.Row(i) *= temp1(i,0);
   }
 
-
+  /*
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
   {
     STACK_ARRAY(SIMD<double>, hmem1, values.Width());
@@ -1190,6 +1196,22 @@ public:
     for (size_t j = 0; j < values.Height(); j++)
       for (size_t i = 0; i < values.VWidth(); i++)
         values.Get(j,i) *= temp1.Get(0,i);
+  }
+  */
+  template <typename T>
+  void T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<T>> values) const
+  {
+    size_t w = ir.Size();
+    __assume (w > 0);
+    STACK_ARRAY(SIMD<T>, hmem1, w);
+    FlatMatrix<SIMD<T>> temp1(1, w, &hmem1[0]);
+    
+    c1->Evaluate (ir, BareSliceMatrix<SIMD<T>> (temp1));
+    c2->Evaluate (ir, values);
+
+    for (size_t j = 0; j < Dimension(); j++)
+      for (size_t i = 0; i < w; i++)
+        values(j,i) *= temp1(0,i);
   }
 
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
@@ -1484,14 +1506,14 @@ public:
 };
 
 template <int DIM>
-class T_MultVecVecCoefficientFunction : public CoefficientFunction
+class T_MultVecVecCoefficientFunction : public T_CoefficientFunction<T_MultVecVecCoefficientFunction<DIM>>
 {
   shared_ptr<CoefficientFunction> c1;
   shared_ptr<CoefficientFunction> c2;
 public:
   T_MultVecVecCoefficientFunction (shared_ptr<CoefficientFunction> ac1,
                                    shared_ptr<CoefficientFunction> ac2)
-    : CoefficientFunction(1, ac1->IsComplex()||ac2->IsComplex()), c1(ac1), c2(ac2)
+    : T_CoefficientFunction<T_MultVecVecCoefficientFunction<DIM>>(1, ac1->IsComplex()||ac2->IsComplex()), c1(ac1), c2(ac2)
   {
     if (DIM != c1->Dimension() || DIM != c2->Dimension())
       throw Exception("T_MultVecVec : dimensions don't fit");
@@ -1519,7 +1541,8 @@ public:
 
   virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
   { return Array<CoefficientFunction*>({ c1.get(), c2.get() }); }  
-  
+
+  using T_CoefficientFunction<T_MultVecVecCoefficientFunction<DIM>>::Evaluate;
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
   {
     Vec<1> res;
@@ -1555,10 +1578,11 @@ public:
 
     c1->Evaluate(ir, temp1);
     c2->Evaluate(ir, temp2);
-    for (int i = 0; i < ir.Size(); i++)
+
+    for (size_t i = 0; i < ir.Size(); i++)
       result(i,0) = InnerProduct(temp1.Row(i), temp2.Row(i));
   }
-
+  /*
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
   {
     STACK_ARRAY(SIMD<double>, hmem1, DIM*values.Width());
@@ -1569,15 +1593,86 @@ public:
     c1->Evaluate (ir, temp1);
     c2->Evaluate (ir, temp2);
 
-    for (int i = 0; i < values.VWidth(); i++)
+    for (size_t i = 0; i < values.VWidth(); i++)
       {
         SIMD<double> sum = 0.0;
-        for (int j = 0; j < DIM; j++)
+        for (size_t j = 0; j < DIM; j++)
           sum += temp1.Get(j,i) * temp2.Get(j,i);
         values.Get(i) = sum; 
       }
   }
+  */
 
+
+
+  /*
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<> values) const
+  {
+    size_t w = ir.Size();
+    __assume (w > 0);
+    
+    STACK_ARRAY(SIMD<double>, hmem, 2*DIM*w);
+    AFlatMatrix<double> temp1(DIM, w*SIMD<double>::Size(), &hmem[0]);
+    AFlatMatrix<double> temp2(DIM, w*SIMD<double>::Size(), &hmem[DIM*w]);
+    
+    c1->Evaluate (ir, temp1);
+    c2->Evaluate (ir, temp2);
+
+    for (size_t i = 0; i < w; i++)
+      {
+        SIMD<double> sum = 0.0;
+        for (size_t j = 0; j < DIM; j++)
+          sum += temp1.Get(j,i) * temp2.Get(j,i);
+        values.Get(0,i) = sum; 
+      }
+  }
+
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<Complex> values) const
+  {
+    size_t w = ir.Size();
+    __assume (w > 0);
+    
+    STACK_ARRAY(SIMD<Complex>, hmem, 2*DIM*w);
+    AFlatMatrix<Complex> temp1(DIM, w*SIMD<double>::Size(), &hmem[0]);
+    AFlatMatrix<Complex> temp2(DIM, w*SIMD<double>::Size(), &hmem[DIM*w]);
+    
+    c1->Evaluate (ir, temp1);
+    c2->Evaluate (ir, temp2);
+
+    for (size_t i = 0; i < w; i++)
+      {
+        SIMD<Complex> sum = Complex(0.0);
+        for (size_t j = 0; j < DIM; j++)
+          sum += temp1.Get(j,i) * temp2.Get(j,i);
+        values.Get(0,i) = sum; 
+      }
+  }
+  */
+
+  template <typename T>
+  void T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<T>> values) const
+  {
+    size_t w = ir.Size();
+    __assume (w > 0);
+    
+    STACK_ARRAY(SIMD<T>, hmem, 2*DIM*w);
+    FlatMatrix<SIMD<T>> temp1(DIM, w, &hmem[0]);
+    FlatMatrix<SIMD<T>> temp2(DIM, w, &hmem[DIM*w]);
+    
+    c1->Evaluate (ir, temp1);
+    c2->Evaluate (ir, temp2);
+
+    for (size_t i = 0; i < w; i++)
+      {
+        SIMD<T> sum = T(0.0);
+        for (size_t j = 0; j < DIM; j++)
+          sum += temp1(j,i) * temp2(j,i);
+        values(0,i) = sum; 
+      }
+  }
+
+  
+  
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
                          AFlatMatrix<double> values) const
   {
@@ -1787,9 +1882,6 @@ public:
     dim1 = c1->Dimension();
   }
   
-  // virtual bool IsComplex() const { return false; }
-  // virtual int Dimension() const { return 1; }
-
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
   {
     c1->TraverseTree (func);
@@ -1822,115 +1914,38 @@ public:
     result(0) = res(0);
   }
 
-
-  /*  
-  virtual void Evaluate(const BaseMappedIntegrationRule & ir,
-                        FlatMatrix<> result) const
-  {
-#ifdef VLA
-    double hmem1[ir.Size()*dim1];
-    FlatMatrix<> temp1(ir.Size(), dim1, hmem1);
-    double hmem2[ir.Size()*dim1];
-    FlatMatrix<> temp2(ir.Size(), dim1, hmem2);
-#else
-    Matrix<> temp1(ir.Size(), dim1);
-    Matrix<> temp2(ir.Size(), dim1);
-#endif
-    c1->Evaluate(ir, temp1);
-    c2->Evaluate(ir, temp2);
-    for (int i = 0; i < ir.Size(); i++)
-      result(i,0) = InnerProduct(temp1.Row(i), temp2.Row(i));
-  }
-
-  virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatArray<FlatMatrix<>*> input,
-                         FlatMatrix<double> result) const
-  {
-    FlatMatrix<> temp1 = *input[0];
-    FlatMatrix<> temp2 = *input[1];
-    for (int i = 0; i < ir.Size(); i++)
-      result(i,0) = InnerProduct(temp1.Row(i), temp2.Row(i));
-  }
-
-  
-
-  virtual void EvaluateDeriv(const BaseMappedIntegrationRule & mir,
-                             FlatMatrix<> result,
-                             FlatMatrix<> deriv) const
-  {
-    Matrix<> v1(mir.Size(), dim1), v2(mir.Size(),dim1);
-    Matrix<> dv1(mir.Size(), dim1), dv2(mir.Size(), dim1);
-    c1->EvaluateDeriv (mir, v1, dv1);
-    c2->EvaluateDeriv (mir, v2, dv2);
-    for (int k = 0; k < mir.Size(); k++)
-      {
-        result(k,0) = InnerProduct (v1.Row(k), v2.Row(k));
-        deriv(k,0) = InnerProduct (v1.Row(k), dv2.Row(k))+InnerProduct(v2.Row(k),dv1.Row(k));
-      }
-  }
-
-  virtual void EvaluateDDeriv(const BaseMappedIntegrationRule & mir,
-                              FlatMatrix<> result,
-                              FlatMatrix<> deriv,
-                              FlatMatrix<> dderiv) const
-  {
-    Matrix<> v1(mir.Size(), dim1), v2(mir.Size(), dim1);
-    Matrix<> dv1(mir.Size(), dim1), dv2(mir.Size(), dim1);
-    Matrix<> ddv1(mir.Size(), dim1), ddv2(mir.Size(), dim1);
-    c1->EvaluateDDeriv (mir, v1, dv1, ddv1);
-    c2->EvaluateDDeriv (mir, v2, dv2, ddv2);
-
-    for (int k = 0; k < mir.Size(); k++)
-      {
-        result(k,0) = InnerProduct (v1.Row(k), v2.Row(k));
-        deriv(k,0) = InnerProduct (v1.Row(k), dv2.Row(k))+InnerProduct(v2.Row(k),dv1.Row(k));
-        dderiv(k,0) = InnerProduct (v1.Row(k), ddv2.Row(k))+
-          2*InnerProduct(dv1.Row(k),dv2.Row(k))+InnerProduct(ddv1.Row(k),v2.Row(k));
-      }
-
-  }
-
-
-  virtual void EvaluateDeriv (const BaseMappedIntegrationRule & mir,
-                              FlatArray<FlatMatrix<>*> input,
-                              FlatArray<FlatMatrix<>*> dinput,
-                              FlatMatrix<> result,
-                              FlatMatrix<> deriv) const
-  {
-    FlatMatrix<> v1 = *input[0], v2 = *input[1];
-    FlatMatrix<> dv1 = *dinput[0], dv2 = *dinput[1];
-    
-    for (int k = 0; k < mir.Size(); k++)
-      {
-        result(k,0) = InnerProduct (v1.Row(k), v2.Row(k));
-        deriv(k,0) = InnerProduct (v1.Row(k), dv2.Row(k))+InnerProduct(v2.Row(k),dv1.Row(k));
-      }
-  }
-
-  virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & mir,
-                               FlatArray<FlatMatrix<>*> input,
-                               FlatArray<FlatMatrix<>*> dinput,
-                               FlatArray<FlatMatrix<>*> ddinput,
-                               FlatMatrix<> result,
-                               FlatMatrix<> deriv,
-                               FlatMatrix<> dderiv) const
-  {
-    FlatMatrix<> v1 = *input[0], v2 = *input[1];
-    FlatMatrix<> dv1 = *dinput[0], dv2 = *dinput[1];
-    FlatMatrix<> ddv1 = *ddinput[0], ddv2 = *ddinput[1];
-    
-    for (int k = 0; k < mir.Size(); k++)
-      {
-        result(k,0) = InnerProduct (v1.Row(k), v2.Row(k));
-        deriv(k,0) = InnerProduct (v1.Row(k), dv2.Row(k))+InnerProduct(v2.Row(k),dv1.Row(k));
-        dderiv(k,0) = InnerProduct (v1.Row(k), ddv2.Row(k))+
-          2*InnerProduct(dv1.Row(k),dv2.Row(k))+InnerProduct(ddv1.Row(k),v2.Row(k));
-      }
-  }
-  */
-
   
   virtual bool ElementwiseConstant () const
   { return c1->ElementwiseConstant(); }
+
+  
+  virtual void Evaluate(const BaseMappedIntegrationRule & ir,
+                        FlatMatrix <> result) const
+  {
+    STACK_ARRAY(double,hmem,ir.Size()*dim1*sizeof(TIN)/sizeof(double));
+    FlatMatrix<TIN> inval(ir.IR().GetNIP(), dim1, reinterpret_cast<TIN*>(&hmem[0]));
+    c1->Evaluate (ir, inval);
+    for (size_t i = 0; i < result.Height(); i++)
+      result(i,0) = L2Norm(inval.Row(i));
+  }
+
+
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const
+  {
+    if (typeid(TIN)==typeid(Complex)) throw ExceptionNOSIMD("CF Norm of complex cannot use simds");
+    STACK_ARRAY(SIMD<double>,hmem,ir.Size()*dim1);
+    AFlatMatrix<> inval(dim1, ir.IR().GetNIP(), &hmem[0]);
+    c1->Evaluate (ir, inval);
+    for (size_t i = 0; i < ir.Size(); i++)
+      {
+        SIMD<double> sum = 0;
+        for (size_t j = 0; j < dim1; j++)
+          sum += inval.Get(j,i)*inval.Get(j,i);
+        values(0,i) = sqrt(sum);
+      }
+  }
+
+
   
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
   {
@@ -2065,7 +2080,7 @@ public:
       }
   }
 
-  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & mir, AFlatMatrix<double> values) const
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & mir, BareSliceMatrix<SIMD<double>> values) const
   {
     FlatArray<int> hdims = Dimensions();    
     STACK_ARRAY(SIMD<double>, hmem1, mir.IR().Size()*hdims[0]*inner_dim);
@@ -2074,7 +2089,7 @@ public:
     AFlatMatrix<double> vb(hdims[1]*inner_dim, mir.IR().GetNIP(), &hmem2[0]);
     c1->Evaluate (mir, va);
     c2->Evaluate (mir, vb);
-    values = 0.0;
+    values.AddSize(Dimension(),mir.Size()) = 0.0;
 
     size_t d1 = hdims[1];
     size_t mir_size = mir.Size();
@@ -2086,7 +2101,7 @@ public:
             auto row_b = vb.Row(l*d1+k);
             auto row_c = values.Row(j*d1+k);
             for (size_t i = 0; i < mir_size; i++)
-              row_c.Get(i) += row_a.Get(i) * row_b.Get(i);
+              row_c(i) += row_a.Get(i) * row_b.Get(i);
             // row_c = pw_mult (row_a, row_b);
           }
   }
@@ -2439,7 +2454,7 @@ public:
       }
   }
 
-  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const
   {
     FlatArray<int> hdims = Dimensions();    
     STACK_ARRAY(SIMD<double>, hmem1, (ir.IR().GetNIP()+8)*hdims[0]*inner_dim);
@@ -2448,11 +2463,11 @@ public:
     AFlatMatrix<double> temp2(inner_dim, ir.IR().GetNIP(), &hmem2[0]);
     c1->Evaluate (ir, temp1);
     c2->Evaluate (ir, temp2);
-    values = 0.0;
-    for (int i = 0; i < hdims[0]; i++)
-      for (int j = 0; j < inner_dim; j++)
-        for (int k = 0; k < ir.Size(); k++)
-          values.Get(i,k) += temp1.Get(i*inner_dim+j, k) * temp2.Get(j,k);
+    values.AddSize(Dimension(),ir.Size()) = 0.0;
+    for (size_t i = 0; i < hdims[0]; i++)
+      for (size_t j = 0; j < inner_dim; j++)
+        for (size_t k = 0; k < ir.Size(); k++)
+          values(i,k) += temp1.Get(i*inner_dim+j, k) * temp2.Get(j,k);
   }
   
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & mir, FlatArray<AFlatMatrix<double>*> input,
@@ -2693,7 +2708,7 @@ public:
   }  
 
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & mir,
-                         AFlatMatrix<double> result) const
+                         BareSliceMatrix<SIMD<double>> result) const
   {
     FlatArray<int> hdims = Dimensions();    
     c1->Evaluate (mir, result);
@@ -2704,10 +2719,10 @@ public:
       {
         for (int j = 0; j < hdims[0]; j++)
           for (int k = 0; k < hdims[1]; k++)
-            tmp.Get(j,k) = result.Get(k*hdims[0]+j, i);
+            tmp.Get(j,k) = result(k*hdims[0]+j, i);
         for (int j = 0; j < hdims[0]; j++)
           for (int k = 0; k < hdims[1]; k++)
-            result.Get(j*hdims[1]+k, i) = tmp.Get(j,k);
+            result(j*hdims[1]+k, i) = tmp.Get(j,k);
       }
   }  
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & mir, FlatArray<AFlatMatrix<double>*> input,
@@ -3068,15 +3083,16 @@ public:
 
 
   
-class ComponentCoefficientFunction : public CoefficientFunction
+class ComponentCoefficientFunction : public T_CoefficientFunction<ComponentCoefficientFunction>
 {
   shared_ptr<CoefficientFunction> c1;
   int dim1;
   int comp;
+  typedef T_CoefficientFunction<ComponentCoefficientFunction> BASE;
 public:
   ComponentCoefficientFunction (shared_ptr<CoefficientFunction> ac1,
                                 int acomp)
-    : CoefficientFunction(1, ac1->IsComplex()), c1(ac1), comp(acomp)
+    : BASE(1, ac1->IsComplex()), c1(ac1), comp(acomp)
   {
     dim1 = c1->Dimension();
   }
@@ -3099,7 +3115,8 @@ public:
 
   virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
   { return Array<CoefficientFunction*>({ c1.get() }); }
-  
+
+  using BASE::Evaluate;
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
   {
     VectorMem<20> v1(c1->Dimension());
@@ -3145,13 +3162,17 @@ public:
     result.Col(0) = temp.Col(comp);
   }  
 
-  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
+  template <typename T>
+  void T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<T>> values) const
   {
-    STACK_ARRAY(SIMD<double>, hmem, ir.Size()*dim1);
-    AFlatMatrix<double> temp(dim1, ir.IR().GetNIP(), &hmem[0]);
+    STACK_ARRAY(SIMD<T>, hmem, ir.Size()*dim1);
+    FlatMatrix<SIMD<T>> temp(dim1, ir.Size(), &hmem[0]);
     
     c1->Evaluate (ir, temp);
-    values.Row(0) = temp.Row(comp);
+    size_t nv = ir.Size();
+    __assume(nv > 0);
+    for (size_t i = 0; i < nv; i++)
+      values(0,i) = temp(comp, i);
   }
 
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
@@ -3306,12 +3327,14 @@ public:
   
 
 
-class DomainWiseCoefficientFunction : public CoefficientFunction
+class DomainWiseCoefficientFunction : public T_CoefficientFunction<DomainWiseCoefficientFunction>
 {
   Array<shared_ptr<CoefficientFunction>> ci;
+  typedef T_CoefficientFunction<DomainWiseCoefficientFunction> BASE;
+  using BASE::Evaluate;
 public:
   DomainWiseCoefficientFunction (Array<shared_ptr<CoefficientFunction>> aci)
-    : CoefficientFunction(1, false), ci(aci) 
+    : BASE(1, false), ci(aci) 
   { 
     for (auto cf : ci)
       if (cf && cf->IsComplex()) is_complex = true;
@@ -3391,13 +3414,14 @@ public:
       values = 0.0;
   }
 
-  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
+  template <typename T>
+  void T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<T>> values) const
   {
     int matindex = ir.GetTransformation().GetElementIndex();
     if (matindex < ci.Size() && ci[matindex])
       ci[matindex] -> Evaluate (ir, values);
     else
-      values = 0.0;
+      values.AddSize(Dimension(), ir.Size()) = 0.0;
   }
 
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
@@ -3520,24 +3544,25 @@ public:
     }
 
 
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const
     {
-      STACK_ARRAY(SIMD<double>, hmem1, ir.Size());
-      AFlatMatrix<double> if_values(1, values.Width(), &hmem1[0]);
-      STACK_ARRAY(SIMD<double>, hmem2, ir.Size()*values.Height());
-      AFlatMatrix<double> then_values(values.Height(), values.Width(), &hmem2[0]);
-      STACK_ARRAY(SIMD<double>, hmem3, ir.Size()*values.Height());
-      AFlatMatrix<double> else_values(values.Height(), values.Width(), &hmem3[0]);
+      size_t nv = ir.Size(), dim = Dimension();
+      STACK_ARRAY(SIMD<double>, hmem1, nv);
+      ABareMatrix<double> if_values(&hmem1[0], nv);
+      STACK_ARRAY(SIMD<double>, hmem2, nv*dim);
+      ABareMatrix<double> then_values(&hmem2[0], nv);
+      STACK_ARRAY(SIMD<double>, hmem3, nv*dim);
+      ABareMatrix<double> else_values(&hmem3[0], nv);
       
       cf_if->Evaluate (ir, if_values);
       cf_then->Evaluate (ir, then_values);
       cf_else->Evaluate (ir, else_values);
 
-      for (int k = 0; k < values.Height(); k++)
-        for (int i = 0; i < values.VWidth(); i++)
-          values.Get(k,i) = ngstd::IfPos (if_values.Get(i),
-                                          then_values.Get(k,i),
-                                          else_values.Get(k,i)); // .Data();
+      for (size_t k = 0; k < dim; k++)
+        for (size_t i = 0; i < nv; i++)
+          values(k,i) = ngstd::IfPos (if_values.Get(i),
+                                      then_values.Get(k,i),
+                                      else_values.Get(k,i));
     }
 
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
@@ -3713,22 +3738,24 @@ public:
   }
 
 
-class VectorialCoefficientFunction : public CoefficientFunction
+class VectorialCoefficientFunction : public T_CoefficientFunction<VectorialCoefficientFunction>
 {
   Array<shared_ptr<CoefficientFunction>> ci;
-  // Array<int> dims;  // tensor valued ...
-  // int dim;
-  Array<int> dimi;  // dimensions of components
+  Array<size_t> dimi;  // dimensions of components
+  Array<std::tuple<CoefficientFunction*, size_t>> both;
+  typedef T_CoefficientFunction<VectorialCoefficientFunction> BASE;
 public:
   VectorialCoefficientFunction (Array<shared_ptr<CoefficientFunction>> aci)
-    : CoefficientFunction(0, false), ci(aci), dimi(aci.Size())
+    : BASE(0, false), ci(aci), dimi(aci.Size()), both(aci.Size()+1)
   {
     int hdim = 0;
     for (int i : Range(ci))
       {
         dimi[i] = ci[i]->Dimension();
+        both[i] = make_tuple(aci[i].get(), hdim);
         hdim += dimi[i];
       }
+    both[ci.Size()] = make_tuple(nullptr, hdim);
     
     for (auto cf : ci)
       if (cf && cf->IsComplex())
@@ -3769,7 +3796,7 @@ public:
       }
   }  
 
-  
+  using BASE::Evaluate;  
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
   {
     Vec<1> res;
@@ -3818,7 +3845,8 @@ public:
         base += dimi;
       }
   }
-  
+
+  /*
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
   {
     int base = 0;
@@ -3828,6 +3856,16 @@ public:
         base += dimi[i];
       }
   }
+  */
+
+  template <typename T>
+  void T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<T>> values) const
+  {
+    FlatArray<std::tuple<CoefficientFunction*, size_t>> hboth = both;
+    for (size_t i = 0; i < hboth.Size()-1; i++)
+      get<0>(hboth[i])->Evaluate(ir, values.Rows(get<1>(hboth[i]), get<1>(hboth[i+1])));
+  }
+
 
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
                          AFlatMatrix<double> values) const
@@ -4028,7 +4066,7 @@ public:
   class CompiledCoefficientFunction : public CoefficientFunction
   {
     typedef void (*lib_function)(const ngfem::BaseMappedIntegrationRule &, ngbla::FlatMatrix<double>);
-    typedef void (*lib_function_simd)(const ngfem::SIMD_BaseMappedIntegrationRule &, AFlatMatrix<double>);
+    typedef void (*lib_function_simd)(const ngfem::SIMD_BaseMappedIntegrationRule &, ABareSliceMatrix<double>);
     typedef void (*lib_function_deriv)(const ngfem::BaseMappedIntegrationRule &, ngbla::FlatMatrix<double>, ngbla::FlatMatrix<double>);
     typedef void (*lib_function_simd_deriv)(const ngfem::SIMD_BaseMappedIntegrationRule &, AFlatMatrix<double>, AFlatMatrix<double>);
     typedef void (*lib_function_dderiv)(const ngfem::BaseMappedIntegrationRule &, ngbla::FlatMatrix<double>, ngbla::FlatMatrix<double>, ngbla::FlatMatrix<double>);
@@ -4143,6 +4181,7 @@ public:
 
             // Function parameters
             string param_type = simd ? "AFlatMatrix<double> " : "FlatMatrix<> ";
+            if (simd && deriv == 0) param_type = "ABareSliceMatrix<> ";
             s << "( " << (simd?"SIMD_":"") << "BaseMappedIntegrationRule &mir";
             for(auto i : Range(deriv+1))
               s << ", " << param_type << parameters[i];
@@ -4230,7 +4269,7 @@ public:
       // t2.Stop();
     }
 
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const
     {
       if(compiled_function_simd)
       {
@@ -4259,7 +4298,9 @@ public:
           steps[i] -> Evaluate (ir, in.Range(0, inputi.Size()), temp[i]);
           // timers[i]->Stop();                    
         }
-      values = temp.Last();
+
+      BareSliceMatrix<SIMD<double>> temp_last = temp.Last();
+      values.AddSize(Dimension(), ir.Size()) = temp_last;
     }
 
 

@@ -118,10 +118,10 @@ namespace ngfem
 
   void BaseScalarFiniteElement ::
   CalcShape (const IntegrationPoint & ip, 
-             SliceVector<Complex> shape) const
+             BareSliceVector<Complex> shape) const
   {
-    CalcShape (ip, SliceVector<double> (shape.Size(), 2*shape.Dist(), reinterpret_cast<double*> (&shape(0))));
-    auto imag_part = SliceVector<double> (shape.Size(), 2*shape.Dist(), reinterpret_cast<double*> (&shape(0))+1);
+    CalcShape (ip, SliceVector<double> (ndof, 2*shape.Dist(), reinterpret_cast<double*> (&shape(0))));
+    SliceVector<double> imag_part(ndof, 2*shape.Dist(), reinterpret_cast<double*> (&shape(0))+1);
     imag_part = 0.0;
   }
 
@@ -137,7 +137,7 @@ namespace ngfem
 
   void BaseScalarFiniteElement :: 
   CalcShape (const SIMD_IntegrationRule & ir, 
-             ABareMatrix<> shape) const
+             BareSliceMatrix<SIMD<double>> shape) const
   {
     throw ExceptionNOSIMD("SIMD - CalcShape not overloaded");
   }
@@ -167,10 +167,9 @@ namespace ngfem
       CalcMappedDShape (mir[i], dshapes.Cols(i*D,(i+1)*D));
   }
 
-  template<int D>
-  void ScalarFiniteElement<D> :: 
+  void BaseScalarFiniteElement :: 
   CalcMappedDShape (const SIMD_BaseMappedIntegrationRule & mir, 
-                    ABareMatrix<> dshapes) const
+                    BareSliceMatrix<SIMD<double>> dshapes) const
   {
     throw ExceptionNOSIMD("SIMD - CalcDShape not overloaded");    
   }
@@ -186,7 +185,7 @@ namespace ngfem
   */
 
   double BaseScalarFiniteElement :: 
-  Evaluate (const IntegrationPoint & ip, SliceVector<double> x) const
+  Evaluate (const IntegrationPoint & ip, BareSliceVector<double> x) const
   {
     VectorMem<20, double> shape(ndof);
     CalcShape (ip, shape);
@@ -195,7 +194,7 @@ namespace ngfem
   
   template<int D>
   Vec<D> ScalarFiniteElement<D> :: 
-  EvaluateGrad (const IntegrationPoint & ip, SliceVector<double> x) const
+  EvaluateGrad (const IntegrationPoint & ip, BareSliceVector<double> x) const
   {
     MatrixFixWidth<D> dshape(ndof);
     CalcDShape (ip, dshape);
@@ -205,22 +204,22 @@ namespace ngfem
 
 
   void BaseScalarFiniteElement :: 
-  Evaluate (const IntegrationRule & ir, SliceVector<double> coefs, FlatVector<double> vals) const
+  Evaluate (const IntegrationRule & ir, BareSliceVector<double> coefs, FlatVector<double> vals) const
   {
-    for (int i = 0; i < ir.GetNIP(); i++)
+    for (size_t i = 0; i < ir.GetNIP(); i++)
       vals(i) = Evaluate (ir[i], coefs);
   }
 
   void BaseScalarFiniteElement :: 
-  Evaluate (const SIMD_IntegrationRule & ir, BareSliceVector<> coefs, ABareVector<double> values) const
+  Evaluate (const SIMD_IntegrationRule & ir, BareSliceVector<> coefs, BareVector<SIMD<double>> values) const
   {
     throw ExceptionNOSIMD (string("Evaluate (simd) not implemented for class ")+typeid(*this).name());
   }
 
   void BaseScalarFiniteElement :: 
-  Evaluate (const SIMD_IntegrationRule & ir, SliceMatrix<> coefs, ABareMatrix<double> values) const
+  Evaluate (const SIMD_IntegrationRule & ir, SliceMatrix<> coefs, BareSliceMatrix<SIMD<double>> values) const
   {
-    for (int i = 0; i < coefs.Width(); i++)
+    for (size_t i = 0; i < coefs.Width(); i++)
       Evaluate (ir, coefs.Col(i), values.Row(i));
   }
 
@@ -229,7 +228,7 @@ namespace ngfem
   Evaluate (const IntegrationRule & ir, SliceMatrix<> coefs, SliceMatrix<> values) const
   {
     VectorMem<100> shapes(coefs.Height());
-    for (int i = 0; i < ir.Size(); i++)
+    for (size_t i = 0; i < ir.Size(); i++)
       {
         CalcShape (ir[i], shapes);
         values.Row(i) = Trans(coefs) * shapes;
@@ -239,47 +238,47 @@ namespace ngfem
 
   template<int D>
   void ScalarFiniteElement<D> :: 
-  EvaluateGrad (const IntegrationRule & ir, SliceVector<double> coefs, FlatMatrixFixWidth<D,double> vals) const
+  EvaluateGrad (const IntegrationRule & ir, BareSliceVector<double> coefs, FlatMatrixFixWidth<D,double> vals) const
   {
-    for (int i = 0; i < ir.GetNIP(); i++)
+    for (size_t i = 0; i < ir.GetNIP(); i++)
       vals.Row(i) = EvaluateGrad (ir[i], coefs);
   }
 
   template<int D>
   void ScalarFiniteElement<D> :: 
-  EvaluateGrad (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, ABareMatrix<double> values) const
+  EvaluateGrad (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const
   {
     throw ExceptionNOSIMD (string("EvaluateGrad (simd) not implemented for class ")+typeid(*this).name());
   }
 
   template<int D>
   void ScalarFiniteElement<D> :: 
-  EvaluateGrad (const SIMD_IntegrationRule & ir, BareSliceVector<> coefs, ABareMatrix<double> values) const
+  EvaluateGrad (const SIMD_IntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const
   {
     throw ExceptionNOSIMD (string("EvaluateGrad (simd) not implemented for class ")+typeid(*this).name());
   }
 
-
+  
   void BaseScalarFiniteElement :: 
-  EvaluateTrans (const IntegrationRule & ir, FlatVector<double> vals, SliceVector<double> coefs) const
+  EvaluateTrans (const IntegrationRule & ir, FlatVector<double> vals, BareSliceVector<double> coefs) const
   {
     VectorMem<20, double> shape(ndof);
-    coefs = 0.0;
+    coefs.AddSize(ndof) = 0.0;
     for (int i = 0; i < ir.GetNIP(); i++)
       {
 	CalcShape (ir[i], shape);
-	coefs += vals(i) * shape;
+	coefs.AddSize(ndof) += vals(i) * shape;
       }
   }
 
   void BaseScalarFiniteElement :: 
-  AddTrans (const SIMD_IntegrationRule & ir, ABareVector<double> values, BareSliceVector<> coefs) const
+  AddTrans (const SIMD_IntegrationRule & ir, BareVector<SIMD<double>> values, BareSliceVector<> coefs) const
   {
     throw ExceptionNOSIMD (string("AddTrans (simd) not implemented for class ")+typeid(*this).name());    
   }
 
   void BaseScalarFiniteElement :: 
-  AddTrans (const SIMD_IntegrationRule & ir, ABareMatrix<double> values, SliceMatrix<> coefs) const
+  AddTrans (const SIMD_IntegrationRule & ir, BareSliceMatrix<SIMD<double>> values, SliceMatrix<> coefs) const
   {
     for (int i = 0; i < coefs.Width(); i++)
       AddTrans (ir, values.Row(i), coefs.Col(i));
@@ -289,14 +288,14 @@ namespace ngfem
   template<int D>
   void ScalarFiniteElement<D> :: 
   EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<D,double> vals, 
-                     SliceVector<double> coefs) const
+                     BareSliceVector<double> coefs) const
   {
     MatrixFixWidth<D> dshape(ndof);
-    coefs = 0.0;
+    coefs.AddSize(ndof) = 0.0;
     for (int i = 0; i < ir.GetNIP(); i++)
       {
 	CalcDShape (ir[i], dshape);
-	coefs += dshape * vals.Row(i);
+	coefs.AddSize(ndof) += dshape * vals.Row(i);
       }
   }
 
@@ -312,7 +311,7 @@ namespace ngfem
 
   template<int D>
   void ScalarFiniteElement<D> :: 
-  AddGradTrans (const SIMD_BaseMappedIntegrationRule & ir, ABareMatrix<double> values,
+  AddGradTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
                 BareSliceVector<> coefs) const
   {
     throw ExceptionNOSIMD (string("AddGradTrans (simd) not implemented for class ")+typeid(*this).name());
@@ -359,7 +358,7 @@ namespace ngfem
 
   template<int D>
   void ScalarFiniteElement<D> :: CalcMappedDDShape (const MappedIntegrationPoint<D,D> & mip, 
-                                                    FlatMatrix<> ddshape) const
+                                                    SliceMatrix<> ddshape) const
   {
     int nd = GetNDof();
 

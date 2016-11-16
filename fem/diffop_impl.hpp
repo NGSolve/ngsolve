@@ -86,7 +86,7 @@ namespace ngfem
   void T_DifferentialOperator<DIFFOP> ::
   CalcMatrix (const FiniteElement & bfel,
               const SIMD_BaseMappedIntegrationRule & bmir,
-              ABareMatrix<double> mat) const
+              BareSliceMatrix<SIMD<double>> mat) const
   {
     DIFFOP::GenerateMatrixSIMDIR (bfel, bmir, mat);
   }
@@ -153,11 +153,18 @@ namespace ngfem
   Apply (const FiniteElement & bfel,
          const SIMD_BaseMappedIntegrationRule & bmir,
          BareSliceVector<double> x, 
-         ABareMatrix<double> flux) const
-  // LocalHeap & lh) const
+         BareSliceMatrix<SIMD<double>> flux) const
   {
-    // const SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
-    // static_cast<const SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
+    DIFFOP::ApplySIMDIR (bfel, bmir, x, flux);
+  }
+
+  template <typename DIFFOP>
+  void T_DifferentialOperator<DIFFOP> ::
+  Apply (const FiniteElement & bfel,
+         const SIMD_BaseMappedIntegrationRule & bmir,
+         BareSliceVector<Complex> x, 
+         BareSliceMatrix<SIMD<Complex>> flux) const
+  {
     DIFFOP::ApplySIMDIR (bfel, bmir, x, flux);
   }
 
@@ -220,14 +227,22 @@ namespace ngfem
   void T_DifferentialOperator<DIFFOP> ::
   AddTrans (const FiniteElement & bfel,
             const SIMD_BaseMappedIntegrationRule & bmir,
-            ABareMatrix<double> flux,
+            BareSliceMatrix<SIMD<double>> flux,
             BareSliceVector<double> x) const
-  // LocalHeap & lh) const
   {
-    // const SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
-    // static_cast<const SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
     DIFFOP::AddTransSIMDIR (bfel, bmir, flux, x);
   }
+  
+  template <typename DIFFOP>
+  void T_DifferentialOperator<DIFFOP> ::
+  AddTrans (const FiniteElement & bfel,
+            const SIMD_BaseMappedIntegrationRule & bmir,
+            BareSliceMatrix<SIMD<Complex>> flux,
+            BareSliceVector<Complex> x) const
+  {
+    DIFFOP::AddTransSIMDIR (bfel, bmir, flux, x);
+  }
+  
   
 #endif  
 }

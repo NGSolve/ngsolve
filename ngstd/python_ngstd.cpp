@@ -6,39 +6,60 @@
 
 #include "python_ngstd.hpp"
 
+#ifdef PARALLEL
+bool MPIManager::initialized_by_me = false;
+static MPIManager mpiman;
+#endif
+
 PythonEnvironment pyenv;
 
 
 using std::ostringstream;
 
-MSVC2015_UPDATE3_GET_PTR_FIX(Archive)
-MSVC2015_UPDATE3_GET_PTR_FIX(LocalHeap)
-
-void SetFlag(Flags &flags, const char * s, bp::object value) 
+void SetFlag(Flags &flags, string s, py::object value) 
 {
-  bp::extract<bool> vb(value);
-  if (vb.check() && vb())
+  py::dict vdd(value);
+  if (vdd.check())
+    {             
+      // call recursively to set dictionary
+      for (auto item : vdd) {
+        string name = item.first.cast<string>();
+        py::object val(item.second, true);
+        SetFlag(flags, name, val);
+      }
+      return;
+    }
+  py::bool_ vb(value);
+  if (vb.check() && bool(vb))
     flags.SetFlag(s);
 
-  bp::extract<double> vd(value);
+  py::float_ vd(value);
   if (vd.check())
-    flags.SetFlag(s, vd());         
+    flags.SetFlag(s, double(vd));         
 
-  bp::extract<char *> vs(value);
+  py::int_ vi(value);
+  if (vi.check())
+    flags.SetFlag(s, int(vi));         
+
+
+  py::str vs(value);
   if (vs.check())
-    flags.SetFlag(s, vs());
+    flags.SetFlag(s, string(vs));
 
-  bp::extract<bp::list> vdl(value);
+  py::list vdl(value);
   if (vdl.check())
     {             
-      if (bp::len(vdl) > 0)
+      if (py::len(vdl) > 0)
       {
-        bp::extract<double> d0(vdl()[0]);
-        bp::extract<char *> s0(vdl()[0]);
+        py::float_ d0(vdl[0]);
+        py::int_ i0(vdl[0]);
+        py::str s0(vdl[0]);
         if(d0.check())
-          flags.SetFlag(s, makeCArray<double>(value));
+          flags.SetFlag(s, makeCArray<double>(vdl));
+        if(i0.check())
+          flags.SetFlag(s, makeCArray<double>(vdl));
         if (s0.check())
-          flags.SetFlag(s, makeCArray<string>(value));
+          flags.SetFlag(s, makeCArray<string>(vdl));
       }
       else
       {
@@ -49,288 +70,206 @@ void SetFlag(Flags &flags, const char * s, bp::object value)
       }
     }
 
-  bp::extract<bp::tuple> vdt(value);
+  py::tuple vdt(value);
   if (vdt.check())
     {
-      bp::extract<double> d0(vdt()[0]);
-      bp::extract<char *> s0(vdt()[0]);
+      py::float_ d0(vdt[0]);
+      py::int_ i0(vdl[0]);
+      py::str s0(vdt[0]);
       if (d0.check())
-        flags.SetFlag(s, makeCArray<double>(value));
+        flags.SetFlag(s, makeCArray<double>(vdt));
+      if(i0.check())
+        flags.SetFlag(s, makeCArray<double>(vdt));
       if (s0.check())
-        flags.SetFlag(s, makeCArray<string>(value));
+        flags.SetFlag(s, makeCArray<string>(vdt));
     }
 }
 
-struct FlagsFromPythonDict 
-{
-  static void* convertible(PyObject* obj_ptr) {
-    if (PyMapping_Check(obj_ptr)) {
-      return obj_ptr;
-    } else {
-      return NULL;
-    }
-  }
-  
-  static void construct(PyObject* obj_ptr,
-                        bp::converter::rvalue_from_python_stage1_data* data) {
-    bp::dict aflags(bp::handle<>(bp::borrowed(obj_ptr)));
-    Flags self;
-    // cout << "py converter" << endl;
-    for (int i=0; i<bp::len(aflags); i++) {
-      char * s = bp::extract<char *>(aflags.keys()[i]);          
-      SetFlag(self, s, aflags.values()[i]);
-    }
-    typedef bp::converter::rvalue_from_python_storage<Flags> storage_t;
-    storage_t* the_storage = reinterpret_cast<storage_t*>(data);
-    void* memory_chunk = the_storage->storage.bytes;
-    /* Flags* output = */ new (memory_chunk) Flags(std::move(self) ); // Use the contents of obj to populate output, e.g. using extract<>
-    data->convertible = memory_chunk;
-  }
-  
-  FlagsFromPythonDict() {
-    bp::converter::registry::push_back(&convertible, &construct, bp::type_id<Flags>());
-  }
-};
+void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
 
+  py::class_<MPIManager>(m, "MPIManager")
+    .def("InitMPI", &MPIManager::InitMPIB)
+    .def("Barrier", &MPIManager::Barrier)
+    .def("GetWT", &MPIManager::GetWT)
+    .def("GetRank", &MPIManager::GetRank)
+    .def("GetNP", &MPIManager::GetNP)
+    ;
 
-void TranslateException (const Exception & ex)
-{
-  string err = string("NGSolve exception: ")+ex.What();
-  PyErr_SetString(PyExc_RuntimeError, err.c_str());
-}
-
-
-void NGS_DLL_HEADER  ExportNgstd() {
   std::string nested_name = "ngstd";
-  if( bp::scope() )
-    nested_name = bp::extract<std::string>(bp::scope().attr("__name__") + ".ngstd");
-  
-  bp::object module(bp::handle<>(bp::borrowed(PyImport_AddModule(nested_name.c_str()))));
-  
-  cout << IM(1) << "exporting ngstd as " << nested_name << endl;
-  bp::object parent = bp::scope() ? bp::scope() : bp::import("__main__");
-  parent.attr("ngstd") = module ;
-  
-  bp::scope ngbla_scope(module);
 
-  bp::def("TestFlags", FunctionPointer( [] (bp::dict const &d) { cout << bp::extract<Flags>(d)() << endl; } ) );
+  m.def("TestFlags", [] (py::dict const &d) { cout << py::extract<Flags>(d)() << endl; } );
+
+  py::class_<DummyArgument>(m, "DummyArgument")
+    .def("__bool__", []( DummyArgument &self ) { return false; } )
+    ;
   
-
-  bp::register_exception_translator<Exception>(&TranslateException);
-
-  bp::class_<PajeTrace >("Tracer", bp::no_init)
+  py::class_<PajeTrace >(m, "Tracer")
     .def("SetTraceThreads", &PajeTrace::SetTraceThreads)
     .def("SetTraceThreadCounter", &PajeTrace::SetTraceThreadCounter)
     .def("SetMaxTracefileSize", &PajeTrace::SetMaxTracefileSize)
     ;
-  bp::class_<FlatArray<double> >("FlatArrayD")
-    .def(PyDefVector<FlatArray<double>, double>()) 
-    .def(PyDefToString<FlatArray<double> >())
-    .def(bp::init<int, double *>())
-    ;
+
+  py::class_<FlatArray<double> > class_flatarrayd (m, "FlatArrayD");
+  class_flatarrayd.def(py::init<int, double *>());
+  PyDefVector<FlatArray<double>, double>(m, class_flatarrayd);
+  PyDefToString<FlatArray<double>>(m, class_flatarrayd);
   
-  bp::class_<Array<double>, bp::bases<FlatArray<double> > >("ArrayD")
-    .def(bp::init<int>())
-    .def("__init__", bp::make_constructor 
-         (FunctionPointer ([](bp::list const & x)
+  py::class_<Array<double>, FlatArray<double> >(m, "ArrayD")
+    .def(py::init<int>())
+    .def("__init__", [](Array<double> &a, std::vector<double> const & x)
                            {
-                             int s = bp::len(x);
-                             auto tmp = make_shared<Array<double>> (s);
+                             int s = x.size();
+                             new (&a) Array<double>(s);
                              for (int i = 0; i < s; i++)
-                               (*tmp)[i] = bp::extract<double> (x[i]); 
-                             return tmp;
-                           })))
-    .def("__rand__" , FunctionPointer( []( Array<double> & a, shared_ptr<Archive> & arch )
+                               a[i] = x[i]; 
+                           })
+    .def("__rand__" ,  []( Array<double> & a, shared_ptr<Archive> & arch )
                                          { cout << "output d array" << endl;
-                                           *arch & a; return arch; }));
+                                           *arch & a; return arch; })
+    .def("print", [](Array<double> &a) { cout << a << endl; } )
     ;
 
-  bp::class_<FlatArray<int> >("FlatArrayI")
-    .def(PyDefVector<FlatArray<int>, int>()) 
-    .def(PyDefToString<FlatArray<int> >())
-    .def(bp::init<int, int *>())
-    ;
+  py::class_<FlatArray<int> > class_flatarrayi (m, "FlatArrayI");
+  PyDefVector<FlatArray<int>, int>(m, class_flatarrayi);
+  PyDefToString<FlatArray<int> >(m, class_flatarrayi);
+  class_flatarrayi.def(py::init<int, int *>());
 
-  bp::class_<Array<int>, bp::bases<FlatArray<int> > >("ArrayI")
-    .def(bp::init<int>())
-    .def("__init__", bp::make_constructor
-         (FunctionPointer ([](bp::list const & x)
+  py::class_<Array<int>, FlatArray<int> >(m, "ArrayI")
+    .def(py::init<int>())
+    .def("__init__", [](std::vector<int> const & x)
                            {
-                             int s = bp::len(x);
+                             int s = x.size();
                              shared_ptr<Array<int>> tmp (new Array<int>(s));
                              for (int i = 0; i < s; i++)
-                               (*tmp)[i] = bp::extract<int> (x[i]); 
+                               (*tmp)[i] = x[i]; 
                              return tmp;
-                           })))
+                           })
     ;
 
-  bp::class_<FlatArray<std::complex<double>> >("FlatArrayC")
-    .def(PyDefVector<FlatArray<std::complex<double>>, std::complex<double>>()) 
-    .def(PyDefToString<FlatArray<std::complex<double>> >())
-    .def(bp::init<int, std::complex<double> *>())
-    ;
-  
-  bp::class_<Array<std::complex<double>>, bp::bases<FlatArray<std::complex<double>> > >("ArrayC")
-    .def(bp::init<int>())
-    .def("__init__", bp::make_constructor 
-         (FunctionPointer ([](bp::list const & x)
-                           {
-                             int s = bp::len(x);
-                             auto tmp = make_shared<Array<std::complex<double>>> (s);
-                             for (int i = 0; i < s; i++)
-                               (*tmp)[i] = bp::extract<std::complex<double>> (x[i]); 
-                             return tmp;
-                           })))
+  py::class_<ngstd::LocalHeap> (m, "LocalHeap", "A heap for fast memory allocation")
+     .def(py::init<size_t,const char*>(), "size"_a=1000000, "name"_a="PyLocalHeap")
     ;
 
-  bp::class_<ngstd::LocalHeap, boost::noncopyable> 
-    ("LocalHeap", 
-     bp::init<size_t,const char*>
-     ((bp::arg("self"), bp::arg("size")=1000000, bp::arg("name")="PyLocalHeap"),
-      "A heap for fast memory allocation"))
+  py::class_<ngstd::HeapReset>
+    (m, "HeapReset","stores heap-pointer on init, and resets it on exit")
+    .def(py::init<LocalHeap&>())
     ;
 
-  bp::class_<ngstd::HeapReset>
-    ("HeapReset",bp::init<LocalHeap&>("stores heap-pointer on init, and resets it on exit"))
-    // .def(bp::init<const HeapReset&>())
-    // .def("__enter__", FunctionPointer([](HeapReset & lh) { cout << "enter" << endl; }))
-    // .def("__exit__", FunctionPointer([](HeapReset & lh, bp::object x, bp::object y, bp::object z) { cout << "exit" << endl; }))    
-    ;
-
-  bp::class_<ngstd::BitArray> ("BitArray")
-    .def(bp::init<int>())
-    .def(bp::init<const BitArray&>())
+  py::class_<ngstd::BitArray> (m, "BitArray")
+    .def(py::init<int>())
+    .def(py::init<const BitArray&>())
     .def("__str__", &ToString<BitArray>)
     .def("__len__", &BitArray::Size)
-    .def("__getitem__", FunctionPointer ([] (BitArray & self, int i) 
+    .def("__getitem__", [] (BitArray & self, int i) 
                                          {
                                            if (i < 0 || i >= self.Size())
-                                             bp::exec("raise IndexError()\n");
+                                             throw py::index_error();
                                            return self.Test(i); 
-                                         }))
-    .def("__setitem__", FunctionPointer ([] (BitArray & self, int i, bool b) 
+                                         })
+    .def("__setitem__", [] (BitArray & self, int i, bool b) 
                                          {
                                            if (i < 0 || i >= self.Size())
-                                             bp::exec("raise IndexError()\n");
+                                             throw py::index_error();
                                            if (b) self.Set(i); else self.Clear(i); 
-                                         }))
+                                         })
 
-    .def("Set", FunctionPointer ([] (BitArray & self, int i)
+    .def("Set", [] (BitArray & self, int i)
                                  {
                                    if (i < 0 || i >= self.Size()) 
-                                     bp::exec("raise IndexError()\n");
+                                     throw py::index_error();
                                    self.Set(i); 
-                                 }))
-    .def("Clear", FunctionPointer ([] (BitArray & self, int i)
+                                 })
+    .def("Clear", [] (BitArray & self, int i)
                                    {
                                    if (i < 0 || i >= self.Size()) 
-                                     bp::exec("raise IndexError()\n");
+                                     throw py::index_error();
                                    self.Clear(i); 
-                                   }))
-    .def("__ior__", FunctionPointer ([] (BitArray & self, BitArray & other)
+                                   })
+    .def("__ior__", [] (BitArray & self, BitArray & other)
                                  {
                                    self.Or(other); 
                                    return self;
-                                 }))
-    .def("__iand__", FunctionPointer ([] (BitArray & self, BitArray & other)
+                                 })
+    .def("__iand__", [] (BitArray & self, BitArray & other)
                                  {
                                    self.And(other); 
                                    return self;
-                                 }))
+                                 })
     ;
 
-  REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<Flags>);
-  bp::class_<ngstd::Flags, shared_ptr<Flags>, boost::noncopyable> ("Flags", bp::no_init)
-    .def("__init__", bp::make_constructor (FunctionPointer ([](const bp::dict & aflags) 
-                                                            {
-      shared_ptr<Flags> self = make_shared<Flags>();
-      for (int i = 0; i < bp::len(aflags); i++)
-      {   
-            char * s = bp::extract<char *>(aflags.keys()[i]);          
-            SetFlag(*self, s, aflags.values()[i]);
-      }
-      return self;
-                })))
-
-    .def("Set", FunctionPointer([](Flags & self,const bp::dict & aflags)->Flags&
+  py::class_<Flags>(m, "Flags")
+    .def(py::init<>())
+    .def("__str__", &ToString<Flags>)
+    .def("__init__", [] (Flags &f, py::object & obj) {
+         py::dict d(obj);
+         new (&f) Flags();
+         SetFlag(f, "", d);
+         // cout << f << endl;
+     })
+    .def("Set",[](Flags & self,const py::dict & aflags)->Flags&
     {      
       cout << "we call Set(dict)" << endl;
-      for (int i = 0; i < bp::len(aflags); i++)
-      {   
-          char * s = bp::extract<char *>(aflags.keys()[i]);          
-          SetFlag(self, s, aflags.values()[i]);
-      }
+      SetFlag(self, "", aflags);
       return self;
-    }), bp::return_value_policy<bp::reference_existing_object>())
+    })
 
-    .def("Set", FunctionPointer([](Flags & self, const char * akey, const bp::object & value)->Flags&
+    .def("Set",[](Flags & self, const char * akey, const py::object & value)->Flags&
     {             
       cout << "we call Set(key,obj)" << endl; 
         SetFlag(self, akey, value);
         return self;
-    }), bp::return_value_policy<bp::reference_existing_object>()       
-        )
+    })
 
-    .def("__getitem__", FunctionPointer( [](Flags & self, const string& name) -> bp::object {
+    .def("__getitem__", [](Flags & self, const string& name) -> py::object {
 
 	  if(self.NumListFlagDefined(name))
-	    return bp::object(self.GetNumListFlag(name));
+	    return py::cast(self.GetNumListFlag(name));
 
 	  if(self.StringListFlagDefined(name))
-	    return bp::object(self.GetStringListFlag(name));
+	    return py::cast(self.GetStringListFlag(name));
 	 
 	  if(self.NumFlagDefined(name))
-	    return bp::object(*self.GetNumFlagPtr(name));
+	    return py::cast(*self.GetNumFlagPtr(name));
 	  
 	  if(self.StringFlagDefined(name))
-	    return bp::object(self.GetStringFlag(name));
+	    return py::cast(self.GetStringFlag(name));
 
 	  if(self.FlagsFlagDefined(name))
-	    return bp::object(self.GetFlagsFlag(name));
+	    return py::cast(self.GetFlagsFlag(name));
 
-	  return bp::object(self.GetDefineFlag(name));
-	}))
+	  return py::cast(self.GetDefineFlag(name));
+	})
+  ;
 
+  m.def("TestFlagsConversion", []( Flags flags) { cout << flags << endl; } );
+  py::implicitly_convertible<py::dict, Flags>();
 
-    .def("__str__", &ToString<Flags>)   
-   ;
+  py::class_<ngstd::IntRange> py_intrange (m, "IntRange");
+  py_intrange.def( py::init<int,int>());
+  py_intrange.def("__str__", &ToString<IntRange>);
+  PyDefIterable2<IntRange>(m, py_intrange);
 
-
-  bp::class_<ngstd::IntRange>
-    ("IntRange", bp::init<int,int>())
-    // .def(PyDefIterable<IntRange,int>())
-    .def(PyDefIterable2<IntRange>())
-    .def("__str__", &ToString<IntRange>)
-    ;
-  
-  FlagsFromPythonDict();
-
-  bp::def("Timers", FunctionPointer
-	  ([]() 
+  m.def("Timers",
+	  []() 
 	   {
-	     bp::list timers;
+	     py::list timers;
 	     for (int i = 0; i < NgProfiler::SIZE; i++)
 	       if (!NgProfiler::names[i].empty())
                {
-                 bp::dict timer;
-                 timer["name"] = NgProfiler::names[i];
-                 timer["time"] = NgProfiler::GetTime(i);
-                 timer["counts"] = NgProfiler::GetCounts(i);
-                 timer["flops"] = NgProfiler::GetFlops(i);
-                 timer["Gflop/s"] = NgProfiler::GetFlops(i)/NgProfiler::GetTime(i)*1e-9;
+                 py::dict timer;
+                 timer["name"] = py::str(NgProfiler::names[i]);
+                 timer["time"] = py::float_(NgProfiler::GetTime(i));
+                 timer["counts"] = py::int_(NgProfiler::GetCounts(i));
+                 timer["flops"] = py::int_(NgProfiler::GetFlops(i));
+                 timer["Gflop/s"] = py::float_(NgProfiler::GetFlops(i)/NgProfiler::GetTime(i)*1e-9);
                  timers.append(timer);
                }
 	     return timers;
 	   }
-	   ));
-  
-  
-  FlagsFromPythonDict();
+	   );
 
-  REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<Archive>);
-  bp::class_<Archive, shared_ptr<Archive>, boost::noncopyable> ("Archive", bp::no_init)
-    .def("__init__", bp::make_constructor
-         (FunctionPointer ([](const string & filename, bool write,
+  py::class_<Archive, shared_ptr<Archive>> (m, "Archive")
+    .def("__init__", [](const string & filename, bool write,
                               bool binary) -> shared_ptr<Archive>
                            {
                              if(binary) {
@@ -345,23 +284,22 @@ void NGS_DLL_HEADER  ExportNgstd() {
                                 else
                                   return make_shared<TextInArchive> (filename);
                               }
-                           })))
+                           })
 
-    .def("__and__" , FunctionPointer( [](shared_ptr<Archive> & self, Array<int> & a) 
+    .def("__and__" , [](shared_ptr<Archive> & self, Array<int> & a) 
                                          { cout << "output array" << endl;
-                                           *self & a; return self; }))
+                                           *self & a; return self; })
   ;
 
-  
-  bp::def("RunWithTaskManager", 
-          FunctionPointer ([](bp::object lam)
+  m.def("RunWithTaskManager", 
+          [](py::object lam)
                            {
                              cout << IM(3) << "running Python function with task-manager:" << endl;
                              RunWithTaskManager ([&] () { lam(); });
-                           }))
+                           })
           ;
 
-  bp::def("SetNumThreads", &TaskManager::SetNumThreads );
+  m.def("SetNumThreads", &TaskManager::SetNumThreads );
 
   // local TaskManager class to be used as context manager in Python
   class ParallelContextManager {
@@ -369,23 +307,24 @@ void NGS_DLL_HEADER  ExportNgstd() {
     public:
       ParallelContextManager() : num_threads(0) {};
       void Enter() {num_threads = EnterTaskManager(); }
-      void Exit(bp::object exc_type, bp::object exc_value, bp::object traceback) {
+      void Exit(py::object exc_type, py::object exc_value, py::object traceback) {
           ExitTaskManager(num_threads);
       }
     };
 
-  bp::class_<ParallelContextManager>("TaskManager")
+  py::class_<ParallelContextManager>(m, "TaskManager")
+    .def(py::init<>())
     .def("__enter__", &ParallelContextManager::Enter)
     .def("__exit__", &ParallelContextManager::Exit)
     ;
 }
 
 
-BOOST_PYTHON_MODULE(libngstd) {
-  ExportNgstd();
+PYBIND11_PLUGIN(libngstd) {
+  py::module m("ngstd", "pybind ngstd");
+  ExportNgstd(m);
+  return m.ptr();
 }
-
-
 
 
 #endif // NGS_PYTHON

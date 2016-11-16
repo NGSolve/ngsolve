@@ -17,10 +17,10 @@ namespace ngstd
 
 
 /// Base class for all ng exceptions
-class NGS_DLL_HEADER Exception 
+class NGS_DLL_HEADER Exception : public std::exception
 {
   /// a verbal description of the exception
-  string what;
+  string m_what;
 public:
   // Exception ();
   /// string s describes the exception
@@ -36,7 +36,10 @@ public:
   Exception & Append (const char * s);
 
   /// verbal description of exception
-  const string & What() const { return what; }
+  const string & What() const { return m_what; }
+
+  /// implement virtual function of std::exception
+  virtual const char* what() const noexcept override { return m_what.c_str(); }
 };
 
   template <typename T>

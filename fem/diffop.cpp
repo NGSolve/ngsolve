@@ -60,7 +60,7 @@ namespace ngfem
   void DifferentialOperator ::
   CalcMatrix (const FiniteElement & fel,
               const SIMD_BaseMappedIntegrationRule & mir,
-              ABareMatrix<double> mat) const
+              BareSliceMatrix<SIMD<double>> mat) const
   {
     throw ExceptionNOSIMD(string("Error: DifferentialOperator::CalcMatrix does not support SIMD, type = ")
                           + typeid(*this).name());
@@ -125,11 +125,20 @@ namespace ngfem
   Apply (const FiniteElement & bfel,
          const SIMD_BaseMappedIntegrationRule & bmir,
          BareSliceVector<double> x, 
-         ABareMatrix<double> flux) const
-  // LocalHeap & lh) const
+         BareSliceMatrix<SIMD<double>> flux) const
   {
-    throw Exception (string("DifferentialOperator :: Apply ( ... SIMD ... ) not overloaded for class ")
-                     + typeid(*this).name());
+    throw ExceptionNOSIMD (string("DifferentialOperator :: Apply ( ... SIMD ... ) not overloaded for class ")
+                           + typeid(*this).name());
+  }
+  
+  void DifferentialOperator ::
+  Apply (const FiniteElement & bfel,
+         const SIMD_BaseMappedIntegrationRule & bmir,
+         BareSliceVector<Complex> x, 
+         BareSliceMatrix<SIMD<Complex>> flux) const
+  {
+    throw ExceptionNOSIMD (string("DifferentialOperator :: Apply ( ... SIMD<Complex> ... ) not overloaded for class ")
+                           + typeid(*this).name());
   }
   
   
@@ -204,12 +213,21 @@ namespace ngfem
   void DifferentialOperator ::
   AddTrans (const FiniteElement & bfel,
             const SIMD_BaseMappedIntegrationRule & bmir,
-            ABareMatrix<double> flux,
+            BareSliceMatrix<SIMD<double>> flux,
             BareSliceVector<double> x) const
-  // LocalHeap & lh) const
   {
-    throw Exception (string("DifferentialOperator :: AddTrans ( ... SIMD ... ) not overloaded") +
-                     + typeid(*this).name());
+    throw ExceptionNOSIMD (string("DifferentialOperator :: AddTrans ( ... SIMD ... ) not overloaded") +
+                           + typeid(*this).name());
+  }
+
+  void DifferentialOperator ::
+  AddTrans (const FiniteElement & bfel,
+            const SIMD_BaseMappedIntegrationRule & bmir,
+            BareSliceMatrix<SIMD<Complex>> flux,
+            BareSliceVector<Complex> x) const
+  {
+    throw ExceptionNOSIMD (string("DifferentialOperator :: AddTrans ( ... SIMD<Complex> ... ) not overloaded") +
+                           + typeid(*this).name());
   }
 
   
@@ -242,7 +260,7 @@ namespace ngfem
   void BlockDifferentialOperator ::
   CalcMatrix (const FiniteElement & fel,
               const SIMD_BaseMappedIntegrationRule & mir,
-              ABareMatrix<double> mat) const
+              BareSliceMatrix<SIMD<double>> mat) const
   {
     throw ExceptionNOSIMD("BlockDifferentialOperator::CalcMatrix does not support SIMD");
   }
@@ -281,7 +299,7 @@ namespace ngfem
   Apply (const FiniteElement & fel,
          const SIMD_BaseMappedIntegrationRule & mir,
          BareSliceVector<double> x, 
-         ABareMatrix<double> flux) const
+         BareSliceMatrix<SIMD<double>> flux) const
   // LocalHeap & lh) const
   {
     if (comp == -1)
@@ -354,12 +372,24 @@ namespace ngfem
   void BlockDifferentialOperator ::
   AddTrans (const FiniteElement & fel,
             const SIMD_BaseMappedIntegrationRule & mir,
-            ABareMatrix<double> flux,
+            BareSliceMatrix<SIMD<double>> flux,
             BareSliceVector<double> x) const
-  // LocalHeap & lh) const
   {
     if (comp == -1)
-      for (int k = 0; k < dim; k++)
+      for (size_t k = 0; k < dim; k++)
+        diffop->AddTrans(fel, mir, flux.RowSlice(k,dim), x.Slice(k,dim));
+    else
+      diffop->AddTrans(fel, mir, flux.RowSlice(comp,dim), x.Slice(comp,dim));
+  }
+
+  void BlockDifferentialOperator ::
+  AddTrans (const FiniteElement & fel,
+            const SIMD_BaseMappedIntegrationRule & mir,
+            BareSliceMatrix<SIMD<Complex>> flux,
+            BareSliceVector<Complex> x) const
+  {
+    if (comp == -1)
+      for (size_t k = 0; k < dim; k++)
         diffop->AddTrans(fel, mir, flux.RowSlice(k,dim), x.Slice(k,dim));
     else
       diffop->AddTrans(fel, mir, flux.RowSlice(comp,dim), x.Slice(comp,dim));

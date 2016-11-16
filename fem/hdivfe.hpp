@@ -54,14 +54,14 @@ namespace ngfem
                                   SliceMatrix<> shape) const;
 
     virtual void CalcMappedShape (const SIMD_BaseMappedIntegrationRule & mir, 
-                                  ABareMatrix<> shapes) const;
+                                  BareSliceMatrix<SIMD<double>> shapes) const;
 
     /// compute div of shape
     virtual void CalcMappedDivShape (const MappedIntegrationPoint<DIM,DIM> & sip,
 				     SliceVector<> divshape) const;
 
     virtual void CalcMappedDivShape (const SIMD_BaseMappedIntegrationRule & mir, 
-                                     ABareMatrix<> divshapes) const;
+                                     BareSliceMatrix<SIMD<double>> divshapes) const;
 
 
     INLINE const FlatMatrixFixWidth<DIM> GetShape (const IntegrationPoint & ip,
@@ -107,23 +107,23 @@ namespace ngfem
 	}
     }
     */
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, ABareMatrix<double> values) const
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const
     {
       cout << "HDivFE::Evaluate (simd) not overloaded" << endl;
     }
     
-    virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, ABareMatrix<double> values,
+    virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
                            BareSliceVector<> coefs) const
     {
       cout << "HDivFE::AddTrans (simd) not overloaded" << endl;
     }
       
-    virtual void EvaluateDiv (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, ABareVector<double> values) const
+    virtual void EvaluateDiv (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareVector<SIMD<double>> values) const
     {
       cout << "HDivFE::EvaluateDiv (simd) not overloaded" << endl;
     }
     
-    virtual void AddDivTrans (const SIMD_BaseMappedIntegrationRule & ir, ABareVector<double> values,
+    virtual void AddDivTrans (const SIMD_BaseMappedIntegrationRule & ir, BareVector<SIMD<double>> values,
                               BareSliceVector<> coefs) const
     {
       cout << "HDivFE::AddDivTrans (simd) not overloaded" << endl;

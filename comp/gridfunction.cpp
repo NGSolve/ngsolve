@@ -10,25 +10,25 @@ using namespace ngcomp;
 #ifdef PARALLEL
 #include "../parallel/dump.hpp"
 
-template <NODE_TYPE NT, typename TELEM, typename TSIZE>
+template <NODE_TYPE NT, typename TELEM>
 class NodalArray
 {
   const MeshAccess & ma;
-  Array<TELEM,TSIZE> & a;
+  Array<TELEM> & a;
 public:
-  NodalArray (const MeshAccess & ama, Array<TELEM,TSIZE> & aa) : ma(ama), a(aa) { ; }
+  NodalArray (const MeshAccess & ama, Array<TELEM> & aa) : ma(ama), a(aa) { ; }
   const MeshAccess & GetMeshAccess() const { return ma; }
-  Array<TELEM,TSIZE> & A() { return a; }
+  Array<TELEM> & A() { return a; }
 };
 
-template <NODE_TYPE NT, typename TELEM, typename TSIZE>
-auto NodalData (const MeshAccess & ama, Array<TELEM,TSIZE> & a) -> NodalArray<NT,TELEM,TSIZE> 
-{ return NodalArray<NT,TELEM,TSIZE> (ama, a); }
+template <NODE_TYPE NT, typename TELEM>
+auto NodalData (const MeshAccess & ama, Array<TELEM> & a) -> NodalArray<NT,TELEM> 
+{ return NodalArray<NT,TELEM> (ama, a); }
 
 
 
-template <NODE_TYPE NT, typename T, typename TSIZE> 
-Archive & operator & (Archive & archive, NodalArray<NT,T,TSIZE> && a)
+template <NODE_TYPE NT, typename T> 
+Archive & operator & (Archive & archive, NodalArray<NT,T> && a)
 {
   if (MyMPI_GetNTasks() == 1) return archive & a.A();
   
@@ -60,11 +60,14 @@ namespace ngcomp
 				const Flags & flags)
     : NGS_Object (afespace->GetMeshAccess(), name), 
       // GridFunctionCoefficientFunction (shared_ptr<GridFunction>(this, NOOP_Deleter), afespace->GetEvaluator()),
-      GridFunctionCoefficientFunction (shared_ptr<GridFunction>(this, NOOP_Deleter),
-                                       shared_ptr<DifferentialOperator>(),
+      /*
+      GridFunctionCoefficientFunction (shared_ptr<DifferentialOperator>(),
                                        shared_ptr<DifferentialOperator>()), // gridfunction-CF with null-ptr diffop
+      */
+      GridFunctionCoefficientFunction (afespace->GetEvaluator(VOL), afespace->GetEvaluator(BND)),
       fespace(afespace)
   {
+    gf = shared_ptr<GridFunction>(this,NOOP_Deleter);
     is_complex = fespace->IsComplex();
     if (fespace->GetEvaluator(VOL) || fespace->GetEvaluator(BND))
       SetDimensions (GridFunctionCoefficientFunction::Dimensions());
@@ -882,17 +885,17 @@ namespace ngcomp
 	for (int i = 0; i < compgfs.Size(); i++)
 	  compgfs[i]->Update();
       }
+    catch (Exception & e)
+      {
+	e.Append ("In GridFunction::Update()\n");
+	throw e;
+      }    
     catch (exception & e)
       {
 	Exception e2 (e.what());
 	e2.Append ("\nIn GridFunction::Update()\n");
 	throw e2;
       }
-    catch (Exception & e)
-      {
-	e.Append ("In GridFunction::Update()\n");
-	throw e;
-      }    
   }
 
   /*
@@ -936,16 +939,26 @@ namespace ngcomp
   }
 
   GridFunctionCoefficientFunction :: 
-  GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, 
-				   shared_ptr<DifferentialOperator> adiffop,
+  GridFunctionCoefficientFunction (shared_ptr<DifferentialOperator> adiffop,
                                    shared_ptr<DifferentialOperator> atrace_diffop,
                                    int acomp)
     : CoefficientFunction(1, false),
-      gf(agf), diffop (adiffop), trace_diffop(atrace_diffop), comp (acomp) 
+     diffop (adiffop), trace_diffop(atrace_diffop), comp (acomp) 
   {
     ; // SetDimensions (gf->Dimensions());    
   }
 
+  GridFunctionCoefficientFunction :: 
+  GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf,
+				   shared_ptr<DifferentialOperator> adiffop,
+                                   shared_ptr<DifferentialOperator> atrace_diffop,
+                                   int acomp)
+    : CoefficientFunction(1,agf->IsComplex()),
+      gf(agf), diffop (adiffop), trace_diffop(atrace_diffop), comp (acomp) 
+  {
+    //SetDimensions (gf->Dimensions());    
+  }
+  
   GridFunctionCoefficientFunction :: 
   GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, 
 				   shared_ptr<BilinearFormIntegrator> abfi, int acomp)
@@ -1110,7 +1123,6 @@ namespace ngcomp
   
   bool GridFunctionCoefficientFunction::IsComplex() const
   {
-    cout << "check for complex" << endl;
     return gf->GetFESpace()->IsComplex(); 
   }
 
@@ -1328,12 +1340,12 @@ namespace ngcomp
 
   void GridFunctionCoefficientFunction ::   
   Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
-            AFlatMatrix<double> values) const
+            BareSliceMatrix<SIMD<double>> bvalues) const
   {
     LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evalute 3");
     // static Timer timer ("GFCoeffFunc::Eval-vec", 2);
     // RegionTimer reg (timer);
-
+    auto values = bvalues.AddSize(Dimension(), ir.Size());
     const ElementTransformation & trafo = ir.GetTransformation();
     
     int elnr = trafo.GetElementNr();
@@ -1383,7 +1395,69 @@ namespace ngcomp
       throw Exception ("GridFunctionCoefficientFunction: SIMD: don't know how I shall evaluate");    
   }
 
+  void GridFunctionCoefficientFunction ::   
+  Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
+            BareSliceMatrix<SIMD<Complex>> bvalues) const
+  {
+    LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evalute 3");
 
+    auto values = bvalues.AddSize(Dimension(), ir.Size());
+    const ElementTransformation & trafo = ir.GetTransformation();
+    
+    int elnr = trafo.GetElementNr();
+    bool boundary = trafo.Boundary();
+    ElementId ei(boundary ? BND : VOL, elnr);
+
+    const FESpace & fes = *gf->GetFESpace();
+
+    if (!trafo.BelongsToMesh ((void*)(fes.GetMeshAccess().get())))
+      {
+        throw ExceptionNOSIMD ("SIMD - evaluation not available for different meshes");
+        // for (int i = 0; i < ir.Size(); i++)
+        // Evaluate (ir[i], values.Row(i));
+        return;
+      }
+    
+    if (!fes.DefinedOn(trafo.GetElementIndex(), boundary)) 
+      { 
+        values = 0.0; 
+        return;
+      }
+    
+    const FiniteElement & fel = fes.GetFE (ei, lh2);
+    int dim = fes.GetDimension();
+
+    ArrayMem<int, 50> dnums;
+    fes.GetDofNrs (ei, dnums);
+    
+    VectorMem<50, Complex> elu(dnums.Size()*dim);
+
+    gf->GetElementVector (comp, dnums, elu);
+    fes.TransformVec (elnr, boundary, elu, TRANSFORM_SOL);
+
+    if (diffop && !boundary)
+      diffop->Apply (fel, ir, elu, values); // , lh2);
+    else if (trace_diffop && boundary)
+      trace_diffop->Apply (fel, ir, elu, values); // , lh2);
+    else if (bfi)
+      throw Exception ("GridFunctionCoefficientFunction: SIMD evaluate not possible 1");
+      // bfi->CalcFlux (fel, ir, elu, values, true, lh2);
+    else if (fes.GetEvaluator(boundary))
+      fes.GetEvaluator(boundary) -> Apply (fel, ir, elu, values); // , lh2);
+    else if (fes.GetIntegrator(boundary))
+      throw Exception ("GridFunctionCoefficientFunction: SIMD evaluate not possible 2");
+      // fes.GetIntegrator(boundary) ->CalcFlux (fel, ir, elu, values, false, lh2);
+    else
+      throw Exception ("GridFunctionCoefficientFunction: SIMD: don't know how I shall evaluate");    
+  }
+
+
+
+
+
+
+
+  
 
   template <class SCAL>
   VisualizeGridFunction<SCAL> ::
@@ -1930,7 +2004,19 @@ namespace ngcomp
   }
 
 
-
+#ifdef __AVX__
+  template <class SCAL>
+  bool VisualizeGridFunction<SCAL> ::
+  GetMultiSurfValue (size_t selnr, size_t facetnr, size_t npts,
+                     const __m256d * xref, 
+                     const __m256d * x, 
+                     const __m256d * dxdxref, 
+                     __m256d * values)
+  {
+    cout << "GetMultiSurf - gf not implemented" << endl;
+    return false;
+  }
+#endif
 
 
 
@@ -2050,7 +2136,6 @@ namespace ngcomp
                   {
                     if (!bfi2d[j]->DefinedOn(eltrans.GetElementIndex())) continue;
                     isdefined = true;
-                    
                     FlatMatrix<SCAL> flux(npts, bfi2d[j]->DimFlux(), lh);
                     bfi2d[j]->CalcFlux (fel, mir, elu, flux, applyd, lh);
 
@@ -2493,6 +2578,93 @@ namespace ngcomp
     return false;
   }
 
+
+#ifdef __AVX__  
+  bool VisualizeCoefficientFunction ::    
+  GetMultiSurfValue (size_t selnr, size_t facetnr, size_t npts,
+                     const __m256d * xref, 
+                     const __m256d * x, 
+                     const __m256d * dxdxref, 
+                     __m256d * values)
+  {
+    try
+      {
+        /*   todo
+        if (cf -> IsComplex())
+          {
+            for (int i = 0; i < npts; i++)
+              GetSurfValue (selnr, facetnr, xref[i*sxref], xref[i*sxref+1], &values[i*svalues]);
+            return true;
+          }
+        */
+        
+        bool bound = (ma->GetDimension() == 3);
+        ElementId ei(bound ? BND : VOL, selnr);
+        
+        LocalHeapMem<1000000> lh("viscf::getmultisurfvalue");
+        ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
+
+        AFlatMatrix<> mvalues(GetComponents(), SIMD<double>::Size()*npts, (double*)values);
+
+        constexpr size_t BS = 64;
+        for (size_t base = 0; base < npts; base +=BS)
+          {
+            size_t ni = min2(npts-base, BS);
+            
+            SIMD_IntegrationRule ir(SIMD<double>::Size()*ni, lh);
+            for (size_t i = 0; i < ni; i++)
+              {
+                ir[i](0) = xref[2*(base+i)];
+                ir[i](1) = xref[2*(base+i)+1];
+                ir[i].FacetNr() = facetnr;
+              }
+
+            if (bound)
+              {
+                SIMD_MappedIntegrationRule<2,3> mir(ir, eltrans, 1, lh);
+                for (size_t k = 0; k < ni; k++)
+                  {
+                    const Mat<2,3,SIMD<double>> & mdxdxref = reinterpret_cast<const Mat<2,3,SIMD<double>>&> (dxdxref[6*(k+base)]);
+                    const Vec<3,SIMD<double>> & vx = reinterpret_cast<const Vec<3,SIMD<double>>&> (x[3*(k+base)]);
+                    mir[k] = SIMD<MappedIntegrationPoint<2,3>> (ir[k], eltrans, vx, mdxdxref);
+                  }
+                
+                cf -> Evaluate (mir, mvalues.VCols(base, base+ni));
+              }
+            else
+              {
+                if (!ma->GetDeformation())
+                  {
+                    SIMD_MappedIntegrationRule<2,2> mir(ir, eltrans, 1, lh);
+                    
+                    for (size_t k = 0; k < ni; k++)
+                      {
+                        auto & mdxdxref = reinterpret_cast<const Mat<2,2,SIMD<double>>&> (dxdxref[6*(k+base)]);
+                        auto & vx = reinterpret_cast<const Vec<2,SIMD<double>>&> (x[3*(k+base)]);
+                        mir[k] = SIMD<MappedIntegrationPoint<2,2>> (ir[k], eltrans, vx, mdxdxref);
+                      }
+                    
+                    cf -> Evaluate (mir, mvalues.VCols(base, base+ni));
+                  }
+                else
+                  {
+                    SIMD_MappedIntegrationRule<2,2> mir(ir, eltrans, lh);
+                    cf -> Evaluate (mir, mvalues.VCols(base, base+ni));
+                  }
+              }
+          }
+        return true;
+      }
+    catch (Exception & e)
+      {
+        cout << "VisualizeCoefficientFunction::GetMultiSurfValue caught exception: " << endl
+             << e.What();
+        return 0;
+      }
+  }
+#endif
+  
+  
   bool VisualizeCoefficientFunction ::  
   GetMultiSurfValue (int selnr, int facetnr, int npts,
 		     const double * xref, int sxref,

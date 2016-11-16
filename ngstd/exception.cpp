@@ -17,20 +17,20 @@ namespace ngstd
   static mutex printexception_mutex;
 
   Exception :: Exception (const string & s) 
-    : what(s)
+    : m_what(s)
   { 
     {
       lock_guard<mutex> guard(printexception_mutex);
-      // cout << "create ngstd::Exception, what = " << s << endl;
+      // cout << "create ngstd::Exception, m_what = " << s << endl;
     }
   }
 
   Exception :: Exception (const char * s) 
-    : what(s)
+    : m_what(s)
   { 
     {
       lock_guard<mutex> guard(printexception_mutex);
-      // cout << "create ngstd::Exception, what = " << s << endl;
+      // cout << "create ngstd::Exception, m_what = " << s << endl;
     }
   }
 
@@ -39,13 +39,13 @@ namespace ngstd
 
   Exception & Exception :: Append (const string & s)
   { 
-    what += s; 
+    m_what += s; 
     return *this;
   }
 
   Exception & Exception :: Append (const char * s)
   { 
-    what += s; 
+    m_what += s; 
     return *this;
   }
 

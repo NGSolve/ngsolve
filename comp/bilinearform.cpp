@@ -255,6 +255,14 @@ namespace ngcomp
       low_order_bilinear_form -> SetElmatEigenValues (ee);
   }
 
+  void BilinearForm :: SetPreconditioner (Preconditioner * pre)
+  {
+    if (preconditioners.Contains(pre))
+      throw Exception (string("preconditioner ")+typeid(*pre).name()+ " already registered in bfa");
+    if (pre->GetFlags().GetDefineFlag("not_register_for_auto_update"))
+      throw Exception (string("'not_register_for_auto_update' set, but preconditioner") + typeid(*pre).name() +" registers anyway");
+    preconditioners.Append (pre);
+  }
 
 
   MatrixGraph * BilinearForm :: GetGraph (int level, bool symmetric)
@@ -589,17 +597,17 @@ namespace ngcomp
       {
         AllocateMatrix ();
       }
-    catch (exception & e)
-      {
-        throw Exception (e.what() + 
-                         string ("\nthrown by allocate matrix ") +
-                         string (GetName()));
-      }
     catch (Exception & e)
       {
         e.Append (string ("\nthrown by allocate matrix ") +
                   string (GetName()));
         throw;
+      }
+    catch (exception & e)
+      {
+        throw Exception (e.what() + 
+                         string ("\nthrown by allocate matrix ") +
+                         string (GetName()));
       }
 
 
@@ -732,9 +740,9 @@ namespace ngcomp
     static Timer mattimer_vol("Matrix assembling vol");
     static Timer mattimer_bound("Matrix assembling bound");
 
-    static Timer timer1 ("Matrix assembling - 1", 2);
-    static Timer timer2 ("Matrix assembling - 2", 2);
-    static Timer timer3 ("Matrix assembling - 3", 2);
+    // static Timer timer1 ("Matrix assembling - 1", 2);
+    // static Timer timer2 ("Matrix assembling - 2", 2);
+    // static Timer timer3 ("Matrix assembling - 3", 2);
 
     static Timer timerb1 ("Matrix assembling bound - 1", 2);
     static Timer timerb2 ("Matrix assembling bound - 2", 2);
@@ -883,7 +891,7 @@ namespace ngcomp
                      
                      progress.Update ();
                      
-                     timer1.Start();
+                     // timer1.Start();
                      
                      const FiniteElement & fel = fespace->GetFE (el, lh);
                      const ElementTransformation & eltrans = ma->GetTrafo (el, lh);
@@ -908,8 +916,8 @@ namespace ngcomp
                      FlatMatrix<SCAL> sum_elmat(elmat_size, lh);
                      sum_elmat = 0;
 
-                     timer1.Stop();
-                     timer2.Start();
+                     // timer1.Stop();
+                     // timer2.Start();
 
                      /*
                      for (int j = 0; j < NumIntegrators(); j++)
@@ -929,8 +937,8 @@ namespace ngcomp
                          
                          try
                            {
-                             static Timer elementtimer ("Element matrix integration", 2);
-                             elementtimer.Start();
+                             // static Timer elementtimer ("Element matrix integration", 2);
+                             // elementtimer.Start();
                              if (!diagonal)
                                bfi.CalcElementMatrix (fel, eltrans, elmat, lh);
                              else
@@ -941,7 +949,7 @@ namespace ngcomp
                                  elmat.Diag() = diag;
                                }
 
-                             elementtimer.Stop();
+                             // elementtimer.Stop();
 
                              if (printelmat)
                                {
@@ -975,8 +983,8 @@ namespace ngcomp
                          sum_elmat += elmat;
                        }
 
-                     timer2.Stop();
-                     timer3.Start();
+                     // timer2.Stop();
+                     // timer3.Start();
                      fespace->TransformMat (el.Nr(), false, sum_elmat, TRANSFORM_MAT_LEFT_RIGHT);
 
 
@@ -1168,7 +1176,7 @@ namespace ngcomp
                      for (auto d : dnums)
                        if (d != -1) useddof[d] = true;
 
-                     timer3.Stop();
+                     // timer3.Stop();
                    });
                 progress.Done();
                 
@@ -1534,6 +1542,7 @@ namespace ngcomp
                       if(elnums.Size()<2) continue;
                       el2 = elnums[1];
 
+                      if (!fespace->DefinedOn (ma->GetElIndex (el1)) || !fespace->DefinedOn (ma->GetElIndex (el2))) continue;
                       ma->GetElFacets(el1,fnums);
                       int facnr1 = fnums.Pos(i);
 
@@ -1567,8 +1576,8 @@ namespace ngcomp
                         {
                           cout << "facet, neighbouring fel(1): GetNDof() = " << fel1.GetNDof() << endl;
                           cout << "facet, neighbouring fel(2): GetNDof() = " << fel2.GetNDof() << endl;
-                          cout << "facet, neighbouring fel(1): dnums.Size() = " << fel1.GetNDof() << endl;
-                          cout << "facet, neighbouring fel(2): dnums.Size() = " << fel2.GetNDof() << endl;
+                          cout << "facet, neighbouring fel(1): dnums.Size() = " << dnums1.Size() << endl;
+                          cout << "facet, neighbouring fel(2): dnums.Size() = " << dnums2.Size() << endl;
                           throw Exception ( "Inconsistent number of degrees of freedom " );
                         }
                       for (int j = 0; j < NumIntegrators(); j++)
@@ -1833,8 +1842,8 @@ namespace ngcomp
                                    {
                                      cout << "facet, neighbouring fel(1): GetNDof() = " << fel1.GetNDof() << endl;
                                      cout << "facet, neighbouring fel(2): GetNDof() = " << fel2.GetNDof() << endl;
-                                     cout << "facet, neighbouring fel(1): dnums.Size() = " << fel1.GetNDof() << endl;
-                                     cout << "facet, neighbouring fel(2): dnums.Size() = " << fel2.GetNDof() << endl;
+                                     cout << "facet, neighbouring fel(1): dnums.Size() = " << dnums1.Size() << endl;
+                                     cout << "facet, neighbouring fel(2): dnums.Size() = " << dnums2.Size() << endl;
                                      throw Exception ( "Inconsistent number of degrees of freedom " );
                                    }
                                  for (int j = 0; j < NumIntegrators(); j++)
@@ -2097,18 +2106,8 @@ namespace ngcomp
 
 
             bool hasbound = false;
-            bool hasinner = false;
-
-            for (int j = 0; j < NumIntegrators(); j++)
-              {
-                const BilinearFormIntegrator & bfi = *GetIntegrator(j);
-                if (bfi.BoundaryForm())
-                  hasbound = true;
-                else
-                  hasinner = true;
-              }
             
-            if (hasinner)
+            if (volume_parts.Size())
               IterateElements 
                 (*fespace, VOL, clh,          // coloring for 1 space is enough
                  [&] (ElementId ei, LocalHeap & lh)
@@ -2123,24 +2122,14 @@ namespace ngcomp
                    fespace2->GetDofNrs (ei, dnums2);
           
                    FlatMatrix<SCAL> elmat(dnums2.Size(), dnums1.Size(), lh);
-                   for (int j = 0; j < NumIntegrators(); j++)
+                   for (auto & bfi : volume_parts)
                      {
-                       const BilinearFormIntegrator & bfi = *GetIntegrator(j);
-                       if (bfi.BoundaryForm()) continue;
-
-                       // ArrayMem<const FiniteElement*,2> fea = { &fel1, &fel2 };
-                       ArrayMem<const FiniteElement*,2> fea(2);
-                       fea[0] = &fel1;
-                       fea[1] = &fel2;
-                       CompoundFiniteElement cfel(fea);
-
-                       bfi.CalcElementMatrix (cfel, eltrans, elmat, lh);
-
+                       MixedFiniteElement fel(fel1, fel2);
+                       bfi->CalcElementMatrix (fel, eltrans, elmat, lh);
                        /*
                         fespace->Transform (i, true, elmat, TRANSFORM_MAT_RIGHT);
                         fespace2->Transform (i, true, elmat, TRANFORM_MAT_LEFT);
                        */
-
                        AddElementMatrix (dnums2, dnums1, elmat, ei, lh);
                      }
                  });
@@ -3564,8 +3553,8 @@ namespace ngcomp
                                    {
                                      cout << "facet, neighbouring fel(1): GetNDof() = " << fel1.GetNDof() << endl;
                                      cout << "facet, neighbouring fel(2): GetNDof() = " << fel2.GetNDof() << endl;
-                                     cout << "facet, neighbouring fel(1): dnums.Size() = " << fel1.GetNDof() << endl;
-                                     cout << "facet, neighbouring fel(2): dnums.Size() = " << fel2.GetNDof() << endl;
+                                     cout << "facet, neighbouring fel(1): dnums.Size() = " << dnums1.Size() << endl;
+                                     cout << "facet, neighbouring fel(2): dnums.Size() = " << dnums2.Size() << endl;
                                      throw Exception ( "Inconsistent number of degrees of freedom " );
                                    }
 
@@ -5028,8 +5017,14 @@ namespace ngcomp
         else 
           return make_shared<S_BilinearFormNonAssemble<double>> (space, space2, name, flags);
       }
-
-    throw Exception ("cannot craeate mixes-space without nonassemble - flag");
+    else
+      {
+        if ( space->IsComplex() )
+          return make_shared<T_BilinearForm<Complex>> (space, space2, name, flags);
+        else 
+          return make_shared<T_BilinearForm<double>> (space, space2, name, flags);
+      }
+    // throw Exception ("cannot craeate mixes-space without nonassemble - flag");
   }
   
   /*

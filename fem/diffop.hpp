@@ -51,7 +51,7 @@ namespace ngfem
     }
 
     template <typename FEL, typename MIR>
-    static void GenerateMatrixSIMDIR (const FEL & fel, const MIR & mir, ABareMatrix<> mat)
+    static void GenerateMatrixSIMDIR (const FEL & fel, const MIR & mir, BareSliceMatrix<SIMD<double>> mat)
     {
       throw ExceptionNOSIMD (string("generate matrix simdir not implemented for diffop ") + typeid(DOP).name());
     }
@@ -218,7 +218,7 @@ namespace ngfem
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
 		const SIMD_BaseMappedIntegrationRule & mir,
-		ABareMatrix<double> mat) const;
+		BareSliceMatrix<SIMD<double>> mat) const;
 
     NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & fel,
@@ -252,8 +252,14 @@ namespace ngfem
     Apply (const FiniteElement & bfel,
 	   const SIMD_BaseMappedIntegrationRule & bmir,
 	   BareSliceVector<double> x, 
-	   ABareMatrix<double> flux) const;
-    // LocalHeap & lh) const;
+	   BareSliceMatrix<SIMD<double>> flux) const;
+
+    NGS_DLL_HEADER virtual void
+    Apply (const FiniteElement & bfel,
+	   const SIMD_BaseMappedIntegrationRule & bmir,
+	   BareSliceVector<Complex> x, 
+	   BareSliceMatrix<SIMD<Complex>> flux) const;
+
     
     NGS_DLL_HEADER virtual void
     ApplyTrans (const FiniteElement & fel,
@@ -286,9 +292,15 @@ namespace ngfem
     NGS_DLL_HEADER virtual void
     AddTrans (const FiniteElement & bfel,
               const SIMD_BaseMappedIntegrationRule & bmir,
-              ABareMatrix<double> flux,
+              BareSliceMatrix<SIMD<double>> flux,
               BareSliceVector<double> x) const;
-    // LocalHeap & lh) const;
+
+    NGS_DLL_HEADER virtual void
+    AddTrans (const FiniteElement & bfel,
+              const SIMD_BaseMappedIntegrationRule & bmir,
+              BareSliceMatrix<SIMD<Complex>> flux,
+              BareSliceVector<Complex> x) const;
+
   };
 
 
@@ -328,7 +340,7 @@ namespace ngfem
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
 		const SIMD_BaseMappedIntegrationRule & mir,
-		ABareMatrix<double> mat) const;
+		BareSliceMatrix<SIMD<double>> mat) const;
     
     NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & fel,
@@ -341,8 +353,7 @@ namespace ngfem
     Apply (const FiniteElement & bfel,
 	   const SIMD_BaseMappedIntegrationRule & bmir,
 	   BareSliceVector<double> x, 
-	   ABareMatrix<double> flux) const;
-    // LocalHeap & lh) const;
+	   BareSliceMatrix<SIMD<double>> flux) const;
     
     NGS_DLL_HEADER virtual void
     ApplyTrans (const FiniteElement & fel,
@@ -361,9 +372,14 @@ namespace ngfem
     virtual void
     AddTrans (const FiniteElement & bfel,
               const SIMD_BaseMappedIntegrationRule & bmir,
-              ABareMatrix<double> flux,
+              BareSliceMatrix<SIMD<double>> flux,
               BareSliceVector<double> x) const;
-    // LocalHeap & lh) const;    
+
+    virtual void
+    AddTrans (const FiniteElement & bfel,
+              const SIMD_BaseMappedIntegrationRule & bmir,
+              BareSliceMatrix<SIMD<Complex>> flux,
+              BareSliceVector<Complex> x) const;
   };
 
 
@@ -416,7 +432,7 @@ namespace ngfem
     virtual void
     CalcMatrix (const FiniteElement & fel,
 		const SIMD_BaseMappedIntegrationRule & mir,
-		ABareMatrix<double> mat) const;
+		BareSliceMatrix<SIMD<double>> mat) const;
     
 #ifndef FASTCOMPILE
     virtual void
@@ -451,8 +467,14 @@ namespace ngfem
     Apply (const FiniteElement & bfel,
 	   const SIMD_BaseMappedIntegrationRule & bmir,
 	   BareSliceVector<double> x, 
-	   ABareMatrix<double> flux) const;
-    // LocalHeap & lh) const;
+	   BareSliceMatrix<SIMD<double>> flux) const;
+
+    virtual void
+    Apply (const FiniteElement & bfel,
+	   const SIMD_BaseMappedIntegrationRule & bmir,
+	   BareSliceVector<Complex> x, 
+	   BareSliceMatrix<SIMD<Complex>> flux) const;
+
 
     virtual void
     ApplyTrans (const FiniteElement & bfel,
@@ -485,9 +507,15 @@ namespace ngfem
     virtual void
     AddTrans (const FiniteElement & bfel,
               const SIMD_BaseMappedIntegrationRule & bmir,
-              ABareMatrix<double> flux,
+              BareSliceMatrix<SIMD<double>> flux,
               BareSliceVector<double> x) const;
-    // LocalHeap & lh) const;    
+
+    virtual void
+    AddTrans (const FiniteElement & bfel,
+              const SIMD_BaseMappedIntegrationRule & bmir,
+              BareSliceMatrix<SIMD<Complex>> flux,
+              BareSliceVector<Complex> x) const;
+
 #endif
   };
 

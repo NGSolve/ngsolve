@@ -5,77 +5,91 @@ using namespace ngsolve;
 
 
 typedef GridFunction GF;
-typedef PyWrapperDerived<GF, CoefficientFunction> PyGF;
+typedef PyWrapper<GF> PyGF;
 
-extern void ExportBVP();
-extern void ExportDrawFlux();
+extern void ExportBVP(py::module &m);
+extern void ExportDrawFlux(py::module &m);
 
-void NGS_DLL_HEADER ExportNgsolve() {
-    std::string nested_name = "solve";
-    if( bp::scope() )
-      nested_name = bp::extract<std::string>(bp::scope().attr("__name__") + ".solve");
-    
-    bp::object module(bp::handle<>(bp::borrowed(PyImport_AddModule(nested_name.c_str()))));
+void NGS_DLL_HEADER ExportNgsolve(py::module &m ) {
 
-    cout << "exporting solve as " << nested_name << endl;
-    bp::object parent = bp::scope() ? bp::scope() : bp::import("__main__");
-    parent.attr("solve") = module ;
+    m.def ("Tcl_Eval", &Ng_TclCmd);
 
-    bp::scope local_scope(module);
-
-    bp::def ("Tcl_Eval", &Ng_TclCmd);
-
-    bp::def ("Redraw", 
-             FunctionPointer([](bool blocking) {Ng_Redraw(blocking);}),
-             (bp::arg("blocking")=false)
+    m.def ("Redraw", 
+            ([](bool blocking) {Ng_Redraw(blocking);}),
+             py::arg("blocking")=false
              );
 
 
-    bp::def ("Draw", FunctionPointer([](shared_ptr<MeshAccess> mesh) 
+    m.def ("Draw",[](shared_ptr<MeshAccess> mesh) 
                                      {
                                        mesh->SelectMesh();
                                        Ng_TclCmd ("set ::selectvisual mesh;\n");
-                                     })
+                                     }
              );
 
 
-    bp::def("SetVisualization", FunctionPointer
-            ([](bp::object deformation, bp::object min, bp::object max)
+    m.def("SetVisualization",
+            [](py::object deformation, py::object min, py::object max,
+                /* py::object clippnt, */ py::object clipnormal, py::object clipping)
              {
                bool need_redraw = false;
-               if (bp::extract<bool>(deformation).check())
+               if (py::extract<bool>(deformation).check())
                  {
-                   bool def = bp::extract<bool>(deformation)();
+                   bool def = py::extract<bool>(deformation)();
                    Ng_TclCmd ("set ::visoptions.deformation "+ToString(def)+";\n");
                    Ng_TclCmd ("Ng_Vis_Set parameters;\n");
                    need_redraw = true;
                  }
-               if (bp::extract<double>(min).check())
+               if (py::extract<double>(min).check())
                  {
                    Ng_TclCmd ("set ::visoptions.autoscale 0\n");
-                   Ng_TclCmd ("set ::visoptions.mminval "+ToString(bp::extract<double>(min)())+";\n");
+                   Ng_TclCmd ("set ::visoptions.mminval "+ToString(py::extract<double>(min)())+";\n");
                    Ng_TclCmd ("Ng_Vis_Set parameters;\n");                                      
                    need_redraw = true;
                  }
-               if (bp::extract<double>(max).check())
+               if (py::extract<double>(max).check())
                  {
                    Ng_TclCmd ("set ::visoptions.autoscale 0\n");
-                   Ng_TclCmd ("set ::visoptions.mmaxval "+ToString(bp::extract<double>(max)())+";\n");
+                   Ng_TclCmd ("set ::visoptions.mmaxval "+ToString(py::extract<double>(max)())+";\n");
                    Ng_TclCmd ("Ng_Vis_Set parameters;\n");                   
+                   need_redraw = true;
+                 }
+               if (py::extract<py::tuple>(clipnormal).check())
+                 {
+                   py::tuple norm = py::extract<py::tuple>(clipnormal)();
+                   if (py::len(norm)==3)
+                     {
+                       cout << "setting clipping normal" << endl;
+                       // tclstring << "set ::viewoptions.clipping.enable 1" << endl
+                       Ng_TclCmd ("set ::viewoptions.clipping.nx "+ToString(py::extract<double>(norm[0])())+";\n");
+                       Ng_TclCmd ("set ::viewoptions.clipping.ny "+ToString(py::extract<double>(norm[1])())+";\n");
+                       Ng_TclCmd ("set ::viewoptions.clipping.nz "+ToString(py::extract<double>(norm[2])())+";\n");
+                       // << "set ::viewoptions.clipping.dist " << clipdist << endl;
+                       need_redraw = true;
+                     }
+                 }
+               if (py::extract<bool>(clipping).check())
+                 {
+                   bool clip = py::extract<bool>(clipping)();
+                   Ng_TclCmd ("set ::viewoptions.clipping.enable "+ToString(int(clip))+";\n");
+                   Ng_TclCmd ("Ng_SetVisParameters");
+                   
                    need_redraw = true;
                  }
                if (need_redraw)
                  Ng_Redraw(true);
-             }),
-            (bp::arg("deformation")=bp::object(),
-             bp::arg("min")=bp::object(),
-             bp::arg("max")=bp::object()
-             )
+             },
+             py::arg("deformation")=DummyArgument(),
+             py::arg("min")=DummyArgument(),
+             py::arg("max")=DummyArgument(),
+             // py::arg("clippnt")=DummyArgument(),
+             py::arg("clipnormal")=DummyArgument(),
+             py::arg("clipping")=DummyArgument()
             )
       ;
     
-    bp::def ("Draw", FunctionPointer
-             ([](PyGF gf, int sd, bool autoscale, double min, double max)
+    m.def ("Draw",
+             [](PyGF gf, int sd, bool autoscale, double min, double max)
               {
                 gf->GetMeshAccess()->SelectMesh();
                 Visualize (gf.Get(), gf->GetName());
@@ -91,13 +105,13 @@ void NGS_DLL_HEADER ExportNgsolve() {
 		}
 		Ng_TclCmd ("Ng_Vis_Set parameters;\n");
                 Ng_TclCmd ("set ::selectvisual solution;\n");
-              }),
-             (bp::arg("gf"),bp::arg("sd")=2,bp::arg("autoscale")=true,
-	      bp::arg("min")=0.0,bp::arg("max")=1.0)
+              },
+             py::arg("gf"),py::arg("sd")=2,py::arg("autoscale")=true,
+	      py::arg("min")=0.0,py::arg("max")=1.0
              );
 
     
-    bp::def ("Draw", FunctionPointer
+    m.def ("Draw", FunctionPointer
              ([](PyWrapper<CoefficientFunction> cf, shared_ptr<MeshAccess> ma, string name,
                  int sd, bool autoscale, double min, double max,
                  bool draw_vol, bool draw_surf) 
@@ -142,24 +156,25 @@ void NGS_DLL_HEADER ExportNgsolve() {
                 Ng_TclCmd ("set ::selectvisual solution;\n");
 
               }),
-             (bp::arg("cf"),bp::arg("mesh"),bp::arg("name"),
-              bp::arg("sd")=2,bp::arg("autoscale")=true,
-	      bp::arg("min")=0.0,bp::arg("max")=1.0,
-              bp::arg("draw_vol")=true,bp::arg("draw_surf")=true)
+              py::arg("cf"),py::arg("mesh"),py::arg("name"),
+              py::arg("sd")=2,py::arg("autoscale")=true,
+	      py::arg("min")=0.0,py::arg("max")=1.0,
+              py::arg("draw_vol")=true,py::arg("draw_surf")=true
              );
 
 
 
 
 
-    ExportBVP();
-    ExportDrawFlux();
+    ExportBVP(m);
+    ExportDrawFlux(m);
 }
 
 
-
-BOOST_PYTHON_MODULE(libsolve) {
-  ExportNgsolve();
+PYBIND11_PLUGIN(libngsolve) {
+  py::module m("solve", "pybind solve");
+  ExportNgsolve(m);
+  return m.ptr();
 }
 
 

@@ -5,7 +5,10 @@
 #pragma clang diagnostic push
 // #pragma clang diagnostic ignored "-W#pragma-messages"
 #pragma clang diagnostic ignored "-Wunused-local-typedefs"
-#include <boost/python.hpp>
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+#include <pybind11/operators.h>
+#include <pybind11/complex.h>
 
 #pragma clang diagnostic pop
 
@@ -13,20 +16,8 @@
 #include <thread>
 #include <iostream>
 
-namespace bp = boost::python;
-
-#if (BOOST_VERSION >= 106000) && (BOOST_VERSION < 106100)
-  // Boost Python 1.60 does not automatically register shared_ptr<T> with T
-  #define REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(type) bp::register_ptr_to_python<type>();
-#else
-  #define REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(type)
-#endif
-
-#if defined(_MSC_FULL_VER) && _MSC_FULL_VER == 190024213
-#define MSVC2015_UPDATE3_GET_PTR_FIX(type) namespace boost { template<> const volatile type * get_pointer(const volatile type * p) { return p; } }
-#else
-#define MSVC2015_UPDATE3_GET_PTR_FIX(type)
-#endif
+namespace py = pybind11;
+using namespace pybind11::literals;
 
 using std::string;
 using std::cout;
@@ -34,17 +25,41 @@ using std::endl;
 
 using namespace ngstd;
 
+namespace pybind11 {
+template<typename T>
+bool CheckCast( py::handle obj ) {
+  try{
+    obj.cast<T>();
+    return true;
+  }
+  catch (py::cast_error &e) {
+    return false;
+  }
+}
 
+
+template <typename T>
+struct extract
+{
+  py::handle obj;
+  extract( py::handle aobj ) : obj(aobj) {}
+
+  bool check() { return CheckCast<T>(obj); }
+  T operator()() { return obj.cast<T>(); }
+};
+}
+
+struct DummyArgument {};
 
 class PythonEnvironment
 {
-  bp::object main_module; 
-  bp::object main_namespace; 
+  py::object main_module; 
+  py::object main_namespace; 
 
 public:
 
   PythonEnvironment () { ; }
-  PythonEnvironment (bp::object _module)
+  PythonEnvironment (py::object _module)
     : main_module(_module), 
       main_namespace(main_module.attr("__dict__")) 
   { ; }
@@ -59,9 +74,10 @@ public:
   virtual void exec(const string s) 
   {
     try{
-      bp::exec(s.c_str(), main_namespace, main_namespace);
+      PyRun_SimpleString(s.c_str());
     }
-    catch (bp::error_already_set const &) {
+    catch (py::error_already_set const &e) {
+      cout << "caught python error: " << e.what() << endl;
       PyErr_Print();
     }
   }
@@ -85,12 +101,12 @@ public:
   
   
 
-  //  bp::exec_file(file.c_str(), main_namespace, main_namespace);
+  //  py::exec_file(file.c_str(), main_namespace, main_namespace);
   //  return;
   //  try{
-  //    bp::exec_file(file.c_str(), main_namespace, main_namespace);
+  //    py::exec_file(file.c_str(), main_namespace, main_namespace);
   //  }
-  //  catch(bp::error_already_set const &) {
+  //  catch(py::error_already_set const &) {
   //    PyErr_Print();
   //  }
   //  catch (...) {
@@ -105,73 +121,15 @@ public:
 
 extern PythonEnvironment pyenv;
 
-class AcquireGIL 
-{
-public:
-  inline AcquireGIL(){
-    state = PyGILState_Ensure();
-  }
-  
-  inline ~AcquireGIL(){
-    PyGILState_Release(state);
-  }
-private:
-  PyGILState_STATE state;
-};
-
-class ReleaseGIL
-{
-public:
-  inline ReleaseGIL() {
-    m_thread_state = PyEval_SaveThread();
-  }
-  
-  inline ~ReleaseGIL() {
-    PyEval_RestoreThread(m_thread_state);
-    m_thread_state = NULL;
-  }
-  
-private:
-  PyThreadState * m_thread_state;
-};
+typedef py::gil_scoped_acquire AcquireGIL; 
+typedef py::gil_scoped_release ReleaseGIL; 
 
 
-
-
-
-
-
-
-template <typename T>
-class PyWrapper {
-protected:
-  shared_ptr<T> ptr;
-public:
-  PyWrapper() {;}
-  // templated constructor to allow initialization with shared_ptr to derived class object
-  template <typename TPtr>
-  PyWrapper(shared_ptr<TPtr> aptr) : ptr(aptr) {}
-  const shared_ptr<T> Get() const { return ptr; }
-  shared_ptr<T> Get() { return ptr; }
-  T* operator ->() { return ptr.get(); }
-  const T* operator ->() const { return ptr.get(); }
-  virtual ~PyWrapper() { }
-};
-
-
-template <typename T, typename BASE>
-class PyWrapperDerived : public PyWrapper<BASE>
-{
-  using PyWrapper<BASE>::ptr;
-public:
-  PyWrapperDerived() {;}
-  PyWrapperDerived(shared_ptr<T> aptr) : PyWrapper<BASE>(aptr) {;}
-  const shared_ptr<T> Get() const { return dynamic_pointer_cast<T>(ptr); }
-  shared_ptr<T> Get() { return dynamic_pointer_cast<T>(ptr); }
-  T* operator ->() { return Get().get(); }
-  const T* operator ->() const { return Get().get(); }
-  virtual ~PyWrapperDerived() {}
-};
+static void InitSlice( const py::slice &inds, size_t len, size_t &start, size_t &step, size_t &n ) {
+      size_t stop;
+      if (!inds.compute(len, &start, &stop, &step, &n))                                          
+        throw py::error_already_set();
+}
 
 
 
@@ -215,20 +173,12 @@ struct PyNameTraits<shared_ptr<T>> {
 
 
 //////////////////////////////////////////////////////////////////////
-template< typename T>
-struct PyDefToString : public boost::python::def_visitor<PyDefToString<T> > {
-  template <class Tclass>
-  void visit(Tclass& c) const {
-    c.def("__str__", &PyDefToString<T>::ToString);
-    c.def("__repr__", &PyDefToString<T>::ToString);
-  }
-
-  static string ToString(T &t ) {
-    std::ostringstream s;
-    s << t;
-    return s.str();
-  }
-};
+template <typename T, typename TCLASS = py::class_<T> >
+void PyDefToString( py::module &m, TCLASS &c )
+{
+    c.def("__str__", &ToString<T>);
+    c.def("__repr__", &ToString<T>);
+}
 
 template <typename T>
 class cl_NonElement 
@@ -242,226 +192,125 @@ inline T NonElement() { return cl_NonElement<T>::Val(); }
 
 
 //////////////////////////////////////////////////////////////////////
-// read-only bracket operator  (Matthias, please polish !)
-// enough for iterator
-// read-wirt bracket could use inheritance 
-template< typename T, typename TELEM = double >
-struct PyDefROBracketOperator : public boost::python::def_visitor<PyDefROBracketOperator<T,TELEM> > {
-  template <class Tclass>
-  void visit(Tclass& c) const {
-    c
-      .def("__getitem__", &PyDefROBracketOperator<T,TELEM>::Get)
-      .def("Get", &PyDefROBracketOperator<T,TELEM>::Get)
-      ;
-  }
+// read-only bracket operator
+template< typename T, typename TELEM, typename TCLASS = py::class_<T>>
+void PyDefROBracketOperator( py::module &m, TCLASS &c )
+{
+    auto Get = [](T& self, int i) { 
+      if( i<self.Size() && i>=0 )
+        return self[i];
+      throw py::index_error();
+      return TELEM();
+    }; 
+    c.def("__getitem__", Get);
+    c.def("Get", Get);
+}
 
-  static TELEM Get(T& self, int i) 
-  { 
-    if( i<self.Size() && i>=0 )
-      return self[i];
-    RaiseIndexError();
-    return NonElement<TELEM>();
-  } 
+// read-write bracket operator
+template< typename T, typename TELEM, typename TCLASS = py::class_<T>>
+void PyDefBracketOperator( py::module &m, TCLASS &c )
+{
+    PyDefROBracketOperator<T, TELEM>(m, c);
+    auto Set = [](T& self, int i, TELEM val) {
+      if( i<self.Size() && i>=0 )
+        self[i] = val;
+      else
+        throw py::index_error();
+    };
+    c.def("__setitem__", Set);
+    c.def("Set", Set);
+}
 
-  static void RaiseIndexError() {
-    // PythonEnvironment::getInstance().exec("raise IndexError()\n");
-    bp::exec("raise IndexError()\n");
-    cerr << "python Index error" << endl;
-  }
-
-};
-
-
-template< typename T, typename TELEM = double >
-struct PyDefBracketOperator : public boost::python::def_visitor<PyDefBracketOperator<T,TELEM> > {
-  template <class Tclass>
-  void visit(Tclass& c) const {
-    c
-      .def("__getitem__", &PyDefBracketOperator<T,TELEM>::Get)
-      .def("__setitem__", &PyDefBracketOperator<T,TELEM>::Set)
-      .def("Get", &PyDefBracketOperator<T,TELEM>::Get)
-      .def("Set", &PyDefBracketOperator<T,TELEM>::Set)
-      ;
-  }
-
-  static TELEM Get(T& self, int i) { 
-    if( i<self.Size() && i>=0 )
-      return self[i];
-    RaiseIndexError();
-    return TELEM();
-  } 
-
-  static void Set(T& self, int i, TELEM val) {
-    if( i<self.Size() && i>=0 )
-      self[i] = val;
-    else
-      RaiseIndexError();
-  }
-
-  static void RaiseIndexError() {
-    // PythonEnvironment::getInstance().exec("raise IndexError()\n");
-    bp::exec("raise IndexError()\n");
-    cerr << "python Index error" << endl;
-  }
-
-};
 
 //////////////////////////////////////////////////////////////////////
 // Python iterator protocoll
 
 template <typename T, typename TELEM>
-class PyIterator {
+class PyIterator
+{
   T & v;
   int size;
   int index;
   int startindex;
-  //     typedef typename std::remove_reference<decltype(v[startindex])>::type TELEM;
     
 public:
-  PyIterator(T & v_, int size_, int startindex_ = 0) : v(v_), size(size_), index(startindex_), startindex(startindex_) {}
+  PyIterator(T & v_, int size_, int startindex_ = 0)
+    : v(v_), size(size_), index(startindex_), startindex(startindex_)
+    {}
 
-  TELEM Next() { 
+  TELEM Next()
+  { 
     if(index<startindex+size) return v[index++];
     else 
-      bp::exec("raise StopIteration()\n");
-    // PyErr_SetNone(PyExc_StopIteration);
+      throw py::stop_iteration();
     return NonElement<TELEM>();
-    // cerr << "python Index error" << endl;
-    // return TELEM();
   }
 
-  static void Export () {
+  static void Export (py::module &m)
+  {
     string name = string("PyIterator")+GetPyName<T>();
-    bp::class_<PyIterator<T, TELEM> >( name.c_str(), bp::no_init).def("__next__", &PyIterator<T, TELEM>::Next);
-    // bp::class_<PyIterator<T, TELEM> >(string("PyIterator")+GetPyName<T>(), bp::no_init).def("__next__", &PyIterator<T, TELEM>::Next);
+    py::class_<PyIterator<T, TELEM> >(m, name.c_str()).def("__next__", &PyIterator<T, TELEM>::Next);
   }
 };
-
-
-
 
 //////////////////////////////////////////////////////////////////////
 // Export len, bracket operator and iterator protocoll at once
-template< typename T,  typename TELEM = double>
-struct PyDefVector : public boost::python::def_visitor<PyDefVector<T,TELEM> > {
-  template <class Tclass>
-  void visit(Tclass& c) const {
-    PyIterator<T, TELEM>::Export();
-    c
-      .def("__len__", FunctionPointer( []( T& v) { return v.Size();} ) )
-      .def(PyDefBracketOperator<T, TELEM>())
-      .def("__iter__", FunctionPointer([](T &v) { return PyIterator<T, TELEM>(v, v.Size(), 0 ); }))
-      ;
-  }
-};
+template <typename T, typename TELEM = double, typename TCLASS = py::class_<T> >
+void PyDefVector( py::module &m, TCLASS &c )
+{
+    PyIterator<T, TELEM>::Export(m);
 
-// Joachim: Matthias, please polish
-template< typename T,  typename TELEM = double>
-struct PyDefIterable : public boost::python::def_visitor<PyDefIterable<T,TELEM> > {
-  template <class Tclass>
-  void visit(Tclass& c) const {
+    c.def("__len__",  []( T& v) { return v.Size();}  );
+    c.def("__iter__", [](T &v) { return PyIterator<T, TELEM>(v, v.Size(), 0 ); });
+    PyDefBracketOperator<T, TELEM>(m,c);
+}
+
+template <typename T, typename TELEM = double, typename TCLASS = py::class_<T> >
+void PyDefIterable( py::module &m, TCLASS &c )
+{
     PyIterator<T, TELEM>::Export();
-    c
-      .def(PyDefROBracketOperator<T, TELEM>())
-      .def("__iter__", FunctionPointer([](T &v) 
+    c.def(PyDefROBracketOperator<T, TELEM>());
+    c.def("__iter__", [](T &v) 
                                        {
                                          return PyIterator<T, TELEM>(v, v.Size(), 0 ); 
-                                       }))
-      ;
+                                       });
+}
+
+template <typename T>
+class PyIterator2
+{
+  typedef decltype(GetReturnValue(&T::begin)) TITER;
+  typedef decltype(GetReturnValue(&TITER::operator*)) TELEM;
+  TITER begin, end;
+public:
+  PyIterator2 (const T & container)
+    : begin(container.begin()), end(container.end()) { ; }
+  TELEM Next()
+  {
+    if (! (begin != end))
+      throw py::stop_iteration();
+      
+    auto tmp = begin;
+    ++begin;
+    return *tmp;
   }
 };
-
-
 
 // iterable where elements have an increment operator (JS)
-template <typename T>
-class PyDefIterable2 : public bp::def_visitor<PyDefIterable2<T>>
+template <typename T, typename TCLASS = py::class_<T> >
+void PyDefIterable2( py::module &m, TCLASS &c )
 {
-  // typedef decltype(&T::First) TFUNCTION;
-  // typedef typename function_traits<TFUNCTION>::return_type TELEM;
-
-  /*
-  typedef decltype(GetReturnValue(&T::First)) TELEM;
-  class Iterator
-  {
-    TELEM first;
-    int size, cnt;
-  public:
-    Iterator (const T & container)
-    // : first (container.First()), size(container.Size()), cnt(0) { }
-      : first (*container.begin()), size(container.Size()), cnt(0) { }
-    TELEM Next()
-    {
-      if (++cnt > size)
-        bp::exec("raise StopIteration()\n");
-      return first++;
-    }
-  };
-  */
-
-  /*
-  typedef decltype(GetReturnValue(&T::begin)) TITER;
-  typedef decltype(GetReturnValue(&TITER::operator*)) TELEM;
-
-  class Iterator
-  {
-    TITER first;
-    int size, cnt;
-  public:
-    Iterator (const T & container)
-    // : first (container.First()), size(container.Size()), cnt(0) { }
-      : first (container.begin()), size(container.Size()), cnt(0) { }
-    TELEM Next()
-    {
-      if (++cnt > size)
-        bp::exec("raise StopIteration()\n");
-      auto tmp = first;
-      ++first;
-      return *tmp;
-    }
-  };
-  */
-
-  typedef decltype(GetReturnValue(&T::begin)) TITER;
-  typedef decltype(GetReturnValue(&TITER::operator*)) TELEM;
-
-  class Iterator
-  {
-    TITER begin, end;
-  public:
-    Iterator (const T & container)
-      : begin(container.begin()), end(container.end()) { ; }
-    TELEM Next()
-    {
-      if (! (begin != end))
-        bp::exec("raise StopIteration()\n");
-        
-      auto tmp = begin;
-      ++begin;
-      return *tmp;
-    }
-  };
-
-
-public:
-  template <class Tclass>
-  void visit (Tclass & c) const
-  {
     string itername = string("PyIterator2_")+GetPyName<T>();
-    bp::class_<Iterator>(itername.c_str(),bp::no_init)
-      .def("__next__", &Iterator::Next)
-      ;
-    c.def("__iter__", FunctionPointer
-          ([](const T & c) { return Iterator(c); }))
-      ;
-  }
-};
+    py::class_<PyIterator2<T>> citer(m, itername.c_str());
+    citer.def("__next__", &PyIterator2<T>::Next);
+    c.def("__iter__", [](const T & c) { return PyIterator2<T>(c); });
+}
 
 
 // the iterator object copies the container (= range_expr)
 // otherwise, it might be destroyed by python too early
-template <typename T>
-class PyDefIterable3 : public bp::def_visitor<PyDefIterable3<T>>
+template <typename T, typename TCLASS = py::class_<T> >
+void PyDefIterable3( py::module &m, TCLASS &c )
 {
 
   typedef decltype(GetReturnValue(&T::begin)) TITER;
@@ -500,7 +349,7 @@ class PyDefIterable3 : public bp::def_visitor<PyDefIterable3<T>>
     TELEM Next()
     {
       if (! (begin != end))
-        bp::exec("raise StopIteration()\n");
+        throw py::stop_iteration();
         
       auto tmp = begin;
       ++begin;
@@ -508,29 +357,18 @@ class PyDefIterable3 : public bp::def_visitor<PyDefIterable3<T>>
     }
   };
 
-public:
-  template <class Tclass>
-  void visit (Tclass & c) const
-  {
     string itername = string("PyIterator3_")+GetPyName<T>();
-    bp::class_<Iterator>(itername.c_str(),bp::no_init)
+    py::class_<Iterator>(m, itername.c_str())
       .def("__next__", &Iterator::Next)
       ;
-    c.def("__iter__", FunctionPointer
-          ([](shared_ptr<T> c) 
+    c.def("__iter__",
+          [](shared_ptr<T> c) 
            { 
              cout << "create python iterator" << endl;
              return Iterator(c); 
-           }))
+           })
       ;
   }
-};
-
-
-
-
-
-
 
 //////////////////////////////////////////////////////////////////////
 // Enable numeric expressions for matrix class
@@ -588,38 +426,51 @@ inline ostream & operator<< (ostream & ost, PyRef<T> ref)
   return ost;
 }
 
+template<typename T> struct PyTraits {};
+template<> struct PyTraits<double> {typedef py::float_ type;};
+template<> struct PyTraits<string> {typedef py::str type;};
+template<> struct PyTraits<bool> {typedef py::bool_ type;};
+template<> struct PyTraits<int> {typedef py::int_ type;};
 
-/*
 template<typename T>
-Array<T> & makeCArray(const bp::object & obj)
+Array<T> makeCArray(const py::tuple & obj)
 {     
-  Array<T> * C_vdL = new Array<T>(bp::len(obj));    
-  for (int i = 0; i < bp::len(obj); i++)    
-    (*C_vdL)[i] = bp::extract<T>(obj[i]);        
-  return *C_vdL;
+  Array<T> C_vdL(py::len(obj));   
+  for (int i = 0; i < py::len(obj); i++)    
+    C_vdL[i] = T(typename PyTraits<T>::type(obj[i]));
+  return std::move(C_vdL);
 }
-*/
+
+
 template<typename T>
-Array<T> makeCArray(const bp::object & obj)
+Array<T> makeCArray(const py::list & obj)
 {     
-  Array<T> C_vdL(bp::len(obj));   
-  for (int i = 0; i < bp::len(obj); i++)    
-    C_vdL[i] = bp::extract<T>(obj[i]);        
+  Array<T> C_vdL(py::len(obj));   
+  for (int i = 0; i < py::len(obj); i++)    
+    C_vdL[i] = T(typename PyTraits<T>::type(obj[i]));        
   return std::move(C_vdL);
 }
 
 template<typename T>
-Array<decltype(std::declval<T>().Get())> makeCArrayUnpackWrapper(const bp::object & obj)
+Array<T> makeCArray(const py::object & obj)
+{     
+  auto list = py::extract<py::list>(obj);
+  if (list.check())
+    return makeCArray<T>(list());
+  auto tuple = py::extract<py::tuple>(obj);
+  if (tuple.check())
+    return makeCArray<T>(tuple());
+  throw py::type_error("Cannot convert Python object to C Array");
+}
+
+template<typename T>
+Array<decltype(std::declval<T>().Get())> makeCArrayUnpackWrapper(const py::list & obj)
 {
-  Array<decltype(std::declval<T>().Get())> C_vdL(bp::len(obj));
-  for (int i = 0; i < bp::len(obj); i++)
-    C_vdL[i] = bp::extract<T>(obj[i])().Get();
+  Array<decltype(std::declval<T>().Get())> C_vdL(py::len(obj));
+  for (int i = 0; i < py::len(obj); i++)
+    C_vdL[i] = py::extract<T>(obj[i])().Get();
   return std::move(C_vdL);
 }
-
-
-
-
 template<typename T>
 struct PyNameTraits<SymbolTable<T>> {
   static string GetName() { return string("SymbolTable_") + GetPyName<T>(); }
@@ -630,68 +481,56 @@ struct PyNameTraits<PyRef<T>> {
   static string GetName() { return string("Ref_") + GetPyName<T>(); }
 };
 
-/*
-template <typename T> struct T_MyRemovePtr 
-{ typedef T type; typedef T & ref_type; };
-
-template <typename T> struct T_MyRemovePtr<shared_ptr<T>> 
-{ typedef T type; typedef T& ref_type; };
-
-template <class T>
-struct cl_remove_pointer
-{ static T Val (T v) { return v; } };
-template <class T>
-struct cl_remove_pointer<T*>
-{ static T & Val (T * v) { return *v; }};
-
-template <class T> inline auto MyRemovePtr (T d) -> decltype(cl_remove_pointer<T>::Val(d))
-{ return cl_remove_pointer<T>::Val(d); }
-*/
-
-
 template <typename T>
-struct PythonDictFromSymbolTable {
-  static PyObject* convert(const SymbolTable<T> & st)
-    {
-      bp::dict res;
-      for(int i = 0; i < st.Size(); i++) 
-        res[st.GetName(i)] = st[i];
-      return bp::incref(res.ptr());
-    }
-};
-
-template <typename T> void PyExportSymbolTable ()
+void PyExportSymbolTable (py::module &m)
 {
-  boost::python::to_python_converter< SymbolTable<T>, PythonDictFromSymbolTable<T> >();
-}
-
-// convertion not possible for shared_ptr<double>, so we have a special treatment:
-template <> inline void PyExportSymbolTable<shared_ptr<double>> ()
-{
-  typedef SymbolTable<shared_ptr<double>> ST;
+  typedef SymbolTable<T> ST;
   
   string name = GetPyName<ST>();
-  bp::class_<ST>(name.c_str())
+  py::class_<ST>(m, name.c_str())
     .def("__str__", &ToString<ST>)
     .def("__len__", &ST::Size)
     .def("__contains__", &ST::Used)
-    .def("GetName", FunctionPointer([](ST & self, int i) { return string(self.GetName(i)); }))
-    .def("__getitem__", FunctionPointer([](ST & self, string name)
+    .def("GetName", [](ST & self, int i) { return string(self.GetName(i)); })
+    .def("__getitem__", [](ST & self, string name)
                                         {
-                                          if (!self.Used(name)) bp::exec("raise KeyError()\n");
-                                          return *self[name]; 
-                                        }))
-    .def("__getitem__", FunctionPointer ([](ST & self, int i)
+                                          if (!self.Used(name)) throw py::index_error();
+                                          return self[name]; 
+                                        })
+    .def("__getitem__", [](ST & self, int i)
                                          {
-                                           if (i < 0 || i >= self.Size()) bp::exec("raise IndexError()\n");
-                                           return *self[i];  
-                                         }))
+                                           if (i < 0 || i >= self.Size()) throw py::index_error();
+                                           return self[i];  
+                                         })
     ;
 }  
 
 
+// convertion not possible for shared_ptr<double>, so we have a special treatment:
+template <> inline void PyExportSymbolTable<shared_ptr<double>> (py::module &m)
+{
+  typedef SymbolTable<shared_ptr<double>> ST;
+  
+  string name = GetPyName<ST>();
+  py::class_<ST>(m, name.c_str())
+    .def("__str__", &ToString<ST>)
+    .def("__len__", &ST::Size)
+    .def("__contains__", &ST::Used)
+    .def("GetName", [](ST & self, int i) { return string(self.GetName(i)); })
+    .def("__getitem__", [](ST & self, string name)
+                                        {
+                                          if (!self.Used(name)) throw py::index_error();
+                                          return *self[name]; 
+                                        })
+    .def("__getitem__", [](ST & self, int i)
+                                         {
+                                           if (i < 0 || i >= self.Size()) throw py::index_error();
+                                           return *self[i];  
+                                         })
+    ;
+}  
 
-
+PYBIND11_DECLARE_HOLDER_TYPE(T, std::shared_ptr<T>);
 
 #endif // NGS_PYTHON
 #endif // PYTHON_NGSTD_HPP___

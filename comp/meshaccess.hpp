@@ -27,11 +27,11 @@ namespace ngcomp
   class Ngs_Element;
 
 
-  class Ngs_Element : public netgen::Ng_Element, public ElementId
+  class Ngs_Element : public ElementId, public netgen::Ng_Element
   {
   public:
     Ngs_Element (const netgen::Ng_Element & el, ElementId id) 
-      : netgen::Ng_Element(el), ElementId(id) { ; }
+      : ElementId(id), netgen::Ng_Element(el) { ; }
     AOWrapper<decltype(vertices)> Vertices() const { return vertices; }
     AOWrapper<decltype(edges)> Edges() const { return edges; }
     AOWrapper<decltype(faces)> Faces() const { return faces; }
