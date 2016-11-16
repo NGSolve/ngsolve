@@ -52,7 +52,7 @@ namespace ngstd
     bool owner;
     const char * name;
 
-#ifdef __MIC__
+#if defined(__MIC__) || defined (__AVX512F__)
     enum { ALIGN = 64 };
 #else
     enum { ALIGN = 32 };
@@ -87,11 +87,6 @@ namespace ngstd
     }
     */
     INLINE LocalHeap (const LocalHeap & lh2) = delete;
-    INLINE LocalHeap Borrow() 
-    {
-      return LocalHeap (p, Available());
-    }
-
 
     INLINE LocalHeap (LocalHeap && lh2)
       : data(lh2.data), p(lh2.p), totsize(lh2.totsize), owner(lh2.owner),
@@ -99,6 +94,28 @@ namespace ngstd
     {
       next = data + totsize;
       lh2.owner = false;
+    }
+    
+    INLINE LocalHeap Borrow() 
+    {
+      return LocalHeap (p, Available());
+    }
+
+
+    INLINE LocalHeap & operator= (LocalHeap && lh2)
+    {
+      if (owner)
+        delete [] data;
+      
+      data = lh2.data;
+      p = lh2.p;
+      totsize = lh2.totsize;
+      owner = lh2.owner;
+      name = lh2.name;
+
+      next = data + totsize;
+      lh2.owner = false;
+      return *this;
     }
 
     INLINE LocalHeap ()

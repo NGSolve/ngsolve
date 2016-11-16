@@ -139,7 +139,7 @@ namespace ngfem
   */
 
   class GenericOrientation;
-  template <int V1, int V2, int V3> class FixedOrientation;
+  template <int V1, int V2, int V3, int V4=-1> class FixedOrientation;
   
   template <ELEMENT_TYPE ET, int ORDER, typename ORIENTATION = GenericOrientation>
   class L2HighOrderFEFO_Shapes;
@@ -262,6 +262,32 @@ namespace ngfem
 	      mass(ii) = 1.0 / ((2 * iy + 1) * (2 * ix + 2 * iy + 2));
           */
 	}
+      else if (ET == ET_TET)
+        {
+          /*
+          int order = ORDER;
+          for (int ix = 0, ii = 0; ix <= order; ix++)
+            for (int iy = 0; iy <= order - ix; iy++)
+              for (int iz = 0; iz <= order - ix-iy; iz++, ii++)
+                mass(ii) = 1.0 / ((2 * ix + 1) * (2 * ix + 2 * iy + 2) * (2 * ix + 2 * iy + 2 * iz + 3));
+          */
+          int ii = 0;
+          Iterate<ORDER+1>
+            ([&] (auto ix)
+             {
+               Iterate<ORDER+1-ix.value>
+                 ([&] (auto iy)
+                  {
+                    Iterate<ORDER+1-ix.value-iy.value>
+                      ([&] (auto iz)
+                       {
+                         mass(ii) = 1.0 / ((2 * ix + 1) * (2 * ix + 2 * iy + 2) * (2 * ix + 2 * iy + 2 * iz + 3));
+                         ii++;
+                       });
+                  });
+             });
+          
+        }
 #ifndef __CUDA_ARCH__
       else
 	{
@@ -281,14 +307,15 @@ namespace ngfem
   class L2HighOrderFEFO_Shapes<ET_SEGM, ORDER> : public L2HighOrderFEFO<ET_SEGM, ORDER>
   {
     using L2HighOrderFEFO<ET_SEGM, ORDER>::ndof;
-    using L2HighOrderFEFO<ET_SEGM, ORDER>::vnums; 
+    using L2HighOrderFEFO<ET_SEGM, ORDER>::vnums;
+    using L2HighOrderFEFO<ET_SEGM, ORDER>::DIM; 
 
   public:
 
     enum { NDOF = (ORDER+1) };
 
     template<typename Tx, typename TFA>  
-    INLINE void T_CalcShape (TIP<1,Tx> ip, TFA & shape) const
+    INLINE void T_CalcShape (const TIP<DIM,Tx> & ip, TFA & shape) const
     {
       Tx lam[2] = { ip.x, 1-ip.x };
       INT<2> e = this -> GetEdgeSort (0, vnums);
@@ -314,7 +341,7 @@ namespace ngfem
     enum { NDOF = (ORDER+1)*(ORDER+2)/2 };
 
     template<typename Tx, typename TFA>  
-    INLINE void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
+    INLINE void T_CalcShape (const TIP<2,Tx> & ip, TFA & shape) const
     {
       Tx lam[3] = { ip.x, ip.y, 1-ip.x-ip.y };
       INT<4> f = this -> GetFaceSort (0, vnums);
@@ -330,7 +357,7 @@ namespace ngfem
          SBLambda ([&] (auto i, Tx val) LAMBDA_INLINE 
                    {
                      // JacobiPolynomialFix<1+2*i,0> jac;
-                     jac.EvalMult (IC<ORDER-i>(), 2*x-1, val, 
+                     jac.EvalMult (IC<ORDER-i.value>(), 2*x-1, val, 
                                    SBLambda([&](auto j, Tx v2) 
                                             {
                                               shape[ii++] = v2;
@@ -346,13 +373,14 @@ namespace ngfem
     : public L2HighOrderFEFO<ET_TRIG, ORDER, FixedOrientation<V1,V2,V3>>
   {
     using L2HighOrderFEFO<ET_TRIG, ORDER, FixedOrientation<V1,V2,V3>>::ndof;
-    using L2HighOrderFEFO<ET_TRIG, ORDER, FixedOrientation<V1,V2,V3>>::vnums; 
-
+    using L2HighOrderFEFO<ET_TRIG, ORDER, FixedOrientation<V1,V2,V3>>::vnums;
+    using L2HighOrderFEFO<ET_TRIG, ORDER, FixedOrientation<V1,V2,V3>>::DIM;     
+    
   public:
     enum { NDOF = (ORDER+1)*(ORDER+2)/2 };
 
     template<typename Tx, typename TFA>  
-    INLINE void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
+      INLINE void T_CalcShape (const TIP<DIM,Tx> & ip, TFA & shape) const
     {
       Tx lam[3] = { ip.x, ip.y, 1-ip.x-ip.y };
 
@@ -369,17 +397,90 @@ namespace ngfem
          y-(1-x-y), 1-x,
          SBLambda ([&] (auto i, Tx val) LAMBDA_INLINE 
                    {
-                     // JacobiPolynomialFix<1+2*i,0> jac;
-                     jac.EvalMult (IC<ORDER-i>(), 2*x-1, val, shape+ii);
-                     /*
-                                   SBLambda([&](auto j, Tx v2) 
-                                            {
-                                              shape[ii++] = v2;
-                                            }));
-                     */
-                     ii += IC<ORDER-i+1>();
+                     jac.EvalMult (IC<ORDER-i.value>(), 2*x-1, val, shape+ii);
+                     ii += IC<ORDER-i.value+1>();
                      jac.IncAlpha2();
                    }));
+    }
+  };
+
+  template <int ORDER, int V1, int V2, int V3, int V4>
+  class L2HighOrderFEFO_Shapes<ET_TET, ORDER, FixedOrientation<V1,V2,V3,V4>>
+    : public L2HighOrderFEFO<ET_TET, ORDER, FixedOrientation<V1,V2,V3,V4>>
+  {
+    using L2HighOrderFEFO<ET_TET, ORDER, FixedOrientation<V1,V2,V3,V4>>::ndof;
+    using L2HighOrderFEFO<ET_TET, ORDER, FixedOrientation<V1,V2,V3,V4>>::vnums; 
+
+  public:
+    enum { NDOF = (ORDER+1)*(ORDER+2)*(ORDER+3)/6 };
+
+    template<typename Tx, typename TFA>  
+    INLINE void T_CalcShape (const TIP<3,Tx> & ip, TFA & shape) const
+    {
+//       Tx lami[4] = { ip.x, ip.y, ip.z, 1-ip.x-ip.y-ip.z };
+// 
+//       INT<4> hvnums(V1,V2,V3,V4);
+//       unsigned char sort[4] = { 0, 1, 2, 3 };
+//       if (hvnums[sort[0]] > hvnums[sort[1]]) Swap (sort[0], sort[1]);
+//       if (hvnums[sort[2]] > hvnums[sort[3]]) Swap (sort[2], sort[3]);
+//       if (hvnums[sort[0]] > hvnums[sort[2]]) Swap (sort[0], sort[2]);
+//       if (hvnums[sort[1]] > hvnums[sort[3]]) Swap (sort[1], sort[3]);
+//       if (hvnums[sort[1]] > hvnums[sort[2]]) Swap (sort[1], sort[2]);
+// 
+//       Tx lamis[4];
+//       for (int i = 0; i < 4; i++)
+//         lamis[i] = lami[sort[i]];
+
+      // Hack: only working because there are currently only 2 possibilities for V1-V4:
+      // 0,1,2,3
+      // 0,1,3,2
+      const Tx l4 = 1-ip.x-ip.y-ip.z;
+      auto const lamis = make_tuple( ip.x, ip.y, V3<V4 ? ip.z : l4, V3<V4 ? l4 : ip.z );
+      const auto & lami0 = get<0>(lamis);
+      const auto & lami1 = get<1>(lamis);
+      const auto & lami2 = get<2>(lamis);
+      const auto & lami3 = get<3>(lamis);
+
+      size_t ii = 0;
+      LegendrePolynomial leg;
+      JacobiPolynomialAlpha jac1(1);    
+      leg.EvalScaled 
+        (IC<ORDER>(), lami2-lami3, lami2+lami3,
+         SBLambda ([&](auto k, Tx polz) LAMBDA_INLINE
+                   {
+                     JacobiPolynomialAlpha jac2(2*k+2);
+                     jac1.EvalScaledMult 
+                       (IC<ORDER-k.value>(), lami1-lami2-lami3, 1-lami0, polz, 
+                        SBLambda ([&] (auto j, Tx polsy) LAMBDA_INLINE
+                                  {
+                                    jac2.EvalMult(IC<ORDER-k.value-j.value>(), 2 * lami0 - 1, polsy, shape+ii);
+                                    ii += IC<ORDER-k.value-j.value+1>();
+                                    jac2.IncAlpha2();
+                                  }));
+                     jac1.IncAlpha2();
+                   }));
+      /*
+      size_t ii = 0;
+      LegendrePolynomial leg;
+      // JacobiPolynomialAlpha jac1(1);    
+      leg.EvalScaled 
+        (IC<ORDER>(), lami[0], lami[0]+lami[1],
+         SBLambda ([&](auto k, Tx polz) LAMBDA_INLINE
+                   {
+                     JacobiPolynomialFix<1+2*k,0> jac1;  
+                     // JacobiPolynomialAlpha jac2(2*k+2);
+                     jac1.EvalScaledMult 
+                       (IC<ORDER-k>(), lami[1], lami[0]+lami[1]+lami[2], polz, 
+                        SBLambda ([&] (auto j, Tx polsy) LAMBDA_INLINE
+                                  {
+                                    JacobiPolynomialFix<2+2*k+2*j,0> jac2;                                      
+                                    jac2.EvalMult(IC<ORDER-k-j>(), lami[2], polsy, shape+ii);
+                                    ii += IC<ORDER-k-j+1>();
+                                    // jac2.IncAlpha2();
+                                  }));
+                     // jac1.IncAlpha2();
+                   }));
+      */
     }
   };
   

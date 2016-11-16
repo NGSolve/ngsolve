@@ -30,13 +30,17 @@ inline void gettimeofday(struct timeval* t,void* timezone)
 #endif
 
 #include <chrono>
-inline double WallTime ()
-{
-  typedef std::chrono::time_point<std::chrono::system_clock> time_point;
-  static time_point start = std::chrono::system_clock::now();
-  time_point now = std::chrono::system_clock::now();
-  std::chrono::duration<double> elapsed_seconds = now-start;
-  return elapsed_seconds.count();
+
+namespace ngstd {
+  extern std::chrono::time_point<std::chrono::system_clock> wall_time_start;
+
+  // Time in seconds since program start
+  inline double WallTime ()
+    {
+      std::chrono::time_point<std::chrono::system_clock> now = std::chrono::system_clock::now();
+      std::chrono::duration<double> elapsed_seconds = now-wall_time_start;
+      return elapsed_seconds.count();
+    }
 }
 
 #ifdef VTRACE
@@ -361,6 +365,22 @@ namespace ngstd
     long int GetCounts () { return 0; }
     operator int () { return timer_id; }
   };
+
+  class RegionTracer
+    {
+    public:
+      static constexpr int ID_JOB = -1;
+
+      /// start trace
+      RegionTracer (int athread_id, int region_id, int id_type = -1, int additional_value = -1 ){}
+      /// start trace with timer
+      RegionTracer (int athread_id, Timer & timer, int additional_value = -1 ){}
+      /// set user defined value
+      void SetValue( int additional_value ){}
+      /// stop trace
+      ~RegionTracer (){}
+    };
+
 #else
 
   class Timer

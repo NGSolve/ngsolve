@@ -4,6 +4,7 @@
 /* Date:   6. Feb. 2003                                              */
 /*********************************************************************/
 
+#define FILE_L2HOFE_CPP
 
 #include <fem.hpp>
 #include <tscalarfe_impl.hpp>
@@ -12,6 +13,7 @@
 
 namespace ngfem
 {
+  
   template class L2HighOrderFE<ET_TRIG>;  
   template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_TRIG>, ET_TRIG, DGFiniteElement<2> >;
   
@@ -31,6 +33,7 @@ namespace ngfem
               case 1: hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,1, FixedOrientation<0,1,2>> (); break;
               case 2: hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,2, FixedOrientation<0,1,2>> (); break;
               case 3: hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,3, FixedOrientation<0,1,2>> (); break;
+              case 4: hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,4, FixedOrientation<0,1,2>> (); break;
               default: ; 
               }
           }
@@ -42,6 +45,7 @@ namespace ngfem
               case 1: hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,1, FixedOrientation<0,2,1>> (); break;
               case 2: hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,2, FixedOrientation<0,2,1>> (); break;
               case 3: hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,3, FixedOrientation<0,2,1>> (); break;
+              case 4: hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,4, FixedOrientation<0,2,1>> (); break;
               default: ; 
               }
           }

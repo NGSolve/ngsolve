@@ -426,7 +426,8 @@ namespace ngla
                      for (int j : dof2element[i].Range())
                        {
                          sizes[j] = colelements[dof2element[i][j]].Size();
-                         ptrs[j] = &colelements[dof2element[i][j]][0];
+                         // ptrs[j] = &colelements[dof2element[i][j]][0];
+                         ptrs[j] = colelements[dof2element[i][j]].Addr(0);
                        }
                      
                      int cnti = 0;
@@ -1978,7 +1979,11 @@ namespace ngla
     return prod;
   }
 
-
+  SparseMatrixTM<double> *
+  MatMult (const SparseMatrix<double, double, double> & mata, const SparseMatrix<double, double, double> & matb)
+  {
+    return MatMult<double, double, double>(mata, matb);
+  }
 
   template <class TM, class TV>
   BaseSparseMatrix * 

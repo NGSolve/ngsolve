@@ -195,7 +195,7 @@ namespace ngfem
   extern template class L2HighOrderFE<ET_TRIG>;
   L2HOFE_EXTERN template class L2HighOrderFE<ET_QUAD>;
 
-  L2HOFE_EXTERN template class L2HighOrderFE<ET_TET>;
+  extern template class L2HighOrderFE<ET_TET>;
   L2HOFE_EXTERN template class L2HighOrderFE<ET_PRISM>;
   L2HOFE_EXTERN template class L2HighOrderFE<ET_PYRAMID>;
   L2HOFE_EXTERN template class L2HighOrderFE<ET_HEX>;
@@ -205,7 +205,7 @@ namespace ngfem
   extern template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_TRIG>, ET_TRIG, DGFiniteElement<2> >;
   L2HOFE_EXTERN template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_QUAD>, ET_QUAD, DGFiniteElement<2> >;
 
-  L2HOFE_EXTERN template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_TET>, ET_TET, DGFiniteElement<3> >;
+  extern template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_TET>, ET_TET, DGFiniteElement<3> >;
   L2HOFE_EXTERN template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_PRISM>, ET_PRISM, DGFiniteElement<3> >;
   L2HOFE_EXTERN template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_PYRAMID>, ET_PYRAMID, DGFiniteElement<3> >;
   L2HOFE_EXTERN template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_HEX>, ET_HEX, DGFiniteElement<3> >;

@@ -16,7 +16,7 @@ namespace ngfem
 class ProxyFunction : public CoefficientFunction
 {
   bool testfunction; // true .. test, false .. trial
-  bool is_complex;
+  // bool is_complex;
   bool is_other;    // neighbour element (DG)
 
   shared_ptr<DifferentialOperator> evaluator;
@@ -27,7 +27,7 @@ class ProxyFunction : public CoefficientFunction
   shared_ptr<CoefficientFunction> boundary_values; // for DG - apply
 
   SymbolTable<shared_ptr<DifferentialOperator>> additional_diffops;
-  int dim;
+  // int dim;
 public:
   ProxyFunction (bool atestfunction, bool ais_complex,
                  shared_ptr<DifferentialOperator> aevaluator, 
@@ -35,22 +35,30 @@ public:
                  shared_ptr<DifferentialOperator> atrace_evaluator,
                  shared_ptr<DifferentialOperator> atrace_deriv_evaluator)
                  
-    : testfunction(atestfunction), is_complex(ais_complex), is_other(false),
+    : CoefficientFunction(aevaluator->Dim(), ais_complex),
+      testfunction(atestfunction), is_other(false),
       evaluator(aevaluator), 
       deriv_evaluator(aderiv_evaluator),
       trace_evaluator(atrace_evaluator), 
       trace_deriv_evaluator(atrace_deriv_evaluator)
   {
-    dim = evaluator->Dim();
+    // dim = evaluator->Dim();
     if (deriv_evaluator || trace_deriv_evaluator)
       deriv_proxy = make_shared<ProxyFunction> (testfunction, is_complex, deriv_evaluator, nullptr,
                                                 trace_deriv_evaluator, nullptr);
+
+    int dim = evaluator->Dim();
+    int blockdim = evaluator->BlockDim();
+    if (blockdim == 1)
+      SetDimensions (Array<int> ({dim}));
+    else
+      SetDimensions (Array<int> ({dim/blockdim, blockdim}));
   }
 
   bool IsTestFunction () const { return testfunction; }
-  virtual int Dimension () const final { return dim; } // { evaluator->Dim(); }
-  virtual Array<int> Dimensions() const final;
-  virtual bool IsComplex () const final { return is_complex; } 
+  // virtual int Dimension () const final { return dim; } // { evaluator->Dim(); }
+  // virtual Array<int> Dimensions() const final;
+  // virtual bool IsComplex () const final { return is_complex; } 
   bool IsOther() const { return is_other; }
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
@@ -149,6 +157,34 @@ public:
                                FlatMatrix<> deriv,
                                FlatMatrix<> dderiv) const;
 
+  virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir, 
+                              AFlatMatrix<double> values, AFlatMatrix<double> deriv) const;
+  
+  virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & ir, 
+                               AFlatMatrix<double> values, AFlatMatrix<double> deriv,
+                               AFlatMatrix<double> dderiv) const;
+  
+  virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
+                              FlatArray<AFlatMatrix<>*> input,
+                              FlatArray<AFlatMatrix<>*> dinput,
+                              AFlatMatrix<> result,
+                              AFlatMatrix<> deriv) const
+  {
+    EvaluateDeriv (ir, result, deriv);
+  }
+  
+  virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & ir,
+                               FlatArray<AFlatMatrix<>*> input,
+                               FlatArray<AFlatMatrix<>*> dinput,
+                               FlatArray<AFlatMatrix<>*> ddinput,
+                               AFlatMatrix<> result,
+                               AFlatMatrix<> deriv,
+                               AFlatMatrix<> dderiv) const
+  {
+    EvaluateDDeriv (ir, result, deriv, dderiv);
+  }
+
+  
   virtual bool ElementwiseConstant () const { return true; }
 
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const;  
@@ -212,15 +248,19 @@ class CompoundDifferentialOperator : public DifferentialOperator
 public:
   CompoundDifferentialOperator (shared_ptr<DifferentialOperator> adiffop, 
                                 int acomp)
-    : diffop(adiffop), comp(acomp) { ; }
+    : DifferentialOperator(adiffop->Dim(), adiffop->BlockDim(),
+                           adiffop->Boundary(), adiffop->DiffOrder()),
+      diffop(adiffop), comp(acomp) { ; }
   
   virtual ~CompoundDifferentialOperator () = default;
   
   /// dimension of range
+  /*
   virtual int Dim() const { return diffop->Dim(); }
   virtual int BlockDim() const { return diffop->BlockDim(); }
   virtual bool Boundary() const { return diffop->Boundary(); }
   virtual int DiffOrder() const { return diffop->DiffOrder(); }
+  */
   virtual string Name() const { return diffop->Name(); }
 
   virtual IntRange UsedDofs(const FiniteElement & bfel) const
@@ -277,7 +317,17 @@ public:
     IntRange r = BlockDim() * fel.GetRange(comp);
     diffop->CalcMatrix (fel[comp], mir, mat.Cols(r), lh);
   }
-  
+
+  NGS_DLL_HEADER virtual void
+  CalcMatrix (const FiniteElement & bfel,
+              const SIMD_BaseMappedIntegrationRule & mir,
+              ABareMatrix<double> mat) const
+  {
+    // mat = 0;   // take care: unused elements not zerod !!!!
+    const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
+    IntRange r = Dim() * fel.GetRange(comp);
+    diffop->CalcMatrix (fel[comp], mir, mat.Rows(r));
+  }
   
   NGS_DLL_HEADER virtual void
   Apply (const FiniteElement & bfel,
@@ -539,7 +589,7 @@ public:
     virtual void
     ApplyFacetMatrix (const FiniteElement & volumefel, int LocalFacetNr,
                       const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
-                      const ElementTransformation & seltrans,  
+                      const ElementTransformation & seltrans, FlatArray<int> & SElVertices,
                       FlatVector<double> elx, FlatVector<double> ely,
                       LocalHeap & lh) const;
 

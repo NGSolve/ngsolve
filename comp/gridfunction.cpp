@@ -64,7 +64,10 @@ namespace ngcomp
                                        shared_ptr<DifferentialOperator>(),
                                        shared_ptr<DifferentialOperator>()), // gridfunction-CF with null-ptr diffop
       fespace(afespace)
-  { 
+  {
+    is_complex = fespace->IsComplex();
+    if (fespace->GetEvaluator(VOL) || fespace->GetEvaluator(BND))
+      SetDimensions (GridFunctionCoefficientFunction::Dimensions());
     nested = flags.GetDefineFlag ("nested");
     visual = !flags.GetDefineFlag ("novisual");
     multidim = int (flags.GetNumFlag ("multidim", 1));
@@ -335,7 +338,7 @@ namespace ngcomp
 	    for( int i = 0; i < nnodes; i++)
 	      {
 		fes.GetNodeDofNrs (nt, compress[index[i]],  dnums); 
-		Vector<SCAL> elvec(dnums.Size());
+		Vector<SCAL> elvec(dnums.Size()*fes.GetDimension());
 		
 		for (int k = 0; k < elvec.Size(); k++)
 		  if (ist.good())
@@ -543,7 +546,7 @@ namespace ngcomp
 	    for( int i = 0; i < nnodes; i++)
 	      {
 		fes.GetNodeDofNrs (nt, compress[index[i]],  dnums); 
-		Vector<SCAL> elvec(dnums.Size());
+		Vector<SCAL> elvec(dnums.Size()*fes.GetDimension());
 		GetElementVector (dnums, elvec);
 		
 		for (int j = 0; j < elvec.Size(); j++)
@@ -926,8 +929,9 @@ namespace ngcomp
 
   GridFunctionCoefficientFunction :: 
   GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, int acomp)
-    : gf(agf), diffop (NULL), comp (acomp) 
+    : CoefficientFunction(1, agf->GetFESpace()->IsComplex()), gf(agf), diffop (NULL), comp (acomp) 
   {
+    SetDimensions (gf->Dimensions());
     diffop = gf->GetFESpace()->GetEvaluator();
   }
 
@@ -936,17 +940,19 @@ namespace ngcomp
 				   shared_ptr<DifferentialOperator> adiffop,
                                    shared_ptr<DifferentialOperator> atrace_diffop,
                                    int acomp)
-    : gf(agf), diffop (adiffop), trace_diffop(atrace_diffop), comp (acomp) 
+    : CoefficientFunction(1, false),
+      gf(agf), diffop (adiffop), trace_diffop(atrace_diffop), comp (acomp) 
   {
-    ;
+    ; // SetDimensions (gf->Dimensions());    
   }
 
   GridFunctionCoefficientFunction :: 
   GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, 
 				   shared_ptr<BilinearFormIntegrator> abfi, int acomp)
-    : gf(agf), bfi (abfi), comp (acomp) 
+    : CoefficientFunction(1, agf->IsComplex()),
+      gf(agf), bfi (abfi), comp (acomp) 
   {
-    ;
+    SetDimensions (gf->Dimensions());    
   }
 
 
@@ -971,9 +977,12 @@ namespace ngcomp
   Array<int> GridFunctionCoefficientFunction::Dimensions() const
   {
     int d = Dimension();
-    int spacedim = gf->GetFESpace()->GetDimension();
-    if (diffop && spacedim > 1)
-      return Array<int> ( { spacedim, d/spacedim } );
+    if (diffop)
+      {
+        int spacedim = gf->GetFESpace()->GetDimension();
+        if (spacedim > 1)
+          return Array<int> ( { spacedim, d/spacedim } );
+      }
     return Array<int>( { d } );
   }
 
@@ -981,7 +990,7 @@ namespace ngcomp
   {
     string mycode_simd = R"CODE_( 
       STACK_ARRAY(SIMD<double>, {hmem}, mir.Size()*{dim});
-      AFlatMatrix<double>  {values}({dim}, mir.IR().GetNIP(), &{hmem}[0].Data());
+      AFlatMatrix<double>  {values}({dim}, mir.IR().GetNIP(), &{hmem}[0] /* .Data() */);
       {
       LocalHeapMem<100000> lh2("{values}");
       const GridFunction & gf = *reinterpret_cast<GridFunction*>({gf_ptr});
@@ -1100,7 +1109,8 @@ namespace ngcomp
   }
   
   bool GridFunctionCoefficientFunction::IsComplex() const
-  { 
+  {
+    cout << "check for complex" << endl;
     return gf->GetFESpace()->IsComplex(); 
   }
 
@@ -1334,7 +1344,7 @@ namespace ngcomp
 
     if (!trafo.BelongsToMesh ((void*)(fes.GetMeshAccess().get())))
       {
-        throw Exception ("SIMD - evaluation not available for different meshes");
+        throw ExceptionNOSIMD ("SIMD - evaluation not available for different meshes");
         // for (int i = 0; i < ir.Size(); i++)
         // Evaluate (ir[i], values.Row(i));
         return;

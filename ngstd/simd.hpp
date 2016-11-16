@@ -56,7 +56,7 @@ namespace ngstd
 
 #ifdef __AVX512F__
   template<>
-  class alignas(64) SIMD<double>
+  class alignas(64) SIMD<double> 
   {
     __m512d data;
     
@@ -121,9 +121,21 @@ namespace ngstd
   };
  
 #else
+
+  template <size_t ALIGN = 64>
+  class AlignedAlloc
+  {
+  public:
+    void * operator new (size_t s) { return  _mm_malloc(s, ALIGN); }
+    void * operator new[] (size_t s) { return  _mm_malloc(s, ALIGN); }
+    void operator delete (void * p) { _mm_free(p); }
+    void operator delete[] (void * p) { _mm_free(p); }
+  };
+  
+
   
   template<>
-  class alignas(32) SIMD<double>
+  class alignas(32) SIMD<double> : public AlignedAlloc<>
   {
     __m256d data;
     
@@ -152,6 +164,13 @@ namespace ngstd
       SIMD_function(val, has_call_operator<T>::value);
       return *this;
     }
+
+    /*
+    void * operator new (size_t s) { return  _mm_malloc(s, 64); }
+    void * operator new[] (size_t s) { return  _mm_malloc(s, 64); }
+    void operator delete (void * p) { _mm_free(p); }
+    void operator delete[] (void * p) { _mm_free(p); }
+    */
     
     template <typename Function>
     void SIMD_function (const Function & func, std::true_type)
@@ -238,12 +257,23 @@ namespace ngstd
     __m128d hv2 = _mm_add_pd (_mm256_extractf128_pd(hv,0), _mm256_extractf128_pd(hv,1));
     return make_tuple(_mm_cvtsd_f64 (hv2),  _mm_cvtsd_f64(_mm_shuffle_pd (hv2, hv2, 3)));
   }
+
+  INLINE SIMD<double> HSum (SIMD<double> v1, SIMD<double> v2, SIMD<double> v3, SIMD<double> v4)
+  {
+    __m256d hsum1 = _mm256_hadd_pd (v1.Data(), v2.Data());
+    __m256d hsum2 = _mm256_hadd_pd (v3.Data(), v4.Data());
+    __m256d hsum = _mm256_add_pd (_mm256_permute2f128_pd (hsum1, hsum2, 1+2*16),
+                                  _mm256_blend_pd (hsum1, hsum2, 12));
+    return hsum;
+  }
+  
 #endif  
   
 
 
 #else
 
+  
   template<>
   class SIMD<double>
   {
@@ -454,9 +484,9 @@ INLINE ngstd::SIMD<double> pow (ngstd::SIMD<double> a, double x) {
 
 
 
-  template <typename T>
+  template <typename T1, typename T2, typename T3>
   // a*b+c
-  T FMA(T a, T b, T c)
+  auto FMA(T1 a, T2 b, T3 c)
   {
     return a*b+c;
   }
@@ -466,11 +496,19 @@ INLINE ngstd::SIMD<double> pow (ngstd::SIMD<double> a, double x) {
   {
     return _mm512_fmadd_pd (a.Data(), b.Data(), c.Data());
   }
+  INLINE SIMD<double> FMA (const double & a, SIMD<double> b, SIMD<double> c)
+  {
+    return _mm512_fmadd_pd (_mm256_set1_pd(a), b.Data(), c.Data());    
+  }
 #else
 #ifdef __AVX2__
   INLINE SIMD<double> FMA (SIMD<double> a, SIMD<double> b, SIMD<double> c)
   {
     return _mm256_fmadd_pd (a.Data(), b.Data(), c.Data());
+  }
+  INLINE SIMD<double> FMA (const double & a, SIMD<double> b, SIMD<double> c)
+  {
+    return _mm256_fmadd_pd (_mm256_set1_pd(a), b.Data(), c.Data());
   }
 #endif
 #endif
@@ -479,6 +517,12 @@ INLINE ngstd::SIMD<double> pow (ngstd::SIMD<double> a, double x) {
   INLINE MultiSIMD<D,double> FMA(MultiSIMD<D,double> a, MultiSIMD<D,double> b, MultiSIMD<D,double> c)
   {
     return MultiSIMD<D,double> (FMA (a.Head(), b.Head(), c.Head()), FMA (a.Tail(), b.Tail(), c.Tail()));
+  }
+
+  template <int D>
+  INLINE MultiSIMD<D,double> FMA(const double & a, MultiSIMD<D,double> b, MultiSIMD<D,double> c)
+  {
+    return MultiSIMD<D,double> (FMA (a, b.Head(), c.Head()), FMA (a, b.Tail(), c.Tail()));
   }
 
 

@@ -2075,7 +2075,10 @@ namespace ngfem
     // ************************************
 
     pointrule.Append (IntegrationPoint (0, 0, 0, 1));
-
+    // cout << "simd_pointrule: " << simd_pointrule << endl;
+    simd_pointrule = SIMD_IntegrationRule (pointrule);
+    // cout << "simd_pointrule: " << simd_pointrule << endl;
+    
     // ************************************
     // ** Segment integration rules
     // ************************************
@@ -2975,7 +2978,7 @@ namespace ngfem
   }
 
   SIMD_IntegrationRule::SIMD_IntegrationRule (const IntegrationRule & ir)
-    : Array<SIMD<IntegrationPoint>> (0, nullptr)
+    : Array<SIMD<IntegrationPoint>, size_t> (0, nullptr)
   {
     nip = ir.GetNIP();
     this->size = (ir.Size()+SIMD<IntegrationPoint>::Size()-1) / SIMD<IntegrationPoint>::Size();
@@ -2991,7 +2994,7 @@ namespace ngfem
   }
 
   SIMD_IntegrationRule::SIMD_IntegrationRule (const IntegrationRule & ir, LocalHeap & lh)
-    : Array<SIMD<IntegrationPoint>> ( (ir.Size()+SIMD<IntegrationPoint>::Size()-1) / SIMD<IntegrationPoint>::Size(), lh)
+    : Array<SIMD<IntegrationPoint>, size_t> ( (ir.Size()+SIMD<IntegrationPoint>::Size()-1) / SIMD<IntegrationPoint>::Size(), lh)
   {
     nip = ir.GetNIP();
     dimension = ir.Dim();
@@ -3001,7 +3004,7 @@ namespace ngfem
   }
 
   SIMD_IntegrationRule::SIMD_IntegrationRule (int _nip, LocalHeap & lh)
-    : Array<SIMD<IntegrationPoint>> ( (_nip+SIMD<IntegrationPoint>::Size()-1) / SIMD<IntegrationPoint>::Size(), lh)
+    : Array<SIMD<IntegrationPoint>, size_t> ( (_nip+SIMD<IntegrationPoint>::Size()-1) / SIMD<IntegrationPoint>::Size(), lh)
   {
     nip = _nip;
   }
@@ -3288,6 +3291,97 @@ namespace ngfem
         ;
       }
     
+    return irvol;
+  }
+
+
+
+
+  SIMD_IntegrationRule & Facet2SurfaceElementTrafo :: operator() (const SIMD_IntegrationRule & irfacet, LocalHeap & lh)
+  {
+    SIMD_IntegrationRule & irvol = *new (lh) SIMD_IntegrationRule (irfacet.GetNIP(), lh);
+    int fnr = 0;
+    
+    FlatArray<SIMD<IntegrationPoint>> hirfacet = irfacet;
+    FlatArray<SIMD<IntegrationPoint>> hirvol = irvol;
+    
+    switch (eltype) // ElementTopology::GetFacetType(eltype, fnr))
+      {
+      case ET_POINT:
+        {
+          irvol[0](0) = points (fnr)[0];
+          irvol[0](1) = 0.0;
+          irvol[0](2) = 0.0;
+          break;
+        }
+      case ET_SEGM:
+        {
+          Vec<2> p1 = points (edges[fnr][0]);
+          Vec<2> p2 = points (edges[fnr][1]);
+          Vec<2> delta = p1-p2;
+          for (int i = 0; i < hirfacet.Size(); i++)
+            {
+              auto ip = hirfacet[i];
+              auto & ipvol = hirvol[i];              
+              for (int k = 0; k < 2; k++)
+                ipvol(k) = p2(k) + delta(k) * ip(0);
+              ipvol(2) = 0.0;
+            }
+          break;
+        }
+
+      case ET_TRIG:
+        {
+          Vec<3> p0 = points(faces[fnr][0]);
+          Vec<3> p1 = points(faces[fnr][1]);
+          Vec<3> p2 = points(faces[fnr][2]);
+          Vec<3> delta1 = p0-p2;
+          Vec<3> delta2 = p1-p2;
+
+          /*
+          for (int i = 0; i < irfacet.GetNIP(); i++)
+            irvol[i] = Vec<3> (p2 + irfacet[i](0) * (p0-p2) + irfacet[i](1)*(p1-p2));
+          */
+          for (int i = 0; i < hirfacet.Size(); i++)
+            {
+              auto ip = hirfacet[i];
+              auto & ipvol = hirvol[i];              
+              for (int k = 0; k < 3; k++)
+                ipvol(k) = p2(k) + delta1(k) * ip(0) + delta2(k) * ip(1);
+            }
+          break;
+        }
+
+	case ET_QUAD:
+	  {
+	    FlatVec<3> p0 = points(faces[fnr][0]);
+	    FlatVec<3> p1 = points(faces[fnr][1]);
+	    FlatVec<3> p2 = points(faces[fnr][3]);
+            Vec<3> delta1 = p1-p0;
+            Vec<3> delta2 = p2-p0;
+
+	    // for (int i = 0; i < irfacet.GetNIP(); i++)
+            // irvol[i] = Vec<3> (p0 + irfacet[i](0) * (p1-p0) + irfacet[i](1)*(p2-p0));
+            for (int i = 0; i < hirfacet.Size(); i++)
+              {
+                auto ip = hirfacet[i];
+                auto & ipvol = hirvol[i];              
+                for (int k = 0; k < 3; k++)
+                  ipvol(k) = p0(k) + delta1(k) * ip(0) + delta2(k) * ip(1);
+              }
+	    break;
+	  }
+
+      default:
+        throw Exception ("undefined facet type in SIMD_Facet2ElementTrafo()\n");
+      } 
+    
+    for (int i = 0; i < irfacet.Size(); i++)
+      {
+        irvol[i].FacetNr() = fnr;
+        irvol[i].Weight() = irfacet[i].Weight();
+      }
+
     return irvol;
   }
 

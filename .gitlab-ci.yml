@@ -17,9 +17,11 @@ stages:
     - 'call "%VS140COMNTOOLS%\..\..\VC\bin\vcvars32.bat"'
     - set EXT_LIBS=C:\external_libs\x86
     - set CMAKE_GENERATOR=Visual Studio 14 2015
-    - set INSTALL_DIR=C:/install32_master
-    - set NETGENDIR=C:\install32_master\bin
-    - set PYTHONPATH=C:\install32_master\lib\site-packages
+    - set NETGEN_ORIG_DIR=C:\install32_master
+    - set NETGEN_TEMP_DIR=C:\ci\%CI_BUILD_REF%_32
+    - set INSTALL_DIR=C:/ci/%CI_BUILD_REF%_32
+    - set NETGENDIR=%NETGEN_TEMP_DIR%\bin
+    - set PYTHONPATH=%NETGEN_TEMP_DIR%\lib\site-packages
     - set PYTHON_LIB=C:/Python3.5_32/libs/python35.lib
     - set PYTHON_CONFIG=-DPYTHON_LIBRARY=C:/Python3.5_32/libs/python35.lib -DPYTHON_INCLUDE_DIR=C:/Python3.5_32/include -DPYTHON_INCLUDE_DIR2=C:/Python3.5_32/include 
 
@@ -32,9 +34,11 @@ stages:
     - 'call "%VS140COMNTOOLS%\..\..\VC\bin\amd64\vcvars64.bat"'
     - set EXT_LIBS=C:\external_libs\x64
     - set CMAKE_GENERATOR=Visual Studio 14 2015 Win64
-    - set INSTALL_DIR=C:/install64_master
-    - set NETGENDIR=C:\install64_master\bin
-    - set PYTHONPATH=C:\install64_master\lib\site-packages
+    - set NETGEN_ORIG_DIR=C:\install64_master
+    - set NETGEN_TEMP_DIR=C:\ci\%CI_BUILD_REF%_64
+    - set INSTALL_DIR=C:/ci/%CI_BUILD_REF%_64
+    - set NETGENDIR=%NETGEN_TEMP_DIR%\bin
+    - set PYTHONPATH=%NETGEN_TEMP_DIR%\lib\site-packages
     - set PYTHON_LIB=C:/Python3.5/libs/python35.lib
     - set PYTHON_CONFIG=-DPYTHON_LIBRARY=C:/Python3.5/libs/python35.lib
 
@@ -69,6 +73,7 @@ stages:
     - cd build
     - DEL CMakeCache.txt
     - RD /S CMakeFiles
+    - xcopy %NETGEN_ORIG_DIR% %NETGEN_TEMP_DIR% /D /I /E /F /Y /H /R /C
     - >-
         cmake ..\
         -DADDITIONAL_PATHS="%EXT_LIBS%\ext_libs"
@@ -80,7 +85,7 @@ stages:
         -DCMAKE_CXX_FLAGS_RELEASE="/W0"
     - cmake --build . --target INSTALL --config Release
 
-build_win32:
+.build_win32:
   <<: *win32
   <<: *build_win
   cache:
@@ -88,7 +93,7 @@ build_win32:
       - build/
     key: "ngsolve_win32_${CI_BUILD_REF_NAME}"
 
-build_win64:
+.build_win64:
   <<: *win64
   <<: *build_win
   cache:
@@ -141,7 +146,7 @@ build_ubuntu_1604:
       - build/
     key: "ngsolve_win32_${CI_BUILD_REF_NAME}"
 
-test_win64:
+.test_win64:
   <<: *win64
   <<: *test_win
   cache:
@@ -184,3 +189,26 @@ linux_cleanup:
     docker images --no-trunc -aqf "dangling=true" | xargs docker rmi -f
   when: always
   allow_failure: true
+
+win64_cleanup:
+  <<: *win64
+  stage: cleanup
+  tags:
+    - windows
+    - x64
+  script:
+    - rd /s /q %INSTALL_DIR%
+  when: always
+  allow_failure: true
+
+win32_cleanup:
+  <<: *win32
+  stage: cleanup
+  tags:
+    - windows
+    - x86
+  script:
+    - rd /s /q %INSTALL_DIR%
+  when: always
+  allow_failure: true
+

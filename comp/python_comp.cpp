@@ -16,6 +16,7 @@ using ngfem::ELEMENT_TYPE;
 
 typedef GridFunction GF;
 typedef PyWrapperDerived<GF, CoefficientFunction> PyGF;
+typedef PyWrapper<FESpace> PyFES;
 
 template <typename T>
 struct PythonTupleFromFlatArray {
@@ -118,7 +119,9 @@ bp::object MakeProxyFunction2 (const FESpace & fes,
                                            shared_ptr <CompoundDifferentialOperator> block_deriv_eval = nullptr;
                                            if (proxy->DerivEvaluator() != nullptr)
                                              block_deriv_eval = make_shared<CompoundDifferentialOperator> (proxy->DerivEvaluator(), i);
-                                           auto block_trace_eval = make_shared<CompoundDifferentialOperator> (proxy->TraceEvaluator(), i);
+                                           shared_ptr <CompoundDifferentialOperator> block_trace_eval = nullptr;
+                                           if (proxy->TraceEvaluator() != nullptr)
+                                             block_trace_eval = make_shared<CompoundDifferentialOperator> (proxy->TraceEvaluator(), i);
                                            shared_ptr <CompoundDifferentialOperator> block_trace_deriv_eval = nullptr;
                                            if (proxy->TraceDerivEvaluator() != nullptr)
                                              block_trace_deriv_eval = make_shared<CompoundDifferentialOperator> (proxy->TraceDerivEvaluator(), i);
@@ -411,11 +414,11 @@ void NGS_DLL_HEADER ExportNgcomp()
     static
     bp::tuple getinitargs(bp::object obj)
     {
-      auto & fes = bp::extract<FESpace const&>(obj)();
-      bp::object m (fes.GetMeshAccess());
+      auto fes = bp::extract<PyFES>(obj)().Get();
+      bp::object m (fes->GetMeshAccess());
       bp::object flags = obj.attr("__dict__")["flags"];
-      flags["dim"] = fes.GetDimension();
-      return bp::make_tuple(fes.type, m, flags, fes.GetOrder(), fes.IsComplex());
+      flags["dim"] = fes->GetDimension();
+      return bp::make_tuple(fes->type, m, flags, fes->GetOrder(), fes->IsComplex());
     }
 
     static
@@ -849,8 +852,24 @@ void NGS_DLL_HEADER ExportNgcomp()
     */
     ;
 
+
+  static size_t global_heapsize = 1000000;
+  static LocalHeap glh(global_heapsize, "python-comp lh", true);
+  bp::def("SetHeapSize", FunctionPointer([](size_t heapsize)
+                                         {
+                                           if (heapsize > global_heapsize)
+                                             {
+                                               global_heapsize = heapsize;
+                                               glh = LocalHeap (heapsize, "python-comp lh", true);
+                                             }
+                                         }));
+
+  bp::def("SetTestoutFile", FunctionPointer([](string filename)
+                                            {
+                                              testout = new ofstream (filename);
+                                            }));
+  
   //////////////////////////////////////////////////////////////////////////////////////////
-  typedef PyWrapper<FESpace> PyFES;
   bp::class_<PyFES>("FESpace",  "a finite element space", bp::no_init)
 
 
@@ -1072,7 +1091,7 @@ void NGS_DLL_HEADER ExportNgcomp()
     .def("Range", FunctionPointer
          ( [] (const PyFES & self, int comp) -> bp::slice
            {
-             auto compspace = dynamic_cast<const CompoundFESpace *> (&self);
+             auto compspace = dynamic_pointer_cast<CompoundFESpace> (self.Get());
              if (!compspace)
                bp::exec("'Range' is available only for product spaces");
              IntRange r = compspace->GetRange(comp);
@@ -1082,12 +1101,12 @@ void NGS_DLL_HEADER ExportNgcomp()
     .add_property("components", FunctionPointer
                   ([](PyFES & self)-> bp::tuple
                    { 
-                     auto compspace = dynamic_cast<CompoundFESpace *> (&self);
+                     auto compspace = dynamic_pointer_cast<CompoundFESpace> (self.Get());
                      if (!compspace)
                        bp::exec("'components' is available only for product spaces");
                      bp::list vecs;
                      for (int i = 0; i < compspace -> GetNSpaces(); i++) 
-                       vecs.append( (*compspace)[i] );
+                       vecs.append( PyFES((*compspace)[i]) );
                      return bp::tuple(vecs);
                    }),
                   "list of gridfunctions for compound gridfunction")
@@ -1109,8 +1128,13 @@ void NGS_DLL_HEADER ExportNgcomp()
         ( [] (const PyFES & self,
               PyCF rho, shared_ptr<BaseVector> vec, int heapsize)
           {
-            LocalHeap lh(heapsize, "solveM - lh", true);
-            self->SolveM(*rho.Get(), *vec, lh);
+            // LocalHeap lh(heapsize, "solveM - lh", true);
+            if (heapsize > global_heapsize)
+              {
+                global_heapsize = heapsize;
+                glh = LocalHeap(heapsize, "python-comp lh", true);
+              }
+            self->SolveM(*rho.Get(), *vec, glh);
           }),
         (bp::args("self"), 
          bp::args("rho"), bp::args("vec"), bp::args("heapsize")=1000000))
@@ -1216,7 +1240,7 @@ void NGS_DLL_HEADER ExportNgcomp()
                                                return d.get("space");
 
                                              // if not, make a new python space object from C++ space
-                                             return bp::object(bp::extract<PyGF>(self)()->GetFESpace());
+                                             return bp::object(PyFES(bp::extract<PyGF>(self)()->GetFESpace()));
                                            }),
                   "the finite element space")
     // .add_property ("space", &GF::GetFESpace, "the finite element spaces")
@@ -1258,11 +1282,16 @@ void NGS_DLL_HEADER ExportNgcomp()
                 return;
               }
 
-            LocalHeap lh(heapsize, "GridFunction::Set-lh", true);
+            if (heapsize > global_heapsize)
+              {
+                global_heapsize = heapsize;
+                glh = LocalHeap(heapsize, "python-comp lh", true);
+              }
+            // LocalHeap lh(heapsize, "GridFunction::Set-lh", true);
             if (reg)
-              SetValues (cf.Get(), *self.Get(), *reg, NULL, lh);
+              SetValues (cf.Get(), *self.Get(), *reg, NULL, glh);
             else
-              SetValues (cf.Get(), *self.Get(), boundary, NULL, lh);
+              SetValues (cf.Get(), *self.Get(), boundary, NULL, glh);
           }),
           bp::default_call_policies(),        // need it to use arguments
          (bp::arg("self"),bp::arg("coefficient"),
@@ -1314,9 +1343,12 @@ void NGS_DLL_HEADER ExportNgcomp()
     .def("Deriv", FunctionPointer
          ([](PyGF self) -> PyCF
           {
-            return PyCF(make_shared<GridFunctionCoefficientFunction> (self.Get(),
-                                                                 self->GetFESpace()->GetFluxEvaluator(),
-                                                                 self->GetFESpace()->GetFluxEvaluator(BND)));
+            auto sp = make_shared<GridFunctionCoefficientFunction> (self.Get(),
+                                                                    self->GetFESpace()->GetFluxEvaluator(),
+                                                                    self->GetFESpace()->GetFluxEvaluator(BND));
+            // sp->SetComplex(self->GetFESpace()->IsComplex()); 
+            sp->SetDimensions(sp->Dimensions());
+            return PyCF (sp);
           }))
 
     .def("Operator", FunctionPointer
@@ -1548,8 +1580,13 @@ void NGS_DLL_HEADER ExportNgcomp()
     
     .def("Assemble", FunctionPointer([](PyBF & self, int heapsize, bool reallocate)
                                      {
-                                       LocalHeap lh (heapsize, "BilinearForm::Assemble-heap", true);
-                                       self->ReAssemble(lh,reallocate);
+                                       // LocalHeap lh (heapsize, "BilinearForm::Assemble-heap", true);
+                                       if (heapsize > global_heapsize)
+                                         {
+                                           global_heapsize = heapsize;
+                                           glh = LocalHeap(heapsize, "python-comp lh", true);
+                                         }
+                                       self->ReAssemble(glh,reallocate);
                                      }),
          (bp::arg("self")=NULL,bp::arg("heapsize")=1000000,bp::arg("reallocate")=false))
 
@@ -1598,13 +1635,18 @@ void NGS_DLL_HEADER ExportNgcomp()
     .def("Energy",FunctionPointer
          ([](PyBF & self, BaseVector & x)
           {
-            self->Energy(x);
+            return self->Energy(x);
           }))
     .def("Apply", FunctionPointer
 	 ([](PyBF & self, BaseVector & x, BaseVector & y, int heapsize)
 	  {
-	    static LocalHeap lh (heapsize, "BilinearForm::Apply", true);
-	    self->ApplyMatrix (x, y, lh );
+	    // static LocalHeap lh (heapsize, "BilinearForm::Apply", true);
+            if (heapsize > global_heapsize)
+              {
+                global_heapsize = heapsize;
+                glh = LocalHeap(heapsize, "python-comp lh", true);
+              }
+	    self->ApplyMatrix (x, y, glh);
 	  }),
          (bp::arg("self")=NULL,bp::arg("x"),bp::arg("y"),bp::arg("heapsize")=1000000))
     .def("ComputeInternal", FunctionPointer
@@ -1618,8 +1660,13 @@ void NGS_DLL_HEADER ExportNgcomp()
     .def("AssembleLinearization", FunctionPointer
 	 ([](PyBF & self, BaseVector & ulin, int heapsize)
 	  {
-	    LocalHeap lh (heapsize, "BilinearForm::Assemble-heap", true);
-	    self->AssembleLinearization (ulin, lh);
+	    // LocalHeap lh (heapsize, "BilinearForm::Assemble-heap", true);
+            if (heapsize > global_heapsize)
+              {
+                global_heapsize = heapsize;
+                glh = LocalHeap(heapsize, "python-comp lh", true);
+              }
+	    self->AssembleLinearization (ulin, glh);
 	  }),
          (bp::arg("self")=NULL,bp::arg("ulin"),bp::arg("heapsize")=1000000))
 
@@ -1698,8 +1745,13 @@ void NGS_DLL_HEADER ExportNgcomp()
     .def("Assemble", FunctionPointer
          ([](PyLF self, int heapsize)
           { 
-            LocalHeap lh(heapsize, "LinearForm::Assemble-heap", true);
-            self->Assemble(lh);
+            // LocalHeap lh(heapsize, "LinearForm::Assemble-heap", true);
+            if (heapsize > global_heapsize)
+              {
+                global_heapsize = heapsize;
+                glh = LocalHeap(heapsize, "python-comp lh", true);
+              }
+            self->Assemble(glh);
           }),
          (bp::arg("self")=NULL,bp::arg("heapsize")=1000000))
 

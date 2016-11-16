@@ -18,7 +18,12 @@ namespace ngfem
   {
   public:
     // T x; // dummy
-    TIP () { ; }
+    TIP () = default;
+    TIP (const TIP &) = default;
+    TIP (TIP &&) = default;
+    TIP & operator= (const TIP &) = default;
+    TIP & operator= (TIP &&) = default;
+    
     explicit TIP (Vec<0,T> v) { ; }
     // TIP (const IntegrationPoint & ip) { ; } 
     // TIP (const SIMD<IntegrationPoint> & ip) { ; }
@@ -31,6 +36,12 @@ namespace ngfem
   {
   public:
     T x;
+    TIP () = default;
+    TIP (const TIP &) = default;
+    TIP (TIP &&) = default;
+    TIP & operator= (const TIP &) = default;
+    TIP & operator= (TIP &&) = default;
+    
     TIP (T _x) : x(_x) { ; }
     explicit TIP (Vec<1,T> v) : x(v(0)) { ; }    
     // TIP (const IntegrationPoint & ip) : x(ip(0)) { ; } 
@@ -46,6 +57,12 @@ namespace ngfem
   public:
     T x, y;
     
+    TIP () = default;
+    TIP (const TIP &) = default;
+    TIP (TIP &&) = default;
+    TIP & operator= (const TIP &) = default;
+    TIP & operator= (TIP &&) = default;
+    
     TIP (T _x, T _y) : x(_x), y(_y) { ; }
     explicit TIP (Vec<2,T> v) : x(v(0)), y(v(1)) { ; }        
     // TIP (const IntegrationPoint & ip) : x(ip(0)), y(ip(1)) { ; } 
@@ -59,6 +76,12 @@ namespace ngfem
   {
   public:
     T x, y, z;
+    TIP () = default;
+    TIP (const TIP &) = default;
+    TIP (TIP &&) = default;
+    TIP & operator= (const TIP &) = default;
+    TIP & operator= (TIP &&) = default;
+    
     TIP (T _x, T _y, T _z) : x(_x), y(_y), z(_z) { ; }
     explicit TIP (Vec<3,T> v) : x(v(0)), y(v(1)), z(v(2)) { ; }            
     // TIP (const IntegrationPoint & ip) : x(ip(0)), y(ip(1)), z(ip(2)) { ; }     
@@ -974,22 +997,27 @@ namespace ngfem
   protected:
     // mutable IntegrationPoint elpoint;  
     ELEMENT_TYPE eltype;
-    const POINT3D * points;
+    // const POINT3D * points;
+    FlatVector<Vec<3> > points;    
     const EDGE * edges;
     const FACE * faces;
     EDGE hedges[4];
     FACE hfaces[6];
   public:
-    Facet2SurfaceElementTrafo(ELEMENT_TYPE aeltype) : eltype(aeltype) 
+    Facet2SurfaceElementTrafo(ELEMENT_TYPE aeltype) :
+      eltype(aeltype),
+      points(99,(double*)ElementTopology::GetVertices (aeltype))
     {
-      points = ElementTopology::GetVertices (eltype);
+      // points = ElementTopology::GetVertices (eltype);
       edges = ElementTopology::GetEdges (eltype);
       faces = ElementTopology::GetFaces (eltype);
     }
     
-    Facet2SurfaceElementTrafo(ELEMENT_TYPE aeltype, FlatArray<int> & vnums) : eltype(aeltype) 
+    Facet2SurfaceElementTrafo(ELEMENT_TYPE aeltype, FlatArray<int> & vnums)
+      : eltype(aeltype),
+        points(99,(double*)ElementTopology::GetVertices (aeltype))
     {
-      points = ElementTopology::GetVertices (eltype);
+      // points = ElementTopology::GetVertices (eltype);
       edges = ElementTopology::GetEdges (eltype);
       faces = ElementTopology::GetFaces (eltype);
 
@@ -1038,32 +1066,55 @@ namespace ngfem
       int fnr = 0;
       switch (eltype)
 	{
+	case ET_POINT:
+	  {
+	    ipvol = Vec<3> (points (fnr) );
+	    break;
+	  }
+          
 	case ET_SEGM:
 	  {
+            /*
 	    const POINT3D & p1 = points[edges[fnr][0]];
 	    const POINT3D & p2 = points[edges[fnr][1]];
             for (int j = 0; j < 3; j++)
               ipvol(j) = p2[j] + (ipfac(0))*(p1[j]-p2[j]);
+            */
+	    FlatVec<3> p1 = points (edges[fnr][0]);
+	    FlatVec<3> p2 = points (edges[fnr][1]);
+	    ipvol = Vec<3> (p2 + ipfac(0) * (p1-p2));
 	    break;
 	  }
 	case ET_TRIG:
 	  {
+            /*
 	    const POINT3D & p0 = points[faces[fnr][0]];
 	    const POINT3D & p1 = points[faces[fnr][1]];
 	    const POINT3D & p2 = points[faces[fnr][2]];
 	    ipvol(0) = p2[0] + ipfac(0)*(p0[0]-p2[0]) + ipfac(1)*(p1[0]-p2[0]);
 	    ipvol(1) = p2[1] + ipfac(0)*(p0[1]-p2[1]) + ipfac(1)*(p1[1]-p2[1]);
 	    ipvol(2) = p2[2] + ipfac(0)*(p0[2]-p2[2]) + ipfac(1)*(p1[2]-p2[2]);
+            */
+	    FlatVec<3> p0 = points(faces[fnr][0]);
+	    FlatVec<3> p1 = points(faces[fnr][1]);
+	    FlatVec<3> p2 = points(faces[fnr][2]);
+	    ipvol = Vec<3> (p2 + ipfac(0) * (p0-p2) + ipfac(1)*(p1-p2));
 	    break;
 	  }
 	case ET_QUAD:
 	  {
+            /*
 	    const POINT3D & p0 = points[faces[fnr][0]];
 	    const POINT3D & p1 = points[faces[fnr][1]];
 	    const POINT3D & p2 = points[faces[fnr][3]];
 	    ipvol(0) = p0[0] + ipfac(0)*(p1[0]-p0[0]) + ipfac(1)*(p2[0]-p0[0]);
 	    ipvol(1) = p0[1] + ipfac(0)*(p1[1]-p0[1]) + ipfac(1)*(p2[1]-p0[1]);
 	    ipvol(2) = p0[2] + ipfac(0)*(p1[2]-p0[2]) + ipfac(1)*(p2[2]-p0[2]);
+            */
+	    FlatVec<3> p0 = points(faces[fnr][0]);
+	    FlatVec<3> p1 = points(faces[fnr][1]);
+	    FlatVec<3> p2 = points(faces[fnr][3]);
+	    ipvol = Vec<3> (p0 + ipfac(0) * (p1-p0) + ipfac(1)*(p2-p0));
 	    break;
 	  }
 	default:
@@ -1072,14 +1123,70 @@ namespace ngfem
 	} 
       /*      cerr << "*** mapping integrationpoint for element " << eltype << " and facel " << fnr << " of type " << facettype << endl;
 	      cerr << "  * ipfac = " << ipfac;
-	      cerr << "  * ipvol = " << ipvol;*/
+	      cerr << "  * ipvol = " << ipvol;*/      
     }
+      
+    IntegrationRule & operator() (const IntegrationRule & irfacet, LocalHeap & lh)
+    {
+      IntegrationRule & irvol = *new (lh) IntegrationRule (irfacet.GetNIP(), lh);
+      int fnr = 0;
+      switch (eltype)
+        {
+        case ET_POINT:
+          {
+            irvol[0] = Vec<3> (points (fnr) );
+            break;
+          }
+        case ET_SEGM:
+          {
+            FlatVec<3> p1 = points (edges[fnr][0]);
+            FlatVec<3> p2 = points (edges[fnr][1]);
+            
+            for (int i = 0; i < irfacet.GetNIP(); i++)
+              irvol[i] = Vec<3> (p2 + irfacet[i](0) * (p1-p2));
+            break;
+          }
+        case ET_TRIG:
+          {
+            FlatVec<3> p0 = points(faces[fnr][0]);
+            FlatVec<3> p1 = points(faces[fnr][1]);
+            FlatVec<3> p2 = points(faces[fnr][2]);
+              
+            for (int i = 0; i < irfacet.GetNIP(); i++)
+              irvol[i] = Vec<3> (p2 + irfacet[i](0) * (p0-p2) + irfacet[i](1)*(p1-p2));
+            break;
+          }
+        case ET_QUAD:
+	  {
+	    FlatVec<3> p0 = points(faces[fnr][0]);
+	    FlatVec<3> p1 = points(faces[fnr][1]);
+	    FlatVec<3> p2 = points(faces[fnr][3]);
+            
+	    for (int i = 0; i < irfacet.GetNIP(); i++)
+	      irvol[i] = Vec<3> (p0 + irfacet[i](0) * (p1-p0) + irfacet[i](1)*(p2-p0));
+	    break;
+	  }
+        default:
+	  throw Exception ("undefined facet type in Facet2SurfaceElementTrafo()\n");
+        } 
+      
+      for (int i = 0; i < irfacet.GetNIP(); i++)
+        {
+          irvol[i].FacetNr() = fnr;
+          irvol[i].SetWeight(irfacet[i].Weight());
+        }
+      
+      return irvol;
+    }
+
     const IntegrationPoint operator()(const IntegrationPoint &ip1d) const 
     {
       IntegrationPoint elpoint;
       operator()(ip1d, elpoint);
       return elpoint;
     }
+
+    class SIMD_IntegrationRule & operator() (const class SIMD_IntegrationRule & irfacet, LocalHeap & lh);
   };
 
 
@@ -1435,7 +1542,7 @@ namespace ngstd
     // SIMD<double> GetJacobiDet() const { return det; }
     ///
     // const Mat<DIMS,DIMR,SCAL> & GetJacobianInverse() const { return dxidx; }
-    const Mat<DIMS,DIMR,SIMD<double>> GetJacobianInverse() const 
+    INLINE const Mat<DIMS,DIMR,SIMD<double>> GetJacobianInverse() const 
     { 
       if (DIMS == DIMR)
         return 1.0/det * Trans (Cof (dxdxi));
@@ -1478,11 +1585,124 @@ namespace ngstd
 
 namespace ngfem
 {
+  template<int DIMS, int DIMR>
+  INLINE void GetTIP( const SIMD<MappedIntegrationPoint<DIMS,DIMR>> & mip, TIP<DIMS,AutoDiffRec<DIMR,SIMD<double>>> & adp);
+
+    template<int DIMR>
+    INLINE void GetTIP( const SIMD<MappedIntegrationPoint<0,DIMR>> & mip, TIP<0,AutoDiffRec<DIMR,SIMD<double>>> & adp) 
+    { }
+
+    template<int DIMR>
+    INLINE void GetTIP( const SIMD<MappedIntegrationPoint<1,DIMR>> & mip, TIP<1,AutoDiffRec<DIMR,SIMD<double>>> & adp) 
+    {
+      Mat<1,DIMR,SIMD<double>> ijac = mip.GetJacobianInverse();
+      const auto &ip = mip.IP();
+      adp.x.Value() = ip(0);
+      for (int j = 0; j < DIMR; j++)
+        adp.x.DValue(j) = ijac(0,j);
+    }
+
   
-  class SIMD_IntegrationRule : public Array<SIMD<IntegrationPoint>>
+    template<int DIMR>
+    INLINE void GetTIP( const SIMD<MappedIntegrationPoint<2,DIMR>> & mip, TIP<2,AutoDiffRec<DIMR,SIMD<double>>> & adp) 
+    {
+      Mat<2,DIMR,SIMD<double>> ijac = mip.GetJacobianInverse();
+      const auto &ip = mip.IP();
+      adp.x.Value() = ip(0);
+      adp.y.Value() = ip(1);
+      for (int j = 0; j < DIMR; j++)
+        adp.x.DValue(j) = ijac(0,j);
+      for (int j = 0; j < DIMR; j++)
+        adp.y.DValue(j) = ijac(1,j);
+    }
+
+  
+    template<int DIMR>
+    INLINE void GetTIP(const SIMD<MappedIntegrationPoint<3,DIMR>> & mip, TIP<3, AutoDiffRec<DIMR,SIMD<double>>> & adp) 
+    {
+      Mat<3,DIMR,SIMD<double>> ijac = mip.GetJacobianInverse();
+      const auto &ip = mip.IP();
+      adp.x.Value() = ip(0);
+      adp.y.Value() = ip(1);
+      adp.z.Value() = ip(2);
+      for (int j = 0; j < DIMR; j++)
+        adp.x.DValue(j) = ijac(0,j);
+      for (int j = 0; j < DIMR; j++)
+        adp.y.DValue(j) = ijac(1,j);
+      for (int j = 0; j < DIMR; j++)
+        adp.z.DValue(j) = ijac(2,j);
+    }
+
+
+
+
+
+  template<int DIMS, int DIMR>
+  INLINE auto GetTIP( const SIMD<MappedIntegrationPoint<DIMS,DIMR>> & mip) -> TIP<DIMS,AutoDiffRec<DIMR,SIMD<double>>>;
+
+    template<int DIMR>
+    INLINE auto GetTIP( const SIMD<MappedIntegrationPoint<0,DIMR>> & mip) -> TIP<0,AutoDiffRec<DIMR,SIMD<double>>>
+    {
+      TIP<0,AutoDiffRec<DIMR,SIMD<double>>> adp;
+      return adp;
+    }
+
+    template<int DIMR>
+    INLINE auto GetTIP( const SIMD<MappedIntegrationPoint<1,DIMR>> & mip) -> TIP<1,AutoDiffRec<DIMR,SIMD<double>>>
+    {
+      TIP<1,AutoDiffRec<DIMR,SIMD<double>>> adp;
+      Mat<1,DIMR,SIMD<double>> ijac = mip.GetJacobianInverse();
+      const auto &ip = mip.IP();
+      adp.x.Value() = ip(0);
+      for (int j = 0; j < DIMR; j++)
+        adp.x.DValue(j) = ijac(0,j);
+      return adp;
+    }
+
+  
+    template<int DIMR>
+    INLINE auto GetTIP( const SIMD<MappedIntegrationPoint<2,DIMR>> & mip) -> TIP<2,AutoDiffRec<DIMR,SIMD<double>>>
+    {
+      TIP<2,AutoDiffRec<DIMR,SIMD<double>>> adp;      
+      Mat<2,DIMR,SIMD<double>> ijac = mip.GetJacobianInverse();
+      const auto &ip = mip.IP();
+      adp.x.Value() = ip(0);
+      adp.y.Value() = ip(1);
+      for (int j = 0; j < DIMR; j++)
+        adp.x.DValue(j) = ijac(0,j);
+      for (int j = 0; j < DIMR; j++)
+        adp.y.DValue(j) = ijac(1,j);
+      return adp;
+    }
+
+  
+    template<int DIMR>
+    INLINE auto GetTIP(const SIMD<MappedIntegrationPoint<3,DIMR>> & mip) -> TIP<3, AutoDiffRec<DIMR,SIMD<double>>>
+    {
+      Mat<3,DIMR,SIMD<double>> ijac = mip.GetJacobianInverse();
+      TIP<3, AutoDiffRec<DIMR,SIMD<double>>> adp;
+      const auto &ip = mip.IP();
+      adp.x.Value() = ip(0);
+      adp.y.Value() = ip(1);
+      adp.z.Value() = ip(2);
+      for (int j = 0; j < DIMR; j++)
+        adp.x.DValue(j) = ijac(0,j);
+      for (int j = 0; j < DIMR; j++)
+        adp.y.DValue(j) = ijac(1,j);
+      for (int j = 0; j < DIMR; j++)
+        adp.z.DValue(j) = ijac(2,j);
+      return adp;
+    }
+
+
+
+
+
+  
+  class SIMD_IntegrationRule : public Array<SIMD<IntegrationPoint>,size_t>
   {
     int dimension = -1;
-    int nip = -47;
+    size_t nip = -47;
     const SIMD_IntegrationRule *irx = nullptr, *iry = nullptr, *irz = nullptr; // for tensor product IR
   public:
     SIMD_IntegrationRule () = default;
@@ -1491,12 +1711,14 @@ namespace ngfem
     SIMD_IntegrationRule (const IntegrationRule & ir, LocalHeap & lh);
     SIMD_IntegrationRule (int nip, LocalHeap & lh);
     NGS_DLL_HEADER ~SIMD_IntegrationRule ();
+    SIMD_IntegrationRule & operator= (const SIMD_IntegrationRule &) = delete;
+    SIMD_IntegrationRule & operator= (SIMD_IntegrationRule &&) = default;
     
-    SIMD_IntegrationRule (int asize, SIMD<IntegrationPoint> * pip)
-      : Array<SIMD<IntegrationPoint>> (asize, pip) { ; }
+    SIMD_IntegrationRule (size_t asize, SIMD<IntegrationPoint> * pip)
+      : Array<SIMD<IntegrationPoint>,size_t> (asize, pip) { ; }
 
-    int GetNIP() const { return nip; } // Size()*SIMD<double>::Size(); }
-    void SetNIP(int _nip) { nip = _nip; }
+    size_t GetNIP() const { return nip; } // Size()*SIMD<double>::Size(); }
+    void SetNIP(size_t _nip) { nip = _nip; }
 
     bool IsTP() const { return irx != nullptr; } 
     const SIMD_IntegrationRule & GetIRX() const { return *irx; }
@@ -1531,7 +1753,7 @@ namespace ngfem
     SIMD_IntegrationRule ir;
     const ElementTransformation & eltrans;
     char * baseip;
-    int incr;
+    size_t incr;
     int dim_element, dim_space;
   public:
     SIMD_BaseMappedIntegrationRule (const SIMD_IntegrationRule & air,
@@ -1546,11 +1768,11 @@ namespace ngfem
     ~SIMD_BaseMappedIntegrationRule ()
       { ir.NothingToDelete(); }
 
-    INLINE int Size() const { return ir.Size(); }
+    INLINE size_t Size() const { return ir.Size(); }
     INLINE const SIMD_IntegrationRule & IR() const { return ir; }
     INLINE const ElementTransformation & GetTransformation () const { return eltrans; }
     virtual void ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr) = 0;    
-    INLINE const SIMD<BaseMappedIntegrationPoint> & operator[] (int i) const
+    INLINE const SIMD<BaseMappedIntegrationPoint> & operator[] (size_t i) const
     { return *static_cast<const SIMD<BaseMappedIntegrationPoint>*> ((void*)(baseip+i*incr)); }
     INLINE int DimElement() const { return dim_element; }
     INLINE int DimSpace() const { return dim_space; }
@@ -1573,8 +1795,12 @@ namespace ngfem
     }
     virtual ABareMatrix<double> GetPoints() const
     {
+      /*
       return ABareMatrix<double> (&mips[0].Point()(0),
                                   &mips[1].Point()(0)-&mips[0].Point()(0));
+      */
+      return ABareMatrix<double> (&mips[0].Point()(0),
+                                  sizeof(SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>>)/sizeof(SIMD<double>));
     }
   };
 }

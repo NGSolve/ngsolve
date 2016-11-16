@@ -43,6 +43,10 @@ namespace ngfem
 #ifndef FASTCOMPILE
     HD NGS_DLL_HEADER virtual void CalcShape (const IntegrationRule & ir, 
                                               SliceMatrix<> shape) const;
+    /// compute shape, row is shape nr, col is ip nr
+    HD NGS_DLL_HEADER 
+    virtual void CalcShape (const SIMD_IntegrationRule & ir, 
+                            ABareMatrix<> shape) const;
     
     HD NGS_DLL_HEADER virtual double Evaluate (const IntegrationPoint & ip, 
 					       SliceVector<double> x) const;
@@ -55,6 +59,10 @@ namespace ngfem
                                              BareSliceVector<> coefs,
                                              ABareVector<double> values) const;
 
+    HD NGS_DLL_HEADER virtual void Evaluate (const SIMD_IntegrationRule & ir,
+                                             SliceMatrix<> coefs,
+                                             ABareMatrix<double> values) const;
+    
     HD NGS_DLL_HEADER virtual void Evaluate (const IntegrationRule & ir, SliceMatrix<> coefs, SliceMatrix<> values) const;
 
     HD NGS_DLL_HEADER virtual void EvaluateTrans (const IntegrationRule & ir, 
@@ -64,7 +72,11 @@ namespace ngfem
     HD NGS_DLL_HEADER virtual void AddTrans (const SIMD_IntegrationRule & ir,
                                              ABareVector<double> values,
                                              BareSliceVector<> coefs) const;
-    
+#ifdef __AVX__
+    HD NGS_DLL_HEADER virtual void AddTrans (const SIMD_IntegrationRule & ir,
+                                             ABareMatrix<double> values,
+                                             SliceMatrix<> coefs) const; 
+#endif
     HD NGS_DLL_HEADER virtual Vec<DIM> EvaluateGrad (const IntegrationPoint & ip, 
                                                      SliceVector<> x) const;
 
@@ -103,6 +115,10 @@ namespace ngfem
     HD NGS_DLL_HEADER virtual void CalcMappedDShape (const MappedIntegrationRule<DIM,DIM> & mip, 
 				   SliceMatrix<> dshape) const;
 
+    HD NGS_DLL_HEADER 
+    virtual void CalcMappedDShape (const SIMD_BaseMappedIntegrationRule & mir, 
+                                   ABareMatrix<> dshapes) const;
+    
 #endif
 
     // NGS_DLL_HEADER virtual void GetPolOrders (FlatArray<PolOrder<DIM> > orders) const;
@@ -117,7 +133,7 @@ namespace ngfem
     */
     
     template<typename Tx, typename TFA>  
-    INLINE void T_CalcShape (TIP<DIM,Tx> ip, TFA & shape) const
+    INLINE void T_CalcShape (const TIP<DIM,Tx> & ip, TFA & shape) const
     {
       static_cast<const FEL*> (this) -> T_CalcShape (ip, shape);
     }    

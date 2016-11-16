@@ -21,6 +21,39 @@ using namespace ngmg;
 namespace ngcomp
 {
 
+  class BlockDifferentialOperatorId : public BlockDifferentialOperator
+  {
+  public:
+    using BlockDifferentialOperator::BlockDifferentialOperator;
+
+    virtual void Apply (const FiniteElement & fel,
+                        const SIMD_BaseMappedIntegrationRule & mir,
+                        BareSliceVector<double> x, 
+                        ABareMatrix<double> flux) const
+    {
+      if (comp == -1)
+        static_cast<const BaseScalarFiniteElement&> (fel).
+          Evaluate(mir.IR(), SliceMatrix<double> (fel.GetNDof(), dim, dim, &x(0)), flux);
+      else
+        diffop->Apply(fel, mir, x.Slice(comp, dim), flux.RowSlice(comp,dim));
+    }
+    virtual void
+    AddTrans (const FiniteElement & fel,
+              const SIMD_BaseMappedIntegrationRule & mir,
+              ABareMatrix<double> flux,
+              BareSliceVector<double> x) const
+    {
+    if (comp == -1)
+      static_cast<const BaseScalarFiniteElement&> (fel).      
+        AddTrans(mir.IR(), flux, SliceMatrix<double> (fel.GetNDof(), dim, dim, &x(0)));
+    else
+      diffop->AddTrans(fel, mir, flux.RowSlice(comp,dim), x.Slice(comp,dim));
+    }
+    
+  };
+
+
+  
   L2HighOrderFESpace ::  
   L2HighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags)
     : FESpace (ama, flags)
@@ -89,12 +122,15 @@ namespace ngcomp
       }
     if (dimension > 1) 
       {
-	evaluator = make_shared<BlockDifferentialOperator> (evaluator, dimension);
+        evaluator = make_shared<BlockDifferentialOperatorId> (evaluator, dimension);
+        // evaluator = make_shared<BlockDifferentialOperator> (evaluator, dimension);
 	flux_evaluator = make_shared<BlockDifferentialOperator> (flux_evaluator, dimension);
 	boundary_evaluator = 
 	  make_shared<BlockDifferentialOperator> (boundary_evaluator, dimension);
+        /*
 	boundary_flux_evaluator = 
 	  make_shared<BlockDifferentialOperator> (boundary_flux_evaluator, dimension);
+        */
       }
 
 
@@ -285,6 +321,9 @@ namespace ngcomp
             return *CreateL2HighOrderFE<ET_TRIG> (order, INT<3>(ngel.Vertices()), alloc);
 	  }
 
+        if (eltype == ET_TET)         
+          return *CreateL2HighOrderFE<ET_TET> (order, INT<4>(ngel.Vertices()), alloc);
+            
         switch (eltype)
           {
           case ET_SEGM:    return T_GetFE<ET_SEGM> (elnr, alloc);
@@ -350,6 +389,9 @@ namespace ngcomp
             vnums = ngel.Vertices();
 	    return *CreateL2HighOrderFE<ET_TRIG> (order, vnums, lh);
 	  }
+
+        if (eltype == ET_TET)         
+          return *CreateL2HighOrderFE<ET_TET> (order, INT<4>(ngel.Vertices()), lh);
 
         switch (eltype)
           {

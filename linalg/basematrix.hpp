@@ -19,7 +19,7 @@ namespace ngla
   /**
      The base for all matrices in the linalg.
   */
-  class NGS_DLL_HEADER BaseMatrix
+  class NGS_DLL_HEADER BaseMatrix : public enable_shared_from_this_virtual<BaseMatrix>
   {
   protected:
     const ParallelDofs * paralleldofs;
@@ -75,7 +75,12 @@ namespace ngla
 
     // virtual const void * Data() const;
     // virtual void * Data();
-
+    
+    template <typename T>
+      shared_ptr<T> SharedFromThis()
+    { return dynamic_pointer_cast<T> (shared_from_this()); }
+    /// whatever it means ... e.g. refactor sparse factorization
+    virtual void Update() { ; } 
     /// creates matrix of same type
     virtual shared_ptr<BaseMatrix> CreateMatrix () const;
     /// creates matrix of same type

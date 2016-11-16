@@ -57,7 +57,16 @@ namespace ngfem
       CalcMatrix (fel, mir[i], mat.Rows(i*dim, (i+1)*dim), lh);
   }
   
-
+  void DifferentialOperator ::
+  CalcMatrix (const FiniteElement & fel,
+              const SIMD_BaseMappedIntegrationRule & mir,
+              ABareMatrix<double> mat) const
+  {
+    throw ExceptionNOSIMD(string("Error: DifferentialOperator::CalcMatrix does not support SIMD, type = ")
+                          + typeid(*this).name());
+    
+  }
+  
   void DifferentialOperator ::
   Apply (const FiniteElement & fel,
          const BaseMappedIntegrationPoint & mip,
@@ -228,6 +237,14 @@ namespace ngfem
       for (int i = 0; i < mat1.Height(); i++)
         for (int j = 0; j < mat1.Width(); j++)
           mat(dim*i+comp, dim*j+comp) = mat1(i,j);
+  }
+  
+  void BlockDifferentialOperator ::
+  CalcMatrix (const FiniteElement & fel,
+              const SIMD_BaseMappedIntegrationRule & mir,
+              ABareMatrix<double> mat) const
+  {
+    throw ExceptionNOSIMD("BlockDifferentialOperator::CalcMatrix does not support SIMD");
   }
   
 

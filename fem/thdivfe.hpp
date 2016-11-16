@@ -28,9 +28,9 @@ namespace ngfem
   {
 
   public:
-    const AutoDiff<2> & u;
+    const AutoDiff<2> u;
 
-    DuRot (const AutoDiff<2> & au)
+    DuRot (const AutoDiff<2> au)
       : u(au) { ; }
 
     Vec<2> Value () const
@@ -57,10 +57,10 @@ namespace ngfem
   class Class_uDvDw_Cyclic
   {
   public:
-    const AutoDiff<DIM,SCAL> & u, v, w;
-    Class_uDvDw_Cyclic (const AutoDiff<DIM,SCAL> & au, 
-                        const AutoDiff<DIM,SCAL> & av,
-                        const AutoDiff<DIM,SCAL> & aw)
+    const AutoDiff<DIM,SCAL> u, v, w;
+    Class_uDvDw_Cyclic (const AutoDiff<DIM,SCAL> au, 
+                        const AutoDiff<DIM,SCAL> av,
+                        const AutoDiff<DIM,SCAL> aw)
       : u(au), v(av), w(aw) { ; }
   };
 
@@ -74,9 +74,9 @@ namespace ngfem
   class Class_Du_Cross_Dv
   {
   public:
-    const AutoDiff<DIM,SCAL> & u, v;
-    Class_Du_Cross_Dv (const AutoDiff<DIM,SCAL> & au, 
-                       const AutoDiff<DIM,SCAL> & av)
+    const AutoDiff<DIM,SCAL> u, v;
+    Class_Du_Cross_Dv (const AutoDiff<DIM,SCAL> au, 
+                       const AutoDiff<DIM,SCAL> av)
       : u(au), v(av) { ; }
   };
 
@@ -90,10 +90,10 @@ namespace ngfem
   class Class_wDu_Cross_Dv
   {
   public:
-    const AutoDiff<DIM,SCAL> & u, v, w;
-    Class_wDu_Cross_Dv (const AutoDiff<DIM,SCAL> & au, 
-                        const AutoDiff<DIM,SCAL> & av,
-                        const AutoDiff<DIM,SCAL> & aw)
+    const AutoDiff<DIM,SCAL> u, v, w;
+    Class_wDu_Cross_Dv (const AutoDiff<DIM,SCAL> au, 
+                        const AutoDiff<DIM,SCAL> av,
+                        const AutoDiff<DIM,SCAL> aw)
       : u(au), v(av), w(aw) { ; }
   };
 
@@ -107,10 +107,10 @@ namespace ngfem
   class Class_uDvDw_minus_DuvDw
   {
   public:
-    const AutoDiff<DIM,SCAL> & u, v, w;
-    Class_uDvDw_minus_DuvDw (const AutoDiff<DIM,SCAL> & au, 
-                             const AutoDiff<DIM,SCAL> & av,
-                             const AutoDiff<DIM,SCAL> & aw)
+    const AutoDiff<DIM,SCAL> u, v, w;
+    Class_uDvDw_minus_DuvDw (const AutoDiff<DIM,SCAL> au, 
+                             const AutoDiff<DIM,SCAL> av,
+                             const AutoDiff<DIM,SCAL> aw)
       : u(au), v(av), w(aw) { ; }
   };
 
@@ -125,10 +125,10 @@ namespace ngfem
   class Class_curl_uDvw_minus_Duvw
   {
   public:
-    const AutoDiff<DIM,SCAL> & u, v, w;
-    Class_curl_uDvw_minus_Duvw (const AutoDiff<DIM,SCAL> & au, 
-                                const AutoDiff<DIM,SCAL> & av,
-                                const AutoDiff<DIM,SCAL> & aw)
+    const AutoDiff<DIM,SCAL> u, v, w;
+    Class_curl_uDvw_minus_Duvw (const AutoDiff<DIM,SCAL> au, 
+                                const AutoDiff<DIM,SCAL> av,
+                                const AutoDiff<DIM,SCAL> aw)
       : u(au), v(av), w(aw) { ; }
   };
 

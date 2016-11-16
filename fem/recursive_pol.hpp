@@ -543,6 +543,18 @@ namespace ngfem
 	}
       if (i == n)
         values[n] = p1;
+
+      /*
+        // needs checking, code looks the same
+      S p2(c * REC::P0(x));
+      S p1(c * REC::P1(x));
+      
+      Iterate<N+1> ([&] (auto i)
+                  {
+                    values[i] = p2;
+                    EvalNext2 (i+2, x, p1, p2);
+                  });
+      */
     }
 
 
@@ -617,7 +629,7 @@ namespace ngfem
     INLINE static void EvalScaledMult (IC<N> n, S x, Sy y, Sc c, T && values)
     {
       S p1(c*REC::P1(x,y)), p2(c * REC::P0(x));
-      Iterate<N+1> ([&] (auto i)
+      Iterate<N+1> ([&] (auto i) LAMBDA_INLINE
                   {
                     values[i] = p2;
                     EvalScaledNext2 (i+2, x, y, p1, p2);
@@ -671,7 +683,7 @@ namespace ngfem
       // CEvalFO<REC, N>::Eval (x, values, p1, p2);
       
       S p1 = REC::P1(x), p2 = REC::P0(x);
-      Iterate<n+1> ( [&] (auto i)
+      Iterate<n+1> ( [&] (auto i) ALWAYS_INLINE
         {
 	  values[i] = p2;
           RecursivePolynomial<REC>::EvalNext2 (IC<i+2>(), x, p1, p2);
@@ -680,10 +692,10 @@ namespace ngfem
     
     template <int N, class S, class Sy, class T>
     INLINE static void EvalScaled (IC<N> n,
-                                   S x, Sy y, T && values)
+                                   S x, Sy y, T && values) 
     {
       S p1(REC::P1(x,y)), p2(REC::P0(x));
-      Iterate<n+1> ( [&] (auto i)
+      Iterate<n+1> ( [&] (auto i) ALWAYS_INLINE
         {
           // cout << "eval scaled, type(i) = " << typeid(i).name() << endl;
 	  values[i] = p2;
@@ -761,7 +773,7 @@ namespace ngfem
 	{
           // S pnew = (Cast().A(i) * x + Cast().B(i)) * p1 + Cast().C(i)*p2;
           // S pnew = FMA(Cast().C(i), p2, (Cast().A(i) * x + Cast().B(i)) * p1); // bad
-          S pnew = FMA( FMA( S(Cast().A(i)), x, S(Cast().B(i))), p1, Cast().C(i) * p2);  // good          
+          S pnew = FMA( FMA(Cast().A(i), x, S(Cast().B(i))), p1, Cast().C(i) * p2);  // good          
           /*
           S axpb = (Cast().A(i) * x + Cast().B(i));
           S hv = Cast().C(i)*p2;
@@ -840,7 +852,7 @@ namespace ngfem
 	  p1 *= c;
 	  p1 += (a * x + b) * p2;
           */
-          p1 = FMA(FMA(S(a),x,S(b)), p2, c*p1);
+          p1 = FMA(FMA(a,x,S(b)), p2, c*p1);
 	  return p1;
 	}
     }
@@ -1173,7 +1185,7 @@ namespace ngfem
     INLINE void EvalScaledMult (IC<N> n, S x, Sy y, Sc c, T && values) const
     {
       S p1(c*Cast().P1(x,y)), p2(c * Cast().P0(x));
-      Iterate<N+1> ([&] (auto i)
+      Iterate<N+1> ([&] (auto i) LAMBDA_INLINE
                   {
                     values[i] = p2;
                     this->EvalScaledNext2 (i+2, x, y, p1, p2);
@@ -1446,9 +1458,12 @@ namespace ngfem
     template <class S>
     static INLINE S P0(S x) { return S(1.0); }
     template <class S>
-    static INLINE S P1(S x) { return 0.5 * (2*(al+1)+(al+be+2)*(x-1)); }
+    // static INLINE S P1(S x) { return 0.5 * (2*(al+1)+(al+be+2)*(x-1)); }
+    static INLINE S P1(S x) { return 0.5*(2*(al+1)-(al+be+2)) + 0.5*(al+be+2)*x; }
+    
     template <class S>
-    static INLINE S P1(S x, S y) { return 0.5 * (2*(al+1)*y+(al+be+2)*(x-y)); }
+    // static INLINE S P1(S x, S y) { return 0.5 * (2*(al+1)*y+(al+be+2)*(x-y)); }
+    static INLINE S P1(S x, S y) { return 0.5*(al+be+2)*x+0.5*(al-be)*y; }
       
     static INLINE double CalcA (int i) 
     { i--; return (2.0*i+al+be)*(2*i+al+be+1)*(2*i+al+be+2) / ( 2 * (i+1) * (i+al+be+1) * (2*i+al+be)); }
@@ -1511,16 +1526,16 @@ namespace ngfem
     static Array< Vec<4> > coefs;
     static int maxnp;
     */
-    static constexpr int maxnp = 128;
-    static constexpr int maxalpha = 128;
+    static constexpr size_t maxnp = 128;
+    static constexpr size_t maxalpha = 128;
     static Vec<4> coefs[maxnp*maxalpha];
 #else
-    int alpha;
+    size_t alpha;
 #endif
     size_t n2;
     Vec<4> * coefsal;
   public:
-    INLINE JacobiPolynomialAlpha (int a) 
+    INLINE JacobiPolynomialAlpha (size_t a) 
     { 
       // offset = alpha*maxnp;
 #ifndef __CUDA_ARCH__
@@ -1554,16 +1569,16 @@ namespace ngfem
     INLINE S P1(S x) const 
     { 
 #ifndef __CUDA_ARCH__
-      return FMA (S(coefsal[1][0]),x,S(coefsal[1][1])); 
+      return FMA (coefsal[1][0],x,S(coefsal[1][1])); 
 #else
-      return FMA (S(jacobialpha_coefs[alpha][1][0]), x, jacobialpha_coefs[alpha][1][1]);
+      return FMA (jacobialpha_coefs[alpha][1][0], x, jacobialpha_coefs[alpha][1][1]);
 #endif
     }
     template <class S, class Sy>
     INLINE S P1(S x, Sy y) const 
     { 
 #ifndef __CUDA_ARCH__
-      return FMA(S(coefsal[1][0]),x,coefsal[1][1]*y);
+      return FMA(coefsal[1][0],x,coefsal[1][1]*y);
 #else
       return jacobialpha_coefs[alpha][1][0]*x+jacobialpha_coefs[alpha][1][1]*y;
 #endif
@@ -1572,15 +1587,15 @@ namespace ngfem
 
 #ifndef __CUDA_ARCH__
     template <typename TI>
-    INLINE double A (TI i) const { return coefsal[i][0]; } 
+    INLINE const double & A (TI i) const { return coefsal[i][0]; } 
     template <typename TI>
-    INLINE double B (TI i) const { return coefsal[i][1]; } 
+    INLINE const double & B (TI i) const { return coefsal[i][1]; } 
     template <typename TI>
-    INLINE double C (TI i) const { return coefsal[i][2]; } 
+    INLINE const double & C (TI i) const { return coefsal[i][2]; } 
 #else
-    INLINE double A (int i) const { return jacobialpha_coefs[alpha][i][0]; } 
-    INLINE double B (int i) const { return jacobialpha_coefs[alpha][i][1]; } 
-    INLINE double C (int i) const { return jacobialpha_coefs[alpha][i][2]; } 
+    INLINE const double & A (int i) const { return jacobialpha_coefs[alpha][i][0]; } 
+    INLINE const double & B (int i) const { return jacobialpha_coefs[alpha][i][1]; } 
+    INLINE const double & C (int i) const { return jacobialpha_coefs[alpha][i][2]; } 
 #endif
 
     template <typename TI>

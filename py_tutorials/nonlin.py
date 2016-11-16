@@ -15,7 +15,7 @@ r = u.vec.CreateVector()
 w = u.vec.CreateVector()
 
 for it in range(5):
-    print ("Iterateion",it)
+    print ("Iteration",it)
     a.Apply(u.vec, r)
     a.AssembleLinearization(u.vec)
     
