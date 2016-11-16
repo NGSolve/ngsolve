@@ -2,10 +2,6 @@
 #include "../ngstd/python_ngstd.hpp"
 #include <comp.hpp>
 
-#ifdef PARALLEL
-#include <mpi4py/mpi4py.h>
-#endif
-
 #include <regex>
 
 using namespace ngcomp;
@@ -435,14 +431,14 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
     .def("__ngsid__", [] ( MeshAccess & self)
         { return reinterpret_cast<std::uintptr_t>(&self); }  )
     
-#ifndef PARALLEL
+    //#ifndef PARALLEL
     .def("__init__",
          [](MeshAccess *instance, const string & filename)
                            { 
                              new (instance) MeshAccess(filename);
                            },
           py::arg("filename"))
-
+    /*
 #else
 
     .def("__init__",
@@ -463,7 +459,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                            },
           py::arg("filename"), py::arg("mpicomm")=DummyArgument())
 #endif
-
+    */
     
     .def("__eq__",
          [] (shared_ptr<MeshAccess> self, shared_ptr<MeshAccess> other)
@@ -1849,7 +1845,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
     .def(py::init<>())
     
 
-#ifndef PARALLEL
+    //#ifndef PARALLEL
     .def("__init__",
          [](PyPDE *instance, const string & filename)
                            { 
@@ -1857,7 +1853,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                            },
           py::arg("filename")
           )
-
+    /*
 #else
 
     .def("__init__",
@@ -1882,7 +1878,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
           py::arg("filename"), py::arg("mpicomm")=DummyArgument()
           )
 #endif
-
+    */
 
 
     .def("LoadSolution", []( PyPDE self, string filename, bool ascii )
@@ -2533,9 +2529,6 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 
 
 
-#ifdef PARALLEL
-  import_mpi4py();
-#endif
 }
 
 
