@@ -249,12 +249,16 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
     .def_property_readonly("vertices", [](Ngs_Element &el) {
         return py::cast(Array<int>(el.Vertices()));
         })//, "list of global vertex numbers")
-//     .def_property_readonly("edges", [](Ngs_Element &el) { return py::cast(Array<int>(el.Edges());} ),
-//                   "list of global edge numbers")
-//     .def_property_readonly("faces", [](Ngs_Element &el) { return py::cast(Array<int>(el.Faces());} ),
-//                   "list of global face numbers")
-    .def_property_readonly("type", &Ngs_Element::GetType, "geometric shape of element")
-    .def_property_readonly("index", &Ngs_Element::GetIndex, "material or boundary condition index")
+    .def_property_readonly("edges", [](Ngs_Element &el) { return py::cast(Array<int>(el.Edges()));} ,
+                  "list of global edge numbers")
+    .def_property_readonly("faces", [](Ngs_Element &el) { return py::cast(Array<int>(el.Faces()));} ,
+                  "list of global face numbers")
+    .def_property_readonly("type", [](Ngs_Element &self)
+        { return self.GetType(); },
+        "geometric shape of element")
+    .def_property_readonly("index", [](Ngs_Element &self)
+        { return self.GetIndex(); },
+        "material or boundary condition index")
     .def_property_readonly("mat", [](Ngs_Element & el)
                                          { return el.GetMaterial() ? *el.GetMaterial() : ""; },
                   "material or boundary condition label")
@@ -264,9 +268,11 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
     .def_property_readonly("dofs",
                   [](FESpace::Element & el) 
                    {
+                     py::list res;
                      Array<int> tmp (el.GetDofs());
-                     return py::make_tuple(tmp);
-                     // return py::tuple(Array<int>(el.GetDofs()));} ))
+                     for( int i : tmp)
+                        res.append(py::cast(i));
+                     return res;
                    },
                   "degrees of freedom of element"
                   )
