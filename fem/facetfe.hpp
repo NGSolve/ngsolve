@@ -47,6 +47,18 @@ namespace ngfem
       throw Exception ("facetfe - calcdshape not olverloaded");
     }
 
+    using ScalarFiniteElement<D>::Evaluate;
+    NGS_DLL_HEADER virtual void Evaluate (const SIMD_IntegrationRule & ir, BareSliceVector<> coefs, ABareVector<double> values) const
+    {
+      fe.EvaluateFacetVolIp (fnr, ir, coefs, values);
+    }
+    
+    using ScalarFiniteElement<D>::AddTrans;    
+    NGS_DLL_HEADER virtual void AddTrans (const SIMD_IntegrationRule & ir, ABareVector<double> values, BareSliceVector<> coefs) const
+    {
+      fe.AddTransFacetVolIp (fnr, ir, values, coefs);
+    }
+    
   };
 
   
@@ -98,7 +110,9 @@ namespace ngfem
     virtual void CalcFacetShapeVolIP (int fnr, const IntegrationPoint & ip, 
 				      SliceVector<> shape) const = 0;
 
-
+    virtual void EvaluateFacetVolIp (int fnr, const SIMD_IntegrationRule & ir, BareSliceVector<> coefs, ABareVector<double> values) const = 0;
+    virtual void AddTransFacetVolIp (int fnr, const SIMD_IntegrationRule & ir, ABareVector<double> values, BareSliceVector<> coefs) const = 0;
+    
 
     IntRange GetFacetDofs(int fnr) const
     {

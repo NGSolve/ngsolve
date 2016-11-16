@@ -211,7 +211,8 @@ namespace ngcomp
     int rect_pml = -1;
     int pml_domain = -1;
     
-    Array<std::tuple<int,int>> identified_facets;    
+    Array<std::tuple<int,int>> identified_facets;
+
     ///
     MPI_Comm mesh_comm;
   public:
@@ -436,11 +437,7 @@ namespace ngcomp
 
     /// the sub-domain indices next to boundary element. 
     /// returns -1 for void
-    void GetSElNeighbouringDomains(const int elnr, int & in, int & out) const
-    { 
-      Ng_GetSurfaceElementNeighbouringDomains(elnr+1,in,out);
-      //in--; out--;
-    }
+    void GetSElNeighbouringDomains(const int elnr, int & in, int & out) const;
   
 
     /// update buffered global quantities.
@@ -696,16 +693,17 @@ namespace ngcomp
         case 3: GetFaceSurfaceElements (fnr, elnums); break;
         }
     }
-    
+
     void CalcIdentifiedFacets();
     int GetPeriodicFacet(int fnr) const
     {
-       if(get<1>(identified_facets[fnr]) == 2) // check if identification type is periodic
-        return get<0>(identified_facets[fnr]);
-       else
-        return fnr;
+      if(get<1>(identified_facets[fnr]) == 2) // check if identification type is periodic
+	return get<0>(identified_facets[fnr]);
+      else
+	return fnr;
     }
-    
+
+
     // void GetVertexElements (int vnr, Array<int> & elnrs) const;
     /// element order stored in Netgen
     int GetElOrder (int enr) const
@@ -825,7 +823,8 @@ namespace ngcomp
 
     /// is element straight or curved ?
     bool IsElementCurved (int elnr) const
-    { return bool (Ng_IsElementCurved (elnr+1)); }
+    { return GetElement(elnr).is_curved; }
+      // { return bool (Ng_IsElementCurved (elnr+1)); }
     
     
     void GetPeriodicVertices ( Array<ngstd::INT<2> > & pairs) const;

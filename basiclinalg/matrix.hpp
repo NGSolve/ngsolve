@@ -562,7 +562,8 @@ namespace ngbla
   template <int H, int W = H, typename T = double>
   class Mat : public MatExpr<Mat<H,W,T> >
   {
-    T data[(H*W>0) ? H*W : 1];
+    // T data[(H*W>0) ? H*W : 1];
+    HTArray<H*W,T> data;
   public:
     typedef T TELEM;
     typedef typename mat_traits<T>::TSCAL TSCAL;
@@ -572,15 +573,17 @@ namespace ngbla
     // enum { WIDTH  = W };
 
     /// do not initialize 
-    INLINE Mat () { ; }
+    Mat () = default;
+    Mat (const Mat &) = default;
 
+    /*
     /// copy matrix
     INLINE Mat (const Mat & m) 
       : MatExpr<Mat> ()
     {
       (*this) = m;
     }
-
+    */
     /// assign values
     template<typename TB>
     INLINE Mat (const Expr<TB> & m)
@@ -604,12 +607,15 @@ namespace ngbla
     }
 
     /// copy matrix
+    Mat & operator= (const Mat &) = default;
+    /*
     INLINE Mat & operator= (const Mat & m) 
     {
       for (int i = 0; i < H*W; i++)
         data[i] = m.data[i];
       return *this;
     }
+    */
  
     /// fill values
     INLINE Mat & operator= (TSCAL s) 
@@ -1837,13 +1843,28 @@ namespace ngbla
     -> Mat<W,H,decltype(Trans(mat(0,0)))>
   {
     Mat<W,H,decltype(Trans(mat(0,0)))> res;
+    /*
     for (int i = 0; i < H; i++)
       for (int j = 0; j < W; j++)
         res(j,i) = mat(i,j);
+    */
+    Iterate<H> ([&] (auto i) {
+        Iterate<W> ([&] (auto j) {
+            res(j.value,i.value) = mat(i.value, j.value);
+          });
+      });
     return res;
   }
   
-
+  template <int H, int W, typename T>
+  INLINE Mat<H,W,T> operator* (T scal, const Mat<H,W,T> & mat)
+  {
+    Mat<H,W,T> res;
+    Iterate<H*W> ([&] (auto i) {
+        res(i.value) = scal * mat(i.value);
+      });
+    return res;
+  }
 
 
   template <int H, int W, int W2, typename T1, typename T2>

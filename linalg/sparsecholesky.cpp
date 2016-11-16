@@ -503,11 +503,13 @@ namespace ngla
 	    {
 	      if ( col <= i ) SetOrig (i, col, a.GetRowValues(i)[j]);
 	    }
+          /*
 	  else if (i == col)
 	    SetOrig (i, i, id);
+          */
 	}
     
-    Factor(); 
+    FactorSPD(); 
   }
  
 
@@ -2098,7 +2100,8 @@ namespace ngla
   SparseFactorization (const BaseSparseMatrix & amatrix,
 		       const BitArray * ainner,
 		       const Array<int> * acluster)
-    : matrix(amatrix), inner(ainner), cluster(acluster)
+    : matrix(const_cast<BaseSparseMatrix&>(amatrix).SharedFromThis<BaseSparseMatrix>()),
+      inner(ainner), cluster(acluster)
   { 
     smooth_is_projection = true;
     if (cluster)
@@ -2128,12 +2131,12 @@ namespace ngla
     auto hvec2 = u.CreateVector();
 
     hvec1 = y;
-    matrix.MultAdd1 (-1, u, hvec1, inner, cluster);
+    matrix.lock()->MultAdd1 (-1, u, hvec1, inner, cluster);
 
     hvec2 = (*this) * hvec1;
     u += hvec2;
     
-    matrix.MultAdd2 (-1, hvec2, y, inner, cluster);
+    matrix.lock()->MultAdd2 (-1, hvec2, y, inner, cluster);
   }
   
 

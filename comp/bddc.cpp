@@ -12,7 +12,9 @@ namespace ngcomp
     shared_ptr<BilinearForm> bfa;
 
     BaseMatrix *harmonicext, *harmonicexttrans, 
-      *innersolve, *pwbmat;    
+      *innersolve;
+
+    shared_ptr<BaseMatrix> pwbmat;    
 
     SparseMatrix<SCAL,TV,TV> *sparse_innersolve, 
       *sparse_harmonicext, *sparse_harmonicexttrans;
@@ -54,7 +56,7 @@ namespace ngcomp
 
       hypre = ahypre;
 
-      pwbmat = NULL;
+      // pwbmat = NULL;
       inv = NULL;
 
       inv_coarse = NULL;
@@ -155,18 +157,19 @@ namespace ngcomp
       harmonicext = sparse_harmonicext =
 	new SparseMatrix<SCAL,TV,TV>(ndof, el2ifdofs, el2wbdofs, false);
       harmonicext->AsVector() = 0.0;
-      pwbmat = bfa->SymmetricStorage() && !hypre
-        ? new SparseMatrixSymmetric<SCAL,TV>(ndof, el2wbdofs)
-        : new SparseMatrix<SCAL,TV,TV>(ndof, el2wbdofs, el2wbdofs, false); // bfa.IsSymmetric() && !hypre);
+      if (bfa->SymmetricStorage() && !hypre)
+        pwbmat = make_shared<SparseMatrixSymmetric<SCAL,TV>>(ndof, el2wbdofs);
+      else
+        pwbmat = make_shared<SparseMatrix<SCAL,TV,TV>>(ndof, el2wbdofs, el2wbdofs, false); // bfa.IsSymmetric() && !hypre);
       pwbmat -> AsVector() = 0.0;
       pwbmat -> SetInverseType (inversetype);
-      dynamic_cast<BaseSparseMatrix*>(pwbmat) -> SetSPD ( bfa->IsSPD() );
+      dynamic_pointer_cast<BaseSparseMatrix>(pwbmat) -> SetSPD ( bfa->IsSPD() );
       weight.SetSize (fes->GetNDof());
       weight = 0;
 
       if (coarse)
       {
-        inv = GetPreconditionerClasses().GetPreconditioner(coarsetype)->creatorbf (bfa, flags, "wirebasket"+coarsetype);
+        inv = GetPreconditionerClasses().GetPreconditioner(coarsetype)->creatorbf (nullptr, flags, "wirebasket"+coarsetype);
         dynamic_pointer_cast<Preconditioner>(inv) -> InitLevel(wb_free_dofs);
       }
     }
@@ -276,7 +279,7 @@ namespace ngcomp
       
       sparse_innersolve -> AddElementMatrix(intdofs,intdofs,d);
 	
-      dynamic_cast<SparseMatrix<SCAL,TV,TV>*>(pwbmat)
+      dynamic_pointer_cast<SparseMatrix<SCAL,TV,TV>>(pwbmat)
         ->AddElementMatrix(wbdofs,wbdofs,a);
       if (coarse)
         dynamic_pointer_cast<Preconditioner>(inv)->AddElementMatrix(wbdofs,a,id,lh);
@@ -296,32 +299,38 @@ namespace ngcomp
 #ifdef PARALLEL
       AllReduceDofData (weight, MPI_SUM, fes->GetParallelDofs());
 #endif
+      ParallelFor (weight.Size(),
+                   [&] (size_t i)
+                   {
+                     if (weight[i]) weight[i] = 1.0/weight[i];
+                   });
 
-      for (int i = 0; i < sparse_innersolve->Height(); i++)
-	{
-	  FlatArray<int> cols = sparse_innersolve -> GetRowIndices(i);
-	  for (int j = 0; j < cols.Size(); j++)
-	    if (weight[i] && weight[cols[j]])
-	      sparse_innersolve->GetRowValues(i)(j) /= (weight[i] * weight[cols[j]]);
-	}
-      
-      
-      for (int i = 0; i < sparse_harmonicext->Height(); i++)
-	if (weight[i])
-	  sparse_harmonicext->GetRowValues(i) /= weight[i];
+      ParallelFor (sparse_innersolve->Height(),
+                   [&] (size_t i)
+                   {
+                     FlatArray<int> cols = sparse_innersolve -> GetRowIndices(i);
+                     for (int j = 0; j < cols.Size(); j++)
+                       sparse_innersolve->GetRowValues(i)(j) *= weight[i] * weight[cols[j]];
+                   });
+
+      ParallelFor (sparse_harmonicext->Height(),
+                   [&] (size_t i)
+                   {
+                     sparse_harmonicext->GetRowValues(i) *= weight[i];                     
+                   });
       
       if (!bfa->SymmetricStorage())
         {
-          for (int i = 0; i < sparse_harmonicexttrans->Height(); i++)
-            {
-              FlatArray<int> rowind = sparse_harmonicexttrans->GetRowIndices(i);
-              FlatVector<SCAL> values = sparse_harmonicexttrans->GetRowValues(i);
-              for (int j = 0; j < rowind.Size(); j++)
-                if (weight[rowind[j]])
-                  values[j] /= weight[rowind[j]];
-            }
+          ParallelFor (sparse_harmonicexttrans->Height(),
+                       [&] (size_t i)
+                       {
+                         FlatArray<int> rowind = sparse_harmonicexttrans->GetRowIndices(i);
+                         FlatVector<SCAL> values = sparse_harmonicexttrans->GetRowValues(i);
+                         for (int j = 0; j < rowind.Size(); j++)
+                           values[j] *= weight[rowind[j]];
+                       });
         }
-
+      
       // now generate wire-basked solver
 
       if (block)
@@ -340,7 +349,7 @@ namespace ngcomp
 	  // *testout << "pwbmat = " << endl << *pwbmat << endl;
 	  cout << "call block-jacobi inverse" << endl;
 
-	  inv = dynamic_cast<BaseSparseMatrix*> (pwbmat)->CreateBlockJacobiPrecond(blocks, 0, 0, 0);
+	  inv = dynamic_pointer_cast<BaseSparseMatrix> (pwbmat)->CreateBlockJacobiPrecond(blocks, 0, 0, 0);
 	  // inv = dynamic_cast<BaseSparseMatrix*> (pwbmat)->CreateJacobiPrecond(wb_free_dofs);
 
 	  cout << "has inverse" << endl << endl;
@@ -365,7 +374,7 @@ namespace ngcomp
 	    {
 	      ParallelDofs * pardofs = &bfa->GetFESpace()->GetParallelDofs();
 
-	      pwbmat = new ParallelMatrix (shared_ptr<BaseMatrix> (pwbmat, NOOP_Deleter), pardofs);
+	      pwbmat = make_shared<ParallelMatrix> (pwbmat, pardofs);
 	      pwbmat -> SetInverseType (inversetype);
 
 #ifdef HYPRE
@@ -375,7 +384,7 @@ namespace ngcomp
 #endif
                 if (coarse)
                 {
-                  dynamic_pointer_cast<Preconditioner>(inv) -> FinalizeLevel(pwbmat);
+                  dynamic_pointer_cast<Preconditioner>(inv) -> FinalizeLevel(pwbmat.get());
                 }
                 else
                   inv = pwbmat -> InverseMatrix (wb_free_dofs);
@@ -399,7 +408,7 @@ namespace ngcomp
                 cout << "call wirebasket preconditioner finalize ( with " << cntfreedofs 
                      << " free dofs out of " << pwbmat->Height() << " )" << endl;
                 // throw Exception("combination of coarse and block not implemented! ");
-                dynamic_pointer_cast<Preconditioner>(inv) -> FinalizeLevel(pwbmat);
+                dynamic_pointer_cast<Preconditioner>(inv) -> FinalizeLevel(pwbmat.get());
               }
               else
               {
@@ -416,7 +425,7 @@ namespace ngcomp
     ~BDDCMatrix()
     {
       // delete inv;
-      delete pwbmat;
+      // delete pwbmat;
       // delete inv_coarse;
       delete harmonicext;
       delete harmonicexttrans;
@@ -659,6 +668,18 @@ namespace ngcomp
 
   template class BDDCPreconditioner<double>;
   template class BDDCPreconditioner<double, Complex>;
+
+
+  template <>
+  shared_ptr<Preconditioner> RegisterPreconditioner<BDDCPreconditioner<double>>::
+  CreateBF(shared_ptr<BilinearForm> bfa, const Flags & flags, const string & name)
+  {
+    // cout << "complex bddc ? " << bfa->GetFESpace()->IsComplex() << endl;
+    if (bfa->GetFESpace()->IsComplex())
+      return make_shared<BDDCPreconditioner<Complex>> (bfa, flags, name);
+    else
+      return make_shared<BDDCPreconditioner<double>> (bfa, flags, name);
+  }
 
   static RegisterPreconditioner<BDDCPreconditioner<double> > initpre ("bddc");
   static RegisterPreconditioner<BDDCPreconditioner<Complex> > initpre2 ("bddcc");

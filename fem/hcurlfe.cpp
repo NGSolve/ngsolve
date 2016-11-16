@@ -145,7 +145,14 @@ namespace ngfem
       CalcMappedShape (mir[i], shape.Cols(i*D, (i+1)*D));
   }
   
-
+  template <int D>
+  void HCurlFiniteElement<D> ::
+  CalcMappedShape (const SIMD_BaseMappedIntegrationRule & mir, 
+                   ABareMatrix<> dshapes) const
+  {
+    throw ExceptionNOSIMD("SIMD - HCurlFE::CalcShape not overloaded");
+  }
+  
 
   /// compute curl of shape
   template <int D>
@@ -177,6 +184,15 @@ namespace ngfem
     for (int i = 0; i < mir.Size(); i++)
       CalcMappedCurlShape (mir[i], curlshape.Cols(i*DIM_CURL_(D), (i+1)*DIM_CURL_(D)));
   }
+  
+  template <int D>
+  void HCurlFiniteElement<D> ::
+  CalcMappedCurlShape (const SIMD_BaseMappedIntegrationRule & mir, 
+                       ABareMatrix<> dshapes) const
+  {
+    throw ExceptionNOSIMD("SIMD - HCurlFE::CalcMappedCurlShape not overloaded");
+  }
+  
   
 
   template <int D>
@@ -4493,7 +4509,7 @@ namespace ngfem
   }
 
 
-
+#ifdef VERY_OLD_NEDELEC_ELS
   // Array<HCurlFiniteElement<3>::IPData> FE_NedelecPyramid3::ipdata;
   Mat<FE_NedelecPyramid3::NDOF> FE_NedelecPyramid3::trans;
   Mat<FE_NedelecPyramid3::NEDGEDOF> FE_NedelecPyramid3::trans2;
@@ -4949,6 +4965,7 @@ namespace ngfem
       (*testout) << "check = " << endl << (fiphij3 * trans3) << endl;
     */
   }
-
+#endif
+  
 
 }

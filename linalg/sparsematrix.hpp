@@ -205,7 +205,9 @@ public:
     size_t NZE() const { return nze; }
 
     FlatArray<int> GetRowIndices(int i) const
-    { return FlatArray<int> (int(firsti[i+1]-firsti[i]), &colnr[firsti[i]]); }
+      // { return FlatArray<int> (int(firsti[i+1]-firsti[i]), &colnr[firsti[i]]); }
+      // { return FlatArray<int> (int(firsti[i+1]-firsti[i]), &colnr[firsti[i]]); }
+    { return FlatArray<int> (int(firsti[i+1]-firsti[i]), colnr+firsti[i]); }
 
     size_t First (int i) const { return firsti[i]; }
 
@@ -395,7 +397,8 @@ public:
     }
 
     FlatVector<TM> GetRowValues(int i) const
-    { return FlatVector<TM> (firsti[i+1]-firsti[i], &data[firsti[i]]); }
+      // { return FlatVector<TM> (firsti[i+1]-firsti[i], &data[firsti[i]]); }
+    { return FlatVector<TM> (firsti[i+1]-firsti[i], data+firsti[i]); }
 
 
     virtual void AddElementMatrix(FlatArray<int> dnums1, 
@@ -404,7 +407,8 @@ public:
 
     virtual BaseVector & AsVector() 
     {
-      asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)&data[0]);
+      // asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)&data[0]);
+      asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Addr(0));
       return asvec; 
     }
 
@@ -544,8 +548,10 @@ public:
       size_t first = firsti[row];
       size_t last = firsti[row+1];
       // TVX * vecp = vec.Addr(0);
-      const int * colpi = &colnr[0];
-      const TM * datap = &data[0];
+      // const int * colpi = &colnr[0];
+      // const TM * datap = &data[0];
+      const int * colpi = colnr.Addr(0);
+      const TM * datap = data.Addr(0);
 
       // int d = vec.Addr(1)-vec.Addr(0);
       // if (d == 1)
@@ -796,8 +802,8 @@ public:
     virtual shared_ptr<BaseMatrix> InverseMatrix (const Array<int> * clusters) const;
   };
 
-  SparseMatrix<double,double> *
-  MatMult (const SparseMatrix<double, double> & mata, const SparseMatrix<double, double> & matb);
+  SparseMatrixTM<double> *
+  MatMult (const SparseMatrix<double, double, double> & mata, const SparseMatrix<double, double, double> & matb);
 
 #ifdef GOLD
 #include <sparsematrix_spec.hpp>

@@ -824,6 +824,24 @@ namespace ngcomp
   }
   */
 
+  void MeshAccess :: GetSElNeighbouringDomains(const int elnr, int & in, int & out) const
+  {
+    ArrayMem<int, 1> elnums;
+    ArrayMem<int, 2> fnums;
+    GetSElFacets(elnr, fnums);
+    GetFacetElements ( fnums[0], elnums );
+    if (elnums.Size()==1)
+    {
+      in = GetElIndex(elnums[0])+1;
+      out = 0;
+    }
+    else
+    {
+      out = GetElIndex(elnums[0])+1;
+      in = GetElIndex(elnums[1])+1;
+    }
+  }
+
 
   void MeshAccess :: UpdateBuffers()
   {
@@ -1218,31 +1236,31 @@ namespace ngcomp
   }
 
   void MeshAccess::CalcIdentifiedFacets()
-   {
-     identified_facets.SetSize(nnodes_cd[1]);
-     for(auto i : Range(identified_facets.Size()))
-       identified_facets[i] = std::tuple<int,int>(i,1);
- 
-     auto & idents = mesh.GetMesh()->GetIdentifications();
-     int nid = idents.GetMaxNr();
-     
-     for(auto id : Range(1,nid+1))
-       {
- 	// for periodic identification by now
- 	if (idents.GetType(id) != 2) continue;
- 	Array<INT<2>> pairs;
- 	switch(mesh.GetDimension())
- 	  {
- 	  case 1: GetPeriodicVertices(id,pairs); break;
- 	  case 2: GetPeriodicEdges(id,pairs); break;
- 	    // default: // here should be a 3D version
- 	  }
- 	for(auto pair : pairs)
- 	  for(auto l : Range(2))
- 	    identified_facets[pair[l]] = std::tuple<int,int>(pair[1-l],2);
-       }
+  {
+    identified_facets.SetSize(nnodes_cd[1]);
+    for(auto i : Range(identified_facets.Size()))
+      identified_facets[i] = std::tuple<int,int>(i,1);
+
+    auto & idents = mesh.GetMesh()->GetIdentifications();
+    int nid = idents.GetMaxNr();
+    
+    for(auto id : Range(1,nid+1))
+      {
+	// for periodic identification by now
+	if (idents.GetType(id) != 2) continue;
+	Array<INT<2>> pairs;
+	switch(mesh.GetDimension())
+	  {
+	  case 1: GetPeriodicVertices(id,pairs); break;
+	  case 2: GetPeriodicEdges(id,pairs); break;
+	    // default: // here should be a 3D version
+	  }
+	for(auto pair : pairs)
+	  for(auto l : Range(2))
+	    identified_facets[pair[l]] = std::tuple<int,int>(pair[1-l],2);
+      }
   }
-  
+
   void MeshAccess::PushStatus (const char * str) const
   { 
     Ng_PushStatus (str);
@@ -1301,6 +1319,7 @@ namespace ngcomp
     // static Timer t("MeshAccess::GetTrafoDim"); RegionTimer reg(t);
     
     ElementTransformation * eltrans;
+    GridFunction * loc_deformation = deformation.get();
     
     Ngs_Element el (mesh.GetElement<DIM> (elnr), ElementId(VOL, elnr));
     
@@ -1312,14 +1331,14 @@ namespace ngcomp
            ElementId(VOL,elnr), el.GetIndex(), pml_alpha, pml_r);
       }
     
-    else if (deformation)
+    else if (loc_deformation)
       {
         if (el.is_curved)
           eltrans = new (lh)
             ALE_ElementTransformation<DIM, DIM, Ng_ElementTransformation<DIM,DIM>>
             (this, el.GetType(), 
              ElementId(VOL,elnr), el.GetIndex(),
-             deformation.get(), 
+             loc_deformation, 
              dynamic_cast<LocalHeap&> (lh));
 
         else
@@ -1328,7 +1347,7 @@ namespace ngcomp
             ALE_ElementTransformation<DIM, DIM, Ng_ConstElementTransformation<DIM,DIM>>
             (this, el.GetType(), 
              ElementId(VOL,elnr), el.GetIndex(),
-             deformation.get(), 
+             loc_deformation, 
              dynamic_cast<LocalHeap&> (lh));
       }
 
@@ -1365,13 +1384,14 @@ namespace ngcomp
     ElementTransformation * eltrans;
     
     Ngs_Element el(mesh.GetElement<DIM-1> (elnr), ElementId(BND, elnr));
-
-    if (deformation)
+    GridFunction * loc_deformation = deformation.get();
+    
+    if (loc_deformation)
 
       eltrans = new (lh) ALE_ElementTransformation<DIM-1,DIM, Ng_ElementTransformation<DIM-1,DIM>>
         (this, el.GetType(), 
          ElementId(BND,elnr), el.GetIndex(),
-         deformation.get(), 
+         loc_deformation, 
          dynamic_cast<LocalHeap&> (lh)); 
     
     else if ( el.is_curved )

@@ -98,6 +98,9 @@ namespace ngla
     else
       for(int i = 0; i < v.FVComplex().Size(); i++)
         v.FVComplex()(i) = double (rand()) / RAND_MAX;
+
+    v.Distribute();
+    v.Cumulate();
       
     cv = 0;
 

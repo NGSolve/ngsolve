@@ -457,7 +457,7 @@ namespace ngstd
 
     // const CArray<T> operator+ (int pos)
     // { return CArray<T> (data+pos); }
-    INLINE T * operator+ (int pos) { return data+pos; }
+    INLINE T * operator+ (int pos) const { return data+pos; }
 
 
     /// access last element. check by macro CHECK_RANGE
@@ -1273,8 +1273,67 @@ namespace ngstd
   }
                                
 
+  // head-tail array
+  template <size_t S, typename T>
+  class HTArray
+  {
+    HTArray<S-1,T> tail;
+    T head;
+  public:
+    HTArray () = default;
+    HTArray (const HTArray &) = default;
+    HTArray & operator= (const HTArray &) = default;
 
+    T * Ptr () { return tail.Ptr(); }
+    T & operator[] (size_t i) { return Ptr()[i]; }
 
+    const T * Ptr () const { return tail.Ptr(); }
+    const T & operator[] (size_t i) const { return Ptr()[i]; }
+  };
+
+  template <typename T>
+  class HTArray<1,T>
+  {
+    T head;
+  public:
+    HTArray () = default;
+    HTArray (const HTArray &) = default;
+    HTArray & operator= (const HTArray &) = default;
+
+    T * Ptr () { return &head; }
+    T & operator[] (size_t i) { return Ptr()[i]; }
+
+    const T * Ptr () const { return &head; }
+    const T & operator[] (size_t i) const { return Ptr()[i]; }
+  };
+
+  template <typename T>
+  class HTArray<0,T>
+  {
+    T head; // dummy variable
+  public:
+    HTArray () = default;
+    HTArray (const HTArray &) = default;
+    HTArray & operator= (const HTArray &) = default;
+
+    T * Ptr () { return &head; }
+    T & operator[] (size_t i) { return Ptr()[i]; }
+
+    const T * Ptr () const { return &head; }
+    const T & operator[] (size_t i) const { return Ptr()[i]; }
+  };
+
+  template<size_t S, typename T>
+  const T * operator+ (const HTArray<S,T> & ar, size_t i)
+  {
+    return ar.Ptr()+i;
+  }
+  template<size_t S, typename T>
+  T * operator+ (HTArray<S,T> & ar, size_t i)
+  {
+    return ar.Ptr()+i;
+  }
+  
 
   template <typename T, typename TSIZE> 
   Archive & operator & (Archive & archive, Array<T,TSIZE> & a)

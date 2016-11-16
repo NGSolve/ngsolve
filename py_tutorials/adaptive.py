@@ -48,7 +48,7 @@ v = H1(mesh, order=3, dirichlet=[1])
 
 # one heat conductivity coefficient per sub-domain
 lam = DomainConstantCF([1, 1000, 10])
-a = BilinearForm(v, symmetric=True)
+a = BilinearForm(v, symmetric=False)
 a += Laplace(lam)
 
 
@@ -102,11 +102,11 @@ def CalcError():
         mesh.SetRefinementFlag(el, elerr[el.nr] > 0.25*maxerr)
 
 
-
-while v.ndof < 100000:  
-    SolveBVP()
-    CalcError()
-    mesh.Refine()
+with TaskManager():
+    while v.ndof < 100000:  
+        SolveBVP()
+        CalcError()
+        mesh.Refine()
     
 SolveBVP()
 

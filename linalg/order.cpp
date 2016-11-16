@@ -222,6 +222,7 @@ namespace ngla
 	  }
 	cliques[v] = NULL;	
 	vertices[v].nconnected = 0;
+        delete [] vertices[v].connected;
 	vertices[v].connected = NULL;
 	
 	return;
@@ -432,7 +433,8 @@ namespace ngla
           p3 = p3->next;
         }
       while (p3 != newp);
-      
+
+      delete [] vertices[v].connected;  // necessary ?       
       vertices[v].nconnected = cnt;
       vertices[v].connected = new int[cnt];
       cnt = 0;
@@ -541,7 +543,8 @@ namespace ngla
     if (cliques[v]) // NumCliques(v) != 0)
       throw Exception ("Eliminate Slave should have exactly no clique");
 
-    vertices[v].nconnected = 0; 
+    vertices[v].nconnected = 0;
+    delete [] vertices[v].connected;    
     vertices[v].connected = NULL;
   }
 
@@ -633,8 +636,8 @@ namespace ngla
   MinimumDegreeOrdering:: ~MinimumDegreeOrdering ()
   {
     // cout << "~MDO: all data should be deleted, please double-check" << endl;
-    // for (int i = 0; i < vertices.Size(); i++)
-    // delete [] vertices[i].connected;
+    for (int i = 0; i < vertices.Size(); i++)
+      delete [] vertices[i].connected;
   }
 
 

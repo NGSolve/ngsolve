@@ -135,6 +135,13 @@ namespace ngfem
       CalcShape (ir[i], shape.Col(i));
   }
 
+  void BaseScalarFiniteElement :: 
+  CalcShape (const SIMD_IntegrationRule & ir, 
+             ABareMatrix<> shape) const
+  {
+    throw ExceptionNOSIMD("SIMD - CalcShape not overloaded");
+  }
+
 
   template<int D>
   void ScalarFiniteElement<D> :: 
@@ -158,6 +165,14 @@ namespace ngfem
   {
     for (int i = 0; i < mir.Size(); i++)
       CalcMappedDShape (mir[i], dshapes.Cols(i*D,(i+1)*D));
+  }
+
+  template<int D>
+  void ScalarFiniteElement<D> :: 
+  CalcMappedDShape (const SIMD_BaseMappedIntegrationRule & mir, 
+                    ABareMatrix<> dshapes) const
+  {
+    throw ExceptionNOSIMD("SIMD - CalcDShape not overloaded");    
   }
 
  /*
@@ -202,6 +217,14 @@ namespace ngfem
     throw ExceptionNOSIMD (string("Evaluate (simd) not implemented for class ")+typeid(*this).name());
   }
 
+  void BaseScalarFiniteElement :: 
+  Evaluate (const SIMD_IntegrationRule & ir, SliceMatrix<> coefs, ABareMatrix<double> values) const
+  {
+    for (int i = 0; i < coefs.Width(); i++)
+      Evaluate (ir, coefs.Col(i), values.Row(i));
+  }
+
+  
   void BaseScalarFiniteElement :: 
   Evaluate (const IntegrationRule & ir, SliceMatrix<> coefs, SliceMatrix<> values) const
   {
@@ -253,6 +276,13 @@ namespace ngfem
   AddTrans (const SIMD_IntegrationRule & ir, ABareVector<double> values, BareSliceVector<> coefs) const
   {
     throw ExceptionNOSIMD (string("AddTrans (simd) not implemented for class ")+typeid(*this).name());    
+  }
+
+  void BaseScalarFiniteElement :: 
+  AddTrans (const SIMD_IntegrationRule & ir, ABareMatrix<double> values, SliceMatrix<> coefs) const
+  {
+    for (int i = 0; i < coefs.Width(); i++)
+      AddTrans (ir, values.Row(i), coefs.Col(i));
   }
 
   

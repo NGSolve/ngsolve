@@ -14,6 +14,8 @@ namespace ngstd
 {
   using namespace ngstd;
 
+  std::chrono::time_point<std::chrono::system_clock> wall_time_start = std::chrono::system_clock::now();
+
   double NgProfiler::tottimes[SIZE];
   double NgProfiler::starttimes[SIZE];
   long int NgProfiler::counts[SIZE];
@@ -147,7 +149,14 @@ namespace ngstd
 	  }
     }
     if (nr > -1) return nr;
-    throw Exception ("no more timer available");
+    static bool first_overflow = true;
+    if (first_overflow)
+      {
+        first_overflow = false;
+        cerr << "no more timer available, reusing last one" << endl;
+      }
+    return 0;
+    // throw Exception ("no more timer available");
   }
 
   void NgProfiler :: Reset () 

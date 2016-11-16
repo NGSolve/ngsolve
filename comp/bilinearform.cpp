@@ -3151,17 +3151,18 @@ namespace ngcomp
     static Timer timervol ("Apply Matrix - volume");
     static Timer timerbound ("Apply Matrix - boundary");
     static Timer timerDG ("Apply Matrix - DG");
-    static Timer timerDGpar ("Apply Matrix - DG par");
-    static Timer timerDG1 ("Apply Matrix - DG 1");
-    static Timer timerDG2 ("Apply Matrix - DG 2");
-    static Timer timerDG2a ("Apply Matrix - DG 2a");
-    static Timer timerDG2b ("Apply Matrix - DG 2b");
-    static Timer timerDG2c ("Apply Matrix - DG 2c");
-    static Timer timerDG3 ("Apply Matrix - DG 3");
-    static Timer timerDG4 ("Apply Matrix - DG 4");
-    static Timer timerDGfacet ("Apply Matrix - DG boundary");
-    static Timer timerDGfacet1 ("Apply Matrix - DG boundary 1");
-    static Timer timerDGfacet2 ("Apply Matrix - DG boundary 2");
+    constexpr int tlevel = 4;
+    static Timer timerDGpar ("Apply Matrix - DG par", tlevel);
+    static Timer timerDG1 ("Apply Matrix - DG 1", tlevel);
+    static Timer timerDG2 ("Apply Matrix - DG 2", tlevel);
+    static Timer timerDG2a ("Apply Matrix - DG 2a", tlevel);
+    static Timer timerDG2b ("Apply Matrix - DG 2b", tlevel);
+    static Timer timerDG2c ("Apply Matrix - DG 2c", tlevel);
+    static Timer timerDG3 ("Apply Matrix - DG 3", tlevel);
+    static Timer timerDG4 ("Apply Matrix - DG 4", tlevel);
+    static Timer timerDGfacet ("Apply Matrix - DG boundary", tlevel);
+    static Timer timerDGfacet1 ("Apply Matrix - DG boundary 1", tlevel);
+    static Timer timerDGfacet2 ("Apply Matrix - DG boundary 2", tlevel);
     RegionTimer reg (timer);
 
     static int lh_size = 5000000;
@@ -3269,13 +3270,14 @@ namespace ngcomp
                       if (parts[j] -> SkeletonForm())
                         {
                           auto dgform = parts[j] -> GetDGFormulation();
-                          if (!dgform.element_boundary && !parts[j]->BoundaryForm())
+                          if (!dgform.element_boundary)   //  && !parts[j]->BoundaryForm())  // too much !!!!
                             needs_facet_loop = true;
                           if (dgform.element_boundary)
                             needs_element_boundary_loop = true;
                             // throw Exception ("No BilinearFormApplication-Implementation for Facet-Integrators yet");
                         }
 
+                    /*
                     // do we need locks for neighbor - testfunctions ?
                     bool neighbor_testfunction = false;
                     for (int j = 0; j < NumIntegrators(); j++)
@@ -3285,6 +3287,7 @@ namespace ngcomp
                           if (dgform.neighbor_testfunction)
                             neighbor_testfunction = true;
                         }
+                    */
 
                     if (needs_facet_loop && !fespace->UsesDGCoupling())
                       throw Exception ("skeleton-form needs \"dgjumps\" : True flag for FESpace");
@@ -3297,13 +3300,14 @@ namespace ngcomp
                            {
                              RegionTimer reg(timerDGpar);
                              LocalHeap lh = clh.Split();
-                             Array<int> elnums(2, lh), fnums1(6, lh), fnums2(6, lh), vnums1(8, lh), vnums2(8, lh);
+                             Array<int> elnums(2, lh), elnums_per(2, lh), fnums1(6, lh), fnums2(6, lh), vnums1(8, lh), vnums2(8, lh);
 
                              for (int i : r)
                                {
                                  timerDG1.Start();
                                  HeapReset hr(lh);
                                  int facet = colfacets[i];
+				 int facet2 = colfacets[i];
                                  ma->GetFacetElements (facet, elnums);
                                  if (elnums.Size() == 0) continue; // coarse facets
                                  int el1 = elnums[0];
@@ -3312,7 +3316,17 @@ namespace ngcomp
                                  
                                  ElementId ei1(VOL, el1);
                                  timerDG1.Stop();
-                                 
+                                 if(elnums.Size() < 2)
+				   {
+				     facet2 = ma->GetPeriodicFacet(facet);
+				     if(facet2 > facet)
+				       {
+					 ma->GetFacetElements (facet2, elnums_per);
+					 elnums.Append(elnums_per[0]);
+				       }
+				     else if(facet2 < facet)
+				       continue;
+				   }
                                  if (elnums.Size()<2)
                                    {
                                      RegionTimer reg(timerDGfacet);
@@ -3322,7 +3336,8 @@ namespace ngcomp
 
                                      const FiniteElement & fel = fespace->GetFE (el1, lh);
                                      Array<int> dnums(fel.GetNDof(), lh);
-                                     ma->GetElVertices (el1, vnums1);     
+                                     ma->GetElVertices (el1, vnums1);
+                                     ma->GetSElVertices (sel, vnums2);     
 
                                      ElementTransformation & eltrans = ma->GetTrafo (el1, VOL, lh);
                                      ElementTransformation & seltrans = ma->GetTrafo (sel, BND, lh);
@@ -3336,13 +3351,14 @@ namespace ngcomp
                                          if (!bfi.BoundaryForm()) continue;  
                                          if (!bfi.SkeletonForm()) continue;
                                          if (bfi.GetDGFormulation().element_boundary) continue;
-
+                                         if (!bfi.DefinedOn (seltrans.GetElementIndex())) continue;
+                                         
                                          FlatVector<SCAL> elx(dnums.Size()*this->fespace->GetDimension(), lh),
                                            ely(dnums.Size()*this->fespace->GetDimension(), lh);
                                          x.GetIndirect(dnums, elx);
 
                                          dynamic_cast<const FacetBilinearFormIntegrator&>(bfi).  
-                                           ApplyFacetMatrix (fel,facnr1,eltrans,vnums1, seltrans, elx, ely, lh);
+                                           ApplyFacetMatrix (fel,facnr1,eltrans,vnums1, seltrans, vnums2, elx, ely, lh);
                                          y.AddIndirect(dnums, ely);
                                        } //end for (numintegrators)
 
@@ -3355,7 +3371,7 @@ namespace ngcomp
                                  ElementId ei2(VOL, el2);
                                  
                                  ma->GetElFacets(el2,fnums2);
-                                 int facnr2 = fnums2.Pos(facet);
+                                 int facnr2 = fnums2.Pos(facet2);
                                  
                                  ElementTransformation & eltrans1 = ma->GetTrafo (ei1, lh);
                                  ElementTransformation & eltrans2 = ma->GetTrafo (ei2, lh);
@@ -3418,7 +3434,7 @@ namespace ngcomp
 
                     // element-boundary formulation
 		    // LocalHeap clh (lh_size*TaskManager::GetMaxThreads(), "biform-AddMatrix - Heap");
-                    mutex addelemfacbnd_mutex;
+                    // mutex addelemfacbnd_mutex;
 
                     if (needs_element_boundary_loop)
                       /*
@@ -3437,7 +3453,7 @@ namespace ngcomp
                        {
                          {
                            int el1 = ei1.Nr();
-                           Array<int> elnums(2, lh), fnums1(6, lh), fnums2(6, lh), vnums1(8, lh), vnums2(8, lh);                         
+                           Array<int> elnums(2, lh), elnums_per(2, lh), fnums1(6, lh), fnums2(6, lh), vnums1(8, lh), vnums2(8, lh);
                              // RegionTimer reg1(timerDG1);
 
                            ma->GetElFacets(el1,fnums1);
@@ -3449,7 +3465,12 @@ namespace ngcomp
                                  HeapReset hr(lh);
 
                                  ma->GetFacetElements(fnums1[facnr1],elnums);
-
+				 if (elnums.Size()<2)
+				   if(ma->GetPeriodicFacet(fnums1[facnr1])!=fnums1[facnr1])
+				     {
+				       ma->GetFacetElements (ma->GetPeriodicFacet(fnums1[facnr1]), elnums_per);
+				       elnums.Append(elnums_per[0]);
+				     }
                                  if (elnums.Size()<2)
                                    {
                                      ma->GetFacetSurfaceElements (fnums1[facnr1], elnums);
@@ -3457,7 +3478,8 @@ namespace ngcomp
 
                                      const FiniteElement & fel = fespace->GetFE (el1, lh);
                                      Array<int> dnums(fel.GetNDof(), lh);
-                                     ma->GetElVertices (el1, vnums1);     
+                                     ma->GetElVertices (el1, vnums1);
+                                     ma->GetSElVertices (sel, vnums2);     
 
                                      ElementTransformation & eltrans = ma->GetTrafo (el1, VOL, lh);
                                      ElementTransformation & seltrans = ma->GetTrafo (sel, BND, lh);
@@ -3496,7 +3518,7 @@ namespace ngcomp
                                          x.GetIndirect(dnums, elx);
 
                                          dynamic_cast<const FacetBilinearFormIntegrator&>(bfi).  
-                                           ApplyFacetMatrix (fel,facnr1,eltrans,vnums1, seltrans, elx, ely, lh);
+                                           ApplyFacetMatrix (fel,facnr1,eltrans,vnums1, seltrans, vnums2, elx, ely, lh);
 
                                          /*
                                          if (neighbor_testfunction)
@@ -3520,8 +3542,8 @@ namespace ngcomp
                                  ElementId ei2(VOL, el2);
                                  
                                  ma->GetElFacets(el2,fnums2);
-                                 int facnr2 = fnums2.Pos(fnums1[facnr1]);
-                                 
+                                 int facnr2 = fnums2.Pos(ma->GetPeriodicFacet(fnums1[facnr1]));
+
                                  ElementTransformation & eltrans1 = ma->GetTrafo (ei1, lh);
                                  ElementTransformation & eltrans2 = ma->GetTrafo (ei2, lh);
 

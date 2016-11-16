@@ -9,6 +9,10 @@ MSVC2015_UPDATE3_GET_PTR_FIX(ngla::BaseVector)
 MSVC2015_UPDATE3_GET_PTR_FIX(ngla::CGSolver<class std::complex<double> >)
 MSVC2015_UPDATE3_GET_PTR_FIX(ngla::CGSolver<double>)
 MSVC2015_UPDATE3_GET_PTR_FIX(ngla::QMRSolver<double>)
+MSVC2015_UPDATE3_GET_PTR_FIX(ngla::QMRSolver<Complex>)
+MSVC2015_UPDATE3_GET_PTR_FIX(ngla::GMRESSolver<double>)
+MSVC2015_UPDATE3_GET_PTR_FIX(ngla::GMRESSolver<Complex>)
+MSVC2015_UPDATE3_GET_PTR_FIX(ngla::Projector)
 
 static void InitSlice( const bp::slice &inds, int len, int &start, int &step, int &n ) {
     bp::object indices = inds.attr("indices")(len);
@@ -56,7 +60,7 @@ void NGS_DLL_HEADER ExportNgla() {
       static
       bp::tuple getinitargs(const BaseVector & v)
       {
-        return bp::make_tuple(v.Size(), v.IsComplex()); 
+        return bp::make_tuple(v.Size(), v.IsComplex(), v.EntrySize()); 
       }
 
       static
@@ -99,15 +103,23 @@ void NGS_DLL_HEADER ExportNgla() {
   REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<BaseVector>);
   bp::class_<BaseVector, shared_ptr<BaseVector>, boost::noncopyable>("BaseVector", bp::no_init)
     .def("__init__", bp::make_constructor 
-         (FunctionPointer ([](int size, bool is_complex) -> shared_ptr<BaseVector>
+         (FunctionPointer ([](int size, bool is_complex, int es) -> shared_ptr<BaseVector>
                            {
-                             if (is_complex)
+			     if(es > 1)
+			       {
+				 if(is_complex)
+				   return make_shared<S_BaseVectorPtr<Complex>> (size, es);
+				 else
+				   return make_shared<S_BaseVectorPtr<double>> (size, es);
+			       }
+			     
+			     if (is_complex)
                                return make_shared<VVector<Complex>> (size);
                              else
-                               return make_shared<VVector<double>> (size);                               
+                               return make_shared<VVector<double>> (size);
                            }),
           bp::default_call_policies(),        // need it to use argumentso
-          (bp::arg("size"), bp::arg("complex")=false)
+          (bp::arg("size"), bp::arg("complex")=false, bp::arg("entrysize")=1)
           ))
     .def_pickle(BaseVector_pickle_suite())
     .def("__ngsid__", FunctionPointer( [] ( BaseVector & self)
@@ -353,10 +365,13 @@ void NGS_DLL_HEADER ExportNgla() {
                                      { return m.InverseMatrix(); }))
     .def("Transpose", FunctionPointer( [](BM &m)->shared_ptr<BaseMatrix>
                                        { return make_shared<Transpose> (m); }))
+    .def("Update", FunctionPointer( [](BM &m) { m.Update(); }));
     // bp::return_value_policy<bp::manage_new_object>())
     ;
 
-
+  REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<Projector>);
+  bp::class_<Projector, shared_ptr<Projector>,bp::bases<BaseMatrix>,boost::noncopyable> ("Projector", bp::init<const BitArray&,bool>())
+    ;
 
   REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<CGSolver<double>>);
   bp::class_<CGSolver<double>, shared_ptr<CGSolver<double>>,bp::bases<BaseMatrix>,boost::noncopyable> ("CGSolverD", bp::no_init)
@@ -393,12 +408,18 @@ void NGS_DLL_HEADER ExportNgla() {
   REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<QMRSolver<double>>);
   bp::class_<QMRSolver<double>, shared_ptr<QMRSolver<double>>,bp::bases<BaseMatrix>,boost::noncopyable> ("QMRSolverD", bp::no_init)
     ;
+  REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<QMRSolver<Complex>>);
+  bp::class_<QMRSolver<Complex>, shared_ptr<QMRSolver<Complex>>,bp::bases<BaseMatrix>,boost::noncopyable> ("QMRSolverC", bp::no_init)
+    ;
   bp::def("QMRSolver", FunctionPointer ([](const BaseMatrix & mat, const BaseMatrix & pre,
                                            bool printrates, 
                                            double precision, int maxsteps) -> BaseMatrix *
                                         {
                                           KrylovSpaceSolver * solver;
-                                          solver = new QMRSolver<double> (mat, pre);
+                                          if (!mat.IsComplex())
+                                            solver = new QMRSolver<double> (mat, pre);
+                                          else
+                                            solver = new QMRSolver<Complex> (mat, pre);                                            
                                           solver->SetPrecision(precision);
                                           solver->SetMaxSteps(maxsteps);
                                           solver->SetPrintRates (printrates);
@@ -409,6 +430,35 @@ void NGS_DLL_HEADER ExportNgla() {
           bp::return_value_policy<bp::manage_new_object>()
           )
     ;
+
+
+  REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<GMRESSolver<double>>);
+  bp::class_<GMRESSolver<double>, shared_ptr<GMRESSolver<double>>,bp::bases<BaseMatrix>,boost::noncopyable> ("GMRESSolverD", bp::no_init)
+    ;
+  REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<GMRESSolver<Complex>>);
+  bp::class_<GMRESSolver<Complex>, shared_ptr<GMRESSolver<Complex>>,bp::bases<BaseMatrix>,boost::noncopyable> ("GMRESSolverC", bp::no_init)
+    ;
+  bp::def("GMRESSolver", FunctionPointer ([](const BaseMatrix & mat, const BaseMatrix & pre,
+                                           bool printrates, 
+                                           double precision, int maxsteps) -> BaseMatrix *
+                                        {
+                                          KrylovSpaceSolver * solver;
+                                          if (!mat.IsComplex())
+                                            solver = new GMRESSolver<double> (mat, pre);
+                                          else
+                                            solver = new GMRESSolver<Complex> (mat, pre);                                            
+                                          solver->SetPrecision(precision);
+                                          solver->SetMaxSteps(maxsteps);
+                                          solver->SetPrintRates (printrates);
+                                          return solver;
+                                        }),
+          (bp::arg("mat"), bp::arg("pre"), bp::arg("printrates")=true,
+           bp::arg("precision")=1e-8, bp::arg("maxsteps")=200),
+          bp::return_value_policy<bp::manage_new_object>()
+          )
+    ;
+  
+
   
   bp::def("ArnoldiSolver", FunctionPointer ([](BaseMatrix & mata, BaseMatrix & matm, const BitArray & freedofs,
                                                bp::list vecs, bp::object bpshift)
