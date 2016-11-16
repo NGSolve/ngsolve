@@ -893,7 +893,6 @@ proc viewingoptionsdialog { } {
         
 	# stl geometry 
 	set f $w.nb.stl
-
 	ttk::labelframe $f.show -relief groove -borderwidth 3 -text "STL viewing options"
 	pack $f.show -fill x -pady 15
 	ttk::checkbutton $f.show.showtrias -text "Show STL-Triangles" \
@@ -935,7 +934,7 @@ proc viewingoptionsdialog { } {
             -validatecommand "Ng_SetVisParameters; redraw;my_validate %W [$f.fn.scale3 cget -from] [$f.fn.scale3 cget -to] %P 0" \
             -invalidcommand "my_invalid %W;Ng_SetVisParameters; redraw;"
             
-	grid $f.fn.scale3 $f.fn.ent3 $f.fn.lab3 -stick nw -padx 4        
+	grid $f.fn.scale3 $f.fn.ent3 $f.fn.lab3 -sticky nw -padx 4        
         
 	
 	#frame $f.fo -relief groove -borderwidth 3
@@ -1576,7 +1575,6 @@ proc clippingdialog { } {
 
         
         proc my_Press {w x y} {
-            puts [$w identify $x $y]
             set inc [expr {([$w get $x $y] <= [$w get]) ? -1 : 1}]
             ttk::Repeatedly ttk::scale::Increment $w [expr 0.001*$inc]
             
@@ -1687,27 +1685,46 @@ proc refinementdialog { } {
 	#ttk::labelframe $w.main -text "Refinement options" -relief groove -borderwidth 3
         #pack $w.main -fill x -pady 15
         #set w $w.main
-	tixControl $w.meshsize -label "max mesh-size: " -integer false \
-	    -variable options.meshsize -min 1e-6 -max 1e6 \
-	    -options {
-		entry.width 6
-		label.width 25
-		label.anchor e
-	    }	
+	# tixControl $w.meshsize -label "max mesh-size: " -integer false \
+	    # -variable options.meshize -min 1e-6 -max 1e6 \
+	    # -options {
+		# entry.width 6
+		# label.width 25
+		# label.anchor e
+	    # }	
 
-	pack $w.meshsize -anchor e
+	# pack $w.meshsize -anchor e
 
 	global localh
 	set localh 1
-	tixControl $w.loch -label "local mesh-size: " -integer false \
-	    -variable localh -min 1e-6 -max 1e6 \
-	    -options {
-		entry.width 6
-		label.width 25
-		label.anchor e
-	    }	
+	# tixControl $w.loch -label "local mesh-size: " -integer false \
+	    # -variable localh -min 1e-6 -max 1e6 \
+	    # -options {
+		# entry.width 6
+		# label.width 25
+		# label.anchor e
+	    # }	
 	
-	pack $w.loch -anchor e
+	# pack $w.loch -anchor e
+
+	ttk::frame $w.meshsize
+    
+    ttk::label $w.meshsize.l1 -text "max mesh-size: "
+    ttk::spinbox $w.meshsize.sp1 -from 1e-6 -to 1e6 -textvariable options.meshsize -validate focus -validatecommand "my_validatespinbox %W %P 4" \
+	    -invalidcommand "my_invalidspinbox %W" -width 6 -increment 0.1
+    #pack $w.meshsize.l1 $w.meshsize.sp1  -fill x -side left
+
+	ttk::frame $w.meshsizeloc
+    #pack $w.meshsize -anchor e
+    #pack $w.meshsizeloc -anchor e
+    ttk::label $w.meshsizeloc.l1 -text "local mesh-size: "
+    ttk::spinbox $w.meshsizeloc.sp1 -from 1e-6 -to 1e6 -textvariable localh -validate focus -validatecommand "my_validatespinbox %W %P 4" \
+	    -invalidcommand "my_invalidspinbox %W" -width 6 -increment 0.1
+    #pack $w.meshsizeloc.l1 $w.meshsizeloc.sp1  -expand yes -fill x
+    pack $w.meshsize 
+    pack $w.meshsizeloc 
+    grid $w.meshsize.l1 $w.meshsize.sp1
+    grid $w.meshsizeloc.l1 $w.meshsizeloc.sp1
 	
 	
 	ttk::button $w.restface -text "Restrict H at face"  \
@@ -1736,7 +1753,7 @@ proc refinementdialog { } {
 	    }
 
 
-	pack $w.restface $w.restedge $w.restelement $w.restpoint -anchor e
+	pack $w.restface $w.restedge $w.restelement $w.restpoint 
 
 
 
@@ -2211,17 +2228,17 @@ proc stloptionsdialog { } {
 }
 
 proc stldoctordialog { } {
-
+    Ng_STLDoctor 0 0
     set wd .stldoctor_dlg
 
     if {[winfo exists .stldoctor_dlg] == 1} {
+    
 	wm withdraw $wd
 	wm deiconify $wd
 	focus $wd 
     } {
 	
     toplevel $wd
-
     pack [ttk::notebook $wd.nb] -fill both -fill both -side top
     $wd.nb add [ttk::frame $wd.nb.general] -text "General" -underline 0
     $wd.nb add [ttk::frame $wd.nb.topology] -text "Edit Topology" -underline 5
@@ -2241,16 +2258,16 @@ proc stldoctordialog { } {
     # GENERAL *****************************
 
     set f $wd.nb.general
-
-    frame $f.show
-    pack $f.show -fill x
-    checkbutton $f.show.showtrias -text "Show STL-Triangles" \
+    ttk::frame $f.selectframe -borderwidth 0
+    #ttk::frame $f.show
+    #pack $f.show -fill x
+    ttk::checkbutton $f.selectframe.showtrias -text "Show STL-Triangles" \
 	-variable stloptions.showtrias -command { Ng_SetVisParameters; redraw }
-    pack $f.show.showtrias -anchor w
+    #pack $f.selectframe.showtrias -anchor w
     
-    checkbutton $f.show.showfilledtrias -text "Show Filled Triangles" \
+    ttk::checkbutton $f.selectframe.showfilledtrias -text "Show Filled Triangles" \
 	-variable stloptions.showfilledtrias -command { Ng_SetVisParameters; redraw }
-    pack $f.show.showfilledtrias -anchor w
+    #pack $f.show.showfilledtrias -anchor w
 
     set selmodevals { 0 1 2 3 4 }
     set selmodelabs(0) "triangle" 
@@ -2259,72 +2276,104 @@ proc stldoctordialog { } {
     set selmodelabs(3) "line" 
     set selmodelabs(4) "line cluster" 
 
-    tixOptionMenu $f.selmode -label "Double Click selects :" \
-	-options {
-	    label.width  19
-	    label.anchor e
-	    menubutton.width 15
-	} 
+    # tixOptionMenu $f.selmode -label "Double Click selects :" \
+	# -options {
+	    # label.width  19
+	    # label.anchor e
+	    # menubutton.width 15
+	# } 
 
-    foreach selmodev $selmodevals {
-	$f.selmode add command $selmodev -label $selmodelabs($selmodev)
-    }
-    $f.selmode config -variable stldoctor.selectmode
-    $f.selmode config -command { Ng_STLDoctor }
+    # foreach selmodev $selmodevals {
+	# $f.selmode add command $selmodev -label $selmodelabs($selmodev)
+    # }
+    # $f.selmode config -variable stldoctor.selectmode
+    # $f.selmode config -command { Ng_STLDoctor }
     global stldoctor.selectmode
-    pack $f.selmode
-
-    frame $f.sm
+    # pack $f.selmode
+    
+    ttk::label  $f.selectframe.dblcsellab -text "Double Click selects : "
+    ttk::menubutton $f.selectframe.dblcselbut -menu $f.selectframe.dblcselmen -text "triangle" -width 16
+    menu $f.selectframe.dblcselmen  -tearoff 0
+	foreach selmode { 0 1 2 3 4 } {
+	    $f.selectframe.dblcselmen add command -label $selmodelabs($selmode) \
+                -command "set stldoctor.selectmode $selmode ; Ng_STLDoctor ; $f.selectframe.dblcselbut configure -text \"$selmodelabs($selmode)\""
+	}
+    $f.selectframe.dblcselmen invoke $selmodelabs(${stldoctor.selectmode})
+    pack $f.selectframe
+    grid $f.selectframe.showtrias -sticky nw
+    grid $f.selectframe.showfilledtrias -sticky nw
+    grid $f.selectframe.dblcsellab $f.selectframe.dblcselbut -sticky nw
+    
+    
+    
+    
+    ttk::frame $f.sm
     pack $f.sm -fill x
-    checkbutton $f.sm.bu -text "select with mouse" \
+    ttk::checkbutton $f.sm.bu -text "select with mouse" \
 	-variable stldoctor.selectwithmouse
     pack $f.sm.bu 
 
-    frame $f.st -relief groove -borderwidth 3
+    ttk::frame $f.st -relief groove -borderwidth 3
     pack $f.st -fill x
-    label $f.st.lab -text "Select triangle by number";
-    entry $f.st.ent -width 5 -relief sunken \
+    ttk::label $f.st.lab -text "Select triangle by number";
+    ttk::entry $f.st.ent -width 5 \
 	-textvariable stldoctor.selecttrig
     pack $f.st.ent $f.st.lab -side left -expand yes
 
-    frame $f.vc -relief groove -borderwidth 3
+    ttk::frame $f.vc -relief groove -borderwidth 3
     pack $f.vc -fill x
-    checkbutton $f.vc.bu -text "show vicinity" \
+    ttk::checkbutton $f.vc.bu -text "show vicinity" \
 	-variable stldoctor.showvicinity \
 	-command {Ng_STLDoctor vicinity; redraw}
-    label $f.vc.lab -text "vicinity size";
-    scale $f.vc.sc -orient horizontal -length 200 -from 0 -to 200 \
+    ttk::label $f.vc.lab -text "vicinity size";
+    
+    #scale $f.vc.sc -orient horizontal -length 200 -from 0 -to 200 \
 	-resolution 1 -variable stldoctor.vicinity \
 	-command { Ng_STLDoctor vicinity; redraw }
+    ttk::frame $f.vc.sc
+    ttk::scale $f.vc.sc.scale -orient horizontal -length 200 -from 0 -to 200 \
+    -variable stldoctor.vicinity -takefocus 0 -command "Ng_STLDoctor vicinity; redraw; roundscale $f.vc.sc.scale 0"
+    ttk::entry $f.vc.sc.entry -textvariable stldoctor.vicinity -width 3 \
+    -validatecommand "Ng_STLDoctor vicinity; redraw; my_validate %W [$f.vc.sc.scale cget -from] [$f.vc.sc.scale cget -to] %P 0" \
+    -invalidcommand "my_invalid %W;Ng_STLDoctor vicinity; redraw;" -validate focus
+    ttk::label $f.vc.sc.lab -text "vicinity size"
+	grid $f.vc.sc.scale $f.vc.sc.entry $f.vc.sc.lab -sticky nw -padx 4    
     pack $f.vc.bu $f.vc.lab $f.vc.sc -expand yes
 
-    frame $f.ge -relief groove -borderwidth 3
-    pack $f.ge -fill x
-    button $f.ge.neighbourangles -text "calc neighbourangles" -command {Ng_STLDoctor neighbourangles}
-    button $f.ge.showcoords -text "show coords of touched triangle" -command {Ng_STLDoctor showcoords}
-    button $f.ge.moveptm -text "move point to middle of trianglepoints" -command {Ng_STLDoctor movepointtomiddle; redraw}
-    button $f.ge.destroy0trigs -text "destroy 0-volume triangles" -command {Ng_STLDoctor destroy0trigs}
-    pack $f.ge.neighbourangles $f.ge.showcoords $f.ge.moveptm $f.ge.destroy0trigs -expand yes 
+    ttk::frame $f.ge -relief groove -borderwidth 0
+    pack $f.ge -expand yes
+    ttk::button $f.ge.neighbourangles -text "calc neighbourangles" -command {Ng_STLDoctor neighbourangles}
+    ttk::button $f.ge.showcoords -text "show coords of touched triangle" -command {Ng_STLDoctor showcoords}
+    ttk::button $f.ge.moveptm -text "move point to middle of trianglepoints" -command {Ng_STLDoctor movepointtomiddle; redraw}
+    ttk::button $f.ge.destroy0trigs -text "destroy 0-volume triangles" -command {Ng_STLDoctor destroy0trigs}
+    grid $f.ge.neighbourangles -sticky nw -padx 4 -pady 4
+    grid $f.ge.showcoords -sticky nw -padx 4 -pady 4
+    grid $f.ge.moveptm -sticky nw -padx 4 -pady 4
+    grid $f.ge.destroy0trigs -sticky nw -padx 4 -pady 4
 
 
-    button $f.ge.cancle -text "Done" -command {destroy .stldoctor_dlg }
-    pack $f.ge.cancle -expand yes
+    ttk::button $f.ge.cancle -text "Done" -command {destroy .stldoctor_dlg }
+    grid $f.ge.cancle  -sticky nw
 
     # TOPOLOGY ********************
     set f $wd.nb.topology
 
-    frame $f.oc -relief groove -borderwidth 3
-    pack $f.oc -fill x
-    button $f.oc.bu -text "invert orientation of selected trig" -command {Ng_STLDoctor invertselectedtrig; redraw }
-    button $f.oc.bu2 -text "orient after selected trig" -command {Ng_STLDoctor orientafterselectedtrig; redraw }
-    pack $f.oc.bu $f.oc.bu2 -side left  -expand yes
+    ttk::frame $f.oc -relief groove -borderwidth 3
+    pack $f.oc -pady 3 -ipady 3 -fill y -fill x
+    ttk::frame $f.oc.oc1 -borderwidth 0
+    pack $f.oc.oc1
+    ttk::button $f.oc.oc1.bu -text "invert orientation \n of selected trig" -command {Ng_STLDoctor invertselectedtrig; redraw }
+    ttk::button $f.oc.oc1.bu2 -text "orient after \n selected trig" -command {Ng_STLDoctor orientafterselectedtrig; redraw }
+    
 
-    button $f.toperr -text "mark inconsistent triangles" -command {Ng_STLDoctor marktoperrortrigs; redraw }
-
-    button $f.deltrig -text "delete selected triangle" -command {Ng_STLDoctor deleteselectedtrig; redraw }
-    button $f.geosmooth -text "geometric smoothing" -command {Ng_STLDoctor smoothgeometry; redraw }
-
-    pack $f.toperr $f.deltrig $f.geosmooth
+    ttk::button $f.oc.oc1.toperr -text "mark inconsistent triangles" -command {Ng_STLDoctor marktoperrortrigs; redraw }
+    ttk::button $f.oc.oc1.deltrig -text "delete selected triangle" -command {Ng_STLDoctor deleteselectedtrig; redraw }
+    ttk::button $f.oc.oc1.geosmooth -text "geometric smoothing" -command {Ng_STLDoctor smoothgeometry; redraw }
+    
+    grid $f.oc.oc1.bu x $f.oc.oc1.bu2 -sticky nw -padx 4 -pady 4
+    grid $f.oc.oc1.toperr - x -sticky nw -padx 4 -pady 4
+    grid $f.oc.oc1.deltrig - x -sticky nw -padx 4 -pady 4
+    grid $f.oc.oc1.geosmooth - x -sticky nw -padx 4 -pady 4
 
 
 
@@ -2334,27 +2383,50 @@ proc stldoctordialog { } {
     set f $wd.nb.edges
 
 
-    frame $f.be -relief groove -borderwidth 3 
+    ttk::frame $f.be -relief groove -borderwidth 3 
     pack $f.be -fill x
-    label $f.be.lab -text "build edges with yellow angle:";
-    scale $f.be.sc -orient horizontal -length 200 -from 0 -to 100 \
+    
+    #scale $f.be.sc -orient horizontal -length 200 -from 0 -to 100 \
+	#-resolution 0.5
+    ttk::frame $f.be.frame
+    pack $f.be.frame -ipady 4 -pady 4
+    ttk::label $f.be.frame.lab -text "build edges with yellow angle:";
+    ttk::scale $f.be.frame.scale -orient horizontal -length 200 -from 0 -to 200 \
+    -variable stloptions.yangle -takefocus 0 -command "roundscale $f.be.frame.scale 1; Ng_SetSTLParameters; Ng_STLDoctor buildedges; redraw"
+    ttk::entry $f.be.frame.entry -textvariable stloptions.yangle -width 5 \
+    -validatecommand "Ng_SetSTLParameters; Ng_STLDoctor buildedges; redraw;my_validate %W [$f.be.frame.scale cget -from] [$f.be.frame.scale cget -to] %P 1" \
+    -invalidcommand "my_invalid %W;Ng_SetSTLParameters; Ng_STLDoctor buildedges; redraw" -validate focus
+	grid $f.be.frame.lab - -sticky nw -padx 4
+    grid $f.be.frame.scale $f.be.frame.entry -sticky nw -padx 4    
+    
+    
+    
+    #$f.be.sc config -variable stloptions.yangle 
+    #$f.be.sc config -command { Ng_SetSTLParameters; Ng_STLDoctor buildedges; redraw }
+    ttk::label $f.be.frame.lab2 -text "continue edges with yellow angle:";
+#    scale $f.be.sc2 -orient horizontal -length 200 -from 0 -to 100 \
 	-resolution 0.5
-    $f.be.sc config -variable stloptions.yangle 
-    $f.be.sc config -command { Ng_SetSTLParameters; Ng_STLDoctor buildedges; redraw }
-    label $f.be.lab2 -text "continue edges with yellow angle:";
-    scale $f.be.sc2 -orient horizontal -length 200 -from 0 -to 100 \
-	-resolution 0.5
-    $f.be.sc2 config -variable stloptions.contyangle 
-    $f.be.sc2 config -command { Ng_SetSTLParameters; Ng_STLDoctor buildedges; redraw }
+    ttk::scale $f.be.frame.scale2 -orient horizontal -length 200 -from 0 -to 100 \
+    -variable stloptions.contyangle -takefocus 0 -command "roundscale $f.be.frame.scale2 1; Ng_SetSTLParameters; Ng_STLDoctor buildedges; redraw"
+    ttk::entry $f.be.frame.entry2 -textvariable stloptions.contyangle -width 5 \
+    -validatecommand "Ng_SetSTLParameters; Ng_STLDoctor buildedges; redraw;my_validate %W [$f.be.frame.scale2 cget -from] [$f.be.frame.scale2 cget -to] %P 1" \
+    -invalidcommand "my_invalid %W;Ng_SetSTLParameters; Ng_STLDoctor buildedges; redraw" -validate focus
+
+	grid $f.be.frame.lab2 - -sticky nw -padx 4
+    grid $f.be.frame.scale2 $f.be.frame.entry2 -sticky nw -padx 4    
+    
+    #$f.be.sc2 config -variable stloptions.contyangle 
+    #$f.be.sc2 config -command { Ng_SetSTLParameters; Ng_STLDoctor buildedges; redraw }
 
 
 
-    button $f.be.buildedges -text "Build Edges" -command {Ng_STLDoctor buildedges; redraw}
-    pack $f.be.lab $f.be.sc $f.be.lab2 $f.be.sc2 $f.be.buildedges -expand yes
+    ttk::button $f.be.frame.buildedges -text "Build Edges" -command {Ng_STLDoctor buildedges; redraw}
+    grid $f.be.frame.buildedges - -sticky n -padx 4 -pady 4
+    #pack $f.be.lab $f.be.sc $f.be.lab2 $f.be.sc2 $f.be.buildedges -expand yes
 
-    frame $f.se
+    ttk::frame $f.se -relief groove -borderwidth 3
     pack $f.se -fill x
-    checkbutton $f.se.bu -text "show excluded" \
+    ttk::checkbutton $f.se.bu -text "show excluded" \
 	-variable stldoctor.showexcluded \
 	-command {Ng_STLDoctor; redraw}
     pack $f.se.bu 
@@ -2368,25 +2440,41 @@ proc stldoctordialog { } {
     set edgeselmodelabs(3) "candidate"
     set edgeselmodelabs(4) "excluded"
 
-    tixOptionMenu $f.edgeselmode -label "Double Click sets edge :" \
-	-options {
-	    label.width  19
-	    label.anchor e
-	    menubutton.width 15
-	} 
+    # tixOptionMenu $f.edgeselmode -label "Double Click sets edge :" \
+	# -options {
+	    # label.width  19
+	    # label.anchor e
+	    # menubutton.width 15
+	# } 
 
-    foreach edgeselmodev $edgeselmodevals {
-	$f.edgeselmode add command $edgeselmodev -label $edgeselmodelabs($edgeselmodev)
-    }
-    $f.edgeselmode config -variable stldoctor.edgeselectmode
-    $f.edgeselmode config -command { Ng_STLDoctor }
-    global stldoctor.edgeselectmode
-    pack $f.edgeselmode
+    # foreach edgeselmodev $edgeselmodevals {
+	# $f.edgeselmode add command $edgeselmodev -label $edgeselmodelabs($edgeselmodev)
+    # }
+    # $f.edgeselmode config -variable stldoctor.edgeselectmode
+    # $f.edgeselmode config -command { Ng_STLDoctor }
+    global stldoctor.edgeselectmode    
+    # pack $f.edgeselmode
 
+    ttk::frame $f.scaleframe -relief groove -borderwidth 0
+    pack $f.scaleframe -ipadx 4 -pady 4 -expand yes
+    ttk::label  $f.scaleframe.dblcedgelab -text "Double Click sets edge :"
+    ttk::menubutton $f.scaleframe.dblcledgebut -menu $f.scaleframe.dblcledgem -text "coarse" -width 16
+
+    menu $f.scaleframe.dblcledgem  -tearoff 0
+	foreach selectmode { 0 1 2 3 4 } {
+	$f.scaleframe.dblcledgem add command -label $edgeselmodelabs($selectmode) \
+    -command "set stldoctor.edgeselectmode $selectmode ; $f.scaleframe.dblcledgebut configure -text \"$edgeselmodelabs($selectmode)\""
+	}
+    $f.scaleframe.dblcledgem invoke $edgeselmodelabs(${stldoctor.edgeselectmode})                
+    grid $f.scaleframe.dblcedgelab $f.scaleframe.dblcledgebut -sticky n -ipadx 4
+
+    
+    
+    
     # edge buttons
 
-    frame $f.edg -relief groove -borderwidth 3
-    pack $f.edg -fill x
+    ttk::frame $f.edg -relief groove -borderwidth 3
+    pack $f.edg -fill x -ipadx 4 -ipady 4
 
 #    checkbutton $f.edg.bu -text "use external edges" \
 #	-variable stldoctor.useexternaledges \
@@ -2394,36 +2482,36 @@ proc stldoctordialog { } {
 #   pack $f.edg.bu -expand yes
 
 
-    frame $f.edg.f0
+    ttk::frame $f.edg.f0
     pack $f.edg.f0
-    button $f.edg.f0.confirmedge -text "confirm" -command {Ng_STLDoctor confirmedge; redraw}
-    button $f.edg.f0.candidateedge -text "candidate" -command {Ng_STLDoctor candidateedge; redraw}
-    button $f.edg.f0.excludeedge -text "exclude" -command {Ng_STLDoctor excludeedge; redraw}
-    button $f.edg.f0.undefinededge -text "undefined" -command {Ng_STLDoctor undefinededge; redraw}
+    ttk::button $f.edg.f0.confirmedge -text "confirm" -command {Ng_STLDoctor confirmedge; redraw}
+    ttk::button $f.edg.f0.candidateedge -text "candidate" -command {Ng_STLDoctor candidateedge; redraw}
+    ttk::button $f.edg.f0.excludeedge -text "exclude" -command {Ng_STLDoctor excludeedge; redraw}
+    ttk::button $f.edg.f0.undefinededge -text "undefined" -command {Ng_STLDoctor undefinededge; redraw}
     pack $f.edg.f0.confirmedge $f.edg.f0.candidateedge $f.edg.f0.excludeedge $f.edg.f0.undefinededge  -side left
 
-    frame $f.edg.fa
+    ttk::frame $f.edg.fa
     pack $f.edg.fa
-    button $f.edg.fa.setallundefined -text "all undefined" -command {Ng_STLDoctor setallundefinededges; redraw}
-    button $f.edg.fa.erasecandidates -text "candidates to undefined" -command {Ng_STLDoctor erasecandidateedges; redraw}
+    ttk::button $f.edg.fa.setallundefined -text "all undefined" -command {Ng_STLDoctor setallundefinededges; redraw}
+    ttk::button $f.edg.fa.erasecandidates -text "candidates to undefined" -command {Ng_STLDoctor erasecandidateedges; redraw}
     pack $f.edg.fa.setallundefined $f.edg.fa.erasecandidates -side left
 
 
-    frame $f.edg.fb
+    ttk::frame $f.edg.fb
     pack $f.edg.fb
-    button $f.edg.fb.confirmcandidates -text "candidates to confirmed" -command {Ng_STLDoctor confirmcandidateedges; redraw}
-    button $f.edg.fb.confirmedtocandidates -text "confirmed to candidates" -command {Ng_STLDoctor confirmedtocandidateedges; redraw}
+    ttk::button $f.edg.fb.confirmcandidates -text "candidates to confirmed" -command {Ng_STLDoctor confirmcandidateedges; redraw}
+    ttk::button $f.edg.fb.confirmedtocandidates -text "confirmed to candidates" -command {Ng_STLDoctor confirmedtocandidateedges; redraw}
     pack $f.edg.fb.confirmcandidates $f.edg.fb.confirmedtocandidates -side left
 
-    frame $f.edg.f1
-    frame $f.edg.f2
-    frame $f.edg.f3
-    frame $f.edg.f4
+    ttk::frame $f.edg.f1
+    ttk::frame $f.edg.f2
+    ttk::frame $f.edg.f3
+    ttk::frame $f.edg.f4
     pack $f.edg.f1 $f.edg.f2 $f.edg.f3 $f.edg.f4
 
-    button $f.edg.f1.exportedges -text "export edges" -command {Ng_STLDoctor exportedges}
-    button $f.edg.f1.importedges -text "import edges" -command {Ng_STLDoctor importedges; redraw}
-    button $f.edg.f1.saveedgedata -text "save edgedata" \
+    ttk::button $f.edg.f1.exportedges -text "export edges" -command {Ng_STLDoctor exportedges}
+    ttk::button $f.edg.f1.importedges -text "import edges" -command {Ng_STLDoctor importedges; redraw}
+    ttk::button $f.edg.f1.saveedgedata -text "save edgedata" \
 	-command { 
 	    set types {
 		{"Netgen Edgedata"   {.ned} } 
@@ -2434,7 +2522,7 @@ proc stldoctordialog { } {
 	}
     }
 
-    button $f.edg.f1.loadedgedata -text "load edgedata" \
+    ttk::button $f.edg.f1.loadedgedata -text "load edgedata" \
 	-command { 
 	    set types {
 		{"Netgen Edgedata"  {.ned} }
@@ -2450,7 +2538,7 @@ proc stldoctordialog { } {
 	    }
 	} 
 
-    button $f.edg.f1.importAVLedges -text "import AVL edges" \
+    ttk::button $f.edg.f1.importAVLedges -text "import AVL edges" \
 	-command {
 	    set types {{"Edge file"  {.edg }}}
 
@@ -2463,7 +2551,7 @@ proc stldoctordialog { } {
     pack $f.edg.f1.importAVLedges $f.edg.f1.loadedgedata $f.edg.f1.saveedgedata -side left
 
 #    button $f.edg.f1.buildedges -text "build external edges" -command {Ng_STLDoctor buildexternaledges; redraw}
-    frame $f.edg2 -relief groove -borderwidth 3
+    ttk::frame $f.edg2 -relief groove -borderwidth 3
     pack $f.edg2 -fill x
 
 
@@ -2485,75 +2573,85 @@ proc stldoctordialog { } {
     # NORMALS ***********************
     set f $wd.nb.normals
 
-    frame $f.dt -relief groove -borderwidth 3
+    ttk::frame $f.dt -relief groove -borderwidth 3
     pack $f.dt -fill x
-    label $f.dt.lab -text "dirty triangle factor";
-    entry $f.dt.ent -width 5 -relief sunken \
-	-textvariable stldoctor.dirtytrigfact
-    pack $f.dt.ent $f.dt.lab -side left  -expand yes
+    ttk::label $f.dt.lab -text "dirty triangle factor";
+    ttk::entry $f.dt.ent -width 5 \
+	-textvariable stldoctor.dirtytrigfact -validatecommand "Ng_SetSTLParameters;my_validate %W -1e9 1e9 %P 3" \
+    -invalidcommand "my_invalid %W;Ng_SetSTLParameters" -validate focus
+    pack $f.dt.ent $f.dt.lab -side left -expand yes -pady 8
 
-    frame $f.srt -relief groove -borderwidth 3
+    ttk::frame $f.srt -relief groove -borderwidth 3
     pack $f.srt -fill x
-    button $f.srt.bu -text "smooth reverted triangles geometric" -command {Ng_STLDoctor smoothrevertedtrigs; redraw }
-    entry $f.srt.ent -width 5 -relief sunken \
-	-textvariable stldoctor.smoothangle
-    pack $f.srt.ent $f.srt.bu -side left  -expand yes
+    ttk::button $f.srt.bu -text "smooth reverted triangles geometric" -command {Ng_STLDoctor smoothrevertedtrigs; redraw }
+    ttk::entry $f.srt.ent -width 5 \
+	-textvariable stldoctor.smoothangle -validatecommand "Ng_SetSTLParameters;my_validate %W -1e9 1e9 %P 2" \
+    -invalidcommand "my_invalid %W;Ng_SetSTLParameters" -validate focus
+    pack $f.srt.ent $f.srt.bu -side left  -expand yes -pady 8
 
-    frame $f.bdt -relief groove -borderwidth 3
+    ttk::frame $f.bdt -relief groove -borderwidth 3
     pack $f.bdt -fill x
-    button $f.bdt.bu -text "mark dirty triangles" -command {Ng_STLDoctor markdirtytrigs; redraw }
-    button $f.bdt.bu2 -text "smooth dirty triangles normal" -command {Ng_STLDoctor smoothdirtytrigs; redraw }
-    pack $f.bdt.bu $f.bdt.bu2 -side left  -expand yes
+    ttk::button $f.bdt.bu -text "mark dirty triangles" -command {Ng_STLDoctor markdirtytrigs; redraw }
+    ttk::button $f.bdt.bu2 -text "smooth dirty triangles normal" -command {Ng_STLDoctor smoothdirtytrigs; redraw }
+    pack $f.bdt.bu $f.bdt.bu2 -side left  -expand yes -pady 8
 
     
-    frame $f.sno -relief groove -borderwidth 3
-    pack $f.sno
-    
-    label $f.sno.labrough -text "rough"
-    scale $f.sno.scsmooth -orient horizontal -length 100 -from 0 -to 0.8 \
+    ttk::frame $f.sno -relief groove -borderwidth 3
+    pack $f.sno -fill x
+    ttk::frame $f.sno.snoframe -borderwidth 0
+    #ttk::label $f.sno.labrough -text "rough"
+    #scale $f.sno.scsmooth -orient horizontal -length 100 -from 0 -to 0.8 \
 	-resolution 0.01 -variable stldoctor.smoothnormalsweight \
 	-command { Ng_SetSTLParameters }
-    label $f.sno.labsmooth -text "smooth"
-    button $f.sno.smoothnormals -text "smooth normals" -command { Ng_STLDoctor smoothnormals; redraw}
+    #ttk::label $f.sno.labsmooth -text "smooth"
+    ttk::button $f.sno.smoothnormals -text "smooth normals" -command { Ng_STLDoctor smoothnormals; redraw}
 
-
-
-    pack $f.sno.labrough $f.sno.scsmooth $f.sno.labsmooth $f.sno.smoothnormals -side left -padx 5
-
-    frame $f.no -relief groove -borderwidth 3
+    ttk::scale $f.sno.snoframe.scale -orient horizontal -length 100 -from 0.0 -to 0.8 \
+    -variable stldoctor.smoothnormalsweight -takefocus 0 -command "roundscale $f.sno.snoframe.scale 2;Ng_SetSTLParameters"
+    ttk::entry $f.sno.snoframe.entry -textvariable stldoctor.smoothnormalsweight -width 4 \
+    -validatecommand "Ng_SetSTLParameters;my_validate %W [$f.sno.snoframe.scale cget -from] [$f.sno.snoframe.scale cget -to] %P 2" \
+    -invalidcommand "my_invalid %W;Ng_SetSTLParameters" -validate focus
+    ttk::label $f.sno.snoframe.labrough -text "rough"
+    ttk::label $f.sno.snoframe.labsmooth -text "smooth"
+	grid $f.sno.snoframe.labrough $f.sno.snoframe.scale $f.sno.snoframe.labsmooth $f.sno.snoframe.entry -sticky nw -padx 4    
+    
+    #pack $f.sno.labrough $f.sno.scsmooth $f.sno.labsmooth $f.sno.smoothnormals -side left -padx 5
+    pack $f.sno.snoframe $f.sno.smoothnormals -side left -padx 5 -pady 8
+    ttk::frame $f.no -relief groove -borderwidth 3
     pack $f.no -fill x
 
-    button $f.no.marknonsmoothnormals -text "mark non-smooth triangles" -command {Ng_STLDoctor marknonsmoothnormals; redraw}
-    button $f.no.calcnormals -text "calculate normals from geometry" -command {Ng_STLDoctor calcnormals; redraw}
+    ttk::button $f.no.marknonsmoothnormals -text "mark non-smooth triangles" -command {Ng_STLDoctor marknonsmoothnormals; redraw}
+    ttk::button $f.no.calcnormals -text "calculate normals from geometry" -command {Ng_STLDoctor calcnormals; redraw}
 
-    pack  $f.no.marknonsmoothnormals $f.no.calcnormals -expand yes
+    pack $f.no.marknonsmoothnormals $f.no.calcnormals -expand yes -pady 8
 
 
     # ADVANCED **************************
     set f $wd.nb.advanced
 
 
-    frame $f.sc
+    ttk::frame $f.sc
     pack $f.sc -fill x
-    checkbutton $f.sc.bu -text "spiral check" \
+    ttk::checkbutton $f.sc.bu -text "spiral check" \
 	-variable stldoctor.spiralcheck \
 	-command {Ng_STLDoctor;}    
-    checkbutton $f.sc.bu2 -text "cone check" \
+    ttk::checkbutton $f.sc.bu2 -text "cone check" \
 	-variable stldoctor.conecheck \
 	-command {Ng_STLDoctor;}    
     pack $f.sc.bu $f.sc.bu2
 
-
-    tixControl $f.gtol -label "load-geometry tolerance factor" -integer false \
+    
+    #tixControl $f.gtol -label "load-geometry tolerance factor" -integer false \
 	-variable stldoctor.geom_tol_fact \
 	-options {
-	    entry.width 8
-	    label.width 30
-	    label.anchor e
-	}	
+	#    entry.width 8
+	#    label.width 30
+	#    label.anchor e
+	#}	
+    ttk::spinbox $f.gtol -from 1 -to 20 -textvariable stldoctor.geom_tol_fact -width 8
     pack $f.gtol
 
-    button $f.adap -text "Apply" -command {
+    ttk::button $f.adap -text "Apply" -command {
 	.stldoctor_dlg.nb.advanced.gtol invoke
 	Ng_STLDoctor; 
     }
@@ -2596,45 +2694,52 @@ proc meshdoctordialog { } {
 	Ng_MeshDoctor;
 
 
-	frame $w.vis -relief groove -borderwidth 3
+	ttk::frame $w.vis -relief groove -borderwidth 3
 	pack $w.vis
 
-	checkbutton $w.vis.showfilledtrigs -text "Show filled triangles" \
+	ttk::checkbutton $w.vis.showfilledtrigs -text "Show filled triangles" \
 	-variable viewoptions.drawfilledtrigs \
 	-command { Ng_SetVisParameters; redraw }
 	
-	checkbutton $w.vis.showedges -text "Show edges" \
+	ttk::checkbutton $w.vis.showedges -text "Show edges" \
 	-variable viewoptions.drawedges \
 	-command { Ng_SetVisParameters; redraw }
 	
 
-	checkbutton $w.vis.showoutline -text "Show Triangle Outline" \
+	ttk::checkbutton $w.vis.showoutline -text "Show Triangle Outline" \
 	-variable viewoptions.drawoutline \
 	-command { Ng_SetVisParameters; redraw }
 
 	pack $w.vis.showfilledtrigs  $w.vis.showoutline $w.vis.showedges
 
-	tixControl $w.markedgedist -label "Mark edge dist: " -integer true \
-	    -min 0 -max 999  \
-	    -variable meshdoc.markedgedist \
-	    -options {
-		entry.width 3
-		label.width 20
-		label.anchor e
-	    } \
-	    -command {
-		Ng_MeshDoctor markedgedist ${meshdoc.markedgedist}
-		redraw
-	    }
+    ttk::frame $w.markedgedist
+    ttk::label $w.markedgedist.l -text "Mark edge dist: "
+    ttk::spinbox $w.markedgedist.s -from 0 -to 999 -width 5 -increment 1 -validate focus -validatecommand "my_validatespinbox %W %P 0" \
+    -invalidcommand "my_invalidspinbox %W" -command {Ng_MeshDoctor markedgedist ${meshdoc.markedgedist};redraw} -textvariable meshdoc.markedgedist
+    #pack $f.grading -fill x
+    pack $w.markedgedist.l $w.markedgedist.s -side left
+    
+	# tixControl $w.markedgedist -label "Mark edge dist: " -integer true \
+	    # -min 0 -max 999  \
+	    # -variable meshdoc.markedgedist \
+	    # -options {
+		# entry.width 3
+		# label.width 20
+		# label.anchor e
+	    # } \
+	    # -command {
+		# Ng_MeshDoctor markedgedist ${meshdoc.markedgedist}
+		# redraw
+	    # }
 	pack $w.markedgedist
 	
-	button $w.deledge -text "Delete marked segments" -command {
+	ttk::button $w.deledge -text "Delete marked segments" -command {
 	    Ng_MeshDoctor deletemarkedsegments
 	    redraw
 	}
 	pack $w.deledge
 	
-	button $w.close -text "Close" -command { 
+	ttk::button $w.close -text "Close" -command { 
 	    set meshdoctor.active 0;
 	    Ng_MeshDoctor;
 	    destroy .meshdoc_dlg 
@@ -2961,117 +3066,117 @@ proc printlatestwarning { } {
 
 
 
-proc runtestdialog { } {
-    source $::ngdir/ngshell.tcl
-    set w .runtest_dlg
+# proc runtestdialog { } {
+    # source $::ngdir/ngshell.tcl
+    # set w .runtest_dlg
     
-    if {[winfo exists .runtest_dlg] == 1} {
-	wm withdraw $w
-	wm deiconify $w
+    # if {[winfo exists .runtest_dlg] == 1} {
+	# wm withdraw $w
+	# wm deiconify $w
 
-	focus $w 
-    } {
-	toplevel $w
+	# focus $w 
+    # } {
+	# toplevel $w
 
-# in2d testing #
-	frame $w.in2dframe 
-	pack $w.in2dframe
+# # in2d testing #
+	# frame $w.in2dframe 
+	# pack $w.in2dframe
 
-        set in2dlogfile ""
- 	tixLabelEntry $w.in2dframe.ent -label "in2d log-file: console if empty"  \
- 	    -labelside top \
- 	    -options {  
- 		entry.textVariable in2dlogfile
- 		entry.width 35
- 		label.width 25
- 		label.anchor w
- 	    }	
- 	button $w.in2dframe.btn -text "Browse" -command {
-	    set types { { "Log file"   {.log}	} }
-	    set in2dlogfile [tk_getOpenFile -filetypes $types -initialfile $in2dlogfile]
-	}
- 	button $w.in2dframe.test -text "Test in2d meshing" -command { ngtest in2d $in2dlogfile }
-
-        
- 	pack $w.in2dframe.test -side left -anchor s -padx 4 -pady 4
- 	pack $w.in2dframe.ent -side left -expand yes -fill x -anchor s -padx 4 -pady 4
- 	pack $w.in2dframe.btn -side left -anchor s -padx 4 -pady 4
+        # set in2dlogfile ""
+ 	# tixLabelEntry $w.in2dframe.ent -label "in2d log-file: console if empty"  \
+ 	    # -labelside top \
+ 	    # -options {  
+ 		# entry.textVariable in2dlogfile
+ 		# entry.width 35
+ 		# label.width 25
+ 		# label.anchor w
+ 	    # }	
+ 	# button $w.in2dframe.btn -text "Browse" -command {
+	    # set types { { "Log file"   {.log}	} }
+	    # set in2dlogfile [tk_getOpenFile -filetypes $types -initialfile $in2dlogfile]
+	# }
+ 	# button $w.in2dframe.test -text "Test in2d meshing" -command { ngtest in2d $in2dlogfile }
 
         
-# geo testing #
-	frame $w.geoframe 
-	pack $w.geoframe
-
-        set geologfile "" 
- 	tixLabelEntry $w.geoframe.ent -label "geo log-file: console if empty"  \
- 	    -labelside top \
- 	    -options {  
- 		entry.textVariable geologfile
- 		entry.width 35
- 		label.width 25
- 		label.anchor w
- 	    }	
- 	button $w.geoframe.btn -text "Browse" -command {
-	    set types { { "Log file"   {.log}	} }
-	    set geologfile [tk_getOpenFile -filetypes $types -initialfile $geologfile]
-	}
- 	button $w.geoframe.test -text "Test geo meshing" -command { ngtest geo $geologfile }
+ 	# pack $w.in2dframe.test -side left -anchor s -padx 4 -pady 4
+ 	# pack $w.in2dframe.ent -side left -expand yes -fill x -anchor s -padx 4 -pady 4
+ 	# pack $w.in2dframe.btn -side left -anchor s -padx 4 -pady 4
 
         
- 	pack $w.geoframe.test -side left -anchor s -padx 4 -pady 4
- 	pack $w.geoframe.ent -side left -expand yes -fill x -anchor s -padx 4 -pady 4
- 	pack $w.geoframe.btn -side left -anchor s -padx 4 -pady 4
+# # geo testing #
+	# frame $w.geoframe 
+	# pack $w.geoframe
 
-# stl testing #
-	frame $w.stlframe 
-	pack $w.stlframe
-
-        set stllogfile ""
- 	tixLabelEntry $w.stlframe.ent -label "stl log-file: console if empty"  \
- 	    -labelside top \
- 	    -options {  
- 		entry.textVariable stllogfile
- 		entry.width 35
- 		label.width 25
- 		label.anchor w
- 	    }	
- 	button $w.stlframe.btn -text "Browse" -command {
-	    set types { { "Log file"   {.log}	} }
-	    set stllogfile [tk_getOpenFile -filetypes $types -initialfile $stllogfile]
-	}
- 	button $w.stlframe.test -text "Test stl meshing" -command { ngtest stl $stllogfile }
+        # set geologfile "" 
+ 	# tixLabelEntry $w.geoframe.ent -label "geo log-file: console if empty"  \
+ 	    # -labelside top \
+ 	    # -options {  
+ 		# entry.textVariable geologfile
+ 		# entry.width 35
+ 		# label.width 25
+ 		# label.anchor w
+ 	    # }	
+ 	# button $w.geoframe.btn -text "Browse" -command {
+	    # set types { { "Log file"   {.log}	} }
+	    # set geologfile [tk_getOpenFile -filetypes $types -initialfile $geologfile]
+	# }
+ 	# button $w.geoframe.test -text "Test geo meshing" -command { ngtest geo $geologfile }
 
         
- 	pack $w.stlframe.test -side left -anchor s -padx 4 -pady 4
- 	pack $w.stlframe.ent -side left -expand yes -fill x -anchor s -padx 4 -pady 4
- 	pack $w.stlframe.btn -side left -anchor s -padx 4 -pady 4
+ 	# pack $w.geoframe.test -side left -anchor s -padx 4 -pady 4
+ 	# pack $w.geoframe.ent -side left -expand yes -fill x -anchor s -padx 4 -pady 4
+ 	# pack $w.geoframe.btn -side left -anchor s -padx 4 -pady 4
 
-# pde testing #
-	frame $w.pdeframe 
-	pack $w.pdeframe
+# # stl testing #
+	# frame $w.stlframe 
+	# pack $w.stlframe
 
-        set pdelogfile ""
- 	tixLabelEntry $w.pdeframe.ent -label "pde log-file: console if empty"  \
- 	    -labelside top \
- 	    -options {  
- 		entry.textVariable pdelogfile
- 		entry.width 35
- 		label.width 25
- 		label.anchor w
- 	    }	
- 	button $w.pdeframe.btn -text "Browse" -command {
-	    set types { { "Log file"   {.log}	} }
-	    set pdelogfile [tk_getOpenFile -filetypes $types -initialfile $pdelogfile]
-	}
- 	button $w.pdeframe.test -text "Test ngsolve pde's" -command { ngtest pde $pdelogfile }
+        # set stllogfile ""
+ 	# tixLabelEntry $w.stlframe.ent -label "stl log-file: console if empty"  \
+ 	    # -labelside top \
+ 	    # -options {  
+ 		# entry.textVariable stllogfile
+ 		# entry.width 35
+ 		# label.width 25
+ 		# label.anchor w
+ 	    # }	
+ 	# button $w.stlframe.btn -text "Browse" -command {
+	    # set types { { "Log file"   {.log}	} }
+	    # set stllogfile [tk_getOpenFile -filetypes $types -initialfile $stllogfile]
+	# }
+ 	# button $w.stlframe.test -text "Test stl meshing" -command { ngtest stl $stllogfile }
 
         
- 	pack $w.pdeframe.test -side left -anchor s -padx 4 -pady 4
- 	pack $w.pdeframe.ent -side left -expand yes -fill x -anchor s -padx 4 -pady 4
- 	pack $w.pdeframe.btn -side left -anchor s -padx 4 -pady 4
+ 	# pack $w.stlframe.test -side left -anchor s -padx 4 -pady 4
+ 	# pack $w.stlframe.ent -side left -expand yes -fill x -anchor s -padx 4 -pady 4
+ 	# pack $w.stlframe.btn -side left -anchor s -padx 4 -pady 4
+
+# # pde testing #
+	# frame $w.pdeframe 
+	# pack $w.pdeframe
+
+        # set pdelogfile ""
+ 	# tixLabelEntry $w.pdeframe.ent -label "pde log-file: console if empty"  \
+ 	    # -labelside top \
+ 	    # -options {  
+ 		# entry.textVariable pdelogfile
+ 		# entry.width 35
+ 		# label.width 25
+ 		# label.anchor w
+ 	    # }	
+ 	# button $w.pdeframe.btn -text "Browse" -command {
+	    # set types { { "Log file"   {.log}	} }
+	    # set pdelogfile [tk_getOpenFile -filetypes $types -initialfile $pdelogfile]
+	# }
+ 	# button $w.pdeframe.test -text "Test ngsolve pde's" -command { ngtest pde $pdelogfile }
+
+        
+ 	# pack $w.pdeframe.test -side left -anchor s -padx 4 -pady 4
+ 	# pack $w.pdeframe.ent -side left -expand yes -fill x -anchor s -padx 4 -pady 4
+ 	# pack $w.pdeframe.btn -side left -anchor s -padx 4 -pady 4
  
-	wm title $w "Testing"
-	focus .runtest_dlg 
-    }
-}
+	# wm title $w "Testing"
+	# focus .runtest_dlg 
+    # }
+# }
 

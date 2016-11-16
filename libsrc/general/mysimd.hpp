@@ -9,7 +9,9 @@
 
 #include <immintrin.h>
 
-#ifdef WIN32
+#ifdef WIN32 
+#ifndef AVX_OPERATORS_DEFINED
+#define AVX_OPERATORS_DEFINED
 inline __m128d operator- (__m128d a) { return _mm_xor_pd(a, _mm_set1_pd(-0.0)); }
 inline __m128d operator+ (__m128d a, __m128d b) { return _mm_add_pd(a,b); }
 inline __m128d operator- (__m128d a, __m128d b) { return _mm_sub_pd(a,b); }
@@ -35,6 +37,7 @@ inline __m256d operator+= (__m256d &a, __m256d b) { return a = a+b; }
 inline __m256d operator-= (__m256d &a, __m256d b) { return a = a-b; }
 inline __m256d operator*= (__m256d &a, __m256d b) { return a = a*b; }
 inline __m256d operator/= (__m256d &a, __m256d b) { return a = a/b; }
+#endif
 #endif
 
 

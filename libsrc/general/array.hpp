@@ -60,6 +60,7 @@ namespace netgen
     T operator*() const { return ar[ind]; }
     T & operator*() { return ar[ind]; }
     bool operator != (ArrayIterator d2) { return ind != d2.ind; }
+    bool operator == (ArrayIterator d2) { return ind == d2.ind; }
   };
 
 

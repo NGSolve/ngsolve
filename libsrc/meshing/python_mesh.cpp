@@ -20,6 +20,7 @@ namespace netgen
 template <typename T, int BASE = 0, typename TIND = int>
 void ExportArray (py::module &m)
 {
+  using TA = Array<T,BASE,TIND>;
   string name = string("Array_") + typeid(T).name();
   py::class_<Array<T,BASE,TIND>>(m, name.c_str())
     .def ("__len__", [] ( Array<T,BASE,TIND> &self ) { return self.Size(); } )
@@ -31,6 +32,9 @@ void ExportArray (py::module &m)
                              return self[i];
                            }),
           py::return_value_policy::reference)
+    .def("__iter__", [] ( TA & self) {
+	return py::make_iterator (self.begin(),self.end());
+      }, py::keep_alive<0,1>()) // keep array alive while iterator is used
 
     ;
 }

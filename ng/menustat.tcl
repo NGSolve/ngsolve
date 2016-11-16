@@ -854,20 +854,31 @@ ttk::button .bubar.center -text "Center" \
     -command { Ng_Center; redraw }
 
 # tk_optionMenu .bubar.modesel drawmode "rotate" "move  " "zoom  "
-tixOptionMenu .bubar.modesel \
-     -options {
- 	label.width  0
- 	label.anchor e
- 	menubutton.width 6
-     } \
-     -variable drawmode
+# tixOptionMenu .bubar.modesel \
+     # -options {
+ 	# label.width  0
+ 	# label.anchor e
+ 	# menubutton.width 6
+     # } \
+     # -variable drawmode
 
-.bubar.modesel add command rotate -label Rotate
-.bubar.modesel add command move -label Move
-.bubar.modesel add command zoom -label Zoom
+# .bubar.modesel add command rotate -label Rotate
+# .bubar.modesel add command move -label Move
+# .bubar.modesel add command zoom -label Zoom
+
+ttk::menubutton .bubar.modesel -menu .bubar.modesel.menu -text "" -width 6
+
+menu .bubar.modesel.menu  -tearoff 0
+
+.bubar.modesel.menu add command -label "Rotate" -command "set drawmode \"rotate\" ;.bubar.modesel configure -text \"Rotate\""
+.bubar.modesel.menu add command -label "Move" -command "set drawmode \"move\" ;.bubar.modesel configure -text \"Move\""
+.bubar.modesel.menu add command -label "Zoom" -command "set drawmode \"zoom\" ;.bubar.modesel configure -text \"Zoom\""
+
+.bubar.modesel.menu invoke "Rotate"
 
 
 
+      
 set viewvals { geometry specpoints mesh solution}
 if { $userlevel == 3} {
     set viewvals { geometry mesh specpoints surfmeshing modelview solution}
@@ -881,19 +892,20 @@ set viewvallabs(surfmeshing) "Mesh Gen"
 set viewvallabs(modelview)     "Modeller" 
 set viewvallabs(solution)     "Solution" 
 
-tixOptionMenu .bubar.selview \
-    -options {
-	label.width  0
-	label.anchor e
-	menubutton.width 10
-    } \
+# tixOptionMenu .bubar.selview \
+    # -options {
+	# label.width  0
+	# label.anchor e
+	# menubutton.width 10
+    # } \
 
-foreach viewv $viewvals {
-    .bubar.selview add command $viewv -label $viewvallabs($viewv)
-}
+# foreach viewv $viewvals {
+    # .bubar.selview add command $viewv -label $viewvallabs($viewv)
+# }
 
-.bubar.selview config -variable selectvisual
-.bubar.selview config -command { Ng_SetVisParameters; redraw }
+# .bubar.selview config -variable selectvisual
+# .bubar.selview config -command { Ng_SetVisParameters; redraw }
+
 
 
 # pack .bubar.modesel -side right
@@ -961,8 +973,9 @@ pack .statbar.selslabel .statbar.selsval -side left -ipady 3p
 # }
 
 
-tixMeter .statbar.per -value 0 -text 0%
-.statbar.per configure -fillcolor blue
+#tixMeter .statbar.per -value 0 -text 0%
+ttk::progressbar .statbar.per -value 0 -maximum 1
+#.statbar.per configure -fillcolor blue
 
 pack .statbar.per -side right
 pack .statbar.task -side right -ipady 4
@@ -1017,7 +1030,8 @@ proc timer2 { } {
     # set mem_moveable [Ng_MemInfo moveable]
 
 
-    .statbar.per config -value [expr $status_percent/100] -text [format %2.1f [expr 0.1*int(10*$status_percent)]]%
+    .statbar.per configure -value [expr $status_percent/100]
+#    -text [format %2.1f [expr 0.1*int(10*$status_percent)]]%
 
 
     if { $multithread_running } {
