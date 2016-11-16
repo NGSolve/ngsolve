@@ -338,11 +338,26 @@ if(USE_VTUNE)
 endif(USE_VTUNE)
 
 
+include(ExternalProject)
 #######################################################################
 if(NETGEN_SOURCE_DIR)
     find_path(NETGEN_INTERNAL_INCLUDE_DIR nginterface_v2_impl.hpp PATHS ${NETGEN_SOURCE_DIR} ${NETGEN_SOURCE_DIR}/libsrc/include)
-    add_definitions(-DHAVE_NETGEN_SOURCES)
-    include_directories(AFTER ${NETGEN_INTERNAL_INCLUDE_DIR})
+else(NETGEN_SOURCE_DIR)
+  set(BUILD_NETGEN ON CACHE INTERNAL "is set if netgen is built as external project")
+  ExternalProject_Add(
+      netgen
+      PREFIX netgen
+#       GIT_SUBMODULE netgen
+#       GIT_REPOSITORY git://git.code.sf.net/p/netgen-mesher/git
+#       GIT_TAG master
+      CMAKE_GENERATOR ${CMAKE_GENERATOR}
+      CMAKE_ARGS "-DUSE_GUI=${USE_GUI}" "-DINSTALL_DIR=${INSTALL_DIR}" "-DUSE_CCACHE=${USE_CCACHE}"
+      CMAKE_CACHE_ARGS "-DCMAKE_PREFIX_PATH:PATH=${CMAKE_PREFIX_PATH}"
+      SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies/netgen"
+      BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/external_dependencies/netgen"
+  )
+  set(NETGEN_INTERNAL_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies/netgen/libsrc/include" CACHE INTERNAL "Netgen include dir")
+
 endif(NETGEN_SOURCE_DIR)
 
 if (NOT NETGEN_INTERNAL_INCLUDE_DIR)
@@ -350,6 +365,8 @@ if (NOT NETGEN_INTERNAL_INCLUDE_DIR)
     cmake -DNETGEN_SOURCE_DIR=path_to_netgen_sources ...")
 endif()
 
+add_definitions(-DHAVE_NETGEN_SOURCES)
+include_directories(AFTER ${NETGEN_INTERNAL_INCLUDE_DIR})
 
 #######################################################################
 
@@ -368,6 +385,17 @@ add_subdirectory(py_tutorials)
 add_subdirectory(tests)
 add_subdirectory(external_dependencies)
 
+if(BUILD_NETGEN)
+  # needed to wait until netgen is build before trying to include its headers
+  add_dependencies(ngla netgen)
+  add_dependencies(ngbla netgen)
+  add_dependencies(ngfem netgen)
+  add_dependencies(solve netgen)
+  add_dependencies(ngcomp netgen)
+  add_dependencies(ngmg netgen)
+  add_dependencies(ngstd netgen)
+  add_dependencies(parallel netgen)
+endif(BUILD_NETGEN)
 #######################################################################
 # generate ngscxx compiler wrapper
 
@@ -616,4 +644,5 @@ message("
 if (ADDITIONAL_PATHS)
   message(WARNING "The use of ADDITIONAL_PATHS is depricated, use CMAKE_PREFIX_PATH instead.")
 endif (ADDITIONAL_PATHS)
+
 
