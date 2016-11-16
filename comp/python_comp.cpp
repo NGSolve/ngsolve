@@ -855,10 +855,12 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 
                              if (order > -1) {
 			       flags.SetFlag ("order", order);
-// 			       bpflags["order"] = py::cast(order); }
+// 			       bpflags["order"] = py::cast(order);
+                             }
                              if (dim > -1) {
 			       flags.SetFlag ("dim", dim);
-// 			       bpflags["dim"] = py::cast(dim); }
+// 			       bpflags["dim"] = py::cast(dim);
+                             }
                              if (is_complex) {
 			       flags.SetFlag ("complex");
 // 			       bpflags["complex"] = py::cast(is_complex);
