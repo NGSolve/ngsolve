@@ -2016,6 +2016,7 @@ namespace ngfem
     Array<IntegrationRule*> prismrules;
     Array<IntegrationRule*> pyramidrules;
     Array<IntegrationRule*> hexrules;
+    Array<IntegrationRule*> hermiterules;
 
     SIMD_IntegrationRule simd_pointrule;
     Array<SIMD_IntegrationRule*> simd_segmentrules, simd_segmentrules_inv;
@@ -2382,6 +2383,9 @@ namespace ngfem
 
     for (int i = 0; i < jacobirules20.Size(); i++)
       delete jacobirules20[i];
+
+    for (int i = 0; i < hermiterules.Size(); i++)
+      delete hermiterules[i];      
   }
 
 
@@ -2409,6 +2413,8 @@ namespace ngfem
 	ira = &prismrules; break;
       case ET_HEX:
 	ira = &hexrules; break;
+      case ET_HERMITE:
+	ira = &hermiterules; break;
       default:
 	{
 	  stringstream str;
@@ -2508,6 +2514,8 @@ namespace ngfem
 	  ira = &prismrules; break;
 	case ET_HEX:
 	  ira = &hexrules; break;
+	case ET_HERMITE:
+	  ira = &hermiterules; break;
 	default:
 	    /*
 	      {
@@ -2734,6 +2742,23 @@ namespace ngfem
 		pyramidrules[order] = pyramidrule;
 		break;
 	      }
+        case ET_HERMITE:
+          {
+            double point[3];
+            point[1] = point[2] = 0.0;
+            Array<double> nodes,weights;
+            ComputeHermiteRule(order,nodes,weights);
+            IntegrationRule * hermite_rule = new IntegrationRule;
+            for(int i=0;i<nodes.Size();i++)
+            {
+              point[0] = nodes[i];
+              IntegrationPoint ip = IntegrationPoint (point, exp(nodes[i]*nodes[i])*weights[i]);
+              ip.SetNr(i);
+              hermite_rule->AddIntegrationPoint(ip);
+            }
+        hermiterules[order] = hermite_rule;
+        break;
+          }
 	    }
 	}
 
