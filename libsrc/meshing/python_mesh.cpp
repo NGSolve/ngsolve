@@ -7,8 +7,6 @@
 #include <csg.hpp>
 #include <geometry2d.hpp>
 #include <../interface/writeuser.hpp>
-#include <nginterface.h>
-#include <nginterface_v2.hpp>
 
 
 using namespace netgen;
@@ -22,6 +20,7 @@ namespace netgen
 template <typename T, int BASE = 0, typename TIND = int>
 void ExportArray (py::module &m)
 {
+  using TA = Array<T,BASE,TIND>;
   string name = string("Array_") + typeid(T).name();
   py::class_<Array<T,BASE,TIND>>(m, name.c_str())
     .def ("__len__", [] ( Array<T,BASE,TIND> &self ) { return self.Size(); } )
@@ -33,6 +32,9 @@ void ExportArray (py::module &m)
                              return self[i];
                            }),
           py::return_value_policy::reference)
+    .def("__iter__", [] ( TA & self) {
+	return py::make_iterator (self.begin(),self.end());
+      }, py::keep_alive<0,1>()) // keep array alive while iterator is used
 
     ;
 }
@@ -300,10 +302,6 @@ DLL_HEADER void ExportNetgenMeshing(py::module &m)
 
   py::implicitly_convertible< int, PointIndex>();
   
-  py::class_<Ngx_Mesh>(m, "Ngx_Mesh")
-    .def(py::init<shared_ptr<Mesh>>())
-    .def_property_readonly("ngmesh", &Ngx_Mesh::GetMesh)
-    ;
   py::class_<Mesh,shared_ptr<Mesh>>(m, "Mesh")
     // .def(py::init<>("create empty mesh"))
 
@@ -564,7 +562,6 @@ DLL_HEADER void ExportNetgenMeshing(py::module &m)
            ))
                                             
     ;
-  py::implicitly_convertible< shared_ptr<Mesh>, Ngx_Mesh >();
   
 
   typedef MeshingParameters MP;
