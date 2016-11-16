@@ -390,7 +390,7 @@ inline void Distribution<dim>::HermiteRule(Array<double> & nodes,Array<double> &
 }
 
 template<int dim>
-void Distribution<dim>::CalcShape1D(const double x,SliceVector<> shape) const
+void Distribution<dim>::CalcShape1D(const double x,BareSliceVector<> shape) const
 {
     VectorMem<50> prod1x(n_nodes), prod2x(n_nodes);
     double px = 1;
@@ -415,11 +415,11 @@ void Distribution<dim>::CalcShape1D(const double x,SliceVector<> shape) const
 
 template<int dim>
 template<Representation REP>
-void Distribution<dim>::CalcShape1(const IntegrationPoint & ip, SliceVector<> shape) const
+void Distribution<dim>::CalcShape1(const IntegrationPoint & ip, BareSliceVector<> shape) const
 {
     double x = ip(0);
     double y = ip(1);
-    shape = 0.0;
+    //shape = 0.0;
     if(REP == NODAL)
     {
         Array<double> nodes,weights;

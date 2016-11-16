@@ -65,6 +65,8 @@ namespace ngfem
     const int GetFacet() const {
       return facet;
     }
+    virtual BaseMappedIntegrationRule & Range(size_t first, size_t next, LocalHeap & lh) const 
+    { throw Exception("TPMappedIntegrationRule::Range not implemented"); }
   };
 
 ///////////////////////////////////////////////////////////////////////////////////////

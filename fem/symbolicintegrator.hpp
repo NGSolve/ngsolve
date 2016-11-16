@@ -49,6 +49,8 @@ public:
 
     int dim = evaluator->Dim();
     int blockdim = evaluator->BlockDim();
+    cout << "Dim = "<<dim<<endl;
+    cout << "Block Dim = "<<blockdim<<endl;
     if (blockdim == 1)
       SetDimensions (Array<int> ({dim}));
     else
@@ -141,8 +143,13 @@ public:
   virtual void Evaluate (const BaseMappedIntegrationRule & ir,
                          FlatMatrix<Complex> result) const;
 
+  // virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
+  // AFlatMatrix<double> values) const;
+
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
-                         AFlatMatrix<double> values) const;
+                         BareSliceMatrix<SIMD<double>> values) const;
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
+                         BareSliceMatrix<SIMD<Complex>> values) const;
 
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
                          FlatArray<AFlatMatrix<double>*> input,
@@ -194,7 +201,7 @@ class ProxyUserData
 {
   FlatArray<const ProxyFunction*> remember_first;
   FlatArray<FlatMatrix<double>> remember_second;
-  FlatArray<AFlatMatrix<double>> remember_asecond;
+  FlatArray<FlatMatrix<SIMD<double>>> remember_asecond;
 public:
   class ProxyFunction * testfunction = nullptr;
   int test_comp;
@@ -208,7 +215,8 @@ public:
   ProxyUserData ()
     : remember_first(0,nullptr), remember_second(0,nullptr), remember_asecond(0,nullptr) { ; }
   ProxyUserData (int ntrial, LocalHeap & lh)
-    : remember_first(ntrial, lh), remember_second(ntrial, lh), remember_asecond(ntrial, lh)
+    : remember_first(ntrial, lh), remember_second(ntrial, lh),
+      remember_asecond(ntrial, lh)
   { remember_first = nullptr; }
   
   void AssignMemory (const ProxyFunction * proxy, int h, int w, LocalHeap & lh)
@@ -219,7 +227,7 @@ public:
           {
             remember_first[i] = proxy;
             new (&remember_second[i]) FlatMatrix<> (h, w, lh);
-            new (&remember_asecond[i]) AFlatMatrix<double> (w, h, lh);
+            new (&remember_asecond[i]) FlatMatrix<SIMD<double>> (w, (h+SIMD<double>::Size()-1)/SIMD<double>::Size(), lh);
             return;
           }
       }
@@ -233,7 +241,7 @@ public:
   {
     return remember_second[remember_first.Pos(proxy)];
   }
-  AFlatMatrix<double> GetAMemory (const ProxyFunction * proxy) const
+  FlatMatrix<SIMD<double>> GetAMemory (const ProxyFunction * proxy) const
   {
     return remember_asecond[remember_first.Pos(proxy)];
   }
@@ -321,7 +329,7 @@ public:
   NGS_DLL_HEADER virtual void
   CalcMatrix (const FiniteElement & bfel,
               const SIMD_BaseMappedIntegrationRule & mir,
-              ABareMatrix<double> mat) const
+              BareSliceMatrix<SIMD<double>> mat) const
   {
     // mat = 0;   // take care: unused elements not zerod !!!!
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
@@ -346,7 +354,7 @@ public:
   Apply (const FiniteElement & bfel,
          const SIMD_BaseMappedIntegrationRule & bmir,
          BareSliceVector<double> x, 
-         ABareMatrix<double> flux) const
+         BareSliceMatrix<SIMD<double>> flux) const
   {
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
     IntRange r = BlockDim() * fel.GetRange(comp);
@@ -384,7 +392,7 @@ public:
   NGS_DLL_HEADER virtual void
   AddTrans (const FiniteElement & bfel,
             const SIMD_BaseMappedIntegrationRule & bmir,
-            ABareMatrix<double> flux,
+            BareSliceMatrix<SIMD<double>> flux,
             BareSliceVector<double> x) const
   {
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
@@ -454,6 +462,9 @@ public:
     virtual bool IsSymmetric() const { return true; }  // correct would be: don't know
     virtual string Name () const { return string ("Symbolic BFI"); }
 
+    IntegrationRule GetIntegrationRule (const FiniteElement & fel) const;
+    SIMD_IntegrationRule Get_SIMD_IntegrationRule (const FiniteElement & fel) const;
+    
     virtual void 
     CalcElementMatrix (const FiniteElement & fel,
 		       const ElementTransformation & trafo, 

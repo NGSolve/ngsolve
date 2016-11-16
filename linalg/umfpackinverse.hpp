@@ -39,8 +39,8 @@ namespace ngla
     void *Symbolic = nullptr;
     void *Numeric = nullptr;
 
-    Array<suite_long, size_t> rowstart, indices;
-    Array<TSCAL, size_t> values;
+    Array<suite_long> rowstart, indices;
+    Array<TSCAL> values;
 
     bool symmetric, is_complex;
 

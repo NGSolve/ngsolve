@@ -165,6 +165,8 @@ namespace ngcomp
     bool no_low_order_space;
 
     int et_bonus_order[30]; // order increase for element-type
+
+    BitArray is_atomic_dof;
   public:
     virtual int GetSpacialDimension() const { return ma->GetDimension();}
     string type;
@@ -518,7 +520,10 @@ namespace ngcomp
     virtual Array<int> & DirectElementClusters(void)
     { return directelementclusters; }
 
+    bool IsAtomicDof (size_t nr) const { return (is_atomic_dof.Size() != 0) && is_atomic_dof[nr]; }
+    bool HasAtomicDofs () const { return is_atomic_dof.Size() != 0; }
 
+    
     void TransformMat (int elnr, bool boundary,
 		       const SliceMatrix<double> & mat, TRANSFORM_TYPE type) const
     {
@@ -1172,6 +1177,14 @@ namespace ngstd
   };
 }
 #endif
+
+namespace ngstd
+{
+  template <>
+  struct PyWrapperTraits<ngcomp::FESpace> {
+    typedef PyWrapperClass<ngcomp::FESpace> type;
+  };
+}
 
 
 #endif

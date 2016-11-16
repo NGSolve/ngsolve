@@ -104,8 +104,8 @@ namespace ngla
     integer pt[128];
     integer hparams[64];
 
-    Array<integer,size_t> rowstart, indices; 
-    Array<typename mat_traits<TM>::TSCAL,size_t> matrix;
+    Array<integer> rowstart, indices; 
+    Array<typename mat_traits<TM>::TSCAL> matrix;
 
     integer matrixtype;
     bool symmetric, spd;

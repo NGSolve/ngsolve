@@ -162,8 +162,9 @@ INLINE auto OffsetTensor (SliceMatrix<T> mat, int offset)
 }
 
 
-
-
+// a 0-tensor is treated as number:
+template <typename T> auto ReduceTensor0 (T tensor) { return tensor; }
+template <typename T, int DIMLIN> T & ReduceTensor0 (FlatTensor<0,T,DIMLIN> tensor) { return *tensor.Data(); } 
 
 
 template <int DIM, typename T, int DIMLIN>
@@ -204,18 +205,32 @@ public:
 
   
   template <typename ... ARG>
-  auto operator() (int i, ARG ... args) -> decltype ( OffsetTensor (sub(args...), i*dist) )
+  auto braces (int i, ARG ... args)
   {
-    return OffsetTensor (sub(args...), i*dist);
+    return OffsetTensor (sub.braces(args...), i*dist);
   }
 
   template <typename ... ARG>
-  auto operator() (typestar star, ARG ... args) 
-    -> decltype (LargerTensor (sub(args...), size,dist) )
+  auto braces (typestar star, ARG ... args) 
   {
-    return LargerTensor(sub(args...), size, dist);
+    return LargerTensor(sub.braces(args...), size, dist);
   }
 
+
+  template <typename ... ARG>
+  auto operator() (int i, ARG ... args)
+    -> decltype (ReduceTensor0 (this->braces(i,args...)))
+  {
+    return ReduceTensor0 (braces(i,args...));
+  }
+ 
+  template <typename ... ARG>
+  auto operator() (typestar star, ARG ... args) 
+  {
+    return braces(star,args...);
+  }
+
+  
   FlatTensor operator= (double d)
   {
     for (int i = 0; i < size; i++)
@@ -257,11 +272,14 @@ public:
   T *& Data () { return data; }
   T * Data () const { return data; }  
   FlatTensor<0,T,LINDIM> operator() () { return FlatTensor<0,T,LINDIM> (data); }
+  FlatTensor<0,T,LINDIM> braces () { return FlatTensor<0,T,LINDIM> (data); }
+  // const T & operator() () const { return *data; }
+  // T & operator() () { return *data; }
   operator T  () const { return *data; }
   operator T& () { return *data; }
-  void operator= (double d) { *data = d; }
-  void operator-= (double d) { *data -= d; }
-  void operator+= (double d) { *data += d; }
+  T & operator= (double d) { *data = d; return *data; }
+  T & operator-= (double d) { *data -= d; return *data; }
+  T & operator+= (double d) { *data += d; return *data; }
 };
 
 

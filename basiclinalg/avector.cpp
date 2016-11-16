@@ -11,102 +11,9 @@ namespace ngstd
   template<int HINT> INLINE void Prefetch (void * p) { _mm_prefetch (p, _MM_HINT_T2); }
   template <> INLINE void Prefetch<0> (void * p) { _mm_prefetch (p, _MM_HINT_T0); }
   template <> INLINE void Prefetch<1> (void * p) { _mm_prefetch (p, _MM_HINT_T1); }
-
   
-#if defined(__AVX2__)
-  INLINE __m256i my_mm256_cmpgt_epi64 (__m256i a, __m256i b)
-  {
-    return _mm256_cmpgt_epi64 (a,b);
-  }
-#else
-  INLINE __m256i my_mm256_cmpgt_epi64 (__m256i a, __m256i b)
-  {
-    __m128i rlo = _mm_cmpgt_epi64(_mm256_extractf128_si256(a, 0),
-                                  _mm256_extractf128_si256(b, 0));
-    __m128i rhi = _mm_cmpgt_epi64(_mm256_extractf128_si256(a, 1),
-                                  _mm256_extractf128_si256(b, 1));
-    return _mm256_insertf128_si256 (_mm256_castsi128_si256(rlo), rhi, 1);
-  }
-#endif
 #endif
 
-  
-  template <>
-  class SIMD<Complex>
-  {
-    SIMD<double> re, im;
-  public:
-    SIMD () = default;
-    SIMD (SIMD<double> _r, SIMD<double> _i) : re(_r), im(_i) { ; }
-    SIMD (Complex c) : re(c.real()), im(c.imag()) { ; } 
-    SIMD<double> real() const { return re; }
-    SIMD<double> imag() const { return im; }
-
-    
-#if defined (__AVX__)
-    void Load (Complex * p)
-    {
-      __m256d c1 = _mm256_loadu_pd((double*)p);
-      __m256d c2 = _mm256_loadu_pd((double*)(p+2));
-      re = _mm256_unpacklo_pd(c1,c2);
-      im = _mm256_unpackhi_pd(c1,c2);
-    }
-    void Store (Complex * p) const
-    {
-      _mm256_storeu_pd ((double*)p, _mm256_unpacklo_pd(re.Data(),im.Data()));
-      _mm256_storeu_pd ((double*)(p+2), _mm256_unpackhi_pd(re.Data(),im.Data()));
-    }
-
-    void Load (Complex * p, size_t mask)
-    {
-      __m256i mask1 = my_mm256_cmpgt_epi64(_mm256_set1_epi64x(mask&3),
-                                           _mm256_set_epi64x(1, 1, 0, 0));
-      __m256i mask2 = my_mm256_cmpgt_epi64(_mm256_set1_epi64x(mask&3),
-                                           _mm256_set_epi64x(3, 3, 2, 2));
-      
-      __m256d c1 = _mm256_maskload_pd((double*)p, mask1);
-      __m256d c2 = _mm256_maskload_pd((double*)(p+2), mask2);
-      re = _mm256_unpacklo_pd(c1,c2);
-      im = _mm256_unpackhi_pd(c1,c2);
-    }
-    void Store (Complex * p, size_t mask) const
-    {
-      __m256i mask1 = my_mm256_cmpgt_epi64(_mm256_set1_epi64x(mask&3),
-                                           _mm256_set_epi64x(1, 1, 0, 0));
-      __m256i mask2 = my_mm256_cmpgt_epi64(_mm256_set1_epi64x(mask&3),
-                                           _mm256_set_epi64x(3, 3, 2, 2));
-
-      _mm256_maskstore_pd ((double*)p, mask1, _mm256_unpacklo_pd(re.Data(),im.Data()));
-      _mm256_maskstore_pd ((double*)(p+2), mask2, _mm256_unpackhi_pd(re.Data(),im.Data()));
-    }
-#else
-    void Load (Complex * p)
-    {
-      Complex c = *p;
-      re = c.real();
-      im = c.imag();
-    }
-    void Store (Complex * p) const
-    {
-      *p = Complex(re.Data(), im.Data());
-    }
-#endif
-    
-  };
-    
-  INLINE SIMD<Complex> operator+ (SIMD<Complex> a, SIMD<Complex> b)
-  { return SIMD<Complex> (a.real()+b.real(), a.imag()+b.imag()); }
-  INLINE SIMD<Complex> operator- (SIMD<Complex> a, SIMD<Complex> b)
-  { return SIMD<Complex> (a.real()-b.real(), a.imag()-b.imag()); }
-  INLINE SIMD<Complex> operator* (SIMD<Complex> a, SIMD<Complex> b)
-    { return SIMD<Complex> (a.real()*b.real()-a.imag()*b.imag(),
-                            a.real()*b.imag()+a.imag()*b.real()); }
-  
-  INLINE ostream & operator<< (ostream & ost, SIMD<Complex> c)
-  {
-    ost << c.real() << ", " << c.imag();
-    return ost;
-  }
 }
   
 
@@ -1452,7 +1359,7 @@ namespace ngbla
   
     if (a.VWidth() <= 0) return;
   
-    for ( ; i < c.Height()-1; i += 2)
+    for ( ; i+1 < c.Height(); i += 2)
       {
         int j = 0;
         for ( ; j < i; j += 4)
@@ -1482,7 +1389,7 @@ namespace ngbla
     if (i < c.Height())
       {
         int j = 0;
-        for ( ; j < c.Width()-3; j += 4)
+        for ( ; j+3 < c.Width(); j += 4)
           {
             SIMD<double> s1, s2;
             MyScal2x4 (a.VWidth(), &a.Get(i,0), &a.Get(i,0),
@@ -1581,11 +1488,11 @@ namespace ngbla
     if (a.VWidth() <= 0) return;
   
     int j = 0;
-    for ( ; j < c.Width()-3; j += 4)
+    for ( ; j+3 < c.Width(); j += 4)
       {
         int i = j;
         double * pc = &c(i,j);
-        for ( ; i < c.Height()-3; i += 4)
+        for ( ; i+3 < c.Height(); i += 4)
           {
             __m256d s1, s2, s3, s4;
             MyScal4x4 (4*a.VWidth(),
@@ -1606,7 +1513,7 @@ namespace ngbla
             pc += c.Dist();          
           }
 
-        if (i < c.Height()-1)
+        if (i+1 < c.Height())
           {
             SIMD<double> s1, s2;
             MyScal2x4 (a.VWidth(), &a.Get(i,0), &a.Get(i+1,0),
@@ -1812,11 +1719,11 @@ namespace ngbla
     if (a.Width() <= 0) return;
   
     int j = 0;
-    for ( ; j < c.Width()-3; j += 4)
+    for ( ; j+3 < c.Width(); j += 4)
       {
         int i = j;
         Complex * pc = &c(i,j);
-        for ( ; i < c.Height()-3; i += 4)
+        for ( ; i+3 < c.Height(); i += 4)
           {
             __m256d s11, s21, s31, s41;
             __m256d s12, s22, s32, s42;
@@ -1855,7 +1762,7 @@ namespace ngbla
             pc += c.Dist();          
           }
 
-        if (i < c.Height()-1)
+        if (i+1 < c.Height())
           {
             __m256d s11, s21;
             __m256d s12, s22;
@@ -1961,10 +1868,10 @@ namespace ngbla
 
 
 
-    for ( ; i < c.Height()-3; i += 4)
+    for ( ; i+3 < c.Height(); i += 4)
       {
         int j = 0;
-        for ( ; j < c.Width()-3; j += 4)
+        for ( ; j+3 < c.Width(); j += 4)
           {
             __m256d s11, s21, s31, s41, s12, s22, s32, s42;
             MyScal4x4 (a.Width(), &a(i,0), &a(i+1,0), &a(i+2,0), &a(i+3,0),
@@ -1989,7 +1896,7 @@ namespace ngbla
             _mm256_storeu_pd(reinterpret_cast<double*>(&c(i+3,j+2)), s42);
           }
         
-        for ( ; j < c.Width()-1; j += 2)
+        for ( ; j+1 < c.Width(); j += 2)
           for (int i2 = i; i2 < i+4; i2 += 2)
             {
               __m256d s11, s21;
@@ -2009,10 +1916,10 @@ namespace ngbla
 
 
     
-    for ( ; i < c.Height()-1; i += 2)
+    for ( ; i+1 < c.Height(); i += 2)
       {
         int j = 0;
-        for ( ; j < c.Width()-3; j += 4)
+        for ( ; j+3 < c.Width(); j += 4)
           {
             __m256d s11, s21, s12, s22;
             MyScal2x4 (a.Width(), &a(i,0), &a(i+1,0),
@@ -2027,7 +1934,7 @@ namespace ngbla
             _mm256_storeu_pd(reinterpret_cast<double*>(&c(i,j+2)), s12);
             _mm256_storeu_pd(reinterpret_cast<double*>(&c(i+1,j+2)), s22);
           }
-        for ( ; j < c.Width()-1; j += 2)
+        for ( ; j+1 < c.Width(); j += 2)
           {
             __m256d s11, s21;
             MyScal2x2 (a.Width(), &a(i,0), &a(i+1,0),
@@ -2062,7 +1969,7 @@ namespace ngbla
     if (i < c.Height())
       {
         int j = 0;
-        for ( ; j < c.Width()-3; j += 4)
+        for ( ; j+3 < c.Width(); j += 4)
           {
             __m256d s11, s12;
             MyScal1x4 (a.Width(), &a(i,0),
@@ -3603,7 +3510,7 @@ namespace ngbla
     double * bpc = &c(0,0);
     unsigned int dc = c.Dist();
     double * ar = &a(0,0);
-    for ( ; r < a.Height()-7; r+=8)
+    for ( ; r+7 < a.Height(); r+=8)
       {
         __m256d sum1 = _mm256_setzero_pd();
         __m256d sum2 = _mm256_setzero_pd();
@@ -3646,7 +3553,7 @@ namespace ngbla
         ar += 8*da;
       }
 
-    if (r < a.Height()-3)
+    if (r+3 < a.Height())
       {
         __m256d sum1 = _mm256_setzero_pd();
         __m256d sum2 = _mm256_setzero_pd();
@@ -3722,7 +3629,7 @@ namespace ngbla
     double * bpc = &c(0,0);
     unsigned int dc = c.Dist();
     double * ar = &a(0,0);
-    for ( ; r < a.Height()-3; r+=4)
+    for ( ; r+3 < a.Height(); r+=4)
       {
         __m256d sum11 = _mm256_setzero_pd();
         __m256d sum21 = _mm256_setzero_pd();
@@ -3833,12 +3740,12 @@ namespace ngbla
   // c = a * b
   void MultMatMat(SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
   {
-    int k = 0;
-    for ( ; k < b.Width()-7; k += 8)
+    size_t k = 0;
+    for ( ; k+7 < b.Width(); k += 8)
       MultMatMat8(a, b.Cols(k,k+8), c.Cols(k,k+8));
     for ( ; k < b.Width(); k += 4)
       {
-        int end = min2(b.Width(), k+4);
+        size_t end = min2(b.Width(), k+4);
         MultMatMat4(a, b.Cols(k,end), c.Cols(k,end));
       }
   }

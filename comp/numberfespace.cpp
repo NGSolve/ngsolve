@@ -5,10 +5,11 @@ namespace ngcomp
 
   class NumberFiniteElement : public FiniteElement
   {
+    ELEMENT_TYPE et;
   public:
-    NumberFiniteElement ()
+    NumberFiniteElement (ELEMENT_TYPE _et)
       : FiniteElement(1, 0) { ; }
-    HD virtual ELEMENT_TYPE ElementType() const { return ET_POINT; }
+    HD virtual ELEMENT_TYPE ElementType() const { return et; }
   };
 
 
@@ -28,23 +29,28 @@ namespace ngcomp
       mat(0,0) = 1;
     }
 
+    using DiffOp<NumberDiffOp>::ApplySIMDIR;
+    /*
     template <typename FEL, class MIR, class TVX, class TVY>
     static void ApplySIMDIR (const FEL & fel, const MIR & mir,
                              const TVX & x, TVY & y)
+    */
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
-      for (int i = 0; i < mir.IR().GetNIP(); i++)
+      for (size_t i = 0; i < mir.Size(); i++)
         y(0,i) = x(0);
     }
 
+    using DiffOp<NumberDiffOp>::AddTransSIMDIR;
     /// Computes Transpose (B-matrix) times point value    
-    template <typename FEL, class MIR, class TVX, class TVY>
-    static void AddTransSIMDIR (const FEL & fel, const MIR & mir,
-                                const TVX & x, TVY & y)
+    static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> x, BareSliceVector<double> y)
     {
-      double sum = 0.0;
-      for (int i = 0; i < mir.IR().GetNIP(); i++)
+      SIMD<double> sum = 0.0;
+      for (size_t i = 0; i < mir.Size(); i++)
         sum += x(0,i);
-      y(0) += sum;
+      y(0) += HSum(sum);
     }
     
   };
@@ -61,6 +67,8 @@ namespace ngcomp
     { 
       evaluator = make_shared<T_DifferentialOperator<NumberDiffOp>>();
       boundary_evaluator = make_shared<T_DifferentialOperator<NumberDiffOp>>();
+      is_atomic_dof = BitArray(1);
+      is_atomic_dof = true;
     }
 
     virtual int GetNDof() const { return 1; }
@@ -68,7 +76,7 @@ namespace ngcomp
     virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const
     {
       if (DefinedOn(ei))
-        return *new (lh) NumberFiniteElement();
+        return *new (lh) NumberFiniteElement(ma->GetElType(ei));
       else
         return *new (lh) DummyFE<ET_POINT>();
     }

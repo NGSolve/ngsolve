@@ -416,26 +416,36 @@ namespace ngla
         auto extdofs = BlockExtDofs (i);
         first_microtask.Append (microtasks.Size());
 
-        // if ( (extdofs.Size() == 0) && (BlockDofs(i).Size() == 1) ) 
-        // cout << "Info: block of just one" << endl; // continue;
-
         int nb = extdofs.Size() / 256 + 1;
 
-        MicroTask mt;
-        mt.blocknr = i;
-        mt.solveL = true;
-        mt.bblock = 0;
-        mt.nbblocks = 0;
-        microtasks.Append (mt);
-        
-        for (int j = 0; j < nb; j++)
+        if (nb == 1)
+          // if (false)
           {
             MicroTask mt;
             mt.blocknr = i;
-            mt.solveL = false;
-            mt.bblock = j;
-            mt.nbblocks = nb;
+            mt.type = MicroTask::LB_BLOCK;
+            mt.bblock = 0;
+            mt.nbblocks = 1;
             microtasks.Append (mt);
+          }
+        else
+          {
+            MicroTask mt;
+            mt.blocknr = i;
+            mt.type = MicroTask::L_BLOCK;
+            mt.bblock = 0;
+            mt.nbblocks = 0;
+            microtasks.Append (mt);
+            
+            for (int j = 0; j < nb; j++)
+              {
+                MicroTask mt;
+                mt.blocknr = i;
+                mt.type = MicroTask::B_BLOCK;
+                mt.bblock = j;
+                mt.nbblocks = nb;
+                microtasks.Append (mt);
+              }
           }
       }
     first_microtask.Append (microtasks.Size());
@@ -449,26 +459,34 @@ namespace ngla
         {
           for (int i = 0; i < first_microtask.Size()-1; i++)
             {
-              for (int b = first_microtask[i]+1; b < first_microtask[i+1]; b++)
-                {
-                  // L to B dependency
-                  creator.Add (first_microtask[i], b);
-                  creator_trans.Add (b, first_microtask[i]);
-
-                  // B to L dependency
+              if (first_microtask[i+1] == first_microtask[i]+1)
+                { // just one LB block
+                  int b = first_microtask[i];
                   for (int o : block_dependency[i])
                     {
                       creator.Add (b, first_microtask[o]);
                       creator_trans.Add (first_microtask[o], b);
                     }
                 }
+              else
+                for (int b = first_microtask[i]+1; b < first_microtask[i+1]; b++)
+                  {
+                    // L to B dependency
+                    creator.Add (first_microtask[i], b);
+                    creator_trans.Add (b, first_microtask[i]);
+                    
+                    // B to L dependency
+                    for (int o : block_dependency[i])
+                      {
+                        creator.Add (b, first_microtask[o]);
+                        creator_trans.Add (first_microtask[o], b);
+                      }
+                  }
             }
         }
 
       micro_dependency = creator.MoveTable();
       micro_dependency_trans = creator_trans.MoveTable();
-
-      // cout << "dag.size = " << micro_dependency.Size() << endl;
     }
   }
   
@@ -1037,8 +1055,8 @@ namespace ngla
             task_manager -> CreateJob
                          ( [&] (const TaskInfo & ti)
                            {
-                             int br = ti.task_nr % nr;
-                             int bc = ti.task_nr / nr;
+                             size_t br = ti.task_nr % nr;
+                             size_t bc = ti.task_nr / nr;
                              // auto rowr = Range(c.Height()).Split (br, nr);
                              // auto colr = Range(c.Width()).Split (bc, nc);
                              auto rowr = Range(BH*br, min(BH*(br+1), c.Height()));
@@ -1568,46 +1586,6 @@ namespace ngla
     x += y;
   }
   */
-  using ngstd::MyAtomicAdd;
-  inline void MyAtomicAdd (Complex & x, Complex y)
-  {
-    /*
-    auto real = y.real();
-#pragma omp atomic
-    reinterpret_cast<double(&)[2]>(x)[0] += real;
-    auto imag = y.imag();
-#pragma omp atomic
-    reinterpret_cast<double(&)[2]>(x)[1] += imag;
-    */
-    auto real = y.real();
-    ngstd::MyAtomicAdd (reinterpret_cast<double(&)[2]>(x)[0], real);
-    auto imag = y.imag();
-    ngstd::MyAtomicAdd (reinterpret_cast<double(&)[2]>(x)[1], imag);
-  }
-
-  template <int DIM, typename SCAL, typename TANY>
-  inline void MyAtomicAdd (Vec<DIM,SCAL> & x, TANY y)
-  {
-    for (int i = 0; i < DIM; i++)
-      MyAtomicAdd (x(i), y(i));
-  }
-  
-  template <int DIM, typename SCAL, typename TANY>
-  inline void MyAtomicAdd (FlatVec<DIM,SCAL> x, TANY y)
-  {
-    for (int i = 0; i < DIM; i++)
-      MyAtomicAdd (x(i), y(i));
-  }
-  
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1847,7 +1825,8 @@ namespace ngla
     FlatVector<TVX> fy = y.FV<TVX> ();
 
     int nused = this->nused;
-    Vector<TVX> hy(nused);
+    Vector<TVX> hy1(nused);
+    FlatVector<TVX> hy(hy1);
 
     /*
     for (int i = 0; i < n; i++)
@@ -1859,7 +1838,6 @@ namespace ngla
                      hy(order[i]) = fx(i);
                  });
 
-    timer1.Start();
 
 
     /*
@@ -1924,25 +1902,66 @@ namespace ngla
 
 
     // parallel version with refined tasks (micri-dependency)
+    /*
+    timer0.Start();    
     RunParallelDependency (micro_dependency, 
                            [&] (int nr) 
+                           { ; } );
+    timer0.Stop();    
+    */
+    timer1.Start();
+    
+    RunParallelDependency (micro_dependency, 
+                           [&,hy] (int nr) 
                            {
                              auto task = microtasks[nr];
-                             int blocknr = task.blocknr;
+                             size_t blocknr = task.blocknr;
                              auto range = BlockDofs (blocknr);
                             
-                             if (task.solveL)
+                             // if (task.solveL)
+                             if (task.type == MicroTask::LB_BLOCK)
+                               { // first L, then B
+
+                                 auto extdofs = BlockExtDofs (blocknr);
+                                 VectorMem<520,TVX> temp(extdofs.Size());
+                                 temp = 0;
+
+                                 for (auto i : range)
+                                   {
+                                     TVX hyi = hy(i);
+                                     
+                                     size_t size = range.end()-i-1;
+                                     if (size > 0)
+                                       {
+                                         FlatVector<TM> vlfact(size, &lfact[firstinrow[i]]);
+                                         
+                                         auto hyr = hy.Range(i+1, range.end());
+                                         for (size_t j = 0; j < size; j++)
+                                           hyr(j) -= Trans(vlfact(j)) * hyi;
+                                       }
+
+                                     size_t first = firstinrow[i] + range.end()-i-1;
+                                     FlatVector<TM> ext_lfact (extdofs.Size(), &lfact[first]);
+                                     for (size_t j = 0; j < temp.Size(); j++)
+                                       temp(j) += Trans(ext_lfact(j)) * hyi;
+                                   }
+                                 
+                                 for (size_t j : Range(extdofs))
+                                   MyAtomicAdd (hy(extdofs[j]), -temp(j));
+                               }
+                             
+                             else if (task.type == MicroTask::L_BLOCK)
                                {
                                  
                                  for (auto i : range)
                                    {
-                                     int size = range.end()-i-1;
+                                     size_t size = range.end()-i-1;
                                      if (size == 0) continue;
                                      FlatVector<TM> vlfact(size, &lfact[firstinrow[i]]);
 
                                      TVX hyi = hy(i);
                                      auto hyr = hy.Range(i+1, range.end());
-                                     for (int j = 0; j < hyr.Size(); j++)
+                                     for (size_t j = 0; j < hyr.Size(); j++)
                                        hyr(j) -= Trans(vlfact(j)) * hyi;
                                    }
 
@@ -1959,20 +1978,20 @@ namespace ngla
  
                                      VectorMem<520,TVX> temp(extdofs.Size());
                                      temp = 0;
- 
+                                     
                                      for (auto i : range)
-                                     {
+                                       {
                                          size_t first = firstinrow[i] + range.end()-i-1;
- 
+                                         
                                          FlatVector<TM> ext_lfact (all_extdofs.Size(), &lfact[first]);
  
                                          TVX hyi = hy(i);
-                                         for (int j = 0; j < temp.Size(); j++)
-                                         temp(j) += Trans(ext_lfact(myr.begin()+j)) * hyi;
-                                     }
- 
-                                     for (int j : Range(extdofs))
-                                     MyAtomicAdd (hy(extdofs[j]), -temp(j));
+                                         for (size_t j = 0; j < temp.Size(); j++)
+                                           temp(j) += Trans(ext_lfact(myr.begin()+j)) * hyi;
+                                       }
+                                     
+                                     for (size_t j : Range(extdofs))
+                                       MyAtomicAdd (hy(extdofs[j]), -temp(j));
                                    }
                                }
 
@@ -2000,24 +2019,57 @@ namespace ngla
 
     // advanced parallel version 
     RunParallelDependency (micro_dependency_trans, 
-                           [&] (int nr) 
+                           [&,hy] (int nr) 
                            {
                              auto task = microtasks[nr];
                              int blocknr = task.blocknr;
                              auto range = BlockDofs (blocknr);
                              
- 
-                             if (task.solveL)
-                               {
-                                 for (int i = range.end()-1; i >= range.begin(); i--)
+                             if (task.type == MicroTask::LB_BLOCK)
+                               { // first B then L
+
+                                 auto extdofs = BlockExtDofs (blocknr);
+                                 
+                                 VectorMem<520,TVX> temp(extdofs.Size());
+                                 for (auto j : Range(extdofs))
+                                   temp(j) = hy(extdofs[j]);
+                                 
+                                 for (auto i : range)
                                    {
-                                     int size = range.end()-i-1;
+                                     size_t first = firstinrow[i] + range.end()-i-1;
+                                     FlatVector<TM> ext_lfact (extdofs.Size(), &lfact[first]);
+                                     
+                                     TVX val(0.0);
+                                     for (auto j : Range(extdofs))
+                                       val += ext_lfact(j) * temp(j);
+                                     hy(i) -= val;
+                                   }
+                                 for (size_t i = range.end()-1; i-- > range.begin(); )
+                                   {
+                                     size_t size = range.end()-i-1;
                                      if (size == 0) continue;
                                      FlatVector<TM> vlfact(size, &lfact[firstinrow[i]]);
                                      auto hyr = hy.Range(i+1, range.end());
 
                                      TVX hyi = hy(i);
-                                     for (int j = 0; j < vlfact.Size(); j++)
+                                     for (size_t j = 0; j < vlfact.Size(); j++)
+                                       hyi -= vlfact(j) * hyr(j);
+                                     hy(i) = hyi;
+                                   }
+                                 
+                               }
+                             else if (task.type == MicroTask::L_BLOCK)                               
+                               {
+                                 // for (int i = range.end()-1; i >= range.begin(); i--)
+                                 for (size_t i = range.end()-1; i-- > range.begin(); )
+                                   {
+                                     size_t size = range.end()-i-1;
+                                     if (size == 0) continue;
+                                     FlatVector<TM> vlfact(size, &lfact[firstinrow[i]]);
+                                     auto hyr = hy.Range(i+1, range.end());
+
+                                     TVX hyi = hy(i);
+                                     for (size_t j = 0; j < vlfact.Size(); j++)
                                        hyi -= vlfact(j) * hyr(j);
                                      hy(i) = hyi;
                                    }
@@ -2034,7 +2086,7 @@ namespace ngla
                                      auto extdofs = all_extdofs.Range(myr);
                                      
                                      VectorMem<520,TVX> temp(extdofs.Size());
-                                     for (int j : Range(extdofs))
+                                     for (auto j : Range(extdofs))
                                        temp(j) = hy(extdofs[j]);
     
                                      for (auto i : range)
@@ -2043,7 +2095,7 @@ namespace ngla
                                          FlatVector<TM> ext_lfact (all_extdofs.Size(), &lfact[first]);
     
                                          TVX val(0.0);
-                                         for (int j : Range(extdofs))
+                                         for (auto j : Range(extdofs))
                                            val += ext_lfact(myr.begin()+j) * temp(j);
                                          MyAtomicAdd (hy(i), -val);
                                        }

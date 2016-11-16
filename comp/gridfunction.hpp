@@ -21,6 +21,9 @@ namespace ngcomp
     shared_ptr<DifferentialOperator> trace_diffop;
     shared_ptr<BilinearFormIntegrator> bfi;
     int comp;
+    GridFunctionCoefficientFunction (shared_ptr<DifferentialOperator> adiffop,
+                                     shared_ptr<DifferentialOperator> atrace_diffop = nullptr,
+                                     int acomp = 0);
   public:
     GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, int acomp = 0);
     GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, 
@@ -46,8 +49,8 @@ namespace ngcomp
     
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, 
 			   FlatMatrix<double> values) const;
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
-                           AFlatMatrix<double> values) const;
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const;
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values) const;
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
                            AFlatMatrix<double> values) const
     { Evaluate (ir, values); }
@@ -355,6 +358,13 @@ namespace ngcomp
                                     const double * dxdxref, int sdxdxref,
                                     double * values, int svalues);
 
+#ifdef __AVX__
+    virtual bool GetMultiSurfValue (size_t selnr, size_t facetnr, size_t npts,
+                                    const __m256d * xref, 
+                                    const __m256d * x, 
+                                    const __m256d * dxdxref, 
+                                    __m256d * values);
+#endif
 
     virtual bool GetSegmentValue (int segnr, double xref, double * values);
 
@@ -421,6 +431,14 @@ namespace ngcomp
                                     const double * dxdxref, int sdxdxref,
                                     double * values, int svalues);
 
+#ifdef __AVX__
+    virtual bool GetMultiSurfValue (size_t selnr, size_t facetnr, size_t npts,
+                                    const __m256d * xref, 
+                                    const __m256d * x, 
+                                    const __m256d * dxdxref, 
+                                    __m256d * values);
+#endif
+
 
     void Analyze(Array<double> & minima, Array<double> & maxima, Array<double> & averages, int component = -1);
     void Analyze(Array<double> & minima, Array<double> & maxima, Array<double> & averages_times_volumes, Array<double> & volumes, int component = -1);
@@ -430,6 +448,13 @@ namespace ngcomp
 
 }
 
+namespace ngstd
+{
+  template <>
+  struct PyWrapperTraits<ngcomp::GridFunction> {
+    typedef PyWrapperDerived<ngcomp::GridFunction, ngfem::CoefficientFunction> type;
+  };
+}
 
 
 

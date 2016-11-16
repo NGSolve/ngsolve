@@ -333,21 +333,21 @@ namespace ngcomp
       // LocalHeapMem<100000> lh("tmp");
       // AFlatVector<double> def(ir.GetNIP(), lh);
       // AFlatMatrix<double> grad(DIMS, ir.GetNIP(), lh);
-      STACK_ARRAY(SIMD<double>, mem0, (ir.GetNIP()+8)/SIMD<double>::Size());
-      AFlatVector<double> def(ir.GetNIP(), (double*)&mem0[0]);
-      STACK_ARRAY(SIMD<double>, mem1, (3*ir.GetNIP()+8)/SIMD<double>::Size());
-      AFlatMatrix<double> grad(DIMS, ir.GetNIP(), (double*)&mem1[0]);
+      STACK_ARRAY(SIMD<double>, mem0, ir.Size());
+      FlatVector<SIMD<double>> def(ir.Size(), &mem0[0]);
+      STACK_ARRAY(SIMD<double>, mem1, (3*ir.Size()));
+      FlatMatrix<SIMD<double>> grad(DIMS, ir.GetNIP(), &mem1[0]);
 
       for (int i = 0; i < DIMR; i++)
         {
           fel->Evaluate (ir, elvec.Slice(i,DIMR), def);
           fel->EvaluateGrad (ir, elvec.Slice(i,DIMR), grad);
           
-          for (int k = 0; k < ir.Size(); k++)
+          for (size_t k = 0; k < ir.Size(); k++)
             {
-              mir[k].Point()(i) += def.Get(k);
+              mir[k].Point()(i) += def(k);
               for (int j = 0; j < DIMS; j++)
-                mir[k].Jacobian()(i,j) += grad.Get(j,k);
+                mir[k].Jacobian()(i,j) += grad(j,k);
             }
         }
       
@@ -1673,7 +1673,7 @@ namespace ngcomp
 
   void NGSolveTaskManager (function<void(int,int)> func)
   {
-    cout << "call ngsolve taskmanager from netgen, tm = " << task_manager << endl;
+    // cout << "call ngsolve taskmanager from netgen, tm = " << task_manager << endl;
     if (!task_manager)
       func(0,1);
     else

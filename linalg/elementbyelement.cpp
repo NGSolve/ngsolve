@@ -118,8 +118,8 @@ namespace ngla
     static Timer timer("EBE-matrix::MultAdd");
     RegionTimer reg (timer);
 
-    int maxs = 0;
-    for (int i = 0; i < coldnums.Size(); i++)
+    size_t maxs = 0;
+    for (size_t i = 0; i < coldnums.Size(); i++)
       maxs = max2 (maxs, coldnums[i].Size());
 
     if (disjointrows)
@@ -181,8 +181,8 @@ namespace ngla
     static Timer timer("EBE-matrix::MultAdd");
     RegionTimer reg (timer);
 
-    int maxs = 0;
-    for (int i = 0; i < coldnums.Size(); i++)
+    size_t maxs = 0;
+    for (size_t i = 0; i < coldnums.Size(); i++)
       maxs = max2 (maxs, coldnums[i].Size());
 
 
@@ -261,8 +261,8 @@ namespace ngla
 //     cout << " ElementByElementMatrix<SCAL> :: MultTansAdd here " << endl << flush;
     static Timer timer("EBE-matrix::MultTransAdd");
     RegionTimer reg (timer);
-    int maxs = 0;
-    for (int i = 0; i < rowdnums.Size(); i++)
+    size_t maxs = 0;
+    for (size_t i = 0; i < rowdnums.Size(); i++)
       maxs = max2 (maxs, rowdnums[i].Size());
     
     if (disjointcols)
@@ -322,8 +322,8 @@ namespace ngla
   {
     static Timer timer("EBE-matrix<double>::MultTransAdd");
     RegionTimer reg (timer);
-    int maxs = 0;
-    for (int i = 0; i < rowdnums.Size(); i++)
+    size_t maxs = 0;
+    for (size_t i = 0; i < rowdnums.Size(); i++)
       maxs = max2 (maxs, rowdnums[i].Size());
     
     if (false) // disjointcols)

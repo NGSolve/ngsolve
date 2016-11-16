@@ -428,9 +428,9 @@ namespace ngstd
     ///
     int size;
     ///
-    Array<T_HASH,size_t> hash;
+    Array<T_HASH> hash;
     ///
-    Array<T,size_t> cont;
+    Array<T> cont;
     ///
     T_HASH invalid;
   public:

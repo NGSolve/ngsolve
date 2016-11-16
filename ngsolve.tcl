@@ -401,68 +401,118 @@ if { [catch { NGS_GetData } ] == 0 } {
 	} {
 
 	    toplevel $w
-
-	    tixTree $w.mtre -options { separator "\\" }
-	    pack $w.mtre -fill both -expand y
-	    set hlist [$w.mtre subwidget hlist]
-
-            $hlist configure -selectforeground black
-            $hlist configure -selectbackground grey
-
-	    $hlist add constants -itemtype text -text "Constants"
-	    set constants [NGS_GetData constants]
+        #tk::treeview $w.tree
+        #pack $w.tree -fill both -expand y
+        #$w.tree insert {} end -id widgets -text "Widget Tour"
+        ttk::treeview $w.tree
+        pack $w.tree -fill both -expand y
+        $w.tree insert {} end -id constants -text "Constants"
+        $w.tree insert {} end -id variables -text "Variables"
+        $w.tree insert {} end -id coefficients -text "Coefficients"
+        $w.tree insert {} end -id spaces -text "Spaces"
+        $w.tree insert {} end -id biforms -text "Bilinear-forms"
+        $w.tree insert {} end -id liforms -text "Linear-forms"
+        $w.tree insert {} end -id gfs -text "Grid-functions"
+        $w.tree insert {} end -id preconds -text "Preconditioners"
+        $w.tree insert {} end -id nps -text "NumProcs"
+        set constants [NGS_GetData constants]
 	    foreach co $constants {
-		$hlist add constants\\$co -itemtype text -text $co
+        $w.tree insert {constants} end -text $co
 	    }
-
-	    $hlist add variables -itemtype text -text "Variables"
-	    set variables [NGS_GetData variableswithval]
+        set variables [NGS_GetData variableswithval]
 	    foreach va $variables {
-		$hlist add variables\\$va -itemtype text -text $va
+        $w.tree insert {variables} end -text $va
 	    }
-
-	    $hlist add coeffs -itemtype text -text "Coefficients"
 	    set coefs [NGS_GetData coefficients]
 	    foreach coef $coefs {
-		$hlist add coeffs\\$coef -itemtype text -text $coef
-	    }
-
-
-	    $hlist add spaces -itemtype text -text "Spaces"
+		$w.tree insert {coefficients} end -text $coef
+	    }        
 	    set spaces [NGS_GetData spaces]
 	    foreach space $spaces {
-		$hlist add spaces\\$space -itemtype text -text $space
+		$w.tree insert {spaces} end -text $space
 	    }
-
-	    $hlist add biforms -itemtype text -text "Bilinear-forms"
 	    set biforms [NGS_GetData bilinearforms]
 	    foreach biform $biforms {
-		$hlist add biforms\\$biform -itemtype text -text $biform
+		$w.tree insert {biforms} end -text $biform
 	    }
-
-	    $hlist add liforms -itemtype text -text "Linear-forms"
 	    set liforms [NGS_GetData linearforms]
 	    foreach liform $liforms {
-		$hlist add liforms\\$liform -itemtype text -text $liform
+		$w.tree insert {liforms} end -text $liform
 	    }
-
-	    $hlist add gridfuns -itemtype text -text "Grid-functions"
 	    set gridfuns [NGS_GetData gridfunctions]
 	    foreach gridfun $gridfuns {
-		$hlist add gridfuns\\$gridfun -itemtype text -text $gridfun
+		$w.tree insert {gfs} end -text $gridfun
 	    }
-
-	    $hlist add preconds -itemtype text -text "Preconditioners"
 	    set preconds [NGS_GetData preconditioners]
 	    foreach precond $preconds {
-		$hlist add preconds\\$precond -itemtype text -text $precond
+		$w.tree insert {preconds} end -text $precond
 	    }
-
-	    $hlist add numprocs -itemtype text -text "NumProcs"
 	    set numprocs [NGS_GetData numprocs]
 	    foreach numproc $numprocs {
-		$hlist add numprocs\\$numproc -itemtype text -text $numproc
-	    }
+		$w.tree insert {nps} end -text $numproc        
+        }
+        #$w.tree configure -color black
+	    # tixTree $w.mtre -options { separator "\\" }
+	    # pack $w.mtre -fill both -expand y
+	    # set hlist [$w.mtre subwidget hlist]
+
+            # $hlist configure -selectforeground black
+            # $hlist configure -selectbackground grey
+
+	    # $hlist add constants -itemtype text -text "Constants"
+	    # set constants [NGS_GetData constants]
+	    # foreach co $constants {
+		# $hlist add constants\\$co -itemtype text -text $co
+	    # }
+
+	    # $hlist add variables -itemtype text -text "Variables"
+	    # set variables [NGS_GetData variableswithval]
+	    # foreach va $variables {
+		# $hlist add variables\\$va -itemtype text -text $va
+	    # }
+
+	    # $hlist add coeffs -itemtype text -text "Coefficients"
+	    # set coefs [NGS_GetData coefficients]
+	    # foreach coef $coefs {
+		# $hlist add coeffs\\$coef -itemtype text -text $coef
+	    # }
+
+
+	    # $hlist add spaces -itemtype text -text "Spaces"
+	    # set spaces [NGS_GetData spaces]
+	    # foreach space $spaces {
+		# $hlist add spaces\\$space -itemtype text -text $space
+	    # }
+
+	    # $hlist add biforms -itemtype text -text "Bilinear-forms"
+	    # set biforms [NGS_GetData bilinearforms]
+	    # foreach biform $biforms {
+		# $hlist add biforms\\$biform -itemtype text -text $biform
+	    # }
+
+	    # $hlist add liforms -itemtype text -text "Linear-forms"
+	    # set liforms [NGS_GetData linearforms]
+	    # foreach liform $liforms {
+		# $hlist add liforms\\$liform -itemtype text -text $liform
+	    # }
+
+	    # $hlist add gridfuns -itemtype text -text "Grid-functions"
+	    # set gridfuns [NGS_GetData gridfunctions]
+	    # foreach gridfun $gridfuns {
+		# $hlist add gridfuns\\$gridfun -itemtype text -text $gridfun
+	    # }
+
+	    # $hlist add preconds -itemtype text -text "Preconditioners"
+	    # set preconds [NGS_GetData preconditioners]
+	    # foreach precond $preconds {
+		# $hlist add preconds\\$precond -itemtype text -text $precond
+	    # }
+
+	    # $hlist add numprocs -itemtype text -text "NumProcs"
+	    # set numprocs [NGS_GetData numprocs]
+	    # foreach numproc $numprocs {
+		# $hlist add numprocs\\$numproc -itemtype text -text $numproc
+	    # }
 
 	    #	    $hlist add varis -itemtype text -text "Variables"
 	    #	    set varis [NGS_GetData variables]
@@ -519,21 +569,35 @@ if { [catch { NGS_GetData } ] == 0 } {
 	    # 		}
 	    # 	    }
 
-	    $w.mtre autosetmode
+        # Old version
+	    # $w.mtre autosetmode
 	    
 
-	    bind $hlist <Double-1> {
-		set solname [[.components_dlg.mtre subwidget hlist] info selection]
-		puts $solname
-		set seppos [string first \\ $solname]
-		if { $seppos != -1 } {
-		    set field [string range $solname 1 [expr $seppos-1]]
-		    set name [string range $solname [expr $seppos+1] [expr [string length $solname]-2]]
-		    puts "field = $field, name = $name"
-		    NGS_PrintPDE $field $name
-		}
-	    }
+	    # bind $hlist <Double-1> {
+		# set solname [[.components_dlg.mtre subwidget hlist] info selection]
+		# puts $solname
+		# set seppos [string first \\ $solname]
+		# if { $seppos != -1 } {
+		    # set field [string range $solname 1 [expr $seppos-1]]
+		    # set name [string range $solname [expr $seppos+1] [expr [string length $solname]-2]]
+		    # puts "field = $field, name = $name"
+		    # NGS_PrintPDE $field $name
+		# }
+	    # }
 
+            # old version end
+            #new version
+            bind $w.tree <Double-1> {
+                set name [.components_dlg.tree item [.components_dlg.tree selection] -text ]
+                # set field [.components_dlg.tree item [.components_dlg.tree parent [.components_dlg.tree selection] ] -text]
+                set field [.components_dlg.tree parent [.components_dlg.tree selection] ]
+                
+                NGS_PrintPDE $field $name
+                # puts "field = $field, name = $name"
+                
+            }
+            #new version end
+        
 	    button $w.cl -text "Close" -command {
 		destroy .components_dlg
 	    }

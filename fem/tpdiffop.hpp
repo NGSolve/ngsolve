@@ -7,8 +7,8 @@ namespace ngfem
   {
     ArrayMem<shared_ptr<DifferentialOperator>,2> evaluators;
   public:
-    NGS_DLL_HEADER TPDifferentialOperator() : DifferentialOperator(1,0,0,1) { ; }
-    NGS_DLL_HEADER TPDifferentialOperator(FlatArray<shared_ptr<DifferentialOperator> > aevaluators) : DifferentialOperator(1,0,0,1)
+    NGS_DLL_HEADER TPDifferentialOperator() : DifferentialOperator(1,1,false,1) { ; }
+    NGS_DLL_HEADER TPDifferentialOperator(FlatArray<shared_ptr<DifferentialOperator> > aevaluators,int adim,int ablockdim,bool abnd,int adifforder) : DifferentialOperator(adim,ablockdim,abnd,adifforder)
       {
         evaluators.SetSize( aevaluators.Size() );
         evaluators = aevaluators;
@@ -16,26 +16,10 @@ namespace ngfem
     /// destructor
     NGS_DLL_HEADER virtual ~TPDifferentialOperator () {}
     /// dimension of range
-    NGS_DLL_HEADER virtual int Dim() const
-    {
-        int dim = 0;
-        for (auto eval : evaluators)
-          dim = max2(dim, eval->Dim());
-        return dim;
-    }
     /// number of copies of finite element by BlockDifferentialOperator
-    NGS_DLL_HEADER virtual int BlockDim() const { return 1; }
     /// does it live on the boundary ?
-    virtual bool Boundary() const { return false; }
 
     /// total polynomial degree is reduced by this order (i.e. minimal difforder)
-    virtual int DiffOrder() const
-    {
-        int ord = evaluators[0]->DiffOrder();
-        for (auto eval : evaluators)
-          ord = min2(ord, eval->DiffOrder());
-        return ord;
-    }
 
     virtual IntRange UsedDofs(const FiniteElement & fel) const { return IntRange(0, fel.GetNDof()); }
 

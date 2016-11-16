@@ -20,11 +20,11 @@ public:
     // Return 1D Hermite integration Rule
     void HermiteRule(Array<double> & nodes,Array<double> & weights, int order=-1) const;
     // Calculates 1-dim Lagrange Polynomials evaluated at x
-    void CalcShape1D(const double x,SliceVector<> shape) const;
+    void CalcShape1D(const double x,BareSliceVector<> shape) const;
     // Calculates d-dim shape functions evaluated at ip
     template<Representation REP>
-    void CalcShape1(const IntegrationPoint & ip, SliceVector<> shape) const;
-    virtual void CalcShape(const IntegrationPoint & ip, SliceVector<> shape) const
+    void CalcShape1(const IntegrationPoint & ip, BareSliceVector<> shape) const;
+    virtual void CalcShape(const IntegrationPoint & ip, BareSliceVector<> shape) const
     {
         CalcShape1<NODAL>(ip,shape);
     }

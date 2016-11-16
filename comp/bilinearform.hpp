@@ -163,8 +163,7 @@ namespace ngcomp
     void SetLinearForm (LinearForm * alf) { linearform = alf; }
     
     /// preconditioner gets element-matrix
-    void SetPreconditioner (Preconditioner * pre) 
-    { preconditioners.Append (pre); }
+    void SetPreconditioner (Preconditioner * pre);
 
     /// generates matrix graph
     virtual MatrixGraph * GetGraph (int level, bool symmetric);
@@ -910,5 +909,12 @@ namespace ngcomp
   
 }
 
+namespace ngstd
+{
+  template <>
+  struct PyWrapperTraits<ngcomp::BilinearForm> {
+    typedef PyWrapperClass<ngcomp::BilinearForm> type;
+  };
+}
 
 #endif

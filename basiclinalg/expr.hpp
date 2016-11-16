@@ -14,11 +14,9 @@
 
 namespace ngbla
 {
-  
-  // not yet functional
   enum ORDERING { ColMajor, RowMajor };
 
-  template <typename T = double, ORDERING ORD = RowMajor> class FlatMatrix;
+  template <typename T = double, ORDERING ORD = RowMajor, typename TIND = int> class FlatMatrix;
   template <typename T = double, ORDERING ORD = RowMajor> class Matrix;
 
   template <int H, int W, typename T> class Mat;
@@ -217,22 +215,22 @@ namespace ngbla
 
   /// Height of matrix
   template <class TM> 
-  inline int Height (const TM & m)
+  inline size_t Height (const TM & m)
   {
     return m.Height();
   }
 
   /// Width of matrix
   template <class TM> 
-  inline int Width (const TM & m)
+  inline size_t Width (const TM & m)
   {
     return m.Width();
   }
 
-  template <> inline int Height<double> (const double&) { return 1; }
-  template <> inline int Height<Complex> (const Complex&) { return 1; }
-  template <> inline int Width<double> (const double&) { return 1; }
-  template <> inline int Width<Complex> (const Complex&) { return 1; }
+  template <> inline size_t Height<double> (const double&) { return 1; }
+  template <> inline size_t Height<Complex> (const Complex&) { return 1; }
+  template <> inline size_t Width<double> (const double&) { return 1; }
+  template <> inline size_t Width<Complex> (const Complex&) { return 1; }
 
 
   /// Complex to double assignment called
@@ -320,8 +318,8 @@ namespace ngbla
 
 
     /// height 
-    INLINE int Height() const { return Spec().T::Height(); }
-    INLINE int Width() const { return Spec().T::Width(); }
+    INLINE size_t Height() const { return Spec().T::Height(); }
+    INLINE size_t Width() const { return Spec().T::Width(); }
 
     // INLINE auto operator() (int i) const -> decltype (this->Spec()(i)) { return this->Spec()(i); }
     // INLINE auto operator() (int i, int j) const -> decltype (this->Spec()(i,j)) { return this->Spec()(i,j); }
@@ -329,25 +327,25 @@ namespace ngbla
     void Dump (ostream & ost) const { Spec().T::Dump(ost); }
 
 
-    INLINE RowExpr<const T> Row (int r) const
+    INLINE RowExpr<const T> Row (size_t r) const
     {
       return RowExpr<const T> (static_cast<const T&> (*this), r);
     }
 
-    INLINE ColExpr<T> Col (int r) const
+    INLINE ColExpr<T> Col (size_t r) const
     {
       return RowExpr<T> (static_cast<T&> (*this), r);
     }
 
 
     INLINE SubMatrixExpr<T>
-    Rows (int first, int next)
+    Rows (size_t first, size_t next)
     { 
       return SubMatrixExpr<T> (static_cast<T&> (*this), first, 0, next-first, Width()); 
     }
 
     SubMatrixExpr<T>
-    Cols (int first, int next) 
+    Cols (size_t first, size_t next) 
     { 
       return SubMatrixExpr<T> (static_cast<T&> (*this), 0, first, Height(), next-first);
     }
@@ -403,10 +401,10 @@ namespace ngbla
 
     SymExpr (const T & aa) : a(aa) { ; }
 
-    INLINE auto operator() (int i) const -> decltype (a(i)) { return a(i); }
-    INLINE auto operator() (int i, int j) const -> decltype (a(i,j)){ return a(i,j); }
-    INLINE int Height() const { return a.Height(); }
-    INLINE int Width() const { return a.Width(); }
+    INLINE auto operator() (size_t i) const { return a(i); }
+    INLINE auto operator() (size_t i, size_t j) const { return a(i,j); }
+    INLINE size_t Height() const { return a.Height(); }
+    INLINE size_t Width() const { return a.Width(); }
     enum { IS_LINEAR = T::IS_LINEAR };
     void Dump (ostream & ost) const
     { ost << "Sym ("; a.Dump(ost); ost << ")"; }
@@ -431,8 +429,8 @@ namespace ngbla
   public:
     LapackExpr (const TA & aa) : a(aa) { ; }
     const TA & A() const { return a; }
-    int Height() const { return a.Height(); }
-    int Width() const { return a.Width(); }
+    size_t Height() const { return a.Height(); }
+    size_t Width() const { return a.Width(); }
   };
 
 
@@ -456,8 +454,8 @@ namespace ngbla
   public:
     INLINE LocalHeapExpr (const TA & aa, LocalHeap & alh) : a(aa), lh(&alh) { ; }
     INLINE const TA & A() const { return a; }
-    INLINE int Height() const { return a.Height(); }
-    INLINE int Width() const { return a.Width(); }
+    INLINE size_t Height() const { return a.Height(); }
+    INLINE size_t Width() const { return a.Width(); }
     INLINE LocalHeap & GetLocalHeap() const { return *lh; }
   };
   
@@ -469,9 +467,6 @@ namespace ngbla
 
 
 
-
-
-  
   template <class TA, class TB> class MultExpr;
   
   
@@ -496,7 +491,6 @@ namespace ngbla
 
 
 
-
     template<typename TOP, typename TB>
     INLINE T & Assign (const Expr<TB> & v)
     {
@@ -511,12 +505,12 @@ namespace ngbla
 
       if (T::COL_MAJOR)
         {
-	  int h = Expr<T>::Height();
-	  int w = Expr<T>::Width();
+	  size_t h = Expr<T>::Height();
+	  size_t w = Expr<T>::Width();
 
           if (h > 0)
-            for (int j = 0; j < w; j++)
-              for (int i = 0; i < h; i++)
+            for (size_t j = 0; j < w; j++)
+              for (size_t i = 0; i < h; i++)
                 TOP()(Spec()(i,j), v.Spec()(i,j));
           return Spec();
         }
@@ -526,33 +520,33 @@ namespace ngbla
 	{
 	  if (T::IS_LINEAR)
 	    {
-	      int hw = Expr<T>::Height() * Expr<T>::Width();
-	      for (int i = 0; i < hw; i++)
-		TOP()(Spec()(i),v.Spec()(i));
+	      auto hw = Expr<T>::Height() * Expr<T>::Width();
+              for (auto i : Range(hw))  // int i = 0; i < hw; i++)
+                TOP()(Spec()(i),v.Spec()(i));
 	    }
 	  else
 	    {
-	      int h = Expr<T>::Height();
-	      int w = Expr<T>::Width();
+	      size_t h = Expr<T>::Height();
+	      size_t w = Expr<T>::Width();
               if (w > 0)
-                for (int i = 0, k = 0; i < h; i++)
-                  for (int j = 0; j < w; j++, k++)
+                for (size_t i = 0, k = 0; i < h; i++)
+                  for (size_t j = 0; j < w; j++, k++)
                     TOP() (Spec()(i,j), v.Spec()(k));
 	    }
 	}
       else
 	{
-	  int h = Expr<T>::Height();
-	  int w = Expr<T>::Width();
+	  size_t h = Expr<T>::Height();
+	  size_t w = Expr<T>::Width();
           if (w > 0)
             {
               if (T::IS_LINEAR)
-                for (int i = 0, k = 0; i < h; i++)
-                  for (int j = 0; j < w; j++, k++)
+                for (size_t i = 0, k = 0; i < h; i++)
+                  for (size_t j = 0; j < w; j++, k++)
                     TOP() (Spec()(k), v.Spec()(i,j));
               else
-                for (int i = 0; i < h; i++)
-                  for (int j = 0; j < w; j++)
+                for (size_t i = 0; i < h; i++)
+                  for (size_t j = 0; j < w; j++)
                     TOP() (Spec()(i,j), v.Spec()(i,j));
             }
         }
@@ -645,10 +639,10 @@ namespace ngbla
 					 Height(), Width(),
 					 v.Height(), v.Width());
 #endif
-      int h = Height();
-      for (int i = 0; i < h; i++)
+      size_t h = Height();
+      for (size_t i = 0; i < h; i++)
 	{
-	  for (int j = 0; j < i; j++)
+	  for (size_t j = 0; j < i; j++)
 	    {
 	      double val = v.Spec()(i,j);
 	      Spec()(i,j) += val;
@@ -666,13 +660,13 @@ namespace ngbla
     {
       if (T::IS_LINEAR)
 	{
-	  int hw = Height() * Width();
-	  for (int i = 0; i < hw; i++)
+	  size_t hw = Height() * Width();
+	  for (size_t i = 0; i < hw; i++)
 	    Spec()(i) *= s;
 	}
       else
-	for (int i = 0; i < Height(); i++)
-	  for (int j = 0; j < Width(); j++)
+	for (size_t i = 0; i < Height(); i++)
+	  for (size_t j = 0; j < Width(); j++)
 	    Spec()(i,j) *= s;
 	
       return Spec();
@@ -759,13 +753,13 @@ namespace ngbla
     }
 
     SubMatrixExpr<const T>
-    INLINE Rows (int first, int next) const
+    INLINE Rows (size_t first, size_t next) const
     { 
       return SubMatrixExpr<const T> (static_cast<const T&> (*this), first, 0, next-first, Width()); 
     }
 
     SubMatrixExpr<const T>
-    INLINE Cols (int first, int next) const
+    INLINE Cols (size_t first, size_t next) const
     { 
       return SubMatrixExpr<const T> (static_cast<const T&> (*this), 0, first, Height(), next-first);
     }
@@ -830,11 +824,11 @@ namespace ngbla
     
     INLINE SumExpr (const TA & aa, const TB & ab) : a(aa), b(ab) { ; }
 
-    INLINE auto operator() (int i) const -> decltype(a(i)+b(i)) { return a(i)+b(i); }
-    INLINE auto operator() (int i, int j) const -> decltype(a(i,j)+b(i,j)) { return a(i,j)+b(i,j); }
+    INLINE auto operator() (size_t i) const { return a(i)+b(i); }
+    INLINE auto operator() (size_t i, size_t j) const { return a(i,j)+b(i,j); }
 
-    INLINE int Height() const { return a.Height(); }
-    INLINE int Width() const { return a.Width(); }
+    INLINE size_t Height() const { return a.Height(); }
+    INLINE size_t Width() const { return a.Width(); }
 
     void Dump (ostream & ost) const
     { ost << "("; a.Dump(ost); ost << ") + ("; b.Dump(ost); ost << ")"; }
@@ -868,10 +862,10 @@ namespace ngbla
     
     INLINE SubExpr (const TA & aa, const TB & ab) : a(aa), b(ab) { ; }
 
-    INLINE auto operator() (int i) const -> decltype(a(i)-b(i)) { return a(i)-b(i); }
-    INLINE auto operator() (int i, int j) const -> decltype(a(i,j)-b(i,j)) { return a(i,j)-b(i,j); }
-    INLINE int Height() const { return a.Height(); }
-    INLINE int Width() const { return a.Width(); }
+    INLINE auto operator() (size_t i) const { return a(i)-b(i); }
+    INLINE auto operator() (size_t i, size_t j) const { return a(i,j)-b(i,j); }
+    INLINE size_t Height() const { return a.Height(); }
+    INLINE size_t Width() const { return a.Width(); }
   };
 
 
@@ -902,10 +896,10 @@ namespace ngbla
   public:
     MinusExpr (const TA & aa) : a(aa) { ; }
 
-    auto operator() (int i) const -> decltype(-a(i)) { return -a(i); }
-    auto operator() (int i, int j) const -> decltype(-a(i,j)) { return -a(i,j); }
-    int Height() const { return a.Height(); }
-    int Width() const { return a.Width(); }
+    auto operator() (size_t i) const { return -a(i); }
+    auto operator() (size_t i, size_t j) const { return -a(i,j); }
+    size_t Height() const { return a.Height(); }
+    size_t Width() const { return a.Width(); }
 
     enum { IS_LINEAR = TA::IS_LINEAR };
   };
@@ -931,11 +925,11 @@ namespace ngbla
 
     INLINE PW_Mult_Expr (const TA & aa, const TB & ab) : a(aa), b(ab) { ; }
 
-    INLINE auto operator() (int i) const -> decltype(a(i)*b(i)) { return a(i)*b(i); }
-    INLINE auto operator() (int i, int j) const -> decltype(a(i,j)*b(i,j)) { return a(i,j)*b(i,j); }
+    INLINE auto operator() (size_t i) const -> decltype(a(i)*b(i)) { return a(i)*b(i); }
+    INLINE auto operator() (size_t i, size_t j) const -> decltype(a(i,j)*b(i,j)) { return a(i,j)*b(i,j); }
 
-    INLINE int Height() const { return a.Height(); }
-    INLINE int Width() const { return a.Width(); }
+    INLINE size_t Height() const { return a.Height(); }
+    INLINE size_t Width() const { return a.Width(); }
 
     void Dump (ostream & ost) const
     { ost << "("; a.Dump(ost); ost << ") + ("; b.Dump(ost); ost << ")"; }
@@ -966,11 +960,11 @@ namespace ngbla
 
     INLINE ScaleExpr (const TA & aa, TS as) : a(aa), s(as) { ; }
 
-    INLINE auto operator() (int i) const -> decltype(s*a(i)) { return s * a(i); }
-    INLINE auto operator() (int i, int j) const -> decltype(s*a(i,j)) { return s * a(i,j); }
+    INLINE auto operator() (size_t i) const -> decltype(s*a(i)) { return s * a(i); }
+    INLINE auto operator() (size_t i, size_t j) const -> decltype(s*a(i,j)) { return s * a(i,j); }
 
-    INLINE int Height() const { return a.Height(); }
-    INLINE int Width() const { return a.Width(); }
+    INLINE size_t Height() const { return a.Height(); }
+    INLINE size_t Width() const { return a.Width(); }
     void Dump (ostream & ost) const
     { ost << "Scale, s=" << s << " * "; a.Dump(ost);  }
   };
@@ -1021,31 +1015,29 @@ namespace ngbla
 
     INLINE MultExpr (const TA & aa, const TB & ab) : a(aa), b(ab) { ; }
 
-    INLINE auto operator() (int i) const -> decltype(a(0,0)*b(0,0))
+    INLINE auto operator() (size_t i) const -> decltype(a(0,0)*b(0,0))
     { return operator()(i,0); }  
 
-    INLINE auto operator() (int i, int j) const -> decltype (a(0,0)*b(0,0))
+    INLINE auto operator() (size_t i, size_t j) const -> decltype (a(0,0)*b(0,0))
     { 
-      int wa = a.Width();
+      size_t wa = a.Width();
 
       if (wa >= 1)
 	{
 	  auto sum = a(i,0) * b(0,j);
-	  for (int k = 1; k < wa; k++)
+	  for (size_t k = 1; k < wa; k++)
 	    sum += a(i,k) * b(k,j);
           return sum;
 	}
 
       decltype (a(0,0)*b(0,0)) sum (0);
       return sum;
-      // return decltype(a(0,0)*b(0,0)) (0);
-      // return 0;
     }
 
     INLINE const TA & A() const { return a; }
     INLINE const TB & B() const { return b; }
-    INLINE int Height() const { return a.Height(); }
-    INLINE int Width() const { return b.Width(); }
+    INLINE size_t Height() const { return a.Height(); }
+    INLINE size_t Width() const { return b.Width(); }
     enum { IS_LINEAR = 0 };
   };
 
@@ -1059,16 +1051,16 @@ namespace ngbla
 
     MultExpr (const DiagMat<H,SCALA> & aa, const TB & ab) : a(aa), b(ab) { ; }
 
-    auto operator() (int i) const -> decltype(a(0,0)*b(0,0))
+    auto operator() (size_t i) const -> decltype(a(0,0)*b(0,0))
     { return a[i] * b(i); }  
 
-    auto operator() (int i, int j) const -> decltype (a(0,0)*b(0,0))
+    auto operator() (size_t i, size_t j) const -> decltype (a(0,0)*b(0,0))
     { return a[i] * b(i,j); }
 
     const DiagMat<H,SCALA> & A() const { return a; }
     const TB & B() const { return b; }
-    int Height() const { return a.Height(); }
-    int Width() const { return b.Width(); }
+    size_t Height() const { return a.Height(); }
+    size_t Width() const { return b.Width(); }
     enum { IS_LINEAR = 0 };
   };
 
@@ -1099,11 +1091,11 @@ namespace ngbla
   public:
     INLINE TransExpr (const TA & aa) : a(aa) { ; }
 
-    INLINE int Height() const { return a.Width(); }
-    INLINE int Width() const { return a.Height(); }
+    INLINE size_t Height() const { return a.Width(); }
+    INLINE size_t Width() const { return a.Height(); }
 
-    INLINE auto operator() (int i, int j) const -> decltype(Trans (a(j,i))) { return Trans (a(j,i)); }
-    INLINE auto operator() (int i) const -> decltype(Trans(a(0,0))) { return Trans(a(0,0)); }
+    INLINE auto operator() (size_t i, size_t j) const -> decltype(Trans (a(j,i))) { return Trans (a(j,i)); }
+    INLINE auto operator() (size_t i) const -> decltype(Trans(a(0,0))) { return Trans(a(0,0)); }
     // auto Row (int i) const -> decltype (a.Col(i)) { return a.Col(i); }
     // auto Col (int i) const -> decltype (a.Row(i)) { return a.Row(i); }
     enum { IS_LINEAR = 0 };
@@ -1200,13 +1192,13 @@ namespace ngbla
 
     RowsArrayExpr (const TA & aa, FlatArray<int> arows) : a(aa), rows(arows) { ; }
 
-    int Height() const { return rows.Size(); }
-    int Width() const { return a.Width(); }
+    auto Height() const { return rows.Size(); }
+    auto Width() const { return a.Width(); }
 
-    auto operator() (int i, int j) const -> decltype(a(rows[i])) { return a(rows[i], j); }
-    auto operator() (int i) const -> decltype(a(rows[i])) { return a(rows[i]); }
+    auto operator() (size_t i, size_t j) const -> decltype(a(rows[i])) { return a(rows[i], j); }
+    auto operator() (size_t i) const -> decltype(a(rows[i])) { return a(rows[i]); }
 
-    auto Row (int i) const -> decltype (a.Row(rows[i])) { return a.Row(rows[i]); }
+    auto Row (size_t i) const -> decltype (a.Row(rows[i])) { return a.Row(rows[i]); }
 
     enum { IS_LINEAR = 0 };
 
@@ -1348,7 +1340,7 @@ namespace ngbla
     if (a.Height() == 0) return 0; 
 
     auto sum = InnerProduct (a.Spec()(0), b.Spec()(0));
-    for (int i = 1; i < a.Height(); i++)
+    for (size_t i = 1; i < a.Height(); i++)
       sum += InnerProduct (a.Spec()(i), b.Spec()(i));
     return sum;
   }
@@ -1370,7 +1362,7 @@ namespace ngbla
   {
     // typedef typename TA::TELEM TELEM;
     decltype (a.Spec()(0,0)) sum = 0;
-    for (int i = 0; i < Height(a); i++)
+    for (size_t i = 0; i < Height(a); i++)
       sum += a.Spec()(i,i);
     return sum;
   }
@@ -1401,11 +1393,11 @@ namespace ngbla
     // double sum = 0;
     decltype(L2Norm2(v.Spec()(0))) sum = 0.0;
     if (TA::IS_LINEAR)
-      for (int i = 0; i < v.Height()*v.Width(); i++)
+      for (size_t i = 0; i < v.Height()*v.Width(); i++)
 	sum += L2Norm2 (v.Spec()(i));  
     else
-      for (int i = 0; i < v.Height(); i++)
-	for (int j = 0; j < v.Width(); j++)
+      for (size_t i = 0; i < v.Height(); i++)
+	for (size_t j = 0; j < v.Width(); j++)
 	  sum += L2Norm2 (v.Spec()(i,j));  
     
     return sum;
@@ -1447,11 +1439,11 @@ namespace ngbla
     double sum = 0;
 
     if (TA::IS_LINEAR)
-      for (int i = 0; i < v.Height()*v.Width(); i++)
+      for (size_t i = 0; i < v.Height()*v.Width(); i++)
 	sum = max(sum, MaxNorm( v.Spec()(i)) );  
     else
-      for (int i = 0; i < v.Height(); i++)
-	for (int j = 0; j < v.Width(); j++)
+      for (size_t i = 0; i < v.Height(); i++)
+	for (size_t j = 0; j < v.Width(); j++)
 	  sum = max(sum, MaxNorm ( v.Spec()(i,j)) );  
     
     return sum;
