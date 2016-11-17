@@ -33,6 +33,7 @@ option( USE_NUMA         "compile with NUMA-aware code")
 option( USE_CCACHE       "use ccache")
 option( INSTALL_DEPENDENCIES "install dependencies like netgen or solver libs, useful for packaging" OFF )
 
+add_subdirectory(external_dependencies/netgen)
 #######################################################################
 if(USE_CCACHE)
   find_program(CCACHE_FOUND ccache)
@@ -344,19 +345,12 @@ if(NETGEN_SOURCE_DIR)
     find_path(NETGEN_INTERNAL_INCLUDE_DIR nginterface_v2_impl.hpp PATHS ${NETGEN_SOURCE_DIR} ${NETGEN_SOURCE_DIR}/libsrc/include)
 else(NETGEN_SOURCE_DIR)
   set(BUILD_NETGEN ON CACHE INTERNAL "is set if netgen is built as external project")
-  ExternalProject_Add(
-      netgen
-      PREFIX netgen
-#       GIT_SUBMODULE netgen
-#       GIT_REPOSITORY git://git.code.sf.net/p/netgen-mesher/git
-#       GIT_TAG master
-      CMAKE_GENERATOR ${CMAKE_GENERATOR}
-      CMAKE_ARGS "-DUSE_GUI=${USE_GUI}" "-DINSTALL_DIR=${INSTALL_DIR}" "-DUSE_CCACHE=${USE_CCACHE}"
-      CMAKE_CACHE_ARGS "-DCMAKE_PREFIX_PATH:PATH=${CMAKE_PREFIX_PATH}"
-      SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies/netgen"
-      BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/external_dependencies/netgen"
+  set(NETGEN_INTERNAL_INCLUDE_DIR
+    "${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies/netgen/libsrc/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies/netgen/libsrc/general"
+    "${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies/netgen/libsrc/visualization"
+    CACHE INTERNAL "Netgen include directories"
   )
-  set(NETGEN_INTERNAL_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies/netgen/libsrc/include" CACHE INTERNAL "Netgen include dir")
 
 endif(NETGEN_SOURCE_DIR)
 
@@ -385,17 +379,6 @@ add_subdirectory(py_tutorials)
 add_subdirectory(tests)
 add_subdirectory(external_dependencies)
 
-if(BUILD_NETGEN)
-  # needed to wait until netgen is build before trying to include its headers
-  add_dependencies(ngla netgen)
-  add_dependencies(ngbla netgen)
-  add_dependencies(ngfem netgen)
-  add_dependencies(solve netgen)
-  add_dependencies(ngcomp netgen)
-  add_dependencies(ngmg netgen)
-  add_dependencies(ngstd netgen)
-  add_dependencies(parallel netgen)
-endif(BUILD_NETGEN)
 #######################################################################
 # generate ngscxx compiler wrapper
 
@@ -588,8 +571,8 @@ configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/cmake_uninstall.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
     IMMEDIATE @ONLY)
-add_custom_target(uninstall
-    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
+# add_custom_target(uninstall
+#     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
 
 #######################################################################
 # Configure message
