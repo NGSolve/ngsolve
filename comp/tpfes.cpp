@@ -57,7 +57,7 @@ namespace ngcomp
     for (auto eval : evaluators)
       difforder = min2(difforder, eval->DiffOrder());
     int blockdim = 1;
-    evaluator = shared_ptr<DifferentialOperator>( new TPDifferentialOperator(evaluators, dim, blockdim, VOL, difforder) );
+    evaluator[VOL] = shared_ptr<DifferentialOperator>( new TPDifferentialOperator(evaluators, dim, blockdim, VOL, difforder) );
   }
 
   TPHighOrderFESpace::TPHighOrderFESpace (shared_ptr<FESpace> aspace_x,FlatArray<shared_ptr<FESpace>> aspaces_y, const Flags & flags, bool parseflags)
@@ -116,7 +116,7 @@ namespace ngcomp
     for (auto eval : evaluators)
       difforder = min2(difforder, eval->DiffOrder());
     int blockdim = 1;
-    evaluator = shared_ptr<DifferentialOperator>( new TPDifferentialOperator(evaluators, dim, blockdim, VOL, difforder) );
+    evaluator[VOL] = shared_ptr<DifferentialOperator>( new TPDifferentialOperator(evaluators, dim, blockdim, VOL, difforder) );
   }
 
   TPHighOrderFESpace::~TPHighOrderFESpace () { ; }
@@ -204,9 +204,9 @@ namespace ngcomp
     for(auto fes : spaces_y)
       fes->FinalizeUpdate(lh);
     FESpace::FinalizeUpdate(lh);
-    element_coloring = Table<int>(nel,1);
+    element_coloring[VOL] = Table<int>(nel,1);
     for (int i : Range(nel))
-      element_coloring[i][0] = i;
+      element_coloring[VOL][i][0] = i;
   }
 
   void TPHighOrderFESpace::Update(LocalHeap & lh)
@@ -293,22 +293,16 @@ namespace ngcomp
     throw Exception("TPHighOrderFESpace::GetDofRanges() not implemented");
   }
 
-  void TPHighOrderFESpace::GetDofNrs (int elnr, Array<int> & dnums) const 
-  {
-    dnums.SetSize(first_element_dof[elnr+1]-first_element_dof[elnr]);
-    for(int i=0;i<first_element_dof[elnr+1]-first_element_dof[elnr];i++)
-      dnums[i] = first_element_dof[elnr]+i;
-  }
-  virtual void TPHighOrderFESpace::GetDofNrs(ngfem::ElementId ei, ngstd::Array<int>& dnums) const
-  {
-    GetDofNrs(ei.Nr(),dnums);
-  }
-  
-  void TPHighOrderFESpace::GetSDofNrs (int selnr, Array<int> & dnums) const
+  void TPHighOrderFESpace::GetDofNrs(ngfem::ElementId ei, ngstd::Array<int>& dnums) const
   {
     dnums.SetSize(0);
+    if(ei.VB() != VOL)
+      return;
+    dnums.SetSize(first_element_dof[ei.Nr()+1]-first_element_dof[ei.Nr()]);
+    for(int i=0;i<first_element_dof[ei.Nr()+1]-first_element_dof[ei.Nr()];i++)
+      dnums[i] = first_element_dof[ei.Nr()]+i;
   }
-
+  
   Table<int> * TPHighOrderFESpace::CreateSmoothingBlocks (const Flags & precflags) const
   {
     throw Exception("TPHighOrderFESpace::CreateSmoothingBlocks() not implemented");

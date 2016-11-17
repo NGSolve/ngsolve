@@ -915,6 +915,11 @@ namespace ngcomp
     nboundaries = MyMPI_AllReduce (nboundaries, MPI_MAX);
 
     CalcIdentifiedFacets();
+    if(mesh.GetDimension() == 1)
+    {
+      nbboundaries = 0;
+      return;
+    }
     nbboundaries = -1;
     int ncd2e = nelements_cd[2];
     for (int i=0; i< ncd2e; i++)
