@@ -1788,7 +1788,7 @@ namespace ngcomp
 	ArrayMem<int,200> dnums(fel.GetNDof());
 	VectorMem<200,SCAL> elu (fel.GetNDof() * dim);
 
-	fes.GetDofNrs (elnr, dnums);
+	fes.GetDofNrs (ei, dnums);
 
         if(gf->GetCacheBlockSize() == 1)
           {
@@ -2247,7 +2247,7 @@ namespace ngcomp
 
     const FiniteElement & fel = fes.GetFE (ei, lh);
     Array<int> dnums(fel.GetNDof(), lh);
-    fes.GetDofNrs (segnr, dnums);
+    fes.GetDofNrs (ei, dnums);
 
     FlatVector<> elvec(fes.GetDimension()*dnums.Size(), lh);
     gf->GetElementVector (dnums, elvec);

@@ -350,13 +350,16 @@ namespace ngcomp
 
     /// returns finite element. 
     virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const;
-    
+
+    [[deprecated("Use GetFE with element-id instead of elnr!")]]    
     virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
+    [[deprecated("Use GetFE(ElementId(BND,elnr)) instead!")]]    
     virtual const FiniteElement & GetSFE (int elnr, LocalHeap & lh) const;
+    [[deprecated("Use GetFE(ElementId(BBND,elnr)) instead!")]]        
     virtual const FiniteElement & GetCD2FE (int cd2elnr, LocalHeap & lh) const;
 
     /// get dof-nrs of the element
-    //[[deprecated("Use GetDofNrs with element-id instead of elnr!")]]
+    [[deprecated("Use GetDofNrs with element-id instead of elnr!")]]
     void GetDofNrs (int elnr, Array<int> & dnums) const
       { GetDofNrs(ElementId(VOL,elnr),dnums); }
 
@@ -398,8 +401,8 @@ namespace ngcomp
 
     virtual bool UsesDGCoupling () const throw() { return dgjumps; };
 
-    //[[deprecated("Use GetDofNrs of elementid instead!")]]
     /// returns dofs of sourface element
+    [[deprecated("Use GetDofNrs(ElementId(BND,elnr)) instead!")]]
     void GetSDofNrs (int selnr, Array<int> & dnums) const
       { GetDofNrs(ElementId(BND,selnr),dnums); }
 

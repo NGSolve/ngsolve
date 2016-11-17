@@ -208,7 +208,7 @@ namespace ngcomp
 		     eltrans.CalcPoint(IntegrationPoint(1),end);
 		     for(int j = 0; j<parts.Size(); j++)
 		       {
-			 if(!parts[j]->VB() == vb) continue;
+			 if(parts[j]->VB() != vb) continue;
 			 if(!parts[j]->DefinedOn(el.GetIndex())) continue;
 			 int elvec_size = fel.GetNDof()*fespace->GetDimension();
 			 FlatVector<TSCAL> elvec(elvec_size, lh);
@@ -274,13 +274,13 @@ namespace ngcomp
 		  ElementTransformation & eltrans = ma->GetTrafo (el, VOL, lh);
 		  ElementTransformation & seltrans = ma->GetTrafo (i, BND, lh);
 
-		  fespace->GetDofNrs (el, dnums);
+		  fespace->GetDofNrs (ElementId(VOL,el), dnums);
 		  ma->GetElVertices (el, vnums);		
 	      
 		  for (int j = 0; j < parts.Size(); j++)
 		    {
 		      if (!parts[j] -> SkeletonForm()) continue;
-		      if (!parts[j] -> VB()==BND) continue;
+		      if (parts[j] -> VB()!=BND) continue;
 		      if (!parts[j] -> DefinedOn (ma->GetSElIndex (i))) continue;
 		      if (parts[j] -> IntegrationAlongCurve()) continue;		    
 		  
@@ -363,7 +363,7 @@ namespace ngcomp
 		      { 
 			clh.CleanUp();
 			fel = &fespace->GetFE(element,clh);
-			fespace->GetDofNrs(element,dnums);
+			fespace->GetDofNrs(ElementId(VOL,element),dnums);
 		      }
 		    ElementTransformation & eltrans = ma->GetTrafo (element, VOL, clh);
 
@@ -574,7 +574,7 @@ namespace ngcomp
 		
 		// (*testout) << " =?= p = " << gsip.GetPoint() << endl;
 
-		fespace->GetDofNrs (elnr, dnums);
+		fespace->GetDofNrs (ElementId(VOL,elnr), dnums);
 		
 		for (int k = 0; k < parts.Size(); k++)
 		  {

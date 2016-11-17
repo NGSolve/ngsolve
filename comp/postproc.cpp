@@ -541,7 +541,7 @@ namespace ngcomp
 	const FiniteElement & fel = fes.GetFE(ei, lh);
 	const FiniteElement & felflux = fesflux.GetFE(ei, lh);
 
-	ElementTransformation & eltrans = ma->GetTrafo (i, vb, lh);
+	ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
 	fes.GetDofNrs(ei,dnums);
 	fesflux.GetDofNrs(ei,dnumsflux);
 
@@ -785,8 +785,7 @@ namespace ngcomp
 	if ((domain != -1) && (domain != eldom))
 	  continue;
 
-	const FiniteElement & fel1 = 
-	  bound1 ? fes1.GetSFE(i, lh) : fes1.GetFE (i, lh);
+	const FiniteElement & fel1 = fes1.GetFE(ei, lh);
 
 	ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
 	fes1.GetDofNrs (ei, dnums1);
@@ -954,8 +953,9 @@ namespace ngcomp
     for (int i = 0; i < ne; i++)
       {
 	lh.CleanUp();
-	fesh1.GetDofNrs (i, dnumsh1);
-	feshcurl.GetDofNrs (i, dnumshcurl);
+        ElementId ei(VOL, i);
+	fesh1.GetDofNrs (ei, dnumsh1);
+	feshcurl.GetDofNrs (ei, dnumshcurl);
 
 	FlatVector<SCAL> elhcurl(dnumshcurl.Size(), lh);
 	FlatVector<SCAL> elh1(dnumsh1.Size(), lh);
@@ -965,7 +965,7 @@ namespace ngcomp
 	vech1.GetIndirect (dnumsh1, elh1);
 	fesh1.TransformVec (i, 0, elh1, TRANSFORM_RHS);
 
-	switch (fesh1.GetFE(i, lh).ElementType())
+	switch (fesh1.GetFE(ei, lh).ElementType())
 	  {
 	  case ET_TRIG:
 	    elhcurl = gradtrig * elh1;
@@ -1034,8 +1034,9 @@ namespace ngcomp
     for (int i = 0; i < ne; i++)
       {
 	lh.CleanUp();
-	fesh1.GetDofNrs (i, dnumsh1);
-	feshcurl.GetDofNrs (i, dnumshcurl);
+        ElementId ei(VOL, i);
+	fesh1.GetDofNrs (ei, dnumsh1);
+	feshcurl.GetDofNrs (ei, dnumshcurl);
 
 	FlatVector<SCAL> elhcurl(dnumshcurl.Size(), lh);
 	FlatVector<SCAL> elh1(dnumsh1.Size(), lh);
@@ -1043,7 +1044,7 @@ namespace ngcomp
 	vechcurl.GetIndirect (dnumshcurl, elhcurl);
 	feshcurl.TransformVec (i, 0, elhcurl, TRANSFORM_RHS);
 
-	switch (fesh1.GetFE(i, lh).ElementType())
+	switch (fesh1.GetFE(ei, lh).ElementType())
 	  {
 	  case ET_TRIG:
 	    elh1 = Trans (gradtrig) * elhcurl;
