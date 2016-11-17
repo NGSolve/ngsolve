@@ -33,6 +33,30 @@ option( USE_NUMA         "compile with NUMA-aware code")
 option( USE_CCACHE       "use ccache")
 option( INSTALL_DEPENDENCIES "install dependencies like netgen or solver libs, useful for packaging" OFF )
 
+#######################################################################
+if(NETGEN_SOURCE_DIR)
+    find_path(NETGEN_INTERNAL_INCLUDE_DIR nginterface_v2_impl.hpp PATHS ${NETGEN_SOURCE_DIR} ${NETGEN_SOURCE_DIR}/libsrc/include)
+else(NETGEN_SOURCE_DIR)
+  execute_process(COMMAND git submodule update --init --recursive WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+  set(BUILD_NETGEN ON CACHE INTERNAL "is set if netgen is built as external project")
+  set(NETGEN_INTERNAL_INCLUDE_DIR
+    "${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies/netgen/libsrc/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies/netgen/libsrc/general"
+    "${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies/netgen/libsrc/visualization"
+    CACHE INTERNAL "Netgen include directories"
+  )
+
+endif(NETGEN_SOURCE_DIR)
+
+if (NOT NETGEN_INTERNAL_INCLUDE_DIR)
+    message(FATAL_ERROR "Could not find Netgen source directory, please provide it by setting NETGEN_SOURCE_DIR:
+    cmake -DNETGEN_SOURCE_DIR=path_to_netgen_sources ...")
+endif()
+
+add_definitions(-DHAVE_NETGEN_SOURCES)
+include_directories(AFTER ${NETGEN_INTERNAL_INCLUDE_DIR})
+#######################################################################
+
 add_subdirectory(external_dependencies/netgen)
 #######################################################################
 if(USE_CCACHE)
@@ -338,30 +362,6 @@ if(USE_VTUNE)
     endif(INTEL_MIC)
 endif(USE_VTUNE)
 
-
-include(ExternalProject)
-#######################################################################
-if(NETGEN_SOURCE_DIR)
-    find_path(NETGEN_INTERNAL_INCLUDE_DIR nginterface_v2_impl.hpp PATHS ${NETGEN_SOURCE_DIR} ${NETGEN_SOURCE_DIR}/libsrc/include)
-else(NETGEN_SOURCE_DIR)
-  execute_process(COMMAND git submodule update --init --recursive WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-  set(BUILD_NETGEN ON CACHE INTERNAL "is set if netgen is built as external project")
-  set(NETGEN_INTERNAL_INCLUDE_DIR
-    "${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies/netgen/libsrc/include"
-    "${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies/netgen/libsrc/general"
-    "${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies/netgen/libsrc/visualization"
-    CACHE INTERNAL "Netgen include directories"
-  )
-
-endif(NETGEN_SOURCE_DIR)
-
-if (NOT NETGEN_INTERNAL_INCLUDE_DIR)
-    message(FATAL_ERROR "Could not find Netgen source directory, please provide it by setting NETGEN_SOURCE_DIR:
-    cmake -DNETGEN_SOURCE_DIR=path_to_netgen_sources ...")
-endif()
-
-add_definitions(-DHAVE_NETGEN_SOURCES)
-include_directories(AFTER ${NETGEN_INTERNAL_INCLUDE_DIR})
 
 #######################################################################
 
