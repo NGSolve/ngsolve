@@ -1305,7 +1305,7 @@ namespace ngcomp
         fes.GetDofNrs (ei, dnums);
         VectorMem<50> elu(dnums.Size()*dim);
         gf->GetElementVector (comp, dnums, elu);
-        fes.TransformVec (elnr, boundary, elu, TRANSFORM_SOL);
+        fes.TransformVec (elnr, vb, elu, TRANSFORM_SOL);
         const TPMappedIntegrationRule & tpir = dynamic_cast<const TPMappedIntegrationRule &>(ir);
         FlatMatrix<> valuestemp(tpir.GetIRs()[0]->Size(),1,lh2);
         fes.GetEvaluator()->Apply (fel, *tpir.GetIRs()[0], elu, values, lh2);
