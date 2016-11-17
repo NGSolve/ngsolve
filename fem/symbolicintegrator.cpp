@@ -1014,7 +1014,7 @@ namespace ngfem
       }
   }
 
-  // #define SIMD_CALCMATRIX
+#define SIMD_CALCMATRIX
 #ifdef SIMD_CALCMATRIX
   template <>
   void SymbolicBilinearFormIntegrator ::
@@ -1063,25 +1063,12 @@ namespace ngfem
     const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : fel;
     const FiniteElement & fel_test = mixedfe ? mixedfe->FETest() : fel;
 
-    /*
-    int trial_difforder = 99, test_difforder = 99;
-    for (auto proxy : trial_proxies)
-      trial_difforder = min2(trial_difforder, proxy->Evaluator()->DiffOrder());
-    for (auto proxy : test_proxies)
-      test_difforder = min2(test_difforder, proxy->Evaluator()->DiffOrder());
-
-    int intorder = fel_trial.Order()+fel_test.Order();
-    auto et = trafo.GetElementType();
-    if (et == ET_TRIG || et == ET_TET)
-      intorder -= test_difforder+trial_difforder;
-    */
     
     elmat = 0;
     if (simd_evaluate)
       try
         {
           // RegionTimer reg(tsimd);          
-          // SIMD_IntegrationRule ir(trafo.GetElementType(), intorder);
           SIMD_IntegrationRule ir = Get_SIMD_IntegrationRule (fel);
           SIMD_BaseMappedIntegrationRule & mir = trafo(ir, lh);
 
