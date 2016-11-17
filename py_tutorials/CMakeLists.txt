@@ -13,7 +13,8 @@ install(FILES
        )
 
 install(FILES
-        TensorProduct/TensorProductTools.py TensorProduct/Bloch_oszillations.py
+        TensorProduct/TensorProductTools.py TensorProduct/make_seg_mesh.py
+        TensorProduct/Bloch_oszillations.py
         TensorProduct/tp_dg_2d.py TensorProduct/tp_dg_2d.py
         DESTINATION share/ngsolve/py_tutorials/TensorProduct
         COMPONENT ngsolve_devel

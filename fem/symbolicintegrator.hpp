@@ -49,8 +49,6 @@ public:
 
     int dim = evaluator->Dim();
     int blockdim = evaluator->BlockDim();
-    cout << "Dim = "<<dim<<endl;
-    cout << "Block Dim = "<<blockdim<<endl;
     if (blockdim == 1)
       SetDimensions (Array<int> ({dim}));
     else
