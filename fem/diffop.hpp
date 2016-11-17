@@ -162,11 +162,15 @@ namespace ngfem
   {
     int dim;
     int blockdim;
-    bool boundary;
+    VorB vb;
     int difforder;
   public:
-    NGS_DLL_HEADER DifferentialOperator(int adim, int ablockdim, bool aboundary, int adifforder)
-      : dim(adim), blockdim(ablockdim), boundary(aboundary), difforder(adifforder)
+    //[[deprecated("Use DifferentialOperator(int,int,VorB,int) instead")]]
+    NGS_DLL_HEADER DifferentialOperator(int adim, int ablockdim, bool boundary, int adifforder)
+      : dim(adim), blockdim(ablockdim), vb(boundary ? BND : VOL),  difforder(adifforder)
+     { ; }
+    NGS_DLL_HEADER DifferentialOperator(int adim, int ablockdim, VorB avb, int adifforder)
+      : dim(adim), blockdim(ablockdim), vb(avb), difforder(adifforder)
     { ; }
     /// destructor
     NGS_DLL_HEADER virtual ~DifferentialOperator ();
@@ -180,7 +184,9 @@ namespace ngfem
     int BlockDim() const { return blockdim; }
     /// does it live on the boundary ?
     //virtual bool Boundary() const { return false; }
-    bool Boundary() const { return boundary; }
+    //[[deprecated("use VB() instead")]]
+    bool Boundary() const { return vb == BND; }
+    VorB VB() const { return vb; }
 
     /// total polynomial degree is reduced by this order (i.e. minimal difforder)
     // virtual int DiffOrder() const = 0;
@@ -315,7 +321,7 @@ namespace ngfem
     BlockDifferentialOperator (shared_ptr<DifferentialOperator> adiffop, 
 			       int adim, int acomp = -1)
       : DifferentialOperator(adim*adiffop->Dim(), adim*adiffop->BlockDim(),
-                             adiffop->Boundary(), adiffop->DiffOrder()),
+                             adiffop->VB(), adiffop->DiffOrder()),
         diffop(adiffop), dim(adim), comp(acomp) { ; }
 
     virtual ~BlockDifferentialOperator ();

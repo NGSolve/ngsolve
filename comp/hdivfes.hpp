@@ -44,10 +44,7 @@ namespace ngcomp
     virtual int GetNDofLevel (int level) const;
 
     ///
-    virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
-    ///
-    virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
-
+    virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const;
     ///
     // virtual Table<int> * CreateSmoothingBlocks (int type = 0) const;
 
