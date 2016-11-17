@@ -157,6 +157,7 @@ namespace ngcomp
 
     BitArray is_atomic_dof;
   public:
+    virtual int GetSpacialDimension() const { return ma->GetDimension();}
     string type;
 
     /**

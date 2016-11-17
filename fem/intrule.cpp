@@ -2402,6 +2402,7 @@ namespace ngfem
 
     for (int i = 0; i < jacobirules20.Size(); i++)
       delete jacobirules20[i];
+   
   }
 
 

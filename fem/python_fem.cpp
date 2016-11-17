@@ -8,6 +8,7 @@ using ngfem::ELEMENT_TYPE;
 
 #include "pml.hpp"
 
+#include "tpintrule.hpp"
 namespace ngfem
 {
   extern SymbolTable<double> * constant_table_for_FEM;
@@ -301,11 +302,48 @@ struct GenericPow {
 
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<> res) const 
     {
-      if (ir[0].Dim() != D)
-        throw Exception("illegal dim of normal vector");
-      FlatMatrixFixWidth<D> resD(res);
-      for (int i = 0; i < ir.Size(); i++)
-        resD.Row(i) = static_cast<const DimMappedIntegrationPoint<D>&>(ir[i]).GetNV();
+      const TPMappedIntegrationRule * tpir = dynamic_cast<const TPMappedIntegrationRule *>(&ir);
+       if(!tpir)
+       {
+         if (ir[0].Dim() != D)
+           throw Exception("illegal dim of normal vector");
+         FlatMatrixFixWidth<D> resD(res);
+         for (int i = 0; i < ir.Size(); i++)
+           resD.Row(i) = static_cast<const DimMappedIntegrationPoint<D>&>(ir[i]).GetNV();
+       }
+       else
+       {
+         int facet = tpir->GetFacet();
+         int dim = tpir->GetIRs()[facet]->operator[](0).Dim();
+         int ii = 0;
+         res = 0.0;
+         if(facet == 0)
+           if(dim == 1)
+             for(int i=0;i<tpir->GetIRs()[0]->Size();i++)
+               for(int j=0;j<tpir->GetIRs()[1]->Size();j++)
+                 res.Row(ii++).Range(0,dim) = static_cast<const DimMappedIntegrationPoint<1>&>(tpir->GetIRs()[facet]->operator[](i)).GetNV();//res1.Row(i).Range(0,dim);
+           if(dim == 2)
+             for(int i=0;i<tpir->GetIRs()[0]->Size();i++)
+               for(int j=0;j<tpir->GetIRs()[1]->Size();j++)          
+                 res.Row(ii++).Range(0,dim) = static_cast<const DimMappedIntegrationPoint<2>&>(tpir->GetIRs()[facet]->operator[](i)).GetNV();//res1.Row(i).Range(0,dim);
+           if(dim == 3)
+             for(int i=0;i<tpir->GetIRs()[0]->Size();i++)
+               for(int j=0;j<tpir->GetIRs()[1]->Size();j++)          
+                 res.Row(ii++).Range(0,dim) = static_cast<const DimMappedIntegrationPoint<3>&>(tpir->GetIRs()[facet]->operator[](i)).GetNV();//res1.Row(i).Range(0,dim);
+         else
+           if(dim == 1)
+             for(int i=0;i<tpir->GetIRs()[0]->Size();i++)
+               for(int j=0;j<tpir->GetIRs()[1]->Size();j++)
+                 res.Row(ii++).Range(D-dim,D) = static_cast<const DimMappedIntegrationPoint<1>&>(tpir->GetIRs()[facet]->operator[](j)).GetNV();//res1.Row(i).Range(0,dim);
+           if(dim == 2)
+             for(int i=0;i<tpir->GetIRs()[0]->Size();i++)
+               for(int j=0;j<tpir->GetIRs()[1]->Size();j++)          
+                 res.Row(ii++).Range(D-dim,D) = static_cast<const DimMappedIntegrationPoint<2>&>(tpir->GetIRs()[facet]->operator[](j)).GetNV();//res1.Row(i).Range(0,dim);
+           if(dim == 3)
+             for(int i=0;i<tpir->GetIRs()[0]->Size();i++)
+               for(int j=0;j<tpir->GetIRs()[1]->Size();j++)          
+                 res.Row(ii++).Range(D-dim,D) = static_cast<const DimMappedIntegrationPoint<3>&>(tpir->GetIRs()[facet]->operator[](j)).GetNV();//res1.Row(i).Range(0,dim);
+      }
     }
 
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> res) const 
@@ -377,11 +415,31 @@ class CoordCoefficientFunction : public T_CoefficientFunction<CoordCoefficientFu
     virtual void Evaluate(const BaseMappedIntegrationRule & ir,
                           FlatMatrix<> result) const
     {
-      result.Col(0) = ir.GetPoints().Col(dir);
-      /*
-      for (int i = 0; i < ir.Size(); i++)
-        result(i,0) = ir[i].GetPoint()(dir);
-      */
+       const TPMappedIntegrationRule * tpmir = dynamic_cast<const TPMappedIntegrationRule *>(&ir);
+       if(!tpmir)
+       {
+           result.Col(0) = ir.GetPoints().Col(dir);
+           return;
+       }
+       if(dir<=2)
+       {
+         int ii = 0;
+         for(int i=0;i<tpmir->GetIRs()[0]->Size();i++)
+           for(int j=0;j<tpmir->GetIRs()[1]->Size();j++)
+             result(ii++,0) = tpmir->GetIRs()[0]->GetPoints().Col(dir)(i);
+       }
+       else
+       {
+         // int ii = 0;
+         // for(int i=0;i<tpmir->GetIRs()[0]->Size();i++)
+           // for(int j=0;j<tpmir->GetIRs()[1]->Size();j++)
+             // result(ii++,0) = tpmir->GetIRs()[1]->GetPoints().Col(dir-3)(j);
+ 
+             //int ii = 0;
+         for(int i=0;i<tpmir->GetIRs()[0]->Size();i++)
+           //for(int j=0;j<tpmir->GetIRs()[1]->Size();j++)
+             result.Col(0).Rows(i*tpmir->GetIRs()[1]->Size(),(i+1)*tpmir->GetIRs()[1]->Size()) = tpmir->GetIRs()[1]->GetPoints().Col(dir-3);
+      }
     }
     virtual void Evaluate(const BaseMappedIntegrationRule & ir,
 			  FlatMatrix<Complex> result) const
@@ -664,6 +722,7 @@ void ExportCoefficientFunction(py::module &m)
   // <shared_ptr<ParameterCoefficientFunction>, shared_ptr<CoefficientFunction> >(); 
 
   
+
   typedef PyWrapper<CoordCoefficientFunction> PyCoordCF;
   py::class_<PyCoordCF,PyCF>
     (m, "CoordCF", "CoefficientFunction for x, y, z")
