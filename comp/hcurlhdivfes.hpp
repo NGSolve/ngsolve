@@ -240,43 +240,43 @@ public:
 
 
 
-  virtual void VTransformMR (int elnr, bool boundary,
+  virtual void VTransformMR (int elnr, VorB vb,
 			     const FlatMatrix<double> & mat, TRANSFORM_TYPE tt) const 
   {
-    TransformMat (elnr, boundary, mat, tt);
+    TransformMat (elnr, vb == BND, mat, tt);
   }
 
-  virtual void VTransformMC (int elnr, bool boundary,
+  virtual void VTransformMC (int elnr, VorB vb,
 			     const FlatMatrix<Complex> & mat, TRANSFORM_TYPE tt) const
   {
-    TransformMat (elnr, boundary, mat, tt);
+    TransformMat (elnr, vb == BND, mat, tt);
   }
 
-  virtual void VTransformMR (int elnr, bool boundary,
+  virtual void VTransformMR (int elnr, VorB vb,
 			     const SliceMatrix<double> & mat, TRANSFORM_TYPE tt) const 
   {
-    TransformMat (elnr, boundary, mat, tt);
+    TransformMat (elnr, vb == BND, mat, tt);
   }
 
-  virtual void VTransformMC (int elnr, bool boundary,
+  virtual void VTransformMC (int elnr, VorB vb,
 			     const SliceMatrix<Complex> & mat, TRANSFORM_TYPE tt) const
   {
-    TransformMat (elnr, boundary, mat, tt);
+    TransformMat (elnr, vb == BND, mat, tt);
   }
 
 
 
 
-  virtual void VTransformVR (int elnr, bool boundary,
+  virtual void VTransformVR (int elnr, VorB vb,
 			     const FlatVector<double> & vec, TRANSFORM_TYPE tt) const 
   {
-    TransformVec (elnr, boundary, vec, tt);
+    TransformVec (elnr, vb == BND, vec, tt);
   }
 
-  virtual void VTransformVC (int elnr, bool boundary,
+  virtual void VTransformVC (int elnr, VorB vb,
 			     const FlatVector<Complex> & vec, TRANSFORM_TYPE tt) const 
   {
-    TransformVec (elnr, boundary, vec, tt);
+    TransformVec (elnr, vb == BND, vec, tt);
   }
 
   ///

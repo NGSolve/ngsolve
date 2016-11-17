@@ -96,25 +96,27 @@ namespace ngfem
 			   LocalHeap & lh) const
     {
       if(VB()==BND)
-	if (SpaceDim() == 2)
-	  {
-	    Mat<2,1> dxdxi;
-	    CalcJacobian (ip, dxdxi);
-	    // Ng_GetSurfaceElementTransformation (elnr+1, &ip(0), 0, &dxdxi(0));
-	    double len = sqrt (sqr (dxdxi(0,0)) + sqr(dxdxi(1,0)));
-	    nv(0) = -dxdxi(1,0) / len; //SZ 
-	    nv(1) = dxdxi(0,0) / len;
-	  }
-	else
-	  {
-	    Mat<3,2> dxdxi;
-	    CalcJacobian (ip, dxdxi);
-	    // Ng_GetSurfaceElementTransformation (elnr+1, &ip(0), 0, &dxdxi(0));
-	    nv(0) = dxdxi(1,0) * dxdxi(2,1) - dxdxi(2,0) * dxdxi(1,1);
-	    nv(1) = dxdxi(2,0) * dxdxi(0,1) - dxdxi(0,0) * dxdxi(2,1);
-	    nv(2) = dxdxi(0,0) * dxdxi(1,1) - dxdxi(1,0) * dxdxi(0,1);
-	    nv /= L2Norm (nv);
-	  }
+        {
+          if (SpaceDim() == 2)
+            {
+              Mat<2,1> dxdxi;
+              CalcJacobian (ip, dxdxi);
+              // Ng_GetSurfaceElementTransformation (elnr+1, &ip(0), 0, &dxdxi(0));
+              double len = sqrt (sqr (dxdxi(0,0)) + sqr(dxdxi(1,0)));
+              nv(0) = -dxdxi(1,0) / len; //SZ 
+              nv(1) = dxdxi(0,0) / len;
+            }
+          else
+            {
+              Mat<3,2> dxdxi;
+              CalcJacobian (ip, dxdxi);
+              // Ng_GetSurfaceElementTransformation (elnr+1, &ip(0), 0, &dxdxi(0));
+              nv(0) = dxdxi(1,0) * dxdxi(2,1) - dxdxi(2,0) * dxdxi(1,1);
+              nv(1) = dxdxi(2,0) * dxdxi(0,1) - dxdxi(0,0) * dxdxi(2,1);
+              nv(2) = dxdxi(0,0) * dxdxi(1,1) - dxdxi(1,0) * dxdxi(0,1);
+              nv /= L2Norm (nv);
+            }
+        }
     }
   
   
