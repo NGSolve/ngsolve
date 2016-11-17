@@ -2503,17 +2503,6 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
   */
 
   
-   m.def("GlobalHermiteFESpace", [](int dim, py::list orders, const Flags & flags )
-            {
-              Array< int > aorders = makeCArray< int > (orders);
-              shared_ptr<FESpace> space( new GlobalHermiteFESpace( dim,aorders,flags ) );
-              return space;
-            });
-    m.def("SetVisualizationSpace", [](PyFES & self, PyFES visualhelper)
-          {
-            dynamic_pointer_cast<GlobalHermiteFESpace>(self.Get())->SetVisualizationSpace(visualhelper.Get());
-          });
-            
    m.def("TensorProductFESpace", [](py::list spaces_list, const Flags & flags ) -> PyFES
             {
               //Array<shared_ptr<FESpace> > spaces = makeCArray<shared_ptr<FESpace>> (spaces_list);
@@ -2522,16 +2511,6 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
               
               if(spaces.Size() == 2)
               {
-                if(!spaces[1]->GetMeshAccess())
-                {
-                  Array<int> el_counts(4);
-                  el_counts[0] = spaces[0]->GetMeshAccess()->GetNE();
-                  el_counts[1] = 1;
-                  el_counts[2] = spaces[0]->GetMeshAccess()->GetNFacets();
-                  el_counts[3] = 0;
-                  shared_ptr<FESpace> space( new TPHighOrderFESpace( spaces, flags, false, &el_counts ) );
-                  return space;
-                }
                 shared_ptr<FESpace> space( new TPHighOrderFESpace( spaces, flags ) );
                 return space;
               }
@@ -2540,16 +2519,6 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                 Array<shared_ptr<FESpace>> spaces_y(spaces.Size()-1);
                 for(int i=1;i<spaces.Size();i++)
                   spaces_y[i-1] = spaces[i];
-                if(spaces_y[0]->GetMeshAccess() == nullptr)
-                {
-                  Array<int> el_counts(4);
-                  el_counts[0] = spaces[0]->GetMeshAccess()->GetNE();
-                  el_counts[1] = 1;
-                  el_counts[2] = spaces[0]->GetMeshAccess()->GetNFacets();
-                  el_counts[3] = 0;
-                  shared_ptr<FESpace> space( new TPHighOrderFESpace( spaces[0],spaces_y, flags, &el_counts ) );
-                  return space;
-                }
                 shared_ptr<FESpace> space( new TPHighOrderFESpace( spaces[0],spaces_y, flags ) );
                 return space;             
               }
@@ -2572,16 +2541,9 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                  for(int s=0;s<ir.Size();s++)
                  {
                    shape.Col(s)*=mir[s].GetWeight();
-                   //FlatVector<> temp(elvec_out.Size(),lh);
                    FlatMatrix<> tempmat(elvec_out.Size(),ir.Size(),lh);
-                   //temp = elmat*shape.Col(s);
                    tempmat = elmat*shape;
-                   if(dynamic_cast<const Distribution<1> *>(tpfel.elements[1]))
-                     if(dynamic_cast<const Distribution<1> *>(tpfel.elements[1])->UseHermiteFunctions() == false)
-                       tempmat.Col(s)*=exp(-0.5*L2Norm2(FlatVector<>(1,&ir[s](0))));
-                       //temp*=exp(-0.5*L2Norm2(FlatVector<>(1,&ir[s](0))));
                    elvec_out+=tempmat.Col(s);
-                   //elvec_out+=temp;
                  }
               });
               });
@@ -2604,32 +2566,12 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                  coef.Get()->Evaluate(mir, vals);
                  for(int s=0;s<ir.Size();s++)
                  {
-                   shape.Col(s)*=mir[s].GetWeight()*vals(s,0);//mir[s].GetPoint()[0];
+                   shape.Col(s)*=mir[s].GetWeight()*vals(s,0);
                    elvec_out+=elmat*shape.Col(s);
                  }
               });
               });
 
-   m.def("CalcMacroscopics", [](PyGF gf_tp, PyGF gf_out)
-            {
-              shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp.Get()->GetFESpace());
-              LocalHeap lh(10000000,"ReduceToXSpace");
-              tpfes->ReduceToXSpace(gf_tp.Get(),gf_out.Get(),lh,
-              [&] (shared_ptr<FESpace> fes,const FiniteElement & fel,const ElementTransformation & trafo,FlatVector<> elvec,FlatVector<> elvec_out,LocalHeap & lh)
-              {
-                 const TPHighOrderFE & tpfel = dynamic_cast<const TPHighOrderFE &>(fel);
-                 shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(fes);
-                 FlatMatrix<> fmat(tpfel.elements[0]->GetNDof(),tpfel.elements[1]->GetNDof(),&elvec(0));
-                 FlatVector<> macs(3,lh);
-                 for(int i=0;i<tpfel.elements[0]->GetNDof();i++)
-                 {
-                    dynamic_cast<const Distribution<1> *>(tpfel.elements[1])->Macroscopics<NODAL>(fmat.Row(i),macs,dynamic_cast<const HM_ElementTransformation &>(trafo).GetAnsatzT(),dynamic_cast<const HM_ElementTransformation &>(trafo).GetAnsatzV(),lh);
-                    elvec_out(3*i+0) = macs(0);
-                    elvec_out(3*i+1) = macs(1);
-                    elvec_out(3*i+2) = macs(2);
-                 }
-              });
-              });              
    m.def("Prolongate", [](PyGF gf_x, PyGF gf_tp )
             {
               shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp.Get()->GetFESpace());
