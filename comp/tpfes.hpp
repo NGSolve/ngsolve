@@ -59,7 +59,7 @@ namespace ngcomp
     int GetNMeshes() {return nmeshes;}
     TPHighOrderFESpace (FlatArray<shared_ptr<FESpace>> spaces, const Flags & flags, bool parseflags=false, Array<int> * el_counts = nullptr);
     
-    TPHighOrderFESpace (shared_ptr<FESpace> space_x,FlatArray<shared_ptr<FESpace>> spaces_y, const Flags & flags, bool parseflags=false, Array<int> * el_counts = nullptr);
+    TPHighOrderFESpace (shared_ptr<FESpace> space_x,FlatArray<shared_ptr<FESpace>> spaces_y, const Flags & flags, bool parseflags=false);
 
     virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const;
     ///

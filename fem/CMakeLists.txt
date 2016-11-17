@@ -17,7 +17,6 @@ add_library(ngfem ${NGS_LIB_TYPE}
         hybridDG.cpp diffop.cpp l2hofefo.cpp h1hofefo.cpp
         facethofe.cpp python_fem.cpp DGIntegrators.cpp pml.cpp
         h1hofe_segm.cpp h1hofe_trig.cpp symbolicintegrator.cpp tpdiffop.cpp
-        Distribution.cpp hermiteelementtransformation.cpp 
         )
 
 if(USE_CUDA)

@@ -22,7 +22,7 @@ namespace ngfem
   enum NGS_DLL_HEADER ELEMENT_TYPE 
     { ET_POINT = 0, ET_SEGM = 1,
 	ET_TRIG = 10, ET_QUAD = 11, 
-	ET_TET = 20, ET_PYRAMID = 21, ET_PRISM = 22, ET_HEX = 24, ET_HERMITE = 30 };
+	ET_TET = 20, ET_PYRAMID = 21, ET_PRISM = 22, ET_HEX = 24 };
   
 
 

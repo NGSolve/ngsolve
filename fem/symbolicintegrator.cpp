@@ -3193,27 +3193,8 @@ void SymbolicFacetBilinearFormIntegrator ::
        ud.AssignMemory (proxy, tpmir1.Size(), proxy->Dimension(), lh);
      tstartup.Stop();
      ttrialproxy.Start();
-     FlatVector<> coef(elx.Size(),lh);
      for (ProxyFunction * proxy : trial_proxies)
      {
-       /*
-       coef = elx;
-       if(dynamic_cast<const HM_ElementTransformation *>(&eltrans2.GetTrafo(1)))
-       {
-         coef_temp = elx.Range(proxy->Evaluator()->BlockDim()*volumefel1.GetNDof(), elx.Size());
-         double T_old = dynamic_cast<HM_ElementTransformation &>(dynamic_cast<const TPElementTransformation &>(eltrans2).GetTrafo(1)).GetAnsatzT();
-         double T_new = dynamic_cast<HM_ElementTransformation &>(dynamic_cast<const TPElementTransformation &>(eltrans1).GetTrafo(1)).GetAnsatzT();
-         Vec<1> V_old = dynamic_cast<HM_ElementTransformation &>(dynamic_cast<const TPElementTransformation &>(eltrans2).GetTrafo(1)).GetAnsatzV();
-         Vec<1> V_new = dynamic_cast<HM_ElementTransformation &>(dynamic_cast<const TPElementTransformation &>(eltrans1).GetTrafo(1)).GetAnsatzV();
-         dynamic_cast<const Distribution<1> *>(volumefel1.elements[1])->Project(coef_temp,elx1,T_old,T_new,V_old,V_new,lh);
-         coef.Range(proxy->Evaluator()->BlockDim()*volumefel1.GetNDof(), elx.Size()) = elx1;
-       }
-       IntRange trial_range  = proxy->IsOther() ? IntRange(proxy->Evaluator()->BlockDim()*volumefel1.GetNDof(), elx.Size()) : IntRange(0, proxy->Evaluator()->BlockDim()*volumefel1.GetNDof());
-       if (proxy->IsOther()) 
-         proxy->Evaluator()->Apply(volumefel2, tpmir2, coef.Range(trial_range), ud.GetMemory(proxy), lh);
-       else
-         proxy->Evaluator()->Apply(volumefel1, tpmir1, coef.Range(trial_range), ud.GetMemory(proxy), lh);
-       */
        IntRange trial_range  = proxy->IsOther() ? IntRange(proxy->Evaluator()->BlockDim()*volumefel1.GetNDof(), elx.Size()) : IntRange(0, proxy->Evaluator()->BlockDim()*volumefel1.GetNDof());       
        if (proxy->IsOther()) 
          proxy->Evaluator()->Apply(volumefel2, tpmir2, elx.Range(trial_range), ud.GetMemory(proxy), lh);
@@ -3245,27 +3226,12 @@ void SymbolicFacetBilinearFormIntegrator ::
        ely1 = 0.0;
        IntRange test_range  = proxy->IsOther() ? IntRange(proxy->Evaluator()->BlockDim()*volumefel1.GetNDof(), elx.Size()) : IntRange(0, proxy->Evaluator()->BlockDim()*volumefel1.GetNDof());
        if (proxy->IsOther())
-       {
-         proxy->Evaluator()->ApplyTrans(volumefel2, tpmir2, proxyvalues, ely1.Range(test_range), lh);
-         /*
-         if(dynamic_cast<const HM_ElementTransformation *>(&eltrans2.GetTrafo(1)))
-         {
-           FlatVector<> elytemp(test_range.Size(),lh);
-           elytemp = ely1.Range(test_range);
-           double T_old = dynamic_cast<HM_ElementTransformation &>(dynamic_cast<const TPElementTransformation &>(eltrans2).GetTrafo(1)).GetAnsatzT();
-           double T_new = dynamic_cast<HM_ElementTransformation &>(dynamic_cast<const TPElementTransformation &>(eltrans1).GetTrafo(1)).GetAnsatzT();
-           Vec<1> V_old = dynamic_cast<HM_ElementTransformation &>(dynamic_cast<const TPElementTransformation &>(eltrans2).GetTrafo(1)).GetAnsatzV();
-           Vec<1> V_new = dynamic_cast<HM_ElementTransformation &>(dynamic_cast<const TPElementTransformation &>(eltrans1).GetTrafo(1)).GetAnsatzV();
-           dynamic_cast<const Distribution<1> *>(volumefel1.elements[1])->ProjectTrans(elytemp,ely1.Range(test_range),T_new,T_old,V_new,V_old,lh);
-         } 
-        */         
-       }
+         proxy->Evaluator()->ApplyTrans(volumefel2, tpmir2, proxyvalues, ely1.Range(test_range), lh);     
        else
          proxy->Evaluator()->ApplyTrans(volumefel1, tpmir1, proxyvalues, ely1.Range(test_range), lh);
        ely += ely1;
        ttestproxy.Stop();
      }
-     //cout << "ely = "<<ely<<endl;
    }
  
    void SymbolicFacetBilinearFormIntegrator :: 
