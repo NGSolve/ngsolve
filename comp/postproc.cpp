@@ -332,7 +332,7 @@ namespace ngcomp
   template <class SCAL>
   void SetValues (shared_ptr<CoefficientFunction> coef,
 		  GridFunction & bu,
-		  bool bound,
+		  VorB vb,
                   const Region * reg, 
 		  DifferentialOperator * diffop,
 		  LocalHeap & clh)
@@ -343,10 +343,6 @@ namespace ngcomp
 
     const FESpace & fes = *u.GetFESpace();
     shared_ptr<MeshAccess> ma = fes.GetMeshAccess();
-
-    ma->PushStatus ("setvalues");
-
-    auto vb = reg->VB();
     int dim   = fes.GetDimension();
 
     shared_ptr<BilinearFormIntegrator> bli = fes.GetIntegrator(vb);
@@ -376,7 +372,7 @@ namespace ngcomp
             }
           else
             {
-              if (bound && !fes.IsDirichletBoundary(ei.GetIndex()))
+              if (vb==BND && !fes.IsDirichletBoundary(ei.GetIndex()))
                 return;
             }
           
@@ -421,8 +417,8 @@ namespace ngcomp
 	      FlatMatrix<double> elmat(fel.GetNDof(), lh);
 	      bli->CalcElementMatrix (fel, eltrans, elmat, lh);
 
-	      fes.TransformMat (ei.Nr(), bound, elmat, TRANSFORM_MAT_LEFT_RIGHT);
-	      fes.TransformVec (ei.Nr(), bound, elflux, TRANSFORM_RHS);
+	      fes.TransformMat (ei.Nr(), vb, elmat, TRANSFORM_MAT_LEFT_RIGHT);
+	      fes.TransformVec (ei.Nr(), vb, elflux, TRANSFORM_RHS);
               if (fel.GetNDof() < 50)
                 {
                   FlatCholeskyFactors<double> invelmat(elmat, lh);
@@ -471,14 +467,14 @@ namespace ngcomp
   
   NGS_DLL_HEADER void SetValues (shared_ptr<CoefficientFunction> coef,
 				 GridFunction & u,
-				 bool bound,
+				 VorB vb,
 				 DifferentialOperator * diffop,
 				 LocalHeap & clh)
   {
     if (u.GetFESpace()->IsComplex())
-      SetValues<Complex> (coef, u, bound, nullptr, diffop, clh);
+      SetValues<Complex> (coef, u, vb, nullptr, diffop, clh);
     else
-      SetValues<double> (coef, u, bound, nullptr, diffop, clh);
+      SetValues<double> (coef, u, vb, nullptr, diffop, clh);
   }
 
   NGS_DLL_HEADER void SetValues (shared_ptr<CoefficientFunction> coef,
@@ -488,9 +484,9 @@ namespace ngcomp
 				 LocalHeap & clh)
   {
     if (u.GetFESpace()->IsComplex())
-      SetValues<Complex> (coef, u, false, &reg, diffop, clh);
+      SetValues<Complex> (coef, u, reg.VB(), &reg, diffop, clh);
     else
-      SetValues<double> (coef, u, false, &reg, diffop, clh);
+      SetValues<double> (coef, u, reg.VB(), &reg, diffop, clh);
   }
 
 
