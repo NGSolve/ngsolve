@@ -2,10 +2,10 @@ lappend auto_path $env(NETGENDIR)
 
 set batchmode [Ng_GetCommandLineParameter batchmode]
 if {$batchmode=="undefined"} {
-    if {[catch {package require Tix } result ]} {
-        puts "cannot load package Tix"
-        puts "error : $result"
-    }
+    # if {[catch {package require Tix } result ]} {
+    # puts "cannot load package Tix"
+    # puts "error : $result"
+    # }
     if {[catch {package require tkdnd } result ]} {
 #        puts "cannot load package tkdnd"
 #        puts "error : $result"
