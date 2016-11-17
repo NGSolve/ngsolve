@@ -30,9 +30,11 @@ namespace ngfem
 
     virtual ~HDG_LaplaceIntegrator () { ; }
 
-    virtual bool BoundaryForm () const 
-    { return 0; }
-
+    //virtual bool BoundaryForm () const 
+    //{ return 0; }
+    virtual VorB VB() const
+    { return VOL; }
+    
     virtual bool IsSymmetric () const { return true; }
 
     virtual void CalcElementMatrix (const FiniteElement & fel,
@@ -522,8 +524,8 @@ namespace ngfem
 
     virtual ~HDG_IR_LaplaceIntegrator () { ; }
 
-    virtual bool BoundaryForm () const 
-    { return 0; }
+    virtual VorB VB() const
+    { return VOL; }
     virtual bool IsSymmetric () const { return true; }
 
     virtual void CalcElementMatrix (const FiniteElement & fel,
@@ -703,8 +705,9 @@ namespace ngfem
 
     virtual ~HDGBR_LaplaceIntegrator () { ; }
 
-    virtual bool BoundaryForm () const 
-    { return 0; }
+    virtual VorB VB() const
+    { return VOL; }
+
     virtual bool IsSymmetric () const { return true; }
 
     virtual void CalcElementMatrix (const FiniteElement & fel,
@@ -892,8 +895,9 @@ namespace ngfem
 
     virtual ~HDGBRF_LaplaceIntegrator () { ; }
 
-    virtual bool BoundaryForm () const 
-    { return 0; }
+    virtual VorB VB() const
+    { return VOL; }
+
     virtual bool IsSymmetric () const { return true; }
 
     virtual void CalcElementMatrix (const FiniteElement & fel,
@@ -1099,8 +1103,8 @@ namespace ngfem
 
     virtual ~HDG_LaplaceIntegrator2 () { ; }
 
-    virtual bool BoundaryForm () const { return 0; }
-
+    virtual VorB VB() const
+    { return VOL; }
 
 
     virtual void CalcElementMatrix (const FiniteElement & fel,
@@ -1310,8 +1314,8 @@ namespace ngfem
 
     virtual ~HDG_LaplaceIntegrator3 () { ; }
 
-    virtual bool BoundaryForm () const { return 0; }
-
+    virtual VorB VB() const
+    { return VOL; }
 
 
     virtual void CalcElementMatrix (const FiniteElement & fel,
@@ -1520,9 +1524,9 @@ namespace ngfem
 
     virtual ~HDG_LaplaceIntegrator4  () { ; }
 
-    virtual bool BoundaryForm () const { return 0; }
-
-
+    virtual VorB VB() const
+    { return VOL; }
+    
 
     virtual void CalcElementMatrix (const FiniteElement & fel,
 				    const ElementTransformation & eltrans, 
@@ -1743,7 +1747,8 @@ namespace ngfem
 
     virtual ~HDG_ConvectionIntegrator () { ; }
 
-    virtual bool BoundaryForm () const { return 0; }
+    virtual VorB VB() const
+    { return VOL; }
     virtual bool IsSymmetric () const { return false; }
 
     virtual void CalcElementMatrix (const FiniteElement & fel,
