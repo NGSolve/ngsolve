@@ -1310,6 +1310,12 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
          ([](PyGF self, PyCF cf,
              VorB boundary, py::object definedon, int heapsize, py::object heap)
           {
+             shared_ptr<TPHighOrderFESpace> tpspace = dynamic_pointer_cast<TPHighOrderFESpace>(self.Get()->GetFESpace());
+             if(tpspace)
+             {
+               Transfer2TPMesh(cf.Get().get(),self.Get().get());
+               return;
+            }          
             Region * reg = nullptr;
             if (py::extract<Region&> (definedon).check())
               reg = &py::extract<Region&>(definedon)();
@@ -2338,7 +2344,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
            py::arg("skeleton")=false,
            py::arg("definedon")=DummyArgument()
           );
-
+          
   m.def("SymbolicEnergy",
           [](PyCF cf, VorB vb, py::object definedon) -> PyWrapper<BilinearFormIntegrator>
            {
@@ -2523,6 +2529,93 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
            }));
   */
 
+  
+   m.def("TensorProductFESpace", [](py::list spaces_list, const Flags & flags ) -> PyFES
+            {
+              //Array<shared_ptr<FESpace> > spaces = makeCArray<shared_ptr<FESpace>> (spaces_list);
+              
+              auto spaces = makeCArrayUnpackWrapper<PyWrapper<FESpace>> (spaces_list);
+              
+              if(spaces.Size() == 2)
+              {
+                shared_ptr<FESpace> space( new TPHighOrderFESpace( spaces, flags ) );
+                return space;
+              }
+              else
+              {
+                Array<shared_ptr<FESpace>> spaces_y(spaces.Size()-1);
+                for(int i=1;i<spaces.Size();i++)
+                  spaces_y[i-1] = spaces[i];
+                shared_ptr<FESpace> space( new TPHighOrderFESpace( spaces[0],spaces_y, flags ) );
+                return space;             
+              }
+              });
+              
+   m.def("IntDv", [](PyGF gf_tp, PyGF gf_x )
+            {
+              shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp.Get()->GetFESpace());
+              LocalHeap lh(10000000,"ReduceToXSpace");
+              tpfes->ReduceToXSpace(gf_tp.Get(),gf_x.Get(),lh,
+              [&] (shared_ptr<FESpace> fes,const FiniteElement & fel,const ElementTransformation & trafo,FlatVector<> elvec,FlatVector<> elvec_out,LocalHeap & lh)
+              {
+                 const TPHighOrderFE & tpfel = dynamic_cast<const TPHighOrderFE &>(fel);
+                 shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(fes);
+                 FlatMatrix<> elmat(tpfel.elements[0]->GetNDof(),tpfel.elements[1]->GetNDof(),&elvec[0]);
+                 IntegrationRule ir(tpfel.elements[1]->ElementType(),2*tpfel.elements[1]->Order());
+                 BaseMappedIntegrationRule & mir = trafo(ir,lh);
+                 FlatMatrix<> shape(tpfel.elements[1]->GetNDof(),ir.Size(),lh);
+                 dynamic_cast<const BaseScalarFiniteElement *>(tpfel.elements[1])->CalcShape(ir,shape);
+                 for(int s=0;s<ir.Size();s++)
+                 {
+                   shape.Col(s)*=mir[s].GetWeight();
+                   FlatMatrix<> tempmat(elvec_out.Size(),ir.Size(),lh);
+                   tempmat = elmat*shape;
+                   elvec_out+=tempmat.Col(s);
+                 }
+              });
+              });
+              
+   m.def("IntDv2", [](PyGF gf_tp, PyGF gf_x, PyCF coef )
+           {
+              shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp.Get()->GetFESpace());
+              LocalHeap lh(10000000,"IntDv2");
+              tpfes->ReduceToXSpace(gf_tp.Get(),gf_x.Get(),lh,
+              [&] (shared_ptr<FESpace> fes,const FiniteElement & fel,const ElementTransformation & trafo,FlatVector<> elvec,FlatVector<> elvec_out,LocalHeap & lh)
+              {
+                 const TPHighOrderFE & tpfel = dynamic_cast<const TPHighOrderFE &>(fel);
+                 shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(fes);
+                 FlatMatrix<> elmat(tpfel.elements[0]->GetNDof(),tpfel.elements[1]->GetNDof(),&elvec[0]);
+                 IntegrationRule ir(tpfel.elements[1]->ElementType(),2*tpfel.elements[1]->Order());
+                 BaseMappedIntegrationRule & mir = trafo(ir,lh);
+                 FlatMatrix<> shape(tpfel.elements[1]->GetNDof(),ir.Size(),lh);
+                 dynamic_cast<const BaseScalarFiniteElement *>(tpfel.elements[1])->CalcShape(ir,shape);
+                 FlatMatrix<> vals(mir.Size(),1,lh);
+                 coef.Get()->Evaluate(mir, vals);
+                 for(int s=0;s<ir.Size();s++)
+                 {
+                   shape.Col(s)*=mir[s].GetWeight()*vals(s,0);
+                   elvec_out+=elmat*shape.Col(s);
+                 }
+              });
+              });
+
+   m.def("Prolongate", [](PyGF gf_x, PyGF gf_tp )
+            {
+              shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp.Get()->GetFESpace());
+              LocalHeap lh(100000,"ProlongateFromXSpace");
+              if(gf_x.Get()->GetFESpace() == tpfes->Space(-1) )
+                tpfes->ProlongateFromXSpace(gf_x.Get(),gf_tp.Get(),lh);
+              else
+                cout << "GridFunction gf_x is not defined on first space"<<endl;
+              });
+   m.def("Transfer2StdMesh", [](const PyGF gfutp, PyGF gfustd )
+            {
+              Transfer2StdMesh(gfutp.Get().get(),gfustd.Get().get());
+              return;
+             });
+  
+  
+  
   typedef PyWrapper<BaseVTKOutput> PyVTK;
   py::class_<PyVTK>(m, "VTKOutput")
     .def("__init__",
