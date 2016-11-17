@@ -193,7 +193,7 @@ namespace ngsolve
   protected:
     shared_ptr<GridFunction> gfu;
     shared_ptr<CoefficientFunction> coef;
-    bool boundary;
+    VorB vb;
     bool coarsegridonly;
     int component;
     bool print;
@@ -204,7 +204,10 @@ namespace ngsolve
     {
       gfu = apde->GetGridFunction (flags.GetStringFlag ("gridfunction", ""));
       coef = apde->GetCoefficientFunction (flags.GetStringFlag ("coefficient", ""));
-      boundary = flags.GetDefineFlag ("boundary");
+      if(flags.GetDefineFlag ("boundary"))
+	vb = BND;
+      else
+	vb = VOL;
       coarsegridonly = flags.GetDefineFlag ("coarsegridonly");
       component = int (flags.GetNumFlag ("component", 0))-1;
       print = flags.GetDefineFlag ("print");
@@ -248,7 +251,7 @@ namespace ngsolve
       if (component != -1)
 	hgfu = gfu->GetComponent(component);
 
-      SetValues (coef, *hgfu, boundary, 0, lh);
+      SetValues (coef, *hgfu, vb, 0, lh);
       if (print) 
         *testout << "setvalues result:" << endl << hgfu->GetVector() << endl;
     }
