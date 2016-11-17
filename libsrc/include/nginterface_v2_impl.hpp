@@ -66,10 +66,10 @@ NGX_INLINE DLL_HEADER Ng_Element Ngx_Mesh :: GetElement<1> (int nr) const
 
   Ng_Element ret;
   ret.type = NG_ELEMENT_TYPE(el.GetType());
-  if(mesh->GetDimension()==2)
-    ret.index = el.si;
-  else
+  if(mesh->GetDimension()==3)
     ret.index = el.edgenr;
+  else
+    ret.index = el.si;
   if (mesh->GetDimension() == 2)
     ret.mat = mesh->GetBCNamePtr(el.si-1);
   else
