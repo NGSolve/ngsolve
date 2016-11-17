@@ -342,8 +342,9 @@ namespace ngcomp
     S_GridFunction<SCAL> & u = dynamic_cast<S_GridFunction<SCAL> &> (bu);
 
     const FESpace & fes = *u.GetFESpace();
-    shared_ptr<MeshAccess> ma = fes.GetMeshAccess();
+    shared_ptr<MeshAccess> ma = fes.GetMeshAccess(); 
     int dim   = fes.GetDimension();
+    ma->PushStatus("setvalues");
 
     shared_ptr<BilinearFormIntegrator> bli = fes.GetIntegrator(vb);
     if (!bli)
