@@ -1,7 +1,7 @@
 #ifndef FILE_TPFES
 #define FILE_TPFES
-#include "../fem/tpdiffop.hpp"
-#include "../fem/tpintrule.hpp"
+// #include "../fem/tpdiffop.hpp"
+// #include "../fem/tpintrule.hpp"
 namespace ngcomp
 {
   ///////////////////////////////////////////////////////////////////////////////////////
