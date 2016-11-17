@@ -60,8 +60,8 @@ namespace ngcomp
     Array<shared_ptr<BaseMatrix>> mats;
 
     /// bilinearform-integrators
-    Array<shared_ptr<BilinearFormIntegrator>> parts,
-      volume_parts, boundary_parts, volume_skeleton_parts, boundary_skeleton_parts;
+    Array<shared_ptr<BilinearFormIntegrator>> parts;
+    Array<shared_ptr<BilinearFormIntegrator>> VB_parts[3], VB_skeleton_parts[3];
 
     /*
     Array<BilinearFormIntegrator*> independent_parts;

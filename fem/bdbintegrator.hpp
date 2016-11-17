@@ -703,9 +703,10 @@ public:
   virtual int GetDimension () const { return DIM; }
   
   ///
-  virtual bool BoundaryForm () const
-  { return int(DIM_SPACE) > int(DIM_ELEMENT); }
-  
+  //virtual bool BoundaryForm () const
+  //{ return int(DIM_SPACE) > int(DIM_ELEMENT); }
+  virtual VorB VB() const
+  { return VorB(int(DIM_SPACE)-int(DIM_ELEMENT)); }
     virtual int DimElement () const
   { return DIM_ELEMENT; }
   
@@ -1467,9 +1468,10 @@ public:
 
   }
   ///
-  virtual bool BoundaryForm () const
-  { return int(DIM_SPACE) > int(DIM_ELEMENT); }
-
+  //virtual bool BoundaryForm () const
+  //{ return int(DIM_SPACE) > int(DIM_ELEMENT); }
+  virtual VorB VB() const
+  { return VorB(int(DIM_SPACE)-int(DIM_ELEMENT)); }
   virtual int DimElement () const
   { return DIM_ELEMENT; }
 

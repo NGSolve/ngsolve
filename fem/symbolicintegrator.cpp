@@ -1797,6 +1797,7 @@ namespace ngfem
               proxy->Evaluator()->Apply(fel, mir, elveclin, ud.GetMemory(proxy), lh);
             }
     
+    
           FlatMatrix<> val(mir.Size(), 1,lh), deriv(mir.Size(), 1,lh);
           for (int k1 : Range(trial_proxies))
             for (int l1 : Range(test_proxies))

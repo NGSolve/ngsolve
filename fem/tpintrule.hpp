@@ -76,7 +76,7 @@ namespace ngfem
     ArrayMem<ElementTransformation*, 2> trafos;
   public:
   TPElementTransformation ( ElementId aei ) : 
-    ElementTransformation (ET_POINT, true, aei.Nr(), 0), ei(aei)
+    ElementTransformation (ET_POINT, VOL, aei.Nr(), 0), ei(aei)
     {
         //trafos.SetSize(nmeshes);
     }
@@ -100,8 +100,8 @@ namespace ngfem
     virtual int SpaceDim () const { 
       return trafos[0]->SpaceDim() + trafos[1]->SpaceDim();
     }
-    virtual bool Boundary() const {
-      return trafos[0]->Boundary() || trafos[1]->Boundary();
+    virtual VorB VB() const {
+      return VorB( (trafos[0]->VB()==BND) || (trafos[1]->VB() == BND) );
     }
     virtual BaseMappedIntegrationPoint & operator() (const IntegrationPoint & ip, Allocator & lh) const {
       throw Exception("TPElementTransformation::operator() not implemented"); }

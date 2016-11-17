@@ -57,8 +57,7 @@ namespace ngcomp
     for (auto eval : evaluators)
       difforder = min2(difforder, eval->DiffOrder());
     int blockdim = 1;
-    bool bnd = false;
-    evaluator = shared_ptr<DifferentialOperator>( new TPDifferentialOperator(evaluators, dim, blockdim, bnd, difforder) );
+    evaluator = shared_ptr<DifferentialOperator>( new TPDifferentialOperator(evaluators, dim, blockdim, VOL, difforder) );
   }
 
   TPHighOrderFESpace::TPHighOrderFESpace (shared_ptr<FESpace> aspace_x,FlatArray<shared_ptr<FESpace>> aspaces_y, const Flags & flags, bool parseflags)
@@ -117,8 +116,7 @@ namespace ngcomp
     for (auto eval : evaluators)
       difforder = min2(difforder, eval->DiffOrder());
     int blockdim = 1;
-    bool bnd = false;    
-    evaluator = shared_ptr<DifferentialOperator>( new TPDifferentialOperator(evaluators, dim, blockdim, bnd, difforder) );
+    evaluator = shared_ptr<DifferentialOperator>( new TPDifferentialOperator(evaluators, dim, blockdim, VOL, difforder) );
   }
 
   TPHighOrderFESpace::~TPHighOrderFESpace () { ; }
@@ -139,15 +137,14 @@ namespace ngcomp
     for (auto eval : gradx)
       difforder = min2(difforder, eval->DiffOrder());
     int blockdim = 1;
-    bool bnd = false;
-    ops.Set("gradx", make_shared<TPDifferentialOperator>( gradx, dim, blockdim, bnd, difforder ));
+    ops.Set("gradx", make_shared<TPDifferentialOperator>( gradx, dim, blockdim, VOL, difforder ));
     dim = 0;
     for (auto eval : grady)
       dim = max2(dim, eval->Dim());
     difforder = grady[0]->DiffOrder();
     for (auto eval : grady)
       difforder = min2(difforder, eval->DiffOrder());
-    ops.Set("grady", make_shared<TPDifferentialOperator>( grady,dim,blockdim,bnd,difforder ));
+    ops.Set("grady", make_shared<TPDifferentialOperator>( grady,dim,blockdim,VOL,difforder ));
     return ops;
   } 
 
@@ -302,7 +299,11 @@ namespace ngcomp
     for(int i=0;i<first_element_dof[elnr+1]-first_element_dof[elnr];i++)
       dnums[i] = first_element_dof[elnr]+i;
   }
-
+  virtual void TPHighOrderFESpace::GetDofNrs(ngfem::ElementId ei, ngstd::Array<int>& dnums) const
+  {
+    GetDofNrs(ei.Nr(),dnums);
+  }
+  
   void TPHighOrderFESpace::GetSDofNrs (int selnr, Array<int> & dnums) const
   {
     dnums.SetSize(0);

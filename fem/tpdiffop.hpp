@@ -7,7 +7,7 @@ namespace ngfem
   {
     ArrayMem<shared_ptr<DifferentialOperator>,2> evaluators;
   public:
-    NGS_DLL_HEADER TPDifferentialOperator() : DifferentialOperator(1,1,false,1) { ; }
+    NGS_DLL_HEADER TPDifferentialOperator() : DifferentialOperator(1,1,VOL,1) { ; }
     NGS_DLL_HEADER TPDifferentialOperator(FlatArray<shared_ptr<DifferentialOperator> > aevaluators,int adim,int ablockdim,bool abnd,int adifforder) : DifferentialOperator(adim,ablockdim,abnd,adifforder)
       {
         evaluators.SetSize( aevaluators.Size() );

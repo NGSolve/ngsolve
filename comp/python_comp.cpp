@@ -108,10 +108,17 @@ py::object MakeProxyFunction2 (const FESpace & fes,
                                            shared_ptr <CompoundDifferentialOperator> block_trace_eval = nullptr;
                                            if (proxy->TraceEvaluator() != nullptr)
                                              block_trace_eval = make_shared<CompoundDifferentialOperator> (proxy->TraceEvaluator(), i);
+					   shared_ptr <CompoundDifferentialOperator> block_ttrace_eval = nullptr;
+					   if (proxy->TTraceEvaluator() != nullptr)
+					     block_ttrace_eval = make_shared<CompoundDifferentialOperator> (proxy->TTraceEvaluator(),i);
                                            shared_ptr <CompoundDifferentialOperator> block_trace_deriv_eval = nullptr;
                                            if (proxy->TraceDerivEvaluator() != nullptr)
                                              block_trace_deriv_eval = make_shared<CompoundDifferentialOperator> (proxy->TraceDerivEvaluator(), i);
-                                           auto block_proxy = make_shared<ProxyFunction> (/* &fes, */ testfunction, fes.IsComplex(),                                                                                          block_eval, block_deriv_eval, block_trace_eval, block_trace_deriv_eval);
+					   shared_ptr <CompoundDifferentialOperator> block_ttrace_deriv_eval = nullptr;
+					   if (proxy->TTraceDerivEvaluator() != nullptr)
+					     block_ttrace_deriv_eval = make_shared<CompoundDifferentialOperator> (proxy->TTraceDerivEvaluator(),i);
+                                           auto block_proxy = make_shared<ProxyFunction> (/* &fes, */ testfunction, fes.IsComplex(),                                                                                          block_eval, block_deriv_eval, block_trace_eval, block_trace_deriv_eval,
+					  block_ttrace_eval, block_ttrace_deriv_eval);
 
                                            SymbolTable<shared_ptr<DifferentialOperator>> add = proxy->GetAdditionalEvaluators();
                                            for (int j = 0; j < add.Size(); j++)
@@ -138,7 +145,9 @@ py::object MakeProxyFunction2 (const FESpace & fes,
                                             fes.GetEvaluator(),
                                             fes.GetFluxEvaluator(),
                                             fes.GetEvaluator(BND),
-                                            fes.GetFluxEvaluator(BND));
+                                            fes.GetFluxEvaluator(BND),
+					    fes.GetEvaluator(BBND),
+					    fes.GetFluxEvaluator(BBND));
   auto add_diffops = fes.GetAdditionalEvaluators();
   for (int i = 0; i < add_diffops.Size(); i++)
     proxy->SetAdditionalEvaluator (add_diffops.GetName(i), add_diffops[i]);
@@ -193,6 +202,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
   py::enum_<VorB>(m, "VorB")
     .value("VOL", VOL)
     .value("BND", BND)
+    .value("BBND", BBND)
     .export_values()
     ;
 
@@ -217,9 +227,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
     .def(py::init<int>())
     .def("__str__", &ToString<ElementId>)
     .def_property_readonly("nr", &ElementId::Nr, "the element number")    
-    .def("IsVolume", &ElementId::IsVolume, "is it a boundary element ?")
-    .def("IsBoundary", &ElementId::IsBoundary, "is it a volume element ?")
-    .def(py::self!=py::self)
+    .def("VB", &ElementId::VB, "VorB of element")    .def(py::self!=py::self)
     .def("__eq__" , [](ElementId &self, ElementId &other)
                                     { return !(self!=other); } )
     .def("__hash__" , &ElementId::Nr)
@@ -566,6 +574,25 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
          "returns boundary mesh-region matching the given regex pattern",
          py::return_value_policy::take_ownership
          )
+    .def("GetBBoundaries",
+	 [](const MeshAccess & ma)
+	  {
+	    py::list bboundaries(ma.GetNBBoundaries());
+	    for (int i : Range(ma.GetNBBoundaries()))
+	      bboundaries[i] = py::cast(ma.GetCD2NumCD2Name(i));
+	    return bboundaries;
+	  },
+	 "returns list of boundary conditions for co dimension 2"
+	 )
+    .def("BBoundaries", FunctionPointer
+	 ([](shared_ptr<MeshAccess> ma, string pattern)
+	  {
+	    return new Region (ma, BBND, pattern);
+	  }),
+	 (py::arg("self"), py::arg("pattern")),
+	 "returns co dim 2 boundary mesh-region matching the given regex pattern",
+	 py::return_value_policy::take_ownership
+	 )
 
     .def("Refine",
          [](MeshAccess & ma)
@@ -1409,7 +1436,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 
             Array<int> dnums(fel.GetNDof(), lh);
             space->GetDofNrs(elnr, dnums);
-            auto & trafo = space->GetMeshAccess()->GetTrafo(elnr, false, lh);
+            auto & trafo = space->GetMeshAccess()->GetTrafo(elnr, VOL, lh);
 
             if (space->IsComplex())
               {
@@ -1492,12 +1519,12 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                 self->GetElementVector(dnums, elvec);
                 if (dim_mesh == 2)
                   {
-                    MappedIntegrationPoint<2, 2> mip(ip, space.GetMeshAccess()->GetTrafo(elnr, false, lh));
+                    MappedIntegrationPoint<2, 2> mip(ip, space.GetMeshAccess()->GetTrafo(elnr, VOL, lh));
                     evaluator->Apply(fel, mip, elvec, values, lh);
                   }
                 else if (dim_mesh == 3)
                   {
-                    MappedIntegrationPoint<3, 3> mip(ip, space.GetMeshAccess()->GetTrafo(elnr, false, lh));
+                    MappedIntegrationPoint<3, 3> mip(ip, space.GetMeshAccess()->GetTrafo(elnr, VOL, lh));
                     evaluator->Apply(fel, mip, elvec, values, lh);
                   }
                 if (dim > 1)
@@ -1513,12 +1540,12 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                 self->GetElementVector(dnums, elvec);
                 if (dim_mesh == 2)
                   {
-                    MappedIntegrationPoint<2, 2> mip(ip, space.GetMeshAccess()->GetTrafo(elnr, false, lh));
+                    MappedIntegrationPoint<2, 2> mip(ip, space.GetMeshAccess()->GetTrafo(elnr, VOL, lh));
                     evaluator->Apply(fel, mip, elvec, values, lh);
                   }
                 else if (dim_mesh == 3)
                   {
-                    MappedIntegrationPoint<3, 3> mip(ip, space.GetMeshAccess()->GetTrafo(elnr, false, lh));
+                    MappedIntegrationPoint<3, 3> mip(ip, space.GetMeshAccess()->GetTrafo(elnr, VOL, lh));
                     evaluator->Apply(fel, mip, elvec, values, lh);
                   }
                 if (dim > 1)
