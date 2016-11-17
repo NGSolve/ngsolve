@@ -26,16 +26,8 @@ namespace ngcomp
     {
       ndofs[i] = spaces[i]->GetNDof();
       meshes[i] = spaces[i]->GetMeshAccess();      
-      if( el_counts!=nullptr )
-      {
-        nels[i] = (*el_counts)[i];
-        nfacets[i] = (*el_counts)[i+2];
-      }
-      else
-      {
-        nels[i] = meshes[i]->GetNE();
-        nfacets[i] = meshes[i]->GetNFacets();
-      }
+      nels[i] = meshes[i]->GetNE();
+      nfacets[i] = meshes[i]->GetNFacets();
       ndof *= ndofs[i];
       nel *= nels[i];
     }
@@ -70,7 +62,7 @@ namespace ngcomp
     evaluator = shared_ptr<DifferentialOperator>( new TPDifferentialOperator(evaluators, dim, blockdim, bnd, difforder) );
   }
 
-  TPHighOrderFESpace::TPHighOrderFESpace (shared_ptr<FESpace> aspace_x,FlatArray<shared_ptr<FESpace>> aspaces_y, const Flags & flags, bool parseflags, Array<int> * el_counts)
+  TPHighOrderFESpace::TPHighOrderFESpace (shared_ptr<FESpace> aspace_x,FlatArray<shared_ptr<FESpace>> aspaces_y, const Flags & flags, bool parseflags)
     : FESpace (aspace_x->GetMeshAccess(), flags)
   {
     nmeshes = 2;
@@ -89,17 +81,10 @@ namespace ngcomp
     nel = 1;
     meshes[0] = fespaces[0]->GetMeshAccess();
     meshes[1] = fespaces[1]->GetMeshAccess();
-    for (int i : Range(nmeshes)) {
-      if( el_counts )
-      {
-        nels[i] = (*el_counts)[i];
-        nfacets[i] = (*el_counts)[i+2];        
-      }
-      else
-      {
-        nels[i] = meshes[i]->GetNE();
-        nfacets[i] = meshes[i]->GetNFacets();
-      }
+    for (int i : Range(nmeshes)) 
+    {
+      nels[i] = meshes[i]->GetNE();
+      nfacets[i] = meshes[i]->GetNFacets();
       nel *= nels[i];
     }
     ndof = 0;
@@ -185,60 +170,12 @@ namespace ngcomp
         FlatVector<> elvec(dnums.Size(),clh);
         vec_in.GetIndirect(dnums,elvec);
         const TPHighOrderFE & tpfel = dynamic_cast<const TPHighOrderFE &>(GetFE(index,clh));
-        if(tpfel.elements[1]->ElementType() == ET_HERMITE)
-        {
-          ElementTransformation & trafo = dynamic_cast<TPElementTransformation &>(GetTrafo(i,clh)).GetTrafo(1);
-          func(gf_in->GetFESpace(),tpfel,trafo,elvec,elvec_out,clh);
-        }
-        else
-        {
-          ElementTransformation & trafo = fespaces[1]->GetMeshAccess()->GetTrafo(j,clh);
-          func(gf_in->GetFESpace(),tpfel,trafo,elvec,elvec_out,clh);
-        }
+        ElementTransformation & trafo = fespaces[1]->GetMeshAccess()->GetTrafo(j,clh);
+        func(gf_in->GetFESpace(),tpfel,trafo,elvec,elvec_out,clh);
       }
       space_x->GetDofNrs(i,dnumsx);
       gf_out->GetVector().SetIndirect(dnumsx,elvec_out);
-    }
-    
-    // shared_ptr<FESpace> space_x = Space(-1);
-    // shared_ptr<FESpace> space_y = Space(0);
-    // const Table<int> & element_coloring0 = space_x->ElementColoring(VOL);
-    // Array<int> dnums,dnumsx;
-    // if (task_manager)
-    // {
-      // for (FlatArray<int> els_of_col : element_coloring0)
-      // {
-        // SharedLoop sl(els_of_col.Range());
-        // task_manager -> CreateJob
-        // ( [&] (const TaskInfo & ti) 
-        // {
-          // LocalHeap lh = clh.Split(ti.thread_nr, ti.nthreads);
-          // for (int mynr : sl)
-          // {
-            // FlatVector<> elvec_out(space_x->GetFE(els_of_col[mynr],lh).GetNDof(),lh);
-            // elvec_out = 0.0;
-            // for(int j=0;j<nels[1];j++)
-            // {
-              // HeapReset hr(lh);
-              // int index = GetIndex(els_of_col[mynr],j);
-              // GetDofNrs(index,dnums);
-              // FlatVector<> elvec(dnums.Size(),lh);
-              // vec_in.GetIndirect(dnums,elvec);
-              // const TPHighOrderFE & tpfel = dynamic_cast<const TPHighOrderFE &>(GetFE(index,lh));
-              // ElementTransformation & trafo = fespaces[1]->GetMeshAccess()->GetTrafo(j,lh);
-              // func(gf_in->GetFESpace(),tpfel,trafo,elvec,elvec_out,lh);
-            // }
-            // space_x->GetDofNrs(els_of_col[mynr],dnumsx);
-            // gf_out->GetVector().SetIndirect(dnumsx,elvec_out);
-          // }
-        // });
-      // }
-      // return;
-    // }
-    
-    
-    
-    
+    }    
   }
 
   void TPHighOrderFESpace :: ProlongateFromXSpace(shared_ptr<GridFunction> gf_in, shared_ptr<GridFunction> gf_out,LocalHeap & lh)
@@ -250,12 +187,10 @@ namespace ngcomp
     {
       Vector<> elvec_in(space_x->GetFE(i,lh).GetNDof());
       fespaces[0]->GetDofNrs(i,dnumsx);
-      vec_in.GetIndirect(dnumsx,elvec_in);      
-      //indices[0] = i;
+      vec_in.GetIndirect(dnumsx,elvec_in);
       for(int j=0;j<nels[1];j++)
       {
         HeapReset hr(lh);
-        //indices[1] = j;
         int index = GetIndex(i,j);
         GetDofNrs(index,dnums);
         FlatVector<> elvec_out(dnums.Size(),lh);
@@ -342,17 +277,7 @@ namespace ngcomp
      ElementId eiix(VOL,indices[0]);
      trafos[0] = &(space_x->GetMeshAccess()->GetTrafo(eiix,lh));
      ElementId eiiy(VOL,indices[1]);
-     if( Space(eiix.Nr())->GetFE(0,lh).ElementType() == ET_HERMITE )
-     {
-//       if(Space(eiix.Nr())->GetSpacialDimension() == 1)
-         trafos[1] = new (lh) HM_ElementTransformation(dynamic_pointer_cast<GlobalHermiteFESpace>(spaces_y[0])->AnsatzTemp(eiix.Nr()),&dynamic_pointer_cast<GlobalHermiteFESpace>(spaces_y[0])->AnsatzV(eiix.Nr()));
-//       if(Space(eiix.Nr())->GetSpacialDimension() == 2)
-//         trafos[1] = new (lh) HM_ElementTransformation(1.0,Vec<2>(0.0,0.0));
-//       if(Space(eiix.Nr())->GetSpacialDimension() == 3)
-//         trafos[1] = new (lh) HM_ElementTransformation(1.0,Vec<3>(0.0,0.0,0.0));
-     }
-     else
-       trafos[1] = &(Space(eiix.Nr())->GetMeshAccess()->GetTrafo(eiiy,lh));
+     trafos[1] = &(Space(eiix.Nr())->GetMeshAccess()->GetTrafo(eiiy,lh));
      trafo->SetTrafos(trafos);
      return *trafo;
   }
@@ -451,33 +376,6 @@ namespace ngcomp
           func (ElementId (vb, i),ElementId (vb, j), clh);
         }
       }
-    // else if(vb == BND)
-    // {
-      // for (int i = 0; i< ma0->GetNSE();i++)
-      // {
-        // Array<int> temp_dnums0;
-        // FESpace::Element el0(*spaces[0], ElementId (BND, i), temp_dnums0, clh);
-        // for(int j=0;j<ma1->GetNE();j++)
-        // {
-          // Array<int> temp_dnums1;
-          // HeapReset hr(clh);
-          // FESpace::Element el1(*spaces[1], ElementId (VOL, j), temp_dnums1, clh);
-          // func (move(el0),move(el1), clh);
-        // }
-      // }
-      // for (int i = 0; i< ma0->GetNE();i++)
-      // {
-        // Array<int> temp_dnums0;
-        // FESpace::Element el0(*spaces[0], ElementId (VOL, i), temp_dnums0, clh);
-        // for(int j=0;j<ma1->GetNSE();j++)
-        // {
-          // Array<int> temp_dnums1;
-          // HeapReset hr(clh);
-          // FESpace::Element el1(*spaces[1], ElementId (BND, j), temp_dnums1, clh);
-          // func (move(el0),move(el1), clh);
-        // }
-      // }
-    // }
   }
   
   void TPHighOrderFESpace::SolveM (CoefficientFunction & rho, BaseVector & vec,
@@ -534,149 +432,63 @@ namespace ngcomp
     shared_ptr<FESpace> fesy = tpfes->Space(0);
     LocalHeap lh(100000000,"heap");
     auto & els = dynamic_cast<TPHighOrderFE &> (tpfes->GetFE(ElementId(0),lh));
-    if(els.elements[1]->ElementType() == ET_HERMITE)
+    IterateElementsTP(*tpfes,VOL,lh,
+    [&] (ElementId ei0,ElementId ei1,LocalHeap & lh)
     {
-      IterateElementsTP(*tpfes,VOL,lh,
-      [&] (ElementId ei0,ElementId ei1,LocalHeap & lh)
-      {
-        HeapReset hr(lh);
-        Array<int> ind(2);
-        ind[0] = ei0.Nr(); ind[1] = ei1.Nr();
-        int elnr = tpfes->GetIndex(ind);
-        TPHighOrderFE & tpfel = dynamic_cast<TPHighOrderFE&>(tpfes->GetFE(ElementId(elnr),lh));
-        const shared_ptr<MeshAccess> helperma = dynamic_pointer_cast<GlobalHermiteFESpace>(fesy)->HelperSpace()->GetMeshAccess();
-        for(int i = 0;i < helperma->GetNE() ; i++)
+      HeapReset hr(lh);
+      Array<int> ind(2);
+      ind[0] = ei0.Nr(); ind[1] = ei1.Nr();
+      int elnr = tpfes->GetIndex(ind);
+      TPHighOrderFE & tpfel = dynamic_cast<TPHighOrderFE&>(tpfes->GetFE(ElementId(elnr),lh));
+      int elnrstd = elnr;
+      const FiniteElement & fel = fes->GetFE(ElementId(elnrstd),lh);
+      Array<const IntegrationRule *> irs(tpfel.elements.Size());
+      for(int s=0;s<irs.Size();s++)
+        irs[s] = &SelectIntegrationRule(tpfel.elements[s]->ElementType(),2*fel.Order());
+      TPIntegrationRule ir(irs);
+      const ElementTransformation & tptrafo = tpfes->GetTrafo(ElementId(elnr),lh);
+      BaseMappedIntegrationRule & tpmir = tptrafo(ir, lh);
+      IntegrationRule irstd;
+      for(int s=0;s<ir(0).Size();s++)
+        for(int t=0;t<ir(1).Size();t++)
         {
-          int elnrstd = elnr*helperma->GetNE() + i;
-          const FiniteElement & fel = fes->GetFE(elnrstd,lh);
-          Array<const IntegrationRule *> irs(tpfel.elements.Size());
-          irs[0] = &SelectIntegrationRule(tpfel.elements[0]->ElementType(),2*fel.Order());
-          const FiniteElement & felyhelper = dynamic_pointer_cast<GlobalHermiteFESpace> (fesy)->HelperSpace()->GetFE(ElementId(VOL,i),lh);
-          irs[1] = &SelectIntegrationRule(felyhelper.ElementType(),2*max(tpfel.elements[1]->Order(),fel.Order()) );
-          const ElementTransformation & tptrafo = tpfes->GetTrafo(ElementId(VOL,elnr),lh);
-          shared_ptr<TPDifferentialOperator> diffop = dynamic_pointer_cast<TPDifferentialOperator>(tpfes->GetEvaluator());
-          int niptp = irs[0]->Size()*irs[1]->Size();
-          FlatMatrix<> elmat(fel.GetNDof(), lh);
-          elmat = 0.0;
-          FlatMatrix<> shapes(fel.GetNDof(),niptp,lh);
-          FlatVector<> elvec(fel.GetNDof(),lh),y(fel.GetNDof(),lh);
-          IntegrationRule irstd;
-          IntegrationRule helperirv;
-          for(int s=0;s<irs[0]->Size();s++)
-            for(int t=0;t<irs[1]->Size();t++)
-            {
-              if(fesx->GetMeshAccess()->GetDimension() == 1 )
-                  irstd.AddIntegrationPoint(IntegrationPoint((*irs[0])[s](0),(*irs[1])[t](0),(*irs[1])[t](1), (*irs[0])[s].Weight()*(*irs[1])[t].Weight()));
-              if(fesx->GetMeshAccess()->GetDimension() == 2 )
-                  irstd.AddIntegrationPoint(IntegrationPoint((*irs[0])[s](0),(*irs[0])[s](1),(*irs[1])[t](0), (*irs[0])[s].Weight()*(*irs[1])[t].Weight()));
-            }
-          
-          for(int t=0;t<irs[1]->Size();t++)
-            helperirv.AddIntegrationPoint( (helperma->GetTrafo(ElementId(VOL,i),lh)(*irs[1],lh))[t].GetPoint()(0) );
-          irs[1] = &helperirv;
-          TPIntegrationRule iir(irs);
-          TPMappedIntegrationRule & ttpmir = dynamic_cast<TPMappedIntegrationRule &>(tptrafo(iir,lh));
-          FlatVector<> flux(niptp,lh);
-          
-          FlatVector<> coef(tpfel.GetNDof(),lh);
-          Array<int> dnums;
-          tpfes->GetDofNrs(elnr,dnums);
-          gfutp->GetVector().GetIndirect(dnums,coef);
-          FlatMatrix<> shape0(tpfel.elements[0]->GetNDof(), irs[0]->Size(),lh);
-          FlatMatrix<> coefmat(tpfel.elements[0]->GetNDof(),tpfel.elements[1]->GetNDof(),&coef(0));
-          dynamic_cast<const BaseScalarFiniteElement *>(tpfel.elements[0])->CalcShape(*irs[0],shape0);
-          FlatMatrix<> coefsipx(irs[0]->Size(),tpfel.elements[1]->GetNDof(), lh);
-          coefsipx = Trans(shape0)*coefmat;
-          if(tpfes->Space(1)->GetSpacialDimension() == 1)
-          {
-            double Tref = dynamic_cast<HM_ElementTransformation &>(dynamic_cast<const TPElementTransformation &>(tptrafo).GetTrafo(1)).GetAnsatzT();
-            Vec<1> Vref = dynamic_cast<HM_ElementTransformation &>(dynamic_cast<const TPElementTransformation &>(tptrafo).GetTrafo(1)).GetAnsatzV();
-            for(int u=0;u<irs[0]->Size();u++)
-              dynamic_cast<const Distribution<1> *>(tpfel.elements[1])->Evaluate<NODAL>(coefsipx.Row(u),helperirv,flux.Range(u*irs[1]->Size(),(u+1)*irs[1]->Size()) ,Tref,Vref);
-          }
-          if(tpfes->Space(1)->GetSpacialDimension() == 2)
-          {
-            double Tref = dynamic_cast<HM_ElementTransformation &>(dynamic_cast<const TPElementTransformation &>(tptrafo).GetTrafo(1)).GetAnsatzT();
-            Vec<2> Vref = dynamic_cast<HM_ElementTransformation &>(dynamic_cast<const TPElementTransformation &>(tptrafo).GetTrafo(1)).GetAnsatzV();
-            for(int u=0;u<irs[0]->Size();u++)
-              dynamic_cast<const Distribution<2> *>(tpfel.elements[1])->Evaluate<NODAL>(coefsipx.Row(u),helperirv,flux.Range(u*irs[1]->Size(),(u+1)*irs[1]->Size()) ,Tref,Vref);
-          }          
-          const ElementTransformation & trafo = fes->GetMeshAccess()->GetTrafo(ElementId(VOL,elnrstd),lh);
-          BaseMappedIntegrationRule & mirstd = trafo(irstd,lh);
-          shapes = 0.0;
-          dynamic_cast<const BaseScalarFiniteElement &>(fel).CalcShape(irstd,shapes);
-          FlatMatrix<> shapes1(fel.GetNDof(),mirstd.Size(),lh);
-          shapes1 = shapes;
-          for(int s=0;s<shapes.Width();s++)
-            shapes.Col(s)*= mirstd[s].GetWeight();
-          elmat = shapes1*Trans(shapes);
-          elvec = shapes * flux;
-          fes->GetDofNrs(elnrstd,dnums);
-          CalcInverse(elmat);
-          y = elmat*elvec;
-          BaseVector & baseout = gfustd->GetVector();
-          baseout.SetIndirect(dnums,y);
-        }
-      });
-    }
-    else
-      IterateElementsTP(*tpfes,VOL,lh,
-      [&] (ElementId ei0,ElementId ei1,LocalHeap & lh)
-      {
-        HeapReset hr(lh);
-        Array<int> ind(2);
-        ind[0] = ei0.Nr(); ind[1] = ei1.Nr();
-        int elnr = tpfes->GetIndex(ind);
-        TPHighOrderFE & tpfel = dynamic_cast<TPHighOrderFE&>(tpfes->GetFE(ElementId(elnr),lh));
-        int elnrstd = elnr;
-        const FiniteElement & fel = fes->GetFE(ElementId(elnrstd),lh);
-        Array<const IntegrationRule *> irs(tpfel.elements.Size());
-        for(int s=0;s<irs.Size();s++)
-          irs[s] = &SelectIntegrationRule(tpfel.elements[s]->ElementType(),2*fel.Order());
-        TPIntegrationRule ir(irs);
-        const ElementTransformation & tptrafo = tpfes->GetTrafo(ElementId(elnr),lh);
-        BaseMappedIntegrationRule & tpmir = tptrafo(ir, lh);
-        IntegrationRule irstd;
-        for(int s=0;s<ir(0).Size();s++)
-          for(int t=0;t<ir(1).Size();t++)
-          {
-            if(fesx->GetMeshAccess()->GetDimension() == 1 )
-                irstd.AddIntegrationPoint(IntegrationPoint(ir(0)[s](0),ir(1)[t](0),ir(1)[t](1), ir(0)[s].Weight()*ir(1)[t].Weight()));
-            if(fesx->GetMeshAccess()->GetDimension() == 2 )
-                irstd.AddIntegrationPoint(IntegrationPoint(ir(0)[s](0),ir(0)[s](1),ir(1)[t](0), ir(0)[s].Weight()*ir(1)[t].Weight()));
-          }
-        const ElementTransformation & trafo = fes->GetMeshAccess()->GetTrafo(ElementId(VOL,elnrstd),lh);
-        BaseMappedIntegrationRule & mirstd = trafo(irstd,lh);
-        shared_ptr<TPDifferentialOperator> diffop = dynamic_pointer_cast<TPDifferentialOperator>(tpfes->GetEvaluator());
-        int niptp = ir(0).Size()*ir(1).Size();
-        // Evalute \int u_tp * v_std :
-        FlatMatrix<> flux(niptp,diffop->Dim(),lh);
-        FlatVector<> coef(tpfel.GetNDof(),lh);
-        const BaseVector & base = gfutp->GetVector();
-        Array<int> dnums;
-        tpfes->GetDofNrs(elnr,dnums);
-        base.GetIndirect(dnums,coef);
-        diffop->Apply(tpfel, tpmir, coef,flux,lh);
-        // Build mass matrix for \int u_std * v_std :
-        FlatMatrix<> elmat(fel.GetNDof(),lh);
-        elmat = 0.0;
-        FlatMatrix<> shapes(fel.GetNDof(),mirstd.Size(),lh);
-        shapes = 0.0;
-        dynamic_cast<const BaseScalarFiniteElement &>(fel).CalcShape(irstd,shapes);
-        FlatMatrix<> shapes1(fel.GetNDof(),mirstd.Size(),lh);
+          if(fesx->GetMeshAccess()->GetDimension() == 1 )
+              irstd.AddIntegrationPoint(IntegrationPoint(ir(0)[s](0),ir(1)[t](0),ir(1)[t](1), ir(0)[s].Weight()*ir(1)[t].Weight()));
+          if(fesx->GetMeshAccess()->GetDimension() == 2 )
+              irstd.AddIntegrationPoint(IntegrationPoint(ir(0)[s](0),ir(0)[s](1),ir(1)[t](0), ir(0)[s].Weight()*ir(1)[t].Weight()));
+         }
+      const ElementTransformation & trafo = fes->GetMeshAccess()->GetTrafo(ElementId(VOL,elnrstd),lh);
+      BaseMappedIntegrationRule & mirstd = trafo(irstd,lh);
+      shared_ptr<TPDifferentialOperator> diffop = dynamic_pointer_cast<TPDifferentialOperator>(tpfes->GetEvaluator());
+      int niptp = ir(0).Size()*ir(1).Size();
+      // Evalute \int u_tp * v_std :
+      FlatMatrix<> flux(niptp,diffop->Dim(),lh);
+      FlatVector<> coef(tpfel.GetNDof(),lh);
+      const BaseVector & base = gfutp->GetVector();
+      Array<int> dnums;
+      tpfes->GetDofNrs(elnr,dnums);
+      base.GetIndirect(dnums,coef);
+      diffop->Apply(tpfel, tpmir, coef,flux,lh);
+      // Build mass matrix for \int u_std * v_std :
+      FlatMatrix<> elmat(fel.GetNDof(),lh);
+      elmat = 0.0;
+      FlatMatrix<> shapes(fel.GetNDof(),mirstd.Size(),lh);
+      shapes = 0.0;
+      dynamic_cast<const BaseScalarFiniteElement &>(fel).CalcShape(irstd,shapes);
+      FlatMatrix<> shapes1(fel.GetNDof(),mirstd.Size(),lh);
         
-        FlatVector<> elvec(fel.GetNDof(),lh),y(fel.GetNDof(),lh);
-        shapes1 = shapes;
-          for(int s=0;s<shapes.Width();s++)
-            shapes.Col(s) *= mirstd[s].GetWeight();
-        elmat = shapes1*Trans(shapes);
-        elvec = shapes * flux;
-        CalcInverse(elmat);
-        y = elmat*elvec;
-        BaseVector & baseout = gfustd->GetVector();
-        fes->GetDofNrs(elnrstd,dnums);
-        baseout.SetIndirect(dnums,y);    
-      });
+      FlatVector<> elvec(fel.GetNDof(),lh),y(fel.GetNDof(),lh);
+      shapes1 = shapes;
+      for(int s=0;s<shapes.Width();s++)
+        shapes.Col(s) *= mirstd[s].GetWeight();
+      elmat = shapes1*Trans(shapes);
+      elvec = shapes * flux;
+      CalcInverse(elmat);
+      y = elmat*elvec;
+      BaseVector & baseout = gfustd->GetVector();
+      fes->GetDofNrs(elnrstd,dnums);
+      baseout.SetIndirect(dnums,y);    
+    });
   }
 
   void Transfer2TPMesh(const CoefficientFunction * cfstd, GridFunction* gfutp)
@@ -696,26 +508,12 @@ namespace ngcomp
         ArrayMem<const IntegrationRule * , 2> irs(tpfel.elements.Size());
         for(int s=0;s<irs.Size();s++)
           irs[s] = &SelectIntegrationRule(tpfel.elements[s]->ElementType(),2*tpfel.elements[s]->Order());
-        if(tpfel.elements[1]->ElementType() == ET_HERMITE)
-          irs[1] = &SelectIntegrationRule(tpfel.elements[1]->ElementType(),tpfel.elements[1]->Order()+1);
         TPIntegrationRule ir(irs);
         const ElementTransformation & tptrafo = tpfes->GetTrafo(ElementId(elnr),lh);
         TPMappedIntegrationRule & tpmir = dynamic_cast<TPMappedIntegrationRule & >(tptrafo(ir, lh));
         int tpnip = irs[0]->Size()*irs[1]->Size();
         FlatMatrix<> result(tpnip,1,lh);
         cfstd->Evaluate(tpmir,result);
-        if(tpfel.elements[1]->ElementType() == ET_HERMITE)
-        {
-          bool hm;
-          if(dynamic_pointer_cast<GlobalHermiteFESpace>(tpfes->Space(0))->GetSpacialDimension() == 1)
-            hm = dynamic_cast<const Distribution<1> *>(tpfel.elements[1])->UseHermiteFunctions();
-          if(dynamic_pointer_cast<GlobalHermiteFESpace>(tpfes->Space(0))->GetSpacialDimension() == 2)
-            hm = dynamic_cast<const Distribution<2> *>(tpfel.elements[1])->UseHermiteFunctions();            
-          if(!hm)
-            for(int i=0,ii=0;i<tpmir.GetIRs()[0]->Size();i++)
-              for(int j=0;j<tpmir.GetIRs()[1]->Size();j++,ii++)
-                result(ii) *=exp( 0.5*L2Norm2( (*irs[1])[j].Point() ) );
-        }
         FlatMatrix<> shapes(tpfel.GetNDof(),tpnip,lh);
         shapes = 0.0;
         tpfel.CalcShape(ir,shapes);
