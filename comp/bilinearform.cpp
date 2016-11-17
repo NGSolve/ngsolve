@@ -465,8 +465,8 @@ namespace ngcomp
 
             LocalHeap lh (20000000, "biform - assemble");
             
-            int hasbound = 0;
-            int hasinner = 0;
+            // int hasbound = 0;
+            // int hasinner = 0;
             for (VorB vb : {VOL, BND, BBND})
 	      {
 		int ne = ma->GetNE(vb);
@@ -480,7 +480,7 @@ namespace ngcomp
 			for(int j=0; j<NumIntegrators(); j++)
 			  {
 			    const BilinearFormIntegrator & bfi = *parts[j];
-			    if(!bfi.VB()==vb) continue;
+			    if(bfi.VB()!=vb) continue;
 			    if(!bfi.DefinedOn (ma->GetElIndex(i))) continue;
 
 			    precomputed_data[i*NumIntegrators()+j] =
@@ -679,7 +679,7 @@ namespace ngcomp
     static Timer mattimer_vol("Matrix assembling vol");
     static Timer mattimer_bound("Matrix assembling bound");
     static Timer mattimer_bbound("Matrix assembling co dim 2");
-    static Timer mattimer_VB[] = {mattimer_vol, mattimer_bound, mattimer_bbound};
+    // static Timer mattimer_VB[] = {mattimer_vol, mattimer_bound, mattimer_bbound};
 
     // static Timer timer1 ("Matrix assembling - 1", 2);
     // static Timer timer2 ("Matrix assembling - 2", 2);
@@ -1743,7 +1743,7 @@ namespace ngcomp
 				     {
 				       const BilinearFormIntegrator & bfi = *parts[j];
 			  
-				       if (!bfi.VB() != BND) continue;
+				       if (bfi.VB() != BND) continue;
 				       if (!bfi.SkeletonForm()) continue;
 				       
 				       if (!bfi.DefinedOn (ma->GetSElIndex(i) )) continue;                
@@ -2210,7 +2210,7 @@ namespace ngcomp
     static Timer timervol ("Assemble Linearization - volume");
     static Timer timerbound ("Assemble Linearization - boundary");
     static Timer timerbbound ("Assemble Linearization - co dim 2");
-    static Timer timerVB[] = { timervol, timerbound, timerbbound };
+    // static Timer timerVB[] = { timervol, timerbound, timerbbound };
 
     static mutex addelmatboundary1_mutex;
 
