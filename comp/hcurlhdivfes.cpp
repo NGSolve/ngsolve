@@ -1389,7 +1389,7 @@ namespace ngcomp
     ma->GetSElEdges (ei.Nr(), enums);
 
     LocalHeapMem<1000> lh("NedelecFESpace2, GetSDofNrs");
-    int nd = GetSFE (ei.Nr(), lh).GetNDof();
+    int nd = GetFE (ElementId(BND,ei.Nr()), lh).GetNDof();
     dnums.SetSize(nd);
     dnums = -1;
 
@@ -1822,16 +1822,17 @@ namespace ngcomp
     ArrayMem<int,6> fnums, forient;
     LocalHeapMem<1000> lh("NedelecFESpace2 - TransformMat");
 
+    ElementId ei(boundary?BND:VOL, elnr);
     if (boundary)
       {
-	nd = GetSFE (elnr, lh).GetNDof();
+	nd = GetFE (ei, lh).GetNDof();
 	et = ma->GetSElType (elnr);
 	ma->GetSElEdges (elnr, enums, eorient);
 	ma->GetSElFace (elnr, fnums[0], forient[0]);
       }
     else
       {
-	nd = GetFE (elnr, lh).GetNDof();
+	nd = GetFE (ei, lh).GetNDof();
 	et = ma->GetElType (elnr);
 	ma->GetElEdges (elnr, enums, eorient);
 	ma->GetElFaces (elnr, fnums, forient);
@@ -1843,17 +1844,16 @@ namespace ngcomp
 
     GetTransformation (et, elnr, eorient, forient, fac);
 
-    int i, j, k, l;
     if (tt & TRANSFORM_MAT_LEFT)
-      for (k = 0; k < dimension; k++)
-	for (i = 0; i < nd; i++)
-	  for (j = 0; j < mat.Width(); j++)
+      for (int k = 0; k < dimension; k++)
+	for (int i = 0; i < nd; i++)
+	  for (int j = 0; j < mat.Width(); j++)
 	    mat(k+i*dimension, j) *= fac(i);
   
     if (tt & TRANSFORM_MAT_RIGHT)
-      for (l = 0; l < dimension; l++)
-	for (i = 0; i < mat.Height(); i++)
-	  for (j = 0; j < nd; j++)
+      for (int l = 0; l < dimension; l++)
+	for (int i = 0; i < mat.Height(); i++)
+	  for (int j = 0; j < nd; j++)
 	    mat(i, l+j*dimension) *= fac(j);
   }
 
@@ -1879,17 +1879,18 @@ namespace ngcomp
     ArrayMem<int,6> fnums, forient;
     LocalHeapMem<1000> lh ("Nedelecfespace2, transformvec");
 
+    ElementId ei(boundary?BND:VOL, elnr);
     if (boundary)
       {
-	nd = GetSFE (elnr, lh).GetNDof();
-	et = ma->GetSElType (elnr);
+	nd = GetFE (ei, lh).GetNDof();
+	et = ma->GetElType (ei);
 	ma->GetSElEdges (elnr, enums, eorient);
 	ma->GetSElFace (elnr, fnums[0], forient[0]);
       }
     else
       {
-	nd = GetFE (elnr, lh).GetNDof();
-	et = ma->GetElType (elnr);
+	nd = GetFE (ei, lh).GetNDof();
+	et = ma->GetElType (ei);
 	ma->GetElEdges (elnr, enums, eorient);
 	ma->GetElFaces (elnr, fnums, forient);
       }

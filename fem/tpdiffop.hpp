@@ -89,7 +89,7 @@ namespace ngfem
     Apply (const FiniteElement & bfel,
 	   const SIMD_BaseMappedIntegrationRule & bmir,
 	   BareSliceVector<double> x, 
-	   ABareMatrix<double> flux) const { throw ExceptionNOSIMD("nosimd"); }
+	   BareSliceMatrix<SIMD<double>> flux) const { throw ExceptionNOSIMD("nosimd"); }
     // LocalHeap & lh) const { throw Exception("not implemented"); }
     
     NGS_DLL_HEADER virtual void
@@ -116,7 +116,7 @@ namespace ngfem
     NGS_DLL_HEADER virtual void
     AddTrans (const FiniteElement & bfel,
               const SIMD_BaseMappedIntegrationRule & bmir,
-              ABareMatrix<double> flux,
+              BareSliceMatrix<SIMD<double>> flux,
               BareSliceVector<double> x) const { throw ExceptionNOSIMD("nosimd"); }
     // LocalHeap & lh) const;
   };

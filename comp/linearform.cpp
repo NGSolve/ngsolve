@@ -268,13 +268,16 @@ namespace ngcomp
 		  int facnr = 0;
 		  for (int k=0; k<fnums.Size(); k++)
 		    if(fac==fnums[k]) facnr = k;
-		  
-		  const FiniteElement & fel = fespace->GetFE (el, lh);
-		
-		  ElementTransformation & eltrans = ma->GetTrafo (el, VOL, lh);
-		  ElementTransformation & seltrans = ma->GetTrafo (i, BND, lh);
 
-		  fespace->GetDofNrs (ElementId(VOL,el), dnums);
+                  ElementId ei(VOL, el);
+                  ElementId sei(BND, i);
+                  
+		  const FiniteElement & fel = fespace->GetFE (ei, lh);
+		
+		  ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
+		  ElementTransformation & seltrans = ma->GetTrafo (sei, lh);
+
+		  fespace->GetDofNrs (ei, dnums);
 		  ma->GetElVertices (el, vnums);		
 	      
 		  for (int j = 0; j < parts.Size(); j++)
@@ -362,10 +365,10 @@ namespace ngcomp
 		    if(element != oldelement)
 		      { 
 			clh.CleanUp();
-			fel = &fespace->GetFE(element,clh);
+			fel = &fespace->GetFE(ElementId(VOL, element),clh);
 			fespace->GetDofNrs(ElementId(VOL,element),dnums);
 		      }
-		    ElementTransformation & eltrans = ma->GetTrafo (element, VOL, clh);
+		    ElementTransformation & eltrans = ma->GetTrafo (ElementId(VOL, element), clh);
 
 		    
 		    void * heapp = clh.GetPointer();
@@ -539,10 +542,10 @@ namespace ngcomp
 	for (int i = 0; i < nse; i++)
 	  {
 	    lh.CleanUp();
-	    
-	    const FiniteElement & sfel = fespace->GetSFE (i, lh);
+	    ElementId sei(BND, i);
+	    const FiniteElement & sfel = fespace->GetFE (sei, lh);
 	    // ma->GetSurfaceElementTransformation (i, seltrans);
-	    ElementTransformation & seltrans = ma->GetTrafo (i, BND, lh);
+	    ElementTransformation & seltrans = ma->GetTrafo (sei, lh);
 
 	      	
 	    // (*testout) << "el = " << i << ", ind = " << ma->GetSElIndex(i) << endl;
@@ -562,13 +565,13 @@ namespace ngcomp
 		int elnr;
 		// elnr = ma->FindElementOfPoint (FlatVector<>(sip.GetPoint()), gip, 1);
                 elnr = ma->FindElementOfPoint (sip.GetPoint(), gip, 1);
-		
+		ElementId ei(VOL, elnr);
 		// (*testout) << "elnr = " << elnr << endl;
 		if (elnr == -1) continue;
 		
-		const FiniteElement & gfel = fespace->GetFE (elnr, lh);
+		const FiniteElement & gfel = fespace->GetFE (ei, lh);
 		// ma->GetElementTransformation (elnr, geltrans);
-		ElementTransformation & geltrans = ma->GetTrafo (elnr, VOL, lh);
+		ElementTransformation & geltrans = ma->GetTrafo (ei, lh);
 
 		MappedIntegrationPoint<3,3> gsip(gip, geltrans);
 		

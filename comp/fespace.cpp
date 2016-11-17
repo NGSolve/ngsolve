@@ -765,7 +765,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   void  FESpace :: GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & ctypes) const
   { 
     ArrayMem<int,100> dnums;
-    GetDofNrs(elnr, dnums);
+    GetDofNrs(ElementId(VOL,elnr), dnums);
     ctypes.SetSize(dnums.Size());
 
     if (ctofdof.Size()==0)
@@ -986,7 +986,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  LocalHeap &clh = lh, lh = clh.Split();
           Array<int> dnums;
 	  for (int i : r)
-            GetDofNrs (i, dnums);
+            GetDofNrs (ElementId(VOL,i), dnums);
 	});
 	steps++;
 	time = WallTime()-starttime;
@@ -1033,7 +1033,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  for (int i : r)
 	    {
 	      HeapReset hr(lh);
-	      GetFE (i, lh);
+	      GetFE (ElementId(VOL,i), lh);
 	    }
 	});
         steps++;
@@ -1072,7 +1072,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
           for (int i : r)
             {
               HeapReset hr(lh);
-              /* ElementTransformation & trafo = */ ma->GetTrafo(i, VOL, lh);
+              /* ElementTransformation & trafo = */ ma->GetTrafo(ElementId(VOL, i), lh);
             }
         });
         steps++;
@@ -2279,6 +2279,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     return *new (alloc) CompoundFiniteElement (fea);
   }
 
+  /*
   const FiniteElement & CompoundFESpace :: GetFE (int elnr, LocalHeap & lh) const
   {
     FlatArray<const FiniteElement*> fea(spaces.Size(), lh);
@@ -2286,7 +2287,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       fea[i] = &spaces[i]->GetFE(elnr, lh);
     return *new (lh) CompoundFiniteElement (fea);
   }
-
+  */
   
   void CompoundFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
@@ -2402,7 +2403,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
 
-
+  /*
   const FiniteElement & CompoundFESpace :: GetSFE (int elnr, LocalHeap & lh) const
   {
     FlatArray<const FiniteElement*> fea(spaces.Size(), lh);
@@ -2418,7 +2419,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       fea[i] = &spaces[i]->GetCD2FE(elnr, lh);
     return *new (lh) CompoundFiniteElement (fea);
   }
-
+  */
 
 
 

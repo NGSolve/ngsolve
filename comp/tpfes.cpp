@@ -38,11 +38,11 @@ namespace ngcomp
     first_element_dof[0] = 0;
     for(int elx : Range(nels[0]) )
     {
-      int ndofx = space_x->GetFE(elx,lh).GetNDof();
+      int ndofx = space_x->GetFE(ElementId(VOL,elx),lh).GetNDof();
       for(int ely : Range(nels[1]) )
       {
         HeapReset hr(lh);
-        int ndofy = Space(elx)->GetFE(ely,lh).GetNDof();
+        int ndofy = Space(elx)->GetFE(ElementId(VOL,ely),lh).GetNDof();
         first_element_dof[ii+1] = first_element_dof[ii] + ndofx*ndofy;
         ii++;
       }
@@ -88,18 +88,18 @@ namespace ngcomp
     ndof = 0;
     LocalHeap lh(100000,"Setup TP Space");
     for(int i=0;i<space_x->GetMeshAccess()->GetNE();i++)
-      ndof += fespaces[0]->GetFE(i,lh).GetNDof()*spaces_y[i]->GetNDof();
+      ndof += fespaces[0]->GetFE(ElementId(VOL,i),lh).GetNDof()*spaces_y[i]->GetNDof();
     
     first_element_dof.SetSize(nel+1);
     int ii=0;
     first_element_dof[0] = 0;
     for(int elx : Range(nels[0]) )
     {
-      int ndofx = space_x->GetFE(elx,lh).GetNDof();
+      int ndofx = space_x->GetFE(ElementId(VOL,elx),lh).GetNDof();
       for(int ely : Range(nels[1]) )
       {
         HeapReset hr(lh);
-        int ndofy = Space(elx)->GetFE(ely,lh).GetNDof();
+        int ndofy = Space(elx)->GetFE(ElementId(VOL,ely),lh).GetNDof();
         first_element_dof[ii+1] = first_element_dof[ii] + ndofx*ndofy;
         ii++;
       }
@@ -156,7 +156,7 @@ namespace ngcomp
     Array<int> dnums,dnumsx;
     for(int i=0;i<nels[0];i++)
     {
-      FlatVector<> elvec_out(space_x->GetFE(i,clh).GetNDof(),clh);
+      FlatVector<> elvec_out(space_x->GetFE(ElementId(VOL,i),clh).GetNDof(),clh);
       elvec_out = 0.0;
       for(int j=0;j<nels[1];j++)
       {
@@ -169,7 +169,7 @@ namespace ngcomp
         ElementTransformation & trafo = fespaces[1]->GetMeshAccess()->GetTrafo(j,clh);
         func(gf_in->GetFESpace(),tpfel,trafo,elvec,elvec_out,clh);
       }
-      space_x->GetDofNrs(i,dnumsx);
+      space_x->GetDofNrs(ElementId(VOL,i),dnumsx);
       gf_out->GetVector().SetIndirect(dnumsx,elvec_out);
     }    
   }
@@ -181,8 +181,8 @@ namespace ngcomp
     Array<int> dnums,dnumsx;
     for(int i=0;i<nels[0];i++)
     {
-      Vector<> elvec_in(space_x->GetFE(i,lh).GetNDof());
-      fespaces[0]->GetDofNrs(i,dnumsx);
+      Vector<> elvec_in(space_x->GetFE(ElementId(VOL,i),lh).GetNDof());
+      fespaces[0]->GetDofNrs(ElementId(VOL,i),dnumsx);
       vec_in.GetIndirect(dnumsx,elvec_in);
       for(int j=0;j<nels[1];j++)
       {
@@ -256,9 +256,9 @@ namespace ngcomp
     ArrayMem<int,2> elnums(2);
     GetIndices(elnr, elnums);
     ArrayMem<const FiniteElement *,2> els(2);
-    const FiniteElement & ref_elx = space_x->GetFE( elnums[0], lh );
+    const FiniteElement & ref_elx = space_x->GetFE( ElementId(VOL,elnums[0]), lh );
     els[0] = &ref_elx;
-    const FiniteElement & ref_ely = Space(elnums[0])->GetFE( elnums[1], lh );
+    const FiniteElement & ref_ely = Space(elnums[0])->GetFE( ElementId(VOL,elnums[1]), lh );
     els[1] = &ref_ely;
     TPHighOrderFE * fe =  new (lh) TPHighOrderFE (els);
     return *fe;
@@ -480,7 +480,7 @@ namespace ngcomp
       CalcInverse(elmat);
       y = elmat*elvec;
       BaseVector & baseout = gfustd->GetVector();
-      fes->GetDofNrs(elnrstd,dnums);
+      fes->GetDofNrs(ElementId(VOL,elnrstd),dnums);
       baseout.SetIndirect(dnums,y);    
     });
   }
