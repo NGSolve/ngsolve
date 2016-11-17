@@ -335,7 +335,7 @@ namespace ngcomp
     
   ngfem::ElementTransformation & TPHighOrderFESpace::GetTrafo (ElementId ei, Allocator & lh) const
   {
-     TPElementTransformation *trafo = new(lh) TPElementTransformation ( ei );
+     TPElementTransformation *trafo = new (lh) TPElementTransformation ( ei );
      ArrayMem<int,2> indices(2);
      GetIndices(ei.Nr(),indices);
      ArrayMem<ElementTransformation *,2> trafos(2);
