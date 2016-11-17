@@ -5,7 +5,7 @@ add_library(csg ${NG_LIB_TYPE}
         explicitcurve2d.cpp extrusion.cpp gencyl.cpp genmesh.cpp identify.cpp  
         manifold.cpp meshsurf.cpp polyhedra.cpp revolution.cpp singularref.cpp 
         solid.cpp specpoin.cpp spline3d.cpp surface.cpp triapprox.cpp zrefine.cpp 
-        python_csg.cpp
+        python_csg.cpp splinesurface.cpp
         )
 if(APPLE)
     set_target_properties( csg PROPERTIES SUFFIX ".so")

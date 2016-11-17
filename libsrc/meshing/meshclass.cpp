@@ -40,6 +40,7 @@ namespace netgen
     geomtype = NO_GEOM;
 
     bcnames.SetSize(0);
+    cd2names.SetSize(0);
 
 #ifdef PARALLEL
     paralleltop = new ParallelMeshTopology (*this);
@@ -72,6 +73,9 @@ namespace netgen
     for (int i = 0; i < bcnames.Size(); i++ )
       delete bcnames[i];
 
+    for (int i = 0; i < cd2names.Size(); i++)
+      delete cd2names[i];
+
 #ifdef PARALLEL
     delete paralleltop;
 #endif
@@ -93,6 +97,11 @@ namespace netgen
     for ( int i = 0; i < mesh2.bcnames.Size(); i++ )
       if ( mesh2.bcnames[i] ) bcnames[i] = new string ( *mesh2.bcnames[i] );
       else bcnames[i] = 0;
+
+    cd2names.SetSize(mesh2.cd2names.Size());
+    for (int i=0; i < mesh2.cd2names.Size(); i++)
+      if (mesh2.cd2names[i]) cd2names[i] = new string(*mesh2.cd2names[i]);
+      else cd2names[i] = 0;
 
     return *this;
   }
@@ -126,6 +135,8 @@ namespace netgen
 
     for ( int i = 0; i < bcnames.Size(); i++ )
       if ( bcnames[i] ) delete bcnames[i];
+    for (int i= 0; i< cd2names.Size(); i++)
+      if (cd2names[i]) delete cd2names[i];
 
 #ifdef PARALLEL
     delete paralleltop;
@@ -610,6 +621,17 @@ namespace netgen
           outfile << i+1 << "\t" << GetBCName(i) << endl;
         outfile << endl << endl;
       }
+    int cntcd2names = 0;
+    for (int ii = 0; ii<cd2names.Size(); ii++)
+      if(cd2names[ii]) cntcd2names++;
+
+    if(cntcd2names)
+      {
+	outfile << "\n\ncd2names" << endl << cd2names.Size() << endl;
+	for (i=0; i<cd2names.Size(); i++)
+	  outfile << i+1 << "\t" << GetCD2Name(i) << endl;
+	outfile << endl << endl;
+      }
 
     /*
       if ( GetDimension() == 2 )
@@ -1075,9 +1097,35 @@ namespace netgen
                   }
 
               }
-
-
           }
+
+	if ( strcmp (str, "cd2names" ) == 0)
+	  {
+	    infile >> n;
+	    Array<int,0> cd2nrs(n);
+	    SetNCD2Names(n);
+	    for( i=1; i<=n; i++)
+	      {
+		string nextcd2name;
+		infile >> cd2nrs[i-1] >> nextcd2name;
+		cd2names[cd2nrs[i-1]-1] = new string(nextcd2name);
+	      }
+	    if (GetDimension() == 2)
+	      {
+		throw NgException("co dim 2 elements not implemented for dimension 2");
+	      }
+	    else
+	      {
+		for (i = 1; i<= GetNSeg(); i++)
+		  {
+		    Segment & seg = LineSegment(i);
+		    if ( seg.cd2i <= n )
+		      seg.SetBCName (cd2names[seg.edgenr-1]);
+		    else
+		      seg.SetBCName(0);
+		  }
+	      }
+	  }
 
         if (strcmp (str, "singular_points") == 0)
           {
@@ -1359,7 +1407,9 @@ namespace netgen
                 if(seg.surfnr2 >= 0)  seg.surfnr2 = seg.surfnr2 + max_surfnr;
                 seg[0] = seg[0] +oldnp;
                 seg[1] = seg[1] +oldnp;
+		*testout << "old edgenr: " << seg.edgenr << endl;
                 seg.edgenr = seg.edgenr + oldne;
+		*testout << "new edgenr: " << seg.edgenr << endl;
                 seg.epgeominfo[1].edgenr = seg.epgeominfo[1].edgenr + oldne;
 
                 AddSegment (seg);
@@ -5710,6 +5760,48 @@ namespace netgen
 
     if ( bcnames[bcnr] )
       return *bcnames[bcnr];
+    else
+      return defaultstring;
+  }
+
+  void Mesh :: SetNCD2Names( int ncd2n )
+  {
+    if (cd2names.Size())
+      for(int i=0; i<cd2names.Size(); i++)
+	if(cd2names[i]) delete cd2names[i];
+    cd2names.SetSize(ncd2n);
+    cd2names = 0;
+  }
+
+  void Mesh :: SetCD2Name ( int cd2nr, const string & abcname )
+  {
+    cd2nr--;
+    (*testout) << "setCD2Name on edge " << cd2nr << " to " << abcname << endl;
+    if (cd2nr >= cd2names.Size())
+      {
+	int oldsize = cd2names.Size();
+	cd2names.SetSize(cd2nr+1);
+	for(int i= oldsize; i<= cd2nr; i++)
+	  cd2names[i] = nullptr;
+      }
+    //if (cd2names[cd2nr]) delete cd2names[cd2nr];
+    if (abcname != "default")
+      cd2names[cd2nr] = new string(abcname);
+    else
+      cd2names[cd2nr] = nullptr;
+  }
+
+  const string & Mesh :: GetCD2Name (int cd2nr) const
+  {
+    static string defaultstring  = "default";
+    if (!cd2names.Size())
+      return defaultstring;
+
+    if (cd2nr < 0 || cd2nr >= cd2names.Size())
+      return defaultstring;
+
+    if (cd2names[cd2nr])
+      return *cd2names[cd2nr];
     else
       return defaultstring;
   }

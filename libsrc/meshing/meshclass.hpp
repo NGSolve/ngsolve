@@ -87,6 +87,9 @@ namespace netgen
     /// labels for boundary conditions
     Array<string*> bcnames;
 
+    /// labels for co dim 2 bboundary conditions
+    Array<string*> cd2names;
+
     /// Periodic surface, close surface, etc. identifications
     Identifications * ident;
 
@@ -587,6 +590,12 @@ namespace netgen
     DLL_HEADER void SetBCName ( int bcnr, const string & abcname );
 
     const string & GetBCName ( int bcnr ) const;
+
+    DLL_HEADER void SetNCD2Names (int ncd2n);
+    DLL_HEADER void SetCD2Name (int cd2nr, const string & abcname);
+
+    const string & GetCD2Name (int cd2nr ) const;
+    size_t GetNCD2Names() const { return cd2names.Size(); }
 
     string * GetBCNamePtr (int bcnr) const
     { return bcnr < bcnames.Size() ? bcnames[bcnr] : nullptr; }

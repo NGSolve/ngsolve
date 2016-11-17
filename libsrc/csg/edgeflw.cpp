@@ -44,6 +44,7 @@ namespace netgen
     for (PointIndex pi : mesh.Points().Range())    
       meshpoint_tree->Insert (mesh[pi], pi);
 
+
     // add all special points before edge points (important for periodic identification)
     // JS, Jan 2007
     const double di=1e-7*geometry.MaxSize();
@@ -454,7 +455,6 @@ namespace netgen
 		refedges[i].surfnr2 = geometry.GetSurfaceClassRepresentant(refedges[i].surfnr2);
 	      }
 
-
 	    /*
 	      for (int i = oldnseg+1; i <= mesh.GetNSeg(); i++)
 	      for (int j = 1; j <= oldnseg; j++)
@@ -485,7 +485,26 @@ namespace netgen
 		      layer,
 		      mesh);
 	  }
-	
+	for(int i=0; i<refedges.Size(); i++)
+	  {
+	    auto splinesurface = dynamic_cast<const SplineSurface*>(geometry.GetSurface(refedges[i].surfnr1));
+	    if(splinesurface)
+	      {
+		auto name = splinesurface->GetBCNameOf(specpoints[startpoints.Get(refedges[i].edgenr)].p,specpoints[endpoints.Get(refedges[i].edgenr)].p);
+		mesh.SetCD2Name(refedges[i].edgenr,*name);
+	      }
+	    else
+	      {
+		auto splinesurface2 = dynamic_cast<const SplineSurface*>(geometry.GetSurface(refedges[i].surfnr2));
+	    if(splinesurface2)
+	      {
+		auto name = splinesurface2->GetBCNameOf(specpoints[startpoints.Get(refedges[i].edgenr)].p,specpoints[endpoints.Get(refedges[i].edgenr)].p);
+		mesh.SetCD2Name(refedges[i].edgenr,*name);
+	      }
+		
+	      }
+	    
+	  }
 
 	/*
 	  // not available ...
@@ -1157,7 +1176,23 @@ namespace netgen
 			  refedges.Elem(hi).domout = i;
 		      }
 		    else
+		      {
 		      refedges.Elem(hi).tlosurf = i;
+		      for(int kk = 0; kk < geometry.GetNTopLevelObjects(); kk++)
+			{
+			  auto othersolid = geometry.GetTopLevelObject(kk)->GetSolid();
+			  auto othersurf = geometry.GetTopLevelObject(kk)->GetSurface();
+			  if(!othersurf)
+			    {
+			      if(othersolid->IsIn(edgepoints[0])  &&
+				 othersolid->IsIn(edgepoints[edgepoints.Size()-1]))
+				{
+				  refedges.Elem(hi).domin = kk;
+				  refedges.Elem(hi).domout = kk;
+				}
+			    }
+			}
+		      }
 
 		    if(pre_ok[k-1])
 		      edges_priority[hi-1] = 1;
