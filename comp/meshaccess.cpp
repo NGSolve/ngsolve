@@ -1485,8 +1485,11 @@ namespace ngcomp
   template <> ElementTransformation & MeshAccess :: GetTrafo (T_ElementId<BBND,2> ei, Allocator & lh) const;
   template <> ElementTransformation & MeshAccess :: GetTrafo (T_ElementId<BBND,3> ei, Allocator & lh) const;
 
-  ngfem::ElementTransformation & MeshAccess :: GetTrafo (int elnr, VorB vb, Allocator & lh) const
+  ngfem::ElementTransformation & MeshAccess :: GetTrafo (ElementId ei, Allocator & lh) const
   {
+    int elnr = ei.Nr();
+    VorB vb = ei.VB();
+    
     switch(vb)
       {
       case VOL:

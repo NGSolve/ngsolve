@@ -52,7 +52,7 @@ namespace ngcomp
 
     bool AllDofsTogether(){return all_dofs_together;};
     ///
-    virtual void Update(LocalHeap & lh);
+    virtual void Update(LocalHeap & lh) override;
     /// 
     virtual void UpdateDofTables();
     ///
@@ -62,7 +62,7 @@ namespace ngcomp
     ///
     virtual int GetNDofLevel (int level) const;
     ///
-    virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const;
+    virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override;
 
     using FESpace::GetFE;
     virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
@@ -77,7 +77,7 @@ namespace ngcomp
 
     virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
 
-    virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const;
+    virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const override;
     ///
     virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const;
     /// 

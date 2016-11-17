@@ -360,7 +360,7 @@ namespace ngcomp
               for (int k=0;k<nbelems.Size();k++){
                 int elnr=nbelems[k];
                 if (!fespace->DefinedOn (VOL,ma->GetElIndex(elnr))) continue;
-                fespace->GetDofNrs (elnr, dnums);
+                fespace->GetDofNrs (ElementId(VOL,elnr), dnums);
                 dnums_dg.Append(dnums);
               }
               QuickSort (dnums_dg);
@@ -476,9 +476,10 @@ namespace ngcomp
 		  {
 		    for (int i=0; i < ne; i++)
 		      {
-			auto & fel = fespace->GetFE(ElementId(vb,i),lh);
-			auto & eltrans = ma->GetTrafo(i,vb,lh);
-			fespace->GetDofNrs(ElementId(vb,i),dnums);
+                        ElementId ei(vb, i);
+			auto & fel = fespace->GetFE(ei,lh);
+			auto & eltrans = ma->GetTrafo(ei,lh);
+			fespace->GetDofNrs(ei,dnums);
 			for(int j=0; j<NumIntegrators(); j++)
 			  {
 			    const BilinearFormIntegrator & bfi = *parts[j];
@@ -798,6 +799,7 @@ namespace ngcomp
 			void * heapp = clh.GetPointer();
 			for (int i = 0; i < ne; i++)
 			  {
+                            ElementId id(vb, i);
 			    gcnt++;
 			    
 			    if (clock()-prevtime > 0.1 * CLOCKS_PER_SEC)
@@ -811,8 +813,8 @@ namespace ngcomp
 			    
 			    if (!fespace->DefinedOn (vb,ma->GetElIndex (i))) continue;
 			    
-			    const FiniteElement & fel = fespace->GetFE (i, clh);
-			    ElementTransformation & eltrans = ma->GetTrafo (i, vb, clh);
+			    const FiniteElement & fel = fespace->GetFE (id, clh);
+			    ElementTransformation & eltrans = ma->GetTrafo (id, clh);
 			    auto ei = ElementId(vb,i);
 			    fespace->GetDofNrs (ei, dnums);
                   
@@ -1261,7 +1263,10 @@ namespace ngcomp
 				     
 				     if(elnums.Size()<2) continue;
 				     el2 = elnums[1];
-				     
+
+                                     ElementId ei1(VOL, el1);
+                                     ElementId ei2(VOL, el2);
+                                     
 				     ma->GetElFacets(el1,fnums);
 				     int facnr1 = fnums.Pos(i);
 				     
@@ -1277,16 +1282,16 @@ namespace ngcomp
 				       ma->SetThreadPercentage ( 100.0*(gcnt) / (loopsteps) );
 				     }
 				     
-				     const FiniteElement & fel1 = fespace->GetFE (el1, lh);
-				     const FiniteElement & fel2 = fespace->GetFE (el2, lh);
+				     const FiniteElement & fel1 = fespace->GetFE (ei1, lh);
+				     const FiniteElement & fel2 = fespace->GetFE (ei2, lh);
 				     
-				     ElementTransformation & eltrans1 = ma->GetTrafo (el1, VOL, lh);
-				     ElementTransformation & eltrans2 = ma->GetTrafo (el2, VOL, lh);
+				     ElementTransformation & eltrans1 = ma->GetTrafo (ei1, lh);
+				     ElementTransformation & eltrans2 = ma->GetTrafo (ei2, lh);
 
 
-				     fespace->GetDofNrs (el1, dnums1);
+				     fespace->GetDofNrs (ei1, dnums1);
 				     dnums=dnums1;
-				     fespace->GetDofNrs (el2, dnums2);
+				     fespace->GetDofNrs (ei2, dnums2);
 				     dnums.Append(dnums2);
 				     
 				     ma->GetElVertices (el1, vnums1);
@@ -1460,6 +1465,7 @@ namespace ngcomp
 				 Array<int> dnums, dnums1, dnums2, elnums, fnums1, fnums2, vnums1, vnums2;
 				 for (int el1 : r)
 				   {
+                                     ElementId ei1(VOL, el1);
 				     ma->GetElFacets(el1,fnums1);
 				     for (int facnr1 : Range(fnums1))
 				       {
@@ -1470,14 +1476,15 @@ namespace ngcomp
 					   {
 					     ma->GetFacetSurfaceElements (fnums1[facnr1], elnums);
 					     int sel = elnums[0];
+                                             ElementId sei(BND, sel);
 					     
-					     const FiniteElement & fel = fespace->GetFE (el1, lh);
+					     const FiniteElement & fel = fespace->GetFE (ei1, lh);
 					     ma->GetElVertices (el1, vnums1);     
 					     
-					     ElementTransformation & eltrans = ma->GetTrafo (el1, VOL, lh);
-					     ElementTransformation & seltrans = ma->GetTrafo (sel, BND, lh);
+					     ElementTransformation & eltrans = ma->GetTrafo (ei1, lh);
+					     ElementTransformation & seltrans = ma->GetTrafo (sei, lh);
 					     
-					     fespace->GetDofNrs (el1, dnums);
+					     fespace->GetDofNrs (ei1, dnums);
 					     if(fel.GetNDof() != dnums.Size())
 					       {
 						 cout << "Surface fel:GetNDof() = " << fel.GetNDof() << endl;
@@ -1530,7 +1537,7 @@ namespace ngcomp
 					 
 					 
 					 int el2 = elnums[0] + elnums[1] - el1;
-					 
+					 ElementId ei2(VOL, el2);
 					 ma->GetElFacets(el2,fnums2);
 					 int facnr2 = fnums2.Pos(fnums1[facnr1]);
 					 
@@ -1542,17 +1549,17 @@ namespace ngcomp
 					     cout << "\rassemble inner facet element " << cnt << "/" << nf << flush;
 					   ma->SetThreadPercentage ( 100.0*(gcnt) / (loopsteps) );
 					 }
+                                         
+					 const FiniteElement & fel1 = fespace->GetFE (ei1, lh);
+					 const FiniteElement & fel2 = fespace->GetFE (ei2, lh);
 					 
-					 const FiniteElement & fel1 = fespace->GetFE (el1, lh);
-					 const FiniteElement & fel2 = fespace->GetFE (el2, lh);
-					 
-					 ElementTransformation & eltrans1 = ma->GetTrafo (el1, VOL, lh);
-					 ElementTransformation & eltrans2 = ma->GetTrafo (el2, VOL, lh);
+					 ElementTransformation & eltrans1 = ma->GetTrafo (ei1, lh);
+					 ElementTransformation & eltrans2 = ma->GetTrafo (ei2, lh);
 					 
 					 
-					 fespace->GetDofNrs (el1, dnums1);
+					 fespace->GetDofNrs (ei1, dnums1);
 					 dnums=dnums1;
-					 fespace->GetDofNrs (el2, dnums2);
+					 fespace->GetDofNrs (ei2, dnums2);
 					 dnums.Append(dnums2);
 					 
 					 ma->GetElVertices (el1, vnums1);
@@ -1719,17 +1726,18 @@ namespace ngcomp
 				   ma->GetFacetElements(fac,elnums);
 				   int el = elnums[0];
 				   ma->GetElFacets(el,fnums);
-				   
-				   const FiniteElement & fel = fespace->GetFE (el, lh);
+				   ElementId ei(VOL, el);
+                                   ElementId sei(BND, i);
+				   const FiniteElement & fel = fespace->GetFE (ei, lh);
 				   int facnr = 0;
 				   for (int k=0; k<fnums.Size(); k++)
 				     if(fac==fnums[k]) facnr = k;
 				   ma->GetElVertices (el, vnums);     
-				   
-				   ElementTransformation & eltrans = ma->GetTrafo (el, VOL, lh);
-				   ElementTransformation & seltrans = ma->GetTrafo (i, BND, lh);
+                                   
+				   ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
+				   ElementTransformation & seltrans = ma->GetTrafo (sei, lh);
                       
-				   fespace->GetDofNrs (el, dnums);
+				   fespace->GetDofNrs (ei, dnums);
 				   if(fel.GetNDof() != dnums.Size())
 				     {
 				       cout << "Surface fel:GetNDof() = " << fel.GetNDof() << endl;
@@ -3171,7 +3179,7 @@ namespace ngcomp
                                      ElementTransformation & eltrans = ma->GetTrafo (el1, VOL, lh);
                                      ElementTransformation & seltrans = ma->GetTrafo (sel, BND, lh);
                                      
-                                     fespace->GetDofNrs (el1, dnums);
+                                     fespace->GetDofNrs (ElementId(VOL,el1), dnums);
 
                                      for (int j = 0; j < NumIntegrators(); j++)
                                        {
@@ -3211,8 +3219,8 @@ namespace ngcomp
                                  timerDG2b.Start();                                 
                                  Array<int> dnums1(fel1.GetNDof(), lh);
                                  Array<int> dnums2(fel2.GetNDof(), lh);
-                                 fespace->GetDofNrs (el1, dnums1);
-                                 fespace->GetDofNrs (el2, dnums2);
+                                 fespace->GetDofNrs (ElementId(VOL,el1), dnums1);
+                                 fespace->GetDofNrs (ElementId(VOL,el2), dnums2);
                                  ma->GetElVertices (el1, vnums1);
                                  ma->GetElVertices (el2, vnums2);
 
@@ -3313,7 +3321,7 @@ namespace ngcomp
                                      ElementTransformation & eltrans = ma->GetTrafo (el1, VOL, lh);
                                      ElementTransformation & seltrans = ma->GetTrafo (sel, BND, lh);
                                      
-                                     fespace->GetDofNrs (el1, dnums);
+                                     fespace->GetDofNrs (ElementId(VOL,el1), dnums);
                                      if(fel.GetNDof() != dnums.Size())
                                        {
                                          cout << "Surface fel:GetNDof() = " << fel.GetNDof() << endl;
@@ -3381,8 +3389,8 @@ namespace ngcomp
                                  
                                  Array<int> dnums1(fel1.GetNDof(), lh);
                                  Array<int> dnums2(fel2.GetNDof(), lh);
-                                 fespace->GetDofNrs (el1, dnums1);
-                                 fespace->GetDofNrs (el2, dnums2);
+                                 fespace->GetDofNrs (ElementId(VOL,el1), dnums1);
+                                 fespace->GetDofNrs (ElementId(VOL,el2), dnums2);
 
                                  ma->GetElVertices (el1, vnums1);
                                  ma->GetElVertices (el2, vnums2);
@@ -3572,7 +3580,7 @@ namespace ngcomp
           
               const FiniteElement & fel = fespace->GetFE (i, lh);
               ElementTransformation & eltrans = ma->GetTrafo (i, VOL, lh);
-              fespace->GetDofNrs (i, dnums);
+              fespace->GetDofNrs (ElementId(VOL,i), dnums);
           
               FlatVector<SCAL> elveclin (dnums.Size() * dim, lh);
               FlatVector<SCAL> elvecx (dnums.Size() * dim, lh);
@@ -3609,7 +3617,7 @@ namespace ngcomp
               HeapReset hr(lh);
               const FiniteElement & fel = fespace->GetSFE (i, lh);
               ElementTransformation & eltrans = ma->GetTrafo (i, BND, lh);
-              fespace->GetSDofNrs (i, dnums);
+              fespace->GetDofNrs (ElementId(BND,i), dnums);
             
               FlatVector<SCAL> elveclin (dnums.Size() * dim, lh);
               FlatVector<SCAL> elvecx (dnums.Size() * dim, lh);
@@ -3723,7 +3731,7 @@ namespace ngcomp
 
               const FiniteElement & fel = fespace->GetSFE (i, lh);
               ElementTransformation & eltrans = ma->GetTrafo (i, BND, lh);
-              fespace->GetSDofNrs (i, dnums);
+              fespace->GetDofNrs (ElementId(BND,i), dnums);
             
               FlatVector<SCAL> elvecx (dnums.Size() * GetFESpace()->GetDimension(), lh);
               x.GetIndirect (dnums, elvecx);

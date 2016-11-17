@@ -807,13 +807,14 @@ namespace ngcomp
     /// returns the transformation from the reference element to physical element.
     /// Given a point in the refrence element, the ElementTransformation can 
     /// compute the mapped point as well as the Jacobian
-    ngfem::ElementTransformation & GetTrafo (int elnr, VorB vb, Allocator & lh) const;
-
-    ngfem::ElementTransformation & GetTrafo (ElementId ei, Allocator & lh) const    
-    {
-      return GetTrafo(ei.Nr(),ei.VB(),lh);
-    }
-
+    [[deprecated("Use GetTrafo with ElementId(vb, elnr) instead!")]]    
+      ngfem::ElementTransformation & GetTrafo (int elnr, VorB vb, Allocator & lh) const
+      {
+        return GetTrafo(ElementId(vb, elnr),lh);
+      }
+    
+    ngfem::ElementTransformation & GetTrafo (ElementId ei, Allocator & lh) const;
+    
     template <int DIM>
     ngfem::ElementTransformation & GetTrafoDim (int elnr, Allocator & lh) const;
     template <int DIM>

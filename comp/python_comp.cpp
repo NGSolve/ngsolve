@@ -1508,9 +1508,10 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
             int dim = evaluator->Dim();
             LocalHeap lh(10000, "ngcomp::GridFunction::Eval");
             int elnr = space.GetMeshAccess()->FindElementOfPoint(Vec<3>(x, y, z), ip, true);
+            ElementId ei(VOL, elnr);
             Array<int> dnums;
-            space.GetDofNrs(elnr, dnums);
-            const FiniteElement & fel = space.GetFE(elnr, lh);
+            space.GetDofNrs(ei, dnums);
+            const FiniteElement & fel = space.GetFE(ei, lh);
             if (space.IsComplex())
               {
                 Vector<Complex> elvec;
@@ -1519,12 +1520,12 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                 self->GetElementVector(dnums, elvec);
                 if (dim_mesh == 2)
                   {
-                    MappedIntegrationPoint<2, 2> mip(ip, space.GetMeshAccess()->GetTrafo(elnr, VOL, lh));
+                    MappedIntegrationPoint<2, 2> mip(ip, space.GetMeshAccess()->GetTrafo(ei, lh));
                     evaluator->Apply(fel, mip, elvec, values, lh);
                   }
                 else if (dim_mesh == 3)
                   {
-                    MappedIntegrationPoint<3, 3> mip(ip, space.GetMeshAccess()->GetTrafo(elnr, VOL, lh));
+                    MappedIntegrationPoint<3, 3> mip(ip, space.GetMeshAccess()->GetTrafo(ei, lh));
                     evaluator->Apply(fel, mip, elvec, values, lh);
                   }
                 if (dim > 1)

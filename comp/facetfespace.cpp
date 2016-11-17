@@ -560,10 +560,7 @@ namespace ngcomp
       {
         // not optimal, needs reordering of dofs ...
         Array<int> dnums;
-        if (ei.IsVolume())
-          GetDofNrs (ei.Nr(), dnums);
-        else
-          GetSDofNrs (ei.Nr(), dnums);
+        GetDofNrs (ei, dnums);
         dranges.SetSize (0);
         for (int j = 0; j < dnums.Size(); j++)
           dranges.Append (IntRange (dnums[j], dnums[j+1]));
