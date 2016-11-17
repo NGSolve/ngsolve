@@ -33,7 +33,10 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 //       static
 //       py::tuple getinitargs(const BaseVector & v)
 //       {
-//         return py::make_tuple(v.Size(), v.IsComplex(), v.EntrySize()); 
+// 	int es = v.EntrySize();
+// 	if(v.IsComplex())
+// 	  es /= 2;
+//      return bp::make_tuple(v.Size(), v.IsComplex(), es); 
 //       }
 // 
 //       static

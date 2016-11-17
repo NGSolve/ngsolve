@@ -23,6 +23,8 @@ class ProxyFunction : public CoefficientFunction
   shared_ptr<DifferentialOperator> deriv_evaluator;
   shared_ptr<DifferentialOperator> trace_evaluator;
   shared_ptr<DifferentialOperator> trace_deriv_evaluator;
+  shared_ptr<DifferentialOperator> ttrace_evaluator;
+  shared_ptr<DifferentialOperator> ttrace_deriv_evaluator;
   shared_ptr<ProxyFunction> deriv_proxy;
   shared_ptr<CoefficientFunction> boundary_values; // for DG - apply
 
@@ -33,19 +35,24 @@ public:
                  shared_ptr<DifferentialOperator> aevaluator, 
                  shared_ptr<DifferentialOperator> aderiv_evaluator,
                  shared_ptr<DifferentialOperator> atrace_evaluator,
-                 shared_ptr<DifferentialOperator> atrace_deriv_evaluator)
+                 shared_ptr<DifferentialOperator> atrace_deriv_evaluator,
+		 shared_ptr<DifferentialOperator> attrace_evaluator,
+		 shared_ptr<DifferentialOperator> attrace_deriv_evaluator)
                  
     : CoefficientFunction(aevaluator->Dim(), ais_complex),
       testfunction(atestfunction), is_other(false),
       evaluator(aevaluator), 
       deriv_evaluator(aderiv_evaluator),
       trace_evaluator(atrace_evaluator), 
-      trace_deriv_evaluator(atrace_deriv_evaluator)
+      trace_deriv_evaluator(atrace_deriv_evaluator),
+      ttrace_evaluator(attrace_evaluator),
+      ttrace_deriv_evaluator(attrace_deriv_evaluator)
   {
     // dim = evaluator->Dim();
     if (deriv_evaluator || trace_deriv_evaluator)
       deriv_proxy = make_shared<ProxyFunction> (testfunction, is_complex, deriv_evaluator, nullptr,
-                                                trace_deriv_evaluator, nullptr);
+                                                trace_deriv_evaluator, nullptr,
+						ttrace_deriv_evaluator, nullptr);
 
     int dim = evaluator->Dim();
     int blockdim = evaluator->BlockDim();
@@ -67,17 +74,19 @@ public:
   const shared_ptr<DifferentialOperator> & DerivEvaluator() const { return deriv_evaluator; }
   const shared_ptr<DifferentialOperator> & TraceEvaluator() const { return trace_evaluator; }
   const shared_ptr<DifferentialOperator> & TraceDerivEvaluator() const { return trace_deriv_evaluator; }
+  const shared_ptr<DifferentialOperator> & TTraceEvaluator() const { return ttrace_evaluator; }
+  const shared_ptr<DifferentialOperator> & TTraceDerivEvaluator() const { return ttrace_deriv_evaluator; }
   shared_ptr<ProxyFunction> Deriv() const
   {
     return deriv_proxy;
   }
   shared_ptr<ProxyFunction> Trace() const
   {
-    return make_shared<ProxyFunction> (testfunction, is_complex, trace_evaluator, trace_deriv_evaluator, nullptr, nullptr);
+    return make_shared<ProxyFunction> (testfunction, is_complex, trace_evaluator, trace_deriv_evaluator, ttrace_evaluator, ttrace_deriv_evaluator, nullptr, nullptr);
   }
   shared_ptr<ProxyFunction> Other(shared_ptr<CoefficientFunction> _boundary_values) const
   {
-    auto other = make_shared<ProxyFunction> (testfunction, is_complex, evaluator, deriv_evaluator, trace_evaluator, trace_deriv_evaluator);
+    auto other = make_shared<ProxyFunction> (testfunction, is_complex, evaluator, deriv_evaluator, trace_evaluator, trace_deriv_evaluator,ttrace_evaluator, ttrace_deriv_evaluator);
     other->is_other = true;
     if (other->deriv_proxy)
       other->deriv_proxy->is_other = true;
@@ -111,7 +120,7 @@ public:
   {
     if (additional_diffops.Used(name))
     {
-      auto adddiffop = make_shared<ProxyFunction> (testfunction, is_complex, additional_diffops[name], nullptr, nullptr, nullptr);
+      auto adddiffop = make_shared<ProxyFunction> (testfunction, is_complex, additional_diffops[name], nullptr, nullptr, nullptr, nullptr, nullptr);
       if (is_other)
         adddiffop->is_other = true;
       return adddiffop;
@@ -415,7 +424,7 @@ public:
     SymbolicLinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb,
                                   bool aelement_boundary);
 
-    virtual bool BoundaryForm() const { return vb==BND; }
+    virtual VorB VB() const { return vb; }
     virtual string Name () const { return string ("Symbolic LFI"); }
     
     virtual void 
@@ -456,7 +465,7 @@ public:
     SymbolicBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb,
                                     bool aelement_boundary);
 
-    virtual bool BoundaryForm() const { return vb == BND; }
+    virtual VorB VB() const { return vb; }
     virtual bool IsSymmetric() const { return true; }  // correct would be: don't know
     virtual string Name () const { return string ("Symbolic BFI"); }
 
@@ -629,7 +638,7 @@ public:
   public:
     SymbolicEnergy (shared_ptr<CoefficientFunction> acf, VorB avb);
 
-    virtual bool BoundaryForm() const { return vb == BND; }
+    virtual VorB VB() const { return vb; }
     virtual bool IsSymmetric() const { return true; } 
     virtual string Name () const { return string ("Symbolic Energy"); }
     

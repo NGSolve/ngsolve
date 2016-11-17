@@ -346,6 +346,13 @@ struct GenericPow {
       }
     }
 
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> res) const 
+    {
+      if (ir[0].Dim() != D)
+	throw Exception("illegal dim of normal vector");
+      for (int i = 0; i < ir.Size(); i++)
+	res.Row(i) = static_cast<const DimMappedIntegrationPoint<D>&>(ir[i]).GetNV();
+    }
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {
         string miptype;
         if(code.is_simd)
@@ -433,6 +440,11 @@ class CoordCoefficientFunction : public T_CoefficientFunction<CoordCoefficientFu
            //for(int j=0;j<tpmir->GetIRs()[1]->Size();j++)
              result.Col(0).Rows(i*tpmir->GetIRs()[1]->Size(),(i+1)*tpmir->GetIRs()[1]->Size()) = tpmir->GetIRs()[1]->GetPoints().Col(dir-3);
       }
+    }
+    virtual void Evaluate(const BaseMappedIntegrationRule & ir,
+			  FlatMatrix<Complex> result) const
+    {
+      result.Col(0) = ir.GetPoints().Col(dir);
     }
 
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {
@@ -1108,7 +1120,7 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
                                }
                            },
           py::arg("et")=ET_TRIG,py::arg("vertices"))
-    .def_property_readonly("is_boundary", &ElementTransformation::Boundary)
+    .def_property_readonly("VB", &ElementTransformation::VB)
     .def_property_readonly("spacedim", &ElementTransformation::SpaceDim)
     .def_property_readonly("elementid", &ElementTransformation::GetElementId)
     .def ("__call__", FunctionPointer

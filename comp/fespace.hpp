@@ -79,9 +79,7 @@ namespace ngcomp
     int level_updated;
 
     /// on which subdomains is the space defined ?
-    Array<bool> definedon;
-    /// on which boundaries is the space defined ?
-    Array<bool> definedonbound;
+    Array<bool> definedon[3];
 
     /// prototype: what are the Dirichlet boundaries ?
     BitArray dirichlet_boundaries;
@@ -125,20 +123,11 @@ namespace ngcomp
     FiniteElement * dummy_point; // = new DummyFE<ET_POINT>();
 
     /// Evaluator for visualization (new style)
-    shared_ptr<DifferentialOperator> evaluator;
-    /// Evaluator for visualization of boundary data
-    shared_ptr<DifferentialOperator> boundary_evaluator; 
+    shared_ptr<DifferentialOperator> evaluator[3];
     /// Evaluator for flux
-    shared_ptr<DifferentialOperator> flux_evaluator; 
-    /// Evaluator for boundary flux
-    shared_ptr<DifferentialOperator> boundary_flux_evaluator; 
-
+    shared_ptr<DifferentialOperator> flux_evaluator[3];
     /// Evaluator for visualization (old style)
-    shared_ptr<BilinearFormIntegrator> integrator; 
-    /// Evaluator for visualization of boundary data
-    shared_ptr<BilinearFormIntegrator> boundary_integrator; 
-
-
+    shared_ptr<BilinearFormIntegrator> integrator[3];
 
     /// if non-zero, pointer to low order space
     shared_ptr<FESpace> low_order_space; 
@@ -155,8 +144,8 @@ namespace ngcomp
     Array<int> directfaceclusters;
     Array<int> directelementclusters;
 
-    Table<int> element_coloring; 
-    Table<int> selement_coloring;
+    
+    Table<int> element_coloring[3]; 
     Table<int> facet_coloring;  // elements on facet in own colors (DG)
     Array<COUPLING_TYPE> ctofdof;
 
@@ -194,7 +183,7 @@ namespace ngcomp
     int GetLevelUpdated() const { return level_updated; }
 
     const Table<int> & ElementColoring(VorB vb = VOL) const 
-    { return (vb == VOL) ? element_coloring : selement_coloring; }
+    { return element_coloring[vb]; }
 
     const Table<int> & FacetColoring() const
     { return facet_coloring; }
@@ -303,16 +292,14 @@ namespace ngcomp
     public:
       INLINE ElementRange (const FESpace & afes, VorB avb, IntRange ar, LocalHeap && lh2) 
         : IntRange(ar), fes(afes),
-          definedon( (avb==VOL) ? fes.definedon.Size() : fes.definedonbound.Size(),
-                     (avb==VOL) ? fes.definedon.Addr(0) : fes.definedonbound.Addr(0)),
+          definedon(fes.definedon[avb].Size(),fes.definedon[avb].Addr(0)),
           // FlatArray<bool>(fes.definedon) : FlatArray<bool>(fes.definedonbound)), 
           vb(avb), mylh(move(lh2)), lh(mylh)
       { ; }
 
       INLINE ElementRange (const FESpace & afes, VorB avb, IntRange ar, LocalHeap & lh2) 
         : IntRange(ar), fes(afes), 
-          definedon( (avb==VOL) ? fes.definedon.Size() : fes.definedonbound.Size(),
-                     (avb==VOL) ? fes.definedon.Addr(0) : fes.definedonbound.Addr(0)),
+          definedon(fes.definedon[avb].Size(),fes.definedon[avb].Addr(0)),
           // definedon( (avb==VOL) ? FlatArray<bool> (fes.definedon) : FlatArray<bool> (fes.definedonbound)), 
           vb(avb), mylh(), lh(lh2)
       { ; }
@@ -363,22 +350,19 @@ namespace ngcomp
 
     /// returns finite element. 
     virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const;
-
-    /// returns finite element. 
+    
     virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
+    virtual const FiniteElement & GetSFE (int elnr, LocalHeap & lh) const;
+    virtual const FiniteElement & GetCD2FE (int cd2elnr, LocalHeap & lh) const;
 
     /// get dof-nrs of the element
-    virtual void GetDofNrs (int elnr, Array<int> & dnums) const = 0;
+    //[[deprecated("Use GetDofNrs with element-id instead of elnr!")]]
+    void GetDofNrs (int elnr, Array<int> & dnums) const
+      { GetDofNrs(ElementId(VOL,elnr),dnums); }
 
     /// get dof-nrs of domain or boundary element elnr
-    void GetDofNrs (ElementId ei, Array<int> & dnums) const
-    {
-      if (ei.IsBoundary())
-	GetSDofNrs (ei.Nr(), dnums);
-      else
-	GetDofNrs (ei.Nr(), dnums);
-    }
-
+    virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const = 0;
+    
     Table<int> CreateDofTable (VorB vorb) const;
 
     // virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
@@ -414,61 +398,55 @@ namespace ngcomp
 
     virtual bool UsesDGCoupling () const throw() { return dgjumps; };
 
-    /// returns surface element for boundary interals
-    virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const;
+    //[[deprecated("Use GetDofNrs of elementid instead!")]]
     /// returns dofs of sourface element
-    virtual void GetSDofNrs (int selnr, Array<int> & dnums) const = 0;
+    void GetSDofNrs (int selnr, Array<int> & dnums) const
+      { GetDofNrs(ElementId(BND,selnr),dnums); }
 
+    bool DefinedOn(VorB vb, int domnr) const
+    { return !definedon[vb].Size() || definedon[vb][domnr]; }
 
     /// is the FESpace defined for this sub-domain nr ?
+    //[[deprecated("Use Definedon(VorB,int) instead")]]
     bool DefinedOn (int domnr) const
-    { return !definedon.Size() || definedon[domnr]; }
+    { return !definedon[VOL].Size() || definedon[VOL][domnr]; }
     /// is the FESpace defined for this boundary nr ?
+    //[[deprecated("Use Definedon(VorB,int) instead")]]
     bool DefinedOnBoundary (int bnr) const
-    {return !definedonbound.Size() || definedonbound[bnr]; }
+    {return !definedon[BND].Size() || definedon[BND][bnr]; }
 
     /// is the FESpace defined for this sub-domain / boundary nr ?
+    //[[deprecated("Use DefinedOn(VorB, int) instead")]]
     bool DefinedOn (int index, bool bound) const
     {
       if (bound)
-        return DefinedOnBoundary (index);
+        return !definedon[BND].Size() || definedon[BND][index];
       else
-        return DefinedOn (index);
+        return !definedon[VOL].Size() || definedon[VOL][index];
     }
 
     bool DefinedOn (ElementId id) const
     {
-      if (id.IsBoundary())
-        {
-          if (!definedonbound.Size()) return true;
-          return definedonbound[ma->GetSElIndex(int(id))];
-        }
-      else
-        {
-          if (!definedon.Size()) return true;
-          return definedon[ma->GetElIndex(int(id))];
-        }
+      if(!definedon[id.VB()].Size()) return true;
+      return definedon[id.VB()][ma->GetElement(id).GetIndex()];
     }
-
+    /* same as definedon(elid)?
     bool DefinedOn (Ngs_Element el) const
     {
-      if (el.IsBoundary())
-        {
-          if (!definedonbound.Size()) return true;
-          return DefinedOnBoundary (el.GetIndex());
-        }
-      else
-        {
-          if (!definedon.Size()) return true;
-          return DefinedOn (el.GetIndex());
-        }
+      if(!definedon[el.VB()].Size()) return true;
+      return definedon[el.VB()][el.GetIndex()];
     }
+    */
 
-
+    void SetDefinedOn (VorB vb, const BitArray& defon);
     ///
-    void SetDefinedOn (const BitArray & defon);
+    //[[deprecated("Use SetDefinedOn(VorB, const Bitarray&)")]]
+     void SetDefinedOn (const BitArray & defon)
+     { SetDefinedOn(VOL,defon); }
     ///
-    void SetDefinedOnBoundary (const BitArray & defon);
+    //[[deprecated("Use SetDefinedOn(VorB, const Bitarray&)")]]
+    void SetDefinedOnBoundary (const BitArray & defon)
+     { SetDefinedOn(BND,defon); }
 
     ///
     void SetDirichletBoundaries (const BitArray & dirbnds);
@@ -523,36 +501,56 @@ namespace ngcomp
     bool IsAtomicDof (size_t nr) const { return (is_atomic_dof.Size() != 0) && is_atomic_dof[nr]; }
     bool HasAtomicDofs () const { return is_atomic_dof.Size() != 0; }
 
-    
+    //[[deprecated("Use TransformMat with VorB  instead of bool")]]
     void TransformMat (int elnr, bool boundary,
 		       const SliceMatrix<double> & mat, TRANSFORM_TYPE type) const
     {
-      VTransformMR (elnr, boundary, mat, type);
+      TransformMat(elnr,boundary ? BND : VOL, mat, type);
     }
   
+    //[[deprecated("Use TransformMat with VorB  instead of bool")]]
     void TransformMat (int elnr, bool boundary,
 		       const SliceMatrix<Complex> & mat, TRANSFORM_TYPE type) const
     {
-      VTransformMC (elnr, boundary, mat, type);
+      TransformMat(elnr,boundary ? BND : VOL, mat, type);
     }
   
-
-
+    //[[deprecated("Use TransformVec with VorB  instead of bool")]]
     void TransformVec (int elnr, bool boundary,
 		       const FlatVector<double> & vec, TRANSFORM_TYPE type) const
     {
-      VTransformVR (elnr, boundary, vec, type);
+      VTransformVR (elnr, boundary ? BND : VOL, vec, type);
     }
   
+    //[[deprecated("Use TransformVec with VorB  instead of bool")]]
     void TransformVec (int elnr, bool boundary,
 		       const FlatVector<Complex> & vec, TRANSFORM_TYPE type) const
     {
-      VTransformVC (elnr, boundary, vec, type);
+      VTransformVC (elnr, boundary ? BND : VOL, vec, type);
     }
 
-
+     void TransformMat (int elnr, VorB vb,
+			const SliceMatrix<double> & mat, TRANSFORM_TYPE type) const
+    {
+      VTransformMR (elnr, vb, mat, type);
+    }
+     void TransformMat (int elnr, VorB vb,
+		       const SliceMatrix<Complex> & mat, TRANSFORM_TYPE type) const
+    {
+      VTransformMC (elnr, vb, mat, type);
+    }		
+void TransformVec (int elnr, VorB vb,
+		       const FlatVector<double> & vec, TRANSFORM_TYPE type) const
+    {
+      VTransformVR (elnr, vb, vec, type);
+    }
+ void TransformVec (int elnr, VorB vb,
+		       const FlatVector<Complex> & vec, TRANSFORM_TYPE type) const
+    {
+      VTransformVC (elnr, vb, vec, type);
+    }
     template < int S, class T >
-    void TransformVec (int elnr, bool boundary,
+    void TransformVec (int elnr, VorB vb,
 		       const FlatVector< Vec<S,T> >& vec, TRANSFORM_TYPE type) const;
 
 
@@ -560,22 +558,22 @@ namespace ngcomp
     void TransformVec (ElementId ei,
 		       const T & vec, TRANSFORM_TYPE type) const
     {
-      TransformVec (ei.Nr(), ei.IsBoundary(), vec, type);
+      TransformVec (ei.Nr(), ei.VB(), vec, type);
     }
   
 
-    virtual void VTransformMR (int elnr, bool boundary,
+    virtual void VTransformMR (int elnr, VorB vb,
 			       const SliceMatrix<double> & mat, TRANSFORM_TYPE type) const
     { ; }
-    virtual void VTransformMC (int elnr, bool boundary,
+    virtual void VTransformMC (int elnr, VorB vb,
 			       const SliceMatrix<Complex> & mat, TRANSFORM_TYPE type) const
     { ; }
 
 
-    virtual void VTransformVR (int elnr, bool boundary,
+    virtual void VTransformVR (int elnr, VorB vb,
 			       const FlatVector<double> & vec, TRANSFORM_TYPE type) const
     { ; }
-    virtual void VTransformVC (int elnr, bool boundary,
+    virtual void VTransformVC (int elnr, VorB vb,
 			       const FlatVector<Complex> & vec, TRANSFORM_TYPE type) const
     { ; }
   
@@ -588,20 +586,32 @@ namespace ngcomp
 
 
     /// returns function-evaluator
-    shared_ptr<DifferentialOperator> GetEvaluator (bool vb = VOL) const
-    { 
-      if (vb == BND)
-	return boundary_evaluator; 
-      else
-	return evaluator; 
+    shared_ptr<DifferentialOperator> GetEvaluator (VorB vb = VOL) const
+    {
+      return evaluator[vb];
     }
 
-    shared_ptr<DifferentialOperator> GetFluxEvaluator (bool vb = VOL) const
+    //[[deprecated("Use GetEvaluator(VorB) instead of GetEvaluator(bool)!")]]
+    shared_ptr<DifferentialOperator> GetEvaluator (bool boundary) const
     {
-      if (vb == BND)
-	return boundary_flux_evaluator; 
+      if(boundary)
+	return evaluator[BND];
       else
-        return flux_evaluator;
+	return evaluator[VOL];
+    }
+
+    shared_ptr<DifferentialOperator> GetFluxEvaluator (VorB vb=VOL) const
+    {
+      return flux_evaluator[vb];
+    }
+
+    //[[deprecated("Use GetFluxEvaluator(VorB) instead of GetFluxEvaluator(bool)!")]]
+    shared_ptr<DifferentialOperator> GetFluxEvaluator (bool boundary) const
+    {
+      if(boundary)
+	return flux_evaluator[BND];
+      else
+	return flux_evaluator[VOL];
     }
 
     virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const
@@ -609,19 +619,9 @@ namespace ngcomp
 
     /// returns function-evaluator
     shared_ptr<BilinearFormIntegrator> GetIntegrator (bool vb = VOL) const
-    { 
-      if (vb == BND)
-	return boundary_integrator; 
-      else
-	return integrator; 
+    {
+      return integrator[vb];
     }
-
-
-    /// returns function-evaluator for boundary values
-    shared_ptr<DifferentialOperator> GetBoundaryEvaluator () const
-    { return boundary_evaluator; }
-    shared_ptr<BilinearFormIntegrator> GetBoundaryIntegrator () const
-    { return boundary_integrator; }
 
 
     /// special elements for hacks (used for contact, periodic-boundary-penalty-constraints, ...
@@ -803,9 +803,8 @@ namespace ngcomp
     virtual int GetNDofLevel (int level) const;
     ///
     using FESpace::GetDofNrs;
-    virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
+    virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const;
     ///
-    virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
 
     virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
   
@@ -840,9 +839,7 @@ namespace ngcomp
     ///
     virtual int GetNDof () const throw();
     ///
-    virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
-    ///
-    virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
+    virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const;
   };
 
 
@@ -877,13 +874,10 @@ namespace ngcomp
     virtual int GetNDof () const throw() { return ndlevel.Last(); }
   
     ///
-    virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
+    virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const;
 
     ///
     virtual int GetNDofLevel (int level) const;
-
-    ///
-    virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
 
 
     virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const 
@@ -928,13 +922,11 @@ namespace ngcomp
     virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
 
     ///
-    virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
+    virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const;
 
     ///
     virtual int GetNDofLevel (int level) const;
 
-    ///
-    virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
   };
 
 
@@ -1006,9 +998,9 @@ namespace ngcomp
     ///
     virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const;
     ///
-    virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
+    virtual const FiniteElement & GetCD2FE (int cd2elnr, LocalHeap & lh) const;
     ///
-    virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
+    virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const;
     ///
     virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const;
     virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const;
@@ -1018,20 +1010,20 @@ namespace ngcomp
     virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
 
     template <class MAT> NGS_DLL_HEADER
-    void TransformMat (int elnr, bool boundary,
+    void TransformMat (int elnr, VorB vb,
 		       MAT & mat, TRANSFORM_TYPE tt) const;
 
     template <class VEC> NGS_DLL_HEADER
-    void TransformVec (int elnr, bool boundary,
+    void TransformVec (int elnr, VorB vb,
 		       VEC & vec, TRANSFORM_TYPE tt) const;
 
-    virtual void VTransformMR (int elnr, bool boundary,
+    virtual void VTransformMR (int elnr, VorB vb,
 			       const SliceMatrix<double> & mat, TRANSFORM_TYPE tt) const;
-    virtual void VTransformMC (int elnr, bool boundary,
+    virtual void VTransformMC (int elnr, VorB vb,
 			       const SliceMatrix<Complex> & mat, TRANSFORM_TYPE tt) const;
-    virtual void VTransformVR (int elnr, bool boundary,
+    virtual void VTransformVR (int elnr, VorB vb,
 			       const FlatVector<double> & vec, TRANSFORM_TYPE tt) const;
-    virtual void VTransformVC (int elnr, bool boundary,
+    virtual void VTransformVC (int elnr, VorB vb,
 			       const FlatVector<Complex> & vec, TRANSFORM_TYPE tt) const;
 
     /// number of component spaces

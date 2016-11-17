@@ -108,6 +108,8 @@ namespace ngcomp
     virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
 
     virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
+    
+    virtual void GetDofNrs(ngfem::ElementId ei, ngstd::Array<int>& dnums) const = 0;
     ///
     virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
     ///

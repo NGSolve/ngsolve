@@ -33,7 +33,7 @@ namespace ngfem
   
   template <int DIMS, int DIMR>
   FE_ElementTransformation<DIMS, DIMR> :: FE_ElementTransformation ()
-    : ElementTransformation(ET_POINT, false,-1,-1),  nvmat(0,0,0)
+    : ElementTransformation(ET_POINT, VOL,-1,-1),  nvmat(0,0,0)
   { ; }
 
   template <int DIM> ScalarFiniteElement<DIM> * GetP1FE (ELEMENT_TYPE type);
@@ -90,7 +90,7 @@ namespace ngfem
 
   template <int DIMS, int DIMR>
   FE_ElementTransformation<DIMS, DIMR> :: FE_ElementTransformation (ELEMENT_TYPE type, SliceMatrix<> pmat)
-    : ElementTransformation(type, false,-1,-1), pointmat(Trans(pmat))
+    : ElementTransformation(type, VOL,-1,-1), pointmat(Trans(pmat))
   {
     fel = GetP1FE<DIMS> (type);
     // SetElementType (type);
@@ -213,6 +213,7 @@ namespace ngfem
   template class FE_ElementTransformation<3,3>;
   template class FE_ElementTransformation<1,2>;
   template class FE_ElementTransformation<2,3>;
+  template class FE_ElementTransformation<1,3>;
   
   template class FE_ElementTransformation<0,2>;
   template class FE_ElementTransformation<0,3>;
