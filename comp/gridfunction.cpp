@@ -1174,12 +1174,12 @@ namespace ngcomp
         int elnr = ma->FindElementOfPoint 
           // (static_cast<const DimMappedIntegrationPoint<2>&> (ip).GetPoint(),
           (ip.GetPoint(), rip, true);  // buildtree not yet threadsafe (maybe now ?)
-         if (elnr == -1)
+        if (elnr == -1)
           {
             result = 0;
             return;
           }
-        const ElementTransformation & trafo2 = ma->GetTrafo(elnr, vb, lh2);
+        const ElementTransformation & trafo2 = ma->GetTrafo(ElementId(vb, elnr), lh2);
         return Evaluate (trafo2(rip, lh2), result);
       }
     
@@ -1234,7 +1234,7 @@ namespace ngcomp
             result = 0;
             return;
           }
-        const ElementTransformation & trafo2 = ma->GetTrafo(elnr, vb, lh2);
+        const ElementTransformation & trafo2 = ma->GetTrafo(ElementId(vb, elnr), lh2);
         Evaluate (trafo2(rip, lh2), result);
         return;
       }
@@ -1708,7 +1708,7 @@ namespace ngcomp
 	      mdxdxref(i,j) = dxdxref[3*i+j];
 	  }
 	
-	ElementTransformation & eltrans = ma->GetTrafo (elnr, VOL, lh);
+	ElementTransformation & eltrans = ma->GetTrafo (ElementId(VOL, elnr), lh);
 	IntegrationPoint ip(xref[0], xref[1], xref[2], 0);
 	MappedIntegrationPoint<3,3> sip (ip, eltrans, vx, mdxdxref);
 	
@@ -1781,8 +1781,8 @@ namespace ngcomp
 	
         LocalHeapMem<100000> lh("visgf::GetMultiValue");
 
-	const ElementTransformation & eltrans = ma->GetTrafo (elnr, VOL, lh);
-        const FiniteElement & fel = fes.GetFE (elnr, lh);
+	const ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
+        const FiniteElement & fel = fes.GetFE (ei, lh);
 
 
 	ArrayMem<int,200> dnums(fel.GetNDof());
@@ -1918,7 +1918,7 @@ namespace ngcomp
 
 	fes.TransformVec (elnr, vb, elu, TRANSFORM_SOL);
 
-	ElementTransformation & eltrans = ma->GetTrafo (elnr, vb, lh);
+	ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
 	if (!fes.DefinedOn(vb, eltrans.GetElementIndex())) return false;
 
 	IntegrationPoint ip(lam1, lam2, 0, 0);
@@ -1998,7 +1998,7 @@ namespace ngcomp
 	fes.TransformVec (elnr, vb, elu, TRANSFORM_SOL);
 	
 	HeapReset hr(lh);
-	ElementTransformation & eltrans = ma->GetTrafo (elnr, vb, lh);
+	ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
         if (!fes.DefinedOn(vb, eltrans.GetElementIndex())) return false;
 
         IntegrationPoint ip(xref[0], xref[1], 0, 0);
@@ -2348,7 +2348,8 @@ namespace ngcomp
       {
 	for(int i=0; i<ma->GetNE(); i++)
 	  {
-	    const FiniteElement & fel = fes.GetFE(i,lh2);
+            ElementId ei(VOL, i);
+	    const FiniteElement & fel = fes.GetFE(ei,lh2);
 	    
 	    domain = ma->GetElIndex(i);
 	    
@@ -2425,7 +2426,8 @@ namespace ngcomp
       {
 	for(int i=0; i<ma->GetNSE(); i++)
 	  {
-	    const FiniteElement & fel = fes.GetSFE(i,lh2);
+            ElementId ei(VOL, i);
+	    const FiniteElement & fel = fes.GetFE(ei,lh2);
 
 	    domain = ma->GetSElIndex(i);
 
@@ -2521,7 +2523,8 @@ namespace ngcomp
     // cout << "viscoef, getval1" << endl;
     LocalHeapMem<100000> lh("viscf::GetValue");
     IntegrationPoint ip(lam1, lam2, lam3);
-    ElementTransformation & trafo = ma->GetTrafo (elnr, VOL, lh);
+    ElementId ei(VOL, elnr);
+    ElementTransformation & trafo = ma->GetTrafo (ei, lh);
     BaseMappedIntegrationPoint & mip = trafo(ip, lh);
     if (!cf -> IsComplex())
       cf -> Evaluate (mip, FlatVector<>(GetComponents(), values));
@@ -2550,7 +2553,8 @@ namespace ngcomp
     // cout << "viscoef, getval2" << endl;
     LocalHeapMem<100000> lh("viscf::GetValue xref");
     IntegrationPoint ip(xref[0],xref[1],xref[2]);
-    ElementTransformation & trafo = ma->GetTrafo (elnr, VOL, lh);
+    ElementId ei(VOL, elnr);
+    ElementTransformation & trafo = ma->GetTrafo (ei, lh);
     BaseMappedIntegrationPoint & mip = trafo(ip, lh);
     if (!cf -> IsComplex())
       cf -> Evaluate (mip, FlatVector<>(GetComponents(), values));
@@ -2607,7 +2611,8 @@ namespace ngcomp
     IntegrationPoint ip(lam1, lam2);
     ip.FacetNr() = facetnr;
     VorB vb = ma->GetDimension() == 3 ? BND : VOL;
-    ElementTransformation & trafo = ma->GetTrafo (elnr, vb, lh);
+    ElementId ei(vb, elnr);
+    ElementTransformation & trafo = ma->GetTrafo (ei, lh);
     BaseMappedIntegrationPoint & mip = trafo(ip, lh);
 
     if (!cf -> IsComplex())

@@ -997,11 +997,11 @@ void TransformVec (int elnr, VorB vb,
     virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const;
 
     /// returns a compound finite element
-    virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
+    // virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
     ///
-    virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const;
+    // virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const;
     ///
-    virtual const FiniteElement & GetCD2FE (int cd2elnr, LocalHeap & lh) const;
+    // virtual const FiniteElement & GetCD2FE (int cd2elnr, LocalHeap & lh) const;
     ///
     virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const;
     ///

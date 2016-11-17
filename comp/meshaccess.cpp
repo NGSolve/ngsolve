@@ -1595,7 +1595,7 @@ namespace ngcomp
   
     LocalHeapMem<10000> lh("MeshAccess - elementvolume");
 
-    ElementTransformation & trans = GetTrafo (elnr, VOL, lh);
+    ElementTransformation & trans = GetTrafo (ElementId(VOL, elnr), lh);
     ConstantCoefficientFunction ccf(1);
 
     if (GetDimension() == 1)
@@ -1642,7 +1642,7 @@ namespace ngcomp
 
     LocalHeapMem<10000> lh("MeshAccess - surfaceelementvolume");
 
-    ElementTransformation & trans = GetTrafo (selnr, BND, lh);
+    ElementTransformation & trans = GetTrafo (ElementId(BND, selnr), lh);
     ConstantCoefficientFunction ccf(1);
 
     if (GetDimension() == 2)

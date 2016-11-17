@@ -214,7 +214,7 @@ public:
   ///
   virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const;
 
-
+  using FESpace::GetFE;
   virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
 
   ///

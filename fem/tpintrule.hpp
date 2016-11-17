@@ -1,6 +1,6 @@
 #ifndef TPINTRULE_HPP
 #define TPINTRULE_HPP
-#include <comp.hpp>
+// #include <comp.hpp>
 
 namespace ngfem
 {

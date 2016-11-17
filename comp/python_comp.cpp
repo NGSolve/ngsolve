@@ -1431,12 +1431,13 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
             IntegrationPoint ip;
             int elnr = space->GetMeshAccess()->FindElementOfPoint(Vec<3>(x, y, z), ip, true);
             if (elnr < 0) throw Exception ("point out of domain");
-
-            const FiniteElement & fel = space->GetFE(elnr, lh);
+            ElementId ei(VOL, elnr);
+            
+            const FiniteElement & fel = space->GetFE(ei, lh);
 
             Array<int> dnums(fel.GetNDof(), lh);
-            space->GetDofNrs(elnr, dnums);
-            auto & trafo = space->GetMeshAccess()->GetTrafo(elnr, VOL, lh);
+            space->GetDofNrs(ei, dnums);
+            auto & trafo = space->GetMeshAccess()->GetTrafo(ei, lh);
 
             if (space->IsComplex())
               {
@@ -1539,14 +1540,15 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                 Vector<> values(dim);
                 elvec.SetSize(fel.GetNDof());
                 self->GetElementVector(dnums, elvec);
+                ElementId ei(VOL, elnr);
                 if (dim_mesh == 2)
                   {
-                    MappedIntegrationPoint<2, 2> mip(ip, space.GetMeshAccess()->GetTrafo(elnr, VOL, lh));
+                    MappedIntegrationPoint<2, 2> mip(ip, space.GetMeshAccess()->GetTrafo(ei, lh));
                     evaluator->Apply(fel, mip, elvec, values, lh);
                   }
                 else if (dim_mesh == 3)
                   {
-                    MappedIntegrationPoint<3, 3> mip(ip, space.GetMeshAccess()->GetTrafo(elnr, VOL, lh));
+                    MappedIntegrationPoint<3, 3> mip(ip, space.GetMeshAccess()->GetTrafo(ei, lh));
                     evaluator->Apply(fel, mip, elvec, values, lh);
                   }
                 if (dim > 1)
