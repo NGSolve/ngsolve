@@ -53,11 +53,11 @@ if (NOT NETGEN_INTERNAL_INCLUDE_DIR)
     cmake -DNETGEN_SOURCE_DIR=path_to_netgen_sources ...")
 endif()
 
-add_definitions(-DHAVE_NETGEN_SOURCES)
 include_directories(AFTER ${NETGEN_INTERNAL_INCLUDE_DIR})
 #######################################################################
 
 add_subdirectory(external_dependencies/netgen)
+add_definitions(-DHAVE_NETGEN_SOURCES)
 #######################################################################
 if(USE_CCACHE)
   find_program(CCACHE_FOUND ccache)
