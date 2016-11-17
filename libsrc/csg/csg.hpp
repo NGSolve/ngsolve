@@ -24,9 +24,9 @@
 #include "csgeom.hpp"
 #include "csgparser.hpp"
 
-
 #include "triapprox.hpp"
 #include "algprim.hpp"
+#include "splinesurface.hpp"
 #include "brick.hpp"
 #include "spline3d.hpp"
 #include "manifold.hpp"

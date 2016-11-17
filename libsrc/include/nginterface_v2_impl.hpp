@@ -13,7 +13,10 @@ NGX_INLINE DLL_HEADER int Ngx_Mesh :: GetElementIndex<0> (int nr) const
 template <>
 NGX_INLINE DLL_HEADER int Ngx_Mesh :: GetElementIndex<1> (int nr) const
 {
-  return (*mesh)[SegmentIndex(nr)].si;
+  if(mesh->GetDimension()==3)
+    return (*mesh)[SegmentIndex(nr)].edgenr;
+  else
+    return (*mesh)[SegmentIndex(nr)].si;
 }
   
 template <>
@@ -63,7 +66,10 @@ NGX_INLINE DLL_HEADER Ng_Element Ngx_Mesh :: GetElement<1> (int nr) const
 
   Ng_Element ret;
   ret.type = NG_ELEMENT_TYPE(el.GetType());
-  ret.index = el.si;
+  if(mesh->GetDimension()==2)
+    ret.index = el.si;
+  else
+    ret.index = el.edgenr;
   if (mesh->GetDimension() == 2)
     ret.mat = mesh->GetBCNamePtr(el.si-1);
   else

@@ -2419,10 +2419,6 @@ namespace netgen
   }
 
 
-
-
-
-
   Identifications :: Identifications (Mesh & amesh)
     : mesh(amesh)
   {

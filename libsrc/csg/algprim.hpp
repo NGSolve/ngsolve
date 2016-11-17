@@ -53,6 +53,7 @@ namespace netgen
   /// A Plane (i.e., the plane and everything behind it).
   class Plane : public QuadraticSurface
   {
+  protected:
     /// a point in the plane
     Point<3> p;
     /// outward normal vector 

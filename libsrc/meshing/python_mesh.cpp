@@ -229,6 +229,10 @@ DLL_HEADER void ExportNetgenMeshing(py::module &m)
                                      li.append (py::cast(self.surfnr2));
                                      return li;
                                    }))
+    .def_property_readonly("index", FunctionPointer([](const Segment &self) -> size_t
+		  {
+		    return self.edgenr;
+		  }))
     ;
 
 
@@ -560,6 +564,12 @@ DLL_HEADER void ExportNetgenMeshing(py::module &m)
              GenerateBoundaryLayer (self, blp);
            }
            ))
+
+    .def ("Scale", FunctionPointer([](Mesh & self, double factor)
+				   {
+				     for(auto i = 0; i<self.GetNP();i++)
+				       self.Point(i).Scale(factor);
+				   }))
                                             
     ;
   
