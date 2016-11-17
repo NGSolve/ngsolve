@@ -2242,9 +2242,9 @@ namespace ngcomp
         for (int j = 0; j < NumIntegrators(); j++)
           {
             if (parts[j] -> VB()==VOL)
-              hasbound = true;
-            else if(parts[j] ->VB()==BND)
               hasinner = true;
+            else if(parts[j] ->VB()==BND)
+              hasbound = true;
 	    else
 	      throw Exception("Assemble Linearization for BBND objects not implemented yet!");
           }
