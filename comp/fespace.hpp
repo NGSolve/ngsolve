@@ -208,9 +208,9 @@ namespace ngcomp
 
 
     /// number of (process-local) dofs
-    virtual int GetNDof () const = 0;
+    virtual size_t GetNDof () const = 0;
     /// number of dofs on the level
-    virtual int GetNDofLevel (int level) const;
+    virtual size_t GetNDofLevel (int level) const;
 
     
     class Element : public Ngs_Element
@@ -801,9 +801,9 @@ void TransformVec (int elnr, VorB vb,
     
     virtual void DoArchive (Archive & archive);
     ///
-    virtual int GetNDof () const throw();
+    virtual size_t GetNDof () const throw();
     ///
-    virtual int GetNDofLevel (int level) const;
+    virtual size_t GetNDofLevel (int level) const;
     ///
     using FESpace::GetDofNrs;
     virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const;
@@ -840,7 +840,7 @@ void TransformVec (int elnr, VorB vb,
     ///
     virtual void Update(LocalHeap & lh);
     ///
-    virtual int GetNDof () const throw();
+    virtual size_t GetNDof () const throw();
     ///
     virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const;
   };
@@ -874,13 +874,13 @@ void TransformVec (int elnr, VorB vb,
     /// 
     virtual void DoArchive (Archive & archive);
     ///
-    virtual int GetNDof () const throw() { return ndlevel.Last(); }
+    virtual size_t GetNDof () const throw() { return ndlevel.Last(); }
   
     ///
     virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const;
 
     ///
-    virtual int GetNDofLevel (int level) const;
+    virtual size_t GetNDofLevel (int level) const;
 
 
     virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const 
@@ -919,7 +919,7 @@ void TransformVec (int elnr, VorB vb,
     virtual void Update(LocalHeap & lh);
 
     ///
-    virtual int GetNDof () const throw() { return ndlevel.Last(); } 
+    virtual size_t GetNDof () const throw() { return ndlevel.Last(); } 
 
     ///
     virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
@@ -928,14 +928,14 @@ void TransformVec (int elnr, VorB vb,
     virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const;
 
     ///
-    virtual int GetNDofLevel (int level) const;
+    virtual size_t GetNDofLevel (int level) const;
 
   };
 
 
 
 
-
+  
 
 
   /// A combination of fe-spaces
@@ -981,9 +981,9 @@ void TransformVec (int elnr, VorB vb,
     virtual void UpdateCouplingDofArray();
 
     /// 
-    virtual int GetNDof () const throw() { return cummulative_nd.Last();} //ndlevel.Last(); }
+    virtual size_t GetNDof () const throw() { return cummulative_nd.Last(); } 
     ///
-    virtual int GetNDofLevel (int level) const { return ndlevel[level]; }
+    virtual size_t GetNDofLevel (int level) const { return ndlevel[level]; }
 
     IntRange GetRange (int spacenr) const
     { 
@@ -1142,7 +1142,7 @@ void TransformVec (int elnr, VorB vb,
   class ParallelMeshDofs : public ParallelDofs 
   {
   public:
-    ParallelMeshDofs (shared_ptr<MeshAccess> ama, const Array<Node> & adofnodes, 
+    ParallelMeshDofs (shared_ptr<MeshAccess> ama, const Array<NodeId> & adofnodes, 
 		      int dim = 1, bool iscomplex = false)
     { ndof = adofnodes.Size(); }
   };

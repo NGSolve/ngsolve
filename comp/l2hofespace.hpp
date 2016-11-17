@@ -58,9 +58,9 @@ namespace ngcomp
     ///
     virtual void UpdateCouplingDofArray();    
     ///
-    virtual int GetNDof () const throw() override;
+    virtual size_t GetNDof () const throw() override;
     ///
-    virtual int GetNDofLevel (int level) const override;
+    virtual size_t GetNDofLevel (int level) const override;
     ///
     virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override;
 
@@ -150,7 +150,7 @@ namespace ngcomp
     /// 
     //virtual void UpdateDofTables();
     ///
-    virtual int GetNDof () const throw() override;
+    virtual size_t GetNDof () const throw() override;
     ///
     virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const override;
     ///

@@ -1110,7 +1110,7 @@ namespace ngcomp
     
 
 
-  int HCurlHighOrderFESpace :: GetNDof () const throw()
+  size_t HCurlHighOrderFESpace :: GetNDof () const throw()
   {
     return ndof;
   }

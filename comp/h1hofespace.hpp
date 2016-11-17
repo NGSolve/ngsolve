@@ -71,9 +71,9 @@ namespace ngcomp
     virtual void DoArchive (Archive & archive) override;
 
     ///
-    virtual int GetNDof () const throw() override { return ndof; }
+    virtual size_t GetNDof () const throw() override { return ndof; }
     ///
-    virtual int GetNDofLevel (int alevel) const override;
+    virtual size_t GetNDofLevel (int alevel) const override;
     ///
     virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override;
     /// 

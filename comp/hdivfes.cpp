@@ -96,12 +96,12 @@ namespace ngcomp
   }
 
   
-  int RaviartThomasFESpace :: GetNDof () const throw()
+  size_t RaviartThomasFESpace :: GetNDof () const throw()
   {
     return ndlevel.Last();
   }
   
-  int RaviartThomasFESpace :: GetNDofLevel (int level) const
+  size_t RaviartThomasFESpace :: GetNDofLevel (int level) const
   {
     return ndlevel[level];
   }

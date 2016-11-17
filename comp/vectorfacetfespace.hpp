@@ -54,9 +54,9 @@ namespace ngcomp
 
     virtual void Update(LocalHeap& lh);
     virtual void UpdateCouplingDofArray();
-    virtual int GetNDof() const throw() { return ndof; }
+    virtual size_t GetNDof() const throw() { return ndof; }
 
-    virtual int GetNDofLevel ( int i ) const { return ndlevel[i]; }
+    virtual size_t GetNDofLevel ( int i ) const { return ndlevel[i]; }
 
     // virtual int GetNDofLowOrder () const
     // { return ndof_lo; }

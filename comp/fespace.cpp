@@ -961,7 +961,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
 
 
-  int FESpace :: GetNDofLevel (int level) const
+  size_t FESpace :: GetNDofLevel (int level) const
   {
     return GetNDof();
   } 
@@ -1420,8 +1420,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
   {
     if (MyMPI_GetNTasks() == 1) return;
 
-    Array<Node> dofnodes (GetNDof());
-    dofnodes = Node (NT_VERTEX, -1);
+    Array<NodeId> dofnodes (GetNDof());
+    dofnodes = NodeId (NT_VERTEX, -1);
     Array<int> dnums;
 
     // for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
@@ -1430,7 +1430,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	{
 	  GetNodeDofNrs (nt, nr, dnums);
 	  for (int d : dnums)
-	    dofnodes[d] = Node (nt, nr);
+	    dofnodes[d] = NodeId (nt, nr);
 	} 
 
     paralleldofs = new ParallelMeshDofs (ma, dofnodes, dimension, iscomplex);
@@ -1570,7 +1570,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     ;
   }
 
-  int NodalFESpace :: GetNDof () const throw()
+  size_t NodalFESpace :: GetNDof () const throw()
   {
     return ndlevel.Last();
   }
@@ -1615,7 +1615,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
   }
 
-  int NodalFESpace :: GetNDofLevel (int level) const
+  size_t NodalFESpace :: GetNDofLevel (int level) const
   {
     return ndlevel[level];
   }
@@ -1759,7 +1759,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
 
 
-  int NonconformingFESpace :: GetNDof () const throw()
+  size_t NonconformingFESpace :: GetNDof () const throw()
   {
     return ma->GetNEdges();
   }
@@ -1938,7 +1938,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  dnums[i] = n_el_dofs*ei.Nr()+i;
       }
   }
-  int ElementFESpace :: GetNDofLevel (int level) const
+  
+  size_t ElementFESpace :: GetNDofLevel (int level) const
   {
     return ndlevel[level];
   }
@@ -2070,8 +2071,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     
   }
-
-  int SurfaceElementFESpace :: GetNDofLevel (int level) const
+  
+  size_t SurfaceElementFESpace :: GetNDofLevel (int level) const
   {
     return ndlevel[level];
   }
@@ -2527,7 +2528,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
   Table<int> * Nodes2Table (const MeshAccess & ma,
-			    const Array<Node> & dofnodes)
+			    const Array<NodeId> & dofnodes)
   {
     int ndof = dofnodes.Size();
 

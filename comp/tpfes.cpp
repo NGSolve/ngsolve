@@ -227,12 +227,12 @@ namespace ngcomp
     throw Exception("TPHighOrderFESpace::UpdateCouplingDofArray() not implemented");
   }
   
-  int TPHighOrderFESpace::GetNDof () const throw() 
+  size_t TPHighOrderFESpace::GetNDof () const throw() 
   {
     return ndof;
   }
   
-  int TPHighOrderFESpace::GetNDofLevel (int level) const 
+  size_t TPHighOrderFESpace::GetNDofLevel (int level) const 
   {
     throw Exception("TPHighOrderFESpace::GetNDofLevel() not implemented");
   }

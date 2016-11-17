@@ -73,9 +73,9 @@ namespace ngcomp
     ///
     virtual void Update(LocalHeap & lh) override;
     ///
-    virtual int GetNDof () const throw() override;
+    virtual size_t GetNDof () const throw() override;
     ///
-    virtual int GetNDofLevel (int level) const override;
+    virtual size_t GetNDofLevel (int level) const override;
     ///
     virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override;
     ///

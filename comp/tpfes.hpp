@@ -85,9 +85,9 @@ namespace ngcomp
     ///
     virtual void UpdateCouplingDofArray();    
     ///
-    virtual int GetNDof () const throw();
+    virtual size_t GetNDof () const throw();
     ///
-    virtual int GetNDofLevel (int level) const;
+    virtual size_t GetNDofLevel (int level) const;
     ///
     virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const;
 
