@@ -105,6 +105,7 @@ include (CheckIncludeFiles)
 check_include_files (dlfcn.h HAVE_DLFCN_H)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 add_definitions(-DHAVE_CONFIG_H)
+include_directories(BEFORE ${CMAKE_CURRENT_BINARY_DIR})
 
 #######################################################################
 # platform specific definitions and flags
