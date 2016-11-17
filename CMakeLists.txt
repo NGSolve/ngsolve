@@ -344,6 +344,7 @@ include(ExternalProject)
 if(NETGEN_SOURCE_DIR)
     find_path(NETGEN_INTERNAL_INCLUDE_DIR nginterface_v2_impl.hpp PATHS ${NETGEN_SOURCE_DIR} ${NETGEN_SOURCE_DIR}/libsrc/include)
 else(NETGEN_SOURCE_DIR)
+  execute_process(COMMAND git submodule update --init --recursive WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
   set(BUILD_NETGEN ON CACHE INTERNAL "is set if netgen is built as external project")
   set(NETGEN_INTERNAL_INCLUDE_DIR
     "${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies/netgen/libsrc/include"
