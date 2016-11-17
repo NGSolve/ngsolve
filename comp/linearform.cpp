@@ -114,7 +114,13 @@ namespace ngcomp
 		if(lfi->VB()==vb)
 		  {
 		    if(lfi->SkeletonForm())
-		      throw Exception ("There are no LinearformIntegrator which act on the skeleton so far!");
+		      {
+			if(vb==VOL)
+			  throw Exception ("There are no LinearformIntegrator which act on the skeleton so far!");
+			else {
+		      //TODO: get aligned volelement and check that
+			}
+		      }
 		    IterateElements
 		      (*fespace,vb,clh, [&](FESpace::Element el, LocalHeap & lh)
 		       {
