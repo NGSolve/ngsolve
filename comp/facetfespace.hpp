@@ -63,9 +63,9 @@ namespace ngcomp
     //  virtual void UpdateDofTables();
     virtual void UpdateCouplingDofArray();    
     ///
-    virtual int GetNDof () const throw();
+    virtual size_t GetNDof () const throw();
     ///
-    virtual int GetNDofLevel (int level) const;
+    virtual size_t GetNDofLevel (int level) const;
     ///
     virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
     ///

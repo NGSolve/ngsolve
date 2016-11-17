@@ -1921,12 +1921,12 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
 
 #else
 
-  int MeshAccess ::GetGlobalNodeNum (Node node) const  
+  size_t MeshAccess ::GetGlobalNodeNum (NodeId node) const  
   {
     return -1;
   }
 
-  void MeshAccess :: GetDistantProcs (Node node, Array<int> & procs) const
+  void MeshAccess :: GetDistantProcs (NodeId node, Array<int> & procs) const
   {
     procs.SetSize (0);
   }

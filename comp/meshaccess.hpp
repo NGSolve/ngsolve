@@ -125,9 +125,9 @@ namespace ngcomp
   class TElementIterator
   {
     const MeshAccess & ma;
-    int nr;
+    size_t nr;
   public:
-    INLINE TElementIterator (const MeshAccess & ama, int anr) : ma(ama), nr(anr) { ; }
+    INLINE TElementIterator (const MeshAccess & ama, size_t anr) : ma(ama), nr(anr) { ; }
     INLINE TElementIterator operator++ () { return TElementIterator(ma, ++nr); }
     // ElementId operator*() const { return ElementId(VB,nr); }
     INLINE Ngs_Element operator*() const; 
@@ -169,20 +169,20 @@ namespace ngcomp
     int dim;
   
     /// number of vertex, edge, face, and cell nodes
-    int nnodes[4];
+    size_t nnodes[4];
 
     // number of nodes of co-dimension i 
     // these are NC, NF, NE, NV  in 3D,
     // and NF, NE, NV, undef, in 2D
-    int nnodes_cd[4];
+    size_t nnodes_cd[4];
 
 
     /// number of elements of dimension i
-    int nelements[4];  
+    size_t nelements[4];  
     /// number of elements of co-dimension i
-    int nelements_cd[4];
+    size_t nelements_cd[4];
     ///
-    int ne_vb[3];  // index with VorB
+    size_t ne_vb[3];  // index with VorB
     /// number of multigrid levels 
     int nlevels;
 
@@ -237,28 +237,28 @@ namespace ngcomp
     int GetDimension() const { return dim; }  
 
     /// number of points. needed for isoparametric nodal elements
-    int GetNP() const  { return Ng_GetNP(); }
+    size_t GetNP() const  { return Ng_GetNP(); }
 
     /// number of vertices
-    int GetNV() const  { return nnodes[0]; }  
+    size_t GetNV() const  { return nnodes[0]; }  
 
     /// number of elements in the domain
-    int GetNE() const  { return nelements_cd[0]; }  
+    size_t GetNE() const  { return nelements_cd[0]; }  
 
     /// number of boundary elements
-    int GetNSE() const { return nelements_cd[1]; }
+    size_t GetNSE() const { return nelements_cd[1]; }
 
     /// number of elements of co dimension 2
-    int GetNCD2E() const { return nelements_cd[2]; }
+    size_t GetNCD2E() const { return nelements_cd[2]; }
 
     /// number of volume or boundary elements
-    int GetNE(VorB vb) const { return ne_vb[vb]; } 
+    size_t GetNE(VorB vb) const { return ne_vb[vb]; } 
 
     /// number of edges in the whole mesh
-    int GetNEdges() const { return nnodes[1]; }     
+    size_t GetNEdges() const { return nnodes[1]; }     
 
     /// number of faces in the whole mesh
-    int GetNFaces() const { return nnodes[2]; }    
+    size_t GetNFaces() const { return nnodes[2]; }    
 
 
     /// maximal sub-domain (material) index. range is [0, ndomains)
@@ -276,7 +276,7 @@ namespace ngcomp
 
     /// returns point coordinate
     template <int D>
-    void GetPoint (int pi, Vec<D> & p) const
+    void GetPoint (size_t pi, Vec<D> & p) const
     { 
       auto pt = mesh.GetPoint (pi);
       for (int j = 0; j < D; j++) p(j) = pt[j];
@@ -284,7 +284,7 @@ namespace ngcomp
 
     /// returns point coordinate
     template <int D>
-    Vec<D> GetPoint (int pi) const
+    Vec<D> GetPoint (size_t pi) const
     { 
       Vec<D> p;
       auto pt = mesh.GetPoint (pi);
@@ -319,7 +319,7 @@ namespace ngcomp
               {
                 LocalHeap lh = clh.Split(ti.thread_nr, ti.nthreads);
 
-                for (int mynr : sl)
+                for (size_t mynr : sl)
                   {
                     HeapReset hr(lh);
                     ElementId ei(vb, mynr);
@@ -329,7 +329,7 @@ namespace ngcomp
         }
       else
         {
-          for (int i = 0; i < GetNE(vb); i++)
+          for (auto i : Range(GetNE(vb)))
             {
               HeapReset hr(clh);
               ElementId ei(vb, i);
@@ -926,16 +926,16 @@ namespace ngcomp
        Returns the list of other MPI - processes where node is present.
        The ordering coincides for all processes.
     */
-    void GetDistantProcs (Node node, Array<int> & procs) const;
+    void GetDistantProcs (NodeId node, Array<int> & procs) const;
 
     /**
        Returns the global number of the node.
        Currently, this function works only for vertex-nodes.
      */
-    int GetGlobalNodeNum (Node node) const;
+    size_t GetGlobalNodeNum (NodeId node) const;
     
     
-    FlatArray<int> GetDistantProcs (Node node) const
+    FlatArray<int> GetDistantProcs (NodeId node) const
     {
 #ifdef PARALLEL
       std::tuple<int,int*> tup = mesh.GetDistantProcs(node.GetType(), node.GetNr());

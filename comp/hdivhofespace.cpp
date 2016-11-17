@@ -865,12 +865,12 @@ namespace ngcomp
     return *fe;
   }
   
-  int HDivHighOrderFESpace :: GetNDof () const throw()
+  size_t HDivHighOrderFESpace :: GetNDof () const throw()
   {
     return ndof;
   }
 
-  int HDivHighOrderFESpace :: GetNDofLevel (int level) const
+  size_t HDivHighOrderFESpace :: GetNDofLevel (int level) const
   {
     return ndlevel[level];
   }

@@ -487,12 +487,12 @@ namespace ngcomp
       }
   }
 
-  int L2HighOrderFESpace :: GetNDof () const throw()
+  size_t L2HighOrderFESpace :: GetNDof () const throw()
   {
     return ndof;
   }
 
-  int L2HighOrderFESpace :: GetNDofLevel (int level) const
+  size_t L2HighOrderFESpace :: GetNDofLevel (int level) const
   {
     return ndlevel[level];
   }
@@ -807,7 +807,7 @@ namespace ngcomp
     throw Exception ("Volume elements not available for L2SurfaceHighOrderFESpace");
   }
  
-  int L2SurfaceHighOrderFESpace :: GetNDof () const throw()
+  size_t L2SurfaceHighOrderFESpace :: GetNDof () const throw()
   {
     return ndof;
   }

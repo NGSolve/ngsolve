@@ -542,13 +542,13 @@ namespace ngcomp
 
 
   // ------------------------------------------------------------------------
-  int FacetFESpace :: GetNDof () const throw()
+  size_t FacetFESpace :: GetNDof () const throw()
   {
     return ndof;
   }
 
   // ------------------------------------------------------------------------
-  int FacetFESpace :: GetNDofLevel (int level) const
+  size_t FacetFESpace :: GetNDofLevel (int level) const
   {
     return ndlevel[level];
   }

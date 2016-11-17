@@ -39,9 +39,9 @@ namespace ngcomp
     virtual void Update(LocalHeap & lh);
 
     ///
-    virtual int GetNDof () const throw();
+    virtual size_t GetNDof () const throw();
     ///
-    virtual int GetNDofLevel (int level) const;
+    virtual size_t GetNDofLevel (int level) const;
 
     ///
     virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const;

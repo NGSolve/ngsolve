@@ -859,7 +859,7 @@ namespace ngcomp
   }
  
 
-  int H1HighOrderFESpace :: GetNDofLevel (int alevel) const
+  size_t H1HighOrderFESpace :: GetNDofLevel (int alevel) const
   {
     return ndlevel[alevel];
   }
