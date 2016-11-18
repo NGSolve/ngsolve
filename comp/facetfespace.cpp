@@ -148,22 +148,22 @@ namespace ngcomp
     if (ma->GetDimension() == 2)
       {
         // integrator = make_shared<MassIntegrator<2>> (&one);
-        evaluator = make_shared<T_DifferentialOperator<DiffOpIdFacet<2>>>();
-        boundary_evaluator = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
-        boundary_integrator = make_shared<RobinIntegrator<2>> (&one);
+        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdFacet<2>>>();
+        evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
+        integrator[BND] = make_shared<RobinIntegrator<2>> (&one);
       }
     else
       {
         // integrator = make_shared<MassIntegrator<3>> (&one);
-        evaluator = make_shared<T_DifferentialOperator<DiffOpIdFacet<3>>>();
-        boundary_evaluator = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
-        boundary_integrator = make_shared<RobinIntegrator<3>> (&one);
+        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdFacet<3>>>();
+	evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
+        integrator[BND] = make_shared<RobinIntegrator<3>> (&one);
       }
 
     if (dimension > 1)
       {
-        integrator = make_shared<BlockBilinearFormIntegrator> (integrator, dimension);
-        boundary_integrator = make_shared<BlockBilinearFormIntegrator> (boundary_integrator, dimension);
+        integrator[VOL] = make_shared<BlockBilinearFormIntegrator> (integrator[VOL], dimension);
+        integrator[BND] = make_shared<BlockBilinearFormIntegrator> (integrator[BND], dimension);
       }
   }
   
@@ -542,13 +542,13 @@ namespace ngcomp
 
 
   // ------------------------------------------------------------------------
-  int FacetFESpace :: GetNDof () const throw()
+  size_t FacetFESpace :: GetNDof () const throw()
   {
     return ndof;
   }
 
   // ------------------------------------------------------------------------
-  int FacetFESpace :: GetNDofLevel (int level) const
+  size_t FacetFESpace :: GetNDofLevel (int level) const
   {
     return ndlevel[level];
   }
@@ -560,10 +560,7 @@ namespace ngcomp
       {
         // not optimal, needs reordering of dofs ...
         Array<int> dnums;
-        if (ei.IsVolume())
-          GetDofNrs (ei.Nr(), dnums);
-        else
-          GetSDofNrs (ei.Nr(), dnums);
+        GetDofNrs (ei, dnums);
         dranges.SetSize (0);
         for (int j = 0; j < dnums.Size(); j++)
           dranges.Append (IntRange (dnums[j], dnums[j+1]));
@@ -599,82 +596,90 @@ namespace ngcomp
   }
 
   // ------------------------------------------------------------------------
-  void FacetFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
+  void FacetFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
-    ArrayMem<int,6> fanums;
-    ma->GetElFacets (elnr,fanums);
-    
-    dnums.SetSize(0);
-    
-    if(!highest_order_dc)
+    // TODO: remove switch...
+    switch (ei.VB())
       {
-        for(int i=0; i<fanums.Size(); i++)
-          {
-            if (!all_dofs_together)
-              dnums.Append(fanums[i]); // low_order
-            dnums += GetFacetDofs (fanums[i]);
-          }
+      case VOL:
+	{
+	  ArrayMem<int,6> fanums;
+	  ma->GetElFacets (ei.Nr(),fanums);
+	  
+	  dnums.SetSize(0);
+	  
+	  if(!highest_order_dc)
+	    {
+	      for(int i=0; i<fanums.Size(); i++)
+		{
+		  if (!all_dofs_together)
+		    dnums.Append(fanums[i]); // low_order
+		  dnums += GetFacetDofs (fanums[i]);
+		}
+	    }
+	  else
+	    {
+	      int innerdof = first_inner_dof[ei.Nr()];
+	      ELEMENT_TYPE eltype = ma->GetElType (ei.Nr());
+	      
+	      for(int i=0; i<fanums.Size(); i++)
+		{
+		  int facetdof = first_facet_dof[fanums[i]];
+		  
+		  if(ma->GetDimension()==2)
+		    {
+		      for(int j = 0; j <= order; j++)
+			{
+			  if(j == 0 && !all_dofs_together) dnums.Append (fanums[i]);
+			  else if(j == order) dnums.Append (innerdof++);
+			  else dnums.Append (facetdof++);
+			}
+		    }
+		  else
+		    {
+		      if(ElementTopology::GetFacetType(eltype,i) == ET_TRIG)
+			for(int j = 0; j <= order; j++)
+			  for(int k = 0; k <= order-j; k++)
+			    {
+			      if(j + k == 0 && !all_dofs_together) dnums.Append (fanums[i]);
+			      else if(j + k == order) dnums.Append (innerdof++);
+			      else dnums.Append (facetdof++);
+			    } else
+			for(int j = 0; j <= order; j++)
+			  for(int k = 0; k <= order; k++)
+			    {
+			      if(j + k == 0 && !all_dofs_together) dnums.Append (fanums[i]);
+			      else if(j == order || k == order) dnums.Append (innerdof++);
+			      else dnums.Append (facetdof++);
+			    }
+		    }
+		}		
+	    }
+	break;
       }
-    else
-      {
-        int innerdof = first_inner_dof[elnr];
-        ELEMENT_TYPE eltype = ma->GetElType (elnr);
-        
-        for(int i=0; i<fanums.Size(); i++)
-          {
-            int facetdof = first_facet_dof[fanums[i]];
-            
-            if(ma->GetDimension()==2)
-              {
-                for(int j = 0; j <= order; j++)
-                  {
-                    if(j == 0 && !all_dofs_together) dnums.Append (fanums[i]);
-                    else if(j == order) dnums.Append (innerdof++);
-                    else dnums.Append (facetdof++);
-                  }
-              }
-            else
-              {
-                if(ElementTopology::GetFacetType(eltype,i) == ET_TRIG)
-                  for(int j = 0; j <= order; j++)
-                    for(int k = 0; k <= order-j; k++)
-                      {
-                        if(j + k == 0 && !all_dofs_together) dnums.Append (fanums[i]);
-                        else if(j + k == order) dnums.Append (innerdof++);
-                        else dnums.Append (facetdof++);
-                      } else
-                  for(int j = 0; j <= order; j++)
-                    for(int k = 0; k <= order; k++)
-                      {
-                        if(j + k == 0 && !all_dofs_together) dnums.Append (fanums[i]);
-                        else if(j == order || k == order) dnums.Append (innerdof++);
-                        else dnums.Append (facetdof++);
-                      }
-              }
-            
-          }
+      case BND:
+	{
+	  dnums.SetSize(0);
+	  
+	  int fnum = 0;
+	  if (ma->GetDimension() == 2)
+	    {
+	      ArrayMem<int, 4> fanums;
+	      ma->GetSElEdges (ei.Nr(), fanums);
+	      fnum = fanums[0];
+	    }
+	  else
+	    fnum = ma->GetSElFace(ei.Nr());
+	  
+	  if (!all_dofs_together) dnums.Append (fnum);
+	  dnums += GetFacetDofs(fnum);
+	}
+	break;
+      case BBND:
+	dnums.SetSize(0);
       }
   }
   
-  // ------------------------------------------------------------------------
-  void FacetFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
-  {
-    dnums.SetSize(0);
-    
-    int fnum = 0;
-    if (ma->GetDimension() == 2)
-      {
-        ArrayMem<int, 4> fanums;
-        ma->GetSElEdges (selnr, fanums);
-	fnum = fanums[0];
-      }
-    else
-      fnum = ma->GetSElFace(selnr);
-      
-    if (!all_dofs_together) dnums.Append (fnum);
-    dnums += GetFacetDofs(fnum);
-  }
-
   // ------------------------------------------------------------------------
   Table<int> * FacetFESpace :: CreateSmoothingBlocks (const Flags & precflags) const
   {
@@ -820,21 +825,21 @@ namespace ngcomp
       throw Exception ("HDG fespace with edges not supported");
 
     static ConstantCoefficientFunction one(1);
-    integrator = GetIntegrators().CreateBFI("HDG_mass", ma->GetDimension(), &one);
+    integrator[VOL] = GetIntegrators().CreateBFI("HDG_mass", ma->GetDimension(), &one);
 
     if (ma->GetDimension() == 2)
       {
 	// integrator = new HDG_MassIntegrator<2> (&one);
-        boundary_integrator.reset (new RobinIntegrator<2> (&one));
-	evaluator = make_shared<T_DifferentialOperator<ngcomp::DiffOpIdHDG<2>>>();
+        integrator[BND].reset (new RobinIntegrator<2> (&one));
+	evaluator[VOL] = make_shared<T_DifferentialOperator<ngcomp::DiffOpIdHDG<2>>>();
       }
     else
       {
         // integrator = new HDG_MassIntegrator<3> (&one);
-        boundary_integrator = make_shared<RobinIntegrator<3>> (&one);
-	evaluator = make_shared<T_DifferentialOperator<ngcomp::DiffOpIdHDG<3>>>();
+        integrator[BND] = make_shared<RobinIntegrator<3>> (&one);
+	evaluator[VOL] = make_shared<T_DifferentialOperator<ngcomp::DiffOpIdHDG<3>>>();
       }
-    boundary_integrator = make_shared<CompoundBilinearFormIntegrator> (boundary_integrator, 1);
+    integrator[BND] = make_shared<CompoundBilinearFormIntegrator> (integrator[BND], 1);
   }
 
   HybridDGFESpace :: ~HybridDGFESpace () { ; }

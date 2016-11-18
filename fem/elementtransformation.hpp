@@ -38,11 +38,17 @@ namespace ngfem
   public:
     ///
     // ElementTransformation () { higher_integration_order = false; } 
-    ElementTransformation (ELEMENT_TYPE et, bool /* aboundary */, int aelnr, int aelindex)
+    ElementTransformation (ELEMENT_TYPE et, VorB /* aboundary */, int aelnr, int aelindex)
       : eltype(et), elnr(aelnr), elindex(aelindex)
     {
       higher_integration_order = false; 
-    } 
+    }
+
+    ElementTransformation(ELEMENT_TYPE et, ElementId ei, int aelindex)
+      : eltype(et), elnr(ei.Nr()), elindex(aelindex)
+    {
+      higher_integration_order = false;
+    }
     
     ///
     virtual ~ElementTransformation() { ; } 
@@ -59,7 +65,7 @@ namespace ngfem
     /// return element number
     int GetElementNr () const { return elnr; }
     ///
-    ElementId GetElementId () const { return ElementId(Boundary() ? BND : VOL, elnr); }
+    ElementId GetElementId () const { return ElementId(VB(), elnr); }
     /// return element index
     int GetElementIndex () const { return elindex; }
     /// return element geometry type 
@@ -89,36 +95,36 @@ namespace ngfem
 			   FlatVector<> nv,
 			   LocalHeap & lh) const
     {
-      if (Boundary())
-	{
-	  if (SpaceDim() == 2)
-	    {
-	      Mat<2,1> dxdxi;
-	      CalcJacobian (ip, dxdxi);
-	      // Ng_GetSurfaceElementTransformation (elnr+1, &ip(0), 0, &dxdxi(0));
-	      double len = sqrt (sqr (dxdxi(0,0)) + sqr(dxdxi(1,0)));
-	      nv(0) = -dxdxi(1,0) / len; //SZ 
-	      nv(1) = dxdxi(0,0) / len;
-	    }
-	  else
-	    {
-	      Mat<3,2> dxdxi;
-	      CalcJacobian (ip, dxdxi);
-	      // Ng_GetSurfaceElementTransformation (elnr+1, &ip(0), 0, &dxdxi(0));
-	      nv(0) = dxdxi(1,0) * dxdxi(2,1) - dxdxi(2,0) * dxdxi(1,1);
-	      nv(1) = dxdxi(2,0) * dxdxi(0,1) - dxdxi(0,0) * dxdxi(2,1);
-	      nv(2) = dxdxi(0,0) * dxdxi(1,1) - dxdxi(1,0) * dxdxi(0,1);
-	      nv /= L2Norm (nv);
-	    }
-	}
+      if(VB()==BND)
+        {
+          if (SpaceDim() == 2)
+            {
+              Mat<2,1> dxdxi;
+              CalcJacobian (ip, dxdxi);
+              // Ng_GetSurfaceElementTransformation (elnr+1, &ip(0), 0, &dxdxi(0));
+              double len = sqrt (sqr (dxdxi(0,0)) + sqr(dxdxi(1,0)));
+              nv(0) = -dxdxi(1,0) / len; //SZ 
+              nv(1) = dxdxi(0,0) / len;
+            }
+          else
+            {
+              Mat<3,2> dxdxi;
+              CalcJacobian (ip, dxdxi);
+              // Ng_GetSurfaceElementTransformation (elnr+1, &ip(0), 0, &dxdxi(0));
+              nv(0) = dxdxi(1,0) * dxdxi(2,1) - dxdxi(2,0) * dxdxi(1,1);
+              nv(1) = dxdxi(2,0) * dxdxi(0,1) - dxdxi(0,0) * dxdxi(2,1);
+              nv(2) = dxdxi(0,0) * dxdxi(1,1) - dxdxi(1,0) * dxdxi(0,1);
+              nv /= L2Norm (nv);
+            }
+        }
     }
   
   
     /// returns space dimension of physical elements
     virtual int SpaceDim () const = 0;
 
-    /// is it a mapping for boundary elements ?
-    virtual bool Boundary() const = 0;
+    /// is it a mapping for boundary or codim 2 elements ?
+    virtual VorB VB() const = 0;
 
     void SetHigherIntegrationOrder(void) {higher_integration_order = true;}
     void UnSetHigherIntegrationOrder(void) {higher_integration_order = false;}
@@ -264,9 +270,10 @@ namespace ngfem
       return pointmat.Height(); 
     }
 
-    bool Boundary(void) const
+    VorB VB(void) const
     {
-      return pointmat.Height() != ElementTopology::GetSpaceDim (fel->ElementType());
+      return pointmat.Height()==ElementTopology::GetSpaceDim(fel->ElementType()) ? VOL :
+	(pointmat.Height()==ElementTopology::GetSpaceDim(fel->ElementType())-1 ? BND : BBND);
     }
 
     void GetSort (FlatArray<int> sort) const
