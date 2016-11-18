@@ -5,7 +5,7 @@ endif(NOT CMAKE_BUILD_TYPE)
 cmake_minimum_required(VERSION 2.8)
 project(NGSolve)
 set(NGSOLVE_VERSION_MAJOR 6)
-set(NGSOLVE_VERSION_MINOR 1)
+set(NGSOLVE_VERSION_MINOR 2)
 string(TIMESTAMP NGSOLVE_VERSION_PATCH "%y%U%w" )
 # set(NGSOLVE_VERSION_PATCH 15440)
 set(NGSOLVE_VERSION "${NGSOLVE_VERSION_MAJOR}.${NGSOLVE_VERSION_MINOR}-dev")
@@ -32,6 +32,7 @@ option( USE_VTUNE        "include vtune pause/resume numproc")
 option( USE_NUMA         "compile with NUMA-aware code")
 option( USE_CCACHE       "use ccache")
 option( INSTALL_DEPENDENCIES "install dependencies like netgen or solver libs, useful for packaging" OFF )
+option( USE_HYPRE "use hypre by llnl" OFF)
 
 #######################################################################
 if(USE_CCACHE)
@@ -51,19 +52,6 @@ endif(INTEL_MIC)
 #######################################################################
 if(USE_NATIVE_ARCH)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
-else(USE_NATIVE_ARCH)
-     message("***********************************")
-     message("${CMAKE_CXX_COMPILER_VERSION}")
-    if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
-        set(AVX2_FLAG "-march=core-avx2")
-    else()
-        # assume gcc
-        if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.9.0")
-            set(AVX2_FLAG "-march=core-avx2")
-        else()
-            set(AVX2_FLAG "-march=haswell")
-        endif()
-    endif()
 endif(USE_NATIVE_ARCH)
 
 #######################################################################
@@ -188,8 +176,9 @@ endif (USE_GUI)
 if (USE_MPI)
     find_package(MPI REQUIRED)
     if (USE_PYTHON)
-      find_package(MPI4PY REQUIRED)
-      include_directories(${MPI4PY_INCLUDE_DIR})
+#   ----- WE DO NOT NEED THIS ANYMORE -----
+#      find_package(MPI4PY REQUIRED)
+#      include_directories(${MPI4PY_INCLUDE_DIR})     
     endif (USE_PYTHON)
     add_definitions(-DPARALLEL)
     include_directories(${MPI_CXX_INCLUDE_PATH})
@@ -248,9 +237,18 @@ endif (USE_MKL)
 if (USE_MUMPS)
     add_definitions(-DUSE_MUMPS)
     find_package(MUMPS REQUIRED)
-    include_directories(${MUMPS_DIR}/include)
+    set(MUMPS_INCLUDE_DIR ${MUMPS_DIR}/include)
+    include_directories(${MUMPS_INCLUDE_DIR})
     link_directories(${MUMPS_DIR}/lib)
 endif (USE_MUMPS)
+
+#######################################################################
+if (USE_HYPRE)
+    add_definitions(-DHYPRE)
+    find_package(HYPRE REQUIRED)
+    include_directories(${HYPRE_DIR}/include)
+    link_directories(${HYPRE_DIR}/lib)
+endif(USE_HYPRE)
 
 #######################################################################
 if (USE_PYTHON)
@@ -378,6 +376,7 @@ add_subdirectory(python)
 add_subdirectory(pde_tutorial)
 add_subdirectory(py_tutorials)
 add_subdirectory(tests)
+add_subdirectory(external_dependencies)
 
 #######################################################################
 # generate ngscxx compiler wrapper
@@ -398,7 +397,11 @@ foreach( d ${ngscxx_defines} )
 endforeach()
 
 # include directories
-set(ngscxx_include_dirs ${INSTALL_DIR}/include ${TCL_INCLUDE_PATH} ${MPI_CXX_INCLUDE_PATH} ${MKL_INCLUDE_DIRS} ${MUMPS_DIR}/include ${PYTHON_INCLUDE_DIRS} ${PYBIND_INCLUDE_DIR} ${UMFPACK_INCLUDE_DIR} ${VTUNE_INCLUDE_DIR} ${NETGEN_INTERNAL_INCLUDE_DIR})
+set(ngscxx_include_dirs ${INSTALL_DIR}/include ${TCL_INCLUDE_PATH} ${MPI_CXX_INCLUDE_PATH} ${MKL_INCLUDE_DIRS} ${MUMPS_INCLUDE_DIR}/include ${PYTHON_INCLUDE_DIRS} ${UMFPACK_INCLUDE_DIR} ${VTUNE_INCLUDE_DIR})
+if(NOT INSTALL_DEPENDENCIES) 
+    set(ngscxx_include_dirs ${ngscxx_include_dirs} ${NETGEN_INTERNAL_INCLUDE_DIR})
+endif(NOT INSTALL_DEPENDENCIES) 
+
 
 foreach( d ${ngscxx_include_dirs} )
   if(WIN32)
@@ -489,24 +492,6 @@ if(UNIX)
     set(CPACK_PACKAGE_NAME ${CPACK_PACKAGE_NAME})
     set(CPACK_DEBIAN_PACKAGE_NAME ${CPACK_PACKAGE_NAME})
     set(CPACK_PACKAGE_FILE_NAME "ngsolve-${PACKAGE_VERSION}_${CPACK_DEBIAN_PACKAGE_ARCHITECTURE}")
-
-    set(postinstall ${CMAKE_CURRENT_BINARY_DIR}/postinst )
-    file(WRITE  ${postinstall} "#!/bin/bash\n")
-    file(APPEND ${postinstall} "source /etc/profile.d/netgen.sh\n")
-    file(APPEND ${postinstall} "if [ `grep -c avx2 /proc/cpuinfo` != \"0\" ]\nthen\n")
-    file(APPEND ${postinstall} "mv $NETGENDIR/../lib/libngfem.so $NETGENDIR/../lib/libngfem_generic.so\n")
-    file(APPEND ${postinstall} "ln -s $NETGENDIR/../lib/libngfem_avx2.so $NETGENDIR/../lib/libngfem.so\n")
-    file(APPEND ${postinstall} "mv $NETGENDIR/../lib/libngbla.so $NETGENDIR/../lib/libngbla_generic.so\n")
-    file(APPEND ${postinstall} "ln -s $NETGENDIR/../lib/libngbla_avx2.so $NETGENDIR/../lib/libngbla.so\n")
-    file(APPEND ${postinstall} "mv $NETGENDIR/../lib/libngcomp.so $NETGENDIR/../lib/libngcomp_generic.so\n")
-    file(APPEND ${postinstall} "ln -s $NETGENDIR/../lib/libngcomp_avx2.so $NETGENDIR/../lib/libngcomp.so\n")
-    string(ASCII 27 Esc)
-    file(APPEND ${postinstall} "echo '${Esc}[0;32m*************************************************'\n")
-    file(APPEND ${postinstall} "echo 'Detected avx2 support, using optimized libraries.'\n")
-    file(APPEND ${postinstall} "echo '*************************************************${Esc}[m'\n")
-    file(APPEND ${postinstall} "fi;\n")
-    set( CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_BINARY_DIR}/postinst")
-
 endif(UNIX)
 if(WIN32)
     set(CPACK_GENERATOR "NSIS")
@@ -612,6 +597,7 @@ message("
     INTEL_MIC: ......... ${INTEL_MIC}
     VTUNE: ............. ${USE_VTUNE}
     VAMPIRTRACE: ....... ${USE_VT}
+    HYPRE: ............. ${USE_HYPRE}
 
 
   Building:

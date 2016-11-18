@@ -71,9 +71,9 @@ namespace ngcomp
     virtual void DoArchive (Archive & archive) override;
 
     ///
-    virtual int GetNDof () const throw() override { return ndof; }
+    virtual size_t GetNDof () const throw() override { return ndof; }
     ///
-    virtual int GetNDofLevel (int alevel) const override;
+    virtual size_t GetNDofLevel (int alevel) const override;
     ///
     virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override;
     /// 
@@ -87,7 +87,9 @@ namespace ngcomp
     template <ELEMENT_TYPE ET>
     FiniteElement & T_GetSFE (int elnr, Allocator & alloc) const;
     ///
-    virtual void GetDofNrs (int elnr, Array<int> & dnums) const override;
+    template <ELEMENT_TYPE ET>
+      FiniteElement & T_GetCD2FE(int elnr, Allocator & alloc) const;
+    virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const override;
 
     virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
 
@@ -96,9 +98,7 @@ namespace ngcomp
     virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const override;
     virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const override;
     ///
-    virtual void GetSDofNrs (int selnr, Array<int> & dnums) const override;
-    virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const override;
-  
+  virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const override;
     virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const override; 
     // virtual void CreateSmoothingBlocks2 (SmoothingBlocksCreator & sbc, const Flags & precflags) const; 
     ///

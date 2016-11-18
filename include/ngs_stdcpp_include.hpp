@@ -59,7 +59,9 @@
 // related to clang Bug 2181:  https://www.nsnam.org/bugzilla/show_bug.cgi?id=2181
 #endif
 
-
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wvirtual-move-assign"
+#endif
 
 
 #include <iostream>

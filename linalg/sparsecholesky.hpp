@@ -171,7 +171,7 @@ public:
     // dependency graph for elimination
     Table<int> block_dependency; 
 
-
+  public:      // needed for gcc 4.9, why  ??? 
     class MicroTask
     {
     public:
@@ -181,6 +181,7 @@ public:
       int bblock;
       int nbblocks;
     };
+  protected:
     
     Array<MicroTask> microtasks;
     Table<int> micro_dependency;     

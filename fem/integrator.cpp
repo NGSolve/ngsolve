@@ -43,6 +43,8 @@ namespace ngfem
   
   bool Integrator :: DefinedOn (int mat) const
   {
+    if(mat<0)
+      return false;
     if (definedon.Size())
       {
         if (mat >= definedon.Size()) return false;
