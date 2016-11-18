@@ -1909,7 +1909,7 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
 
 #ifdef PARALLEL
  
-  int MeshAccess ::GetGlobalNodeNum (Node node) const
+  size_t MeshAccess ::GetGlobalNodeNum (Node node) const
   {
     int glob = NgPar_GetGlobalNodeNum (node.GetType(), node.GetNr());
     return glob;
