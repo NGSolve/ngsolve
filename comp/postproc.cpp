@@ -30,15 +30,14 @@ namespace ngcomp
     ma->PushStatus ("Post-processing");
     
 
-    bool bound = bli->BoundaryForm();
+    auto vb = bli->VB();
 
-    int ne      = bound ? ma->GetNSE() : ma->GetNE();
+    int ne      = ma->GetNE(vb);
     int dim     = fes.GetDimension();
     int dimflux = fesflux.GetDimension();
     int dimfluxvec = bli->DimFlux(); 
 
-    shared_ptr<BilinearFormIntegrator> fluxbli =
-      bound ? (fesflux.GetBoundaryIntegrator()) : (fesflux.GetIntegrator());
+    shared_ptr<BilinearFormIntegrator> fluxbli = fesflux.GetIntegrator(vb);
 
     Array<int> cnti(fesflux.GetNDof());
     cnti = 0;
@@ -56,7 +55,7 @@ namespace ngcomp
     */
     
     IterateElements  
-      (fesflux, VorB(bound), clh, 
+      (fesflux, vb, clh, 
        [&] (Ngs_Element ei, LocalHeap & lh)
        {
          HeapReset hr(lh);
@@ -333,7 +332,7 @@ namespace ngcomp
   template <class SCAL>
   void SetValues (shared_ptr<CoefficientFunction> coef,
 		  GridFunction & bu,
-		  bool bound,
+		  VorB vb,
                   const Region * reg, 
 		  DifferentialOperator * diffop,
 		  LocalHeap & clh)
@@ -343,15 +342,11 @@ namespace ngcomp
     S_GridFunction<SCAL> & u = dynamic_cast<S_GridFunction<SCAL> &> (bu);
 
     const FESpace & fes = *u.GetFESpace();
-    shared_ptr<MeshAccess> ma = fes.GetMeshAccess();
-
-    ma->PushStatus ("setvalues");
-
-    if (reg) bound = reg->IsBoundary();
-    VorB vorb = VorB(bound);
+    shared_ptr<MeshAccess> ma = fes.GetMeshAccess(); 
     int dim   = fes.GetDimension();
+    ma->PushStatus("setvalues");
 
-    shared_ptr<BilinearFormIntegrator> bli = fes.GetIntegrator(bound);
+    shared_ptr<BilinearFormIntegrator> bli = fes.GetIntegrator(vb);
     if (!bli)
       throw Exception ("no integrator available");
 
@@ -364,10 +359,10 @@ namespace ngcomp
 
     u.GetVector() = 0.0;
 
-    ProgressOutput progress (ma, "setvalues element", ma->GetNE(vorb));
+    ProgressOutput progress (ma, "setvalues element", ma->GetNE(vb));
 
     IterateElements 
-      (fes, vorb, clh, 
+      (fes, vb, clh, 
        [&] (FESpace::Element ei, LocalHeap & lh)
        {
           progress.Update ();
@@ -378,7 +373,7 @@ namespace ngcomp
             }
           else
             {
-              if (bound && !fes.IsDirichletBoundary(ei.GetIndex()))
+              if (vb==BND && !fes.IsDirichletBoundary(ei.GetIndex()))
                 return;
             }
           
@@ -423,8 +418,8 @@ namespace ngcomp
 	      FlatMatrix<double> elmat(fel.GetNDof(), lh);
 	      bli->CalcElementMatrix (fel, eltrans, elmat, lh);
 
-	      fes.TransformMat (ei.Nr(), bound, elmat, TRANSFORM_MAT_LEFT_RIGHT);
-	      fes.TransformVec (ei.Nr(), bound, elflux, TRANSFORM_RHS);
+	      fes.TransformMat (ei.Nr(), vb, elmat, TRANSFORM_MAT_LEFT_RIGHT);
+	      fes.TransformVec (ei.Nr(), vb, elflux, TRANSFORM_RHS);
               if (fel.GetNDof() < 50)
                 {
                   FlatCholeskyFactors<double> invelmat(elmat, lh);
@@ -473,14 +468,14 @@ namespace ngcomp
   
   NGS_DLL_HEADER void SetValues (shared_ptr<CoefficientFunction> coef,
 				 GridFunction & u,
-				 bool bound,
+				 VorB vb,
 				 DifferentialOperator * diffop,
 				 LocalHeap & clh)
   {
     if (u.GetFESpace()->IsComplex())
-      SetValues<Complex> (coef, u, bound, nullptr, diffop, clh);
+      SetValues<Complex> (coef, u, vb, nullptr, diffop, clh);
     else
-      SetValues<double> (coef, u, bound, nullptr, diffop, clh);
+      SetValues<double> (coef, u, vb, nullptr, diffop, clh);
   }
 
   NGS_DLL_HEADER void SetValues (shared_ptr<CoefficientFunction> coef,
@@ -490,9 +485,9 @@ namespace ngcomp
 				 LocalHeap & clh)
   {
     if (u.GetFESpace()->IsComplex())
-      SetValues<Complex> (coef, u, false, &reg, diffop, clh);
+      SetValues<Complex> (coef, u, reg.VB(), &reg, diffop, clh);
     else
-      SetValues<double> (coef, u, false, &reg, diffop, clh);
+      SetValues<double> (coef, u, reg.VB(), &reg, diffop, clh);
   }
 
 
@@ -515,15 +510,17 @@ namespace ngcomp
     const FESpace & fes = *u.GetFESpace();
     const FESpace & fesflux = *flux.GetFESpace();
 
-    bool bound = bli->BoundaryForm();
+    VorB vb = bli->VB();
 
-    int ne      = bound ? ma->GetNSE() : ma->GetNE();
+    if(vb==BBND)
+      throw Exception("CalcError not implemented for co dim 2");
+
+    int ne      = ma->GetNE(vb);
     int dim     = fes.GetDimension();
     int dimflux = fesflux.GetDimension();
     int dimfluxvec = bli->DimFlux(); // fesflux.GetDimension();
 
-    shared_ptr<BilinearFormIntegrator> fluxbli =
-      bound ? fesflux.GetBoundaryIntegrator() : fesflux.GetIntegrator();
+    shared_ptr<BilinearFormIntegrator> fluxbli = fesflux.GetIntegrator(vb);
 
     Array<int> dnums;
     Array<int> dnumsflux;
@@ -531,7 +528,7 @@ namespace ngcomp
     double sum = 0;
     for (int i = 0; i < ne; i++)
       {
-        ElementId ei(VorB(bound),i);
+        ElementId ei(vb,i);
 
 	HeapReset hr(lh);
 	ma->SetThreadPercentage ( 100.0*i / ne );
@@ -542,20 +539,11 @@ namespace ngcomp
 	if (!domains[eldom]) continue;
 
 	const FiniteElement & fel = fes.GetFE(ei, lh);
-	const FiniteElement & felflux = 
-	  (bound ? fesflux.GetSFE(i, lh) : fesflux.GetFE (i, lh));
+	const FiniteElement & felflux = fesflux.GetFE(ei, lh);
 
-	ElementTransformation & eltrans = ma->GetTrafo (i, bound, lh);
-	if (bound)
-	  {
-	    fes.GetSDofNrs (i, dnums);
-	    fesflux.GetSDofNrs (i, dnumsflux);
-	  }
-	else
-	  {
-	    fes.GetDofNrs (i, dnums);
-	    fesflux.GetDofNrs (i, dnumsflux);
-	  }
+	ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
+	fes.GetDofNrs(ei,dnums);
+	fesflux.GetDofNrs(ei,dnumsflux);
 
 	FlatVector<SCAL> elu(dnums.Size() * dim, lh);
 	FlatVector<SCAL> elflux(dnumsflux.Size() * dimflux, lh);
@@ -564,9 +552,9 @@ namespace ngcomp
 
 
 	u.GetElementVector (dnums, elu);
-	fes.TransformVec (i, bound, elu, TRANSFORM_SOL);
+	fes.TransformVec (i, vb, elu, TRANSFORM_SOL);
 	flux.GetElementVector (dnumsflux, elflux);
-	fesflux.TransformVec (i, bound, elflux, TRANSFORM_SOL);
+	fesflux.TransformVec (i, vb, elflux, TRANSFORM_SOL);
 
 	IntegrationRule ir(felflux.ElementType(), 2*felflux.Order());
 
@@ -797,8 +785,7 @@ namespace ngcomp
 	if ((domain != -1) && (domain != eldom))
 	  continue;
 
-	const FiniteElement & fel1 = 
-	  bound1 ? fes1.GetSFE(i, lh) : fes1.GetFE (i, lh);
+	const FiniteElement & fel1 = fes1.GetFE(ei, lh);
 
 	ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
 	fes1.GetDofNrs (ei, dnums1);
@@ -966,8 +953,9 @@ namespace ngcomp
     for (int i = 0; i < ne; i++)
       {
 	lh.CleanUp();
-	fesh1.GetDofNrs (i, dnumsh1);
-	feshcurl.GetDofNrs (i, dnumshcurl);
+        ElementId ei(VOL, i);
+	fesh1.GetDofNrs (ei, dnumsh1);
+	feshcurl.GetDofNrs (ei, dnumshcurl);
 
 	FlatVector<SCAL> elhcurl(dnumshcurl.Size(), lh);
 	FlatVector<SCAL> elh1(dnumsh1.Size(), lh);
@@ -977,7 +965,7 @@ namespace ngcomp
 	vech1.GetIndirect (dnumsh1, elh1);
 	fesh1.TransformVec (i, 0, elh1, TRANSFORM_RHS);
 
-	switch (fesh1.GetFE(i, lh).ElementType())
+	switch (fesh1.GetFE(ei, lh).ElementType())
 	  {
 	  case ET_TRIG:
 	    elhcurl = gradtrig * elh1;
@@ -1046,8 +1034,9 @@ namespace ngcomp
     for (int i = 0; i < ne; i++)
       {
 	lh.CleanUp();
-	fesh1.GetDofNrs (i, dnumsh1);
-	feshcurl.GetDofNrs (i, dnumshcurl);
+        ElementId ei(VOL, i);
+	fesh1.GetDofNrs (ei, dnumsh1);
+	feshcurl.GetDofNrs (ei, dnumshcurl);
 
 	FlatVector<SCAL> elhcurl(dnumshcurl.Size(), lh);
 	FlatVector<SCAL> elh1(dnumsh1.Size(), lh);
@@ -1055,7 +1044,7 @@ namespace ngcomp
 	vechcurl.GetIndirect (dnumshcurl, elhcurl);
 	feshcurl.TransformVec (i, 0, elhcurl, TRANSFORM_RHS);
 
-	switch (fesh1.GetFE(i, lh).ElementType())
+	switch (fesh1.GetFE(ei, lh).ElementType())
 	  {
 	  case ET_TRIG:
 	    elh1 = Trans (gradtrig) * elhcurl;

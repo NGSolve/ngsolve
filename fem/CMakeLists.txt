@@ -16,7 +16,7 @@ add_library(ngfem ${NGS_LIB_TYPE}
         scalarfe.cpp generic_recpol.cpp hdivfe.cpp recursive_pol.cpp
         hybridDG.cpp diffop.cpp l2hofefo.cpp h1hofefo.cpp
         facethofe.cpp python_fem.cpp DGIntegrators.cpp pml.cpp
-        h1hofe_segm.cpp h1hofe_trig.cpp  symbolicintegrator.cpp
+        h1hofe_segm.cpp h1hofe_trig.cpp symbolicintegrator.cpp tpdiffop.cpp
         )
 
 if(USE_CUDA)
@@ -31,14 +31,6 @@ endif(USE_CUDA)
 if(NOT WIN32)
     target_link_libraries(ngfem ${PYTHON_LIBS} ${LAPACK_LIBRARIES})
     install( TARGETS ngfem ${ngs_install_dir} )
-
-    if(NOT USE_NATIVE_ARCH)
-        add_library(ngfem_avx2 ${NGS_LIB_TYPE} $<TARGET_PROPERTY:ngfem,SOURCES> )
-        target_link_libraries(ngfem_avx2 $<TARGET_PROPERTY:ngfem,INTERFACE_LINK_LIBRARIES> )
-        target_compile_options(ngfem_avx2 PUBLIC ${AVX2_FLAG})
-        install( TARGETS ngfem_avx2 ${ngs_install_dir} )
-    endif(NOT USE_NATIVE_ARCH)
-
 endif(NOT WIN32)
 
 install( FILES
@@ -53,8 +45,8 @@ install( FILES
         specialelement.hpp thdivfe.hpp tscalarfe.hpp vectorfacetfe.hpp	
         hdivlofe.hpp hdivhofefo.hpp pml.hpp precomp.hpp h1hofe_impl.hpp	
         hdivhofe_impl.hpp tscalarfe_impl.hpp thdivfe_impl.hpp l2hofe_impl.hpp
-        diffop_impl.hpp hcurlhofe_impl.hpp thcurlfe.hpp
-        thcurlfe_impl.hpp symbolicintegrator.hpp code_generation.hpp
+        diffop_impl.hpp hcurlhofe_impl.hpp thcurlfe.hpp tpdiffop.hpp tpintrule.hpp
+        thcurlfe_impl.hpp symbolicintegrator.hpp code_generation.hpp 
         DESTINATION include
         COMPONENT ngsolve_devel
        )

@@ -11,7 +11,8 @@
 /*********************************************************************/
 
 
-// #include "_hypre_utilities.h"
+//#include "_hypre_utilities.h"
+#include "HYPRE_utilities.h"
 // #include "HYPRE_krylov.h"
 
 #include "HYPRE.h"
@@ -24,8 +25,11 @@ namespace ngcomp
   
 class HyprePreconditioner : public Preconditioner
 {
-  const S_BilinearForm<double> * bfa;
-
+  shared_ptr<BilinearForm> dummy;
+  
+  //const S_BilinearForm<double> * bfa;
+  shared_ptr<BilinearForm> bfa;
+  
   HYPRE_Solver precond;
   HYPRE_IJMatrix A;
   HYPRE_ParCSRMatrix parcsr_A;
@@ -39,11 +43,16 @@ public:
     
   HyprePreconditioner (const PDE & pde, const Flags & flags, const string & name);
   HyprePreconditioner (const BaseMatrix & matrix, const BitArray * afreedofs); 
+  HyprePreconditioner (shared_ptr<BilinearForm> bfa, const Flags & aflags,
+		       const string aname = "precond");
 
   ~HyprePreconditioner ();
 	
+  virtual void FinalizeLevel (const ngla::BaseMatrix * mat = NULL);
   virtual void Update();
   virtual void Mult (const BaseVector & f, BaseVector & u) const;
+  virtual int VHeight() const { return pardofs->GetNDofLocal();}
+  virtual int VWidth() const { return pardofs->GetNDofLocal();}
 
   virtual const char * ClassName() const
   { return "HYPRE AMG Preconditioner"; }

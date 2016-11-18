@@ -385,10 +385,21 @@ namespace ngfem
 	{
 	  if (DIMR == 3)
 	    {
-	      normalvec = Cross (Vec<3,SCAL> (dxdxi.Col(0)),
-				 Vec<3,SCAL> (dxdxi.Col(1)));
-	      det = L2Norm (normalvec);
-	      normalvec /= det;
+	      if(DIMS == 2)
+		{
+		  normalvec = Cross (Vec<3,SCAL> (dxdxi.Col(0)),
+				     Vec<3,SCAL> (dxdxi.Col(1)));
+		  det = L2Norm (normalvec);
+		  normalvec /= det;
+		}
+	      else
+		{
+		  // CHECK!
+		  normalvec = TSCAL(0.0);
+		  tangentialvec = Vec<3,SCAL>(dxdxi.Col(0));
+		  det = L2Norm(tangentialvec);
+		  tangentialvec /= det;
+		}
 	    }
 	  else if (DIMR == 2)
 	    {
@@ -445,7 +456,8 @@ namespace ngfem
     }
 
     ///
-    INLINE int IsBoundary () const { return DIMS != DIMR; }
+    INLINE VorB VB() const { return VorB(DIMR-DIMS); }
+    //INLINE int IsBoundary () const { return DIMS != DIMR; }
 
     ///
     void CalcHesse (Mat<2> & ddx1, Mat<2> & ddx2) const;

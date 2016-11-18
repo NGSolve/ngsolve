@@ -49,6 +49,7 @@ namespace ngfem
 
 #include "elementtransformation.hpp"
 
+
 #include "h1lofe.hpp"
 #include "h1hofe.hpp"
 #include "l2hofe.hpp"
@@ -83,5 +84,6 @@ namespace ngfem
 // #include "pml.hpp" 
 
 // using ngfem::ELEMENT_TYPE;
-
+#include "tpdiffop.hpp"
+#include "tpintrule.hpp"
 #endif

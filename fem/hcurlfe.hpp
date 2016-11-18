@@ -71,7 +71,7 @@ namespace ngfem
                                   SliceMatrix<> shape) const;
 
     virtual void CalcMappedShape (const SIMD_BaseMappedIntegrationRule & mir, 
-                                  ABareMatrix<> shapes) const;
+                                  BareSliceMatrix<SIMD<double>> shapes) const;
     
     /// compute curl of shape
     virtual void CalcMappedCurlShape (const MappedIntegrationPoint<DIM,DIM> & mip,
@@ -81,7 +81,7 @@ namespace ngfem
                                       SliceMatrix<> curlshape) const;
 
     virtual void CalcMappedCurlShape (const SIMD_BaseMappedIntegrationRule & mir, 
-                                      ABareMatrix<> curlshapes) const;
+                                      BareSliceMatrix<SIMD<double>> curlshapes) const;
 
     ///
     const FlatMatrixFixWidth<DIM> GetShape (const IntegrationPoint & ip, 

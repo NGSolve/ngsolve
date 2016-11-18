@@ -148,7 +148,7 @@ namespace ngfem
   template <int D>
   void HCurlFiniteElement<D> ::
   CalcMappedShape (const SIMD_BaseMappedIntegrationRule & mir, 
-                   ABareMatrix<> dshapes) const
+                   BareSliceMatrix<SIMD<double>> dshapes) const
   {
     throw ExceptionNOSIMD("SIMD - HCurlFE::CalcShape not overloaded");
   }
@@ -188,7 +188,7 @@ namespace ngfem
   template <int D>
   void HCurlFiniteElement<D> ::
   CalcMappedCurlShape (const SIMD_BaseMappedIntegrationRule & mir, 
-                       ABareMatrix<> dshapes) const
+                       BareSliceMatrix<SIMD<double>> dshapes) const
   {
     throw ExceptionNOSIMD("SIMD - HCurlFE::CalcMappedCurlShape not overloaded");
   }
