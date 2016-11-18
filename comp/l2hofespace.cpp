@@ -88,11 +88,11 @@ namespace ngcomp
 	throw Exception ("Flag 'variableorder' for l2ho is obsolete. \n  Either choose uniform order by -order= .. \n -relorder=.. for relative mesh order "); 
       }
 
-    integrator = CreateBFI("mass", ma->GetDimension(),
+    integrator[VOL] = CreateBFI("mass", ma->GetDimension(),
                            make_shared<ConstantCoefficientFunction>(1));
 
     if (dimension > 1)
-      integrator = make_shared<BlockBilinearFormIntegrator> (integrator, dimension);
+      integrator[VOL] = make_shared<BlockBilinearFormIntegrator> (integrator[VOL], dimension);
 
     
 
@@ -100,33 +100,33 @@ namespace ngcomp
       {
       case 1:
         {
-          evaluator = make_shared<T_DifferentialOperator<DiffOpId<1>>>();
-          flux_evaluator = make_shared<T_DifferentialOperator<DiffOpGradient<1>>>();
-          boundary_evaluator = make_shared<T_DifferentialOperator<DiffOpIdBoundary<1>>>();
+          evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<1>>>();
+          flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<1>>>();
+          evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<1>>>();
           break;
         }
       case 2:
         {
-          evaluator = make_shared<T_DifferentialOperator<DiffOpId<2>>>();
-          flux_evaluator = make_shared<T_DifferentialOperator<DiffOpGradient<2>>>();
-          boundary_evaluator = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
+          evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<2>>>();
+          flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<2>>>();
+          evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
           break;
         }
       case 3:
         {
-          evaluator = make_shared<T_DifferentialOperator<DiffOpId<3>>>();
-          flux_evaluator = make_shared<T_DifferentialOperator<DiffOpGradient<3>>>();
-          boundary_evaluator = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
+          evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<3>>>();
+          flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<3>>>();
+          evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
           break;
         }
       }
     if (dimension > 1) 
       {
-        evaluator = make_shared<BlockDifferentialOperatorId> (evaluator, dimension);
-        // evaluator = make_shared<BlockDifferentialOperator> (evaluator, dimension);
-	flux_evaluator = make_shared<BlockDifferentialOperator> (flux_evaluator, dimension);
-	boundary_evaluator = 
-	  make_shared<BlockDifferentialOperator> (boundary_evaluator, dimension);
+        evaluator[VOL] = make_shared<BlockDifferentialOperatorId> (evaluator[VOL], dimension);
+        // evaluator[VOL] = make_shared<BlockDifferentialOperator> (evaluator[VOL], dimension);
+	flux_evaluator[VOL] = make_shared<BlockDifferentialOperator> (flux_evaluator[VOL], dimension);
+	evaluator[BND] = 
+	  make_shared<BlockDifferentialOperator> (evaluator[BND], dimension);
         /*
 	boundary_flux_evaluator = 
 	  make_shared<BlockDifferentialOperator> (boundary_flux_evaluator, dimension);
@@ -487,12 +487,12 @@ namespace ngcomp
       }
   }
 
-  int L2HighOrderFESpace :: GetNDof () const throw()
+  size_t L2HighOrderFESpace :: GetNDof () const throw()
   {
     return ndof;
   }
 
-  int L2HighOrderFESpace :: GetNDofLevel (int level) const
+  size_t L2HighOrderFESpace :: GetNDofLevel (int level) const
   {
     return ndlevel[level];
   }
@@ -511,29 +511,23 @@ namespace ngcomp
   }
 
 
-  void L2HighOrderFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
+  void L2HighOrderFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
     dnums.SetSize0();
-    if (!DefinedOn (ma->GetElIndex (elnr))) return;
+    if (!DefinedOn (ei) || ei.VB()!=VOL) return;
 
-    auto eldofs = GetElementDofs(elnr);
+    auto eldofs = GetElementDofs(ei.Nr());
     int size = eldofs.Size();
     int base = all_dofs_together ? 0 : 1;
     size += base;
     dnums.SetSize(size);
-    if (!all_dofs_together) dnums[0] = elnr;
+    if (!all_dofs_together) dnums[0] = ei.Nr();
     dnums.Range(base, size) = eldofs;
     /*
     if (!all_dofs_together)
       dnums.Append (elnr); // lowest_order 
     dnums += GetElementDofs(elnr);
     */
-  }
-  
-  void L2HighOrderFESpace :: 
-  GetSDofNrs (int elnr, Array<int> & dnums) const
-  {
-    dnums.SetSize0 ();
   }
   
   Table<int> * L2HighOrderFESpace :: 
@@ -682,18 +676,18 @@ namespace ngcomp
 
     if (ma->GetDimension() == 2)
       {
-	// boundary_integrator.reset (new RobinIntegrator<2> (new ConstantCoefficientFunction(1)));
-        boundary_integrator = 
+	// integrator[BND].reset (new RobinIntegrator<2> (new ConstantCoefficientFunction(1)));
+        integrator[BND] = 
           make_shared<RobinIntegrator<2>>(make_shared<ConstantCoefficientFunction>(1));
       }
     else
       {
-	boundary_integrator = 
+	integrator[BND] = 
           make_shared<RobinIntegrator<3>> (make_shared<ConstantCoefficientFunction>(1));
       }
 
     if (dimension > 1)
-      boundary_integrator = make_shared<BlockBilinearFormIntegrator> (boundary_integrator, dimension);
+      integrator[BND] = make_shared<BlockBilinearFormIntegrator> (integrator[BND], dimension);
   }
 
   L2SurfaceHighOrderFESpace :: ~L2SurfaceHighOrderFESpace ()
@@ -813,27 +807,24 @@ namespace ngcomp
     throw Exception ("Volume elements not available for L2SurfaceHighOrderFESpace");
   }
  
-  int L2SurfaceHighOrderFESpace :: GetNDof () const throw()
+  size_t L2SurfaceHighOrderFESpace :: GetNDof () const throw()
   {
     return ndof;
   }
 
-  void L2SurfaceHighOrderFESpace :: GetSDofNrs (int elnr, Array<int> & dnums) const
+  void L2SurfaceHighOrderFESpace :: 
+  GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
-    dnums.SetSize(0);
-    int first = first_element_dof[elnr];
-    int neldofs = first_element_dof[elnr+1] - first;
+    dnums.SetSize (0);
+    if(ei.VB()!=BND) return;
+    int first = first_element_dof[ei.Nr()];
+    int neldofs = first_element_dof[ei.Nr()+1] - first;
     for (int j = 0; j < neldofs; j++)
       dnums.Append (first+j);
 
-    if (!DefinedOn (ma->GetSElIndex (elnr)))
+    if (!DefinedOn (ei))
       dnums = -1;
-  }
-  
-  void L2SurfaceHighOrderFESpace :: 
-  GetDofNrs (int elnr, Array<int> & dnums) const
-  {
-    dnums.SetSize (0);
+    
   }
   
   Table<int> * L2SurfaceHighOrderFESpace :: 

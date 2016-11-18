@@ -33,7 +33,10 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 //       static
 //       py::tuple getinitargs(const BaseVector & v)
 //       {
-//         return py::make_tuple(v.Size(), v.IsComplex(), v.EntrySize()); 
+// 	int es = v.EntrySize();
+// 	if(v.IsComplex())
+// 	  es /= 2;
+//      return bp::make_tuple(v.Size(), v.IsComplex(), es); 
 //       }
 // 
 //       static
@@ -221,9 +224,10 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
           else
             throw py::index_error("cannot assign complex values to real vector");
       } )
-//     .def(py::self+=py::self)
-//     .def(py::self-=py::self)
-//     .def(py::self*=double())
+    .def("__iadd__", [](PyBaseVector & self,  PyBaseVector & other) { *self += *other; return self;})
+    .def("__isub__", [](PyBaseVector & self,  PyBaseVector & other) { *self -= *other; return self;})
+    .def("__imul__", [](PyBaseVector & self,  double scal) { *self *= scal; return self;})
+    .def("__imul__", [](PyBaseVector & self,  Complex scal) { *self *= scal; return self;})
     .def("InnerProduct", [](PyBaseVector & self, PyBaseVector & other)
                                           {
                                             if (self->IsComplex())
@@ -232,9 +236,9 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                               return py::cast (InnerProduct (*self, *other));
                                           })
     .def("Norm",  [](PyBaseVector & self) { return self->L2Norm(); })
-    .def("Range", [](PyBaseVector & self, int from, int to) -> shared_ptr<BaseVector>
+    .def("Range", [](PyBaseVector & self, int from, int to) -> PyBaseVector // shared_ptr<BaseVector>
                                    {
-                                     return self->Range(from,to);
+                                     return shared_ptr<BaseVector>(self->Range(from,to));
                                    })
     .def("FV", FunctionPointer( [] (PyBaseVector & self) -> FlatVector<double>
                                 {

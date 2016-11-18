@@ -177,12 +177,12 @@ namespace ngbla
 
     INLINE const SliceVector<T,TIND> Col (size_t i) const
     {
-      return SliceVector<T> (h, w, &data[i]);
+      return SliceVector<T,TIND> (h, w, &data[i]);
     }
 
     INLINE const SliceVector<T,TIND> Diag () const
     {
-      return SliceVector<T> (h, w+1, &data[0]);
+      return SliceVector<T,TIND> (h, w+1, &data[0]);
     }
 
     using CMCPMatExpr<FlatMatrix<T> >::Rows;
@@ -442,10 +442,10 @@ namespace ngbla
     Matrix () : FlatMatrix<T,ORD> (0, 0) { ; }
 
     /// allocate matrix of size ah * ah
-    Matrix (int ah) : FlatMatrix<T,ORD> (ah, new T[size_t(ah)*size_t(ah)]) { ; }
+    Matrix (size_t ah) : FlatMatrix<T,ORD> (ah, new T[ah*ah]) { ; }
     
     /// allocate matrix of size ah * aw
-    Matrix (int ah, int aw) : FlatMatrix<T,ORD> (ah, aw, new T[size_t(ah)*size_t(aw)]) { ; }
+    Matrix (size_t ah, size_t aw) : FlatMatrix<T,ORD> (ah, aw, new T[ah*aw]) { ; }
 
     /// allocate and copy matrix  
     Matrix (const Matrix & m2) 
@@ -489,7 +489,7 @@ namespace ngbla
     ~Matrix() { delete [] this->data; }
 
     /// sets new size of matrix
-    void SetSize(int ah, int aw)
+    void SetSize(size_t ah, size_t aw)
     {
       if (this->h == ah && this->w == aw) return;
       delete [] this->data;
@@ -499,7 +499,7 @@ namespace ngbla
     }
 
     /// sets new size of matrix
-    void SetSize(int ah)
+    void SetSize(size_t ah)
     {
       if (this->h == ah && this->w == ah) return;
       delete [] this->data;

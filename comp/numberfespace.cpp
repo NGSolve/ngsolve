@@ -65,13 +65,13 @@ namespace ngcomp
     NumberFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags=false)
       : FESpace (ama, flags)
     { 
-      evaluator = make_shared<T_DifferentialOperator<NumberDiffOp>>();
-      boundary_evaluator = make_shared<T_DifferentialOperator<NumberDiffOp>>();
+      evaluator[VOL] = make_shared<T_DifferentialOperator<NumberDiffOp>>();
+      evaluator[BND] = make_shared<T_DifferentialOperator<NumberDiffOp>>();
       is_atomic_dof = BitArray(1);
       is_atomic_dof = true;
     }
 
-    virtual int GetNDof() const { return 1; }
+    virtual size_t GetNDof() const { return 1; }
 
     virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const
     {
@@ -81,9 +81,9 @@ namespace ngcomp
         return *new (lh) DummyFE<ET_POINT>();
     }
 
-    virtual void GetDofNrs (int elnr, Array<int> & dnums) const
+    virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const
     {
-      if (DefinedOn(ElementId(VOL,elnr)))
+      if (DefinedOn(ei))
         {
           dnums.SetSize(1);
           dnums[0] = 0;
@@ -92,16 +92,6 @@ namespace ngcomp
         dnums.SetSize(0);
     }
 
-    virtual void GetSDofNrs (int selnr, Array<int> & dnums) const
-    {
-      if (DefinedOn(ElementId(BND,selnr)))
-        {
-          dnums.SetSize(1);
-          dnums[0] = 0;
-        }
-      else
-        dnums.SetSize(0);        
-    }
   };
 
 

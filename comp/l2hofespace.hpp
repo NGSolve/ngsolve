@@ -45,49 +45,43 @@ namespace ngcomp
       return make_shared<L2HighOrderFESpace> (ma, flags);
     }  
   
-    virtual string GetClassName () const
+    virtual string GetClassName () const override
     {
       return "L2HighOrderFESpace";
     }
 
     bool AllDofsTogether(){return all_dofs_together;};
     ///
-    virtual void Update(LocalHeap & lh);
+    virtual void Update(LocalHeap & lh) override;
     /// 
     virtual void UpdateDofTables();
     ///
     virtual void UpdateCouplingDofArray();    
     ///
-    virtual int GetNDof () const throw();
+    virtual size_t GetNDof () const throw() override;
     ///
-    virtual int GetNDofLevel (int level) const;
+    virtual size_t GetNDofLevel (int level) const override;
     ///
-    virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const;
+    virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override;
 
     using FESpace::GetFE;
-    virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
-    template <ELEMENT_TYPE ET>
-      FiniteElement & T_GetFE (int elnr, Allocator & alloc) const;
-
+    virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const override;
     ///
-    virtual const FiniteElement & GetSFE (int elnr, LocalHeap & lh) const;
-    ///
+    virtual const FiniteElement & GetSFE (int elnr, LocalHeap & lh) const override;
     ///
     virtual const FiniteElement & GetFacetFE (int fnr, LocalHeap & lh) const;
 
     virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
 
-    virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
+    virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const override;
     ///
-    virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
-    ///
-    virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const;
+    virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const override;
     /// 
  
-    virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const;
-    virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const;
-    virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const;
-    virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const;
+    virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const override;
+    virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const override;
+    virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const override;
+    virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const override;
 
 
     IntRange GetElementDofs (int nr) const
@@ -97,7 +91,13 @@ namespace ngcomp
     }
 
     virtual void SolveM (CoefficientFunction & rho, BaseVector & vec,
-                         LocalHeap & lh) const;
+                         LocalHeap & lh) const override;
+
+
+  protected:
+
+    template <ELEMENT_TYPE ET>
+      FiniteElement & T_GetFE (int elnr, Allocator & alloc) const;
   };
 
 
@@ -140,35 +140,33 @@ namespace ngcomp
 
     static shared_ptr<FESpace> Create (shared_ptr<MeshAccess> ma, const Flags & flags);
 
-    virtual string GetClassName () const
+    virtual string GetClassName () const override
     {
       return "L2SurfaceHighOrderFESpace";
     }
 
     ///
-    virtual void Update(LocalHeap & lh);
+    virtual void Update(LocalHeap & lh) override;
     /// 
     //virtual void UpdateDofTables();
     ///
-    virtual int GetNDof () const throw();
+    virtual size_t GetNDof () const throw() override;
     ///
-    virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
+    virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const override;
     ///
-    virtual const FiniteElement & GetSFE (int elnr, LocalHeap & lh) const;
+    virtual const FiniteElement & GetSFE (int elnr, LocalHeap & lh) const override;
     ///
-    virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
-    ///
-    virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
+    virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const override;
   
-    virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const;
+    virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const override;
     /// 
-    virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const;
-    virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const;
-    virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const;
-    virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const;
+    virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const override;
+    virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const override;
+    virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const override;
+    virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const override;
 
-    virtual bool VarOrder() const { return var_order; } 
-    virtual int GetRelOrder() const { return rel_order; }   
+    virtual bool VarOrder() const override { return var_order; } 
+    virtual int GetRelOrder() const override { return rel_order; }   
 
   };
 
