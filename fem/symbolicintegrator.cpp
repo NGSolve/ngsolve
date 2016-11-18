@@ -2837,8 +2837,7 @@ namespace ngfem
             static Timer tcoef("SymbolicFacetBFI::CalcTraceValues - coef", 2);
             static Timer tapplyt("SymbolicFacetBFI::CalcTraceValues - apply-trans", 2); 
             
-            HeapReset hr(lh);
-            
+	    //HeapReset hr(lh); //this one is a bad boy!!            
 
             int maxorder = volumefel.Order();
             
@@ -2893,13 +2892,13 @@ namespace ngfem
 	    int sely = 0;
 	    for (ProxyFunction * proxy : trial_proxies)
               if(!proxy->IsOther())
-		sely += ud.GetAMemory(proxy).Size()*SIMD<double>::Size();
+		sely += ud.GetAMemory(proxy).AsVector().Size()*SIMD<double>::Size();
 	    FlatVector<double> ely(sely, lh); 
 	    ely = -1;
 	    sely = 0;
 	    for (ProxyFunction * proxy : trial_proxies)
               if(!proxy->IsOther())
-		for(auto k:Range(ud.GetAMemory(proxy).Size()))
+		for(auto k:Range(ud.GetAMemory(proxy).AsVector().Size()))
 		  for(auto j:Range(SIMD<double>::Size()))
 		    ely[sely++] = ud.GetAMemory(proxy)(k)[j];
 	    
@@ -2927,7 +2926,7 @@ namespace ngfem
       static Timer t3("SymbolicFacetBFI::Apply 3", 2);
     */
     
-    HeapReset hr(lh);
+    //HeapReset hr(lh); //this one is a bad boy!!
     // ts1.Start();
     
 
@@ -2941,19 +2940,29 @@ namespace ngfem
     Facet2ElementTrafo transform(eltype, ElVertices); 
     IntegrationRule & ir_facet_vol = transform(LocalFacetNr, ir_facet, lh);
     BaseMappedIntegrationRule & mir = eltrans(ir_facet_vol, lh);
+    mir.ComputeNormalsAndMeasure(eltype, LocalFacetNr);
     
-    // ts1.Stop();
-    // ts2.Start();
-    // int notrial, notest;
-    // notrial = notest = 0;
-    // for (ProxyFunction * proxy : trial_proxies)
-    //   if(proxy->IsOther())
-    // 	notrial++;
-    // for (ProxyFunction * proxy : test_proxies)
-    //   if(proxy->IsOther())
-    // 	notest++;
+    int notrial, notest;
+    Array<int> dim_trial, dim_test;
+    notrial = notest = 0;
+    for (ProxyFunction * proxy : trial_proxies)
+      {
+	dim_trial.Append(proxy->Dimension());
+	if(proxy->IsOther())
+	  notrial++;
+      }
+    for (ProxyFunction * proxy : test_proxies)
+      {
+	dim_test.Append(proxy->Dimension());
+	if(proxy->IsOther())
+	  notest++;
+      }
     // cout << "there are " << trial_proxies.Size() << " trial proxies, " << notrial << " are other " << endl;
+    // cout << "dims trial:" << endl << dim_trial << endl;
     // cout << "there are " << test_proxies.Size()  << " test proxies "  << notest  << " are other " << endl;
+    // cout << "dims test:" << endl << dim_test << endl;
+
+    // cout << "mir size: " << mir.Size() << endl;
     
     // evaluate proxy-values
     ProxyUserData ud(trial_proxies.Size(), lh);
@@ -2972,16 +2981,26 @@ namespace ngfem
 	}
     
     int sely = 0;
+    Array<int> sely_sizes;
     for (ProxyFunction * proxy : trial_proxies)
       if(!proxy->IsOther())
-	sely += ud.GetMemory(proxy).AsVector().Size();
+	{
+	  sely += ud.GetMemory(proxy).AsVector().Size();
+	  sely_sizes.Append(ud.GetMemory(proxy).AsVector().Size());
+	}
+    //cout << "lh-ptr before trace alloc: " << (long int)lh.GetPointer() << endl;
     FlatVector<double> ely(sely, lh); 
+    ely = 0.0;
     sely = 0;
     for (ProxyFunction * proxy : trial_proxies)
       if(!proxy->IsOther())
 	for(auto k:Range(ud.GetMemory(proxy).AsVector().Size()))
 	  ely[sely++] = ud.GetMemory(proxy).AsVector()[k];
-	    
+
+
+    // cout << "TRACE SIZE: tot " << ely.Size() << ", vec:" << endl << sely_sizes << endl;
+    // cout << "lh-ptr after trace alloc//end CTV: " << (long int)lh.GetPointer() << endl;
+    
     return ely;
     // t.Stop();
   }//end CalcTraceValues (double)
@@ -3026,11 +3045,11 @@ namespace ngfem
 		auto mem = ud.GetAMemory(proxy);
 		//cout << "proxy is other? " << proxy->IsOther() << endl;
 		if(proxy->IsOther())
-		  for(auto k:Range(mem.Size()))
+		  for(auto k:Range(mem.AsVector().Size()))
 		    for(auto j:Range(SIMD<double>::Size()))
 		      mem(k) = SIMD<double>(&trace_you[ctrace_you+=SIMD<double>::Size()]);
 		else
-		  for(auto k:Range(mem.Size()))
+		  for(auto k:Range(mem.AsVector().Size()))
 		    for(auto j:Range(SIMD<double>::Size()))
 		      mem(k) = SIMD<double>(&trace_me[ctrace_me+=SIMD<double>::Size()]);
 	      }
@@ -3083,6 +3102,7 @@ namespace ngfem
     auto etfacet = ElementTopology::GetFacetType (eltype, LocalFacetNr);
     IntegrationRule ir_facet(etfacet, 2*maxorder);
     
+
     Facet2ElementTrafo transform(eltype, ElVertices); 
     IntegrationRule & ir_facet_vol = transform(LocalFacetNr, ir_facet, lh);
     BaseMappedIntegrationRule & mir = eltrans(ir_facet_vol, lh);
@@ -3092,7 +3112,7 @@ namespace ngfem
     // for(auto nvn:Range(mir.Size()))
     //   cout << "point " << nvn << endl << mir[nvn] << endl;
 
-    
+        
     ProxyUserData ud(trial_proxies.Size(), lh);
     const_cast<ElementTransformation&>(eltrans).userdata = &ud;
     ud.fel = &volumefel;   // necessary to check remember-map
@@ -3116,7 +3136,7 @@ namespace ngfem
 	  for(auto k:Range(mem.Size()))
 	    mem(k) = trace_me[ctrace_me++];
 
-	//cout << "mem of trial-prox is: " << endl << mem << endl;
+	//cout << "mem of trial-prox (mine? " << ((proxy->IsOther())?"no":"yes") << ") is: " << endl << mem << endl;
       }
 
     FlatMatrix<> val(ir_facet.Size(), 1,lh);
@@ -3142,15 +3162,13 @@ namespace ngfem
 	    // proxyvalues.Row(i) *= measure(i) * ir_facet[i].Weight();
 	    proxyvalues.Row(i) *= mir[i].GetMeasure() * ir_facet[i].Weight();
 
-	  //cout << "proxyvals:" << endl << proxyvalues << endl;
-	  
 	  // tapplyt.Start();
 	  ely1 = 0.0;
 	  IntRange test_range  = IntRange(0, proxy->Evaluator()->BlockDim()*volumefel.GetNDof());
 	  
 	  //proxy->Evaluator()->AddTrans(volumefel, simd_mir, simd_proxyvalues, ely.Range(test_range));
 	  proxy->Evaluator()->ApplyTrans(volumefel, mir, proxyvalues, ely1.Range(test_range), lh);
-	  //cout << "add to ely: " << endl << ely1.Size() << ely1 << endl;
+
 	  ely += ely1;
 	}
     

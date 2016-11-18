@@ -3162,7 +3162,8 @@ namespace ngcomp
 				ElementTransformation & eltrans = ma->GetTrafo (el, lh);
 				fespace->GetDofNrs (el, dnums);
 
-				for (auto igt : volume_skeleton_parts)
+				//this should get skeleton- AND el-bound formulations ?!
+				for (auto igt : volume_skeleton_parts) 
 				  {
 				    FlatVector<SCAL> elx(dnums.Size()*this->fespace->GetDimension(), lh);
 				    x.GetIndirect(dnums, elx);
@@ -3173,10 +3174,14 @@ namespace ngcomp
 				    // FlatVector<SCAL> trace_values = 
 				    //   dynamic_cast<const FacetBilinearFormIntegrator&>(bfi).  
 				    //   CalcTraceValues(fel,facetnr,eltrans,vnums, elx, lh);
+				    //cout << "lh-ptr before CTV: " << (long int)lh.GetPointer() << endl;
 				    FlatVector<SCAL> trace_values = 
 				      dynamic_cast<const FacetBilinearFormIntegrator*>(igt.get())->  
 				      CalcTraceValues(fel,facetnr,eltrans,vnums, elx, lh);
-                                
+				    //cout << "lh-ptr after CTV: " << (long int)lh.GetPointer() << endl;
+
+				    //cout << "trace loop " << loop << endl << trace_values << endl;
+				    
 				    if (loop == 1)
 				      {
 					cnt[d] += trace_values.Size();
@@ -3202,18 +3207,23 @@ namespace ngcomp
 					
 				
 					// cout << "ely is : " << ely.Size() << endl << ely << endl;
+					// cout << "trace MY (" << MyMPI_GetId() << ")| OTHER (" << d << "): " << endl;
+					// cout << "sizes: " << trace_values.Size() << " " << other.Size() << endl;
+					// for(auto jj:Range(trace_values.Size()))
+					//   cout << jj << ": " << trace_values[jj] << " | " << other[jj] << endl;
 					
 					dynamic_cast<const FacetBilinearFormIntegrator*>(igt.get())->  
 					  ApplyFromTraceValues(fel,facetnr,eltrans,vnums, trace_values, other, ely, lh);
 					//cout << "ely:" << endl << ely << endl;
 
-					// cout << "ely is : " << ely.Size() << endl << ely << endl;
-					//cout << "AFTER trace MY (" << MyMPI_GetId() << ")| OTHER (" << d << "): " << endl;
-					//cout << "sizes: " << trace_values.Size() << " " << other.Size() << endl;
-					//for(auto jj:Range(trace_values.Size()))
-					//cout << jj << ": " << trace_values[jj] << " | " << other[jj] << endl;
+					// cout << "AFTER trace MY (" << MyMPI_GetId() << ")| OTHER (" << d << "): " << endl;
+					// cout << "sizes: " << trace_values.Size() << " " << other.Size() << endl;
+					// for(auto jj:Range(trace_values.Size()))
+					//   cout << jj << ": " << trace_values[jj] << " | " << other[jj] << endl;
+
+					//cout << "ely: " << ely.Size() << endl << ely << endl;
 					
-					int hjo;
+					//int hjo;
 					//cin>>hjo;
 					
 					y.AddIndirect(dnums, ely);
@@ -3243,21 +3253,21 @@ namespace ngcomp
 				      reqs.Append(MyMPI_ISend(send_table[dp], dp, MPI_TAG_SOLVE, mcomm));
 				      reqr.Append(MyMPI_IRecv(recv_table[dp], dp, MPI_TAG_SOLVE, mcomm));
 				    }
-				cout << "wait for " << reqr.Size() << " recvs !!";
-				for(auto k:Range(mnp))
-				  cout << (send_table[k].Size()) << " " << (recv_table[k].Size()) << " | ";
-				cout << endl;
+				//cout << "wait for " << reqr.Size() << " recvs !!";
+				//for(auto k:Range(mnp))
+				  //cout << (send_table[k].Size()) << " " << (recv_table[k].Size()) << " | ";
+				//cout << endl;
 				MyMPI_WaitAll(reqr);
-				cout << "have!!" << endl;
+				//cout << "have!!" << endl;
 				//cout << "recv-table:" << endl << recv_table << endl;
 			      }
 			  }
 			    //??...
-			cout << "wait req_send" << endl;
+			//cout << "wait req_send" << endl;
 			MyMPI_WaitAll(reqs);
-			cout << "send done" << endl;
+			//cout << "send done" << endl;
 		      }		  
-		    cout << "par-facet section done!" << endl;
+		    //cout << "par-facet section done!" << endl;
 #endif
 
                     // element-boundary formulation
