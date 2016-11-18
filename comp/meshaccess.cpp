@@ -887,7 +887,10 @@ namespace ngcomp
 	  }
         ne_vb[VOL] = nelements_cd[0];
         ne_vb[BND] = nelements_cd[1];
-	ne_vb[BBND] = nelements_cd[2];
+	if(dim==1)
+	  ne_vb[BBND] = 0;
+	else 
+	  ne_vb[BBND] = nelements_cd[2];
       }
 
     ndomains = -1;
