@@ -401,6 +401,8 @@ DLL_HEADER void ExportNetgenMeshing(py::module &m)
     .def("FaceDescriptor", static_cast<FaceDescriptor&(Mesh::*)(int)> (&Mesh::GetFaceDescriptor),
          py::return_value_policy::reference)
     .def("GetNFaceDescriptors", &Mesh::GetNFD)
+
+    .def("GetNCD2Names", &Mesh::GetNCD2Names)
     
 
     .def("__getitem__", FunctionPointer ([](const Mesh & self, PointIndex pi)
@@ -444,6 +446,9 @@ DLL_HEADER void ExportNetgenMeshing(py::module &m)
     .def ("SetMaterial", &Mesh::SetMaterial)
     .def ("GetMaterial", FunctionPointer([](Mesh & self, int domnr)
                                          { return string(self.GetMaterial(domnr)); }))
+
+    .def ("GetCD2Name", &Mesh::GetCD2Name)
+    .def("SetCD2Name", &Mesh::SetCD2Name)
 
     .def ("AddPointIdentification", [](Mesh & self, py::object pindex1, py::object pindex2, int identnr, int type)
                            {
