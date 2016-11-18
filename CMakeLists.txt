@@ -33,30 +33,32 @@ option( USE_NUMA         "compile with NUMA-aware code")
 option( USE_CCACHE       "use ccache")
 option( INSTALL_DEPENDENCIES "install dependencies like netgen or solver libs, useful for packaging" OFF )
 
+add_library(pic_on INTERFACE)
+add_library(ngsolve_options INTERFACE)
+set(NETGEN_INTERNAL_INCLUDE_DIR NOTFOUND CACHE INTERNAL "Netgen include directories")
+set(BUILD_NETGEN OFF CACHE INTERNAL "is set if netgen is built as external project")
 #######################################################################
 if(NETGEN_SOURCE_DIR)
     find_path(NETGEN_INTERNAL_INCLUDE_DIR nginterface_v2_impl.hpp PATHS ${NETGEN_SOURCE_DIR} ${NETGEN_SOURCE_DIR}/libsrc/include)
+    if (NOT NETGEN_INTERNAL_INCLUDE_DIR)
+      message(FATAL_ERROR "Could not find Netgen source files in NETGEN_SOURCE_DIR, which was set to ${NETGEN_SOURCE_DIR}")
+    endif()
 else(NETGEN_SOURCE_DIR)
   execute_process(COMMAND git submodule update --init --recursive WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-  set(BUILD_NETGEN ON CACHE INTERNAL "is set if netgen is built as external project")
+  set(BUILD_NETGEN ON)
   set(NETGEN_INTERNAL_INCLUDE_DIR
     "${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies/netgen/libsrc/include"
     "${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies/netgen/libsrc/general"
     "${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies/netgen/libsrc/visualization"
     CACHE INTERNAL "Netgen include directories"
   )
-
 endif(NETGEN_SOURCE_DIR)
 
-if (NOT NETGEN_INTERNAL_INCLUDE_DIR)
-    message(FATAL_ERROR "Could not find Netgen source directory, please provide it by setting NETGEN_SOURCE_DIR:
-    cmake -DNETGEN_SOURCE_DIR=path_to_netgen_sources ...")
-endif()
+add_subdirectory(external_dependencies)
 
 include_directories(AFTER ${NETGEN_INTERNAL_INCLUDE_DIR})
 #######################################################################
 
-add_subdirectory(external_dependencies/netgen)
 add_definitions(-DHAVE_NETGEN_SOURCES)
 #######################################################################
 if(USE_CCACHE)
@@ -378,7 +380,6 @@ add_subdirectory(python)
 add_subdirectory(pde_tutorial)
 add_subdirectory(py_tutorials)
 add_subdirectory(tests)
-add_subdirectory(external_dependencies)
 
 #######################################################################
 # generate ngscxx compiler wrapper
