@@ -87,7 +87,7 @@ stages:
         -DNETGEN_SOURCE_DIR=../netgen
     - cmake --build . --target INSTALL --config Release
 
-.build_win32:
+build_win32:
   <<: *win32
   <<: *build_win
   cache:
@@ -95,7 +95,7 @@ stages:
       - build/
     key: "ngsolve_win32_${CI_BUILD_REF_NAME}"
 
-.build_win64:
+build_win64:
   <<: *win64
   <<: *build_win
   cache:
@@ -148,7 +148,7 @@ build_ubuntu_1604:
       - build/
     key: "ngsolve_win32_${CI_BUILD_REF_NAME}"
 
-.test_win64:
+test_win64:
   <<: *win64
   <<: *test_win
   cache:
