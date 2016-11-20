@@ -245,6 +245,140 @@ namespace ngstd
 
 
 
+class AtomicRange
+{
+  mutex lock;
+  int begin, end;
+public:
+  
+  void Set (IntRange r)
+  {
+    lock_guard<mutex> guard(lock);
+    begin = r.begin();
+    end = r.end();
+  }
+
+  IntRange Get()
+  {
+    lock_guard<mutex> guard(lock);
+    return IntRange(begin, end);
+  }
+
+  bool PopFirst (int & first)
+  {
+    lock_guard<mutex> guard(lock);
+    bool non_empty = end > begin;
+    first = begin;
+    if (non_empty) begin++;
+
+    return non_empty;
+  }
+
+  bool PopHalf (IntRange & r)
+  {
+    lock_guard<mutex> guard(lock);
+    bool non_empty = end > begin;
+    if (non_empty)
+      {
+        int mid = (begin+end)/2;
+        r = IntRange(mid, end);
+        end = mid;
+      }
+    return non_empty;
+  }
+};
+
+
+
+
+
+  inline ostream & operator<< (ostream & ost, AtomicRange & r)
+  {
+    ost << r.Get();
+    return ost;
+  }
+
+
+
+
+  class SharedLoop2
+  {
+    Array<AtomicRange> ranges;
+    atomic<int> processed;
+    int total;
+    
+    class SharedIterator
+    {
+      FlatArray<AtomicRange> ranges;
+      atomic<int> & processed;
+      int total;
+      int myval;
+      int processed_by_me = 0;
+      int me;
+      int steal_from;
+    public:
+      SharedIterator (FlatArray<AtomicRange> _ranges, atomic<int> & _processed, int _total, bool begin_it)
+        : ranges(_ranges), processed(_processed), total(_total)
+      {
+        me = TaskManager::GetThreadId();
+        steal_from = me;
+        if (begin_it)
+          GetNext();
+      }
+      
+      SharedIterator & operator++ () { GetNext(); return *this;}
+
+      void GetNext()
+      {
+        while (1)
+          {
+            int nr;
+            if (ranges[me].PopFirst(nr))
+              {
+                processed_by_me++;
+                myval = nr;
+                return;
+              }
+            processed += processed_by_me;
+            processed_by_me = 0;
+            
+            // done with my work, going to steal ...
+            while (1)
+              {
+                if (processed >= total) return;
+                steal_from = (steal_from + 1) % ranges.Size();
+            
+                // steal half of the work reserved for 'from':
+                IntRange steal;
+                if (ranges[steal_from].PopHalf(steal))
+                  {
+                    ranges[me].Set(steal);
+                    break;
+                  }
+              }
+          }
+      }
+      
+      int operator* () const { return myval; }
+      bool operator!= (const SharedIterator & it2) const { return processed < total; }
+    };
+    
+    
+  public:
+    SharedLoop2 (IntRange r)
+      : ranges(TaskManager::GetMaxThreads()), processed(0)
+    {
+      total = r.Size();
+      for (int i = 0; i < ranges.Size(); i++)
+        ranges[i].Set (r.Split(i,ranges.Size()));
+    }
+    
+    SharedIterator begin() { return SharedIterator (ranges, processed, total, true); }
+    SharedIterator end()   { return SharedIterator (ranges, processed, total, false); }
+  };
+
+
+
 
 
   class Partitioning

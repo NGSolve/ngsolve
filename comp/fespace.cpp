@@ -1251,7 +1251,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       {
         for (FlatArray<int> els_of_col : element_coloring)
           {
-            SharedLoop sl(els_of_col.Range());
+            SharedLoop2 sl(els_of_col.Range());
 
             task_manager -> CreateJob
               ( [&] (const TaskInfo & ti) 
