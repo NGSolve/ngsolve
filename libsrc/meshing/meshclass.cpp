@@ -5670,7 +5670,7 @@ namespace netgen
   void Mesh :: UpdateTopology (TaskManager tm)
   {
     topology->Update(tm);
-    clusters->Update();
+    clusters->Update(tm);
 #ifdef PARALLEL
     if (paralleltop)
       {

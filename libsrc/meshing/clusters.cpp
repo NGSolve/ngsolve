@@ -16,11 +16,13 @@ namespace netgen
     ;
   }
 
-  void AnisotropicClusters ::  Update()
+  void AnisotropicClusters ::  Update(TaskManager tm)
   {
     static int timer = NgProfiler::CreateTimer ("clusters");
+    static int timer1 = NgProfiler::CreateTimer ("clusters1");
+    static int timer2 = NgProfiler::CreateTimer ("clusters2");
     NgProfiler::RegionTimer reg (timer);
-    
+
     const MeshTopology & top = mesh.GetTopology();
 
     bool hasedges = top.HasEdges();
@@ -46,8 +48,10 @@ namespace netgen
     Array<int> nnums, ednums, fanums;
     int changed;
 
+    NgProfiler::StartTimer(timer1);    
 
   
+    /*
     for (int i = 1; i <= ne; i++)
       {
 	const Element & el = mesh.VolumeElement(i);
@@ -72,8 +76,41 @@ namespace netgen
 	for (int j = 0; j < nnums.Size(); j++)
 	  cluster_reps.Elem(nnums[j]) = nnums[j];
       }
+    */
+    ParallelForRange
+      (tm, ne,
+       [&] (size_t begin, size_t end)
+       {
+         Array<int> nnums, ednums, fanums;
+         for (int i = begin+1; i <= end; i++)
+           {
+             const Element & el = mesh.VolumeElement(i);
+             ELEMENT_TYPE typ = el.GetType();
+             
+             top.GetElementEdges (i, ednums);
+             top.GetElementFaces (i, fanums);
+             
+             int elnv = top.GetNVertices (typ);
+             int elned = ednums.Size();
+             int elnfa = fanums.Size();
+             
+             nnums.SetSize(elnv+elned+elnfa+1);
+             for (int j = 1; j <= elnv; j++)
+               nnums.Elem(j) = el.PNum(j);
+             for (int j = 1; j <= elned; j++)
+               nnums.Elem(elnv+j) = nv+ednums.Elem(j);
+             for (int j = 1; j <= elnfa; j++)
+               nnums.Elem(elnv+elned+j) = nv+ned+fanums.Elem(j);
+             nnums.Elem(elnv+elned+elnfa+1) = nv+ned+nfa+i;
+             
+             for (int j = 0; j < nnums.Size(); j++)
+               cluster_reps.Elem(nnums[j]) = nnums[j];
+           }
+       });
+    
 
-  
+    NgProfiler::StopTimer(timer1);
+    NgProfiler::StartTimer(timer2);      
 
     for (int i = 1; i <= nse; i++)
       {
@@ -264,7 +301,7 @@ namespace netgen
 	  }
       }
     while (changed);
-
+    NgProfiler::StopTimer(timer2);
     /*
       (*testout) << "cluster reps:" << endl;
       for (i = 1; i <= cluster_reps.Size(); i++)
