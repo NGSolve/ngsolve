@@ -18,6 +18,9 @@ namespace netgen
 
   void AnisotropicClusters ::  Update()
   {
+    static int timer = NgProfiler::CreateTimer ("clusters");
+    NgProfiler::RegionTimer reg (timer);
+    
     const MeshTopology & top = mesh.GetTopology();
 
     bool hasedges = top.HasEdges();
