@@ -1942,7 +1942,7 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
 
   
   ProgressOutput :: ProgressOutput (shared_ptr<MeshAccess> ama,
-				    string atask, int atotal)
+				    string atask, size_t atotal)
     : ma(ama), task(atask), total(atotal)
   {
     is_root = (MyMPI_GetId() == 0);
@@ -1959,13 +1959,31 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
     Done();
   }  
 
+  thread_local size_t ProgressOutput :: thd_cnt = 0;
+  thread_local double ProgressOutput :: thd_prev_time = WallTime();
+  
   void ProgressOutput :: Update ()
   {
-    cnt++;
+    thd_cnt++;
+    double time = WallTime();
+    if (time > thd_prev_time+0.05)
+      {
+        thd_prev_time = time;
+        cnt += thd_cnt;
+        thd_cnt = 0;
+        Update(cnt);
+      }
+  }
+
+  void ProgressOutput :: DoneThread()
+  {
+    cnt += thd_cnt;
+    thd_cnt = 0;
     Update(cnt);
   }
 
-  void ProgressOutput :: Update (int nr)
+
+  void ProgressOutput :: Update (size_t nr)
   {
     static mutex progressupdate_mutex;
     double time = WallTime();
