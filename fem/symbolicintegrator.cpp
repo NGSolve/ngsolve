@@ -545,7 +545,7 @@ namespace ngfem
             elvec = 0;
             for (auto proxy : proxies)
               {
-                FlatMatrix<SIMD<SCAL>> proxyvalues(proxy->Dimension(), ir.GetNIP(), lh);
+                FlatMatrix<SIMD<SCAL>> proxyvalues(proxy->Dimension(), ir.Size(), lh);
                 for (int k = 0; k < proxy->Dimension(); k++)
                   {
                     ud.testfunction = proxy;
@@ -553,7 +553,7 @@ namespace ngfem
                     
                     cf -> Evaluate (mir, proxyvalues.Rows(k,k+1));
                     for (size_t i = 0; i < mir.Size(); i++)
-                      proxyvalues(k,i) *= mir[i].GetWeight().Data();
+                      proxyvalues(k,i) *= mir[i].GetWeight();
                   }
                 
                 proxy->Evaluator()->AddTrans(fel, mir, proxyvalues, elvec);
@@ -1953,20 +1953,8 @@ namespace ngfem
           const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : fel;
           const FiniteElement & fel_test = mixedfe ? mixedfe->FETest() : fel;
 
-          /*
-          int trial_difforder = 99, test_difforder = 99;
-          for (auto proxy : trial_proxies)
-            trial_difforder = min2(trial_difforder, proxy->Evaluator()->DiffOrder());
-          for (auto proxy : test_proxies)
-            test_difforder = min2(test_difforder, proxy->Evaluator()->DiffOrder());
-          int intorder = fel_trial.Order()+fel_test.Order();
-          auto et = trafo.GetElementType();
-          if (et == ET_TRIG || et == ET_TET)
-            intorder -= test_difforder+trial_difforder;
-          */
           HeapReset hr(lh);
-          // cout << "apply order = " << intorder << endl;
-          // SIMD_IntegrationRule simd_ir(trafo.GetElementType(), intorder);
+
           SIMD_IntegrationRule simd_ir = Get_SIMD_IntegrationRule (fel);
           auto & simd_mir = trafo(simd_ir, lh);
           
