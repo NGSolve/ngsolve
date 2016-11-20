@@ -754,10 +754,17 @@ namespace ngfem
     
   SIMD_IntegrationRule SymbolicBilinearFormIntegrator :: Get_SIMD_IntegrationRule (const FiniteElement & fel) const
   {
+    /*
     const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fel);
     const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : fel;
     const FiniteElement & fel_test = mixedfe ? mixedfe->FETest() : fel;
+    */
+    bool is_mixed = typeid(fel) == typeid(const MixedFiniteElement&);
+    const MixedFiniteElement * mixedfe = static_cast<const MixedFiniteElement*> (&fel);    
+    const FiniteElement & fel_trial = is_mixed ? mixedfe->FETrial() : fel;
+    const FiniteElement & fel_test = is_mixed ? mixedfe->FETest() : fel;
 
+    
     int trial_difforder = 99, test_difforder = 99;
     for (auto proxy : trial_proxies)
       trial_difforder = min2(trial_difforder, proxy->Evaluator()->DiffOrder());
