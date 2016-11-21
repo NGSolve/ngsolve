@@ -2933,24 +2933,33 @@ namespace ngfem
     
     size_t st;
     st = 0;
+    //cout << "other-proxy dims: " << endl;
     for (ProxyFunction * proxy : trial_proxies)
       if(proxy->IsOther())
-	sto += ud.GetMemory(proxy).AsVector().Size();
+	{
+	  st += ud.GetMemory(proxy).AsVector().Size();
+	  //cout << ud.GetMemory(proxy).AsVector().Size() << endl;
+	}
 
+    //cout << "total: " << st << endl;
     trace.AssignMemory(st, lh);
+    //cout << "trace ptr: " << (long int) &trace[0] << endl;
     st = 0;
     
     for (ProxyFunction * proxy : trial_proxies)
       if(proxy->IsOther())
 	for(auto k:Range(ud.GetMemory(proxy).AsVector().Size()))
-	  trace_other[sto++] = ud.GetMemory(proxy).AsVector()[k];
+	  trace[st++] = ud.GetMemory(proxy).AsVector()[k];
 
+    //cout << "return traces: " << endl << trace << endl;
+    
   }//end CalcTraceValues (double)
 
   void SymbolicFacetBilinearFormIntegrator ::
   ApplyFromTraceValues (const FiniteElement & volumefel, int LocalFacetNr,
 			const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
-			FlatVector<double> trace, FlatVector<double> ely, 
+			FlatVector<double> trace,
+			FlatVector<double> elx, FlatVector<double> ely, 
 			LocalHeap & lh) const
   {
     //cout << "apply facet from trace NOSIMD ver.." << endl;
@@ -2976,7 +2985,7 @@ namespace ngfem
     ud.fel = &volumefel;   // necessary to check remember-map
     ud.lh = &lh;
 
-    size_t ctrace_me = 0, ctrace_you = 0;
+    size_t ctrace = 0;
     //copy traces to user memory
     for (ProxyFunction * proxy : trial_proxies)
       {
@@ -2985,15 +2994,20 @@ namespace ngfem
 	  {
 	    auto mem = ud.GetMemory(proxy).AsVector();
 	    for(auto k:Range(mem.Size()))
-	      mem(k) = trace_you[ctrace_you++];
+	      mem[k] = trace[ctrace++];
 	  }
+	else
+	  {
+	    IntRange trial_range  = IntRange(0, proxy->Evaluator()->BlockDim()*volumefel.GetNDof());
+	    proxy->Evaluator()->Apply(volumefel, mir, elx.Range(trial_range), ud.GetMemory(proxy), lh);
+	  }
+	//cout << "trial proxy, other " << proxy->IsOther() << endl << ud.GetMemory(proxy) << endl;
       }
 
     FlatMatrix<> val(ir_facet.Size(), 1,lh);
     for (auto proxy : test_proxies)
       if(!proxy->IsOther())
 	{
-	  //cout << "test-proxy is mine" << endl;
 	  HeapReset hr(lh);
 
 	  FlatMatrix<> proxyvalues(ir_facet.Size(), proxy->Dimension(), lh);
