@@ -195,13 +195,14 @@ DLL_HEADER void ExportNetgenMeshing(py::module &m)
 
   py::class_<Segment>(m, "Element1D")
     .def("__init__",
-         [](Segment *instance, py::list vertices, py::list surfaces, int index, int edgenr)
+         [](Segment *instance, py::list vertices, py::list surfaces, int index)
                            {
                              new (instance) Segment();
                              for (int i = 0; i < 2; i++)
                                (*instance)[i] = py::extract<PointIndex>(vertices[i])();
                              instance -> si = index;
-			     instance -> edgenr = edgenr;
+			     // needed for codim2 in 3d
+			     instance -> edgenr = index;
                              if (len(surfaces))
                                {
                                  instance->surfnr1 = py::extract<int>(surfaces[0])();
@@ -211,7 +212,6 @@ DLL_HEADER void ExportNetgenMeshing(py::module &m)
           py::arg("vertices"),
            py::arg("surfaces")=py::list(),
            py::arg("index")=1,
-	 py:: arg("edgenr")=-1,
          "create segment element"
          )
     .def("__repr__", &ToString<Segment>)
