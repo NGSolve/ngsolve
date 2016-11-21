@@ -69,7 +69,7 @@ namespace ngla
     // (*testout) << "matrix = " << a << endl;
     // (*testout) << "diag a = ";
     // for ( int i=0; i<a.Height(); i++ ) (*testout) << i << ", " << a(i,i) << endl;
-
+    cout << "make sparse chol!" << endl;
     int n = a.Height();
     height = n;
 
@@ -2155,6 +2155,7 @@ namespace ngla
     : matrix(const_cast<BaseSparseMatrix&>(amatrix).SharedFromThis<BaseSparseMatrix>()),
       inner(ainner), cluster(acluster)
   { 
+    cout << "MAKE SPARSE FAC" << endl;
     smooth_is_projection = true;
     if (cluster)
       {

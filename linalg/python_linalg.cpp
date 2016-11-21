@@ -21,6 +21,19 @@ shared_ptr<BaseVector> CreateBaseVector(int size, bool is_complex, int es)
   return res;
 }
 
+class PStatDummy
+{
+public:
+  PARALLEL_STATUS ps;
+
+  PStatDummy(PARALLEL_STATUS aps) { ps = aps; } 
+};
+
+static PStatDummy pstat_dis(DISTRIBUTED);
+static PStatDummy pstat_cum(CUMULATED);
+static PStatDummy pstat_not_par(NOT_PARALLEL);
+  
+  
 void NGS_DLL_HEADER ExportNgla(py::module &m) {
     cout << IM(1) << "exporting linalg" << endl;
     // TODO
@@ -73,9 +86,14 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 // 
 //     static bool getstate_manages_dict() { return true; }
 //   };
+
+    py::class_<PStatDummy> (m, "PSD");
+    typedef PyWrapper<PStatDummy> PyPStatDummy;
     
+    m.attr("pstat_distr") = py::cast(&pstat_dis);
+    m.attr("pstat_cum") = py::cast(&pstat_cum);
+    m.attr("pstat_not_par") = py::cast(&pstat_not_par);
     
-  
     typedef PyWrapper<BaseVector> PyBaseVector;
     typedef PyWrapper<BaseMatrix> PyBaseMatrix;
   py::class_<PyBaseVector>(m, "BaseVector",
@@ -244,6 +262,10 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                 {
                                   return self->FVDouble();
                                 }))
+    .def("Distribute", [] (PyBaseVector & self) { self->Distribute(); } ) 
+    .def("Cumulate", [] (PyBaseVector & self) { self->Cumulate(); } ) 
+    .def("GetParallelStatus", [] (PyBaseVector & self) -> int { return self->GetParallelStatus(); } )
+    .def("SetParallelStatus", [] (PyBaseVector & self, PyPStatDummy stat) { self->SetParallelStatus(stat.ps); } )
     ;       
 
   // m.def("InnerProduct",[](BaseVector & v1, BaseVector & v2)->double { return InnerProduct(v1,v2); })

@@ -3359,9 +3359,10 @@ namespace ngcomp
 				    //   dynamic_cast<const FacetBilinearFormIntegrator&>(bfi).  
 				    //   CalcTraceValues(fel,facetnr,eltrans,vnums, elx, lh);
 				    //cout << "lh-ptr before CTV: " << (long int)lh.GetPointer() << endl;
-				    FlatVector<SCAL> trace_values = 
-				      dynamic_cast<const FacetBilinearFormIntegrator*>(igt.get())->  
-				      CalcTraceValues(fel,facetnr,eltrans,vnums, elx, lh);
+				    FlatVector<SCAL> trace_values;
+				    dynamic_cast<const FacetBilinearFormIntegrator*>(igt.get())->  
+				      CalcTraceValues(fel,facetnr,eltrans,vnums, trace_values, elx, lh);
+
 				    //cout << "lh-ptr after CTV: " << (long int)lh.GetPointer() << endl;
 
 				    //cout << "trace loop " << loop << endl << trace_values << endl;
