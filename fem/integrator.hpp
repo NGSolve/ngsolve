@@ -726,7 +726,9 @@ namespace ngfem
     virtual void
       ApplyFromTraceValues (const FiniteElement & volumefel, int LocalFacetNr,
 			    const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
-			    FlatVector<double> trace, FlatVector<double> ely, LocalHeap & lh) const
+			    FlatVector<double> trace,
+			    FlatVector<double> elx, FlatVector<double> ely, 
+			    LocalHeap & lh) const
     { 
       throw Exception ("FacetBilinearFormIntegrator::ApplyFromTraceValues not implemented!");
     }
@@ -734,7 +736,9 @@ namespace ngfem
     virtual void
       ApplyFromTraceValues (const FiniteElement & volumefel, int LocalFacetNr,
 			    const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
-			    FlatVector<Complex> trace, FlatVector<Complex> ely, LocalHeap & lh) const
+			    FlatVector<Complex> trace,
+			    FlatVector<Complex> elx, FlatVector<Complex> ely, 
+			    LocalHeap & lh) const
     { 
       throw Exception ("FacetBilinearFormIntegrator::ApplyFromTraceValues not implemented!");
     }

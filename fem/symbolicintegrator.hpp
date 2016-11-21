@@ -612,14 +612,17 @@ public:
     virtual void
     ApplyFromTraceValues (const FiniteElement & volumefel, int LocalFacetNr,
 			  const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
-			  FlatVector<double> trace, FlatVector<double> ely, LocalHeap & lh) const;
+			  FlatVector<double> trace,
+			  FlatVector<double> elx, FlatVector<double> ely, 
+			  LocalHeap & lh) const;
+    
     virtual void
     ApplyFacetMatrix (const FiniteElement & volumefel, int LocalFacetNr,
-                      const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
-                      const ElementTransformation & seltrans, FlatArray<int> & SElVertices,
-                      FlatVector<double> elx, FlatVector<double> ely,
-                      LocalHeap & lh) const;
-
+		      const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+		      const ElementTransformation & seltrans, FlatArray<int> & SElVertices,
+		      FlatVector<double> elx, FlatVector<double> ely,
+		      LocalHeap & lh) const;
+    
     virtual void
     ApplyFacetMatrixTP (const FiniteElement & volumefel1, int LocalFacetNr1,
 			const ElementTransformation & eltrans1, FlatArray<int> & ElVertices1,
