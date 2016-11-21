@@ -1483,7 +1483,7 @@ void Parallel_InitPython ()
 	       []() {Ng_Redraw();});
       }
       
-      cout << "ini python complete" << endl;	  
+      cout << "ini (parallel) python complete" << endl;	  
 
       pyenv.exec("from ngsolve import *");
       //PyEval_ReleaseLock();
@@ -1590,12 +1590,24 @@ void NGS_ParallelRun (const string & message)
 #ifdef NGS_PYTHON
   else if (message.substr(0,7) == "ngs_py " ) 
     {
-      Parallel_InitPython ();
 
       string command = message.substr(7);
-      AcquireGIL gil_lock;
-      // PythonEnvironment & py_env = PythonEnvironment::getInstance();
-      pyenv.exec(command);
+      cout << "detach py thread.." << endl;
+      std::thread( [](string a_command){
+	  cout << "hi, i am new thread" << endl;
+	  Parallel_InitPython ();
+	  cout << "get gil" << endl;
+	  AcquireGIL gil_lock;
+	  cout << "set id " << endl;
+	  pythread_id = std::this_thread::get_id();
+	  // PythonEnvironment & py_env = PythonEnvironment::getInstance();
+	  cout << "exec py" << endl;
+	  pyenv.exec(a_command);
+	  cout << "py done, set pythread id back to master thread" << endl;
+	  pythread_id = mainthread_id;
+	  
+	}, command).detach();
+      cout << "hi, i am the netgen thread, returning now.." << endl;
     }
 #endif
   return;

@@ -604,16 +604,15 @@ public:
                       FlatVector<double> elx, FlatVector<double> ely,
                       LocalHeap & lh) const;
 
-    virtual FlatVector<double> 
+    virtual void
     CalcTraceValues (const FiniteElement & volumefel, int LocalFacetNr,
 		     const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
-		     FlatVector<double> elx, LocalHeap & lh) const;
+		     FlatVector<double> & trace, FlatVector<double> elx, LocalHeap & lh) const;
 
     virtual void
     ApplyFromTraceValues (const FiniteElement & volumefel, int LocalFacetNr,
 			  const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
-			   FlatVector<double> trace_me, FlatVector<double> trace_you,
-			   FlatVector<double> ely, LocalHeap & lh) const;
+			  FlatVector<double> trace, FlatVector<double> ely, LocalHeap & lh) const;
     virtual void
     ApplyFacetMatrix (const FiniteElement & volumefel, int LocalFacetNr,
                       const ElementTransformation & eltrans, FlatArray<int> & ElVertices,

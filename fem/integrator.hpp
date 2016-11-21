@@ -707,34 +707,34 @@ namespace ngfem
 
 
     // calculate traces in integration points
-    virtual FlatVector<double> 
+    virtual void
       CalcTraceValues (const FiniteElement & volumefel, int LocalFacetNr,
-                       const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
-                       FlatVector<double> elx, LocalHeap & lh) const
+		       const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+		       FlatVector<double> & trace, FlatVector<double> elx, LocalHeap & lh) const
     { 
       throw Exception ("FacetBilinearFormIntegrator::ApplyFacetMatrix for boundary facets not implemented!");
     }
-    virtual FlatVector<Complex> 
+
+    virtual void
       CalcTraceValues (const FiniteElement & volumefel, int LocalFacetNr,
                        const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
-                       FlatVector<Complex> elx, LocalHeap & lh) const
+		       FlatVector<Complex> & trace, FlatVector<Complex> elx, LocalHeap & lh) const
     { 
       throw Exception ("FacetBilinearFormIntegrator::ApplyFacetMatrix for boundary facets not implemented!");
     }
+    
     virtual void
       ApplyFromTraceValues (const FiniteElement & volumefel, int LocalFacetNr,
-                             const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
-                             FlatVector<double> trace_me, FlatVector<double> trace_you,
-                             FlatVector<double> ely, LocalHeap & lh) const
+			    const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+			    FlatVector<double> trace, FlatVector<double> ely, LocalHeap & lh) const
     { 
       throw Exception ("FacetBilinearFormIntegrator::ApplyFromTraceValues not implemented!");
     }
     
     virtual void
       ApplyFromTraceValues (const FiniteElement & volumefel, int LocalFacetNr,
-                             const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
-                             FlatVector<Complex> trace_me, FlatVector<Complex> trace_you,
-                             FlatVector<Complex> ely, LocalHeap & lh) const
+			    const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+			    FlatVector<Complex> trace, FlatVector<Complex> ely, LocalHeap & lh) const
     { 
       throw Exception ("FacetBilinearFormIntegrator::ApplyFromTraceValues not implemented!");
     }

@@ -316,17 +316,16 @@ namespace ngstd
   }
   
   
-
   inline void MyMPI_SendCmd (const char * cmd)
   {
-    char buf[10000];
-    strcpy (buf, cmd);
-
     int ntasks;
     MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
+
+    if(ntasks==1)
+      return;
+    
     for (int dest = 1; dest < ntasks; dest++)
-      MPI_Send( &buf, 10000, MPI_CHAR, dest, MPI_TAG_CMD, MPI_COMM_WORLD);
-    // changed from BSend (for VSC)
+      MPI_Send( cmd, (strlen(cmd)+1), MPI_CHAR, dest, MPI_TAG_CMD, MPI_COMM_WORLD);
   }
 
 
@@ -374,11 +373,18 @@ public:
 	      int argc2 = argc;
 	      MPI_Init(&argc2, argv);
 	    }
+	  ngs_comm = MPI_COMM_WORLD;
 	  initialized_by_me = true;
 	}
-      ngs_comm = MPI_COMM_WORLD;
+
+      if(ngs_comm == MPI_COMM_NULL)
+	{
+	  cout << "WARNING, MPI was already initialized but ngs_comm was not set!! Duping MPI_COMM_WORLDto ngs_comm..." << endl;
+	  MPI_Comm_dup ( MPI_COMM_WORLD, &ngs_comm);      
+  	}
+      
       NGSOStream::SetGlobalActive (MyMPI_GetId() == 0);
-      if (MyMPI_GetNTasks (MPI_COMM_WORLD) > 1)
+      if (MyMPI_GetNTasks () > 1)
 	TaskManager::SetNumThreads (1);
     }
 
@@ -389,7 +395,7 @@ public:
     }
 
     static void InitMPIB(){ InitMPI(); }
-    static void Barrier() { MPI_Barrier(MPI_COMM_WORLD); }
+    static void Barrier() { MPI_Barrier(ngs_comm); }
     static double GetWT() { return MPI_Wtime(); }
     static int GetRank() { return MyMPI_GetId(); }
     static int GetNP() { return MyMPI_GetNTasks(); }

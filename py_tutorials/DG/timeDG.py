@@ -1,6 +1,11 @@
 from netgen.geom2d import unit_square
 from ngsolve import *
 
+from ngsolve.ngstd import MPIManager
+MPIManager.InitMPI()
+rank = MPIManager.GetRank()
+np = MPIManager.GetNP()
+
 mesh = Mesh (unit_square.GenerateMesh(maxh=0.1))
 
 fes = L2(mesh, order=4)
@@ -32,7 +37,12 @@ with TaskManager():
     while t < tend:
         a.Apply (u.vec, w)
         fes.SolveM (rho=CoefficientFunction(1), vec=w)
+        
         u.vec.data -= tau * w
         t += tau
         Redraw()
-    
+
+        if t>1:
+            vtk = VTKOutput(ma=mesh,coefs=[u],names=["sol"],filename="vtkout_"+str(rank),subdivision=3)
+            vtk.Do()
+            input("A")
