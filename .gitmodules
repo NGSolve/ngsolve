@@ -1,3 +1,4 @@
 [submodule "external_dependencies/netgen"]
 	path = external_dependencies/netgen
 	url = git://git.code.sf.net/p/netgen-mesher/git
+        ignore = all

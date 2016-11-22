@@ -54,6 +54,17 @@ else(NETGEN_SOURCE_DIR)
   )
 endif(NETGEN_SOURCE_DIR)
 
+#######################################################################
+include (CheckIncludeFiles)
+check_include_files (dlfcn.h HAVE_DLFCN_H)
+include (CheckCXXSymbolExists)
+# set(CMAKE_REQUIRED_INCLUDES cxxabi.h)
+check_cxx_symbol_exists ( abi::__cxa_demangle "cxxabi.h" HAVE_CXA_DEMANGLE )
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config.h)
+
+install (FILES ${CMAKE_CURRENT_BINARY_DIR}/config.h DESTINATION include COMPONENT ngsolve_devel )
+
+
 add_subdirectory(external_dependencies)
 
 include_directories(AFTER ${NETGEN_INTERNAL_INCLUDE_DIR})
@@ -137,17 +148,9 @@ include_directories (AFTER "${CMAKE_INSTALL_PREFIX}/include")
 
 link_directories ("${CMAKE_INSTALL_PREFIX}/${ngs_install_dir_lib}")
 
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -Wall")
-
-include (CheckIncludeFiles)
-check_include_files (dlfcn.h HAVE_DLFCN_H)
-include (CheckCXXSymbolExists)
-# set(CMAKE_REQUIRED_INCLUDES cxxabi.h)
-check_cxx_symbol_exists ( abi::__cxa_demangle "cxxabi.h" HAVE_CXA_DEMANGLE )
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config.h)
-
-install (FILES ${CMAKE_CURRENT_BINARY_DIR}/config.h DESTINATION include COMPONENT ngsolve_devel )
 install (FILES ngsolve.tcl DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve )
+
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -Wall")
 
 #######################################################################
 # platform specific definitions and flags
@@ -269,16 +272,11 @@ endif (USE_MUMPS)
 
 #######################################################################
 if (USE_PYTHON)
-    find_path(PYBIND_INCLUDE_DIR pybind11/pybind11.h ${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies/pybind11/include)
+  find_path(PYBIND_INCLUDE_DIR pybind11/pybind11.h ${NETGEN_INTERNAL_INCLUDE_DIR}/../external_dependencies/pybind11/include)
     if( NOT PYBIND_INCLUDE_DIR )
-      execute_process(COMMAND git submodule update --init --recursive WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-        find_path(PYBIND_INCLUDE_DIR pybind11/pybind11.h ${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies/pybind11/include)
+      message(FATAL_ERROR "Could NOT find pybind11!")
     endif( NOT PYBIND_INCLUDE_DIR )
-    if( PYBIND_INCLUDE_DIR )
-        message("-- Found Pybind11: ${PYBIND_INCLUDE_DIR}")
-    else( PYBIND_INCLUDE_DIR )
-        message(FATAL_ERROR "Could NOT find pybind11!")
-    endif( PYBIND_INCLUDE_DIR )
+    message("-- Found Pybind11: ${PYBIND_INCLUDE_DIR}")
     include_directories(${PYBIND_INCLUDE_DIR})
     set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${PROJECT_SOURCE_DIR}/cmake_modules/python")
     set(PYTHON_VERSION "3" CACHE STRING "Python version (only Python >= 3.0 supported)")
@@ -483,7 +481,6 @@ set(CPACK_SOURCE_IGNORE_FILES "/cmake/;/build/;/.gz/;~$;${CPACK_SOURCE_IGNORE_FI
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "NGSolve Finite Element Library")
 set(CPACK_PACKAGE_DESCRIPTION "NGSolve is a general purpose Finite Element Library on top of Netgen. With the basic library one can solve heat flow equations, Maxwell equations, and solid mechanical problems. Several add-ons are available for particular application classes.") 
 if(UNIX)
-        message(" ****************************** cpack - unix *******")
     set(CPACK_PACKAGING_INSTALL_PREFIX "/opt/netgen")
     set(CPACK_GENERATOR "DEB")
     execute_process(COMMAND dpkg --print-architecture OUTPUT_VARIABLE CPACK_DEBIAN_PACKAGE_ARCHITECTURE OUTPUT_STRIP_TRAILING_WHITESPACE)
@@ -579,6 +576,8 @@ configure_file(
 #######################################################################
 # Configure message
 # TODO: other message in case of failure
+string(TOUPPER "CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE}" name)
+set(flags "${${name}} ${CMAKE_CXX_FLAGS}")
 message("
 ------------------------------------------------------------------------
   ${PROJECT_NAME} ${NGSOLVE_VERSION}:  Automatic configuration OK.
