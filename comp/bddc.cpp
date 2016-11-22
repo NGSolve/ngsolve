@@ -185,7 +185,7 @@ namespace ngcomp
 
     {
       static Timer timer ("BDDC - Addmatrix", 2);
-      RegionTimer reg(timer);
+      // RegionTimer reg(timer);
       static Timer timer2("BDDC - Add to sparse", 3);
       static Timer timer3("BDDC - compute", 3);
 

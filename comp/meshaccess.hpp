@@ -1014,20 +1014,27 @@ namespace ngcomp
   {
     shared_ptr<MeshAccess> ma;
     string task;
-    int total;
+    size_t total;
     double prevtime;
     bool is_root;
 
-    atomic<int> cnt;
     bool done_called;
+
+    static atomic<size_t> cnt;
+    static thread_local size_t thd_cnt;
+    static thread_local double thd_prev_time;
   public:
     NGS_DLL_HEADER ProgressOutput (shared_ptr<MeshAccess> ama,
-		    string atask, int atotal);
+                                   string atask, size_t atotal);
     NGS_DLL_HEADER ~ProgressOutput();
 
+    // update thd-local counter, and after some time also atomic node-local cnt
     NGS_DLL_HEADER void Update();
-    NGS_DLL_HEADER void Update(int nr);
+    // transfer thd-local counter to atomic node-local cnt    
+    NGS_DLL_HEADER static void SumUpLocal();    
+    NGS_DLL_HEADER void Update(size_t nr);
     NGS_DLL_HEADER void Done();
+    // NGS_DLL_HEADER void DoneThread();
   };
 
 
