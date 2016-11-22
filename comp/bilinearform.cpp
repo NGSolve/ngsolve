@@ -247,6 +247,7 @@ namespace ngcomp
 
   void BilinearForm :: SetPreconditioner (Preconditioner * pre)
   {
+    // cout << "SetPreconditioner, type fes = " << typeid(*fespace).name() << ", type pre = " << typeid(*pre).name() << endl;
     if (preconditioners.Contains(pre))
       throw Exception (string("preconditioner ")+typeid(*pre).name()+ " already registered in bfa");
     if (pre->GetFlags().GetDefineFlag("not_register_for_auto_update"))
