@@ -201,6 +201,8 @@ DLL_HEADER void ExportNetgenMeshing(py::module &m)
                              for (int i = 0; i < 2; i++)
                                (*instance)[i] = py::extract<PointIndex>(vertices[i])();
                              instance -> si = index;
+			     // needed for codim2 in 3d
+			     instance -> edgenr = index;
                              if (len(surfaces))
                                {
                                  instance->surfnr1 = py::extract<int>(surfaces[0])();
@@ -231,8 +233,12 @@ DLL_HEADER void ExportNetgenMeshing(py::module &m)
                                    }))
     .def_property_readonly("index", FunctionPointer([](const Segment &self) -> size_t
 		  {
-		    return self.edgenr;
+		    return self.si;
 		  }))
+    .def_property_readonly("edgenr", FunctionPointer([](const Segment & self) -> size_t
+						     {
+						       return self.edgenr;
+						     }))
     ;
 
 
