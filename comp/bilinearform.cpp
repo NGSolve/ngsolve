@@ -676,30 +676,12 @@ namespace ngcomp
   {
     static Timer mattimer("Matrix assembling");
 
-    static Timer mattimer1("Matrix assembling part 1");
-    static Timer mattimerclear("Matrix assembling - clear matrix");
-    static Timer mattimer1a("Matrix assembling part 1a");
-    static Timer mattimer2("Matrix assembling part 2");
-    static Timer mattimer_vol("Matrix assembling vol");
-    static Timer mattimer_bound("Matrix assembling bound");
-    static Timer mattimer_bbound("Matrix assembling co dim 2");
-    // static Timer mattimer_VB[] = {mattimer_vol, mattimer_bound, mattimer_bbound};
-
-    // static Timer timer1 ("Matrix assembling - 1", 2);
-    // static Timer timer2 ("Matrix assembling - 2", 2);
-    // static Timer timer3 ("Matrix assembling - 3", 2);
-
-    // static Timer timerb1 ("Matrix assembling bound - 1", 2);
-    // static Timer timerb2 ("Matrix assembling bound - 2", 2);
-    // static Timer timerb3 ("Matrix assembling bound - 3", 2);
-
-    // static Timer timerbb1 ("Matrix assembling codim2 - 1", 2);
-    // static Timer timerbb2 ("Matrix assembling codim2 - 2", 2);
-    // static Timer timerbb3 ("Matrix assembling codim2 - 3", 2);
-
-    // static Timer timer1_VB[] = {timer1, timerb1, timerbb1};
-    // static Timer timer2_VB[] = {timer2, timerb2, timerbb2};
-    // static Timer timer3_VB[] = {timer3, timerb3, timerbb3};
+    static Timer mattimer_checkintegrators("Matrix assembling check integrators");
+    static Timer mattimer1a("Matrix assembling initializing");
+    static Timer mattimer_finalize("Matrix assembling finalize matrix");
+    static Timer mattimer_VB[] = { Timer("Matrix assembling vol"),
+                                   Timer("Matrix assembling bound"),
+                                   Timer("Matrix assembling co dim 2") };
     
     static mutex addelemfacbnd_mutex;
     static mutex addelemfacin_mutex;
@@ -712,7 +694,7 @@ namespace ngcomp
 
     timestamp = ++global_timestamp;
     
-    mattimer1.Start();
+    mattimer_checkintegrators.Start();
     // check if integrators fit to space
     for(VorB vb : {VOL,BND,BBND})
       {
@@ -729,7 +711,7 @@ namespace ngcomp
 		throw Exception("FESpace is not suitable for those integrators (try -dgjumps)");
 	  }
       }
-    mattimer1.Stop();    
+    mattimer_checkintegrators.Stop();    
     
     try
       {
@@ -737,21 +719,16 @@ namespace ngcomp
 	  
           {
 	    mattimer1a.Start();
+
             ma->PushStatus ("Assemble Matrix");
  
-            int ndof = fespace->GetNDof();
+            size_t ndof = fespace->GetNDof();
             Array<bool> useddof(ndof);
             useddof = false;
 
-            //int ne = ma->GetNE();
-            //int nse = ma->GetNSE();
-            int nf = ma->GetNFacets();
+            size_t nf = ma->GetNFacets();
 
-	    mattimerclear.Start();
-            BaseMatrix & mat = GetMatrix();
-            //mat = 0.0;
-	    mat.SetZero();
-	    mattimerclear.Stop();
+            GetMatrix().SetZero();
 	    
             if (print)
               {
@@ -762,15 +739,12 @@ namespace ngcomp
                 *testout << " hasskeletoninner = " << (VB_skeleton_parts[VOL].Size()>0) << endl;
                 *testout << " hasskeletonouter = " << (VB_skeleton_parts[BND].Size()>0) << endl;
               }
-
-	    
+            
             int loopsteps = 0;
-	    for(VorB vb : {VOL,BND,BBND})
-	      if(VB_parts[vb].Size())
+	    for (VorB vb : {VOL,BND,BBND})
+	      if (VB_parts[vb].Size())
 		loopsteps += ma->GetNE(vb);
-
-	    // ma->GetNE(vb) ?? 
-
+            
 	    if(VB_skeleton_parts[VOL].Size())
 	      loopsteps += ma->GetNFacets();
 
@@ -780,7 +754,7 @@ namespace ngcomp
 	    if(fespace->specialelements.Size())
 	      loopsteps += fespace->specialelements.Size(); 
 	    
-            int gcnt = 0; //global count (for all cases)
+            size_t gcnt = 0; //global count (for all cases)
 
             for (auto pre : preconditioners)
               pre -> InitLevel(fespace->GetFreeDofs());
@@ -789,12 +763,12 @@ namespace ngcomp
 
 	    for (VorB vb : {VOL,BND,BBND})
 	      {
-		int ne = ma->GetNE(vb);
-		if(VB_parts[vb].Size())
+                RegionTimer reg(mattimer_VB[vb]);
+		size_t ne = ma->GetNE(vb);
+		if (VB_parts[vb].Size())
 		  {
 		    if(vb==VOL && diagonal)
 		      {
-			
 			double prevtime = WallTime();
 			Array<int> dnums;
 			void * heapp = clh.GetPointer();
@@ -875,12 +849,9 @@ namespace ngcomp
 			clh.CleanUp(heapp);
 			cout << IM(3) << "\rassemble element " << ne << "/" << ne << endl;
 		      }
-		    else
+		    else // not diagonal
 		      {
-			// RegionTimer reg(mattimer_VB[vb]);
-
-			string str_vb = vb == VOL ? "VOL" : (vb==BND ? "BND" : "BBND");
-			ProgressOutput progress(ma,string("assemble ") + str_vb + string(" element"), ma->GetNE(vb));
+			ProgressOutput progress(ma,string("assemble ") + ToString(vb) + string(" element"), ma->GetNE(vb));
 			if (vb == VOL && eliminate_internal && keep_internal)
 			  {
 			    delete harmonicext;
@@ -906,13 +877,9 @@ namespace ngcomp
 			     
 			     progress.Update ();
 			     
-			     // timer1_VB[vb].Start();
-                     
 			     const FiniteElement & fel = fespace->GetFE (el, lh);
 			     const ElementTransformation & eltrans = ma->GetTrafo (el, lh);
 			     FlatArray<int> dnums = el.GetDofs();
-			     // Array<int> dnums (fel.GetNDof(), lh);
-			     // fespace->GetDofNrs (el, dnums);
 
 			     if (fel.GetNDof() != dnums.Size())
 			       {
@@ -931,11 +898,8 @@ namespace ngcomp
 			     FlatMatrix<SCAL> sum_elmat(elmat_size, lh);
 			     sum_elmat = 0;
 			     
-			     // timer1_VB[vb].Stop();
-			     // timer2_VB[vb].Start();
-
-			     for(int d : dnums)
-			       if(d != -1) useddof[d] = true;
+			     // for(int d : dnums)
+                             // if(d != -1) useddof[d] = true;
 			     
 			     for (auto & bfip : VB_parts[vb])
 			       {
@@ -946,7 +910,6 @@ namespace ngcomp
 				 
 				 try
 				   {
-				     // timer2_VB[vb].Start();
 				     if (!diagonal || vb != VOL)
 				       bfi.CalcElementMatrix (fel, eltrans, elmat, lh);
 				     else
@@ -957,8 +920,6 @@ namespace ngcomp
 					 elmat = 0.0;
 					 elmat.Diag() = diag;
 				       }
-				     
-				     // timer2_VB[vb].Stop();
 				     
 				     if (printelmat)
 				       {
@@ -1000,10 +961,8 @@ namespace ngcomp
 				 sum_elmat += elmat;
 			       }
 			     
-			     // timer3_VB[vb].Start();
 			     fespace->TransformMat (el.Nr(), vb, sum_elmat, TRANSFORM_MAT_LEFT_RIGHT);
 			     
-			     // do it twice??
 			     if (elmat_ev)
 			       {
 				 (*testout) << "sum matrix:" << endl;
@@ -1135,7 +1094,6 @@ namespace ngcomp
 					 if (spd)
 					   {
 					     // *testout << "schur orig = " << endl << a << endl;
-					     
 					     Matrix<SCAL> schur(odofs.Size());
 					     CalcSchur (sum_elmat, schur, odofs, idofs);
 					     
@@ -1188,7 +1146,9 @@ namespace ngcomp
 			     
 			     for (auto pre : preconditioners)
 			       pre -> AddElementMatrix (dnums, sum_elmat, el, lh);
-			     
+
+                             if (printelmat)
+                               *testout << "set these as useddof: " << dnums << endl;
 			     for (auto d : dnums)
 			       if (d != -1) useddof[d] = true;
 			     
@@ -1213,15 +1173,15 @@ namespace ngcomp
 		  }
 	      }
 
-	    RegionTimer reg(mattimer2);
+
 
 	    //simplify
-	    for(VorB vb : {VOL,BND})
+	    for (VorB vb : {VOL,BND})
 	      {
-		if(VB_skeleton_parts[vb].Size())
+		if (VB_skeleton_parts[vb].Size())
 		  {
-		    int ne = ma->GetNE(vb);
-		    if(vb == VOL)
+		    size_t ne = ma->GetNE(vb);
+		    if (vb == VOL)
 		      {
 			bool has_element_wise = false;
 			bool has_facet_wise = false;
@@ -1702,6 +1662,7 @@ namespace ngcomp
 		    
 		    if(vb==BND)
 		      {
+                        cout << "check bnd" << endl;
 			int cnt = 0;          
 			ParallelForRange( IntRange(ne), [&] ( IntRange r )
 			     {
@@ -1813,10 +1774,13 @@ namespace ngcomp
 				 }//end for nse                  
 			     });//end of parallel
 			cout << "\rassemble facet surface element " << ne << "/" << ne << endl;  
-		      }
-		  }
-	      }
+		      } // end if vb==BND
+		  } // if VB_skeleton_parts.size
+	      } // for vb
+            
             ma->SetThreadPercentage ( 100.0 );
+
+	    RegionTimer reg(mattimer_finalize);
             
             /*
               if(NumIndependentIntegrators() > 0)
@@ -1872,7 +1836,7 @@ namespace ngcomp
                                               << fespace->specialelements.Size() << "/" << fespace->specialelements.Size() << endl;
 
             
-          
+            
             // add eps to avoid empty lines
             FlatMatrix<SCAL> elmat (fespace->GetDimension(), clh);
             elmat = 0;
@@ -1900,24 +1864,23 @@ namespace ngcomp
                       AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), clh);
                     }
               }
-
+            
             for (auto pre : preconditioners)
               pre -> FinalizeLevel(&GetMatrix());
 
             if (print)
               (*testout) << "mat = " << endl << GetMatrix() << endl;
 
-            int cntused = 0;
-            for (int i = 0; i < useddof.Size(); i++)
-              if (useddof[i])
-                cntused++;
+            size_t cntused = 0;
+            for (bool u : useddof)
+              if (u) cntused++;
             
             if (cntused < useddof.Size())
               cout << IM(4) << "used " << cntused
                    << ", unused = " << useddof.Size()-cntused
                    << ", total = " << useddof.Size() << endl;
             
-
+            
             int MASK = eliminate_internal ? EXTERNAL_DOF : ANY_DOF;
             bool first_time = true;
 
