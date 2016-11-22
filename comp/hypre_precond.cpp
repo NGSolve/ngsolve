@@ -149,7 +149,7 @@ namespace ngcomp
     HYPRE_ParVector par_b = NULL;
     HYPRE_ParVector par_x = NULL;
 
-    HYPRE_BoomerAMGSetPrintLevel(precond, 0);  /* print solve info + parameters */
+    HYPRE_BoomerAMGSetPrintLevel(precond, 1);  /* print solve info + parameters */
     HYPRE_BoomerAMGSetCoarsenType(precond, 10); /* Falgout coarsening */
     HYPRE_BoomerAMGSetRelaxType(precond, 6);  // 3 GS, 6 .. sym GS 
     HYPRE_BoomerAMGSetStrongThreshold(precond, 0.5);

@@ -846,21 +846,22 @@ namespace ngstd
       ngstd::Swap (mem_to_delete, b.mem_to_delete);
     }
 
+    INLINE void ResetSize (size_t new_size);
+
   private:
 
     /// resize array, at least to size minsize. copy contents
     INLINE void ReSize (size_t minsize);
-    INLINE void ResetSize (size_t new_size);
      /*
     {
-      TSIZE nsize = 2 * allocsize;
+      size_t nsize = 2 * allocsize;
       if (nsize < minsize) nsize = minsize;
 
       if (data)
         {
           T * p = new T[nsize];
 	
-          TSIZE mins = (nsize < size) ? nsize : size; 
+          size_t mins = (nsize < size) ? nsize : size; 
           memcpy (p, data, mins * sizeof(T));
 
           if (ownmem) delete [] data;

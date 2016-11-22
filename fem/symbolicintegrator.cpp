@@ -2902,6 +2902,67 @@ namespace ngfem
 		   FlatVector<double> & trace, FlatVector<double> elx, LocalHeap & lh) const
   {
 
+    if (simd_evaluate)
+      {
+        try
+          {
+	    //cout << "SIMD CTV!!" << endl;
+	    int maxorder = volumefel.Order();
+            
+            auto eltype = eltrans.GetElementType();
+            auto etfacet = ElementTopology::GetFacetType (eltype, LocalFacetNr);
+            
+            Facet2ElementTrafo transform(eltype, ElVertices); 
+            
+            SIMD_IntegrationRule simd_ir_facet(etfacet, 2*maxorder);
+            
+            auto & simd_ir_facet_vol = transform(LocalFacetNr, simd_ir_facet, lh);
+            auto & simd_mir = eltrans(simd_ir_facet_vol, lh);
+            simd_mir.ComputeNormalsAndMeasure(eltype, LocalFacetNr);
+
+            ProxyUserData ud(trial_proxies.Size(), lh);
+            const_cast<ElementTransformation&>(eltrans).userdata = &ud;
+            ud.fel = &volumefel;   // necessary to check remember-map
+            // ud.elx = &elx;
+            ud.lh = &lh;
+            for (ProxyFunction * proxy : trial_proxies)
+	      if(proxy->IsOther())
+		{
+		  ud.AssignMemory (proxy, simd_ir_facet.GetNIP(), proxy->Dimension(), lh);
+		  IntRange trial_range  = IntRange(0, volumefel.GetNDof());
+		  trial_range = proxy->Evaluator()->BlockDim() * trial_range;
+		  proxy->Evaluator()->Apply(volumefel, simd_mir, elx.Range(trial_range), ud.GetAMemory(proxy)); // , lh);
+		}
+	    
+	    size_t st = 0;
+	    for (ProxyFunction * proxy : trial_proxies)
+              if(proxy->IsOther())
+		st += ud.GetAMemory(proxy).AsVector().Size()*SIMD<double>::Size();
+		
+	    
+	    trace.AssignMemory(st, lh);
+	    st = 0;
+	    
+	    for (ProxyFunction * proxy : trial_proxies)
+              if(proxy->IsOther())
+		for(auto k:Range(ud.GetAMemory(proxy).AsVector().Size()))
+		  for(auto j:Range(SIMD<double>::Size()))
+		    trace [st++] = ud.GetAMemory(proxy)(k)[j];
+
+	    return;
+	  }
+        catch (ExceptionNOSIMD e)
+          {
+	    cout << "CTV SIMD EX" << endl;
+            cout << "caught in SymbolicFacetInegtrator::CalcTraceValues: " << endl
+                 << e.What() << endl;
+            simd_evaluate = false;
+	    CalcTraceValues (volumefel, LocalFacetNr, eltrans, ElVertices, trace, elx, lh);
+          }
+	return;
+      }  
+    //cout << "NO SIMD CTV!!" << endl;
+
     int maxorder = volumefel.Order();
 
     auto eltype = eltrans.GetElementType();
@@ -2962,6 +3023,98 @@ namespace ngfem
 			FlatVector<double> elx, FlatVector<double> ely, 
 			LocalHeap & lh) const
   {
+    if (simd_evaluate)
+      {
+        try
+          {
+	    //cout << "SIMD AFTV!!" << endl;
+            ely = 0.0;
+
+	    int maxorder = volumefel.Order();
+	    auto eltype = eltrans.GetElementType();
+            auto etfacet = ElementTopology::GetFacetType (eltype, LocalFacetNr);
+
+            Facet2ElementTrafo transform(eltype, ElVertices); 
+            SIMD_IntegrationRule simd_ir_facet(etfacet, 2*maxorder);
+
+            auto & simd_ir_facet_vol = transform(LocalFacetNr, simd_ir_facet, lh);
+            auto & simd_mir = eltrans(simd_ir_facet_vol, lh);
+            simd_mir.ComputeNormalsAndMeasure(eltype, LocalFacetNr);
+
+            ProxyUserData ud(trial_proxies.Size(), lh);
+            const_cast<ElementTransformation&>(eltrans).userdata = &ud;
+            ud.fel = &volumefel;   // necessary to check remember-map
+            // ud.elx = &elx;
+            ud.lh = &lh;
+	    
+	    size_t ctrace = 0;	    
+	    for (ProxyFunction * proxy : trial_proxies)
+	      {
+		ud.AssignMemory (proxy, simd_ir_facet.GetNIP(), proxy->Dimension(), lh);
+		
+		if(proxy->IsOther())
+		  {
+		    auto mem = ud.GetAMemory(proxy);
+ 		    for(auto k:Range(mem.AsVector().Size()))
+		      {
+			mem(k) = SIMD<double>(&trace[ctrace]);
+			ctrace+=SIMD<double>::Size();
+		      }
+		    //cout << "mem , other " << proxy->IsOther() << ":" << endl << mem << endl;
+		  }
+		else
+		  {
+		    IntRange trial_range  = IntRange(0, volumefel.GetNDof());
+		    trial_range = proxy->Evaluator()->BlockDim() * trial_range;
+		    proxy->Evaluator()->Apply(volumefel, simd_mir, elx.Range(trial_range), ud.GetAMemory(proxy)); // , lh);
+
+		    // auto mem = ud.GetAMemory(proxy);
+		    // cout << "mem, other " << proxy->IsOther() << ":" << endl << mem << endl;
+		  }
+		
+	      }
+
+	    for (auto proxy : test_proxies)
+              if(!proxy->IsOther())
+		{
+		  HeapReset hr(lh);
+		  AFlatMatrix<double> simd_proxyvalues(proxy->Dimension(), simd_ir_facet.GetNIP(), lh); 
+                
+		  for (int k = 0; k < proxy->Dimension(); k++)
+		    {
+		      ud.testfunction = proxy;
+		      ud.test_comp = k;
+		      cf -> Evaluate (simd_mir, simd_proxyvalues.Rows(k,k+1));
+		    }
+                
+		  for (int i = 0; i < simd_proxyvalues.Height(); i++)
+		    {
+		      auto row = simd_proxyvalues.Row(i);
+		      for (int j = 0; j < row.VSize(); j++)
+			row.Get(j) *= simd_mir[j].GetMeasure().Data() * simd_ir_facet[j].Weight().Data();
+		    }
+		  // tapplyt.Start();
+		  IntRange test_range  = IntRange(0, volumefel.GetNDof());
+		  int blockdim = proxy->Evaluator()->BlockDim();
+		  test_range = blockdim * test_range;
+                
+		  proxy->Evaluator()->AddTrans(volumefel, simd_mir, simd_proxyvalues, ely.Range(test_range));
+		}
+
+	  }
+        catch (ExceptionNOSIMD e)
+          {
+	    cout << "AFTV SIMD EX" << endl;
+            cout << "caught in SymbolicFacetInegtrator::CalcTraceValues: " << endl
+                 << e.What() << endl;
+            simd_evaluate = false;
+	    ApplyFromTraceValues(volumefel, LocalFacetNr, eltrans, ElVertices,
+				 trace, elx, ely, lh);
+          }
+	return;
+      }
+    //cout << "NO SIMD AFTV!!" << endl;
+
     //cout << "apply facet from trace NOSIMD ver.." << endl;
     ely = 0.0;
     FlatVector<> ely1(ely.Size(), lh);
