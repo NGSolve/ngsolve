@@ -1268,6 +1268,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
                       
                       func (move(el), lh);
                     }
+
+                  ProgressOutput::SumUpLocal();
                 } );
           }
         return;

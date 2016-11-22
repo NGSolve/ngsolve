@@ -1959,6 +1959,7 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
     Done();
   }  
 
+  atomic<size_t> ProgressOutput :: cnt;
   thread_local size_t ProgressOutput :: thd_cnt = 0;
   thread_local double ProgressOutput :: thd_prev_time = WallTime();
   
@@ -1974,14 +1975,13 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
         Update(cnt);
       }
   }
-
-  void ProgressOutput :: DoneThread()
+  
+  void ProgressOutput :: SumUpLocal()
   {
     cnt += thd_cnt;
     thd_cnt = 0;
-    Update(cnt);
+    // Update(cnt);
   }
-
 
   void ProgressOutput :: Update (size_t nr)
   {
