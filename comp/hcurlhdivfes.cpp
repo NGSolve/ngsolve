@@ -53,6 +53,22 @@ namespace ngcomp
     integrator[VOL] = GetIntegrators().CreateBFI("massedge", ma->GetDimension(), &one);
     integrator[BND] = GetIntegrators().CreateBFI("robinedge", ma->GetDimension(), &one);
 
+    if (ma->GetDimension() == 2)
+      {
+        evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundaryEdge<2>>>();
+        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdEdge<2>>>();
+        flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpCurlEdge<2>>>();        
+      }
+    else if(ma->GetDimension() == 3) 
+      {
+        evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundaryEdge<3>>>();
+        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdEdge<3>>>();
+        flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpCurlEdge<3>>>();
+        flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpCurlBoundaryEdgeVec<>>>();
+	evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpIdBBoundaryEdge<3>>>();	
+      }
+
+    
     /*
     static ConstantCoefficientFunction one(1);
     if (ma->GetDimension() == 2)
@@ -862,14 +878,22 @@ namespace ngcomp
 	Array<shared_ptr<CoefficientFunction>> coeffs(1);
 	coeffs[0] = shared_ptr<CoefficientFunction> (new ConstantCoefficientFunction(1));
 	integrator[VOL] = GetIntegrators().CreateBFI("massedge", 2, coeffs);
+        evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundaryEdge<2>>>();
+        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdEdge<2>>>();
+        flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpCurlEdge<2>>>();        
       }
     else if(ma->GetDimension() == 3) 
       {
 	Array<shared_ptr<CoefficientFunction>> coeffs(1); 
 	coeffs[0] = shared_ptr<CoefficientFunction> (new ConstantCoefficientFunction(1)); 
 	integrator[VOL] = GetIntegrators().CreateBFI("massedge",3,coeffs); 
-	integrator[BND] = GetIntegrators().CreateBFI("robinedge",3,coeffs); 
-	
+	integrator[BND] = GetIntegrators().CreateBFI("robinedge",3,coeffs);
+        
+        evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundaryEdge<3>>>();
+        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdEdge<3>>>();
+        flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpCurlEdge<3>>>();
+        flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpCurlBoundaryEdgeVec<>>>();
+	evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpIdBBoundaryEdge<3>>>();	
       }
 
 
