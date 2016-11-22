@@ -787,6 +787,7 @@ namespace ngcomp
 
   void MeshAccess :: LoadMesh (const string & filename)
   {
+    static Timer t("MeshAccess::LoadMesh"); RegionTimer reg(t);
     mesh.LoadMesh (filename);
     UpdateBuffers();
     if (!mesh.Valid())
@@ -795,6 +796,7 @@ namespace ngcomp
 
   void MeshAccess :: LoadMesh (istream & str)
   {
+    static Timer t("MeshAccess::LoadMesh"); RegionTimer reg(t);    
     mesh.LoadMesh (str);
     UpdateBuffers();
   }
@@ -845,6 +847,9 @@ namespace ngcomp
 
   void MeshAccess :: UpdateBuffers()
   {
+    static Timer t("MeshAccess::UpdateBuffers");
+    RegionTimer reg(t);
+    
     if (!mesh.Valid())
       {
         for (int i = 0; i < 4; i++)  
