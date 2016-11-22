@@ -1017,9 +1017,9 @@ namespace ngcomp
     double prevtime;
     bool is_root;
 
-    atomic<size_t> cnt;
     bool done_called;
 
+    static atomic<size_t> cnt;
     static thread_local size_t thd_cnt;
     static thread_local double thd_prev_time;
   public:
@@ -1027,10 +1027,13 @@ namespace ngcomp
                                    string atask, size_t atotal);
     NGS_DLL_HEADER ~ProgressOutput();
 
+    // update thd-local counter, and after some time also atomic node-local cnt
     NGS_DLL_HEADER void Update();
+    // transfer thd-local counter to atomic node-local cnt    
+    NGS_DLL_HEADER static void SumUpLocal();    
     NGS_DLL_HEADER void Update(size_t nr);
     NGS_DLL_HEADER void Done();
-    NGS_DLL_HEADER void DoneThread();
+    // NGS_DLL_HEADER void DoneThread();
   };
 
 
