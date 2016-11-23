@@ -78,20 +78,20 @@ namespace ngcomp
 
     if (ma->GetDimension() == 2)
       {
-        boundary_evaluator = make_shared<T_DifferentialOperator<DiffOpIdBoundaryEdge<2>>>();
-        evaluator = make_shared<T_DifferentialOperator<DiffOpIdEdge<2>>>();
+        evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundaryEdge<2>>>();
+        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdEdge<2>>>();
       }
     else
       {
-        boundary_evaluator = make_shared<T_DifferentialOperator<DiffOpIdBoundaryEdge<3>>>();
-        evaluator = make_shared<T_DifferentialOperator<DiffOpIdEdge<3>>>();
+        evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundaryEdge<3>>>();
+        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdEdge<3>>>();
       }
 
     static ConstantCoefficientFunction one(1);
     // Array<CoefficientFunction*> coeffs(1);
     // coeffs[0] = &one;
     // evaluator = GetIntegrators().CreateBFI("massvectorfacet", 2, coeffs);
-    boundary_integrator = GetIntegrators().CreateBFI("robinvectorfacet", ma->GetDimension(), &one); 
+    integrator[BND] = GetIntegrators().CreateBFI("robinvectorfacet", ma->GetDimension(), &one); 
 
     highest_order_dc = flags.GetDefineFlag("highest_order_dc");
     if (highest_order_dc) {
@@ -435,8 +435,10 @@ namespace ngcomp
       }
   }
 
-  void VectorFacetFESpace :: GetDofNrs(int elnr, Array<int> & dnums) const
+  void VectorFacetFESpace :: GetDofNrs(ElementId ei, Array<int> & dnums) const
   {
+    if(ei.VB()==VOL)
+      {
     if (!highest_order_dc)
       {
 	Array<int> fanums; // facet numbers
@@ -447,9 +449,9 @@ namespace ngcomp
 	
 	
 	if(ma->GetDimension() == 3)
-	  ma->GetElFaces (elnr, fanums);
+	  ma->GetElFaces (ei.Nr(), fanums);
 	else // dim=2
-	  ma->GetElEdges (elnr, fanums);
+	  ma->GetElEdges (ei.Nr(), fanums);
 	
 	for(int i=0; i<fanums.Size(); i++)
 	  {
@@ -476,9 +478,9 @@ namespace ngcomp
 	    fanums.SetSize(0);
 	    dnums.SetSize(0);
 	    
-	    ma->GetElEdges (elnr, fanums);
+	    ma->GetElEdges (ei.Nr(), fanums);
 	    
-	    int innerdof = first_inner_dof[elnr];
+	    int innerdof = first_inner_dof[ei.Nr()];
 	    for(int i=0; i<fanums.Size(); i++)
 	      {
 		int facetdof = first_facet_dof[fanums[i]];
@@ -506,10 +508,10 @@ namespace ngcomp
 	    fanums.SetSize(0);
 	    dnums.SetSize(0);
 	    
-	    ELEMENT_TYPE et = ma->GetElType (elnr);
-	    ma->GetElFaces (elnr, fanums);
+	    ELEMENT_TYPE et = ma->GetElType (ei.Nr());
+	    ma->GetElFaces (ei.Nr(), fanums);
 	    
-	    int innerdof = first_inner_dof[elnr];
+	    int innerdof = first_inner_dof[ei.Nr()];
 	    for(int i=0; i<fanums.Size(); i++)
 	      {
 		ELEMENT_TYPE ft = ElementTopology::GetFacetType (et, i);
@@ -564,14 +566,12 @@ namespace ngcomp
 	  }
       }
       
-    if (!DefinedOn (ma->GetElIndex (elnr)))
+    if (!DefinedOn (ma->GetElIndex (ei.Nr())))
       dnums = -1;
     // *testout << "dnums = " << endl << dnums << endl;
-  }
-
-  ///
-  void VectorFacetFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
-  {
+      }
+    if(ei.VB()==BND)
+      {
     dnums.SetSize(0);
     ArrayMem<int, 1> fanums(1);
     int first, next;
@@ -579,7 +579,7 @@ namespace ngcomp
 
     if ( ma->GetDimension() == 2 )
       {
-	ma->GetSElEdges ( selnr, fanums );
+	ma->GetSElEdges ( ei.Nr(), fanums );
 	dnums.Append(fanums[0]);
 
 	first = first_facet_dof[fanums[0]];
@@ -589,7 +589,7 @@ namespace ngcomp
       } 
     else // 3D
       {
-	fanums[0] = ma->GetSElFace(selnr);
+	fanums[0] = ma->GetSElFace(ei.Nr());
 	dnums.Append( 2*fanums[0] );
 	dnums.Append( 2*fanums[0]+1 );
 
@@ -599,6 +599,10 @@ namespace ngcomp
 	  dnums.Append(j);
 
       }
+
+      }
+    if(ei.VB()==BBND)
+      dnums.SetSize(0);
   }
 
   Table<int> * VectorFacetFESpace :: CreateSmoothingBlocks (const Flags & precflags) const

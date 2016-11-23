@@ -49,21 +49,29 @@ namespace ngfem
   
   FlatMatrix<> BaseMappedIntegrationPoint :: GetJacobian() const
   {
-    if (!eltrans->Boundary())
-      switch (eltrans->SpaceDim())
-        {
-        case 1: return static_cast<const MappedIntegrationPoint<1,1>&> (*this).GetJacobian();
-        case 2: return static_cast<const MappedIntegrationPoint<2,2>&> (*this).GetJacobian();
-        case 3: return static_cast<const MappedIntegrationPoint<3,3>&> (*this).GetJacobian();
-        }
-    else
-      switch (eltrans->SpaceDim())
-        {
-        case 1: return static_cast<const MappedIntegrationPoint<0,1>&> (*this).GetJacobian();
-        case 2: return static_cast<const MappedIntegrationPoint<1,2>&> (*this).GetJacobian();
-        case 3: return static_cast<const MappedIntegrationPoint<2,3>&> (*this).GetJacobian();
-        }
-
+    switch(eltrans->VB())
+      {
+      case VOL:
+	switch (eltrans->SpaceDim())
+	  {
+	  case 1: return static_cast<const MappedIntegrationPoint<1,1>&> (*this).GetJacobian();
+	  case 2: return static_cast<const MappedIntegrationPoint<2,2>&> (*this).GetJacobian();
+	  case 3: return static_cast<const MappedIntegrationPoint<3,3>&> (*this).GetJacobian();
+	  }
+      case BND:
+	switch (eltrans->SpaceDim())
+	  {
+	  case 1: return static_cast<const MappedIntegrationPoint<0,1>&> (*this).GetJacobian();
+	  case 2: return static_cast<const MappedIntegrationPoint<1,2>&> (*this).GetJacobian();
+	  case 3: return static_cast<const MappedIntegrationPoint<2,3>&> (*this).GetJacobian();
+	  }
+      case BBND:
+	switch (eltrans->SpaceDim())
+	  {
+	  case 2: return static_cast<const MappedIntegrationPoint<0,2>&> (*this).GetJacobian();
+	  case 3: return static_cast<const MappedIntegrationPoint<1,3>&> (*this).GetJacobian();
+	  }
+      }
     throw Exception("BaseMappedIntegrationPoint::GetJacobian, illegal dimension");
   }
 
@@ -318,11 +326,20 @@ namespace ngfem
   template class MappedIntegrationRule<2,2>;
   template class MappedIntegrationRule<3,3>;
   template class MappedIntegrationRule<1,2>;
+  template class MappedIntegrationRule<1,3>;
   template class MappedIntegrationRule<2,3>;
 
   template class MappedIntegrationRule<1,1, Complex>;
   template class MappedIntegrationRule<2,2, Complex>;
   template class MappedIntegrationRule<3,3, Complex>;
+
+
+  template class MappedIntegrationRule<0,1, Complex>;
+  template class MappedIntegrationRule<0,2, Complex>;
+  template class MappedIntegrationRule<0,3, Complex>;
+  template class MappedIntegrationRule<1,2, Complex>;
+  template class MappedIntegrationRule<1,3, Complex>;
+  template class MappedIntegrationRule<2,3, Complex>;
 
 
   
@@ -2385,6 +2402,7 @@ namespace ngfem
 
     for (int i = 0; i < jacobirules20.Size(); i++)
       delete jacobirules20[i];
+   
   }
 
 
@@ -3035,8 +3053,8 @@ namespace ngfem
   template class SIMD_MappedIntegrationRule<2,2>;
   template class SIMD_MappedIntegrationRule<3,3>;
   template class SIMD_MappedIntegrationRule<1,2>;
+  template class SIMD_MappedIntegrationRule<1,3>;
   template class SIMD_MappedIntegrationRule<2,3>;
-
   template class SIMD_MappedIntegrationRule<0,2>;
   template class SIMD_MappedIntegrationRule<0,3>;
 

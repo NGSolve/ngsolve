@@ -57,7 +57,7 @@ namespace ngcomp
     {
       Array<shared_ptr<CoefficientFunction>> coeffs(1);
       coeffs[0] = shared_ptr<CoefficientFunction> (new ConstantCoefficientFunction(1));
-      integrator = GetIntegrators().CreateBFI("masshdiv", 2, coeffs);
+      integrator[VOL] = GetIntegrators().CreateBFI("masshdiv", 2, coeffs);
     }
   }
       
@@ -96,50 +96,50 @@ namespace ngcomp
   }
 
   
-  int RaviartThomasFESpace :: GetNDof () const throw()
+  size_t RaviartThomasFESpace :: GetNDof () const throw()
   {
     return ndlevel.Last();
   }
   
-  int RaviartThomasFESpace :: GetNDofLevel (int level) const
+  size_t RaviartThomasFESpace :: GetNDofLevel (int level) const
   {
     return ndlevel[level];
   }
   
   
   
-  void RaviartThomasFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
+  void RaviartThomasFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
-    Array<int> forient(6);
-    
-    if (ma->GetDimension() == 2)
-      ma->GetElEdges (elnr, dnums, forient);
-    else
-      ma->GetElFaces (elnr, dnums, forient);
-    
-    
-    if (!DefinedOn (ma->GetElIndex (elnr)))
-      dnums = -1;
+    if(ei.VB()==VOL)
+      {
+	Array<int> forient(6);
+	
+	if (ma->GetDimension() == 2)
+	  ma->GetElEdges (ei.Nr(), dnums, forient);
+	else
+	  ma->GetElFaces (ei.Nr(), dnums, forient);
+	
+	if (!DefinedOn (ei))
+	  dnums = -1;
+      }
 
-    
+    if(ei.VB()==BND)
+      {
+	if (ma->GetDimension() == 2)
+	  {
+	    int eoa[12];
+	    Array<int> eorient(12, eoa);
+	    ma->GetSElEdges (ei.Nr(), dnums, eorient);
+	    
+	    if (!DefinedOn(ei))
+	      dnums = -1;
+      }
+	if(ei.VB()==BBND)
+	  dnums.SetSize(0);
     // (*testout) << "el = " << elnr << ", dofs = " << dnums << endl;
   }
   
   
-  void RaviartThomasFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
-  {
-    if (ma->GetDimension() == 2)
-      {
-	int eoa[12];
-	Array<int> eorient(12, eoa);
-	ma->GetSElEdges (selnr, dnums, eorient);
-	
-	if (!DefinedOnBoundary (ma->GetSElIndex (selnr)))
-	  dnums = -1;
-
-	return;
-      }
-
 
     /*
       int eoa[12];
@@ -163,11 +163,11 @@ namespace ngcomp
   */
   
   void RaviartThomasFESpace :: 
-  VTransformMR (int elnr, bool boundary,
+  VTransformMR (int elnr, VorB vb,
 		const SliceMatrix<double> & mat, TRANSFORM_TYPE tt) const
   {
     int nd = 3;
-    
+    bool boundary = (vb == BND);
     if (boundary) return;
 
     Vector<> fac(nd);
@@ -191,11 +191,11 @@ namespace ngcomp
   
     
   void  RaviartThomasFESpace ::
-  VTransformVR (int elnr, bool boundary,
+  VTransformVR (int elnr, VorB vb,
 		const FlatVector<double> & vec, TRANSFORM_TYPE tt) const
   {
     int nd = 3;
-    
+    bool boundary = (vb == BND);    
     if (boundary) 
       {
 	ArrayMem<int,4> edge_nums, edge_orient;

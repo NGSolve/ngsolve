@@ -501,7 +501,7 @@ namespace ngfem
 
 
 
-  ostream & operator<< (ostream & ost, const Node & node)
+  ostream & operator<< (ostream & ost, const NodeId & node)
   {
     switch (node.GetType())
       {

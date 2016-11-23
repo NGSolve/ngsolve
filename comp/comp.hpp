@@ -62,6 +62,7 @@ namespace ngcomp
 
 #include "postproc.hpp"
 
+#include "tpfes.hpp"
 #include "hcurlhdivfes.hpp"
 #include "hdivfes.hpp"
 #include "h1hofespace.hpp"

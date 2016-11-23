@@ -23,7 +23,7 @@ namespace ngcomp
   public:
     Ng_ElementTransformation (const MeshAccess * amesh,
                               ELEMENT_TYPE aet, ElementId ei, int elindex) 
-      : ElementTransformation(aet, ei.IsBoundary(), ei.Nr(), elindex), 
+      : ElementTransformation(aet, ei, elindex), 
         mesh(amesh) 
     {
       iscurved = true;
@@ -41,10 +41,10 @@ namespace ngcomp
     {
       return DIMR;
     }
-    
-    virtual bool Boundary() const
+
+    virtual VorB VB() const
     {
-      return DIMS < DIMR;
+      return VorB(int(DIMR)-int(DIMS));
     }
 
     virtual bool BelongsToMesh (const void * mesh2) const 
@@ -495,7 +495,7 @@ namespace ngcomp
   public:
     INLINE Ng_ConstElementTransformation (const MeshAccess * amesh,
                                           ELEMENT_TYPE aet, ElementId ei, int elindex) 
-      : ElementTransformation(aet, ei.IsBoundary(), ei.Nr(), elindex), 
+      : ElementTransformation(aet, ei, elindex), 
         mesh(amesh) 
     { 
       iscurved = false;
@@ -610,12 +610,12 @@ namespace ngcomp
     {
       return DIMR;
     }
-    
-    virtual bool Boundary() const
-    {
-      return DIMS < DIMR;
-    }
 
+    virtual VorB VB() const
+    {
+      return VorB(int(DIMR)-int(DIMS));
+    }
+    
     virtual bool BelongsToMesh (const void * mesh2) const 
     {
       // return mesh == &(static_cast<const MeshAccess*> (mesh2) -> mesh);
@@ -787,6 +787,7 @@ namespace ngcomp
 
   void MeshAccess :: LoadMesh (const string & filename)
   {
+    static Timer t("MeshAccess::LoadMesh"); RegionTimer reg(t);
     mesh.LoadMesh (filename);
     UpdateBuffers();
     if (!mesh.Valid())
@@ -795,6 +796,7 @@ namespace ngcomp
 
   void MeshAccess :: LoadMesh (istream & str)
   {
+    static Timer t("MeshAccess::LoadMesh"); RegionTimer reg(t);    
     mesh.LoadMesh (str);
     UpdateBuffers();
   }
@@ -845,6 +847,9 @@ namespace ngcomp
 
   void MeshAccess :: UpdateBuffers()
   {
+    static Timer t("MeshAccess::UpdateBuffers");
+    RegionTimer reg(t);
+    
     if (!mesh.Valid())
       {
         for (int i = 0; i < 4; i++)  
@@ -855,7 +860,7 @@ namespace ngcomp
             nelements_cd[i] = 0;
           }
         dim = -1;
-        ne_vb[VOL] = ne_vb[BND] = 0;
+        ne_vb[VOL] = ne_vb[BND] = ne_vb[BBND] = 0;
         return;
       }
 
@@ -871,7 +876,7 @@ namespace ngcomp
             nnodes_cd[i] = 0;
             nelements_cd[i] = 0;
           }
-        ne_vb[VOL] = ne_vb[BND] = 0;
+        ne_vb[VOL] = ne_vb[BND] = ne_vb[BBND] = 0;
       }
     else
       {
@@ -887,6 +892,10 @@ namespace ngcomp
 	  }
         ne_vb[VOL] = nelements_cd[0];
         ne_vb[BND] = nelements_cd[1];
+	if(dim==1)
+	  ne_vb[BBND] = 0;
+	else 
+	  ne_vb[BBND] = nelements_cd[2];
       }
 
     ndomains = -1;
@@ -912,6 +921,24 @@ namespace ngcomp
 
     nboundaries++;
     nboundaries = MyMPI_AllReduce (nboundaries, MPI_MAX);
+
+    CalcIdentifiedFacets();
+    if(mesh.GetDimension() == 1)
+    {
+      nbboundaries = 0;
+      return;
+    }
+    nbboundaries = -1;
+    int ncd2e = nelements_cd[2];
+    for (int i=0; i< ncd2e; i++)
+      {
+	int elindex = GetCD2ElIndex(i);
+	//if (elindex < 0) throw Exception ("mesh with negative cd2 condition number");
+	if (elindex >=0)
+	  nbboundaries = max2(nbboundaries, elindex);
+      }
+    nbboundaries++;
+    nbboundaries = MyMPI_AllReduce(nbboundaries, MPI_MAX);
   }
 
 
@@ -1182,6 +1209,19 @@ namespace ngcomp
     pnums[1] -= 1;
   }
 
+  void MeshAccess :: GetElFacets (ElementId ei, Array<int> & fnums) const
+  {
+    switch (dim)
+      {
+      case 1:
+	fnums = GetElement(ei).Vertices(); break;
+      case 2:
+	fnums = GetElement(ei).Edges(); break;
+      default:
+	fnums = GetElement(ei).Faces();
+      }
+  }
+
   // some utility for Facets
   void MeshAccess :: GetElFacets (int elnr, Array<int> & fnums) const
   {
@@ -1230,6 +1270,32 @@ namespace ngcomp
 	ArrayMem<int, 4> pnums;
 	GetFacePNums(fnr, pnums);
 	return (pnums.Size() == 3) ? ET_TRIG : ET_QUAD;
+      }
+  }
+
+  void MeshAccess::CalcIdentifiedFacets()
+  {
+    identified_facets.SetSize(nnodes_cd[1]);
+    for(auto i : Range(identified_facets.Size()))
+      identified_facets[i] = std::tuple<int,int>(i,1);
+
+    auto & idents = mesh.GetMesh()->GetIdentifications();
+    int nid = idents.GetMaxNr();
+    
+    for(auto id : Range(1,nid+1))
+      {
+	// for periodic identification by now
+	if (idents.GetType(id) != 2) continue;
+	Array<INT<2>> pairs;
+	switch(mesh.GetDimension())
+	  {
+	  case 1: GetPeriodicVertices(id,pairs); break;
+	  case 2: GetPeriodicEdges(id,pairs); break;
+	    // default: // here should be a 3D version
+	  }
+	for(auto pair : pairs)
+	  for(auto l : Range(2))
+	    identified_facets[pair[l]] = std::tuple<int,int>(pair[1-l],2);
       }
   }
 
@@ -1389,20 +1455,52 @@ namespace ngcomp
     return *eltrans;
   }
 
+  template <int DIM>
+  ElementTransformation & MeshAccess ::
+  GetCD2TrafoDim(int elnr, Allocator & lh) const
+  {
+    ElementTransformation * eltrans;
+    Ngs_Element el(mesh.GetElement<DIM-2>(elnr), ElementId(BBND,elnr));
+    GridFunction * loc_deformation = deformation.get();
+    if(loc_deformation)
+      eltrans = new (lh) ALE_ElementTransformation<DIM-2,DIM, Ng_ElementTransformation<DIM-2,DIM>>
+	(this,el.GetType(),
+	 ElementId(BBND,elnr), el.GetIndex(),
+	 loc_deformation,
+	 dynamic_cast<LocalHeap&>(lh));
+    else if( el.is_curved )
+      eltrans = new (lh) Ng_ElementTransformation<DIM-2,DIM> (this, el.GetType(),
+							      ElementId(BBND,elnr), el.GetIndex());
+
+    else
+      eltrans = new (lh) Ng_ConstElementTransformation<DIM-2,DIM> (this, el.GetType(),
+								   ElementId(BBND,elnr), el.GetIndex());
+
+    if(higher_integration_order.Size() == GetNCD2E() && higher_integration_order[elnr])
+      eltrans->SetHigherIntegrationOrder();
+    else
+      eltrans->UnSetHigherIntegrationOrder();
+
+    return *eltrans;
+  }
+
   template <> ElementTransformation & MeshAccess :: GetTrafo (T_ElementId<VOL,1> ei, Allocator & lh) const;
   template <> ElementTransformation & MeshAccess :: GetTrafo (T_ElementId<VOL,2> ei, Allocator & lh) const;
   template <> ElementTransformation & MeshAccess :: GetTrafo (T_ElementId<VOL,3> ei, Allocator & lh) const;
   template <> ElementTransformation & MeshAccess :: GetTrafo (T_ElementId<BND,1> ei, Allocator & lh) const;
   template <> ElementTransformation & MeshAccess :: GetTrafo (T_ElementId<BND,2> ei, Allocator & lh) const;
   template <> ElementTransformation & MeshAccess :: GetTrafo (T_ElementId<BND,3> ei, Allocator & lh) const;
-  
+  template <> ElementTransformation & MeshAccess :: GetTrafo (T_ElementId<BBND,2> ei, Allocator & lh) const;
+  template <> ElementTransformation & MeshAccess :: GetTrafo (T_ElementId<BBND,3> ei, Allocator & lh) const;
 
-  ngfem::ElementTransformation & MeshAccess :: GetTrafo (int elnr, bool boundary, Allocator & lh) const
+  ngfem::ElementTransformation & MeshAccess :: GetTrafo (ElementId ei, Allocator & lh) const
   {
-    ElementTransformation * eltrans;
-
-    if (!boundary)
+    int elnr = ei.Nr();
+    VorB vb = ei.VB();
+    
+    switch(vb)
       {
+      case VOL:
         switch (dim)
           {
           case 1: return GetTrafoDim<1> (elnr, lh);
@@ -1412,9 +1510,8 @@ namespace ngcomp
           default:
             throw Exception ("MeshAccess::GetTrafo, illegal dimension");
           }
-      }
-    else
-      {
+
+      case BND:
         switch (dim)
           {
           case 1: return GetSTrafoDim<1> (elnr, lh);
@@ -1424,9 +1521,17 @@ namespace ngcomp
           default:
             throw Exception ("MeshAccess::GetSTrafo, illegal dimension");
           }
-      }
 
-    return *eltrans;
+      case BBND:
+	switch(dim)
+	  {
+	  case 2: return GetCD2TrafoDim<2>(elnr,lh);
+	  case 3: return GetCD2TrafoDim<3>(elnr,lh);
+
+	  default:
+	    throw Exception ("MeshAccess::GetCD2Trafo, illegal dimension");
+	  }
+      }
   }
 
 
@@ -1444,6 +1549,7 @@ namespace ngcomp
             mask.Set(i);
       }
     else
+      if (vb==BND)
       {
         mask = BitArray(mesh->GetNBoundaries());
         mask.Clear();
@@ -1452,6 +1558,18 @@ namespace ngcomp
           if (regex_match(mesh->GetBCNumBCName(i), re_pattern))
             mask.Set(i);
       }
+      else
+	{
+	  mask = BitArray(mesh->GetNBBoundaries());
+	  mask.Clear();
+	  regex re_pattern(pattern);
+	  for(int i : Range(mask))
+	    (*testout) << "boundary condition " << i << ": " << mesh->GetCD2NumCD2Name(i) << endl;
+	  for (int i : Range(mask))
+	    if (regex_match(mesh->GetCD2NumCD2Name(i), re_pattern))
+	      mask.Set(i);
+	  (*testout) << "mask: " << mask << endl;
+	}
   }      
 
 
@@ -1485,7 +1603,7 @@ namespace ngcomp
   
     LocalHeapMem<10000> lh("MeshAccess - elementvolume");
 
-    ElementTransformation & trans = GetTrafo (elnr, false, lh);
+    ElementTransformation & trans = GetTrafo (ElementId(VOL, elnr), lh);
     ConstantCoefficientFunction ccf(1);
 
     if (GetDimension() == 1)
@@ -1532,7 +1650,7 @@ namespace ngcomp
 
     LocalHeapMem<10000> lh("MeshAccess - surfaceelementvolume");
 
-    ElementTransformation & trans = GetTrafo (selnr, true, lh);
+    ElementTransformation & trans = GetTrafo (ElementId(BND, selnr), lh);
     ConstantCoefficientFunction ccf(1);
 
     if (GetDimension() == 2)
@@ -1757,13 +1875,7 @@ namespace ngcomp
 ///// Added by Roman Stainko ....
 void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
 {
-  int nel = Ng_GetVertex_NSurfaceElements( vnr+1 );
-  elems.SetSize( nel );
-  
-  Ng_GetVertex_SurfaceElements( vnr+1, &elems[0] );
-
-  for( int i=0; i<nel; i++ )
-    elems[i]--;
+    elems = GetVertexSurfaceElements(vnr);
 }
 
 
@@ -1802,7 +1914,7 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
 
 #ifdef PARALLEL
  
-  int MeshAccess ::GetGlobalNodeNum (Node node) const
+  size_t MeshAccess ::GetGlobalNodeNum (Node node) const
   {
     int glob = NgPar_GetGlobalNodeNum (node.GetType(), node.GetNr());
     return glob;
@@ -1817,12 +1929,12 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
 
 #else
 
-  int MeshAccess ::GetGlobalNodeNum (Node node) const  
+  size_t MeshAccess ::GetGlobalNodeNum (NodeId node) const  
   {
     return -1;
   }
 
-  void MeshAccess :: GetDistantProcs (Node node, Array<int> & procs) const
+  void MeshAccess :: GetDistantProcs (NodeId node, Array<int> & procs) const
   {
     procs.SetSize (0);
   }
@@ -1835,7 +1947,7 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
 
   
   ProgressOutput :: ProgressOutput (shared_ptr<MeshAccess> ama,
-				    string atask, int atotal)
+				    string atask, size_t atotal)
     : ma(ama), task(atask), total(atotal)
   {
     is_root = (MyMPI_GetId() == 0);
@@ -1852,13 +1964,31 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
     Done();
   }  
 
+  atomic<size_t> ProgressOutput :: cnt;
+  thread_local size_t ProgressOutput :: thd_cnt = 0;
+  thread_local double ProgressOutput :: thd_prev_time = WallTime();
+  
   void ProgressOutput :: Update ()
   {
-    cnt++;
-    Update(cnt);
+    thd_cnt++;
+    double time = WallTime();
+    if (time > thd_prev_time+0.05)
+      {
+        thd_prev_time = time;
+        cnt += thd_cnt;
+        thd_cnt = 0;
+        Update(cnt);
+      }
+  }
+  
+  void ProgressOutput :: SumUpLocal()
+  {
+    cnt += thd_cnt;
+    thd_cnt = 0;
+    // Update(cnt);
   }
 
-  void ProgressOutput :: Update (int nr)
+  void ProgressOutput :: Update (size_t nr)
   {
     static mutex progressupdate_mutex;
     double time = WallTime();

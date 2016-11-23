@@ -124,26 +124,26 @@ namespace ngcomp
 
 
     auto one = make_shared<ConstantCoefficientFunction> (1);
-    integrator = GetIntegrators().CreateBFI("masshdiv", ma->GetDimension(), one);
-    boundary_integrator = GetIntegrators().CreateBFI("robinhdiv", ma->GetDimension(), one);
+    integrator[VOL]= GetIntegrators().CreateBFI("masshdiv", ma->GetDimension(), one);
+    integrator[BND] = GetIntegrators().CreateBFI("robinhdiv", ma->GetDimension(), one);
     
     if (ma->GetDimension() == 2)
       {
-        evaluator = make_shared<T_DifferentialOperator<DiffOpIdHDiv<2>>>();
-        boundary_evaluator = make_shared<T_DifferentialOperator<DiffOpIdVecHDivBoundary<2>>>();
-        flux_evaluator = make_shared<T_DifferentialOperator<DiffOpDivHDiv<2>>>();
+        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHDiv<2>>>();
+        evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdVecHDivBoundary<2>>>();
+        flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpDivHDiv<2>>>();
       }
     else
       {
-        evaluator = make_shared<T_DifferentialOperator<DiffOpIdHDiv<3>>>();
-        boundary_evaluator = make_shared<T_DifferentialOperator<DiffOpIdVecHDivBoundary<3>>>();
-        flux_evaluator = make_shared<T_DifferentialOperator<DiffOpDivHDiv<3>>>();
+        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHDiv<3>>>();
+        evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdVecHDivBoundary<3>>>();
+        flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpDivHDiv<3>>>();
       }
 
     if (dimension > 1)
       {
-        integrator = make_shared<BlockBilinearFormIntegrator> (integrator, dimension);
-        boundary_integrator = make_shared<BlockBilinearFormIntegrator> (boundary_integrator, dimension);
+        integrator[VOL]= make_shared<BlockBilinearFormIntegrator> (integrator[VOL], dimension);
+        integrator[BND] = make_shared<BlockBilinearFormIntegrator> (integrator[BND], dimension);
       }
 
     highest_order_dc = flags.GetDefineFlag("highest_order_dc");
@@ -865,12 +865,12 @@ namespace ngcomp
     return *fe;
   }
   
-  int HDivHighOrderFESpace :: GetNDof () const throw()
+  size_t HDivHighOrderFESpace :: GetNDof () const throw()
   {
     return ndof;
   }
 
-  int HDivHighOrderFESpace :: GetNDofLevel (int level) const
+  size_t HDivHighOrderFESpace :: GetNDofLevel (int level) const
   {
     return ndlevel[level];
   }
@@ -885,110 +885,108 @@ namespace ngcomp
 
 
 
-  void HDivHighOrderFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
+  void HDivHighOrderFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
     dnums.SetSize0();
     if(discont) 
       {
-	// lowest_order included in inner 
-        dnums += GetElementDofs (elnr);
+	// lowest_order included in inner
+	if(ei.VB()==VOL)
+	  dnums += GetElementDofs (ei.Nr());
 	return;
       } 
-
-    ArrayMem<int,6> fanums;
-    ma->GetElFacets (elnr, fanums);
-
-    if (highest_order_dc)
+    if(ei.VB()==VOL)
       {
-        if (ma->GetDimension() == 2)
-          {
-            IntRange eldofs = GetElementDofs (elnr);
-            
-            dnums += fanums;
-            
-            int first_el_dof = eldofs.First();
-
-            for(int i = 0; i < fanums.Size(); i++)
-              {
-                dnums += GetFacetDofs (fanums[i]);
-		if (!boundary_facet[fanums[i]])
-                  dnums += first_el_dof++;
-              }
-            dnums += IntRange (first_el_dof, eldofs.Next());
-          }
-        else
-          {
-            IntRange eldofs = GetElementDofs (elnr);
-            
-            // for (int i = 0; i < fanums.Size(); i++)
-            // dnums.Append (fanums[i]);
-            dnums += fanums;
-            
-            int firstel = eldofs.First();
-            
-            for(int i = 0; i < fanums.Size(); i++)
-              {
-                int firstfa = GetFacetDofs(fanums[i]).First();
+	ArrayMem<int,6> fanums;
+	ma->GetElFacets (ei, fanums);
+	if (highest_order_dc)
+	  {
+	    if (ma->GetDimension() == 2)
+	      {
+		IntRange eldofs = GetElementDofs (ei.Nr());
 		
-		if (!boundary_facet[fanums[i]])
+		dnums += fanums;
+		
+		int first_el_dof = eldofs.First();
+		
+		for(int i = 0; i < fanums.Size(); i++)
 		  {
-		    for (int i = 0; i <= order-1; i++)
+		    dnums += GetFacetDofs (fanums[i]);
+		    if (!boundary_facet[fanums[i]])
+		      dnums += first_el_dof++;
+		  }
+		dnums += IntRange (first_el_dof, eldofs.Next());
+	      }
+	    else
+	      {
+		IntRange eldofs = GetElementDofs (ei.Nr());
+		
+		// for (int i = 0; i < fanums.Size(); i++)
+		// dnums.Append (fanums[i]);
+		dnums += fanums;
+		
+		int firstel = eldofs.First();
+		
+		for(int i = 0; i < fanums.Size(); i++)
+		  {
+		    int firstfa = GetFacetDofs(fanums[i]).First();
+		    
+		    if (!boundary_facet[fanums[i]])
 		      {
-			for(int j = 0; j < order-i-1; j++)
+			for (int i = 0; i <= order-1; i++)
+			  {
+			    for(int j = 0; j < order-i-1; j++)
+			      dnums.Append(firstfa++);
+			    dnums.Append(firstel++);
+			  }
+			for (int i = 0; i < order-1; i++)
 			  dnums.Append(firstfa++);
 			dnums.Append(firstel++);
 		      }
-		    for (int i = 0; i < order-1; i++)
-		      dnums.Append(firstfa++);
-		    dnums.Append(firstel++);
+		    else
+		      dnums += GetFacetDofs (fanums[i]);
 		  }
-		else
-		  dnums += GetFacetDofs (fanums[i]);
-              }
-            dnums += IntRange (firstel, eldofs.Next());
-          }
-      }
-    else
-      {
-	//Raviart-Thomas
-	for (int i = 0; i < fanums.Size(); i++)
-	  dnums.Append (fanums[i]);
-	// facets
-	for(int i=0; i<fanums.Size(); i++)
-	  dnums += GetFacetDofs (fanums[i]);
+		dnums += IntRange (firstel, eldofs.Next());
+	      }
+	  }
+	else
+	  {
+	    //Raviart-Thomas
+	    for (int i = 0; i < fanums.Size(); i++)
+	      dnums.Append (fanums[i]);
+	    // facets
+	    for(int i=0; i<fanums.Size(); i++)
+	      dnums += GetFacetDofs (fanums[i]);
+	    
+	    //inner
+	    dnums += GetElementDofs (ei.Nr());
+	  }
 	
-	//inner
-	dnums += GetElementDofs (elnr);
+	if (!DefinedOn (ma->GetElIndex (ei.Nr())))
+	  dnums = -1;
       }
-
-    if (!DefinedOn (ma->GetElIndex (elnr)))
-      dnums = -1;
+    if(ei.VB()==BND)
+      {
+	Array<int> fanums;
+	ma->GetElFacets (ei, fanums);
+	// lowest-order
+	for(int i=0;i<fanums.Size();i++) 
+	  dnums.Append (fanums[i]);
+	
+	// high order
+	for (int i = 0; i < fanums.Size(); i++)
+	  dnums += IntRange (first_facet_dof[fanums[i]],
+			     first_facet_dof[fanums[i]+1]);
+	
+	if (!DefinedOn (ElementId(BND,ei.Nr())))
+	  dnums = -1;
+      }
+    if(ei.VB()==BBND)
+	dnums.SetSize(0);
 
     // cout << "ndof = " << dnums.Size() << endl;
   }
 
-
-  void HDivHighOrderFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
-  {
-    dnums.SetSize(0);
-    if (discont) return; 
-
-    Array<int> fanums; 
-       
-    ma->GetSElFacets (selnr, fanums);
-
-    // lowest-order
-    for(int i=0;i<fanums.Size();i++) 
-      dnums.Append (fanums[i]);
-
-    // high order
-    for (int i = 0; i < fanums.Size(); i++)
-      dnums += IntRange (first_facet_dof[fanums[i]],
-                         first_facet_dof[fanums[i]+1]);
-
-    if (!DefinedOn (ElementId(BND,selnr)))
-      dnums = -1;
-  }
 
 
   // ****************************

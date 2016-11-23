@@ -72,6 +72,8 @@ namespace ngcomp
     bool discontinuous;
     bool type1;        // first family
     bool wb_loedge;    // keep linear on edge as wb-dof
+    bool ctupgrade = true;  // set WIREBASKET_DOF on badly shaped elements
+    
   public:
 
     HCurlHighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags=false);
@@ -88,7 +90,7 @@ namespace ngcomp
     ///
     virtual void DoArchive (Archive & archive) override;
     ///
-    virtual int GetNDof () const throw() override;
+    virtual size_t GetNDof () const throw() override;
     ///
     virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const override;
     ///
@@ -101,11 +103,12 @@ namespace ngcomp
     template <ELEMENT_TYPE ET>
     const FiniteElement & T_GetSFE (int elnr, LocalHeap & lh) const;
 
-    virtual void GetDofNrs (int elnr, Array<int> & dnums) const override;
+    virtual const FiniteElement & GetCD2FE(int cd2elnr, LocalHeap & lh) const override;
+    template <ELEMENT_TYPE ET>
+      const FiniteElement & T_GetCD2FE(int cd2elnr, LocalHeap & lh) const;
+    
+    virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const override;
     ///
-    virtual void GetSDofNrs (int selnr, Array<int> & dnums) const override;
-    ///
-
 
     ///
     void SetGradientDomains (const BitArray & adoms);
@@ -138,7 +141,9 @@ namespace ngcomp
     virtual void UpdateDofTables(); 
     virtual void UpdateCouplingDofArray();
     int GetMaxOrder() const {return maxorder;}; 
-    int GetMinOrder() const {return minorder;}; 
+    int GetMinOrder() const {return minorder;};
+
+    void DoCouplingDofUpgrade(bool actupgrade);
 
 
     virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const override;

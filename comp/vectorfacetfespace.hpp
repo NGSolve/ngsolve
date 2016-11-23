@@ -54,9 +54,9 @@ namespace ngcomp
 
     virtual void Update(LocalHeap& lh);
     virtual void UpdateCouplingDofArray();
-    virtual int GetNDof() const throw() { return ndof; }
+    virtual size_t GetNDof() const throw() { return ndof; }
 
-    virtual int GetNDofLevel ( int i ) const { return ndlevel[i]; }
+    virtual size_t GetNDofLevel ( int i ) const { return ndlevel[i]; }
 
     // virtual int GetNDofLowOrder () const
     // { return ndof_lo; }
@@ -68,10 +68,8 @@ namespace ngcomp
 
     virtual int GetNFacetDofs ( int felnr ) const;
 
-    virtual void GetDofNrs ( int elnr, Array<int> & dnums ) const;
+    virtual void GetDofNrs ( ElementId ei, Array<int> & dnums ) const;
 
-    virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
-    ///
     virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const;
     ///
     virtual Array<int> * CreateDirectSolverClusters (const Flags & precflags) const;

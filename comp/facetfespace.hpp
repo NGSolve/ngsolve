@@ -63,15 +63,15 @@ namespace ngcomp
     //  virtual void UpdateDofTables();
     virtual void UpdateCouplingDofArray();    
     ///
-    virtual int GetNDof () const throw();
+    virtual size_t GetNDof () const throw();
     ///
-    virtual int GetNDofLevel (int level) const;
+    virtual size_t GetNDofLevel (int level) const;
     ///
     virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
     ///
     virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const; 
     ///
-    virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
+    virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const;
     ///
     virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
 
@@ -90,8 +90,6 @@ namespace ngcomp
     ///
     virtual int GetNFacetDofs (int felnr) const 
     { return (first_facet_dof[felnr+1]-first_facet_dof[felnr] + 1); }
-    ///
-    virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
     ///
     virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const;
     ///

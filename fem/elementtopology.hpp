@@ -77,37 +77,46 @@ namespace ngfem
 
 
 
-  enum VorB { VOL, BND };
+  enum VorB { VOL, BND, BBND };
   inline void operator++(VorB & vb, int)  { vb = VorB(vb+1); } 
   inline ostream & operator<< (ostream & ost, VorB vb)
   {
-    if (vb == VOL) ost << "VOL"; else ost << "BND";
+    if (vb == VOL) ost << "VOL"; else if (vb==BND) ost << "BND"; else ost << "BBND";
     return ost;
   }
 
   class ElementId
   {
+    typedef size_t int_type;
     const VorB vb;
-    int nr;
-  public:
-    ElementId (VorB avb, int anr) : vb(avb), nr(anr) { ; }
-    ElementId (int anr) : vb(VOL), nr(anr) { ; }
-    int Nr() const { return nr; }
+    int_type nr;
+  public:    
+    ElementId (VorB avb, int_type anr) : vb(avb), nr(anr) { ; }
+    ElementId (int_type anr) : vb(VOL), nr(anr) { ; }
+    int_type Nr() const { return nr; }
     explicit operator int () const { return nr; }
     explicit operator VorB () const { return vb; }
+    VorB VB() const { return vb; }
     bool IsVolume() const { return vb == VOL; }
     bool IsBoundary() const { return vb == BND; }
-    // VorB VolumeOrBoundary() const { return vb; }
-    bool operator< (int nr2) { return nr < nr2; }
+    bool operator< (int_type nr2) { return nr < nr2; }
     ElementId operator++ (int) { return ElementId(vb,nr++); }
     ElementId operator++ () { return ElementId(vb,++nr); }
     ElementId operator*() const { return *this; }
     bool operator!=(ElementId id2) const { return nr != id2.nr || vb != id2.vb; }
   };
 
+  typedef size_t dof_int_type;
+  class DofId
+  {
+  public:
+    dof_int_type nr;
+  };
+  
+  
   inline ostream & operator<< (ostream & ost, ElementId id)
   {
-    return ost << (id.IsVolume() ? "VEl" : "BEl") << ' ' << id.Nr();
+    return ost << (id.VB()==VOL ? "VEl " : (id.VB()==BND ? "BEl " : "CD2El ")) << ' ' << id.Nr();
   }
 
   template <VorB VB,int DIM>
@@ -479,31 +488,33 @@ namespace ngfem
      number. The number can be with respect to the local element
      numbering, or can be the global numbering on the mesh.
   */
-  class NGS_DLL_HEADER Node
+  class NGS_DLL_HEADER NodeId
   {
     NODE_TYPE nt;
-    int nodenr;
+    size_t nodenr;
 
   public:
     /// do nothing
-    Node () { ; }
+    NodeId () { ; }
   
     /// construct node from type and number
-    Node (NODE_TYPE ant, int anodenr)
+    NodeId (NODE_TYPE ant, size_t anodenr)
       : nt(ant), nodenr(anodenr) { ; }
 
     /// copy constructor
-    Node (const Node & n2)
+    NodeId (const NodeId & n2)
     { nt = n2.nt; nodenr = n2.nodenr; }
 
     /// returns type of the node
     NODE_TYPE GetType () const { return nt; }
 
     /// returns number of the node
-    int GetNr() const { return nodenr; }
+    size_t GetNr() const { return nodenr; }
   };
+  typedef NodeId Node;
 
-  inline int CalcNodeId (ELEMENT_TYPE et, const Node & node)
+  
+  inline int CalcNodeId (ELEMENT_TYPE et, const NodeId & node)
   {
     switch (et)
       {
@@ -524,7 +535,7 @@ namespace ngfem
       }
   }
 
-  inline Node CalcNodeFromId (ELEMENT_TYPE et, int nodeid)
+  inline NodeId CalcNodeFromId (ELEMENT_TYPE et, int nodeid)
   {
     switch (et)
       {
@@ -532,13 +543,13 @@ namespace ngfem
 	{
 	  static const int nodetypes[] = { 0, 0, 0, 1, 1, 1, 2 };
 	  static const int nodenrs[]   = { 0, 1, 2, 0, 1, 2, 0 };
-	  return Node (NODE_TYPE(nodetypes[nodeid]), nodenrs[nodeid]);
+	  return NodeId (NODE_TYPE(nodetypes[nodeid]), nodenrs[nodeid]);
 	}
       case ET_TET: 
 	{
 	  static const int nodetypes[] = { 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 3 };
 	  static const int nodenrs[]   = { 0, 1, 2, 3, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 0 };
-	  return Node (NODE_TYPE(nodetypes[nodeid]), nodenrs[nodeid]);
+	  return NodeId (NODE_TYPE(nodetypes[nodeid]), nodenrs[nodeid]);
 	}
 
       default:
@@ -551,7 +562,7 @@ namespace ngfem
   ostream & operator<< (ostream & ost, ELEMENT_TYPE et);
   ostream & operator<< (ostream & ost, NODE_TYPE nt);
 
-  ostream & operator<< (ostream & ost, const Node & node);
+  ostream & operator<< (ostream & ost, const NodeId & node);
 
   /**
      A binary representation of selecting V-E-F-C Nodes.

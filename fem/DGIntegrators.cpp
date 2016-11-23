@@ -43,9 +43,9 @@ namespace ngfem
     }
 
     virtual ~DGInnerFacet_LaplaceIntegrator () { ; }
-    
-    virtual bool BoundaryForm () const 
-    { return 0; }
+
+    virtual VorB VB() const
+    { return VOL; }
     virtual bool IsSymmetric () const { return true; }
     
     static Integrator * Create (const Array<shared_ptr<CoefficientFunction>> & coeffs)
@@ -214,8 +214,9 @@ namespace ngfem
     {
       return new ConvectionIntegrator (coeffs);
     }
-    
-    virtual bool BoundaryForm () const { return 0; }
+
+    virtual VorB VB() const
+    { return VOL; }
     virtual bool IsSymmetric () const { return false; }
 
     virtual void CalcElementMatrix (const FiniteElement & fel,
@@ -289,8 +290,8 @@ namespace ngfem
 
     virtual ~DGInnerFacet_ConvectionIntegrator () { ; }
     
-    virtual bool BoundaryForm () const 
-    { return 0; }
+    virtual VorB VB() const
+    { return VOL; }
     virtual bool IsSymmetric () const { return false; }
     
     static Integrator * Create (const Array<shared_ptr<CoefficientFunction>> & coeffs)
@@ -426,9 +427,9 @@ namespace ngfem
     }
 
     virtual ~DGBoundaryFacet_ConvectionIntegrator () { ; }
-    
-    virtual bool BoundaryForm () const 
-    { return 1; }
+
+    virtual VorB VB() const
+    { return BND; }
     virtual bool IsSymmetric () const { return false; }
   
     static Integrator * Create (const Array<shared_ptr<CoefficientFunction>> & coeffs)
@@ -525,9 +526,9 @@ namespace ngfem
       if (dgtype!=DG_FORMULATIONS::BO)
 	alpha = coeffs[1] -> EvaluateConst();
     }
-    
-    virtual bool BoundaryForm () const 
-    { return 1; }
+
+    virtual VorB VB() const
+    { return BND; }
     virtual bool IsSymmetric () const { return true; }
 
     virtual ~DGBoundaryFacet_LaplaceIntegrator () { ; }
@@ -658,9 +659,10 @@ namespace ngfem
       coef_dir  = coeffs[1];
       alpha = coeffs[2] -> EvaluateConst();
     }
-    
-    virtual bool BoundaryForm () const 
-    { return 1; }
+
+
+    virtual VorB VB() const
+    { return BND; }
     
     virtual ~DGFacet_DirichletBoundaryIntegrator () { ; }
 
@@ -773,9 +775,9 @@ namespace ngfem
     { 
       coef_lam  = coeffs[0];
     }
-    
-    virtual bool BoundaryForm () const 
-    { return 1; }
+
+    virtual VorB VB() const
+    { return BND; }
 
     virtual ~DGFacet_NeumannBoundaryIntegrator () { ; }
 
@@ -869,8 +871,8 @@ namespace ngfem
       coef_rob = coeffs[D];
     }
 
-    virtual bool BoundaryForm () const 
-    { return 1; }
+    virtual VorB VB() const
+    { return BND; }
     
     virtual ~DGFacet_ConvectionDirichletBoundaryIntegrator () { ; }
 

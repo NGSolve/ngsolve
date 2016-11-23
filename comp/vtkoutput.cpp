@@ -257,7 +257,8 @@ namespace ngcomp
       
       HeapReset hr(lh);
 
-      ElementTransformation & eltrans = ma->GetTrafo (elnr, 0, lh);
+      ElementId ei(VOL, elnr);
+      ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
 
       int offset = points.Size();
       for ( auto ip : ref_vertices)

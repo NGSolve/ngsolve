@@ -19,16 +19,19 @@ namespace ngcomp
     shared_ptr<GridFunction> gf;
     shared_ptr<DifferentialOperator> diffop;
     shared_ptr<DifferentialOperator> trace_diffop;
+    shared_ptr<DifferentialOperator> ttrace_diffop;
     shared_ptr<BilinearFormIntegrator> bfi;
     int comp;
     GridFunctionCoefficientFunction (shared_ptr<DifferentialOperator> adiffop,
                                      shared_ptr<DifferentialOperator> atrace_diffop = nullptr,
+				     shared_ptr<DifferentialOperator> attrace_diffop = nullptr,
                                      int acomp = 0);
   public:
     GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, int acomp = 0);
     GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, 
                                      shared_ptr<DifferentialOperator> adiffop,
                                      shared_ptr<DifferentialOperator> atrace_diffop = nullptr,
+				     shared_ptr<DifferentialOperator> attrace_diffop = nullptr,
                                      int acomp = 0);
     GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, 
                                      shared_ptr<BilinearFormIntegrator> abfi, int acomp = 0);
@@ -49,6 +52,8 @@ namespace ngcomp
     
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, 
 			   FlatMatrix<double> values) const;
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, 
+			   FlatMatrix<Complex> values) const;
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const;
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values) const;
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,

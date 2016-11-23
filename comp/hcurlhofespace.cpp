@@ -121,22 +121,23 @@ namespace ngcomp
 
     // Evaluator
     static ConstantCoefficientFunction one(1);
-    integrator = GetIntegrators().CreateBFI("massedge", ma->GetDimension(), &one);
+    integrator[VOL] = GetIntegrators().CreateBFI("massedge", ma->GetDimension(), &one);
     if (!discontinuous)
-      boundary_integrator = GetIntegrators().CreateBFI("robinedge", ma->GetDimension(), &one); 
+      integrator[BND] = GetIntegrators().CreateBFI("robinedge", ma->GetDimension(), &one); 
     
     if (ma->GetDimension() == 2)
       {
-        boundary_evaluator = make_shared<T_DifferentialOperator<DiffOpIdBoundaryEdge<2>>>();
-        evaluator = make_shared<T_DifferentialOperator<DiffOpIdEdge<2>>>();
-        flux_evaluator = make_shared<T_DifferentialOperator<DiffOpCurlEdge<2>>>();
+        evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundaryEdge<2>>>();
+        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdEdge<2>>>();
+        flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpCurlEdge<2>>>();
       }
     else
       {
-        boundary_evaluator = make_shared<T_DifferentialOperator<DiffOpIdBoundaryEdge<3>>>();
-        evaluator = make_shared<T_DifferentialOperator<DiffOpIdEdge<3>>>();
-        flux_evaluator = make_shared<T_DifferentialOperator<DiffOpCurlEdge<3>>>();
-        boundary_flux_evaluator = make_shared<T_DifferentialOperator<DiffOpCurlBoundaryEdgeVec<>>>();
+        evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundaryEdge<3>>>();
+        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdEdge<3>>>();
+        flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpCurlEdge<3>>>();
+        flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpCurlBoundaryEdgeVec<>>>();
+	evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpIdBBoundaryEdge<3>>>();
       }
   }
   
@@ -598,7 +599,7 @@ namespace ngcomp
         if (wb_loedge)
 	  ctofdof[range.First()] = WIREBASKET_DOF;
       }
-      
+    
     // faces 
     if (ma->GetDimension() == 3)
       for (int face = 0; face < ma->GetNFaces(); face++)
@@ -630,7 +631,7 @@ namespace ngcomp
 
 	if (eltype == ET_PRISM) 
 	  {
-	    ElementTransformation & eltrans = ma->GetTrafo (el, false, lh);
+	    ElementTransformation & eltrans = ma->GetTrafo (ElementId(VOL, el), lh);
 	    IntegrationPoint ip(0.3333, 0.3333, 0.5);
 	    MappedIntegrationPoint<3,3> mip(ip, eltrans);
 
@@ -695,7 +696,7 @@ namespace ngcomp
 
 	if (eltype == ET_TET)
 	  {
-	    ElementTransformation & eltrans = ma->GetTrafo (el, false, lh);
+	    ElementTransformation & eltrans = ma->GetTrafo (ElementId(VOL, el), lh);
 	    IntegrationPoint ip(0.25, 0.25, 0.25);
 	    MappedIntegrationPoint<3,3> mip(ip, eltrans);
 
@@ -705,7 +706,7 @@ namespace ngcomp
 	
 	if (eltype == ET_PYRAMID) upgrade = true;
 	
-	if (upgrade)
+	if (upgrade && ctupgrade)
 	  {
 	    GetDofNrs (el, dnums);
 	    for (int j = 0; j < dnums.Size(); j++)
@@ -713,7 +714,14 @@ namespace ngcomp
 		ctofdof[dnums[j]] = WIREBASKET_DOF;
 	  }
       }
+    
+
   }
+
+  void HCurlHighOrderFESpace :: DoCouplingDofUpgrade(bool actupgrade) {
+      ctupgrade = actupgrade;
+      UpdateCouplingDofArray();
+    }
 
   
   const FiniteElement & HCurlHighOrderFESpace :: GetFE (int elnr, LocalHeap & lh) const
@@ -1024,7 +1032,7 @@ namespace ngcomp
 
 
 
-    Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,VOL> (selnr);
+    Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,BND> (selnr);
 
     HCurlHighOrderFE<ET> * hofe =  new (lh) HCurlHighOrderFE<ET> ();
     hofe -> SetVertexNumbers (ngel.vertices);
@@ -1057,25 +1065,68 @@ namespace ngcomp
   }
 
 
+  const FiniteElement & HCurlHighOrderFESpace :: GetCD2FE(int cd2elnr, LocalHeap & lh) const
+  {
+    switch (ma->GetElement(ElementId(BBND,cd2elnr)).GetType())
+      {
+      case ET_SEGM: return T_GetCD2FE<ET_SEGM> (cd2elnr, lh);
+
+      default:
+        throw Exception ("illegal element in HCurlHoFeSpace::GetCD2FE");
+      }
+  }
+
+  template <ELEMENT_TYPE ET>
+  const FiniteElement & HCurlHighOrderFESpace :: T_GetCD2FE(int cd2elnr, LocalHeap & lh) const
+  {
+    if (!DefinedOn (BBND,ma->GetElement (ElementId(BBND,cd2elnr)).GetIndex()))
+      return * new (lh) DummyFE<ET_SEGM>; 
+
+    Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,BBND> (cd2elnr);
+
+    HCurlHighOrderFE<ET> * hofe =  new (lh) HCurlHighOrderFE<ET> ();
+    hofe -> SetVertexNumbers (ngel.vertices);
+
+    hofe -> SetOrderEdge (order_edge[ngel.Edges()]);
+    hofe -> SetUseGradEdge (usegrad_edge[ngel.Edges()]);
+    
+
+    if(ma->GetElement(ElementId(BBND,cd2elnr)).GetType() == ET_SEGM)
+      {
+	hofe -> SetOrderCell (order_edge[ngel.edges[0]]);  // old style
+        FlatArray<TORDER> aoe(1, &order_edge[ngel.edges[0]]);
+        hofe -> SetOrderEdge (aoe);
+	hofe -> SetUseGradCell (usegrad_edge[ngel.edges[0]]);  // old style
+      } 
+    else 
+      {
+	throw Exception("Only SEGM possible for codim 2 element of hcurlhofe space");
+      }
+    hofe -> SetType1 (type1);              
+    hofe -> ComputeNDof();
+    return *hofe;
+    
+  }
+    
 
 
-  int HCurlHighOrderFESpace :: GetNDof () const throw()
+  size_t HCurlHighOrderFESpace :: GetNDof () const throw()
   {
     return ndof;
   }
 
 
-  void HCurlHighOrderFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
+  void HCurlHighOrderFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
     dnums.SetSize(0);
-    if (!DefinedOn (ma->GetElIndex (elnr))) return;
+    if (!DefinedOn (ei)) return;
 
     // ordering of shape functions
     // (1*e1),.. (1*e_ne)  
     // (p_t)*tang_e1, ... p_t*tang_ne
     // p_n * el1, p_i * el1, ... , p_n * ne_n , p_i *el_ne 
 
-    Ngs_Element ngel = ma->GetElement (elnr);
+    Ngs_Element ngel = ma->GetElement (ei);
      
     //Nedelec0
     if ( !discontinuous )
@@ -1090,33 +1141,11 @@ namespace ngcomp
     if (ma->GetDimension() == 3)
       for (auto face : ngel.Faces())
         dnums += GetFaceDofs(face);
-        
-    dnums += GetElementDofs (elnr); 
+
+    if(ei.VB()==VOL)
+      dnums += GetElementDofs (ei.Nr()); 
   }
  
-
-
-
-  void HCurlHighOrderFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
-  {
-    dnums.SetSize(0);
-    if (!DefinedOnBoundary (ma->GetSElIndex (selnr))) return;
-
-    ArrayMem<int,4> ednums;
-    ma->GetSElEdges (selnr, ednums);
-    int fnum = ma->GetSElFace (selnr); 
-
-    if ( !discontinuous )
-      //Nedelec
-      for (int i = 0; i < ednums.Size(); i++) 
-	dnums.Append (ednums[i]);
-    
-    for (int i = 0; i < ednums.Size(); i++)
-      dnums += GetEdgeDofs (ednums[i]);
-
-    if(first_face_dof.Size()>1)		       
-      dnums += GetFaceDofs (fnum);
-  }
 
 
   void HCurlHighOrderFESpace ::
@@ -2621,24 +2650,24 @@ namespace ngcomp
     auto fesh1 = make_shared<H1HighOrderFESpace>(ma, flags2);
 
     BitArray h1def(ma->GetNDomains());
-    if(definedon.Size() == 0)
+    if(definedon[VOL].Size() == 0)
       h1def.Set();
     else
       h1def.Clear();
-    for(int i=0; i<definedon.Size(); i++)
-      if(definedon[i] > 0)
+    for(int i=0; i<definedon[VOL].Size(); i++)
+      if(definedon[VOL][i] > 0)
 	h1def.Set(i);
-    fesh1->SetDefinedOn(h1def);
+    fesh1->SetDefinedOn(VOL,h1def);
 
     BitArray h1defb(ma->GetNBoundaries());
-    if(definedonbound.Size() == 0)
+    if(definedon[BND].Size() == 0)
       h1defb.Set();
     else
       h1defb.Clear();
-    for(int i=0; i<definedonbound.Size(); i++)
-      if(definedonbound[i] > 0)
+    for(int i=0; i<definedon[BND].Size(); i++)
+      if(definedon[BND][i] > 0)
 	h1defb.Set(i);
-    fesh1->SetDefinedOnBoundary(h1defb);
+    fesh1->SetDefinedOn(BND,h1defb);
 
     int ne = ma -> GetNE();
     // int ned = ma->GetNEdges();

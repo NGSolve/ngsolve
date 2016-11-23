@@ -1,3 +1,6 @@
+cd 
+cd src/ngsolve
+git submodule update --init --recursive
 cd
 mkdir -p build/ngsolve
 cd build/ngsolve
