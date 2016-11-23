@@ -827,18 +827,6 @@ namespace ngfem
     const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : fel;
     const FiniteElement & fel_test = mixedfe ? mixedfe->FETest() : fel;
 
-    /*
-    int trial_difforder = 99, test_difforder = 99;
-    for (auto proxy : trial_proxies)
-      trial_difforder = min2(trial_difforder, proxy->Evaluator()->DiffOrder());
-    for (auto proxy : test_proxies)
-      test_difforder = min2(test_difforder, proxy->Evaluator()->DiffOrder());
-
-    int intorder = fel_trial.Order()+fel_test.Order();
-    auto et = trafo.GetElementType();
-    if (et == ET_TRIG || et == ET_TET)
-      intorder -= test_difforder+trial_difforder;
-    */
     elmat = 0;
 
     IntegrationRule ir = GetIntegrationRule (fel);
@@ -872,7 +860,7 @@ namespace ngfem
             if (is_nonzero)
               {
                 HeapReset hr(lh);
-                bool samediffop = *(proxy1->Evaluator()) == *(proxy2->Evaluator());
+                bool samediffop = (*(proxy1->Evaluator()) == *(proxy2->Evaluator())) && !mixedfe;
                 // td.Start();
                 FlatTensor<3,SCAL> proxyvalues(lh, mir.Size(), proxy1->Dimension(), proxy2->Dimension());
                 FlatVector<SCAL> diagproxyvalues(mir.Size()*proxy1->Dimension(), lh);
@@ -1066,9 +1054,12 @@ namespace ngfem
     
     // RegionTimer reg(t);
 
-    const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fel);
-    const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : fel;
-    const FiniteElement & fel_test = mixedfe ? mixedfe->FETest() : fel;
+    // const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fel);
+    bool is_mixedfe = typeid(fel) == typeid(const MixedFiniteElement&);
+    const MixedFiniteElement * mixedfe = static_cast<const MixedFiniteElement*> (&fel);
+    // if (is_mixedfe != ( mixedfe != nullptr) ) cout << "different" << endl;
+    const FiniteElement & fel_trial = is_mixedfe ? mixedfe->FETrial() : fel;
+    const FiniteElement & fel_test = is_mixedfe ? mixedfe->FETest() : fel;
 
     
     elmat = 0;
@@ -1103,7 +1094,7 @@ namespace ngfem
                   if (is_nonzero)
                     {
                       HeapReset hr(lh);
-                      bool samediffop = *(proxy1->Evaluator()) == *(proxy2->Evaluator());
+                      bool samediffop = (*(proxy1->Evaluator()) == *(proxy2->Evaluator())) && !is_mixedfe;
                       // td.Start();
                       AFlatMatrix<SCAL> proxyvalues(proxy1->Dimension()*proxy2->Dimension(), ir.GetNIP(), lh);
                       AFlatMatrix<SCAL> diagproxyvalues(proxy1->Dimension(), ir.GetNIP(), lh);
@@ -1162,7 +1153,7 @@ namespace ngfem
                             for (size_t j = 0; j < proxy1->Dimension(); j++)
                               diagproxyvalues.Get(j,i) *= fac;
                           }
-                  
+
                       IntRange r1 = proxy1->Evaluator()->UsedDofs(fel_trial);
                       IntRange r2 = proxy2->Evaluator()->UsedDofs(fel_test);
                       SliceMatrix<SCAL> part_elmat = elmat.Rows(r2).Cols(r1);
@@ -1192,6 +1183,7 @@ namespace ngfem
                           
                           if (!samediffop)
                             proxy2->Evaluator()->CalcMatrix(fel_test, mir, bbmat2);
+
                           // tb.Stop();
                           // tdb.Start();
                           if (is_diagonal)
