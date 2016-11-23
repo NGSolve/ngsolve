@@ -17,6 +17,7 @@ namespace ngcomp
   {
   protected:
     shared_ptr<GridFunction> gf;
+    shared_ptr<FESpace> fes;
     shared_ptr<DifferentialOperator> diffop;
     shared_ptr<DifferentialOperator> trace_diffop;
     shared_ptr<DifferentialOperator> ttrace_diffop;
