@@ -128,21 +128,22 @@ DLL_HEADER void ExportNetgenMeshing(py::module &m)
                                    (*instance)[i] = py::extract<PointIndex>(vertices[i])();
                                  instance->SetIndex(index);
                                }
-                             if (py::len(vertices) == 6)
+                             else if (py::len(vertices) == 6)
                                {
                                  new (instance) Element(PRISM);
                                  for (int i = 0; i < 6; i++)
                                    (*instance)[i] = py::extract<PointIndex>(vertices[i])();
                                  instance->SetIndex(index);
                                }
-                             if (py::len(vertices) == 8)
+                             else if (py::len(vertices) == 8)
                                {
                                  new (instance) Element(HEX);
                                  for (int i = 0; i < 8; i++)
                                    (*instance)[i] = py::extract<PointIndex>(vertices[i])();
                                  instance->SetIndex(index);
                                }
-                             throw NgException ("cannot create element");                             
+                             else
+                               throw NgException ("cannot create element");                             
                            },
           py::arg("index")=1,py::arg("vertices"),
          "create volume element"
