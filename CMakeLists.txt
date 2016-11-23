@@ -33,6 +33,45 @@ option( USE_NUMA         "compile with NUMA-aware code")
 option( USE_CCACHE       "use ccache")
 option( INSTALL_DEPENDENCIES "install dependencies like netgen or solver libs, useful for packaging" OFF )
 
+set(NETGEN_INTERNAL_INCLUDE_DIR NOTFOUND CACHE INTERNAL "Netgen include directories")
+set(BUILD_NETGEN OFF CACHE INTERNAL "is set if netgen is built as external project")
+#######################################################################
+if(NETGEN_SOURCE_DIR)
+    find_path(NETGEN_INTERNAL_INCLUDE_DIR nginterface_v2_impl.hpp PATHS ${NETGEN_SOURCE_DIR} ${NETGEN_SOURCE_DIR}/libsrc/include)
+    if (NOT NETGEN_INTERNAL_INCLUDE_DIR)
+      message(FATAL_ERROR "Could not find Netgen source files in NETGEN_SOURCE_DIR, which was set to ${NETGEN_SOURCE_DIR}")
+    endif()
+else(NETGEN_SOURCE_DIR)
+  message(STATUS "Use Netgen from submodule, updating modules...")
+  execute_process(COMMAND git submodule update --init --recursive WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+  add_custom_target(check_submodules_start ALL cmake -P cmake_modules/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} )
+  add_custom_target(check_submodules_stop ALL cmake -P cmake_modules/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} DEPENDS ngs ngslib netgen ngpy occvis)
+  set(BUILD_NETGEN ON)
+  set(NETGEN_INTERNAL_INCLUDE_DIR
+    "${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies/netgen/libsrc/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies/netgen/libsrc/general"
+    "${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies/netgen/libsrc/visualization"
+    CACHE INTERNAL "Netgen include directories"
+  )
+endif(NETGEN_SOURCE_DIR)
+
+#######################################################################
+include (CheckIncludeFiles)
+check_include_files (dlfcn.h HAVE_DLFCN_H)
+include (CheckCXXSymbolExists)
+# set(CMAKE_REQUIRED_INCLUDES cxxabi.h)
+check_cxx_symbol_exists ( abi::__cxa_demangle "cxxabi.h" HAVE_CXA_DEMANGLE )
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config.h)
+
+install (FILES ${CMAKE_CURRENT_BINARY_DIR}/config.h DESTINATION include COMPONENT ngsolve_devel )
+
+
+add_subdirectory(external_dependencies)
+
+include_directories(AFTER ${NETGEN_INTERNAL_INCLUDE_DIR})
+#######################################################################
+
+add_definitions(-DHAVE_NETGEN_SOURCES)
 #######################################################################
 if(USE_CCACHE)
   find_program(CCACHE_FOUND ccache)
@@ -110,17 +149,9 @@ include_directories (AFTER "${CMAKE_INSTALL_PREFIX}/include")
 
 link_directories ("${CMAKE_INSTALL_PREFIX}/${ngs_install_dir_lib}")
 
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -Wall")
-
-include (CheckIncludeFiles)
-check_include_files (dlfcn.h HAVE_DLFCN_H)
-include (CheckCXXSymbolExists)
-# set(CMAKE_REQUIRED_INCLUDES cxxabi.h)
-check_cxx_symbol_exists ( abi::__cxa_demangle "cxxabi.h" HAVE_CXA_DEMANGLE )
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config.h)
-
-install (FILES ${CMAKE_CURRENT_BINARY_DIR}/config.h DESTINATION include COMPONENT ngsolve_devel )
 install (FILES ngsolve.tcl DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve )
+
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -Wall")
 
 #######################################################################
 # platform specific definitions and flags
@@ -242,16 +273,11 @@ endif (USE_MUMPS)
 
 #######################################################################
 if (USE_PYTHON)
-    find_path(PYBIND_INCLUDE_DIR pybind11/pybind11.h ${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies/pybind11/include)
+  find_path(PYBIND_INCLUDE_DIR pybind11/pybind11.h ${NETGEN_INTERNAL_INCLUDE_DIR}/../external_dependencies/pybind11/include)
     if( NOT PYBIND_INCLUDE_DIR )
-      execute_process(COMMAND git submodule update --init --recursive WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-        find_path(PYBIND_INCLUDE_DIR pybind11/pybind11.h ${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies/pybind11/include)
+      message(FATAL_ERROR "Could NOT find pybind11!")
     endif( NOT PYBIND_INCLUDE_DIR )
-    if( PYBIND_INCLUDE_DIR )
-        message("-- Found Pybind11: ${PYBIND_INCLUDE_DIR}")
-    else( PYBIND_INCLUDE_DIR )
-        message(FATAL_ERROR "Could NOT find pybind11!")
-    endif( PYBIND_INCLUDE_DIR )
+    message("-- Found Pybind11: ${PYBIND_INCLUDE_DIR}")
     include_directories(${PYBIND_INCLUDE_DIR})
     set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${PROJECT_SOURCE_DIR}/cmake_modules/python")
     set(PYTHON_VERSION "3" CACHE STRING "Python version (only Python >= 3.0 supported)")
@@ -339,19 +365,6 @@ endif(USE_VTUNE)
 
 
 #######################################################################
-if(NETGEN_SOURCE_DIR)
-    find_path(NETGEN_INTERNAL_INCLUDE_DIR nginterface_v2_impl.hpp PATHS ${NETGEN_SOURCE_DIR} ${NETGEN_SOURCE_DIR}/libsrc/include)
-    add_definitions(-DHAVE_NETGEN_SOURCES)
-    include_directories(AFTER ${NETGEN_INTERNAL_INCLUDE_DIR})
-endif(NETGEN_SOURCE_DIR)
-
-if (NOT NETGEN_INTERNAL_INCLUDE_DIR)
-    message(FATAL_ERROR "Could not find Netgen source directory, please provide it by setting NETGEN_SOURCE_DIR:
-    cmake -DNETGEN_SOURCE_DIR=path_to_netgen_sources ...")
-endif()
-
-
-#######################################################################
 
 add_subdirectory(include)
 add_subdirectory(ngstd)
@@ -366,7 +379,11 @@ add_subdirectory(python)
 add_subdirectory(pde_tutorial)
 add_subdirectory(py_tutorials)
 add_subdirectory(tests)
-add_subdirectory(external_dependencies)
+
+if(BUILD_NETGEN)
+  add_dependencies(ngstd check_submodules_start)
+  add_dependencies(ngmg check_submodules_start)
+endif(BUILD_NETGEN)
 
 #######################################################################
 # generate ngscxx compiler wrapper
@@ -470,7 +487,6 @@ set(CPACK_SOURCE_IGNORE_FILES "/cmake/;/build/;/.gz/;~$;${CPACK_SOURCE_IGNORE_FI
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "NGSolve Finite Element Library")
 set(CPACK_PACKAGE_DESCRIPTION "NGSolve is a general purpose Finite Element Library on top of Netgen. With the basic library one can solve heat flow equations, Maxwell equations, and solid mechanical problems. Several add-ons are available for particular application classes.") 
 if(UNIX)
-        message(" ****************************** cpack - unix *******")
     set(CPACK_PACKAGING_INSTALL_PREFIX "/opt/netgen")
     set(CPACK_GENERATOR "DEB")
     execute_process(COMMAND dpkg --print-architecture OUTPUT_VARIABLE CPACK_DEBIAN_PACKAGE_ARCHITECTURE OUTPUT_STRIP_TRAILING_WHITESPACE)
@@ -560,12 +576,14 @@ configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/cmake_uninstall.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
     IMMEDIATE @ONLY)
-add_custom_target(uninstall
-    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
+# add_custom_target(uninstall
+#     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
 
 #######################################################################
 # Configure message
 # TODO: other message in case of failure
+string(TOUPPER "CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE}" name)
+set(flags "${${name}} ${CMAKE_CXX_FLAGS}")
 message("
 ------------------------------------------------------------------------
   ${PROJECT_NAME} ${NGSOLVE_VERSION}:  Automatic configuration OK.
@@ -616,4 +634,5 @@ message("
 if (ADDITIONAL_PATHS)
   message(WARNING "The use of ADDITIONAL_PATHS is depricated, use CMAKE_PREFIX_PATH instead.")
 endif (ADDITIONAL_PATHS)
+
 

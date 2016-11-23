@@ -1,6 +1,9 @@
+cd 
+cd src/ngsolve
+git submodule update --init --recursive
 cd
 mkdir -p build/ngsolve
 cd build/ngsolve
-cmake ../../src/ngsolve -DUSE_CCACHE=ON -DUSE_MKL=ON -DNETGEN_SOURCE_DIR=../../src/netgen
+cmake ../../src/ngsolve -DUSE_CCACHE=ON -DUSE_MKL=ON
 make -j12
 make install
