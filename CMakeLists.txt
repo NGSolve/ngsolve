@@ -33,8 +33,6 @@ option( USE_NUMA         "compile with NUMA-aware code")
 option( USE_CCACHE       "use ccache")
 option( INSTALL_DEPENDENCIES "install dependencies like netgen or solver libs, useful for packaging" OFF )
 
-add_library(pic_on INTERFACE)
-add_library(ngsolve_options INTERFACE)
 set(NETGEN_INTERNAL_INCLUDE_DIR NOTFOUND CACHE INTERNAL "Netgen include directories")
 set(BUILD_NETGEN OFF CACHE INTERNAL "is set if netgen is built as external project")
 #######################################################################
@@ -44,7 +42,10 @@ if(NETGEN_SOURCE_DIR)
       message(FATAL_ERROR "Could not find Netgen source files in NETGEN_SOURCE_DIR, which was set to ${NETGEN_SOURCE_DIR}")
     endif()
 else(NETGEN_SOURCE_DIR)
+  message(STATUS "Use Netgen from submodule, updating modules...")
   execute_process(COMMAND git submodule update --init --recursive WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+  add_custom_target(check_submodules_start ALL cmake -P cmake_modules/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} )
+  add_custom_target(check_submodules_stop ALL cmake -P cmake_modules/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} DEPENDS ngs ngslib netgen ngpy occvis)
   set(BUILD_NETGEN ON)
   set(NETGEN_INTERNAL_INCLUDE_DIR
     "${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies/netgen/libsrc/include"
@@ -378,6 +379,11 @@ add_subdirectory(python)
 add_subdirectory(pde_tutorial)
 add_subdirectory(py_tutorials)
 add_subdirectory(tests)
+
+if(BUILD_NETGEN)
+  add_dependencies(ngstd check_submodules_start)
+  add_dependencies(ngmg check_submodules_start)
+endif(BUILD_NETGEN)
 
 #######################################################################
 # generate ngscxx compiler wrapper
