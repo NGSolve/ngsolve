@@ -273,7 +273,7 @@ endif (USE_MUMPS)
 
 #######################################################################
 if (USE_PYTHON)
-  find_path(PYBIND_INCLUDE_DIR pybind11/pybind11.h ${NETGEN_INTERNAL_INCLUDE_DIR}/../external_dependencies/pybind11/include)
+  find_path(PYBIND_INCLUDE_DIR pybind11/pybind11.h ${NETGEN_INTERNAL_INCLUDE_DIR}/../../external_dependencies/pybind11/include)
     if( NOT PYBIND_INCLUDE_DIR )
       message(FATAL_ERROR "Could NOT find pybind11!")
     endif( NOT PYBIND_INCLUDE_DIR )
