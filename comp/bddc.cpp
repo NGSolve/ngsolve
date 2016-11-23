@@ -10,6 +10,7 @@ namespace ngcomp
   class BDDCMatrix : public BaseMatrix
   {
     shared_ptr<BilinearForm> bfa;
+    shared_ptr<FESpace> fes;
 
     BaseMatrix *harmonicext, *harmonicexttrans, 
       *innersolve;
@@ -51,6 +52,8 @@ namespace ngcomp
       : bfa(abfa), block(ablock), inversetype(ainversetype), coarsetype(acoarsetype)
     {
       static Timer timer ("BDDC Constructor");
+
+      fes = bfa->GetFESpace();
       
       coarse = (coarsetype != "none");
 
@@ -64,7 +67,7 @@ namespace ngcomp
       tmp2 = NULL;
       RegionTimer reg(timer);
 
-      auto fes = bfa -> GetFESpace();
+      // auto fes = bfa -> GetFESpace();
       shared_ptr<MeshAccess> ma = fes->GetMeshAccess();
 
       Array<int> wbdcnt(ma->GetNE()+ma->GetNSE());
@@ -191,7 +194,7 @@ namespace ngcomp
 
       HeapReset hr(lh);
 
-      auto fes = bfa->GetFESpace();
+      // auto fes = bfa->GetFESpace();
       
       ArrayMem<int, 100> localwbdofs, localintdofs;
       
@@ -296,7 +299,7 @@ namespace ngcomp
       static Timer timer ("BDDC Finalize");
       RegionTimer reg(timer);
 
-      auto fes = bfa->GetFESpace();
+      // auto fes = bfa->GetFESpace();
       int ndof = fes->GetNDof();      
 
 
@@ -525,6 +528,7 @@ namespace ngcomp
   class NGS_DLL_HEADER BDDCPreconditioner : public Preconditioner
   {
     shared_ptr<S_BilinearForm<SCAL>> bfa;
+    shared_ptr<FESpace> fes;
     shared_ptr<BDDCMatrix<SCAL,TV>> pre;
     string inversetype;
     string coarsetype;
@@ -544,6 +548,7 @@ namespace ngcomp
       block = flags.GetDefineFlag("block");
       hypre = flags.GetDefineFlag("usehypre");
       // pre = NULL;
+      fes = bfa->GetFESpace();
     }
 
 
@@ -645,7 +650,7 @@ namespace ngcomp
 		    ElementId id, 
 		    LocalHeap & lh)
   {
-    auto fes = bfa->GetFESpace();
+    // auto fes = bfa->GetFESpace();
 
     int used = 0;
     for (int i : Range(dnums))
