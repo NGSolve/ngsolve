@@ -39,27 +39,24 @@ namespace ngcomp
     virtual void Update(LocalHeap & lh);
 
     ///
-    virtual int GetNDof () const throw();
+    virtual size_t GetNDof () const throw();
     ///
-    virtual int GetNDofLevel (int level) const;
+    virtual size_t GetNDofLevel (int level) const;
 
     ///
-    virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
-    ///
-    virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
-
+    virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const;
     ///
     // virtual Table<int> * CreateSmoothingBlocks (int type = 0) const;
 
 
-    virtual void VTransformMR (int elnr, bool boundary,
+    virtual void VTransformMR (int elnr, VorB vb, 
 			       const SliceMatrix<double> & mat, TRANSFORM_TYPE tt) const;
-    virtual void VTransformMC (int elnr, bool boundary,
+    virtual void VTransformMC (int elnr, VorB vb,
 			       const SliceMatrix<Complex> & mat, TRANSFORM_TYPE tt) const { ; }
 
-    virtual void VTransformVR (int elnr, bool boundary,
+    virtual void VTransformVR (int elnr, VorB vb,
 			       const FlatVector<double> & vec, TRANSFORM_TYPE tt) const;
-    virtual void VTransformVC (int elnr, bool boundary,
+    virtual void VTransformVC (int elnr, VorB vb,
 			       const FlatVector<Complex> & vec, TRANSFORM_TYPE tt) const { ; }
 
     void GetTransformationFactors (int elnr, FlatVector<> & fac) const;

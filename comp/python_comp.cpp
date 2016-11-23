@@ -108,10 +108,17 @@ py::object MakeProxyFunction2 (const FESpace & fes,
                                            shared_ptr <CompoundDifferentialOperator> block_trace_eval = nullptr;
                                            if (proxy->TraceEvaluator() != nullptr)
                                              block_trace_eval = make_shared<CompoundDifferentialOperator> (proxy->TraceEvaluator(), i);
+					   shared_ptr <CompoundDifferentialOperator> block_ttrace_eval = nullptr;
+					   if (proxy->TTraceEvaluator() != nullptr)
+					     block_ttrace_eval = make_shared<CompoundDifferentialOperator> (proxy->TTraceEvaluator(),i);
                                            shared_ptr <CompoundDifferentialOperator> block_trace_deriv_eval = nullptr;
                                            if (proxy->TraceDerivEvaluator() != nullptr)
                                              block_trace_deriv_eval = make_shared<CompoundDifferentialOperator> (proxy->TraceDerivEvaluator(), i);
-                                           auto block_proxy = make_shared<ProxyFunction> (/* &fes, */ testfunction, fes.IsComplex(),                                                                                          block_eval, block_deriv_eval, block_trace_eval, block_trace_deriv_eval);
+					   shared_ptr <CompoundDifferentialOperator> block_ttrace_deriv_eval = nullptr;
+					   if (proxy->TTraceDerivEvaluator() != nullptr)
+					     block_ttrace_deriv_eval = make_shared<CompoundDifferentialOperator> (proxy->TTraceDerivEvaluator(),i);
+                                           auto block_proxy = make_shared<ProxyFunction> (/* &fes, */ testfunction, fes.IsComplex(),                                                                                          block_eval, block_deriv_eval, block_trace_eval, block_trace_deriv_eval,
+					  block_ttrace_eval, block_ttrace_deriv_eval);
 
                                            SymbolTable<shared_ptr<DifferentialOperator>> add = proxy->GetAdditionalEvaluators();
                                            for (int j = 0; j < add.Size(); j++)
@@ -138,7 +145,9 @@ py::object MakeProxyFunction2 (const FESpace & fes,
                                             fes.GetEvaluator(),
                                             fes.GetFluxEvaluator(),
                                             fes.GetEvaluator(BND),
-                                            fes.GetFluxEvaluator(BND));
+                                            fes.GetFluxEvaluator(BND),
+					    fes.GetEvaluator(BBND),
+					    fes.GetFluxEvaluator(BBND));
   auto add_diffops = fes.GetAdditionalEvaluators();
   for (int i = 0; i < add_diffops.Size(); i++)
     proxy->SetAdditionalEvaluator (add_diffops.GetName(i), add_diffops[i]);
@@ -193,6 +202,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
   py::enum_<VorB>(m, "VorB")
     .value("VOL", VOL)
     .value("BND", BND)
+    .value("BBND", BBND)
     .export_values()
     ;
 
@@ -217,9 +227,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
     .def(py::init<int>())
     .def("__str__", &ToString<ElementId>)
     .def_property_readonly("nr", &ElementId::Nr, "the element number")    
-    .def("IsVolume", &ElementId::IsVolume, "is it a boundary element ?")
-    .def("IsBoundary", &ElementId::IsBoundary, "is it a volume element ?")
-    .def(py::self!=py::self)
+    .def("VB", &ElementId::VB, "VorB of element")    .def(py::self!=py::self)
     .def("__eq__" , [](ElementId &self, ElementId &other)
                                     { return !(self!=other); } )
     .def("__hash__" , &ElementId::Nr)
@@ -501,9 +509,9 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 
     .def("__getitem__", static_cast<Ngs_Element(MeshAccess::*)(ElementId)const> (&MeshAccess::operator[]))
 
-    .def ("GetNE", static_cast<int(MeshAccess::*)(VorB)const> (&MeshAccess::GetNE))
+    .def ("GetNE", static_cast<size_t(MeshAccess::*)(VorB)const> (&MeshAccess::GetNE))
     .def_property_readonly ("nv", &MeshAccess::GetNV, "number of vertices")
-    .def_property_readonly ("ne",  static_cast<int(MeshAccess::*)()const> (&MeshAccess::GetNE), "number of volume elements")
+    .def_property_readonly ("ne",  static_cast<size_t(MeshAccess::*)()const> (&MeshAccess::GetNE), "number of volume elements")
     .def_property_readonly ("dim", &MeshAccess::GetDimension, "mesh dimension")
     .def_property_readonly ("ngmesh", &MeshAccess::GetNetgenMesh, "netgen mesh")
     .def ("GetTrafo", 
@@ -566,6 +574,25 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
          "returns boundary mesh-region matching the given regex pattern",
          py::return_value_policy::take_ownership
          )
+    .def("GetBBoundaries",
+	 [](const MeshAccess & ma)
+	  {
+	    py::list bboundaries(ma.GetNBBoundaries());
+	    for (int i : Range(ma.GetNBBoundaries()))
+	      bboundaries[i] = py::cast(ma.GetCD2NumCD2Name(i));
+	    return bboundaries;
+	  },
+	 "returns list of boundary conditions for co dimension 2"
+	 )
+    .def("BBoundaries", FunctionPointer
+	 ([](shared_ptr<MeshAccess> ma, string pattern)
+	  {
+	    return new Region (ma, BBND, pattern);
+	  }),
+	 (py::arg("self"), py::arg("pattern")),
+	 "returns co dim 2 boundary mesh-region matching the given regex pattern",
+	 py::return_value_policy::take_ownership
+	 )
 
     .def("Refine",
          [](MeshAccess & ma)
@@ -1283,6 +1310,12 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
          ([](PyGF self, PyCF cf,
              VorB boundary, py::object definedon, int heapsize, py::object heap)
           {
+             shared_ptr<TPHighOrderFESpace> tpspace = dynamic_pointer_cast<TPHighOrderFESpace>(self.Get()->GetFESpace());
+             if(tpspace)
+             {
+               Transfer2TPMesh(cf.Get().get(),self.Get().get());
+               return;
+            }          
             Region * reg = nullptr;
             if (py::extract<Region&> (definedon).check())
               reg = &py::extract<Region&>(definedon)();
@@ -1398,12 +1431,13 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
             IntegrationPoint ip;
             int elnr = space->GetMeshAccess()->FindElementOfPoint(Vec<3>(x, y, z), ip, true);
             if (elnr < 0) throw Exception ("point out of domain");
-
-            const FiniteElement & fel = space->GetFE(elnr, lh);
+            ElementId ei(VOL, elnr);
+            
+            const FiniteElement & fel = space->GetFE(ei, lh);
 
             Array<int> dnums(fel.GetNDof(), lh);
-            space->GetDofNrs(elnr, dnums);
-            auto & trafo = space->GetMeshAccess()->GetTrafo(elnr, false, lh);
+            space->GetDofNrs(ei, dnums);
+            auto & trafo = space->GetMeshAccess()->GetTrafo(ei, lh);
 
             if (space->IsComplex())
               {
@@ -1475,9 +1509,10 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
             int dim = evaluator->Dim();
             LocalHeap lh(10000, "ngcomp::GridFunction::Eval");
             int elnr = space.GetMeshAccess()->FindElementOfPoint(Vec<3>(x, y, z), ip, true);
+            ElementId ei(VOL, elnr);
             Array<int> dnums;
-            space.GetDofNrs(elnr, dnums);
-            const FiniteElement & fel = space.GetFE(elnr, lh);
+            space.GetDofNrs(ei, dnums);
+            const FiniteElement & fel = space.GetFE(ei, lh);
             if (space.IsComplex())
               {
                 Vector<Complex> elvec;
@@ -1486,12 +1521,12 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                 self->GetElementVector(dnums, elvec);
                 if (dim_mesh == 2)
                   {
-                    MappedIntegrationPoint<2, 2> mip(ip, space.GetMeshAccess()->GetTrafo(elnr, false, lh));
+                    MappedIntegrationPoint<2, 2> mip(ip, space.GetMeshAccess()->GetTrafo(ei, lh));
                     evaluator->Apply(fel, mip, elvec, values, lh);
                   }
                 else if (dim_mesh == 3)
                   {
-                    MappedIntegrationPoint<3, 3> mip(ip, space.GetMeshAccess()->GetTrafo(elnr, false, lh));
+                    MappedIntegrationPoint<3, 3> mip(ip, space.GetMeshAccess()->GetTrafo(ei, lh));
                     evaluator->Apply(fel, mip, elvec, values, lh);
                   }
                 if (dim > 1)
@@ -1505,14 +1540,15 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                 Vector<> values(dim);
                 elvec.SetSize(fel.GetNDof());
                 self->GetElementVector(dnums, elvec);
+                ElementId ei(VOL, elnr);
                 if (dim_mesh == 2)
                   {
-                    MappedIntegrationPoint<2, 2> mip(ip, space.GetMeshAccess()->GetTrafo(elnr, false, lh));
+                    MappedIntegrationPoint<2, 2> mip(ip, space.GetMeshAccess()->GetTrafo(ei, lh));
                     evaluator->Apply(fel, mip, elvec, values, lh);
                   }
                 else if (dim_mesh == 3)
                   {
-                    MappedIntegrationPoint<3, 3> mip(ip, space.GetMeshAccess()->GetTrafo(elnr, false, lh));
+                    MappedIntegrationPoint<3, 3> mip(ip, space.GetMeshAccess()->GetTrafo(ei, lh));
                     evaluator->Apply(fel, mip, elvec, values, lh);
                   }
                 if (dim > 1)
@@ -2311,7 +2347,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
            py::arg("skeleton")=false,
            py::arg("definedon")=DummyArgument()
           );
-
+          
   m.def("SymbolicEnergy",
           [](PyCF cf, VorB vb, py::object definedon) -> PyWrapper<BilinearFormIntegrator>
            {
@@ -2496,6 +2532,93 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
            }));
   */
 
+  
+   m.def("TensorProductFESpace", [](py::list spaces_list, const Flags & flags ) -> PyFES
+            {
+              //Array<shared_ptr<FESpace> > spaces = makeCArray<shared_ptr<FESpace>> (spaces_list);
+              
+              auto spaces = makeCArrayUnpackWrapper<PyWrapper<FESpace>> (spaces_list);
+              
+              if(spaces.Size() == 2)
+              {
+                shared_ptr<FESpace> space( new TPHighOrderFESpace( spaces, flags ) );
+                return space;
+              }
+              else
+              {
+                Array<shared_ptr<FESpace>> spaces_y(spaces.Size()-1);
+                for(int i=1;i<spaces.Size();i++)
+                  spaces_y[i-1] = spaces[i];
+                shared_ptr<FESpace> space( new TPHighOrderFESpace( spaces[0],spaces_y, flags ) );
+                return space;             
+              }
+              });
+              
+   m.def("IntDv", [](PyGF gf_tp, PyGF gf_x )
+            {
+              shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp.Get()->GetFESpace());
+              LocalHeap lh(10000000,"ReduceToXSpace");
+              tpfes->ReduceToXSpace(gf_tp.Get(),gf_x.Get(),lh,
+              [&] (shared_ptr<FESpace> fes,const FiniteElement & fel,const ElementTransformation & trafo,FlatVector<> elvec,FlatVector<> elvec_out,LocalHeap & lh)
+              {
+                 const TPHighOrderFE & tpfel = dynamic_cast<const TPHighOrderFE &>(fel);
+                 shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(fes);
+                 FlatMatrix<> elmat(tpfel.elements[0]->GetNDof(),tpfel.elements[1]->GetNDof(),&elvec[0]);
+                 IntegrationRule ir(tpfel.elements[1]->ElementType(),2*tpfel.elements[1]->Order());
+                 BaseMappedIntegrationRule & mir = trafo(ir,lh);
+                 FlatMatrix<> shape(tpfel.elements[1]->GetNDof(),ir.Size(),lh);
+                 dynamic_cast<const BaseScalarFiniteElement *>(tpfel.elements[1])->CalcShape(ir,shape);
+                 for(int s=0;s<ir.Size();s++)
+                 {
+                   shape.Col(s)*=mir[s].GetWeight();
+                   FlatMatrix<> tempmat(elvec_out.Size(),ir.Size(),lh);
+                   tempmat = elmat*shape;
+                   elvec_out+=tempmat.Col(s);
+                 }
+              });
+              });
+              
+   m.def("IntDv2", [](PyGF gf_tp, PyGF gf_x, PyCF coef )
+           {
+              shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp.Get()->GetFESpace());
+              LocalHeap lh(10000000,"IntDv2");
+              tpfes->ReduceToXSpace(gf_tp.Get(),gf_x.Get(),lh,
+              [&] (shared_ptr<FESpace> fes,const FiniteElement & fel,const ElementTransformation & trafo,FlatVector<> elvec,FlatVector<> elvec_out,LocalHeap & lh)
+              {
+                 const TPHighOrderFE & tpfel = dynamic_cast<const TPHighOrderFE &>(fel);
+                 shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(fes);
+                 FlatMatrix<> elmat(tpfel.elements[0]->GetNDof(),tpfel.elements[1]->GetNDof(),&elvec[0]);
+                 IntegrationRule ir(tpfel.elements[1]->ElementType(),2*tpfel.elements[1]->Order());
+                 BaseMappedIntegrationRule & mir = trafo(ir,lh);
+                 FlatMatrix<> shape(tpfel.elements[1]->GetNDof(),ir.Size(),lh);
+                 dynamic_cast<const BaseScalarFiniteElement *>(tpfel.elements[1])->CalcShape(ir,shape);
+                 FlatMatrix<> vals(mir.Size(),1,lh);
+                 coef.Get()->Evaluate(mir, vals);
+                 for(int s=0;s<ir.Size();s++)
+                 {
+                   shape.Col(s)*=mir[s].GetWeight()*vals(s,0);
+                   elvec_out+=elmat*shape.Col(s);
+                 }
+              });
+              });
+
+   m.def("Prolongate", [](PyGF gf_x, PyGF gf_tp )
+            {
+              shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp.Get()->GetFESpace());
+              LocalHeap lh(100000,"ProlongateFromXSpace");
+              if(gf_x.Get()->GetFESpace() == tpfes->Space(-1) )
+                tpfes->ProlongateFromXSpace(gf_x.Get(),gf_tp.Get(),lh);
+              else
+                cout << "GridFunction gf_x is not defined on first space"<<endl;
+              });
+   m.def("Transfer2StdMesh", [](const PyGF gfutp, PyGF gfustd )
+            {
+              Transfer2StdMesh(gfutp.Get().get(),gfustd.Get().get());
+              return;
+             });
+  
+  
+  
   typedef PyWrapper<BaseVTKOutput> PyVTK;
   py::class_<PyVTK>(m, "VTKOutput")
     .def("__init__",

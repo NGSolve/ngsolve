@@ -38,7 +38,7 @@ namespace ngcomp
   extern NGS_DLL_HEADER 
   void SetValues (shared_ptr<CoefficientFunction> coef,
 		  GridFunction & u,
-		  bool vb,
+		  VorB vb,
 		  DifferentialOperator * diffop,   // NULL is FESpace evaluator
 		  LocalHeap & clh);
   

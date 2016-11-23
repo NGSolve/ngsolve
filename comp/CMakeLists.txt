@@ -15,7 +15,7 @@ add_library( ngcomp ${NGS_LIB_TYPE}
         hdivfes.cpp hdivhofespace.cpp hierarchicalee.cpp l2hofespace.cpp     
         linearform.cpp meshaccess.cpp ngsobject.cpp postproc.cpp	     
         preconditioner.cpp vectorfacetfespace.cpp numberfespace.cpp bddc.cpp 
-        hypre_precond.cpp 
+        hypre_precond.cpp tpfes.cpp 
         python_comp.cpp basenumproc.cpp pde.cpp pdeparser.cpp vtkoutput.cpp
         )
 
@@ -28,7 +28,7 @@ install( FILES
         bilinearform.hpp comp.hpp facetfespace.hpp	   
         fespace.hpp gridfunction.hpp h1hofespace.hpp hcurlhdivfes.hpp	   
         hcurlhofespace.hpp hdivfes.hpp hdivhofespace.hpp		   
-        l2hofespace.hpp linearform.hpp meshaccess.hpp ngsobject.hpp	   
+        l2hofespace.hpp tpfes.hpp linearform.hpp meshaccess.hpp ngsobject.hpp	   
         postproc.hpp preconditioner.hpp vectorfacetfespace.hpp hypre_precond.hpp 
         pde.hpp numproc.hpp vtkoutput.hpp
         DESTINATION include

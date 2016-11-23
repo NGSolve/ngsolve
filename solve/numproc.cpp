@@ -193,7 +193,7 @@ namespace ngsolve
   protected:
     shared_ptr<GridFunction> gfu;
     shared_ptr<CoefficientFunction> coef;
-    bool boundary;
+    VorB vb;
     bool coarsegridonly;
     int component;
     bool print;
@@ -204,7 +204,10 @@ namespace ngsolve
     {
       gfu = apde->GetGridFunction (flags.GetStringFlag ("gridfunction", ""));
       coef = apde->GetCoefficientFunction (flags.GetStringFlag ("coefficient", ""));
-      boundary = flags.GetDefineFlag ("boundary");
+      if(flags.GetDefineFlag ("boundary"))
+	vb = BND;
+      else
+	vb = VOL;
       coarsegridonly = flags.GetDefineFlag ("coarsegridonly");
       component = int (flags.GetNumFlag ("component", 0))-1;
       print = flags.GetDefineFlag ("print");
@@ -248,7 +251,7 @@ namespace ngsolve
       if (component != -1)
 	hgfu = gfu->GetComponent(component);
 
-      SetValues (coef, *hgfu, boundary, 0, lh);
+      SetValues (coef, *hgfu, vb, 0, lh);
       if (print) 
         *testout << "setvalues result:" << endl << hgfu->GetVector() << endl;
     }
@@ -1246,7 +1249,7 @@ namespace ngsolve
 	    typestring = ".surf";
 
 	    Integrator_ptr = NULL;
-	    BoundaryIntegrator_ptr = fes.GetBoundaryIntegrator();
+	    BoundaryIntegrator_ptr = fes.GetIntegrator(BND);
 	    ndomains = shared_ptr<PDE>(pde)->GetMeshAccess()->GetNBoundaries();
 	  }
 
@@ -1493,7 +1496,8 @@ namespace ngsolve
 	for (int i : r)
 	  {
 	    HeapReset hr(lh);
-	    ElementTransformation & eltrans = ma->GetTrafo (i, 0, lh);
+            ElementId ei(VOL, i);
+	    ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
 	    IntegrationRule ir (eltrans.GetElementType(), order);
 	    const BaseMappedIntegrationRule & mir = eltrans(ir, lh);
 	      

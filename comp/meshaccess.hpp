@@ -125,9 +125,9 @@ namespace ngcomp
   class TElementIterator
   {
     const MeshAccess & ma;
-    int nr;
+    size_t nr;
   public:
-    INLINE TElementIterator (const MeshAccess & ama, int anr) : ma(ama), nr(anr) { ; }
+    INLINE TElementIterator (const MeshAccess & ama, size_t anr) : ma(ama), nr(anr) { ; }
     INLINE TElementIterator operator++ () { return TElementIterator(ma, ++nr); }
     // ElementId operator*() const { return ElementId(VB,nr); }
     INLINE Ngs_Element operator*() const; 
@@ -169,20 +169,20 @@ namespace ngcomp
     int dim;
   
     /// number of vertex, edge, face, and cell nodes
-    int nnodes[4];
+    size_t nnodes[4];
 
     // number of nodes of co-dimension i 
     // these are NC, NF, NE, NV  in 3D,
     // and NF, NE, NV, undef, in 2D
-    int nnodes_cd[4];
+    size_t nnodes_cd[4];
 
 
     /// number of elements of dimension i
-    int nelements[4];  
+    size_t nelements[4];  
     /// number of elements of co-dimension i
-    int nelements_cd[4];
+    size_t nelements_cd[4];
     ///
-    int ne_vb[2];  // index with VorB
+    size_t ne_vb[3];  // index with VorB
     /// number of multigrid levels 
     int nlevels;
 
@@ -191,6 +191,9 @@ namespace ngcomp
 
     /// max boundary index
     int nboundaries;
+
+    /// max boundary index for co dim 2
+    int nbboundaries;
 
     /// for ALE
     shared_ptr<GridFunction> deformation;  
@@ -211,7 +214,8 @@ namespace ngcomp
     int rect_pml = -1;
     int pml_domain = -1;
     
-    
+    Array<std::tuple<int,int>> identified_facets;
+
     ///
     MPI_Comm mesh_comm;
   public:
@@ -233,25 +237,28 @@ namespace ngcomp
     int GetDimension() const { return dim; }  
 
     /// number of points. needed for isoparametric nodal elements
-    int GetNP() const  { return Ng_GetNP(); }
+    size_t GetNP() const  { return Ng_GetNP(); }
 
     /// number of vertices
-    int GetNV() const  { return nnodes[0]; }  
+    size_t GetNV() const  { return nnodes[0]; }  
 
     /// number of elements in the domain
-    int GetNE() const  { return nelements_cd[0]; }  
+    size_t GetNE() const  { return nelements_cd[0]; }  
 
     /// number of boundary elements
-    int GetNSE() const { return nelements_cd[1]; }  
+    size_t GetNSE() const { return nelements_cd[1]; }
+
+    /// number of elements of co dimension 2
+    size_t GetNCD2E() const { return nelements_cd[2]; }
 
     /// number of volume or boundary elements
-    int GetNE(VorB vb) const { return ne_vb[vb]; } 
+    size_t GetNE(VorB vb) const { return ne_vb[vb]; } 
 
     /// number of edges in the whole mesh
-    int GetNEdges() const { return nnodes[1]; }     
+    size_t GetNEdges() const { return nnodes[1]; }     
 
     /// number of faces in the whole mesh
-    int GetNFaces() const { return nnodes[2]; }    
+    size_t GetNFaces() const { return nnodes[2]; }    
 
 
     /// maximal sub-domain (material) index. range is [0, ndomains)
@@ -260,14 +267,16 @@ namespace ngcomp
     /// maximal boundary condition index. range is [0, nboundaries)
     int GetNBoundaries () const { return nboundaries; }
 
+    int GetNBBoundaries() const { return nbboundaries; }
+
     int GetNRegions (VorB vb) const
     {
-      return (vb == VOL) ? ndomains : nboundaries;
+      return (vb == VOL) ? ndomains : ((vb==BND) ? nboundaries : nbboundaries);
     }
 
     /// returns point coordinate
     template <int D>
-    void GetPoint (int pi, Vec<D> & p) const
+    void GetPoint (size_t pi, Vec<D> & p) const
     { 
       auto pt = mesh.GetPoint (pi);
       for (int j = 0; j < D; j++) p(j) = pt[j];
@@ -275,7 +284,7 @@ namespace ngcomp
 
     /// returns point coordinate
     template <int D>
-    Vec<D> GetPoint (int pi) const
+    Vec<D> GetPoint (size_t pi) const
     { 
       Vec<D> p;
       auto pt = mesh.GetPoint (pi);
@@ -310,7 +319,7 @@ namespace ngcomp
               {
                 LocalHeap lh = clh.Split(ti.thread_nr, ti.nthreads);
 
-                for (int mynr : sl)
+                for (size_t mynr : sl)
                   {
                     HeapReset hr(lh);
                     ElementId ei(vb, mynr);
@@ -320,7 +329,7 @@ namespace ngcomp
         }
       else
         {
-          for (int i = 0; i < GetNE(vb); i++)
+          for (auto i : Range(GetNE(vb)))
             {
               HeapReset hr(clh);
               ElementId ei(vb, i);
@@ -394,6 +403,11 @@ namespace ngcomp
       */
     }
 
+    int GetCD2ElIndex(int elnr) const
+    {
+      return GetCD2Element(elnr).GetIndex();
+    }
+
     int GetElIndex (ElementId ei) const
     {
       return GetElement(ei).GetIndex();
@@ -422,6 +436,9 @@ namespace ngcomp
     /// the boundary condition name of boundary condition number
     string GetBCNumBCName (int bcnr) const
     { return Ng_GetBCNumBCName (bcnr); }
+
+    string GetCD2NumCD2Name (int cd2nr) const
+    { return Ng_GetCD2NumCD2Name (cd2nr); }
 
 
     /// not sure who needs that
@@ -485,8 +502,7 @@ namespace ngcomp
     
     INLINE Ngs_Element GetElement (ElementId ei) const
     {
-      int hdim = dim;
-      if (ei.IsBoundary()) hdim--;
+      int hdim = dim - int(ei.VB());
       switch (hdim)
 	{
         case 0:	return Ngs_Element (mesh.GetElement<0> (ei.Nr()), ei);
@@ -500,7 +516,7 @@ namespace ngcomp
     template <VorB VB, int DIM>
       INLINE Ngs_Element GetElement (T_ElementId<VB,DIM> ei) const
     {
-      constexpr int HDIM = DIM - ((VB == BND) ? 1 : 0);
+      constexpr int HDIM = DIM - int(VB);
       return Ngs_Element (mesh.GetElement<HDIM> (ei.Nr()), ei);
     }
 
@@ -525,6 +541,17 @@ namespace ngcomp
 	case 2: return Ngs_Element (mesh.GetElement<1> (elnr), ElementId(BND,elnr));
 	case 3: 
         default: return Ngs_Element (mesh.GetElement<2> (elnr), ElementId(BND,elnr));
+	}
+    }
+
+    Ngs_Element GetCD2Element(int elnr) const
+    {
+      switch(dim)
+	{
+	case 1: throw Exception("No CoDim 2 Element for dimension 1");
+	case 2: return Ngs_Element(mesh.GetElement<0>(elnr),ElementId(BBND,elnr));
+	case 3:
+	default: return Ngs_Element(mesh.GetElement<1>(elnr),ElementId(BBND,elnr));
 	}
     }
 
@@ -607,6 +634,9 @@ namespace ngcomp
     void GetSElVertices (int selnr, Array<int> & vnums) const
     { vnums = GetSElement(selnr).Vertices(); }
 
+    void GetElEdges(ElementId ei, Array<int> & ednums) const
+    { ednums = GetElement(ei).Edges(); }
+
     /// returns the edges of an element
     void GetElEdges (int elnr, Array<int> & ednums) const
     { ednums = GetElement(elnr).Edges(); }
@@ -666,6 +696,7 @@ namespace ngcomp
     /// facets are edges (2D) or faces (3D)
     int GetNFacets() const { return nnodes_cd[1]; } 
     /// facets of an element
+    void GetElFacets (ElementId ei, Array<int> & fnums) const;
     void GetElFacets (int elnr, Array<int> & fnums) const;
     /// facet of a surface element
     void GetSElFacets (int selnr, Array<int> & fnums) const;
@@ -678,7 +709,7 @@ namespace ngcomp
     {
       switch (dim)
         {
-        case 1: GetVertexElements (fnr, elnums); break;
+        case 1: elnums = GetVertexElements (fnr); break;
         case 2: GetEdgeElements (fnr, elnums); break;
         case 3: GetFaceElements (fnr, elnums); break;
         }
@@ -687,11 +718,21 @@ namespace ngcomp
     {
       switch (dim)
         {
-        case 1: GetVertexSurfaceElements (fnr, elnums); break;
+        case 1: elnums = GetVertexSurfaceElements (fnr); break;
         case 2: GetEdgeSurfaceElements (fnr, elnums); break;
         case 3: GetFaceSurfaceElements (fnr, elnums); break;
         }
     }
+
+    void CalcIdentifiedFacets();
+    int GetPeriodicFacet(int fnr) const
+    {
+      if(get<1>(identified_facets[fnr]) == 2) // check if identification type is periodic
+	return get<0>(identified_facets[fnr]);
+      else
+	return fnr;
+    }
+
 
     // void GetVertexElements (int vnr, Array<int> & elnrs) const;
     /// element order stored in Netgen
@@ -766,25 +807,35 @@ namespace ngcomp
     /// returns the transformation from the reference element to physical element.
     /// Given a point in the refrence element, the ElementTransformation can 
     /// compute the mapped point as well as the Jacobian
-    ngfem::ElementTransformation & GetTrafo (int elnr, bool boundary, Allocator & lh) const;
-
-    ngfem::ElementTransformation & GetTrafo (ElementId ei, Allocator & lh) const    
-    {
-      return GetTrafo (ei.Nr(), ei.IsBoundary(), lh);
-    }
-
+    [[deprecated("Use GetTrafo with ElementId(vb, elnr) instead!")]]    
+      ngfem::ElementTransformation & GetTrafo (int elnr, VorB vb, Allocator & lh) const
+      {
+        return GetTrafo(ElementId(vb, elnr),lh);
+      }
+    
+    ngfem::ElementTransformation & GetTrafo (ElementId ei, Allocator & lh) const;
+    
     template <int DIM>
     ngfem::ElementTransformation & GetTrafoDim (int elnr, Allocator & lh) const;
     template <int DIM>
     ngfem::ElementTransformation & GetSTrafoDim (int elnr, Allocator & lh) const;
+    template <int DIM>
+      ngfem::ElementTransformation & GetCD2TrafoDim (int elnr, Allocator & lh) const;
 
     template <VorB VB,int DIM>
       ngfem::ElementTransformation & GetTrafo (T_ElementId<VB,DIM> ei, Allocator & lh) const
     {
-      if (VB == VOL)
-        return GetTrafoDim<DIM> (ei.Nr(), lh);
-      else
-        return GetSTrafoDim<DIM> (ei.Nr(), lh);
+      switch(VB)
+	{
+	case VOL:
+	  return GetTrafoDim<DIM> (ei.Nr(), lh);
+	case BND:
+	  return GetSTrafoDim<DIM> (ei.Nr(), lh);
+	case BBND:
+	  return GetCD2TrafoDim<DIM> (ei.Nr(),lh);
+	default:
+	  __assume(false);
+	}
     }
     
 
@@ -875,16 +926,16 @@ namespace ngcomp
        Returns the list of other MPI - processes where node is present.
        The ordering coincides for all processes.
     */
-    void GetDistantProcs (Node node, Array<int> & procs) const;
+    void GetDistantProcs (NodeId node, Array<int> & procs) const;
 
     /**
        Returns the global number of the node.
        Currently, this function works only for vertex-nodes.
      */
-    int GetGlobalNodeNum (Node node) const;
+    size_t GetGlobalNodeNum (NodeId node) const;
     
     
-    FlatArray<int> GetDistantProcs (Node node) const
+    FlatArray<int> GetDistantProcs (NodeId node) const
     {
 #ifdef PARALLEL
       std::tuple<int,int*> tup = mesh.GetDistantProcs(node.GetType(), node.GetNr());
@@ -924,8 +975,10 @@ namespace ngcomp
       : mesh(amesh), vb(avb), mask(amask) { ; }
     Region (const Region &) = default;
     explicit operator VorB () const { return vb; }
+    VorB VB() const { return vb; }
     bool IsVolume () const { return vb == VOL; }
     bool IsBoundary () const { return vb == BND; }
+    bool IsCoDim2() const { return vb == BBND; }
     const BitArray & Mask() const { return mask; }
     operator const BitArray & () const { return mask; }
     
@@ -960,20 +1013,27 @@ namespace ngcomp
   {
     shared_ptr<MeshAccess> ma;
     string task;
-    int total;
+    size_t total;
     double prevtime;
     bool is_root;
 
-    atomic<int> cnt;
     bool done_called;
+
+    static atomic<size_t> cnt;
+    static thread_local size_t thd_cnt;
+    static thread_local double thd_prev_time;
   public:
     NGS_DLL_HEADER ProgressOutput (shared_ptr<MeshAccess> ama,
-		    string atask, int atotal);
+                                   string atask, size_t atotal);
     NGS_DLL_HEADER ~ProgressOutput();
 
+    // update thd-local counter, and after some time also atomic node-local cnt
     NGS_DLL_HEADER void Update();
-    NGS_DLL_HEADER void Update(int nr);
+    // transfer thd-local counter to atomic node-local cnt    
+    NGS_DLL_HEADER static void SumUpLocal();    
+    NGS_DLL_HEADER void Update(size_t nr);
     NGS_DLL_HEADER void Done();
+    // NGS_DLL_HEADER void DoneThread();
   };
 
 

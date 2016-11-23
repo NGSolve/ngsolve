@@ -170,7 +170,10 @@ namespace ngcomp
       if (coarse)
       {
         flags.SetFlag ("not_register_for_auto_update");
-        inv = GetPreconditionerClasses().GetPreconditioner(coarsetype)->creatorbf (bfa, flags, "wirebasket"+coarsetype);
+	auto creator = GetPreconditionerClasses().GetPreconditioner(coarsetype);
+	if(creator == nullptr)
+	  throw Exception("Nothing known about preconditioner " + coarsetype);
+        inv = creator->creatorbf (bfa, flags, "wirebasket"+coarsetype);
         dynamic_pointer_cast<Preconditioner>(inv) -> InitLevel(wb_free_dofs);
       }
     }
@@ -182,7 +185,7 @@ namespace ngcomp
 
     {
       static Timer timer ("BDDC - Addmatrix", 2);
-      RegionTimer reg(timer);
+      // RegionTimer reg(timer);
       static Timer timer2("BDDC - Add to sparse", 3);
       static Timer timer3("BDDC - compute", 3);
 
@@ -535,6 +538,8 @@ namespace ngcomp
       // bfa -> SetPreconditioner (this);
       inversetype = flags.GetStringFlag("inverse", "sparsecholesky");
       coarsetype = flags.GetStringFlag("coarsetype", "none");
+      if(coarsetype=="myamg_hcurl")
+	(dynamic_pointer_cast<HCurlHighOrderFESpace>(bfa->GetFESpace()))->DoCouplingDofUpgrade(false);
       if (flags.GetDefineFlag("refelement")) Exception ("refelement - BDDC not supported");
       block = flags.GetDefineFlag("block");
       hypre = flags.GetDefineFlag("usehypre");

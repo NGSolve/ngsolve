@@ -96,8 +96,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
         flags.NumFlagDefined("definedon") ||
         flags.StringListFlagDefined("definedon"))
       {
-	definedon.SetSize (ma->GetNDomains());
-	definedon = false;
+	definedon[VOL].SetSize (ma->GetNDomains());
+	definedon[VOL] = false;
 	Array<double> defon;
 	if (flags.NumListFlagDefined("definedon")) 
 	  defon = flags.GetNumListFlag("definedon");
@@ -113,7 +113,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
         */
         for (int di : defon)
           if (di > 0 && di <= ma->GetNDomains())
-            definedon[di-1] = true;
+            definedon[VOL][di-1] = true;
           
 	if(flags.StringListFlagDefined("definedon"))
 	  {
@@ -125,7 +125,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 		for(int j = 0; j < dmaterials.Size(); j++)
 		  if(StringFitsPattern(ma->GetDomainMaterial(i),dmaterials[j]))
 		    {
-		      definedon[i] = true;
+		      definedon[VOL][i] = true;
 		      break;
 		    }
 	      }
@@ -133,8 +133,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 	// default:
 	// fespace only defined on boundaries matching definedon-domains
-	definedonbound.SetSize (ma->GetNBoundaries());
-	definedonbound = false;
+	definedon[BND].SetSize (ma->GetNBoundaries());
+	definedon[BND] = false;
 	for (int sel = 0; sel < ma->GetNSE(); sel++)
 	  {
 	    int index = ma->GetSElIndex(sel);
@@ -142,22 +142,22 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    ma->GetSElNeighbouringDomains(sel, dom1, dom2);
 	    dom1--; dom2--;
 	    if ( dom1 >= 0 )
-	      if ( definedon[dom1] )
-		definedonbound[index] = true;
+	      if ( definedon[VOL][dom1] )
+		definedon[BND][index] = true;
 
 	    if ( dom2 >= 0 )
-	      if ( definedon[dom2] )
-		definedonbound[index] = true;
+	      if ( definedon[VOL][dom2] )
+		definedon[BND][index] = true;
 	  }
       }
 
     // additional boundaries
     if(flags.NumListFlagDefined("definedonbound")|| flags.NumFlagDefined("definedonbound") )
       {
-	if ( definedonbound.Size() == 0 )
+	if ( definedon[BND].Size() == 0 )
 	  {
-	    definedonbound.SetSize (ma->GetNBoundaries());
-	    definedonbound = false;
+	    definedon[BND].SetSize (ma->GetNBoundaries());
+	    definedon[BND] = false;
 	  }
 	Array<double> defon;
 	if ( flags.NumListFlagDefined("definedonbound") )
@@ -170,16 +170,16 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 	for(int i=0; i< defon.Size(); i++) 
 	  if(defon[i] <= ma->GetNBoundaries() && defon[i] > 0)
-	    definedonbound[int(defon[i])-1] = true;
+	    definedon[BND][int(defon[i])-1] = true;
       }
     
 
     else if(flags.StringListFlagDefined("definedonbound") || flags.StringFlagDefined("definedonbound"))
       {
-	if ( definedonbound.Size() == 0 )
+	if ( definedon[BND].Size() == 0 )
 	  {
-	    definedonbound.SetSize (ma->GetNBoundaries());
-	    definedonbound = false;
+	    definedon[BND].SetSize (ma->GetNBoundaries());
+	    definedon[BND] = false;
 	  }
 
 	Array<string*> defon;
@@ -192,13 +192,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	
 	for(int selnum = 0; selnum < ma->GetNSE(); selnum++)
 	  {
-	    if(definedonbound[ma->GetSElIndex(selnum)] == false)
+	    if(definedon[BND][ma->GetSElIndex(selnum)] == false)
 	      {
 		for(int i=0; i<defon.Size(); i++)
 		  {
 		    if(StringFitsPattern(ma->GetSElBCName(selnum),*(defon[i])))	
 		      {		
-		 	definedonbound[ma->GetSElIndex(selnum)] = true;
+		 	definedon[BND][ma->GetSElIndex(selnum)] = true;
 			continue;
 		      }
 		  }
@@ -229,12 +229,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
     dummy_segm = new DummyFE<ET_SEGM>();
     dummy_point = new DummyFE<ET_POINT>();
 
-    evaluator = NULL; 
-    boundary_evaluator = NULL;
-    flux_evaluator = NULL;
-
-    integrator = NULL;
-    boundary_integrator = NULL;
+    for(auto vb : {VOL,BND,BBND})
+      {
+	evaluator[vb] = nullptr;
+	flux_evaluator[vb] = nullptr;
+	integrator[vb] = nullptr;
+      }
     low_order_space = NULL;
     prol = NULL;
 
@@ -411,12 +411,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if (low_order_space)
       {
-        element_coloring = Table<int> (low_order_space->element_coloring);
-        selement_coloring = Table<int> (low_order_space->selement_coloring);
+	for(auto vb : {VOL, BND, BBND})
+	  element_coloring[vb] = Table<int>(low_order_space->element_coloring[vb]);
       }
     else
       // for (auto vb = VOL; vb <= BND; vb++)
-      for (auto vb : { VOL, BND })
+      for (auto vb : { VOL, BND, BBND })
       {
         tcol.Start();
         Array<int> col(ma->GetNE(vb));
@@ -523,7 +523,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
         for (ElementId el : Elements(vb))
           cntcol[col[el.Nr()]]++;
         
-        Table<int> & coloring = (vb == VOL) ? element_coloring : selement_coloring;
+        Table<int> & coloring = element_coloring[vb];
         coloring = Table<int> (cntcol);
 
 	cntcol = 0;
@@ -629,8 +629,17 @@ lot of new non-zero entries in the matrix!\n" << endl;
   FiniteElement & FESpace :: GetFE (ElementId ei, Allocator & alloc) const
   {
     LocalHeap & lh = dynamic_cast<LocalHeap&> (alloc);
-    const FiniteElement & el = ei.IsBoundary() ? GetSFE(ei.Nr(), lh) : GetFE(ei.Nr(), lh);
-    return const_cast<FiniteElement&> (el);
+    switch(ei.VB())
+      {
+      case VOL:
+	return const_cast<FiniteElement&>(GetFE(ei.Nr(),lh));
+      case BND:
+	return const_cast<FiniteElement&>(GetSFE(ei.Nr(),lh));
+      case BBND:
+	return const_cast<FiniteElement&>(GetCD2FE(ei.Nr(),lh));
+      default:
+	__assume(false);
+      }
   }
   
 
@@ -756,7 +765,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   void  FESpace :: GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & ctypes) const
   { 
     ArrayMem<int,100> dnums;
-    GetDofNrs(elnr, dnums);
+    GetDofNrs(ElementId(VOL,elnr), dnums);
     ctypes.SetSize(dnums.Size());
 
     if (ctofdof.Size()==0)
@@ -796,27 +805,21 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
     cout << "check dofs" << endl;
-    for (ElementId id : ma->Elements<VOL>())
-      {
-        GetDofNrs (id, dnums);
-        for (auto d : dnums)
-          if (d < 0 || d >= ndof)
-            cout << "dof out of range: " << d << endl;
-      }
-    for (ElementId id : ma->Elements<BND>())
-      {
-        GetDofNrs (id, dnums);
-        for (auto d : dnums)
-          if (d < 0 || d >= ndof)
-            cout << "dof out of range: " << d << endl;
-      }
+    for(auto vb : {VOL,BND,BBND})
+      for (ElementId id : ma->Elements(vb))
+	{
+	  GetDofNrs (id, dnums);
+	  for (auto d : dnums)
+	    if (d < 0 || d >= ndof)
+	      cout << "dof out of range: " << d << endl;
+	}
   }
 
 
   void FESpace :: GetDofNrs (int elnr, Array<int> & dnums, COUPLING_TYPE ctype) const
   {
     ArrayMem<int,100> alldnums; 
-    GetDofNrs(elnr, alldnums);
+    GetDofNrs(ElementId(VOL,elnr), alldnums);
 
     dnums.SetSize(0);
     if (ctofdof.Size() == 0)
@@ -878,7 +881,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
 
-
+ 
 
   const FiniteElement & FESpace :: GetSFE (int selnr, LocalHeap & lh) const
   {
@@ -893,6 +896,17 @@ lot of new non-zero entries in the matrix!\n" << endl;
         ;
       }
     throw Exception ("GetSFE: unknown type");
+  }
+
+  const FiniteElement & FESpace :: GetCD2FE (int cd2elnr, LocalHeap & lh) const
+  {
+    switch (ma->GetElement(ElementId(BBND,cd2elnr)).GetType())
+      {
+      case ET_SEGM: return *segm;
+      case ET_POINT: return *point;
+      default: ;
+      }
+    throw Exception("GetCD2FE: unknown type");
   }
 
   const FiniteElement & FESpace :: GetFE (ELEMENT_TYPE type) const
@@ -919,8 +933,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	<< "dim   = " << dimension << endl
 	<< "dgjmps= " << dgjumps << endl
 	<< "complex = " << iscomplex << endl;
-    ost << "definedon = " << definedon << endl;
-    ost << "definedon boundary = " << definedonbound << endl;
+    ost << "definedon = " << definedon[VOL] << endl;
+    ost << "definedon boundary = " << definedon[BND] << endl;
+    ost << "definedon codim 2 = " << definedon[BBND] << endl;
     if (!free_dofs.Size()) return;
 
     ost << "ndof = " << GetNDof() << endl;
@@ -940,13 +955,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
   void FESpace :: DoArchive (Archive & archive)
   {
     archive & order & dimension & iscomplex & dgjumps & print & level_updated;
-    archive & definedon & definedonbound;
+    archive & definedon[VOL] & definedon[BND] & definedon[BBND];
     archive & dirichlet_boundaries & dirichlet_dofs & free_dofs & external_free_dofs;
     archive & dirichlet_vertex & dirichlet_edge & dirichlet_face;
   }
 
 
-  int FESpace :: GetNDofLevel (int level) const
+  size_t FESpace :: GetNDofLevel (int level) const
   {
     return GetNDof();
   } 
@@ -971,7 +986,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  LocalHeap &clh = lh, lh = clh.Split();
           Array<int> dnums;
 	  for (int i : r)
-            GetDofNrs (i, dnums);
+            GetDofNrs (ElementId(VOL,i), dnums);
 	});
 	steps++;
 	time = WallTime()-starttime;
@@ -1018,7 +1033,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  for (int i : r)
 	    {
 	      HeapReset hr(lh);
-	      GetFE (i, lh);
+	      GetFE (ElementId(VOL,i), lh);
 	    }
 	});
         steps++;
@@ -1057,7 +1072,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
           for (int i : r)
             {
               HeapReset hr(lh);
-              /* ElementTransformation & trafo = */ ma->GetTrafo(i, VOL, lh);
+              /* ElementTransformation & trafo = */ ma->GetTrafo(ElementId(VOL, i), lh);
             }
         });
         steps++;
@@ -1198,24 +1213,14 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
 
     
-  void FESpace :: SetDefinedOn (const BitArray & defon)
+  void FESpace :: SetDefinedOn (VorB vb, const BitArray & defon)
   {
-    definedon.SetSize(defon.Size());
+    definedon[vb].SetSize(defon.Size());
     for (int i = 0; i < defon.Size(); i++)
-      definedon[i] = defon.Test(i);
+      definedon[vb][i] = defon.Test(i);
 
     if (low_order_space)
-      low_order_space -> SetDefinedOn (defon);
-  }
-
-  void FESpace :: SetDefinedOnBoundary (const BitArray & defon)
-  {
-    definedonbound.SetSize(defon.Size());
-    for (int i = 0; i < defon.Size(); i++)
-      definedonbound[i] = defon.Test(i);
-
-    if (low_order_space)
-      low_order_space -> SetDefinedOnBoundary (defon);
+      low_order_space -> SetDefinedOn (vb, defon);
   }
 
   void FESpace :: SetDirichletBoundaries (const BitArray & dirbnds)
@@ -1246,7 +1251,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       {
         for (FlatArray<int> els_of_col : element_coloring)
           {
-            SharedLoop sl(els_of_col.Range());
+            SharedLoop2 sl(els_of_col.Range());
 
             task_manager -> CreateJob
               ( [&] (const TaskInfo & ti) 
@@ -1263,6 +1268,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
                       
                       func (move(el), lh);
                     }
+
+                  ProgressOutput::SumUpLocal();
                 } );
           }
         return;
@@ -1312,7 +1319,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   // Aendern, Bremse!!!
   template < int S, class T >
-  void FESpace :: TransformVec (int elnr, bool boundary,
+  void FESpace :: TransformVec (int elnr, VorB vb,
 				const FlatVector< Vec<S,T> >& vec, TRANSFORM_TYPE type) const
   {
     //cout << "Achtung, Bremse" << endl;
@@ -1324,69 +1331,69 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	for(int j=0;j<vec.Size(); j++)
 	  partvec(j) = vec[j](i);
 
-	TransformVec(elnr,boundary,partvec,type);
+	TransformVec(elnr,vb,partvec,type);
 
 	for(int j=0;j<vec.Size(); j++)
 	  vec[j](i) = partvec(j);
       }
   }
 
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 				      const FlatVector< Vec<2,double> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 				      const FlatVector< Vec<3,double> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 				      const FlatVector< Vec<4,double> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 				      const FlatVector< Vec<5,double> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 				      const FlatVector< Vec<6,double> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 				      const FlatVector< Vec<7,double> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<8,double> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<9,double> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<10,double> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<11,double> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<12,double> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<13,double> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<14,double> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<15,double> >& vec, TRANSFORM_TYPE type) const;
 
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<2,Complex> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<3,Complex> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<4,Complex> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<5,Complex> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<6,Complex> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<7,Complex> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<8,Complex> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<9,Complex> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<10,Complex> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<11,Complex> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<12,Complex> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<13,Complex> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<14,Complex> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<15,Complex> >& vec, TRANSFORM_TYPE type) const;
 
 
@@ -1415,8 +1422,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
   {
     if (MyMPI_GetNTasks() == 1) return;
 
-    Array<Node> dofnodes (GetNDof());
-    dofnodes = Node (NT_VERTEX, -1);
+    Array<NodeId> dofnodes (GetNDof());
+    dofnodes = NodeId (NT_VERTEX, -1);
     Array<int> dnums;
 
     // for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
@@ -1425,7 +1432,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	{
 	  GetNodeDofNrs (nt, nr, dnums);
 	  for (int d : dnums)
-	    dofnodes[d] = Node (nt, nr);
+	    dofnodes[d] = NodeId (nt, nr);
 	} 
 
     paralleldofs = new ParallelMeshDofs (ma, dofnodes, dimension, iscomplex);
@@ -1507,19 +1514,19 @@ lot of new non-zero entries in the matrix!\n" << endl;
     auto one = make_shared<ConstantCoefficientFunction> (1);
     if (ma->GetDimension() == 2)
       {
-	integrator = make_shared<MassIntegrator<2>> (one);
-        boundary_integrator = make_shared<RobinIntegrator<2>> (one);
+	integrator[VOL] = make_shared<MassIntegrator<2>> (one);
+        integrator[BND] = make_shared<RobinIntegrator<2>> (one);
       }
     else
       {
-	integrator = make_shared<MassIntegrator<3>> (one);
-	boundary_integrator = make_shared<RobinIntegrator<3>> (one);
+	integrator[VOL] = make_shared<MassIntegrator<3>> (one);
+	integrator[BND] = make_shared<RobinIntegrator<3>> (one);
       }
     
     if (dimension > 1)
       {
-	integrator = make_shared<BlockBilinearFormIntegrator> (integrator, dimension);
-	boundary_integrator = make_shared<BlockBilinearFormIntegrator> (boundary_integrator, dimension);  
+	integrator[VOL] = make_shared<BlockBilinearFormIntegrator> (integrator[VOL], dimension);
+	integrator[BND] = make_shared<BlockBilinearFormIntegrator> (integrator[BND], dimension);  
       }
 
 
@@ -1527,36 +1534,34 @@ lot of new non-zero entries in the matrix!\n" << endl;
       {
       case 1:
         {
-          evaluator = make_shared<T_DifferentialOperator<DiffOpId<1>>>();
-          flux_evaluator = make_shared<T_DifferentialOperator<DiffOpGradient<1>>>();
-          boundary_evaluator = make_shared<T_DifferentialOperator<DiffOpIdBoundary<1>>>();
+          evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<1>>>();
+	  evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<1>>>();
+	  flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<1>>>();
           break;
         }
       case 2:
         {
-          evaluator = make_shared<T_DifferentialOperator<DiffOpId<2>>>();
-          flux_evaluator = make_shared<T_DifferentialOperator<DiffOpGradient<2>>>();
-          boundary_evaluator = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
-          boundary_flux_evaluator = make_shared<T_DifferentialOperator<DiffOpGradientBoundary<2>>>();
+          evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<2>>>();
+	  evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
+          flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<2>>>();
+	  flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpGradientBoundary<2>>>();
           break;
         }
       case 3:
         {
-          evaluator = make_shared<T_DifferentialOperator<DiffOpId<3>>>();
-          flux_evaluator = make_shared<T_DifferentialOperator<DiffOpGradient<3>>>();
-          boundary_evaluator = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
-          boundary_flux_evaluator = make_shared<T_DifferentialOperator<DiffOpGradientBoundary<3>>>();
+          evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<3>>>();
+	  evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
+          flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<3>>>();
+	  flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpGradientBoundary<3>>>();
           break;
         }
       }
     if (dimension > 1)
       {
-	evaluator = make_shared<BlockDifferentialOperator> (evaluator, dimension);
-	flux_evaluator = make_shared<BlockDifferentialOperator> (flux_evaluator, dimension);
-	boundary_evaluator = 
-	  make_shared<BlockDifferentialOperator> (boundary_evaluator, dimension);
-	boundary_flux_evaluator = 
-	  make_shared<BlockDifferentialOperator> (boundary_flux_evaluator, dimension);
+	evaluator[VOL] = make_shared<BlockDifferentialOperator> (evaluator[VOL], dimension);
+	evaluator[BND] = make_shared<BlockDifferentialOperator> (evaluator[BND], dimension);
+	flux_evaluator[VOL] = make_shared<BlockDifferentialOperator> (flux_evaluator[VOL], dimension);
+	flux_evaluator[BND] = make_shared<BlockDifferentialOperator> (flux_evaluator[BND], dimension);
       }
 
     
@@ -1567,7 +1572,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     ;
   }
 
-  int NodalFESpace :: GetNDof () const throw()
+  size_t NodalFESpace :: GetNDof () const throw()
   {
     return ndlevel.Last();
   }
@@ -1612,7 +1617,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
   }
 
-  int NodalFESpace :: GetNDofLevel (int level) const
+  size_t NodalFESpace :: GetNDofLevel (int level) const
   {
     return ndlevel[level];
   }
@@ -1641,39 +1646,14 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
  
-  void NodalFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
+  void NodalFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
-    if (order == 1)
-      ma->GetElVertices (elnr, dnums);
-    else
-      ma->GetElPNums (elnr, dnums);
+    dnums = ma->GetElement(ei).Vertices();
 
-    if (!DefinedOn (ElementId (VOL, elnr))) dnums = -1;
+    if (!DefinedOn (ei)) dnums = -1;
   }
 
 
-  void NodalFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
-  {
-    ma->GetSElPNums (selnr, dnums);
-
-    if (order == 1)
-      { // Ng-mesh may be second order, but FE space is 1st order
-	int np = dnums.Size();
-	switch (ma->GetSElType(selnr))
-	  {
-	  case ET_SEGM: np = 2; break;
-	  case ET_TRIG: np = 3; break;
-	  case ET_QUAD: np = 4; break;
-          default:
-            ;
-	  }
-	if (dnums.Size() > np) dnums.SetSize (np);
-      }
-
-    if (!DefinedOnBoundary (ma->GetSElIndex (selnr)))
-      dnums = -1;
-  }
-  
 
   void NodalFESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
   {
@@ -1756,22 +1736,22 @@ lot of new non-zero entries in the matrix!\n" << endl;
     auto one = make_shared<ConstantCoefficientFunction> (1);
     if (ma->GetDimension() == 2)
       {
-	integrator = make_shared<MassIntegrator<2>> (one);
-        boundary_integrator = make_shared<RobinIntegrator<2>> (one);
-        evaluator = make_shared<T_DifferentialOperator<DiffOpId<2>>>();
-        flux_evaluator = make_shared<T_DifferentialOperator<DiffOpGradient<2>>>();
-        boundary_evaluator = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
+	integrator[VOL] = make_shared<MassIntegrator<2>> (one);
+        integrator[BND] = make_shared<RobinIntegrator<2>> (one);
+        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<2>>>();
+        flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<2>>>();
+        evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
       }
     else
       {
-	integrator.reset (new MassIntegrator<3> (new ConstantCoefficientFunction(1)));
-	boundary_integrator.reset (new RobinIntegrator<3> (new ConstantCoefficientFunction(1)));
+	integrator[VOL].reset (new MassIntegrator<3> (new ConstantCoefficientFunction(1)));
+	integrator[BND].reset (new RobinIntegrator<3> (new ConstantCoefficientFunction(1)));
       }
 
     if (dimension > 1)
       {
-	integrator = make_shared<BlockBilinearFormIntegrator> (integrator, dimension);
-	boundary_integrator = make_shared<BlockBilinearFormIntegrator> (boundary_integrator, dimension);
+	integrator[VOL] = make_shared<BlockBilinearFormIntegrator> (integrator[VOL], dimension);
+	integrator[BND] = make_shared<BlockBilinearFormIntegrator> (integrator[BND], dimension);
       }
   }
 
@@ -1781,7 +1761,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
 
 
-  int NonconformingFESpace :: GetNDof () const throw()
+  size_t NonconformingFESpace :: GetNDof () const throw()
   {
     return ma->GetNEdges();
   }
@@ -1836,23 +1816,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
     */
   }
 
- 
-  void NonconformingFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
+  void NonconformingFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
-    ma->GetElEdges (elnr, dnums);
-    if (!DefinedOn (ma->GetElIndex (elnr)))
+    ma->GetElEdges(ei,dnums);
+    if (!DefinedOn(ei))
       dnums = -1;
   }
-
-
-  void NonconformingFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
-  {
-    ma->GetSElEdges (selnr, dnums);
-    if (!DefinedOnBoundary (ma->GetSElIndex (selnr)))
-      dnums = -1;
-  }
-  
-
 
 
 
@@ -1903,19 +1872,19 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if (ma->GetDimension() == 2)
       {
-        integrator.reset (new MassIntegrator<2> (&one));
-        boundary_integrator = 0;
-        evaluator = make_shared<T_DifferentialOperator<DiffOpId<2>>>();
+        integrator[VOL].reset (new MassIntegrator<2> (&one));
+        integrator[BND] = 0;
+        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<2>>>();
       }
     else
       {
-        integrator.reset (new MassIntegrator<3> (&one));
-        boundary_integrator = 0;
-        evaluator = make_shared<T_DifferentialOperator<DiffOpId<3>>>();
+        integrator[VOL].reset (new MassIntegrator<3> (&one));
+	integrator[BND] = 0;
+        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<3>>>();
       }
     
     if (dimension > 1)
-      integrator = make_shared<BlockBilinearFormIntegrator> (integrator, dimension);
+      integrator[VOL] = make_shared<BlockBilinearFormIntegrator> (integrator[VOL], dimension);
   }
   
   ElementFESpace :: ~ElementFESpace ()
@@ -1935,16 +1904,17 @@ lot of new non-zero entries in the matrix!\n" << endl;
     archive & ndlevel & n_el_dofs;
   }
 
-  void ElementFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
+  void ElementFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
+    if(ei.VB()!=VOL) { dnums.SetSize(0); return; }
     if (order == 0)
       {
 	dnums.SetSize(1);
-	dnums[0] = elnr;
+	dnums[0] = ei.Nr();
       }
     else if (order == 1)
       {
-	switch (ma->GetElType(elnr))
+	switch (ma->GetElType(ei))
 	  {
 	  case ET_TRIG:
 	    dnums.SetSize(3);
@@ -1967,14 +1937,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  }
 
 	for (int i = 0; i < dnums.Size(); i++)
-	  dnums[i] = n_el_dofs*elnr+i;
+	  dnums[i] = n_el_dofs*ei.Nr()+i;
       }
   }
-  void ElementFESpace :: GetSDofNrs (int elnr, Array<int> & dnums) const
-  {
-    dnums.SetSize(0);
-  }
-  int ElementFESpace :: GetNDofLevel (int level) const
+  
+  size_t ElementFESpace :: GetNDofLevel (int level) const
   {
     return ndlevel[level];
   }
@@ -2030,10 +1997,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
         n_el_dofs = 9;
     }
 
-    boundary_integrator.reset (new RobinIntegrator<3> (new ConstantCoefficientFunction(1)));
+    integrator[BND].reset (new RobinIntegrator<3> (new ConstantCoefficientFunction(1)));
 
     if (dimension > 1)
-      boundary_integrator = make_shared<BlockBilinearFormIntegrator> (boundary_integrator, dimension);
+      integrator[BND] = make_shared<BlockBilinearFormIntegrator> (integrator[BND], dimension);
   }
 
   
@@ -2056,27 +2023,17 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
 
   
-  void SurfaceElementFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
+  void SurfaceElementFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
-    dnums.SetSize (0);
-  }
-
-  int SurfaceElementFESpace :: GetNDofLevel (int level) const
-  {
-    return ndlevel[level];
-  }
-
-
-  void SurfaceElementFESpace :: GetSDofNrs (int elnr, Array<int> & dnums) const
-  {
+    if(ei.VB()!=BND) {dnums.SetSize (0); return; }
     if (order == 0)
       {
 	dnums.SetSize(1);
-	dnums[0] = elnr;
+	dnums[0] = ei.Nr();
       }
     else if (order == 1)
       {
-	switch (ma->GetSElType(elnr))
+	switch (ma->GetSElType(ei.Nr()))
 	  {
 	  case ET_SEGM:
 	    dnums.SetSize(2);
@@ -2092,11 +2049,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    break;
 	  }
 	for (int i = 0; i < dnums.Size(); i++)
-	  dnums[i] = n_el_dofs*elnr+i;
+	  dnums[i] = n_el_dofs*ei.Nr()+i;
       }
     else if (order == 2)
       {
-	switch (ma->GetSElType(elnr))
+	switch (ma->GetSElType(ei.Nr()))
 	  {
 	  case ET_SEGM:
 	    dnums.SetSize(3);
@@ -2112,18 +2069,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    break;
 	  }
 	for (int i = 0; i < dnums.Size(); i++)
-	  dnums[i] = n_el_dofs*elnr+i;
+	  dnums[i] = n_el_dofs*ei.Nr()+i;
       }
+    
   }
-
-
-
-
-
- 
-
-
-
+  
+  size_t SurfaceElementFESpace :: GetNDofLevel (int level) const
+  {
+    return ndlevel[level];
+  }
 
 
 
@@ -2328,6 +2282,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     return *new (alloc) CompoundFiniteElement (fea);
   }
 
+  /*
   const FiniteElement & CompoundFESpace :: GetFE (int elnr, LocalHeap & lh) const
   {
     FlatArray<const FiniteElement*> fea(spaces.Size(), lh);
@@ -2335,15 +2290,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
       fea[i] = &spaces[i]->GetFE(elnr, lh);
     return *new (lh) CompoundFiniteElement (fea);
   }
-
+  */
   
-  void CompoundFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
+  void CompoundFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
     ArrayMem<int,500> hdnums;
     dnums.SetSize0();
     for (int i = 0; i < spaces.Size(); i++)
       {
-	spaces[i]->GetDofNrs (elnr, hdnums);
+	spaces[i]->GetDofNrs (ei, hdnums);
         int base = dnums.Size();
         int base_cum = cummulative_nd[i];
         dnums.SetSize(base+hdnums.Size());
@@ -2451,7 +2406,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
 
-
+  /*
   const FiniteElement & CompoundFESpace :: GetSFE (int elnr, LocalHeap & lh) const
   {
     FlatArray<const FiniteElement*> fea(spaces.Size(), lh);
@@ -2460,27 +2415,21 @@ lot of new non-zero entries in the matrix!\n" << endl;
     return *new (lh) CompoundFiniteElement (fea);
   }
 
-
-  void CompoundFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
+  const FiniteElement & CompoundFESpace :: GetCD2FE (int elnr, LocalHeap & lh) const
   {
-    ArrayMem<int,500> hdnums;
-    dnums.SetSize(0);
-    for (int i = 0; i < spaces.Size(); i++)
-      {
-	spaces[i]->GetSDofNrs (selnr, hdnums);
-	for (int j = 0; j < hdnums.Size(); j++)
-	  if (hdnums[j] != -1)
-	    dnums.Append (hdnums[j]+cummulative_nd[i]);
-	  else
-	    dnums.Append (-1);
-      }
+    FlatArray<const FiniteElement*> fea(spaces.Size(), lh);
+    for (int i = 0; i < fea.Size(); i++)
+      fea[i] = &spaces[i]->GetCD2FE(elnr, lh);
+    return *new (lh) CompoundFiniteElement (fea);
   }
+  */
+
 
 
 
 
   template <class MAT>
-  void CompoundFESpace::TransformMat (int elnr, bool boundary,
+  void CompoundFESpace::TransformMat (int elnr, VorB vb,
 				      MAT & mat, TRANSFORM_TYPE tt) const
   {
     size_t base = 0;
@@ -2493,17 +2442,17 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  : spaces[i]->GetFE(elnr, lh).GetNDof();
         */
         HeapReset hr(lh);
-        size_t nd = spaces[i]->GetFE(ElementId(boundary?BND:VOL, elnr), lh).GetNDof();
+        size_t nd = spaces[i]->GetFE(ElementId(vb, elnr), lh).GetNDof();
 
-	spaces[i]->TransformMat (elnr, boundary, mat.Rows(base, base+nd), TRANSFORM_MAT_LEFT);
-	spaces[i]->TransformMat (elnr, boundary, mat.Cols(base, base+nd), TRANSFORM_MAT_RIGHT);
+	spaces[i]->TransformMat (elnr, vb, mat.Rows(base, base+nd), TRANSFORM_MAT_LEFT);
+	spaces[i]->TransformMat (elnr, vb, mat.Cols(base, base+nd), TRANSFORM_MAT_RIGHT);
 
 	base += nd;
       }
   }
 
   template <class VEC>
-  void CompoundFESpace::TransformVec (int elnr, bool boundary,
+  void CompoundFESpace::TransformVec (int elnr, VorB vb,
 				      VEC & vec, TRANSFORM_TYPE tt) const
   {
     LocalHeapMem<100006> lh("CompoundFESpace - transformvec");
@@ -2517,11 +2466,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	lh.CleanUp();
         */
         HeapReset hr(lh);
-        int nd = spaces[i]->GetFE(ElementId(boundary?BND:VOL, elnr), lh).GetNDof();
+        int nd = spaces[i]->GetFE(ElementId(vb, elnr), lh).GetNDof();
 
 
 	// VEC svec (nd, &vec(base));
-	spaces[i]->TransformVec (elnr, boundary, vec.Range(base, base+nd), tt);
+	spaces[i]->TransformVec (elnr, vb, vec.Range(base, base+nd), tt);
 	base += nd;
       }
   }
@@ -2530,49 +2479,49 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   template NGS_DLL_HEADER
   void CompoundFESpace::TransformVec<FlatVector<double> >
-  (int elnr, bool boundary, FlatVector<double> & vec, TRANSFORM_TYPE tt) const;
+  (int elnr, VorB vb, FlatVector<double> & vec, TRANSFORM_TYPE tt) const;
   template NGS_DLL_HEADER
   void CompoundFESpace::TransformVec<FlatVector<Complex> >
-  (int elnr, bool boundary, FlatVector<Complex> & vec, TRANSFORM_TYPE tt) const;
+  (int elnr, VorB vb, FlatVector<Complex> & vec, TRANSFORM_TYPE tt) const;
   
   template
   void CompoundFESpace::TransformMat<FlatMatrix<double> > 
-  (int elnr, bool boundary, FlatMatrix<double> & mat, TRANSFORM_TYPE tt) const;
+  (int elnr, VorB vb, FlatMatrix<double> & mat, TRANSFORM_TYPE tt) const;
   template
   void CompoundFESpace::TransformMat<FlatMatrix<Complex> > 
-  (int elnr, bool boundary, FlatMatrix<Complex> & mat, TRANSFORM_TYPE tt) const;
+  (int elnr, VorB vb, FlatMatrix<Complex> & mat, TRANSFORM_TYPE tt) const;
   
   template
   void CompoundFESpace::TransformMat<SliceMatrix<double> > 
-  (int elnr, bool boundary, SliceMatrix<double> & mat, TRANSFORM_TYPE tt) const;
+  (int elnr, VorB vb, SliceMatrix<double> & mat, TRANSFORM_TYPE tt) const;
   template
   void CompoundFESpace::TransformMat<SliceMatrix<Complex> > 
-  (int elnr, bool boundary, SliceMatrix<Complex> & mat, TRANSFORM_TYPE tt) const;
+  (int elnr, VorB vb, SliceMatrix<Complex> & mat, TRANSFORM_TYPE tt) const;
   
   
-  void CompoundFESpace::VTransformMR (int elnr, bool boundary,
+  void CompoundFESpace::VTransformMR (int elnr, VorB vb,
 				      const SliceMatrix<double> & mat, TRANSFORM_TYPE tt) const 
   {
-    TransformMat (elnr, boundary, mat, tt);
+    TransformMat (elnr, vb, mat, tt);
   }
   
-  void CompoundFESpace::VTransformMC (int elnr, bool boundary,
+  void CompoundFESpace::VTransformMC (int elnr, VorB vb,
 				      const SliceMatrix<Complex> & mat, TRANSFORM_TYPE tt) const
   {
-    TransformMat (elnr, boundary, mat, tt);
+    TransformMat (elnr, vb, mat, tt);
   }
   
 
-  void CompoundFESpace::VTransformVR (int elnr, bool boundary,
+  void CompoundFESpace::VTransformVR (int elnr, VorB vb,
 				      const FlatVector<double> & vec, TRANSFORM_TYPE tt) const 
   {
-    TransformVec (elnr, boundary, vec, tt);
+    TransformVec (elnr, vb, vec, tt);
   }
   
-  void CompoundFESpace::VTransformVC (int elnr, bool boundary,
+  void CompoundFESpace::VTransformVC (int elnr, VorB vb,
 				      const FlatVector<Complex> & vec, TRANSFORM_TYPE tt) const 
   {
-    TransformVec (elnr, boundary, vec, tt);
+    TransformVec (elnr, vb, vec, tt);
   }
 
 
@@ -2581,7 +2530,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
   Table<int> * Nodes2Table (const MeshAccess & ma,
-			    const Array<Node> & dofnodes)
+			    const Array<NodeId> & dofnodes)
   {
     int ndof = dofnodes.Size();
 
