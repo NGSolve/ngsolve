@@ -19,7 +19,7 @@ stages:
     - set CMAKE_GENERATOR=Visual Studio 14 2015
     - set NETGEN_ORIG_DIR=C:\install32_master
     - set NETGEN_TEMP_DIR=C:\ci\%CI_BUILD_REF%_32
-    - set INSTALL_DIR=C:/ci/%CI_BUILD_REF%_32
+    - set INSTALL_DIR="C:/ci/%CI_BUILD_REF%_32"
     - set NETGENDIR=%NETGEN_TEMP_DIR%\bin
     - set PYTHONPATH=%NETGEN_TEMP_DIR%\lib\site-packages
     - set PYTHON_LIB=C:/Python3.5_32/libs/python35.lib
@@ -36,7 +36,7 @@ stages:
     - set CMAKE_GENERATOR=Visual Studio 14 2015 Win64
     - set NETGEN_ORIG_DIR=C:\install64_master
     - set NETGEN_TEMP_DIR=C:\ci\%CI_BUILD_REF%_64
-    - set INSTALL_DIR=C:/ci/%CI_BUILD_REF%_64
+    - set INSTALL_DIR="C:/ci/%CI_BUILD_REF%_64"
     - set NETGENDIR=%NETGEN_TEMP_DIR%\bin
     - set PYTHONPATH=%NETGEN_TEMP_DIR%\lib\site-packages
     - set PYTHON_LIB=C:/Python3.5/libs/python35.lib
@@ -69,12 +69,11 @@ stages:
 .template_build_win: &build_win
   stage: build
   script:
+    - git submodule update --init --recursive
     - if not exist build MKDIR build
-    - git clone git@data.asc.tuwien.ac.at:jschoeberl/netgen.git
     - cd build
     - DEL CMakeCache.txt
     - RD /S CMakeFiles
-    - xcopy %NETGEN_ORIG_DIR% %NETGEN_TEMP_DIR% /D /I /E /F /Y /H /R /C
     - >-
         cmake ..\
         -DADDITIONAL_PATHS="%EXT_LIBS%\ext_libs"
@@ -84,7 +83,6 @@ stages:
         -DUSE_MKL=ON
         -DMKL_STATIC=ON
         -DCMAKE_CXX_FLAGS_RELEASE="/W0"
-        -DNETGEN_SOURCE_DIR=../netgen
     - cmake --build . --target INSTALL --config Release
 
 build_win32:
