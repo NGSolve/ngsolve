@@ -19,7 +19,7 @@ stages:
     - set CMAKE_GENERATOR=Visual Studio 14 2015
     - set NETGEN_ORIG_DIR=C:\install32_master
     - set NETGEN_TEMP_DIR=C:\ci\%CI_BUILD_REF%_32
-    - set INSTALL_DIR=C:/ci/%CI_BUILD_REF%_32
+    - set INSTALL_DIR="C:/ci/%CI_BUILD_REF%_32"
     - set NETGENDIR=%NETGEN_TEMP_DIR%\bin
     - set PYTHONPATH=%NETGEN_TEMP_DIR%\lib\site-packages
     - set PYTHON_LIB=C:/Python3.5_32/libs/python35.lib
@@ -36,7 +36,7 @@ stages:
     - set CMAKE_GENERATOR=Visual Studio 14 2015 Win64
     - set NETGEN_ORIG_DIR=C:\install64_master
     - set NETGEN_TEMP_DIR=C:\ci\%CI_BUILD_REF%_64
-    - set INSTALL_DIR=C:/ci/%CI_BUILD_REF%_64
+    - set INSTALL_DIR="C:/ci/%CI_BUILD_REF%_64"
     - set NETGENDIR=%NETGEN_TEMP_DIR%\bin
     - set PYTHONPATH=%NETGEN_TEMP_DIR%\lib\site-packages
     - set PYTHON_LIB=C:/Python3.5/libs/python35.lib
