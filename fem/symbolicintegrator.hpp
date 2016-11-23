@@ -549,6 +549,7 @@ public:
   public:
     SymbolicFacetLinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb);
 
+    virtual VorB VB() const { return vb; }
     virtual bool BoundaryForm() const { return vb == BND; }
 
     virtual void
@@ -575,6 +576,7 @@ public:
   public:
     SymbolicFacetBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb, bool aelement_boundary);
 
+    virtual VorB VB() const { return vb; }
     virtual bool BoundaryForm() const { return vb == BND; }
     virtual bool IsSymmetric() const { return true; }  // correct would be: don't know
     
