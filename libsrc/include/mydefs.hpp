@@ -14,16 +14,6 @@
 
 // #define DEBUG
 
-// Philippose - 31/01/2009
-// Hack for the Windows Version
-// in Linux, "PACKAGE_VERSION" is replaced 
-// in the configure/make phases, with the 
-// right version number
-#ifdef WIN32
-#define PACKAGE_VERSION "6.1-dev"
-#endif
-
-
 #ifdef WIN32
    #if NGINTERFACE_EXPORTS || NGLIB_EXPORTS || nglib_EXPORTS
       #define DLL_HEADER   __declspec(dllexport)
