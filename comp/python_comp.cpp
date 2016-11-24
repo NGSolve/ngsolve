@@ -2103,11 +2103,15 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
           [](PyCF cf,
                              shared_ptr<MeshAccess> ma, 
 	     VorB vb, int order, py::object definedon,
-                             bool region_wise, bool element_wise)
+	     bool region_wise, bool element_wise, int heapsize)
                           {
                             static Timer t("Integrate CF"); RegionTimer reg(t);
                             // static mutex addcomplex_mutex;
-                            LocalHeap lh(1000000, "lh-Integrate");
+			    if (heapsize > global_heapsize)
+			      {
+				global_heapsize = heapsize;
+				glh = LocalHeap(heapsize, "python-comp lh", true);
+			      }
                            py::extract<Region> defon_region(definedon);
                            if (defon_region.check())
                              vb = VorB(defon_region());
@@ -2133,7 +2137,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                                 bool use_simd = true;
                                 
                                 ma->IterateElements
-                                  (vb, lh, [&] (Ngs_Element el, LocalHeap & lh)
+                                  (vb, glh, [&] (Ngs_Element el, LocalHeap & lh)
                                    {
 				     if(!mask.Test(el.GetIndex())) return;
                                      auto & trafo = ma->GetTrafo (el, lh);
@@ -2203,7 +2207,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                                 bool use_simd = true;
                                 
                                 ma->IterateElements
-                                  (vb, lh, [&] (Ngs_Element el, LocalHeap & lh)
+                                  (vb, glh, [&] (Ngs_Element el, LocalHeap & lh)
                                    {
 				     if(!mask.Test(el.GetIndex())) return;
                                      auto & trafo = ma->GetTrafo (el, lh);
@@ -2220,8 +2224,8 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                                              auto & mir = trafo(ir, lh);
                                              FlatMatrix<SIMD<Complex>> values(dim, ir.GetNIP(), lh);
                                              cf.Get() -> Evaluate (mir, values);
-                                             Vector<SIMD<Complex>> vsum(dim);
-					     vsum = 0.0;
+                                             FlatVector<SIMD<Complex>> vsum(dim,lh);
+					     vsum = Complex(0.0);
                                              for (size_t i = 0; i < values.Width(); i++)
 					       vsum += mir[i].GetWeight() * values.Col(i);
 					     // for(size_t j = 0; j < values.Height(); j++)
@@ -2269,7 +2273,8 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
            py::arg("order")=5,
 	py::arg("definedon")=DummyArgument(),
            py::arg("region_wise")=false,
-           py::arg("element_wise")=false)
+	py::arg("element_wise")=false,
+	py::arg("heapsize") = 1000000)
     ;
   
 
