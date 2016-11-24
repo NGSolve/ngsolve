@@ -2065,7 +2065,11 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                           {
                             static Timer t("Integrate CF"); RegionTimer reg(t);
                             // static mutex addcomplex_mutex;
-                            LocalHeap lh(heapsize, "lh-Integrate");
+			    if (heapsize > global_heapsize)
+			      {
+				global_heapsize = heapsize;
+				glh = LocalHeap(heapsize, "python-comp lh", true);
+			      }
                            py::extract<Region> defon_region(definedon);
                            if (defon_region.check())
                              vb = VorB(defon_region());
@@ -2091,7 +2095,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                                 bool use_simd = true;
                                 
                                 ma->IterateElements
-                                  (vb, lh, [&] (Ngs_Element el, LocalHeap & lh)
+                                  (vb, glh, [&] (Ngs_Element el, LocalHeap & lh)
                                    {
 				     if(!mask.Test(el.GetIndex())) return;
                                      auto & trafo = ma->GetTrafo (el, lh);
@@ -2161,7 +2165,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                                 bool use_simd = true;
                                 
                                 ma->IterateElements
-                                  (vb, lh, [&] (Ngs_Element el, LocalHeap & lh)
+                                  (vb, glh, [&] (Ngs_Element el, LocalHeap & lh)
                                    {
 				     if(!mask.Test(el.GetIndex())) return;
                                      auto & trafo = ma->GetTrafo (el, lh);
