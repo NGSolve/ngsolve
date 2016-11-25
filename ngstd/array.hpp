@@ -894,7 +894,7 @@ namespace ngstd
         for (size_t i = 0; i < mins; i++) data[i] = move(hdata[i]);
 #else
         if (std::is_trivially_copyable<T>::value)
-          memcpy (data, hdata, sizeof(T)*mins);
+          memcpy ((void*)data, hdata, sizeof(T)*mins);
         else
           for (size_t i = 0; i < mins; i++) data[i] = move(hdata[i]);
 #endif

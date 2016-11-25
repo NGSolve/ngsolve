@@ -109,6 +109,8 @@ namespace ngcomp
     void Timing () const;
     void ThrowPreconditionerNotReady() const;
     const Flags & GetFlags() const { return flags; }
+
+    using BaseMatrix::shared_from_this;
   };
 
 
