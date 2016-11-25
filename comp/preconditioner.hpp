@@ -376,7 +376,7 @@ namespace ngstd
 {
   template <>
   struct PyWrapperTraits<ngcomp::Preconditioner> {
-    typedef PyWrapperDerived<ngcomp::Preconditioner, ngla::BaseMatrix> type;
+    typedef shared_ptr<ngcomp::Preconditioner> type;
   };
 }
 
