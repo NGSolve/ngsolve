@@ -1273,7 +1273,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
          flags.SetFlag ("multidim", py::extract<int>(t[3])());
          auto gf = CreateGridFunction (fespace.Get(), t[1].cast<string>(), flags);
          gf->Update();
-	 gf->GetVector() = *t[2].cast<PyBaseVector>().Get();
+	 gf->GetVector() = *t[2].cast<PyBaseVector>();
          new (&self) PyGF(gf);
          py::object self_object = py::cast(self);
 	 self_object.attr("__persistent_id__") = t[4];
@@ -1828,28 +1828,28 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
-  typedef PyWrapperDerived<Preconditioner, BaseMatrix> PRE;
-  py::class_<PRE, PyBaseMatrix>(m, "Preconditioner")
-    .def("__init__",
-         [](PRE *instance, PyWrapper<BilinearForm> bfa, const string & type,
-                              Flags flags)
+  py::class_<Preconditioner, shared_ptr<Preconditioner>, BaseMatrix>(m, "CPreconditioner")
+    .def ("Update", [](Preconditioner &pre) { pre.Update();} )
+    .def_property_readonly("mat", FunctionPointer
+                  ([](Preconditioner &self) -> PyWrapper<BaseMatrix>
+                   {
+                     return shared_ptr<BaseMatrix> (const_cast<BaseMatrix*> (&self.GetMatrix()),
+                                                    NOOP_Deleter);
+                   }))
+    ;
+
+   
+   m.def("Preconditioner",
+         [](PyWrapper<BilinearForm> bfa, const string & type, Flags flags)
                            { 
                              auto creator = GetPreconditionerClasses().GetPreconditioner(type);
                              if (creator == nullptr)
                                throw Exception(string("nothing known about preconditioner '") + type + "'");
-                             new (instance) PRE(creator->creatorbf(bfa.Get(), flags, "noname-pre"));
+                             return creator->creatorbf(bfa.Get(), flags, "noname-pre");
                            },
           py::arg("bf"), py::arg("type"), py::arg("flags")=py::dict()
-          )
+          );
 
-    .def ("Update", [](PRE pre) { pre->Update();} )
-    .def_property_readonly("mat", FunctionPointer
-                  ([](PRE self) -> PyBaseMatrix
-                   {
-                     return shared_ptr<BaseMatrix> (const_cast<BaseMatrix*> (&self->GetMatrix()),
-                                                    NOOP_Deleter);
-                   }))
-    ;
 
   //////////////////////////////////////////////////////////////////////////////////////////
 

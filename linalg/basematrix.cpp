@@ -123,7 +123,7 @@ namespace ngla
   void BaseMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
     //    cout << "Warning: BaseMatrix::MultAdd(double), this = " << typeid(*this).name() << endl;
-    auto temp = CreateColVector();
+    auto temp = y.CreateVector();
     Mult (x, *temp);
     y += s * *temp;
   }
