@@ -1,4 +1,4 @@
 if(USE_PYTHON)
   add_test(NAME pytest COMMAND ${PYTHON_EXECUTABLE} -m pytest WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-  add_custom_target(pytest ctest -R pytest WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} )
+  add_custom_target(pytest ${PYTHON_EXECUTABLE} -m pytest WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 endif(USE_PYTHON)
