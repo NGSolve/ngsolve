@@ -2133,8 +2133,8 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                                 Vector<> element_sum(element_wise ? ma->GetNE(vb) : 0);
                                 region_sum = 0;
                                 element_sum = 0;
-
-                                bool use_simd = true;
+				bool use_simd = true;
+				
                                 
                                 ma->IterateElements
                                   (vb, glh, [&] (Ngs_Element el, LocalHeap & lh)
@@ -2155,7 +2155,6 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                                              cf.Get() -> Evaluate (mir, values);
                                              Vector<SIMD<double>> vsum(dim);
 					     vsum = 0;
-					     
                                              for (size_t i = 0; i < values.VWidth(); i++)
                                                vsum += mir[i].GetWeight() * values.Col(i);
 					     for(int i = 0; i< dim; i++)
@@ -2198,7 +2197,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                             else
                               {
                                 Vector<Complex> sum(dim);
-				sum = 0;
+				sum = 0.0;
                                 Vector<Complex> region_sum(region_wise ? ma->GetNRegions(vb) : 0);
                                 Vector<Complex> element_sum(element_wise ? ma->GetNE(vb) : 0);
                                 region_sum = 0;
@@ -2212,7 +2211,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 				     if(!mask.Test(el.GetIndex())) return;
                                      auto & trafo = ma->GetTrafo (el, lh);
                                      Vector<Complex> hsum(dim);
-				     hsum = 0;
+				     hsum = 0.0;
                                      
                                      bool this_simd = use_simd;
 
@@ -2222,14 +2221,12 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                                            {
                                              SIMD_IntegrationRule ir(trafo.GetElementType(), order);
                                              auto & mir = trafo(ir, lh);
-                                             FlatMatrix<SIMD<Complex>> values(dim, ir.GetNIP(), lh);
+                                             FlatMatrix<SIMD<Complex>> values(dim, ir.Size(), lh);
                                              cf.Get() -> Evaluate (mir, values);
                                              FlatVector<SIMD<Complex>> vsum(dim,lh);
 					     vsum = Complex(0.0);
                                              for (size_t i = 0; i < values.Width(); i++)
 					       vsum += mir[i].GetWeight() * values.Col(i);
-					     // for(size_t j = 0; j < values.Height(); j++)
-					     //	 vsum[j] += mir[i].GetWeight() * values(j,i);
 					     for(size_t i =0; i < dim; i++)
 					       hsum[i] = HSum(vsum[i]);
                                            }
