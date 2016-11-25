@@ -553,7 +553,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                                   arnoldi.Calc (2*nev+1, lam, nev, evecs, 0);
                                             
                                                   for (int i = 0; i < nev; i++)
-                                                    vecs[i].cast<BaseVector>() = *evecs[i];
+                                                    vecs[i].cast<BaseVector&>() = *evecs[i];
 
                                                   Vector<Complex> vlam(nev);
                                                   for (int i = 0; i < nev; i++)
