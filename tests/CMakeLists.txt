@@ -99,3 +99,5 @@ if(BUILD_TYPE_UPPER STREQUAL "DEBUG")
 endif(BUILD_TYPE_UPPER STREQUAL "DEBUG")
 
 endif(USE_PYTHON OR NOT WIN32)
+
+add_subdirectory(pytest)
