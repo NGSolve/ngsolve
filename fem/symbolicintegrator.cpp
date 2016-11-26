@@ -930,8 +930,8 @@ namespace ngfem
                 IntRange r1 = proxy1->Evaluator()->UsedDofs(fel_trial);
                 IntRange r2 = proxy2->Evaluator()->UsedDofs(fel_test);
                 SliceMatrix<SCAL> part_elmat = elmat.Rows(r2).Cols(r1);
-                FlatMatrix<SCAL_SHAPES,ColMajor> bmat1(proxy1->Dimension(), elmat.Width(), lh);
-                FlatMatrix<SCAL_SHAPES,ColMajor> bmat2(proxy2->Dimension(), elmat.Height(), lh);
+                // FlatMatrix<SCAL_SHAPES,ColMajor> bmat1(proxy1->Dimension(), elmat.Width(), lh);
+                // FlatMatrix<SCAL_SHAPES,ColMajor> bmat2(proxy2->Dimension(), elmat.Height(), lh);
 
                 
                 // enum { BS = 16 };
