@@ -386,6 +386,9 @@ namespace ngfem
     enum { DIM_DMAT = 1 };
     enum { DIFFORDER = 0 };
 
+    static const FEL & Cast (const FiniteElement & fel) 
+    { return static_cast<const FEL&> (fel); }
+
     template <typename AFEL, typename MIP, typename MAT>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
@@ -446,6 +449,21 @@ namespace ngfem
       // static_cast<const FEL&>(fel).
       // EvaluateTrans (mir.IR(), FlatVector<> (mir.Size(), &x(0,0)), y);
     }
+
+    using DiffOp<DiffOpIdBoundary<D, FEL> >::ApplySIMDIR;    
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      Cast(fel).Evaluate (mir.IR(), x, y.Row(0));
+    }
+    
+    using DiffOp<DiffOpIdBoundary<D, FEL> >::AddTransSIMDIR;        
+    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      Cast(fel).AddTrans (mir.IR(), y.Row(0), x);
+    }    
+    
   };
 
 
