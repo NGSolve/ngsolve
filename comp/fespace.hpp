@@ -279,6 +279,7 @@ namespace ngcomp
       }
       INLINE Element operator*() const { return Element (fes, ei, temp_dnums, lh); }          
       INLINE bool operator!=(const ElementIterator & id2) const { return ei != id2.ei; }
+      INLINE bool operator==(const ElementIterator & id2) const { return ei == id2.ei; }
     };
     
     class ElementRange : public IntRange
