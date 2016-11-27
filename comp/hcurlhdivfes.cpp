@@ -445,14 +445,14 @@ namespace ngcomp
   }
 
   
-  Table<int> * NedelecFESpace :: CreateSmoothingBlocks (const Flags & precflags) const
+  shared_ptr<Table<int>> NedelecFESpace :: CreateSmoothingBlocks (const Flags & precflags) const
   {
     return CreateSmoothingBlocks (int (precflags.GetNumFlag ("loblocktype", SB_AFW)));
   }
 
 
 
-  Table<int> * NedelecFESpace :: CreateSmoothingBlocks (int type) const
+  shared_ptr<Table<int>> NedelecFESpace :: CreateSmoothingBlocks (int type) const
   {
     cout << "NedelecFESpace::CreateSmoothingBlocks" << endl;
 
@@ -653,7 +653,7 @@ namespace ngcomp
 	}
       }
   
-    return node2edge;
+    return shared_ptr<Table<int>> (node2edge);
   }
 
   SparseMatrix<double> * 
@@ -1973,7 +1973,7 @@ namespace ngcomp
 
 
 
-  Table<int> * NedelecFESpace2 ::
+  shared_ptr<Table<int>> NedelecFESpace2 ::
   CreateSmoothingBlocks (const Flags & precflags) const
   // CreateSmoothingBlocks (int type) const
   {
@@ -2413,7 +2413,7 @@ namespace ngcomp
       }
   
     // (*testout) << "Nedelec2, Smoothingblocks type = " << type << endl << (*it) << endl;
-    return it;
+    return shared_ptr<Table<int>> (it);
   }
 
   BitArray * NedelecFESpace2 :: 

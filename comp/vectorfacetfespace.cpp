@@ -605,9 +605,9 @@ namespace ngcomp
       dnums.SetSize(0);
   }
 
-  Table<int> * VectorFacetFESpace :: CreateSmoothingBlocks (const Flags & precflags) const
+  shared_ptr<Table<int>> VectorFacetFESpace :: CreateSmoothingBlocks (const Flags & precflags) const
   { 
-    return NULL;
+    return nullptr;
   }
 
   Array<int> * VectorFacetFESpace :: CreateDirectSolverClusters (const Flags & precflags) const

@@ -1,5 +1,5 @@
 /*********************************************************************/
-/* File:   hcurlhofe_test.cpp                                        */
+/* File:   hcurlhofe_tet.cpp                                         */
 /* Author: Sabine Zaglmayr                                           */
 /* Date:   20. Maerz 2003                                            */
 /*                                                                   */

@@ -960,7 +960,7 @@ namespace ngcomp
       }
     return additional;
   }
-  Table<int> * H1HighOrderFESpace :: 
+  shared_ptr<Table<int>> H1HighOrderFESpace :: 
   CreateSmoothingBlocks (const Flags & precflags) const
   {
     static Timer t("H1HighOrderFESpace :: CreateSmoothingBlocks");
@@ -991,7 +991,7 @@ namespace ngcomp
     cout << " blocktype " << smoothing_type << endl; 
     // cout << " Use H1-Block Smoother:  "; 
 
-    FilteredTableCreator creator(GetFreeDofs());
+    FilteredTableCreator creator(GetFreeDofs().get());
     for ( ; !creator.Done(); creator++)
       {
 	switch (smoothing_type)
@@ -1406,7 +1406,7 @@ namespace ngcomp
 	    break; 	    
 	  }
       }
-    return creator.GetTable();
+    return shared_ptr<Table<int>> (creator.GetTable());
   }
 
     

@@ -244,19 +244,19 @@ namespace ngla
 	  for (int j = 0; j < prol->GetRowIndices(i).Size(); j++)
 	    cnt[prol->GetRowIndices(i)[j]]++;
 	
-	Table<int> * smblocks = new Table<int>(cnt);
+	Table<int> smblocks(cnt);
 	cnt = 0;
 	for (int i = 0; i < prol->Height(); i++)
 	  for (int j = 0; j < prol->GetRowIndices(i).Size(); j++)
 	    {
 	      int jj = prol->GetRowIndices(i)[j];
-	      (*smblocks)[jj][cnt[jj]] = i;
+	      smblocks[jj][cnt[jj]] = i;
 	      cnt[jj]++;
 	    }
 	// *testout << "prol = " << endl << *prol << endl;
 	// *testout << "smoothing blocks = " << endl << *smblocks << endl;
 	
-	bjacobi = mat.CreateBlockJacobiPrecond (*smblocks);
+	bjacobi = mat.CreateBlockJacobiPrecond (make_shared<Table<int>> (smblocks));
       }
     jacobi = mat.CreateJacobiPrecond ();
 

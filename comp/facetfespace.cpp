@@ -719,11 +719,11 @@ namespace ngcomp
   }
   
   // ------------------------------------------------------------------------
-  Table<int> * FacetFESpace :: CreateSmoothingBlocks (const Flags & precflags) const
+  shared_ptr<Table<int>> FacetFESpace :: CreateSmoothingBlocks (const Flags & precflags) const
   {
-		if (all_dofs_together)
-			throw Exception("FacetFESpace ::CreateSmoothingBlocks not implemented for case all_dofs_together!");
-
+    if (all_dofs_together)
+      throw Exception("FacetFESpace ::CreateSmoothingBlocks not implemented for case all_dofs_together!");
+    
     int ncnt;
 
     // 1 x low order + faces/edges
@@ -737,7 +737,7 @@ namespace ngcomp
       cnt[i-ncfa] = 1 + first_facet_dof[i+1]-first_facet_dof[i];
 
 
-    Table<int> & table = *new Table<int> (cnt);
+    Table<int> table(cnt);
     
     // face/edges
     int ii;
@@ -750,8 +750,7 @@ namespace ngcomp
       }
       
     // cout << "smoothingblocks = " << endl << table << endl;
-    return &table;
-
+    return make_shared<Table<int>> (table);
   }
 
 
@@ -966,7 +965,7 @@ namespace ngcomp
       }
   }
 
-  Table<int> * HybridDGFESpace :: CreateSmoothingBlocks (const Flags & precflags) const
+  shared_ptr<Table<int>> HybridDGFESpace :: CreateSmoothingBlocks (const Flags & precflags) const
   {
     bool eliminate_internal = precflags.GetDefineFlag("eliminate_internal");
     bool subassembled = precflags.GetDefineFlag("subassembled");
@@ -1075,7 +1074,7 @@ namespace ngcomp
 	    break; 	    
 	  }
       }
-    return creator.GetTable();
+    return shared_ptr<Table<int>> (creator.GetTable());
   }
 
 

@@ -436,7 +436,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                               return GetInverseName( m.GetInverseType());
                                             })
 
-    .def("Inverse", [](BM &m, BitArray * freedofs, string inverse)
+    .def("Inverse", [](BM &m, shared_ptr<BitArray> freedofs, string inverse)
                                      -> PyWrapper<BaseMatrix>
                                      { 
                                        if (inverse != "") m.SetInverseType(inverse);
@@ -533,12 +533,12 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
           )
     ;
   
-  m.def("ArnoldiSolver", [](PyBaseMatrix & mata, PyBaseMatrix & matm, const BitArray & freedofs,
+  m.def("ArnoldiSolver", [](PyBaseMatrix & mata, PyBaseMatrix & matm, shared_ptr<BitArray> freedofs,
                                                py::list vecs, py::object bpshift)
                                             {
                                               if (mata.IsComplex())
                                                 {
-                                                  Arnoldi<Complex> arnoldi (mata, matm, &freedofs);
+                                                  Arnoldi<Complex> arnoldi (mata, matm, freedofs);
                                                   Complex shift = 0.0;
 //                                                   if (py::cast<Complex>(bpshift).check())
                                                     shift = py::cast<Complex>(bpshift);

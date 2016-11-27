@@ -530,7 +530,7 @@ namespace ngcomp
     */
   }
   
-  Table<int> * L2HighOrderFESpace :: 
+  shared_ptr<Table<int>> L2HighOrderFESpace :: 
   CreateSmoothingBlocks (const Flags & precflags) const
   {
     int i, j, first;
@@ -539,7 +539,7 @@ namespace ngcomp
     for (i = 0; i < nel; i++)
       cnt[i] = first_element_dof[i+1]-first_element_dof[i];
 	
-    Table<int> & table = *new Table<int> (cnt);
+    Table<int> table(cnt);
     
     for (i = 0; i < nel; i++)
       {
@@ -547,7 +547,7 @@ namespace ngcomp
 	for (j = 0; j < cnt[i]; j++)
 	  table[i][j] = first+j;
       }
-    return &table;
+    return make_shared<Table<int>> (table);
   }
 
   void  L2HighOrderFESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
@@ -827,7 +827,7 @@ namespace ngcomp
     
   }
   
-  Table<int> * L2SurfaceHighOrderFESpace :: 
+  shared_ptr<Table<int>> L2SurfaceHighOrderFESpace :: 
   // CreateSmoothingBlocks ( int type) const
   CreateSmoothingBlocks (const Flags & precflags) const    
   {
@@ -837,7 +837,7 @@ namespace ngcomp
     for (i = 0; i < nel; i++)
       cnt[i] = first_element_dof[i+1]-first_element_dof[i];
 	
-    Table<int> & table = *new Table<int> (cnt);
+    Table<int> table(cnt);
     
     for (i = 0; i < nel; i++)
       {
@@ -845,7 +845,7 @@ namespace ngcomp
 	for (j = 0; j < cnt[i]; j++)
 	  table[i][j] = first+j;
       }
-    return &table;
+    return make_shared<Table<int>> (table);
   }
 
 
