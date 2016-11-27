@@ -179,7 +179,7 @@ namespace ngla
 
 
 
-  shared_ptr<BaseMatrix> BaseMatrix :: InverseMatrix (const BitArray * subset) const 
+  shared_ptr<BaseMatrix> BaseMatrix :: InverseMatrix (shared_ptr<BitArray> subset) const 
   {
     cerr << "BaseMatrix::InverseMatrix not available" << endl;
     return NULL;

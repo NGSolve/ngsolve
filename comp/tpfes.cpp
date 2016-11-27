@@ -303,7 +303,7 @@ namespace ngcomp
       dnums[i] = first_element_dof[ei.Nr()]+i;
   }
   
-  Table<int> * TPHighOrderFESpace::CreateSmoothingBlocks (const Flags & precflags) const
+  shared_ptr<Table<int>> TPHighOrderFESpace::CreateSmoothingBlocks (const Flags & precflags) const
   {
     throw Exception("TPHighOrderFESpace::CreateSmoothingBlocks() not implemented");
   }

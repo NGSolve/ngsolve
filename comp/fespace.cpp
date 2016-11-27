@@ -387,22 +387,22 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    if (d != -1) dirichlet_dofs.Set (d);
 	}
 
-    free_dofs.SetSize (GetNDof());
-    free_dofs = dirichlet_dofs;
-    free_dofs.Invert();
+    free_dofs = make_shared<BitArray>(GetNDof());
+    *free_dofs = dirichlet_dofs;
+    free_dofs->Invert();
     
     for (auto i : Range(ctofdof))
       if (ctofdof[i] == UNUSED_DOF)
-	free_dofs.Clear(i);
+	free_dofs->Clear(i);
 
-    external_free_dofs.SetSize (GetNDof());
-    external_free_dofs = free_dofs;
+    external_free_dofs = make_shared<BitArray>(GetNDof());
+    *external_free_dofs = *free_dofs;
     for (auto i : Range(ctofdof))
       if (ctofdof[i] & LOCAL_DOF)
-	external_free_dofs.Clear(i);
+	external_free_dofs->Clear(i);
 
     if (print)
-      *testout << "freedofs = " << endl << free_dofs << endl;
+      *testout << "freedofs = " << endl << *free_dofs << endl;
     
     UpdateParallelDofs();
 
@@ -936,7 +936,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     ost << "definedon = " << definedon[VOL] << endl;
     ost << "definedon boundary = " << definedon[BND] << endl;
     ost << "definedon codim 2 = " << definedon[BBND] << endl;
-    if (!free_dofs.Size()) return;
+    if (free_dofs->Size()) return;
 
     ost << "ndof = " << GetNDof() << endl;
     int ntype[8] = { 0 };
@@ -947,8 +947,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     if (ntype[LOCAL_DOF])  ost << "local  = " << ntype[LOCAL_DOF] << endl;
 
     int nfree = 0;
-    for (int i = 0; i < free_dofs.Size(); i++)
-      if (free_dofs[i])
+    for (int i = 0; i < free_dofs->Size(); i++)
+      if ((*free_dofs)[i])
 	nfree++;
   }
   
@@ -1191,14 +1191,14 @@ lot of new non-zero entries in the matrix!\n" << endl;
       for (int i = 0; i < ndof; i++)
 	if ((ctofdof[i] & doffilter) != 0)
 	  output.Set(i);
-    if (freedofsonly && free_dofs.Size()) {
-      output.And(free_dofs);
+    if (freedofsonly && free_dofs->Size()) {
+      output.And(*free_dofs);
     }
   }
 
 
 
-  Table<int> * FESpace :: CreateSmoothingBlocks (const Flags & flags) const
+  shared_ptr<Table<int>> FESpace :: CreateSmoothingBlocks (const Flags & flags) const
   {
     int nd = GetNDof();
     TableCreator<int> creator;
@@ -1209,7 +1209,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  if (!IsDirichletDof(i))
 	    creator.Add (i, i);
       }
-    return creator.GetTable();
+    return shared_ptr<Table<int>> (creator.GetTable());
   }
 
     
@@ -1231,12 +1231,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
 
 
-  const BitArray * FESpace :: GetFreeDofs (bool external) const
+  shared_ptr<BitArray> FESpace :: GetFreeDofs (bool external) const
   {
     if (external)
-      return &external_free_dofs;
+      return external_free_dofs;
     else
-      return &free_dofs;
+      return free_dofs;
   }
 
   void IterateElements (const FESpace & fes, 
@@ -2149,23 +2149,23 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
     
-    free_dofs.SetSize (GetNDof());
-    free_dofs.Clear();
+    free_dofs = make_shared<BitArray> (GetNDof());
+    free_dofs->Clear();
     for (int i = 0; i < spaces.Size(); i++)
       {
-	const BitArray & freedofsi = *spaces[i]->GetFreeDofs(false);
-	for (int j = 0; j < freedofsi.Size();j++)
-	  if (freedofsi.Test(j)) 
-	    free_dofs.Set(cummulative_nd[i]+j);
+	shared_ptr<BitArray> freedofsi = spaces[i]->GetFreeDofs(false);
+	for (int j = 0; j < freedofsi->Size();j++)
+	  if (freedofsi->Test(j)) 
+	    free_dofs->Set(cummulative_nd[i]+j);
       }
-    external_free_dofs.SetSize (GetNDof());
-    external_free_dofs.Clear();
+    external_free_dofs = make_shared<BitArray> (GetNDof());
+    external_free_dofs->Clear();
     for (int i = 0; i < spaces.Size(); i++)
       {
-	const BitArray & freedofsi = *spaces[i]->GetFreeDofs(true);
-	for (int j = 0; j < freedofsi.Size();j++)
-	  if (freedofsi.Test(j)) 
-	    external_free_dofs.Set(cummulative_nd[i]+j);
+	shared_ptr<BitArray> freedofsi = spaces[i]->GetFreeDofs(true);
+	for (int j = 0; j < freedofsi->Size();j++)
+	  if (freedofsi->Test(j)) 
+	    external_free_dofs->Set(cummulative_nd[i]+j);
       }
     
     
@@ -2222,34 +2222,34 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if (has_dirichlet_dofs)
       {
-	free_dofs.SetSize(GetNDof());
-	free_dofs.Set();
+	free_dofs = make_shared<BitArray> (GetNDof());
+	free_dofs->Set();
 
 	for (int i = 0; i < spaces.Size(); i++)
 	  {
-	    const BitArray * free_dofs_sub = spaces[i]->GetFreeDofs();
+	    shared_ptr<BitArray> free_dofs_sub = spaces[i]->GetFreeDofs();
 	    if (free_dofs_sub)
 	      {
 		int base = cummulative_nd[i];
 		int nd = cummulative_nd[i+1] - base;
 		for (int i = 0; i < nd; i++)
 		  if (!free_dofs_sub->Test(i))
-		    free_dofs.Clear (base+i);
+		    free_dofs->Clear (base+i);
 	      }
 	  }
 
         for (int i = 0; i < ctofdof.Size(); i++)
           if (ctofdof[i] == UNUSED_DOF)
-            free_dofs.Clear(i);
+            free_dofs->Clear(i);
 
-	dirichlet_dofs = free_dofs;
+	dirichlet_dofs = *free_dofs;
 	dirichlet_dofs.Invert();
 
-        external_free_dofs.SetSize (GetNDof());
-        external_free_dofs = free_dofs;
+        external_free_dofs = make_shared<BitArray>(GetNDof());
+        *external_free_dofs = *free_dofs;
         for (int i = 0; i < ctofdof.Size(); i++)
           if (ctofdof[i] & LOCAL_DOF)
-            external_free_dofs.Clear(i);
+            external_free_dofs->Clear(i);
 
 
         if (print)
