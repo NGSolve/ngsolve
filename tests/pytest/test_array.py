@@ -9,6 +9,13 @@ def getArray():
 
 def test_array_iterator():
     i = 0
-    for n in getArray():
-        i += 1
+    a = getArray()
+    for n in a:
         assert n == i
+        i += 1
+
+def test_array_iterator_temporary_object():
+    i = 0
+    for n in getArray():
+        assert n == i
+        i += 1
