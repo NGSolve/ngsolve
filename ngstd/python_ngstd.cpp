@@ -247,7 +247,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
   py::class_<ngstd::IntRange> py_intrange (m, "IntRange");
   py_intrange.def( py::init<int,int>());
   py_intrange.def("__str__", &ToString<IntRange>);
-  PyDefIterable2<IntRange>(m, py_intrange);
+  py_intrange.def("__iter__", [] (ngstd::IntRange & i) { return py::make_iterator(i.begin(), i.end()); });
 
   m.def("Timers",
 	  []() 
