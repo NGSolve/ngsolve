@@ -1126,8 +1126,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 
 
     .def("FreeDofs", FunctionPointer
-         ( [] (const PyFES &self, bool coupling) -> const BitArray &{ return *self->GetFreeDofs(coupling); } ),
-         py::return_value_policy::reference,
+         ( [] (const PyFES &self, bool coupling) { return self->GetFreeDofs(coupling); } ),
          py::arg("coupling")=false)
 
     .def("Range", FunctionPointer
