@@ -53,7 +53,7 @@ namespace ngla
 
     ///
     UmfpackInverseTM (const SparseMatrixTM<TM> & a,
-		      const BitArray * ainner = NULL,
+		      shared_ptr<BitArray> ainner = NULL,
 		      const Array<int> * acluster = NULL,
 		      int symmetric = 0);
     ///
@@ -97,7 +97,7 @@ namespace ngla
 
     ///
     UmfpackInverse (const SparseMatrix<TM,TV_ROW,TV_COL> & a,
-		    const BitArray * ainner = NULL,
+		    shared_ptr<BitArray> ainner = NULL,
 		    const Array<int> * acluster = NULL,
 		    int symmetric = 0)
       : UmfpackInverseTM<TM> (a, ainner, acluster, symmetric) { ; }

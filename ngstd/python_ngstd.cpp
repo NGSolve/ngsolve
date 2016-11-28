@@ -154,8 +154,8 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
     (m, "HeapReset","stores heap-pointer on init, and resets it on exit")
     .def(py::init<LocalHeap&>())
     ;
-
-  py::class_<ngstd::BitArray> (m, "BitArray")
+  
+  py::class_<ngstd::BitArray, shared_ptr<BitArray>> (m, "BitArray")
     .def(py::init<int>())
     .def(py::init<const BitArray&>())
     .def("__str__", &ToString<BitArray>)

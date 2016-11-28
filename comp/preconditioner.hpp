@@ -70,7 +70,7 @@ namespace ngcomp
       GetMatrix().Mult(x, y);
     }
 
-    virtual void InitLevel (const BitArray * freedofs = NULL) { ; }
+    virtual void InitLevel (shared_ptr<BitArray> freedofs = NULL) { ; }
     virtual void FinalizeLevel (const ngla::BaseMatrix * mat = NULL) { ; }
     virtual void AddElementMatrix (FlatArray<int> dnums,
 				   const FlatMatrix<double> & elmat,
