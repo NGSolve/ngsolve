@@ -83,7 +83,7 @@ namespace ngfem
             var += ".Value()";
           string values = "{values}";
           if(code.is_simd)
-            values += ".Get(" + ToString(ind) + ",i)";
+            values += "(" + ToString(ind) + ",i)";
           else
             values += "(i," + ToString(ind) + ")";
 
@@ -98,11 +98,17 @@ namespace ngfem
       body += "{\n";
     else
       body += "if({ud}->{func_string} == {this}) {\n";
-    TraverseDimensions( dims, [&](int ind, int i, int j) {
+    if(testfunction)
+      TraverseDimensions( dims, [&](int ind, int i, int j) {
+        if(code.deriv==0) body += Var(index,i,j).Assign( Var("comp", index,i,j), false );
+        if(code.deriv==1) body += Var(index,i,j).Assign( Var("comp", index,i,j), false );
+        if(code.deriv==2) body += Var(index,i,j).Call("DValue","0").Assign( Var("comp", index,i,j).Call("DValue","0"), false );
+      });
+    else
+      TraverseDimensions( dims, [&](int ind, int i, int j) {
         if(code.deriv==0) body += Var(index,i,j).Assign( Var("comp", index,i,j), false );
         if(code.deriv>=1) body += Var(index,i,j).Call("DValue","0").Assign( Var("comp", index,i,j).Call("DValue","0"), false );
-        if(code.deriv==2) body += Var(index,i,j).Call("DDValue","0").Assign( Var("comp", index,i,j).Call("DDValue","0"), false );
-    });
+      });
     body += "}\n";
 
     string func_string = testfunction ? "testfunction" : "trialfunction";
@@ -114,7 +120,7 @@ namespace ngfem
     variables["comp_string"] = testfunction ? "test_comp" : "trial_comp";
     variables["testfunction"] = ToString(testfunction);
 
-    variables["flatmatrix"] = code.is_simd ? "AFlatMatrix<double>" : "FlatMatrix<double>";
+    variables["flatmatrix"] = code.is_simd ? "FlatMatrix<SIMD<double>>" : "FlatMatrix<double>";
 
     variables["values"] = Var("values", index).S();
 
