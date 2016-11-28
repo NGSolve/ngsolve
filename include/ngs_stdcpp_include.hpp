@@ -61,6 +61,8 @@
 
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic ignored "-Wvirtual-move-assign"
+#pragma GCC diagnostic ignored "-Wattributes"
+// this one silences warning: requested alignment 4096 is larger than 256
 #endif
 
 
