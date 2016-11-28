@@ -2099,7 +2099,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                                    {
 				     if(!mask.Test(el.GetIndex())) return;
                                      auto & trafo = ma->GetTrafo (el, lh);
-                                     Vector<> hsum(dim);
+                                     FlatVector<> hsum(dim, lh);
 				     hsum = 0.0;
                                      bool this_simd = use_simd;
                                      
@@ -2109,12 +2109,13 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                                            {
                                              SIMD_IntegrationRule ir(trafo.GetElementType(), order);
                                              auto & mir = trafo(ir, lh);
-                                             AFlatMatrix<> values(dim,ir.GetNIP(), lh);
+                                             FlatMatrix<SIMD<double>> values(dim,ir.Size(), lh);
                                              cf.Get() -> Evaluate (mir, values);
-                                             Vector<SIMD<double>> vsum(dim);
+                                             FlatVector<SIMD<double>> vsum(dim, lh);
 					     vsum = 0;
-                                             for (size_t i = 0; i < values.VWidth(); i++)
-                                               vsum += mir[i].GetWeight() * values.Col(i);
+                                             for (size_t j = 0; j < dim; j++)
+                                               for (size_t i = 0; i < values.Width(); i++)
+                                                 vsum(j) += mir[i].GetWeight() * values(j,i);
 					     for(int i = 0; i< dim; i++)
 					       hsum[i] = HSum(vsum[i]);
                                            }
@@ -2183,9 +2184,10 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                                              cf.Get() -> Evaluate (mir, values);
                                              FlatVector<SIMD<Complex>> vsum(dim,lh);
 					     vsum = Complex(0.0);
-                                             for (size_t i = 0; i < values.Width(); i++)
-					       vsum += mir[i].GetWeight() * values.Col(i);
-					     for(size_t i =0; i < dim; i++)
+                                             for (size_t j = 0; j < dim; j++)
+                                               for (size_t i = 0; i < values.Width(); i++)
+                                                 vsum(j) += mir[i].GetWeight() * values(j,i);
+					     for(size_t i = 0; i < dim; i++)
 					       hsum[i] = HSum(vsum[i]);
                                            }
                                          catch (ExceptionNOSIMD e)
