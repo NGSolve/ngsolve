@@ -228,7 +228,10 @@ template <typename T, typename TELEM = double, typename TCLASS = py::class_<T> >
 void PyDefVector( py::module &m, TCLASS &c )
 {
     c.def("__len__",  []( T& v) { return v.Size();}  );
-    c.def("__iter__", [] (T &v) { return py::make_iterator(v.begin(), v.end()); });
+    c.def("__iter__", [] (T &v)
+      { return py::make_iterator(v.begin(), v.end()); },
+      py::keep_alive<0,1>()
+    );
     PyDefBracketOperator<T, TELEM>(m,c);
 }
 
