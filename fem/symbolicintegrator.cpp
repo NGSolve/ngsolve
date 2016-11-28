@@ -362,7 +362,7 @@ namespace ngfem
           }
       }
     if (ud->testfunction == this)
-      deriv.Row(ud->test_comp) = 1;
+      result.Row(ud->test_comp) = 1;
     if (ud->trialfunction == this)
       deriv.Row(ud->trial_comp) = 1;
   }
