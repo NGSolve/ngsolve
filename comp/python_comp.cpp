@@ -242,12 +242,16 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 
   py::class_<ElementRange, IntRange> (m, "ElementRange")
     .def(py::init<const MeshAccess&,VorB,IntRange>())
-    .def("__iter__", [] (ElementRange &er) { return py::make_iterator(er.begin(), er.end()); }) 
-    ;
+    .def("__iter__", [] (ElementRange &er)
+      { return py::make_iterator(er.begin(), er.end()); },
+      py::keep_alive<0,1>()
+    );
 
   py::class_<FESpace::ElementRange,shared_ptr<FESpace::ElementRange>, IntRange> (m, "FESpaceElementRange")
-    .def("__iter__", [] (FESpace::ElementRange &er) { return py::make_iterator(er.begin(), er.end()); } )
-    ;
+    .def("__iter__", [] (FESpace::ElementRange &er)
+      { return py::make_iterator(er.begin(), er.end()); },
+      py::keep_alive<0,1>()
+    );
 
 
   //////////////////////////////////////////////////////////////////////////////////////////
