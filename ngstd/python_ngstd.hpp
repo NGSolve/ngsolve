@@ -223,155 +223,17 @@ void PyDefBracketOperator( py::module &m, TCLASS &c )
 
 
 //////////////////////////////////////////////////////////////////////
-// Python iterator protocoll
-
-template <typename T, typename TELEM>
-class PyIterator
-{
-  T & v;
-  int size;
-  int index;
-  int startindex;
-    
-public:
-  PyIterator(T & v_, int size_, int startindex_ = 0)
-    : v(v_), size(size_), index(startindex_), startindex(startindex_)
-    {}
-
-  TELEM Next()
-  { 
-    if(index<startindex+size) return v[index++];
-    else 
-      throw py::stop_iteration();
-    return NonElement<TELEM>();
-  }
-
-  static void Export (py::module &m)
-  {
-    string name = string("PyIterator")+GetPyName<T>();
-    py::class_<PyIterator<T, TELEM> >(m, name.c_str())
-    .def("__next__", &PyIterator<T, TELEM>::Next)
-    .def("__iter__", [](PyIterator<T, TELEM> &self) { return self; });
-  }
-};
-
-//////////////////////////////////////////////////////////////////////
 // Export len, bracket operator and iterator protocoll at once
 template <typename T, typename TELEM = double, typename TCLASS = py::class_<T> >
 void PyDefVector( py::module &m, TCLASS &c )
 {
-    PyIterator<T, TELEM>::Export(m);
-
     c.def("__len__",  []( T& v) { return v.Size();}  );
-    c.def("__iter__", [](T &v) { return PyIterator<T, TELEM>(v, v.Size(), 0 ); });
+    c.def("__iter__", [] (T &v)
+      { return py::make_iterator(v.begin(), v.end()); },
+      py::keep_alive<0,1>()
+    );
     PyDefBracketOperator<T, TELEM>(m,c);
 }
-
-template <typename T, typename TELEM = double, typename TCLASS = py::class_<T> >
-void PyDefIterable( py::module &m, TCLASS &c )
-{
-    PyIterator<T, TELEM>::Export();
-    c.def(PyDefROBracketOperator<T, TELEM>());
-    c.def("__iter__", [](T &v) 
-                                       {
-                                         return PyIterator<T, TELEM>(v, v.Size(), 0 ); 
-                                       });
-}
-
-template <typename T>
-class PyIterator2
-{
-  typedef decltype(GetReturnValue(&T::begin)) TITER;
-  typedef decltype(GetReturnValue(&TITER::operator*)) TELEM;
-  TITER begin, end;
-public:
-  PyIterator2 (const T & container)
-    : begin(container.begin()), end(container.end()) { ; }
-  TELEM Next()
-  {
-    if (! (begin != end))
-      throw py::stop_iteration();
-      
-    auto tmp = begin;
-    ++begin;
-    return *tmp;
-  }
-};
-
-// iterable where elements have an increment operator (JS)
-template <typename T, typename TCLASS = py::class_<T> >
-void PyDefIterable2( py::module &m, TCLASS &c )
-{
-    string itername = string("PyIterator2_")+GetPyName<T>();
-    py::class_<PyIterator2<T>> citer(m, itername.c_str());
-    citer.def("__next__", &PyIterator2<T>::Next);
-    citer.def("__iter__", [] (PyIterator2<T> &self) { return self; });
-    c.def("__iter__", [](const T & c) { return PyIterator2<T>(c); });
-}
-
-
-// the iterator object copies the container (= range_expr)
-// otherwise, it might be destroyed by python too early
-template <typename T, typename TCLASS = py::class_<T> >
-void PyDefIterable3( py::module &m, TCLASS &c )
-{
-
-  typedef decltype(GetReturnValue(&T::begin)) TITER;
-  typedef decltype(GetReturnValue(&TITER::operator*)) TELEM;
-
-  class Iterator
-  {
-    shared_ptr<T> cont2;
-    TITER begin, end;
-  public:
-    Iterator (shared_ptr<T> container)
-      : cont2(container), begin(cont2->begin()), end(cont2->end()) 
-    { 
-      cout << "Iterator from container" << endl;
-    }
-    
-    /*
-    Iterator (T && container)
-      : cont2(move(container)), begin(cont2->begin()), end(cont2->end())
-    { 
-      cout << "Iterator from rvalue - container" << endl;
-    }
-    */
-
-    Iterator (const Iterator & it2)
-      : cont2(it2.cont2), begin(cont2->begin()), end(cont2->end()) 
-    {
-      cout << "copy iterator" << endl; 
-    }
-
-    /*
-    Iterator (Iterator && it2)
-      : cont2(move(it2.cont2)), begin(cont2.begin()), end(cont2.end()) { ; }
-    */
-
-    TELEM Next()
-    {
-      if (! (begin != end))
-        throw py::stop_iteration();
-        
-      auto tmp = begin;
-      ++begin;
-      return *tmp;
-    }
-  };
-
-    string itername = string("PyIterator3_")+GetPyName<T>();
-    py::class_<Iterator>(m, itername.c_str())
-      .def("__next__", &Iterator::Next)
-      ;
-    c.def("__iter__",
-          [](shared_ptr<T> c) 
-           { 
-             cout << "create python iterator" << endl;
-             return Iterator(c); 
-           })
-      ;
-  }
 
 //////////////////////////////////////////////////////////////////////
 // Enable numeric expressions for matrix class
