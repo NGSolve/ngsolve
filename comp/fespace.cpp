@@ -2148,7 +2148,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       ndlevel.Append (cummulative_nd.Last());
 
 
-    
+    /*
     free_dofs = make_shared<BitArray> (GetNDof());
     free_dofs->Clear();
     for (int i = 0; i < spaces.Size(); i++)
@@ -2167,6 +2167,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  if (freedofsi->Test(j)) 
 	    external_free_dofs->Set(cummulative_nd[i]+j);
       }
+    */
     
     
     bool has_atomic = false;
