@@ -42,14 +42,14 @@ namespace ngla
 #ifdef USE_NUMA
 
 template <typename T>
-class NumaInterleavedArray : public Array<T,size_t>
+class NumaInterleavedArray : public Array<T>
 {
   T * numa_ptr;
   size_t numa_size;
 public:
   NumaInterleavedArray () { numa_size = 0; numa_ptr = nullptr; }
   NumaInterleavedArray (size_t s)
-    : Array<T,size_t> (s, (T*)numa_alloc_interleaved(s*sizeof(T)))
+    : Array<T> (s, (T*)numa_alloc_interleaved(s*sizeof(T)))
   {
     numa_ptr = this->data;
     numa_size = s;
@@ -81,13 +81,13 @@ public:
 
   NumaInterleavedArray & operator= (T val)
   {
-    Array<T,size_t>::operator= (val);      
+    Array<T>::operator= (val);      
     return *this;
   }
 
   NumaInterleavedArray & operator= (NumaInterleavedArray && a2)
   {
-    Array<T,size_t>::operator= ((Array<T,size_t>&&)a2);  
+    Array<T>::operator= ((Array<T>&&)a2);  
     ngstd::Swap (numa_ptr, a2.numa_ptr);
     ngstd::Swap (numa_size, a2.numa_size);
     return *this;
@@ -95,7 +95,7 @@ public:
 
   void Swap (NumaInterleavedArray & b)
   {
-    Array<T,size_t>::Swap(b);    
+    Array<T>::Swap(b);    
     ngstd::Swap (numa_ptr, b.numa_ptr);
     ngstd::Swap (numa_size, b.numa_size);
   }
@@ -103,7 +103,7 @@ public:
   void SetSize (size_t size)
   {
     cerr << "************************* NumaDistArray::SetSize not overloaded" << endl;
-    Array<T,size_t>::SetSize(size);
+    Array<T>::SetSize(size);
   }
 };
 #else
