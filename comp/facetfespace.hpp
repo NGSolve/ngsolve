@@ -91,7 +91,7 @@ namespace ngcomp
     virtual int GetNFacetDofs (int felnr) const 
     { return (first_facet_dof[felnr+1]-first_facet_dof[felnr] + 1); }
     ///
-    virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const;
+    virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & precflags) const;
     ///
     virtual Array<int> * CreateDirectSolverClusters (const Flags & precflags) const;
 
@@ -154,7 +154,7 @@ namespace ngcomp
     virtual string GetClassName () const { return "HybridDGFESpace"; }
 
     virtual Array<int> * CreateDirectSolverClusters (const Flags & flags) const;
-    virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const;
+    virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & precflags) const;
   };
 
 }

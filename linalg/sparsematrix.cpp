@@ -1284,7 +1284,7 @@ namespace ngla
 
   template <class TM, class TV_ROW, class TV_COL>
   shared_ptr<BaseMatrix> SparseMatrix<TM,TV_ROW,TV_COL> ::
-  InverseMatrix (const BitArray * subset) const
+  InverseMatrix (shared_ptr<BitArray> subset) const
   {
     if ( this->GetInverseType() == SUPERLU_DIST )
       throw Exception ("SparseMatrix::InverseMatrix:  SuperLU_DIST_Inverse not available");
@@ -2330,7 +2330,7 @@ namespace ngla
   
 
   template <class TM, class TV>
-  shared_ptr<BaseMatrix> SparseMatrixSymmetric<TM,TV> :: InverseMatrix (const BitArray * subset) const
+  shared_ptr<BaseMatrix> SparseMatrixSymmetric<TM,TV> :: InverseMatrix (shared_ptr<BitArray> subset) const
   {
     // #ifndef ASTRID
     // #ifdef USE_SUPERLU

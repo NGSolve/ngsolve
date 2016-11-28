@@ -3154,7 +3154,7 @@ void SymbolicFacetBilinearFormIntegrator ::
      irs[facet_x_y] = &ir_facet_vol2;
      TPIntegrationRule tpir2(irs);
      BaseMappedIntegrationRule & tpmir2 = eltrans2(tpir2,lh);
-     int tpnip = ir_facet_vol1.Size()*ir_vol1.Size();
+     // int tpnip = ir_facet_vol1.Size()*ir_vol1.Size();
      dynamic_cast<TPMappedIntegrationRule &>(tpmir1).SetFacet(facet_x_y);
      dynamic_cast<TPMappedIntegrationRule &>(tpmir2).SetFacet(facet_x_y);
      // evaluate proxy-values
@@ -3243,7 +3243,7 @@ void SymbolicFacetBilinearFormIntegrator ::
      tpsmir.GetIRs()[1-xfacet] = dynamic_cast<TPMappedIntegrationRule &>(tpmir).GetIRs()[1-xfacet];
      // evaluate proxy-values
      ProxyUserData ud(trial_proxies.Size(), lh);
-     int niptp=irs[0]->Size()*irs[1]->Size();
+     // int niptp=irs[0]->Size()*irs[1]->Size();
      dynamic_cast<TPMappedIntegrationRule &>(tpmir).SetFacet(xfacet);
      dynamic_cast<TPMappedIntegrationRule &>(tpsmir).SetFacet(xfacet);
      const_cast<ElementTransformation&>(eltrans).userdata = &ud;

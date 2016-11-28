@@ -58,7 +58,7 @@ namespace ngla
   template<class TM>
   UmfpackInverseTM<TM> ::
   UmfpackInverseTM (const SparseMatrixTM<TM> & a,
-		    const BitArray * ainner,
+		    shared_ptr<BitArray> ainner,
 		    const Array<int> * acluster,
 		    int asymmetric)
     : SparseFactorization (a, ainner, acluster)

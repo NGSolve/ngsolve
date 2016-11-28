@@ -74,8 +74,8 @@ public:
 
   enum { SB_AFW, SB_HIPTMAIR, SB_POTENTIAL, SB_JAC };
   ///
-  virtual Table<int> * CreateSmoothingBlocks (int type = 0) const;
-  virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const;
+  virtual shared_ptr<Table<int>> CreateSmoothingBlocks (int type = 0) const;
+  virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & precflags) const;
 
   SparseMatrix<double> * CreateGradient() const;
 
@@ -283,7 +283,7 @@ public:
   virtual void LockSomeDofs (BaseMatrix & mat) const;
   ///
   // virtual Table<int> * CreateSmoothingBlocks (int type = 0) const;
-  virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const;
+  virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & precflags) const;
   /// for anisotropic plane smoothing
   virtual BitArray * CreateIntermediatePlanes (int type = 0) const;
 

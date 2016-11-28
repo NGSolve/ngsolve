@@ -997,7 +997,7 @@ namespace ngcomp
   //  1) 2d-Vertex / 3d-Edge blocks + F + I  --- default
   //  2) 2d: edge by edge,  3d: face by face
 
-  Table<int> * HDivHighOrderFESpace :: CreateSmoothingBlocks (const Flags & precflags) const
+  shared_ptr<Table<int>> HDivHighOrderFESpace :: CreateSmoothingBlocks (const Flags & precflags) const
   {
     int first;
     int ncnt = 0;
@@ -1149,7 +1149,7 @@ namespace ngcomp
       }
 
 
-    Table<int> & table = *new Table<int> (cnt); 
+    Table<int> table(cnt); 
   
     // ii = 0; 
     cnt = 0;
@@ -1279,7 +1279,7 @@ namespace ngcomp
 
     //  *testout << table << endl;
     // cout << "sucess " << endl;
-    return & table;
+    return make_shared<Table<int>> (table);
 
   }
 

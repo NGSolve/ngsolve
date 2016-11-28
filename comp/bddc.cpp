@@ -35,7 +35,7 @@ namespace ngcomp
     BaseVector * tmp;
     BaseVector * tmp2;
 
-    BitArray * wb_free_dofs;
+    shared_ptr<BitArray> wb_free_dofs;
 
   public:
 
@@ -130,7 +130,7 @@ namespace ngcomp
 
       auto ndof = fes->GetNDof();      
 
-      wb_free_dofs = new BitArray (ndof);
+      wb_free_dofs = make_shared<BitArray> (ndof);
       wb_free_dofs->Clear();
 
       // *wb_free_dofs = wbdof;
@@ -350,7 +350,7 @@ namespace ngcomp
 	  flags.SetFlag("eliminate_internal");
 	  flags.SetFlag("subassembled");
 	  cout << "call Create Smoothing Blocks of " << bfa->GetFESpace()->GetName() << endl;
-	  Table<int> & blocks = *(bfa->GetFESpace()->CreateSmoothingBlocks(flags));
+	  shared_ptr<Table<int>> blocks = (bfa->GetFESpace()->CreateSmoothingBlocks(flags));
 	  cout << "has blocks" << endl << endl;
 	  // *testout << "blocks = " << endl << blocks << endl;
 	  // *testout << "pwbmat = " << endl << *pwbmat << endl;
@@ -437,7 +437,7 @@ namespace ngcomp
       delete harmonicext;
       delete harmonicexttrans;
       delete innersolve;
-      delete wb_free_dofs;
+      // delete wb_free_dofs;
 
       delete tmp;
       delete tmp2;
@@ -576,7 +576,7 @@ namespace ngcomp
       ; // delete pre;
     }
     
-    virtual void InitLevel (const BitArray * /* freedofs */) 
+    virtual void InitLevel (shared_ptr<BitArray> /* freedofs */) 
     {
       // delete pre;
       pre = make_shared<BDDCMatrix<SCAL,TV>>(bfa, flags, inversetype, coarsetype, block, hypre);
