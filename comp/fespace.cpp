@@ -936,7 +936,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     ost << "definedon = " << definedon[VOL] << endl;
     ost << "definedon boundary = " << definedon[BND] << endl;
     ost << "definedon codim 2 = " << definedon[BBND] << endl;
-    if (free_dofs->Size()) return;
+    if (!free_dofs) return;
 
     ost << "ndof = " << GetNDof() << endl;
     int ntype[8] = { 0 };
