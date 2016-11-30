@@ -19,7 +19,7 @@ namespace ngla
     // enum COARSE_TYPE { NO_COARSE = 0, USER_COARSE = 1, DIRECT_COARSE = 2, SMOOTHING_COARSE = 3 };
   protected:
     /// the table defining the blocks
-    Table<int> & blocktable;
+    shared_ptr<Table<int>> blocktable;
     /// maximal block size
     int maxbs;
 
@@ -32,7 +32,7 @@ namespace ngla
     size_t nze;
   public:
     /// the blocktable define the blocks. ATTENTION: entries will be reordered !
-    BaseBlockJacobiPrecond (Table<int> & ablocktable);
+    BaseBlockJacobiPrecond (shared_ptr<Table<int>> ablocktable);
 
     /// deletes the table
     virtual ~BaseBlockJacobiPrecond ();
@@ -127,7 +127,7 @@ namespace ngla
 
     ///
     BlockJacobiPrecond (const SparseMatrix<TM,TV_ROW,TV_COL> & amat, 
-			Table<int> & ablocktable);
+			shared_ptr<Table<int>> ablocktable);
     ///
     virtual ~BlockJacobiPrecond ();
 
@@ -175,12 +175,12 @@ namespace ngla
     virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const
     {
       int nels = 0;
-      for (int i = 0; i < blocktable.Size(); i++)
+      for (int i = 0; i < blocktable->Size(); i++)
 	{
-	  int bs = blocktable[i].Size();
+	  int bs = (*blocktable)[i].Size();
 	  nels += bs*bs;
 	}
-      mu.Append (new MemoryUsageStruct ("BlockJac", nels*sizeof(TM), blocktable.Size()));
+      mu.Append (new MemoryUsageStruct ("BlockJac", nels*sizeof(TM), blocktable->Size()));
     }
 
 
@@ -219,7 +219,7 @@ namespace ngla
   
     ///
     NGS_DLL_HEADER BlockJacobiPrecondSymmetric (const SparseMatrixSymmetric<TM,TV> & amat, 
-				 Table<int> & ablocktable);
+                                                shared_ptr<Table<int>> ablocktable);
     
     /*
     BlockJacobiPrecondSymmetric (const SparseMatrixSymmetric<TM,TV> & amat, 

@@ -4,100 +4,49 @@
 
 using namespace ngbla;
 
-template <typename T> char * getPythonFormatString();
-template <> char * getPythonFormatString<float>() { static char f[2]="f"; return f; }
-template <> char * getPythonFormatString<double>() { static char f[2]="d"; return f; }
-template <> char * getPythonFormatString<Complex>() { static char f[2]="D"; return f; }
-
-
-template <typename T, int DIM>
-struct PyBufferProtocol {
+template<typename T, typename TCLASS>
+void PyDefVecBuffer( TCLASS & c )
+{
     typedef typename T::TSCAL TSCAL;
+    c.def_buffer([](T &self) -> py::buffer_info {
+        return py::buffer_info(
+            &self(0),                                     /* Pointer to buffer */
+            sizeof(TSCAL),                                /* Size of one scalar */
+            py::format_descriptor<TSCAL>::format(),       /* Python struct-style format descriptor */
+            1,                                            /* Number of dimensions */
+            { self.Size() },                              /* Buffer dimensions */
+            { sizeof(TSCAL)*(self.Addr(1)-self.Addr(0)) } /* Strides (in bytes) for each index */
+        );
+    });
+    c.def("NumPy", [] (py::object & self) {
+        T& fv = py::cast<T&>(self);
+        auto numpy = py::module::import("numpy");
+        auto frombuffer = numpy.attr("frombuffer");
+        return frombuffer(self);
+    });
+}
 
-    template <class Tclass>
-    void visit(Tclass& c) const {
-//         c.def("NumPy",
-//             [] (py::object & self)
-//               {
-//                 try {
-//                   T& fv = py::cast<T&>(self);
-//                   auto numpy = py::import("numpy");
-//                   auto frombuffer = numpy.attr("frombuffer");
-//                   if (DIM==1)
-//                     return frombuffer(self);
-//                   if (DIM==2)
-//                     return frombuffer(self).attr("reshape")(fv.Height(),fv.Width());
-//                 } catch (py::error_already_set const &) {
-//                   PyErr_Print();
-//                 }
-//                 return py::object();
-//               }  );
-
-        // update exported type so it implements the buffer protocol
-//         const py::converter::registration& fb_reg(py::converter::registry::lookup(py::type_id<T>())); TODO
-//         PyTypeObject* fb_type = fb_reg.get_class_object();
-// 
-//         // buffer protocol
-//         static PyBufferProcs buffer_functions = {
-//             PyBufferProtocol<T, DIM>::getbuffer,/* bf_getbuffer */
-//             PyBufferProtocol<T, DIM>::releasebuffer/* bf_releasebuffer */
-//         };
-// 
-//         // register buffer protocol functions in PyType object
-//         fb_type->tp_as_buffer = &buffer_functions;
-    }
-
-//     static int getbuffer(PyObject *exporter, Py_buffer *view, int flags) {
-//         auto b = py::cast<T&>(exporter);
-// 
-// //         if (!b.check()) {
-// //             PyErr_SetString(PyExc_BufferError, "Invalid exporter instance");
-// //             view->obj = NULL;
-// //             return -1;
-// //         }
-// 
-//         T& array = b();
-// 
-//         if (view == NULL)
-//           return 0;
-// 
-//         view->obj = exporter;
-//         Py_INCREF(view->obj);
-//         view->buf = &array(0);
-//         view->len = sizeof(TSCAL) * array.Width() * array.Height();
-//         view->readonly = PyBUF_WRITABLE;
-//         view->itemsize = sizeof(TSCAL);
-//         view->format = getPythonFormatString<TSCAL>();
-//         view->ndim = DIM;
-//         static_assert(DIM==1 || DIM==2, "invalid dimension for buffer protocol export!");
-//         view->shape = NULL;
-//         if(DIM==2)
-//           {
-//             view->shape = new Py_ssize_t[2];
-//             view->shape[0] = array.Width();
-//             view->shape[1] = array.Height();
-//           }
-//         view->strides = NULL;
-//         view->suboffsets = NULL;
-//         view->internal = NULL;
-//         return 0;
-//     }
-// 
-//     static void releasebuffer(PyObject *exporter, Py_buffer *view) {
-//       auto b = py::cast<T&>(exporter);
-// 
-// //         if (!b.check()) {
-// //             PyErr_SetString(PyExc_BufferError, "Invalid buffer exporter instance");
-// //             return;
-// //         }
-// 
-//         if (view->shape)
-//           {
-//             delete view->shape;
-//             view->shape = NULL;
-//           }
-//     }
-};
+template<typename T, typename TCLASS>
+void PyDefMatBuffer( TCLASS & c )
+{
+    typedef typename T::TSCAL TSCAL;
+    c.def_buffer([](T &self) -> py::buffer_info {
+        return py::buffer_info(
+            &self(0),                                     /* Pointer to buffer */
+            sizeof(TSCAL),                                /* Size of one scalar */
+            py::format_descriptor<TSCAL>::format(),       /* Python struct-style format descriptor */
+            2,                                            /* Number of dimensions */
+            { self.Height(), self.Width() },              /* Buffer dimensions */
+            { sizeof(TSCAL)*self.Width(), sizeof(TSCAL) } /* Strides (in bytes) for each index */
+        );
+    });
+    c.def("NumPy", [] (py::object & self) {
+        T& fv = py::cast<T&>(self);
+        auto numpy = py::module::import("numpy");
+        auto frombuffer = numpy.attr("frombuffer");
+        return frombuffer(self).attr("reshape")(fv.Height(),fv.Width());
+    });
+}
 
 template <typename T, typename TNEW = T, typename TCLASS = py::class_<T> >
 void PyVecAccess( py::module &m, TCLASS &c )
@@ -380,9 +329,9 @@ auto ExportVector(py::module &m, const char * name ) -> py::class_<TVEC>
   {
     auto c = py::class_<TVEC >(m, name);
     PyDefVector<TVEC, TSCAL>(m, c);
-//     PyBufferProtocol<TVEC, 1>(m, c);
     PyVecAccess< TVEC, TNEW >(m, c);
     PyDefToString<TVEC >(m, c);
+    PyDefVecBuffer<TVEC>(c);
     c.def(py::self+=py::self);
     c.def(py::self-=py::self);
     c.def(py::self*=TSCAL());
@@ -418,13 +367,13 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
         .def(py::self*=double())
         ;
 
-    py::class_<VD, FVD>(m, "VectorD")
-        .def(py::init<int>())
-        ;
+    py::class_<VD, FVD> cvd(m, "VectorD");
+    cvd.def(py::init<int>());
+    PyDefVecBuffer<VD>(cvd);
 
-    py::class_<VC, FVC >(m, "VectorC")
-        .def(py::init<int>())
-        ;
+    py::class_<VC, FVC > cvc(m, "VectorC");
+    cvc.def(py::init<int>());
+    PyDefVecBuffer<VC>(cvc);
 
     m.def("Vector",
             [] (int n, bool is_complex) {
@@ -480,14 +429,14 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
         class_FMD.def(py::self+=py::self);
         class_FMD.def(py::self-=py::self);
         class_FMD.def(py::self*=double());
-//         .def(PyBufferProtocol<FMD, 2>())
         class_FMD.def("Inverse", [](FMD & self, FMD & inv) {
 	    CalcInverse(self,inv); return;
 	  });
+        PyDefMatBuffer<FMD>(class_FMD);
 
 
     typedef FlatMatrix<Complex> FMC;
-    py::class_<FlatMatrix<Complex> >(m, "FlatMatrixC")
+    auto class_FMC = py::class_<FlatMatrix<Complex> >(m, "FlatMatrixC")
 //         .def(PyDefToString<FMC>())
 //         .def(PyMatAccess<FMC, Matrix<Complex> >())
         .def(py::self+=py::self)
@@ -528,14 +477,17 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
             return result;
             } ) )
         ;
+    PyDefMatBuffer<FMC>(class_FMC);
 
-    py::class_<Matrix<double>, FMD>(m, "MatrixD")
+    auto class_MD = py::class_<Matrix<double>, FMD>(m, "MatrixD")
         .def(py::init<int, int>())
         ;
+    PyDefMatBuffer<Matrix<>>(class_MD);
 
-    py::class_<Matrix<Complex>, FMC >(m, "MatrixC")
+    auto class_MC = py::class_<Matrix<Complex>, FMC >(m, "MatrixC")
         .def(py::init<int, int>())
         ;
+    PyDefMatBuffer<Matrix<Complex>>(class_MC);
 
     m.def("Matrix",
             [] (int h, int w, bool is_complex) {

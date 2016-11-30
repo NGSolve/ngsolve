@@ -1193,7 +1193,7 @@ namespace ngcomp
   }
 
 
-  Table<int> * HCurlHighOrderFESpace :: 
+  shared_ptr<Table<int>> HCurlHighOrderFESpace :: 
   CreateSmoothingBlocks (const Flags & precflags) const
   {
     int nv = ma->GetNV();
@@ -1254,7 +1254,7 @@ namespace ngcomp
 	  }
 
 	
-	return creator.GetTable();
+	return shared_ptr<Table<int>> (creator.GetTable());
       }
 
 
@@ -1604,7 +1604,7 @@ namespace ngcomp
     
    
         
-    Table<int> & table = *new Table<int> (cnt); 
+    Table<int> table(cnt); 
     // ii = 0; 
     cnt = 0;
     switch(SmoothingType) 
@@ -2006,7 +2006,7 @@ namespace ngcomp
       }
     //(*testout) << "H(Curl)-table = " << table << endl;	
     
-    return & table; 
+    return make_shared<Table<int>> (table); 
   }
 
     

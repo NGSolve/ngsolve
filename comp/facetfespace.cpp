@@ -23,16 +23,54 @@ namespace ngcomp
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,
                                 MAT & mat, LocalHeap & lh)
     {
-      const FacetVolumeFiniteElement<D> & fel_facet = static_cast<const FacetVolumeFiniteElement<D>&> (bfel);
-
       int facetnr = mip.IP().FacetNr();
-      mat = 0.0;
-      if (facetnr < 0)
-        throw Exception("cannot evaluate facet-fe inside element");
+      if (facetnr >= 0)
+        {
+          mat = 0.0;
+          const FacetVolumeFiniteElement<D> & fel_facet = static_cast<const FacetVolumeFiniteElement<D>&> (bfel);
+          fel_facet.Facet(facetnr).CalcShape(mip.IP(), 
+                                             mat.Row(0).Range(fel_facet.GetFacetDofs(facetnr)));
+        }
       else
-        fel_facet.Facet(facetnr).CalcShape(mip.IP(), 
-                                           mat.Row(0).Range(fel_facet.GetFacetDofs(facetnr)));
+        {
+          if (mip.BaseMappedIntegrationPoint::VB() == BND) 
+            {
+              const BaseScalarFiniteElement & fel = static_cast<const BaseScalarFiniteElement&> (bfel);
+              fel.CalcShape (mip.IP(), mat.Row(0));
+            }
+          else
+            throw Exception("cannot evaluate facet-fe inside element");
+        }
     }
+
+    /*
+      // not ready yet ...
+    static void GenerateMatrixSIMDIR (const FiniteElement & fel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      int facetnr = mip.IP().FacetNr();
+      if (facetnr >= 0)
+        {
+          mat = 0.0;
+          const FacetVolumeFiniteElement<D> & fel_facet = static_cast<const FacetVolumeFiniteElement<D>&> (bfel);
+          fel_facet.Facet(facetnr).CalcShape(mip.IP(), 
+                                             mat.Row(0).Range(fel_facet.GetFacetDofs(facetnr)));
+        }
+      else
+        {
+          if (mip.BaseMappedIntegrationPoint::VB() == BND) 
+            {
+              const BaseScalarFiniteElement & fel = static_cast<const BaseScalarFiniteElement&> (bfel);
+              fel.CalcShape (mip.IP(), mat.Row(0));
+            }
+          else
+            throw Exception("cannot evaluate facet-fe inside element");
+        }
+      // Cast(fel).CalcMappedDShape (mir, mat);      
+    }
+    */
+
     
     using DiffOp<DiffOpIdFacet<D>>::ApplySIMDIR;          
     static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
@@ -44,7 +82,7 @@ namespace ngcomp
 
       int facetnr = mir.IR()[0].FacetNr();
       if (facetnr < 0)
-        throw Exception("cannot evaluate facet-fe inside element");
+        throw Exception("cannot evaluate facet-fe inside element, apply simd");
       else
         fel_facet.Facet(facetnr).Evaluate(mir.IR(),
                                           x.Range(fel_facet.GetFacetDofs(facetnr)),
@@ -60,7 +98,7 @@ namespace ngcomp
 
       int facetnr = mir.IR()[0].FacetNr();
       if (facetnr < 0)
-        throw Exception("cannot evaluate facet-fe inside element");
+        throw Exception("cannot evaluate facet-fe inside element, add trans simd");
       else
         fel_facet.Facet(facetnr).AddTrans(mir.IR(),
                                           y.Row(0),
@@ -681,11 +719,11 @@ namespace ngcomp
   }
   
   // ------------------------------------------------------------------------
-  Table<int> * FacetFESpace :: CreateSmoothingBlocks (const Flags & precflags) const
+  shared_ptr<Table<int>> FacetFESpace :: CreateSmoothingBlocks (const Flags & precflags) const
   {
-		if (all_dofs_together)
-			throw Exception("FacetFESpace ::CreateSmoothingBlocks not implemented for case all_dofs_together!");
-
+    if (all_dofs_together)
+      throw Exception("FacetFESpace ::CreateSmoothingBlocks not implemented for case all_dofs_together!");
+    
     int ncnt;
 
     // 1 x low order + faces/edges
@@ -699,7 +737,7 @@ namespace ngcomp
       cnt[i-ncfa] = 1 + first_facet_dof[i+1]-first_facet_dof[i];
 
 
-    Table<int> & table = *new Table<int> (cnt);
+    Table<int> table(cnt);
     
     // face/edges
     int ii;
@@ -712,8 +750,7 @@ namespace ngcomp
       }
       
     // cout << "smoothingblocks = " << endl << table << endl;
-    return &table;
-
+    return make_shared<Table<int>> (table);
   }
 
 
@@ -928,7 +965,7 @@ namespace ngcomp
       }
   }
 
-  Table<int> * HybridDGFESpace :: CreateSmoothingBlocks (const Flags & precflags) const
+  shared_ptr<Table<int>> HybridDGFESpace :: CreateSmoothingBlocks (const Flags & precflags) const
   {
     bool eliminate_internal = precflags.GetDefineFlag("eliminate_internal");
     bool subassembled = precflags.GetDefineFlag("subassembled");
@@ -1037,7 +1074,7 @@ namespace ngcomp
 	    break; 	    
 	  }
       }
-    return creator.GetTable();
+    return shared_ptr<Table<int>> (creator.GetTable());
   }
 
 
