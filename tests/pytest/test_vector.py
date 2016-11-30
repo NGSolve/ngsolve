@@ -17,6 +17,10 @@ def test_vector():
     assert list(b)== ([42,99,42]*3)+[42]
 
 def test_vector_numpy():
+    try:
+        import numpy
+    except:
+        pytest.skip("could not import numpy")
     n = 10
     a = Vector(n)
     for i in range(len(a)):

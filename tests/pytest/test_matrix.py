@@ -16,6 +16,10 @@ def test_matrix():
     assert a[2,4] == 1
 
 def test_matrix_numpy():
+    try:
+        import numpy
+    except:
+        pytest.skip("could not import numpy")
     n = 10
     m = 15
     a = Matrix(n,m)
