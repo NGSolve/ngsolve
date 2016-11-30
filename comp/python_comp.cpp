@@ -296,17 +296,17 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
          py::return_value_policy::reference
          )
     
-    .def("GetFE",[](FESpace::Element & el) -> const FiniteElement & 
+    .def("GetFE",[](FESpace::Element & el)
                                   {
-                                    return el.GetFE();
+                                    return shared_ptr<FiniteElement>(const_cast<FiniteElement*>(&el.GetFE()), NOOP_Deleter);
                                   },
          py::return_value_policy::reference,
          "the finite element containing shape functions"
          )
 
-    .def("GetTrafo",[](FESpace::Element & el) -> const ElementTransformation & 
+    .def("GetTrafo",[](FESpace::Element & el) -> PyWrapper<ElementTransformation>
                                      {
-                                       return el.GetTrafo();
+                                       return shared_ptr<ElementTransformation>(const_cast<ElementTransformation*>(&el.GetTrafo()), NOOP_Deleter);
                                      },
          py::return_value_policy::reference,
          "the transformation from reference element to physical element"
@@ -1109,7 +1109,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                                    {
                                      Allocator alloc;
 
-                                     auto fe = shared_ptr<FiniteElement> (&self->GetFE(ei, alloc));
+                                     auto fe = shared_ptr<FiniteElement> (&self->GetFE(ei, alloc), NOOP_Deleter);
 
                                      auto scalfe = dynamic_pointer_cast<BaseScalarFiniteElement> (fe);
                                      if (scalfe) return py::cast(scalfe);
@@ -1120,7 +1120,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
     
     .def ("GetFE", FunctionPointer([](PyFES & self, ElementId ei, LocalHeap & lh)
                                    {
-                                     return &self->GetFE(ei, lh);
+                                     return shared_ptr<FiniteElement>(&self->GetFE(ei, lh), NOOP_Deleter);
                                    }),
           py::return_value_policy::reference)
 
@@ -1877,13 +1877,13 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
-  PyExportSymbolTable<shared_ptr<FESpace>> (m);
-  PyExportSymbolTable<shared_ptr<CoefficientFunction>> (m);
-  PyExportSymbolTable<shared_ptr<GridFunction>> (m);
-  PyExportSymbolTable<shared_ptr<BilinearForm>>(m);
-  PyExportSymbolTable<shared_ptr<LinearForm>>(m);
-  PyExportSymbolTable<shared_ptr<Preconditioner>> (m);
-  PyExportSymbolTable<shared_ptr<NumProc>> (m);
+  PyExportSymbolTable<shared_ptr<FESpace>, PyWrapper<FESpace>> (m);
+  PyExportSymbolTable<shared_ptr<CoefficientFunction>, PyWrapper<CoefficientFunction>> (m);
+  PyExportSymbolTable<shared_ptr<GridFunction>, PyWrapper<GridFunction>> (m);
+  PyExportSymbolTable<shared_ptr<BilinearForm>, PyWrapper<BilinearForm>>(m);
+  PyExportSymbolTable<shared_ptr<LinearForm>, PyWrapper<LinearForm>>(m);
+  PyExportSymbolTable<shared_ptr<Preconditioner>, PyWrapper<Preconditioner>> (m);
+  PyExportSymbolTable<shared_ptr<NumProc>, PyWrapper<NumProc>> (m);
   PyExportSymbolTable<double> (m);
   PyExportSymbolTable<shared_ptr<double>> (m);
 
@@ -2072,30 +2072,30 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
     .def_property_readonly ("coefficients", FunctionPointer([](PyPDE self) { return py::cast(self->GetCoefficientTable()); }))
     .def_property_readonly ("spaces", FunctionPointer([](PyPDE self) {
           auto table = self->GetSpaceTable();
-          SymbolTable<PyFES> pytable;
+          SymbolTable<shared_ptr<FESpace>> pytable;
           for ( auto i : Range(table.Size() ))
-                pytable.Set(table.GetName(i), PyFES(table[i]));
+                pytable.Set(table.GetName(i), shared_ptr<FESpace>(table[i]));
           return py::cast(pytable);
           }))
     .def_property_readonly ("gridfunctions", FunctionPointer([](PyPDE self) {
           auto table = self->GetGridFunctionTable();
-          SymbolTable<PyGF> pytable;
+          SymbolTable<shared_ptr<GridFunction>> pytable;
           for ( auto i : Range(table.Size() ))
-                pytable.Set(table.GetName(i), PyGF(table[i]));
+                pytable.Set(table.GetName(i), shared_ptr<GridFunction>(table[i]));
           return py::cast(pytable);
           }))
     .def_property_readonly ("bilinearforms", FunctionPointer([](PyPDE self) {
           auto table = self->GetBilinearFormTable();
-          SymbolTable<PyBF> pytable;
+          SymbolTable<shared_ptr<BilinearForm>> pytable;
           for ( auto i : Range(table.Size() ))
-                pytable.Set(table.GetName(i), PyBF(table[i]));
+                pytable.Set(table.GetName(i), shared_ptr<BilinearForm>(table[i]));
           return py::cast(pytable);
           }))
     .def_property_readonly ("linearforms", FunctionPointer([](PyPDE self) {
           auto table = self->GetLinearFormTable();
-          SymbolTable<PyLF> pytable;
+          SymbolTable<shared_ptr<LinearForm>> pytable;
           for ( auto i : Range(table.Size() ))
-                pytable.Set(table.GetName(i), PyLF(table[i]));
+                pytable.Set(table.GetName(i), shared_ptr<LinearForm>(table[i]));
           return py::cast(pytable);
           }))
     .def_property_readonly ("preconditioners", FunctionPointer([](PyPDE self) { return py::cast(self->GetPreconditionerTable()); }))
