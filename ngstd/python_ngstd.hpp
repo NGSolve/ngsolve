@@ -346,7 +346,7 @@ struct PyNameTraits<PyRef<T>> {
   static string GetName() { return string("Ref_") + GetPyName<T>(); }
 };
 
-template <typename T>
+template <typename T, typename PY_T = T>
 void PyExportSymbolTable (py::module &m)
 {
   typedef SymbolTable<T> ST;
@@ -357,12 +357,12 @@ void PyExportSymbolTable (py::module &m)
     .def("__len__", &ST::Size)
     .def("__contains__", &ST::Used)
     .def("GetName", [](ST & self, int i) { return string(self.GetName(i)); })
-    .def("__getitem__", [](ST & self, string name)
+    .def("__getitem__", [](ST & self, string name) -> PY_T
                                         {
                                           if (!self.Used(name)) throw py::index_error();
                                           return self[name]; 
                                         })
-    .def("__getitem__", [](ST & self, int i)
+    .def("__getitem__", [](ST & self, int i) -> PY_T
                                          {
                                            if (i < 0 || i >= self.Size()) throw py::index_error();
                                            return self[i];  
@@ -372,7 +372,7 @@ void PyExportSymbolTable (py::module &m)
 
 
 // convertion not possible for shared_ptr<double>, so we have a special treatment:
-template <> inline void PyExportSymbolTable<shared_ptr<double>> (py::module &m)
+template <> inline void PyExportSymbolTable<shared_ptr<double>, shared_ptr<double>> (py::module &m)
 {
   typedef SymbolTable<shared_ptr<double>> ST;
   
