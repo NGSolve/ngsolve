@@ -359,23 +359,24 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                    SparseMatrix<double> * sp = dynamic_cast<SparseMatrix<double>*> (&m);
                                    if (sp)
                                      {
-                                       Array<int> ri, ci;
-                                       Array<double> vals;
-                                       for (int i = 0; i < sp->Height(); i++)
+                                       size_t nze = sp->NZE();
+                                       Array<int> ri(nze), ci(nze);
+                                       Vector<double> vals(nze);
+                                       for (size_t i = 0, ii = 0; i < sp->Height(); i++)
                                          {
                                            FlatArray<int> ind = sp->GetRowIndices(i);
                                            FlatVector<double> rv = sp->GetRowValues(i);
-                                           for (int j = 0; j < ind.Size(); j++)
+                                           for (int j = 0; j < ind.Size(); j++, ii++)
                                              {
-                                               ri.Append (i);
-                                               ci.Append (ind[j]);
-                                               vals.Append (rv[j]);
+                                               ri[ii] = i;
+                                               ci[ii] = ind[j];
+                                               vals[ii] = rv[j];
                                              }
                                          }
 
-                                       py::object pyri = py::cast(ri);
-                                       py::object pyci = py::cast(ci);
-                                       py::object pyvals = py::cast(vals);
+                                       py::object pyri = py::cast(std::move(ri));
+                                       py::object pyci = py::cast(std::move(ci));
+                                       py::object pyvals = py::cast(std::move(vals));
                                        return py::make_tuple (pyri, pyci, pyvals);
                                      }
 				   
@@ -383,25 +384,24 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 				     = dynamic_cast<SparseMatrix<Complex>*> (&m);
 				   if (spc)
 				     {
-					 Array<int> ri, ci;
-					 Array<double> vals_real;
-					 Array<double> vals_imag;
-					 Array<Complex> vals;
-					 for (int i = 0; i < spc->Height(); i++)
-					   {
-					     FlatArray<int> ind = spc->GetRowIndices(i);
-					     FlatVector<Complex> rv = spc->GetRowValues(i);
-					     for (int j = 0; j < ind.Size(); j++)
-					       {
-						 ri.Append (i);
-						 ci.Append (ind[j]);
-						 vals.Append (rv[j]);
-					       }
-					   }
-					 py::object pyri  = py::cast(ri);
-					 py::object pyci  = py::cast(ci);
-					 py::object pyvals = py::cast(vals);
-					 return py::make_tuple (pyri, pyci, pyvals);
+                                       size_t nze = spc->NZE();
+                                       Array<int> ri(nze), ci(nze);
+                                       Vector<Complex> vals(nze);
+                                       for (size_t i = 0, ii = 0; i < spc->Height(); i++)
+                                         {
+                                           FlatArray<int> ind = spc->GetRowIndices(i);
+                                           FlatVector<Complex> rv = spc->GetRowValues(i);
+                                           for (int j = 0; j < ind.Size(); j++, ii++)
+                                             {
+                                               ri[ii] = i;
+                                               ci[ii] = ind[j];
+                                               vals[ii] = rv[j];
+                                             }
+                                         }
+                                       py::object pyri = py::cast(std::move(ri));
+                                       py::object pyci = py::cast(std::move(ci));
+                                       py::object pyvals = py::cast(std::move(vals));
+                                       return py::make_tuple (pyri, pyci, pyvals);
 				     }
 				   
 				   throw Exception ("COO needs real or complex-valued sparse matrix");
