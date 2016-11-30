@@ -92,6 +92,7 @@ namespace ngcomp
     ElementIterator operator++ () { return ElementIterator(ma, ++ei); }
     INLINE Ngs_Element operator*() const;
     bool operator!=(ElementIterator id2) const { return ei != id2.ei; }
+    bool operator==(ElementIterator id2) const { return ei == id2.ei; }
   };
 
 

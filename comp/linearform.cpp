@@ -203,7 +203,7 @@ namespace ngcomp
 		IterateElements
 		  (*fespace,vb,clh,[&] (FESpace::Element el, LocalHeap &lh)
 		   {
-		     RegionTimer reg2(timer2);
+		     // RegionTimer reg2(timer2);
 		     progress.Update();
 
 		     auto & fel = el.GetFE();

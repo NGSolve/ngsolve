@@ -278,7 +278,9 @@ namespace ngfem
 
     NGS_DLL_HEADER FlatVector<> GetPoint() const;
     FlatMatrix<> GetJacobian() const;
-    int Dim() const;
+    // dimension of range
+    int Dim() const;  
+    VorB VB() const; 
     bool IsComplex() const { return is_complex; }
     void SetOwnsTrafo (bool aowns_trafo = true) { owns_trafo = aowns_trafo; }
   };
@@ -1299,8 +1301,9 @@ namespace ngfem
     
     virtual SliceMatrix<> GetPoints() const
     {
-      return SliceMatrix<> (mips.Size(), DIM_SPACE,
-                            &mips[1].GetPoint()(0) - &mips[0].GetPoint()(0),
+      return SliceMatrix<> (mips.Size(), DIM_SPACE*sizeof(SCAL)/sizeof(double),
+                            //&mips[1].GetPoint()(0) - &mips[0].GetPoint()(0),
+                            sizeof(MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE, SCAL>) / sizeof(double),
                             const_cast<double*> (&mips[0].GetPoint()(0)));
     }
 

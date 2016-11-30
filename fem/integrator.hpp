@@ -614,7 +614,7 @@ namespace ngfem
       
       
     virtual VorB VB () const 
-    { return BND; }
+    { return VOL; }
 
     virtual bool SkeletonForm () const 
     { return 1; }

@@ -179,17 +179,17 @@ namespace ngmg
     for (j = 0; j < ma.GetNP(); j++)
       cnts[ma.GetClusterRepVertex(j)]++;
 
-    Table<int> * linecluster = new Table<int>(cnts);
+    Table<int> linecluster(cnts);
     
     cnts = 0;
     for (j = 0; j < ma.GetNP(); j++)
       {
 	int cl = ma.GetClusterRepVertex(j);
-	(linecluster)[cl][cnts[cl]] = j;
+	linecluster[cl][cnts[cl]] = j;
 	cnts[cl]++;
       }
     jac.Append  (dynamic_cast<const BaseSparseMatrix&> (biform.GetMatrix()) . 
-		 CreateBlockJacobiPrecond(*linecluster));
+		 CreateBlockJacobiPrecond(make_shared<Table<int>> (linecluster)));
   }
 
 
@@ -714,7 +714,7 @@ namespace ngmg
     
     if (biform.UsesEliminateInternal())
       flags.SetFlag("eliminate_internal");
-    Table<int> * it = biform.GetFESpace()->CreateSmoothingBlocks(flags);
+    shared_ptr<Table<int>> it = biform.GetFESpace()->CreateSmoothingBlocks(flags);
 
 
     while (jac.Size() < level)
@@ -725,12 +725,12 @@ namespace ngmg
       {
 	// delete jac[level-1];
 	jac[level-1] = dynamic_cast<const BaseSparseMatrix&> 
-	  (biform.GetMatrix()).CreateBlockJacobiPrecond(*it);
+	  (biform.GetMatrix()).CreateBlockJacobiPrecond(it);
       }
     else
       {
 	jac[level-1] = dynamic_cast<const BaseSparseMatrix&> 
-	  (biform.GetMatrix()).CreateBlockJacobiPrecond(*it, &constraint->GetVector());
+	  (biform.GetMatrix()).CreateBlockJacobiPrecond(it, &constraint->GetVector());
       }
 #else
 

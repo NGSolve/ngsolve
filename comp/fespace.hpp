@@ -86,8 +86,8 @@ namespace ngcomp
 
     /// dofs on Dirichlet boundary
     BitArray dirichlet_dofs;
-    BitArray free_dofs;
-    BitArray external_free_dofs;
+    shared_ptr<BitArray> free_dofs;
+    shared_ptr<BitArray> external_free_dofs;
 
 
     Array<bool> dirichlet_vertex;
@@ -279,6 +279,7 @@ namespace ngcomp
       }
       INLINE Element operator*() const { return Element (fes, ei, temp_dnums, lh); }          
       INLINE bool operator!=(const ElementIterator & id2) const { return ei != id2.ei; }
+      INLINE bool operator==(const ElementIterator & id2) const { return ei == id2.ei; }
     };
     
     class ElementRange : public IntRange
@@ -467,7 +468,7 @@ namespace ngcomp
     // bool IsLowOrderSpace () const { return is_low_order_space; }
 
     /// non Dirichlet dofs
-    virtual const BitArray * GetFreeDofs (bool external = false) const;
+    virtual shared_ptr<BitArray> GetFreeDofs (bool external = false) const;
     ///
     bool IsDirichletDof (int i) const
     { return dirichlet_dofs.Size() && dirichlet_dofs[i]; }
@@ -484,7 +485,7 @@ namespace ngcomp
 
     void GetFilteredDofs(COUPLING_TYPE doffilter, BitArray & output, bool freedofsonly=true) const;
     /// 
-    virtual Table<int> * CreateSmoothingBlocks (const Flags & flags) const;
+    virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & flags) const;
     /// for anisotropic plane smoothing:
     virtual Array<int> * CreateDirectSolverClusters (const Flags & flags) const
     { return 0; }

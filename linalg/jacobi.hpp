@@ -31,7 +31,7 @@ namespace ngla
   protected:
     const SparseMatrix<TM,TV_ROW,TV_COL> & mat;
     ///
-    const BitArray * inner;
+    shared_ptr<BitArray> inner;
     ///
     int height;
     ///
@@ -42,7 +42,7 @@ namespace ngla
 
     ///
     JacobiPrecond (const SparseMatrix<TM,TV_ROW,TV_COL> & amat, 
-		   const BitArray * ainner = NULL, bool use_par = true);
+		   shared_ptr<BitArray> ainner = nullptr, bool use_par = true);
 
     ///
     virtual ~JacobiPrecond ();
@@ -92,7 +92,7 @@ namespace ngla
 
     ///
     JacobiPrecondSymmetric (const SparseMatrixSymmetric<TM,TV> & amat, 
-			    const BitArray * ainner = NULL, bool use_par = true);
+			    shared_ptr<BitArray> ainner = nullptr, bool use_par = true);
 
     ///
     virtual void GSSmooth (BaseVector & x, const BaseVector & b) const;

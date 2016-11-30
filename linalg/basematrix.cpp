@@ -123,7 +123,7 @@ namespace ngla
   void BaseMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
     //    cout << "Warning: BaseMatrix::MultAdd(double), this = " << typeid(*this).name() << endl;
-    auto temp = CreateColVector();
+    auto temp = y.CreateVector();
     Mult (x, *temp);
     y += s * *temp;
   }
@@ -179,7 +179,7 @@ namespace ngla
 
 
 
-  shared_ptr<BaseMatrix> BaseMatrix :: InverseMatrix (const BitArray * subset) const 
+  shared_ptr<BaseMatrix> BaseMatrix :: InverseMatrix (shared_ptr<BitArray> subset) const 
   {
     cerr << "BaseMatrix::InverseMatrix not available" << endl;
     return NULL;

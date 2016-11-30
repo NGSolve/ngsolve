@@ -236,14 +236,18 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
-  py::class_<ElementRange, IntRange> class_elementrange(m, "ElementRange");
-  class_elementrange.def(py::init<const MeshAccess&,VorB,IntRange>()) ;
-  PyDefIterable2<ElementRange>(m, class_elementrange);
+  py::class_<ElementRange, IntRange> (m, "ElementRange")
+    .def(py::init<const MeshAccess&,VorB,IntRange>())
+    .def("__iter__", [] (ElementRange &er)
+      { return py::make_iterator(er.begin(), er.end()); },
+      py::keep_alive<0,1>()
+    );
 
-  py::class_<FESpace::ElementRange,shared_ptr<FESpace::ElementRange>, IntRange> class_fespace(m, "FESpaceElementRange");
-    // .def(py::init<const FESpace::ElementRange&>())
-    // .def(py::init<FESpace::ElementRange&&>())
-  PyDefIterable3<FESpace::ElementRange>(m, class_fespace);
+  py::class_<FESpace::ElementRange,shared_ptr<FESpace::ElementRange>, IntRange> (m, "FESpaceElementRange")
+    .def("__iter__", [] (FESpace::ElementRange &er)
+      { return py::make_iterator(er.begin(), er.end()); },
+      py::keep_alive<0,1>()
+    );
 
 
   //////////////////////////////////////////////////////////////////////////////////////////
@@ -1118,8 +1122,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 
 
     .def("FreeDofs", FunctionPointer
-         ( [] (const PyFES &self, bool coupling) -> const BitArray &{ return *self->GetFreeDofs(coupling); } ),
-         py::return_value_policy::reference,
+         ( [] (const PyFES &self, bool coupling) { return self->GetFreeDofs(coupling); } ),
          py::arg("coupling")=false)
 
     .def("Range", FunctionPointer
@@ -1269,7 +1272,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
          flags.SetFlag ("multidim", py::extract<int>(t[3])());
          auto gf = CreateGridFunction (fespace.Get(), t[1].cast<string>(), flags);
          gf->Update();
-	 gf->GetVector() = *t[2].cast<PyBaseVector>().Get();
+	 gf->GetVector() = *t[2].cast<PyBaseVector>();
          new (&self) PyGF(gf);
          py::object self_object = py::cast(self);
 	 self_object.attr("__persistent_id__") = t[4];
@@ -1824,28 +1827,28 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
-  typedef PyWrapperDerived<Preconditioner, BaseMatrix> PRE;
-  py::class_<PRE, PyBaseMatrix>(m, "Preconditioner")
-    .def("__init__",
-         [](PRE *instance, PyWrapper<BilinearForm> bfa, const string & type,
-                              Flags flags)
+  py::class_<Preconditioner, shared_ptr<Preconditioner>, BaseMatrix>(m, "CPreconditioner")
+    .def ("Update", [](Preconditioner &pre) { pre.Update();} )
+    .def_property_readonly("mat", FunctionPointer
+                  ([](Preconditioner &self) -> PyWrapper<BaseMatrix>
+                   {
+                     return shared_ptr<BaseMatrix> (const_cast<BaseMatrix*> (&self.GetMatrix()),
+                                                    NOOP_Deleter);
+                   }))
+    ;
+
+   
+   m.def("Preconditioner",
+         [](PyWrapper<BilinearForm> bfa, const string & type, Flags flags)
                            { 
                              auto creator = GetPreconditionerClasses().GetPreconditioner(type);
                              if (creator == nullptr)
                                throw Exception(string("nothing known about preconditioner '") + type + "'");
-                             new (instance) PRE(creator->creatorbf(bfa.Get(), flags, "noname-pre"));
+                             return creator->creatorbf(bfa.Get(), flags, "noname-pre");
                            },
           py::arg("bf"), py::arg("type"), py::arg("flags")=py::dict()
-          )
+          );
 
-    .def ("Update", [](PRE pre) { pre->Update();} )
-    .def_property_readonly("mat", FunctionPointer
-                  ([](PRE self) -> PyBaseMatrix
-                   {
-                     return shared_ptr<BaseMatrix> (const_cast<BaseMatrix*> (&self->GetMatrix()),
-                                                    NOOP_Deleter);
-                   }))
-    ;
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
@@ -2099,11 +2102,15 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
           [](PyCF cf,
                              shared_ptr<MeshAccess> ma, 
 	     VorB vb, int order, py::object definedon,
-                             bool region_wise, bool element_wise)
+	     bool region_wise, bool element_wise, int heapsize)
                           {
                             static Timer t("Integrate CF"); RegionTimer reg(t);
                             // static mutex addcomplex_mutex;
-                            LocalHeap lh(1000000, "lh-Integrate");
+			    if (heapsize > global_heapsize)
+			      {
+				global_heapsize = heapsize;
+				glh = LocalHeap(heapsize, "python-comp lh", true);
+			      }
                            py::extract<Region> defon_region(definedon);
                            if (defon_region.check())
                              vb = VorB(defon_region());
@@ -2125,15 +2132,15 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                                 Vector<> element_sum(element_wise ? ma->GetNE(vb) : 0);
                                 region_sum = 0;
                                 element_sum = 0;
-
-                                bool use_simd = true;
+				bool use_simd = true;
+				
                                 
                                 ma->IterateElements
-                                  (vb, lh, [&] (Ngs_Element el, LocalHeap & lh)
+                                  (vb, glh, [&] (Ngs_Element el, LocalHeap & lh)
                                    {
 				     if(!mask.Test(el.GetIndex())) return;
                                      auto & trafo = ma->GetTrafo (el, lh);
-                                     Vector<> hsum(dim);
+                                     FlatVector<> hsum(dim, lh);
 				     hsum = 0.0;
                                      bool this_simd = use_simd;
                                      
@@ -2143,13 +2150,13 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                                            {
                                              SIMD_IntegrationRule ir(trafo.GetElementType(), order);
                                              auto & mir = trafo(ir, lh);
-                                             AFlatMatrix<> values(dim,ir.GetNIP(), lh);
+                                             FlatMatrix<SIMD<double>> values(dim,ir.Size(), lh);
                                              cf.Get() -> Evaluate (mir, values);
-                                             Vector<SIMD<double>> vsum(dim);
+                                             FlatVector<SIMD<double>> vsum(dim, lh);
 					     vsum = 0;
-					     
-                                             for (size_t i = 0; i < values.VWidth(); i++)
-                                               vsum += mir[i].GetWeight() * values.Col(i);
+                                             for (size_t j = 0; j < dim; j++)
+                                               for (size_t i = 0; i < values.Width(); i++)
+                                                 vsum(j) += mir[i].GetWeight() * values(j,i);
 					     for(int i = 0; i< dim; i++)
 					       hsum[i] = HSum(vsum[i]);
                                            }
@@ -2190,7 +2197,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                             else
                               {
                                 Vector<Complex> sum(dim);
-				sum = 0;
+				sum = 0.0;
                                 Vector<Complex> region_sum(region_wise ? ma->GetNRegions(vb) : 0);
                                 Vector<Complex> element_sum(element_wise ? ma->GetNE(vb) : 0);
                                 region_sum = 0;
@@ -2199,12 +2206,12 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                                 bool use_simd = true;
                                 
                                 ma->IterateElements
-                                  (vb, lh, [&] (Ngs_Element el, LocalHeap & lh)
+                                  (vb, glh, [&] (Ngs_Element el, LocalHeap & lh)
                                    {
 				     if(!mask.Test(el.GetIndex())) return;
                                      auto & trafo = ma->GetTrafo (el, lh);
                                      Vector<Complex> hsum(dim);
-				     hsum = 0;
+				     hsum = 0.0;
                                      
                                      bool this_simd = use_simd;
 
@@ -2214,15 +2221,14 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                                            {
                                              SIMD_IntegrationRule ir(trafo.GetElementType(), order);
                                              auto & mir = trafo(ir, lh);
-                                             FlatMatrix<SIMD<Complex>> values(dim, ir.GetNIP(), lh);
+                                             FlatMatrix<SIMD<Complex>> values(dim, ir.Size(), lh);
                                              cf.Get() -> Evaluate (mir, values);
-                                             Vector<SIMD<Complex>> vsum(dim);
-					     vsum = 0.0;
-                                             for (size_t i = 0; i < values.Width(); i++)
-					       vsum += mir[i].GetWeight() * values.Col(i);
-					     // for(size_t j = 0; j < values.Height(); j++)
-					     //	 vsum[j] += mir[i].GetWeight() * values(j,i);
-					     for(size_t i =0; i < dim; i++)
+                                             FlatVector<SIMD<Complex>> vsum(dim,lh);
+					     vsum = Complex(0.0);
+                                             for (size_t j = 0; j < dim; j++)
+                                               for (size_t i = 0; i < values.Width(); i++)
+                                                 vsum(j) += mir[i].GetWeight() * values(j,i);
+					     for(size_t i = 0; i < dim; i++)
 					       hsum[i] = HSum(vsum[i]);
                                            }
                                          catch (ExceptionNOSIMD e)
@@ -2265,7 +2271,8 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
            py::arg("order")=5,
 	py::arg("definedon")=DummyArgument(),
            py::arg("region_wise")=false,
-           py::arg("element_wise")=false)
+	py::arg("element_wise")=false,
+	py::arg("heapsize") = 1000000)
     ;
   
 
