@@ -1348,7 +1348,6 @@ namespace ngla
     // #endif
 
     // #ifdef ASTRID
-    cout << "HELLO2!" << endl;
 
     if ( this->GetInverseType() == SUPERLU_DIST )
       throw Exception ("SparseMatrix::InverseMatrix:  SuperLU_DIST_Inverse not available");
