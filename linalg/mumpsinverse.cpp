@@ -28,7 +28,7 @@ namespace ngla
   template <class TM, class TV_ROW, class TV_COL>
   MumpsInverse<TM,TV_ROW,TV_COL> :: 
   MumpsInverse (const SparseMatrix<TM,TV_ROW,TV_COL> & a, 
-                const BitArray * ainner,
+                const shared_ptr<BitArray> ainner,
                 const Array<int> * acluster,
                 bool asymmetric)
   { 
