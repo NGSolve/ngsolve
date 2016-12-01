@@ -258,8 +258,8 @@ namespace ngla
                               FlatVector<Complex> v) const = 0;
     void SetIndirect (FlatArray<int> ind, FlatVector<double> v);
     void SetIndirect (FlatArray<int> ind, FlatVector<Complex> v);
-    void AddIndirect (FlatArray<int> ind, FlatVector<double> v);
-    void AddIndirect (FlatArray<int> ind, FlatVector<Complex> v);
+    void AddIndirect (FlatArray<int> ind, FlatVector<double> v, bool use_atomic = false);
+    void AddIndirect (FlatArray<int> ind, FlatVector<Complex> v, bool use_atomic = false);
 
     /*
 
