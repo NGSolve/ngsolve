@@ -518,16 +518,25 @@ namespace ngla
   */  
 
   void BaseVector :: AddIndirect (FlatArray<int> ind, 
-				  FlatVector<double> v) 
+				  FlatVector<double> v, bool use_atomic) 
   {
     if (EntrySize() == 1)
       {
         FlatVector<double> lsv(Size(), &FVDouble()(0));
-        
-        for (int i = 0; i < ind.Size(); i++)
-          if (ind[i] != -1)
-            lsv(ind[i]) += v(i);
 
+        if (!use_atomic)
+          {
+            for (int i = 0; i < ind.Size(); i++)
+              if (ind[i] != -1)
+                lsv(ind[i]) += v(i);
+          }
+        else
+          {
+            for (int i = 0; i < ind.Size(); i++)
+              if (ind[i] != -1)
+                MyAtomicAdd (lsv(ind[i]), v(i));
+            // lsv(ind[i]) += v(i);
+          }
       }
     else
       {
@@ -541,7 +550,7 @@ namespace ngla
   }
 
   void BaseVector :: AddIndirect (FlatArray<int> ind, 
-				  FlatVector<Complex> v)
+				  FlatVector<Complex> v, bool use_atomic)
   { 
     FlatVector<Complex> fv = FVComplex();
     int es = EntrySize() / 2;

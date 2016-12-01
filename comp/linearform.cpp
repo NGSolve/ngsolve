@@ -690,7 +690,7 @@ namespace ngcomp
 		    FlatVector<double> elvec,
 		    int cachecomp) 
   {
-    vec -> AddIndirect (dnums, elvec);
+    vec -> AddIndirect (dnums, elvec, fespace->HasAtomicDofs());
   }
   
   template <> void T_LinearForm<Complex>::
