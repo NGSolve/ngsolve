@@ -37,10 +37,15 @@ set(NETGEN_INTERNAL_INCLUDE_DIR NOTFOUND CACHE INTERNAL "Netgen include director
 set(BUILD_NETGEN OFF CACHE INTERNAL "is set if netgen is built as external project")
 #######################################################################
 if(NETGEN_SOURCE_DIR)
-    find_path(NETGEN_INTERNAL_INCLUDE_DIR nginterface_v2_impl.hpp PATHS ${NETGEN_SOURCE_DIR} ${NETGEN_SOURCE_DIR}/libsrc/include)
-    if (NOT NETGEN_INTERNAL_INCLUDE_DIR)
+    find_path(NETGEN_INCLUDE_DIR nginterface_v2_impl.hpp PATHS ${NETGEN_SOURCE_DIR} ${NETGEN_SOURCE_DIR}/libsrc/include)
+    if (NOT NETGEN_INCLUDE_DIR)
       message(FATAL_ERROR "Could not find Netgen source files in NETGEN_SOURCE_DIR, which was set to ${NETGEN_SOURCE_DIR}")
     endif()
+    set(NETGEN_INTERNAL_INCLUDE_DIR
+      "${NETGEN_INCLUDE_DIR}"
+      "${NETGEN_INCLUDE_DIR}/../general"
+      "${NETGEN_INCLUDE_DIR}/../visualization"
+    )
 else(NETGEN_SOURCE_DIR)
   message(STATUS "Use Netgen from submodule, updating modules...")
   execute_process(COMMAND git submodule update --init --recursive WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
@@ -51,7 +56,6 @@ else(NETGEN_SOURCE_DIR)
     "${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies/netgen/libsrc/include"
     "${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies/netgen/libsrc/general"
     "${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies/netgen/libsrc/visualization"
-    CACHE INTERNAL "Netgen include directories"
   )
 endif(NETGEN_SOURCE_DIR)
 
@@ -145,7 +149,7 @@ add_definitions(-DUSE_TIMEOFDAY)
 
 include_directories ("${PROJECT_SOURCE_DIR}/include")
 include_directories ("${PROJECT_BINARY_DIR}")
-include_directories (AFTER "${CMAKE_INSTALL_PREFIX}/include")
+# include_directories (AFTER "${CMAKE_INSTALL_PREFIX}/include")
 
 link_directories ("${CMAKE_INSTALL_PREFIX}/${ngs_install_dir_lib}")
 
