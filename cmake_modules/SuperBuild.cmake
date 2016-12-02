@@ -3,6 +3,7 @@ include (ExternalProject)
 set_property (DIRECTORY PROPERTY EP_BASE Dependencies)
 
 set (DEPENDENCIES)
+set (LAPACK_DEPENDENCIES)
 set (EXTRA_CMAKE_ARGS)
 
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${PROJECT_SOURCE_DIR}/cmake_modules")
@@ -46,7 +47,21 @@ endif(USE_MKL)
 
 if (USE_LAPACK)
     if(NOT LAPACK_LIBRARIES)
-      find_package(LAPACK)
+      if(WIN32)
+        ExternalProject_Add(win_download_lapack
+          PREFIX ${CMAKE_CURRENT_BINARY_DIR}/tcl
+          URL "http://www.asc.tuwien.ac.at/~mhochsteger/ngsuite/lapack64.zip"
+          UPDATE_COMMAND "" # Disable update
+          BUILD_IN_SOURCE 1
+          CONFIGURE_COMMAND ""
+          BUILD_COMMAND ""
+          INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_directory . ${INSTALL_DIR}
+          )
+        set(LAPACK_LIBRARIES ${INSTALL_DIR}/lib/BLAS.lib)
+        list(APPEND LAPACK_DEPENDENCIES win_download_lapack)
+      else(WIN32)
+        find_package(LAPACK)
+      endif(WIN32)
     endif()
     set_vars(LAPACK_LIBRARIES)
 endif (USE_LAPACK)
@@ -106,12 +121,28 @@ endif (USE_PYTHON)
 if(USE_UMFPACK)
   ExternalProject_Add(
     suitesparse
+    DEPENDS ${LAPACK_DEPENDENCIES}
     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/umfpack
     GIT_REPOSITORY https://github.com/jlblancoc/suitesparse-metis-for-windows.git
     CMAKE_ARGS -DSUITESPARSE_USE_CUSTOM_BLAS_LAPACK_LIBS=ON -DSHARED=ON -DBUILD_METIS=OFF -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} -DSUITESPARSE_CUSTOM_LAPACK_LIB=${LAPACK_LIBRARIES} -DSUITESPARSE_CUSTOM_BLAS_LIB=${LAPACK_LIBRARIES}
     )
   list(APPEND DEPENDENCIES suitesparse)
 endif(USE_UMFPACK)
+
+#######################################################################
+
+if(USE_OCC AND WIN32)
+    ExternalProject_Add(win_download_occ
+      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/tcl
+      URL "http://www.asc.tuwien.ac.at/~mhochsteger/ngsuite/occ64.zip"
+      UPDATE_COMMAND "" # Disable update
+      BUILD_IN_SOURCE 1
+      CONFIGURE_COMMAND ""
+      BUILD_COMMAND ""
+      INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_directory . ${INSTALL_DIR}
+      )
+  list(APPEND DEPENDENCIES win_download_occ)
+endif(USE_OCC AND WIN32)
 
 #######################################################################
 
@@ -146,7 +177,7 @@ set_vars(
 ExternalProject_Add (ngsolve
   DEPENDS ${DEPENDENCIES}
   SOURCE_DIR ${PROJECT_SOURCE_DIR}
-  CMAKE_ARGS -DUSE_SUPERBUILD=OFF ${EXTRA_CMAKE_ARGS}
+  CMAKE_ARGS -DUSE_SUPERBUILD=OFF ${EXTRA_CMAKE_ARGS} -DCMAKE_PREFIX_PATH=${INSTALL_DIR}
   INSTALL_COMMAND ""
   BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/ngsolve
   STEP_TARGETS build
