@@ -189,6 +189,9 @@ endif (USE_MPI)
 
 #######################################################################
 if (USE_LAPACK)
+    if(NOT LAPACK_LIBRARIES)
+      find_package(LAPACK REQUIRED)
+    endif()
     add_definitions(-DLAPACK)
 endif (USE_LAPACK)
 

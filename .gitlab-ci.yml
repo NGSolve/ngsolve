@@ -15,9 +15,7 @@ stages:
   before_script:
     - "echo off"
     - 'call "%VS140COMNTOOLS%\..\..\VC\bin\vcvars32.bat"'
-    - set EXT_LIBS=C:\external_libs\x86
     - set CMAKE_GENERATOR=Visual Studio 14 2015
-    - set NETGEN_ORIG_DIR=C:\install32_master
     - set NETGEN_TEMP_DIR=C:\ci\%CI_BUILD_REF%_32
     - set INSTALL_DIR="C:/ci/%CI_BUILD_REF%_32"
     - set NETGENDIR=%NETGEN_TEMP_DIR%\bin
@@ -32,7 +30,6 @@ stages:
   before_script:
     - "echo off"
     - 'call "%VS140COMNTOOLS%\..\..\VC\bin\amd64\vcvars64.bat"'
-    - set EXT_LIBS=C:\external_libs\x64
     - set CMAKE_GENERATOR=Visual Studio 14 2015 Win64
     - set NETGEN_ORIG_DIR=C:\install64_master
     - set NETGEN_TEMP_DIR=C:\ci\%CI_BUILD_REF%_64
@@ -76,7 +73,6 @@ stages:
     - RD /S CMakeFiles
     - >-
         cmake ..\
-        -DADDITIONAL_PATHS="%EXT_LIBS%\ext_libs"
         %PYTHON_CONFIG%
         -G"%CMAKE_GENERATOR%"
         -DINSTALL_DIR="%INSTALL_DIR%"

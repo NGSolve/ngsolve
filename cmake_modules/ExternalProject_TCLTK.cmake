@@ -44,7 +44,7 @@ elseif(WIN32)
 
   ExternalProject_Add(win_extlibs
     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/tcl
-    URL "http://www.asc.tuwien.ac.at/~mhochsteger/ngsuite/external_libs.zip"
+    URL "http://www.asc.tuwien.ac.at/~mhochsteger/ngsuite/ext_libs64.zip"
     UPDATE_COMMAND "" # Disable update
     BUILD_IN_SOURCE 1
     CONFIGURE_COMMAND ""
@@ -56,4 +56,4 @@ elseif(WIN32)
 else(WIN32)
     find_package(TCL 8.5 REQUIRED)
     set_vars(TCL_INCLUDE_PATH)
-endif(WIN32)
+endif(APPLE)
