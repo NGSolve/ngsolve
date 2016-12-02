@@ -114,6 +114,12 @@ if(USE_UMFPACK)
 endif(USE_UMFPACK)
 
 #######################################################################
+
+if(USE_GUI)
+  include(cmake_modules/ExternalProject_TCLTK.cmake)
+endif(USE_GUI)
+
+#######################################################################
 # propagate cmake variables to NGSolve subproject
 set_vars(
   USE_GUI
