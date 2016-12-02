@@ -427,7 +427,7 @@ foreach( d ${ngscxx_include_dirs} )
 endforeach()
 
 # linker flags
-if(USE_MKL)
+if(USE_MKL AND NOT INSTALL_DEPENDENCIES)
     set( ngsld_flags "${ngsld_flags} ${MKL_LINK_FLAGS}" )
 endif()
 
