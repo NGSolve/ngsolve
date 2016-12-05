@@ -16,6 +16,24 @@ macro(set_vars ...)
     endif()
   endforeach()
 endmacro()
+#######################################################################
+if(WIN32)
+  if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+    string(REGEX REPLACE "/W[0-4]" "/W0" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}" FORCE)
+  endif(NOT CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+
+  if(${CMAKE_SIZEOF_VOID_P} MATCHES 4)
+    # 32 bit
+    set(EXT_LIBS_DOWNLOAD_URL_WIN "http://www.asc.tuwien.ac.at/~mhochsteger/ngsuite/ext_libs32.zip" CACHE STRING INTERNAL)
+    set(LAPACK_DOWNLOAD_URL_WIN "http://www.asc.tuwien.ac.at/~mhochsteger/ngsuite/lapack32.zip" CACHE STRING INTERNAL)
+    set(OCC_DOWNLOAD_URL_WIN "http://www.asc.tuwien.ac.at/~mhochsteger/ngsuite/occ32.zip" CACHE STRING INTERNAL)
+  else(${CMAKE_SIZEOF_VOID_P} MATCHES 4)
+    # 64 bit
+    set(EXT_LIBS_DOWNLOAD_URL_WIN "http://www.asc.tuwien.ac.at/~mhochsteger/ngsuite/ext_libs64.zip" CACHE STRING INTERNAL)
+    set(LAPACK_DOWNLOAD_URL_WIN "http://www.asc.tuwien.ac.at/~mhochsteger/ngsuite/lapack64.zip" CACHE STRING INTERNAL)
+    set(OCC_DOWNLOAD_URL_WIN "http://www.asc.tuwien.ac.at/~mhochsteger/ngsuite/occ64.zip" CACHE STRING INTERNAL)
+  endif(${CMAKE_SIZEOF_VOID_P} MATCHES 4)
+endif(WIN32)
 
 #######################################################################
 # find netgen
@@ -50,7 +68,7 @@ if (USE_LAPACK)
       if(WIN32)
         ExternalProject_Add(win_download_lapack
           PREFIX ${CMAKE_CURRENT_BINARY_DIR}/tcl
-          URL "http://www.asc.tuwien.ac.at/~mhochsteger/ngsuite/lapack64.zip"
+          URL ${LAPACK_DOWNLOAD_URL_WIN}
           UPDATE_COMMAND "" # Disable update
           BUILD_IN_SOURCE 1
           CONFIGURE_COMMAND ""
@@ -134,7 +152,7 @@ endif(USE_UMFPACK)
 if(USE_OCC AND WIN32)
     ExternalProject_Add(win_download_occ
       PREFIX ${CMAKE_CURRENT_BINARY_DIR}/tcl
-      URL "http://www.asc.tuwien.ac.at/~mhochsteger/ngsuite/occ64.zip"
+      URL ${OCC_DOWNLOAD_URL_WIN}
       UPDATE_COMMAND "" # Disable update
       BUILD_IN_SOURCE 1
       CONFIGURE_COMMAND ""
@@ -153,6 +171,8 @@ endif(USE_GUI)
 #######################################################################
 # propagate cmake variables to NGSolve subproject
 set_vars(
+  CMAKE_CXX_FLAGS
+  CMAKE_CXX_FLAGS_RELEASE
   USE_GUI
   USE_PYTHON
   USE_LAPACK

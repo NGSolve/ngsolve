@@ -146,7 +146,7 @@ if(WIN32)
         set(CMAKE_CXX_FLAGS "/Od ${CMAKE_CXX_FLAGS} /MP /Qstd=c++14 /Qopt-report-file:report.log")
     else()
         # MS Visual Compiler
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /w /bigobj")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /bigobj")
     endif()
 
 else(WIN32)
