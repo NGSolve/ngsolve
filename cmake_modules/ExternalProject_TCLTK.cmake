@@ -44,7 +44,7 @@ elseif(WIN32)
 
   ExternalProject_Add(win_extlibs
     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/tcl
-    URL "http://www.asc.tuwien.ac.at/~mhochsteger/ngsuite/ext_libs64.zip"
+    URL ${EXT_LIBS_DOWNLOAD_URL_WIN}
     UPDATE_COMMAND "" # Disable update
     BUILD_IN_SOURCE 1
     CONFIGURE_COMMAND ""
