@@ -28,7 +28,7 @@ namespace ngla
   template <class TM, class TV_ROW, class TV_COL>
   MumpsInverse<TM,TV_ROW,TV_COL> :: 
   MumpsInverse (const SparseMatrix<TM,TV_ROW,TV_COL> & a, 
-                const BitArray * ainner,
+                shared_ptr<BitArray> ainner,
                 const Array<int> * acluster,
                 bool asymmetric)
   { 
@@ -418,7 +418,7 @@ namespace ngla
   template <class TM, class TV>
   ParallelMumpsInverse<TM,TV> :: 
   ParallelMumpsInverse (const BaseSparseMatrix & ba, 
-			const BitArray * inner,
+			shared_ptr<BitArray> inner,
 			const Array<int> * cluster,
 			const ParallelDofs * pardofs,
 			bool asymmetric)
@@ -470,7 +470,7 @@ namespace ngla
     
     Array<int> global_nums;
     int num_glob_dofs;
-    pardofs -> EnumerateGlobally (inner, global_nums, num_glob_dofs);
+    pardofs -> EnumerateGlobally (inner.get(), global_nums, num_glob_dofs);
 
     int ndof = pardofs->GetNDofLocal();
 
