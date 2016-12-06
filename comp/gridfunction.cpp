@@ -1312,7 +1312,7 @@ namespace ngcomp
         gf->GetElementVector (comp, dnums, elu);
         fes.TransformVec (elnr, vb, elu, TRANSFORM_SOL);
         const TPMappedIntegrationRule & tpir = dynamic_cast<const TPMappedIntegrationRule &>(ir);
-        fes.GetEvaluator()->Apply (fel, *tpir.GetIRs()[0], elu, values, lh2);
+        diffop->Apply (fel, *tpir.GetIRs()[0], elu, values, lh2);
         for(int i=tpir.GetIRs()[0]->Size()-1;i>=0;i--)
             values.Rows(i*tpir.GetIRs()[1]->Size(),(i+1)*tpir.GetIRs()[1]->Size()) = values.Row(i)(0);
         return;
