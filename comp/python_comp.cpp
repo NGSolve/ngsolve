@@ -2588,7 +2588,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
               
    m.def("IntDv2", [](PyGF gf_tp, PyGF gf_x, PyCF coef )
            {
-              static Timer tall("comp.IntDv2"); RegionTimer rall(tall);
+              static Timer tall("comp.IntDv2 - total domain int"); RegionTimer rall(tall);
               shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp.Get()->GetFESpace());
               LocalHeap lh(10000000,"IntDv2");
               tpfes->ReduceToXSpace(gf_tp.Get(),gf_x.Get(),lh,
@@ -2616,21 +2616,23 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
     
    m.def("IntDv2", [](PyGF gf_tp, py::list ax0, PyCF coef) -> double
            {
+             static Timer tall("comp.IntDv2 - single point"); RegionTimer rall(tall);
              Array<double> x0_help = makeCArray<double> (ax0);
              LocalHeap lh(10000000,"IntDv2");
              shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp.Get()->GetFESpace());
-             FlatVector<> x0(tpfes->Space(0)->GetSpacialDimension(),&x0_help[0]);
+             const Array<shared_ptr<FESpace> > & spaces = tpfes->Spaces(0);
+             FlatVector<> x0(spaces[0]->GetSpacialDimension(),&x0_help[0]);
              IntegrationPoint ip;
-             int elnr = tpfes->Space(0)->GetMeshAccess()->FindElementOfPoint(x0,ip,true);
-             auto & felx = tpfes->Space(0)->GetFE(ElementId(elnr),lh);
+             int elnr = spaces[0]->GetMeshAccess()->FindElementOfPoint(x0,ip,true);
+             auto & felx = spaces[0]->GetFE(ElementId(elnr),lh);
              FlatVector<> shapex(felx.GetNDof(),lh);
              dynamic_cast<const BaseScalarFiniteElement &>(felx).CalcShape(ip,shapex);
              double val = 0.0;
              int index = tpfes->GetIndex(elnr,0);
              Array<int> dnums;
-             for(int i=index;i<index+tpfes->Space(1)->GetMeshAccess()->GetNE();i++)
+             for(int i=index;i<index+spaces[1]->GetMeshAccess()->GetNE();i++)
              {
-               auto & fely = tpfes->Space(1)->GetFE(ElementId(i-index),lh);
+               auto & fely = spaces[1]->GetFE(ElementId(i-index),lh);
                tpfes->GetDofNrs(i,dnums);
                int tpndof = felx.GetNDof()*fely.GetNDof();
                FlatVector<> elvec(tpndof,lh);
@@ -2639,16 +2641,15 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                FlatVector<> coefy(fely.GetNDof(),lh);
                coefy = Trans(coefmat)*shapex;
                const IntegrationRule & ir = SelectIntegrationRule(fely.ElementType(),2*fely.Order());
-               BaseMappedIntegrationRule & mir = tpfes->Space(1)->GetMeshAccess()->GetTrafo(ElementId(i-index),lh)(ir,lh);
+               BaseMappedIntegrationRule & mir = spaces[1]->GetMeshAccess()->GetTrafo(ElementId(i-index),lh)(ir,lh);
                FlatMatrixFixWidth<1> coefvals(ir.Size(),lh);
                coef.Get()->Evaluate(mir,coefvals);
-               //cout << coefvals << endl;
                FlatMatrix<> shapesy(fely.GetNDof(),ir.Size(),lh);
                dynamic_cast<const BaseScalarFiniteElement & >(fely).CalcShape(ir,shapesy);
                FlatVector<> helper(ir.Size(),lh);
                helper = Trans(shapesy)*coefy;
                for(int ip=0;ip<ir.Size();ip++)
-                  val+=helper(i)*mir[i].GetWeight()*coefvals(ip,0);
+                  val+=helper(ip)*mir[ip].GetWeight()*coefvals(ip,0);
              }
              return val;
            });
