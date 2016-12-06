@@ -11,13 +11,13 @@ namespace ngfem
   {
     Array< const IntegrationRule *> &irs;
     public:
-      TPIntegrationRule(Array< const IntegrationRule *> & airs) : irs(airs)
+      INLINE TPIntegrationRule(Array< const IntegrationRule *> & airs) : irs(airs)
       {
         this->size = 1;
         for(int i=0;i<irs.Size();i++)
             this->size *= irs[i]->GetNIP();
       }
-    const IntegrationRule & operator() (int i) const {return *irs[i];}
+    INLINE const IntegrationRule & operator() (int i) const {return *irs[i];}
   };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -28,9 +28,9 @@ namespace ngfem
     ArrayMem<int,2> dims;
     int facet = -1;
     public:
-    TPMappedIntegrationRule(const IntegrationRule & ir, const ElementTransformation & eltrans ) : BaseMappedIntegrationRule(ir, eltrans) {
+    INLINE TPMappedIntegrationRule(const IntegrationRule & ir, const ElementTransformation & eltrans ) : BaseMappedIntegrationRule(ir, eltrans) {
     }
-    void SetFacet(int afacet) { 
+    INLINE void SetFacet(int afacet) { 
       facet = afacet;
     }
     virtual ~TPMappedIntegrationRule() {}
@@ -44,25 +44,25 @@ namespace ngfem
     {
       return false;
     }
-    void AppendDim(int adim) {
+    INLINE void AppendDim(int adim) {
       dims.Append(adim);
     }
-    void AppendIR(BaseMappedIntegrationRule * miri) {
+    INLINE void AppendIR(BaseMappedIntegrationRule * miri) {
       irs.Append(miri);
     }
-    const Array<int> & GetDims() const {
+    INLINE const Array<int> & GetDims() const {
       return dims;
     }
-    Array<int> & GetDims() {
+    INLINE Array<int> & GetDims() {
       return dims;
     }    
-    const Array<BaseMappedIntegrationRule *> & GetIRs() const {
+    INLINE const Array<BaseMappedIntegrationRule *> & GetIRs() const {
       return irs;
     }
-    Array<BaseMappedIntegrationRule *> & GetIRs() {
+    INLINE Array<BaseMappedIntegrationRule *> & GetIRs() {
       return irs;
     }
-    const int GetFacet() const {
+    INLINE const int GetFacet() const {
       return facet;
     }
     virtual BaseMappedIntegrationRule & Range(size_t first, size_t next, LocalHeap & lh) const 
@@ -75,12 +75,12 @@ namespace ngfem
     ElementId ei;
     ArrayMem<ElementTransformation*, 2> trafos;
   public:
-  TPElementTransformation ( ElementId aei ) : 
+  INLINE TPElementTransformation ( ElementId aei ) : 
     ElementTransformation (ET_POINT, VOL, aei.Nr(), 0), ei(aei)
     {
         //trafos.SetSize(nmeshes);
     }
-    ElementTransformation & GetTrafo(int i) const {return *trafos[i];}
+    INLINE ElementTransformation & GetTrafo(int i) const {return *trafos[i];}
     void SetTrafos(Array<ElementTransformation *> & atrafos) {trafos = atrafos;}
     virtual void CalcJacobian (const IntegrationPoint & ip, FlatMatrix<> dxdxi) const {
       throw Exception("TPElementTransformation::CalcJacobian not implemented");
@@ -160,7 +160,7 @@ namespace ngfem
           ii++;
         }
     }
-    const FiniteElement* Elements(int i) { return elements[i]; }
+    INLINE const FiniteElement* Elements(int i) { return elements[i]; }
     //int NElements() { return elements.Size();}
     HD virtual ELEMENT_TYPE ElementType() const { return ET_POINT; }
 

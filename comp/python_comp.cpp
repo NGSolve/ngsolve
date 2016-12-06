@@ -2556,6 +2556,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
               
    m.def("IntDv", [](PyGF gf_tp, PyGF gf_x )
             {
+              static Timer tall("comp.IntDv"); RegionTimer rall(tall);
               shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp.Get()->GetFESpace());
               LocalHeap lh(10000000,"ReduceToXSpace");
               tpfes->ReduceToXSpace(gf_tp.Get(),gf_x.Get(),lh,
@@ -2580,30 +2581,74 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
               
    m.def("IntDv2", [](PyGF gf_tp, PyGF gf_x, PyCF coef )
            {
+              static Timer tall("comp.IntDv2"); RegionTimer rall(tall);
               shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp.Get()->GetFESpace());
               LocalHeap lh(10000000,"IntDv2");
               tpfes->ReduceToXSpace(gf_tp.Get(),gf_x.Get(),lh,
               [&] (shared_ptr<FESpace> fes,const FiniteElement & fel,const ElementTransformation & trafo,FlatVector<> elvec,FlatVector<> elvec_out,LocalHeap & lh)
               {
                  const TPHighOrderFE & tpfel = dynamic_cast<const TPHighOrderFE &>(fel);
+                 
                  shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(fes);
-                 FlatMatrix<> elmat(tpfel.elements[0]->GetNDof(),tpfel.elements[1]->GetNDof(),&elvec[0]);
+                 FlatMatrix<> coefmat(tpfel.elements[0]->GetNDof(),tpfel.elements[1]->GetNDof(),&elvec[0]);
                  IntegrationRule ir(tpfel.elements[1]->ElementType(),2*tpfel.elements[1]->Order());
-                 BaseMappedIntegrationRule & mir = trafo(ir,lh);
                  FlatMatrix<> shape(tpfel.elements[1]->GetNDof(),ir.Size(),lh);
                  dynamic_cast<const BaseScalarFiniteElement *>(tpfel.elements[1])->CalcShape(ir,shape);
-                 FlatMatrix<> vals(mir.Size(),1,lh);
+                 
+                 BaseMappedIntegrationRule & mir = trafo(ir,lh);
+                 
+                 FlatMatrixFixWidth<1> vals(mir.Size(),lh);
                  coef.Get()->Evaluate(mir, vals);
                  for(int s=0;s<ir.Size();s++)
                  {
                    shape.Col(s)*=mir[s].GetWeight()*vals(s,0);
-                   elvec_out+=elmat*shape.Col(s);
+                   elvec_out+=coefmat*shape.Col(s);
                  }
               });
               });
-
+    
+   m.def("IntDv2", [](PyGF gf_tp, py::list ax0, PyCF coef) -> double
+           {
+             Array<double> x0_help = makeCArray<double> (ax0);
+             LocalHeap lh(10000000,"IntDv2");
+             shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp.Get()->GetFESpace());
+             FlatVector<> x0(tpfes->Space(0)->GetSpacialDimension(),&x0_help[0]);
+             IntegrationPoint ip;
+             int elnr = tpfes->Space(0)->GetMeshAccess()->FindElementOfPoint(x0,ip,true);
+             auto & felx = tpfes->Space(0)->GetFE(ElementId(elnr),lh);
+             FlatVector<> shapex(felx.GetNDof(),lh);
+             dynamic_cast<const BaseScalarFiniteElement &>(felx).CalcShape(ip,shapex);
+             double val = 0.0;
+             int index = tpfes->GetIndex(elnr,0);
+             Array<int> dnums;
+             for(int i=index;i<index+tpfes->Space(1)->GetMeshAccess()->GetNE();i++)
+             {
+               auto & fely = tpfes->Space(1)->GetFE(ElementId(i-index),lh);
+               tpfes->GetDofNrs(i,dnums);
+               int tpndof = felx.GetNDof()*fely.GetNDof();
+               FlatVector<> elvec(tpndof,lh);
+               gf_tp->GetElementVector(dnums,elvec);
+               FlatMatrix<> coefmat(felx.GetNDof(),fely.GetNDof(), &elvec(0));
+               FlatVector<> coefy(fely.GetNDof(),lh);
+               coefy = Trans(coefmat)*shapex;
+               const IntegrationRule & ir = SelectIntegrationRule(fely.ElementType(),2*fely.Order());
+               BaseMappedIntegrationRule & mir = tpfes->Space(1)->GetMeshAccess()->GetTrafo(ElementId(i-index),lh)(ir,lh);
+               FlatMatrixFixWidth<1> coefvals(ir.Size(),lh);
+               coef.Get()->Evaluate(mir,coefvals);
+               //cout << coefvals << endl;
+               FlatMatrix<> shapesy(fely.GetNDof(),ir.Size(),lh);
+               dynamic_cast<const BaseScalarFiniteElement & >(fely).CalcShape(ir,shapesy);
+               FlatVector<> helper(ir.Size(),lh);
+               helper = Trans(shapesy)*coefy;
+               for(int ip=0;ip<ir.Size();ip++)
+                  val+=helper(i)*mir[i].GetWeight()*coefvals(ip,0);
+             }
+             return val;
+           });
+              
    m.def("Prolongate", [](PyGF gf_x, PyGF gf_tp )
             {
+              static Timer tall("comp.Prolongate"); RegionTimer rall(tall);
               shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp.Get()->GetFESpace());
               LocalHeap lh(100000,"ProlongateFromXSpace");
               if(gf_x.Get()->GetFESpace() == tpfes->Space(-1) )
@@ -2613,6 +2658,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
               });
    m.def("Transfer2StdMesh", [](const PyGF gfutp, PyGF gfustd )
             {
+              static Timer tall("comp.Transfer2StdMesh"); RegionTimer rall(tall);
               Transfer2StdMesh(gfutp.Get().get(),gfustd.Get().get());
               return;
              });
