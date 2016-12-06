@@ -1241,8 +1241,6 @@ int NGSolve_Init (Tcl_Interp * interp)
     TaskManager::SetNumThreads (1);
 #endif
   cout << "Running parallel using " << TaskManager::GetMaxThreads() << " thread(s)" << endl;
-  cout << "(number of threads can be changed by setting OMP_NUM_THREADS)" << endl;
-  
 
 #ifdef VTRACE
   cout << "Vampirtrace - enabled" << endl;

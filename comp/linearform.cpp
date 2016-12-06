@@ -216,6 +216,7 @@ namespace ngcomp
 		       {
 			 if(parts[j]->VB() != vb) continue;
 			 if(!parts[j]->DefinedOn(el.GetIndex())) continue;
+                         if (parts[j]->SkeletonForm()) continue;
 			 int elvec_size = fel.GetNDof()*fespace->GetDimension();
 			 FlatVector<TSCAL> elvec(elvec_size, lh);
 			 
