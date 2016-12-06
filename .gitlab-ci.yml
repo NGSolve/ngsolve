@@ -21,7 +21,7 @@ stages:
     - set NETGENDIR=%NETGEN_TEMP_DIR%\bin
     - set PYTHONPATH=%NETGEN_TEMP_DIR%\lib\site-packages
     - set PYTHON_LIB=C:/Python3.5_32/libs/python35.lib
-    - set PYTHON_CONFIG=-DPYTHON_LIBRARY=C:/Python3.5_32/libs/python35.lib -DPYTHON_INCLUDE_DIR=C:/Python3.5_32/include -DPYTHON_INCLUDE_DIR2=C:/Python3.5_32/include 
+    - set PYTHON_CONFIG=-DPYTHON_LIBRARY=C:/Python3.5_32/libs/python35.lib -DPYTHON_INCLUDE_DIRS=C:/Python3.5_32/include -DPYTHON_INCLUDE_DIR=C:/Python3.5_32/include -DPYTHON_INCLUDE_DIR2=C:/Python3.5_32/include 
 
 .template_windows_64: &win64
   tags:

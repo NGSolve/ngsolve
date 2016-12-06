@@ -5,14 +5,15 @@ set_property (DIRECTORY PROPERTY EP_BASE Dependencies)
 set (DEPENDENCIES)
 set (LAPACK_DEPENDENCIES)
 set (EXTRA_CMAKE_ARGS)
+set (NGSOLVE_CMAKE_ARGS)
 
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${PROJECT_SOURCE_DIR}/cmake_modules")
 
-macro(set_vars ...)
-  foreach(varname ${ARGV})
+macro(set_vars OUTPUT_VAR )
+  foreach(varname ${ARGN})
     if(NOT "${${varname}}" STREQUAL "")
       string(REPLACE ";" "$<SEMICOLON>" varvalue "${${varname}}" )
-      list(APPEND EXTRA_CMAKE_ARGS -D${varname}=${varvalue})
+      list(APPEND ${OUTPUT_VAR} -D${varname}=${varvalue})
     endif()
   endforeach()
 endmacro()
@@ -61,7 +62,7 @@ if(USE_MKL)
     else(USE_MUMPS)
         set( LAPACK_LIBRARIES "${MKL_MINIMAL_LIBRARIES}")
     endif(USE_MUMPS)
-    set_vars(MKL_LINK_FLAGS MKL_INTERFACE_LAYER MKL_INCLUDE_DIRS)
+    set_vars(NGSOLVE_CMAKE_ARGS MKL_LINK_FLAGS MKL_INTERFACE_LAYER MKL_INCLUDE_DIRS)
 endif(USE_MKL)
 
 if (USE_LAPACK)
@@ -82,7 +83,7 @@ if (USE_LAPACK)
         find_package(LAPACK)
       endif(WIN32)
     endif()
-    set_vars(LAPACK_LIBRARIES)
+    set_vars(NGSOLVE_CMAKE_ARGS LAPACK_LIBRARIES)
 endif (USE_LAPACK)
 
 #######################################################################
@@ -112,7 +113,7 @@ else(NETGEN_SOURCE_DIR)
   )
 endif(NETGEN_SOURCE_DIR)
 
-set_vars(NETGEN_INTERNAL_INCLUDE_DIR BUILD_NETGEN)
+set_vars(NGSOLVE_CMAKE_ARGS NETGEN_INTERNAL_INCLUDE_DIR BUILD_NETGEN)
 
 #######################################################################
 if (USE_PYTHON)
@@ -132,7 +133,12 @@ if (USE_PYTHON)
 
     set(PYTHON_LIBS "${PYTHON_LIBRARIES}")
     execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1,0,''))" OUTPUT_VARIABLE PYTHON_PACKAGES_INSTALL_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
-    set_vars(PYTHON_LIBS PYTHON_LIBRARY PYTHON_PACKAGES_INSTALL_DIR PYBIND_INCLUDE_DIRS PYBIND_INCLUDE_DIR PYBIND_INCLUDE_DIR2 PYTHON_LIBRARIES PYTHON_EXECUTABLE PYTHON_VERSION)
+    set_vars(NGSOLVE_CMAKE_ARGS
+      PYTHON_LIBS
+      PYTHON_INCLUDE_DIR
+      PYTHON_PACKAGES_INSTALL_DIR
+      PYBIND_INCLUDE_DIR
+     )
 endif (USE_PYTHON)
 
 #######################################################################
@@ -143,7 +149,7 @@ if(USE_UMFPACK)
     DEPENDS ${LAPACK_DEPENDENCIES}
     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/umfpack
     GIT_REPOSITORY https://github.com/jlblancoc/suitesparse-metis-for-windows.git
-    CMAKE_ARGS -DSUITESPARSE_USE_CUSTOM_BLAS_LAPACK_LIBS=ON -DSHARED=ON -DBUILD_METIS=OFF -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} -DSUITESPARSE_CUSTOM_LAPACK_LIB=${LAPACK_LIBRARIES} -DSUITESPARSE_CUSTOM_BLAS_LIB=${LAPACK_LIBRARIES}
+    CMAKE_ARGS ${EXTRA_CMAKE_ARGS} -DSUITESPARSE_USE_CUSTOM_BLAS_LAPACK_LIBS=ON -DSHARED=ON -DBUILD_METIS=OFF -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} -DSUITESPARSE_CUSTOM_LAPACK_LIB=${LAPACK_LIBRARIES} -DSUITESPARSE_CUSTOM_BLAS_LIB=${LAPACK_LIBRARIES}
     )
   list(APPEND DEPENDENCIES suitesparse)
 endif(USE_UMFPACK)
@@ -171,9 +177,11 @@ endif(USE_GUI)
 
 #######################################################################
 # propagate cmake variables to NGSolve subproject
-set_vars(
+set_vars( EXTRA_CMAKE_ARGS
   CMAKE_CXX_FLAGS
   CMAKE_CXX_FLAGS_RELEASE
+)
+set_vars( NGSOLVE_CMAKE_ARGS
   USE_GUI
   USE_PYTHON
   USE_LAPACK
@@ -198,10 +206,11 @@ set_vars(
 ExternalProject_Add (ngsolve
   DEPENDS ${DEPENDENCIES}
   SOURCE_DIR ${PROJECT_SOURCE_DIR}
-  CMAKE_ARGS -DUSE_SUPERBUILD=OFF ${EXTRA_CMAKE_ARGS} -DCMAKE_PREFIX_PATH=${INSTALL_DIR}
+  CMAKE_ARGS ${NGSOLVE_CMAKE_ARGS} -DUSE_SUPERBUILD=OFF ${EXTRA_CMAKE_ARGS} -DCMAKE_PREFIX_PATH=${INSTALL_DIR}
   INSTALL_COMMAND ""
   BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/ngsolve
   STEP_TARGETS build
+  LOG_BUILD 1
 )
 
 install(CODE "execute_process(COMMAND cmake --build . --target install WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ngsolve)")
