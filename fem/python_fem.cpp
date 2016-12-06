@@ -753,13 +753,12 @@ void ExportCoefficientFunction(py::module &m)
           return det/ip.GetMeasure();
         }
       
-      switch (ip.Dim())
+      switch (ip.Dim() - int(ip.VB()))
         {
-        case 1: return fabs (static_cast<const MappedIntegrationPoint<1,1>&> (ip).GetJacobiDet());
-        case 2: return pow (fabs (static_cast<const MappedIntegrationPoint<2,2>&> (ip).GetJacobiDet()), 1.0/2);
-        case 3:
-        default:
-          return pow (fabs (static_cast<const MappedIntegrationPoint<3,3>&> (ip).GetJacobiDet()), 1.0/3);
+        case 0: throw Exception ("don't have mesh-size on 0-D boundary");
+        case 1: return fabs (static_cast<const ScalMappedIntegrationPoint<>&> (ip).GetJacobiDet());
+        case 2: return pow (fabs (static_cast<const ScalMappedIntegrationPoint<>&> (ip).GetJacobiDet()), 1.0/2);
+        case 3: return pow (fabs (static_cast<const ScalMappedIntegrationPoint<>&> (ip).GetJacobiDet()), 1.0/3);
         }
       // return pow(ip.GetMeasure(), 1.0/(ip.Dim());
     }
