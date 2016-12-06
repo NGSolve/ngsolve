@@ -250,6 +250,7 @@ namespace ngbla
       INLINE TELEM operator*() const { return vec[ind]; }
       INLINE TELEM & operator*() { return vec[ind]; }
       INLINE bool operator != (Iterator d2) { return ind != d2.ind; }
+      INLINE bool operator == (Iterator d2) { return ind == d2.ind; }
     };
     
     Iterator begin() const { return Iterator (*this, 0); }
@@ -1340,6 +1341,23 @@ namespace ngbla
     {
       return SliceVector<T> (s/adist, dist*adist, data+first*dist);
     }
+
+    class Iterator
+    {
+      SliceVector vec;
+      size_t ind;
+    public:
+      INLINE Iterator (SliceVector avec, size_t ai) : vec(avec), ind(ai) { ; }
+      INLINE Iterator operator++ (int) { return Iterator(vec, ind++); }
+      INLINE Iterator operator++ () { return Iterator(vec, ++ind); }
+      INLINE TELEM operator*() const { return vec[ind]; }
+      INLINE TELEM & operator*() { return vec[ind]; }
+      INLINE bool operator != (Iterator d2) { return ind != d2.ind; }
+      INLINE bool operator == (Iterator d2) { return ind == d2.ind; }
+    };
+
+    Iterator begin() const { return Iterator (*this, 0); }
+    Iterator end() const { return Iterator (*this, this->Size()); }
   };
 
   

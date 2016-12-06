@@ -92,7 +92,7 @@ namespace ngcomp
     ///
     virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const override;
     ///
-    virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const override;
+    virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & precflags) const override;
     /// 
     virtual Array<int> * CreateDirectSolverClusters (const Flags & precflags) const override;
     /// 

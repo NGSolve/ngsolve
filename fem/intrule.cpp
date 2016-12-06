@@ -81,6 +81,12 @@ namespace ngfem
     return eltrans->SpaceDim();
   }
 
+  VorB BaseMappedIntegrationPoint :: VB() const
+  {
+    return eltrans->VB();
+  }
+
+  
   template <int S, int R, typename SCAL>
   MappedIntegrationPoint<S,R,SCAL> :: 
   MappedIntegrationPoint (const IntegrationPoint & aip,

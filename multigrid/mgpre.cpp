@@ -143,7 +143,7 @@ namespace ngmg
 	    */
 	    // delete coarsegridpre;
 
-	    const BitArray * freedofs = fespace.GetFreeDofs(); // change to const BitArray * 
+	    shared_ptr<BitArray> freedofs = fespace.GetFreeDofs(); // change to const BitArray * 
 	    if (!freedofs)
 	      coarsegridpre =
 		dynamic_cast<const BaseSparseMatrix&> (biform.GetMatrix(0)) .InverseMatrix();

@@ -70,7 +70,7 @@ namespace ngcomp
       GetMatrix().Mult(x, y);
     }
 
-    virtual void InitLevel (const BitArray * freedofs = NULL) { ; }
+    virtual void InitLevel (shared_ptr<BitArray> freedofs = NULL) { ; }
     virtual void FinalizeLevel (const ngla::BaseMatrix * mat = NULL) { ; }
     virtual void AddElementMatrix (FlatArray<int> dnums,
 				   const FlatMatrix<double> & elmat,
@@ -109,6 +109,8 @@ namespace ngcomp
     void Timing () const;
     void ThrowPreconditionerNotReady() const;
     const Flags & GetFlags() const { return flags; }
+
+    using BaseMatrix::shared_from_this;
   };
 
 
@@ -374,7 +376,7 @@ namespace ngstd
 {
   template <>
   struct PyWrapperTraits<ngcomp::Preconditioner> {
-    typedef PyWrapperDerived<ngcomp::Preconditioner, ngla::BaseMatrix> type;
+    typedef shared_ptr<ngcomp::Preconditioner> type;
   };
 }
 

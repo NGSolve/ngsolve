@@ -12,7 +12,7 @@ namespace ngla
   template <class TM, class TV_ROW, class TV_COL>
   JacobiPrecond<TM,TV_ROW,TV_COL> ::
   JacobiPrecond (const SparseMatrix<TM,TV_ROW,TV_COL> & amat, 
-		 const BitArray * ainner, bool use_par)
+		 shared_ptr<BitArray> ainner, bool use_par)
     : mat(amat), inner(ainner)
   { 
     SetParallelDofs (mat.GetParallelDofs());
@@ -129,7 +129,7 @@ namespace ngla
   template <class TM, class TV>
   JacobiPrecondSymmetric<TM,TV> ::
   JacobiPrecondSymmetric (const SparseMatrixSymmetric<TM,TV> & amat, 
-			  const BitArray * ainner, bool use_par)
+			  shared_ptr<BitArray> ainner, bool use_par)
     : JacobiPrecond<TM,TV,TV> (amat, ainner, use_par)
   { 
     ;

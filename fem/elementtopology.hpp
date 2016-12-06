@@ -103,7 +103,8 @@ namespace ngfem
     ElementId operator++ (int) { return ElementId(vb,nr++); }
     ElementId operator++ () { return ElementId(vb,++nr); }
     ElementId operator*() const { return *this; }
-    bool operator!=(ElementId id2) const { return nr != id2.nr || vb != id2.vb; }
+    bool operator!=(const ElementId id2) const { return nr != id2.nr || vb != id2.vb; }
+    bool operator==(const ElementId id2) const { return nr == id2.nr && vb == id2.vb; }
   };
 
   typedef size_t dof_int_type;

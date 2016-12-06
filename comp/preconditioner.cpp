@@ -661,7 +661,7 @@ namespace ngcomp
       try
 	{
 	  bfa->GetMatrix().SetInverseType (inversetype);
-	  const BitArray * freedofs = 
+	  shared_ptr<BitArray> freedofs = 
 	    bfa->GetFESpace()->GetFreeDofs (bfa->UsesEliminateInternal());
 	  inverse = bfa->GetMatrix().InverseMatrix(freedofs);
 	}
@@ -764,9 +764,9 @@ namespace ngcomp
           // new: blocktypes, specified in fespace
           if (bfa->UsesEliminateInternal())
             flags.SetFlag("eliminate_internal");
-          Table<int> * blocks = bfa->GetFESpace()->CreateSmoothingBlocks(flags);
+          shared_ptr<Table<int>> blocks = bfa->GetFESpace()->CreateSmoothingBlocks(flags);
           jacobi = dynamic_cast<const BaseSparseMatrix&> (bfa->GetMatrix())
-            .CreateBlockJacobiPrecond(*blocks, 0, parallel, bfa->GetFESpace()->GetFreeDofs());
+            .CreateBlockJacobiPrecond(blocks, 0, parallel, bfa->GetFESpace()->GetFreeDofs());
         }
       else if (block)
         {

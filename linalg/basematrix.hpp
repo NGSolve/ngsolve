@@ -124,7 +124,7 @@ namespace ngla
     void SetParallelDofs (const ParallelDofs * pardofs) { paralleldofs = pardofs; }
     const ParallelDofs * GetParallelDofs () const { return paralleldofs; }
 
-    virtual shared_ptr<BaseMatrix> InverseMatrix (const BitArray * subset = 0) const;
+    virtual shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<BitArray> subset = nullptr) const;
     virtual shared_ptr<BaseMatrix> InverseMatrix (const Array<int> * clusters) const;
     virtual INVERSETYPE SetInverseType ( INVERSETYPE ainversetype ) const;
     virtual INVERSETYPE SetInverseType ( string ainversetype ) const;
@@ -335,7 +335,8 @@ namespace ngstd
 {
   template <>
   struct PyWrapperTraits<ngla::BaseMatrix> {
-    typedef PyWrapperClass<ngla::BaseMatrix> type;
+    typedef shared_ptr<ngla::BaseMatrix> type;
   };
 }
+
 #endif

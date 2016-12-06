@@ -143,9 +143,6 @@ namespace ngfem
 
 #define HCURLHOFE_EXTERN extern
 
-#endif
-
-
 namespace ngfem
 {
   // HCURLHOFE_EXTERN template class HCurlHighOrderFE<ET_POINT>;
@@ -176,6 +173,8 @@ namespace ngfem
   T_HCurlHighOrderFiniteElement<ET_HEX, HCurlHighOrderFE_Shape<ET_HEX>>;
   
 }
+
+#endif // HCURLHOFE_EXTERN
 
 #endif
 

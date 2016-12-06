@@ -76,65 +76,60 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     
     
   
-    typedef PyWrapper<BaseVector> PyBaseVector;
-    typedef PyWrapper<BaseMatrix> PyBaseMatrix;
-  py::class_<PyBaseVector>(m, "BaseVector",
+    typedef BaseVector PyBaseVector;
+    typedef BaseMatrix PyBaseMatrix;
+
+  m.def("CreateVVector", CreateBaseVector, "size"_a, "complex"_a=false, "entrysize"_a=1);
+
+  py::class_<BaseVector, shared_ptr<BaseVector>>(m, "BaseVector",
         py::dynamic_attr() // add dynamic attributes
       )
-    .def("__init__", 
-         [](PyBaseVector *instance, int size, bool is_complex, int es)
-                           {
-                             auto vec = CreateBaseVector(size, is_complex, es);
-                             new (instance) PyBaseVector(vec);
-                           },
-          py::arg("size"), py::arg("complex")=false, py::arg("entrysize")=1
-          )
   .def("__ngsid__", FunctionPointer( [] ( PyBaseVector & self)
-      { return reinterpret_cast<std::uintptr_t>(self.Get().get()); } ) )
+      { return reinterpret_cast<std::uintptr_t>(&self); } ) )
     
-    .def("__str__", [](PyBaseVector self) { return ToString<BaseVector>(*self.Get()); } )
-    .def("__repr__", [](PyBaseVector self) { return "basevector"; } )
-    .def_property_readonly("size", py::cpp_function( [] (PyBaseVector self) { return self->Size(); } ) )
-    .def("__len__", [] (PyBaseVector self) { return self->Size(); })
-    .def("__getstate__", [] (py::object self_object) {
-        auto self = self_object.cast<PyBaseVector>();
-        auto dict = self_object.attr("__dict__");
-        auto vec = self->FV<double>();
-        py::list values;
-        for (int i : Range(vec))
-          values.append (py::cast(vec(i)));
-       return py::make_tuple( vec.Size(), self->IsComplex(), self->EntrySize(), values, dict );
-     })
-    .def("__setstate__", [] (PyBaseVector &self, py::tuple t) {
-         auto vec = CreateBaseVector( t[0].cast<int>(), t[1].cast<bool>(), t[2].cast<int>());
-         new (&self) PyBaseVector(vec);
-         py::object vec_object = py::cast(self);
-         auto fvec = vec->FVDouble();
-         py::list values = t[3].cast<py::list>();
-         for (int i : Range(fvec.Size()))
-                fvec[i] = values[i].cast<double>();
-         // restore dynamic attributes (necessary for persistent id in NgsPickler)
-         vec_object.attr("__dict__") = t[4];
-     })
-    .def("CreateVector", [] ( PyBaseVector & self) -> PyBaseVector
-        { return shared_ptr<BaseVector>(self->CreateVector()); } )
+    .def("__str__", [](PyBaseVector &self) { return ToString<BaseVector>(self); } )
+    .def("__repr__", [](PyBaseVector &self) { return "basevector"; } )
+    .def_property_readonly("size", py::cpp_function( [] (PyBaseVector &self) { return self.Size(); } ) )
+    .def("__len__", [] (PyBaseVector &self) { return self.Size(); })
+//     .def("__getstate__", [] (py::object self_object) {
+//         const BaseVector & self = self_object.cast<PyBaseVector>();
+//         auto dict = self_object.attr("__dict__");
+//         auto vec = self.FV<double>();
+//         py::list values;
+//         for (int i : Range(vec))
+//           values.append (py::cast(vec(i)));
+//        return py::make_tuple( vec.Size(), self.IsComplex(), self.EntrySize(), values, dict );
+//      })
+//     .def("__setstate__", [] (PyBaseVector &self, py::tuple t) {
+//          auto vec = CreateBaseVector( t[0].cast<int>(), t[1].cast<bool>(), t[2].cast<int>());
+//          new (&self) PyBaseVector(vec);
+//          py::object vec_object = py::cast(self);
+//          auto fvec = vec->FVDouble();
+//          py::list values = t[3].cast<py::list>();
+//          for (int i : Range(fvec.Size()))
+//                 fvec[i] = values[i].cast<double>();
+//          // restore dynamic attributes (necessary for persistent id in NgsPickler)
+//          vec_object.attr("__dict__") = t[4];
+//      })
+    .def("CreateVector", [] ( PyBaseVector & self) -> PyWrapper<BaseVector>
+        { return shared_ptr<BaseVector>(self.CreateVector()); } )
 
     /*
-    .def("Assign", FunctionPointer([](PyBaseVector & self, BaseVector & v2, double s)->void { self->Set(s, v2); }))
-    .def("Add", FunctionPointer([](PyBaseVector & self, BaseVector & v2, double s)->void { self->Add(s, v2); }))
-    .def("Assign", FunctionPointer([](PyBaseVector & self, BaseVector & v2, Complex s)->void { self->Set(s, v2); }))
-    .def("Add", FunctionPointer([](PyBaseVector & self, BaseVector & v2, Complex s)->void { self->Add(s, v2); }))
+    .def("Assign", FunctionPointer([](PyBaseVector & self, BaseVector & v2, double s)->void { self.Set(s, v2); }))
+    .def("Add", FunctionPointer([](PyBaseVector & self, BaseVector & v2, double s)->void { self.Add(s, v2); }))
+    .def("Assign", FunctionPointer([](PyBaseVector & self, BaseVector & v2, Complex s)->void { self.Set(s, v2); }))
+    .def("Add", FunctionPointer([](PyBaseVector & self, BaseVector & v2, Complex s)->void { self.Add(s, v2); }))
     */
     .def("Assign",[](PyBaseVector & self, PyBaseVector & v2, py::object s)->void 
                                    { 
                                      if ( py::extract<double>(s).check() )
                                        {
-                                         self->Set (py::extract<double>(s)(), *v2);
+                                         self.Set (py::extract<double>(s)(), v2);
                                          return;
                                        }
                                      if ( py::extract<Complex>(s).check() )
                                        {
-                                         self->Set (py::extract<Complex>(s)(), *v2);
+                                         self.Set (py::extract<Complex>(s)(), v2);
                                          return;
                                        }
                                      throw Exception ("BaseVector::Assign called with non-scalar type");
@@ -143,12 +138,12 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                    { 
                                      if ( py::extract<double>(s).check() )
                                        {
-                                         self->Add (py::extract<double>(s)(), *v2);
+                                         self.Add (py::extract<double>(s)(), v2);
                                          return;
                                        }
                                      if ( py::extract<Complex>(s).check() )
                                        {
-                                         self->Add (py::extract<Complex>(s)(), *v2);
+                                         self.Add (py::extract<Complex>(s)(), v2);
                                          return;
                                        }
                                      throw Exception ("BaseVector::Assign called with non-scalar type");
@@ -164,85 +159,85 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("__getitem__",
           [](PyBaseVector & self,  int ind )
            {
-             if (ind < 0 || ind >= self->Size()) 
+             if (ind < 0 || ind >= self.Size()) 
                throw py::index_error();
-             int entrysize = self->EntrySize();
-             if( self->IsComplex() ) entrysize/=2;
+             int entrysize = self.EntrySize();
+             if( self.IsComplex() ) entrysize/=2;
              if(entrysize == 1)
              {
-                 if( !self->IsComplex() )
-                     return py::cast(self->FVDouble()[ind]);
+                 if( !self.IsComplex() )
+                     return py::cast(self.FVDouble()[ind]);
                  else
-                     return py::cast(self->FVComplex()[ind]);
+                     return py::cast(self.FVComplex()[ind]);
              }
              else
              {
                  // return FlatVector<T>
-                 if( self->IsComplex() )
-                   return py::cast(self->SV<Complex>()(ind));
+                 if( self.IsComplex() )
+                   return py::cast(self.SV<Complex>()(ind));
                  else
-                   return py::cast(self->SV<double>()(ind));
+                   return py::cast(self.SV<double>()(ind));
              }
            } )
-    .def("__getitem__", [](PyBaseVector & self,  py::slice inds ) -> PyBaseVector
+    .def("__getitem__", [](PyBaseVector & self,  py::slice inds ) -> PyWrapper<BaseVector>
       {
           size_t start, step, n;
-          InitSlice( inds, self->Size(), start, step, n );
-          return shared_ptr<BaseVector>(self->Range(start, start+n));
+          InitSlice( inds, self.Size(), start, step, n );
+          return shared_ptr<BaseVector>(self.Range(start, start+n));
       } )
     .def("__setitem__", [](PyBaseVector & self,  int ind, double d )
       {
-          self->Range(ind,ind+1) = d;
+          self.Range(ind,ind+1) = d;
       } )
     .def("__setitem__", [](PyBaseVector & self,  int ind, Complex z ) -> void
       {
-        self->Range(ind,ind+1) = z;
+        self.Range(ind,ind+1) = z;
       } )
     .def("__setitem__", [](PyBaseVector & self,  py::slice inds, double d )
       {
           size_t start, step, n;
-          InitSlice( inds, self->Size(), start, step, n );
-          self->Range(start,start+n) = d;
+          InitSlice( inds, self.Size(), start, step, n );
+          self.Range(start,start+n) = d;
       } )
     .def("__setitem__", [](PyBaseVector & self,  py::slice inds, Complex z )
       {
           size_t start, step, n;
-          InitSlice( inds, self->Size(), start, step, n );
-          self->Range(start,start+n) = z;
+          InitSlice( inds, self.Size(), start, step, n );
+          self.Range(start,start+n) = z;
       } )
     .def("__setitem__", [](PyBaseVector & self,  int ind, FlatVector<double> & v )
       {
-          if( self->IsComplex() )
-            self->SV<Complex>()(ind) = v;
+          if( self.IsComplex() )
+            self.SV<Complex>()(ind) = v;
           else
-            self->SV<double>()(ind) = v;
+            self.SV<double>()(ind) = v;
       } )
     .def("__setitem__", [](PyBaseVector & self,  int ind, FlatVector<Complex> & v )
       {
-          if( self->IsComplex() )
-            self->SV<Complex>()(ind) = v;
+          if( self.IsComplex() )
+            self.SV<Complex>()(ind) = v;
           else
             throw py::index_error("cannot assign complex values to real vector");
       } )
-    .def("__iadd__", [](PyBaseVector & self,  PyBaseVector & other) { *self += *other; return self;})
-    .def("__isub__", [](PyBaseVector & self,  PyBaseVector & other) { *self -= *other; return self;})
-    .def("__imul__", [](PyBaseVector & self,  double scal) { *self *= scal; return self;})
-    .def("__imul__", [](PyBaseVector & self,  Complex scal) { *self *= scal; return self;})
+    .def("__iadd__", [](PyBaseVector & self,  PyBaseVector & other) -> BaseVector& { self += other; return self;})
+    .def("__isub__", [](PyBaseVector & self,  PyBaseVector & other) -> BaseVector& { self -= other; return self;})
+    .def("__imul__", [](PyBaseVector & self,  double scal) -> BaseVector& { self *= scal; return self;})
+    .def("__imul__", [](PyBaseVector & self,  Complex scal) -> BaseVector& { self *= scal; return self;})
     .def("InnerProduct", [](PyBaseVector & self, PyBaseVector & other)
                                           {
-                                            if (self->IsComplex())
-                                              return py::cast (S_InnerProduct<ComplexConjugate> (*self, *other));
+                                            if (self.IsComplex())
+                                              return py::cast (S_InnerProduct<ComplexConjugate> (self, other));
                                             else
-                                              return py::cast (InnerProduct (*self, *other));
+                                              return py::cast (InnerProduct (self, other));
                                           })
-    .def("Norm",  [](PyBaseVector & self) { return self->L2Norm(); })
-    .def("Range", [](PyBaseVector & self, int from, int to) -> PyBaseVector // shared_ptr<BaseVector>
+    .def("Norm",  [](PyBaseVector & self) { return self.L2Norm(); })
+    .def("Range", [](PyBaseVector & self, int from, int to) -> shared_ptr<BaseVector>
                                    {
-                                     return shared_ptr<BaseVector>(self->Range(from,to));
+                                     return shared_ptr<BaseVector>(self.Range(from,to));
                                    })
     .def("FV", FunctionPointer( [] (PyBaseVector & self) -> FlatVector<double>
                                 {
-                                  return self->FVDouble();
+                                  return self.FVDouble();
                                 }))
     ;       
 
@@ -256,204 +251,294 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
   typedef PyBaseMatrix BM;
   // typedef BaseVector BV;
 
-  py::class_<PyBaseMatrix>(m, "BaseMatrix")
-    .def("__str__", [](PyBaseMatrix self) { return ToString<BaseMatrix>(*self.Get()); } )
+    class PyBaseMatrixTrampoline : public BaseMatrix {
+    public:
+      using BaseMatrix::BaseMatrix;
+      PyBaseMatrixTrampoline() : BaseMatrix()
+          {
+            static_assert( sizeof(BaseMatrix)==sizeof(PyBaseMatrixTrampoline), "slkdf");
+          }
+
+      bool IsComplex() const override { 
+        PYBIND11_OVERLOAD_PURE(
+            bool, /* Return type */
+            BaseMatrix,      /* Parent class */
+            IsComplex,          /* Name of function */
+            );
+      }
+
+      void Mult (const BaseVector & x, BaseVector & y) const override {
+        pybind11::gil_scoped_acquire gil;
+        pybind11::function overload = pybind11::get_overload(this, "Mult");
+        if (overload) {
+          auto sx = shared_ptr<BaseVector>(const_cast<BaseVector*>(&x), NOOP_Deleter);
+          auto sy = shared_ptr<BaseVector>(const_cast<BaseVector*>(&y), NOOP_Deleter);
+          overload(sx,sy);
+        }
+        else
+          BaseMatrix::Mult(x,y);
+      }
+      void MultAdd (double s, const BaseVector & x, BaseVector & y) const override {
+        pybind11::gil_scoped_acquire gil;
+        pybind11::function overload = pybind11::get_overload(this, "MultAdd");
+        if (overload) {
+          auto sx = shared_ptr<BaseVector>(const_cast<BaseVector*>(&x), NOOP_Deleter);
+          auto sy = shared_ptr<BaseVector>(const_cast<BaseVector*>(&y), NOOP_Deleter);
+          overload(s, sx,sy);
+        }
+        else
+          BaseMatrix::MultAdd(s, x, y);
+      }
+      void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override {
+        pybind11::gil_scoped_acquire gil;
+        pybind11::function overload = pybind11::get_overload(this, "MultTransAdd");
+        if (overload) {
+          auto sx = shared_ptr<BaseVector>(const_cast<BaseVector*>(&x), NOOP_Deleter);
+          auto sy = shared_ptr<BaseVector>(const_cast<BaseVector*>(&y), NOOP_Deleter);
+          overload(s, sx,sy);
+        }
+        else
+          BaseMatrix::MultTransAdd(s, x, y);
+      }
+
+
+      void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const override {
+        pybind11::gil_scoped_acquire gil;
+        pybind11::function overload = pybind11::get_overload(this, "MultAdd");
+        if (overload) {
+          auto sx = shared_ptr<BaseVector>(const_cast<BaseVector*>(&x), NOOP_Deleter);
+          auto sy = shared_ptr<BaseVector>(const_cast<BaseVector*>(&y), NOOP_Deleter);
+          overload(s, sx,sy);
+        }
+        else
+          BaseMatrix::MultAdd(s, x, y);
+      }
+      void MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const override {
+        pybind11::gil_scoped_acquire gil;
+        pybind11::function overload = pybind11::get_overload(this, "MultTransAdd");
+        if (overload) {
+          auto sx = shared_ptr<BaseVector>(const_cast<BaseVector*>(&x), NOOP_Deleter);
+          auto sy = shared_ptr<BaseVector>(const_cast<BaseVector*>(&y), NOOP_Deleter);
+          overload(s, sx,sy);
+        }
+        else
+          BaseMatrix::MultTransAdd(s, x, y);
+      }
+
+
+    };
+  
+
+
+  py::class_<BaseMatrix, PyWrapper<BaseMatrix>, PyBaseMatrixTrampoline>(m, "BaseMatrix")
+    .def("__init__", [](BaseMatrix *instance) { 
+        new (instance) PyBaseMatrixTrampoline(); }
+        )
+    .def("__str__", [](PyBaseMatrix &self) { return ToString<BaseMatrix>(self); } )
     .def_property_readonly("height", [] ( PyBaseMatrix & self)
-        { return self->Height(); } )
+        { return self.Height(); } )
     .def_property_readonly("width", [] ( PyBaseMatrix & self)
-        { return self->Width(); } )
+        { return self.Width(); } )
 
     // .def("CreateMatrix", &BaseMatrix::CreateMatrix)
-    .def("CreateMatrix", [] ( PyBaseMatrix & self) -> PyBaseMatrix
-        { return self->CreateMatrix(); } )
+    .def("CreateMatrix", [] ( PyBaseMatrix & self) -> PyWrapper<BaseMatrix>
+        { return self.CreateMatrix(); } )
 
     
-    .def("CreateRowVector", [] ( PyBaseMatrix & self) -> PyBaseVector
-        { return shared_ptr<BaseVector>(self->CreateRowVector()); } )
-    .def("CreateColVector", [] ( PyBaseMatrix & self) -> PyBaseVector
-        { return shared_ptr<BaseVector>(self->CreateColVector()); } )
+    .def("CreateRowVector", [] ( PyBaseMatrix & self) -> PyWrapper<BaseVector>
+        { return shared_ptr<BaseVector>(self.CreateRowVector()); } )
+    .def("CreateColVector", [] ( PyBaseMatrix & self) -> PyWrapper<BaseVector>
+        { return shared_ptr<BaseVector>(self.CreateColVector()); } )
 
-    .def("AsVector", [] (BM & m) -> PyBaseVector
+    .def("AsVector", [] (BM & m) -> PyWrapper<BaseVector>
                                       {
-                                        return shared_ptr<BaseVector> (&m->AsVector(), NOOP_Deleter);
+                                        return shared_ptr<BaseVector> (&m.AsVector(), NOOP_Deleter);
                                       })
     .def("COO", [] (BM & m) -> py::object
                                  {
-                                   SparseMatrix<double> * sp = dynamic_cast<SparseMatrix<double>*> (m.Get().get());
+                                   SparseMatrix<double> * sp = dynamic_cast<SparseMatrix<double>*> (&m);
                                    if (sp)
                                      {
-                                       Array<int> ri, ci;
-                                       Array<double> vals;
-                                       for (int i = 0; i < sp->Height(); i++)
+                                       size_t nze = sp->NZE();
+                                       Array<int> ri(nze), ci(nze);
+                                       Vector<double> vals(nze);
+                                       for (size_t i = 0, ii = 0; i < sp->Height(); i++)
                                          {
                                            FlatArray<int> ind = sp->GetRowIndices(i);
                                            FlatVector<double> rv = sp->GetRowValues(i);
-                                           for (int j = 0; j < ind.Size(); j++)
+                                           for (int j = 0; j < ind.Size(); j++, ii++)
                                              {
-                                               ri.Append (i);
-                                               ci.Append (ind[j]);
-                                               vals.Append (rv[j]);
+                                               ri[ii] = i;
+                                               ci[ii] = ind[j];
+                                               vals[ii] = rv[j];
                                              }
                                          }
 
-                                       py::object pyri = py::cast(ri);
-                                       py::object pyci = py::cast(ci);
-                                       py::object pyvals = py::cast(vals);
+                                       py::object pyri = py::cast(std::move(ri));
+                                       py::object pyci = py::cast(std::move(ci));
+                                       py::object pyvals = py::cast(std::move(vals));
                                        return py::make_tuple (pyri, pyci, pyvals);
                                      }
 				   
 				   SparseMatrix<Complex> * spc
-				     = dynamic_cast<SparseMatrix<Complex>*> (m.Get().get());
+				     = dynamic_cast<SparseMatrix<Complex>*> (&m);
 				   if (spc)
 				     {
-					 Array<int> ri, ci;
-					 Array<double> vals_real;
-					 Array<double> vals_imag;
-					 Array<Complex> vals;
-					 for (int i = 0; i < spc->Height(); i++)
-					   {
-					     FlatArray<int> ind = spc->GetRowIndices(i);
-					     FlatVector<Complex> rv = spc->GetRowValues(i);
-					     for (int j = 0; j < ind.Size(); j++)
-					       {
-						 ri.Append (i);
-						 ci.Append (ind[j]);
-						 vals.Append (rv[j]);
-					       }
-					   }
-					 py::object pyri  = py::cast(ri);
-					 py::object pyci  = py::cast(ci);
-					 py::object pyvals = py::cast(vals);
-					 return py::make_tuple (pyri, pyci, pyvals);
+                                       size_t nze = spc->NZE();
+                                       Array<int> ri(nze), ci(nze);
+                                       Vector<Complex> vals(nze);
+                                       for (size_t i = 0, ii = 0; i < spc->Height(); i++)
+                                         {
+                                           FlatArray<int> ind = spc->GetRowIndices(i);
+                                           FlatVector<Complex> rv = spc->GetRowValues(i);
+                                           for (int j = 0; j < ind.Size(); j++, ii++)
+                                             {
+                                               ri[ii] = i;
+                                               ci[ii] = ind[j];
+                                               vals[ii] = rv[j];
+                                             }
+                                         }
+                                       py::object pyri = py::cast(std::move(ri));
+                                       py::object pyci = py::cast(std::move(ci));
+                                       py::object pyvals = py::cast(std::move(vals));
+                                       return py::make_tuple (pyri, pyci, pyvals);
 				     }
 				   
 				   throw Exception ("COO needs real or complex-valued sparse matrix");
                                  })
 
-    .def("Mult",        FunctionPointer( [](BM &m, PyBaseVector &x, PyBaseVector &y, double s) { m->Mult (*x,*y); *y *= s; }) )
-    .def("MultAdd",     FunctionPointer( [](BM &m, PyBaseVector &x, PyBaseVector &y, double s) { m->MultAdd (s, *x, *y); }))
-    // .def("MultTrans",   FunctionPointer( [](BM &m, PyBaseVector &x, PyBaseVector &y, double s) { y  = s*Trans(m)*x; }) )
-    // .def("MultTransAdd",FunctionPointer( [](BM &m, PyBaseVector &x, PyBaseVector &y, double s) { y += s*Trans(m)*x; }) )
-
-//     .add_property("expr", py::object(expr_namespace["MatExpr"]) )
-//     .def("__mul__" , py::object(expr_namespace["expr_mul"]) )
-//     .def("__rmul__" , py::object(expr_namespace["expr_rmul"]) )
+    .def("Mult",        FunctionPointer( [](BaseMatrix &m, BaseVector &x, BaseVector &y) { m.Mult(x, y); }))
+    .def("MultAdd",     FunctionPointer( [](BaseMatrix &m, double s, BaseVector &x, BaseVector &y) { m.MultAdd (s, x, y); }))
+    .def("MultTrans",   FunctionPointer( [](BaseMatrix &m, double s, BaseVector &x, BaseVector &y) { y=0; m.MultTransAdd (1.0, x, y); }))
+    .def("MultTransAdd", FunctionPointer( [](BaseMatrix &m, double s, BaseVector &x, BaseVector &y) { m.MultTransAdd (s, x, y); }))
+    .def("MultScale",   FunctionPointer( [](BaseMatrix &m, double s, BaseVector &x, BaseVector &y)
+          {
+              m.Mult (x,y);
+              if(s!=1.0)
+                  y *= s;
+          }) )
+    .def("MultAdd",     FunctionPointer( [](BaseMatrix &m, Complex s, BaseVector &x, BaseVector &y) { m.MultAdd (s, x, y); }))
+    .def("MultTrans",   FunctionPointer( [](BaseMatrix &m, Complex s, BaseVector &x, BaseVector &y) { y=0; m.MultTransAdd (1.0, x, y); }))
+    .def("MultTransAdd", FunctionPointer( [](BaseMatrix &m, Complex s, BaseVector &x, BaseVector &y) { m.MultTransAdd (s, x, y); }))
+    .def("MultScale",   FunctionPointer( [](BaseMatrix &m, Complex s, BaseVector &x, BaseVector &y)
+          {
+              m.Mult (x,y);
+              if(s!=1.0)
+                  y *= s;
+          }) )
 
     .def("__iadd__", [] (BM &m, BM &m2) { 
-        m->AsVector()+=m2->AsVector();
+        m.AsVector()+=m2.AsVector();
     })
 
     .def("GetInverseType", [](BM & m)
                                             {
-                                              return GetInverseName( m->GetInverseType());
+                                              return GetInverseName( m.GetInverseType());
                                             })
 
-    .def("Inverse", [](BM &m, BitArray * freedofs, string inverse)
-                                     -> PyBaseMatrix
+    .def("Inverse", [](BM &m, shared_ptr<BitArray> freedofs, string inverse)
+                                     -> PyWrapper<BaseMatrix>
                                      { 
-                                       if (inverse != "") m->SetInverseType(inverse);
-                                       return m->InverseMatrix(freedofs);
+                                       if (inverse != "") m.SetInverseType(inverse);
+                                       return m.InverseMatrix(freedofs);
                                      }
          ,"Inverse", py::arg("freedofs"), py::arg("inverse")=py::str("")
          )
-    .def("Inverse", [](BM &m)-> PyBaseMatrix
-                                     { return m->InverseMatrix(); })
-    .def("Transpose", [](BM &m)-> PyBaseMatrix
-                                       { return make_shared<Transpose> (*m); })
+    .def("Inverse", [](BM &m)-> PyWrapper<BaseMatrix>
+                                     { return m.InverseMatrix(); })
+    .def("Transpose", [](BM &m)-> PyWrapper<BaseMatrix>
+                                       { return make_shared<Transpose> (m); })
     // py::return_value_policy<py::manage_new_object>())
     ;
+    m.def("TestMult", [] (BaseMatrix &m, PyBaseVector &x, PyBaseVector &y) {
+        m.Mult(x, y);
+        });
 
-  typedef PyWrapper<Projector> PyProjector;
-  py::class_<PyProjector, PyBaseMatrix> (m, "Projector")
-  .def("__init__", []( PyProjector *instance, const BitArray &array, bool b ) {
-      new (instance) PyProjector(make_shared<Projector>(array, b));
+    m.def("TestMultAdd", [] (BaseMatrix &m, double s, PyBaseVector &x, PyBaseVector &y) {
+        m.MultAdd(s, x, y);
+        });
+
+//   typedef PyWrapper<Projector> PyProjector;
+  py::class_<Projector, shared_ptr<Projector>, BaseMatrix> (m, "Projector")
+  .def("__init__", []( Projector *instance, const BitArray &array, bool b ) {
+      new (instance) Projector(array, b);
       })
     ;
 
-  py::class_<PyWrapper<CGSolver<double>> ,PyBaseMatrix> (m, "CGSolverD")
-    .def("GetSteps", &CGSolver<double>::GetSteps)
-    ;
-
-  py::class_<PyWrapper<CGSolver<Complex>> ,PyBaseMatrix> (m, "CGSolverC")
-    .def("GetSteps", &CGSolver<Complex>::GetSteps)
+  py::class_<KrylovSpaceSolver, shared_ptr<KrylovSpaceSolver>, BaseMatrix> (m, "KrylovSpaceSolver")
+    .def("GetSteps", &KrylovSpaceSolver::GetSteps)
     ;
 
   m.def("CGSolver", [](const PyBaseMatrix & mat, const PyBaseMatrix & pre,
                                           bool iscomplex, bool printrates, 
-                                          double precision, int maxsteps) -> PyBaseMatrix 
+                                          double precision, int maxsteps)
                                        {
                                          KrylovSpaceSolver * solver;
-                                         if(mat->IsComplex()) iscomplex = true;
+                                         if(mat.IsComplex()) iscomplex = true;
                                          
                                          if (iscomplex)
-                                           solver = new CGSolver<Complex> (*mat, *pre);
+                                           solver = new CGSolver<Complex> (mat, pre);
                                          else
-                                           solver = new CGSolver<double> (*mat, *pre);
+                                           solver = new CGSolver<double> (mat, pre);
                                          solver->SetPrecision(precision);
                                          solver->SetMaxSteps(maxsteps);
                                          solver->SetPrintRates (printrates);
-                                         return solver;
+                                         return shared_ptr<KrylovSpaceSolver>(solver);
                                        },
           "CG Solver", py::arg("mat"), py::arg("pre"), py::arg("complex") = false, py::arg("printrates")=true,
            py::arg("precision")=1e-8, py::arg("maxsteps")=200
-//           py::return_value_policy<py::manage_new_object>()
           )
-    ;
-
-  py::class_<PyWrapper<GMRESSolver<double>>, PyBaseMatrix> (m, "GMRESSolverD")
-    ;
-  py::class_<PyWrapper<GMRESSolver<Complex>>, PyBaseMatrix> (m, "GMRESSolverC")
     ;
 
   m.def("GMRESSolver", [](const PyBaseMatrix & mat, const PyBaseMatrix & pre,
                                            bool printrates, 
-                                           double precision, int maxsteps) -> PyBaseMatrix
+                                           double precision, int maxsteps)
                                         {
                                           KrylovSpaceSolver * solver;
-                                          if (!mat->IsComplex())
-                                            solver = new GMRESSolver<double> (*mat, *pre);
+                                          if (!mat.IsComplex())
+                                            solver = new GMRESSolver<double> (mat, pre);
                                           else
-                                            solver = new GMRESSolver<Complex> (*mat, *pre);                                            
+                                            solver = new GMRESSolver<Complex> (mat, pre);                                            
                                           solver->SetPrecision(precision);
                                           solver->SetMaxSteps(maxsteps);
                                           solver->SetPrintRates (printrates);
-                                          return solver;
+                                          return shared_ptr<KrylovSpaceSolver>(solver);
                                         },
           "GMRES Solver", py::arg("mat"), py::arg("pre"), py::arg("printrates")=true,
            py::arg("precision")=1e-8, py::arg("maxsteps")=200
           )
     ;
   
-  py::class_<PyWrapper<QMRSolver<double>>, PyBaseMatrix> (m, "QMRSolverD")
+  py::class_<PyWrapper<QMRSolver<double>>, shared_ptr<QMRSolver<double>>, PyBaseMatrix> (m, "QMRSolverD")
     ;
-  py::class_<PyWrapper<QMRSolver<Complex>>, PyBaseMatrix> (m, "QMRSolverC")
+  py::class_<PyWrapper<QMRSolver<Complex>>, shared_ptr<QMRSolver<Complex>>, PyBaseMatrix> (m, "QMRSolverC")
     ;
 
   m.def("QMRSolver", [](const PyBaseMatrix & mat, const PyBaseMatrix & pre,
                                            bool printrates, 
-                                           double precision, int maxsteps) -> PyBaseMatrix
+                                           double precision, int maxsteps)
                                         {
                                           KrylovSpaceSolver * solver;
-                                          if (!mat->IsComplex())
-                                            solver = new QMRSolver<double> (*mat, *pre);
+                                          if (!mat.IsComplex())
+                                            solver = new QMRSolver<double> (mat, pre);
                                           else
-                                            solver = new QMRSolver<Complex> (*mat, *pre);                                            
+                                            solver = new QMRSolver<Complex> (mat, pre);                                            
                                           solver->SetPrecision(precision);
                                           solver->SetMaxSteps(maxsteps);
                                           solver->SetPrintRates (printrates);
-                                          return solver;
+                                          return shared_ptr<KrylovSpaceSolver>(solver);
                                         },
           "QMR Solver", py::arg("mat"), py::arg("pre"), py::arg("printrates")=true,
            py::arg("precision")=1e-8, py::arg("maxsteps")=200
           )
     ;
   
-  m.def("ArnoldiSolver", [](PyBaseMatrix & mata, PyBaseMatrix & matm, const BitArray & freedofs,
+  m.def("ArnoldiSolver", [](PyBaseMatrix & mata, PyBaseMatrix & matm, shared_ptr<BitArray> freedofs,
                                                py::list vecs, py::object bpshift)
                                             {
-                                              if (mata->IsComplex())
+                                              if (mata.IsComplex())
                                                 {
-                                                  Arnoldi<Complex> arnoldi (*mata, *matm, &freedofs);
+                                                  Arnoldi<Complex> arnoldi (mata, matm, freedofs);
                                                   Complex shift = 0.0;
 //                                                   if (py::cast<Complex>(bpshift).check())
                                                     shift = py::cast<Complex>(bpshift);
@@ -468,7 +553,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                                   arnoldi.Calc (2*nev+1, lam, nev, evecs, 0);
                                             
                                                   for (int i = 0; i < nev; i++)
-                                                    * py::extract<PyBaseVector>(vecs[i])() = *evecs[i];
+                                                    vecs[i].cast<BaseVector&>() = *evecs[i];
 
                                                   Vector<Complex> vlam(nev);
                                                   for (int i = 0; i < nev; i++)
@@ -488,7 +573,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 
   m.def("DoArchive" , [](shared_ptr<Archive> & arch, PyBaseMatrix & mat) 
                                          { cout << "output basematrix" << endl;
-                                           mat->DoArchive(*arch); return arch; });
+                                           mat.DoArchive(*arch); return arch; });
                                            
 }
 

@@ -779,7 +779,7 @@ void ExportBVP(py::module &m)
                double prec) -> shared_ptr<NumProc>
             
             {
-              return make_shared<NumProcBVP> (bfa.Get(), lff.Get(), gfu.Get(), pre.Get(), maxsteps, prec);
+              return make_shared<NumProcBVP> (bfa.Get(), lff.Get(), gfu.Get(), pre, maxsteps, prec);
             }),
             py::arg("pde"),
             py::arg("bf"), py::arg("lf"), py::arg("gf"), 
@@ -795,7 +795,7 @@ void ExportBVP(py::module &m)
                double prec) -> shared_ptr<NumProc>
             
             {
-              return make_shared<NumProcBVP> (bfa.Get(), lff.Get(), gfu.Get(), pre.Get(), maxsteps, prec);
+              return make_shared<NumProcBVP> (bfa.Get(), lff.Get(), gfu.Get(), pre, maxsteps, prec);
             }),
             py::arg("bf"), py::arg("lf"), py::arg("gf"), 
             py::arg("pre"), py::arg("maxsteps")=100, py::arg("prec")=1e-8

@@ -4071,11 +4071,11 @@ public:
   class CompiledCoefficientFunction : public CoefficientFunction
   {
     typedef void (*lib_function)(const ngfem::BaseMappedIntegrationRule &, ngbla::FlatMatrix<double>);
-    typedef void (*lib_function_simd)(const ngfem::SIMD_BaseMappedIntegrationRule &, ABareSliceMatrix<double>);
+    typedef void (*lib_function_simd)(const ngfem::SIMD_BaseMappedIntegrationRule &, BareSliceMatrix<SIMD<double>>);
     typedef void (*lib_function_deriv)(const ngfem::BaseMappedIntegrationRule &, ngbla::FlatMatrix<double>, ngbla::FlatMatrix<double>);
-    typedef void (*lib_function_simd_deriv)(const ngfem::SIMD_BaseMappedIntegrationRule &, AFlatMatrix<double>, AFlatMatrix<double>);
+    typedef void (*lib_function_simd_deriv)(const ngfem::SIMD_BaseMappedIntegrationRule &, BareSliceMatrix<SIMD<double>>, BareSliceMatrix<SIMD<double>>);
     typedef void (*lib_function_dderiv)(const ngfem::BaseMappedIntegrationRule &, ngbla::FlatMatrix<double>, ngbla::FlatMatrix<double>, ngbla::FlatMatrix<double>);
-    typedef void (*lib_function_simd_dderiv)(const ngfem::SIMD_BaseMappedIntegrationRule &, AFlatMatrix<double>, AFlatMatrix<double>, AFlatMatrix<double>);
+    typedef void (*lib_function_simd_dderiv)(const ngfem::SIMD_BaseMappedIntegrationRule &, BareSliceMatrix<SIMD<double>>, BareSliceMatrix<SIMD<double>>, BareSliceMatrix<SIMD<double>>);
     shared_ptr<CoefficientFunction> cf;
     Array<CoefficientFunction*> steps;
     DynamicTable<int> inputs;
@@ -4159,7 +4159,7 @@ public:
                  code.body += Var(steps.Size(),i,j).Declare(res_type);
                  code.body += Var(steps.Size(),i,j).Assign(Var(steps.Size()-1,i,j),false);
                  string sget = "(i," + ToString(ii) + ") =";
-                 if(simd) sget = ".Get(" + ToString(ii) + ",i) =";
+                 if(simd) sget = "(" + ToString(ii) + ",i) =";
 
                  for (auto ideriv : Range(deriv+1))
                  {
@@ -4184,8 +4184,8 @@ public:
             if(simd) s << "SIMD";
 
             // Function parameters
-            string param_type = simd ? "AFlatMatrix<double> " : "FlatMatrix<> ";
-            if (simd && deriv == 0) param_type = "ABareSliceMatrix<> ";
+            string param_type = simd ? "BareSliceMatrix<SIMD<double>> " : "FlatMatrix<> ";
+            if (simd && deriv == 0) param_type = "BareSliceMatrix<SIMD<double>> ";
             s << "( " << (simd?"SIMD_":"") << "BaseMappedIntegrationRule &mir";
             for(auto i : Range(deriv+1))
               s << ", " << param_type << parameters[i];

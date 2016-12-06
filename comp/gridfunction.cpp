@@ -67,7 +67,9 @@ namespace ngcomp
       GridFunctionCoefficientFunction (afespace->GetEvaluator(VOL), afespace->GetEvaluator(BND)),
       fespace(afespace)
   {
-    gf = shared_ptr<GridFunction>(this,NOOP_Deleter);
+    GridFunctionCoefficientFunction::gf = shared_ptr<GridFunction>(this,NOOP_Deleter);
+    GridFunctionCoefficientFunction::fes = fespace;
+
     is_complex = fespace->IsComplex();
     if (fespace->GetEvaluator(VOL) || fespace->GetEvaluator(BND))
       SetDimensions (GridFunctionCoefficientFunction::Dimensions());
@@ -934,6 +936,7 @@ namespace ngcomp
   GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, int acomp)
     : CoefficientFunction(1, agf->GetFESpace()->IsComplex()), gf(agf), diffop (NULL), comp (acomp) 
   {
+    fes = gf->GetFESpace();
     SetDimensions (gf->Dimensions());
     diffop = gf->GetFESpace()->GetEvaluator();
   }
@@ -958,6 +961,7 @@ namespace ngcomp
     : CoefficientFunction(1,agf->IsComplex()),
       gf(agf), diffop (adiffop), trace_diffop(atrace_diffop), ttrace_diffop(attrace_diffop), comp (acomp) 
   {
+    fes = gf->GetFESpace();    
     //SetDimensions (gf->Dimensions());    
   }
   
@@ -967,6 +971,7 @@ namespace ngcomp
     : CoefficientFunction(1, agf->IsComplex()),
       gf(agf), bfi (abfi), comp (acomp) 
   {
+    fes = gf->GetFESpace();
     SetDimensions (gf->Dimensions());    
   }
 
@@ -1405,9 +1410,9 @@ namespace ngcomp
     VorB vb = trafo.VB();
     ElementId ei(vb, elnr);
 
-    const FESpace & fes = *gf->GetFESpace();
+    // const FESpace & fes = *gf->GetFESpace();
 
-    if (!trafo.BelongsToMesh ((void*)(fes.GetMeshAccess().get())))
+    if (!trafo.BelongsToMesh ((void*)(fes->GetMeshAccess().get())))
       {
         throw ExceptionNOSIMD ("SIMD - evaluation not available for different meshes");
         // for (int i = 0; i < ir.Size(); i++)
@@ -1415,22 +1420,22 @@ namespace ngcomp
         return;
       }
     
-    if (!fes.DefinedOn(vb,trafo.GetElementIndex())) 
+    if (!fes->DefinedOn(vb,trafo.GetElementIndex())) 
       { 
         values = 0.0; 
         return;
       }
     
-    const FiniteElement & fel = fes.GetFE (ei, lh2);
-    int dim = fes.GetDimension();
+    const FiniteElement & fel = fes->GetFE (ei, lh2);
+    int dim = fes->GetDimension();
 
     ArrayMem<int, 50> dnums;
-    fes.GetDofNrs (ei, dnums);
+    fes->GetDofNrs (ei, dnums);
     
     VectorMem<50> elu(dnums.Size()*dim);
 
     gf->GetElementVector (comp, dnums, elu);
-    fes.TransformVec (elnr, vb, elu, TRANSFORM_SOL);
+    fes->TransformVec (elnr, vb, elu, TRANSFORM_SOL);
 
     if (diffop && vb==VOL)
       diffop->Apply (fel, ir, elu, values); // , lh2);
@@ -1439,9 +1444,9 @@ namespace ngcomp
     else if (bfi)
       throw Exception ("GridFunctionCoefficientFunction: SIMD evaluate not possible 1");
       // bfi->CalcFlux (fel, ir, elu, values, true, lh2);
-    else if (fes.GetEvaluator(vb==BND))
-      fes.GetEvaluator(vb==BND) -> Apply (fel, ir, elu, values); // , lh2);
-    else if (fes.GetIntegrator(vb==BND))
+    else if (fes->GetEvaluator(vb==BND))
+      fes->GetEvaluator(vb==BND) -> Apply (fel, ir, elu, values); // , lh2);
+    else if (fes->GetIntegrator(vb==BND))
       throw Exception ("GridFunctionCoefficientFunction: SIMD evaluate not possible 2");
       // fes.GetIntegrator(boundary) ->CalcFlux (fel, ir, elu, values, false, lh2);
     else
@@ -1461,7 +1466,8 @@ namespace ngcomp
     VorB vb = trafo.VB();
     ElementId ei(vb, elnr);
 
-    const FESpace & fes = *gf->GetFESpace();
+    // const FESpace & fes = *gf->GetFESpace();
+    const FESpace & fes = *this->fes;
 
     if (!trafo.BelongsToMesh ((void*)(fes.GetMeshAccess().get())))
       {

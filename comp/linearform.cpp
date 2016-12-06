@@ -203,7 +203,7 @@ namespace ngcomp
 		IterateElements
 		  (*fespace,vb,clh,[&] (FESpace::Element el, LocalHeap &lh)
 		   {
-		     RegionTimer reg2(timer2);
+		     // RegionTimer reg2(timer2);
 		     progress.Update();
 
 		     auto & fel = el.GetFE();
@@ -690,7 +690,7 @@ namespace ngcomp
 		    FlatVector<double> elvec,
 		    int cachecomp) 
   {
-    vec -> AddIndirect (dnums, elvec);
+    vec -> AddIndirect (dnums, elvec, fespace->HasAtomicDofs());
   }
   
   template <> void T_LinearForm<Complex>::
