@@ -85,6 +85,7 @@ namespace ngstd
     INLINE auto operator*() const -> decltype(ao[ind]) { return ao[ind]; }
     INLINE auto operator*() -> decltype(ao[ind]) { return ao[ind]; }
     INLINE bool operator != (AOWrapperIterator d2) { return ind != d2.ind; }
+    INLINE bool operator == (AOWrapperIterator d2) { return ind == d2.ind; }
   };
 
 
@@ -167,6 +168,7 @@ namespace ngstd
     INLINE TELEM operator*() const { return ar[ind]; }
     INLINE TELEM & operator*() { return ar[ind]; }
     INLINE bool operator != (ArrayIterator d2) { return ind != d2.ind; }
+    INLINE bool operator == (ArrayIterator d2) { return ind == d2.ind; }
   };
 
 
@@ -183,6 +185,7 @@ namespace ngstd
     INLINE TSIZE Index() { return ind; }
     INLINE operator TSIZE () const { return ind; }
     INLINE bool operator != (ArrayRangeIterator d2) { return ind != d2.ind; }
+    INLINE bool operator == (ArrayRangeIterator d2) { return ind == d2.ind; }
   };
 
   /// a range of intergers
@@ -894,7 +897,7 @@ namespace ngstd
         for (size_t i = 0; i < mins; i++) data[i] = move(hdata[i]);
 #else
         if (std::is_trivially_copyable<T>::value)
-          memcpy (data, hdata, sizeof(T)*mins);
+          memcpy ((void*)data, hdata, sizeof(T)*mins);
         else
           for (size_t i = 0; i < mins; i++) data[i] = move(hdata[i]);
 #endif

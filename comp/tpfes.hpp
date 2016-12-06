@@ -109,7 +109,7 @@ namespace ngcomp
     
     virtual void GetDofNrs(ngfem::ElementId ei, ngstd::Array<int>& dnums) const;
     ///
-    virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const;
+    virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & precflags) const;
     /// 
  
     virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const;

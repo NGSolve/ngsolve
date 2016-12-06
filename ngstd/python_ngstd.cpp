@@ -154,8 +154,8 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
     (m, "HeapReset","stores heap-pointer on init, and resets it on exit")
     .def(py::init<LocalHeap&>())
     ;
-
-  py::class_<ngstd::BitArray> (m, "BitArray")
+  
+  py::class_<ngstd::BitArray, shared_ptr<BitArray>> (m, "BitArray")
     .def(py::init<int>())
     .def(py::init<const BitArray&>())
     .def("__str__", &ToString<BitArray>)
@@ -247,7 +247,10 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
   py::class_<ngstd::IntRange> py_intrange (m, "IntRange");
   py_intrange.def( py::init<int,int>());
   py_intrange.def("__str__", &ToString<IntRange>);
-  PyDefIterable2<IntRange>(m, py_intrange);
+  py_intrange.def("__iter__", [] (ngstd::IntRange & i)
+      { return py::make_iterator(i.begin(), i.end()); },
+      py::keep_alive<0,1>()
+    );
 
   m.def("Timers",
 	  []() 

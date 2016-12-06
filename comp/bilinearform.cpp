@@ -3165,7 +3165,7 @@ namespace ngcomp
 
                                          dynamic_cast<const FacetBilinearFormIntegrator&>(bfi).  
                                            ApplyFacetMatrix (fel,facnr1,eltrans,vnums1, seltrans, vnums2, elx, ely, lh);
-                                         y.AddIndirect(dnums, ely);
+                                         y.AddIndirect(dnums, ely, fespace->HasAtomicDofs());
                                        } //end for (numintegrators)
 
                                      continue;
@@ -3904,7 +3904,7 @@ namespace ngcomp
 
     TMATRIX & mat = dynamic_cast<TMATRIX&> (*hmat);
 
-    mat.AddElementMatrix (dnums1, dnums2, elmat);
+    mat.AddElementMatrix (dnums1, dnums2, elmat, this->fespace->HasAtomicDofs());
   }
 
 
@@ -3963,7 +3963,7 @@ namespace ngcomp
             this->fespace->TransformVec (elnum, (type == 1), elvecy, TRANSFORM_RHS);
 
             elvecy *= val;
-            y.AddIndirect (dnums, elvecy);  // coloring	    
+            y.AddIndirect (dnums, elvecy, fespace->HasAtomicDofs());  // coloring	    
           }
       }
     else if (type == 2)
@@ -4084,7 +4084,7 @@ namespace ngcomp
 
     TMATRIX & mat = dynamic_cast<TMATRIX&> (*hmat);
 
-    mat.AddElementMatrix (dnums1, elmat);
+    mat.AddElementMatrix (dnums1, elmat, this->fespace->HasAtomicDofs());
   }
 
 

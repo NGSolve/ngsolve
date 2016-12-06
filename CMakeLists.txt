@@ -37,10 +37,15 @@ set(NETGEN_INTERNAL_INCLUDE_DIR NOTFOUND CACHE INTERNAL "Netgen include director
 set(BUILD_NETGEN OFF CACHE INTERNAL "is set if netgen is built as external project")
 #######################################################################
 if(NETGEN_SOURCE_DIR)
-    find_path(NETGEN_INTERNAL_INCLUDE_DIR nginterface_v2_impl.hpp PATHS ${NETGEN_SOURCE_DIR} ${NETGEN_SOURCE_DIR}/libsrc/include)
-    if (NOT NETGEN_INTERNAL_INCLUDE_DIR)
+    find_path(NETGEN_INCLUDE_DIR nginterface_v2_impl.hpp PATHS ${NETGEN_SOURCE_DIR} ${NETGEN_SOURCE_DIR}/libsrc/include)
+    if (NOT NETGEN_INCLUDE_DIR)
       message(FATAL_ERROR "Could not find Netgen source files in NETGEN_SOURCE_DIR, which was set to ${NETGEN_SOURCE_DIR}")
     endif()
+    set(NETGEN_INTERNAL_INCLUDE_DIR
+      "${NETGEN_INCLUDE_DIR}"
+      "${NETGEN_INCLUDE_DIR}/../general"
+      "${NETGEN_INCLUDE_DIR}/../visualization"
+    )
 else(NETGEN_SOURCE_DIR)
   message(STATUS "Use Netgen from submodule, updating modules...")
   execute_process(COMMAND git submodule update --init --recursive WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
@@ -51,7 +56,6 @@ else(NETGEN_SOURCE_DIR)
     "${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies/netgen/libsrc/include"
     "${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies/netgen/libsrc/general"
     "${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies/netgen/libsrc/visualization"
-    CACHE INTERNAL "Netgen include directories"
   )
 endif(NETGEN_SOURCE_DIR)
 
@@ -145,7 +149,7 @@ add_definitions(-DUSE_TIMEOFDAY)
 
 include_directories ("${PROJECT_SOURCE_DIR}/include")
 include_directories ("${PROJECT_BINARY_DIR}")
-include_directories (AFTER "${CMAKE_INSTALL_PREFIX}/include")
+# include_directories (AFTER "${CMAKE_INSTALL_PREFIX}/include")
 
 link_directories ("${CMAKE_INSTALL_PREFIX}/${ngs_install_dir_lib}")
 
@@ -396,17 +400,19 @@ string(TOUPPER "CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE}" name)
 set(ngscxx_flags "${${name}} ${CMAKE_CXX_FLAGS} -fPIC")
 
 foreach( d ${ngscxx_defines} )
-  if(WIN32)
-    if(NOT ${d} STREQUAL "NGS_EXPORTS")
-      set( ngscxx_flags "${ngscxx_flags} /D${d}" )
+  if(NOT ${d} MATCHES "HAVE_NETGEN_SOURCES")
+    if(WIN32)
+      if(NOT ${d} STREQUAL "NGS_EXPORTS")
+        set( ngscxx_flags "${ngscxx_flags} /D${d}" )
+      endif()
+    else()
+      set( ngscxx_flags "${ngscxx_flags} -D${d}" )
     endif()
-  else()
-    set( ngscxx_flags "${ngscxx_flags} -D${d}" )
   endif()
 endforeach()
 
 # include directories
-set(ngscxx_include_dirs ${INSTALL_DIR}/include ${TCL_INCLUDE_PATH} ${MPI_CXX_INCLUDE_PATH} ${MKL_INCLUDE_DIRS} ${MUMPS_INCLUDE_DIR}/include ${PYTHON_INCLUDE_DIRS} ${UMFPACK_INCLUDE_DIR} ${VTUNE_INCLUDE_DIR})
+set(ngscxx_include_dirs ${INSTALL_DIR}/include ${TCL_INCLUDE_PATH} ${MPI_CXX_INCLUDE_PATH} ${MKL_INCLUDE_DIRS} ${MUMPS_INCLUDE_DIR} ${PYTHON_INCLUDE_DIRS} ${UMFPACK_INCLUDE_DIR} ${VTUNE_INCLUDE_DIR})
 if(NOT INSTALL_DEPENDENCIES) 
     set(ngscxx_include_dirs ${ngscxx_include_dirs} ${NETGEN_INTERNAL_INCLUDE_DIR})
 endif(NOT INSTALL_DEPENDENCIES) 
@@ -421,7 +427,7 @@ foreach( d ${ngscxx_include_dirs} )
 endforeach()
 
 # linker flags
-if(USE_MKL)
+if(USE_MKL AND NOT INSTALL_DEPENDENCIES)
     set( ngsld_flags "${ngsld_flags} ${MKL_LINK_FLAGS}" )
 endif()
 
@@ -463,9 +469,9 @@ else(WIN32)
     get_property(MYCRULE GLOBAL PROPERTY RULE_LAUNCH_COMPILE)
     get_property(MYLRULE GLOBAL PROPERTY RULE_LAUNCH_LINK)
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngscxx "${ngscxx_header}
-${MYCRULE} ${CMAKE_CXX_COMPILER} ${ngscxx_flags} ${ngscxx_includes} $*\n")
+${CMAKE_CXX_COMPILER} ${ngscxx_flags} ${ngscxx_includes} $*\n")
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngsld "${ngsld_header}
-${MYLRULE} ${CMAKE_CXX_COMPILER} ${ngsld_flags} $*\n")
+${CMAKE_CXX_COMPILER} ${ngsld_flags} $*\n")
     install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngscxx DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve_devel )
     install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngsld DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve_devel )
 endif(WIN32)

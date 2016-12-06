@@ -1114,17 +1114,17 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
     .def_property_readonly("spacedim", &ElementTransformation::SpaceDim)
     .def_property_readonly("elementid", &ElementTransformation::GetElementId)
     .def ("__call__", FunctionPointer
-          ([] (ElementTransformation & self, double x, double y, double z)
+          ([] (PyElementTransformation & self, double x, double y, double z)
            {
              
-             return &self(IntegrationPoint(x,y,z), global_alloc);
+             return &(*self)(IntegrationPoint(x,y,z), global_alloc);
            }),
           py::arg("x"), py::arg("y")=0, py::arg("z")=0,
           py::return_value_policy::reference)
     .def ("__call__", FunctionPointer
-          ([] (ElementTransformation & self, IntegrationPoint & ip)
+          ([] (PyElementTransformation & self, IntegrationPoint & ip)
            {
-             return &self(ip, global_alloc);
+             return &(*self)(ip, global_alloc);
            }),
           py::arg("ip"),
           py::return_value_policy::reference)
@@ -1204,7 +1204,7 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
 
     .def("CalcElementMatrix",
          FunctionPointer([] (PyBFI self,
-                             const FiniteElement & fe, const ElementTransformation & trafo,
+                             const FiniteElement & fe, const PyElementTransformation & trafo,
                              int heapsize)
                          {
                            Matrix<> mat(fe.GetNDof());
@@ -1213,7 +1213,7 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
                                try
                                  {
                                    LocalHeap lh(heapsize);
-                                   self->CalcElementMatrix (fe, trafo, mat, lh);
+                                   self->CalcElementMatrix (fe, *trafo, mat, lh);
                                    return mat;
                                  }
                                catch (LocalHeapOverflow ex)
@@ -1312,10 +1312,10 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
          py::return_value_policy::reference)
 
     .def("CalcElementVector", 
-         [] (PyLFI  self, const FiniteElement & fe, const ElementTransformation & trafo, FlatVector<double> v, LocalHeap &lh) { self->CalcElementVector(fe, trafo, v, lh); } )
+         [] (PyLFI  self, const FiniteElement & fe, const PyElementTransformation & trafo, FlatVector<double> v, LocalHeap &lh) { self->CalcElementVector(fe, *trafo, v, lh); } )
     .def("CalcElementVector",
          [] (PyLFI  self,
-                             const FiniteElement & fe, const ElementTransformation & trafo,
+                             const FiniteElement & fe, const PyElementTransformation & trafo,
                              int heapsize)
                          {
                            Vector<> vec(fe.GetNDof());
@@ -1324,7 +1324,7 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
                                try
                                  {
                                    LocalHeap lh(heapsize);
-                                   self->CalcElementVector (fe, trafo, vec, lh);
+                                   self->CalcElementVector (fe, *trafo, vec, lh);
                                    return vec;
                                  }
                                catch (LocalHeapOverflow ex)

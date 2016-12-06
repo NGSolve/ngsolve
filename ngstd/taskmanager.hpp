@@ -245,7 +245,7 @@ namespace ngstd
 
 
 
-class AtomicRange
+  class alignas(4096) AtomicRange
 {
   mutex lock;
   int begin, end;

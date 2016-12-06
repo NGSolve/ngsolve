@@ -2,12 +2,6 @@
 # Expression classes                          
 ###############################################
 
-import time
-print ("Import expr.py")
-
-def fexpr():
-    print("hallo from expr")
-
 def Expr(a):
     if isinstance(a, BaseExpr):
         return a
@@ -54,19 +48,17 @@ class BaseExpr:
         return SumExpr(self, Expr(other).Scale(-1))
     
     def __str__(self):
-        return str(self.a)
+        return str(self.s) + '*' +str(self.a)
 
     def __len__(self):
         return len(self.a)
 
+    def T(self):
+        return TransExpr(self)
 
 class VecExpr(BaseExpr):
     def AssignTo(self, v, s = 1.0):
-#        try:
-            v.a.Assign(self.a,s*self.s)
-#        except:
-#            print ("WARNING: assign to exception")
-#            v.a = self.a
+        v.a.Assign(self.a,s*self.s)
     
     def AddTo(self, v, s = 1.0):
         try:
@@ -77,17 +69,17 @@ class VecExpr(BaseExpr):
 
 
 class MatExpr(BaseExpr):
-    def Mult(self, x, y, s = 1.0):
-        self.a.Mult(x.a,y.a,s*self.s)
+    def MultScale(self, s, x, y):
+        self.a.MultScale(s*self.s,x.a,y.a)
 
-    def MultTrans(self, x, y, s = 1.0):
-        self.a.MultTrans(x.a,y.a,s*self.s)
+    def MultTrans(self, s, x, y):
+        self.a.MultTrans(s*self.s,x.a,y.a)
 
-    def MultAdd(self, x, y, s = 1.0):
-        self.a.MultAdd(x.a,y.a,s*self.s)
+    def MultAdd(self, s, x, y):
+        self.a.MultAdd(s*self.s,x.a,y.a)
 
-    def MultTransAdd(self, x, y, s = 1.0):
-        self.a.MultTransAdd(x.a,y.a,s*self.s)
+    def MultTransAdd(self, s, x, y):
+        self.a.MultTransAdd(s*self.s,x.a,y.a)
 
     def __mul__(self, other):
         if isinstance(Expr(other), VecExpr):
@@ -102,25 +94,22 @@ class MatExpr(BaseExpr):
 
 
 class TransExpr(MatExpr):
-    def __init__(self, matexpr):
-        self.a = matexpr.a
-        self.s = matexpr.s
+    def __init__(self, matexpr, s=1.0):
+        self.a = Expr(matexpr).a
+        self.s = s*Expr(matexpr).s
 
-    def Mult(self, x, y, s = 1.0):
-        self.a.MultTrans(x.a,y.a,s*self.s)
+    def MultScale(self, s, x, y):
+        self.a.MultTrans(s*self.s,x.a,y.a)
 
-    def MultTrans(self, x, y, s = 1.0):
-        self.a.Mult(x.a,y.a,s*self.s)
+    def MultTrans(self, s, x, y):
+        self.a.MultScale(s*self.s,x.a,y.a)
 
-    def MultAdd(self, x, y, s = 1.0):
-        self.a.MultTransAdd(x.a,y.a,s*self.s)
+    def MultAdd(self, s, x, y):
+        self.a.MultTransAdd(s*self.s,x.a,y.a)
 
-    def MultTransAdd(self, x, y, s = 1.0):
-        self.a.MultAdd(x.a,y.a,s*self.s)
+    def MultTransAdd(self, s, x, y):
+        self.a.MultAdd(s*self.s,x.a,y.a)
     
-def Trans(matexpr):
-    return TransExpr(Expr(matexpr))
-
 class BinExpr(BaseExpr):
     def __init__(self, a,b):
         self.a = Expr(a)
@@ -154,13 +143,13 @@ class MatVecExpr(BinExpr):
         return MatVecExpr(self.a.Scale(s), self.b)
 
     def AssignTo(self, v, s = 1.0):
-        self.a.Mult(self.b,v,s)
+        self.a.MultScale(s,self.b,v)
 
     def AddTo(self, v, s = 1.0):
-        self.a.MultAdd(self.b,v, s)
+        self.a.MultAdd(s,self.b,v)
 
     def __str__(self):
-        return str(self.a) + ' + ' + str(self.b)
+        return str(self.a) + ' * ' + str(self.b)
 
         
 def GetSlice(self, index):

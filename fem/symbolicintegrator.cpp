@@ -83,7 +83,7 @@ namespace ngfem
             var += ".Value()";
           string values = "{values}";
           if(code.is_simd)
-            values += ".Get(" + ToString(ind) + ",i)";
+            values += "(" + ToString(ind) + ",i)";
           else
             values += "(i," + ToString(ind) + ")";
 
@@ -98,11 +98,17 @@ namespace ngfem
       body += "{\n";
     else
       body += "if({ud}->{func_string} == {this}) {\n";
-    TraverseDimensions( dims, [&](int ind, int i, int j) {
+    if(testfunction)
+      TraverseDimensions( dims, [&](int ind, int i, int j) {
+        if(code.deriv==0) body += Var(index,i,j).Assign( Var("comp", index,i,j), false );
+        if(code.deriv==1) body += Var(index,i,j).Assign( Var("comp", index,i,j), false );
+        if(code.deriv==2) body += Var(index,i,j).Call("DValue","0").Assign( Var("comp", index,i,j).Call("DValue","0"), false );
+      });
+    else
+      TraverseDimensions( dims, [&](int ind, int i, int j) {
         if(code.deriv==0) body += Var(index,i,j).Assign( Var("comp", index,i,j), false );
         if(code.deriv>=1) body += Var(index,i,j).Call("DValue","0").Assign( Var("comp", index,i,j).Call("DValue","0"), false );
-        if(code.deriv==2) body += Var(index,i,j).Call("DDValue","0").Assign( Var("comp", index,i,j).Call("DDValue","0"), false );
-    });
+      });
     body += "}\n";
 
     string func_string = testfunction ? "testfunction" : "trialfunction";
@@ -114,7 +120,7 @@ namespace ngfem
     variables["comp_string"] = testfunction ? "test_comp" : "trial_comp";
     variables["testfunction"] = ToString(testfunction);
 
-    variables["flatmatrix"] = code.is_simd ? "AFlatMatrix<double>" : "FlatMatrix<double>";
+    variables["flatmatrix"] = code.is_simd ? "FlatMatrix<SIMD<double>>" : "FlatMatrix<double>";
 
     variables["values"] = Var("values", index).S();
 
@@ -362,7 +368,7 @@ namespace ngfem
           }
       }
     if (ud->testfunction == this)
-      deriv.Row(ud->test_comp) = 1;
+      result.Row(ud->test_comp) = 1;
     if (ud->trialfunction == this)
       deriv.Row(ud->trial_comp) = 1;
   }
@@ -827,18 +833,6 @@ namespace ngfem
     const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : fel;
     const FiniteElement & fel_test = mixedfe ? mixedfe->FETest() : fel;
 
-    /*
-    int trial_difforder = 99, test_difforder = 99;
-    for (auto proxy : trial_proxies)
-      trial_difforder = min2(trial_difforder, proxy->Evaluator()->DiffOrder());
-    for (auto proxy : test_proxies)
-      test_difforder = min2(test_difforder, proxy->Evaluator()->DiffOrder());
-
-    int intorder = fel_trial.Order()+fel_test.Order();
-    auto et = trafo.GetElementType();
-    if (et == ET_TRIG || et == ET_TET)
-      intorder -= test_difforder+trial_difforder;
-    */
     elmat = 0;
 
     IntegrationRule ir = GetIntegrationRule (fel);
@@ -872,7 +866,7 @@ namespace ngfem
             if (is_nonzero)
               {
                 HeapReset hr(lh);
-                bool samediffop = *(proxy1->Evaluator()) == *(proxy2->Evaluator());
+                bool samediffop = (*(proxy1->Evaluator()) == *(proxy2->Evaluator())) && !mixedfe;
                 // td.Start();
                 FlatTensor<3,SCAL> proxyvalues(lh, mir.Size(), proxy1->Dimension(), proxy2->Dimension());
                 FlatVector<SCAL> diagproxyvalues(mir.Size()*proxy1->Dimension(), lh);
@@ -942,8 +936,8 @@ namespace ngfem
                 IntRange r1 = proxy1->Evaluator()->UsedDofs(fel_trial);
                 IntRange r2 = proxy2->Evaluator()->UsedDofs(fel_test);
                 SliceMatrix<SCAL> part_elmat = elmat.Rows(r2).Cols(r1);
-                FlatMatrix<SCAL_SHAPES,ColMajor> bmat1(proxy1->Dimension(), elmat.Width(), lh);
-                FlatMatrix<SCAL_SHAPES,ColMajor> bmat2(proxy2->Dimension(), elmat.Height(), lh);
+                // FlatMatrix<SCAL_SHAPES,ColMajor> bmat1(proxy1->Dimension(), elmat.Width(), lh);
+                // FlatMatrix<SCAL_SHAPES,ColMajor> bmat2(proxy2->Dimension(), elmat.Height(), lh);
 
                 
                 // enum { BS = 16 };
@@ -1066,9 +1060,12 @@ namespace ngfem
     
     // RegionTimer reg(t);
 
-    const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fel);
-    const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : fel;
-    const FiniteElement & fel_test = mixedfe ? mixedfe->FETest() : fel;
+    // const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fel);
+    bool is_mixedfe = typeid(fel) == typeid(const MixedFiniteElement&);
+    const MixedFiniteElement * mixedfe = static_cast<const MixedFiniteElement*> (&fel);
+    // if (is_mixedfe != ( mixedfe != nullptr) ) cout << "different" << endl;
+    const FiniteElement & fel_trial = is_mixedfe ? mixedfe->FETrial() : fel;
+    const FiniteElement & fel_test = is_mixedfe ? mixedfe->FETest() : fel;
 
     
     elmat = 0;
@@ -1103,7 +1100,7 @@ namespace ngfem
                   if (is_nonzero)
                     {
                       HeapReset hr(lh);
-                      bool samediffop = *(proxy1->Evaluator()) == *(proxy2->Evaluator());
+                      bool samediffop = (*(proxy1->Evaluator()) == *(proxy2->Evaluator())) && !is_mixedfe;
                       // td.Start();
                       AFlatMatrix<SCAL> proxyvalues(proxy1->Dimension()*proxy2->Dimension(), ir.GetNIP(), lh);
                       AFlatMatrix<SCAL> diagproxyvalues(proxy1->Dimension(), ir.GetNIP(), lh);
@@ -1162,7 +1159,7 @@ namespace ngfem
                             for (size_t j = 0; j < proxy1->Dimension(); j++)
                               diagproxyvalues.Get(j,i) *= fac;
                           }
-                  
+
                       IntRange r1 = proxy1->Evaluator()->UsedDofs(fel_trial);
                       IntRange r2 = proxy2->Evaluator()->UsedDofs(fel_test);
                       SliceMatrix<SCAL> part_elmat = elmat.Rows(r2).Cols(r1);
@@ -1192,6 +1189,7 @@ namespace ngfem
                           
                           if (!samediffop)
                             proxy2->Evaluator()->CalcMatrix(fel_test, mir, bbmat2);
+
                           // tb.Stop();
                           // tdb.Start();
                           if (is_diagonal)
@@ -3162,7 +3160,7 @@ void SymbolicFacetBilinearFormIntegrator ::
      irs[facet_x_y] = &ir_facet_vol2;
      TPIntegrationRule tpir2(irs);
      BaseMappedIntegrationRule & tpmir2 = eltrans2(tpir2,lh);
-     int tpnip = ir_facet_vol1.Size()*ir_vol1.Size();
+     // int tpnip = ir_facet_vol1.Size()*ir_vol1.Size();
      dynamic_cast<TPMappedIntegrationRule &>(tpmir1).SetFacet(facet_x_y);
      dynamic_cast<TPMappedIntegrationRule &>(tpmir2).SetFacet(facet_x_y);
      // evaluate proxy-values
@@ -3251,7 +3249,7 @@ void SymbolicFacetBilinearFormIntegrator ::
      tpsmir.GetIRs()[1-xfacet] = dynamic_cast<TPMappedIntegrationRule &>(tpmir).GetIRs()[1-xfacet];
      // evaluate proxy-values
      ProxyUserData ud(trial_proxies.Size(), lh);
-     int niptp=irs[0]->Size()*irs[1]->Size();
+     // int niptp=irs[0]->Size()*irs[1]->Size();
      dynamic_cast<TPMappedIntegrationRule &>(tpmir).SetFacet(xfacet);
      dynamic_cast<TPMappedIntegrationRule &>(tpsmir).SetFacet(xfacet);
      const_cast<ElementTransformation&>(eltrans).userdata = &ud;

@@ -120,7 +120,7 @@ namespace ngla
 
     ///
     PardisoInverseTM (const SparseMatrixTM<TM> & a, 
-		      const BitArray * ainner = NULL,
+		      shared_ptr<BitArray> ainner = NULL,
 		      const Array<int> * acluster = NULL,
 		      int symmetric = 0);
     ///
@@ -167,7 +167,7 @@ namespace ngla
 
     ///
     PardisoInverse (const SparseMatrix<TM,TV_ROW,TV_COL> & a, 
-		    const BitArray * ainner = NULL,
+		    shared_ptr<BitArray> ainner = NULL,
 		    const Array<int> * acluster = NULL,
 		    int symmetric = 0)
       : PardisoInverseTM<TM> (a, ainner, acluster, symmetric) { ; }
