@@ -3094,8 +3094,8 @@ namespace ngcomp
                         }
                     */
 
-                    if (needs_facet_loop && !fespace->UsesDGCoupling())
-                      throw Exception ("skeleton-form needs \"dgjumps\" : True flag for FESpace");
+                    // if (needs_facet_loop && !fespace->UsesDGCoupling())
+                    // throw Exception ("skeleton-form needs \"dgjumps\" : True flag for FESpace");
 
                     // facet-loop
                     if (needs_facet_loop)
