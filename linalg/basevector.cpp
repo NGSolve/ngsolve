@@ -101,7 +101,7 @@ namespace ngla
     t.AddFlops (fv.Size());
 
     ParallelFor ( fv.Range(),
-                  [fv,scal] (int i) { fv(i) = scal; });
+                  [fv,scal] (size_t i) { fv(i) = scal; });
     
     return *this; 
   }
