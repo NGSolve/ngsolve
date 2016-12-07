@@ -185,8 +185,7 @@ namespace ngcomp
     const Table<int> & ElementColoring(VorB vb = VOL) const 
     { return element_coloring[vb]; }
 
-    const Table<int> & FacetColoring() const
-    { return facet_coloring; }
+    const Table<int> & FacetColoring() const;
     
     /// print report to stream
     virtual void PrintReport (ostream & ost) const;

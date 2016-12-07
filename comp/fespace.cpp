@@ -537,86 +537,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
 
-
-    // facet coloring
-    if (UsesDGCoupling())
-      {
-        int nf = ma->GetNFacets();
-        Array<int> col(nf);
-        col = -1;
-
-        int maxcolor = 0;
-        int basecol = 0;
-        Array<unsigned int> mask(GetNDof());
-
-        int cnt = nf, found = 0;
-        // for (ElementId el : Elements(vb)) { cnt++; (void)el; } // no warning 
-        Array<int> dofs, dofs1, elnums; 
-        do
-          {
-            mask = 0;
-
-            //  for (auto el : Elements(vb))
-            for (int f = 0; f < nf; f++)
-              {
-                if (col[f] >= 0) continue;
-
-                ma->GetFacetElements(f,elnums);
-                dofs.SetSize0();
-                for (int el : elnums)
-                  {
-                    GetDofNrs(ElementId(VOL, el), dofs1);
-                    dofs += dofs1;
-                  }
-                
-                unsigned check = 0;
-                for (auto d : dofs)
-                  if (d != -1) check |= mask[d];
-
-                if (check != UINT_MAX) // 0xFFFFFFFF)
-                  {
-                    found++;
-                    unsigned checkbit = 1;
-                    int color = basecol;
-                    while (check & checkbit)
-                      {
-                        color++;
-                        checkbit *= 2;
-                      }
-
-                    col[f] = color;
-                    if (color > maxcolor) maxcolor = color;
-		
-                    for (auto d : dofs)
-                      if (d != -1) mask[d] |= checkbit;
-                  }
-              }
-            
-            basecol += 8*sizeof(unsigned int); // 32;
-          }
-        while (found < cnt);
-        // cout << "facet-colors: " << col << endl;
-        Array<int> cntcol(maxcolor+1);
-        cntcol = 0;
-
-        for (auto f : Range(nf))
-          cntcol[col[f]]++;
-        
-        facet_coloring = Table<int> (cntcol);
-
-	cntcol = 0;
-        for (auto f : Range(nf))          
-          facet_coloring[col[f]][cntcol[col[f]]++] = f;
-        // cout << "facet_coloring: " << facet_coloring << endl;
-        if (print)
-          *testout << "needed " << maxcolor+1 << " colors for facet-coloring" << endl;
-      }
-    
-
-
-
-
-
+    // invalidate facet_coloring
+    facet_coloring = Table<int>();
+       
 
     
     level_updated = ma->GetNLevels();
@@ -625,6 +548,84 @@ lot of new non-zero entries in the matrix!\n" << endl;
     // CheckCouplingTypes();
   }
 
+
+  const Table<int> & FESpace :: FacetColoring() const
+  {
+    if (facet_coloring.Size()) return facet_coloring;
+
+    size_t nf = ma->GetNFacets();
+    Array<int> col(nf);
+    col = -1;
+    
+    int maxcolor = 0;
+    int basecol = 0;
+    Array<unsigned int> mask(GetNDof());
+
+    int cnt = nf, found = 0;
+    // for (ElementId el : Elements(vb)) { cnt++; (void)el; } // no warning 
+    Array<int> dofs, dofs1, elnums; 
+    do
+      {
+        mask = 0;
+        
+        //  for (auto el : Elements(vb))
+        for (size_t f = 0; f < nf; f++)
+          {
+            if (col[f] >= 0) continue;
+            
+            ma->GetFacetElements(f,elnums);
+            dofs.SetSize0();
+            for (int el : elnums)
+              {
+                GetDofNrs(ElementId(VOL, el), dofs1);
+                dofs += dofs1;
+              }
+            
+            unsigned check = 0;
+            for (auto d : dofs)
+              if (d != -1) check |= mask[d];
+            
+            if (check != UINT_MAX) // 0xFFFFFFFF)
+              {
+                found++;
+                unsigned checkbit = 1;
+                int color = basecol;
+                while (check & checkbit)
+                  {
+                    color++;
+                        checkbit *= 2;
+                  }
+                
+                col[f] = color;
+                if (color > maxcolor) maxcolor = color;
+		
+                for (auto d : dofs)
+                  if (d != -1) mask[d] |= checkbit;
+              }
+          }
+        
+        basecol += 8*sizeof(unsigned int); // 32;
+      }
+    while (found < cnt);
+    // cout << "facet-colors: " << col << endl;
+    Array<int> cntcol(maxcolor+1);
+    cntcol = 0;
+    
+    for (auto f : Range(nf))
+      cntcol[col[f]]++;
+    
+    const_cast<Table<int>&> (facet_coloring) = Table<int> (cntcol);
+    
+    cntcol = 0;
+    for (auto f : Range(nf))          
+      facet_coloring[col[f]][cntcol[col[f]]++] = f;
+    // cout << "facet_coloring: " << facet_coloring << endl;
+    if (print)
+      *testout << "needed " << maxcolor+1 << " colors for facet-coloring" << endl;
+
+    return facet_coloring;
+  }
+  
 
   FiniteElement & FESpace :: GetFE (ElementId ei, Allocator & alloc) const
   {
