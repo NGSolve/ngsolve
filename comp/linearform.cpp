@@ -699,7 +699,7 @@ namespace ngcomp
 		    FlatVector<Complex> elvec,
 		    int cachecomp) 
   {
-    vec -> AddIndirect (dnums, elvec);
+    vec -> AddIndirect (dnums, elvec, fespace->HasAtomicDofs());
   }
 
   template <typename TV>
