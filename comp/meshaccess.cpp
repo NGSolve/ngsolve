@@ -1211,6 +1211,11 @@ namespace ngcomp
 
   void MeshAccess :: GetElFacets (ElementId ei, Array<int> & fnums) const
   {
+    if (dim == 1)
+      fnums = GetElement(ei).Vertices();
+    else
+      fnums = GetElement(ei).Facets();
+    /*
     switch (dim)
       {
       case 1:
@@ -1220,6 +1225,7 @@ namespace ngcomp
       default:
 	fnums = GetElement(ei).Faces();
       }
+    */
   }
 
   // some utility for Facets
