@@ -542,8 +542,14 @@ void ExportCoefficientFunction(py::module &m)
          [] (PyCF self) { return self->Dimension(); } ,
                   "number of components of CF")
 
+    /*
     .def_property_readonly("dims",
          [] (PyCF self) { return self->Dimensions(); } ,
+                  "shape of CF:  (dim) for vector, (h,w) for matrix")    
+    */
+    .def_property("dims",
+                  [] (PyCF self) { return self->Dimensions(); } ,
+                  [] (PyCF self, py::tuple tup) { self->SetDimensions(makeCArray<int>(tup)); } ,
                   "shape of CF:  (dim) for vector, (h,w) for matrix")    
     
     .def("__getitem__", FunctionPointer( [](PyCF self, int comp) -> PyCF

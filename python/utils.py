@@ -53,6 +53,10 @@ def FacetFESpace(mesh, **args):
     """ Create Facet finite element space. """
     return FESpace("facet", mesh, **args)
 
+def HDivDiv(mesh, **args):
+    """ Create H(div-div) finite element space. """
+    return FESpace("hdivdiv", mesh, **args)
+
 
 
 def grad(func):
@@ -113,4 +117,4 @@ def NgsUnpickler(*args, **kargs):
     return unpickler
 
 
-__all__ = ['x', 'y', 'z', 'Laplace', 'Mass', 'Source', 'Neumann', 'H1', 'FacetFESpace', 'HCurl', 'HDiv', 'L2', 'grad', 'curl', 'div','NgsPickler', 'NgsUnpickler', 'Mesh' ]
+__all__ = ['x', 'y', 'z', 'Laplace', 'Mass', 'Source', 'Neumann', 'H1', 'FacetFESpace', 'HCurl', 'HDiv', 'L2', 'HDivDiv', 'grad', 'curl', 'div','NgsPickler', 'NgsUnpickler', 'Mesh' ]
