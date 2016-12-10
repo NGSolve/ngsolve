@@ -1332,7 +1332,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	for(int j=0;j<vec.Size(); j++)
 	  partvec(j) = vec[j](i);
 
-	TransformVec(elnr,vb,partvec,type);
+	TransformVec(ElementId(vb, elnr),partvec,type);
 
 	for(int j=0;j<vec.Size(); j++)
 	  vec[j](i) = partvec(j);
@@ -2446,8 +2446,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
         HeapReset hr(lh);
         size_t nd = spaces[i]->GetFE(ElementId(vb, elnr), lh).GetNDof();
 
-	spaces[i]->TransformMat (elnr, vb, mat.Rows(base, base+nd), TRANSFORM_MAT_LEFT);
-	spaces[i]->TransformMat (elnr, vb, mat.Cols(base, base+nd), TRANSFORM_MAT_RIGHT);
+	spaces[i]->TransformMat (ElementId(vb, elnr), mat.Rows(base, base+nd), TRANSFORM_MAT_LEFT);
+	spaces[i]->TransformMat (ElementId(vb, elnr), mat.Cols(base, base+nd), TRANSFORM_MAT_RIGHT);
 
 	base += nd;
       }
@@ -2472,7 +2472,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
 	// VEC svec (nd, &vec(base));
-	spaces[i]->TransformVec (elnr, vb, vec.Range(base, base+nd), tt);
+	spaces[i]->TransformVec (ElementId(vb, elnr), vec.Range(base, base+nd), tt);
 	base += nd;
       }
   }

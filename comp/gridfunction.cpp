@@ -1203,7 +1203,7 @@ namespace ngcomp
     VectorMem<50> elu(dnums.Size()*dim);
 
     gf->GetElementVector (comp, dnums, elu);
-    fes->TransformVec (elnr, vb, elu, TRANSFORM_SOL);
+    fes->TransformVec (ei, elu, TRANSFORM_SOL);
     if (diffop && vb==VOL)
       diffop->Apply (fel, ip, elu, result, lh2);
     else if (trace_diffop && vb==BND)
@@ -1259,7 +1259,7 @@ namespace ngcomp
     VectorMem<50, Complex> elu(dnums.Size()*dim);
 
     gf->GetElementVector (comp, dnums, elu);
-    fes.TransformVec (elnr, vb, elu, TRANSFORM_SOL);
+    fes.TransformVec (ei, elu, TRANSFORM_SOL);
 
     if (diffop && vb==VOL)
       diffop->Apply (fel, ip, elu, result, lh2);
@@ -1310,7 +1310,7 @@ namespace ngcomp
         fes.GetDofNrs (ei, dnums);
         VectorMem<50> elu(dnums.Size()*dim);
         gf->GetElementVector (comp, dnums, elu);
-        fes.TransformVec (elnr, vb, elu, TRANSFORM_SOL);
+        fes.TransformVec (ElementId(vb, elnr), elu, TRANSFORM_SOL); // correct ????
         const TPMappedIntegrationRule & tpir = dynamic_cast<const TPMappedIntegrationRule &>(ir);
         FlatMatrix<> valuestemp(tpir.GetIRs()[0]->Size(),1,lh2);
         fes.GetEvaluator()->Apply (fel, *tpir.GetIRs()[0], elu, values, lh2);
@@ -1328,7 +1328,7 @@ namespace ngcomp
     VectorMem<50> elu(dnums.Size()*dim);
 
     gf->GetElementVector (comp, dnums, elu);
-    fes.TransformVec (elnr, vb, elu, TRANSFORM_SOL);
+    fes.TransformVec (ElementId(vb, elnr), elu, TRANSFORM_SOL);
 
     if (diffop && vb==VOL)
       diffop->Apply (fel, ir, elu, values, lh2);
@@ -1381,7 +1381,7 @@ namespace ngcomp
     VectorMem<50,Complex> elu(dnums.Size()*dim);
 
     gf->GetElementVector (comp, dnums, elu);
-    fes.TransformVec (elnr, vb, elu, TRANSFORM_SOL);
+    fes.TransformVec (ei, elu, TRANSFORM_SOL);
 
     if (diffop && vb==VOL)
       diffop->Apply (fel, ir, elu, values, lh2);
@@ -1436,7 +1436,7 @@ namespace ngcomp
     VectorMem<50> elu(dnums.Size()*dim);
 
     gf->GetElementVector (comp, dnums, elu);
-    fes->TransformVec (elnr, vb, elu, TRANSFORM_SOL);
+    fes->TransformVec (ei, elu, TRANSFORM_SOL);
 
     if (diffop && vb==VOL)
       diffop->Apply (fel, ir, elu, values); // , lh2);
@@ -1493,7 +1493,7 @@ namespace ngcomp
     VectorMem<50, Complex> elu(dnums.Size()*dim);
 
     gf->GetElementVector (comp, dnums, elu);
-    fes.TransformVec (elnr, trafo.VB(), elu, TRANSFORM_SOL);
+    fes.TransformVec (ei, elu, TRANSFORM_SOL);
 
     if (diffop && vb==VOL)
       diffop->Apply (fel, ir, elu, values); // , lh2);
@@ -1620,7 +1620,7 @@ namespace ngcomp
 	      elu[i] = elu2[i*gf->GetCacheBlockSize()+multidimcomponent];
 	  }
 
-	fes.TransformVec (elnr, 0, elu, TRANSFORM_SOL);
+	fes.TransformVec (ei, elu, TRANSFORM_SOL);
 
 	IntegrationPoint ip(lam1, lam2, lam3, 0);
 	MappedIntegrationPoint<3,3> mip (ip, eltrans);
@@ -1700,7 +1700,7 @@ namespace ngcomp
 	    for(int i=0; i<elu.Size(); i++)
 	      elu[i] = elu2[i*gf->GetCacheBlockSize()+multidimcomponent];
 	  }
-	fes.TransformVec (elnr, 0, elu, TRANSFORM_SOL);
+	fes.TransformVec (ei, elu, TRANSFORM_SOL);
 	
 	
 	HeapReset hr(lh);
@@ -1808,7 +1808,7 @@ namespace ngcomp
               elu[i] = elu2[i*gf->GetCacheBlockSize()+multidimcomponent];
           }
         
-        fes.TransformVec (elnr, false, elu, TRANSFORM_SOL);
+        fes.TransformVec (ei, elu, TRANSFORM_SOL);
         
 	if (!fes.DefinedOn(eltrans.GetElementIndex()))return 0;
 
@@ -1922,7 +1922,7 @@ namespace ngcomp
 	      elu[i] = elu2[i*gf->GetCacheBlockSize()+multidimcomponent];
 	  }
 
-	fes.TransformVec (elnr, vb, elu, TRANSFORM_SOL);
+	fes.TransformVec (ei, elu, TRANSFORM_SOL);
 
 	ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
 	if (!fes.DefinedOn(vb, eltrans.GetElementIndex())) return false;
@@ -2001,7 +2001,7 @@ namespace ngcomp
 	      elu[i] = elu2[i*gf->GetCacheBlockSize()+multidimcomponent];
 	  }
 	
-	fes.TransformVec (elnr, vb, elu, TRANSFORM_SOL);
+	fes.TransformVec (ei, elu, TRANSFORM_SOL);
 	
 	HeapReset hr(lh);
 	ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
@@ -2142,7 +2142,7 @@ namespace ngcomp
               elu[i] = elu2[i*gf->GetCacheBlockSize()+multidimcomponent];
           }
         
-        fes.TransformVec (elnr, vb, elu, TRANSFORM_SOL);
+        fes.TransformVec (ei, elu, TRANSFORM_SOL);
 
         if (!fes.DefinedOn(eltrans.GetElementIndex(), vb)) return false;
         

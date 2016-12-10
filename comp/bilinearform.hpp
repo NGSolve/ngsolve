@@ -384,10 +384,10 @@ namespace ngcomp
   {
   protected:
 
-    ElementByElementMatrix<SCAL> * harmonicext = NULL;
-    BaseMatrix * harmonicexttrans = NULL;
-    ElementByElementMatrix<SCAL> * innersolve = NULL;
-    ElementByElementMatrix<SCAL> * innermatrix = NULL;
+    shared_ptr<ElementByElementMatrix<SCAL>> harmonicext; //  = NULL;
+    shared_ptr<BaseMatrix> harmonicexttrans; //  = NULL;
+    shared_ptr<ElementByElementMatrix<SCAL>> innersolve; //  = NULL;
+    shared_ptr<ElementByElementMatrix<SCAL>> innermatrix; //  = NULL;
 
         
   public:
