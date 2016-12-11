@@ -859,6 +859,8 @@ namespace ngcomp
             nnodes_cd[i] = 0;
             nelements_cd[i] = 0;
           }
+        nnodes[NT_ELEMENT] = 0;
+        nnodes[NT_FACET] = 0;
         dim = -1;
         ne_vb[VOL] = ne_vb[BND] = ne_vb[BBND] = 0;
         return;
@@ -897,6 +899,9 @@ namespace ngcomp
 	else 
 	  ne_vb[BBND] = nelements_cd[2];
       }
+    nnodes[NT_ELEMENT] = nnodes[StdNodeType (NT_ELEMENT, dim)];
+    nnodes[NT_FACET] = nnodes[StdNodeType (NT_FACET, dim)];
+    
 
     ndomains = -1;
     int ne = GetNE(); 

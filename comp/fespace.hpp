@@ -365,6 +365,7 @@ namespace ngcomp
 
     /// get dof-nrs of domain or boundary element elnr
     virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const = 0;
+    virtual void GetDofNrs (NodeId ni, Array<int> & dnums) const;
     
     Table<int> CreateDofTable (VorB vorb) const;
 
@@ -385,6 +386,7 @@ namespace ngcomp
     void GetDofNrs (int elnr, Array<int> & dnums, COUPLING_TYPE ctype) const;    
 
     /// get dofs on nr'th node of type nt.
+    [[deprecated("Use GetDofNrs with NodeId instead of nt/nr")]]    
     virtual void GetNodeDofNrs (NODE_TYPE nt, int nr, Array<int> & dnums) const;
     /// get number of low-order dofs for node of type nt
     // virtual int GetNLowOrderNodeDofs ( NODE_TYPE nt ) const;
@@ -625,7 +627,7 @@ namespace ngcomp
       return evaluator[vb];
     }
 
-    //[[deprecated("Use GetEvaluator(VorB) instead of GetEvaluator(bool)!")]]
+    // [[deprecated("Use GetEvaluator(VorB) instead of GetEvaluator(bool)!")]]
     shared_ptr<DifferentialOperator> GetEvaluator (bool boundary) const
     {
       if(boundary)

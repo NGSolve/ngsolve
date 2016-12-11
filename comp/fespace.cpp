@@ -860,6 +860,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
   }
 
+  void FESpace :: GetDofNrs (NodeId ni, Array<int> & dnums) const
+  {
+    GetNodeDofNrs (ni.GetType(), ni.GetNr(), dnums);
+  }
+  
   void FESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
   {
     dnums.SetSize0 ();
@@ -1431,8 +1436,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     for (NODE_TYPE nt : { NT_VERTEX, NT_EDGE, NT_FACE, NT_CELL })
       for ( int nr = 0; nr < ma->GetNNodes (nt); nr++ )
 	{
-	  GetNodeDofNrs (nt, nr, dnums);
-	  for (int d : dnums)
+	  GetDofNrs (NodeId(nt, nr), dnums);
+	  for (auto d : dnums)
 	    dofnodes[d] = NodeId (nt, nr);
 	} 
 
@@ -2304,7 +2309,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
         int base = dnums.Size();
         int base_cum = cummulative_nd[i];
         dnums.SetSize(base+hdnums.Size());
-	// for (int j = 0; j < hdnums.Size(); j++)
+
         for (auto j : Range(hdnums))
           {
             int val = hdnums[j];
@@ -2312,12 +2317,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
               val += base_cum;
             dnums[base+j] = val;
           }
-          /*
-	  if (hdnums[j] != -1)
-	    dnums[base+j] = hdnums[j]+base_cum;
-	  else
-	    dnums[base+j] = -1;
-          */
       }
   }
 
