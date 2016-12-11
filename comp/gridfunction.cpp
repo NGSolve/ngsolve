@@ -111,7 +111,7 @@ namespace ngcomp
 	    temp = 0;
 	    for (int i = 0; i < ma->GetNV(); i++)
 	      {
-		fespace->GetNodeDofNrs (NT_VERTEX, i, dnums);
+		fespace->GetDofNrs (NodeId(NT_VERTEX, i), dnums);
 		if (dnums.Size())
 		  temp[i] = fv(dnums[0]);
 	      }
@@ -125,7 +125,7 @@ namespace ngcomp
 	    Array<int> dnums;
 	    for (int i = 0; i < ma->GetNV(); i++)
 	      {
-		fespace->GetNodeDofNrs (NT_VERTEX, i, dnums);
+		fespace->GetDofNrs (NodeId(NT_VERTEX, i), dnums);
 		if (dnums.Size())
 		  fv(dnums[0]) = temp[i];
 	      }
@@ -139,7 +139,7 @@ namespace ngcomp
 	    temp = 0;
 	    for (int i = 0; i < ma->GetNEdges(); i++)
 	      {
-		fespace->GetNodeDofNrs (NT_EDGE, i, dnums);
+		fespace->GetDofNrs (NodeId(NT_EDGE, i), dnums);
 		if (dnums.Size())
 		  temp[i] = fv(dnums[0]);
 	      }
@@ -153,7 +153,7 @@ namespace ngcomp
 	    Array<int> dnums;
 	    for (int i = 0; i < ma->GetNEdges(); i++)
 	      {
-		fespace->GetNodeDofNrs (NT_EDGE, i, dnums);
+		fespace->GetDofNrs (NodeId(NT_EDGE, i), dnums);
 		if (dnums.Size())
 		  fv(dnums[0]) = temp[i];
 	      }
@@ -313,7 +313,7 @@ namespace ngcomp
 	    Array<int> pnums, compress;
 	    for(int i = 0; i < nnodes; i++)
 	      {
-		fes.GetNodeDofNrs (nt, i,  dnums);
+		fes.GetDofNrs (NodeId(nt, i),  dnums);
 		if (dnums.Size() == 0) continue;
 		
 		switch (nt)
@@ -342,7 +342,7 @@ namespace ngcomp
 	    
 	    for( int i = 0; i < nnodes; i++)
 	      {
-		fes.GetNodeDofNrs (nt, compress[index[i]],  dnums); 
+		fes.GetDofNrs (NodeId(nt, compress[index[i]]),  dnums); 
 		Vector<SCAL> elvec(dnums.Size()*fes.GetDimension());
 		
 		for (int k = 0; k < elvec.Size(); k++)
@@ -519,7 +519,7 @@ namespace ngcomp
 	    Array<int> pnums, compress;
 	    for(int i = 0; i < nnodes; i++)
 	      {
-		fes.GetNodeDofNrs (nt, i,  dnums);
+		fes.GetDofNrs (NodeId(nt, i),  dnums);
 		if (dnums.Size() == 0) continue;
 		
 		switch (nt)
@@ -550,7 +550,7 @@ namespace ngcomp
 
 	    for( int i = 0; i < nnodes; i++)
 	      {
-		fes.GetNodeDofNrs (nt, compress[index[i]],  dnums); 
+		fes.GetDofNrs (NodeId(nt, compress[index[i]]),  dnums); 
 		Vector<SCAL> elvec(dnums.Size()*fes.GetDimension());
 		GetElementVector (dnums, elvec);
 		

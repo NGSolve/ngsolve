@@ -236,7 +236,6 @@ namespace ngfem
   
   template <> class HDivDivFE<ET_TRIG> : public T_HDivDivFE<ET_TRIG> 
   {
-    typedef T_HDivDivFE<ET_TRIG> BASE;
     
   public:
     using T_HDivDivFE<ET_TRIG> :: T_HDivDivFE;
