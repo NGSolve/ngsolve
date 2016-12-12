@@ -564,22 +564,22 @@ namespace ngcomp
 
     
     void TransformMat (ElementId ei, 
-                       const SliceMatrix<double> & mat, TRANSFORM_TYPE type) const
+                       SliceMatrix<double> mat, TRANSFORM_TYPE type) const
     {
       VTransformMR (ei.Nr(), ei.VB(), mat, type);
     }
     void TransformMat (ElementId ei, 
-		       const SliceMatrix<Complex> & mat, TRANSFORM_TYPE type) const
+		       SliceMatrix<Complex> mat, TRANSFORM_TYPE type) const
     {
       VTransformMC (ei.Nr(), ei.VB(), mat, type);
     }		
     void TransformVec (ElementId ei, 
-		       const FlatVector<double> & vec, TRANSFORM_TYPE type) const
+		       FlatVector<double> vec, TRANSFORM_TYPE type) const
     {
       VTransformVR (ei.Nr(), ei.VB(), vec, type);
     }
     void TransformVec (ElementId ei, 
-		       const FlatVector<Complex> & vec, TRANSFORM_TYPE type) const
+		       FlatVector<Complex> vec, TRANSFORM_TYPE type) const
     {
       VTransformVC (ei.Nr(), ei.VB(), vec, type);
     }
@@ -589,14 +589,14 @@ namespace ngcomp
     void TransformVec (int elnr, VorB vb,
 		       const FlatVector< Vec<S,T> >& vec, TRANSFORM_TYPE type) const;
 
-
+    /*
     template < class T >
     void TransformVec (ElementId ei,
 		       const T & vec, TRANSFORM_TYPE type) const
     {
       TransformVec (ei, vec, type);
     }
-  
+    */
 
     virtual void VTransformMR (int elnr, VorB vb,
 			       const SliceMatrix<double> & mat, TRANSFORM_TYPE type) const
