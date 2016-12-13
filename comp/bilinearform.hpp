@@ -61,7 +61,13 @@ namespace ngcomp
 
     /// bilinearform-integrators
     Array<shared_ptr<BilinearFormIntegrator>> parts;
-    Array<shared_ptr<BilinearFormIntegrator>> VB_parts[3], VB_skeleton_parts[3];
+    Array<shared_ptr<BilinearFormIntegrator>> VB_parts[3];
+
+    // loop over facets, VB=0 .. inner facets, VB=1 .. boundary facets
+    Array<shared_ptr<BilinearFormIntegrator>> facetwise_skeleton_parts[2];
+
+    // loop over elements
+    Array<shared_ptr<BilinearFormIntegrator>> elementwise_skeleton_parts;
 
     /*
     Array<BilinearFormIntegrator*> independent_parts;
