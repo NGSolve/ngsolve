@@ -495,6 +495,7 @@ namespace ngcomp
 				   ElementId id, 
 				   LocalHeap & lh) = 0;
 
+    /*
     virtual void ApplyElementMatrix(const BaseVector & x,
 				    BaseVector & y,
 				    const SCAL & val,
@@ -506,6 +507,7 @@ namespace ngcomp
 				    LocalHeap & lh,
 				    const FiniteElement * fel,
 				    const SpecialElement * sel = NULL) const;
+    */
     // { cerr << "ApplyElementMatrix called for baseclass" << endl;}
 
     virtual void AddDiagElementMatrix (const Array<int> & dnums1,
@@ -723,6 +725,7 @@ namespace ngcomp
 				       const FlatVector<TSCAL> & diag,
 				       bool inner_element, int elnr,
 				       LocalHeap & lh);
+    /*
     virtual void ApplyElementMatrix(const BaseVector & x,
 				    BaseVector & y,
 				    const TSCAL & val,
@@ -734,6 +737,7 @@ namespace ngcomp
 				    LocalHeap & lh,
 				    const FiniteElement * fel,
 				    const SpecialElement * sel = NULL) const;
+    */
   };
 
 

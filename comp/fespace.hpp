@@ -435,13 +435,12 @@ namespace ngcomp
       if(!definedon[id.VB()].Size()) return true;
       return definedon[id.VB()][ma->GetElement(id).GetIndex()];
     }
-    /* same as definedon(elid)?
+
     bool DefinedOn (Ngs_Element el) const
     {
       if(!definedon[el.VB()].Size()) return true;
       return definedon[el.VB()][el.GetIndex()];
     }
-    */
 
     void SetDefinedOn (VorB vb, const BitArray& defon);
     ///
