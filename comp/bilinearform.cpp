@@ -2235,7 +2235,8 @@ namespace ngcomp
           preconditioners[j] -> InitLevel(fespace->GetFreeDofs());
 
         
-        if (hasinner)
+        // if (hasinner)
+        if (VB_parts[VOL].Size())
           {
             RegionTimer reg(timervol);
             ProgressOutput progress (ma, "assemble element", ma->GetNE());
@@ -2265,12 +2266,17 @@ namespace ngcomp
                  FlatVector<SCAL> elveclin (dnums.Size()*fespace->GetDimension(), lh);
                  lin.GetIndirect (dnums, elveclin);
                  fespace->TransformVec (el, elveclin, TRANSFORM_SOL);
-                 
+
+                 /*
                  for (int j = 0; j < NumIntegrators(); j++)
                    {
                      const BilinearFormIntegrator & bfi = *parts[j];
+                 */
+                 for (auto & spbfi : VB_parts[VOL])
+                   {
+                     auto & bfi = *spbfi;
                      
-                     if (bfi.BoundaryForm()) continue;
+                     // if (bfi.BoundaryForm()) continue;
                      if (!bfi.DefinedOn (el.GetIndex())) continue;
                      
                      try
@@ -2475,7 +2481,8 @@ namespace ngcomp
 
       
         int nse = ma->GetNSE();
-        if (hasbound)
+        // if (hasbound)
+        if (VB_parts[BND].Size())
           {
             RegionTimer reg(timerbound);
             ProgressOutput progress (ma, "assemble surface element", nse);
@@ -2503,12 +2510,16 @@ namespace ngcomp
                   
                  lin.GetIndirect (dnums, elveclin);
                  fespace->TransformVec (el, elveclin, TRANSFORM_SOL);
-                  
+
+                 /*
                  for (int j = 0; j < NumIntegrators(); j++)
                    {
                      const BilinearFormIntegrator & bfi = *parts[j];
-                     
-                     if (!bfi.BoundaryForm()) continue;
+                 */
+                 for (auto & spbfi : VB_parts[BND])
+                   {
+                     auto & bfi = *spbfi;
+                     // if (!bfi.BoundaryForm()) continue;
                      if (!bfi.DefinedOn (el.GetIndex())) continue;
                      
                      bfi.CalcLinearizedElementMatrix (fel, eltrans, elveclin, elmat, lh);
@@ -2542,7 +2553,135 @@ namespace ngcomp
             progress.Done();
           }
         
-      
+
+        if (facetwise_skeleton_parts[VOL].Size())
+          throw Exception ("CalcLinearization for skeleton-VOL not implemented");
+        if (elementwise_skeleton_parts.Size())
+          throw Exception ("CalcLinearization for skeleton-VOL not implemented");
+        
+
+        if (facetwise_skeleton_parts[BND].Size())
+          {
+            cout << "warning: AssembleLinearization for facetwise-skelton term assumes form is linear" << endl;
+            // cout << "check bnd" << endl;
+            int cnt = 0;
+            int ne = ma->GetNE(BND);
+            
+            ProgressOutput progress (ma, "assemble skelton element", ne);
+            
+            ParallelForRange
+              ( IntRange(ne), [&] ( IntRange r )
+                {
+                  LocalHeap lh = clh.Split();
+                  Array<int> fnums, elnums, vnums, dnums;
+                  
+                  for (int i : r)
+                    {
+                      progress.Update();                      
+                      HeapReset hr(lh);
+                      
+                      if (!fespace->DefinedOn (BND,ma->GetSElIndex (i))) continue;
+                      ma->GetSElFacets(i,fnums);
+                      int fac = fnums[0];
+                      ma->GetFacetElements(fac,elnums);
+                      int el = elnums[0];
+                      ma->GetElFacets(el,fnums);
+                      ElementId ei(VOL, el);
+                      ElementId sei(BND, i);
+                      const FiniteElement & fel = fespace->GetFE (ei, lh);
+                      int facnr = 0;
+                      for (int k=0; k<fnums.Size(); k++)
+                        if(fac==fnums[k]) facnr = k;
+                      ma->GetElVertices (el, vnums);     
+                      
+                      ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
+                      ElementTransformation & seltrans = ma->GetTrafo (sei, lh);
+                      
+                      fespace->GetDofNrs (ei, dnums);
+                      if(fel.GetNDof() != dnums.Size())
+                        {
+                          cout << "Surface fel:GetNDof() = " << fel.GetNDof() << endl;
+                          cout << "dnums.Size() = " << dnums.Size() << endl;
+                          
+                          (*testout) << "fel:GetNDof() = " << fel.GetNDof() << endl;
+                          (*testout) << "dnums.Size() = " << dnums.Size() << endl;
+                          (*testout) << "dnums = " << dnums << endl;
+                          throw Exception ( "Inconsistent number of degrees of freedom " );
+                        }
+                      
+                      /*
+                        for (int j = 0; j < NumIntegrators(); j++)
+                        {
+                        const BilinearFormIntegrator & bfi = *parts[j];
+                      */
+                      for (auto & bfi : facetwise_skeleton_parts[BND])
+                        {
+                          // if (bfi.VB() != BND) continue;
+                          // if (!bfi.SkeletonForm()) continue;
+                          
+                          if (!bfi->DefinedOn (ma->GetSElIndex(i) )) continue;                
+                          
+                          for (int k = 0; k < dnums.Size(); k++)
+                            if (dnums[k] != -1)
+                              useddof.Set(dnums[k]);
+                          
+                          int elmat_size = dnums.Size()*fespace->GetDimension();
+                          FlatMatrix<SCAL> elmat(elmat_size, lh);
+                          
+                          // original version did not compile on MacOS V
+                          const FacetBilinearFormIntegrator & fbfi = 
+                            dynamic_cast<const FacetBilinearFormIntegrator&>(*bfi);  
+                          fbfi.CalcFacetMatrix (fel,facnr,eltrans,vnums, seltrans, elmat, lh);
+                          
+                          fespace->TransformMat (ei, elmat, TRANSFORM_MAT_LEFT_RIGHT);
+                          
+                          if (printelmat)
+                            {
+                              testout->precision(8);
+                              
+                              (*testout) << "surface-elnum= " << i << endl;
+                              (*testout) << "integrator " << bfi->Name() << endl;
+                              (*testout) << "dnums = " << endl << dnums << endl;
+                              (*testout) << "element-index = " << eltrans.GetElementIndex() << endl;
+                              (*testout) << "elmat = " << endl << elmat << endl;
+                            }
+                          
+                          
+                          if (elmat_ev)
+                            {
+                              testout->precision(8);
+                              
+                              (*testout) << "elind = " << eltrans.GetElementIndex() << endl;
+#ifdef LAPACK
+                              LapackEigenSystem(elmat, lh);
+#else
+                              Vector<SCAL> lami(elmat.Height());
+                              Matrix<SCAL> evecs(elmat.Height());
+                              
+                              CalcEigenSystem (elmat, lami, evecs);
+                              (*testout) << "lami = " << endl << lami << endl;
+#endif
+                              // << "evecs = " << endl << evecs << endl;
+                            } 
+                          
+                          //                    for(int k=0; k<elmat.Height(); k++)
+                          //                      if(fabs(elmat(k,k)) < 1e-7 && dnums[k] != -1)
+                          //                        cout << "dnums " << dnums << " elmat " << elmat << endl; 
+                          {
+                            lock_guard<mutex> guard(addelmatboundary1_mutex);                            
+                            AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), lh);
+                          }
+                        }//end for (numintegrators)
+                    }//end for nse                  
+                });//end of parallel
+            progress.Done();
+          } // if facetwise_skeleton_parts[BND].size
+        
+        
+
+
+
+        
         if (fespace->specialelements.Size())
           cout << "special elements: " << fespace->specialelements.Size() << endl;
 
