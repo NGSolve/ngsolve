@@ -2373,46 +2373,6 @@ namespace ngfem
           auto proxy2 = test_proxies[l1];
 
           FlatTensor<3> proxyvalues(lh, mir1.Size(), proxy2->Dimension(), proxy1->Dimension());
-          /*
-          FlatVector<> measure(mir1.Size(), lh);
-          switch (trafo1.SpaceDim())
-            {
-	    case 1:
-              {
-                Vec<1> normal_ref = ElementTopology::GetNormals<1>(eltype1)[LocalFacetNr1];
-                for (int i = 0; i < mir1.Size(); i++)
-                  {
-                    auto & mip = static_cast<const MappedIntegrationPoint<1,1>&> (mir1[i]);
-                    Mat<1> inv_jac = mip.GetJacobianInverse();
-                    double det = mip.GetMeasure();
-                    Vec<1> normal = det * Trans (inv_jac) * normal_ref;       
-                    double len = L2Norm (normal);    // that's the surface measure 
-                    normal /= len;                   // normal vector on physical element
-                    const_cast<MappedIntegrationPoint<1,1>&> (mip).SetNV(normal);
-                    measure(i) = len;
-                  }
-                break;
-              }
-            case 2:
-              {
-                Vec<2> normal_ref = ElementTopology::GetNormals<2>(eltype1)[LocalFacetNr1];
-                for (int i = 0; i < mir1.Size(); i++)
-                  {
-                    auto & mip = static_cast<const MappedIntegrationPoint<2,2>&> (mir1[i]);
-                    Mat<2> inv_jac = mip.GetJacobianInverse();
-                    double det = mip.GetMeasure();
-                    Vec<2> normal = det * Trans (inv_jac) * normal_ref;       
-                    double len = L2Norm (normal);    // that's the surface measure 
-                    normal /= len;                   // normal vector on physical element
-                    const_cast<MappedIntegrationPoint<2,2>&> (mip).SetNV(normal);
-                    measure(i) = len;
-                  }
-                break;
-              }
-            default:
-              cout << "Symbolic DG in " << trafo1.SpaceDim() << " not available" << endl;
-            }
-          */
 
           mir1.ComputeNormalsAndMeasure (eltype1, LocalFacetNr1);
           
@@ -2510,46 +2470,6 @@ namespace ngfem
           if (proxy1->IsOther() || proxy2->IsOther()) continue;
 
           FlatTensor<3> proxyvalues(lh, mir1.Size(), proxy2->Dimension(), proxy1->Dimension());
-          /*
-          FlatVector<> measure(mir1.Size(), lh);
-          switch (trafo1.SpaceDim())
-            {
-	    case 1:
-              {
-                Vec<1> normal_ref = ElementTopology::GetNormals<1>(eltype1)[LocalFacetNr1];
-                for (int i = 0; i < mir1.Size(); i++)
-                  {
-                    auto & mip = static_cast<const MappedIntegrationPoint<1,1>&> (mir1[i]);
-                    Mat<1> inv_jac = mip.GetJacobianInverse();
-                    double det = mip.GetMeasure();
-                    Vec<1> normal = det * Trans (inv_jac) * normal_ref;       
-                    double len = L2Norm (normal);    // that's the surface measure 
-                    normal /= len;                   // normal vector on physical element
-                    const_cast<MappedIntegrationPoint<1,1>&> (mip).SetNV(normal);
-                    measure(i) = len;
-                  }
-                break;
-              }
-            case 2:
-              {
-                Vec<2> normal_ref = ElementTopology::GetNormals<2>(eltype1)[LocalFacetNr1];
-                for (int i = 0; i < mir1.Size(); i++)
-                  {
-                    auto & mip = static_cast<const MappedIntegrationPoint<2,2>&> (mir1[i]);
-                    Mat<2> inv_jac = mip.GetJacobianInverse();
-                    double det = mip.GetMeasure();
-                    Vec<2> normal = det * Trans (inv_jac) * normal_ref;       
-                    double len = L2Norm (normal);    // that's the surface measure 
-                    normal /= len;                   // normal vector on physical element
-                    const_cast<MappedIntegrationPoint<2,2>&> (mip).SetNV(normal);
-                    measure(i) = len;
-                  }
-                break;
-              }
-            default:
-              cout << "Symbolic DG in " << trafo1.SpaceDim() << " not available" << endl;
-            }
-          */
           
           for (int k = 0; k < proxy1->Dimension(); k++)
             for (int l = 0; l < proxy2->Dimension(); l++)

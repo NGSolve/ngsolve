@@ -3052,6 +3052,16 @@ namespace ngfem
         mip.SetMeasure (len);
       }
   }
+
+
+  template <int DIM_ELEMENT, int DIM_SPACE>
+  void SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> :: Print (ostream & ost) const
+  {
+    ost << "simd-mir, size = " << mips.Size() << endl;
+    for (size_t i = 0; i < mips.Size(); i++)
+      mips[i].Print(ost);
+  }
+  
   
   template class SIMD_MappedIntegrationRule<0,0>;
   template class SIMD_MappedIntegrationRule<0,1>;
