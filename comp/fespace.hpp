@@ -185,8 +185,7 @@ namespace ngcomp
     const Table<int> & ElementColoring(VorB vb = VOL) const 
     { return element_coloring[vb]; }
 
-    const Table<int> & FacetColoring() const
-    { return facet_coloring; }
+    const Table<int> & FacetColoring() const;
     
     /// print report to stream
     virtual void PrintReport (ostream & ost) const;
@@ -366,6 +365,7 @@ namespace ngcomp
 
     /// get dof-nrs of domain or boundary element elnr
     virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const = 0;
+    virtual void GetDofNrs (NodeId ni, Array<int> & dnums) const;
     
     Table<int> CreateDofTable (VorB vorb) const;
 
@@ -386,6 +386,7 @@ namespace ngcomp
     void GetDofNrs (int elnr, Array<int> & dnums, COUPLING_TYPE ctype) const;    
 
     /// get dofs on nr'th node of type nt.
+    [[deprecated("Use GetDofNrs with NodeId instead of nt/nr")]]    
     virtual void GetNodeDofNrs (NODE_TYPE nt, int nr, Array<int> & dnums) const;
     /// get number of low-order dofs for node of type nt
     // virtual int GetNLowOrderNodeDofs ( NODE_TYPE nt ) const;
@@ -434,13 +435,12 @@ namespace ngcomp
       if(!definedon[id.VB()].Size()) return true;
       return definedon[id.VB()][ma->GetElement(id).GetIndex()];
     }
-    /* same as definedon(elid)?
+
     bool DefinedOn (Ngs_Element el) const
     {
       if(!definedon[el.VB()].Size()) return true;
       return definedon[el.VB()][el.GetIndex()];
     }
-    */
 
     void SetDefinedOn (VorB vb, const BitArray& defon);
     ///
@@ -505,66 +505,97 @@ namespace ngcomp
     bool IsAtomicDof (size_t nr) const { return (is_atomic_dof.Size() != 0) && is_atomic_dof[nr]; }
     bool HasAtomicDofs () const { return is_atomic_dof.Size() != 0; }
 
-    //[[deprecated("Use TransformMat with VorB  instead of bool")]]
+    [[deprecated("Use TransformMat with VorB  instead of bool")]]
     void TransformMat (int elnr, bool boundary,
 		       const SliceMatrix<double> & mat, TRANSFORM_TYPE type) const
     {
       TransformMat(elnr,boundary ? BND : VOL, mat, type);
     }
   
-    //[[deprecated("Use TransformMat with VorB  instead of bool")]]
+    [[deprecated("Use TransformMat with VorB  instead of bool")]]
     void TransformMat (int elnr, bool boundary,
 		       const SliceMatrix<Complex> & mat, TRANSFORM_TYPE type) const
     {
       TransformMat(elnr,boundary ? BND : VOL, mat, type);
     }
   
-    //[[deprecated("Use TransformVec with VorB  instead of bool")]]
+    [[deprecated("Use TransformVec with VorB  instead of bool")]]
     void TransformVec (int elnr, bool boundary,
 		       const FlatVector<double> & vec, TRANSFORM_TYPE type) const
     {
       VTransformVR (elnr, boundary ? BND : VOL, vec, type);
     }
   
-    //[[deprecated("Use TransformVec with VorB  instead of bool")]]
+    [[deprecated("Use TransformVec with VorB  instead of bool")]]
     void TransformVec (int elnr, bool boundary,
 		       const FlatVector<Complex> & vec, TRANSFORM_TYPE type) const
     {
       VTransformVC (elnr, boundary ? BND : VOL, vec, type);
     }
 
-     void TransformMat (int elnr, VorB vb,
-			const SliceMatrix<double> & mat, TRANSFORM_TYPE type) const
+    [[deprecated("Use TransformMat with VorB  instead of bool")]]    
+    void TransformMat (int elnr, VorB vb,
+                       const SliceMatrix<double> & mat, TRANSFORM_TYPE type) const
     {
       VTransformMR (elnr, vb, mat, type);
     }
-     void TransformMat (int elnr, VorB vb,
+
+    [[deprecated("Use TransformMat with VorB  instead of bool")]]    
+    void TransformMat (int elnr, VorB vb,
 		       const SliceMatrix<Complex> & mat, TRANSFORM_TYPE type) const
     {
       VTransformMC (elnr, vb, mat, type);
-    }		
-void TransformVec (int elnr, VorB vb,
+    }
+
+    [[deprecated("Use TransformVec with VorB  instead of bool")]]        
+    void TransformVec (int elnr, VorB vb,
 		       const FlatVector<double> & vec, TRANSFORM_TYPE type) const
     {
       VTransformVR (elnr, vb, vec, type);
     }
- void TransformVec (int elnr, VorB vb,
+
+    [[deprecated("Use TransformVec with VorB  instead of bool")]]            
+    void TransformVec (int elnr, VorB vb,
 		       const FlatVector<Complex> & vec, TRANSFORM_TYPE type) const
     {
       VTransformVC (elnr, vb, vec, type);
     }
+
+    
+    void TransformMat (ElementId ei, 
+                       SliceMatrix<double> mat, TRANSFORM_TYPE type) const
+    {
+      VTransformMR (ei.Nr(), ei.VB(), mat, type);
+    }
+    void TransformMat (ElementId ei, 
+		       SliceMatrix<Complex> mat, TRANSFORM_TYPE type) const
+    {
+      VTransformMC (ei.Nr(), ei.VB(), mat, type);
+    }		
+    void TransformVec (ElementId ei, 
+		       FlatVector<double> vec, TRANSFORM_TYPE type) const
+    {
+      VTransformVR (ei.Nr(), ei.VB(), vec, type);
+    }
+    void TransformVec (ElementId ei, 
+		       FlatVector<Complex> vec, TRANSFORM_TYPE type) const
+    {
+      VTransformVC (ei.Nr(), ei.VB(), vec, type);
+    }
+
+    
     template < int S, class T >
     void TransformVec (int elnr, VorB vb,
 		       const FlatVector< Vec<S,T> >& vec, TRANSFORM_TYPE type) const;
 
-
+    /*
     template < class T >
     void TransformVec (ElementId ei,
 		       const T & vec, TRANSFORM_TYPE type) const
     {
-      TransformVec (ei.Nr(), ei.VB(), vec, type);
+      TransformVec (ei, vec, type);
     }
-  
+    */
 
     virtual void VTransformMR (int elnr, VorB vb,
 			       const SliceMatrix<double> & mat, TRANSFORM_TYPE type) const
@@ -595,7 +626,7 @@ void TransformVec (int elnr, VorB vb,
       return evaluator[vb];
     }
 
-    //[[deprecated("Use GetEvaluator(VorB) instead of GetEvaluator(bool)!")]]
+    // [[deprecated("Use GetEvaluator(VorB) instead of GetEvaluator(bool)!")]]
     shared_ptr<DifferentialOperator> GetEvaluator (bool boundary) const
     {
       if(boundary)

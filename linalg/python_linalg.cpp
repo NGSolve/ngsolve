@@ -205,6 +205,12 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
           InitSlice( inds, self.Size(), start, step, n );
           self.Range(start,start+n) = z;
       } )
+    .def("__setitem__", [](PyBaseVector & self, py::slice inds, PyWrapper<BaseVector> & v )
+      {
+        size_t start, step, n;
+        InitSlice( inds, self.Size(), start, step, n );
+        self.Range(start, start+n) = *v;
+      } )
     .def("__setitem__", [](PyBaseVector & self,  int ind, FlatVector<double> & v )
       {
           if( self.IsComplex() )
