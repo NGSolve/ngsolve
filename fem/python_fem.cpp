@@ -532,8 +532,14 @@ void ExportCoefficientFunction(py::module &m)
          [] (PyCF self) { return self->Dimension(); } ,
                   "number of components of CF")
 
+    /*
     .def_property_readonly("dims",
          [] (PyCF self) { return self->Dimensions(); } ,
+                  "shape of CF:  (dim) for vector, (h,w) for matrix")    
+    */
+    .def_property("dims",
+                  [] (PyCF self) { return self->Dimensions(); } ,
+                  [] (PyCF self, py::tuple tup) { self->SetDimensions(makeCArray<int>(tup)); } ,
                   "shape of CF:  (dim) for vector, (h,w) for matrix")    
     
     .def("__getitem__", FunctionPointer( [](PyCF self, int comp) -> PyCF
@@ -748,7 +754,8 @@ void ExportCoefficientFunction(py::module &m)
         case 0: throw Exception ("don't have mesh-size on 0-D boundary");
         case 1: return fabs (static_cast<const ScalMappedIntegrationPoint<>&> (ip).GetJacobiDet());
         case 2: return pow (fabs (static_cast<const ScalMappedIntegrationPoint<>&> (ip).GetJacobiDet()), 1.0/2);
-        case 3: return pow (fabs (static_cast<const ScalMappedIntegrationPoint<>&> (ip).GetJacobiDet()), 1.0/3);
+        case 3: default:
+          return pow (fabs (static_cast<const ScalMappedIntegrationPoint<>&> (ip).GetJacobiDet()), 1.0/3);
         }
       // return pow(ip.GetMeasure(), 1.0/(ip.Dim());
     }

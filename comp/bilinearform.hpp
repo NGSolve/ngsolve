@@ -61,7 +61,13 @@ namespace ngcomp
 
     /// bilinearform-integrators
     Array<shared_ptr<BilinearFormIntegrator>> parts;
-    Array<shared_ptr<BilinearFormIntegrator>> VB_parts[3], VB_skeleton_parts[3];
+    Array<shared_ptr<BilinearFormIntegrator>> VB_parts[3];
+
+    // loop over facets, VB=0 .. inner facets, VB=1 .. boundary facets
+    Array<shared_ptr<BilinearFormIntegrator>> facetwise_skeleton_parts[2];
+
+    // loop over elements
+    Array<shared_ptr<BilinearFormIntegrator>> elementwise_skeleton_parts;
 
     /*
     Array<BilinearFormIntegrator*> independent_parts;
@@ -384,10 +390,10 @@ namespace ngcomp
   {
   protected:
 
-    ElementByElementMatrix<SCAL> * harmonicext = NULL;
-    BaseMatrix * harmonicexttrans = NULL;
-    ElementByElementMatrix<SCAL> * innersolve = NULL;
-    ElementByElementMatrix<SCAL> * innermatrix = NULL;
+    shared_ptr<ElementByElementMatrix<SCAL>> harmonicext; //  = NULL;
+    shared_ptr<BaseMatrix> harmonicexttrans; //  = NULL;
+    shared_ptr<ElementByElementMatrix<SCAL>> innersolve; //  = NULL;
+    shared_ptr<ElementByElementMatrix<SCAL>> innermatrix; //  = NULL;
 
         
   public:
@@ -489,6 +495,7 @@ namespace ngcomp
 				   ElementId id, 
 				   LocalHeap & lh) = 0;
 
+    /*
     virtual void ApplyElementMatrix(const BaseVector & x,
 				    BaseVector & y,
 				    const SCAL & val,
@@ -500,6 +507,7 @@ namespace ngcomp
 				    LocalHeap & lh,
 				    const FiniteElement * fel,
 				    const SpecialElement * sel = NULL) const;
+    */
     // { cerr << "ApplyElementMatrix called for baseclass" << endl;}
 
     virtual void AddDiagElementMatrix (const Array<int> & dnums1,
@@ -717,6 +725,7 @@ namespace ngcomp
 				       const FlatVector<TSCAL> & diag,
 				       bool inner_element, int elnr,
 				       LocalHeap & lh);
+    /*
     virtual void ApplyElementMatrix(const BaseVector & x,
 				    BaseVector & y,
 				    const TSCAL & val,
@@ -728,6 +737,7 @@ namespace ngcomp
 				    LocalHeap & lh,
 				    const FiniteElement * fel,
 				    const SpecialElement * sel = NULL) const;
+    */
   };
 
 
