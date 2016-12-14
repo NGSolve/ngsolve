@@ -92,7 +92,7 @@ py::object MakeProxyFunction2 (const FESpace & fes,
                               const function<shared_ptr<ProxyFunction>(shared_ptr<ProxyFunction>)> & addblock)
 {
   auto compspace = dynamic_cast<const CompoundFESpace*> (&fes);
-  if (compspace)
+  if (compspace && !fes.GetEvaluator())
     {
       py::list l;
       int nspace = compspace->GetNSpaces();
