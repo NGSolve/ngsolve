@@ -1,12 +1,8 @@
 #ifndef TPINTRULE_HPP
 #define TPINTRULE_HPP
-// #include <comp.hpp>
 
 namespace ngfem
 {
-  //constexpr int DIM1 = 2;
-  //constexpr int DIM = 2;
-
   class TPIntegrationRule : public IntegrationRule
   {
     Array< const IntegrationRule *> &irs;
@@ -74,6 +70,7 @@ namespace ngfem
   {
     ElementId ei;
     ArrayMem<ElementTransformation*, 2> trafos;
+    
   public:
   INLINE TPElementTransformation ( ElementId aei ) : 
     ElementTransformation (ET_POINT, VOL, aei.Nr(), 0), ei(aei)
