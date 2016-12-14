@@ -35,6 +35,7 @@ namespace ngcomp
     AOWrapper<decltype(vertices)> Vertices() const { return vertices; }
     AOWrapper<decltype(edges)> Edges() const { return edges; }
     AOWrapper<decltype(faces)> Faces() const { return faces; }
+    AOWrapper<decltype(facets)> Facets() const { return facets; }
     const string * GetMaterial() const { return mat; }
     /*
       Converts element-type from Netgen to element-types of NGSolve.
@@ -68,34 +69,17 @@ namespace ngcomp
 
 
 
-  /*
-  class ElementIterator
-  {
-    const MeshAccess & ma;
-    VorB vb;
-    int nr;
-  public:
-    ElementIterator (const MeshAccess & ama, VorB avb, int anr) 
-      : ma(ama), vb(avb), nr(anr) { ; }
-    ElementIterator operator++ () { return ElementIterator(ma, vb,++nr); }
-    INLINE Ngs_Element operator*() const;
-    bool operator!=(ElementIterator id2) const { return nr != id2.nr || vb != id2.vb; }
-  };
-  */
   class ElementIterator
   {
     const MeshAccess & ma;
     ElementId ei;
   public:
-    // ElementIterator (const MeshAccess & ama, VorB avb, int anr) : ma(ama), ei(avb, anr) { ; }
     ElementIterator (const MeshAccess & ama, ElementId aei) : ma(ama), ei(aei) { ; }
     ElementIterator operator++ () { return ElementIterator(ma, ++ei); }
     INLINE Ngs_Element operator*() const;
     bool operator!=(ElementIterator id2) const { return ei != id2.ei; }
     bool operator==(ElementIterator id2) const { return ei == id2.ei; }
   };
-
-
 
   class ElementRange : public IntRange
   {
@@ -108,18 +92,6 @@ namespace ngcomp
     ElementIterator begin () const { return ElementIterator(ma, ElementId(vb,IntRange::First())); }
     ElementIterator end () const { return ElementIterator(ma, ElementId(vb,IntRange::Next())); }
     ElementId operator[] (int nr) { return ElementId(vb, IntRange::First()+nr); }
-
-    // ElementRange OmpSplit() const 
-    // {
-      /*
-      int id = omp_get_thread_num();
-      int tot = omp_get_num_threads();
-      int f = IntRange::First() + (long(Size()) * id) / tot;
-      int n = IntRange::First() + (long(Size()) * (id+1)) / tot;
-      return ElementRange (ma, vb, IntRange(f,n));
-      */
-    // return ElementRange (ma, vb, ::OmpSplit(IntRange(*this)));
-    // }
   };
 
   template <VorB VB>
@@ -145,7 +117,35 @@ namespace ngcomp
     INLINE TElementIterator<VB> begin () const { return TElementIterator<VB>(ma, r.First()); }
     INLINE TElementIterator<VB> end () const { return TElementIterator<VB>(ma, r.Next()); }
   };
-    
+
+
+  class NodeIterator
+  {
+    // const MeshAccess & ma;
+    NodeId ni;
+  public:
+    NodeIterator (NodeId ani) : ni(ani) { ; }
+    NodeIterator operator++ () { return NodeIterator(++ni); }
+    INLINE NodeId operator*() const { return ni; }
+    bool operator!=(NodeIterator id2) const { return ni != id2.ni; }
+    bool operator==(NodeIterator id2) const { return ni == id2.ni; }
+  };
+
+  class NodeRange : public IntRange
+  {
+    // const MeshAccess & ma;
+    NODE_TYPE nt;
+  public:
+    NodeRange (NODE_TYPE ant, IntRange ar) 
+      : IntRange(ar), nt(ant) { ; } 
+    // ElementId First() const { return ElementId(vb, IntRange::First()); }
+    NodeIterator begin () const { return NodeIterator(NodeId(nt,IntRange::First())); }
+    NodeIterator end () const { return NodeIterator(NodeId(nt,IntRange::Next())); }
+    NodeId operator[] (size_t nr) { return NodeId(nt, IntRange::First()+nr); }
+  };
+
+
+  
 
   /** 
       Access to mesh topology and geometry.
@@ -170,7 +170,7 @@ namespace ngcomp
     int dim;
   
     /// number of vertex, edge, face, and cell nodes
-    size_t nnodes[4];
+    size_t nnodes[6];
 
     // number of nodes of co-dimension i 
     // these are NC, NF, NE, NV  in 3D,
@@ -302,6 +302,11 @@ namespace ngcomp
     TElementRange<VB> Elements () const
     {
       return TElementRange<VB> (*this, IntRange (0, GetNE(VB)));
+    }
+
+    NodeRange Nodes (NODE_TYPE nt) const
+    {
+      return NodeRange (nt, IntRange (0, GetNNodes(nt)));
     }
 
 

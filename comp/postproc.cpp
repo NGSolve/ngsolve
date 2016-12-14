@@ -262,7 +262,7 @@ namespace ngcomp
 	  elu[i] = elu2[i*bu.GetCacheBlockSize()+component];
       }
     
-    fes.TransformVec (elnr, boundary, elu, TRANSFORM_SOL);
+    fes.TransformVec (ei, elu, TRANSFORM_SOL);
     bli->CalcFlux (fel, eltrans(ip, lh), elu, flux, applyd, lh);
     return 1;
   }
@@ -418,8 +418,8 @@ namespace ngcomp
 	      FlatMatrix<double> elmat(fel.GetNDof(), lh);
 	      bli->CalcElementMatrix (fel, eltrans, elmat, lh);
 
-	      fes.TransformMat (ei.Nr(), vb, elmat, TRANSFORM_MAT_LEFT_RIGHT);
-	      fes.TransformVec (ei.Nr(), vb, elflux, TRANSFORM_RHS);
+	      fes.TransformMat (ei, elmat, TRANSFORM_MAT_LEFT_RIGHT);
+	      fes.TransformVec (ei, elflux, TRANSFORM_RHS);
               if (fel.GetNDof() < 50)
                 {
                   FlatCholeskyFactors<double> invelmat(elmat, lh);
@@ -552,9 +552,9 @@ namespace ngcomp
 
 
 	u.GetElementVector (dnums, elu);
-	fes.TransformVec (i, vb, elu, TRANSFORM_SOL);
+	fes.TransformVec (ei, elu, TRANSFORM_SOL);
 	flux.GetElementVector (dnumsflux, elflux);
-	fesflux.TransformVec (i, vb, elflux, TRANSFORM_SOL);
+	fesflux.TransformVec (ei, elflux, TRANSFORM_SOL);
 
 	IntegrationRule ir(felflux.ElementType(), 2*felflux.Order());
 
@@ -963,7 +963,7 @@ namespace ngcomp
 
 
 	vech1.GetIndirect (dnumsh1, elh1);
-	fesh1.TransformVec (i, 0, elh1, TRANSFORM_RHS);
+	fesh1.TransformVec (ei, elh1, TRANSFORM_RHS);
 
 	switch (fesh1.GetFE(ei, lh).ElementType())
 	  {
@@ -977,7 +977,7 @@ namespace ngcomp
 	    throw Exception ("CalcGradient: unsupported element");
 	  }
 
-	feshcurl.TransformVec (i, 0, elhcurl, TRANSFORM_RHS);
+	feshcurl.TransformVec (ei, elhcurl, TRANSFORM_RHS);
 	vechcurl.SetIndirect (dnumshcurl, elhcurl);
       }
   }
@@ -1042,7 +1042,7 @@ namespace ngcomp
 	FlatVector<SCAL> elh1(dnumsh1.Size(), lh);
 
 	vechcurl.GetIndirect (dnumshcurl, elhcurl);
-	feshcurl.TransformVec (i, 0, elhcurl, TRANSFORM_RHS);
+	feshcurl.TransformVec (ei, elhcurl, TRANSFORM_RHS);
 
 	switch (fesh1.GetFE(ei, lh).ElementType())
 	  {
@@ -1056,7 +1056,7 @@ namespace ngcomp
 	    throw Exception ("CalcGradientT: unsupported element");
 	  }
 
-	fesh1.TransformVec (i, 0, elh1, TRANSFORM_RHS);
+	fesh1.TransformVec (ei, elh1, TRANSFORM_RHS);
 	vech1.AddIndirect (dnumsh1, elh1);
 
 	elhcurl = 0;
