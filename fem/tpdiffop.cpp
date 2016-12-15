@@ -11,7 +11,7 @@ namespace ngfem {
         coef->Evaluate(*irs[1-prolongateto],values);
         if(prolongateto == 1)
             for(int i=tpmir.GetIRs()[0]->Size()-1;i>=0;i--)
-                values.Rows(i*tpmir.GetIRs()[1]->Size(),(i+1)*tpmir.GetIRs()[1]->Size()) = values.Rows(i);
+                values.Rows(i*tpmir.GetIRs()[1]->Size(),(i+1)*tpmir.GetIRs()[1]->Size()) = values.Row(i)(0);
         if(prolongateto == 0)
             for(int i=1;i<tpmir.GetIRs()[0]->Size();i++)
                 values.Rows(i*tpmir.GetIRs()[1]->Size(),(i+1)*tpmir.GetIRs()[1]->Size()) = values.Rows(0,tpmir.GetIRs()[1]->Size());
