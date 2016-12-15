@@ -1,7 +1,6 @@
 #ifndef FILE_TPFES
 #define FILE_TPFES
-// #include "../fem/tpdiffop.hpp"
-// #include "../fem/tpintrule.hpp"
+
 namespace ngcomp
 {
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -135,6 +134,9 @@ namespace ngcomp
 			       const function<void(ElementId,ElementId,LocalHeap&)> & func);
     extern void Transfer2StdMesh(const GridFunction * gfutp, GridFunction* gfustd);
     extern void Transfer2TPMesh(const CoefficientFunction * cfstd, GridFunction* gfutp);
+
+    
 }
+
 
 #endif
