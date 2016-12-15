@@ -1924,12 +1924,12 @@ namespace ngfem
         return;
       }
     */
-    const TPHighOrderFE * tpfel = dynamic_cast<const TPHighOrderFE *>(&fel);
-    if(tpfel)
-    {
-      ApplyElementMatrixTP(fel,trafo,elx,ely,precomputed,lh);
-      return;
-    }
+    // const TPHighOrderFE * tpfel = dynamic_cast<const TPHighOrderFE *>(&fel);
+    // if(tpfel)
+    // {
+      // ApplyElementMatrixTP(fel,trafo,elx,ely,precomputed,lh);
+      // return;
+    // }
     if (element_boundary)
       {
         switch (trafo.SpaceDim())
@@ -2056,7 +2056,7 @@ namespace ngfem
   }
 
  void
-   SymbolicBilinearFormIntegrator :: ApplyElementMatrixTP (const FiniteElement & fel, 
+   TensorProductBilinearFormIntegrator :: ApplyElementMatrix (const FiniteElement & fel, 
                                                          const ElementTransformation & trafo, 
                                                          const FlatVector<double> elx, 
                                                          FlatVector<double> ely,
@@ -2065,23 +2065,23 @@ namespace ngfem
    {
      static Timer tallnosimd("SymbolicBFI::Apply"); RegionTimer rallnosimd(tallnosimd);
      const TPHighOrderFE & tpfel = dynamic_cast<const TPHighOrderFE &> (fel);
-     if (element_boundary)
-       {
-         switch (trafo.SpaceDim())
-           {
-           case 1:
-             T_ApplyElementMatrixEB<1,double,double> (fel, trafo, elx, ely, precomputed, lh);
-             return;
-           case 2:
-             T_ApplyElementMatrixEB<2,double,double> (fel, trafo, elx, ely, precomputed, lh);            
-             return;
-           case 3:
-             T_ApplyElementMatrixEB<3,double,double> (fel, trafo, elx, ely, precomputed, lh);            
-             return;
-           default:
-             throw Exception ("Illegal space dimension" + ToString(trafo.SpaceDim()));
-           }
-       }
+     // if (element_boundary)
+       // {
+         // switch (trafo.SpaceDim())
+           // {
+           // case 1:
+             // T_ApplyElementMatrixEB<1,double,double> (fel, trafo, elx, ely, precomputed, lh);
+             // return;
+           // case 2:
+             // T_ApplyElementMatrixEB<2,double,double> (fel, trafo, elx, ely, precomputed, lh);            
+             // return;
+           // case 3:
+             // T_ApplyElementMatrixEB<3,double,double> (fel, trafo, elx, ely, precomputed, lh);            
+             // return;
+           // default:
+             // throw Exception ("Illegal space dimension" + ToString(trafo.SpaceDim()));
+           // }
+       // }
      HeapReset hr(lh);
      ely = 0;
      ArrayMem<const IntegrationRule *,2> irs(2);
@@ -2529,18 +2529,18 @@ namespace ngfem
                     FlatVector<double> elx, FlatVector<double> ely,
                     LocalHeap & lh) const
   {
-    const TPHighOrderFE * tpfel = dynamic_cast<const TPHighOrderFE *>(&fel1);
-    if(tpfel)
-    {
-      int facet_x_y = 0;
-      if(LocalFacetNr1>=10)
-      {
-        facet_x_y = 1;
-        LocalFacetNr1-=10;
-      }
-      ApplyFacetMatrixTP(fel1,LocalFacetNr1,trafo1,ElVertices1,fel2,LocalFacetNr2,trafo2,ElVertices2,elx,ely,facet_x_y,lh);
-      return;
-    }
+    // const TPHighOrderFE * tpfel = dynamic_cast<const TPHighOrderFE *>(&fel1);
+    // if(tpfel)
+    // {
+      // int facet_x_y = 0;
+      // if(LocalFacetNr1>=10)
+      // {
+        // facet_x_y = 1;
+        // LocalFacetNr1-=10;
+      // }
+      // ApplyFacetMatrixTP(fel1,LocalFacetNr1,trafo1,ElVertices1,fel2,LocalFacetNr2,trafo2,ElVertices2,elx,ely,facet_x_y,lh);
+      // return;
+    // }
     if (simd_evaluate)
       {
         try
@@ -2817,18 +2817,18 @@ namespace ngfem
                     FlatVector<double> elx, FlatVector<double> ely,
                     LocalHeap & lh) const
   {
-    const TPHighOrderFE * tpfel = dynamic_cast<const TPHighOrderFE *>(&fel1);
-    if(tpfel)
-    {
-      int facet_x_y = 0;
-      if(LocalFacetNr>=10)
-      {
-        facet_x_y = 1;
-        LocalFacetNr-=10;
-      }
-      ApplyFacetMatrixTP(fel1,LocalFacetNr,trafo1,ElVertices,strafo,elx,ely,facet_x_y,lh);
-      return;
-    }    
+    // const TPHighOrderFE * tpfel = dynamic_cast<const TPHighOrderFE *>(&fel1);
+    // if(tpfel)
+    // {
+      // int facet_x_y = 0;
+      // if(LocalFacetNr>=10)
+      // {
+        // facet_x_y = 1;
+        // LocalFacetNr-=10;
+      // }
+      // ApplyFacetMatrixTP(fel1,LocalFacetNr,trafo1,ElVertices,strafo,elx,ely,facet_x_y,lh);
+      // return;
+    // }    
     if (simd_evaluate)
       {
         try
@@ -3036,14 +3036,20 @@ namespace ngfem
   
 
   
-void SymbolicFacetBilinearFormIntegrator :: 
-   ApplyFacetMatrixTP (const FiniteElement & avolumefel1, int LocalFacetNr1,
+void TensorProductFacetBilinearFormIntegrator :: 
+   ApplyFacetMatrix (const FiniteElement & avolumefel1, int LocalFacetNr1,
                        const ElementTransformation & trafo1, FlatArray<int> & ElVertices1,
                        const FiniteElement & avolumefel2, int LocalFacetNr2,
                        const ElementTransformation & trafo2, FlatArray<int> & ElVertices2,
-                       FlatVector<double> elx, FlatVector<double> ely, int facet_x_y,
+                       FlatVector<double> elx, FlatVector<double> ely, 
                        LocalHeap & lh) const
    {
+     int facet_x_y = 0;
+     if(LocalFacetNr1>=10)
+     {
+       facet_x_y = 1;
+       LocalFacetNr1-=10;
+     }
      static Timer tall("SymbolicFacetBFI::ApplyFacetMatrixTP, inner facet total"); RegionTimer rall(tall);
      static Timer ttrialproxy("SymbolicFacetBFI::ApplyFacetMatrixTP, inner facet eval trial proxies");
      static Timer ttestproxy("SymbolicFacetBFI::ApplyFacetMatrixTP, inner facet eval test proxies");
@@ -3135,13 +3141,19 @@ void SymbolicFacetBilinearFormIntegrator ::
      }
    }
  
-   void SymbolicFacetBilinearFormIntegrator :: 
-   ApplyFacetMatrixTP (const FiniteElement & fel, int LocalFacetNr,
+   void TensorProductFacetBilinearFormIntegrator :: 
+   ApplyFacetMatrix (const FiniteElement & fel, int LocalFacetNr,
                        const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
-                       const ElementTransformation & seltrans,  
-                       FlatVector<double> elx, FlatVector<double> ely, int xfacet,
+                       const ElementTransformation & seltrans, FlatArray<int> & SElVertices, 
+                       FlatVector<double> elx, FlatVector<double> ely, 
                        LocalHeap & lh) const
    {
+     int xfacet = 0;
+     if(LocalFacetNr>=10)
+     {
+       xfacet = 1;
+       LocalFacetNr-=10;
+     }   
      static Timer tall("SymbolicFacetBFI::ApplyFacetMatrixTP, boundary facet"); RegionTimer rall(tall);  
      HeapReset hr(lh);
      ely = 0;

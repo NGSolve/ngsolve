@@ -2355,6 +2355,48 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
            py::arg("definedon")=DummyArgument()
           );
           
+  m.def("SymbolicTPBFI",
+          [](PyCF cf, VorB vb, bool element_boundary,
+              bool skeleton, py::object definedon)
+           {
+             py::extract<Region> defon_region(definedon);
+             if (defon_region.check())
+               vb = VorB(defon_region());
+
+             // check for DG terms
+             bool has_other = false;
+             cf->TraverseTree ([&has_other] (CoefficientFunction & cf)
+                               {
+                                 if (dynamic_cast<ProxyFunction*> (&cf))
+                                   if (dynamic_cast<ProxyFunction&> (cf).IsOther())
+                                     has_other = true;
+                               });
+             if (has_other && !element_boundary && !skeleton)
+               throw Exception("DG-facet terms need either skeleton=True or element_boundary=True");
+             
+             shared_ptr<BilinearFormIntegrator> bfi;
+             if (!has_other && !skeleton)
+               bfi = make_shared<TensorProductBilinearFormIntegrator> (cf.Get(), vb, element_boundary);
+             else
+               bfi = make_shared<TensorProductFacetBilinearFormIntegrator> (cf.Get(), vb, element_boundary);
+             
+             if (py::extract<py::list> (definedon).check())
+               bfi -> SetDefinedOn (makeCArray<int> (definedon));
+
+             if (defon_region.check())
+               {
+                 cout << IM(3) << "defineon = " << defon_region().Mask() << endl;
+                 bfi->SetDefinedOn(defon_region().Mask());
+               }
+             
+             return PyWrapper<BilinearFormIntegrator>(bfi);
+           },
+           py::arg("form"), py::arg("VOL_or_BND")=VOL,
+           py::arg("element_boundary")=false,
+           py::arg("skeleton")=false,
+           py::arg("definedon")=DummyArgument()
+          );
+          
   m.def("SymbolicEnergy",
           [](PyCF cf, VorB vb, py::object definedon) -> PyWrapper<BilinearFormIntegrator>
            {
