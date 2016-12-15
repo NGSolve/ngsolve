@@ -1298,26 +1298,7 @@ namespace ngcomp
         values = 0.0; 
         return;
       }
-    if(dynamic_cast<const TPElementTransformation *>(&trafo))
-    {
-      if(!dynamic_cast<const TPHighOrderFESpace *>(&fes))
-      {
-        ElementId ei(dynamic_cast<const TPElementTransformation *>(&trafo)->GetTrafo(0).VB(),
-                     dynamic_cast<const TPElementTransformation *>(&trafo)->GetTrafo(0).GetElementNr());
-        const FiniteElement & fel = fes.GetFE (ei, lh2);
-        int dim = fes.GetDimension();
-        ArrayMem<int, 50> dnums;
-        fes.GetDofNrs (ei, dnums);
-        VectorMem<50> elu(dnums.Size()*dim);
-        gf->GetElementVector (comp, dnums, elu);
-        fes.TransformVec (ElementId(vb, elnr), elu, TRANSFORM_SOL); // correct ????
-        const TPMappedIntegrationRule & tpir = dynamic_cast<const TPMappedIntegrationRule &>(ir);
-        diffop->Apply (fel, *tpir.GetIRs()[0], elu, values, lh2);
-        for(int i=tpir.GetIRs()[0]->Size()-1;i>=0;i--)
-            values.Rows(i*tpir.GetIRs()[1]->Size(),(i+1)*tpir.GetIRs()[1]->Size()) = values.Row(i)(0);
-        return;
-      }
-    }
+
     const FiniteElement & fel = fes.GetFE (ei, lh2);
     int dim = fes.GetDimension();
 
