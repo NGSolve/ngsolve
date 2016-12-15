@@ -2586,11 +2586,11 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
               });
               });
               
-   m.def("IntDv2", [](PyGF gf_tp, PyGF gf_x, PyCF coef )
+   m.def("IntDv", [](PyGF gf_tp, PyGF gf_x, PyCF coef )
            {
-              static Timer tall("comp.IntDv2 - total domain int"); RegionTimer rall(tall);
+              static Timer tall("comp.IntDv - total domain int"); RegionTimer rall(tall);
               shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp.Get()->GetFESpace());
-              LocalHeap lh(10000000,"IntDv2");
+              LocalHeap lh(10000000,"IntDv");
               tpfes->ReduceToXSpace(gf_tp.Get(),gf_x.Get(),lh,
               [&] (shared_ptr<FESpace> fes,const FiniteElement & fel,const ElementTransformation & trafo,FlatVector<> elvec,FlatVector<> elvec_out,LocalHeap & lh)
               {
@@ -2614,7 +2614,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
               });
               });
     
-   m.def("IntDv2", [](PyGF gf_tp, py::list ax0, PyCF coef) -> double
+   m.def("IntDv", [](PyGF gf_tp, py::list ax0, PyCF coef) -> double
            {
              static Timer tall("comp.IntDv2 - single point"); RegionTimer rall(tall);
              Array<double> x0_help = makeCArray<double> (ax0);
@@ -2653,7 +2653,12 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
              }
              return val;
            });
-              
+   m.def("ProlongateCoefficientFunction", [](PyCF cf_x, int prolongateto) -> PyCF
+           {
+             auto pcf = make_shared<ProlongateCoefficientFunction>(cf_x.Get(),prolongateto,cf_x.Get()->Dimension(),false);
+             pcf->SetDimension(pcf->Dimension());
+             return PyCF(pcf);
+           });
    m.def("Prolongate", [](PyGF gf_x, PyGF gf_tp )
             {
               static Timer tall("comp.Prolongate"); RegionTimer rall(tall);

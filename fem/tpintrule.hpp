@@ -172,5 +172,21 @@ namespace ngfem
     
   };
 
+
+  class ProlongateCoefficientFunction : public CoefficientFunction
+  {
+  private:
+    shared_ptr<CoefficientFunction> coef;
+    int prolongateto;
+  public:
+    ///
+    ProlongateCoefficientFunction(shared_ptr<CoefficientFunction> acoef,int aprolongateto,int adimension, bool ais_complex = false) : CoefficientFunction(adimension,ais_complex), coef(acoef), prolongateto(aprolongateto)
+    { ; }
+    ///
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const {throw Exception("ProlongateCoefficientFunction:IntegrationPoint evaluate not possible. Use Integration Rule instead ");return 0;}
+    
+    ///
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const;  
+  };
 }
 #endif // TPINTRULE_HPP
