@@ -2355,6 +2355,48 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
            py::arg("definedon")=DummyArgument()
           );
           
+  m.def("SymbolicTPBFI",
+          [](PyCF cf, VorB vb, bool element_boundary,
+              bool skeleton, py::object definedon)
+           {
+             py::extract<Region> defon_region(definedon);
+             if (defon_region.check())
+               vb = VorB(defon_region());
+
+             // check for DG terms
+             bool has_other = false;
+             cf->TraverseTree ([&has_other] (CoefficientFunction & cf)
+                               {
+                                 if (dynamic_cast<ProxyFunction*> (&cf))
+                                   if (dynamic_cast<ProxyFunction&> (cf).IsOther())
+                                     has_other = true;
+                               });
+             if (has_other && !element_boundary && !skeleton)
+               throw Exception("DG-facet terms need either skeleton=True or element_boundary=True");
+             
+             shared_ptr<BilinearFormIntegrator> bfi;
+             if (!has_other && !skeleton)
+               bfi = make_shared<TensorProductBilinearFormIntegrator> (cf.Get(), vb, element_boundary);
+             else
+               bfi = make_shared<TensorProductFacetBilinearFormIntegrator> (cf.Get(), vb, element_boundary);
+             
+             if (py::extract<py::list> (definedon).check())
+               bfi -> SetDefinedOn (makeCArray<int> (definedon));
+
+             if (defon_region.check())
+               {
+                 cout << IM(3) << "defineon = " << defon_region().Mask() << endl;
+                 bfi->SetDefinedOn(defon_region().Mask());
+               }
+             
+             return PyWrapper<BilinearFormIntegrator>(bfi);
+           },
+           py::arg("form"), py::arg("VOL_or_BND")=VOL,
+           py::arg("element_boundary")=false,
+           py::arg("skeleton")=false,
+           py::arg("definedon")=DummyArgument()
+          );
+          
   m.def("SymbolicEnergy",
           [](PyCF cf, VorB vb, py::object definedon) -> PyWrapper<BilinearFormIntegrator>
            {
@@ -2563,6 +2605,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
               
    m.def("IntDv", [](PyGF gf_tp, PyGF gf_x )
             {
+              static Timer tall("comp.IntDv"); RegionTimer rall(tall);
               shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp.Get()->GetFESpace());
               LocalHeap lh(10000000,"ReduceToXSpace");
               tpfes->ReduceToXSpace(gf_tp.Get(),gf_x.Get(),lh,
@@ -2585,32 +2628,82 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
               });
               });
               
-   m.def("IntDv2", [](PyGF gf_tp, PyGF gf_x, PyCF coef )
+   m.def("IntDv", [](PyGF gf_tp, PyGF gf_x, PyCF coef )
            {
+              static Timer tall("comp.IntDv - total domain int"); RegionTimer rall(tall);
               shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp.Get()->GetFESpace());
-              LocalHeap lh(10000000,"IntDv2");
+              LocalHeap lh(10000000,"IntDv");
               tpfes->ReduceToXSpace(gf_tp.Get(),gf_x.Get(),lh,
               [&] (shared_ptr<FESpace> fes,const FiniteElement & fel,const ElementTransformation & trafo,FlatVector<> elvec,FlatVector<> elvec_out,LocalHeap & lh)
               {
                  const TPHighOrderFE & tpfel = dynamic_cast<const TPHighOrderFE &>(fel);
+                 
                  shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(fes);
-                 FlatMatrix<> elmat(tpfel.elements[0]->GetNDof(),tpfel.elements[1]->GetNDof(),&elvec[0]);
+                 FlatMatrix<> coefmat(tpfel.elements[0]->GetNDof(),tpfel.elements[1]->GetNDof(),&elvec[0]);
                  IntegrationRule ir(tpfel.elements[1]->ElementType(),2*tpfel.elements[1]->Order());
-                 BaseMappedIntegrationRule & mir = trafo(ir,lh);
                  FlatMatrix<> shape(tpfel.elements[1]->GetNDof(),ir.Size(),lh);
                  dynamic_cast<const BaseScalarFiniteElement *>(tpfel.elements[1])->CalcShape(ir,shape);
-                 FlatMatrix<> vals(mir.Size(),1,lh);
+                 
+                 BaseMappedIntegrationRule & mir = trafo(ir,lh);
+                 
+                 FlatMatrixFixWidth<1> vals(mir.Size(),lh);
                  coef.Get()->Evaluate(mir, vals);
                  for(int s=0;s<ir.Size();s++)
                  {
                    shape.Col(s)*=mir[s].GetWeight()*vals(s,0);
-                   elvec_out+=elmat*shape.Col(s);
+                   elvec_out+=coefmat*shape.Col(s);
                  }
               });
               });
-
+    
+   m.def("IntDv", [](PyGF gf_tp, py::list ax0, PyCF coef) -> double
+           {
+             static Timer tall("comp.IntDv2 - single point"); RegionTimer rall(tall);
+             Array<double> x0_help = makeCArray<double> (ax0);
+             LocalHeap lh(10000000,"IntDv2");
+             shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp.Get()->GetFESpace());
+             const Array<shared_ptr<FESpace> > & spaces = tpfes->Spaces(0);
+             FlatVector<> x0(spaces[0]->GetSpacialDimension(),&x0_help[0]);
+             IntegrationPoint ip;
+             int elnr = spaces[0]->GetMeshAccess()->FindElementOfPoint(x0,ip,true);
+             auto & felx = spaces[0]->GetFE(ElementId(elnr),lh);
+             FlatVector<> shapex(felx.GetNDof(),lh);
+             dynamic_cast<const BaseScalarFiniteElement &>(felx).CalcShape(ip,shapex);
+             double val = 0.0;
+             int index = tpfes->GetIndex(elnr,0);
+             Array<int> dnums;
+             for(int i=index;i<index+spaces[1]->GetMeshAccess()->GetNE();i++)
+             {
+               auto & fely = spaces[1]->GetFE(ElementId(i-index),lh);
+               tpfes->GetDofNrs(i,dnums);
+               int tpndof = felx.GetNDof()*fely.GetNDof();
+               FlatVector<> elvec(tpndof,lh);
+               gf_tp->GetElementVector(dnums,elvec);
+               FlatMatrix<> coefmat(felx.GetNDof(),fely.GetNDof(), &elvec(0));
+               FlatVector<> coefy(fely.GetNDof(),lh);
+               coefy = Trans(coefmat)*shapex;
+               const IntegrationRule & ir = SelectIntegrationRule(fely.ElementType(),2*fely.Order());
+               BaseMappedIntegrationRule & mir = spaces[1]->GetMeshAccess()->GetTrafo(ElementId(i-index),lh)(ir,lh);
+               FlatMatrixFixWidth<1> coefvals(ir.Size(),lh);
+               coef.Get()->Evaluate(mir,coefvals);
+               FlatMatrix<> shapesy(fely.GetNDof(),ir.Size(),lh);
+               dynamic_cast<const BaseScalarFiniteElement & >(fely).CalcShape(ir,shapesy);
+               FlatVector<> helper(ir.Size(),lh);
+               helper = Trans(shapesy)*coefy;
+               for(int ip=0;ip<ir.Size();ip++)
+                  val+=helper(ip)*mir[ip].GetWeight()*coefvals(ip,0);
+             }
+             return val;
+           });
+   m.def("ProlongateCoefficientFunction", [](PyCF cf_x, int prolongateto) -> PyCF
+           {
+             auto pcf = make_shared<ProlongateCoefficientFunction>(cf_x.Get(),prolongateto,cf_x.Get()->Dimension(),false);
+             pcf->SetDimension(pcf->Dimension());
+             return PyCF(pcf);
+           });
    m.def("Prolongate", [](PyGF gf_x, PyGF gf_tp )
             {
+              static Timer tall("comp.Prolongate"); RegionTimer rall(tall);
               shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp.Get()->GetFESpace());
               LocalHeap lh(100000,"ProlongateFromXSpace");
               if(gf_x.Get()->GetFESpace() == tpfes->Space(-1) )
@@ -2620,6 +2713,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
               });
    m.def("Transfer2StdMesh", [](const PyGF gfutp, PyGF gfustd )
             {
+              static Timer tall("comp.Transfer2StdMesh"); RegionTimer rall(tall);
               Transfer2StdMesh(gfutp.Get().get(),gfustd.Get().get());
               return;
              });
