@@ -319,6 +319,7 @@ struct GenericPow {
          int ii = 0;
          res = 0.0;
          if(facet == 0)
+         {
            if(dim == 1)
              for(int i=0;i<tpir->GetIRs()[0]->Size();i++)
                for(int j=0;j<tpir->GetIRs()[1]->Size();j++)
@@ -331,7 +332,9 @@ struct GenericPow {
              for(int i=0;i<tpir->GetIRs()[0]->Size();i++)
                for(int j=0;j<tpir->GetIRs()[1]->Size();j++)          
                  res.Row(ii++).Range(0,dim) = static_cast<const DimMappedIntegrationPoint<3>&>(mir[i]).GetNV();//res1.Row(i).Range(0,dim);
+         }
          else
+         {
            if(dim == 1)
              for(int i=0;i<tpir->GetIRs()[0]->Size();i++)
                for(int j=0;j<tpir->GetIRs()[1]->Size();j++)
@@ -344,6 +347,7 @@ struct GenericPow {
              for(int i=0;i<tpir->GetIRs()[0]->Size();i++)
                for(int j=0;j<tpir->GetIRs()[1]->Size();j++)          
                  res.Row(ii++).Range(D-dim,D) = static_cast<const DimMappedIntegrationPoint<3>&>(mir[j]).GetNV();//res1.Row(i).Range(0,dim);
+         }
       }
     }
 
