@@ -2338,7 +2338,7 @@ namespace ngfem
                    const ElementTransformation & trafo1, FlatArray<int> & ElVertices1,
                    const FiniteElement & fel2, int LocalFacetNr2,
                    const ElementTransformation & trafo2, FlatArray<int> & ElVertices2,
-                   FlatMatrix<double> & elmat,
+                   FlatMatrix<double> elmat,
                    LocalHeap & lh) const
   {
     elmat = 0.0;
@@ -2438,8 +2438,8 @@ namespace ngfem
   void SymbolicFacetBilinearFormIntegrator ::
   CalcFacetMatrix (const FiniteElement & fel1, int LocalFacetNr1,
                    const ElementTransformation & trafo1, FlatArray<int> & ElVertices1,
-                   const ElementTransformation & strafo,  
-                   FlatMatrix<double> & elmat,
+                   const ElementTransformation & strafo, FlatArray<int> & SElVertices1,
+                   FlatMatrix<double> elmat,
                    LocalHeap & lh) const
   {
     // cout << "calc boundary facet matrix (DG)" << endl;
@@ -2451,8 +2451,12 @@ namespace ngfem
     auto etfacet = ElementTopology::GetFacetType (eltype1, LocalFacetNr1);
 
     IntegrationRule ir_facet(etfacet, 2*maxorder);
-    Facet2ElementTrafo transform1(eltype1, ElVertices1); 
+    Facet2ElementTrafo transform1(eltype1, ElVertices1);
+    Facet2SurfaceElementTrafo stransform(strafo.GetElementType(), SElVertices1); 
+    
     IntegrationRule & ir_facet_vol1 = transform1(LocalFacetNr1, ir_facet, lh);
+    IntegrationRule & ir_facet_surf = stransform(ir_facet, lh);  // not yet used ???
+    
     BaseMappedIntegrationRule & mir1 = trafo1(ir_facet_vol1, lh);
     mir1.ComputeNormalsAndMeasure (eltype1, LocalFacetNr1);          
     
@@ -2519,6 +2523,107 @@ namespace ngfem
         }
 
   }
+
+
+  void SymbolicFacetBilinearFormIntegrator ::
+  CalcLinearizedFacetMatrix (const FiniteElement & fel1, int LocalFacetNr1,
+                             const ElementTransformation & trafo1, FlatArray<int> & ElVertices1,
+                             const ElementTransformation & strafo, FlatArray<int> & SElVertices1,  
+                             FlatVector<double> elveclin, FlatMatrix<double> elmat,
+                             LocalHeap & lh) const
+  {
+    elmat = 0.0;
+
+    int maxorder = fel1.Order();
+
+    auto eltype1 = trafo1.GetElementType();
+    auto etfacet = ElementTopology::GetFacetType (eltype1, LocalFacetNr1);
+
+    IntegrationRule ir_facet(etfacet, 2*maxorder);
+    Facet2ElementTrafo transform1(eltype1, ElVertices1);
+    Facet2SurfaceElementTrafo stransform(strafo.GetElementType(), SElVertices1); 
+    
+    IntegrationRule & ir_facet_vol1 = transform1(LocalFacetNr1, ir_facet, lh);
+    IntegrationRule & ir_facet_surf = stransform(ir_facet, lh);  // not yet used ???
+    
+    BaseMappedIntegrationRule & mir1 = trafo1(ir_facet_vol1, lh);
+    mir1.ComputeNormalsAndMeasure (eltype1, LocalFacetNr1);          
+    
+    // new 
+    ProxyUserData ud(trial_proxies.Size(), lh);
+    const_cast<ElementTransformation&>(trafo1).userdata = &ud;
+    ud.fel = &fel1;
+    ud.elx = &elveclin;
+    ud.lh = &lh;
+    for (ProxyFunction * proxy : trial_proxies)
+      {
+        ud.AssignMemory (proxy, ir_facet_vol1.Size(), proxy->Dimension(), lh);
+        proxy->Evaluator()->Apply(fel1, mir1, elveclin, ud.GetMemory(proxy), lh);
+      }
+    
+    FlatMatrix<> val(mir1.Size(), 1, lh), deriv(mir1.Size(), 1, lh);
+    elmat = 0;
+    // endnew
+
+
+    
+    for (int k1 : Range(trial_proxies))
+      for (int l1 : Range(test_proxies))
+        {
+          HeapReset hr(lh);
+          // FlatMatrix<> val(mir1.Size(), 1,lh);
+          
+          auto proxy1 = trial_proxies[k1];
+          auto proxy2 = test_proxies[l1];
+          if (proxy1->IsOther() || proxy2->IsOther()) continue;
+
+          FlatTensor<3> proxyvalues(lh, mir1.Size(), proxy2->Dimension(), proxy1->Dimension());
+          
+          for (int k = 0; k < proxy1->Dimension(); k++)
+            for (int l = 0; l < proxy2->Dimension(); l++)
+              {
+                ud.trialfunction = proxy1;
+                ud.trial_comp = k;
+                ud.testfunction = proxy2;
+                ud.test_comp = l;
+                
+                cf -> EvaluateDeriv (mir1, val, deriv);
+                proxyvalues(STAR,l,k) = deriv.Col(0);
+              }
+
+          for (int i = 0; i < mir1.Size(); i++)
+            proxyvalues(i,STAR,STAR) *=  mir1[i].GetMeasure() * ir_facet[i].Weight();
+
+          // auto loc_elmat = elmat.Rows(test_range).Cols(trial_range);
+          FlatMatrix<double,ColMajor> bmat1(proxy1->Dimension(), elmat.Width(), lh);
+          FlatMatrix<double,ColMajor> bmat2(proxy2->Dimension(), elmat.Height(), lh);
+
+          // enum { BS = 16 };
+          constexpr size_t BS = 16;          
+          for (int i = 0; i < mir1.Size(); i+=BS)
+            {
+              int rest = min2(size_t(BS), mir1.Size()-i);
+              HeapReset hr(lh);
+              FlatMatrix<double,ColMajor> bdbmat1(rest*proxy2->Dimension(), elmat.Width(), lh);
+              FlatMatrix<double,ColMajor> bbmat2(rest*proxy2->Dimension(), elmat.Height(), lh);
+
+              for (int j = 0; j < rest; j++)
+                {
+                  int ii = i+j;
+                  IntRange r2 = proxy2->Dimension() * IntRange(j,j+1);
+                  proxy1->Evaluator()->CalcMatrix(fel1, mir1[ii], bmat1, lh);
+                  proxy2->Evaluator()->CalcMatrix(fel1, mir1[ii], bmat2, lh);
+                  bdbmat1.Rows(r2) = proxyvalues(ii,STAR,STAR) * bmat1;
+                  bbmat2.Rows(r2) = bmat2;
+                }
+
+              IntRange r1 = proxy1->Evaluator()->UsedDofs(fel1);
+              IntRange r2 = proxy2->Evaluator()->UsedDofs(fel1);
+              elmat.Rows(r2).Cols(r1) += Trans (bbmat2.Cols(r2)) * bdbmat1.Cols(r1) | Lapack;
+            }
+        }
+  }
+  
 
 
   void SymbolicFacetBilinearFormIntegrator ::
