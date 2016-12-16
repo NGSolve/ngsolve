@@ -189,7 +189,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
       {
           self.Range(ind,ind+1) = d;
       } )
-    .def("__setitem__", [](PyBaseVector & self,  int ind, Complex z ) -> void
+    .def("__setitem__", [](PyBaseVector & self,  int ind, Complex z ) 
       {
         self.Range(ind,ind+1) = z;
       } )

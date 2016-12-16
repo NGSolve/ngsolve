@@ -209,9 +209,9 @@ namespace ngcomp
 		     auto & fel = el.GetFE();
 		     auto & eltrans = el.GetTrafo();
 
-		     Vec<3> start, end;
-		     eltrans.CalcPoint(IntegrationPoint(0),start);
-		     eltrans.CalcPoint(IntegrationPoint(1),end);
+		     // Vec<3> start, end;
+		     // eltrans.CalcPoint(IntegrationPoint(0),start);
+		     // eltrans.CalcPoint(IntegrationPoint(1),end);
 		     for(int j = 0; j<parts.Size(); j++)
 		       {
 			 if(parts[j]->VB() != vb) continue;

@@ -443,6 +443,13 @@ namespace ngcomp
       return mir;
     }
 
+    virtual SIMD_BaseMappedIntegrationRule & operator() (const SIMD_IntegrationRule & ir, Allocator & lh) const
+    {
+      throw ExceptionNOSIMD("PML-trafo operator() (SIMD_IntegrationRule & ir) not overloaded");
+      // return *new (lh) SIMD_MappedIntegrationRule<DIMS,DIMR> (ir, *this, lh);
+    }
+
+    
     virtual void CalcMultiPointJacobian (const IntegrationRule & ir,
 					 BaseMappedIntegrationRule & bmir) const
     {
@@ -452,7 +459,7 @@ namespace ngcomp
           return;
         }
 
-      LocalHeapMem<1000000> lh("testwise");
+      LocalHeapMem<100000> lh("testwise");
       MappedIntegrationRule<DIMS,DIMR> mir_real(ir, *this, lh);
 
       auto & mir_complex = dynamic_cast<MappedIntegrationRule<DIMS,DIMR,Complex>&> (bmir);
