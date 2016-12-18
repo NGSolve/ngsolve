@@ -241,9 +241,12 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                    {
                                      return shared_ptr<BaseVector>(self.Range(from,to));
                                    })
-    .def("FV", FunctionPointer( [] (PyBaseVector & self) -> FlatVector<double>
+    .def("FV", FunctionPointer ([] (PyBaseVector & self)
                                 {
-                                  return self.FVDouble();
+                                  if (!self.IsComplex())
+                                    return py::cast(self.FVDouble());
+                                  else
+                                    return py::cast(self.FVComplex());
                                 }))
     ;       
 
