@@ -1635,9 +1635,9 @@ namespace ngfem
       }
 
     
-    static Timer t("symbolicbfi - calclinearized", 2);
-    static Timer td("symbolicbfi - calclinearized dmats", 2);
-    RegionTimer reg(t);
+    // static Timer t("symbolicbfi - calclinearized", 2);
+    // static Timer td("symbolicbfi - calclinearized dmats", 2);
+    // RegionTimer reg(t);
 
 
 
@@ -1683,7 +1683,7 @@ namespace ngfem
           HeapReset hr(lh);
           auto proxy1 = trial_proxies[k1];
           auto proxy2 = test_proxies[l1];
-          td.Start(); 
+          // td.Start(); 
           FlatTensor<3> proxyvalues(lh, mir.Size(), proxy2->Dimension(), proxy1->Dimension());
           
           for (int k = 0; k < proxy1->Dimension(); k++)
@@ -1701,12 +1701,12 @@ namespace ngfem
                 }
               else
                 proxyvalues(STAR,l,k) = 0;
-          td.Stop();
+          // td.Stop();
 
           for (int i = 0; i < mir.Size(); i++)
             proxyvalues(i,STAR,STAR) *= mir[i].GetWeight();
 
-          t.AddFlops (double (mir.Size()) * proxy1->Dimension()*elmat.Width()*elmat.Height());
+          // t.AddFlops (double (mir.Size()) * proxy1->Dimension()*elmat.Width()*elmat.Height());
 
           FlatMatrix<double,ColMajor> bmat1(proxy1->Dimension(), elmat.Width(), lh);
           FlatMatrix<double,ColMajor> bmat2(proxy2->Dimension(), elmat.Height(), lh);
