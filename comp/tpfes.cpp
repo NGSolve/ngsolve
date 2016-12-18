@@ -152,7 +152,7 @@ namespace ngcomp
                                               const function<void(shared_ptr<FESpace>,const FiniteElement &,const ElementTransformation &,FlatVector<>,FlatVector<>,LocalHeap&)> & func)
   {
     BaseVector & vec_in = gf_in->GetVector();
-    BaseVector & vec_out = gf_out->GetVector();
+    // BaseVector & vec_out = gf_out->GetVector();
     Array<int> dnums,dnumsx;
     for(int i=0;i<nels[0];i++)
     {
@@ -382,7 +382,7 @@ namespace ngcomp
         Array<int> indices(2);
         indices[0] = ei0.Nr(); indices[1] = ei1.Nr();
         int elnr = GetIndex(indices);
-        const Array<shared_ptr<FESpace> > & spaces = Spaces(ei0.Nr());
+        // const Array<shared_ptr<FESpace> > & spaces = Spaces(ei0.Nr());
         TPElementTransformation & eltrans = dynamic_cast<TPElementTransformation &>(GetTrafo (elnr, lh));
         TPHighOrderFE & tpfel = dynamic_cast<TPHighOrderFE&>(GetFE(ElementId(elnr),lh));
         const IntegrationRule & irx = SelectIntegrationRule(tpfel.elements[0]->ElementType(),2*tpfel.elements[0]->Order());
@@ -427,7 +427,7 @@ namespace ngcomp
     shared_ptr<FESpace> fesx = tpfes->Space(-1);
     shared_ptr<FESpace> fesy = tpfes->Space(0);
     LocalHeap lh(100000000,"heap");
-    auto & els = dynamic_cast<TPHighOrderFE &> (tpfes->GetFE(ElementId(0),lh));
+    // auto & els = dynamic_cast<TPHighOrderFE &> (tpfes->GetFE(ElementId(0),lh));
     IterateElementsTP(*tpfes,VOL,lh,
     [&] (ElementId ei0,ElementId ei1,LocalHeap & lh)
     {
