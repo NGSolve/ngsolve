@@ -2300,7 +2300,15 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                lfi = make_shared<SymbolicFacetLinearFormIntegrator> (cf.Get(), vb /* , element_boundary */);
              
              if (py::extract<py::list> (definedon).check())
-               lfi -> SetDefinedOn (makeCArray<int> (definedon));
+               {
+                 cout << "warning: SymbolicLFI definedon changed to 1-based" << endl;
+                 Array<int> defon = makeCArray<int> (definedon);
+                 for (int & d : defon) d--;
+                 lfi -> SetDefinedOn (defon); 
+               }
+               
+             // lfi -> SetDefinedOn (makeCArray<int> (definedon));
+
              if (defon_region.check())
                lfi->SetDefinedOn(defon_region().Mask());
 
@@ -2339,13 +2347,16 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                bfi = make_shared<SymbolicFacetBilinearFormIntegrator> (cf.Get(), vb, element_boundary);
              
              if (py::extract<py::list> (definedon).check())
-               bfi -> SetDefinedOn (makeCArray<int> (definedon));
+               {
+                 cout << "warning: SymbolicBFI definedon changed to 1-based" << endl;
+                 Array<int> defon = makeCArray<int> (definedon);
+                 for (int & d : defon) d--;
+                 bfi -> SetDefinedOn (defon); 
+               }
+             // bfi -> SetDefinedOn (makeCArray<int> (definedon));
 
              if (defon_region.check())
-               {
-                 cout << IM(3) << "defineon = " << defon_region().Mask() << endl;
-                 bfi->SetDefinedOn(defon_region().Mask());
-               }
+               bfi->SetDefinedOn(defon_region().Mask());
              
              return PyWrapper<BilinearFormIntegrator>(bfi);
            },
