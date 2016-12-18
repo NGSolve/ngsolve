@@ -375,11 +375,13 @@ namespace ngcomp
 
 
 
-  template <class MAT>
-  void NedelecFESpace::TransformMat (int elnr, VorB vb,
-				     MAT & mat, TRANSFORM_TYPE tt) const
+  template <class T>
+  void NedelecFESpace::TransformMat (ElementId ei,
+				     SliceMatrix<T> mat, TRANSFORM_TYPE tt) const
   {
-    Ngs_Element ngel = ma->GetElement(ElementId(vb,elnr));
+    int elnr = ei.Nr();
+    
+    Ngs_Element ngel = ma->GetElement(ei);
     ELEMENT_TYPE eltype = ngel.GetType();
     
     int ned = ElementTopology::GetNEdges (eltype);
@@ -402,9 +404,9 @@ namespace ngcomp
   }
 
 
-  template <class VEC>
-  void NedelecFESpace::TransformVec (int elnr, VorB vb,
-				     VEC & vec, TRANSFORM_TYPE tt) const
+  template <class T>
+  void NedelecFESpace::TransformVec (ElementId ei, 
+				     SliceVector<T> vec, TRANSFORM_TYPE tt) const
   {
     /*
     int nd;
@@ -424,7 +426,7 @@ namespace ngcomp
     */
 
 
-    Ngs_Element ngel = ma->GetElement(ElementId(vb,elnr));
+    Ngs_Element ngel = ma->GetElement(ei);
     ELEMENT_TYPE eltype = ngel.GetType();
     
     int ned = ElementTopology::GetNEdges (eltype);
@@ -1836,9 +1838,9 @@ namespace ngcomp
 
 
 
-  template <class MAT>
-  void NedelecFESpace2::TransformMat (int elnr, bool boundary,
-				      MAT & mat, TRANSFORM_TYPE tt) const
+  template <class T>
+  void NedelecFESpace2::TransformMat (ElementId ei, 
+				      SliceMatrix<T> mat, TRANSFORM_TYPE tt) const
   {
     int nd;
     ELEMENT_TYPE et;
@@ -1846,7 +1848,8 @@ namespace ngcomp
     ArrayMem<int,6> fnums, forient;
     LocalHeapMem<1000> lh("NedelecFESpace2 - TransformMat");
 
-    ElementId ei(boundary?BND:VOL, elnr);
+    bool boundary = ei.VB() == BND;
+    size_t elnr = ei.Nr();
     if (boundary)
       {
 	nd = GetFE (ei, lh).GetNDof();
@@ -1887,9 +1890,9 @@ namespace ngcomp
 
 
 
-  template <class VEC>
-  void NedelecFESpace2::TransformVec (int elnr, bool boundary,
-				      VEC & vec, TRANSFORM_TYPE tt) const
+  template <class T>
+  void NedelecFESpace2::TransformVec (ElementId ei,
+				      SliceVector<T> vec, TRANSFORM_TYPE tt) const
   {
     int nd;
     ELEMENT_TYPE et;
@@ -1902,9 +1905,8 @@ namespace ngcomp
     ArrayMem<int,12> enums, eorient;
     ArrayMem<int,6> fnums, forient;
     LocalHeapMem<1000> lh ("Nedelecfespace2, transformvec");
-
-    ElementId ei(boundary?BND:VOL, elnr);
-    if (boundary)
+    size_t elnr = ei.Nr();
+    if (ei.VB()==BND)
       {
 	nd = GetFE (ei, lh).GetNDof();
 	et = ma->GetElType (ei);
@@ -1932,25 +1934,27 @@ namespace ngcomp
 
 
   template
-  void NedelecFESpace2::TransformVec<const FlatVector<double> >
-  (int elnr, bool boundary, const FlatVector<double> & vec, TRANSFORM_TYPE tt) const;
+  void NedelecFESpace2::TransformVec<double> 
+  (ElementId ei, SliceVector<double> vec, TRANSFORM_TYPE tt) const;
   template
-  void NedelecFESpace2::TransformVec<const FlatVector<Complex> >
-  (int elnr, bool boundary, const FlatVector<Complex> & vec, TRANSFORM_TYPE tt) const;
+  void NedelecFESpace2::TransformVec<Complex> 
+  (ElementId ei, SliceVector<Complex> vec, TRANSFORM_TYPE tt) const;
 
+  /*
   template
   void NedelecFESpace2::TransformMat<const FlatMatrix<double> > 
   (int elnr, bool boundary, const FlatMatrix<double> & mat, TRANSFORM_TYPE tt) const;
   template
   void NedelecFESpace2::TransformMat<const FlatMatrix<Complex> > 
   (int elnr, bool boundary, const FlatMatrix<Complex> & mat, TRANSFORM_TYPE tt) const;
-
+  */
+  
   template
-  void NedelecFESpace2::TransformMat<const SliceMatrix<double> > 
-  (int elnr, bool boundary, const SliceMatrix<double> & mat, TRANSFORM_TYPE tt) const;
+  void NedelecFESpace2::TransformMat<double> 
+  (ElementId ei, SliceMatrix<double> mat, TRANSFORM_TYPE tt) const;
   template
-  void NedelecFESpace2::TransformMat<const SliceMatrix<Complex> > 
-  (int elnr, bool boundary, const SliceMatrix<Complex> & mat, TRANSFORM_TYPE tt) const;
+  void NedelecFESpace2::TransformMat<Complex> 
+  (ElementId ei, SliceMatrix<Complex> mat, TRANSFORM_TYPE tt) const;
 
 
 

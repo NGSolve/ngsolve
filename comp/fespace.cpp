@@ -2429,9 +2429,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
 
-  template <class MAT>
-  void CompoundFESpace::TransformMat (int elnr, VorB vb,
-				      MAT & mat, TRANSFORM_TYPE tt) const
+  template <class T>
+  void CompoundFESpace::TransformMat (ElementId ei, 
+				      SliceMatrix<T> mat, TRANSFORM_TYPE tt) const
   {
     size_t base = 0;
     LocalHeapMem<100005> lh("CompoundFESpace - transformmat");
@@ -2443,18 +2443,18 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  : spaces[i]->GetFE(elnr, lh).GetNDof();
         */
         HeapReset hr(lh);
-        size_t nd = spaces[i]->GetFE(ElementId(vb, elnr), lh).GetNDof();
+        size_t nd = spaces[i]->GetFE(ei, lh).GetNDof();
 
-	spaces[i]->TransformMat (ElementId(vb, elnr), mat.Rows(base, base+nd), TRANSFORM_MAT_LEFT);
-	spaces[i]->TransformMat (ElementId(vb, elnr), mat.Cols(base, base+nd), TRANSFORM_MAT_RIGHT);
+	spaces[i]->TransformMat (ei, mat.Rows(base, base+nd), TRANSFORM_MAT_LEFT);
+	spaces[i]->TransformMat (ei, mat.Cols(base, base+nd), TRANSFORM_MAT_RIGHT);
 
 	base += nd;
       }
   }
 
-  template <class VEC>
-  void CompoundFESpace::TransformVec (int elnr, VorB vb,
-				      VEC & vec, TRANSFORM_TYPE tt) const
+  template <class T>
+  void CompoundFESpace::TransformVec (ElementId ei, 
+				      SliceVector<T> vec, TRANSFORM_TYPE tt) const
   {
     LocalHeapMem<100006> lh("CompoundFESpace - transformvec");
     for (int i = 0, base = 0; i < spaces.Size(); i++)
@@ -2467,11 +2467,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	lh.CleanUp();
         */
         HeapReset hr(lh);
-        int nd = spaces[i]->GetFE(ElementId(vb, elnr), lh).GetNDof();
+        int nd = spaces[i]->GetFE(ei, lh).GetNDof();
 
 
 	// VEC svec (nd, &vec(base));
-	spaces[i]->TransformVec (ElementId(vb, elnr), vec.Range(base, base+nd), tt);
+	spaces[i]->TransformVec (ei, vec.Range(base, base+nd), tt);
 	base += nd;
       }
   }
@@ -2479,50 +2479,43 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
   template NGS_DLL_HEADER
-  void CompoundFESpace::TransformVec<FlatVector<double> >
-  (int elnr, VorB vb, FlatVector<double> & vec, TRANSFORM_TYPE tt) const;
+  void CompoundFESpace::TransformVec<double> 
+  (ElementId ei, SliceVector<double> vec, TRANSFORM_TYPE tt) const;
   template NGS_DLL_HEADER
-  void CompoundFESpace::TransformVec<FlatVector<Complex> >
-  (int elnr, VorB vb, FlatVector<Complex> & vec, TRANSFORM_TYPE tt) const;
+  void CompoundFESpace::TransformVec<Complex>
+  (ElementId ei, SliceVector<Complex> vec, TRANSFORM_TYPE tt) const;
   
   template
-  void CompoundFESpace::TransformMat<FlatMatrix<double> > 
-  (int elnr, VorB vb, FlatMatrix<double> & mat, TRANSFORM_TYPE tt) const;
+  void CompoundFESpace::TransformMat<double> 
+  (ElementId ei, SliceMatrix<double> mat, TRANSFORM_TYPE tt) const;
   template
-  void CompoundFESpace::TransformMat<FlatMatrix<Complex> > 
-  (int elnr, VorB vb, FlatMatrix<Complex> & mat, TRANSFORM_TYPE tt) const;
-  
-  template
-  void CompoundFESpace::TransformMat<SliceMatrix<double> > 
-  (int elnr, VorB vb, SliceMatrix<double> & mat, TRANSFORM_TYPE tt) const;
-  template
-  void CompoundFESpace::TransformMat<SliceMatrix<Complex> > 
-  (int elnr, VorB vb, SliceMatrix<Complex> & mat, TRANSFORM_TYPE tt) const;
+  void CompoundFESpace::TransformMat<Complex> 
+  (ElementId ei, SliceMatrix<Complex> mat, TRANSFORM_TYPE tt) const;
   
   
-  void CompoundFESpace::VTransformMR (int elnr, VorB vb,
-				      const SliceMatrix<double> & mat, TRANSFORM_TYPE tt) const 
+  void CompoundFESpace::VTransformMR (ElementId ei, 
+				      SliceMatrix<double> mat, TRANSFORM_TYPE tt) const 
   {
-    TransformMat (elnr, vb, mat, tt);
+    TransformMat (ei, mat, tt);
   }
   
-  void CompoundFESpace::VTransformMC (int elnr, VorB vb,
-				      const SliceMatrix<Complex> & mat, TRANSFORM_TYPE tt) const
+  void CompoundFESpace::VTransformMC (ElementId ei, 
+				      SliceMatrix<Complex> mat, TRANSFORM_TYPE tt) const
   {
-    TransformMat (elnr, vb, mat, tt);
+    TransformMat (ei, mat, tt);
   }
   
 
-  void CompoundFESpace::VTransformVR (int elnr, VorB vb,
-				      const FlatVector<double> & vec, TRANSFORM_TYPE tt) const 
+  void CompoundFESpace::VTransformVR (ElementId ei, 
+				      SliceVector<double> vec, TRANSFORM_TYPE tt) const 
   {
-    TransformVec (elnr, vb, vec, tt);
+    TransformVec (ei, vec, tt);
   }
   
-  void CompoundFESpace::VTransformVC (int elnr, VorB vb,
-				      const FlatVector<Complex> & vec, TRANSFORM_TYPE tt) const 
+  void CompoundFESpace::VTransformVC (ElementId ei, 
+				      SliceVector<Complex> vec, TRANSFORM_TYPE tt) const 
   {
-    TransformVec (elnr, vb, vec, tt);
+    TransformVec (ei, vec, tt);
   }
 
 
