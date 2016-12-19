@@ -229,13 +229,20 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("__isub__", [](PyBaseVector & self,  PyBaseVector & other) -> BaseVector& { self -= other; return self;})
     .def("__imul__", [](PyBaseVector & self,  double scal) -> BaseVector& { self *= scal; return self;})
     .def("__imul__", [](PyBaseVector & self,  Complex scal) -> BaseVector& { self *= scal; return self;})
-    .def("InnerProduct", [](PyBaseVector & self, PyBaseVector & other)
+    .def("InnerProduct", [](PyBaseVector & self, PyBaseVector & other, bool conjugate)
                                           {
                                             if (self.IsComplex())
-                                              return py::cast (S_InnerProduct<ComplexConjugate> (self, other));
+                                              {
+                                                if (conjugate)
+                                                  return py::cast (S_InnerProduct<ComplexConjugate> (self, other));
+                                                else
+                                                  return py::cast (S_InnerProduct<Complex> (self, other));
+                                              }
                                             else
                                               return py::cast (InnerProduct (self, other));
-                                          })
+                                          },
+         "InnerProduct", py::arg("other"), py::arg("conjugate")=py::cast(true)         
+         )
     .def("Norm",  [](PyBaseVector & self) { return self.L2Norm(); })
     .def("Range", [](PyBaseVector & self, int from, int to) -> shared_ptr<BaseVector>
                                    {
