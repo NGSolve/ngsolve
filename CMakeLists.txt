@@ -113,6 +113,8 @@ else(APPLE)
   set(CMAKE_INSTALL_PREFIX "${INSTALL_DIR}" CACHE INTERNAL "Prefix prepended to install directories" FORCE) 
 endif(APPLE)
 
+# add_library(interface SHARED IMPORTED)
+# set_property(TARGET interface PROPERTY IMPORTED_LOCATION "${INSTALL_DIR}/lib/libinterface.so")
 #######################################################################
 # append install paths of software in non-standard paths (e.g. openmpi, metis, intel mkl, ...)
 # cmake -DUSE_MPI=ON -DCMAKE_PREFIX_PATH="/opt/openmpi165;/opt/metis51" ../
@@ -142,7 +144,8 @@ else(APPLE)
   set(ngs_install_dir_bin bin)
   set(ngs_install_dir_lib lib)
 endif(APPLE)
-set(ngs_install_dir RUNTIME DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve LIBRARY DESTINATION ${ngs_install_dir_lib} COMPONENT ngsolve_devel ARCHIVE DESTINATION ${ngs_install_dir_lib} COMPONENT ngsolve_devel )
+set(ngs_install_dir EXPORT ngsolve-targets RUNTIME DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve LIBRARY DESTINATION ${ngs_install_dir_lib} COMPONENT ngsolve_devel ARCHIVE DESTINATION ${ngs_install_dir_lib} COMPONENT ngsolve_devel )
+install(EXPORT ngsolve-targets DESTINATION share/cmake)
 
 add_definitions(-DHAVE_CONFIG_H)
 add_definitions(-DUSE_TIMEOFDAY)
@@ -586,6 +589,12 @@ configure_file(
     IMMEDIATE @ONLY)
 # add_custom_target(uninstall
 #     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/NGSolveConfig.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/NGSolveConfig.cmake @ONLY)
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/NGSolveConfig.cmake DESTINATION share/cmake)
+
 
 #######################################################################
 # Configure message
