@@ -5,6 +5,7 @@
 /* *************************************************************************/
 
 #include <la.hpp>
+#include "pardisoinverse.hpp"
 
 #ifdef USE_PARDISO
 

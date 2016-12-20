@@ -12,6 +12,11 @@
 
 #include <la.hpp>
 
+#include "pardisoinverse.hpp"
+#include "umfpackinverse.hpp"
+#include "superluinverse.hpp"
+#include "mumpsinverse.hpp"
+
 
 namespace ngla
 {
