@@ -1,7 +1,7 @@
 set(PACKAGE_VERSION "@NGSOLVE_VERSION@")
-set(NGSOLVE_INSTALL_DIR "@INSTALL_DIR@")
+set(NGSOLVE_INSTALL_DIR "@CMAKE_INSTALL_PREFIX@")
 
-set(NGSOLVE_INCLUDE_DIR "@INSTALL_DIR@/include")
+set(NGSOLVE_INCLUDE_DIR "@CMAKE_INSTALL_PREFIX@/include")
 
 set(CMAKE_THREAD_LIBS_INIT "@CMAKE_THREAD_LIBS_INIT@")
 set(MKL_LIBRARIES "@MKL_LIBRARIES@")
@@ -35,6 +35,8 @@ set(USE_UMFPACK     @USE_UMFPACK@)
 set(USE_VT          @USE_VT@)
 set(USE_VTUNE       @USE_VTUNE@)
 
+set(NGSCXX_DEFINE_FLAGS "@ngscxx_define_flags@" CACHE STRING "Preprocessor definitions of ngscxx")
+set(NGSCXX_INCLUDE_DIRS "@ngscxx_include_dirs@" CACHE STRING "Include dirs set in ngscxx")
 if(@USE_GUI@)
   find_package(TCL 8.5 REQUIRED)
 endif(@USE_GUI@)
