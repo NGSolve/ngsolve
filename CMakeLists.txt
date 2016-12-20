@@ -400,19 +400,20 @@ endif(BUILD_NETGEN)
 # compile flags and preprocessor definitions
 get_directory_property( ngscxx_defines COMPILE_DEFINITIONS )
 string(TOUPPER "CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE}" name)
-set(ngscxx_flags "${${name}} ${CMAKE_CXX_FLAGS} -fPIC")
 
 foreach( d ${ngscxx_defines} )
   if(NOT ${d} MATCHES "HAVE_NETGEN_SOURCES")
     if(WIN32)
       if(NOT ${d} STREQUAL "NGS_EXPORTS")
-        set( ngscxx_flags "${ngscxx_flags} /D${d}" )
+        set( ngscxx_define_flags "${ngscxx_define_flags} /D${d}" )
       endif()
     else()
-      set( ngscxx_flags "${ngscxx_flags} -D${d}" )
+      set( ngscxx_define_flags "${ngscxx_define_flags} -D${d}" )
     endif()
   endif()
 endforeach()
+
+set(ngscxx_flags "${${name}} ${CMAKE_CXX_FLAGS} -fPIC ${ngscxx_define_flags}")
 
 # include directories
 set(ngscxx_include_dirs ${INSTALL_DIR}/include ${TCL_INCLUDE_PATH} ${MPI_CXX_INCLUDE_PATH} ${MKL_INCLUDE_DIRS} ${MUMPS_INCLUDE_DIR} ${PYTHON_INCLUDE_DIRS} ${UMFPACK_INCLUDE_DIR} ${VTUNE_INCLUDE_DIR})
