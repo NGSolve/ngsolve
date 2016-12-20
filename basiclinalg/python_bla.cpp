@@ -1,4 +1,5 @@
 #ifdef NGS_PYTHON
+#include <pybind11/numpy.h>
 #include "../ngstd/python_ngstd.hpp"
 #include <bla.hpp>
 
@@ -22,7 +23,7 @@ void PyDefVecBuffer( TCLASS & c )
         T& fv = py::cast<T&>(self);
         auto numpy = py::module::import("numpy");
         auto frombuffer = numpy.attr("frombuffer");
-        return frombuffer(self);
+        return frombuffer(self, py::detail::npy_format_descriptor<TSCAL>::dtype());
     });
 }
 
@@ -44,7 +45,7 @@ void PyDefMatBuffer( TCLASS & c )
         T& fv = py::cast<T&>(self);
         auto numpy = py::module::import("numpy");
         auto frombuffer = numpy.attr("frombuffer");
-        return frombuffer(self).attr("reshape")(fv.Height(),fv.Width());
+        return frombuffer(self, py::detail::npy_format_descriptor<TSCAL>::dtype()).attr("reshape")(fv.Height(),fv.Width());
     });
 }
 
@@ -436,13 +437,12 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
 
 
     typedef FlatMatrix<Complex> FMC;
-    auto class_FMC = py::class_<FlatMatrix<Complex> >(m, "FlatMatrixC")
-//         .def(PyDefToString<FMC>())
-//         .def(PyMatAccess<FMC, Matrix<Complex> >())
-        .def(py::self+=py::self)
+    auto class_FMC = py::class_<FlatMatrix<Complex> > (m, "FlatMatrixC");
+        PyMatAccess<FMC, Matrix<Complex> >(class_FMC);
+        PyDefToString<FMC>(m, class_FMC);
+        class_FMC.def(py::self+=py::self)
         .def(py::self-=py::self)
         .def(py::self*=Complex())
-//         .def(PyBufferProtocol<FMC, 2>())
         .def_property("diag",
                 py::cpp_function([](const FMC &self) { return Vector<Complex>(self.Diag()); }),
                 py::cpp_function([](FMC &self, const FVC &v) { self.Diag() = v; }))
