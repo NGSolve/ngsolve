@@ -509,14 +509,14 @@ namespace ngcomp
     void TransformMat (int elnr, bool boundary,
 		       const SliceMatrix<double> & mat, TRANSFORM_TYPE type) const
     {
-      TransformMat(elnr,boundary ? BND : VOL, mat, type);
+      TransformMat(ElementId(boundary ? BND : VOL, elnr), mat, type);
     }
   
     [[deprecated("Use TransformMat with VorB  instead of bool")]]
     void TransformMat (int elnr, bool boundary,
 		       const SliceMatrix<Complex> & mat, TRANSFORM_TYPE type) const
     {
-      TransformMat(elnr,boundary ? BND : VOL, mat, type);
+      TransformMat(ElementId(boundary ? BND : VOL, elnr), mat, type);
     }
   
     [[deprecated("Use TransformVec with VorB  instead of bool")]]
