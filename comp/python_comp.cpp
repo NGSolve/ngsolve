@@ -221,25 +221,6 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
-  py::class_<ElementId> (m, "ElementId", 
-                         "an element identifier containing element number and Volume/Boundary flag")
-    .def(py::init<VorB,int>())
-    .def(py::init<int>())
-    .def("__str__", &ToString<ElementId>)
-    .def_property_readonly("nr", &ElementId::Nr, "the element number")    
-    .def("VB", &ElementId::VB, "VorB of element")    .def(py::self!=py::self)
-    .def("__eq__" , [](ElementId &self, ElementId &other)
-                                    { return !(self!=other); } )
-    .def("__hash__" , &ElementId::Nr)
-    ;
-  
-  m.def("BndElementId",[] (int nr) { return ElementId(BND,nr); },
-          py::arg("nr"),
-          "creates an element-id for a boundary element")
-    ;
-
-  //////////////////////////////////////////////////////////////////////////////////////////
-
   py::class_<ElementRange, IntRange> (m, "ElementRange")
     .def(py::init<const MeshAccess&,VorB,IntRange>())
     .def("__iter__", [] (ElementRange &er)
@@ -253,11 +234,34 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
       py::keep_alive<0,1>()
     );
 
+  //////////////////////////////////////////////////////////////////////////////////////////
+
+  py::class_<ElementId> (m, "ElementId", 
+                         "an element identifier containing element number and Volume/Boundary flag")
+    .def(py::init<VorB,int>())
+    .def(py::init<int>())
+    .def(py::init<Ngs_Element>())
+    .def("__str__", &ToString<ElementId>)
+    .def_property_readonly("nr", &ElementId::Nr, "the element number")    
+    .def("VB", &ElementId::VB, "VorB of element")
+    .def(py::self!=py::self)
+    .def("__eq__" , [](ElementId &self, ElementId &other)
+         { return !(self!=other); } )
+    .def("__hash__" , &ElementId::Nr)
+    ;
+  
+  m.def("BndElementId",[] (int nr) { return ElementId(BND,nr); },
+          py::arg("nr"),
+          "creates an element-id for a boundary element")
+    ;
+
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
   // TODO: make tuple not doing the right thing
-  py::class_<Ngs_Element, ElementId>(m, "Ngs_Element")
+  py::class_<Ngs_Element>(m, "Ngs_Element")
+    .def_property_readonly("nr", &Ngs_Element::Nr, "the element number")    
+    .def("VB", &Ngs_Element::VB, "VorB of element")   
     .def_property_readonly("vertices", [](Ngs_Element &el) {
         return py::cast(Array<int>(el.Vertices()));
         })//, "list of global vertex numbers")
@@ -275,6 +279,9 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                                          { return el.GetMaterial() ? *el.GetMaterial() : ""; },
                   "material or boundary condition label")
     ;
+
+  py::implicitly_convertible <Ngs_Element, ElementId> ();
+  // py::implicitly_convertible <ElementId, Ngs_Element> ();
 
   py::class_<FESpace::Element,Ngs_Element>(m, "FESpaceElement")
     .def_property_readonly("dofs",
