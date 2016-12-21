@@ -26,6 +26,106 @@ namespace ngcomp
   class MeshAccess;
   class Ngs_Element;
 
+  class PML_Transformation
+  {
+    public:
+    
+    PML_Transformation() { ; }
+    
+    virtual ~PML_Transformation() { ; }
+    
+    virtual PML_Transformation * CreateDim(int dim) = 0;
+    
+    virtual void MapPoint(Vec<1> & hpoint, Vec<1,Complex> & point,
+                   Mat<1,1> & hjac, Mat<1,1,Complex> & jac) const   
+    {
+      throw Exception("No PML Transformation specified\n");
+    }
+    virtual void MapPoint(Vec<2> & hpoint, Vec<2,Complex> & point,
+                   Mat<2,2> & hjac, Mat<2,2,Complex> & jac) const   
+    {
+      throw Exception("No PML Transformation specified\n");
+    }
+    virtual void MapPoint(Vec<3> & hpoint, Vec<3,Complex> & point,
+                   Mat<3,3> & hjac, Mat<3,3,Complex> & jac) const   
+    {
+      throw Exception("No PML Transformation specified\n");
+    }
+  };
+
+  template <int DIM>
+  class PML_TransformationDim : public PML_Transformation
+  {
+
+    virtual void MapPoint (Vec<DIM> & hpoint, Vec<DIM,Complex> & point,
+                   Mat<DIM,DIM> & hjac, Mat<DIM,DIM,Complex> & jac) const
+    {
+      throw Exception("No PML Transformation specified\n");
+    }
+
+  };
+
+
+  template <int DIM>
+  class RadialPML_Transformation : public PML_TransformationDim<DIM>
+  {
+    double rad;
+    Complex alpha;
+    public:
+
+    RadialPML_Transformation(double _rad, Complex _alpha) 
+      : rad(_rad), alpha(_alpha) { ; }
+    
+    ~RadialPML_Transformation() {;}
+
+    PML_Transformation * CreateDim(int dim)
+    {
+      switch (dim)
+      {
+        case 1:
+        {
+          return new RadialPML_Transformation<1> (rad,alpha);
+        }
+        case 2:
+        {
+          return new RadialPML_Transformation<2> (rad,alpha);
+        }
+        case 3:
+        {
+          return new RadialPML_Transformation<3> (rad,alpha);
+        }
+        default:
+        {
+          throw Exception ("No valid Dimension");
+        }
+
+      }
+    }
+
+    void MapPoint (Vec<DIM> & hpoint, Vec<DIM,Complex> & point,
+                   Mat<DIM,DIM> & hjac, Mat<DIM,DIM,Complex> & jac) const
+    {
+      double abs_x = L2Norm (hpoint);
+      if (abs_x <= rad)  
+      {
+        point = hpoint;
+        jac = hjac;
+      }
+      else
+      {
+        Complex g = 1.+alpha*(1.0-rad/abs_x);
+        point = g * hpoint;
+        // SZ: sollte da nicht abs_x * abs_x anstelle  abs_x*abs_x * abs_x stehen? 
+        // JS: das hat schon so gestimmt
+        Mat<DIM,DIM,Complex> trans =
+          g * Id<DIM>() + (rad*alpha/(abs_x*abs_x*abs_x)) * 
+          (hpoint * Trans(hpoint));
+        jac = trans * hjac;
+      }
+
+    }
+  };
+
 
   class Ngs_Element : public ElementId, public netgen::Ng_Element
   {
@@ -199,7 +299,7 @@ namespace ngcomp
     /// for ALE
     shared_ptr<GridFunction> deformation;  
 
-    /// PML parameters
+    /// PML parameters, should not be necessary any more
     Complex pml_alpha;
     double pml_r;
     double pml_x;
@@ -214,6 +314,9 @@ namespace ngcomp
   */
     int rect_pml = -1;
     int pml_domain = -1;
+
+    //new pml stuff
+    Array<shared_ptr <PML_Transformation>> pml_trafos;
     
     Array<std::tuple<int,int>> identified_facets;
 
@@ -590,14 +693,18 @@ namespace ngcomp
       return deformation;
     }
 
-
-    void SetRadialPML (double _r, Complex _alpha, int _domnr)
+    //old
+    /*void SetRadialPML (double _r, Complex _alpha, int _domnr)
     {
       pml_r = _r;
       pml_alpha = _alpha;
       pml_domain = _domnr;
-    }
+    }*/
 
+    void SetPML (shared_ptr<PML_Transformation> pml_trafo, int _domnr)
+    {
+       pml_trafos[_domnr] = pml_trafo; 
+    }
     
     shared_ptr<netgen::Mesh> GetNetgenMesh () const
     { return mesh.GetMesh(); }

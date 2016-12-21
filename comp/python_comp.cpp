@@ -533,7 +533,9 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
     .def("SetDeformation", FunctionPointer
 	 ([](MeshAccess & ma, PyGF gf)
           { ma.SetDeformation(gf.Get()); }))
-    .def("SetRadialPML", &MeshAccess::SetRadialPML)
+    //old
+    //.def("SetRadialPML", &MeshAccess::SetRadialPML)
+    .def("SetPML", &MeshAccess::SetPML)
     .def("UnsetDeformation", FunctionPointer
 	 ([](MeshAccess & ma){ ma.SetDeformation(nullptr);}))
     

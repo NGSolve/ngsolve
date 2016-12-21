@@ -360,23 +360,20 @@ namespace ngcomp
 
 
 
-  
-
   template <int DIMS, int DIMR, typename BASE>
-  class RadialPML_ElementTransformation : public BASE
+  class PML_ElementTransformation : public BASE
   {
-    Complex alpha;
-    double rad;
+    const PML_Transformation & pml_global_trafo;
   public:
-    RadialPML_ElementTransformation (const MeshAccess * amesh, 
+    PML_ElementTransformation (const MeshAccess * amesh, 
                                      ELEMENT_TYPE aet, ElementId ei, int elindex,
-                                     Complex _alpha, double _rad)
-      : BASE(amesh, aet, ei, elindex), alpha(_alpha), rad(_rad)
+                                     const PML_Transformation & _pml_global_trafo)
+      : BASE(amesh, aet, ei, elindex), pml_global_trafo(_pml_global_trafo)
     {
       this->is_complex = true;
     }
 
-    virtual ~RadialPML_ElementTransformation() { ; }
+    virtual ~PML_ElementTransformation() { ; }
 
     virtual void CalcJacobian (const IntegrationPoint & ip,
 			       FlatMatrix<> dxdxi) const
@@ -398,24 +395,11 @@ namespace ngcomp
     }
 
     void MapPoint (Vec<DIMR> & hpoint, Vec<DIMR,Complex> & point,
-                   Mat<DIMS,DIMR> & hjac, Mat<DIMS,DIMR,Complex> & jac) const
+                   Mat<DIMR,DIMS> & hjac, Mat<DIMR,DIMS,Complex> & jac) const
     {
-      double abs_x = L2Norm (hpoint);
-      if (abs_x <= rad)  
-        {
-          point = hpoint;
-          jac = hjac;
-        }
-      else
-        {
-          Complex g = 1.+alpha*(1.0-rad/abs_x);
-          point = g * hpoint;
-          // SZ: sollte da nicht abs_x * abs_x anstelle  abs_x*abs_x * abs_x stehen? 
-          // JS: das hat schon so gestimmt
-          Mat<DIMR,DIMR,Complex> trans =
-            g * Id<DIMR>() + (rad*alpha/(abs_x*abs_x*abs_x)) * (hpoint * Trans(hpoint));
-          jac = trans * hjac;
-        }
+      Mat<DIMR,DIMR,Complex> tjac;
+      pml_global_trafo.MapPoint (hpoint, point, hjac, tjac);
+      jac=hjac*tjac;
     }
 
     virtual BaseMappedIntegrationPoint & operator() (const IntegrationPoint & ip, Allocator & lh) const
@@ -487,9 +471,6 @@ namespace ngcomp
     }
   };
 
-
-
-  
 
 
   
@@ -951,6 +932,8 @@ namespace ngcomp
       }
     nbboundaries++;
     nbboundaries = MyMPI_AllReduce(nbboundaries, MPI_MAX);
+
+    pml_trafos.SetSize(ndomains);
   }
 
 
@@ -1379,12 +1362,12 @@ namespace ngcomp
     
     Ngs_Element el (mesh.GetElement<DIM> (elnr), ElementId(VOL, elnr));
     
-    if (el.GetIndex() == pml_domain)
+    if (pml_trafos[el.GetIndex()])
       {
         eltrans = new (lh)
-          RadialPML_ElementTransformation<DIM, DIM, Ng_ElementTransformation<DIM,DIM>>
+          PML_ElementTransformation<DIM, DIM, Ng_ElementTransformation<DIM,DIM>>
           (this, el.GetType(), 
-           ElementId(VOL,elnr), el.GetIndex(), pml_alpha, pml_r);
+           ElementId(VOL,elnr), el.GetIndex(), *pml_trafos[el.GetIndex()]);
       }
     
     else if (loc_deformation)
