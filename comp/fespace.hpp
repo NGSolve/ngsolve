@@ -226,6 +226,7 @@ namespace ngcomp
 
       INLINE Element (const Element & el) = default;
       INLINE Element (Element && el) = default;
+      // ElementId operator() const { return ei; }
 
       INLINE FlatArray<DofId> GetDofs() const
       {
