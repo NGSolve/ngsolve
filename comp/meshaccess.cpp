@@ -359,7 +359,6 @@ namespace ngcomp
   };
 
 
-
   template <int DIMS, int DIMR, typename BASE>
   class PML_ElementTransformation : public BASE
   {
@@ -470,9 +469,6 @@ namespace ngcomp
       throw ExceptionNOSIMD ("pml - trafo cannot calc simd_rule");
     }
   };
-
-
-
   
   template <int DIMS, int DIMR>
   class Ng_ConstElementTransformation : public ElementTransformation
