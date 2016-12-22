@@ -194,9 +194,26 @@ public:
 };
 static GlobalDummyVariables globvar;
 
+void NGS_DLL_HEADER ExportPml(py::module &m)
+{
+  typedef PyWrapper<PML_Transformation> PyPML;
+  py::class_<PyPML>(m, "Radial", "radial pml scaling")
+    .def("__init__", [](PyPML *instance, double rad, Complex alpha) {
+        new (instance) RadialPML_Transformation<0>(rad,alpha);
+        },
+        py::arg("rad")=1, py::arg("alpha")=Complex(0,1))
+  ;
+    m.def("test2",[]() {cout << "test2\n";});  
+  
+}
+
+
 
 void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 {
+
+  py::module pml = m.def_submodule("pml", "module for perfectly matched layers");
+  ExportPml(pml);
   //////////////////////////////////////////////////////////////////////////////////////////
 
   py::enum_<VorB>(m, "VorB")
@@ -2774,12 +2791,13 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
     
     ;
 
-
+  /////////////////////////////////////////////////////////////////////////////////////
 
 #ifdef PARALLEL
   import_mpi4py();
 #endif
 }
+
 
 
 
