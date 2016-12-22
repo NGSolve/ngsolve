@@ -59,6 +59,7 @@ namespace ngcomp
 #include "preconditioner.hpp"
 #include "numproc.hpp"
 #include "pde.hpp"
+#include "pmltrafo.hpp"
 
 #include "postproc.hpp"
 
