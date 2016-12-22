@@ -32,5 +32,5 @@ NETGEN_BUNDLE_NAME=ngsuite make bundle
 # make bundle
 # mv Netgen.dmg ngsuite-6.1-16061.dmg
 
-scp *.dmg schoeberl@auroraold.asc.tuwien.ac.at:public_html/downloads
+scp *.dmg schoeberl@aurora.asc.tuwien.ac.at:public_html/downloads
 

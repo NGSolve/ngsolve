@@ -314,35 +314,40 @@ struct GenericPow {
        else
        {
          int facet = tpir->GetFacet();
+         auto & mir = *tpir->GetIRs()[facet];
          int dim = tpir->GetIRs()[facet]->operator[](0).Dim();
          int ii = 0;
          res = 0.0;
          if(facet == 0)
+         {
            if(dim == 1)
              for(int i=0;i<tpir->GetIRs()[0]->Size();i++)
                for(int j=0;j<tpir->GetIRs()[1]->Size();j++)
-                 res.Row(ii++).Range(0,dim) = static_cast<const DimMappedIntegrationPoint<1>&>(tpir->GetIRs()[facet]->operator[](i)).GetNV();//res1.Row(i).Range(0,dim);
+                 res.Row(ii++).Range(0,dim) = static_cast<const DimMappedIntegrationPoint<1>&>(mir[i]).GetNV();//res1.Row(i).Range(0,dim);
            if(dim == 2)
              for(int i=0;i<tpir->GetIRs()[0]->Size();i++)
                for(int j=0;j<tpir->GetIRs()[1]->Size();j++)          
-                 res.Row(ii++).Range(0,dim) = static_cast<const DimMappedIntegrationPoint<2>&>(tpir->GetIRs()[facet]->operator[](i)).GetNV();//res1.Row(i).Range(0,dim);
+                 res.Row(ii++).Range(0,dim) = static_cast<const DimMappedIntegrationPoint<2>&>(mir[i]).GetNV();//res1.Row(i).Range(0,dim);
            if(dim == 3)
              for(int i=0;i<tpir->GetIRs()[0]->Size();i++)
                for(int j=0;j<tpir->GetIRs()[1]->Size();j++)          
-                 res.Row(ii++).Range(0,dim) = static_cast<const DimMappedIntegrationPoint<3>&>(tpir->GetIRs()[facet]->operator[](i)).GetNV();//res1.Row(i).Range(0,dim);
+                 res.Row(ii++).Range(0,dim) = static_cast<const DimMappedIntegrationPoint<3>&>(mir[i]).GetNV();//res1.Row(i).Range(0,dim);
+         }
          else
+         {
            if(dim == 1)
              for(int i=0;i<tpir->GetIRs()[0]->Size();i++)
                for(int j=0;j<tpir->GetIRs()[1]->Size();j++)
-                 res.Row(ii++).Range(D-dim,D) = static_cast<const DimMappedIntegrationPoint<1>&>(tpir->GetIRs()[facet]->operator[](j)).GetNV();//res1.Row(i).Range(0,dim);
+                 res.Row(ii++).Range(D-dim,D) = static_cast<const DimMappedIntegrationPoint<1>&>(mir[j]).GetNV();//res1.Row(i).Range(0,dim);
            if(dim == 2)
              for(int i=0;i<tpir->GetIRs()[0]->Size();i++)
                for(int j=0;j<tpir->GetIRs()[1]->Size();j++)          
-                 res.Row(ii++).Range(D-dim,D) = static_cast<const DimMappedIntegrationPoint<2>&>(tpir->GetIRs()[facet]->operator[](j)).GetNV();//res1.Row(i).Range(0,dim);
+                 res.Row(ii++).Range(D-dim,D) = static_cast<const DimMappedIntegrationPoint<2>&>(mir[j]).GetNV();//res1.Row(i).Range(0,dim);
            if(dim == 3)
              for(int i=0;i<tpir->GetIRs()[0]->Size();i++)
                for(int j=0;j<tpir->GetIRs()[1]->Size();j++)          
-                 res.Row(ii++).Range(D-dim,D) = static_cast<const DimMappedIntegrationPoint<3>&>(tpir->GetIRs()[facet]->operator[](j)).GetNV();//res1.Row(i).Range(0,dim);
+                 res.Row(ii++).Range(D-dim,D) = static_cast<const DimMappedIntegrationPoint<3>&>(mir[j]).GetNV();//res1.Row(i).Range(0,dim);
+         }
       }
     }
 
@@ -423,23 +428,12 @@ class CoordCoefficientFunction : public T_CoefficientFunction<CoordCoefficientFu
        }
        if(dir<=2)
        {
-         int ii = 0;
          for(int i=0;i<tpmir->GetIRs()[0]->Size();i++)
-           for(int j=0;j<tpmir->GetIRs()[1]->Size();j++)
-             result(ii++,0) = tpmir->GetIRs()[0]->GetPoints().Col(dir)(i);
+             result.Rows(i*tpmir->GetIRs()[1]->Size(),(i+1)*tpmir->GetIRs()[1]->Size() ) = tpmir->GetIRs()[0]->GetPoints().Col(dir)(i);
+         return;
        }
-       else
-       {
-         // int ii = 0;
-         // for(int i=0;i<tpmir->GetIRs()[0]->Size();i++)
-           // for(int j=0;j<tpmir->GetIRs()[1]->Size();j++)
-             // result(ii++,0) = tpmir->GetIRs()[1]->GetPoints().Col(dir-3)(j);
- 
-             //int ii = 0;
-         for(int i=0;i<tpmir->GetIRs()[0]->Size();i++)
-           //for(int j=0;j<tpmir->GetIRs()[1]->Size();j++)
-             result.Col(0).Rows(i*tpmir->GetIRs()[1]->Size(),(i+1)*tpmir->GetIRs()[1]->Size()) = tpmir->GetIRs()[1]->GetPoints().Col(dir-3);
-      }
+       for(int i=0;i<tpmir->GetIRs()[0]->Size();i++)
+         result.Rows(i*tpmir->GetIRs()[1]->Size(),(i+1)*tpmir->GetIRs()[1]->Size()) = tpmir->GetIRs()[1]->GetPoints().Col(dir-3);
     }
     virtual void Evaluate(const BaseMappedIntegrationRule & ir,
 			  FlatMatrix<Complex> result) const
@@ -542,8 +536,14 @@ void ExportCoefficientFunction(py::module &m)
          [] (PyCF self) { return self->Dimension(); } ,
                   "number of components of CF")
 
+    /*
     .def_property_readonly("dims",
          [] (PyCF self) { return self->Dimensions(); } ,
+                  "shape of CF:  (dim) for vector, (h,w) for matrix")    
+    */
+    .def_property("dims",
+                  [] (PyCF self) { return self->Dimensions(); } ,
+                  [] (PyCF self, py::tuple tup) { self->SetDimensions(makeCArray<int>(tup)); } ,
                   "shape of CF:  (dim) for vector, (h,w) for matrix")    
     
     .def("__getitem__", FunctionPointer( [](PyCF self, int comp) -> PyCF
@@ -753,13 +753,13 @@ void ExportCoefficientFunction(py::module &m)
           return det/ip.GetMeasure();
         }
       
-      switch (ip.Dim())
+      switch (ip.Dim() - int(ip.VB()))
         {
-        case 1: return fabs (static_cast<const MappedIntegrationPoint<1,1>&> (ip).GetJacobiDet());
-        case 2: return pow (fabs (static_cast<const MappedIntegrationPoint<2,2>&> (ip).GetJacobiDet()), 1.0/2);
-        case 3:
-        default:
-          return pow (fabs (static_cast<const MappedIntegrationPoint<3,3>&> (ip).GetJacobiDet()), 1.0/3);
+        case 0: throw Exception ("don't have mesh-size on 0-D boundary");
+        case 1: return fabs (static_cast<const ScalMappedIntegrationPoint<>&> (ip).GetJacobiDet());
+        case 2: return pow (fabs (static_cast<const ScalMappedIntegrationPoint<>&> (ip).GetJacobiDet()), 1.0/2);
+        case 3: default:
+          return pow (fabs (static_cast<const ScalMappedIntegrationPoint<>&> (ip).GetJacobiDet()), 1.0/3);
         }
       // return pow(ip.GetMeasure(), 1.0/(ip.Dim());
     }

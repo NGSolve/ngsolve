@@ -108,7 +108,8 @@ else(APPLE)
   set(ngs_install_dir_bin bin)
   set(ngs_install_dir_lib lib)
 endif(APPLE)
-set(ngs_install_dir RUNTIME DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve LIBRARY DESTINATION ${ngs_install_dir_lib} COMPONENT ngsolve_devel ARCHIVE DESTINATION ${ngs_install_dir_lib} COMPONENT ngsolve_devel )
+set(ngs_install_dir EXPORT ngsolve-targets RUNTIME DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve LIBRARY DESTINATION ${ngs_install_dir_lib} COMPONENT ngsolve_devel ARCHIVE DESTINATION ${ngs_install_dir_lib} COMPONENT ngsolve_devel )
+install(EXPORT ngsolve-targets DESTINATION share/cmake)
 
 add_definitions(-DHAVE_CONFIG_H)
 add_definitions(-DUSE_TIMEOFDAY)
@@ -307,19 +308,20 @@ add_subdirectory(tests)
 # compile flags and preprocessor definitions
 get_directory_property( ngscxx_defines COMPILE_DEFINITIONS )
 string(TOUPPER "CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE}" name)
-set(ngscxx_flags "${${name}} ${CMAKE_CXX_FLAGS} -fPIC")
 
 foreach( d ${ngscxx_defines} )
   if(NOT ${d} MATCHES "HAVE_NETGEN_SOURCES")
     if(WIN32)
       if(NOT ${d} STREQUAL "NGS_EXPORTS")
-        set( ngscxx_flags "${ngscxx_flags} /D${d}" )
+        set( ngscxx_define_flags "${ngscxx_define_flags} /D${d}" )
       endif()
     else()
-      set( ngscxx_flags "${ngscxx_flags} -D${d}" )
+      set( ngscxx_define_flags "${ngscxx_define_flags} -D${d}" )
     endif()
   endif()
 endforeach()
+
+set(ngscxx_flags "${${name}} ${CMAKE_CXX_FLAGS} -fPIC ${ngscxx_define_flags}")
 
 # include directories
 set(ngscxx_include_dirs ${INSTALL_DIR}/include ${TCL_INCLUDE_PATH} ${MPI_CXX_INCLUDE_PATH} ${MKL_INCLUDE_DIRS} ${MUMPS_INCLUDE_DIR} ${PYTHON_INCLUDE_DIRS} ${UMFPACK_INCLUDE_DIR} ${VTUNE_INCLUDE_DIR})
@@ -496,6 +498,12 @@ configure_file(
     IMMEDIATE @ONLY)
 # add_custom_target(uninstall
 #     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/NGSolveConfig.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/NGSolveConfig.cmake @ONLY)
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/NGSolveConfig.cmake DESTINATION share/cmake)
+
 
 #######################################################################
 # Configure message

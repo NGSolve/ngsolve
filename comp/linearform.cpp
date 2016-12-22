@@ -209,13 +209,14 @@ namespace ngcomp
 		     auto & fel = el.GetFE();
 		     auto & eltrans = el.GetTrafo();
 
-		     Vec<3> start, end;
-		     eltrans.CalcPoint(IntegrationPoint(0),start);
-		     eltrans.CalcPoint(IntegrationPoint(1),end);
+		     // Vec<3> start, end;
+		     // eltrans.CalcPoint(IntegrationPoint(0),start);
+		     // eltrans.CalcPoint(IntegrationPoint(1),end);
 		     for(int j = 0; j<parts.Size(); j++)
 		       {
 			 if(parts[j]->VB() != vb) continue;
 			 if(!parts[j]->DefinedOn(el.GetIndex())) continue;
+                         if (parts[j]->SkeletonForm()) continue;
 			 int elvec_size = fel.GetNDof()*fespace->GetDimension();
 			 FlatVector<TSCAL> elvec(elvec_size, lh);
 			 
@@ -246,14 +247,14 @@ namespace ngcomp
 	}
 	if(hasskeletonparts[BND])
 	{
-		int nse = ma->GetNE(BND);
+          int nse = ma->GetNE(BND);
 	  ParallelForRange( IntRange(nse), [&] ( IntRange r )
 	  {
 	    LocalHeap lh = clh.Split();
 	    Array<int> dnums;
 	    Array<int> fnums, elnums, vnums;
 	    //Schleife fuer Facet-Integrators: 
-	      for (int i : r)
+            for (int i : r)
 		{
 		  {
                     lock_guard<mutex> guard(linformsurfneighprint_mutex);
@@ -308,8 +309,7 @@ namespace ngcomp
 			  (*testout) << "elvec = " << endl << elvec << endl;
 			}
 
-
-		      fespace->TransformVec (i, VOL, elvec, TRANSFORM_RHS);
+		      fespace->TransformVec (ei, elvec, TRANSFORM_RHS);
 		    
 		      {
                         lock_guard<mutex> guard(addelvec3_mutex);
@@ -428,7 +428,7 @@ namespace ngcomp
 								   g_sip,
 								   elvec,clh,true);
 		      }
-		    fespace->TransformVec (element, false, elvec, TRANSFORM_RHS);
+		    fespace->TransformVec (ElementId(VOL, element), elvec, TRANSFORM_RHS);
 
 		    elvec *= (oldlength+length); // Des is richtig
 		    
@@ -607,7 +607,7 @@ namespace ngcomp
 		    // (*testout) << "elvec, 1 = " << elvec << endl;
 
 		    elvec *= fabs (sip.GetJacobiDet()) * ip.Weight();
-		    fespace->TransformVec (elnr, 0, elvec, TRANSFORM_RHS);
+		    fespace->TransformVec (ElementId(VOL,elnr), elvec, TRANSFORM_RHS);
 
 		    // (*testout) << "final vec = " << elvec << endl;
 		    // (*testout) << "dnums = " << dnums << endl;
@@ -698,7 +698,7 @@ namespace ngcomp
 		    FlatVector<Complex> elvec,
 		    int cachecomp) 
   {
-    vec -> AddIndirect (dnums, elvec);
+    vec -> AddIndirect (dnums, elvec, fespace->HasAtomicDofs());
   }
 
   template <typename TV>

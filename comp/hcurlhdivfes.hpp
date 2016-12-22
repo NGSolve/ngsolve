@@ -79,49 +79,37 @@ public:
 
   SparseMatrix<double> * CreateGradient() const;
 
-  template <class MAT>
-  NGS_DLL_HEADER void TransformMat (int elnr, VorB vb,
-		     MAT & mat, TRANSFORM_TYPE tt) const;
-
-  template <class VEC>
-  NGS_DLL_HEADER void TransformVec (int elnr, VorB vb,
-		     VEC & vec, TRANSFORM_TYPE tt) const;
-
+  template <class T>
+    NGS_DLL_HEADER void TransformMat (ElementId ei, 
+                                      SliceMatrix<T> mat, TRANSFORM_TYPE tt) const;
   
-  virtual void VTransformMR (int elnr, VorB vb,
-			     const FlatMatrix<double> & mat, TRANSFORM_TYPE tt) const 
+  template <class T>
+    NGS_DLL_HEADER void TransformVec (ElementId ei, 
+                                      SliceVector<T> vec, TRANSFORM_TYPE tt) const;
+  
+  
+  virtual void VTransformMR (ElementId ei, 
+			     SliceMatrix<double> mat, TRANSFORM_TYPE tt) const 
   {
-    TransformMat (elnr, vb, mat, tt);
+    TransformMat (ei, mat, tt);
   }
 
-  virtual void VTransformMC (int elnr, VorB vb,
-			     const FlatMatrix<Complex> & mat, TRANSFORM_TYPE tt) const
+  virtual void VTransformMC (ElementId ei, 
+			     SliceMatrix<Complex> mat, TRANSFORM_TYPE tt) const
   {
-    TransformMat (elnr, vb, mat, tt);
+    TransformMat (ei, mat, tt);
   }
 
-  virtual void VTransformMR (int elnr, VorB vb,
-			     const SliceMatrix<double> & mat, TRANSFORM_TYPE tt) const 
+  virtual void VTransformVR (ElementId ei, 
+			     SliceVector<double> vec, TRANSFORM_TYPE tt) const 
   {
-    TransformMat (elnr, vb, mat, tt);
+    TransformVec (ei, vec, tt);
   }
 
-  virtual void VTransformMC (int elnr, VorB vb,
-			     const SliceMatrix<Complex> & mat, TRANSFORM_TYPE tt) const
+  virtual void VTransformVC (ElementId ei, 
+			     SliceVector<Complex> vec, TRANSFORM_TYPE tt) const 
   {
-    TransformMat (elnr, vb, mat, tt);
-  }
-
-  virtual void VTransformVR (int elnr, VorB vb,
-			     const FlatVector<double> & vec, TRANSFORM_TYPE tt) const 
-  {
-    TransformVec (elnr, vb, vec, tt);
-  }
-
-  virtual void VTransformVC (int elnr, VorB vb,
-			     const FlatVector<Complex> & vec, TRANSFORM_TYPE tt) const 
-  {
-    TransformVec (elnr, vb, vec, tt);
+    TransformVec (ei, vec, tt);
   }
 
 
@@ -230,53 +218,39 @@ public:
 			  FlatVector<double> & fac) const;
 			  
 
-  template <class MAT>
-  NGS_DLL_HEADER void TransformMat (int elnr, bool boundary,
-		     MAT & mat, TRANSFORM_TYPE tt) const;
+  template <class T>
+    NGS_DLL_HEADER void TransformMat (ElementId ei, 
+                                      SliceMatrix<T> mat, TRANSFORM_TYPE tt) const;
+  
+  template <class T>
+    NGS_DLL_HEADER void TransformVec (ElementId ei, 
+                                      SliceVector<T> vec, TRANSFORM_TYPE tt) const;
 
-  template <class VEC>
-  NGS_DLL_HEADER void TransformVec (int elnr, bool boundary,
-		     VEC & vec, TRANSFORM_TYPE tt) const;
 
-
-
-  virtual void VTransformMR (int elnr, VorB vb,
-			     const FlatMatrix<double> & mat, TRANSFORM_TYPE tt) const 
+  virtual void VTransformMR (ElementId ei, 
+			     SliceMatrix<double> mat, TRANSFORM_TYPE tt) const 
   {
-    TransformMat (elnr, vb == BND, mat, tt);
+    TransformMat (ei, mat, tt);
   }
 
-  virtual void VTransformMC (int elnr, VorB vb,
-			     const FlatMatrix<Complex> & mat, TRANSFORM_TYPE tt) const
+  virtual void VTransformMC (ElementId ei, 
+			     SliceMatrix<Complex> mat, TRANSFORM_TYPE tt) const
   {
-    TransformMat (elnr, vb == BND, mat, tt);
-  }
-
-  virtual void VTransformMR (int elnr, VorB vb,
-			     const SliceMatrix<double> & mat, TRANSFORM_TYPE tt) const 
-  {
-    TransformMat (elnr, vb == BND, mat, tt);
-  }
-
-  virtual void VTransformMC (int elnr, VorB vb,
-			     const SliceMatrix<Complex> & mat, TRANSFORM_TYPE tt) const
-  {
-    TransformMat (elnr, vb == BND, mat, tt);
+    TransformMat (ei, mat, tt);
   }
 
 
 
-
-  virtual void VTransformVR (int elnr, VorB vb,
-			     const FlatVector<double> & vec, TRANSFORM_TYPE tt) const 
+  virtual void VTransformVR (ElementId ei, 
+			     SliceVector<double> vec, TRANSFORM_TYPE tt) const 
   {
-    TransformVec (elnr, vb == BND, vec, tt);
+    TransformVec (ei, vec, tt);
   }
 
-  virtual void VTransformVC (int elnr, VorB vb,
-			     const FlatVector<Complex> & vec, TRANSFORM_TYPE tt) const 
+  virtual void VTransformVC (ElementId ei, 
+			     SliceVector<Complex> vec, TRANSFORM_TYPE tt) const 
   {
-    TransformVec (elnr, vb == BND, vec, tt);
+    TransformVec (ei, vec, tt);
   }
 
   ///

@@ -19,7 +19,7 @@ namespace ngfem
 
   SIMD_BaseMappedIntegrationRule & ElementTransformation :: operator() (const SIMD_IntegrationRule & ir, Allocator & lh) const
   {
-    throw Exception("ElementTransformation(SIMD_IR) not overloaded");
+    throw ExceptionNOSIMD("ElementTransformation(SIMD_IR) not overloaded");
   }
 
   void ElementTransformation :: CalcMultiPointJacobian (const SIMD_IntegrationRule & ir,

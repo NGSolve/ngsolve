@@ -39,3 +39,10 @@ def test_matrix_numpy():
     assert a[1,2] == 40
     a[1,2] = 20
     assert b[1,2] == 20
+
+    c = Matrix(n, m, True)
+    c[0,1] = 1j
+    d = c.NumPy()
+    assert d[0,1] == c[0,1]
+    d[0,1] = 1+3j
+    assert d[0,1] == c[0,1]

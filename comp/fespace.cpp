@@ -537,86 +537,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
 
-
-    // facet coloring
-    if (UsesDGCoupling())
-      {
-        int nf = ma->GetNFacets();
-        Array<int> col(nf);
-        col = -1;
-
-        int maxcolor = 0;
-        int basecol = 0;
-        Array<unsigned int> mask(GetNDof());
-
-        int cnt = nf, found = 0;
-        // for (ElementId el : Elements(vb)) { cnt++; (void)el; } // no warning 
-        Array<int> dofs, dofs1, elnums; 
-        do
-          {
-            mask = 0;
-
-            //  for (auto el : Elements(vb))
-            for (int f = 0; f < nf; f++)
-              {
-                if (col[f] >= 0) continue;
-
-                ma->GetFacetElements(f,elnums);
-                dofs.SetSize0();
-                for (int el : elnums)
-                  {
-                    GetDofNrs(ElementId(VOL, el), dofs1);
-                    dofs += dofs1;
-                  }
-                
-                unsigned check = 0;
-                for (auto d : dofs)
-                  if (d != -1) check |= mask[d];
-
-                if (check != UINT_MAX) // 0xFFFFFFFF)
-                  {
-                    found++;
-                    unsigned checkbit = 1;
-                    int color = basecol;
-                    while (check & checkbit)
-                      {
-                        color++;
-                        checkbit *= 2;
-                      }
-
-                    col[f] = color;
-                    if (color > maxcolor) maxcolor = color;
-		
-                    for (auto d : dofs)
-                      if (d != -1) mask[d] |= checkbit;
-                  }
-              }
-            
-            basecol += 8*sizeof(unsigned int); // 32;
-          }
-        while (found < cnt);
-        // cout << "facet-colors: " << col << endl;
-        Array<int> cntcol(maxcolor+1);
-        cntcol = 0;
-
-        for (auto f : Range(nf))
-          cntcol[col[f]]++;
-        
-        facet_coloring = Table<int> (cntcol);
-
-	cntcol = 0;
-        for (auto f : Range(nf))          
-          facet_coloring[col[f]][cntcol[col[f]]++] = f;
-        // cout << "facet_coloring: " << facet_coloring << endl;
-        if (print)
-          *testout << "needed " << maxcolor+1 << " colors for facet-coloring" << endl;
-      }
-    
-
-
-
-
-
+    // invalidate facet_coloring
+    facet_coloring = Table<int>();
+       
 
     
     level_updated = ma->GetNLevels();
@@ -625,6 +548,84 @@ lot of new non-zero entries in the matrix!\n" << endl;
     // CheckCouplingTypes();
   }
 
+
+  const Table<int> & FESpace :: FacetColoring() const
+  {
+    if (facet_coloring.Size()) return facet_coloring;
+
+    size_t nf = ma->GetNFacets();
+    Array<int> col(nf);
+    col = -1;
+    
+    int maxcolor = 0;
+    int basecol = 0;
+    Array<unsigned int> mask(GetNDof());
+
+    int cnt = nf, found = 0;
+    // for (ElementId el : Elements(vb)) { cnt++; (void)el; } // no warning 
+    Array<int> dofs, dofs1, elnums; 
+    do
+      {
+        mask = 0;
+        
+        //  for (auto el : Elements(vb))
+        for (size_t f = 0; f < nf; f++)
+          {
+            if (col[f] >= 0) continue;
+            
+            ma->GetFacetElements(f,elnums);
+            dofs.SetSize0();
+            for (int el : elnums)
+              {
+                GetDofNrs(ElementId(VOL, el), dofs1);
+                dofs += dofs1;
+              }
+            
+            unsigned check = 0;
+            for (auto d : dofs)
+              if (d != -1) check |= mask[d];
+            
+            if (check != UINT_MAX) // 0xFFFFFFFF)
+              {
+                found++;
+                unsigned checkbit = 1;
+                int color = basecol;
+                while (check & checkbit)
+                  {
+                    color++;
+                        checkbit *= 2;
+                  }
+                
+                col[f] = color;
+                if (color > maxcolor) maxcolor = color;
+		
+                for (auto d : dofs)
+                  if (d != -1) mask[d] |= checkbit;
+              }
+          }
+        
+        basecol += 8*sizeof(unsigned int); // 32;
+      }
+    while (found < cnt);
+    // cout << "facet-colors: " << col << endl;
+    Array<int> cntcol(maxcolor+1);
+    cntcol = 0;
+    
+    for (auto f : Range(nf))
+      cntcol[col[f]]++;
+    
+    const_cast<Table<int>&> (facet_coloring) = Table<int> (cntcol);
+    
+    cntcol = 0;
+    for (auto f : Range(nf))          
+      facet_coloring[col[f]][cntcol[col[f]]++] = f;
+    // cout << "facet_coloring: " << facet_coloring << endl;
+    if (print)
+      *testout << "needed " << maxcolor+1 << " colors for facet-coloring" << endl;
+
+    return facet_coloring;
+  }
+  
 
   FiniteElement & FESpace :: GetFE (ElementId ei, Allocator & alloc) const
   {
@@ -859,6 +860,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
   }
 
+  void FESpace :: GetDofNrs (NodeId ni, Array<int> & dnums) const
+  {
+    GetNodeDofNrs (ni.GetType(), ni.GetNr(), dnums);
+  }
+  
   void FESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
   {
     dnums.SetSize0 ();
@@ -1331,7 +1337,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	for(int j=0;j<vec.Size(); j++)
 	  partvec(j) = vec[j](i);
 
-	TransformVec(elnr,vb,partvec,type);
+	TransformVec(ElementId(vb, elnr),partvec,type);
 
 	for(int j=0;j<vec.Size(); j++)
 	  vec[j](i) = partvec(j);
@@ -1430,8 +1436,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     for (NODE_TYPE nt : { NT_VERTEX, NT_EDGE, NT_FACE, NT_CELL })
       for ( int nr = 0; nr < ma->GetNNodes (nt); nr++ )
 	{
-	  GetNodeDofNrs (nt, nr, dnums);
-	  for (int d : dnums)
+	  GetDofNrs (NodeId(nt, nr), dnums);
+	  for (auto d : dnums)
 	    dofnodes[d] = NodeId (nt, nr);
 	} 
 
@@ -1769,6 +1775,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void NonconformingFESpace :: Update(LocalHeap & lh)
   {
+    ctofdof.SetSize (ma->GetNFacets());
+    ctofdof = UNUSED_DOF;
+    for (auto el : ma->Elements(VOL))
+      ctofdof[el.Facets()] = WIREBASKET_DOF;
+    
     /*
     if (ma->GetNLevels() > ndlevel.Size())
       {
@@ -2303,7 +2314,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
         int base = dnums.Size();
         int base_cum = cummulative_nd[i];
         dnums.SetSize(base+hdnums.Size());
-	// for (int j = 0; j < hdnums.Size(); j++)
+
         for (auto j : Range(hdnums))
           {
             int val = hdnums[j];
@@ -2311,12 +2322,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
               val += base_cum;
             dnums[base+j] = val;
           }
-          /*
-	  if (hdnums[j] != -1)
-	    dnums[base+j] = hdnums[j]+base_cum;
-	  else
-	    dnums[base+j] = -1;
-          */
       }
   }
 
@@ -2429,9 +2434,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
 
-  template <class MAT>
-  void CompoundFESpace::TransformMat (int elnr, VorB vb,
-				      MAT & mat, TRANSFORM_TYPE tt) const
+  template <class T>
+  void CompoundFESpace::TransformMat (ElementId ei, 
+				      SliceMatrix<T> mat, TRANSFORM_TYPE tt) const
   {
     size_t base = 0;
     LocalHeapMem<100005> lh("CompoundFESpace - transformmat");
@@ -2443,18 +2448,18 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  : spaces[i]->GetFE(elnr, lh).GetNDof();
         */
         HeapReset hr(lh);
-        size_t nd = spaces[i]->GetFE(ElementId(vb, elnr), lh).GetNDof();
+        size_t nd = spaces[i]->GetFE(ei, lh).GetNDof();
 
-	spaces[i]->TransformMat (elnr, vb, mat.Rows(base, base+nd), TRANSFORM_MAT_LEFT);
-	spaces[i]->TransformMat (elnr, vb, mat.Cols(base, base+nd), TRANSFORM_MAT_RIGHT);
+	spaces[i]->TransformMat (ei, mat.Rows(base, base+nd), TRANSFORM_MAT_LEFT);
+	spaces[i]->TransformMat (ei, mat.Cols(base, base+nd), TRANSFORM_MAT_RIGHT);
 
 	base += nd;
       }
   }
 
-  template <class VEC>
-  void CompoundFESpace::TransformVec (int elnr, VorB vb,
-				      VEC & vec, TRANSFORM_TYPE tt) const
+  template <class T>
+  void CompoundFESpace::TransformVec (ElementId ei, 
+				      SliceVector<T> vec, TRANSFORM_TYPE tt) const
   {
     LocalHeapMem<100006> lh("CompoundFESpace - transformvec");
     for (int i = 0, base = 0; i < spaces.Size(); i++)
@@ -2467,11 +2472,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	lh.CleanUp();
         */
         HeapReset hr(lh);
-        int nd = spaces[i]->GetFE(ElementId(vb, elnr), lh).GetNDof();
+        int nd = spaces[i]->GetFE(ei, lh).GetNDof();
 
 
 	// VEC svec (nd, &vec(base));
-	spaces[i]->TransformVec (elnr, vb, vec.Range(base, base+nd), tt);
+	spaces[i]->TransformVec (ei, vec.Range(base, base+nd), tt);
 	base += nd;
       }
   }
@@ -2479,50 +2484,43 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
   template NGS_DLL_HEADER
-  void CompoundFESpace::TransformVec<FlatVector<double> >
-  (int elnr, VorB vb, FlatVector<double> & vec, TRANSFORM_TYPE tt) const;
+  void CompoundFESpace::TransformVec<double> 
+  (ElementId ei, SliceVector<double> vec, TRANSFORM_TYPE tt) const;
   template NGS_DLL_HEADER
-  void CompoundFESpace::TransformVec<FlatVector<Complex> >
-  (int elnr, VorB vb, FlatVector<Complex> & vec, TRANSFORM_TYPE tt) const;
+  void CompoundFESpace::TransformVec<Complex>
+  (ElementId ei, SliceVector<Complex> vec, TRANSFORM_TYPE tt) const;
   
   template
-  void CompoundFESpace::TransformMat<FlatMatrix<double> > 
-  (int elnr, VorB vb, FlatMatrix<double> & mat, TRANSFORM_TYPE tt) const;
+  void CompoundFESpace::TransformMat<double> 
+  (ElementId ei, SliceMatrix<double> mat, TRANSFORM_TYPE tt) const;
   template
-  void CompoundFESpace::TransformMat<FlatMatrix<Complex> > 
-  (int elnr, VorB vb, FlatMatrix<Complex> & mat, TRANSFORM_TYPE tt) const;
-  
-  template
-  void CompoundFESpace::TransformMat<SliceMatrix<double> > 
-  (int elnr, VorB vb, SliceMatrix<double> & mat, TRANSFORM_TYPE tt) const;
-  template
-  void CompoundFESpace::TransformMat<SliceMatrix<Complex> > 
-  (int elnr, VorB vb, SliceMatrix<Complex> & mat, TRANSFORM_TYPE tt) const;
+  void CompoundFESpace::TransformMat<Complex> 
+  (ElementId ei, SliceMatrix<Complex> mat, TRANSFORM_TYPE tt) const;
   
   
-  void CompoundFESpace::VTransformMR (int elnr, VorB vb,
-				      const SliceMatrix<double> & mat, TRANSFORM_TYPE tt) const 
+  void CompoundFESpace::VTransformMR (ElementId ei, 
+				      SliceMatrix<double> mat, TRANSFORM_TYPE tt) const 
   {
-    TransformMat (elnr, vb, mat, tt);
+    TransformMat (ei, mat, tt);
   }
   
-  void CompoundFESpace::VTransformMC (int elnr, VorB vb,
-				      const SliceMatrix<Complex> & mat, TRANSFORM_TYPE tt) const
+  void CompoundFESpace::VTransformMC (ElementId ei, 
+				      SliceMatrix<Complex> mat, TRANSFORM_TYPE tt) const
   {
-    TransformMat (elnr, vb, mat, tt);
+    TransformMat (ei, mat, tt);
   }
   
 
-  void CompoundFESpace::VTransformVR (int elnr, VorB vb,
-				      const FlatVector<double> & vec, TRANSFORM_TYPE tt) const 
+  void CompoundFESpace::VTransformVR (ElementId ei, 
+				      SliceVector<double> vec, TRANSFORM_TYPE tt) const 
   {
-    TransformVec (elnr, vb, vec, tt);
+    TransformVec (ei, vec, tt);
   }
   
-  void CompoundFESpace::VTransformVC (int elnr, VorB vb,
-				      const FlatVector<Complex> & vec, TRANSFORM_TYPE tt) const 
+  void CompoundFESpace::VTransformVC (ElementId ei, 
+				      SliceVector<Complex> vec, TRANSFORM_TYPE tt) const 
   {
-    TransformVec (elnr, vb, vec, tt);
+    TransformVec (ei, vec, tt);
   }
 
 
