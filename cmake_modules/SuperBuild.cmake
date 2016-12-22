@@ -1,9 +1,9 @@
 include (ExternalProject)
 
-set_property (DIRECTORY PROPERTY EP_BASE Dependencies)
+set_property (DIRECTORY PROPERTY EP_BASE dependencies)
 
 set (DEPENDENCIES)
-set (LAPACK_DEPENDENCIES)
+set (LAPACK_PROJECTS)
 set (EXTRA_CMAKE_ARGS)
 set (NGSOLVE_CMAKE_ARGS)
 
@@ -26,25 +26,18 @@ if(WIN32)
 
   if(${CMAKE_SIZEOF_VOID_P} MATCHES 4)
     # 32 bit
-    set(EXT_LIBS_DOWNLOAD_URL_WIN "http://www.asc.tuwien.ac.at/~mhochsteger/ngsuite/ext_libs32.zip" CACHE STRING INTERNAL)
     set(LAPACK_DOWNLOAD_URL_WIN "http://www.asc.tuwien.ac.at/~mhochsteger/ngsuite/lapack32.zip" CACHE STRING INTERNAL)
-    set(OCC_DOWNLOAD_URL_WIN "http://www.asc.tuwien.ac.at/~mhochsteger/ngsuite/occ32.zip" CACHE STRING INTERNAL)
   else(${CMAKE_SIZEOF_VOID_P} MATCHES 4)
     # 64 bit
-    set(EXT_LIBS_DOWNLOAD_URL_WIN "http://www.asc.tuwien.ac.at/~mhochsteger/ngsuite/ext_libs64.zip" CACHE STRING INTERNAL)
     set(LAPACK_DOWNLOAD_URL_WIN "http://www.asc.tuwien.ac.at/~mhochsteger/ngsuite/lapack64.zip" CACHE STRING INTERNAL)
-    set(OCC_DOWNLOAD_URL_WIN "http://www.asc.tuwien.ac.at/~mhochsteger/ngsuite/occ64.zip" CACHE STRING INTERNAL)
   endif(${CMAKE_SIZEOF_VOID_P} MATCHES 4)
 endif(WIN32)
 
 #######################################################################
 # find netgen
-set(INSTALL_DIR /opt/netgen CACHE PATH "Install path")
-if(APPLE)
-  set(CMAKE_INSTALL_PREFIX "${INSTALL_DIR}/Netgen.app/Contents/Resources" CACHE INTERNAL "Prefix prepended to install directories" FORCE)
-else(APPLE)
-  set(CMAKE_INSTALL_PREFIX "${INSTALL_DIR}" CACHE INTERNAL "Prefix prepended to install directories" FORCE) 
-endif(APPLE)
+find_package(Netgen REQUIRED CONFIG HINTS ${INSTALL_DIR}/share/cmake $ENV{NETGENDIR}/../share/cmake)
+set(INSTALL_DIR ${NETGEN_INSTALL_DIR} CACHE PATH "Install path")
+set_vars(NGSOLVE_CMAKE_ARGS NETGEN_DIR)
 
 #######################################################################
 set(LAPACK_LIBRARIES CACHE INTERNAL "Lapack libraries")
@@ -78,7 +71,7 @@ if (USE_LAPACK)
           INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_directory . ${INSTALL_DIR}
           )
         set(LAPACK_LIBRARIES ${INSTALL_DIR}/lib/BLAS.lib)
-        list(APPEND LAPACK_DEPENDENCIES win_download_lapack)
+        list(APPEND LAPACK_PROJECTS win_download_lapack)
       else(WIN32)
         find_package(LAPACK)
       endif(WIN32)
@@ -87,22 +80,13 @@ if (USE_LAPACK)
 endif (USE_LAPACK)
 
 #######################################################################
-set(NETGEN_INTERNAL_INCLUDE_DIR NOTFOUND CACHE INTERNAL "Netgen include directories")
 set(BUILD_NETGEN OFF CACHE INTERNAL "is set if netgen is built as external project")
 #######################################################################
 if(NETGEN_SOURCE_DIR)
-    find_path(NETGEN_INCLUDE_DIR nginterface_v2_impl.hpp PATHS ${NETGEN_SOURCE_DIR} ${NETGEN_SOURCE_DIR}/libsrc/include)
-    if (NOT NETGEN_INCLUDE_DIR)
-      message(FATAL_ERROR "Could not find Netgen source files in NETGEN_SOURCE_DIR, which was set to ${NETGEN_SOURCE_DIR}")
-    endif()
-    set(NETGEN_INTERNAL_INCLUDE_DIR
-      ${NETGEN_INCLUDE_DIR}
-      ${NETGEN_INCLUDE_DIR}/../general
-      ${NETGEN_INCLUDE_DIR}/../visualization
-    )
 else(NETGEN_SOURCE_DIR)
   message(STATUS "Use Netgen from submodule, updating modules...")
-  execute_process(COMMAND git submodule update --init --recursive WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+#   execute_process(COMMAND git submodule update --init --recursive WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+  execute_process(COMMAND cmake -P cmake_modules/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} )
   add_custom_target(check_submodules_start ALL cmake -P cmake_modules/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} )
   add_custom_target(check_submodules_stop ALL cmake -P cmake_modules/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} DEPENDS ngsolve)
   set(BUILD_NETGEN ON)
@@ -113,67 +97,20 @@ else(NETGEN_SOURCE_DIR)
   )
 endif(NETGEN_SOURCE_DIR)
 
-set_vars(NGSOLVE_CMAKE_ARGS NETGEN_INTERNAL_INCLUDE_DIR BUILD_NETGEN)
-
-#######################################################################
-if (USE_PYTHON)
-  find_path(PYBIND_INCLUDE_DIR pybind11/pybind11.h ${NETGEN_INTERNAL_INCLUDE_DIR}/../../external_dependencies/pybind11/include)
-    if( NOT PYBIND_INCLUDE_DIR )
-      message(FATAL_ERROR "Could NOT find pybind11!")
-    endif( NOT PYBIND_INCLUDE_DIR )
-    message(STATUS "Found Pybind11: ${PYBIND_INCLUDE_DIR}")
-#     set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${PROJECT_SOURCE_DIR}/cmake_modules/python")
-    set(PYTHON_VERSION "3" CACHE STRING "Python version (only Python >= 3.0 supported)")
-    set(Python_ADDITIONAL_VERSIONS 3.5)
-    if( PYTHON_VERSION VERSION_LESS 3 )
-        message(FATAL_ERROR "NGSolve supports only Python 3")
-    endif( PYTHON_VERSION VERSION_LESS 3 )
-    find_package(PythonInterp ${PYTHON_VERSION} REQUIRED)
-    find_package(PythonLibs ${PYTHON_VERSION}  REQUIRED)
-
-    set(PYTHON_LIBS "${PYTHON_LIBRARIES}")
-    execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1,0,''))" OUTPUT_VARIABLE PYTHON_PACKAGES_INSTALL_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
-    set_vars(NGSOLVE_CMAKE_ARGS
-      PYTHON_LIBS
-      PYTHON_INCLUDE_DIR
-      PYTHON_PACKAGES_INSTALL_DIR
-      PYBIND_INCLUDE_DIR
-     )
-endif (USE_PYTHON)
+set_vars(NGSOLVE_CMAKE_ARGS NETGEN_INCLUDE_DIRS BUILD_NETGEN)
 
 #######################################################################
 
 if(USE_UMFPACK)
   ExternalProject_Add(
     suitesparse
-    DEPENDS ${LAPACK_DEPENDENCIES}
+    DEPENDS ${LAPACK_PROJECTS}
     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/umfpack
     GIT_REPOSITORY https://github.com/jlblancoc/suitesparse-metis-for-windows.git
     CMAKE_ARGS ${EXTRA_CMAKE_ARGS} -DSUITESPARSE_USE_CUSTOM_BLAS_LAPACK_LIBS=ON -DSHARED=ON -DBUILD_METIS=OFF -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} -DSUITESPARSE_CUSTOM_LAPACK_LIB=${LAPACK_LIBRARIES} -DSUITESPARSE_CUSTOM_BLAS_LIB=${LAPACK_LIBRARIES}
     )
   list(APPEND DEPENDENCIES suitesparse)
 endif(USE_UMFPACK)
-
-#######################################################################
-
-if(USE_OCC AND WIN32)
-    ExternalProject_Add(win_download_occ
-      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/tcl
-      URL ${OCC_DOWNLOAD_URL_WIN}
-      UPDATE_COMMAND "" # Disable update
-      BUILD_IN_SOURCE 1
-      CONFIGURE_COMMAND ""
-      BUILD_COMMAND ""
-      INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_directory . ${INSTALL_DIR}
-      )
-  list(APPEND DEPENDENCIES win_download_occ)
-endif(USE_OCC AND WIN32)
-
-#######################################################################
-
-if(USE_GUI)
-  include(cmake_modules/ExternalProject_TCLTK.cmake)
-endif(USE_GUI)
 
 #######################################################################
 # propagate cmake variables to NGSolve subproject
@@ -204,14 +141,18 @@ set_vars( NGSOLVE_CMAKE_ARGS
   )
 
 ExternalProject_Add (ngsolve
-  DEPENDS ${DEPENDENCIES}
+  DEPENDS ${DEPENDENCIES} ${LAPACK_PROJECTS}
   SOURCE_DIR ${PROJECT_SOURCE_DIR}
-  CMAKE_ARGS ${NGSOLVE_CMAKE_ARGS} -DUSE_SUPERBUILD=OFF ${EXTRA_CMAKE_ARGS} -DCMAKE_PREFIX_PATH=${INSTALL_DIR}
+  CMAKE_ARGS ${NGSOLVE_CMAKE_ARGS} -DUSE_SUPERBUILD=OFF ${EXTRA_CMAKE_ARGS} -DCMAKE_PREFIX_PATH=${NETGEN_DIR}
   INSTALL_COMMAND ""
   BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/ngsolve
   STEP_TARGETS build
-  LOG_BUILD 1
 )
 
 install(CODE "execute_process(COMMAND cmake --build . --target install WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ngsolve)")
 
+add_custom_target(tests
+  ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR}/ngsolve
+                   --target test
+                   --config ${CMAKE_BUILD_TYPE}
+                   )

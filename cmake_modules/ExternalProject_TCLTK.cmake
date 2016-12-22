@@ -54,6 +54,5 @@ elseif(WIN32)
 
   list(APPEND DEPENDENCIES win_extlibs)
 else(WIN32)
-    find_package(TCL 8.5 REQUIRED)
     set_vars(TCL_INCLUDE_PATH)
 endif(APPLE)

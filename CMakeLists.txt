@@ -6,10 +6,7 @@ cmake_minimum_required(VERSION 2.8)
 
 # Handle superbuild first
 option (USE_SUPERBUILD "Whether or not a superbuild should be invoked" ON)
-option( USE_GUI          "build ngsolve with GUI" ON)
-option( USE_PYTHON       "enable python shell" ON)
 option( USE_LAPACK       "build ngsolve with LAPACK" ON)
-option( USE_MPI          "enable mpi parallelization")
 option( USE_VT           "enable vampirtrace")
 option( USE_CUDA         "enable CUDA GPU support")
 option( USE_MKL          "enable MKL")
@@ -35,6 +32,8 @@ else()
   project(NGSolve)
 endif()
 
+find_package(Netgen REQUIRED CONFIG HINTS ${NETGEN_DIR}/share/cmake)
+
 set(NGSOLVE_VERSION_MAJOR 6)
 set(NGSOLVE_VERSION_MINOR 2)
 string(TIMESTAMP NGSOLVE_VERSION_PATCH "%y%U%w" )
@@ -55,7 +54,7 @@ install (FILES ${CMAKE_CURRENT_BINARY_DIR}/config.h DESTINATION include COMPONEN
 
 add_subdirectory(external_dependencies)
 
-include_directories(AFTER ${NETGEN_INTERNAL_INCLUDE_DIR})
+include_directories(AFTER ${NETGEN_INCLUDE_DIRS})
 #######################################################################
 
 add_definitions(-DHAVE_NETGEN_SOURCES)
@@ -89,6 +88,7 @@ endif (ADDITIONAL_PATHS)
 
 #######################################################################
 # use rpath
+set(CMAKE_INSTALL_PREFIX ${NETGEN_DIR} CACHE INTERNAL "Prefix prepended to install directories" FORCE)
 set(CMAKE_SKIP_BUILD_RPATH  FALSE)
 set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE) 
 set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
@@ -164,13 +164,8 @@ endif(APPLE)
 
 #######################################################################
 if (USE_GUI)
-    find_package(TCL 8.5)
-    if(TCL_FOUND)
-        add_definitions(-DTCL)
-        include_directories(${TCL_INCLUDE_PATH})
-    else(TCL_FOUND)
-        message( FATAL_ERROR "Tcl library not found!" )
-    endif(TCL_FOUND)
+    add_definitions(-DTCL)
+    include_directories(${TCL_INCLUDE_PATH})
 endif (USE_GUI)
 
 #######################################################################
@@ -236,8 +231,6 @@ if (USE_PYTHON)
     add_definitions(-DNGS_PYTHON)
     include_directories(BEFORE ${PYBIND_INCLUDE_DIR})
     include_directories(${PYTHON_INCLUDE_DIR})
-    install(DIRECTORY ${PYBIND_INCLUDE_DIR}/pybind11 DESTINATION include COMPONENT ngsolve_devel)
-    install(FILES ${PYBIND_INCLUDE_DIR}/../LICENSE DESTINATION include/pybind11 COMPONENT ngsolve_devel)
 endif (USE_PYTHON)
 
 #######################################################################
