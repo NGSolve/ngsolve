@@ -32,7 +32,7 @@ else()
   project(NGSolve)
 endif()
 
-find_package(Netgen REQUIRED CONFIG HINTS ${NETGEN_DIR}/share/cmake)
+find_package(Netgen REQUIRED CONFIG HINTS ${NETGEN_DIR} ${NETGEN_DIR}/share/cmake)
 
 set(NGSOLVE_VERSION_MAJOR 6)
 set(NGSOLVE_VERSION_MINOR 2)
@@ -52,7 +52,6 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake ${CMAKE_CURRENT_BINARY
 
 install (FILES ${CMAKE_CURRENT_BINARY_DIR}/config.h DESTINATION include COMPONENT ngsolve_devel )
 
-add_subdirectory(external_dependencies)
 
 include_directories(AFTER ${NETGEN_INCLUDE_DIRS})
 #######################################################################

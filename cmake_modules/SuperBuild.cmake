@@ -34,10 +34,35 @@ if(WIN32)
 endif(WIN32)
 
 #######################################################################
+option(BUILD_NETGEN ON "Build Netgen from the git submodule as part of NGSolve (recommended)")
+#######################################################################
+if(NETGEN_SOURCE_DIR)
+  message(STATUS "Since NETGEN_SOURCE_DIR is given, assume Netgen is already installed")
+  message(STATUS "Looking for NetgenConfig.cmake...")
+  find_package(Netgen REQUIRED CONFIG HINTS ${INSTALL_DIR}/share/cmake $ENV{NETGENDIR}/../share/cmake)
+  set(INSTALL_DIR ${NETGEN_INSTALL_DIR} CACHE PATH "Install path")
+  set(BUILD_NETGEN OFF)
+else(NETGEN_SOURCE_DIR)
+  message(STATUS "Use Netgen from submodule, updating modules...")
+#   execute_process(COMMAND git submodule update --init --recursive WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+  execute_process(COMMAND cmake -P cmake_modules/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} )
+  add_custom_target(check_submodules_start ALL cmake -P cmake_modules/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} )
+  add_custom_target(check_submodules_stop ALL cmake -P cmake_modules/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} DEPENDS ngsolve)
+  set(BUILD_NETGEN ON)
+  set(NETGEN_DIR ${INSTALL_DIR})
+  add_subdirectory(external_dependencies)
+  add_custom_target(install_netgen
+    ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR}/external_dependencies/netgen
+                     --target install
+                     --config ${CMAKE_BUILD_TYPE}
+                   )
+  add_dependencies(install_netgen netgen)
+endif(NETGEN_SOURCE_DIR)
+
+set_vars(NGSOLVE_CMAKE_ARGS NETGEN_DIR BUILD_NETGEN)
+
+#######################################################################
 # find netgen
-find_package(Netgen REQUIRED CONFIG HINTS ${INSTALL_DIR}/share/cmake $ENV{NETGENDIR}/../share/cmake)
-set(INSTALL_DIR ${NETGEN_INSTALL_DIR} CACHE PATH "Install path")
-set_vars(NGSOLVE_CMAKE_ARGS NETGEN_DIR)
 
 #######################################################################
 set(LAPACK_LIBRARIES CACHE INTERNAL "Lapack libraries")
@@ -78,26 +103,6 @@ if (USE_LAPACK)
     endif()
     set_vars(NGSOLVE_CMAKE_ARGS LAPACK_LIBRARIES)
 endif (USE_LAPACK)
-
-#######################################################################
-set(BUILD_NETGEN OFF CACHE INTERNAL "is set if netgen is built as external project")
-#######################################################################
-if(NETGEN_SOURCE_DIR)
-else(NETGEN_SOURCE_DIR)
-  message(STATUS "Use Netgen from submodule, updating modules...")
-#   execute_process(COMMAND git submodule update --init --recursive WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-  execute_process(COMMAND cmake -P cmake_modules/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} )
-  add_custom_target(check_submodules_start ALL cmake -P cmake_modules/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} )
-  add_custom_target(check_submodules_stop ALL cmake -P cmake_modules/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} DEPENDS ngsolve)
-  set(BUILD_NETGEN ON)
-  set(NETGEN_INTERNAL_INCLUDE_DIR
-    ${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies/netgen/libsrc/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies/netgen/libsrc/general
-    ${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies/netgen/libsrc/visualization
-  )
-endif(NETGEN_SOURCE_DIR)
-
-set_vars(NGSOLVE_CMAKE_ARGS NETGEN_INCLUDE_DIRS BUILD_NETGEN)
 
 #######################################################################
 
@@ -141,7 +146,7 @@ set_vars( NGSOLVE_CMAKE_ARGS
   )
 
 ExternalProject_Add (ngsolve
-  DEPENDS ${DEPENDENCIES} ${LAPACK_PROJECTS}
+  DEPENDS ${DEPENDENCIES} ${LAPACK_PROJECTS} netgen install_netgen
   SOURCE_DIR ${PROJECT_SOURCE_DIR}
   CMAKE_ARGS ${NGSOLVE_CMAKE_ARGS} -DUSE_SUPERBUILD=OFF ${EXTRA_CMAKE_ARGS} -DCMAKE_PREFIX_PATH=${NETGEN_DIR}
   INSTALL_COMMAND ""
@@ -151,7 +156,7 @@ ExternalProject_Add (ngsolve
 
 install(CODE "execute_process(COMMAND cmake --build . --target install WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ngsolve)")
 
-add_custom_target(tests
+add_custom_target(test_ngsolve
   ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR}/ngsolve
                    --target test
                    --config ${CMAKE_BUILD_TYPE}
