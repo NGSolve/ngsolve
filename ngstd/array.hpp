@@ -63,7 +63,7 @@ namespace ngstd
   template <typename T>
   inline ostream & operator<< (ostream & ost, const BaseArrayObject<T> & array)
   {
-    for (auto i : array.Range())
+    for (auto i : Range(array.Size()))
       ost << i << ":" << array.Spec()[i] << endl;
     return ost;
   }

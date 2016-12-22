@@ -152,7 +152,7 @@ namespace ngcomp
                                               const function<void(shared_ptr<FESpace>,const FiniteElement &,const ElementTransformation &,FlatVector<>,FlatVector<>,LocalHeap&)> & func)
   {
     BaseVector & vec_in = gf_in->GetVector();
-    BaseVector & vec_out = gf_out->GetVector();
+    // BaseVector & vec_out = gf_out->GetVector();
     Array<int> dnums,dnumsx;
     for(int i=0;i<nels[0];i++)
     {
@@ -171,7 +171,7 @@ namespace ngcomp
       }
       space_x->GetDofNrs(ElementId(VOL,i),dnumsx);
       gf_out->GetVector().SetIndirect(dnumsx,elvec_out);
-    }    
+    }
   }
 
   void TPHighOrderFESpace :: ProlongateFromXSpace(shared_ptr<GridFunction> gf_in, shared_ptr<GridFunction> gf_out,LocalHeap & lh)
@@ -375,17 +375,18 @@ namespace ngcomp
   void TPHighOrderFESpace::SolveM (CoefficientFunction & rho, BaseVector & vec,
                          LocalHeap & lh) const
   {
+    static Timer tall("TPHighOrderFESpace::SolveM"); RegionTimer rall(tall);
     IterateElementsTP(*this, VOL, lh, 
       [&] (ElementId ei0,ElementId ei1, LocalHeap & lh)
       {
         Array<int> indices(2);
         indices[0] = ei0.Nr(); indices[1] = ei1.Nr();
         int elnr = GetIndex(indices);
-        const Array<shared_ptr<FESpace> > & spaces = Spaces(ei0.Nr());
+        // const Array<shared_ptr<FESpace> > & spaces = Spaces(ei0.Nr());
         TPElementTransformation & eltrans = dynamic_cast<TPElementTransformation &>(GetTrafo (elnr, lh));
         TPHighOrderFE & tpfel = dynamic_cast<TPHighOrderFE&>(GetFE(ElementId(elnr),lh));
-        IntegrationRule irx(tpfel.elements[0]->ElementType(),2*tpfel.elements[0]->Order());
-        IntegrationRule iry(tpfel.elements[1]->ElementType(),2*tpfel.elements[1]->Order());
+        const IntegrationRule & irx = SelectIntegrationRule(tpfel.elements[0]->ElementType(),2*tpfel.elements[0]->Order());
+        const IntegrationRule & iry = SelectIntegrationRule(tpfel.elements[1]->ElementType(),2*tpfel.elements[1]->Order());
         BaseMappedIntegrationRule & mirx = eltrans.GetTrafo(0)(irx,lh);
         BaseMappedIntegrationRule & miry = eltrans.GetTrafo(1)(iry,lh);
         FlatMatrix<> shapesx(tpfel.elements[0]->GetNDof(),irx.Size(),lh);
@@ -420,17 +421,18 @@ namespace ngcomp
 
   void Transfer2StdMesh(const GridFunction * gfutp, GridFunction* gfustd)
   {
+    static Timer tall("TPHighOrderFESpace::Transfer2StdMesh"); RegionTimer rall(tall);
     const shared_ptr<FESpace> fes = gfustd->GetFESpace();
     const shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gfutp->GetFESpace());
     shared_ptr<FESpace> fesx = tpfes->Space(-1);
     shared_ptr<FESpace> fesy = tpfes->Space(0);
     LocalHeap lh(100000000,"heap");
-    auto & els = dynamic_cast<TPHighOrderFE &> (tpfes->GetFE(ElementId(0),lh));
+    // auto & els = dynamic_cast<TPHighOrderFE &> (tpfes->GetFE(ElementId(0),lh));
     IterateElementsTP(*tpfes,VOL,lh,
     [&] (ElementId ei0,ElementId ei1,LocalHeap & lh)
     {
       HeapReset hr(lh);
-      Array<int> ind(2);
+      ArrayMem<int,2> ind(2);
       ind[0] = ei0.Nr(); ind[1] = ei1.Nr();
       int elnr = tpfes->GetIndex(ind);
       TPHighOrderFE & tpfel = dynamic_cast<TPHighOrderFE&>(tpfes->GetFE(ElementId(elnr),lh));
@@ -487,6 +489,7 @@ namespace ngcomp
 
   void Transfer2TPMesh(const CoefficientFunction * cfstd, GridFunction* gfutp)
   {
+    static Timer tall("TPHighOrderFESpace::Transfer2TPMesh"); RegionTimer rall(tall);
     const shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gfutp->GetFESpace());
     LocalHeap lh(100000000,"heap");
     IterateElementsTP(*tpfes,VOL,lh,

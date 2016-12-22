@@ -5,6 +5,7 @@
 /* *************************************************************************/
 
 #include <la.hpp>
+#include "umfpackinverse.hpp"
 
 #ifdef USE_UMFPACK
 

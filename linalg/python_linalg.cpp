@@ -189,7 +189,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
       {
           self.Range(ind,ind+1) = d;
       } )
-    .def("__setitem__", [](PyBaseVector & self,  int ind, Complex z ) -> void
+    .def("__setitem__", [](PyBaseVector & self,  int ind, Complex z ) 
       {
         self.Range(ind,ind+1) = z;
       } )
@@ -204,6 +204,12 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
           size_t start, step, n;
           InitSlice( inds, self.Size(), start, step, n );
           self.Range(start,start+n) = z;
+      } )
+    .def("__setitem__", [](PyBaseVector & self, py::slice inds, PyWrapper<BaseVector> & v )
+      {
+        size_t start, step, n;
+        InitSlice( inds, self.Size(), start, step, n );
+        self.Range(start, start+n) = *v;
       } )
     .def("__setitem__", [](PyBaseVector & self,  int ind, FlatVector<double> & v )
       {
@@ -223,21 +229,31 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("__isub__", [](PyBaseVector & self,  PyBaseVector & other) -> BaseVector& { self -= other; return self;})
     .def("__imul__", [](PyBaseVector & self,  double scal) -> BaseVector& { self *= scal; return self;})
     .def("__imul__", [](PyBaseVector & self,  Complex scal) -> BaseVector& { self *= scal; return self;})
-    .def("InnerProduct", [](PyBaseVector & self, PyBaseVector & other)
+    .def("InnerProduct", [](PyBaseVector & self, PyBaseVector & other, bool conjugate)
                                           {
                                             if (self.IsComplex())
-                                              return py::cast (S_InnerProduct<ComplexConjugate> (self, other));
+                                              {
+                                                if (conjugate)
+                                                  return py::cast (S_InnerProduct<ComplexConjugate> (self, other));
+                                                else
+                                                  return py::cast (S_InnerProduct<Complex> (self, other));
+                                              }
                                             else
                                               return py::cast (InnerProduct (self, other));
-                                          })
+                                          },
+         "InnerProduct", py::arg("other"), py::arg("conjugate")=py::cast(true)         
+         )
     .def("Norm",  [](PyBaseVector & self) { return self.L2Norm(); })
     .def("Range", [](PyBaseVector & self, int from, int to) -> shared_ptr<BaseVector>
                                    {
                                      return shared_ptr<BaseVector>(self.Range(from,to));
                                    })
-    .def("FV", FunctionPointer( [] (PyBaseVector & self) -> FlatVector<double>
+    .def("FV", FunctionPointer ([] (PyBaseVector & self)
                                 {
-                                  return self.FVDouble();
+                                  if (!self.IsComplex())
+                                    return py::cast(self.FVDouble());
+                                  else
+                                    return py::cast(self.FVComplex());
                                 }))
     ;       
 

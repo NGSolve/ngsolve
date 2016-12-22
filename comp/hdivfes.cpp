@@ -163,11 +163,12 @@ namespace ngcomp
   */
   
   void RaviartThomasFESpace :: 
-  VTransformMR (int elnr, VorB vb,
-		const SliceMatrix<double> & mat, TRANSFORM_TYPE tt) const
+  VTransformMR (ElementId ei, 
+		SliceMatrix<double> mat, TRANSFORM_TYPE tt) const
   {
     int nd = 3;
-    bool boundary = (vb == BND);
+    bool boundary = (ei.VB() == BND);
+    size_t elnr = ei.Nr();
     if (boundary) return;
 
     Vector<> fac(nd);
@@ -191,11 +192,13 @@ namespace ngcomp
   
     
   void  RaviartThomasFESpace ::
-  VTransformVR (int elnr, VorB vb,
-		const FlatVector<double> & vec, TRANSFORM_TYPE tt) const
+  VTransformVR (ElementId ei, 
+		SliceVector<double> vec, TRANSFORM_TYPE tt) const
   {
     int nd = 3;
-    bool boundary = (vb == BND);    
+    bool boundary = (ei.VB() == BND);
+    size_t elnr = ei.Nr();
+    
     if (boundary) 
       {
 	ArrayMem<int,4> edge_nums, edge_orient;

@@ -49,15 +49,15 @@ namespace ngcomp
     // virtual Table<int> * CreateSmoothingBlocks (int type = 0) const;
 
 
-    virtual void VTransformMR (int elnr, VorB vb, 
-			       const SliceMatrix<double> & mat, TRANSFORM_TYPE tt) const;
-    virtual void VTransformMC (int elnr, VorB vb,
-			       const SliceMatrix<Complex> & mat, TRANSFORM_TYPE tt) const { ; }
+    virtual void VTransformMR (ElementId ei, 
+			       const SliceMatrix<double> mat, TRANSFORM_TYPE tt) const;
+    virtual void VTransformMC (ElementId ei, 
+			       const SliceMatrix<Complex> mat, TRANSFORM_TYPE tt) const { ; }
 
-    virtual void VTransformVR (int elnr, VorB vb,
-			       const FlatVector<double> & vec, TRANSFORM_TYPE tt) const;
-    virtual void VTransformVC (int elnr, VorB vb,
-			       const FlatVector<Complex> & vec, TRANSFORM_TYPE tt) const { ; }
+    virtual void VTransformVR (ElementId ei, 
+			       const SliceVector<double> vec, TRANSFORM_TYPE tt) const;
+    virtual void VTransformVC (ElementId ei, 
+			       const SliceVector<Complex> vec, TRANSFORM_TYPE tt) const { ; }
 
     void GetTransformationFactors (int elnr, FlatVector<> & fac) const;
 

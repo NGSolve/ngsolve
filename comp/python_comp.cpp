@@ -92,7 +92,7 @@ py::object MakeProxyFunction2 (const FESpace & fes,
                               const function<shared_ptr<ProxyFunction>(shared_ptr<ProxyFunction>)> & addblock)
 {
   auto compspace = dynamic_cast<const CompoundFESpace*> (&fes);
-  if (compspace)
+  if (compspace && !fes.GetEvaluator())
     {
       py::list l;
       int nspace = compspace->GetNSpaces();
@@ -221,25 +221,6 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
-  py::class_<ElementId> (m, "ElementId", 
-                         "an element identifier containing element number and Volume/Boundary flag")
-    .def(py::init<VorB,int>())
-    .def(py::init<int>())
-    .def("__str__", &ToString<ElementId>)
-    .def_property_readonly("nr", &ElementId::Nr, "the element number")    
-    .def("VB", &ElementId::VB, "VorB of element")    .def(py::self!=py::self)
-    .def("__eq__" , [](ElementId &self, ElementId &other)
-                                    { return !(self!=other); } )
-    .def("__hash__" , &ElementId::Nr)
-    ;
-  
-  m.def("BndElementId",[] (int nr) { return ElementId(BND,nr); },
-          py::arg("nr"),
-          "creates an element-id for a boundary element")
-    ;
-
-  //////////////////////////////////////////////////////////////////////////////////////////
-
   py::class_<ElementRange, IntRange> (m, "ElementRange")
     .def(py::init<const MeshAccess&,VorB,IntRange>())
     .def("__iter__", [] (ElementRange &er)
@@ -253,11 +234,34 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
       py::keep_alive<0,1>()
     );
 
+  //////////////////////////////////////////////////////////////////////////////////////////
+
+  py::class_<ElementId> (m, "ElementId", 
+                         "an element identifier containing element number and Volume/Boundary flag")
+    .def(py::init<VorB,int>())
+    .def(py::init<int>())
+    .def(py::init<Ngs_Element>())
+    .def("__str__", &ToString<ElementId>)
+    .def_property_readonly("nr", &ElementId::Nr, "the element number")    
+    .def("VB", &ElementId::VB, "VorB of element")
+    .def(py::self!=py::self)
+    .def("__eq__" , [](ElementId &self, ElementId &other)
+         { return !(self!=other); } )
+    .def("__hash__" , &ElementId::Nr)
+    ;
+  
+  m.def("BndElementId",[] (int nr) { return ElementId(BND,nr); },
+          py::arg("nr"),
+          "creates an element-id for a boundary element")
+    ;
+
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
   // TODO: make tuple not doing the right thing
-  py::class_<Ngs_Element, ElementId>(m, "Ngs_Element")
+  py::class_<Ngs_Element>(m, "Ngs_Element")
+    .def_property_readonly("nr", &Ngs_Element::Nr, "the element number")    
+    .def("VB", &Ngs_Element::VB, "VorB of element")   
     .def_property_readonly("vertices", [](Ngs_Element &el) {
         return py::cast(Array<int>(el.Vertices()));
         })//, "list of global vertex numbers")
@@ -275,6 +279,9 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                                          { return el.GetMaterial() ? *el.GetMaterial() : ""; },
                   "material or boundary condition label")
     ;
+
+  py::implicitly_convertible <Ngs_Element, ElementId> ();
+  // py::implicitly_convertible <ElementId, Ngs_Element> ();
 
   py::class_<FESpace::Element,Ngs_Element>(m, "FESpaceElement")
     .def_property_readonly("dofs",
@@ -2300,7 +2307,15 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                lfi = make_shared<SymbolicFacetLinearFormIntegrator> (cf.Get(), vb /* , element_boundary */);
              
              if (py::extract<py::list> (definedon).check())
-               lfi -> SetDefinedOn (makeCArray<int> (definedon));
+               {
+                 cout << "warning: SymbolicLFI definedon changed to 1-based" << endl;
+                 Array<int> defon = makeCArray<int> (definedon);
+                 for (int & d : defon) d--;
+                 lfi -> SetDefinedOn (defon); 
+               }
+               
+             // lfi -> SetDefinedOn (makeCArray<int> (definedon));
+
              if (defon_region.check())
                lfi->SetDefinedOn(defon_region().Mask());
 
@@ -2337,6 +2352,51 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                bfi = make_shared<SymbolicBilinearFormIntegrator> (cf.Get(), vb, element_boundary);
              else
                bfi = make_shared<SymbolicFacetBilinearFormIntegrator> (cf.Get(), vb, element_boundary);
+             
+             if (py::extract<py::list> (definedon).check())
+               {
+                 cout << "warning: SymbolicBFI definedon changed to 1-based" << endl;
+                 Array<int> defon = makeCArray<int> (definedon);
+                 for (int & d : defon) d--;
+                 bfi -> SetDefinedOn (defon); 
+               }
+             // bfi -> SetDefinedOn (makeCArray<int> (definedon));
+
+             if (defon_region.check())
+               bfi->SetDefinedOn(defon_region().Mask());
+             
+             return PyWrapper<BilinearFormIntegrator>(bfi);
+           },
+           py::arg("form"), py::arg("VOL_or_BND")=VOL,
+           py::arg("element_boundary")=false,
+           py::arg("skeleton")=false,
+           py::arg("definedon")=DummyArgument()
+          );
+          
+  m.def("SymbolicTPBFI",
+          [](PyCF cf, VorB vb, bool element_boundary,
+              bool skeleton, py::object definedon)
+           {
+             py::extract<Region> defon_region(definedon);
+             if (defon_region.check())
+               vb = VorB(defon_region());
+
+             // check for DG terms
+             bool has_other = false;
+             cf->TraverseTree ([&has_other] (CoefficientFunction & cf)
+                               {
+                                 if (dynamic_cast<ProxyFunction*> (&cf))
+                                   if (dynamic_cast<ProxyFunction&> (cf).IsOther())
+                                     has_other = true;
+                               });
+             if (has_other && !element_boundary && !skeleton)
+               throw Exception("DG-facet terms need either skeleton=True or element_boundary=True");
+             
+             shared_ptr<BilinearFormIntegrator> bfi;
+             if (!has_other && !skeleton)
+               bfi = make_shared<TensorProductBilinearFormIntegrator> (cf.Get(), vb, element_boundary);
+             else
+               bfi = make_shared<TensorProductFacetBilinearFormIntegrator> (cf.Get(), vb, element_boundary);
              
              if (py::extract<py::list> (definedon).check())
                bfi -> SetDefinedOn (makeCArray<int> (definedon));
@@ -2563,6 +2623,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
               
    m.def("IntDv", [](PyGF gf_tp, PyGF gf_x )
             {
+              static Timer tall("comp.IntDv"); RegionTimer rall(tall);
               shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp.Get()->GetFESpace());
               LocalHeap lh(10000000,"ReduceToXSpace");
               tpfes->ReduceToXSpace(gf_tp.Get(),gf_x.Get(),lh,
@@ -2585,32 +2646,82 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
               });
               });
               
-   m.def("IntDv2", [](PyGF gf_tp, PyGF gf_x, PyCF coef )
+   m.def("IntDv", [](PyGF gf_tp, PyGF gf_x, PyCF coef )
            {
+              static Timer tall("comp.IntDv - total domain int"); RegionTimer rall(tall);
               shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp.Get()->GetFESpace());
-              LocalHeap lh(10000000,"IntDv2");
+              LocalHeap lh(10000000,"IntDv");
               tpfes->ReduceToXSpace(gf_tp.Get(),gf_x.Get(),lh,
               [&] (shared_ptr<FESpace> fes,const FiniteElement & fel,const ElementTransformation & trafo,FlatVector<> elvec,FlatVector<> elvec_out,LocalHeap & lh)
               {
                  const TPHighOrderFE & tpfel = dynamic_cast<const TPHighOrderFE &>(fel);
+                 
                  shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(fes);
-                 FlatMatrix<> elmat(tpfel.elements[0]->GetNDof(),tpfel.elements[1]->GetNDof(),&elvec[0]);
+                 FlatMatrix<> coefmat(tpfel.elements[0]->GetNDof(),tpfel.elements[1]->GetNDof(),&elvec[0]);
                  IntegrationRule ir(tpfel.elements[1]->ElementType(),2*tpfel.elements[1]->Order());
-                 BaseMappedIntegrationRule & mir = trafo(ir,lh);
                  FlatMatrix<> shape(tpfel.elements[1]->GetNDof(),ir.Size(),lh);
                  dynamic_cast<const BaseScalarFiniteElement *>(tpfel.elements[1])->CalcShape(ir,shape);
-                 FlatMatrix<> vals(mir.Size(),1,lh);
+                 
+                 BaseMappedIntegrationRule & mir = trafo(ir,lh);
+                 
+                 FlatMatrixFixWidth<1> vals(mir.Size(),lh);
                  coef.Get()->Evaluate(mir, vals);
                  for(int s=0;s<ir.Size();s++)
                  {
                    shape.Col(s)*=mir[s].GetWeight()*vals(s,0);
-                   elvec_out+=elmat*shape.Col(s);
+                   elvec_out+=coefmat*shape.Col(s);
                  }
               });
               });
-
+    
+   m.def("IntDv", [](PyGF gf_tp, py::list ax0, PyCF coef) -> double
+           {
+             static Timer tall("comp.IntDv2 - single point"); RegionTimer rall(tall);
+             Array<double> x0_help = makeCArray<double> (ax0);
+             LocalHeap lh(10000000,"IntDv2");
+             shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp.Get()->GetFESpace());
+             const Array<shared_ptr<FESpace> > & spaces = tpfes->Spaces(0);
+             FlatVector<> x0(spaces[0]->GetSpacialDimension(),&x0_help[0]);
+             IntegrationPoint ip;
+             int elnr = spaces[0]->GetMeshAccess()->FindElementOfPoint(x0,ip,true);
+             auto & felx = spaces[0]->GetFE(ElementId(elnr),lh);
+             FlatVector<> shapex(felx.GetNDof(),lh);
+             dynamic_cast<const BaseScalarFiniteElement &>(felx).CalcShape(ip,shapex);
+             double val = 0.0;
+             int index = tpfes->GetIndex(elnr,0);
+             Array<int> dnums;
+             for(int i=index;i<index+spaces[1]->GetMeshAccess()->GetNE();i++)
+             {
+               auto & fely = spaces[1]->GetFE(ElementId(i-index),lh);
+               tpfes->GetDofNrs(i,dnums);
+               int tpndof = felx.GetNDof()*fely.GetNDof();
+               FlatVector<> elvec(tpndof,lh);
+               gf_tp->GetElementVector(dnums,elvec);
+               FlatMatrix<> coefmat(felx.GetNDof(),fely.GetNDof(), &elvec(0));
+               FlatVector<> coefy(fely.GetNDof(),lh);
+               coefy = Trans(coefmat)*shapex;
+               const IntegrationRule & ir = SelectIntegrationRule(fely.ElementType(),2*fely.Order());
+               BaseMappedIntegrationRule & mir = spaces[1]->GetMeshAccess()->GetTrafo(ElementId(i-index),lh)(ir,lh);
+               FlatMatrixFixWidth<1> coefvals(ir.Size(),lh);
+               coef.Get()->Evaluate(mir,coefvals);
+               FlatMatrix<> shapesy(fely.GetNDof(),ir.Size(),lh);
+               dynamic_cast<const BaseScalarFiniteElement & >(fely).CalcShape(ir,shapesy);
+               FlatVector<> helper(ir.Size(),lh);
+               helper = Trans(shapesy)*coefy;
+               for(int ip=0;ip<ir.Size();ip++)
+                  val+=helper(ip)*mir[ip].GetWeight()*coefvals(ip,0);
+             }
+             return val;
+           });
+   m.def("ProlongateCoefficientFunction", [](PyCF cf_x, int prolongateto) -> PyCF
+           {
+             auto pcf = make_shared<ProlongateCoefficientFunction>(cf_x.Get(),prolongateto,cf_x.Get()->Dimension(),false);
+             pcf->SetDimension(pcf->Dimension());
+             return PyCF(pcf);
+           });
    m.def("Prolongate", [](PyGF gf_x, PyGF gf_tp )
             {
+              static Timer tall("comp.Prolongate"); RegionTimer rall(tall);
               shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp.Get()->GetFESpace());
               LocalHeap lh(100000,"ProlongateFromXSpace");
               if(gf_x.Get()->GetFESpace() == tpfes->Space(-1) )
@@ -2620,6 +2731,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
               });
    m.def("Transfer2StdMesh", [](const PyGF gfutp, PyGF gfustd )
             {
+              static Timer tall("comp.Transfer2StdMesh"); RegionTimer rall(tall);
               Transfer2StdMesh(gfutp.Get().get(),gfustd.Get().get());
               return;
              });

@@ -107,7 +107,7 @@ namespace ngcomp
     template <ELEMENT_TYPE ET>
       const FiniteElement & T_GetCD2FE(int cd2elnr, LocalHeap & lh) const;
     
-    virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const override;
+    virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
     ///
 
     ///
@@ -146,10 +146,10 @@ namespace ngcomp
     void DoCouplingDofUpgrade(bool actupgrade);
 
 
-    virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const override;
-    virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const override;
-    virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const override;
-    virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const override;
+    virtual void GetVertexDofNrs (int vnr, Array<DofId> & dnums) const override;
+    virtual void GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const override;
+    virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const override;
+    virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const override;
 
     bool GetFineEdge( const int i ) const {return fine_edge[i]; };
     bool GetFineFace( const int i ) const {return fine_face[i]; };

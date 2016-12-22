@@ -3,7 +3,7 @@ from ngsolve import *
 
 mesh = Mesh (unit_square.GenerateMesh(maxh=0.1))
 
-fes = L2(mesh, order=4, flags = { "dgjumps" : True } )
+fes = L2(mesh, order=4) 
 
 u = fes.TrialFunction()
 v = fes.TestFunction()

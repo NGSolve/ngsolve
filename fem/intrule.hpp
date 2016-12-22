@@ -1603,8 +1603,8 @@ namespace ngstd
     
     void Print (ostream & ost) const
     {
-      cout << "Point = " << this->point << endl;
-      cout << "Jacobian = " << dxdxi << endl;
+      ost << "Point = " << this->point << endl;
+      ost << "Jacobian = " << dxdxi << endl;
     }
   };
 }
@@ -1804,8 +1804,15 @@ namespace ngfem
     { return *static_cast<const SIMD<BaseMappedIntegrationPoint>*> ((void*)(baseip+i*incr)); }
     INLINE int DimElement() const { return dim_element; }
     INLINE int DimSpace() const { return dim_space; }
-    virtual ABareMatrix<double> GetPoints() const = 0;        
+    virtual ABareMatrix<double> GetPoints() const = 0;
+    virtual void Print (ostream & ost) const = 0;
   };
+
+  inline ostream & operator<< (ostream & ost, const SIMD_BaseMappedIntegrationRule & mip)
+  {
+    mip.Print (ost);
+    return ost;
+  }
 
   template <int DIM_ELEMENT, int DIM_SPACE>
   class NGS_DLL_HEADER SIMD_MappedIntegrationRule : public SIMD_BaseMappedIntegrationRule
@@ -1840,6 +1847,7 @@ namespace ngfem
       return ABareMatrix<double> (&mips[0].Point()(0),
                                   sizeof(SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>>)/sizeof(SIMD<double>));
     }
+    virtual void Print (ostream & ost) const;
   };
 }
 
