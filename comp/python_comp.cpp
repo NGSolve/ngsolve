@@ -2330,7 +2330,8 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 
   m.def("SymbolicBFI",
           [](PyCF cf, VorB vb, bool element_boundary,
-              bool skeleton, py::object definedon)
+             bool skeleton, py::object definedon,
+             IntegrationRule ir)
            {
              py::extract<Region> defon_region(definedon);
              if (defon_region.check())
@@ -2364,14 +2365,22 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 
              if (defon_region.check())
                bfi->SetDefinedOn(defon_region().Mask());
+
+             if (ir.Size())
+               {
+                 cout << "ir = " << ir << endl;
+                 dynamic_pointer_cast<SymbolicBilinearFormIntegrator> (bfi)
+                   ->SetIntegrationRule(ir);
+               }
              
              return PyWrapper<BilinearFormIntegrator>(bfi);
            },
-           py::arg("form"), py::arg("VOL_or_BND")=VOL,
-           py::arg("element_boundary")=false,
-           py::arg("skeleton")=false,
-           py::arg("definedon")=DummyArgument()
-          );
+        py::arg("form"), py::arg("VOL_or_BND")=VOL,
+        py::arg("element_boundary")=false,
+        py::arg("skeleton")=false,
+        py::arg("definedon")=DummyArgument(),
+        py::arg("intrule")=IntegrationRule()
+        );
           
   m.def("SymbolicTPBFI",
           [](PyCF cf, VorB vb, bool element_boundary,
