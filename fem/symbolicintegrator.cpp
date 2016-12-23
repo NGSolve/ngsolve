@@ -739,8 +739,16 @@ namespace ngfem
   };
   */
 
+  void SymbolicBilinearFormIntegrator :: SetIntegrationRule (const IntegrationRule & _ir)
+  {
+    ir = _ir.Copy();
+    simd_ir = SIMD_IntegrationRule(ir);
+  }
+
+
   IntegrationRule SymbolicBilinearFormIntegrator :: GetIntegrationRule (const FiniteElement & fel) const
   {
+    if (ir.Size()) return ir;
     const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fel);
     const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : fel;
     const FiniteElement & fel_test = mixedfe ? mixedfe->FETest() : fel;
@@ -760,6 +768,7 @@ namespace ngfem
     
   SIMD_IntegrationRule SymbolicBilinearFormIntegrator :: Get_SIMD_IntegrationRule (const FiniteElement & fel) const
   {
+    if (simd_ir.Size()) return simd_ir.Clone();
     /*
     const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fel);
     const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : fel;

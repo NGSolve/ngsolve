@@ -1012,6 +1012,23 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
                              new (instance) IntegrationRule (et, order);
                            },
           py::arg("element type"), py::arg("order"))
+    
+    .def("__init__",
+         [](IntegrationRule *instance, py::list points, py::list weights)
+         {
+           IntegrationRule * ir = new (instance) IntegrationRule ();
+           for (size_t i = 0; i < len(points); i++)
+             {
+               py::object pnt = points[i];
+               IntegrationPoint ip;
+               for (int j = 0; j < len(pnt); j++)
+                 ip(j) = py::extract<double> (py::tuple(pnt)[j])();
+               ip.SetWeight(py::extract<double> (weights[i])());
+               ir -> Append (ip);
+             }
+         },
+         py::arg("points"), py::arg("weights"))
+    .def("__str__", &ToString<IntegrationRule>)
     .def("__getitem__", [](IntegrationRule & ir, int nr)
                                         {
                                           if (nr < 0 || nr >= ir.Size())
@@ -1022,6 +1039,7 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
          ([](IntegrationRule & ir, py::object func) -> py::object
           {
             py::object sum;
+            bool first = true;
             for (const IntegrationPoint & ip : ir)
               {
                 py::object val;
@@ -1037,12 +1055,12 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
                     throw Exception("integration rule with illegal dimension");
                   }
 
-                  // TODO: fix!!!
-//                 val = val * py::cast((double)ip.Weight());
-//                 if (sum == DummyArgument())
-//                   sum = val;
-//                 else
-//                   sum = sum+py::cast(val);
+                val = val.attr("__mul__")(py::cast((double)ip.Weight()));
+                if (first)
+                  sum = val;
+                else
+                  sum = sum.attr("__add__")(val);
+                first = false;
               }
             return sum;
           }))

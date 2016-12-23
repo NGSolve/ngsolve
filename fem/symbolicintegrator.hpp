@@ -460,6 +460,8 @@ public:
     Matrix<bool> nonzeros_proxies; // do proxies interact ? 
     bool elementwise_constant;
     mutable bool simd_evaluate;
+    IntegrationRule ir;   // if non-empty use this integration-rule
+    SIMD_IntegrationRule simd_ir;   // if non-empty use this integration-rule
     
   public:
     SymbolicBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb,
@@ -471,6 +473,7 @@ public:
 
     IntegrationRule GetIntegrationRule (const FiniteElement & fel) const;
     SIMD_IntegrationRule Get_SIMD_IntegrationRule (const FiniteElement & fel) const;
+    void SetIntegrationRule (const IntegrationRule & _ir);
     
     virtual void 
     CalcElementMatrix (const FiniteElement & fel,
