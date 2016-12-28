@@ -1367,8 +1367,8 @@ namespace ngfem
                         diagproxyvalues.Range(proxy1->Dimension()*IntRange(i,i+1)) *=
                           static_cast<const ScalMappedIntegrationPoint<SCAL>&> (mir[i]).GetJacobiDet()*ir[i].Weight();
                   }
-                IntRange r1 = proxy1->Evaluator()->UsedDofs(fel);
-                IntRange r2 = proxy2->Evaluator()->UsedDofs(fel);
+                IntRange r1 = proxy1->Evaluator()->UsedDofs(fel_trial);
+                IntRange r2 = proxy2->Evaluator()->UsedDofs(fel_test);
                 SliceMatrix<SCAL> part_elmat = elmat.Rows(r2).Cols(r1);
                 FlatMatrix<SCAL_SHAPES,ColMajor> bmat1(proxy1->Dimension(), elmat.Width(), lh);
                 FlatMatrix<SCAL_SHAPES,ColMajor> bmat2(proxy2->Dimension(), elmat.Height(), lh);
@@ -1388,10 +1388,10 @@ namespace ngfem
 
                     // tb.Start();
                     BaseMappedIntegrationRule & bmir = mir.Range(i, i+bs, lh);
-                    proxy1->Evaluator()->CalcMatrix(fel, bmir, Trans(bbmat1), lh);
+                    proxy1->Evaluator()->CalcMatrix(fel_trial, bmir, Trans(bbmat1), lh);
                     
                     if (!samediffop)
-                      proxy2->Evaluator()->CalcMatrix(fel, bmir, Trans(bbmat2), lh);
+                      proxy2->Evaluator()->CalcMatrix(fel_test, bmir, Trans(bbmat2), lh);
                     // tb.Stop();
 
                     // tdb.Start();
