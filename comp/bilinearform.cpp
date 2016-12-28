@@ -277,7 +277,7 @@ namespace ngcomp
     const Array<SpecialElement*> & specialelements = fespace->GetSpecialElements();
     int nspe = specialelements.Size();
 
-    Array<int> dnums;
+    Array<DofId> dnums;
     Array<int> fnums; //facets of one element
     Array<int> elnums; //elements neighbouring one facet
     Array<int> nbelems; //neighbour elements
@@ -328,7 +328,7 @@ namespace ngcomp
 	    int nre = ma->GetNE(vb);
 	    ParallelForRange (Range(nre), [&](IntRange r)
 			      {
-				Array<int> dnums;
+				Array<DofId> dnums;
 				for (auto i : r)
 				  {
 				    auto eid = ElementId(vb,i);
@@ -356,7 +356,7 @@ namespace ngcomp
         if (fespace->UsesDGCoupling())
         {
           //add dofs of neighbour elements as well
-          Array<int> dnums_dg;
+          Array<DofId> dnums_dg;
 
           for (int i = 0; i < nf; i++)
             {
@@ -470,7 +470,7 @@ namespace ngcomp
       
         if (precompute)
           {
-            Array<int> dnums;
+            Array<DofId> dnums;
             precomputed_data.SetSize( max2(max2(ma->GetNE(VOL), ma->GetNE(BND)),ma->GetNE(BBND))*NumIntegrators() );
             precomputed_data = nullptr;
 
@@ -788,7 +788,7 @@ namespace ngcomp
                 if (vb==VOL && diagonal)
                   {
                     double prevtime = WallTime();
-                    Array<int> dnums;
+                    Array<DofId> dnums;
 
                     for (int i = 0; i < ne; i++)
                       {

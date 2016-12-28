@@ -286,7 +286,7 @@ namespace ngcomp
       const FESpace & fes;
       Array<bool> definedon;
       const VorB vb;
-      mutable Array<int> temp_dnums;
+      mutable Array<DofId> temp_dnums;
       mutable LocalHeap mylh;
       LocalHeap & lh;
     public:
@@ -360,7 +360,7 @@ namespace ngcomp
 
     /// get dof-nrs of the element
     [[deprecated("Use GetDofNrs with element-id instead of elnr!")]]
-    void GetDofNrs (int elnr, Array<int> & dnums) const
+    void GetDofNrs (int elnr, Array<DofId> & dnums) const
       { GetDofNrs(ElementId(VOL,elnr),dnums); }
 
     /// get dof-nrs of domain or boundary element elnr
@@ -383,7 +383,7 @@ namespace ngcomp
     void CheckCouplingTypes() const;
 
     /// get dof-nrs of the element of certain coupling type
-    void GetDofNrs (int elnr, Array<int> & dnums, COUPLING_TYPE ctype) const;    
+    void GetDofNrs (int elnr, Array<DofId> & dnums, COUPLING_TYPE ctype) const;    
 
     /// get dofs on nr'th node of type nt.
     [[deprecated("Use GetDofNrs with NodeId instead of nt/nr")]]    
@@ -405,7 +405,7 @@ namespace ngcomp
 
     /// returns dofs of sourface element
     [[deprecated("Use GetDofNrs(ElementId(BND,elnr)) instead!")]]
-    void GetSDofNrs (int selnr, Array<int> & dnums) const
+    void GetSDofNrs (int selnr, Array<DofId> & dnums) const
       { GetDofNrs(ElementId(BND,selnr),dnums); }
 
     bool DefinedOn(VorB vb, int domnr) const
@@ -856,10 +856,10 @@ namespace ngcomp
 
     virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
   
-    virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const;
-    virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const;
-    virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const;
-    virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const;
+    virtual void GetVertexDofNrs (int vnr, Array<DofId> & dnums) const;
+    virtual void GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const;
+    virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const;
+    virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const;
 
     virtual Array<int> * CreateDirectSolverClusters (const Flags & flags) const;
   };
@@ -887,7 +887,7 @@ namespace ngcomp
     ///
     virtual size_t GetNDof () const throw();
     ///
-    virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const;
+    virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const;
   };
 
 
@@ -922,19 +922,19 @@ namespace ngcomp
     virtual size_t GetNDof () const throw() { return ndlevel.Last(); }
   
     ///
-    virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const;
+    virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const;
 
     ///
     virtual size_t GetNDofLevel (int level) const;
 
 
-    virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const 
+    virtual void GetVertexDofNrs (int vnr, Array<DofId> & dnums) const 
     { dnums.SetSize (0); }
-    virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const
+    virtual void GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const
     { dnums.SetSize (0); }
-    virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const
+    virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const
     { dnums.SetSize (0); }
-    virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const
+    virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const
     { GetDofNrs (elnr, dnums); }
   };
 
@@ -970,7 +970,7 @@ namespace ngcomp
     virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
 
     ///
-    virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const;
+    virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const;
 
     ///
     virtual size_t GetNDofLevel (int level) const;
@@ -1048,12 +1048,12 @@ namespace ngcomp
     ///
     // virtual const FiniteElement & GetCD2FE (int cd2elnr, LocalHeap & lh) const;
     ///
-    virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const;
+    virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const;
     ///
-    virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const;
-    virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const;
-    virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const;
-    virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const;
+    virtual void GetVertexDofNrs (int vnr, Array<DofId> & dnums) const;
+    virtual void GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const;
+    virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const;
+    virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const;
 
     virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
 
