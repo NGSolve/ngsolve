@@ -654,12 +654,12 @@ namespace ngcomp
 
     int used = 0;
     for (int i : Range(dnums))
-      if (dnums[i] != -1 && fes->GetFreeDofs()->Test(dnums[i])) used++;
+      if (dnums[i] != -1 && fes->IsFreeDof(dnums[i])) used++;
     
     FlatArray<int> compress(used, lh);
     int cnt = 0;
     for (int i : Range(dnums))
-      if (dnums[i] != -1 && fes->GetFreeDofs()->Test(dnums[i])) 
+      if (dnums[i] != -1 && fes->IsFreeDof(dnums[i])) 
         compress[cnt++] = i;
 
     FlatArray<int> hdnums(used, lh);

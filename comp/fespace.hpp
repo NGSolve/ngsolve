@@ -469,6 +469,13 @@ namespace ngcomp
 
     /// non Dirichlet dofs
     virtual shared_ptr<BitArray> GetFreeDofs (bool external = false) const;
+    bool IsFreeDof (DofId dof, bool external = false) const
+    {
+      if (external)
+        return external_free_dofs->Test(dof);
+      else
+        return free_dofs->Test(dof);
+    }
     ///
     bool IsDirichletDof (int i) const
     { return dirichlet_dofs.Size() && dirichlet_dofs[i]; }
