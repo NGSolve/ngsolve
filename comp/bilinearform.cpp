@@ -2021,7 +2021,7 @@ namespace ngcomp
   ModifyRHS (BaseVector & f) const
   {
     if (keep_internal)
-      f += GetHarmonicExtensionTrans() * f;
+      f += *GetHarmonicExtensionTrans() * f;
   }
 
   template <class SCAL>
@@ -2058,11 +2058,11 @@ namespace ngcomp
                   }
                 
                 if (linearform)
-                  u += GetInnerSolve() * linearform->GetVector();
+                  u += *GetInnerSolve() * linearform->GetVector();
                 else
-                  u += GetInnerSolve() * f;
+                  u += *GetInnerSolve() * f;
                 
-                u += GetHarmonicExtension() * u;
+                u += *GetHarmonicExtension() * u;
                 cout << IM(1) << endl;
               }
             else
