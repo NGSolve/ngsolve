@@ -201,11 +201,17 @@ void T_ExportPml(py::module &m, py::class_<PML_TransformationDim<DIM>,PML_Transf
       });
 }*/
 
+typedef PyWrapper<CoefficientFunction> PyCF;
 typedef PyWrapper<PML_Transformation> PyPML;
 void ExportPml(py::module &m)
 {
   py::class_<PyPML>(m, "PML", "Base pml object")
     //.def("__str__",&ToString<PML_Transformation>)
+    .def_property_readonly("PMLCF", [](PyPML *instance)-> PyCF {
+        return PyCF(instance->MakePMLCF());
+        },
+        
+        "the pml coefficient function")
     ;
   /*
   py::class_<PML_TransformationDim<0>,PML_Transformation> class_pml0 (m, "PML0");

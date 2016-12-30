@@ -12,6 +12,8 @@
 namespace ngcomp
 {
 
+
+
   template <int DIM>
   class RadialPML_Transformation : public PML_TransformationDim<DIM>
   {
@@ -113,7 +115,7 @@ namespace ngcomp
     }
 
     void MapPoint (Vec<DIM> & hpoint, Vec<DIM,Complex> & point,
-                   Mat<DIM,DIM> & hjac, Mat<DIM,DIM,Complex> & jac) const
+                    Mat<DIM,DIM,Complex> & jac) const 
     {
       point = hpoint;
       jac = Id<DIM>();
