@@ -24,22 +24,30 @@ namespace ngcomp
     
     ~RadialPML_Transformation() {;}
 
-    PML_Transformation * CreateDim(int dim)
+    shared_ptr<PML_Transformation> CreateDim(int dim)
     {
       switch (dim)
       {
-        case 0:     
-          return new RadialPML_Transformation<0> (rad,alpha);
-
-        case 1:     
-          return new RadialPML_Transformation<1> (rad,alpha);
-        
-        case 2:
-          return new RadialPML_Transformation<2> (rad,alpha);
-        
-        case 3:
-          return new RadialPML_Transformation<3> (rad,alpha);
-
+        case 0:    
+          {
+          shared_ptr<PML_Transformation> out = make_shared<RadialPML_Transformation<0>> (rad,alpha);
+          return out;
+          }
+        case 1:    
+          {
+          shared_ptr<PML_Transformation> out = make_shared<RadialPML_Transformation<1>> (rad,alpha);
+          return out;
+          }
+        case 2:    
+          {
+          shared_ptr<PML_Transformation> out = make_shared<RadialPML_Transformation<2>> (rad,alpha);
+          return out;
+          }
+        case 3:    
+          {
+          shared_ptr<PML_Transformation> out = make_shared<RadialPML_Transformation<3>> (rad,alpha);
+          return out;
+          }
         default:
           throw Exception ("No valid Dimension");
 
@@ -47,13 +55,13 @@ namespace ngcomp
     }
 
     void MapPoint (Vec<DIM> & hpoint, Vec<DIM,Complex> & point,
-                   Mat<DIM,DIM> & hjac, Mat<DIM,DIM,Complex> & jac) const
+                   Mat<DIM,DIM,Complex> & jac) const
     {
       double abs_x = L2Norm (hpoint);
       if (abs_x <= rad)  
       {
         point = hpoint;
-        jac = hjac;
+        jac = Id<DIM>();
       }
       else
       {
@@ -64,40 +72,39 @@ namespace ngcomp
         Mat<DIM,DIM,Complex> trans =
           g * Id<DIM>() + (rad*alpha/(abs_x*abs_x*abs_x)) * 
           (hpoint * Trans(hpoint));
-        jac = trans * hjac;
+        jac = trans;
       }
 
     }
   };
-/* TODO
   template <int DIM>
   class CartesianPML_Transformation : public PML_TransformationDim<DIM>
   {
-    Matrix bounds;
+    Matrix<double> bounds;
     Complex alpha;
     public:
 
-    CartesianPML_Transformation(Matrix _bounds, Complex _alpha) 
+    CartesianPML_Transformation(Matrix<double> _bounds, Complex _alpha) 
       : bounds(_bounds), alpha(_alpha) { ; }
     
     ~CartesianPML_Transformation() {;}
 
-    PML_Transformation * CreateDim(int dim)
+    shared_ptr<PML_Transformation> CreateDim(int dim)
     {
       switch (dim)
       {
-        Matrix newbounds = 
+        bounds.SetSize(dim,2);
         case 0:     
-          return new CartesianPML_Transformation<0> (bounds,alpha);
+          return make_shared<CartesianPML_Transformation<0>> (bounds,alpha);
 
         case 1:     
-          return new CartesianPML_Transformation<1> (bounds,alpha);
+          return make_shared<CartesianPML_Transformation<1>> (bounds,alpha);
         
         case 2:
-          return new CartesianPML_Transformation<2> (bounds,alpha);
+          return make_shared<CartesianPML_Transformation<2>> (bounds,alpha);
         
         case 3:
-          return new CartesianPML_Transformation<3> (bounds,alpha);
+          return make_shared<CartesianPML_Transformation<3>> (bounds,alpha);
 
         default:
           throw Exception ("No valid Dimension");
@@ -108,28 +115,23 @@ namespace ngcomp
     void MapPoint (Vec<DIM> & hpoint, Vec<DIM,Complex> & point,
                    Mat<DIM,DIM> & hjac, Mat<DIM,DIM,Complex> & jac) const
     {
-      for (int j = 0 ; j < DIM; )
-
-      double abs_x = L2Norm (hpoint);
-      if (abs_x <= rad)  
+      point = hpoint;
+      jac = Id<DIM>();
+      for (int j : Range(DIM))
       {
-        point = hpoint;
-        jac = hjac;
+          if (hpoint[j]<bounds(j,0))
+          {
+            point[j]+=alpha*(hpoint[j]-bounds(j,0));
+            jac(j,j)-=alpha;
+          }
+          if (hpoint[j]>bounds(j,1))
+          {
+            point[j]+=alpha*(hpoint[j]-bounds(j,1));
+            jac(j,j)-=alpha;
+          }
       }
-      else
-      {
-        Complex g = 1.+alpha*(1.0-rad/abs_x);
-        point = g * hpoint;
-        // SZ: sollte da nicht abs_x * abs_x anstelle  abs_x*abs_x * abs_x stehen? 
-        // JS: das hat schon so gestimmt
-        Mat<DIM,DIM,Complex> trans =
-          g * Id<DIM>() + (rad*alpha/(abs_x*abs_x*abs_x)) * 
-          (hpoint * Trans(hpoint));
-        jac = trans * hjac;
-      }
-
     }
-  };*/
+  };
 }
 
 #endif
