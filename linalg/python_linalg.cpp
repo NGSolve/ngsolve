@@ -22,7 +22,7 @@ shared_ptr<BaseVector> CreateBaseVector(int size, bool is_complex, int es)
 }
 
 void NGS_DLL_HEADER ExportNgla(py::module &m) {
-    cout << IM(1) << "exporting linalg" << endl;
+  // cout << IM(1) << "exporting linalg" << endl;
     // TODO
 //     py::object expr_module = py::import("ngsolve.__expr");
 //     py::object expr_namespace = expr_module.attr("__dict__");

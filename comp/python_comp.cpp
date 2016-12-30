@@ -1792,13 +1792,11 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                      for (auto igt : self->Integrators())
                        igts.append (py::cast(PyWrapper<LinearFormIntegrator> (igt)));
                      return igts;
-                     // return py::cast (self->Integrators());
                    } ))
 
     .def("Assemble", FunctionPointer
          ([](PyLF self, int heapsize)
           { 
-            // LocalHeap lh(heapsize, "LinearForm::Assemble-heap", true);
             if (heapsize > global_heapsize)
               {
                 global_heapsize = heapsize;
@@ -1839,8 +1837,11 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
     .def_property_readonly("mat", FunctionPointer
                   ([](Preconditioner &self) -> PyWrapper<BaseMatrix>
                    {
+                     return self.GetMatrixPtr();
+                     /*
                      return shared_ptr<BaseMatrix> (const_cast<BaseMatrix*> (&self.GetMatrix()),
                                                     NOOP_Deleter);
+                     */
                    }))
     ;
 

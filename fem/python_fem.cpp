@@ -20,7 +20,7 @@ struct PythonCoefficientFunction : public CoefficientFunction {
   PythonCoefficientFunction() : CoefficientFunction(1,false) { ; }
 
     virtual double EvaluateXYZ (double x, double y, double z) const = 0;
-
+  
     py::list GetCoordinates(const BaseMappedIntegrationPoint &bip ) {
         double x[3]{0};
         int dim = bip.GetTransformation().SpaceDim();
