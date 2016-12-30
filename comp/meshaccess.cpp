@@ -394,11 +394,11 @@ namespace ngcomp
     }
 
     void MapPoint (Vec<DIMR> & hpoint, Vec<DIMR,Complex> & point,
-                   Mat<DIMR,DIMS> & hjac, Mat<DIMR,DIMS,Complex> & jac) const
+                   Mat<DIMS,DIMR> & hjac, Mat<DIMS,DIMR,Complex> & jac) const
     {
       Mat<DIMR,DIMR,Complex> tjac;
-      pml_global_trafo.MapPoint (hpoint, point, hjac, tjac);
-      jac=hjac*tjac;
+      pml_global_trafo.MapPoint (hpoint, point, tjac);
+      jac=tjac*hjac;
     }
 
     virtual BaseMappedIntegrationPoint & operator() (const IntegrationPoint & ip, Allocator & lh) const

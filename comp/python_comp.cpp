@@ -194,16 +194,50 @@ public:
 };
 static GlobalDummyVariables globvar;
 
-void NGS_DLL_HEADER ExportPml(py::module &m)
+/*template <int DIM>
+void T_ExportPml(py::module &m, py::class_<PML_TransformationDim<DIM>,PML_Transformation> & c) {
+  c.def("__init__",[](PML_TransformationDim<DIM> *instance){ 
+      new (instance) PML_TransformationDim<DIM>();
+      });
+}*/
+
+typedef PyWrapper<PML_Transformation> PyPML;
+void ExportPml(py::module &m)
 {
-  typedef PyWrapper<PML_Transformation> PyPML;
-  py::class_<PyPML>(m, "Radial", "radial pml scaling")
-    .def("__init__", [](PyPML *instance, double rad, Complex alpha) {
+  py::class_<PyPML>(m, "PML", "Base pml object")
+    //.def("__str__",&ToString<PML_Transformation>)
+    ;
+  /*
+  py::class_<PML_TransformationDim<0>,PML_Transformation> class_pml0 (m, "PML0");
+  T_ExportPml<0>(m,class_pml0);
+  py::class_<PML_TransformationDim<1>,PML_Transformation> class_pml1 (m, "PML1");
+  T_ExportPml<1>(m,class_pml1);
+  py::class_<PML_TransformationDim<2>,PML_Transformation> class_pml2 (m, "PML2");
+  T_ExportPml<2>(m,class_pml2);
+  py::class_<PML_TransformationDim<3>,PML_Transformation> class_pml3 (m, "PML3");
+  T_ExportPml<3>(m,class_pml3);
+*/
+  py::class_<RadialPML_Transformation<0>,PyPML>(m, "Radial", "radial pml scaling")
+    .def("__init__", [](RadialPML_Transformation<0> *instance, double rad, Complex alpha) {
         new (instance) RadialPML_Transformation<0>(rad,alpha);
         },
         py::arg("rad")=1, py::arg("alpha")=Complex(0,1))
-  ;
-    m.def("test2",[]() {cout << "test2\n";});  
+    ;
+
+  py::class_<CartesianPML_Transformation<0>,PyPML>(m, "Cartesian", "cartesian pml scaling")
+    .def("__init__", [](CartesianPML_Transformation<0> *instance, py::tuple mins,py::tuple maxs, Complex alpha) {
+          Matrix<double> bounds = 0;
+          bounds.SetSize(min(py::len(mins),py::len(maxs)),2);
+          for (int j :Range(bounds.Height()))
+            {
+              bounds(j,0)=py::extract<double>(mins[j])();
+              bounds(j,1)=py::extract<double>(maxs[j])();
+            }
+        new (instance) CartesianPML_Transformation<0>(bounds,alpha);
+        },
+        py::arg("mins"),py::arg("maxs"), py::arg("alpha"))
+    ;
+  //m.def("test2",[]() {cout << "test2\n";});  
   
 }
 
@@ -552,7 +586,24 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
           { ma.SetDeformation(gf.Get()); }))
     //old
     //.def("SetRadialPML", &MeshAccess::SetRadialPML)
-    .def("SetPML", &MeshAccess::SetPML)
+    .def("SetPML", FunctionPointer
+	 ([](MeshAccess & ma,  PML_Transformation & apml, int domnr)
+    {
+    cout << "setting pml in python_comp" << endl;
+    shared_ptr<PML_Transformation> spml = apml.CreateDim(ma.GetDimension());
+    ma.SetPML(spml,domnr);
+    }))
+    .def("UnsetPML", FunctionPointer
+	 ([](MeshAccess & ma, int domnr)
+    {
+    ma.SetPML(shared_ptr<PML_Transformation>(nullptr),domnr);
+    }))
+    .def("GetPMLTrafos", [](MeshAccess & ma) {
+      py::list pml_trafos(ma.GetNDomains());
+	    for (int i : Range(ma.GetNDomains()))
+	      pml_trafos[i] = py::cast((ma.GetPMLTrafos())[i]);
+	    return pml_trafos;
+        })
     .def("UnsetDeformation", FunctionPointer
 	 ([](MeshAccess & ma){ ma.SetDeformation(nullptr);}))
     

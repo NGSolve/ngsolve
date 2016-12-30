@@ -153,26 +153,30 @@ namespace ngcomp
     
     virtual ~PML_Transformation() { ; }
     
-    virtual PML_Transformation * CreateDim(int dim) = 0;
+    virtual shared_ptr<PML_Transformation> CreateDim(int dim) = 0; 
+   /* {
+        throw Exception("While creating dim: No PML Transformation specified\n");
+        return new PML_Transformation();
+    }*/
     
     virtual void MapPoint(Vec<0> & hpoint, Vec<0,Complex> & point,
-                   Mat<0,0> & hjac, Mat<0,0,Complex> & jac) const   
-    {
+                   Mat<0,0,Complex> & jac) const 
+    {    
       throw Exception("No PML Transformation specified\n");
     }
 
     virtual void MapPoint(Vec<1> & hpoint, Vec<1,Complex> & point,
-                   Mat<1,1> & hjac, Mat<1,1,Complex> & jac) const   
+                   Mat<1,1,Complex> & jac) const   
     {
       throw Exception("No PML Transformation specified\n");
     }
     virtual void MapPoint(Vec<2> & hpoint, Vec<2,Complex> & point,
-                   Mat<2,2> & hjac, Mat<2,2,Complex> & jac) const   
+                   Mat<2,2,Complex> & jac) const   
     {
       throw Exception("No PML Transformation specified\n");
     }
     virtual void MapPoint(Vec<3> & hpoint, Vec<3,Complex> & point,
-                   Mat<3,3> & hjac, Mat<3,3,Complex> & jac) const   
+                   Mat<3,3,Complex> & jac) const   
     {
       throw Exception("No PML Transformation specified\n");
     }
@@ -181,28 +185,28 @@ namespace ngcomp
   template <int DIM>
   class PML_TransformationDim : public PML_Transformation
   {
-
-    PML_Transformation * CreateDim(int dim)
-    {
+    public:
+    virtual shared_ptr<PML_Transformation> CreateDim(int dim)  = 0;
+/*    {
       switch (dim)
       {
         case 0:     
-          return new PML_TransformationDim<0> ();
+          return make_shared<PML_TransformationDim<0>> ();
 
         case 1:     
-          return new PML_TransformationDim<1> ();
+          return make_shared<PML_TransformationDim<1>> ();
         
         case 2:
-          return new PML_TransformationDim<2> ();
+          return make_shared<PML_TransformationDim<2>> ();
         
         case 3:
-          return new PML_TransformationDim<3> ();
+          return make_shared<PML_TransformationDim<3>> ();
 
         default:
           throw Exception ("No valid Dimension");
 
       }
-    }
+    }*/
 
     virtual void MapPoint (Vec<DIM> & hpoint, Vec<DIM,Complex> & point,
                    Mat<DIM,DIM> & hjac, Mat<DIM,DIM,Complex> & jac) const
@@ -264,22 +268,24 @@ namespace ngcomp
     /// for ALE
     shared_ptr<GridFunction> deformation;  
 
-    /// PML parameters, should not be necessary any more
+    /// PML parameters, should not be necessary any morea
+    /*
     Complex pml_alpha;
     double pml_r;
     double pml_x;
 
     double pml_xmin[3];
     double pml_xmax[3]; 
-
+    */
   /*
     rect_pml = 0 .... circular pml with radius pml_r
     rect_pml = 1 .... square pml on square (-pml_x, pml_x)^d
     rect_pml = 2 .... rectangular pml on (pml_xmin, pml_xmax) x (pml_ymin, pml_ymax) x (pml_zmin, pml_zmax)
   */
+    /*
     int rect_pml = -1;
     int pml_domain = -1;
-
+    */
     //new pml stuff
     Array<shared_ptr <PML_Transformation>> pml_trafos;
     
@@ -668,7 +674,26 @@ namespace ngcomp
 
     void SetPML (shared_ptr<PML_Transformation> pml_trafo, int _domnr)
     {
-       pml_trafos[_domnr] = shared_ptr<PML_Transformation>(pml_trafo->CreateDim(GetDimension())); 
+      if (_domnr>=ndomains)
+        cout << "was not able to set PML, domain index too high!" << endl;
+      if (pml_trafo)
+        pml_trafos[_domnr] = pml_trafo->CreateDim(GetDimension()); 
+      else
+        pml_trafos[_domnr] = nullptr;
+    }
+    
+    Array<shared_ptr<PML_Transformation>> & GetPMLTrafos()
+    { return pml_trafos; }
+
+    shared_ptr<PML_Transformation> GetPML(int _domnr)
+    {
+      if (_domnr>=ndomains)
+      {
+        cout << "was not able to get PML, domain index too high!" << endl;
+        return nullptr;
+      } 
+      else
+        return pml_trafos[_domnr];
     }
     
     shared_ptr<netgen::Mesh> GetNetgenMesh () const
