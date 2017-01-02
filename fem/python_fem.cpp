@@ -187,6 +187,35 @@ void ExportStdMathFunction(py::module &m, string name)
             });
 }
 
+
+namespace ngfem
+{
+  void ExportUnaryFunction2 (py::module & m, string name,
+                             std::function<shared_ptr<CoefficientFunction>(shared_ptr<CoefficientFunction>)> creator,
+                             std::function<double(double)> func_real,
+                             std::function<Complex(Complex)> func_complex)
+  {
+    m.def (name.c_str(),
+           [creator, func_real, func_complex] (py::object x) -> py::object
+           {
+             if (py::extract<PyCF>(x).check())
+               {
+                 auto coef = py::extract<PyCF>(x)();
+                 return py::cast(PyCF(creator(coef.Get())));
+             }
+             
+             py::extract<double> ed(x);
+             if (ed.check()) return py::cast(func_real(ed()));
+             if (py::extract<Complex> (x).check())
+               return py::cast(func_complex(py::extract<Complex> (x)()));
+             
+             throw py::type_error ("can't compute math-function");
+           });         
+  }
+}
+                          
+
+
 template <typename FUNC>
 void ExportStdMathFunction2(py::module &m, string name)
 {
