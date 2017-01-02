@@ -464,6 +464,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                      { return m.InverseMatrix(); })
     .def("Transpose", [](BM &m)-> PyWrapper<BaseMatrix>
                                        { return make_shared<Transpose> (m); })
+    .def("Update", [](BM &m) { m.Update(); })
     // py::return_value_policy<py::manage_new_object>())
     ;
     m.def("TestMult", [] (BaseMatrix &m, PyBaseVector &x, PyBaseVector &y) {
