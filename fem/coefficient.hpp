@@ -7,6 +7,7 @@
 /* Date:   25. Mar. 2000                                             */
 /*********************************************************************/
 
+namespace pybind11 { class module; };
 
 namespace ngfem
 {
@@ -1052,6 +1053,55 @@ shared_ptr<CoefficientFunction> UnaryOpCF(shared_ptr<CoefficientFunction> c1,
 {
   return shared_ptr<CoefficientFunction> (new cl_UnaryOpCF<OP,OPC> (c1, lam, lamc, name));
 }
+
+
+#ifdef NGS_PYTHON
+extern
+void ExportUnaryFunction2 (class pybind11::module & m, string name,
+                             std::function<shared_ptr<CoefficientFunction>(shared_ptr<CoefficientFunction>)> creator,
+                             std::function<double(double)> func_real,
+                             std::function<Complex(Complex)> func_complex);
+
+template <typename FUNC>
+void ExportUnaryFunction (class pybind11::module & m, string name)
+{
+  auto creator = [] (shared_ptr<CoefficientFunction> input) -> shared_ptr<CoefficientFunction>
+    {
+      FUNC func;
+      return UnaryOpCF (input, func, func);
+    };
+  
+  FUNC func;
+  ExportUnaryFunction2 (m, name, creator, func, func);
+}
+
+/*
+  // TODO: switch BinaryOpCF to AutoDiff 
+extern
+void ExportBinaryFunction2 (class pybind11::module & m, string name,
+                            std::function<shared_ptr<CoefficientFunction>(shared_ptr<CoefficientFunction>,
+                                                                          shared_ptr<CoefficientFunction>)> creator,
+                            std::function<double(double,double)> func_real,
+                            std::function<Complex(Complex,Complex)> func_complex);
+
+template <typename FUNC>
+void ExportBinaryFunction (class pybind11::module & m, string name)
+{
+  auto creator = [] (shared_ptr<CoefficientFunction> in1,
+                     shared_ptr<CoefficientFunction> in2) -> shared_ptr<CoefficientFunction>
+    {
+      FUNC func;
+      return BinaryOpCF (in1, in2, func, func, func, func, );
+    };
+  
+  FUNC func;
+  ExportBinaryFunction2 (m, name, creator, func, func);
+}
+*/
+#endif
+
+
+
 
   // extern int myglobalvar_eval;
   
