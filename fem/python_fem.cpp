@@ -212,6 +212,35 @@ namespace ngfem
              throw py::type_error ("can't compute math-function");
            });         
   }
+
+
+  void ExportBinaryFunction2 (py::module & m, string name,
+                              std::function<shared_ptr<CoefficientFunction>(shared_ptr<CoefficientFunction>,
+                                                                            shared_ptr<CoefficientFunction>)> creator,
+                              std::function<double(double,double)> func_real,
+                              std::function<Complex(Complex,Complex)> func_complex)
+  {
+    m.def (name.c_str(),
+           [creator, func_real, func_complex] (py::object x, py::object y) -> py::object
+           {
+             if (py::extract<PyCF>(x).check() && py::extract<PyCF>(y).check())
+               {
+                 auto coefx = py::extract<PyCF>(x)();
+                 auto coefy = py::extract<PyCF>(y)();
+                 return py::cast(PyCF(creator(coefx.Get(), coefy.Get())));
+             }
+             
+             py::extract<double> edx(x);
+             py::extract<double> edy(y);
+             if (edx.check() && edy.check()) return py::cast(func_real(edx(), edy()));
+             if (py::extract<Complex> (x).check() && py::extract<Complex> (y).check())
+               return py::cast(func_complex(py::extract<Complex> (x)(), py::extract<Complex> (y)()));
+             
+             throw py::type_error ("can't compute math-function");
+           });         
+  }
+
+
 }
                           
 
@@ -227,7 +256,7 @@ void ExportStdMathFunction2(py::module &m, string name)
              {
                auto cx = MakeCoefficient(x);
                auto cy = MakeCoefficient(y);
-               return py::cast(PyCF(BinaryOpCF(cx.Get(), cy.Get(), func, func, func, func,
+               return py::cast(PyCF(BinaryOpCF(cx.Get(), cy.Get(), func,
                                                [](bool a, bool b) { return a||b; }, 'X' /* FUNC::Name() */)));
              }
            py::extract<double> dx(x), dy(y);
@@ -291,19 +320,17 @@ struct GenericConj {
 
 struct GenericATan2 {
   double operator() (double x, double y) const { return atan2(x,y); }
-  double operator() (double x, double y, double & dx, double & dy) const { throw Exception ("atan2 deriv not available");  }
-  double operator() (double x, double y, double & ddx, double & dxdy, double & ddy ) const
-  { throw Exception ("atan2 dderiv not available");  }
-  template <typename T1, typename T2> T1 operator() (T1 x, T2 y) const { throw Exception ("atan2 not available");  }
+  template <typename T1, typename T2> T1 operator() (T1 x, T2 y) const
+  { throw Exception (string("atan2 not available for type ")+typeid(T1).name());  }
   static string Name() { return "atan2"; }
 };
 
 struct GenericPow {
   double operator() (double x, double y) const { return pow(x,y); }
-  double operator() (double x, double y, double & dx, double & dy) const { throw Exception ("pow deriv not available");  }
-  double operator() (double x, double y, double & ddx, double & dxdy, double & ddy ) const
-  { throw Exception ("pow dderiv not available");  }
-  template <typename T1, typename T2> T1 operator() (T1 x, T2 y) const { throw Exception ("pow not available");  }
+  template <typename T1, typename T2> T1 operator() (T1 x, T2 y) const
+  {
+    throw Exception (string("pow not available for type ")+typeid(T1).name());
+  }    
   static string Name() { return "pow"; }
 };
 

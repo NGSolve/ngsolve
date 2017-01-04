@@ -2464,7 +2464,7 @@ namespace ngfem
     Facet2SurfaceElementTrafo stransform(strafo.GetElementType(), SElVertices1); 
     
     IntegrationRule & ir_facet_vol1 = transform1(LocalFacetNr1, ir_facet, lh);
-    IntegrationRule & ir_facet_surf = stransform(ir_facet, lh);  // not yet used ???
+    // IntegrationRule & ir_facet_surf = stransform(ir_facet, lh);  // not yet used ???
     
     BaseMappedIntegrationRule & mir1 = trafo1(ir_facet_vol1, lh);
     mir1.ComputeNormalsAndMeasure (eltype1, LocalFacetNr1);          
@@ -2553,7 +2553,7 @@ namespace ngfem
     Facet2SurfaceElementTrafo stransform(strafo.GetElementType(), SElVertices1); 
     
     IntegrationRule & ir_facet_vol1 = transform1(LocalFacetNr1, ir_facet, lh);
-    IntegrationRule & ir_facet_surf = stransform(ir_facet, lh);  // not yet used ???
+    // IntegrationRule & ir_facet_surf = stransform(ir_facet, lh);  // not yet used ???
     
     BaseMappedIntegrationRule & mir1 = trafo1(ir_facet_vol1, lh);
     mir1.ComputeNormalsAndMeasure (eltype1, LocalFacetNr1);          
