@@ -1230,15 +1230,22 @@ public:
   template <typename T>
   void T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<T>> values) const
   {
-    size_t nv = ir.Size();
-    size_t mydim = Dimension();
-    STACK_ARRAY(SIMD<T>, hmem, nv*mydim);
-    FlatMatrix<SIMD<T>> temp(mydim, nv, &hmem[0]);
-    c1->Evaluate (ir, values);
-    c2->Evaluate (ir, temp);
-    for (size_t i = 0; i < mydim; i++)
-      for (size_t j = 0; j < nv; j++)
-        values(i,j) = lam (values(i,j), temp(i,j));
+    try
+      {
+        size_t nv = ir.Size();
+        size_t mydim = Dimension();
+        STACK_ARRAY(SIMD<T>, hmem, nv*mydim);
+        FlatMatrix<SIMD<T>> temp(mydim, nv, &hmem[0]);
+        c1->Evaluate (ir, values);
+        c2->Evaluate (ir, temp);
+        for (size_t i = 0; i < mydim; i++)
+          for (size_t j = 0; j < nv; j++)
+            values(i,j) = lam (values(i,j), temp(i,j));
+      }
+    catch (Exception e)
+      {
+        throw ExceptionNOSIMD (e.What());
+      }
   }
 
 
