@@ -124,12 +124,12 @@ namespace ngcomp
           if (hpoint[j]<bounds(j,0))
           {
             point[j]+=alpha*(hpoint[j]-bounds(j,0));
-            jac(j,j)-=alpha;
+            jac(j,j)+=alpha;
           }
           if (hpoint[j]>bounds(j,1))
           {
             point[j]+=alpha*(hpoint[j]-bounds(j,1));
-            jac(j,j)-=alpha;
+            jac(j,j)+=alpha;
           }
       }
     }
