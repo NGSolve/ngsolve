@@ -241,10 +241,23 @@ void ExportPml(py::module &m)
             }
         new (instance) CartesianPML_Transformation<0>(bounds,alpha);
         },
-        py::arg("mins"),py::arg("maxs"), py::arg("alpha"))
+        py::arg("mins"),py::arg("maxs"), py::arg("alpha")=Complex(0,1))
     ;
   //m.def("test2",[]() {cout << "test2\n";});  
   
+  py::class_<BrickRadialPML_Transformation<0>,PyPML>(m, "BrickRadial", "generalized radial pml scaling on a brick")
+    .def("__init__", [](BrickRadialPML_Transformation<0> *instance, py::tuple mins,py::tuple maxs, Complex alpha) {
+          Matrix<double> bounds = 0;
+          bounds.SetSize(min(py::len(mins),py::len(maxs)),2);
+          for (int j :Range(bounds.Height()))
+            {
+              bounds(j,0)=py::extract<double>(mins[j])();
+              bounds(j,1)=py::extract<double>(maxs[j])();
+            }
+        new (instance) BrickRadialPML_Transformation<0>(bounds,alpha);
+        },
+        py::arg("mins"),py::arg("maxs"), py::arg("alpha")=Complex(0,1))
+    ;
 }
 
 
