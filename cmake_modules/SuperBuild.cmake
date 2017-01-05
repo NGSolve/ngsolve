@@ -50,14 +50,26 @@ else(NETGEN_SOURCE_DIR)
   add_custom_target(check_submodules_stop ALL cmake -P cmake_modules/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} DEPENDS ngsolve)
   set(BUILD_NETGEN ON)
   set(NETGEN_DIR ${INSTALL_DIR})
+  set (NETGEN_CMAKE_ARGS)
+  set_vars( NETGEN_CMAKE_ARGS
+    USE_GUI
+    USE_PYTHON
+    USE_LAPACK
+    USE_MPI
+    USE_VT
+    USE_CCACHE
+    USE_NATIVE_ARCH
+    USE_OCC
+    INSTALL_DIR
+    INSTALL_DEPENDENCIES 
+    INTEL_MIC 
+    )
 
   ExternalProject_Add (netgen_project
     DEPENDS 
     SOURCE_DIR ${PROJECT_SOURCE_DIR}/external_dependencies/netgen
-    CMAKE_ARGS ${NETGEN_CMAKE_ARGS} -DCMAKE_PREFIX_PATH=${INSTALL_DIR}
+    CMAKE_ARGS ${NETGEN_CMAKE_ARGS} ${EXTRA_CMAKE_ARGS} -DCMAKE_PREFIX_PATH=${INSTALL_DIR}
     BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/netgen
-    BUILD_COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR}/netgen --config ${CMAKE_BUILD_TYPE}
-    STEP_TARGETS install
   )
 endif(NETGEN_SOURCE_DIR)
 
