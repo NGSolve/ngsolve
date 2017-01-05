@@ -49,6 +49,7 @@ else(NETGEN_SOURCE_DIR)
   add_custom_target(check_submodules_start ALL cmake -P cmake_modules/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} )
   add_custom_target(check_submodules_stop ALL cmake -P cmake_modules/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} DEPENDS ngsolve)
   set(BUILD_NETGEN ON)
+  set(INSTALL_DIR /opt/netgen CACHE PATH "Install path")
   set(NETGEN_DIR ${INSTALL_DIR})
   set (NETGEN_CMAKE_ARGS)
   set_vars( NETGEN_CMAKE_ARGS
@@ -63,13 +64,6 @@ else(NETGEN_SOURCE_DIR)
     INSTALL_DIR
     INSTALL_DEPENDENCIES 
     INTEL_MIC 
-    )
-
-  ExternalProject_Add (netgen_project
-    DEPENDS 
-    SOURCE_DIR ${PROJECT_SOURCE_DIR}/external_dependencies/netgen
-    CMAKE_ARGS ${NETGEN_CMAKE_ARGS} ${EXTRA_CMAKE_ARGS} -DCMAKE_PREFIX_PATH=${INSTALL_DIR}
-    BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/netgen
   )
 endif(NETGEN_SOURCE_DIR)
 
@@ -159,14 +153,24 @@ set_vars( NGSOLVE_CMAKE_ARGS
   INTEL_MIC 
   )
 
+if(BUILD_NETGEN)
+  ExternalProject_Add (netgen_project
+    SOURCE_DIR ${PROJECT_SOURCE_DIR}/external_dependencies/netgen
+    CMAKE_ARGS ${NETGEN_CMAKE_ARGS} ${EXTRA_CMAKE_ARGS} -DCMAKE_PREFIX_PATH=${INSTALL_DIR}
+    BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/netgen
+  )
+  list(APPEND DEPENDENCIES netgen_project)
+endif(BUILD_NETGEN)
+
 ExternalProject_Add (ngsolve
-  DEPENDS ${DEPENDENCIES} ${LAPACK_PROJECTS} netgen_project
+  DEPENDS ${DEPENDENCIES} ${LAPACK_PROJECTS}
   SOURCE_DIR ${PROJECT_SOURCE_DIR}
   CMAKE_ARGS ${NGSOLVE_CMAKE_ARGS} -DUSE_SUPERBUILD=OFF ${EXTRA_CMAKE_ARGS} -DCMAKE_PREFIX_PATH=${NETGEN_DIR}
   INSTALL_COMMAND ""
   BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/ngsolve
   STEP_TARGETS build
 )
+add_dependencies(ngsolve netgen_project)
 
 install(CODE "execute_process(COMMAND cmake --build . --target install WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ngsolve)")
 
