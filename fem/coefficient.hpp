@@ -1102,10 +1102,6 @@ public:
     });
   }
 
-  // virtual bool IsComplex() const { return is_complex; } // c1->IsComplex() || c2->IsComplex(); }
-  // virtual int Dimension() const { return dim; }
-  // virtual Array<int> Dimensions() const { return c1->Dimensions(); }
-  
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
   {
     c1->TraverseTree (func);
@@ -1124,7 +1120,6 @@ public:
   virtual Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const 
   {
     return lam (c1->EvaluateComplex(ip), c2->EvaluateComplex(ip));
-    // return lamc (c1->EvaluateComplex(ip), c2->EvaluateComplex(ip));
   }
 
   virtual double EvaluateConst () const
@@ -1150,7 +1145,16 @@ public:
   virtual void Evaluate(const BaseMappedIntegrationPoint & mip,
                         FlatVector<Complex> result) const
   {
-    size_t dim = Dimension();    
+    size_t dim = Dimension();
+    if (!is_complex)
+      {
+        STACK_ARRAY(double, hmem, dim);
+        FlatVector<> temp(dim, &hmem[0]);
+        Evaluate (mip, temp);
+        result = temp;
+        return;
+      }
+    
     STACK_ARRAY(double, hmem, 2*dim);
     FlatVector<Complex> temp(dim, hmem);
 
@@ -1158,7 +1162,6 @@ public:
     c2->Evaluate (mip, temp);
     for (int i = 0; i < result.Size(); i++)
       result(i) = lam (result(i), temp(i));
-      // result(i) = lamc (result(i), temp(i));
   }
 
 
@@ -1186,6 +1189,7 @@ public:
         FlatMatrix<> temp(ir.Size(), dim, &hmem[0]);
         Evaluate (ir, temp);
         result = temp;
+        return;
       }
 
         
@@ -1196,7 +1200,6 @@ public:
     c2->Evaluate (ir, temp);
     for (int i = 0; i < result.Height()*result.Width(); i++)
       result(i) = lam(result(i), temp(i));
-    // result(i) = lamc (result(i), temp(i));
   }
 
   /*

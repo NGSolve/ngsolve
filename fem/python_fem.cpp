@@ -327,6 +327,7 @@ struct GenericATan2 {
 
 struct GenericPow {
   double operator() (double x, double y) const { return pow(x,y); }
+  Complex operator() (Complex x, Complex y) const { return pow(x,y); }
   template <typename T1, typename T2> T1 operator() (T1 x, T2 y) const
   {
     throw Exception (string("pow not available for type ")+typeid(T1).name());
