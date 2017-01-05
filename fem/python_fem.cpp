@@ -183,7 +183,8 @@ void ExportStdMathFunction(py::module &m, string name)
               if (ed.check()) return py::cast(func(ed()));
               if (py::extract<Complex> (x).check())
                 return py::cast(func(py::extract<Complex> (x)()));
-              throw py::type_error ("can't compute math-function");
+              throw py::type_error (string("can't compute math-function, type = ")
+                                    + typeid(FUNC).name());
             });
 }
 
@@ -209,7 +210,7 @@ namespace ngfem
              if (py::extract<Complex> (x).check())
                return py::cast(func_complex(py::extract<Complex> (x)()));
              
-             throw py::type_error ("can't compute math-function");
+             throw py::type_error ("can't compute unary math-function");
            });         
   }
 
@@ -236,7 +237,7 @@ namespace ngfem
              if (py::extract<Complex> (x).check() && py::extract<Complex> (y).check())
                return py::cast(func_complex(py::extract<Complex> (x)(), py::extract<Complex> (y)()));
              
-             throw py::type_error ("can't compute math-function");
+             throw py::type_error ("can't compute binary math-function");
            });         
   }
 
@@ -261,9 +262,9 @@ void ExportStdMathFunction2(py::module &m, string name)
              }
            py::extract<double> dx(x), dy(y);
            if (dx.check() && dy.check()) return py::cast(func(dx(), dy()));
-           // py::extract<Complex> cx(x), cy(y);
-           // if (cx.check() && cy.check()) return py::cast(func(cx(), cy()));
-           throw py::type_error ("can't compute math-function");
+           py::extract<Complex> cx(x), cy(y);
+           if (cx.check() && cy.check()) return py::cast(func(cx(), cy()));
+           throw py::type_error (string("can't compute binary math-function")+typeid(FUNC).name());
          });
 }
 
