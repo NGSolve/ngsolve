@@ -739,8 +739,16 @@ namespace ngfem
   };
   */
 
+  void SymbolicBilinearFormIntegrator :: SetIntegrationRule (const IntegrationRule & _ir)
+  {
+    ir = _ir.Copy();
+    simd_ir = SIMD_IntegrationRule(ir);
+  }
+
+
   IntegrationRule SymbolicBilinearFormIntegrator :: GetIntegrationRule (const FiniteElement & fel) const
   {
+    if (ir.Size()) return ir;
     const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fel);
     const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : fel;
     const FiniteElement & fel_test = mixedfe ? mixedfe->FETest() : fel;
@@ -760,6 +768,7 @@ namespace ngfem
     
   SIMD_IntegrationRule SymbolicBilinearFormIntegrator :: Get_SIMD_IntegrationRule (const FiniteElement & fel) const
   {
+    if (simd_ir.Size()) return simd_ir.Clone();
     /*
     const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fel);
     const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : fel;
@@ -1358,8 +1367,8 @@ namespace ngfem
                         diagproxyvalues.Range(proxy1->Dimension()*IntRange(i,i+1)) *=
                           static_cast<const ScalMappedIntegrationPoint<SCAL>&> (mir[i]).GetJacobiDet()*ir[i].Weight();
                   }
-                IntRange r1 = proxy1->Evaluator()->UsedDofs(fel);
-                IntRange r2 = proxy2->Evaluator()->UsedDofs(fel);
+                IntRange r1 = proxy1->Evaluator()->UsedDofs(fel_trial);
+                IntRange r2 = proxy2->Evaluator()->UsedDofs(fel_test);
                 SliceMatrix<SCAL> part_elmat = elmat.Rows(r2).Cols(r1);
                 FlatMatrix<SCAL_SHAPES,ColMajor> bmat1(proxy1->Dimension(), elmat.Width(), lh);
                 FlatMatrix<SCAL_SHAPES,ColMajor> bmat2(proxy2->Dimension(), elmat.Height(), lh);
@@ -1379,10 +1388,10 @@ namespace ngfem
 
                     // tb.Start();
                     BaseMappedIntegrationRule & bmir = mir.Range(i, i+bs, lh);
-                    proxy1->Evaluator()->CalcMatrix(fel, bmir, Trans(bbmat1), lh);
+                    proxy1->Evaluator()->CalcMatrix(fel_trial, bmir, Trans(bbmat1), lh);
                     
                     if (!samediffop)
-                      proxy2->Evaluator()->CalcMatrix(fel, bmir, Trans(bbmat2), lh);
+                      proxy2->Evaluator()->CalcMatrix(fel_test, bmir, Trans(bbmat2), lh);
                     // tb.Stop();
 
                     // tdb.Start();
@@ -2455,7 +2464,7 @@ namespace ngfem
     Facet2SurfaceElementTrafo stransform(strafo.GetElementType(), SElVertices1); 
     
     IntegrationRule & ir_facet_vol1 = transform1(LocalFacetNr1, ir_facet, lh);
-    IntegrationRule & ir_facet_surf = stransform(ir_facet, lh);  // not yet used ???
+    // IntegrationRule & ir_facet_surf = stransform(ir_facet, lh);  // not yet used ???
     
     BaseMappedIntegrationRule & mir1 = trafo1(ir_facet_vol1, lh);
     mir1.ComputeNormalsAndMeasure (eltype1, LocalFacetNr1);          
@@ -2544,7 +2553,7 @@ namespace ngfem
     Facet2SurfaceElementTrafo stransform(strafo.GetElementType(), SElVertices1); 
     
     IntegrationRule & ir_facet_vol1 = transform1(LocalFacetNr1, ir_facet, lh);
-    IntegrationRule & ir_facet_surf = stransform(ir_facet, lh);  // not yet used ???
+    // IntegrationRule & ir_facet_surf = stransform(ir_facet, lh);  // not yet used ???
     
     BaseMappedIntegrationRule & mir1 = trafo1(ir_facet_vol1, lh);
     mir1.ComputeNormalsAndMeasure (eltype1, LocalFacetNr1);          

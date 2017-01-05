@@ -530,6 +530,7 @@ namespace ngcomp
     shared_ptr<S_BilinearForm<SCAL>> bfa;
     shared_ptr<FESpace> fes;
     shared_ptr<BDDCMatrix<SCAL,TV>> pre;
+    shared_ptr<BitArray> freedofs;
     string inversetype;
     string coarsetype;
     bool block, hypre;
@@ -576,9 +577,9 @@ namespace ngcomp
       ; // delete pre;
     }
     
-    virtual void InitLevel (shared_ptr<BitArray> /* freedofs */) 
+    virtual void InitLevel (shared_ptr<BitArray> _freedofs) 
     {
-      // delete pre;
+      freedofs = _freedofs;
       pre = make_shared<BDDCMatrix<SCAL,TV>>(bfa, flags, inversetype, coarsetype, block, hypre);
       pre -> SetHypre (hypre);
     }
@@ -654,12 +655,12 @@ namespace ngcomp
 
     int used = 0;
     for (int i : Range(dnums))
-      if (dnums[i] != -1 && fes->GetFreeDofs()->Test(dnums[i])) used++;
+      if (dnums[i] != -1 && freedofs->Test(dnums[i])) used++;
     
     FlatArray<int> compress(used, lh);
     int cnt = 0;
     for (int i : Range(dnums))
-      if (dnums[i] != -1 && fes->GetFreeDofs()->Test(dnums[i])) 
+      if (dnums[i] != -1 && freedofs->Test(dnums[i]))
         compress[cnt++] = i;
 
     FlatArray<int> hdnums(used, lh);

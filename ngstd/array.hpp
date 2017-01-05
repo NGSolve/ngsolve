@@ -1002,18 +1002,18 @@ namespace ngstd
   { return tup.Head().Size()+ArraySize(tup.Tail()); }
 
   
-  template <typename ... ARGS>
-  void StoreToArray (FlatArray<int> a, Tuple<ARGS...> tup) { ; }
+  template <typename T, typename ... ARGS>
+  void StoreToArray (FlatArray<T> a, Tuple<ARGS...> tup) { ; }
   
-  template <typename ... ARGS>
-  void StoreToArray (FlatArray<int> a, Tuple<int,ARGS...> tup)
+  template <typename T, typename ... ARGS>
+  void StoreToArray (FlatArray<T> a, Tuple<int,ARGS...> tup)
   {
     a[0] = tup.Head();
     StoreToArray (a.Range(1, a.Size()), tup.Tail());
   }
   
-  template <typename ... ARGS>
-  void StoreToArray (FlatArray<int> a, Tuple<IntRange,ARGS...> tup)
+  template <typename T, typename ... ARGS>
+  void StoreToArray (FlatArray<T> a, Tuple<IntRange,ARGS...> tup)
   {
     IntRange r = tup.Head();
     a.Range(0,r.Size()) = r;
@@ -1046,15 +1046,15 @@ namespace ngstd
   */
   
 
-  template <typename T2>
-  inline Array<int> & operator+= (Array<int> & array, const BaseArrayObject<T2> & a2)
+  template <typename T, typename T2>
+  inline Array<T> & operator+= (Array<T> & array, const BaseArrayObject<T2> & a2)
   {
-    int oldsize = array.Size();
-    int s = a2.Spec().Size();
+    size_t oldsize = array.Size();
+    size_t s = a2.Spec().Size();
     
     array.SetSize (oldsize+s);
 
-    for (int i = 0; i < s; i++)
+    for (size_t i = 0; i < s; i++)
       array[oldsize+i] = a2.Spec()[i];
 
     return array;
@@ -1068,8 +1068,8 @@ namespace ngstd
   inline void BubbleSort (const FlatArray<T> & data)
   {
     T hv;
-    for (int i = 0; i < data.Size(); i++)
-      for (int j = i+1; j < data.Size(); j++)
+    for (size_t i = 0; i < data.Size(); i++)
+      for (size_t j = i+1; j < data.Size(); j++)
         if (data[i] > data[j])
           {
             hv = data[i];
@@ -1082,8 +1082,8 @@ namespace ngstd
   template <class T, class S>
   inline void BubbleSort (FlatArray<T> & data, FlatArray<S> & slave)
   {
-    for (int i = 0; i < data.Size(); i++)
-      for (int j = i+1; j < data.Size(); j++)
+    for (size_t i = 0; i < data.Size(); i++)
+      for (size_t j = i+1; j < data.Size(); j++)
 	if (data[i] > data[j])
 	  {
 	    T hv = data[i];

@@ -237,18 +237,18 @@ namespace ngcomp
 
     /// reconstruct internal dofs from static condensation 
     /// -A_ii^{-1} A_ib
-    virtual BaseMatrix & GetHarmonicExtension () const = 0;
+    virtual shared_ptr<BaseMatrix> GetHarmonicExtension () const = 0;
 
     /// modify rhs doue to static condensation.
     /// -A_bi A_ii^{-1} 
     /// stored only for non-symmetric biforms
-    virtual BaseMatrix & GetHarmonicExtensionTrans () const = 0;
+    virtual shared_ptr<BaseMatrix> GetHarmonicExtensionTrans () const = 0;
 
     /// returns inverse of A_ii
-    virtual BaseMatrix & GetInnerSolve () const = 0;
+    virtual shared_ptr<BaseMatrix> GetInnerSolve () const = 0;
 
     /// returns A_ii
-    virtual BaseMatrix & GetInnerMatrix () const = 0;
+    virtual shared_ptr<BaseMatrix> GetInnerMatrix () const = 0;
 
     /// is there a low-order biform ?
     bool HasLowOrderBilinearForm () const { return low_order_bilinear_form != NULL; }
@@ -516,24 +516,24 @@ namespace ngcomp
 				       LocalHeap & lh);
 
 
-    BaseMatrix & GetHarmonicExtension () const 
+    shared_ptr<BaseMatrix> GetHarmonicExtension () const 
     { 
-      return *harmonicext; 
+      return harmonicext; 
     }
     ///  
-    BaseMatrix & GetHarmonicExtensionTrans () const
+    shared_ptr<BaseMatrix> GetHarmonicExtensionTrans () const
     { 
-      return *harmonicexttrans; 
+      return harmonicexttrans; 
     }
     ///  
-    BaseMatrix & GetInnerSolve () const
+    shared_ptr<BaseMatrix> GetInnerSolve () const
     { 
-      return *innersolve; 
+      return innersolve; 
     }
     ///  
-    BaseMatrix & GetInnerMatrix () const
+    shared_ptr<BaseMatrix> GetInnerMatrix () const
     { 
-      return *innermatrix; 
+      return innermatrix; 
     }
 
     /*
@@ -779,14 +779,14 @@ namespace ngcomp
 					   BaseVector & y) const 
     { throw Exception ("comp-bf - AddMatrix is illegal"); }
 
-    virtual BaseMatrix & GetHarmonicExtension () const 
+    virtual shared_ptr<BaseMatrix> GetHarmonicExtension () const 
     { throw Exception ("comp-bf - GetHarmonicExt is illegal"); }
 
-    virtual BaseMatrix & GetHarmonicExtensionTrans () const
+    virtual shared_ptr<BaseMatrix> GetHarmonicExtensionTrans () const
     { throw Exception ("comp-bf - GetHarmonicExtTrans is illegal"); } 
-    virtual BaseMatrix & GetInnerSolve () const 
+    virtual shared_ptr<BaseMatrix> GetInnerSolve () const 
     { throw Exception ("comp-bf - GetInnerSolve is illegal"); } 
-    virtual BaseMatrix & GetInnerMatrix () const
+    virtual shared_ptr<BaseMatrix> GetInnerMatrix () const
     { throw Exception ("comp-bf - GetInnerMatrix is illegal"); } 
     virtual void ComputeInternal (BaseVector & u, const BaseVector & f, LocalHeap & lh) const
     { throw Exception ("comp-bf - ComputeInternal is illegal"); } 
