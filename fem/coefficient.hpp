@@ -7,6 +7,7 @@
 /* Date:   25. Mar. 2000                                             */
 /*********************************************************************/
 
+namespace pybind11 { class module; };
 
 namespace ngfem
 {
@@ -1053,17 +1054,18 @@ shared_ptr<CoefficientFunction> UnaryOpCF(shared_ptr<CoefficientFunction> c1,
   return shared_ptr<CoefficientFunction> (new cl_UnaryOpCF<OP,OPC> (c1, lam, lamc, name));
 }
 
+
+
+
+
   // extern int myglobalvar_eval;
   
-  template <typename OP, typename OPC, typename DERIV, typename DDERIV, typename NONZERO> 
-  class cl_BinaryOpCF : public T_CoefficientFunction<cl_BinaryOpCF<OP,OPC,DERIV,DDERIV,NONZERO>>
+  template <typename OP, typename NONZERO> 
+  class cl_BinaryOpCF : public T_CoefficientFunction<cl_BinaryOpCF<OP,NONZERO>>
 {
-  typedef T_CoefficientFunction<cl_BinaryOpCF<OP,OPC,DERIV,DDERIV,NONZERO>> BASE;
+  typedef T_CoefficientFunction<cl_BinaryOpCF<OP,NONZERO>> BASE;
   shared_ptr<CoefficientFunction> c1, c2;
   OP lam;
-  OPC lamc;
-  DERIV lam_deriv;
-  DDERIV lam_dderiv;
   NONZERO lam_nonzero;
   // int dim;
   char opname;
@@ -1075,17 +1077,15 @@ shared_ptr<CoefficientFunction> UnaryOpCF(shared_ptr<CoefficientFunction> c1,
 public:
   cl_BinaryOpCF (shared_ptr<CoefficientFunction> ac1, 
                  shared_ptr<CoefficientFunction> ac2, 
-                 OP alam, OPC alamc, DERIV alam_deriv, DDERIV alam_dderiv, NONZERO alam_nonzero, char aopname)
+                 OP alam, NONZERO alam_nonzero, char aopname)
     : BASE(ac1->Dimension(), ac1->IsComplex() || ac2->IsComplex()),
-      c1(ac1), c2(ac2), lam(alam), lamc(alamc),
-      lam_deriv(alam_deriv), lam_dderiv(alam_dderiv),
+      c1(ac1), c2(ac2), lam(alam),
       lam_nonzero(alam_nonzero),
       opname(aopname)
   {
     int dim1 = c1->Dimension();
     int dim2 = c2->Dimension();
     if (dim1 != dim2) throw Exception ("Dimensions don't match");
-    // dim = dim1;
     is_complex = c1->IsComplex() || c2->IsComplex();
     SetDimensions (c1->Dimensions());
   }
@@ -1102,10 +1102,6 @@ public:
     });
   }
 
-  // virtual bool IsComplex() const { return is_complex; } // c1->IsComplex() || c2->IsComplex(); }
-  // virtual int Dimension() const { return dim; }
-  // virtual Array<int> Dimensions() const { return c1->Dimensions(); }
-  
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
   {
     c1->TraverseTree (func);
@@ -1123,7 +1119,7 @@ public:
 
   virtual Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const 
   {
-    return lamc (c1->EvaluateComplex(ip), c2->EvaluateComplex(ip));
+    return lam (c1->EvaluateComplex(ip), c2->EvaluateComplex(ip));
   }
 
   virtual double EvaluateConst () const
@@ -1149,14 +1145,23 @@ public:
   virtual void Evaluate(const BaseMappedIntegrationPoint & mip,
                         FlatVector<Complex> result) const
   {
-    size_t dim = Dimension();    
+    size_t dim = Dimension();
+    if (!is_complex)
+      {
+        STACK_ARRAY(double, hmem, dim);
+        FlatVector<> temp(dim, &hmem[0]);
+        Evaluate (mip, temp);
+        result = temp;
+        return;
+      }
+    
     STACK_ARRAY(double, hmem, 2*dim);
     FlatVector<Complex> temp(dim, hmem);
 
     c1->Evaluate (mip, result);
     c2->Evaluate (mip, temp);
     for (int i = 0; i < result.Size(); i++)
-      result(i) = lamc (result(i), temp(i));
+      result(i) = lam (result(i), temp(i));
   }
 
 
@@ -1184,6 +1189,7 @@ public:
         FlatMatrix<> temp(ir.Size(), dim, &hmem[0]);
         Evaluate (ir, temp);
         result = temp;
+        return;
       }
 
         
@@ -1193,7 +1199,7 @@ public:
     c1->Evaluate (ir, result);
     c2->Evaluate (ir, temp);
     for (int i = 0; i < result.Height()*result.Width(); i++)
-      result(i) = lamc (result(i), temp(i));
+      result(i) = lam(result(i), temp(i));
   }
 
   /*
@@ -1227,20 +1233,28 @@ public:
   template <typename T>
   void T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<T>> values) const
   {
-    size_t nv = ir.Size();
-    size_t mydim = Dimension();
-    STACK_ARRAY(SIMD<T>, hmem, nv*mydim);
-    FlatMatrix<SIMD<T>> temp(mydim, nv, &hmem[0]);
-    c1->Evaluate (ir, values);
-    c2->Evaluate (ir, temp);
-    for (size_t i = 0; i < mydim; i++)
-      for (size_t j = 0; j < nv; j++)
-        values(i,j) = lam (values(i,j), temp(i,j));
+    try
+      {
+        size_t nv = ir.Size();
+        size_t mydim = Dimension();
+        STACK_ARRAY(SIMD<T>, hmem, nv*mydim);
+        FlatMatrix<SIMD<T>> temp(mydim, nv, &hmem[0]);
+        c1->Evaluate (ir, values);
+        c2->Evaluate (ir, temp);
+        for (size_t i = 0; i < mydim; i++)
+          for (size_t j = 0; j < nv; j++)
+            values(i,j) = lam (values(i,j), temp(i,j));
+      }
+    catch (Exception e)
+      {
+        throw ExceptionNOSIMD (e.What());
+      }
   }
 
 
   
-  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
+                         FlatArray<AFlatMatrix<double>*> input,
                          AFlatMatrix<double> values) const
   {
     auto in0 = *input[0];
@@ -1260,7 +1274,6 @@ public:
       for (int i = 0; i < result.Width(); i++)
         result(k,i) = lam (ra(k,i), rb(k,i));
     */
-    // myglobalvar_eval++;
     for (int i = 0; i < result.Height()*result.Width(); i++)
       result(i) = lam (ra(i), rb(i));
   }
@@ -1286,10 +1299,20 @@ public:
     for (int k = 0; k < mir.Size(); k++)
       for (int i = 0; i < result.Width(); i++)
         {
+          AutoDiff<1> a(ra(k,i));
+          a.DValue(0) = da(k,i);
+          AutoDiff<1> b(rb(k,i));
+          b.DValue(0) = db(k,i);
+
+          AutoDiff<1> res = lam(a,b);
+          result(k,i) = res.Value();
+          deriv(k,i) = res.DValue(0);
+          /*
           result(k,i) = lam (ra(k,i), rb(k,i));
           double dda, ddb;
           lam_deriv (ra(k,i), rb(k,i), dda, ddb);
           deriv(k,i) = dda * da(k,i) + ddb * db(k,i);
+          */
         }
   }
 
@@ -1318,6 +1341,18 @@ public:
     for (int k = 0; k < mir.Size(); k++)
       for (int i = 0; i < dim; i++)
         {
+          AutoDiffDiff<1> a(ra(k,i));
+          a.DValue(0) = da(k,i);
+          a.DDValue(0) = dda(k,i);
+          AutoDiffDiff<1> b(rb(k,i));
+          b.DValue(0) = db(k,i);
+          b.DDValue(0) = ddb(k,i);
+
+          AutoDiffDiff<1> res = lam(a,b);
+          result(k,i) = res.Value();
+          deriv(k,i) = res.DValue(0);
+          dderiv(k,i) = res.DValue(0);
+          /*
           result(k,i) = lam (ra(k,i), rb(k,i));
           double d_da, d_db;
           lam_deriv (ra(k,i), rb(k,i), d_da, d_db);
@@ -1328,6 +1363,7 @@ public:
           
           dderiv(k,i) = d_da * dda(k,i) + d_db * ddb(k,i) +
             d_dada * da(k,i)*da(k,i) + 2 * d_dadb * da(k,i)*db(k,i) + d_dbdb * db(k,i) * db(k,i);
+          */
         }
   }
   
@@ -1344,10 +1380,20 @@ public:
     for (int k = 0; k < mir.Size(); k++)
       for (int i = 0; i < result.Width(); i++)
         {
+          AutoDiff<1> a(ra(k,i));
+          a.DValue(0) = da(k,i);
+          AutoDiff<1> b(rb(k,i));
+          b.DValue(0) = db(k,i);
+
+          AutoDiff<1> res = lam(a,b);
+          result(k,i) = res.Value();
+          deriv(k,i) = res.DValue(0);
+          /*
           result(k,i) = lam (ra(k,i), rb(k,i));
           double dda, ddb;
           lam_deriv (ra(k,i), rb(k,i), dda, ddb);
           deriv(k,i) = dda * da(k,i) + ddb * db(k,i);
+          */
         }
   }
 
@@ -1368,6 +1414,17 @@ public:
     for (int k = 0; k < mir.Size(); k++)
       for (int i = 0; i < dim; i++)
         {
+          AutoDiffDiff<1> a(ra(k,i));
+          a.DValue(0) = da(k,i);
+          a.DDValue(0) = dda(k,i);
+          AutoDiffDiff<1> b(rb(k,i));
+          b.DValue(0) = db(k,i);
+          b.DDValue(0) = ddb(k,i);
+          AutoDiffDiff<1> res = lam(a,b);
+          result(k,i) = res.Value();
+          deriv(k,i) = res.DValue(0);
+          dderiv(k,i) = res.DDValue(0);          
+          /*
           result(k,i) = lam (ra(k,i), rb(k,i));
           double d_da, d_db;
           lam_deriv (ra(k,i), rb(k,i), d_da, d_db);
@@ -1378,6 +1435,7 @@ public:
           
           dderiv(k,i) = d_da * dda(k,i) + d_db * ddb(k,i) +
             d_dada * da(k,i)*da(k,i) + 2 * d_dadb * da(k,i)*db(k,i) + d_dbdb * db(k,i) * db(k,i);
+          */
         }
   }
   
@@ -1520,17 +1578,65 @@ public:
 
 };
 
-  template <typename OP, typename OPC, typename DERIV, typename DDERIV, typename NONZERO> 
+  template <typename OP, typename NONZERO> 
 INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction> c1, 
                                                   shared_ptr<CoefficientFunction> c2, 
-                                                  OP lam, OPC lamc, DERIV lam_deriv,
-                                                  DDERIV lam_dderiv,
+                                                  OP lam,
                                                   NONZERO lam_nonzero,
                                                   char opname)
 {
-  return shared_ptr<CoefficientFunction> (new cl_BinaryOpCF<OP,OPC,DERIV,DDERIV,NONZERO> 
-                                          (c1, c2, lam, lamc, lam_deriv, lam_dderiv, lam_nonzero, opname));
+  return shared_ptr<CoefficientFunction> (new cl_BinaryOpCF<OP,NONZERO> 
+                                          (c1, c2, lam, lam_nonzero, opname));
 }
+
+
+
+
+#ifdef NGS_PYTHON
+extern
+void ExportUnaryFunction2 (class pybind11::module & m, string name,
+                             std::function<shared_ptr<CoefficientFunction>(shared_ptr<CoefficientFunction>)> creator,
+                             std::function<double(double)> func_real,
+                             std::function<Complex(Complex)> func_complex);
+
+template <typename FUNC>
+void ExportUnaryFunction (class pybind11::module & m, string name)
+{
+  auto creator = [] (shared_ptr<CoefficientFunction> input) -> shared_ptr<CoefficientFunction>
+    {
+      FUNC func;
+      return UnaryOpCF (input, func, func);
+    };
+  
+  FUNC func;
+  ExportUnaryFunction2 (m, name, creator, func, func);
+}
+
+
+
+extern
+void ExportBinaryFunction2 (class pybind11::module & m, string name,
+                            std::function<shared_ptr<CoefficientFunction>(shared_ptr<CoefficientFunction>,
+                                                                          shared_ptr<CoefficientFunction>)> creator,
+                            std::function<double(double,double)> func_real,
+                            std::function<Complex(Complex,Complex)> func_complex);
+
+template <typename FUNC>
+void ExportBinaryFunction (class pybind11::module & m, string name)
+{
+  auto creator = [] (shared_ptr<CoefficientFunction> in1,
+                     shared_ptr<CoefficientFunction> in2) -> shared_ptr<CoefficientFunction>
+    {
+      FUNC func;
+      return BinaryOpCF (in1, in2, func, 
+                         [](bool a, bool b) { return a||b; }, '+');
+    };
+  
+  FUNC func;
+  ExportBinaryFunction2 (m, name, creator, func, func);
+}
+#endif
+
 
   extern shared_ptr<CoefficientFunction>
   MakeComponentCoefficientFunction (shared_ptr<CoefficientFunction> c1, int comp);

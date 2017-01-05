@@ -58,7 +58,7 @@ public:
   virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
 
   ///
-  virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const;
+  virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const;
   ///
   int EdgePoint1 (int ednr) const { return edgepoints[ednr][0]; }
   ///
@@ -121,10 +121,10 @@ public:
   }
 
 
-  virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const;
-  virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const;
-  virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const;
-  virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const;
+  virtual void GetVertexDofNrs (int vnr, Array<DofId> & dnums) const;
+  virtual void GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const;
+  virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const;
+  virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const;
 };
 
 
@@ -200,7 +200,7 @@ public:
   virtual size_t GetNDofLevel (int level) const;
 
   ///
-  virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const;
+  virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const;
 
   using FESpace::GetFE;
   virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
@@ -268,10 +268,10 @@ public:
   virtual Array<int> * CreateDirectSolverClusters (const Flags & flags) const;
 
 
-  virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const;
-  virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const;
-  virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const;
-  virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const;
+  virtual void GetVertexDofNrs (int vnr, Array<DofId> & dnums) const;
+  virtual void GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const;
+  virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const;
+  virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const;
 
 //  void AddGradient (double fac, const BaseVector & pot, BaseVector & grad) const;
 //  void ApplyGradientT (const BaseVector & gradt, BaseVector & pott) const;

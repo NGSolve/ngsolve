@@ -1810,6 +1810,36 @@ namespace ngcomp
     }
   };
 
+  template <int DIM_SPC>  
+  class DiffOpDivVectorH1 : public DiffOp<DiffOpDivVectorH1<DIM_SPC> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = DIM_SPC };
+    enum { DIM_ELEMENT = DIM_SPC };
+    enum { DIM_DMAT = 1 };
+    enum { DIFFORDER = 0 };
+
+    static string Name() { return "div"; }
+    
+    template <typename FEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const FEL & bfel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & feli = static_cast<const ScalarFiniteElement<DIM_SPC>&> (fel[0]);
+      
+      mat = 0.0;
+      size_t n1 = feli.GetNDof();
+      FlatMatrix<> tmp(n1, DIM_SPC, lh);
+      feli.CalcMappedDShape (mip, tmp);
+      
+      for (int i = 0; i < DIM_SPC; i++)
+        mat.Row(0).Range(i*n1, (i+1)*n1) = tmp.Col(i);
+    }
+  };
+
+  
   template <int D>
   class NGS_DLL_HEADER VectorH1MassIntegrator 
     : public T_BDBIntegrator<DiffOpIdVectorH1<D>, DiagDMat<D> >
@@ -1839,7 +1869,8 @@ namespace ngcomp
     {
       SymbolTable<shared_ptr<DifferentialOperator>> additional;
       
-      additional.Set ("divfree_reconstruction", make_shared<T_DifferentialOperator<DiffOpDivFreeReconstructVectorH1<2>>> ()); 
+      additional.Set ("div", make_shared<T_DifferentialOperator<DiffOpDivVectorH1<2>>> ()); 
+      additional.Set ("divfree_reconstruction", make_shared<T_DifferentialOperator<DiffOpDivFreeReconstructVectorH1<2>>> ());
       
       return additional;
     }

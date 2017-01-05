@@ -1604,17 +1604,15 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
            py::arg("flags") = py::dict())
     
     .def("__init__",
-         [](PyBF *instance, PyFES fespace, PyFES fespace2,
-                              string name, bool symmetric, py::dict bpflags)
+         [](PyBF *instance, PyFES trial_space, PyFES test_space,
+                              string name, py::dict bpflags)
                            {
                              Flags flags = py::extract<Flags> (bpflags)();
-                             if (symmetric) flags.SetFlag("symmetric");
-                             new (instance) PyBF(CreateBilinearForm (fespace.Get(), fespace2.Get(), name, flags));
+                             new (instance) PyBF(CreateBilinearForm (trial_space.Get(), test_space.Get(), name, flags));
                            },
-           py::arg("space"),
-           py::arg("space2"),
+           py::arg("trialspace"),
+           py::arg("testspace"),
            py::arg("name")="bfa", 
-           py::arg("symmetric") = false,
            py::arg("flags") = py::dict())
 
     .def("__str__", FunctionPointer( []( PyBF & self ) { return ToString<BilinearForm>(*self.Get()); } ))
@@ -1625,7 +1623,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
          "add integrator to bilinear-form")
     
     .def("__iadd__",FunctionPointer
-                  ([](PyBF self, PyWrapper<BilinearFormIntegrator> & other) { *self.Get()+=other.Get(); return self; } ))
+                  ([](PyBF self, PyWrapper<BilinearFormIntegrator> other) { *self += other.Get(); return self; } ))
 
     .def_property_readonly("integrators", FunctionPointer
                   ([](PyBF & self)
@@ -1634,12 +1632,10 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                      for (auto igt : self->Integrators())
                        igts.append (py::cast(PyWrapper<BilinearFormIntegrator> (igt)));
                      return igts;
-                     // return py::cast (self->Integrators());
                    } ))
     
     .def("Assemble", FunctionPointer([](PyBF & self, int heapsize, bool reallocate)
                                      {
-                                       // LocalHeap lh (heapsize, "BilinearForm::Assemble-heap", true);
                                        if (heapsize > global_heapsize)
                                          {
                                            global_heapsize = heapsize;
@@ -1649,7 +1645,6 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                                      }),
          py::arg("heapsize")=1000000,py::arg("reallocate")=false)
 
-    // .def_property_readonly("mat", static_cast<shared_ptr<BaseMatrix>(BilinearForm::*)()const> (&BilinearForm::GetMatrixPtr))
     .def_property_readonly("mat", FunctionPointer([](PyBF & self) -> PyBaseMatrix
                                          {
                                            auto mat = self->GetMatrixPtr();
@@ -1690,16 +1685,15 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
             return InnerProduct (au, v.GetVector());
           }))
 
-    // .def("Energy", &BilinearForm::Energy)
     .def("Energy",FunctionPointer
          ([](PyBF & self, PyBaseVector & x)
           {
             return self->Energy(*x);
           }))
+    
     .def("Apply", FunctionPointer
 	 ([](PyBF & self, PyBaseVector & x, PyBaseVector & y, int heapsize)
 	  {
-	    // static LocalHeap lh (heapsize, "BilinearForm::Apply", true);
             if (heapsize > global_heapsize)
               {
                 global_heapsize = heapsize;
@@ -1708,18 +1702,22 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 	    self->ApplyMatrix (*x, *y, glh);
 	  }),
          py::arg("x"),py::arg("y"),py::arg("heapsize")=1000000)
+
     .def("ComputeInternal", FunctionPointer
 	 ([](PyBF & self, PyBaseVector & u, PyBaseVector & f, int heapsize)
 	  {
-	    LocalHeap lh (heapsize, "BilinearForm::ComputeInternal");
-	    self->ComputeInternal (*u ,*f ,lh );
+            if (heapsize > global_heapsize)
+              {
+                global_heapsize = heapsize;
+                glh = LocalHeap(heapsize, "python-comp lh", true);
+              }
+	    self->ComputeInternal (*u, *f, glh );
 	  }),
          py::arg("u"),py::arg("f"),py::arg("heapsize")=1000000)
 
     .def("AssembleLinearization", FunctionPointer
 	 ([](PyBF & self, PyBaseVector & ulin, int heapsize)
 	  {
-	    // LocalHeap lh (heapsize, "BilinearForm::Assemble-heap", true);
             if (heapsize > global_heapsize)
               {
                 global_heapsize = heapsize;
@@ -1734,25 +1732,23 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
           {
             return PyCF(make_shared<GridFunctionCoefficientFunction> (gf, self->GetIntegrator(0)));
           }))
+    
     .def_property_readonly("harmonic_extension", FunctionPointer
                   ([](PyBF & self) -> PyBaseMatrix
                    {
-                     return shared_ptr<BaseMatrix> (&self->GetHarmonicExtension(),
-                                                    &NOOP_Deleter);
+                     return self->GetHarmonicExtension();
                    })
                   )
     .def_property_readonly("harmonic_extension_trans", FunctionPointer
                   ([](PyBF & self) -> PyBaseMatrix
                    {
-                     return shared_ptr<BaseMatrix> (&self->GetHarmonicExtensionTrans(),
-                                                    &NOOP_Deleter);
+                     return self->GetHarmonicExtensionTrans();
                    })
                   )
     .def_property_readonly("inner_solve", FunctionPointer
                   ([](PyBF & self) -> PyBaseMatrix
                    {
-                     return shared_ptr<BaseMatrix> (&self->GetInnerSolve(),
-                                                    &NOOP_Deleter);
+                     return self->GetInnerSolve();
                    })
                   )
     ;
@@ -1773,7 +1769,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                            },
           py::arg("space"), py::arg("name")="lff", py::arg("flags") = py::dict()
          )
-    .def("__str__", FunctionPointer( []( PyLF & self ) { return ToString<LinearForm>(*self.Get()); } ))
+    .def("__str__", FunctionPointer( []( PyLF & self ) { return ToString<LinearForm>(*self); } ))
 
     .def_property_readonly("vec", FunctionPointer([] (PyLF self) -> PyBaseVector { return self->GetVectorPtr();}))
 
@@ -1796,13 +1792,11 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                      for (auto igt : self->Integrators())
                        igts.append (py::cast(PyWrapper<LinearFormIntegrator> (igt)));
                      return igts;
-                     // return py::cast (self->Integrators());
                    } ))
 
     .def("Assemble", FunctionPointer
          ([](PyLF self, int heapsize)
           { 
-            // LocalHeap lh(heapsize, "LinearForm::Assemble-heap", true);
             if (heapsize > global_heapsize)
               {
                 global_heapsize = heapsize;
@@ -1843,8 +1837,11 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
     .def_property_readonly("mat", FunctionPointer
                   ([](Preconditioner &self) -> PyWrapper<BaseMatrix>
                    {
+                     return self.GetMatrixPtr();
+                     /*
                      return shared_ptr<BaseMatrix> (const_cast<BaseMatrix*> (&self.GetMatrix()),
                                                     NOOP_Deleter);
+                     */
                    }))
     ;
 
@@ -2330,7 +2327,8 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 
   m.def("SymbolicBFI",
           [](PyCF cf, VorB vb, bool element_boundary,
-              bool skeleton, py::object definedon)
+             bool skeleton, py::object definedon,
+             IntegrationRule ir)
            {
              py::extract<Region> defon_region(definedon);
              if (defon_region.check())
@@ -2364,14 +2362,22 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 
              if (defon_region.check())
                bfi->SetDefinedOn(defon_region().Mask());
+
+             if (ir.Size())
+               {
+                 cout << "ir = " << ir << endl;
+                 dynamic_pointer_cast<SymbolicBilinearFormIntegrator> (bfi)
+                   ->SetIntegrationRule(ir);
+               }
              
              return PyWrapper<BilinearFormIntegrator>(bfi);
            },
-           py::arg("form"), py::arg("VOL_or_BND")=VOL,
-           py::arg("element_boundary")=false,
-           py::arg("skeleton")=false,
-           py::arg("definedon")=DummyArgument()
-          );
+        py::arg("form"), py::arg("VOL_or_BND")=VOL,
+        py::arg("element_boundary")=false,
+        py::arg("skeleton")=false,
+        py::arg("definedon")=DummyArgument(),
+        py::arg("intrule")=IntegrationRule()
+        );
           
   m.def("SymbolicTPBFI",
           [](PyCF cf, VorB vb, bool element_boundary,
