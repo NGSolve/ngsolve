@@ -177,7 +177,7 @@ void ExportStdMathFunction(py::module &m, string name)
               if (py::extract<PyCF>(x).check())
                 {
                   auto coef = py::extract<PyCF>(x)();
-                  return py::cast(PyCF(UnaryOpCF(coef.Get(), func, func, FUNC::Name())));
+                  return py::cast(PyCF(UnaryOpCF(coef.Get(), func, /* func, */ FUNC::Name())));
                 }
               py::extract<double> ed(x);
               if (ed.check()) return py::cast(func(ed()));
@@ -659,6 +659,14 @@ void ExportCoefficientFunction(py::module &m)
              return c1.Get()*c2.Get();
            } ))
 
+    .def ("__pow__", FunctionPointer 
+          ([] (PyCF c1, PyCF c2) -> PyCF
+           {
+             GenericPow func;
+             return BinaryOpCF(c1.Get(), c2.Get(), func,
+                               [](bool a, bool b) { return a||b; }, 'X' /* FUNC::Name() */);
+           } ))
+
     .def ("InnerProduct", FunctionPointer
           ([] (PyCF c1, PyCF c2) -> PyCF
            { 
@@ -667,20 +675,22 @@ void ExportCoefficientFunction(py::module &m)
           
     .def("Norm", FunctionPointer ( [](PyCF x) -> PyCF { return NormCF(x.Get()); }))
 
-    /*
-      // it's using the complex functions anyway ...
+
+    // it's using the complex functions anyway ...
+    // it seems to take the double-version now
     .def ("__mul__", FunctionPointer 
           ([] (PyCF coef, double val) -> PyCF
-           { 
-             return make_shared<ScaleCoefficientFunction> (val, coef); 
+           {
+             return val * coef.Get(); 
            }))
     .def ("__rmul__", FunctionPointer 
           ([] (PyCF coef, double val) -> PyCF
-           { return make_shared<ScaleCoefficientFunction> (val, coef); }))
-    */
+           { return val * coef.Get(); }
+           ))
+
     .def ("__mul__", FunctionPointer 
           ([] (PyCF coef, Complex val) -> PyCF
-           { 
+           {
              if (val.imag() == 0)
                return val.real() * coef.Get();
              else
@@ -702,7 +712,12 @@ void ExportCoefficientFunction(py::module &m)
 
     .def ("__truediv__", FunctionPointer 
           ([] (PyCF coef, double val) -> PyCF
-           { return coef.Get() / make_shared<ConstantCoefficientFunction>(val); }))
+           // { return coef.Get() * make_shared<ConstantCoefficientFunction>(1/val); }))
+           { return (1/val) * coef.Get(); }))
+
+    .def ("__truediv__", FunctionPointer 
+          ([] (PyCF coef, Complex val) -> PyCF
+           { return (1.0/val) * coef.Get(); }))
 
     .def ("__rtruediv__", FunctionPointer 
           ([] (PyCF coef, double val) -> PyCF
@@ -913,7 +928,7 @@ void ExportCoefficientFunction(py::module &m)
     .def("__call__", FunctionPointer
          ([](shared_ptr<BSpline> sp, PyCF coef) -> PyCF
           {
-            return UnaryOpCF (coef.Get(), GenericBSpline(sp), GenericBSpline(sp));
+            return UnaryOpCF (coef.Get(), GenericBSpline(sp) /* , GenericBSpline(sp) */);
           }))
     .def("Integrate", 
          FunctionPointer([](const BSpline & sp) { return make_shared<BSpline>(sp.Integrate()); }))

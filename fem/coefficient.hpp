@@ -808,19 +808,19 @@ namespace ngfem
 
   // *************************** CoefficientFunction Algebra ********************************
 #ifndef __AVX512F__
-template <typename OP, typename OPC> 
-class cl_UnaryOpCF : public T_CoefficientFunction<cl_UnaryOpCF<OP,OPC>>
+  template <typename OP> // , typename OPC> 
+  class cl_UnaryOpCF : public T_CoefficientFunction<cl_UnaryOpCF<OP /* ,OPC */>>
 {
   shared_ptr<CoefficientFunction> c1;
   OP lam;
-  OPC lamc;
+  // OPC lamc;
   string name;
-  typedef  T_CoefficientFunction<cl_UnaryOpCF<OP,OPC>> BASE;
+  typedef  T_CoefficientFunction<cl_UnaryOpCF<OP /* ,OPC */>> BASE;
 public:
   cl_UnaryOpCF (shared_ptr<CoefficientFunction> ac1, 
-                OP alam, OPC alamc, string aname="undefined")
+                OP alam, /* OPC alamc, */ string aname="undefined")
     : BASE(ac1->Dimension(), ac1->IsComplex()),
-      c1(ac1), lam(alam), lamc(alamc), name(aname)
+      c1(ac1), lam(alam), /* lamc(alamc), */ name(aname)
   {
     this->SetDimensions (c1->Dimensions());
   }
@@ -829,8 +829,8 @@ public:
   virtual bool IsComplex() const
   {
     if (c1->IsComplex())
-      return typeid (lamc(Complex(0.0))) == typeid(Complex);
-      // typeid(function_traits<lam<Complex>>::return_type) == typeid(Complex);
+      // return typeid (lamc(Complex(0.0))) == typeid(Complex);
+      return typeid (lam(Complex(0.0))) == typeid(Complex);
     return false;
   }
   
@@ -860,7 +860,8 @@ public:
 
   virtual Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const 
   {
-    return lamc (c1->EvaluateComplex(ip));
+    // return lamc (c1->EvaluateComplex(ip));
+    return lam (c1->EvaluateComplex(ip));
   }
 
   virtual double EvaluateConst () const
@@ -889,7 +890,8 @@ public:
   {
     c1->Evaluate (ip, result);
     for (int j = 0; j < result.Size(); j++)
-      result(j) = lamc(result(j));
+      // result(j) = lamc(result(j));
+      result(j) = lam(result(j));
   }
   
   virtual void Evaluate(const BaseMappedIntegrationRule & ir,
@@ -897,7 +899,8 @@ public:
   {
     c1->Evaluate (ir, result);
     for (int i = 0; i < result.Height()*result.Width(); i++)
-      result(i) = lamc(result(i));
+      // result(i) = lamc(result(i));
+      result(i) = lam(result(i));
   }
 
   template <typename T>
@@ -1047,11 +1050,11 @@ public:
   
 };
 
-template <typename OP, typename OPC> 
+  template <typename OP /* , typename OPC */> 
 shared_ptr<CoefficientFunction> UnaryOpCF(shared_ptr<CoefficientFunction> c1, 
-                                          OP lam, OPC lamc, string name="undefined")
+                                          OP lam, /* OPC lamc, */ string name="undefined")
 {
-  return shared_ptr<CoefficientFunction> (new cl_UnaryOpCF<OP,OPC> (c1, lam, lamc, name));
+  return shared_ptr<CoefficientFunction> (new cl_UnaryOpCF<OP /* ,OPC */> (c1, lam/* , lamc */, name));
 }
 
 
@@ -1605,7 +1608,7 @@ void ExportUnaryFunction (class pybind11::module & m, string name)
   auto creator = [] (shared_ptr<CoefficientFunction> input) -> shared_ptr<CoefficientFunction>
     {
       FUNC func;
-      return UnaryOpCF (input, func, func);
+      return UnaryOpCF (input, func /*, func */);
     };
   
   FUNC func;

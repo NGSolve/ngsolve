@@ -844,12 +844,6 @@ public:
   {
     SetDimensions(c1->Dimensions());
   }
-
-  /*
-  virtual bool IsComplex() const { return c1->IsComplex(); }
-  virtual int Dimension() const { return c1->Dimension(); }
-  virtual Array<int> Dimensions() const { return c1->Dimensions(); }
-  */
   
   virtual void PrintReport (ostream & ost) const
   {
@@ -873,7 +867,6 @@ public:
 
   virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
   { return Array<CoefficientFunction*>({ c1.get() }); }
-
 
   using BASE::Evaluate;
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
@@ -948,8 +941,6 @@ public:
     deriv *= scal;
     dderiv *= scal;
   }
-
-
 
   virtual void Evaluate (const BaseMappedIntegrationRule & mir,
                          FlatArray<FlatMatrix<>*> input,
