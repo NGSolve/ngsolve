@@ -35,6 +35,9 @@ namespace ngla
     int VWidth() const { return matrix.lock()->VHeight();}
 
     bool SmoothIsProjection () const { return smooth_is_projection; }
+    
+    auto GetAMatrix() const { return matrix.lock(); }
+    virtual bool SupportsUpdate() const { return false; } 
   };
 
 
@@ -222,6 +225,8 @@ public:
     template <typename T>
     void FactorSPD1 (T dummy); 
 #endif
+
+    virtual bool SupportsUpdate() const { return true; }     
     virtual void Update()
     {
       FactorNew (dynamic_cast<const SparseMatrix<TM>&> (*matrix.lock().get()));
