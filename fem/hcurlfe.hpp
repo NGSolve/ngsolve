@@ -127,21 +127,21 @@ namespace ngfem
 
 
     HD NGS_DLL_HEADER virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const
-    { cout << "HCurlFE - simd eval not overloaded" << endl; }
+    { throw ExceptionNOSIMD("HCurlFE - simd eval not overloaded"); }
     HD NGS_DLL_HEADER virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<Complex> coefs, BareSliceMatrix<SIMD<Complex>> values) const
-    { cout << "HCurlFE - simd<complex> eval not overloaded" << endl; }
+    { throw ExceptionNOSIMD("HCurlFE - simd<complex> eval not overloaded"); }
     HD NGS_DLL_HEADER virtual void EvaluateCurl (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const
-    { cout << "HCurlFE - simd evalcurl not overloaded" << endl; }      
+    { throw ExceptionNOSIMD("HCurlFE - simd evalcurl not overloaded"); }      
 
     HD NGS_DLL_HEADER virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
                                              BareSliceVector<> coefs) const
-    { cout << "HCurlFE - simd addtrans not overloaded" << endl; }
+    { throw ExceptionNOSIMD("HCurlFE - simd addtrans not overloaded"); }
     HD NGS_DLL_HEADER virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values,
                                              BareSliceVector<Complex> coefs) const
-    { cout << "HCurlFE - simd addtrans complex not overloaded" << endl; }
+    { throw ExceptionNOSIMD("HCurlFE - simd addtrans complex not overloaded"); }
     HD NGS_DLL_HEADER virtual void AddCurlTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
                                                  BareSliceVector<> coefs) const
-    { cout << "HCurlFE - simd addcurltrans not overloaded" << endl; }
+    { throw ExceptionNOSIMD("HCurlFE - simd addcurltrans not overloaded"); }
 
   protected:
     ///
