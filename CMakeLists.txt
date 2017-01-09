@@ -2,7 +2,7 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING INTERNAL)
 endif(NOT CMAKE_BUILD_TYPE)
 
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.8.12)
 
 # Handle superbuild first
 option (USE_SUPERBUILD "Whether or not a superbuild should be invoked" ON)
@@ -162,24 +162,24 @@ if(APPLE)
 endif(APPLE)
 
 #######################################################################
-if (USE_GUI)
+if (NETGEN_USE_GUI)
     add_definitions(-DTCL)
-    include_directories(${TCL_INCLUDE_PATH})
-endif (USE_GUI)
+    include_directories(${NETGEN_TCL_INCLUDE_PATH})
+endif (NETGEN_USE_GUI)
 
 #######################################################################
-if (USE_MPI)
+if (NETGEN_USE_MPI)
     find_package(MPI REQUIRED)
-    if (USE_PYTHON)
+    if (NETGEN_USE_PYTHON)
       find_package(MPI4PY REQUIRED)
       include_directories(${MPI4PY_INCLUDE_DIR})
-    endif (USE_PYTHON)
+    endif (NETGEN_USE_PYTHON)
     add_definitions(-DPARALLEL)
     include_directories(${MPI_CXX_INCLUDE_PATH})
     set(CMAKE_EXE_LINKER_FLAGS    "${CMAKE_EXE_LINKER_FLAGS}    ${MPI_CXX_LINK_FLAGS} -ldl")
     set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} ${MPI_CXX_LINK_FLAGS} -ldl")
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${MPI_CXX_LINK_FLAGS} -ldl")
-endif (USE_MPI)
+endif (NETGEN_USE_MPI)
 # set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-undefined")
 
 #######################################################################
@@ -226,11 +226,11 @@ if (USE_MUMPS)
 endif (USE_MUMPS)
 
 #######################################################################
-if (USE_PYTHON)
+if (NETGEN_USE_PYTHON)
     add_definitions(-DNGS_PYTHON)
-    include_directories(BEFORE ${PYBIND_INCLUDE_DIR})
-    include_directories(${PYTHON_INCLUDE_DIR})
-endif (USE_PYTHON)
+    include_directories(BEFORE ${NETGEN_PYBIND_INCLUDE_DIR})
+    include_directories(${NETGEN_PYTHON_INCLUDE_DIR})
+endif (NETGEN_USE_PYTHON)
 
 #######################################################################
 
@@ -447,7 +447,7 @@ if(APPLE)
     file(APPEND ${mac_startup} "NGSuite_BUNDLE=\"`echo \"$0\" | sed -e 's/\\/Contents\\/Resources\\/bin\\/startup.sh//'`\"\n")
     file(APPEND ${mac_startup} "NGSuite_RESOURCES=\"$NGSuite_BUNDLE/Contents/Resources\"\n")
     file(APPEND ${mac_startup} "export DYLD_LIBRARY_PATH=$NGSuite_RESOURCES/lib:$DYLD_LIBRARY_PATH\n")
-    file(APPEND ${mac_startup} "export PYTHONPATH=$NGSuite_RESOURCES/${PYTHON_PACKAGES_INSTALL_DIR}:$PYTHONPATH")
+    file(APPEND ${mac_startup} "export PYTHONPATH=$NGSuite_RESOURCES/${NETGEN_PYTHON_PACKAGES_INSTALL_DIR}:$PYTHONPATH")
     file(APPEND ${mac_startup} "export NETGENDIR=$NGSuite_RESOURCES/bin\n")
     file(APPEND ${mac_startup} "cd $NGSuite_RESOURCES\n")
     file(APPEND ${mac_startup} "$NGSuite_RESOURCES/bin/netgen\n")
@@ -512,11 +512,11 @@ message("
 
   Enabled functionality:
 
-    GUI: ............... ${USE_GUI}
+    GUI: ............... ${NETGEN_USE_GUI}
     LAPACK: ............ ${USE_LAPACK}
     MKL: ............... ${USE_MKL}
-    PYTHON: ............ ${USE_PYTHON}
-    MPI: ............... ${USE_MPI}
+    PYTHON: ............ ${NETGEN_USE_PYTHON}
+    MPI: ............... ${NETGEN_USE_MPI}
     CUDA: .............. ${USE_CUDA}
     MUMPS: ............. ${USE_MUMPS}
     PARDISO: ........... ${USE_PARDISO}

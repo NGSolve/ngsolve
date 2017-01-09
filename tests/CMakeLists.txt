@@ -1,10 +1,10 @@
 # Tests currently only working on Linux
-if(USE_PYTHON OR NOT WIN32)
+if(NETGEN_USE_PYTHON OR NOT WIN32)
 
 include(CTest)
 
-if(USE_PYTHON)
-  set(test_driver ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/pde_tester.py)
+if(NETGEN_USE_PYTHON)
+  set(test_driver ${NETGEN_PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/pde_tester.py)
 else()
   set(test_driver "${CMAKE_CURRENT_BINARY_DIR}/pde_tester")
   add_executable( pde_tester pde_tester.cpp)
@@ -19,7 +19,7 @@ set(acc_dir "${CMAKE_CURRENT_BINARY_DIR}/acc_tests")
 
 set(pde_tests "d1_square.pde;d2_chip.pde;d3_helmholtz.pde;d4_cube.pde;d5_beam.pde;d6_shaft.pde;d7_coil.pde;d8_coilshield.pde;d9_hybridDG.pde;d10_DGdoubleglazing.pde;d11_chip_nitsche.pde")
 
-if(USE_MPI)
+if(NETGEN_USE_MPI)
 # currently d8 and d10 is not working in parallel
     set(pde_tests "d1_square.pde;d2_chip.pde;d3_helmholtz.pde;d4_cube.pde;d5_beam.pde;d6_shaft.pde;d7_coil.pde;d9_hybridDG.pde;d11_chip_nitsche.pde")
     if(NOT DEFINED PROCESSOR_COUNT)
@@ -62,7 +62,7 @@ if(USE_MPI)
         file(WRITE ${pde_dir}/${pde_test} ${pdefile})
     endforeach()
     
-endif(USE_MPI)
+endif(NETGEN_USE_MPI)
 
 foreach(pde_test ${pde_tests})
     if(EXISTS "${PROJECT_SOURCE_DIR}/tests/pde_tutorial/${pde_test}.appx")
@@ -93,11 +93,11 @@ endif()
 string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE_UPPER )
 if(BUILD_TYPE_UPPER STREQUAL "DEBUG")
     set_tests_properties ( "d6_shaft.pde" PROPERTIES TIMEOUT 60 )
-    if(NOT USE_MPI)
+    if(NOT NETGEN_USE_MPI)
         set_tests_properties ( "d8_coilshield.pde" PROPERTIES TIMEOUT 60 )
-    endif(NOT USE_MPI)
+    endif(NOT NETGEN_USE_MPI)
 endif(BUILD_TYPE_UPPER STREQUAL "DEBUG")
 
-endif(USE_PYTHON OR NOT WIN32)
+endif(NETGEN_USE_PYTHON OR NOT WIN32)
 
 add_subdirectory(pytest)
