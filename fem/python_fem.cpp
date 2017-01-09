@@ -177,13 +177,14 @@ void ExportStdMathFunction(py::module &m, string name)
               if (py::extract<PyCF>(x).check())
                 {
                   auto coef = py::extract<PyCF>(x)();
-                  return py::cast(PyCF(UnaryOpCF(coef.Get(), func, func, FUNC::Name())));
+                  return py::cast(PyCF(UnaryOpCF(coef.Get(), func, /* func, */ FUNC::Name())));
                 }
               py::extract<double> ed(x);
               if (ed.check()) return py::cast(func(ed()));
               if (py::extract<Complex> (x).check())
                 return py::cast(func(py::extract<Complex> (x)()));
-              throw py::type_error ("can't compute math-function");
+              throw py::type_error (string("can't compute math-function, type = ")
+                                    + typeid(FUNC).name());
             });
 }
 
@@ -209,7 +210,7 @@ namespace ngfem
              if (py::extract<Complex> (x).check())
                return py::cast(func_complex(py::extract<Complex> (x)()));
              
-             throw py::type_error ("can't compute math-function");
+             throw py::type_error ("can't compute unary math-function");
            });         
   }
 
@@ -236,7 +237,7 @@ namespace ngfem
              if (py::extract<Complex> (x).check() && py::extract<Complex> (y).check())
                return py::cast(func_complex(py::extract<Complex> (x)(), py::extract<Complex> (y)()));
              
-             throw py::type_error ("can't compute math-function");
+             throw py::type_error ("can't compute binary math-function");
            });         
   }
 
@@ -261,9 +262,9 @@ void ExportStdMathFunction2(py::module &m, string name)
              }
            py::extract<double> dx(x), dy(y);
            if (dx.check() && dy.check()) return py::cast(func(dx(), dy()));
-           // py::extract<Complex> cx(x), cy(y);
-           // if (cx.check() && cy.check()) return py::cast(func(cx(), cy()));
-           throw py::type_error ("can't compute math-function");
+           py::extract<Complex> cx(x), cy(y);
+           if (cx.check() && cy.check()) return py::cast(func(cx(), cy()));
+           throw py::type_error (string("can't compute binary math-function")+typeid(FUNC).name());
          });
 }
 
@@ -658,6 +659,14 @@ void ExportCoefficientFunction(py::module &m)
              return c1.Get()*c2.Get();
            } ))
 
+    .def ("__pow__", FunctionPointer 
+          ([] (PyCF c1, PyCF c2) -> PyCF
+           {
+             GenericPow func;
+             return BinaryOpCF(c1.Get(), c2.Get(), func,
+                               [](bool a, bool b) { return a||b; }, 'X' /* FUNC::Name() */);
+           } ))
+
     .def ("InnerProduct", FunctionPointer
           ([] (PyCF c1, PyCF c2) -> PyCF
            { 
@@ -666,20 +675,22 @@ void ExportCoefficientFunction(py::module &m)
           
     .def("Norm", FunctionPointer ( [](PyCF x) -> PyCF { return NormCF(x.Get()); }))
 
-    /*
-      // it's using the complex functions anyway ...
+
+    // it's using the complex functions anyway ...
+    // it seems to take the double-version now
     .def ("__mul__", FunctionPointer 
           ([] (PyCF coef, double val) -> PyCF
-           { 
-             return make_shared<ScaleCoefficientFunction> (val, coef); 
+           {
+             return val * coef.Get(); 
            }))
     .def ("__rmul__", FunctionPointer 
           ([] (PyCF coef, double val) -> PyCF
-           { return make_shared<ScaleCoefficientFunction> (val, coef); }))
-    */
+           { return val * coef.Get(); }
+           ))
+
     .def ("__mul__", FunctionPointer 
           ([] (PyCF coef, Complex val) -> PyCF
-           { 
+           {
              if (val.imag() == 0)
                return val.real() * coef.Get();
              else
@@ -701,7 +712,12 @@ void ExportCoefficientFunction(py::module &m)
 
     .def ("__truediv__", FunctionPointer 
           ([] (PyCF coef, double val) -> PyCF
-           { return coef.Get() / make_shared<ConstantCoefficientFunction>(val); }))
+           // { return coef.Get() * make_shared<ConstantCoefficientFunction>(1/val); }))
+           { return (1/val) * coef.Get(); }))
+
+    .def ("__truediv__", FunctionPointer 
+          ([] (PyCF coef, Complex val) -> PyCF
+           { return (1.0/val) * coef.Get(); }))
 
     .def ("__rtruediv__", FunctionPointer 
           ([] (PyCF coef, double val) -> PyCF
@@ -912,7 +928,7 @@ void ExportCoefficientFunction(py::module &m)
     .def("__call__", FunctionPointer
          ([](shared_ptr<BSpline> sp, PyCF coef) -> PyCF
           {
-            return UnaryOpCF (coef.Get(), GenericBSpline(sp), GenericBSpline(sp));
+            return UnaryOpCF (coef.Get(), GenericBSpline(sp) /* , GenericBSpline(sp) */);
           }))
     .def("Integrate", 
          FunctionPointer([](const BSpline & sp) { return make_shared<BSpline>(sp.Integrate()); }))

@@ -659,7 +659,18 @@ namespace ngcomp
       cout << IM(3) << "Update Direct Solver Preconditioner" << flush;
       
       try
-	{
+	{                                          
+          auto have_sparse_fact = dynamic_pointer_cast<SparseFactorization> (inverse);
+          if (have_sparse_fact && have_sparse_fact -> SupportsUpdate())
+            {
+              if (have_sparse_fact->GetAMatrix() == bfa->GetMatrixPtr())
+                {
+                  // cout << "have the same matrix, can update factorization" << endl;
+                  have_sparse_fact->Update();
+                  return;
+                }
+            }
+          
 	  bfa->GetMatrix().SetInverseType (inversetype);
 	  shared_ptr<BitArray> freedofs = 
 	    bfa->GetFESpace()->GetFreeDofs (bfa->UsesEliminateInternal());
