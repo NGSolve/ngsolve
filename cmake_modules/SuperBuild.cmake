@@ -8,6 +8,7 @@ set (NGSOLVE_CMAKE_ARGS)
 set (NETGEN_CMAKE_ARGS)
 
 set(INSTALL_DIR CACHE PATH "Install path")
+set(NETGEN_DIR CACHE PATH "Path where Netgen is already installed. Setting this variable will skip the Netgen buildand override the setting of INSTALL_DIR")
 
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${PROJECT_SOURCE_DIR}/cmake_modules")
 
@@ -45,23 +46,20 @@ if(WIN32)
 endif(WIN32)
 
 #######################################################################
-set(BUILD_NETGEN ON)
-#######################################################################
-if(NETGEN_SOURCE_DIR)
+if(NETGEN_DIR)
   message(STATUS "Since NETGEN_SOURCE_DIR is given, assume Netgen is already installed")
   message(STATUS "Looking for NetgenConfig.cmake...")
   find_package(Netgen REQUIRED CONFIG HINTS ${NETGEN_DIR}/share/cmake $ENV{NETGENDIR}/../share/cmake)
-  set(INSTALL_DIR ${NETGEN_INSTALL_DIR})
-  set(BUILD_NETGEN OFF)
-else(NETGEN_SOURCE_DIR)
+  set(INSTALL_DIR ${NETGEN_INSTALL_DIR} FORCE)
+else(NETGEN_DIR)
   message(STATUS "Build Netgen from git submodule")
 #   execute_process(COMMAND git submodule update --init --recursive WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
   execute_process(COMMAND cmake -P cmake_modules/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} )
   add_custom_target(check_submodules_start ALL cmake -P cmake_modules/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} )
   add_custom_target(check_submodules_stop ALL cmake -P cmake_modules/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} DEPENDS ngsolve)
-  set(BUILD_NETGEN ON)
-  set(INSTALL_DIR /opt/netgen CACHE PATH "Install path")
-  set(NETGEN_DIR ${INSTALL_DIR})
+  if(NOT INSTALL_DIR)
+    set(INSTALL_DIR /opt/netgen)
+  endif(NOT INSTALL_DIR)
   set (NETGEN_CMAKE_ARGS)
   # propagate netgen-specific settings to Netgen subproject
   set_vars( NETGEN_CMAKE_ARGS
@@ -103,7 +101,7 @@ else(NETGEN_SOURCE_DIR)
     ZLIB_INCLUDE_DIRS
     ZLIB_LIBRARIES
   )
-endif(NETGEN_SOURCE_DIR)
+endif(NETGEN_DIR)
 
 set_vars(NGSOLVE_CMAKE_ARGS NETGEN_DIR)
 
@@ -187,7 +185,7 @@ set_vars( NGSOLVE_CMAKE_ARGS
   INTEL_MIC 
   )
 
-if(BUILD_NETGEN)
+if(NOT NETGEN_DIR)
   ExternalProject_Add (netgen_project
     SOURCE_DIR ${PROJECT_SOURCE_DIR}/external_dependencies/netgen
     BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/netgen
@@ -197,7 +195,7 @@ if(BUILD_NETGEN)
 
 message("Configure Netgen from submodule...")
 execute_process(COMMAND ${CMAKE_COMMAND} ${NETGEN_CMAKE_ARGS} ${PROJECT_SOURCE_DIR}/external_dependencies/netgen WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/netgen)
-endif(BUILD_NETGEN)
+endif(NOT NETGEN_DIR)
 
 ExternalProject_Add (ngsolve
   DEPENDS ${DEPENDENCIES} ${LAPACK_PROJECTS}
