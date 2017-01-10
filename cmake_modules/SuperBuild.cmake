@@ -7,6 +7,8 @@ set (LAPACK_PROJECTS)
 set (NGSOLVE_CMAKE_ARGS)
 set (NETGEN_CMAKE_ARGS)
 
+set(INSTALL_DIR CACHE PATH "Install path")
+
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${PROJECT_SOURCE_DIR}/cmake_modules")
 
 macro(set_vars OUTPUT_VAR )
@@ -43,13 +45,13 @@ if(WIN32)
 endif(WIN32)
 
 #######################################################################
-option(BUILD_NETGEN ON "Build Netgen from the git submodule as part of NGSolve (recommended)")
+set(BUILD_NETGEN ON)
 #######################################################################
 if(NETGEN_SOURCE_DIR)
   message(STATUS "Since NETGEN_SOURCE_DIR is given, assume Netgen is already installed")
   message(STATUS "Looking for NetgenConfig.cmake...")
-  find_package(Netgen REQUIRED CONFIG HINTS ${INSTALL_DIR}/share/cmake $ENV{NETGENDIR}/../share/cmake)
-  set(INSTALL_DIR ${NETGEN_INSTALL_DIR} CACHE PATH "Install path")
+  find_package(Netgen REQUIRED CONFIG HINTS ${NETGEN_DIR}/share/cmake $ENV{NETGENDIR}/../share/cmake)
+  set(INSTALL_DIR ${NETGEN_INSTALL_DIR})
   set(BUILD_NETGEN OFF)
 else(NETGEN_SOURCE_DIR)
   message(STATUS "Build Netgen from git submodule")
@@ -64,6 +66,7 @@ else(NETGEN_SOURCE_DIR)
   # propagate netgen-specific settings to Netgen subproject
   set_vars( NETGEN_CMAKE_ARGS
     FFMPEG_LIBRARIES
+    INSTALL_DIR
     INSTALL_DEPENDENCIES
     INSTALL_PROFILES
     INTEL_MIC
@@ -192,7 +195,7 @@ if(BUILD_NETGEN)
     BUILD_COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR}/netgen --config ${CMAKE_BUILD_TYPE}
   )
 
-message(STATUS "Configure Netgen from msubmodule...")
+message("Configure Netgen from submodule...")
 execute_process(COMMAND ${CMAKE_COMMAND} ${NETGEN_CMAKE_ARGS} ${PROJECT_SOURCE_DIR}/external_dependencies/netgen WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/netgen)
 endif(BUILD_NETGEN)
 

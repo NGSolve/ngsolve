@@ -229,7 +229,7 @@ endif (USE_MUMPS)
 if (NETGEN_USE_PYTHON)
     add_definitions(-DNGS_PYTHON)
     include_directories(BEFORE ${NETGEN_PYBIND_INCLUDE_DIR})
-    include_directories(${NETGEN_PYTHON_INCLUDE_DIR})
+    include_directories(${NETGEN_PYTHON_INCLUDE_DIRS})
 endif (NETGEN_USE_PYTHON)
 
 #######################################################################
