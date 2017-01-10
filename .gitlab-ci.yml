@@ -20,7 +20,7 @@ stages:
     - set INSTALL_DIR="C:/ci/%CI_BUILD_REF%_32"
     - set NETGENDIR=%NETGEN_TEMP_DIR%\bin
     - set PYTHONPATH=%NETGEN_TEMP_DIR%\lib\site-packages
-    - set PYTHON_CONFIG=-DPYTHON_LIBRARIES=C:/Python3.5_32/libs/python35.lib -DPYTHON_INCLUDE_DIRS=C:/Python3.5_32/include -DPYTHON_EXECUTABLE=C:/Python3.5_32/libs/python35.lib
+    - set PYTHON_CONFIG=-DPYTHON_LIBRARIES=C:/Python3.5_32/libs/python35.lib -DPYTHON_INCLUDE_DIRS=C:/Python3.5_32/include -DPYTHON_EXECUTABLE=C:/Python3.5_32/libs/python.exe
 
 .template_windows_64: &win64
   tags:
@@ -35,7 +35,7 @@ stages:
     - set INSTALL_DIR="C:/ci/%CI_BUILD_REF%_64"
     - set NETGENDIR=%NETGEN_TEMP_DIR%\bin
     - set PYTHONPATH=%NETGEN_TEMP_DIR%\lib\site-packages
-    - set PYTHON_CONFIG=-DPYTHON_LIBRARIES=C:/Python3.5/libs/python35.lib
+    - set PYTHON_CONFIG=-DPYTHON_LIBRARIES=C:/Python3.5/libs/python35.lib -DPYTHON_INCLUDE_DIRS=C:/Python3.5/include -DPYTHON_EXECUTABLE=C:/Python3.5/libs/python.exe
 
 # Linux
 .template_ubuntu: &ubuntu
