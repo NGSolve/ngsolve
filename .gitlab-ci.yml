@@ -160,7 +160,7 @@ test_win64:
       -e LD_LIBRARY_PATH=/opt/intel/mkl/lib/intel64
       -v /opt/intel:/opt/intel
       ngsolve_${CI_BUILD_REF_NAME}_installed:$UBUNTU_VERSION
-      bash -c 'cd /root/build/ngsolve && make test ARGS="-V"'
+      bash -c 'cd /root/build/ngsolve && make test_ngsolve ARGS="-V"'
 
 test_ubuntu_1510:
   <<: *ubuntu_1510
