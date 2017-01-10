@@ -1053,8 +1053,16 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
          [] (const BaseMappedIntegrationPoint & bmip)
           {
             stringstream str;
-            str << "p = " << bmip.GetPoint() << endl;
-            str << "jac = " << bmip.GetJacobian() << endl;
+            if (bmip.IsComplex())
+            {
+              str << "p = " << bmip.GetPointComplex() << endl;
+              str << "jac = " << bmip.GetJacobianComplex() << endl;
+            }
+            else 
+            {
+              str << "p = " << bmip.GetPoint() << endl;
+              str << "jac = " << bmip.GetJacobian() << endl;
+            }
             /*
             switch (bmip.Dim())
               {
