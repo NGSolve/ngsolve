@@ -209,7 +209,7 @@ ExternalProject_Add (ngsolve
 )
 add_dependencies(ngsolve netgen_project)
 
-install(CODE "execute_process(COMMAND cmake --build . --target install WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ngsolve)")
+install(CODE "execute_process(COMMAND cmake --build . --config ${CMAKE_BUILD_TYPE} --target install WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ngsolve)")
 
 add_custom_target(test_ngsolve
   ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR}/ngsolve
