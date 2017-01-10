@@ -393,13 +393,6 @@ namespace ngcomp
       CalcPoint (ip, point);
     }
 
-    void MapPoint (Vec<DIMR> & hpoint, Vec<DIMR,Complex> & point,
-                   Mat<DIMS,DIMR> & hjac, Mat<DIMS,DIMR,Complex> & jac) const
-    {
-      Mat<DIMR,DIMR,Complex> tjac;
-      pml_global_trafo.MapPoint (hpoint, point, tjac);
-      jac=tjac*hjac;
-    }
 
     virtual BaseMappedIntegrationPoint & operator() (const IntegrationPoint & ip, Allocator & lh) const
     {
@@ -410,13 +403,13 @@ namespace ngcomp
       Vec<DIMR,Complex> point;
       
       Mat<DIMS,DIMR> hjac(hip.Jacobian());
-      Mat<DIMS,DIMR,Complex> jac;
           
-      MapPoint (hpoint, point, hjac, jac);
+      Mat<DIMR,DIMR,Complex> tjac;
+      pml_global_trafo.MapPoint (hpoint, point, tjac);
                     
       mip.Point() = point; 
-      mip.Jacobian() = jac;
-      mip.Compute();          
+      mip.Jacobian() = tjac*hjac;
+      mip.Compute();
       return mip;
     }
 
@@ -453,12 +446,12 @@ namespace ngcomp
           Vec<DIMR,Complex> point;
           
           Mat<DIMS,DIMR> hjac(mir_real[i].Jacobian());
-          Mat<DIMS,DIMR,Complex> jac;
           
-          MapPoint (hpoint, point, hjac, jac);
+          Mat<DIMR,DIMR,Complex> tjac;
+          pml_global_trafo.MapPoint (hpoint, point, tjac);
                     
           mir_complex[i].Point() = point; 
-          mir_complex[i].Jacobian() = jac;
+          mir_complex[i].Jacobian() = tjac*hjac;
           mir_complex[i].Compute();          
         }
     }

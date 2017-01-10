@@ -144,7 +144,11 @@ namespace ngcomp
     NodeId operator[] (size_t nr) { return NodeId(nt, IntRange::First()+nr); }
   };
   template<int DIM>
-  class PML_CF;
+      class PML_CF;
+
+  template<int DIM>
+      class PML_Jac;
+  
 
   class PML_Transformation
   {
@@ -159,28 +163,52 @@ namespace ngcomp
         throw Exception("While creating dim: No PML Transformation specified\n");
         return new PML_Transformation();
     }*/
+    
+    virtual void PrintParameters() = 0;
 
     virtual shared_ptr<CoefficientFunction> MakePMLCF() = 0;
+    
+    virtual shared_ptr<CoefficientFunction> MakePMLJac() = 0;
     
     virtual void MapPoint(Vec<0> & hpoint, Vec<0,Complex> & point,
                    Mat<0,0,Complex> & jac) const 
     {
-      throw Exception("No PML Transformation specified");
+      throw Exception("PML_Transformation::MapPoint: No PML Transformation specified");
     }
     virtual void MapPoint(Vec<1> & hpoint, Vec<1,Complex> & point,
                    Mat<1,1,Complex> & jac) const
     {
-      throw Exception("No PML Transformation specified");
+      throw Exception("PML_Transformation::MapPoint: No PML Transformation specified");
     }
     virtual void MapPoint(Vec<2> & hpoint, Vec<2,Complex> & point,
                    Mat<2,2,Complex> & jac) const  
     {
-      throw Exception("No PML Transformation specified");
+      throw Exception("PML_Transformation::MapPoint: No PML Transformation specified");
     }
     virtual void MapPoint(Vec<3> & hpoint, Vec<3,Complex> & point,
                    Mat<3,3,Complex> & jac) const  
     {
-      throw Exception("No PML Transformation specified");
+      throw Exception("PML_Transformation::MapPoint: No PML Transformation specified");
+    }
+    virtual void MapIntegrationPoint(const BaseMappedIntegrationPoint & hpoint, Vec<0,Complex> & point,
+                   Mat<0,0,Complex> & jac) const 
+    {
+      throw Exception("PML_Transformation::MapIntegrationPoint: No PML Transformation specified");
+    }
+    virtual void MapIntegrationPoint(const BaseMappedIntegrationPoint & hpoint, Vec<1,Complex> & point,
+                   Mat<1,1,Complex> & jac) const
+    {
+      throw Exception("PML_Transformation::MapIntegrationPoint: No PML Transformation specified");
+    }
+    virtual void MapIntegrationPoint(const BaseMappedIntegrationPoint & hpoint, Vec<2,Complex> & point,
+                   Mat<2,2,Complex> & jac) const  
+    {
+      throw Exception("PML_Transformation::MapIntegrationPoint: No PML Transformation specified");
+    }
+    virtual void MapIntegrationPoint(const BaseMappedIntegrationPoint & hpoint, Vec<3,Complex> & point,
+                   Mat<3,3,Complex> & jac) const  
+    {
+      throw Exception("PML_Transformation::MapIntegrationPoint: No PML Transformation specified");
     }
   };
 
@@ -205,48 +233,67 @@ namespace ngcomp
 
         virtual void Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<Complex> result) const
         {
-          Vec<DIM> point;
-          for (int j : Range(DIM))
-              point[j]=ip.GetPoint()(j);
-
           Mat<DIM,DIM,Complex> jac;
           Vec<DIM,Complex> tresult;
-          pml_trafo.MapPoint(point,tresult,jac);
-          for (int j : Range(DIM))
-              result(j)=tresult[j];
+          pml_trafo.MapIntegrationPoint(ip,tresult,jac);
+          result=FlatVector<Complex>(tresult);
         }
 
     };
 
   template <int DIM>
+  class PML_Jac : public CoefficientFunction
+    {
+        PML_Transformation & pml_trafo;
+
+        public:
+
+        PML_Jac(PML_Transformation & _pml_trafo)
+          : CoefficientFunction(DIM*DIM,true), pml_trafo(_pml_trafo)
+        { 
+            FlatArray<int> dims;
+            dims[0]=DIM;
+            dims[1]=DIM;
+            SetDimensions(dims);
+        }
+
+        ~PML_Jac() { ; }
+
+        virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
+        {
+          return 0; 
+        }
+
+        virtual void Evaluate (const BaseMappedIntegrationPoint & ip, FlatMatrix<Complex> result) const
+        {
+          Mat<DIM,DIM,Complex> jac;
+          Vec<DIM,Complex> tresult;
+          pml_trafo.MapIntegrationPoint(ip,tresult,jac);
+          result=FlatMatrix<Complex>(jac);
+        }
+
+    };
+  template <int DIM>
   class PML_TransformationDim : public PML_Transformation
   {
     public:
     virtual shared_ptr<PML_Transformation> CreateDim(int dim)  = 0;
-/*    {
-      switch (dim)
-      {
-        case 0:     
-          return make_shared<PML_TransformationDim<0>> ();
-
-        case 1:     
-          return make_shared<PML_TransformationDim<1>> ();
-        
-        case 2:
-          return make_shared<PML_TransformationDim<2>> ();
-        
-        case 3:
-          return make_shared<PML_TransformationDim<3>> ();
-
-        default:
-          throw Exception ("No valid Dimension");
-
-      }
-    }*/
     
     virtual shared_ptr<CoefficientFunction> MakePMLCF()
     {
       return make_shared<PML_CF<DIM>> (*this);
+    }
+
+    virtual shared_ptr<CoefficientFunction> MakePMLJac()
+    {
+      return make_shared<PML_Jac<DIM>> (*this);
+    }
+
+    virtual void MapIntegrationPoint(const BaseMappedIntegrationPoint & ip, Vec<DIM,Complex> & point,
+                   Mat<DIM,DIM,Complex> & jac) const  
+    {
+      Vec<DIM> hpoint = ip.GetPoint();
+      MapPoint(hpoint, point, jac);
     }
 
   };

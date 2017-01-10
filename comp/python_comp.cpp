@@ -212,22 +212,21 @@ void ExportPml(py::module &m)
         },
         
         "the pml coefficient function")
+    .def_property_readonly("PMLJac", [](PyPML *instance)-> PyCF {
+        return PyCF(instance->MakePMLJac());
+        },
+        
+        "the pml jacobian function")
+    .def("PrintParamters", &PyPML::PrintParameters)
+
     ;
-  /*
-  py::class_<PML_TransformationDim<0>,PML_Transformation> class_pml0 (m, "PML0");
-  T_ExportPml<0>(m,class_pml0);
-  py::class_<PML_TransformationDim<1>,PML_Transformation> class_pml1 (m, "PML1");
-  T_ExportPml<1>(m,class_pml1);
-  py::class_<PML_TransformationDim<2>,PML_Transformation> class_pml2 (m, "PML2");
-  T_ExportPml<2>(m,class_pml2);
-  py::class_<PML_TransformationDim<3>,PML_Transformation> class_pml3 (m, "PML3");
-  T_ExportPml<3>(m,class_pml3);
-*/
+
   py::class_<RadialPML_Transformation<0>,PyPML>(m, "Radial", "radial pml scaling")
     .def("__init__", [](RadialPML_Transformation<0> *instance, double rad, Complex alpha) {
         new (instance) RadialPML_Transformation<0>(rad,alpha);
         },
         py::arg("rad")=1, py::arg("alpha")=Complex(0,1))
+    
     ;
 
   py::class_<CartesianPML_Transformation<0>,PyPML>(m, "Cartesian", "cartesian pml scaling")
