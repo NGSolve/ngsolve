@@ -77,6 +77,7 @@ stages:
         -DUSE_MKL=ON
         -DMKL_STATIC=ON
         -DCMAKE_CXX_FLAGS_RELEASE="/W0"
+        -DUSE_UMFPACK=ON
     - cmake --build . --target INSTALL --config Release
 
 build_win32:
