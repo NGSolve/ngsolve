@@ -32,7 +32,7 @@ else()
   project(NGSolve)
 endif()
 
-find_package(Netgen REQUIRED CONFIG HINTS ${NETGEN_DIR} ${NETGEN_DIR}/share/cmake ${INSTALL_DIR} ${INSTALL_DIR}/share/cmake)
+find_package(Netgen REQUIRED CONFIG HINTS ${NETGEN_DIR} ${NETGEN_DIR}/share/cmake ${INSTALL_DIR} ${INSTALL_DIR}/share/cmake ${INSTALL_DIR}/Netgen.app/Contents/Resources/share/cmake)
 
 set(NGSOLVE_VERSION_MAJOR 6)
 set(NGSOLVE_VERSION_MINOR 2)
