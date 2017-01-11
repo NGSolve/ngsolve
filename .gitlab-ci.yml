@@ -130,6 +130,8 @@ build_ubuntu_1604:
   script:
     - cd build
     - ctest -C Release -V
+    - cd ..
+    - RD /S build
 
 # skip since we have no machine with 32 bits
 .test_win32:
