@@ -17,25 +17,25 @@ add_library( solve ${NGS_LIB_TYPE}
         ${solve_object_libs}
         )
 
-if(USE_PYTHON)
+if(NETGEN_USE_PYTHON)
 add_library( ngslib SHARED ngspy.cpp )
 
 set_target_properties(ngslib PROPERTIES SUFFIX ".so")
 set_target_properties(ngslib PROPERTIES PREFIX "")
 target_link_libraries(ngslib ${PYTHON_LIBS} ${LAPACK_LIBRARIES})
 
-if(USE_GUI)
+if(NETGEN_USE_GUI)
     target_link_libraries(ngslib ngsolve)
-else(USE_GUI)
+else(NETGEN_USE_GUI)
     target_link_libraries(ngslib solve)
-endif(USE_GUI)
+endif(NETGEN_USE_GUI)
 
 if(WIN32)
     set_target_properties( ngslib PROPERTIES SUFFIX ".pyd" )
 endif(WIN32)
 
 install( TARGETS ngslib ${ngs_install_dir} )
-endif(USE_PYTHON)
+endif(NETGEN_USE_PYTHON)
 
 if(NOT WIN32)
     target_link_libraries( solve ngcomp ngstd ngfem ngla ngbla nglib visual ${MPI_CXX_LIBRARIES} ${PYTHON_LIBS} ${LAPACK_LIBRARIES} ${VTUNE_LIB} ${PARDISO_LIB})
@@ -45,7 +45,7 @@ endif(NOT WIN32)
 
 
 
-if (USE_GUI)
+if (NETGEN_USE_GUI)
     if(WIN32)
         set(ngsolve_object_libs
             $<TARGET_OBJECTS:solve> 
@@ -71,7 +71,7 @@ if (USE_GUI)
     if(WIN32)
         set_target_properties( ngsolve PROPERTIES OUTPUT_NAME libngsolve )
     endif(WIN32)
-endif (USE_GUI)
+endif (NETGEN_USE_GUI)
 
 
 if(NOT WIN32)

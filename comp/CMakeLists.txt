@@ -1,8 +1,8 @@
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
-if (USE_GUI)
+if (NETGEN_USE_GUI)
     add_definitions(-DTCL)
-endif (USE_GUI)
+endif (NETGEN_USE_GUI)
 
 if(NOT WIN32)
     set(ngcomp_object_libs $<TARGET_OBJECTS:ngmg> )
