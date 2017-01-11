@@ -2,25 +2,11 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING INTERNAL)
 endif(NOT CMAKE_BUILD_TYPE)
 
-cmake_minimum_required(VERSION 2.8)
-project(NGSolve)
-set(NGSOLVE_VERSION_MAJOR 6)
-set(NGSOLVE_VERSION_MINOR 2)
-string(TIMESTAMP NGSOLVE_VERSION_PATCH "%y%U%w" )
-# set(NGSOLVE_VERSION_PATCH 15440)
-set(NGSOLVE_VERSION "${NGSOLVE_VERSION_MAJOR}.${NGSOLVE_VERSION_MINOR}-dev")
-set(PACKAGE_VERSION "${NGSOLVE_VERSION_MAJOR}.${NGSOLVE_VERSION_MINOR}-${NGSOLVE_VERSION_PATCH}")
-set(CPACK_PACKAGE_VERSION "${NGSOLVE_VERSION_MAJOR}.${NGSOLVE_VERSION_MINOR}-${NGSOLVE_VERSION_PATCH}")
-set(CPACK_DEBIAN_PACKAGE_VERSION "${NGSOLVE_VERSION_MAJOR}.${NGSOLVE_VERSION_MINOR}.${NGSOLVE_VERSION_PATCH}")
+cmake_minimum_required(VERSION 2.8.12)
 
-if(NOT WIN32 AND NOT INTEL_MIC)
-    option( USE_NATIVE_ARCH  "build which -march=native" ON)
-endif(NOT WIN32 AND NOT INTEL_MIC)
-
-option( USE_GUI          "build ngsolve with GUI" ON)
-option( USE_PYTHON       "enable python shell" ON)
+# Handle superbuild first
+option (USE_SUPERBUILD "Whether or not a superbuild should be invoked" ON)
 option( USE_LAPACK       "build ngsolve with LAPACK" ON)
-option( USE_MPI          "enable mpi parallelization")
 option( USE_VT           "enable vampirtrace")
 option( USE_CUDA         "enable CUDA GPU support")
 option( USE_MKL          "enable MKL")
@@ -32,47 +18,42 @@ option( USE_VTUNE        "include vtune pause/resume numproc")
 option( USE_NUMA         "compile with NUMA-aware code")
 option( USE_CCACHE       "use ccache")
 option( INSTALL_DEPENDENCIES "install dependencies like netgen or solver libs, useful for packaging" OFF )
+if(NOT WIN32 AND NOT INTEL_MIC)
+    option( USE_NATIVE_ARCH  "build which -march=native" ON)
+endif(NOT WIN32 AND NOT INTEL_MIC)
 
-set(NETGEN_INTERNAL_INCLUDE_DIR NOTFOUND CACHE INTERNAL "Netgen include directories")
-set(BUILD_NETGEN OFF CACHE INTERNAL "is set if netgen is built as external project")
-#######################################################################
-if(NETGEN_SOURCE_DIR)
-    find_path(NETGEN_INCLUDE_DIR nginterface_v2_impl.hpp PATHS ${NETGEN_SOURCE_DIR} ${NETGEN_SOURCE_DIR}/libsrc/include)
-    if (NOT NETGEN_INCLUDE_DIR)
-      message(FATAL_ERROR "Could not find Netgen source files in NETGEN_SOURCE_DIR, which was set to ${NETGEN_SOURCE_DIR}")
-    endif()
-    set(NETGEN_INTERNAL_INCLUDE_DIR
-      "${NETGEN_INCLUDE_DIR}"
-      "${NETGEN_INCLUDE_DIR}/../general"
-      "${NETGEN_INCLUDE_DIR}/../visualization"
-    )
-else(NETGEN_SOURCE_DIR)
-  message(STATUS "Use Netgen from submodule, updating modules...")
-  execute_process(COMMAND git submodule update --init --recursive WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-  add_custom_target(check_submodules_start ALL cmake -P cmake_modules/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} )
-#   add_custom_target(check_submodules_stop ALL cmake -P cmake_modules/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} DEPENDS ngs ngslib netgen ngpy occvis)
-  set(BUILD_NETGEN ON)
-  set(NETGEN_INTERNAL_INCLUDE_DIR
-    "${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies/netgen/libsrc/include"
-    "${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies/netgen/libsrc/general"
-    "${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies/netgen/libsrc/visualization"
-  )
-endif(NETGEN_SOURCE_DIR)
+if (USE_SUPERBUILD)
+  project (SUPERBUILD)
+  # execute the superbuild (this script will be invoked again without the
+  # USE_SUPERBUILD option this time)
+  include (cmake_modules/SuperBuild.cmake)
+  return()                      # stop processing this file further
+else()
+  project(NGSolve)
+endif()
+
+find_package(Netgen REQUIRED CONFIG HINTS ${NETGEN_DIR} ${NETGEN_DIR}/share/cmake ${INSTALL_DIR} ${INSTALL_DIR}/share/cmake)
+
+set(NGSOLVE_VERSION_MAJOR 6)
+set(NGSOLVE_VERSION_MINOR 2)
+string(TIMESTAMP NGSOLVE_VERSION_PATCH "%y%U%w" )
+# set(NGSOLVE_VERSION_PATCH 15440)
+set(NGSOLVE_VERSION "${NGSOLVE_VERSION_MAJOR}.${NGSOLVE_VERSION_MINOR}-dev")
+set(PACKAGE_VERSION "${NGSOLVE_VERSION_MAJOR}.${NGSOLVE_VERSION_MINOR}-${NGSOLVE_VERSION_PATCH}")
+set(CPACK_PACKAGE_VERSION "${NGSOLVE_VERSION_MAJOR}.${NGSOLVE_VERSION_MINOR}-${NGSOLVE_VERSION_PATCH}")
+set(CPACK_DEBIAN_PACKAGE_VERSION "${NGSOLVE_VERSION_MAJOR}.${NGSOLVE_VERSION_MINOR}.${NGSOLVE_VERSION_PATCH}")
 
 #######################################################################
 include (CheckIncludeFiles)
 check_include_files (dlfcn.h HAVE_DLFCN_H)
 include (CheckCXXSymbolExists)
-# set(CMAKE_REQUIRED_INCLUDES cxxabi.h)
 check_cxx_symbol_exists ( abi::__cxa_demangle "cxxabi.h" HAVE_CXA_DEMANGLE )
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
 install (FILES ${CMAKE_CURRENT_BINARY_DIR}/config.h DESTINATION include COMPONENT ngsolve_devel )
 
 
-add_subdirectory(external_dependencies)
-
-include_directories(AFTER ${NETGEN_INTERNAL_INCLUDE_DIR})
+include_directories(AFTER ${NETGEN_INCLUDE_DIRS})
 #######################################################################
 
 add_definitions(-DHAVE_NETGEN_SOURCES)
@@ -97,25 +78,6 @@ if(USE_NATIVE_ARCH)
 endif(USE_NATIVE_ARCH)
 
 #######################################################################
-# find netgen
-if(NOT INSTALL_DIR)
-    set(netgen_env $ENV{NETGENDIR})
-    if(NOT netgen_env)
-        message( FATAL_ERROR "Could not find Netgen. Set either NETGENDIR environment variable or INSTALL_DIR in the CMake cache.")
-    else(NOT netgen_env)
-        get_filename_component(NETGEN_BASEDIR $ENV{NETGENDIR} PATH)
-        set(INSTALL_DIR ${NETGEN_BASEDIR} CACHE PATH "Path to install NGSolve (i.e. where netgen is installed)")
-    endif(NOT netgen_env)
-endif(NOT INSTALL_DIR)
-if(APPLE)
-  set(CMAKE_INSTALL_PREFIX "${INSTALL_DIR}/Netgen.app/Contents/Resources" CACHE INTERNAL "Prefix prepended to install directories" FORCE)
-else(APPLE)
-  set(CMAKE_INSTALL_PREFIX "${INSTALL_DIR}" CACHE INTERNAL "Prefix prepended to install directories" FORCE) 
-endif(APPLE)
-
-# add_library(interface SHARED IMPORTED)
-# set_property(TARGET interface PROPERTY IMPORTED_LOCATION "${INSTALL_DIR}/lib/libinterface.so")
-#######################################################################
 # append install paths of software in non-standard paths (e.g. openmpi, metis, intel mkl, ...)
 # cmake -DUSE_MPI=ON -DCMAKE_PREFIX_PATH="/opt/openmpi165;/opt/metis51" ../
 set(ADDITIONAL_PATHS "" CACHE PATH "List of paths to additional libraries in non-standard locations, seperated by ';'")
@@ -125,6 +87,7 @@ endif (ADDITIONAL_PATHS)
 
 #######################################################################
 # use rpath
+set(CMAKE_INSTALL_PREFIX ${NETGEN_DIR} CACHE INTERNAL "Prefix prepended to install directories" FORCE)
 set(CMAKE_SKIP_BUILD_RPATH  FALSE)
 set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE) 
 set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
@@ -183,7 +146,7 @@ if(WIN32)
         set(CMAKE_CXX_FLAGS "/Od ${CMAKE_CXX_FLAGS} /MP /Qstd=c++14 /Qopt-report-file:report.log")
     else()
         # MS Visual Compiler
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /w /bigobj")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /bigobj")
     endif()
 
 else(WIN32)
@@ -199,36 +162,33 @@ if(APPLE)
 endif(APPLE)
 
 #######################################################################
-if (USE_GUI)
-    find_package(TCL 8.5)
-    if(TCL_FOUND)
-        add_definitions(-DTCL)
-        include_directories(${TCL_INCLUDE_PATH})
-    else(TCL_FOUND)
-        message( FATAL_ERROR "Tcl library not found!" )
-    endif(TCL_FOUND)
-endif (USE_GUI)
+if (NETGEN_USE_GUI)
+    add_definitions(-DTCL)
+    include_directories(${NETGEN_TCL_INCLUDE_PATH})
+endif (NETGEN_USE_GUI)
 
 #######################################################################
-if (USE_MPI)
+if (NETGEN_USE_MPI)
     find_package(MPI REQUIRED)
-    if (USE_PYTHON)
+    if (NETGEN_USE_PYTHON)
       find_package(MPI4PY REQUIRED)
       include_directories(${MPI4PY_INCLUDE_DIR})
-    endif (USE_PYTHON)
+    endif (NETGEN_USE_PYTHON)
     add_definitions(-DPARALLEL)
     include_directories(${MPI_CXX_INCLUDE_PATH})
     set(CMAKE_EXE_LINKER_FLAGS    "${CMAKE_EXE_LINKER_FLAGS}    ${MPI_CXX_LINK_FLAGS} -ldl")
     set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} ${MPI_CXX_LINK_FLAGS} -ldl")
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${MPI_CXX_LINK_FLAGS} -ldl")
-endif (USE_MPI)
+endif (NETGEN_USE_MPI)
 # set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-undefined")
 
 #######################################################################
-if (USE_LAPACK AND NOT USE_MKL)
-    find_package(LAPACK)
+if (USE_LAPACK)
+    if(NOT LAPACK_LIBRARIES)
+      find_package(LAPACK REQUIRED)
+    endif()
     add_definitions(-DLAPACK)
-endif (USE_LAPACK AND NOT USE_MKL)
+endif (USE_LAPACK)
 
 #######################################################################
 if (USE_VT)
@@ -247,22 +207,9 @@ endif (USE_CUDA)
 
 #######################################################################
 if (USE_MKL)
-    set(MKL_MULTI_THREADED ON)
-
-    set(MKL_STATIC OFF CACHE BOOL "Link static MKL")
-    set(MKL_SDL ON CACHE BOOL "Link single dynamic MKL lib")
-
-    set(USE_LAPACK ON)
-    find_package(MKL REQUIRED)
     include_directories(${MKL_INCLUDE_DIRS})
     add_definitions(-DUSE_MKL -DUSE_PARDISO -DLAPACK)
 
-    if(USE_MUMPS)
-        # include scalapack
-        set( LAPACK_LIBRARIES "${MKL_LIBRARIES}")
-    else(USE_MUMPS)
-        set( LAPACK_LIBRARIES "${MKL_MINIMAL_LIBRARIES}")
-    endif(USE_MUMPS)
 
     if("${MKL_INTERFACE_LAYER}" STREQUAL "_ilp64")
         add_definitions(-DMKL_ILP64)
@@ -272,36 +219,18 @@ endif (USE_MKL)
 #######################################################################
 if (USE_MUMPS)
     add_definitions(-DUSE_MUMPS)
-    find_package(MUMPS REQUIRED)
-    set(MUMPS_INCLUDE_DIR ${MUMPS_DIR}/include)
     include_directories(${MUMPS_INCLUDE_DIR})
+    set(MUMPS_INCLUDE_DIR ${MUMPS_DIR}/include)
+    find_package(MUMPS REQUIRED)
     link_directories(${MUMPS_DIR}/lib)
 endif (USE_MUMPS)
 
 #######################################################################
-if (USE_PYTHON)
-  find_path(PYBIND_INCLUDE_DIR pybind11/pybind11.h ${NETGEN_INTERNAL_INCLUDE_DIR}/../../external_dependencies/pybind11/include)
-    if( NOT PYBIND_INCLUDE_DIR )
-      message(FATAL_ERROR "Could NOT find pybind11!")
-    endif( NOT PYBIND_INCLUDE_DIR )
-    message("-- Found Pybind11: ${PYBIND_INCLUDE_DIR}")
-    include_directories(BEFORE ${PYBIND_INCLUDE_DIR})
-    install(DIRECTORY ${PYBIND_INCLUDE_DIR}/pybind11 DESTINATION include COMPONENT ngsolve_devel)
-    install(FILES ${PYBIND_INCLUDE_DIR}/../LICENSE DESTINATION include/pybind11 COMPONENT ngsolve_devel)
-    set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${PROJECT_SOURCE_DIR}/cmake_modules/python")
-    set(PYTHON_VERSION "3" CACHE STRING "Python version (only Python >= 3.0 supported)")
-    set(Python_ADDITIONAL_VERSIONS 3.5)
-    if( PYTHON_VERSION VERSION_LESS 3 )
-        message(FATAL_ERROR "NGSolve supports only Python 3")
-    endif( PYTHON_VERSION VERSION_LESS 3 )
-    find_package(PythonInterp ${PYTHON_VERSION} REQUIRED)
-    find_package(PythonLibs ${PYTHON_VERSION}  REQUIRED)
+if (NETGEN_USE_PYTHON)
     add_definitions(-DNGS_PYTHON)
-
-    include_directories(${PYTHON_INCLUDE_DIRS})
-    set(PYTHON_LIBS "${PYTHON_LIBRARIES}")
-    execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1,0,''))" OUTPUT_VARIABLE PYTHON_PACKAGES_INSTALL_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
-endif (USE_PYTHON)
+    include_directories(BEFORE ${NETGEN_PYBIND_INCLUDE_DIR})
+    include_directories(${NETGEN_PYTHON_INCLUDE_DIRS})
+endif (NETGEN_USE_PYTHON)
 
 #######################################################################
 
@@ -321,35 +250,11 @@ endif(USE_PARDISO)
 #######################################################################
 
 if(USE_UMFPACK)
+  find_package(SuiteSparse NO_MODULE HINTS ${INSTALL_DIR})
+  include(${USE_SuiteSparse})
+  include_directories(${SuiteSparse_INCLUDE_DIRS})
+  set(UMFPACK_LIBRARIES ${SuiteSparse_LIBRARIES} CACHE STRING "List of UMFPACK libraries")
   add_definitions(-DUSE_UMFPACK)
-
-  if(NOT UMFPACK_INCLUDE_DIR)
-    find_path(UMFPACK_INCLUDE_DIR umfpack.h PATH_SUFFIXES suitesparse)
-  endif()
-
-  if(NOT UMFPACK_LIBRARIES)
-    find_library(UMFPACK_LIB NAMES libumfpack.a )
-    if(UMFPACK_LIB)
-      find_library(UMFPACK_AMD_LIB NAMES libamd.a)
-      find_library(UMFPACK_COLAMD_LIB NAMES libcolamd.a)
-      find_library(UMFPACK_CONFIG_LIB NAMES libsuitesparseconfig.a)
-      find_library(UMFPACK_CHOLMOD_LIB NAMES libcholmod.a)
-    else(UMFPACK_LIB)
-      find_library(UMFPACK_LIB NAMES libumfpack.so)
-    endif(UMFPACK_LIB)
-  endif(NOT UMFPACK_LIBRARIES)
-
-  set(UMFPACK_LIBRARIES ${UMFPACK_LIB} ${UMFPACK_AMD_LIB} ${UMFPACK_COLAMD_LIB} ${UMFPACK_CHOLMOD_LIB} ${UMFPACK_CONFIG_LIB} CACHE STRING "List of UMFPACK libraries")
-
-  if(NOT UMFPACK_LIBRARIES OR NOT UMFPACK_INCLUDE_DIR)
-    message(FATAL_ERROR "Could NOT find UMFPACK")
-  else()
-    message(STATUS "Found Umfpack include:   ${UMFPACK_INCLUDE_DIR}")
-    message(STATUS "Found Umfpack libraries: ${UMFPACK_LIBRARIES}")
-  endif()
-
-  include_directories(${UMFPACK_INCLUDE_DIR})
-
 endif(USE_UMFPACK)
 
 #######################################################################
@@ -388,11 +293,6 @@ add_subdirectory(python)
 add_subdirectory(pde_tutorial)
 add_subdirectory(py_tutorials)
 add_subdirectory(tests)
-
-if(BUILD_NETGEN)
-  add_dependencies(ngstd check_submodules_start)
-  add_dependencies(ngmg check_submodules_start)
-endif(BUILD_NETGEN)
 
 #######################################################################
 # generate ngscxx compiler wrapper
@@ -547,7 +447,7 @@ if(APPLE)
     file(APPEND ${mac_startup} "NGSuite_BUNDLE=\"`echo \"$0\" | sed -e 's/\\/Contents\\/Resources\\/bin\\/startup.sh//'`\"\n")
     file(APPEND ${mac_startup} "NGSuite_RESOURCES=\"$NGSuite_BUNDLE/Contents/Resources\"\n")
     file(APPEND ${mac_startup} "export DYLD_LIBRARY_PATH=$NGSuite_RESOURCES/lib:$DYLD_LIBRARY_PATH\n")
-    file(APPEND ${mac_startup} "export PYTHONPATH=$NGSuite_RESOURCES/${PYTHON_PACKAGES_INSTALL_DIR}:$PYTHONPATH")
+    file(APPEND ${mac_startup} "export PYTHONPATH=$NGSuite_RESOURCES/${NETGEN_PYTHON_PACKAGES_INSTALL_DIR}:$PYTHONPATH")
     file(APPEND ${mac_startup} "export NETGENDIR=$NGSuite_RESOURCES/bin\n")
     file(APPEND ${mac_startup} "cd $NGSuite_RESOURCES\n")
     file(APPEND ${mac_startup} "$NGSuite_RESOURCES/bin/netgen\n")
@@ -612,11 +512,11 @@ message("
 
   Enabled functionality:
 
-    GUI: ............... ${USE_GUI}
+    GUI: ............... ${NETGEN_USE_GUI}
     LAPACK: ............ ${USE_LAPACK}
     MKL: ............... ${USE_MKL}
-    PYTHON: ............ ${USE_PYTHON}
-    MPI: ............... ${USE_MPI}
+    PYTHON: ............ ${NETGEN_USE_PYTHON}
+    MPI: ............... ${NETGEN_USE_MPI}
     CUDA: .............. ${USE_CUDA}
     MUMPS: ............. ${USE_MUMPS}
     PARDISO: ........... ${USE_PARDISO}
