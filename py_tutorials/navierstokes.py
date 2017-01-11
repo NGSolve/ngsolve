@@ -55,7 +55,7 @@ gfu.vec.data += inv_stokes * res
 mstar = BilinearForm(X)
 mstar += SymbolicBFI(ux*vx+uy*vy + tau*stokes)
 mstar.Assemble()
-inv = mstar.mat.Inverse(X.FreeDofs(), inverse="umfpack")
+inv = mstar.mat.Inverse(X.FreeDofs(), inverse="sparsecholesky")
 
 # the non-linear term 
 conv = BilinearForm(X, flags = { "nonassemble" : True })
