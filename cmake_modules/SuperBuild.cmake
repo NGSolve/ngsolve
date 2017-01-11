@@ -20,6 +20,13 @@ macro(set_vars OUTPUT_VAR )
     endif()
   endforeach()
 endmacro()
+
+if(${CMAKE_GENERATOR} STREQUAL "Unix Makefiles")
+  set(COMMON_BUILD_COMMAND $(MAKE) --silent )
+else()
+  set(COMMON_BUILD_COMMAND "${CMAKE_COMMAND} --config ${CMAKE_BUILD_TYPE}) --build .")
+endif()
+
 #######################################################################
 if(WIN32)
   if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
@@ -185,21 +192,14 @@ set_vars( NGSOLVE_CMAKE_ARGS
   INTEL_MIC 
   )
 
-if(${CMAKE_GENERATOR} STREQUAL "Unix Makefiles")
-  set(NETGEN_BUILD_COMMAND $(MAKE) --silent )
-  set(NGSOLVE_BUILD_COMMAND $(MAKE) --silent )
-else()
-  set(NETGEN_BUILD_COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR}/netgen --config ${CMAKE_BUILD_TYPE})
-  set(NGSOLVE_BUILD_COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR}/ngsolve --config ${CMAKE_BUILD_TYPE})
-endif()
-
 if(NOT NETGEN_DIR)
   ExternalProject_Add (netgen_project
     SOURCE_DIR ${PROJECT_SOURCE_DIR}/external_dependencies/netgen
     BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/netgen
     CONFIGURE_COMMAND ""
-    BUILD_COMMAND ${NETGEN_BUILD_COMMAND}
+    BUILD_COMMAND ${COMMON_BUILD_COMMAND}
     INSTALL_COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR}/netgen --target install --config ${CMAKE_BUILD_TYPE}
+    BUILD_ALWAYS 1
   )
 
 message("\n\nConfigure Netgen from submodule...")
@@ -212,7 +212,7 @@ ExternalProject_Add (ngsolve
   CMAKE_ARGS ${NGSOLVE_CMAKE_ARGS} -DUSE_SUPERBUILD=OFF -DCMAKE_PREFIX_PATH=${NETGEN_DIR}
   INSTALL_COMMAND ""
   BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/ngsolve
-  BUILD_COMMAND ${NGSOLVE_BUILD_COMMAND}
+  BUILD_COMMAND ${COMMON_BUILD_COMMAND}
   STEP_TARGETS build
 )
 add_dependencies(ngsolve netgen_project)
