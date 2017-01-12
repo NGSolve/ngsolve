@@ -223,10 +223,24 @@ ExternalProject_Add (ngsolve
 )
 add_dependencies(ngsolve netgen_project)
 
-install(CODE "execute_process(COMMAND cmake --build . --config ${CMAKE_BUILD_TYPE} --target install WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ngsolve)")
+install(CODE "execute_process(COMMAND \"${CMAKE_COMMAND}\" --build . --config ${CMAKE_BUILD_TYPE} --target install WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ngsolve)")
 
 add_custom_target(test_ngsolve
   ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR}/ngsolve
                    --target test
                    --config ${CMAKE_BUILD_TYPE}
                    )
+
+if(WIN32)
+  file(TO_NATIVE_PATH ${INSTALL_DIR}/bin netgendir)
+  file(TO_NATIVE_PATH ${INSTALL_DIR}/${PYTHON_PACKAGES_INSTALL_DIR} pythonpath)
+  add_custom_target(set_netgendir
+    setx NETGENDIR  ${netgendir}
+  )
+  add_custom_target(set_pythonpath
+    setx PYTHONPATH "${pythonpath};$ENV{PYTHONPATH}"
+  )
+  add_custom_target(set_environment_variables)
+  add_dependencies(set_environment_variables set_netgendir set_pythonpath)
+endif(WIN32)
+
