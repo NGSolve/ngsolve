@@ -132,7 +132,6 @@ build_ubuntu_1604:
     - cd build
     - ctest -C Release -V
     - cd ..
-    - RD /S build
 
 # skip since we have no machine with 32 bits
 .test_win32:
@@ -195,6 +194,7 @@ win64_cleanup:
     - x64
   script:
     - rd /s /q %INSTALL_DIR%
+    - rd /s /q build
   when: always
   allow_failure: true
 
@@ -206,6 +206,7 @@ win32_cleanup:
     - x86
   script:
     - rd /s /q %INSTALL_DIR%
+    - rd /s /q build
   when: always
   allow_failure: true
 
