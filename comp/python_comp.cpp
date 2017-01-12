@@ -910,16 +910,14 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 // 			       bpflags["complex"] = py::cast(is_complex);
 			     }
 
-                             py::extract<py::list> dirlist(dirichlet);
-                             if (dirlist.check()){ 
-                               flags.SetFlag("dirichlet", makeCArray<double>(dirlist()));
+                             if (py::isinstance<py::list>(dirichlet)) {
+                               flags.SetFlag("dirichlet", makeCArray<double>(py::list(dirichlet)));
 // 			       bpflags["dirichlet"] = dirlist();
 			     }
 
-                             py::extract<string> dirstring(dirichlet);
-                             if (dirstring.check())
+                             if (py::isinstance<py::str>(dirichlet))
                                {
-                                 std::regex pattern(dirstring());
+                                 std::regex pattern(dirichlet.cast<string>());
                                  Array<double> dirlist;
                                  for (int i = 0; i < ma->GetNBoundaries(); i++)
                                    if (std::regex_match (ma->GetBCNumBCName(i), pattern))
@@ -928,13 +926,12 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 // 				 bpflags["dirichlet"] = py::cast(dirlist);
                                }
 
-                             py::extract<string> definedon_string(definedon);
-                             if (definedon_string.check())
+                             if (py::isinstance<py::str>(definedon))
                                {
-                                 regex definedon_pattern(definedon_string());
+                                 std::regex pattern(definedon.cast<string>());
                                  Array<double> defonlist;
                                  for (int i = 0; i < ma->GetNDomains(); i++)
-                                   if (regex_match(ma->GetDomainMaterial(i), definedon_pattern))
+                                   if (regex_match(ma->GetDomainMaterial(i), pattern))
                                      defonlist.Append(i+1);
                                  flags.SetFlag ("definedon", defonlist);
 // 				 bpflags["definedon"] = py::cast(defonlist);

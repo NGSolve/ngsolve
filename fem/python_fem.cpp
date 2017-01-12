@@ -113,29 +113,28 @@ PyCF MakeCoefficient (py::object val)
   py::extract<PyCF> ecf(val);
   if (ecf.check()) return ecf();
 
-  py::extract<double> ed(val);
-  if (ed.check()) 
-    return PyCF(make_shared<ConstantCoefficientFunction> (ed()));
+  if(py::CheckCast<double>(val))
+    return PyCF(make_shared<ConstantCoefficientFunction> (val.cast<double>()));
 
-  py::extract<Complex> ec(val);
-  if (ec.check()) 
-    return PyCF(make_shared<ConstantCoefficientFunctionC> (ec()));
+  if(py::CheckCast<Complex>(val)) {
+    return PyCF(make_shared<ConstantCoefficientFunctionC> (val.cast<Complex>()));
+  }
 
-  py::extract<py::list> el(val);
-  if (el.check())
+  if (py::isinstance<py::list>(val))
     {
-      Array<shared_ptr<CoefficientFunction>> cflist(py::len(el()));
+      py::list el(val);
+      Array<shared_ptr<CoefficientFunction>> cflist(py::len(el));
       for (int i : Range(cflist))
-        cflist[i] = MakeCoefficient(el()[i]).Get();
+        cflist[i] = MakeCoefficient(el[i]).Get();
       return PyCF(MakeDomainWiseCoefficientFunction(move(cflist)));
     }
 
-  py::extract<py::tuple> et(val);
-  if (et.check())
+  if (py::isinstance<py::tuple>(val))
     {
-      Array<shared_ptr<CoefficientFunction>> cflist(py::len(et()));
+      py::tuple et(val);
+      Array<shared_ptr<CoefficientFunction>> cflist(py::len(et));
       for (int i : Range(cflist))
-        cflist[i] = MakeCoefficient(et()[i]).Get();
+        cflist[i] = MakeCoefficient(et[i]).Get();
       return PyCF(MakeVectorialCoefficientFunction(move(cflist)));
     }
 
