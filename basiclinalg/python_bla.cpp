@@ -328,7 +328,7 @@ void PyMatAccess( TCLASS &c )
 template <typename TVEC, typename TNEW, typename TSCAL>
 auto ExportVector(py::module &m, const char * name ) -> py::class_<TVEC>
   {
-    auto c = py::class_<TVEC >(m, name);
+    auto c = py::class_<TVEC >(m, name, py::buffer_protocol());
     PyDefVector<TVEC, TSCAL>(m, c);
     PyVecAccess< TVEC, TNEW >(m, c);
     PyDefToString<TVEC >(m, c);
@@ -368,11 +368,11 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
         .def(py::self*=double())
         ;
 
-    py::class_<VD, FVD> cvd(m, "VectorD");
+    py::class_<VD, FVD> cvd(m, "VectorD", py::buffer_protocol());
     cvd.def(py::init<int>());
     PyDefVecBuffer<VD>(cvd);
 
-    py::class_<VC, FVC > cvc(m, "VectorC");
+    py::class_<VC, FVC > cvc(m, "VectorC", py::buffer_protocol());
     cvc.def(py::init<int>());
     PyDefVecBuffer<VC>(cvc);
 
@@ -424,7 +424,7 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
     ///////////////////////////////////////////////////////////////////////////////////////
     // Matrix types
     typedef FlatMatrix<double> FMD;
-    py::class_<FlatMatrix<double> > class_FMD(m, "FlatMatrixD");
+    py::class_<FlatMatrix<double> > class_FMD(m, "FlatMatrixD", py::buffer_protocol());
         PyMatAccess<FMD, Matrix<double> >(class_FMD);
         PyDefToString<FMD>(m, class_FMD);
         class_FMD.def(py::self+=py::self);
@@ -437,7 +437,7 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
 
 
     typedef FlatMatrix<Complex> FMC;
-    auto class_FMC = py::class_<FlatMatrix<Complex> > (m, "FlatMatrixC");
+    auto class_FMC = py::class_<FlatMatrix<Complex> > (m, "FlatMatrixC", py::buffer_protocol());
         PyMatAccess<FMC, Matrix<Complex> >(class_FMC);
         PyDefToString<FMC>(m, class_FMC);
         class_FMC.def(py::self+=py::self)
@@ -479,12 +479,12 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
         ;
     PyDefMatBuffer<FMC>(class_FMC);
 
-    auto class_MD = py::class_<Matrix<double>, FMD>(m, "MatrixD")
+    auto class_MD = py::class_<Matrix<double>, FMD>(m, "MatrixD", py::buffer_protocol())
         .def(py::init<int, int>())
         ;
     PyDefMatBuffer<Matrix<>>(class_MD);
 
-    auto class_MC = py::class_<Matrix<Complex>, FMC >(m, "MatrixC")
+    auto class_MC = py::class_<Matrix<Complex>, FMC >(m, "MatrixC", py::buffer_protocol())
         .def(py::init<int, int>())
         ;
     PyDefMatBuffer<Matrix<Complex>>(class_MC);
