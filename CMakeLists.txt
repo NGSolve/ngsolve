@@ -250,7 +250,7 @@ endif(USE_PARDISO)
 #######################################################################
 
 if(USE_UMFPACK)
-  find_package(SuiteSparse NO_MODULE HINTS ${INSTALL_DIR})
+  find_package(SuiteSparse NO_MODULE HINTS ${UMFPACK_DIR})
   include(${USE_SuiteSparse})
   include_directories(${SuiteSparse_INCLUDE_DIRS})
   set(UMFPACK_LIBRARIES ${SuiteSparse_LIBRARIES} CACHE STRING "List of UMFPACK libraries")
