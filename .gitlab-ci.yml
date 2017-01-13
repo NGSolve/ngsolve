@@ -84,18 +84,10 @@ stages:
 build_win32:
   <<: *win32
   <<: *build_win
-  cache:
-    paths:
-      - build/
-    key: "ngsolve_win32_${CI_BUILD_REF_NAME}"
 
 build_win64:
   <<: *win64
   <<: *build_win
-  cache:
-    paths:
-      - build/
-    key: "ngsolve_win64_${CI_BUILD_REF_NAME}"
 
 # Linux
 .template_build_linux: &build_linux
@@ -138,18 +130,10 @@ build_ubuntu_1604:
 .test_win32:
   <<: *win32
   <<: *test_win
-  cache:
-    paths:
-      - build/
-    key: "ngsolve_win32_${CI_BUILD_REF_NAME}"
 
 test_win64:
   <<: *win64
   <<: *test_win
-  cache:
-    paths:
-      - build/
-    key: "ngsolve_win64_${CI_BUILD_REF_NAME}"
 
 # Linux
 .template_test_linux: &test_linux
@@ -195,12 +179,7 @@ win64_cleanup:
     - x64
   script:
     - rd /s /q %INSTALL_DIR%
-    - rd /s /q build
   when: always
-  cache:
-    paths:
-      - build/
-    key: "ngsolve_win64_${CI_BUILD_REF_NAME}"
   allow_failure: true
 
 win32_cleanup:
@@ -211,11 +190,6 @@ win32_cleanup:
     - x86
   script:
     - rd /s /q %INSTALL_DIR%
-    - rd /s /q build
   when: always
-  cache:
-    paths:
-      - build/
-    key: "ngsolve_win32_${CI_BUILD_REF_NAME}"
   allow_failure: true
 
