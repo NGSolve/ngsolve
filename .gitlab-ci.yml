@@ -65,7 +65,8 @@ stages:
   stage: build
   script:
     - git submodule update --init --recursive
-    - if not exist build MKDIR build
+    - if exist build rd /s /q build
+    - mkdir build
     - cd build
     - DEL CMakeCache.txt
     - RD /S CMakeFiles
