@@ -206,12 +206,18 @@ if(NOT NETGEN_DIR)
     BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/netgen
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ${COMMON_BUILD_COMMAND}
-    INSTALL_COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR}/netgen --target install --config ${CMAKE_BUILD_TYPE}
-    BUILD_ALWAYS 1
+    INSTALL_COMMAND ""
   )
 
-message("\n\nConfigure Netgen from submodule...")
-execute_process(COMMAND ${CMAKE_COMMAND} -G${CMAKE_GENERATOR} ${NETGEN_CMAKE_ARGS} ${PROJECT_SOURCE_DIR}/external_dependencies/netgen WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/netgen)
+  add_custom_target(install_netgen ALL
+    ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR}/netgen --target install --config ${CMAKE_BUILD_TYPE}
+    DEPENDS netgen_project
+  )
+
+  list(APPEND DEPENDENCIES install_netgen)
+
+  message("\n\nConfigure Netgen from submodule...")
+  execute_process(COMMAND ${CMAKE_COMMAND} -G${CMAKE_GENERATOR} ${NETGEN_CMAKE_ARGS} ${PROJECT_SOURCE_DIR}/external_dependencies/netgen WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/netgen)
 endif(NOT NETGEN_DIR)
 
 ExternalProject_Add (ngsolve
@@ -223,7 +229,6 @@ ExternalProject_Add (ngsolve
   BUILD_COMMAND ${COMMON_BUILD_COMMAND}
   STEP_TARGETS build
 )
-add_dependencies(ngsolve netgen_project)
 
 install(CODE "execute_process(COMMAND \"${CMAKE_COMMAND}\" --build . --config ${CMAKE_BUILD_TYPE} --target install WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ngsolve)")
 
