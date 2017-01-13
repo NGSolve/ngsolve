@@ -196,6 +196,10 @@ win64_cleanup:
     - rd /s /q %INSTALL_DIR%
     - rd /s /q build
   when: always
+  cache:
+    paths:
+      - build/
+    key: "ngsolve_win64_${CI_BUILD_REF_NAME}"
   allow_failure: true
 
 win32_cleanup:
@@ -208,5 +212,9 @@ win32_cleanup:
     - rd /s /q %INSTALL_DIR%
     - rd /s /q build
   when: always
+  cache:
+    paths:
+      - build/
+    key: "ngsolve_win32_${CI_BUILD_REF_NAME}"
   allow_failure: true
 
