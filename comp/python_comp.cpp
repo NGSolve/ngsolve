@@ -1779,7 +1779,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
          py::arg("integrator"))
 
     .def("__iadd__",FunctionPointer
-                  ([](PyLF self, PyWrapper<LinearFormIntegrator> & other) { *self.Get()+=other.Get(); return self; } ))
+                  ([](PyLF self, PyWrapper<LinearFormIntegrator> & other) { *self+=other.Get(); return self; } ))
 
 
     .def_property_readonly("integrators", FunctionPointer
@@ -1820,7 +1820,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                   "list of components for linearforms on compound-space")
     
     .def("__call__", FunctionPointer
-         ([](PyLF & self, const GridFunction & v)
+         ([](PyLF self, const GridFunction & v)
           {
             return InnerProduct (self->GetVector(), v.GetVector());
           }))
