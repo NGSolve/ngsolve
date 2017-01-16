@@ -399,13 +399,12 @@ namespace ngcomp
       auto & mip = *new (lh) MappedIntegrationPoint<DIMS,DIMR,Complex> (ip, *this, -47);
       MappedIntegrationPoint<DIMS,DIMR> hip(ip, *this);
       
-      Vec<DIMR> hpoint(hip.Point());
       Vec<DIMR,Complex> point;
       
       Mat<DIMS,DIMR> hjac(hip.Jacobian());
           
       Mat<DIMR,DIMR,Complex> tjac;
-      pml_global_trafo.MapPoint (hpoint, point, tjac);
+      pml_global_trafo.MapIntegrationPoint (hip, point, tjac);
                     
       mip.Point() = point; 
       mip.Jacobian() = tjac*hjac;
@@ -442,13 +441,12 @@ namespace ngcomp
 
       for (int i = 0; i < ir.Size(); i++)
         {
-          Vec<DIMR> hpoint(mir_real[i].Point());
           Vec<DIMR,Complex> point;
           
           Mat<DIMS,DIMR> hjac(mir_real[i].Jacobian());
           
           Mat<DIMR,DIMR,Complex> tjac;
-          pml_global_trafo.MapPoint (hpoint, point, tjac);
+          pml_global_trafo.MapIntegrationPoint (mir_real[i], point, tjac);
                     
           mir_complex[i].Point() = point; 
           mir_complex[i].Jacobian() = tjac*hjac;
