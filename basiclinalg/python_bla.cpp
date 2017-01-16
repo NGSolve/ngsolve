@@ -105,20 +105,20 @@ void PyMatAccess( TCLASS &c )
             py::object cols = t[1];
 
             // First element of tuple is of type int
-            int row_ind = rows.cast<int>();
-            //         if(row_ind.check()) {
-            py::object row = py::cast( self.Row(row_ind) );
-            py::object f = row.attr("__getitem__");
-            return f(cols);
-            //         }
+            if(py::isinstance<py::int_>(rows)) {
+              cout <<"first is int : " << flush << rows.cast<int>() << endl;
+              py::object row = py::cast( self.Row(rows.cast<int>()) );
+              cout <<"row " << row << endl;
+              return row.attr("__getitem__")(cols);
+            }
 
             // Second element of tuple is of type int
-            auto col_ind = cols.cast<int>();
-            //         if(col_ind.check()) {
-            py::object col = py::cast( TROW(self.Col(col_ind)) );
-            py::object f1 = col.attr("__getitem__");
-            return f1(rows);
-            //         }
+            if(py::isinstance<py::int_>(cols)) {
+              cout <<"second is int : " << flush << cols.cast<int>() << endl;
+              py::object col = py::cast( TROW(self.Col(cols.cast<int>())) );
+              cout <<"col " << col << endl;
+              return col.attr("__getitem__")(rows);
+            }
 
             // Both elements are slices
             try {
@@ -137,25 +137,26 @@ void PyMatAccess( TCLASS &c )
             py::object cols = t[1];
 
             // First element of tuple is of type int
-            int row_ind = rows.cast<int>();
-            //         if(row_ind.check()) {
-            py::object row = py::cast( self.Row(row_ind) );
-            py::object f = row.attr("__setitem__");
-            f(cols, v);
-            return;
-            //         }
+            if(py::isinstance<py::int_>(rows)) {
+              cout <<"first is int : " << flush << rows.cast<int>() << endl;
+              py::object row = py::cast( self.Row(rows.cast<int>()) );
+              cout <<"row " << row << endl;
+              row.attr("__setitem__")(cols, v);
+              return;
+            }
 
             // Second element of tuple is of type int
-            auto col_ind = cols.cast<int>();
-            //         if(col_ind.check()) {
-            auto row_slice = rows.cast<py::slice>();
-            auto col = self.Col(col_ind);
-            size_t start, step, n;
-            InitSlice( row_slice, self.Height(), start, step, n );
-            for (int i=0; i<n; i++, start+=step)
-              col[start] = v[i];
-            return;
-            //         }
+            if(py::isinstance<py::int_>(cols)) {
+              cout <<"second is int : " << flush << cols.cast<int>() << endl;
+              auto row_slice = rows.cast<py::slice>();
+              auto col = self.Col(cols.cast<int>());
+              cout <<"col " << col << endl;
+              size_t start, step, n;
+              InitSlice( row_slice, self.Height(), start, step, n );
+              for (int i=0; i<n; i++, start+=step)
+                col[start] = v[i];
+              return;
+            }
 
             // One of the indices has to be of type int
             cerr << "Invalid Matrix access!" << endl;
@@ -166,25 +167,25 @@ void PyMatAccess( TCLASS &c )
             py::object cols = t[1];
 
             // First element of tuple is of type int
-            int row_ind = rows.cast<int>();
-            //         if(row_ind.check()) {
-            py::object row = py::cast( self.Row(row_ind) );
-            py::object f = row.attr("__setitem__");
-            f(cols, val);
-            return;
-            //         }
+            if(py::isinstance<py::int_>(rows)) {
+              cout <<"first is int : " << flush << rows.cast<int>() << endl;
+              py::object row = py::cast( self.Row(rows.cast<int>()) );
+              row.attr("__setitem__")(cols,val);
+              return;
+            }
 
             // Second element of tuple is of type int
-            int col_ind = cols.cast<int> ();
-            //         if(col_ind.check()) {
-            py::slice row_slice = rows.cast<py::slice> ();
-            auto col = self.Col(col_ind);
-            size_t start, step, n;
-            InitSlice( row_slice, self.Height(), start, step, n );
-            for (int i=0; i<n; i++, start+=step)
-              col[start] = val;
-            return;
-            //         }
+            if(py::isinstance<py::int_>(cols)) {
+              cout <<"second is int : " << flush << cols.cast<int>() << endl;
+              auto row_slice = rows.cast<py::slice>();
+              auto col = self.Col(cols.cast<int>());
+              cout <<"col " << col << endl;
+              size_t start, step, n;
+              InitSlice( row_slice, self.Height(), start, step, n );
+              for (int i=0; i<n; i++, start+=step)
+                col[start] = val;
+              return;
+            }
 
             // Both elements are slices
             try {
@@ -193,10 +194,9 @@ void PyMatAccess( TCLASS &c )
               InitSlice( row_slice(), self.Height(), start, step, n );
               for (int i=0; i<n; i++, start+=step) {
                 py::object row = py::cast(self.Row(start));
-                py::object f = row.attr("__setitem__");
-                f(cols, val);
-                return;
+                row.attr("__setitem__")(cols,val);
               }
+              return;
             } catch (py::error_already_set const &) {
               cerr << "Invalid Matrix access!" << endl;
               PyErr_Print();
