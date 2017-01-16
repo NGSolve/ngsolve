@@ -143,22 +143,20 @@ namespace ngcomp
     NodeIterator end () const { return NodeIterator(NodeId(nt,IntRange::Next())); }
     NodeId operator[] (size_t nr) { return NodeId(nt, IntRange::First()+nr); }
   };
-  template<int DIM>
-      class PML_CF;
-
-  template<int DIM>
-      class PML_Jac;
-  
+ 
 
   class PML_Transformation
   {
+    int dim;
     public:
     
-    PML_Transformation() { ; }
+    PML_Transformation(int _dim) : dim(_dim) { ; }
     
     virtual ~PML_Transformation() { ; }
-    
-    virtual shared_ptr<PML_Transformation> CreateDim(int dim) = 0; 
+
+    int GetDimension() const { return dim; }
+
+    virtual shared_ptr<PML_Transformation> CreateDim(int _dim) = 0; 
    /* {
         throw Exception("While creating dim: No PML Transformation specified\n");
         return new PML_Transformation();
@@ -166,10 +164,10 @@ namespace ngcomp
     
     virtual void PrintParameters() = 0;
 
-    virtual shared_ptr<CoefficientFunction> MakePMLCF() = 0;
+    virtual void MapPointV(const BaseMappedIntegrationPoint & hpoint, Vector<Complex> & point, Matrix<Complex> & jac) const = 0;
     
-    virtual shared_ptr<CoefficientFunction> MakePMLJac() = 0;
-    
+    virtual void MapPointV(Vector<double> & hpoint, Vector<Complex> & point, Matrix<Complex> & jac) const = 0;
+
     virtual void MapPoint(Vec<0> & hpoint, Vec<0,Complex> & point,
                    Mat<0,0,Complex> & jac) const 
     {
@@ -214,86 +212,38 @@ namespace ngcomp
 
   
   template <int DIM>
-  class PML_CF : public CoefficientFunction
-    {
-        PML_Transformation & pml_trafo;
-
-        public:
-
-        PML_CF(PML_Transformation & _pml_trafo)
-          : CoefficientFunction(DIM,true), pml_trafo(_pml_trafo)
-        { ; }
-
-        ~PML_CF() { ; }
-
-        virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
-        {
-          return 0; 
-        }
-
-        virtual void Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<Complex> result) const
-        {
-          Mat<DIM,DIM,Complex> jac;
-          Vec<DIM,Complex> tresult;
-          pml_trafo.MapIntegrationPoint(ip,tresult,jac);
-          result=FlatVector<Complex>(tresult);
-        }
-
-    };
-
-  template <int DIM>
-  class PML_Jac : public CoefficientFunction
-    {
-        PML_Transformation & pml_trafo;
-
-        public:
-
-        PML_Jac(PML_Transformation & _pml_trafo)
-          : CoefficientFunction(DIM*DIM,true), pml_trafo(_pml_trafo)
-        { 
-            FlatArray<int> dims;
-            dims[0]=DIM;
-            dims[1]=DIM;
-            SetDimensions(dims);
-        }
-
-        ~PML_Jac() { ; }
-
-        virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
-        {
-          return 0; 
-        }
-
-        virtual void Evaluate (const BaseMappedIntegrationPoint & ip, FlatMatrix<Complex> result) const
-        {
-          Mat<DIM,DIM,Complex> jac;
-          Vec<DIM,Complex> tresult;
-          pml_trafo.MapIntegrationPoint(ip,tresult,jac);
-          result=FlatMatrix<Complex>(jac);
-        }
-
-    };
-  template <int DIM>
   class PML_TransformationDim : public PML_Transformation
   {
     public:
+    
+    PML_TransformationDim() : PML_Transformation(DIM) { ; }
+
     virtual shared_ptr<PML_Transformation> CreateDim(int dim)  = 0;
     
-    virtual shared_ptr<CoefficientFunction> MakePMLCF()
-    {
-      return make_shared<PML_CF<DIM>> (*this);
-    }
-
-    virtual shared_ptr<CoefficientFunction> MakePMLJac()
-    {
-      return make_shared<PML_Jac<DIM>> (*this);
-    }
-
     virtual void MapIntegrationPoint(const BaseMappedIntegrationPoint & ip, Vec<DIM,Complex> & point,
                    Mat<DIM,DIM,Complex> & jac) const  
     {
       Vec<DIM> hpoint = ip.GetPoint();
       MapPoint(hpoint, point, jac);
+    }
+
+    virtual void MapPointV(const BaseMappedIntegrationPoint & hpoint, Vector<Complex> & point, Matrix<Complex> & jac) const 
+    {
+      Vec<DIM,Complex> vpoint;
+      Mat<DIM,DIM,Complex> mjac;
+      MapIntegrationPoint(hpoint,vpoint,mjac);
+      point = FlatVector<Complex>(vpoint);
+      jac = FlatMatrix<Complex>(mjac);
+    }
+    
+    virtual void MapPointV(Vector<double> & hpoint, Vector<Complex> & point, Matrix<Complex> & jac) const 
+    {
+      Vec<DIM,Complex> vpoint;
+      Mat<DIM,DIM,Complex> mjac;
+      Vec<DIM> vhpoint = hpoint;
+      MapPoint(vhpoint,vpoint,mjac);
+      point = Vector<Complex>(vpoint);
+      jac = Matrix<Complex>(mjac);
     }
 
   };
@@ -757,25 +707,24 @@ namespace ngcomp
     void SetPML (shared_ptr<PML_Transformation> pml_trafo, int _domnr)
     {
       if (_domnr>=ndomains)
-        cout << "was not able to set PML, domain index too high!" << endl;
-      if (pml_trafo)
-        pml_trafos[_domnr] = pml_trafo->CreateDim(GetDimension()); 
-      else
-        pml_trafos[_domnr] = nullptr;
+        throw Exception("MeshAccess::SetPML: was not able to set PML, domain index too high!");
+      pml_trafos[_domnr] = pml_trafo->CreateDim(GetDimension()); 
     }
     
+    void UnSetPML (int _domnr)
+    {
+      if (_domnr>=ndomains)
+        throw Exception("MeshAccess::UnSetPML: was not able to unset PML, domain index too high!");
+      pml_trafos[_domnr] = nullptr; 
+    }
     Array<shared_ptr<PML_Transformation>> & GetPMLTrafos()
     { return pml_trafos; }
 
     shared_ptr<PML_Transformation> GetPML(int _domnr)
     {
       if (_domnr>=ndomains)
-      {
-        cout << "was not able to get PML, domain index too high!" << endl;
-        return nullptr;
-      } 
-      else
-        return pml_trafos[_domnr];
+        throw Exception("MeshAccess::GetPML: was not able to get PML, domain index too high!");
+      return pml_trafos[_domnr];
     }
     
     shared_ptr<netgen::Mesh> GetNetgenMesh () const
@@ -1290,6 +1239,14 @@ namespace ngcomp
 
 #endif
 
+}
+
+namespace ngstd
+{
+  template <>
+  struct PyWrapperTraits<ngcomp::PML_Transformation> {
+    typedef PyWrapperClass<ngcomp::PML_Transformation> type;
+  };
 }
 
 #endif
