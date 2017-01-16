@@ -335,7 +335,7 @@ namespace ngfem
     { ; }
     */
     ///
-    INLINE const Vec<R,SCAL> & GetPoint () const { cout << "returning point: "<< point << endl; return point; }
+    INLINE const Vec<R,SCAL> & GetPoint () const { return point; }
     INLINE Vec<R,SCAL> & Point () { return point; }
     ///
     INLINE SCAL operator() (int i) const { return point(i); }
