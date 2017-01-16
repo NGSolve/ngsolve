@@ -11,9 +11,13 @@ def test_matrix():
     assert a.w == m
 
     a[:] = 99
+    a[5,:] = 55
     a[2,4] = 1
     assert a[1,2] == 99
     assert a[2,4] == 1
+    assert a[5,4] == 55
+    a[:,3] = 33
+    assert a[2,3] == 33
 
 def test_matrix_numpy():
     try:
