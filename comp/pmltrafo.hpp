@@ -20,7 +20,7 @@ namespace ngcomp
     public:
 
     RadialPML_Transformation(double _rad, Complex _alpha) 
-      : rad(_rad), alpha(_alpha) { ; }
+      : PML_TransformationDim<DIM>(), rad(_rad), alpha(_alpha) { ; }
     
     ~RadialPML_Transformation() {;}
     
@@ -59,7 +59,6 @@ namespace ngcomp
 
       }
     }
-
     void MapPoint (Vec<DIM> & hpoint, Vec<DIM,Complex> & point,
                    Mat<DIM,DIM,Complex> & jac) const
     {
@@ -90,7 +89,7 @@ namespace ngcomp
     public:
 
     CartesianPML_Transformation(Matrix<double> _bounds, Complex _alpha) 
-      : bounds(_bounds), alpha(_alpha) { ; }
+      : PML_TransformationDim<DIM>(), bounds(_bounds), alpha(_alpha) { ; }
     
     ~CartesianPML_Transformation() {;}
 
@@ -122,7 +121,6 @@ namespace ngcomp
 
       }
     }
-
     void MapPoint (Vec<DIM> & hpoint, Vec<DIM,Complex> & point,
                     Mat<DIM,DIM,Complex> & jac) const 
     {
@@ -153,7 +151,7 @@ namespace ngcomp
     public:
 
     BrickRadialPML_Transformation(Matrix<double> _bounds, Complex _alpha) 
-      : bounds(_bounds), alpha(_alpha) { ; }
+      : PML_TransformationDim<DIM>(), bounds(_bounds), alpha(_alpha) { ; }
     
     ~BrickRadialPML_Transformation() {;}
 
@@ -186,11 +184,6 @@ namespace ngcomp
       }
     }
 
-    Matrix<double> GetBounds()
-    { return bounds;}
-    Complex GetAlpha()
-    {return alpha;}
-
     void MapPoint (Vec<DIM> & hpoint, Vec<DIM,Complex> & point,
                     Mat<DIM,DIM,Complex> & jac) const 
     {
@@ -221,12 +214,15 @@ namespace ngcomp
   template <int DIM>
   class CustomPML_Transformation : public PML_TransformationDim<DIM>
   {
-    const CoefficientFunction & trafo;
-    const CoefficientFunction & jac;
+    shared_ptr<CoefficientFunction> trafo;
+    shared_ptr<CoefficientFunction> jac;
     public:
 
-    CustomPML_Transformation(CoefficientFunction & _trafo, CoefficientFunction & _jac) 
-      : trafo(_trafo), jac(_jac) { ; }
+    CustomPML_Transformation(shared_ptr<CoefficientFunction> _trafo,shared_ptr<CoefficientFunction> _jac) 
+      : PML_TransformationDim<DIM>(), trafo(_trafo), jac(_jac) {
+        if (jac->Dimensions()[0]!=trafo->Dimension() || jac->Dimensions()[1]!=trafo->Dimension())
+            throw Exception( string("CustomPML_Transformation::CustomPML_Transformation: dimensions for jacobian and transformation do not match!"));
+      }
     
     ~CustomPML_Transformation() {;}
 
@@ -241,49 +237,50 @@ namespace ngcomp
       switch (dim)
       {
         case 0:     
-            if (trafo.Dimension()==0)
               return make_shared<CustomPML_Transformation<0>> (trafo,jac);
         case 1:     
-            if (trafo.Dimension()==1)
+            if (trafo->Dimension()==1)
               return make_shared<CustomPML_Transformation<1>> (trafo,jac);
         case 2:     
-            if (trafo.Dimension()==2)
+            if (trafo->Dimension()==2)
               return make_shared<CustomPML_Transformation<2>> (trafo,jac);
         case 3:     
-            if (trafo.Dimension()==3)
+            if (trafo->Dimension()==3)
               return make_shared<CustomPML_Transformation<3>> (trafo,jac);
-        default:
-          throw Exception ("No valid Dimension");
+        throw Exception ("CustomPML_Transformation::SetDimension: No valid Dimension");
       }
     }
 
-    void MapIntegrationPoint (BaseMappedIntegrationPoint & hpoint, Vec<DIM,Complex> & point,
+    void MapIntegrationPoint (const BaseMappedIntegrationPoint & hpoint, Vec<DIM,Complex> & point,
                     Mat<DIM,DIM,Complex> & jacmat) const 
     {
-      FlatVector<Complex> fvpoint(DIM);
-      FlatVector<Complex> fvjac(DIM*DIM);
-      trafo.Evaluate(hpoint,fvpoint);
-      jac.Evaluate(hpoint,fvjac);
-      for (int i : Range(DIM))
-      {
-          point(i) = fvpoint(i);
-          for (int j : Range(DIM))
-              jacmat(i,j)=fvjac(i+j*DIM);
-      }
+      Vector<Complex> fvpoint(trafo->Dimension());
+      Vector<Complex> fvjac(jac->Dimension());
+      trafo->Evaluate(hpoint,fvpoint);
+      point = fvpoint;
+      jac->Evaluate(hpoint,fvjac);
+      jacmat = fvjac;
+    }
+    
+    void MapPoint (Vec<DIM> & hpoint, Vec<DIM,Complex> & point,
+                    Mat<DIM,DIM,Complex> & jac) const 
+    {
+      throw Exception("CustomPML_Transformation::MapPoint: can only map integration Points");
     }
   };
 
-
-  //scaling of the form \hat x := x - d(x) + \alpha(x)*d(x)
+/*
+  //scaling of the form \hat x := x + \alpha(d(x))*d(x)
   template <int DIM>
   class DistanceScalingPML_Transformation : public PML_TransformationDim<DIM>
   {
-    const CoefficientFunction & alpha;
-    const CoefficientFunction & dalpha;
+    protected:
+    shared_ptr<CoefficientFunction> alpha;
+    shared_ptr<CoefficientFunction> dalpha;
     public:
 
-    DistanceScalingPML_Transformation(const CoefficientFunction & _scaling, const CoefficientFunction & _dscaling) 
-      : alpha(_scaling), dalpha(_dscaling) { ; }
+    DistanceScalingPML_Transformation(shared_ptr<CoefficientFunction> _scaling, shared_ptr<CoefficientFunction> _dscaling) 
+      : PML_TransformationDim<DIM>(), alpha(_scaling), dalpha(_dscaling) { ; }
     
     ~DistanceScalingPML_Transformation() {;}
 
@@ -292,25 +289,36 @@ namespace ngcomp
       cout << "scaling: " << alpha << endl;
     }
     
-    virtual void GetDistance(const BaseMappedIntegrationPoint & hpoint, Vec<DIM> & dist, Mat<DIM,DIM> &ddist) const = 0;
+    virtual void GetDistance(const BaseMappedIntegrationPoint & hpoint, Vec<DIM> & dist, Mat<DIM,DIM> &ddist) const 
+    {
+      BaseMappedIntegrationPoint mip_dist = GetMipDistance(hpoint,ddist);
+      dist = mip_dist.GetPoint();
+    }
+
+    virtual BaseMappedIntegrationPoint GetMipDistance(const BaseMappedIntegrationPoint & hpoint,Mat<DIM,DIM> & ddist) const = 0;
+
 
     void MapIntegrationPoint (const BaseMappedIntegrationPoint & hpoint, Vec<DIM,Complex> & point,
                     Mat<DIM,DIM,Complex> & jacmat) const 
     {
       Mat<DIM,DIM> ddist;
       Vec<DIM> dist;
-
-      GetDistance(hpoint, dist,ddist);
-      double dist_abs = L2Norm(dist);
       
-      Complex valpha = alpha.EvaluateComplex(hpoint);
-      FlatVector<Complex> vdalpha(DIM*DIM);
-      dalpha.Evaluate(hpoint, vdalpha);
-      Mat<DIM,DIM> matvdalpha = vdalpha;
+      BaseMappedIntegrationPoint hmipdist = GetMipDistance(hpoint, ddist);
+      dist = hmipdist.GetPoint(); 
+      
+      Complex valpha = alpha->EvaluateComplex(hmipdist);
+      Vector<Complex> vdalpha(DIM*DIM);
+      dalpha->Evaluate(hmipdist, vdalpha);
 
-      point = hpoint.GetPoint() - dist + valpha * dist;
+      point = hpoint.GetPoint() + valpha * dist;
 
-      jacmat = Id<DIM>() + vdalpha * dist + (valpha - 1.)*ddist;
+      jacmat = Id<DIM>() + valpha * ddist + dist * Trans(vdalpha);
+    }
+    void MapPoint (Vec<DIM> & hpoint, Vec<DIM,Complex> & point,
+                    Mat<DIM,DIM,Complex> & jac) const 
+    {
+      throw Exception("DistanceScalingPML_Transformation::MapPoint: can only map integration Points");
     }
 
   };
@@ -321,43 +329,81 @@ namespace ngcomp
     double rad;
     public:
       RadialCustomScalingPML_Trafo(
-            const CoefficientFunction & _scaling, 
-            const CoefficientFunction & _dscaling,
-            double _rad) : DistanceScalingPML_Transformation<DIM>(_scaling,_dscaling),
-                          rad(_rad)
+              double _rad,
+            shared_ptr<CoefficientFunction> _scaling, 
+            shared_ptr<CoefficientFunction> _dscaling)
+           : DistanceScalingPML_Transformation<DIM>(_scaling,_dscaling), rad(_rad)
       { ; }
       ~RadialCustomScalingPML_Trafo() { ; }
 
       void PrintParameters()
       {
-        cout << "scaling: " << this->alpha << endl;
+        cout << "scaling: " << DistanceScalingPML_Transformation<DIM>::alpha << endl;
         cout << "radius: " << rad << endl; 
       }
       
-      void GetDistance(const BaseMappedIntegrationPoint & hpoint, Vec<DIM> & dist, Mat<DIM,DIM> &ddist) const
+      BaseMappedIntegrationPoint GetMipDistance(const BaseMappedIntegrationPoint & hpoint, Mat<DIM,DIM> &ddist) const
       {
+
         Vec<DIM> p = hpoint.GetPoint();
         double norm = L2Norm(p);
-        dist = 0;
-        ddist = 0;
+
+
+
+        DimMappedIntegrationPoint<DIM> out(
+                hpoint.IP(),
+                hpoint.GetTransformation());
+        Vec<DIM> dist;
+        ddist = 0.;
         if (norm > rad)
         {
           dist = (1.-rad/norm)*p;
           ddist = (1.-rad/norm)*Id<DIM>() + rad/norm/norm/norm*p*Trans(p);
         }
+        out.Point() = FlatVector<double>(dist);
+        return out;
       }
+    shared_ptr<PML_Transformation> CreateDim(int dim)
+    {
+      switch (dim)
+      {
+        case 0:     
+              return make_shared<RadialCustomScalingPML_Trafo<0>> (
+                      rad,
+                      DistanceScalingPML_Transformation<DIM>::alpha,
+                      DistanceScalingPML_Transformation<DIM>::dalpha);
+        case 1:     
+              return make_shared<RadialCustomScalingPML_Trafo<1>> (
+                      rad,
+                      DistanceScalingPML_Transformation<DIM>::alpha,
+                      DistanceScalingPML_Transformation<DIM>::dalpha);
+        case 2:     
+              return make_shared<RadialCustomScalingPML_Trafo<2>> (
+                      rad,
+                      DistanceScalingPML_Transformation<DIM>::alpha,
+                      DistanceScalingPML_Transformation<DIM>::dalpha);
+        case 3:     
+              return make_shared<RadialCustomScalingPML_Trafo<3>> (
+                      rad,
+                      DistanceScalingPML_Transformation<DIM>::alpha,
+                      DistanceScalingPML_Transformation<DIM>::dalpha);
+        default:
+          throw Exception ("No valid Dimension");
+      }
+    }
   };
+*/
+  /*
   template <int DIM>
   class CustomDistanceScalingPML_Trafo : public DistanceScalingPML_Transformation<DIM>
   {
-    const CoefficientFunction & dist;
-    const CoefficientFunction & ddist;
+    shared_ptr<CoefficientFunction> dist;
+    shared_ptr<CoefficientFunction> ddist;
     public:
       RadialCustomScalingPML_Trafo(
-            const CoefficientFunction & _scaling, 
-            const CoefficientFunction & _dscaling,
-            double _rad) : DistanceScalingPML_Transformation<DIM>(_scaling,_dscaling),
-                          rad(_rad)
+            shared_ptr<CoefficientFunction> _scaling, 
+            shared_ptr<CoefficientFunction>  _dscaling,
+            double _rad) : DistanceScalingPML_Transformation<DIM>(_scaling,_dscaling), rad(_rad)
       { ; }
       ~RadialCustomScalingPML_Trafo() { ; }
 
@@ -379,6 +425,6 @@ namespace ngcomp
           ddist = (1.-rad/norm)*Id<DIM>() + rad/norm/norm/norm*p*Trans(p);
         }
       }
-  };
+  };*/
 }
 #endif
