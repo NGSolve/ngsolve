@@ -22,7 +22,7 @@ shared_ptr<BaseVector> CreateBaseVector(int size, bool is_complex, int es)
 }
 
 void NGS_DLL_HEADER ExportNgla(py::module &m) {
-    cout << IM(1) << "exporting linalg" << endl;
+  // cout << IM(1) << "exporting linalg" << endl;
     // TODO
 //     py::object expr_module = py::import("ngsolve.__expr");
 //     py::object expr_namespace = expr_module.attr("__dict__");
@@ -464,6 +464,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                      { return m.InverseMatrix(); })
     .def("Transpose", [](BM &m)-> PyWrapper<BaseMatrix>
                                        { return make_shared<Transpose> (m); })
+    .def("Update", [](BM &m) { m.Update(); })
     // py::return_value_policy<py::manage_new_object>())
     ;
     m.def("TestMult", [] (BaseMatrix &m, PyBaseVector &x, PyBaseVector &y) {

@@ -379,8 +379,6 @@ namespace ngcomp
   void NedelecFESpace::TransformMat (ElementId ei,
 				     SliceMatrix<T> mat, TRANSFORM_TYPE tt) const
   {
-    int elnr = ei.Nr();
-    
     Ngs_Element ngel = ma->GetElement(ei);
     ELEMENT_TYPE eltype = ngel.GetType();
     

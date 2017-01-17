@@ -1,4 +1,5 @@
 #ifdef NGS_PYTHON
+#include <pybind11/numpy.h>
 #include "../ngstd/python_ngstd.hpp"
 #include <bla.hpp>
 
@@ -19,10 +20,10 @@ void PyDefVecBuffer( TCLASS & c )
         );
     });
     c.def("NumPy", [] (py::object & self) {
-        T& fv = py::cast<T&>(self);
+        // T& fv = py::cast<T&>(self);
         auto numpy = py::module::import("numpy");
         auto frombuffer = numpy.attr("frombuffer");
-        return frombuffer(self);
+        return frombuffer(self, py::detail::npy_format_descriptor<TSCAL>::dtype());
     });
 }
 
@@ -44,7 +45,7 @@ void PyDefMatBuffer( TCLASS & c )
         T& fv = py::cast<T&>(self);
         auto numpy = py::module::import("numpy");
         auto frombuffer = numpy.attr("frombuffer");
-        return frombuffer(self).attr("reshape")(fv.Height(),fv.Width());
+        return frombuffer(self, py::detail::npy_format_descriptor<TSCAL>::dtype()).attr("reshape")(fv.Height(),fv.Width());
     });
 }
 
@@ -104,20 +105,20 @@ void PyMatAccess( TCLASS &c )
             py::object cols = t[1];
 
             // First element of tuple is of type int
-            int row_ind = rows.cast<int>();
-            //         if(row_ind.check()) {
-            py::object row = py::cast( self.Row(row_ind) );
-            py::object f = row.attr("__getitem__");
-            return f(cols);
-            //         }
+            if(py::isinstance<py::int_>(rows)) {
+              cout <<"first is int : " << flush << rows.cast<int>() << endl;
+              py::object row = py::cast( self.Row(rows.cast<int>()) );
+              cout <<"row " << row << endl;
+              return row.attr("__getitem__")(cols);
+            }
 
             // Second element of tuple is of type int
-            auto col_ind = cols.cast<int>();
-            //         if(col_ind.check()) {
-            py::object col = py::cast( TROW(self.Col(col_ind)) );
-            py::object f1 = col.attr("__getitem__");
-            return f1(rows);
-            //         }
+            if(py::isinstance<py::int_>(cols)) {
+              cout <<"second is int : " << flush << cols.cast<int>() << endl;
+              py::object col = py::cast( TROW(self.Col(cols.cast<int>())) );
+              cout <<"col " << col << endl;
+              return col.attr("__getitem__")(rows);
+            }
 
             // Both elements are slices
             try {
@@ -136,25 +137,26 @@ void PyMatAccess( TCLASS &c )
             py::object cols = t[1];
 
             // First element of tuple is of type int
-            int row_ind = rows.cast<int>();
-            //         if(row_ind.check()) {
-            py::object row = py::cast( self.Row(row_ind) );
-            py::object f = row.attr("__setitem__");
-            f(cols, v);
-            return;
-            //         }
+            if(py::isinstance<py::int_>(rows)) {
+              cout <<"first is int : " << flush << rows.cast<int>() << endl;
+              py::object row = py::cast( self.Row(rows.cast<int>()) );
+              cout <<"row " << row << endl;
+              row.attr("__setitem__")(cols, v);
+              return;
+            }
 
             // Second element of tuple is of type int
-            auto col_ind = cols.cast<int>();
-            //         if(col_ind.check()) {
-            auto row_slice = rows.cast<py::slice>();
-            auto col = self.Col(col_ind);
-            size_t start, step, n;
-            InitSlice( row_slice, self.Height(), start, step, n );
-            for (int i=0; i<n; i++, start+=step)
-              col[start] = v[i];
-            return;
-            //         }
+            if(py::isinstance<py::int_>(cols)) {
+              cout <<"second is int : " << flush << cols.cast<int>() << endl;
+              auto row_slice = rows.cast<py::slice>();
+              auto col = self.Col(cols.cast<int>());
+              cout <<"col " << col << endl;
+              size_t start, step, n;
+              InitSlice( row_slice, self.Height(), start, step, n );
+              for (int i=0; i<n; i++, start+=step)
+                col[start] = v[i];
+              return;
+            }
 
             // One of the indices has to be of type int
             cerr << "Invalid Matrix access!" << endl;
@@ -165,25 +167,25 @@ void PyMatAccess( TCLASS &c )
             py::object cols = t[1];
 
             // First element of tuple is of type int
-            int row_ind = rows.cast<int>();
-            //         if(row_ind.check()) {
-            py::object row = py::cast( self.Row(row_ind) );
-            py::object f = row.attr("__setitem__");
-            f(cols, val);
-            return;
-            //         }
+            if(py::isinstance<py::int_>(rows)) {
+              cout <<"first is int : " << flush << rows.cast<int>() << endl;
+              py::object row = py::cast( self.Row(rows.cast<int>()) );
+              row.attr("__setitem__")(cols,val);
+              return;
+            }
 
             // Second element of tuple is of type int
-            int col_ind = cols.cast<int> ();
-            //         if(col_ind.check()) {
-            py::slice row_slice = rows.cast<py::slice> ();
-            auto col = self.Col(col_ind);
-            size_t start, step, n;
-            InitSlice( row_slice, self.Height(), start, step, n );
-            for (int i=0; i<n; i++, start+=step)
-              col[start] = val;
-            return;
-            //         }
+            if(py::isinstance<py::int_>(cols)) {
+              cout <<"second is int : " << flush << cols.cast<int>() << endl;
+              auto row_slice = rows.cast<py::slice>();
+              auto col = self.Col(cols.cast<int>());
+              cout <<"col " << col << endl;
+              size_t start, step, n;
+              InitSlice( row_slice, self.Height(), start, step, n );
+              for (int i=0; i<n; i++, start+=step)
+                col[start] = val;
+              return;
+            }
 
             // Both elements are slices
             try {
@@ -192,10 +194,9 @@ void PyMatAccess( TCLASS &c )
               InitSlice( row_slice(), self.Height(), start, step, n );
               for (int i=0; i<n; i++, start+=step) {
                 py::object row = py::cast(self.Row(start));
-                py::object f = row.attr("__setitem__");
-                f(cols, val);
-                return;
+                row.attr("__setitem__")(cols,val);
               }
+              return;
             } catch (py::error_already_set const &) {
               cerr << "Invalid Matrix access!" << endl;
               PyErr_Print();
@@ -327,7 +328,7 @@ void PyMatAccess( TCLASS &c )
 template <typename TVEC, typename TNEW, typename TSCAL>
 auto ExportVector(py::module &m, const char * name ) -> py::class_<TVEC>
   {
-    auto c = py::class_<TVEC >(m, name);
+    auto c = py::class_<TVEC >(m, name, py::buffer_protocol());
     PyDefVector<TVEC, TSCAL>(m, c);
     PyVecAccess< TVEC, TNEW >(m, c);
     PyDefToString<TVEC >(m, c);
@@ -367,11 +368,11 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
         .def(py::self*=double())
         ;
 
-    py::class_<VD, FVD> cvd(m, "VectorD");
+    py::class_<VD, FVD> cvd(m, "VectorD", py::buffer_protocol());
     cvd.def(py::init<int>());
     PyDefVecBuffer<VD>(cvd);
 
-    py::class_<VC, FVC > cvc(m, "VectorC");
+    py::class_<VC, FVC > cvc(m, "VectorC", py::buffer_protocol());
     cvc.def(py::init<int>());
     PyDefVecBuffer<VC>(cvc);
 
@@ -423,7 +424,7 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
     ///////////////////////////////////////////////////////////////////////////////////////
     // Matrix types
     typedef FlatMatrix<double> FMD;
-    py::class_<FlatMatrix<double> > class_FMD(m, "FlatMatrixD");
+    py::class_<FlatMatrix<double> > class_FMD(m, "FlatMatrixD", py::buffer_protocol());
         PyMatAccess<FMD, Matrix<double> >(class_FMD);
         PyDefToString<FMD>(m, class_FMD);
         class_FMD.def(py::self+=py::self);
@@ -436,13 +437,12 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
 
 
     typedef FlatMatrix<Complex> FMC;
-    auto class_FMC = py::class_<FlatMatrix<Complex> >(m, "FlatMatrixC")
-//         .def(PyDefToString<FMC>())
-//         .def(PyMatAccess<FMC, Matrix<Complex> >())
-        .def(py::self+=py::self)
+    auto class_FMC = py::class_<FlatMatrix<Complex> > (m, "FlatMatrixC", py::buffer_protocol());
+        PyMatAccess<FMC, Matrix<Complex> >(class_FMC);
+        PyDefToString<FMC>(m, class_FMC);
+        class_FMC.def(py::self+=py::self)
         .def(py::self-=py::self)
         .def(py::self*=Complex())
-//         .def(PyBufferProtocol<FMC, 2>())
         .def_property("diag",
                 py::cpp_function([](const FMC &self) { return Vector<Complex>(self.Diag()); }),
                 py::cpp_function([](FMC &self, const FVC &v) { self.Diag() = v; }))
@@ -479,12 +479,12 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
         ;
     PyDefMatBuffer<FMC>(class_FMC);
 
-    auto class_MD = py::class_<Matrix<double>, FMD>(m, "MatrixD")
+    auto class_MD = py::class_<Matrix<double>, FMD>(m, "MatrixD", py::buffer_protocol())
         .def(py::init<int, int>())
         ;
     PyDefMatBuffer<Matrix<>>(class_MD);
 
-    auto class_MC = py::class_<Matrix<Complex>, FMC >(m, "MatrixC")
+    auto class_MC = py::class_<Matrix<Complex>, FMC >(m, "MatrixC", py::buffer_protocol())
         .def(py::init<int, int>())
         ;
     PyDefMatBuffer<Matrix<Complex>>(class_MC);

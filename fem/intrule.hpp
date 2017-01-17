@@ -536,10 +536,12 @@ namespace ngfem
     INLINE IntegrationRule (int asize, IntegrationPoint * pip)
       : Array<IntegrationPoint> (asize, pip) { ; }
 
-
+    // copies pointers
     INLINE NGS_DLL_HEADER IntegrationRule (const IntegrationRule & ir2)
       : Array<IntegrationPoint> (ir2.Size(), &ir2[0]), dimension(ir2.dimension)
     { ; }
+
+    INLINE NGS_DLL_HEADER IntegrationRule (IntegrationRule && ir2) = default;
 
     INLINE NGS_DLL_HEADER IntegrationRule (size_t asize, LocalHeap & lh)
       : Array<IntegrationPoint> (asize, lh)
@@ -550,12 +552,17 @@ namespace ngfem
     // make it polymorphic
     HD virtual ~IntegrationRule() { ; }
 
+    IntegrationRule & operator= (IntegrationRule && ir2) = default;
+    IntegrationRule & operator= (const IntegrationRule & ir2) = delete;
+    
     ///
     INLINE void AddIntegrationPoint (const IntegrationPoint & ip)
     { 
       Append (ip);
     }
 
+    IntegrationRule Copy() const;
+    
     /// number of integration points
     INLINE size_t GetNIP() const { return Size(); }
 
@@ -1761,6 +1768,19 @@ namespace ngfem
     size_t GetNIP() const { return nip; } // Size()*SIMD<double>::Size(); }
     void SetNIP(size_t _nip) { nip = _nip; }
 
+    SIMD_IntegrationRule Clone() const
+    {
+      SIMD_IntegrationRule ir2(Size(), &(*this)[0]);
+      ir2.dimension = dimension;
+      ir2.nip = nip;
+      ir2.irx = irx;
+      ir2.iry = iry;
+      ir2.irz = irz;
+      return ir2;
+    }
+
+
+    
     bool IsTP() const { return irx != nullptr; } 
     const SIMD_IntegrationRule & GetIRX() const { return *irx; }
     const SIMD_IntegrationRule & GetIRY() const { return *iry; }
