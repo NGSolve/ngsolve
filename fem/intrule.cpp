@@ -300,6 +300,16 @@ namespace ngfem
     // mem_to_delete = NULL;
   }
 
+  IntegrationRule IntegrationRule :: Copy() const
+  {
+    IntegrationRule ir2;
+    ir2.SetSize (Size());
+    for (size_t i = 0; i < Size(); i++)
+      ir2[i] = (*this)[i];
+    ir2.dimension = dimension;
+    return ir2;
+  }
+
   ostream & operator<< (ostream & ost, const IntegrationRule & ir)
   {
     for (size_t i = 0; i < ir.GetNIP(); i++)

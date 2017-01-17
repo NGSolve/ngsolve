@@ -75,8 +75,11 @@ def curl(func):
     return func.Deriv()
 
 def div(func):
-    if func.derivname != "div":
-        raise Exception("cannot form div")
+    if func.derivname == "div":
+        return func.Deriv()
+    add = func.Operator("div")
+    if add:
+        return add        
     return func.Deriv()
 
 

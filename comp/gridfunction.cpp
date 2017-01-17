@@ -106,7 +106,7 @@ namespace ngcomp
 
 	if (archive.Output())
 	  {
-	    Array<int> dnums;
+	    Array<DofId> dnums;
 	    Array<double> temp (ma->GetNV());
 	    temp = 0;
 	    for (int i = 0; i < ma->GetNV(); i++)
@@ -122,7 +122,7 @@ namespace ngcomp
 	    Array<double> temp;
 	    archive & NodalData<NT_VERTEX> (*ma, temp);
 
-	    Array<int> dnums;
+	    Array<DofId> dnums;
 	    for (int i = 0; i < ma->GetNV(); i++)
 	      {
 		fespace->GetDofNrs (NodeId(NT_VERTEX, i), dnums);
@@ -134,7 +134,7 @@ namespace ngcomp
 
 	if (archive.Output())
 	  {
-	    Array<int> dnums;
+	    Array<DofId> dnums;
 	    Array<double> temp (ma->GetNEdges());
 	    temp = 0;
 	    for (int i = 0; i < ma->GetNEdges(); i++)
@@ -150,7 +150,7 @@ namespace ngcomp
 	    Array<double> temp;
 	    archive & NodalData<NT_EDGE> (*ma, temp);
 
-	    Array<int> dnums;
+	    Array<DofId> dnums;
 	    for (int i = 0; i < ma->GetNEdges(); i++)
 	      {
 		fespace->GetDofNrs (NodeId(NT_EDGE, i), dnums);
@@ -301,7 +301,7 @@ namespace ngcomp
     if (MyMPI_GetNTasks() == 1)
       { 
 	const FESpace & fes = *GetFESpace();
-	Array<int> dnums;
+	Array<DofId> dnums;
 	
 	// for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
         for (NODE_TYPE nt : { NT_VERTEX, NT_EDGE, NT_FACE, NT_CELL })
@@ -384,7 +384,7 @@ namespace ngcomp
 	
 	Array<Vec<N+1, int> > nodekeys;
 	Array<int> master_nodes;
-	Array<int> dnums, pnums;
+	Array<DofId> dnums, pnums;
 	
 	for(int i = 0; i < nnodes; i++)
 	  {
@@ -509,7 +509,7 @@ namespace ngcomp
   
     if (ntasks == 1)
       {
-	Array<int> dnums;	    
+	Array<DofId> dnums;	    
 	// for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
         for (NODE_TYPE nt : { NT_VERTEX, NT_EDGE, NT_FACE, NT_CELL })
 	  {
@@ -616,7 +616,8 @@ namespace ngcomp
 	Array<Vec<N+1,int> > nodenums;
 	Array<SCAL> data;
     
-	Array<int> dnums, pnums;
+	Array<DofId> dnums;
+        Array<int> pnums;
     
 	for (int i = 0; i < nnodes; i++)
 	  {

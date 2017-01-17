@@ -108,7 +108,7 @@ namespace ngcomp
       else if (ma->GetDimension() == 3) GetFaceDofNrs(fanr,dnums); 
     } 
     ///
-    virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const override; 
+    virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const override; 
 
     virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const override;
 

@@ -12,6 +12,11 @@
 
 #include <la.hpp>
 
+#include "pardisoinverse.hpp"
+#include "umfpackinverse.hpp"
+#include "superluinverse.hpp"
+#include "mumpsinverse.hpp"
+
 
 namespace ngla
 {
@@ -33,7 +38,8 @@ namespace ngla
       }
     firsti[size] = nze;
     
-    colnr.SetSize (nze+1);
+    // colnr.SetSize (nze+1);
+    colnr = NumaDistributedArray<int> (nze+1);
     
     for (size_t i = 0; i < nze; i++)
       colnr[i] = -1;
@@ -48,8 +54,8 @@ namespace ngla
     width = as;
     nze = as * max_elsperrow;
 
-    colnr.SetSize (as*max_elsperrow+1);
-
+    // colnr.SetSize (as*max_elsperrow+1);
+    colnr = NumaDistributedArray<int> (as*max_elsperrow+1);
     firsti.SetSize (as+1);
     owner = true;
     
@@ -81,8 +87,9 @@ namespace ngla
     else
       {
 	firsti.SetSize (size+1);
-	colnr.SetSize (nze);
-	
+	// colnr.SetSize (nze);
+        colnr = NumaDistributedArray<int> (nze);
+        
 	for (int i = 0; i < size+1; i++)
 	  firsti[i] = graph.firsti[i];
 	for (size_t i = 0; i < nze; i++)
@@ -1839,6 +1846,7 @@ namespace ngla
     static Timer t ("sparse matrix multiplication");
     static Timer t1a ("sparse matrix multiplication - setup a");
     static Timer t1b ("sparse matrix multiplication - setup b");
+    static Timer t1b1 ("sparse matrix multiplication - setup b1");
     static Timer t2 ("sparse matrix multiplication - mult"); 
     RegionTimer reg(t);
 
@@ -1872,9 +1880,10 @@ namespace ngla
 
     t1a.Stop();
     t1b.Start();
+    t1b1.Start();
     SparseMatrixTM<TM_Res> * prod = new SparseMatrix<TM_Res>(cnt, matb.Width());
     prod->AsVector() = 0.0;
-
+    t1b1.Stop();
     // fill col-indices
     ParallelForRange
       (mata.Height(), [&] (IntRange r)

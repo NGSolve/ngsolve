@@ -27,16 +27,20 @@ namespace ngcomp
   class Ngs_Element;
   
 
-  class Ngs_Element : public ElementId, public netgen::Ng_Element
+  class Ngs_Element : public netgen::Ng_Element
   {
+    ElementId ei;
   public:
     Ngs_Element (const netgen::Ng_Element & el, ElementId id) 
-      : ElementId(id), netgen::Ng_Element(el) { ; }
+      : netgen::Ng_Element(el), ei(id) { ; }
     AOWrapper<decltype(vertices)> Vertices() const { return vertices; }
     AOWrapper<decltype(edges)> Edges() const { return edges; }
     AOWrapper<decltype(faces)> Faces() const { return faces; }
     AOWrapper<decltype(facets)> Facets() const { return facets; }
     const string * GetMaterial() const { return mat; }
+    operator ElementId() const { return ei; }
+    auto VB() const { return ei.VB(); }
+    auto Nr() const { return ei.Nr(); }
     /*
       Converts element-type from Netgen to element-types of NGSolve.
       E.g. the Netgen-types NG_TRIG and NG_TRIG6 are merged to NGSolve type ET_TRIG.
@@ -67,7 +71,11 @@ namespace ngcomp
     { return ConvertElementType (Ng_Element::GetType()); }
   };
 
-
+  inline ostream & operator<< (ostream & ost, Ngs_Element & el)
+  {
+    ost << ElementId(el);
+    return ost;
+  }
 
   class ElementIterator
   {

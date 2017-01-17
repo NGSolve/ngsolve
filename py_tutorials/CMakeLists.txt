@@ -27,8 +27,8 @@ install(FILES
 #       )
 
 include(CTest)
-foreach(py_test assemble.py poisson.py adaptive.py cmagnet.py mixed.py hybrid_mixed.py hybrid_dg.py taskmanager.py pickling.py)
-  add_test(NAME ${py_test} COMMAND ${PYTHON_EXECUTABLE} ${py_test} WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+foreach(py_test assemble.py poisson.py adaptive.py cmagnet.py mixed.py hybrid_mixed.py hybrid_dg.py taskmanager.py )
+  add_test(NAME ${py_test} COMMAND ${NETGEN_PYTHON_EXECUTABLE} ${py_test} WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
   set_tests_properties ( ${py_test} PROPERTIES TIMEOUT 60 )
 endforeach()
 #  skip those files because the take too long (navierstokes) or need user input (elasticity, nonlin)

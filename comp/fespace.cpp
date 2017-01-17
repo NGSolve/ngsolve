@@ -1775,6 +1775,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void NonconformingFESpace :: Update(LocalHeap & lh)
   {
+    ctofdof.SetSize (ma->GetNFacets());
+    ctofdof = UNUSED_DOF;
+    for (auto el : ma->Elements(VOL))
+      ctofdof[el.Facets()] = WIREBASKET_DOF;
+    
     /*
     if (ma->GetNLevels() > ndlevel.Size())
       {
