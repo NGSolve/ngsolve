@@ -143,7 +143,7 @@ namespace ngcomp
     NodeIterator end () const { return NodeIterator(NodeId(nt,IntRange::Next())); }
     NodeId operator[] (size_t nr) { return NodeId(nt, IntRange::First()+nr); }
   };
- 
+
 
   class PML_Transformation
   {
