@@ -3,6 +3,8 @@ set(NGSOLVE_INSTALL_DIR "@CMAKE_INSTALL_PREFIX@")
 
 set(NGSOLVE_INCLUDE_DIR "@CMAKE_INSTALL_PREFIX@/include")
 
+set(NGSOLVE_CXX_COMPILER "@CMAKE_CXX_COMPILER@")
+
 set(NGSOLVE_CMAKE_THREAD_LIBS_INIT "@CMAKE_THREAD_LIBS_INIT@")
 set(NGSOLVE_MKL_LIBRARIES "@MKL_LIBRARIES@")
 set(NGSOLVE_PYBIND_INCLUDE_DIR "@NETGEN_PYBIND_INCLUDE_DIR@")
@@ -35,8 +37,8 @@ set(NGSOLVE_USE_UMFPACK     @USE_UMFPACK@)
 set(NGSOLVE_USE_VT          @USE_VT@)
 set(NGSOLVE_USE_VTUNE       @USE_VTUNE@)
 
-set(NGSCXX_DEFINE_FLAGS "@ngscxx_define_flags@" CACHE STRING "Preprocessor definitions of ngscxx")
-set(NGSCXX_INCLUDE_DIRS "@ngscxx_include_dirs@" CACHE STRING "Include dirs set in ngscxx")
+set(NGSOLVE_COMPILE_FLAGS "@ngscxx_define_flags@" CACHE STRING "Preprocessor definitions of ngscxx")
+set(NGSOLVE_LINK_FLAGS "@ngsld_flags@" CACHE STRING "Link flags set in ngsld")
+set(NGSOLVE_INCLUDE_DIRS @ngscxx_include_dirs@ CACHE STRING "Include dirs set in ngscxx")
 
-include(${CMAKE_CURRENT_LIST_DIR}/netgen-targets.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/ngsolve-targets.cmake)
