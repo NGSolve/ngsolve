@@ -302,7 +302,6 @@ get_directory_property( ngscxx_defines COMPILE_DEFINITIONS )
 string(TOUPPER "CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE}" name)
 
 foreach( d ${ngscxx_defines} )
-  if(NOT ${d} MATCHES "HAVE_NETGEN_SOURCES")
     if(WIN32)
       if(NOT ${d} STREQUAL "NGS_EXPORTS")
         set( ngscxx_define_flags "${ngscxx_define_flags} /D${d}" )
@@ -310,13 +309,12 @@ foreach( d ${ngscxx_defines} )
     else()
       set( ngscxx_define_flags "${ngscxx_define_flags} -D${d}" )
     endif()
-  endif()
 endforeach()
 
 set(ngscxx_flags "${${name}} ${CMAKE_CXX_FLAGS} -fPIC ${ngscxx_define_flags}")
 
 # include directories
-set(ngscxx_include_dirs ${INSTALL_DIR}/include ${TCL_INCLUDE_PATH} ${MPI_CXX_INCLUDE_PATH} ${MKL_INCLUDE_DIRS} ${MUMPS_INCLUDE_DIR} ${PYTHON_INCLUDE_DIRS} ${UMFPACK_INCLUDE_DIR} ${VTUNE_INCLUDE_DIR})
+set(ngscxx_include_dirs ${NETGEN_INCLUDE_DIRS} ${CMAKE_INSTALL_PREFIX}/include ${NETGEN_TCL_INCLUDE_PATH} ${NETGEN_MPI_CXX_INCLUDE_PATH} ${MKL_INCLUDE_DIRS} ${MUMPS_INCLUDE_DIR} ${NETGEN_PYTHON_INCLUDE_DIRS} ${UMFPACK_INCLUDE_DIR} ${VTUNE_INCLUDE_DIR})
 if(NOT INSTALL_DEPENDENCIES) 
     set(ngscxx_include_dirs ${ngscxx_include_dirs} ${NETGEN_INTERNAL_INCLUDE_DIR})
 endif(NOT INSTALL_DEPENDENCIES) 
