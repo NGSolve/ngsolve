@@ -203,7 +203,7 @@ public:
   virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const;
 
   using FESpace::GetFE;
-  virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
+  virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
 
   ///
   void SetGradientDomains (const BitArray & adoms);

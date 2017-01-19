@@ -633,11 +633,76 @@ lot of new non-zero entries in the matrix!\n" << endl;
     switch(ei.VB())
       {
       case VOL:
-	return const_cast<FiniteElement&>(GetFE(ei.Nr(),lh));
+        {
+        FiniteElement * fe = NULL;
+    
+        if (DefinedOn (ei))
+          {
+            switch (ma->GetElType(ei))
+              {
+              case ET_TET: fe = tet; break;
+              case ET_PYRAMID: fe = pyramid; break;
+              case ET_PRISM: fe = prism; break;
+              case ET_HEX: fe = hex; break;
+              case ET_TRIG: fe = trig; break;
+              case ET_QUAD: fe = quad; break;
+              case ET_SEGM: fe = segm; break;
+              case ET_POINT: fe = point; break;
+              }
+          }
+        else
+          {
+            switch (ma->GetElType(ei))
+              {
+              case ET_TET: fe = dummy_tet; break;
+              case ET_PYRAMID: fe = dummy_pyramid; break;
+              case ET_PRISM: fe = dummy_prism; break;
+              case ET_HEX: fe = dummy_hex; break;
+              case ET_TRIG: fe = dummy_trig; break;
+              case ET_QUAD: fe = dummy_quad; break;
+              case ET_SEGM: fe = dummy_segm; break;
+              case ET_POINT: fe = dummy_point; break;
+              }
+          }
+
+        if (!fe)
+          {
+            /*
+              Exception ex;
+              ex << "FESpace" << GetClassName() << ", undefined eltype " 
+              << ElementTopology::GetElementName(ma->GetElType(elnr))
+              << ", order = " << ToString (order) << "\n";
+              throw ex;
+            */
+            stringstream str;
+            str << "FESpace" << GetClassName() << ", undefined eltype " 
+                << ElementTopology::GetElementName(ma->GetElType(ei.Nr()))
+                << ", order = " << ToString (order) << "\n";
+            throw Exception (str.str());
+          }
+    
+        return *fe;
+        }
       case BND:
-	return const_cast<FiniteElement&>(GetSFE(ei.Nr(),lh));
+        switch (ma->GetElement(ei).GetType())
+          {
+          case ET_TRIG:  return *trig; 
+          case ET_QUAD:  return *quad; 
+          case ET_SEGM:  return *segm; 
+          case ET_POINT: return *point; 
+          case ET_TET: case ET_PYRAMID:
+          case ET_PRISM: case ET_HEX: 
+            ;
+          }
+        throw Exception ("GetFE BND: unknown type");
       case BBND:
-	return const_cast<FiniteElement&>(GetCD2FE(ei.Nr(),lh));
+        switch (ma->GetElement(ei).GetType())
+          {
+          case ET_SEGM: return *segm;
+          case ET_POINT: return *point;
+          default: ;
+          }
+        throw Exception("GetFE BBND: unknown type");
       default:
 	__assume(false);
       }
@@ -646,54 +711,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   const FiniteElement & FESpace :: GetFE (int elnr, LocalHeap & lh) const
   {
-    FiniteElement * fe = NULL;
-    
-    if (DefinedOn (ElementId (VOL, elnr)))
-      {
-        switch (ma->GetElType(elnr))
-          {
-          case ET_TET: fe = tet; break;
-          case ET_PYRAMID: fe = pyramid; break;
-          case ET_PRISM: fe = prism; break;
-          case ET_HEX: fe = hex; break;
-          case ET_TRIG: fe = trig; break;
-          case ET_QUAD: fe = quad; break;
-          case ET_SEGM: fe = segm; break;
-          case ET_POINT: fe = point; break;
-          }
-      }
-    else
-      {
-        switch (ma->GetElType(elnr))
-          {
-          case ET_TET: fe = dummy_tet; break;
-          case ET_PYRAMID: fe = dummy_pyramid; break;
-          case ET_PRISM: fe = dummy_prism; break;
-          case ET_HEX: fe = dummy_hex; break;
-          case ET_TRIG: fe = dummy_trig; break;
-          case ET_QUAD: fe = dummy_quad; break;
-          case ET_SEGM: fe = dummy_segm; break;
-          case ET_POINT: fe = dummy_point; break;
-          }
-      }
-
-    if (!fe)
-      {
-        /*
-        Exception ex;
-        ex << "FESpace" << GetClassName() << ", undefined eltype " 
-           << ElementTopology::GetElementName(ma->GetElType(elnr))
-           << ", order = " << ToString (order) << "\n";
-        throw ex;
-        */
-        stringstream str;
-        str << "FESpace" << GetClassName() << ", undefined eltype " 
-            << ElementTopology::GetElementName(ma->GetElType(elnr))
-            << ", order = " << ToString (order) << "\n";
-        throw Exception (str.str());
-      }
-    
-    return *fe;
+    return const_cast<FiniteElement&>(GetFE(ElementId(VOL,elnr),lh));
   }
 
   /*
@@ -891,28 +909,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   const FiniteElement & FESpace :: GetSFE (int selnr, LocalHeap & lh) const
   {
-    switch (ma->GetSElType(selnr))
-      {
-      case ET_TRIG:  return *trig; 
-      case ET_QUAD:  return *quad; 
-      case ET_SEGM:  return *segm; 
-      case ET_POINT: return *point; 
-      case ET_TET: case ET_PYRAMID:
-      case ET_PRISM: case ET_HEX: 
-        ;
-      }
-    throw Exception ("GetSFE: unknown type");
+    return const_cast<FiniteElement&>(GetFE(ElementId(BND,selnr),lh));
   }
 
   const FiniteElement & FESpace :: GetCD2FE (int cd2elnr, LocalHeap & lh) const
   {
-    switch (ma->GetElement(ElementId(BBND,cd2elnr)).GetType())
-      {
-      case ET_SEGM: return *segm;
-      case ET_POINT: return *point;
-      default: ;
-      }
-    throw Exception("GetCD2FE: unknown type");
+    return const_cast<FiniteElement&>(GetFE(ElementId(BBND,cd2elnr),lh));
   }
 
   const FiniteElement & FESpace :: GetFE (ELEMENT_TYPE type) const
@@ -2028,7 +2030,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       ndlevel.Append (n_el_dofs * ma->GetNSE());
   }
 
-  const FiniteElement & SurfaceElementFESpace :: GetFE (int elnr, LocalHeap & lh) const
+  const FiniteElement & SurfaceElementFESpace :: GetFE (ElementId ei, LocalHeap & lh) const
   {
     throw Exception ("SurfaceElementFESpace::GetFE not available");
   }

@@ -250,7 +250,7 @@ namespace ngcomp
     TPHighOrderFE * fe = new (lh) TPHighOrderFE (els);
     return *fe;
   }
-  
+  /*
   const FiniteElement & TPHighOrderFESpace::GetFE (int elnr, LocalHeap & lh) const
   {
     ArrayMem<int,2> elnums(2);
@@ -263,7 +263,7 @@ namespace ngcomp
     TPHighOrderFE * fe =  new (lh) TPHighOrderFE (els);
     return *fe;
   }
-    
+  */
   ngfem::ElementTransformation & TPHighOrderFESpace::GetTrafo (ElementId ei, Allocator & lh) const
   {
      TPElementTransformation *trafo = new (lh) TPElementTransformation ( ei );
@@ -277,12 +277,12 @@ namespace ngcomp
      trafo->SetTrafos(trafos);
      return *trafo;
   }
-
+  /*
   const FiniteElement & TPHighOrderFESpace::GetSFE (int elnr, LocalHeap & lh) const
   {
     throw Exception("TPHighOrderFESpace::GetSFE() not implemented");
   }
-
+  */
   const FiniteElement & TPHighOrderFESpace::GetFacetFE (int fnr, LocalHeap & lh) const
   {
     throw Exception("TPHighOrderFESpace::GetFacetFE() not implemented");

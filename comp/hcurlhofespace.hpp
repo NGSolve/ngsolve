@@ -92,20 +92,10 @@ namespace ngcomp
     ///
     virtual size_t GetNDof () const throw() override;
     ///
-    virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const override;
+    virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
     ///
     template <ELEMENT_TYPE ET>
-    const FiniteElement & T_GetFE (int elnr, LocalHeap & lh) const;
-
-    ///
-    virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const override;
-    ///
-    template <ELEMENT_TYPE ET>
-    const FiniteElement & T_GetSFE (int elnr, LocalHeap & lh) const;
-
-    virtual const FiniteElement & GetCD2FE(int cd2elnr, LocalHeap & lh) const override;
-    template <ELEMENT_TYPE ET>
-      const FiniteElement & T_GetCD2FE(int cd2elnr, LocalHeap & lh) const;
+      FiniteElement & T_GetFE(ElementId ei, Allocator & lh) const;
     
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
     ///
