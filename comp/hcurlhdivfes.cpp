@@ -1062,10 +1062,10 @@ namespace ngcomp
 
 
 
-  const FiniteElement & NedelecFESpace2 :: GetFE (int elnr, LocalHeap & lh) const
+  FiniteElement & NedelecFESpace2 :: GetFE (ElementId ei, Allocator & lh) const
   {
     FiniteElement * fe = 0;
-    ELEMENT_TYPE typ = ma->GetElType(elnr);
+    ELEMENT_TYPE typ = ma->GetElType(ei);
 
     switch (typ)
       {
@@ -1085,7 +1085,7 @@ namespace ngcomp
 	fe = 0;
       }
 
-    if (!gradientdomains[ma->GetElIndex(elnr)])
+    if (!gradientdomains[ma->GetElIndex(ei.Nr())])
       {
 	switch (typ)
 	  {
@@ -1105,7 +1105,7 @@ namespace ngcomp
 	stringstream str;
 	str << "FESpace " << GetClassName() 
 	    << ", undefined eltype " 
-	    << ElementTopology::GetElementName(ma->GetElType(elnr))
+	    << ElementTopology::GetElementName(ma->GetElType(ei.Nr()))
 	    << ", order = " << order << endl;
 	throw Exception (str.str());
       }

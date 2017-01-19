@@ -352,11 +352,11 @@ namespace ngcomp
     virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const;
 
     [[deprecated("Use GetFE with element-id instead of elnr!")]]    
-    virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
+    virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const final;
     [[deprecated("Use GetFE(ElementId(BND,elnr)) instead!")]]    
-    virtual const FiniteElement & GetSFE (int elnr, LocalHeap & lh) const;
+    virtual const FiniteElement & GetSFE (int elnr, LocalHeap & lh) const final;
     [[deprecated("Use GetFE(ElementId(BBND,elnr)) instead!")]]        
-    virtual const FiniteElement & GetCD2FE (int cd2elnr, LocalHeap & lh) const;
+    virtual const FiniteElement & GetCD2FE (int cd2elnr, LocalHeap & lh) const final;
 
     /// get dof-nrs of the element
     [[deprecated("Use GetDofNrs with element-id instead of elnr!")]]
@@ -967,7 +967,7 @@ namespace ngcomp
     virtual size_t GetNDof () const throw() { return ndlevel.Last(); } 
 
     ///
-    virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
+    virtual const FiniteElement & GetFE (ElementId ei, LocalHeap & lh) const;
 
     ///
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const;
