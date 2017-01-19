@@ -287,6 +287,7 @@ namespace ngcomp
 
   FiniteElement & L2HighOrderFESpace :: GetFE (ElementId ei, Allocator & alloc) const
   {
+    if (ei.VB()==BBND) throw Exception ("BBND not available in L2HighOrderFESpace");
     if (ei.IsVolume())
       {
         int elnr = ei.Nr();
