@@ -204,7 +204,7 @@ namespace ngcomp
           }
       }
       Vec<DIM> tmpvec;
-      tmpvec[maxind]=scal/fabs(hpoint[maxind]);
+      tmpvec[maxind]=1/hpoint(maxind)-scal/hpoint(maxind);
       point += alpha*scal*hpoint;
       jac =(1. + alpha * scal)*Id<DIM>() + alpha * hpoint * Trans(tmpvec);
     }
