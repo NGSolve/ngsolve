@@ -53,8 +53,11 @@ geom = cbb(0.5,0.6,1.2)
 pc=pml.Cartesian((-0.6,-0.6),(0.6,0.6),2j)
 lamc=circle_evs(geom,pc)
 
+pbr=pml.BrickRadial((-0.6,-0.6),(0.6,0.6),2j)
+lamb=circle_evs(geom,pbr)
 
 plot([sqrt(l).real for l in lamr],[sqrt(l).imag for l in lamr],'xr')
 plot([sqrt(l).real for l in lamc],[sqrt(l).imag for l in lamc],'xb')
+plot([sqrt(l).real for l in lamb],[sqrt(l).imag for l in lamb],'xg')
 show()
 
