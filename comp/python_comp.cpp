@@ -194,9 +194,131 @@ public:
 };
 static GlobalDummyVariables globvar;
 
+typedef PyWrapper<CoefficientFunction> PyCF;
+typedef PyWrapper<PML_Transformation> PyPML;
+typedef PyWrapperDerived<RadialPML_Transformation<0>,PML_Transformation> PyRadPML; 
+typedef PyWrapperDerived<CustomPML_Transformation<0>,PML_Transformation> PyCustPML; 
+typedef PyWrapperDerived<CartesianPML_Transformation<0>,PML_Transformation> PyCartPML; 
+typedef PyWrapperDerived<BrickRadialPML_Transformation<0>,PML_Transformation> PyBrickPML; 
+void ExportPml(py::module &m)
+{
+  py::class_<PyPML>(m, "PML", "Base pml object")
+    .def("PrintParameters", [](PyPML *instance){ instance->Get()->PrintParameters();})
+    .def("__call__",  [](PyPML *instance, py::tuple _point) {
+                      int dim = py::len(_point);
+                      PyPML dimpml = instance->Get()->CreateDim(dim);
+                      Vector<double> hpoint(dim);
+                      Vector<Complex> point(dim);
+                      for (int i : Range(dim))
+                        hpoint[i] = py::extract<double>(_point[i])();
+                      Matrix<Complex> jac(dim,dim);
+                      dimpml.Get()->MapPointV(hpoint,point,jac);
+                      return point;
+                    },"map a point")
+    .def("__call__",  [](PyPML *instance, double x) {
+                      PyPML dimpml = instance->Get()->CreateDim(1);
+                      Vector<double> hpoint(1);
+                      hpoint[0]=x;
+                      Vector<Complex> point(1);
+                      Matrix<Complex> jac(1,1);
+                      dimpml.Get()->MapPointV(hpoint,point,jac);
+                      return point;
+                    },"map a point")
+    .def("__call__",  [](PyPML *instance, const BaseMappedIntegrationPoint & _point) {
+                      int dim = _point.Dim();
+                      PyPML dimpml = instance->Get()->CreateDim(dim);
+                      Vector<Complex> point(dim);
+                      Matrix<Complex> jac(dim,dim);
+                      dimpml.Get()->MapPointV(_point,point,jac);
+                      return point;
+                    },"map a point")
+
+    .def("jac",  [](PyPML *instance, py::tuple _point) {
+                      int dim = py::len(_point);
+                      PyPML dimpml = instance->Get()->CreateDim(dim);
+                      Vector<double> hpoint(dim);
+                      Vector<Complex> point(dim);
+                      for (int i : Range(dim))
+                        hpoint(i) = py::extract<double>(_point[i])();
+                      Matrix<Complex> jac(dim,dim);
+                      dimpml.Get()->MapPointV(hpoint,point,jac);
+                      return jac; 
+                    },
+                    "jacobian at point")
+    .def("jac",  [](PyPML *instance, double x) {
+                      PyPML dimpml = instance->Get()->CreateDim(1);
+                      Vector<double> hpoint(1);
+                      hpoint[0]=x;
+                      Vector<Complex> point(1);
+                      Matrix<Complex> jac(1,1);
+                      dimpml.Get()->MapPointV(hpoint,point,jac);
+                      return jac;
+                    },"jacobian at point")
+    .def("jac",  [](PyPML *instance, const BaseMappedIntegrationPoint & _point) {
+                      int dim = _point.Dim();
+                      PyPML dimpml = instance->Get()->CreateDim(dim);
+                      Vector<Complex> point(dim);
+                      Matrix<Complex> jac(dim,dim);
+                      dimpml.Get()->MapPointV(_point,point,jac);
+                      return jac; 
+                    },
+                    "jacobian at point")
+  ;
+
+  py::class_<PyRadPML,PyPML>(m, "Radial", "radial pml scaling")
+    .def("__init__", [](PyRadPML *instance, double rad, Complex alpha) {
+        auto pml = make_shared<RadialPML_Transformation<0>> (rad,alpha);
+        new (instance) PyRadPML(pml);
+        },
+        py::arg("rad")=1, py::arg("alpha")=Complex(0,1))
+    
+    ;
+
+  py::class_<PyCustPML,PyPML>(m, "Custom", "pml with custom transformation")
+    .def("__init__", [](PyCustPML *instance, PyCF trafo, PyCF jac) {
+        auto pml = make_shared<CustomPML_Transformation<0>> (trafo.Get(),jac.Get());
+        new (instance) PyCustPML(pml);
+        },
+        py::arg("trafo"),py::arg("jac"))
+    
+    ;
+
+  py::class_<PyCartPML,PyPML>(m, "Cartesian", "cartesian pml scaling")
+    .def("__init__", [](PyCartPML *instance, py::tuple mins,py::tuple maxs, Complex alpha) {
+          Matrix<double> bounds = 0;
+          bounds.SetSize(min(py::len(mins),py::len(maxs)),2);
+          for (int j :Range(bounds.Height()))
+            {
+              bounds(j,0)=py::extract<double>(mins[j])();
+              bounds(j,1)=py::extract<double>(maxs[j])();
+            }
+        new (instance) PyCartPML(make_shared<CartesianPML_Transformation<0>>(bounds,alpha));
+        },
+        py::arg("mins"),py::arg("maxs"), py::arg("alpha")=Complex(0,1))
+    ;
+  
+  py::class_<PyBrickPML,PyPML>(m, "BrickRadial", "generalized radial pml scaling on a brick")
+    .def("__init__", [](PyBrickPML *instance, py::tuple mins,py::tuple maxs, Complex alpha) {
+          Matrix<double> bounds = 0;
+          bounds.SetSize(min(py::len(mins),py::len(maxs)),2);
+          for (int j :Range(bounds.Height()))
+            {
+              bounds(j,0)=py::extract<double>(mins[j])();
+              bounds(j,1)=py::extract<double>(maxs[j])();
+            }
+        new (instance) PyPML(make_shared<BrickRadialPML_Transformation<0>>(bounds,alpha));
+        },
+        py::arg("mins"),py::arg("maxs"), py::arg("alpha")=Complex(0,1))
+    ;
+}
+
+
 
 void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 {
+
+  py::module pml = m.def_submodule("pml", "module for perfectly matched layers");
+  ExportPml(pml);
   //////////////////////////////////////////////////////////////////////////////////////////
 
   py::enum_<VorB>(m, "VorB")
@@ -540,7 +662,40 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
     .def("SetDeformation", FunctionPointer
 	 ([](MeshAccess & ma, PyGF gf)
           { ma.SetDeformation(gf.Get()); }))
-    .def("SetRadialPML", &MeshAccess::SetRadialPML)
+    //old
+    //.def("SetRadialPML", &MeshAccess::SetRadialPML)
+    .def("SetPML", FunctionPointer
+	 ([](MeshAccess & ma,  PyPML apml, int domnr)
+    {
+    //shared_ptr<PML_Transformation> spml = apml.CreateDim(ma.GetDimension());
+    ma.SetPML(apml.Get(),domnr);
+    }),
+   py::arg("pmltrafo"),py::arg("dom")=0,
+   "set PML transformation on domain"
+   )
+    .def("UnSetPML", &MeshAccess::UnSetPML)
+    .def("GetPMLTrafos", [](MeshAccess & ma) {
+      py::list pml_trafos(ma.GetNDomains());
+	    for (int i : Range(ma.GetNDomains()))
+        {
+        if (ma.GetPMLTrafos()[i])
+  	      pml_trafos[i] = py::cast(PyPML(ma.GetPMLTrafos()[i]->CreateDim(0)));
+        else
+          pml_trafos[i] = py::none();
+        }
+	    return pml_trafos;
+        },
+        "returns list of pml transformations"
+        )
+    .def("GetPMLTrafo", [](MeshAccess & ma, int domnr) {
+	      if (ma.GetPMLTrafos()[domnr])
+     	    return py::cast(PyPML(ma.GetPMLTrafos()[domnr]->CreateDim(0)));
+        else
+          throw Exception("No PML Trafo set"); 
+        },
+        py::arg("dom")=0,
+        "returns pml transformation on domain dom"
+        )
     .def("UnsetDeformation", FunctionPointer
 	 ([](MeshAccess & ma){ ma.SetDeformation(nullptr);}))
     
@@ -2782,12 +2937,13 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
     
     ;
 
-
+  /////////////////////////////////////////////////////////////////////////////////////
 
 #ifdef PARALLEL
   import_mpi4py();
 #endif
 }
+
 
 
 

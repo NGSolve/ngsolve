@@ -278,6 +278,9 @@ namespace ngfem
 
     NGS_DLL_HEADER FlatVector<> GetPoint() const;
     FlatMatrix<> GetJacobian() const;
+
+    FlatVector<Complex> GetPointComplex() const;
+    FlatMatrix<Complex> GetJacobianComplex() const;
     // dimension of range
     int Dim() const;  
     VorB VB() const; 
@@ -293,12 +296,22 @@ namespace ngfem
   public:
     using BaseMappedIntegrationPoint :: BaseMappedIntegrationPoint;
     ScalMappedIntegrationPoint() { is_complex = false; }
+
+    ScalMappedIntegrationPoint(const IntegrationPoint & aip,
+                                       const ElementTransformation & aeltrans) 
+      : BaseMappedIntegrationPoint(aip,aeltrans){ is_complex = false; }
     ///
     INLINE SCAL GetJacobiDet() const { return det; }
   };
   
   template<> INLINE ScalMappedIntegrationPoint<Complex> :: ScalMappedIntegrationPoint()
   { is_complex = true; }
+  
+  template<> INLINE ScalMappedIntegrationPoint<Complex> 
+    :: ScalMappedIntegrationPoint(const IntegrationPoint & aip,
+                                       const ElementTransformation & aeltrans)
+      : BaseMappedIntegrationPoint(aip,aeltrans) { 
+    is_complex = true; }
 
   
   template <int R, typename SCAL = double>

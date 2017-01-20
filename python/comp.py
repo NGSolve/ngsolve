@@ -20,4 +20,4 @@ from . import la
 
 from ngslib.comp import *
 
-__all__ = ['BBND', 'BND', 'BilinearForm', 'COUPLING_TYPE', 'CompoundFESpace', 'ElementId', 'BndElementId', 'FESpace', 'GridFunction', 'LinearForm', 'Mesh', 'Preconditioner', 'VOL', 'NumProc', 'PDE', 'PyNumProc', 'Integrate', 'IntegrateLF', 'SymbolicLFI', 'SymbolicBFI', 'SymbolicEnergy', 'IntegrateBF', 'VTKOutput', 'ngsglobals']
+__all__ = ['BBND', 'BND', 'BilinearForm', 'COUPLING_TYPE', 'CompoundFESpace', 'ElementId', 'BndElementId', 'FESpace', 'GridFunction', 'LinearForm', 'Mesh', 'pml', 'Preconditioner', 'VOL', 'NumProc', 'PDE', 'PyNumProc', 'Integrate', 'IntegrateLF', 'SymbolicLFI', 'SymbolicBFI', 'SymbolicEnergy', 'IntegrateBF', 'VTKOutput', 'ngsglobals']
