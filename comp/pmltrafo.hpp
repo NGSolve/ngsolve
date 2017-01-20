@@ -247,6 +247,7 @@ namespace ngcomp
         case 3:     
             if (trafo->Dimension()==3)
               return make_shared<CustomPML_Transformation<3>> (trafo,jac);
+      default:
         throw Exception ("CustomPML_Transformation::SetDimension: No valid Dimension");
       }
     }
