@@ -53,7 +53,6 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake ${CMAKE_CURRENT_BINARY
 install (FILES ${CMAKE_CURRENT_BINARY_DIR}/config.h DESTINATION include COMPONENT ngsolve_devel )
 
 
-include_directories(AFTER ${NETGEN_INCLUDE_DIRS})
 #######################################################################
 
 add_definitions(-DHAVE_NETGEN_SOURCES)
@@ -113,9 +112,9 @@ install(EXPORT ngsolve-targets DESTINATION share/cmake)
 add_definitions(-DHAVE_CONFIG_H)
 add_definitions(-DUSE_TIMEOFDAY)
 
-include_directories ("${PROJECT_SOURCE_DIR}/include")
-include_directories ("${PROJECT_BINARY_DIR}")
-# include_directories (AFTER "${CMAKE_INSTALL_PREFIX}/include")
+include_directories (BEFORE ${PROJECT_SOURCE_DIR}/include)
+include_directories (BEFORE ${PROJECT_BINARY_DIR})
+include_directories (AFTER ${NETGEN_INCLUDE_DIRS})
 
 link_directories ("${CMAKE_INSTALL_PREFIX}/${ngs_install_dir_lib}")
 
@@ -228,7 +227,7 @@ endif (USE_MUMPS)
 #######################################################################
 if (NETGEN_USE_PYTHON)
     add_definitions(-DNGS_PYTHON)
-    include_directories(BEFORE ${NETGEN_PYBIND_INCLUDE_DIR})
+    include_directories(${NETGEN_PYBIND_INCLUDE_DIR})
     include_directories(${NETGEN_PYTHON_INCLUDE_DIRS})
 endif (NETGEN_USE_PYTHON)
 
