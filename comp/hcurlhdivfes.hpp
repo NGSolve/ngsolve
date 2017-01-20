@@ -49,6 +49,8 @@ public:
   /// 
   virtual void UpdateCouplingDofArray();
 
+  virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
+
   ///
   virtual size_t GetNDof () const throw();
   ///
