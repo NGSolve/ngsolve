@@ -34,13 +34,13 @@ namespace ngcomp
     if( flags.GetDefineFlag("hcurl"))
       cerr << "WARNING: -hcurl flag is deprecated: use -type=hcurl instead" << endl;
     
-    tet     = new FE_NedelecTet1;
-    prism   = new FE_NedelecPrism1;
-    pyramid = new FE_NedelecPyramid1;
-    trig    = new FE_NedelecTrig1;
-    quad    = new FE_NedelecQuad1;
-    segm    = new FE_NedelecSegm1;
-    hex     = new FE_NedelecHex1; 
+    // tet     = new FE_NedelecTet1;
+    // prism   = new FE_NedelecPrism1;
+    // pyramid = new FE_NedelecPyramid1;
+    // trig    = new FE_NedelecTrig1;
+    // quad    = new FE_NedelecQuad1;
+    // segm    = new FE_NedelecSegm1;
+    // hex     = new FE_NedelecHex1; 
 
     SetDummyFE<HCurlDummyFE> ();
 
@@ -342,6 +342,20 @@ namespace ngcomp
   }
 
 
+  FiniteElement & NedelecFESpace :: GetFE (ElementId ei, Allocator & lh) const
+  {
+    switch (ma->GetElType(ei))
+      {
+      case ET_TET:     return *(new (lh) FE_NedelecTet1);
+      case ET_PRISM:   return *(new (lh) FE_NedelecPrism1);
+      case ET_PYRAMID: return *(new (lh) FE_NedelecPyramid1);
+      case ET_TRIG:    return *(new (lh) FE_NedelecTrig1);
+      case ET_QUAD:    return *(new (lh) FE_NedelecQuad1);
+      case ET_SEGM:    return *(new (lh) FE_NedelecSegm1);
+      case ET_HEX:     return *(new (lh) FE_NedelecHex1);
+        throw Exception ("Inconsistent element type in NedelecFESpace::GetFE");
+      }
+  }
 
   size_t NedelecFESpace :: GetNDof () const throw()
   {
@@ -1128,7 +1142,7 @@ namespace ngcomp
 	ma->GetElFaces (ei.Nr(), fnums, forient);
 	
 	LocalHeapMem<1000> lh("NedelecFESpace2, GetDofNrs");
-	int nd = GetFE (ei.Nr(), lh).GetNDof();
+	int nd = GetFE (ei, lh).GetNDof();
 	dnums.SetSize(nd);
 	dnums = -1;
 	

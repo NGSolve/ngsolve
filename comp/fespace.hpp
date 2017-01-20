@@ -349,7 +349,7 @@ namespace ngcomp
         
 
     /// returns finite element. 
-    virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const;
+    virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const = 0;
 
     [[deprecated("Use GetFE with element-id instead of elnr!")]]    
     virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const final;
@@ -827,6 +827,7 @@ namespace ngcomp
   {
     ///
     Array<int> ndlevel;
+    bool hb_defined;
 
   public:
 
@@ -845,6 +846,8 @@ namespace ngcomp
     virtual void Update (LocalHeap & lh);
     
     virtual void DoArchive (Archive & archive);
+
+    virtual FiniteElement & GetFE(ElementId ei, Allocator & lh) const override;
     ///
     virtual size_t GetNDof () const throw();
     ///
@@ -884,6 +887,8 @@ namespace ngcomp
 
     ///
     virtual void Update(LocalHeap & lh);
+
+    virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
     ///
     virtual size_t GetNDof () const throw();
     ///
@@ -918,6 +923,8 @@ namespace ngcomp
     virtual void Update(LocalHeap & lh);
     /// 
     virtual void DoArchive (Archive & archive);
+
+    virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
     ///
     virtual size_t GetNDof () const throw() { return ndlevel.Last(); }
   
