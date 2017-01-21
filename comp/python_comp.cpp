@@ -665,12 +665,23 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
     //old
     //.def("SetRadialPML", &MeshAccess::SetRadialPML)
     .def("SetPML", FunctionPointer
-	 ([](MeshAccess & ma,  PyPML apml, int domnr)
-    {
-    //shared_ptr<PML_Transformation> spml = apml.CreateDim(ma.GetDimension());
-    ma.SetPML(apml.Get(),domnr);
-    }),
-   py::arg("pmltrafo"),py::arg("dom")=0,
+	 ([](MeshAccess & ma,  PyPML apml, py::object definedon)
+          {
+            //shared_ptr<PML_Transformation> spml = apml.CreateDim(ma.GetDimension());
+            if (py::extract<int>(definedon).check())
+              {
+                ma.SetPML(apml.Get(), py::extract<int>(definedon)()-1);
+              }
+
+            if (py::isinstance<py::str>(definedon))
+              {
+                std::regex pattern(definedon.cast<string>());
+                for (int i = 0; i < ma.GetNDomains(); i++)
+                  if (std::regex_match (ma.GetDomainMaterial(i), pattern))
+                    ma.SetPML(apml.Get(), i);
+              }
+          }),
+   py::arg("pmltrafo"),py::arg("definedon"),
    "set PML transformation on domain"
    )
     .def("UnSetPML", &MeshAccess::UnSetPML)
