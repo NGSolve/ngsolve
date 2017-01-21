@@ -1770,10 +1770,6 @@ namespace ngcomp
     UpdateBuffers();
   }
 
-
-  
-
-
   int MeshAccess :: GetNPairsPeriodicVertices () const 
   {
     return Ng_GetNPeriodicVertices(0);

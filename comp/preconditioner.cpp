@@ -676,9 +676,11 @@ namespace ngcomp
 	    bfa->GetFESpace()->GetFreeDofs (bfa->UsesEliminateInternal());
 	  inverse = bfa->GetMatrix().InverseMatrix(freedofs);
 	}
-      catch (exception &)
+      catch (exception & e)
 	{
-	  throw Exception ("DirectPreconditioner: needs a sparse matrix (or has memory problems)");
+	  throw Exception (string("caught exception in DirectPreconditioner: \n") +
+                           e.what() + 
+                           "\nneeds a sparse matrix (or has memory problems)");
 	}
     }
 
