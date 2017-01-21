@@ -2651,7 +2651,7 @@ namespace ngcomp
         LocalHeapMem<1000000> lh("viscf::getmultisurfvalue");
         ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
 
-        AFlatMatrix<> mvalues(GetComponents(), SIMD<double>::Size()*npts, (double*)values);
+        FlatMatrix<SIMD<double>> mvalues(GetComponents(), npts, (SIMD<double>*)values);
 
         constexpr size_t BS = 64;
         for (size_t base = 0; base < npts; base +=BS)
@@ -2676,7 +2676,7 @@ namespace ngcomp
                     mir[k] = SIMD<MappedIntegrationPoint<2,3>> (ir[k], eltrans, vx, mdxdxref);
                   }
                 
-                cf -> Evaluate (mir, mvalues.VCols(base, base+ni));
+                cf -> Evaluate (mir, mvalues.Cols(base, base+ni));
               }
             else
               {
@@ -2691,12 +2691,12 @@ namespace ngcomp
                         mir[k] = SIMD<MappedIntegrationPoint<2,2>> (ir[k], eltrans, vx, mdxdxref);
                       }
                     
-                    cf -> Evaluate (mir, mvalues.VCols(base, base+ni));
+                    cf -> Evaluate (mir, mvalues.Cols(base, base+ni));
                   }
                 else
                   {
                     SIMD_MappedIntegrationRule<2,2> mir(ir, eltrans, lh);
-                    cf -> Evaluate (mir, mvalues.VCols(base, base+ni));
+                    cf -> Evaluate (mir, mvalues.Cols(base, base+ni));
                   }
               }
           }
@@ -2704,7 +2704,7 @@ namespace ngcomp
       }
     catch (Exception & e)
       {
-        cout << "VisualizeCoefficientFunction::GetMultiSurfValue caught exception: " << endl
+        cout << "VisualizeCoefficientFunction::GetMultiSurfValue caught exception (AVX): " << endl
              << e.What();
         return 0;
       }
