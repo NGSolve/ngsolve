@@ -972,17 +972,18 @@ lot of new non-zero entries in the matrix!\n" << endl;
     return GetNDof();
   } 
 
-  void FESpace :: Timing () const
+  shared_ptr<std::map<std::string,double>> FESpace :: Timing () const
   {
     double starttime;
     double time;
     int steps;
+    auto results = make_shared<std::map<std::string,double>>();
     LocalHeap lh (100000, "FESpace - Timing");
 
-    cout << endl << "timing fespace " << GetName() 
-         << (low_order_space ? "" : " low-order")
-         << " ..." << endl;
-    
+    // cout << endl << "timing fespace " << GetName() 
+    //      << (low_order_space ? "" : " low-order")
+    //      << " ..." << endl;
+
     starttime = WallTime();
     steps = 0;
     do
@@ -998,9 +999,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	time = WallTime()-starttime;
       }
     while (time < 2.0);
+    (*results)["GetDofNrs"] = 1e9*time / (ma->GetNE()*steps);
+    //cout << 1e9*time / (ma->GetNE()*steps) << " ns per GetDofNrs (parallel)" << endl;
     
-    cout << 1e9*time / (ma->GetNE()*steps) << " ns per GetDofNrs (parallel)" << endl;
-
     /*
     starttime = WallTime();
     steps = 0;
@@ -1046,8 +1047,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
         time = WallTime()-starttime;
       }
     while (time < 2.0);
-    
-    cout << 1e9 * time / (ma->GetNE()*steps) << " ns per GetFE (parallel)" << endl;
+
+    (*results)["GetFE"] = 1e9 * time / (ma->GetNE()*steps); 
+    //    cout << 1e9 * time / (ma->GetNE()*steps) << " ns per GetFE (parallel)" << endl;
 
 
 
@@ -1064,8 +1066,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
         time = WallTime()-starttime;
       }
     while (time < 2.0);
-    
-    cout << 1e9 * time / (ma->GetNE()*steps) << " ns per Get - Ng_Element (parallel)" << endl;
+
+    (*results)["Get Ng_Element"] =  1e9 * time / (ma->GetNE()*steps);
+    //    cout << 1e9 * time / (ma->GetNE()*steps) << " ns per Get - Ng_Element (parallel)" << endl;
 
 
     starttime = WallTime();
@@ -1085,8 +1088,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
         time = WallTime()-starttime;
       }
     while (time < 2.0);
-    
-    cout << 1e9 * time / (ma->GetNE()*steps) << " ns per GetTrafo(parallel)" << endl;
+
+    (*results)["GetTrafo"] = 1e9 * time / (ma->GetNE()*steps);
+    //    cout << 1e9 * time / (ma->GetNE()*steps) << " ns per GetTrafo(parallel)" << endl;
 
 
 
@@ -1182,6 +1186,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 #endif
 
+    return results;
 
   }
 
