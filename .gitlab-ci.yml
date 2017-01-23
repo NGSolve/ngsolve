@@ -16,10 +16,11 @@ stages:
     - "echo off"
     - 'call "%VS140COMNTOOLS%\..\..\VC\bin\vcvars32.bat"'
     - set CMAKE_GENERATOR=Visual Studio 14 2015
-    - set NETGEN_TEMP_DIR=C:\ci\%CI_BUILD_REF%_32
-    - set INSTALL_DIR="C:/ci/%CI_BUILD_REF%_32"
-    - set NETGENDIR=%NETGEN_TEMP_DIR%\bin
-    - set PYTHONPATH=%NETGEN_TEMP_DIR%\lib\site-packages
+    - set CI_DIR=C:\ci\%CI_BUILD_REF%_32
+    - set NETGEN_BUILD_DIR=%CI_DIR%\build
+    - set INSTALL_DIR=%CI_DIR%\install
+    - set NETGENDIR=%INSTALL_DIR%\bin
+    - set PYTHONPATH=%INSTALL_DIR%\lib\site-packages
     - set PYTHON_CONFIG=-DPYTHON_LIBRARIES=C:/Python3.5_32/libs/python35.lib -DPYTHON_INCLUDE_DIRS=C:/Python3.5_32/include -DPYTHON_EXECUTABLE=C:/Python3.5_32/python.exe
 
 .template_windows_64: &win64
@@ -30,11 +31,11 @@ stages:
     - "echo off"
     - 'call "%VS140COMNTOOLS%\..\..\VC\bin\amd64\vcvars64.bat"'
     - set CMAKE_GENERATOR=Visual Studio 14 2015 Win64
-    - set NETGEN_ORIG_DIR=C:\install64_master
-    - set NETGEN_TEMP_DIR=C:\ci\%CI_BUILD_REF%_64
-    - set INSTALL_DIR="C:/ci/%CI_BUILD_REF%_64"
-    - set NETGENDIR=%NETGEN_TEMP_DIR%\bin
-    - set PYTHONPATH=%NETGEN_TEMP_DIR%\lib\site-packages
+    - set CI_DIR=C:\ci\%CI_BUILD_REF%_32
+    - set NETGEN_BUILD_DIR=%CI_DIR%\build
+    - set INSTALL_DIR=%CI_DIR%\install
+    - set NETGENDIR=%INSTALL_DIR%\bin
+    - set PYTHONPATH=%INSTALL_DIR%\lib\site-packages
     - set PYTHON_CONFIG=-DPYTHON_LIBRARIES=C:/Python3.5/libs/python35.lib -DPYTHON_INCLUDE_DIRS=C:/Python3.5/include -DPYTHON_EXECUTABLE=C:/Python3.5/python.exe
 
 # Linux
@@ -65,20 +66,18 @@ stages:
   stage: build
   script:
     - git submodule update --init --recursive
-    - if exist build rd /s /q build
-    - mkdir build
-    - cd build
-    - DEL CMakeCache.txt
-    - RD /S CMakeFiles
+    - rd /s /q %NETGEN_BUILD_DIR%
+    - mkdir %NETGEN_BUILD_DIR%
+    - cd %NETGEN_BUILD_DIR%
     - >-
-        cmake ..\
+        cmake %CI_PROJECT_DIR%
         %PYTHON_CONFIG%
         -G"%CMAKE_GENERATOR%"
-        -DINSTALL_DIR="%INSTALL_DIR%"
+        -DINSTALL_DIR=%INSTALL_DIR%
         -DUSE_MKL=ON
         -DMKL_STATIC=ON
-        -DCMAKE_CXX_FLAGS_RELEASE="/W0"
         -DUSE_UMFPACK=ON
+        -DCMAKE_BUILD_TYPE=Release
     - cmake --build . --target INSTALL --config Release
 
 build_win32:
@@ -122,7 +121,7 @@ build_ubuntu_1604:
 .template_test_win: &test_win
   stage: test
   script:
-    - cd build
+    - cd %NETGEN_BUILD_DIR%
     - ctest -C Release -V
     - cd ..
 
@@ -178,7 +177,7 @@ win64_cleanup:
     - windows
     - x64
   script:
-    - rd /s /q %INSTALL_DIR%
+    - rd /s /q %CI_DIR%
   when: always
   allow_failure: true
 
