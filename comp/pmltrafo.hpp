@@ -4,7 +4,7 @@
 /*********************************************************************/
 /* File:   pmltrafo.hpp                                              */
 /* Author: M. Wess, J. Schoeberl                                     */
-/* Date:   2016                                                      */
+/* Date:   2016                                                      Ge/
 /*********************************************************************/
 
 
@@ -76,6 +76,33 @@ namespace ngcomp
     }
   };
 
+  template <int DIM>
+    class PML_TransformationDim;
+
+    class PML_CF : public CoefficientFunction
+  {
+    shared_ptr<PML_Transformation> pmltrafo;
+    public:
+
+    PML_CF(shared_ptr<PML_Transformation> _pmltrafo, int dim) : 
+      CoefficientFunction(dim,true), pmltrafo(_pmltrafo)
+    { ; }
+    using CoefficientFunction::Evaluate;
+    double Evaluate(const BaseMappedIntegrationPoint & ip) const
+    {
+      throw Exception("PML_CF::Evaluate: PML_CF is complex");
+    }
+    void Evaluate(const BaseMappedIntegrationPoint & ip, FlatVector<Complex> values) const
+    {
+      Vector<double> hpoint(ip.Dim());
+      hpoint=ip.GetPoint();
+      if (ip.IsComplex())
+        for (int i : Range(ip.Dim()))
+          hpoint(i) = ip.GetPointComplex()(i).real(); 
+      Matrix<Complex> jac(Dimension(),Dimension());
+      pmltrafo->MapPointV(ip,values,jac);
+    }
+  };
   
   template <int DIM>
   class PML_TransformationDim : public PML_Transformation
@@ -108,9 +135,10 @@ namespace ngcomp
       Mat<DIM,DIM,Complex> mjac;
       Vec<DIM> vhpoint = hpoint;
       MapPoint(vhpoint,vpoint,mjac);
-      point = Vector<Complex>(vpoint);
-      jac = Matrix<Complex>(mjac);
+      point = FlatVector<Complex>(vpoint);
+      jac = FlatMatrix<Complex>(mjac);
     }
+
   };
 
 
@@ -198,25 +226,28 @@ namespace ngcomp
 
     shared_ptr<PML_Transformation> CreateDim(int dim)
     {
-      switch (dim)
-      {
-        // bounds.SetSize(dim,2);  // what was the idea ??? 
-        case 0:     
-          return make_shared<CartesianPML_Transformation<0>> (bounds,alpha);
+      if (bounds.Height()>=dim)
+        switch (dim)
+        {
+          case 0:     
+            return make_shared<CartesianPML_Transformation<0>> (abounds,alpha);
 
-        case 1:     
-          return make_shared<CartesianPML_Transformation<1>> (bounds,alpha);
-        
-        case 2:
-          return make_shared<CartesianPML_Transformation<2>> (bounds,alpha);
-        
-        case 3:
-          return make_shared<CartesianPML_Transformation<3>> (bounds,alpha);
+          case 1:     
+            return make_shared<CartesianPML_Transformation<1>> (abounds,alpha);
+          
+          case 2:
+            return make_shared<CartesianPML_Transformation<2>> (abounds,alpha);
+          
+          case 3:
+            return make_shared<CartesianPML_Transformation<3>> (abounds,alpha);
 
-        default:
-          throw Exception ("No valid Dimension");
+          default:
+            throw Exception ("CartesianPML_Transformation::CreateDim: No valid Dimension");
 
-      }
+        }
+      else
+        throw Exception ("CartesianPML_Transformation::CreateDim: Bounds matrix too small");
+
     }
     void MapPoint (Vec<DIM> & hpoint, Vec<DIM,Complex> & point,
                     Mat<DIM,DIM,Complex> & jac) const 
@@ -260,25 +291,27 @@ namespace ngcomp
 
     shared_ptr<PML_Transformation> CreateDim(int dim)
     {
-      switch (dim)
-      {
-        // bounds.SetSize(dim,2);  // what was the idea ??? 
-        case 0:     
-          return make_shared<BrickRadialPML_Transformation<0>> (bounds,alpha);
+      if (bounds.Height()>=dim)
+        switch (dim)
+        {
+          case 0:     
+            return make_shared<BrickRadialPML_Transformation<0>> (bounds,alpha);
 
-        case 1:     
-          return make_shared<BrickRadialPML_Transformation<1>> (bounds,alpha);
-        
-        case 2:
-          return make_shared<BrickRadialPML_Transformation<2>> (bounds,alpha);
-        
-        case 3:
-          return make_shared<BrickRadialPML_Transformation<3>> (bounds,alpha);
+          case 1:     
+            return make_shared<BrickRadialPML_Transformation<1>> (bounds,alpha);
+          
+          case 2:
+            return make_shared<BrickRadialPML_Transformation<2>> (bounds,alpha);
+          
+          case 3:
+            return make_shared<BrickRadialPML_Transformation<3>> (bounds,alpha);
 
-        default:
-          throw Exception ("No valid Dimension");
+          default:
+            throw Exception ("BrickRadialPML_Transformation::CreateDim: No valid Dimension");
 
-      }
+        }
+      else
+        throw Exception("BrickRadialPML_Transformation::CreateDim: not enough bounds")
     }
 
     void MapPoint (Vec<DIM> & hpoint, Vec<DIM,Complex> & point,
@@ -344,8 +377,8 @@ namespace ngcomp
         case 3:     
             if (trafo->Dimension()==3)
               return make_shared<CustomPML_Transformation<3>> (trafo,jac);
-      default:
-        throw Exception ("CustomPML_Transformation::SetDimension: No valid Dimension");
+        default:
+          throw Exception ("CustomPML_Transformation::SetDimension: No valid Dimension");
       }
     }
 
