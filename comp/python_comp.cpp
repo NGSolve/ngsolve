@@ -791,27 +791,40 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
    py::arg("pmltrafo"),py::arg("definedon"),
    "set PML transformation on domain"
    )
-    .def("UnSetPML", &MeshAccess::UnSetPML)
-    .def("GetPMLTrafos", [](MeshAccess & ma) {
-      py::list pml_trafos(ma.GetNDomains());
-	    for (int i : Range(ma.GetNDomains()))
+    .def("UnSetPML", [](MeshAccess & ma, py::object definedon)
+          {
+            if (py::extract<int>(definedon).check())
+                ma.UnSetPML(py::extract<int>(definedon)()-1);
+
+            if (py::isinstance<py::str>(definedon))
+              {
+                std::regex pattern(definedon.cast<string>());
+                for (int i = 0; i < ma.GetNDomains(); i++)
+                  if (std::regex_match (ma.GetDomainMaterial(i), pattern))
+                    ma.UnSetPML(i);
+              }
+          })
+    .def("GetPMLTrafos", [](MeshAccess & ma) 
+      {
+        py::list pml_trafos(ma.GetNDomains());
+        for (int i : Range(ma.GetNDomains()))
         {
-        if (ma.GetPMLTrafos()[i])
-  	      pml_trafos[i] = py::cast(PyPML(ma.GetPMLTrafos()[i]->CreateDim(0)));
-        else
-          pml_trafos[i] = py::none();
+          if (ma.GetPMLTrafos()[i])
+            pml_trafos[i] = py::cast(PyPML(ma.GetPMLTrafos()[i]->CreateDim(0)));
+          else
+            pml_trafos[i] = py::none();
         }
-	    return pml_trafos;
-        },
+        return pml_trafos;
+      },
         "returns list of pml transformations"
-        )
+    )
     .def("GetPMLTrafo", [](MeshAccess & ma, int domnr) {
-	      if (ma.GetPMLTrafos()[domnr])
-     	    return py::cast(PyPML(ma.GetPMLTrafos()[domnr]->CreateDim(0)));
+        if (ma.GetPMLTrafos()[domnr])
+     	  return py::cast(PyPML(ma.GetPMLTrafos()[domnr-1]->CreateDim(0)));
         else
           throw Exception("No PML Trafo set"); 
         },
-        py::arg("dom")=0,
+        py::arg("dom")=1,
         "returns pml transformation on domain dom"
         )
     .def("UnsetDeformation", FunctionPointer
