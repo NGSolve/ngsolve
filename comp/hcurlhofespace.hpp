@@ -92,6 +92,7 @@ namespace ngcomp
     ///
     virtual size_t GetNDof () const throw() override;
     ///
+    using FESpace::GetFE;
     virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const override;
     ///
     template <ELEMENT_TYPE ET>
