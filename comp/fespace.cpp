@@ -415,13 +415,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  element_coloring[vb] = Table<int>(low_order_space->element_coloring[vb]);
       }
     else
-      // for (auto vb = VOL; vb <= BND; vb++)
       for (auto vb : { VOL, BND, BBND })
       {
         tcol.Start();
         Array<int> col(ma->GetNE(vb));
         col = -1;
-        // bool found;
+
         int maxcolor = 0;
         
         int basecol = 0;
@@ -535,16 +534,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
                    << " for " << ((vb == VOL) ? "vol" : "bnd") << endl;
       }
 
-
-
     // invalidate facet_coloring
     facet_coloring = Table<int>();
        
-
-    
     level_updated = ma->GetNLevels();
     if (timing) Timing();
-
     // CheckCouplingTypes();
   }
 
@@ -562,13 +556,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
     Array<unsigned int> mask(GetNDof());
 
     int cnt = nf, found = 0;
-    // for (ElementId el : Elements(vb)) { cnt++; (void)el; } // no warning 
     Array<int> dofs, dofs1, elnums; 
     do
       {
         mask = 0;
-        
-        //  for (auto el : Elements(vb))
         for (size_t f = 0; f < nf; f++)
           {
             if (col[f] >= 0) continue;
@@ -593,7 +584,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
                 while (check & checkbit)
                   {
                     color++;
-                        checkbit *= 2;
+                    checkbit *= 2;
                   }
                 
                 col[f] = color;
@@ -607,7 +598,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
         basecol += 8*sizeof(unsigned int); // 32;
       }
     while (found < cnt);
-    // cout << "facet-colors: " << col << endl;
+
     Array<int> cntcol(maxcolor+1);
     cntcol = 0;
     
@@ -619,7 +610,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     cntcol = 0;
     for (auto f : Range(nf))          
       facet_coloring[col[f]][cntcol[col[f]]++] = f;
-    // cout << "facet_coloring: " << facet_coloring << endl;
+
     if (print)
       *testout << "needed " << maxcolor+1 << " colors for facet-coloring" << endl;
 
@@ -679,13 +670,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if (!fe)
       {
-        /*
-        Exception ex;
-        ex << "FESpace" << GetClassName() << ", undefined eltype " 
-           << ElementTopology::GetElementName(ma->GetElType(elnr))
-           << ", order = " << ToString (order) << "\n";
-        throw ex;
-        */
         stringstream str;
         str << "FESpace" << GetClassName() << ", undefined eltype " 
             << ElementTopology::GetElementName(ma->GetElType(elnr))
@@ -695,45 +679,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
     
     return *fe;
   }
-
-  /*
-    // not such a great idea ..
-  void FESpace :: GetDofRanges (ElementId ei, Array<IntRange> & dranges) const
-  {
-    // cout << "getdofrangs called for fespace " << GetClassName() << endl;
-    Array<int> dnums;
-    GetDofNrs (ei, dnums);
-    dranges.SetSize(0);
-    for (int i = 0; i < dnums.Size(); i++)
-      dranges.Append (IntRange (dnums[i], dnums[i]+1));
-  }
-  */
-
-  /*
-  FlatArray<int> FESpace :: GetDofNrs (ElementId ei, LocalHeap & lh) const
-  {
-    Vec<4,int> nnodes = ElementTopology::GetNNodes (ma->GetElType (ei));
-    Array<IntRange> dranges(InnerProduct (nnodes, vefc_dofblocks), lh);
-    dranges.SetSize(0);
-    GetDofRanges (ei, dranges);
-    int nd = 0;
-    for (int i = 0; i < dranges.Size(); i++) nd += dranges[i].Size();
-    
-    FlatArray<int> dnums(nd, lh);
-    for (int i = 0, cnt = 0; i < dranges.Size(); i++)
-      {
-        if (dranges[i].First() != -1)
-          for (int j = dranges[i].First(); j < dranges[i].Next(); j++)
-            dnums[cnt++] = j;
-        else
-          for (int j = dranges[i].First(); j < dranges[i].Next(); j++)
-            dnums[cnt++] = -1;
-      }
-
-    return dnums;
-  }
-  */
-
 
   Table<int> FESpace :: CreateDofTable (VorB vorb) const
   {
