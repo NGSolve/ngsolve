@@ -1,4 +1,5 @@
-from ngsolve import TaskManager
+from ngsolve import *
+from netgen.geom2d import unit_square
 import subprocess
 import os
 import pickle
@@ -66,8 +67,15 @@ class Timing():
         folder = "benchmark"
         if not os.path.exists(folder):
             os.makedirs(folder)
-        pickle.dump(self,open(folder + "/" + name + ".dat","wb"))
+        pickle.dump(self,open(folder + "/" + self.name + ".dat","wb"))
 
 
 
     
+def CreateBenchmark():
+    spaces = Spaces()
+    for spacename in spaces:
+        timing = Timing(name=spacename,obj=spaces[spacename])
+        timing.SaveBenchmark()
+        
+        

@@ -701,7 +701,7 @@ namespace ngcomp
     virtual bool VarOrder() const { return 0; }
 
     bool timing;
-    shared_ptr<std::map<std::string,double>> Timing () const;
+    std::map<std::string,double> Timing () const;
 
   protected:
     template <template <ELEMENT_TYPE ET> class FE>

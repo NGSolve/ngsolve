@@ -1206,8 +1206,8 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
     // .def("__str__", &ToString<FESpace>)
     .def("__str__", [] (PyFES & self) { return ToString(*self.Get()); } )
     .def("__timing__", [] (PyFES & self) {
-	return py::cast(*(self->Timing()));
-      },py::return_value_policy::take_ownership)
+	return py::cast(self->Timing());
+      })
 
     // .def_property_readonly("mesh", FunctionPointer ([](FESpace & self) -> shared_ptr<MeshAccess>
     // { return self.GetMeshAccess(); }))
