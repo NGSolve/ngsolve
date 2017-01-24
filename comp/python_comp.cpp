@@ -201,6 +201,7 @@ typedef PyWrapperDerived<RadialPML_Transformation<0>,PML_Transformation> PyRadPM
 typedef PyWrapperDerived<CustomPML_Transformation<0>,PML_Transformation> PyCustPML; 
 typedef PyWrapperDerived<CartesianPML_Transformation<0>,PML_Transformation> PyCartPML; 
 typedef PyWrapperDerived<BrickRadialPML_Transformation<0>,PML_Transformation> PyBrickPML; 
+typedef PyWrapperDerived<HalfSpacePML_Transformation<0>,PML_Transformation> PyHalfPML; 
 void ExportPml(py::module &m)
 {
   py::class_<PyPMLCF,PyCF> (m, "PML_CF", "pml scaling function")
@@ -228,19 +229,6 @@ void ExportPml(py::module &m)
                       else if (py::extract<py::tuple>(_point).check())
                       {
                         py::tuple ppoint = py::extract<py::tuple>(_point)();
-                        dim = py::len(ppoint);
-                        PyPML dimpml = instance->Get()->CreateDim(dim);
-                        Vector<double> hpoint(dim);
-                        Vector<Complex> point(dim);
-                        for (int i : Range(dim))
-                          hpoint[i] = py::extract<double>(ppoint[i])();
-                        Matrix<Complex> jac(dim,dim);
-                        dimpml.Get()->MapPointV(hpoint,point,jac);
-                        return point;
-                      }
-                      else if (py::extract<py::list>(_point).check())
-                      {
-                        py::list ppoint = py::extract<py::list>(_point)();
                         dim = py::len(ppoint);
                         PyPML dimpml = instance->Get()->CreateDim(dim);
                         Vector<double> hpoint(dim);
@@ -300,11 +288,21 @@ void ExportPml(py::module &m)
   ;
 
   py::class_<PyRadPML,PyPML>(m, "Radial", "radial pml scaling")
-    .def("__init__", [](PyRadPML *instance, double rad, Complex alpha) {
-        auto pml = make_shared<RadialPML_Transformation<0>> (rad,alpha);
-        new (instance) PyRadPML(pml);
+    .def("__init__", [](PyRadPML *instance, double rad, Complex alpha, py::object _origin) {
+          Vector<double> origin(3);
+          origin=0.;
+          if (py::extract<double>(_origin).check())
+            origin(0)=py::extract<double>(_origin)();
+
+          else if (py::extract<py::tuple>(_origin).check())
+          {
+            auto torigin = py::extract<py::tuple>(_origin)();
+            for (int j : Range(py::len(torigin)))
+              origin(j)=py::extract<double>(torigin[j])();
+          }
+          new (instance) PyRadPML(make_shared<RadialPML_Transformation<0>> (rad,alpha,origin));
         },
-        py::arg("rad")=1, py::arg("alpha")=Complex(0,1))
+        py::arg("rad")=1, py::arg("alpha")=Complex(0,1),py::arg("origin")=0)
     
     ;
 
@@ -318,45 +316,106 @@ void ExportPml(py::module &m)
     ;
 
   py::class_<PyCartPML,PyPML>(m, "Cartesian", "cartesian pml scaling")
-    .def("__init__", [](PyCartPML *instance, py::tuple mins,py::tuple maxs, Complex alpha) {
-          Matrix<double> bounds = 0;
-          bounds.SetSize(min(py::len(mins),py::len(maxs)),2);
-          for (int j :Range(bounds.Height()))
-            {
-              bounds(j,0)=py::extract<double>(mins[j])();
-              bounds(j,1)=py::extract<double>(maxs[j])();
-            }
-        new (instance) PyCartPML(make_shared<CartesianPML_Transformation<0>>(bounds,alpha));
-        },
-        py::arg("mins"),py::arg("maxs"), py::arg("alpha")=Complex(0,1))
-    .def("__init__", [](PyCartPML *instance, double mins,double maxs, Complex alpha) {
-          Matrix<double> bounds(1,2);
-          bounds(1,0)=mins;
-          bounds(1,1)=maxs;
+    .def("__init__", [](PyCartPML *instance, py::object mins,py::object maxs, Complex alpha) {
+          Matrix<double> bounds(3,2);
+          bounds = 0.;
+          if (py::extract<double>(mins).check())
+            bounds(0,0)=py::extract<double>(mins)();
+
+          else if (py::extract<py::tuple>(mins).check())
+          {
+            auto tmin = py::extract<py::tuple>(mins)();
+            for (int j : Range(py::len(tmin)))
+              bounds(j,0)=py::extract<double>(tmin[j])();
+          }
+
+          if (py::extract<double>(maxs).check())
+            bounds(0,1)=py::extract<double>(maxs)();
+
+          else if (py::extract<py::tuple>(maxs).check())
+          {
+            auto tmax = py::extract<py::tuple>(maxs)();
+            for (int j : Range(py::len(tmax)))
+              bounds(j,1)=py::extract<double>(tmax[j])();
+          }
         new (instance) PyCartPML(make_shared<CartesianPML_Transformation<0>>(bounds,alpha));
         },
         py::arg("mins"),py::arg("maxs"), py::arg("alpha")=Complex(0,1))
     ;
   
+  py::class_<PyHalfPML,PyPML>(m, "HalfSpace", "half space pml scaling")
+    .def("__init__", [](PyHalfPML *instance, py::object _point, py::object _normal, Complex alpha) {
+          Vector<double> point(3);
+          Vector<double> normal(3);
+          point = 0.;
+          normal = 0.;
+          if (py::extract<double>(_point).check())
+            point(0)=py::extract<double>(_point)();
+
+          else if (py::extract<py::tuple>(_point).check())
+          {
+            auto tpoint = py::extract<py::tuple>(_point)();
+            for (int j : Range(py::len(tpoint)))
+              point(j)=py::extract<double>(tpoint[j])();
+          }
+
+          if (py::extract<double>(_normal).check())
+            normal(0)=py::extract<double>(_normal)();
+
+          else if (py::extract<py::tuple>(_normal).check())
+          {
+            auto tnormal = py::extract<py::tuple>(_normal)();
+            for (int j : Range(py::len(tnormal)))
+              normal(j)=py::extract<double>(tnormal[j])();
+          }
+        new (instance) PyHalfPML(make_shared<HalfSpacePML_Transformation<0>>(point,normal,alpha));
+        },
+        py::arg("point"),py::arg("normal"), py::arg("alpha")=Complex(0,1))
+    ;
   py::class_<PyBrickPML,PyPML>(m, "BrickRadial", "generalized radial pml scaling on a brick")
-    .def("__init__", [](PyBrickPML *instance, py::tuple mins,py::tuple maxs, Complex alpha) {
-          Matrix<double> bounds = 0;
-          bounds.SetSize(min(py::len(mins),py::len(maxs)),2);
-          for (int j :Range(bounds.Height()))
-            {
-              bounds(j,0)=py::extract<double>(mins[j])();
-              bounds(j,1)=py::extract<double>(maxs[j])();
-            }
-        new (instance) PyPML(make_shared<BrickRadialPML_Transformation<0>>(bounds,alpha));
+    .def("__init__", [](PyBrickPML *instance, 
+                        py::object mins,
+                        py::object maxs, 
+                        Complex alpha,
+                        py::object _origin) {
+          Matrix<double> bounds(3,2);
+          bounds = 0.;
+          Vector<double> origin(3);
+          origin = 0.;
+
+          if (py::extract<double>(mins).check())
+            bounds(0,0)=py::extract<double>(mins)();
+
+          else if (py::extract<py::tuple>(mins).check())
+          {
+            auto tmin = py::extract<py::tuple>(mins)();
+            for (int j : Range(py::len(tmin)))
+              bounds(j,0)=py::extract<double>(tmin[j])();
+          }
+
+          if (py::extract<double>(maxs).check())
+            bounds(0,1)=py::extract<double>(maxs)();
+
+          else if (py::extract<py::tuple>(maxs).check())
+          {
+            auto tmax = py::extract<py::tuple>(maxs)();
+            for (int j : Range(py::len(tmax)))
+              bounds(j,1)=py::extract<double>(tmax[j])();
+          }
+
+          if (py::extract<double>(_origin).check())
+            origin(0)=py::extract<double>(_origin)();
+
+          else if (py::extract<py::tuple>(_origin).check())
+          {
+            auto torigin = py::extract<py::tuple>(_origin)();
+            for (int j : Range(py::len(torigin)))
+              origin(j)=py::extract<double>(torigin[j])();
+          }
+
+        new (instance) PyPML(make_shared<BrickRadialPML_Transformation<0>>(bounds,alpha,origin));
         },
-        py::arg("mins"),py::arg("maxs"), py::arg("alpha")=Complex(0,1))
-    .def("__init__", [](PyBrickPML *instance, double mins,double maxs, Complex alpha) {
-          Matrix<double> bounds(1,2);
-          bounds(1,0)=mins;
-          bounds(1,1)=maxs;
-        new (instance) PyPML(make_shared<BrickRadialPML_Transformation<0>>(bounds,alpha));
-        },
-        py::arg("mins"),py::arg("maxs"), py::arg("alpha")=Complex(0,1))
+        py::arg("mins"),py::arg("maxs"), py::arg("alpha")=Complex(0,1), py::arg("origin")=0)
     ;
 }
 
