@@ -1056,13 +1056,13 @@ namespace ngcomp
     virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const;
 
     virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
-
+    
     template <class T> NGS_DLL_HEADER
-      void TransformMat (ElementId ei, 
-                         SliceMatrix<T> mat, TRANSFORM_TYPE tt) const;
-
+      void T_TransformMat (ElementId ei, 
+                           SliceMatrix<T> mat, TRANSFORM_TYPE tt) const;
+    
     template <class T> NGS_DLL_HEADER
-      void TransformVec (ElementId ei, 
+      void T_TransformVec (ElementId ei, 
                          SliceVector<T> vec, TRANSFORM_TYPE tt) const;
 
     virtual void VTransformMR (ElementId ei,
