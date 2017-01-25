@@ -3528,49 +3528,53 @@ namespace ngcomp
           }
                 */
       }
-    else
+    else // MixedSpaces
       {
         static Timer timer ("Apply Matrix - mixed"); RegionTimer reg(timer);
 
-        IterateElements 
-          (*fespace2, VOL, clh, 
-           [&] (ElementId ei, LocalHeap & lh)
+        for (auto vb : { VOL, BND, BBND } )
+          if (VB_parts[vb].Size())
+            {        
+              IterateElements 
+                (*fespace2, vb, clh, 
+                 [&] (ElementId ei, LocalHeap & lh)
            
-           {
-             if (!fespace->DefinedOn (ei)) return;
-             if (!fespace2->DefinedOn (ei)) return;
-             const FiniteElement & fel1 = fespace->GetFE (ei, lh);
-             const FiniteElement & fel2 = fespace2->GetFE (ei, lh);
-             ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
+                 {
+                   if (!fespace->DefinedOn (ei)) return;
+                   if (!fespace2->DefinedOn (ei)) return;
+                   const FiniteElement & fel1 = fespace->GetFE (ei, lh);
+                   const FiniteElement & fel2 = fespace2->GetFE (ei, lh);
+                   ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
              
-             Array<int> dnums1 (fel1.GetNDof(), lh);
-             fespace->GetDofNrs (ei, dnums1);
-             Array<int> dnums2 (fel2.GetNDof(), lh);
-             fespace2->GetDofNrs (ei, dnums2);
-             
-             FlatVector<SCAL> elvecx (dnums1.Size() * fespace->GetDimension(), lh);
-             FlatVector<SCAL> elvecy (dnums2.Size() * fespace2->GetDimension(), lh);
+                   Array<int> dnums1 (fel1.GetNDof(), lh);
+                   fespace->GetDofNrs (ei, dnums1);
+                   Array<int> dnums2 (fel2.GetNDof(), lh);
+                   fespace2->GetDofNrs (ei, dnums2);
+                   
+                   FlatVector<SCAL> elvecx (dnums1.Size() * fespace->GetDimension(), lh);
+                   FlatVector<SCAL> elvecy (dnums2.Size() * fespace2->GetDimension(), lh);
 
-             x.GetIndirect (dnums1, elvecx);
-             this->fespace->TransformVec (ei, elvecx, TRANSFORM_SOL);
+                   x.GetIndirect (dnums1, elvecx);
+                   this->fespace->TransformVec (ei, elvecx, TRANSFORM_SOL);
 
-             for (int j = 0; j < this->NumIntegrators(); j++)
-               {
-                 BilinearFormIntegrator & bfi = *this->parts[j];
-                 if (bfi.SkeletonForm()) continue;
-                 if (bfi.BoundaryForm()) continue;
-                 if (!bfi.DefinedOn (this->ma->GetElIndex (ei))) continue;
+                   //for (int j = 0; j < this->NumIntegrators(); j++)
+                   for (auto & bfi : VB_parts[vb])
+                     {
+                       // BilinearFormIntegrator & bfi = *this->parts[j];
+                       // if (bfi.SkeletonForm()) continue;
+                       // if (bfi.BoundaryForm()) continue;
+                       if (!bfi->DefinedOn (this->ma->GetElIndex (ei))) continue;
 
-                 MixedFiniteElement fel(fel1, fel2);
-                 bfi.ApplyElementMatrix (fel, eltrans, elvecx, elvecy, 0, lh);
-            
-                 this->fespace->TransformVec (ei, elvecy, TRANSFORM_RHS);
+                       MixedFiniteElement fel(fel1, fel2);
+                       bfi->ApplyElementMatrix (fel, eltrans, elvecx, elvecy, 0, lh);
+                       
+                       this->fespace->TransformVec (ei, elvecy, TRANSFORM_RHS);
         
-                 elvecy *= val;
-                 y.AddIndirect (dnums2, elvecy);  // coloring	      
-               }
-           });
-        
+                       elvecy *= val;
+                       y.AddIndirect (dnums2, elvecy);  // coloring	      
+                     }
+                 });
+            }
         // cout << "apply not implemented for mixed" << endl;
       }
   }
