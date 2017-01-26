@@ -654,47 +654,6 @@ public:
     
 
   };
-
-////////////////////////////////////////////// Added by Gerhard Kitzler
-
-  class TensorProductBilinearFormIntegrator : public SymbolicBilinearFormIntegrator
-  {
-  public:
-    TensorProductBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb,
-                                    bool aelement_boundary) : SymbolicBilinearFormIntegrator(acf, avb, aelement_boundary)
-    { ; }
-    virtual string Name () const { return string ("Symbolic BFI"); }
-
-    virtual void 
-    ApplyElementMatrix (const FiniteElement & fel, 
-			const ElementTransformation & trafo, 
-			const FlatVector<double> elx, 
-			FlatVector<double> ely,
-			void * precomputed,
-			LocalHeap & lh) const;
-  };
-
-  class TensorProductFacetBilinearFormIntegrator : public SymbolicFacetBilinearFormIntegrator
-  {
-  public:
-    TensorProductFacetBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb, bool aelement_boundary) : SymbolicFacetBilinearFormIntegrator(acf, avb, aelement_boundary)
-    { ; }
-
-    virtual void
-    ApplyFacetMatrix (const FiniteElement & volumefel1, int LocalFacetNr1,
-                      const ElementTransformation & eltrans1, FlatArray<int> & ElVertices1,
-                      const FiniteElement & volumefel2, int LocalFacetNr2,
-                      const ElementTransformation & eltrans2, FlatArray<int> & ElVertices2,
-                      FlatVector<double> elx, FlatVector<double> ely,
-                      LocalHeap & lh) const;
-
-    virtual void
-    ApplyFacetMatrix (const FiniteElement & volumefel, int LocalFacetNr,
-                      const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
-                      const ElementTransformation & seltrans, FlatArray<int> & SElVertices,
-                      FlatVector<double> elx, FlatVector<double> ely,
-                      LocalHeap & lh) const;                   
-  };
   
 
 }

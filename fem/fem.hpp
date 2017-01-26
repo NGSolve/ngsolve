@@ -80,7 +80,7 @@ namespace ngfem
 #include "hdiv_equations.hpp"
 #include "elasticity_equations.hpp"
 #include "symbolicintegrator.hpp"
-
+#include "tensorproductintegrator.hpp"
 // #include "pml.hpp" 
 
 // using ngfem::ELEMENT_TYPE;
