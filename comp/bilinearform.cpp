@@ -2975,8 +2975,8 @@ namespace ngcomp
                // Element transformations and elements for both spaces
                ElementTransformation & eltrans1 = tpfes->GetTrafo (ei1, lh);
                ElementTransformation & eltrans2 = tpfes->GetTrafo (ei2, lh);
-               const FiniteElement & fel1 = tpfes->GetFE (el1, lh);
-               const FiniteElement & fel2 = tpfes->GetFE (el2, lh);
+               const FiniteElement & fel1 = tpfes->GetFE (ei1, lh);
+               const FiniteElement & fel2 = tpfes->GetFE (ei2, lh);
                // Dof numbers of both TP volume elements
                Array<int> dnums1(fel1.GetNDof(), lh);
                Array<int> dnums2(fel2.GetNDof(), lh);

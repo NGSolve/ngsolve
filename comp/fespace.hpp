@@ -349,14 +349,14 @@ namespace ngcomp
         
 
     /// returns finite element. 
-    virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const;
+    virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const = 0;
 
     [[deprecated("Use GetFE with element-id instead of elnr!")]]    
-    virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
+    virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const final;
     [[deprecated("Use GetFE(ElementId(BND,elnr)) instead!")]]    
-    virtual const FiniteElement & GetSFE (int elnr, LocalHeap & lh) const;
+    virtual const FiniteElement & GetSFE (int elnr, LocalHeap & lh) const final;
     [[deprecated("Use GetFE(ElementId(BBND,elnr)) instead!")]]        
-    virtual const FiniteElement & GetCD2FE (int cd2elnr, LocalHeap & lh) const;
+    virtual const FiniteElement & GetCD2FE (int cd2elnr, LocalHeap & lh) const final;
 
     /// get dof-nrs of the element
     [[deprecated("Use GetDofNrs with element-id instead of elnr!")]]
@@ -827,6 +827,7 @@ namespace ngcomp
   {
     ///
     Array<int> ndlevel;
+    bool hb_defined;
 
   public:
 
@@ -845,6 +846,8 @@ namespace ngcomp
     virtual void Update (LocalHeap & lh);
     
     virtual void DoArchive (Archive & archive);
+
+    virtual FiniteElement & GetFE(ElementId ei, Allocator & lh) const override;
     ///
     virtual size_t GetNDof () const throw();
     ///
@@ -884,6 +887,8 @@ namespace ngcomp
 
     ///
     virtual void Update(LocalHeap & lh);
+
+    virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
     ///
     virtual size_t GetNDof () const throw();
     ///
@@ -918,6 +923,8 @@ namespace ngcomp
     virtual void Update(LocalHeap & lh);
     /// 
     virtual void DoArchive (Archive & archive);
+
+    virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
     ///
     virtual size_t GetNDof () const throw() { return ndlevel.Last(); }
   
@@ -967,7 +974,7 @@ namespace ngcomp
     virtual size_t GetNDof () const throw() { return ndlevel.Last(); } 
 
     ///
-    virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
+    virtual const FiniteElement & GetFE (ElementId ei, LocalHeap & lh) const;
 
     ///
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const;

@@ -657,7 +657,7 @@ namespace ngcomp
 
 
 
-
+  /*
   const FiniteElement & H1HighOrderFESpace :: GetFE (int elnr, LocalHeap & lh) const
   {
     Ngs_Element ngel = ma->GetElement(elnr);
@@ -727,7 +727,7 @@ namespace ngcomp
         throw;
       }
   }
- 
+  */ 
 
 
 
@@ -775,40 +775,40 @@ namespace ngcomp
 
 
 
-  const FiniteElement & H1HighOrderFESpace :: GetSFE (int elnr, LocalHeap & lh) const
-  {
-    if (!DefinedOnBoundary (ma->GetSElIndex (elnr)))
-      {
-        switch (ma->GetSElType(elnr))
-          {
-          case ET_POINT:   return * new (lh) ScalarDummyFE<ET_POINT> (); 
-          case ET_SEGM:    return * new (lh) ScalarDummyFE<ET_SEGM> (); 
-          case ET_TRIG:    return * new (lh) ScalarDummyFE<ET_TRIG> (); 
-          case ET_QUAD:    return * new (lh) ScalarDummyFE<ET_QUAD> (); 
-	  default: ;
-	  }
-      }
+  // const FiniteElement & H1HighOrderFESpace :: GetSFE (int elnr, LocalHeap & lh) const
+  // {
+  //   if (!DefinedOnBoundary (ma->GetSElIndex (elnr)))
+  //     {
+  //       switch (ma->GetSElType(elnr))
+  //         {
+  //         case ET_POINT:   return * new (lh) ScalarDummyFE<ET_POINT> (); 
+  //         case ET_SEGM:    return * new (lh) ScalarDummyFE<ET_SEGM> (); 
+  //         case ET_TRIG:    return * new (lh) ScalarDummyFE<ET_TRIG> (); 
+  //         case ET_QUAD:    return * new (lh) ScalarDummyFE<ET_QUAD> (); 
+  //         default: ;
+  //         }
+  //     }
 
-    try
-      {
-        switch (ma->GetSElType(elnr))
-          {
-          case ET_POINT:   return T_GetSFE<ET_POINT> (elnr, lh);
-          case ET_SEGM:    return T_GetSFE<ET_SEGM> (elnr, lh);
+  //   try
+  //     {
+  //       switch (ma->GetSElType(elnr))
+  //         {
+  //         case ET_POINT:   return T_GetSFE<ET_POINT> (elnr, lh);
+  //         case ET_SEGM:    return T_GetSFE<ET_SEGM> (elnr, lh);
 
-          case ET_TRIG:    return T_GetSFE<ET_TRIG> (elnr, lh);
-          case ET_QUAD:    return T_GetSFE<ET_QUAD> (elnr, lh);
+  //         case ET_TRIG:    return T_GetSFE<ET_TRIG> (elnr, lh);
+  //         case ET_QUAD:    return T_GetSFE<ET_QUAD> (elnr, lh);
 
-          default:
-            throw Exception ("illegal element in H1HoFeSpace::GetSFE");
-          }
-      }
-    catch (Exception & e)
-      {
-        e.Append ("in H1HoFESpace::GetSElement\n");
-        throw;
-      }
-  }
+  //         default:
+  //           throw Exception ("illegal element in H1HoFeSpace::GetSFE");
+  //         }
+  //     }
+  //   catch (Exception & e)
+  //     {
+  //       e.Append ("in H1HoFESpace::GetSElement\n");
+  //       throw;
+  //     }
+  // }
 
 
   template <ELEMENT_TYPE ET>

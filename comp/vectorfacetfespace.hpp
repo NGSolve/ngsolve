@@ -61,8 +61,10 @@ namespace ngcomp
     // virtual int GetNDofLowOrder () const
     // { return ndof_lo; }
 
-    virtual const FiniteElement & GetFE ( int elnr, LocalHeap & lh ) const;
-    virtual const FiniteElement & GetSFE ( int selnr, LocalHeap & lh ) const;
+    virtual FiniteElement & GetFE(ElementId ei, Allocator & lh) const override;
+    
+    // virtual const FiniteElement & GetFE ( int elnr, LocalHeap & lh ) const;
+    // virtual const FiniteElement & GetSFE ( int selnr, LocalHeap & lh ) const;
 
     virtual void GetFacetDofNrs ( int felnr, Array<DofId> & dnums ) const;
 

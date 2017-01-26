@@ -694,53 +694,53 @@ namespace ngcomp
       }
   }
   
-  const FiniteElement & HDivHighOrderFESpace :: GetFE (int elnr, LocalHeap & lh) const
-  {
-    Ngs_Element ngel = ma->GetElement(elnr);
-    ELEMENT_TYPE eltype = ngel.GetType();
+  // const FiniteElement & HDivHighOrderFESpace :: GetFE (int elnr, LocalHeap & lh) const
+  // {
+  //   Ngs_Element ngel = ma->GetElement(elnr);
+  //   ELEMENT_TYPE eltype = ngel.GetType();
 
-    /*
-    if (ma->GetElType(elnr) == ET_TRIG && order <= 6 && fixed_order)
-      {
-	HDivHighOrderFiniteElementFO<2> * hofe2d = 0;
-	switch (order)
-	  {
-	  case 1: hofe2d = new (lh)  HDivHighOrderFEFO<ET_TRIG,1> (); break;
-	  case 2: hofe2d = new (lh)  HDivHighOrderFEFO<ET_TRIG,2> (); break;
-	  case 3: hofe2d = new (lh)  HDivHighOrderFEFO<ET_TRIG,3> (); break;
-	  case 4: hofe2d = new (lh)  HDivHighOrderFEFO<ET_TRIG,4> (); break;
-	  case 5: hofe2d = new (lh)  HDivHighOrderFEFO<ET_TRIG,5> (); break;
-	  case 6: hofe2d = new (lh)  HDivHighOrderFEFO<ET_TRIG,6> (); break;
-	  }
+  //   /*
+  //   if (ma->GetElType(elnr) == ET_TRIG && order <= 6 && fixed_order)
+  //     {
+  //       HDivHighOrderFiniteElementFO<2> * hofe2d = 0;
+  //       switch (order)
+  //         {
+  //         case 1: hofe2d = new (lh)  HDivHighOrderFEFO<ET_TRIG,1> (); break;
+  //         case 2: hofe2d = new (lh)  HDivHighOrderFEFO<ET_TRIG,2> (); break;
+  //         case 3: hofe2d = new (lh)  HDivHighOrderFEFO<ET_TRIG,3> (); break;
+  //         case 4: hofe2d = new (lh)  HDivHighOrderFEFO<ET_TRIG,4> (); break;
+  //         case 5: hofe2d = new (lh)  HDivHighOrderFEFO<ET_TRIG,5> (); break;
+  //         case 6: hofe2d = new (lh)  HDivHighOrderFEFO<ET_TRIG,6> (); break;
+  //         }
 	
-	Ngs_Element ngel = ma->GetElement<2> (elnr);
-	for (int j = 0; j < 3; j++)
-	  hofe2d->SetVertexNumber (j, ngel.vertices[j]);
+  //       Ngs_Element ngel = ma->GetElement<2> (elnr);
+  //       for (int j = 0; j < 3; j++)
+  //         hofe2d->SetVertexNumber (j, ngel.vertices[j]);
 
-        hofe2d -> SetHODivFree (ho_div_free);
-        hofe2d -> SetOnlyHODiv (false);
-        hofe2d -> ComputeNDof();
+  //       hofe2d -> SetHODivFree (ho_div_free);
+  //       hofe2d -> SetOnlyHODiv (false);
+  //       hofe2d -> ComputeNDof();
 	
-	return *hofe2d;
-      }  
-    */
+  //       return *hofe2d;
+  //     }  
+  //   */
 
-    switch (eltype)
-      {
-        // case ET_SEGM:    return T_GetFE<ET_SEGM> (elnr, false, lh);
+  //   switch (eltype)
+  //     {
+  //       // case ET_SEGM:    return T_GetFE<ET_SEGM> (elnr, false, lh);
         
-      case ET_TRIG:    return T_GetFE<ET_TRIG> (elnr, false, lh);
-      case ET_QUAD:    return T_GetFE<ET_QUAD> (elnr, false, lh);
+  //     case ET_TRIG:    return T_GetFE<ET_TRIG> (elnr, false, lh);
+  //     case ET_QUAD:    return T_GetFE<ET_QUAD> (elnr, false, lh);
         
-      case ET_TET:     return T_GetFE<ET_TET> (elnr, false, lh);
-      case ET_PRISM:   return T_GetFE<ET_PRISM> (elnr, false, lh);
-            // case ET_PYRAMID: return T_GetFE<ET_PYRAMID> (elnr, false, lh);
-            // case ET_HEX:     return T_GetFE<ET_HEX> (elnr, false, lh);
+  //     case ET_TET:     return T_GetFE<ET_TET> (elnr, false, lh);
+  //     case ET_PRISM:   return T_GetFE<ET_PRISM> (elnr, false, lh);
+  //           // case ET_PYRAMID: return T_GetFE<ET_PYRAMID> (elnr, false, lh);
+  //           // case ET_HEX:     return T_GetFE<ET_HEX> (elnr, false, lh);
         
-      default:
-        throw Exception ("illegal element in HDivHOFESpace::GetFE");
-      }
-  }
+  //     default:
+  //       throw Exception ("illegal element in HDivHOFESpace::GetFE");
+  //     }
+  // }
 
   const FiniteElement & HDivHighOrderFESpace :: GetHODivFE (int elnr, LocalHeap & lh) const
   {
@@ -793,77 +793,77 @@ namespace ngcomp
 
 
 
-  const FiniteElement & HDivHighOrderFESpace :: GetSFE (int selnr, LocalHeap & lh) const
-  {
-    FiniteElement * fe = 0;
+//   const FiniteElement & HDivHighOrderFESpace :: GetSFE (int selnr, LocalHeap & lh) const
+//   {
+//     FiniteElement * fe = 0;
 
-    int porder; 
-    if (discont) porder = -1; 
-    else porder = order; 
+//     int porder; 
+//     if (discont) porder = -1; 
+//     else porder = order; 
 
-    // if (highest_order_dc) porder--;
+//     // if (highest_order_dc) porder--;
 
-    switch (ma->GetSElType(selnr))
-      {
-      case ET_SEGM:
-        fe = new (lh) HDivHighOrderNormalSegm<TrigExtensionMonomial> (porder); 
-        break;
-      case ET_TRIG: 
-        fe = new (lh) HDivHighOrderNormalTrig<TrigExtensionMonomial> (porder); 
-        break; 
-      case ET_QUAD: 
-        fe = new (lh) HDivHighOrderNormalQuad<TrigExtensionMonomial> (porder); 
-        break; 
-      default:
-        throw Exception (string("HDivHighOrderFESpace::GetSFE: unsupported element ")+
-                         ElementTopology::GetElementName(ma->GetSElType(selnr)));
-      }
+//     switch (ma->GetSElType(selnr))
+//       {
+//       case ET_SEGM:
+//         fe = new (lh) HDivHighOrderNormalSegm<TrigExtensionMonomial> (porder); 
+//         break;
+//       case ET_TRIG: 
+//         fe = new (lh) HDivHighOrderNormalTrig<TrigExtensionMonomial> (porder); 
+//         break; 
+//       case ET_QUAD: 
+//         fe = new (lh) HDivHighOrderNormalQuad<TrigExtensionMonomial> (porder); 
+//         break; 
+//       default:
+//         throw Exception (string("HDivHighOrderFESpace::GetSFE: unsupported element ")+
+//                          ElementTopology::GetElementName(ma->GetSElType(selnr)));
+//       }
 
-    if (discont) return *fe; 
+//     if (discont) return *fe; 
 
-    ArrayMem<int,4> vnums;
-    ArrayMem<int, 4> ednums, order_ed;
-    INT<3> order_fa;
-    ma->GetSElVertices(selnr, vnums);
+//     ArrayMem<int,4> vnums;
+//     ArrayMem<int, 4> ednums, order_ed;
+//     INT<3> order_fa;
+//     ma->GetSElVertices(selnr, vnums);
     
-    if(ma->GetSElType(selnr) == ET_SEGM)
-      {
-	HDivHighOrderNormalFiniteElement<1> * hofe =
-	  dynamic_cast<HDivHighOrderNormalFiniteElement<1>*> (fe);
+//     if(ma->GetSElType(selnr) == ET_SEGM)
+//       {
+// 	HDivHighOrderNormalFiniteElement<1> * hofe =
+// 	  dynamic_cast<HDivHighOrderNormalFiniteElement<1>*> (fe);
 
-	hofe -> SetVertexNumbers (vnums);
-	ma->GetSElEdges(selnr, ednums);
-	// int dec = (!boundary_facet[ednums[0]] && highest_order_dc) ? 1 : 0;
-	hofe -> SetOrderInner (order_facet[ednums[0]][0] /* -dec */);
-	hofe -> ComputeNDof();
-      }
-    else
-      {
-	HDivHighOrderNormalFiniteElement<2> * hofe =
-	  dynamic_cast<HDivHighOrderNormalFiniteElement<2>*> (fe);
+// 	hofe -> SetVertexNumbers (vnums);
+// 	ma->GetSElEdges(selnr, ednums);
+// 	// int dec = (!boundary_facet[ednums[0]] && highest_order_dc) ? 1 : 0;
+// 	hofe -> SetOrderInner (order_facet[ednums[0]][0] /* -dec */);
+// 	hofe -> ComputeNDof();
+//       }
+//     else
+//       {
+// 	HDivHighOrderNormalFiniteElement<2> * hofe =
+// 	  dynamic_cast<HDivHighOrderNormalFiniteElement<2>*> (fe);
 
-	hofe -> SetVertexNumbers (vnums);
+// 	hofe -> SetVertexNumbers (vnums);
 	
-#ifdef NEW_HDIVFE
-	INT<3> order_fa = INT<3>(order_facet[ma->GetSElFace(selnr)][0],
-                                 order_facet[ma->GetSElFace(selnr)][1],0);
-        if (highest_order_dc)
-          {
-            order_fa[0]--;
-            order_fa[1]--;
-            order_fa[2]--;
-          }
-	hofe -> SetOrderInner (order_fa);
-#else 
-	int order_fa = order_facet[ma->GetSElFace(selnr)][0];
-        // if (highest_order_dc) order_fa--;
-	hofe -> SetOrderInner (order_fa);
-#endif
-	hofe -> ComputeNDof();
-      }
+// #ifdef NEW_HDIVFE
+// 	INT<3> order_fa = INT<3>(order_facet[ma->GetSElFace(selnr)][0],
+//                                  order_facet[ma->GetSElFace(selnr)][1],0);
+//         if (highest_order_dc)
+//           {
+//             order_fa[0]--;
+//             order_fa[1]--;
+//             order_fa[2]--;
+//           }
+// 	hofe -> SetOrderInner (order_fa);
+// #else 
+// 	int order_fa = order_facet[ma->GetSElFace(selnr)][0];
+//         // if (highest_order_dc) order_fa--;
+// 	hofe -> SetOrderInner (order_fa);
+// #endif
+// 	hofe -> ComputeNDof();
+//       }
     
-    return *fe;
-  }
+//     return *fe;
+//   }
   
   size_t HDivHighOrderFESpace :: GetNDof () const throw()
   {

@@ -618,66 +618,91 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
   
 
-  FiniteElement & FESpace :: GetFE (ElementId ei, Allocator & alloc) const
-  {
-    LocalHeap & lh = dynamic_cast<LocalHeap&> (alloc);
-    switch(ei.VB())
-      {
-      case VOL:
-	return const_cast<FiniteElement&>(GetFE(ei.Nr(),lh));
-      case BND:
-	return const_cast<FiniteElement&>(GetSFE(ei.Nr(),lh));
-      case BBND:
-	return const_cast<FiniteElement&>(GetCD2FE(ei.Nr(),lh));
-      default:
-	__assume(false);
-      }
-  }
+  // FiniteElement & FESpace :: GetFE (ElementId ei, Allocator & alloc) const
+  // {
+  //   LocalHeap & lh = dynamic_cast<LocalHeap&> (alloc);
+  //   switch(ei.VB())
+  //     {
+  //     case VOL:
+  //       {
+  //       FiniteElement * fe = NULL;
+    
+  //       if (DefinedOn (ei))
+  //         {
+  //           switch (ma->GetElType(ei))
+  //             {
+  //             case ET_TET: fe = tet; break;
+  //             case ET_PYRAMID: fe = pyramid; break;
+  //             case ET_PRISM: fe = prism; break;
+  //             case ET_HEX: fe = hex; break;
+  //             case ET_TRIG: fe = trig; break;
+  //             case ET_QUAD: fe = quad; break;
+  //             case ET_SEGM: fe = segm; break;
+  //             case ET_POINT: fe = point; break;
+  //             }
+  //         }
+  //       else
+  //         {
+  //           switch (ma->GetElType(ei))
+  //             {
+  //             case ET_TET: fe = dummy_tet; break;
+  //             case ET_PYRAMID: fe = dummy_pyramid; break;
+  //             case ET_PRISM: fe = dummy_prism; break;
+  //             case ET_HEX: fe = dummy_hex; break;
+  //             case ET_TRIG: fe = dummy_trig; break;
+  //             case ET_QUAD: fe = dummy_quad; break;
+  //             case ET_SEGM: fe = dummy_segm; break;
+  //             case ET_POINT: fe = dummy_point; break;
+  //             }
+  //         }
+
+  //       if (!fe)
+  //         {
+  //           /*
+  //             Exception ex;
+  //             ex << "FESpace" << GetClassName() << ", undefined eltype " 
+  //             << ElementTopology::GetElementName(ma->GetElType(elnr))
+  //             << ", order = " << ToString (order) << "\n";
+  //             throw ex;
+  //           */
+  //           stringstream str;
+  //           str << "FESpace" << GetClassName() << ", undefined eltype " 
+  //               << ElementTopology::GetElementName(ma->GetElType(ei.Nr()))
+  //               << ", order = " << ToString (order) << "\n";
+  //           throw Exception (str.str());
+  //         }
+    
+  //       return *fe;
+  //       }
+  //     case BND:
+  //       switch (ma->GetElement(ei).GetType())
+  //         {
+  //         case ET_TRIG:  return *trig; 
+  //         case ET_QUAD:  return *quad; 
+  //         case ET_SEGM:  return *segm; 
+  //         case ET_POINT: return *point; 
+  //         case ET_TET: case ET_PYRAMID:
+  //         case ET_PRISM: case ET_HEX: 
+  //           ;
+  //         }
+  //       throw Exception ("GetFE BND: unknown type");
+  //     case BBND:
+  //       switch (ma->GetElement(ei).GetType())
+  //         {
+  //         case ET_SEGM: return *segm;
+  //         case ET_POINT: return *point;
+  //         default: ;
+  //         }
+  //       throw Exception("GetFE BBND: unknown type");
+  //     default:
+  //       __assume(false);
+  //     }
+  // }
   
 
   const FiniteElement & FESpace :: GetFE (int elnr, LocalHeap & lh) const
   {
-    FiniteElement * fe = NULL;
-    
-    if (DefinedOn (ElementId (VOL, elnr)))
-      {
-        switch (ma->GetElType(elnr))
-          {
-          case ET_TET: fe = tet; break;
-          case ET_PYRAMID: fe = pyramid; break;
-          case ET_PRISM: fe = prism; break;
-          case ET_HEX: fe = hex; break;
-          case ET_TRIG: fe = trig; break;
-          case ET_QUAD: fe = quad; break;
-          case ET_SEGM: fe = segm; break;
-          case ET_POINT: fe = point; break;
-          }
-      }
-    else
-      {
-        switch (ma->GetElType(elnr))
-          {
-          case ET_TET: fe = dummy_tet; break;
-          case ET_PYRAMID: fe = dummy_pyramid; break;
-          case ET_PRISM: fe = dummy_prism; break;
-          case ET_HEX: fe = dummy_hex; break;
-          case ET_TRIG: fe = dummy_trig; break;
-          case ET_QUAD: fe = dummy_quad; break;
-          case ET_SEGM: fe = dummy_segm; break;
-          case ET_POINT: fe = dummy_point; break;
-          }
-      }
-
-    if (!fe)
-      {
-        stringstream str;
-        str << "FESpace" << GetClassName() << ", undefined eltype " 
-            << ElementTopology::GetElementName(ma->GetElType(elnr))
-            << ", order = " << ToString (order) << "\n";
-        throw Exception (str.str());
-      }
-    
-    return *fe;
+    return const_cast<FiniteElement&>(GetFE(ElementId(VOL,elnr),lh));
   }
 
   Table<int> FESpace :: CreateDofTable (VorB vorb) const
@@ -836,28 +861,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   const FiniteElement & FESpace :: GetSFE (int selnr, LocalHeap & lh) const
   {
-    switch (ma->GetSElType(selnr))
-      {
-      case ET_TRIG:  return *trig; 
-      case ET_QUAD:  return *quad; 
-      case ET_SEGM:  return *segm; 
-      case ET_POINT: return *point; 
-      case ET_TET: case ET_PYRAMID:
-      case ET_PRISM: case ET_HEX: 
-        ;
-      }
-    throw Exception ("GetSFE: unknown type");
+    return const_cast<FiniteElement&>(GetFE(ElementId(BND,selnr),lh));
   }
 
   const FiniteElement & FESpace :: GetCD2FE (int cd2elnr, LocalHeap & lh) const
   {
-    switch (ma->GetElement(ElementId(BBND,cd2elnr)).GetType())
-      {
-      case ET_SEGM: return *segm;
-      case ET_POINT: return *point;
-      default: ;
-      }
-    throw Exception("GetCD2FE: unknown type");
+    return const_cast<FiniteElement&>(GetFE(ElementId(BBND,cd2elnr),lh));
   }
 
   const FiniteElement & FESpace :: GetFE (ELEMENT_TYPE type) const
@@ -1426,39 +1435,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	if (iscomplex) loflags.SetFlag ("complex");
 	low_order_space = make_shared<NodalFESpace> (ma, loflags);
       }
-
-    if (order == 1)
-      {
-	tet     = new ScalarFE<ET_TET,1>;
-	prism   = new FE_Prism1;
-	pyramid = new FE_Pyramid1;
-	hex     = new FE_Hex1;
-	trig    = new ScalarFE<ET_TRIG,1>;
-	quad    = new ScalarFE<ET_QUAD,1>;
-	segm    = new FE_Segm1;
-      }
-    else
-      {
-	if (flags.GetDefineFlag ("hb"))
-	  {
-	    tet     = new FE_Tet2HB;
-	    prism   = new FE_Prism1;
-	    pyramid = new FE_Pyramid1;
-	    trig    = new FE_Trig2HB;
-	    quad    = new ScalarFE<ET_QUAD,1>;
-	    segm    = new FE_Segm2;
-	  }
-	else
-	  {
-	    tet     = new FE_Tet2;
-	    prism   = new FE_Prism1;
-	    pyramid = new FE_Pyramid1;
-	    trig    = new FE_Trig2;
-	    quad    = new ScalarFE<ET_QUAD,1>;
-	    segm    = new FE_Segm2;
-	  }
-      }
-    point = new FE_Point;
+    hb_defined = flags.GetDefineFlag("hb");
 
     SetDummyFE<ScalarDummyFE> ();
 
@@ -1521,6 +1498,56 @@ lot of new non-zero entries in the matrix!\n" << endl;
   NodalFESpace :: ~NodalFESpace ()
   {
     ;
+  }
+
+  FiniteElement & NodalFESpace :: GetFE(ElementId ei, Allocator & lh) const
+  {
+    if(order == 1)
+      {
+        switch (ma->GetElType(ei))
+          {
+          case ET_SEGM:    return *(new (lh) FE_Segm1);
+          case ET_TRIG:    return *(new (lh) ScalarFE<ET_TRIG,1>);
+          case ET_QUAD:    return *(new (lh) ScalarFE<ET_QUAD,1>);
+          case ET_TET:     return *(new (lh) ScalarFE<ET_TET,1>);
+          case ET_PRISM:   return *(new (lh) FE_Prism1);
+          case ET_PYRAMID: return *(new (lh) FE_Pyramid1);
+          case ET_HEX:     return *(new (lh) FE_Hex1);
+          case ET_POINT:   return *(new (lh) FE_Point);
+            throw Exception ("Inconsistent element type in NodalFESpace::GetFE");
+          }
+      }
+    else
+      {
+        if(hb_defined)
+          {
+            switch (ma->GetElType(ei))
+              {
+              case ET_TET:     return *(new (lh) FE_Tet2HB);
+              case ET_PRISM:   return *(new (lh) FE_Prism1);
+              case ET_PYRAMID: return *(new (lh) FE_Pyramid1);
+              case ET_TRIG:    return *(new (lh) FE_Trig2HB);
+              case ET_QUAD:    return *(new (lh) ScalarFE<ET_QUAD,1>);
+              case ET_SEGM:    return *(new (lh) FE_Segm2);
+              case ET_POINT:   return *(new (lh) FE_Point);
+                throw Exception ("Inconsistent element type in NodalFESpace::GetFE, hb defined");
+              }
+          }
+        else
+          {
+            switch (ma->GetElType(ei))
+              {
+              case ET_TET:     return *(new (lh) FE_Tet2);
+              case ET_PRISM:   return *(new (lh) FE_Prism1);
+              case ET_PYRAMID: return *(new (lh) FE_Pyramid1);
+              case ET_TRIG:    return *(new (lh) FE_Trig2);
+              case ET_QUAD:    return *(new (lh) ScalarFE<ET_QUAD,1>);
+              case ET_SEGM:    return *(new (lh) FE_Segm2);
+              case ET_POINT:   return *(new (lh) FE_Point);
+                throw Exception ("Inconsistent element type in NodalFESpace::GetFE, no hb defined");
+              }
+          }
+      }
   }
 
   size_t NodalFESpace :: GetNDof () const throw()
@@ -1681,8 +1708,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     // prol = new LinearProlongation(*this);
     
 
-    trig = new FE_NcTrig1;
-    segm = new FE_Segm0;
+    // trig = new FE_NcTrig1;
+    // segm = new FE_Segm0;
       
     auto one = make_shared<ConstantCoefficientFunction> (1);
     if (ma->GetDimension() == 2)
@@ -1711,7 +1738,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
     ;
   }
 
-
+  FiniteElement & NonconformingFESpace :: GetFE (ElementId ei, Allocator & lh) const
+  {
+    switch (ma->GetElType(ei))
+      {
+      case ET_TRIG: return *(new (lh)FE_NcTrig1);
+      case ET_SEGM: return *(new (lh) FE_Segm0);
+      default: throw Exception ("Element type not available in NonconformingFESpace::GetFE");
+      }
+  }
   size_t NonconformingFESpace :: GetNDof () const throw()
   {
     return ma->GetNEdges();
@@ -1798,24 +1833,24 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if (order == 0)
     {
-      tet     = new ScalarFE<ET_TET,0>;
-      prism   = new FE_Prism0;
-      pyramid = new FE_Pyramid0;
-      hex     = new FE_Hex0;
-      trig    = new ScalarFE<ET_TRIG,0>;
-      quad    = new ScalarFE<ET_QUAD,0>;
-      segm    = new FE_Segm0;
+      // tet     = new ScalarFE<ET_TET,0>;
+      // prism   = new FE_Prism0;
+      // pyramid = new FE_Pyramid0;
+      // hex     = new FE_Hex0;
+      // trig    = new ScalarFE<ET_TRIG,0>;
+      // quad    = new ScalarFE<ET_QUAD,0>;
+      // segm    = new FE_Segm0;
 
       n_el_dofs = 1;
     }
     else
     {
-      tet     = new ScalarFE<ET_TET,1>;
-      prism   = new FE_Prism1;
-      pyramid = new FE_Pyramid1;
-      trig    = new ScalarFE<ET_TRIG,1>;
-      quad    = new ScalarFE<ET_QUAD,1>;
-      segm    = new FE_Segm1;
+      // tet     = new ScalarFE<ET_TET,1>;
+      // prism   = new FE_Prism1;
+      // pyramid = new FE_Pyramid1;
+      // trig    = new ScalarFE<ET_TRIG,1>;
+      // quad    = new ScalarFE<ET_QUAD,1>;
+      // segm    = new FE_Segm1;
 
       if (ma->GetDimension() == 2)
         n_el_dofs = 4;
@@ -1860,6 +1895,37 @@ lot of new non-zero entries in the matrix!\n" << endl;
     archive & ndlevel & n_el_dofs;
   }
 
+  FiniteElement & ElementFESpace :: GetFE (ElementId ei, Allocator & lh) const
+  {
+    
+    if (order == 0)
+    {
+      switch (ma->GetElType(ei))
+        {
+        case ET_TET:     return *(new (lh) ScalarFE<ET_TET,0>);
+        case ET_PRISM:   return *(new (lh) FE_Prism0);
+        case ET_PYRAMID: return *(new (lh) FE_Pyramid0);
+        case ET_HEX:     return *(new (lh) FE_Hex0);
+        case ET_TRIG:    return *(new (lh) ScalarFE<ET_TRIG,0>);
+        case ET_QUAD:    return *(new (lh) ScalarFE<ET_QUAD,0>);
+        case ET_SEGM:    return *(new (lh) FE_Segm0);
+        }
+    }
+    else
+    {
+      switch (ma->GetElType(ei))
+        {
+        case ET_TET:     return *(new (lh) ScalarFE<ET_TET,1>);
+        case ET_PRISM:   return *(new (lh) FE_Prism1);
+        case ET_PYRAMID: return *(new (lh) FE_Pyramid1);
+        case ET_HEX:     return *(new (lh) FE_Hex1);
+        case ET_TRIG:    return *(new (lh) ScalarFE<ET_TRIG,1>);
+        case ET_QUAD:    return *(new (lh) ScalarFE<ET_QUAD,1>);
+        case ET_SEGM:    return *(new (lh) FE_Segm1);
+        }
+    }
+  }
+  
   void ElementFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
     if(ei.VB()!=VOL) { dnums.SetSize(0); return; }
@@ -1973,7 +2039,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       ndlevel.Append (n_el_dofs * ma->GetNSE());
   }
 
-  const FiniteElement & SurfaceElementFESpace :: GetFE (int elnr, LocalHeap & lh) const
+  const FiniteElement & SurfaceElementFESpace :: GetFE (ElementId ei, LocalHeap & lh) const
   {
     throw Exception ("SurfaceElementFESpace::GetFE not available");
   }
