@@ -677,14 +677,17 @@ namespace ngcomp
 
     if (ma->GetDimension() == 2)
       {
-	// integrator[BND].reset (new RobinIntegrator<2> (new ConstantCoefficientFunction(1)));
         integrator[BND] = 
           make_shared<RobinIntegrator<2>>(make_shared<ConstantCoefficientFunction>(1));
+        evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
+        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<2>>>(); // for dimension
       }
     else
       {
 	integrator[BND] = 
           make_shared<RobinIntegrator<3>> (make_shared<ConstantCoefficientFunction>(1));
+        evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
+        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<3>>>(); // for dimension      
       }
 
     if (dimension > 1)

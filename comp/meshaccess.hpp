@@ -25,7 +25,7 @@ namespace ngcomp
   
   class MeshAccess;
   class Ngs_Element;
-
+  
 
   class Ngs_Element : public netgen::Ng_Element
   {
@@ -153,8 +153,6 @@ namespace ngcomp
   };
 
 
-  
-
   /** 
       Access to mesh topology and geometry.
 
@@ -207,21 +205,8 @@ namespace ngcomp
     /// for ALE
     shared_ptr<GridFunction> deformation;  
 
-    /// PML parameters
-    Complex pml_alpha;
-    double pml_r;
-    double pml_x;
-
-    double pml_xmin[3];
-    double pml_xmax[3]; 
-
-  /*
-    rect_pml = 0 .... circular pml with radius pml_r
-    rect_pml = 1 .... square pml on square (-pml_x, pml_x)^d
-    rect_pml = 2 .... rectangular pml on (pml_xmin, pml_xmax) x (pml_ymin, pml_ymax) x (pml_zmin, pml_zmax)
-  */
-    int rect_pml = -1;
-    int pml_domain = -1;
+    /// pml trafos per sub-domain
+    Array<shared_ptr <PML_Transformation>> pml_trafos;
     
     Array<std::tuple<int,int>> identified_facets;
 
@@ -598,14 +583,28 @@ namespace ngcomp
       return deformation;
     }
 
-
-    void SetRadialPML (double _r, Complex _alpha, int _domnr)
+    void SetPML (shared_ptr<PML_Transformation> pml_trafo, int _domnr)
     {
-      pml_r = _r;
-      pml_alpha = _alpha;
-      pml_domain = _domnr;
+      if (_domnr>=ndomains)
+        throw Exception("MeshAccess::SetPML: was not able to set PML, domain index too high!");
+      pml_trafos[_domnr] = pml_trafo->CreateDim(GetDimension()); 
     }
+    
+    void UnSetPML (int _domnr)
+    {
+      if (_domnr>=ndomains)
+        throw Exception("MeshAccess::UnSetPML: was not able to unset PML, domain index too high!");
+      pml_trafos[_domnr] = nullptr; 
+    }
+    Array<shared_ptr<PML_Transformation>> & GetPMLTrafos()
+    { return pml_trafos; }
 
+    shared_ptr<PML_Transformation> GetPML(int _domnr)
+    {
+      if (_domnr>=ndomains)
+        throw Exception("MeshAccess::GetPML: was not able to get PML, domain index too high!");
+      return pml_trafos[_domnr];
+    }
     
     shared_ptr<netgen::Mesh> GetNetgenMesh () const
     { return mesh.GetMesh(); }
@@ -644,12 +643,18 @@ namespace ngcomp
     void GetElVertices (ElementId ei, Array<int> & vnums) const
     { vnums = GetElement(ei).Vertices(); }
 
+    auto GetElVertices (ElementId ei) const
+    { return GetElement(ei).Vertices(); }
+
     /// returns the vertices of a boundary element
     void GetSElVertices (int selnr, Array<int> & vnums) const
     { vnums = GetSElement(selnr).Vertices(); }
 
-    void GetElEdges(ElementId ei, Array<int> & ednums) const
+    void GetElEdges (ElementId ei, Array<int> & ednums) const
     { ednums = GetElement(ei).Edges(); }
+
+    auto GetElEdges (ElementId ei) const
+    { return GetElement(ei).Edges(); }
 
     /// returns the edges of an element
     void GetElEdges (int elnr, Array<int> & ednums) const
@@ -1119,6 +1124,14 @@ namespace ngcomp
 
 #endif
 
+}
+
+namespace ngstd
+{
+  template <>
+  struct PyWrapperTraits<ngcomp::PML_Transformation> {
+    typedef PyWrapperClass<ngcomp::PML_Transformation> type;
+  };
 }
 
 #endif
