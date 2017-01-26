@@ -49,6 +49,8 @@ public:
   /// 
   virtual void UpdateCouplingDofArray();
 
+  virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
+
   ///
   virtual size_t GetNDof () const throw();
   ///
@@ -203,7 +205,7 @@ public:
   virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const;
 
   using FESpace::GetFE;
-  virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
+  virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
 
   ///
   void SetGradientDomains (const BitArray & adoms);

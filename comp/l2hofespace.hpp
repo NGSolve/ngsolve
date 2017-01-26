@@ -65,9 +65,9 @@ namespace ngcomp
     virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override;
 
     using FESpace::GetFE;
-    virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const override;
-    ///
-    virtual const FiniteElement & GetSFE (int elnr, LocalHeap & lh) const override;
+    // virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const override;
+    // ///
+    // virtual const FiniteElement & GetSFE (int elnr, LocalHeap & lh) const override;
     ///
     virtual const FiniteElement & GetFacetFE (int fnr, LocalHeap & lh) const;
 
@@ -151,11 +151,12 @@ namespace ngcomp
     //virtual void UpdateDofTables();
     ///
     virtual size_t GetNDof () const throw() override;
+
+    virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
     ///
-    using FESpace::GetFE;
-    virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const override;
-    ///
-    virtual const FiniteElement & GetSFE (int elnr, LocalHeap & lh) const override;
+    // virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const override;
+    // ///
+    // virtual const FiniteElement & GetSFE (int elnr, LocalHeap & lh) const override;
     ///
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
   
