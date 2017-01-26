@@ -33,3 +33,10 @@ def test_vector_numpy():
     assert v[1] == 100
 
     assert list(v) == list(a)
+
+    c = Vector(n, True)
+    c[0] = 1j
+    d = c.NumPy()
+    assert d[0] == c[0]
+    d[1] = 1+3j
+    assert d[1] == c[1]

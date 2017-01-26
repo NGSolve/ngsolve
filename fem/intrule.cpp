@@ -75,6 +75,56 @@ namespace ngfem
     throw Exception("BaseMappedIntegrationPoint::GetJacobian, illegal dimension");
   }
 
+  FlatVector<Complex> BaseMappedIntegrationPoint :: GetPointComplex() const
+  {
+    if (is_complex)
+    {
+      switch (eltrans->SpaceDim())
+        {
+        case 1: return static_cast<const DimMappedIntegrationPoint<1,Complex>&> (*this).GetPoint();
+        case 2: return static_cast<const DimMappedIntegrationPoint<2,Complex>&> (*this).GetPoint();
+        case 3: return static_cast<const DimMappedIntegrationPoint<3,Complex>&> (*this).GetPoint();
+        }
+      throw Exception("BaseMappedIntegrationPoint::GetPointComplex, illegal dimension");
+    }
+    throw Exception("BaseMappedIntegrationPoint::GetPointComplex, is not complex");
+  }
+
+  
+
+
+  
+  FlatMatrix<Complex> BaseMappedIntegrationPoint :: GetJacobianComplex() const
+  {
+  if (is_complex)
+  {
+      switch(eltrans->VB())
+        {
+        case VOL:
+    switch (eltrans->SpaceDim())
+      {
+      case 1: return static_cast<const MappedIntegrationPoint<1,1,Complex>&> (*this).GetJacobian();
+      case 2: return static_cast<const MappedIntegrationPoint<2,2,Complex>&> (*this).GetJacobian();
+      case 3: return static_cast<const MappedIntegrationPoint<3,3,Complex>&> (*this).GetJacobian();
+      }
+        case BND:
+    switch (eltrans->SpaceDim())
+      {
+      case 1: return static_cast<const MappedIntegrationPoint<0,1,Complex>&> (*this).GetJacobian();
+      case 2: return static_cast<const MappedIntegrationPoint<1,2,Complex>&> (*this).GetJacobian();
+      case 3: return static_cast<const MappedIntegrationPoint<2,3,Complex>&> (*this).GetJacobian();
+      }
+        case BBND:
+    switch (eltrans->SpaceDim())
+      {
+      case 2: return static_cast<const MappedIntegrationPoint<0,2,Complex>&> (*this).GetJacobian();
+      case 3: return static_cast<const MappedIntegrationPoint<1,3,Complex>&> (*this).GetJacobian();
+      }
+        }
+      throw Exception("BaseMappedIntegrationPoint::GetJacobian, illegal dimension");
+  }
+    throw Exception("BaseMappedIntegrationPoint::GetPointComplex, is not complex");
+  }
   
   int BaseMappedIntegrationPoint :: Dim() const
   {
@@ -248,6 +298,16 @@ namespace ngfem
 	AddIntegrationPoint (ip);
       }
     // mem_to_delete = NULL;
+  }
+
+  IntegrationRule IntegrationRule :: Copy() const
+  {
+    IntegrationRule ir2;
+    ir2.SetSize (Size());
+    for (size_t i = 0; i < Size(); i++)
+      ir2[i] = (*this)[i];
+    ir2.dimension = dimension;
+    return ir2;
   }
 
   ostream & operator<< (ostream & ost, const IntegrationRule & ir)

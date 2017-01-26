@@ -277,7 +277,7 @@ namespace ngcomp
     const Array<SpecialElement*> & specialelements = fespace->GetSpecialElements();
     int nspe = specialelements.Size();
 
-    Array<int> dnums;
+    Array<DofId> dnums;
     Array<int> fnums; //facets of one element
     Array<int> elnums; //elements neighbouring one facet
     Array<int> nbelems; //neighbour elements
@@ -328,7 +328,7 @@ namespace ngcomp
 	    int nre = ma->GetNE(vb);
 	    ParallelForRange (Range(nre), [&](IntRange r)
 			      {
-				Array<int> dnums;
+				Array<DofId> dnums;
 				for (auto i : r)
 				  {
 				    auto eid = ElementId(vb,i);
@@ -356,7 +356,7 @@ namespace ngcomp
         if (fespace->UsesDGCoupling())
         {
           //add dofs of neighbour elements as well
-          Array<int> dnums_dg;
+          Array<DofId> dnums_dg;
 
           for (int i = 0; i < nf; i++)
             {
@@ -470,7 +470,7 @@ namespace ngcomp
       
         if (precompute)
           {
-            Array<int> dnums;
+            Array<DofId> dnums;
             precomputed_data.SetSize( max2(max2(ma->GetNE(VOL), ma->GetNE(BND)),ma->GetNE(BBND))*NumIntegrators() );
             precomputed_data = nullptr;
 
@@ -788,7 +788,7 @@ namespace ngcomp
                 if (vb==VOL && diagonal)
                   {
                     double prevtime = WallTime();
-                    Array<int> dnums;
+                    Array<DofId> dnums;
 
                     for (int i = 0; i < ne; i++)
                       {
@@ -1439,7 +1439,8 @@ namespace ngcomp
                                  ElementId sei(BND, sel);
                                  
                                  const FiniteElement & fel = fespace->GetFE (ei1, lh);
-                                 ma->GetElVertices (el1, vnums1);     
+                                 ma->GetElVertices (el1, vnums1);
+                                 ma->GetElVertices (sei, vnums2);     
                                  
                                  ElementTransformation & eltrans = ma->GetTrafo (ei1, lh);
                                  ElementTransformation & seltrans = ma->GetTrafo (sei, lh);
@@ -1474,7 +1475,7 @@ namespace ngcomp
                                      FlatMatrix<SCAL> elmat(elmat_size, lh);
                                      
                                      dynamic_cast<const FacetBilinearFormIntegrator&>(*bfi).  
-                                       CalcFacetMatrix (fel,facnr1,eltrans,vnums1, seltrans, elmat, lh);
+                                       CalcFacetMatrix (fel,facnr1,eltrans,vnums1, seltrans, vnums2, elmat, lh);
                                      
                                      fespace->TransformMat (ei1, elmat, TRANSFORM_MAT_LEFT_RIGHT);
                                      
@@ -1672,7 +1673,7 @@ namespace ngcomp
                   ( IntRange(ne), [&] ( IntRange r )
                     {
                       LocalHeap lh = clh.Split();
-                      Array<int> fnums, elnums, vnums, dnums;
+                      Array<int> fnums, elnums, vnums, svnums, dnums;
                       
                       for (int i : r)
                         {
@@ -1699,7 +1700,8 @@ namespace ngcomp
                           int facnr = 0;
                           for (int k=0; k<fnums.Size(); k++)
                             if(fac==fnums[k]) facnr = k;
-                          ma->GetElVertices (el, vnums);     
+                          ma->GetElVertices (el, vnums);
+                          ma->GetElVertices (sei, svnums);     
                               
                           ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
                           ElementTransformation & seltrans = ma->GetTrafo (sei, lh);
@@ -1738,7 +1740,7 @@ namespace ngcomp
                               // original version did not compile on MacOS V
                               const FacetBilinearFormIntegrator & fbfi = 
                                 dynamic_cast<const FacetBilinearFormIntegrator&>(*bfi);  
-                              fbfi.CalcFacetMatrix (fel,facnr,eltrans,vnums, seltrans, elmat, lh);
+                              fbfi.CalcFacetMatrix (fel,facnr,eltrans,vnums, seltrans, svnums, elmat, lh);
 				  
                               fespace->TransformMat (ei, elmat, TRANSFORM_MAT_LEFT_RIGHT);
 				  
@@ -2019,7 +2021,7 @@ namespace ngcomp
   ModifyRHS (BaseVector & f) const
   {
     if (keep_internal)
-      f += GetHarmonicExtensionTrans() * f;
+      f += *GetHarmonicExtensionTrans() * f;
   }
 
   template <class SCAL>
@@ -2056,11 +2058,11 @@ namespace ngcomp
                   }
                 
                 if (linearform)
-                  u += GetInnerSolve() * linearform->GetVector();
+                  u += *GetInnerSolve() * linearform->GetVector();
                 else
-                  u += GetInnerSolve() * f;
+                  u += *GetInnerSolve() * f;
                 
-                u += GetHarmonicExtension() * u;
+                u += *GetHarmonicExtension() * u;
                 cout << IM(1) << endl;
               }
             else
@@ -2482,9 +2484,6 @@ namespace ngcomp
 
         if (facetwise_skeleton_parts[BND].Size())
           {
-            cout << "warning: AssembleLinearization for facetwise-skelton term assumes form is linear" << endl;
-            // cout << "check bnd" << endl;
-            // int cnt = 0;
             int ne = ma->GetNE(BND);
             
             ProgressOutput progress (ma, "assemble skelton element", ne);
@@ -2493,7 +2492,7 @@ namespace ngcomp
               ( IntRange(ne), [&] ( IntRange r )
                 {
                   LocalHeap lh = clh.Split();
-                  Array<int> fnums, elnums, vnums, dnums;
+                  Array<int> fnums, elnums, vnums, svnums, dnums;
                   
                   for (int i : r)
                     {
@@ -2512,7 +2511,8 @@ namespace ngcomp
                       int facnr = 0;
                       for (int k=0; k<fnums.Size(); k++)
                         if(fac==fnums[k]) facnr = k;
-                      ma->GetElVertices (el, vnums);     
+                      ma->GetElVertices (el, vnums);
+                      ma->GetElVertices (sei, svnums);     
                       
                       ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
                       ElementTransformation & seltrans = ma->GetTrafo (sei, lh);
@@ -2547,11 +2547,15 @@ namespace ngcomp
                           
                           int elmat_size = dnums.Size()*fespace->GetDimension();
                           FlatMatrix<SCAL> elmat(elmat_size, lh);
+                          FlatVector<SCAL> elveclin(elmat_size, lh);
+
+                          lin.GetIndirect (dnums, elveclin);
+                          fespace->TransformVec (ei, elveclin, TRANSFORM_SOL);                     
                           
                           // original version did not compile on MacOS V
                           const FacetBilinearFormIntegrator & fbfi = 
                             dynamic_cast<const FacetBilinearFormIntegrator&>(*bfi);  
-                          fbfi.CalcFacetMatrix (fel,facnr,eltrans,vnums, seltrans, elmat, lh);
+                          fbfi.CalcLinearizedFacetMatrix (fel,facnr,eltrans,vnums, seltrans, svnums, elveclin, elmat, lh);
                           
                           fespace->TransformMat (ei, elmat, TRANSFORM_MAT_LEFT_RIGHT);
                           
@@ -2971,8 +2975,8 @@ namespace ngcomp
                // Element transformations and elements for both spaces
                ElementTransformation & eltrans1 = tpfes->GetTrafo (ei1, lh);
                ElementTransformation & eltrans2 = tpfes->GetTrafo (ei2, lh);
-               const FiniteElement & fel1 = tpfes->GetFE (el1, lh);
-               const FiniteElement & fel2 = tpfes->GetFE (el2, lh);
+               const FiniteElement & fel1 = tpfes->GetFE (ei1, lh);
+               const FiniteElement & fel2 = tpfes->GetFE (ei2, lh);
                // Dof numbers of both TP volume elements
                Array<int> dnums1(fel1.GetNDof(), lh);
                Array<int> dnums2(fel2.GetNDof(), lh);
@@ -3892,49 +3896,53 @@ namespace ngcomp
           }
                 */
       }
-    else
+    else // MixedSpaces
       {
         static Timer timer ("Apply Matrix - mixed"); RegionTimer reg(timer);
 
-        IterateElements 
-          (*fespace2, VOL, clh, 
-           [&] (ElementId ei, LocalHeap & lh)
+        for (auto vb : { VOL, BND, BBND } )
+          if (VB_parts[vb].Size())
+            {        
+              IterateElements 
+                (*fespace2, vb, clh, 
+                 [&] (ElementId ei, LocalHeap & lh)
            
-           {
-             if (!fespace->DefinedOn (ei)) return;
-             if (!fespace2->DefinedOn (ei)) return;
-             const FiniteElement & fel1 = fespace->GetFE (ei, lh);
-             const FiniteElement & fel2 = fespace2->GetFE (ei, lh);
-             ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
+                 {
+                   if (!fespace->DefinedOn (ei)) return;
+                   if (!fespace2->DefinedOn (ei)) return;
+                   const FiniteElement & fel1 = fespace->GetFE (ei, lh);
+                   const FiniteElement & fel2 = fespace2->GetFE (ei, lh);
+                   ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
              
-             Array<int> dnums1 (fel1.GetNDof(), lh);
-             fespace->GetDofNrs (ei, dnums1);
-             Array<int> dnums2 (fel2.GetNDof(), lh);
-             fespace2->GetDofNrs (ei, dnums2);
-             
-             FlatVector<SCAL> elvecx (dnums1.Size() * fespace->GetDimension(), lh);
-             FlatVector<SCAL> elvecy (dnums2.Size() * fespace2->GetDimension(), lh);
+                   Array<int> dnums1 (fel1.GetNDof(), lh);
+                   fespace->GetDofNrs (ei, dnums1);
+                   Array<int> dnums2 (fel2.GetNDof(), lh);
+                   fespace2->GetDofNrs (ei, dnums2);
+                   
+                   FlatVector<SCAL> elvecx (dnums1.Size() * fespace->GetDimension(), lh);
+                   FlatVector<SCAL> elvecy (dnums2.Size() * fespace2->GetDimension(), lh);
 
-             x.GetIndirect (dnums1, elvecx);
-             this->fespace->TransformVec (ei, elvecx, TRANSFORM_SOL);
+                   x.GetIndirect (dnums1, elvecx);
+                   this->fespace->TransformVec (ei, elvecx, TRANSFORM_SOL);
 
-             for (int j = 0; j < this->NumIntegrators(); j++)
-               {
-                 BilinearFormIntegrator & bfi = *this->parts[j];
-                 if (bfi.SkeletonForm()) continue;
-                 if (bfi.BoundaryForm()) continue;
-                 if (!bfi.DefinedOn (this->ma->GetElIndex (ei))) continue;
+                   //for (int j = 0; j < this->NumIntegrators(); j++)
+                   for (auto & bfi : VB_parts[vb])
+                     {
+                       // BilinearFormIntegrator & bfi = *this->parts[j];
+                       // if (bfi.SkeletonForm()) continue;
+                       // if (bfi.BoundaryForm()) continue;
+                       if (!bfi->DefinedOn (this->ma->GetElIndex (ei))) continue;
 
-                 MixedFiniteElement fel(fel1, fel2);
-                 bfi.ApplyElementMatrix (fel, eltrans, elvecx, elvecy, 0, lh);
-            
-                 this->fespace->TransformVec (ei, elvecy, TRANSFORM_RHS);
+                       MixedFiniteElement fel(fel1, fel2);
+                       bfi->ApplyElementMatrix (fel, eltrans, elvecx, elvecy, 0, lh);
+                       
+                       this->fespace->TransformVec (ei, elvecy, TRANSFORM_RHS);
         
-                 elvecy *= val;
-                 y.AddIndirect (dnums2, elvecy);  // coloring	      
-               }
-           });
-        
+                       elvecy *= val;
+                       y.AddIndirect (dnums2, elvecy);  // coloring	      
+                     }
+                 });
+            }
         // cout << "apply not implemented for mixed" << endl;
       }
   }

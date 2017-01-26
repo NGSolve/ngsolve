@@ -12,6 +12,8 @@
 #include <multigrid.hpp> 
 #include "../fem/h1hofe.hpp"
 #include "../fem/h1hofefo.hpp"
+#include <../fem/hdivhofe.hpp>
+#include <../fem/facethofe.hpp>  
 
 using namespace ngmg; 
 
@@ -655,7 +657,7 @@ namespace ngcomp
 
 
 
-
+  /*
   const FiniteElement & H1HighOrderFESpace :: GetFE (int elnr, LocalHeap & lh) const
   {
     Ngs_Element ngel = ma->GetElement(elnr);
@@ -725,7 +727,7 @@ namespace ngcomp
         throw;
       }
   }
- 
+  */ 
 
 
 
@@ -773,40 +775,40 @@ namespace ngcomp
 
 
 
-  const FiniteElement & H1HighOrderFESpace :: GetSFE (int elnr, LocalHeap & lh) const
-  {
-    if (!DefinedOnBoundary (ma->GetSElIndex (elnr)))
-      {
-        switch (ma->GetSElType(elnr))
-          {
-          case ET_POINT:   return * new (lh) ScalarDummyFE<ET_POINT> (); 
-          case ET_SEGM:    return * new (lh) ScalarDummyFE<ET_SEGM> (); 
-          case ET_TRIG:    return * new (lh) ScalarDummyFE<ET_TRIG> (); 
-          case ET_QUAD:    return * new (lh) ScalarDummyFE<ET_QUAD> (); 
-	  default: ;
-	  }
-      }
+  // const FiniteElement & H1HighOrderFESpace :: GetSFE (int elnr, LocalHeap & lh) const
+  // {
+  //   if (!DefinedOnBoundary (ma->GetSElIndex (elnr)))
+  //     {
+  //       switch (ma->GetSElType(elnr))
+  //         {
+  //         case ET_POINT:   return * new (lh) ScalarDummyFE<ET_POINT> (); 
+  //         case ET_SEGM:    return * new (lh) ScalarDummyFE<ET_SEGM> (); 
+  //         case ET_TRIG:    return * new (lh) ScalarDummyFE<ET_TRIG> (); 
+  //         case ET_QUAD:    return * new (lh) ScalarDummyFE<ET_QUAD> (); 
+  //         default: ;
+  //         }
+  //     }
 
-    try
-      {
-        switch (ma->GetSElType(elnr))
-          {
-          case ET_POINT:   return T_GetSFE<ET_POINT> (elnr, lh);
-          case ET_SEGM:    return T_GetSFE<ET_SEGM> (elnr, lh);
+  //   try
+  //     {
+  //       switch (ma->GetSElType(elnr))
+  //         {
+  //         case ET_POINT:   return T_GetSFE<ET_POINT> (elnr, lh);
+  //         case ET_SEGM:    return T_GetSFE<ET_SEGM> (elnr, lh);
 
-          case ET_TRIG:    return T_GetSFE<ET_TRIG> (elnr, lh);
-          case ET_QUAD:    return T_GetSFE<ET_QUAD> (elnr, lh);
+  //         case ET_TRIG:    return T_GetSFE<ET_TRIG> (elnr, lh);
+  //         case ET_QUAD:    return T_GetSFE<ET_QUAD> (elnr, lh);
 
-          default:
-            throw Exception ("illegal element in H1HoFeSpace::GetSFE");
-          }
-      }
-    catch (Exception & e)
-      {
-        e.Append ("in H1HoFESpace::GetSElement\n");
-        throw;
-      }
-  }
+  //         default:
+  //           throw Exception ("illegal element in H1HoFeSpace::GetSFE");
+  //         }
+  //     }
+  //   catch (Exception & e)
+  //     {
+  //       e.Append ("in H1HoFESpace::GetSElement\n");
+  //       throw;
+  //     }
+  // }
 
 
   template <ELEMENT_TYPE ET>
@@ -1622,6 +1624,264 @@ namespace ngcomp
     return make_shared<H1HighOrderFESpace> (ma, flags);
   }
 
+
+
+
+
+  template <int DIM_SPC>
+  class DiffOpIdVectorH1 : public DiffOp<DiffOpIdVectorH1<DIM_SPC> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = DIM_SPC };
+    enum { DIM_ELEMENT = DIM_SPC };
+    enum { DIM_DMAT = DIM_SPC };
+    enum { DIFFORDER = 0 };
+
+    template <typename FEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const FEL & bfel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      mat = 0.0;
+      for (int i = 0; i < DIM_SPC; i++)
+        {
+          auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
+          feli.CalcShape (mip.IP(), mat.Row(i).Range(fel.GetRange(i)));
+        }
+    }
+  };
+
+
+
+  template <int DIM_SPC>
+  class DiffOpDivFreeReconstructVectorH1 : public DiffOp<DiffOpDivFreeReconstructVectorH1<DIM_SPC> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = DIM_SPC };
+    enum { DIM_ELEMENT = DIM_SPC };
+    enum { DIM_DMAT = DIM_SPC };
+    enum { DIFFORDER = 0 };
+
+    template <typename FEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const FEL & bfel, const MIP & mip,
+                                MAT & bmat, LocalHeap & lh)
+    {
+      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & fel_u = static_cast<const ScalarFiniteElement<DIM_SPACE>&> (fel[0]);
+      
+      int order = fel_u.Order();
+      auto & trafo = mip.GetTransformation();
+      
+      HDivHighOrderFE<ET_TRIG> fel_hdiv(order-1);
+      L2HighOrderFE<ET_TRIG> fel_l2(order-2);
+      L2HighOrderFE<ET_TRIG> fel_koszul( max(order-3, -1) );
+      // FacetFE<ET_TRIG> fel_facet;
+      FacetVolumeFiniteElement<DIM_SPACE> & fel_facet = *new (lh) FacetFE<ET_TRIG>;
+      fel_facet.SetOrder(order-1);
+      Array<int> vnums = { 1, 2, 3 } ;
+      fel_facet.SetVertexNumbers(vnums);
+      fel_facet.ComputeNDof();
+
+      Matrix<> mat(fel_hdiv.GetNDof());
+      Matrix<> rhs(fel_hdiv.GetNDof(), DIM_SPACE*fel_u.GetNDof());
+
+      auto eltype = trafo.GetElementType();
+      int nfacet = ElementTopology::GetNFacets(eltype);
+      Facet2ElementTrafo transform(eltype); 
+
+      IntRange r_facet(0, fel_facet.GetNDof());
+      IntRange r_div(r_facet.Next(), r_facet.Next() + fel_l2.GetNDof() - 1);
+      IntRange r_koszul(r_div.Next(), fel_hdiv.GetNDof());
+
+      /*
+      *testout << "r_facet = " << r_facet << endl;
+      *testout << "r_div = " << r_div << endl;
+      *testout << "r_koszul = " << r_koszul << endl;
+      */
+      
+      mat = 0;
+      rhs = 0;
+
+      FlatMatrix<> shape_hdiv(fel_hdiv.GetNDof(), 2, lh); 
+      FlatVector<> shape_hdivn(fel_hdiv.GetNDof(), lh);
+      FlatVector<> shape_u(fel_u.GetNDof(),lh);
+
+      // edge moments
+      for (int k = 0; k < nfacet; k++)
+        {
+          IntRange r_facet_k = fel_facet.GetFacetDofs(k);
+          FlatVector<> shape_facet(r_facet_k.Size(), lh);
+
+          HeapReset hr(lh);
+          ngfem::ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype, k);
+          
+          IntegrationRule ir_facet(etfacet, 2*fel.Order());
+          IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
+          
+          MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> mir(ir_facet_vol, trafo, lh);
+          mir.ComputeNormalsAndMeasure (eltype, k);
+       
+          for (int j = 0; j < ir_facet.Size(); j++)
+            {
+              fel_hdiv.CalcMappedShape (mir[j], shape_hdiv);
+              shape_hdivn = shape_hdiv * mir[j].GetNV();
+              shape_facet = 0;
+              fel_facet.CalcFacetShapeVolIP (k, ir_facet_vol[j], shape_facet);
+              mat.Rows(r_facet_k) += mir[j].GetWeight() * shape_facet * Trans(shape_hdivn);
+
+              fel_u.CalcShape(ir_facet_vol[j], shape_u);
+              for (int l = 0; l < DIM_SPACE; l++)
+                rhs.Rows(r_facet_k).Cols(l*fel_u.GetNDof(), (l+1)*fel_u.GetNDof()) +=
+                  (mir[j].GetWeight()*mir[j].GetNV()(l)) * shape_facet * Trans(shape_u);
+            }
+        }
+
+
+      IntegrationRule ir(eltype, 2*fel.Order());
+      MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> mir(ir, trafo, lh);      
+
+      FlatVector<> div_shape(fel_hdiv.GetNDof(), lh);
+      FlatVector<> shape_l2(fel_l2.GetNDof(), lh);
+      FlatVector<> shape_koszul(fel_koszul.GetNDof(), lh);
+      FlatMatrix<> grad_u(fel_u.GetNDof(), DIM_SPACE, lh);
+      
+      for (int j = 0; j < ir.Size(); j++)
+        {
+          fel_hdiv.CalcMappedShape (mir[j], shape_hdiv);
+          fel_hdiv.CalcMappedDivShape (mir[j], div_shape);
+          fel_u.CalcMappedDShape (mir[j], grad_u);
+          fel_u.CalcShape (ir[j], shape_u);
+          fel_l2.CalcShape(ir[j], shape_l2);
+          fel_koszul.CalcShape(ir[j], shape_koszul);
+
+          mat.Rows(r_div) += mir[j].GetWeight() * shape_l2.Range(1, shape_l2.Size()) * Trans(div_shape);
+          for (int l = 0; l < DIM_SPACE; l++)
+            rhs.Rows(r_div).Cols(l*fel_u.GetNDof(), (l+1)*fel_u.GetNDof()) +=
+              mir[j].GetWeight() * shape_l2.Range(1, shape_l2.Size()) * Trans(grad_u.Col(l));
+
+          Vec<2> rel_pos = mir[j].Point()-mir[0].Point();
+          Vec<2> ymx (rel_pos(1), -rel_pos(0));
+          
+          mat.Rows(r_koszul) += mir[j].GetWeight() * shape_koszul * Trans(shape_hdiv * ymx);
+          for (int l = 0; l < DIM_SPACE; l++)
+            rhs.Rows(r_koszul).Cols(l*fel_u.GetNDof(), (l+1)*fel_u.GetNDof()) +=
+              (mir[j].GetWeight()*ymx(l)) * shape_koszul * Trans(shape_u);
+        }
+
+      // *testout << "mat = " << endl << mat << endl;
+      // *testout << "rhs = " << endl << rhs << endl;
+
+      CalcInverse (mat);
+      Matrix<> prod = mat * rhs;
+      fel_hdiv.CalcMappedShape (mip, shape_hdiv);
+
+      bmat = Trans(shape_hdiv) * prod;
+    }
+  };
+
+
+
+  
+  template <int DIM_SPC>
+  class DiffOpGradVectorH1 : public DiffOp<DiffOpGradVectorH1<DIM_SPC> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = DIM_SPC };
+    enum { DIM_ELEMENT = DIM_SPC };
+    enum { DIM_DMAT = DIM_SPC*DIM_SPC };
+    enum { DIFFORDER = 0 };
+
+    static string Name() { return "grad"; }
+    
+    template <typename FEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const FEL & bfel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      mat = 0.0;
+      for (int i = 0; i < DIM_SPC; i++)
+        {
+          auto & feli = static_cast<const ScalarFiniteElement<DIM_SPC>&> (fel[i]);
+          feli.CalcMappedDShape (mip, Trans(mat.Rows(DIM_SPC*i, DIM_SPC*(i+1)).Cols(fel.GetRange(i))));
+        }
+    }
+  };
+
+  template <int DIM_SPC>  
+  class DiffOpDivVectorH1 : public DiffOp<DiffOpDivVectorH1<DIM_SPC> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = DIM_SPC };
+    enum { DIM_ELEMENT = DIM_SPC };
+    enum { DIM_DMAT = 1 };
+    enum { DIFFORDER = 0 };
+
+    static string Name() { return "div"; }
+    
+    template <typename FEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const FEL & bfel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & feli = static_cast<const ScalarFiniteElement<DIM_SPC>&> (fel[0]);
+      
+      mat = 0.0;
+      size_t n1 = feli.GetNDof();
+      FlatMatrix<> tmp(n1, DIM_SPC, lh);
+      feli.CalcMappedDShape (mip, tmp);
+      
+      for (int i = 0; i < DIM_SPC; i++)
+        mat.Row(0).Range(i*n1, (i+1)*n1) = tmp.Col(i);
+    }
+  };
+
+  
+  template <int D>
+  class NGS_DLL_HEADER VectorH1MassIntegrator 
+    : public T_BDBIntegrator<DiffOpIdVectorH1<D>, DiagDMat<D> >
+  {
+  public:
+    using T_BDBIntegrator<DiffOpIdVectorH1<D>, DiagDMat<D>>::T_BDBIntegrator;
+  };
+  
+
+  class VectorH1FESpace : public CompoundFESpace
+  {
+  public:
+    VectorH1FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, 
+                     bool checkflags = false)
+      : CompoundFESpace(ama, flags)
+    {
+      for (int i = 0; i <  ma->GetDimension(); i++)
+        AddSpace (make_shared<H1HighOrderFESpace> (ama, flags));
+
+      evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdVectorH1<2>>>();
+      flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradVectorH1<2>>>();
+      auto one = make_shared<ConstantCoefficientFunction>(1);      
+      integrator[VOL] = make_shared<VectorH1MassIntegrator<2>>(one);
+    }
+
+    virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const
+    {
+      SymbolTable<shared_ptr<DifferentialOperator>> additional;
+      
+      additional.Set ("div", make_shared<T_DifferentialOperator<DiffOpDivVectorH1<2>>> ()); 
+      additional.Set ("divfree_reconstruction", make_shared<T_DifferentialOperator<DiffOpDivFreeReconstructVectorH1<2>>> ());
+      
+      return additional;
+    }
+
+    
+  };
+    
+
+    
+  
   static RegisterFESpace<H1HighOrderFESpace> init ("h1ho");
+  static RegisterFESpace<VectorH1FESpace> initvec ("VectorH1");
 }
  

@@ -22,7 +22,7 @@ shared_ptr<BaseVector> CreateBaseVector(int size, bool is_complex, int es)
 }
 
 void NGS_DLL_HEADER ExportNgla(py::module &m) {
-    cout << IM(1) << "exporting linalg" << endl;
+  // cout << IM(1) << "exporting linalg" << endl;
     // TODO
 //     py::object expr_module = py::import("ngsolve.__expr");
 //     py::object expr_namespace = expr_module.attr("__dict__");
@@ -189,7 +189,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
       {
           self.Range(ind,ind+1) = d;
       } )
-    .def("__setitem__", [](PyBaseVector & self,  int ind, Complex z ) -> void
+    .def("__setitem__", [](PyBaseVector & self,  int ind, Complex z ) 
       {
         self.Range(ind,ind+1) = z;
       } )
@@ -229,21 +229,31 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("__isub__", [](PyBaseVector & self,  PyBaseVector & other) -> BaseVector& { self -= other; return self;})
     .def("__imul__", [](PyBaseVector & self,  double scal) -> BaseVector& { self *= scal; return self;})
     .def("__imul__", [](PyBaseVector & self,  Complex scal) -> BaseVector& { self *= scal; return self;})
-    .def("InnerProduct", [](PyBaseVector & self, PyBaseVector & other)
+    .def("InnerProduct", [](PyBaseVector & self, PyBaseVector & other, bool conjugate)
                                           {
                                             if (self.IsComplex())
-                                              return py::cast (S_InnerProduct<ComplexConjugate> (self, other));
+                                              {
+                                                if (conjugate)
+                                                  return py::cast (S_InnerProduct<ComplexConjugate> (self, other));
+                                                else
+                                                  return py::cast (S_InnerProduct<Complex> (self, other));
+                                              }
                                             else
                                               return py::cast (InnerProduct (self, other));
-                                          })
+                                          },
+         "InnerProduct", py::arg("other"), py::arg("conjugate")=py::cast(true)         
+         )
     .def("Norm",  [](PyBaseVector & self) { return self.L2Norm(); })
     .def("Range", [](PyBaseVector & self, int from, int to) -> shared_ptr<BaseVector>
                                    {
                                      return shared_ptr<BaseVector>(self.Range(from,to));
                                    })
-    .def("FV", FunctionPointer( [] (PyBaseVector & self) -> FlatVector<double>
+    .def("FV", FunctionPointer ([] (PyBaseVector & self)
                                 {
-                                  return self.FVDouble();
+                                  if (!self.IsComplex())
+                                    return py::cast(self.FVDouble());
+                                  else
+                                    return py::cast(self.FVComplex());
                                 }))
     ;       
 
@@ -454,6 +464,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                      { return m.InverseMatrix(); })
     .def("Transpose", [](BM &m)-> PyWrapper<BaseMatrix>
                                        { return make_shared<Transpose> (m); })
+    .def("Update", [](BM &m) { m.Update(); })
     // py::return_value_policy<py::manage_new_object>())
     ;
     m.def("TestMult", [] (BaseMatrix &m, PyBaseVector &x, PyBaseVector &y) {

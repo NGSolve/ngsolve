@@ -46,9 +46,8 @@ namespace ngcomp
 
   class FESpace;
 
-
-
-
+  // will be size_t some day 
+  typedef int DofId;
 
   using ngmg::Prolongation;
 
@@ -215,11 +214,11 @@ namespace ngcomp
     class Element : public Ngs_Element
     {
       const FESpace & fes;
-      Array<int> & temp_dnums;
+      Array<DofId> & temp_dnums;
       LocalHeap & lh;
       mutable bool dofs_set = false;
     public:     
-      INLINE Element (const FESpace & afes, ElementId id, Array<int> & atemp_dnums,
+      INLINE Element (const FESpace & afes, ElementId id, Array<DofId> & atemp_dnums,
                       LocalHeap & alh)
         : Ngs_Element ((*afes.GetMeshAccess())[id] ), fes(afes), 
           temp_dnums(atemp_dnums), lh(alh) 
@@ -227,8 +226,9 @@ namespace ngcomp
 
       INLINE Element (const Element & el) = default;
       INLINE Element (Element && el) = default;
+      // ElementId operator() const { return ei; }
 
-      INLINE FlatArray<int> GetDofs() const
+      INLINE FlatArray<DofId> GetDofs() const
       {
         if (!dofs_set)
           fes.GetDofNrs (*this, temp_dnums);
@@ -257,13 +257,13 @@ namespace ngcomp
       const FESpace & fes;
       ElementId ei;
       const FlatArray<bool> defined_on;
-      Array<int> & temp_dnums;      
+      Array<DofId> & temp_dnums;      
       LocalHeap & lh;
       void * heappointer;
     public:
       INLINE ElementIterator (const FESpace & afes, ElementId aei, 
                               const FlatArray<bool> adefined_on,
-                              Array<int> & atemp_dnums, LocalHeap & alh)
+                              Array<DofId> & atemp_dnums, LocalHeap & alh)
         : fes(afes), ei(aei), defined_on(adefined_on), 
           temp_dnums(atemp_dnums), lh(alh), heappointer(lh.GetPointer()) { ; }
       INLINE ElementIterator & operator++ ()
@@ -286,7 +286,7 @@ namespace ngcomp
       const FESpace & fes;
       Array<bool> definedon;
       const VorB vb;
-      mutable Array<int> temp_dnums;
+      mutable Array<DofId> temp_dnums;
       mutable LocalHeap mylh;
       LocalHeap & lh;
     public:
@@ -349,23 +349,23 @@ namespace ngcomp
         
 
     /// returns finite element. 
-    virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const;
+    virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const = 0;
 
     [[deprecated("Use GetFE with element-id instead of elnr!")]]    
-    virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
+    virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const final;
     [[deprecated("Use GetFE(ElementId(BND,elnr)) instead!")]]    
-    virtual const FiniteElement & GetSFE (int elnr, LocalHeap & lh) const;
+    virtual const FiniteElement & GetSFE (int elnr, LocalHeap & lh) const final;
     [[deprecated("Use GetFE(ElementId(BBND,elnr)) instead!")]]        
-    virtual const FiniteElement & GetCD2FE (int cd2elnr, LocalHeap & lh) const;
+    virtual const FiniteElement & GetCD2FE (int cd2elnr, LocalHeap & lh) const final;
 
     /// get dof-nrs of the element
     [[deprecated("Use GetDofNrs with element-id instead of elnr!")]]
-    void GetDofNrs (int elnr, Array<int> & dnums) const
+    void GetDofNrs (int elnr, Array<DofId> & dnums) const
       { GetDofNrs(ElementId(VOL,elnr),dnums); }
 
     /// get dof-nrs of domain or boundary element elnr
-    virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const = 0;
-    virtual void GetDofNrs (NodeId ni, Array<int> & dnums) const;
+    virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const = 0;
+    virtual void GetDofNrs (NodeId ni, Array<DofId> & dnums) const;
     
     Table<int> CreateDofTable (VorB vorb) const;
 
@@ -383,7 +383,7 @@ namespace ngcomp
     void CheckCouplingTypes() const;
 
     /// get dof-nrs of the element of certain coupling type
-    void GetDofNrs (int elnr, Array<int> & dnums, COUPLING_TYPE ctype) const;    
+    void GetDofNrs (int elnr, Array<DofId> & dnums, COUPLING_TYPE ctype) const;    
 
     /// get dofs on nr'th node of type nt.
     [[deprecated("Use GetDofNrs with NodeId instead of nt/nr")]]    
@@ -393,19 +393,19 @@ namespace ngcomp
     // { return lodofs_per_node[nt]; }
 
     /// get dofs on vertex vnr
-    virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const;
+    virtual void GetVertexDofNrs (int vnr, Array<DofId> & dnums) const;
     /// get dofs on edge enr
-    virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const;
+    virtual void GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const;
     /// get dofs on face fnr
-    virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const;
+    virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const;
     /// get dofs on element (=cell) elnr
-    virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const;
+    virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const;
 
     virtual bool UsesDGCoupling () const throw() { return dgjumps; };
 
     /// returns dofs of sourface element
     [[deprecated("Use GetDofNrs(ElementId(BND,elnr)) instead!")]]
-    void GetSDofNrs (int selnr, Array<int> & dnums) const
+    void GetSDofNrs (int selnr, Array<DofId> & dnums) const
       { GetDofNrs(ElementId(BND,selnr),dnums); }
 
     bool DefinedOn(VorB vb, int domnr) const
@@ -469,6 +469,13 @@ namespace ngcomp
 
     /// non Dirichlet dofs
     virtual shared_ptr<BitArray> GetFreeDofs (bool external = false) const;
+    bool IsFreeDof (DofId dof, bool external = false) const
+    {
+      if (external)
+        return external_free_dofs->Test(dof);
+      else
+        return free_dofs->Test(dof);
+    }
     ///
     bool IsDirichletDof (int i) const
     { return dirichlet_dofs.Size() && dirichlet_dofs[i]; }
@@ -509,78 +516,84 @@ namespace ngcomp
     void TransformMat (int elnr, bool boundary,
 		       const SliceMatrix<double> & mat, TRANSFORM_TYPE type) const
     {
-      TransformMat(elnr,boundary ? BND : VOL, mat, type);
+      TransformMat(ElementId(boundary ? BND : VOL, elnr), mat, type);
     }
   
     [[deprecated("Use TransformMat with VorB  instead of bool")]]
     void TransformMat (int elnr, bool boundary,
 		       const SliceMatrix<Complex> & mat, TRANSFORM_TYPE type) const
     {
-      TransformMat(elnr,boundary ? BND : VOL, mat, type);
+      TransformMat(ElementId(boundary ? BND : VOL, elnr), mat, type);
     }
   
     [[deprecated("Use TransformVec with VorB  instead of bool")]]
     void TransformVec (int elnr, bool boundary,
 		       const FlatVector<double> & vec, TRANSFORM_TYPE type) const
     {
-      VTransformVR (elnr, boundary ? BND : VOL, vec, type);
+      // VTransformVR (elnr, boundary ? BND : VOL, vec, type);
+      VTransformVR (ElementId(boundary ? BND : VOL, elnr), vec, type);
     }
   
     [[deprecated("Use TransformVec with VorB  instead of bool")]]
     void TransformVec (int elnr, bool boundary,
 		       const FlatVector<Complex> & vec, TRANSFORM_TYPE type) const
     {
-      VTransformVC (elnr, boundary ? BND : VOL, vec, type);
+      // VTransformVC (elnr, boundary ? BND : VOL, vec, type);
+      VTransformVC (ElementId(boundary ? BND : VOL, elnr), vec, type);      
     }
 
     [[deprecated("Use TransformMat with VorB  instead of bool")]]    
     void TransformMat (int elnr, VorB vb,
                        const SliceMatrix<double> & mat, TRANSFORM_TYPE type) const
     {
-      VTransformMR (elnr, vb, mat, type);
+      // VTransformMR (elnr, vb, mat, type);
+      VTransformMR (ElementId(vb, elnr), mat, type);            
     }
 
     [[deprecated("Use TransformMat with VorB  instead of bool")]]    
     void TransformMat (int elnr, VorB vb,
 		       const SliceMatrix<Complex> & mat, TRANSFORM_TYPE type) const
     {
-      VTransformMC (elnr, vb, mat, type);
+      // VTransformMC (elnr, vb, mat, type);
+      VTransformMC (ElementId(vb, elnr), mat, type);                  
     }
 
     [[deprecated("Use TransformVec with VorB  instead of bool")]]        
     void TransformVec (int elnr, VorB vb,
 		       const FlatVector<double> & vec, TRANSFORM_TYPE type) const
     {
-      VTransformVR (elnr, vb, vec, type);
+      // VTransformVR (elnr, vb, vec, type);
+      VTransformVR (ElementId(vb, elnr), vec, type);            
     }
 
     [[deprecated("Use TransformVec with VorB  instead of bool")]]            
     void TransformVec (int elnr, VorB vb,
 		       const FlatVector<Complex> & vec, TRANSFORM_TYPE type) const
     {
-      VTransformVC (elnr, vb, vec, type);
+      // VTransformVC (elnr, vb, vec, type);
+      VTransformVC (ElementId(vb, elnr), vec, type);                  
     }
 
     
     void TransformMat (ElementId ei, 
                        SliceMatrix<double> mat, TRANSFORM_TYPE type) const
     {
-      VTransformMR (ei.Nr(), ei.VB(), mat, type);
+      VTransformMR (ei, mat, type);
     }
     void TransformMat (ElementId ei, 
 		       SliceMatrix<Complex> mat, TRANSFORM_TYPE type) const
     {
-      VTransformMC (ei.Nr(), ei.VB(), mat, type);
+      VTransformMC (ei, mat, type);
     }		
     void TransformVec (ElementId ei, 
-		       FlatVector<double> vec, TRANSFORM_TYPE type) const
+		       SliceVector<double> vec, TRANSFORM_TYPE type) const
     {
-      VTransformVR (ei.Nr(), ei.VB(), vec, type);
+      VTransformVR (ei, vec, type);
     }
     void TransformVec (ElementId ei, 
-		       FlatVector<Complex> vec, TRANSFORM_TYPE type) const
+		       SliceVector<Complex> vec, TRANSFORM_TYPE type) const
     {
-      VTransformVC (ei.Nr(), ei.VB(), vec, type);
+      VTransformVC (ei, vec, type);
     }
 
     
@@ -597,19 +610,19 @@ namespace ngcomp
     }
     */
 
-    virtual void VTransformMR (int elnr, VorB vb,
-			       const SliceMatrix<double> & mat, TRANSFORM_TYPE type) const
+    virtual void VTransformMR (ElementId ei,
+			       const SliceMatrix<double> mat, TRANSFORM_TYPE type) const
     { ; }
-    virtual void VTransformMC (int elnr, VorB vb,
-			       const SliceMatrix<Complex> & mat, TRANSFORM_TYPE type) const
+    virtual void VTransformMC (ElementId ei, 
+			       const SliceMatrix<Complex> mat, TRANSFORM_TYPE type) const
     { ; }
 
 
-    virtual void VTransformVR (int elnr, VorB vb,
-			       const FlatVector<double> & vec, TRANSFORM_TYPE type) const
+    virtual void VTransformVR (ElementId ei,
+			       const SliceVector<double> vec, TRANSFORM_TYPE type) const
     { ; }
-    virtual void VTransformVC (int elnr, VorB vb,
-			       const FlatVector<Complex> & vec, TRANSFORM_TYPE type) const
+    virtual void VTransformVC (ElementId ei, 
+			       const SliceVector<Complex> vec, TRANSFORM_TYPE type) const
     { ; }
   
   
@@ -814,6 +827,7 @@ namespace ngcomp
   {
     ///
     Array<int> ndlevel;
+    bool hb_defined;
 
   public:
 
@@ -832,6 +846,8 @@ namespace ngcomp
     virtual void Update (LocalHeap & lh);
     
     virtual void DoArchive (Archive & archive);
+
+    virtual FiniteElement & GetFE(ElementId ei, Allocator & lh) const override;
     ///
     virtual size_t GetNDof () const throw();
     ///
@@ -843,10 +859,10 @@ namespace ngcomp
 
     virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
   
-    virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const;
-    virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const;
-    virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const;
-    virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const;
+    virtual void GetVertexDofNrs (int vnr, Array<DofId> & dnums) const;
+    virtual void GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const;
+    virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const;
+    virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const;
 
     virtual Array<int> * CreateDirectSolverClusters (const Flags & flags) const;
   };
@@ -871,10 +887,12 @@ namespace ngcomp
 
     ///
     virtual void Update(LocalHeap & lh);
+
+    virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
     ///
     virtual size_t GetNDof () const throw();
     ///
-    virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const;
+    virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const;
   };
 
 
@@ -905,23 +923,25 @@ namespace ngcomp
     virtual void Update(LocalHeap & lh);
     /// 
     virtual void DoArchive (Archive & archive);
+
+    virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
     ///
     virtual size_t GetNDof () const throw() { return ndlevel.Last(); }
   
     ///
-    virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const;
+    virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const;
 
     ///
     virtual size_t GetNDofLevel (int level) const;
 
 
-    virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const 
+    virtual void GetVertexDofNrs (int vnr, Array<DofId> & dnums) const 
     { dnums.SetSize (0); }
-    virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const
+    virtual void GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const
     { dnums.SetSize (0); }
-    virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const
+    virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const
     { dnums.SetSize (0); }
-    virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const
+    virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const
     { GetDofNrs (elnr, dnums); }
   };
 
@@ -954,10 +974,10 @@ namespace ngcomp
     virtual size_t GetNDof () const throw() { return ndlevel.Last(); } 
 
     ///
-    virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
+    virtual const FiniteElement & GetFE (ElementId ei, LocalHeap & lh) const;
 
     ///
-    virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const;
+    virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const;
 
     ///
     virtual size_t GetNDofLevel (int level) const;
@@ -1035,31 +1055,31 @@ namespace ngcomp
     ///
     // virtual const FiniteElement & GetCD2FE (int cd2elnr, LocalHeap & lh) const;
     ///
-    virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const;
+    virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const;
     ///
-    virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const;
-    virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const;
-    virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const;
-    virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const;
+    virtual void GetVertexDofNrs (int vnr, Array<DofId> & dnums) const;
+    virtual void GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const;
+    virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const;
+    virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const;
 
     virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
+    
+    template <class T> NGS_DLL_HEADER
+      void T_TransformMat (ElementId ei, 
+                           SliceMatrix<T> mat, TRANSFORM_TYPE tt) const;
+    
+    template <class T> NGS_DLL_HEADER
+      void T_TransformVec (ElementId ei, 
+                         SliceVector<T> vec, TRANSFORM_TYPE tt) const;
 
-    template <class MAT> NGS_DLL_HEADER
-    void TransformMat (int elnr, VorB vb,
-		       MAT & mat, TRANSFORM_TYPE tt) const;
-
-    template <class VEC> NGS_DLL_HEADER
-    void TransformVec (int elnr, VorB vb,
-		       VEC & vec, TRANSFORM_TYPE tt) const;
-
-    virtual void VTransformMR (int elnr, VorB vb,
-			       const SliceMatrix<double> & mat, TRANSFORM_TYPE tt) const;
-    virtual void VTransformMC (int elnr, VorB vb,
-			       const SliceMatrix<Complex> & mat, TRANSFORM_TYPE tt) const;
-    virtual void VTransformVR (int elnr, VorB vb,
-			       const FlatVector<double> & vec, TRANSFORM_TYPE tt) const;
-    virtual void VTransformVC (int elnr, VorB vb,
-			       const FlatVector<Complex> & vec, TRANSFORM_TYPE tt) const;
+    virtual void VTransformMR (ElementId ei,
+			       SliceMatrix<double> mat, TRANSFORM_TYPE tt) const;
+    virtual void VTransformMC (ElementId ei,
+                               SliceMatrix<Complex> mat, TRANSFORM_TYPE tt) const;
+    virtual void VTransformVR (ElementId ei,
+                               SliceVector<double> vec, TRANSFORM_TYPE tt) const;
+    virtual void VTransformVC (ElementId ei, 
+                               SliceVector<Complex> vec, TRANSFORM_TYPE tt) const;
 
     /// number of component spaces
     inline int GetNSpaces () const { return spaces.Size(); } 

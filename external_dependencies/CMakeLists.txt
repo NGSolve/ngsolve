@@ -1,5 +1,3 @@
-if(BUILD_NETGEN)
-  add_subdirectory(netgen)
-  add_dependencies(mesh check_submodules_start)
-  add_dependencies(occ check_submodules_start)
-endif()
+# if(BUILD_NETGEN)
+#   add_subdirectory(netgen)
+# endif()

@@ -154,7 +154,7 @@ namespace ngcomp
                                               const function<void(shared_ptr<FESpace>,const FiniteElement &,const ElementTransformation &,FlatVector<>,FlatVector<>,LocalHeap&)> & func)
   {
     BaseVector & vec_in = gf_in->GetVector();
-    BaseVector & vec_out = gf_out->GetVector();
+    // BaseVector & vec_out = gf_out->GetVector();
     Array<int> dnums,dnumsx;
     for(int i=0;i<nels[0];i++)
     {
@@ -252,7 +252,7 @@ namespace ngcomp
     TPHighOrderFE * fe = new (lh) TPHighOrderFE (els);
     return *fe;
   }
-  
+  /*
   const FiniteElement & TPHighOrderFESpace::GetFE (int elnr, LocalHeap & lh) const
   {
     ArrayMem<int,2> elnums(2);
@@ -265,7 +265,7 @@ namespace ngcomp
     TPHighOrderFE * fe =  new (lh) TPHighOrderFE (els);
     return *fe;
   }
-    
+  */
   ngfem::ElementTransformation & TPHighOrderFESpace::GetTrafo (ElementId ei, Allocator & lh) const
   {
      TPElementTransformation *trafo = new (lh) TPElementTransformation ( ei );
@@ -279,12 +279,12 @@ namespace ngcomp
      trafo->SetTrafos(trafos);
      return *trafo;
   }
-
+  /*
   const FiniteElement & TPHighOrderFESpace::GetSFE (int elnr, LocalHeap & lh) const
   {
     throw Exception("TPHighOrderFESpace::GetSFE() not implemented");
   }
-
+  */
   const FiniteElement & TPHighOrderFESpace::GetFacetFE (int fnr, LocalHeap & lh) const
   {
     throw Exception("TPHighOrderFESpace::GetFacetFE() not implemented");
@@ -497,7 +497,7 @@ namespace ngcomp
     shared_ptr<FESpace> fesx = tpfes->Space(-1);
     shared_ptr<FESpace> fesy = tpfes->Space(0);
     LocalHeap lh(100000000,"heap");
-    auto & els = dynamic_cast<TPHighOrderFE &> (tpfes->GetFE(ElementId(0),lh));
+    // auto & els = dynamic_cast<TPHighOrderFE &> (tpfes->GetFE(ElementId(0),lh));
     IterateElementsTP(*tpfes,VOL,lh,
     [&] (ElementId ei0,ElementId ei1,LocalHeap & lh)
     {
