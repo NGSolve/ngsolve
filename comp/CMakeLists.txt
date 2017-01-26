@@ -1,8 +1,8 @@
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
-if (USE_GUI)
+if (NETGEN_USE_GUI)
     add_definitions(-DTCL)
-endif (USE_GUI)
+endif (NETGEN_USE_GUI)
 
 if(NOT WIN32)
     set(ngcomp_object_libs $<TARGET_OBJECTS:ngmg> )
@@ -30,7 +30,7 @@ install( FILES
         hcurlhofespace.hpp hdivfes.hpp hdivhofespace.hpp		   
         l2hofespace.hpp tpfes.hpp linearform.hpp meshaccess.hpp ngsobject.hpp	   
         postproc.hpp preconditioner.hpp vectorfacetfespace.hpp hypre_precond.hpp 
-        pde.hpp numproc.hpp vtkoutput.hpp
+        pde.hpp numproc.hpp vtkoutput.hpp pmltrafo.hpp
         DESTINATION include
         COMPONENT ngsolve_devel
        )

@@ -107,14 +107,6 @@ namespace ngfem
     bool operator==(const ElementId id2) const { return nr == id2.nr && vb == id2.vb; }
   };
 
-  typedef size_t dof_int_type;
-  class DofId
-  {
-  public:
-    dof_int_type nr;
-  };
-  
-  
   inline ostream & operator<< (ostream & ost, ElementId id)
   {
     return ost << (id.VB()==VOL ? "VEl " : (id.VB()==BND ? "BEl " : "CD2El ")) << ' ' << id.Nr();

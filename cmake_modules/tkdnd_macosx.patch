@@ -1,0 +1,35 @@
+diff -Naur orig/tkdnd2.8/configure changed/tkdnd2.8/configure
+--- tkdnd2.8/configure	2015-05-13 19:24:32.000000000 +0200
++++ tkdnd2.8/configure	2016-02-22 15:26:37.000000000 +0100
+@@ -6145,7 +6145,7 @@
+ 
+ 
+ 
+-    PKG_CFLAGS="$PKG_CFLAGS -DMAC_TK_COCOA -std=gnu99 -x objective-c -fobjc-gc"
++    PKG_CFLAGS="$PKG_CFLAGS -DMAC_TK_COCOA -std=gnu99 -x objective-c"
+ 
+ 
+ 
+diff -Naur orig/tkdnd2.8/configure.in changed/tkdnd2.8/configure.in
+--- tkdnd2.8/configure.in	2015-05-13 19:24:32.000000000 +0200
++++ tkdnd2.8/configure.in	2016-02-22 15:26:44.000000000 +0100
+@@ -126,7 +126,7 @@
+ 
+ if test "${TEA_WINDOWINGSYSTEM}" = "aqua"; then
+     TEA_ADD_SOURCES([macosx/macdnd.m])
+-    TEA_ADD_CFLAGS([-DMAC_TK_COCOA -std=gnu99 -x objective-c -fobjc-gc])
++    TEA_ADD_CFLAGS([-DMAC_TK_COCOA -std=gnu99 -x objective-c])
+     TEA_ADD_LIBS([-framework Cocoa -framework Carbon])
+ fi
+ 
+diff -Naur orig/tkdnd2.8/macosx/macdnd.m changed/tkdnd2.8/macosx/macdnd.m
+--- tkdnd2.8/macosx/macdnd.m	2015-07-06 21:49:14.000000000 +0200
++++ tkdnd2.8/macosx/macdnd.m	2016-02-22 15:27:04.000000000 +0100
+@@ -16,6 +16,7 @@
+ #import <tcl.h>
+ #import <tk.h>
+ #import <tkInt.h>
++#undef panic
+ #import <tkMacOSXInt.h>
+ #import <Cocoa/Cocoa.h>
+ 

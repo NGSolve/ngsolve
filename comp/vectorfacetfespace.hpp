@@ -61,14 +61,16 @@ namespace ngcomp
     // virtual int GetNDofLowOrder () const
     // { return ndof_lo; }
 
-    virtual const FiniteElement & GetFE ( int elnr, LocalHeap & lh ) const;
-    virtual const FiniteElement & GetSFE ( int selnr, LocalHeap & lh ) const;
+    virtual FiniteElement & GetFE(ElementId ei, Allocator & lh) const override;
+    
+    // virtual const FiniteElement & GetFE ( int elnr, LocalHeap & lh ) const;
+    // virtual const FiniteElement & GetSFE ( int selnr, LocalHeap & lh ) const;
 
-    virtual void GetFacetDofNrs ( int felnr, Array<int> & dnums ) const;
+    virtual void GetFacetDofNrs ( int felnr, Array<DofId> & dnums ) const;
 
     virtual int GetNFacetDofs ( int felnr ) const;
 
-    virtual void GetDofNrs ( ElementId ei, Array<int> & dnums ) const;
+    virtual void GetDofNrs ( ElementId ei, Array<DofId> & dnums ) const;
 
     virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & precflags) const;
     ///
@@ -84,10 +86,10 @@ namespace ngcomp
 
     virtual bool UsesHighestOrderDiscontinuous() const {return highest_order_dc;};
 
-    virtual void GetVertexDofNrs ( int elnum, Array<int> & dnums ) const;
-    virtual void GetEdgeDofNrs ( int elnum, Array<int> & dnums ) const;
-    virtual void GetFaceDofNrs (int felnr, Array<int> & dnums) const;
-    virtual void GetInnerDofNrs (int felnr, Array<int> & dnums) const;
+    virtual void GetVertexDofNrs ( int elnum, Array<DofId> & dnums ) const;
+    virtual void GetEdgeDofNrs ( int elnum, Array<DofId> & dnums ) const;
+    virtual void GetFaceDofNrs (int felnr, Array<DofId> & dnums) const;
+    virtual void GetInnerDofNrs (int felnr, Array<DofId> & dnums) const;
   };
 
 }

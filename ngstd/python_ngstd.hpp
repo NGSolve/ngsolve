@@ -35,6 +35,9 @@ bool CheckCast( py::handle obj ) {
   catch (py::cast_error &e) {
     return false;
   }
+  catch (py::error_already_set &e) {
+    return false;
+  }
 }
 
 
@@ -319,12 +322,10 @@ Array<T> makeCArray(const py::list & obj)
 template<typename T>
 Array<T> makeCArray(const py::object & obj)
 {     
-  auto list = py::extract<py::list>(obj);
-  if (list.check())
-    return makeCArray<T>(list());
-  auto tuple = py::extract<py::tuple>(obj);
-  if (tuple.check())
-    return makeCArray<T>(tuple());
+  if (py::isinstance<py::list>(obj))
+    return makeCArray<T>(obj.cast<py::list>());
+  if (py::isinstance<py::tuple>(obj))
+    return makeCArray<T>(obj.cast<py::tuple>());
   throw py::type_error("Cannot convert Python object to C Array");
 }
 

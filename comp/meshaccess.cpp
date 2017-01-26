@@ -359,24 +359,20 @@ namespace ngcomp
   };
 
 
-
-  
-
   template <int DIMS, int DIMR, typename BASE>
-  class RadialPML_ElementTransformation : public BASE
+  class PML_ElementTransformation : public BASE
   {
-    Complex alpha;
-    double rad;
+    const PML_Transformation & pml_global_trafo;
   public:
-    RadialPML_ElementTransformation (const MeshAccess * amesh, 
+    PML_ElementTransformation (const MeshAccess * amesh, 
                                      ELEMENT_TYPE aet, ElementId ei, int elindex,
-                                     Complex _alpha, double _rad)
-      : BASE(amesh, aet, ei, elindex), alpha(_alpha), rad(_rad)
+                                     const PML_Transformation & _pml_global_trafo)
+      : BASE(amesh, aet, ei, elindex), pml_global_trafo(_pml_global_trafo)
     {
       this->is_complex = true;
     }
 
-    virtual ~RadialPML_ElementTransformation() { ; }
+    virtual ~PML_ElementTransformation() { ; }
 
     virtual void CalcJacobian (const IntegrationPoint & ip,
 			       FlatMatrix<> dxdxi) const
@@ -397,43 +393,22 @@ namespace ngcomp
       CalcPoint (ip, point);
     }
 
-    void MapPoint (Vec<DIMR> & hpoint, Vec<DIMR,Complex> & point,
-                   Mat<DIMS,DIMR> & hjac, Mat<DIMS,DIMR,Complex> & jac) const
-    {
-      double abs_x = L2Norm (hpoint);
-      if (abs_x <= rad)  
-        {
-          point = hpoint;
-          jac = hjac;
-        }
-      else
-        {
-          Complex g = 1.+alpha*(1.0-rad/abs_x);
-          point = g * hpoint;
-          // SZ: sollte da nicht abs_x * abs_x anstelle  abs_x*abs_x * abs_x stehen? 
-          // JS: das hat schon so gestimmt
-          Mat<DIMR,DIMR,Complex> trans =
-            g * Id<DIMR>() + (rad*alpha/(abs_x*abs_x*abs_x)) * (hpoint * Trans(hpoint));
-          jac = trans * hjac;
-        }
-    }
 
     virtual BaseMappedIntegrationPoint & operator() (const IntegrationPoint & ip, Allocator & lh) const
     {
       auto & mip = *new (lh) MappedIntegrationPoint<DIMS,DIMR,Complex> (ip, *this, -47);
       MappedIntegrationPoint<DIMS,DIMR> hip(ip, *this);
       
-      Vec<DIMR> hpoint(hip.Point());
       Vec<DIMR,Complex> point;
       
       Mat<DIMS,DIMR> hjac(hip.Jacobian());
-      Mat<DIMS,DIMR,Complex> jac;
           
-      MapPoint (hpoint, point, hjac, jac);
+      Mat<DIMR,DIMR,Complex> tjac;
+      pml_global_trafo.MapIntegrationPoint (hip, point, tjac);
                     
       mip.Point() = point; 
-      mip.Jacobian() = jac;
-      mip.Compute();          
+      mip.Jacobian() = tjac*hjac;
+      mip.Compute();
       return mip;
     }
 
@@ -443,6 +418,13 @@ namespace ngcomp
       return mir;
     }
 
+    virtual SIMD_BaseMappedIntegrationRule & operator() (const SIMD_IntegrationRule & ir, Allocator & lh) const
+    {
+      throw ExceptionNOSIMD("PML-trafo operator() (SIMD_IntegrationRule & ir) not overloaded");
+      // return *new (lh) SIMD_MappedIntegrationRule<DIMS,DIMR> (ir, *this, lh);
+    }
+
+    
     virtual void CalcMultiPointJacobian (const IntegrationRule & ir,
 					 BaseMappedIntegrationRule & bmir) const
     {
@@ -452,23 +434,22 @@ namespace ngcomp
           return;
         }
 
-      LocalHeapMem<1000000> lh("testwise");
+      LocalHeapMem<100000> lh("testwise");
       MappedIntegrationRule<DIMS,DIMR> mir_real(ir, *this, lh);
 
       auto & mir_complex = dynamic_cast<MappedIntegrationRule<DIMS,DIMR,Complex>&> (bmir);
 
       for (int i = 0; i < ir.Size(); i++)
         {
-          Vec<DIMR> hpoint(mir_real[i].Point());
           Vec<DIMR,Complex> point;
           
           Mat<DIMS,DIMR> hjac(mir_real[i].Jacobian());
-          Mat<DIMS,DIMR,Complex> jac;
           
-          MapPoint (hpoint, point, hjac, jac);
+          Mat<DIMR,DIMR,Complex> tjac;
+          pml_global_trafo.MapIntegrationPoint (mir_real[i], point, tjac);
                     
           mir_complex[i].Point() = point; 
-          mir_complex[i].Jacobian() = jac;
+          mir_complex[i].Jacobian() = tjac*hjac;
           mir_complex[i].Compute();          
         }
     }
@@ -479,12 +460,6 @@ namespace ngcomp
       throw ExceptionNOSIMD ("pml - trafo cannot calc simd_rule");
     }
   };
-
-
-
-  
-
-
   
   template <int DIMS, int DIMR>
   class Ng_ConstElementTransformation : public ElementTransformation
@@ -944,6 +919,8 @@ namespace ngcomp
       }
     nbboundaries++;
     nbboundaries = MyMPI_AllReduce(nbboundaries, MPI_MAX);
+
+    pml_trafos.SetSize(ndomains);
   }
 
 
@@ -1372,12 +1349,12 @@ namespace ngcomp
     
     Ngs_Element el (mesh.GetElement<DIM> (elnr), ElementId(VOL, elnr));
     
-    if (el.GetIndex() == pml_domain)
+    if (pml_trafos[el.GetIndex()])
       {
         eltrans = new (lh)
-          RadialPML_ElementTransformation<DIM, DIM, Ng_ElementTransformation<DIM,DIM>>
+          PML_ElementTransformation<DIM, DIM, Ng_ElementTransformation<DIM,DIM>>
           (this, el.GetType(), 
-           ElementId(VOL,elnr), el.GetIndex(), pml_alpha, pml_r);
+           ElementId(VOL,elnr), el.GetIndex(), *pml_trafos[el.GetIndex()]);
       }
     
     else if (loc_deformation)
@@ -1792,10 +1769,6 @@ namespace ngcomp
     mesh.Refine(NG_REFINE_H, &NGSolveTaskManager);
     UpdateBuffers();
   }
-
-
-  
-
 
   int MeshAccess :: GetNPairsPeriodicVertices () const 
   {

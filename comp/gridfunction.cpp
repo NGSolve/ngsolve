@@ -106,7 +106,7 @@ namespace ngcomp
 
 	if (archive.Output())
 	  {
-	    Array<int> dnums;
+	    Array<DofId> dnums;
 	    Array<double> temp (ma->GetNV());
 	    temp = 0;
 	    for (int i = 0; i < ma->GetNV(); i++)
@@ -122,7 +122,7 @@ namespace ngcomp
 	    Array<double> temp;
 	    archive & NodalData<NT_VERTEX> (*ma, temp);
 
-	    Array<int> dnums;
+	    Array<DofId> dnums;
 	    for (int i = 0; i < ma->GetNV(); i++)
 	      {
 		fespace->GetDofNrs (NodeId(NT_VERTEX, i), dnums);
@@ -134,7 +134,7 @@ namespace ngcomp
 
 	if (archive.Output())
 	  {
-	    Array<int> dnums;
+	    Array<DofId> dnums;
 	    Array<double> temp (ma->GetNEdges());
 	    temp = 0;
 	    for (int i = 0; i < ma->GetNEdges(); i++)
@@ -150,7 +150,7 @@ namespace ngcomp
 	    Array<double> temp;
 	    archive & NodalData<NT_EDGE> (*ma, temp);
 
-	    Array<int> dnums;
+	    Array<DofId> dnums;
 	    for (int i = 0; i < ma->GetNEdges(); i++)
 	      {
 		fespace->GetDofNrs (NodeId(NT_EDGE, i), dnums);
@@ -301,7 +301,7 @@ namespace ngcomp
     if (MyMPI_GetNTasks() == 1)
       { 
 	const FESpace & fes = *GetFESpace();
-	Array<int> dnums;
+	Array<DofId> dnums;
 	
 	// for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
         for (NODE_TYPE nt : { NT_VERTEX, NT_EDGE, NT_FACE, NT_CELL })
@@ -384,7 +384,7 @@ namespace ngcomp
 	
 	Array<Vec<N+1, int> > nodekeys;
 	Array<int> master_nodes;
-	Array<int> dnums, pnums;
+	Array<DofId> dnums, pnums;
 	
 	for(int i = 0; i < nnodes; i++)
 	  {
@@ -509,7 +509,7 @@ namespace ngcomp
   
     if (ntasks == 1)
       {
-	Array<int> dnums;	    
+	Array<DofId> dnums;	    
 	// for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
         for (NODE_TYPE nt : { NT_VERTEX, NT_EDGE, NT_FACE, NT_CELL })
 	  {
@@ -616,7 +616,8 @@ namespace ngcomp
 	Array<Vec<N+1,int> > nodenums;
 	Array<SCAL> data;
     
-	Array<int> dnums, pnums;
+	Array<DofId> dnums;
+        Array<int> pnums;
     
 	for (int i = 0; i < nnodes; i++)
 	  {
@@ -2650,7 +2651,7 @@ namespace ngcomp
         LocalHeapMem<1000000> lh("viscf::getmultisurfvalue");
         ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
 
-        AFlatMatrix<> mvalues(GetComponents(), SIMD<double>::Size()*npts, (double*)values);
+        FlatMatrix<SIMD<double>> mvalues(GetComponents(), npts, (SIMD<double>*)values);
 
         constexpr size_t BS = 64;
         for (size_t base = 0; base < npts; base +=BS)
@@ -2675,7 +2676,7 @@ namespace ngcomp
                     mir[k] = SIMD<MappedIntegrationPoint<2,3>> (ir[k], eltrans, vx, mdxdxref);
                   }
                 
-                cf -> Evaluate (mir, mvalues.VCols(base, base+ni));
+                cf -> Evaluate (mir, mvalues.Cols(base, base+ni));
               }
             else
               {
@@ -2690,12 +2691,12 @@ namespace ngcomp
                         mir[k] = SIMD<MappedIntegrationPoint<2,2>> (ir[k], eltrans, vx, mdxdxref);
                       }
                     
-                    cf -> Evaluate (mir, mvalues.VCols(base, base+ni));
+                    cf -> Evaluate (mir, mvalues.Cols(base, base+ni));
                   }
                 else
                   {
                     SIMD_MappedIntegrationRule<2,2> mir(ir, eltrans, lh);
-                    cf -> Evaluate (mir, mvalues.VCols(base, base+ni));
+                    cf -> Evaluate (mir, mvalues.Cols(base, base+ni));
                   }
               }
           }
@@ -2703,7 +2704,7 @@ namespace ngcomp
       }
     catch (Exception & e)
       {
-        cout << "VisualizeCoefficientFunction::GetMultiSurfValue caught exception: " << endl
+        cout << "VisualizeCoefficientFunction::GetMultiSurfValue caught exception (AVX): " << endl
              << e.What();
         return 0;
       }

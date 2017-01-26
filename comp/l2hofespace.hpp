@@ -65,23 +65,23 @@ namespace ngcomp
     virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override;
 
     using FESpace::GetFE;
-    virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const override;
-    ///
-    virtual const FiniteElement & GetSFE (int elnr, LocalHeap & lh) const override;
+    // virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const override;
+    // ///
+    // virtual const FiniteElement & GetSFE (int elnr, LocalHeap & lh) const override;
     ///
     virtual const FiniteElement & GetFacetFE (int fnr, LocalHeap & lh) const;
 
     virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
 
-    virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const override;
+    virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
     ///
     virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & precflags) const override;
     /// 
  
-    virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const override;
-    virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const override;
-    virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const override;
-    virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const override;
+    virtual void GetVertexDofNrs (int vnr, Array<DofId> & dnums) const override;
+    virtual void GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const override;
+    virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const override;
+    virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const override;
 
 
     IntRange GetElementDofs (int nr) const
@@ -151,19 +151,21 @@ namespace ngcomp
     //virtual void UpdateDofTables();
     ///
     virtual size_t GetNDof () const throw() override;
+
+    virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
     ///
-    virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const override;
+    // virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const override;
+    // ///
+    // virtual const FiniteElement & GetSFE (int elnr, LocalHeap & lh) const override;
     ///
-    virtual const FiniteElement & GetSFE (int elnr, LocalHeap & lh) const override;
-    ///
-    virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const override;
+    virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
   
     virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & precflags) const override;
     /// 
-    virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const override;
-    virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const override;
-    virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const override;
-    virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const override;
+    virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const override;
+    virtual void GetVertexDofNrs (int vnr, Array<DofId> & dnums) const override;
+    virtual void GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const override;
+    virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const override;
 
     virtual bool VarOrder() const override { return var_order; } 
     virtual int GetRelOrder() const override { return rel_order; }   

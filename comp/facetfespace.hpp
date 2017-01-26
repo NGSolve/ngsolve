@@ -66,12 +66,14 @@ namespace ngcomp
     virtual size_t GetNDof () const throw();
     ///
     virtual size_t GetNDofLevel (int level) const;
+
+    virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
     ///
-    virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
+    // virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
+    // ///
+    // virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const; 
     ///
-    virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const; 
-    ///
-    virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const;
+    virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const;
     ///
     virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
 
@@ -80,7 +82,7 @@ namespace ngcomp
       return IntRange (first_facet_dof[nr], first_facet_dof[nr+1]); 
     }
   
-    virtual void GetFacetDofNrs (int nr, Array<int> & dnums) const
+    virtual void GetFacetDofNrs (int nr, Array<DofId> & dnums) const
     {
       dnums.SetSize(0);
       dnums += nr;
@@ -105,12 +107,12 @@ namespace ngcomp
       return first_facet_dof[fanr];
     }
 
-    virtual void GetVertexDofNrs ( int nr, Array<int> & dnums ) const
+    virtual void GetVertexDofNrs ( int nr, Array<DofId> & dnums ) const
     {
       dnums.SetSize0();
     }
 
-    virtual void GetEdgeDofNrs ( int nr, Array<int> & dnums ) const
+    virtual void GetEdgeDofNrs ( int nr, Array<DofId> & dnums ) const
     {
       dnums.SetSize0();
       if (ma->GetDimension() == 3) return;
@@ -122,7 +124,7 @@ namespace ngcomp
       dnums = MakeTuple (nr, GetFacetDofs(nr));
     }
 
-    virtual void GetFaceDofNrs (int nr, Array<int> & dnums) const
+    virtual void GetFaceDofNrs (int nr, Array<DofId> & dnums) const
     {
       dnums.SetSize(0);
       if (ma->GetDimension() == 2) return;
@@ -131,7 +133,7 @@ namespace ngcomp
       dnums += GetFacetDofs(nr);
     }
   
-    virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const
+    virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const
     {
       dnums.SetSize(0);
     }

@@ -460,6 +460,8 @@ public:
     Matrix<bool> nonzeros_proxies; // do proxies interact ? 
     bool elementwise_constant;
     mutable bool simd_evaluate;
+    IntegrationRule ir;   // if non-empty use this integration-rule
+    SIMD_IntegrationRule simd_ir;   // if non-empty use this integration-rule
     
   public:
     SymbolicBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb,
@@ -471,6 +473,7 @@ public:
 
     IntegrationRule GetIntegrationRule (const FiniteElement & fel) const;
     SIMD_IntegrationRule Get_SIMD_IntegrationRule (const FiniteElement & fel) const;
+    void SetIntegrationRule (const IntegrationRule & _ir);
     
     virtual void 
     CalcElementMatrix (const FiniteElement & fel,
@@ -580,16 +583,23 @@ public:
                      const ElementTransformation & eltrans1, FlatArray<int> & ElVertices1,
                      const FiniteElement & volumefel2, int LocalFacetNr2,
                      const ElementTransformation & eltrans2, FlatArray<int> & ElVertices2,
-                     FlatMatrix<double> & elmat,
+                     FlatMatrix<double> elmat,
                      LocalHeap & lh) const;
 
     virtual void
     CalcFacetMatrix (const FiniteElement & volumefel, int LocalFacetNr,
                      const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
-                     const ElementTransformation & seltrans,  
-                     FlatMatrix<double> & elmat,
+                     const ElementTransformation & seltrans, FlatArray<int> & SElVertices,  
+                     FlatMatrix<double> elmat,
                      LocalHeap & lh) const;
 
+    virtual void
+    CalcLinearizedFacetMatrix (const FiniteElement & volumefel, int LocalFacetNr,
+                               const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+                               const ElementTransformation & seltrans, FlatArray<int> & SElVertices,  
+                               FlatVector<double> vec, FlatMatrix<double> elmat,
+                               LocalHeap & lh) const;
+    
     virtual void
     ApplyFacetMatrix (const FiniteElement & volumefel1, int LocalFacetNr1,
                       const ElementTransformation & eltrans1, FlatArray<int> & ElVertices1,

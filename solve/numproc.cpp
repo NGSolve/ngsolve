@@ -3500,7 +3500,7 @@ public:
 using namespace ngsolve;
 void ExportDrawFlux(py::module &m)
 {
-  cout << "exporting CalcFlux and DrawFlux numproc" << endl;
+  // cout << "exporting CalcFlux and DrawFlux numproc" << endl;
 
   m.def ("CalcFlux", FunctionPointer
            ([](shared_ptr<PDE> pde,

@@ -79,36 +79,36 @@ namespace ngcomp
     ///
     virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override;
     ///
-    virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const override;
+    // virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const override;
     ///
     template <ELEMENT_TYPE ET>
       FiniteElement & T_GetFE (int elnr, bool onlyhdiv, Allocator & lh) const;
     ///
     virtual const FiniteElement & GetHODivFE (int elnr, LocalHeap & lh) const;
     ///
-    virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const override; // 2D: array =0.;
+    // virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const override; // 2D: array =0.;
     ///
     virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
     ///
-    virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const override;
+    virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
     ///
     virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & precflags) const override;
     /// 
     virtual Array<int> * CreateDirectSolverClusters (const Flags & precflags) const override;
     /// 
-    virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const override;
+    virtual void GetVertexDofNrs (int vnr, Array<DofId> & dnums) const override;
     /// 
-    virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const override;
+    virtual void GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const override;
     /// 
-    virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const override;
+    virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const override;
     /// 
-    virtual void GetFacetDofNrs(int fanr, Array<int> & dnums) const
+    virtual void GetFacetDofNrs(int fanr, Array<DofId> & dnums) const
     { 
       if (ma->GetDimension() == 2) GetEdgeDofNrs(fanr,dnums); 
       else if (ma->GetDimension() == 3) GetFaceDofNrs(fanr,dnums); 
     } 
     ///
-    virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const override; 
+    virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const override; 
 
     virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const override;
 
@@ -122,7 +122,7 @@ namespace ngcomp
       if(discont) return(first_inner_dof[elnr+1] - first_inner_dof[elnr]); 
       else 
 	{ 
-	  Array<int> dnums; 
+	  Array<DofId> dnums; 
 	  this->GetDofNrs(elnr,dnums); 
 	  return(dnums.Size()); 
 	} 

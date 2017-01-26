@@ -346,6 +346,8 @@ namespace ngcomp
     int dim   = fes.GetDimension();
     ma->PushStatus("setvalues");
 
+    if (!diffop)
+      diffop = fes.GetEvaluator(vb).get();
     shared_ptr<BilinearFormIntegrator> bli = fes.GetIntegrator(vb);
     if (!bli)
       throw Exception ("no integrator available");
@@ -360,7 +362,9 @@ namespace ngcomp
     u.GetVector() = 0.0;
 
     ProgressOutput progress (ma, "setvalues element", ma->GetNE(vb));
+    bool use_simd = true;
 
+    
     IterateElements 
       (fes, vb, clh, 
        [&] (FESpace::Element ei, LocalHeap & lh)
@@ -387,6 +391,74 @@ namespace ngcomp
 	  FlatVector<SCAL> elfluxi(fel.GetNDof() * dim, lh);
 	  FlatVector<SCAL> fluxi(dimflux, lh);
 
+          if (use_simd)
+            {
+              try
+                {
+                  SIMD_IntegrationRule ir(fel.ElementType(), 2*fel.Order());
+                  FlatMatrix<SIMD<SCAL>> mfluxi(dimflux, ir.Size(), lh);
+                  
+                  auto & mir = eltrans(ir, lh);
+
+                  coef->Evaluate (mir, mfluxi);
+          
+                  for (size_t j : Range(ir))
+                    mfluxi.Col(j) *= mir[j].GetWeight();
+
+                  elflux = SCAL(0.0);
+                  if (diffop)
+                    diffop -> AddTrans (fel, mir, mfluxi, elflux);
+                  else
+                    throw ExceptionNOSIMD("need diffop");
+
+                  if (dim > 1)
+                    {
+                      FlatMatrix<SCAL> elmat(fel.GetNDof(), lh);
+                      const BlockBilinearFormIntegrator & bbli = 
+                        dynamic_cast<const BlockBilinearFormIntegrator&> (*bli.get());
+                      bbli . Block() . CalcElementMatrix (fel, eltrans, elmat, lh);
+                      FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
+                      
+                      for (int j = 0; j < dim; j++)
+                        invelmat.Mult (elflux.Slice (j,dim), elfluxi.Slice (j,dim));
+                    }
+                  else
+                    {
+                      FlatMatrix<double> elmat(fel.GetNDof(), lh);
+                      bli->CalcElementMatrix (fel, eltrans, elmat, lh);
+                      
+                      fes.TransformMat (ei, elmat, TRANSFORM_MAT_LEFT_RIGHT);
+                      fes.TransformVec (ei, elflux, TRANSFORM_RHS);
+                      if (fel.GetNDof() < 50)
+                        {
+                          FlatCholeskyFactors<double> invelmat(elmat, lh);
+                          invelmat.Mult (elflux, elfluxi);
+                        }
+                      else
+                        {
+                          LapackInverse (elmat);
+                          elfluxi = elmat * elflux;
+                        }
+                    }
+                  
+                  // fes.TransformVec (i, bound, elfluxi, TRANSFORM_SOL);
+                  
+                  u.GetElementVector (ei.GetDofs(), elflux);
+                  elfluxi += elflux;
+                  u.SetElementVector (ei.GetDofs(), elfluxi);
+                  
+                  for (auto d : ei.GetDofs())
+                    if (d != -1) cnti[d]++;
+                  
+                  return;
+                }
+              catch (ExceptionNOSIMD e)
+                {
+                  use_simd = false;
+                  cout << IM(1) << "Warning: switching to std evalution in SetValues since: " << e.What() << endl;
+                }
+            }
+          
 	  IntegrationRule ir(fel.ElementType(), 2*fel.Order());
 	  FlatMatrix<SCAL> mfluxi(ir.GetNIP(), dimflux, lh);
 

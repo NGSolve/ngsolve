@@ -91,17 +91,17 @@ namespace ngcomp
     ///
     virtual size_t GetNDofLevel (int level) const;
     ///
-    virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const;
+    virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override;
 
     ngfem::ElementTransformation & GetTrafo (ElementId ei, Allocator & lh) const;
 
     using FESpace::GetFE;
-    virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
+    // virtual const FiniteElement & GetFE (ElementId ei, LocalHeap & lh) const;
     template <ELEMENT_TYPE ET>
       FiniteElement & T_GetFE (int elnr, Allocator & alloc) const;
 
     ///
-    virtual const FiniteElement & GetSFE (int elnr, LocalHeap & lh) const;
+    //virtual const FiniteElement & GetSFE (int elnr, LocalHeap & lh) const;
     ///
     virtual int GetSpacialDimension() const { return space_x->GetSpacialDimension() + spaces_y[0]->GetSpacialDimension();}
     ///
