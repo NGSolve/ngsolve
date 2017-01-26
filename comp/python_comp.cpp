@@ -8,6 +8,37 @@
 
 #include <regex>
 
+//#define COMPILE_DOCU
+
+#ifndef COMPILE_DOCU
+const char* docu_string(const char* str)
+{
+  std::string replacement(str);
+  bool replaced = false;
+  while(true)
+    {
+      cout << "replacement: " << replacement << endl;
+      auto start_pos = replacement.find(":any:`");
+      if(start_pos==std::string::npos)
+        break;
+      else
+        replaced = true;
+      auto rest = replacement.substr(start_pos+6); //first character after ":any:`"
+      auto end = rest.find("`");
+      cout << "start pos: " << start_pos << ", end pos: " << end << endl;
+      replacement.replace(start_pos,end+7,rest.substr(0,end)); 
+    }
+  if(!replaced)
+    return replacement.c_str();
+  char * newchar = new char[replacement.size()+1];
+  std::copy(replacement.begin(),replacement.end(),newchar);
+  newchar[replacement.size()] = '\0';
+  return newchar;
+}
+#else
+const char* docu_string(const char* c) { return c; }
+#endif // COMPILE_DOCU
+
 using namespace ngcomp;
 
 using ngfem::ELEMENT_TYPE;
@@ -1326,12 +1357,12 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
          [] (const PyFES & self) 
            {
              return MakeProxyFunction (*self.Get(), false);
-           }, "Gives a proxy to be used as a trialfunction in :any:`Symbolic Integrators`")
+           }, docu_string("Gives a proxy to be used as a trialfunction in :any:`Symbolic Integrators`"))
     .def("TestFunction",
          [] (const PyFES & self) 
            {
              return MakeProxyFunction (*self.Get(), true);
-           }, "Gives a proxy to be used as a testfunction for :any:`Symbolic Integrators`")
+           }, docu_string("Gives a proxy to be used as a testfunction for :any:`Symbolic Integrators`"))
 
     .def("SolveM", FunctionPointer
         ( [] (const PyFES & self,
