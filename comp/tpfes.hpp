@@ -23,6 +23,7 @@ namespace ngcomp
     shared_ptr<FESpace> space_x;
     Array<shared_ptr<MeshAccess>> meshes;
     bool element_wise;
+    double nelsyinverse;
   public:
     INLINE int GetIndex( FlatArray<int> indices) const 
     {
@@ -34,8 +35,10 @@ namespace ngcomp
     }
     INLINE void GetIndices( int index, FlatArray<int> indices) const 
     {
-      indices[1] = index%nels[1];
-      indices[0] = index/nels[1];
+      //indices[1] = index%nels[1];
+      //indices[0] = index/nels[1];
+      indices[0] = int(index*nelsyinverse);
+      indices[1] = index-nels[1]*indices[0];
     }    
     INLINE const shared_ptr<FESpace> Space(int i) const {
       if(i == -1)
@@ -107,6 +110,7 @@ namespace ngcomp
     virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
     
     virtual void GetDofNrs(ngfem::ElementId ei, ngstd::Array<int>& dnums) const;
+    void GetSliceDofNrs(ngfem::ElementId ei, int direction, ngstd::Array<int>& dnums) const;
     ///
     virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & precflags) const;
     /// 
