@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+    <Fragment>
+        <DirectoryRef Id="TARGETDIR">
+            <Merge Id="CRT1" SourceFile="C:\Microsoft_VC140_CRT_x64.msm" DiskId="1" Language="0"/>
+            <Merge Id="CRT2" SourceFile="C:\Microsoft_VC140_CXXAMP_x64.msm" DiskId="1" Language="0"/>
+            <Merge Id="CRT3" SourceFile="C:\Microsoft_VC140_DebugCRT_x64.msm" DiskId="1" Language="0"/>
+            <Merge Id="CRT4" SourceFile="C:\Microsoft_VC140_DebugCXXAMP_x64.msm" DiskId="1" Language="0"/>
+        </DirectoryRef>
+
+        <Feature Id="CRT" Title="Visual C++ 14.0 Runtime" AllowAdvertise="no" Display="hidden" Level="1">
+             <MergeRef Id="CRT1"/>
+             <MergeRef Id="CRT2"/>
+             <MergeRef Id="CRT3"/>
+             <MergeRef Id="CRT4"/>
+        </Feature>
+
+
+        <PackageGroup Id="vs_redistributables">
+        <ExePackage 
+            Id="VCRedist2015" 
+            Name="vc_redist.x64.exe"
+            Compressed="no"
+            Cache="no" 
+            Permanent="yes" 
+            Vital="yes" 
+            DownloadUrl="https://download.microsoft.com/download/9/3/F/93FCF1E7-E6A4-478B-96E7-D4B285925B00/vc_redist.x64.exe"
+            SuppressSignatureVerification="yes">
+        </ExePackage>
+
+
+
+        </PackageGroup>
+        </Fragment>
+        </Wix>
