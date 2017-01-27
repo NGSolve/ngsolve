@@ -196,49 +196,33 @@ static GlobalDummyVariables globvar;
 
 typedef PyWrapper<CoefficientFunction> PyCF;
 typedef PyWrapperDerived<PML_CF,CoefficientFunction> PyPMLCF;
+typedef PyWrapperDerived<PML_Jac,CoefficientFunction> PyPMLJac;
+typedef PyWrapperDerived<PML_Det,CoefficientFunction> PyPMLDet;
 typedef PyWrapper<PML_Transformation> PyPML;
 typedef PyWrapperDerived<RadialPML_Transformation<0>,PML_Transformation> PyRadPML; 
 typedef PyWrapperDerived<CustomPML_Transformation<0>,PML_Transformation> PyCustPML; 
 typedef PyWrapperDerived<CartesianPML_Transformation<0>,PML_Transformation> PyCartPML; 
 typedef PyWrapperDerived<BrickRadialPML_Transformation<0>,PML_Transformation> PyBrickPML; 
 typedef PyWrapperDerived<HalfSpacePML_Transformation<0>,PML_Transformation> PyHalfPML; 
+typedef PyWrapperDerived<SumPML<0>,PML_Transformation> PySumPML; 
+typedef PyWrapperDerived<CompoundPML<0,0,0>,PML_Transformation> PyCompPML; 
 void ExportPml(py::module &m)
 {
-  py::class_<PyPMLCF,PyCF> (m, "PML_CF", "pml scaling function")
-    .def("__init__", [](PyPMLCF *instance, PyPML apml, int dim) {
-                        auto pcf = make_shared<PML_CF> (apml.Get()->CreateDim(dim),dim);
-                        new (instance) PyPMLCF(pcf);
-                      })
-    ;
+  py::class_<PyPMLCF,PyCF> (m, "PML_CF", "pml scaling function");
+  py::class_<PyPMLJac,PyCF> (m, "PML_Jac", "pml jacobian function");
+  py::class_<PyPMLDet,PyCF> (m, "PML_Det", "pml determinant function");
 
   py::class_<PyPML>(m, "PML", "Base pml object")
-    .def("PrintParameters", [](PyPML *instance){ instance->Get()->PrintParameters();})
-    .def("__call__",  [](PyPML *instance, py::object _point) {
-                      int dim = 0;
-                      if (py::extract<double>(_point).check())
-                      {
-                        double ppoint = py::extract<double>(_point)();
-                        PyPML dimpml = instance->Get()->CreateDim(1);
-                        Vector<double> hpoint(1);
-                        Vector<Complex> point(1);
-                        hpoint = ppoint;
-                        Matrix<Complex> jac(dim,dim);
-                        dimpml.Get()->MapPointV(hpoint,point,jac);
-                        return point;
-                      }
-                      else if (py::extract<py::tuple>(_point).check())
-                      {
-                        py::tuple ppoint = py::extract<py::tuple>(_point)();
-                        dim = py::len(ppoint);
-                        PyPML dimpml = instance->Get()->CreateDim(dim);
-                        Vector<double> hpoint(dim);
-                        Vector<Complex> point(dim);
-                        for (int i : Range(dim))
-                          hpoint[i] = py::extract<double>(ppoint[i])();
-                        Matrix<Complex> jac(dim,dim);
-                        dimpml.Get()->MapPointV(hpoint,point,jac);
-                        return point;
-                      }
+    .def("__call__",  [](py::args varargs) {
+                      int dim = py::len(varargs)-1;
+                      PyPML dimpml = py::extract<PyPML>(varargs[0])().Get()->CreateDim(dim);
+                      Vector<double> hpoint(dim);
+                      Vector<Complex> point(dim);
+                      for (int i : Range(dim))
+                        hpoint[i] = py::extract<double>(varargs[i+1])();
+                      Matrix<Complex> jac(dim,dim);
+                      dimpml.Get()->MapPointV(hpoint,point,jac);
+                      return point;
                     },"map a point")
     .def("__call__",  [](PyPML *instance, const BaseMappedIntegrationPoint & _point) {
                       int dim = _point.Dim();
@@ -248,43 +232,49 @@ void ExportPml(py::module &m)
                       dimpml.Get()->MapPointV(_point,point,jac);
                       return point;
                     },"map a point")
-
-    .def("jac",  [](PyPML *instance, py::tuple _point) {
-                      int dim = py::len(_point);
-                      PyPML dimpml = instance->Get()->CreateDim(dim);
+    .def("__str__", [] (PyPML & self) { return ToString(*self.Get()); } )
+    .def("call_jacobian",  [](py::args varargs) {
+                      int dim = py::len(varargs)-1;
+                      PyPML dimpml = py::extract<PyPML>(varargs[0])().Get()->CreateDim(dim);
                       Vector<double> hpoint(dim);
                       Vector<Complex> point(dim);
                       for (int i : Range(dim))
-                        hpoint(i) = py::extract<double>(_point[i])();
+                        hpoint[i] = py::extract<double>(varargs[i+1])();
                       Matrix<Complex> jac(dim,dim);
                       dimpml.Get()->MapPointV(hpoint,point,jac);
-                      return jac; 
-                    },
-                    "jacobian at point")
-    .def("jac",  [](PyPML *instance, double x) {
-                      PyPML dimpml = instance->Get()->CreateDim(1);
-                      Vector<double> hpoint(1);
-                      hpoint[0]=x;
-                      Vector<Complex> point(1);
-                      Matrix<Complex> jac(1,1);
-                      dimpml.Get()->MapPointV(hpoint,point,jac);
                       return jac;
-                    },"jacobian at point")
-    .def("jac",  [](PyPML *instance, const BaseMappedIntegrationPoint & _point) {
+                    },"evaluates jacobian at point")
+    .def("call_jacobian",  [](PyPML *instance, const BaseMappedIntegrationPoint & _point) {
                       int dim = _point.Dim();
                       PyPML dimpml = instance->Get()->CreateDim(dim);
                       Vector<Complex> point(dim);
                       Matrix<Complex> jac(dim,dim);
                       dimpml.Get()->MapPointV(_point,point,jac);
-                      return jac; 
-                    },
-                    "jacobian at point")
-    .def("pmlcf", [](PyPML *instance, int dim) {
+                      return jac;
+                    })
+    .def("PML_CF", [](PyPML *instance, int dim) {
                       PyPML dimpml = instance->Get()->CreateDim(dim);
                       auto pcf = make_shared<PML_CF> (dimpml.Get()->CreateDim(dim),dim);
                       return PyPMLCF(pcf);
                     },
         "the pml scaling as coefficient function")
+    .def("Jac_CF", [](PyPML *instance, int dim) {
+                      PyPML dimpml = instance->Get()->CreateDim(dim);
+                      auto pcf = make_shared<PML_Jac> (dimpml.Get()->CreateDim(dim),dim);
+                      return PyCF(pcf);
+                    },
+        "the pml jacobian as coefficient function")
+    .def("Det_CF", [](PyPML *instance, int dim) {
+                      PyPML dimpml = instance->Get()->CreateDim(dim);
+                      auto pcf = make_shared<PML_Det> (dimpml.Get()->CreateDim(dim));
+                      return PyCF(pcf);
+                    },
+        "the pml determinant as coefficient function")
+    .def("__add__", [](PyPML *instance, PyPML addor) {
+                      auto dimpml1 = instance->Get()->CreateDim(0);
+                      auto dimpml2 = addor.Get()->CreateDim(0);
+                      return PySumPML(make_shared<SumPML<0>>(dimpml1,dimpml2));
+                    })
   ;
 
   py::class_<PyRadPML,PyPML>(m, "Radial", "radial pml scaling")
@@ -303,7 +293,6 @@ void ExportPml(py::module &m)
           new (instance) PyRadPML(make_shared<RadialPML_Transformation<0>> (rad,alpha,origin));
         },
         py::arg("rad")=1, py::arg("alpha")=Complex(0,1),py::arg("origin")=0)
-    
     ;
 
   py::class_<PyCustPML,PyPML>(m, "Custom", "pml with custom transformation")
@@ -312,7 +301,6 @@ void ExportPml(py::module &m)
         new (instance) PyCustPML(pml);
         },
         py::arg("trafo"),py::arg("jac"))
-    
     ;
 
   py::class_<PyCartPML,PyPML>(m, "Cartesian", "cartesian pml scaling")
@@ -320,7 +308,8 @@ void ExportPml(py::module &m)
           Matrix<double> bounds(3,2);
           bounds = 0.;
           if (py::extract<double>(mins).check())
-            bounds(0,0)=py::extract<double>(mins)();
+            for (int j : Range(3))
+              bounds.(i,0)=py::extract<double>(mins)();
 
           else if (py::extract<py::tuple>(mins).check())
           {
@@ -330,7 +319,8 @@ void ExportPml(py::module &m)
           }
 
           if (py::extract<double>(maxs).check())
-            bounds(0,1)=py::extract<double>(maxs)();
+            for (int j : Range(3))
+              bounds.(j,1)=py::extract<double>(maxs)();
 
           else if (py::extract<py::tuple>(maxs).check())
           {
@@ -384,7 +374,8 @@ void ExportPml(py::module &m)
           origin = 0.;
 
           if (py::extract<double>(mins).check())
-            bounds(0,0)=py::extract<double>(mins)();
+            for (int i : Range(3))
+              bounds(i,0)=py::extract<double>(mins)();
 
           else if (py::extract<py::tuple>(mins).check())
           {
@@ -394,7 +385,8 @@ void ExportPml(py::module &m)
           }
 
           if (py::extract<double>(maxs).check())
-            bounds(0,1)=py::extract<double>(maxs)();
+            for (int i : Range(3))
+              bounds(i,1)=py::extract<double>(maxs)();
 
           else if (py::extract<py::tuple>(maxs).check())
           {
@@ -417,6 +409,39 @@ void ExportPml(py::module &m)
         },
         py::arg("mins"),py::arg("maxs"), py::arg("alpha")=Complex(0,1), py::arg("origin")=0)
     ;
+  py::class_<PySumPML,PyPML>(m, "Sum", "sum of two pmls");
+  py::class_<PyCompPML,PyPML>(m, "Compound", "compound of two pmls\n"
+                                 "_dims1 is an ascending list of dimensions of first pml")
+    .def("__init__", [](PyCompPML *instance, 
+                        PyPML pml1,
+                        PyPML pml2, 
+                        py::object _dims1)
+        {
+        auto pml1dim = pml1.Get()->CreateDim(0);
+        auto pml2dim = pml2.Get()->CreateDim(0);
+        BitArray pml1_defined(3);
+        if (py::extract<py::list>(_dims1).check())
+        { 
+          py::list ldims1=py::list(_dims1);
+          ldims1.attr("sort");
+          pml1_defined.SetSize(max(py::extract<int>(ldims1[py::len(ldims1)-1])(),3));
+          pml1_defined.Clear();
+          for (int i : Range(py::len(ldims1)))
+            pml1_defined.Set(py::extract<int>(ldims1[i])()-1);
+        }
+        else if (py::extract<int>(_dims1).check())
+        {
+          int num=py::extract<int>(_dims1)(); 
+          pml1_defined.SetSize(max(num,3));
+          pml1_defined.Clear();
+          pml1_defined.Set(num-1);                
+        }
+        
+        new (instance) PyCompPML(make_shared<CompoundPML<0,0,0>>(pml1dim,pml2dim,pml1_defined));
+        },
+        py::arg("pml1"),py::arg("pml2"), py::arg("dims")=1)
+    ;
+
 }
 
 
@@ -3078,14 +3103,10 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 
 
 
-
-
 PYBIND11_PLUGIN(libngcomp) {
   py::module m("comp", "pybind comp");
   ExportNgcomp(m);
   return m.ptr();
 }
-
-
 
 #endif // NGS_PYTHON
