@@ -73,6 +73,33 @@ void SetFlag(Flags &flags, string s, py::object value)
     }
 }
 
+const char* docu_string(const char* str)
+{
+  if(rst_docu)
+    return str;
+  std::string replacement(str);
+  bool replaced = false;
+  while(true)
+    {
+      cout << "replacement: " << replacement << endl;
+      auto start_pos = replacement.find(":any:`");
+      if(start_pos==std::string::npos)
+        break;
+      else
+        replaced = true;
+      auto rest = replacement.substr(start_pos+6); //first character after ":any:`"
+      auto end = rest.find("`");
+      cout << "start pos: " << start_pos << ", end pos: " << end << endl;
+      replacement.replace(start_pos,end+7,rest.substr(0,end)); 
+    }
+  if(!replaced)
+    return replacement.c_str();
+  char * newchar = new char[replacement.size()+1];
+  std::copy(replacement.begin(),replacement.end(),newchar);
+  newchar[replacement.size()] = '\0';
+  return newchar;
+}
+
 void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
 
   py::class_<MPIManager>(m, "MPIManager")
