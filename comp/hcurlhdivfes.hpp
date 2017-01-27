@@ -43,24 +43,24 @@ public:
   static shared_ptr<FESpace> Create (shared_ptr<MeshAccess> ma, const Flags & flags);
 
   ///
-  virtual void Update(LocalHeap & lh);
+  virtual void Update(LocalHeap & lh) override;
   ///
-  virtual void DoArchive (Archive & archive);
+  virtual void DoArchive (Archive & archive) override;
   /// 
   virtual void UpdateCouplingDofArray();
 
   virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
 
   ///
-  virtual size_t GetNDof () const throw();
+  virtual size_t GetNDof () const throw() override;
   ///
-  virtual size_t GetNDofLevel (int level) const;
+  virtual size_t GetNDofLevel (int level) const override;
 
   /// 
   virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
 
   ///
-  virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const;
+  virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
   ///
   int EdgePoint1 (int ednr) const { return edgepoints[ednr][0]; }
   ///
@@ -77,7 +77,7 @@ public:
   enum { SB_AFW, SB_HIPTMAIR, SB_POTENTIAL, SB_JAC };
   ///
   virtual shared_ptr<Table<int>> CreateSmoothingBlocks (int type = 0) const;
-  virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & precflags) const;
+  virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & precflags) const override;
 
   SparseMatrix<double> * CreateGradient() const;
 
@@ -91,25 +91,25 @@ public:
   
   
   virtual void VTransformMR (ElementId ei, 
-			     SliceMatrix<double> mat, TRANSFORM_TYPE tt) const 
+			     SliceMatrix<double> mat, TRANSFORM_TYPE tt) const override
   {
     TransformMat (ei, mat, tt);
   }
 
   virtual void VTransformMC (ElementId ei, 
-			     SliceMatrix<Complex> mat, TRANSFORM_TYPE tt) const
+			     SliceMatrix<Complex> mat, TRANSFORM_TYPE tt) const override
   {
     TransformMat (ei, mat, tt);
   }
 
   virtual void VTransformVR (ElementId ei, 
-			     SliceVector<double> vec, TRANSFORM_TYPE tt) const 
+			     SliceVector<double> vec, TRANSFORM_TYPE tt) const override
   {
     TransformVec (ei, vec, tt);
   }
 
   virtual void VTransformVC (ElementId ei, 
-			     SliceVector<Complex> vec, TRANSFORM_TYPE tt) const 
+			     SliceVector<Complex> vec, TRANSFORM_TYPE tt) const override
   {
     TransformVec (ei, vec, tt);
   }
@@ -117,16 +117,16 @@ public:
 
 
 
-  virtual string GetClassName () const
+  virtual string GetClassName () const override
   {
     return "NedelecFESpace";
   }
 
 
-  virtual void GetVertexDofNrs (int vnr, Array<DofId> & dnums) const;
-  virtual void GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const;
-  virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const;
-  virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const;
+  virtual void GetVertexDofNrs (int vnr, Array<DofId> & dnums) const override;
+  virtual void GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const override;
+  virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const override;
+  virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const override;
 };
 
 
@@ -187,22 +187,22 @@ public:
   virtual const char * GetType() 
     { return "Nedelec2"; }
 
-  virtual string GetClassName () const
+  virtual string GetClassName () const override
   {
     return "NedelecFESpace2";
   }
 
 
   ///
-  virtual void Update(LocalHeap & lh);
+  virtual void Update(LocalHeap & lh) override;
 
   ///
-  virtual size_t GetNDof () const throw();
+  virtual size_t GetNDof () const throw() override;
   ///
-  virtual size_t GetNDofLevel (int level) const;
+  virtual size_t GetNDofLevel (int level) const override;
 
   ///
-  virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const;
+  virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
 
   using FESpace::GetFE;
   virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
@@ -230,13 +230,13 @@ public:
 
 
   virtual void VTransformMR (ElementId ei, 
-			     SliceMatrix<double> mat, TRANSFORM_TYPE tt) const 
+			     SliceMatrix<double> mat, TRANSFORM_TYPE tt) const override
   {
     TransformMat (ei, mat, tt);
   }
 
   virtual void VTransformMC (ElementId ei, 
-			     SliceMatrix<Complex> mat, TRANSFORM_TYPE tt) const
+			     SliceMatrix<Complex> mat, TRANSFORM_TYPE tt) const override
   {
     TransformMat (ei, mat, tt);
   }
@@ -244,13 +244,13 @@ public:
 
 
   virtual void VTransformVR (ElementId ei, 
-			     SliceVector<double> vec, TRANSFORM_TYPE tt) const 
+			     SliceVector<double> vec, TRANSFORM_TYPE tt) const override
   {
     TransformVec (ei, vec, tt);
   }
 
   virtual void VTransformVC (ElementId ei, 
-			     SliceVector<Complex> vec, TRANSFORM_TYPE tt) const 
+			     SliceVector<Complex> vec, TRANSFORM_TYPE tt) const override
   {
     TransformVec (ei, vec, tt);
   }
@@ -259,7 +259,7 @@ public:
   virtual void LockSomeDofs (BaseMatrix & mat) const;
   ///
   // virtual Table<int> * CreateSmoothingBlocks (int type = 0) const;
-  virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & precflags) const;
+  virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & precflags) const override;
   /// for anisotropic plane smoothing
   virtual BitArray * CreateIntermediatePlanes (int type = 0) const;
 
@@ -267,13 +267,13 @@ public:
   SparseMatrix<double> * CreateGradient() const;
 
   
-  virtual Array<int> * CreateDirectSolverClusters (const Flags & flags) const;
+  virtual Array<int> * CreateDirectSolverClusters (const Flags & flags) const override;
 
 
-  virtual void GetVertexDofNrs (int vnr, Array<DofId> & dnums) const;
-  virtual void GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const;
-  virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const;
-  virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const;
+  virtual void GetVertexDofNrs (int vnr, Array<DofId> & dnums) const override;
+  virtual void GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const override;
+  virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const override;
+  virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const override;
 
 //  void AddGradient (double fac, const BaseVector & pot, BaseVector & grad) const;
 //  void ApplyGradientT (const BaseVector & gradt, BaseVector & pott) const;

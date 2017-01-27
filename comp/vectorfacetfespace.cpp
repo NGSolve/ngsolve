@@ -436,9 +436,7 @@ namespace ngcomp
           }        
       }
       case BBND:
-        {
-          Exception ("VectorFacetFESpace::GetFE doesnt support BBND");
-        }
+        throw Exception ("VectorFacetFESpace::GetFE doesnt support BBND");
       }
   }
   // const FiniteElement & VectorFacetFESpace :: GetFE ( int elnr, LocalHeap & lh ) const

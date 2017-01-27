@@ -77,7 +77,15 @@ namespace ngfem
 
   public:
 
+    /*
     void SetVertexNumbers (FlatArray<int> & avnums)
+    {
+      for (int i = 0; i < avnums.Size(); i++)
+	vnums[i] = avnums[i];
+    }
+    */
+    template <typename T>
+    void SetVertexNumbers (const BaseArrayObject<T> & avnums)
     {
       for (int i = 0; i < avnums.Size(); i++)
 	vnums[i] = avnums[i];
