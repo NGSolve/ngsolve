@@ -2,6 +2,7 @@ stages:
   - build
   - test
   - cleanup
+  - deploy
 
 ############################################
 # System templates
@@ -21,7 +22,11 @@ stages:
     - set INSTALL_DIR=%CI_DIR%\install
     - set NETGENDIR=%INSTALL_DIR%\bin
     - set PYTHONPATH=%INSTALL_DIR%\lib\site-packages
-    - set PYTHON_CONFIG=-DPYTHON_LIBRARIES=C:/Python3.5_32/libs/python35.lib -DPYTHON_INCLUDE_DIRS=C:/Python3.5_32/include -DPYTHON_EXECUTABLE=C:/Python3.5_32/python.exe
+    - set UPLOAD_USER=tester
+    - set UPLOAD_SERVER=open sftp://%UPLOAD_USER%:%UPLOAD_PASS%@vector.asc.tuwien.ac.at/ -hostkey=""ecdsa-sha2-nistp256 256 a6:6b:08:75:c2:b7:57:9a:97:03:bb:9e:24:7e:9c:b7""
+    - set UPLOAD_DIR=/home/tester/deploy/win32/%CI_BUILD_REF%/
+    - set UPLOAD_FILE=NGSuite-6.2-dev-win32.msi
+    - set MKL_CONFIG=-DUSE_MKL=OFF
 
 .template_windows_64: &win64
   tags:
@@ -36,7 +41,11 @@ stages:
     - set INSTALL_DIR=%CI_DIR%\install
     - set NETGENDIR=%INSTALL_DIR%\bin
     - set PYTHONPATH=%INSTALL_DIR%\lib\site-packages
-    - set PYTHON_CONFIG=-DPYTHON_LIBRARIES=C:/Python3.5/libs/python35.lib -DPYTHON_INCLUDE_DIRS=C:/Python3.5/include -DPYTHON_EXECUTABLE=C:/Python3.5/python.exe
+    - set UPLOAD_USER=tester
+    - set UPLOAD_SERVER=open sftp://%UPLOAD_USER%:%UPLOAD_PASS%@vector.asc.tuwien.ac.at/ -hostkey=""ecdsa-sha2-nistp256 256 a6:6b:08:75:c2:b7:57:9a:97:03:bb:9e:24:7e:9c:b7""
+    - set UPLOAD_DIR=/home/tester/deploy/win64/%CI_BUILD_REF%/
+    - set UPLOAD_FILE=NGSuite-6.2-dev-win64.msi
+    - set MKL_CONFIG=-DUSE_MKL=ON -DMKL_STATIC=ON -DMKL_ROOT="C:/Program Files (x86)/IntelSWTools/compilers_and_libraries/windows/mkl"
 
 # Linux
 .template_ubuntu: &ubuntu
@@ -51,11 +60,28 @@ stages:
   <<: *ubuntu
   variables:
     UBUNTU_VERSION: "15.10"
+    UBUNTU_VERSION_NAME: "wily"
 
 .template_ubuntu_1604: &ubuntu_1604
   <<: *ubuntu
   variables:
     UBUNTU_VERSION: "16.04"
+    UBUNTU_VERSION_NAME: "xenial"
+
+# MacOSX
+.template_mac: &mac
+  tags:
+    - mac
+  before_script:
+    - export BUILD_DIR=/tmp/$CI_BUILD_REF
+    - export INSTALL_DIR=/tmp/$CI_BUILD_REF/install
+    - export MACOSX_DEPLOYMENT_TARGET=10.9
+    - export PYTHONPATH=$INSTALL_DIR/Netgen.app/Contents/Resources/lib/python3.6/site-packages:.
+    - export NETGENDIR=$INSTALL_DIR/Netgen.app/Contents/MacOS
+    - export DYLD_LIBRARY_PATH=$NETGENDIR
+    - export DYLD_FRAMEWORK_PATH=$NETGENDIR/../Frameworks
+    - export PATH=$NETGENDIR:$PATH
+    - export CCACHE_LOGFILE=/tmp/$CI_BUILD_REF.debug
 
 ############################################
 # Build stage
@@ -71,14 +97,14 @@ stages:
     - cd %NETGEN_BUILD_DIR%
     - >-
         cmake %CI_PROJECT_DIR%
-        %PYTHON_CONFIG%
         -G"%CMAKE_GENERATOR%"
         -DINSTALL_DIR=%INSTALL_DIR%
-        -DUSE_MKL=ON
-        -DMKL_STATIC=ON
+        %MKL_CONFIG%
         -DUSE_UMFPACK=ON
         -DCMAKE_BUILD_TYPE=Release
     - cmake --build . --target INSTALL --config Release
+    - cmake --build . --target PACKAGE --config Release
+    - winscp.com /command "%UPLOAD_SERVER%" "mkdir %UPLOAD_DIR%" "put %UPLOAD_FILE%  %UPLOAD_DIR%" "exit"
 
 build_win32:
   <<: *win32
@@ -99,7 +125,10 @@ build_win64:
       --cidfile ngsolve_${CI_BUILD_REF_NAME}_$UBUNTU_VERSION.id
       -e MKLROOT=/opt/intel/mkl
       -e NETGENDIR=/opt/netgen/bin
+      -e UBUNTU_VERSION_NAME=$UBUNTU_VERSION_NAME
+      -e CI_BUILD_REF=$CI_BUILD_REF
       -e CCACHE_DIR=/ccache
+      -e SSH_PRIVATE_KEY="$SSH_PRIVATE_KEY"
       -v /opt/intel:/opt/intel
       -v /mnt/ccache:/ccache ngsolve_${CI_BUILD_REF_NAME}:$UBUNTU_VERSION
       bash /root/src/ngsolve/tests/build.sh
@@ -112,6 +141,21 @@ build_ubuntu_1510:
 build_ubuntu_1604:
   <<: *ubuntu_1604
   <<: *build_linux
+
+build_mac:
+  <<: *mac
+  stage: build
+  script:
+    - git submodule update --init --recursive
+    - rm -rf $BUILD_DIR
+    - mkdir $BUILD_DIR
+    - cd $BUILD_DIR
+    - cmake $CI_PROJECT_DIR -DINSTALL_DIR=$INSTALL_DIR -DUSE_CCACHE=ON -DCMAKE_BUILD_TYPE=Release
+    - make -j10 install
+    - osascript -e 'tell application "Finder" to eject (every disk whose ejectable is true)'
+    - make bundle
+    - ssh tester@vector.asc.tuwien.ac.at "mkdir -p /home/tester/deploy/macos/$CI_BUILD_REF/"
+    - scp *.dmg tester@vector.asc.tuwien.ac.at:/home/tester/deploy/macos/$CI_BUILD_REF/
 
 ############################################
 # Test stage
@@ -156,6 +200,13 @@ test_ubuntu_1604:
   <<: *ubuntu_1604
   <<: *test_linux
 
+test_mac:
+  <<: *mac
+  stage: test
+  script:
+    - cd $BUILD_DIR
+    - make test_ngsolve
+
 ############################################
 # Cleanup stage
 ############################################
@@ -177,6 +228,7 @@ win64_cleanup:
     - windows
     - x64
   script:
+    - cd %CI_PROJECT_DIR%
     - rd /s /q %CI_DIR%
   when: always
   allow_failure: true
@@ -188,7 +240,28 @@ win32_cleanup:
     - windows
     - x86
   script:
-    - rd /s /q %INSTALL_DIR%
+    - cd %CI_PROJECT_DIR%
+    - rd /s /q %CI_DIR%
   when: always
   allow_failure: true
 
+cleanup_mac:
+  <<: *mac
+  stage: cleanup
+  script:
+    - rm -rf $BUILD_DIR
+  when: always
+  allow_failure: true
+
+############################################
+# Deploy stage
+############################################
+
+deploy_latest:
+  stage: deploy
+  tags:
+    - linux
+  script:
+    - docker run ngsolve_${CI_BUILD_REF_NAME}_installed /root/src/ngsolve/tests/deploy.sh
+  when: manual
+  environment: deploy_latest
