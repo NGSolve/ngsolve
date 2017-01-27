@@ -309,7 +309,7 @@ void ExportPml(py::module &m)
           bounds = 0.;
           if (py::extract<double>(mins).check())
             for (int j : Range(3))
-              bounds.(i,0)=py::extract<double>(mins)();
+              bounds(i,0)=py::extract<double>(mins)();
 
           else if (py::extract<py::tuple>(mins).check())
           {
@@ -320,7 +320,7 @@ void ExportPml(py::module &m)
 
           if (py::extract<double>(maxs).check())
             for (int j : Range(3))
-              bounds.(j,1)=py::extract<double>(maxs)();
+              bounds(j,1)=py::extract<double>(maxs)();
 
           else if (py::extract<py::tuple>(maxs).check())
           {
