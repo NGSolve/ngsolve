@@ -346,13 +346,14 @@ namespace ngcomp
   {
     switch (ma->GetElType(ei))
       {
-      case ET_TET:     return *(new (lh) FE_NedelecTet1);
-      case ET_PRISM:   return *(new (lh) FE_NedelecPrism1);
-      case ET_PYRAMID: return *(new (lh) FE_NedelecPyramid1);
-      case ET_TRIG:    return *(new (lh) FE_NedelecTrig1);
-      case ET_QUAD:    return *(new (lh) FE_NedelecQuad1);
-      case ET_SEGM:    return *(new (lh) FE_NedelecSegm1);
-      case ET_HEX:     return *(new (lh) FE_NedelecHex1);
+      case ET_TET:     return * new (lh) FE_NedelecTet1;
+      case ET_PRISM:   return * new (lh) FE_NedelecPrism1;
+      case ET_PYRAMID: return * new (lh) FE_NedelecPyramid1;
+      case ET_TRIG:    return * new (lh) FE_NedelecTrig1;
+      case ET_QUAD:    return * new (lh) FE_NedelecQuad1;
+      case ET_SEGM:    return * new (lh) FE_NedelecSegm1;
+      case ET_HEX:     return * new (lh) FE_NedelecHex1;
+      default:
         throw Exception ("Inconsistent element type in NedelecFESpace::GetFE");
       }
   }

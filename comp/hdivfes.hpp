@@ -36,33 +36,33 @@ namespace ngcomp
     static shared_ptr<FESpace> Create (shared_ptr<MeshAccess> ma, const Flags & flags);
 
     ///
-    virtual void Update(LocalHeap & lh);
+    virtual void Update(LocalHeap & lh) override;
 
     virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
     ///
-    virtual size_t GetNDof () const throw();
+    virtual size_t GetNDof () const throw() override;
     ///
-    virtual size_t GetNDofLevel (int level) const;
+    virtual size_t GetNDofLevel (int level) const override;
 
     ///
-    virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const;
+    virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
     ///
     // virtual Table<int> * CreateSmoothingBlocks (int type = 0) const;
 
 
     virtual void VTransformMR (ElementId ei, 
-			       const SliceMatrix<double> mat, TRANSFORM_TYPE tt) const;
+			       const SliceMatrix<double> mat, TRANSFORM_TYPE tt) const override;
     virtual void VTransformMC (ElementId ei, 
-			       const SliceMatrix<Complex> mat, TRANSFORM_TYPE tt) const { ; }
+			       const SliceMatrix<Complex> mat, TRANSFORM_TYPE tt) const override { ; }
 
     virtual void VTransformVR (ElementId ei, 
-			       const SliceVector<double> vec, TRANSFORM_TYPE tt) const;
+			       const SliceVector<double> vec, TRANSFORM_TYPE tt) const override;
     virtual void VTransformVC (ElementId ei, 
-			       const SliceVector<Complex> vec, TRANSFORM_TYPE tt) const { ; }
+			       const SliceVector<Complex> vec, TRANSFORM_TYPE tt) const override { ; }
 
     void GetTransformationFactors (int elnr, FlatVector<> & fac) const;
 
-    virtual string GetClassName () const
+    virtual string GetClassName () const override
     {
       return "RaviartThomasFESpace";
     }

@@ -181,21 +181,18 @@ namespace ngcomp
     
     nowirebasket = flags.GetDefineFlag ("nowirebasket");
     
-    // TODO: Evaluator for shape tester 
-    static ConstantCoefficientFunction one(1);
+    auto one = make_shared<ConstantCoefficientFunction>(1);
     if (ma->GetDimension() == 2)
       {
-        // integrator = make_shared<MassIntegrator<2>> (&one);
         evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdFacet<2>>>();
         evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
-        integrator[BND] = make_shared<RobinIntegrator<2>> (&one);
+        integrator[BND] = make_shared<RobinIntegrator<2>> (one);
       }
     else
       {
-        // integrator = make_shared<MassIntegrator<3>> (&one);
         evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdFacet<3>>>();
 	evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
-        integrator[BND] = make_shared<RobinIntegrator<3>> (&one);
+        integrator[BND] = make_shared<RobinIntegrator<3>> (one);
       }
 
     if (dimension > 1)
@@ -496,12 +493,14 @@ namespace ngcomp
             throw Exception (str.str());
           }
 
-        ArrayMem<int, 12> vnums;
+        // ArrayMem<int, 12> vnums;
         ArrayMem<int, 6> fanums, order_fa;
     
-        ma->GetElVertices(ei, vnums);
+        // ma->GetElVertices(ei, vnums);
         ma->GetElFacets (ei, fanums);
 
+        auto vnums = ma->GetElVertices(ei);
+        
         order_fa.SetSize(fanums.Size());
         for (int j = 0; j < fanums.Size(); j++)
           order_fa[j] = order_facet[fanums[j]][0]; //SZ not yet anisotropric
