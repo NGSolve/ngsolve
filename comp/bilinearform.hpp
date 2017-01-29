@@ -429,22 +429,20 @@ namespace ngcomp
 
     ///
     void AddMatrix1 (SCAL val, const BaseVector & x,
-		     BaseVector & y, LocalHeap & lh) const;
+            BaseVector & y, LocalHeap & lh) const;
 
     virtual void AddMatrix (double val, const BaseVector & x,
-			    BaseVector & y, LocalHeap & lh) const
+                BaseVector & y, LocalHeap & lh) const
     {
       AddMatrix1 (val, x, y, lh);
     }
 
     virtual void AddMatrixTP (SCAL val, const BaseVector & x,
-			    BaseVector & y, LocalHeap & lh) const;
+                BaseVector & y, LocalHeap & lh) const;
                 
-    virtual void AddMatrixTP1 (SCAL val, const BaseVector & x,
-			    BaseVector & y, LocalHeap & lh) const;
                 
     virtual void AddMatrix (Complex val, const BaseVector & x,
-			    BaseVector & y, LocalHeap & lh) const
+                BaseVector & y, LocalHeap & lh) const
     {
       AddMatrix1 (ConvertTo<SCAL> (val), x, y, lh);
     }

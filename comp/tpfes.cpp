@@ -164,7 +164,7 @@ namespace ngcomp
       {
         HeapReset hr(clh);
         int index = GetIndex(i,j);
-        GetDofNrs(index,dnums);
+        GetDofNrs(ElementId(index),dnums);
         FlatVector<> elvec(dnums.Size(),clh);
         vec_in.GetIndirect(dnums,elvec);
         const TPHighOrderFE & tpfel = dynamic_cast<const TPHighOrderFE &>(GetFE(ElementId(index),clh));
@@ -190,7 +190,7 @@ namespace ngcomp
       {
         HeapReset hr(lh);
         int index = GetIndex(i,j);
-        GetDofNrs(index,dnums);
+        GetDofNrs(ElementId(index),dnums);
         FlatVector<> elvec_out(dnums.Size(),lh);
         FlatMatrix<> elmat_out(dnumsx.Size(),dnums.Size()/dnumsx.Size(),&elvec_out(0));
         elmat_out = 0.0;
@@ -252,20 +252,7 @@ namespace ngcomp
     TPHighOrderFE * fe = new (lh) TPHighOrderFE (els);
     return *fe;
   }
-  /*
-  const FiniteElement & TPHighOrderFESpace::GetFE (int elnr, LocalHeap & lh) const
-  {
-    ArrayMem<int,2> elnums(2);
-    GetIndices(elnr, elnums);
-    ArrayMem<const FiniteElement *,2> els(2);
-    const FiniteElement & ref_elx = space_x->GetFE( ElementId(VOL,elnums[0]), lh );
-    els[0] = &ref_elx;
-    const FiniteElement & ref_ely = Space(elnums[0])->GetFE( ElementId(VOL,elnums[1]), lh );
-    els[1] = &ref_ely;
-    TPHighOrderFE * fe =  new (lh) TPHighOrderFE (els);
-    return *fe;
-  }
-  */
+
   ngfem::ElementTransformation & TPHighOrderFESpace::GetTrafo (ElementId ei, Allocator & lh) const
   {
      TPElementTransformation *trafo = new (lh) TPElementTransformation ( ei );
@@ -278,16 +265,6 @@ namespace ngcomp
      trafos[1] = &(Space(eiix.Nr())->GetMeshAccess()->GetTrafo(eiiy,lh));
      trafo->SetTrafos(trafos);
      return *trafo;
-  }
-  /*
-  const FiniteElement & TPHighOrderFESpace::GetSFE (int elnr, LocalHeap & lh) const
-  {
-    throw Exception("TPHighOrderFESpace::GetSFE() not implemented");
-  }
-  */
-  const FiniteElement & TPHighOrderFESpace::GetFacetFE (int fnr, LocalHeap & lh) const
-  {
-    throw Exception("TPHighOrderFESpace::GetFacetFE() not implemented");
   }
 
   void TPHighOrderFESpace::GetDofRanges (ElementId ei, Array<IntRange> & dranges) const
@@ -303,12 +280,10 @@ namespace ngcomp
     ArrayMem<int,2> indices;
     ArrayMem<int,100> dnumsx, dnumsy;
     GetIndices(ei.Nr(),indices);
-    space_x->GetDofNrs(indices[0],dnumsx);
-    Space(indices[0])->GetDofNrs(indices[1],dnumsy);
+    space_x->GetDofNrs(ElementId(indices[0]),dnumsx);
+    Space(indices[0])->GetDofNrs(ElementId(indices[1]),dnumsy);
     dnums.SetSize(dnumsx.Size()*dnumsy.Size());
-    int ii=0;
-    // new -> working!!!!
-    for(int i=0;i<dnumsx.Size();i++)
+    for(int i=0,ii=0;i<dnumsx.Size();i++)
       for(int j=0;j<dnumsy.Size();j++,ii++)
         dnums[ii] = Space(indices[0])->GetNDof()*dnumsx[i]+dnumsy[j];
   }
@@ -326,7 +301,7 @@ namespace ngcomp
       space_x->GetDofNrs(ei,dnumsx);
       for(int el=0;el<nels[direction];el++)
       {
-        Space(ei.Nr())->GetDofNrs(el,dnumsy);
+        Space(ei.Nr())->GetDofNrs(ElementId(el),dnumsy);
         alldnums.Range(totsize,totsize+dnumsy.Size()) = dnumsy;
         totsize+=dnumsy.Size();
       }
@@ -339,10 +314,10 @@ namespace ngcomp
     else
     {
       Array<int> alldnums(space_x->GetNDof());
-      spaces_y[0]->GetDofNrs(ei,dnumsy);
+      spaces_y[0]->GetDofNrs(ElementId(ei),dnumsy);
       for(int el=0;el<nels[direction];el++)
       {
-        space_x->GetDofNrs(el,dnumsx);
+        space_x->GetDofNrs(ElementId(el),dnumsx);
         alldnums.Range(totsize,totsize+dnumsx.Size()) = dnumsx;
         totsize+=dnumsx.Size();
       }
@@ -358,26 +333,6 @@ namespace ngcomp
   shared_ptr<Table<int>> TPHighOrderFESpace::CreateSmoothingBlocks (const Flags & precflags) const
   {
     throw Exception("TPHighOrderFESpace::CreateSmoothingBlocks() not implemented");
-  }
-
-  void TPHighOrderFESpace::GetVertexDofNrs (int vnr, Array<int> & dnums) const
-  {
-    throw Exception("TPHighOrderFESpace::GetVertexDofNumbers() not implemented");
-  }
-
-  void TPHighOrderFESpace::GetEdgeDofNrs (int ednr, Array<int> & dnums) const
-  {
-    throw Exception("TPHighOrderFESpace::GetEdgeDofNrs() not implemented");
-  }
-
-  void TPHighOrderFESpace::GetFaceDofNrs (int fanr, Array<int> & dnums) const
-  {
-    throw Exception("TPHighOrderFESpace::GetFaceDofNrs() not implemented");
-  }
-
-  void TPHighOrderFESpace::GetInnerDofNrs (int elnr, Array<int> & dnums) const
-  {
-    throw Exception("TPHighOrderFESpace::GetInnerDofNumbers() not implemented");
   }
 
   void IterateElementsTP (const FESpace & fes, VorB vb, LocalHeap & clh, 
@@ -507,8 +462,9 @@ namespace ngcomp
       int elnr = tpfes->GetIndex(ind);
       TPHighOrderFE & tpfel = dynamic_cast<TPHighOrderFE&>(tpfes->GetFE(ElementId(elnr),lh));
       int elnrstd = elnr;
+      //int elnrstd = ind[1]*fesx->GetMeshAccess()->GetNE() + ind[0];
       const FiniteElement & fel = fes->GetFE(ElementId(elnrstd),lh);
-      Array<const IntegrationRule *> irs(tpfel.elements.Size());
+      ArrayMem<const IntegrationRule *,2> irs(tpfel.elements.Size());
       for(int s=0;s<irs.Size();s++)
         irs[s] = &SelectIntegrationRule(tpfel.elements[s]->ElementType(),2*fel.Order());
       TPIntegrationRule ir(irs);
@@ -518,8 +474,10 @@ namespace ngcomp
       for(int s=0;s<ir(0).Size();s++)
         for(int t=0;t<ir(1).Size();t++)
         {
-          if(fesx->GetMeshAccess()->GetDimension() == 1 )
+          if(fesx->GetMeshAccess()->GetDimension() == 1 &&  fesy->GetMeshAccess()->GetDimension() == 1)
               irstd.AddIntegrationPoint(IntegrationPoint(ir(0)[s](0),ir(1)[t](0),ir(1)[t](1), ir(0)[s].Weight()*ir(1)[t].Weight()));
+          if(fesx->GetMeshAccess()->GetDimension() == 1 &&  fesy->GetMeshAccess()->GetDimension() == 2)
+              irstd.AddIntegrationPoint(IntegrationPoint(ir(1)[t](0),ir(1)[t](1),ir(0)[s](0), ir(0)[s].Weight()*ir(1)[t].Weight()));
           if(fesx->GetMeshAccess()->GetDimension() == 2 )
               irstd.AddIntegrationPoint(IntegrationPoint(ir(0)[s](0),ir(0)[s](1),ir(1)[t](0), ir(0)[s].Weight()*ir(1)[t].Weight()));
          }
@@ -553,7 +511,7 @@ namespace ngcomp
       y = elmat*elvec;
       BaseVector & baseout = gfustd->GetVector();
       fes->GetDofNrs(ElementId(VOL,elnrstd),dnums);
-      baseout.SetIndirect(dnums,y);    
+      baseout.SetIndirect(dnums,y);
     });
   }
 

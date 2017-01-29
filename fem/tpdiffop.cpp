@@ -131,7 +131,7 @@ namespace ngfem {
             FlatMatrix<> resultmat(nipx*dimx,x.Width(), lh);
             resultmat = bmatx*x;
             for(int k=0;k<x.Height();k+=2)
-              flux.Rows(k*nipx,(k+1)*nipx) = Trans(resultmat.Rows(k,k+1));
+              flux.Rows(k*nipx,(k+1)*nipx) = Trans(resultmat.Rows(dimx*k,dimx*(k+1)));
           }
         }
 
@@ -145,7 +145,7 @@ namespace ngfem {
           int dimx = evaluators[0]->Dim();
           int dimy = evaluators[1]->Dim();
           int nipx = mirx.IR().Size();
-          int nipy = flux.Height()/(dimy*dimx*nipx);
+          int nipy = flux.Height()/nipx;
           FlatMatrix<double, ColMajor> bmatx( nipx*dimx, fel.GetNDof(),lh );
           evaluators[0]->CalcMatrix(fel,mirx,bmatx,lh);
           if(dimx == 1)
@@ -183,10 +183,10 @@ namespace ngfem {
           }
           else
           {
-            FlatMatrix<> resultmat(x.Height(),nipy*dimy, lh);
+            FlatMatrix<double, ColMajor> resultmat(x.Height(),nipy*dimy, lh);
             resultmat = x*Trans(bmaty);
-            for(int k=0;k<x.Height();k+=2)
-              flux.Rows(k*nipy,(k+1)*nipy) = Trans(resultmat.Rows(k,k+1));
+            for(int k=0;k<x.Height()/dimx;k++)
+              flux.Rows(k*nipy,(k+1)*nipy) = Trans(resultmat.Rows(dimx*k,dimx*(k+1)));
           }
         }
 
@@ -200,7 +200,7 @@ namespace ngfem {
           int dimx = evaluators[0]->Dim();
           int dimy = evaluators[1]->Dim();
           int nipy = miry.IR().Size();
-          int nipx = flux.Height()/(dimx*dimy*nipy);
+          int nipx = flux.Height()/nipy;
           FlatMatrix<double, ColMajor> bmaty( nipy*dimy, fel.GetNDof(),lh );
           evaluators[1]->CalcMatrix(fel,miry,bmaty,lh);
           if(dimx == 1)
