@@ -2691,329 +2691,8 @@ namespace ngcomp
   }
 
 
-
    template<class SCAL>
    void S_BilinearForm<SCAL> :: AddMatrixTP(SCAL val, const BaseVector & x, BaseVector & y, LocalHeap & clh) const
-   {
-     static Timer timerall ("Apply Matrix (TP) - all");
-     static Timer timervol ("Apply Matrix (TP) - volume");
-     static Timer timerfac1 ("Apply Matrix (TP) - facets 1");
-     static Timer timerfac2 ("Apply Matrix (TP) - facets 2");
-     RegionTimer rall(timerall);
-     bool hasbound = false;
-     bool hasinner = false;
-     bool hasskeletonbound = false;
-     bool hasskeletoninner = false;
-     for(int j=0;j<parts.Size();j++)
-     {
-       const BilinearFormIntegrator & bfi = *GetIntegrator(j);
-       if (bfi.BoundaryForm())
-         if (bfi.SkeletonForm())
-           hasskeletonbound = true;
-         else
-           hasbound = true;
-       else
-         if (bfi.SkeletonForm())
-           hasskeletoninner = true; 
-         else
-           hasinner = true;
-     }
-     // int cnt = 0;
-     if(hasinner)
-     {
-       RegionTimer reg (timervol);
-       IterateElementsTP 
-       (*fespace, VOL, clh, 
-       [&] (ElementId ei0,ElementId ei1, LocalHeap & lh)
-       {
-         shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace > (fespace);
-         const Array<shared_ptr<FESpace> > & spaces = tpfes->Spaces(ei0.Nr());
-         if ( !spaces[0]->DefinedOn (ei0) || !spaces[1]->DefinedOn(ei1) ) return;
-         int elnr = tpfes->GetIndex(ei0.Nr(),ei1.Nr());
-         const FiniteElement & fel = tpfes->GetFE (elnr, lh);
-         ElementTransformation & eltrans = tpfes->GetTrafo (elnr, lh);
-         Array<int> dnums;
-         tpfes->GetDofNrs (elnr, dnums);
-         FlatVector<SCAL> elvecx (dnums.Size() * this->fespace->GetDimension(), lh);
-         FlatVector<SCAL> elvecy (dnums.Size() * this->fespace->GetDimension(), lh);
-         x.GetIndirect (dnums, elvecx);
-         int type = 0;
-         this->fespace->TransformVec (ElementId (VorB(type), elnr), elvecx, TRANSFORM_SOL);
-         for (int j = 0; j < this->NumIntegrators(); j++)
-         {
-           BilinearFormIntegrator & bfi = *this->parts[j];
-           if (bfi.SkeletonForm()) continue;
-           if (type == 0 && bfi.BoundaryForm()) continue;
-           //if (type == 0 && !bfi.DefinedOn (tpfes->Space(0)->GetMeshAccess()->GetElIndex (ei0.Nr()))) continue;
-           //if (type == 0 && !bfi.DefinedOn (tpfes->Space(1)->GetMeshAccess()->GetElIndex (ei1.Nr()))) continue;
-           if (this->precompute)
-             bfi.ApplyElementMatrix (fel, eltrans, elvecx, elvecy, 
-                                this->precomputed_data[elnr*this->NumIntegrators()+j], lh);
-           else
-             bfi.ApplyElementMatrix (fel, eltrans, elvecx, elvecy, NULL, lh);
-           this->fespace->TransformVec (ElementId(VorB(type),elnr), elvecy, TRANSFORM_RHS);
-           elvecy *= val;
-           y.AddIndirect (dnums, elvecy);
-         }
-       });
-     }
-     bool needs_facet_loop = false;
-     bool needs_element_boundary_loop = false;
-     bool neighbor_testfunction = false;
-     if (hasskeletonbound||hasskeletoninner)
-     {
-       for (int j = 0; j < NumIntegrators(); j++)
-         if (parts[j] -> SkeletonForm())
-         {
-           auto dgform = parts[j] -> GetDGFormulation();
-           if (!dgform.element_boundary && !parts[j]->BoundaryForm())
-             needs_facet_loop = true;
-           if (dgform.element_boundary)
-             needs_element_boundary_loop = true;
-         }
-       // do we need locks for neighbor - testfunctions ?
-       for (int j = 0; j < NumIntegrators(); j++)
-         if (parts[j] -> SkeletonForm())
-         {
-           auto dgform = parts[j] -> GetDGFormulation();
-           if (dgform.neighbor_testfunction)
-             neighbor_testfunction = true;
-         }
-       if (needs_facet_loop && !fespace->UsesDGCoupling())
-         throw Exception ("skeleton-form needs \"dgjumps\" : True flag for FESpace");
-     }
-     else
-       return;
-     shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace > (fespace);
-     const Array<shared_ptr<FESpace> > & spaces = tpfes->Spaces(0);
-     auto & nels = tpfes->GetNels();
-     auto & nfacets = tpfes->GetNFacets();
-     timerfac1.Start();
-     for(auto colfacets : spaces[0]->FacetColoring() )
-     {
-       ParallelForRange( colfacets.Size(), [&] (IntRange r)
-       {
-         LocalHeap lh = clh.Split();
-         for(int i : r)
-           for(int j=0;j<nels[1];j++)
-           {
-             HeapReset hr(lh);
-             Array<int> elnums_x(2, lh), elnums_per_x(2,lh), fnums1_x(6, lh), fnums2_x(6, lh), vnums1(8, lh), vnums2(8, lh);
-             int facet_x = colfacets[i];
-             int facet2_x = colfacets[i];
-             // Horzontal edge - get facet elements w.r.t. first direction
-             spaces[0]->GetMeshAccess()->GetFacetElements (facet_x, elnums_x);
-             int el1_x = elnums_x[0];
-             int el1 = tpfes->GetIndex(el1_x,j);
-             if(elnums_x.Size() < 2)
-             {
-               facet2_x = spaces[0]->GetMeshAccess()->GetPeriodicFacet(facet_x);
-               if(facet2_x > facet_x)
-               {
-                 ma->GetFacetElements (facet2_x, elnums_per_x);
-                 elnums_x.Append(elnums_per_x[0]);
-               }
-               else if(facet2_x < facet_x)
-                 continue;
-             }             
-             if(elnums_x.Size() < 2)
-             {
-               spaces[0]->GetMeshAccess()->GetFacetSurfaceElements(facet_x, elnums_x);
-               spaces[0]->GetMeshAccess()->GetElFacets(el1_x,fnums1_x);
-               int facnr_x = fnums1_x.Pos(facet_x);
-               int sel = elnums_x[0];
-               ElementId ei1(VOL,el1);
-               ElementId sei(BND,sel);
-               spaces[0]->GetMeshAccess()->GetElVertices (el1_x, vnums1);
-               spaces[0]->GetMeshAccess()->GetSElVertices (sel, vnums2);
-               //Array<int> indices(2);
-               //indices[0] = el1_x; indices[1] = j;
-               ElementTransformation & eltrans = tpfes->GetTrafo (ei1, lh);
-               ElementTransformation & seltrans = spaces[0]->GetMeshAccess()->GetTrafo (sei, lh);
-               const FiniteElement & fel = tpfes->GetFE (ei1, lh);
-               Array<int> dnums(fel.GetNDof(), lh);
-               tpfes->GetDofNrs (ei1, dnums);
-               FlatVector<SCAL> elx(dnums.Size()*this->fespace->GetDimension(), lh), ely(dnums.Size()*this->fespace->GetDimension(), lh);
-               x.GetIndirect(dnums, elx);                
-               for (int s = 0; s < NumIntegrators(); s++)
-               {
-                 BilinearFormIntegrator & bfi = *parts[s];
-                 if (!bfi.BoundaryForm()) continue;  
-                 if (!bfi.SkeletonForm()) continue;
-                 if (bfi.GetDGFormulation().element_boundary) continue;
-                 FacetBilinearFormIntegrator * fbfi = dynamic_cast<FacetBilinearFormIntegrator*>(&bfi);
-                 fbfi->ApplyFacetMatrix(fel,facnr_x,eltrans,vnums1, seltrans, vnums2, elx, ely, lh);
-                 y.AddIndirect(dnums, ely);
-               }
-             }
-             else
-             {
-               // The element facets:
-               spaces[0]->GetMeshAccess()->GetElFacets(el1_x,fnums1_x);
-               // TP Element number of the first element sharing the facet
-               ElementId ei1(VOL,el1);
-               // TP Element number of the second element sharing the facet
-               int el2_x = elnums_x[1];
-               //indices[0] = el2_x;
-               int el2 = tpfes->GetIndex(el2_x,j);
-               ElementId ei2(VOL,el2);
-               spaces[0]->GetMeshAccess()->GetElFacets(el2_x,fnums2_x);
-               // Local position of the facets
-               int facnr1_x = fnums1_x.Pos(facet_x);
-               int facnr2_x = fnums2_x.Pos(facet2_x);
-               //int facnr2_x = fnums2_x.Pos(facet_x);
-               // Element transformations and elements for both spaces
-               ElementTransformation & eltrans1 = tpfes->GetTrafo (ei1, lh);
-               ElementTransformation & eltrans2 = tpfes->GetTrafo (ei2, lh);
-               const FiniteElement & fel1 = tpfes->GetFE (el1, lh);
-               const FiniteElement & fel2 = tpfes->GetFE (el2, lh);
-               // Dof numbers of both TP volume elements
-               Array<int> dnums1(fel1.GetNDof(), lh);
-               Array<int> dnums2(fel2.GetNDof(), lh);
-               tpfes->GetDofNrs (el1, dnums1);
-               tpfes->GetDofNrs (el2, dnums2);
-               // vnums stores the elements vertex numbers (needed for facet2element trafo)
-               spaces[0]->GetMeshAccess()->GetElVertices (el1_x, vnums1);
-               spaces[0]->GetMeshAccess()->GetElVertices (el2_x, vnums2);
-               Array<int> dnums(fel1.GetNDof()+fel2.GetNDof(), lh);
-               // For DG we need both degrees of freedom, from the left and right facet element
-               dnums.Range(0, dnums1.Size()) = dnums1;
-               dnums.Range(dnums1.Size(), dnums.Size()) = dnums2;
-               // Element vectors, elx,ely
-               FlatVector<SCAL> elx(dnums.Size()*this->fespace->GetDimension(), lh),
-               ely(dnums.Size()*this->fespace->GetDimension(), lh);
-               x.GetIndirect(dnums, elx);
-               for (int j = 0; j < NumIntegrators(); j++)
-               {
-                 BilinearFormIntegrator * bfi = parts[j].get();
-                 if (!bfi->SkeletonForm()) continue;
-                 if ( bfi->BoundaryForm()) continue;
-                 if ( bfi->GetDGFormulation().element_boundary) continue;                                     
-                 FacetBilinearFormIntegrator * fbfi = dynamic_cast<FacetBilinearFormIntegrator*>(bfi);
-                 fbfi->ApplyFacetMatrix(fel1, facnr1_x, eltrans1, vnums1,
-                                        fel2, facnr2_x, eltrans2, vnums2,
-                                        elx, ely, lh);                                       
-                 y.AddIndirect(dnums, ely);
-               }
-             } // end: if elnums.Size != 1
-           } // end: inner element loop
-       });
-     } // end: for( auto colfacets : spaces[0]->FacetColoring )
-     timerfac1.Stop();
-     timerfac2.Start();
-     for(auto colels : spaces[0]->ElementColoring() )
-     {
-       ParallelForRange( colels.Size(), [&] (IntRange r)
-       {
-         LocalHeap lh = clh.Split();
-         for(int i: r)
-           for(int j=0;j<nfacets[1];j++)
-           {
-             //LocalHeap & lh(clh);
-             HeapReset hr(lh);
-             Array<int> elnums_y(2, lh), elnums_per_y(2,lh), fnums1_y(6, lh), fnums2_y(6, lh), vnums1(8, lh), vnums2(8, lh);
-             int facet_y = j;
-             int facet2_y = j;
-             // Horzontal edge - get facet elements w.r.t. first direction
-             spaces[1]->GetMeshAccess()->GetFacetElements (facet_y, elnums_y);
-             int el1_y = elnums_y[0];
-             int el1 = tpfes->GetIndex(colels[i],el1_y);
-             if(elnums_y.Size() < 2)
- 				   {
- 				     facet2_y = spaces[1]->GetMeshAccess()->GetPeriodicFacet(facet_y);
- 				     if(facet2_y > facet_y)
- 				       {
- 					 ma->GetFacetElements (facet2_y, elnums_per_y);
- 					 elnums_y.Append(elnums_per_y[0]);
- 				       }
- 				     else if(facet2_y < facet_y)
- 				       continue;
-             }
-             if(elnums_y.Size() < 2)
-             {
-               spaces[1]->GetMeshAccess()->GetFacetSurfaceElements (facet_y, elnums_y);
-               spaces[1]->GetMeshAccess()->GetElFacets(el1_y,fnums1_y);
-               int facnr_y = fnums1_y.Pos(facet_y);
-               int sel = elnums_y[0];
-               ElementId ei1(VOL, el1);
-               ElementId sei(BND, sel);
-               spaces[1]->GetMeshAccess()->GetElVertices (el1_y, vnums1);
-               spaces[1]->GetMeshAccess()->GetSElVertices (sel, vnums2);
-               ElementTransformation & eltrans = tpfes->GetTrafo (ei1, lh);
-               ElementTransformation & seltrans = spaces[1]->GetMeshAccess()->GetTrafo (sei, lh);
-               const FiniteElement & fel = tpfes->GetFE (ei1, lh);
-               Array<int> dnums(fel.GetNDof(), lh);
-               tpfes->GetDofNrs (ei1, dnums);
-               FlatVector<SCAL> elx(dnums.Size()*this->fespace->GetDimension(), lh), ely(dnums.Size()*this->fespace->GetDimension(), lh);
-               x.GetIndirect(dnums, elx);
-               for (int j = 0; j < NumIntegrators(); j++)
-               {
-                 BilinearFormIntegrator & bfi = *parts[j];
-                 if (!bfi.BoundaryForm()) continue;  
-                 if (!bfi.SkeletonForm()) continue;
-                 if (bfi.GetDGFormulation().element_boundary) continue;
-                 FacetBilinearFormIntegrator * fbfi = dynamic_cast<FacetBilinearFormIntegrator*>(&bfi);
-                 fbfi->ApplyFacetMatrix (fel,facnr_y+10,eltrans,vnums1, seltrans, vnums2, elx, ely, lh);
-                 y.AddIndirect(dnums, ely);
-               }
-             }
-             else
-             {
-               // The element facets:
-               spaces[1]->GetMeshAccess()->GetElFacets(el1_y,fnums1_y);
-               // TP Element number of the first element sharing the facet
-               ElementId ei1(VOL,el1);
-               // TP Element number of the second element sharing the facet
-               int el2_y = elnums_y[1];
-               //indices[1] = el2_y;
-               int el2 = tpfes->GetIndex(colels[i],el2_y);
-               ElementId ei2(VOL,el2);
-               spaces[1]->GetMeshAccess()->GetElFacets(el2_y,fnums2_y);
-               // Local position of the facets
-               int facnr1_y = fnums1_y.Pos(facet_y);
-               int facnr2_y = fnums2_y.Pos(facet2_y);
-               // Element transformations and elements for both spaces
-               ElementTransformation & eltrans1 = tpfes->GetTrafo (ei1, lh);
-               ElementTransformation & eltrans2 = tpfes->GetTrafo (ei2, lh);
-               const FiniteElement & fel1 = tpfes->GetFE (ei1, lh);
-               const FiniteElement & fel2 = tpfes->GetFE (ei2, lh);
-               // Dof numbers of both TP volume elements
-               Array<int> dnums1(fel1.GetNDof(), lh);
-               Array<int> dnums2(fel2.GetNDof(), lh);
-               tpfes->GetDofNrs (el1, dnums1);
-               tpfes->GetDofNrs (el2, dnums2);
-               // vnums stores the elements vertex numbers (needed for fact2element trafo)
-               spaces[1]->GetMeshAccess()->GetElVertices (el1_y, vnums1);
-               spaces[1]->GetMeshAccess()->GetElVertices (el2_y, vnums2);
-               Array<int> dnums(fel1.GetNDof()+fel2.GetNDof(), lh);
-               // For DG we need both degrees of freedom, from the left and right facet element
-               dnums.Range(0, dnums1.Size()) = dnums1;
-               dnums.Range(dnums1.Size(), dnums.Size()) = dnums2;
-               // Element vectors, elx,ely
-               FlatVector<SCAL> elx(dnums.Size()*this->fespace->GetDimension(), lh),
-               ely(dnums.Size()*this->fespace->GetDimension(), lh);
-               x.GetIndirect(dnums, elx);
-               for (int j = 0; j < NumIntegrators(); j++)
-               {
-                 BilinearFormIntegrator * bfi = parts[j].get();
-                 if (!bfi->SkeletonForm()) continue;
-                 if ( bfi->BoundaryForm()) continue;
-                 if ( bfi->GetDGFormulation().element_boundary) continue;                                     
-                 FacetBilinearFormIntegrator * fbfi = dynamic_cast<FacetBilinearFormIntegrator*>(bfi);
-                 fbfi->ApplyFacetMatrix (fel1, facnr1_y+10, eltrans1, vnums1,
-                                         fel2, facnr2_y, eltrans2, vnums2,
-                                         elx, ely, lh);
-                 y.AddIndirect(dnums, ely);
-               }
-             } // end: if elnums.Size != 1
-           } // end: inner element loop
-       });
-     } // end: for( auto colels : spaces[0]->ElementColoring() )
-     timerfac2.Stop();
-  }
-
-   template<class SCAL>
-   void S_BilinearForm<SCAL> :: AddMatrixTP1(SCAL val, const BaseVector & x, BaseVector & y, LocalHeap & clh) const
    {
      static Timer timerall ("Apply Matrix1 (TP) - all");
      static Timer timervol ("Apply Matrix1 (TP) - volume");
@@ -3186,7 +2865,7 @@ namespace ngcomp
              facet2_x = meshx->GetPeriodicFacet(facet_x);
              if(facet2_x > facet_x)
              {
-               ma->GetFacetElements (facet2_x, elnums_per_x);
+               meshx->GetFacetElements (facet2_x, elnums_per_x);
                elnums_x.Append(elnums_per_x[0]);
              }
              else if(facet2_x < facet_x)
@@ -3300,7 +2979,7 @@ namespace ngcomp
              facet2_y = meshy->GetPeriodicFacet(facet_y);
              if(facet2_y > facet_y)
              {
-               ma->GetFacetElements (facet2_y, elnums_per_y);
+               meshy->GetFacetElements (facet2_y, elnums_per_y);
                elnums_y.Append(elnums_per_y[0]);
              }
              else if(facet2_y < facet_y)
@@ -3334,7 +3013,7 @@ namespace ngcomp
              int el2_y = elnums_y[1];
              auto & fely2 = spaces[1]->GetFE(ElementId(el2_y),lh);
              int ndofy2 = fely2.GetNDof();
-             const ElementTransformation & eltransy2 = meshy->GetTrafo(el2_y,lh);
+             const ElementTransformation & eltransy2 = meshy->GetTrafo(ElementId(el2_y),lh);
              meshy->GetElFacets(el2_y,fnums2_y);
              // Local position of second facet
              int facnr_y2 = fnums2_y.Pos(facet2_y);
@@ -3411,7 +3090,7 @@ namespace ngcomp
     shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(fespace);
     if(tpfes)
     {
-      AddMatrixTP1(val,x,y,clh);
+      AddMatrixTP(val,x,y,clh);
       return;
     }
 

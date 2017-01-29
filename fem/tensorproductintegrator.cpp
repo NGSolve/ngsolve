@@ -60,16 +60,16 @@ namespace ngfem
      ud.lh = &lh;
      ud.fel = &fel;
      int ndofy = fel.GetNDof();
-     for (ProxyFunction * proxy : trial_proxies)
-     {
-         ud.AssignMemory (proxy, (*mirx).IR().Size()*ir.Size(), proxy->Dimension(), lh);
-         dynamic_pointer_cast<TPDifferentialOperator>(proxy->Evaluator())->ApplyY(fel,miry,ud.GetMemory(proxy), xevals.GetMemory(proxy).Cols(dnumsy),lh);
-     }
      int nipx = mirx->Size();
      int nipy = miry.Size();
      int niptp = nipx*nipy;
      TPMappedIntegrationRule * tpmir = new (lh) TPMappedIntegrationRule(*mirx, miry, TPIntegrationRule(niptp), tptrafo);
      tpmir->SetFacet(0);
+     for (ProxyFunction * proxy : trial_proxies)
+     {
+         ud.AssignMemory (proxy, (*mirx).IR().Size()*ir.Size(), proxy->Dimension(), lh);
+         dynamic_pointer_cast<TPDifferentialOperator>(proxy->Evaluator())->ApplyY(fel,miry,ud.GetMemory(proxy), xevals.GetMemory(proxy).Cols(dnumsy),lh);
+     }
      FlatMatrix<> val(niptp, 1,lh);
      for (auto proxy : test_proxies)
        {
