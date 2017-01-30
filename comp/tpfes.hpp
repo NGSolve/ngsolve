@@ -61,11 +61,11 @@ namespace ngcomp
     
     TPHighOrderFESpace (shared_ptr<FESpace> space_x,FlatArray<shared_ptr<FESpace>> spaces_y, const Flags & flags, bool parseflags=false);
 
-    virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const;
+    virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const override;
     ///
     virtual ~TPHighOrderFESpace ();
   
-    virtual string GetClassName () const
+    virtual string GetClassName () const override
     {
       return "TPHighOrderFESpace";
     }
@@ -78,16 +78,16 @@ namespace ngcomp
       return nfacets;
     }    
     ///
-    virtual void FinalizeUpdate(LocalHeap & lh);
-    virtual void Update(LocalHeap & lh);
+    virtual void FinalizeUpdate(LocalHeap & lh) override;
+    virtual void Update(LocalHeap & lh) override;
     /// 
     virtual void UpdateDofTables();
     ///
     virtual void UpdateCouplingDofArray();    
     ///
-    virtual size_t GetNDof () const throw();
+    virtual size_t GetNDof () const throw() override;
     ///
-    virtual size_t GetNDofLevel (int level) const;
+    virtual size_t GetNDofLevel (int level) const override;
     ///
     virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override;
 
@@ -98,21 +98,21 @@ namespace ngcomp
     template <ELEMENT_TYPE ET>
       FiniteElement & T_GetFE (int elnr, Allocator & alloc) const;
 
-    virtual int GetSpacialDimension() const { return space_x->GetSpacialDimension() + spaces_y[0]->GetSpacialDimension();}
-    
-    virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
-    
-    virtual void GetDofNrs(ngfem::ElementId ei, ngstd::Array<int>& dnums) const;
     void GetSliceDofNrs(ngfem::ElementId ei, int direction, ngstd::Array<int>& dnums) const;
     ///
-    virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & precflags) const;
+    virtual int GetSpacialDimension() const override { return space_x->GetSpacialDimension() + spaces_y[0]->GetSpacialDimension();}
+    ///
+    virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
+    
+    virtual void GetDofNrs(ngfem::ElementId ei, ngstd::Array<int>& dnums) const override;
+    ///
+    virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & precflags) const override;
     /// 
- 
     void ReduceToXSpace(shared_ptr<GridFunction> gf_in, shared_ptr<GridFunction> gf_out,LocalHeap & lh,const function<void(shared_ptr<FESpace>,const FiniteElement &, const ElementTransformation & ,FlatVector<>,FlatVector<>,LocalHeap&)> & func);
     void ProlongateFromXSpace(shared_ptr<GridFunction> gf_in, shared_ptr<GridFunction> gf_out, LocalHeap & lh);
 
     virtual void SolveM (CoefficientFunction & rho, BaseVector & vec,
-                         LocalHeap & lh) const;
+                         LocalHeap & lh) const override;
   };
 
     extern void IterateElementsTP (const FESpace & fes, 

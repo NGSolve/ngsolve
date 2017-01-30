@@ -3833,7 +3833,7 @@ namespace ngfem
 
 
 
-
+  /*
   // Array<HCurlFiniteElement<3>::IPData> FE_NedelecPyramid1::ipdata;
   Matrix<> FE_NedelecPyramid1::trans(8);
 
@@ -3841,7 +3841,7 @@ namespace ngfem
     : HCurlFiniteElement<3> (8, 3)
   {
     // if (!ipdata.Size())
-      Orthogonalize();
+    // Orthogonalize();
       // CalcIPData(ipdata);
       // controldestruction.NewControl(&ipdatadestructed);
   }
@@ -3926,9 +3926,9 @@ namespace ngfem
 
     CalcInverse (fiphij, trans);
   }
+  */
 
-
-
+  
 
 
 

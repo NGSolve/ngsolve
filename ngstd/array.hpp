@@ -55,8 +55,8 @@ namespace ngstd
           return i;
       return -1;
     }
-    // INLINE auto operator[] (int i) -> decltype (Spec()[i]) { return Spec()[i]; }
-    // INLINE auto operator[] (int i) const -> decltype (T::operator[](i)) { return Spec()[i]; }
+    INLINE auto operator[] (size_t i) { return Spec()[i]; }
+    INLINE auto operator[] (size_t i) const { return Spec()[i]; }
   };
 
 
