@@ -164,7 +164,7 @@ build_mac:
 .template_test_win: &test_win
   stage: test
   script:
-    - cd %NETGEN_BUILD_DIR%
+    - cd %NETGEN_BUILD_DIR%/ngsolve
     - ctest -C Release -V
     - cd ..
 
