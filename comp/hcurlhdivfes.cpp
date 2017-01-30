@@ -33,15 +33,20 @@ namespace ngcomp
     
     if( flags.GetDefineFlag("hcurl"))
       cerr << "WARNING: -hcurl flag is deprecated: use -type=hcurl instead" << endl;
-    
-    // tet     = new FE_NedelecTet1;
-    // prism   = new FE_NedelecPrism1;
-    // pyramid = new FE_NedelecPyramid1;
-    // trig    = new FE_NedelecTrig1;
-    // quad    = new FE_NedelecQuad1;
-    // segm    = new FE_NedelecSegm1;
-    // hex     = new FE_NedelecHex1; 
 
+    /*
+    tet     = new FE_NedelecTet1;
+    prism   = new FE_NedelecPrism1;
+    pyramid = new FE_NedelecPyramid1;
+    trig    = new FE_NedelecTrig1;
+    quad    = new FE_NedelecQuad1;
+    segm    = new FE_NedelecSegm1;
+    hex     = new FE_NedelecHex1; 
+    */
+    // compute transformation matrix 
+    FE_NedelecPyramid1 tmp_pyramid;
+    tmp_pyramid.Orthogonalize();
+    
     SetDummyFE<HCurlDummyFE> ();
 
     prol = make_shared<EdgeProlongation> (*this);
@@ -49,9 +54,9 @@ namespace ngcomp
 
     // Integrator for shape tester 
 
-    static ConstantCoefficientFunction one(1);
-    integrator[VOL] = GetIntegrators().CreateBFI("massedge", ma->GetDimension(), &one);
-    integrator[BND] = GetIntegrators().CreateBFI("robinedge", ma->GetDimension(), &one);
+    auto one = make_shared<ConstantCoefficientFunction>(1);
+    integrator[VOL] = GetIntegrators().CreateBFI("massedge", ma->GetDimension(), one);
+    integrator[BND] = GetIntegrators().CreateBFI("robinedge", ma->GetDimension(), one);
 
     if (ma->GetDimension() == 2)
       {
@@ -391,8 +396,8 @@ namespace ngcomp
 
 
   template <class T>
-  void NedelecFESpace::TransformMat (ElementId ei,
-				     SliceMatrix<T> mat, TRANSFORM_TYPE tt) const
+  void NedelecFESpace::T_TransformMat (ElementId ei,
+                                       SliceMatrix<T> mat, TRANSFORM_TYPE tt) const
   {
     Ngs_Element ngel = ma->GetElement(ei);
     ELEMENT_TYPE eltype = ngel.GetType();
@@ -418,8 +423,8 @@ namespace ngcomp
 
 
   template <class T>
-  void NedelecFESpace::TransformVec (ElementId ei, 
-				     SliceVector<T> vec, TRANSFORM_TYPE tt) const
+  void NedelecFESpace::T_TransformVec (ElementId ei, 
+                                       SliceVector<T> vec, TRANSFORM_TYPE tt) const
   {
     /*
     int nd;
