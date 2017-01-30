@@ -82,36 +82,36 @@ public:
   SparseMatrix<double> * CreateGradient() const;
 
   template <class T>
-    NGS_DLL_HEADER void TransformMat (ElementId ei, 
-                                      SliceMatrix<T> mat, TRANSFORM_TYPE tt) const;
+    NGS_DLL_HEADER void T_TransformMat (ElementId ei, 
+                                        SliceMatrix<T> mat, TRANSFORM_TYPE tt) const;
   
   template <class T>
-    NGS_DLL_HEADER void TransformVec (ElementId ei, 
+    NGS_DLL_HEADER void T_TransformVec (ElementId ei, 
                                       SliceVector<T> vec, TRANSFORM_TYPE tt) const;
   
   
   virtual void VTransformMR (ElementId ei, 
 			     SliceMatrix<double> mat, TRANSFORM_TYPE tt) const override
   {
-    TransformMat (ei, mat, tt);
+    T_TransformMat (ei, mat, tt);
   }
 
   virtual void VTransformMC (ElementId ei, 
 			     SliceMatrix<Complex> mat, TRANSFORM_TYPE tt) const override
   {
-    TransformMat (ei, mat, tt);
+    T_TransformMat (ei, mat, tt);
   }
 
   virtual void VTransformVR (ElementId ei, 
 			     SliceVector<double> vec, TRANSFORM_TYPE tt) const override
   {
-    TransformVec (ei, vec, tt);
+    T_TransformVec (ei, vec, tt);
   }
 
   virtual void VTransformVC (ElementId ei, 
 			     SliceVector<Complex> vec, TRANSFORM_TYPE tt) const override
   {
-    TransformVec (ei, vec, tt);
+    T_TransformVec (ei, vec, tt);
   }
 
 
