@@ -28,11 +28,9 @@ v = tpfes.TestFunction()
 vx = v.Operator("gradx")
 vy = v.Operator("grady")
 
-b = CoefficientFunction( (x1-0.5,0.5-x,1) )
 b = CoefficientFunction( (0,0,1) )
 
 uin = CoefficientFunction(0.0)
-
 
 gradv = CoefficientFunction((vx,vy))
 
@@ -53,8 +51,6 @@ v = GridFunction(tpfes)
 uu = GridFunction(fes)
 
 u.Set(exp(-70*(x-0.125)*(x-0.125)-70*(y-0.125)*(y-0.125)-70*(x1-0.75)*(x1-0.75)))
-#u.Set(exp(-70*(x-0.125)*(x-0.125)-70*(x1-0.125)*(x1-0.125)-70*(y1-0.75)*(y1-0.75)))
-#u.Set(x)
 Transfer2StdMesh(u,uu)
 Draw(uu,sd=3,autoscale=False)
 
@@ -74,13 +70,6 @@ def Run(nsteps):
             print("Step ",i+1, "/",nsteps)
             Step()
 
-import ngsolve.internal as internal
-internal.viewoptions.clipping.enable=1
-internal.viewoptions.clipping.nx=0
-internal.viewoptions.clipping.ny=1
-internal.viewoptions.clipping.nz=0
-internal.viewoptions.clipping.dist=0.45
-internal.visoptions.clipsolution="scal"
 Run(10000)
 for t in Timers():
     print(t["counts"], t["time"], t["name"])
