@@ -33,26 +33,11 @@ namespace ngcomp
     
     if( flags.GetDefineFlag("hcurl"))
       cerr << "WARNING: -hcurl flag is deprecated: use -type=hcurl instead" << endl;
-
-    /*
-    tet     = new FE_NedelecTet1;
-    prism   = new FE_NedelecPrism1;
-    pyramid = new FE_NedelecPyramid1;
-    trig    = new FE_NedelecTrig1;
-    quad    = new FE_NedelecQuad1;
-    segm    = new FE_NedelecSegm1;
-    hex     = new FE_NedelecHex1; 
-    */
-    // compute transformation matrix 
-    FE_NedelecPyramid1 tmp_pyramid;
-    tmp_pyramid.Orthogonalize();
     
     SetDummyFE<HCurlDummyFE> ();
 
     prol = make_shared<EdgeProlongation> (*this);
     order = 1;
-
-    // Integrator for shape tester 
 
     auto one = make_shared<ConstantCoefficientFunction>(1);
     integrator[VOL] = GetIntegrators().CreateBFI("massedge", ma->GetDimension(), one);
@@ -72,26 +57,7 @@ namespace ngcomp
         flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpCurlBoundaryEdgeVec<>>>();
 	evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpIdBBoundaryEdge<3>>>();	
       }
-
     
-    /*
-    static ConstantCoefficientFunction one(1);
-    if (ma->GetDimension() == 2)
-      {
-	Array<CoefficientFunction*> coeffs(1);
-	coeffs[0] = &one;
-	integrator = GetIntegrators().CreateBFI("massedge", 2, coeffs);
-      }
-    else if(ma->GetDimension() == 3) 
-      {
-	Array<CoefficientFunction*> coeffs(1); 
-	coeffs[0] = &one;
-	integrator = GetIntegrators().CreateBFI("massedge",3,coeffs); 
-	boundary_integrator = GetIntegrators().CreateBFI("robinedge",3,coeffs); 
-	
-      }
-    */
-
     discontinuous = flags.GetDefineFlag("discontinuous");
   }
 
