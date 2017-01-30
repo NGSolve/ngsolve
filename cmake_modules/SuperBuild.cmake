@@ -251,6 +251,24 @@ add_custom_target(test_ngsolve
                    --config ${CMAKE_BUILD_TYPE}
                    )
 
+# Check if the git submodules (i.e. netgen) are up to date
+# in case, something is wrong, emit a warning but continue
+ ExternalProject_Add_Step(ngsolve check_submodules
+   COMMAND cmake -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/check_submodules.cmake
+   DEPENDERS install # Steps on which this step depends
+   )
+
+# Due to 'ALWAYS 1', this step is always run which also forces a build of
+# the ngsolve subproject
+ ExternalProject_Add_Step(ngsolve check_submodules1
+   COMMAND cmake -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/check_submodules.cmake
+   DEPENDEES configure # Steps on which this step depends
+   DEPENDERS build     # Steps that depend on this step
+   ALWAYS 1            # No stamp file, step always runs
+   )
+
+
+
 if(WIN32)
   file(TO_NATIVE_PATH ${INSTALL_DIR}/bin netgendir)
   file(TO_NATIVE_PATH ${INSTALL_DIR}/${PYTHON_PACKAGES_INSTALL_DIR} pythonpath)
