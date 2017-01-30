@@ -3833,7 +3833,7 @@ namespace ngfem
 
 
 
-
+  /*
   // Array<HCurlFiniteElement<3>::IPData> FE_NedelecPyramid1::ipdata;
   Matrix<> FE_NedelecPyramid1::trans(8);
 
@@ -3926,9 +3926,9 @@ namespace ngfem
 
     CalcInverse (fiphij, trans);
   }
+  */
 
-
-
+  
 
 
 
