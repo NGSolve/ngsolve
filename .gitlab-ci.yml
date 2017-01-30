@@ -81,7 +81,6 @@ stages:
     - export DYLD_LIBRARY_PATH=$NETGENDIR
     - export DYLD_FRAMEWORK_PATH=$NETGENDIR/../Frameworks
     - export PATH=$NETGENDIR:$PATH
-    - export CCACHE_LOGFILE=/tmp/$CI_BUILD_REF.debug
 
 ############################################
 # Build stage
@@ -204,8 +203,8 @@ test_mac:
   <<: *mac
   stage: test
   script:
-    - cd $BUILD_DIR
-    - make test_ngsolve
+    - cd $BUILD_DIR/ngsolve
+    - ctest . -V
 
 ############################################
 # Cleanup stage
