@@ -4,15 +4,15 @@ from ngsolve.comp import *
 from ngsolve import *
 from ngsolve.comp import TensorProductFESpace, Transfer2StdMesh, SymbolicTPBFI
 
-mesh1 = Mesh(SegMesh(20,0,1,0))
-mesh2 = Mesh(SegMesh(20,0,1,0))
+mesh1 = Mesh(SegMesh(20,0,1,1))
+mesh2 = Mesh(SegMesh(20,0,1,1))
 
 tpmesh = Mesh(MakeTensorProductMesh(mesh1,mesh2))
 Draw(tpmesh)
 
 n=5
 m=5
-ngsglobals.numthreads = 1
+ngsglobals.numthreads = 24
 
 fesx = L2(mesh1,order=n,flags={'dgjumps':True})
 fesy = L2(mesh2,order=m,flags={'dgjumps':True})
@@ -54,7 +54,7 @@ u.Set(exp(-200*(x-0.4)*(x-0.4)-200*(x1-0.4)*(x1-0.4)))
 print("Done")
 Transfer2StdMesh(u,uu)
 
-Draw(uu,sd=4,autoscale=False)
+Draw(uu,sd=2,autoscale=False)
 
 h = u.vec.CreateVector()
 #u.vec[:] = 1.0
@@ -80,6 +80,6 @@ def Run(nsteps):
                 Redraw()
 
 Transfer2StdMesh(u,uu)
-Run(1000)
+Run(1500)
 for t in Timers():
     print(t["counts"], t["time"], t["name"])
