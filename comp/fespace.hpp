@@ -837,34 +837,34 @@ namespace ngcomp
     virtual ~NodalFESpace ();
 
     ///
-    virtual string GetClassName () const
+    virtual string GetClassName () const override
     {
       return "NodalFESpace";
     }
 
     ///
-    virtual void Update (LocalHeap & lh);
+    virtual void Update (LocalHeap & lh) override;
     
-    virtual void DoArchive (Archive & archive);
+    virtual void DoArchive (Archive & archive) override;
 
     virtual FiniteElement & GetFE(ElementId ei, Allocator & lh) const override;
     ///
-    virtual size_t GetNDof () const throw();
+    virtual size_t GetNDof () const throw() override;
     ///
-    virtual size_t GetNDofLevel (int level) const;
+    virtual size_t GetNDofLevel (int level) const override;
     ///
     using FESpace::GetDofNrs;
-    virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const;
+    virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const override;
     ///
 
     virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
   
-    virtual void GetVertexDofNrs (int vnr, Array<DofId> & dnums) const;
-    virtual void GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const;
-    virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const;
-    virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const;
+    virtual void GetVertexDofNrs (int vnr, Array<DofId> & dnums) const override;
+    virtual void GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const override;
+    virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const override;
+    virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const override;
 
-    virtual Array<int> * CreateDirectSolverClusters (const Flags & flags) const;
+    virtual Array<int> * CreateDirectSolverClusters (const Flags & flags) const override;
   };
 
 
@@ -882,17 +882,17 @@ namespace ngcomp
     NonconformingFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags=false);
     virtual ~NonconformingFESpace ();
 
-    virtual string GetClassName () const
+    virtual string GetClassName () const override
     { return "Nonconforming FESpace"; }
 
     ///
-    virtual void Update(LocalHeap & lh);
+    virtual void Update(LocalHeap & lh) override;
 
     virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
     ///
-    virtual size_t GetNDof () const throw();
+    virtual size_t GetNDof () const throw() override;
     ///
-    virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const;
+    virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
   };
 
 
@@ -914,34 +914,34 @@ namespace ngcomp
     ///
     ~ElementFESpace ();
 
-    virtual string GetClassName () const
+    virtual string GetClassName () const override
     {
       return "ElementFESpace";
     }
 
     ///
-    virtual void Update(LocalHeap & lh);
+    virtual void Update(LocalHeap & lh) override;
     /// 
-    virtual void DoArchive (Archive & archive);
+    virtual void DoArchive (Archive & archive) override;
 
     virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
     ///
-    virtual size_t GetNDof () const throw() { return ndlevel.Last(); }
+    virtual size_t GetNDof () const throw() override { return ndlevel.Last(); }
   
     ///
-    virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const;
+    virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
 
     ///
-    virtual size_t GetNDofLevel (int level) const;
+    virtual size_t GetNDofLevel (int level) const override;
 
 
-    virtual void GetVertexDofNrs (int vnr, Array<DofId> & dnums) const 
+    virtual void GetVertexDofNrs (int vnr, Array<DofId> & dnums) const override
     { dnums.SetSize (0); }
-    virtual void GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const
+    virtual void GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const override
     { dnums.SetSize (0); }
-    virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const
+    virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const override
     { dnums.SetSize (0); }
-    virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const
+    virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const override
     { GetDofNrs (elnr, dnums); }
   };
 

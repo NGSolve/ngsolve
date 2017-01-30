@@ -1530,6 +1530,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
               case ET_QUAD:    return *(new (lh) ScalarFE<ET_QUAD,1>);
               case ET_SEGM:    return *(new (lh) FE_Segm2);
               case ET_POINT:   return *(new (lh) FE_Point);
+              default:
                 throw Exception ("Inconsistent element type in NodalFESpace::GetFE, hb defined");
               }
           }
@@ -1544,6 +1545,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
               case ET_QUAD:    return *(new (lh) ScalarFE<ET_QUAD,1>);
               case ET_SEGM:    return *(new (lh) FE_Segm2);
               case ET_POINT:   return *(new (lh) FE_Point);
+              default:
                 throw Exception ("Inconsistent element type in NodalFESpace::GetFE, no hb defined");
               }
           }
@@ -1899,31 +1901,33 @@ lot of new non-zero entries in the matrix!\n" << endl;
   {
     
     if (order == 0)
-    {
-      switch (ma->GetElType(ei))
-        {
-        case ET_TET:     return *(new (lh) ScalarFE<ET_TET,0>);
-        case ET_PRISM:   return *(new (lh) FE_Prism0);
-        case ET_PYRAMID: return *(new (lh) FE_Pyramid0);
-        case ET_HEX:     return *(new (lh) FE_Hex0);
-        case ET_TRIG:    return *(new (lh) ScalarFE<ET_TRIG,0>);
-        case ET_QUAD:    return *(new (lh) ScalarFE<ET_QUAD,0>);
-        case ET_SEGM:    return *(new (lh) FE_Segm0);
-        }
-    }
+      {
+        switch (ma->GetElType(ei))
+          {
+          case ET_TET:     return * new (lh) ScalarFE<ET_TET,0>;
+          case ET_PRISM:   return * new (lh) FE_Prism0;
+          case ET_PYRAMID: return * new (lh) FE_Pyramid0;
+          case ET_HEX:     return * new (lh) FE_Hex0;
+          case ET_TRIG:    return * new (lh) ScalarFE<ET_TRIG,0>;
+          case ET_QUAD:    return * new (lh) ScalarFE<ET_QUAD,0>;
+          case ET_SEGM:    return * new (lh) FE_Segm0;
+          case ET_POINT:   return * new (lh) FE_Point;
+          }
+      }
     else
-    {
-      switch (ma->GetElType(ei))
-        {
-        case ET_TET:     return *(new (lh) ScalarFE<ET_TET,1>);
-        case ET_PRISM:   return *(new (lh) FE_Prism1);
-        case ET_PYRAMID: return *(new (lh) FE_Pyramid1);
-        case ET_HEX:     return *(new (lh) FE_Hex1);
-        case ET_TRIG:    return *(new (lh) ScalarFE<ET_TRIG,1>);
-        case ET_QUAD:    return *(new (lh) ScalarFE<ET_QUAD,1>);
-        case ET_SEGM:    return *(new (lh) FE_Segm1);
-        }
-    }
+      {
+        switch (ma->GetElType(ei))
+          {
+          case ET_TET:     return *(new (lh) ScalarFE<ET_TET,1>);
+          case ET_PRISM:   return *(new (lh) FE_Prism1);
+          case ET_PYRAMID: return *(new (lh) FE_Pyramid1);
+          case ET_HEX:     return *(new (lh) FE_Hex1);
+          case ET_TRIG:    return *(new (lh) ScalarFE<ET_TRIG,1>);
+          case ET_QUAD:    return *(new (lh) ScalarFE<ET_QUAD,1>);
+          case ET_SEGM:    return *(new (lh) FE_Segm1);
+          case ET_POINT:   return * new (lh) FE_Point;            
+          }
+      }
   }
   
   void ElementFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const

@@ -47,16 +47,16 @@ namespace ngcomp
 
     virtual ~VectorFacetFESpace () { ; }
 
-    virtual string GetClassName () const 
+    virtual string GetClassName () const override
     {
       return "VectorFacetFESpace";
     }
 
-    virtual void Update(LocalHeap& lh);
+    virtual void Update (LocalHeap& lh) override;
     virtual void UpdateCouplingDofArray();
-    virtual size_t GetNDof() const throw() { return ndof; }
+    virtual size_t GetNDof() const throw() override { return ndof; }
 
-    virtual size_t GetNDofLevel ( int i ) const { return ndlevel[i]; }
+    virtual size_t GetNDofLevel ( int i ) const override { return ndlevel[i]; }
 
     // virtual int GetNDofLowOrder () const
     // { return ndof_lo; }
@@ -66,15 +66,15 @@ namespace ngcomp
     // virtual const FiniteElement & GetFE ( int elnr, LocalHeap & lh ) const;
     // virtual const FiniteElement & GetSFE ( int selnr, LocalHeap & lh ) const;
 
-    virtual void GetFacetDofNrs ( int felnr, Array<DofId> & dnums ) const;
+    virtual void GetFacetDofNrs (int felnr, Array<DofId> & dnums) const;
 
-    virtual int GetNFacetDofs ( int felnr ) const;
+    virtual int GetNFacetDofs (int felnr) const;
 
-    virtual void GetDofNrs ( ElementId ei, Array<DofId> & dnums ) const;
+    virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
 
-    virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & precflags) const;
+    virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & precflags) const override;
     ///
-    virtual Array<int> * CreateDirectSolverClusters (const Flags & precflags) const;
+    virtual Array<int> * CreateDirectSolverClusters (const Flags & precflags) const override;
   
     // some utility functions for convenience
     ///
@@ -86,10 +86,10 @@ namespace ngcomp
 
     virtual bool UsesHighestOrderDiscontinuous() const {return highest_order_dc;};
 
-    virtual void GetVertexDofNrs ( int elnum, Array<DofId> & dnums ) const;
-    virtual void GetEdgeDofNrs ( int elnum, Array<DofId> & dnums ) const;
-    virtual void GetFaceDofNrs (int felnr, Array<DofId> & dnums) const;
-    virtual void GetInnerDofNrs (int felnr, Array<DofId> & dnums) const;
+    virtual void GetVertexDofNrs (int elnum, Array<DofId> & dnums) const override;
+    virtual void GetEdgeDofNrs (int elnum, Array<DofId> & dnums) const override;
+    virtual void GetFaceDofNrs (int felnr, Array<DofId> & dnums) const override;
+    virtual void GetInnerDofNrs (int felnr, Array<DofId> & dnums) const override;
   };
 
 }

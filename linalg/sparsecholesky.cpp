@@ -2061,6 +2061,7 @@ namespace ngla
                              else if (task.type == MicroTask::L_BLOCK)                               
                                {
                                  // for (int i = range.end()-1; i >= range.begin(); i--)
+                                 if (range.Size() > 0) // for case [0,0)
                                  for (size_t i = range.end()-1; i-- > range.begin(); )
                                    {
                                      size_t size = range.end()-i-1;
