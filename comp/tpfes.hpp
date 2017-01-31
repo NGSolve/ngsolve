@@ -23,6 +23,7 @@ namespace ngcomp
     shared_ptr<FESpace> space_x;
     Array<shared_ptr<MeshAccess>> meshes;
     bool element_wise;
+    double nelsyinverse;
   public:
     INLINE int GetIndex( FlatArray<int> indices) const 
     {
@@ -34,8 +35,8 @@ namespace ngcomp
     }
     INLINE void GetIndices( int index, FlatArray<int> indices) const 
     {
-      indices[1] = index%nels[1];
-      indices[0] = index/nels[1];
+      indices[0] = int(index*nelsyinverse);
+      indices[1] = index-nels[1]*indices[0];
     }    
     INLINE const shared_ptr<FESpace> Space(int i) const {
       if(i == -1)
@@ -97,41 +98,27 @@ namespace ngcomp
     template <ELEMENT_TYPE ET>
       FiniteElement & T_GetFE (int elnr, Allocator & alloc) const;
 
-    ///
-    //virtual const FiniteElement & GetSFE (int elnr, LocalHeap & lh) const;
+    void GetSliceDofNrs(ngfem::ElementId ei, int direction, ngstd::Array<int>& dnums) const;
     ///
     virtual int GetSpacialDimension() const override { return space_x->GetSpacialDimension() + spaces_y[0]->GetSpacialDimension();}
     ///
-    virtual const FiniteElement & GetFacetFE (int fnr, LocalHeap & lh) const;
-
     virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
     
     virtual void GetDofNrs(ngfem::ElementId ei, ngstd::Array<int>& dnums) const override;
     ///
     virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & precflags) const override;
     /// 
- 
-    virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const override;
-    virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const override;
-    virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const override;
-    virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const override;
-
     void ReduceToXSpace(shared_ptr<GridFunction> gf_in, shared_ptr<GridFunction> gf_out,LocalHeap & lh,const function<void(shared_ptr<FESpace>,const FiniteElement &, const ElementTransformation & ,FlatVector<>,FlatVector<>,LocalHeap&)> & func);
     void ProlongateFromXSpace(shared_ptr<GridFunction> gf_in, shared_ptr<GridFunction> gf_out, LocalHeap & lh);
-    IntRange GetElementDofs (int nr) const
-    {
-      return IntRange (first_element_dof[nr], 
-                       first_element_dof[nr+1]);
-    }
 
     virtual void SolveM (CoefficientFunction & rho, BaseVector & vec,
                          LocalHeap & lh) const override;
   };
 
     extern void IterateElementsTP (const FESpace & fes, 
-			       VorB vb, 
-			       LocalHeap & clh, 
-			       const function<void(ElementId,ElementId,LocalHeap&)> & func);
+                VorB vb, 
+                LocalHeap & clh, 
+                const function<void(ElementId,ElementId,LocalHeap&)> & func);
     extern void Transfer2StdMesh(const GridFunction * gfutp, GridFunction* gfustd);
     extern void Transfer2TPMesh(const CoefficientFunction * cfstd, GridFunction* gfutp);
 
