@@ -5,13 +5,15 @@ namespace ngfem
 {
   class TPIntegrationRule : public IntegrationRule
   {
-    Array< const IntegrationRule *> &irs;
+    Array< const IntegrationRule *> irs;
     public:
       INLINE TPIntegrationRule(Array< const IntegrationRule *> & airs) : irs(airs)
       {
-        this->size = 1;
-        for(int i=0;i<irs.Size();i++)
-            this->size *= irs[i]->GetNIP();
+        this->size = irs[0]->GetNIP()*irs[1]->GetNIP();
+      }
+      INLINE TPIntegrationRule(int asize)
+      {
+        this->size = asize;
       }
     INLINE const IntegrationRule & operator() (int i) const {return *irs[i];}
   };
@@ -25,6 +27,12 @@ namespace ngfem
     int facet = -1;
     public:
     INLINE TPMappedIntegrationRule(const IntegrationRule & ir, const ElementTransformation & eltrans ) : BaseMappedIntegrationRule(ir, eltrans) {
+    }
+    INLINE TPMappedIntegrationRule(BaseMappedIntegrationRule & mirx, BaseMappedIntegrationRule & miry, const IntegrationRule & tpir, const ElementTransformation & eltrans ) : BaseMappedIntegrationRule(tpir, eltrans) {
+    irs[0] = &mirx;
+    irs[1] = &miry;
+    dims[0] = mirx.GetTransformation().SpaceDim();
+    dims[1] = miry.GetTransformation().SpaceDim();
     }
     INLINE void SetFacet(int afacet) { 
       facet = afacet;
