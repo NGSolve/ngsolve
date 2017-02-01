@@ -1161,18 +1161,19 @@ namespace ngbla
   }
 
 
+  // Template helper for the SliceVector from Vec constructor
+  // to prevent range checks from triggering on call to v(0) for empty v
+  template <typename T, typename TIND, int D>
+  struct SliceVecFromVecHelper
+  {
+    static T *ptr(Vec<D,T> & v) { return &v(0); }
+  };
 
-
-
-
-
-
-
-
-
-
-
-
+  template <typename T, typename TIND>
+  struct SliceVecFromVecHelper<T, TIND, 0>
+  {
+    static T *ptr(Vec<0,T> &) { return nullptr; }
+  };
 
   /**
      A vector with non-linear data access.
@@ -1204,13 +1205,13 @@ namespace ngbla
     
     /// SV from FlatVector
     INLINE SliceVector (FlatVector<T> fv)
-      : s(fv.Size()), dist(&fv(1)-&fv(0)), data((T*)fv.Data()) { ; }
-    
-    /// SV from FlatVector
+      : s(fv.Size()), dist(1), data((T*)fv.Data()) { ; }
+
+    /// SV from Vec
     template <int D>
-    INLINE SliceVector (Vec<D,T> & fv)
-      : s(D), dist(&fv(1)-&fv(0)), data(&fv(0)) { ; }
-    
+    INLINE SliceVector (Vec<D,T> & v)
+      : s(D), dist(1), data(SliceVecFromVecHelper<T, TIND, D>::ptr(v)) { ; }
+
     ///
     template <int D>
     INLINE SliceVector (FixSliceVector<D,T> fsv)
