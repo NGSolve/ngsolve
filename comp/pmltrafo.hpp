@@ -103,7 +103,7 @@ namespace ngcomp
       {
         Vector<double> rpoint(Dimension());
         for (int i : Range(Dimension()))
-          rpoint(i)=ip.GetPointComplex(i).real();
+          rpoint(i)=ip.GetPointComplex()(i).real();
         pmltrafo->MapPointV(rpoint,values,jac);
       } 
       else 
@@ -134,7 +134,7 @@ namespace ngcomp
       {
         Vector<double> rpoint(Dimension());
         for (int i : Range(Dimension()))
-          rpoint(i)=ip.GetPointComplex(i).real();
+          rpoint(i)=ip.GetPointComplex()(i).real();
         pmltrafo->MapPointV(rpoint,val,jac);
       } 
       else 
@@ -163,7 +163,7 @@ namespace ngcomp
       {
         Vector<double> rpoint(Dimension());
         for (int i : Range(Dimension()))
-          rpoint(i)=ip.GetPointComplex(i).real();
+          rpoint(i)=ip.GetPointComplex()(i).real();
         pmltrafo->MapPointV(rpoint,val,jac);
       } 
       else 
@@ -178,7 +178,7 @@ namespace ngcomp
       {
         Vector<double> rpoint(Dimension());
         for (int i : Range(Dimension()))
-          rpoint(i)=ip.GetPointComplex(i).real();
+          rpoint(i)=ip.GetPointComplex()(i).real();
         pmltrafo->MapPointV(rpoint,val,jac);
       } 
       else 
