@@ -1,10 +1,10 @@
 #include <comp.hpp>
-#include <python_ngstd.hpp>
+#include "../ngstd/python_ngstd.hpp"
 
 namespace ngcomp {
 
   template<typename BASE>
-  class PeriodicFESpace : public BASE
+  class PeriodicFESpaceBASE : public BASE
   {
     Array<int> dofmap; // mapping of dofs
     using BASE::GetNDof;
@@ -13,13 +13,13 @@ namespace ngcomp {
     
 
   public:
-    PeriodicFESpace (shared_ptr<MeshAccess> ama, const Flags & flags)
+    PeriodicFESpaceBASE (shared_ptr<MeshAccess> ama, const Flags & flags)
       : BASE(ama,flags)
     {
       ;
     }
     
-    virtual ~PeriodicFESpace () { ; }
+    virtual ~PeriodicFESpaceBASE () { ; }
     virtual void Update (LocalHeap & lh) override
     { 
       BASE::Update (lh);
@@ -163,8 +163,40 @@ namespace ngcomp {
     
   };
 
-  static RegisterFESpace<PeriodicFESpace<H1HighOrderFESpace>> initperh1 ("perH1");
+  // this will be much easier with if constexpr (C++17)
+  template<typename...> class PeriodicFESpace;
+
+  template<typename BASE>
+  class PeriodicFESpace<BASE> : public PeriodicFESpaceBASE<BASE>
+  {
+  public:
+    PeriodicFESpace (shared_ptr<MeshAccess> ama, const Flags & flags)
+      : PeriodicFESpaceBASE<BASE>(ama,flags)
+    {
+      this->low_order_space = nullptr;
+    }
+    
+    virtual ~PeriodicFESpace () { ; }
+  };
+  
+  template<typename BASE, typename LOW_ORDER_SPACE>
+  class PeriodicFESpace<BASE,LOW_ORDER_SPACE> : public PeriodicFESpaceBASE<BASE>
+  {
+  public:
+    PeriodicFESpace (shared_ptr<MeshAccess> ama, const Flags & flags)
+      : PeriodicFESpaceBASE<BASE>(ama,flags)
+    {
+      auto lo_flags = flags;
+      lo_flags.SetFlag("order",1);
+      this->low_order_space = make_shared<PeriodicFESpace<LOW_ORDER_SPACE>>(ama,lo_flags);
+    }
+    
+    virtual ~PeriodicFESpace () { ; }
+  };
+  
+  static RegisterFESpace<PeriodicFESpace<H1HighOrderFESpace,NodalFESpace>> initperh1 ("perH1");
   static RegisterFESpace<PeriodicFESpace<HCurlHighOrderFESpace>> initperhcurl ("perHCurl");
   static RegisterFESpace<PeriodicFESpace<HDivHighOrderFESpace>> initperhdiv ("perHDiv");
+  static RegisterFESpace<PeriodicFESpace<NodalFESpace>> initnodal ("perH1lo");
   
 }
