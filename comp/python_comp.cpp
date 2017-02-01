@@ -8,9 +8,6 @@
 
 #include <regex>
 
-//#define COMPILE_DOCU
-
-
 using namespace ngcomp;
 
 using ngfem::ELEMENT_TYPE;

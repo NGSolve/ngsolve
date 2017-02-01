@@ -2,8 +2,6 @@ from ngsolve.fem import *
 from ngsolve.comp import *
 from ngsolve.comp import HCurlFunctionsWrap
 
-__docformat__ = 'reStructuredText'
-
 x = CoordCF(0)
 y = CoordCF(1)
 z = CoordCF(2)
@@ -26,7 +24,7 @@ def Neumann (coef):
 def H1(mesh, **args):
     """
     Create H1 finite element space.
-    documentation of arguments is available in :any:`FESpace` .
+    documentation of arguments is available in FESpace.
     """
     fes = FESpace("h1ho", mesh, **args)
     return fes
@@ -36,7 +34,7 @@ def L2(mesh, **args):
     return FESpace("l2ho", mesh, **args)
 
 class HCurl(HCurlFunctionsWrap):
-    """ Create HCurl finite element space, derived from :any:`FESpace` ."""
+    """ Create HCurl finite element space, derived from FESpace."""
     def __init__(self,mesh,*args,**kwargs):
         # fix for pickling
         #if mesh=="hcurlho":
