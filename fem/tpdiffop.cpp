@@ -20,10 +20,10 @@ namespace ngfem {
 
     void TPDifferentialOperator :: 
     Apply (const FiniteElement & fel,
-	   const BaseMappedIntegrationRule & mir,
-	   FlatVector<double> x, 
-	   FlatMatrix<double> flux,
-	   LocalHeap & lh) const
+        const BaseMappedIntegrationRule & mir,
+        FlatVector<double> x, 
+        FlatMatrix<double> flux,
+        LocalHeap & lh) const
     {
       const TPHighOrderFE & tpfel = dynamic_cast<const TPHighOrderFE &>(fel);
       const TPMappedIntegrationRule & tpmir = dynamic_cast<const TPMappedIntegrationRule &>(mir);
@@ -62,10 +62,10 @@ namespace ngfem {
 
     void TPDifferentialOperator :: 
     ApplyTrans (const FiniteElement & fel,
-		const BaseMappedIntegrationRule & mir,
-		FlatMatrix<double> flux,
-		FlatVector<double> x, 
-		LocalHeap & lh) const
+        const BaseMappedIntegrationRule & mir,
+        FlatMatrix<double> flux,
+        FlatVector<double> x, 
+        LocalHeap & lh) const
     {
       const TPHighOrderFE & tpfel = dynamic_cast<const TPHighOrderFE &>(fel);
       const TPMappedIntegrationRule & tpmir = dynamic_cast<const TPMappedIntegrationRule &>(mir);
@@ -96,15 +96,126 @@ namespace ngfem {
       else      
       {
         FlatMatrix<double> fvals( nip0, nip1*dim0, &flux(0,0) );
-        FlatMatrix<double> fvals1( nip0*dim0, nip1*dim1, lh );
+        FlatMatrix<double> fcoefs( ndof0, ndof1, &x(0) ); //TODO slicematrix
         FlatMatrix<double> helper(nip0*dim0,ndof1,lh);
+        
+        FlatMatrix<double> fvals1( nip0*dim0, nip1*dim1, lh );
         for(int i=0;i<nip1;i++)
           for(int j=0;j<nip0;j++)
             fvals1.Rows(dim0*j,dim0*(j+1)).Col(i) = (fvals.Cols(dim0*i,dim0*(i+1)).Row(j));
-        FlatMatrix<double> fcoefs( ndof0, ndof1, &x(0) ); //TODO slicematrix
+        
         helper = fvals1 * shape1;
         fcoefs = Trans(shape0) * helper;
       }
     }
 
+    void TPDifferentialOperator ::
+    ApplyX(const FiniteElement &fel,
+        const BaseMappedIntegrationRule & mirx,
+        FlatMatrix<double> flux,
+        SliceMatrix<double> x,
+        LocalHeap & lh) const
+        {
+          int dimx = evaluators[0]->Dim();
+          int dimy = evaluators[1]->Dim();
+          int nipx = mirx.IR().Size();
+          FlatMatrix<double, ColMajor> bmatx( nipx*dimx, fel.GetNDof(),lh );
+          evaluators[0]->CalcMatrix(fel,mirx,bmatx,lh);
+          if(dimx == 1)
+          {
+            FlatMatrix<> resultmat(nipx*dimx,x.Width(), &flux(0,0));
+            resultmat = bmatx*x;
+          }
+          else
+          {
+            FlatMatrix<> resultmat(nipx*dimx,x.Width(), lh);
+            resultmat = bmatx*x;
+            for(int k=0;k<x.Height();k+=2)
+              flux.Rows(k*nipx,(k+1)*nipx) = Trans(resultmat.Rows(dimx*k,dimx*(k+1)));
+          }
+        }
+
+    void TPDifferentialOperator ::
+    ApplyXTrans(const FiniteElement &fel,
+        const BaseMappedIntegrationRule & mirx,
+        FlatMatrix<double> flux,
+        SliceMatrix<double> x,
+        LocalHeap & lh) const
+        {
+          int dimx = evaluators[0]->Dim();
+          int dimy = evaluators[1]->Dim();
+          int nipx = mirx.IR().Size();
+          int nipy = flux.Height()/nipx;
+          FlatMatrix<double, ColMajor> bmatx( nipx*dimx, fel.GetNDof(),lh );
+          evaluators[0]->CalcMatrix(fel,mirx,bmatx,lh);
+          if(dimx == 1)
+          {
+            FlatMatrix<> proxyvaluesasmat(nipx, nipy*dimy, &flux(0,0));
+            x = Trans(bmatx)*proxyvaluesasmat;
+          }
+          else
+          {
+            FlatMatrix<double> proxyvaluesasmat( nipx, nipy*dimx, &flux(0,0) );
+            FlatMatrix<double> proxyvaluesasmat1( nipx*dimx, nipy*dimy, lh );
+            for(int i=0;i<nipy;i++)
+              for(int j=0;j<nipx;j++)
+                proxyvaluesasmat1.Rows(dimx*j,dimx*(j+1)).Col(i) = (proxyvaluesasmat.Cols(dimx*i,dimx*(i+1)).Row(j));
+            x = proxyvaluesasmat1*bmatx;
+          }
+        }
+
+    void TPDifferentialOperator ::
+    ApplyY(const FiniteElement &fel,
+        const BaseMappedIntegrationRule & miry,
+        FlatMatrix<double> flux,
+        SliceMatrix<double> x,
+        LocalHeap & lh) const
+        {
+          int dimx = evaluators[0]->Dim();
+          int dimy = evaluators[1]->Dim();
+          int nipy = miry.IR().Size();
+          FlatMatrix<double, ColMajor> bmaty( nipy*dimy, fel.GetNDof(),lh );
+          evaluators[1]->CalcMatrix(fel,miry,bmaty,lh);
+          if(dimx == 1)
+          {
+            FlatMatrix<> resultmat(x.Height(),nipy*dimy, &flux(0,0));
+            resultmat = x*Trans(bmaty);
+          }
+          else
+          {
+            FlatMatrix<double, ColMajor> resultmat(x.Height(),nipy*dimy, lh);
+            resultmat = x*Trans(bmaty);
+            for(int k=0;k<x.Height()/dimx;k++)
+              flux.Rows(k*nipy,(k+1)*nipy) = Trans(resultmat.Rows(dimx*k,dimx*(k+1)));
+          }
+        }
+
+    void TPDifferentialOperator :: 
+    ApplyYTrans(const FiniteElement &fel,
+        const BaseMappedIntegrationRule & miry,
+        FlatMatrix<double> flux,
+        SliceMatrix<double> x,
+        LocalHeap & lh) const
+        {
+          int dimx = evaluators[0]->Dim();
+          int dimy = evaluators[1]->Dim();
+          int nipy = miry.IR().Size();
+          int nipx = flux.Height()/nipy;
+          FlatMatrix<double, ColMajor> bmaty( nipy*dimy, fel.GetNDof(),lh );
+          evaluators[1]->CalcMatrix(fel,miry,bmaty,lh);
+          if(dimx == 1)
+          {
+            FlatMatrix<> proxyvaluesasmat(nipx, nipy*dimy, &flux(0,0));
+            x = proxyvaluesasmat*bmaty;
+          }
+          else
+          {
+            FlatMatrix<double> proxyvaluesasmat( nipx, nipy*dimx, &flux(0,0) );
+            FlatMatrix<double> proxyvaluesasmat1( nipx*dimx, nipy*dimy, lh );
+            for(int i=0;i<nipy;i++)
+              for(int j=0;j<nipx;j++)
+                proxyvaluesasmat1.Rows(dimx*j,dimx*(j+1)).Col(i) = (proxyvaluesasmat.Cols(dimx*i,dimx*(i+1)).Row(j));
+            x = proxyvaluesasmat1*bmaty;
+          }
+        }
 }

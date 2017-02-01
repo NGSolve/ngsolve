@@ -609,7 +609,7 @@ void * SolveBVP(void *)
   catch (exception & e)
     {
       cerr << "\n\ncaught exception in SolveBVP:\n "
-	   << typeid(e).name() << endl;
+	   << typeid(e).name() << ": " << e.what() << endl;
       pde->SetGood (false);
     }
 #ifdef _MSC_VER

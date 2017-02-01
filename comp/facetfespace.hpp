@@ -52,26 +52,28 @@ namespace ngcomp
     ///
     virtual ~FacetFESpace ();
     ///
-    virtual string GetClassName () const
+    virtual string GetClassName () const override
     {
       return "FacetFESpace";
     }
   
     ///
-    virtual void Update(LocalHeap & lh);
+    virtual void Update(LocalHeap & lh) override;
   
     //  virtual void UpdateDofTables();
     virtual void UpdateCouplingDofArray();    
     ///
-    virtual size_t GetNDof () const throw();
+    virtual size_t GetNDof () const throw() override;
     ///
-    virtual size_t GetNDofLevel (int level) const;
+    virtual size_t GetNDofLevel (int level) const override;
+
+    virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
     ///
-    virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
+    // virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
+    // ///
+    // virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const; 
     ///
-    virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const; 
-    ///
-    virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const;
+    virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
     ///
     virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
 
@@ -91,9 +93,9 @@ namespace ngcomp
     virtual int GetNFacetDofs (int felnr) const 
     { return (first_facet_dof[felnr+1]-first_facet_dof[felnr] + 1); }
     ///
-    virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & precflags) const;
+    virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & precflags) const override;
     ///
-    virtual Array<int> * CreateDirectSolverClusters (const Flags & precflags) const;
+    virtual Array<int> * CreateDirectSolverClusters (const Flags & precflags) const override;
 
 
     virtual INT<2> GetFacetOrder(int fnr) 
@@ -105,12 +107,12 @@ namespace ngcomp
       return first_facet_dof[fanr];
     }
 
-    virtual void GetVertexDofNrs ( int nr, Array<DofId> & dnums ) const
+    virtual void GetVertexDofNrs ( int nr, Array<DofId> & dnums ) const override
     {
       dnums.SetSize0();
     }
 
-    virtual void GetEdgeDofNrs ( int nr, Array<DofId> & dnums ) const
+    virtual void GetEdgeDofNrs ( int nr, Array<DofId> & dnums ) const override
     {
       dnums.SetSize0();
       if (ma->GetDimension() == 3) return;
@@ -122,7 +124,7 @@ namespace ngcomp
       dnums = MakeTuple (nr, GetFacetDofs(nr));
     }
 
-    virtual void GetFaceDofNrs (int nr, Array<DofId> & dnums) const
+    virtual void GetFaceDofNrs (int nr, Array<DofId> & dnums) const override
     {
       dnums.SetSize(0);
       if (ma->GetDimension() == 2) return;
@@ -131,7 +133,7 @@ namespace ngcomp
       dnums += GetFacetDofs(nr);
     }
   
-    virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const
+    virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const override
     {
       dnums.SetSize(0);
     }

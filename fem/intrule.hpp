@@ -538,7 +538,7 @@ namespace ngfem
 
     // copies pointers
     INLINE NGS_DLL_HEADER IntegrationRule (const IntegrationRule & ir2)
-      : Array<IntegrationPoint> (ir2.Size(), &ir2[0]), dimension(ir2.dimension)
+      : Array<IntegrationPoint> (ir2.Size(), ir2.data), dimension(ir2.dimension)
     { ; }
 
     INLINE NGS_DLL_HEADER IntegrationRule (IntegrationRule && ir2) = default;

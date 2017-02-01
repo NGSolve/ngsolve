@@ -18,6 +18,7 @@ add_library(ngfem ${NGS_LIB_TYPE}
         hybridDG.cpp diffop.cpp l2hofefo.cpp h1hofefo.cpp
         facethofe.cpp python_fem.cpp DGIntegrators.cpp pml.cpp
         h1hofe_segm.cpp h1hofe_trig.cpp symbolicintegrator.cpp tpdiffop.cpp
+        tensorproductintegrator.cpp
         )
 
 if(USE_CUDA)
@@ -48,6 +49,7 @@ install( FILES
         hdivhofe_impl.hpp tscalarfe_impl.hpp thdivfe_impl.hpp l2hofe_impl.hpp
         diffop_impl.hpp hcurlhofe_impl.hpp thcurlfe.hpp tpdiffop.hpp tpintrule.hpp
         thcurlfe_impl.hpp symbolicintegrator.hpp code_generation.hpp 
+        tensorproductintegrator.hpp fe_interfaces.hpp
         DESTINATION include
         COMPONENT ngsolve_devel
        )

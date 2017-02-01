@@ -77,12 +77,12 @@ namespace ngcomp
     ///
     virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override;
     /// 
-    virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const override;
+    //virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const override;
     ///
     template <ELEMENT_TYPE ET>
     FiniteElement & T_GetFE (int elnr, Allocator & alloc) const;
     ///
-    virtual const FiniteElement & GetSFE (int elnr, LocalHeap & lh) const override;
+    // virtual const FiniteElement & GetSFE (int elnr, LocalHeap & lh) const override;
     ///
     template <ELEMENT_TYPE ET>
     FiniteElement & T_GetSFE (int elnr, Allocator & alloc) const;
