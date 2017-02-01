@@ -95,19 +95,20 @@ namespace ngfem
 
   template <ELEMENT_TYPE ET> 
   class NGS_DLL_HEADER HDivHighOrderFE : 
-    public T_HDivFiniteElement< HDivHighOrderFE_Shape<ET>, ET >
+    public T_HDivFiniteElement< HDivHighOrderFE_Shape<ET>, ET > , public ET_trait<ET>, public VertexOrientedFE<ET>
   {
   protected:
-    enum { DIM = ET_trait<ET>::DIM };
-    enum { N_VERTEX = ET_trait<ET>::N_VERTEX };
-    enum { N_FACET = ET_trait<ET>::N_FACET };
+    using ET_trait<ET>::N_VERTEX;
+    using ET_trait<ET>::N_FACET;
+    using ET_trait<ET>::DIM;
 
     typedef IntegratedLegendreMonomialExt T_ORTHOPOL;  
 
     using HDivFiniteElement<DIM>::ndof;
     using HDivFiniteElement<DIM>::order;
 
-    int vnums[N_VERTEX];
+    using VertexOrientedFE<ET>::vnums;
+    
 
     INT<DIM> order_inner;
     INT<N_FACET,INT<DIM-1>> order_facet;  
@@ -116,6 +117,7 @@ namespace ngfem
     bool only_ho_div;
 
   public:
+    using VertexOrientedFE<ET>::SetVertexNumbers;
     /// minimal constructor, orders will be set later
     HDivHighOrderFE () 
       : ho_div_free(false), only_ho_div(false)
@@ -133,12 +135,6 @@ namespace ngfem
       ComputeNDof();
     }
 
-
-    template <typename TA> 
-    void SetVertexNumbers (const TA & avnums)
-    { 
-      for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++) vnums[i] = avnums[i]; 
-    }
 
     void SetOrderInner (INT<DIM> oi)
     { 
