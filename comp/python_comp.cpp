@@ -224,14 +224,6 @@ void ExportPml(py::module &m)
                       dimpml.Get()->MapPointV(hpoint,point,jac);
                       return point;
                     },"map a point")
-    .def("__call__",  [](PyPML *instance, const BaseMappedIntegrationPoint & _point) {
-                      int dim = _point.Dim();
-                      PyPML dimpml = instance->Get()->CreateDim(dim);
-                      Vector<Complex> point(dim);
-                      Matrix<Complex> jac(dim,dim);
-                      dimpml.Get()->MapPointV(_point,point,jac);
-                      return point;
-                    },"map a point")
     .def("__str__", [] (PyPML & self) { return ToString(*self.Get()); } )
     .def("call_jacobian",  [](py::args varargs) {
                       int dim = py::len(varargs)-1;
@@ -244,14 +236,6 @@ void ExportPml(py::module &m)
                       dimpml.Get()->MapPointV(hpoint,point,jac);
                       return jac;
                     },"evaluates jacobian at point")
-    .def("call_jacobian",  [](PyPML *instance, const BaseMappedIntegrationPoint & _point) {
-                      int dim = _point.Dim();
-                      PyPML dimpml = instance->Get()->CreateDim(dim);
-                      Vector<Complex> point(dim);
-                      Matrix<Complex> jac(dim,dim);
-                      dimpml.Get()->MapPointV(_point,point,jac);
-                      return jac;
-                    })
     .def("PML_CF", [](PyPML *instance, int dim) {
                       PyPML dimpml = instance->Get()->CreateDim(dim);
                       auto pcf = make_shared<PML_CF> (dimpml.Get()->CreateDim(dim),dim);
