@@ -17,6 +17,7 @@ add_library( ngcomp ${NGS_LIB_TYPE}
         preconditioner.cpp vectorfacetfespace.cpp numberfespace.cpp bddc.cpp 
         hypre_precond.cpp hdivdivfespace.cpp tpfes.cpp 
         python_comp.cpp basenumproc.cpp pde.cpp pdeparser.cpp vtkoutput.cpp
+        periodic.cpp
         )
 
 if(NOT WIN32)
