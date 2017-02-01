@@ -916,33 +916,46 @@ static Matrix<> trans_trig;
 
 
   ///
-  class FE_NedelecPyramid1 : public HCurlFiniteElement<3>
+  class FE_NedelecPyramid1 : public T_HCurlFiniteElementFO<FE_NedelecPyramid1,ET_PYRAMID,8,1>
   {
-    ///
-// static Array<IPData> ipdata;
-// bool ipdatadestructed;
-///
-static Matrix<> trans;
   public:
-    ///
-    FE_NedelecPyramid1();
-    ///
-    virtual ~FE_NedelecPyramid1();
-    virtual ELEMENT_TYPE ElementType() const { return ET_PYRAMID; }
-
-    ///
-    virtual void CalcShape (const IntegrationPoint & ip, 
-			    SliceMatrix<> shape) const;
-
-    virtual void CalcShape1 (const IntegrationPoint & ip, 
-			     FlatMatrixFixWidth<3> shape) const;
-
-    ///
-    void Orthogonalize();
-
+    template<typename Tx, typename TFA>  
+    static void T_CalcShape (Tx hx[3], TFA & shape) 
+    {
+      Tx x = hx[0], y = hx[1], z = hx[2];
+      z.Value() = z.Value()*(1-1e-12);
+      
+      Tx xt = x/(1-z); 
+      Tx yt = y/(1-z); 
+      Tx sigma[5] = {(1-xt)+(1-yt)+(1-z),xt+(1-yt)+(1-z), xt + yt + (1-z), 
+                     (1-xt)+yt+(1-z),z}; 
+      
+      Tx lami[5] = {(1-xt)*(1-yt)*(1-z),xt*(1-yt)*(1-z), xt * yt * (1-z), 
+                    (1-xt)*yt*(1-z),z}; 
+      
+      Tx lambda[5] = {(1-xt)*(1-yt),xt*(1-yt), xt * yt, 
+                      (1-xt)*yt,z}; 
+      
+      // horizontal edges incl. Nedelec 0
+      for (int i = 0; i < 4; i++)
+        {
+          INT<2> e = ET_trait<ET_PYRAMID>::GetEdge(i);	  
+          Tx xi  = sigma[e[1]] - sigma[e[0]];   
+          Tx lam_t = lambda[e[1]] + lambda[e[0]]; 
+          shape[i] = uDv (0.5 * (1-z)*(1-z)*lam_t, xi);
+        }
+      
+      // vertical edges incl. Nedelec 0  
+      for(int i = 4; i < 8; i++)
+        {
+          INT<2> e = ET_trait<ET_PYRAMID>::GetEdge (i);	  
+          shape[i] = uDv_minus_vDu (lami[e[0]], lami[e[1]]);
+        }
+    }
   };
-
-
+  
+  HCURLFE_EXTERN template class T_HCurlHighOrderFiniteElement<ET_PYRAMID,FE_NedelecPyramid1>;
+  
 
   ///
   class FE_NedelecPyramid2 : public HCurlFiniteElement<3>

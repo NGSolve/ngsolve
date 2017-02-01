@@ -889,6 +889,7 @@ namespace ngcomp
 
     ndomains++;
     ndomains = MyMPI_AllReduce (ndomains, MPI_MAX);
+    pml_trafos.SetSize(ndomains);
 
     nboundaries = -1;
     int nse = GetNSE(); 
@@ -919,8 +920,6 @@ namespace ngcomp
       }
     nbboundaries++;
     nbboundaries = MyMPI_AllReduce(nbboundaries, MPI_MAX);
-
-    pml_trafos.SetSize(ndomains);
   }
 
 

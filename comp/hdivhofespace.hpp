@@ -79,14 +79,14 @@ namespace ngcomp
     ///
     virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override;
     ///
-    virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const override;
+    // virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const override;
     ///
     template <ELEMENT_TYPE ET>
       FiniteElement & T_GetFE (int elnr, bool onlyhdiv, Allocator & lh) const;
     ///
     virtual const FiniteElement & GetHODivFE (int elnr, LocalHeap & lh) const;
     ///
-    virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const override; // 2D: array =0.;
+    // virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const override; // 2D: array =0.;
     ///
     virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
     ///

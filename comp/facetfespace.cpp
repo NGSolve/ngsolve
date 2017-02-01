@@ -181,21 +181,18 @@ namespace ngcomp
     
     nowirebasket = flags.GetDefineFlag ("nowirebasket");
     
-    // TODO: Evaluator for shape tester 
-    static ConstantCoefficientFunction one(1);
+    auto one = make_shared<ConstantCoefficientFunction>(1);
     if (ma->GetDimension() == 2)
       {
-        // integrator = make_shared<MassIntegrator<2>> (&one);
         evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdFacet<2>>>();
         evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
-        integrator[BND] = make_shared<RobinIntegrator<2>> (&one);
+        integrator[BND] = make_shared<RobinIntegrator<2>> (one);
       }
     else
       {
-        // integrator = make_shared<MassIntegrator<3>> (&one);
         evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdFacet<3>>>();
 	evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
-        integrator[BND] = make_shared<RobinIntegrator<3>> (&one);
+        integrator[BND] = make_shared<RobinIntegrator<3>> (one);
       }
 
     if (dimension > 1)
@@ -464,118 +461,175 @@ namespace ngcomp
   
   
   // ------------------------------------------------------------------------
-  const FiniteElement & FacetFESpace :: GetFE (int elnr, LocalHeap & lh) const
+  FiniteElement & FacetFESpace :: GetFE (ElementId ei, Allocator  & lh) const
   {
-    FacetVolumeFiniteElement<1> * fe1d = NULL;
-    FacetVolumeFiniteElement<2> * fe2d = NULL;
-    FacetVolumeFiniteElement<3> * fe3d = NULL;;
-
-    switch (ma->GetElType(elnr))
+    switch(ei.VB())
       {
-      case ET_POINT:   break;
-      case ET_SEGM:    fe1d = new (lh) FacetFE<ET_SEGM> (); break;
-      case ET_TRIG:    fe2d = new (lh) FacetFE<ET_TRIG> (); break;
-      case ET_QUAD:    fe2d = new (lh) FacetFE<ET_QUAD> (); break;
-      case ET_TET:     fe3d = new (lh) FacetFE<ET_TET> (); break;
-      case ET_PYRAMID: fe3d = new (lh) FacetFE<ET_PYRAMID> (); break;
-      case ET_PRISM:   fe3d = new (lh) FacetFE<ET_PRISM> (); break;
-      case ET_HEX:     fe3d = new (lh) FacetFE<ET_HEX> (); break;
-      }
+      case VOL:
+        {
+        FacetVolumeFiniteElement<1> * fe1d = NULL;
+        FacetVolumeFiniteElement<2> * fe2d = NULL;
+        FacetVolumeFiniteElement<3> * fe3d = NULL;;
 
-    if (!fe2d && !fe3d && !fe1d)
-      {
-        stringstream str;
-        str << "FacetFESpace " << GetClassName() 
-            << ", undefined eltype " 
-            << ElementTopology::GetElementName(ma->GetElType(elnr))
-            << ", order = " << order << endl;
-        throw Exception (str.str());
-      }
+        switch (ma->GetElType(ei))
+          {
+          case ET_POINT:   break;
+          case ET_SEGM:    fe1d = new (lh) FacetFE<ET_SEGM> (); break;
+          case ET_TRIG:    fe2d = new (lh) FacetFE<ET_TRIG> (); break;
+          case ET_QUAD:    fe2d = new (lh) FacetFE<ET_QUAD> (); break;
+          case ET_TET:     fe3d = new (lh) FacetFE<ET_TET> (); break;
+          case ET_PYRAMID: fe3d = new (lh) FacetFE<ET_PYRAMID> (); break;
+          case ET_PRISM:   fe3d = new (lh) FacetFE<ET_PRISM> (); break;
+          case ET_HEX:     fe3d = new (lh) FacetFE<ET_HEX> (); break;
+          }
 
-    ArrayMem<int, 12> vnums;
-    ArrayMem<int, 6> fanums, order_fa;
+        if (!fe2d && !fe3d && !fe1d)
+          {
+            stringstream str;
+            str << "FacetFESpace " << GetClassName() 
+                << ", undefined eltype " 
+                << ElementTopology::GetElementName(ma->GetElType(ei))
+                << ", order = " << order << endl;
+            throw Exception (str.str());
+          }
+
+        // ArrayMem<int, 12> vnums;
+        ArrayMem<int, 6> fanums, order_fa;
     
-    ma->GetElVertices(elnr, vnums);
-    ma->GetElFacets (elnr, fanums);
+        // ma->GetElVertices(ei, vnums);
+        ma->GetElFacets (ei, fanums);
 
-    order_fa.SetSize(fanums.Size());
-    for (int j = 0; j < fanums.Size(); j++)
-      order_fa[j] = order_facet[fanums[j]][0]; //SZ not yet anisotropric
+        auto vnums = ma->GetElVertices(ei);
+        
+        order_fa.SetSize(fanums.Size());
+        for (int j = 0; j < fanums.Size(); j++)
+          order_fa[j] = order_facet[fanums[j]][0]; //SZ not yet anisotropric
     
 
-    if (ma->GetDimension() == 1)
-      {
-        fe1d -> SetVertexNumbers (vnums);
-        fe1d -> SetOrder (order_fa);
-        fe1d -> ComputeNDof();
-        return *fe1d;
-      }
-    else if (ma->GetDimension() == 2)
-      {
-        fe2d -> SetVertexNumbers (vnums);
-        fe2d -> SetOrder (order_fa);
-        fe2d -> ComputeNDof();
-        return *fe2d;
-      }
-    else
-      {
-        fe3d -> SetVertexNumbers (vnums);
-        fe3d -> SetOrder (order_fa);
-        fe3d -> ComputeNDof();
-        return *fe3d;
-      }
-  }
+        if (ma->GetDimension() == 1)
+          {
+            fe1d -> SetVertexNumbers (vnums);
+            fe1d -> SetOrder (order_fa);
+            fe1d -> ComputeNDof();
+            return *fe1d;
+          }
+        else if (ma->GetDimension() == 2)
+          {
+            fe2d -> SetVertexNumbers (vnums);
+            fe2d -> SetOrder (order_fa);
+            fe2d -> ComputeNDof();
+            return *fe2d;
+          }
+        else
+          {
+            fe3d -> SetVertexNumbers (vnums);
+            fe3d -> SetOrder (order_fa);
+            fe3d -> ComputeNDof();
+            return *fe3d;
+          }
+        }
+      case BND:
+        {
+        DGFiniteElement<1> * fe1d = 0;
+        DGFiniteElement<2> * fe2d = 0;
 
-
-  // ------------------------------------------------------------------------
-  const FiniteElement & FacetFESpace :: GetSFE (int selnr, LocalHeap & lh) const
-  {
-    DGFiniteElement<1> * fe1d = 0;
-    DGFiniteElement<2> * fe2d = 0;
-
-    switch (ma->GetSElType(selnr))
-      {
-      case ET_SEGM: fe1d = new (lh) L2HighOrderFE<ET_SEGM> (); break;
-      case ET_TRIG: fe2d = new (lh) L2HighOrderFE<ET_TRIG> (); break;
-      case ET_QUAD: fe2d = new (lh) L2HighOrderFE<ET_QUAD> (); break;
-      default:
-        throw Exception (string("FacetFESpace::GetSFE: unsupported element ")+
-                         ElementTopology::GetElementName(ma->GetSElType(selnr)));
-      }
+        switch (ma->GetSElType(ei.Nr()))
+          {
+          case ET_SEGM: fe1d = new (lh) L2HighOrderFE<ET_SEGM> (); break;
+          case ET_TRIG: fe2d = new (lh) L2HighOrderFE<ET_TRIG> (); break;
+          case ET_QUAD: fe2d = new (lh) L2HighOrderFE<ET_QUAD> (); break;
+          default:
+            throw Exception (string("FacetFESpace::GetSFE: unsupported element ")+
+                             ElementTopology::GetElementName(ma->GetElType(ei)));
+          }
      
-    ArrayMem<int,4> vnums;
-    ArrayMem<int,4> ednums;
+        ArrayMem<int,4> vnums;
+        ArrayMem<int,4> ednums;
     
-    ma->GetSElVertices(selnr, vnums);
-    switch (ma->GetSElType(selnr))
-      {
-      case ET_SEGM:
-	{
-	  fe1d -> SetVertexNumbers (vnums);
-	  ma->GetSElEdges(selnr, ednums);
-	  int p = order_facet[ednums[0]][0];
-	  if (highest_order_dc) p--;
-	  fe1d -> SetOrder (p); 
-	  fe1d -> ComputeNDof();
-	  return *fe1d;
-	  break;
-	}
-      case ET_TRIG: 
-      case ET_QUAD: 
-	{
-	  fe2d -> SetVertexNumbers (vnums);
-	  int p = order_facet[ma->GetSElFace(selnr)][0];
-	  if (highest_order_dc) p--;
-	  fe2d -> SetOrder (p);   // SZ not yet anisotropic order for facet fe !!! 
-	  fe2d -> ComputeNDof();
-	  return *fe2d;
-	  break;
-	}
-      default:
-        break;
+        ma->GetSElVertices(ei.Nr(), vnums);
+        switch (ma->GetSElType(ei.Nr()))
+          {
+          case ET_SEGM:
+            {
+              fe1d -> SetVertexNumbers (vnums);
+              ma->GetSElEdges(ei.Nr(), ednums);
+              int p = order_facet[ednums[0]][0];
+              if (highest_order_dc) p--;
+              fe1d -> SetOrder (p); 
+              fe1d -> ComputeNDof();
+              return *fe1d;
+              break;
+            }
+          case ET_TRIG: 
+          case ET_QUAD: 
+            {
+              fe2d -> SetVertexNumbers (vnums);
+              int p = order_facet[ma->GetSElFace(ei.Nr())][0];
+              if (highest_order_dc) p--;
+              fe2d -> SetOrder (p);   // SZ not yet anisotropic order for facet fe !!! 
+              fe2d -> ComputeNDof();
+              return *fe2d;
+              break;
+            }
+          default:
+            break;
+          }
+        return *fe2d;
+        }
+      case BBND:
+        throw Exception("No BBND GetFE implemented for FacetFESpace");
       }
-    return *fe2d;
   }
+
+  // // ------------------------------------------------------------------------
+  // const FiniteElement & FacetFESpace :: GetSFE (int selnr, LocalHeap & lh) const
+  // {
+  //   DGFiniteElement<1> * fe1d = 0;
+  //   DGFiniteElement<2> * fe2d = 0;
+
+  //   switch (ma->GetSElType(selnr))
+  //     {
+  //     case ET_SEGM: fe1d = new (lh) L2HighOrderFE<ET_SEGM> (); break;
+  //     case ET_TRIG: fe2d = new (lh) L2HighOrderFE<ET_TRIG> (); break;
+  //     case ET_QUAD: fe2d = new (lh) L2HighOrderFE<ET_QUAD> (); break;
+  //     default:
+  //       throw Exception (string("FacetFESpace::GetSFE: unsupported element ")+
+  //                        ElementTopology::GetElementName(ma->GetSElType(selnr)));
+  //     }
+     
+  //   ArrayMem<int,4> vnums;
+  //   ArrayMem<int,4> ednums;
+    
+  //   ma->GetSElVertices(selnr, vnums);
+  //   switch (ma->GetSElType(selnr))
+  //     {
+  //     case ET_SEGM:
+  //       {
+  //         fe1d -> SetVertexNumbers (vnums);
+  //         ma->GetSElEdges(selnr, ednums);
+  //         int p = order_facet[ednums[0]][0];
+  //         if (highest_order_dc) p--;
+  //         fe1d -> SetOrder (p); 
+  //         fe1d -> ComputeNDof();
+  //         return *fe1d;
+  //         break;
+  //       }
+  //     case ET_TRIG: 
+  //     case ET_QUAD: 
+  //       {
+  //         fe2d -> SetVertexNumbers (vnums);
+  //         int p = order_facet[ma->GetSElFace(selnr)][0];
+  //         if (highest_order_dc) p--;
+  //         fe2d -> SetOrder (p);   // SZ not yet anisotropic order for facet fe !!! 
+  //         fe2d -> ComputeNDof();
+  //         return *fe2d;
+  //         break;
+  //       }
+  //     default:
+  //       break;
+  //     }
+  //   return *fe2d;
+  // }
 
 
 

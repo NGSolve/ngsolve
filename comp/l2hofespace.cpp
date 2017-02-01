@@ -287,6 +287,7 @@ namespace ngcomp
 
   FiniteElement & L2HighOrderFESpace :: GetFE (ElementId ei, Allocator & alloc) const
   {
+    if (ei.VB()==BBND) throw Exception ("BBND not available in L2HighOrderFESpace");
     if (ei.IsVolume())
       {
         int elnr = ei.Nr();
@@ -360,62 +361,62 @@ namespace ngcomp
       }
   }
 
-  const FiniteElement & L2HighOrderFESpace :: GetFE (int elnr, LocalHeap & lh) const
-  {
-    try
-      { 
-        Ngs_Element ngel = ma->GetElement(elnr);
-        ELEMENT_TYPE eltype = ngel.GetType();
+  // const FiniteElement & L2HighOrderFESpace :: GetFE (int elnr, LocalHeap & lh) const
+  // {
+  //   try
+  //     { 
+  //       Ngs_Element ngel = ma->GetElement(elnr);
+  //       ELEMENT_TYPE eltype = ngel.GetType();
         
-        if (!DefinedOn (ngel.GetIndex()))
-          {
-            switch (eltype)
-              {
-              case ET_POINT:   return * new (lh) ScalarDummyFE<ET_POINT> (); break;
-              case ET_SEGM:    return * new (lh) ScalarDummyFE<ET_SEGM> (); break;
-              case ET_TRIG:    return * new (lh) ScalarDummyFE<ET_TRIG> (); break;
-              case ET_QUAD:    return * new (lh) ScalarDummyFE<ET_QUAD> (); break;
-              case ET_TET:     return * new (lh) ScalarDummyFE<ET_TET> (); break;
-              case ET_PYRAMID: return * new (lh) ScalarDummyFE<ET_PYRAMID> (); break;
-              case ET_PRISM:   return * new (lh) ScalarDummyFE<ET_PRISM> (); break;
-              case ET_HEX:     return * new (lh) ScalarDummyFE<ET_HEX> (); break;
-              }
-          }
+  //       if (!DefinedOn (ngel.GetIndex()))
+  //         {
+  //           switch (eltype)
+  //             {
+  //             case ET_POINT:   return * new (lh) ScalarDummyFE<ET_POINT> (); break;
+  //             case ET_SEGM:    return * new (lh) ScalarDummyFE<ET_SEGM> (); break;
+  //             case ET_TRIG:    return * new (lh) ScalarDummyFE<ET_TRIG> (); break;
+  //             case ET_QUAD:    return * new (lh) ScalarDummyFE<ET_QUAD> (); break;
+  //             case ET_TET:     return * new (lh) ScalarDummyFE<ET_TET> (); break;
+  //             case ET_PYRAMID: return * new (lh) ScalarDummyFE<ET_PYRAMID> (); break;
+  //             case ET_PRISM:   return * new (lh) ScalarDummyFE<ET_PRISM> (); break;
+  //             case ET_HEX:     return * new (lh) ScalarDummyFE<ET_HEX> (); break;
+  //             }
+  //         }
 
-        if (ngel.GetType() == ET_TRIG) 
-	  {
-            int ia[3];
-            FlatArray<int> vnums(3, &ia[0]);
-            vnums = ngel.Vertices();
-	    return *CreateL2HighOrderFE<ET_TRIG> (order, vnums, lh);
-	  }
+  //       if (ngel.GetType() == ET_TRIG) 
+  //         {
+  //           int ia[3];
+  //           FlatArray<int> vnums(3, &ia[0]);
+  //           vnums = ngel.Vertices();
+  //           return *CreateL2HighOrderFE<ET_TRIG> (order, vnums, lh);
+  //         }
 
-        if (eltype == ET_TET)         
-          return *CreateL2HighOrderFE<ET_TET> (order, INT<4>(ngel.Vertices()), lh);
+  //       if (eltype == ET_TET)         
+  //         return *CreateL2HighOrderFE<ET_TET> (order, INT<4>(ngel.Vertices()), lh);
 
-        switch (eltype)
-          {
-          case ET_SEGM:    return T_GetFE<ET_SEGM> (elnr, lh);
+  //       switch (eltype)
+  //         {
+  //         case ET_SEGM:    return T_GetFE<ET_SEGM> (elnr, lh);
 
-          case ET_TRIG:    return T_GetFE<ET_TRIG> (elnr, lh);
-          case ET_QUAD:    return T_GetFE<ET_QUAD> (elnr, lh);
+  //         case ET_TRIG:    return T_GetFE<ET_TRIG> (elnr, lh);
+  //         case ET_QUAD:    return T_GetFE<ET_QUAD> (elnr, lh);
             
-          case ET_TET:     return T_GetFE<ET_TET> (elnr, lh);
-          case ET_PRISM:   return T_GetFE<ET_PRISM> (elnr, lh);
-          case ET_PYRAMID: return T_GetFE<ET_PYRAMID> (elnr, lh);
-          case ET_HEX:     return T_GetFE<ET_HEX> (elnr, lh);
+  //         case ET_TET:     return T_GetFE<ET_TET> (elnr, lh);
+  //         case ET_PRISM:   return T_GetFE<ET_PRISM> (elnr, lh);
+  //         case ET_PYRAMID: return T_GetFE<ET_PYRAMID> (elnr, lh);
+  //         case ET_HEX:     return T_GetFE<ET_HEX> (elnr, lh);
             
-          default:
-            throw Exception ("illegal element in L2HoFeSpace::GetFE");
-          }
-      } 
-    catch (Exception & e)
-      {
-	e.Append ("in L2HoFESpace::GetElement");
-	e.Append ("\n");
-	throw; 
-      }
-  }
+  //         default:
+  //           throw Exception ("illegal element in L2HoFeSpace::GetFE");
+  //         }
+  //     } 
+  //   catch (Exception & e)
+  //     {
+  //       e.Append ("in L2HoFESpace::GetElement");
+  //       e.Append ("\n");
+  //       throw; 
+  //     }
+  // }
 
   
   template <ELEMENT_TYPE ET>
@@ -469,23 +470,23 @@ namespace ngcomp
 
 
  
-  const FiniteElement & L2HighOrderFESpace :: GetSFE (int elnr, LocalHeap & lh) const
-  {
-    switch (ma->GetSElType(elnr))
-      {
-      case ET_POINT: return *new (lh) DummyFE<ET_POINT>; 
-      case ET_SEGM:  return *new (lh) DummyFE<ET_SEGM>; break;
-      case ET_TRIG:  return *new (lh) DummyFE<ET_TRIG>; break;
-      case ET_QUAD:  return *new (lh) DummyFE<ET_QUAD>; break;
+  // const FiniteElement & L2HighOrderFESpace :: GetSFE (int elnr, LocalHeap & lh) const
+  // {
+  //   switch (ma->GetSElType(elnr))
+  //     {
+  //     case ET_POINT: return *new (lh) DummyFE<ET_POINT>; 
+  //     case ET_SEGM:  return *new (lh) DummyFE<ET_SEGM>; break;
+  //     case ET_TRIG:  return *new (lh) DummyFE<ET_TRIG>; break;
+  //     case ET_QUAD:  return *new (lh) DummyFE<ET_QUAD>; break;
 
-      default:
-	stringstream str;
-	str << "FESpace " << GetClassName() 
-	    << ", undefined surface eltype " << ma->GetSElType(elnr) 
-	    << ", order = " << order << endl;
-	throw Exception (str.str());
-      }
-  }
+  //     default:
+  //       stringstream str;
+  //       str << "FESpace " << GetClassName() 
+  //           << ", undefined surface eltype " << ma->GetSElType(elnr) 
+  //           << ", order = " << order << endl;
+  //       throw Exception (str.str());
+  //     }
+  // }
 
   size_t L2HighOrderFESpace :: GetNDof () const throw()
   {
@@ -676,14 +677,17 @@ namespace ngcomp
 
     if (ma->GetDimension() == 2)
       {
-	// integrator[BND].reset (new RobinIntegrator<2> (new ConstantCoefficientFunction(1)));
         integrator[BND] = 
           make_shared<RobinIntegrator<2>>(make_shared<ConstantCoefficientFunction>(1));
+        evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
+        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<2>>>(); // for dimension
       }
     else
       {
 	integrator[BND] = 
           make_shared<RobinIntegrator<3>> (make_shared<ConstantCoefficientFunction>(1));
+        evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
+        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<3>>>(); // for dimension      
       }
 
     if (dimension > 1)
@@ -728,84 +732,134 @@ namespace ngcomp
     first_element_dof[nel] = ndof;
   }
 
-  const FiniteElement & L2SurfaceHighOrderFESpace :: GetSFE (int elnr, LocalHeap & lh) const
-  {
-    if (ma->GetDimension() == 2)
-      {
-	DGFiniteElement<1> * fe1d = 0;
+  // const FiniteElement & L2SurfaceHighOrderFESpace :: GetSFE (int elnr, LocalHeap & lh) const
+  // {
+  //   if (ma->GetDimension() == 2)
+  //     {
+  //       DGFiniteElement<1> * fe1d = 0;
 	
-	Ngs_Element ngel = ma->GetElement<1,BND> (elnr);
+  //       Ngs_Element ngel = ma->GetElement<1,BND> (elnr);
 
-	switch (ngel.GetType())
-	  {
-	  case ET_SEGM: fe1d = new (lh) L2HighOrderFE<ET_SEGM> (); break;
-	  default:
-	    ;
-	  }
+  //       switch (ngel.GetType())
+  //         {
+  //         case ET_SEGM: fe1d = new (lh) L2HighOrderFE<ET_SEGM> (); break;
+  //         default:
+  //           ;
+  //         }
 
-	fe1d -> SetVertexNumbers (ngel.vertices);
-	fe1d -> SetOrder (INT<1> (order));
-	fe1d -> ComputeNDof(); 
-	return *fe1d;
-      }
-    else
-      {
-	DGFiniteElement<2> * fe2d = 0;
+  //       fe1d -> SetVertexNumbers (ngel.vertices);
+  //       fe1d -> SetOrder (INT<1> (order));
+  //       fe1d -> ComputeNDof(); 
+  //       return *fe1d;
+  //     }
+  //   else
+  //     {
+  //       DGFiniteElement<2> * fe2d = 0;
 	
-	Ngs_Element ngel = ma->GetElement<2,BND> (elnr);
+  //       Ngs_Element ngel = ma->GetElement<2,BND> (elnr);
 	
-	switch (ngel.GetType())
-	  {
-	  case ET_TRIG: fe2d = new (lh) L2HighOrderFE<ET_TRIG> (); break;
-	  case ET_QUAD: fe2d = new (lh) L2HighOrderFE<ET_QUAD> (); break;
-	  default:
-	    ;
-	  }
+  //       switch (ngel.GetType())
+  //         {
+  //         case ET_TRIG: fe2d = new (lh) L2HighOrderFE<ET_TRIG> (); break;
+  //         case ET_QUAD: fe2d = new (lh) L2HighOrderFE<ET_QUAD> (); break;
+  //         default:
+  //           ;
+  //         }
 	
-	fe2d -> SetVertexNumbers (ngel.vertices);
-	fe2d -> SetOrder (INT<2> (order));
-	fe2d -> ComputeNDof(); 
-	return *fe2d;
-      }
-	/*
+  //       fe2d -> SetVertexNumbers (ngel.vertices);
+  //       fe2d -> SetOrder (INT<2> (order));
+  //       fe2d -> ComputeNDof(); 
+  //       return *fe2d;
+  //     }
+  //       /*
 
-    FiniteElement * fe = 0;
+  //   FiniteElement * fe = 0;
     
-    switch (ma->GetSElType(elnr))
-      {
-      case ET_SEGM:
-	fe = segm; break;
-      case ET_TRIG:
-	fe = trig; break;
-      case ET_QUAD:
-	fe = quad; break;
-      default:
-	fe = 0;
-      }
+  //   switch (ma->GetSElType(elnr))
+  //     {
+  //     case ET_SEGM:
+  //       fe = segm; break;
+  //     case ET_TRIG:
+  //       fe = trig; break;
+  //     case ET_QUAD:
+  //       fe = quad; break;
+  //     default:
+  //       fe = 0;
+  //     }
     
-    ArrayMem<int,12> vnums; // calls GetElPNums -> max 12 for PRISM12
-    ma->GetSElVertices(elnr, vnums);
+  //   ArrayMem<int,12> vnums; // calls GetElPNums -> max 12 for PRISM12
+  //   ma->GetSElVertices(elnr, vnums);
 
-    if (!fe)
-      {
-	stringstream str;
-	str << "L2SurfaceHighOrderFESpace " << GetClassName() 
-	    << ", undefined eltype " 
-	    << ElementTopology::GetElementName(ma->GetSElType(elnr))
-	    << ", order = " << order << endl;
-	throw Exception (str.str());
-      }
+  //   if (!fe)
+  //     {
+  //       stringstream str;
+  //       str << "L2SurfaceHighOrderFESpace " << GetClassName() 
+  //           << ", undefined eltype " 
+  //           << ElementTopology::GetElementName(ma->GetSElType(elnr))
+  //           << ", order = " << order << endl;
+  //       throw Exception (str.str());
+  //     }
 
-    dynamic_cast<L2HighOrderFiniteElement<2>*> (fe) -> SetVertexNumbers (vnums);
+  //   dynamic_cast<L2HighOrderFiniteElement<2>*> (fe) -> SetVertexNumbers (vnums);
 
-    return *fe;
-	*/
-  }
- 
-  const FiniteElement & L2SurfaceHighOrderFESpace :: GetFE (int elnr, LocalHeap & lh) const
+  //   return *fe;
+  //       */
+  // }
+
+  FiniteElement & L2SurfaceHighOrderFESpace :: GetFE (ElementId ei, Allocator & lh) const
   {
-    throw Exception ("Volume elements not available for L2SurfaceHighOrderFESpace");
+    switch(ei.VB())
+      {
+      case VOL:
+        throw Exception ("Volume elements not available for L2SurfaceHighOrderFESpace");
+      case BND:
+
+        if (ma->GetDimension() == 2)
+          {
+            DGFiniteElement<1> * fe1d = 0;
+	
+            Ngs_Element ngel = ma->GetElement<1,BND> (ei.Nr());
+
+            switch (ngel.GetType())
+              {
+              case ET_SEGM: fe1d = new (lh) L2HighOrderFE<ET_SEGM> (); break;
+              default:
+                ;
+              }
+
+            fe1d -> SetVertexNumbers (ngel.vertices);
+            fe1d -> SetOrder (INT<1> (order));
+            fe1d -> ComputeNDof(); 
+            return *fe1d;
+          }
+        else
+          {
+            DGFiniteElement<2> * fe2d = 0;
+	
+            Ngs_Element ngel = ma->GetElement<2,BND> (ei.Nr());
+	
+            switch (ngel.GetType())
+              {
+              case ET_TRIG: fe2d = new (lh) L2HighOrderFE<ET_TRIG> (); break;
+              case ET_QUAD: fe2d = new (lh) L2HighOrderFE<ET_QUAD> (); break;
+              default:
+                ;
+              }
+	
+            fe2d -> SetVertexNumbers (ngel.vertices);
+            fe2d -> SetOrder (INT<2> (order));
+            fe2d -> ComputeNDof(); 
+            return *fe2d;
+          }
+
+      case BBND:
+        throw Exception ("BBND elements not available for L2SurfaceHighOrderFESpace");
+      }
   }
+  // const FiniteElement & L2SurfaceHighOrderFESpace :: GetFE (int elnr, LocalHeap & lh) const
+  // {
+  //   throw Exception ("Volume elements not available for L2SurfaceHighOrderFESpace");
+  // }
  
   size_t L2SurfaceHighOrderFESpace :: GetNDof () const throw()
   {
