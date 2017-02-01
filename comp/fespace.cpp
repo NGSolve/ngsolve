@@ -813,26 +813,26 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void FESpace :: GetNodeDofNrs (NODE_TYPE nt, int nr, Array<int> & dnums) const
   {
-    switch (nt)
-      {
-      case NT_VERTEX: GetVertexDofNrs(nr, dnums); break;
-      case NT_EDGE:   GetEdgeDofNrs(nr, dnums); break;
-      case NT_FACE:   
-        if (ma->GetDimension() == 3)
-          GetFaceDofNrs(nr, dnums); 
-        else
-          GetInnerDofNrs(nr, dnums); 
-        break;
-      case NT_CELL:   GetInnerDofNrs(nr, dnums); break;
-      case NT_ELEMENT: case NT_FACET:
-        GetNodeDofNrs (StdNodeType(nt, ma->GetDimension()), nr, dnums);
-        break;
-      }
+    GetDofNrs(NodeId(nt,nr),dnums);
   }
 
   void FESpace :: GetDofNrs (NodeId ni, Array<int> & dnums) const
   {
-    GetNodeDofNrs (ni.GetType(), ni.GetNr(), dnums);
+    switch (ni.GetType())
+      {
+      case NT_VERTEX: GetVertexDofNrs(ni.GetNr(), dnums); break;
+      case NT_EDGE:   GetEdgeDofNrs(ni.GetNr(), dnums); break;
+      case NT_FACE:   
+        if (ma->GetDimension() == 3)
+          GetFaceDofNrs(ni.GetNr(), dnums); 
+        else
+          GetInnerDofNrs(ni.GetNr(), dnums); 
+        break;
+      case NT_CELL:   GetInnerDofNrs(ni.GetNr(), dnums); break;
+      case NT_ELEMENT: case NT_FACET:
+        GetDofNrs (NodeId(StdNodeType(ni.GetType(), ma->GetDimension()), ni.GetNr()), dnums);
+        break;
+      }
   }
   
   void FESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
