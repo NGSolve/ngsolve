@@ -29,7 +29,7 @@ namespace ngfem
             class BASE = T_ScalarFiniteElement< SHAPES, ET> >
   
 
-  class H1HighOrderFE : public BASE, public ET_trait<ET>
+  class H1HighOrderFE : public BASE, public ET_trait<ET>, public VertexOrientedFE<ET>
   {
   protected:
 
@@ -38,11 +38,10 @@ namespace ngfem
     using ScalarFiniteElement<DIM>::ndof;
     using ScalarFiniteElement<DIM>::order;
 
-    enum { N_VERTEX = ET_trait<ET>::N_VERTEX };
-    enum { N_EDGE   = ET_trait<ET>::N_EDGE };
-    enum { N_FACE   = ET_trait<ET>::N_FACE };
-    enum { N_CELL   = ET_trait<ET>::N_CELL };
-
+    using ET_trait<ET>::N_VERTEX;
+    using ET_trait<ET>::N_EDGE;
+    using ET_trait<ET>::N_FACE;
+    using ET_trait<ET>::N_CELL;
     using ET_trait<ET>::FaceType;
     using ET_trait<ET>::GetEdgeSort;
     using ET_trait<ET>::GetFaceSort;
@@ -51,8 +50,7 @@ namespace ngfem
 
     typedef unsigned char TORDER;
 
-    /// global vertex numbers used of edge/face orientation
-    Vec<N_VERTEX, int> vnums;
+    using VertexOrientedFE<ET>::vnums;
 
     /// order of edge shapes
     Vec<N_EDGE, TORDER> order_edge; 
@@ -64,6 +62,10 @@ namespace ngfem
     Vec<N_CELL, INT<3,TORDER> > order_cell;
 
   public:
+
+    using VertexOrientedFE<ET>::SetVertexNumbers;
+    using VertexOrientedFE<ET>::SetVertexNumber;
+    
     /// minimal constructor, orders will be set later
     INLINE H1HighOrderFE () { ; } 
 
@@ -81,15 +83,6 @@ namespace ngfem
     }
 
     // virtual NGS_DLL_HEADER ~H1HighOrderFE () { ; }
-
-    /// assignes vertex numbers
-    template <typename TA> 
-    void SetVertexNumbers (const TA & avnums)
-    { for (int i = 0; i < N_VERTEX; i++) vnums[i] = avnums[i]; }
-
-    /// assign vertex number
-    void SetVertexNumber (int nr, int vnum) { vnums[nr] = vnum; }
-
     /// set edge orders
     template <typename TA>
     void SetOrderEdge (const TA & oe)

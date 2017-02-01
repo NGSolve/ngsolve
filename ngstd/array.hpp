@@ -55,8 +55,8 @@ namespace ngstd
           return i;
       return -1;
     }
-    // INLINE auto operator[] (int i) -> decltype (Spec()[i]) { return Spec()[i]; }
-    // INLINE auto operator[] (int i) const -> decltype (T::operator[](i)) { return Spec()[i]; }
+    INLINE auto operator[] (size_t i) { return Spec()[i]; }
+    INLINE auto operator[] (size_t i) const { return Spec()[i]; }
   };
 
 
@@ -335,7 +335,7 @@ namespace ngstd
 
     /// copy constructor allows size-type conversion 
     INLINE FlatArray (const FlatArray<T> & a2)  
-      : size(a2.Size()), data(&a2[0]) { ; } 
+      : size(a2.Size()), data(a2.data) { ; } 
 
     /// provide size and memory
     INLINE FlatArray (size_t asize, T * adata) 

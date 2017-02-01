@@ -369,6 +369,11 @@ namespace ngstd
         }
     }
 
+    const T & operator[] (T_HASH ahash) const
+    {
+      return Get(ahash);
+    }
+
     class Iterator
     {
       const HashTable & ht;
