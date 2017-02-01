@@ -99,7 +99,15 @@ namespace ngcomp
     void Evaluate(const BaseMappedIntegrationPoint & ip, FlatVector<Complex> values) const
     {
       Matrix<Complex> jac(Dimension(),Dimension());
-      pmltrafo->MapPointV(ip,values,jac);
+      if (ip.IsComplex())
+      {
+        Vector<double> rpoint(Dimension());
+        for (int i : Range(Dimension()))
+          rpoint(i)=ip.GetPointComplex(i).real();
+        pmltrafo->MapPointV(rpoint,values,jac);
+      } 
+      else 
+        pmltrafo->MapPointV(ip,values,jac);
     }
   };
   
@@ -122,7 +130,15 @@ namespace ngcomp
     {
       Matrix<Complex> jac(Dimension(),Dimension());
       Vector<Complex> val(Dimension());
-      pmltrafo->MapPointV(ip,val,jac);
+      if (ip.IsComplex())
+      {
+        Vector<double> rpoint(Dimension());
+        for (int i : Range(Dimension()))
+          rpoint(i)=ip.GetPointComplex(i).real();
+        pmltrafo->MapPointV(rpoint,val,jac);
+      } 
+      else 
+        pmltrafo->MapPointV(ip,val,jac);
       values = jac;
     }
   };
@@ -143,14 +159,30 @@ namespace ngcomp
     {
       Matrix<Complex> jac(Dimension(),Dimension());
       Vector<Complex> val(Dimension());
-      pmltrafo->MapPointV(ip,val,jac);
+      if (ip.IsComplex())
+      {
+        Vector<double> rpoint(Dimension());
+        for (int i : Range(Dimension()))
+          rpoint(i)=ip.GetPointComplex(i).real();
+        pmltrafo->MapPointV(rpoint,val,jac);
+      } 
+      else 
+        pmltrafo->MapPointV(ip,val,jac);
       return Det(jac);
     }
     void Evaluate(const BaseMappedIntegrationPoint & ip, FlatVector<Complex> value) const
     {
       Matrix<Complex> jac(Dimension(),Dimension());
       Vector<Complex> val(Dimension());
-      pmltrafo->MapPointV(ip,val,jac);
+      if (ip.IsComplex())
+      {
+        Vector<double> rpoint(Dimension());
+        for (int i : Range(Dimension()))
+          rpoint(i)=ip.GetPointComplex(i).real();
+        pmltrafo->MapPointV(rpoint,val,jac);
+      } 
+      else 
+        pmltrafo->MapPointV(ip,val,jac);
       value = Det(jac);
     }
   };
