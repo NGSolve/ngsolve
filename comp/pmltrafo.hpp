@@ -142,6 +142,37 @@ namespace ngcomp
       values = jac;
     }
   };
+    class PML_JacInv : public CoefficientFunction
+  {
+    shared_ptr<PML_Transformation> pmltrafo;
+    public:
+
+    PML_JacInv(shared_ptr<PML_Transformation> _pmltrafo, int dim) : 
+      CoefficientFunction(dim*dim,true), pmltrafo(_pmltrafo)
+    {
+      SetDimensions(Array<int>({dim,dim}));
+    }
+    using CoefficientFunction::Evaluate;
+    double Evaluate(const BaseMappedIntegrationPoint & ip) const
+    {
+      throw Exception("PML_JacInv::Evaluate: PML_JacInv is complex");
+    }
+    void Evaluate(const BaseMappedIntegrationPoint & ip, FlatVector<Complex> values) const
+    {
+      Matrix<Complex> jac(Dimension(),Dimension());
+      Vector<Complex> val(Dimension());
+      if (ip.IsComplex())
+      {
+        Vector<double> rpoint(Dimension());
+        for (int i : Range(Dimension()))
+          rpoint(i)=ip.GetPointComplex()(i).real();
+        pmltrafo->MapPointV(rpoint,val,jac);
+      } 
+      else 
+        pmltrafo->MapPointV(ip,val,jac);
+      values = Inv(jac);
+    }
+  };
     class PML_Det : public CoefficientFunction
   {
     shared_ptr<PML_Transformation> pmltrafo;
