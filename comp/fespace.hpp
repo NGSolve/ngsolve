@@ -387,7 +387,7 @@ namespace ngcomp
 
     /// get dofs on nr'th node of type nt.
     [[deprecated("Use GetDofNrs with NodeId instead of nt/nr")]]    
-    virtual void GetNodeDofNrs (NODE_TYPE nt, int nr, Array<int> & dnums) const;
+    virtual void GetNodeDofNrs (NODE_TYPE nt, int nr, Array<int> & dnums) const final;
     /// get number of low-order dofs for node of type nt
     // virtual int GetNLowOrderNodeDofs ( NODE_TYPE nt ) const;
     // { return lodofs_per_node[nt]; }
