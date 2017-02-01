@@ -317,9 +317,9 @@ namespace ngbla
     INLINE const T & Spec() const { return static_cast<const T&> (*this); }
 
 
-    /// height 
-    INLINE size_t Height() const { return Spec().T::Height(); }
-    INLINE size_t Width() const { return Spec().T::Width(); }
+    /// height
+    size_t Height() const { return Spec().T::Height(); }
+    size_t Width() const { return Spec().T::Width(); }
 
     // INLINE auto operator() (int i) const -> decltype (this->Spec()(i)) { return this->Spec()(i); }
     // INLINE auto operator() (int i, int j) const -> decltype (this->Spec()(i,j)) { return this->Spec()(i,j); }

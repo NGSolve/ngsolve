@@ -1354,7 +1354,7 @@ public:
           AutoDiffDiff<1> res = lam(a,b);
           result(k,i) = res.Value();
           deriv(k,i) = res.DValue(0);
-          dderiv(k,i) = res.DValue(0);
+          dderiv(k,i) = res.DDValue(0);
           /*
           result(k,i) = lam (ra(k,i), rb(k,i));
           double d_da, d_db;
