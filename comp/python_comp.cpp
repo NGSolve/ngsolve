@@ -197,6 +197,7 @@ static GlobalDummyVariables globvar;
 typedef PyWrapper<CoefficientFunction> PyCF;
 typedef PyWrapperDerived<PML_CF,CoefficientFunction> PyPMLCF;
 typedef PyWrapperDerived<PML_Jac,CoefficientFunction> PyPMLJac;
+typedef PyWrapperDerived<PML_JacInv,CoefficientFunction> PyPMLJacInv;
 typedef PyWrapperDerived<PML_Det,CoefficientFunction> PyPMLDet;
 typedef PyWrapper<PML_Transformation> PyPML;
 typedef PyWrapperDerived<RadialPML_Transformation<0>,PML_Transformation> PyRadPML; 
@@ -210,6 +211,7 @@ void ExportPml(py::module &m)
 {
   py::class_<PyPMLCF,PyCF> (m, "PML_CF", "pml scaling function");
   py::class_<PyPMLJac,PyCF> (m, "PML_Jac", "pml jacobian function");
+  py::class_<PyPMLJacInv,PyCF> (m, "PML_JacInv", "inverse of pml jacobian function");
   py::class_<PyPMLDet,PyCF> (m, "PML_Det", "pml determinant function");
 
   py::class_<PyPML>(m, "PML", "Base pml object")
@@ -253,7 +255,13 @@ void ExportPml(py::module &m)
                       auto pcf = make_shared<PML_Det> (dimpml.Get()->CreateDim(dim));
                       return PyCF(pcf);
                     },
-        "the pml determinant as coefficient function")
+          "the pml transformation determinant as coefficient function")
+    .def("JacInv_CF", [](PyPML *instance, int dim) {
+                      PyPML dimpml = instance->Get()->CreateDim(dim);
+                      auto pcf = make_shared<PML_JacInv> (dimpml.Get()->CreateDim(dim),dim);
+                      return PyCF(pcf);
+                    },
+        "the pml jacobian inverse as coefficient function")
     .def("__add__", [](PyPML *instance, PyPML addor) {
                       auto dimpml1 = instance->Get()->CreateDim(0);
                       auto dimpml2 = addor.Get()->CreateDim(0);
