@@ -38,16 +38,6 @@ del path
 # from ngsolve.solve import *
 # from ngsolve.utils import *
 
-rstdocu = True
-try:
-    rstdocu
-    print("rstdocu_found")
-    from ngs_docu_flag import Setdocu
-    Setdocu()
-except NameError:
-    print("rstdocu not found")
-    pass
-
 from ngslib import *
 
 ngstd.__all__ = ['ArrayD', 'ArrayI', 'BitArray', 'Flags', 'HeapReset', 'IntRange', 'LocalHeap', 'Timers', 'RunWithTaskManager', 'TaskManager', 'SetNumThreads']

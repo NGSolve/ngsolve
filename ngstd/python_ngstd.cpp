@@ -75,7 +75,7 @@ void SetFlag(Flags &flags, string s, py::object value)
 
 const char* docu_string(const char* str)
 {
-  if(rst_docu)
+  if(getenv("NETGEN_DOCUMENTATION_RST_FORMAT"))
     return str;
   std::string replacement(str);
   bool replaced = false;

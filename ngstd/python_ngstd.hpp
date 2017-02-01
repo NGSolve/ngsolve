@@ -397,7 +397,6 @@ template <> inline void PyExportSymbolTable<shared_ptr<double>, shared_ptr<doubl
 }
 
 // replace docu links with plain text for help function
-extern bool rst_docu;
 const char* docu_string(const char* str);
 
 PYBIND11_DECLARE_HOLDER_TYPE(T, std::shared_ptr<T>);
