@@ -43,6 +43,7 @@ namespace ngfem
 #include "recursive_pol_trig.hpp"
 // #include "recursive_pol_tet.hpp"
 
+#include "fe_interfaces.hpp"
 #include "finiteelement.hpp"
 #include "scalarfe.hpp"
 #include "tscalarfe.hpp"
