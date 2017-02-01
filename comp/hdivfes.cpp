@@ -48,8 +48,8 @@ namespace ngcomp
     
     order = 1; // he: see above constructor!
         
-    trig    = new FE_RTTrig0;
-    segm    = new HDivNormalSegm0;
+    // trig    = new FE_RTTrig0;
+    // segm    = new HDivNormalSegm0;
 
     SetDummyFE<HDivDummyFE> ();
     
@@ -95,6 +95,15 @@ namespace ngcomp
     // FinalizeUpdate (lh);
   }
 
+  FiniteElement & RaviartThomasFESpace :: GetFE (ElementId ei, Allocator & lh) const
+  {
+    switch(ma->GetElType(ei))
+      {
+      case ET_TRIG: return *(new (lh) FE_RTTrig0);
+      case ET_SEGM: return *(new (lh) HDivNormalSegm0);
+      default: throw Exception ("Element type not available for RaviartThomasFESpace::GetFE");
+      }
+  }
   
   size_t RaviartThomasFESpace :: GetNDof () const throw()
   {

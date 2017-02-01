@@ -43,6 +43,7 @@ namespace ngfem
 #include "recursive_pol_trig.hpp"
 // #include "recursive_pol_tet.hpp"
 
+#include "fe_interfaces.hpp"
 #include "finiteelement.hpp"
 #include "scalarfe.hpp"
 #include "tscalarfe.hpp"
@@ -80,7 +81,7 @@ namespace ngfem
 #include "hdiv_equations.hpp"
 #include "elasticity_equations.hpp"
 #include "symbolicintegrator.hpp"
-
+#include "tensorproductintegrator.hpp"
 // #include "pml.hpp" 
 
 // using ngfem::ELEMENT_TYPE;

@@ -24,7 +24,7 @@ void SetFlag(Flags &flags, string s, py::object value)
       // call recursively to set dictionary
       for (auto item : vdd) {
         string name = item.first.cast<string>();
-        py::object val(item.second, true);
+        py::object val = py::reinterpret_borrow<py::object>(item.second);
         SetFlag(flags, name, val);
       }
       return;

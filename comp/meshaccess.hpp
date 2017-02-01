@@ -643,12 +643,18 @@ namespace ngcomp
     void GetElVertices (ElementId ei, Array<int> & vnums) const
     { vnums = GetElement(ei).Vertices(); }
 
+    auto GetElVertices (ElementId ei) const
+    { return GetElement(ei).Vertices(); }
+
     /// returns the vertices of a boundary element
     void GetSElVertices (int selnr, Array<int> & vnums) const
     { vnums = GetSElement(selnr).Vertices(); }
 
-    void GetElEdges(ElementId ei, Array<int> & ednums) const
+    void GetElEdges (ElementId ei, Array<int> & ednums) const
     { ednums = GetElement(ei).Edges(); }
+
+    auto GetElEdges (ElementId ei) const
+    { return GetElement(ei).Edges(); }
 
     /// returns the edges of an element
     void GetElEdges (int elnr, Array<int> & ednums) const
