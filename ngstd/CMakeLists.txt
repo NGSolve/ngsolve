@@ -5,7 +5,7 @@ set(ngstd_sources
         symboltable.cpp blockalloc.cpp evalfunc.cpp templates.cpp  
         localheap.cpp stringops.cpp profiler.cpp archive.cpp
         cuda_ngstd.cpp python_ngstd.cpp taskmanager.cpp
-        paje_interface.cpp bspline.cpp setdocu.cpp
+        paje_interface.cpp bspline.cpp 
         )
 
 if(NOT WIN32)
