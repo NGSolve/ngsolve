@@ -1037,7 +1037,7 @@ namespace ngcomp
           VectorMem<50> elu(dnums.Size()*dim);
 
           gf.GetElementVector ({comp}, dnums, elu);
-          fes.TransformVec (elnr, vb, elu, TRANSFORM_SOL);
+          fes.TransformVec (ei, elu, TRANSFORM_SOL);
 
           if (diffop && vb==VOL)
             diffop->Apply (fel, mir, elu, {values});
@@ -1085,7 +1085,7 @@ namespace ngcomp
           VectorMem<50> elu(dnums.Size()*dim);
 
           gf.GetElementVector ({comp}, dnums, elu);
-          fes.TransformVec (elnr, vb, elu, TRANSFORM_SOL);
+          fes.TransformVec (ei, elu, TRANSFORM_SOL);
 
           if (diffop && vb==VOL)
             diffop->Apply (fel, mir, elu, {values}, lh2);
