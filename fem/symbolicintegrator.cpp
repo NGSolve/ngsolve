@@ -1706,6 +1706,27 @@ namespace ngfem
                   
                   cf -> EvaluateDeriv (mir, val, deriv);
                   proxyvalues(STAR,l,k) = deriv.Col(0);
+
+                  /*
+                  *testout << "deriv = " << deriv.Col(0);
+                  *testout << "val   = " << val.Col(0);
+                  // num-diff
+                  FlatMatrix<> deriv1(mir.Size(), 1, lh);
+                  deriv1 = deriv;
+                  double eps = 1e-6;
+                  cf -> Evaluate (mir, val);
+                  auto hmat = ud.GetMemory(proxy1);
+                  for (int i = 0; i < mir.Size(); i++)
+                    hmat(i,k) += eps;
+                  cf -> Evaluate (mir, deriv);  
+                  for (int i = 0; i < mir.Size(); i++)
+                    hmat(i,k) -= eps;
+                  deriv -= val;
+                  deriv *= 1/eps;
+                  *testout << "num-diff = " << 1/eps * (deriv.Col(0)-val.Col(0)) << endl;
+                  *testout << "err = " << deriv1-deriv << endl;
+                  if (L2Norm(deriv1-deriv) > 1e-4) *testout << "big error" << endl;
+                  */
                 }
               else
                 proxyvalues(STAR,l,k) = 0;

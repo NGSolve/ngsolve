@@ -195,25 +195,9 @@ public:
 static GlobalDummyVariables globvar;
 
 typedef PyWrapper<CoefficientFunction> PyCF;
-/*typedef PyWrapperDerived<PML_CF,CoefficientFunction> PyPMLCF;
-typedef PyWrapperDerived<PML_Jac,CoefficientFunction> PyPMLJac;
-typedef PyWrapperDerived<PML_JacInv,CoefficientFunction> PyPMLJacInv;
-typedef PyWrapperDerived<PML_Det,CoefficientFunction> PyPMLDet;*/
 typedef PyWrapper<PML_Transformation> PyPML;
-/*typedef PyWrapperDerived<RadialPML_Transformation<0>,PML_Transformation> PyRadPML; 
-typedef PyWrapperDerived<CustomPML_Transformation<0>,PML_Transformation> PyCustPML; 
-typedef PyWrapperDerived<CartesianPML_Transformation<0>,PML_Transformation> PyCartPML; 
-typedef PyWrapperDerived<BrickRadialPML_Transformation<0>,PML_Transformation> PyBrickPML; 
-typedef PyWrapperDerived<HalfSpacePML_Transformation<0>,PML_Transformation> PyHalfPML; 
-typedef PyWrapperDerived<SumPML<0>,PML_Transformation> PySumPML; 
-typedef PyWrapperDerived<CompoundPML<0,0,0>,PML_Transformation> PyCompPML; */
 void ExportPml(py::module &m)
 {
-  /*py::class_<PyPMLCF,PyCF> (m, "PML_CF", "pml scaling function");
-  py::class_<PyPMLJac,PyCF> (m, "PML_Jac", "pml jacobian function");
-  py::class_<PyPMLJacInv,PyCF> (m, "PML_JacInv", "inverse of pml jacobian function");
-  py::class_<PyPMLDet,PyCF> (m, "PML_Det", "pml determinant function");*/
-
   py::class_<PyPML>(m, "PML", "Base pml object")
     .def("__call__",  [](py::args varargs) {
                       PyPML self = py::extract<PyPML>(varargs[0])();
@@ -1586,12 +1570,12 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
          [] (const PyFES & self) 
            {
              return MakeProxyFunction (*self.Get(), false);
-           })
+           }, docu_string("Gives a proxy to be used as a trialfunction in :any:`Symbolic Integrators`"))
     .def("TestFunction",
          [] (const PyFES & self) 
            {
              return MakeProxyFunction (*self.Get(), true);
-           })
+           }, docu_string("Gives a proxy to be used as a testfunction for :any:`Symbolic Integrators`"))
 
     .def("SolveM", FunctionPointer
         ( [] (const PyFES & self,
