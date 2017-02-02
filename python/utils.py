@@ -34,6 +34,7 @@ def L2(mesh, **args):
     return FESpace("l2ho", mesh, **args)
 
 class HCurl(HCurlFunctionsWrap):
+    """ Create HCurl finite element space, derived from FESpace."""
     def __init__(self,mesh,*args,**kwargs):
         # fix for pickling
         #if mesh=="hcurlho":
