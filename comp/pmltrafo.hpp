@@ -4,13 +4,13 @@
 /*********************************************************************/
 /* File:   pmltrafo.hpp                                              */
 /* Author: M. Wess, J. Schoeberl                                     */
-/* Date:   2016                                                      Ge/
+/* Date:   2016                                                      */
 /*********************************************************************/
 
 
 namespace ngcomp
 {
-  //PML base object
+  //PML base object for mapping points to Vec<DIM> cast to PML_TransformationDim
   class PML_Transformation
   {
     int dim;
@@ -30,46 +30,6 @@ namespace ngcomp
     
     virtual void MapPointV(FlatVector<double> hpoint, FlatVector<Complex> point, FlatMatrix<Complex> jac) const = 0;
 
-    virtual void MapPoint(Vec<0> & hpoint, Vec<0,Complex> & point,
-                   Mat<0,0,Complex> & jac) const 
-    {
-      throw Exception("PML_Transformation::MapPoint: No PML Transformation for dimension 0 specified");
-    }
-    virtual void MapPoint(Vec<1> & hpoint, Vec<1,Complex> & point,
-                   Mat<1,1,Complex> & jac) const
-    {
-      throw Exception("PML_Transformation::MapPoint: No PML Transformation for dimension 1 specified");
-    }
-    virtual void MapPoint(Vec<2> & hpoint, Vec<2,Complex> & point,
-                   Mat<2,2,Complex> & jac) const  
-    {
-      throw Exception("PML_Transformation::MapPoint: No PML Transformation for dimension 2 specified");
-    }
-    virtual void MapPoint(Vec<3> & hpoint, Vec<3,Complex> & point,
-                   Mat<3,3,Complex> & jac) const  
-    {
-      throw Exception("PML_Transformation::MapPoint: No PML Transformation for dimension 3 specified");
-    }
-    virtual void MapIntegrationPoint(const BaseMappedIntegrationPoint & hpoint, Vec<0,Complex> & point,
-                   Mat<0,0,Complex> & jac) const 
-    {
-      throw Exception("PML_Transformation::MapIntegrationPoint: No PML Transformation specified");
-    }
-    virtual void MapIntegrationPoint(const BaseMappedIntegrationPoint & hpoint, Vec<1,Complex> & point,
-                   Mat<1,1,Complex> & jac) const
-    {
-      throw Exception("PML_Transformation::MapIntegrationPoint: No PML Transformation specified");
-    }
-    virtual void MapIntegrationPoint(const BaseMappedIntegrationPoint & hpoint, Vec<2,Complex> & point,
-                   Mat<2,2,Complex> & jac) const  
-    {
-      throw Exception("PML_Transformation::MapIntegrationPoint: No PML Transformation specified");
-    }
-    virtual void MapIntegrationPoint(const BaseMappedIntegrationPoint & hpoint, Vec<3,Complex> & point,
-                   Mat<3,3,Complex> & jac) const  
-    {
-      throw Exception("PML_Transformation::MapIntegrationPoint: No PML Transformation specified");
-    }
   };
 
 
@@ -88,8 +48,8 @@ namespace ngcomp
     shared_ptr<PML_Transformation> pmltrafo;
     public:
 
-    PML_CF(shared_ptr<PML_Transformation> _pmltrafo, int dim) : 
-      CoefficientFunction(dim,true), pmltrafo(_pmltrafo)
+    PML_CF(shared_ptr<PML_Transformation> _pmltrafo) : 
+      CoefficientFunction(_pmltrafo->GetDimension(),true), pmltrafo(_pmltrafo)
     { ; }
     using CoefficientFunction::Evaluate;
     double Evaluate(const BaseMappedIntegrationPoint & ip) const
@@ -116,10 +76,10 @@ namespace ngcomp
     shared_ptr<PML_Transformation> pmltrafo;
     public:
 
-    PML_Jac(shared_ptr<PML_Transformation> _pmltrafo, int dim) : 
-      CoefficientFunction(dim*dim,true), pmltrafo(_pmltrafo)
+    PML_Jac(shared_ptr<PML_Transformation> _pmltrafo) : 
+      CoefficientFunction(pmltrafo->GetDimension()*pmltrafo->GetDimension(),true), pmltrafo(_pmltrafo)
     {
-      SetDimensions(Array<int>({dim,dim}));
+      SetDimensions(Array<int>({pmltrafo->GetDimension(),pmltrafo->GetDimension()}));
     }
     using CoefficientFunction::Evaluate;
     double Evaluate(const BaseMappedIntegrationPoint & ip) const
@@ -147,10 +107,10 @@ namespace ngcomp
     shared_ptr<PML_Transformation> pmltrafo;
     public:
 
-    PML_JacInv(shared_ptr<PML_Transformation> _pmltrafo, int dim) : 
-      CoefficientFunction(dim*dim,true), pmltrafo(_pmltrafo)
+    PML_JacInv(shared_ptr<PML_Transformation> _pmltrafo) : 
+      CoefficientFunction(pmltrafo->GetDimension()*pmltrafo->GetDimension(),true), pmltrafo(_pmltrafo)
     {
-      SetDimensions(Array<int>({dim,dim}));
+      SetDimensions(Array<int>({pmltrafo->GetDimension(),pmltrafo->GetDimension()}));
     }
     using CoefficientFunction::Evaluate;
     double Evaluate(const BaseMappedIntegrationPoint & ip) const
@@ -234,6 +194,12 @@ namespace ngcomp
       MapPoint(hpoint, point, jac);
     }
 
+    virtual void MapPoint(Vec<DIM> & hpoint, Vec<DIM,Complex> & point,
+                   Mat<DIM,DIM,Complex> & jac) const 
+    {
+      throw Exception("PML_TransformationDim::MapPoint: no transformation specified");
+    }
+
     virtual void MapPointV(const BaseMappedIntegrationPoint & hpoint, FlatVector<Complex> point, FlatMatrix<Complex> jac) const 
     {
       Vec<DIM,Complex> vpoint;
@@ -260,16 +226,15 @@ namespace ngcomp
   {
     Complex alpha;
     double rad;
-    Vector<double> origin;
-    Vec<DIM> dimorigin;
+    Vec<DIM> origin;
   public:
 
     RadialPML_Transformation(double _rad, Complex _alpha, FlatVector<double> _origin) 
-      : PML_TransformationDim<DIM>(), rad(_rad), alpha(_alpha), origin(_origin) 
+      : PML_TransformationDim<DIM>(), rad(_rad), alpha(_alpha) 
     { 
-      if (origin.Size()>=DIM)
-        for (int i : Range(DIM))
-          dimorigin(i)=origin(i);
+      origin = 0.;
+      for (int i : Range(min(int(_origin.Size()),DIM)))
+        origin(i)=_origin(i);
     }
     
     ~RadialPML_Transformation() {;}
@@ -310,7 +275,7 @@ namespace ngcomp
     virtual void MapPoint (Vec<DIM> & hpoint, Vec<DIM,Complex> & point,
                    Mat<DIM,DIM,Complex> & jac) const
     {
-      Vec<DIM,double> rel_point = hpoint-dimorigin;
+      Vec<DIM,double> rel_point = hpoint-origin;
       double abs_x = L2Norm (rel_point);
       if (abs_x <= rad)  
       {
@@ -333,12 +298,18 @@ namespace ngcomp
   template <int DIM>
   class CartesianPML_Transformation : public PML_TransformationDim<DIM>
   {
-    Matrix<double> bounds;
+    Mat<DIM,DIM,double> bounds;
     Complex alpha;
     public:
 
     CartesianPML_Transformation(FlatMatrix<double> _bounds, Complex _alpha) 
-      : PML_TransformationDim<DIM>(), bounds(_bounds), alpha(_alpha) { ; }
+      : PML_TransformationDim<DIM>(), alpha(_alpha) 
+    {
+      bounds = 0.;
+      for (int i : Range(min(int(_bounds.Height()),DIM)))
+        for (int j : Range(min(int(_bounds.Width()),2)))
+          bounds(i,j)=_bounds(i,j);
+    }
     
     ~CartesianPML_Transformation() {;}
 
@@ -400,28 +371,19 @@ namespace ngcomp
   template <int DIM>
   class HalfSpacePML_Transformation : public PML_TransformationDim<DIM>
   {
-    Vector<double> point;
-    Vec<DIM> dimpoint;
-    Vector<double> normal;
-    Vec<DIM> dimnormal;
+    Vec<DIM> point;
+    Vec<DIM> normal;
     Complex alpha;
     public:
     HalfSpacePML_Transformation(FlatVector<double> _point, FlatVector<double> _normal, Complex _alpha) 
-      : PML_TransformationDim<DIM>(), point(_point), normal(_normal), alpha(_alpha)
+      : PML_TransformationDim<DIM>(), alpha(_alpha)
     {
-      if (point.Size()>=DIM)
-        for (int i : Range(DIM))
-          dimpoint(i)=point(i);
-      else
-        throw Exception("HalfSpacePML_Transformation::HalfSpacePML_Transformation: point has too few dimensions");
-      if (normal.Size()>=DIM)
-      {
-        for (int i : Range(DIM))
-          dimnormal(i)=normal(i);
-        dimnormal/=L2Norm(dimnormal);
-      }
-      else
-        throw Exception("HalfSpacePML_Transformation::HalfSpacePML_Transformation: normal has too few dimensions");
+      point = 0.;
+      for (int i : Range(min(int(_point.Size()),DIM)))
+          point(i)=_point(i);
+      for (int i : Range(min(int(_normal.Size()),DIM)))
+          normal(i)=_normal(i);
+      normal/=L2Norm(normal);
     }
     
     ~HalfSpacePML_Transformation() {;}
@@ -464,30 +426,31 @@ namespace ngcomp
     {
       out = hpoint;
       jac = Id<DIM>();
-      double dot = InnerProduct(hpoint-dimpoint,dimnormal); //dimnormal has already norm 1
+      double dot = InnerProduct(hpoint-point,normal); //normal has already norm 1
       if (dot>0.)
       {
-        out += alpha*dot*dimnormal;
-        jac+= alpha*dimnormal*Trans(dimnormal);        
+        out += alpha*dot*normal;
+        jac+= alpha*normal*Trans(normal);        
       }
     }
   };
   template <int DIM>
   class BrickRadialPML_Transformation : public PML_TransformationDim<DIM>
   {
-    Matrix<double> bounds;
+    Mat<DIM,DIM,double> bounds;
     Complex alpha;
-    Vector<double> origin;
-    Vec<DIM> dimorigin;
+    Vec<DIM> origin;
     public:
     BrickRadialPML_Transformation(FlatMatrix<double> _bounds, Complex _alpha, FlatVector<double> _origin) 
-      : PML_TransformationDim<DIM>(), bounds(_bounds), alpha(_alpha), origin(_origin) 
+      : PML_TransformationDim<DIM>(), bounds(_bounds), alpha(_alpha)
     {
-      if (origin.Size()>=DIM)
-        for (int i : Range(DIM))
-          dimorigin(i)=origin(i);
-      else
-        throw Exception("HalfSpacePML_Transformation::HalfSpacePML_Transformation: origin has not enough dimensions");
+      origin = 0.;
+      for (int i : Range(min(int(_origin.Size()),DIM)))
+        origin(i)=_origin(i); 
+      bounds = 0.;
+      for (int i : Range(min(int(_bounds.Height()),DIM)))
+        for (int j : Range(min(int(_bounds.Width()),2)))
+          bounds(i,j)=_bounds(i,j);
     }
     
     ~BrickRadialPML_Transformation() {;}
@@ -658,10 +621,10 @@ namespace ngcomp
     virtual void MapIntegrationPoint (const BaseMappedIntegrationPoint & hpoint, Vec<DIM,Complex> & point,
                     Mat<DIM,DIM,Complex> & jacmat) const 
     {
-      pml1->MapIntegrationPoint(hpoint,point,jacmat);
+      static_cast<PML_TransformationDim<DIM> &>(*pml1).MapIntegrationPoint(hpoint,point,jacmat);
       Vec<DIM,Complex> point2;
       Mat<DIM,DIM,Complex> jac2;
-      pml2->MapIntegrationPoint(hpoint,point2,jac2);
+      static_cast<PML_TransformationDim<DIM> &>(*pml2).MapIntegrationPoint(hpoint,point2,jac2);
       point+=point2-hpoint.GetPoint();
       jacmat+=jac2-Id<DIM>();
     }
@@ -669,10 +632,10 @@ namespace ngcomp
     virtual void MapPoint (Vec<DIM> & hpoint, Vec<DIM,Complex> & point,
                     Mat<DIM,DIM,Complex> & jac) const 
     {
-      pml1->MapPoint(hpoint,point,jac);
+      static_cast<PML_TransformationDim<DIM> &>(*pml1).MapPoint(hpoint,point,jac);
       Vec<DIM,Complex> point2;
       Mat<DIM,DIM,Complex> jac2;
-      pml2->MapPoint(hpoint,point2,jac2);
+      static_cast<PML_TransformationDim<DIM> &>(*pml2).MapPoint(hpoint,point2,jac2);
       point+=point2-hpoint;
       jac+=jac2-Id<DIM>();
     }
@@ -682,7 +645,6 @@ namespace ngcomp
   class CompoundPML : public PML_TransformationDim<DIM>
   {
     shared_ptr<PML_Transformation> pml1,pml2;
-    BitArray pml1_defined;
     Vec<DIMA,int> dims1;
     Vec<DIMB,int> dims2;
     public:
@@ -690,44 +652,34 @@ namespace ngcomp
     CompoundPML(
         shared_ptr<PML_Transformation> _pml1, 
         shared_ptr<PML_Transformation> _pml2, 
-        BitArray _pml1_defined) 
+        FlatVector<int> _dims1,
+        FlatVector<int> _dims2)
       : PML_TransformationDim<DIM>(), 
-      pml1(_pml1), pml2(_pml2), 
-      pml1_defined(_pml1_defined)
+      pml1(_pml1), pml2(_pml2) 
     {
       if (DIMA+DIMB!=DIM)
         throw Exception("CompoundPML::CompoundPML: dimensions do not match");
-
-      //set up dim vectors  
-      int dim1cnt=0;
-      int dim2cnt=0;
-      for (int i : Range(DIM))
+      if (dims1.Size()<DIMA || dims2.Size()<DIMB)
+        throw Exception("CompoundPML::CompoundPML: one of the dims vectors too short");
+      BitArray count(DIMA);
+      count.Clear();
+      for (int i : Range(DIMA))
       {
-        if (pml1_defined.Size()<=i)
-        {
-          if (dim2cnt>DIMB)
-            throw Exception("CompoundPML::CompoundPML: something wrong with dimensions");
-          dims2[dim2cnt]=i;
-          dim2cnt++;
-        }
-        else
-        {
-          if (pml1_defined.Test(i))
-          {
-            if (dim1cnt>DIMA)
-              throw Exception("CompoundPML::CompoundPML: something wrong with dimensions");
-            dims1[dim1cnt]=i;
-            dim1cnt++;
-          }
-          else
-          {
-            if (dim2cnt>DIMB)
-              throw Exception("CompoundPML::CompoundPML: something wrong with dimensions");
-            dims2[dim2cnt]=i;
-            dim2cnt++;
-          }
-        }
+        dims1(i)=_dims1(i);
+        count.Set(dims1(i)-1);
       }
+      if (count.NumSet())
+        throw Exception("CompoundPML::CompoundPML: dims1 vector is weird");
+
+      count.Clear();
+      count.SetSize(DIMB);
+      for (int i : Range(DIMB))
+      {
+        dims2(i)=_dims2(i);
+        count.Set(dims2(i)-1);
+      }
+      if (count.NumSet())
+        throw Exception("CompoundPML::CompoundPML: dims2 vector is weird");
     }
     
     ~CompoundPML() {;}
@@ -737,12 +689,13 @@ namespace ngcomp
       stringstream str;
       str << "pml1: " << typeid(*pml1).name() << endl;
       str << "pml2: " << typeid(*pml2).name() << endl;
-      str << "pml1_defined: " << pml1_defined;
+      str << "dims1: " << dims1 << endl;
+      str << "dims2: " << dims2;
       return str.str();
     }
 
-    shared_ptr<PML_Transformation> CreateDim(int dim)
-    {
+    shared_ptr<PML_Transformation> CreateDim(int dim) { return NULL; }
+    /*{
       int dim1 = 0;
       for (int i : Range(dim))
         if (pml1_defined.Size()>i)
@@ -789,7 +742,7 @@ namespace ngcomp
         default:
           throw Exception ("CompoundPML::CreateDim: No valid Dimension");
       }
-   }
+   }*/
 
     virtual void MapPoint (Vec<DIM> & hpoint, Vec<DIM,Complex> & point,
                     Mat<DIM,DIM,Complex> & jac) const 
@@ -802,7 +755,7 @@ namespace ngcomp
 
         Vec<DIMA,Complex> point1;
         Mat<DIMA,DIMA,Complex> jac1;
-        pml1->MapPoint(hpoint1,point1,jac1);
+        static_cast<const PML_TransformationDim<DIMA>& > (*pml1).MapPoint(hpoint1,point1,jac1);
 
         for (int i : Range(DIMA))
         {
@@ -818,7 +771,7 @@ namespace ngcomp
           hpoint2(i)=hpoint(dims2[i]);
         Vec<DIMB,Complex> point2;
         Mat<DIMB,DIMB,Complex> jac2;
-        pml2->MapPoint(hpoint2,point2,jac2);
+        static_cast<PML_TransformationDim<DIMB>& > (*pml2).MapPoint(hpoint2,point2,jac2);
 
         for (int i : Range(DIMB))
         {

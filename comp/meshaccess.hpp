@@ -587,7 +587,7 @@ namespace ngcomp
     {
       if (_domnr>=ndomains)
         throw Exception("MeshAccess::SetPML: was not able to set PML, domain index too high!");
-      if (pml_trafo->GetDimension!=dim)
+      if (pml_trafo->GetDimension()!=dim)
         throw Exception("MeshAccess::SetPML: dimension of PML = "+ToString(pml_trafo->GetDimension())+" does not fit mesh dimension!");
       pml_trafos[_domnr] = pml_trafo; 
     }
