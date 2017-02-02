@@ -26,7 +26,7 @@ namespace ngcomp
 {
 
   FESpace :: FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags)
-    : NGS_Object (ama, "FESpace")
+    : NGS_Object (ama, flags, "FESpace")
   {
     // register flags
     DefineStringFlag("type");

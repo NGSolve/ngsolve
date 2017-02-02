@@ -9,7 +9,7 @@ namespace ngcomp
   LinearForm (shared_ptr<FESpace> afespace, 
 	      const string & aname,
 	      const Flags & flags)
-    : NGS_Object(afespace->GetMeshAccess(), aname), fespace(afespace)
+    : NGS_Object(afespace->GetMeshAccess(), flags, aname), fespace(afespace)
   {
     independent = false;
     print = flags.GetDefineFlag ("print");
