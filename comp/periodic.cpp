@@ -97,6 +97,9 @@ namespace ngcomp {
     virtual void GetDofNrs(ElementId ei, Array<int> & dnums) const override
     {
       BASE::GetDofNrs(ei,dnums);
+      // if dofmap is not yet created return the dofs of the base space
+      if(dofmap.Size()==0)
+        return;
       for (int i = 0; i< dnums.Size(); i++)
 	dnums[i] = dofmap[dnums[i]];
     }

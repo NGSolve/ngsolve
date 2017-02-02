@@ -34,7 +34,8 @@ def test_periodicH1():
 
     mesh = Mesh(geo.GenerateMesh(maxh=min(Lx,Ly,Lz)/10))
     
-    fes = PeriodicH1(mesh,order=2, complex=True)
+    # fes = PeriodicH1(mesh,order=1, complex=True)
+    fes = FESpace("perH1lo",mesh,order=1,complex=True)
     u,v = fes.TrialFunction(), fes.TestFunction()
     
     a = BilinearForm(fes)
