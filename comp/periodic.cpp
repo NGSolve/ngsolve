@@ -1,6 +1,12 @@
+
+/*********************************************************************/
+/* File:   periodic.cpp                                              */
+/* Author: Christopher Lackner                                       */
+/* Date:   Feb. 2017                                                 */
+/*********************************************************************/
+
+
 #include <comp.hpp>
-#include "../ngstd/python_ngstd.hpp"
-#include "periodic.hpp"
 
 namespace ngcomp {
 
@@ -8,12 +14,26 @@ namespace ngcomp {
     : FESpace(aspace->GetMeshAccess(), flags), space(aspace)
     {
       type = "Periodic" + space->type;
+      for(auto vb : {VOL,BND,BBND})
+        {
+          evaluator[vb] = space->GetEvaluator(vb);
+          flux_evaluator[vb] = space->GetFluxEvaluator(vb);
+          integrator[vb] = space->GetIntegrator(vb);
+        }
+      iscomplex = space->IsComplex();
+      // not yet working...
+      if (space->LowOrderFESpacePtr() && false)
+        {
+          auto lo_flags = flags;
+          lo_flags.SetFlag("order",1);
+          low_order_space = make_shared<PeriodicFESpace>(space->LowOrderFESpacePtr(),lo_flags);
+        }
     }
     
   void PeriodicFESpace :: Update (LocalHeap & lh)
     {      
       space->Update (lh);
-            
+      FESpace::Update(lh);
       dofmap.SetSize (space->GetNDof());
       for (int i = 0; i < dofmap.Size(); i++)
 	dofmap[i] = i;
@@ -41,9 +61,12 @@ namespace ngcomp {
               }
             }
         }
+      ctofdof.SetSize(dofmap.Size());
+      for (auto i : Range(ctofdof.Size()))
+        ctofdof[i] = space->GetDofCouplingType(i);
       for (int i = 0; i < dofmap.Size(); i++)
 	if (dofmap[i] != i){
-          space->SetDofCouplingType (i, UNUSED_DOF);
+          ctofdof[i] = UNUSED_DOF;
 	}
     }
     
@@ -80,6 +103,7 @@ namespace ngcomp {
       for (int i = 0; i< dnums.Size(); i++)
 	dnums[i] = dofmap[dnums[i]];
     }
+
 
   void PeriodicFESpace :: GetPeriodicNodeIds(Array<std::tuple<NodeId,NodeId>> & node_ids,int idnr) const
     {
