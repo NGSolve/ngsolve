@@ -1372,9 +1372,9 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
     .def("Range", &CompoundFESpace::GetRange)
     ;
   
-  m.def("Periodic", [] (PyFES & fes, py::dict & dflags) -> PyFES
+  m.def("Periodic", [] (PyFES & fes) -> PyFES
           {
-            Flags flags = py::extract<Flags>(dflags)();
+            Flags flags = fes->GetFlags();
             auto perfes = make_shared<PeriodicFESpace>(fes.Get(),flags);
             perfes->Update(glh);
             perfes->FinalizeUpdate(glh);
