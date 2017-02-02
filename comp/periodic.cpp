@@ -1,35 +1,20 @@
 #include <comp.hpp>
 #include "../ngstd/python_ngstd.hpp"
+#include "periodic.hpp"
 
 namespace ngcomp {
 
-  template<typename BASE>
-  class PeriodicFESpaceBASE : public BASE
-  {
-    Array<int> dofmap; // mapping of dofs
-    using BASE::GetNDof;
-    using BASE::ma;
-    using BASE::ctofdof;
-    
-
-  public:
-    PeriodicFESpaceBASE (shared_ptr<MeshAccess> ama, const Flags & flags)
-      : BASE(ama,flags)
+  PeriodicFESpace :: PeriodicFESpace (shared_ptr<FESpace> aspace, const Flags & flags)
+    : FESpace(aspace->GetMeshAccess(), flags), space(aspace)
     {
-      ;
+      type = "Periodic" + space->type;
     }
     
-    virtual ~PeriodicFESpaceBASE () { ; }
-    virtual void Update (LocalHeap & lh) override
-    {
-      // fix for hcurlho dof upgrading...
-      auto hcurlho = dynamic_cast<HCurlHighOrderFESpace*>(this);
-      if(hcurlho)
-        hcurlho->DoCouplingDofUpgrade(false);
-      
-      BASE::Update (lh);
+  void PeriodicFESpace :: Update (LocalHeap & lh)
+    {      
+      space->Update (lh);
             
-      dofmap.SetSize (GetNDof());
+      dofmap.SetSize (space->GetNDof());
       for (int i = 0; i < dofmap.Size(); i++)
 	dofmap[i] = i;
 
@@ -49,8 +34,8 @@ namespace ngcomp {
               std::tie(id1,id2) = node_pair;
               slave_dofnrs.SetSize(0);
               master_dofnrs.SetSize(0);
-              FESpace::GetDofNrs(id1,master_dofnrs);
-              FESpace::GetDofNrs(id2,slave_dofnrs);
+              space->GetDofNrs(id1,master_dofnrs);
+              space->GetDofNrs(id2,slave_dofnrs);
               for(auto i : Range(master_dofnrs.Size())){
                 dofmap[slave_dofnrs[i]] = dofmap[master_dofnrs[i]];
               }
@@ -58,18 +43,13 @@ namespace ngcomp {
         }
       for (int i = 0; i < dofmap.Size(); i++)
 	if (dofmap[i] != i){
-	  ctofdof[i] = UNUSED_DOF;
+          space->SetDofCouplingType (i, UNUSED_DOF);
 	}
-      if (hcurlho)
-        {
-          hcurlho->DoCouplingDofUpgrade(true);
-          hcurlho->UpdateCouplingDofArray();            
-        }
     }
     
-    virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override
+  FiniteElement& PeriodicFESpace :: GetFE (ElementId ei, Allocator & alloc) const
     {
-      auto & fe = BASE::GetFE(ei,alloc);
+      auto & fe = space->GetFE(ei,alloc);
       const auto & ngel = ma->GetElement(ei);
       switch (ngel.GetType())
 	{
@@ -94,18 +74,14 @@ namespace ngcomp {
     }
 
 
-    virtual void GetDofNrs(ElementId ei, Array<int> & dnums) const override
+  void PeriodicFESpace :: GetDofNrs(ElementId ei, Array<int> & dnums) const
     {
-      BASE::GetDofNrs(ei,dnums);
-      // if dofmap is not yet created return the dofs of the base space
-      if(dofmap.Size()==0)
-        return;
+      space->GetDofNrs(ei,dnums);
       for (int i = 0; i< dnums.Size(); i++)
 	dnums[i] = dofmap[dnums[i]];
     }
 
-  private:
-    void GetPeriodicNodeIds(Array<std::tuple<NodeId,NodeId>> & node_ids,int idnr)
+  void PeriodicFESpace :: GetPeriodicNodeIds(Array<std::tuple<NodeId,NodeId>> & node_ids,int idnr) const
     {
       Array<INT<2>> vertex_pairs;
       ma->GetPeriodicVertices(idnr,vertex_pairs);
@@ -167,42 +143,5 @@ namespace ngcomp {
         }
     }
     
-  };
-
-  // this will be much easier with if constexpr (C++17)
-  template<typename...> class PeriodicFESpace;
-
-  template<typename BASE>
-  class PeriodicFESpace<BASE> : public PeriodicFESpaceBASE<BASE>
-  {
-  public:
-    PeriodicFESpace (shared_ptr<MeshAccess> ama, const Flags & flags)
-      : PeriodicFESpaceBASE<BASE>(ama,flags)
-    {
-      this->low_order_space = nullptr;
-    }
-    
-    virtual ~PeriodicFESpace () { ; }
-  };
-  
-  template<typename BASE, typename LOW_ORDER_SPACE>
-  class PeriodicFESpace<BASE,LOW_ORDER_SPACE> : public PeriodicFESpaceBASE<BASE>
-  {
-  public:
-    PeriodicFESpace (shared_ptr<MeshAccess> ama, const Flags & flags)
-      : PeriodicFESpaceBASE<BASE>(ama,flags)
-    {
-      auto lo_flags = flags;
-      lo_flags.SetFlag("order",1);
-      this->low_order_space = make_shared<PeriodicFESpace<LOW_ORDER_SPACE>>(ama,lo_flags);
-    }
-    
-    virtual ~PeriodicFESpace () { ; }
-  };
-  
-  static RegisterFESpace<PeriodicFESpace<H1HighOrderFESpace,NodalFESpace>> initperh1 ("perH1");
-  static RegisterFESpace<PeriodicFESpace<HCurlHighOrderFESpace>> initperhcurl ("perHCurl");
-  static RegisterFESpace<PeriodicFESpace<HDivHighOrderFESpace>> initperhdiv ("perHDiv");
-  static RegisterFESpace<PeriodicFESpace<NodalFESpace>> initnodal ("perH1lo");
   
 }

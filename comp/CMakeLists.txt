@@ -31,7 +31,7 @@ install( FILES
         hcurlhofespace.hpp hdivfes.hpp hdivhofespace.hpp		   
         l2hofespace.hpp tpfes.hpp linearform.hpp meshaccess.hpp ngsobject.hpp	   
         postproc.hpp preconditioner.hpp vectorfacetfespace.hpp hypre_precond.hpp 
-        pde.hpp numproc.hpp vtkoutput.hpp pmltrafo.hpp
+        pde.hpp numproc.hpp vtkoutput.hpp pmltrafo.hpp periodic.hpp
         DESTINATION include
         COMPONENT ngsolve_devel
        )
