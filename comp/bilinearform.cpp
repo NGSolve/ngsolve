@@ -61,7 +61,7 @@ namespace ngcomp
   BilinearForm (shared_ptr<FESpace> afespace,
                 const string & aname,
                 const Flags & flags)
-    : NGS_Object(afespace->GetMeshAccess(), aname), fespace(afespace)
+    : NGS_Object(afespace->GetMeshAccess(), flags, aname), fespace(afespace)
   {
     fespace2 = NULL;
 
@@ -101,7 +101,7 @@ namespace ngcomp
   BilinearForm (shared_ptr<FESpace> afespace,
                 shared_ptr<FESpace> afespace2, const string & aname,
                 const Flags & flags)
-    : NGS_Object(afespace->GetMeshAccess(), aname), fespace(afespace), fespace2(afespace2)
+    : NGS_Object(afespace->GetMeshAccess(), flags, aname), fespace(afespace), fespace2(afespace2)
   {
     multilevel = true;
     galerkin = false;

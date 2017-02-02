@@ -8,7 +8,7 @@ namespace ngcomp
 
 
   NumProc :: NumProc (weak_ptr<PDE> apde, const Flags & flags) 
-    : NGS_Object (apde.lock()->GetMeshAccess(int(flags.GetNumFlag("mesh",1))-1), 
+    : NGS_Object (apde.lock()->GetMeshAccess(int(flags.GetNumFlag("mesh",1))-1),flags,
                   "numproc"), pde(apde)
   {
     if (flags.StringFlagDefined ("name"))
@@ -16,7 +16,7 @@ namespace ngcomp
   }
 
   NumProc :: NumProc (const Flags & flags) 
-    : NGS_Object (nullptr, "numproc")
+    : NGS_Object (nullptr, flags, "numproc")
   {
     if (flags.StringFlagDefined ("name"))
       SetName (flags.GetStringFlag ("name",""));
