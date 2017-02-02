@@ -34,7 +34,7 @@ def test_periodicH1():
 
     mesh = Mesh(geo.GenerateMesh(maxh=min(Lx,Ly,Lz)/10))
     
-    fes = Periodic(H1(mesh,order=1, complex=True),{})
+    fes = Periodic(H1(mesh,order=2, complex=True),{})
     
     u,v = fes.TrialFunction(), fes.TestFunction()
     
@@ -56,9 +56,6 @@ def test_periodicH1():
         ainv = CGSolver(a.mat,c.mat)
         u.vec.data = ainv * f.vec
         error = sqrt(Integrate(Conj(u-u_exact)*(u-u_exact),mesh).real)
-        # assert error < 1e-2
-        print(error)
-        Draw(u)
-        
-test_periodicH1()
+        assert error < 1e-2
+  
 
