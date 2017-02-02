@@ -34,7 +34,7 @@ def test_periodicH1():
 
     mesh = Mesh(geo.GenerateMesh(maxh=min(Lx,Ly,Lz)/10))
     
-    fes = Periodic(H1(mesh,order=2, complex=True),{})
+    fes = Periodic(H1(mesh,order=2, complex=True))
     
     u,v = fes.TrialFunction(), fes.TestFunction()
     
