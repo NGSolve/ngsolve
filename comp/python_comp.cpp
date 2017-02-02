@@ -1204,7 +1204,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                                      self->FinalizeUpdate(lh);
                                    },
          py::arg("heapsize")=1000000,
-         "update space after mesh-refinement")
+         "Update space, use after mesh-refinement")
 
     .def_property_readonly ("ndof", [](PyFES & self) { return self->GetNDof(); }, 
                    "number of degrees of freedom")
@@ -1229,14 +1229,14 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                          {
                            return make_shared<FESpace::ElementRange> (self->Elements(vb, heapsize));
                          }),
-         py::arg("VOL_or_BND")=VOL,py::arg("heapsize")=10000)
+         py::arg("VOL_or_BND")=VOL,py::arg("heapsize")=10000, "Returns Iterator over elements of the finite element space")
 
     .def("Elements", 
          FunctionPointer([](PyFES & self, VorB vb, LocalHeap & lh) 
                          {
                            return make_shared<FESpace::ElementRange> (self->Elements(vb, lh));
                          }),
-         py::arg("VOL_or_BND")=VOL, py::arg("heap"))
+         py::arg("VOL_or_BND")=VOL, py::arg("heap"), "Returns Iterator over elements of the finite element space, uses given LocalHeap")
 
     /*
     .def("Elements", 
@@ -1256,7 +1256,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                                      for( auto i : Range(tmp))
                                         tuple[i] = py::int_(tmp[i]);
                                      return tuple;
-                                   }))
+                                   }), "Get the degrees of freedom for the Element Given by ElementId")
 
     .def("CouplingType", FunctionPointer ([](PyFES & self, int dofnr) -> COUPLING_TYPE
                                           { return self.Get()->GetDofCouplingType(dofnr); }),
@@ -1286,18 +1286,18 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 
                                      return py::cast(fe);
 
-                                   }))
+                                   }), "Creates the FiniteElement for an ElementId")
     
     .def ("GetFE", FunctionPointer([](PyFES & self, ElementId ei, LocalHeap & lh)
                                    {
                                      return shared_ptr<FiniteElement>(&self->GetFE(ei, lh), NOOP_Deleter);
                                    }),
-          py::return_value_policy::reference)
+          py::return_value_policy::reference, "Creates the FiniteElement for an ElementId on the given LocalHeap")
 
 
     .def("FreeDofs", FunctionPointer
          ( [] (const PyFES &self, bool coupling) { return self->GetFreeDofs(coupling); } ),
-         py::arg("coupling")=false)
+         py::arg("coupling")=false, "Gives the degrees of freedom of the finite element space")
 
     .def("Range", FunctionPointer
          ( [] (const PyFES & self, int comp) -> py::slice
@@ -1326,12 +1326,12 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
          [] (const PyFES & self) 
            {
              return MakeProxyFunction (*self.Get(), false);
-           })
+           }, docu_string("Gives a proxy to be used as a trialfunction in :any:`Symbolic Integrators`"))
     .def("TestFunction",
          [] (const PyFES & self) 
            {
              return MakeProxyFunction (*self.Get(), true);
-           })
+           }, docu_string("Gives a proxy to be used as a testfunction for :any:`Symbolic Integrators`"))
 
     .def("SolveM", FunctionPointer
         ( [] (const PyFES & self,
@@ -2954,11 +2954,6 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
   import_mpi4py();
 #endif
 }
-
-
-
-
-
 
 PYBIND11_PLUGIN(libngcomp) {
   py::module m("comp", "pybind comp");
