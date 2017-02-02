@@ -246,19 +246,19 @@ void ExportPml(py::module &m)
                       return PyCF(make_shared<PML_CF> (instance->Get()));
                     },
         "the pml scaling as coefficient function")
-    .def("Jac_CF", [](PyPML *instance) {
+    .def_property_readonly("Jac_CF", [](PyPML *instance) {
                       return PyCF(make_shared<PML_Jac> (instance->Get()));
                     },
         "the pml jacobian as coefficient function")
-    .def("Det_CF", [](PyPML *instance) {
+    .def_property_readonly("Det_CF", [](PyPML *instance) {
                       return PyCF(make_shared<PML_Det> (instance->Get()));
                     },
           "the pml transformation determinant as coefficient function")
-    .def("JacInv_CF", [](PyPML *instance) {
+    .def_property_readonly("JacInv_CF", [](PyPML *instance) {
                       return PyCF(make_shared<PML_JacInv> (instance->Get()));
                     },
         "the pml jacobian inverse as coefficient function")
-    .def("__add__", [](PyPML pml1, PyPML pml2) {
+    .def_property_readonly("__add__", [](PyPML pml1, PyPML pml2) {
                   int dim = pml1.Get()->GetDimension();
                   if (pml2.Get()->GetDimension() != dim)
                     throw Exception("Dimensions do not match");
@@ -272,7 +272,7 @@ void ExportPml(py::module &m)
                       return PyPML(make_shared<SumPML<3>> (pml1.Get(),pml2.Get()));
                   }
                   throw Exception("No valid dimension");
-                    })
+             })
   ;
 
   m.def("Radial", [](py::object _origin, double rad, Complex alpha) -> PyPML {
@@ -305,6 +305,7 @@ void ExportPml(py::module &m)
       },
     py::arg("origin"),py::arg("rad")=1,py::arg("alpha")=Complex(0,1),
     "radial pml transformation");
+
     m.def("Custom", [](PyCF trafo, PyCF jac) -> PyPML {
           switch (trafo.Get()->Dimension())
           {
@@ -317,7 +318,8 @@ void ExportPml(py::module &m)
           }
           throw Exception("No valid dimension");
         },
-        py::arg("trafo"),py::arg("jac"))
+        py::arg("trafo"),py::arg("jac"),
+        "pml given by coefficient functions")
     ;
     m.def("Cartesian", [](py::object mins,py::object maxs, Complex alpha) {
           int dim = 0;
@@ -359,7 +361,8 @@ void ExportPml(py::module &m)
            }
           throw Exception("No valid dimension");
         },
-        py::arg("mins"),py::arg("maxs"), py::arg("alpha")=Complex(0,1))
+        py::arg("mins"),py::arg("maxs"), py::arg("alpha")=Complex(0,1),
+        "cartesian pml")
     ;
     m.def("HalfSpace", [](py::object point,py::object normal, Complex alpha) {
           int dim = 0;
@@ -409,7 +412,8 @@ void ExportPml(py::module &m)
           }
           throw Exception("No valid dimension");
         },
-        py::arg("point"),py::arg("normal"), py::arg("alpha")=Complex(0,1))
+        py::arg("point"),py::arg("normal"), py::arg("alpha")=Complex(0,1),
+        "half space pml, scales orthogonal to specified plane in direction of normal")
     ;
     m.def("BrickRadial", [](py::object mins,py::object maxs,py::object _origin, Complex alpha) {
           int dim = 0;
@@ -463,7 +467,8 @@ void ExportPml(py::module &m)
           }
           throw Exception("No valid dimension");
         },
-        py::arg("mins"),py::arg("maxs"), py::arg("origin"),py::arg("alpha")=Complex(0,1))
+        py::arg("mins"),py::arg("maxs"), py::arg("origin")=py::make_tuple(0.,0.,0.),py::arg("alpha")=Complex(0,1),
+        "radial pml on a brick")
       ;
     m.def("Compound", [](PyPML pml1,PyPML pml2,py::object dims1,py::object dims2) {
           int dim1 = pml1.Get()->GetDimension();
@@ -472,13 +477,7 @@ void ExportPml(py::module &m)
           Vector<int> vdims1;
           Vector<int> vdims2;
           
-          if (!dims1)
-          {
-            vdims1.SetSize(dim1);
-            for (int j : Range(dim1))
-              vdims1(j)=j;
-          }
-          else if (py::extract<double>(dims1).check())
+          if (py::extract<double>(dims1).check())
           {
             vdims1.SetSize(1);
             vdims1=py::extract<double>(dims1)();
@@ -490,13 +489,13 @@ void ExportPml(py::module &m)
             for (int j : Range(py::len(tdims1)))
               vdims1(j)=py::extract<double>(tdims1[j])();
           }
-          if (!dim2)
+          else 
           {
-            vdims2.SetSize(dim2);
-            for (int j : Range(dim2))
-              vdims2(j)=j;
+            vdims1.SetSize(dim1);
+            for (int j : Range(dim1))
+              vdims1(j)=j+1;
           }
-          else if (py::extract<double>(dims2).check())
+          if (py::extract<double>(dims2).check())
           {
             vdims2.SetSize(1);
             vdims2=py::extract<double>(dims2)();
@@ -508,8 +507,20 @@ void ExportPml(py::module &m)
             for (int j : Range(py::len(tdims2)))
               vdims2(j)=py::extract<double>(tdims2[j])();
           }
+          else
+          {
+            vdims2.SetSize(dim2);
+            for (int j : Range(dim2))
+              vdims2(j)=j+dim1+1;
+          }
           if (vdims1.Size()!=dim1 || vdims2.Size()!=dim2)
+          {
             throw Exception("Dimensions do not match");
+          }
+            cout << dim1 << endl;
+            cout << dim2 << endl;
+            cout << vdims1 << endl;
+            cout << vdims2 << endl;
 
           switch (dim)
           {
@@ -544,174 +555,9 @@ void ExportPml(py::module &m)
           throw Exception("No valid dimension");
         },
         py::arg("pml1"),py::arg("pml2"), 
-        py::arg("dims1")=DummyArgument(),py::arg("dims2")=DummyArgument())
+        py::arg("dims1")=DummyArgument(),py::arg("dims2")=DummyArgument(),
+        "compound of two pmls, dimensions start with 1")
       ;
-/*
-  py::class_<PyRadPML,PyPML>(m, "Radial", "radial pml scaling")
-    .def("__init__", [](PyRadPML *instance, double rad, Complex alpha, py::object _origin) {
-          Vector<double> origin(3);
-          origin=0.;
-          if (py::extract<double>(_origin).check())
-            origin(0)=py::extract<double>(_origin)();
-
-          else if (py::extract<py::tuple>(_origin).check())
-          {
-            auto torigin = py::extract<py::tuple>(_origin)();
-            for (int j : Range(py::len(torigin)))
-              origin(j)=py::extract<double>(torigin[j])();
-          }
-          new (instance) PyRadPML(make_shared<RadialPML_Transformation<0>> (rad,alpha,origin));
-        },
-        py::arg("rad")=1, py::arg("alpha")=Complex(0,1),py::arg("origin")=0)
-    ;
-
-  py::class_<PyCustPML,PyPML>(m, "Custom", "pml with custom transformation")
-    .def("__init__", [](PyCustPML *instance, PyCF trafo, PyCF jac) {
-        auto pml = make_shared<CustomPML_Transformation<0>> (trafo.Get(),jac.Get());
-        new (instance) PyCustPML(pml);
-        },
-        py::arg("trafo"),py::arg("jac"))
-    ;
-
-  py::class_<PyCartPML,PyPML>(m, "Cartesian", "cartesian pml scaling")
-    .def("__init__", [](PyCartPML *instance, py::object mins,py::object maxs, Complex alpha) {
-          Matrix<double> bounds(3,2);
-          bounds = 0.;
-          if (py::extract<double>(mins).check())
-            for (int j : Range(3))
-              bounds(j,0)=py::extract<double>(mins)();
-
-          else if (py::extract<py::tuple>(mins).check())
-          {
-            auto tmin = py::extract<py::tuple>(mins)();
-            for (int j : Range(py::len(tmin)))
-              bounds(j,0)=py::extract<double>(tmin[j])();
-          }
-
-          if (py::extract<double>(maxs).check())
-            for (int j : Range(3))
-              bounds(j,1)=py::extract<double>(maxs)();
-
-          else if (py::extract<py::tuple>(maxs).check())
-          {
-            auto tmax = py::extract<py::tuple>(maxs)();
-            for (int j : Range(py::len(tmax)))
-              bounds(j,1)=py::extract<double>(tmax[j])();
-          }
-        new (instance) PyCartPML(make_shared<CartesianPML_Transformation<0>>(bounds,alpha));
-        },
-        py::arg("mins"),py::arg("maxs"), py::arg("alpha")=Complex(0,1))
-    ;
-  
-  py::class_<PyHalfPML,PyPML>(m, "HalfSpace", "half space pml scaling")
-    .def("__init__", [](PyHalfPML *instance, py::object _point, py::object _normal, Complex alpha) {
-          Vector<double> point(3);
-          Vector<double> normal(3);
-          point = 0.;
-          normal = 0.;
-          if (py::extract<double>(_point).check())
-            point(0)=py::extract<double>(_point)();
-
-          else if (py::extract<py::tuple>(_point).check())
-          {
-            auto tpoint = py::extract<py::tuple>(_point)();
-            for (int j : Range(py::len(tpoint)))
-              point(j)=py::extract<double>(tpoint[j])();
-          }
-
-          if (py::extract<double>(_normal).check())
-            normal(0)=py::extract<double>(_normal)();
-
-          else if (py::extract<py::tuple>(_normal).check())
-          {
-            auto tnormal = py::extract<py::tuple>(_normal)();
-            for (int j : Range(py::len(tnormal)))
-              normal(j)=py::extract<double>(tnormal[j])();
-          }
-        new (instance) PyHalfPML(make_shared<HalfSpacePML_Transformation<0>>(point,normal,alpha));
-        },
-        py::arg("point"),py::arg("normal"), py::arg("alpha")=Complex(0,1))
-    ;
-  py::class_<PyBrickPML,PyPML>(m, "BrickRadial", "generalized radial pml scaling on a brick")
-    .def("__init__", [](PyBrickPML *instance, 
-                        py::object mins,
-                        py::object maxs, 
-                        Complex alpha,
-                        py::object _origin) {
-          Matrix<double> bounds(3,2);
-          bounds = 0.;
-          Vector<double> origin(3);
-          origin = 0.;
-
-          if (py::extract<double>(mins).check())
-            for (int i : Range(3))
-              bounds(i,0)=py::extract<double>(mins)();
-
-          else if (py::extract<py::tuple>(mins).check())
-          {
-            auto tmin = py::extract<py::tuple>(mins)();
-            for (int j : Range(py::len(tmin)))
-              bounds(j,0)=py::extract<double>(tmin[j])();
-          }
-
-          if (py::extract<double>(maxs).check())
-            for (int i : Range(3))
-              bounds(i,1)=py::extract<double>(maxs)();
-
-          else if (py::extract<py::tuple>(maxs).check())
-          {
-            auto tmax = py::extract<py::tuple>(maxs)();
-            for (int j : Range(py::len(tmax)))
-              bounds(j,1)=py::extract<double>(tmax[j])();
-          }
-
-          if (py::extract<double>(_origin).check())
-            origin(0)=py::extract<double>(_origin)();
-
-          else if (py::extract<py::tuple>(_origin).check())
-          {
-            auto torigin = py::extract<py::tuple>(_origin)();
-            for (int j : Range(py::len(torigin)))
-              origin(j)=py::extract<double>(torigin[j])();
-          }
-
-        new (instance) PyPML(make_shared<BrickRadialPML_Transformation<0>>(bounds,alpha,origin));
-        },
-        py::arg("mins"),py::arg("maxs"), py::arg("alpha")=Complex(0,1), py::arg("origin")=0)
-    ;
-  py::class_<PySumPML,PyPML>(m, "Sum", "sum of two pmls");
-  py::class_<PyCompPML,PyPML>(m, "Compound", "compound of two pmls\n"
-                                 "_dims1 is an ascending list of dimensions of first pml")
-    .def("__init__", [](PyCompPML *instance, 
-                        PyPML pml1,
-                        PyPML pml2, 
-                        py::object _dims1)
-        {
-        auto pml1dim = pml1.Get()->CreateDim(0);
-        auto pml2dim = pml2.Get()->CreateDim(0);
-        BitArray pml1_defined(3);
-        if (py::extract<py::list>(_dims1).check())
-        { 
-          py::list ldims1=py::list(_dims1);
-          ldims1.attr("sort");
-          pml1_defined.SetSize(max(py::extract<int>(ldims1[py::len(ldims1)-1])(),3));
-          pml1_defined.Clear();
-          for (int i : Range(py::len(ldims1)))
-            pml1_defined.Set(py::extract<int>(ldims1[i])()-1);
-        }
-        else if (py::extract<int>(_dims1).check())
-        {
-          int num=py::extract<int>(_dims1)(); 
-          pml1_defined.SetSize(max(num,3));
-          pml1_defined.Clear();
-          pml1_defined.Set(num-1);                
-        }
-        
-        new (instance) PyCompPML(make_shared<CompoundPML<0,0,0>>(pml1dim,pml2dim,pml1_defined));
-        },
-        py::arg("pml1"),py::arg("pml2"), py::arg("dims")=1)
-    ;*/
-
 }
 
 
@@ -1069,7 +915,6 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
     .def("SetPML", FunctionPointer
 	 ([](MeshAccess & ma,  PyPML apml, py::object definedon)
           {
-            //shared_ptr<PML_Transformation> spml = apml.CreateDim(ma.GetDimension());
             if (py::extract<int>(definedon).check())
               {
                 ma.SetPML(apml.Get(), py::extract<int>(definedon)()-1);
@@ -1105,7 +950,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
         for (int i : Range(ma.GetNDomains()))
         {
           if (ma.GetPMLTrafos()[i])
-            pml_trafos[i] = py::cast(PyPML(ma.GetPMLTrafos()[i]->CreateDim(0)));
+            pml_trafos[i] = PyPML(ma.GetPMLTrafos()[i]);
           else
             pml_trafos[i] = py::none();
         }
@@ -1115,7 +960,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
     )
     .def("GetPMLTrafo", [](MeshAccess & ma, int domnr) {
         if (ma.GetPMLTrafos()[domnr])
-     	  return py::cast(PyPML(ma.GetPMLTrafos()[domnr-1]->CreateDim(0)));
+     	  return PyPML(ma.GetPMLTrafos()[domnr-1]);
         else
           throw Exception("No PML Trafo set"); 
         },
