@@ -21,7 +21,12 @@ namespace ngcomp {
     
     virtual ~PeriodicFESpaceBASE () { ; }
     virtual void Update (LocalHeap & lh) override
-    { 
+    {
+      // fix for hcurlho dof upgrading...
+      auto hcurlho = dynamic_cast<HCurlHighOrderFESpace*>(this);
+      if(hcurlho)
+        hcurlho->DoCouplingDofUpgrade(false);
+      
       BASE::Update (lh);
             
       dofmap.SetSize (GetNDof());
@@ -55,6 +60,11 @@ namespace ngcomp {
 	if (dofmap[i] != i){
 	  ctofdof[i] = UNUSED_DOF;
 	}
+      if (hcurlho)
+        {
+          hcurlho->DoCouplingDofUpgrade(true);
+          hcurlho->UpdateCouplingDofArray();            
+        }
     }
     
     virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override
@@ -65,23 +75,16 @@ namespace ngcomp {
 	{
 	case ET_TRIG:
 	  {
-            try
-              {
-                auto & hofe = dynamic_cast<VertexOrientedFE<ET_TRIG>&> (fe);
-                hofe.SetVertexNumbers (dofmap[ngel.Vertices()]);
-              }
-            catch(exception e) { ; }
+            auto hofe = dynamic_cast<VertexOrientedFE<ET_TRIG>*>(&fe);
+            if(hofe)
+              hofe->SetVertexNumbers(dofmap[ngel.Vertices()]);
             break;
-            
 	  }
 	case ET_TET:
 	  {
-            try
-              {
-                auto & hofe = dynamic_cast<VertexOrientedFE<ET_TET>&> (fe);
-                hofe.SetVertexNumbers (dofmap[ngel.Vertices()]);
-              }
-            catch(exception e) { ; }
+            auto hofe = dynamic_cast<VertexOrientedFE<ET_TET>*>(&fe);
+            if(hofe)
+              hofe->SetVertexNumbers(dofmap[ngel.Vertices()]);
             break;
 	  }
         default:
