@@ -541,7 +541,7 @@ namespace ngcomp
     for (int i = 0; i < ne; i++)
       {
 	int index = ma->GetElIndex(i);
-	if (!DefinedOn (index)) continue;
+	if (!DefinedOn (VOL, index)) continue;
 
 	order_inner[i] = INT<3> (p,p,p); 	
 	INT<3,TORDER> el_orders = ma->GetElOrders(i);
@@ -622,7 +622,7 @@ namespace ngcomp
 
     for (int i = 0; i < nse; i++)
       {	
-	if (!DefinedOnBoundary (ma->GetSElIndex (i))) continue;
+	if (!DefinedOn (BND, ma->GetSElIndex (i))) continue;
 	
 	ma->GetSElEdges (i, eledges);		
 	for (int j=0;j<eledges.Size();j++) fine_edge[eledges[j]] = 1; 
@@ -921,7 +921,7 @@ namespace ngcomp
     Array<int> dnums, edge_nums, face_nums;
     for (int el = 0; el < ma->GetNE(); el++)
       {
-	if (!DefinedOn (ma->GetElIndex (el))) continue;
+	if (!DefinedOn (VOL, ma->GetElIndex (el))) continue;
 	HeapReset hr(lh);
 	IntRange range = GetElementDofs (el);
 	ctofdof.Range (range) = LOCAL_DOF;
@@ -1096,12 +1096,12 @@ namespace ngcomp
   }
   case BND:
     {
-    if (!DefinedOnBoundary (ma->GetSElIndex (ei.Nr())))
-      return * new (lh) HCurlDummyFE<ET_TRIG> ();
+      if (!DefinedOn (VOL, ma->GetSElIndex (ei.Nr())))
+        return * new (lh) HCurlDummyFE<ET_TRIG> ();
 
-    if ( discontinuous )
-      return * new (lh) DummyFE<ET_SEGM>; 
-
+      if ( discontinuous )
+        return * new (lh) DummyFE<ET_SEGM>; 
+      
 
 
     Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,BND> (ei.Nr());

@@ -674,7 +674,7 @@ namespace ngcomp
 	  }
       }
       
-    if (!DefinedOn (ma->GetElIndex (ei.Nr())))
+    if (!DefinedOn (VOL, ma->GetElIndex (ei.Nr())))
       dnums = -1;
     // *testout << "dnums = " << endl << dnums << endl;
       }

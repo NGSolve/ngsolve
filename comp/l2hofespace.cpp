@@ -187,7 +187,7 @@ namespace ngcomp
       {
         order_inner[i] = order_inner[i] + INT<3> (et_bonus_order[ma->GetElType(i)]);
         order_inner[i] = Max(order_inner[i], INT<3>(0));
-        if (!DefinedOn (ma->GetElIndex (i)))
+        if (!DefinedOn (VOL, ma->GetElIndex (i)))
           order_inner[i] = 0;
       }
     if(print) 
@@ -211,7 +211,7 @@ namespace ngcomp
     if (!all_dofs_together)
       for (int i=0; i<ma->GetNE(); i++)
 	{
-          if (!DefinedOn (ma->GetElIndex (i)))
+          if (!DefinedOn (VOL, ma->GetElIndex (i)))
             {
               ctofdof[i] = UNUSED_DOF;
               continue;
@@ -504,7 +504,7 @@ namespace ngcomp
     dranges.SetSize(0);
 
     if (!ei.IsVolume()) return;
-    if (!DefinedOn (ma->GetElIndex (ei))) return;
+    if (!DefinedOn (VOL, ma->GetElIndex (ei))) return;
     
     if (!all_dofs_together)
       dranges.Append (IntRange (ei.Nr(), ei.Nr()+1));

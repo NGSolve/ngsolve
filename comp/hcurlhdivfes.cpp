@@ -1120,7 +1120,7 @@ namespace ngcomp
 	
 	int index = ma->GetElIndex (ei.Nr());
 	
-	if (!DefinedOn (index)) return;
+	if (!DefinedOn (VOL, index)) return;
 	
 	bool graddom = gradientdomains[index];
 	
@@ -1403,7 +1403,7 @@ namespace ngcomp
     dnums.SetSize(nd);
     dnums = -1;
 
-    if (!DefinedOnBoundary (ma->GetSElIndex (ei.Nr())))
+    if (!DefinedOn (BND, ma->GetSElIndex (ei.Nr())))
       return;
 
     switch (ma->GetSElType(ei.Nr()))
