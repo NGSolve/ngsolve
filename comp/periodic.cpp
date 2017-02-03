@@ -10,8 +10,8 @@
 
 namespace ngcomp {
 
-  PeriodicFESpace :: PeriodicFESpace (shared_ptr<FESpace> aspace, const Flags & flags)
-    : FESpace(aspace->GetMeshAccess(), flags), space(aspace)
+  PeriodicFESpace :: PeriodicFESpace (shared_ptr<FESpace> aspace, const Flags & flags, shared_ptr<Array<int>> aused_idnrs)
+    : FESpace(aspace->GetMeshAccess(), flags), space(aspace), used_idnrs(aused_idnrs)
     {
       type = "Periodic" + space->type;
       for(auto vb : {VOL,BND,BBND})
@@ -26,7 +26,7 @@ namespace ngcomp {
         {
           auto lo_flags = flags;
           lo_flags.SetFlag("order",1);
-          low_order_space = make_shared<PeriodicFESpace>(space->LowOrderFESpacePtr(),lo_flags);
+          low_order_space = make_shared<PeriodicFESpace>(space->LowOrderFESpacePtr(),lo_flags,used_idnrs);
         }
     }
     
@@ -43,6 +43,7 @@ namespace ngcomp {
       // identifications are 1 based
       for (int idnr = 1; idnr<nid+1; idnr++)
         {
+	  if (used_idnrs->Size() && !used_idnrs->Contains(idnr)) continue;
           Array<int> slave_dofnrs;
           Array<int> master_dofnrs;
           for (auto node_type : {NT_VERTEX, NT_EDGE, NT_FACE})

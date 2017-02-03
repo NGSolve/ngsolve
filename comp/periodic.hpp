@@ -16,9 +16,10 @@ namespace ngcomp
   {
     Array<int> dofmap; // mapping of dofs
     shared_ptr<FESpace> space;
+    shared_ptr<Array<int>> used_idnrs;
     
   public:
-    PeriodicFESpace (shared_ptr<FESpace> space, const Flags & flags);
+    PeriodicFESpace (shared_ptr<FESpace> space, const Flags & flags, shared_ptr<Array<int>> aused_idnrs);
     
     virtual ~PeriodicFESpace () { ; }
     virtual void Update (LocalHeap & lh) override;
@@ -60,6 +61,8 @@ namespace ngcomp
     { space->VTransformVC(ei, vec, tt); }    
     
   };
+
+
 }
 
 

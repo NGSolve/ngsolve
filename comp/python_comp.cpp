@@ -1616,14 +1616,19 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
     .def("Range", &CompoundFESpace::GetRange)
     ;
   
-  m.def("Periodic", [] (PyFES & fes) -> PyFES
+  m.def("Periodic", [] (PyFES & fes, py::object obj) -> PyFES
           {
             Flags flags = fes->GetFlags();
-            auto perfes = make_shared<PeriodicFESpace>(fes.Get(),flags);
+	    shared_ptr<Array<int>> used_idnrs;
+	    if(py::extract<py::list>(obj).check())
+	      used_idnrs = make_shared<Array<int>>(makeCArray<int>(py::extract<py::list>(obj)()));
+	    else
+	      used_idnrs = make_shared<Array<int>>();
+            auto perfes = make_shared<PeriodicFESpace>(fes.Get(),flags,used_idnrs);
             perfes->Update(glh);
             perfes->FinalizeUpdate(glh);
             return perfes;
-          });
+          }, py::arg("fespace"), py::arg("used_idnrs")=DummyArgument());
   /*
   typedef PyWrapperDerived<PeriodicFESpace, FESpace> PyPeriodicFES;
   py::class_<PyPeriodicFES, PyFES>
