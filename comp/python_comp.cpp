@@ -1616,7 +1616,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
     .def("Range", &CompoundFESpace::GetRange)
     ;
   
-  m.def("Periodic", [] (PyFES & fes, py::object use_idnrs, py::object phase ) -> PyFES
+  m.def("Periodic", [] (PyFES & fes, py::object phase, py::object use_idnrs ) -> PyFES
           {
             Flags flags = fes->GetFlags();
 	    shared_ptr<Array<int>> a_used_idnrs;
@@ -1650,7 +1650,21 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
             perfes->Update(glh);
             perfes->FinalizeUpdate(glh);
             return perfes;
-	  }, py::arg("fespace"), py::arg("used_idnrs")=nullptr, py::arg("phase")=nullptr);
+	  }, py::arg("fespace"), py::arg("phase")=nullptr, py::arg("use_idnrs")=nullptr,
+	docu_string(r"
+Generator function for periodic or quasi-periodic :any:`Finite Element Spaces`. The periodic fespace is a wrapper around a standard fespace with an additional dof mapping for the periodic degrees of freedom. All dofs on  slave boundaries are mapped to their master dofs. Because of this, the mesh needs to be periodic. To create a periodic mesh use i.e. the function :any:`CSGeometry.PeriodicSurfaces`(master,slave). Low order fespaces are currently not supported, so methods using them will not work. 
+
+Parameters
+----------
+
+fespace (FESpace): finite element space 
+
+phase (list of Complex = None): phase shift for quasi-periodic finite element space. The basis functions on the slave boundary are multiplied by the factor given in this list. If None (default) is given, a periodic fespace is created. The order of the list must match the order of the definition of the periodic boundaries in the mesh. 
+
+used_idnrs (list of int = None): identification numbers to be made periodic if you don't want to use all periodic identifications defined in the mesh, if None (default) all available periodic identifications are used
+
+
+"));
   /*
   typedef PyWrapperDerived<PeriodicFESpace, FESpace> PyPeriodicFES;
   py::class_<PyPeriodicFES, PyFES>
