@@ -120,4 +120,4 @@ def NgsUnpickler(*args, **kargs):
     return unpickler
 
 
-__all__ = ['x', 'y', 'z', 'Laplace', 'Mass', 'Source', 'Neumann', 'H1', 'FacetFESpace', 'HCurl', 'HDiv', 'L2', 'HDivDiv', 'PeriodicH1', 'PeriodicHCurl', 'PeriodicHDiv', 'grad', 'curl', 'div','NgsPickler', 'NgsUnpickler', 'Mesh' ]
+__all__ = ['x', 'y', 'z', 'Laplace', 'Mass', 'Source', 'Neumann', 'H1', 'FacetFESpace', 'HCurl', 'HDiv', 'L2', 'HDivDiv', 'grad', 'curl', 'div','NgsPickler', 'NgsUnpickler', 'Mesh' ]
