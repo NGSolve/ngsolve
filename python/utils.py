@@ -59,38 +59,6 @@ def HDivDiv(mesh, **args):
     return FESpace("hdivdiv", mesh, **args)
 
 
-def PeriodicH1(*args,**kwargs):
-    """
-Periodic H1
-===========
-
-Generator function for periodic H1 space. The mesh needs to be periodic, i.e. use the function CSGeometry.PeriodicSurfaces(master,slave) to create a periodic geometry. With this Netgen creates a periodic mesh, the returned function space maps the slave dofs to the master dofs.
-
-    """
-    return FESpace("perH1",*args,**kwargs)
-
-def PeriodicHCurl(*args,**kwargs):
-    """
-Periodic HCurl
-===========
-
-Generator function for periodic HCurl space. The mesh needs to be periodic, i.e. use the function CSGeometry.PeriodicSurfaces(master,slave) to create a periodic geometry. With this Netgen creates a periodic mesh, the returned function space maps the slave dofs to the master dofs.
-
-    """
-    return FESpace("perHCurl",*args,**kwargs)
-
-def PeriodicHDiv(*args,**kwargs):
-    """
-Periodic HDiv
-===========
-
-Generator function for periodic HDiv space. The mesh needs to be periodic, i.e. use the function CSGeometry.PeriodicSurfaces(master,slave) to create a periodic geometry. With this Netgen creates a periodic mesh, the returned function space maps the slave dofs to the master dofs.
-
-    """
-    return FESpace("perHDiv",*args,**kwargs)
-
-
-
 def grad(func):
     if func.derivname == "grad":
         return func.Deriv()
