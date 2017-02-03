@@ -1163,12 +1163,13 @@ namespace ngcomp
 
     const ElementTransformation & trafo = ip.GetTransformation();
     
-    int elnr = trafo.GetElementNr();
-    VorB vb  = trafo.VB();
-    ElementId ei(vb, elnr);
+    // int elnr = trafo.GetElementNr();
+    // VorB vb  = trafo.VB();
+    // ElementId ei(vb, elnr);
+    ElementId ei = trafo.GetElementId();
 
-    auto fes = gf->GetFESpace();
-    shared_ptr<MeshAccess>  ma = fes->GetMeshAccess();
+    // auto fes = gf->GetFESpace();
+    const shared_ptr<MeshAccess> & ma = fes->GetMeshAccess();
 
     if (gf->GetLevelUpdated() != ma->GetNLevels())
     {
@@ -1179,19 +1180,19 @@ namespace ngcomp
     if (!trafo.BelongsToMesh (ma.get()))
       {
         IntegrationPoint rip;
-        int elnr = ma->FindElementOfPoint 
+        int elnr2 = ma->FindElementOfPoint 
           // (static_cast<const DimMappedIntegrationPoint<2>&> (ip).GetPoint(),
           (ip.GetPoint(), rip, true);  // buildtree not yet threadsafe (maybe now ?)
-        if (elnr == -1)
+        if (elnr2 == -1)
           {
             result = 0;
             return;
           }
-        const ElementTransformation & trafo2 = ma->GetTrafo(ElementId(vb, elnr), lh2);
+        const ElementTransformation & trafo2 = ma->GetTrafo(ElementId(ei.VB(), elnr2), lh2);
         return Evaluate (trafo2(rip, lh2), result);
       }
     
-    if (!fes->DefinedOn (vb,trafo.GetElementIndex()))
+    if (!fes->DefinedOn (ei.VB(),trafo.GetElementIndex()))
       { 
         result = 0.0; 
         return;
@@ -1207,15 +1208,15 @@ namespace ngcomp
 
     gf->GetElementVector (comp, dnums, elu);
     fes->TransformVec (ei, elu, TRANSFORM_SOL);
-    if (diffop && vb==VOL)
+    if (diffop && ei.VB()==VOL)
       diffop->Apply (fel, ip, elu, result, lh2);
-    else if (trace_diffop && vb==BND)
+    else if (trace_diffop && ei.VB()==BND)
       trace_diffop->Apply (fel, ip, elu, result, lh2);
     else if (bfi)
       bfi->CalcFlux (fel, ip, elu, result, true, lh2);
     else
       // fes->GetIntegrator(boundary) -> CalcFlux (fel, ip, elu, result, false, lh2);
-      fes->GetEvaluator(vb==BND) -> Apply (fel, ip, elu, result, lh2);
+      fes->GetEvaluator(ei.VB()==BND) -> Apply (fel, ip, elu, result, lh2);
   }
 
   void GridFunctionCoefficientFunction :: 
@@ -1461,7 +1462,7 @@ namespace ngcomp
         return;
       }
     
-    if (!fes.DefinedOn(trafo.GetElementIndex(), vb)) 
+    if (!fes.DefinedOn(vb, trafo.GetElementIndex())) 
       { 
         values = 0.0; 
         return;
@@ -1792,7 +1793,7 @@ namespace ngcomp
         
         fes.TransformVec (ei, elu, TRANSFORM_SOL);
         
-	if (!fes.DefinedOn(eltrans.GetElementIndex()))return 0;
+	if (!fes.DefinedOn(VOL, eltrans.GetElementIndex()))return 0;
 
 	IntegrationRule ir; 
 	ir.SetAllocSize(npts);
@@ -2126,7 +2127,7 @@ namespace ngcomp
         
         fes.TransformVec (ei, elu, TRANSFORM_SOL);
 
-        if (!fes.DefinedOn(eltrans.GetElementIndex(), vb)) return false;
+        if (!fes.DefinedOn(vb, eltrans.GetElementIndex())) return false;
         
 	SliceMatrix<> mvalues(npts, components, svalues, values);
 	mvalues = 0;
