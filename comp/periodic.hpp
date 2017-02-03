@@ -59,9 +59,6 @@ namespace ngcomp
                                SliceVector<Complex> vec, TRANSFORM_TYPE tt) const override
     { space->VTransformVC(ei, vec, tt); }    
     
-  private:
-    void GetPeriodicNodeIds(Array<std::tuple<NodeId,NodeId>> & node_ids,int idnr) const;
-
   };
 }
 
