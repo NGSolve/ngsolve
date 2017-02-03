@@ -43,22 +43,20 @@ namespace ngcomp {
       // identifications are 1 based
       for (int idnr = 1; idnr<nid+1; idnr++)
         {
-          Array<std::tuple<NodeId,NodeId>> periodic_nodes;
-          GetPeriodicNodeIds(periodic_nodes,idnr);
-
           Array<int> slave_dofnrs;
           Array<int> master_dofnrs;
-          for(auto node_pair : periodic_nodes)
+          for (auto node_type : {NT_VERTEX, NT_EDGE, NT_FACE})
             {
-              NodeId id1, id2;
-              std::tie(id1,id2) = node_pair;
-              slave_dofnrs.SetSize(0);
-              master_dofnrs.SetSize(0);
-              space->GetDofNrs(id1,master_dofnrs);
-              space->GetDofNrs(id2,slave_dofnrs);
-              for(auto i : Range(master_dofnrs.Size())){
-                dofmap[slave_dofnrs[i]] = dofmap[master_dofnrs[i]];
-              }
+              auto & periodic_nodes = ma->GetPeriodicNodes(node_type, idnr);
+              for(auto node_pair : periodic_nodes)
+                {
+                  space->GetDofNrs(NodeId(node_type,node_pair[0]),master_dofnrs);
+                  space->GetDofNrs(NodeId(node_type,node_pair[1]),slave_dofnrs);
+                  for(auto i : Range(master_dofnrs.Size()))
+                    {
+                    dofmap[slave_dofnrs[i]] = dofmap[master_dofnrs[i]];
+                    }
+                }
             }
         }
       ctofdof.SetSize(dofmap.Size());
@@ -104,68 +102,4 @@ namespace ngcomp {
 	dnums[i] = dofmap[dnums[i]];
     }
 
-
-  void PeriodicFESpace :: GetPeriodicNodeIds(Array<std::tuple<NodeId,NodeId>> & node_ids,int idnr) const
-    {
-      Array<INT<2>> vertex_pairs;
-      ma->GetPeriodicVertices(idnr,vertex_pairs);
-      for (auto pair : vertex_pairs)
-        node_ids.Append(std::make_tuple(NodeId(NT_VERTEX,pair[0]),NodeId(NT_VERTEX,pair[1])));
-
-      Array<int> vertex_map(GetNDof());
-      for (auto i : Range(vertex_map.Size()))
-        vertex_map[i] = i;
-      for (auto pair : vertex_pairs)
-        vertex_map[pair[1]] = pair[0];
-      
-      // build vertex-pair to edge hashtable:
-      HashTable<INT<2>, int> vp2e(ma->GetNEdges());
-      
-      for (int enr = 0; enr < ma->GetNEdges(); enr++)
-        {
-          int v1, v2;
-          ma->GetEdgePNums (enr, v1, v2);
-          if (v1 > v2) Swap (v1, v2);
-          vp2e[INT<2>(v1,v2)] = enr;
-        }
-
-      for (int enr = 0; enr < ma->GetNEdges(); enr++)
-        {
-          int v1, v2;
-          ma->GetEdgePNums (enr, v1, v2);
-          int mv1 = vertex_map[v1];
-          int mv2 = vertex_map[v2];
-          if(mv1 != v1 && mv2 != v2)
-            {
-              if (mv1 > mv2) Swap(mv1,mv2);
-              int menr = vp2e.Get(INT<2>(mv1,mv2));
-              node_ids.Append(std::make_tuple(NodeId(NT_EDGE,menr),NodeId(NT_EDGE,enr)));
-            }
-        }
-
-      // build vertex-triple to face hashtable
-      HashTable<INT<3>, int> v2f(ma->GetNFaces());
-      Array<int> pnums;
-      for (auto fnr : Range(ma->GetNFaces()))
-        {
-          ma->GetFacePNums (fnr, pnums);
-          INT<3> i3(pnums[0], pnums[1], pnums[2]);
-          i3.Sort();
-          v2f[i3] = fnr;
-        }
-
-      for (auto fnr : Range(ma->GetNFaces()))
-        {
-          ma->GetFacePNums(fnr,pnums);
-          INT<3> mv(vertex_map[pnums[0]],vertex_map[pnums[1]],vertex_map[pnums[2]]);
-          if(mv[0] != pnums[0] && mv[1] != pnums[1] && mv[2] != pnums[2])
-            {
-              mv.Sort();
-              int mfnr = v2f[mv];
-              node_ids.Append(std::make_tuple(NodeId(NT_FACE,mfnr),NodeId(NT_FACE,fnr)));
-            }
-        }
-    }
-    
-  
 }
