@@ -404,7 +404,9 @@ namespace ngcomp
       Mat<DIMS,DIMR> hjac(hip.Jacobian());
           
       Mat<DIMR,DIMR,Complex> tjac;
-      pml_global_trafo.MapIntegrationPoint (hip, point, tjac);
+      const PML_TransformationDim<DIMR> & dimpml = 
+        static_cast<const PML_TransformationDim<DIMR>&> (pml_global_trafo);
+      dimpml.MapIntegrationPoint (hip, point, tjac);
                     
       mip.Point() = point; 
       mip.Jacobian() = tjac*hjac;
@@ -438,6 +440,8 @@ namespace ngcomp
       MappedIntegrationRule<DIMS,DIMR> mir_real(ir, *this, lh);
 
       auto & mir_complex = dynamic_cast<MappedIntegrationRule<DIMS,DIMR,Complex>&> (bmir);
+      const PML_TransformationDim<DIMR> & dimpml = 
+            static_cast<const PML_TransformationDim<DIMR>&> (pml_global_trafo);
 
       for (int i = 0; i < ir.Size(); i++)
         {
@@ -446,7 +450,7 @@ namespace ngcomp
           Mat<DIMS,DIMR> hjac(mir_real[i].Jacobian());
           
           Mat<DIMR,DIMR,Complex> tjac;
-          pml_global_trafo.MapIntegrationPoint (mir_real[i], point, tjac);
+          dimpml.MapIntegrationPoint (mir_real[i], point, tjac);
                     
           mir_complex[i].Point() = point; 
           mir_complex[i].Jacobian() = tjac*hjac;
