@@ -14,6 +14,7 @@ namespace ngcomp
 
   class PeriodicFESpace : public FESpace
   {
+  protected:
     Array<int> dofmap; // mapping of dofs
     shared_ptr<FESpace> space;
     shared_ptr<Array<int>> used_idnrs;
@@ -59,9 +60,33 @@ namespace ngcomp
     virtual void VTransformVC (ElementId ei, 
                                SliceVector<Complex> vec, TRANSFORM_TYPE tt) const override
     { space->VTransformVC(ei, vec, tt); }    
-    
+
+  protected:
+    // overload in quasiperiodic space
+    virtual void DofMapped(size_t from, size_t to, size_t idnr) { ; }
   };
 
+  class QuasiPeriodicFESpace : public PeriodicFESpace
+  {
+    shared_ptr<Array<Complex>> factors;
+    Array<Complex> dof_factors;
+
+  public:
+    QuasiPeriodicFESpace (shared_ptr<FESpace> fespace, const Flags & flag, shared_ptr<Array<int>> aused_idnrs, shared_ptr<Array<Complex>> afactors);
+
+    virtual void Update (LocalHeap & lh) override;
+
+    virtual void VTransformMR (ElementId ei, SliceMatrix<double> mat, TRANSFORM_TYPE tt) const override;
+    virtual void VTransformMC (ElementId ei, SliceMatrix<Complex> mat, TRANSFORM_TYPE tt) const override;
+    virtual void VTransformVR (ElementId ei, SliceVector<double> vec, TRANSFORM_TYPE tt) const override;
+    virtual void VTransformVC (ElementId ei, SliceVector<Complex> vec, TRANSFORM_TYPE tt) const override;
+
+
+    
+  protected:
+    virtual void DofMapped(size_t from, size_t to, size_t idnr) override;
+  };
+  
 
 }
 
