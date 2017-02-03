@@ -1057,7 +1057,9 @@ namespace ngcomp
       }
     )CODE_";
     string mycode = R"CODE_( 
-      Matrix<>  {values}{mir.Size(), {dim}};
+      // Matrix<>  {values}{mir.Size(), {dim}};
+      STACK_ARRAY(double, {hmem}, mir.Size()*{dim});
+      FlatMatrix<double>  {values}(mir.Size(), {dim}, &{hmem}[0]);
       {
       LocalHeapMem<100000> lh2("{values}");
       const GridFunction & gf = *reinterpret_cast<GridFunction*>({gf_ptr});
