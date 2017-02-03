@@ -47,3 +47,12 @@ viewoptions = TclVariables('::viewoptions', 'Ng_SetVisParameters', viewoptions_v
 viewoptions.add_group( 'clipping', clipping_variables )
 viewoptions.add_group( 'light', ['amb', 'diff', 'spec', 'locviewer'] )
 viewoptions.add_group( 'mat', ['shininess', 'transp'] )
+
+def VideoStart(filename):
+    ngsolve.solve.Tcl_Eval("Ng_VideoClip .ndraw init " + filename+';\n')
+
+def VideoAddFrame():
+    ngsolve.solve.Tcl_Eval("Ng_VideoClip .ndraw addframe;\n")
+
+def VideoFinalize():
+    ngsolve.solve.Tcl_Eval("Ng_VideoClip .ndraw finalize;\n")
