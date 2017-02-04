@@ -30,12 +30,12 @@ namespace ngcomp
       FESpace::FinalizeUpdate(lh);
     }
 
-    virtual string GetClassName() const { return "Periodic" + space->GetClassName(); }
+    virtual string GetClassName() const override { return "Periodic" + space->GetClassName(); }
     
     virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override;
 
-    virtual size_t GetNDof () const { return space->GetNDof(); }
-    virtual size_t GetNDofLevel (int level) const { return space->GetNDofLevel(level); }
+    virtual size_t GetNDof () const override { return space->GetNDof(); }
+    virtual size_t GetNDofLevel (int level) const override { return space->GetNDofLevel(level); }
 
     virtual void GetDofNrs(ElementId ei, Array<int> & dnums) const override;
 
