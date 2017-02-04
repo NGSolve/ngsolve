@@ -116,6 +116,10 @@ namespace ngla
     
     auto me = FVDouble();
     auto you = v.FVDouble();
+
+    if (me.Size() != you.Size())
+      throw Exception (string ("BaseVector::Add: size of me = ") +
+                       ToString(Size()) + " != size of other = " + ToString(v.Size()));
     
     t.AddFlops (me.Size());
 
