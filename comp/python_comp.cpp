@@ -1615,7 +1615,78 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
     (m, "CompoundFESpace")
     .def("Range", &CompoundFESpace::GetRange)
     ;
+  
+  m.def("Periodic", [] (PyFES & fes, py::object phase, py::object use_idnrs ) -> PyFES
+          {
+            Flags flags = fes->GetFlags();
+	    shared_ptr<Array<int>> a_used_idnrs;
+	    if(py::extract<py::list>(use_idnrs).check())
+	      a_used_idnrs = make_shared<Array<int>>(makeCArray<int>(py::extract<py::list>(use_idnrs)()));
+	    else if (use_idnrs == Py_None)
+	      a_used_idnrs = make_shared<Array<int>>();
+	    else
+	      throw Exception("Argument for use_idnrs in Periodic must be list of identification numbers (int)");
+	    shared_ptr<FESpace> perfes;
+	    auto ext = py::extract<py::list>(phase);
+	    if(ext.check())
+	      {
+		auto a_phase = make_shared<Array<Complex>>(py::len(ext()));
+		for (auto i : Range(a_phase->Size()))
+		  {
+		    auto ext_value = py::extract<Complex>(ext()[i]);
+		    if(ext_value.check())
+		      (*a_phase)[i] = ext_value();
+		    else
+		      throw Exception("Periodic FESpace needs a list of complex castable values as parameter phase");
+		  }
+		perfes = make_shared<QuasiPeriodicFESpace>(fes.Get(),flags,a_used_idnrs,a_phase);
+	      }
+	    else if (phase == Py_None)
+	      {
+	      perfes = make_shared<PeriodicFESpace>(fes.Get(),flags,a_used_idnrs);
+	      }
+	    else
+	      throw Exception("Periodic FESpace needs a list of complex castable values as parameter 'phase'");
+            perfes->Update(glh);
+            perfes->FinalizeUpdate(glh);
+            return perfes;
+	  }, py::arg("fespace"), py::arg("phase")=nullptr, py::arg("use_idnrs")=nullptr,
+	docu_string(R"delimiter(Generator function for periodic or quasi-periodic :any:`Finite Element Spaces`. 
+The periodic fespace is a wrapper around a standard fespace with an 
+additional dof mapping for the periodic degrees of freedom. All dofs 
+on slave boundaries are mapped to their master dofs. Because of this, 
+the mesh needs to be periodic. To create a periodic mesh use i.e. the 
+function :any:`CSGeometry.PeriodicSurfaces`(master,slave). Low order 
+fespaces are currently not supported, so methods using them will not work. 
 
+Parameters
+----------
+
+fespace (FESpace): finite element space 
+
+phase (list of Complex = None): phase shift for quasi-periodic finite 
+    element space. The basis functions on the slave boundary are 
+    multiplied by the factor given in this list. If None (default) is 
+    given, a periodic fespace is created. The order of the list must 
+    match the order of the definition of the periodic boundaries in 
+    the mesh. 
+
+used_idnrs (list of int = None): identification numbers to be made periodic 
+    if you don't want to use all periodic identifications defined in the 
+    mesh, if None (default) all available periodic identifications are 
+    used.
+
+)delimiter"));
+  /*
+  typedef PyWrapperDerived<PeriodicFESpace, FESpace> PyPeriodicFES;
+  py::class_<PyPeriodicFES, PyFES>
+    (m, "PeriodicFES", "a periodic fespace")
+    .def("__init__", [](PyPeriodicFES *instance, PyFES & fespace, py::dict dictflags)
+         {
+           Flags flags = py::extract<Flags> (dictflags)();
+           
+         });
+  */
   //////////////////////////////////////////////////////////////////////////////////////////
   
 
