@@ -149,7 +149,7 @@ build_mac:
     - rm -rf $BUILD_DIR
     - mkdir $BUILD_DIR
     - cd $BUILD_DIR
-    - cmake $CI_PROJECT_DIR -DINSTALL_DIR=$INSTALL_DIR -DUSE_CCACHE=ON -DCMAKE_BUILD_TYPE=Release
+    - cmake $CI_PROJECT_DIR -DINSTALL_DIR=$INSTALL_DIR -DUSE_CCACHE=ON -DCMAKE_BUILD_TYPE=Release -DUSE_UMFPACK=ON
     - make -j10 install
     - osascript -e 'tell application "Finder" to eject (every disk whose ejectable is true)'
     - make bundle
