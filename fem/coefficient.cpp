@@ -2059,7 +2059,7 @@ public:
     c1->Evaluate (ip, va);
     c2->Evaluate (ip, vb);
 
-    FlatMatrix<> c(hdims[0], hdims[1], &result(0));
+    FlatMatrix<Complex> c(hdims[0], hdims[1], &result(0));
     c = a*b;
     //cout << "MultMatMat: complex not implemented" << endl;
   }  
@@ -2703,7 +2703,13 @@ public:
   virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
                          FlatVector<Complex> result) const
   {
-    cout << "Transpose: complex not implemented" << endl;
+    FlatArray<int> hdims = Dimensions();        
+    Vector<Complex> input(result.Size());
+    c1->Evaluate (ip, input);    
+    FlatMatrix<Complex> reshape1(hdims[1], hdims[0], &input(0));  // source matrix format
+    FlatMatrix<Complex> reshape2(hdims[0], hdims[1], &result(0));  // range matrix format
+    reshape2 = Trans(reshape1);
+    //cout << "Transpose: complex not implemented" << endl;
   }  
 
   virtual void Evaluate (const BaseMappedIntegrationRule & mir,
