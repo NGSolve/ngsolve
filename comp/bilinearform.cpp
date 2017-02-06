@@ -197,7 +197,10 @@ namespace ngcomp
         else
           {
             if (bfi->VB() > 1) throw Exception ("skeletonform makes sense only for VOL or BND");
-            facetwise_skeleton_parts[bfi->VB()].Append(bfi);
+            // facetwise_skeleton_parts[bfi->VB()].Append(bfi);
+            auto fbfi = dynamic_pointer_cast<FacetBilinearFormIntegrator> (bfi);
+            if (!fbfi)  throw Exception ("not a FacetBFI");
+            facetwise_skeleton_parts[bfi->VB()] += fbfi;
           }
       }
     else
@@ -3073,7 +3076,8 @@ namespace ngcomp
     static Timer timerbound ("Apply Matrix - boundary");
     static Timer timerDG ("Apply Matrix - DG");
     constexpr int tlevel = 4;
-    static Timer timerDGpar ("Apply Matrix - DG par", tlevel);
+    static Timer timerDGpar ("Apply Matrix - DG par", 1);
+    static Timer timerDGapply ("Apply Matrix - DG par apply", 1);
     static Timer timerDG1 ("Apply Matrix - DG 1", tlevel);
     static Timer timerDG2 ("Apply Matrix - DG 2", tlevel);
     static Timer timerDG2a ("Apply Matrix - DG 2a", tlevel);
@@ -3277,22 +3281,15 @@ namespace ngcomp
                            
                            fespace->GetDofNrs (ei1, dnums);
                            
-                           // for (int j = 0; j < NumIntegrators(); j++)
-                           for (auto & spbfi : facetwise_skeleton_parts[BND])
+                           for (auto & bfi : facetwise_skeleton_parts[BND])
                              {
-                               const BilinearFormIntegrator & bfi = *spbfi; // *parts[j];
-                               
-                               // if (!bfi.BoundaryForm()) continue;  
-                               // if (!bfi.SkeletonForm()) continue;
-                               // if (bfi.GetDGFormulation().element_boundary) continue;
-                               if (!bfi.DefinedOn (seltrans.GetElementIndex())) continue;
+                               if (!bfi->DefinedOn (seltrans.GetElementIndex())) continue;
                                          
                                FlatVector<SCAL> elx(dnums.Size()*this->fespace->GetDimension(), lh),
                                  ely(dnums.Size()*this->fespace->GetDimension(), lh);
                                x.GetIndirect(dnums, elx);
                                
-                               dynamic_cast<const FacetBilinearFormIntegrator&>(bfi).  
-                                 ApplyFacetMatrix (fel,facnr1,eltrans,vnums1, seltrans, vnums2, elx, ely, lh);
+                               bfi->ApplyFacetMatrix (fel,facnr1,eltrans,vnums1, seltrans, vnums2, elx, ely, lh);
                                y.AddIndirect(dnums, ely, fespace->HasAtomicDofs());
                              } //end for (numintegrators)
                            
@@ -3335,21 +3332,14 @@ namespace ngcomp
                        // timerDG2.Stop();
                        
                        //                                  for (int j = 0; j < NumIntegrators(); j++)
+                       RegionTimer reg2(timerDGapply);                     
                        for (auto & bfi : facetwise_skeleton_parts[VOL])                                   
                          {
-                           // BilinearFormIntegrator * bfi = parts[j].get();
-                           
-                           // if (!bfi->SkeletonForm()) continue;
-                           // if (bfi->BoundaryForm()) continue;
-                           // if (bfi->GetDGFormulation().element_boundary) continue;                                     
                            if (!bfi->DefinedOn (ma->GetElIndex (el1))) continue; 
                            if (!bfi->DefinedOn (ma->GetElIndex (el2))) continue; 
                            
                            // timerDG3.Start();
-                           FacetBilinearFormIntegrator * fbfi = 
-                             dynamic_cast<FacetBilinearFormIntegrator*>(bfi.get());
-                           
-                           fbfi->ApplyFacetMatrix (fel1, facnr1, eltrans1, vnums1,
+                           bfi->ApplyFacetMatrix (fel1, facnr1, eltrans1, vnums1,
                                                    fel2, facnr2, eltrans2, vnums2, elx, ely, lh);
                            // timerDG3.Stop();
                            // timerDG4.Start();
