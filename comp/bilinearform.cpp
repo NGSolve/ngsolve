@@ -3081,8 +3081,8 @@ namespace ngcomp
     static Timer timerbound ("Apply Matrix - boundary");
     static Timer timerDG ("Apply Matrix - DG");
     constexpr int tlevel = 4;
-    static Timer timerDGpar ("Apply Matrix - DG par", 1);
-    static Timer timerDGapply ("Apply Matrix - DG par apply", 1);
+    static Timer timerDGpar ("Apply Matrix - DG par", tlevel);
+    static Timer timerDGapply ("Apply Matrix - DG par apply", tlevel);
     static Timer timerDG1 ("Apply Matrix - DG 1", tlevel);
     static Timer timerDG2 ("Apply Matrix - DG 2", tlevel);
     static Timer timerDG2a ("Apply Matrix - DG 2a", tlevel);
