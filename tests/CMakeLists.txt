@@ -93,7 +93,7 @@ foreach(pde_test ${acc_tests})
     set_tests_properties ( acc_${pde_test} PROPERTIES LABELS "accuracy")
 endforeach()
 
-if(NOT WIN32)
+if(NOT WIN32 AND NOT APPLE)
     add_test(NAME cpu_usage COMMAND top "-n1" "-b" )
 endif()
 string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE_UPPER )
