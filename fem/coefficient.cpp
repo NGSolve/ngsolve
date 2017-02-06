@@ -2050,7 +2050,18 @@ public:
   virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
                          FlatVector<Complex> result) const
   {
-    cout << "MultMatMat: complex not implemented" << endl;
+    FlatArray<int> hdims = Dimensions();
+    Vector<Complex> va(hdims[0]*inner_dim);
+    Vector<Complex> vb(hdims[1]*inner_dim);
+    FlatMatrix<Complex> a(hdims[0], inner_dim, &va[0]);
+    FlatMatrix<Complex> b(inner_dim, hdims[1], &vb[0]);
+    
+    c1->Evaluate (ip, va);
+    c2->Evaluate (ip, vb);
+
+    FlatMatrix<> c(hdims[0], hdims[1], &result(0));
+    c = a*b;
+    //cout << "MultMatMat: complex not implemented" << endl;
   }  
 
   virtual void Evaluate (const BaseMappedIntegrationRule & mir,
@@ -2431,7 +2442,16 @@ public:
   virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
                          FlatVector<Complex> result) const
   {
-    cout << "MultMatMat: complex not implemented" << endl;
+    FlatArray<int> hdims = Dimensions();
+    Vector<Complex> va(hdims[0]*inner_dim);
+    Vector<Complex> vb(inner_dim);
+    FlatMatrix<Complex> a(hdims[0], inner_dim, &va[0]);
+
+    c1->Evaluate (ip, va);
+    c2->Evaluate (ip, vb);
+
+    result = a * vb;
+    //cout << "MultMatMat: complex not implemented" << endl;
   }  
 
   virtual void Evaluate (const BaseMappedIntegrationRule & mir,
