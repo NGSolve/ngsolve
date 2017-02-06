@@ -1651,10 +1651,15 @@ namespace ngcomp
                                  
                                  FlatMatrix<SCAL> compressed_elmat(compressed_dofs * fespace->GetDimension(), lh);
                                  compressed_elmat = 0.0;
+
+                                 int dim = fespace->GetDimension();
+
                                  for (int i = 0; i < dnums.Size(); ++i)
                                    for (int j = 0; j < dnums.Size(); ++j)
-                                     compressed_elmat(dnums_to_compressed[i],dnums_to_compressed[j]) += elmat(i,j);
-                                 
+                                     for (int di = 0; di < dim; ++di)
+                                       for (int dj = 0; dj < dim; ++dj)
+                                         compressed_elmat(dim*dnums_to_compressed[i]+di,dim*dnums_to_compressed[j]+dj) += elmat(i*dim+di,j*dim+dj);
+
                                  {
                                    lock_guard<mutex> guard(addelemfacin_mutex);
                                    AddElementMatrix (compressed_dnums, compressed_dnums, compressed_elmat,
