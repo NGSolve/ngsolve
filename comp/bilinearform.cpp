@@ -3235,6 +3235,8 @@ namespace ngcomp
                (facetwise_skeleton_parts[BND].Size() > 0) )
             
             for (auto colfacets : fespace->FacetColoring())
+              {
+              /*
               ParallelForRange
                 (colfacets.Size(), [&] (IntRange r)
                  {
@@ -3243,6 +3245,19 @@ namespace ngcomp
                    Array<int> elnums(2, lh), elnums_per(2, lh), fnums1(6, lh), fnums2(6, lh), vnums1(8, lh), vnums2(8, lh);
                    
                    for (int i : r)
+              */
+                SharedLoop2 sl(colfacets.Size());
+
+                task_manager -> CreateJob
+                  ( [&] (const TaskInfo & ti) 
+                    {
+                      // LocalHeap lh = clh.Split(ti.thread_nr, ti.nthreads);
+                      // ArrayMem<int,100> temp_dnums;
+                      RegionTimer reg(timerDGpar);
+                      LocalHeap lh = clh.Split();
+                      Array<int> elnums(2, lh), elnums_per(2, lh), fnums1(6, lh), fnums2(6, lh), vnums1(8, lh), vnums2(8, lh);
+
+                  for (int i : sl)                
                      {
                        // timerDG1.Start();
                        HeapReset hr(lh);
@@ -3353,7 +3368,7 @@ namespace ngcomp
                          }
                      }
                  });
-          
+              }
           
                     
 
