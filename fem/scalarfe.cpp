@@ -284,6 +284,164 @@ namespace ngfem
       AddTrans (ir, values.Row(i), coefs.Col(i));
   }
 
+
+  template<int D>
+  map<string,double> ScalarFiniteElement<D> :: Timing () const
+  {
+    map<string,double> timings;
+    IntegrationRule ir(ElementType(), Order());
+    SIMD_IntegrationRule simdir(ElementType(), Order());
+    Vector<> shape(GetNDof()), coefs(GetNDof());
+    Vector<> values(ir.Size());
+    Matrix<> dvalues(ir.Size(), D);
+    Vector<SIMD<double>> avalues(simdir.Size());
+    Matrix<SIMD<double>> advalues(D, simdir.Size());
+    FE_ElementTransformation<D,D> trafo(ElementType());
+    static LocalHeap lh (100000, "FE - Timing");
+    auto & simdmir = trafo(simdir, lh);
+    
+    coefs = 1;
+    
+    double maxtime = 0.5;
+    double starttime;
+    double time;
+    size_t steps;
+
+    // calc shape single point
+    starttime = WallTime();
+    steps = 0;
+    do
+      {
+        for (size_t i = 0; i < 1000; i++)
+          this -> CalcShape(ir[0], shape);
+        steps += 1000;
+	time = WallTime()-starttime;
+      }
+    while (time < maxtime);
+    timings["CalcShape"] = time/steps*1e9/GetNDof();
+
+    // evaluate IR
+    starttime = WallTime();
+    steps = 0;
+    do
+      {
+        for (size_t i = 0; i < 1000; i++)
+          this -> Evaluate(ir, coefs, values);
+        steps += 1000;
+	time = WallTime()-starttime;
+      }
+    while (time < maxtime);
+    timings["Evaluate"] = time/steps*1e9/(GetNDof()*ir.GetNIP());
+
+    
+    // evaluate IR SIMD
+    starttime = WallTime();
+    steps = 0;
+    do
+      {
+        for (size_t i = 0; i < 1000; i++)
+          this -> Evaluate(simdir, coefs, avalues);
+        steps += 1000;
+	time = WallTime()-starttime;
+      }
+    while (time < maxtime);
+    timings["Evaluate(SIMD)"] = time/steps*1e9/(GetNDof()*ir.GetNIP());
+
+
+    // evaluate grad IR
+    starttime = WallTime();
+    steps = 0;
+    do
+      {
+        for (size_t i = 0; i < 1000; i++)
+          this -> EvaluateGrad(ir, coefs, dvalues);
+        steps += 1000;
+	time = WallTime()-starttime;
+      }
+    while (time < maxtime);
+    timings["Evaluate Grad"] = time/steps*1e9/(D*GetNDof()*ir.GetNIP());
+
+
+    // evaluate grad IR SIMD
+    starttime = WallTime();
+    steps = 0;
+    do
+      {
+        for (size_t i = 0; i < 1000; i++)
+          this -> EvaluateGrad(simdir, coefs, advalues);
+        steps += 1000;
+	time = WallTime()-starttime;
+      }
+    while (time < maxtime);
+    timings["Evaluate Grad(SIMD)"] = time/steps*1e9/(D*GetNDof()*ir.GetNIP());
+
+
+
+    
+    // evaluate IR
+    starttime = WallTime();
+    steps = 0;
+    do
+      {
+        for (size_t i = 0; i < 1000; i++)
+          this -> EvaluateTrans(ir, values, coefs);
+        steps += 1000;
+	time = WallTime()-starttime;
+      }
+    while (time < maxtime);
+    timings["Evaluate Trans"] = time/steps*1e9/(GetNDof()*ir.GetNIP());    
+
+    // evaluate trans IR SIMD
+    starttime = WallTime();
+    steps = 0;
+    do
+      {
+        for (size_t i = 0; i < 1000; i++)
+          this -> AddTrans(simdir, avalues, coefs);
+        steps += 1000;
+	time = WallTime()-starttime;
+      }
+    while (time < maxtime);
+    timings["Evaluate Trans (SIMD)"] = time/steps*1e9/(GetNDof()*ir.GetNIP());
+
+
+    // evaluate trans grad IR
+    starttime = WallTime();
+    steps = 0;
+    do
+      {
+        for (size_t i = 0; i < 1000; i++)
+          this -> EvaluateGradTrans(ir, dvalues, coefs);
+        steps += 1000;
+	time = WallTime()-starttime;
+      }
+    while (time < maxtime);
+    timings["Evaluate Trans Grad"] = time/steps*1e9/(D*GetNDof()*ir.GetNIP());
+
+
+    // evaluate trans grad IR SIMD
+    starttime = WallTime();
+    steps = 0;
+    do
+      {
+        for (size_t i = 0; i < 1000; i++)
+          this -> AddGradTrans(simdmir, advalues, coefs);
+        steps += 1000;
+	time = WallTime()-starttime;
+      }
+    while (time < maxtime);
+    timings["Evaluate Trans Grad(SIMD)"] = time/steps*1e9/(D*GetNDof()*ir.GetNIP());
+
+
+    
+
+
+    
+    
+    return timings;
+  }
+
+
   
   template<int D>
   void ScalarFiniteElement<D> :: 
