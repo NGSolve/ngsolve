@@ -1650,7 +1650,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
             perfes->Update(glh);
             perfes->FinalizeUpdate(glh);
             return perfes;
-	  }, py::arg("fespace"), py::arg("phase")=nullptr, py::arg("use_idnrs")=nullptr,
+	  }, py::arg("fespace"), py::arg("phase")=DummyArgument(), py::arg("use_idnrs")=DummyArgument(),
 	docu_string(R"delimiter(Generator function for periodic or quasi-periodic :any:`Finite Element Spaces`. 
 The periodic fespace is a wrapper around a standard fespace with an 
 additional dof mapping for the periodic degrees of freedom. All dofs 
