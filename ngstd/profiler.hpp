@@ -32,7 +32,7 @@ inline void gettimeofday(struct timeval* t,void* timezone)
 #include <chrono>
 
 namespace ngstd {
-  extern std::chrono::time_point<std::chrono::system_clock> wall_time_start;
+  extern NGS_DLL_HEADER std::chrono::time_point<std::chrono::system_clock> wall_time_start;
 
   // Time in seconds since program start
   inline double WallTime ()

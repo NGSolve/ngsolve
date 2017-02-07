@@ -404,7 +404,9 @@ namespace ngcomp
       Mat<DIMS,DIMR> hjac(hip.Jacobian());
           
       Mat<DIMR,DIMR,Complex> tjac;
-      pml_global_trafo.MapIntegrationPoint (hip, point, tjac);
+      const PML_TransformationDim<DIMR> & dimpml = 
+        static_cast<const PML_TransformationDim<DIMR>&> (pml_global_trafo);
+      dimpml.MapIntegrationPoint (hip, point, tjac);
                     
       mip.Point() = point; 
       mip.Jacobian() = tjac*hjac;
@@ -438,6 +440,8 @@ namespace ngcomp
       MappedIntegrationRule<DIMS,DIMR> mir_real(ir, *this, lh);
 
       auto & mir_complex = dynamic_cast<MappedIntegrationRule<DIMS,DIMR,Complex>&> (bmir);
+      const PML_TransformationDim<DIMR> & dimpml = 
+            static_cast<const PML_TransformationDim<DIMR>&> (pml_global_trafo);
 
       for (int i = 0; i < ir.Size(); i++)
         {
@@ -446,7 +450,7 @@ namespace ngcomp
           Mat<DIMS,DIMR> hjac(mir_real[i].Jacobian());
           
           Mat<DIMR,DIMR,Complex> tjac;
-          pml_global_trafo.MapIntegrationPoint (mir_real[i], point, tjac);
+          dimpml.MapIntegrationPoint (mir_real[i], point, tjac);
                     
           mir_complex[i].Point() = point; 
           mir_complex[i].Jacobian() = tjac*hjac;
@@ -889,6 +893,7 @@ namespace ngcomp
 
     ndomains++;
     ndomains = MyMPI_AllReduce (ndomains, MPI_MAX);
+    pml_trafos.SetSize(ndomains);
 
     nboundaries = -1;
     int nse = GetNSE(); 
@@ -904,24 +909,124 @@ namespace ngcomp
 
     CalcIdentifiedFacets();
     if(mesh.GetDimension() == 1)
-    {
-      nbboundaries = 0;
-      return;
-    }
-    nbboundaries = -1;
-    int ncd2e = nelements_cd[2];
-    for (int i=0; i< ncd2e; i++)
       {
-	int elindex = GetCD2ElIndex(i);
-	//if (elindex < 0) throw Exception ("mesh with negative cd2 condition number");
-	if (elindex >=0)
-	  nbboundaries = max2(nbboundaries, elindex);
+        nbboundaries = 0;
       }
-    nbboundaries++;
-    nbboundaries = MyMPI_AllReduce(nbboundaries, MPI_MAX);
+    else
+      {
+        nbboundaries = -1;
+        int ncd2e = nelements_cd[2];
+        for (int i=0; i< ncd2e; i++)
+          {
+            int elindex = GetCD2ElIndex(i);
+            //if (elindex < 0) throw Exception ("mesh with negative cd2 condition number");
+            if (elindex >=0)
+              nbboundaries = max2(nbboundaries, elindex);
+          }
+        nbboundaries++;
+        nbboundaries = MyMPI_AllReduce(nbboundaries, MPI_MAX);
+      }
+    
+    // update periodic mappings
+    auto nid = mesh.GetMesh()->GetIdentifications().GetMaxNr();
+    periodic_node_pairs[NT_VERTEX]->SetSize(nid);
+    periodic_node_pairs[NT_EDGE]->SetSize(nid);
+    periodic_node_pairs[NT_FACE]->SetSize(nid);
+    for (auto idnr : Range(1,nid+1))
+      {
+        // only if it is periodic
+        if (mesh.GetMesh()->GetIdentifications().GetType(idnr)!=2) continue;
+        size_t nverts = Ng_GetNPeriodicVertices(idnr); 
+        (*periodic_node_pairs[NT_VERTEX])[idnr-1].SetSize(nverts);
+        Ng_GetPeriodicVertices(idnr,&(*periodic_node_pairs[NT_VERTEX])[idnr-1][0][0]);
+        for (auto i : Range(nverts))
+          {
+            (*periodic_node_pairs[NT_VERTEX])[idnr-1][i][0]--;
+            (*periodic_node_pairs[NT_VERTEX])[idnr-1][i][1]--;
+          }
+      
 
-    pml_trafos.SetSize(ndomains);
-  }
+        // build vertex map for idnr
+        Array<int> vertex_map(GetNV());
+        for (auto i : Range(GetNV()))
+          vertex_map[i] = i;
+        for (auto pair : (*periodic_node_pairs[NT_VERTEX])[idnr-1])
+          vertex_map[pair[1]] = pair[0];
+        
+        // build vertex-pair to edge hashtable:
+        HashTable<INT<2>, int> vp2e(GetNEdges());
+        
+        for (int enr = 0; enr < GetNEdges(); enr++)
+          {
+            int v1, v2;
+            GetEdgePNums (enr, v1, v2);
+            if (v1 > v2) Swap (v1, v2);
+            vp2e[INT<2>(v1,v2)] = enr;
+          }
+        int count = 0;
+        for (int enr = 0; enr < GetNEdges(); enr++)
+          {
+            int v1,v2;
+            GetEdgePNums(enr,v1,v2);
+            int mv1 = vertex_map[v1];
+            int mv2 = vertex_map[v2];
+            if(mv1 != v1 && mv2 != v2)
+              count++;
+          }
+        (*periodic_node_pairs[NT_EDGE])[idnr-1].SetSize(count);
+        count = 0;
+        for (int enr = 0; enr < GetNEdges(); enr++)
+          {
+            int v1, v2;
+            GetEdgePNums (enr, v1, v2);
+            int mv1 = vertex_map[v1];
+            int mv2 = vertex_map[v2];
+            if(mv1 != v1 && mv2 != v2)
+              {               
+                if (mv1 > mv2) Swap(mv1,mv2);
+                int menr = vp2e.Get(INT<2>(mv1,mv2));
+                (*periodic_node_pairs[NT_EDGE])[idnr-1][count][0] = menr;
+                (*periodic_node_pairs[NT_EDGE])[idnr-1][count++][1] = enr;
+              }
+          }
+        // build vertex-triple to face hashtable
+        HashTable<INT<3>, int> v2f(GetNFaces());
+        Array<int> pnums;
+        for (auto fnr : Range(GetNFaces()))
+          {
+            GetFacePNums (fnr, pnums);
+            INT<3> i3(pnums[0], pnums[1], pnums[2]);
+            i3.Sort();
+            v2f[i3] = fnr;
+          }
+
+        count = 0;
+        for (auto fnr : Range(GetNFaces()))
+          {
+            GetFacePNums(fnr,pnums);
+            if(vertex_map[pnums[0]] != pnums[0] && vertex_map[pnums[1]] != pnums[1] &&
+               vertex_map[pnums[2]] != pnums[2])
+              {
+                count++;
+              }
+          }
+        (*periodic_node_pairs[NT_FACE])[idnr-1].SetSize(count);
+        count = 0;
+        for (auto fnr : Range(GetNFaces()))
+          {
+            GetFacePNums(fnr,pnums);
+            INT<3> mv(vertex_map[pnums[0]],vertex_map[pnums[1]],vertex_map[pnums[2]]);
+            if(mv[0] != pnums[0] && mv[1] != pnums[1] && mv[2] != pnums[2])
+              {
+                mv.Sort();
+                int mfnr = v2f[mv];
+                (*periodic_node_pairs[NT_FACE])[idnr-1][count][0] = mfnr;
+                (*periodic_node_pairs[NT_FACE])[idnr-1][count++][1] = fnr;
+              }
+          }
+      }
+    
+ }
 
 
 #ifdef ABC
@@ -1770,10 +1875,6 @@ namespace ngcomp
     UpdateBuffers();
   }
 
-
-  
-
-
   int MeshAccess :: GetNPairsPeriodicVertices () const 
   {
     return Ng_GetNPeriodicVertices(0);
@@ -1817,6 +1918,10 @@ namespace ngcomp
   }
 
 
+  const Array<INT<2>> & MeshAccess :: GetPeriodicNodes (NODE_TYPE nt, int idnr) const
+  {
+    return (*periodic_node_pairs[nt])[idnr-1];
+  }
 
 
   int MeshAccess :: GetNPairsPeriodicEdges () const 

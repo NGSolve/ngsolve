@@ -20,7 +20,10 @@ namespace ngcomp
     string name;
 
     /// the valid flags for this class
-    Flags flaglist; 
+    Flags flaglist;
+
+    // the flags of this class 
+    Flags flags;
 
     /// access to the mesh
     shared_ptr<MeshAccess> ma;
@@ -37,9 +40,9 @@ namespace ngcomp
   public:
 
     /// 
-    NGS_Object (shared_ptr<MeshAccess> ama, const string & aname = "noname", 
+    NGS_Object (shared_ptr<MeshAccess> ama, Flags aflags, const string & aname = "noname", 
                 bool checkflags = false)
-      : name(aname), ma(ama), timer(aname), skipCleanUp(0)
+      : name(aname), ma(ama), flags(aflags), timer(aname), skipCleanUp(0)
     { 
       ;
     }
@@ -59,6 +62,8 @@ namespace ngcomp
     {
       return name; 
     }
+
+    const Flags & GetFlags() const { return flags; }
 
     int GetTimeStamp() const { return timestamp; } 
     
