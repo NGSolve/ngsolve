@@ -15,103 +15,131 @@ namespace ngfem
       }
     /// destructor
     NGS_DLL_HEADER virtual ~TPDifferentialOperator () {}
-    /// dimension of range
-    /// number of copies of finite element by BlockDifferentialOperator
-    /// does it live on the boundary ?
-
-    /// total polynomial degree is reduced by this order (i.e. minimal difforder)
 
     virtual IntRange UsedDofs(const FiniteElement & fel) const { return IntRange(0, fel.GetNDof()); }
 
     virtual bool operator== (const TPDifferentialOperator & diffop2) const { return false; }
     
+    shared_ptr<DifferentialOperator> GetEvaluators( int num)
+    {
+      return evaluators[num];
+    }
+    
     NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & fel,
-	   const BaseMappedIntegrationRule & mir,
-	   FlatVector<double> x, 
-	   FlatMatrix<double> flux,
-	   LocalHeap & lh) const;
+        const BaseMappedIntegrationRule & mir,
+        FlatVector<double> x, 
+        FlatMatrix<double> flux,
+        LocalHeap & lh) const;
        
     NGS_DLL_HEADER virtual void
     ApplyTrans (const FiniteElement & fel,
-		const BaseMappedIntegrationRule & mir,
-		FlatMatrix<double> flux,
-		FlatVector<double> x, 
-		LocalHeap & lh) const;
+        const BaseMappedIntegrationRule & mir,
+        FlatMatrix<double> flux,
+        FlatVector<double> x, 
+        LocalHeap & lh) const;
+    
+    NGS_DLL_HEADER virtual void
+    ApplyY(const FiniteElement &fel,
+        const BaseMappedIntegrationRule & miry,
+        FlatMatrix<double> flux,
+        SliceMatrix<double> x,
+        LocalHeap & lh) const;
+        
+    NGS_DLL_HEADER virtual void
+    ApplyYTrans(const FiniteElement &fel,
+        const BaseMappedIntegrationRule & miry,
+        FlatMatrix<double> flux,
+        SliceMatrix<double> x,
+        LocalHeap & lh) const;
+
+    NGS_DLL_HEADER virtual void
+    ApplyX(const FiniteElement &fel,
+        const BaseMappedIntegrationRule & mirx,
+        FlatMatrix<double> flux,
+        SliceMatrix<double> x,
+        LocalHeap & lh) const;
+        
+    NGS_DLL_HEADER virtual void
+    ApplyXTrans(const FiniteElement &fel,
+        const BaseMappedIntegrationRule & mirx,
+        FlatMatrix<double> flux,
+        SliceMatrix<double> x,
+        LocalHeap & lh) const;
 
     /// calculates the matrix
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
-		const BaseMappedIntegrationPoint & mip,
-		SliceMatrix<double,ColMajor> mat,   
-		LocalHeap & lh) const { throw Exception("2 not implemented"); }
+        const BaseMappedIntegrationPoint & mip,
+        SliceMatrix<double,ColMajor> mat,   
+        LocalHeap & lh) const { throw Exception("2 not implemented"); }
 
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & bfel,
-		const BaseMappedIntegrationPoint & bmip,
-		SliceMatrix<Complex,ColMajor> mat, 
-		LocalHeap & lh) const { throw Exception("3 not implemented"); }
+        const BaseMappedIntegrationPoint & bmip,
+        SliceMatrix<Complex,ColMajor> mat, 
+        LocalHeap & lh) const { throw Exception("3 not implemented"); }
 
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
-		const BaseMappedIntegrationRule & mir,
-		SliceMatrix<double,ColMajor> mat,   
-		LocalHeap & lh) const { throw Exception("4 not implemented"); }
+        const BaseMappedIntegrationRule & mir,
+        SliceMatrix<double,ColMajor> mat,   
+        LocalHeap & lh) const { throw Exception("4 not implemented"); }
 
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
-		const BaseMappedIntegrationRule & mir,
-		SliceMatrix<Complex,ColMajor> mat,   
-		LocalHeap & lh) const { throw Exception("5 not implemented"); }
+        const BaseMappedIntegrationRule & mir,
+        SliceMatrix<Complex,ColMajor> mat,   
+        LocalHeap & lh) const { throw Exception("5 not implemented"); }
     
     NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & fel,
-	   const BaseMappedIntegrationPoint & mip,
-	   FlatVector<double> x, 
-	   FlatVector<double> flux,
-	   LocalHeap & lh) const { throw Exception("6 not implemented"); }
+        const BaseMappedIntegrationPoint & mip,
+        FlatVector<double> x, 
+        FlatVector<double> flux,
+        LocalHeap & lh) const { throw Exception("6 not implemented"); }
 
     NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & fel,
-	   const BaseMappedIntegrationPoint & mip,
-	   FlatVector<Complex> x, 
-	   FlatVector<Complex> flux,
-	   LocalHeap & lh) const { throw Exception("8 not implemented"); }
+        const BaseMappedIntegrationPoint & mip,
+        FlatVector<Complex> x, 
+        FlatVector<Complex> flux,
+        LocalHeap & lh) const { throw Exception("8 not implemented"); }
 
     NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & fel,
-	   const BaseMappedIntegrationRule & mir,
-	   FlatVector<Complex> x, 
-	   FlatMatrix<Complex> flux,
-	   LocalHeap & lh) const { throw Exception("9 not implemented"); }
+        const BaseMappedIntegrationRule & mir,
+        FlatVector<Complex> x, 
+        FlatMatrix<Complex> flux,
+        LocalHeap & lh) const { throw Exception("9 not implemented"); }
 
     NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & bfel,
-	   const SIMD_BaseMappedIntegrationRule & bmir,
-	   BareSliceVector<double> x, 
-	   BareSliceMatrix<SIMD<double>> flux) const { throw ExceptionNOSIMD("nosimd"); }
+        const SIMD_BaseMappedIntegrationRule & bmir,
+        BareSliceVector<double> x, 
+        BareSliceMatrix<SIMD<double>> flux) const { throw ExceptionNOSIMD("nosimd"); }
     // LocalHeap & lh) const { throw Exception("not implemented"); }
     
     NGS_DLL_HEADER virtual void
     ApplyTrans (const FiniteElement & fel,
-		const BaseMappedIntegrationPoint & mip,
-		FlatVector<double> flux,
-		FlatVector<double> x, 
-		LocalHeap & lh) const { throw Exception("11 not implemented"); }
+        const BaseMappedIntegrationPoint & mip,
+        FlatVector<double> flux,
+        FlatVector<double> x, 
+        LocalHeap & lh) const { throw Exception("11 not implemented"); }
 
     NGS_DLL_HEADER virtual void
     ApplyTrans (const FiniteElement & fel,
-		const BaseMappedIntegrationPoint & mip,
-		FlatVector<Complex> flux,
-		FlatVector<Complex> x, 
-		LocalHeap & lh) const { throw Exception("12 not implemented"); }
+        const BaseMappedIntegrationPoint & mip,
+        FlatVector<Complex> flux,
+        FlatVector<Complex> x, 
+        LocalHeap & lh) const { throw Exception("12 not implemented"); }
 
     NGS_DLL_HEADER virtual void
     ApplyTrans (const FiniteElement & fel,
-		const BaseMappedIntegrationRule & mir,
-		FlatMatrix<Complex> flux,
-		FlatVector<Complex> x, 
-		LocalHeap & lh) const { throw Exception("14 not implemented"); }
+        const BaseMappedIntegrationRule & mir,
+        FlatMatrix<Complex> flux,
+        FlatVector<Complex> x, 
+        LocalHeap & lh) const { throw Exception("13 not implemented"); }
 
     NGS_DLL_HEADER virtual void
     AddTrans (const FiniteElement & bfel,

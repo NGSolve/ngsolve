@@ -48,7 +48,7 @@ namespace ngcomp
 }
 
 
-
+#include "pmltrafo.hpp"
 #include "meshaccess.hpp"
 #include "ngsobject.hpp"
 #include "fespace.hpp"
@@ -59,7 +59,6 @@ namespace ngcomp
 #include "preconditioner.hpp"
 #include "numproc.hpp"
 #include "pde.hpp"
-#include "pmltrafo.hpp"
 
 #include "postproc.hpp"
 
@@ -72,6 +71,7 @@ namespace ngcomp
 #include "hcurlhofespace.hpp" 
 #include "facetfespace.hpp" 
 #include "vectorfacetfespace.hpp"
+#include "periodic.hpp"
 
 // #include "bddc.hpp"
 #include "hypre_precond.hpp"

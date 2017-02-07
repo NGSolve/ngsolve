@@ -31,21 +31,20 @@ namespace ngfem
             template <ELEMENT_TYPE ET2> class TSHAPES = HCurlHighOrderFE_Shape,
             typename BASE = T_HCurlHighOrderFiniteElement<ET, TSHAPES<ET>> >
 
-  class HCurlHighOrderFE : public BASE, public ET_trait<ET>
+    class HCurlHighOrderFE : public BASE, public ET_trait<ET>, public VertexOrientedFE<ET>
   {
   protected:
-    enum { N_VERTEX = ET_trait<ET>::N_VERTEX };
-    enum { N_EDGE   = ET_trait<ET>::N_EDGE };
-    enum { N_FACE   = ET_trait<ET>::N_FACE };
-    enum { N_CELL   = ET_trait<ET>::N_CELL };
-
+    using ET_trait<ET>::N_VERTEX;
+    using ET_trait<ET>::N_EDGE;
+    using ET_trait<ET>::N_FACE;
+    using ET_trait<ET>::N_CELL;
     using ET_trait<ET>::FaceType;
-
-    enum { DIM = ET_trait<ET>::DIM };
+    using ET_trait<ET>::DIM;
 
     typedef short TORDER;
 
-    int vnums[N_VERTEX]; 
+    using VertexOrientedFE<ET>::vnums;
+
     INT<N_EDGE, TORDER> order_edge;
     INT<N_FACE, INT<2, TORDER>> order_face;
     INT<3, TORDER> order_cell;
@@ -66,6 +65,7 @@ namespace ngfem
     // typedef ChebyPolynomial EdgeOrthoPol; 
 
   public:
+    using VertexOrientedFE<ET>::SetVertexNumbers;
     /* INLINE */ HCurlHighOrderFE () { ; } 
 
     /* INLINE */ HCurlHighOrderFE (int aorder) 
@@ -85,13 +85,6 @@ namespace ngfem
       ComputeNDof();
     }
 
-    /// assignes vertex numbers
-    template <typename TA> 
-    INLINE void SetVertexNumbers (const TA & avnums)
-    { for (int i = 0; i < N_VERTEX; i++) vnums[i] = avnums[i]; }
-
-
-    // void SetVertexNumber (int nr, int vnum) { vnums[nr] = vnum; }
     INLINE void SetOrderEdge (int nr, TORDER order) { order_edge[nr] = order; }
     INLINE void SetOrderFace (int nr, INT<2,TORDER> order) { order_face[nr] = order; }
 

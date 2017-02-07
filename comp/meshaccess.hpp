@@ -153,109 +153,6 @@ namespace ngcomp
   };
 
 
-  class PML_Transformation
-  {
-    int dim;
-    public:
-    
-    PML_Transformation(int _dim) : dim(_dim) { ; }
-    
-    virtual ~PML_Transformation() { ; }
-
-    int GetDimension() const { return dim; }
-
-    virtual shared_ptr<PML_Transformation> CreateDim(int _dim) = 0; 
-   /* {
-        throw Exception("While creating dim: No PML Transformation specified\n");
-        return new PML_Transformation();
-    }*/
-    
-    virtual void PrintParameters() = 0;
-
-    virtual void MapPointV(const BaseMappedIntegrationPoint & hpoint, Vector<Complex> & point, Matrix<Complex> & jac) const = 0;
-    
-    virtual void MapPointV(Vector<double> & hpoint, Vector<Complex> & point, Matrix<Complex> & jac) const = 0;
-
-    virtual void MapPoint(Vec<0> & hpoint, Vec<0,Complex> & point,
-                   Mat<0,0,Complex> & jac) const 
-    {
-      throw Exception("PML_Transformation::MapPoint: No PML Transformation specified");
-    }
-    virtual void MapPoint(Vec<1> & hpoint, Vec<1,Complex> & point,
-                   Mat<1,1,Complex> & jac) const
-    {
-      throw Exception("PML_Transformation::MapPoint: No PML Transformation specified");
-    }
-    virtual void MapPoint(Vec<2> & hpoint, Vec<2,Complex> & point,
-                   Mat<2,2,Complex> & jac) const  
-    {
-      throw Exception("PML_Transformation::MapPoint: No PML Transformation specified");
-    }
-    virtual void MapPoint(Vec<3> & hpoint, Vec<3,Complex> & point,
-                   Mat<3,3,Complex> & jac) const  
-    {
-      throw Exception("PML_Transformation::MapPoint: No PML Transformation specified");
-    }
-    virtual void MapIntegrationPoint(const BaseMappedIntegrationPoint & hpoint, Vec<0,Complex> & point,
-                   Mat<0,0,Complex> & jac) const 
-    {
-      throw Exception("PML_Transformation::MapIntegrationPoint: No PML Transformation specified");
-    }
-    virtual void MapIntegrationPoint(const BaseMappedIntegrationPoint & hpoint, Vec<1,Complex> & point,
-                   Mat<1,1,Complex> & jac) const
-    {
-      throw Exception("PML_Transformation::MapIntegrationPoint: No PML Transformation specified");
-    }
-    virtual void MapIntegrationPoint(const BaseMappedIntegrationPoint & hpoint, Vec<2,Complex> & point,
-                   Mat<2,2,Complex> & jac) const  
-    {
-      throw Exception("PML_Transformation::MapIntegrationPoint: No PML Transformation specified");
-    }
-    virtual void MapIntegrationPoint(const BaseMappedIntegrationPoint & hpoint, Vec<3,Complex> & point,
-                   Mat<3,3,Complex> & jac) const  
-    {
-      throw Exception("PML_Transformation::MapIntegrationPoint: No PML Transformation specified");
-    }
-  };
-
-  
-  template <int DIM>
-  class PML_TransformationDim : public PML_Transformation
-  {
-    public:
-    
-    PML_TransformationDim() : PML_Transformation(DIM) { ; }
-
-    virtual shared_ptr<PML_Transformation> CreateDim(int dim)  = 0;
-    
-    virtual void MapIntegrationPoint(const BaseMappedIntegrationPoint & ip, Vec<DIM,Complex> & point,
-                   Mat<DIM,DIM,Complex> & jac) const  
-    {
-      Vec<DIM> hpoint = ip.GetPoint();
-      MapPoint(hpoint, point, jac);
-    }
-
-    virtual void MapPointV(const BaseMappedIntegrationPoint & hpoint, Vector<Complex> & point, Matrix<Complex> & jac) const 
-    {
-      Vec<DIM,Complex> vpoint;
-      Mat<DIM,DIM,Complex> mjac;
-      MapIntegrationPoint(hpoint,vpoint,mjac);
-      point = FlatVector<Complex>(vpoint);
-      jac = FlatMatrix<Complex>(mjac);
-    }
-    
-    virtual void MapPointV(Vector<double> & hpoint, Vector<Complex> & point, Matrix<Complex> & jac) const 
-    {
-      Vec<DIM,Complex> vpoint;
-      Mat<DIM,DIM,Complex> mjac;
-      Vec<DIM> vhpoint = hpoint;
-      MapPoint(vhpoint,vpoint,mjac);
-      point = Vector<Complex>(vpoint);
-      jac = Matrix<Complex>(mjac);
-    }
-
-  };
-
   /** 
       Access to mesh topology and geometry.
 
@@ -308,28 +205,16 @@ namespace ngcomp
     /// for ALE
     shared_ptr<GridFunction> deformation;  
 
-    /// PML parameters, should not be necessary any morea
-    /*
-    Complex pml_alpha;
-    double pml_r;
-    double pml_x;
-
-    double pml_xmin[3];
-    double pml_xmax[3]; 
-    */
-  /*
-    rect_pml = 0 .... circular pml with radius pml_r
-    rect_pml = 1 .... square pml on square (-pml_x, pml_x)^d
-    rect_pml = 2 .... rectangular pml on (pml_xmin, pml_xmax) x (pml_ymin, pml_ymax) x (pml_zmin, pml_zmax)
-  */
-    /*
-    int rect_pml = -1;
-    int pml_domain = -1;
-    */
-    //new pml stuff
+    /// pml trafos per sub-domain
     Array<shared_ptr <PML_Transformation>> pml_trafos;
     
     Array<std::tuple<int,int>> identified_facets;
+
+    /// store periodic vertex mapping for each identification number
+    // shared ptr because Meshaccess is copy constructible
+    shared_ptr<Array<Array<INT<2>>>> periodic_node_pairs[3] = {make_shared<Array<Array<INT<2>>>>(),
+                                                               make_shared<Array<Array<INT<2>>>>(),
+                                                               make_shared<Array<Array<INT<2>>>>()};
 
     ///
     MPI_Comm mesh_comm;
@@ -704,19 +589,13 @@ namespace ngcomp
       return deformation;
     }
 
-    //old
-    /*void SetRadialPML (double _r, Complex _alpha, int _domnr)
-    {
-      pml_r = _r;
-      pml_alpha = _alpha;
-      pml_domain = _domnr;
-    }*/
-
     void SetPML (shared_ptr<PML_Transformation> pml_trafo, int _domnr)
     {
       if (_domnr>=ndomains)
         throw Exception("MeshAccess::SetPML: was not able to set PML, domain index too high!");
-      pml_trafos[_domnr] = pml_trafo->CreateDim(GetDimension()); 
+      if (pml_trafo->GetDimension()!=dim)
+        throw Exception("MeshAccess::SetPML: dimension of PML = "+ToString(pml_trafo->GetDimension())+" does not fit mesh dimension!");
+      pml_trafos[_domnr] = pml_trafo; 
     }
     
     void UnSetPML (int _domnr)
@@ -772,12 +651,18 @@ namespace ngcomp
     void GetElVertices (ElementId ei, Array<int> & vnums) const
     { vnums = GetElement(ei).Vertices(); }
 
+    auto GetElVertices (ElementId ei) const
+    { return GetElement(ei).Vertices(); }
+
     /// returns the vertices of a boundary element
     void GetSElVertices (int selnr, Array<int> & vnums) const
     { vnums = GetSElement(selnr).Vertices(); }
 
-    void GetElEdges(ElementId ei, Array<int> & ednums) const
+    void GetElEdges (ElementId ei, Array<int> & ednums) const
     { ednums = GetElement(ei).Edges(); }
+
+    auto GetElEdges (ElementId ei) const
+    { return GetElement(ei).Edges(); }
 
     /// returns the edges of an element
     void GetElEdges (int elnr, Array<int> & ednums) const
@@ -1017,7 +902,9 @@ namespace ngcomp
     void GetPeriodicEdges ( Array<ngstd::INT<2> > & pairs) const;
     int GetNPairsPeriodicEdges () const;
     void GetPeriodicEdges (int idnr, Array<ngstd::INT<2> > & pairs) const;
-    int GetNPairsPeriodicEdges (int idnr) const;  
+    int GetNPairsPeriodicEdges (int idnr) const;
+
+    const Array<INT<2>>& GetPeriodicNodes(NODE_TYPE nt, int idnr) const;
 
 
     virtual void PushStatus (const char * str) const;

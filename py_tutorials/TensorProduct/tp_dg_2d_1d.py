@@ -2,16 +2,18 @@ from TensorProductTools import *
 from make_seg_mesh import *
 from ngsolve.comp import *
 from ngsolve import *
-from ngsolve.comp import TensorProductFESpace, Transfer2StdMesh
+from ngsolve.comp import TensorProductFESpace, Transfer2StdMesh, SymbolicTPBFI
+from netgen.geom2d import unit_square
 
-mesh1 = Mesh(SegMesh(32,0,1))
-mesh2 = Mesh(SegMesh(40,0,1))
+
+mesh1 = Mesh(unit_square.GenerateMesh(maxh=0.15))
+mesh2 = Mesh(SegMesh(20,0,1,1))
 
 tpmesh = Mesh(MakeTensorProductMesh(mesh1,mesh2))
 Draw(tpmesh)
 
-n=4
-m=4
+n=3
+m=3
 ngsglobals.numthreads = 24
 
 fesx = L2(mesh1,order=n,flags={'dgjumps':True})
@@ -26,11 +28,9 @@ v = tpfes.TestFunction()
 vx = v.Operator("gradx")
 vy = v.Operator("grady")
 
-b = (-1)*CoefficientFunction( (x1-0.5,-x+0.5) )
+b = CoefficientFunction( (0,0,1) )
 
-
-uin = IfPos((1.0-x1)*(x1-0.5),sin((x1-0.5)*2*3.14159),0) + IfPos((x1-0.0)*(0.5-x1),sin((x1)*2*3.14159),0)
-
+uin = CoefficientFunction(0.0)
 
 gradv = CoefficientFunction((vx,vy))
 
@@ -39,27 +39,26 @@ a = BilinearForm(tpfes)
 n = specialcf.normal(tpmesh.dim)
 bn = b*n
 
-a += SymbolicBFI ( -u * b*gradv )
-a += SymbolicBFI ( (bn) *IfPos(bn, u, u.Other( )) * (v-v.Other()), VOL, skeleton=True)
-a += SymbolicBFI ( (bn) *IfPos(bn, u, u.Other(bnd = CoefficientFunction(uin) )) * (v), BND, skeleton=True)
+a += SymbolicTPBFI ( -u * b*gradv )
+a += SymbolicTPBFI ( (bn) *IfPos(bn, u, u.Other(bnd = uin )) * (v-v.Other(bnd = 0.0)), VOL, skeleton=True)
+a += SymbolicTPBFI ( (bn) *IfPos(bn, u, u.Other(bnd = uin )) * (v), BND, skeleton=True)
 
 
 u = GridFunction(tpfes)
 v = GridFunction(tpfes)
 
+
 uu = GridFunction(fes)
 
-u.Set(exp(-200*(x-0.3)*(x-0.3)-200*(x1-0.3)*(x1-0.3)))
-
+u.Set(exp(-70*(x-0.125)*(x-0.125)-70*(y-0.125)*(y-0.125)-70*(x1-0.75)*(x1-0.75)))
 Transfer2StdMesh(u,uu)
-Draw(uu,sd=4,autoscale=False)
+Draw(uu,sd=3,autoscale=False)
 
 h = u.vec.CreateVector()
 print('To start the simulation type Run(n_steps)!')
-
 def Step():
     a.Apply(u.vec,v.vec)
-    h.data = 0.000625*v.vec.data
+    h.data = 0.001*v.vec.data
     tpfes.SolveM(rho=CoefficientFunction(1), vec = h)
     u.vec.data-=h.data
     Transfer2StdMesh(u,uu)
@@ -70,6 +69,7 @@ def Run(nsteps):
         for i in range(nsteps):
             print("Step ",i+1, "/",nsteps)
             Step()
-Run(100)
+
+Run(10000)
 for t in Timers():
     print(t["counts"], t["time"], t["name"])

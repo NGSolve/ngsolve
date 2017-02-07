@@ -24,7 +24,7 @@ void SetFlag(Flags &flags, string s, py::object value)
       // call recursively to set dictionary
       for (auto item : vdd) {
         string name = item.first.cast<string>();
-        py::object val(item.second, true);
+        py::object val = py::reinterpret_borrow<py::object>(item.second);
         SetFlag(flags, name, val);
       }
       return;
@@ -71,6 +71,31 @@ void SetFlag(Flags &flags, string s, py::object value)
       if (py::isinstance<py::str>(value))
         flags.SetFlag(s, makeCArray<string>(vdt));
     }
+}
+
+const char* docu_string(const char* str)
+{
+  if(getenv("NETGEN_DOCUMENTATION_RST_FORMAT"))
+    return str;
+  std::string replacement(str);
+  bool replaced = false;
+  while(true)
+    {
+      auto start_pos = replacement.find(":any:`");
+      if(start_pos==std::string::npos)
+        break;
+      else
+        replaced = true;
+      auto rest = replacement.substr(start_pos+6); //first character after ":any:`"
+      auto end = rest.find("`");
+      replacement.replace(start_pos,end+7,rest.substr(0,end)); 
+    }
+  if(!replaced)
+    return replacement.c_str();
+  char * newchar = new char[replacement.size()+1];
+  std::copy(replacement.begin(),replacement.end(),newchar);
+  newchar[replacement.size()] = '\0';
+  return newchar;
 }
 
 void NGS_DLL_HEADER  ExportNgstd(py::module & m) {

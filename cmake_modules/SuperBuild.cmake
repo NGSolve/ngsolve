@@ -31,17 +31,15 @@ endif()
 if(WIN32)
   if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
     string(REGEX REPLACE "/W[0-4]" "/W0" CMAKE_CXX_FLAGS_NEW ${CMAKE_CXX_FLAGS})
-    set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS_NEW} CACHE STRING "compile flags" FORCE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS_NEW} /MP" CACHE STRING "compile flags" FORCE)
     string(REGEX REPLACE "/W[0-4]" "/W0" CMAKE_CXX_FLAGS_NEW ${CMAKE_CXX_FLAGS_RELEASE})
-    set(CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_NEW} CACHE STRING "compile flags" FORCE)
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_NEW} /MP" CACHE STRING "compile flags" FORCE)
 
     string(REGEX REPLACE "/W[0-4]" "/W0" CMAKE_SHARED_LINKER_FLAGS_NEW ${CMAKE_SHARED_LINKER_FLAGS})
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS_NEW} /IGNORE:4217,4049" CACHE STRING "compile flags" FORCE)
     string(REGEX REPLACE "/W[0-4]" "/W0" CMAKE_EXE_LINKER_FLAGS_NEW ${CMAKE_EXE_LINKER_FLAGS})
     set(CMAKE_EXE_LINKER_FLAGS"${CMAKE_EXE_LINKER_FLAGS_NEW}/IGNORE:4217,4049" CACHE STRING "compile flags" FORCE)
 
-    set_vars(NGSOLVE_CMAKE_ARGS CMAKE_SHARED_LINKER_FLAGS CMAKE_SHARED_LINKER_FLAGS_RELEASE CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_RELEASE)
-    set_vars(NETGEN_CMAKE_ARGS CMAKE_SHARED_LINKER_FLAGS CMAKE_SHARED_LINKER_FLAGS_RELEASE CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_RELEASE)
   endif(NOT CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
 
   if(${CMAKE_SIZEOF_VOID_P} MATCHES 4)
@@ -77,6 +75,12 @@ else(NETGEN_DIR)
   set (NETGEN_CMAKE_ARGS)
   # propagate netgen-specific settings to Netgen subproject
   set_vars( NETGEN_CMAKE_ARGS
+    CMAKE_BUILD_TYPE
+    CMAKE_SHARED_LINKER_FLAGS
+    CMAKE_SHARED_LINKER_FLAGS_RELEASE
+    CMAKE_CXX_FLAGS
+    CMAKE_CXX_FLAGS_RELEASE
+
     FFMPEG_LIBRARIES
     INSTALL_DIR
     INSTALL_DEPENDENCIES
@@ -174,6 +178,7 @@ if(USE_UMFPACK)
     CMAKE_ARGS -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DSUITESPARSE_USE_CUSTOM_BLAS_LAPACK_LIBS=ON -DSHARED=OFF -DBUILD_METIS=OFF -DCMAKE_INSTALL_PREFIX=${UMFPACK_DIR} -DSUITESPARSE_INSTALL_PREFIX=${UMFPACK_DIR} -DSUITESPARSE_CUSTOM_LAPACK_LIB=${LAPACK_LIBRARIES} -DSUITESPARSE_CUSTOM_BLAS_LIB=${LAPACK_LIBRARIES}
     LOG_DOWNLOAD 1
     LOG_BUILD 1
+    LOG_INSTALL 1
     )
   list(APPEND DEPENDENCIES suitesparse)
   set_vars( NGSOLVE_CMAKE_ARGS UMFPACK_DIR )
@@ -182,6 +187,12 @@ endif(USE_UMFPACK)
 #######################################################################
 # propagate cmake variables to NGSolve subproject
 set_vars( NGSOLVE_CMAKE_ARGS
+  CMAKE_SHARED_LINKER_FLAGS
+  CMAKE_SHARED_LINKER_FLAGS_RELEASE
+  CMAKE_CXX_FLAGS
+  CMAKE_CXX_FLAGS_RELEASE
+  CMAKE_BUILD_TYPE
+
   USE_GUI
   USE_PYTHON
   USE_LAPACK
@@ -230,7 +241,6 @@ ExternalProject_Add (ngsolve
   INSTALL_COMMAND ""
   BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/ngsolve
   BUILD_COMMAND ${COMMON_BUILD_COMMAND}
-  STEP_TARGETS build
 )
 
 install(CODE "execute_process(COMMAND \"${CMAKE_COMMAND}\" --build . --config ${CMAKE_BUILD_TYPE} --target install WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ngsolve)")
@@ -240,6 +250,24 @@ add_custom_target(test_ngsolve
                    --target test
                    --config ${CMAKE_BUILD_TYPE}
                    )
+
+# Check if the git submodules (i.e. netgen) are up to date
+# in case, something is wrong, emit a warning but continue
+ ExternalProject_Add_Step(ngsolve check_submodules
+   COMMAND cmake -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/check_submodules.cmake
+   DEPENDERS install # Steps on which this step depends
+   )
+
+# Due to 'ALWAYS 1', this step is always run which also forces a build of
+# the ngsolve subproject
+ ExternalProject_Add_Step(ngsolve check_submodules1
+   COMMAND cmake -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/check_submodules.cmake
+   DEPENDEES configure # Steps on which this step depends
+   DEPENDERS build     # Steps that depend on this step
+   ALWAYS 1            # No stamp file, step always runs
+   )
+
+
 
 if(WIN32)
   file(TO_NATIVE_PATH ${INSTALL_DIR}/bin netgendir)
