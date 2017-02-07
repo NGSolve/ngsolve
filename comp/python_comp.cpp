@@ -1622,8 +1622,6 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 	    shared_ptr<Array<int>> a_used_idnrs;
 	    if(py::extract<py::list>(use_idnrs).check())
 	      a_used_idnrs = make_shared<Array<int>>(makeCArray<int>(py::extract<py::list>(use_idnrs)()));
-	    else if (use_idnrs == Py_None)
-	      a_used_idnrs = make_shared<Array<int>>();
 	    else
 	      throw Exception("Argument for use_idnrs in Periodic must be list of identification numbers (int)");
 	    shared_ptr<FESpace> perfes;
@@ -1641,7 +1639,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 		  }
 		perfes = make_shared<QuasiPeriodicFESpace>(fes.Get(),flags,a_used_idnrs,a_phase);
 	      }
-	    else if (phase == Py_None)
+	    else if (py::isinstance<DummyArgument>(phase))
 	      {
 	      perfes = make_shared<PeriodicFESpace>(fes.Get(),flags,a_used_idnrs);
 	      }
@@ -1650,7 +1648,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
             perfes->Update(glh);
             perfes->FinalizeUpdate(glh);
             return perfes;
-	  }, py::arg("fespace"), py::arg("phase")=DummyArgument(), py::arg("use_idnrs")=DummyArgument(),
+	  }, py::arg("fespace"), py::arg("phase")=DummyArgument(), py::arg("use_idnrs")=py::list(),
 	docu_string(R"delimiter(Generator function for periodic or quasi-periodic :any:`Finite Element Spaces`. 
 The periodic fespace is a wrapper around a standard fespace with an 
 additional dof mapping for the periodic degrees of freedom. All dofs 
