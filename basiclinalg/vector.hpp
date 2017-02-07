@@ -960,7 +960,8 @@ namespace ngbla
     INLINE int Width() const { return 1; }
     template<typename TB>
     INLINE Vec & operator= (const Expr<TB> & v) { return *this;}
-
+    INLINE Vec & operator= (const T & /* scal */) { return *this; } 
+    
     INLINE T & operator[] (int i) const  { return *(T*)(void*)(this); }
     INLINE T & operator() (int i) const  { return *(T*)(void*)(this); }
     INLINE T & operator() (int i, int j) const  { return *(T*)(void*)(this); }
