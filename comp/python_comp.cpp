@@ -1368,6 +1368,9 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                              new (instance) PyFES(fes);
                              };
 
+  // bind std::map<std::string,double> to python MapStringDouble
+  py::bind_map<std::map<std::string,double>> (m,"MapStringDouble");
+  
   py::class_<PyFES>(m, "FESpace",  "a finite element space", py::dynamic_attr())
     // the raw - constructor
     .def("__init__", 
@@ -1457,6 +1460,9 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                    "global number of dofs on MPI-distributed mesh")
     // .def("__str__", &ToString<FESpace>)
     .def("__str__", [] (PyFES & self) { return ToString(*self.Get()); } )
+    .def("__timing__", [] (PyFES & self) {
+	return py::cast(self->Timing());
+      })
 
     // .def_property_readonly("mesh", FunctionPointer ([](FESpace & self) -> shared_ptr<MeshAccess>
     // { return self.GetMeshAccess(); }))

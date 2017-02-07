@@ -7,6 +7,7 @@
 /* Date:   25. Mar. 2000                                             */
 /*********************************************************************/
 
+#include <list>
 namespace ngcomp
 {
 
@@ -701,7 +702,7 @@ namespace ngcomp
     virtual bool VarOrder() const { return 0; }
 
     bool timing;
-    void Timing () const;
+    std::list<std::tuple<std::string,double>> Timing () const;
 
   protected:
     template <template <ELEMENT_TYPE ET> class FE>
