@@ -75,6 +75,7 @@ else(NETGEN_DIR)
   set (NETGEN_CMAKE_ARGS)
   # propagate netgen-specific settings to Netgen subproject
   set_vars( NETGEN_CMAKE_ARGS
+    CMAKE_CXX_COMPILER
     CMAKE_BUILD_TYPE
     CMAKE_SHARED_LINKER_FLAGS
     CMAKE_SHARED_LINKER_FLAGS_RELEASE
@@ -187,6 +188,7 @@ endif(USE_UMFPACK)
 #######################################################################
 # propagate cmake variables to NGSolve subproject
 set_vars( NGSOLVE_CMAKE_ARGS
+  CMAKE_CXX_COMPILER
   CMAKE_SHARED_LINKER_FLAGS
   CMAKE_SHARED_LINKER_FLAGS_RELEASE
   CMAKE_CXX_FLAGS
