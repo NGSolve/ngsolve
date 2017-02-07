@@ -926,12 +926,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
     return GetNDof();
   } 
 
-  std::map<std::string,double> FESpace :: Timing () const
+  std::list<std::tuple<std::string,double>> FESpace :: Timing () const
   {
     double starttime;
     double time;
     int steps;
-    std::map<std::string,double> results;
+    std::list<std::tuple<std::string,double>> results;
     LocalHeap lh (100000, "FESpace - Timing");
 
     // cout << endl << "timing fespace " << GetName() 
@@ -953,7 +953,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	time = WallTime()-starttime;
       }
     while (time < 2.0);
-    results["GetDofNrs"] = 1e9*time / (ma->GetNE()*steps);
+    results.push_back(std::make_tuple<std::string,double>("GetDofNrs",1e9*time / (ma->GetNE()*steps)));
     //cout << 1e9*time / (ma->GetNE()*steps) << " ns per GetDofNrs (parallel)" << endl;
     
     /*
@@ -1002,7 +1002,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     while (time < 2.0);
 
-    results["GetFE"] = 1e9 * time / (ma->GetNE()*steps); 
+    results.push_back(std::make_tuple<std::string,double>("GetFE",1e9 * time / (ma->GetNE()*steps))); 
     //    cout << 1e9 * time / (ma->GetNE()*steps) << " ns per GetFE (parallel)" << endl;
 
 
@@ -1021,7 +1021,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     while (time < 2.0);
 
-    results["Get Ng_Element"] =  1e9 * time / (ma->GetNE()*steps);
+    results.push_back(std::make_tuple<std::string,double>("Get Ng_Element", 1e9 * time / (ma->GetNE()*steps)));
     //    cout << 1e9 * time / (ma->GetNE()*steps) << " ns per Get - Ng_Element (parallel)" << endl;
 
 
@@ -1043,7 +1043,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     while (time < 2.0);
 
-    results["GetTrafo"] = 1e9 * time / (ma->GetNE()*steps);
+    results.push_back(std::make_tuple<std::string,double>("GetTrafo", 1e9 * time / (ma->GetNE()*steps)));
     //    cout << 1e9 * time / (ma->GetNE()*steps) << " ns per GetTrafo(parallel)" << endl;
 
 
