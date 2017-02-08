@@ -8,6 +8,7 @@
 /*********************************************************************/
 
 
+
 namespace ngfem
 {
 
@@ -209,6 +210,10 @@ class ProxyUserData
   FlatArray<const ProxyFunction*> remember_first;
   FlatArray<FlatMatrix<double>> remember_second;
   FlatArray<FlatMatrix<SIMD<double>>> remember_asecond;
+
+  FlatArray<const CoefficientFunction*> remember_cf_first;
+  FlatArray<FlatMatrix<SIMD<double>>> remember_cf_asecond;
+  FlatArray<bool> remember_cf_computed;
 public:
   class ProxyFunction * testfunction = nullptr;
   int test_comp;
@@ -220,11 +225,18 @@ public:
   LocalHeap * lh;
 
   ProxyUserData ()
-    : remember_first(0,nullptr), remember_second(0,nullptr), remember_asecond(0,nullptr) { ; }
-  ProxyUserData (int ntrial, LocalHeap & lh)
+    : remember_first(0,nullptr), remember_second(0,nullptr), remember_asecond(0,nullptr),
+      remember_cf_first(0, nullptr), remember_cf_asecond(0,nullptr), remember_cf_computed(0, nullptr)
+  { ; }
+  ProxyUserData (int ntrial, int ncf, LocalHeap & lh)
     : remember_first(ntrial, lh), remember_second(ntrial, lh),
-      remember_asecond(ntrial, lh)
-  { remember_first = nullptr; }
+      remember_asecond(ntrial, lh),
+      remember_cf_first(ncf, lh), remember_cf_asecond(ncf, lh),
+      remember_cf_computed(ncf, lh)
+  { remember_first = nullptr; remember_cf_first = nullptr; }
+
+  ProxyUserData (int ntrial, LocalHeap & lh)
+    : ProxyUserData (ntrial, 0, lh) { ; } 
   
   void AssignMemory (const ProxyFunction * proxy, int h, int w, LocalHeap & lh)
   {
@@ -240,9 +252,30 @@ public:
       }
     throw Exception ("no space for userdata - memory available");
   }
+
+  void AssignMemory (const CoefficientFunction * cf, int h, int w, LocalHeap & lh)
+  {
+    for (int i = 0; i < remember_cf_first.Size(); i++)
+      {
+        if (remember_cf_first[i] == nullptr)
+          {
+            remember_cf_first[i] = cf;
+            new (&remember_cf_asecond[i]) FlatMatrix<SIMD<double>> (w, (h+SIMD<double>::Size()-1)/SIMD<double>::Size(), lh);
+            remember_cf_computed[i] = false;
+            return;
+          }
+      }
+    throw Exception ("no space for userdata - memory available");
+  }
+
+
   bool HasMemory (const ProxyFunction * proxy) const
   {
     return remember_first.Contains(proxy);
+  }
+  bool HasMemory (const CoefficientFunction * cf) const
+  {
+    return remember_cf_first.Contains(cf);
   }
   FlatMatrix<> GetMemory (const ProxyFunction * proxy) const
   {
@@ -251,6 +284,18 @@ public:
   FlatMatrix<SIMD<double>> GetAMemory (const ProxyFunction * proxy) const
   {
     return remember_asecond[remember_first.Pos(proxy)];
+  }
+  FlatMatrix<SIMD<double>> GetAMemory (const CoefficientFunction * cf) const
+  {
+    return remember_cf_asecond[remember_cf_first.Pos(cf)];
+  }
+  bool Computed (const CoefficientFunction * cf) const
+  {
+    return remember_cf_computed[remember_cf_first.Pos(cf)];
+  }
+  void SetComputed (const CoefficientFunction * cf) const
+  {
+    remember_cf_computed[remember_cf_first.Pos(cf)] = true;
   }
 };
 
@@ -453,6 +498,7 @@ public:
   protected:
     shared_ptr<CoefficientFunction> cf;
     Array<ProxyFunction*> trial_proxies, test_proxies;
+    Array<CoefficientFunction*> gridfunction_cfs;
     Array<int> trial_cum, test_cum;   // cumulated dimension of proxies
     VorB vb;
     bool element_boundary;
@@ -563,6 +609,7 @@ public:
   protected:
     shared_ptr<CoefficientFunction> cf;
     Array<ProxyFunction*> trial_proxies, test_proxies;
+    Array<CoefficientFunction*> gridfunction_cfs;    
     Array<int> trial_cum, test_cum;   // cumulated dimension of proxies
     VorB vb;
     bool element_boundary;

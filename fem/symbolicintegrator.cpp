@@ -668,6 +668,9 @@ namespace ngfem
                     }
                 }
             }
+          else
+            if (nodecf.StoreUserData())
+              gridfunction_cfs.Append (&nodecf);
         });
     cout << IM(3) << "num test_proxies " << test_proxies.Size() << endl;
     cout << IM(3) << "num trial_proxies " << trial_proxies.Size() << endl;
@@ -1987,13 +1990,15 @@ namespace ngfem
           SIMD_IntegrationRule simd_ir = Get_SIMD_IntegrationRule (fel);
           auto & simd_mir = trafo(simd_ir, lh);
           
-          ProxyUserData ud(trial_proxies.Size(), lh);
+          ProxyUserData ud(trial_proxies.Size(), gridfunction_cfs.Size(), lh);
           const_cast<ElementTransformation&>(trafo).userdata = &ud;
           ud.fel = &fel;
           ud.elx = &elx;
           ud.lh = &lh;
           for (ProxyFunction * proxy : trial_proxies)
             ud.AssignMemory (proxy, simd_ir.GetNIP(), proxy->Dimension(), lh);
+          for (CoefficientFunction * cf : gridfunction_cfs)
+            ud.AssignMemory (cf, simd_ir.GetNIP(), cf->Dimension(), lh);
           
           for (ProxyFunction * proxy : trial_proxies)
             proxy->Evaluator()->Apply(fel_trial, simd_mir, elx, ud.GetAMemory(proxy)); 
@@ -2264,6 +2269,9 @@ namespace ngfem
                     }
                 }
             }
+          else
+            if (nodecf.StoreUserData())
+              gridfunction_cfs.Append (&nodecf);
         });
 
     neighbor_testfunction = false;
@@ -2635,13 +2643,15 @@ namespace ngfem
             simd_mir1.ComputeNormalsAndMeasure(eltype1, LocalFacetNr1);
             
             // evaluate proxy-values
-            ProxyUserData ud(trial_proxies.Size(), lh);
+            ProxyUserData ud(trial_proxies.Size(), gridfunction_cfs.Size(), lh);
             const_cast<ElementTransformation&>(trafo1).userdata = &ud;
             ud.fel = &fel1;   // necessary to check remember-map
             // ud.elx = &elx;
             ud.lh = &lh;
             for (ProxyFunction * proxy : trial_proxies)
               ud.AssignMemory (proxy, simd_ir_facet.GetNIP(), proxy->Dimension(), lh);
+            for (CoefficientFunction * cf : gridfunction_cfs)
+              ud.AssignMemory (cf, simd_ir_facet.GetNIP(), cf->Dimension(), lh);
             // tstart.Stop();
             // tapply.Start();
             
