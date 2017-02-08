@@ -67,7 +67,7 @@ namespace ngfem
     ///
     virtual void Print (ostream & ost) const;
 
-    virtual map<string,double> Timing () const { return map<string,double>(); }
+    virtual list<tuple<string,double>> Timing () const { return list<tuple<string,double>>(); }
   };
 
  

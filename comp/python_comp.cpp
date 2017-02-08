@@ -7,7 +7,6 @@
 #include <regex>
 
 #include "../ngstd/python_ngstd.hpp"
-#include <pybind11/stl_bind.h>
 #include <comp.hpp>
 
 using namespace ngcomp;

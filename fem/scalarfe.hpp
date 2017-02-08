@@ -190,7 +190,7 @@ namespace ngfem
     HD NGS_DLL_HEADER virtual void GetPolOrders (FlatArray<PolOrder<D> > orders) const;
 
   public:
-    virtual std::map<std::string,double> Timing () const;
+    virtual std::list<std::tuple<std::string,double>> Timing () const;
   };
 
 
