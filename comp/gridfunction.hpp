@@ -60,7 +60,7 @@ namespace ngcomp
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
                            AFlatMatrix<double> values) const
     { Evaluate (ir, values); }
-    
+    virtual bool StoreUserData() const { return true; }    
   };
 
 

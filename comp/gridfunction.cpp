@@ -1013,6 +1013,14 @@ namespace ngcomp
       STACK_ARRAY(SIMD<double>, {hmem}, mir.Size()*{dim});
       AFlatMatrix<double>  {values}({dim}, mir.IR().GetNIP(), &{hmem}[0] /* .Data() */);
       {
+      auto gfcf = reinterpret_cast<GridFunctionCoefficientFunction*>({gfcf_ptr});
+      ProxyUserData * ud = (ProxyUserData*)mir.GetTransformation().userdata;
+      if (ud && ud->HasMemory(gfcf) && ud->Computed(gfcf))
+        {
+          {values} = AFlatMatrix<double> ({dim}, mir.IR().GetNIP(), &ud->GetAMemory(gfcf)(0,0));
+        }
+      else
+        {
       LocalHeapMem<100000> lh2("{values}");
       const GridFunction & gf = *reinterpret_cast<GridFunction*>({gf_ptr});
       const ElementTransformation &trafo = mir.GetTransformation();
@@ -1053,6 +1061,15 @@ namespace ngcomp
           // fes.GetIntegrator(vb==BND) ->CalcFlux (fel, mir, elu, values, false, lh2);
           else
             throw Exception ("GridFunctionCoefficientFunction: SIMD: don't know how I shall evaluate");
+        if (ud)
+          {
+            if (ud->HasMemory(gfcf))
+              {
+                ud->GetAMemory(gfcf) = BareSliceMatrix<SIMD<double>> ({values});
+                ud->SetComputed(gfcf);
+              }
+          }    
+        }
       }
       }
     )CODE_";
@@ -1108,6 +1125,7 @@ namespace ngcomp
     auto values = Var("values", index);
     variables["values"] = values.S();
     variables["gf_ptr"] = ToString(gf.get());
+    variables["gfcf_ptr"] = ToString(this);
     variables["diffop_ptr"] = ToString(diffop.get());
     variables["trace_diffop_ptr"] = ToString(trace_diffop.get());
     variables["bfi_ptr"] = ToString(trace_diffop.get());
@@ -1385,6 +1403,18 @@ namespace ngcomp
   Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
             BareSliceMatrix<SIMD<double>> bvalues) const
   {
+    ProxyUserData * ud = (ProxyUserData*)ir.GetTransformation().userdata;
+    if (ud)
+      {
+        if (ud->HasMemory(this) && ud->Computed(this))
+          {
+            bvalues.AddSize(Dimension(), ir.Size()) = ud->GetAMemory(this);
+            return;
+          }
+      }
+    
+
+    
     LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evalute 3");
     // static Timer timer ("GFCoeffFunc::Eval-vec", 2);
     // RegionTimer reg (timer);
@@ -1435,7 +1465,17 @@ namespace ngcomp
       throw Exception ("GridFunctionCoefficientFunction: SIMD evaluate not possible 2");
       // fes.GetIntegrator(boundary) ->CalcFlux (fel, ir, elu, values, false, lh2);
     else
-      throw Exception ("GridFunctionCoefficientFunction: SIMD: don't know how I shall evaluate");    
+      throw Exception ("GridFunctionCoefficientFunction: SIMD: don't know how I shall evaluate");
+
+
+    if (ud)
+      {
+        if (ud->HasMemory(this))
+          {
+            ud->GetAMemory(this) = bvalues;
+            ud->SetComputed(this);
+          }
+      }    
   }
 
   void GridFunctionCoefficientFunction ::   
