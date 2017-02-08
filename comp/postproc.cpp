@@ -455,7 +455,7 @@ namespace ngcomp
               catch (ExceptionNOSIMD e)
                 {
                   use_simd = false;
-                  cout << IM(1) << "Warning: switching to std evalution in SetValues since: " << e.What() << endl;
+                  cout << IM(4) << "Warning: switching to std evalution in SetValues since: " << e.What() << endl;
                 }
             }
           

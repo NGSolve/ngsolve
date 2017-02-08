@@ -8,6 +8,7 @@
 /* Date:   25. Mar. 2000                                             */
 /*********************************************************************/
 
+
 namespace ngfem
 {
 
@@ -65,6 +66,8 @@ namespace ngfem
     
     ///
     virtual void Print (ostream & ost) const;
+
+    virtual map<string,double> Timing () const { return map<string,double>(); }
   };
 
  

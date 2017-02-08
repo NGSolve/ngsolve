@@ -917,7 +917,7 @@ namespace ngcomp
 		  }
 		dnums += IntRange (first_el_dof, eldofs.Next());
 	      }
-	    else
+	    else // dim not 2
 	      {
 		IntRange eldofs = GetElementDofs (ei.Nr());
 		
@@ -949,7 +949,7 @@ namespace ngcomp
 		dnums += IntRange (firstel, eldofs.Next());
 	      }
 	  }
-	else
+	else // not highest order dc
 	  {
 	    //Raviart-Thomas
 	    for (int i = 0; i < fanums.Size(); i++)
@@ -962,7 +962,7 @@ namespace ngcomp
 	    dnums += GetElementDofs (ei.Nr());
 	  }
 	
-	if (!DefinedOn (ma->GetElIndex (ei.Nr())))
+	if (!DefinedOn (ei))
 	  dnums = -1;
       }
     if(ei.VB()==BND)
@@ -978,7 +978,7 @@ namespace ngcomp
 	  dnums += IntRange (first_facet_dof[fanums[i]],
 			     first_facet_dof[fanums[i]+1]);
 	
-	if (!DefinedOn (ElementId(BND,ei.Nr())))
+	if (!DefinedOn (ei))
 	  dnums = -1;
       }
     if(ei.VB()==BBND)

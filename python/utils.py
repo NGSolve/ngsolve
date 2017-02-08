@@ -59,7 +59,6 @@ def HDivDiv(mesh, **args):
     return FESpace("hdivdiv", mesh, **args)
 
 
-
 def grad(func):
     if func.derivname == "grad":
         return func.Deriv()

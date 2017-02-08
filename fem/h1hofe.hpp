@@ -65,6 +65,7 @@ namespace ngfem
 
     using VertexOrientedFE<ET>::SetVertexNumbers;
     using VertexOrientedFE<ET>::SetVertexNumber;
+    using VertexOrientedFE<ET>::GetVertexOrientedEdge;
     
     /// minimal constructor, orders will be set later
     INLINE H1HighOrderFE () { ; } 

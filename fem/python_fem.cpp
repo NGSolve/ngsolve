@@ -994,6 +994,8 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
     .def_property_readonly("dim", &FiniteElement::Dim, "spatial dimension of element")    
     .def_property_readonly("classname", &FiniteElement::ClassName, "name of element family")  
     .def("__str__", &ToString<FiniteElement>)
+    // .def("__timing__", [] (FiniteElement & fel) { return py::cast(fel.Timing()); })
+    .def("__timing__", &FiniteElement::Timing)
     ;
 
   py::class_<BaseScalarFiniteElement, shared_ptr<BaseScalarFiniteElement>, 
