@@ -668,6 +668,9 @@ namespace ngfem
                     }
                 }
             }
+          else
+            if (nodecf.StoreUserData())
+              gridfunction_cfs.Append (&nodecf);
         });
     cout << IM(3) << "num test_proxies " << test_proxies.Size() << endl;
     cout << IM(3) << "num trial_proxies " << trial_proxies.Size() << endl;
@@ -1987,13 +1990,15 @@ namespace ngfem
           SIMD_IntegrationRule simd_ir = Get_SIMD_IntegrationRule (fel);
           auto & simd_mir = trafo(simd_ir, lh);
           
-          ProxyUserData ud(trial_proxies.Size(), lh);
+          ProxyUserData ud(trial_proxies.Size(), gridfunction_cfs.Size(), lh);
           const_cast<ElementTransformation&>(trafo).userdata = &ud;
           ud.fel = &fel;
           ud.elx = &elx;
           ud.lh = &lh;
           for (ProxyFunction * proxy : trial_proxies)
             ud.AssignMemory (proxy, simd_ir.GetNIP(), proxy->Dimension(), lh);
+          for (CoefficientFunction * cf : gridfunction_cfs)
+            ud.AssignMemory (cf, simd_ir.GetNIP(), cf->Dimension(), lh);
           
           for (ProxyFunction * proxy : trial_proxies)
             proxy->Evaluator()->Apply(fel_trial, simd_mir, elx, ud.GetAMemory(proxy)); 
@@ -2264,6 +2269,9 @@ namespace ngfem
                     }
                 }
             }
+          else
+            if (nodecf.StoreUserData())
+              gridfunction_cfs.Append (&nodecf);
         });
 
     neighbor_testfunction = false;
@@ -2337,8 +2345,8 @@ namespace ngfem
             // proxyvalues(i,STAR,STAR) *= measure(i) * ir_facet[i].Weight();
             proxyvalues(i,STAR,STAR) *= mir1[i].GetMeasure() * ir_facet[i].Weight();
 
-          IntRange trial_range = proxy1->IsOther() ? IntRange(fel1.GetNDof(), elmat.Width()) : IntRange(0, fel1.GetNDof());
-          IntRange test_range  = proxy2->IsOther() ? IntRange(fel1.GetNDof(), elmat.Height()) : IntRange(0, fel1.GetNDof());
+          IntRange trial_range  = proxy1->IsOther() ? IntRange(proxy1->Evaluator()->BlockDim()*fel1.GetNDof(), elmat.Width()) : IntRange(0, proxy1->Evaluator()->BlockDim()*fel1.GetNDof());
+          IntRange test_range  = proxy2->IsOther() ? IntRange(proxy2->Evaluator()->BlockDim()*fel1.GetNDof(), elmat.Height()) : IntRange(0, proxy2->Evaluator()->BlockDim()*fel1.GetNDof());
 
           auto loc_elmat = elmat.Rows(test_range).Cols(trial_range);
           FlatMatrix<double,ColMajor> bmat1(proxy1->Dimension(), loc_elmat.Width(), lh);
@@ -2635,20 +2643,21 @@ namespace ngfem
             simd_mir1.ComputeNormalsAndMeasure(eltype1, LocalFacetNr1);
             
             // evaluate proxy-values
-            ProxyUserData ud(trial_proxies.Size(), lh);
+            ProxyUserData ud(trial_proxies.Size(), gridfunction_cfs.Size(), lh);
             const_cast<ElementTransformation&>(trafo1).userdata = &ud;
             ud.fel = &fel1;   // necessary to check remember-map
             // ud.elx = &elx;
             ud.lh = &lh;
             for (ProxyFunction * proxy : trial_proxies)
               ud.AssignMemory (proxy, simd_ir_facet.GetNIP(), proxy->Dimension(), lh);
+            for (CoefficientFunction * cf : gridfunction_cfs)
+              ud.AssignMemory (cf, simd_ir_facet.GetNIP(), cf->Dimension(), lh);
             // tstart.Stop();
             // tapply.Start();
             
             for (ProxyFunction * proxy : trial_proxies)
               {
-                IntRange trial_range  = proxy->IsOther() ? IntRange(fel1.GetNDof(), elx.Size()) : IntRange(0, fel1.GetNDof());
-                trial_range = proxy->Evaluator()->BlockDim() * trial_range;
+                IntRange trial_range  = proxy->IsOther() ? IntRange(proxy->Evaluator()->BlockDim()*fel1.GetNDof(), elx.Size()) : IntRange(0, proxy->Evaluator()->BlockDim()*fel1.GetNDof());
                 
                 if (proxy->IsOther())
                   proxy->Evaluator()->Apply(fel2, simd_mir2, elx.Range(trial_range), ud.GetAMemory(proxy)); // , lh);

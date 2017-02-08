@@ -71,6 +71,7 @@ namespace ngcomp
 #include "hcurlhofespace.hpp" 
 #include "facetfespace.hpp" 
 #include "vectorfacetfespace.hpp"
+#include "periodic.hpp"
 
 // #include "bddc.hpp"
 #include "hypre_precond.hpp"

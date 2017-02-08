@@ -43,7 +43,7 @@ define linearform fdisc -fespace=vdisc
 DGIP_bndfac_dir lam dirichletcoef calpha -definedon=2
 DG_bndfac_convdir b1 b2 dirichletcoef -definedon=2
 
-define preconditioner c -type=direct -bilinearform=adisc -inverse=pardiso
+define preconditioner c -type=direct -bilinearform=adisc
 
 numproc bvp npdisc -bilinearform=adisc -linearform=fdisc -gridfunction=udisc -preconditioner=c
 
