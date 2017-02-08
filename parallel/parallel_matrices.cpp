@@ -7,6 +7,7 @@
 #ifdef PARALLEL
  
 #include <la.hpp>
+#include "../linalg/mumpsinverse.hpp"
 #include <parallelngs.hpp>
 
 
