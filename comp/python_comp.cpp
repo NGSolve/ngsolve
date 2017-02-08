@@ -1,12 +1,14 @@
 #ifdef NGS_PYTHON
-#include "../ngstd/python_ngstd.hpp"
-#include <comp.hpp>
 
 #ifdef PARALLEL
 #include <mpi4py/mpi4py.h>
 #endif
 
 #include <regex>
+
+#include "../ngstd/python_ngstd.hpp"
+#include <pybind11/stl_bind.h>
+#include <comp.hpp>
 
 using namespace ngcomp;
 
