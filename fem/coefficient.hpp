@@ -251,6 +251,7 @@ namespace ngfem
     virtual void TraverseTree (const function<void(CoefficientFunction&)> & func);
     virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
     { return Array<CoefficientFunction*>(); }
+    virtual bool StoreUserData() const { return false; }
   };
 
   inline ostream & operator<< (ostream & ost, const CoefficientFunction & cf)
