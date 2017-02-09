@@ -267,9 +267,6 @@ namespace ngstd
     INLINE HashTable (int size)
       : hash(size), cont(size)
     { ; }
-    INLINE HashTable ()
-      : hash(0), cont(0)
-    { ; }
     INLINE ~HashTable () { ; }
 
     /// Sets identifier ahash to value acont
@@ -314,12 +311,6 @@ namespace ngstd
       return (pos != -1);
     }
 
-    //sets size of dynamictables to size (this deletes data)
-    void SetSize(int size) 
-    {
-      hash.SetSize(size);
-      cont.SetSize(size);
-    }
 
     /// number of hash entries
     int Size () const

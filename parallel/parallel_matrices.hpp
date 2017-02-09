@@ -18,13 +18,13 @@ namespace ngla
   class MasterInverse : public BaseMatrix
   {
     shared_ptr<BaseMatrix> inv;
-    const BitArray * subset;
+    shared_ptr<BitArray> subset;
     DynamicTable<int> loc2glob;
     Array<int> select;
     string invtype;
     const ParallelDofs * pardofs;
   public:
-    MasterInverse (const SparseMatrixTM<TM> & mat, const BitArray * asubset, 
+    MasterInverse (const SparseMatrixTM<TM> & mat, shared_ptr<BitArray> asubset, 
 		   const ParallelDofs * apardofs);
     virtual ~MasterInverse ();
     virtual bool IsComplex() const { return inv->IsComplex(); } 
@@ -64,9 +64,9 @@ namespace ngla
     // virtual const ParallelDofs * GetParallelDofs () const {return &pardofs;}
 
 
-    virtual shared_ptr<BaseMatrix> InverseMatrix (const BitArray * subset = 0) const;
+    virtual shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<BitArray> subset = nullptr) const;
     template <typename TM>
-    shared_ptr<BaseMatrix> InverseMatrixTM (const BitArray * subset = 0) const;
+    shared_ptr<BaseMatrix> InverseMatrixTM (shared_ptr<BitArray> subset = nullptr) const;
 
     virtual shared_ptr<BaseMatrix> InverseMatrix (const Array<int> * clusters) const;
     virtual INVERSETYPE SetInverseType ( INVERSETYPE ainversetype ) const;

@@ -93,7 +93,7 @@ namespace ngla
       return m;
     }
 
-    void EnumerateGlobally (const BitArray * freedofs, Array<int> & globnum, int & num_glob_dofs) const;
+    void EnumerateGlobally (shared_ptr<BitArray> freedofs, Array<int> & globnum, int & num_glob_dofs) const;
 
 
     template <typename T>

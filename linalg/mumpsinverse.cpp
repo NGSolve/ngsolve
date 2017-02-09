@@ -418,7 +418,7 @@ namespace ngla
   template <class TM, class TV>
   ParallelMumpsInverse<TM,TV> :: 
   ParallelMumpsInverse (const BaseSparseMatrix & ba, 
-			const BitArray * inner,
+			shared_ptr<BitArray> inner,
 			const Array<int> * cluster,
 			const ParallelDofs * pardofs,
 			bool asymmetric)
