@@ -427,7 +427,7 @@ namespace ngcomp
             IntegrationRule ir(felx.ElementType(), 0);
             BaseMappedIntegrationRule & mir = xtrafo(ir, lh);
             diag_mass *= mir[0].GetMeasure();
-            for (int i = 0; i < elmat_yslice.Height(); i++)
+            for (int i = 0; i < diag_mass.Size(); i++)
               elmat_yslice.Row(i) /= diag_mass(i);//*elmat_yslice.Row(i);
           }
           else
@@ -469,7 +469,7 @@ namespace ngcomp
               IntegrationRule ir(fely.ElementType(), 0);
               BaseMappedIntegrationRule & mir = ytrafo(ir, lh);
               diag_mass *= mir[0].GetMeasure();
-              for (int i = 0; i < elmat_yslice.Height(); i++)
+              for (int i = 0; i < diag_mass.Size(); i++)
                 elmat_yslice.Col(dnumsy[i]) /= diag_mass(i);
             }
             else
