@@ -1,8 +1,9 @@
 #ifdef NGS_PYTHON
-#include "../ngstd/python_ngstd.hpp"
-#include <comp.hpp>
 
 #include <regex>
+
+#include "../ngstd/python_ngstd.hpp"
+#include <comp.hpp>
 
 using namespace ngcomp;
 
@@ -88,7 +89,7 @@ py::object MakeProxyFunction2 (const FESpace & fes,
                               const function<shared_ptr<ProxyFunction>(shared_ptr<ProxyFunction>)> & addblock)
 {
   auto compspace = dynamic_cast<const CompoundFESpace*> (&fes);
-  if (compspace)
+  if (compspace && !fes.GetEvaluator())
     {
       py::list l;
       int nspace = compspace->GetNSpaces();
@@ -190,9 +191,363 @@ public:
 };
 static GlobalDummyVariables globvar;
 
+typedef PyWrapper<CoefficientFunction> PyCF;
+typedef PyWrapper<PML_Transformation> PyPML;
+void ExportPml(py::module &m)
+{
+  py::class_<PyPML>(m, "PML", "Base pml object")
+    .def("__call__",  [](py::args varargs) {
+                      PyPML self = py::extract<PyPML>(varargs[0])();
+                      int dim = self.Get()->GetDimension();
+                      Vector<double> hpoint(dim);
+                      hpoint = 0.;
+                      for (int i : Range(min(int(py::len(varargs)-1),dim)))
+                        hpoint[i] = py::extract<double>(varargs[i+1])();
+                      Vector<Complex> point(dim);
+                      Matrix<Complex> jac(dim,dim);
+                      self.Get()->MapPointV(hpoint,point,jac);
+                      return point;
+                    },"map a point")
+    .def("__str__", [] (PyPML & self) { return ToString(*self.Get()); } )
+    .def("call_jacobian",  [](py::args varargs) {
+                      PyPML self = py::extract<PyPML>(varargs[0])();
+                      int dim = self.Get()->GetDimension();
+                      Vector<double> hpoint(dim);
+                      hpoint = 0.;
+                      for (int i : Range(min(int(py::len(varargs)-1),dim)))
+                        hpoint[i] = py::extract<double>(varargs[i+1])();
+                      Vector<Complex> point(dim);
+                      Matrix<Complex> jac(dim,dim);
+                      self.Get()->MapPointV(hpoint,point,jac);
+                      return jac;
+                    },"evaluates jacobian at point")
+    .def_property_readonly("dim", [] (PyPML & self) {return self.Get()->GetDimension(); },
+        "dimension")
+    .def_property_readonly("PML_CF", [](PyPML *instance) {
+                      return PyCF(make_shared<PML_CF> (instance->Get()));
+                    },
+        "the pml scaling as coefficient function")
+    .def_property_readonly("Jac_CF", [](PyPML *instance) {
+                      return PyCF(make_shared<PML_Jac> (instance->Get()));
+                    },
+        "the pml jacobian as coefficient function")
+    .def_property_readonly("Det_CF", [](PyPML *instance) {
+                      return PyCF(make_shared<PML_Det> (instance->Get()));
+                    },
+          "the pml transformation determinant as coefficient function")
+    .def_property_readonly("JacInv_CF", [](PyPML *instance) {
+                      return PyCF(make_shared<PML_JacInv> (instance->Get()));
+                    },
+        "the pml jacobian inverse as coefficient function")
+    .def_property_readonly("__add__", [](PyPML pml1, PyPML pml2) {
+                  int dim = pml1.Get()->GetDimension();
+                  if (pml2.Get()->GetDimension() != dim)
+                    throw Exception("Dimensions do not match");
+                  switch (dim)
+                  {
+                    case 1:
+                      return PyPML(make_shared<SumPML<1>> (pml1.Get(),pml2.Get()));
+                    case 2:
+                      return PyPML(make_shared<SumPML<2>> (pml1.Get(),pml2.Get()));
+                    case 3:
+                      return PyPML(make_shared<SumPML<3>> (pml1.Get(),pml2.Get()));
+                  }
+                  throw Exception("No valid dimension");
+             })
+  ;
+
+  m.def("Radial", [](py::object _origin, double rad, Complex alpha) -> PyPML {
+          Vector<double> origin;
+          int dim = 0;
+          if (py::extract<double>(_origin).check())
+          {
+            dim = 1;
+            origin.SetSize(1);
+            origin(0)=py::extract<double>(_origin)();
+          }
+          else if (py::extract<py::tuple>(_origin).check())
+          {
+            py::tuple torigin(_origin);
+            dim = py::len(torigin);
+            origin.SetSize(dim);
+            for (int j : Range(dim))
+              origin(j)=py::extract<double>(torigin[j])();
+          }
+          switch (dim)
+          {
+            case 1:
+              return PyPML(make_shared<RadialPML_Transformation<1>> (rad,alpha,origin));
+            case 2:
+              return PyPML(make_shared<RadialPML_Transformation<2>> (rad,alpha,origin));
+            case 3:
+              return PyPML(make_shared<RadialPML_Transformation<3>> (rad,alpha,origin));
+          }
+          throw Exception("No valid dimension");
+      },
+    py::arg("origin"),py::arg("rad")=1,py::arg("alpha")=Complex(0,1),
+    "radial pml transformation");
+
+    m.def("Custom", [](PyCF trafo, PyCF jac) -> PyPML {
+          switch (trafo.Get()->Dimension())
+          {
+            case 1:
+              return PyPML(make_shared<CustomPML_Transformation<1>> (trafo.Get(),jac.Get()));
+            case 2:
+              return PyPML(make_shared<CustomPML_Transformation<2>> (trafo.Get(),jac.Get()));
+            case 3:
+              return PyPML(make_shared<CustomPML_Transformation<3>> (trafo.Get(),jac.Get()));
+          }
+          throw Exception("No valid dimension");
+        },
+        py::arg("trafo"),py::arg("jac"),
+        "pml given by coefficient functions")
+    ;
+    m.def("Cartesian", [](py::object mins,py::object maxs, Complex alpha) {
+          int dim = 0;
+          Matrix<double> bounds;
+          if (py::extract<double>(mins).check())
+          {
+            dim = 1;
+            bounds.SetSize(dim,2);
+            bounds = 0.;
+            bounds(0,0)=py::extract<double>(mins)();
+          }
+          else if (py::extract<py::tuple>(mins).check())
+          {
+            py::tuple tmins(mins);
+            dim = py::len(tmins);
+            bounds.SetSize(dim,2);
+            bounds = 0.;
+            for (int j : Range(dim))
+              bounds(j,0)=py::extract<double>(tmins[j])();
+          }
+
+          if (py::extract<double>(maxs).check())
+              bounds(0,1)=py::extract<double>(maxs)();
+
+          else if (py::extract<py::tuple>(maxs).check())
+          {
+            py::tuple tmax(maxs);
+            for (int j : Range(min(int(py::len(tmax)),dim)))
+              bounds(j,1)=py::extract<double>(tmax[j])();
+          }
+          switch (dim)
+          {
+            case 1:
+              return PyPML(make_shared<CartesianPML_Transformation<1>> (bounds,alpha));
+            case 2:
+              return PyPML(make_shared<CartesianPML_Transformation<2>> (bounds,alpha));
+            case 3:
+              return PyPML(make_shared<CartesianPML_Transformation<3>> (bounds,alpha));
+           }
+          throw Exception("No valid dimension");
+        },
+        py::arg("mins"),py::arg("maxs"), py::arg("alpha")=Complex(0,1),
+        "cartesian pml")
+    ;
+    m.def("HalfSpace", [](py::object point,py::object normal, Complex alpha) {
+          int dim = 0;
+          Vector<double> vpoint;
+          Vector<double> vnormal;
+          if (py::extract<double>(point).check())
+          {
+            dim = 1;
+            vpoint.SetSize(dim);
+            vpoint = 0.;
+            vnormal.SetSize(dim);
+            vnormal = 0.;
+            vpoint(0)=py::extract<double>(point)();
+          }
+          else if (py::extract<py::tuple>(point).check())
+          {
+            py::tuple tpoint(point);
+            dim = py::len(tpoint);
+            vpoint.SetSize(dim);
+            vnormal.SetSize(dim);
+            vpoint = 0.;
+            vnormal = 0.;
+            for (int j : Range(dim))
+              vpoint(j)=py::extract<double>(tpoint[j])();
+          }
+
+          if(py::extract<double>(normal).check())
+          {
+            dim = 1;
+            vnormal(0)=py::extract<double>(normal)();
+          }
+          else if (py::extract<py::tuple>(normal).check())
+          {
+            py::tuple tnormal(normal);
+            dim = py::len(tnormal);
+            for (int j : Range(min(int(py::len(tnormal)),dim)))
+              vnormal(j)=py::extract<double>(tnormal[j])();
+          }
+          switch (dim)
+          {
+            case 1:
+              return PyPML(make_shared<HalfSpacePML_Transformation<1>> (vpoint,vnormal,alpha));
+            case 2:
+              return PyPML(make_shared<HalfSpacePML_Transformation<2>> (vpoint,vnormal,alpha));
+            case 3:
+              return PyPML(make_shared<HalfSpacePML_Transformation<3>> (vpoint,vnormal,alpha));
+          }
+          throw Exception("No valid dimension");
+        },
+        py::arg("point"),py::arg("normal"), py::arg("alpha")=Complex(0,1),
+        "half space pml, scales orthogonal to specified plane in direction of normal")
+    ;
+    m.def("BrickRadial", [](py::object mins,py::object maxs,py::object _origin, Complex alpha) {
+          int dim = 0;
+          Matrix<double> bounds;
+          if (py::extract<double>(mins).check())
+          {
+            dim = 1;
+            bounds.SetSize(dim,2);
+            bounds = 0.;
+            bounds(0,0)=py::extract<double>(mins)();
+          }
+          else if (py::extract<py::tuple>(mins).check())
+          {
+            py::tuple tmins(mins);
+            dim = py::len(tmins);
+            bounds.SetSize(dim,2);
+            bounds = 0.;
+            for (int j : Range(dim))
+              bounds(j,0)=py::extract<double>(tmins[j])();
+          }
+
+          if (py::extract<double>(maxs).check())
+              bounds(0,1)=py::extract<double>(maxs)();
+
+          else if (py::extract<py::tuple>(maxs).check())
+          {
+            py::tuple tmax(maxs);
+            for (int j : Range(min(int(py::len(tmax)),dim)))
+              bounds(j,1)=py::extract<double>(tmax[j])();
+          }
+          Vector<double> vorigin(dim);
+          vorigin = 0.;
+          if (py::extract<double>(_origin).check())
+          {
+            vorigin(0)=py::extract<double>(_origin)();
+          }
+          else if (py::extract<py::tuple>(_origin).check())
+          {
+            py::tuple torigin(_origin);
+            for (int j : Range(min(int(py::len(torigin)),dim)))
+              vorigin(j)=py::extract<double>(torigin[j])();
+          }
+          switch (dim)
+          {
+            case 1:
+              return PyPML(make_shared<BrickRadialPML_Transformation<1>> (bounds,alpha,vorigin));
+            case 2:
+              return PyPML(make_shared<BrickRadialPML_Transformation<2>> (bounds,alpha,vorigin));
+            case 3:
+              return PyPML(make_shared<BrickRadialPML_Transformation<3>> (bounds,alpha,vorigin));
+          }
+          throw Exception("No valid dimension");
+        },
+        py::arg("mins"),py::arg("maxs"), py::arg("origin")=py::make_tuple(0.,0.,0.),py::arg("alpha")=Complex(0,1),
+        "radial pml on a brick")
+      ;
+    m.def("Compound", [](PyPML pml1,PyPML pml2,py::object dims1,py::object dims2) {
+          int dim1 = pml1.Get()->GetDimension();
+          int dim2 = pml2.Get()->GetDimension();
+          int dim = dim1 + dim2;
+          Vector<int> vdims1;
+          Vector<int> vdims2;
+          
+          if (py::extract<double>(dims1).check())
+          {
+            vdims1.SetSize(1);
+            vdims1=py::extract<double>(dims1)();
+          }
+          else if (py::extract<py::tuple>(dims1).check())
+          {
+            py::tuple tdims1(dims1);
+            vdims1.SetSize(py::len(tdims1));
+            for (int j : Range(py::len(tdims1)))
+              vdims1(j)=py::extract<double>(tdims1[j])();
+          }
+          else 
+          {
+            vdims1.SetSize(dim1);
+            for (int j : Range(dim1))
+              vdims1(j)=j+1;
+          }
+          if (py::extract<double>(dims2).check())
+          {
+            vdims2.SetSize(1);
+            vdims2=py::extract<double>(dims2)();
+          }
+          else if (py::extract<py::tuple>(dims2).check())
+          {
+            py::tuple tdims2(dims2);
+            vdims2.SetSize(py::len(tdims2));
+            for (int j : Range(py::len(tdims2)))
+              vdims2(j)=py::extract<double>(tdims2[j])();
+          }
+          else
+          {
+            vdims2.SetSize(dim2);
+            for (int j : Range(dim2))
+              vdims2(j)=j+dim1+1;
+          }
+          if (vdims1.Size()!=dim1 || vdims2.Size()!=dim2)
+          {
+            throw Exception("Dimensions do not match");
+          }
+            cout << dim1 << endl;
+            cout << dim2 << endl;
+            cout << vdims1 << endl;
+            cout << vdims2 << endl;
+
+          switch (dim)
+          {
+            case 1:
+              if (dim1==1)
+                return pml1;
+              else
+                return pml2;
+            case 2:
+              switch(dim1)
+              {
+                case 0:
+                  return PyPML(make_shared<CompoundPML<2,0,2>> (pml1.Get(),pml2.Get(),vdims1,vdims2));
+                case 1:
+                  return PyPML(make_shared<CompoundPML<2,1,1>> (pml1.Get(),pml2.Get(),vdims1,vdims2));
+                case 2:
+                  return PyPML(make_shared<CompoundPML<2,2,0>> (pml1.Get(),pml2.Get(),vdims1,vdims2));
+              }
+            case 3:
+              switch(dim1)
+              {
+                case 0:
+                  return PyPML(make_shared<CompoundPML<3,0,3>> (pml1.Get(),pml2.Get(),vdims1,vdims2));
+                case 1:
+                  return PyPML(make_shared<CompoundPML<3,1,2>> (pml1.Get(),pml2.Get(),vdims1,vdims2));
+                case 2:
+                  return PyPML(make_shared<CompoundPML<3,2,1>> (pml1.Get(),pml2.Get(),vdims1,vdims2));
+                case 3:
+                  return PyPML(make_shared<CompoundPML<3,3,0>> (pml1.Get(),pml2.Get(),vdims1,vdims2));
+              }
+          }
+          throw Exception("No valid dimension");
+        },
+        py::arg("pml1"),py::arg("pml2"), 
+        py::arg("dims1")=DummyArgument(),py::arg("dims2")=DummyArgument(),
+        "compound of two pmls, dimensions start with 1")
+      ;
+}
+
+
 
 void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 {
+
+  py::module pml = m.def_submodule("pml", "module for perfectly matched layers");
+  ExportPml(pml);
   //////////////////////////////////////////////////////////////////////////////////////////
 
   py::enum_<VorB>(m, "VorB")
@@ -217,25 +572,6 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
-  py::class_<ElementId> (m, "ElementId", 
-                         "an element identifier containing element number and Volume/Boundary flag")
-    .def(py::init<VorB,int>())
-    .def(py::init<int>())
-    .def("__str__", &ToString<ElementId>)
-    .def_property_readonly("nr", &ElementId::Nr, "the element number")    
-    .def("VB", &ElementId::VB, "VorB of element")    .def(py::self!=py::self)
-    .def("__eq__" , [](ElementId &self, ElementId &other)
-                                    { return !(self!=other); } )
-    .def("__hash__" , &ElementId::Nr)
-    ;
-  
-  m.def("BndElementId",[] (int nr) { return ElementId(BND,nr); },
-          py::arg("nr"),
-          "creates an element-id for a boundary element")
-    ;
-
-  //////////////////////////////////////////////////////////////////////////////////////////
-
   py::class_<ElementRange, IntRange> (m, "ElementRange")
     .def(py::init<const MeshAccess&,VorB,IntRange>())
     .def("__iter__", [] (ElementRange &er)
@@ -249,11 +585,34 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
       py::keep_alive<0,1>()
     );
 
+  //////////////////////////////////////////////////////////////////////////////////////////
+
+  py::class_<ElementId> (m, "ElementId", 
+                         "an element identifier containing element number and Volume/Boundary flag")
+    .def(py::init<VorB,int>())
+    .def(py::init<int>())
+    .def(py::init<Ngs_Element>())
+    .def("__str__", &ToString<ElementId>)
+    .def_property_readonly("nr", &ElementId::Nr, "the element number")    
+    .def("VB", &ElementId::VB, "VorB of element")
+    .def(py::self!=py::self)
+    .def("__eq__" , [](ElementId &self, ElementId &other)
+         { return !(self!=other); } )
+    .def("__hash__" , &ElementId::Nr)
+    ;
+  
+  m.def("BndElementId",[] (int nr) { return ElementId(BND,nr); },
+          py::arg("nr"),
+          "creates an element-id for a boundary element")
+    ;
+
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
   // TODO: make tuple not doing the right thing
-  py::class_<Ngs_Element, ElementId>(m, "Ngs_Element")
+  py::class_<Ngs_Element>(m, "Ngs_Element")
+    .def_property_readonly("nr", &Ngs_Element::Nr, "the element number")    
+    .def("VB", &Ngs_Element::VB, "VorB of element")   
     .def_property_readonly("vertices", [](Ngs_Element &el) {
         return py::cast(Array<int>(el.Vertices()));
         })//, "list of global vertex numbers")
@@ -271,6 +630,9 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                                          { return el.GetMaterial() ? *el.GetMaterial() : ""; },
                   "material or boundary condition label")
     ;
+
+  py::implicitly_convertible <Ngs_Element, ElementId> ();
+  // py::implicitly_convertible <ElementId, Ngs_Element> ();
 
   py::class_<FESpace::Element,Ngs_Element>(m, "FESpaceElement")
     .def_property_readonly("dofs",
@@ -292,17 +654,17 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
          py::return_value_policy::reference
          )
     
-    .def("GetFE",[](FESpace::Element & el) -> const FiniteElement & 
+    .def("GetFE",[](FESpace::Element & el)
                                   {
-                                    return el.GetFE();
+                                    return shared_ptr<FiniteElement>(const_cast<FiniteElement*>(&el.GetFE()), NOOP_Deleter);
                                   },
          py::return_value_policy::reference,
          "the finite element containing shape functions"
          )
 
-    .def("GetTrafo",[](FESpace::Element & el) -> const ElementTransformation & 
+    .def("GetTrafo",[](FESpace::Element & el) -> PyWrapper<ElementTransformation>
                                      {
-                                       return el.GetTrafo();
+                                       return shared_ptr<ElementTransformation>(const_cast<ElementTransformation*>(&el.GetTrafo()), NOOP_Deleter);
                                      },
          py::return_value_policy::reference,
          "the transformation from reference element to physical element"
@@ -529,7 +891,63 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
     .def("SetDeformation", FunctionPointer
 	 ([](MeshAccess & ma, PyGF gf)
           { ma.SetDeformation(gf.Get()); }))
-    .def("SetRadialPML", &MeshAccess::SetRadialPML)
+    //old
+    //.def("SetRadialPML", &MeshAccess::SetRadialPML)
+    .def("SetPML", FunctionPointer
+	 ([](MeshAccess & ma,  PyPML apml, py::object definedon)
+          {
+            if (py::extract<int>(definedon).check())
+              {
+                ma.SetPML(apml.Get(), py::extract<int>(definedon)()-1);
+              }
+
+            if (py::isinstance<py::str>(definedon))
+              {
+                std::regex pattern(definedon.cast<string>());
+                for (int i = 0; i < ma.GetNDomains(); i++)
+                  if (std::regex_match (ma.GetDomainMaterial(i), pattern))
+                    ma.SetPML(apml.Get(), i);
+              }
+          }),
+   py::arg("pmltrafo"),py::arg("definedon"),
+   "set PML transformation on domain"
+   )
+    .def("UnSetPML", [](MeshAccess & ma, py::object definedon)
+          {
+            if (py::extract<int>(definedon).check())
+                ma.UnSetPML(py::extract<int>(definedon)()-1);
+
+            if (py::isinstance<py::str>(definedon))
+              {
+                std::regex pattern(definedon.cast<string>());
+                for (int i = 0; i < ma.GetNDomains(); i++)
+                  if (std::regex_match (ma.GetDomainMaterial(i), pattern))
+                    ma.UnSetPML(i);
+              }
+          })
+    .def("GetPMLTrafos", [](MeshAccess & ma) 
+      {
+        py::list pml_trafos(ma.GetNDomains());
+        for (int i : Range(ma.GetNDomains()))
+        {
+          if (ma.GetPMLTrafos()[i])
+            pml_trafos[i] = PyPML(ma.GetPMLTrafos()[i]);
+          else
+            pml_trafos[i] = py::none();
+        }
+        return pml_trafos;
+      },
+        "returns list of pml transformations"
+    )
+    .def("GetPMLTrafo", [](MeshAccess & ma, int domnr) {
+        if (ma.GetPMLTrafos()[domnr])
+     	  return PyPML(ma.GetPMLTrafos()[domnr-1]);
+        else
+          throw Exception("No PML Trafo set"); 
+        },
+        py::arg("dom")=1,
+        "returns pml transformation on domain dom"
+        )
     .def("UnsetDeformation", FunctionPointer
 	 ([](MeshAccess & ma){ ma.SetDeformation(nullptr);}))
     
@@ -899,16 +1317,14 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 // 			       bpflags["complex"] = py::cast(is_complex);
 			     }
 
-                             py::extract<py::list> dirlist(dirichlet);
-                             if (dirlist.check()){ 
-                               flags.SetFlag("dirichlet", makeCArray<double>(dirlist()));
+                             if (py::isinstance<py::list>(dirichlet)) {
+                               flags.SetFlag("dirichlet", makeCArray<double>(py::list(dirichlet)));
 // 			       bpflags["dirichlet"] = dirlist();
 			     }
 
-                             py::extract<string> dirstring(dirichlet);
-                             if (dirstring.check())
+                             if (py::isinstance<py::str>(dirichlet))
                                {
-                                 std::regex pattern(dirstring());
+                                 std::regex pattern(dirichlet.cast<string>());
                                  Array<double> dirlist;
                                  for (int i = 0; i < ma->GetNBoundaries(); i++)
                                    if (std::regex_match (ma->GetBCNumBCName(i), pattern))
@@ -917,13 +1333,12 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 // 				 bpflags["dirichlet"] = py::cast(dirlist);
                                }
 
-                             py::extract<string> definedon_string(definedon);
-                             if (definedon_string.check())
+                             if (py::isinstance<py::str>(definedon))
                                {
-                                 regex definedon_pattern(definedon_string());
+                                 std::regex pattern(definedon.cast<string>());
                                  Array<double> defonlist;
                                  for (int i = 0; i < ma->GetNDomains(); i++)
-                                   if (regex_match(ma->GetDomainMaterial(i), definedon_pattern))
+                                   if (regex_match(ma->GetDomainMaterial(i), pattern))
                                      defonlist.Append(i+1);
                                  flags.SetFlag ("definedon", defonlist);
 // 				 bpflags["definedon"] = py::cast(defonlist);
@@ -950,6 +1365,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                              new (instance) PyFES(fes);
                              };
 
+  
   py::class_<PyFES>(m, "FESpace",  "a finite element space", py::dynamic_attr())
     // the raw - constructor
     .def("__init__", 
@@ -1039,6 +1455,9 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                    "global number of dofs on MPI-distributed mesh")
     // .def("__str__", &ToString<FESpace>)
     .def("__str__", [] (PyFES & self) { return ToString(*self.Get()); } )
+    .def("__timing__", [] (PyFES & self) {
+	return py::cast(self->Timing());
+      })
 
     // .def_property_readonly("mesh", FunctionPointer ([](FESpace & self) -> shared_ptr<MeshAccess>
     // { return self.GetMeshAccess(); }))
@@ -1105,7 +1524,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                                    {
                                      Allocator alloc;
 
-                                     auto fe = shared_ptr<FiniteElement> (&self->GetFE(ei, alloc));
+                                     auto fe = shared_ptr<FiniteElement> (&self->GetFE(ei, alloc), NOOP_Deleter);
 
                                      auto scalfe = dynamic_pointer_cast<BaseScalarFiniteElement> (fe);
                                      if (scalfe) return py::cast(scalfe);
@@ -1116,7 +1535,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
     
     .def ("GetFE", FunctionPointer([](PyFES & self, ElementId ei, LocalHeap & lh)
                                    {
-                                     return &self->GetFE(ei, lh);
+                                     return shared_ptr<FiniteElement>(&self->GetFE(ei, lh), NOOP_Deleter);
                                    }),
           py::return_value_policy::reference)
 
@@ -1152,12 +1571,12 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
          [] (const PyFES & self) 
            {
              return MakeProxyFunction (*self.Get(), false);
-           })
+           }, docu_string("Gives a proxy to be used as a trialfunction in :any:`Symbolic Integrators`"))
     .def("TestFunction",
          [] (const PyFES & self) 
            {
              return MakeProxyFunction (*self.Get(), true);
-           })
+           }, docu_string("Gives a proxy to be used as a testfunction for :any:`Symbolic Integrators`"))
 
     .def("SolveM", FunctionPointer
         ( [] (const PyFES & self,
@@ -1197,7 +1616,76 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
     (m, "CompoundFESpace")
     .def("Range", &CompoundFESpace::GetRange)
     ;
+  
+  m.def("Periodic", [] (PyFES & fes, py::object phase, py::object use_idnrs ) -> PyFES
+          {
+            Flags flags = fes->GetFlags();
+	    shared_ptr<Array<int>> a_used_idnrs;
+	    if(py::extract<py::list>(use_idnrs).check())
+	      a_used_idnrs = make_shared<Array<int>>(makeCArray<int>(py::extract<py::list>(use_idnrs)()));
+	    else
+	      throw Exception("Argument for use_idnrs in Periodic must be list of identification numbers (int)");
+	    shared_ptr<FESpace> perfes;
+	    auto ext = py::extract<py::list>(phase);
+	    if(ext.check())
+	      {
+		auto a_phase = make_shared<Array<Complex>>(py::len(ext()));
+		for (auto i : Range(a_phase->Size()))
+		  {
+		    auto ext_value = py::extract<Complex>(ext()[i]);
+		    if(ext_value.check())
+		      (*a_phase)[i] = ext_value();
+		    else
+		      throw Exception("Periodic FESpace needs a list of complex castable values as parameter phase");
+		  }
+		perfes = make_shared<QuasiPeriodicFESpace>(fes.Get(),flags,a_used_idnrs,a_phase);
+	      }
+	    else if (py::isinstance<DummyArgument>(phase))
+	      {
+	      perfes = make_shared<PeriodicFESpace>(fes.Get(),flags,a_used_idnrs);
+	      }
+	    else
+	      throw Exception("Periodic FESpace needs a list of complex castable values as parameter 'phase'");
+            perfes->Update(glh);
+            perfes->FinalizeUpdate(glh);
+            return perfes;
+	  }, py::arg("fespace"), py::arg("phase")=DummyArgument(), py::arg("use_idnrs")=py::list(),
+	docu_string(R"delimiter(Generator function for periodic or quasi-periodic :any:`Finite Element Spaces`. 
+The periodic fespace is a wrapper around a standard fespace with an 
+additional dof mapping for the periodic degrees of freedom. All dofs 
+on slave boundaries are mapped to their master dofs. Because of this, 
+the mesh needs to be periodic. To create a periodic mesh use i.e. the 
+function :any:`CSGeometry.PeriodicSurfaces`(master,slave). Low order 
+fespaces are currently not supported, so methods using them will not work. 
 
+Parameters
+----------
+
+fespace (FESpace): finite element space 
+
+phase (list of Complex = None): phase shift for quasi-periodic finite 
+    element space. The basis functions on the slave boundary are 
+    multiplied by the factor given in this list. If None (default) is 
+    given, a periodic fespace is created. The order of the list must 
+    match the order of the definition of the periodic boundaries in 
+    the mesh. 
+
+used_idnrs (list of int = None): identification numbers to be made periodic 
+    if you don't want to use all periodic identifications defined in the 
+    mesh, if None (default) all available periodic identifications are 
+    used.
+
+)delimiter"));
+  /*
+  typedef PyWrapperDerived<PeriodicFESpace, FESpace> PyPeriodicFES;
+  py::class_<PyPeriodicFES, PyFES>
+    (m, "PeriodicFES", "a periodic fespace")
+    .def("__init__", [](PyPeriodicFES *instance, PyFES & fespace, py::dict dictflags)
+         {
+           Flags flags = py::extract<Flags> (dictflags)();
+           
+         });
+  */
   //////////////////////////////////////////////////////////////////////////////////////////
   
 
@@ -1593,17 +2081,15 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
            py::arg("flags") = py::dict())
     
     .def("__init__",
-         [](PyBF *instance, PyFES fespace, PyFES fespace2,
-                              string name, bool symmetric, py::dict bpflags)
+         [](PyBF *instance, PyFES trial_space, PyFES test_space,
+                              string name, py::dict bpflags)
                            {
                              Flags flags = py::extract<Flags> (bpflags)();
-                             if (symmetric) flags.SetFlag("symmetric");
-                             new (instance) PyBF(CreateBilinearForm (fespace.Get(), fespace2.Get(), name, flags));
+                             new (instance) PyBF(CreateBilinearForm (trial_space.Get(), test_space.Get(), name, flags));
                            },
-           py::arg("space"),
-           py::arg("space2"),
+           py::arg("trialspace"),
+           py::arg("testspace"),
            py::arg("name")="bfa", 
-           py::arg("symmetric") = false,
            py::arg("flags") = py::dict())
 
     .def("__str__", FunctionPointer( []( PyBF & self ) { return ToString<BilinearForm>(*self.Get()); } ))
@@ -1614,7 +2100,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
          "add integrator to bilinear-form")
     
     .def("__iadd__",FunctionPointer
-                  ([](PyBF self, PyWrapper<BilinearFormIntegrator> & other) { *self.Get()+=other.Get(); return self; } ))
+                  ([](PyBF self, PyWrapper<BilinearFormIntegrator> other) { *self += other.Get(); return self; } ))
 
     .def_property_readonly("integrators", FunctionPointer
                   ([](PyBF & self)
@@ -1623,12 +2109,10 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                      for (auto igt : self->Integrators())
                        igts.append (py::cast(PyWrapper<BilinearFormIntegrator> (igt)));
                      return igts;
-                     // return py::cast (self->Integrators());
                    } ))
     
     .def("Assemble", FunctionPointer([](PyBF & self, int heapsize, bool reallocate)
                                      {
-                                       // LocalHeap lh (heapsize, "BilinearForm::Assemble-heap", true);
                                        if (heapsize > global_heapsize)
                                          {
                                            global_heapsize = heapsize;
@@ -1638,7 +2122,6 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                                      }),
          py::arg("heapsize")=1000000,py::arg("reallocate")=false)
 
-    // .def_property_readonly("mat", static_cast<shared_ptr<BaseMatrix>(BilinearForm::*)()const> (&BilinearForm::GetMatrixPtr))
     .def_property_readonly("mat", FunctionPointer([](PyBF & self) -> PyBaseMatrix
                                          {
                                            auto mat = self->GetMatrixPtr();
@@ -1679,16 +2162,15 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
             return InnerProduct (au, v.GetVector());
           }))
 
-    // .def("Energy", &BilinearForm::Energy)
     .def("Energy",FunctionPointer
          ([](PyBF & self, PyBaseVector & x)
           {
             return self->Energy(*x);
           }))
+    
     .def("Apply", FunctionPointer
 	 ([](PyBF & self, PyBaseVector & x, PyBaseVector & y, int heapsize)
 	  {
-	    // static LocalHeap lh (heapsize, "BilinearForm::Apply", true);
             if (heapsize > global_heapsize)
               {
                 global_heapsize = heapsize;
@@ -1697,18 +2179,22 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 	    self->ApplyMatrix (*x, *y, glh);
 	  }),
          py::arg("x"),py::arg("y"),py::arg("heapsize")=1000000)
+
     .def("ComputeInternal", FunctionPointer
 	 ([](PyBF & self, PyBaseVector & u, PyBaseVector & f, int heapsize)
 	  {
-	    LocalHeap lh (heapsize, "BilinearForm::ComputeInternal");
-	    self->ComputeInternal (*u ,*f ,lh );
+            if (heapsize > global_heapsize)
+              {
+                global_heapsize = heapsize;
+                glh = LocalHeap(heapsize, "python-comp lh", true);
+              }
+	    self->ComputeInternal (*u, *f, glh );
 	  }),
          py::arg("u"),py::arg("f"),py::arg("heapsize")=1000000)
 
     .def("AssembleLinearization", FunctionPointer
 	 ([](PyBF & self, PyBaseVector & ulin, int heapsize)
 	  {
-	    // LocalHeap lh (heapsize, "BilinearForm::Assemble-heap", true);
             if (heapsize > global_heapsize)
               {
                 global_heapsize = heapsize;
@@ -1723,25 +2209,23 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
           {
             return PyCF(make_shared<GridFunctionCoefficientFunction> (gf, self->GetIntegrator(0)));
           }))
+    
     .def_property_readonly("harmonic_extension", FunctionPointer
                   ([](PyBF & self) -> PyBaseMatrix
                    {
-                     return shared_ptr<BaseMatrix> (&self->GetHarmonicExtension(),
-                                                    &NOOP_Deleter);
+                     return self->GetHarmonicExtension();
                    })
                   )
     .def_property_readonly("harmonic_extension_trans", FunctionPointer
                   ([](PyBF & self) -> PyBaseMatrix
                    {
-                     return shared_ptr<BaseMatrix> (&self->GetHarmonicExtensionTrans(),
-                                                    &NOOP_Deleter);
+                     return self->GetHarmonicExtensionTrans();
                    })
                   )
     .def_property_readonly("inner_solve", FunctionPointer
                   ([](PyBF & self) -> PyBaseMatrix
                    {
-                     return shared_ptr<BaseMatrix> (&self->GetInnerSolve(),
-                                                    &NOOP_Deleter);
+                     return self->GetInnerSolve();
                    })
                   )
     ;
@@ -1762,7 +2246,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                            },
           py::arg("space"), py::arg("name")="lff", py::arg("flags") = py::dict()
          )
-    .def("__str__", FunctionPointer( []( PyLF & self ) { return ToString<LinearForm>(*self.Get()); } ))
+    .def("__str__", FunctionPointer( []( PyLF & self ) { return ToString<LinearForm>(*self); } ))
 
     .def_property_readonly("vec", FunctionPointer([] (PyLF self) -> PyBaseVector { return self->GetVectorPtr();}))
 
@@ -1775,7 +2259,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
          py::arg("integrator"))
 
     .def("__iadd__",FunctionPointer
-                  ([](PyLF self, PyWrapper<LinearFormIntegrator> & other) { *self.Get()+=other.Get(); return self; } ))
+                  ([](PyLF self, PyWrapper<LinearFormIntegrator> & other) { *self+=other.Get(); return self; } ))
 
 
     .def_property_readonly("integrators", FunctionPointer
@@ -1785,13 +2269,11 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                      for (auto igt : self->Integrators())
                        igts.append (py::cast(PyWrapper<LinearFormIntegrator> (igt)));
                      return igts;
-                     // return py::cast (self->Integrators());
                    } ))
 
     .def("Assemble", FunctionPointer
          ([](PyLF self, int heapsize)
           { 
-            // LocalHeap lh(heapsize, "LinearForm::Assemble-heap", true);
             if (heapsize > global_heapsize)
               {
                 global_heapsize = heapsize;
@@ -1818,7 +2300,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                   "list of components for linearforms on compound-space")
     
     .def("__call__", FunctionPointer
-         ([](PyLF & self, const GridFunction & v)
+         ([](PyLF self, const GridFunction & v)
           {
             return InnerProduct (self->GetVector(), v.GetVector());
           }))
@@ -1832,8 +2314,11 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
     .def_property_readonly("mat", FunctionPointer
                   ([](Preconditioner &self) -> PyWrapper<BaseMatrix>
                    {
+                     return self.GetMatrixPtr();
+                     /*
                      return shared_ptr<BaseMatrix> (const_cast<BaseMatrix*> (&self.GetMatrix()),
                                                     NOOP_Deleter);
+                     */
                    }))
     ;
 
@@ -1873,13 +2358,13 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
-  PyExportSymbolTable<shared_ptr<FESpace>> (m);
-  PyExportSymbolTable<shared_ptr<CoefficientFunction>> (m);
-  PyExportSymbolTable<shared_ptr<GridFunction>> (m);
-  PyExportSymbolTable<shared_ptr<BilinearForm>>(m);
-  PyExportSymbolTable<shared_ptr<LinearForm>>(m);
-  PyExportSymbolTable<shared_ptr<Preconditioner>> (m);
-  PyExportSymbolTable<shared_ptr<NumProc>> (m);
+  PyExportSymbolTable<shared_ptr<FESpace>, PyWrapper<FESpace>> (m);
+  PyExportSymbolTable<shared_ptr<CoefficientFunction>, PyWrapper<CoefficientFunction>> (m);
+  PyExportSymbolTable<shared_ptr<GridFunction>, PyWrapper<GridFunction>> (m);
+  PyExportSymbolTable<shared_ptr<BilinearForm>, PyWrapper<BilinearForm>>(m);
+  PyExportSymbolTable<shared_ptr<LinearForm>, PyWrapper<LinearForm>>(m);
+  PyExportSymbolTable<shared_ptr<Preconditioner>, PyWrapper<Preconditioner>> (m);
+  PyExportSymbolTable<shared_ptr<NumProc>, PyWrapper<NumProc>> (m);
   PyExportSymbolTable<double> (m);
   PyExportSymbolTable<shared_ptr<double>> (m);
 
@@ -2068,30 +2553,30 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
     .def_property_readonly ("coefficients", FunctionPointer([](PyPDE self) { return py::cast(self->GetCoefficientTable()); }))
     .def_property_readonly ("spaces", FunctionPointer([](PyPDE self) {
           auto table = self->GetSpaceTable();
-          SymbolTable<PyFES> pytable;
+          SymbolTable<shared_ptr<FESpace>> pytable;
           for ( auto i : Range(table.Size() ))
-                pytable.Set(table.GetName(i), PyFES(table[i]));
+                pytable.Set(table.GetName(i), shared_ptr<FESpace>(table[i]));
           return py::cast(pytable);
           }))
     .def_property_readonly ("gridfunctions", FunctionPointer([](PyPDE self) {
           auto table = self->GetGridFunctionTable();
-          SymbolTable<PyGF> pytable;
+          SymbolTable<shared_ptr<GridFunction>> pytable;
           for ( auto i : Range(table.Size() ))
-                pytable.Set(table.GetName(i), PyGF(table[i]));
+                pytable.Set(table.GetName(i), shared_ptr<GridFunction>(table[i]));
           return py::cast(pytable);
           }))
     .def_property_readonly ("bilinearforms", FunctionPointer([](PyPDE self) {
           auto table = self->GetBilinearFormTable();
-          SymbolTable<PyBF> pytable;
+          SymbolTable<shared_ptr<BilinearForm>> pytable;
           for ( auto i : Range(table.Size() ))
-                pytable.Set(table.GetName(i), PyBF(table[i]));
+                pytable.Set(table.GetName(i), shared_ptr<BilinearForm>(table[i]));
           return py::cast(pytable);
           }))
     .def_property_readonly ("linearforms", FunctionPointer([](PyPDE self) {
           auto table = self->GetLinearFormTable();
-          SymbolTable<PyLF> pytable;
+          SymbolTable<shared_ptr<LinearForm>> pytable;
           for ( auto i : Range(table.Size() ))
-                pytable.Set(table.GetName(i), PyLF(table[i]));
+                pytable.Set(table.GetName(i), shared_ptr<LinearForm>(table[i]));
           return py::cast(pytable);
           }))
     .def_property_readonly ("preconditioners", FunctionPointer([](PyPDE self) { return py::cast(self->GetPreconditionerTable()); }))
@@ -2296,7 +2781,15 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                lfi = make_shared<SymbolicFacetLinearFormIntegrator> (cf.Get(), vb /* , element_boundary */);
              
              if (py::extract<py::list> (definedon).check())
-               lfi -> SetDefinedOn (makeCArray<int> (definedon));
+               {
+                 cout << "warning: SymbolicLFI definedon changed to 1-based" << endl;
+                 Array<int> defon = makeCArray<int> (definedon);
+                 for (int & d : defon) d--;
+                 lfi -> SetDefinedOn (defon); 
+               }
+               
+             // lfi -> SetDefinedOn (makeCArray<int> (definedon));
+
              if (defon_region.check())
                lfi->SetDefinedOn(defon_region().Mask());
 
@@ -2311,7 +2804,8 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 
   m.def("SymbolicBFI",
           [](PyCF cf, VorB vb, bool element_boundary,
-              bool skeleton, py::object definedon)
+             bool skeleton, py::object definedon,
+             IntegrationRule ir)
            {
              py::extract<Region> defon_region(definedon);
              if (defon_region.check())
@@ -2333,6 +2827,59 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                bfi = make_shared<SymbolicBilinearFormIntegrator> (cf.Get(), vb, element_boundary);
              else
                bfi = make_shared<SymbolicFacetBilinearFormIntegrator> (cf.Get(), vb, element_boundary);
+             
+             if (py::extract<py::list> (definedon).check())
+               {
+                 cout << "warning: SymbolicBFI definedon changed to 1-based" << endl;
+                 Array<int> defon = makeCArray<int> (definedon);
+                 for (int & d : defon) d--;
+                 bfi -> SetDefinedOn (defon); 
+               }
+             // bfi -> SetDefinedOn (makeCArray<int> (definedon));
+
+             if (defon_region.check())
+               bfi->SetDefinedOn(defon_region().Mask());
+
+             if (ir.Size())
+               {
+                 cout << "ir = " << ir << endl;
+                 dynamic_pointer_cast<SymbolicBilinearFormIntegrator> (bfi)
+                   ->SetIntegrationRule(ir);
+               }
+             
+             return PyWrapper<BilinearFormIntegrator>(bfi);
+           },
+        py::arg("form"), py::arg("VOL_or_BND")=VOL,
+        py::arg("element_boundary")=false,
+        py::arg("skeleton")=false,
+        py::arg("definedon")=DummyArgument(),
+        py::arg("intrule")=IntegrationRule()
+        );
+          
+  m.def("SymbolicTPBFI",
+          [](PyCF cf, VorB vb, bool element_boundary,
+              bool skeleton, py::object definedon)
+           {
+             py::extract<Region> defon_region(definedon);
+             if (defon_region.check())
+               vb = VorB(defon_region());
+
+             // check for DG terms
+             bool has_other = false;
+             cf->TraverseTree ([&has_other] (CoefficientFunction & cf)
+                               {
+                                 if (dynamic_cast<ProxyFunction*> (&cf))
+                                   if (dynamic_cast<ProxyFunction&> (cf).IsOther())
+                                     has_other = true;
+                               });
+             if (has_other && !element_boundary && !skeleton)
+               throw Exception("DG-facet terms need either skeleton=True or element_boundary=True");
+             
+             shared_ptr<BilinearFormIntegrator> bfi;
+             if (!has_other && !skeleton)
+               bfi = make_shared<TensorProductBilinearFormIntegrator> (cf.Get(), vb, element_boundary);
+             else
+               bfi = make_shared<TensorProductFacetBilinearFormIntegrator> (cf.Get(), vb, element_boundary);
              
              if (py::extract<py::list> (definedon).check())
                bfi -> SetDefinedOn (makeCArray<int> (definedon));
@@ -2559,6 +3106,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
               
    m.def("IntDv", [](PyGF gf_tp, PyGF gf_x )
             {
+              static Timer tall("comp.IntDv"); RegionTimer rall(tall);
               shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp.Get()->GetFESpace());
               LocalHeap lh(10000000,"ReduceToXSpace");
               tpfes->ReduceToXSpace(gf_tp.Get(),gf_x.Get(),lh,
@@ -2581,32 +3129,82 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
               });
               });
               
-   m.def("IntDv2", [](PyGF gf_tp, PyGF gf_x, PyCF coef )
+   m.def("IntDv", [](PyGF gf_tp, PyGF gf_x, PyCF coef )
            {
+              static Timer tall("comp.IntDv - total domain int"); RegionTimer rall(tall);
               shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp.Get()->GetFESpace());
-              LocalHeap lh(10000000,"IntDv2");
+              LocalHeap lh(10000000,"IntDv");
               tpfes->ReduceToXSpace(gf_tp.Get(),gf_x.Get(),lh,
               [&] (shared_ptr<FESpace> fes,const FiniteElement & fel,const ElementTransformation & trafo,FlatVector<> elvec,FlatVector<> elvec_out,LocalHeap & lh)
               {
                  const TPHighOrderFE & tpfel = dynamic_cast<const TPHighOrderFE &>(fel);
+                 
                  shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(fes);
-                 FlatMatrix<> elmat(tpfel.elements[0]->GetNDof(),tpfel.elements[1]->GetNDof(),&elvec[0]);
+                 FlatMatrix<> coefmat(tpfel.elements[0]->GetNDof(),tpfel.elements[1]->GetNDof(),&elvec[0]);
                  IntegrationRule ir(tpfel.elements[1]->ElementType(),2*tpfel.elements[1]->Order());
-                 BaseMappedIntegrationRule & mir = trafo(ir,lh);
                  FlatMatrix<> shape(tpfel.elements[1]->GetNDof(),ir.Size(),lh);
                  dynamic_cast<const BaseScalarFiniteElement *>(tpfel.elements[1])->CalcShape(ir,shape);
-                 FlatMatrix<> vals(mir.Size(),1,lh);
+                 
+                 BaseMappedIntegrationRule & mir = trafo(ir,lh);
+                 
+                 FlatMatrixFixWidth<1> vals(mir.Size(),lh);
                  coef.Get()->Evaluate(mir, vals);
                  for(int s=0;s<ir.Size();s++)
                  {
                    shape.Col(s)*=mir[s].GetWeight()*vals(s,0);
-                   elvec_out+=elmat*shape.Col(s);
+                   elvec_out+=coefmat*shape.Col(s);
                  }
               });
               });
-
+    
+   m.def("IntDv", [](PyGF gf_tp, py::list ax0, PyCF coef) -> double
+           {
+             static Timer tall("comp.IntDv2 - single point"); RegionTimer rall(tall);
+             Array<double> x0_help = makeCArray<double> (ax0);
+             LocalHeap lh(10000000,"IntDv2");
+             shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp.Get()->GetFESpace());
+             const Array<shared_ptr<FESpace> > & spaces = tpfes->Spaces(0);
+             FlatVector<> x0(spaces[0]->GetSpacialDimension(),&x0_help[0]);
+             IntegrationPoint ip;
+             int elnr = spaces[0]->GetMeshAccess()->FindElementOfPoint(x0,ip,true);
+             auto & felx = spaces[0]->GetFE(ElementId(elnr),lh);
+             FlatVector<> shapex(felx.GetNDof(),lh);
+             dynamic_cast<const BaseScalarFiniteElement &>(felx).CalcShape(ip,shapex);
+             double val = 0.0;
+             int index = tpfes->GetIndex(elnr,0);
+             Array<int> dnums;
+             for(int i=index;i<index+spaces[1]->GetMeshAccess()->GetNE();i++)
+             {
+               auto & fely = spaces[1]->GetFE(ElementId(i-index),lh);
+               tpfes->GetDofNrs(i,dnums);
+               int tpndof = felx.GetNDof()*fely.GetNDof();
+               FlatVector<> elvec(tpndof,lh);
+               gf_tp->GetElementVector(dnums,elvec);
+               FlatMatrix<> coefmat(felx.GetNDof(),fely.GetNDof(), &elvec(0));
+               FlatVector<> coefy(fely.GetNDof(),lh);
+               coefy = Trans(coefmat)*shapex;
+               const IntegrationRule & ir = SelectIntegrationRule(fely.ElementType(),2*fely.Order());
+               BaseMappedIntegrationRule & mir = spaces[1]->GetMeshAccess()->GetTrafo(ElementId(i-index),lh)(ir,lh);
+               FlatMatrixFixWidth<1> coefvals(ir.Size(),lh);
+               coef.Get()->Evaluate(mir,coefvals);
+               FlatMatrix<> shapesy(fely.GetNDof(),ir.Size(),lh);
+               dynamic_cast<const BaseScalarFiniteElement & >(fely).CalcShape(ir,shapesy);
+               FlatVector<> helper(ir.Size(),lh);
+               helper = Trans(shapesy)*coefy;
+               for(int ip=0;ip<ir.Size();ip++)
+                  val+=helper(ip)*mir[ip].GetWeight()*coefvals(ip,0);
+             }
+             return val;
+           });
+   m.def("ProlongateCoefficientFunction", [](PyCF cf_x, int prolongateto) -> PyCF
+           {
+             auto pcf = make_shared<ProlongateCoefficientFunction>(cf_x.Get(),prolongateto,cf_x.Get()->Dimension(),false);
+             pcf->SetDimension(pcf->Dimension());
+             return PyCF(pcf);
+           });
    m.def("Prolongate", [](PyGF gf_x, PyGF gf_tp )
             {
+              static Timer tall("comp.Prolongate"); RegionTimer rall(tall);
               shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp.Get()->GetFESpace());
               LocalHeap lh(100000,"ProlongateFromXSpace");
               if(gf_x.Get()->GetFESpace() == tpfes->Space(-1) )
@@ -2616,6 +3214,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
               });
    m.def("Transfer2StdMesh", [](const PyGF gfutp, PyGF gfustd )
             {
+              static Timer tall("comp.Transfer2StdMesh"); RegionTimer rall(tall);
               Transfer2StdMesh(gfutp.Get().get(),gfustd.Get().get());
               return;
              });
@@ -2663,10 +3262,9 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
     
     ;
 
-
+  /////////////////////////////////////////////////////////////////////////////////////
 
 }
-
 
 
 
@@ -2676,7 +3274,5 @@ PYBIND11_PLUGIN(libngcomp) {
   ExportNgcomp(m);
   return m.ptr();
 }
-
-
 
 #endif // NGS_PYTHON

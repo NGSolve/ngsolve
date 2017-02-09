@@ -632,7 +632,7 @@ namespace ngfem
 			 const ElementTransformation & eltrans1, FlatArray<int> & ElVertices1,
 			 const FiniteElement & volumefel2, int LocalFacetNr2,
 			 const ElementTransformation & eltrans2, FlatArray<int> & ElVertices2,
-			 FlatMatrix<double> & elmat,
+			 FlatMatrix<double> elmat,
 			 LocalHeap & lh) const{ 
       throw Exception ("FacetBilinearFormIntegrator::CalcFacetMatrix for inner facets not implemented!");
     }
@@ -642,7 +642,7 @@ namespace ngfem
 			 const ElementTransformation & eltrans1, FlatArray<int> & ElVertices1,
 			 const FiniteElement & volumefel2, int LocalFacetNr2,
 			 const ElementTransformation & eltrans2, FlatArray<int> & ElVertices2,	 
-			 FlatMatrix<Complex> & elmat,
+			 FlatMatrix<Complex> elmat,
 			 LocalHeap & lh) const{ 
       throw Exception ("FacetBilinearFormIntegrator::CalcFacetMatrix<Complex> for inner facets not implemented!");
     }
@@ -672,20 +672,42 @@ namespace ngfem
     virtual void
     CalcFacetMatrix (const FiniteElement & volumefel, int LocalFacetNr,
 			 const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
-			 const ElementTransformation & seltrans,  
-			 FlatMatrix<double> & elmat,
+			 const ElementTransformation & seltrans, FlatArray<int> & SElVertices,  
+			 FlatMatrix<double> elmat,
 			 LocalHeap & lh) const{ 
       throw Exception ("FacetBilinearFormIntegrator::CalcFacetMatrix for boundary facets not implemented!");
     }
     virtual void 
     CalcFacetMatrix (const FiniteElement & volumefel, int LocalFacetNr,
 			 const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
-			 const ElementTransformation & seltrans,  
-			 FlatMatrix<Complex> & elmat,
+			 const ElementTransformation & seltrans, FlatArray<int> & SElVertices,  
+			 FlatMatrix<Complex> elmat,
 			 LocalHeap & lh) const{ 
       throw Exception ("FacetBilinearFormIntegrator::CalcFacetMatrix<Complex> for boundary facets not implemented!");
     }
 
+    virtual void
+      CalcLinearizedFacetMatrix (const FiniteElement & volumefel, int LocalFacetNr,
+                                 const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+                                 const ElementTransformation & seltrans, FlatArray<int> & SElVertices,  
+                                 FlatVector<double> vec, FlatMatrix<double> elmat,
+                                 LocalHeap & lh) const
+    {
+      CalcFacetMatrix (volumefel, LocalFacetNr,
+                       eltrans, ElVertices, seltrans, SElVertices, elmat, lh);
+    }
+      
+    virtual void
+      CalcLinearizedFacetMatrix (const FiniteElement & volumefel, int LocalFacetNr,
+                                 const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+                                 const ElementTransformation & seltrans, FlatArray<int> & SElVertices,  
+                                 FlatVector<Complex> vec, FlatMatrix<Complex> elmat,
+                                 LocalHeap & lh) const
+    {
+      throw Exception ("CalcLinearizedFacetMatrix<Complex> not available");
+    }
+      
+    
     virtual void
       ApplyFacetMatrix (const FiniteElement & volumefel, int LocalFacetNr,
                         const ElementTransformation & eltrans, FlatArray<int> & ElVertices,

@@ -34,24 +34,14 @@ namespace ngcomp
     if( flags.GetDefineFlag("hcurl"))
       cerr << "WARNING: -hcurl flag is deprecated: use -type=hcurl instead" << endl;
     
-    tet     = new FE_NedelecTet1;
-    prism   = new FE_NedelecPrism1;
-    pyramid = new FE_NedelecPyramid1;
-    trig    = new FE_NedelecTrig1;
-    quad    = new FE_NedelecQuad1;
-    segm    = new FE_NedelecSegm1;
-    hex     = new FE_NedelecHex1; 
-
     SetDummyFE<HCurlDummyFE> ();
 
     prol = make_shared<EdgeProlongation> (*this);
     order = 1;
 
-    // Integrator for shape tester 
-
-    static ConstantCoefficientFunction one(1);
-    integrator[VOL] = GetIntegrators().CreateBFI("massedge", ma->GetDimension(), &one);
-    integrator[BND] = GetIntegrators().CreateBFI("robinedge", ma->GetDimension(), &one);
+    auto one = make_shared<ConstantCoefficientFunction>(1);
+    integrator[VOL] = GetIntegrators().CreateBFI("massedge", ma->GetDimension(), one);
+    integrator[BND] = GetIntegrators().CreateBFI("robinedge", ma->GetDimension(), one);
 
     if (ma->GetDimension() == 2)
       {
@@ -67,26 +57,7 @@ namespace ngcomp
         flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpCurlBoundaryEdgeVec<>>>();
 	evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpIdBBoundaryEdge<3>>>();	
       }
-
     
-    /*
-    static ConstantCoefficientFunction one(1);
-    if (ma->GetDimension() == 2)
-      {
-	Array<CoefficientFunction*> coeffs(1);
-	coeffs[0] = &one;
-	integrator = GetIntegrators().CreateBFI("massedge", 2, coeffs);
-      }
-    else if(ma->GetDimension() == 3) 
-      {
-	Array<CoefficientFunction*> coeffs(1); 
-	coeffs[0] = &one;
-	integrator = GetIntegrators().CreateBFI("massedge",3,coeffs); 
-	boundary_integrator = GetIntegrators().CreateBFI("robinedge",3,coeffs); 
-	
-      }
-    */
-
     discontinuous = flags.GetDefineFlag("discontinuous");
   }
 
@@ -342,6 +313,21 @@ namespace ngcomp
   }
 
 
+  FiniteElement & NedelecFESpace :: GetFE (ElementId ei, Allocator & lh) const
+  {
+    switch (ma->GetElType(ei))
+      {
+      case ET_TET:     return * new (lh) FE_NedelecTet1;
+      case ET_PRISM:   return * new (lh) FE_NedelecPrism1;
+      case ET_PYRAMID: return * new (lh) FE_NedelecPyramid1;
+      case ET_TRIG:    return * new (lh) FE_NedelecTrig1;
+      case ET_QUAD:    return * new (lh) FE_NedelecQuad1;
+      case ET_SEGM:    return * new (lh) FE_NedelecSegm1;
+      case ET_HEX:     return * new (lh) FE_NedelecHex1;
+      default:
+        throw Exception ("Inconsistent element type in NedelecFESpace::GetFE");
+      }
+  }
 
   size_t NedelecFESpace :: GetNDof () const throw()
   {
@@ -375,11 +361,11 @@ namespace ngcomp
 
 
 
-  template <class MAT>
-  void NedelecFESpace::TransformMat (int elnr, VorB vb,
-				     MAT & mat, TRANSFORM_TYPE tt) const
+  template <class T>
+  void NedelecFESpace::T_TransformMat (ElementId ei,
+                                       SliceMatrix<T> mat, TRANSFORM_TYPE tt) const
   {
-    Ngs_Element ngel = ma->GetElement(ElementId(vb,elnr));
+    Ngs_Element ngel = ma->GetElement(ei);
     ELEMENT_TYPE eltype = ngel.GetType();
     
     int ned = ElementTopology::GetNEdges (eltype);
@@ -402,9 +388,9 @@ namespace ngcomp
   }
 
 
-  template <class VEC>
-  void NedelecFESpace::TransformVec (int elnr, VorB vb,
-				     VEC & vec, TRANSFORM_TYPE tt) const
+  template <class T>
+  void NedelecFESpace::T_TransformVec (ElementId ei, 
+                                       SliceVector<T> vec, TRANSFORM_TYPE tt) const
   {
     /*
     int nd;
@@ -424,7 +410,7 @@ namespace ngcomp
     */
 
 
-    Ngs_Element ngel = ma->GetElement(ElementId(vb,elnr));
+    Ngs_Element ngel = ma->GetElement(ei);
     ELEMENT_TYPE eltype = ngel.GetType();
     
     int ned = ElementTopology::GetNEdges (eltype);
@@ -1062,10 +1048,10 @@ namespace ngcomp
 
 
 
-  const FiniteElement & NedelecFESpace2 :: GetFE (int elnr, LocalHeap & lh) const
+  FiniteElement & NedelecFESpace2 :: GetFE (ElementId ei, Allocator & lh) const
   {
     FiniteElement * fe = 0;
-    ELEMENT_TYPE typ = ma->GetElType(elnr);
+    ELEMENT_TYPE typ = ma->GetElType(ei);
 
     switch (typ)
       {
@@ -1085,7 +1071,7 @@ namespace ngcomp
 	fe = 0;
       }
 
-    if (!gradientdomains[ma->GetElIndex(elnr)])
+    if (!gradientdomains[ma->GetElIndex(ei.Nr())])
       {
 	switch (typ)
 	  {
@@ -1105,7 +1091,7 @@ namespace ngcomp
 	stringstream str;
 	str << "FESpace " << GetClassName() 
 	    << ", undefined eltype " 
-	    << ElementTopology::GetElementName(ma->GetElType(elnr))
+	    << ElementTopology::GetElementName(ma->GetElType(ei.Nr()))
 	    << ", order = " << order << endl;
 	throw Exception (str.str());
       }
@@ -1128,13 +1114,13 @@ namespace ngcomp
 	ma->GetElFaces (ei.Nr(), fnums, forient);
 	
 	LocalHeapMem<1000> lh("NedelecFESpace2, GetDofNrs");
-	int nd = GetFE (ei.Nr(), lh).GetNDof();
+	int nd = GetFE (ei, lh).GetNDof();
 	dnums.SetSize(nd);
 	dnums = -1;
 	
 	int index = ma->GetElIndex (ei.Nr());
 	
-	if (!DefinedOn (index)) return;
+	if (!DefinedOn (VOL, index)) return;
 	
 	bool graddom = gradientdomains[index];
 	
@@ -1417,7 +1403,7 @@ namespace ngcomp
     dnums.SetSize(nd);
     dnums = -1;
 
-    if (!DefinedOnBoundary (ma->GetSElIndex (ei.Nr())))
+    if (!DefinedOn (BND, ma->GetSElIndex (ei.Nr())))
       return;
 
     switch (ma->GetSElType(ei.Nr()))
@@ -1836,9 +1822,9 @@ namespace ngcomp
 
 
 
-  template <class MAT>
-  void NedelecFESpace2::TransformMat (int elnr, bool boundary,
-				      MAT & mat, TRANSFORM_TYPE tt) const
+  template <class T>
+  void NedelecFESpace2::TransformMat (ElementId ei, 
+				      SliceMatrix<T> mat, TRANSFORM_TYPE tt) const
   {
     int nd;
     ELEMENT_TYPE et;
@@ -1846,7 +1832,8 @@ namespace ngcomp
     ArrayMem<int,6> fnums, forient;
     LocalHeapMem<1000> lh("NedelecFESpace2 - TransformMat");
 
-    ElementId ei(boundary?BND:VOL, elnr);
+    bool boundary = ei.VB() == BND;
+    size_t elnr = ei.Nr();
     if (boundary)
       {
 	nd = GetFE (ei, lh).GetNDof();
@@ -1887,9 +1874,9 @@ namespace ngcomp
 
 
 
-  template <class VEC>
-  void NedelecFESpace2::TransformVec (int elnr, bool boundary,
-				      VEC & vec, TRANSFORM_TYPE tt) const
+  template <class T>
+  void NedelecFESpace2::TransformVec (ElementId ei,
+				      SliceVector<T> vec, TRANSFORM_TYPE tt) const
   {
     int nd;
     ELEMENT_TYPE et;
@@ -1902,9 +1889,8 @@ namespace ngcomp
     ArrayMem<int,12> enums, eorient;
     ArrayMem<int,6> fnums, forient;
     LocalHeapMem<1000> lh ("Nedelecfespace2, transformvec");
-
-    ElementId ei(boundary?BND:VOL, elnr);
-    if (boundary)
+    size_t elnr = ei.Nr();
+    if (ei.VB()==BND)
       {
 	nd = GetFE (ei, lh).GetNDof();
 	et = ma->GetElType (ei);
@@ -1932,25 +1918,27 @@ namespace ngcomp
 
 
   template
-  void NedelecFESpace2::TransformVec<const FlatVector<double> >
-  (int elnr, bool boundary, const FlatVector<double> & vec, TRANSFORM_TYPE tt) const;
+  void NedelecFESpace2::TransformVec<double> 
+  (ElementId ei, SliceVector<double> vec, TRANSFORM_TYPE tt) const;
   template
-  void NedelecFESpace2::TransformVec<const FlatVector<Complex> >
-  (int elnr, bool boundary, const FlatVector<Complex> & vec, TRANSFORM_TYPE tt) const;
+  void NedelecFESpace2::TransformVec<Complex> 
+  (ElementId ei, SliceVector<Complex> vec, TRANSFORM_TYPE tt) const;
 
+  /*
   template
   void NedelecFESpace2::TransformMat<const FlatMatrix<double> > 
   (int elnr, bool boundary, const FlatMatrix<double> & mat, TRANSFORM_TYPE tt) const;
   template
   void NedelecFESpace2::TransformMat<const FlatMatrix<Complex> > 
   (int elnr, bool boundary, const FlatMatrix<Complex> & mat, TRANSFORM_TYPE tt) const;
-
+  */
+  
   template
-  void NedelecFESpace2::TransformMat<const SliceMatrix<double> > 
-  (int elnr, bool boundary, const SliceMatrix<double> & mat, TRANSFORM_TYPE tt) const;
+  void NedelecFESpace2::TransformMat<double> 
+  (ElementId ei, SliceMatrix<double> mat, TRANSFORM_TYPE tt) const;
   template
-  void NedelecFESpace2::TransformMat<const SliceMatrix<Complex> > 
-  (int elnr, bool boundary, const SliceMatrix<Complex> & mat, TRANSFORM_TYPE tt) const;
+  void NedelecFESpace2::TransformMat<Complex> 
+  (ElementId ei, SliceMatrix<Complex> mat, TRANSFORM_TYPE tt) const;
 
 
 

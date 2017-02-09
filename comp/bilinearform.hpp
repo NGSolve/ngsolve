@@ -61,7 +61,13 @@ namespace ngcomp
 
     /// bilinearform-integrators
     Array<shared_ptr<BilinearFormIntegrator>> parts;
-    Array<shared_ptr<BilinearFormIntegrator>> VB_parts[3], VB_skeleton_parts[3];
+    Array<shared_ptr<BilinearFormIntegrator>> VB_parts[3];
+
+    // loop over facets, VB=0 .. inner facets, VB=1 .. boundary facets
+    Array<shared_ptr<FacetBilinearFormIntegrator>> facetwise_skeleton_parts[2];
+
+    // loop over elements
+    Array<shared_ptr<BilinearFormIntegrator>> elementwise_skeleton_parts;
 
     /*
     Array<BilinearFormIntegrator*> independent_parts;
@@ -231,18 +237,18 @@ namespace ngcomp
 
     /// reconstruct internal dofs from static condensation 
     /// -A_ii^{-1} A_ib
-    virtual BaseMatrix & GetHarmonicExtension () const = 0;
+    virtual shared_ptr<BaseMatrix> GetHarmonicExtension () const = 0;
 
     /// modify rhs doue to static condensation.
     /// -A_bi A_ii^{-1} 
     /// stored only for non-symmetric biforms
-    virtual BaseMatrix & GetHarmonicExtensionTrans () const = 0;
+    virtual shared_ptr<BaseMatrix> GetHarmonicExtensionTrans () const = 0;
 
     /// returns inverse of A_ii
-    virtual BaseMatrix & GetInnerSolve () const = 0;
+    virtual shared_ptr<BaseMatrix> GetInnerSolve () const = 0;
 
     /// returns A_ii
-    virtual BaseMatrix & GetInnerMatrix () const = 0;
+    virtual shared_ptr<BaseMatrix> GetInnerMatrix () const = 0;
 
     /// is there a low-order biform ?
     bool HasLowOrderBilinearForm () const { return low_order_bilinear_form != NULL; }
@@ -384,10 +390,10 @@ namespace ngcomp
   {
   protected:
 
-    ElementByElementMatrix<SCAL> * harmonicext = NULL;
-    BaseMatrix * harmonicexttrans = NULL;
-    ElementByElementMatrix<SCAL> * innersolve = NULL;
-    ElementByElementMatrix<SCAL> * innermatrix = NULL;
+    shared_ptr<ElementByElementMatrix<SCAL>> harmonicext; //  = NULL;
+    shared_ptr<BaseMatrix> harmonicexttrans; //  = NULL;
+    shared_ptr<ElementByElementMatrix<SCAL>> innersolve; //  = NULL;
+    shared_ptr<ElementByElementMatrix<SCAL>> innermatrix; //  = NULL;
 
         
   public:
@@ -423,19 +429,19 @@ namespace ngcomp
 
     ///
     void AddMatrix1 (SCAL val, const BaseVector & x,
-		     BaseVector & y, LocalHeap & lh) const;
+                    BaseVector & y, LocalHeap & lh) const;
 
     virtual void AddMatrix (double val, const BaseVector & x,
-			    BaseVector & y, LocalHeap & lh) const
+                           BaseVector & y, LocalHeap & lh) const
     {
       AddMatrix1 (val, x, y, lh);
     }
 
     virtual void AddMatrixTP (SCAL val, const BaseVector & x,
-			    BaseVector & y, LocalHeap & lh) const;
-                
+                             BaseVector & y, LocalHeap & lh) const;
+
     virtual void AddMatrix (Complex val, const BaseVector & x,
-			    BaseVector & y, LocalHeap & lh) const
+                           BaseVector & y, LocalHeap & lh) const
     {
       AddMatrix1 (ConvertTo<SCAL> (val), x, y, lh);
     }
@@ -489,6 +495,7 @@ namespace ngcomp
 				   ElementId id, 
 				   LocalHeap & lh) = 0;
 
+    /*
     virtual void ApplyElementMatrix(const BaseVector & x,
 				    BaseVector & y,
 				    const SCAL & val,
@@ -500,6 +507,7 @@ namespace ngcomp
 				    LocalHeap & lh,
 				    const FiniteElement * fel,
 				    const SpecialElement * sel = NULL) const;
+    */
     // { cerr << "ApplyElementMatrix called for baseclass" << endl;}
 
     virtual void AddDiagElementMatrix (const Array<int> & dnums1,
@@ -508,24 +516,24 @@ namespace ngcomp
 				       LocalHeap & lh);
 
 
-    BaseMatrix & GetHarmonicExtension () const 
+    shared_ptr<BaseMatrix> GetHarmonicExtension () const 
     { 
-      return *harmonicext; 
+      return harmonicext; 
     }
     ///  
-    BaseMatrix & GetHarmonicExtensionTrans () const
+    shared_ptr<BaseMatrix> GetHarmonicExtensionTrans () const
     { 
-      return *harmonicexttrans; 
+      return harmonicexttrans; 
     }
     ///  
-    BaseMatrix & GetInnerSolve () const
+    shared_ptr<BaseMatrix> GetInnerSolve () const
     { 
-      return *innersolve; 
+      return innersolve; 
     }
     ///  
-    BaseMatrix & GetInnerMatrix () const
+    shared_ptr<BaseMatrix> GetInnerMatrix () const
     { 
-      return *innermatrix; 
+      return innermatrix; 
     }
 
     /*
@@ -717,6 +725,7 @@ namespace ngcomp
 				       const FlatVector<TSCAL> & diag,
 				       bool inner_element, int elnr,
 				       LocalHeap & lh);
+    /*
     virtual void ApplyElementMatrix(const BaseVector & x,
 				    BaseVector & y,
 				    const TSCAL & val,
@@ -728,6 +737,7 @@ namespace ngcomp
 				    LocalHeap & lh,
 				    const FiniteElement * fel,
 				    const SpecialElement * sel = NULL) const;
+    */
   };
 
 
@@ -769,14 +779,14 @@ namespace ngcomp
 					   BaseVector & y) const 
     { throw Exception ("comp-bf - AddMatrix is illegal"); }
 
-    virtual BaseMatrix & GetHarmonicExtension () const 
+    virtual shared_ptr<BaseMatrix> GetHarmonicExtension () const 
     { throw Exception ("comp-bf - GetHarmonicExt is illegal"); }
 
-    virtual BaseMatrix & GetHarmonicExtensionTrans () const
+    virtual shared_ptr<BaseMatrix> GetHarmonicExtensionTrans () const
     { throw Exception ("comp-bf - GetHarmonicExtTrans is illegal"); } 
-    virtual BaseMatrix & GetInnerSolve () const 
+    virtual shared_ptr<BaseMatrix> GetInnerSolve () const 
     { throw Exception ("comp-bf - GetInnerSolve is illegal"); } 
-    virtual BaseMatrix & GetInnerMatrix () const
+    virtual shared_ptr<BaseMatrix> GetInnerMatrix () const
     { throw Exception ("comp-bf - GetInnerMatrix is illegal"); } 
     virtual void ComputeInternal (BaseVector & u, const BaseVector & f, LocalHeap & lh) const
     { throw Exception ("comp-bf - ComputeInternal is illegal"); } 

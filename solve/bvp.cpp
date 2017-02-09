@@ -767,7 +767,7 @@ namespace ngsolve
 using namespace ngsolve;
 void ExportBVP(py::module &m)
 {
-  cout << "exporting bvp numproc" << endl;
+  // cout << "exporting bvp numproc" << endl;
 
   m.def ("BVP", FunctionPointer
            ([](shared_ptr<PDE> pde,

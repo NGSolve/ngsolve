@@ -62,11 +62,11 @@ namespace ngfem
     }
     
     virtual void CalcFacetMatrix (const FiniteElement & volumefel1, int LocalFacetNr1,
-			 const ElementTransformation & eltrans1, FlatArray<int> & ElVertices1,
-			 const FiniteElement & volumefel2, int LocalFacetNr2,
-			 const ElementTransformation & eltrans2, FlatArray<int> & ElVertices2,
-                         FlatMatrix<double> & elmat,
-                         LocalHeap & lh) const
+                                  const ElementTransformation & eltrans1, FlatArray<int> & ElVertices1,
+                                  const FiniteElement & volumefel2, int LocalFacetNr2,
+                                  const ElementTransformation & eltrans2, FlatArray<int> & ElVertices2,
+                                  FlatMatrix<double> elmat,
+                                  LocalHeap & lh) const
     {
       static int timer = NgProfiler::CreateTimer ("DGInnerFacet_LaplaceIntegrator");
 
@@ -311,8 +311,8 @@ namespace ngfem
 			 const ElementTransformation & eltrans1, FlatArray<int> & ElVertices1,
 			 const FiniteElement & volumefel2, int LocalFacetNr2,
 			 const ElementTransformation & eltrans2, FlatArray<int> & ElVertices2,
-                         FlatMatrix<double> & elmat,
-                         LocalHeap & lh) const
+                         FlatMatrix<double> elmat,
+                         LocalHeap & lh) const 
     {
       static int timer = NgProfiler::CreateTimer ("DGInnerFacet_ConvectionIntegrator");
       if (LocalFacetNr2==-1) throw Exception ("DGInnerFacet_ConvectionIntegrator: LocalFacetNr2==-1");
@@ -446,10 +446,10 @@ namespace ngfem
     }
     
     virtual void CalcFacetMatrix (const FiniteElement & volumefel, int LocalFacetNr,
-			 const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
- 			 const ElementTransformation & seltrans,
-                         FlatMatrix<double> & elmat,
-                         LocalHeap & lh) const
+                                  const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+                                  const ElementTransformation & seltrans, FlatArray<int> & SElVertices,
+                                  FlatMatrix<double> elmat,
+                                  LocalHeap & lh) const
     {
       static int timer = NgProfiler::CreateTimer ("DGBoundaryFacet_ConvectionIntegrator");
       NgProfiler::RegionTimer reg (timer);
@@ -547,10 +547,10 @@ namespace ngfem
     }
     
     virtual void CalcFacetMatrix (const FiniteElement & volumefel, int LocalFacetNr,
-			 const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
- 			 const ElementTransformation & seltrans,
-                         FlatMatrix<double> & elmat,
-                         LocalHeap & lh) const
+                                  const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+                                  const ElementTransformation & seltrans, FlatArray<int> & SElVertices,
+                                  FlatMatrix<double> elmat,
+                                  LocalHeap & lh) const
     {
       static int timer = NgProfiler::CreateTimer ("DGBoundaryFacet_LaplaceIntegrator boundary");
       NgProfiler::RegionTimer reg (timer);

@@ -1,0 +1,8 @@
+<CPackWiXPatch>
+  <CPackWiXFragment Id="CM_CP_netgen.bin.netgen.exe">
+    <Environment Id="pythonpath" Action="set" Part="first"
+      Name="PYTHONPATH" Value="[INSTALL_ROOT]lib\site-packages;."/>
+    <Environment Id="netgendir" Action="set"
+      Name="NETGENDIR" Value="[INSTALL_ROOT]bin"/>
+  </CPackWiXFragment>
+</CPackWiXPatch>

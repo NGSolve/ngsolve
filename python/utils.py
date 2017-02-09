@@ -34,6 +34,7 @@ def L2(mesh, **args):
     return FESpace("l2ho", mesh, **args)
 
 class HCurl(HCurlFunctionsWrap):
+    """ Create HCurl finite element space, derived from FESpace."""
     def __init__(self,mesh,*args,**kwargs):
         # fix for pickling
         #if mesh=="hcurlho":
@@ -53,6 +54,9 @@ def FacetFESpace(mesh, **args):
     """ Create Facet finite element space. """
     return FESpace("facet", mesh, **args)
 
+def HDivDiv(mesh, **args):
+    """ Create H(div-div) finite element space. """
+    return FESpace("hdivdiv", mesh, **args)
 
 
 def grad(func):
@@ -71,8 +75,11 @@ def curl(func):
     return func.Deriv()
 
 def div(func):
-    if func.derivname != "div":
-        raise Exception("cannot form div")
+    if func.derivname == "div":
+        return func.Deriv()
+    add = func.Operator("div")
+    if add:
+        return add        
     return func.Deriv()
 
 
@@ -113,4 +120,4 @@ def NgsUnpickler(*args, **kargs):
     return unpickler
 
 
-__all__ = ['x', 'y', 'z', 'Laplace', 'Mass', 'Source', 'Neumann', 'H1', 'FacetFESpace', 'HCurl', 'HDiv', 'L2', 'grad', 'curl', 'div','NgsPickler', 'NgsUnpickler', 'Mesh' ]
+__all__ = ['x', 'y', 'z', 'Laplace', 'Mass', 'Source', 'Neumann', 'H1', 'FacetFESpace', 'HCurl', 'HDiv', 'L2', 'HDivDiv', 'grad', 'curl', 'div','NgsPickler', 'NgsUnpickler', 'Mesh' ]

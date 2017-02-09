@@ -18,47 +18,38 @@ using std::ostringstream;
 
 void SetFlag(Flags &flags, string s, py::object value) 
 {
-  py::dict vdd(value);
-  if (vdd.check())
+  if (py::isinstance<py::dict>(value))
     {             
+      py::dict vdd(value);
       // call recursively to set dictionary
       for (auto item : vdd) {
         string name = item.first.cast<string>();
-        py::object val(item.second, true);
+        py::object val = py::reinterpret_borrow<py::object>(item.second);
         SetFlag(flags, name, val);
       }
       return;
     }
-  py::bool_ vb(value);
-  if (vb.check() && bool(vb))
+
+  if (py::isinstance<py::bool_>(value) && value.cast<bool>())
     flags.SetFlag(s);
 
-  py::float_ vd(value);
-  if (vd.check())
-    flags.SetFlag(s, double(vd));         
+  if (py::isinstance<py::float_>(value))
+    flags.SetFlag(s, value.cast<double>());
 
-  py::int_ vi(value);
-  if (vi.check())
-    flags.SetFlag(s, int(vi));         
+  if (py::isinstance<py::int_>(value))
+    flags.SetFlag(s, value.cast<int>());
 
+  if (py::isinstance<py::str>(value))
+    flags.SetFlag(s, value.cast<string>());
 
-  py::str vs(value);
-  if (vs.check())
-    flags.SetFlag(s, string(vs));
-
-  py::list vdl(value);
-  if (vdl.check())
+  if (py::isinstance<py::list>(value))
     {             
+      py::list vdl(value);
       if (py::len(vdl) > 0)
       {
-        py::float_ d0(vdl[0]);
-        py::int_ i0(vdl[0]);
-        py::str s0(vdl[0]);
-        if(d0.check())
+        if(py::CheckCast<double>(vdl[0]))
           flags.SetFlag(s, makeCArray<double>(vdl));
-        if(i0.check())
-          flags.SetFlag(s, makeCArray<double>(vdl));
-        if (s0.check())
+        if(py::isinstance<py::str>(vdl[0]))
           flags.SetFlag(s, makeCArray<string>(vdl));
       }
       else
@@ -70,19 +61,41 @@ void SetFlag(Flags &flags, string s, py::object value)
       }
     }
 
-  py::tuple vdt(value);
-  if (vdt.check())
+  if (py::isinstance<py::tuple>(value))
     {
-      py::float_ d0(vdt[0]);
-      py::int_ i0(vdl[0]);
-      py::str s0(vdt[0]);
-      if (d0.check())
+      py::tuple vdt(value);
+      if (py::isinstance<py::float_>(value))
         flags.SetFlag(s, makeCArray<double>(vdt));
-      if(i0.check())
+      if (py::isinstance<py::int_>(value))
         flags.SetFlag(s, makeCArray<double>(vdt));
-      if (s0.check())
+      if (py::isinstance<py::str>(value))
         flags.SetFlag(s, makeCArray<string>(vdt));
     }
+}
+
+const char* docu_string(const char* str)
+{
+  if(getenv("NETGEN_DOCUMENTATION_RST_FORMAT"))
+    return str;
+  std::string replacement(str);
+  bool replaced = false;
+  while(true)
+    {
+      auto start_pos = replacement.find(":any:`");
+      if(start_pos==std::string::npos)
+        break;
+      else
+        replaced = true;
+      auto rest = replacement.substr(start_pos+6); //first character after ":any:`"
+      auto end = rest.find("`");
+      replacement.replace(start_pos,end+7,rest.substr(0,end)); 
+    }
+  if(!replaced)
+    return replacement.c_str();
+  char * newchar = new char[replacement.size()+1];
+  std::copy(replacement.begin(),replacement.end(),newchar);
+  newchar[replacement.size()] = '\0';
+  return newchar;
 }
 
 void NGS_DLL_HEADER  ExportNgstd(py::module & m) {

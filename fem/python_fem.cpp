@@ -20,7 +20,7 @@ struct PythonCoefficientFunction : public CoefficientFunction {
   PythonCoefficientFunction() : CoefficientFunction(1,false) { ; }
 
     virtual double EvaluateXYZ (double x, double y, double z) const = 0;
-
+  
     py::list GetCoordinates(const BaseMappedIntegrationPoint &bip ) {
         double x[3]{0};
         int dim = bip.GetTransformation().SpaceDim();
@@ -113,29 +113,28 @@ PyCF MakeCoefficient (py::object val)
   py::extract<PyCF> ecf(val);
   if (ecf.check()) return ecf();
 
-  py::extract<double> ed(val);
-  if (ed.check()) 
-    return PyCF(make_shared<ConstantCoefficientFunction> (ed()));
+  if(py::CheckCast<double>(val))
+    return PyCF(make_shared<ConstantCoefficientFunction> (val.cast<double>()));
 
-  py::extract<Complex> ec(val);
-  if (ec.check()) 
-    return PyCF(make_shared<ConstantCoefficientFunctionC> (ec()));
+  if(py::CheckCast<Complex>(val)) {
+    return PyCF(make_shared<ConstantCoefficientFunctionC> (val.cast<Complex>()));
+  }
 
-  py::extract<py::list> el(val);
-  if (el.check())
+  if (py::isinstance<py::list>(val))
     {
-      Array<shared_ptr<CoefficientFunction>> cflist(py::len(el()));
+      py::list el(val);
+      Array<shared_ptr<CoefficientFunction>> cflist(py::len(el));
       for (int i : Range(cflist))
-        cflist[i] = MakeCoefficient(el()[i]).Get();
+        cflist[i] = MakeCoefficient(el[i]).Get();
       return PyCF(MakeDomainWiseCoefficientFunction(move(cflist)));
     }
 
-  py::extract<py::tuple> et(val);
-  if (et.check())
+  if (py::isinstance<py::tuple>(val))
     {
-      Array<shared_ptr<CoefficientFunction>> cflist(py::len(et()));
+      py::tuple et(val);
+      Array<shared_ptr<CoefficientFunction>> cflist(py::len(et));
       for (int i : Range(cflist))
-        cflist[i] = MakeCoefficient(et()[i]).Get();
+        cflist[i] = MakeCoefficient(et[i]).Get();
       return PyCF(MakeVectorialCoefficientFunction(move(cflist)));
     }
 
@@ -177,15 +176,74 @@ void ExportStdMathFunction(py::module &m, string name)
               if (py::extract<PyCF>(x).check())
                 {
                   auto coef = py::extract<PyCF>(x)();
-                  return py::cast(PyCF(UnaryOpCF(coef.Get(), func, func, FUNC::Name())));
+                  return py::cast(PyCF(UnaryOpCF(coef.Get(), func, /* func, */ FUNC::Name())));
                 }
               py::extract<double> ed(x);
               if (ed.check()) return py::cast(func(ed()));
               if (py::extract<Complex> (x).check())
                 return py::cast(func(py::extract<Complex> (x)()));
-              throw py::type_error ("can't compute math-function");
+              throw py::type_error (string("can't compute math-function, type = ")
+                                    + typeid(FUNC).name());
             });
 }
+
+
+namespace ngfem
+{
+  void ExportUnaryFunction2 (py::module & m, string name,
+                             std::function<shared_ptr<CoefficientFunction>(shared_ptr<CoefficientFunction>)> creator,
+                             std::function<double(double)> func_real,
+                             std::function<Complex(Complex)> func_complex)
+  {
+    m.def (name.c_str(),
+           [creator, func_real, func_complex] (py::object x) -> py::object
+           {
+             if (py::extract<PyCF>(x).check())
+               {
+                 auto coef = py::extract<PyCF>(x)();
+                 return py::cast(PyCF(creator(coef.Get())));
+             }
+             
+             py::extract<double> ed(x);
+             if (ed.check()) return py::cast(func_real(ed()));
+             if (py::extract<Complex> (x).check())
+               return py::cast(func_complex(py::extract<Complex> (x)()));
+             
+             throw py::type_error ("can't compute unary math-function");
+           });         
+  }
+
+
+  void ExportBinaryFunction2 (py::module & m, string name,
+                              std::function<shared_ptr<CoefficientFunction>(shared_ptr<CoefficientFunction>,
+                                                                            shared_ptr<CoefficientFunction>)> creator,
+                              std::function<double(double,double)> func_real,
+                              std::function<Complex(Complex,Complex)> func_complex)
+  {
+    m.def (name.c_str(),
+           [creator, func_real, func_complex] (py::object x, py::object y) -> py::object
+           {
+             if (py::extract<PyCF>(x).check() && py::extract<PyCF>(y).check())
+               {
+                 auto coefx = py::extract<PyCF>(x)();
+                 auto coefy = py::extract<PyCF>(y)();
+                 return py::cast(PyCF(creator(coefx.Get(), coefy.Get())));
+             }
+             
+             py::extract<double> edx(x);
+             py::extract<double> edy(y);
+             if (edx.check() && edy.check()) return py::cast(func_real(edx(), edy()));
+             if (py::extract<Complex> (x).check() && py::extract<Complex> (y).check())
+               return py::cast(func_complex(py::extract<Complex> (x)(), py::extract<Complex> (y)()));
+             
+             throw py::type_error ("can't compute binary math-function");
+           });         
+  }
+
+
+}
+                          
+
 
 template <typename FUNC>
 void ExportStdMathFunction2(py::module &m, string name)
@@ -198,14 +256,14 @@ void ExportStdMathFunction2(py::module &m, string name)
              {
                auto cx = MakeCoefficient(x);
                auto cy = MakeCoefficient(y);
-               return py::cast(PyCF(BinaryOpCF(cx.Get(), cy.Get(), func, func, func, func,
+               return py::cast(PyCF(BinaryOpCF(cx.Get(), cy.Get(), func,
                                                [](bool a, bool b) { return a||b; }, 'X' /* FUNC::Name() */)));
              }
            py::extract<double> dx(x), dy(y);
            if (dx.check() && dy.check()) return py::cast(func(dx(), dy()));
-           // py::extract<Complex> cx(x), cy(y);
-           // if (cx.check() && cy.check()) return py::cast(func(cx(), cy()));
-           throw py::type_error ("can't compute math-function");
+           py::extract<Complex> cx(x), cy(y);
+           if (cx.check() && cy.check()) return py::cast(func(cx(), cy()));
+           throw py::type_error (string("can't compute binary math-function")+typeid(FUNC).name());
          });
 }
 
@@ -262,19 +320,18 @@ struct GenericConj {
 
 struct GenericATan2 {
   double operator() (double x, double y) const { return atan2(x,y); }
-  double operator() (double x, double y, double & dx, double & dy) const { throw Exception ("atan2 deriv not available");  }
-  double operator() (double x, double y, double & ddx, double & dxdy, double & ddy ) const
-  { throw Exception ("atan2 dderiv not available");  }
-  template <typename T1, typename T2> T1 operator() (T1 x, T2 y) const { throw Exception ("atan2 not available");  }
+  template <typename T1, typename T2> T1 operator() (T1 x, T2 y) const
+  { throw Exception (string("atan2 not available for type ")+typeid(T1).name());  }
   static string Name() { return "atan2"; }
 };
 
 struct GenericPow {
   double operator() (double x, double y) const { return pow(x,y); }
-  double operator() (double x, double y, double & dx, double & dy) const { throw Exception ("pow deriv not available");  }
-  double operator() (double x, double y, double & ddx, double & dxdy, double & ddy ) const
-  { throw Exception ("pow dderiv not available");  }
-  template <typename T1, typename T2> T1 operator() (T1 x, T2 y) const { throw Exception ("pow not available");  }
+  Complex operator() (Complex x, Complex y) const { return pow(x,y); }
+  template <typename T1, typename T2> T1 operator() (T1 x, T2 y) const
+  {
+    throw Exception (string("pow not available for type ")+typeid(T1).name());
+  }    
   static string Name() { return "pow"; }
 };
 
@@ -314,35 +371,40 @@ struct GenericPow {
        else
        {
          int facet = tpir->GetFacet();
+         auto & mir = *tpir->GetIRs()[facet];
          int dim = tpir->GetIRs()[facet]->operator[](0).Dim();
          int ii = 0;
          res = 0.0;
          if(facet == 0)
+         {
            if(dim == 1)
              for(int i=0;i<tpir->GetIRs()[0]->Size();i++)
                for(int j=0;j<tpir->GetIRs()[1]->Size();j++)
-                 res.Row(ii++).Range(0,dim) = static_cast<const DimMappedIntegrationPoint<1>&>(tpir->GetIRs()[facet]->operator[](i)).GetNV();//res1.Row(i).Range(0,dim);
+                 res.Row(ii++).Range(0,dim) = static_cast<const DimMappedIntegrationPoint<1>&>(mir[i]).GetNV();//res1.Row(i).Range(0,dim);
            if(dim == 2)
              for(int i=0;i<tpir->GetIRs()[0]->Size();i++)
                for(int j=0;j<tpir->GetIRs()[1]->Size();j++)          
-                 res.Row(ii++).Range(0,dim) = static_cast<const DimMappedIntegrationPoint<2>&>(tpir->GetIRs()[facet]->operator[](i)).GetNV();//res1.Row(i).Range(0,dim);
+                 res.Row(ii++).Range(0,dim) = static_cast<const DimMappedIntegrationPoint<2>&>(mir[i]).GetNV();//res1.Row(i).Range(0,dim);
            if(dim == 3)
              for(int i=0;i<tpir->GetIRs()[0]->Size();i++)
                for(int j=0;j<tpir->GetIRs()[1]->Size();j++)          
-                 res.Row(ii++).Range(0,dim) = static_cast<const DimMappedIntegrationPoint<3>&>(tpir->GetIRs()[facet]->operator[](i)).GetNV();//res1.Row(i).Range(0,dim);
+                 res.Row(ii++).Range(0,dim) = static_cast<const DimMappedIntegrationPoint<3>&>(mir[i]).GetNV();//res1.Row(i).Range(0,dim);
+         }
          else
+         {
            if(dim == 1)
              for(int i=0;i<tpir->GetIRs()[0]->Size();i++)
                for(int j=0;j<tpir->GetIRs()[1]->Size();j++)
-                 res.Row(ii++).Range(D-dim,D) = static_cast<const DimMappedIntegrationPoint<1>&>(tpir->GetIRs()[facet]->operator[](j)).GetNV();//res1.Row(i).Range(0,dim);
+                 res.Row(ii++).Range(D-dim,D) = static_cast<const DimMappedIntegrationPoint<1>&>(mir[j]).GetNV();//res1.Row(i).Range(0,dim);
            if(dim == 2)
              for(int i=0;i<tpir->GetIRs()[0]->Size();i++)
                for(int j=0;j<tpir->GetIRs()[1]->Size();j++)          
-                 res.Row(ii++).Range(D-dim,D) = static_cast<const DimMappedIntegrationPoint<2>&>(tpir->GetIRs()[facet]->operator[](j)).GetNV();//res1.Row(i).Range(0,dim);
+                 res.Row(ii++).Range(D-dim,D) = static_cast<const DimMappedIntegrationPoint<2>&>(mir[j]).GetNV();//res1.Row(i).Range(0,dim);
            if(dim == 3)
              for(int i=0;i<tpir->GetIRs()[0]->Size();i++)
                for(int j=0;j<tpir->GetIRs()[1]->Size();j++)          
-                 res.Row(ii++).Range(D-dim,D) = static_cast<const DimMappedIntegrationPoint<3>&>(tpir->GetIRs()[facet]->operator[](j)).GetNV();//res1.Row(i).Range(0,dim);
+                 res.Row(ii++).Range(D-dim,D) = static_cast<const DimMappedIntegrationPoint<3>&>(mir[j]).GetNV();//res1.Row(i).Range(0,dim);
+         }
       }
     }
 
@@ -410,36 +472,28 @@ class CoordCoefficientFunction : public T_CoefficientFunction<CoordCoefficientFu
     using BASE::Evaluate;
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
     {
-      return ip.GetPoint()(dir);
+      if (!ip.IsComplex())
+        return ip.GetPoint()(dir);
+      else
+        return ip.GetPointComplex()(dir).real();
     }
     virtual void Evaluate(const BaseMappedIntegrationRule & ir,
                           FlatMatrix<> result) const
     {
-       const TPMappedIntegrationRule * tpmir = dynamic_cast<const TPMappedIntegrationRule *>(&ir);
-       if(!tpmir)
-       {
-           result.Col(0) = ir.GetPoints().Col(dir);
-           return;
-       }
-       if(dir<=2)
-       {
-         int ii = 0;
-         for(int i=0;i<tpmir->GetIRs()[0]->Size();i++)
-           for(int j=0;j<tpmir->GetIRs()[1]->Size();j++)
-             result(ii++,0) = tpmir->GetIRs()[0]->GetPoints().Col(dir)(i);
-       }
-       else
-       {
-         // int ii = 0;
-         // for(int i=0;i<tpmir->GetIRs()[0]->Size();i++)
-           // for(int j=0;j<tpmir->GetIRs()[1]->Size();j++)
-             // result(ii++,0) = tpmir->GetIRs()[1]->GetPoints().Col(dir-3)(j);
- 
-             //int ii = 0;
-         for(int i=0;i<tpmir->GetIRs()[0]->Size();i++)
-           //for(int j=0;j<tpmir->GetIRs()[1]->Size();j++)
-             result.Col(0).Rows(i*tpmir->GetIRs()[1]->Size(),(i+1)*tpmir->GetIRs()[1]->Size()) = tpmir->GetIRs()[1]->GetPoints().Col(dir-3);
-      }
+      const TPMappedIntegrationRule * tpmir = dynamic_cast<const TPMappedIntegrationRule *>(&ir);
+      if(!tpmir)
+        {
+          result.Col(0) = ir.GetPoints().Col(dir);
+          return;
+        }
+      if(dir<=2)
+        {
+          for(int i=0;i<tpmir->GetIRs()[0]->Size();i++)
+            result.Rows(i*tpmir->GetIRs()[1]->Size(),(i+1)*tpmir->GetIRs()[1]->Size() ) = tpmir->GetIRs()[0]->GetPoints().Col(dir)(i);
+          return;
+        }
+      for(int i=0;i<tpmir->GetIRs()[0]->Size();i++)
+        result.Rows(i*tpmir->GetIRs()[1]->Size(),(i+1)*tpmir->GetIRs()[1]->Size()) = tpmir->GetIRs()[1]->GetPoints().Col(dir-3);
     }
     virtual void Evaluate(const BaseMappedIntegrationRule & ir,
 			  FlatMatrix<Complex> result) const
@@ -542,8 +596,14 @@ void ExportCoefficientFunction(py::module &m)
          [] (PyCF self) { return self->Dimension(); } ,
                   "number of components of CF")
 
+    /*
     .def_property_readonly("dims",
          [] (PyCF self) { return self->Dimensions(); } ,
+                  "shape of CF:  (dim) for vector, (h,w) for matrix")    
+    */
+    .def_property("dims",
+                  [] (PyCF self) { return self->Dimensions(); } ,
+                  [] (PyCF self, py::tuple tup) { self->SetDimensions(makeCArray<int>(tup)); } ,
                   "shape of CF:  (dim) for vector, (h,w) for matrix")    
     
     .def("__getitem__", FunctionPointer( [](PyCF self, int comp) -> PyCF
@@ -601,6 +661,14 @@ void ExportCoefficientFunction(py::module &m)
              return c1.Get()*c2.Get();
            } ))
 
+    .def ("__pow__", FunctionPointer 
+          ([] (PyCF c1, PyCF c2) -> PyCF
+           {
+             GenericPow func;
+             return BinaryOpCF(c1.Get(), c2.Get(), func,
+                               [](bool a, bool b) { return a||b; }, 'X' /* FUNC::Name() */);
+           } ))
+
     .def ("InnerProduct", FunctionPointer
           ([] (PyCF c1, PyCF c2) -> PyCF
            { 
@@ -609,20 +677,22 @@ void ExportCoefficientFunction(py::module &m)
           
     .def("Norm", FunctionPointer ( [](PyCF x) -> PyCF { return NormCF(x.Get()); }))
 
-    /*
-      // it's using the complex functions anyway ...
+
+    // it's using the complex functions anyway ...
+    // it seems to take the double-version now
     .def ("__mul__", FunctionPointer 
           ([] (PyCF coef, double val) -> PyCF
-           { 
-             return make_shared<ScaleCoefficientFunction> (val, coef); 
+           {
+             return val * coef.Get(); 
            }))
     .def ("__rmul__", FunctionPointer 
           ([] (PyCF coef, double val) -> PyCF
-           { return make_shared<ScaleCoefficientFunction> (val, coef); }))
-    */
+           { return val * coef.Get(); }
+           ))
+
     .def ("__mul__", FunctionPointer 
           ([] (PyCF coef, Complex val) -> PyCF
-           { 
+           {
              if (val.imag() == 0)
                return val.real() * coef.Get();
              else
@@ -644,7 +714,12 @@ void ExportCoefficientFunction(py::module &m)
 
     .def ("__truediv__", FunctionPointer 
           ([] (PyCF coef, double val) -> PyCF
-           { return coef.Get() / make_shared<ConstantCoefficientFunction>(val); }))
+           // { return coef.Get() * make_shared<ConstantCoefficientFunction>(1/val); }))
+           { return (1/val) * coef.Get(); }))
+
+    .def ("__truediv__", FunctionPointer 
+          ([] (PyCF coef, Complex val) -> PyCF
+           { return (1.0/val) * coef.Get(); }))
 
     .def ("__rtruediv__", FunctionPointer 
           ([] (PyCF coef, double val) -> PyCF
@@ -753,13 +828,13 @@ void ExportCoefficientFunction(py::module &m)
           return det/ip.GetMeasure();
         }
       
-      switch (ip.Dim())
+      switch (ip.Dim() - int(ip.VB()))
         {
-        case 1: return fabs (static_cast<const MappedIntegrationPoint<1,1>&> (ip).GetJacobiDet());
-        case 2: return pow (fabs (static_cast<const MappedIntegrationPoint<2,2>&> (ip).GetJacobiDet()), 1.0/2);
-        case 3:
-        default:
-          return pow (fabs (static_cast<const MappedIntegrationPoint<3,3>&> (ip).GetJacobiDet()), 1.0/3);
+        case 0: throw Exception ("don't have mesh-size on 0-D boundary");
+        case 1: return fabs (static_cast<const ScalMappedIntegrationPoint<>&> (ip).GetJacobiDet());
+        case 2: return pow (fabs (static_cast<const ScalMappedIntegrationPoint<>&> (ip).GetJacobiDet()), 1.0/2);
+        case 3: default:
+          return pow (fabs (static_cast<const ScalMappedIntegrationPoint<>&> (ip).GetJacobiDet()), 1.0/3);
         }
       // return pow(ip.GetMeasure(), 1.0/(ip.Dim());
     }
@@ -855,7 +930,7 @@ void ExportCoefficientFunction(py::module &m)
     .def("__call__", FunctionPointer
          ([](shared_ptr<BSpline> sp, PyCF coef) -> PyCF
           {
-            return UnaryOpCF (coef.Get(), GenericBSpline(sp), GenericBSpline(sp));
+            return UnaryOpCF (coef.Get(), GenericBSpline(sp) /* , GenericBSpline(sp) */);
           }))
     .def("Integrate", 
          FunctionPointer([](const BSpline & sp) { return make_shared<BSpline>(sp.Integrate()); }))
@@ -919,6 +994,8 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
     .def_property_readonly("dim", &FiniteElement::Dim, "spatial dimension of element")    
     .def_property_readonly("classname", &FiniteElement::ClassName, "name of element family")  
     .def("__str__", &ToString<FiniteElement>)
+    // .def("__timing__", [] (FiniteElement & fel) { return py::cast(fel.Timing()); })
+    .def("__timing__", &FiniteElement::Timing)
     ;
 
   py::class_<BaseScalarFiniteElement, shared_ptr<BaseScalarFiniteElement>, 
@@ -1012,6 +1089,23 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
                              new (instance) IntegrationRule (et, order);
                            },
           py::arg("element type"), py::arg("order"))
+    
+    .def("__init__",
+         [](IntegrationRule *instance, py::list points, py::list weights)
+         {
+           IntegrationRule * ir = new (instance) IntegrationRule ();
+           for (size_t i = 0; i < len(points); i++)
+             {
+               py::object pnt = points[i];
+               IntegrationPoint ip;
+               for (int j = 0; j < len(pnt); j++)
+                 ip(j) = py::extract<double> (py::tuple(pnt)[j])();
+               ip.SetWeight(py::extract<double> (weights[i])());
+               ir -> Append (ip);
+             }
+         },
+         py::arg("points"), py::arg("weights"))
+    .def("__str__", &ToString<IntegrationRule>)
     .def("__getitem__", [](IntegrationRule & ir, int nr)
                                         {
                                           if (nr < 0 || nr >= ir.Size())
@@ -1022,6 +1116,7 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
          ([](IntegrationRule & ir, py::object func) -> py::object
           {
             py::object sum;
+            bool first = true;
             for (const IntegrationPoint & ip : ir)
               {
                 py::object val;
@@ -1037,12 +1132,12 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
                     throw Exception("integration rule with illegal dimension");
                   }
 
-                  // TODO: fix!!!
-//                 val = val * py::cast((double)ip.Weight());
-//                 if (sum == DummyArgument())
-//                   sum = val;
-//                 else
-//                   sum = sum+py::cast(val);
+                val = val.attr("__mul__")(py::cast((double)ip.Weight()));
+                if (first)
+                  sum = val;
+                else
+                  sum = sum.attr("__add__")(val);
+                first = false;
               }
             return sum;
           }))
@@ -1053,8 +1148,16 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
          [] (const BaseMappedIntegrationPoint & bmip)
           {
             stringstream str;
-            str << "p = " << bmip.GetPoint() << endl;
-            str << "jac = " << bmip.GetJacobian() << endl;
+            if (bmip.IsComplex())
+            {
+              str << "p = " << bmip.GetPointComplex() << endl;
+              str << "jac = " << bmip.GetJacobianComplex() << endl;
+            }
+            else 
+            {
+              str << "p = " << bmip.GetPoint() << endl;
+              str << "jac = " << bmip.GetJacobian() << endl;
+            }
             /*
             switch (bmip.Dim())
               {
@@ -1124,17 +1227,17 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
     .def_property_readonly("spacedim", &ElementTransformation::SpaceDim)
     .def_property_readonly("elementid", &ElementTransformation::GetElementId)
     .def ("__call__", FunctionPointer
-          ([] (ElementTransformation & self, double x, double y, double z)
+          ([] (PyElementTransformation & self, double x, double y, double z)
            {
              
-             return &self(IntegrationPoint(x,y,z), global_alloc);
+             return &(*self)(IntegrationPoint(x,y,z), global_alloc);
            }),
           py::arg("x"), py::arg("y")=0, py::arg("z")=0,
           py::return_value_policy::reference)
     .def ("__call__", FunctionPointer
-          ([] (ElementTransformation & self, IntegrationPoint & ip)
+          ([] (PyElementTransformation & self, IntegrationPoint & ip)
            {
-             return &self(ip, global_alloc);
+             return &(*self)(ip, global_alloc);
            }),
           py::arg("ip"),
           py::return_value_policy::reference)
@@ -1214,7 +1317,7 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
 
     .def("CalcElementMatrix",
          FunctionPointer([] (PyBFI self,
-                             const FiniteElement & fe, const ElementTransformation & trafo,
+                             const FiniteElement & fe, const PyElementTransformation & trafo,
                              int heapsize)
                          {
                            Matrix<> mat(fe.GetNDof());
@@ -1223,7 +1326,7 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
                                try
                                  {
                                    LocalHeap lh(heapsize);
-                                   self->CalcElementMatrix (fe, trafo, mat, lh);
+                                   self->CalcElementMatrix (fe, *trafo, mat, lh);
                                    return mat;
                                  }
                                catch (LocalHeapOverflow ex)
@@ -1322,10 +1425,10 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
          py::return_value_policy::reference)
 
     .def("CalcElementVector", 
-         [] (PyLFI  self, const FiniteElement & fe, const ElementTransformation & trafo, FlatVector<double> v, LocalHeap &lh) { self->CalcElementVector(fe, trafo, v, lh); } )
+         [] (PyLFI  self, const FiniteElement & fe, const PyElementTransformation & trafo, FlatVector<double> v, LocalHeap &lh) { self->CalcElementVector(fe, *trafo, v, lh); } )
     .def("CalcElementVector",
          [] (PyLFI  self,
-                             const FiniteElement & fe, const ElementTransformation & trafo,
+                             const FiniteElement & fe, const PyElementTransformation & trafo,
                              int heapsize)
                          {
                            Vector<> vec(fe.GetNDof());
@@ -1334,7 +1437,7 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
                                try
                                  {
                                    LocalHeap lh(heapsize);
-                                   self->CalcElementVector (fe, trafo, vec, lh);
+                                   self->CalcElementVector (fe, *trafo, vec, lh);
                                    return vec;
                                  }
                                catch (LocalHeapOverflow ex)

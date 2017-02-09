@@ -195,7 +195,7 @@ namespace ngstd
   /// hash value of 3 int
   INLINE int HashValue (const INT<3> & ind, int size) 
   {
-    INT<2,long> lind = ind;
+    INT<3,long> lind = ind;
     return (113*lind[0]+59*lind[1]+lind[2]) % size;
   }
 
@@ -367,6 +367,11 @@ namespace ngstd
 	  cont.Add (bnr, T(0));
           return cont[bnr][cont[bnr].Size()-1];
         }
+    }
+
+    const T & operator[] (T_HASH ahash) const
+    {
+      return Get(ahash);
     }
 
     class Iterator

@@ -55,15 +55,15 @@ namespace ngstd
           return i;
       return -1;
     }
-    // INLINE auto operator[] (int i) -> decltype (Spec()[i]) { return Spec()[i]; }
-    // INLINE auto operator[] (int i) const -> decltype (T::operator[](i)) { return Spec()[i]; }
+    INLINE auto operator[] (size_t i) { return Spec()[i]; }
+    INLINE auto operator[] (size_t i) const { return Spec()[i]; }
   };
 
 
   template <typename T>
   inline ostream & operator<< (ostream & ost, const BaseArrayObject<T> & array)
   {
-    for (auto i : array.Range())
+    for (auto i : Range(array.Size()))
       ost << i << ":" << array.Spec()[i] << endl;
     return ost;
   }
@@ -335,7 +335,7 @@ namespace ngstd
 
     /// copy constructor allows size-type conversion 
     INLINE FlatArray (const FlatArray<T> & a2)  
-      : size(a2.Size()), data(&a2[0]) { ; } 
+      : size(a2.Size()), data(a2.data) { ; } 
 
     /// provide size and memory
     INLINE FlatArray (size_t asize, T * adata) 
@@ -1020,18 +1020,18 @@ namespace ngstd
   { return tup.Head().Size()+ArraySize(tup.Tail()); }
 
   
-  template <typename ... ARGS>
-  void StoreToArray (FlatArray<int> a, Tuple<ARGS...> tup) { ; }
+  template <typename T, typename ... ARGS>
+  void StoreToArray (FlatArray<T> a, Tuple<ARGS...> tup) { ; }
   
-  template <typename ... ARGS>
-  void StoreToArray (FlatArray<int> a, Tuple<int,ARGS...> tup)
+  template <typename T, typename ... ARGS>
+  void StoreToArray (FlatArray<T> a, Tuple<int,ARGS...> tup)
   {
     a[0] = tup.Head();
     StoreToArray (a.Range(1, a.Size()), tup.Tail());
   }
   
-  template <typename ... ARGS>
-  void StoreToArray (FlatArray<int> a, Tuple<IntRange,ARGS...> tup)
+  template <typename T, typename ... ARGS>
+  void StoreToArray (FlatArray<T> a, Tuple<IntRange,ARGS...> tup)
   {
     IntRange r = tup.Head();
     a.Range(0,r.Size()) = r;
@@ -1064,15 +1064,15 @@ namespace ngstd
   */
   
 
-  template <typename T2>
-  inline Array<int> & operator+= (Array<int> & array, const BaseArrayObject<T2> & a2)
+  template <typename T, typename T2>
+  inline Array<T> & operator+= (Array<T> & array, const BaseArrayObject<T2> & a2)
   {
-    int oldsize = array.Size();
-    int s = a2.Spec().Size();
+    size_t oldsize = array.Size();
+    size_t s = a2.Spec().Size();
     
     array.SetSize (oldsize+s);
 
-    for (int i = 0; i < s; i++)
+    for (size_t i = 0; i < s; i++)
       array[oldsize+i] = a2.Spec()[i];
 
     return array;
@@ -1086,8 +1086,8 @@ namespace ngstd
   inline void BubbleSort (const FlatArray<T> & data)
   {
     T hv;
-    for (int i = 0; i < data.Size(); i++)
-      for (int j = i+1; j < data.Size(); j++)
+    for (size_t i = 0; i < data.Size(); i++)
+      for (size_t j = i+1; j < data.Size(); j++)
         if (data[i] > data[j])
           {
             hv = data[i];
@@ -1100,8 +1100,8 @@ namespace ngstd
   template <class T, class S>
   inline void BubbleSort (FlatArray<T> & data, FlatArray<S> & slave)
   {
-    for (int i = 0; i < data.Size(); i++)
-      for (int j = i+1; j < data.Size(); j++)
+    for (size_t i = 0; i < data.Size(); i++)
+      for (size_t j = i+1; j < data.Size(); j++)
 	if (data[i] > data[j])
 	  {
 	    T hv = data[i];

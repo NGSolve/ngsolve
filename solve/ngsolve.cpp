@@ -609,7 +609,7 @@ void * SolveBVP(void *)
   catch (exception & e)
     {
       cerr << "\n\ncaught exception in SolveBVP:\n "
-	   << typeid(e).name() << endl;
+	   << typeid(e).name() << ": " << e.what() << endl;
       pde->SetGood (false);
     }
 #ifdef _MSC_VER
@@ -1241,8 +1241,6 @@ int NGSolve_Init (Tcl_Interp * interp)
     TaskManager::SetNumThreads (1);
 #endif
   cout << "Running parallel using " << TaskManager::GetMaxThreads() << " thread(s)" << endl;
-  cout << "(number of threads can be changed by setting OMP_NUM_THREADS)" << endl;
-  
 
 #ifdef VTRACE
   cout << "Vampirtrace - enabled" << endl;

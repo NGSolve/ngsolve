@@ -7,10 +7,16 @@ namespace ngstd
 
 #if defined(__AVX__)
 
+#ifdef WIN32
   // MSVC needs a char*
-  template<int HINT> INLINE void Prefetch (void * p) { _mm_prefetch (p, _MM_HINT_T2); }
-  template <> INLINE void Prefetch<0> (void * p) { _mm_prefetch (p, _MM_HINT_T0); }
-  template <> INLINE void Prefetch<1> (void * p) { _mm_prefetch (p, _MM_HINT_T1); }
+  typedef char * prefetch_ptr_t;
+#else
+  typedef void * prefetch_ptr_t;
+#endif
+
+  template<int HINT> INLINE void Prefetch (void * p) { _mm_prefetch (reinterpret_cast<prefetch_ptr_t>(p), _MM_HINT_T2); }
+  template <> INLINE void Prefetch<0> (void * p) { _mm_prefetch (reinterpret_cast<prefetch_ptr_t>(p), _MM_HINT_T0); }
+  template <> INLINE void Prefetch<1> (void * p) { _mm_prefetch (reinterpret_cast<prefetch_ptr_t>(p), _MM_HINT_T1); }
   
 #endif
 

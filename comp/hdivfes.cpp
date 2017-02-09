@@ -48,8 +48,8 @@ namespace ngcomp
     
     order = 1; // he: see above constructor!
         
-    trig    = new FE_RTTrig0;
-    segm    = new HDivNormalSegm0;
+    // trig    = new FE_RTTrig0;
+    // segm    = new HDivNormalSegm0;
 
     SetDummyFE<HDivDummyFE> ();
     
@@ -95,6 +95,15 @@ namespace ngcomp
     // FinalizeUpdate (lh);
   }
 
+  FiniteElement & RaviartThomasFESpace :: GetFE (ElementId ei, Allocator & lh) const
+  {
+    switch(ma->GetElType(ei))
+      {
+      case ET_TRIG: return *(new (lh) FE_RTTrig0);
+      case ET_SEGM: return *(new (lh) HDivNormalSegm0);
+      default: throw Exception ("Element type not available for RaviartThomasFESpace::GetFE");
+      }
+  }
   
   size_t RaviartThomasFESpace :: GetNDof () const throw()
   {
@@ -163,11 +172,12 @@ namespace ngcomp
   */
   
   void RaviartThomasFESpace :: 
-  VTransformMR (int elnr, VorB vb,
-		const SliceMatrix<double> & mat, TRANSFORM_TYPE tt) const
+  VTransformMR (ElementId ei, 
+		SliceMatrix<double> mat, TRANSFORM_TYPE tt) const
   {
     int nd = 3;
-    bool boundary = (vb == BND);
+    bool boundary = (ei.VB() == BND);
+    size_t elnr = ei.Nr();
     if (boundary) return;
 
     Vector<> fac(nd);
@@ -191,11 +201,13 @@ namespace ngcomp
   
     
   void  RaviartThomasFESpace ::
-  VTransformVR (int elnr, VorB vb,
-		const FlatVector<double> & vec, TRANSFORM_TYPE tt) const
+  VTransformVR (ElementId ei, 
+		SliceVector<double> vec, TRANSFORM_TYPE tt) const
   {
     int nd = 3;
-    bool boundary = (vb == BND);    
+    bool boundary = (ei.VB() == BND);
+    size_t elnr = ei.Nr();
+    
     if (boundary) 
       {
 	ArrayMem<int,4> edge_nums, edge_orient;

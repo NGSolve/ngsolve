@@ -26,7 +26,7 @@ namespace ngcomp
 {
 
   FESpace :: FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags)
-    : NGS_Object (ama, "FESpace")
+    : NGS_Object (ama, flags, "FESpace")
   {
     // register flags
     DefineStringFlag("type");
@@ -415,13 +415,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  element_coloring[vb] = Table<int>(low_order_space->element_coloring[vb]);
       }
     else
-      // for (auto vb = VOL; vb <= BND; vb++)
       for (auto vb : { VOL, BND, BBND })
       {
         tcol.Start();
         Array<int> col(ma->GetNE(vb));
         col = -1;
-        // bool found;
+
         int maxcolor = 0;
         
         int basecol = 0;
@@ -535,204 +534,176 @@ lot of new non-zero entries in the matrix!\n" << endl;
                    << " for " << ((vb == VOL) ? "vol" : "bnd") << endl;
       }
 
-
-
-
-    // facet coloring
-    if (UsesDGCoupling())
-      {
-        int nf = ma->GetNFacets();
-        Array<int> col(nf);
-        col = -1;
-
-        int maxcolor = 0;
-        int basecol = 0;
-        Array<unsigned int> mask(GetNDof());
-
-        int cnt = nf, found = 0;
-        // for (ElementId el : Elements(vb)) { cnt++; (void)el; } // no warning 
-        Array<int> dofs, dofs1, elnums; 
-        do
-          {
-            mask = 0;
-
-            //  for (auto el : Elements(vb))
-            for (int f = 0; f < nf; f++)
-              {
-                if (col[f] >= 0) continue;
-
-                ma->GetFacetElements(f,elnums);
-                dofs.SetSize0();
-                for (int el : elnums)
-                  {
-                    GetDofNrs(ElementId(VOL, el), dofs1);
-                    dofs += dofs1;
-                  }
-                
-                unsigned check = 0;
-                for (auto d : dofs)
-                  if (d != -1) check |= mask[d];
-
-                if (check != UINT_MAX) // 0xFFFFFFFF)
-                  {
-                    found++;
-                    unsigned checkbit = 1;
-                    int color = basecol;
-                    while (check & checkbit)
-                      {
-                        color++;
-                        checkbit *= 2;
-                      }
-
-                    col[f] = color;
-                    if (color > maxcolor) maxcolor = color;
-		
-                    for (auto d : dofs)
-                      if (d != -1) mask[d] |= checkbit;
-                  }
-              }
-            
-            basecol += 8*sizeof(unsigned int); // 32;
-          }
-        while (found < cnt);
-        // cout << "facet-colors: " << col << endl;
-        Array<int> cntcol(maxcolor+1);
-        cntcol = 0;
-
-        for (auto f : Range(nf))
-          cntcol[col[f]]++;
-        
-        facet_coloring = Table<int> (cntcol);
-
-	cntcol = 0;
-        for (auto f : Range(nf))          
-          facet_coloring[col[f]][cntcol[col[f]]++] = f;
-        // cout << "facet_coloring: " << facet_coloring << endl;
-        if (print)
-          *testout << "needed " << maxcolor+1 << " colors for facet-coloring" << endl;
-      }
-    
-
-
-
-
-
-
-    
+    // invalidate facet_coloring
+    facet_coloring = Table<int>();
+       
     level_updated = ma->GetNLevels();
     if (timing) Timing();
-
     // CheckCouplingTypes();
   }
 
 
-  FiniteElement & FESpace :: GetFE (ElementId ei, Allocator & alloc) const
+  const Table<int> & FESpace :: FacetColoring() const
   {
-    LocalHeap & lh = dynamic_cast<LocalHeap&> (alloc);
-    switch(ei.VB())
+    if (facet_coloring.Size()) return facet_coloring;
+
+    size_t nf = ma->GetNFacets();
+    Array<int> col(nf);
+    col = -1;
+    
+    int maxcolor = 0;
+    int basecol = 0;
+    Array<unsigned int> mask(GetNDof());
+
+    int cnt = nf, found = 0;
+    Array<int> dofs, dofs1, elnums; 
+    do
       {
-      case VOL:
-	return const_cast<FiniteElement&>(GetFE(ei.Nr(),lh));
-      case BND:
-	return const_cast<FiniteElement&>(GetSFE(ei.Nr(),lh));
-      case BBND:
-	return const_cast<FiniteElement&>(GetCD2FE(ei.Nr(),lh));
-      default:
-	__assume(false);
+        mask = 0;
+        for (size_t f = 0; f < nf; f++)
+          {
+            if (col[f] >= 0) continue;
+            
+            ma->GetFacetElements(f,elnums);
+            dofs.SetSize0();
+            for (int el : elnums)
+              {
+                GetDofNrs(ElementId(VOL, el), dofs1);
+                dofs += dofs1;
+              }
+            
+            unsigned check = 0;
+            for (auto d : dofs)
+              if (d != -1) check |= mask[d];
+            
+            if (check != UINT_MAX) // 0xFFFFFFFF)
+              {
+                found++;
+                unsigned checkbit = 1;
+                int color = basecol;
+                while (check & checkbit)
+                  {
+                    color++;
+                    checkbit *= 2;
+                  }
+                
+                col[f] = color;
+                if (color > maxcolor) maxcolor = color;
+		
+                for (auto d : dofs)
+                  if (d != -1) mask[d] |= checkbit;
+              }
+          }
+        
+        basecol += 8*sizeof(unsigned int); // 32;
       }
+    while (found < cnt);
+
+    Array<int> cntcol(maxcolor+1);
+    cntcol = 0;
+    
+    for (auto f : Range(nf))
+      cntcol[col[f]]++;
+    
+    const_cast<Table<int>&> (facet_coloring) = Table<int> (cntcol);
+    
+    cntcol = 0;
+    for (auto f : Range(nf))          
+      facet_coloring[col[f]][cntcol[col[f]]++] = f;
+
+    if (print)
+      *testout << "needed " << maxcolor+1 << " colors for facet-coloring" << endl;
+
+    return facet_coloring;
   }
+  
+
+  // FiniteElement & FESpace :: GetFE (ElementId ei, Allocator & alloc) const
+  // {
+  //   LocalHeap & lh = dynamic_cast<LocalHeap&> (alloc);
+  //   switch(ei.VB())
+  //     {
+  //     case VOL:
+  //       {
+  //       FiniteElement * fe = NULL;
+    
+  //       if (DefinedOn (ei))
+  //         {
+  //           switch (ma->GetElType(ei))
+  //             {
+  //             case ET_TET: fe = tet; break;
+  //             case ET_PYRAMID: fe = pyramid; break;
+  //             case ET_PRISM: fe = prism; break;
+  //             case ET_HEX: fe = hex; break;
+  //             case ET_TRIG: fe = trig; break;
+  //             case ET_QUAD: fe = quad; break;
+  //             case ET_SEGM: fe = segm; break;
+  //             case ET_POINT: fe = point; break;
+  //             }
+  //         }
+  //       else
+  //         {
+  //           switch (ma->GetElType(ei))
+  //             {
+  //             case ET_TET: fe = dummy_tet; break;
+  //             case ET_PYRAMID: fe = dummy_pyramid; break;
+  //             case ET_PRISM: fe = dummy_prism; break;
+  //             case ET_HEX: fe = dummy_hex; break;
+  //             case ET_TRIG: fe = dummy_trig; break;
+  //             case ET_QUAD: fe = dummy_quad; break;
+  //             case ET_SEGM: fe = dummy_segm; break;
+  //             case ET_POINT: fe = dummy_point; break;
+  //             }
+  //         }
+
+  //       if (!fe)
+  //         {
+  //           /*
+  //             Exception ex;
+  //             ex << "FESpace" << GetClassName() << ", undefined eltype " 
+  //             << ElementTopology::GetElementName(ma->GetElType(elnr))
+  //             << ", order = " << ToString (order) << "\n";
+  //             throw ex;
+  //           */
+  //           stringstream str;
+  //           str << "FESpace" << GetClassName() << ", undefined eltype " 
+  //               << ElementTopology::GetElementName(ma->GetElType(ei.Nr()))
+  //               << ", order = " << ToString (order) << "\n";
+  //           throw Exception (str.str());
+  //         }
+    
+  //       return *fe;
+  //       }
+  //     case BND:
+  //       switch (ma->GetElement(ei).GetType())
+  //         {
+  //         case ET_TRIG:  return *trig; 
+  //         case ET_QUAD:  return *quad; 
+  //         case ET_SEGM:  return *segm; 
+  //         case ET_POINT: return *point; 
+  //         case ET_TET: case ET_PYRAMID:
+  //         case ET_PRISM: case ET_HEX: 
+  //           ;
+  //         }
+  //       throw Exception ("GetFE BND: unknown type");
+  //     case BBND:
+  //       switch (ma->GetElement(ei).GetType())
+  //         {
+  //         case ET_SEGM: return *segm;
+  //         case ET_POINT: return *point;
+  //         default: ;
+  //         }
+  //       throw Exception("GetFE BBND: unknown type");
+  //     default:
+  //       __assume(false);
+  //     }
+  // }
   
 
   const FiniteElement & FESpace :: GetFE (int elnr, LocalHeap & lh) const
   {
-    FiniteElement * fe = NULL;
-    
-    if (DefinedOn (ElementId (VOL, elnr)))
-      {
-        switch (ma->GetElType(elnr))
-          {
-          case ET_TET: fe = tet; break;
-          case ET_PYRAMID: fe = pyramid; break;
-          case ET_PRISM: fe = prism; break;
-          case ET_HEX: fe = hex; break;
-          case ET_TRIG: fe = trig; break;
-          case ET_QUAD: fe = quad; break;
-          case ET_SEGM: fe = segm; break;
-          case ET_POINT: fe = point; break;
-          }
-      }
-    else
-      {
-        switch (ma->GetElType(elnr))
-          {
-          case ET_TET: fe = dummy_tet; break;
-          case ET_PYRAMID: fe = dummy_pyramid; break;
-          case ET_PRISM: fe = dummy_prism; break;
-          case ET_HEX: fe = dummy_hex; break;
-          case ET_TRIG: fe = dummy_trig; break;
-          case ET_QUAD: fe = dummy_quad; break;
-          case ET_SEGM: fe = dummy_segm; break;
-          case ET_POINT: fe = dummy_point; break;
-          }
-      }
-
-    if (!fe)
-      {
-        /*
-        Exception ex;
-        ex << "FESpace" << GetClassName() << ", undefined eltype " 
-           << ElementTopology::GetElementName(ma->GetElType(elnr))
-           << ", order = " << ToString (order) << "\n";
-        throw ex;
-        */
-        stringstream str;
-        str << "FESpace" << GetClassName() << ", undefined eltype " 
-            << ElementTopology::GetElementName(ma->GetElType(elnr))
-            << ", order = " << ToString (order) << "\n";
-        throw Exception (str.str());
-      }
-    
-    return *fe;
+    return const_cast<FiniteElement&>(GetFE(ElementId(VOL,elnr),lh));
   }
-
-  /*
-    // not such a great idea ..
-  void FESpace :: GetDofRanges (ElementId ei, Array<IntRange> & dranges) const
-  {
-    // cout << "getdofrangs called for fespace " << GetClassName() << endl;
-    Array<int> dnums;
-    GetDofNrs (ei, dnums);
-    dranges.SetSize(0);
-    for (int i = 0; i < dnums.Size(); i++)
-      dranges.Append (IntRange (dnums[i], dnums[i]+1));
-  }
-  */
-
-  /*
-  FlatArray<int> FESpace :: GetDofNrs (ElementId ei, LocalHeap & lh) const
-  {
-    Vec<4,int> nnodes = ElementTopology::GetNNodes (ma->GetElType (ei));
-    Array<IntRange> dranges(InnerProduct (nnodes, vefc_dofblocks), lh);
-    dranges.SetSize(0);
-    GetDofRanges (ei, dranges);
-    int nd = 0;
-    for (int i = 0; i < dranges.Size(); i++) nd += dranges[i].Size();
-    
-    FlatArray<int> dnums(nd, lh);
-    for (int i = 0, cnt = 0; i < dranges.Size(); i++)
-      {
-        if (dranges[i].First() != -1)
-          for (int j = dranges[i].First(); j < dranges[i].Next(); j++)
-            dnums[cnt++] = j;
-        else
-          for (int j = dranges[i].First(); j < dranges[i].Next(); j++)
-            dnums[cnt++] = -1;
-      }
-
-    return dnums;
-  }
-  */
-
 
   Table<int> FESpace :: CreateDofTable (VorB vorb) const
   {
@@ -842,23 +813,28 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void FESpace :: GetNodeDofNrs (NODE_TYPE nt, int nr, Array<int> & dnums) const
   {
-    switch (nt)
+    GetDofNrs(NodeId(nt,nr),dnums);
+  }
+
+  void FESpace :: GetDofNrs (NodeId ni, Array<int> & dnums) const
+  {
+    switch (ni.GetType())
       {
-      case NT_VERTEX: GetVertexDofNrs(nr, dnums); break;
-      case NT_EDGE:   GetEdgeDofNrs(nr, dnums); break;
+      case NT_VERTEX: GetVertexDofNrs(ni.GetNr(), dnums); break;
+      case NT_EDGE:   GetEdgeDofNrs(ni.GetNr(), dnums); break;
       case NT_FACE:   
         if (ma->GetDimension() == 3)
-          GetFaceDofNrs(nr, dnums); 
+          GetFaceDofNrs(ni.GetNr(), dnums); 
         else
-          GetInnerDofNrs(nr, dnums); 
+          GetInnerDofNrs(ni.GetNr(), dnums); 
         break;
-      case NT_CELL:   GetInnerDofNrs(nr, dnums); break;
+      case NT_CELL:   GetInnerDofNrs(ni.GetNr(), dnums); break;
       case NT_ELEMENT: case NT_FACET:
-        GetNodeDofNrs (StdNodeType(nt, ma->GetDimension()), nr, dnums);
+        GetDofNrs (NodeId(StdNodeType(ni.GetType(), ma->GetDimension()), ni.GetNr()), dnums);
         break;
       }
   }
-
+  
   void FESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
   {
     dnums.SetSize0 ();
@@ -885,28 +861,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   const FiniteElement & FESpace :: GetSFE (int selnr, LocalHeap & lh) const
   {
-    switch (ma->GetSElType(selnr))
-      {
-      case ET_TRIG:  return *trig; 
-      case ET_QUAD:  return *quad; 
-      case ET_SEGM:  return *segm; 
-      case ET_POINT: return *point; 
-      case ET_TET: case ET_PYRAMID:
-      case ET_PRISM: case ET_HEX: 
-        ;
-      }
-    throw Exception ("GetSFE: unknown type");
+    return const_cast<FiniteElement&>(GetFE(ElementId(BND,selnr),lh));
   }
 
   const FiniteElement & FESpace :: GetCD2FE (int cd2elnr, LocalHeap & lh) const
   {
-    switch (ma->GetElement(ElementId(BBND,cd2elnr)).GetType())
-      {
-      case ET_SEGM: return *segm;
-      case ET_POINT: return *point;
-      default: ;
-      }
-    throw Exception("GetCD2FE: unknown type");
+    return const_cast<FiniteElement&>(GetFE(ElementId(BBND,cd2elnr),lh));
   }
 
   const FiniteElement & FESpace :: GetFE (ELEMENT_TYPE type) const
@@ -966,17 +926,18 @@ lot of new non-zero entries in the matrix!\n" << endl;
     return GetNDof();
   } 
 
-  void FESpace :: Timing () const
+  std::list<std::tuple<std::string,double>> FESpace :: Timing () const
   {
     double starttime;
     double time;
     int steps;
+    std::list<std::tuple<std::string,double>> results;
     LocalHeap lh (100000, "FESpace - Timing");
 
-    cout << endl << "timing fespace " << GetName() 
-         << (low_order_space ? "" : " low-order")
-         << " ..." << endl;
-    
+    // cout << endl << "timing fespace " << GetName() 
+    //      << (low_order_space ? "" : " low-order")
+    //      << " ..." << endl;
+
     starttime = WallTime();
     steps = 0;
     do
@@ -992,9 +953,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	time = WallTime()-starttime;
       }
     while (time < 2.0);
+    results.push_back(std::make_tuple<std::string,double>("GetDofNrs",1e9*time / (ma->GetNE()*steps)));
+    //cout << 1e9*time / (ma->GetNE()*steps) << " ns per GetDofNrs (parallel)" << endl;
     
-    cout << 1e9*time / (ma->GetNE()*steps) << " ns per GetDofNrs (parallel)" << endl;
-
     /*
     starttime = WallTime();
     steps = 0;
@@ -1040,8 +1001,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
         time = WallTime()-starttime;
       }
     while (time < 2.0);
-    
-    cout << 1e9 * time / (ma->GetNE()*steps) << " ns per GetFE (parallel)" << endl;
+
+    results.push_back(std::make_tuple<std::string,double>("GetFE",1e9 * time / (ma->GetNE()*steps))); 
+    //    cout << 1e9 * time / (ma->GetNE()*steps) << " ns per GetFE (parallel)" << endl;
 
 
 
@@ -1058,8 +1020,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
         time = WallTime()-starttime;
       }
     while (time < 2.0);
-    
-    cout << 1e9 * time / (ma->GetNE()*steps) << " ns per Get - Ng_Element (parallel)" << endl;
+
+    results.push_back(std::make_tuple<std::string,double>("Get Ng_Element", 1e9 * time / (ma->GetNE()*steps)));
+    //    cout << 1e9 * time / (ma->GetNE()*steps) << " ns per Get - Ng_Element (parallel)" << endl;
 
 
     starttime = WallTime();
@@ -1079,8 +1042,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
         time = WallTime()-starttime;
       }
     while (time < 2.0);
-    
-    cout << 1e9 * time / (ma->GetNE()*steps) << " ns per GetTrafo(parallel)" << endl;
+
+    results.push_back(std::make_tuple<std::string,double>("GetTrafo", 1e9 * time / (ma->GetNE()*steps)));
+    //    cout << 1e9 * time / (ma->GetNE()*steps) << " ns per GetTrafo(parallel)" << endl;
 
 
 
@@ -1176,6 +1140,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 #endif
 
+    return results;
 
   }
 
@@ -1331,7 +1296,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	for(int j=0;j<vec.Size(); j++)
 	  partvec(j) = vec[j](i);
 
-	TransformVec(elnr,vb,partvec,type);
+	TransformVec(ElementId(vb, elnr),partvec,type);
 
 	for(int j=0;j<vec.Size(); j++)
 	  vec[j](i) = partvec(j);
@@ -1430,8 +1395,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     for (NODE_TYPE nt : { NT_VERTEX, NT_EDGE, NT_FACE, NT_CELL })
       for ( int nr = 0; nr < ma->GetNNodes (nt); nr++ )
 	{
-	  GetNodeDofNrs (nt, nr, dnums);
-	  for (int d : dnums)
+	  GetDofNrs (NodeId(nt, nr), dnums);
+	  for (auto d : dnums)
 	    dofnodes[d] = NodeId (nt, nr);
 	} 
 
@@ -1475,39 +1440,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	if (iscomplex) loflags.SetFlag ("complex");
 	low_order_space = make_shared<NodalFESpace> (ma, loflags);
       }
-
-    if (order == 1)
-      {
-	tet     = new ScalarFE<ET_TET,1>;
-	prism   = new FE_Prism1;
-	pyramid = new FE_Pyramid1;
-	hex     = new FE_Hex1;
-	trig    = new ScalarFE<ET_TRIG,1>;
-	quad    = new ScalarFE<ET_QUAD,1>;
-	segm    = new FE_Segm1;
-      }
-    else
-      {
-	if (flags.GetDefineFlag ("hb"))
-	  {
-	    tet     = new FE_Tet2HB;
-	    prism   = new FE_Prism1;
-	    pyramid = new FE_Pyramid1;
-	    trig    = new FE_Trig2HB;
-	    quad    = new ScalarFE<ET_QUAD,1>;
-	    segm    = new FE_Segm2;
-	  }
-	else
-	  {
-	    tet     = new FE_Tet2;
-	    prism   = new FE_Prism1;
-	    pyramid = new FE_Pyramid1;
-	    trig    = new FE_Trig2;
-	    quad    = new ScalarFE<ET_QUAD,1>;
-	    segm    = new FE_Segm2;
-	  }
-      }
-    point = new FE_Point;
+    hb_defined = flags.GetDefineFlag("hb");
 
     SetDummyFE<ScalarDummyFE> ();
 
@@ -1570,6 +1503,58 @@ lot of new non-zero entries in the matrix!\n" << endl;
   NodalFESpace :: ~NodalFESpace ()
   {
     ;
+  }
+
+  FiniteElement & NodalFESpace :: GetFE(ElementId ei, Allocator & lh) const
+  {
+    if(order == 1)
+      {
+        switch (ma->GetElType(ei))
+          {
+          case ET_SEGM:    return *(new (lh) FE_Segm1);
+          case ET_TRIG:    return *(new (lh) ScalarFE<ET_TRIG,1>);
+          case ET_QUAD:    return *(new (lh) ScalarFE<ET_QUAD,1>);
+          case ET_TET:     return *(new (lh) ScalarFE<ET_TET,1>);
+          case ET_PRISM:   return *(new (lh) FE_Prism1);
+          case ET_PYRAMID: return *(new (lh) FE_Pyramid1);
+          case ET_HEX:     return *(new (lh) FE_Hex1);
+          case ET_POINT:   return *(new (lh) FE_Point);
+            throw Exception ("Inconsistent element type in NodalFESpace::GetFE");
+          }
+      }
+    else
+      {
+        if(hb_defined)
+          {
+            switch (ma->GetElType(ei))
+              {
+              case ET_TET:     return *(new (lh) FE_Tet2HB);
+              case ET_PRISM:   return *(new (lh) FE_Prism1);
+              case ET_PYRAMID: return *(new (lh) FE_Pyramid1);
+              case ET_TRIG:    return *(new (lh) FE_Trig2HB);
+              case ET_QUAD:    return *(new (lh) ScalarFE<ET_QUAD,1>);
+              case ET_SEGM:    return *(new (lh) FE_Segm2);
+              case ET_POINT:   return *(new (lh) FE_Point);
+              default:
+                throw Exception ("Inconsistent element type in NodalFESpace::GetFE, hb defined");
+              }
+          }
+        else
+          {
+            switch (ma->GetElType(ei))
+              {
+              case ET_TET:     return *(new (lh) FE_Tet2);
+              case ET_PRISM:   return *(new (lh) FE_Prism1);
+              case ET_PYRAMID: return *(new (lh) FE_Pyramid1);
+              case ET_TRIG:    return *(new (lh) FE_Trig2);
+              case ET_QUAD:    return *(new (lh) ScalarFE<ET_QUAD,1>);
+              case ET_SEGM:    return *(new (lh) FE_Segm2);
+              case ET_POINT:   return *(new (lh) FE_Point);
+              default:
+                throw Exception ("Inconsistent element type in NodalFESpace::GetFE, no hb defined");
+              }
+          }
+      }
   }
 
   size_t NodalFESpace :: GetNDof () const throw()
@@ -1730,8 +1715,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     // prol = new LinearProlongation(*this);
     
 
-    trig = new FE_NcTrig1;
-    segm = new FE_Segm0;
+    // trig = new FE_NcTrig1;
+    // segm = new FE_Segm0;
       
     auto one = make_shared<ConstantCoefficientFunction> (1);
     if (ma->GetDimension() == 2)
@@ -1760,7 +1745,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
     ;
   }
 
-
+  FiniteElement & NonconformingFESpace :: GetFE (ElementId ei, Allocator & lh) const
+  {
+    switch (ma->GetElType(ei))
+      {
+      case ET_TRIG: return *(new (lh)FE_NcTrig1);
+      case ET_SEGM: return *(new (lh) FE_Segm0);
+      default: throw Exception ("Element type not available in NonconformingFESpace::GetFE");
+      }
+  }
   size_t NonconformingFESpace :: GetNDof () const throw()
   {
     return ma->GetNEdges();
@@ -1769,6 +1762,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void NonconformingFESpace :: Update(LocalHeap & lh)
   {
+    ctofdof.SetSize (ma->GetNFacets());
+    ctofdof = UNUSED_DOF;
+    for (auto el : ma->Elements(VOL))
+      ctofdof[el.Facets()] = WIREBASKET_DOF;
+    
     /*
     if (ma->GetNLevels() > ndlevel.Size())
       {
@@ -1842,24 +1840,24 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if (order == 0)
     {
-      tet     = new ScalarFE<ET_TET,0>;
-      prism   = new FE_Prism0;
-      pyramid = new FE_Pyramid0;
-      hex     = new FE_Hex0;
-      trig    = new ScalarFE<ET_TRIG,0>;
-      quad    = new ScalarFE<ET_QUAD,0>;
-      segm    = new FE_Segm0;
+      // tet     = new ScalarFE<ET_TET,0>;
+      // prism   = new FE_Prism0;
+      // pyramid = new FE_Pyramid0;
+      // hex     = new FE_Hex0;
+      // trig    = new ScalarFE<ET_TRIG,0>;
+      // quad    = new ScalarFE<ET_QUAD,0>;
+      // segm    = new FE_Segm0;
 
       n_el_dofs = 1;
     }
     else
     {
-      tet     = new ScalarFE<ET_TET,1>;
-      prism   = new FE_Prism1;
-      pyramid = new FE_Pyramid1;
-      trig    = new ScalarFE<ET_TRIG,1>;
-      quad    = new ScalarFE<ET_QUAD,1>;
-      segm    = new FE_Segm1;
+      // tet     = new ScalarFE<ET_TET,1>;
+      // prism   = new FE_Prism1;
+      // pyramid = new FE_Pyramid1;
+      // trig    = new ScalarFE<ET_TRIG,1>;
+      // quad    = new ScalarFE<ET_QUAD,1>;
+      // segm    = new FE_Segm1;
 
       if (ma->GetDimension() == 2)
         n_el_dofs = 4;
@@ -1904,6 +1902,39 @@ lot of new non-zero entries in the matrix!\n" << endl;
     archive & ndlevel & n_el_dofs;
   }
 
+  FiniteElement & ElementFESpace :: GetFE (ElementId ei, Allocator & lh) const
+  {
+    
+    if (order == 0)
+      {
+        switch (ma->GetElType(ei))
+          {
+          case ET_TET:     return * new (lh) ScalarFE<ET_TET,0>;
+          case ET_PRISM:   return * new (lh) FE_Prism0;
+          case ET_PYRAMID: return * new (lh) FE_Pyramid0;
+          case ET_HEX:     return * new (lh) FE_Hex0;
+          case ET_TRIG:    return * new (lh) ScalarFE<ET_TRIG,0>;
+          case ET_QUAD:    return * new (lh) ScalarFE<ET_QUAD,0>;
+          case ET_SEGM:    return * new (lh) FE_Segm0;
+          case ET_POINT:   return * new (lh) FE_Point;
+          }
+      }
+    else
+      {
+        switch (ma->GetElType(ei))
+          {
+          case ET_TET:     return *(new (lh) ScalarFE<ET_TET,1>);
+          case ET_PRISM:   return *(new (lh) FE_Prism1);
+          case ET_PYRAMID: return *(new (lh) FE_Pyramid1);
+          case ET_HEX:     return *(new (lh) FE_Hex1);
+          case ET_TRIG:    return *(new (lh) ScalarFE<ET_TRIG,1>);
+          case ET_QUAD:    return *(new (lh) ScalarFE<ET_QUAD,1>);
+          case ET_SEGM:    return *(new (lh) FE_Segm1);
+          case ET_POINT:   return * new (lh) FE_Point;            
+          }
+      }
+  }
+  
   void ElementFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
     if(ei.VB()!=VOL) { dnums.SetSize(0); return; }
@@ -2017,7 +2048,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       ndlevel.Append (n_el_dofs * ma->GetNSE());
   }
 
-  const FiniteElement & SurfaceElementFESpace :: GetFE (int elnr, LocalHeap & lh) const
+  const FiniteElement & SurfaceElementFESpace :: GetFE (ElementId ei, LocalHeap & lh) const
   {
     throw Exception ("SurfaceElementFESpace::GetFE not available");
   }
@@ -2303,7 +2334,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
         int base = dnums.Size();
         int base_cum = cummulative_nd[i];
         dnums.SetSize(base+hdnums.Size());
-	// for (int j = 0; j < hdnums.Size(); j++)
+
         for (auto j : Range(hdnums))
           {
             int val = hdnums[j];
@@ -2311,12 +2342,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
               val += base_cum;
             dnums[base+j] = val;
           }
-          /*
-	  if (hdnums[j] != -1)
-	    dnums[base+j] = hdnums[j]+base_cum;
-	  else
-	    dnums[base+j] = -1;
-          */
       }
   }
 
@@ -2429,9 +2454,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
 
-  template <class MAT>
-  void CompoundFESpace::TransformMat (int elnr, VorB vb,
-				      MAT & mat, TRANSFORM_TYPE tt) const
+  template <class T>
+  void CompoundFESpace::T_TransformMat (ElementId ei, 
+                                        SliceMatrix<T> mat, TRANSFORM_TYPE tt) const
   {
     size_t base = 0;
     LocalHeapMem<100005> lh("CompoundFESpace - transformmat");
@@ -2443,18 +2468,18 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  : spaces[i]->GetFE(elnr, lh).GetNDof();
         */
         HeapReset hr(lh);
-        size_t nd = spaces[i]->GetFE(ElementId(vb, elnr), lh).GetNDof();
+        size_t nd = spaces[i]->GetFE(ei, lh).GetNDof();
 
-	spaces[i]->TransformMat (elnr, vb, mat.Rows(base, base+nd), TRANSFORM_MAT_LEFT);
-	spaces[i]->TransformMat (elnr, vb, mat.Cols(base, base+nd), TRANSFORM_MAT_RIGHT);
+	spaces[i]->TransformMat (ei, mat.Rows(base, base+nd), TRANSFORM_MAT_LEFT);
+	spaces[i]->TransformMat (ei, mat.Cols(base, base+nd), TRANSFORM_MAT_RIGHT);
 
 	base += nd;
       }
   }
 
-  template <class VEC>
-  void CompoundFESpace::TransformVec (int elnr, VorB vb,
-				      VEC & vec, TRANSFORM_TYPE tt) const
+  template <class T>
+  void CompoundFESpace::T_TransformVec (ElementId ei, 
+                                        SliceVector<T> vec, TRANSFORM_TYPE tt) const
   {
     LocalHeapMem<100006> lh("CompoundFESpace - transformvec");
     for (int i = 0, base = 0; i < spaces.Size(); i++)
@@ -2467,11 +2492,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	lh.CleanUp();
         */
         HeapReset hr(lh);
-        int nd = spaces[i]->GetFE(ElementId(vb, elnr), lh).GetNDof();
+        int nd = spaces[i]->GetFE(ei, lh).GetNDof();
 
 
 	// VEC svec (nd, &vec(base));
-	spaces[i]->TransformVec (elnr, vb, vec.Range(base, base+nd), tt);
+	spaces[i]->TransformVec (ei, vec.Range(base, base+nd), tt);
 	base += nd;
       }
   }
@@ -2479,50 +2504,43 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
   template NGS_DLL_HEADER
-  void CompoundFESpace::TransformVec<FlatVector<double> >
-  (int elnr, VorB vb, FlatVector<double> & vec, TRANSFORM_TYPE tt) const;
+  void CompoundFESpace::T_TransformVec<double> 
+  (ElementId ei, SliceVector<double> vec, TRANSFORM_TYPE tt) const;
   template NGS_DLL_HEADER
-  void CompoundFESpace::TransformVec<FlatVector<Complex> >
-  (int elnr, VorB vb, FlatVector<Complex> & vec, TRANSFORM_TYPE tt) const;
+  void CompoundFESpace::T_TransformVec<Complex>
+  (ElementId ei, SliceVector<Complex> vec, TRANSFORM_TYPE tt) const;
   
   template
-  void CompoundFESpace::TransformMat<FlatMatrix<double> > 
-  (int elnr, VorB vb, FlatMatrix<double> & mat, TRANSFORM_TYPE tt) const;
+  void CompoundFESpace::T_TransformMat<double> 
+  (ElementId ei, SliceMatrix<double> mat, TRANSFORM_TYPE tt) const;
   template
-  void CompoundFESpace::TransformMat<FlatMatrix<Complex> > 
-  (int elnr, VorB vb, FlatMatrix<Complex> & mat, TRANSFORM_TYPE tt) const;
-  
-  template
-  void CompoundFESpace::TransformMat<SliceMatrix<double> > 
-  (int elnr, VorB vb, SliceMatrix<double> & mat, TRANSFORM_TYPE tt) const;
-  template
-  void CompoundFESpace::TransformMat<SliceMatrix<Complex> > 
-  (int elnr, VorB vb, SliceMatrix<Complex> & mat, TRANSFORM_TYPE tt) const;
+  void CompoundFESpace::T_TransformMat<Complex> 
+  (ElementId ei, SliceMatrix<Complex> mat, TRANSFORM_TYPE tt) const;
   
   
-  void CompoundFESpace::VTransformMR (int elnr, VorB vb,
-				      const SliceMatrix<double> & mat, TRANSFORM_TYPE tt) const 
+  void CompoundFESpace::VTransformMR (ElementId ei, 
+				      SliceMatrix<double> mat, TRANSFORM_TYPE tt) const 
   {
-    TransformMat (elnr, vb, mat, tt);
+    T_TransformMat (ei, mat, tt);
   }
   
-  void CompoundFESpace::VTransformMC (int elnr, VorB vb,
-				      const SliceMatrix<Complex> & mat, TRANSFORM_TYPE tt) const
+  void CompoundFESpace::VTransformMC (ElementId ei, 
+				      SliceMatrix<Complex> mat, TRANSFORM_TYPE tt) const
   {
-    TransformMat (elnr, vb, mat, tt);
+    T_TransformMat (ei, mat, tt);
   }
   
 
-  void CompoundFESpace::VTransformVR (int elnr, VorB vb,
-				      const FlatVector<double> & vec, TRANSFORM_TYPE tt) const 
+  void CompoundFESpace::VTransformVR (ElementId ei, 
+				      SliceVector<double> vec, TRANSFORM_TYPE tt) const 
   {
-    TransformVec (elnr, vb, vec, tt);
+    T_TransformVec (ei, vec, tt);
   }
   
-  void CompoundFESpace::VTransformVC (int elnr, VorB vb,
-				      const FlatVector<Complex> & vec, TRANSFORM_TYPE tt) const 
+  void CompoundFESpace::VTransformVC (ElementId ei, 
+				      SliceVector<Complex> vec, TRANSFORM_TYPE tt) const 
   {
-    TransformVec (elnr, vb, vec, tt);
+    T_TransformVec (ei, vec, tt);
   }
 
 

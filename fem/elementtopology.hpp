@@ -94,7 +94,7 @@ namespace ngfem
     ElementId (VorB avb, int_type anr) : vb(avb), nr(anr) { ; }
     ElementId (int_type anr) : vb(VOL), nr(anr) { ; }
     int_type Nr() const { return nr; }
-    explicit operator int () const { return nr; }
+    explicit operator int_type () const { return nr; }
     explicit operator VorB () const { return vb; }
     VorB VB() const { return vb; }
     bool IsVolume() const { return vb == VOL; }
@@ -103,18 +103,10 @@ namespace ngfem
     ElementId operator++ (int) { return ElementId(vb,nr++); }
     ElementId operator++ () { return ElementId(vb,++nr); }
     ElementId operator*() const { return *this; }
-    bool operator!=(ElementId id2) const { return nr != id2.nr || vb != id2.vb; }
-    bool operator==(ElementId id2) const { return nr == id2.nr && vb == id2.vb; }
+    bool operator!=(const ElementId id2) const { return nr != id2.nr || vb != id2.vb; }
+    bool operator==(const ElementId id2) const { return nr == id2.nr && vb == id2.vb; }
   };
 
-  typedef size_t dof_int_type;
-  class DofId
-  {
-  public:
-    dof_int_type nr;
-  };
-  
-  
   inline ostream & operator<< (ostream & ost, ElementId id)
   {
     return ost << (id.VB()==VOL ? "VEl " : (id.VB()==BND ? "BEl " : "CD2El ")) << ' ' << id.Nr();
@@ -511,6 +503,13 @@ namespace ngfem
 
     /// returns number of the node
     size_t GetNr() const { return nodenr; }
+
+    operator size_t () const { return nodenr; }
+    NodeId operator++ (int) { return NodeId(nt,nodenr++); }
+    NodeId operator++ () { return NodeId(nt,++nodenr); }
+    // NodeId operator*() const { return *this; }
+    bool operator!=(const NodeId id2) const { return nodenr != id2.nodenr || nt != id2.nt; }
+    bool operator==(const NodeId id2) const { return nodenr == id2.nodenr && nt == id2.nt; }
   };
   typedef NodeId Node;
 

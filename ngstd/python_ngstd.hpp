@@ -6,9 +6,9 @@
 // #pragma clang diagnostic ignored "-W#pragma-messages"
 #pragma clang diagnostic ignored "-Wunused-local-typedefs"
 #include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
 #include <pybind11/operators.h>
 #include <pybind11/complex.h>
+#include <pybind11/stl.h>
 
 #pragma clang diagnostic pop
 
@@ -33,6 +33,9 @@ bool CheckCast( py::handle obj ) {
     return true;
   }
   catch (py::cast_error &e) {
+    return false;
+  }
+  catch (py::error_already_set &e) {
     return false;
   }
 }
@@ -319,12 +322,10 @@ Array<T> makeCArray(const py::list & obj)
 template<typename T>
 Array<T> makeCArray(const py::object & obj)
 {     
-  auto list = py::extract<py::list>(obj);
-  if (list.check())
-    return makeCArray<T>(list());
-  auto tuple = py::extract<py::tuple>(obj);
-  if (tuple.check())
-    return makeCArray<T>(tuple());
+  if (py::isinstance<py::list>(obj))
+    return makeCArray<T>(obj.cast<py::list>());
+  if (py::isinstance<py::tuple>(obj))
+    return makeCArray<T>(obj.cast<py::tuple>());
   throw py::type_error("Cannot convert Python object to C Array");
 }
 
@@ -346,7 +347,7 @@ struct PyNameTraits<PyRef<T>> {
   static string GetName() { return string("Ref_") + GetPyName<T>(); }
 };
 
-template <typename T>
+template <typename T, typename PY_T = T>
 void PyExportSymbolTable (py::module &m)
 {
   typedef SymbolTable<T> ST;
@@ -357,12 +358,12 @@ void PyExportSymbolTable (py::module &m)
     .def("__len__", &ST::Size)
     .def("__contains__", &ST::Used)
     .def("GetName", [](ST & self, int i) { return string(self.GetName(i)); })
-    .def("__getitem__", [](ST & self, string name)
+    .def("__getitem__", [](ST & self, string name) -> PY_T
                                         {
                                           if (!self.Used(name)) throw py::index_error();
                                           return self[name]; 
                                         })
-    .def("__getitem__", [](ST & self, int i)
+    .def("__getitem__", [](ST & self, int i) -> PY_T
                                          {
                                            if (i < 0 || i >= self.Size()) throw py::index_error();
                                            return self[i];  
@@ -372,7 +373,7 @@ void PyExportSymbolTable (py::module &m)
 
 
 // convertion not possible for shared_ptr<double>, so we have a special treatment:
-template <> inline void PyExportSymbolTable<shared_ptr<double>> (py::module &m)
+template <> inline void PyExportSymbolTable<shared_ptr<double>, shared_ptr<double>> (py::module &m)
 {
   typedef SymbolTable<shared_ptr<double>> ST;
   
@@ -393,7 +394,10 @@ template <> inline void PyExportSymbolTable<shared_ptr<double>> (py::module &m)
                                            return *self[i];  
                                          })
     ;
-}  
+}
+
+// replace docu links with plain text for help function
+const char* docu_string(const char* str);
 
 PYBIND11_DECLARE_HOLDER_TYPE(T, std::shared_ptr<T>);
 

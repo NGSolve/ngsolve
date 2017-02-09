@@ -62,7 +62,7 @@ namespace ngfem
     
     if (order_edge[0] >= 2)
       {
-        INT<2> e = GetEdgeSort (0, vnums);
+        INT<2> e = GetVertexOrientedEdge (0);
         EdgeOrthoPol::
           EvalMult (order_edge[0]-2, 
                     lam[e[1]]-lam[e[0]], lam[e[0]]*lam[e[1]], shape+2);
@@ -85,7 +85,7 @@ namespace ngfem
     for (int i = 0; i < N_EDGE; i++)
       if (order_edge[i] >= 2)
 	{ 
-          INT<2> e = GetEdgeSort (i, vnums);
+          INT<2> e = GetVertexOrientedEdge(i);
           EdgeOrthoPol::
             EvalScaledMult (order_edge[i]-2, 
                             lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
