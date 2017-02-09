@@ -293,37 +293,18 @@ namespace ngstd
           cout << "Sorting traces..." << flush;
           std::sort (events.begin(), events.end());
           cout << " finished" << endl;
-          int nthreads = TaskManager::GetMaxThreads();
-          int buf_size = 100000;
-          std::vector<vector<char>> bufs(nthreads);
-          for(auto & buf : bufs)
-            buf.reserve(buf_size);
 
-          int nevents = events.size();
-          int events_per_thread = 2000;
-          int nrounds = (nevents+events_per_thread*nthreads-1)/(events_per_thread*nthreads);
-          for( int round : IntRange(nrounds) )
-            {
-              cout << "\rWriting traces... " << (size_t)round*100/nrounds << "%" << flush;
-              atomic<int> thread_counter(0);
-              ParallelForRange( IntRange(nevents).Split(round, nrounds), [&] (IntRange r)
-                {
-                  int i = thread_counter++;
-                  int counter = 0;
-                  char *buf = &bufs[i][0];
-                  buf[0] = '\0';
-                  for (int k : r)
-                    {
-                      int ret = events[k].write( buf+counter );
-                      if(ret>MAX_TRACE_LINE_SIZE)
-                        throw Exception("Line in tracefile too long, increase MAX_TRACE_LINE_SIZE in " __FILE__ "!\n");
-                      counter += ret;
-
-                    }
-                });
-              for (int i : Range(nthreads) )
-                fprintf( ctrace_stream, "%s", &bufs[i][0] );
-            }
+          char buf[2*MAX_TRACE_LINE_SIZE];
+          int nrounds = 100;
+          for (int round : IntRange(100))
+          {
+            cout << "\rWriting traces... " << round+1 << "%" << flush;
+            for (int i : IntRange(events.size()).Split(round, nrounds ) )
+              {
+                events[i].write( buf );
+                fprintf( ctrace_stream, "%s", buf );
+              }
+          }
           cout << endl;
         }
 

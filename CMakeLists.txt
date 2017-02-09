@@ -219,10 +219,9 @@ endif (USE_MKL)
 
 #######################################################################
 if (USE_MUMPS)
+    find_package(MUMPS REQUIRED)
     add_definitions(-DUSE_MUMPS)
     include_directories(${MUMPS_INCLUDE_DIR})
-    set(MUMPS_INCLUDE_DIR ${MUMPS_DIR}/include)
-    find_package(MUMPS REQUIRED)
     link_directories(${MUMPS_DIR}/lib)
 endif (USE_MUMPS)
 

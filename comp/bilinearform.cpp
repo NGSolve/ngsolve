@@ -61,7 +61,7 @@ namespace ngcomp
   BilinearForm (shared_ptr<FESpace> afespace,
                 const string & aname,
                 const Flags & flags)
-    : NGS_Object(afespace->GetMeshAccess(), aname), fespace(afespace)
+    : NGS_Object(afespace->GetMeshAccess(), flags, aname), fespace(afespace)
   {
     fespace2 = NULL;
 
@@ -101,7 +101,7 @@ namespace ngcomp
   BilinearForm (shared_ptr<FESpace> afespace,
                 shared_ptr<FESpace> afespace2, const string & aname,
                 const Flags & flags)
-    : NGS_Object(afespace->GetMeshAccess(), aname), fespace(afespace), fespace2(afespace2)
+    : NGS_Object(afespace->GetMeshAccess(), flags, aname), fespace(afespace), fespace2(afespace2)
   {
     multilevel = true;
     galerkin = false;
@@ -197,7 +197,10 @@ namespace ngcomp
         else
           {
             if (bfi->VB() > 1) throw Exception ("skeletonform makes sense only for VOL or BND");
-            facetwise_skeleton_parts[bfi->VB()].Append(bfi);
+            // facetwise_skeleton_parts[bfi->VB()].Append(bfi);
+            auto fbfi = dynamic_pointer_cast<FacetBilinearFormIntegrator> (bfi);
+            if (!fbfi)  throw Exception ("not a FacetBFI");
+            facetwise_skeleton_parts[bfi->VB()] += fbfi;
           }
       }
     else
@@ -1648,10 +1651,15 @@ namespace ngcomp
                                  
                                  FlatMatrix<SCAL> compressed_elmat(compressed_dofs * fespace->GetDimension(), lh);
                                  compressed_elmat = 0.0;
+
+                                 int dim = fespace->GetDimension();
+
                                  for (int i = 0; i < dnums.Size(); ++i)
                                    for (int j = 0; j < dnums.Size(); ++j)
-                                     compressed_elmat(dnums_to_compressed[i],dnums_to_compressed[j]) += elmat(i,j);
-                                 
+                                     for (int di = 0; di < dim; ++di)
+                                       for (int dj = 0; dj < dim; ++dj)
+                                         compressed_elmat(dim*dnums_to_compressed[i]+di,dim*dnums_to_compressed[j]+dj) += elmat(i*dim+di,j*dim+dj);
+
                                  {
                                    lock_guard<mutex> guard(addelemfacin_mutex);
                                    AddElementMatrix (compressed_dnums, compressed_dnums, compressed_elmat,
@@ -3074,6 +3082,7 @@ namespace ngcomp
     static Timer timerDG ("Apply Matrix - DG");
     constexpr int tlevel = 4;
     static Timer timerDGpar ("Apply Matrix - DG par", tlevel);
+    static Timer timerDGapply ("Apply Matrix - DG par apply", tlevel);
     static Timer timerDG1 ("Apply Matrix - DG 1", tlevel);
     static Timer timerDG2 ("Apply Matrix - DG 2", tlevel);
     static Timer timerDG2a ("Apply Matrix - DG 2a", tlevel);
@@ -3226,6 +3235,8 @@ namespace ngcomp
                (facetwise_skeleton_parts[BND].Size() > 0) )
             
             for (auto colfacets : fespace->FacetColoring())
+              {
+              /*
               ParallelForRange
                 (colfacets.Size(), [&] (IntRange r)
                  {
@@ -3234,6 +3245,19 @@ namespace ngcomp
                    Array<int> elnums(2, lh), elnums_per(2, lh), fnums1(6, lh), fnums2(6, lh), vnums1(8, lh), vnums2(8, lh);
                    
                    for (int i : r)
+              */
+                SharedLoop2 sl(colfacets.Size());
+
+                task_manager -> CreateJob
+                  ( [&] (const TaskInfo & ti) 
+                    {
+                      // LocalHeap lh = clh.Split(ti.thread_nr, ti.nthreads);
+                      // ArrayMem<int,100> temp_dnums;
+                      RegionTimer reg(timerDGpar);
+                      LocalHeap lh = clh.Split();
+                      Array<int> elnums(2, lh), elnums_per(2, lh), fnums1(6, lh), fnums2(6, lh), vnums1(8, lh), vnums2(8, lh);
+
+                  for (int i : sl)                
                      {
                        // timerDG1.Start();
                        HeapReset hr(lh);
@@ -3277,22 +3301,15 @@ namespace ngcomp
                            
                            fespace->GetDofNrs (ei1, dnums);
                            
-                           // for (int j = 0; j < NumIntegrators(); j++)
-                           for (auto & spbfi : facetwise_skeleton_parts[BND])
+                           for (auto & bfi : facetwise_skeleton_parts[BND])
                              {
-                               const BilinearFormIntegrator & bfi = *spbfi; // *parts[j];
-                               
-                               // if (!bfi.BoundaryForm()) continue;  
-                               // if (!bfi.SkeletonForm()) continue;
-                               // if (bfi.GetDGFormulation().element_boundary) continue;
-                               if (!bfi.DefinedOn (seltrans.GetElementIndex())) continue;
+                               if (!bfi->DefinedOn (seltrans.GetElementIndex())) continue;
                                          
                                FlatVector<SCAL> elx(dnums.Size()*this->fespace->GetDimension(), lh),
                                  ely(dnums.Size()*this->fespace->GetDimension(), lh);
                                x.GetIndirect(dnums, elx);
                                
-                               dynamic_cast<const FacetBilinearFormIntegrator&>(bfi).  
-                                 ApplyFacetMatrix (fel,facnr1,eltrans,vnums1, seltrans, vnums2, elx, ely, lh);
+                               bfi->ApplyFacetMatrix (fel,facnr1,eltrans,vnums1, seltrans, vnums2, elx, ely, lh);
                                y.AddIndirect(dnums, ely, fespace->HasAtomicDofs());
                              } //end for (numintegrators)
                            
@@ -3335,21 +3352,14 @@ namespace ngcomp
                        // timerDG2.Stop();
                        
                        //                                  for (int j = 0; j < NumIntegrators(); j++)
+                       RegionTimer reg2(timerDGapply);                     
                        for (auto & bfi : facetwise_skeleton_parts[VOL])                                   
                          {
-                           // BilinearFormIntegrator * bfi = parts[j].get();
-                           
-                           // if (!bfi->SkeletonForm()) continue;
-                           // if (bfi->BoundaryForm()) continue;
-                           // if (bfi->GetDGFormulation().element_boundary) continue;                                     
                            if (!bfi->DefinedOn (ma->GetElIndex (el1))) continue; 
                            if (!bfi->DefinedOn (ma->GetElIndex (el2))) continue; 
                            
                            // timerDG3.Start();
-                           FacetBilinearFormIntegrator * fbfi = 
-                             dynamic_cast<FacetBilinearFormIntegrator*>(bfi.get());
-                           
-                           fbfi->ApplyFacetMatrix (fel1, facnr1, eltrans1, vnums1,
+                           bfi->ApplyFacetMatrix (fel1, facnr1, eltrans1, vnums1,
                                                    fel2, facnr2, eltrans2, vnums2, elx, ely, lh);
                            // timerDG3.Stop();
                            // timerDG4.Start();
@@ -3358,7 +3368,7 @@ namespace ngcomp
                          }
                      }
                  });
-          
+              }
           
                     
 

@@ -6,9 +6,9 @@
 // #pragma clang diagnostic ignored "-W#pragma-messages"
 #pragma clang diagnostic ignored "-Wunused-local-typedefs"
 #include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
 #include <pybind11/operators.h>
 #include <pybind11/complex.h>
+#include <pybind11/stl.h>
 
 #pragma clang diagnostic pop
 
@@ -394,7 +394,10 @@ template <> inline void PyExportSymbolTable<shared_ptr<double>, shared_ptr<doubl
                                            return *self[i];  
                                          })
     ;
-}  
+}
+
+// replace docu links with plain text for help function
+const char* docu_string(const char* str);
 
 PYBIND11_DECLARE_HOLDER_TYPE(T, std::shared_ptr<T>);
 

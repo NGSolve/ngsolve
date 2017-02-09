@@ -81,7 +81,6 @@ stages:
     - export DYLD_LIBRARY_PATH=$NETGENDIR
     - export DYLD_FRAMEWORK_PATH=$NETGENDIR/../Frameworks
     - export PATH=$NETGENDIR:$PATH
-    - export CCACHE_LOGFILE=/tmp/$CI_BUILD_REF.debug
 
 ############################################
 # Build stage
@@ -150,7 +149,7 @@ build_mac:
     - rm -rf $BUILD_DIR
     - mkdir $BUILD_DIR
     - cd $BUILD_DIR
-    - cmake $CI_PROJECT_DIR -DINSTALL_DIR=$INSTALL_DIR -DUSE_CCACHE=ON -DCMAKE_BUILD_TYPE=Release
+    - cmake $CI_PROJECT_DIR -DINSTALL_DIR=$INSTALL_DIR -DUSE_CCACHE=ON -DCMAKE_BUILD_TYPE=Release -DUSE_UMFPACK=ON
     - make -j10 install
     - osascript -e 'tell application "Finder" to eject (every disk whose ejectable is true)'
     - make bundle
@@ -165,7 +164,7 @@ build_mac:
 .template_test_win: &test_win
   stage: test
   script:
-    - cd %NETGEN_BUILD_DIR%
+    - cd %NETGEN_BUILD_DIR%/ngsolve
     - ctest -C Release -V
     - cd ..
 
@@ -204,8 +203,8 @@ test_mac:
   <<: *mac
   stage: test
   script:
-    - cd $BUILD_DIR
-    - make test_ngsolve
+    - cd $BUILD_DIR/ngsolve
+    - ctest . -V
 
 ############################################
 # Cleanup stage

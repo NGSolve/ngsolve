@@ -387,7 +387,7 @@ namespace ngcomp
 
     /// get dofs on nr'th node of type nt.
     [[deprecated("Use GetDofNrs with NodeId instead of nt/nr")]]    
-    virtual void GetNodeDofNrs (NODE_TYPE nt, int nr, Array<int> & dnums) const;
+    virtual void GetNodeDofNrs (NODE_TYPE nt, int nr, Array<int> & dnums) const final;
     /// get number of low-order dofs for node of type nt
     // virtual int GetNLowOrderNodeDofs ( NODE_TYPE nt ) const;
     // { return lodofs_per_node[nt]; }
@@ -412,16 +412,16 @@ namespace ngcomp
     { return !definedon[vb].Size() || definedon[vb][domnr]; }
 
     /// is the FESpace defined for this sub-domain nr ?
-    //[[deprecated("Use Definedon(VorB,int) instead")]]
+    [[deprecated("Use Definedon(VorB,int) instead")]]
     bool DefinedOn (int domnr) const
     { return !definedon[VOL].Size() || definedon[VOL][domnr]; }
     /// is the FESpace defined for this boundary nr ?
-    //[[deprecated("Use Definedon(VorB,int) instead")]]
+    [[deprecated("Use Definedon(VorB,int) instead")]]
     bool DefinedOnBoundary (int bnr) const
     {return !definedon[BND].Size() || definedon[BND][bnr]; }
 
     /// is the FESpace defined for this sub-domain / boundary nr ?
-    //[[deprecated("Use DefinedOn(VorB, int) instead")]]
+    [[deprecated("Use DefinedOn(VorB, int) instead")]]
     bool DefinedOn (int index, bool bound) const
     {
       if (bound)
@@ -701,7 +701,7 @@ namespace ngcomp
     virtual bool VarOrder() const { return 0; }
 
     bool timing;
-    void Timing () const;
+    std::list<std::tuple<std::string,double>> Timing () const;
 
   protected:
     template <template <ELEMENT_TYPE ET> class FE>
