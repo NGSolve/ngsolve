@@ -38,7 +38,7 @@ namespace ngcomp
       indices[0] = int(index*nelsyinverse);
       indices[1] = index-nels[1]*indices[0];
     }    
-    INLINE const shared_ptr<FESpace> Space(int i) const {
+    INLINE const shared_ptr<FESpace> & Space(int i) const {
       if(i == -1)
         return space_x;
       else
@@ -98,7 +98,7 @@ namespace ngcomp
     template <ELEMENT_TYPE ET>
       FiniteElement & T_GetFE (int elnr, Allocator & alloc) const;
 
-    void GetSliceDofNrs(ngfem::ElementId ei, int direction, ngstd::Array<int>& dnums) const;
+    void GetSliceDofNrs(ngfem::ElementId ei, int direction, ngstd::Array<int>& dnums ,LocalHeap & lh) const;
     ///
     virtual int GetSpacialDimension() const override { return space_x->GetSpacialDimension() + spaces_y[0]->GetSpacialDimension();}
     ///
