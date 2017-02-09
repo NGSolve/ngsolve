@@ -1681,8 +1681,8 @@ namespace ngcomp
                             lock_guard<mutex> guard(printmatasstatus2_mutex);
                             cnt++;
                             gcnt++;
-                            if (cnt % 10 == 0)
-                              cout << "\rassemble facet surface element " << cnt << "/" << ne << flush;
+                            // if (cnt % 10 == 0)
+                              // cout << "\rassemble facet surface element " << cnt << "/" << ne << flush;
                             ma->SetThreadPercentage ( 100.0*(gcnt) / (loopsteps) );
                           }
                           
@@ -1783,7 +1783,7 @@ namespace ngcomp
                             }//end for (numintegrators)
                         }//end for nse                  
                     });//end of parallel
-                cout << "\rassemble facet surface element " << ne << "/" << ne << endl;  
+                // cout << "\rassemble facet surface element " << ne << "/" << ne << endl;  
               } // if facetwise_skeleton_parts[BND].size
             
             ma->SetThreadPercentage ( 100.0 );
@@ -2723,7 +2723,7 @@ namespace ngcomp
      }
      // int cnt = 0;
      LocalHeap chelperheap(10000000,"my x heap");
-     shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace > (fespace);
+     const shared_ptr<TPHighOrderFESpace> & tpfes = dynamic_pointer_cast<TPHighOrderFESpace > (fespace);
      const Array<shared_ptr<FESpace> > & spaces = tpfes->Spaces(0);
      const Table<int> & element_coloring0 = spaces[0]->ElementColoring(VOL);
      auto meshx = spaces[0]->GetMeshAccess();
@@ -2739,7 +2739,7 @@ namespace ngcomp
        {
          for (FlatArray<int> els_of_col : element_coloring0)
          {
-           SharedLoop2 sl(els_of_col.Range());
+           SharedLoop sl(els_of_col.Range());
            task_manager -> CreateJob
            ( [&] (const TaskInfo & ti) 
            {
@@ -2753,13 +2753,13 @@ namespace ngcomp
                int ndofx = felx.GetNDof();
 
                const ElementTransformation & xtrafo = meshx->GetTrafo(ElementId(elnrx), lh);
-               const IntegrationRule ir = SelectIntegrationRule(felx.ElementType(),2*felx.Order());
+               const IntegrationRule & ir = SelectIntegrationRule(felx.ElementType(),2*felx.Order());
                BaseMappedIntegrationRule & mir = xtrafo(ir, lh);
                
-               FlatMatrix<> elvec_yslicemat(ndofx,ndofyspace,lh);
-               Array<int> dnums_yslice(ndofx*ndofyspace, lh);
+               FlatMatrix<> elvec_yslicemat(ndofx,ndofyspace,xheap);
+               Array<int> dnums_yslice(ndofx*ndofyspace, xheap);
                
-               tpfes->GetSliceDofNrs(ElementId(elnrx), 1, dnums_yslice);
+               tpfes->GetSliceDofNrs(ElementId(elnrx), 1, dnums_yslice,xheap);
                x.GetIndirect (dnums_yslice, elvec_yslicemat.AsVector());
 
                dynamic_cast<TensorProductBilinearFormIntegrator &>(*parts[volumeintegrals]).ApplyXElementMatrix(felx, xtrafo, elvec_yslicemat, &xheap,&mir, lh);
@@ -2834,7 +2834,7 @@ namespace ngcomp
      timerfac1.Start();
      for (FlatArray<int> colfacets : spaces[0]->FacetColoring())
      {
-       SharedLoop2 sl(colfacets.Range());
+       SharedLoop sl(colfacets.Range());
        task_manager -> CreateJob
        ( [&] (const TaskInfo & ti) 
        {
@@ -2918,8 +2918,8 @@ namespace ngcomp
              mirx1.ComputeNormalsAndMeasure (eltype1, facnr_x1);
              FlatMatrix<> elvec_yslicemat(ndofx1+ndofx2,ndofyspace,lh);
              Array<int> dnums_yslice((ndofx1+ndofx2)*ndofyspace,lh),dnums_yslice1(ndofx2*ndofyspace,lh);
-             tpfes->GetSliceDofNrs(ElementId(el1_x),1,dnums_yslice);
-             tpfes->GetSliceDofNrs(ElementId(el2_x),1,dnums_yslice1);
+             tpfes->GetSliceDofNrs(ElementId(el1_x),1,dnums_yslice,xheap);
+             tpfes->GetSliceDofNrs(ElementId(el2_x),1,dnums_yslice1,xheap);
              dnums_yslice.Append(dnums_yslice1);
              x.GetIndirect (dnums_yslice, elvec_yslicemat.AsVector());
              dynamic_cast<TensorProductFacetBilinearFormIntegrator &>(*parts[facetvolumeintegrals]).ApplyXFacetMatrix(felx1, eltransx1, felx2,eltransx2, elvec_yslicemat, &xheap, &mirx1,&mirx2,lh);
@@ -2948,7 +2948,7 @@ namespace ngcomp
      timerfac2.Start();
      for (FlatArray<int> colfacets : spaces[1]->FacetColoring())
      {
-       SharedLoop2 sl(colfacets.Range());
+       SharedLoop sl(colfacets.Range());
        task_manager -> CreateJob
        ( [&] (const TaskInfo & ti) 
        {
@@ -3031,8 +3031,8 @@ namespace ngcomp
              miry1.ComputeNormalsAndMeasure (eltype1, facnr_y1);
              FlatMatrix<> elvec_xslicemat(ndofy1+ndofy2,ndofxspace,lh);
              Array<int> dnums_xslice((ndofy1+ndofy2)*ndofxspace,lh),dnums_xslice1(ndofy2*ndofxspace,lh);
-             tpfes->GetSliceDofNrs(ElementId(el1_y),0,dnums_xslice);
-             tpfes->GetSliceDofNrs(ElementId(el2_y),0,dnums_xslice1);
+             tpfes->GetSliceDofNrs(ElementId(el1_y),0,dnums_xslice,yheap);
+             tpfes->GetSliceDofNrs(ElementId(el2_y),0,dnums_xslice1,yheap);
              dnums_xslice.Append(dnums_xslice1);
              x.GetIndirect (dnums_xslice, elvec_xslicemat.AsVector());
              dynamic_cast<TensorProductFacetBilinearFormIntegrator &>(*parts[facetvolumeintegrals]).ApplyYFacetMatrix(fely1, eltransy1, fely2,eltransy2, elvec_xslicemat, &yheap, &miry1,&miry2,lh);
