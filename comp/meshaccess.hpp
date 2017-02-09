@@ -210,6 +210,12 @@ namespace ngcomp
     
     Array<std::tuple<int,int>> identified_facets;
 
+    /// store periodic vertex mapping for each identification number
+    // shared ptr because Meshaccess is copy constructible
+    shared_ptr<Array<Array<INT<2>>>> periodic_node_pairs[3] = {make_shared<Array<Array<INT<2>>>>(),
+                                                               make_shared<Array<Array<INT<2>>>>(),
+                                                               make_shared<Array<Array<INT<2>>>>()};
+
     ///
     MPI_Comm mesh_comm;
   public:
@@ -587,7 +593,9 @@ namespace ngcomp
     {
       if (_domnr>=ndomains)
         throw Exception("MeshAccess::SetPML: was not able to set PML, domain index too high!");
-      pml_trafos[_domnr] = pml_trafo->CreateDim(GetDimension()); 
+      if (pml_trafo->GetDimension()!=dim)
+        throw Exception("MeshAccess::SetPML: dimension of PML = "+ToString(pml_trafo->GetDimension())+" does not fit mesh dimension!");
+      pml_trafos[_domnr] = pml_trafo; 
     }
     
     void UnSetPML (int _domnr)
@@ -894,7 +902,9 @@ namespace ngcomp
     void GetPeriodicEdges ( Array<ngstd::INT<2> > & pairs) const;
     int GetNPairsPeriodicEdges () const;
     void GetPeriodicEdges (int idnr, Array<ngstd::INT<2> > & pairs) const;
-    int GetNPairsPeriodicEdges (int idnr) const;  
+    int GetNPairsPeriodicEdges (int idnr) const;
+
+    const Array<INT<2>>& GetPeriodicNodes(NODE_TYPE nt, int idnr) const;
 
 
     virtual void PushStatus (const char * str) const;

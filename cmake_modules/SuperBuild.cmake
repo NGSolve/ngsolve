@@ -75,6 +75,7 @@ else(NETGEN_DIR)
   set (NETGEN_CMAKE_ARGS)
   # propagate netgen-specific settings to Netgen subproject
   set_vars( NETGEN_CMAKE_ARGS
+    CMAKE_CXX_COMPILER
     CMAKE_BUILD_TYPE
     CMAKE_SHARED_LINKER_FLAGS
     CMAKE_SHARED_LINKER_FLAGS_RELEASE
@@ -187,6 +188,7 @@ endif(USE_UMFPACK)
 #######################################################################
 # propagate cmake variables to NGSolve subproject
 set_vars( NGSOLVE_CMAKE_ARGS
+  CMAKE_CXX_COMPILER
   CMAKE_SHARED_LINKER_FLAGS
   CMAKE_SHARED_LINKER_FLAGS_RELEASE
   CMAKE_CXX_FLAGS
@@ -208,6 +210,7 @@ set_vars( NGSOLVE_CMAKE_ARGS
   USE_CCACHE
   USE_NATIVE_ARCH
   USE_OCC
+  MUMPS_DIR
   INSTALL_DIR
   NETGEN_SOURCE_DIR
   INSTALL_DEPENDENCIES 
@@ -237,7 +240,7 @@ endif(NOT NETGEN_DIR)
 ExternalProject_Add (ngsolve
   DEPENDS ${DEPENDENCIES} ${LAPACK_PROJECTS}
   SOURCE_DIR ${PROJECT_SOURCE_DIR}
-  CMAKE_ARGS ${NGSOLVE_CMAKE_ARGS} -DUSE_SUPERBUILD=OFF -DCMAKE_PREFIX_PATH=${NETGEN_DIR}
+  CMAKE_ARGS ${NGSOLVE_CMAKE_ARGS} -DUSE_SUPERBUILD=OFF -DCMAKE_PREFIX_PATH="${NETGEN_DIR};${CMAKE_PREFIX_PATH}"
   INSTALL_COMMAND ""
   BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/ngsolve
   BUILD_COMMAND ${COMMON_BUILD_COMMAND}
@@ -250,6 +253,24 @@ add_custom_target(test_ngsolve
                    --target test
                    --config ${CMAKE_BUILD_TYPE}
                    )
+
+# Check if the git submodules (i.e. netgen) are up to date
+# in case, something is wrong, emit a warning but continue
+ ExternalProject_Add_Step(ngsolve check_submodules
+   COMMAND cmake -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/check_submodules.cmake
+   DEPENDERS install # Steps on which this step depends
+   )
+
+# Due to 'ALWAYS 1', this step is always run which also forces a build of
+# the ngsolve subproject
+ ExternalProject_Add_Step(ngsolve check_submodules1
+   COMMAND cmake -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/check_submodules.cmake
+   DEPENDEES configure # Steps on which this step depends
+   DEPENDERS build     # Steps that depend on this step
+   ALWAYS 1            # No stamp file, step always runs
+   )
+
+
 
 if(WIN32)
   file(TO_NATIVE_PATH ${INSTALL_DIR}/bin netgendir)

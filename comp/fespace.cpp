@@ -26,7 +26,7 @@ namespace ngcomp
 {
 
   FESpace :: FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags)
-    : NGS_Object (ama, "FESpace")
+    : NGS_Object (ama, flags, "FESpace")
   {
     // register flags
     DefineStringFlag("type");
@@ -813,26 +813,26 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void FESpace :: GetNodeDofNrs (NODE_TYPE nt, int nr, Array<int> & dnums) const
   {
-    switch (nt)
-      {
-      case NT_VERTEX: GetVertexDofNrs(nr, dnums); break;
-      case NT_EDGE:   GetEdgeDofNrs(nr, dnums); break;
-      case NT_FACE:   
-        if (ma->GetDimension() == 3)
-          GetFaceDofNrs(nr, dnums); 
-        else
-          GetInnerDofNrs(nr, dnums); 
-        break;
-      case NT_CELL:   GetInnerDofNrs(nr, dnums); break;
-      case NT_ELEMENT: case NT_FACET:
-        GetNodeDofNrs (StdNodeType(nt, ma->GetDimension()), nr, dnums);
-        break;
-      }
+    GetDofNrs(NodeId(nt,nr),dnums);
   }
 
   void FESpace :: GetDofNrs (NodeId ni, Array<int> & dnums) const
   {
-    GetNodeDofNrs (ni.GetType(), ni.GetNr(), dnums);
+    switch (ni.GetType())
+      {
+      case NT_VERTEX: GetVertexDofNrs(ni.GetNr(), dnums); break;
+      case NT_EDGE:   GetEdgeDofNrs(ni.GetNr(), dnums); break;
+      case NT_FACE:   
+        if (ma->GetDimension() == 3)
+          GetFaceDofNrs(ni.GetNr(), dnums); 
+        else
+          GetInnerDofNrs(ni.GetNr(), dnums); 
+        break;
+      case NT_CELL:   GetInnerDofNrs(ni.GetNr(), dnums); break;
+      case NT_ELEMENT: case NT_FACET:
+        GetDofNrs (NodeId(StdNodeType(ni.GetType(), ma->GetDimension()), ni.GetNr()), dnums);
+        break;
+      }
   }
   
   void FESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
@@ -926,17 +926,18 @@ lot of new non-zero entries in the matrix!\n" << endl;
     return GetNDof();
   } 
 
-  void FESpace :: Timing () const
+  std::list<std::tuple<std::string,double>> FESpace :: Timing () const
   {
     double starttime;
     double time;
     int steps;
+    std::list<std::tuple<std::string,double>> results;
     LocalHeap lh (100000, "FESpace - Timing");
 
-    cout << endl << "timing fespace " << GetName() 
-         << (low_order_space ? "" : " low-order")
-         << " ..." << endl;
-    
+    // cout << endl << "timing fespace " << GetName() 
+    //      << (low_order_space ? "" : " low-order")
+    //      << " ..." << endl;
+
     starttime = WallTime();
     steps = 0;
     do
@@ -952,9 +953,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	time = WallTime()-starttime;
       }
     while (time < 2.0);
+    results.push_back(std::make_tuple<std::string,double>("GetDofNrs",1e9*time / (ma->GetNE()*steps)));
+    //cout << 1e9*time / (ma->GetNE()*steps) << " ns per GetDofNrs (parallel)" << endl;
     
-    cout << 1e9*time / (ma->GetNE()*steps) << " ns per GetDofNrs (parallel)" << endl;
-
     /*
     starttime = WallTime();
     steps = 0;
@@ -1000,8 +1001,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
         time = WallTime()-starttime;
       }
     while (time < 2.0);
-    
-    cout << 1e9 * time / (ma->GetNE()*steps) << " ns per GetFE (parallel)" << endl;
+
+    results.push_back(std::make_tuple<std::string,double>("GetFE",1e9 * time / (ma->GetNE()*steps))); 
+    //    cout << 1e9 * time / (ma->GetNE()*steps) << " ns per GetFE (parallel)" << endl;
 
 
 
@@ -1018,8 +1020,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
         time = WallTime()-starttime;
       }
     while (time < 2.0);
-    
-    cout << 1e9 * time / (ma->GetNE()*steps) << " ns per Get - Ng_Element (parallel)" << endl;
+
+    results.push_back(std::make_tuple<std::string,double>("Get Ng_Element", 1e9 * time / (ma->GetNE()*steps)));
+    //    cout << 1e9 * time / (ma->GetNE()*steps) << " ns per Get - Ng_Element (parallel)" << endl;
 
 
     starttime = WallTime();
@@ -1039,8 +1042,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
         time = WallTime()-starttime;
       }
     while (time < 2.0);
-    
-    cout << 1e9 * time / (ma->GetNE()*steps) << " ns per GetTrafo(parallel)" << endl;
+
+    results.push_back(std::make_tuple<std::string,double>("GetTrafo", 1e9 * time / (ma->GetNE()*steps)));
+    //    cout << 1e9 * time / (ma->GetNE()*steps) << " ns per GetTrafo(parallel)" << endl;
 
 
 
@@ -1136,6 +1140,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 #endif
 
+    return results;
 
   }
 
