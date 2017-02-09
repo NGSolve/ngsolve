@@ -112,7 +112,7 @@ namespace ngla
 
 
   
-  void ParallelDofs :: EnumerateGlobally (const BitArray * freedofs, 
+  void ParallelDofs :: EnumerateGlobally (shared_ptr<BitArray> freedofs, 
 					  Array<int> & global_nums,
 					  int & num_glob_dofs) const
   {

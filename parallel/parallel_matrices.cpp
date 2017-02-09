@@ -15,7 +15,7 @@ namespace ngla
 
   template <typename TM>
   MasterInverse<TM> :: MasterInverse (const SparseMatrixTM<TM> & mat, 
-				      const BitArray * subset, 
+				      shared_ptr<BitArray> subset, 
 				      const ParallelDofs * hpardofs)
 
     : loc2glob(MyMPI_GetNTasks (hpardofs -> GetCommunicator())),
@@ -397,7 +397,7 @@ namespace ngla
   }
 
 
-  shared_ptr<BaseMatrix> ParallelMatrix::InverseMatrix (const BitArray * subset) const
+  shared_ptr<BaseMatrix> ParallelMatrix::InverseMatrix (shared_ptr<BitArray> subset) const
   {
     shared_ptr<BaseMatrix> inv;
     inv = InverseMatrixTM<double> (subset);   if (inv) return inv;
@@ -415,7 +415,7 @@ namespace ngla
 
   
   template <typename TM>
-  shared_ptr<BaseMatrix> ParallelMatrix::InverseMatrixTM (const BitArray * subset) const
+  shared_ptr<BaseMatrix> ParallelMatrix::InverseMatrixTM (shared_ptr<BitArray> subset) const
   {
     const SparseMatrixTM<TM> * dmat = dynamic_cast<const SparseMatrixTM<TM>*> (mat.get());
     if (!dmat) return NULL;

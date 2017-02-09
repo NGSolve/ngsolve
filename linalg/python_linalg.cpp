@@ -257,10 +257,10 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                 {
                                   return self.FVDouble();
                                 }))
-    .def("Distribute", [] (PyBaseVector & self) { self->Distribute(); } ) 
-    .def("Cumulate", [] (PyBaseVector & self) { self->Cumulate(); } ) 
-    .def("GetParallelStatus", [] (PyBaseVector & self) -> int { return self->GetParallelStatus(); } )
-    .def("SetParallelStatus", [] (PyBaseVector & self, PyPStatDummy stat) { self->SetParallelStatus(stat.ps); } )
+    .def("Distribute", [] (PyBaseVector & self) { self.Distribute(); } ) 
+    .def("Cumulate", [] (PyBaseVector & self) { self.Cumulate(); } ) 
+    .def("GetParallelStatus", [] (PyBaseVector & self) -> int { return self.GetParallelStatus(); } )
+    .def("SetParallelStatus", [] (PyBaseVector & self, PyPStatDummy stat) { self.SetParallelStatus(stat.ps); } )
     ;       
 
   // m.def("InnerProduct",[](BaseVector & v1, BaseVector & v2)->double { return InnerProduct(v1,v2); })
