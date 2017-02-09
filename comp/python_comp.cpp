@@ -7,7 +7,6 @@
 #include <regex>
 
 #include "../ngstd/python_ngstd.hpp"
-#include <pybind11/stl_bind.h>
 #include <comp.hpp>
 
 using namespace ngcomp;
@@ -1370,8 +1369,6 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                              new (instance) PyFES(fes);
                              };
 
-  // bind std::map<std::string,double> to python MapStringDouble
-  py::bind_map<std::map<std::string,double>> (m,"MapStringDouble");
   
   py::class_<PyFES>(m, "FESpace",  "a finite element space", py::dynamic_attr())
     // the raw - constructor
