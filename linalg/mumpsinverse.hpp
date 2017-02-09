@@ -71,7 +71,7 @@ namespace ngla
   public:
     ///
     MumpsInverse (const SparseMatrix<TM,TV_ROW,TV_COL> & a, 
-                  const shared_ptr<BitArray> ainner = nullptr,
+                  shared_ptr<BitArray> ainner = nullptr,
                   const Array<int> * acluster = nullptr,
                   bool symmetric = false);
 

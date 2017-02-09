@@ -35,7 +35,7 @@ static PStatDummy pstat_not_par(NOT_PARALLEL);
   
   
 void NGS_DLL_HEADER ExportNgla(py::module &m) {
-    cout << IM(1) << "exporting linalg" << endl;
+  // cout << IM(1) << "exporting linalg" << endl;
     // TODO
 //     py::object expr_module = py::import("ngsolve.__expr");
 //     py::object expr_namespace = expr_module.attr("__dict__");
@@ -207,7 +207,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
       {
           self.Range(ind,ind+1) = d;
       } )
-    .def("__setitem__", [](PyBaseVector & self,  int ind, Complex z ) -> void
+    .def("__setitem__", [](PyBaseVector & self,  int ind, Complex z ) 
       {
         self.Range(ind,ind+1) = z;
       } )
@@ -222,6 +222,12 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
           size_t start, step, n;
           InitSlice( inds, self.Size(), start, step, n );
           self.Range(start,start+n) = z;
+      } )
+    .def("__setitem__", [](PyBaseVector & self, py::slice inds, PyWrapper<BaseVector> & v )
+      {
+        size_t start, step, n;
+        InitSlice( inds, self.Size(), start, step, n );
+        self.Range(start, start+n) = *v;
       } )
     .def("__setitem__", [](PyBaseVector & self,  int ind, FlatVector<double> & v )
       {
@@ -241,21 +247,31 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("__isub__", [](PyBaseVector & self,  PyBaseVector & other) -> BaseVector& { self -= other; return self;})
     .def("__imul__", [](PyBaseVector & self,  double scal) -> BaseVector& { self *= scal; return self;})
     .def("__imul__", [](PyBaseVector & self,  Complex scal) -> BaseVector& { self *= scal; return self;})
-    .def("InnerProduct", [](PyBaseVector & self, PyBaseVector & other)
+    .def("InnerProduct", [](PyBaseVector & self, PyBaseVector & other, bool conjugate)
                                           {
                                             if (self.IsComplex())
-                                              return py::cast (S_InnerProduct<ComplexConjugate> (self, other));
+                                              {
+                                                if (conjugate)
+                                                  return py::cast (S_InnerProduct<ComplexConjugate> (self, other));
+                                                else
+                                                  return py::cast (S_InnerProduct<Complex> (self, other));
+                                              }
                                             else
                                               return py::cast (InnerProduct (self, other));
-                                          })
+                                          },
+         "InnerProduct", py::arg("other"), py::arg("conjugate")=py::cast(true)         
+         )
     .def("Norm",  [](PyBaseVector & self) { return self.L2Norm(); })
     .def("Range", [](PyBaseVector & self, int from, int to) -> shared_ptr<BaseVector>
                                    {
                                      return shared_ptr<BaseVector>(self.Range(from,to));
                                    })
-    .def("FV", FunctionPointer( [] (PyBaseVector & self) -> FlatVector<double>
+    .def("FV", FunctionPointer ([] (PyBaseVector & self)
                                 {
-                                  return self.FVDouble();
+                                  if (!self.IsComplex())
+                                    return py::cast(self.FVDouble());
+                                  else
+                                    return py::cast(self.FVComplex());
                                 }))
     .def("Distribute", [] (PyBaseVector & self) { self.Distribute(); } ) 
     .def("Cumulate", [] (PyBaseVector & self) { self.Cumulate(); } ) 
@@ -381,23 +397,24 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                    SparseMatrix<double> * sp = dynamic_cast<SparseMatrix<double>*> (&m);
                                    if (sp)
                                      {
-                                       Array<int> ri, ci;
-                                       Array<double> vals;
-                                       for (int i = 0; i < sp->Height(); i++)
+                                       size_t nze = sp->NZE();
+                                       Array<int> ri(nze), ci(nze);
+                                       Vector<double> vals(nze);
+                                       for (size_t i = 0, ii = 0; i < sp->Height(); i++)
                                          {
                                            FlatArray<int> ind = sp->GetRowIndices(i);
                                            FlatVector<double> rv = sp->GetRowValues(i);
-                                           for (int j = 0; j < ind.Size(); j++)
+                                           for (int j = 0; j < ind.Size(); j++, ii++)
                                              {
-                                               ri.Append (i);
-                                               ci.Append (ind[j]);
-                                               vals.Append (rv[j]);
+                                               ri[ii] = i;
+                                               ci[ii] = ind[j];
+                                               vals[ii] = rv[j];
                                              }
                                          }
 
-                                       py::object pyri = py::cast(ri);
-                                       py::object pyci = py::cast(ci);
-                                       py::object pyvals = py::cast(vals);
+                                       py::object pyri = py::cast(std::move(ri));
+                                       py::object pyci = py::cast(std::move(ci));
+                                       py::object pyvals = py::cast(std::move(vals));
                                        return py::make_tuple (pyri, pyci, pyvals);
                                      }
 				   
@@ -405,25 +422,24 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 				     = dynamic_cast<SparseMatrix<Complex>*> (&m);
 				   if (spc)
 				     {
-					 Array<int> ri, ci;
-					 Array<double> vals_real;
-					 Array<double> vals_imag;
-					 Array<Complex> vals;
-					 for (int i = 0; i < spc->Height(); i++)
-					   {
-					     FlatArray<int> ind = spc->GetRowIndices(i);
-					     FlatVector<Complex> rv = spc->GetRowValues(i);
-					     for (int j = 0; j < ind.Size(); j++)
-					       {
-						 ri.Append (i);
-						 ci.Append (ind[j]);
-						 vals.Append (rv[j]);
-					       }
-					   }
-					 py::object pyri  = py::cast(ri);
-					 py::object pyci  = py::cast(ci);
-					 py::object pyvals = py::cast(vals);
-					 return py::make_tuple (pyri, pyci, pyvals);
+                                       size_t nze = spc->NZE();
+                                       Array<int> ri(nze), ci(nze);
+                                       Vector<Complex> vals(nze);
+                                       for (size_t i = 0, ii = 0; i < spc->Height(); i++)
+                                         {
+                                           FlatArray<int> ind = spc->GetRowIndices(i);
+                                           FlatVector<Complex> rv = spc->GetRowValues(i);
+                                           for (int j = 0; j < ind.Size(); j++, ii++)
+                                             {
+                                               ri[ii] = i;
+                                               ci[ii] = ind[j];
+                                               vals[ii] = rv[j];
+                                             }
+                                         }
+                                       py::object pyri = py::cast(std::move(ri));
+                                       py::object pyci = py::cast(std::move(ci));
+                                       py::object pyvals = py::cast(std::move(vals));
+                                       return py::make_tuple (pyri, pyci, pyvals);
 				     }
 				   
 				   throw Exception ("COO needs real or complex-valued sparse matrix");
@@ -470,6 +486,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                      { return m.InverseMatrix(); })
     .def("Transpose", [](BM &m)-> PyWrapper<BaseMatrix>
                                        { return make_shared<Transpose> (m); })
+    .def("Update", [](BM &m) { m.Update(); })
     // py::return_value_policy<py::manage_new_object>())
     ;
     m.def("TestMult", [] (BaseMatrix &m, PyBaseVector &x, PyBaseVector &y) {

@@ -48,7 +48,7 @@ fem.__all__ =  ['BFI', 'CoefficientFunction',  'DomainConstantCF',  'Parameter',
            'IntegrationRule', 'IfPos' \
            ]
 # TODO: fem:'PythonCF' comp:'PyNumProc'
-comp.__all__ =  ['BBND','BND', 'BilinearForm', 'COUPLING_TYPE', 'CompoundFESpace', 'ElementId', 'BndElementId', 'FESpace', 'GridFunction', 'LinearForm', 'Mesh', 'Preconditioner', 'VOL', 'NumProc', 'PDE', 'Integrate', 'SymbolicLFI', 'SymbolicBFI', 'SymbolicEnergy', 'VTKOutput', 'SetHeapSize', 'SetTestoutFile', 'ngsglobals']           
+comp.__all__ =  ['BBND','BND', 'BilinearForm', 'COUPLING_TYPE', 'CompoundFESpace', 'ElementId', 'BndElementId', 'FESpace', 'GridFunction', 'LinearForm', 'Mesh', 'Preconditioner', 'VOL', 'NumProc', 'PDE', 'Integrate', 'SymbolicLFI', 'SymbolicBFI', 'SymbolicEnergy', 'VTKOutput', 'SetHeapSize', 'SetTestoutFile', 'ngsglobals','pml','Periodic']           
 solve.__all__ =  ['Redraw', 'BVP', 'CalcFlux', 'Draw', 'DrawFlux', 'SetVisualization']
 
 from ngsolve.ngstd import *
@@ -58,6 +58,7 @@ from ngsolve.fem import *
 from ngsolve.comp import *
 from ngsolve.solve import *
 from ngsolve.utils import *
+from . import timing
 
 from . import __expr
 BaseVector.expr = property(__expr.VecExpr)
@@ -72,6 +73,8 @@ BaseMatrix.T = property(__expr.TransExpr)
 BaseMatrix.__mul__ = __expr.expr_mul
 BaseMatrix.__rmul__ = __expr.expr_rmul
 
+Timing = timing.Timing
+
 fem.__doc__ = \
 """Finite Elements
 ===============
@@ -80,7 +83,7 @@ finite element shape functions, and element-matrix/vector integrators
 """
 
 
-__all__ = ngstd.__all__ + bla.__all__ +la.__all__ + fem.__all__ + comp.__all__ + solve.__all__ + utils.__all__
+__all__ = ngstd.__all__ + bla.__all__ +la.__all__ + fem.__all__ + comp.__all__ + solve.__all__ + utils.__all__ + ["Timing"]
 
 
 

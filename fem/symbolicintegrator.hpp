@@ -8,6 +8,7 @@
 /*********************************************************************/
 
 
+
 namespace ngfem
 {
 
@@ -209,6 +210,10 @@ class ProxyUserData
   FlatArray<const ProxyFunction*> remember_first;
   FlatArray<FlatMatrix<double>> remember_second;
   FlatArray<FlatMatrix<SIMD<double>>> remember_asecond;
+
+  FlatArray<const CoefficientFunction*> remember_cf_first;
+  FlatArray<FlatMatrix<SIMD<double>>> remember_cf_asecond;
+  FlatArray<bool> remember_cf_computed;
 public:
   class ProxyFunction * testfunction = nullptr;
   int test_comp;
@@ -220,11 +225,18 @@ public:
   LocalHeap * lh;
 
   ProxyUserData ()
-    : remember_first(0,nullptr), remember_second(0,nullptr), remember_asecond(0,nullptr) { ; }
-  ProxyUserData (int ntrial, LocalHeap & lh)
+    : remember_first(0,nullptr), remember_second(0,nullptr), remember_asecond(0,nullptr),
+      remember_cf_first(0, nullptr), remember_cf_asecond(0,nullptr), remember_cf_computed(0, nullptr)
+  { ; }
+  ProxyUserData (int ntrial, int ncf, LocalHeap & lh)
     : remember_first(ntrial, lh), remember_second(ntrial, lh),
-      remember_asecond(ntrial, lh)
-  { remember_first = nullptr; }
+      remember_asecond(ntrial, lh),
+      remember_cf_first(ncf, lh), remember_cf_asecond(ncf, lh),
+      remember_cf_computed(ncf, lh)
+  { remember_first = nullptr; remember_cf_first = nullptr; }
+
+  ProxyUserData (int ntrial, LocalHeap & lh)
+    : ProxyUserData (ntrial, 0, lh) { ; } 
   
   void AssignMemory (const ProxyFunction * proxy, int h, int w, LocalHeap & lh)
   {
@@ -240,9 +252,30 @@ public:
       }
     throw Exception ("no space for userdata - memory available");
   }
+
+  void AssignMemory (const CoefficientFunction * cf, int h, int w, LocalHeap & lh)
+  {
+    for (int i = 0; i < remember_cf_first.Size(); i++)
+      {
+        if (remember_cf_first[i] == nullptr)
+          {
+            remember_cf_first[i] = cf;
+            new (&remember_cf_asecond[i]) FlatMatrix<SIMD<double>> (w, (h+SIMD<double>::Size()-1)/SIMD<double>::Size(), lh);
+            remember_cf_computed[i] = false;
+            return;
+          }
+      }
+    throw Exception ("no space for userdata - memory available");
+  }
+
+
   bool HasMemory (const ProxyFunction * proxy) const
   {
     return remember_first.Contains(proxy);
+  }
+  bool HasMemory (const CoefficientFunction * cf) const
+  {
+    return remember_cf_first.Contains(cf);
   }
   FlatMatrix<> GetMemory (const ProxyFunction * proxy) const
   {
@@ -251,6 +284,18 @@ public:
   FlatMatrix<SIMD<double>> GetAMemory (const ProxyFunction * proxy) const
   {
     return remember_asecond[remember_first.Pos(proxy)];
+  }
+  FlatMatrix<SIMD<double>> GetAMemory (const CoefficientFunction * cf) const
+  {
+    return remember_cf_asecond[remember_cf_first.Pos(cf)];
+  }
+  bool Computed (const CoefficientFunction * cf) const
+  {
+    return remember_cf_computed[remember_cf_first.Pos(cf)];
+  }
+  void SetComputed (const CoefficientFunction * cf) const
+  {
+    remember_cf_computed[remember_cf_first.Pos(cf)] = true;
   }
 };
 
@@ -453,6 +498,7 @@ public:
   protected:
     shared_ptr<CoefficientFunction> cf;
     Array<ProxyFunction*> trial_proxies, test_proxies;
+    Array<CoefficientFunction*> gridfunction_cfs;
     Array<int> trial_cum, test_cum;   // cumulated dimension of proxies
     VorB vb;
     bool element_boundary;
@@ -460,6 +506,8 @@ public:
     Matrix<bool> nonzeros_proxies; // do proxies interact ? 
     bool elementwise_constant;
     mutable bool simd_evaluate;
+    IntegrationRule ir;   // if non-empty use this integration-rule
+    SIMD_IntegrationRule simd_ir;   // if non-empty use this integration-rule
     
   public:
     SymbolicBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb,
@@ -471,6 +519,7 @@ public:
 
     IntegrationRule GetIntegrationRule (const FiniteElement & fel) const;
     SIMD_IntegrationRule Get_SIMD_IntegrationRule (const FiniteElement & fel) const;
+    void SetIntegrationRule (const IntegrationRule & _ir);
     
     virtual void 
     CalcElementMatrix (const FiniteElement & fel,
@@ -518,14 +567,6 @@ public:
 			void * precomputed,
 			LocalHeap & lh) const;
 
-     virtual void 
-     ApplyElementMatrixTP (const FiniteElement & fel, 
- 			const ElementTransformation & trafo, 
- 			const FlatVector<double> elx, 
- 			FlatVector<double> ely,
- 			void * precomputed,
- 			LocalHeap & lh) const;
-
     template <int D, typename SCAL, typename SCAL_SHAPES>
     void T_ApplyElementMatrixEB (const FiniteElement & fel, 
                                  const ElementTransformation & trafo, 
@@ -568,6 +609,7 @@ public:
   protected:
     shared_ptr<CoefficientFunction> cf;
     Array<ProxyFunction*> trial_proxies, test_proxies;
+    Array<CoefficientFunction*> gridfunction_cfs;    
     Array<int> trial_cum, test_cum;   // cumulated dimension of proxies
     VorB vb;
     bool element_boundary;
@@ -588,16 +630,23 @@ public:
                      const ElementTransformation & eltrans1, FlatArray<int> & ElVertices1,
                      const FiniteElement & volumefel2, int LocalFacetNr2,
                      const ElementTransformation & eltrans2, FlatArray<int> & ElVertices2,
-                     FlatMatrix<double> & elmat,
+                     FlatMatrix<double> elmat,
                      LocalHeap & lh) const;
 
     virtual void
     CalcFacetMatrix (const FiniteElement & volumefel, int LocalFacetNr,
                      const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
-                     const ElementTransformation & seltrans,  
-                     FlatMatrix<double> & elmat,
+                     const ElementTransformation & seltrans, FlatArray<int> & SElVertices,  
+                     FlatMatrix<double> elmat,
                      LocalHeap & lh) const;
 
+    virtual void
+    CalcLinearizedFacetMatrix (const FiniteElement & volumefel, int LocalFacetNr,
+                               const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+                               const ElementTransformation & seltrans, FlatArray<int> & SElVertices,  
+                               FlatVector<double> vec, FlatMatrix<double> elmat,
+                               LocalHeap & lh) const;
+    
     virtual void
     ApplyFacetMatrix (const FiniteElement & volumefel1, int LocalFacetNr1,
                       const ElementTransformation & eltrans1, FlatArray<int> & ElVertices1,
@@ -620,25 +669,11 @@ public:
     
     virtual void
     ApplyFacetMatrix (const FiniteElement & volumefel, int LocalFacetNr,
-		      const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
-		      const ElementTransformation & seltrans, FlatArray<int> & SElVertices,
-		      FlatVector<double> elx, FlatVector<double> ely,
-		      LocalHeap & lh) const;
-    
-    virtual void
-    ApplyFacetMatrixTP (const FiniteElement & volumefel1, int LocalFacetNr1,
-			const ElementTransformation & eltrans1, FlatArray<int> & ElVertices1,
-			const FiniteElement & volumefel2, int LocalFacetNr2,
-			const ElementTransformation & eltrans2, FlatArray<int> & ElVertices2,
-			FlatVector<double> elx, FlatVector<double> ely, int xfacet,
-			LocalHeap & lh) const;
+                      const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+                      const ElementTransformation & seltrans, FlatArray<int> & SElVertices,
+                      FlatVector<double> elx, FlatVector<double> ely,
+                      LocalHeap & lh) const;
 
-    virtual void
-    ApplyFacetMatrixTP (const FiniteElement & volumefel, int LocalFacetNr,
-			const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
-			const ElementTransformation & seltrans,  
-			FlatVector<double> elx, FlatVector<double> ely, int xfacet,
-			LocalHeap & lh) const;                      
   };
 
   class SymbolicEnergy : public BilinearFormIntegrator
@@ -688,10 +723,6 @@ public:
     
 
   };
-
-
-
-
   
 
 }

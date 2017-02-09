@@ -38,11 +38,6 @@ namespace ngcomp
     int on_proc;
 
   public:
-    ///
-    //Preconditioner ();
-    ///
-    //Preconditioner (const Flags & flags);
-    ///
     Preconditioner (const PDE * const apde, const Flags & aflags,
 		    const string aname = "precond");
     Preconditioner (shared_ptr<BilinearForm> bfa, const Flags & aflags,
@@ -60,6 +55,11 @@ namespace ngcomp
     virtual const BaseMatrix & GetMatrix() const
     {
       return *this; 
+    }
+    
+    virtual shared_ptr<BaseMatrix> GetMatrixPtr() 
+    {
+      return BaseMatrix::SharedFromThis<BaseMatrix>();
     }
 
     virtual bool IsComplex() const { return GetMatrix().IsComplex(); }

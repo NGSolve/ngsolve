@@ -359,24 +359,20 @@ namespace ngcomp
   };
 
 
-
-  
-
   template <int DIMS, int DIMR, typename BASE>
-  class RadialPML_ElementTransformation : public BASE
+  class PML_ElementTransformation : public BASE
   {
-    Complex alpha;
-    double rad;
+    const PML_Transformation & pml_global_trafo;
   public:
-    RadialPML_ElementTransformation (const MeshAccess * amesh, 
+    PML_ElementTransformation (const MeshAccess * amesh, 
                                      ELEMENT_TYPE aet, ElementId ei, int elindex,
-                                     Complex _alpha, double _rad)
-      : BASE(amesh, aet, ei, elindex), alpha(_alpha), rad(_rad)
+                                     const PML_Transformation & _pml_global_trafo)
+      : BASE(amesh, aet, ei, elindex), pml_global_trafo(_pml_global_trafo)
     {
       this->is_complex = true;
     }
 
-    virtual ~RadialPML_ElementTransformation() { ; }
+    virtual ~PML_ElementTransformation() { ; }
 
     virtual void CalcJacobian (const IntegrationPoint & ip,
 			       FlatMatrix<> dxdxi) const
@@ -397,43 +393,24 @@ namespace ngcomp
       CalcPoint (ip, point);
     }
 
-    void MapPoint (Vec<DIMR> & hpoint, Vec<DIMR,Complex> & point,
-                   Mat<DIMS,DIMR> & hjac, Mat<DIMS,DIMR,Complex> & jac) const
-    {
-      double abs_x = L2Norm (hpoint);
-      if (abs_x <= rad)  
-        {
-          point = hpoint;
-          jac = hjac;
-        }
-      else
-        {
-          Complex g = 1.+alpha*(1.0-rad/abs_x);
-          point = g * hpoint;
-          // SZ: sollte da nicht abs_x * abs_x anstelle  abs_x*abs_x * abs_x stehen? 
-          // JS: das hat schon so gestimmt
-          Mat<DIMR,DIMR,Complex> trans =
-            g * Id<DIMR>() + (rad*alpha/(abs_x*abs_x*abs_x)) * (hpoint * Trans(hpoint));
-          jac = trans * hjac;
-        }
-    }
 
     virtual BaseMappedIntegrationPoint & operator() (const IntegrationPoint & ip, Allocator & lh) const
     {
       auto & mip = *new (lh) MappedIntegrationPoint<DIMS,DIMR,Complex> (ip, *this, -47);
       MappedIntegrationPoint<DIMS,DIMR> hip(ip, *this);
       
-      Vec<DIMR> hpoint(hip.Point());
       Vec<DIMR,Complex> point;
       
       Mat<DIMS,DIMR> hjac(hip.Jacobian());
-      Mat<DIMS,DIMR,Complex> jac;
           
-      MapPoint (hpoint, point, hjac, jac);
+      Mat<DIMR,DIMR,Complex> tjac;
+      const PML_TransformationDim<DIMR> & dimpml = 
+        static_cast<const PML_TransformationDim<DIMR>&> (pml_global_trafo);
+      dimpml.MapIntegrationPoint (hip, point, tjac);
                     
       mip.Point() = point; 
-      mip.Jacobian() = jac;
-      mip.Compute();          
+      mip.Jacobian() = tjac*hjac;
+      mip.Compute();
       return mip;
     }
 
@@ -443,6 +420,13 @@ namespace ngcomp
       return mir;
     }
 
+    virtual SIMD_BaseMappedIntegrationRule & operator() (const SIMD_IntegrationRule & ir, Allocator & lh) const
+    {
+      throw ExceptionNOSIMD("PML-trafo operator() (SIMD_IntegrationRule & ir) not overloaded");
+      // return *new (lh) SIMD_MappedIntegrationRule<DIMS,DIMR> (ir, *this, lh);
+    }
+
+    
     virtual void CalcMultiPointJacobian (const IntegrationRule & ir,
 					 BaseMappedIntegrationRule & bmir) const
     {
@@ -452,23 +436,24 @@ namespace ngcomp
           return;
         }
 
-      LocalHeapMem<1000000> lh("testwise");
+      LocalHeapMem<100000> lh("testwise");
       MappedIntegrationRule<DIMS,DIMR> mir_real(ir, *this, lh);
 
       auto & mir_complex = dynamic_cast<MappedIntegrationRule<DIMS,DIMR,Complex>&> (bmir);
+      const PML_TransformationDim<DIMR> & dimpml = 
+            static_cast<const PML_TransformationDim<DIMR>&> (pml_global_trafo);
 
       for (int i = 0; i < ir.Size(); i++)
         {
-          Vec<DIMR> hpoint(mir_real[i].Point());
           Vec<DIMR,Complex> point;
           
           Mat<DIMS,DIMR> hjac(mir_real[i].Jacobian());
-          Mat<DIMS,DIMR,Complex> jac;
           
-          MapPoint (hpoint, point, hjac, jac);
+          Mat<DIMR,DIMR,Complex> tjac;
+          dimpml.MapIntegrationPoint (mir_real[i], point, tjac);
                     
           mir_complex[i].Point() = point; 
-          mir_complex[i].Jacobian() = jac;
+          mir_complex[i].Jacobian() = tjac*hjac;
           mir_complex[i].Compute();          
         }
     }
@@ -479,12 +464,6 @@ namespace ngcomp
       throw ExceptionNOSIMD ("pml - trafo cannot calc simd_rule");
     }
   };
-
-
-
-  
-
-
   
   template <int DIMS, int DIMR>
   class Ng_ConstElementTransformation : public ElementTransformation
@@ -859,6 +838,8 @@ namespace ngcomp
             nnodes_cd[i] = 0;
             nelements_cd[i] = 0;
           }
+        nnodes[NT_ELEMENT] = 0;
+        nnodes[NT_FACET] = 0;
         dim = -1;
         ne_vb[VOL] = ne_vb[BND] = ne_vb[BBND] = 0;
         return;
@@ -897,6 +878,9 @@ namespace ngcomp
 	else 
 	  ne_vb[BBND] = nelements_cd[2];
       }
+    nnodes[NT_ELEMENT] = nnodes[StdNodeType (NT_ELEMENT, dim)];
+    nnodes[NT_FACET] = nnodes[StdNodeType (NT_FACET, dim)];
+    
 
     ndomains = -1;
     int ne = GetNE(); 
@@ -909,6 +893,7 @@ namespace ngcomp
 
     ndomains++;
     ndomains = MyMPI_AllReduce (ndomains, MPI_MAX);
+    pml_trafos.SetSize(ndomains);
 
     nboundaries = -1;
     int nse = GetNSE(); 
@@ -924,22 +909,124 @@ namespace ngcomp
 
     CalcIdentifiedFacets();
     if(mesh.GetDimension() == 1)
-    {
-      nbboundaries = 0;
-      return;
-    }
-    nbboundaries = -1;
-    int ncd2e = nelements_cd[2];
-    for (int i=0; i< ncd2e; i++)
       {
-	int elindex = GetCD2ElIndex(i);
-	//if (elindex < 0) throw Exception ("mesh with negative cd2 condition number");
-	if (elindex >=0)
-	  nbboundaries = max2(nbboundaries, elindex);
+        nbboundaries = 0;
       }
-    nbboundaries++;
-    nbboundaries = MyMPI_AllReduce(nbboundaries, MPI_MAX);
-  }
+    else
+      {
+        nbboundaries = -1;
+        int ncd2e = nelements_cd[2];
+        for (int i=0; i< ncd2e; i++)
+          {
+            int elindex = GetCD2ElIndex(i);
+            //if (elindex < 0) throw Exception ("mesh with negative cd2 condition number");
+            if (elindex >=0)
+              nbboundaries = max2(nbboundaries, elindex);
+          }
+        nbboundaries++;
+        nbboundaries = MyMPI_AllReduce(nbboundaries, MPI_MAX);
+      }
+    
+    // update periodic mappings
+    auto nid = mesh.GetMesh()->GetIdentifications().GetMaxNr();
+    periodic_node_pairs[NT_VERTEX]->SetSize(nid);
+    periodic_node_pairs[NT_EDGE]->SetSize(nid);
+    periodic_node_pairs[NT_FACE]->SetSize(nid);
+    for (auto idnr : Range(1,nid+1))
+      {
+        // only if it is periodic
+        if (mesh.GetMesh()->GetIdentifications().GetType(idnr)!=2) continue;
+        size_t nverts = Ng_GetNPeriodicVertices(idnr); 
+        (*periodic_node_pairs[NT_VERTEX])[idnr-1].SetSize(nverts);
+        Ng_GetPeriodicVertices(idnr,&(*periodic_node_pairs[NT_VERTEX])[idnr-1][0][0]);
+        for (auto i : Range(nverts))
+          {
+            (*periodic_node_pairs[NT_VERTEX])[idnr-1][i][0]--;
+            (*periodic_node_pairs[NT_VERTEX])[idnr-1][i][1]--;
+          }
+      
+
+        // build vertex map for idnr
+        Array<int> vertex_map(GetNV());
+        for (auto i : Range(GetNV()))
+          vertex_map[i] = i;
+        for (auto pair : (*periodic_node_pairs[NT_VERTEX])[idnr-1])
+          vertex_map[pair[1]] = pair[0];
+        
+        // build vertex-pair to edge hashtable:
+        HashTable<INT<2>, int> vp2e(GetNEdges());
+        
+        for (int enr = 0; enr < GetNEdges(); enr++)
+          {
+            int v1, v2;
+            GetEdgePNums (enr, v1, v2);
+            if (v1 > v2) Swap (v1, v2);
+            vp2e[INT<2>(v1,v2)] = enr;
+          }
+        int count = 0;
+        for (int enr = 0; enr < GetNEdges(); enr++)
+          {
+            int v1,v2;
+            GetEdgePNums(enr,v1,v2);
+            int mv1 = vertex_map[v1];
+            int mv2 = vertex_map[v2];
+            if(mv1 != v1 && mv2 != v2)
+              count++;
+          }
+        (*periodic_node_pairs[NT_EDGE])[idnr-1].SetSize(count);
+        count = 0;
+        for (int enr = 0; enr < GetNEdges(); enr++)
+          {
+            int v1, v2;
+            GetEdgePNums (enr, v1, v2);
+            int mv1 = vertex_map[v1];
+            int mv2 = vertex_map[v2];
+            if(mv1 != v1 && mv2 != v2)
+              {               
+                if (mv1 > mv2) Swap(mv1,mv2);
+                int menr = vp2e.Get(INT<2>(mv1,mv2));
+                (*periodic_node_pairs[NT_EDGE])[idnr-1][count][0] = menr;
+                (*periodic_node_pairs[NT_EDGE])[idnr-1][count++][1] = enr;
+              }
+          }
+        // build vertex-triple to face hashtable
+        HashTable<INT<3>, int> v2f(GetNFaces());
+        Array<int> pnums;
+        for (auto fnr : Range(GetNFaces()))
+          {
+            GetFacePNums (fnr, pnums);
+            INT<3> i3(pnums[0], pnums[1], pnums[2]);
+            i3.Sort();
+            v2f[i3] = fnr;
+          }
+
+        count = 0;
+        for (auto fnr : Range(GetNFaces()))
+          {
+            GetFacePNums(fnr,pnums);
+            if(vertex_map[pnums[0]] != pnums[0] && vertex_map[pnums[1]] != pnums[1] &&
+               vertex_map[pnums[2]] != pnums[2])
+              {
+                count++;
+              }
+          }
+        (*periodic_node_pairs[NT_FACE])[idnr-1].SetSize(count);
+        count = 0;
+        for (auto fnr : Range(GetNFaces()))
+          {
+            GetFacePNums(fnr,pnums);
+            INT<3> mv(vertex_map[pnums[0]],vertex_map[pnums[1]],vertex_map[pnums[2]]);
+            if(mv[0] != pnums[0] && mv[1] != pnums[1] && mv[2] != pnums[2])
+              {
+                mv.Sort();
+                int mfnr = v2f[mv];
+                (*periodic_node_pairs[NT_FACE])[idnr-1][count][0] = mfnr;
+                (*periodic_node_pairs[NT_FACE])[idnr-1][count++][1] = fnr;
+              }
+          }
+      }
+    
+ }
 
 
 #ifdef ABC
@@ -1211,6 +1298,11 @@ namespace ngcomp
 
   void MeshAccess :: GetElFacets (ElementId ei, Array<int> & fnums) const
   {
+    if (dim == 1)
+      fnums = GetElement(ei).Vertices();
+    else
+      fnums = GetElement(ei).Facets();
+    /*
     switch (dim)
       {
       case 1:
@@ -1220,6 +1312,7 @@ namespace ngcomp
       default:
 	fnums = GetElement(ei).Faces();
       }
+    */
   }
 
   // some utility for Facets
@@ -1361,12 +1454,12 @@ namespace ngcomp
     
     Ngs_Element el (mesh.GetElement<DIM> (elnr), ElementId(VOL, elnr));
     
-    if (el.GetIndex() == pml_domain)
+    if (pml_trafos[el.GetIndex()])
       {
         eltrans = new (lh)
-          RadialPML_ElementTransformation<DIM, DIM, Ng_ElementTransformation<DIM,DIM>>
+          PML_ElementTransformation<DIM, DIM, Ng_ElementTransformation<DIM,DIM>>
           (this, el.GetType(), 
-           ElementId(VOL,elnr), el.GetIndex(), pml_alpha, pml_r);
+           ElementId(VOL,elnr), el.GetIndex(), *pml_trafos[el.GetIndex()]);
       }
     
     else if (loc_deformation)
@@ -1782,10 +1875,6 @@ namespace ngcomp
     UpdateBuffers();
   }
 
-
-  
-
-
   int MeshAccess :: GetNPairsPeriodicVertices () const 
   {
     return Ng_GetNPeriodicVertices(0);
@@ -1829,6 +1918,10 @@ namespace ngcomp
   }
 
 
+  const Array<INT<2>> & MeshAccess :: GetPeriodicNodes (NODE_TYPE nt, int idnr) const
+  {
+    return (*periodic_node_pairs[nt])[idnr-1];
+  }
 
 
   int MeshAccess :: GetNPairsPeriodicEdges () const 

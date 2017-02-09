@@ -8,6 +8,8 @@
 #ifdef USE_MUMPS
 
 #include <la.hpp>
+#include "mumpsinverse.hpp"
+
 #include <comp.hpp>
 // #include <parallelngs.hpp>
 
@@ -28,7 +30,7 @@ namespace ngla
   template <class TM, class TV_ROW, class TV_COL>
   MumpsInverse<TM,TV_ROW,TV_COL> :: 
   MumpsInverse (const SparseMatrix<TM,TV_ROW,TV_COL> & a, 
-                const shared_ptr<BitArray> ainner,
+                shared_ptr<BitArray> ainner,
                 const Array<int> * acluster,
                 bool asymmetric)
   { 
@@ -470,7 +472,7 @@ namespace ngla
     
     Array<int> global_nums;
     int num_glob_dofs;
-    pardofs -> EnumerateGlobally (inner, global_nums, num_glob_dofs);
+    pardofs -> EnumerateGlobally (inner.get(), global_nums, num_glob_dofs);
 
     int ndof = pardofs->GetNDofLocal();
 

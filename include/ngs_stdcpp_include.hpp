@@ -3,10 +3,10 @@
 #endif
 
 #ifndef VERSION
-#define VERSION "6.1"
+#define VERSION "6.2-dev"
 #endif
 
-#define NGS_VERSION 610
+#define NGS_VERSION 620
 
 
 
@@ -88,6 +88,7 @@
 #include <functional>
 #include <atomic>
 #include <mutex>
+#include <list>
 
 
 

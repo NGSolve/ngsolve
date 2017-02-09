@@ -844,12 +844,6 @@ public:
   {
     SetDimensions(c1->Dimensions());
   }
-
-  /*
-  virtual bool IsComplex() const { return c1->IsComplex(); }
-  virtual int Dimension() const { return c1->Dimension(); }
-  virtual Array<int> Dimensions() const { return c1->Dimensions(); }
-  */
   
   virtual void PrintReport (ostream & ost) const
   {
@@ -873,7 +867,6 @@ public:
 
   virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
   { return Array<CoefficientFunction*>({ c1.get() }); }
-
 
   using BASE::Evaluate;
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
@@ -948,8 +941,6 @@ public:
     deriv *= scal;
     dderiv *= scal;
   }
-
-
 
   virtual void Evaluate (const BaseMappedIntegrationRule & mir,
                          FlatArray<FlatMatrix<>*> input,
@@ -2963,10 +2954,10 @@ public:
   {
     return BinaryOpCF (c1, c2, 
                        gen_plus, // [](double a, double b) { return a+b; },
-                       [](Complex a, Complex b) { return a+b; },
-                       [](double a, double b, double & dda, double & ddb) { dda = 1; ddb = 1; },
-                       [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
-                       { ddada = 0; ddadb = 0; ddbdb = 0; },
+                       // [](Complex a, Complex b) { return a+b; },
+                       // [](double a, double b, double & dda, double & ddb) { dda = 1; ddb = 1; },
+                       // [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
+                       // { ddada = 0; ddadb = 0; ddbdb = 0; },
                        [](bool a, bool b) { return a||b; }, '+'
                        );
   }
@@ -2975,10 +2966,12 @@ public:
   {
     return BinaryOpCF (c1, c2, 
                        gen_minus, // [](double a, double b) { return a-b; },
+                       /*
                        [](Complex a, Complex b) { return a-b; },
                        [](double a, double b, double & dda, double & ddb) { dda = 1; ddb = -1; },
                        [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
                        { ddada = 0; ddadb = 0; ddbdb = 0; },
+                       */
                        [](bool a, bool b) { return a||b; }, '-'
                        );
   }
@@ -3011,10 +3004,12 @@ public:
     
     return BinaryOpCF (c1, c2, 
                        gen_mult, // [](double a, double b) { return a*b; },
+                       /*
                        [](Complex a, Complex b) { return a*b; },
                        [](double a, double b, double & dda, double & ddb) { dda = b; ddb = a; },
                        [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
                        { ddada = 0; ddadb = 1; ddbdb = 0; },
+                       */
                        [](bool a, bool b) { return a&&b; }, '*'
                        );
   }
@@ -3073,10 +3068,12 @@ public:
   {
     return BinaryOpCF (c1, c2,
                        gen_div, // [](double a, double b) { return a/b; },
+                       /*
                        [](Complex a, Complex b) { return a/b; },
                        [](double a, double b, double & dda, double & ddb) { dda = 1.0/b; ddb = -a/(b*b); },
                        [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
                        { ddada = 0; ddadb = -1.0/(b*b); ddbdb = 2*a/(b*b*b); },
+                       */
                        [](bool a, bool b) { return a; }, '/'
                        );
   }

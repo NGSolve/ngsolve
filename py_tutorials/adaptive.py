@@ -44,21 +44,21 @@ def MakeGeometry():
 mesh = Mesh(MakeGeometry().GenerateMesh (maxh=0.2))
 
 
-v = H1(mesh, order=3, dirichlet=[1])
+V = H1(mesh, order=3, dirichlet=[1])
 
 # one heat conductivity coefficient per sub-domain
-lam = DomainConstantCF([1, 1000, 10])
-a = BilinearForm(v, symmetric=False)
+lam = CoefficientFunction([1, 1000, 10])
+a = BilinearForm(V, symmetric=False)
 a += Laplace(lam)
 
 
 # heat-source in sub-domain 3
-f = LinearForm(v)
-f += Source(DomainConstantCF([0, 0, 1]))
+f = LinearForm(V)
+f += Source(CoefficientFunction([0, 0, 1]))
 
 c = Preconditioner(a, type="multigrid", flags= { "inverse" : "sparsecholesky" })
 
-u = GridFunction(v)
+u = GridFunction(V)
 
 # the boundary value problem to be solved on each level
 bvp = BVP(bf=a, lf=f, gf=u, pre=c)
@@ -71,7 +71,7 @@ gf_flux = GridFunction(space_flux, "flux")
 
 
 def SolveBVP():
-    v.Update()
+    V.Update()
     u.Update()
     a.Assemble()
     f.Assemble()
@@ -95,7 +95,7 @@ def CalcError():
     elerr = Integrate (err, mesh, VOL, element_wise=True)
 
     maxerr = max(elerr)
-    l.append ( (v.ndof, sqrt(sum(elerr)) ))
+    l.append ( (V.ndof, sqrt(sum(elerr)) ))
     print ("maxerr = ", maxerr)
 
     for el in mesh.Elements():
@@ -103,7 +103,7 @@ def CalcError():
 
 
 with TaskManager():
-    while v.ndof < 100000:  
+    while V.ndof < 100000:  
         SolveBVP()
         CalcError()
         mesh.Refine()
