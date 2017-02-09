@@ -286,9 +286,9 @@ namespace ngfem
 
 
   template<int D>
-  map<string,double> ScalarFiniteElement<D> :: Timing () const
+  list<tuple<string,double>> ScalarFiniteElement<D> :: Timing () const
   {
-    map<string,double> timings;
+    list<tuple<string,double>>timings;
     IntegrationRule ir(ElementType(), Order());
     SIMD_IntegrationRule simdir(ElementType(), Order());
     Vector<> shape(GetNDof()), coefs(GetNDof());
@@ -318,7 +318,7 @@ namespace ngfem
 	time = WallTime()-starttime;
       }
     while (time < maxtime);
-    timings["CalcShape"] = time/steps*1e9/GetNDof();
+    timings.push_back(make_tuple("CalcShape", time/steps*1e9/GetNDof()));
 
     // evaluate IR
     starttime = WallTime();
@@ -331,7 +331,7 @@ namespace ngfem
 	time = WallTime()-starttime;
       }
     while (time < maxtime);
-    timings["Evaluate"] = time/steps*1e9/(GetNDof()*ir.GetNIP());
+    timings.push_back(make_tuple("Evaluate",time/steps*1e9/(GetNDof()*ir.GetNIP())));
 
     
     // evaluate IR SIMD
@@ -345,7 +345,7 @@ namespace ngfem
 	time = WallTime()-starttime;
       }
     while (time < maxtime);
-    timings["Evaluate(SIMD)"] = time/steps*1e9/(GetNDof()*ir.GetNIP());
+    timings.push_back(make_tuple("Evaluate(SIMD)", time/steps*1e9/(GetNDof()*ir.GetNIP())));
 
 
     // evaluate grad IR
@@ -359,7 +359,7 @@ namespace ngfem
 	time = WallTime()-starttime;
       }
     while (time < maxtime);
-    timings["Evaluate Grad"] = time/steps*1e9/(D*GetNDof()*ir.GetNIP());
+    timings.push_back(make_tuple("Evaluate Grad", time/steps*1e9/(D*GetNDof()*ir.GetNIP())));
 
 
     // evaluate grad IR SIMD
@@ -373,7 +373,7 @@ namespace ngfem
 	time = WallTime()-starttime;
       }
     while (time < maxtime);
-    timings["Evaluate Grad(SIMD)"] = time/steps*1e9/(D*GetNDof()*ir.GetNIP());
+    timings.push_back(make_tuple("Evaluate Grad(SIMD)", time/steps*1e9/(D*GetNDof()*ir.GetNIP())));
 
 
 
@@ -389,7 +389,7 @@ namespace ngfem
 	time = WallTime()-starttime;
       }
     while (time < maxtime);
-    timings["Evaluate Trans"] = time/steps*1e9/(GetNDof()*ir.GetNIP());    
+    timings.push_back(make_tuple("Evaluate Trans", time/steps*1e9/(GetNDof()*ir.GetNIP())));
 
     // evaluate trans IR SIMD
     starttime = WallTime();
@@ -402,7 +402,7 @@ namespace ngfem
 	time = WallTime()-starttime;
       }
     while (time < maxtime);
-    timings["Evaluate Trans (SIMD)"] = time/steps*1e9/(GetNDof()*ir.GetNIP());
+    timings.push_back(make_tuple("Evaluate Trans (SIMD)", time/steps*1e9/(GetNDof()*ir.GetNIP())));
 
 
     // evaluate trans grad IR
@@ -416,7 +416,7 @@ namespace ngfem
 	time = WallTime()-starttime;
       }
     while (time < maxtime);
-    timings["Evaluate Trans Grad"] = time/steps*1e9/(D*GetNDof()*ir.GetNIP());
+    timings.push_back(make_tuple("Evaluate Trans Grad", time/steps*1e9/(D*GetNDof()*ir.GetNIP())));
 
 
     // evaluate trans grad IR SIMD
@@ -430,13 +430,7 @@ namespace ngfem
 	time = WallTime()-starttime;
       }
     while (time < maxtime);
-    timings["Evaluate Trans Grad(SIMD)"] = time/steps*1e9/(D*GetNDof()*ir.GetNIP());
-
-
-    
-
-
-    
+    timings.push_back(make_tuple("Evaluate Trans Grad(SIMD)", time/steps*1e9/(D*GetNDof()*ir.GetNIP())));
     
     return timings;
   }
