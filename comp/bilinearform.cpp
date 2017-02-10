@@ -3248,13 +3248,14 @@ namespace ngcomp
               */
                 SharedLoop2 sl(colfacets.Size());
 
-                task_manager -> CreateJob
+                // task_manager -> CreateJob
+                ParallelJob
                   ( [&] (const TaskInfo & ti) 
                     {
-                      // LocalHeap lh = clh.Split(ti.thread_nr, ti.nthreads);
+                      LocalHeap lh = clh.Split(ti.thread_nr, ti.nthreads);
                       // ArrayMem<int,100> temp_dnums;
                       RegionTimer reg(timerDGpar);
-                      LocalHeap lh = clh.Split();
+                      // LocalHeap lh = clh.Split();
                       Array<int> elnums(2, lh), elnums_per(2, lh), fnums1(6, lh), fnums2(6, lh), vnums1(8, lh), vnums2(8, lh);
 
                   for (int i : sl)                

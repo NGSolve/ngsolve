@@ -190,6 +190,25 @@ namespace ngstd
   }
 
   
+  template <typename TFUNC>
+  INLINE void ParallelJob (TFUNC f, 
+                           int antasks = task_manager ? task_manager->GetNumThreads() : 0)
+  {
+    if (task_manager)
+
+      task_manager -> CreateJob (f, antasks);
+
+    else
+      
+      {
+        TaskInfo ti;
+        ti.task_nr = 0; ti.ntasks = 1;
+        ti.thread_nr = 0; ti.nthreads = 1;
+        ti.node_nr = 0; ti.nnodes = 1;
+        f(ti);
+      }
+  }
+
   
   
   /*
