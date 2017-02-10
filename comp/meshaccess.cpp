@@ -1231,6 +1231,21 @@ namespace ngcomp
 
   void MeshAccess :: GetFaceElements (int fnr, Array<int> & elnums) const
   {
+    if (dim == 3)
+      {
+        elnums.SetSize0();
+        auto vnums = ArrayObject(mesh.GetNode<2> (fnr).vertices);
+        auto vels = ArrayObject(mesh.GetNode<0> (vnums[0]).elements);
+        for (auto el : vels)
+          {
+            for (int f : ArrayObject(mesh.GetElement<3>(el).faces))
+              if (f == fnr)
+                elnums.Append (el);
+          }
+        return;
+      }
+
+    // 2D case: as it was before: one volume element, is it still needed ???
     ArrayMem<int, 9> vnums;
     GetFacePNums(fnr, vnums);
 
