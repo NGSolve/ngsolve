@@ -4,20 +4,38 @@ set_property (DIRECTORY PROPERTY EP_BASE dependencies)
 
 set (DEPENDENCIES)
 set (LAPACK_PROJECTS)
-set (NGSOLVE_CMAKE_ARGS)
-set (NETGEN_CMAKE_ARGS)
+set (NETGEN_CMAKE_ARGS "" CACHE INTERNAL "")
+set (NGSOLVE_CMAKE_ARGS "" CACHE INTERNAL "")
+
+# propagate all variables set on the command line using cmake -DFOO=BAR
+# to Netgen and NGSolve subprojects
+get_cmake_property(CACHE_VARS CACHE_VARIABLES)
+foreach(CACHE_VAR ${CACHE_VARS})
+  get_property(CACHE_VAR_HELPSTRING CACHE ${CACHE_VAR} PROPERTY HELPSTRING)
+  if(CACHE_VAR_HELPSTRING STREQUAL "No help, variable specified on the command line.")
+    get_property(CACHE_VAR_TYPE CACHE ${CACHE_VAR} PROPERTY TYPE)
+    set(NETGEN_CMAKE_ARGS ${NETGEN_CMAKE_ARGS};-D${CACHE_VAR}:${CACHE_VAR_TYPE}=${${CACHE_VAR}} CACHE INTERNAL "")
+    set(NGSOLVE_CMAKE_ARGS ${NGSOLVE_CMAKE_ARGS};-D${CACHE_VAR}:${CACHE_VAR_TYPE}=${${CACHE_VAR}} CACHE INTERNAL "")
+  endif()
+endforeach()
 
 set(INSTALL_DIR CACHE PATH "Install path")
 set(NETGEN_DIR CACHE PATH "Path where Netgen is already installed. Setting this variable will skip the Netgen buildand override the setting of INSTALL_DIR")
 
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${PROJECT_SOURCE_DIR}/cmake_modules")
 
-macro(set_vars OUTPUT_VAR )
+macro(set_vars VAR_OUT)
   foreach(varname ${ARGN})
     if(NOT "${${varname}}" STREQUAL "")
       string(REPLACE ";" "$<SEMICOLON>" varvalue "${${varname}}" )
-      list(APPEND ${OUTPUT_VAR} -D${varname}=${varvalue})
+      set(${VAR_OUT} ${${VAR_OUT}};-D${varname}=${varvalue} CACHE INTERNAL "")
     endif()
+  endforeach()
+endmacro()
+
+macro(set_flags_vars OUTPUT_VAR )
+  foreach(varname ${ARGN})
+    set_vars(${OUTPUT_VAR} ${varname} ${varname}_RELEASE ${varname}_MINSIZEREL ${varname}_RELWITHDEBINFO ${varname}_DEBUG)
   endforeach()
 endmacro()
 
@@ -76,53 +94,19 @@ else(NETGEN_DIR)
   # propagate netgen-specific settings to Netgen subproject
   set_vars( NETGEN_CMAKE_ARGS
     CMAKE_CXX_COMPILER
+    CMAKE_C_COMPILER
     CMAKE_BUILD_TYPE
-    CMAKE_SHARED_LINKER_FLAGS
-    CMAKE_SHARED_LINKER_FLAGS_RELEASE
-    CMAKE_CXX_FLAGS
-    CMAKE_CXX_FLAGS_RELEASE
+    CMAKE_PREFIX_PATH
 
-    FFMPEG_LIBRARIES
     INSTALL_DIR
     INSTALL_DEPENDENCIES
     INSTALL_PROFILES
     INTEL_MIC
-    JPEG_INCLUDE_DIR
-    JPEG_LIBRARIES
-    METIS_INCLUDE_DIR
-    METIS_LIBRARY
-    MPI_CXX_INCLUDE_PATH
-    MPI_CXX_LIBRARIES
-    OCC_INCLUDE_DIR
-    OCC_LIBRARIES
-    OCC_LIBRARIES_BIN
-    OCC_LIBRARY_DIR
-    OPENGL_LIBRARIES
-    PYBIND_INCLUDE_DIR
-    PYTHON_EXECUTABLE
-    PYTHON_INCLUDE_DIRS
-    PYTHON_LIBRARIES
-    PYTHON_PACKAGES_INSTALL_DIR
-    TCL_INCLUDE_PATH
-    TCL_LIBRARY
-    TK_DND_LIBRARY
-    TK_INCLUDE_PATH
-    TK_LIBRARY
     USE_CCACHE
-    USE_GUI
-    USE_JPEG
-    USE_MPEG
-    USE_MPI
-    USE_OCC
-    USE_PYTHON
-    X11_X11_LIB
-    X11_Xmu_LIB
-    ZLIB_INCLUDE_DIRS
-    ZLIB_LIBRARIES
+    USE_NATIVE_ARCH
   )
+  set_flags_vars(NETGEN_CMAKE_ARGS CMAKE_CXX_FLAGS CMAKE_SHARED_LINKER_FLAGS CMAKE_LINKER_FLAGS)
 endif(NETGEN_DIR)
-
-set_vars(NGSOLVE_CMAKE_ARGS NETGEN_DIR)
 
 #######################################################################
 # find netgen
@@ -189,14 +173,10 @@ endif(USE_UMFPACK)
 # propagate cmake variables to NGSolve subproject
 set_vars( NGSOLVE_CMAKE_ARGS
   CMAKE_CXX_COMPILER
-  CMAKE_SHARED_LINKER_FLAGS
-  CMAKE_SHARED_LINKER_FLAGS_RELEASE
-  CMAKE_CXX_FLAGS
-  CMAKE_CXX_FLAGS_RELEASE
+  CMAKE_C_COMPILER
   CMAKE_BUILD_TYPE
+  CMAKE_PREFIX_PATH
 
-  USE_GUI
-  USE_PYTHON
   USE_LAPACK
   USE_MPI
   USE_VT
@@ -209,13 +189,14 @@ set_vars( NGSOLVE_CMAKE_ARGS
   USE_NUMA
   USE_CCACHE
   USE_NATIVE_ARCH
-  USE_OCC
-  MUMPS_DIR
   INSTALL_DIR
   NETGEN_SOURCE_DIR
   INSTALL_DEPENDENCIES 
   INTEL_MIC 
+  NETGEN_DIR
   )
+
+set_flags_vars(NGSOLVE_CMAKE_ARGS CMAKE_CXX_FLAGS CMAKE_SHARED_LINKER_FLAGS CMAKE_LINKER_FLAGS)
 
 if(NOT NETGEN_DIR)
   ExternalProject_Add (netgen_project
