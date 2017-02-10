@@ -15,13 +15,13 @@ namespace ngfem
   template <ELEMENT_TYPE ET> 
   class H1HighOrderFE_Shape : public H1HighOrderFE<ET, H1HighOrderFE_Shape<ET>>
   {
-    using H1HighOrderFE<ET>::vnums;
+    // using H1HighOrderFE<ET>::vnums;
     using H1HighOrderFE<ET>::order;
     using H1HighOrderFE<ET>::order_edge;
     using H1HighOrderFE<ET>::order_face;
     using H1HighOrderFE<ET>::order_cell;
-    using H1HighOrderFE<ET>::GetFaceSort;
-    using H1HighOrderFE<ET>::GetEdgeSort;
+    // using H1HighOrderFE<ET>::GetFaceSort;
+    // using H1HighOrderFE<ET>::GetEdgeSort;
     // using H1HighOrderFE<ET>::EdgeOrthoPol;
 
     using H1HighOrderFE<ET>::N_VERTEX;
@@ -96,7 +96,8 @@ namespace ngfem
     // inner shapes
     if (order_face[0][0] >= 3)
       {
-        INT<4> f = GetFaceSort (0, vnums);
+        // INT<4> f = GetFaceSort (0, vnums);
+        INT<4> f = GetVertexOrientedFace (0);
 	DubinerBasis3::EvalMult (order_face[0][0]-3, 
 				 lam[f[0]], lam[f[1]], 
 				 lam[f[0]]*lam[f[1]]*lam[f[2]], shape+ii);
@@ -123,7 +124,7 @@ namespace ngfem
         {
           int p = order_edge[i];
 
-          Tx xi = ET_trait<ET_QUAD>::XiEdge(i, hx, vnums);
+          Tx xi = ET_trait<ET_QUAD>::XiEdge(i, hx, this->vnums);
           Tx lam_e = ET_trait<ET_QUAD>::LamEdge(i, hx);
           
           Tx bub = 0.25 * lam_e * (1 - xi*xi);
@@ -135,7 +136,7 @@ namespace ngfem
     INT<2> p = order_face[0];
     if (p[0] >= 2 && p[1] >= 2)
       {
-        Vec<2,Tx> xi = ET_trait<ET_QUAD>::XiFace(0, hx, vnums);
+        Vec<2,Tx> xi = ET_trait<ET_QUAD>::XiFace(0, hx, this->vnums);
 
 	Tx bub = 1.0/16 * (1-xi(0)*xi(0))*(1-xi(1)*xi(1));
         
@@ -176,7 +177,8 @@ namespace ngfem
     for (int i = 0; i < N_EDGE; i++)
       if (order_edge[i] >= 2)
 	{
-          INT<2> e = GetEdgeSort (i, vnums);
+          // INT<2> e = GetEdgeSort (i, vnums);
+          INT<2> e = GetVertexOrientedEdge (i);
 	  EdgeOrthoPol::EvalScaledMult (order_edge[i]-2, 
                                         lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
                                         lam[e[0]]*lam[e[1]], shape+ii);
@@ -187,7 +189,8 @@ namespace ngfem
     for (int i = 0; i < N_FACE; i++)
       if (order_face[i][0] >= 3)
 	{
-          INT<4> f = GetFaceSort (i, vnums);
+          // INT<4> f = GetFaceSort (i, vnums);
+          INT<4> f = GetVertexOrientedFace (i);
 	  int vop = 6 - f[0] - f[1] - f[2];  	
           
 	  int p = order_face[i][0];
@@ -227,7 +230,8 @@ namespace ngfem
     for (int i = 0; i < 6; i++)
       if (order_edge[i] >= 2)
 	{
-          INT<2> e = GetEdgeSort (i, vnums);
+          // INT<2> e = GetEdgeSort (i, vnums);
+          INT<2> e = GetVertexOrientedEdge (i);
 
 	  Tx xi = lam[e[1]]-lam[e[0]]; 
 	  Tx eta = lam[e[0]]+lam[e[1]]; 
@@ -242,7 +246,8 @@ namespace ngfem
     for (int i = 6; i < 9; i++)
       if (order_edge[i] >= 2)
 	{
-          INT<2> e = GetEdgeSort (i, vnums);
+          // INT<2> e = GetEdgeSort (i, vnums);
+          INT<2> e = GetVertexOrientedEdge (i);
 
 	  EdgeOrthoPol::
 	    EvalMult (order_edge[i]-2, 
@@ -259,7 +264,8 @@ namespace ngfem
     for (int i = 0; i < 2; i++)
       if (order_face[i][0] >= 3)
 	{
-          INT<4> f = GetFaceSort (i, vnums);
+          // INT<4> f = GetFaceSort (i, vnums);
+          INT<4> f = GetVertexOrientedFace (i);
 	  int p = order_face[i][0];
 	  
 	  Tx bub = lam[0]*lam[1]*lam[2]*muz[f[2]];
@@ -275,7 +281,8 @@ namespace ngfem
       if (order_face[i][0] >= 2 && order_face[i][1] >= 2)
 	{
 	  INT<2> p = order_face[i];
-          INT<4> f = GetFaceSort (i, vnums);	  
+          // INT<4> f = GetFaceSort (i, vnums);
+          INT<4> f = GetVertexOrientedFace (i);          
 
 	  Tx xi  = sigma[f[0]] - sigma[f[1]]; 
 	  Tx eta = sigma[f[0]] - sigma[f[3]];
@@ -339,7 +346,8 @@ namespace ngfem
 	{
 	  int p = order_edge[i];
 
-          INT<2> e = GetEdgeSort (i, vnums);	  
+          // INT<2> e = GetEdgeSort (i, vnums);
+          INT<2> e = GetVertexOrientedEdge (i);          
           Tx xi = sigma[e[1]]-sigma[e[0]]; 
           Tx lam_e = lam[e[0]]+lam[e[1]];
 	  Tx bub = 0.25 * lam_e * (1 - xi*xi);
@@ -352,8 +360,8 @@ namespace ngfem
       if (order_face[i][0] >= 2 && order_face[i][1] >= 2)
 	{
 	  INT<2> p = order_face[i];
-          INT<4> f = GetFaceSort (i, vnums);	  
-
+          // INT<4> f = GetFaceSort (i, vnums);	  
+          INT<4> f = GetVertexOrientedFace (i);
 	  Tx lam_f(0.0);
 	  for (int j = 0; j < 4; j++) lam_f += lam[f[j]];
           
@@ -420,8 +428,9 @@ namespace ngfem
       if (order_edge[i] >= 2)
 	{
 	  int p = order_edge[i];
-	  INT<2> e = GetEdgeSort (i, vnums);	  
-
+	  // INT<2> e = GetEdgeSort (i, vnums);	  
+          INT<2> e = GetVertexOrientedEdge (i);
+          
 	  Tx xi = sigma[e[1]]-sigma[e[0]]; 
 	  Tx lam_e = lambda[e[0]]+lambda[e[1]];
 	  Tx bub = 0.25 * lam_e * (1 - xi*xi)*(1-z)*(1-z);
@@ -436,8 +445,9 @@ namespace ngfem
       if (order_edge[i] >= 2)
 	{
 	  int p = order_edge[i];
-	  INT<2> e = GetEdgeSort (i, vnums);	  
-
+	  // INT<2> e = GetEdgeSort (i, vnums);	  
+          INT<2> e = GetVertexOrientedEdge (i);
+          
 	  Tx xi = lambda3d[e[1]]-lambda3d[e[0]]; 
 	  Tx lam_e = lambda3d[e[0]]+lambda3d[e[1]];
 	  Tx bub = 0.25 * (lam_e*lam_e-xi*xi);
@@ -462,8 +472,9 @@ namespace ngfem
 	    {(sigma[0]-lam_face)*(1-z), (sigma[1]-lam_face)*(1-z), 
 	     (sigma[2]-lam_face)*(1-z), (sigma[3]-lam_face)*(1-z), z };
 	  
-	  INT<4> f = GetFaceSort (i, vnums);
-
+	  // INT<4> f = GetFaceSort (i, vnums);
+          INT<4> f = GetVertexOrientedFace (i);
+          
 	  Tx bub = lam_face * bary[f[0]]*bary[f[1]]*bary[f[2]];
 
 	  DubinerBasis3::
@@ -481,8 +492,9 @@ namespace ngfem
 	for (int k = 1; k <= pmax; k++)
 	  fac *= (1-z);
 
-	INT<4> f = GetFaceSort (4, vnums);	  
-	
+	// INT<4> f = GetFaceSort (4, vnums);	  
+        INT<4> f = GetVertexOrientedFace (4);
+        
 	Tx xi  = sigma[f[0]] - sigma[f[1]]; 
 	Tx eta = sigma[f[0]] - sigma[f[3]];
 
