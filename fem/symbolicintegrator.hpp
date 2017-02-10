@@ -517,8 +517,11 @@ public:
     virtual bool IsSymmetric() const { return true; }  // correct would be: don't know
     virtual string Name () const { return string ("Symbolic BFI"); }
 
-    IntegrationRule GetIntegrationRule (const FiniteElement & fel) const;
-    SIMD_IntegrationRule Get_SIMD_IntegrationRule (const FiniteElement & fel) const;
+    virtual IntegrationRule GetIntegrationRule (const FiniteElement & fel, LocalHeap & lh) const;
+    virtual SIMD_IntegrationRule Get_SIMD_IntegrationRule (const FiniteElement & fel, LocalHeap & lh) const;
+    // virtual IntegrationRule GetIntegrationRuleEB (const FiniteElement & fel, int facetnr, LocalHeap & lh) const;
+    // virtual SIMD_IntegrationRule Get_SIMD_IntegrationRuleEB (const FiniteElement & fel, int facetnr, LocalHeap & lh) const;
+    
     void SetIntegrationRule (const IntegrationRule & _ir);
     
     virtual void 
