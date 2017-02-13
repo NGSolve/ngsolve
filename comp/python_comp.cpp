@@ -243,7 +243,7 @@ void ExportPml(py::module &m)
                       return PyCF(make_shared<PML_JacInv> (instance->Get()));
                     },
         "the pml jacobian inverse as coefficient function")
-    .def_property_readonly("__add__", [](PyPML pml1, PyPML pml2) {
+    .def("__add__", [](PyPML pml1, PyPML pml2) {
                   int dim = pml1.Get()->GetDimension();
                   if (pml2.Get()->GetDimension() != dim)
                     throw Exception("Dimensions do not match");
@@ -502,11 +502,6 @@ void ExportPml(py::module &m)
           {
             throw Exception("Dimensions do not match");
           }
-            cout << dim1 << endl;
-            cout << dim2 << endl;
-            cout << vdims1 << endl;
-            cout << vdims2 << endl;
-
           switch (dim)
           {
             case 1:
