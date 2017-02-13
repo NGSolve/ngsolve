@@ -2709,8 +2709,8 @@ public:
                          FlatVector<Complex> result) const
   {
     FlatArray<int> hdims = Dimensions();        
-    STACK_ARRAY(Complex,meminput,hdims[1]*hdims[2]);
-    FlatVector<Complex> input(result.Size(),meminput);
+    STACK_ARRAY(Complex,meminput,hdims[0]*hdims[1]);
+    FlatVector<Complex> input(hdims[0]*hdims[1],meminput);
     c1->Evaluate (ip, input);    
     FlatMatrix<Complex> reshape1(hdims[1], hdims[0], meminput);  // source matrix format
     FlatMatrix<Complex> reshape2(hdims[0], hdims[1], &result(0));  // range matrix format
