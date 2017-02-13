@@ -11,7 +11,7 @@ ngmesh = geo.GenerateMesh(maxh=0.04)
 mesh = Mesh(ngmesh)
 # mesh = Mesh ("scattering.vol")
 
-mesh.SetPML(pml.Radial(rad=1, alpha=0.1j), definedon=2)
+mesh.SetPML(pml.Radial(origin=(0,0), rad=1, alpha=0.1j), definedon=2)
 
 kx = 50
 ky = 20
