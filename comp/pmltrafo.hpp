@@ -254,7 +254,7 @@ namespace ngcomp
       stringstream str;
       str << "alpha: " << alpha << endl;
       str << "radius: " << rad << endl;
-      str << "origin: " << endl << origin;
+      str << "origin: " << origin;
       return str.str();
     }
 
@@ -303,7 +303,7 @@ namespace ngcomp
     {
       stringstream str;
       str << "alpha: " << alpha << endl;
-      str << "bounds: " << endl << bounds;
+      str << "bounds: " << bounds;
       return str.str();
     }
 
@@ -351,8 +351,8 @@ namespace ngcomp
     virtual string ParameterString() const
     {
       stringstream str;
-      str << "point: " << endl << point;
-      str << "normal: " << endl << normal;
+      str << "point: " << point << endl;
+      str << "normal: " << normal;
       return str.str();
     }
 
@@ -394,8 +394,8 @@ namespace ngcomp
     {
       stringstream str;
       str << "alpha: " << alpha << endl;
-      str << "bounds: " << endl << bounds;
-      str << "origin: " << endl << origin;
+      str << "bounds: " << bounds << endl;
+      str << "origin: " << origin;
       return str.str();
     }
 
