@@ -1,12 +1,13 @@
 #ifdef NGS_PYTHON
-#include "../ngstd/python_ngstd.hpp"
-#include <comp.hpp>
 
 #ifdef PARALLEL
 #include <mpi4py/mpi4py.h>
 #endif
 
 #include <regex>
+
+#include "../ngstd/python_ngstd.hpp"
+#include <comp.hpp>
 
 using namespace ngcomp;
 
@@ -1368,8 +1369,6 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                              new (instance) PyFES(fes);
                              };
 
-  // bind std::map<std::string,double> to python MapStringDouble
-  py::bind_map<std::map<std::string,double>> (m,"MapStringDouble");
   
   py::class_<PyFES>(m, "FESpace",  "a finite element space", py::dynamic_attr())
     // the raw - constructor

@@ -1025,7 +1025,8 @@ namespace ngcomp
       const GridFunction & gf = *reinterpret_cast<GridFunction*>({gf_ptr});
       const ElementTransformation &trafo = mir.GetTransformation();
       auto elnr = trafo.GetElementNr();
-      const FESpace &fes = *gf.GetFESpace();
+      // const FESpace &fes = *gf.GetFESpace();
+      const FESpace & fes = *reinterpret_cast<FESpace*>({fes_ptr});
       auto vb = trafo.VB();
       ElementId ei(vb, elnr);
       DifferentialOperator * diffop = (DifferentialOperator*){diffop_ptr};
@@ -1126,6 +1127,7 @@ namespace ngcomp
     variables["values"] = values.S();
     variables["gf_ptr"] = ToString(gf.get());
     variables["gfcf_ptr"] = ToString(this);
+    variables["fes_ptr"] = ToString(fes.get());
     variables["diffop_ptr"] = ToString(diffop.get());
     variables["trace_diffop_ptr"] = ToString(trace_diffop.get());
     variables["bfi_ptr"] = ToString(trace_diffop.get());
