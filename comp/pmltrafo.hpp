@@ -454,7 +454,7 @@ namespace ngcomp
                     Mat<DIM,DIM,Complex> & jacmat) const 
     {
       STACK_ARRAY(Complex,pmem,trafo->Dimension());
-      SRACK_ARRAY(Complex,jacmem,jac->Dimension());
+      STACK_ARRAY(Complex,jacmem,jac->Dimension());
       FlatVector<Complex> fvpoint(trafo->Dimension(),pmem);
       FlatVector<Complex> fvjac(jac->Dimension(),jacmem);
       trafo->Evaluate(hpoint,fvpoint);
