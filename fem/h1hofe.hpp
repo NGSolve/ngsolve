@@ -50,7 +50,7 @@ namespace ngfem
 
     typedef unsigned char TORDER;
 
-    using VertexOrientedFE<ET>::vnums;
+    // using VertexOrientedFE<ET>::vnums;
 
     /// order of edge shapes
     Vec<N_EDGE, TORDER> order_edge; 
@@ -63,9 +63,9 @@ namespace ngfem
 
   public:
 
-    using VertexOrientedFE<ET>::SetVertexNumbers;
-    using VertexOrientedFE<ET>::SetVertexNumber;
-    using VertexOrientedFE<ET>::GetVertexOrientedEdge;
+    // using VertexOrientedFE<ET>::SetVertexNumbers;
+    // using VertexOrientedFE<ET>::SetVertexNumber;
+    // using VertexOrientedFE<ET>::GetVertexOrientedEdge;
     
     /// minimal constructor, orders will be set later
     INLINE H1HighOrderFE () { ; } 
@@ -75,7 +75,7 @@ namespace ngfem
     { 
       ndof = PolDimension (aorder);
       
-      for (int i = 0; i < N_VERTEX; i++) vnums[i] = i;
+      for (int i = 0; i < N_VERTEX; i++) this->SetVertexNumber(i,i);
       for (int i = 0; i < N_EDGE; i++) order_edge[i] = aorder;
       for (int i = 0; i < N_FACE; i++) order_face[i] = aorder;   
       if (DIM == 3) order_cell[0] = aorder; 

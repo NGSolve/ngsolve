@@ -630,18 +630,33 @@ namespace ngcomp
         else porder = order; 
         
         // if (highest_order_dc) porder--;
+
+        ArrayMem<int,4> vnums;
+        ma->GetSElVertices(selnr, vnums);
         
         switch (ma->GetSElType(selnr))
           {
           case ET_SEGM:
-            fe = new (alloc) HDivHighOrderNormalSegm<TrigExtensionMonomial> (porder); 
-            break;
-          case ET_TRIG: 
-            fe = new (alloc) HDivHighOrderNormalTrig<TrigExtensionMonomial> (porder); 
-            break; 
-          case ET_QUAD: 
-            fe = new (alloc) HDivHighOrderNormalQuad<TrigExtensionMonomial> (porder); 
-            break; 
+            {
+              auto fe1 = new (alloc) HDivHighOrderNormalSegm<TrigExtensionMonomial> (porder);
+              fe1 -> SetVertexNumbers(vnums);
+              fe = fe1;
+              break;
+            }
+          case ET_TRIG:
+            {
+              auto fe1 = new (alloc) HDivHighOrderNormalTrig<TrigExtensionMonomial> (porder);
+              fe1 -> SetVertexNumbers(vnums);              
+              fe = fe1;
+              break;
+            }
+          case ET_QUAD:
+            {
+              auto fe1 = new (alloc) HDivHighOrderNormalQuad<TrigExtensionMonomial> (porder);
+              fe1 -> SetVertexNumbers(vnums);              
+              fe = fe1;
+              break;
+            }
           default:
             throw Exception (string("HDivHighOrderFESpace::GetSFE: unsupported element ")+
                              ElementTopology::GetElementName(ma->GetSElType(selnr)));
@@ -649,17 +664,15 @@ namespace ngcomp
         
         if (discont) return *fe; 
         
-        ArrayMem<int,4> vnums;
         ArrayMem<int, 4> ednums, order_ed;
         INT<3> order_fa;
-        ma->GetSElVertices(selnr, vnums);
         
         if(ma->GetSElType(selnr) == ET_SEGM)
           {
             HDivHighOrderNormalFiniteElement<1> * hofe =
               dynamic_cast<HDivHighOrderNormalFiniteElement<1>*> (fe);
             
-            hofe -> SetVertexNumbers (vnums);
+            // hofe -> SetVertexNumbers (vnums);
             ma->GetSElEdges(selnr, ednums);
             // int dec = (!boundary_facet[ednums[0]] && highest_order_dc) ? 1 : 0;
             hofe -> SetOrderInner (order_facet[ednums[0]][0] /* -dec */);
@@ -670,7 +683,7 @@ namespace ngcomp
             HDivHighOrderNormalFiniteElement<2> * hofe =
               dynamic_cast<HDivHighOrderNormalFiniteElement<2>*> (fe);
             
-            hofe -> SetVertexNumbers (vnums);
+            // hofe -> SetVertexNumbers (vnums);
             
 #ifdef NEW_HDIVFE
             INT<3> order_fa = INT<3>(order_facet[ma->GetSElFace(selnr)][0],
