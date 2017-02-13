@@ -523,16 +523,17 @@ namespace ngcomp
       TPIntegrationRule ir(irs);
       const ElementTransformation & tptrafo = tpfes->GetTrafo(ElementId(elnr),lh);
       BaseMappedIntegrationRule & tpmir = tptrafo(ir, lh);
-      IntegrationRule irstd;
+      IntegrationRule irstd(ir(0).Size()*ir(1).Size(),lh);
+      int ii=0;
       for(int s=0;s<ir(0).Size();s++)
         for(int t=0;t<ir(1).Size();t++)
         {
           if(meshx->GetDimension() == 1 && meshy->GetDimension() == 1)
-              irstd.AddIntegrationPoint(IntegrationPoint(ir(0)[s](0),ir(1)[t](0),ir(1)[t](1), ir(0)[s].Weight()*ir(1)[t].Weight()));
+              irstd[ii++] = (IntegrationPoint(ir(0)[s](0),ir(1)[t](0),ir(1)[t](1), ir(0)[s].Weight()*ir(1)[t].Weight()));
           if(meshx->GetDimension() == 1 && meshy->GetDimension() == 2)
-              irstd.AddIntegrationPoint(IntegrationPoint(ir(1)[t](0),ir(1)[t](1),ir(0)[s](0), ir(0)[s].Weight()*ir(1)[t].Weight()));
+              irstd[ii++] = (IntegrationPoint(ir(1)[t](0),ir(1)[t](1),ir(0)[s](0), ir(0)[s].Weight()*ir(1)[t].Weight()));
           if(meshx->GetDimension() == 2 )
-              irstd.AddIntegrationPoint(IntegrationPoint(ir(0)[s](0),ir(0)[s](1),ir(1)[t](0), ir(0)[s].Weight()*ir(1)[t].Weight()));
+              irstd[ii++] = (IntegrationPoint(ir(0)[s](0),ir(0)[s](1),ir(1)[t](0), ir(0)[s].Weight()*ir(1)[t].Weight()));
          }
       const ElementTransformation & trafo = fes->GetMeshAccess()->GetTrafo(ElementId(VOL,elnrstd),lh);
       BaseMappedIntegrationRule & mirstd = trafo(irstd,lh);
