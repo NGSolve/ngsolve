@@ -453,10 +453,10 @@ namespace ngcomp
     virtual void MapIntegrationPoint (const BaseMappedIntegrationPoint & hpoint, Vec<DIM,Complex> & point,
                     Mat<DIM,DIM,Complex> & jacmat) const 
     {
-      STACK_ARRAY(double,jacmem,2*Dimension()*Dimension());
-      STACK_ARRAY(double,vmem,Dimension());
-      FlatMatrix<Complex> jac(Dimension(),Dimension(),reinterpret_cast<Complex*>(&jacmem[0]));
-      FlatVector<Complex> vec(Dimension(),reinterpret_cast<Complex*>(&vmem[0]));
+      STACK_ARRAY(double,jacmem,2*jac->Dimension());
+      STACK_ARRAY(double,vmem,2*trafo->Dimension());
+      FlatVector<Complex> fvjac(jac->Dimension(),reinterpret_cast<Complex*>(&jacmem[0]));
+      FlatVector<Complex> fvpoint(trafo->Dimension(),reinterpret_cast<Complex*>(&vmem[0]));
       trafo->Evaluate(hpoint,fvpoint);
       point = fvpoint;
       jac->Evaluate(hpoint,fvjac);
