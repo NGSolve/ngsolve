@@ -56,8 +56,8 @@ namespace ngcomp
     }
     void Evaluate(const BaseMappedIntegrationPoint & ip, FlatVector<Complex> values) const
     {
-      STACK_ARRAY(Complex,jacmem,Dimension()*Dimension());
-      FlatMatrix<Complex> jac(Dimension(),Dimension(),jacmem);
+      STACK_ARRAY(double,jacmem,2*Dimension()*Dimension());
+      FlatMatrix<Complex> jac(Dimension(),Dimension(),reinterpret_cast<Complex*>(&jacmem[0]));
       if (ip.IsComplex())
       {
         STACK_ARRAY(double,pmem,Dimension());
@@ -88,10 +88,10 @@ namespace ngcomp
     }
     void Evaluate(const BaseMappedIntegrationPoint & ip, FlatVector<Complex> values) const
     {
-      STACK_ARRAY(Complex,jacmem,Dimension()*Dimension());
-      STACK_ARRAY(Complex,vmem,Dimension());
-      FlatMatrix<Complex> jac(Dimension(),Dimension(),jacmem);
-      FlatVector<Complex> vec(Dimension(),vmem);
+      STACK_ARRAY(double,jacmem,2*Dimension()*Dimension());
+      STACK_ARRAY(double,vmem,2*Dimension());
+      FlatMatrix<Complex> jac(Dimension(),Dimension(),reinterpret_cast<Complex*>(&jacmem[0]));
+      FlatVector<Complex> vec(Dimension(),reinterpret_cast<Complex*>(&vmem[0]));
       if (ip.IsComplex())
       {
         STACK_ARRAY(double,pmem,Dimension());
@@ -122,10 +122,10 @@ namespace ngcomp
     }
     void Evaluate(const BaseMappedIntegrationPoint & ip, FlatVector<Complex> values) const
     {
-      STACK_ARRAY(Complex,jacmem,Dimension()*Dimension());
-      STACK_ARRAY(Complex,vmem,Dimension());
-      FlatMatrix<Complex> jac(Dimension(),Dimension(),jacmem);
-      FlatVector<Complex> vec(Dimension(),vmem);
+      STACK_ARRAY(double,jacmem,2*Dimension()*Dimension());
+      STACK_ARRAY(double,vmem,2*Dimension());
+      FlatMatrix<Complex> jac(Dimension(),Dimension(),reinterpret_cast<Complex*>(&jacmem[0]));
+      FlatVector<Complex> vec(Dimension(),reinterpret_cast<Complex*>(&vmem[0]));
       if (ip.IsComplex())
       {
         STACK_ARRAY(double,pmem,Dimension());
@@ -154,10 +154,10 @@ namespace ngcomp
     }
     Complex EvaluateComplex(const BaseMappedIntegrationPoint & ip) const
     {
-      STACK_ARRAY(Complex,jacmem,Dimension()*Dimension());
-      STACK_ARRAY(Complex,vmem,Dimension());
-      FlatMatrix<Complex> jac(Dimension(),Dimension(),jacmem);
-      FlatVector<Complex> vec(Dimension(),vmem);
+      STACK_ARRAY(double,jacmem,2*Dimension()*Dimension());
+      STACK_ARRAY(double,vmem,2*Dimension());
+      FlatMatrix<Complex> jac(Dimension(),Dimension(),reinterpret_cast<Complex*>(&jacmem[0]));
+      FlatVector<Complex> vec(Dimension(),reinterpret_cast<Complex*>(&vmem[0]));
       if (ip.IsComplex())
       {
         STACK_ARRAY(double,pmem,Dimension());
@@ -172,10 +172,10 @@ namespace ngcomp
     }
     void Evaluate(const BaseMappedIntegrationPoint & ip, FlatVector<Complex> value) const
     {
-      STACK_ARRAY(Complex,jacmem,Dimension()*Dimension());
-      STACK_ARRAY(Complex,vmem,Dimension());
-      FlatMatrix<Complex> jac(Dimension(),Dimension(),jacmem);
-      FlatVector<Complex> vec(Dimension(),vmem);
+      STACK_ARRAY(double,jacmem,2*Dimension()*Dimension());
+      STACK_ARRAY(double,vmem,Dimension());
+      FlatMatrix<Complex> jac(Dimension(),Dimension(),reinterpret_cast<Complex*>(&jacmem[0]));
+      FlatVector<Complex> vec(Dimension(),reinterpret_cast<Complex*>(&vmem[0]));
       if (ip.IsComplex())
       {
         STACK_ARRAY(double,pmem,Dimension());
@@ -453,10 +453,10 @@ namespace ngcomp
     virtual void MapIntegrationPoint (const BaseMappedIntegrationPoint & hpoint, Vec<DIM,Complex> & point,
                     Mat<DIM,DIM,Complex> & jacmat) const 
     {
-      STACK_ARRAY(Complex,pmem,trafo->Dimension());
-      STACK_ARRAY(Complex,jacmem,jac->Dimension());
-      FlatVector<Complex> fvpoint(trafo->Dimension(),pmem);
-      FlatVector<Complex> fvjac(jac->Dimension(),jacmem);
+      STACK_ARRAY(double,jacmem,2*Dimension()*Dimension());
+      STACK_ARRAY(double,vmem,Dimension());
+      FlatMatrix<Complex> jac(Dimension(),Dimension(),reinterpret_cast<Complex*>(&jacmem[0]));
+      FlatVector<Complex> vec(Dimension(),reinterpret_cast<Complex*>(&vmem[0]));
       trafo->Evaluate(hpoint,fvpoint);
       point = fvpoint;
       jac->Evaluate(hpoint,fvjac);
