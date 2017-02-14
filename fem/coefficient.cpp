@@ -2051,16 +2051,16 @@ public:
                          FlatVector<Complex> result) const
   {
     FlatArray<int> hdims = Dimensions();
-    STACK_ARRAY(Complex,mema,hdims[0]*inner_dim);
-    STACK_ARRAY(Complex,memb,hdims[1]*inner_dim);
-    FlatVector<Complex> va(hdims[0]*inner_dim, mema);
-    FlatVector<Complex> vb(inner_dim*hdims[1], memb);
+    STACK_ARRAY(double,mema,2*hdims[0]*inner_dim);
+    STACK_ARRAY(double,memb,2*hdims[1]*inner_dim);
+    FlatVector<Complex> va(hdims[0]*inner_dim, reinterpret_cast<Complex*>(&mema[0]));
+    FlatVector<Complex> vb(inner_dim*hdims[1], reinterpret_cast<Complex*>(&memb[0]));
     
     c1->Evaluate (ip, va);
     c2->Evaluate (ip, vb);
 
-    FlatMatrix<Complex> a(hdims[0], inner_dim, mema);
-    FlatMatrix<Complex> b(inner_dim, hdims[1], memb);
+    FlatMatrix<Complex> a(hdims[0], inner_dim, &va(0));
+    FlatMatrix<Complex> b(inner_dim, hdims[1], &vb(0));
 
     FlatMatrix<Complex> c(hdims[0], hdims[1], &result(0));
     c = a*b;
@@ -2446,11 +2446,11 @@ public:
                          FlatVector<Complex> result) const
   {
     FlatArray<int> hdims = Dimensions();
-    STACK_ARRAY(Complex,mema,hdims[0]*inner_dim);
-    STACK_ARRAY(Complex,memb,inner_dim);
-    FlatVector<Complex> va(hdims[0]*inner_dim,mema);
-    FlatVector<Complex> vb(inner_dim,memb);
-    FlatMatrix<Complex> a(hdims[0], inner_dim, mema);
+    STACK_ARRAY(double,mema,2*hdims[0]*inner_dim);
+    STACK_ARRAY(double,memb,2*inner_dim);
+    FlatVector<Complex> va(hdims[0]*inner_dim,reinterpret_cast<Complex*>(&mema[0]));
+    FlatVector<Complex> vb(inner_dim,reinterpret_cast<Complex*>(&memb[0]));
+    FlatMatrix<Complex> a(hdims[0], inner_dim, &va(0));
 
     c1->Evaluate (ip, va);
     c2->Evaluate (ip, vb);
@@ -2709,10 +2709,10 @@ public:
                          FlatVector<Complex> result) const
   {
     FlatArray<int> hdims = Dimensions();        
-    STACK_ARRAY(Complex,meminput,hdims[0]*hdims[1]);
-    FlatVector<Complex> input(hdims[0]*hdims[1],meminput);
+    STACK_ARRAY(double,meminput,2*hdims[0]*hdims[1]);
+    FlatVector<Complex> input(hdims[0]*hdims[1],reinterpret_cast<Complex*>(&meminput[0]));
     c1->Evaluate (ip, input);    
-    FlatMatrix<Complex> reshape1(hdims[1], hdims[0], meminput);  // source matrix format
+    FlatMatrix<Complex> reshape1(hdims[1], hdims[0], &input(0));  // source matrix format
     FlatMatrix<Complex> reshape2(hdims[0], hdims[1], &result(0));  // range matrix format
     reshape2 = Trans(reshape1);
     //cout << "Transpose: complex not implemented" << endl;
