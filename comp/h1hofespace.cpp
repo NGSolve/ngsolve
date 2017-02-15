@@ -1678,7 +1678,7 @@ namespace ngcomp
       L2HighOrderFE<ET_TRIG> fel_l2(order-2);
       L2HighOrderFE<ET_TRIG> fel_koszul( max(order-3, -1) );
       // FacetFE<ET_TRIG> fel_facet;
-      FacetVolumeFiniteElement<DIM_SPACE> & fel_facet = *new (lh) FacetFE<ET_TRIG>;
+      FacetFE<ET_TRIG> & fel_facet = *new (lh) FacetFE<ET_TRIG>;
       fel_facet.SetOrder(order-1);
       Array<int> vnums = { 1, 2, 3 } ;
       fel_facet.SetVertexNumbers(vnums);

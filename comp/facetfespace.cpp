@@ -458,7 +458,23 @@ namespace ngcomp
     if(print)
       *testout << "FacetFESpace, ctofdof = " << endl << ctofdof << endl;
   }
-  
+
+
+  template <ELEMENT_TYPE ET>
+  FiniteElement & FacetFESpace :: T_GetFE (int elnr, Allocator & alloc) const
+  {
+    Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,VOL> (elnr);
+
+    FacetFE<ET> * fe =  new (alloc) FacetFE<ET> ();
+    fe -> SetVertexNumbers (ngel.Vertices());
+    if (ET_trait<ET>::DIM >= 2)
+      for (int i = 0; i < ET_trait<ET>::N_FACET; i++)
+        fe -> SetOrder (i, order_facet[ngel.Facets()[i]][0]);
+    fe -> ComputeNDof();
+    
+    return *fe;
+  }
+
   
   // ------------------------------------------------------------------------
   FiniteElement & FacetFESpace :: GetFE (ElementId ei, Allocator  & lh) const
@@ -467,6 +483,24 @@ namespace ngcomp
       {
       case VOL:
         {
+          switch (ma->GetElType(ei))
+            {
+            case ET_POINT:   break;
+            case ET_SEGM:    return T_GetFE<ET_SEGM>(ei.Nr(), lh);              
+            case ET_TRIG:    return T_GetFE<ET_TRIG>(ei.Nr(), lh);
+            case ET_QUAD:    return T_GetFE<ET_QUAD>(ei.Nr(), lh);
+            case ET_TET:     return T_GetFE<ET_TET>(ei.Nr(), lh);
+            case ET_PYRAMID: return T_GetFE<ET_PYRAMID>(ei.Nr(), lh);
+            case ET_PRISM:   return T_GetFE<ET_PRISM>(ei.Nr(), lh);
+            case ET_HEX:     return T_GetFE<ET_HEX>(ei.Nr(), lh);
+            }
+
+          throw Exception (string("FacetFESpace ") + GetClassName() 
+                           + ", undefined eltype " 
+                           + ElementTopology::GetElementName(ma->GetElType(ei)));
+        } 
+            
+          /*
         FacetVolumeFiniteElement<1> * fe1d = NULL;
         FacetVolumeFiniteElement<2> * fe2d = NULL;
         FacetVolumeFiniteElement<3> * fe3d = NULL;;
@@ -528,6 +562,7 @@ namespace ngcomp
             return *fe3d;
           }
         }
+          */
       case BND:
         {
         DGFiniteElement<1> * fe1d = 0;

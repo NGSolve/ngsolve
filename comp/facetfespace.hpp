@@ -68,11 +68,10 @@ namespace ngcomp
     virtual size_t GetNDofLevel (int level) const override;
 
     virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
-    ///
-    // virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
-    // ///
-    // virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const; 
-    ///
+
+    template <ELEMENT_TYPE ET>
+    FiniteElement & T_GetFE (int elnr, Allocator & alloc) const;
+
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
     ///
     virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
