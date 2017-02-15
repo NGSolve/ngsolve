@@ -18,21 +18,39 @@ namespace ngfem
   template <ELEMENT_TYPE ET> 
   class FacetFiniteElement_Family :
     public FacetVolumeFiniteElement<ET_trait<ET>::DIM>,
-    public ET_trait<ET> 
+    public ET_trait<ET>,
+    public VertexOrientedFE<ET>
   {
   protected:
     enum { DIM = ET_trait<ET>::DIM };
     using ET_trait<ET>::N_FACET;
 
+    using FacetVolumeFiniteElement<ET_trait<ET>::DIM>::order;
     using FacetVolumeFiniteElement<ET_trait<ET>::DIM>::ndof;
     using FacetVolumeFiniteElement<ET_trait<ET>::DIM>::first_facet_dof;
     using FacetVolumeFiniteElement<ET_trait<ET>::DIM>::facet_order;
-
+    using VertexOrientedFE<ET>::vnums;
+    using VertexOrientedFE<ET>::GetVertexOrientedEdge;
+    using VertexOrientedFE<ET>::GetVertexOrientedFace;    
+  public:
+    using VertexOrientedFE<ET>::SetVertexNumbers;
   public:
     FacetFiniteElement_Family () { ; }
 
     virtual ELEMENT_TYPE ElementType() const { return ET; }
+    
+    using FacetVolumeFiniteElement<ET_trait<ET>::DIM>::SetOrder;
+    template <typename TA>
+    void SetOrder (const TA & of)
+    {
+      for (int i = 0; i < N_FACET; i++) facet_order[i] = of[i];
 
+      order = facet_order[0];      
+      for (int i = 1; i < N_FACET; i++)
+	order = max2(order, of[i]);
+    }
+
+    
     virtual void ComputeNDof() 
     {
       ndof = 0;
@@ -47,8 +65,11 @@ namespace ngfem
 	    case ET_QUAD: ndof += sqr (fo+1); break;
 	    default: ;
 	    }
-	}
+	}      
       first_facet_dof[N_FACET] = ndof;
+      order = facet_order[0];      
+      for (int i = 1; i < N_FACET; i++)
+	order = max2(order, facet_order[i]);
     }
     
 
