@@ -55,7 +55,7 @@ namespace ngstd
           return i;
       return -1;
     }
-    INLINE auto operator[] (size_t i) { return Spec()[i]; }
+    // INLINE auto & operator[] (size_t i) { return Spec()[i]; }
     INLINE auto operator[] (size_t i) const { return Spec()[i]; }
   };
 
