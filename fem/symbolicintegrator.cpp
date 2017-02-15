@@ -761,7 +761,8 @@ namespace ngfem
       trial_difforder = min2(trial_difforder, proxy->Evaluator()->DiffOrder());
     for (auto proxy : test_proxies)
       test_difforder = min2(test_difforder, proxy->Evaluator()->DiffOrder());
-
+    if (trial_proxies.Size() == 0) trial_difforder = 0;
+    
     int intorder = fel_trial.Order()+fel_test.Order();
     auto et = fel.ElementType();
     if (et == ET_TRIG || et == ET_TET)
@@ -789,7 +790,8 @@ namespace ngfem
       trial_difforder = min2(trial_difforder, proxy->Evaluator()->DiffOrder());
     for (auto proxy : test_proxies)
       test_difforder = min2(test_difforder, proxy->Evaluator()->DiffOrder());
-
+    if (trial_proxies.Size() == 0) trial_difforder = 0;
+    
     int intorder = fel_trial.Order()+fel_test.Order();
     auto et = fel.ElementType();
     if (et == ET_TRIG || et == ET_TET)
