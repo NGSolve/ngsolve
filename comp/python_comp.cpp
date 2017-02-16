@@ -885,7 +885,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
           (&MeshAccess::GetTrafo), 
           py::return_value_policy::reference)
 
-    .def ("GetTrafo", FunctionPointer([](MeshAccess & ma, ElementId id)
+    .def ("GetTrafo", FunctionPointer([](MeshAccess & ma, ElementId id) -> PyWrapper<ElementTransformation>
                                       {
                                         return &ma.GetTrafo(id, global_alloc);
                                       }),
