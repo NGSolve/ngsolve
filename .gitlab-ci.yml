@@ -105,7 +105,7 @@ stages:
     - cmake --build . --target PACKAGE --config Release
     - winscp.com /command "%UPLOAD_SERVER%" "mkdir %UPLOAD_DIR%" "put %UPLOAD_FILE%  %UPLOAD_DIR%" "exit"
 
-build_win32:
+.build_win32:
   <<: *win32
   <<: *build_win
 
@@ -232,7 +232,7 @@ win64_cleanup:
   when: always
   allow_failure: true
 
-win32_cleanup:
+.win32_cleanup:
   <<: *win32
   stage: cleanup
   tags:
