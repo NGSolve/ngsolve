@@ -1886,6 +1886,7 @@ namespace ngcomp
   void MeshAccess :: Refine ()
   {
     static Timer t("MeshAccess::Refine"); RegionTimer reg(t);
+    nlevels = std::numeric_limits<int>::max();
     mesh.Refine(NG_REFINE_H, &NGSolveTaskManager);
     UpdateBuffers();
   }
