@@ -15,6 +15,7 @@
 
 
 
+
 namespace ngfem
 { 
 
@@ -31,7 +32,7 @@ namespace ngfem
   {
     Tx lam[3] = { x[0], x[1], 1-x[0]-x[1] };
     
-    INT<2> e = GetEdgeSort (fnr, vnums);
+    INT<2> e = GetVertexOrientedEdge (fnr);
     int p = facet_order[fnr];
     
     LegendrePolynomial::Eval (p, lam[e[1]]-lam[e[0]], shape);
@@ -47,7 +48,7 @@ namespace ngfem
       Tx x = hx[0], y = hx[1];
       Tx sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};  
       
-      INT<2> e = GetEdgeSort (fnr, vnums);
+      INT<2> e = GetVertexOrientedEdge (fnr);
       int p = facet_order[fnr];
 
       LegendrePolynomial::Eval (p, sigma[e[1]]-sigma[e[0]], shape);
@@ -59,7 +60,7 @@ namespace ngfem
   {
     Tx lam[4] = { hx[0], hx[1], hx[2], 1-hx[0]-hx[1]-hx[2] };
     
-    INT<4> f = GetFaceSort (fnr, vnums);
+    INT<4> f = GetVertexOrientedFace (fnr);
     int p = facet_order[fnr];
     
     DubinerBasis3::Eval (p, lam[f[0]], lam[f[1]], shape);
@@ -81,7 +82,7 @@ namespace ngfem
     
     int p = facet_order[fnr];
     
-    INT<4> f = GetFaceSort (fnr, vnums);	  
+    INT<4> f = GetVertexOrientedFace (fnr);	  
 	    
     Tx xi  = sigma[f[0]] - sigma[f[1]]; 
     Tx eta = sigma[f[0]] - sigma[f[3]];
@@ -108,7 +109,7 @@ namespace ngfem
     Tx muz[6]  = { 1-z, 1-z, 1-z, z, z, z };
     
     
-    INT<4> f = GetFaceSort (fnr, vnums);
+    INT<4> f = GetVertexOrientedFace (fnr);
     
     int p = facet_order[fnr];
     
@@ -154,7 +155,7 @@ namespace ngfem
     lam[4] = z;
     
     
-    INT<4> f = GetFaceSort (fnr, vnums);
+    INT<4> f = GetVertexOrientedFace (fnr);
     
     int p = facet_order[fnr];
     

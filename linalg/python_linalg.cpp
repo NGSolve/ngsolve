@@ -557,8 +557,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                                 {
                                                   Arnoldi<Complex> arnoldi (mata, matm, freedofs);
                                                   Complex shift = 0.0;
-//                                                   if (py::cast<Complex>(bpshift).check())
-                                                    shift = py::cast<Complex>(bpshift);
+                                                  shift = py::cast<Complex>(bpshift);
                                                   cout << "shift = " << shift << endl;
                                                   arnoldi.SetShift (shift);
                                                   
@@ -577,10 +576,28 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                                     vlam(i) = lam[i];
                                                   return vlam;
                                                 }
-                                              
-                                              cout << "real Arnoldi not supported" << endl;
-                                              Vector<Complex> lam(5);
-                                              return lam;
+                                              else
+                                                {
+                                                  Arnoldi<double> arnoldi (mata, matm, freedofs);
+                                                  double shift = py::cast<double>(bpshift);
+                                                  cout << "shift = " << shift << endl;
+                                                  arnoldi.SetShift (shift);
+                                                  
+                                                  int nev = py::len(vecs);
+                                                  cout << "num vecs: " << nev << endl;
+                                                  Array<shared_ptr<BaseVector>> evecs(nev);
+                                                  
+                                                  Array<Complex> lam(nev);
+                                                  arnoldi.Calc (2*nev+1, lam, nev, evecs, 0);
+                                            
+                                                  for (int i = 0; i < nev; i++)
+                                                    vecs[i].cast<BaseVector&>() = *evecs[i];
+
+                                                  Vector<Complex> vlam(nev);
+                                                  for (int i = 0; i < nev; i++)
+                                                    vlam(i) = lam[i];
+                                                  return vlam;
+                                                }
                                             },
           "Arnoldi Solver", py::arg("mata"), py::arg("matm"), py::arg("freedofs"), py::arg("vecs"), py::arg("shift")=DummyArgument()
           )
