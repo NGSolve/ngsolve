@@ -1427,16 +1427,16 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
         auto self = self_object.cast<PyFES>();
         auto dict = self_object.attr("__dict__");
         auto mesh = self->GetMeshAccess();
-        return py::make_tuple( self->type, mesh, dict );
+        return py::make_tuple( self->type, mesh, self->GetFlags(), dict );
      })
     .def("__setstate__", [] (PyFES &self, py::tuple t) {
-        auto flags = t[2]["flags"].cast<Flags>();
+        auto flags = t[2].cast<Flags>();
         auto fes = CreateFESpace (t[0].cast<string>(), t[1].cast<shared_ptr<MeshAccess>>(), flags);
         LocalHeap lh (1000000, "FESpace::Update-heap");
         fes->Update(lh);
         fes->FinalizeUpdate(lh);
         new (&self) PyFES(fes);
-        py::cast(self).attr("__dict__") = t[2];
+        py::cast(self).attr("__dict__") = t[3];
      })
     .def("Update", [](PyFES & self, int heapsize)
                                    { 
@@ -1739,7 +1739,6 @@ used_idnrs (list of int = None): identification numbers to be made periodic
                             auto gf = CreateGridFunction (fespace.Get(), name, flags);
                             gf->Update();
                             new (instance) PyGF(gf);
-			    py::cast(*instance).attr("__dict__")["space"] = bp_fespace;
                           },
          py::arg("space"), py::arg("name")="gfu", py::arg("multidim")=DummyArgument(),
          "creates a gridfunction in finite element space"
@@ -1748,35 +1747,31 @@ used_idnrs (list of int = None): identification numbers to be made periodic
         { return reinterpret_cast<std::uintptr_t>(self.Get().get()); } ) )
     .def("__getstate__", [] (py::object self_object) {
         auto self = self_object.cast<PyGF>();
-        auto vec = PyBaseVector(self->GetVectorPtr());
-	auto fes = self_object.attr("space");
-	auto perid  = self_object.attr("__persistent_id__");
-        return py::make_tuple(fes, self->GetName(), vec, self->GetMultiDim(),perid);
+        auto vec = self->GetVectorPtr()->FV<double>();
+        py::list values;
+        for (int i : Range(vec))
+          values.append(py::cast(vec(i)));
+	auto fes = PyFES(self->GetFESpace());
+	auto dict  = self_object.attr("__dict__");
+        return py::make_tuple(fes, self->GetName(), values, self->GetFlags(),dict);
         })
     .def("__setstate__", [] (PyGF &self, py::tuple t) {
          auto fespace = t[0].cast<PyFES>();
-         Flags flags;
-         flags.SetFlag ("multidim", py::extract<int>(t[3])());
+         auto flags = t[3].cast<Flags>();
          auto gf = CreateGridFunction (fespace.Get(), t[1].cast<string>(), flags);
          gf->Update();
-	 gf->GetVector() = *t[2].cast<PyBaseVector>();
+         auto values = t[2].cast<py::list>();
+         auto fvec = gf->GetVector().FV<double>();
+         for (auto i : Range(fvec.Size()))
+           fvec[i] = values[i].cast<double>();
          new (&self) PyGF(gf);
          py::object self_object = py::cast(self);
-	 self_object.attr("__persistent_id__") = t[4];
+	 self_object.attr("__dict__") = t[4];
          })
     // .def("__str__", &ToString<GF>)
     .def("__str__", [] (PyGF & self) { return ToString(*self.Get()); } )
-    .def_property_readonly("space", FunctionPointer([](py::object self) -> py::object
-                                           {
-                                             py::dict d = py::extract<py::dict>(self.attr("__dict__"))();
-                                             // if gridfunction is created from python, it has the space attribute
-                                             if (d.contains("space"))
-                                               return d["space"];
-
-                                             // if not, make a new python space object from C++ space
-                                             return py::cast(PyFES(py::extract<PyGF>(self)()->GetFESpace()));
-                                           }),
-                  "the finite element space")
+    .def_property_readonly("space", [](PyGF & self) { return PyFES(self->GetFESpace()); },
+                           "the finite element space")
     // .def_property_readonly ("space", &GF::GetFESpace, "the finite element spaces")
     .def("Update", FunctionPointer ([](PyGF self) { self->Update(); }),
          "update vector size to finite element space dimension after mesh refinement")

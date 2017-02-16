@@ -210,6 +210,8 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
                                  })
     ;
 
+  
+
   py::class_<Flags>(m, "Flags")
     .def(py::init<>())
     .def("__str__", &ToString<Flags>)
@@ -219,6 +221,18 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
          SetFlag(f, "", d);
          // cout << f << endl;
      })
+    .def("__getstate__", [] (py::object self_object) {
+        auto self = self_object.cast<Flags>();
+        stringstream str;
+        self.SaveFlags(str);
+        return py::make_tuple(py::cast(str.str())); 
+      })
+    .def("__setstate__", [] (Flags & self, py::tuple state) {
+        string s = state[0].cast<string>();
+        stringstream str(s);
+        new (&self) Flags();
+        self.LoadFlags(str);
+      })
     .def("Set",[](Flags & self,const py::dict & aflags)->Flags&
     {      
       cout << "we call Set(dict)" << endl;
