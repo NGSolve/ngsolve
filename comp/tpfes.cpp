@@ -288,16 +288,16 @@ namespace ngcomp
         dnums[ii] = Space(indices[0])->GetNDof()*dnumsx[i]+dnumsy[j];
   }
 
-  void TPHighOrderFESpace::GetSliceDofNrs(ngfem::ElementId ei, int direction, ngstd::Array<int>& dnums) const
+  void TPHighOrderFESpace::GetSliceDofNrs(ngfem::ElementId ei, int direction, ngstd::Array<int>& dnums,LocalHeap & lh) const
   {
     dnums.SetSize(0);
     if(ei.VB() != VOL)
       return;
-    ArrayMem<int,100> dnumsx,dnumsy;
+    ArrayMem<int,300> dnumsx,dnumsy;
     int totsize = 0;
     if(direction == 1)
     {
-      Array<int> alldnums(Space(ei.Nr())->GetNDof());
+      Array<int> alldnums(Space(ei.Nr())->GetNDof(),lh);
       space_x->GetDofNrs(ei,dnumsx);
       for(int el=0;el<nels[direction];el++)
       {
@@ -308,12 +308,15 @@ namespace ngcomp
       dnums.SetSize(dnumsx.Size()*alldnums.Size());
       int ii=0;
       for(int i=0;i<dnumsx.Size();i++)
+      {
+        int offset = spaces_y[0]->GetNDof()*dnumsx[i];
         for(int j=0;j<alldnums.Size();j++,ii++)
-          dnums[ii] = spaces_y[0]->GetNDof()*dnumsx[i]+alldnums[j];
+          dnums[ii] = offset+alldnums[j];
+      }
     }
     else
     {
-      Array<int> alldnums(space_x->GetNDof());
+      Array<int> alldnums(space_x->GetNDof(),lh);
       spaces_y[0]->GetDofNrs(ElementId(ei),dnumsy);
       for(int el=0;el<nels[direction];el++)
       {
@@ -324,8 +327,10 @@ namespace ngcomp
       dnums.SetSize(dnumsy.Size()*alldnums.Size());
       int ii=0;
       for(int i=0;i<dnumsy.Size();i++)
+      {
         for(int j=0;j<alldnums.Size();j++,ii++)
           dnums[ii] = spaces_y[0]->GetNDof()*alldnums[j] + dnumsy[i];
+      }
     }
   }
 
@@ -383,8 +388,8 @@ namespace ngcomp
     static Timer tall("TPHighOrderFESpace::SolveM"); RegionTimer rall(tall);
     const Array<shared_ptr<FESpace> > & spaces = Spaces(0);
     int ndofyspace = spaces[1]->GetNDof();
-    auto meshx = spaces[0]->GetMeshAccess();
-    auto meshy = spaces[1]->GetMeshAccess();
+    auto & meshx = spaces[0]->GetMeshAccess();
+    auto & meshy = spaces[1]->GetMeshAccess();
     int nely = meshy->GetNE();
     auto & element_coloring0 = spaces[0]->ElementColoring(VOL);
     for (FlatArray<int> els_of_col : element_coloring0)
@@ -401,44 +406,90 @@ namespace ngcomp
           auto & felx = spaces[0]->GetFE(ElementId(elnrx),lh);
           int ndofx = felx.GetNDof();
           const ElementTransformation & xtrafo = meshx->GetTrafo(ElementId(elnrx), lh);
-          const IntegrationRule & irx = SelectIntegrationRule(felx.ElementType(),2*felx.Order());
-          BaseMappedIntegrationRule & mirx = xtrafo(irx, lh);
           FlatMatrix<> elmat_yslice(ndofx,ndofyspace,lh);
           Array<int> dnums_yslice(ndofx*ndofyspace, lh);
-          GetSliceDofNrs(ElementId(elnrx), 1, dnums_yslice);
+          GetSliceDofNrs(ElementId(elnrx), 1, dnums_yslice,lh);
           vec.GetIndirect (dnums_yslice, elmat_yslice.AsVector());
-          FlatMatrix<> shapesx(felx.GetNDof(),irx.Size(),lh);
-          shapesx = 0.0;
-          dynamic_cast<const BaseScalarFiniteElement &>(felx).CalcShape(irx,shapesx);
-          for(int ip=0;ip<irx.Size();ip++)
-            shapesx.Col(ip)*=sqrt(mirx[ip].GetWeight());
-          FlatMatrix<> elmatx(felx.GetNDof(),lh);
-          elmatx = shapesx*Trans(shapesx);
-          CalcInverse(elmatx);
           FlatMatrix<> res1(ndofx,ndofyspace,lh);
           FlatMatrix<> out(ndofx,ndofyspace,lh);
-          res1 = elmatx*elmat_yslice;
+          if (!xtrafo.IsCurvedElement())
+          {
+            FlatVector<double> diag_mass(ndofx, lh);
+            switch (meshx->GetDimension())
+            {
+              case 1:
+                static_cast<const DGFiniteElement<1>&> (felx).GetDiagMassMatrix (diag_mass);
+              case 2:
+                static_cast<const DGFiniteElement<2>&> (felx).GetDiagMassMatrix (diag_mass);
+              case 3:
+                static_cast<const DGFiniteElement<3>&> (felx).GetDiagMassMatrix (diag_mass);
+            }
+            IntegrationRule ir(felx.ElementType(), 0);
+            BaseMappedIntegrationRule & mir = xtrafo(ir, lh);
+            diag_mass *= mir[0].GetMeasure();
+            for (int i = 0; i < diag_mass.Size(); i++)
+              elmat_yslice.Row(i) /= diag_mass(i);//*elmat_yslice.Row(i);
+          }
+          else
+          {
+            cout << "Not so efficient (SolveMx)"<<endl;
+            const IntegrationRule & irx = SelectIntegrationRule(felx.ElementType(),2*felx.Order());
+            BaseMappedIntegrationRule & mirx = xtrafo(irx, lh);
+            FlatMatrix<> shapesx(felx.GetNDof(),irx.Size(),lh);
+            shapesx = 0.0;
+            dynamic_cast<const BaseScalarFiniteElement &>(felx).CalcShape(irx,shapesx);
+            for(int ip=0;ip<irx.Size();ip++)
+              shapesx.Col(ip)*=sqrt(mirx[ip].GetWeight());
+            FlatMatrix<> elmatx(felx.GetNDof(),lh);
+            elmatx = shapesx*Trans(shapesx);
+            CalcInverse(elmatx);
+            res1 = elmatx*elmat_yslice;
+            elmat_yslice = res1;
+          }
           int firstydof = 0;
           for(int j=0;j<nely;j++)
           {
             auto & fely = spaces[1]->GetFE(ElementId(j),lh);
             int ndofy = fely.GetNDof();
             const ElementTransformation & ytrafo = meshy->GetTrafo(ElementId(j), lh);
-            const IntegrationRule & iry = SelectIntegrationRule(fely.ElementType(),2*fely.Order());
-            BaseMappedIntegrationRule & miry = ytrafo(iry, lh);
-            FlatMatrix<> shapesy(fely.GetNDof(),iry.Size(),lh);
-            shapesy = 0.0;
-            dynamic_cast<const BaseScalarFiniteElement &>(fely).CalcShape(iry,shapesy); 
-            for(int ip=0;ip<iry.Size();ip++)
-              shapesy.Col(ip)*=sqrt(miry[ip].GetWeight());
-            FlatMatrix<> elmaty(fely.GetNDof(),lh);
-            elmaty = shapesy*Trans(shapesy);
-            CalcInverse(elmaty);
             IntRange dnumsy(firstydof, firstydof+ndofy);
             firstydof+=ndofy;
-            out.Cols(dnumsy) = res1.Cols(dnumsy)*Trans(elmaty);
+            if (!ytrafo.IsCurvedElement())
+            {
+              FlatVector<double> diag_mass(ndofy, lh);
+              switch (meshy->GetDimension())
+              {
+                case 1:
+                  static_cast<const DGFiniteElement<1>&> (fely).GetDiagMassMatrix (diag_mass);
+                case 2:
+                  static_cast<const DGFiniteElement<2>&> (fely).GetDiagMassMatrix (diag_mass);
+                case 3:
+                  static_cast<const DGFiniteElement<3>&> (fely).GetDiagMassMatrix (diag_mass);
+              }
+              IntegrationRule ir(fely.ElementType(), 0);
+              BaseMappedIntegrationRule & mir = ytrafo(ir, lh);
+              diag_mass *= mir[0].GetMeasure();
+              for (int i = 0; i < diag_mass.Size(); i++)
+                elmat_yslice.Col(dnumsy[i]) /= diag_mass(i);
+            }
+            else
+            {
+              cout << "Not so efficient (SolveMy)"<<endl;
+              const IntegrationRule & iry = SelectIntegrationRule(fely.ElementType(),2*fely.Order());
+              BaseMappedIntegrationRule & miry = ytrafo(iry, lh);
+              FlatMatrix<> shapesy(fely.GetNDof(),iry.Size(),lh);
+              shapesy = 0.0;
+              dynamic_cast<const BaseScalarFiniteElement &>(fely).CalcShape(iry,shapesy); 
+              for(int ip=0;ip<iry.Size();ip++)
+                shapesy.Col(ip)*=sqrt(miry[ip].GetWeight());
+              FlatMatrix<> elmaty(fely.GetNDof(),lh);
+              elmaty = shapesy*Trans(shapesy);
+              CalcInverse(elmaty);
+              out.Cols(dnumsy) = res1.Cols(dnumsy)*Trans(elmaty);
+              elmat_yslice = out;
+            }
           }
-          vec.SetIndirect(dnums_yslice,out.AsVector());
+          vec.SetIndirect(dnums_yslice,elmat_yslice.AsVector());
         }
       });
     }
@@ -448,9 +499,11 @@ namespace ngcomp
   {
     static Timer tall("TPHighOrderFESpace::Transfer2StdMesh"); RegionTimer rall(tall);
     const shared_ptr<FESpace> fes = gfustd->GetFESpace();
-    const shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gfutp->GetFESpace());
-    shared_ptr<FESpace> fesx = tpfes->Space(-1);
-    shared_ptr<FESpace> fesy = tpfes->Space(0);
+    TPHighOrderFESpace * tpfes = dynamic_cast<TPHighOrderFESpace *>(gfutp->GetFESpace().get());
+    const shared_ptr<FESpace> & fesx = tpfes->Space(-1);
+    const shared_ptr<FESpace> & fesy = tpfes->Space(0);
+    auto & meshx = fesx->GetMeshAccess();
+    auto & meshy = fesy->GetMeshAccess();    
     LocalHeap lh(100000000,"heap");
     // auto & els = dynamic_cast<TPHighOrderFE &> (tpfes->GetFE(ElementId(0),lh));
     IterateElementsTP(*tpfes,VOL,lh,
@@ -470,29 +523,34 @@ namespace ngcomp
       TPIntegrationRule ir(irs);
       const ElementTransformation & tptrafo = tpfes->GetTrafo(ElementId(elnr),lh);
       BaseMappedIntegrationRule & tpmir = tptrafo(ir, lh);
-      IntegrationRule irstd;
+      IntegrationRule irstd(ir(0).Size()*ir(1).Size(),lh);
+      int ii=0;
       for(int s=0;s<ir(0).Size();s++)
         for(int t=0;t<ir(1).Size();t++)
         {
-          if(fesx->GetMeshAccess()->GetDimension() == 1 &&  fesy->GetMeshAccess()->GetDimension() == 1)
-              irstd.AddIntegrationPoint(IntegrationPoint(ir(0)[s](0),ir(1)[t](0),ir(1)[t](1), ir(0)[s].Weight()*ir(1)[t].Weight()));
-          if(fesx->GetMeshAccess()->GetDimension() == 1 &&  fesy->GetMeshAccess()->GetDimension() == 2)
-              irstd.AddIntegrationPoint(IntegrationPoint(ir(1)[t](0),ir(1)[t](1),ir(0)[s](0), ir(0)[s].Weight()*ir(1)[t].Weight()));
-          if(fesx->GetMeshAccess()->GetDimension() == 2 )
-              irstd.AddIntegrationPoint(IntegrationPoint(ir(0)[s](0),ir(0)[s](1),ir(1)[t](0), ir(0)[s].Weight()*ir(1)[t].Weight()));
+          if(meshx->GetDimension() == 1 && meshy->GetDimension() == 1)
+              irstd[ii++] = (IntegrationPoint(ir(0)[s](0),ir(1)[t](0),ir(1)[t](1), ir(0)[s].Weight()*ir(1)[t].Weight()));
+          if(meshx->GetDimension() == 1 && meshy->GetDimension() == 2)
+              irstd[ii++] = (IntegrationPoint(ir(1)[t](0),ir(1)[t](1),ir(0)[s](0), ir(0)[s].Weight()*ir(1)[t].Weight()));
+          if(meshx->GetDimension() == 2 )
+              irstd[ii++] = (IntegrationPoint(ir(0)[s](0),ir(0)[s](1),ir(1)[t](0), ir(0)[s].Weight()*ir(1)[t].Weight()));
          }
       const ElementTransformation & trafo = fes->GetMeshAccess()->GetTrafo(ElementId(VOL,elnrstd),lh);
       BaseMappedIntegrationRule & mirstd = trafo(irstd,lh);
-      shared_ptr<TPDifferentialOperator> diffop = dynamic_pointer_cast<TPDifferentialOperator>(tpfes->GetEvaluator());
+      //shared_ptr<TPDifferentialOperator> diffop = dynamic_pointer_cast<TPDifferentialOperator>(tpfes->GetEvaluator());
       int niptp = ir(0).Size()*ir(1).Size();
       // Evalute \int u_tp * v_std :
-      FlatMatrix<> flux(niptp,diffop->Dim(),lh);
-      FlatVector<> coef(tpfel.GetNDof(),lh);
-      const BaseVector & base = gfutp->GetVector();
-      Array<int> dnums;
-      tpfes->GetDofNrs(elnr,dnums);
-      base.GetIndirect(dnums,coef);
-      diffop->Apply(tpfel, tpmir, coef,flux,lh);
+      // FlatMatrix<> flux(niptp,diffop->Dim(),lh);
+      FlatMatrix<> flux(niptp,1,lh);
+      gfutp->Evaluate(tpmir, flux);
+      
+      //FlatVector<> coef(tpfel.GetNDof(),lh);
+      //const BaseVector & base = gfutp->GetVector();
+      
+      //tpfes->GetDofNrs(elnr,dnums);
+      //base.GetIndirect(dnums,coef);
+      // diffop->Apply(tpfel, tpmir, coef,flux,lh);
+      
       // Build mass matrix for \int u_std * v_std :
       FlatMatrix<> elmat(fel.GetNDof(),lh);
       elmat = 0.0;
@@ -510,6 +568,8 @@ namespace ngcomp
       CalcInverse(elmat);
       y = elmat*elvec;
       BaseVector & baseout = gfustd->GetVector();
+      //Array<int> dnums;
+      Array<int> dnums(fel.GetNDof(),lh);
       fes->GetDofNrs(ElementId(VOL,elnrstd),dnums);
       baseout.SetIndirect(dnums,y);
     });
@@ -524,7 +584,7 @@ namespace ngcomp
     [&] (ElementId ei0,ElementId ei1,LocalHeap & lh)
     {
         HeapReset hr(lh);
-        Array<int> ind(2);
+        ArrayMem<int,2> ind(2);
         
         ind[0] = ei0.Nr(); ind[1] = ei1.Nr();
         int elnr = tpfes->GetIndex(ind);

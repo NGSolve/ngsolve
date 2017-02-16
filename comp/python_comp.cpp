@@ -3097,63 +3097,10 @@ used_idnrs (list of int = None): identification numbers to be made periodic
                 return space;             
               }
               });
-              
-   m.def("IntDv", [](PyGF gf_tp, PyGF gf_x )
-            {
-              static Timer tall("comp.IntDv"); RegionTimer rall(tall);
-              shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp.Get()->GetFESpace());
-              LocalHeap lh(10000000,"ReduceToXSpace");
-              tpfes->ReduceToXSpace(gf_tp.Get(),gf_x.Get(),lh,
-              [&] (shared_ptr<FESpace> fes,const FiniteElement & fel,const ElementTransformation & trafo,FlatVector<> elvec,FlatVector<> elvec_out,LocalHeap & lh)
-              {
-                 const TPHighOrderFE & tpfel = dynamic_cast<const TPHighOrderFE &>(fel);
-                 shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(fes);
-                 FlatMatrix<> elmat(tpfel.elements[0]->GetNDof(),tpfel.elements[1]->GetNDof(),&elvec[0]);
-                 IntegrationRule ir(tpfel.elements[1]->ElementType(),2*tpfel.elements[1]->Order());
-                 BaseMappedIntegrationRule & mir = trafo(ir,lh);
-                 FlatMatrix<> shape(tpfel.elements[1]->GetNDof(),ir.Size(),lh);
-                 dynamic_cast<const BaseScalarFiniteElement *>(tpfel.elements[1])->CalcShape(ir,shape);
-                 for(int s=0;s<ir.Size();s++)
-                 {
-                   shape.Col(s)*=mir[s].GetWeight();
-                   FlatMatrix<> tempmat(elvec_out.Size(),ir.Size(),lh);
-                   tempmat = elmat*shape;
-                   elvec_out+=tempmat.Col(s);
-                 }
-              });
-              });
-              
-   m.def("IntDv", [](PyGF gf_tp, PyGF gf_x, PyCF coef )
-           {
-              static Timer tall("comp.IntDv - total domain int"); RegionTimer rall(tall);
-              shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp.Get()->GetFESpace());
-              LocalHeap lh(10000000,"IntDv");
-              tpfes->ReduceToXSpace(gf_tp.Get(),gf_x.Get(),lh,
-              [&] (shared_ptr<FESpace> fes,const FiniteElement & fel,const ElementTransformation & trafo,FlatVector<> elvec,FlatVector<> elvec_out,LocalHeap & lh)
-              {
-                 const TPHighOrderFE & tpfel = dynamic_cast<const TPHighOrderFE &>(fel);
-                 
-                 shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(fes);
-                 FlatMatrix<> coefmat(tpfel.elements[0]->GetNDof(),tpfel.elements[1]->GetNDof(),&elvec[0]);
-                 IntegrationRule ir(tpfel.elements[1]->ElementType(),2*tpfel.elements[1]->Order());
-                 FlatMatrix<> shape(tpfel.elements[1]->GetNDof(),ir.Size(),lh);
-                 dynamic_cast<const BaseScalarFiniteElement *>(tpfel.elements[1])->CalcShape(ir,shape);
-                 
-                 BaseMappedIntegrationRule & mir = trafo(ir,lh);
-                 
-                 FlatMatrixFixWidth<1> vals(mir.Size(),lh);
-                 coef.Get()->Evaluate(mir, vals);
-                 for(int s=0;s<ir.Size();s++)
-                 {
-                   shape.Col(s)*=mir[s].GetWeight()*vals(s,0);
-                   elvec_out+=coefmat*shape.Col(s);
-                 }
-              });
-              });
-    
+
    m.def("IntDv", [](PyGF gf_tp, py::list ax0, PyCF coef) -> double
            {
-             static Timer tall("comp.IntDv2 - single point"); RegionTimer rall(tall);
+             static Timer tall("comp.IntDv - single point"); RegionTimer rall(tall);
              Array<double> x0_help = makeCArray<double> (ax0);
              LocalHeap lh(10000000,"IntDv2");
              shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp.Get()->GetFESpace());
@@ -3190,6 +3137,72 @@ used_idnrs (list of int = None): identification numbers to be made periodic
              }
              return val;
            });
+   m.def("IntDv",[](PyGF gf_tp, PyGF gf_x, PyCF coef )
+           {
+             static Timer tall("comp.IntDv - total domain integral"); RegionTimer rall(tall);
+             BaseVector & vec_in = gf_tp->GetVector();
+             BaseVector & vec_out = gf_x->GetVector();
+             LocalHeap clh(10000000,"IntDv - New");
+             shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp.Get()->GetFESpace());
+             const Array<shared_ptr<FESpace> > & spaces = tpfes->Spaces(0);
+             int ndofxspace = spaces[0]->GetNDof();
+             auto & meshy = spaces[1]->GetMeshAccess();
+             Vector<> elvec_out(ndofxspace);
+             Matrix<> elvec_outmat(meshy->GetNE(),ndofxspace);
+             elvec_outmat = 0.0;
+             elvec_out = 0.0;
+            auto & element_coloring1 = spaces[1]->ElementColoring(VOL);
+            for (FlatArray<int> els_of_col : element_coloring1)
+            {
+              SharedLoop sl(els_of_col.Range());
+              task_manager -> CreateJob
+              ( [&] (const TaskInfo & ti) 
+              {
+                LocalHeap lh = clh.Split(ti.thread_nr, ti.nthreads);
+                for (int mynr : sl)
+                {
+                  int i = els_of_col[mynr];
+                  ArrayMem<int,100> dnumsx;
+                  auto & fely = spaces[1]->GetFE(ElementId(i),lh);
+                  int ndofy = fely.GetNDof();
+                  FlatMatrix<> elvec_slicemat(ndofy,ndofxspace,lh);
+                  Array<int> dnumsslice(ndofy*ndofxspace, lh);
+                  tpfes->GetSliceDofNrs(ElementId(i),0,dnumsslice,lh);
+                  vec_in.GetIndirect(dnumsslice, elvec_slicemat.AsVector());
+                  ElementTransformation & trafo = spaces[1]->GetMeshAccess()->GetTrafo(ElementId(i),lh);
+                  const IntegrationRule & ir = SelectIntegrationRule(fely.ElementType(),2*fely.Order());
+                  FlatMatrix<> shape(fely.GetNDof(),ir.Size(),lh);
+                  dynamic_cast<const BaseScalarFiniteElement &>(fely).CalcShape(ir,shape);
+                  BaseMappedIntegrationRule & mir = trafo(ir,lh);
+                  FlatMatrixFixWidth<1> vals(mir.Size(),lh);
+                  coef.Get()->Evaluate(mir, vals);
+                  int firstxdof = 0;
+                  for(int s=0;s<ir.Size();s++)
+                    shape.Col(s)*=mir[s].GetWeight()*vals(s,0);
+                  for(int j=0;j<spaces[0]->GetMeshAccess()->GetNE();j++)
+                  {
+                    HeapReset hr(lh);
+                    int ndofx = spaces[0]->GetFE(ElementId(j),lh).GetNDof();
+                    IntRange dnumsx(firstxdof, firstxdof+ndofx);
+                    FlatMatrix<> coefmat(ndofx,ndofy,lh);
+                    coefmat = elvec_slicemat.Cols(dnumsx);
+                    FlatMatrix<> tempmat(ndofx,ir.Size(),lh);
+                    tempmat = coefmat*shape;
+                    Array<int> dofnrs_xspace(ndofx,lh);
+                    spaces[0]->GetDofNrs(ElementId(j),dofnrs_xspace);
+                    for(int s=0;s<ir.Size();s++)
+                      elvec_outmat.Cols(dnumsx).Row(i)+=(tempmat.Col(s));
+                    firstxdof+=ndofx;
+                  }
+                }
+              }
+              );
+            }
+            for(int i=0;i<elvec_outmat.Height();i++)
+              elvec_out+=elvec_outmat.Row(i);
+            vec_out.FVDouble() = elvec_out;
+});
+
    m.def("ProlongateCoefficientFunction", [](PyCF cf_x, int prolongateto) -> PyCF
            {
              auto pcf = make_shared<ProlongateCoefficientFunction>(cf_x.Get(),prolongateto,cf_x.Get()->Dimension(),false);
@@ -3206,13 +3219,20 @@ used_idnrs (list of int = None): identification numbers to be made periodic
               else
                 cout << "GridFunction gf_x is not defined on first space"<<endl;
               });
-   m.def("Transfer2StdMesh", [](const PyGF gfutp, PyGF gfustd )
+   m.def("Transfer2StdMesh", [](/*const PyFES tpfes,*/ const PyGF gfutp, PyGF gfustd )
             {
               static Timer tall("comp.Transfer2StdMesh"); RegionTimer rall(tall);
               Transfer2StdMesh(gfutp.Get().get(),gfustd.Get().get());
               return;
              });
-  
+   
+   m.def("Transfer2StdMesh", [](/*const PyFES tpfes,*/ const PyCF cftp, PyGF gfustd )
+            {
+              cout << cftp.Get() << endl;
+              static Timer tall("comp.Transfer2StdMesh"); RegionTimer rall(tall);
+              //Transfer2StdMesh(cftp.Get().get(),gfustd.Get().get());
+              return;
+             });
   
   
   typedef PyWrapper<BaseVTKOutput> PyVTK;

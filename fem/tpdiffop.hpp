@@ -20,7 +20,7 @@ namespace ngfem
 
     virtual bool operator== (const TPDifferentialOperator & diffop2) const { return false; }
     
-    shared_ptr<DifferentialOperator> GetEvaluators( int num)
+    shared_ptr<DifferentialOperator> & GetEvaluators( int num)
     {
       return evaluators[num];
     }

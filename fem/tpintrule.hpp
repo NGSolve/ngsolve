@@ -5,9 +5,9 @@ namespace ngfem
 {
   class TPIntegrationRule : public IntegrationRule
   {
-    Array< const IntegrationRule *> irs;
+    const ArrayMem< const IntegrationRule *,2> irs;
     public:
-      INLINE TPIntegrationRule(Array< const IntegrationRule *> & airs) : irs(airs)
+      INLINE TPIntegrationRule(const Array< const IntegrationRule *> & airs) : irs(airs)
       {
         this->size = irs[0]->GetNIP()*irs[1]->GetNIP();
       }
