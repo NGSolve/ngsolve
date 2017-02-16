@@ -75,7 +75,7 @@ namespace ngcomp
     public:
 
     PML_Jac(shared_ptr<PML_Transformation> _pmltrafo) : 
-      CoefficientFunction(pmltrafo->GetDimension()*pmltrafo->GetDimension(),true), pmltrafo(_pmltrafo)
+      CoefficientFunction(_pmltrafo->GetDimension()*_pmltrafo->GetDimension(),true), pmltrafo(_pmltrafo)
     {
       SetDimensions(Array<int>({pmltrafo->GetDimension(),pmltrafo->GetDimension()}));
     }
@@ -106,7 +106,7 @@ namespace ngcomp
     public:
 
     PML_JacInv(shared_ptr<PML_Transformation> _pmltrafo) : 
-      CoefficientFunction(pmltrafo->GetDimension()*pmltrafo->GetDimension(),true), pmltrafo(_pmltrafo)
+      CoefficientFunction(_pmltrafo->GetDimension()*_pmltrafo->GetDimension(),true), pmltrafo(_pmltrafo)
     {
       SetDimensions(Array<int>({pmltrafo->GetDimension(),pmltrafo->GetDimension()}));
     }
