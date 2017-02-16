@@ -68,6 +68,12 @@ stages:
     UBUNTU_VERSION: "16.04"
     UBUNTU_VERSION_NAME: "xenial"
 
+.template_ubuntu_1610: &ubuntu_1610
+  <<: *ubuntu
+  variables:
+    UBUNTU_VERSION: "16.10"
+    UBUNTU_VERSION_NAME: "yakkety"
+
 # MacOSX
 .template_mac: &mac
   tags:
@@ -141,6 +147,10 @@ build_ubuntu_1604:
   <<: *ubuntu_1604
   <<: *build_linux
 
+build_ubuntu_1610:
+  <<: *ubuntu_1610
+  <<: *build_linux
+
 build_mac:
   <<: *mac
   stage: build
@@ -197,6 +207,10 @@ test_ubuntu_1510:
 
 test_ubuntu_1604:
   <<: *ubuntu_1604
+  <<: *test_linux
+
+test_ubuntu_1610:
+  <<: *ubuntu_1610
   <<: *test_linux
 
 test_mac:
@@ -261,6 +275,6 @@ deploy_latest:
   tags:
     - linux
   script:
-    - docker run ngsolve_${CI_BUILD_REF_NAME}_installed /root/src/ngsolve/tests/deploy.sh
+    - /home/gitlab-runner/deploy/deploy.sh $CI_BUILD_REF
   when: manual
   environment: deploy_latest
