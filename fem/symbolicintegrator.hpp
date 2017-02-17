@@ -49,18 +49,12 @@ public:
       ttrace_evaluator(attrace_evaluator),
       ttrace_deriv_evaluator(attrace_deriv_evaluator)
   {
-    // dim = evaluator->Dim();
     if (deriv_evaluator || trace_deriv_evaluator)
       deriv_proxy = make_shared<ProxyFunction> (testfunction, is_complex, deriv_evaluator, nullptr,
                                                 trace_deriv_evaluator, nullptr,
 						ttrace_deriv_evaluator, nullptr);
 
-    int dim = evaluator->Dim();
-    int blockdim = evaluator->BlockDim();
-    if (blockdim == 1)
-      SetDimensions (Array<int> ({dim}));
-    else
-      SetDimensions (Array<int> ({dim/blockdim, blockdim}));
+    SetDimensions (evaluator->Dimensions());
   }
 
   bool IsTestFunction () const { return testfunction; }
@@ -309,18 +303,14 @@ public:
   CompoundDifferentialOperator (shared_ptr<DifferentialOperator> adiffop, 
                                 int acomp)
     : DifferentialOperator(adiffop->Dim(), adiffop->BlockDim(),
-                           adiffop->Boundary(), adiffop->DiffOrder()),
-      diffop(adiffop), comp(acomp) { ; }
+                           adiffop->VB(), adiffop->DiffOrder()),
+      diffop(adiffop), comp(acomp)
+  {
+    dimensions = adiffop->Dimensions();
+  }
   
   virtual ~CompoundDifferentialOperator () = default;
-  
-  /// dimension of range
-  /*
-  virtual int Dim() const { return diffop->Dim(); }
-  virtual int BlockDim() const { return diffop->BlockDim(); }
-  virtual bool Boundary() const { return diffop->Boundary(); }
-  virtual int DiffOrder() const { return diffop->DiffOrder(); }
-  */
+
   virtual string Name() const { return diffop->Name(); }
 
   virtual IntRange UsedDofs(const FiniteElement & bfel) const
