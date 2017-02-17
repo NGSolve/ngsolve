@@ -1794,6 +1794,8 @@ namespace ngcomp
     enum { DIM_DMAT = DIM_SPC*DIM_SPC };
     enum { DIFFORDER = 0 };
 
+    static Array<int> GetDimensions() { return Array<int> ( { DIM_SPC, DIM_SPC } ); }
+      
     static string Name() { return "grad"; }
     
     template <typename FEL, typename MIP, typename MAT>
