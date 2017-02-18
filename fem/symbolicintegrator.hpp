@@ -38,29 +38,9 @@ public:
                  shared_ptr<DifferentialOperator> atrace_evaluator,
                  shared_ptr<DifferentialOperator> atrace_deriv_evaluator,
 		 shared_ptr<DifferentialOperator> attrace_evaluator,
-		 shared_ptr<DifferentialOperator> attrace_deriv_evaluator)
-                 
-    : CoefficientFunction(aevaluator->Dim(), ais_complex),
-      testfunction(atestfunction), is_other(false),
-      evaluator(aevaluator), 
-      deriv_evaluator(aderiv_evaluator),
-      trace_evaluator(atrace_evaluator), 
-      trace_deriv_evaluator(atrace_deriv_evaluator),
-      ttrace_evaluator(attrace_evaluator),
-      ttrace_deriv_evaluator(attrace_deriv_evaluator)
-  {
-    if (deriv_evaluator || trace_deriv_evaluator)
-      deriv_proxy = make_shared<ProxyFunction> (testfunction, is_complex, deriv_evaluator, nullptr,
-                                                trace_deriv_evaluator, nullptr,
-						ttrace_deriv_evaluator, nullptr);
-
-    SetDimensions (evaluator->Dimensions());
-  }
+		 shared_ptr<DifferentialOperator> attrace_deriv_evaluator);
 
   bool IsTestFunction () const { return testfunction; }
-  // virtual int Dimension () const final { return dim; } // { evaluator->Dim(); }
-  // virtual Array<int> Dimensions() const final;
-  // virtual bool IsComplex () const final { return is_complex; } 
   bool IsOther() const { return is_other; }
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
@@ -71,14 +51,14 @@ public:
   const shared_ptr<DifferentialOperator> & TraceDerivEvaluator() const { return trace_deriv_evaluator; }
   const shared_ptr<DifferentialOperator> & TTraceEvaluator() const { return ttrace_evaluator; }
   const shared_ptr<DifferentialOperator> & TTraceDerivEvaluator() const { return ttrace_deriv_evaluator; }
+
   shared_ptr<ProxyFunction> Deriv() const
   {
     return deriv_proxy;
   }
-  shared_ptr<ProxyFunction> Trace() const
-  {
-    return make_shared<ProxyFunction> (testfunction, is_complex, trace_evaluator, trace_deriv_evaluator, ttrace_evaluator, ttrace_deriv_evaluator, nullptr, nullptr);
-  }
+
+  shared_ptr<ProxyFunction> Trace() const;
+
   shared_ptr<ProxyFunction> Other(shared_ptr<CoefficientFunction> _boundary_values) const
   {
     auto other = make_shared<ProxyFunction> (testfunction, is_complex, evaluator, deriv_evaluator, trace_evaluator, trace_deriv_evaluator,ttrace_evaluator, ttrace_deriv_evaluator);
