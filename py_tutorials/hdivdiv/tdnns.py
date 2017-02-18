@@ -25,9 +25,6 @@ tau, v = X.TestFunction()
 
 n = specialcf.normal(2)
 
-sigma.dims = (2,2)
-tau.dims = (2,2)
-
 def tang(u): return u-(u*n)*n
 
 a = BilinearForm(X, symmetric=True)
