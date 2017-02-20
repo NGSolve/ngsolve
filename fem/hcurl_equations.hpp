@@ -39,7 +39,7 @@ namespace ngfem
     enum { DIM_DMAT = D };
     enum { DIFFORDER = 0 };
 
-
+    static constexpr bool SUPPORT_PML = true;
     template <typename MIP, typename MAT>
     static void GenerateMatrix (const FiniteElement & fel, 
 				const MIP & mip,
@@ -167,7 +167,6 @@ namespace ngfem
   {
   };
 
-
   template <typename FEL> class DiffOpCurlEdge<2,FEL> 
     : public DiffOp<DiffOpCurlEdge<2, FEL> >
   {
@@ -210,6 +209,7 @@ namespace ngfem
 
     static string Name() { return "curl"; }
 
+    static constexpr bool SUPPORT_PML = true;
 
 
     template <typename MIP, typename MAT>
@@ -320,6 +320,7 @@ namespace ngfem
     enum { DIM_ELEMENT = D };
     enum { DIM_DMAT = 1 };
     enum { DIFFORDER = 0 };
+    static constexpr bool SUPPORT_PML = true;
 
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & fel, const MIP & mip,
@@ -343,6 +344,7 @@ namespace ngfem
     enum { DIM_ELEMENT = D-2 };
     enum { DIM_DMAT = D };
     enum { DIFFORDER = 0 };
+    static constexpr bool SUPPORT_PML = true;
 
     template <typename FEL1, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL1 & fel, const MIP & mip,
@@ -420,6 +422,7 @@ namespace ngfem
     enum { DIM_DMAT = D };
     enum { DIFFORDER = 0 };
 
+    static constexpr bool SUPPORT_PML = true;
     template <typename FEL1, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL1 & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
@@ -505,6 +508,7 @@ namespace ngfem
     enum { DIM_DMAT = 1 };
     enum { DIFFORDER = 1 };
 
+    static constexpr bool SUPPORT_PML = true;
     template <typename AFEL, typename MIP, typename MAT>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
@@ -545,6 +549,7 @@ public:
   enum { DIM_DMAT = 3 };
   enum { DIFFORDER = 1 };
 
+    static constexpr bool SUPPORT_PML = true;
   static const FEL & Cast (const FiniteElement & fel) 
   { return static_cast<const FEL&> (fel); }
 
