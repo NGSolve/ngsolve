@@ -1,3 +1,4 @@
+set -e
 cd 
 cd src/ngsolve
 git submodule update --init --recursive
@@ -8,6 +9,9 @@ cmake ../../src/ngsolve -DUSE_CCACHE=ON -DUSE_MKL=ON -DUSE_UMFPACK=ON -DINSTALL_
 make -j12
 make install
 make package
+cd ngsolve
+make docs
+cd ..
 
 # Run ssh-agent (inside the build environment)
 eval $(ssh-agent -s)
@@ -18,4 +22,11 @@ mkdir -p ~/.ssh
 
 ssh tester@vector.asc.tuwien.ac.at "mkdir -p /home/tester/deploy/ubuntu/$CI_BUILD_REF/${UBUNTU_VERSION_NAME}_amd64"
 scp *.deb tester@vector.asc.tuwien.ac.at:/home/tester/deploy/ubuntu/$CI_BUILD_REF/${UBUNTU_VERSION_NAME}_amd64/
+
+if [ "yakkety" = "$UBUNTU_VERSION_NAME" ]
+then
+  echo "upload docu"
+  ssh tester@vector.asc.tuwien.ac.at "mkdir -p /home/tester/deploy/docu/$CI_BUILD_REF"
+  scp -r ngsolve/docs/html/* tester@vector.asc.tuwien.ac.at:/home/tester/deploy/docu/$CI_BUILD_REF/
+fi
         
