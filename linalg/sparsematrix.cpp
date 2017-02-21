@@ -1296,8 +1296,6 @@ namespace ngla
     if ( this->GetInverseType() == SUPERLU_DIST )
       throw Exception ("SparseMatrix::InverseMatrix:  SuperLU_DIST_Inverse not available");
 
-    cout << "HELLO!" << endl;
-
     if ( BaseSparseMatrix :: GetInverseType() == SUPERLU )
       {
 #ifdef USE_SUPERLU
