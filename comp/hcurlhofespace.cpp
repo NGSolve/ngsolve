@@ -1096,7 +1096,7 @@ namespace ngcomp
   }
   case BND:
     {
-      if (!DefinedOn (VOL, ma->GetSElIndex (ei.Nr())))
+      if (!DefinedOn (BND, ma->GetSElIndex (ei.Nr())))
         return * new (lh) HCurlDummyFE<ET_TRIG> ();
 
       if ( discontinuous )
