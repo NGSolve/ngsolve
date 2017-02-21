@@ -295,6 +295,7 @@ add_subdirectory(python)
 add_subdirectory(pde_tutorial)
 add_subdirectory(py_tutorials)
 add_subdirectory(tests)
+add_subdirectory(docs)
 
 #######################################################################
 # generate ngscxx compiler wrapper
