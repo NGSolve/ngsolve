@@ -105,6 +105,6 @@ Test the installation
 
 Now the installation should be finished. Test it by starting
 ``netgen.exe`` and see if you get a message saying that the module
-NGSolve-|version|-dev has been loaded. In ``BASEDIR\install\share\ngsolve``
+NGSolve-|version| has been loaded. In ``BASEDIR\install\share\ngsolve``
 you can find example PDE problems, which you can use to try if ngsolve
 does what it should do.

@@ -6,7 +6,7 @@ running OS X 10.9 or greater. These steps will give you a native OSX
 style *framework* and a *Netgen.app*. These steps have been tested on
 MacOS version 10.12.
 
-Here we describe how to build the latest version |version|-dev.
+Here we describe how to build the latest version |version|.
 
 Prerequisites
 *************
