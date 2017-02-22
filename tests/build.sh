@@ -20,13 +20,17 @@ ssh-add <(echo "$SSH_PRIVATE_KEY")
 mkdir -p ~/.ssh
 [[ -f /.dockerenv ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
 
-ssh tester@vector.asc.tuwien.ac.at "mkdir -p /home/tester/deploy/ubuntu/$CI_BUILD_REF/${UBUNTU_VERSION_NAME}_amd64"
-scp *.deb tester@vector.asc.tuwien.ac.at:/home/tester/deploy/ubuntu/$CI_BUILD_REF/${UBUNTU_VERSION_NAME}_amd64/
+export UPLOAD_DIR=deploy/builds/$CI_PIPELINE_ID/ubuntu/${UBUNTU_VERSION_NAME}_amd64
+rsync -ztrl --del -e ssh \
+  --rsync-path="mkdir -p $UPLOAD_DIR && rsync" \
+  *.deb \
+  gitlab-runner@vector.asc.tuwien.ac.at:$UPLOAD_DIR/
 
 if [ "yakkety" = "$UBUNTU_VERSION_NAME" ]
 then
   echo "upload docu"
-  ssh tester@vector.asc.tuwien.ac.at "mkdir -p /home/tester/deploy/docu/$CI_BUILD_REF"
-  scp -r ngsolve/docs/html/* tester@vector.asc.tuwien.ac.at:/home/tester/deploy/docu/$CI_BUILD_REF/
+  rsync -ztrl --del -e ssh \
+    ngsolve/docs/html/* \
+    gitlab-runner@vector.asc.tuwien.ac.at:deploy/builds/$CI_PIPELINE_ID/docu/
 fi
-        
+
