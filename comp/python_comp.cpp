@@ -1,9 +1,5 @@
 #ifdef NGS_PYTHON
 
-#ifdef PARALLEL
-#include <mpi4py/mpi4py.h>
-#endif
-
 #include <regex>
 
 #include "../ngstd/python_ngstd.hpp"
@@ -856,22 +852,14 @@ mesh (netgen.Mesh): a mesh generated from Netgen
 #else
 
     .def("__init__",
-         [](MeshAccess *instance, const string & filename,
-                              py::object py_mpicomm)
+         [](MeshAccess *instance, const string & filename)
                            { 
-                             PyObject * py_mpicomm_ptr = py_mpicomm.ptr();
-                             if (py_mpicomm_ptr != Py_None)
-                               {
-                                 MPI_Comm * comm = PyMPIComm_Get (py_mpicomm_ptr);
-                                 ngs_comm = *comm;
-                               }
-                             else
-                               ngs_comm = MPI_COMM_WORLD;
+                             ngs_comm = MPI_COMM_WORLD;
 
                              NGSOStream::SetGlobalActive (MyMPI_GetId()==0);
                              new (instance) MeshAccess (filename, ngs_comm);
                            },
-          py::arg("filename"), py::arg("mpicomm")=DummyArgument())
+          py::arg("filename"))
 #endif
 
     
@@ -2543,17 +2531,9 @@ flags : dict
 #else
 
     .def("__init__",
-         [](PyPDE *instance, const string & filename,
-                              py::object py_mpicomm)
+         [](PyPDE *instance, const string & filename)
                            { 
-                             PyObject * py_mpicomm_ptr = py_mpicomm.ptr();
-                             if (py_mpicomm_ptr != Py_None)
-                               {
-                                 MPI_Comm * comm = PyMPIComm_Get (py_mpicomm_ptr);
-                                 ngs_comm = *comm;
-                               }
-                             else
-                               ngs_comm = MPI_COMM_WORLD;
+                             ngs_comm = MPI_COMM_WORLD;
 
                              cout << "Rank = " << MyMPI_GetId(ngs_comm) << "/"
                                   << MyMPI_GetNTasks(ngs_comm) << endl;
@@ -2561,7 +2541,7 @@ flags : dict
                              NGSOStream::SetGlobalActive (MyMPI_GetId()==0);
                              new (instance) PyPDE(LoadPDE (filename));
                            },
-          py::arg("filename"), py::arg("mpicomm")=DummyArgument()
+          py::arg("filename")
           )
 #endif
 
@@ -3440,9 +3420,6 @@ flags : dict
 
   /////////////////////////////////////////////////////////////////////////////////////
 
-#ifdef PARALLEL
-  import_mpi4py();
-#endif
 }
 
 
