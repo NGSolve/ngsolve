@@ -90,6 +90,13 @@ namespace ngcomp {
               hofe->SetVertexNumbers(dofmap[ngel.Vertices()]);
             break;
 	  }
+        case ET_SEGM:
+          {
+            auto hofe = dynamic_cast<VertexOrientedFE<ET_SEGM>*>(&fe);
+            if (hofe)
+              hofe->SetVertexNumbers(dofmap[ngel.Vertices()]);
+            break;
+          }
         default:
           throw Exception("ElementType not implemented for PeriodicFESpace::GetFE");
 	}

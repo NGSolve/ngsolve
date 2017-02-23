@@ -91,7 +91,7 @@ const char* docu_string(const char* str)
       replacement.replace(start_pos,end+7,rest.substr(0,end)); 
     }
   if(!replaced)
-    return replacement.c_str();
+    return str;
   char * newchar = new char[replacement.size()+1];
   std::copy(replacement.begin(),replacement.end(),newchar);
   newchar[replacement.size()] = '\0';
@@ -114,6 +114,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
 
   py::class_<DummyArgument>(m, "DummyArgument")
     .def("__bool__", []( DummyArgument &self ) { return false; } )
+    .def("__repr__", [] ( DummyArgument & self) { return "<ngsolve.ngstd.DummyArgument>"; })
     ;
   
   py::class_<PajeTrace >(m, "Tracer")
