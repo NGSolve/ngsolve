@@ -168,6 +168,13 @@ if(USE_UMFPACK)
 endif(USE_UMFPACK)
 
 #######################################################################
+
+if(USE_MUMPS)
+  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/external_projects/parmetis.cmake)
+  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/external_projects/mumps.cmake)
+endif(USE_MUMPS)
+
+#######################################################################
 # propagate cmake variables to NGSolve subproject
 set_vars( NGSOLVE_CMAKE_ARGS
   CMAKE_CXX_COMPILER

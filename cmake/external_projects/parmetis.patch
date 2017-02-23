@@ -1,0 +1,26 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index ca945dd..2969b79 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -23,7 +23,7 @@ else()
+   set(ParMETIS_LIBRARY_TYPE STATIC)
+ endif()
+ 
+-include(${GKLIB_PATH}/GKlibSystem.cmake)
++# include(${GKLIB_PATH}/GKlibSystem.cmake)
+ 
+ # List of paths that the compiler will search for header files.
+ # i.e., the -I equivalent
+@@ -33,10 +33,10 @@ include_directories(${GKLIB_PATH})
+ include_directories(${METIS_PATH}/include)
+ 
+ # List of directories that cmake will look for CMakeLists.txt
+-add_subdirectory(${METIS_PATH}/libmetis ${CMAKE_BINARY_DIR}/libmetis)
++# add_subdirectory(${METIS_PATH}/libmetis ${CMAKE_BINARY_DIR}/libmetis)
+ add_subdirectory(include)
+ add_subdirectory(libparmetis)
+-add_subdirectory(programs)
++# add_subdirectory(programs)
+ 
+ # This is for testing during development and is not being distributed
+ #add_subdirectory(test)
