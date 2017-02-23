@@ -22,8 +22,6 @@ endforeach()
 set(INSTALL_DIR CACHE PATH "Install path")
 set(NETGEN_DIR CACHE PATH "Path where Netgen is already installed. Setting this variable will skip the Netgen buildand override the setting of INSTALL_DIR")
 
-set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${PROJECT_SOURCE_DIR}/cmake_modules")
-
 macro(set_vars VAR_OUT)
   foreach(varname ${ARGN})
     if(NOT "${${varname}}" STREQUAL "")
@@ -78,9 +76,9 @@ if(NETGEN_DIR)
 else(NETGEN_DIR)
   message(STATUS "Build Netgen from git submodule")
 #   execute_process(COMMAND git submodule update --init --recursive WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-  execute_process(COMMAND cmake -P cmake_modules/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} )
-  add_custom_target(check_submodules_start ALL cmake -P cmake_modules/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} )
-  add_custom_target(check_submodules_stop ALL cmake -P cmake_modules/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} DEPENDS ngsolve)
+  execute_process(COMMAND cmake -P cmake/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} )
+  add_custom_target(check_submodules_start ALL cmake -P cmake/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} )
+  add_custom_target(check_submodules_stop ALL cmake -P cmake/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} DEPENDS ngsolve)
   if(NOT INSTALL_DIR)
     if(APPLE)
       set(INSTALL_DIR /Applications/NGSolve)
@@ -239,14 +237,14 @@ add_custom_target(test_ngsolve
 # Check if the git submodules (i.e. netgen) are up to date
 # in case, something is wrong, emit a warning but continue
  ExternalProject_Add_Step(ngsolve check_submodules
-   COMMAND cmake -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/check_submodules.cmake
+   COMMAND cmake -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/check_submodules.cmake
    DEPENDERS install # Steps on which this step depends
    )
 
 # Due to 'ALWAYS 1', this step is always run which also forces a build of
 # the ngsolve subproject
  ExternalProject_Add_Step(ngsolve check_submodules1
-   COMMAND cmake -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/check_submodules.cmake
+   COMMAND cmake -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/check_submodules.cmake
    DEPENDEES configure # Steps on which this step depends
    DEPENDERS build     # Steps that depend on this step
    ALWAYS 1            # No stamp file, step always runs

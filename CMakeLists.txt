@@ -22,6 +22,7 @@ if(NOT WIN32 AND NOT INTEL_MIC)
     option( USE_NATIVE_ARCH  "build which -march=native" ON)
 endif(NOT WIN32 AND NOT INTEL_MIC)
 
+set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_modules")
 set(NETGEN_DIR "" CACHE PATH "Path to Netgen, leave empty to build Netgen automatically")
 
 find_program(GIT_FOUND git)
@@ -55,8 +56,8 @@ if (USE_SUPERBUILD)
   project (NGSuite)
   # execute the superbuild (this script will be invoked again without the
   # USE_SUPERBUILD option this time)
-  include (cmake_modules/SuperBuild.cmake)
-  include (cmake_modules/package.cmake)
+  include (cmake/SuperBuild.cmake)
+  include (cmake/package.cmake)
   include(CPack)
   return()                      # stop processing this file further
 else()
@@ -93,7 +94,7 @@ endif(USE_CCACHE)
 #######################################################################
 if(INTEL_MIC)
     set(MKL_ARCH "mic")
-    include(cmake_modules/mic.cmake)
+    include(cmake/mic.cmake)
 endif(INTEL_MIC)
 
 #######################################################################
@@ -123,7 +124,6 @@ endif("${isSystemDir}" STREQUAL "-1")
 
 #######################################################################
 # build options
-set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${PROJECT_SOURCE_DIR}/cmake_modules")
 if(APPLE)
   set(ngs_install_dir_bin ../MacOS)
   set(ngs_install_dir_lib ../MacOS)
@@ -412,13 +412,13 @@ add_custom_target(performance_tests ctest -L performance -D Experimental)
 #######################################################################
 # uninstall target
 configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/cmake_uninstall.cmake.in"
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
     IMMEDIATE @ONLY)
 # add_custom_target(uninstall
 #     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/NGSolveConfig.cmake.in
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/NGSolveConfig.cmake.in
   ${CMAKE_CURRENT_BINARY_DIR}/NGSolveConfig.cmake @ONLY)
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/NGSolveConfig.cmake DESTINATION share/cmake)
