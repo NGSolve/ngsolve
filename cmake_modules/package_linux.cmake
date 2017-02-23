@@ -2,6 +2,7 @@
 execute_process(COMMAND grep CODENAME /etc/lsb-release OUTPUT_VARIABLE temp OUTPUT_STRIP_TRAILING_WHITESPACE)
 execute_process(COMMAND dpkg --print-architecture OUTPUT_VARIABLE CPACK_DEBIAN_PACKAGE_ARCHITECTURE OUTPUT_STRIP_TRAILING_WHITESPACE)
 if(temp)
+    set(CPACK_DEBIAN_PACKAGE_NAME ${CPACK_PACKAGE_NAME} CACHE STRING "Debian package name")
     set(CPACK_GENERATOR "DEB")
     string(SUBSTRING ${temp} 17 -1 UBUNTU_VERSION)
     message("ubuntu version: ${UBUNTU_VERSION}")
