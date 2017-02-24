@@ -99,6 +99,7 @@ stages:
         -DINSTALL_DIR=%INSTALL_DIR%
         %MKL_CONFIG%
         -DUSE_UMFPACK=ON
+        -DCPACK_PACKAGE_NAME=NGSolve${PACKAGE_NAME_SUFFIX}
         -DCMAKE_BUILD_TYPE=Release
     - cmake --build . --target INSTALL --config Release
     - cmake --build . --target PACKAGE --config Release
@@ -130,6 +131,7 @@ win64_build:
       -e UBUNTU_VERSION_NAME=$UBUNTU_VERSION_NAME
       -e CI_BUILD_REF=$CI_BUILD_REF
       -e CI_PIPELINE_ID=$CI_PIPELINE_ID
+      -e CMAKE_ARGS="-DCPACK_DEBIAN_PACKAGE_NAME=ngsolve${PACKAGE_NAME_SUFFIX}"
       -e CCACHE_DIR=/ccache
       -e SSH_PRIVATE_KEY="$SSH_PRIVATE_KEY"
       -v /opt/intel:/opt/intel
@@ -157,7 +159,13 @@ mac_build:
     - rm -rf $BUILD_DIR
     - mkdir $BUILD_DIR
     - cd $BUILD_DIR
-    - cmake $CI_PROJECT_DIR -DINSTALL_DIR=$INSTALL_DIR -DUSE_CCACHE=ON -DCMAKE_BUILD_TYPE=Release -DUSE_UMFPACK=ON
+    - >-
+      cmake $CI_PROJECT_DIR
+      -DINSTALL_DIR=$INSTALL_DIR
+      -DUSE_CCACHE=ON
+      -DCMAKE_BUILD_TYPE=Release
+      -DUSE_UMFPACK=ON
+      -DCPACK_PACKAGE_NAME=NGSolve${PACKAGE_NAME_SUFFIX}
     - make -j10 install
     - osascript -e 'tell application "Finder" to eject (every disk whose ejectable is true)'
     - make bundle

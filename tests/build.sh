@@ -5,7 +5,7 @@ git submodule update --init --recursive
 cd
 mkdir -p build/ngsolve
 cd build/ngsolve
-cmake ../../src/ngsolve -DUSE_CCACHE=ON -DUSE_MKL=ON -DUSE_UMFPACK=ON -DINSTALL_PROFILES=ON -DMKL_STATIC=ON -DCMAKE_BUILD_TYPE=Release
+cmake ../../src/ngsolve -DUSE_CCACHE=ON -DUSE_MKL=ON -DUSE_UMFPACK=ON -DINSTALL_PROFILES=ON -DMKL_STATIC=ON -DCMAKE_BUILD_TYPE=Release -DCPACK_PACKAGING_INSTALL_PREFIX=/opt/netgen $CMAKE_ARGS
 make -j12
 make install
 make package
