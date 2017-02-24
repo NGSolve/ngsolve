@@ -58,7 +58,9 @@ interface to Python is inspired by the `FEniCS project <https://fenicsproject.or
   how_to/howto_numpy.rst
 
   how_to/periodic.rst
-  
+
+  how_to/symbolic_integrators.rst
+
 ..  * [Iterating over elements]
 
 
