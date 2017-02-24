@@ -1096,7 +1096,7 @@ namespace ngcomp
   }
   case BND:
     {
-      if (!DefinedOn (VOL, ma->GetSElIndex (ei.Nr())))
+      if (!DefinedOn (ei))
         return * new (lh) HCurlDummyFE<ET_TRIG> ();
 
       if ( discontinuous )
@@ -1137,8 +1137,8 @@ namespace ngcomp
   }
   case BBND:
     {
-    if (!DefinedOn (BBND,ma->GetElement (ei).GetIndex()))
-      return * new (lh) DummyFE<ET_SEGM>; 
+      if (!DefinedOn (ei))
+	return * new (lh) DummyFE<ET_SEGM>; 
 
     Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,BBND> (ei.Nr());
 
