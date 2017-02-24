@@ -7,7 +7,7 @@ if(temp)
     string(SUBSTRING ${temp} 17 -1 UBUNTU_VERSION)
     message("ubuntu version: ${UBUNTU_VERSION}")
 
-    set(CPACK_DEBIAN_PACKAGE_DEPENDS "python3 libpython3-dev libxmu-dev tk-dev tcl-dev libglu1-mesa-dev liblapacke-dev")
+    set(CPACK_DEBIAN_PACKAGE_DEPENDS "python3, libpython3-dev, libxmu-dev, tk-dev, tcl-dev, libglu1-mesa-dev, liblapacke-dev")
     execute_process(COMMAND dpkg --print-architecture OUTPUT_VARIABLE CPACK_DEBIAN_PACKAGE_ARCHITECTURE OUTPUT_STRIP_TRAILING_WHITESPACE)
     set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Matthias Hochsteger <matthias.hochsteger@tuwien.ac.at>")
     if(USE_MPI)
