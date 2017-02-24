@@ -7,16 +7,17 @@ mesh = Mesh (unit_square.GenerateMesh(maxh=0.2))
 V = H1(mesh, order=4, dirichlet=[1,2,3,4])
 
 u = V.TrialFunction()
-gradu = u.Deriv()
 
 a = BilinearForm (V, symmetric=False)
-a += SymbolicEnergy (0.05*gradu*gradu+u*u*u*u-100*u)
+a += SymbolicEnergy (0.05*grad(u)*grad(u) + u*u*u*u - 100*u)
 
 u = GridFunction (V)
 u.vec[:] = 0
 
 res = u.vec.CreateVector()
 w = u.vec.CreateVector()
+
+Draw(u,sd=4)
 
 for it in range(20):
     print ("Newton iteration", it)
@@ -29,6 +30,6 @@ for it in range(20):
     print ("w*r =", InnerProduct(w,res))
 
     u.vec.data -= w
-    Draw (u, sd=4)
+    Redraw()
     
 

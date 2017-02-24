@@ -2313,7 +2313,22 @@ flags : dict
               }
 	    self->ApplyMatrix (*x, *y, glh);
 	  }),
-         py::arg("x"),py::arg("y"),py::arg("heapsize")=1000000)
+         py::arg("x"),py::arg("y"),py::arg("heapsize")=1000000,docu_string(R"raw_string(
+Applies a (non-)linear variational formulation to x and stores the result in y.
+
+Parameters
+
+x : ngsolve.BaseVector
+  input vector
+
+y : ngsolve.BaseVector
+  output vector
+
+heapsize : int
+  Size of the LocalHeap for that operation. If you get an error about not
+  enough heapsize increase this value.
+
+)raw_string"))
 
     .def("ComputeInternal", FunctionPointer
 	 ([](PyBF & self, PyBaseVector & u, PyBaseVector & f, int heapsize)
