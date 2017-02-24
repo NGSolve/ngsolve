@@ -652,8 +652,8 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
         { return self.GetIndex(); },
         "material or boundary condition index")
     .def_property_readonly("mat", [](Ngs_Element & el)
-                                         { return el.GetMaterial() ? *el.GetMaterial() : ""; },
-                  "material or boundary condition label")
+                           { return el.GetMaterial(); },
+                           "material or boundary condition label")
     ;
 
   py::implicitly_convertible <Ngs_Element, ElementId> ();
@@ -939,7 +939,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
               {
                 std::regex pattern(definedon.cast<string>());
                 for (int i = 0; i < ma.GetNDomains(); i++)
-                  if (std::regex_match (ma.GetDomainMaterial(i), pattern))
+                  if (std::regex_match (ma.GetMaterial(VOL,i), pattern))
                     ma.SetPML(apml.Get(), i);
               }
           }),
@@ -955,7 +955,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
               {
                 std::regex pattern(definedon.cast<string>());
                 for (int i = 0; i < ma.GetNDomains(); i++)
-                  if (std::regex_match (ma.GetDomainMaterial(i), pattern))
+                  if (std::regex_match (ma.GetMaterial(VOL,i), pattern))
                     ma.UnSetPML(i);
               }
           })
@@ -990,7 +990,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
 	  {
             py::list materials(ma.GetNDomains());
 	    for (int i : Range(ma.GetNDomains()))
-	      materials[i] = py::cast(ma.GetDomainMaterial(i));
+	      materials[i] = py::cast(ma.GetMaterial(VOL,i));
 	    return materials;
 	  },
 	 "Returns list of materials"
@@ -1011,7 +1011,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
 	  {
             py::list materials(ma.GetNBoundaries());
 	    for (int i : Range(ma.GetNBoundaries()))
-	      materials[i] = py::cast(ma.GetBCNumBCName(i));
+	      materials[i] = py::cast(ma.GetMaterial(BND,i));
 	    return materials;
 	  },
 	 "Returns list of boundary conditions"
@@ -1031,7 +1031,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
 	  {
 	    py::list bboundaries(ma.GetNBBoundaries());
 	    for (int i : Range(ma.GetNBBoundaries()))
-	      bboundaries[i] = py::cast(ma.GetCD2NumCD2Name(i));
+	      bboundaries[i] = py::cast(ma.GetMaterial(BBND,i));
 	    return bboundaries;
 	  },
 	 "Returns list of boundary conditions for co dimension 2"
@@ -1370,7 +1370,7 @@ when building the system matrices.
                                  std::regex pattern(dirichlet.cast<string>());
                                  Array<double> dirlist;
                                  for (int i = 0; i < ma->GetNBoundaries(); i++)
-                                   if (std::regex_match (ma->GetBCNumBCName(i), pattern))
+                                   if (std::regex_match (ma->GetMaterial(BND, i), pattern))
                                      dirlist.Append (i+1);
                                  flags.SetFlag("dirichlet", dirlist);
 // 				 bpflags["dirichlet"] = py::cast(dirlist);
@@ -1381,7 +1381,7 @@ when building the system matrices.
                                  std::regex pattern(definedon.cast<string>());
                                  Array<double> defonlist;
                                  for (int i = 0; i < ma->GetNDomains(); i++)
-                                   if (regex_match(ma->GetDomainMaterial(i), pattern))
+                                   if (regex_match(ma->GetMaterial(VOL,i), pattern))
                                      defonlist.Append(i+1);
                                  flags.SetFlag ("definedon", defonlist);
 // 				 bpflags["definedon"] = py::cast(defonlist);
