@@ -115,12 +115,12 @@ namespace ngfem
   template <VorB VB,int DIM>
   class T_ElementId
   {
-    int nr;
+    size_t nr;
   public:
-    T_ElementId (int anr) : nr(anr) { ; }
+    T_ElementId (size_t anr) : nr(anr) { ; }
     T_ElementId (ElementId ei) : nr(ei.Nr()) { ; }
     operator ElementId() const { return ElementId(VB, nr); }
-    int Nr() const { return nr; } 
+    size_t Nr() const { return nr; } 
   };
 
   
