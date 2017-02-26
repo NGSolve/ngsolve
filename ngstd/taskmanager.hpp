@@ -267,7 +267,8 @@ namespace ngstd
   class alignas(4096) AtomicRange
 {
   mutex lock;
-  int begin, end;
+  atomic<int> begin;
+  int end;
 public:
   
   void Set (IntRange r)
@@ -285,25 +286,46 @@ public:
 
   bool PopFirst (int & first)
   {
+    /*
     lock_guard<mutex> guard(lock);
     bool non_empty = end > begin;
     first = begin;
     if (non_empty) begin++;
 
     return non_empty;
+    */
+
+    int oldbegin = begin;
+    if (oldbegin >= end) return false;
+    while (!begin.compare_exchange_weak (oldbegin, oldbegin+1))
+      if (oldbegin >= end) return false;        
+
+    first = oldbegin;
+    return true;
   }
 
   bool PopHalf (IntRange & r)
   {
+    /*
     lock_guard<mutex> guard(lock);
     bool non_empty = end > begin;
     if (non_empty)
       {
-        int mid = (begin+end)/2;
-        r = IntRange(mid, end);
-        end = mid;
+        int mid = (begin+end+1)/2;
+        r = IntRange(begin, mid);
+        begin = mid;
       }
     return non_empty;
+    */
+    int oldbegin = begin;
+    if (oldbegin >= end) return false;
+    
+    lock_guard<mutex> guard(lock);    
+    while (!begin.compare_exchange_weak (oldbegin, (oldbegin+end+1)/2))
+      if (oldbegin >= end) return false;        
+
+    r = IntRange(oldbegin, (oldbegin+end+1)/2);
+    return true;
   }
 };
 
@@ -371,8 +393,15 @@ public:
                 IntRange steal;
                 if (ranges[steal_from].PopHalf(steal))
                   {
+                    /*
                     ranges[me].Set(steal);
                     break;
+                    */
+                    myval = steal.First();
+                    processed_by_me++;                    
+                    if (myval+1 < steal.Next())
+                      ranges[me].Set (IntRange(myval+1, steal.Next()));
+                    return;
                   }
               }
           }
