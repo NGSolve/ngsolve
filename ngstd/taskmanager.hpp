@@ -263,11 +263,10 @@ namespace ngstd
 
 
 
-
-  class alignas(4096) AtomicRange
+class alignas(4096) AtomicRange
 {
   mutex lock;
-  atomic<int> begin;
+  int begin;
   int end;
 public:
   
@@ -286,27 +285,15 @@ public:
 
   bool PopFirst (int & first)
   {
-    /*
     lock_guard<mutex> guard(lock);
     bool non_empty = end > begin;
     first = begin;
     if (non_empty) begin++;
-
     return non_empty;
-    */
-
-    int oldbegin = begin;
-    if (oldbegin >= end) return false;
-    while (!begin.compare_exchange_weak (oldbegin, oldbegin+1))
-      if (oldbegin >= end) return false;        
-
-    first = oldbegin;
-    return true;
   }
 
   bool PopHalf (IntRange & r)
   {
-    /*
     lock_guard<mutex> guard(lock);
     bool non_empty = end > begin;
     if (non_empty)
@@ -316,21 +303,67 @@ public:
         begin = mid;
       }
     return non_empty;
-    */
-    int oldbegin = begin;
+  }
+};
+
+
+
+   /*
+  // lock free popfirst
+  // faster for large loops, bug slower for small loops (~1000) ????
+
+  class alignas(4096) AtomicRange
+{
+  mutex lock;
+  atomic<int> begin;
+  int end;
+public:
+  
+  void Set (IntRange r)
+  {
+    lock_guard<mutex> guard(lock);
+    // begin = r.begin();
+    begin.store(r.begin(), std::memory_order_relaxed);
+    end = r.end();
+  }
+
+  IntRange Get()
+  {
+    lock_guard<mutex> guard(lock);
+    return IntRange(begin, end);
+  }
+
+  bool PopFirst (int & first)
+  {
+    // int oldbegin = begin;
+    int oldbegin = begin.load(std::memory_order_relaxed);
+    if (oldbegin >= end) return false;
+    while (!begin.compare_exchange_weak (oldbegin, oldbegin+1,
+                                         std::memory_order_relaxed, std::memory_order_relaxed))
+      if (oldbegin >= end) return false;        
+
+    first = oldbegin;
+    return true;
+  }
+
+  bool PopHalf (IntRange & r)
+  {
+    // int oldbegin = begin;
+    int oldbegin = begin.load(std::memory_order_relaxed);    
     if (oldbegin >= end) return false;
     
     lock_guard<mutex> guard(lock);    
-    while (!begin.compare_exchange_weak (oldbegin, (oldbegin+end+1)/2))
+    while (!begin.compare_exchange_weak (oldbegin, (oldbegin+end+1)/2,
+                                         std::memory_order_relaxed, std::memory_order_relaxed))
       if (oldbegin >= end) return false;        
 
     r = IntRange(oldbegin, (oldbegin+end+1)/2);
     return true;
   }
 };
+   */
 
-
-
+  
 
 
   inline ostream & operator<< (ostream & ost, AtomicRange & r)
@@ -380,14 +413,17 @@ public:
                 myval = nr;
                 return;
               }
+
             processed += processed_by_me;
             processed_by_me = 0;
-            
+
             // done with my work, going to steal ...
             while (1)
               {
                 if (processed >= total) return;
-                steal_from = (steal_from + 1) % ranges.Size();
+                // steal_from = (steal_from + 1) % ranges.Size();
+                steal_from++;
+                if (steal_from == ranges.Size()) steal_from = 0;
             
                 // steal half of the work reserved for 'from':
                 IntRange steal;
