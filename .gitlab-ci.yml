@@ -30,15 +30,16 @@ stages:
     - x64
   before_script:
     - "echo off"
-    - 'call "%VS140COMNTOOLS%\..\..\VC\bin\amd64\vcvars64.bat"'
-    - set CMAKE_GENERATOR=Visual Studio 14 2015 Win64
+    - 'call "%VS140COMNTOOLS%\..\..\VC\vcvarsall" x64'
+    - set CMAKE_GENERATOR=Ninja
     - set CI_DIR=C:\ci\%CI_PIPELINE_ID%_64
     - set NETGEN_BUILD_DIR=%CI_DIR%\build
     - set INSTALL_DIR=%CI_DIR%\install
     - set NETGENDIR=%INSTALL_DIR%\bin
     - set PYTHONPATH=%INSTALL_DIR%\lib\site-packages
     - set UPLOAD_DIR=/home/tester/deploy/win64/%CI_BUILD_TAG%%CI_BUILD_REF%/
-    - set MKL_CONFIG=-DUSE_MKL=ON -DMKL_STATIC=ON -DMKL_ROOT="C:/Program Files (x86)/IntelSWTools/compilers_and_libraries/windows/mkl"
+    - set CLCACHE_BASEDIR=%CI_DIR%
+    - set MKL_CONFIG=-DUSE_CCACHE=ON -DUSE_MKL=ON -DMKL_STATIC=ON -DMKL_ROOT=C:\Intel\compilers_and_libraries\windows\mkl
 
 # Linux
 .template_ubuntu: &ubuntu
@@ -101,8 +102,8 @@ stages:
         -DUSE_UMFPACK=ON
         -DCPACK_PACKAGE_NAME=NGSolve${PACKAGE_NAME_SUFFIX}
         -DCMAKE_BUILD_TYPE=Release
-    - cmake --build . --target INSTALL --config Release
-    - cmake --build . --target PACKAGE --config Release
+    - cmake --build . --target install --config Release
+    - cmake --build . --target package --config Release
     - >-
       rsync -ztrl --del -e ssh
       --rsync-path="mkdir -p deploy/builds/%CI_PIPELINE_ID%/windows && rsync"
