@@ -106,17 +106,13 @@ void PyMatAccess( TCLASS &c )
 
             // First element of tuple is of type int
             if(py::isinstance<py::int_>(rows)) {
-              cout <<"first is int : " << flush << rows.cast<int>() << endl;
               py::object row = py::cast( self.Row(rows.cast<int>()) );
-              cout <<"row " << row << endl;
               return row.attr("__getitem__")(cols);
             }
 
             // Second element of tuple is of type int
             if(py::isinstance<py::int_>(cols)) {
-              cout <<"second is int : " << flush << cols.cast<int>() << endl;
               py::object col = py::cast( TROW(self.Col(cols.cast<int>())) );
-              cout <<"col " << col << endl;
               return col.attr("__getitem__")(rows);
             }
 
@@ -138,19 +134,15 @@ void PyMatAccess( TCLASS &c )
 
             // First element of tuple is of type int
             if(py::isinstance<py::int_>(rows)) {
-              cout <<"first is int : " << flush << rows.cast<int>() << endl;
               py::object row = py::cast( self.Row(rows.cast<int>()) );
-              cout <<"row " << row << endl;
               row.attr("__setitem__")(cols, v);
               return;
             }
 
             // Second element of tuple is of type int
             if(py::isinstance<py::int_>(cols)) {
-              cout <<"second is int : " << flush << cols.cast<int>() << endl;
               auto row_slice = rows.cast<py::slice>();
               auto col = self.Col(cols.cast<int>());
-              cout <<"col " << col << endl;
               size_t start, step, n;
               InitSlice( row_slice, self.Height(), start, step, n );
               for (int i=0; i<n; i++, start+=step)
@@ -168,7 +160,6 @@ void PyMatAccess( TCLASS &c )
 
             // First element of tuple is of type int
             if(py::isinstance<py::int_>(rows)) {
-              cout <<"first is int : " << flush << rows.cast<int>() << endl;
               py::object row = py::cast( self.Row(rows.cast<int>()) );
               row.attr("__setitem__")(cols,val);
               return;
@@ -176,10 +167,8 @@ void PyMatAccess( TCLASS &c )
 
             // Second element of tuple is of type int
             if(py::isinstance<py::int_>(cols)) {
-              cout <<"second is int : " << flush << cols.cast<int>() << endl;
               auto row_slice = rows.cast<py::slice>();
               auto col = self.Col(cols.cast<int>());
-              cout <<"col " << col << endl;
               size_t start, step, n;
               InitSlice( row_slice, self.Height(), start, step, n );
               for (int i=0; i<n; i++, start+=step)
