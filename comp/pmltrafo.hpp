@@ -319,7 +319,7 @@ namespace ngcomp
             point(j)+=alpha*(hpoint(j)-bounds(j,0));
             jac(j,j)+=alpha;
           }
-          else if (hpoint(j)=>bounds(j,1))
+          else if (hpoint(j)>=bounds(j,1))
           {
             point(j)+=alpha*(hpoint(j)-bounds(j,1));
             jac(j,j)+=alpha;
@@ -363,7 +363,7 @@ namespace ngcomp
       out = hpoint;
       jac = Id<DIM>();
       double dot = InnerProduct(hpoint-point,normal); //normal has already norm 1
-      if (dot=>0.)
+      if (dot>=0.)
       {
         out += alpha*dot*normal;
         jac += alpha*normal*Trans(normal);        
@@ -413,7 +413,7 @@ namespace ngcomp
       {
         if (hpoint(j)<=bounds(j,0))
           tmp=(hpoint(j)-bounds(j,0))/rel_point(j);
-        else if (hpoint(j)=>bounds(j,1))
+        else if (hpoint(j)>=bounds(j,1))
           tmp=(hpoint(j)-bounds(j,1))/rel_point(j);
         if (tmp>scal)
         {
