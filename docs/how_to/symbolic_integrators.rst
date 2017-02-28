@@ -19,21 +19,21 @@ For linear problems we use the function ``Assemble`` of the ``BilinearForm`` to 
 from example :any:`Magnetic Fields <whetting-cmagnet>` we have to define the space
 
 .. literalinclude:: /../py_tutorials/cmagnet.py
-   :start-at: V = HCurl
+   :start-after: ngsglobals.msg_level
    :end-before: # u and v refer to
 
 and the BilinearForm
 
 .. literalinclude:: /../py_tutorials/cmagnet.py
-   :start-at: a = BilinearForm
-   :end-at: a += SymbolicBFI
+   :start-after: nu =
+   :end-before: c =
    :append: a.Assemble()
 
 as well as the LinearForm
 
 .. literalinclude:: /../py_tutorials/cmagnet.py
-   :start-at: f = LinearForm
-   :end-at: f.Assemble()
+   :start-after: a.Assemble()
+   :end-before: u =
 
 The argument of the symbolic integrator must be a coefficient function depending linearily on the test and trial function.
 
@@ -104,16 +104,16 @@ Symbolic Energy
 For this we use ``SymbolicEnergy``:
 
 .. literalinclude:: /../py_tutorials/symbolic_energy.py
-   :start-at: a = BilinearForm
-   :end-at: a += Symbolic
+   :start-after: u = V.TrialFunction()
+   :end-before: u = GridFunction
 
 from the ``GridFunction`` we can create new ``BaseVector``:
 
 .. literalinclude:: /../py_tutorials/symbolic_energy.py
-   :start-at: u = Grid
-   :end-at: w = u.vec.Create
+   :start-after: a += Symbolic
+   :end-before: Draw
 
 With this we can use :any:`AssembleLinearization` to do a Newton iteration to solve the problem:
 
 .. literalinclude:: /../py_tutorials/symbolic_energy.py
-   :start-at: for it
+   :start-after: Draw
