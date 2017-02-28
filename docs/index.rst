@@ -39,7 +39,7 @@ interface to Python is inspired by the `FEniCS project <https://fenicsproject.or
   :maxdepth: 1
   :caption: How-to
 
-  how_to/howto_coefficient.rst               
+  how_to/coefficient.rst
 
   how_to/howto_dirichlet.rst
   
