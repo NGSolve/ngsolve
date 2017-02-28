@@ -14,7 +14,6 @@ Draw(tpmesh)
 
 n=3
 m=3
-ngsglobals.numthreads = 24
 
 fesx = L2(mesh1,order=n,flags={'dgjumps':True})
 fesy = L2(mesh2,order=m,flags={'dgjumps':True})

@@ -59,6 +59,9 @@ namespace ngcomp
       difforder = min2(difforder, eval->DiffOrder());
     int blockdim = 1;
     evaluator[VOL] = shared_ptr<DifferentialOperator>( new TPDifferentialOperator(evaluators, dim, blockdim, VOL, difforder) );
+
+    if (dimension > 1) 
+      evaluator[VOL] = make_shared<TPBlockDifferentialOperator2> (evaluator[VOL], dimension);
   }
 
   TPHighOrderFESpace::TPHighOrderFESpace (shared_ptr<FESpace> aspace_x,FlatArray<shared_ptr<FESpace>> aspaces_y, const Flags & flags, bool parseflags)
@@ -119,6 +122,8 @@ namespace ngcomp
       difforder = min2(difforder, eval->DiffOrder());
     int blockdim = 1;
     evaluator[VOL] = shared_ptr<DifferentialOperator>( new TPDifferentialOperator(evaluators, dim, blockdim, VOL, difforder) );
+    if (dimension > 1) 
+      evaluator[VOL] = make_shared<TPBlockDifferentialOperator2> (evaluator[VOL], dimension);    
   }
 
   TPHighOrderFESpace::~TPHighOrderFESpace () { ; }
@@ -147,6 +152,11 @@ namespace ngcomp
     for (auto eval : grady)
       difforder = min2(difforder, eval->DiffOrder());
     ops.Set("grady", make_shared<TPDifferentialOperator>( grady,dim,blockdim,VOL,difforder ));
+    if(dimension>1)
+    {
+      ops.Set("gradx", make_shared<TPBlockDifferentialOperator2>( ops["gradx"] , dimension));
+      ops.Set("grady", make_shared<TPBlockDifferentialOperator2>( ops["grady"] , dimension));
+    }
     return ops;
   } 
 
@@ -343,7 +353,7 @@ namespace ngcomp
   void IterateElementsTP (const FESpace & fes, VorB vb, LocalHeap & clh, 
             const function<void(ElementId,ElementId,LocalHeap&)> & func)
   {
-    static mutex copyex_mutex;
+    // static mutex copyex_mutex;
     const TPHighOrderFESpace & festp = dynamic_cast<const TPHighOrderFESpace &>(fes);
     shared_ptr<FESpace> space_x = festp.Space(-1);
     shared_ptr<FESpace> space_y = festp.Space(0);
@@ -353,7 +363,7 @@ namespace ngcomp
     {
       for (FlatArray<int> els_of_col : element_coloring0)
       {
-        SharedLoop sl(els_of_col.Range());
+        SharedLoop2 sl(els_of_col.Range());
         task_manager -> CreateJob
         ( [&] (const TaskInfo & ti) 
         {
@@ -406,7 +416,7 @@ namespace ngcomp
           auto & felx = spaces[0]->GetFE(ElementId(elnrx),lh);
           int ndofx = felx.GetNDof();
           const ElementTransformation & xtrafo = meshx->GetTrafo(ElementId(elnrx), lh);
-          FlatMatrix<> elmat_yslice(ndofx,ndofyspace,lh);
+          FlatMatrix<> elmat_yslice(ndofx,ndofyspace*GetDimension(),lh);
           Array<int> dnums_yslice(ndofx*ndofyspace, lh);
           GetSliceDofNrs(ElementId(elnrx), 1, dnums_yslice,lh);
           vec.GetIndirect (dnums_yslice, elmat_yslice.AsVector());
@@ -469,8 +479,14 @@ namespace ngcomp
               IntegrationRule ir(fely.ElementType(), 0);
               BaseMappedIntegrationRule & mir = ytrafo(ir, lh);
               diag_mass *= mir[0].GetMeasure();
-              for (int i = 0; i < diag_mass.Size(); i++)
-                elmat_yslice.Col(dnumsy[i]) /= diag_mass(i);
+              if(GetDimension()>1)
+
+                for (int i = 0; i < diag_mass.Size(); i++)
+                  elmat_yslice.Cols(GetDimension()*dnumsy[i],GetDimension()*dnumsy[i]+GetDimension()) /= diag_mass(i);
+              else
+                for (int i = 0; i < diag_mass.Size(); i++)
+                  elmat_yslice.Col(dnumsy[i]) /= diag_mass(i);
+
             }
             else
             {
@@ -537,21 +553,10 @@ namespace ngcomp
          }
       const ElementTransformation & trafo = fes->GetMeshAccess()->GetTrafo(ElementId(VOL,elnrstd),lh);
       BaseMappedIntegrationRule & mirstd = trafo(irstd,lh);
-      //shared_ptr<TPDifferentialOperator> diffop = dynamic_pointer_cast<TPDifferentialOperator>(tpfes->GetEvaluator());
       int niptp = ir(0).Size()*ir(1).Size();
       // Evalute \int u_tp * v_std :
-      // FlatMatrix<> flux(niptp,diffop->Dim(),lh);
-      FlatMatrix<> flux(niptp,1,lh);
+      FlatMatrix<double> flux(niptp,tpfes->GetDimension(),lh);
       gfutp->Evaluate(tpmir, flux);
-      
-      //FlatVector<> coef(tpfel.GetNDof(),lh);
-      //const BaseVector & base = gfutp->GetVector();
-      
-      //tpfes->GetDofNrs(elnr,dnums);
-      //base.GetIndirect(dnums,coef);
-      // diffop->Apply(tpfel, tpmir, coef,flux,lh);
-      
-      // Build mass matrix for \int u_std * v_std :
       FlatMatrix<> elmat(fel.GetNDof(),lh);
       elmat = 0.0;
       FlatMatrix<> shapes(fel.GetNDof(),mirstd.Size(),lh);
@@ -559,7 +564,7 @@ namespace ngcomp
       dynamic_cast<const BaseScalarFiniteElement &>(fel).CalcShape(irstd,shapes);
       FlatMatrix<> shapes1(fel.GetNDof(),mirstd.Size(),lh);
         
-      FlatVector<> elvec(fel.GetNDof(),lh),y(fel.GetNDof(),lh);
+      FlatMatrix<> elvec(fel.GetNDof(),tpfes->GetDimension(),lh),y(fel.GetNDof(),tpfes->GetDimension(),lh);
       shapes1 = shapes;
       for(int s=0;s<shapes.Width();s++)
         shapes.Col(s) *= mirstd[s].GetWeight();
@@ -571,7 +576,7 @@ namespace ngcomp
       //Array<int> dnums;
       Array<int> dnums(fel.GetNDof(),lh);
       fes->GetDofNrs(ElementId(VOL,elnrstd),dnums);
-      baseout.SetIndirect(dnums,y);
+      baseout.SetIndirect(dnums,y.AsVector());
     });
   }
 
@@ -585,25 +590,23 @@ namespace ngcomp
     {
         HeapReset hr(lh);
         ArrayMem<int,2> ind(2);
-        
         ind[0] = ei0.Nr(); ind[1] = ei1.Nr();
         int elnr = tpfes->GetIndex(ind);
-        
         TPHighOrderFE & tpfel = dynamic_cast<TPHighOrderFE&>(tpfes->GetFE(ElementId(elnr),lh));
-        ArrayMem<const IntegrationRule * , 2> irs(tpfel.elements.Size());
+        ArrayMem<const IntegrationRule *,2> irs(tpfel.elements.Size());
         for(int s=0;s<irs.Size();s++)
           irs[s] = &SelectIntegrationRule(tpfel.elements[s]->ElementType(),2*tpfel.elements[s]->Order());
         TPIntegrationRule ir(irs);
         const ElementTransformation & tptrafo = tpfes->GetTrafo(ElementId(elnr),lh);
         TPMappedIntegrationRule & tpmir = dynamic_cast<TPMappedIntegrationRule & >(tptrafo(ir, lh));
         int tpnip = irs[0]->Size()*irs[1]->Size();
-        FlatMatrix<> result(tpnip,1,lh);
+        FlatMatrix<> result(tpnip,tpfes->GetDimension(),lh);
         cfstd->Evaluate(tpmir,result);
         FlatMatrix<> shapes(tpfel.GetNDof(),tpnip,lh);
         shapes = 0.0;
         tpfel.CalcShape(ir,shapes);
-        FlatVector<> elvecy(tpfel.GetNDof(),lh), elvecx(tpfel.GetNDof(),lh);
-        FlatMatrix<> elmat(tpfel.GetNDof(),lh);
+        FlatMatrix<> elvecx(tpfel.GetNDof(),tpfes->GetDimension(),lh);
+        FlatMatrix<> elmat(tpfel.GetNDof(),lh),elvecy(tpfel.GetNDof(),tpfes->GetDimension(),lh);
         elmat = 0.0;
         FlatMatrix<> shapes1(tpfel.GetNDof(),tpnip,lh);
         shapes1 = shapes;
@@ -617,8 +620,7 @@ namespace ngcomp
         elvecy = elmat * elvecx;
         Array<int> dnums;
         tpfes->GetDofNrs(elnr,dnums);
-        gfutp->GetVector().SetIndirect(dnums,elvecy);    
+        gfutp->GetVector().SetIndirect(dnums,elvecy.AsVector());
     });
   }
-  
   }

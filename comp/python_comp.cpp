@@ -3171,8 +3171,8 @@ used_idnrs (list of int = None): identification numbers to be made periodic
                 LocalHeap lh = clh.Split(ti.thread_nr, ti.nthreads);
                 for (int mynr : sl)
                 {
+                  HeapReset hr(lh);
                   int i = els_of_col[mynr];
-                  ArrayMem<int,100> dnumsx;
                   auto & fely = spaces[1]->GetFE(ElementId(i),lh);
                   int ndofy = fely.GetNDof();
                   FlatMatrix<> elvec_slicemat(ndofy,ndofxspace,lh);
@@ -3191,15 +3191,12 @@ used_idnrs (list of int = None): identification numbers to be made periodic
                     shape.Col(s)*=mir[s].GetWeight()*vals(s,0);
                   for(int j=0;j<spaces[0]->GetMeshAccess()->GetNE();j++)
                   {
-                    HeapReset hr(lh);
                     int ndofx = spaces[0]->GetFE(ElementId(j),lh).GetNDof();
                     IntRange dnumsx(firstxdof, firstxdof+ndofx);
-                    FlatMatrix<> coefmat(ndofx,ndofy,lh);
+                    FlatMatrix<> coefmat(ndofy,ndofx,lh);
                     coefmat = elvec_slicemat.Cols(dnumsx);
                     FlatMatrix<> tempmat(ndofx,ir.Size(),lh);
-                    tempmat = coefmat*shape;
-                    Array<int> dofnrs_xspace(ndofx,lh);
-                    spaces[0]->GetDofNrs(ElementId(j),dofnrs_xspace);
+                    tempmat = Trans(coefmat)*shape;
                     for(int s=0;s<ir.Size();s++)
                       elvec_outmat.Cols(dnumsx).Row(i)+=(tempmat.Col(s));
                     firstxdof+=ndofx;
@@ -3210,7 +3207,16 @@ used_idnrs (list of int = None): identification numbers to be made periodic
             }
             for(int i=0;i<elvec_outmat.Height();i++)
               elvec_out+=elvec_outmat.Row(i);
-            vec_out.FVDouble() = elvec_out;
+            int firstxdof = 0;
+            for(int i=0;i<spaces[0]->GetMeshAccess()->GetNE();i++)
+            {
+              int ndofx = spaces[0]->GetFE(ElementId(i),clh).GetNDof();
+              IntRange dnumsx(firstxdof, firstxdof+ndofx);
+              firstxdof+=ndofx;
+              Array<int> dofsx;
+              spaces[0]->GetDofNrs(ElementId(i),dofsx);
+              vec_out.SetIndirect(dofsx,elvec_out.Range(dnumsx));
+            }
 });
 
    m.def("ProlongateCoefficientFunction", [](PyCF cf_x, int prolongateto) -> PyCF
