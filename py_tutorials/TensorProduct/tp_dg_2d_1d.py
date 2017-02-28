@@ -1,4 +1,4 @@
-from TensorProductTools import *
+from ngsolve.TensorProductTools import *
 from make_seg_mesh import *
 from ngsolve.comp import *
 from ngsolve import *

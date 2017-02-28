@@ -6,6 +6,29 @@
 namespace ngfem 
 {
 
+  double ProlongateCoefficientFunction :: Evaluate (const BaseMappedIntegrationPoint & ip) const
+  {
+    IntegrationPoint iphelp = ip.IP();
+    cout << iphelp << endl;
+    const ElementTransformation * trafo = &(ip.GetTransformation());
+    DimMappedIntegrationPoint<1> miphelp(iphelp(0), *trafo);
+    cout << "mip = "<<endl;
+    cout << miphelp << endl;
+    if(prolongateto == 0)
+      if(dimx == 1)
+      {
+        ip.GetPoint()[0] = ip.GetPoint()[1];
+        if(dimy == 2)
+        {
+          ip.GetPoint()[1] = ip.GetPoint()[2];
+          ip.GetPoint()[2] = 0.0;
+        }
+      }
+      else if(dimx == 2)
+        ip.GetPoint()[0] = ip.GetPoint()[2];  
+      return coef->Evaluate(ip);
+  }
+
   void ProlongateCoefficientFunction :: Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
   {
     const TPMappedIntegrationRule * tpmir = static_cast<const TPMappedIntegrationRule *>(&ir);
@@ -19,6 +42,30 @@ namespace ngfem
         values.Rows(i*irs[1]->Size(),(i+1)*irs[1]->Size()) = values.Rows(0,irs[1]->Size());
   }
 
+  void ProlongateCoefficientFunction :: EvaluateStdRule (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
+  {
+    for(int i=0;i< ir.Size();i++)
+      values(i,0) = Evaluate(ir[i]);
+    // return;
+    // if(prolongateto == 0)
+      // for(int i : Range(ir.Size()) )
+      // {
+        // cout << ir[i].GetPoint() << endl;
+        // if(dimx == 1)
+        // {
+          // ir[i].GetPoint()[0] = ir[i].GetPoint()[1];
+          // if(dimy == 2)
+            // ir[i].GetPoint()[1] = ir[i].GetPoint()[2];
+        // }
+        // else if(dimx == 2)
+          // ir[i].GetPoint()[0] = ir[i].GetPoint()[2];
+        // cout << ir[i].GetPoint() << endl;
+      // }
+    // cout << "Evaluating"<<endl;
+    // // coef->Evaluate(ir,values);
+    // cout << "Evaluating"<<endl;
+  }
+  
   void TPDifferentialOperator :: Apply (
             const FiniteElement & fel,
             const BaseMappedIntegrationRule & mir,
@@ -281,14 +328,14 @@ namespace ngfem
       // for(int i=0;i<nip0;i++)
         // flux.Rows(i*nip1,(i+1)*nip1) = fvals.Cols(dim0*i,dim0*(i+1));
 
-      FlatMatrix<Vec<3>,RowMajor> fvals( nip1*dim1, nip0*dim0, lh );
-      FlatMatrix<double,RowMajor> fvalsdb( nip1*dim1, nip0*dim0*BlockDim(), reinterpret_cast<double * >(&fvals(0,0)) );
-      FlatMatrix<Vec<3>,RowMajor> helper(ndof1,nip0*dim0,lh);
-      FlatMatrix<Vec<3>> fcoefs1(ndof0,ndof1,reinterpret_cast<Vec<3> *>(&fcoefs(0,0)));
-      helper = fcoefs1 * Trans(shape0);
-      fvals = shape1 * helper;
-      for(int i=0;i<nip0;i++)
-        flux.Rows(i*nip1,(i+1)*nip1) = fvalsdb.Cols(dim0*i*BlockDim(),dim0*(i+1)*BlockDim());
+      // FlatMatrix<Vec<3>,RowMajor> fvals( nip1*dim1, nip0*dim0, lh );
+      // FlatMatrix<double,RowMajor> fvalsdb( nip1*dim1, nip0*dim0*BlockDim(), reinterpret_cast<double * >(&fvals(0,0)) );
+      // FlatMatrix<Vec<3>,RowMajor> helper(ndof1,nip0*dim0,lh);
+      // FlatMatrix<Vec<3>> fcoefs1(ndof0,ndof1,reinterpret_cast<Vec<3> *>(&fcoefs(0,0)));
+      // helper = fcoefs1 * Trans(shape0);
+      // fvals = shape1 * helper;
+      // for(int i=0;i<nip0;i++)
+        // flux.Rows(i*nip1,(i+1)*nip1) = fvalsdb.Cols(dim0*i*BlockDim(),dim0*(i+1)*BlockDim());
     }      
   }
     
@@ -319,11 +366,11 @@ namespace ngfem
 
     if(dim0 == 1)
     {
-      FlatMatrix<Vec<3> > fvalsvec( nip0*dim0, nip1*dim1, reinterpret_cast<Vec<3> * >(&flux(0,0)) );
-      FlatMatrix<Vec<3> > fcoefsvec( ndof0, ndof1, reinterpret_cast<Vec<3> * >(&x(0,0)) );
-      FlatMatrix<Vec<3> > helpervec(nip0*dim0,ndof1*BlockDim(),lh);
-      helpervec = fvalsvec*shape1;
-      fcoefsvec = Trans(shape0)*helpervec;
+      // FlatMatrix<Vec<3> > fvalsvec( nip0*dim0, nip1*dim1, reinterpret_cast<Vec<3> * >(&flux(0,0)) );
+      // FlatMatrix<Vec<3> > fcoefsvec( ndof0, ndof1, reinterpret_cast<Vec<3> * >(&x(0,0)) );
+      // FlatMatrix<Vec<3> > helpervec(nip0*dim0,ndof1*BlockDim(),lh);
+      // helpervec = fvalsvec*shape1;
+      // fcoefsvec = Trans(shape0)*helpervec;
     }
     else      
     {
@@ -434,12 +481,12 @@ namespace ngfem
     }
     else
     {
-      FlatMatrix<Vec<3>, ColMajor> resultmat(x.Height(),nipy*dimy, lh);
-      FlatMatrix<double, ColMajor> resultmat_dbl(x.Height(),BlockDim()*nipy*dimy, reinterpret_cast<double *>(&resultmat(0,0)));
-      SliceMatrix< Vec<3> > x_vec(x.Height(),0.5*x.Width(),0.5*x.Dist(),reinterpret_cast<Vec<3> * >(&x(0,0)));
-      resultmat = x_vec*Trans(bmaty);
-      for(int k=0;k<x.Height()/dimx;k++)
-        flux.Rows(k*nipy,(k+1)*nipy) = Trans(resultmat_dbl.Rows(dimx*k*BlockDim(),dimx*(k+1)*BlockDim()));
+      // FlatMatrix<Vec<3>, ColMajor> resultmat(x.Height(),nipy*dimy, lh);
+      // FlatMatrix<double, ColMajor> resultmat_dbl(x.Height(),BlockDim()*nipy*dimy, reinterpret_cast<double *>(&resultmat(0,0)));
+      // SliceMatrix< Vec<3> > x_vec(x.Height(),0.5*x.Width(),0.5*x.Dist(),reinterpret_cast<Vec<3> * >(&x(0,0)));
+      // resultmat = x_vec*Trans(bmaty);
+      // for(int k=0;k<x.Height()/dimx;k++)
+        // flux.Rows(k*nipy,(k+1)*nipy) = Trans(resultmat_dbl.Rows(dimx*k*BlockDim(),dimx*(k+1)*BlockDim()));
       // cout << "TPBlockDifferentialOperator::ApplyY" << endl;
       // cout << "x = "<< endl<<x << endl;
       // cout << "x_vec = "<<endl<<x_vec<<endl;
@@ -475,13 +522,13 @@ namespace ngfem
     }
     else
     {
-      FlatMatrix<Vec<3> > proxyvaluesasmat( nipx, nipy*dimx, reinterpret_cast<Vec<3> *>(&flux(0,0)));
-      FlatMatrix<Vec<3> > proxyvaluesasmat1( nipx*dimx, nipy*dimy, lh );
-      for(int i=0;i<nipy;i++)
-        for(int j=0;j<nipx;j++)
-      proxyvaluesasmat1.Rows(dimx*j,dimx*(j+1)).Col(i) = (proxyvaluesasmat.Cols(dimx*i,dimx*(i+1)).Row(j));
-      SliceMatrix<Vec<3> > x_vec(x.Height(), 1.0/3.0*x.Width(),1.0/3.0*x.Dist(), reinterpret_cast<Vec<3> *>(&x(0,0)));
-      x_vec = proxyvaluesasmat1*bmaty;
+      // FlatMatrix<Vec<3> > proxyvaluesasmat( nipx, nipy*dimx, reinterpret_cast<Vec<3> *>(&flux(0,0)));
+      // FlatMatrix<Vec<3> > proxyvaluesasmat1( nipx*dimx, nipy*dimy, lh );
+      // for(int i=0;i<nipy;i++)
+        // for(int j=0;j<nipx;j++)
+      // proxyvaluesasmat1.Rows(dimx*j,dimx*(j+1)).Col(i) = (proxyvaluesasmat.Cols(dimx*i,dimx*(i+1)).Row(j));
+      // SliceMatrix<Vec<3> > x_vec(x.Height(), 1.0/3.0*x.Width(),1.0/3.0*x.Dist(), reinterpret_cast<Vec<3> *>(&x(0,0)));
+      // x_vec = proxyvaluesasmat1*bmaty;
       // cout << "TPBlockDifferentialOperator::ApplyYTrans" << endl;
       // cout << "flux (in) = "<<endl<<flux<<endl;
       // cout << "fluxasmat = "<<endl<<proxyvaluesasmat<<endl;
@@ -593,11 +640,6 @@ namespace ngfem
         FlatMatrix<double> helper(nip0*dim0,ndof1,lh);
         helper = fvals*shape1;
         fcomp = Trans(shape0) * helper;
-        // FlatMatrix<Vec<3> > fvalsvec( nip0*dim0, nip1*dim1, reinterpret_cast<Vec<3> * >(&flux(0,0)) );
-        // FlatMatrix<Vec<3> > fcoefsvec( ndof0, ndof1, reinterpret_cast<Vec<3> * >(&x(0,0)) );
-        // FlatMatrix<Vec<3> > helpervec(nip0*dim0,ndof1*BlockDim(),lh);
-        // helpervec = fvalsvec*shape1;
-        // fcoefsvec = Trans(shape0)*helpervec;
       }
       else
       {
@@ -703,7 +745,7 @@ namespace ngfem
     flux = 0.0;
     FlatMatrix<> dim0geq1(nipy*BlockDim(),flux.Width(),lh);
     dim0geq1 = 0.0;
-    
+
     if(dimx == 1)
     {
       for(int i: Range(BlockDim()) )
@@ -718,19 +760,15 @@ namespace ngfem
       for(int i: Range(BlockDim()) )
       {
         SliceMatrix<> fcomp(ndofy,x.Width(),x.Width()*BlockDim(), &x(i,0));
-        DoubleSliceMatrix<double> resultmat(bmaty.Height(),fcomp.Width(),BlockDim()*dimx*3,BlockDim(),&dim0geq1(0,i));
+        DoubleSliceMatrix<double> resultmat(bmaty.Height(),fcomp.Width(),BlockDim()*dimx*x.Height()/dimx,BlockDim(),&dim0geq1(0,i));
         FlatMatrix<double> resultmat1(bmaty.Height(),fcomp.Width(),lh);
         resultmat =  (bmaty * fcomp);
         resultmat1 =  (bmaty * fcomp);
         cout << "resultmat (DoubleSliceMat) = "<<endl<<resultmat << endl;
         cout << "resultmat (FlatMat) = "<<endl<<resultmat1 << endl;
         cout << "dim0geq1 = "<<endl<<dim0geq1 << endl;
-        // FlatMatrix<Vec<3>, ColMajor> resultmat(x.Height(),nipy*dimy, lh);
-        // FlatMatrix<double, ColMajor> resultmat_dbl(x.Height(),BlockDim()*nipy*dimy, reinterpret_cast<double *>(&resultmat(0,0)));
-        // SliceMatrix< Vec<3> > x_vec(x.Height(),0.5*x.Width(),0.5*x.Dist(),reinterpret_cast<Vec<3> * >(&x(0,0)));
-        // resultmat = x_vec*Trans(bmaty);
       }
-      for(int k=0;k<x.Height()/dimx;k++)
+      for(int k=0;k<1;k++)
         flux.Rows(k*nipy,(k+1)*nipy) = (dim0geq1.Cols(dimx*k*BlockDim(),dimx*(k+1)*BlockDim()));
     }
   }
@@ -762,13 +800,13 @@ namespace ngfem
     }
     else
     {
-      FlatMatrix<Vec<3> > proxyvaluesasmat( nipx, nipy*dimx, reinterpret_cast<Vec<3> *>(&flux(0,0)));
-      FlatMatrix<Vec<3> > proxyvaluesasmat1( nipx*dimx, nipy*dimy, lh );
-      for(int i=0;i<nipy;i++)
-        for(int j=0;j<nipx;j++)
-      proxyvaluesasmat1.Rows(dimx*j,dimx*(j+1)).Col(i) = (proxyvaluesasmat.Cols(dimx*i,dimx*(i+1)).Row(j));
-      SliceMatrix<Vec<3> > x_vec(x.Height(), 1.0/3.0*x.Width(),1.0/3.0*x.Dist(), reinterpret_cast<Vec<3> *>(&x(0,0)));
-      x_vec = proxyvaluesasmat1*bmaty;
+      // FlatMatrix<Vec<3> > proxyvaluesasmat( nipx, nipy*dimx, reinterpret_cast<Vec<3> *>(&flux(0,0)));
+      // FlatMatrix<Vec<3> > proxyvaluesasmat1( nipx*dimx, nipy*dimy, lh );
+      // for(int i=0;i<nipy;i++)
+        // for(int j=0;j<nipx;j++)
+      // proxyvaluesasmat1.Rows(dimx*j,dimx*(j+1)).Col(i) = (proxyvaluesasmat.Cols(dimx*i,dimx*(i+1)).Row(j));
+      // SliceMatrix<Vec<3> > x_vec(x.Height(), 1.0/3.0*x.Width(),1.0/3.0*x.Dist(), reinterpret_cast<Vec<3> *>(&x(0,0)));
+      // x_vec = proxyvaluesasmat1*bmaty;
     }
   }
 

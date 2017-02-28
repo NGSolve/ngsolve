@@ -3108,11 +3108,11 @@ used_idnrs (list of int = None): identification numbers to be made periodic
               }
               });
 
-   m.def("IntDv", [](PyGF gf_tp, py::list ax0, PyCF coef) -> double
+   m.def("TensorProductIntegrate", [](PyGF gf_tp, py::list ax0, PyCF coef) -> double
            {
-             static Timer tall("comp.IntDv - single point"); RegionTimer rall(tall);
+             static Timer tall("comp.TensorProductIntegrate - single point"); RegionTimer rall(tall);
              Array<double> x0_help = makeCArray<double> (ax0);
-             LocalHeap lh(10000000,"IntDv2");
+             LocalHeap lh(10000000,"TensorProductIntegrate");
              shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp.Get()->GetFESpace());
              const Array<shared_ptr<FESpace> > & spaces = tpfes->Spaces(0);
              FlatVector<> x0(spaces[0]->GetSpacialDimension(),&x0_help[0]);
@@ -3147,12 +3147,12 @@ used_idnrs (list of int = None): identification numbers to be made periodic
              }
              return val;
            });
-   m.def("IntDv",[](PyGF gf_tp, PyGF gf_x, PyCF coef )
+   m.def("TensorProductIntegrate",[](PyGF gf_tp, PyGF gf_x, PyCF coef )
            {
-             static Timer tall("comp.IntDv - total domain integral"); RegionTimer rall(tall);
+             static Timer tall("comp.TensorProductIntegrate - total domain integral"); RegionTimer rall(tall);
              BaseVector & vec_in = gf_tp->GetVector();
              BaseVector & vec_out = gf_x->GetVector();
-             LocalHeap clh(10000000,"IntDv - New");
+             LocalHeap clh(10000000,"TensorProductIntegrate");
              shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp.Get()->GetFESpace());
              const Array<shared_ptr<FESpace> > & spaces = tpfes->Spaces(0);
              int ndofxspace = spaces[0]->GetNDof();
@@ -3219,9 +3219,11 @@ used_idnrs (list of int = None): identification numbers to be made periodic
             }
 });
 
-   m.def("ProlongateCoefficientFunction", [](PyCF cf_x, int prolongateto) -> PyCF
+   m.def("ProlongateCoefficientFunction", [](PyCF cf_x, int prolongateto, PyFES tpfes) -> PyCF
            {
-             auto pcf = make_shared<ProlongateCoefficientFunction>(cf_x.Get(),prolongateto,cf_x.Get()->Dimension(),false);
+             int dimx = dynamic_pointer_cast<TPHighOrderFESpace>(tpfes.Get())->Spaces(0)[0]->GetMeshAccess()->GetDimension();
+             int dimy = dynamic_pointer_cast<TPHighOrderFESpace>(tpfes.Get())->Spaces(0)[1]->GetMeshAccess()->GetDimension();
+             auto pcf = make_shared<ProlongateCoefficientFunction>(cf_x.Get(),prolongateto,cf_x.Get()->Dimension(),dimx,dimy,false);
              pcf->SetDimension(pcf->Dimension());
              return PyCF(pcf);
            });
