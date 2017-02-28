@@ -5,9 +5,6 @@
 
 namespace ngcomp
 {
-  extern void IterateElementsTP (const FESpace & fes, 
-                VorB vb, LocalHeap & clh, 
-			    const function<void(ElementId,ElementId,LocalHeap&)> & func); 
   // dummy function header 
   void CalcEigenSystem (FlatMatrix<Complex> & elmat, 
                         FlatVector<Complex> & lami, 
@@ -2699,374 +2696,373 @@ namespace ngcomp
   }
 
 
-   template<class SCAL>
-   void S_BilinearForm<SCAL> :: AddMatrixTP(SCAL val, const BaseVector & x, BaseVector & y, LocalHeap & clh) const
-   {
-     static Timer timerall ("Apply Matrix1 (TP) - all");
-     static Timer timervol ("Apply Matrix1 (TP) - volume");
-     static Timer timerfac1 ("Apply Matrix1 (TP) - facets 1");
-     static Timer timerfac2 ("Apply Matrix1 (TP) - facets 2");
-     RegionTimer rall(timerall);
-     bool hasbound = false;
-     bool hasinner = false;
-     bool hasskeletonbound = false;
-     bool hasskeletoninner = false;
-     int volumeintegrals = -1;
-     for(int j=0;j<parts.Size();j++)
-     {
-       const BilinearFormIntegrator & bfi = *GetIntegrator(j);
-       if (bfi.BoundaryForm())
-         if (bfi.SkeletonForm())
-           hasskeletonbound = true;
-         else
-           hasbound = true;
-       else
-         if (bfi.SkeletonForm())
-           hasskeletoninner = true; 
-         else
-         {
-           hasinner = true;
-           volumeintegrals = j;
-         }
-     }
-     // int cnt = 0;
-     LocalHeap chelperheap(10000000,"my x heap");
-     const shared_ptr<TPHighOrderFESpace> & tpfes = dynamic_pointer_cast<TPHighOrderFESpace > (fespace);
-     const Array<shared_ptr<FESpace> > & spaces = tpfes->Spaces(0);
-     const Table<int> & element_coloring0 = spaces[0]->ElementColoring(VOL);
-     auto meshx = spaces[0]->GetMeshAccess();
-     auto meshy = spaces[1]->GetMeshAccess();
-     int nelx = meshx->GetNE();
-     int nely = meshy->GetNE();
-     int ndofxspace = spaces[0]->GetNDof();
-     int ndofyspace = spaces[1]->GetNDof();
-     if(hasinner)
-     {
-       timervol.Start();
-       if (task_manager)
-       {
-         for (FlatArray<int> els_of_col : element_coloring0)
-         {
-           SharedLoop sl(els_of_col.Range());
-           task_manager -> CreateJob
-           ( [&] (const TaskInfo & ti) 
-           {
-             LocalHeap lh = clh.Split(ti.thread_nr, ti.nthreads);
-             LocalHeap xheap = chelperheap.Split(ti.thread_nr, ti.nthreads);
-             for (int mynr : sl)
-             {
-               HeapReset hr(xheap);
-               int elnrx = els_of_col[mynr];
-               auto & felx = spaces[0]->GetFE(ElementId(elnrx),lh);
-               int ndofx = felx.GetNDof();
-
-               const ElementTransformation & xtrafo = meshx->GetTrafo(ElementId(elnrx), lh);
-               const IntegrationRule & ir = SelectIntegrationRule(felx.ElementType(),2*felx.Order());
-               BaseMappedIntegrationRule & mir = xtrafo(ir, lh);
-               
-               FlatMatrix<> elvec_yslicemat(ndofx,ndofyspace,xheap);
-               Array<int> dnums_yslice(ndofx*ndofyspace, xheap);
-               
-               tpfes->GetSliceDofNrs(ElementId(elnrx), 1, dnums_yslice,xheap);
-               x.GetIndirect (dnums_yslice, elvec_yslicemat.AsVector());
-
-               dynamic_cast<TensorProductBilinearFormIntegrator &>(*parts[volumeintegrals]).ApplyXElementMatrix(felx, xtrafo, elvec_yslicemat, &xheap,&mir, lh);
-               int firstydof = 0;
-               for(int j=0;j<nely;j++)
-               {
-                 HeapReset hr(lh);
-                 ElementId elid(j+elnrx*nely);
-                 auto & tpfel = tpfes->GetFE(elid,lh);
-                 int ndofy = spaces[1]->GetFE(ElementId(j),lh).GetNDof();
-                 IntRange dnumsy(firstydof, firstydof+ndofy);
-                 firstydof+=ndofy;
-                 const ElementTransformation & tptrafo = tpfes->GetTrafo(elid,lh);
-                 dynamic_cast<TensorProductBilinearFormIntegrator &>(*parts[volumeintegrals]).ApplyYElementMatrix(tpfel,tptrafo,dnumsy,xtrafo.userdata,&mir,lh);
-               }
-               FlatMatrix<> elvecy_mat(ndofx,ndofyspace,lh);
-               elvecy_mat = 0.0;
-               dynamic_cast<TensorProductBilinearFormIntegrator &>(*parts[volumeintegrals]).ApplyXElementMatrixTrans(felx,xtrafo,elvecy_mat,xtrafo.userdata,&mir,lh);
-               //elvecy_mat *= val;
-               y.AddIndirect (dnums_yslice, elvecy_mat.AsVector());
-             }
-           }
-           );
-         }
-       }
-       timervol.Stop();
-     }
-     bool needs_facet_loop = false;
-     bool needs_element_boundary_loop = false;
-     bool neighbor_testfunction = false;
-     int facetvolumeintegrals = -1;
-     int facetboundaryintegrals = -1;
-     if (hasskeletonbound||hasskeletoninner)
-     {
-       for (int j = 0; j < NumIntegrators(); j++)
-       {
-         if (parts[j] -> SkeletonForm())
-         {
-           auto dgform = parts[j] -> GetDGFormulation();
-           if (!dgform.element_boundary && !parts[j]->BoundaryForm())
-           {
-             needs_facet_loop = true;
-             facetvolumeintegrals = j;
-           }
-           if (!dgform.element_boundary && parts[j]->BoundaryForm())
-           {
-             needs_facet_loop = true;
-             facetboundaryintegrals = j;
-           }
-           if (dgform.element_boundary)
-           {
-             throw Exception("Element boundary formulation is not currently not implemented for tensor product spaces, please reformulate as skeleton integrals");
-             needs_element_boundary_loop = true;
-           }
-         }
-       }
-       // do we need locks for neighbor - testfunctions ?
-       for (int j = 0; j < NumIntegrators(); j++)
-         if (parts[j] -> SkeletonForm())
-         {
-           auto dgform = parts[j] -> GetDGFormulation();
-           if (dgform.neighbor_testfunction)
-             neighbor_testfunction = true;
-         }
-       if (needs_facet_loop && !fespace->UsesDGCoupling())
-         throw Exception ("skeleton-form needs \"dgjumps\" : True flag for FESpace");
-     }
-     else
-       return;
-     auto & nels = tpfes->GetNels();
-     auto & nfacets = tpfes->GetNFacets();
-     timerfac1.Start();
-     for (FlatArray<int> colfacets : spaces[0]->FacetColoring())
-     {
-       SharedLoop sl(colfacets.Range());
-       task_manager -> CreateJob
-       ( [&] (const TaskInfo & ti) 
-       {
-         LocalHeap lh = clh.Split(ti.thread_nr, ti.nthreads);
-         LocalHeap xheap = chelperheap.Split(ti.thread_nr, ti.nthreads);
-         for (int i : sl)
-         {
-           HeapReset hr(lh);
-           HeapReset hrx(xheap);
-           Array<int> elnums_x(2, lh), elnums_per_x(2,lh), fnums1_x(6, lh), fnums2_x(6, lh), vnums1(8, lh), vnums2(8, lh);
-           int facet_x = colfacets[i];
-           int facet2_x = colfacets[i];
-           // Horzontal edge - get facet elements w.r.t. first direction
-           meshx->GetFacetElements (facet_x, elnums_x);
-           int el1_x = elnums_x[0];
-           auto & felx1 = spaces[0]->GetFE(ElementId(el1_x),lh);
-           int ndofx1 = felx1.GetNDof();
-           // The element facets:           
-           meshx->GetElFacets(el1_x,fnums1_x);
-           int facnr_x1 = fnums1_x.Pos(facet_x);
-           meshx->GetElVertices (el1_x, vnums1);
-           const ElementTransformation & eltransx1 = meshx->GetTrafo(el1_x,lh);
-           auto eltype1 = eltransx1.GetElementType();
-           auto etfacet = ElementTopology::GetFacetType (eltype1, facnr_x1);
-           Facet2ElementTrafo transform1(eltype1, vnums1);
-           if(elnums_x.Size() < 2)
-           {
-             facet2_x = meshx->GetPeriodicFacet(facet_x);
-             if(facet2_x > facet_x)
-             {
-               meshx->GetFacetElements (facet2_x, elnums_per_x);
-               elnums_x.Append(elnums_per_x[0]);
-             }
-             else if(facet2_x < facet_x)
-               continue;
-           }
-           if(elnums_x.Size() < 2)
-           {
-             meshx->GetFacetSurfaceElements(facet_x, elnums_x);
-             int sel = elnums_x[0];
-             ElementId sei(BND,sel);
-             meshx->GetSElVertices (sel, vnums2);
-             for(int j=0;j<nely;j++)
-             {
-               HeapReset hr(lh);
-               ElementId ei1(j+el1_x*nely);               
-               ElementTransformation & eltrans = tpfes->GetTrafo (ei1, lh);
-               ElementTransformation & seltrans = meshx->GetTrafo (sei, lh);
-               const FiniteElement & fel = tpfes->GetFE (ei1, lh);
-               Array<int> dnums(fel.GetNDof(), lh);
+ template<class SCAL>
+ void S_BilinearForm<SCAL> :: AddMatrixTP(SCAL val,
+                                          const BaseVector & x,
+                                          BaseVector & y, LocalHeap & clh) const
+ {
+    static Timer timerall ("Apply Matrix1 (TP) - all");
+    static Timer timervol ("Apply Matrix1 (TP) - volume");
+    static Timer timerfac1 ("Apply Matrix1 (TP) - facets 1");
+    static Timer timerfac2 ("Apply Matrix1 (TP) - facets 2");
+    RegionTimer rall(timerall);
+    bool hasbound = false;
+    bool hasinner = false;
+    bool hasskeletonbound = false;
+    bool hasskeletoninner = false;
+    int volumeintegrals = -1;
+    for(int j=0;j<parts.Size();j++)
+    {
+      const BilinearFormIntegrator & bfi = *GetIntegrator(j);
+      if (bfi.BoundaryForm())
+        if (bfi.SkeletonForm())
+          hasskeletonbound = true;
+        else
+          hasbound = true;
+      else
+        if (bfi.SkeletonForm())
+          hasskeletoninner = true; 
+        else
+        {
+          hasinner = true;
+          volumeintegrals = j;
+        }
+    }
+    LocalHeap chelperheap(1000000000,"my x heap");
+    const shared_ptr<TPHighOrderFESpace> & tpfes = dynamic_pointer_cast<TPHighOrderFESpace > (fespace);
+    const Array<shared_ptr<FESpace> > & spaces = tpfes->Spaces(0);
+    int dimspace = tpfes->GetDimension();
+    const Table<int> & element_coloring0 = spaces[0]->ElementColoring(VOL);
+    auto meshx = spaces[0]->GetMeshAccess();
+    auto meshy = spaces[1]->GetMeshAccess();
+    int nelx = meshx->GetNE();
+    int nely = meshy->GetNE();
+    int ndofxspace = spaces[0]->GetNDof();
+    int ndofyspace = spaces[1]->GetNDof();
+    if(hasinner)
+    {
+      timervol.Start();
+      if (task_manager)
+      {
+        for (FlatArray<int> els_of_col : element_coloring0)
+        {
+          SharedLoop sl(els_of_col.Range());
+          task_manager -> CreateJob
+          ( [&] (const TaskInfo & ti) 
+          {
+            LocalHeap lh = clh.Split(ti.thread_nr, ti.nthreads);
+            LocalHeap xheap = chelperheap.Split(ti.thread_nr, ti.nthreads);
+            for (int mynr : sl)
+            {
+              HeapReset hr(xheap);
+              int elnrx = els_of_col[mynr];
+              auto & felx = spaces[0]->GetFE(ElementId(elnrx),lh);
+              int ndofx = felx.GetNDof();
+              const ElementTransformation & xtrafo = meshx->GetTrafo(ElementId(elnrx), lh);
+              const IntegrationRule & ir = SelectIntegrationRule(felx.ElementType(),2*felx.Order());
+              BaseMappedIntegrationRule & mir = xtrafo(ir, lh);
+              FlatMatrix<> elvec_yslicemat(ndofx,ndofyspace*dimspace,xheap);
+              Array<int> dnums_yslice(ndofx*ndofyspace, xheap);
+              tpfes->GetSliceDofNrs(ElementId(elnrx), 1, dnums_yslice,xheap);
+              x.GetIndirect (dnums_yslice, elvec_yslicemat.AsVector());
+              dynamic_cast<TensorProductBilinearFormIntegrator &>(*parts[volumeintegrals]).ApplyXElementMatrix(felx, xtrafo, elvec_yslicemat, &xheap,&mir, lh);
+              int firstydof = 0;
+              for(int j=0;j<nely;j++)
+              {
+                HeapReset hr(lh);
+                ElementId elid(j+elnrx*nely);
+                auto & tpfel = tpfes->GetFE(elid,lh);
+                int ndofy = spaces[1]->GetFE(ElementId(j),lh).GetNDof();
+                IntRange dnumsy(firstydof, firstydof+dimspace*ndofy);
+                firstydof+=dimspace*ndofy;
+                const ElementTransformation & tptrafo = tpfes->GetTrafo(elid,lh);
+                dynamic_cast<TensorProductBilinearFormIntegrator &>(*parts[volumeintegrals]).ApplyYElementMatrix(tpfel,tptrafo,dnumsy,xtrafo.userdata,&mir,lh);
+              }
+              FlatMatrix<> elvecy_mat(ndofx,ndofyspace*dimspace,lh);
+              dynamic_cast<TensorProductBilinearFormIntegrator &>(*parts[volumeintegrals]).ApplyXElementMatrixTrans(felx,xtrafo,elvecy_mat,xtrafo.userdata,&mir,lh);
+              //elvecy_mat *= (double)val;
+              y.AddIndirect (dnums_yslice, elvecy_mat.AsVector());
+            }
+          }
+          );
+        }
+      }
+      timervol.Stop();
+    }
+    bool needs_facet_loop = false;
+    bool needs_element_boundary_loop = false;
+    bool neighbor_testfunction = false;
+    int facetvolumeintegrals = -1;
+    int facetboundaryintegrals = -1;
+    if (hasskeletonbound||hasskeletoninner)
+    {
+      for (int j = 0; j < NumIntegrators(); j++)
+      {
+        if (parts[j] -> SkeletonForm())
+        {
+          auto dgform = parts[j] -> GetDGFormulation();
+          if (!dgform.element_boundary && !parts[j]->BoundaryForm())
+          {
+            needs_facet_loop = true;
+            facetvolumeintegrals = j;
+          }
+          if (!dgform.element_boundary && parts[j]->BoundaryForm())
+          {
+            needs_facet_loop = true;
+            facetboundaryintegrals = j;
+          }
+          if (dgform.element_boundary)
+          {
+            throw Exception("Element boundary formulation is not currently not implemented for tensor product spaces, please reformulate as skeleton integrals");
+            needs_element_boundary_loop = true;
+          }
+        }
+      }
+      // do we need locks for neighbor - testfunctions ?
+      for (int j = 0; j < NumIntegrators(); j++)
+        if (parts[j] -> SkeletonForm())
+        {
+          auto dgform = parts[j] -> GetDGFormulation();
+          if (dgform.neighbor_testfunction)
+            neighbor_testfunction = true;
+        }
+      if (needs_facet_loop && !fespace->UsesDGCoupling())
+        throw Exception ("skeleton-form needs \"dgjumps\" : True flag for FESpace");
+    }
+    else
+      return;
+      
+    if(facetvolumeintegrals == -1 && facetboundaryintegrals == -1)
+      return;
+    auto & nels = tpfes->GetNels();
+    auto & nfacets = tpfes->GetNFacets();
+    timerfac1.Start();
+    for (FlatArray<int> colfacets : spaces[0]->FacetColoring())
+    {
+      SharedLoop sl(colfacets.Range());
+      task_manager -> CreateJob
+      ( [&] (const TaskInfo & ti) 
+      {
+        LocalHeap lh = clh.Split(ti.thread_nr, ti.nthreads);
+        LocalHeap xheap = chelperheap.Split(ti.thread_nr, ti.nthreads);
+        for (int i : sl)
+        {
+          HeapReset hr(lh);
+          HeapReset hrx(xheap);
+          Array<int> elnums_x(2, lh), elnums_per_x(2,lh), fnums1_x(6, lh), fnums2_x(6, lh), vnums1(8, lh), vnums2(8, lh);
+          int facet_x = colfacets[i];
+          int facet2_x = colfacets[i];
+          // Horzontal edge - get facet elements w.r.t. first direction
+          meshx->GetFacetElements (facet_x, elnums_x);
+          int el1_x = elnums_x[0];
+          auto & felx1 = spaces[0]->GetFE(ElementId(el1_x),lh);
+          int ndofx1 = felx1.GetNDof();
+          // The element facets:           
+          meshx->GetElFacets(el1_x,fnums1_x);
+          int facnr_x1 = fnums1_x.Pos(facet_x);
+          meshx->GetElVertices (el1_x, vnums1);
+          const ElementTransformation & eltransx1 = meshx->GetTrafo(el1_x,lh);
+          auto eltype1 = eltransx1.GetElementType();
+          auto etfacet = ElementTopology::GetFacetType (eltype1, facnr_x1);
+          Facet2ElementTrafo transform1(eltype1, vnums1);
+          if(elnums_x.Size() < 2)
+          {
+            facet2_x = meshx->GetPeriodicFacet(facet_x);
+            if(facet2_x > facet_x)
+            {
+              meshx->GetFacetElements (facet2_x, elnums_per_x);
+              elnums_x.Append(elnums_per_x[0]);
+            }
+            else if(facet2_x < facet_x)
+              continue;
+          }
+          if(elnums_x.Size() < 2)
+          {
+            meshx->GetFacetSurfaceElements(facet_x, elnums_x);
+            int sel = elnums_x[0];
+            ElementId sei(BND,sel);
+            meshx->GetSElVertices (sel, vnums2);
+            for(int j=0;j<nely;j++)
+            {
+              HeapReset hr(lh);
+              ElementId ei1(j+el1_x*nely);               
+              ElementTransformation & eltrans = tpfes->GetTrafo (ei1, lh);
+              ElementTransformation & seltrans = meshx->GetTrafo (sei, lh);
+              const FiniteElement & fel = tpfes->GetFE (ei1, lh);
+              Array<int> dnums(fel.GetNDof(), lh);
+              tpfes->GetDofNrs (ei1, dnums);
+              FlatVector<double> elx(dnums.Size()*dimspace, lh), ely(dnums.Size()*dimspace, lh);
+              x.GetIndirect(dnums, elx);
+              dynamic_cast<TensorProductFacetBilinearFormIntegrator &>(*parts[facetboundaryintegrals]).ApplyFacetMatrix(fel,facnr_x1,eltrans,vnums1, seltrans, vnums2, elx, ely, lh);
+              y.AddIndirect(dnums, ely);
+            }
+            continue;
+          }
+          else
+          {
+            // TP Element number of the second element sharing the facet
+            int el2_x = elnums_x[1];
+            auto & felx2 = spaces[0]->GetFE(ElementId(el2_x),lh);
+            int ndofx2 = felx2.GetNDof();
+            const ElementTransformation & eltransx2 = meshx->GetTrafo(el2_x,lh);
+            meshx->GetElFacets(el2_x,fnums2_x);
+            // Local position of second facet
+            int facnr_x2 = fnums2_x.Pos(facet2_x);
+            // vnums stores the elements vertex numbers (needed for facet2element trafo)
+            meshx->GetElVertices (el2_x, vnums2);             
+            // Prepare Integration Rules:
+            int maxorderx = max2 (felx1.Order(), felx2.Order());
+            auto eltype2 = eltransx2.GetElementType();
+            const IntegrationRule & ir_facet = SelectIntegrationRule(etfacet, 2*maxorderx);
+            const IntegrationRule & ir_volx1 = transform1(facnr_x1, ir_facet, lh);
+            Facet2ElementTrafo transform2(eltype2, vnums2);
+            const IntegrationRule & ir_volx2 = transform2(facnr_x2, ir_facet, lh);
+            BaseMappedIntegrationRule & mirx1 = eltransx1(ir_volx1, lh);
+            BaseMappedIntegrationRule & mirx2 = eltransx2(ir_volx2, lh);            
+            mirx1.ComputeNormalsAndMeasure (eltype1, facnr_x1);
+            FlatMatrix<> elvec_yslicemat(ndofx1+ndofx2,ndofyspace*dimspace,lh);
+            Array<int> dnums_yslice((ndofx1+ndofx2)*ndofyspace,lh),dnums_yslice1(ndofx2*ndofyspace,lh);
+            tpfes->GetSliceDofNrs(ElementId(el1_x),1,dnums_yslice,xheap);
+            tpfes->GetSliceDofNrs(ElementId(el2_x),1,dnums_yslice1,xheap);
+            dnums_yslice.Append(dnums_yslice1);
+            x.GetIndirect (dnums_yslice, elvec_yslicemat.AsVector());
+            dynamic_cast<TensorProductFacetBilinearFormIntegrator &>(*parts[facetvolumeintegrals]).ApplyXFacetMatrix(felx1, eltransx1, felx2,eltransx2, elvec_yslicemat, &xheap, &mirx1,&mirx2,lh);
+            int firstydof = 0;
+            for(int j=0;j<nely;j++)
+            {
+              HeapReset hr(lh);
+              ElementId elid(j+el1_x*nely);
+              auto & tpfel = tpfes->GetFE(elid,lh);
+              int ndofy = spaces[1]->GetFE(ElementId(j),lh).GetNDof();
+              IntRange dnumsy(firstydof,firstydof+dimspace*ndofy);
+              firstydof+=dimspace*ndofy;
+              const ElementTransformation & tptrafo = tpfes->GetTrafo(elid,lh);
+              dynamic_cast<TensorProductFacetBilinearFormIntegrator &>(*parts[facetvolumeintegrals]).ApplyYElementMatrix(tpfel,tptrafo,dnumsy,eltransx1.userdata,&mirx1,lh);
+            }
+            FlatMatrix<> elmat(ndofx1+ndofx2,ndofyspace*dimspace,lh);
+            elmat = 0.0;
+            dynamic_cast<TensorProductFacetBilinearFormIntegrator &>(*parts[facetvolumeintegrals]).ApplyXFacetMatrixTrans(felx1,eltransx1,felx2,eltransx2,elmat,eltransx1.userdata,&mirx1,&mirx2,lh);
+            //elvec_mat *= val;
+            y.AddIndirect (dnums_yslice, elmat.AsVector());
+          }
+        }
+      });
+    }
+    timerfac1.Stop();
+    timerfac2.Start();
+    for (FlatArray<int> colfacets : spaces[1]->FacetColoring())
+    {
+      SharedLoop sl(colfacets.Range());
+      task_manager -> CreateJob
+      ( [&] (const TaskInfo & ti) 
+      {
+        LocalHeap lh = clh.Split(ti.thread_nr, ti.nthreads);
+        LocalHeap yheap = chelperheap.Split(ti.thread_nr, ti.nthreads);
+        for (int i : sl)
+        {         
+          HeapReset hr(lh);
+          HeapReset hry(yheap);
+          Array<int> elnums_y(2, lh), elnums_per_y(2,lh), fnums1_y(6, lh), fnums2_y(6, lh), vnums1(8, lh), vnums2(8, lh);
+          int facet_y = colfacets[i];
+          int facet2_y = colfacets[i];
+          // Horzontal edge - get facet elements w.r.t. second direction
+          meshy->GetFacetElements (facet_y, elnums_y);
+          int el1_y = elnums_y[0];
+          auto & fely1 = spaces[1]->GetFE(ElementId(el1_y),lh);
+          int ndofy1 = fely1.GetNDof();
+          // The element facets:           
+          meshy->GetElFacets(el1_y,fnums1_y);
+          int facnr_y1 = fnums1_y.Pos(facet_y);
+          meshy->GetElVertices (el1_y, vnums1);
+          const ElementTransformation & eltransy1 = meshy->GetTrafo(el1_y,lh);
+          auto eltype1 = eltransy1.GetElementType();
+          auto etfacet = ElementTopology::GetFacetType (eltype1, facnr_y1);
+          Facet2ElementTrafo transform1(eltype1, vnums1);
+          if(elnums_y.Size() < 2)
+          {
+            facet2_y = meshy->GetPeriodicFacet(facet_y);
+            if(facet2_y > facet_y)
+            {
+              meshy->GetFacetElements (facet2_y, elnums_per_y);
+              elnums_y.Append(elnums_per_y[0]);
+            }
+            else if(facet2_y < facet_y)
+              continue;
+          }
+          if(elnums_y.Size() < 2)
+          {
+            meshy->GetFacetSurfaceElements(facet_y, elnums_y);
+            int sel = elnums_y[0];
+            ElementId sei(BND,sel);
+            meshy->GetSElVertices (sel, vnums2);
+            for(int j=0;j<nelx;j++)
+            {
+              HeapReset hr(lh);
+              ElementId ei1(j*nely+el1_y);
+              ElementTransformation & eltrans = tpfes->GetTrafo (ei1, lh);
+              ElementTransformation & seltrans = meshy->GetTrafo (sei, lh);
+              const FiniteElement & fel = tpfes->GetFE (ei1, lh);
+              Array<int> dnums(fel.GetNDof(), lh);
                tpfes->GetDofNrs (ei1, dnums);
-               FlatVector<double> elx(dnums.Size()*this->fespace->GetDimension(), lh), ely(dnums.Size()*this->fespace->GetDimension(), lh);
-               x.GetIndirect(dnums, elx);
-               dynamic_cast<TensorProductFacetBilinearFormIntegrator &>(*parts[facetboundaryintegrals]).ApplyFacetMatrix(fel,facnr_x1,eltrans,vnums1, seltrans, vnums2, elx, ely, lh);
-               y.AddIndirect(dnums, ely);
-             }
+              FlatVector<double> elx(dnums.Size()*dimspace, lh), ely(dnums.Size()*dimspace, lh);
+              x.GetIndirect(dnums, elx);
+              dynamic_cast<TensorProductFacetBilinearFormIntegrator &>(*parts[facetboundaryintegrals]).ApplyFacetMatrix(fel,facnr_y1+10,eltrans,vnums1, seltrans, vnums2, elx, ely, lh);
+              y.AddIndirect(dnums, ely);
+            }
              continue;
-           }
-           else
-           {
-             // TP Element number of the second element sharing the facet
-             int el2_x = elnums_x[1];
-             auto & felx2 = spaces[0]->GetFE(ElementId(el2_x),lh);
-             int ndofx2 = felx2.GetNDof();
-             const ElementTransformation & eltransx2 = meshx->GetTrafo(el2_x,lh);
-             meshx->GetElFacets(el2_x,fnums2_x);
-             // Local position of second facet
-             int facnr_x2 = fnums2_x.Pos(facet2_x);
-             // vnums stores the elements vertex numbers (needed for facet2element trafo)
-             meshx->GetElVertices (el2_x, vnums2);             
-             
-             // Prepare Integration Rules:
-             int maxorderx = max2 (felx1.Order(), felx2.Order());
-             auto eltype2 = eltransx2.GetElementType();
-             const IntegrationRule & ir_facet = SelectIntegrationRule(etfacet, 2*maxorderx);
-             const IntegrationRule & ir_volx1 = transform1(facnr_x1, ir_facet, lh);
-             Facet2ElementTrafo transform2(eltype2, vnums2);
-             const IntegrationRule & ir_volx2 = transform2(facnr_x2, ir_facet, lh);
-             BaseMappedIntegrationRule & mirx1 = eltransx1(ir_volx1, lh);
-             BaseMappedIntegrationRule & mirx2 = eltransx2(ir_volx2, lh);            
-             mirx1.ComputeNormalsAndMeasure (eltype1, facnr_x1);
-             FlatMatrix<> elvec_yslicemat(ndofx1+ndofx2,ndofyspace,lh);
-             Array<int> dnums_yslice((ndofx1+ndofx2)*ndofyspace,lh),dnums_yslice1(ndofx2*ndofyspace,lh);
-             tpfes->GetSliceDofNrs(ElementId(el1_x),1,dnums_yslice,xheap);
-             tpfes->GetSliceDofNrs(ElementId(el2_x),1,dnums_yslice1,xheap);
-             dnums_yslice.Append(dnums_yslice1);
-             x.GetIndirect (dnums_yslice, elvec_yslicemat.AsVector());
-             dynamic_cast<TensorProductFacetBilinearFormIntegrator &>(*parts[facetvolumeintegrals]).ApplyXFacetMatrix(felx1, eltransx1, felx2,eltransx2, elvec_yslicemat, &xheap, &mirx1,&mirx2,lh);
-             int firstydof = 0;
-             for(int j=0;j<nely;j++)
-             {
-               HeapReset hr(lh);
-               ElementId elid(j+el1_x*nely);
-               auto & tpfel = tpfes->GetFE(elid,lh);
-               int ndofy = spaces[1]->GetFE(ElementId(j),lh).GetNDof();
-               IntRange dnumsy(firstydof,firstydof+ndofy);
-               firstydof+=ndofy;
-               const ElementTransformation & tptrafo = tpfes->GetTrafo(elid,lh);
-               dynamic_cast<TensorProductFacetBilinearFormIntegrator &>(*parts[facetvolumeintegrals]).ApplyYElementMatrix(tpfel,tptrafo,dnumsy,eltransx1.userdata,&mirx1,lh);
-             }
-             FlatMatrix<> elmat(ndofx1+ndofx2,ndofyspace,lh);
-             elmat = 0.0;
-             dynamic_cast<TensorProductFacetBilinearFormIntegrator &>(*parts[facetvolumeintegrals]).ApplyXFacetMatrixTrans(felx1,eltransx1,felx2,eltransx2,elmat,eltransx1.userdata,&mirx1,&mirx2,lh);
-             //elvec_mat *= val;
-             y.AddIndirect (dnums_yslice, elmat.AsVector());
-           } // end: if elnums.Size != 1
-         } // end: inner element loop
-       });
-     } // end: for( auto colfacets : spaces[0]->FacetColoring )
-     timerfac1.Stop();
-     timerfac2.Start();
-     for (FlatArray<int> colfacets : spaces[1]->FacetColoring())
-     {
-       SharedLoop sl(colfacets.Range());
-       task_manager -> CreateJob
-       ( [&] (const TaskInfo & ti) 
-       {
-         LocalHeap lh = clh.Split(ti.thread_nr, ti.nthreads);
-         LocalHeap yheap = chelperheap.Split(ti.thread_nr, ti.nthreads);
-         for (int i : sl)
-         {         
-           HeapReset hr(lh);
-           HeapReset hry(yheap);
-           Array<int> elnums_y(2, lh), elnums_per_y(2,lh), fnums1_y(6, lh), fnums2_y(6, lh), vnums1(8, lh), vnums2(8, lh);
-           int facet_y = colfacets[i];
-           int facet2_y = colfacets[i];
-           // Horzontal edge - get facet elements w.r.t. second direction
-           meshy->GetFacetElements (facet_y, elnums_y);
-           int el1_y = elnums_y[0];
-           auto & fely1 = spaces[1]->GetFE(ElementId(el1_y),lh);
-           int ndofy1 = fely1.GetNDof();
-           // The element facets:           
-           meshy->GetElFacets(el1_y,fnums1_y);
-           int facnr_y1 = fnums1_y.Pos(facet_y);
-           meshy->GetElVertices (el1_y, vnums1);
-           const ElementTransformation & eltransy1 = meshy->GetTrafo(el1_y,lh);
-           auto eltype1 = eltransy1.GetElementType();
-           auto etfacet = ElementTopology::GetFacetType (eltype1, facnr_y1);
-           Facet2ElementTrafo transform1(eltype1, vnums1);
-           if(elnums_y.Size() < 2)
-           {
-             facet2_y = meshy->GetPeriodicFacet(facet_y);
-             if(facet2_y > facet_y)
-             {
-               meshy->GetFacetElements (facet2_y, elnums_per_y);
-               elnums_y.Append(elnums_per_y[0]);
-             }
-             else if(facet2_y < facet_y)
-               continue;
-           }
-           if(elnums_y.Size() < 2)
-           {
-             meshy->GetFacetSurfaceElements(facet_y, elnums_y);
-             int sel = elnums_y[0];
-             ElementId sei(BND,sel);
-             meshy->GetSElVertices (sel, vnums2);
-             for(int j=0;j<nelx;j++)
-             {
-               HeapReset hr(lh);
-               ElementId ei1(j*nely+el1_y);
-               ElementTransformation & eltrans = tpfes->GetTrafo (ei1, lh);
-               ElementTransformation & seltrans = meshy->GetTrafo (sei, lh);
-               const FiniteElement & fel = tpfes->GetFE (ei1, lh);
-               Array<int> dnums(fel.GetNDof(), lh);
-               tpfes->GetDofNrs (ei1, dnums);
-               FlatVector<double> elx(dnums.Size()*this->fespace->GetDimension(), lh), ely(dnums.Size()*this->fespace->GetDimension(), lh);
-               x.GetIndirect(dnums, elx);
-               dynamic_cast<TensorProductFacetBilinearFormIntegrator &>(*parts[facetboundaryintegrals]).ApplyFacetMatrix(fel,facnr_y1+10,eltrans,vnums1, seltrans, vnums2, elx, ely, lh);
-               y.AddIndirect(dnums, ely);
-             }
-             continue;
-           }
-           else
-           {
-             // TP Element number of the second element sharing the facet
-             int el2_y = elnums_y[1];
-             auto & fely2 = spaces[1]->GetFE(ElementId(el2_y),lh);
-             int ndofy2 = fely2.GetNDof();
-             const ElementTransformation & eltransy2 = meshy->GetTrafo(ElementId(el2_y),lh);
-             meshy->GetElFacets(el2_y,fnums2_y);
-             // Local position of second facet
-             int facnr_y2 = fnums2_y.Pos(facet2_y);
-             // vnums stores the elements vertex numbers (needed for facet2element trafo)
-             meshy->GetElVertices (el2_y, vnums2);
-             // Prepare Integration Rules:
-             int maxordery = max2 (fely1.Order(), fely2.Order());
-             auto eltype2 = eltransy2.GetElementType();
-             const IntegrationRule & ir_facet = SelectIntegrationRule(etfacet, 2*maxordery);
-             const IntegrationRule & ir_voly1 = transform1(facnr_y1, ir_facet, lh);
-             Facet2ElementTrafo transform2(eltype2, vnums2);
-             const IntegrationRule & ir_voly2 = transform2(facnr_y2, ir_facet, lh);
-             BaseMappedIntegrationRule & miry1 = eltransy1(ir_voly1, lh);
-             BaseMappedIntegrationRule & miry2 = eltransy2(ir_voly2, lh);            
-             miry1.ComputeNormalsAndMeasure (eltype1, facnr_y1);
-             FlatMatrix<> elvec_xslicemat(ndofy1+ndofy2,ndofxspace,lh);
-             Array<int> dnums_xslice((ndofy1+ndofy2)*ndofxspace,lh),dnums_xslice1(ndofy2*ndofxspace,lh);
-             tpfes->GetSliceDofNrs(ElementId(el1_y),0,dnums_xslice,yheap);
-             tpfes->GetSliceDofNrs(ElementId(el2_y),0,dnums_xslice1,yheap);
-             dnums_xslice.Append(dnums_xslice1);
-             x.GetIndirect (dnums_xslice, elvec_xslicemat.AsVector());
-             dynamic_cast<TensorProductFacetBilinearFormIntegrator &>(*parts[facetvolumeintegrals]).ApplyYFacetMatrix(fely1, eltransy1, fely2,eltransy2, elvec_xslicemat, &yheap, &miry1,&miry2,lh);
-             int firstxdof = 0;
-             for(int j=0;j<nelx;j++)
-             {
-               HeapReset hr(lh);
-               ElementId elid(j*nely+el1_y);
-               auto & tpfel = tpfes->GetFE(elid,lh);
-               int ndofx = spaces[0]->GetFE(ElementId(j),lh).GetNDof();
-               IntRange dnumsx(firstxdof,firstxdof+ndofx);
-               firstxdof+=ndofx;
-               const ElementTransformation & tptrafo = tpfes->GetTrafo(elid,lh);
-               dynamic_cast<TensorProductFacetBilinearFormIntegrator &>(*parts[facetvolumeintegrals]).ApplyXElementMatrix(tpfel,tptrafo,dnumsx,eltransy1.userdata,&miry1,lh);
-             }
-             FlatMatrix<> elmat(ndofy1+ndofy2,ndofxspace,lh);
-             elmat = 0.0;
-             dynamic_cast<TensorProductFacetBilinearFormIntegrator &>(*parts[facetvolumeintegrals]).ApplyYFacetMatrixTrans(fely1,eltransy1,fely2,eltransy2,elmat,eltransy1.userdata,&miry1,&miry2,lh);
-             //elvec_mat *= val;
-             y.AddIndirect (dnums_xslice, elmat.AsVector());
-           } // end: if elnums.Size != 1
-         } // end: inner element loop
-       });
-     } // end: for( auto colfacets : spaces[0]->FacetColoring )   
-     timerfac2.Stop();
-  }
+          }
+          else
+          {
+            // TP Element number of the second element sharing the facet
+            int el2_y = elnums_y[1];
+            auto & fely2 = spaces[1]->GetFE(ElementId(el2_y),lh);
+            int ndofy2 = fely2.GetNDof();
+            const ElementTransformation & eltransy2 = meshy->GetTrafo(ElementId(el2_y),lh);
+            meshy->GetElFacets(el2_y,fnums2_y);
+            // Local position of second facet
+            int facnr_y2 = fnums2_y.Pos(facet2_y);
+            // vnums stores the elements vertex numbers (needed for facet2element trafo)
+            meshy->GetElVertices (el2_y, vnums2);
+            // Prepare Integration Rules:
+            int maxordery = max2 (fely1.Order(), fely2.Order());
+            auto eltype2 = eltransy2.GetElementType();
+            const IntegrationRule & ir_facet = SelectIntegrationRule(etfacet, 2*maxordery);
+            const IntegrationRule & ir_voly1 = transform1(facnr_y1, ir_facet, lh);
+            Facet2ElementTrafo transform2(eltype2, vnums2);
+            const IntegrationRule & ir_voly2 = transform2(facnr_y2, ir_facet, lh);
+            BaseMappedIntegrationRule & miry1 = eltransy1(ir_voly1, lh);
+            BaseMappedIntegrationRule & miry2 = eltransy2(ir_voly2, lh);            
+            miry1.ComputeNormalsAndMeasure (eltype1, facnr_y1);
+            FlatMatrix<> elvec_xslicemat(ndofy1+ndofy2,ndofxspace*dimspace,lh);
+            Array<int> dnums_xslice((ndofy1+ndofy2)*ndofxspace,lh),dnums_xslice1(ndofy2*ndofxspace,lh);
+            tpfes->GetSliceDofNrs(ElementId(el1_y),0,dnums_xslice,yheap);
+            tpfes->GetSliceDofNrs(ElementId(el2_y),0,dnums_xslice1,yheap);
+            dnums_xslice.Append(dnums_xslice1);
+            x.GetIndirect (dnums_xslice, elvec_xslicemat.AsVector());
+            dynamic_cast<TensorProductFacetBilinearFormIntegrator &>(*parts[facetvolumeintegrals]).ApplyYFacetMatrix(fely1, eltransy1, fely2,eltransy2, elvec_xslicemat, &yheap, &miry1,&miry2,lh);
+            int firstxdof = 0;
+            for(int j=0;j<nelx;j++)
+            {
+              HeapReset hr(lh);
+              ElementId elid(j*nely+el1_y);
+              auto & tpfel = tpfes->GetFE(elid,lh);
+              int ndofx = spaces[0]->GetFE(ElementId(j),lh).GetNDof();
+              IntRange dnumsx(firstxdof,firstxdof+dimspace*ndofx);
+              firstxdof+=dimspace*ndofx;
+              const ElementTransformation & tptrafo = tpfes->GetTrafo(elid,lh);
+              dynamic_cast<TensorProductFacetBilinearFormIntegrator &>(*parts[facetvolumeintegrals]).ApplyXElementMatrix(tpfel,tptrafo,dnumsx,eltransy1.userdata,&miry1,lh);
+            }
+            FlatMatrix<> elmat(ndofy1+ndofy2,dimspace*ndofxspace,lh);
+            elmat = 0.0;
+            dynamic_cast<TensorProductFacetBilinearFormIntegrator &>(*parts[facetvolumeintegrals]).ApplyYFacetMatrixTrans(fely1,eltransy1,fely2,eltransy2,elmat,eltransy1.userdata,&miry1,&miry2,lh);
+            //elvec_mat *= val;
+            y.AddIndirect (dnums_xslice, elmat.AsVector());
+          } // end: if elnums.Size != 1
+        } // end: inner element loop
+      });
+    } // end: for( auto colfacets : spaces[0]->FacetColoring )   
+    timerfac2.Stop();
+  } 
 
 
 
