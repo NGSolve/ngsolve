@@ -87,8 +87,11 @@ const char* docu_string(const char* str)
       else
         replaced = true;
       auto rest = replacement.substr(start_pos+6); //first character after ":any:`"
+      auto inner_end = rest.find("<");
       auto end = rest.find("`");
-      replacement.replace(start_pos,end+7,rest.substr(0,end)); 
+      if(inner_end==std::string::npos)
+        inner_end = end;
+      replacement.replace(start_pos,end+7,rest.substr(0,inner_end)); 
     }
   if(!replaced)
     return str;

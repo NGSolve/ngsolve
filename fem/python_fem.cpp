@@ -537,10 +537,23 @@ void ExportCoefficientFunction(py::module &m)
 {
   py::class_<PyWrapper<CoefficientFunction>>
     (m, "CoefficientFunction",
-     "A CoefficientFunction (CF) is some function defined on a mesh.\n"
-     "examples are coordinates x, y, z, domain-wise constants, solution-fields, ...\n"
-     "CFs can be combined by mathematical operations (+,-,sin(), ...) to form new CFs"
-    )
+R"raw(A CoefficientFunction (CF) is some function defined on a mesh.
+Examples are coordinates x, y, z, domain-wise constants, solution-fields, ...
+CFs can be combined by mathematical operations (+,-,sin(), ...) to form new CFs
+Parameters:
+
+val : can be one of the following:
+
+  scalar (float or complex):
+    Creates a constant CoefficientFunction with value val
+
+  tuple of scalars or CoefficientFunctions:
+    Creates a vector or matrix valued CoefficientFunction, use dims=(h,w)
+    for matrix valued CF
+  list of scalars or CoefficientFunctions:
+    Creates a domain-wise CF, use with generator expressions and mesh.GetMaterials()
+    and mesh.GetBoundaries()
+)raw")
 
     .def("__init__",
          [](PyCF *instance, py::object val, py::object dims)
@@ -761,7 +774,21 @@ void ExportCoefficientFunction(py::module &m)
               return IfPos(c1.Get(),
                            MakeCoefficient(then_obj).Get(),
                            MakeCoefficient(else_obj).Get());
-            } ))
+            } ),docu_string(R"raw_string(Returns new CoefficientFunction with values then_obj if c1 is positive and else_obj else.
+
+Parameters:
+
+c1 : ngsolve.CoefficientFunction
+  Indicator function
+
+then_obj : object
+  Values of new CF if c1 is positive, object must be implicitly convertible to
+  ngsolve.CoefficientFunction. See help(:any:`CoefficientFunction` ) for information.
+
+else_obj : object
+  Values of new CF if c1 is not positive, object must be implicitly convertible to
+  ngsolve.CoefficientFunction. See help(:any:`CoefficientFunction` ) for information.
+)raw_string"))
     ;
   
   typedef PyWrapper<ConstantCoefficientFunction> PyConstCF;
@@ -779,7 +806,13 @@ void ExportCoefficientFunction(py::module &m)
 
   typedef PyWrapper<ParameterCoefficientFunction> PyParameterCF;
   py::class_<PyParameterCF,PyCF>
-    (m, "Parameter", "CoefficientFunction with a modifiable value")
+    (m, "Parameter", docu_string(R"raw_string(CoefficientFunction with a modifiable value
+
+Parameters:
+
+val : float
+  Parameter value
+)raw_string"))
     .def ("__init__",
           [] (PyParameterCF *instance, double val)
                             {
@@ -916,7 +949,18 @@ void ExportCoefficientFunction(py::module &m)
   
   m.attr("specialcf") = py::cast(&specialcf);
 
-  py::class_<BSpline, shared_ptr<BSpline> > (m, "BSpline")
+  py::class_<BSpline, shared_ptr<BSpline> > (m, "BSpline",R"raw(BSpline of arbitrary order
+
+Parameters:
+
+order : int
+  order of the BSpline
+
+knots : list of float
+
+vals : list of float
+
+)raw")
    .def("__init__",
         [](BSpline *instance, int order, py::list knots, py::list vals)
                            {
