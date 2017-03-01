@@ -615,7 +615,7 @@ val : can be one of the following:
                   "shape of CF:  (dim) for vector, (h,w) for matrix")    
     */
     .def_property("dims",
-                  [] (PyCF self) { return self->Dimensions(); } ,
+                  [] (PyCF self) { return Array<int>(self->Dimensions()); } ,
                   [] (PyCF self, py::tuple tup) { self->SetDimensions(makeCArray<int>(tup)); } ,
                   "shape of CF:  (dim) for vector, (h,w) for matrix")    
     
