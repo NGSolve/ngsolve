@@ -22,7 +22,7 @@ stages:
     - set INSTALL_DIR=%CI_DIR%\install
     - set NETGENDIR=%INSTALL_DIR%\bin
     - set PYTHONPATH=%INSTALL_DIR%\lib\site-packages
-    - set MKL_CONFIG=-DUSE_MKL=OFF
+    - set CMAKE_CONFIG=-DUSE_MKL=OFF -DUSE_OCC=ON
 
 .template_windows_64: &win64
   tags:
@@ -98,7 +98,7 @@ stages:
         cmake %CI_PROJECT_DIR%
         -G"%CMAKE_GENERATOR%"
         -DINSTALL_DIR=%INSTALL_DIR%
-        %MKL_CONFIG%
+        %CMAKE_CONFIG%
         -DUSE_UMFPACK=ON
         -DCPACK_PACKAGE_NAME=NGSolve${PACKAGE_NAME_SUFFIX}
         -DCMAKE_BUILD_TYPE=Release
