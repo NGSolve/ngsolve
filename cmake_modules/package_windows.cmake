@@ -8,7 +8,7 @@ endif(NGSOLVE_VERSION_TWEAK)
 
 set(CPACK_INSTALLED_DIRECTORIES ${CMAKE_BINARY_DIR}/netgen/dependencies/src/win_extlibs netgen)
 if(USE_OCC)
-  set(CPACK_INSTALLED_DIRECTORIES ${CMAKE_BINARY_DIR}/netgen/dependencies/src/win_download_occ netgen)
+    set(CPACK_INSTALLED_DIRECTORIES ${CPACK_INSTALLED_DIRECTORIES} ${CMAKE_BINARY_DIR}/netgen/tcl/src/win_download_occ netgen)
 endif(USE_OCC)
 
 set(CPACK_COMPONENT_GROUP_GROUP_NETGEN_DISPLAY_NAME "Netgen")
