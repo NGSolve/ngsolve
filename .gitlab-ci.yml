@@ -39,7 +39,7 @@ stages:
     - set PYTHONPATH=%INSTALL_DIR%\lib\site-packages
     - set UPLOAD_DIR=/home/tester/deploy/win64/%CI_BUILD_TAG%%CI_BUILD_REF%/
     - set CLCACHE_BASEDIR=%CI_DIR%
-    - set MKL_CONFIG=-DUSE_CCACHE=ON -DUSE_MKL=ON -DMKL_STATIC=ON -DMKL_ROOT=C:\Intel\compilers_and_libraries\windows\mkl
+    - set CMAKE_CONFIG=-DUSE_OCC=ON -DUSE_MKL=ON -DMKL_STATIC=ON -DMKL_ROOT="C:/Program Files (x86)/IntelSWTools/compilers_and_libraries/windows/mkl"
 
 # Linux
 .template_ubuntu: &ubuntu
