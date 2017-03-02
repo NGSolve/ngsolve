@@ -1291,6 +1291,23 @@ public:
       }
   }
   
+  virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & mir,
+                              FlatArray<AFlatMatrix<>*> input,
+                              FlatArray<AFlatMatrix<>*> dinput,
+                              AFlatMatrix<> result,
+                              AFlatMatrix<> deriv) const
+  {
+    AFlatMatrix<> v1 = *input[0], v2 = *input[1];
+    AFlatMatrix<> dv1 = *dinput[0], dv2 = *dinput[1];
+
+    for (int i = 0; i < result.Height(); i++)
+      for (int k = 0; k < mir.Size(); k++)
+        {
+          result.Get(i,k) = v1.Get(0,k)*v2.Get(i,k);
+          deriv.Get(i,k) = v1.Get(0,k)*dv2.Get(i,k)+dv1.Get(0,k)*v2.Get(i,k);
+        }
+  }
+  
 
   
   
@@ -2599,6 +2616,29 @@ public:
       }
   }
 
+  virtual void EvaluateDeriv(const SIMD_BaseMappedIntegrationRule & mir,
+                             FlatArray<AFlatMatrix<>*> input,
+                             FlatArray<AFlatMatrix<>*> dinput,
+                             AFlatMatrix<> result,
+                             AFlatMatrix<> deriv) const
+  {
+    FlatArray<int> hdims = Dimensions();    
+    AFlatMatrix<> va = *input[0], vb = *input[1];
+    AFlatMatrix<> dva = *dinput[0], dvb = *dinput[1];
+
+    result = 0.0;
+    deriv = 0.0;
+    for (int j = 0; j < hdims[0]; j++)
+      for (int k = 0; k < inner_dim; k++)
+        {
+          int row = j*inner_dim+k;
+          for (int i = 0; i < mir.Size(); i++)
+            result.Get(j,i) += va.Get(row,i)*vb.Get(k,i);
+          for (int i = 0; i < mir.Size(); i++)
+            deriv.Get(j,i) += dva.Get(row,i)*vb.Get(k,i) + va.Get(row,i)*dvb.Get(k,i);
+        }
+  }
+
 
   
   virtual void EvaluateDDeriv(const BaseMappedIntegrationRule & mir,
@@ -3292,35 +3332,37 @@ public:
    }  
 
 
-    virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & mir, 
-                                AFlatMatrix<double> values, AFlatMatrix<double> deriv) const
-    {
-      STACK_ARRAY(SIMD<double>, hmem, mir.Size()*dim1);
-      AFlatMatrix<> v1(dim1, mir.Size(), hmem);
-      STACK_ARRAY(SIMD<double>, hdmem, mir.Size()*dim1);
-      AFlatMatrix<> dv1(dim1, mir.Size(), hdmem);
-      
-      c1->EvaluateDeriv (mir, v1, dv1);
-      values.Row(0) = v1.Row(comp);
-      deriv.Row(0) = dv1.Row(comp);
-    }
+  virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & mir, 
+                              AFlatMatrix<double> values, AFlatMatrix<double> deriv) const
+  {
+    STACK_ARRAY(SIMD<double>, hmem, mir.Size()*dim1);
+    AFlatMatrix<> v1(dim1, mir.Size(), hmem);
+    STACK_ARRAY(SIMD<double>, hdmem, mir.Size()*dim1);
+    AFlatMatrix<> dv1(dim1, mir.Size(), hdmem);
+    
+    c1->EvaluateDeriv (mir, v1, dv1);
+    values.Row(0) = v1.Row(comp);
+    deriv.Row(0) = dv1.Row(comp);
+  }
+  
 
-    virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & mir, 
-                                 AFlatMatrix<double> values, AFlatMatrix<double> deriv,
-                                 AFlatMatrix<double> dderiv) const
-    {
-      STACK_ARRAY(SIMD<double>, hmem, mir.Size()*dim1);
-      AFlatMatrix<> v1(dim1, mir.Size(), hmem);
-      STACK_ARRAY(SIMD<double>, hdmem, mir.Size()*dim1);
-      AFlatMatrix<> dv1(dim1, mir.Size(), hdmem);
-      STACK_ARRAY(SIMD<double>, hddmem, mir.Size()*dim1);
-      AFlatMatrix<> ddv1(dim1, mir.Size(), hddmem);
-      
-      c1->EvaluateDDeriv (mir, v1, dv1, ddv1);
-      values.Row(0) = v1.Row(comp);
-      deriv.Row(0) = dv1.Row(comp);
-      dderiv.Row(0) = ddv1.Row(comp);
-    }
+  
+  virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & mir, 
+                               AFlatMatrix<double> values, AFlatMatrix<double> deriv,
+                               AFlatMatrix<double> dderiv) const
+  {
+    STACK_ARRAY(SIMD<double>, hmem, mir.Size()*dim1);
+    AFlatMatrix<> v1(dim1, mir.Size(), hmem);
+    STACK_ARRAY(SIMD<double>, hdmem, mir.Size()*dim1);
+    AFlatMatrix<> dv1(dim1, mir.Size(), hdmem);
+    STACK_ARRAY(SIMD<double>, hddmem, mir.Size()*dim1);
+    AFlatMatrix<> ddv1(dim1, mir.Size(), hddmem);
+    
+    c1->EvaluateDDeriv (mir, v1, dv1, ddv1);
+    values.Row(0) = v1.Row(comp);
+    deriv.Row(0) = dv1.Row(comp);
+    dderiv.Row(0) = ddv1.Row(comp);
+  }
   
   virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
                               FlatArray<AFlatMatrix<>*> input,

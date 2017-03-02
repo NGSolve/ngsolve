@@ -1651,6 +1651,31 @@ namespace ngcomp
           feli.CalcShape (mip.IP(), mat.Row(i).Range(fel.GetRange(i)));
         }
     }
+
+    using DiffOp<DiffOpIdVectorH1<DIM_SPC>>::ApplySIMDIR;    
+    static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      for (int i = 0; i < DIM_SPC; i++)
+        {
+          auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
+          feli.Evaluate (mir.IR(), x.Range(fel.GetRange(i)), y.Row(i));
+        }
+    }
+
+    using DiffOp<DiffOpIdVectorH1<DIM_SPC>>::AddTransSIMDIR;        
+    static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      for (int i = 0; i < DIM_SPC; i++)
+        {
+          auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
+          feli.AddTrans (mir.IR(), y.Row(i), x.Range(fel.GetRange(i)));
+        }
+    }    
+    
   };
 
 
@@ -1811,6 +1836,30 @@ namespace ngcomp
           feli.CalcMappedDShape (mip, Trans(mat.Rows(DIM_SPC*i, DIM_SPC*(i+1)).Cols(fel.GetRange(i))));
         }
     }
+
+    using DiffOp<DiffOpGradVectorH1<DIM_SPC>>::ApplySIMDIR;    
+    static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      for (int i = 0; i < DIM_SPC; i++)
+        {
+          auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
+          feli.EvaluateGrad (mir, x.Range(fel.GetRange(i)), y.Rows(i*DIM_SPC, (i+1)*DIM_SPC));
+        }
+    }
+
+    using DiffOp<DiffOpGradVectorH1<DIM_SPC>>::AddTransSIMDIR;        
+    static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      for (int i = 0; i < DIM_SPC; i++)
+        {
+          auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
+          feli.AddGradTrans (mir, y.Rows(i*DIM_SPC, (i+1)*DIM_SPC), x.Range(fel.GetRange(i)));
+        }
+    }    
   };
 
   template <int DIM_SPC>  
