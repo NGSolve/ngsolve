@@ -1,8 +1,5 @@
-Getting started
-###############
-
-Start Netgen/NGSolve
-********************
+Getting started with Netgen/NGSolve
+###################################
 
 Ubuntu
 =======
@@ -44,13 +41,13 @@ To test the installation go to
 - `Load and execute python files`_
 
 Load a geometry and generate a mesh
-***********************************
+===================================
 
-First we need to locate the geometry files (e.g. \*.geo, \*.stl, \*.in2d). They can be found in:
+First we need to locate the geometry files (e.g. \*.geo, \*.stl, \*.in2d). Usually they can be found in:
 
-- Linux: ``$INSTALL_DIR/share/netgen``
+- Linux: ``/opt/netgen/share/netgen``
 - Windows: ``$INSTALL_DIR/share/netgen``
-- Mac OS X: ``$INSTALL_DIR/Contents/Resources/share/netgen``
+- Mac OS X: ``/Applications/NGSolve.app/Contents/Resources/share/netgen``
 
 Now you can load a geometry with "File/Load Geometry" from the menu in the GUI and generate a mesh by clicking the "Generate Mesh" button.
 
@@ -61,13 +58,13 @@ If you are using the command prompt, you can start netgen and load a geometry si
    netgen sculpture.geo
 
 Load and execute python files
-***********************************
+===================================
 
-Again we need to locate the python tutorial. They can be found in:
+Again we need to locate the python tutorial. Usually they can be found in:
 
-- Linux: ``$INSTALL_DIR/share/ngsolve/py_tutorials/intro``
+- Linux: ``/opt/netgen/share/ngsolve/py_tutorials/intro``
 - Windows: ``$INSTALL_DIR/share/ngsolve/py_tutorials/intro``
-- Mac OS X: ``$INSTALL_DIR/Contents/Resources/share/ngsolve/py_tutorials/intro``
+- Mac OS X: ``/Applications/NGSolve.app/Contents/Resources/share/ngsolve/py_tutorials/intro``
     
 These python-files can be executed with "Solve/Load Python" from the menu.
 
