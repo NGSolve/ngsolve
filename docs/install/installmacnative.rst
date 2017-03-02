@@ -77,9 +77,7 @@ Change into the directory for builds and call cmake with a link to the source di
 .. code:: bash
 
    cd $NGROOT/ngsolve-build
-   cmake XYZ $NGROOT/ngsolve-src
-
-and cmake parameters XYZ, which can be used to set a lot of options.
+   cmake $NGROOT/ngsolve-src
 
 Building
 ========
@@ -112,40 +110,3 @@ and execute the file with
    source .bashrc
 
 to set all environment variable needed to start Netgen/NGSolve from the command line.
-
-Test the installation
-=====================
-
-Navigate to your "Applications" folder and start "Netgen".
-Now you can:
-
-* load geometries ("File/Load Geometry") from ``Resources/share/netgen`` and generate a mesh
-* load PDE-files ("Solve/Load PDE") from ``Resources/share/ngsolve`` and solve
-* execute python-files ("Solve/Load Python") ``Resources/share/ngsolve/py_tutorials/intro``
-    
-
-Test the installation from the command line
-===========================================
-
-Netgen
-------
-Now the installation should be finished. Test it with calling netgen
-
-.. code:: bash
-
-    netgen
-
-in ``/Applications/Netgen.app/Contents/Resources/share/netgen`` you can find several geometry and mesh
-files which you can use to try if netgen does what it should do.
-
-NGSolve
--------
-Test NGSolve with calling netgen
-
-.. code:: bash
-
-    netgen
-
-and see if you get a message saying that the module NGSolve-|version|-dev has
-been loaded. In ``/Applications/Netgen.app/Contents/Resources/share/ngsolve`` you can find example PDE
-problems which you can use to try if Netgen/NGSolve does what it should do.
