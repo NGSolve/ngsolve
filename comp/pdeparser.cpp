@@ -1313,7 +1313,7 @@ namespace ngcomp
 		  if (coeffs[index]) continue;
 
 		  shared_ptr<EvalFunction> fun = NULL;
-		  string bcname = pde->GetMeshAccess()->GetMaterial(ElemnetId(BND, i));
+		  string bcname = pde->GetMeshAccess()->GetMaterial(ElementId(BND, i));
 		  // cout << "bcname = " << bcname << ", ind = " << index << endl;
 
 		  bool used = false;
