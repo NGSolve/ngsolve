@@ -1,3 +1,6 @@
+.. |Python| replace:: Python |python_version|
+.. _Python: https://www.python.org/downloads/mac-osx/
+		    
 Build on Mac OS X.
 ##################
 
@@ -30,7 +33,7 @@ Prerequisites
   install the command line tools. Open CMake, click on "How to Install For Command Line Use"
   in the "Tools" menu and execute one of the suggested options.
 
-* Install `Python |python_version| <https://www.python.org/downloads/mac-osx/>`_
+* Install |Python|_
 
 
 Getting the source
@@ -100,14 +103,8 @@ Finishing the installation
 
 Add the following line to your ``.bashrc`` file in your home directory
 
-.. code:: bash
+.. literalinclude:: setenviron_mac.sh
 
-   export PYTHONPATH=$PYTHONPATH:/Applications/Netgen.app/Contents/Resources/lib/python|python_version|/site-packages:.
-   export NETGENDIR=/Applications/Netgen.app/Contents/MacOS
-   export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$NETGENDIR
-   export DYLD_FRAMEWORK_PATH=$DYLD_FRAMEWORK_PATH:$NETGENDIR/../Frameworks
-   export PATH=$NETGENDIR:$PATH
-	  
 and execute the file with
 
 .. code:: bash
