@@ -1710,7 +1710,7 @@ namespace ngfem
           IntegrationRule stdir = GetIntegrationRule (fel, lh);
           BaseMappedIntegrationRule & stdmir = trafo(stdir, lh);
 
-          ProxyUserData ud(trial_proxies.Size(), lh);
+          ProxyUserData ud(trial_proxies.Size(), gridfunction_cfs.Size(), lh);
           const_cast<ElementTransformation&>(trafo).userdata = &ud;
           ud.fel = &fel;
           ud.elx = &elveclin;
@@ -1720,6 +1720,8 @@ namespace ngfem
               ud.AssignMemory (proxy, ir.Size(), proxy->Dimension(), lh);
               proxy->Evaluator()->Apply(fel_trial, mir, elveclin, ud.GetAMemory(proxy));
             }
+          for (CoefficientFunction * cf : gridfunction_cfs)
+            ud.AssignMemory (cf, ir.GetNIP(), cf->Dimension(), lh);
     
           AFlatMatrix<> val(1, mir.IR().GetNIP(), lh), deriv(1, mir.IR().GetNIP(), lh);
           elmat = 0;
