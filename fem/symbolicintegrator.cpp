@@ -1733,7 +1733,7 @@ namespace ngfem
                 auto proxy1 = trial_proxies[k1];
                 auto proxy2 = test_proxies[l1];
                 
-                FlatTensor<3> proxyvalues(lh, mir.Size(), proxy2->Dimension(), proxy1->Dimension());
+                FlatTensor<3> proxyvalues(lh, stdmir.Size(), proxy2->Dimension(), proxy1->Dimension());
           
                 for (int k = 0; k < proxy1->Dimension(); k++)
                   for (int l = 0; l < proxy2->Dimension(); l++)
@@ -1777,6 +1777,7 @@ namespace ngfem
                     elmat.Rows(r2).Cols(r1) += Trans (bbmat2.Cols(r2)) * bdbmat1.Cols(r1) | Lapack;
                   }
               }
+          return;
         }
       catch (ExceptionNOSIMD e)
         {
