@@ -2,3 +2,12 @@
 .wy-nav-side {
     padding-bottom: 3em;
 }
+
+table.docutils {
+    width: 100%;
+    table-layout: fixed;
+}
+
+table.docutils td {
+    white-space: normal;
+}
