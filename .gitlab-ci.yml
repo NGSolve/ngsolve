@@ -39,7 +39,7 @@ stages:
     - set PYTHONPATH=%INSTALL_DIR%\lib\site-packages
     - set UPLOAD_DIR=/home/tester/deploy/win64/%CI_BUILD_TAG%%CI_BUILD_REF%/
     - set CLCACHE_BASEDIR=%CI_DIR%
-    - set CMAKE_CONFIG=-DUSE_OCC=ON -DUSE_MKL=ON -DMKL_STATIC=ON -DMKL_ROOT="C:/Program Files (x86)/IntelSWTools/compilers_and_libraries/windows/mkl"
+    - set CMAKE_CONFIG=-DUSE_OCC=ON -DUSE_CCACHE=ON -DUSE_MKL=ON -DMKL_STATIC=ON -DMKL_ROOT="C:/Intel/compilers_and_libraries/windows/mkl"
 
 # Linux
 .template_ubuntu: &ubuntu
@@ -164,7 +164,6 @@ mac_build:
     - >-
       cmake $CI_PROJECT_DIR
       -DINSTALL_DIR=$INSTALL_DIR
-      -DUSE_CCACHE=ON
       -DCMAKE_BUILD_TYPE=Release
       -DUSE_UMFPACK=ON
       -DCPACK_PACKAGE_NAME=NGSolve${PACKAGE_NAME_SUFFIX}
@@ -241,12 +240,12 @@ linux_cleanup:
     - linux
   script:
     # remove built docker images
-    docker rmi -f ngsolve_${CI_PIPELINE_ID}:15.10
-    docker rmi -f ngsolve_${CI_PIPELINE_ID}_installed:15.10
-    docker rmi -f ngsolve_${CI_PIPELINE_ID}:16.04
-    docker rmi -f ngsolve_${CI_PIPELINE_ID}_installed:16.04
-    docker rmi -f ngsolve_${CI_PIPELINE_ID}:16.10
-    docker rmi -f ngsolve_${CI_PIPELINE_ID}_installed:16.10
+    - docker rmi -f ngsolve_${CI_PIPELINE_ID}:15.10
+    - docker rmi -f ngsolve_${CI_PIPELINE_ID}_installed:15.10
+    - docker rmi -f ngsolve_${CI_PIPELINE_ID}:16.04
+    - docker rmi -f ngsolve_${CI_PIPELINE_ID}_installed:16.04
+    - docker rmi -f ngsolve_${CI_PIPELINE_ID}:16.10
+    - docker rmi -f ngsolve_${CI_PIPELINE_ID}_installed:16.10
   when: always
   allow_failure: true
 
