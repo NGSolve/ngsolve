@@ -75,12 +75,15 @@ namespace ngfem
   /**
      High order 1D finite element
   */
-  class VectorFacetFacetSegm : public VectorFacetFacetFiniteElement<1>
+  class VectorFacetFacetSegm : public VectorFacetFacetFiniteElement<1>, public VertexOrientedFE<ET_SEGM>
   {
+    using VertexOrientedFE<ET_SEGM>::vnums;
   public:
     VectorFacetFacetSegm (int aorder=0);
 
     virtual void ComputeNDof();
+    using VertexOrientedFE<ET_SEGM>::SetVertexNumbers;
+
     HD virtual ELEMENT_TYPE ElementType() const { return ET_SEGM; }
 
     /// compute shape
@@ -101,11 +104,14 @@ namespace ngfem
   /**
      High order triangular finite element
   */
-  class VectorFacetFacetTrig : public VectorFacetFacetFiniteElement<2>
+  class VectorFacetFacetTrig : public VectorFacetFacetFiniteElement<2>, public VertexOrientedFE<ET_TRIG>
   {
+    using VertexOrientedFE<ET_TRIG>::vnums;
   public:
     VectorFacetFacetTrig (int aorder=0);
     virtual void ComputeNDof();
+    using VertexOrientedFE<ET_TRIG>::SetVertexNumbers;
+
     HD virtual ELEMENT_TYPE ElementType() const { return ET_TRIG; }
     /// compute shape
     virtual void CalcShape (const IntegrationPoint & ip, 
@@ -210,11 +216,13 @@ namespace ngfem
 
 
 
-  class VectorFacetVolumeTrig : public VectorFacetVolumeFiniteElement<2>
+  class VectorFacetVolumeTrig : public VectorFacetVolumeFiniteElement<2>, public VertexOrientedFE<ET_TRIG>
   {
+    using VertexOrientedFE<ET_TRIG>::vnums;
   public:
     VectorFacetVolumeTrig() : VectorFacetVolumeFiniteElement<2>(ET_TRIG) { ; }
     virtual void ComputeNDof();
+    using VertexOrientedFE<ET_TRIG>::SetVertexNumbers;
    
     virtual void CalcShape ( const IntegrationPoint & ip, int facet, SliceMatrix<> shape) const;
     virtual int GetNExtraShapes( int facet) const {return 1;};
@@ -236,12 +244,14 @@ namespace ngfem
   };
 
 
-  class VectorFacetVolumeTet : public VectorFacetVolumeFiniteElement<3>
+  class VectorFacetVolumeTet : public VectorFacetVolumeFiniteElement<3>, public VertexOrientedFE<ET_TET>
   {
+    using VertexOrientedFE<ET_TET>::vnums;
   public:
     VectorFacetVolumeTet() : VectorFacetVolumeFiniteElement<3> (ET_TET) { ; }
     virtual void ComputeNDof();
-   
+    using VertexOrientedFE<ET_TET>::SetVertexNumbers;
+
     virtual void CalcShape (const IntegrationPoint & ip, int facet, SliceMatrix<> shape) const;
     virtual int GetNExtraShapes( int facet) const {return 2*(facet_order[facet][0]+2);};
     virtual void CalcExtraShape ( const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<3> xshape) const;    
