@@ -1723,60 +1723,70 @@ namespace ngfem
           for (CoefficientFunction * cf : gridfunction_cfs)
             ud.AssignMemory (cf, ir.GetNIP(), cf->Dimension(), lh);
     
-          AFlatMatrix<> val(1, mir.IR().GetNIP(), lh), deriv(1, mir.IR().GetNIP(), lh);
+          AFlatMatrix<> val(1, mir.IR().GetNIP(), lh);
           elmat = 0;
     
-          for (int k1 : Range(trial_proxies))
-            for (int l1 : Range(test_proxies))
-              {
-                HeapReset hr(lh);
-                auto proxy1 = trial_proxies[k1];
-                auto proxy2 = test_proxies[l1];
-                
-                FlatTensor<3> proxyvalues(lh, stdmir.Size(), proxy2->Dimension(), proxy1->Dimension());
-          
-                for (int k = 0; k < proxy1->Dimension(); k++)
-                  for (int l = 0; l < proxy2->Dimension(); l++)
-                    {
-                      ud.trialfunction = proxy1;
-                      ud.trial_comp = k;
-                      ud.testfunction = proxy2;
-                      ud.test_comp = l;
+          for (int l1 : Range(test_proxies))
+            {
+              HeapReset hr(lh);              
+              auto proxy2 = test_proxies[l1];
+              AFlatMatrix<> bdbmat1(elmat.Width()*proxy2->Dimension(), ir.GetNIP(), lh);
+              AFlatMatrix<> hbdbmat1(elmat.Width(), proxy2->Dimension()*SIMD<double>::Size()*ir.Size(),
+                                     &bdbmat1.Get(0,0));
+              bdbmat1 = 0.0;
+              
+              for (int k1 : Range(trial_proxies))
+                {
+                  HeapReset hr(lh);
+                  auto proxy1 = trial_proxies[k1];
                   
-                      cf -> EvaluateDeriv (mir, val, deriv);
-                      proxyvalues(STAR,l,k) = deriv.Row(0);
-                    }
-                
-                for (int i = 0; i < stdmir.Size(); i++)
-                  proxyvalues(i,STAR,STAR) *= stdmir[i].GetWeight();
-
-                FlatMatrix<double,ColMajor> bmat1(proxy1->Dimension(), elmat.Width(), lh);
-                FlatMatrix<double,ColMajor> bmat2(proxy2->Dimension(), elmat.Height(), lh);
-
-                // enum { BS = 16 };
-                constexpr size_t BS = 16;
-                for (int i = 0; i < stdmir.Size(); i+=BS)
-                  {
-                    int rest = min2(size_t(BS), stdmir.Size()-i);
-                    HeapReset hr(lh);
-                    FlatMatrix<double,ColMajor> bdbmat1(rest*proxy2->Dimension(), elmat.Width(), lh);
-                    FlatMatrix<double,ColMajor> bbmat2(rest*proxy2->Dimension(), elmat.Height(), lh);
-                    
-                    for (int j = 0; j < rest; j++)
+                  AFlatMatrix<> proxyvalues(proxy1->Dimension()*proxy2->Dimension(), ir.GetNIP(), lh);
+                  
+                  for (size_t k = 0, kk = 0; k < proxy1->Dimension(); k++)
+                    for (size_t l = 0; l < proxy2->Dimension(); l++, kk++)
                       {
-                        int ii = i+j;
-                        IntRange r2 = proxy2->Dimension() * IntRange(j,j+1);
-                        proxy1->Evaluator()->CalcMatrix(fel_trial, stdmir[ii], bmat1, lh);
-                        proxy2->Evaluator()->CalcMatrix(fel_test, stdmir[ii], bmat2, lh);
-                        bdbmat1.Rows(r2) = proxyvalues(ii,STAR,STAR) * bmat1;
-                        bbmat2.Rows(r2) = bmat2;
+                        ud.trialfunction = proxy1;
+                        ud.trial_comp = k;
+                        ud.testfunction = proxy2;
+                        ud.test_comp = l;
+                        
+                        cf -> EvaluateDeriv (mir, val, proxyvalues.Rows(kk,kk+1));
                       }
-                    
-                    IntRange r1 = proxy1->Evaluator()->UsedDofs(fel);
-                    IntRange r2 = proxy2->Evaluator()->UsedDofs(fel);
-                    elmat.Rows(r2).Cols(r1) += Trans (bbmat2.Cols(r2)) * bdbmat1.Cols(r1) | Lapack;
-                  }
-              }
+                  
+                  for (size_t i = 0; i < mir.Size(); i++)
+                    {
+                      auto fac = mir[i].GetWeight();
+                      for (size_t j = 0; j < proxyvalues.Height(); j++)
+                        proxyvalues.Get(j,i) *= fac;
+                    }
+                  
+                  IntRange r1 = proxy1->Evaluator()->UsedDofs(fel_trial);
+                  
+                  AFlatMatrix<> bbmat1(elmat.Width()*proxy1->Dimension(), ir.GetNIP(), lh);
+                  
+                  // bbmat1 = 0.0;
+                  proxy1->Evaluator()->CalcMatrix(fel_trial, mir, bbmat1);
+                  for (auto i : r1)
+                    for (size_t j = 0; j < proxy2->Dimension(); j++)
+                      for (size_t k = 0; k < proxy1->Dimension(); k++)
+                        {
+                          bdbmat1.Row(i*proxy2->Dimension()+j) +=
+                            pw_mult (bbmat1.Row(i*proxy1->Dimension()+k),
+                                     proxyvalues.Row(k*proxy2->Dimension()+j));
+                        }
+                  
+                }
+
+              IntRange r2 = proxy2->Evaluator()->UsedDofs(fel_test);
+              
+              AFlatMatrix<> bbmat2(elmat.Height()*proxy2->Dimension(), ir.GetNIP(), lh);
+              AFlatMatrix<> hbbmat2(elmat.Height(), proxy2->Dimension()*SIMD<double>::Size()*ir.Size(),
+                                    &bbmat2.Get(0,0));
+              // bbmat2 = 0.0;
+              proxy2->Evaluator()->CalcMatrix(fel_test, mir, bbmat2);
+              
+              AddABt (hbbmat2.Rows(r2), hbdbmat1 /* .Rows(r1)*/, elmat.Rows(r2) /* .Cols(r1) */);
+            }
           return;
         }
       catch (ExceptionNOSIMD e)

@@ -2628,13 +2628,13 @@ public:
 
     result = 0.0;
     deriv = 0.0;
-    for (int j = 0; j < hdims[0]; j++)
-      for (int k = 0; k < inner_dim; k++)
+    for (size_t j = 0; j < hdims[0]; j++)
+      for (size_t k = 0; k < inner_dim; k++)
         {
-          int row = j*inner_dim+k;
-          for (int i = 0; i < mir.Size(); i++)
+          size_t row = j*inner_dim+k;
+          for (size_t i = 0; i < mir.Size(); i++)
             result.Get(j,i) += va.Get(row,i)*vb.Get(k,i);
-          for (int i = 0; i < mir.Size(); i++)
+          for (size_t i = 0; i < mir.Size(); i++)
             deriv.Get(j,i) += dva.Get(row,i)*vb.Get(k,i) + va.Get(row,i)*dvb.Get(k,i);
         }
   }
