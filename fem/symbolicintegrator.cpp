@@ -25,6 +25,48 @@ namespace ngfem
   }
   */
 
+  ProxyFunction ::
+  ProxyFunction (bool atestfunction, bool ais_complex,
+                 shared_ptr<DifferentialOperator> aevaluator, 
+                 shared_ptr<DifferentialOperator> aderiv_evaluator,
+                 shared_ptr<DifferentialOperator> atrace_evaluator,
+                 shared_ptr<DifferentialOperator> atrace_deriv_evaluator,
+		 shared_ptr<DifferentialOperator> attrace_evaluator,
+		 shared_ptr<DifferentialOperator> attrace_deriv_evaluator)
+    
+    : CoefficientFunction(aevaluator ? aevaluator->Dim() : 1, ais_complex),
+      testfunction(atestfunction), is_other(false),
+      evaluator(aevaluator), 
+      deriv_evaluator(aderiv_evaluator),
+      trace_evaluator(atrace_evaluator), 
+      trace_deriv_evaluator(atrace_deriv_evaluator),
+      ttrace_evaluator(attrace_evaluator),
+      ttrace_deriv_evaluator(attrace_deriv_evaluator)
+  {
+    if (!aevaluator)
+      {
+        cerr << "don't have a primal evaluator" << endl;
+        if (trace_evaluator) cout << "trace-eval = " << typeid(*trace_evaluator).name() << endl;
+        if (deriv_evaluator) cout << "deriv-eval = " << typeid(*deriv_evaluator).name() << endl;
+        throw Exception("don't have a primal evaluator");
+      }
+    if (deriv_evaluator || trace_deriv_evaluator)
+      deriv_proxy = make_shared<ProxyFunction> (testfunction, is_complex, deriv_evaluator, nullptr,
+                                                trace_deriv_evaluator, nullptr,
+						ttrace_deriv_evaluator, nullptr);
+
+    SetDimensions (evaluator->Dimensions());
+  }
+  
+  shared_ptr<ProxyFunction> ProxyFunction :: Trace() const
+  {
+    if (!trace_evaluator)
+      throw Exception (string("don't have a trace, primal evaluator = ")+
+                       evaluator->Name());
+    
+    return make_shared<ProxyFunction> (testfunction, is_complex, trace_evaluator, trace_deriv_evaluator, ttrace_evaluator, ttrace_deriv_evaluator, nullptr, nullptr);
+  }
+  
   void ProxyFunction ::
   GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
@@ -748,7 +790,8 @@ namespace ngfem
   }
 
 
-  IntegrationRule SymbolicBilinearFormIntegrator :: GetIntegrationRule (const FiniteElement & fel) const
+  IntegrationRule SymbolicBilinearFormIntegrator ::
+  GetIntegrationRule (const FiniteElement & fel, LocalHeap & /* lh */) const
   {
     if (ir.Size()) return ir;
     const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fel);
@@ -760,15 +803,17 @@ namespace ngfem
       trial_difforder = min2(trial_difforder, proxy->Evaluator()->DiffOrder());
     for (auto proxy : test_proxies)
       test_difforder = min2(test_difforder, proxy->Evaluator()->DiffOrder());
-
+    if (trial_proxies.Size() == 0) trial_difforder = 0;
+    
     int intorder = fel_trial.Order()+fel_test.Order();
     auto et = fel.ElementType();
     if (et == ET_TRIG || et == ET_TET)
       intorder -= test_difforder+trial_difforder;
     return IntegrationRule (et, intorder);
   }
-    
-  SIMD_IntegrationRule SymbolicBilinearFormIntegrator :: Get_SIMD_IntegrationRule (const FiniteElement & fel) const
+  
+  SIMD_IntegrationRule SymbolicBilinearFormIntegrator ::
+  Get_SIMD_IntegrationRule (const FiniteElement & fel, LocalHeap & lh) const
   {
     if (simd_ir.Size()) return simd_ir.Clone();
     /*
@@ -787,7 +832,8 @@ namespace ngfem
       trial_difforder = min2(trial_difforder, proxy->Evaluator()->DiffOrder());
     for (auto proxy : test_proxies)
       test_difforder = min2(test_difforder, proxy->Evaluator()->DiffOrder());
-
+    if (trial_proxies.Size() == 0) trial_difforder = 0;
+    
     int intorder = fel_trial.Order()+fel_test.Order();
     auto et = fel.ElementType();
     if (et == ET_TRIG || et == ET_TET)
@@ -846,7 +892,7 @@ namespace ngfem
 
     elmat = 0;
 
-    IntegrationRule ir = GetIntegrationRule (fel);
+    IntegrationRule ir = GetIntegrationRule (fel, lh);
     // IntegrationRule ir = fel_trial.GetIR(intorder);
     BaseMappedIntegrationRule & mir = trafo(ir, lh);
     
@@ -1084,7 +1130,7 @@ namespace ngfem
       try
         {
           // RegionTimer reg(tsimd);          
-          SIMD_IntegrationRule ir = Get_SIMD_IntegrationRule (fel);
+          SIMD_IntegrationRule ir = Get_SIMD_IntegrationRule (fel, lh);
           SIMD_BaseMappedIntegrationRule & mir = trafo(ir, lh);
 
           ProxyUserData ud;
@@ -1272,7 +1318,7 @@ namespace ngfem
     
 
     // IntegrationRule ir(trafo.GetElementType(), intorder);
-    IntegrationRule ir = GetIntegrationRule (fel);    
+    IntegrationRule ir = GetIntegrationRule (fel, lh);    
     BaseMappedIntegrationRule & mir = trafo(ir, lh);
     
     ProxyUserData ud;
@@ -1670,7 +1716,7 @@ namespace ngfem
     */
     
     // IntegrationRule ir(trafo.GetElementType(), intorder);
-    IntegrationRule ir = GetIntegrationRule (fel);
+    IntegrationRule ir = GetIntegrationRule (fel, lh);
     // IntegrationRule ir(trafo.GetElementType(), 2*fel.Order());
     BaseMappedIntegrationRule & mir = trafo(ir, lh);
 
@@ -1987,7 +2033,7 @@ namespace ngfem
 
           HeapReset hr(lh);
 
-          SIMD_IntegrationRule simd_ir = Get_SIMD_IntegrationRule (fel);
+          SIMD_IntegrationRule simd_ir = Get_SIMD_IntegrationRule (fel, lh);
           auto & simd_mir = trafo(simd_ir, lh);
           
           ProxyUserData ud(trial_proxies.Size(), gridfunction_cfs.Size(), lh);
@@ -2050,7 +2096,7 @@ namespace ngfem
     ud.lh = &lh;
 
     // IntegrationRule ir(trafo.GetElementType(), fel_trial.Order()+fel_test.Order());
-    IntegrationRule ir = GetIntegrationRule (fel);
+    IntegrationRule ir = GetIntegrationRule (fel, lh);
 
     BaseMappedIntegrationRule & mir = trafo(ir, lh);
 

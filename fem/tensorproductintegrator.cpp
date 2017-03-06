@@ -30,15 +30,15 @@ namespace ngfem
      xevaluations->lh = &xheap;
      for (ProxyFunction * proxy : trial_proxies)
      {
-         int dimx = dynamic_pointer_cast<TPDifferentialOperator>(proxy->Evaluator())->GetEvaluators(0)->Dim();
+         int dimx = dynamic_cast<TPDifferentialOperator*>(proxy->Evaluator().get())->GetEvaluators(0)->Dim();
          xevaluations->AssignMemory (proxy, mirx->IR().Size()*dimx, elx.Width(), xheap);
          FlatMatrix<double, ColMajor> bmatx( mirx->IR().Size()*dimx, fel.GetNDof(),lh ); 
-         dynamic_pointer_cast<TPDifferentialOperator>(proxy->Evaluator())->GetEvaluators(0)->CalcMatrix(fel,*mirx,bmatx,lh);
+         dynamic_cast<TPDifferentialOperator*>(proxy->Evaluator().get())->GetEvaluators(0)->CalcMatrix(fel,*mirx,bmatx,lh);
          xevaluations->GetMemory(proxy) = bmatx*elx;
      }
      for (ProxyFunction * proxy : test_proxies)
      {
-        int dimx = dynamic_pointer_cast<TPDifferentialOperator>(proxy->Evaluator())->GetEvaluators(0)->Dim();
+        int dimx = dynamic_cast<TPDifferentialOperator*>(proxy->Evaluator().get())->GetEvaluators(0)->Dim();
         xevaluations->AssignMemory (proxy, mirx->IR().Size()*dimx, elx.Width(), xheap);
      }
   }
@@ -53,7 +53,7 @@ namespace ngfem
      const FiniteElement & fel = *dynamic_cast<const TPHighOrderFE &>(tpfel).elements[1];
      const ElementTransformation & trafo = dynamic_cast<const TPElementTransformation &>(tptrafo).GetTrafo(1);
      ProxyUserData & xevals = *(static_cast<ProxyUserData *>(axevaluations));
-     const IntegrationRule ir = SelectIntegrationRule(fel.ElementType(),2*fel.Order());
+     const IntegrationRule & ir = SelectIntegrationRule(fel.ElementType(),2*fel.Order());
      BaseMappedIntegrationRule & miry = trafo(ir, lh);
      ProxyUserData ud(trial_proxies.Size(), lh);
      const_cast<ElementTransformation&>(tptrafo).userdata = &ud;
@@ -68,7 +68,7 @@ namespace ngfem
      for (ProxyFunction * proxy : trial_proxies)
      {
          ud.AssignMemory (proxy, (*mirx).IR().Size()*ir.Size(), proxy->Dimension(), lh);
-         dynamic_pointer_cast<TPDifferentialOperator>(proxy->Evaluator())->ApplyY(fel,miry,ud.GetMemory(proxy), xevals.GetMemory(proxy).Cols(dnumsy),lh);
+         dynamic_cast<TPDifferentialOperator*>(proxy->Evaluator().get())->ApplyY(fel,miry,ud.GetMemory(proxy), xevals.GetMemory(proxy).Cols(dnumsy),lh);
      }
      FlatMatrix<> val(niptp, 1,lh);
      for (auto proxy : test_proxies)
@@ -85,7 +85,7 @@ namespace ngfem
            for(int j=0;j<nipy;j++,ii++)
              proxyvalues.Row(ii) *= (*mirx)[i].GetWeight()*miry[j].GetWeight();
 
-         dynamic_pointer_cast<TPDifferentialOperator>(proxy->Evaluator())
+         dynamic_cast<TPDifferentialOperator*>(proxy->Evaluator().get())
          ->ApplyYTrans(fel,miry,proxyvalues,xevals.GetMemory(proxy).Cols(dnumsy),lh);
        }
   }
@@ -107,9 +107,9 @@ namespace ngfem
      ely = 0.0;
      for (auto proxy : test_proxies)
      {
-         int dimx = dynamic_pointer_cast<TPDifferentialOperator>(proxy->Evaluator())->GetEvaluators(0)->Dim();
+         int dimx = dynamic_cast<TPDifferentialOperator * >(proxy->Evaluator().get())->GetEvaluators(0)->Dim();
          FlatMatrix<double, ColMajor> bmatx( mirx->IR().Size()*dimx, fel.GetNDof(),lh ); 
-         dynamic_pointer_cast<TPDifferentialOperator>(proxy->Evaluator())->GetEvaluators(0)->CalcMatrix(fel,*mirx,bmatx,lh);
+         dynamic_cast<TPDifferentialOperator*>(proxy->Evaluator().get())->GetEvaluators(0)->CalcMatrix(fel,*mirx,bmatx,lh);
          ely += Trans(bmatx)*ud->GetMemory(proxy);
      }
   }
@@ -218,26 +218,26 @@ namespace ngfem
       xevaluations->lh = &xheap;
       for (ProxyFunction * proxy : trial_proxies)
       {
-        int dimx = dynamic_pointer_cast<TPDifferentialOperator>(proxy->Evaluator())->GetEvaluators(0)->Dim();
+        int dimx = dynamic_cast<TPDifferentialOperator * >(proxy->Evaluator().get())->GetEvaluators(0)->Dim();
         xevaluations->AssignMemory (proxy, mirx1->IR().Size()*dimx, elx.Width(), xheap);
         IntRange trial_range  = proxy->IsOther() ? IntRange(proxy->Evaluator()->BlockDim()*felx1.GetNDof(), elx.Height()) : IntRange(0, proxy->Evaluator()->BlockDim()*felx1.GetNDof());       
         if(proxy->IsOther())
         {
           FlatMatrix<double, ColMajor> bmatx( mirx1->IR().Size()*dimx, felx2.GetNDof(),lh ); 
-          dynamic_pointer_cast<TPDifferentialOperator>(proxy->Evaluator())->GetEvaluators(0)->CalcMatrix(felx2,*mirx2,bmatx,lh);
+          dynamic_cast<TPDifferentialOperator*>(  proxy->Evaluator().get()  )->GetEvaluators(0)->CalcMatrix(felx2,*mirx2,bmatx,lh);
           xevaluations->GetMemory(proxy) = bmatx*elx.Rows(trial_range);
         }
         else
         {
           FlatMatrix<double, ColMajor> bmatx( mirx1->IR().Size()*dimx, felx1.GetNDof(),lh ); 
-          dynamic_pointer_cast<TPDifferentialOperator>(proxy->Evaluator())->GetEvaluators(0)->CalcMatrix(felx1,*mirx1,bmatx,lh);
+          dynamic_cast<TPDifferentialOperator*>(proxy->Evaluator().get())->GetEvaluators(0)->CalcMatrix(felx1,*mirx1,bmatx,lh);
           xevaluations->GetMemory(proxy) = bmatx*elx.Rows(trial_range);
         }
         
       }
       for (ProxyFunction * proxy : test_proxies)
       {
-        int dimx = dynamic_pointer_cast<TPDifferentialOperator>(proxy->Evaluator())->GetEvaluators(0)->Dim();
+        int dimx = dynamic_cast<TPDifferentialOperator*>(proxy->Evaluator().get())->GetEvaluators(0)->Dim();
         xevaluations->AssignMemory (proxy, mirx1->IR().Size()*dimx, elx.Width(), xheap);
       }
     }
@@ -253,7 +253,7 @@ namespace ngfem
       const FiniteElement & fel = *dynamic_cast<const TPHighOrderFE &>(tpfel).elements[1];
       const ElementTransformation & trafo = dynamic_cast<const TPElementTransformation &>(tptrafo).GetTrafo(1);
       ProxyUserData & xevals = *(static_cast<ProxyUserData *>(axevaluations));
-      const IntegrationRule ir = SelectIntegrationRule(fel.ElementType(),2*fel.Order());
+      const IntegrationRule & ir = SelectIntegrationRule(fel.ElementType(),2*fel.Order());
       BaseMappedIntegrationRule & miry = trafo(ir, lh);
       ProxyUserData ud(trial_proxies.Size(), lh);
       const_cast<ElementTransformation&>(tptrafo).userdata = &ud;
@@ -263,7 +263,7 @@ namespace ngfem
       for (ProxyFunction * proxy : trial_proxies)
       {
           ud.AssignMemory (proxy, (*mirx).IR().Size()*ir.Size(), proxy->Dimension(), lh);
-          dynamic_pointer_cast<TPDifferentialOperator>(proxy->Evaluator())->ApplyY(fel,miry,ud.GetMemory(proxy), xevals.GetMemory(proxy).Cols(dnumsy),lh);
+          dynamic_cast<TPDifferentialOperator*>(proxy->Evaluator().get())->ApplyY(fel,miry,ud.GetMemory(proxy), xevals.GetMemory(proxy).Cols(dnumsy),lh);
       }
       int nipx = mirx->Size();
       int nipy = miry.Size();
@@ -286,7 +286,7 @@ namespace ngfem
           for(int j=0;j<nipy;j++,ii++)
             proxyvalues.Row(ii) *= (*mirx)[i].GetWeight()*miry[j].GetWeight();
 
-        dynamic_pointer_cast<TPDifferentialOperator>(proxy->Evaluator())
+        dynamic_cast<TPDifferentialOperator*>(proxy->Evaluator().get())
         ->ApplyYTrans(fel,miry,proxyvalues,xevals.GetMemory(proxy).Cols(dnumsy),lh);
       }
     }
@@ -305,18 +305,18 @@ namespace ngfem
       ProxyUserData * ud = (static_cast<ProxyUserData *>(yapplytrans));
       for (auto proxy : test_proxies)
       {
-        int dimx = dynamic_pointer_cast<TPDifferentialOperator>(proxy->Evaluator())->GetEvaluators(0)->Dim();
+        int dimx = dynamic_cast<TPDifferentialOperator * >(proxy->Evaluator().get())->GetEvaluators(0)->Dim();
         IntRange test_range  = proxy->IsOther() ? IntRange(proxy->Evaluator()->BlockDim()*felx1.GetNDof(), ely.Height()) : IntRange(0, proxy->Evaluator()->BlockDim()*felx1.GetNDof());
         if(proxy->IsOther())
         {
           FlatMatrix<double, ColMajor> bmatx( mirx1->IR().Size()*dimx, felx2.GetNDof(),lh ); 
-          dynamic_pointer_cast<TPDifferentialOperator>(proxy->Evaluator())->GetEvaluators(0)->CalcMatrix(felx2,*mirx2,bmatx,lh);
+          dynamic_cast<TPDifferentialOperator*>(proxy->Evaluator().get())->GetEvaluators(0)->CalcMatrix(felx2,*mirx2,bmatx,lh);
           ely.Rows(test_range) += Trans(bmatx)*ud->GetMemory(proxy);
         }
         else
         {
           FlatMatrix<double, ColMajor> bmatx( mirx1->IR().Size()*dimx, felx1.GetNDof(),lh );
-          dynamic_pointer_cast<TPDifferentialOperator>(proxy->Evaluator())->GetEvaluators(0)->CalcMatrix(felx1,*mirx1,bmatx,lh);
+          dynamic_cast<TPDifferentialOperator*>(proxy->Evaluator().get())->GetEvaluators(0)->CalcMatrix(felx1,*mirx1,bmatx,lh);
           ely.Rows(test_range) += Trans(bmatx)*ud->GetMemory(proxy);
         }
       }
@@ -333,7 +333,7 @@ namespace ngfem
       const FiniteElement & fel = *dynamic_cast<const TPHighOrderFE &>(tpfel).elements[0];
       const ElementTransformation & trafo = dynamic_cast<const TPElementTransformation &>(tptrafo).GetTrafo(0);
       ProxyUserData & yevals = *(static_cast<ProxyUserData *>(ayevaluations));
-      const IntegrationRule ir = SelectIntegrationRule(fel.ElementType(),2*fel.Order());
+      const IntegrationRule & ir = SelectIntegrationRule(fel.ElementType(),2*fel.Order());
       BaseMappedIntegrationRule & mirx = trafo(ir, lh);
       ProxyUserData ud(trial_proxies.Size(), lh);
       const_cast<ElementTransformation&>(tptrafo).userdata = &ud;
@@ -343,7 +343,7 @@ namespace ngfem
       for (ProxyFunction * proxy : trial_proxies)
       {
           ud.AssignMemory (proxy, (*miry).IR().Size()*ir.Size(), proxy->Dimension(), lh);
-          dynamic_pointer_cast<TPDifferentialOperator>(proxy->Evaluator())->ApplyX(fel,mirx,ud.GetMemory(proxy), yevals.GetMemory(proxy).Rows(dnumsx),lh);
+          dynamic_cast<TPDifferentialOperator*>(proxy->Evaluator().get())->ApplyX(fel,mirx,ud.GetMemory(proxy), yevals.GetMemory(proxy).Rows(dnumsx),lh);
       }
       int nipx = mirx.Size();
       int nipy = miry->Size();
@@ -366,7 +366,7 @@ namespace ngfem
           for(int j=0;j<nipy;j++,ii++)
             proxyvalues.Row(ii) *= (*miry)[j].GetWeight()*mirx[i].GetWeight();
 
-        dynamic_pointer_cast<TPDifferentialOperator>(proxy->Evaluator())
+        dynamic_cast<TPDifferentialOperator*>(proxy->Evaluator().get())
         ->ApplyXTrans(fel,mirx,proxyvalues,yevals.GetMemory(proxy).Rows(dnumsx),lh);
       }
     }
@@ -394,26 +394,26 @@ namespace ngfem
       yevaluations->lh = &yheap;
       for (ProxyFunction * proxy : trial_proxies)
       {
-        int dimy = dynamic_pointer_cast<TPDifferentialOperator>(proxy->Evaluator())->GetEvaluators(1)->Dim();
+        int dimy = dynamic_cast<TPDifferentialOperator * >(proxy->Evaluator().get())->GetEvaluators(1)->Dim();
         yevaluations->AssignMemory (proxy, elx.Width(),miry1->IR().Size()*dimy, yheap);
         IntRange trial_range  = proxy->IsOther() ? IntRange(proxy->Evaluator()->BlockDim()*fely1.GetNDof(), elx.Height()) : IntRange(0, proxy->Evaluator()->BlockDim()*fely1.GetNDof());       
         if(proxy->IsOther())
         {
           FlatMatrix<double, ColMajor> bmaty( miry1->IR().Size()*dimy, fely2.GetNDof(),lh ); 
-          dynamic_pointer_cast<TPDifferentialOperator>(proxy->Evaluator())->GetEvaluators(1)->CalcMatrix(fely2,*miry2,bmaty,lh);
+          dynamic_cast<TPDifferentialOperator*>(proxy->Evaluator().get())->GetEvaluators(1)->CalcMatrix(fely2,*miry2,bmaty,lh);
           yevaluations->GetMemory(proxy) = Trans(bmaty*elx.Rows(trial_range));
         }
         else
         {
           FlatMatrix<double, ColMajor> bmaty( miry1->IR().Size()*dimy, fely1.GetNDof(),lh ); 
-          dynamic_pointer_cast<TPDifferentialOperator>(proxy->Evaluator())->GetEvaluators(1)->CalcMatrix(fely1,*miry1,bmaty,lh);
+          dynamic_cast<TPDifferentialOperator*>(proxy->Evaluator().get())->GetEvaluators(1)->CalcMatrix(fely1,*miry1,bmaty,lh);
           yevaluations->GetMemory(proxy) = Trans(bmaty*elx.Rows(trial_range));
         }
         
       }
       for (ProxyFunction * proxy : test_proxies)
       {
-        int dimy = dynamic_pointer_cast<TPDifferentialOperator>(proxy->Evaluator())->GetEvaluators(1)->Dim();
+        int dimy = dynamic_cast<TPDifferentialOperator *>(proxy->Evaluator().get())->GetEvaluators(1)->Dim();
         yevaluations->AssignMemory (proxy, elx.Width(), miry1->IR().Size()*dimy, yheap);
       }
     }
@@ -432,18 +432,18 @@ namespace ngfem
       ProxyUserData * ud = (static_cast<ProxyUserData *>(xapplytrans));
       for (auto proxy : test_proxies)
       {
-        int dimy = dynamic_pointer_cast<TPDifferentialOperator>(proxy->Evaluator())->GetEvaluators(1)->Dim();
+        int dimy = dynamic_cast<TPDifferentialOperator * >(proxy->Evaluator().get())->GetEvaluators(1)->Dim();
         IntRange test_range  = proxy->IsOther() ? IntRange(proxy->Evaluator()->BlockDim()*fely1.GetNDof(), ely.Height()) : IntRange(0, proxy->Evaluator()->BlockDim()*fely1.GetNDof());
         if(proxy->IsOther())
         {
           FlatMatrix<double, ColMajor> bmaty( miry1->IR().Size()*dimy, fely2.GetNDof(),lh ); 
-          dynamic_pointer_cast<TPDifferentialOperator>(proxy->Evaluator())->GetEvaluators(1)->CalcMatrix(fely2,*miry2,bmaty,lh);
+          dynamic_cast<TPDifferentialOperator*>(proxy->Evaluator().get())->GetEvaluators(1)->CalcMatrix(fely2,*miry2,bmaty,lh);
           ely.Rows(test_range) += Trans(ud->GetMemory(proxy)*bmaty);
         }
         else
         {
           FlatMatrix<double, ColMajor> bmaty( miry1->IR().Size()*dimy, fely1.GetNDof(),lh );
-          dynamic_pointer_cast<TPDifferentialOperator>(proxy->Evaluator())->GetEvaluators(1)->CalcMatrix(fely1,*miry1,bmaty,lh);
+          dynamic_cast<TPDifferentialOperator*>(proxy->Evaluator().get())->GetEvaluators(1)->CalcMatrix(fely1,*miry1,bmaty,lh);
           ely.Rows(test_range) += Trans(ud->GetMemory(proxy)*bmaty);
         }
       }

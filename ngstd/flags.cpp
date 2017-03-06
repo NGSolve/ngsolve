@@ -296,27 +296,30 @@ namespace ngstd
     return numlistflags.Used (name);
   }
 
+  void Flags :: SaveFlags (ostream & str) const
+  {
+    for (int i = 0; i < strflags.Size(); i++)
+      str << strflags.GetName(i) << " = " << strflags[i] << endl;
+    for (int i = 0; i < numflags.Size(); i++)
+      str << numflags.GetName(i) << " = " << numflags[i] << endl;
+    for (int i = 0; i < defflags.Size(); i++)
+      str << defflags.GetName(i) << endl;
+    for (int i = 0; i < flaglistflags.Size(); i++)
+      str << flaglistflags.GetName(i) << " =*" << flaglistflags[i] << endl;
+    for (int i = 0; i < numlistflags.Size(); i++)
+      {
+        str << numlistflags.GetName(i) << " = [";
+        int j = 0;
+        for (j = 0; j < numlistflags[i]->Size() - 1; ++j)
+          str << (*numlistflags[i])[j] << ", ";
+        str << (*numlistflags[i])[j] << "]" << endl;
+      }
+  }
 
   void Flags :: SaveFlags (const char * filename) const 
   {
     ofstream outfile (filename);
-  
-    for (int i = 0; i < strflags.Size(); i++)
-      outfile << strflags.GetName(i) << " = " << strflags[i] << endl;
-    for (int i = 0; i < numflags.Size(); i++)
-      outfile << numflags.GetName(i) << " = " << numflags[i] << endl;
-    for (int i = 0; i < defflags.Size(); i++)
-      outfile << defflags.GetName(i) << endl;
-    for (int i = 0; i < flaglistflags.Size(); i++)
-      outfile << flaglistflags.GetName(i) << " =*" << flaglistflags[i] << endl;
-    for (int i = 0; i < numlistflags.Size(); i++)
-      {
-        outfile << numlistflags.GetName(i) << " = [";
-        int j = 0;
-        for (j = 0; j < numlistflags[i]->Size() - 1; ++j)
-          outfile << (*numlistflags[i])[j] << ", ";
-        outfile << (*numlistflags[i])[j] << "]" << endl;
-      }
+    SaveFlags(outfile);
   }
  
 
@@ -337,20 +340,24 @@ namespace ngstd
       ost << flaglistflags.GetName(i) << " = " << flaglistflags[i] << endl;
   }
 
+  void Flags :: LoadFlags (const char * filename, SymbolTable<Flags> * sf)
+  {
+    ifstream str(filename);
+    LoadFlags(str,sf);
+  }
 
-  void Flags :: LoadFlags (const char * filename, SymbolTable<Flags> * sf ) 
+  void Flags :: LoadFlags (istream & istr, SymbolTable<Flags> * sf ) 
   {
     char str[100];
     char ch;
     // double val;
-    ifstream infile(filename);
 
-    while (infile.good())
+    while (istr.good())
       {
         string name;
         string content;
         string line;
-        getline(infile, line);
+        getline(istr, line);
         istringstream line_stream(line);
 
         getline(line_stream, name, '=');
@@ -362,9 +369,9 @@ namespace ngstd
 	// if (name[0] == '/' && name[1] == '/')
 	//   {
 	//     ch = 0;
-	//     while (ch != '\n' && infile.good())
+	//     while (ch != '\n' && istr.good())
 	//       {
-	// 	ch = infile.get();
+	// 	ch = istr.get();
 	//       }
 	//     continue;
 	//   }

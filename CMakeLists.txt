@@ -5,11 +5,11 @@ endif(NOT CMAKE_BUILD_TYPE)
 cmake_minimum_required(VERSION 2.8.12)
 
 # Handle superbuild first
-option (USE_SUPERBUILD "Whether or not a superbuild should be invoked" ON)
+option( USE_SUPERBUILD   "Whether or not a superbuild should be invoked" ON)
 option( USE_LAPACK       "build ngsolve with LAPACK" ON)
 option( USE_MPI          "enable mpi parallelization")
 option( USE_VT           "enable vampirtrace")
-option( USE_CUDA         "enable CUDA GPU support")
+# option( USE_CUDA         "enable CUDA GPU support")
 option( USE_MKL          "enable MKL")
 option( USE_MUMPS        "enable sparse direct solver MUMPS")
 option( USE_PARDISO      "enable pardiso sparse direct solver")
@@ -22,6 +22,8 @@ option( INSTALL_DEPENDENCIES "install dependencies like netgen or solver libs, u
 if(NOT WIN32 AND NOT INTEL_MIC)
     option( USE_NATIVE_ARCH  "build which -march=native" ON)
 endif(NOT WIN32 AND NOT INTEL_MIC)
+
+set(NETGEN_DIR "" CACHE PATH "Path to Netgen, leave empty to build Netgen automatically")
 
 set(NGSOLVE_VERSION_MAJOR 6)
 set(NGSOLVE_VERSION_MINOR 2)
@@ -302,6 +304,7 @@ add_subdirectory(python)
 add_subdirectory(pde_tutorial)
 add_subdirectory(py_tutorials)
 add_subdirectory(tests)
+add_subdirectory(docs)
 
 #######################################################################
 # generate ngscxx compiler wrapper
@@ -324,9 +327,6 @@ set(ngscxx_flags "${${name}} ${CMAKE_CXX_FLAGS} -fPIC ${ngscxx_define_flags}")
 
 # include directories
 set(ngscxx_include_dirs ${NETGEN_INCLUDE_DIRS} ${CMAKE_INSTALL_PREFIX}/include ${NETGEN_TCL_INCLUDE_PATH} ${NETGEN_MPI_CXX_INCLUDE_PATH} ${MKL_INCLUDE_DIRS} ${MUMPS_INCLUDE_DIR} ${NETGEN_PYTHON_INCLUDE_DIRS} ${UMFPACK_INCLUDE_DIR} ${VTUNE_INCLUDE_DIR})
-if(NOT INSTALL_DEPENDENCIES) 
-    set(ngscxx_include_dirs ${ngscxx_include_dirs} ${NETGEN_INTERNAL_INCLUDE_DIR})
-endif(NOT INSTALL_DEPENDENCIES) 
 
 
 foreach( d ${ngscxx_include_dirs} )

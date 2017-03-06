@@ -146,7 +146,11 @@ namespace ngla
 	hevecs.SetSize(nout);
 	for (int i = 0; i< nout; i++)
 	  {
-	    hevecs[i] = a.CreateVector();
+            if (a.IsComplex())
+              hevecs[i] = a.CreateVector();
+            else // real biform and system-vecors not yet supported
+              hevecs[i] =  make_shared<VVector<Complex>> (a.Height());
+            
 	    *hevecs[i] = 0;
 	    for (int j = 0; j < m; j++)
 	      *hevecs[i] += evecs(i,j) * *abv[j];

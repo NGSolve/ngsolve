@@ -106,9 +106,15 @@ namespace ngfem
 	{ 0, 1, 1 }
       };
 
+    static double point_points[][3] = 
+      { 
+	{ 0, 0, 0 },
+      };
+
     
     switch (et)
       {
+      case ET_POINT: return point_points;
       case ET_SEGM: return segm_points;
       case ET_TRIG: return trig_points;
       case ET_QUAD: return quad_points;
@@ -117,7 +123,7 @@ namespace ngfem
       case ET_PRISM: return prism_points;
       case ET_HEX: return hex_points;
       default:
-	break;
+    break;
       }
   
     stringstream str;

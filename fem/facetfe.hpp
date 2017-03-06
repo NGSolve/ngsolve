@@ -68,7 +68,7 @@ namespace ngfem
   class FacetVolumeFiniteElement : public FiniteElement
   {
   protected:
-    int vnums[8];
+    // int vnums[8];
     int facet_order[6]; 
     int first_facet_dof[7];
 
@@ -84,19 +84,24 @@ namespace ngfem
 	vnums[i] = avnums[i];
     }
     */
+
+    /*
     template <typename T>
     void SetVertexNumbers (const BaseArrayObject<T> & avnums)
     {
       for (int i = 0; i < avnums.Size(); i++)
 	vnums[i] = avnums[i];
     }
-
+    */
+    
     void SetOrder (int ao)  
     {
       order = ao;
       for (int i = 0; i < 6; i++)
 	facet_order[i] = ao;
     }
+
+    void SetOrder (int nr, int o) { facet_order[nr] = o; }
     
     void SetOrder (FlatArray<int> & ao)
     {

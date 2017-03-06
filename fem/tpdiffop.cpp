@@ -6,15 +6,15 @@
 namespace ngfem {
     void ProlongateCoefficientFunction :: Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
     {
-        const TPMappedIntegrationRule & tpmir = dynamic_cast<const TPMappedIntegrationRule &>(ir);
-        auto & irs = tpmir.GetIRs();
+        const TPMappedIntegrationRule * tpmir = dynamic_cast<const TPMappedIntegrationRule *>(&ir);
+        auto & irs = tpmir->GetIRs();
         coef->Evaluate(*irs[1-prolongateto],values);
         if(prolongateto == 1)
-            for(int i=tpmir.GetIRs()[0]->Size()-1;i>=0;i--)
-                values.Rows(i*tpmir.GetIRs()[1]->Size(),(i+1)*tpmir.GetIRs()[1]->Size()) = values.Row(i)(0);
+            for(int i=irs[0]->Size()-1;i>=0;i--)
+                values.Rows(i*irs[1]->Size(),(i+1)*irs[1]->Size()) = values.Row(i)(0);
         if(prolongateto == 0)
-            for(int i=1;i<tpmir.GetIRs()[0]->Size();i++)
-                values.Rows(i*tpmir.GetIRs()[1]->Size(),(i+1)*tpmir.GetIRs()[1]->Size()) = values.Rows(0,tpmir.GetIRs()[1]->Size());
+            for(int i=1;i<irs[0]->Size();i++)
+                values.Rows(i*irs[1]->Size(),(i+1)*irs[1]->Size()) = values.Rows(0,irs[1]->Size());
     }
 
 
@@ -200,7 +200,8 @@ namespace ngfem {
           int dimx = evaluators[0]->Dim();
           int dimy = evaluators[1]->Dim();
           int nipy = miry.IR().Size();
-          int nipx = flux.Height()/nipy;
+          //int nipx = flux.Height()/(double)nipy;
+          int nipx = x.Height();
           FlatMatrix<double, ColMajor> bmaty( nipy*dimy, fel.GetNDof(),lh );
           evaluators[1]->CalcMatrix(fel,miry,bmaty,lh);
           if(dimx == 1)

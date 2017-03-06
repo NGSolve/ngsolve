@@ -15,7 +15,7 @@ if(temp)
     message("ubuntu version: ${UBUNTU_VERSION}")
 
 # TODO (use dpkg -s <packagename> to retrieve version)
-    set(CPACK_DEBIAN_PACKAGE_DEPENDS "python3, libtk8.6, libtcl8.6, libxmu6, liblapacke")
+    set(CPACK_DEBIAN_PACKAGE_DEPENDS "python3, libtk8.6, libtcl8.6, libxmu6")
     execute_process(COMMAND dpkg --print-architecture OUTPUT_VARIABLE CPACK_DEBIAN_PACKAGE_ARCHITECTURE OUTPUT_STRIP_TRAILING_WHITESPACE)
     set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Matthias Hochsteger <matthias.hochsteger@tuwien.ac.at>")
     if(USE_MPI)
