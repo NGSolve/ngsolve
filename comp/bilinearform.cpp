@@ -194,7 +194,7 @@ namespace ngcomp
         auto dgform = bfi -> GetDGFormulation();
         if (dgform.element_boundary)
           elementwise_skeleton_parts.Append(bfi);
-        else
+	else
           {
             if (bfi->VB() > 1) throw Exception ("skeletonform makes sense only for VOL or BND");
             // facetwise_skeleton_parts[bfi->VB()].Append(bfi);
@@ -202,6 +202,10 @@ namespace ngcomp
             if (!fbfi)  throw Exception ("not a FacetBFI");
             facetwise_skeleton_parts[bfi->VB()] += fbfi;
           }
+#ifdef PARALLEL
+	auto fbfi = dynamic_pointer_cast<FacetBilinearFormIntegrator> (bfi);
+	mpi_facet_parts.Append(fbfi);
+#endif
       }
     else
       VB_parts[bfi->VB()].Append(bfi);
@@ -3093,6 +3097,7 @@ namespace ngcomp
     static Timer timerDGfacet ("Apply Matrix - DG boundary", tlevel);
     static Timer timerDGfacet1 ("Apply Matrix - DG boundary 1", tlevel);
     static Timer timerDGfacet2 ("Apply Matrix - DG boundary 2", tlevel);
+    static Timer timerDGparallelfacets ("Apply Matrix - DG parallel facets");
     RegionTimer reg (timer);
 
     //     static int lh_size = 5000000;
@@ -3274,7 +3279,12 @@ namespace ngcomp
                        // timerDG1.Stop();
                        if(elnums.Size() < 2)
                          {
-                           facet2 = ma->GetPeriodicFacet(facet);
+#ifdef PARALLEL
+			   //skip parallel facets
+			   if( (ma->GetDistantProcs (Node(NT_FACET, facet)).Size() > 0) && (MyMPI_GetNTasks()>1) )
+			     continue;
+#endif
+			   facet2 = ma->GetPeriodicFacet(facet);
                            if(facet2 > facet)
                              {
                                ma->GetFacetElements (facet2, elnums_per);
@@ -3391,16 +3401,22 @@ namespace ngcomp
                        HeapReset hr(lh);
                        
                        ma->GetFacetElements(fnums1[facnr1],elnums);
-                       if (elnums.Size()<2)
+                       if (elnums.Size()<2) {
+#ifdef PARALLEL
+			 //skip parallel facets
+			 if( (ma->GetDistantProcs (Node(NT_FACET, fnums1[facnr1])).Size() > 0) && (MyMPI_GetNTasks()>1) )
+			   continue;
+#endif
                          if(ma->GetPeriodicFacet(fnums1[facnr1])!=fnums1[facnr1])
                            {
                              ma->GetFacetElements (ma->GetPeriodicFacet(fnums1[facnr1]), elnums_per);
                              elnums.Append(elnums_per[0]);
                            }
-                       
+		       }
+		       
                        if (elnums.Size()<2)
                          {
-                           ma->GetFacetSurfaceElements (fnums1[facnr1], elnums);
+			   ma->GetFacetSurfaceElements (fnums1[facnr1], elnums);
                            int sel = elnums[0];
                            ElementId sei(BND, sel);
                            const FiniteElement & fel = fespace->GetFE (ei1, lh);
@@ -3548,6 +3564,112 @@ namespace ngcomp
                  }                             
                });
         }
+
+#ifdef PARALLEL
+	if( (MyMPI_GetNTasks()>1) &&
+	    (mpi_facet_parts.Size()) )
+	  {
+	    RegionTimer rt(timerDGparallelfacets);
+
+	    // cout << "apply parallel DG facets, " << elementwise_skeleton_parts.Size() << " el-bound and " << facetwise_skeleton_parts[VOL].Size() << " facet parts" << endl;
+
+	    /**
+	       TODO:
+	         - buffer as member of bf; only need to allocate once
+		 - converts ranks to ngs_comm-ranks and send via that comm
+	     **/
+	    
+	    MPI_Comm mcomm = ma->GetCommunicator();
+	    int mrank, mnp;
+	    MPI_Comm_rank(mcomm, &mrank);
+	    MPI_Comm_size(mcomm, &mnp);
+	    MPI_Comm_size(mcomm, &mnp);
+	    Table<SCAL> send_table;
+	    Table<SCAL> recv_table;
+	    Array<int> cnt(mnp);
+	    Array<MPI_Request> reqs;
+	    Array<MPI_Request> reqr;
+	    LocalHeap &lh(clh);
+	    Array<int> elnums(2, lh), fnums(6, lh), vnums(8, lh);
+	    for(auto loop:Range(3)) {
+	      cnt = 0;
+	      
+	      for(auto facet:Range(ma->GetNFacets())) {
+		HeapReset hr(lh);
+		//skip non-mpi facets
+		auto fdps = ma->GetDistantProcs(Node(NT_FACET, facet));
+		if (fdps.Size() == 0)
+		  continue;
+		auto d = fdps[0];
+		ma->GetFacetElements(facet, elnums);
+		ElementId el(VOL, elnums[0]);
+		ma->GetElFacets(elnums[0], fnums);
+		int facetnr = fnums.Pos(facet);
+
+		const FiniteElement & fel = fespace->GetFE (el, lh);
+		Array<int> dnums(fel.GetNDof(), lh);
+		ma->GetElVertices (el, vnums);
+
+		ElementTransformation & eltrans = ma->GetTrafo (el, lh);
+		fespace->GetDofNrs (el, dnums);
+	    
+		for(auto igt:mpi_facet_parts) {
+		  FlatVector<SCAL> elx(dnums.Size()*this->fespace->GetDimension(), lh);
+		  x.GetIndirect(dnums, elx);
+		  FlatVector<SCAL> trace_values;
+		  dynamic_cast<const FacetBilinearFormIntegrator*>(igt.get())->  
+		    CalcTraceValues(fel,facetnr,eltrans,vnums, trace_values, elx, lh);
+		  if (loop == 0) {
+		    cnt[d] += trace_values.Size();
+		  }
+		  else if (loop == 1) {
+		    FlatVector<SCAL> tmp(trace_values.Size(), &( send_table[d][cnt[d]] ));
+		    tmp = trace_values;
+
+		    cnt[d] += trace_values.Size();
+		  }
+		  else {
+		    FlatVector<SCAL> trace_other(trace_values.Size(), &( recv_table[d][cnt[d]] ));
+		    cnt[d]+= trace_values.Size();
+		    FlatVector<SCAL> ely(dnums.Size()*this->fespace->GetDimension(), lh);
+		    dynamic_cast<const FacetBilinearFormIntegrator*>(igt.get())->  
+		      ApplyFromTraceValues(fel,facetnr,eltrans,vnums, trace_other,  elx, ely, lh);
+			
+		    y.AddIndirect(dnums, ely);
+		  }
+		}		
+	      }
+	      
+	      if(loop==0) {
+		send_table = Table<SCAL> (cnt);
+		recv_table = Table<SCAL> (cnt);
+		for(auto r:send_table)
+		  r = -1;
+		for(auto r:recv_table)
+		  r = -2;
+
+	      }
+	      else if(loop==1) {
+		//cout << "send-table:" << endl << send_table << endl;
+		//mpi - exchange ..
+		for(auto dp:Range(mnp))
+		  if(send_table[dp].Size())
+		    {
+		      // cout << "rank " << mrank << ", send/recv " << send_table[dp].Size() << " to/from " << dp << endl;
+		      reqs.Append(MyMPI_ISend(send_table[dp], dp, MPI_TAG_SOLVE, mcomm));
+		      reqr.Append(MyMPI_IRecv(recv_table[dp], dp, MPI_TAG_SOLVE, mcomm));
+		    }
+		//cout << "wait for " << reqr.Size() << " recvs !!";
+		//for(auto k:Range(mnp))
+		//cout << (send_table[k].Size()) << " " << (recv_table[k].Size()) << " | ";
+		//cout << endl;
+		MyMPI_WaitAll(reqr);
+		//cout << "have!!" << endl;
+		//cout << "recv-table:" << endl << recv_table << endl;
+	      }
+	    }
+	  }	    
+#endif
         
 
 

@@ -69,6 +69,10 @@ namespace ngcomp
     // loop over elements
     Array<shared_ptr<BilinearFormIntegrator>> elementwise_skeleton_parts;
 
+#ifdef PARALLEL
+    Array<shared_ptr<FacetBilinearFormIntegrator> > mpi_facet_parts;
+#endif
+    
     /*
     Array<BilinearFormIntegrator*> independent_parts;
     Array<bool> independent_parts_deletable;

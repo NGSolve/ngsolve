@@ -7,7 +7,6 @@ cmake_minimum_required(VERSION 2.8.12)
 # Handle superbuild first
 option( USE_SUPERBUILD   "Whether or not a superbuild should be invoked" ON)
 option( USE_LAPACK       "build ngsolve with LAPACK" ON)
-option( USE_MPI          "enable mpi parallelization")
 option( USE_VT           "enable vampirtrace")
 # option( USE_CUDA         "enable CUDA GPU support")
 option( USE_MKL          "enable MKL")
@@ -175,8 +174,8 @@ endif (NETGEN_USE_GUI)
 if (NETGEN_USE_MPI)
     find_package(MPI REQUIRED)
     if (NETGEN_USE_PYTHON)
-#      find_package(MPI4PY REQUIRED)
-#      include_directories(${MPI4PY_INCLUDE_DIR})
+      find_package(MPI4PY REQUIRED)
+      include_directories(${MPI4PY_INCLUDE_DIR})
     endif (NETGEN_USE_PYTHON)
     add_definitions(-DPARALLEL)
     include_directories(${MPI_CXX_INCLUDE_PATH})
@@ -227,14 +226,6 @@ if (USE_MUMPS)
     include_directories(${MUMPS_INCLUDE_DIR})
     link_directories(${MUMPS_DIR}/lib)
 endif (USE_MUMPS)
-
-#######################################################################
-if (USE_HYPRE)
-    add_definitions(-DHYPRE)
-    find_package(HYPRE REQUIRED)
-    include_directories(${HYPRE_DIR}/include)
-    link_directories(${HYPRE_DIR}/lib)
-endif(USE_HYPRE)
 
 #######################################################################
 if (NETGEN_USE_PYTHON)
@@ -437,7 +428,6 @@ message("
     INTEL_MIC: ......... ${INTEL_MIC}
     VTUNE: ............. ${USE_VTUNE}
     VAMPIRTRACE: ....... ${USE_VT}
-    HYPRE: ............. ${USE_HYPRE}
 
 
   Building:
