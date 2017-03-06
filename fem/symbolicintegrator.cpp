@@ -1785,7 +1785,7 @@ namespace ngfem
               // bbmat2 = 0.0;
               proxy2->Evaluator()->CalcMatrix(fel_test, mir, bbmat2);
               
-              AddABt (hbbmat2.Rows(r2), hbdbmat1 /* .Rows(r1)*/, elmat.Rows(r2) /* .Cols(r1) */);
+              AddABt (hbbmat2.Rows(r2), hbdbmat1 /* .Rows(r1)*/, SliceMatrix<> (elmat.Rows(r2)) /* .Cols(r1) */);
             }
           return;
         }
