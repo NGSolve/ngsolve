@@ -68,6 +68,12 @@ stages:
     UBUNTU_VERSION: "16.04"
     UBUNTU_VERSION_NAME: "xenial"
 
+.template_ubuntu_1610: &ubuntu_1610
+  <<: *ubuntu
+  variables:
+    UBUNTU_VERSION: "16.10"
+    UBUNTU_VERSION_NAME: "yakkety"
+
 # MacOSX
 .template_mac: &mac
   tags:
@@ -103,13 +109,13 @@ stages:
         -DCMAKE_BUILD_TYPE=Release
     - cmake --build . --target INSTALL --config Release
     - cmake --build . --target PACKAGE --config Release
-    - winscp.com /command "%UPLOAD_SERVER%" "mkdir %UPLOAD_DIR%" "put %UPLOAD_FILE%  %UPLOAD_DIR%" "exit"
+    - winscp.com /command "%UPLOAD_SERVER%" "option batch continue" "mkdir %UPLOAD_DIR%" "put %UPLOAD_FILE%  %UPLOAD_DIR%" "exit"
 
-build_win32:
+.win32_build:
   <<: *win32
   <<: *build_win
 
-build_win64:
+win64_build:
   <<: *win64
   <<: *build_win
 
@@ -133,15 +139,19 @@ build_win64:
       bash /root/src/ngsolve/tests/build.sh
     - docker commit `cat ngsolve_${CI_BUILD_REF_NAME}_$UBUNTU_VERSION.id` ngsolve_${CI_BUILD_REF_NAME}_installed:$UBUNTU_VERSION
 
-build_ubuntu_1510:
+ubuntu_1510_build:
   <<: *ubuntu_1510
   <<: *build_linux
 
-build_ubuntu_1604:
+ubuntu_1604_build:
   <<: *ubuntu_1604
   <<: *build_linux
 
-build_mac:
+ubuntu_1610_build:
+  <<: *ubuntu_1610
+  <<: *build_linux
+
+mac_build:
   <<: *mac
   stage: build
   script:
@@ -173,7 +183,7 @@ build_mac:
   <<: *win32
   <<: *test_win
 
-test_win64:
+win64_test:
   <<: *win64
   <<: *test_win
 
@@ -191,15 +201,19 @@ test_win64:
       ngsolve_${CI_BUILD_REF_NAME}_installed:$UBUNTU_VERSION
       bash -c 'cd /root/build/ngsolve && make test_ngsolve ARGS="-V"'
 
-test_ubuntu_1510:
+ubuntu_1510_test:
   <<: *ubuntu_1510
   <<: *test_linux
 
-test_ubuntu_1604:
+ubuntu_1604_test:
   <<: *ubuntu_1604
   <<: *test_linux
 
-test_mac:
+ubuntu_1610_test:
+  <<: *ubuntu_1610
+  <<: *test_linux
+
+mac_test:
   <<: *mac
   stage: test
   script:
@@ -232,7 +246,7 @@ win64_cleanup:
   when: always
   allow_failure: true
 
-win32_cleanup:
+.win32_cleanup:
   <<: *win32
   stage: cleanup
   tags:
@@ -256,11 +270,24 @@ cleanup_mac:
 # Deploy stage
 ############################################
 
+deploy_release:
+  stage: deploy
+  tags:
+    - linux
+  script:
+    - /home/gitlab-runner/deploy/deploy.sh $CI_BUILD_REF $CI_BUILD_TAG
+  only:
+    - tags
+  environment: deploy_release
+
 deploy_latest:
   stage: deploy
   tags:
     - linux
   script:
-    - docker run ngsolve_${CI_BUILD_REF_NAME}_installed /root/src/ngsolve/tests/deploy.sh
-  when: manual
+    - /home/gitlab-runner/deploy/deploy.sh $CI_BUILD_REF
+  only:
+    - triggers
+  except:
+    - tags
   environment: deploy_latest

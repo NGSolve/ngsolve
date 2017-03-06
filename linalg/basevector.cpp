@@ -102,8 +102,11 @@ namespace ngla
     if (Size() != v.Size())
       throw Exception (string ("BaseVector::Set: size of me = ") +
                        ToString(Size()) + " != size of other = " + ToString(v.Size()));
-    
-    FVComplex() = scal * v.FVComplex();
+
+    if (v.IsComplex())
+      FVComplex() = scal * v.FVComplex();
+    else
+      FVComplex() = scal * v.FVDouble();      
     return *this;
   }
     
@@ -134,8 +137,11 @@ namespace ngla
     if(Size() != v.Size())
       throw Exception (string ("BaseVector::Add: size of me = ") +
                        ToString(Size()) + " != size of other = " + ToString(v.Size()));
-    
-    FVComplex() += scal * v.FVComplex();
+
+    if (v.IsComplex())
+      FVComplex() += scal * v.FVComplex();
+    else
+      FVComplex() += scal * v.FVDouble();      
     return *this;
   }
 

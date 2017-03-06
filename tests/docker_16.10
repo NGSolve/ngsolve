@@ -1,0 +1,6 @@
+FROM ubuntu:16.10
+MAINTAINER Matthias Hochsteger <matthias.hochsteger@tuwien.ac.at>
+RUN apt-get update && apt-get -y install python3 libpython3-dev libxmu-dev tk-dev tcl-dev cmake git g++ libglu1-mesa-dev ccache python3-pytest python3-numpy openssh-client python3-sphinx python3-pip
+RUN pip3 install sphinx_rtd_theme 
+ADD . /root/src/ngsolve
+

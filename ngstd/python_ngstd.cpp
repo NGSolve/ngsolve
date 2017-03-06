@@ -91,7 +91,7 @@ const char* docu_string(const char* str)
       replacement.replace(start_pos,end+7,rest.substr(0,end)); 
     }
   if(!replaced)
-    return replacement.c_str();
+    return str;
   char * newchar = new char[replacement.size()+1];
   std::copy(replacement.begin(),replacement.end(),newchar);
   newchar[replacement.size()] = '\0';
@@ -114,6 +114,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
 
   py::class_<DummyArgument>(m, "DummyArgument")
     .def("__bool__", []( DummyArgument &self ) { return false; } )
+    .def("__repr__", [] ( DummyArgument & self) { return "<ngsolve.ngstd.DummyArgument>"; })
     ;
   
   py::class_<PajeTrace >(m, "Tracer")
@@ -210,6 +211,8 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
                                  })
     ;
 
+  
+
   py::class_<Flags>(m, "Flags")
     .def(py::init<>())
     .def("__str__", &ToString<Flags>)
@@ -219,6 +222,18 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
          SetFlag(f, "", d);
          // cout << f << endl;
      })
+    .def("__getstate__", [] (py::object self_object) {
+        auto self = self_object.cast<Flags>();
+        stringstream str;
+        self.SaveFlags(str);
+        return py::make_tuple(py::cast(str.str())); 
+      })
+    .def("__setstate__", [] (Flags & self, py::tuple state) {
+        string s = state[0].cast<string>();
+        stringstream str(s);
+        new (&self) Flags();
+        self.LoadFlags(str);
+      })
     .def("Set",[](Flags & self,const py::dict & aflags)->Flags&
     {      
       cout << "we call Set(dict)" << endl;

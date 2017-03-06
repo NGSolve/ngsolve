@@ -38,35 +38,9 @@ public:
                  shared_ptr<DifferentialOperator> atrace_evaluator,
                  shared_ptr<DifferentialOperator> atrace_deriv_evaluator,
 		 shared_ptr<DifferentialOperator> attrace_evaluator,
-		 shared_ptr<DifferentialOperator> attrace_deriv_evaluator)
-                 
-    : CoefficientFunction(aevaluator->Dim(), ais_complex),
-      testfunction(atestfunction), is_other(false),
-      evaluator(aevaluator), 
-      deriv_evaluator(aderiv_evaluator),
-      trace_evaluator(atrace_evaluator), 
-      trace_deriv_evaluator(atrace_deriv_evaluator),
-      ttrace_evaluator(attrace_evaluator),
-      ttrace_deriv_evaluator(attrace_deriv_evaluator)
-  {
-    // dim = evaluator->Dim();
-    if (deriv_evaluator || trace_deriv_evaluator)
-      deriv_proxy = make_shared<ProxyFunction> (testfunction, is_complex, deriv_evaluator, nullptr,
-                                                trace_deriv_evaluator, nullptr,
-						ttrace_deriv_evaluator, nullptr);
-
-    int dim = evaluator->Dim();
-    int blockdim = evaluator->BlockDim();
-    if (blockdim == 1)
-      SetDimensions (Array<int> ({dim}));
-    else
-      SetDimensions (Array<int> ({dim/blockdim, blockdim}));
-  }
+		 shared_ptr<DifferentialOperator> attrace_deriv_evaluator);
 
   bool IsTestFunction () const { return testfunction; }
-  // virtual int Dimension () const final { return dim; } // { evaluator->Dim(); }
-  // virtual Array<int> Dimensions() const final;
-  // virtual bool IsComplex () const final { return is_complex; } 
   bool IsOther() const { return is_other; }
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
@@ -77,14 +51,14 @@ public:
   const shared_ptr<DifferentialOperator> & TraceDerivEvaluator() const { return trace_deriv_evaluator; }
   const shared_ptr<DifferentialOperator> & TTraceEvaluator() const { return ttrace_evaluator; }
   const shared_ptr<DifferentialOperator> & TTraceDerivEvaluator() const { return ttrace_deriv_evaluator; }
+
   shared_ptr<ProxyFunction> Deriv() const
   {
     return deriv_proxy;
   }
-  shared_ptr<ProxyFunction> Trace() const
-  {
-    return make_shared<ProxyFunction> (testfunction, is_complex, trace_evaluator, trace_deriv_evaluator, ttrace_evaluator, ttrace_deriv_evaluator, nullptr, nullptr);
-  }
+
+  shared_ptr<ProxyFunction> Trace() const;
+
   shared_ptr<ProxyFunction> Other(shared_ptr<CoefficientFunction> _boundary_values) const
   {
     auto other = make_shared<ProxyFunction> (testfunction, is_complex, evaluator, deriv_evaluator, trace_evaluator, trace_deriv_evaluator,ttrace_evaluator, ttrace_deriv_evaluator);
@@ -309,18 +283,14 @@ public:
   CompoundDifferentialOperator (shared_ptr<DifferentialOperator> adiffop, 
                                 int acomp)
     : DifferentialOperator(adiffop->Dim(), adiffop->BlockDim(),
-                           adiffop->Boundary(), adiffop->DiffOrder()),
-      diffop(adiffop), comp(acomp) { ; }
+                           adiffop->VB(), adiffop->DiffOrder()),
+      diffop(adiffop), comp(acomp)
+  {
+    dimensions = adiffop->Dimensions();
+  }
   
   virtual ~CompoundDifferentialOperator () = default;
-  
-  /// dimension of range
-  /*
-  virtual int Dim() const { return diffop->Dim(); }
-  virtual int BlockDim() const { return diffop->BlockDim(); }
-  virtual bool Boundary() const { return diffop->Boundary(); }
-  virtual int DiffOrder() const { return diffop->DiffOrder(); }
-  */
+
   virtual string Name() const { return diffop->Name(); }
 
   virtual IntRange UsedDofs(const FiniteElement & bfel) const
@@ -517,8 +487,11 @@ public:
     virtual bool IsSymmetric() const { return true; }  // correct would be: don't know
     virtual string Name () const { return string ("Symbolic BFI"); }
 
-    IntegrationRule GetIntegrationRule (const FiniteElement & fel) const;
-    SIMD_IntegrationRule Get_SIMD_IntegrationRule (const FiniteElement & fel) const;
+    virtual IntegrationRule GetIntegrationRule (const FiniteElement & fel, LocalHeap & lh) const;
+    virtual SIMD_IntegrationRule Get_SIMD_IntegrationRule (const FiniteElement & fel, LocalHeap & lh) const;
+    // virtual IntegrationRule GetIntegrationRuleEB (const FiniteElement & fel, int facetnr, LocalHeap & lh) const;
+    // virtual SIMD_IntegrationRule Get_SIMD_IntegrationRuleEB (const FiniteElement & fel, int facetnr, LocalHeap & lh) const;
+    
     void SetIntegrationRule (const IntegrationRule & _ir);
     
     virtual void 

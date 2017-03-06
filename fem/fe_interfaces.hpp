@@ -22,6 +22,10 @@ namespace ngfem
     {
       return ET_trait<ET>::GetEdgeSort (nr, vnums);
     }
+    auto GetVertexOrientedFace (int nr) const
+    {
+      return ET_trait<ET>::GetFaceSort (nr, vnums);
+    }
   };
 }
 

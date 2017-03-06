@@ -91,15 +91,18 @@ namespace ngfem
   //------------------------------------------------------------------------
   // HDivHighOrderNormalFiniteElement
   //------------------------------------------------------------------------
+  /*
   template <int D>
   HDivHighOrderNormalFiniteElement<D> ::
   HDivHighOrderNormalFiniteElement ()
     : HDivNormalFiniteElement<D> (-1, -1)
   {
-    for (int i = 0; i < 4; i++)
-      vnums[i] = i;
+    // for (int i = 0; i < 4; i++)
+    // vnums[i] = i;
+    ;
   }
-
+  */
+  /*
   template <int D>
   void HDivHighOrderNormalFiniteElement<D>::
   SetVertexNumbers (FlatArray<int> & avnums)
@@ -108,7 +111,9 @@ namespace ngfem
     for (int i = 0; i < avnums.Size(); i++)
       vnums[i] = avnums[i];
   }
+  */
 
+  /*
   template <int D>
   void HDivHighOrderNormalFiniteElement<D>::
   SetOrderInner (int oi)
@@ -122,13 +127,14 @@ namespace ngfem
   {
     order_inner = oi;
   }
-
+  */
+  
   //------------------------------------------------------------------------
   // HDivHighOrderNormalSegm
   //------------------------------------------------------------------------
   template <class T_ORTHOPOL>
   HDivHighOrderNormalSegm<T_ORTHOPOL> :: HDivHighOrderNormalSegm (int aorder)
-    : HDivHighOrderNormalFiniteElement<1>()
+  // : HDivHighOrderNormalFiniteElement<1>()
   {
     order_inner = INT<2>(aorder,aorder);
     ComputeNDof();
@@ -141,6 +147,7 @@ namespace ngfem
     order = order_inner[0];
   }
 
+  /*
   template <class T_ORTHOPOL>
   void HDivHighOrderNormalSegm<T_ORTHOPOL> :: CalcShape (const IntegrationPoint & ip,
 							 FlatVector<> shape) const
@@ -162,7 +169,8 @@ namespace ngfem
     
     for(int j = 0; j < p; j++) 	      
       shape[j+1] = -adpol1[j].DValue(0);
-  }
+      }
+  */
 
 
 
@@ -176,7 +184,7 @@ namespace ngfem
   //------------------------------------------------------------------------
   template <class T_ORTHOPOL>
   HDivHighOrderNormalQuad<T_ORTHOPOL> :: HDivHighOrderNormalQuad (int aorder)
-    : HDivHighOrderNormalFiniteElement<2>()
+  // : HDivHighOrderNormalFiniteElement<2>()
   {
     order_inner = INT<2>(aorder,aorder);
     ComputeNDof();
@@ -190,6 +198,7 @@ namespace ngfem
     order++; // order used for numerical integration
   }
 
+#ifdef OLD
   template <class T_ORTHOPOL>
   void HDivHighOrderNormalQuad<T_ORTHOPOL> :: CalcShape (const IntegrationPoint & ip,
 							 FlatVector<> shape) const
@@ -247,7 +256,7 @@ namespace ngfem
     for (int k = 0; k < p[1]; k++)
       shape(ii++)   = -xi.DValue(0)*pol_eta[k].DValue(1) + xi.DValue(1)*pol_eta[k].DValue(0);
   }
-
+#endif 
 
   template class HDivHighOrderNormalQuad<IntegratedLegendreMonomialExt>;
   template class HDivHighOrderNormalQuad<TrigExtensionMonomial>;
@@ -260,7 +269,7 @@ namespace ngfem
 
   template <class T_ORTHOPOL>
   HDivHighOrderNormalTrig<T_ORTHOPOL> :: HDivHighOrderNormalTrig (int aorder)
-    : HDivHighOrderNormalFiniteElement<2>()
+  // : HDivHighOrderNormalFiniteElement<2>()
   {
     order_inner = INT<2>(aorder,aorder);
     ComputeNDof();
@@ -275,6 +284,7 @@ namespace ngfem
     order++;
   }
 
+#ifdef OLD
   template <class T_ORTHOPOL>
   void HDivHighOrderNormalTrig<T_ORTHOPOL> :: CalcShape (const IntegrationPoint & ip,
 							 FlatVector<> shape) const
@@ -409,7 +419,7 @@ namespace ngfem
       shape(ii) = adpol2[k].DValue(0)*nedelec(1) - adpol2[k].DValue(1)*nedelec(0) 
         + adpol2[k].Value()*curlned;
   }
-
+#endif
 
   template class HDivHighOrderNormalTrig<IntegratedLegendreMonomialExt>;
   template class HDivHighOrderNormalTrig<TrigExtensionMonomial>;

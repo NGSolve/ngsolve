@@ -29,7 +29,7 @@ vx = v.Operator("gradx")
 vy = v.Operator("grady")
 
 b = CoefficientFunction( (x1-0.5,0.5-x,1) )
-b = CoefficientFunction( (0,0,1) )
+b = CoefficientFunction( (1,0,0) )
 
 uin = CoefficientFunction(0.0)
 
@@ -52,7 +52,7 @@ v = GridFunction(tpfes)
 
 uu = GridFunction(fes)
 
-u.Set(exp(-70*(x-0.125)*(x-0.125)-70*(x1-0.125)*(x1-0.125)-70*(y1-0.75)*(y1-0.75)))
+u.Set(exp(-70*(x-0.25)*(x-0.25)-70*(x1-0.25)*(x1-0.25)-70*(y1-0.75)*(y1-0.75)))
 Transfer2StdMesh(u,uu)
 Draw(uu,sd=3,autoscale=False)
 

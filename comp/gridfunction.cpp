@@ -2781,8 +2781,8 @@ namespace ngcomp
       {
     
     
-    static Timer t("VisualizeCoefficientFunction::GetMultiSurfValue", 2); RegionTimer reg(t);
-    static Timer t2("VisualizeCoefficientFunction::GetMultiSurfValue evaluate", 2);
+        // static Timer t("VisualizeCoefficientFunction::GetMultiSurfValue", 2); RegionTimer reg(t);
+        // static Timer t2("VisualizeCoefficientFunction::GetMultiSurfValue evaluate", 2);
 
     if (cf -> IsComplex())
       {
@@ -2817,7 +2817,7 @@ namespace ngcomp
             mir[k] = MappedIntegrationPoint<2,3> (ir[k], eltrans, vx, mdxdxref);
           }
 
-        RegionTimer r2(t2);
+        // RegionTimer r2(t2);
         cf -> Evaluate (mir, mvalues1);
       }
     else
@@ -2832,7 +2832,7 @@ namespace ngcomp
                 FlatVec<2> vx( (double*)x + k*sx);
                 mir[k] = MappedIntegrationPoint<2,2> (ir[k], eltrans, vx, mdxdxref);
               }
-            RegionTimer r2(t2);            
+            // RegionTimer r2(t2);            
             cf -> Evaluate (mir, mvalues1);
           }
         else
