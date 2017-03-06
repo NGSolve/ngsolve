@@ -12,16 +12,6 @@
 namespace ngfem
 {
   
-  // template <ELEMENT_TYPE ET> class FacetFE;
-
-  /*
-  template <ELEMENT_TYPE ET> 
-  class FacetFiniteElement_Family :
-    public FacetVolumeFiniteElement<ET_trait<ET>::DIM>,
-    public ET_trait<ET>,
-    public VertexOrientedFE<ET>
-  */
-
   template <ELEMENT_TYPE ET>
   class FacetFE : 
     public FacetVolumeFiniteElement<ET_trait<ET>::DIM>,
