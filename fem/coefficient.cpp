@@ -2945,21 +2945,21 @@ public:
                                 AFlatMatrix<> result,
                                 AFlatMatrix<> deriv) const
     {
-      FlatArray<int> dims = Dimensions();        
+      FlatArray<int> dims = Dimensions();
+      size_t dim0 = dims[0], dim1 = dims[1];
       auto in0 = *input[0];
       auto din0 = *dinput[0];
-      for (size_t i = 0; i < mir.Size(); i++)
-        {
-          for (int j = 0; j < dims[0]; j++)
-            for (int k = 0; k < dims[1]; k++)
-              result.Get(j*dims[1]+k, i) = in0.Get(k*dims[0]+j, i);
-        }
-      for (size_t i = 0; i < mir.Size(); i++)
-        {
-          for (int j = 0; j < dims[0]; j++)
-            for (int k = 0; k < dims[1]; k++)
-              deriv.Get(j*dims[1]+k, i) = din0.Get(k*dims[0]+j, i);
-        }
+      size_t s = mir.Size();
+
+      for (size_t j = 0; j < dim0; j++)
+        for (size_t k = 0; k < dim1; k++)
+          for (size_t i = 0; i < s; i++)
+            result.Get(j*dim1+k, i) = in0.Get(k*dim0+j, i);
+
+      for (int j = 0; j < dim0; j++)
+        for (int k = 0; k < dim1; k++)
+          for (size_t i = 0; i < s; i++)
+            deriv.Get(j*dim1+k, i) = din0.Get(k*dim0+j, i);
     }
 
     virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & mir,
