@@ -60,16 +60,6 @@ namespace ngstd
   };
 
 
-  template <typename T>
-  inline ostream & operator<< (ostream & ost, const BaseArrayObject<T> & array)
-  {
-    for (auto i : Range(array.Size()))
-      ost << i << ":" << array.Spec()[i] << endl;
-    return ost;
-  }
-
-
-
   template <typename AO>
   class AOWrapperIterator
   {
@@ -278,6 +268,14 @@ namespace ngstd
     return ost;
   }
 
+
+  template <typename T>
+  inline ostream & operator<< (ostream & ost, const BaseArrayObject<T> & array)
+  {
+    for (auto i : Range(array.Size()))
+      ost << i << ":" << array.Spec()[i] << endl;
+    return ost;
+  }
 
 
   template <typename T, typename INDEX_ARRAY>
