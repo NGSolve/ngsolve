@@ -520,16 +520,36 @@ namespace ngla
   { 
     FlatVector<Complex> fv = FVComplex();
     int es = EntrySize() / 2;
-    int ii = 0;
-    for (int i = 0; i < ind.Size(); i++)
-      if (ind[i] != -1)
-	{
-	  int base = es * ind[i];
-	  for (int j = 0; j < es; j++)
-	    fv[base++] += v[ii++];
-	}
-      else
-	ii += es;
+
+    if (es == 1)
+      {
+        if (!use_atomic)
+          {
+            for (int i = 0; i < ind.Size(); i++)
+              if (ind[i] != -1)
+                fv(ind[i]) += v(i);
+          }
+        else
+          {
+            for (int i = 0; i < ind.Size(); i++)
+              if (ind[i] != -1)
+                MyAtomicAdd (fv(ind[i]), v(i));
+          }
+      }
+    else
+      {
+    
+        int ii = 0;
+        for (int i = 0; i < ind.Size(); i++)
+          if (ind[i] != -1)
+            {
+              int base = es * ind[i];
+              for (int j = 0; j < es; j++)
+                fv[base++] += v[ii++];
+            }
+          else
+            ii += es;
+      }
   }
 
 
