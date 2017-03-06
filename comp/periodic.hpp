@@ -16,6 +16,7 @@ namespace ngcomp
   {
   protected:
     Array<int> dofmap; // mapping of dofs
+    Array<int> vertex_map; // mapping of vertices
     shared_ptr<FESpace> space;
     shared_ptr<Array<int>> used_idnrs;
     
