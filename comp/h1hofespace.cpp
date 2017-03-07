@@ -554,7 +554,6 @@ namespace ngcomp
     archive & level_adapted_order & nodalp2;
   }
 
-
   FiniteElement & H1HighOrderFESpace :: GetFE (ElementId ei, Allocator & alloc) const
   {
     Ngs_Element ngel = ma->GetElement(ei);
@@ -562,6 +561,22 @@ namespace ngcomp
 
     if (!DefinedOn (ei))
       {
+        return 
+          * SwitchET (eltype, [&] (auto et) -> FiniteElement*
+                      {
+                        return new (alloc) ScalarDummyFE<et.ElementType()> ();
+                      });
+        
+        /*
+        FiniteElement * fe;
+        SwitchET (eltype, [&] (auto et)
+                  {
+                    fe = new (alloc) ScalarDummyFE<et.ElementType()> ();
+                  });
+        return *fe;
+        */
+        
+        /*
         switch (eltype)
           {
           case ET_SEGM:    return * new (alloc) ScalarDummyFE<ET_SEGM> (); break;
@@ -573,6 +588,7 @@ namespace ngcomp
           case ET_HEX:     return * new (alloc) ScalarDummyFE<ET_HEX> (); break;
 	  case ET_POINT:   break;
 	  }
+        */
       }
     
 
