@@ -7,6 +7,7 @@
 /* Date:   2008                                                      */
 /*********************************************************************/
 
+#include <fem.hpp>
 
 namespace ngfem 
 {
@@ -15,38 +16,37 @@ namespace ngfem
     to be changed similar to scalar facetfe
   */
   
-  template <int D>
-  //   class NGS_DLL_HEADER VectorFacetFacetFiniteElement : public FiniteElement
-  class VectorFacetFacetFiniteElement : public HCurlFiniteElement<D>
+  template <ELEMENT_TYPE ET>
+  class VectorFacetFacetFE : public HCurlFiniteElement<ET_trait<ET>::DIM>, public VertexOrientedFE<ET>
   {
   protected:
-    int vnums[8];
+    using VertexOrientedFE<ET>::GetVertexOrientedEdge;
+    using VertexOrientedFE<ET>::GetVertexOrientedFace;
+    using VertexOrientedFE<ET>::vnums;
 
     INT<2> order_inner;
     // using HCurlFiniteElement<D>::eltype;
-    using HCurlFiniteElement<D>::order;
+    using HCurlFiniteElement<ET_trait<ET>::DIM>::order;
  
   public:
+    using VertexOrientedFE<ET>::SetVertexNumber;
+    using VertexOrientedFE<ET>::SetVertexNumbers;
 
-    VectorFacetFacetFiniteElement ()
+    VectorFacetFacetFE (int aorder)
+    {
+      order = aorder;
+      order_inner = INT<2>(aorder,aorder);
+      ComputeNDof();
+    }
+
+    VectorFacetFacetFE ()
       : order_inner (0)
     {
-      for ( int i = 0; i < 8; i++ )
-	vnums[i] = -1;
+      // for(int i=0; i<VertexOrientedFE<ET>::N_VERTEX; i++)
+      //   SetVertexNumber(i,-1);
     }
 
-    VectorFacetFacetFiniteElement (int dim, ELEMENT_TYPE aeltype)
-      : HCurlFiniteElement<D> (-1, -1)
-                                  // : FiniteElement (aeltype, -1, -1 )
-    {
-      for (int i=0; i<8; i++) vnums[i] = -1; 
-      order_inner = -1;
-    }
-
-    INLINE void SetVertexNumbers (FlatArray<int> & avnums)
-    {
-      for ( int i = 0; i < avnums.Size(); i++ ) vnums[i] = avnums[i];
-    }
+    HD virtual ELEMENT_TYPE ElementType() const { return ET; }
 
     INLINE void SetOrder (int aorder)
     {
@@ -62,93 +62,13 @@ namespace ngfem
       ComputeNDof();
     }
 
-    virtual void ComputeNDof () = 0; 
+    virtual void ComputeNDof ();
 
-    virtual void CalcShape (const IntegrationPoint & ip, SliceMatrix<> shape) const = 0;
-
-    virtual const FlatMatrixFixWidth<D> GetShape (const IntegrationPoint & ip, 
-                                                  LocalHeap & lh) const = 0;
-  };
-
-
-
-  /**
-     High order 1D finite element
-  */
-  class VectorFacetFacetSegm : public VectorFacetFacetFiniteElement<1>, public VertexOrientedFE<ET_SEGM>
-  {
-    using VertexOrientedFE<ET_SEGM>::vnums;
-  public:
-    VectorFacetFacetSegm (int aorder=0);
-
-    virtual void ComputeNDof();
-    using VertexOrientedFE<ET_SEGM>::SetVertexNumbers;
-
-    HD virtual ELEMENT_TYPE ElementType() const { return ET_SEGM; }
-
-    /// compute shape
-    virtual void CalcShape (const IntegrationPoint & ip, 
-			    SliceMatrix<> shape) const;
-			    
-    virtual const FlatMatrixFixWidth<1> GetShape (const IntegrationPoint & ip, 
-						  LocalHeap & lh) const
-    {
-      FlatMatrixFixWidth<1> shape(ndof, lh);
-      CalcShape (ip, shape);
-      return shape;
-    }
+    virtual void CalcShape(const IntegrationPoint & ip,
+         		    SliceMatrix<> shape) const;
 
   };
 
-
-  /**
-     High order triangular finite element
-  */
-  class VectorFacetFacetTrig : public VectorFacetFacetFiniteElement<2>, public VertexOrientedFE<ET_TRIG>
-  {
-    using VertexOrientedFE<ET_TRIG>::vnums;
-  public:
-    VectorFacetFacetTrig (int aorder=0);
-    virtual void ComputeNDof();
-    using VertexOrientedFE<ET_TRIG>::SetVertexNumbers;
-
-    HD virtual ELEMENT_TYPE ElementType() const { return ET_TRIG; }
-    /// compute shape
-    virtual void CalcShape (const IntegrationPoint & ip, 
-			    SliceMatrix<> shape) const;
-
-    virtual const FlatMatrixFixWidth<2> GetShape (const IntegrationPoint & ip, 
-						  LocalHeap & lh) const
-    {
-      FlatMatrixFixWidth<2> shape(ndof, lh);
-      CalcShape (ip, shape);
-      return shape;
-    }
-  };
-
-
-  /**
-     High order quadrilateral finite element
-  */
-  class VectorFacetFacetQuad : public VectorFacetFacetFiniteElement<2>
-  {
-  public:
-    VectorFacetFacetQuad (int aorder=0);
-    virtual void ComputeNDof();
-    HD virtual ELEMENT_TYPE ElementType() const { return ET_QUAD; }
-    /// compute shape
-    virtual void CalcShape (const IntegrationPoint & ip, 
-			    SliceMatrix<> shape) const;
-
-    virtual const FlatMatrixFixWidth<2> GetShape (const IntegrationPoint & ip, 
-					 LocalHeap & lh) const
-    {
-      FlatMatrixFixWidth<2> shape(ndof, lh);
-      CalcShape (ip, shape);
-      return shape;
-    }
-
-  };
 
 
   template <int D>
