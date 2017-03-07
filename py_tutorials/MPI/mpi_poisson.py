@@ -15,7 +15,7 @@ ngsglobals.msg_level = 1
 
 # generate a triangular mesh of mesh-size 0.2
 ngmesh = netgen.Mesh(dim=2)
-ngmesh.Load("square.vol.gz")
+ngmesh.Load("square.vol")
 mesh = Mesh(ngmesh)
 
 #mesh = Mesh (unit_square.GenerateMesh(maxh=0.2))

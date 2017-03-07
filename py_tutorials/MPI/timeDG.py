@@ -9,7 +9,7 @@ np = MPIManager.GetNP()
 
 #mesh = Mesh (unit_square.GenerateMesh(maxh=0.1))
 ngmesh = netgen.Mesh(dim=2)
-ngmesh.Load("../square.vol.gz")
+ngmesh.Load("square.vol.gz")
 mesh = Mesh(ngmesh)
 
 fes = L2(mesh, order=4)
@@ -38,6 +38,8 @@ tau = 1e-3
 tend = 10
 count = 0
 
+vtk_interval = int(0.02/tau);
+
 with TaskManager():
     while t < tend:
         if rank==0:
@@ -49,12 +51,9 @@ with TaskManager():
         t += tau
         Redraw(blocking=True)
 
-        # MPIManager.Barrier();
-        # if rank==0:
-        #     input("continue?")
-        # MPIManager.Barrier();
-        
-        vtk = VTKOutput(ma=mesh,coefs=[u],names=["sol"],filename="vtkout_"+str(rank)+"_"+str(count),subdivision=3)
-        count = count+1;
-        vtk.Do()
+        #u.vec.Cumulate()
+        # if count%vtk_interval==0:
+        #     vtk = VTKOutput(ma=mesh,coefs=[u],names=["sol"],filename="vtkout_p"+str(rank)+"_n"+str(int(count/vtk_interval))+".vtk",subdivision=3)
+        #     vtk.Do()
+        # count = count+1;
         MPIManager.Barrier()
