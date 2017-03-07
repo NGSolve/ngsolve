@@ -9,28 +9,12 @@
 
 namespace ngfem
 {
-
-
-
   /* **************************** Facet Segm ********************************* */
 
-  VectorFacetFacetSegm :: VectorFacetFacetSegm (int aorder) :
-    VectorFacetFacetFiniteElement<1> (1, ET_SEGM )
-  {
-    order = aorder;
-    order_inner = INT<2> (aorder, aorder);
-    ComputeNDof();
-  }
 
-  void VectorFacetFacetSegm :: ComputeNDof()
-  {
-    order = order_inner[0];
-    ndof = order+1;
-  }
-
-
-  void VectorFacetFacetSegm :: CalcShape (const IntegrationPoint & ip, 
-					  SliceMatrix<> shape) const
+  template<>
+  void VectorFacetFacetFE<ET_SEGM>::CalcShape(const IntegrationPoint & ip,
+                                                SliceMatrix<> shape) const
   {
     AutoDiff<1> x (ip(0),0);
     ArrayMem<double, 10>  polx(order_inner[0]+1);
@@ -45,25 +29,17 @@ namespace ngfem
       shape(ii++,0) = 2 * polx[i] * x.DValue(0);
   }
 
+  template<>
+  void VectorFacetFacetFE<ET_SEGM>::ComputeNDof()
+  {
+    order = order_inner[0];
+    ndof = order+1;
+  }
 
   /* **************************** Facet Trig ********************************* */
 
-  VectorFacetFacetTrig :: VectorFacetFacetTrig (int aorder) :
-    VectorFacetFacetFiniteElement<2> (2, ET_TRIG)
-  {
-    order = aorder;
-    order_inner = INT<2> ( aorder, aorder);
-    ComputeNDof();
-  }
-
-  void VectorFacetFacetTrig :: ComputeNDof()
-  {
-    order = order_inner[0];
-    int p = order_inner[0];
-    ndof = (p+1)*(p+2);
-  }
-
-  void VectorFacetFacetTrig :: CalcShape (const IntegrationPoint & ip, 
+  template<>
+  void VectorFacetFacetFE<ET_TRIG>::CalcShape(const IntegrationPoint & ip,
 					  SliceMatrix<> shape) const
   {
     AutoDiff<2> x (ip(0), 0);
@@ -104,26 +80,19 @@ namespace ngfem
 	}
   }
 
+  template<>
+  void VectorFacetFacetFE<ET_TRIG>::ComputeNDof()
+  {
+    order = order_inner[0];
+    int p = order_inner[0];
+    ndof = (p+1)*(p+2);
+  }
 
 
   /* **************************** Facet Quad ********************************* */
 
-  VectorFacetFacetQuad :: VectorFacetFacetQuad (int aorder) :
-    VectorFacetFacetFiniteElement<2> (2, ET_QUAD)
-  {
-    order = aorder;
-    order_inner = INT<2> (aorder, aorder);
-    ComputeNDof();
-  }
-
-  void VectorFacetFacetQuad :: ComputeNDof()
-  {
-    order = max2( order_inner[0], order_inner[1] );
-    ndof = 2 * (order_inner[0]+1) * (order_inner[1]+1);
-  }
-
-  /// compute shape
-  void VectorFacetFacetQuad :: CalcShape (const IntegrationPoint & ip, 
+  template<>
+  void VectorFacetFacetFE<ET_QUAD>::CalcShape (const IntegrationPoint & ip,
 					  SliceMatrix<> shape) const
   {
     AutoDiff<2> x (ip(0), 0);
@@ -162,6 +131,12 @@ namespace ngfem
 	}
   }
 
+  template<>
+  void VectorFacetFacetFE<ET_QUAD>::ComputeNDof()
+  {
+    order = max2( order_inner[0], order_inner[1] );
+    ndof = 2 * (order_inner[0]+1) * (order_inner[1]+1);
+  }
 
   ///+++++++++++++++++++++++++
 
@@ -306,9 +281,6 @@ namespace ngfem
 
   template class VectorFacetVolumeFiniteElement<2>;
   template class VectorFacetVolumeFiniteElement<3>;
-
-  template class VectorFacetFacetFiniteElement<1>;
-  template class VectorFacetFacetFiniteElement<2>;
 
 
 

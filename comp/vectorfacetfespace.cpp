@@ -388,53 +388,52 @@ namespace ngcomp
         }
       case BND:
         {
-        VectorFacetFacetFiniteElement<1> * fe1d = 0;
-        VectorFacetFacetFiniteElement<2> * fe2d = 0;
-
-        switch (ma->GetElType(ei))
-          {
-          case ET_SEGM: fe1d = new (lh) VectorFacetFacetSegm (); break;
-          case ET_TRIG: fe2d = new (lh) VectorFacetFacetTrig (); break;
-          case ET_QUAD: fe2d = new (lh) VectorFacetFacetQuad (); break;
-          default:
-            ;
-          }
-     
-        if (!fe1d && !fe2d)
-          {
-            stringstream str;
-            str << "VectorFacetFESpace " << GetClassName()
-                << ", undefined eltype "
-                << ElementTopology::GetElementName(ma->GetElType(ei))
-                << ", order = " << order << endl;
-            throw Exception (str.str());
-          }
-     
-        ArrayMem<int,4> vnums;
-        ArrayMem<int, 4> ednums;
-    
-        ma->GetElVertices(ei, vnums);
-        int reduceorder = highest_order_dc ? 1 : 0;
-        switch (ma->GetElType(ei))
-          {
-          case ET_SEGM:
-            fe1d -> SetVertexNumbers (vnums);
-            ma->GetElEdges(ei, ednums);
-            fe1d -> SetOrder (order_facet[ednums[0]][0]-reduceorder); 
-            fe1d -> ComputeNDof();
-            return *fe1d;
-            break;
-          case ET_TRIG: 
-          case ET_QUAD:
-            fe2d -> SetVertexNumbers (vnums);
-            fe2d -> SetOrder (order_facet[ma->GetSElFace(ei.Nr())][0]-reduceorder);
-            fe2d -> ComputeNDof();
-            return *fe2d;
-            break;
-          default:
-            throw Exception ("VectorFacetFESpace::GetSFE: unsupported element");
-          }        
-      }
+          int reduceorder = highest_order_dc ? 1 : 0;
+          switch (ma->GetElType(ei))
+            {
+            case ET_SEGM:
+              {
+                auto fe = new (lh) VectorFacetFacetFE<ET_SEGM>();
+                ArrayMem<int,2> vnums;
+                ma->GetElVertices(ei,vnums);
+                fe->SetVertexNumbers(vnums);
+                ArrayMem<int,1> ednums;
+                ma->GetElEdges(ei,ednums);
+                fe->SetOrder(order_facet[ednums[0]][0]-reduceorder);
+                return *fe;
+              }
+            case ET_TRIG:
+              {
+                auto fe = new (lh) VectorFacetFacetFE<ET_TRIG>();
+                ArrayMem<int,3> vnums;
+                ma->GetElVertices(ei,vnums);
+                fe->SetVertexNumbers(vnums);
+                ArrayMem<int,3> ednums;
+                ma->GetElEdges(ei,ednums);
+                fe->SetOrder (order_facet[ma->GetSElFace(ei.Nr())][0]-reduceorder);
+                return *fe;
+              }
+            case ET_QUAD:
+              {
+                auto fe = new (lh) VectorFacetFacetFE<ET_QUAD>();
+                ArrayMem<int,4> vnums;
+                ma->GetElVertices(ei,vnums);
+                fe->SetVertexNumbers(vnums);
+                ArrayMem<int,4> ednums;
+                ma->GetElEdges(ei,ednums);
+                fe->SetOrder (order_facet[ma->GetSElFace(ei.Nr())][0]-reduceorder);
+                return *fe;
+              }
+            default:
+              stringstream str;
+              str << "VectorFacetFESpace " << GetClassName()
+                  << ", undefined eltype "
+                  << ElementTopology::GetElementName(ma->GetElType(ei))
+                  << ", order = " << order << endl;
+              throw Exception (str.str());
+              ;
+            }
+        }
       case BBND:
         throw Exception ("VectorFacetFESpace::GetFE doesnt support BBND");
       }
