@@ -4,10 +4,9 @@
 /* Date:   2008                                                      */
 /*********************************************************************/
 
-
 #include <comp.hpp>
 #include <fem.hpp>
-
+#include <cassert>
 
 namespace ngcomp
 {
@@ -336,54 +335,115 @@ namespace ngcomp
       {
       case VOL:
         {
-        VectorFacetVolumeFiniteElement<2> * fe2d = 0;
-        VectorFacetVolumeFiniteElement<3> * fe3d = 0;
         switch (ma->GetElType(ei))
           {
-          case ET_TRIG: fe2d = new (lh)  VectorFacetVolumeTrig (); break;
-          case ET_QUAD: fe2d = new (lh) VectorFacetVolumeQuad (); break;
-          case ET_TET:  fe3d = new (lh) VectorFacetVolumeTet (); break;
-          case ET_PYRAMID: fe3d = new (lh)  VectorFacetVolumePyramid (); break;
-          case ET_PRISM: fe3d = new (lh)  VectorFacetVolumePrism (); break;
-          case ET_HEX:   fe3d = new (lh) VectorFacetVolumeHex (); break;
+          case ET_TRIG:
+            {
+              auto fe = new (lh) VectorFacetVolumeFE<ET_TRIG>();
+              ArrayMem<int,3> vnums,fanums, order_fa;
+              ma->GetElVertices(ei,vnums);
+              ma->GetElEdges(ei,fanums);
+              assert(vnums.Size()==3);
+              assert(fanums.Size()==3);
+              order_fa.SetSize(fanums.Size());
+              for(auto i : Range(fanums.Size()))
+                order_fa[i] = order_facet[fanums[i]][0];
+              fe->SetVertexNumbers(vnums);
+              fe->SetOrder(order_fa);
+              fe->SetHighestOrderDC(highest_order_dc);
+              return *fe;
+            }
+          case ET_QUAD:
+            {
+              auto fe = new (lh) VectorFacetVolumeFE<ET_QUAD>();
+              ArrayMem<int,4> vnums,fanums, order_fa;
+              ma->GetElVertices(ei,vnums);
+              ma->GetElEdges(ei,fanums);
+              assert(vnums.Size()==4);
+              assert(fanums.Size()==4);
+              order_fa.SetSize(fanums.Size());
+              for(auto i : Range(fanums.Size()))
+                order_fa[i] = order_facet[fanums[i]][0];
+              fe->SetVertexNumbers(vnums);
+              fe->SetOrder(order_fa);
+              fe->SetHighestOrderDC(highest_order_dc);
+              return *fe;
+            }
+          case ET_TET:
+            {
+              using ET_T = ET_trait<ET_TET>;
+              auto fe = new (lh) VectorFacetVolumeFE<ET_TET>();
+              ArrayMem<int,ET_T::N_VERTEX> vnums;
+              ArrayMem<int,ET_T::N_FACET> fanums, order_fa;
+              ma->GetElVertices(ei,vnums);
+              ma->GetElFaces(ei.Nr(), fanums);
+              assert(vnums.Size()==ET_T::N_VERTEX);
+              assert(fanums.Size()==ET_T::N_FACET);
+              order_fa.SetSize(fanums.Size());
+              for (auto i : Range(fanums.Size()))
+                order_fa[i] = order_facet[fanums[i]][0];
+              fe->SetVertexNumbers(vnums);
+              fe->SetOrder(order_fa);
+              fe->SetHighestOrderDC(highest_order_dc);
+              return *fe;
+            }
+          case ET_PYRAMID:
+            {
+              using ET_T = ET_trait<ET_PYRAMID>;
+              auto fe = new (lh) VectorFacetVolumeFE<ET_PYRAMID>();
+              ArrayMem<int,ET_T::N_VERTEX> vnums;
+              ArrayMem<int,ET_T::N_FACET> fanums, order_fa;
+              ma->GetElVertices(ei,vnums);
+              ma->GetElFaces(ei.Nr(), fanums);
+              assert(vnums.Size()==ET_T::N_VERTEX);
+              assert(fanums.Size()==ET_T::N_FACET);
+              order_fa.SetSize(fanums.Size());
+              for (auto i : Range(fanums.Size()))
+                order_fa[i] = order_facet[fanums[i]][0];
+              fe->SetVertexNumbers(vnums);
+              fe->SetOrder(order_fa);
+              fe->SetHighestOrderDC(highest_order_dc);
+              return *fe;
+            }
+          case ET_PRISM:
+            {
+              using ET_T = ET_trait<ET_PRISM>;
+              auto fe = new (lh) VectorFacetVolumeFE<ET_PRISM>();
+              ArrayMem<int,ET_T::N_VERTEX> vnums;
+              ArrayMem<int,ET_T::N_FACET> fanums, order_fa;
+              ma->GetElVertices(ei,vnums);
+              ma->GetElFaces(ei.Nr(), fanums);
+              assert(vnums.Size()==ET_T::N_VERTEX);
+              assert(fanums.Size()==ET_T::N_FACET);
+              order_fa.SetSize(fanums.Size());
+              for (auto i : Range(fanums.Size()))
+                order_fa[i] = order_facet[fanums[i]][0];
+              fe->SetVertexNumbers(vnums);
+              fe->SetOrder(order_fa);
+              fe->SetHighestOrderDC(highest_order_dc);
+              return *fe;
+            }
+          case ET_HEX:
+            {
+              using ET_T = ET_trait<ET_HEX>;
+              auto fe = new (lh) VectorFacetVolumeFE<ET_HEX>();
+              ArrayMem<int,ET_T::N_VERTEX> vnums;
+              ArrayMem<int,ET_T::N_FACET> fanums, order_fa;
+              ma->GetElVertices(ei,vnums);
+              ma->GetElFaces(ei.Nr(), fanums);
+              assert(vnums.Size()==ET_T::N_VERTEX);
+              assert(fanums.Size()==ET_T::N_FACET);
+              order_fa.SetSize(fanums.Size());
+              for (auto i : Range(fanums.Size()))
+                order_fa[i] = order_facet[fanums[i]][0];
+              fe->SetVertexNumbers(vnums);
+              fe->SetOrder(order_fa);
+              fe->SetHighestOrderDC(highest_order_dc);
+              return *fe;
+            }
           default:
             throw Exception (string("VectorFacetFESpace::GetFE: unsupported element ")+
                              ElementTopology::GetElementName(ma->GetElType(ei)));
-          }
-
-        Array<int> vnums;
-        ArrayMem<int, 6> fanums, order_fa;
-    
-        ma->GetElVertices(ei, vnums);
-
-        if (fe2d)
-          {
-            ma->GetElEdges(ei, fanums);
-    
-            order_fa.SetSize(fanums.Size());
-            for (int j = 0; j < fanums.Size(); j++)
-              order_fa[j] = order_facet[fanums[j]][0]; 
-	
-            fe2d -> SetVertexNumbers (vnums);
-            fe2d -> SetOrder (order_fa);
-            fe2d -> ComputeNDof();
-            fe2d -> SetHighestOrderDC(highest_order_dc);
-            return *fe2d;
-          }    
-        else
-          {
-            ma->GetElFaces(ei.Nr(), fanums);
-    
-            order_fa.SetSize(fanums.Size());
-            for (int j = 0; j < fanums.Size(); j++)
-              order_fa[j] = order_facet[fanums[j]][0]; 
-	
-            fe3d -> SetVertexNumbers (vnums);
-            fe3d -> SetOrder (order_fa);
-            fe3d -> ComputeNDof();
-            fe3d -> SetHighestOrderDC(highest_order_dc);
-    
-            return *fe3d;
           }
         }
       case BND:

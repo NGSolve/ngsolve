@@ -7,7 +7,9 @@
 /* Date:   2008                                                      */
 /*********************************************************************/
 
+
 #include <fem.hpp>
+#include <cassert>
 
 namespace ngfem 
 {
@@ -20,8 +22,6 @@ namespace ngfem
   class VectorFacetFacetFE : public HCurlFiniteElement<ET_trait<ET>::DIM>, public VertexOrientedFE<ET>
   {
   protected:
-    using VertexOrientedFE<ET>::GetVertexOrientedEdge;
-    using VertexOrientedFE<ET>::GetVertexOrientedFace;
     using VertexOrientedFE<ET>::vnums;
 
     INT<2> order_inner;
@@ -70,150 +70,117 @@ namespace ngfem
   };
 
 
-
-  template <int D>
-  class VectorFacetVolumeFiniteElement : public HCurlFiniteElement<D>
+  template <ELEMENT_TYPE ET>
+  class VectorFacetVolumeFE : public HCurlFiniteElement<ET_trait<ET>::DIM>, public VertexOrientedFE<ET>
   {
   protected:
-    int vnums[8];
-    INT<2> facet_order[6]; 
-    int first_facet_dof[7];
+    using ET_T = ET_trait<ET>;
+    INT<2> facet_order[ET_T::N_FACET];
+    int first_facet_dof[ET_T::N_FACET+1];
     bool highest_order_dc;
+    using HCurlFiniteElement<ET_trait<ET>::DIM>::order;
+    using VertexOrientedFE<ET>::vnums;
 
-    ELEMENT_TYPE eltype;
-    // using HCurlFiniteElement<D>::eltype;
-    using HCurlFiniteElement<D>::order;
-  
   public:
-    VectorFacetVolumeFiniteElement () // : nv(0), nf(0)
-    { highest_order_dc=false; }
-
-    VectorFacetVolumeFiniteElement (ELEMENT_TYPE aeltype);
-    HD virtual ELEMENT_TYPE ElementType() const { return eltype; }
-
-    void SetHighestOrderDC(bool set){highest_order_dc=set;}
-    void SetVertexNumbers (FlatArray<int> & avnums);
-
-    void SetOrder(int ao);
-
-    void SetOrder(FlatArray<int> & ao);
-    void SetOrder(FlatArray<INT<2> > & ao);
-
-    INT<2> GetFacetOrder(int j) const 
-    { return facet_order[j]; }
-    int GetVertexNumber(int j) const 
-    { return vnums[j]; }
-  
-
-    //   virtual void TransformFacetToVolumeShape ( int fanr, FlatMatrix<> shape1d, 
-    // 					     FlatMatrix<> shape ) const;
-
-    virtual void CalcShape (const IntegrationPoint & ip, SliceMatrix<> shape) const;
-    virtual void CalcShape (const IntegrationPoint & ip, int facet, SliceMatrix<> shape) const = 0;
+    using VertexOrientedFE<ET>::SetVertexNumbers;
     
+    VectorFacetVolumeFE () { highest_order_dc=false; }
+    
+    HD virtual ELEMENT_TYPE ElementType() const { return ET; }
+
+    void SetHighestOrderDC(bool set) { highest_order_dc=set; }
+
+    void SetOrder(int ao)
+    {
+      order = ao;
+      for ( int i = 0; i < ET_T::N_FACET; i++ )
+        facet_order[i] = INT<2> (ao, ao);
+      ComputeNDof();
+    }
+
+    void SetOrder(FlatArray<int> & ao)
+    {
+      assert(ao.Size()==ET_T::N_FACET);
+      for ( int i = 0; i < ET_T::N_FACET; i++ )
+        {
+          order = max2 ( order, ao[i] );
+          facet_order[i] = INT<2> (ao[i], ao[i]);
+        }
+      ComputeNDof();
+    }
+
+    void SetOrder(FlatArray<INT<2> > & ao)
+    {
+      assert(ao.Size()==ET_T::N_FACET);
+      for ( int i = 0; i < ET_T::N_FACET; i++ )
+        {
+          order = max3 ( order, ao[i][0], ao[i][1] );
+          facet_order[i] = ao[i];
+        }
+      ComputeNDof();
+    }
+
+    INT<2> GetFacetOrder(int j) const { return facet_order[j]; }
+    int GetVertexNumber(int j) const { return vnums[j]; }
+    
+    virtual void CalcShape (const IntegrationPoint & ip, SliceMatrix<> shape) const
+    {
+      int fnr = ip.FacetNr();
+      if (fnr >= 0)
+        {
+          CalcShape (ip, fnr, shape);
+          return;
+        }
+      throw Exception("VectorFacetVolumeFiniteElement<D>::CalcShape in global coordinates disabled");
+    }
+    virtual void CalcShape (const IntegrationPoint & ip, int facet, SliceMatrix<> shape) const;
+
     virtual int GetNExtraShapes( int facet) const {return 0;}
-    virtual void CalcExtraShape (const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<D> xshape) const {xshape = 0.0;}
+    virtual void CalcExtraShape (const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<ET_T::DIM> xshape) const {xshape = 0.0;}
 
-    virtual void GetFacetDofNrs(int afnr, Array<int>& fdnums) const; 
+    virtual void GetFacetDofNrs(int afnr, Array<int>& fdnums) const
+    {
+      int first = first_facet_dof[afnr];
+      int next = first_facet_dof[afnr+1];
+      assert(next > first);
+      fdnums.SetSize(next-first);
+      for (auto i : Range(next-first))
+        fdnums[i] = first+i;
+    }
 
-    virtual int GetFacetNDof(int afnr) const 
+    virtual int GetFacetNDof(int afnr) const
     { return first_facet_dof[afnr+1] - first_facet_dof[afnr]; };
+    virtual int GetFirstFacetDof(int afnr) const {
+      return first_facet_dof[afnr];};
 
-    virtual int GetFirstFacetDof(int afnr) const { 
-      return first_facet_dof[afnr];}; 
-  
-    virtual void ComputeNDof () = 0;
+    virtual void ComputeNDof ();
 
     /// degrees of freedom sitting inside the element, used for static condensation
-    virtual void GetInternalDofs (Array<int> & idofs) const;
-    
-    // utility
-    // virtual int GetNF() const { return nf; };
-    // virtual int GetNV() const { return nv; };
-    // virtual void GetVertexNumbers(Array<int>&) const;
-    // virtual void GetFacetOrders(Array<INT<2> >&) const;
-  };
-
-
-
-  class VectorFacetVolumeTrig : public VectorFacetVolumeFiniteElement<2>, public VertexOrientedFE<ET_TRIG>
-  {
-    using VertexOrientedFE<ET_TRIG>::vnums;
-  public:
-    VectorFacetVolumeTrig() : VectorFacetVolumeFiniteElement<2>(ET_TRIG) { ; }
-    virtual void ComputeNDof();
-    using VertexOrientedFE<ET_TRIG>::SetVertexNumbers;
-   
-    virtual void CalcShape ( const IntegrationPoint & ip, int facet, SliceMatrix<> shape) const;
-    virtual int GetNExtraShapes( int facet) const {return 1;};
-    virtual void CalcExtraShape ( const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<2> xshape) const;
-  };
-
-
-
-  class VectorFacetVolumeQuad : public VectorFacetVolumeFiniteElement<2>
-  {
-  public:
-    VectorFacetVolumeQuad() : VectorFacetVolumeFiniteElement<2> (ET_QUAD) { ; }
-    virtual void ComputeNDof();
-   
-    virtual void CalcShape (const IntegrationPoint & ip, int facet, SliceMatrix<> shape) const;
-    virtual int GetNExtraShapes( int facet) const {return 1;};
-    virtual void CalcExtraShape ( const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<2> xshape) const;
-    
-  };
-
-
-  class VectorFacetVolumeTet : public VectorFacetVolumeFiniteElement<3>, public VertexOrientedFE<ET_TET>
-  {
-    using VertexOrientedFE<ET_TET>::vnums;
-  public:
-    VectorFacetVolumeTet() : VectorFacetVolumeFiniteElement<3> (ET_TET) { ; }
-    virtual void ComputeNDof();
-    using VertexOrientedFE<ET_TET>::SetVertexNumbers;
-
-    virtual void CalcShape (const IntegrationPoint & ip, int facet, SliceMatrix<> shape) const;
-    virtual int GetNExtraShapes( int facet) const {return 2*(facet_order[facet][0]+2);};
-    virtual void CalcExtraShape ( const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<3> xshape) const;    
-  };
-
-
-
-  class VectorFacetVolumeHex : public VectorFacetVolumeFiniteElement<3>
-  {
-  public:
-    VectorFacetVolumeHex() : VectorFacetVolumeFiniteElement<3>(ET_HEX) { ; };
-    virtual void ComputeNDof();
-    HD virtual ELEMENT_TYPE ElementType() const { return ET_HEX; }   
-    virtual void CalcShape ( const IntegrationPoint & ip, int facet, SliceMatrix<> shape ) const;
-//     virtual int GetNExtraShapes( int facet) const {return 2*(2*facet_order[facet][0]+3);};
-//     virtual void CalcExtraShape ( const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<3> xshape) const;    
-  };
-
-
-
-  class VectorFacetVolumePrism : public VectorFacetVolumeFiniteElement<3>
-  {
-  public:
-    VectorFacetVolumePrism() : VectorFacetVolumeFiniteElement<3> (ET_PRISM) { ; };
-    virtual void ComputeNDof();
-   
-    virtual void CalcShape ( const IntegrationPoint & ip, int facet, SliceMatrix<> shape) const;
-    virtual int GetNExtraShapes( int facet) const;
-    virtual void CalcExtraShape ( const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<3> xshape) const;    
-  };
-
-
-  class VectorFacetVolumePyramid : public VectorFacetVolumeFiniteElement<3>
-  {
-  public:
-    VectorFacetVolumePyramid() : VectorFacetVolumeFiniteElement<3> (ET_PYRAMID) { ; };
-    virtual void ComputeNDof();
-   
-    virtual void CalcShape (const IntegrationPoint & ip, int facet, SliceMatrix<> shape ) const;
-//     virtual int GetNExtraShapes( int facet) const;
-//     virtual void CalcExtraShape ( const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<3> xshape) const;    
-    
+    virtual void GetInternalDofs (Array<int> & idofs) const
+    {
+      idofs.SetSize(0);
+      if (highest_order_dc)
+        {
+          if (ET_T::DIM==2)
+            {
+              for (int i=0; i < ET_T::N_FACET; i++)
+                idofs.Append(first_facet_dof[i+1]-1);
+            }
+          else
+            {
+              for (int i=0; i < ET_T::N_FACET; i++)
+                {
+                  int pos = first_facet_dof[i]-2;
+                  int fac = 4 - ElementTopology::GetNVertices(ElementTopology::GetFaceType(ET,i));
+                  for (int k = 0; k <= facet_order[i][0]; k++){
+                    pos += 2*(facet_order[i][0]+1-fac*k);
+                    idofs.Append(pos);
+                    idofs.Append(pos+1);
+                  }
+                }
+            }//end if Dimension
+        }
+    }
   };
 
 }
