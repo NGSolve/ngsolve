@@ -677,6 +677,8 @@ namespace ngfem
     enum { N_FACET = 0 };
 
     static constexpr ELEMENT_TYPE ElementType() { return ET_POINT; }
+    constexpr operator ELEMENT_TYPE() const { return ET_POINT; }
+    
     static INLINE int PolDimension (INT<1> order) { return 1; }
     static INLINE int PolBubbleDimension (INT<1> order) { return 0; }
 
@@ -746,6 +748,7 @@ namespace ngfem
     enum { N_FACET = 2 };
     
     static constexpr ELEMENT_TYPE ElementType() { return ET_SEGM; }
+    constexpr operator ELEMENT_TYPE() const { return ET_SEGM; }
     
     static INLINE int PolDimension (INT<1> order) { return order[0]+1; }
     static INLINE int PolBubbleDimension (INT<1> order) { return (order[0] <= 1) ? 0 : order[0]-1; }
@@ -806,6 +809,8 @@ namespace ngfem
     enum { N_FACET = 3 };
     
     static constexpr ELEMENT_TYPE ElementType() { return ET_TRIG; }
+    constexpr operator ELEMENT_TYPE() const { return ET_TRIG; }
+    
     static constexpr int PolDimension (int order) { return (order+1)*(order+2)/2; }
     static INLINE int PolDimension (INT<2> order) { return (order[0]+1)*(order[0]+2)/2; }
     static INLINE int PolBubbleDimension (INT<2> order) { return (order[0] <= 2) ? 0 : (order[0]-1)*(order[0]-2)/2; }
@@ -906,6 +911,8 @@ namespace ngfem
     enum { N_FACET = 4 };
 
     static constexpr ELEMENT_TYPE ElementType() { return ET_QUAD; }
+    constexpr operator ELEMENT_TYPE() const { return ET_QUAD; }
+    
     static constexpr INLINE int PolDimension (int order) { return (order+1)*(order+1); }
     static INLINE int PolDimension (INT<2> order) { return (order[0]+1)*(order[1]+1); }
     static INLINE int PolBubbleDimension (INT<2> order) { return (order[0] <= 1 || order[1] <= 1) ? 0 : (order[0]-1)*(order[1]-1); }
@@ -1062,6 +1069,8 @@ namespace ngfem
     enum { N_FACET = 4 };
 
     static constexpr ELEMENT_TYPE ElementType() { return ET_TET; }
+    constexpr operator ELEMENT_TYPE() const { return ET_TET; }
+    
     static constexpr INLINE int PolDimension (int p) { return (p+1)*(p+2)*(p+3)/6; }
     static INLINE int PolDimension (INT<3> p) { return (p[0]+1)*(p[0]+2)*(p[0]+3)/6; }
     static INLINE int PolBubbleDimension (INT<3> p) { return (p[0] <= 3) ? 0 : (p[0]-1)*(p[0]-2)*(p[0]-3)/6;  }
@@ -1165,6 +1174,8 @@ namespace ngfem
     enum { N_FACET = 5 };
 
     static constexpr ELEMENT_TYPE ElementType() { return ET_PRISM; }
+    constexpr operator ELEMENT_TYPE() const { return ET_PRISM; }
+    
     static INLINE int PolDimension (INT<3> order) { return (order[0]+1)*(order[0]+2)*(order[2]+1)/2; }
     static INLINE int PolBubbleDimension (INT<3> p) { return (p[0] <= 2) ? 0 : (p[0]-1)*(p[0]-2)*(p[2]-1)/2; }
 
@@ -1271,7 +1282,9 @@ namespace ngfem
     enum { N_CELL = 1 };
     enum { N_FACET = 5 };
 
-    static constexpr ELEMENT_TYPE ElementType() { return ET_PYRAMID; }    
+    static constexpr ELEMENT_TYPE ElementType() { return ET_PYRAMID; }
+    constexpr operator ELEMENT_TYPE() const { return ET_PYRAMID; }
+    
     static INLINE ELEMENT_TYPE FaceType(int i) { return (i < 4) ? ET_TRIG : ET_QUAD; }
 
     static INLINE int PolDimension (INT<3> order) { return (order[0]+2)*(order[0]+1)*(2*order[0]+3) / 6; }
@@ -1376,6 +1389,8 @@ namespace ngfem
     enum { N_FACET = 6 };
 
     static constexpr ELEMENT_TYPE ElementType() { return ET_HEX; }
+    constexpr operator ELEMENT_TYPE() const { return ET_HEX; }
+    
     static ELEMENT_TYPE FaceType(int i) { return ET_QUAD; }
 
     static inline int PolDimension (INT<3> order) { return (order[0]+1)*(order[1]+1)*(order[2]+1); }
