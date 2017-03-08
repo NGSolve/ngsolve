@@ -11,3 +11,40 @@ table.docutils {
 table.docutils td {
     white-space: normal;
 }
+
+.wy-table td, .rst-content table.docutils td {
+    white-space: normal;
+    overflow: hidden;
+}
+
+
+table.docutils span.scrollable {
+    display: block;
+    overflow: auto;
+}
+
+table.rows th {
+    background-color: #ede;
+    border-style: solid solid solid solid;
+    border-width: 0px 0px 0px 0px;
+    border-color: #AAAAAA;
+    text-align: center;
+}
+table.rows td {
+    border-style: solid solid solid solid;
+    border-width: 0px 0px 0px 0px;
+    border-color: #AAAAAA;
+}
+
+table.rows tr {
+    border-style: solid solid solid solid;
+    border-width: 0px 0px 0px 0px;
+    border-color: #AAAAAA;
+}
+
+table.rows tr:nth-child(even) {
+    background-color: #F3F3FF;
+}
+table.rows tr:nth-child(odd) {
+    background-color: #FFFFEE;
+}
