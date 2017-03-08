@@ -8,29 +8,30 @@ table.docutils {
     table-layout: fixed;
 }
 
-table.docutils td {
-    white-space: normal;
-}
-
 .wy-table td, .rst-content table.docutils td {
-    white-space: normal;
     overflow: hidden;
 }
-
-
+/*
 table.docutils span.scrollable {
     display: block;
     overflow: auto;
 }
+*/
+
+table.rows p {
+    font-size: 100%;
+}
 
 table.rows th {
-    background-color: #ede;
+    background-color: #2980B9;
     border-style: solid solid solid solid;
     border-width: 0px 0px 0px 0px;
     border-color: #AAAAAA;
     text-align: center;
+    color: white;
 }
 table.rows td {
+    white-space: normal;
     border-style: solid solid solid solid;
     border-width: 0px 0px 0px 0px;
     border-color: #AAAAAA;
@@ -43,8 +44,8 @@ table.rows tr {
 }
 
 table.rows tr:nth-child(even) {
-    background-color: #F3F3FF;
+    background-color: white;
 }
 table.rows tr:nth-child(odd) {
-    background-color: #FFFFEE;
+    background-color: grey;
 }
