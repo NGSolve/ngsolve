@@ -76,7 +76,7 @@ stages:
     - mac
   before_script:
     - export BUILD_DIR=/tmp/$CI_PIPELINE_ID
-    - export INSTALL_DIR=/tmp/$CI_PIPELINE_ID/install/NGSolve.app
+    - export INSTALL_DIR=/tmp/$CI_PIPELINE_ID/install/Netgen.app
     - export MACOSX_DEPLOYMENT_TARGET=10.9
     - export PYTHONPATH=$INSTALL_DIR/Contents/Resources/lib/python3.6/site-packages:.
     - export NETGENDIR=$INSTALL_DIR/Contents/MacOS
