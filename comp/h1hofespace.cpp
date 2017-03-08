@@ -564,7 +564,7 @@ namespace ngcomp
         return 
           * SwitchET (eltype, [&] (auto et) -> FiniteElement*
                       {
-                        return new (alloc) ScalarDummyFE<et> ();
+                        return new (alloc) ScalarDummyFE<et.ElementType()> ();
                       });
         
         /*
