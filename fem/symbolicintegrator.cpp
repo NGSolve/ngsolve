@@ -2435,6 +2435,7 @@ namespace ngfem
           FlatTensor<3> proxyvalues(lh, mir1.Size(), proxy2->Dimension(), proxy1->Dimension());
 
           mir1.ComputeNormalsAndMeasure (eltype1, LocalFacetNr1);
+          mir2.ComputeNormalsAndMeasure (eltype2, LocalFacetNr2);
           
           for (int k = 0; k < proxy1->Dimension(); k++)
             for (int l = 0; l < proxy2->Dimension(); l++)
@@ -2748,6 +2749,7 @@ namespace ngfem
             auto & simd_mir2 = trafo2(simd_ir_facet_vol2, lh);
             
             simd_mir1.ComputeNormalsAndMeasure(eltype1, LocalFacetNr1);
+            simd_mir2.ComputeNormalsAndMeasure(eltype2, LocalFacetNr2);
             
             // evaluate proxy-values
             ProxyUserData ud(trial_proxies.Size(), gridfunction_cfs.Size(), lh);
@@ -2931,7 +2933,7 @@ namespace ngfem
     */
 
     mir1.ComputeNormalsAndMeasure (eltype1, LocalFacetNr1);
-
+    mir2.ComputeNormalsAndMeasure (eltype2, LocalFacetNr2);
 
     
     FlatMatrix<> val(ir_facet.Size(), 1,lh);
