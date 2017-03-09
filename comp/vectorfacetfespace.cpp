@@ -6,6 +6,8 @@
 
 #include <comp.hpp>
 #include <fem.hpp>
+
+//#undef NDEBUG
 #include <cassert>
 
 namespace ngcomp
@@ -389,109 +391,6 @@ namespace ngcomp
         throw Exception ("VectorFacetFESpace::GetFE doesnt support BBND");
       }
   }
-  // const FiniteElement & VectorFacetFESpace :: GetFE ( int elnr, LocalHeap & lh ) const
-  // {
-  //   VectorFacetVolumeFiniteElement<2> * fe2d = 0;
-  //   VectorFacetVolumeFiniteElement<3> * fe3d = 0;
-  //   switch (ma->GetElType(elnr))
-  //     {
-  //     case ET_TRIG: fe2d = new (lh)  VectorFacetVolumeTrig (); break;
-  //     case ET_QUAD: fe2d = new (lh) VectorFacetVolumeQuad (); break;
-  //     case ET_TET:  fe3d = new (lh) VectorFacetVolumeTet (); break;
-  //     case ET_PYRAMID: fe3d = new (lh)  VectorFacetVolumePyramid (); break;
-  //     case ET_PRISM: fe3d = new (lh)  VectorFacetVolumePrism (); break;
-  //     case ET_HEX:   fe3d = new (lh) VectorFacetVolumeHex (); break;
-  //     default:
-  //       throw Exception (string("VectorFacetFESpace::GetFE: unsupported element ")+
-  //                        ElementTopology::GetElementName(ma->GetElType(elnr)));
-  //     }
-
-  //   Array<int> vnums;
-  //   ArrayMem<int, 6> fanums, order_fa;
-    
-  //   ma->GetElVertices(elnr, vnums);
-
-  //   if (fe2d)
-  //     {
-  //       ma->GetElEdges(elnr, fanums);
-    
-  //       order_fa.SetSize(fanums.Size());
-  //       for (int j = 0; j < fanums.Size(); j++)
-  //         order_fa[j] = order_facet[fanums[j]][0]; 
-	
-  //       fe2d -> SetVertexNumbers (vnums);
-  //       fe2d -> SetOrder (order_fa);
-  //       fe2d -> ComputeNDof();
-  //       fe2d -> SetHighestOrderDC(highest_order_dc);
-  //       return *fe2d;
-  //     }    
-  //   else
-  //     {
-  //       ma->GetElFaces(elnr, fanums);
-    
-  //       order_fa.SetSize(fanums.Size());
-  //       for (int j = 0; j < fanums.Size(); j++)
-  //         order_fa[j] = order_facet[fanums[j]][0]; 
-	
-  //       fe3d -> SetVertexNumbers (vnums);
-  //       fe3d -> SetOrder (order_fa);
-  //       fe3d -> ComputeNDof();
-  //       fe3d -> SetHighestOrderDC(highest_order_dc);
-    
-  //       return *fe3d;
-  //     }
-  // }
-
-
-  // const FiniteElement & VectorFacetFESpace :: GetSFE ( int selnr, LocalHeap & lh ) const
-  // {
-  //   VectorFacetFacetFiniteElement<1> * fe1d = 0;
-  //   VectorFacetFacetFiniteElement<2> * fe2d = 0;
-
-  //   switch (ma->GetSElType(selnr))
-  //     {
-  //     case ET_SEGM: fe1d = new (lh) VectorFacetFacetSegm (); break;
-  //     case ET_TRIG: fe2d = new (lh) VectorFacetFacetTrig (); break;
-  //     case ET_QUAD: fe2d = new (lh) VectorFacetFacetQuad (); break;
-  //     default:
-  //       ;
-  //     }
-     
-  //   if (!fe1d && !fe2d)
-  //     {
-  //       stringstream str;
-  //       str << "VectorFacetFESpace " << GetClassName()
-  //           << ", undefined eltype "
-  //           << ElementTopology::GetElementName(ma->GetSElType(selnr))
-  //           << ", order = " << order << endl;
-  //       throw Exception (str.str());
-  //     }
-     
-  //   ArrayMem<int,4> vnums;
-  //   ArrayMem<int, 4> ednums;
-    
-  //   ma->GetSElVertices(selnr, vnums);
-  //   int reduceorder = highest_order_dc ? 1 : 0;
-  //   switch (ma->GetSElType(selnr))
-  //     {
-  //     case ET_SEGM:
-  //       fe1d -> SetVertexNumbers (vnums);
-  //       ma->GetSElEdges(selnr, ednums);
-  //       fe1d -> SetOrder (order_facet[ednums[0]][0]-reduceorder); 
-  //       fe1d -> ComputeNDof();
-  //       return *fe1d;
-  //       break;
-  //     case ET_TRIG: 
-  //     case ET_QUAD:
-  //       fe2d -> SetVertexNumbers (vnums);
-  //       fe2d -> SetOrder (order_facet[ma->GetSElFace(selnr)][0]-reduceorder);
-  //       fe2d -> ComputeNDof();
-  //       return *fe2d;
-  //       break;
-  //     default:
-  //       throw Exception ("VectorFacetFESpace::GetSFE: unsupported element");
-  //     }
-  // }
 
   void VectorFacetFESpace :: GetDofNrs(ElementId ei, Array<int> & dnums) const
   {
