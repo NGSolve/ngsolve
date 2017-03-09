@@ -335,164 +335,55 @@ namespace ngcomp
       {
       case VOL:
         {
-        switch (ma->GetElType(ei))
-          {
-          case ET_TRIG:
+          return * SwitchET<ET_TRIG,ET_QUAD,ET_TET,ET_PRISM,ET_PYRAMID,ET_HEX>
+            (ma->GetElType(ei), [&] (auto et) -> FiniteElement*
             {
-              auto fe = new (lh) VectorFacetVolumeFE<ET_TRIG>();
-              ArrayMem<int,3> vnums,fanums, order_fa;
-              ma->GetElVertices(ei,vnums);
-              ma->GetElEdges(ei,fanums);
-              assert(vnums.Size()==3);
-              assert(fanums.Size()==3);
-              order_fa.SetSize(fanums.Size());
-              for(auto i : Range(fanums.Size()))
-                order_fa[i] = order_facet[fanums[i]][0];
-              fe->SetVertexNumbers(vnums);
-              fe->SetOrder(order_fa);
-              fe->SetHighestOrderDC(highest_order_dc);
-              return *fe;
-            }
-          case ET_QUAD:
-            {
-              auto fe = new (lh) VectorFacetVolumeFE<ET_QUAD>();
-              ArrayMem<int,4> vnums,fanums, order_fa;
-              ma->GetElVertices(ei,vnums);
-              ma->GetElEdges(ei,fanums);
-              assert(vnums.Size()==4);
-              assert(fanums.Size()==4);
-              order_fa.SetSize(fanums.Size());
-              for(auto i : Range(fanums.Size()))
-                order_fa[i] = order_facet[fanums[i]][0];
-              fe->SetVertexNumbers(vnums);
-              fe->SetOrder(order_fa);
-              fe->SetHighestOrderDC(highest_order_dc);
-              return *fe;
-            }
-          case ET_TET:
-            {
-              using ET_T = ET_trait<ET_TET>;
-              auto fe = new (lh) VectorFacetVolumeFE<ET_TET>();
+              using ET_T = ET_trait<et.ElementType()>;
+              auto fe = new (lh) VectorFacetVolumeFE<et.ElementType()>();
               ArrayMem<int,ET_T::N_VERTEX> vnums;
               ArrayMem<int,ET_T::N_FACET> fanums, order_fa;
               ma->GetElVertices(ei,vnums);
-              ma->GetElFaces(ei.Nr(), fanums);
-              assert(vnums.Size()==ET_T::N_VERTEX);
-              assert(fanums.Size()==ET_T::N_FACET);
+              if(ET_T::DIM==2)
+                ma->GetElEdges(ei, fanums);
+              else
+                ma->GetElFaces(ei.Nr(), fanums);
+              assert(vnums.Size() == ET_T::N_VERTEX);
+              assert(fanums.Size() == ET_T::N_FACET);
               order_fa.SetSize(fanums.Size());
               for (auto i : Range(fanums.Size()))
                 order_fa[i] = order_facet[fanums[i]][0];
               fe->SetVertexNumbers(vnums);
               fe->SetOrder(order_fa);
               fe->SetHighestOrderDC(highest_order_dc);
-              return *fe;
-            }
-          case ET_PYRAMID:
-            {
-              using ET_T = ET_trait<ET_PYRAMID>;
-              auto fe = new (lh) VectorFacetVolumeFE<ET_PYRAMID>();
-              ArrayMem<int,ET_T::N_VERTEX> vnums;
-              ArrayMem<int,ET_T::N_FACET> fanums, order_fa;
-              ma->GetElVertices(ei,vnums);
-              ma->GetElFaces(ei.Nr(), fanums);
-              assert(vnums.Size()==ET_T::N_VERTEX);
-              assert(fanums.Size()==ET_T::N_FACET);
-              order_fa.SetSize(fanums.Size());
-              for (auto i : Range(fanums.Size()))
-                order_fa[i] = order_facet[fanums[i]][0];
-              fe->SetVertexNumbers(vnums);
-              fe->SetOrder(order_fa);
-              fe->SetHighestOrderDC(highest_order_dc);
-              return *fe;
-            }
-          case ET_PRISM:
-            {
-              using ET_T = ET_trait<ET_PRISM>;
-              auto fe = new (lh) VectorFacetVolumeFE<ET_PRISM>();
-              ArrayMem<int,ET_T::N_VERTEX> vnums;
-              ArrayMem<int,ET_T::N_FACET> fanums, order_fa;
-              ma->GetElVertices(ei,vnums);
-              ma->GetElFaces(ei.Nr(), fanums);
-              assert(vnums.Size()==ET_T::N_VERTEX);
-              assert(fanums.Size()==ET_T::N_FACET);
-              order_fa.SetSize(fanums.Size());
-              for (auto i : Range(fanums.Size()))
-                order_fa[i] = order_facet[fanums[i]][0];
-              fe->SetVertexNumbers(vnums);
-              fe->SetOrder(order_fa);
-              fe->SetHighestOrderDC(highest_order_dc);
-              return *fe;
-            }
-          case ET_HEX:
-            {
-              using ET_T = ET_trait<ET_HEX>;
-              auto fe = new (lh) VectorFacetVolumeFE<ET_HEX>();
-              ArrayMem<int,ET_T::N_VERTEX> vnums;
-              ArrayMem<int,ET_T::N_FACET> fanums, order_fa;
-              ma->GetElVertices(ei,vnums);
-              ma->GetElFaces(ei.Nr(), fanums);
-              assert(vnums.Size()==ET_T::N_VERTEX);
-              assert(fanums.Size()==ET_T::N_FACET);
-              order_fa.SetSize(fanums.Size());
-              for (auto i : Range(fanums.Size()))
-                order_fa[i] = order_facet[fanums[i]][0];
-              fe->SetVertexNumbers(vnums);
-              fe->SetOrder(order_fa);
-              fe->SetHighestOrderDC(highest_order_dc);
-              return *fe;
-            }
-          default:
-            throw Exception (string("VectorFacetFESpace::GetFE: unsupported element ")+
-                             ElementTopology::GetElementName(ma->GetElType(ei)));
-          }
+              return fe;
+            });
         }
+
       case BND:
         {
           int reduceorder = highest_order_dc ? 1 : 0;
-          switch (ma->GetElType(ei))
+          return *SwitchET<ET_SEGM,ET_TRIG,ET_QUAD>
+            (ma->GetElType(ei), [&] (auto ET) -> FiniteElement*
             {
-            case ET_SEGM:
-              {
-                auto fe = new (lh) VectorFacetFacetFE<ET_SEGM>();
-                ArrayMem<int,2> vnums;
-                ma->GetElVertices(ei,vnums);
-                fe->SetVertexNumbers(vnums);
-                ArrayMem<int,1> ednums;
-                ma->GetElEdges(ei,ednums);
-                fe->SetOrder(order_facet[ednums[0]][0]-reduceorder);
-                return *fe;
-              }
-            case ET_TRIG:
-              {
-                auto fe = new (lh) VectorFacetFacetFE<ET_TRIG>();
-                ArrayMem<int,3> vnums;
-                ma->GetElVertices(ei,vnums);
-                fe->SetVertexNumbers(vnums);
-                ArrayMem<int,3> ednums;
-                ma->GetElEdges(ei,ednums);
-                fe->SetOrder (order_facet[ma->GetSElFace(ei.Nr())][0]-reduceorder);
-                return *fe;
-              }
-            case ET_QUAD:
-              {
-                auto fe = new (lh) VectorFacetFacetFE<ET_QUAD>();
-                ArrayMem<int,4> vnums;
-                ma->GetElVertices(ei,vnums);
-                fe->SetVertexNumbers(vnums);
-                ArrayMem<int,4> ednums;
-                ma->GetElEdges(ei,ednums);
-                fe->SetOrder (order_facet[ma->GetSElFace(ei.Nr())][0]-reduceorder);
-                return *fe;
-              }
-            default:
-              stringstream str;
-              str << "VectorFacetFESpace " << GetClassName()
-                  << ", undefined eltype "
-                  << ElementTopology::GetElementName(ma->GetElType(ei))
-                  << ", order = " << order << endl;
-              throw Exception (str.str());
-              ;
-            }
+              using ET_T = ET_trait<ET>;
+              auto fe = new (lh) VectorFacetFacetFE<ET>();
+              ArrayMem<int,ET_T::N_VERTEX> vnums;
+              ArrayMem<int,ET_T::N_EDGE> ednums;
+              ma->GetElVertices(ei,vnums);
+              assert(vnums.Size() == ET_T::N_VERTEX);
+              fe->SetVertexNumbers(vnums);
+              if (ET == ET_SEGM)
+                {
+                  ArrayMem<int,ET_T::N_EDGE> ednums;
+                  ma->GetElEdges(ei,ednums);
+                  fe->SetOrder(order_facet[ednums[0]][0]-reduceorder);
+                }
+              else
+                {
+                  fe->SetOrder(order_facet[ma->GetSElFace(ei.Nr())][0]-reduceorder);
+                }
+              return fe;
+            });
         }
       case BBND:
         throw Exception ("VectorFacetFESpace::GetFE doesnt support BBND");
