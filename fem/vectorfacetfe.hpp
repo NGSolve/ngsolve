@@ -22,10 +22,8 @@ namespace ngfem
   class VectorFacetFacetFE : public HCurlFiniteElement<ET_trait<ET>::DIM>, public VertexOrientedFE<ET>
   {
   protected:
-    using VertexOrientedFE<ET>::vnums;
-
     INT<2> order_inner;
-    // using HCurlFiniteElement<D>::eltype;
+    using VertexOrientedFE<ET>::vnums;
     using HCurlFiniteElement<ET_trait<ET>::DIM>::order;
  
   public:
@@ -39,19 +37,14 @@ namespace ngfem
       ComputeNDof();
     }
 
-    VectorFacetFacetFE ()
-      : order_inner (0)
-    {
-      // for(int i=0; i<VertexOrientedFE<ET>::N_VERTEX; i++)
-      //   SetVertexNumber(i,-1);
-    }
+    VectorFacetFacetFE () { ; }
 
     HD virtual ELEMENT_TYPE ElementType() const { return ET; }
 
     INLINE void SetOrder (int aorder)
     {
       order = aorder;
-      order_inner = aorder;
+      order_inner = INT<2>(aorder,aorder);
       ComputeNDof();
     }
   
@@ -100,6 +93,7 @@ namespace ngfem
 
     void SetOrder(FlatArray<int> & ao)
     {
+      order = 0;
       assert(ao.Size()==ET_T::N_FACET);
       for ( int i = 0; i < ET_T::N_FACET; i++ )
         {
@@ -111,6 +105,7 @@ namespace ngfem
 
     void SetOrder(FlatArray<INT<2> > & ao)
     {
+      order = 0;
       assert(ao.Size()==ET_T::N_FACET);
       for ( int i = 0; i < ET_T::N_FACET; i++ )
         {
