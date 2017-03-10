@@ -1,6 +1,7 @@
 stages:
   - build
   - test
+  - timings
   - cleanup
   - deploy
 
@@ -230,6 +231,91 @@ mac_test:
   script:
     - cd $BUILD_DIR/ngsolve
     - ctest . -V
+
+############################################
+# Timings stage
+############################################
+
+.t_clang: &t_clang
+  variables:
+    CMAKE_C_COMPILER: "clang"
+    CMAKE_CXX_COMPILER: "clang++"
+
+.t_gcc6: &t_gcc6
+  variables:
+    CMAKE_C_COMPILER: "gcc"
+    CMAKE_CXX_COMPILER: "g++"
+
+.t_gcc5: &t_gcc5
+  variables:
+    CMAKE_C_COMPILER: "gcc-5"
+    CMAKE_CXX_COMPILER: "g++-5"
+
+.t_fast_math: &t_fast_math
+  before_script:
+    - export CMAKE_FLAGS="-ffast-math"
+
+.t_timings: &t_timings
+  stage: timings
+  tags:
+    - linux
+    - avx2
+  only:
+    - triggers
+  script:
+    - git submodule update --init --recursive
+    - mkdir build
+    - mkdir install
+    - cd build
+    - >-
+        cmake ..
+        -DUSE_CCACHE=ON
+        -DINSTALL_DIR=$CI_PROJECT_DIR/install
+        -DUSE_NATIVE_ARCH=ON
+        -DCMAKE_C_COMPILER=$CMAKE_C_COMPILER
+        -DCMAKE_CXX_COMPILER=$CMAKE_CXX_COMPILER
+        -DCMAKE_CXX_FLAGS="$CMAKE_FLAGS"
+        -DUSE_MKL=ON
+        -DMKL_ROOT=/opt/intel/mkl
+        -DCMAKE_BUILD_TYPE=Release
+    - make -j install
+    - export NETGENDIR=$CI_PROJECT_DIR/install/bin
+    - export PATH=$CI_PROJECT_DIR/install/bin:$PATH
+    - export PYTHONPATH=$CI_PROJECT_DIR/install/lib/python3.6/site-packages:.
+    - export LD_LIBRARY_PATH=$CI_PROJECT_DIR/install/lib:.:$LD_LIBRARY_PATH
+    - cd ngsolve
+    - if [ -n "${RUN_TIMINGS}" ]; then make timings; fi
+
+  artifacts:
+    paths:
+      - build/ngsolve/tests/timings/results.json
+
+gcc5_timings:
+  <<: *t_gcc5
+  <<: *t_timings
+
+gcc6_timings:
+  <<: *t_gcc6
+  <<: *t_timings
+
+clang_timings:
+  <<: *t_clang
+  <<: *t_timings
+
+gcc5_fm_timings:
+  <<: *t_fast_math
+  <<: *t_gcc5
+  <<: *t_timings
+
+gcc6_fm_timings:
+  <<: *t_fast_math
+  <<: *t_gcc6
+  <<: *t_timings
+
+clang_fm_timings:
+  <<: *t_fast_math
+  <<: *t_clang
+  <<: *t_timings
 
 ############################################
 # Cleanup stage
