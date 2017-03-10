@@ -1,4 +1,7 @@
-find_path (HYPRE_DIR include/HYPRE.h HINTS "$CMAKE_PREFIX_PATH}")
+message("hint is ${CMAKE_PREFIX_PATH}")
+message("hypre-specifichint is ${HYPRE_HINTS}")
+
+find_path (HYPRE_DIR include/HYPRE.h HINTS "${HYPRE_HINTS}")
 if( EXISTS ${HYPRE_DIR}/include/HYPRE.h )
   message( "HYPRE_DIR:  ${HYPRE_DIR}")
   set(HYPRE_FOUND YES)
