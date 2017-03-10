@@ -1988,8 +1988,7 @@ used_idnrs : list of int = None
             auto sp = make_shared<GridFunctionCoefficientFunction> (self.Get(),
                                                                     self->GetFESpace()->GetFluxEvaluator(),
                                                                     self->GetFESpace()->GetFluxEvaluator(BND));
-            // sp->SetComplex(self->GetFESpace()->IsComplex()); 
-            sp->SetDimensions(sp->Dimensions());
+            // sp->SetDimensions(sp->Dimensions());
             return PyCF(sp);
           }))
 
