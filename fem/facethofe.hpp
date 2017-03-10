@@ -12,11 +12,8 @@
 namespace ngfem
 {
   
-  template <ELEMENT_TYPE ET> class FacetFE;
-
-
-  template <ELEMENT_TYPE ET> 
-  class FacetFiniteElement_Family :
+  template <ELEMENT_TYPE ET>
+  class FacetFE : 
     public FacetVolumeFiniteElement<ET_trait<ET>::DIM>,
     public ET_trait<ET>,
     public VertexOrientedFE<ET>
@@ -35,7 +32,7 @@ namespace ngfem
   public:
     using VertexOrientedFE<ET>::SetVertexNumbers;
   public:
-    FacetFiniteElement_Family () { ; }
+    FacetFE () { ; }
 
     virtual ELEMENT_TYPE ElementType() const { return ET; }
     
@@ -113,13 +110,8 @@ namespace ngfem
         }
     }
 
-    
-  };
 
-  template <ELEMENT_TYPE ET>
-  class FacetFE : public FacetFiniteElement_Family<ET>
-  {
-  public:
+  private:
     template<typename Tx, typename TFA>  
     void T_CalcShapeFNr (int fnr, Tx x[ET_trait<ET>::DIM], TFA & shape) const;
   };
@@ -134,15 +126,6 @@ namespace ngfem
   extern template class FacetFE<ET_HEX>;
   extern template class FacetFE<ET_PRISM>;
   extern template class FacetFE<ET_PYRAMID>;
-
-  extern template class FacetFiniteElement_Family<ET_SEGM>;
-  extern template class FacetFiniteElement_Family<ET_TRIG>;
-  extern template class FacetFiniteElement_Family<ET_QUAD>;
-  extern template class FacetFiniteElement_Family<ET_TET>;
-  extern template class FacetFiniteElement_Family<ET_HEX>;
-  extern template class FacetFiniteElement_Family<ET_PRISM>;
-  extern template class FacetFiniteElement_Family<ET_PYRAMID>;
-
 #endif
 
 }

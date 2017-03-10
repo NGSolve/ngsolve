@@ -37,7 +37,7 @@ namespace ngcomp
     AOWrapper<decltype(edges)> Edges() const { return edges; }
     AOWrapper<decltype(faces)> Faces() const { return faces; }
     AOWrapper<decltype(facets)> Facets() const { return facets; }
-    const string * GetMaterial() const { return mat; }
+    const string & GetMaterial() const { return *mat; }
     operator ElementId() const { return ei; }
     auto VB() const { return ei.VB(); }
     auto Nr() const { return ei.Nr(); }
@@ -53,7 +53,7 @@ namespace ngcomp
         case NG_SEGM: case NG_SEGM3:    return ET_SEGM;
         case NG_TRIG: case NG_TRIG6:    return ET_TRIG;
         case NG_QUAD: case NG_QUAD6:    return ET_QUAD;
-        case NG_TET: case NG_TET10:     return ET_TET;
+        case NG_TET:  case NG_TET10:     return ET_TET;
         case NG_PRISM: case NG_PRISM12: return ET_PRISM;
         case NG_PYRAMID:                return ET_PYRAMID;
         case NG_HEX:                    return ET_HEX;
@@ -425,25 +425,48 @@ namespace ngcomp
     // void SetElIndex (int elnr, int index) const
     // { Ng_SetElementIndex (elnr+1,index+1); }
 
+    const string & GetMaterial(ElementId ei) const
+    { return GetElement(ei).GetMaterial(); }
+    
+    const string & GetMaterial(VorB vb, int region_nr) const
+    {
+      switch (vb)
+        {
+        case VOL: return mesh.GetMaterialCD<0> (region_nr);
+        case BND: return mesh.GetMaterialCD<1> (region_nr);
+        case BBND: return mesh.GetMaterialCD<2> (region_nr);
+        }
+    }
+    
     /// the material of the element
+    [[deprecated("Use GetMaterial with ElementId(VOL, elnr) instead!")]]        
     string GetElMaterial (int elnr) const
-    { return Ng_GetElementMaterial (elnr+1); }
+    { return GetMaterial(ElementId(VOL, elnr)); }
+      // { return Ng_GetElementMaterial (elnr+1); }
 
     /// the material of the sub-domain
+    [[deprecated("Use GetMaterial(VOL, region_nr) instead!")]]                
     string GetDomainMaterial (int domnr) const
-    { return Ng_GetDomainMaterial (domnr+1); }
+      { return GetMaterial(VOL, domnr); }
+      // { return Ng_GetDomainMaterial (domnr+1); }
       
 
     /// the boundary condition name of surface element
+    [[deprecated("Use GetMaterial with ElementId(BND, elnr) instead!")]]            
     string GetSElBCName (int selnr) const
-    { return Ng_GetSurfaceElementBCName (selnr+1); }
+    { return GetMaterial(ElementId(BND, selnr)); }      
+      // { return Ng_GetSurfaceElementBCName (selnr+1); }
 
     /// the boundary condition name of boundary condition number
+    [[deprecated("Use GetMaterial(BND, region_nr) instead!")]]            
     string GetBCNumBCName (int bcnr) const
-    { return Ng_GetBCNumBCName (bcnr); }
+      { return GetMaterial(BND, bcnr); }      
+    // { return Ng_GetBCNumBCName (bcnr); }
 
+    [[deprecated("Use GetMaterial(BBND, region_nr) instead!")]]                
     string GetCD2NumCD2Name (int cd2nr) const
-    { return Ng_GetCD2NumCD2Name (cd2nr); }
+      { return GetMaterial(BBND, cd2nr); }      
+    // { return Ng_GetCD2NumCD2Name (cd2nr); }
 
 
     /// not sure who needs that

@@ -185,12 +185,5 @@ namespace ngfem
   template class FacetFE<ET_HEX>;
   template class FacetFE<ET_PRISM>;
   template class FacetFE<ET_PYRAMID>;
-  template class FacetFiniteElement_Family<ET_SEGM>;
-  template class FacetFiniteElement_Family<ET_TRIG>;
-  template class FacetFiniteElement_Family<ET_QUAD>;
-  template class FacetFiniteElement_Family<ET_TET>;
-  template class FacetFiniteElement_Family<ET_HEX>;
-  template class FacetFiniteElement_Family<ET_PRISM>;
-  template class FacetFiniteElement_Family<ET_PYRAMID>;
 }
  
