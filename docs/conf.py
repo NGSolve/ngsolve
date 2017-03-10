@@ -32,7 +32,7 @@
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 # extensions = ["sphinx.ext.autodoc","numpydoc","sphinx.ext.autosummary","sphinx.ext.napoleon","sphinx.ext.intersphinx"]
-extensions = ["sphinx.ext.autodoc"]
+extensions = ["sphinx.ext.autodoc","sphinx.ext.mathjax"]
 
 
 # autosummary_generate = True
@@ -179,3 +179,6 @@ rst_epilog = """
 .. |python_version| replace:: 3.6
 
 """
+
+def setup(app):
+    app.add_stylesheet("custom.css")

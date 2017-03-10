@@ -1,3 +1,5 @@
+.. _whetting-cmagnet:
+
 Symbolic definition of forms : magnetic field
 =============================================
 

@@ -87,8 +87,11 @@ const char* docu_string(const char* str)
       else
         replaced = true;
       auto rest = replacement.substr(start_pos+6); //first character after ":any:`"
+      auto inner_end = rest.find("<");
       auto end = rest.find("`");
-      replacement.replace(start_pos,end+7,rest.substr(0,end)); 
+      if(inner_end==std::string::npos)
+        inner_end = end;
+      replacement.replace(start_pos,end+7,rest.substr(0,inner_end)); 
     }
   if(!replaced)
     return str;
@@ -347,6 +350,96 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
     .def(py::init<>())
     .def("__enter__", &ParallelContextManager::Enter)
     .def("__exit__", &ParallelContextManager::Exit)
+    .def("__timing__", [] ()
+         {
+           list<tuple<string,double>>timings;           
+           double starttime, time;
+           double maxtime = 0.5;
+           size_t steps;
+           
+           starttime = WallTime();
+           steps = 0;
+           do
+             {
+               for (size_t i = 0; i < 1000; i++)
+                 ParallelJob ( [] (TaskInfo ti) { ; } );
+               steps += 1000;
+               time = WallTime()-starttime;
+             }
+           while (time < maxtime);
+           timings.push_back(make_tuple("ParallelJob", time/steps*1e9));
+
+           starttime = WallTime();
+           steps = 0;
+           do
+             {
+               for (int k = 0; k < 10000; k++)
+                 {
+                   SharedLoop2 sl(1000);
+                   steps += 1;
+                 }
+               time = WallTime()-starttime;
+             }
+           while (time < maxtime);
+           timings.push_back(make_tuple("SharedLoop init", time/steps*1e9));
+
+           starttime = WallTime();
+           steps = 0;
+           do
+             {
+               for (int k = 0; k < 1000; k++)
+                 {
+                   SharedLoop2 sl(1000);
+                   ParallelJob ( [&sl] (TaskInfo ti)
+                                 {
+                                   // auto beg = sl.begin();
+                                   // auto end = sl.end();
+                                 } );
+                   steps += 1;
+                 }
+               time = WallTime()-starttime;
+             }
+           while (time < maxtime);
+           timings.push_back(make_tuple("SharedLoop begin/end", time/steps*1e9));
+           
+           
+           starttime = WallTime();
+           steps = 0;
+           do
+             {
+               for (int k = 0; k < 1000; k++)
+                 {
+                   SharedLoop2 sl(1000);
+                   ParallelJob ( [&sl] (TaskInfo ti)
+                                 {
+                                   for (auto i : sl)
+                                     ; 
+                                 } );
+                   steps += 1000;
+                 }
+               time = WallTime()-starttime;
+             }
+           while (time < maxtime);
+           timings.push_back(make_tuple("SharedLoop 1000", time/steps*1e9));
+
+           starttime = WallTime();
+           steps = 0;
+           do
+             {
+               SharedLoop2 sl(1000000);
+               ParallelJob ( [&sl] (TaskInfo ti)
+                             {
+                               for (auto i : sl)
+                                 ; 
+                             } );
+               steps += 1000000;
+               time = WallTime()-starttime;
+             }
+           while (time < maxtime);
+           timings.push_back(make_tuple("SharedLoop 1000000", time/steps*1e9));
+
+           return timings;
+         })
     ;
 }
 

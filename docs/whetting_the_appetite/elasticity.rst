@@ -1,3 +1,5 @@
+.. _how-to-elasticity:
+
 Nonlinear elasticity
 ====================
 

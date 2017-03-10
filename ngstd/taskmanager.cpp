@@ -121,7 +121,8 @@ namespace ngstd
       if (use_paje_trace)
 	sprintf(buf, "ng%d.trace", cnt++);
       else
-	sprintf(buf, "");
+        buf[0] = 0;
+      //sprintf(buf, "");
       trace = new PajeTrace(num_threads, buf);
     }
 
