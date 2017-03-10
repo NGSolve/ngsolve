@@ -263,13 +263,13 @@ namespace ngcomp
     {
       Vec<DIM,double> rel_point = hpoint-origin;
       double abs_x = L2Norm (rel_point);
-      /*if (abs_x <= rad)  
+      if (abs_x <= rad)  
       {
         point = hpoint;
         jac = Id<DIM>();
       }
       else
-      {*/
+      {
         Complex g = 1.+alpha*(1.0-rad/abs_x);
         point = origin + g * rel_point;
         // SZ: sollte da nicht abs_x * abs_x anstelle  abs_x*abs_x * abs_x stehen? 
@@ -277,7 +277,7 @@ namespace ngcomp
         jac =
           g * Id<DIM>() + (rad*alpha/(abs_x*abs_x*abs_x)) * 
           (rel_point * Trans(rel_point));
-      //}
+      }
 
     }
   };
@@ -314,12 +314,12 @@ namespace ngcomp
       jac = Id<DIM>();
       for (int j : Range(DIM))
       {
-          if (hpoint(j)<=bounds(j,0))
+          if (hpoint(j)<bounds(j,0))
           {
             point(j)+=alpha*(hpoint(j)-bounds(j,0));
             jac(j,j)+=alpha;
           }
-          else if (hpoint(j)>=bounds(j,1))
+          else if (hpoint(j)>bounds(j,1))
           {
             point(j)+=alpha*(hpoint(j)-bounds(j,1));
             jac(j,j)+=alpha;
@@ -363,7 +363,7 @@ namespace ngcomp
       out = hpoint;
       jac = Id<DIM>();
       double dot = InnerProduct(hpoint-point,normal); //normal has already norm 1
-      if (dot>=0.)
+      if (dot>0.)
       {
         out += alpha*dot*normal;
         jac += alpha*normal*Trans(normal);        
@@ -411,9 +411,9 @@ namespace ngcomp
       Vec<DIM> rel_point = hpoint - origin;
       for (int j : Range(DIM))
       {
-        if (hpoint(j)<=bounds(j,0))
+        if (hpoint(j)<bounds(j,0))
           tmp=(hpoint(j)-bounds(j,0))/rel_point(j);
-        else if (hpoint(j)>=bounds(j,1))
+        else if (hpoint(j)>bounds(j,1))
           tmp=(hpoint(j)-bounds(j,1))/rel_point(j);
         if (tmp>scal)
         {
