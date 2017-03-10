@@ -1509,7 +1509,6 @@ namespace ngfem
       }
   }
 
-
   template <typename FUNC>
   auto SwitchET (ELEMENT_TYPE et, FUNC f)
   {
@@ -1527,8 +1526,23 @@ namespace ngfem
         __assume(false);
       }
   }
-    
+
+  template<ELEMENT_TYPE ET1, typename FUNC>
+  auto SwitchET (ELEMENT_TYPE et, FUNC f)
+  {
+    if (et != ET1)
+      throw Exception("Element type not defined!");
+    return f(ET_trait<ET1>());
+  }
   
+  template<ELEMENT_TYPE ET1, ELEMENT_TYPE ET2, ELEMENT_TYPE ... ET_REST, typename FUNC>
+  auto SwitchET (ELEMENT_TYPE et, FUNC f)
+  {
+    if (et==ET1)
+      return f(ET_trait<ET1>());
+    else
+      return SwitchET<ET2,ET_REST...>(et,f);
+  }
 }
 
 #endif
