@@ -591,7 +591,6 @@ namespace ngcomp
         */
       }
     
-
     try
       {
         if (fixed_order && eltype == ET_TRIG)
