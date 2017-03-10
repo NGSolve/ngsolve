@@ -380,13 +380,12 @@ namespace ngcomp
 	  if (bfa->GetFESpace()->IsParallel())
 	    {
 	      ParallelDofs * pardofs = &bfa->GetFESpace()->GetParallelDofs();
-
 	      pwbmat = make_shared<ParallelMatrix> (pwbmat, pardofs);
 	      pwbmat -> SetInverseType (inversetype);
 
 #ifdef HYPRE
 	      if (hypre)
-		inv = new HyprePreconditioner (*pwbmat, wb_free_dofs);
+		inv = make_shared<HyprePreconditioner> (*pwbmat, wb_free_dofs);
 	      else
 #endif
                 if (coarse)
@@ -460,7 +459,6 @@ namespace ngcomp
       static Timer timerharmonicext ("Apply BDDC preconditioner - harmonic extension");
       static Timer timerharmonicexttrans ("Apply BDDC preconditioner - harmonic extension trans");
       
-
       RegionTimer reg (timer);
 
       x.Cumulate();
