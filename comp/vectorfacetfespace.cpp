@@ -365,16 +365,16 @@ namespace ngcomp
         {
           int reduceorder = highest_order_dc ? 1 : 0;
           return *SwitchET<ET_SEGM,ET_TRIG,ET_QUAD>
-            (ma->GetElType(ei), [&] (auto ET) -> FiniteElement*
+            (ma->GetElType(ei), [&] (auto et) -> FiniteElement*
             {
-              using ET_T = ET_trait<ET>;
-              auto fe = new (lh) VectorFacetFacetFE<ET>();
+              using ET_T = ET_trait<et.ElementType()>;
+              auto fe = new (lh) VectorFacetFacetFE<et.ElementType()>();
               ArrayMem<int,ET_T::N_VERTEX> vnums;
               ArrayMem<int,ET_T::N_EDGE> ednums;
               ma->GetElVertices(ei,vnums);
               assert(vnums.Size() == ET_T::N_VERTEX);
               fe->SetVertexNumbers(vnums);
-              if (ET == ET_SEGM)
+              if (et.ElementType() == ET_SEGM)
                 {
                   ArrayMem<int,ET_T::N_EDGE> ednums;
                   ma->GetElEdges(ei,ednums);
