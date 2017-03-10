@@ -73,6 +73,7 @@ if(NETGEN_DIR)
   message(STATUS "Looking for NetgenConfig.cmake...")
   find_package(Netgen REQUIRED CONFIG HINTS ${NETGEN_DIR}/share/cmake $ENV{NETGENDIR}/../share/cmake)
   set(INSTALL_DIR ${NETGEN_DIR})
+  add_custom_target(netgen_project)
 else(NETGEN_DIR)
   message(STATUS "Build Netgen from git submodule")
 #   execute_process(COMMAND git submodule update --init --recursive WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
@@ -103,6 +104,23 @@ else(NETGEN_DIR)
     USE_NATIVE_ARCH
   )
   set_flags_vars(NETGEN_CMAKE_ARGS CMAKE_CXX_FLAGS CMAKE_SHARED_LINKER_FLAGS CMAKE_LINKER_FLAGS)
+  ExternalProject_Add (netgen_project
+    SOURCE_DIR ${PROJECT_SOURCE_DIR}/external_dependencies/netgen
+    BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/netgen
+    CONFIGURE_COMMAND ""
+    BUILD_COMMAND ${COMMON_BUILD_COMMAND}
+    INSTALL_COMMAND ""
+  )
+
+  add_custom_target(install_netgen ALL
+    ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR}/netgen --target install --config ${CMAKE_BUILD_TYPE}
+    DEPENDS netgen_project
+  )
+
+  list(APPEND DEPENDENCIES install_netgen)
+
+  message("\n\nConfigure Netgen from submodule...")
+  execute_process(COMMAND ${CMAKE_COMMAND} -G${CMAKE_GENERATOR} ${NETGEN_CMAKE_ARGS} ${PROJECT_SOURCE_DIR}/external_dependencies/netgen WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/netgen)
 endif(NETGEN_DIR)
 
 #######################################################################
@@ -111,7 +129,7 @@ endif(NETGEN_DIR)
 #######################################################################
 set(LAPACK_LIBRARIES CACHE INTERNAL "Lapack libraries")
 if(USE_MKL)
-    set(MKL_MULTI_THREADED ON)
+    set(MKL_MULTI_THREADED ON CACHE BOOL "Use threaded MKL libs")
 
     set(MKL_STATIC OFF CACHE BOOL "Link static MKL")
     set(MKL_SDL ON CACHE BOOL "Link single dynamic MKL lib")
@@ -149,8 +167,7 @@ if (USE_LAPACK)
 endif (USE_LAPACK)
 
 #######################################################################
-
-if(USE_UMFPACK)
+if(USE_UMFPACK AND NOT UMFPACK_DIR)
   set(UMFPACK_DIR ${CMAKE_CURRENT_BINARY_DIR}/umfpack/install CACHE PATH "Temporary directory to build UMFPACK")
   ExternalProject_Add(
     suitesparse
@@ -164,14 +181,17 @@ if(USE_UMFPACK)
     )
   list(APPEND DEPENDENCIES suitesparse)
   set_vars( NGSOLVE_CMAKE_ARGS UMFPACK_DIR )
-endif(USE_UMFPACK)
+endif(USE_UMFPACK AND NOT UMFPACK_DIR)
 
 #######################################################################
+if(USE_HYPRE AND NOT HYPRE_DIR)
+  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/external_projects/hypre.cmake)
+endif(USE_HYPRE AND NOT HYPRE_DIR)
 
-if(USE_MUMPS)
-  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/external_projects/parmetis.cmake)
+#######################################################################
+if(USE_MUMPS AND NOT MUMPS_DIR)
   include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/external_projects/mumps.cmake)
-endif(USE_MUMPS)
+endif(USE_MUMPS AND NOT MUMPS_DIR)
 
 #######################################################################
 # propagate cmake variables to NGSolve subproject
@@ -200,26 +220,6 @@ set_vars( NGSOLVE_CMAKE_ARGS
   )
 
 set_flags_vars(NGSOLVE_CMAKE_ARGS CMAKE_CXX_FLAGS CMAKE_SHARED_LINKER_FLAGS CMAKE_LINKER_FLAGS)
-
-if(NOT NETGEN_DIR)
-  ExternalProject_Add (netgen_project
-    SOURCE_DIR ${PROJECT_SOURCE_DIR}/external_dependencies/netgen
-    BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/netgen
-    CONFIGURE_COMMAND ""
-    BUILD_COMMAND ${COMMON_BUILD_COMMAND}
-    INSTALL_COMMAND ""
-  )
-
-  add_custom_target(install_netgen ALL
-    ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR}/netgen --target install --config ${CMAKE_BUILD_TYPE}
-    DEPENDS netgen_project
-  )
-
-  list(APPEND DEPENDENCIES install_netgen)
-
-  message("\n\nConfigure Netgen from submodule...")
-  execute_process(COMMAND ${CMAKE_COMMAND} -G${CMAKE_GENERATOR} ${NETGEN_CMAKE_ARGS} ${PROJECT_SOURCE_DIR}/external_dependencies/netgen WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/netgen)
-endif(NOT NETGEN_DIR)
 
 ExternalProject_Add (ngsolve
   DEPENDS ${DEPENDENCIES} ${LAPACK_PROJECTS}

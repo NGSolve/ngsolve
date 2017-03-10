@@ -10,8 +10,9 @@ ExternalProject_Add(project_parmetis
   CMAKE_ARGS
          -DCMAKE_C_FLAGS="-fPIC"
          -DGKLIB_PATH=${PARMETIS_SRC_DIR}/metis/GKlib
-         -DMETIS_PATH=${NETGEN_METIS_DIR}
+         -DMETIS_PATH=${PARMETIS_SRC_DIR}/metis/
          -DCMAKE_INSTALL_PREFIX=${PARMETIS_DIR}
+         -DMETIS_INSTALL=ON
   UPDATE_COMMAND "" # Disable update
   )
 

@@ -193,6 +193,9 @@ endif (NETGEN_USE_GUI)
 
 #######################################################################
 if (NETGEN_USE_MPI)
+    if(USE_MUMPS)
+      enable_language(Fortran)
+    endif(USE_MUMPS)
     find_package(MPI REQUIRED)
     add_definitions(-DPARALLEL)
     include_directories(${MPI_CXX_INCLUDE_PATH})
@@ -227,6 +230,7 @@ endif (USE_CUDA)
 
 #######################################################################
 if (USE_MKL)
+    find_package(MKL REQUIRED)
     include_directories(${MKL_INCLUDE_DIRS})
     add_definitions(-DUSE_MKL -DUSE_PARDISO -DLAPACK)
 
@@ -401,6 +405,16 @@ ${CMAKE_CXX_COMPILER} ${ngsld_flags} $*\n")
     install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngscxx DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve_devel )
     install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngsld DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve_devel )
 endif(WIN32)
+
+if (NETGEN_USE_MPI)
+    # generate python3 wrapper for mpi (to preload mkl and mpi libs)
+    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngspy
+"#! /usr/bin/bash
+LD_PRELOAD=$LD_PRELOAD:${MKL_CORE_LIBRARY}:${MKL_THREADING_LIBRARY}:${MPI_C_LIBRARIES} ${NETGEN_PYTHON_EXECUTABLE} $*
+    ")
+    install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngspy DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve_devel )
+endif (NETGEN_USE_MPI)
+
 
 
 
