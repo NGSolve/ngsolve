@@ -39,7 +39,7 @@ namespace ngfem
 
     VectorFacetFacetFE () { ; }
 
-    HD virtual ELEMENT_TYPE ElementType() const { return ET; }
+    HD virtual ELEMENT_TYPE ElementType() const { return ELEMENT_TYPE(ET); }
 
     INLINE void SetOrder (int aorder)
     {
@@ -79,7 +79,7 @@ namespace ngfem
     
     VectorFacetVolumeFE () { highest_order_dc=false; }
     
-    HD virtual ELEMENT_TYPE ElementType() const { return ET; }
+    HD virtual ELEMENT_TYPE ElementType() const { return ELEMENT_TYPE(ET); }
 
     void SetHighestOrderDC(bool set) { highest_order_dc=set; }
 
