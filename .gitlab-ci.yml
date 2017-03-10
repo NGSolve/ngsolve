@@ -45,6 +45,7 @@ stages:
 .template_ubuntu: &ubuntu
   tags:
     - linux
+    - docker
   before_script:
     - pwd
     - ls
@@ -238,6 +239,7 @@ linux_cleanup:
   stage: cleanup
   tags:
     - linux
+    - docker
   script:
     # remove built docker images
     - docker rmi -f ngsolve_${CI_PIPELINE_ID}:15.10
@@ -289,6 +291,7 @@ deploy_release:
   stage: deploy
   tags:
     - linux
+    - docker
   script:
     - /home/gitlab-runner/deploy/deploy_release.sh $CI_PIPELINE_ID $CI_BUILD_TAG
   only:
@@ -299,6 +302,7 @@ deploy_nightly:
   stage: deploy
   tags:
     - linux
+    - docker
   script:
     - /home/gitlab-runner/deploy/deploy_nightly.sh $CI_PIPELINE_ID
   only:
