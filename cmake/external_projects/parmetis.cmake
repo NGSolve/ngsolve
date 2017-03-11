@@ -9,6 +9,7 @@ ExternalProject_Add(project_parmetis
   PATCH_COMMAND patch -p1 -i ${CMAKE_CURRENT_SOURCE_DIR}/cmake/external_projects/parmetis.patch
   CMAKE_ARGS
          -DCMAKE_C_FLAGS="-fPIC"
+         -DMPI_INCLUDE_PATH=${MPI_C_INCLUDE_PATH}
          -DGKLIB_PATH=${PARMETIS_SRC_DIR}/metis/GKlib
          -DMETIS_PATH=${PARMETIS_SRC_DIR}/metis/
          -DCMAKE_INSTALL_PREFIX=${PARMETIS_DIR}
