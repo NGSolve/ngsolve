@@ -6,31 +6,16 @@
 
 
 #include <fem.hpp>
+#include <cassert>
 
 namespace ngfem
 {
-
-
-
   /* **************************** Facet Segm ********************************* */
 
-  VectorFacetFacetSegm :: VectorFacetFacetSegm (int aorder) :
-    VectorFacetFacetFiniteElement<1> (1, ET_SEGM )
-  {
-    order = aorder;
-    order_inner = INT<2> (aorder, aorder);
-    ComputeNDof();
-  }
 
-  void VectorFacetFacetSegm :: ComputeNDof()
-  {
-    order = order_inner[0];
-    ndof = order+1;
-  }
-
-
-  void VectorFacetFacetSegm :: CalcShape (const IntegrationPoint & ip, 
-					  SliceMatrix<> shape) const
+  template<>
+  void VectorFacetFacetFE<ET_SEGM>::CalcShape(const IntegrationPoint & ip,
+                                                SliceMatrix<> shape) const
   {
     AutoDiff<1> x (ip(0),0);
     ArrayMem<double, 10>  polx(order_inner[0]+1);
@@ -45,25 +30,17 @@ namespace ngfem
       shape(ii++,0) = 2 * polx[i] * x.DValue(0);
   }
 
+  template<>
+  void VectorFacetFacetFE<ET_SEGM>::ComputeNDof()
+  {
+    order = order_inner[0];
+    ndof = order+1;
+  }
 
   /* **************************** Facet Trig ********************************* */
 
-  VectorFacetFacetTrig :: VectorFacetFacetTrig (int aorder) :
-    VectorFacetFacetFiniteElement<2> (2, ET_TRIG)
-  {
-    order = aorder;
-    order_inner = INT<2> ( aorder, aorder);
-    ComputeNDof();
-  }
-
-  void VectorFacetFacetTrig :: ComputeNDof()
-  {
-    order = order_inner[0];
-    int p = order_inner[0];
-    ndof = (p+1)*(p+2);
-  }
-
-  void VectorFacetFacetTrig :: CalcShape (const IntegrationPoint & ip, 
+  template<>
+  void VectorFacetFacetFE<ET_TRIG>::CalcShape(const IntegrationPoint & ip,
 					  SliceMatrix<> shape) const
   {
     AutoDiff<2> x (ip(0), 0);
@@ -104,26 +81,19 @@ namespace ngfem
 	}
   }
 
+  template<>
+  void VectorFacetFacetFE<ET_TRIG>::ComputeNDof()
+  {
+    order = order_inner[0];
+    int p = order_inner[0];
+    ndof = (p+1)*(p+2);
+  }
 
 
   /* **************************** Facet Quad ********************************* */
 
-  VectorFacetFacetQuad :: VectorFacetFacetQuad (int aorder) :
-    VectorFacetFacetFiniteElement<2> (2, ET_QUAD)
-  {
-    order = aorder;
-    order_inner = INT<2> (aorder, aorder);
-    ComputeNDof();
-  }
-
-  void VectorFacetFacetQuad :: ComputeNDof()
-  {
-    order = max2( order_inner[0], order_inner[1] );
-    ndof = 2 * (order_inner[0]+1) * (order_inner[1]+1);
-  }
-
-  /// compute shape
-  void VectorFacetFacetQuad :: CalcShape (const IntegrationPoint & ip, 
+  template<>
+  void VectorFacetFacetFE<ET_QUAD>::CalcShape (const IntegrationPoint & ip,
 					  SliceMatrix<> shape) const
   {
     AutoDiff<2> x (ip(0), 0);
@@ -162,157 +132,18 @@ namespace ngfem
 	}
   }
 
-
-  ///+++++++++++++++++++++++++
-
-  template <int D>
-  VectorFacetVolumeFiniteElement<D> :: 
-  VectorFacetVolumeFiniteElement (ELEMENT_TYPE aeltype) 
-    : HCurlFiniteElement<D>(-1, -1)
+  template<>
+  void VectorFacetFacetFE<ET_QUAD>::ComputeNDof()
   {
-    eltype = aeltype;
-    for ( int i = 0; i < 8; i++ )
-      vnums[i] = -1;
-    for ( int i = 0; i < 6; i++ )
-      facet_order[i] = INT<2> (-1, -1);
-    for ( int i = 0; i < 7; i++ )
-      first_facet_dof[i] = 0;
+    order = max2( order_inner[0], order_inner[1] );
+    ndof = 2 * (order_inner[0]+1) * (order_inner[1]+1);
   }
 
 
-  template <int D>
-  void  VectorFacetVolumeFiniteElement<D>::
-  CalcShape (const IntegrationPoint & ip, SliceMatrix<> shape) const
-  {
-    int fnr = ip.FacetNr();
-    if (fnr >= 0)
-      {
-        CalcShape (ip, fnr, shape);
-        return;
-      }
-    shape = 0.0;
-    static int cnt = 0;
-    cnt++;
-    if (cnt < 3)
-      cerr << "VectorFacetVolumeFiniteElement<D>::CalcShape in global coordinates disabled" << endl;
-  }
+  /* **************************** Volume Trig ********************************* */
 
-
-  /// degrees of freedom sitting inside the element, used for static condensation
-  
-  template <int D>
-  void VectorFacetVolumeFiniteElement<D>::
-  GetInternalDofs (Array<int> & idofs) const
-  {
-    idofs.SetSize(0);
-    if (highest_order_dc)
-      {
-	if (D==2)
-	  {
-	    for (int i=0; i<ElementTopology::GetNFacets(eltype); i++)
-	      idofs.Append(first_facet_dof[i+1]-1);   
-	  }
-	else
-	  {
-	    for (int i=0; i<ElementTopology::GetNFacets(eltype); i++)
-	      {
-		int pos = first_facet_dof[i]-2;
-		int fac = 4 - ElementTopology::GetNVertices(ElementTopology::GetFaceType(eltype,i));
-		for (int k = 0; k <= facet_order[i][0]; k++){
-		  pos += 2*(facet_order[i][0]+1-fac*k);
-		  idofs.Append(pos);
-		  idofs.Append(pos+1);
-		}
-	      }
-	  }//end if Dimension
-      }
-  }
-
-
-  template <int D>
-  void VectorFacetVolumeFiniteElement<D> :: 
-  SetVertexNumbers (FlatArray<int> & avnums)
-  {
-    for (int i = 0; i < avnums.Size(); i++)
-      vnums[i] = avnums[i];
-  }
-
-  template <int D>
-  void VectorFacetVolumeFiniteElement<D> :: 
-  SetOrder(int ao)
-  {
-    order = ao;
-    for ( int i = 0; i < 6; i++ )
-      facet_order[i] = INT<2> (ao, ao);
-    ComputeNDof();
-  }
-
-  template <int D>
-  void VectorFacetVolumeFiniteElement<D> :: 
-  SetOrder(FlatArray<INT<2> > & ao)
-  {
-    for ( int i = 0; i < ao.Size(); i++ )
-      {
-        order = max3 ( order, ao[i][0], ao[i][1] );
-	facet_order[i] = ao[i];
-      }
-    ComputeNDof();
-  }
-
-  template <int D>
-  void VectorFacetVolumeFiniteElement<D> :: 
-  SetOrder(FlatArray<int> & ao)
-  {
-    for ( int i = 0; i < ao.Size(); i++ )
-      {
-        order = max2 ( order, ao[i] );
-	facet_order[i] = INT<2> (ao[i], ao[i]);
-      }
-    ComputeNDof();
-  }
-
-  template <int D>
-  void VectorFacetVolumeFiniteElement<D> :: 
-  GetFacetDofNrs(int afnr, Array<int>& fdnums) const
-  {
-    fdnums.SetSize(0);
-    int first = first_facet_dof[afnr];
-    int next = first_facet_dof[afnr+1];
-    for ( int i = first; i < next; i++ )
-      fdnums.Append(i); 
-  }
-  
-    /*  template <int D>
-  void VectorFacetVolumeFiniteElement<D> :: 
-  GetVertexNumbers(Array<int>& avnums) const
-  {
-    cerr << "vectorfacetelement getvertexnumbers not supported" << endl;
-
-    avnums.SetSize(nv);
-    for ( int i = 0; i < nv; i++ )
-      avnums[i] = vnums[i];
-  }
-  
-  template <int D>
-  void VectorFacetVolumeFiniteElement<D> :: 
-  GetFacetOrders(Array<INT<2> >& forder) const
-  {
-    forder.SetSize(6);
-    for ( int i = 0; i < 6; i++ )
-      forder[i] = facet_order[i];
-  }
-    */
-  
-
-  template class VectorFacetVolumeFiniteElement<2>;
-  template class VectorFacetVolumeFiniteElement<3>;
-
-  template class VectorFacetFacetFiniteElement<1>;
-  template class VectorFacetFacetFiniteElement<2>;
-
-
-
-  void VectorFacetVolumeTrig ::
+  template<>
+  void VectorFacetVolumeFE<ET_TRIG> ::
   CalcShape ( const IntegrationPoint & ip, int fanr, SliceMatrix<> shape ) const
   {
     for (int i = 0; i < ndof; i++)
@@ -322,7 +153,7 @@ namespace ngfem
 
     AutoDiff<2> x(ip(0), 0), y(ip(1),1);
 
-    const EDGE * edges = ElementTopology :: GetEdges ( eltype );
+    const EDGE * edges = ElementTopology :: GetEdges (ET_TRIG);
 
     int fav[2] = { edges[fanr][0], edges[fanr][1] };
     int j1 = 0, j2 = 1;
@@ -341,14 +172,15 @@ namespace ngfem
                                  }));
   }
 
-  void VectorFacetVolumeTrig ::
+  template<>
+  void VectorFacetVolumeFE<ET_TRIG> ::
   CalcExtraShape ( const IntegrationPoint & ip, int fanr, FlatMatrixFixWidth<2> xshape ) const
   {
     xshape = 0.0;
 
     AutoDiff<2> x(ip(0), 0), y(ip(1),1);
 
-    const EDGE * edges = ElementTopology :: GetEdges ( eltype );
+    const EDGE * edges = ElementTopology :: GetEdges (ET_TRIG);
 
     int  fav[2] = {edges[fanr][0], edges[fanr][1] };
     int j1 = 0; 
@@ -371,9 +203,8 @@ namespace ngfem
     xshape(0,1) = val * xi.DValue(1);
   }
 
-
-    
-  void VectorFacetVolumeTrig :: ComputeNDof()
+  template<>
+  void VectorFacetVolumeFE<ET_TRIG> :: ComputeNDof()
   {
     ndof = 0;
     for ( int i = 0; i < 3; i++ )
@@ -384,18 +215,17 @@ namespace ngfem
     first_facet_dof[3] = ndof;
   }
 
-  
+  /* **************************** Volume Quad ********************************* */
 
-  //--------------------------------------------------
-
-  void VectorFacetVolumeQuad ::
+  template<>
+  void VectorFacetVolumeFE<ET_QUAD> ::
   CalcShape ( const IntegrationPoint & ip, int fanr, SliceMatrix<> shape ) const
   {
     shape = 0.0;
 
     AutoDiff<2> x(ip(0), 0), y(ip(1),1);
 
-    const EDGE * faces = ElementTopology :: GetEdges ( eltype );
+    const EDGE * faces = ElementTopology :: GetEdges (ET_QUAD);
 
     int  fav[2] = {faces[fanr][0], faces[fanr][1] };
     int j1 = 0; 
@@ -421,15 +251,15 @@ namespace ngfem
   }
 
 
-
-  void VectorFacetVolumeQuad ::
+  template<>
+  void VectorFacetVolumeFE<ET_QUAD> ::
   CalcExtraShape ( const IntegrationPoint & ip, int fanr, FlatMatrixFixWidth<2> xshape ) const
   {
     xshape = 0.0;
 
     AutoDiff<2> x(ip(0), 0), y(ip(1),1);
 
-    const EDGE * faces = ElementTopology :: GetEdges ( eltype );
+    const EDGE * faces = ElementTopology :: GetEdges (ET_QUAD);
 
     int  fav[2] = {faces[fanr][0], faces[fanr][1] };
     int j1 = 0; 
@@ -449,8 +279,8 @@ namespace ngfem
     xshape(0,1) = val * xi.DValue(1);
   }
 
-
-  void VectorFacetVolumeQuad :: ComputeNDof()
+  template<>
+  void VectorFacetVolumeFE<ET_QUAD> :: ComputeNDof()
   {
     ndof = 0;
     for ( int i = 0; i < 4; i++ )
@@ -462,9 +292,10 @@ namespace ngfem
   }
 
   
+  /* **************************** Volume Tet ********************************* */
 
-
-  void VectorFacetVolumeTet ::
+  template<>
+  void VectorFacetVolumeFE<ET_TET> ::
   CalcShape ( const IntegrationPoint & ip, int fanr, SliceMatrix<> shape ) const
   {
     for (int i = 0; i < ndof; i++)
@@ -473,7 +304,7 @@ namespace ngfem
     AutoDiff<3> x(ip(0), 0), y(ip(1),1), z(ip(2),2);
     AutoDiff<3> lami[4] = { x, y, z, 1-x-y-z };
 
-    INT<4> fav = ET_trait<ET_TET>::GetFaceSort (fanr, vnums);
+    INT<4> fav = ET_T::GetFaceSort (fanr, vnums);
 
     AutoDiff<3> adxi = lami[fav[0]]-lami[fav[2]];
     AutoDiff<3> adeta = lami[fav[1]]-lami[fav[2]];
@@ -505,8 +336,8 @@ namespace ngfem
 	}
   }
 
-
-  void VectorFacetVolumeTet ::
+  template<>
+  void VectorFacetVolumeFE<ET_TET> ::
   CalcExtraShape ( const IntegrationPoint & ip, int fanr, FlatMatrixFixWidth<3> xshape ) const
   {
     xshape = 0.0;
@@ -545,7 +376,8 @@ namespace ngfem
   }
 
 
-  void VectorFacetVolumeTet :: ComputeNDof() 
+  template<>
+  void VectorFacetVolumeFE<ET_TET> :: ComputeNDof()
   {
     ndof = 0;
     for (int i = 0; i < 4; i++)
@@ -556,13 +388,10 @@ namespace ngfem
     first_facet_dof[4] = ndof;
   }
 
+  /* **************************** Volume Prism ********************************* */
 
-
-
-  // -------------------------------------------------------------------------------
-
-
-  void VectorFacetVolumePrism ::
+  template<>
+  void VectorFacetVolumeFE<ET_PRISM> ::
   CalcShape ( const IntegrationPoint & ip, int fanr, SliceMatrix<> shape ) const
   {
     AutoDiff<3> x(ip(0), 0), y(ip(1),1), z(ip(2),2);
@@ -638,7 +467,8 @@ namespace ngfem
       }
   }
 
-  int VectorFacetVolumePrism ::
+  template<>
+  int VectorFacetVolumeFE<ET_PRISM> ::
   GetNExtraShapes ( int fanr) const
   {
     if (fanr < 2) //trig shape
@@ -647,7 +477,8 @@ namespace ngfem
       return 2*(2*facet_order[fanr][0]+3);
   }
 
-  void VectorFacetVolumePrism ::
+  template<>
+  void VectorFacetVolumeFE<ET_PRISM> ::
   CalcExtraShape ( const IntegrationPoint & ip, int fanr, FlatMatrixFixWidth<3> xshape ) const
   {
     AutoDiff<3> x(ip(0), 0), y(ip(1),1), z(ip(2),2);
@@ -723,8 +554,9 @@ namespace ngfem
 	}	
       }
   }
-  
-  void VectorFacetVolumePrism::ComputeNDof() 
+
+  template<>
+  void VectorFacetVolumeFE<ET_PRISM>::ComputeNDof()
   {
     ndof = 0;
     // triangles
@@ -744,20 +576,17 @@ namespace ngfem
   }
 
 
+  /* **************************** Volume Hex ********************************* */
 
-
-
-  // --------------------------------------------
-
-  void VectorFacetVolumeHex ::
+  template<>
+  void VectorFacetVolumeFE<ET_HEX> ::
   CalcShape ( const IntegrationPoint & ip, int facet, SliceMatrix<> shape ) const
   {
-    cout << "VectorFacetVolumeHex::CalcShape not implemented!" << endl;
-    exit(0);
+    throw Exception("VectorFacetVolumeHex::CalcShape not implemented!");
   }
 
-  
-  void VectorFacetVolumeHex::ComputeNDof()  
+  template<>
+  void VectorFacetVolumeFE<ET_HEX>::ComputeNDof()
   {
     ndof = 0;
     for (int i=0; i<6; i++)
@@ -770,14 +599,13 @@ namespace ngfem
 
 
 
-  // -------------------------------------------------------------------------------
+  /* **************************** Volume Pyramid ********************************* */
 
-
-  void VectorFacetVolumePyramid ::
+  template<>
+  void VectorFacetVolumeFE<ET_PYRAMID> ::
   CalcShape ( const IntegrationPoint & ip, int facet, SliceMatrix<> shape ) const
   {
-    cout << "error in VectorFacetVolumePyramid::CalcShape: not implemented!" << endl;
-    exit(0);
+    throw Exception("VectorFacetVolumePyramid::CalcShape: not implemented!");
   }
 
 //   void VectorFacetVolumePyramid::CalcFacetShape (int afnr, const IntegrationPoint & ip, FlatMatrix<> shape) const
@@ -817,8 +645,8 @@ namespace ngfem
 //       }
 //   }  
 
-
-  void VectorFacetVolumePyramid::ComputeNDof() 
+  template<>
+  void VectorFacetVolumeFE<ET_PYRAMID>::ComputeNDof()
   {
     ndof = 0;
     // triangles

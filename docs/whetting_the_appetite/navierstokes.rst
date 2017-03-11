@@ -1,3 +1,5 @@
+.. _how-to-navierstokes:
+
 Navier Stokes Equation
 ======================
 
