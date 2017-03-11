@@ -26,21 +26,15 @@ if (NETGEN_USE_PYTHON)
       COMMENT "Building HTML documentation with Sphinx"
       )
 
-    # not working yet
-    # find_package(rst2pdf)
-    # if(RST2PDF_FOUND)
-    #   add_custom_target(pdf_docs
-    # 	${SPHINX_EXECUTABLE}
-    # 	-q -b pdf
-    # 	-c "${BINARY_BUILD_DIR}"
-    # 	-d "${SPHINX_CACHE_DIR}"
-    # 	"${CMAKE_CURRENT_SOURCE_DIR}/docs"
-    # 	"${SPHINX_OUTPUT_DIR}/pdf"
-    # 	COMMENT "Building HTML documentation with Sphinx")
-    #   message("rst2pdf found, you can build a pdf documentation with make docs_pdf")
-    # else (RST2PDF_FOUND)
-    #   message ("rst2pdf not found, if you want to build pdf documentation you have to install it")
-    # endif(RSTPDF_FOUND)
+      add_custom_target(docs_latex
+      ${CMAKE_COMMAND} -E env NETGEN_DOCUMENTATION_RST_FORMAT=1
+    	${SPHINX_EXECUTABLE}
+    	-q -b latex
+    	-c "${BINARY_BUILD_DIR}"
+    	-d "${SPHINX_CACHE_DIR}"
+    	"${CMAKE_CURRENT_SOURCE_DIR}"
+    	"${SPHINX_OUTPUT_DIR}/latex"
+    	COMMENT "Building Latex documentation with Sphinx")
 
 
     message("Sphinx found, you can build the documentation with make docu")

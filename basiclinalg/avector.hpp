@@ -329,7 +329,8 @@ namespace ngbla
     template<typename TB>
     INLINE const AFlatVectorD & operator= (const SIMDExpr<TB> & v) const
     {
-      for (size_t i = 0; i < vsize(); i++)
+      // for (size_t i = 0; i < vsize(); i++)
+      for (auto i : ::Range(vsize()))       
         data[i] = v.Spec().Get(i);
       return *this;
     }
@@ -337,7 +338,8 @@ namespace ngbla
     template<typename TB>
     INLINE const AFlatVectorD & operator+= (const SIMDExpr<TB> & v) const
     {
-      for (size_t i = 0; i < vsize(); i++)
+      // for (size_t i = 0; i < vsize(); i++)
+      for (auto i : ::Range(vsize()))
         data[i] += v.Spec().Get(i);
       return *this;
     }

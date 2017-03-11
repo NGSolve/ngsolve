@@ -335,8 +335,8 @@ namespace ngcomp
       // AFlatMatrix<double> grad(DIMS, ir.GetNIP(), lh);
       STACK_ARRAY(SIMD<double>, mem0, ir.Size());
       FlatVector<SIMD<double>> def(ir.Size(), &mem0[0]);
-      STACK_ARRAY(SIMD<double>, mem1, (3*ir.Size()));
-      FlatMatrix<SIMD<double>> grad(DIMS, ir.GetNIP(), &mem1[0]);
+      STACK_ARRAY(SIMD<double>, mem1, (DIMS*ir.Size()));
+      FlatMatrix<SIMD<double>> grad(DIMS, ir.Size(), &mem1[0]);
 
       for (int i = 0; i < DIMR; i++)
         {
@@ -1647,13 +1647,22 @@ namespace ngcomp
                     VorB avb, string pattern)
     : mesh(amesh), vb(avb)
   {
+    mask = BitArray(mesh->GetNRegions(vb));
+    mask.Clear();
+    regex re_pattern(pattern);
+
+    for (int i : Range(mask))
+      if (regex_match(mesh->GetMaterial(vb,i), re_pattern))
+        mask.Set(i);
+    
+    /*
     if (vb == VOL)
       {
         mask = BitArray(mesh->GetNDomains());
         mask.Clear();
         regex re_pattern(pattern);
         for (int i : Range(mask))
-          if (regex_match(mesh->GetDomainMaterial(i), re_pattern))
+          if (regex_match(mesh->GetMaterial(VOL,i), re_pattern))
             mask.Set(i);
       }
     else
@@ -1663,21 +1672,22 @@ namespace ngcomp
         mask.Clear();
         regex re_pattern(pattern);
         for (int i : Range(mask))
-          if (regex_match(mesh->GetBCNumBCName(i), re_pattern))
+          if (regex_match(mesh->GetMaterial(BND,i), re_pattern))
             mask.Set(i);
       }
       else
 	{
-	  mask = BitArray(mesh->GetNBBoundaries());
-	  mask.Clear();
-	  regex re_pattern(pattern);
+          mask = BitArray(mesh->GetNBBoundaries());
+          mask.Clear();
+          regex re_pattern(pattern);
 	  for(int i : Range(mask))
-	    (*testout) << "boundary condition " << i << ": " << mesh->GetCD2NumCD2Name(i) << endl;
+	    (*testout) << "boundary condition " << i << ": " << mesh->GetMaterial(BBND,i) << endl;
 	  for (int i : Range(mask))
-	    if (regex_match(mesh->GetCD2NumCD2Name(i), re_pattern))
+	    if (regex_match(mesh->GetMaterial(BBND,i), re_pattern))
 	      mask.Set(i);
 	  (*testout) << "mask: " << mask << endl;
 	}
+    */
   }      
 
 
