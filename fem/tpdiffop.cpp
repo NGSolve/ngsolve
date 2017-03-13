@@ -9,11 +9,9 @@ namespace ngfem
   double ProlongateCoefficientFunction :: Evaluate (const BaseMappedIntegrationPoint & ip) const
   {
     IntegrationPoint iphelp = ip.IP();
-    cout << iphelp << endl;
+    // cout << iphelp << endl;
     const ElementTransformation * trafo = &(ip.GetTransformation());
     DimMappedIntegrationPoint<1> miphelp(iphelp(0), *trafo);
-    cout << "mip = "<<endl;
-    cout << miphelp << endl;
     if(prolongateto == 0)
       if(dimx == 1)
       {
@@ -88,14 +86,12 @@ namespace ngfem
     FlatMatrix<double> fcoefs( ndof0, ndof1, &x(0) );
     evaluators[0]->CalcMatrix( *elements[0], *irs[0], shape0, lh ); 
     evaluators[1]->CalcMatrix( *elements[1], *irs[1], shape1, lh );
-    // cout << "In = "<< endl << fcoefs << endl;
     if(dim0 == 1)
     {
       FlatMatrix<double,ColMajor> fvals( nip1*dim1, nip0*dim0, &flux(0) );
       FlatMatrix<double,ColMajor> helper(ndof1,nip0*dim0,lh);
       helper = Trans(fcoefs) * Trans(shape0); // (a*b'*c')' = c*(a*b')' = c*b*a'
       fvals = shape1 * helper;
-      // cout << flux << endl;
     }
     if(dim0 > 1)
     {
@@ -105,7 +101,6 @@ namespace ngfem
       fvals = shape1 * helper;
       for(int i=0;i<nip0;i++)
         flux.Rows(i*nip1,(i+1)*nip1) = fvals.Cols(dim0*i,dim0*(i+1));
-      // cout << "Flux = "<<endl<<flux << endl;
     }
   }
     
@@ -131,13 +126,9 @@ namespace ngfem
     FlatMatrix<double, ColMajor> shape1( nip1*dim1, ndof1,lh ); 
     evaluators[0]->CalcMatrix( *elements[0], *irs[0], shape0, lh ); 
     evaluators[1]->CalcMatrix( *elements[1], *irs[1], shape1, lh );
-    // cout << "TPDifferentialOperator::ApplyTrans"<<endl;
-    // cout << "Dims = ("<<dim0<<", "<<dim1<<")"<<endl;
-    // cout << "In = "<<endl<<flux << endl;
     if(dim0 == 1)
     {
       FlatMatrix<double> fvals( nip0*dim0, nip1*dim1, &flux(0,0) );
-      // cout << "Flux as mat = "<<endl<<fvals << endl;
       FlatMatrix<double> fcoefs( ndof0, ndof1, &x(0) );
       FlatMatrix<double> helper(nip0*dim0,ndof1,lh);
       helper = fvals*shape1;
@@ -154,9 +145,7 @@ namespace ngfem
           fvals1.Rows(dim0*j,dim0*(j+1)).Col(i) = (fvals.Cols(dim0*i,dim0*(i+1)).Row(j));
       helper = fvals1 * shape1;
       fcoefs = Trans(shape0) * helper;
-      // cout << "fcoef mat = "<<endl<<fcoefs<< endl;
     }
-    // cout << "Out = "<<endl<<x << endl;
   }
 
   void TPDifferentialOperator :: ApplyX(
@@ -169,6 +158,9 @@ namespace ngfem
     int dimx = evaluators[0]->Dim();
     int dimy = evaluators[1]->Dim();
     int nipx = mirx.IR().Size();
+    int nipy = x.Width()/dimy;
+    // for(int i:Range(mirx.IR().Size()) )
+      // cout << mirx[i].GetPoint()<<endl;
     FlatMatrix<double, ColMajor> bmatx( nipx*dimx, fel.GetNDof(),lh );
     evaluators[0]->CalcMatrix(fel,mirx,bmatx,lh);
     if(dimx == 1)
@@ -180,11 +172,10 @@ namespace ngfem
     {
       FlatMatrix<> resultmat(nipx*dimx,x.Width(), lh);
       resultmat = bmatx*x;
-      for(int k=0;k<x.Height();k+=2)
-        flux.Rows(k*nipx,(k+1)*nipx) = Trans(resultmat.Rows(dimx*k,dimx*(k+1)));
-      // cout << "TPDifferentialOperator::ApplyX"<< endl;
-      // cout << "x = "   << endl << x    << endl;
-      // cout << "flux = "<< endl << flux << endl;        
+      // cout << "resultmat = "<<endl<<resultmat<<endl;
+      for(int k=0;k<flux.Height()/nipy;k++)
+        flux.Rows(k*nipy,(k+1)*nipy) = Trans(resultmat.Rows(dimx*k,dimx*(k+1)));
+      // cout << "flux = "<<endl<<flux<<endl;
     }
   }
 
@@ -204,6 +195,7 @@ namespace ngfem
     if(dimx == 1)
     {
       FlatMatrix<> proxyvaluesasmat(nipx, nipy*dimy, &flux(0,0));
+      // cout << "Input as mat = "<<endl<<proxyvaluesasmat<<endl;
       x = Trans(bmatx)*proxyvaluesasmat;
     }
     else
@@ -233,18 +225,13 @@ namespace ngfem
     {
       FlatMatrix<> resultmat(x.Height(),nipy*dimy, &flux(0,0));
       resultmat = x*Trans(bmaty);
-      cout << "resultmat = "<< endl<<resultmat << endl;
     }
     else
     {
-      // cout << "TPDifferentialOperator::ApplyY" << endl;
       FlatMatrix<double, ColMajor> resultmat(x.Height(),nipy*dimy, lh);
       resultmat = x*Trans(bmaty);
       for(int k=0;k<x.Height()/dimx;k++)
         flux.Rows(k*nipy,(k+1)*nipy) = Trans(resultmat.Rows(dimx*k,dimx*(k+1)));
-      // cout << "x = "<<endl<< x << endl;
-      cout << "resultmat = "<< endl<<resultmat << endl;
-      // cout << "flux = "<<endl<< flux << endl;
     }
   }
 
@@ -265,7 +252,6 @@ namespace ngfem
     {
       FlatMatrix<> proxyvaluesasmat(nipx, nipy*dimy, &flux(0,0));
       x = proxyvaluesasmat*bmaty;
-      // cout << "Input as Matrix = "<<endl<<proxyvaluesasmat<<endl;
     }
     else
     {
@@ -275,12 +261,6 @@ namespace ngfem
         for(int j=0;j<nipx;j++)
           proxyvaluesasmat1.Rows(dimx*j,dimx*(j+1)).Col(i) = (proxyvaluesasmat.Cols(dimx*i,dimx*(i+1)).Row(j));
       x = proxyvaluesasmat1*bmaty;
-      // cout << "nipx = "<<nipx<<" nipy = "<<nipy << " dimx = "<<dimx << " dimy = "<<dimy << endl;
-      // cout << "TPBlockDifferentialOperator::ApplyYTrans" << endl;
-      // cout << "flux (in) = "<<endl<<flux<<endl;
-      // cout << "fluxasmat = "<<endl<<proxyvaluesasmat<<endl;
-      // cout << "fluxasmat = "<<endl<<proxyvaluesasmat1<<endl;
-      // cout << "x = "<< endl<<x << endl;      
     }
   }
 
@@ -582,10 +562,16 @@ namespace ngfem
       for(int i : Range(BlockDim()) )
       {
         DoubleSliceMatrix<> fcomp(ndof0,ndof1,ndof1*BlockDim(),BlockDim(), &x(i));
+        FlatMatrix<> fcomp_calc(ndof0,ndof1,lh);
+        FlatMatrix<> fvals_calc(nip0*dim0,nip1*dim1,lh);
         DoubleSliceMatrix<double> fvals( nip0*dim0, nip1*dim1,BlockDim()*nip1*dim1,BlockDim(), &flux(i) );
         FlatMatrix<double,ColMajor> helper(ndof1,nip0*dim0,lh);
-        helper = Trans(fcomp) * Trans(shape0);
-        fvals = Trans(shape1 * helper);
+        // helper = Trans(fcomp) * Trans(shape0);
+        // fvals = Trans(shape1 * helper);
+        fcomp_calc = fcomp;
+        helper = Trans(fcomp_calc) * Trans(shape0);
+        fvals_calc = Trans(shape1 * helper);
+        fvals = fvals_calc;
       }
     }
     if(dim0 > 1)
@@ -594,10 +580,17 @@ namespace ngfem
       {
         DoubleSliceMatrix<> fcomp(ndof0,ndof1,ndof1*BlockDim(),BlockDim(), &x(i));
         DoubleSliceMatrix<double> fvals( nip1*dim1, nip0*dim0,BlockDim()*nip0*dim0,BlockDim(), &dim0geq1(0,i) );
+        FlatMatrix<> fcomp_calc(ndof0, ndof1, lh);
+        FlatMatrix<double> fvals_calc( nip1*dim1, nip0*dim0, lh);
         FlatMatrix<double,RowMajor> helper(ndof1,nip0*dim0,lh);
-        helper = Trans(fcomp) * Trans(shape0);
-        fvals = (shape1 * helper);
+        // helper = Trans(fcomp) * Trans(shape0);
+        // fvals = (shape1 * helper);
+        fcomp_calc = fcomp;
+        helper = Trans(fcomp_calc) * Trans(shape0);
+        fvals_calc = (shape1 * helper);
+        fvals = fvals_calc;
       }
+      
       for(int i=0;i<nip0;i++)
         flux.Rows(i*nip1,(i+1)*nip1) = dim0geq1.Cols(i*BlockDim()*dim0,(i+1)*BlockDim()*dim0);
     }
@@ -627,34 +620,38 @@ namespace ngfem
     FlatMatrix<double, ColMajor> shape1( nip1*dim1, ndof1,lh ); 
     evalx->CalcMatrix( *elements[0], *irs[0], shape0, lh ); 
     evaly->CalcMatrix( *elements[1], *irs[1], shape1, lh );
-    // cout << "TPBlockDifferentialOperator2::ApplyTrans"<<endl;
-    // cout << "Dims = ("<<dim0<<", "<<dim1<<")"<<endl;
-    // cout << "In = "<<endl<< flux << endl;
-    x = 0.0;
-    for(int i: Range(BlockDim()) )
+    // x = 0.0;
+    if(dim0 == 1)
     {
-      if(dim0 == 1)
+      for(int i: Range(BlockDim()) )
       {
         DoubleSliceMatrix<> fcomp(ndof0,ndof1,ndof1*BlockDim(),BlockDim(), &x(i));
         DoubleSliceMatrix<double> fvals( nip0*dim0, nip1*dim1,BlockDim()*nip1*dim1,BlockDim(), &flux(i) );
+        FlatMatrix<> fcomp_calc(ndof0,ndof1, lh);
+        FlatMatrix<double> fvals_calc( nip0*dim0, nip1*dim1, lh);
         FlatMatrix<double> helper(nip0*dim0,ndof1,lh);
-        helper = fvals*shape1;
-        fcomp = Trans(shape0) * helper;
+        fvals_calc = fvals;
+        helper = fvals_calc*shape1;
+        fcomp_calc = Trans(shape0) * helper;
+        fcomp = fcomp_calc;
       }
-      else
+    }
+    else
+    {
+      for(int i: Range(BlockDim()) )
       {
         DoubleSliceMatrix<> fcomp(ndof0,ndof1,ndof1*BlockDim(),BlockDim(), &x(i));
         DoubleSliceMatrix<double> fvals( nip0*dim0, nip1*dim0,BlockDim()*nip1*dim0,BlockDim(), &flux(i) );
         FlatMatrix<double> helper(nip0*dim0,ndof1,lh);
-        FlatMatrix<double> fvals1( nip0*dim0, nip1*dim1, lh );
+        FlatMatrix<double> fvals_calc( nip0*dim0, nip1*dim1, lh );
+        FlatMatrix<> fcomp_calc(ndof0,ndof1,lh);
         for(int i=0;i<nip1;i++)
           for(int j=0;j<nip0;j++)
-            fvals1.Rows(dim0*j,dim0*(j+1)).Col(i) = (fvals.Cols(dim0*i,dim0*(i+1)).Row(j));
-        
-        helper = fvals1 * shape1;
-        fcomp = Trans(shape0) * helper;
+            fvals_calc.Rows(dim0*j,dim0*(j+1)).Col(i) = (fvals.Cols(dim0*i,dim0*(i+1)).Row(j));
+        helper = fvals_calc * shape1;
+        fcomp_calc = Trans(shape0) * helper;
+        fcomp = fcomp_calc;
       }
-      // cout << "fcoefs = "<<endl<<x << endl;
     }
   }
 
@@ -672,27 +669,32 @@ namespace ngfem
     int nipx = mirx.IR().Size();
     FlatMatrix<double, ColMajor> bmatx( nipx*dimx, fel.GetNDof(),lh );
     evalx->CalcMatrix(fel,mirx,bmatx,lh);
+    int nipy = x.Width()/dimy;
+    flux = 0.0;
+    FlatMatrix<> dim0geq1(nipx,dimx*x.Width()*BlockDim(),lh);
     if(dimx == 1)
     {
-      FlatMatrix<> x_reshape(1.0/BlockDim()*x.Height(),BlockDim()*x.Width(),&x(0,0));
-      FlatMatrix<> resultmat(bmatx.Height(),x_reshape.Width(),&flux(0,0));
-      resultmat = bmatx*x_reshape;
+      for(int i: Range(BlockDim()) )
+      {
+        SliceMatrix<> xcomp(fel.GetNDof(),x.Width(),BlockDim()*x.Width(),&x(i,0));
+        DoubleSliceMatrix<> resultmat(bmatx.Height(),xcomp.Width(),flux.Width()*nipy,flux.Width()/dimy, &flux(0,i));
+        FlatMatrix<> resultmat_comp(bmatx.Height(),xcomp.Width(),lh);
+        resultmat_comp = bmatx*xcomp;
+        resultmat = resultmat_comp;
+      }
     }
     else
     {
-      // FlatMatrix<> resultmat(nipx*dimx,x.Width(), lh);
-      // resultmat = bmatx*x;
-      FlatMatrix<> x_reshape(1.0/BlockDim()*x.Height(),BlockDim()*x.Width(),&x(0,0));
-      FlatMatrix<> resultmat(bmatx.Height(),x_reshape.Width(),lh);
-      resultmat = bmatx*x_reshape;
-      // cout << "TPBlockDifferentialOperator::ApplyX"<<endl;
-      // cout << "x = "<<endl<<x << endl;
-      // cout << "x_reshpae = "<<endl<<x_reshape << endl;
-      // cout << "Result mat = "<<endl<<resultmat1 << endl;
-      // cout << "flux = "<<endl<<flux << endl;
-      
-      for(int k=0;k<x.Height();k+=2)
-        flux.Rows(k*nipx,(k+1)*nipx) = Trans(resultmat.Rows(dimx*k,dimx*(k+1)));
+      for(int i : Range(BlockDim()) )
+      {
+        SliceMatrix<> xcomp(fel.GetNDof(),x.Width(),BlockDim()*x.Width(),&x(i,0));
+        DoubleSliceMatrix<double> resultmat(bmatx.Height(),x.Width(),BlockDim()*x.Width(),BlockDim(),&dim0geq1(0,i));
+        FlatMatrix<double> resultmat_comp(bmatx.Height(),x.Width(),lh);
+        resultmat_comp = bmatx*xcomp;
+        resultmat = resultmat_comp;
+      }
+      for(int k=0;k<flux.Height();k++)
+        flux.Rows(k*nipy,(k+1)*nipy) = (dim0geq1.Cols(dimx*k*BlockDim(),dimx*(k+1)*BlockDim()));
     }
   }
 
@@ -708,16 +710,24 @@ namespace ngfem
     int dimx = evalx->Dim();
     int dimy = evaly->Dim();
     int nipx = mirx.IR().Size();
-    int nipy = x.Width();
+    int nipy = x.Width()/dimy;
     FlatMatrix<double, ColMajor> bmatx( nipx*dimx, fel.GetNDof(),lh );
     evalx->CalcMatrix(fel,mirx,bmatx,lh);
     if(dimx == 1)
     {
-      FlatMatrix<> resultmat(fel.GetNDof(),BlockDim()*nipy*dimy,&x(0,0));
-      resultmat = Trans(bmatx)*flux;
+      for(int i: Range(BlockDim()) )
+      {
+        SliceMatrix<> resultmat(fel.GetNDof(),x.Width(),BlockDim()*x.Width(),&x(i,0));
+        DoubleSliceMatrix<> fluxcomp(nipx,x.Width(),BlockDim()*dimy*nipy, BlockDim(), &flux(0,i));
+        FlatMatrix<> fluxcomp_calc(nipx,x.Width(),lh);
+        fluxcomp_calc = fluxcomp;
+        resultmat = Trans(bmatx)*fluxcomp;
+      }
     }
     else
     {
+      cout << "Also in here!! "<<endl;
+      cout << "This branch may yield undesirable results!!!!"<<endl;
       FlatMatrix<double> proxyvaluesasmat( nipx, nipy*dimx, &flux(0,0) );
       FlatMatrix<double> proxyvaluesasmat1( nipx*dimx, nipy*dimy, lh );
       for(int i=0;i<nipy;i++)
@@ -743,16 +753,17 @@ namespace ngfem
     FlatMatrix<double, ColMajor> bmaty( nipy*dimy, fel.GetNDof(),lh );
     evaly->CalcMatrix(fel,miry,bmaty,lh);
     flux = 0.0;
-    FlatMatrix<> dim0geq1(nipy*BlockDim(),flux.Width(),lh);
+    FlatMatrix<> dim0geq1(nipy*dimy,x.Width()*BlockDim(),lh);
     dim0geq1 = 0.0;
-
     if(dimx == 1)
     {
       for(int i: Range(BlockDim()) )
       {
         SliceMatrix<> fcomp(ndofy,x.Width(),x.Width()*BlockDim(), &x(i,0));
-        DoubleSliceMatrix<double> resultmat(fcomp.Width(),bmaty.Height(),BlockDim()*BlockDim()*dimy,BlockDim(), &flux(0,i));
-        resultmat = Trans(bmaty * fcomp);
+        DoubleSliceMatrix<double> resultmat(fcomp.Width(),bmaty.Height(),BlockDim()*nipy*dimy,BlockDim(), &flux(0,i));
+        FlatMatrix<double> resultmat_calc(fcomp.Width(),bmaty.Height(),lh);
+        resultmat_calc = Trans(bmaty * fcomp);
+        resultmat = resultmat_calc;
       }
     }
     else
@@ -760,15 +771,12 @@ namespace ngfem
       for(int i: Range(BlockDim()) )
       {
         SliceMatrix<> fcomp(ndofy,x.Width(),x.Width()*BlockDim(), &x(i,0));
-        DoubleSliceMatrix<double> resultmat(bmaty.Height(),fcomp.Width(),BlockDim()*dimx*x.Height()/dimx,BlockDim(),&dim0geq1(0,i));
-        FlatMatrix<double> resultmat1(bmaty.Height(),fcomp.Width(),lh);
-        resultmat =  (bmaty * fcomp);
-        resultmat1 =  (bmaty * fcomp);
-        cout << "resultmat (DoubleSliceMat) = "<<endl<<resultmat << endl;
-        cout << "resultmat (FlatMat) = "<<endl<<resultmat1 << endl;
-        cout << "dim0geq1 = "<<endl<<dim0geq1 << endl;
+        DoubleSliceMatrix<double> resultmat(bmaty.Height(),x.Width(),BlockDim()*x.Width(),BlockDim(),&dim0geq1(0,i));
+        FlatMatrix<double> resultmat_calc(bmaty.Height(),x.Width(),lh);
+        resultmat_calc =  (bmaty * fcomp);
+        resultmat = resultmat_calc;
       }
-      for(int k=0;k<1;k++)
+      for(int k=0;k<x.Width()/dimx;k++)
         flux.Rows(k*nipy,(k+1)*nipy) = (dim0geq1.Cols(dimx*k*BlockDim(),dimx*(k+1)*BlockDim()));
     }
   }
@@ -790,27 +798,35 @@ namespace ngfem
     evaly->CalcMatrix(fel,miry,bmaty,lh);
     if(dimx == 1)
     {
-      FlatMatrix<double> helper(flux.Width(),flux.Height(),lh);
-      helper = Trans(flux);
-      FlatMatrix<double,RowMajor> helper2(BlockDim()*nipx,nipy*dimy,&helper(0,0));
-      FlatMatrix<double,ColMajor> temp(BlockDim()*nipx,bmaty.Width(),lh);
-      temp = helper2*bmaty;
-      FlatMatrix<double,ColMajor> xt(x.Height(),x.Width(),&temp(0,0));
-      x = xt;
+      for(int i : Range(BlockDim()) )
+      {
+        DoubleSliceMatrix<double> fvals( x.Height(), nipy*dimy,BlockDim()*nipy*dimy,BlockDim(), &flux(i) );
+        DoubleSliceMatrix<> fcomp(x.Height(), fel.GetNDof(),x.Dist(),BlockDim(), &x(0,i));
+        FlatMatrix<double> fvals_calc( x.Height(), nipy*dimy,lh );
+        FlatMatrix<> fcomp_calc(x.Height(), fel.GetNDof(),lh);
+        fvals_calc = fvals;
+        fcomp_calc = fvals*bmaty;
+        fcomp = fcomp_calc;
+      }
     }
     else
     {
-      // FlatMatrix<Vec<3> > proxyvaluesasmat( nipx, nipy*dimx, reinterpret_cast<Vec<3> *>(&flux(0,0)));
-      // FlatMatrix<Vec<3> > proxyvaluesasmat1( nipx*dimx, nipy*dimy, lh );
-      // for(int i=0;i<nipy;i++)
-        // for(int j=0;j<nipx;j++)
-      // proxyvaluesasmat1.Rows(dimx*j,dimx*(j+1)).Col(i) = (proxyvaluesasmat.Cols(dimx*i,dimx*(i+1)).Row(j));
-      // SliceMatrix<Vec<3> > x_vec(x.Height(), 1.0/3.0*x.Width(),1.0/3.0*x.Dist(), reinterpret_cast<Vec<3> *>(&x(0,0)));
-      // x_vec = proxyvaluesasmat1*bmaty;
+      FlatMatrix<> fvalstotal(nipx*dimx*BlockDim(), nipy*dimy,lh);
+      for(int i=0;i<nipy;i++)
+        for(int j=0;j<nipx;j++)
+          fvalstotal.Rows(dimx*j*BlockDim(),dimx*(j+1)*BlockDim()).Col(i) = (flux.Cols(dimx*i*BlockDim(),dimx*(i+1)*BlockDim()).Row(j*nipy));
+      for(int i: Range(BlockDim()) )
+      {
+        SliceMatrix<> fvals1(nipx*dimx,nipy*dimy,BlockDim()*nipy*dimy,&fvalstotal(i,0));
+        DoubleSliceMatrix<> xcomp(nipx*dimx,fel.GetNDof(),x.Dist(),BlockDim(), &x(0,i));
+        FlatMatrix<> xcomp_calc(nipx*dimx,fel.GetNDof(),lh);
+        xcomp_calc = fvals1*bmaty;
+        xcomp = xcomp_calc;
+      }
     }
   }
 
- 
+
 }
 
 

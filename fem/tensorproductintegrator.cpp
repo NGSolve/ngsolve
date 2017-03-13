@@ -87,28 +87,20 @@ namespace ngfem
     int nipx = mirx->Size();
     int nipy = miry.Size();
     int niptp = nipx*nipy;
-    // cout << "Tensorproductintegrator, nipx = "<<nipx << " nipy = "<<nipy<<endl;
     TPMappedIntegrationRule * tpmir = new (lh) TPMappedIntegrationRule(*mirx, miry, TPIntegrationRule(niptp), tptrafo);
     tpmir->SetFacet(0);
-    cout << "TensorproductBilinearFormIntegrator::ApplyYElementMatrix"<<endl;
     for (ProxyFunction * proxy : trial_proxies)
     {
       ud.AssignMemory (proxy, (*mirx).IR().Size()*ir.Size(), proxy->Dimension(), lh);
       if(proxy->Evaluator()->BlockDim() == 1)
-      {
-        cout << "In = xevaluations(proxy) = "<<endl<<xevals.GetMemory(proxy).Cols(dnumsy) << endl;
         static_cast<TPDifferentialOperator*>(proxy->Evaluator().get())->ApplyY(fel,miry,ud.GetMemory(proxy), xevals.GetMemory(proxy).Cols(dnumsy),lh);
-      }
       else
-      {
-        cout << "In = xevaluations(proxy) = "<<endl<<Trans(xevals.GetMemory(proxy).Rows(dnumsy)) << endl;
         static_cast<TPBlockDifferentialOperator2*>(proxy->Evaluator().get())->ApplyY(fel,miry,ud.GetMemory(proxy), xevals.GetMemory(proxy).Rows(dnumsy),lh);
-      }
-      cout << "Out = ud.GetMemory(proxy) = "<<endl<<ud.GetMemory(proxy)<<endl;
     }
     FlatMatrix<> val(niptp, 1,lh);
     for (auto proxy : test_proxies)
     {
+      HeapReset hr(lh);
       FlatMatrix<> proxyvalues(niptp, proxy->Dimension(), lh);
       for (int k = 0; k < proxy->Dimension(); k++)
       {
@@ -121,14 +113,12 @@ namespace ngfem
         for(int j=0;j<nipy;j++,ii++)
           proxyvalues.Row(ii) *= (*mirx)[i].GetWeight()*miry[j].GetWeight();
 
-      // cout << "In = "<<endl<< proxyvalues << endl;
       if(proxy->Evaluator()->BlockDim() == 1)
         static_cast<TPDifferentialOperator*>(proxy->Evaluator().get())
         ->ApplyYTrans(fel,miry,proxyvalues,xevals.GetMemory(proxy).Cols(dnumsy),lh);
       else
         static_cast<TPBlockDifferentialOperator2*>(proxy->Evaluator().get())
         ->ApplyYTrans(fel,miry,proxyvalues,xevals.GetMemory(proxy).Cols(dnumsy),lh);
-      // cout << "Out = "<<endl<< xevals.GetMemory(proxy).Cols(dnumsy)<<endl;        
     }
   }
 
@@ -347,6 +337,7 @@ namespace ngfem
     FlatMatrix<> val(niptp, 1,lh);
     for (auto proxy : test_proxies)
     {
+      HeapReset hr(lh);
       FlatMatrix<> proxyvalues(niptp, proxy->Dimension(), lh);
       for (int k = 0; k < proxy->Dimension(); k++)
       {
@@ -427,7 +418,7 @@ namespace ngfem
     int dimy;
     for (ProxyFunction * proxy : trial_proxies)
     {
-      bool block = proxy->Evaluator()->BlockDim() > 1;      
+      bool block = proxy->Evaluator()->BlockDim() > 1;
       if(!block)
         dimy = static_cast<TPDifferentialOperator * >(proxy->Evaluator().get())->GetEvaluators(1)->Dim();
       else
@@ -497,6 +488,7 @@ namespace ngfem
     FlatMatrix<> val(niptp, 1,lh);
     for (auto proxy : test_proxies)
     {
+      HeapReset hr(lh);
       FlatMatrix<> proxyvalues(niptp, proxy->Dimension(), lh);
       for (int k = 0; k < proxy->Dimension(); k++)
       {
@@ -558,6 +550,7 @@ namespace ngfem
         ely.Rows(test_range) += Trans(ud->GetMemory(proxy)*bmaty);
       }
     }
+    // cout << ely << endl;
   }
 }
  
