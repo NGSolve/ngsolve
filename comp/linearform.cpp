@@ -259,8 +259,8 @@ namespace ngcomp
 		  {
                     lock_guard<mutex> guard(linformsurfneighprint_mutex);
 		    gcnt++;
-		    if (i % 10 == 0)
-		      cout << "\rassemble facet surface element " << i << "/" << nse << flush;
+		    // if (i % 10 == 0)
+		      // cout << "\rassemble facet surface element " << i << "/" << nse << flush;
 		    ma->SetThreadPercentage ( 100.0*(gcnt) / (loopsteps) );
 		  }
 
@@ -319,7 +319,7 @@ namespace ngcomp
 		}
 		
 	  });//end of parallel
-	  cout << "\rassemble facet surface element  " << nse << "/" << nse << endl;	  
+	  // cout << "\rassemble facet surface element  " << nse << "/" << nse << endl;	  
 	}//endof hasskeletonbound
 
 
