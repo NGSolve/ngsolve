@@ -11,19 +11,20 @@ ngsolve.comp ... function spaces, forms
 """
 
 from os import environ
+import os
 from sys import path
-path.append(environ['NETGENDIR']+'/../lib')
 
 from sys import platform as __platform
 if __platform.startswith('linux'):
-    path.append(environ['NETGENDIR']+'/../lib')
+    path.append(os.path.abspath(os.path.dirname(__file__)+'/../../../'))
 if __platform.startswith('win'):
-    path.append(environ['NETGENDIR'])
+    path.append(os.path.abspath(os.path.dirname(__file__)+'/../../../bin'))
 if __platform.startswith('darwin'):
-    path.append(environ['NETGENDIR'])
+    path.append(os.path.abspath(os.path.dirname(__file__)+'/../../../../../MacOS/'))
     
 del environ
 del path
+del os
 
 #old
 # __all__ = ['ngstd','bla','fem','la','comp','solve','utils']
