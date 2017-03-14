@@ -23,10 +23,10 @@ set(CPACK_SOURCE_GENERATOR "TGZ")
 set(CPACK_SOURCE_IGNORE_FILES "/.dmg/;/.msi/;/.deb/;/.git/;/cmake/;/build/;/.gz/;/.zip/;~$;${CPACK_SOURCE_IGNORE_FILES}")
 
 if(WIN32)
-  include(cmake_modules/package_windows.cmake)
+  include(cmake/package_windows.cmake)
 elseif(APPLE)
-  include(cmake_modules/package_macos.cmake)
+  include(cmake/package_macos.cmake)
 elseif(UNIX)
-  include(cmake_modules/package_linux.cmake)
+  include(cmake/package_linux.cmake)
 endif()
 
