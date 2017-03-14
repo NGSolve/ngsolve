@@ -18,9 +18,9 @@ from sys import platform as __platform
 if __platform.startswith('linux'):
     path.append(os.path.abspath(os.path.dirname(__file__)+'/../../../'))
 if __platform.startswith('win'):
-    path.append(environ['NETGENDIR'])
+    path.append(os.path.abspath(os.path.dirname(__file__)+'/../../../bin'))
 if __platform.startswith('darwin'):
-    path.append(environ['NETGENDIR'])
+    path.append(os.path.abspath(os.path.dirname(__file__)+'/../../../../MacOS/'))
     
 del environ
 del path
