@@ -2,6 +2,9 @@ if(NOT UNIX)
   message(FATAL_ERROR "Building MUMPS as dependency is not supported on this platform. Please configure with USE_MUMPS=OFF or set MUMPS_DIR=path_to_your_mumps_installation")
 endif(NOT UNIX)
 
+enable_language(Fortran)
+find_package(MPI REQUIRED)
+
 if(NOT PARMETIS_DIR)
   include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/external_projects/parmetis.cmake)
 endif(NOT PARMETIS_DIR)
@@ -9,8 +12,6 @@ endif(NOT PARMETIS_DIR)
 set(MUMPS_SRC_DIR ${CMAKE_CURRENT_BINARY_DIR}/dependencies/src/project_mumps)
 set(MUMPS_DIR ${MUMPS_SRC_DIR})
 
-enable_language(Fortran)
-find_package(MPI REQUIRED)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/external_projects/mumps.inc ${CMAKE_CURRENT_BINARY_DIR}/dependencies/Makefile_mumps.inc)
 
 ExternalProject_Add(project_mumps
