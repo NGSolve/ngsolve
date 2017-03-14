@@ -29,8 +29,8 @@ public:
   PStatDummy(PARALLEL_STATUS aps) { ps = aps; } 
 };
 
-static PStatDummy pstat_dis(DISTRIBUTED);
-static PStatDummy pstat_cum(CUMULATED);
+static PStatDummy pstat_distr(DISTRIBUTED);
+static PStatDummy pstat_cumul(CUMULATED);
 static PStatDummy pstat_not_par(NOT_PARALLEL);
   
   
@@ -90,8 +90,8 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     py::class_<PStatDummy> (m, "PSD");
     typedef PyWrapper<PStatDummy> PyPStatDummy;
     
-    m.attr("pstat_distr") = py::cast(&pstat_dis);
-    m.attr("pstat_cum") = py::cast(&pstat_cum);
+    m.attr("pstat_distrtr") = py::cast(&pstat_distr);
+    m.attr("pstat_cumul") = py::cast(&pstat_cumul);
     m.attr("pstat_not_par") = py::cast(&pstat_not_par);
     
     typedef BaseVector PyBaseVector;

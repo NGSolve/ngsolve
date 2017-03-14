@@ -2452,6 +2452,7 @@ flags : dict
   //////////////////////////////////////////////////////////////////////////////////////////
 
   py::class_<Preconditioner, shared_ptr<Preconditioner>, BaseMatrix>(m, "CPreconditioner")
+    .def ("Test", [](Preconditioner &pre) { pre.Test();} )
     .def ("Update", [](Preconditioner &pre) { pre.Update();} )
     .def_property_readonly("mat", FunctionPointer
                   ([](Preconditioner &self) -> PyWrapper<BaseMatrix>
