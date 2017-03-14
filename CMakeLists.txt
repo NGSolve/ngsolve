@@ -24,13 +24,32 @@ endif(NOT WIN32 AND NOT INTEL_MIC)
 
 set(NETGEN_DIR "" CACHE PATH "Path to Netgen, leave empty to build Netgen automatically")
 
-set(NGSOLVE_VERSION_MAJOR 6)
-set(NGSOLVE_VERSION_MINOR 2)
-string(TIMESTAMP NGSOLVE_VERSION_PATCH "%y%U%w" )
-set(NGSOLVE_VERSION "${NGSOLVE_VERSION_MAJOR}.${NGSOLVE_VERSION_MINOR}-dev")
-set(CPACK_PACKAGE_VERSION_MAJOR ${NGSOLVE_VERSION_MAJOR})
-set(CPACK_PACKAGE_VERSION_MINOR ${NGSOLVE_VERSION_MINOR})
-set(CPACK_PACKAGE_VERSION_PATCH ${NGSOLVE_VERSION_PATCH})
+find_program(GIT_FOUND git)
+if(GIT_FOUND AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
+    execute_process(COMMAND git describe --tags --long --dirty WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} OUTPUT_VARIABLE git_version_string)
+else()
+  get_filename_component(git_version_string ${CMAKE_CURRENT_SOURCE_DIR} NAME)
+  string(REGEX REPLACE "^ngsolve_(.*)" "\\1" git_version_string "${git_version_string}")
+endif()
+
+string(REGEX REPLACE "^v([0-9]+)\\..*" "\\1" NGSOLVE_VERSION_MAJOR "${git_version_string}")
+string(REGEX REPLACE "^v[0-9]+\\.([0-9]+).*" "\\1" NGSOLVE_VERSION_MINOR "${git_version_string}")
+string(REGEX REPLACE "^v[0-9]+\\.[0-9]+\\.([0-9]+).*" "\\1" NGSOLVE_VERSION_PATCH "${git_version_string}")
+string(REGEX REPLACE "^v[0-9]+\\.[0-9]+\\.[0-9]+\\-([0-9]+).*" "\\1" NGSOLVE_VERSION_TWEAK "${git_version_string}")
+string(REGEX REPLACE "^v[0-9]+\\.[0-9]+\\.[0-9]+\\-[0-9]+\\-([0-9a-z]+).*" "\\1" NGSOLVE_VERSION_HASH "${git_version_string}")
+
+set(NGSOLVE_VERSION_SHORT ${NGSOLVE_VERSION_MAJOR}.${NGSOLVE_VERSION_MINOR}.${NGSOLVE_VERSION_PATCH})
+set(NGSOLVE_VERSION_LONG ${NGSOLVE_VERSION_SHORT}-${NGSOLVE_VERSION_TWEAK}-${NGSOLVE_VERSION_HASH})
+
+if(NGSOLVE_VERSION_TWEAK)
+  # no release version - nightly build
+  set(NGSOLVE_VERSION ${NGSOLVE_VERSION_LONG})
+else()
+  # TWEAK is 0 -> current version has a tag assigned
+  set(NGSOLVE_VERSION ${NGSOLVE_VERSION_SHORT})
+endif()
+
+set(NGSOLVE_VERSION_LONG ${NGSOLVE_VERSION_SHORT}-${NGSOLVE_VERSION_TWEAK}-${NGSOLVE_VERSION_HASH})
 
 if (USE_SUPERBUILD)
   project (NGSuite)
@@ -38,12 +57,13 @@ if (USE_SUPERBUILD)
   # USE_SUPERBUILD option this time)
   include (cmake_modules/SuperBuild.cmake)
   include (cmake_modules/package.cmake)
+  include(CPack)
   return()                      # stop processing this file further
 else()
   project(NGSolve)
 endif()
 
-find_package(Netgen REQUIRED CONFIG HINTS ${NETGEN_DIR} ${NETGEN_DIR}/share/cmake ${INSTALL_DIR} ${INSTALL_DIR}/share/cmake ${INSTALL_DIR}/Netgen.app/Contents/Resources/share/cmake)
+find_package(Netgen REQUIRED CONFIG HINTS ${NETGEN_DIR} ${NETGEN_DIR}/share/cmake ${INSTALL_DIR} ${INSTALL_DIR}/share/cmake ${INSTALL_DIR}/Contents/Resources/share/cmake)
 
 # set(CPACK_DEBIAN_PACKAGE_VERSION "${NGSOLVE_VERSION_MAJOR}.${NGSOLVE_VERSION_MINOR}.${NGSOLVE_VERSION_PATCH}")
 
@@ -60,6 +80,7 @@ install (FILES ${CMAKE_CURRENT_BINARY_DIR}/config.h DESTINATION include COMPONEN
 #######################################################################
 
 add_definitions(-DHAVE_NETGEN_SOURCES)
+add_definitions(-DNGSOLVE_VERSION="${NGSOLVE_VERSION}")
 #######################################################################
 if(USE_CCACHE)
   find_program(CCACHE_FOUND ccache)
@@ -295,6 +316,7 @@ add_subdirectory(python)
 add_subdirectory(pde_tutorial)
 add_subdirectory(py_tutorials)
 add_subdirectory(tests)
+add_subdirectory(docs)
 
 #######################################################################
 # generate ngscxx compiler wrapper
@@ -333,6 +355,7 @@ if(USE_MKL AND NOT INSTALL_DEPENDENCIES)
 endif()
 
 if(APPLE)
+    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/pictures/logo.icns DESTINATION . RENAME Netgen.icns)
     if(CMAKE_OSX_SYSROOT)
         set( ngscxx_includes "-I${CMAKE_OSX_SYSROOT}/usr/include ${ngscxx_includes}" )
     endif()

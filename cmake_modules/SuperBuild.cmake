@@ -83,9 +83,9 @@ else(NETGEN_DIR)
   add_custom_target(check_submodules_stop ALL cmake -P cmake_modules/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} DEPENDS ngsolve)
   if(NOT INSTALL_DIR)
     if(APPLE)
-      set(INSTALL_DIR /Applications)
+      set(INSTALL_DIR /Applications/NGSolve.app)
     elseif(WIN32)
-      set(INSTALL_DIR C:/netgen)
+      set(INSTALL_DIR C:/NGSolve)
     else()
       set(INSTALL_DIR /opt/netgen)
     endif()
@@ -225,7 +225,8 @@ ExternalProject_Add (ngsolve
   INSTALL_COMMAND ""
   BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/ngsolve
   BUILD_COMMAND ${COMMON_BUILD_COMMAND}
-)
+  )
+
 
 install(CODE "execute_process(COMMAND \"${CMAKE_COMMAND}\" --build . --config ${CMAKE_BUILD_TYPE} --target install WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ngsolve)")
 
@@ -265,4 +266,4 @@ if(WIN32)
   add_custom_target(set_environment_variables)
   add_dependencies(set_environment_variables set_netgendir set_pythonpath)
 endif(WIN32)
-
+ 
