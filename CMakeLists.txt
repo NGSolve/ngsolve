@@ -143,7 +143,9 @@ include_directories (AFTER ${NETGEN_INCLUDE_DIRS})
 
 link_directories ("${CMAKE_INSTALL_PREFIX}/${ngs_install_dir_lib}")
 
-install (FILES ngsolve.tcl DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve )
+if(NETGEN_USE_GUI)
+  install (FILES ngsolve.tcl DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve )
+endif(NETGEN_USE_GUI)
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -Wall")
 
