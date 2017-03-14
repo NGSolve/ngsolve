@@ -1,5 +1,5 @@
 if(NOT UNIX)
-  message(FATAL_ERROR "Building MUMPS as dependency is not supported on this platform. Please configure with USE_MUMPS=OFF")
+  message(FATAL_ERROR "Building MUMPS as dependency is not supported on this platform. Please configure with USE_MUMPS=OFF or set MUMPS_DIR=path_to_your_mumps_installation")
 endif(NOT UNIX)
 
 if(NOT PARMETIS_DIR)

@@ -1,5 +1,5 @@
 if(NOT UNIX)
-  message(FATAL_ERROR "Building HYPRE as dependency is not supported on this platform. Please configure with USE_HYPRE=OFF")
+  message(FATAL_ERROR "Building HYPRE as dependency is not supported on this platform. Please configure with USE_HYPRE=OFF or set HYPRE_DIR=path_to_your_hypre_installation")
 endif(NOT UNIX)
 
 set(HYPRE_SRC_DIR ${CMAKE_CURRENT_BINARY_DIR}/dependencies/src/project_parmetis/src)
