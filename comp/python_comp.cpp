@@ -199,7 +199,7 @@ typedef PyWrapper<CoefficientFunction> PyCF;
 typedef PyWrapper<PML_Transformation> PyPML;
 void ExportPml(py::module &m)
 {
-  py::class_<PyPML>(m, "PML", "Base PML object, can only be created by generator
+  py::class_<PyPML>(m, "PML", "Base PML object, can only be created by generatori\n\
       functions. Use PML(x, [y, z]) to evaluate the scaling.")
     .def("__call__",  [](py::args varargs) {
                       PyPML self = py::extract<PyPML>(varargs[0])();
@@ -290,7 +290,7 @@ void ExportPml(py::module &m)
           throw Exception("No valid dimension");
       },
     py::arg("origin"),py::arg("rad")=1,py::arg("alpha")=Complex(0,1),
-    "radial pml transformation
+    "radial pml transformation\n\
       origin is a list/tuple determining the dimenson");
 
     m.def("Custom", [](PyCF trafo, PyCF jac) -> PyPML {
@@ -306,7 +306,7 @@ void ExportPml(py::module &m)
           throw Exception("No valid dimension");
         },
         py::arg("trafo"),py::arg("jac"),
-        "custom pml transformation.
+        "custom pml transformation.\n\
         trafo and jac are coefficient functions of the scaling and the jacobian")
     ;
     m.def("Cartesian", [](py::object mins,py::object maxs, Complex alpha) {
@@ -350,7 +350,7 @@ void ExportPml(py::module &m)
           throw Exception("No valid dimension");
         },
         py::arg("mins"),py::arg("maxs"), py::arg("alpha")=Complex(0,1),
-        "cartesian pml transformation
+        "cartesian pml transformation\n\
           mins and maxs ate tuples/lists determining the dimension")
     ;
     m.def("HalfSpace", [](py::object point,py::object normal, Complex alpha) {
@@ -403,7 +403,7 @@ void ExportPml(py::module &m)
         },
         py::arg("point"),py::arg("normal"), py::arg("alpha")=Complex(0,1),
         "half space pml 
-          scales orthogonal to specified plane in direction of normal
+          scales orthogonal to specified plane in direction of normal\n \
           point and normal are given as tuples/lists determining the dimension")
     ;
     m.def("BrickRadial", [](py::object mins,py::object maxs,py::object _origin, Complex alpha) {
@@ -459,7 +459,7 @@ void ExportPml(py::module &m)
           throw Exception("No valid dimension");
         },
         py::arg("mins"),py::arg("maxs"), py::arg("origin")=py::make_tuple(0.,0.,0.),py::arg("alpha")=Complex(0,1),
-        "radial pml on a brick.
+        "radial pml on a brick.\n \
           mins, maxs and origin are given as tuples/lists")
       ;
     m.def("Compound", [](PyPML pml1,PyPML pml2,py::object dims1,py::object dims2) {
