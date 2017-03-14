@@ -1,4 +1,4 @@
-find_path (HYPRE_DIR include/HYPRE.h HINTS "$CMAKE_PREFIX_PATH}")
+find_path (HYPRE_DIR include/HYPRE.h HINTS "${HYPRE_HINTS}")
 if( EXISTS ${HYPRE_DIR}/include/HYPRE.h )
   message( "HYPRE_DIR:  ${HYPRE_DIR}")
   set(HYPRE_FOUND YES)
@@ -18,6 +18,3 @@ else( EXISTS ${HYPRE_DIR}/include/HYPRE.h )
 endif( EXISTS ${HYPRE_DIR}/include/HYPRE.h )
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(HYPRE DEFAULT_MSG HYPRE_LIBRARIES HYPRE_INCLUDES)
-  
-
-

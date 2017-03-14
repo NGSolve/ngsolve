@@ -950,7 +950,14 @@ namespace ngcomp
     : CoefficientFunction(1, false),
       diffop (adiffop), trace_diffop(atrace_diffop), ttrace_diffop(attrace_diffop), comp (acomp) 
   {
-    ; // SetDimensions (gf->Dimensions());    
+    ; // SetDimensions (gf->Dimensions());
+
+    if (diffop)
+      SetDimensions (diffop->Dimensions());
+    else if (trace_diffop)
+      SetDimensions (trace_diffop->Dimensions());
+    else if (ttrace_diffop)
+      SetDimensions (ttrace_diffop->Dimensions());
   }
 
   GridFunctionCoefficientFunction :: 
@@ -963,7 +970,12 @@ namespace ngcomp
       gf(agf), diffop (adiffop), trace_diffop(atrace_diffop), ttrace_diffop(attrace_diffop), comp (acomp) 
   {
     fes = gf->GetFESpace();    
-    //SetDimensions (gf->Dimensions());    
+    if (diffop)
+      SetDimensions (diffop->Dimensions());
+    else if (trace_diffop)
+      SetDimensions (trace_diffop->Dimensions());
+    else if (ttrace_diffop)
+      SetDimensions (ttrace_diffop->Dimensions());
   }
   
   GridFunctionCoefficientFunction :: 
@@ -997,6 +1009,16 @@ namespace ngcomp
 
   Array<int> GridFunctionCoefficientFunction::Dimensions() const
   {
+    if (diffop)
+      return Array<int> (diffop->Dimensions());
+    else if (trace_diffop)
+      return Array<int> (trace_diffop->Dimensions());
+    else if (ttrace_diffop)
+      return Array<int> (ttrace_diffop->Dimensions());
+
+    // is it possible ?? 
+    return Array<int> ( { Dimension() } );
+    /*
     int d = Dimension();
     if (diffop)
       {
@@ -1005,6 +1027,7 @@ namespace ngcomp
           return Array<int> ( { spacedim, d/spacedim } );
       }
     return Array<int>( { d } );
+    */
   }
 
   void GridFunctionCoefficientFunction :: GenerateCode(Code &code, FlatArray<int> inputs, int index) const

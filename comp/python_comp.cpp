@@ -648,8 +648,8 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
         { return self.GetIndex(); },
         "material or boundary condition index")
     .def_property_readonly("mat", [](Ngs_Element & el)
-                                         { return el.GetMaterial() ? *el.GetMaterial() : ""; },
-                  "material or boundary condition label")
+                           { return el.GetMaterial(); },
+                           "material or boundary condition label")
     ;
 
   py::implicitly_convertible <Ngs_Element, ElementId> ();
@@ -840,36 +840,12 @@ mesh (netgen.Mesh): a mesh generated from Netgen
     .def(py::init<shared_ptr<netgen::Mesh>>())
     .def("__ngsid__", [] ( MeshAccess & self)
         { return reinterpret_cast<std::uintptr_t>(&self); }  )
-    
-    //#ifndef PARALLEL
     .def("__init__",
          [](MeshAccess *instance, const string & filename)
                            { 
                              new (instance) MeshAccess(filename);
                            },
           py::arg("filename"))
-    /*
-#else
-
-    .def("__init__",
-         [](MeshAccess *instance, const string & filename,
-                              py::object py_mpicomm)
-                           { 
-                             // PyObject * py_mpicomm_ptr = py_mpicomm.ptr();
-                             // if (py_mpicomm_ptr != Py_None)
-                             //   {
-                             //     MPI_Comm * comm = PyMPIComm_Get (py_mpicomm_ptr);
-                             //     ngs_comm = *comm;
-                             //   }
-                             // else
-                               ngs_comm = MPI_COMM_WORLD;
-
-                             NGSOStream::SetGlobalActive (MyMPI_GetId()==0);
-                             new (instance) MeshAccess (filename, ngs_comm);
-                           },
-          py::arg("filename"), py::arg("mpicomm")=DummyArgument())
-#endif
-    */
     
     .def("__eq__",
          [] (shared_ptr<MeshAccess> self, shared_ptr<MeshAccess> other)
@@ -935,7 +911,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
               {
                 std::regex pattern(definedon.cast<string>());
                 for (int i = 0; i < ma.GetNDomains(); i++)
-                  if (std::regex_match (ma.GetDomainMaterial(i), pattern))
+                  if (std::regex_match (ma.GetMaterial(VOL,i), pattern))
                     ma.SetPML(apml.Get(), i);
               }
           }),
@@ -951,7 +927,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
               {
                 std::regex pattern(definedon.cast<string>());
                 for (int i = 0; i < ma.GetNDomains(); i++)
-                  if (std::regex_match (ma.GetDomainMaterial(i), pattern))
+                  if (std::regex_match (ma.GetMaterial(VOL,i), pattern))
                     ma.UnSetPML(i);
               }
           })
@@ -986,7 +962,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
 	  {
             py::list materials(ma.GetNDomains());
 	    for (int i : Range(ma.GetNDomains()))
-	      materials[i] = py::cast(ma.GetDomainMaterial(i));
+	      materials[i] = py::cast(ma.GetMaterial(VOL,i));
 	    return materials;
 	  },
 	 "Returns list of materials"
@@ -1007,7 +983,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
 	  {
             py::list materials(ma.GetNBoundaries());
 	    for (int i : Range(ma.GetNBoundaries()))
-	      materials[i] = py::cast(ma.GetBCNumBCName(i));
+	      materials[i] = py::cast(ma.GetMaterial(BND,i));
 	    return materials;
 	  },
 	 "Returns list of boundary conditions"
@@ -1027,7 +1003,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
 	  {
 	    py::list bboundaries(ma.GetNBBoundaries());
 	    for (int i : Range(ma.GetNBBoundaries()))
-	      bboundaries[i] = py::cast(ma.GetCD2NumCD2Name(i));
+	      bboundaries[i] = py::cast(ma.GetMaterial(BBND,i));
 	    return bboundaries;
 	  },
 	 "Returns list of boundary conditions for co dimension 2"
@@ -1366,7 +1342,7 @@ when building the system matrices.
                                  std::regex pattern(dirichlet.cast<string>());
                                  Array<double> dirlist;
                                  for (int i = 0; i < ma->GetNBoundaries(); i++)
-                                   if (std::regex_match (ma->GetBCNumBCName(i), pattern))
+                                   if (std::regex_match (ma->GetMaterial(BND, i), pattern))
                                      dirlist.Append (i+1);
                                  flags.SetFlag("dirichlet", dirlist);
 // 				 bpflags["dirichlet"] = py::cast(dirlist);
@@ -1377,7 +1353,7 @@ when building the system matrices.
                                  std::regex pattern(definedon.cast<string>());
                                  Array<double> defonlist;
                                  for (int i = 0; i < ma->GetNDomains(); i++)
-                                   if (regex_match(ma->GetDomainMaterial(i), pattern))
+                                   if (regex_match(ma->GetMaterial(VOL,i), pattern))
                                      defonlist.Append(i+1);
                                  flags.SetFlag ("definedon", defonlist);
 // 				 bpflags["definedon"] = py::cast(defonlist);
@@ -1681,12 +1657,12 @@ flags : dict
          [] (const PyFES & self) 
            {
              return MakeProxyFunction (*self.Get(), false);
-           }, docu_string("Gives a proxy to be used as a trialfunction in :any:`Symbolic Integrators`"))
+           }, docu_string("Gives a proxy to be used as a trialfunction in :any:`Symbolic Integrators<symbolic-integrators>`"))
     .def("TestFunction",
          [] (const PyFES & self) 
            {
              return MakeProxyFunction (*self.Get(), true);
-           }, docu_string("Gives a proxy to be used as a testfunction for :any:`Symbolic Integrators`"))
+           }, docu_string("Gives a proxy to be used as a testfunction for :any:`Symbolic Integrators<symbolic-integrators>`"))
 
     .def("SolveM", FunctionPointer
         ( [] (const PyFES & self,
@@ -1984,8 +1960,7 @@ used_idnrs : list of int = None
             auto sp = make_shared<GridFunctionCoefficientFunction> (self.Get(),
                                                                     self->GetFESpace()->GetFluxEvaluator(),
                                                                     self->GetFESpace()->GetFluxEvaluator(BND));
-            // sp->SetComplex(self->GetFESpace()->IsComplex()); 
-            sp->SetDimensions(sp->Dimensions());
+            // sp->SetDimensions(sp->Dimensions());
             return PyCF(sp);
           }))
 
@@ -2309,7 +2284,22 @@ flags : dict
               }
 	    self->ApplyMatrix (*x, *y, glh);
 	  }),
-         py::arg("x"),py::arg("y"),py::arg("heapsize")=1000000)
+         py::arg("x"),py::arg("y"),py::arg("heapsize")=1000000,docu_string(R"raw_string(
+Applies a (non-)linear variational formulation to x and stores the result in y.
+
+Parameters
+
+x : ngsolve.BaseVector
+  input vector
+
+y : ngsolve.BaseVector
+  output vector
+
+heapsize : int
+  Size of the LocalHeap for that operation. If you get an error about not
+  enough heapsize increase this value.
+
+)raw_string"))
 
     .def("ComputeInternal", FunctionPointer
 	 ([](PyBF & self, PyBaseVector & u, PyBaseVector & f, int heapsize)
@@ -2527,7 +2517,6 @@ flags : dict
     .def(py::init<>())
     
 
-    //#ifndef PARALLEL
     .def("__init__",
          [](PyPDE *instance, const string & filename)
                            { 
@@ -2535,33 +2524,6 @@ flags : dict
                            },
           py::arg("filename")
           )
-    /*
-#else
-
-    .def("__init__",
-         [](PyPDE *instance, const string & filename,
-                              py::object py_mpicomm)
-                           { 
-                             // PyObject * py_mpicomm_ptr = py_mpicomm.ptr();
-                             // if (py_mpicomm_ptr != Py_None)
-                             //   {
-                             //     MPI_Comm * comm = PyMPIComm_Get (py_mpicomm_ptr);
-                             //     ngs_comm = *comm;
-                             //   }
-                             // else
-                               ngs_comm = MPI_COMM_WORLD;
-
-                             // cout << "Rank = " << MyMPI_GetId(ngs_comm) << "/"
-                             //      << MyMPI_GetNTasks(ngs_comm) << endl;
-
-                             NGSOStream::SetGlobalActive (MyMPI_GetId()==0);
-                             new (instance) PyPDE(LoadPDE (filename));
-                           },
-          py::arg("filename"), py::arg("mpicomm")=DummyArgument()
-          )
-#endif
-    */
-
 
     .def("LoadSolution", []( PyPDE self, string filename, bool ascii )
         {

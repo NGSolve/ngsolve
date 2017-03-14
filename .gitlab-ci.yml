@@ -17,16 +17,12 @@ stages:
     - "echo off"
     - 'call "%VS140COMNTOOLS%\..\..\VC\bin\vcvars32.bat"'
     - set CMAKE_GENERATOR=Visual Studio 14 2015
-    - set CI_DIR=C:\ci\%CI_BUILD_REF%_32
+    - set CI_DIR=C:\ci\%CI_PIPELINE_ID%_32
     - set NETGEN_BUILD_DIR=%CI_DIR%\build
     - set INSTALL_DIR=%CI_DIR%\install
     - set NETGENDIR=%INSTALL_DIR%\bin
     - set PYTHONPATH=%INSTALL_DIR%\lib\site-packages
-    - set UPLOAD_USER=tester
-    - set UPLOAD_SERVER=open sftp://%UPLOAD_USER%:%UPLOAD_PASS%@vector.asc.tuwien.ac.at/ -hostkey=""ecdsa-sha2-nistp256 256 a6:6b:08:75:c2:b7:57:9a:97:03:bb:9e:24:7e:9c:b7""
-    - set UPLOAD_DIR=/home/tester/deploy/win32/%CI_BUILD_REF%/
-    - set UPLOAD_FILE=NGSuite-6.2-dev-win32.msi
-    - set MKL_CONFIG=-DUSE_MKL=OFF
+    - set CMAKE_CONFIG=-DUSE_MKL=OFF -DUSE_OCC=ON
 
 .template_windows_64: &win64
   tags:
@@ -34,23 +30,22 @@ stages:
     - x64
   before_script:
     - "echo off"
-    - 'call "%VS140COMNTOOLS%\..\..\VC\bin\amd64\vcvars64.bat"'
-    - set CMAKE_GENERATOR=Visual Studio 14 2015 Win64
-    - set CI_DIR=C:\ci\%CI_BUILD_REF%_64
+    - 'call "%VS140COMNTOOLS%\..\..\VC\vcvarsall" x64'
+    - set CMAKE_GENERATOR=Ninja
+    - set CI_DIR=C:\ci\%CI_PIPELINE_ID%_64
     - set NETGEN_BUILD_DIR=%CI_DIR%\build
     - set INSTALL_DIR=%CI_DIR%\install
     - set NETGENDIR=%INSTALL_DIR%\bin
     - set PYTHONPATH=%INSTALL_DIR%\lib\site-packages
-    - set UPLOAD_USER=tester
-    - set UPLOAD_SERVER=open sftp://%UPLOAD_USER%:%UPLOAD_PASS%@vector.asc.tuwien.ac.at/ -hostkey=""ecdsa-sha2-nistp256 256 a6:6b:08:75:c2:b7:57:9a:97:03:bb:9e:24:7e:9c:b7""
-    - set UPLOAD_DIR=/home/tester/deploy/win64/%CI_BUILD_REF%/
-    - set UPLOAD_FILE=NGSuite-6.2-dev-win64.msi
-    - set MKL_CONFIG=-DUSE_MKL=ON -DMKL_STATIC=ON -DMKL_ROOT="C:/Program Files (x86)/IntelSWTools/compilers_and_libraries/windows/mkl"
+    - set UPLOAD_DIR=/home/tester/deploy/win64/%CI_BUILD_TAG%%CI_BUILD_REF%/
+    - set CLCACHE_BASEDIR=%CI_DIR%
+    - set CMAKE_CONFIG=-DUSE_OCC=ON -DUSE_CCACHE=ON -DUSE_MKL=ON -DMKL_STATIC=ON -DMKL_ROOT="C:/Intel/compilers_and_libraries/windows/mkl"
 
 # Linux
 .template_ubuntu: &ubuntu
   tags:
     - linux
+    - docker
   before_script:
     - pwd
     - ls
@@ -79,11 +74,11 @@ stages:
   tags:
     - mac
   before_script:
-    - export BUILD_DIR=/tmp/$CI_BUILD_REF
-    - export INSTALL_DIR=/tmp/$CI_BUILD_REF/install
+    - export BUILD_DIR=/tmp/$CI_PIPELINE_ID
+    - export INSTALL_DIR=/tmp/$CI_PIPELINE_ID/install/NGSolve.app
     - export MACOSX_DEPLOYMENT_TARGET=10.9
-    - export PYTHONPATH=$INSTALL_DIR/Netgen.app/Contents/Resources/lib/python3.6/site-packages:.
-    - export NETGENDIR=$INSTALL_DIR/Netgen.app/Contents/MacOS
+    - export PYTHONPATH=$INSTALL_DIR/Contents/Resources/lib/python3.6/site-packages:.
+    - export NETGENDIR=$INSTALL_DIR/Contents/MacOS
     - export DYLD_LIBRARY_PATH=$NETGENDIR
     - export DYLD_FRAMEWORK_PATH=$NETGENDIR/../Frameworks
     - export PATH=$NETGENDIR:$PATH
@@ -104,12 +99,17 @@ stages:
         cmake %CI_PROJECT_DIR%
         -G"%CMAKE_GENERATOR%"
         -DINSTALL_DIR=%INSTALL_DIR%
-        %MKL_CONFIG%
+        %CMAKE_CONFIG%
         -DUSE_UMFPACK=ON
+        -DCPACK_PACKAGE_NAME=NGSolve${PACKAGE_NAME_SUFFIX}
         -DCMAKE_BUILD_TYPE=Release
-    - cmake --build . --target INSTALL --config Release
-    - cmake --build . --target PACKAGE --config Release
-    - winscp.com /command "%UPLOAD_SERVER%" "option batch continue" "mkdir %UPLOAD_DIR%" "put %UPLOAD_FILE%  %UPLOAD_DIR%" "exit"
+    - cmake --build . --target install --config Release
+    - cmake --build . --target package --config Release
+    - >-
+      rsync -ztrl --del -e ssh
+      --rsync-path="mkdir -p deploy/builds/%CI_PIPELINE_ID%/windows && rsync"
+      *.msi
+      gitlab-runner@vector.asc.tuwien.ac.at:deploy/builds/%CI_PIPELINE_ID%/windows/
 
 .win32_build:
   <<: *win32
@@ -123,21 +123,24 @@ win64_build:
 .template_build_linux: &build_linux
   stage: build
   script:
-    - docker build -t ngsolve_${CI_BUILD_REF_NAME}:$UBUNTU_VERSION -f tests/docker_$UBUNTU_VERSION .
-    - rm -f ngsolve_${CI_BUILD_REF_NAME}_$UBUNTU_VERSION.id
+    - docker build -t ngsolve_${CI_PIPELINE_ID}:$UBUNTU_VERSION -f tests/docker_$UBUNTU_VERSION .
+    - rm -f ngsolve_${CI_PIPELINE_ID}_$UBUNTU_VERSION.id
     - >-
       docker run
-      --cidfile ngsolve_${CI_BUILD_REF_NAME}_$UBUNTU_VERSION.id
+      --cidfile ngsolve_${CI_PIPELINE_ID}_$UBUNTU_VERSION.id
       -e MKLROOT=/opt/intel/mkl
       -e NETGENDIR=/opt/netgen/bin
       -e UBUNTU_VERSION_NAME=$UBUNTU_VERSION_NAME
+      -e PYTHONPATH=/opt/netgen/lib/python3/dist-packages
       -e CI_BUILD_REF=$CI_BUILD_REF
+      -e CI_PIPELINE_ID=$CI_PIPELINE_ID
+      -e CMAKE_ARGS="-DCPACK_DEBIAN_PACKAGE_NAME=ngsolve${PACKAGE_NAME_SUFFIX}"
       -e CCACHE_DIR=/ccache
       -e SSH_PRIVATE_KEY="$SSH_PRIVATE_KEY"
       -v /opt/intel:/opt/intel
-      -v /mnt/ccache:/ccache ngsolve_${CI_BUILD_REF_NAME}:$UBUNTU_VERSION
+      -v /mnt/ccache:/ccache ngsolve_${CI_PIPELINE_ID}:$UBUNTU_VERSION
       bash /root/src/ngsolve/tests/build.sh
-    - docker commit `cat ngsolve_${CI_BUILD_REF_NAME}_$UBUNTU_VERSION.id` ngsolve_${CI_BUILD_REF_NAME}_installed:$UBUNTU_VERSION
+    - docker commit `cat ngsolve_${CI_PIPELINE_ID}_$UBUNTU_VERSION.id` ngsolve_${CI_PIPELINE_ID}_installed:$UBUNTU_VERSION
 
 ubuntu_1510_build:
   <<: *ubuntu_1510
@@ -159,12 +162,20 @@ mac_build:
     - rm -rf $BUILD_DIR
     - mkdir $BUILD_DIR
     - cd $BUILD_DIR
-    - cmake $CI_PROJECT_DIR -DINSTALL_DIR=$INSTALL_DIR -DUSE_CCACHE=ON -DCMAKE_BUILD_TYPE=Release -DUSE_UMFPACK=ON
+    - >-
+      cmake $CI_PROJECT_DIR
+      -DINSTALL_DIR=$INSTALL_DIR
+      -DCMAKE_BUILD_TYPE=Release
+      -DUSE_UMFPACK=ON
+      -DCPACK_PACKAGE_NAME=NGSolve${PACKAGE_NAME_SUFFIX}
     - make -j10 install
     - osascript -e 'tell application "Finder" to eject (every disk whose ejectable is true)'
     - make bundle
-    - ssh tester@vector.asc.tuwien.ac.at "mkdir -p /home/tester/deploy/macos/$CI_BUILD_REF/"
-    - scp *.dmg tester@vector.asc.tuwien.ac.at:/home/tester/deploy/macos/$CI_BUILD_REF/
+    - >-
+      rsync -ztrl --del -e ssh
+      --rsync-path="mkdir -p deploy/builds/$CI_PIPELINE_ID/macos && rsync"
+      *.dmg
+      gitlab-runner@vector.asc.tuwien.ac.at:deploy/builds/$CI_PIPELINE_ID/macos/
 
 ############################################
 # Test stage
@@ -198,7 +209,7 @@ win64_test:
       -e MKLROOT=/opt/intel/mkl
       -e LD_LIBRARY_PATH=/opt/intel/mkl/lib/intel64
       -v /opt/intel:/opt/intel
-      ngsolve_${CI_BUILD_REF_NAME}_installed:$UBUNTU_VERSION
+      ngsolve_${CI_PIPELINE_ID}_installed:$UBUNTU_VERSION
       bash -c 'cd /root/build/ngsolve && make test_ngsolve ARGS="-V"'
 
 ubuntu_1510_test:
@@ -228,9 +239,15 @@ linux_cleanup:
   stage: cleanup
   tags:
     - linux
+    - docker
   script:
-    # remove old docker images
-    docker images --no-trunc -aqf "dangling=true" | xargs docker rmi -f
+    # remove built docker images
+    - docker rmi -f ngsolve_${CI_PIPELINE_ID}:15.10
+    - docker rmi -f ngsolve_${CI_PIPELINE_ID}_installed:15.10
+    - docker rmi -f ngsolve_${CI_PIPELINE_ID}:16.04
+    - docker rmi -f ngsolve_${CI_PIPELINE_ID}_installed:16.04
+    - docker rmi -f ngsolve_${CI_PIPELINE_ID}:16.10
+    - docker rmi -f ngsolve_${CI_PIPELINE_ID}_installed:16.10
   when: always
   allow_failure: true
 
@@ -274,20 +291,22 @@ deploy_release:
   stage: deploy
   tags:
     - linux
+    - docker
   script:
-    - /home/gitlab-runner/deploy/deploy.sh $CI_BUILD_REF $CI_BUILD_TAG
+    - /home/gitlab-runner/deploy/deploy_release.sh $CI_PIPELINE_ID $CI_BUILD_TAG
   only:
     - tags
   environment: deploy_release
 
-deploy_latest:
+deploy_nightly:
   stage: deploy
   tags:
     - linux
+    - docker
   script:
-    - /home/gitlab-runner/deploy/deploy.sh $CI_BUILD_REF
+    - /home/gitlab-runner/deploy/deploy_nightly.sh $CI_PIPELINE_ID
   only:
     - triggers
   except:
     - tags
-  environment: deploy_latest
+  environment: deploy_nigthly

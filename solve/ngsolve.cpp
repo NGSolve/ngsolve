@@ -481,12 +481,6 @@ int NGS_LoadPDE (ClientData clientData,
 #endif
             }
 	}
-      catch (exception & e)
-	{
-	  cerr << "\n\nCaught exception in NGS_LoadPDE:\n"
-	       << typeid(e).name() << endl;
-          pde->SetGood (false);
-	}
       catch (ngstd::Exception & e)
 	{
           pde->SetGood (false);
@@ -499,6 +493,12 @@ int NGS_LoadPDE (ClientData clientData,
 	  return TCL_ERROR;
 	}
 
+      catch (exception & e)
+	{
+	  cerr << "\n\nCaught exception in NGS_LoadPDE:\n"
+	       << typeid(e).name() << endl;
+          pde->SetGood (false);
+	}
 
       catch (netgen::NgException & e)
 	{
@@ -606,6 +606,12 @@ void * SolveBVP(void *)
 	pde->Solve();
     }
 
+  catch (ngstd::Exception & e)
+    {
+      cerr << "\n\ncaught Exception in SolveBVP:\n"
+	   << e.What() << "\n\n";
+      pde->SetGood (false);
+    }
   catch (exception & e)
     {
       cerr << "\n\ncaught exception in SolveBVP:\n "
@@ -624,12 +630,6 @@ void * SolveBVP(void *)
     }
 # endif // MSVC_EXPRESS
 #endif
-  catch (ngstd::Exception & e)
-    {
-      cerr << "\n\ncaught Exception in SolveBVP:\n"
-	   << e.What() << "\n\n";
-      pde->SetGood (false);
-    }
   catch (netgen::NgException & e)
     {
       cerr << "\n\ncaught Exception in SolveBVP:\n"
