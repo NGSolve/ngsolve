@@ -186,7 +186,13 @@ namespace ngfem
       mat = 1.0/mip.GetJacobiDet() * 
 	Trans (static_cast<const FEL&> (fel).GetCurlShape(mip.IP(), lh));
     }
-
+    
+    static void GenerateMatrixSIMDIR (const FiniteElement & fel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      static_cast<const FEL&>(fel).CalcMappedCurlShape (mir, mat);      
+    }
 
     template <typename AFEL, typename MIP, class TVX, class TVY>
     static void Apply (const AFEL & fel, const MIP & mip,
@@ -196,6 +202,20 @@ namespace ngfem
       y = (1.0/mip.GetJacobiDet()) * 
 	(Trans (static_cast<const FEL&>(fel).GetCurlShape(mip.IP(), lh)) * x);
     }
+
+    using DiffOp<DiffOpCurlEdge<2> >::ApplySIMDIR;        
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      static_cast<const FEL&> (fel).EvaluateCurl (mir, x, y);
+    }    
+
+    using DiffOp<DiffOpCurlEdge<2> >::AddTransSIMDIR;        
+    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+       static_cast<const FEL&> (fel).AddCurlTrans (mir, y, x);
+    }    
   };
 
   template <typename FEL> class DiffOpCurlEdge<3,FEL> : public DiffOp<DiffOpCurlEdge<3,FEL> >

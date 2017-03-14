@@ -33,13 +33,14 @@ interface to Python is inspired by the `FEniCS project <https://fenicsproject.or
 
    Download installer <https://ngsolve.org/downloads>
    install/install_sources.rst
+   install/gettingstarted.rst
 
 
 .. toctree::
   :maxdepth: 1
   :caption: How-to
 
-  how_to/howto_coefficient.rst               
+  how_to/coefficient.rst
 
   how_to/howto_dirichlet.rst
   

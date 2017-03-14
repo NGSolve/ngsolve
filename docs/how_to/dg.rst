@@ -1,3 +1,5 @@
+.. _discontinuous-galerkin:
+
 Discontinuous Galerkin methods
 ==============================
 
