@@ -25,7 +25,7 @@ namespace ngfem
 
     static string Name() { return typeid(DiffOp<DOP>()).name(); }
     static constexpr bool SUPPORT_PML = false;
-  
+    static Array<int> GetDimensions() { return Array<int> ( { DOP::DIM_DMAT } ); };
     /**
        Computes the B-matrix. 
        The height is DIM_DMAT, the width is fel.GetNDof(). 
@@ -160,18 +160,30 @@ namespace ngfem
   */
   class DifferentialOperator
   {
+  protected:
     int dim;
     int blockdim;
     VorB vb;
     int difforder;
+    Array<int> dimensions;
   public:
-    //[[deprecated("Use DifferentialOperator(int,int,VorB,int) instead")]]
+    [[deprecated("Use DifferentialOperator(int,int,VorB,int) instead")]]
     NGS_DLL_HEADER DifferentialOperator(int adim, int ablockdim, bool boundary, int adifforder)
       : dim(adim), blockdim(ablockdim), vb(boundary ? BND : VOL),  difforder(adifforder)
-     { ; }
+     {
+       if (blockdim == 1)
+         dimensions = Array<int> ( { dim } );
+       else
+         dimensions = Array<int> ( { dim/blockdim, blockdim });
+     }
     NGS_DLL_HEADER DifferentialOperator(int adim, int ablockdim, VorB avb, int adifforder)
       : dim(adim), blockdim(ablockdim), vb(avb), difforder(adifforder)
-    { ; }
+    { 
+      if (blockdim == 1)
+        dimensions = Array<int> ( { dim } );
+      else
+        dimensions = Array<int> ( { dim/blockdim, blockdim });
+    }
     /// destructor
     NGS_DLL_HEADER virtual ~DifferentialOperator ();
     ///
@@ -179,6 +191,7 @@ namespace ngfem
     /// dimension of range
     // NGS_DLL_HEADER virtual int Dim() const = 0;
     int Dim() const { return dim; }
+    const Array<int> & Dimensions() const { return dimensions; } 
     /// number of copies of finite element by BlockDifferentialOperator
     // NGS_DLL_HEADER virtual int BlockDim() const { return 1; }
     int BlockDim() const { return blockdim; }
@@ -404,8 +417,11 @@ namespace ngfem
 
   public:
     T_DifferentialOperator()
-      : DifferentialOperator(DIFFOP::DIM_DMAT, 1, int(DIM_SPACE) > int(DIM_ELEMENT), DIFFOP::DIFFORDER)
-    { ; }
+    // : DifferentialOperator(DIFFOP::DIM_DMAT, 1, int(DIM_SPACE) > int(DIM_ELEMENT), DIFFOP::DIFFORDER)
+      : DifferentialOperator(DIFFOP::DIM_DMAT, 1, VorB(int(DIM_SPACE)-int(DIM_ELEMENT)), DIFFOP::DIFFORDER)
+    {
+      dimensions = DIFFOP::GetDimensions();
+    }
     /*
     virtual int Dim() const { return DIFFOP::DIM_DMAT; }
     virtual bool Boundary() const { return int(DIM_SPACE) > int(DIM_ELEMENT); }

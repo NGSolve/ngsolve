@@ -25,6 +25,48 @@ namespace ngfem
   }
   */
 
+  ProxyFunction ::
+  ProxyFunction (bool atestfunction, bool ais_complex,
+                 shared_ptr<DifferentialOperator> aevaluator, 
+                 shared_ptr<DifferentialOperator> aderiv_evaluator,
+                 shared_ptr<DifferentialOperator> atrace_evaluator,
+                 shared_ptr<DifferentialOperator> atrace_deriv_evaluator,
+		 shared_ptr<DifferentialOperator> attrace_evaluator,
+		 shared_ptr<DifferentialOperator> attrace_deriv_evaluator)
+    
+    : CoefficientFunction(aevaluator ? aevaluator->Dim() : 1, ais_complex),
+      testfunction(atestfunction), is_other(false),
+      evaluator(aevaluator), 
+      deriv_evaluator(aderiv_evaluator),
+      trace_evaluator(atrace_evaluator), 
+      trace_deriv_evaluator(atrace_deriv_evaluator),
+      ttrace_evaluator(attrace_evaluator),
+      ttrace_deriv_evaluator(attrace_deriv_evaluator)
+  {
+    if (!aevaluator)
+      {
+        cerr << "don't have a primal evaluator" << endl;
+        if (trace_evaluator) cout << "trace-eval = " << typeid(*trace_evaluator).name() << endl;
+        if (deriv_evaluator) cout << "deriv-eval = " << typeid(*deriv_evaluator).name() << endl;
+        throw Exception("don't have a primal evaluator");
+      }
+    if (deriv_evaluator || trace_deriv_evaluator)
+      deriv_proxy = make_shared<ProxyFunction> (testfunction, is_complex, deriv_evaluator, nullptr,
+                                                trace_deriv_evaluator, nullptr,
+						ttrace_deriv_evaluator, nullptr);
+
+    SetDimensions (evaluator->Dimensions());
+  }
+  
+  shared_ptr<ProxyFunction> ProxyFunction :: Trace() const
+  {
+    if (!trace_evaluator)
+      throw Exception (string("don't have a trace, primal evaluator = ")+
+                       evaluator->Name());
+    
+    return make_shared<ProxyFunction> (testfunction, is_complex, trace_evaluator, trace_deriv_evaluator, ttrace_evaluator, ttrace_deriv_evaluator, nullptr, nullptr);
+  }
+  
   void ProxyFunction ::
   GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
