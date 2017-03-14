@@ -123,7 +123,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    for(int i = 0; i < ma->GetNDomains(); i++)
 	      {
 		for(int j = 0; j < dmaterials.Size(); j++)
-		  if(StringFitsPattern(ma->GetDomainMaterial(i),dmaterials[j]))
+		  if(StringFitsPattern(ma->GetMaterial(VOL,i),dmaterials[j]))
 		    {
 		      definedon[VOL][i] = true;
 		      break;
@@ -196,7 +196,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	      {
 		for(int i=0; i<defon.Size(); i++)
 		  {
-		    if(StringFitsPattern(ma->GetSElBCName(selnum),*(defon[i])))	
+		    // if(StringFitsPattern(ma->GetSElBCName(selnum),*(defon[i])))
+                    if(StringFitsPattern(ma->GetMaterial(ElementId(BND, selnum)),*(defon[i])))	
 		      {		
 		 	definedon[BND][ma->GetSElIndex(selnum)] = true;
 			continue;

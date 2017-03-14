@@ -16,7 +16,7 @@ namespace ngcomp
 
 
   HyprePreconditioner :: HyprePreconditioner (const PDE & pde, const Flags & aflags, const string & aname)  
-    : Preconditioner (&pde, flags)
+    : Preconditioner (&pde, aflags)
   {
     bfa = pde.GetBilinearForm (flags.GetStringFlag ("bilinearform", NULL));
   }

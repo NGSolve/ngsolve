@@ -68,7 +68,7 @@ the sources. The standard configuring command looks like this:
 
        mkdir build
        cd build
-       cmake "../src"  -DINSTALL_DIR="BASEDIR/install" -G "Visual Studio 14 Win64"
+       cmake "../src" -DINSTALL_DIR="BASEDIR/install" -G "Visual Studio 14 Win64"
 
 There are many options for cmake, which you can find using
 
@@ -99,12 +99,3 @@ PYTHONPATH to the appropriate values. This is done by building the
 .. code:: bash
 
        cmake --build . --config Release --target set_environment_variables
-
-Test the installation
-=====================
-
-Now the installation should be finished. Test it by starting
-``netgen.exe`` and see if you get a message saying that the module
-NGSolve-|version|-dev has been loaded. In ``BASEDIR\install\share\ngsolve``
-you can find example PDE problems, which you can use to try if ngsolve
-does what it should do.

@@ -22,8 +22,6 @@ endforeach()
 set(INSTALL_DIR CACHE PATH "Install path")
 set(NETGEN_DIR CACHE PATH "Path where Netgen is already installed. Setting this variable will skip the Netgen buildand override the setting of INSTALL_DIR")
 
-set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${PROJECT_SOURCE_DIR}/cmake_modules")
-
 macro(set_vars VAR_OUT)
   foreach(varname ${ARGN})
     if(NOT "${${varname}}" STREQUAL "")
@@ -75,17 +73,18 @@ if(NETGEN_DIR)
   message(STATUS "Looking for NetgenConfig.cmake...")
   find_package(Netgen REQUIRED CONFIG HINTS ${NETGEN_DIR}/share/cmake $ENV{NETGENDIR}/../share/cmake)
   set(INSTALL_DIR ${NETGEN_DIR})
+  add_custom_target(netgen_project)
 else(NETGEN_DIR)
   message(STATUS "Build Netgen from git submodule")
 #   execute_process(COMMAND git submodule update --init --recursive WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-  execute_process(COMMAND cmake -P cmake_modules/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} )
-  add_custom_target(check_submodules_start ALL cmake -P cmake_modules/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} )
-  add_custom_target(check_submodules_stop ALL cmake -P cmake_modules/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} DEPENDS ngsolve)
+  execute_process(COMMAND cmake -P cmake/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} )
+  add_custom_target(check_submodules_start ALL cmake -P cmake/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} )
+  add_custom_target(check_submodules_stop ALL cmake -P cmake/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} DEPENDS ngsolve)
   if(NOT INSTALL_DIR)
     if(APPLE)
-      set(INSTALL_DIR /Applications)
+      set(INSTALL_DIR /Applications/NGSolve.app)
     elseif(WIN32)
-      set(INSTALL_DIR C:/netgen)
+      set(INSTALL_DIR C:/NGSolve)
     else()
       set(INSTALL_DIR /opt/netgen)
     endif()
@@ -96,7 +95,6 @@ else(NETGEN_DIR)
     CMAKE_CXX_COMPILER
     CMAKE_C_COMPILER
     CMAKE_BUILD_TYPE
-    CMAKE_PREFIX_PATH
 
     INSTALL_DIR
     INSTALL_DEPENDENCIES
@@ -106,6 +104,23 @@ else(NETGEN_DIR)
     USE_NATIVE_ARCH
   )
   set_flags_vars(NETGEN_CMAKE_ARGS CMAKE_CXX_FLAGS CMAKE_SHARED_LINKER_FLAGS CMAKE_LINKER_FLAGS)
+  ExternalProject_Add (netgen_project
+    SOURCE_DIR ${PROJECT_SOURCE_DIR}/external_dependencies/netgen
+    BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/netgen
+    CONFIGURE_COMMAND ""
+    BUILD_COMMAND ${COMMON_BUILD_COMMAND}
+    INSTALL_COMMAND ""
+  )
+
+  add_custom_target(install_netgen ALL
+    ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR}/netgen --target install --config ${CMAKE_BUILD_TYPE}
+    DEPENDS netgen_project
+  )
+
+  list(APPEND DEPENDENCIES install_netgen)
+
+  message("\n\nConfigure Netgen from submodule...")
+  execute_process(COMMAND ${CMAKE_COMMAND} -G${CMAKE_GENERATOR} ${NETGEN_CMAKE_ARGS} ${PROJECT_SOURCE_DIR}/external_dependencies/netgen WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/netgen)
 endif(NETGEN_DIR)
 
 #######################################################################
@@ -114,7 +129,7 @@ endif(NETGEN_DIR)
 #######################################################################
 set(LAPACK_LIBRARIES CACHE INTERNAL "Lapack libraries")
 if(USE_MKL)
-    set(MKL_MULTI_THREADED ON)
+    set(MKL_MULTI_THREADED ON CACHE BOOL "Use threaded MKL libs")
 
     set(MKL_STATIC OFF CACHE BOOL "Link static MKL")
     set(MKL_SDL ON CACHE BOOL "Link single dynamic MKL lib")
@@ -152,8 +167,7 @@ if (USE_LAPACK)
 endif (USE_LAPACK)
 
 #######################################################################
-
-if(USE_UMFPACK)
+if(USE_UMFPACK AND NOT UMFPACK_DIR)
   set(UMFPACK_DIR ${CMAKE_CURRENT_BINARY_DIR}/umfpack/install CACHE PATH "Temporary directory to build UMFPACK")
   ExternalProject_Add(
     suitesparse
@@ -167,7 +181,17 @@ if(USE_UMFPACK)
     )
   list(APPEND DEPENDENCIES suitesparse)
   set_vars( NGSOLVE_CMAKE_ARGS UMFPACK_DIR )
-endif(USE_UMFPACK)
+endif(USE_UMFPACK AND NOT UMFPACK_DIR)
+
+#######################################################################
+if(USE_HYPRE AND NOT HYPRE_DIR)
+  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/external_projects/hypre.cmake)
+endif(USE_HYPRE AND NOT HYPRE_DIR)
+
+#######################################################################
+if(USE_MUMPS AND NOT MUMPS_DIR)
+  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/external_projects/mumps.cmake)
+endif(USE_MUMPS AND NOT MUMPS_DIR)
 
 #######################################################################
 # propagate cmake variables to NGSolve subproject
@@ -175,13 +199,13 @@ set_vars( NGSOLVE_CMAKE_ARGS
   CMAKE_CXX_COMPILER
   CMAKE_C_COMPILER
   CMAKE_BUILD_TYPE
-  CMAKE_PREFIX_PATH
 
   USE_LAPACK
   USE_MPI
   USE_VT
   USE_CUDA
   USE_MKL
+  USE_HYPRE
   USE_MUMPS
   USE_PARDISO
   USE_UMFPACK
@@ -193,39 +217,19 @@ set_vars( NGSOLVE_CMAKE_ARGS
   NETGEN_SOURCE_DIR
   INSTALL_DEPENDENCIES 
   INTEL_MIC 
-  NETGEN_DIR
   )
 
 set_flags_vars(NGSOLVE_CMAKE_ARGS CMAKE_CXX_FLAGS CMAKE_SHARED_LINKER_FLAGS CMAKE_LINKER_FLAGS)
 
-if(NOT NETGEN_DIR)
-  ExternalProject_Add (netgen_project
-    SOURCE_DIR ${PROJECT_SOURCE_DIR}/external_dependencies/netgen
-    BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/netgen
-    CONFIGURE_COMMAND ""
-    BUILD_COMMAND ${COMMON_BUILD_COMMAND}
-    INSTALL_COMMAND ""
-  )
-
-  add_custom_target(install_netgen ALL
-    ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR}/netgen --target install --config ${CMAKE_BUILD_TYPE}
-    DEPENDS netgen_project
-  )
-
-  list(APPEND DEPENDENCIES install_netgen)
-
-  message("\n\nConfigure Netgen from submodule...")
-  execute_process(COMMAND ${CMAKE_COMMAND} -G${CMAKE_GENERATOR} ${NETGEN_CMAKE_ARGS} ${PROJECT_SOURCE_DIR}/external_dependencies/netgen WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/netgen)
-endif(NOT NETGEN_DIR)
-
 ExternalProject_Add (ngsolve
   DEPENDS ${DEPENDENCIES} ${LAPACK_PROJECTS}
   SOURCE_DIR ${PROJECT_SOURCE_DIR}
-  CMAKE_ARGS ${NGSOLVE_CMAKE_ARGS} -DUSE_SUPERBUILD=OFF -DCMAKE_PREFIX_PATH="${NETGEN_DIR};${CMAKE_PREFIX_PATH}"
+  CMAKE_ARGS ${NGSOLVE_CMAKE_ARGS} -DUSE_SUPERBUILD=OFF
   INSTALL_COMMAND ""
   BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/ngsolve
   BUILD_COMMAND ${COMMON_BUILD_COMMAND}
-)
+  )
+
 
 install(CODE "execute_process(COMMAND \"${CMAKE_COMMAND}\" --build . --config ${CMAKE_BUILD_TYPE} --target install WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ngsolve)")
 
@@ -238,14 +242,14 @@ add_custom_target(test_ngsolve
 # Check if the git submodules (i.e. netgen) are up to date
 # in case, something is wrong, emit a warning but continue
  ExternalProject_Add_Step(ngsolve check_submodules
-   COMMAND cmake -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/check_submodules.cmake
+   COMMAND cmake -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/check_submodules.cmake
    DEPENDERS install # Steps on which this step depends
    )
 
 # Due to 'ALWAYS 1', this step is always run which also forces a build of
 # the ngsolve subproject
  ExternalProject_Add_Step(ngsolve check_submodules1
-   COMMAND cmake -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/check_submodules.cmake
+   COMMAND cmake -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/check_submodules.cmake
    DEPENDEES configure # Steps on which this step depends
    DEPENDERS build     # Steps that depend on this step
    ALWAYS 1            # No stamp file, step always runs
@@ -265,4 +269,4 @@ if(WIN32)
   add_custom_target(set_environment_variables)
   add_dependencies(set_environment_variables set_netgendir set_pythonpath)
 endif(WIN32)
-
+ 

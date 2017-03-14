@@ -2471,7 +2471,7 @@ namespace ngcomp
                          testout->precision(8);
                          (*testout) << "surface-elnum= " << el.Nr() << endl;
                          (*testout) << "eltype " << fel.ElementType() << endl;
-                         (*testout) << "boundary = " << ma->GetSElBCName (el.Nr()) << endl;
+                         (*testout) << "boundary = " << ma->GetMaterial (el) << endl;
                          (*testout) << "integrator " << bfi->Name() << endl;
                          (*testout) << "dnums = " << endl << dnums << endl;
                          (*testout) << "elveclin = " << endl << elveclin << endl;
