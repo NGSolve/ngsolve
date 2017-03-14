@@ -1692,12 +1692,12 @@ flags : dict
          [] (const PyFES & self) 
            {
              return MakeProxyFunction (*self.Get(), false);
-           }, docu_string("Gives a proxy to be used as a trialfunction in :any:`Symbolic Integrators`"))
+           }, docu_string("Gives a proxy to be used as a trialfunction in :any:`Symbolic Integrators<symbolic-integrators>`"))
     .def("TestFunction",
          [] (const PyFES & self) 
            {
              return MakeProxyFunction (*self.Get(), true);
-           }, docu_string("Gives a proxy to be used as a testfunction for :any:`Symbolic Integrators`"))
+           }, docu_string("Gives a proxy to be used as a testfunction for :any:`Symbolic Integrators<symbolic-integrators>`"))
 
     .def("SolveM", FunctionPointer
         ( [] (const PyFES & self,
@@ -1995,8 +1995,7 @@ used_idnrs : list of int = None
             auto sp = make_shared<GridFunctionCoefficientFunction> (self.Get(),
                                                                     self->GetFESpace()->GetFluxEvaluator(),
                                                                     self->GetFESpace()->GetFluxEvaluator(BND));
-            // sp->SetComplex(self->GetFESpace()->IsComplex()); 
-            sp->SetDimensions(sp->Dimensions());
+            // sp->SetDimensions(sp->Dimensions());
             return PyCF(sp);
           }))
 

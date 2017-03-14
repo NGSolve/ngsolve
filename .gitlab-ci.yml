@@ -1,6 +1,7 @@
 stages:
   - build
   - test
+  - timings
   - cleanup
   - deploy
 
@@ -22,7 +23,7 @@ stages:
     - set INSTALL_DIR=%CI_DIR%\install
     - set NETGENDIR=%INSTALL_DIR%\bin
     - set PYTHONPATH=%INSTALL_DIR%\lib\site-packages
-    - set MKL_CONFIG=-DUSE_MKL=OFF
+    - set CMAKE_CONFIG=-DUSE_MKL=OFF -DUSE_OCC=ON
 
 .template_windows_64: &win64
   tags:
@@ -30,20 +31,22 @@ stages:
     - x64
   before_script:
     - "echo off"
-    - 'call "%VS140COMNTOOLS%\..\..\VC\bin\amd64\vcvars64.bat"'
-    - set CMAKE_GENERATOR=Visual Studio 14 2015 Win64
+    - 'call "%VS140COMNTOOLS%\..\..\VC\vcvarsall" x64'
+    - set CMAKE_GENERATOR=Ninja
     - set CI_DIR=C:\ci\%CI_PIPELINE_ID%_64
     - set NETGEN_BUILD_DIR=%CI_DIR%\build
     - set INSTALL_DIR=%CI_DIR%\install
     - set NETGENDIR=%INSTALL_DIR%\bin
     - set PYTHONPATH=%INSTALL_DIR%\lib\site-packages
     - set UPLOAD_DIR=/home/tester/deploy/win64/%CI_BUILD_TAG%%CI_BUILD_REF%/
-    - set MKL_CONFIG=-DUSE_MKL=ON -DMKL_STATIC=ON -DMKL_ROOT="C:/Program Files (x86)/IntelSWTools/compilers_and_libraries/windows/mkl"
+    - set CLCACHE_BASEDIR=%CI_DIR%
+    - set CMAKE_CONFIG=-DUSE_OCC=ON -DUSE_CCACHE=ON -DUSE_MKL=ON -DMKL_STATIC=ON -DMKL_ROOT="C:/Intel/compilers_and_libraries/windows/mkl"
 
 # Linux
 .template_ubuntu: &ubuntu
   tags:
     - linux
+    - docker
   before_script:
     - pwd
     - ls
@@ -97,12 +100,12 @@ stages:
         cmake %CI_PROJECT_DIR%
         -G"%CMAKE_GENERATOR%"
         -DINSTALL_DIR=%INSTALL_DIR%
-        %MKL_CONFIG%
+        %CMAKE_CONFIG%
         -DUSE_UMFPACK=ON
         -DCPACK_PACKAGE_NAME=NGSolve${PACKAGE_NAME_SUFFIX}
         -DCMAKE_BUILD_TYPE=Release
-    - cmake --build . --target INSTALL --config Release
-    - cmake --build . --target PACKAGE --config Release
+    - cmake --build . --target install --config Release
+    - cmake --build . --target package --config Release
     - >-
       rsync -ztrl --del -e ssh
       --rsync-path="mkdir -p deploy/builds/%CI_PIPELINE_ID%/windows && rsync"
@@ -129,6 +132,7 @@ win64_build:
       -e MKLROOT=/opt/intel/mkl
       -e NETGENDIR=/opt/netgen/bin
       -e UBUNTU_VERSION_NAME=$UBUNTU_VERSION_NAME
+      -e PYTHONPATH=/opt/netgen/lib/python3/dist-packages
       -e CI_BUILD_REF=$CI_BUILD_REF
       -e CI_PIPELINE_ID=$CI_PIPELINE_ID
       -e CMAKE_ARGS="-DCPACK_DEBIAN_PACKAGE_NAME=ngsolve${PACKAGE_NAME_SUFFIX}"
@@ -162,7 +166,6 @@ mac_build:
     - >-
       cmake $CI_PROJECT_DIR
       -DINSTALL_DIR=$INSTALL_DIR
-      -DUSE_CCACHE=ON
       -DCMAKE_BUILD_TYPE=Release
       -DUSE_UMFPACK=ON
       -DCPACK_PACKAGE_NAME=NGSolve${PACKAGE_NAME_SUFFIX}
@@ -230,6 +233,91 @@ mac_test:
     - ctest . -V
 
 ############################################
+# Timings stage
+############################################
+
+.t_clang: &t_clang
+  variables:
+    CMAKE_C_COMPILER: "clang"
+    CMAKE_CXX_COMPILER: "clang++"
+
+.t_gcc6: &t_gcc6
+  variables:
+    CMAKE_C_COMPILER: "gcc"
+    CMAKE_CXX_COMPILER: "g++"
+
+.t_gcc5: &t_gcc5
+  variables:
+    CMAKE_C_COMPILER: "gcc-5"
+    CMAKE_CXX_COMPILER: "g++-5"
+
+.t_fast_math: &t_fast_math
+  before_script:
+    - export CMAKE_FLAGS="-ffast-math"
+
+.t_timings: &t_timings
+  stage: timings
+  tags:
+    - linux
+    - avx2
+  only:
+    - triggers
+  script:
+    - git submodule update --init --recursive
+    - mkdir build
+    - mkdir install
+    - cd build
+    - >-
+        cmake ..
+        -DUSE_CCACHE=ON
+        -DINSTALL_DIR=$CI_PROJECT_DIR/install
+        -DUSE_NATIVE_ARCH=ON
+        -DCMAKE_C_COMPILER=$CMAKE_C_COMPILER
+        -DCMAKE_CXX_COMPILER=$CMAKE_CXX_COMPILER
+        -DCMAKE_CXX_FLAGS="$CMAKE_FLAGS"
+        -DUSE_MKL=ON
+        -DMKL_ROOT=/opt/intel/mkl
+        -DCMAKE_BUILD_TYPE=Release
+    - make -j install
+    - export NETGENDIR=$CI_PROJECT_DIR/install/bin
+    - export PATH=$CI_PROJECT_DIR/install/bin:$PATH
+    - export PYTHONPATH=$CI_PROJECT_DIR/install/lib/python3.6/site-packages:.
+    - export LD_LIBRARY_PATH=$CI_PROJECT_DIR/install/lib:.:$LD_LIBRARY_PATH
+    - cd ngsolve
+    - if [ -n "${RUN_TIMINGS}" ]; then make timings; fi
+
+  artifacts:
+    paths:
+      - build/ngsolve/tests/timings/results.json
+
+gcc5_timings:
+  <<: *t_gcc5
+  <<: *t_timings
+
+gcc6_timings:
+  <<: *t_gcc6
+  <<: *t_timings
+
+clang_timings:
+  <<: *t_clang
+  <<: *t_timings
+
+gcc5_fm_timings:
+  <<: *t_fast_math
+  <<: *t_gcc5
+  <<: *t_timings
+
+gcc6_fm_timings:
+  <<: *t_fast_math
+  <<: *t_gcc6
+  <<: *t_timings
+
+clang_fm_timings:
+  <<: *t_fast_math
+  <<: *t_clang
+  <<: *t_timings
+
+############################################
 # Cleanup stage
 ############################################
 
@@ -237,10 +325,15 @@ linux_cleanup:
   stage: cleanup
   tags:
     - linux
+    - docker
   script:
-    # remove old docker images
-    docker rmi -f ngsolve_${CI_PIPELINE_ID}_installed:$UBUNTU_VERSION
-    docker images --no-trunc -aqf "dangling=true" | xargs docker rmi -f
+    # remove built docker images
+    - docker rmi -f ngsolve_${CI_PIPELINE_ID}:15.10
+    - docker rmi -f ngsolve_${CI_PIPELINE_ID}_installed:15.10
+    - docker rmi -f ngsolve_${CI_PIPELINE_ID}:16.04
+    - docker rmi -f ngsolve_${CI_PIPELINE_ID}_installed:16.04
+    - docker rmi -f ngsolve_${CI_PIPELINE_ID}:16.10
+    - docker rmi -f ngsolve_${CI_PIPELINE_ID}_installed:16.10
   when: always
   allow_failure: true
 
@@ -284,6 +377,7 @@ deploy_release:
   stage: deploy
   tags:
     - linux
+    - docker
   script:
     - /home/gitlab-runner/deploy/deploy_release.sh $CI_PIPELINE_ID $CI_BUILD_TAG
   only:
@@ -294,6 +388,7 @@ deploy_nightly:
   stage: deploy
   tags:
     - linux
+    - docker
   script:
     - /home/gitlab-runner/deploy/deploy_nightly.sh $CI_PIPELINE_ID
   only:
