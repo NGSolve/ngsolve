@@ -199,8 +199,8 @@ typedef PyWrapper<CoefficientFunction> PyCF;
 typedef PyWrapper<PML_Transformation> PyPML;
 void ExportPml(py::module &m)
 {
-  py::class_<PyPML>(m, "PML", "Base PML object, can only be created by generatori\n\
-      functions. Use PML(x, [y, z]) to evaluate the scaling.")
+  py::class_<PyPML>(m, "PML", R"raw_string(Base PML object
+can only be created by generator functions. Use PML(x, [y, z]) to evaluate the scaling.)raw_string")
     .def("__call__",  [](py::args varargs) {
                       PyPML self = py::extract<PyPML>(varargs[0])();
                       int dim = self.Get()->GetDimension();
@@ -290,8 +290,8 @@ void ExportPml(py::module &m)
           throw Exception("No valid dimension");
       },
     py::arg("origin"),py::arg("rad")=1,py::arg("alpha")=Complex(0,1),
-    "radial pml transformation\n\
-      origin is a list/tuple determining the dimenson");
+    R"raw_string(radial pml transformation
+origin is a list/tuple determining the dimenson)raw_string");
 
     m.def("Custom", [](PyCF trafo, PyCF jac) -> PyPML {
           switch (trafo.Get()->Dimension())
@@ -306,8 +306,8 @@ void ExportPml(py::module &m)
           throw Exception("No valid dimension");
         },
         py::arg("trafo"),py::arg("jac"),
-        "custom pml transformation.\n\
-        trafo and jac are coefficient functions of the scaling and the jacobian")
+        R"raw_string(custom pml transformation
+trafo and jac are coefficient functions of the scaling and the jacobian)raw_string")
     ;
     m.def("Cartesian", [](py::object mins,py::object maxs, Complex alpha) {
           int dim = 0;
@@ -350,8 +350,8 @@ void ExportPml(py::module &m)
           throw Exception("No valid dimension");
         },
         py::arg("mins"),py::arg("maxs"), py::arg("alpha")=Complex(0,1),
-        "cartesian pml transformation\n\
-          mins and maxs ate tuples/lists determining the dimension")
+        R"raw_string(cartesian pml transformation
+mins and maxs ate tuples/lists determining the dimension)raw_string")
     ;
     m.def("HalfSpace", [](py::object point,py::object normal, Complex alpha) {
           int dim = 0;
@@ -402,9 +402,9 @@ void ExportPml(py::module &m)
           throw Exception("No valid dimension");
         },
         py::arg("point"),py::arg("normal"), py::arg("alpha")=Complex(0,1),
-        "half space pml 
-          scales orthogonal to specified plane in direction of normal\n \
-          point and normal are given as tuples/lists determining the dimension")
+        R"raw_string(half space pml
+scales orthogonal to specified plane in direction of normal
+point and normal are given as tuples/lists determining the dimension)raw_string")
     ;
     m.def("BrickRadial", [](py::object mins,py::object maxs,py::object _origin, Complex alpha) {
           int dim = 0;
@@ -459,8 +459,8 @@ void ExportPml(py::module &m)
           throw Exception("No valid dimension");
         },
         py::arg("mins"),py::arg("maxs"), py::arg("origin")=py::make_tuple(0.,0.,0.),py::arg("alpha")=Complex(0,1),
-        "radial pml on a brick.\n \
-          mins, maxs and origin are given as tuples/lists")
+        R"raw_string(radial pml on a brick
+mins, maxs and origin are given as tuples/lists)raw_string")
       ;
     m.def("Compound", [](PyPML pml1,PyPML pml2,py::object dims1,py::object dims2) {
           int dim1 = pml1.Get()->GetDimension();
