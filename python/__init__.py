@@ -20,7 +20,7 @@ if __platform.startswith('linux'):
 if __platform.startswith('win'):
     path.append(os.path.abspath(os.path.dirname(__file__)+'/../../../bin'))
 if __platform.startswith('darwin'):
-    path.append(os.path.abspath(os.path.dirname(__file__)+'/../../../../MacOS/'))
+    path.append(os.path.abspath(os.path.dirname(__file__)+'/../../../../../MacOS/'))
     
 del environ
 del path
