@@ -45,7 +45,7 @@ set(CPACK_GENERATOR "WIX")
 set(CPACK_WIX_PROGRAM_MENU_FOLDER "NGSolve-v${NGSOLVE_VERSION}" )
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "ngsolve-v${NGSOLVE_VERSION}")
 
-set(resources_dir ${CMAKE_SOURCE_DIR}/cmake_modules/resources)
+set(resources_dir ${CMAKE_SOURCE_DIR}/cmake/resources)
 set(CPACK_WIX_PATCH_FILE ${resources_dir}/wix_patch.xml)
 set(CPACK_RESOURCE_FILE_LICENSE ${resources_dir}/LICENSE.txt)
 set(CPACK_PACKAGE_EXECUTABLES ${CPACK_PACKAGE_EXECUTABLES} "netgen" "Netgen")
