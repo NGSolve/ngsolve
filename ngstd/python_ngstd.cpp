@@ -189,7 +189,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
                                              throw py::index_error();
                                            if (b) self.Set(i); else self.Clear(i); 
                                          })
-<<<<<<< HEAD
+
     .def("__setitem__", [] (BitArray & self, py::slice inds, bool b) 
                                          {
                                            size_t start, step, n;
@@ -212,14 +212,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
                                              }
                                          })
 
-    .def("Set", [] (BitArray & self, int i)
-                                 {
-                                   if (i < 0 || i >= self.Size()) 
-                                     throw py::index_error();
-                                   self.Set(i); 
-                                 })
-    .def("Clear", [] (BitArray & self, int i)
-=======
+
     .def("Set", [] (BitArray & self, py::object in)
                                    {
                                      if (py::isinstance<DummyArgument>(in))
@@ -235,7 +228,6 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
                                        throw py::value_error();
                                    }, py::arg("i") = DummyArgument())
     .def("Clear", [] (BitArray & self, py::object in)
->>>>>>> b6e62ebc3bf31714ae22d9b410f1fee2d6dc493c
                                    {
                                      if (py::isinstance<DummyArgument>(in))
                                        self.Clear();
