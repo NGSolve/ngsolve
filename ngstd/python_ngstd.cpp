@@ -190,6 +190,12 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
                                            if (b) self.Set(i); else self.Clear(i); 
                                          })
 
+    .def("SetSize", [] (BitArray & self, int i)
+                                 {
+                                   if (i < 0) 
+                                     throw py::index_error();
+                                   self.SetSize(i); 
+                                 })
     .def("Set", [] (BitArray & self, int i)
                                  {
                                    if (i < 0 || i >= self.Size()) 
@@ -198,10 +204,13 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
                                  })
     .def("Clear", [] (BitArray & self, int i)
                                    {
-                                   if (i < 0 || i >= self.Size()) 
-                                     throw py::index_error();
-                                   self.Clear(i); 
-                                   })
+                                     if (i < -1 || (i >= 0 && i >= self.Size())) 
+                                       throw py::index_error();
+                                     if (i==-1)
+                                       self.Clear();
+                                     else
+                                       self.Clear(i);
+                                   }, py::arg("i") = -1)
     .def("__ior__", [] (BitArray & self, BitArray & other)
                                  {
                                    self.Or(other); 
