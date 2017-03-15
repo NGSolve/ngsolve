@@ -189,6 +189,27 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
                                              throw py::index_error();
                                            if (b) self.Set(i); else self.Clear(i); 
                                          })
+    .def("__setitem__", [] (BitArray & self, py::slice inds, bool b) 
+                                         {
+                                           size_t start, step, n;
+                                           InitSlice( inds, self.Size(), start, step, n );
+                                           if (start == 0 && n == self.Size() && step == 1)
+                                             { // base branch
+                                               if (b)
+                                                 self.Set();
+                                               else
+                                                 self.Clear();
+                                             }
+                                           else
+                                             {
+                                               if (b)
+                                                 for (size_t i=0; i<n; i++, start+=step)
+                                                   self.Set(start);
+                                               else
+                                                 for (size_t i=0; i<n; i++, start+=step)
+                                                   self.Clear(start);
+                                             }
+                                         })
 
     .def("Set", [] (BitArray & self, int i)
                                  {
