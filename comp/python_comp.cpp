@@ -2938,7 +2938,7 @@ flags : dict
 
   m.def("SymbolicLFI",
           [](PyCF cf, VorB vb, bool element_boundary,
-              bool skeleton, py::object definedon) 
+              bool skeleton, py::object definedon, py::object definedonelem) 
            {
              py::extract<Region> defon_region(definedon);
              if (defon_region.check())
@@ -2963,19 +2963,23 @@ flags : dict
              if (defon_region.check())
                lfi->SetDefinedOn(defon_region().Mask());
 
+             if (! py::extract<DummyArgument> (definedonelem).check())
+               lfi -> SetDefinedOnElements (py::extract<PyWrapper<shared_ptr<BitArray>>>(definedonelem)()); 
+             
              return PyWrapper<LinearFormIntegrator>(lfi);
            },
            py::arg("form"),
            py::arg("VOL_or_BND")=VOL,
            py::arg("element_boundary")=false,
            py::arg("skeleton")=false,           
-           py::arg("definedon")=DummyArgument()
+           py::arg("definedon")=DummyArgument(),
+           py::arg("definedonelements")=DummyArgument()
           );
 
   m.def("SymbolicBFI",
           [](PyCF cf, VorB vb, bool element_boundary,
              bool skeleton, py::object definedon,
-             IntegrationRule ir)
+             IntegrationRule ir, py::object definedonelem)
            {
              py::extract<Region> defon_region(definedon);
              if (defon_region.check())
@@ -3016,14 +3020,17 @@ flags : dict
                  dynamic_pointer_cast<SymbolicBilinearFormIntegrator> (bfi)
                    ->SetIntegrationRule(ir);
                }
-             
+
+             if (! py::extract<DummyArgument> (definedonelem).check())
+               bfi -> SetDefinedOnElements (py::extract<PyWrapper<shared_ptr<BitArray>>>(definedonelem)()); 
              return PyWrapper<BilinearFormIntegrator>(bfi);
            },
         py::arg("form"), py::arg("VOL_or_BND")=VOL,
         py::arg("element_boundary")=false,
         py::arg("skeleton")=false,
         py::arg("definedon")=DummyArgument(),
-        py::arg("intrule")=IntegrationRule()
+        py::arg("intrule")=IntegrationRule(),
+        py::arg("definedonelements")=DummyArgument()
         );
           
   m.def("SymbolicTPBFI",
@@ -3069,7 +3076,7 @@ flags : dict
           );
           
   m.def("SymbolicEnergy",
-          [](PyCF cf, VorB vb, py::object definedon) -> PyWrapper<BilinearFormIntegrator>
+          [](PyCF cf, VorB vb, py::object definedon, py::object definedonelem) -> PyWrapper<BilinearFormIntegrator>
            {
              py::extract<Region> defon_region(definedon);
              if (defon_region.check())
@@ -3105,9 +3112,12 @@ flags : dict
                  cout << "allbool = " << all_booleans << endl;
                }
              */
+             if (! py::extract<DummyArgument> (definedonelem).check())
+               bfi -> SetDefinedOnElements (py::extract<PyWrapper<shared_ptr<BitArray>>>(definedonelem)()); 
              return PyWrapper<BilinearFormIntegrator>(bfi);
            },
-           py::arg("coefficient"), py::arg("VOL_or_BND")=VOL, py::arg("definedon")=DummyArgument()
+           py::arg("coefficient"), py::arg("VOL_or_BND")=VOL, py::arg("definedon")=DummyArgument(),
+           py::arg("definedonelements")=DummyArgument()
           );
 
 

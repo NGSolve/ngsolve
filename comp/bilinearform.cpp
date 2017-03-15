@@ -830,6 +830,7 @@ namespace ngcomp
                           {
                             const BilinearFormIntegrator & bfi = *bfip;
                             if (!bfi.DefinedOn (ma->GetElIndex (i))) continue;
+                            if (!bfi.DefinedOnElement (i)) continue;
                             
                             FlatVector<double> diag;
                             try
@@ -917,6 +918,7 @@ namespace ngcomp
                            {
                              const BilinearFormIntegrator & bfi = *bfip;
                              if (!bfi.DefinedOn (el.GetIndex())) continue;                        
+                             if (!bfi.DefinedOnElement (el.Nr())) continue;                        
                              
                              FlatMatrix<SCAL> elmat(elmat_size, lh);
                              
@@ -1272,6 +1274,7 @@ namespace ngcomp
                               // if (bfi->VB() == BND) continue;
                               if (!bfi->DefinedOn (ma->GetElIndex (el1))) continue;
                               if (!bfi->DefinedOn (ma->GetElIndex (el2))) continue;
+                              if (!bfi->DefinedOnElement(i)) continue;                        
                               
                               /*
                                 for (int k = 0; k < dnums.Size(); k++)
@@ -1550,6 +1553,7 @@ namespace ngcomp
                                  // if (bfi->VB() != VOL) continue;
                                  if (!bfi->DefinedOn (ma->GetElIndex (el1))) continue;
                                  if (!bfi->DefinedOn (ma->GetElIndex (el2))) continue;
+                                 if (!bfi->DefinedOnElement (el1)) continue;
                                  
                                  for (auto d : dnums)
                                    if (d != -1) useddof[d] = true;
@@ -1737,6 +1741,7 @@ namespace ngcomp
                               // if (!bfi.SkeletonForm()) continue;
 				  
                               if (!bfi->DefinedOn (ma->GetSElIndex(i) )) continue;                
+                              if (!bfi->DefinedOnElement (i)) continue;
 				  
                               for (int k = 0; k < dnums.Size(); k++)
                                 if (dnums[k] != -1)
@@ -2105,6 +2110,7 @@ namespace ngcomp
                          
                          if (!bfi.VolumeForm()) continue;
                          if (!bfi.DefinedOn (eltrans.GetElementIndex())) continue;
+                         if (!bfi.DefinedOnElement (ei.Nr())) continue;
                          
                          FlatMatrix<SCAL> elmat(elmat_size, lh);
                          bfi.CalcElementMatrix (fel, eltrans, elmat, lh);
@@ -2261,6 +2267,7 @@ namespace ngcomp
                  for (auto & bfi : VB_parts[VOL])
                    {
                      if (!bfi->DefinedOn (el.GetIndex())) continue;
+                     if (!bfi->DefinedOnElement (el.Nr())) continue;
                      
                      try
                        {
@@ -2454,6 +2461,7 @@ namespace ngcomp
                  for (auto & bfi : VB_parts[BND])
                    {
                      if (!bfi->DefinedOn (el.GetIndex())) continue;
+                     if (!bfi->DefinedOnElement (el.Nr())) continue;
                      
                      bfi->CalcLinearizedElementMatrix (fel, eltrans, elveclin, elmat, lh);
                      
