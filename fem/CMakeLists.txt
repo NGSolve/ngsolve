@@ -31,7 +31,7 @@ if(USE_CUDA)
 endif(USE_CUDA)
 
 if(NOT WIN32)
-    target_link_libraries(ngfem ${PYTHON_LIBS} ${LAPACK_LIBRARIES})
+    target_link_libraries(ngfem ngstd ${PYTHON_LIBS} ${LAPACK_LIBRARIES})
     install( TARGETS ngfem ${ngs_install_dir} )
 endif(NOT WIN32)
 
