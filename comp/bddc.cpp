@@ -386,7 +386,7 @@ namespace ngcomp
 
 #ifdef HYPRE
 	      if (hypre)
-		inv = new HyprePreconditioner (*pwbmat, wb_free_dofs);
+		inv = make_shared<HyprePreconditioner> (*pwbmat, wb_free_dofs);
 	      else
 #endif
                 if (coarse)

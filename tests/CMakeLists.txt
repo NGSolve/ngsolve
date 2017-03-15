@@ -57,7 +57,6 @@ if(NETGEN_USE_MPI)
     set(test_driver "mpirun" -np ${PROCESSOR_COUNT} ${test_driver})
 
     foreach(pde_test ${pde_tests})
-        message("${pde_test}")
         file(READ ${pde_dir}/${pde_test} pdefile)
 #no multigrid in parallel implementation
         string(REPLACE "multigrid" "bddc" pdefile ${pdefile})
@@ -107,3 +106,4 @@ endif(BUILD_TYPE_UPPER STREQUAL "DEBUG")
 endif(NETGEN_USE_PYTHON OR NOT WIN32)
 
 add_subdirectory(pytest)
+add_subdirectory(timings)

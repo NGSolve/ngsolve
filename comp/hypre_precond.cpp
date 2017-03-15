@@ -9,25 +9,31 @@
 
 #include <solve.hpp>
 
-extern ngsolve::PDE * pde;
 namespace ngcomp
 {
 
 
-  HyprePreconditioner :: HyprePreconditioner (const PDE & pde, const Flags & flags, const string & name)  
-    : Preconditioner (&pde, flags)
+
+  HyprePreconditioner :: HyprePreconditioner (const PDE & pde, const Flags & aflags, const string & aname)  
+    : Preconditioner (&pde, aflags)
   {
-    bfa = dynamic_cast<const S_BilinearForm<double>*>
-      (pde.GetBilinearForm (flags.GetStringFlag ("bilinearform", NULL)));
+    bfa = pde.GetBilinearForm (flags.GetStringFlag ("bilinearform", NULL));
   }
   
 
-  HyprePreconditioner :: HyprePreconditioner (const BaseMatrix & matrix, const BitArray * afreedofs)
-    : Preconditioner (pde, Flags()), freedofs(afreedofs)
+  HyprePreconditioner :: HyprePreconditioner (const BaseMatrix & matrix, const shared_ptr<BitArray> afreedofs)
+    : Preconditioner(shared_ptr<BilinearForm>(nullptr), freedofs(afreedofs), Flags("not_register_for_auto_update"))
   {
     Setup (matrix);
   }
   
+  HyprePreconditioner :: HyprePreconditioner (shared_ptr<BilinearForm> abfa, const Flags & aflags,
+					      const string aname)
+    : Preconditioner(abfa, aflags, aname)
+  {
+    bfa = abfa;
+  }
+
 
   HyprePreconditioner :: ~HyprePreconditioner ()
   {
@@ -38,8 +44,14 @@ namespace ngcomp
   
   void HyprePreconditioner :: Update()
   {
-    freedofs = bfa->GetFESpace().GetFreeDofs (bfa->UsesEliminateInternal());
+    freedofs = bfa->GetFESpace()->GetFreeDofs(bfa->UsesEliminateInternal());
     Setup (bfa->GetMatrix());
+  }
+
+  void HyprePreconditioner :: FinalizeLevel (const BaseMatrix * mat)
+  {
+    freedofs = bfa->GetFESpace()->GetFreeDofs(bfa->UsesEliminateInternal());
+    Setup (*mat);
   }
   
 
@@ -64,7 +76,8 @@ namespace ngcomp
 
     // find global dof enumeration 
     global_nums.SetSize(ndof);
-    global_nums = -1;
+    if(ndof)
+      global_nums = -1;
     int num_master_dofs = 0;
     for (int i = 0; i < ndof; i++)
       if (pardofs -> IsMasterDof (i) && (!freedofs || freedofs -> Test(i)))
@@ -133,7 +146,7 @@ namespace ngcomp
     HYPRE_ParVector par_b = NULL;
     HYPRE_ParVector par_x = NULL;
 
-    HYPRE_BoomerAMGSetPrintLevel(precond, 0);  /* print solve info + parameters */
+    HYPRE_BoomerAMGSetPrintLevel(precond, 1);  /* print solve info + parameters */
     HYPRE_BoomerAMGSetCoarsenType(precond, 10); /* Falgout coarsening */
     HYPRE_BoomerAMGSetRelaxType(precond, 6);  // 3 GS, 6 .. sym GS 
     HYPRE_BoomerAMGSetStrongThreshold(precond, 0.5);
@@ -159,10 +172,8 @@ namespace ngcomp
     RegionTimer reg(t);
 
     f.Distribute();
-    ParallelBaseVector& pu = dynamic_cast< ParallelBaseVector& > (u);
-    pu.SetStatus(DISTRIBUTED);
-	
-
+    u.SetParallelStatus(DISTRIBUTED);
+    
     HYPRE_IJVector b;
     HYPRE_ParVector par_b;
     HYPRE_IJVector x;
@@ -181,22 +192,38 @@ namespace ngcomp
 	
     Array<int> nzglobal;
     Array<double> free_f;
-    for (int i = 0; i < global_nums.Size(); i++)
+    for(auto i : Range(global_nums.Size()))
       if (global_nums[i] != -1)
 	{
 	  nzglobal.Append (global_nums[i]);
 	  free_f.Append (fvf(i));
 	}
+        
+    Array<int> setzi;
+    Array<double> zeros;
+    if(iupper>=ilower)
+      for(auto k : Range(ilower,iupper+1))
+	{
+	  setzi.Append(k);
+	  zeros.Append(0.0);
+	}
 
     int local_size = nzglobal.Size();
 
-
-    HYPRE_IJVectorAddToValues(b, local_size, &nzglobal[0], &free_f[0]);
+    //HYPRE_IJVectorAddToValues(b, setzi.Size(), &setzi[0], &zeros[0]);
+    //set vector to 0
+    if(setzi.Size())
+      HYPRE_IJVectorSetValues(b, setzi.Size(), &setzi[0], &zeros[0]);
+    //add values
+    if(local_size)
+      HYPRE_IJVectorAddToValues(b, local_size, &nzglobal[0], &free_f[0]);
     HYPRE_IJVectorAssemble(b);
 
 	
     HYPRE_IJVectorGetObject(b, (void **) &par_b);
 
+    if(setzi.Size())
+      HYPRE_IJVectorSetValues(x, setzi.Size(), &setzi[0], &zeros[0]);
     HYPRE_IJVectorAssemble(x);
     HYPRE_IJVectorGetObject(x, (void **) &par_x);
    
@@ -208,8 +235,6 @@ namespace ngcomp
 
     // HYPRE_IJVectorPrint(x, "IJ.out.x");
     
-    // ParallelDofs * pardofs = &(bfa->GetFESpace()).GetParallelDofs ();
-    // const ParallelDofs * pardofs = pu.GetParallelDofs ();
 
     int ndof = pardofs->GetNDofLocal();
     

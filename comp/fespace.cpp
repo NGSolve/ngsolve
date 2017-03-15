@@ -939,7 +939,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
     //      << (low_order_space ? "" : " low-order")
     //      << " ..." << endl;
 
-    starttime = WallTime();
     steps = 0;
     do
       {
@@ -951,6 +950,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
             GetDofNrs (ElementId(VOL,i), dnums);
 	});
 	steps++;
+        if(steps==1) starttime = WallTime();
 	time = WallTime()-starttime;
       }
     while (time < 2.0);
@@ -984,7 +984,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
 
-    starttime = WallTime();
     steps = 0;
     do
       {
@@ -999,6 +998,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    }
 	});
         steps++;
+        if(steps==1) starttime = WallTime();
         time = WallTime()-starttime;
       }
     while (time < 2.0);
@@ -1009,7 +1009,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
 
-    starttime = WallTime();
     steps = 0;
     do
       {
@@ -1018,6 +1017,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    /* Ng_Element ngel = */ ma->GetElement(i);
           });
         steps++;
+        if(steps==1) starttime = WallTime();
         time = WallTime()-starttime;
       }
     while (time < 2.0);
@@ -1026,7 +1026,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
     //    cout << 1e9 * time / (ma->GetNE()*steps) << " ns per Get - Ng_Element (parallel)" << endl;
 
 
-    starttime = WallTime();
     steps = 0;
     do
       {
@@ -1040,6 +1039,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
             }
         });
         steps++;
+        if(steps==1) starttime = WallTime();
         time = WallTime()-starttime;
       }
     while (time < 2.0);
