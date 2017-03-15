@@ -189,6 +189,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
                                              throw py::index_error();
                                            if (b) self.Set(i); else self.Clear(i); 
                                          })
+<<<<<<< HEAD
     .def("__setitem__", [] (BitArray & self, py::slice inds, bool b) 
                                          {
                                            size_t start, step, n;
@@ -218,11 +219,36 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
                                    self.Set(i); 
                                  })
     .def("Clear", [] (BitArray & self, int i)
+=======
+    .def("Set", [] (BitArray & self, py::object in)
                                    {
-                                   if (i < 0 || i >= self.Size()) 
-                                     throw py::index_error();
-                                   self.Clear(i); 
-                                   })
+                                     if (py::isinstance<DummyArgument>(in))
+                                       self.Set();
+                                     else if (py::extract<int>(in).check())
+                                     {
+                                       int i = py::extract<int>(in)();
+                                       if (i < 0 || i >= self.Size()) 
+                                         throw py::index_error();
+                                       self.Set(i);
+                                     }
+                                     else
+                                       throw py::value_error();
+                                   }, py::arg("i") = DummyArgument())
+    .def("Clear", [] (BitArray & self, py::object in)
+>>>>>>> b6e62ebc3bf31714ae22d9b410f1fee2d6dc493c
+                                   {
+                                     if (py::isinstance<DummyArgument>(in))
+                                       self.Clear();
+                                     else if (py::extract<int>(in).check())
+                                     {
+                                       int i = py::extract<int>(in)();
+                                       if (i < 0 || i >= self.Size()) 
+                                         throw py::index_error();
+                                       self.Clear(i);
+                                     }
+                                     else
+                                       throw py::value_error();
+                                   }, py::arg("i") = DummyArgument())
     .def("__ior__", [] (BitArray & self, BitArray & other)
                                  {
                                    self.Or(other); 
