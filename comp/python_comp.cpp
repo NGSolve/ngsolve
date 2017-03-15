@@ -200,6 +200,7 @@ typedef PyWrapper<PML_Transformation> PyPML;
 void ExportPml(py::module &m)
 {
   py::class_<PyPML>(m, "PML", R"raw_string(Base PML object
+
 can only be created by generator functions. Use PML(x, [y, z]) to evaluate the scaling.)raw_string")
     .def("__call__",  [](py::args varargs) {
                       PyPML self = py::extract<PyPML>(varargs[0])();
@@ -291,6 +292,7 @@ can only be created by generator functions. Use PML(x, [y, z]) to evaluate the s
       },
     py::arg("origin"),py::arg("rad")=1,py::arg("alpha")=Complex(0,1),
     R"raw_string(radial pml transformation
+
 origin is a list/tuple determining the dimenson)raw_string");
 
     m.def("Custom", [](PyCF trafo, PyCF jac) -> PyPML {
@@ -307,6 +309,7 @@ origin is a list/tuple determining the dimenson)raw_string");
         },
         py::arg("trafo"),py::arg("jac"),
         R"raw_string(custom pml transformation
+
 trafo and jac are coefficient functions of the scaling and the jacobian)raw_string")
     ;
     m.def("Cartesian", [](py::object mins,py::object maxs, Complex alpha) {
@@ -351,7 +354,8 @@ trafo and jac are coefficient functions of the scaling and the jacobian)raw_stri
         },
         py::arg("mins"),py::arg("maxs"), py::arg("alpha")=Complex(0,1),
         R"raw_string(cartesian pml transformation
-mins and maxs ate tuples/lists determining the dimension)raw_string")
+
+mins and maxs are tuples/lists determining the dimension)raw_string")
     ;
     m.def("HalfSpace", [](py::object point,py::object normal, Complex alpha) {
           int dim = 0;
@@ -403,8 +407,8 @@ mins and maxs ate tuples/lists determining the dimension)raw_string")
         },
         py::arg("point"),py::arg("normal"), py::arg("alpha")=Complex(0,1),
         R"raw_string(half space pml
-scales orthogonal to specified plane in direction of normal
-point and normal are given as tuples/lists determining the dimension)raw_string")
+
+scales orthogonal to specified plane in direction of normal point and normal are given as tuples/lists determining the dimension)raw_string")
     ;
     m.def("BrickRadial", [](py::object mins,py::object maxs,py::object _origin, Complex alpha) {
           int dim = 0;
@@ -460,6 +464,7 @@ point and normal are given as tuples/lists determining the dimension)raw_string"
         },
         py::arg("mins"),py::arg("maxs"), py::arg("origin")=py::make_tuple(0.,0.,0.),py::arg("alpha")=Complex(0,1),
         R"raw_string(radial pml on a brick
+
 mins, maxs and origin are given as tuples/lists)raw_string")
       ;
     m.def("Compound", [](PyPML pml1,PyPML pml2,py::object dims1,py::object dims2) {
@@ -543,7 +548,9 @@ mins, maxs and origin are given as tuples/lists)raw_string")
         },
         py::arg("pml1"),py::arg("pml2"), 
         py::arg("dims1")=DummyArgument(),py::arg("dims2")=DummyArgument(),
-        "compound of two pmls, dimensions start with 1")
+        R"raw_string(tensor product of two pml transformations
+
+        dimensions are optional, given as tuples/lists and start with 1)raw_string")
       ;
 }
 
