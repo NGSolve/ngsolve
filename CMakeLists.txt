@@ -410,10 +410,14 @@ endif(WIN32)
 
 if (NETGEN_USE_MPI)
     # generate python3 wrapper for mpi (to preload mkl and mpi libs)
+    set(ngspy_preload_libs "${MPI_C_LIBRARIES}")
+    if(USE_MKL AND NOT MKL_STATIC)
+      set(ngspy_preload_libs "${ngspy_preload_libs}:${MKL_CORE_LIBRARY}:${MKL_THREADING_LIBRARY}:${MKL_INTERFACE_LIBRARY}:${MKL_BLACS_LIBRARY}")
+    endif()
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngspy
 "#! /usr/bin/bash
-LD_PRELOAD=$LD_PRELOAD:${MKL_CORE_LIBRARY}:${MKL_THREADING_LIBRARY}:${MPI_C_LIBRARIES} ${NETGEN_PYTHON_EXECUTABLE} $*
-    ")
+LD_PRELOAD=$LD_PRELOAD:${ngspy_preload_libs} ${NETGEN_PYTHON_EXECUTABLE} $*
+")
     install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngspy DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve_devel )
 endif (NETGEN_USE_MPI)
 
