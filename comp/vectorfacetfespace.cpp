@@ -388,7 +388,7 @@ namespace ngcomp
             });
         }
       case BBND:
-        throw Exception ("VectorFacetFESpace::GetFE doesnt support BBND");
+        throw Exception ("VectorFacetFESpace::GetFE does not support BBND");
       }
   }
 

@@ -301,15 +301,15 @@ protected:
   ResultType res_type;
   const double eps;
 
-  /// parsing expression (standard parsing grammer)
+  /// parsing expression (standard parsing grammar)
   ResultType ParseExpression ();
-  /// parsing expression (standard parsing grammer)
+  /// parsing expression (standard parsing grammar)
   ResultType ParseCommaExpression ();
-  /// parsing expression (standard parsing grammer)
+  /// parsing expression (standard parsing grammar)
   ResultType ParseSubExpression ();
-  /// parsing expression (standard parsing grammer)
+  /// parsing expression (standard parsing grammar)
   ResultType ParseTerm ();
-  /// parsing expression (standard parsing grammer)
+  /// parsing expression (standard parsing grammar)
   ResultType ParsePrimary ();
 
   /// parse from stream

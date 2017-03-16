@@ -1384,7 +1384,7 @@ namespace ngcomp
 	    }
 	  default:
 	    {
-	      cerr << "NedelecFE2, GetDofNrs, unkown element" << endl;
+	      cerr << "NedelecFE2, GetDofNrs, unknown element" << endl;
 	    }
 	  }
       }

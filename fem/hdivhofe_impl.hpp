@@ -325,7 +325,7 @@ namespace ngfem
           /*
           T_FACESHAPES::CalcSplitted (p+2, xi, eta, zeta, adpol1, adpol2); 
 
-          // Compability WITH TRIG!! 
+          // Compatibility WITH TRIG!! 
           for (int k = 0; k < adpol1.Size(); k++)
             adpol1[k] *= 0.5; 
             
