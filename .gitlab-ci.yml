@@ -381,6 +381,8 @@ deploy_sourceforge:
   script:
     - git remote add sourceforge ssh://mhochste@git.code.sf.net/p/ngsolve/git || true
     - git remote update
+    - git checkout master
+    - git pull origin master
     - git push sourceforge master
   only:
     - master
