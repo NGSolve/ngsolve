@@ -380,6 +380,7 @@ deploy_sourceforge:
     - docker
   script:
     - git remote add sourceforge ssh://mhochste@git.code.sf.net/p/ngsolve/git
+    - git remote update
     - git push sourceforge master
   only:
     - master
