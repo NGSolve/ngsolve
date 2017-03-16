@@ -339,6 +339,7 @@ namespace ngcomp
       : PML_TransformationDim<DIM>(), alpha(_alpha)
     {
       point = 0.;
+      normal = 0.;
       for (int i : Range(min(int(_point.Size()),DIM)))
           point(i)=_point(i);
       for (int i : Range(min(int(_normal.Size()),DIM)))
@@ -403,9 +404,10 @@ namespace ngcomp
                     Mat<DIM,DIM,Complex> & jac) const 
     {
       point = hpoint;
+      jac = Id<DIM>();
       double tmp = 0;
       double scal = 0;
-      int maxind = 0;
+      int maxind = -1;
       Vec<DIM> rel_point = hpoint - origin;
       for (int j : Range(DIM))
       {
@@ -419,10 +421,13 @@ namespace ngcomp
           maxind=j;
         }
       }
-      Vec<DIM> tmpvec;
-      tmpvec[maxind]=1/rel_point(maxind)-scal/rel_point(maxind);
-      point += alpha*scal*rel_point;
-      jac =(1. + alpha * scal)*Id<DIM>() + alpha * rel_point * Trans(tmpvec);
+      Vec<DIM> tmpvec = 0.;
+      if (maxind>=0)
+      {
+        tmpvec(maxind)=1/rel_point(maxind)-scal/rel_point(maxind);
+        point += alpha*scal*rel_point;
+        jac += alpha * (scal*Id<DIM>() + rel_point * Trans(tmpvec));
+      }
     }
   };
 
