@@ -373,6 +373,17 @@ cleanup_mac:
 # Deploy stage
 ############################################
 
+deploy_sourceforge:
+  stage: deploy
+  tags:
+    - linux
+    - docker
+  script:
+    - git remote add sourceforge ssh://mhochste@git.code.sf.net/p/ngsolve/git
+    - git push sourceforge master
+  only:
+    - master
+
 deploy_release:
   stage: deploy
   tags:
