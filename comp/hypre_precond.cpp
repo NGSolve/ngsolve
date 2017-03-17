@@ -22,8 +22,9 @@ namespace ngcomp
   
 
   HyprePreconditioner :: HyprePreconditioner (const BaseMatrix & matrix, const shared_ptr<BitArray> afreedofs)
-    : Preconditioner(shared_ptr<BilinearForm>(nullptr), freedofs(afreedofs), Flags("not_register_for_auto_update"))
+    : Preconditioner(shared_ptr<BilinearForm>(nullptr), Flags("not_register_for_auto_update"))
   {
+    freedofs = afreedofs; 
     Setup (matrix);
   }
   

@@ -195,7 +195,9 @@ typedef PyWrapper<CoefficientFunction> PyCF;
 typedef PyWrapper<PML_Transformation> PyPML;
 void ExportPml(py::module &m)
 {
-  py::class_<PyPML>(m, "PML", "Base pml object")
+  py::class_<PyPML>(m, "PML", R"raw_string(Base PML object
+
+can only be created by generator functions. Use PML(x, [y, z]) to evaluate the scaling.)raw_string")
     .def("__call__",  [](py::args varargs) {
                       PyPML self = py::extract<PyPML>(varargs[0])();
                       int dim = self.Get()->GetDimension();
@@ -220,25 +222,25 @@ void ExportPml(py::module &m)
                       Matrix<Complex> jac(dim,dim);
                       self.Get()->MapPointV(hpoint,point,jac);
                       return jac;
-                    },"evaluates jacobian at point")
+                    },"evaluate PML jacobian at point x, [y, z]")
     .def_property_readonly("dim", [] (PyPML & self) {return self.Get()->GetDimension(); },
         "dimension")
     .def_property_readonly("PML_CF", [](PyPML *instance) {
                       return PyCF(make_shared<PML_CF> (instance->Get()));
                     },
-        "the pml scaling as coefficient function")
+        "the scaling as coefficient function")
     .def_property_readonly("Jac_CF", [](PyPML *instance) {
                       return PyCF(make_shared<PML_Jac> (instance->Get()));
                     },
-        "the pml jacobian as coefficient function")
+        "the jacobian of the PML as coefficient function")
     .def_property_readonly("Det_CF", [](PyPML *instance) {
                       return PyCF(make_shared<PML_Det> (instance->Get()));
                     },
-          "the pml transformation determinant as coefficient function")
+          "the determinant of the jacobian as coefficient function")
     .def_property_readonly("JacInv_CF", [](PyPML *instance) {
                       return PyCF(make_shared<PML_JacInv> (instance->Get()));
                     },
-        "the pml jacobian inverse as coefficient function")
+        "the inverse of the jacobian as coefficient function")
     .def("__add__", [](PyPML pml1, PyPML pml2) {
                   int dim = pml1.Get()->GetDimension();
                   if (pml2.Get()->GetDimension() != dim)
@@ -285,7 +287,9 @@ void ExportPml(py::module &m)
           throw Exception("No valid dimension");
       },
     py::arg("origin"),py::arg("rad")=1,py::arg("alpha")=Complex(0,1),
-    "radial pml transformation");
+    R"raw_string(radial pml transformation
+
+origin is a list/tuple determining the dimenson)raw_string");
 
     m.def("Custom", [](PyCF trafo, PyCF jac) -> PyPML {
           switch (trafo.Get()->Dimension())
@@ -300,7 +304,9 @@ void ExportPml(py::module &m)
           throw Exception("No valid dimension");
         },
         py::arg("trafo"),py::arg("jac"),
-        "pml given by coefficient functions")
+        R"raw_string(custom pml transformation
+
+trafo and jac are coefficient functions of the scaling and the jacobian)raw_string")
     ;
     m.def("Cartesian", [](py::object mins,py::object maxs, Complex alpha) {
           int dim = 0;
@@ -343,7 +349,9 @@ void ExportPml(py::module &m)
           throw Exception("No valid dimension");
         },
         py::arg("mins"),py::arg("maxs"), py::arg("alpha")=Complex(0,1),
-        "cartesian pml")
+        R"raw_string(cartesian pml transformation
+
+mins and maxs are tuples/lists determining the dimension)raw_string")
     ;
     m.def("HalfSpace", [](py::object point,py::object normal, Complex alpha) {
           int dim = 0;
@@ -394,7 +402,9 @@ void ExportPml(py::module &m)
           throw Exception("No valid dimension");
         },
         py::arg("point"),py::arg("normal"), py::arg("alpha")=Complex(0,1),
-        "half space pml, scales orthogonal to specified plane in direction of normal")
+        R"raw_string(half space pml
+
+scales orthogonal to specified plane in direction of normal point and normal are given as tuples/lists determining the dimension)raw_string")
     ;
     m.def("BrickRadial", [](py::object mins,py::object maxs,py::object _origin, Complex alpha) {
           int dim = 0;
@@ -449,7 +459,9 @@ void ExportPml(py::module &m)
           throw Exception("No valid dimension");
         },
         py::arg("mins"),py::arg("maxs"), py::arg("origin")=py::make_tuple(0.,0.,0.),py::arg("alpha")=Complex(0,1),
-        "radial pml on a brick")
+        R"raw_string(radial pml on a brick
+
+mins, maxs and origin are given as tuples/lists)raw_string")
       ;
     m.def("Compound", [](PyPML pml1,PyPML pml2,py::object dims1,py::object dims2) {
           int dim1 = pml1.Get()->GetDimension();
@@ -532,7 +544,9 @@ void ExportPml(py::module &m)
         },
         py::arg("pml1"),py::arg("pml2"), 
         py::arg("dims1")=DummyArgument(),py::arg("dims2")=DummyArgument(),
-        "compound of two pmls, dimensions start with 1")
+        R"raw_string(tensor product of two pml transformations
+
+        dimensions are optional, given as tuples/lists and start with 1)raw_string")
       ;
 }
 
@@ -1561,8 +1575,9 @@ flags : dict
 	return py::cast(self->Timing());
       })
 
-    // .def_property_readonly("mesh", FunctionPointer ([](FESpace & self) -> shared_ptr<MeshAccess>
-    // { return self.GetMeshAccess(); }))
+    .def_property_readonly("mesh",
+                           [](PyFES & self) -> shared_ptr<MeshAccess>
+                           { return self->GetMeshAccess(); })
 
     .def_property_readonly("order", FunctionPointer([] (PyFES & self) { return OrderProxy(*self.Get()); }),
                   "proxy to set order for individual nodes")

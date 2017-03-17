@@ -372,7 +372,7 @@ void PyExportSymbolTable (py::module &m)
 }  
 
 
-// convertion not possible for shared_ptr<double>, so we have a special treatment:
+// conversion not possible for shared_ptr<double>, so we have a special treatment:
 template <> inline void PyExportSymbolTable<shared_ptr<double>, shared_ptr<double>> (py::module &m)
 {
   typedef SymbolTable<shared_ptr<double>> ST;
