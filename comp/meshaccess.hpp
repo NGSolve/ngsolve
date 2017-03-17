@@ -559,7 +559,7 @@ namespace ngcomp
        returns topology of a Netgen - element.  This is the new
        (2008), unified concept. The function returns a direct access
        to the Netgen mesh structure instead of copying point numbers
-       etc. The nasty 1-0 convertion is done on the fly.
+       etc. The nasty 1-0 conversion is done on the fly.
      */
     Ngs_Element GetSElement (int elnr) const
     {
@@ -855,7 +855,7 @@ namespace ngcomp
     
     
     /// returns the transformation from the reference element to physical element.
-    /// Given a point in the refrence element, the ElementTransformation can 
+    /// Given a point in the reference element, the ElementTransformation can 
     /// compute the mapped point as well as the Jacobian
     [[deprecated("Use GetTrafo with ElementId(vb, elnr) instead!")]]    
       ngfem::ElementTransformation & GetTrafo (int elnr, VorB vb, Allocator & lh) const

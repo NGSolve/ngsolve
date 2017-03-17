@@ -3663,7 +3663,7 @@ public:
       FlatMatrix<> then_values = *input[1];
       FlatMatrix<> else_values = *input[2];
       for (int i = 0; i < if_values.Height(); i++)
-        values(i) = (if_values(i) > 0) ? then_values(i) : else_values(i);
+        values.Row(i) = (if_values(i) > 0) ? then_values.Row(i) : else_values.Row(i);
     }
 
     // virtual bool IsComplex() const { return cf_then->IsComplex() | cf_else->IsComplex(); }

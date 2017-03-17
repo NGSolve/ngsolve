@@ -1291,7 +1291,7 @@ namespace ngcomp
 
 
     //  *testout << table << endl;
-    // cout << "sucess " << endl;
+    // cout << "success " << endl;
     return make_shared<Table<int>> (table);
 
   }
