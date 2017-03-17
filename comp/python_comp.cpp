@@ -1575,8 +1575,9 @@ flags : dict
 	return py::cast(self->Timing());
       })
 
-    // .def_property_readonly("mesh", FunctionPointer ([](FESpace & self) -> shared_ptr<MeshAccess>
-    // { return self.GetMeshAccess(); }))
+    .def_property_readonly("mesh",
+                           [](PyFES & self) -> shared_ptr<MeshAccess>
+                           { return self->GetMeshAccess(); })
 
     .def_property_readonly("order", FunctionPointer([] (PyFES & self) { return OrderProxy(*self.Get()); }),
                   "proxy to set order for individual nodes")
