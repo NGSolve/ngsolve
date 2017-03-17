@@ -92,6 +92,8 @@ namespace ngstd
     shared_ptr<T> Get() { return dynamic_pointer_cast<T>(ptr); }
     T* operator ->() { return Get().get(); }
     const T* operator ->() const { return Get().get(); }
+    T& operator *() { return *Get().get(); }
+    const T& operator *() const { return *Get().get(); }    
     virtual ~PyWrapperDerived() {}
   };
 
