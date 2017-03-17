@@ -6,7 +6,7 @@ deformation. All pre-implemented PMLs are of the form
 
 .. math::
 
-  \hat x(x)&:=x+i\alpha d(x)
+  \hat x(x):=x+i\alpha d(x)
 
 where :math:`d(x)` is some distance function and :math:`\alpha` is the scaling 
 parameter.
