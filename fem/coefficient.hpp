@@ -382,31 +382,15 @@ namespace ngfem
     ///
     Complex val;
   public:
-    ///
     ConstantCoefficientFunctionC (Complex aval);
-    ///
     virtual ~ConstantCoefficientFunctionC ();
-    virtual bool IsComplex() const { return true; }
-    ///
-    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
-    {
-      throw Exception("no real evaluate for ConstantCF-Complex");
-    }
-    ///
-    virtual Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const 
-    { 
-      return val;
-    }
-    
-    virtual void Evaluate (const BaseMappedIntegrationPoint & mip, FlatVector<Complex> values) const
-    {
-      values = val;
-    }
 
-    virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const
-    {
-      values = val;
-    }
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const;
+    virtual Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const;
+
+    virtual void Evaluate (const BaseMappedIntegrationPoint & mip, FlatVector<Complex> values) const;
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const;
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values) const;
     
     virtual void PrintReport (ostream & ost) const;
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;

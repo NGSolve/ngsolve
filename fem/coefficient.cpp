@@ -175,7 +175,33 @@ namespace ngfem
   ConstantCoefficientFunctionC ::
   ~ConstantCoefficientFunctionC ()
   { ; }
+  
+  double ConstantCoefficientFunctionC :: Evaluate (const BaseMappedIntegrationPoint & ip) const
+  {
+    throw Exception("no real evaluate for ConstantCF-Complex");
+  }
 
+  Complex ConstantCoefficientFunctionC :: EvaluateComplex (const BaseMappedIntegrationPoint & ip) const 
+  { 
+    return val;
+  }
+  
+  void ConstantCoefficientFunctionC :: Evaluate (const BaseMappedIntegrationPoint & mip, FlatVector<Complex> values) const
+  {
+    values = val;
+  }
+  
+  void ConstantCoefficientFunctionC :: Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const
+  {
+    values = val;
+  }
+  
+  void ConstantCoefficientFunctionC :: Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values) const
+  {
+    for (auto i : Range(ir.Size()))
+      values(0, i) = val;
+  }
+  
   void ConstantCoefficientFunctionC :: PrintReport (ostream & ost) const
   {
     ost << "ConstantCFC, val = " << val << endl;
