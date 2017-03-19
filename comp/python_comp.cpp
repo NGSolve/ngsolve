@@ -649,7 +649,11 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
     .def_property_readonly("nr", &Ngs_Element::Nr, "the element number")    
     .def("VB", &Ngs_Element::VB, "VorB of element")   
     .def_property_readonly("vertices", [](Ngs_Element &el) {
-        return py::cast(Array<int>(el.Vertices()));
+        // return py::cast(Array<int>(el.Vertices()));
+        py::tuple tuple(el.Vertices().Size());
+        for (auto i : Range(el.Vertices()))
+          tuple[i] = py::int_(el.Vertices()[i]);
+        return tuple;
         })//, "list of global vertex numbers")
     .def_property_readonly("edges", [](Ngs_Element &el) { return py::cast(Array<int>(el.Edges()));} ,
                   "list of global edge numbers")
@@ -675,8 +679,8 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
                    {
                      py::list res;
                      Array<int> tmp (el.GetDofs());
-                     for( int i : tmp)
-                        res.append(py::cast(i));
+                     for (int i : tmp)
+                       res.append(py::cast(i));
                      return res;
                    },
                   "degrees of freedom of element"
@@ -917,20 +921,18 @@ mesh (netgen.Mesh): a mesh generated from Netgen
           (&MeshAccess::GetTrafo), 
           py::return_value_policy::reference)
 
-    .def ("GetTrafo", FunctionPointer([](MeshAccess & ma, ElementId id) -> PyWrapper<ElementTransformation>
-                                      {
-                                        return &ma.GetTrafo(id, global_alloc);
-                                      }),
+    .def ("GetTrafo",
+          [](MeshAccess & ma, ElementId id) -> PyWrapper<ElementTransformation>
+          { return &ma.GetTrafo(id, global_alloc); },
           py::return_value_policy::take_ownership)
 
-    // .def("SetDeformation", &MeshAccess::SetDeformation)
-    .def("SetDeformation", FunctionPointer
-	 ([](MeshAccess & ma, PyGF gf)
-	  { ma.SetDeformation(gf.Get()); }), docu_string("Deform the mesh with the given GridFunction"))
-    //old
-    //.def("SetRadialPML", &MeshAccess::SetRadialPML)
-    .def("SetPML", FunctionPointer
-	 ([](MeshAccess & ma,  PyPML apml, py::object definedon)
+    .def("SetDeformation", 
+	 [](MeshAccess & ma, PyGF gf)
+         { ma.SetDeformation(gf.Get()); },
+         docu_string("Deform the mesh with the given GridFunction"))
+
+    .def("SetPML", 
+	 [](MeshAccess & ma,  PyPML apml, py::object definedon)
           {
             if (py::extract<int>(definedon).check())
               {
@@ -944,10 +946,10 @@ mesh (netgen.Mesh): a mesh generated from Netgen
                   if (std::regex_match (ma.GetMaterial(VOL,i), pattern))
                     ma.SetPML(apml.Get(), i);
               }
-          }),
-   py::arg("pmltrafo"),py::arg("definedon"),
-   "set PML transformation on domain"
-   )
+          },
+         py::arg("pmltrafo"),py::arg("definedon"),
+         "set PML transformation on domain"
+         )
     .def("UnSetPML", [](MeshAccess & ma, py::object definedon)
           {
             if (py::extract<int>(definedon).check())
@@ -961,6 +963,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
                     ma.UnSetPML(i);
               }
           })
+    
     .def("GetPMLTrafos", [](MeshAccess & ma) 
       {
         py::list pml_trafos(ma.GetNDomains());
@@ -984,6 +987,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
         py::arg("dom")=1,
         "returns pml transformation on domain dom"
         )
+
     .def("UnsetDeformation", FunctionPointer
 	 ([](MeshAccess & ma){ ma.SetDeformation(nullptr);}))
     
@@ -1142,26 +1146,26 @@ integrators will replace it with the basis functions of the finite element space
 when building the system matrices.
 
 )raw_string"))
-    .def("Deriv", FunctionPointer
-         ([](const PyProxyFunction self)
-          { return PyProxyFunction(self->Deriv()); }),
+    .def("Deriv", 
+         [](const PyProxyFunction self)
+         { return PyProxyFunction(self->Deriv()); },
          "take canonical derivative (grad, curl, div)")
-    .def("Trace", FunctionPointer
-         ([](const PyProxyFunction self)
-          { return PyProxyFunction(self->Trace()); }),
+    .def("Trace", 
+         [](const PyProxyFunction self)
+         { return PyProxyFunction(self->Trace()); },
          "take canonical boundary trace")
-    .def("Other", FunctionPointer
-         ([](const PyProxyFunction self, py::object bnd) 
-          {
-            if (py::extract<double> (bnd).check())
-              return PyProxyFunction(self->Other(make_shared<ConstantCoefficientFunction>(py::extract<double> (bnd)())));
-            if (py::extract<PyCF> (bnd).check())
-              return PyProxyFunction(self->Other(py::extract<PyCF> (bnd)().Get()));
-            else
-              return PyProxyFunction(self->Other(nullptr));
-          }),
+    .def("Other", 
+         [](const PyProxyFunction self, py::object bnd) 
+         {
+           if (py::extract<double> (bnd).check())
+             return PyProxyFunction(self->Other(make_shared<ConstantCoefficientFunction>(py::extract<double> (bnd)())));
+           if (py::extract<PyCF> (bnd).check())
+             return PyProxyFunction(self->Other(py::extract<PyCF> (bnd)().Get()));
+           else
+             return PyProxyFunction(self->Other(nullptr));
+         },
          "take value from neighbour element (DG)",
-          py::arg("bnd") = DummyArgument()
+         py::arg("bnd") = DummyArgument()
          )
     .def_property_readonly("derivname",
                   [](const PyProxyFunction self) -> string
@@ -1326,19 +1330,21 @@ when building the system matrices.
 
   static size_t global_heapsize = 1000000;
   static LocalHeap glh(global_heapsize, "python-comp lh", true);
-  m.def("SetHeapSize", [](size_t heapsize)
-                                         {
-                                           if (heapsize > global_heapsize)
-                                             {
-                                               global_heapsize = heapsize;
-                                               glh = LocalHeap (heapsize, "python-comp lh", true);
-                                             }
-                                         });
-
-  m.def("SetTestoutFile", [](string filename)
-                                            {
-                                              testout = new ofstream (filename);
-					    }, "Enable some logging into file with given filename");
+  m.def("SetHeapSize",
+        [](size_t heapsize)
+        {
+          if (heapsize > global_heapsize)
+            {
+              global_heapsize = heapsize;
+              glh = LocalHeap (heapsize, "python-comp lh", true);
+            }
+        });
+  
+  m.def("SetTestoutFile",
+        [](string filename)
+        {
+          testout = new ofstream (filename);
+        }, "Enable some logging into file with given filename");
   
   //////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1511,7 +1517,7 @@ flags : dict
                              Flags flags = py::extract<Flags> (bpflags)();
 
                              Array<shared_ptr<FESpace>> spaces;
-                             for( auto fes : lspaces )
+                             for (auto fes : lspaces )
                                spaces.Append(py::extract<PyFES>(fes)().Get());
                              if (spaces.Size() == 0)
                                throw Exception("Compound space must have at least one space");
@@ -1555,20 +1561,22 @@ flags : dict
         new (&self) PyFES(fes);
         py::cast(self).attr("__dict__") = t[3];
      })
+    
     .def("Update", [](PyFES & self, int heapsize)
-                                   { 
-                                     LocalHeap lh (heapsize, "FESpace::Update-heap");
-                                     self->Update(lh);
-                                     self->FinalizeUpdate(lh);
-                                   },
+         { 
+           LocalHeap lh (heapsize, "FESpace::Update-heap");
+           self->Update(lh);
+           self->FinalizeUpdate(lh);
+         },
          py::arg("heapsize")=1000000,
          "update space after mesh-refinement")
 
     .def_property_readonly ("ndof", [](PyFES & self) { return self->GetNDof(); }, 
-                   "number of degrees of freedom")
+                            "number of degrees of freedom")
 
-    .def_property_readonly ("ndofglobal", [](PyFES & self) { return self->GetNDofGlobal(); }, 
-                   "global number of dofs on MPI-distributed mesh")
+    .def_property_readonly ("ndofglobal",
+                            [](PyFES & self) { return self->GetNDofGlobal(); }, 
+                            "global number of dofs on MPI-distributed mesh")
     // .def("__str__", &ToString<FESpace>)
     .def("__str__", [] (PyFES & self) { return ToString(*self.Get()); } )
     .def("__timing__", [] (PyFES & self) {
@@ -1587,17 +1595,17 @@ flags : dict
                   "type of finite element space")    
 
     .def("Elements", 
-         FunctionPointer([](PyFES & self, VorB vb, int heapsize) 
-                         {
-                           return make_shared<FESpace::ElementRange> (self->Elements(vb, heapsize));
-                         }),
+         [](PyFES & self, VorB vb, int heapsize) 
+         {
+           return make_shared<FESpace::ElementRange> (self->Elements(vb, heapsize));
+         },
          py::arg("VOL_or_BND")=VOL,py::arg("heapsize")=10000)
 
     .def("Elements", 
-         FunctionPointer([](PyFES & self, VorB vb, LocalHeap & lh) 
-                         {
-                           return make_shared<FESpace::ElementRange> (self->Elements(vb, lh));
-                         }),
+         [](PyFES & self, VorB vb, LocalHeap & lh) 
+         {
+           return make_shared<FESpace::ElementRange> (self->Elements(vb, lh));
+         },
          py::arg("VOL_or_BND")=VOL, py::arg("heap"))
 
     /*
@@ -1611,68 +1619,61 @@ flags : dict
           py::arg("heap")=LocalHeap(0), py::arg("heapsize")=10000)
     */
 
-    .def("GetDofNrs", FunctionPointer([](PyFES & self, ElementId ei) 
-                                   {
-                                     Array<int> tmp; self->GetDofNrs(ei,tmp); 
-                                     py::tuple tuple(tmp.Size());
-                                     for( auto i : Range(tmp))
-                                        tuple[i] = py::int_(tmp[i]);
-                                     return tuple;
-                                   }))
+    .def("GetDofNrs", [](PyFES & self, ElementId ei) 
+         {
+           Array<int> tmp; self->GetDofNrs(ei,tmp); 
+           py::tuple tuple(tmp.Size());
+           for (auto i : Range(tmp))
+             tuple[i] = py::int_(tmp[i]);
+           return tuple;
+         })
 
-    .def("CouplingType", FunctionPointer ([](PyFES & self, int dofnr) -> COUPLING_TYPE
-                                          { return self.Get()->GetDofCouplingType(dofnr); }),
+    .def("CouplingType", [](PyFES & self, DofId dofnr) -> COUPLING_TYPE
+         { return self.Get()->GetDofCouplingType(dofnr); },
          py::arg("dofnr"),
          "get coupling type of a degree of freedom"
          )
-    .def("SetCouplingType", [](PyFES & self, int dofnr, COUPLING_TYPE ct) 
-                                             { return self.Get()->SetDofCouplingType(dofnr,ct); },
+    .def("SetCouplingType", [](PyFES & self, DofId dofnr, COUPLING_TYPE ct) 
+         { return self.Get()->SetDofCouplingType(dofnr,ct); },
          py::arg("dofnr"), py::arg("coupling_type"),
          "set coupling type of a degree of freedom"
          )
 
-    /*
-    .def ("GetFE", 
-          static_cast<FiniteElement&(FESpace::*)(ElementId,Allocator&)const>
-          (&FESpace::GetFE), 
+    .def ("GetFE", [](PyFES & self, ElementId ei) -> py::object
+          {
+            Allocator alloc;
+            
+            auto fe = shared_ptr<FiniteElement> (&self->GetFE(ei, alloc), NOOP_Deleter);
+            
+            auto scalfe = dynamic_pointer_cast<BaseScalarFiniteElement> (fe);
+            if (scalfe) return py::cast(scalfe);
+            
+            return py::cast(fe);
+          })
+          
+    .def ("GetFE", [](PyFES & self, ElementId ei, LocalHeap & lh)
+          {
+            return shared_ptr<FiniteElement>(&self->GetFE(ei, lh), NOOP_Deleter);
+          },
           py::return_value_policy::reference)
-    */
-    .def ("GetFE", FunctionPointer([](PyFES & self, ElementId ei) -> py::object
-                                   {
-                                     Allocator alloc;
-
-                                     auto fe = shared_ptr<FiniteElement> (&self->GetFE(ei, alloc), NOOP_Deleter);
-
-                                     auto scalfe = dynamic_pointer_cast<BaseScalarFiniteElement> (fe);
-                                     if (scalfe) return py::cast(scalfe);
-
-                                     return py::cast(fe);
-
-                                   }))
     
-    .def ("GetFE", FunctionPointer([](PyFES & self, ElementId ei, LocalHeap & lh)
-                                   {
-                                     return shared_ptr<FiniteElement>(&self->GetFE(ei, lh), NOOP_Deleter);
-                                   }),
-          py::return_value_policy::reference)
-
-
-    .def("FreeDofs", FunctionPointer
-         ( [] (const PyFES &self, bool coupling) { return self->GetFreeDofs(coupling); } ),
+    .def("FreeDofs",
+         [] (const PyFES &self, bool coupling)
+         { return self->GetFreeDofs(coupling); },
          py::arg("coupling")=false)
 
-    .def("Range", FunctionPointer
-         ( [] (const PyFES & self, int comp) -> py::slice
-           {
-             auto compspace = dynamic_pointer_cast<CompoundFESpace> (self.Get());
-             if (!compspace)
-               throw py::type_error("'Range' is available only for product spaces");
-             IntRange r = compspace->GetRange(comp);
-             return py::slice(py::int_(r.First()), py::int_(r.Next()),1);
-           }))
+    .def("Range",
+         [] (const PyFES & self, int comp) -> py::slice
+         {
+           auto compspace = dynamic_pointer_cast<CompoundFESpace> (self.Get());
+           if (!compspace)
+             throw py::type_error("'Range' is available only for product spaces");
+           IntRange r = compspace->GetRange(comp);
+           return py::slice(py::int_(r.First()), py::int_(r.Next()),1);
+         })
 
-    .def_property_readonly("components", FunctionPointer
-                  ([](PyFES & self)-> py::tuple
+    .def_property_readonly("components", 
+                  [](PyFES & self)-> py::tuple
                    { 
                      auto compspace = dynamic_pointer_cast<CompoundFESpace> (self.Get());
                      if (!compspace)
@@ -1681,39 +1682,41 @@ flags : dict
                      for (int i = 0; i < compspace -> GetNSpaces(); i++) 
                        vecs[i]= py::cast( PyFES((*compspace)[i]) );
                      return vecs;
-                   }),
+                   },
                   "list of gridfunctions for compound gridfunction")
 
     .def("TrialFunction",
          [] (const PyFES & self) 
-           {
-             return MakeProxyFunction (*self.Get(), false);
-           }, docu_string("Gives a proxy to be used as a trialfunction in :any:`Symbolic Integrators<symbolic-integrators>`"))
+         {
+           return MakeProxyFunction (*self.Get(), false);
+         },
+         docu_string("Gives a proxy to be used as a trialfunction in :any:`Symbolic Integrators<symbolic-integrators>`"))
+    
     .def("TestFunction",
          [] (const PyFES & self) 
            {
              return MakeProxyFunction (*self.Get(), true);
-           }, docu_string("Gives a proxy to be used as a testfunction for :any:`Symbolic Integrators<symbolic-integrators>`"))
+           },
+         docu_string("Gives a proxy to be used as a testfunction for :any:`Symbolic Integrators<symbolic-integrators>`"))
 
-    .def("SolveM", FunctionPointer
-        ( [] (const PyFES & self,
-              PyCF rho, PyBaseVector vec, int heapsize)
+    .def("SolveM",
+         [] (const PyFES & self,
+             PyCF rho, PyBaseVector vec, int heapsize)
           {
-            // LocalHeap lh(heapsize, "solveM - lh", true);
             if (heapsize > global_heapsize)
               {
                 global_heapsize = heapsize;
                 glh = LocalHeap(heapsize, "python-comp lh", true);
               }
             self->SolveM(*rho.Get(), *vec, glh);
-          }),
+          },
          py::arg("rho"), py::arg("vec"), py::arg("heapsize")=1000000)
         
-    .def("__eq__", FunctionPointer
-         ( [] (PyFES self, PyFES other)
-           {
-             return self.Get() == other.Get();
-           }))
+    .def("__eq__",
+         [] (PyFES self, PyFES other)
+         {
+           return self.Get() == other.Get();
+         })
     ;
   typedef PyWrapperDerived<HCurlHighOrderFESpace, FESpace> PyHCurl;
   typedef PyWrapperDerived<CompoundFESpace, FESpace> PyCompoundFES;
@@ -1860,8 +1863,8 @@ used_idnrs : list of int = None
          py::arg("space"), py::arg("name")="gfu", py::arg("multidim")=DummyArgument(),
          "creates a gridfunction in finite element space"
          )
-    .def("__ngsid__", FunctionPointer( [] ( PyGF self)
-        { return reinterpret_cast<std::uintptr_t>(self.Get().get()); } ) )
+    .def("__ngsid__", [] ( PyGF self)
+        { return reinterpret_cast<std::uintptr_t>(self.Get().get()); }) 
     .def("__getstate__", [] (py::object self_object) {
         auto self = self_object.cast<PyGF>();
         auto vec = self->GetVectorPtr()->FV<double>();
@@ -1893,21 +1896,21 @@ used_idnrs : list of int = None
     .def("Update", FunctionPointer ([](PyGF self) { self->Update(); }),
          "update vector size to finite element space dimension after mesh refinement")
     
-    .def("Save", FunctionPointer([](PyGF self, string filename)
-                                 {
-                                   ofstream out(filename, ios::binary);
-                                   self->Save(out);
-                                 }))
-    .def("Load", FunctionPointer([](PyGF self, string filename)
-                                 {
-                                   ifstream in(filename, ios::binary);
-                                   self->Load(in);
-                                 }))
-    
-    .def("Set", FunctionPointer
-         ([](PyGF self, PyCF cf,
-             VorB boundary, py::object definedon, int heapsize, py::object heap)
-          {
+    .def("Save", [](PyGF self, string filename)
+         {
+           ofstream out(filename, ios::binary);
+           self->Save(out);
+         })
+    .def("Load", [](PyGF self, string filename)
+         {
+           ifstream in(filename, ios::binary);
+           self->Load(in);
+         })
+         
+    .def("Set", 
+         [](PyGF self, PyCF cf,
+            VorB boundary, py::object definedon, int heapsize, py::object heap)
+         {
              shared_ptr<TPHighOrderFESpace> tpspace = dynamic_pointer_cast<TPHighOrderFESpace>(self.Get()->GetFESpace());
              if(tpspace)
              {
@@ -1938,7 +1941,7 @@ used_idnrs : list of int = None
               SetValues (cf.Get(), *self.Get(), *reg, NULL, glh);
             else
               SetValues (cf.Get(), *self.Get(), boundary, NULL, glh);
-          }),
+         },
           py::arg("coefficient"),
           py::arg("VOL_or_BND")=VOL,
           py::arg("definedon")=DummyArgument(),
@@ -1947,28 +1950,29 @@ used_idnrs : list of int = None
       )
 
 
-    .def_property_readonly("components", FunctionPointer
-                  ([](PyGF self)-> py::tuple
+    .def_property_readonly("components",
+                  [](PyGF self)-> py::tuple
                    { 
                      py::tuple vecs(self->GetNComponents());
                      for (int i = 0; i < self->GetNComponents(); i++)
                        vecs[i] = py::cast(PyGF(self->GetComponent(i)));
                      return vecs;
-                   }),
+                   },
                   "list of gridfunctions for compound gridfunction")
 
     .def_property_readonly("vec",
-                  FunctionPointer([](PyGF self) -> PyBaseVector { return self->GetVectorPtr(); }),
-                  "coefficient vector")
+                           [](PyGF self) -> PyBaseVector
+                           { return self->GetVectorPtr(); },
+                           "coefficient vector")
 
-    .def_property_readonly("vecs", FunctionPointer
-                  ([](PyGF self)-> py::list
+    .def_property_readonly("vecs", 
+                  [](PyGF self)-> py::list
                    { 
                      py::list vecs(self->GetMultiDim());
                      for (int i = 0; i < self->GetMultiDim(); i++)
                        vecs[i] = py::cast(PyBaseVector(self->GetVectorPtr(i)));
                      return vecs;
-                   }),
+                   },
                   "list of coefficient vectors for multi-dim gridfunction")
 
     /*
@@ -1985,18 +1989,18 @@ used_idnrs : list of int = None
             return make_shared<GridFunctionCoefficientFunction> (self, diffop);
           }))
     */
-    .def("Deriv", FunctionPointer
-         ([](PyGF self) -> PyCF
+    .def("Deriv",
+         [](PyGF self) -> PyCF
           {
             auto sp = make_shared<GridFunctionCoefficientFunction> (self.Get(),
                                                                     self->GetFESpace()->GetFluxEvaluator(),
                                                                     self->GetFESpace()->GetFluxEvaluator(BND));
             // sp->SetDimensions(sp->Dimensions());
             return PyCF(sp);
-          }))
+          })
 
-    .def("Operator", FunctionPointer
-         ([](PyGF self, string name) -> py::object // shared_ptr<CoefficientFunction>
+    .def("Operator",
+         [](PyGF self, string name) -> py::object // shared_ptr<CoefficientFunction>
           {
             if (self->GetFESpace()->GetAdditionalEvaluators().Used(name))
               {
@@ -2007,19 +2011,19 @@ used_idnrs : list of int = None
                 return py::cast(PyCF(coef));
               }
             return py::none(); //  shared_ptr<CoefficientFunction>();
-          }))
+          })
 
     
-    .def_property_readonly("derivname", FunctionPointer
-                  ([](PyGF self) -> string
+    .def_property_readonly("derivname", 
+                  [](PyGF self) -> string
                    {
                      auto deriv = self->GetFESpace()->GetFluxEvaluator();
                      if (!deriv) return "";
                      return deriv->Name();
-                   }))
+                   })
 
-    .def("__call__", FunctionPointer
-         ([](PyGF self, double x, double y, double z)
+    .def("__call__", 
+         [](PyGF self, double x, double y, double z)
           {
             auto space = self->GetFESpace();
             auto evaluator = space->GetEvaluator();
@@ -2054,12 +2058,12 @@ used_idnrs : list of int = None
                 evaluator->Apply(fel, trafo(ip, lh), elvec, values, lh);
                 return (values.Size() > 1) ? py::cast(values) : py::cast(values(0));
               }
-          }
-          ), py::arg("x") = 0.0, py::arg("y") = 0.0, py::arg("z") = 0.0)
+          },
+         py::arg("x") = 0.0, py::arg("y") = 0.0, py::arg("z") = 0.0)
 
 
-   .def("__call__", FunctionPointer
-        ([](PyGF self, const BaseMappedIntegrationPoint & mip)
+   .def("__call__", 
+        [](PyGF self, const BaseMappedIntegrationPoint & mip)
           {
             auto space = self->GetFESpace();
 
@@ -2091,12 +2095,12 @@ used_idnrs : list of int = None
                 evaluator->Apply(fel, mip, elvec, values, lh);
                 return (values.Size() > 1) ? py::cast(values) : py::cast(values(0));
               }
-          }), 
+          }, 
         py::arg("mip"))
     
 
-    .def("D", FunctionPointer
-         ([](PyGF self, const double &x, const double &y, const double &z)
+    .def("D", 
+         [](PyGF self, const double &x, const double &y, const double &z)
           {
             const FESpace & space = *self->GetFESpace();
             IntegrationPoint ip;
@@ -2153,19 +2157,18 @@ used_idnrs : list of int = None
                 else
                   return py::cast(values(0));
               }
-          }
-          ), py::arg("x") = 0.0, py::arg("y") = 0.0, py::arg("z") = 0.0)
+          },
+         py::arg("x") = 0.0, py::arg("y") = 0.0, py::arg("z") = 0.0)
 
 
-    .def("CF", FunctionPointer
-         ([](PyGF self, shared_ptr<DifferentialOperator> diffop) -> PyCF
+    .def("CF", 
+         [](PyGF self, shared_ptr<DifferentialOperator> diffop) -> PyCF
           {
             if (!diffop->Boundary())
               return PyCF(make_shared<GridFunctionCoefficientFunction> (self.Get(), diffop));
             else
               return PyCF(make_shared<GridFunctionCoefficientFunction> (self.Get(), nullptr, diffop));
-          }))
-    
+          })
     ;
 
 

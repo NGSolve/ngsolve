@@ -718,7 +718,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
 
   /// get coupling type of dof
-  COUPLING_TYPE FESpace :: GetDofCouplingType (int dof) const 
+  COUPLING_TYPE FESpace :: GetDofCouplingType (DofId dof) const 
   {
     if (ctofdof.Size()==0) //this is the standard case if the FESpace does not specify anything.
       return WIREBASKET_DOF;
@@ -726,7 +726,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     return ctofdof[dof];
   }
 
-  void FESpace :: SetDofCouplingType (int dof, COUPLING_TYPE ct) const
+  void FESpace :: SetDofCouplingType (DofId dof, COUPLING_TYPE ct) const
   {
     if (dof >= ctofdof.Size()) throw Exception("FESpace::SetDofCouplingType out of range");
     ctofdof[dof] = ct;
