@@ -441,6 +441,23 @@ struct GenericPow {
       Evaluate (ir, values);
     }
     
+    virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir, 
+                                AFlatMatrix<double> values, AFlatMatrix<double> deriv) const
+    {
+      Evaluate (ir, values);
+      deriv = 0.0;
+    }
+    
+    virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
+                                FlatArray<AFlatMatrix<>*> input,
+                                FlatArray<AFlatMatrix<>*> dinput,
+                                AFlatMatrix<> result,
+                                AFlatMatrix<> deriv) const
+    {
+      Evaluate (ir, result);
+      deriv = 0.0;
+    }
+    
   };
 
   template <int D>
