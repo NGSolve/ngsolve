@@ -307,6 +307,9 @@ namespace ngstd
 
 #else
 
+  // it's only a dummy without AVX
+  template <typename T>
+  class AlignedAlloc { ; };
   
   template<>
   class SIMD<double>
