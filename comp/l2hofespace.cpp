@@ -811,7 +811,13 @@ namespace ngcomp
     switch(ei.VB())
       {
       case VOL:
-        throw Exception ("Volume elements not available for L2SurfaceHighOrderFESpace");
+        // throw Exception ("Volume elements not available for L2SurfaceHighOrderFESpace");
+        return * SwitchET (ma->GetElement(ei).GetType(),
+                           [&lh] (auto et) -> FiniteElement*
+                           {
+                             return new (lh) ScalarDummyFE<et.ElementType()>();
+                           });
+                  
       case BND:
 
         if (ma->GetDimension() == 2)

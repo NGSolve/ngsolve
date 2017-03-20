@@ -16,6 +16,7 @@
 
 
 #include <comp.hpp>
+#include <../fem/hdivlofe.hpp>  
 #include <../fem/hdivhofe.hpp>  
 #include <../fem/hdivhofefo.hpp>  
 
@@ -575,6 +576,8 @@ namespace ngcomp
   FiniteElement & HDivHighOrderFESpace :: T_GetFE (int elnr, bool onlyhdiv, Allocator & lh) const
   {
     Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,VOL> (elnr);
+    if (!DefinedOn(ngel)) return * new (lh) HDivDummyFE<ET>();
+    
     HDivHighOrderFE<ET> * hofe =  new (lh) HDivHighOrderFE<ET> ();
 
     hofe -> SetVertexNumbers (ngel.Vertices());
@@ -976,7 +979,8 @@ namespace ngcomp
 	  }
 	
 	if (!DefinedOn (ei))
-	  dnums = -1;
+	  // dnums = -1;
+          dnums.SetSize0();
       }
     if(ei.VB()==BND)
       {
