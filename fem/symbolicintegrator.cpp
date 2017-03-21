@@ -1714,7 +1714,7 @@ namespace ngfem
           ud.lh = &lh;
           for (ProxyFunction * proxy : trial_proxies)
             {
-              ud.AssignMemory (proxy, ir.Size(), proxy->Dimension(), lh);
+              ud.AssignMemory (proxy, ir.GetNIP(), proxy->Dimension(), lh);
               proxy->Evaluator()->Apply(fel_trial, mir, elveclin, ud.GetAMemory(proxy));
             }
           for (CoefficientFunction * cf : gridfunction_cfs)
@@ -1915,7 +1915,7 @@ namespace ngfem
               ud.lh = &lh;
               for (ProxyFunction * proxy : trial_proxies)
                 {
-                  ud.AssignMemory (proxy, ir_facet.Size(), proxy->Dimension(), lh);
+                  ud.AssignMemory (proxy, ir_facet.GetNIP(), proxy->Dimension(), lh);
                   proxy->Evaluator()->Apply(fel, mir, elveclin, ud.GetAMemory(proxy));
                 }
               for (CoefficientFunction * cf : gridfunction_cfs)

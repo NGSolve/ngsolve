@@ -445,10 +445,55 @@ namespace ngfem
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
   };
 
+  class NGS_DLL_HEADER CoefficientFunctionNoDerivative : public CoefficientFunction
+  {
+  public:
+    using CoefficientFunction::CoefficientFunction;
+    
+    virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir, 
+                                AFlatMatrix<double> values, AFlatMatrix<double> deriv) const
+    {
+      Evaluate(ir, values);
+      deriv = 0.0;
+    }
+
+    virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & ir, 
+                                 AFlatMatrix<double> values, AFlatMatrix<double> deriv,
+                                 AFlatMatrix<double> dderiv) const
+    {
+      Evaluate (ir, values);
+      deriv = 0.0;
+      dderiv = 0.0;
+    }
+
+    virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
+                                FlatArray<AFlatMatrix<>*> input,
+                                FlatArray<AFlatMatrix<>*> dinput,
+                                AFlatMatrix<> result,
+                                AFlatMatrix<> deriv) const
+    {
+      Evaluate (ir, result);
+      deriv = 0.0;
+    }
+
+    virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & ir,
+                                 FlatArray<AFlatMatrix<>*> input,
+                                 FlatArray<AFlatMatrix<>*> dinput,
+                                 FlatArray<AFlatMatrix<>*> ddinput,
+                                 AFlatMatrix<> result,
+                                 AFlatMatrix<> deriv,
+                                 AFlatMatrix<> dderiv) const
+    {
+      Evaluate (ir, result);
+      deriv = 0.0;
+      dderiv = 0.0;
+    }
+  };
+
   
 
   /// The coefficient is constant in every sub-domain
-  class NGS_DLL_HEADER DomainConstantCoefficientFunction : public CoefficientFunction
+  class NGS_DLL_HEADER DomainConstantCoefficientFunction : public CoefficientFunctionNoDerivative
   {
     ///
     Array<double> val;
@@ -1433,13 +1478,13 @@ public:
     int dim = values.Height();
     STACK_ARRAY(SIMD<double>, ha, mir.Size()*dim);
     STACK_ARRAY(SIMD<double>, hb, mir.Size()*dim);
-    AFlatMatrix<double> ra(dim, mir.Size(), ha);
-    AFlatMatrix<double> rb(dim, mir.Size(), hb);
+    AFlatMatrix<double> ra(dim, mir.IR().GetNIP(), ha);
+    AFlatMatrix<double> rb(dim, mir.IR().GetNIP(), hb);
 
     STACK_ARRAY(SIMD<double>, hda, mir.Size()*dim);
     STACK_ARRAY(SIMD<double>, hdb, mir.Size()*dim);
-    AFlatMatrix<double> da(dim, mir.Size(), hda);
-    AFlatMatrix<double> db(dim, mir.Size(), hdb);
+    AFlatMatrix<double> da(dim, mir.IR().GetNIP(), hda);
+    AFlatMatrix<double> db(dim, mir.IR().GetNIP(), hdb);
 
     c1->EvaluateDeriv (mir, ra, da);
     c2->EvaluateDeriv (mir, rb, db);
@@ -1464,18 +1509,18 @@ public:
     int dim = values.Height();
     STACK_ARRAY(SIMD<double>, ha, mir.Size()*dim);
     STACK_ARRAY(SIMD<double>, hb, mir.Size()*dim);
-    AFlatMatrix<double> ra(dim, mir.Size(), ha);
-    AFlatMatrix<double> rb(dim, mir.Size(), hb);
+    AFlatMatrix<double> ra(dim, mir.IR().GetNIP(), ha);
+    AFlatMatrix<double> rb(dim, mir.IR().GetNIP(), hb);
 
     STACK_ARRAY(SIMD<double>, hda, mir.Size()*dim);
     STACK_ARRAY(SIMD<double>, hdb, mir.Size()*dim);
-    AFlatMatrix<double> da(dim, mir.Size(), hda);
-    AFlatMatrix<double> db(dim, mir.Size(), hdb);
+    AFlatMatrix<double> da(dim, mir.IR().GetNIP(), hda);
+    AFlatMatrix<double> db(dim, mir.IR().GetNIP(), hdb);
 
     STACK_ARRAY(SIMD<double>, hdda, mir.Size()*dim);
     STACK_ARRAY(SIMD<double>, hddb, mir.Size()*dim);
-    AFlatMatrix<double> dda(dim, mir.Size(), hdda);
-    AFlatMatrix<double> ddb(dim, mir.Size(), hddb);
+    AFlatMatrix<double> dda(dim, mir.IR().GetNIP(), hdda);
+    AFlatMatrix<double> ddb(dim, mir.IR().GetNIP(), hddb);
 
     c1->EvaluateDDeriv (mir, ra, da, dda);
     c2->EvaluateDDeriv (mir, rb, db, ddb);
