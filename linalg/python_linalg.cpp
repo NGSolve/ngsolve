@@ -482,7 +482,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                auto row = blocktable[i++];
                size_t j = 0;
                for (auto val : block)
-                 row[j++] = py::extract<int> (val)();
+                 row[j++] = val.cast<int>();
              }
            cout << "table = " << endl << blocktable << endl;
            BaseSparseMatrix & sparse_mat = dynamic_cast<BaseSparseMatrix&>(m);
