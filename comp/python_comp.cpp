@@ -1394,8 +1394,10 @@ when building the system matrices.
                                  flags.SetFlag ("definedon", defonlist);
 // 				 bpflags["definedon"] = py::cast(defonlist);
                                }
-                             py::extract<py::list> definedon_list(definedon);
-                             if (definedon_list.check())
+
+                             // py::extract<py::list> definedon_list(definedon);
+                             // if (definedon_list.check())
+                             if (py::isinstance<py::list> (definedon))
                                flags.SetFlag ("definedon", makeCArray<double> (definedon));
                              py::extract<Region> definedon_reg(definedon);
                              if (definedon_reg.check() && definedon_reg().IsVolume())
