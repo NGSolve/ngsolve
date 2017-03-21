@@ -250,14 +250,7 @@ namespace ngfem
   
   DomainConstantCoefficientFunction :: 
   DomainConstantCoefficientFunction (const Array<double> & aval)
-    : CoefficientFunction(1, false), val(aval) { ; }
-  /*
-    .Size())
-    {
-    for (int i = 0; i < val.Size(); i++)
-    val[i] = aval[i];
-    }
-  */
+    : CoefficientFunctionNoDerivative(1, false), val(aval) { ; }
   
   double DomainConstantCoefficientFunction :: Evaluate (const BaseMappedIntegrationPoint & ip) const
   {
