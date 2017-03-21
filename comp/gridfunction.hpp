@@ -61,6 +61,10 @@ namespace ngcomp
                            AFlatMatrix<double> values) const
     { Evaluate (ir, values); }
     virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
+                                AFlatMatrix<> result,
+                                AFlatMatrix<> deriv) const
+    { Evaluate (ir, result); deriv = 0.0; }
+    virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
                                 FlatArray<AFlatMatrix<>*> input,
                                 FlatArray<AFlatMatrix<>*> dinput,
                                 AFlatMatrix<> result,

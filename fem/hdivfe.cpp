@@ -122,7 +122,8 @@ namespace ngfem
   CalcMappedShape (const SIMD_BaseMappedIntegrationRule & mir, 
                    BareSliceMatrix<SIMD<double>> shapes) const
   {
-    throw ExceptionNOSIMD("SIMD - HDivFE::CalcMappedShape not overloaded");
+    throw ExceptionNOSIMD(string("SIMD - HDivFE::CalcMappedShape not overloaded, et = ")
+                          + typeid(*this).name());
   }
   
   

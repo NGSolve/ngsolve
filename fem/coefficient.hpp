@@ -472,7 +472,7 @@ namespace ngfem
                                 AFlatMatrix<> result,
                                 AFlatMatrix<> deriv) const
     {
-      Evaluate (ir, result);
+      Evaluate (ir, input, result);
       deriv = 0.0;
     }
 
@@ -484,7 +484,7 @@ namespace ngfem
                                  AFlatMatrix<> deriv,
                                  AFlatMatrix<> dderiv) const
     {
-      Evaluate (ir, result);
+      Evaluate (ir, input, result);
       deriv = 0.0;
       dderiv = 0.0;
     }
