@@ -1524,7 +1524,7 @@ namespace ngcomp
                              const TVX & x, TVY & y)
     */
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
-                             BareSliceVector<double> x, ABareSliceMatrix<double> y)
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
       int size = (bmir.Size()+1)*2000;
       STACK_ARRAY(char, data, size);
@@ -1540,7 +1540,7 @@ namespace ngcomp
 
       for (int k = 0; k < mir.Size(); k++)
         for (int m = 0; m < D*D; m++)
-          y.Get(m, k) = SIMD<double> (0.0).Data();
+          y(m, k) = SIMD<double> (0.0).Data();
       
       for (int j = 0; j < D; j++)
         {
@@ -1575,7 +1575,7 @@ namespace ngcomp
               for (int l = 0; l < D; l++)
                 {
                   for (int m = 0; m < D; m++)
-                    y.Get(m*D+l, k) += (jacinv(j,m) * hx.Get(l, k)).Data();
+                    y(m*D+l, k) += (jacinv(j,m) * hx.Get(l, k)).Data();
                 }
             }
         }

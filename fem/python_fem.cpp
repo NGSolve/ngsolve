@@ -858,10 +858,10 @@ val : float
                              })
     ;
 
-  class MeshSizeCF : public CoefficientFunction
+  class MeshSizeCF : public CoefficientFunctionNoDerivative
   {
   public:
-    MeshSizeCF () : CoefficientFunction(1, false) { ; }
+    MeshSizeCF () : CoefficientFunctionNoDerivative(1, false) { ; }
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
     {
       if (ip.IP().FacetNr() != -1) // on a boundary facet of the element
@@ -898,6 +898,12 @@ val : float
         for(size_t i : Range(ir))
           values(i) =  pow(fabs (ir[i].GetJacobiDet()), 1.0/ir.DimElement()).Data();
     }
+
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
+                           AFlatMatrix<double> values) const
+    {
+      Evaluate (ir, values);
+    }    
 
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {
       if(code.is_simd)

@@ -1309,6 +1309,25 @@ public:
         deriv.Row(k) = v1(k,0)*dv2.Row(k)+dv1(k,0)*v2.Row(k);
       }
   }
+
+  virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & mir,
+                              AFlatMatrix<> result,
+                              AFlatMatrix<> deriv) const
+  {
+    STACK_ARRAY(SIMD<double>, hmem1, mir.Size());
+    AFlatMatrix<> temp1(1, mir.IR().GetNIP(), hmem1);
+    STACK_ARRAY(SIMD<double>, hmem2, mir.Size());
+    AFlatMatrix<> deriv1(1, mir.IR().GetNIP(), hmem2);
+    c1->EvaluateDeriv(mir, temp1, deriv1);
+    c2->EvaluateDeriv(mir, result, deriv);
+
+    for (int i = 0; i < result.Height(); i++)
+      for (int k = 0; k < mir.Size(); k++)
+        {
+          deriv.Get(i,k) = deriv.Get(i,k)*temp1.Get(0,k) + result.Get(i,k) * deriv1.Get(0,k);
+          result.Get(i,k) *= temp1.Get(0,k);
+        }
+  }
   
   virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & mir,
                               FlatArray<AFlatMatrix<>*> input,
@@ -1752,8 +1771,11 @@ public:
                              FlatMatrix<> result,
                              FlatMatrix<> deriv) const
   {
-    Matrix<> v1(mir.Size(), DIM), v2(mir.Size(),DIM);
-    Matrix<> dv1(mir.Size(), DIM), dv2(mir.Size(), DIM);
+    size_t si = DIM*mir.Size();
+    STACK_ARRAY(double, hmem, 4*si);
+    FlatMatrix<> v1(mir.Size(), DIM, &hmem[0]), v2(mir.Size(),DIM, &hmem[si]);
+    FlatMatrix<> dv1(mir.Size(), DIM, &hmem[2*si]), dv2(mir.Size(), DIM, &hmem[3*si]);
+    
     c1->EvaluateDeriv (mir, v1, dv1);
     c2->EvaluateDeriv (mir, v2, dv2);
     for (int k = 0; k < mir.Size(); k++)
@@ -1768,9 +1790,12 @@ public:
                               FlatMatrix<> deriv,
                               FlatMatrix<> dderiv) const
   {
-    Matrix<> v1(mir.Size(), DIM), v2(mir.Size(), DIM);
-    Matrix<> dv1(mir.Size(), DIM), dv2(mir.Size(), DIM);
-    Matrix<> ddv1(mir.Size(), DIM), ddv2(mir.Size(), DIM);
+    size_t si = DIM*mir.Size();
+    STACK_ARRAY(double, hmem, 6*si);
+    FlatMatrix<> v1(mir.Size(), DIM, &hmem[0]), v2(mir.Size(),DIM, &hmem[si]);
+    FlatMatrix<> dv1(mir.Size(), DIM, &hmem[2*si]), dv2(mir.Size(), DIM, &hmem[3*si]);
+    FlatMatrix<> ddv1(mir.Size(), DIM, &hmem[4*si]), ddv2(mir.Size(), DIM, &hmem[5*si]);
+
     c1->EvaluateDDeriv (mir, v1, dv1, ddv1);
     c2->EvaluateDDeriv (mir, v2, dv2, ddv2);
 
@@ -1826,6 +1851,31 @@ public:
 
 
 
+  virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & mir,
+                              AFlatMatrix<> result,
+                              AFlatMatrix<> deriv) const
+  {
+    size_t si = DIM*mir.Size();
+    STACK_ARRAY(SIMD<double>, hmem, 4*si);
+    AFlatMatrix<> v1(DIM, mir.IR().GetNIP(), &hmem[0]), v2(DIM, mir.IR().GetNIP(), &hmem[si]);
+    AFlatMatrix<> dv1(DIM, mir.IR().GetNIP(), &hmem[2*si]), dv2(DIM, mir.IR().GetNIP(), &hmem[3*si]);
+    
+    c1->EvaluateDeriv (mir, v1, dv1);
+    c2->EvaluateDeriv (mir, v2, dv2);
+    
+    for (size_t k = 0; k < mir.Size(); k++)
+      {
+        SIMD<double> sum = 0.0, dsum = 0.0;
+        for (size_t i = 0; i < DIM; i++)
+          {
+            sum += v1.Get(i,k) * v2.Get(i,k);
+            dsum += v1.Get(i,k) * dv2.Get(i,k) + dv1.Get(i,k) * v2.Get(i,k);
+          }
+        result.Get(0,k) = sum;
+        deriv.Get(0,k) = dsum;
+      }
+  }
+  
 
 
 
@@ -3972,6 +4022,20 @@ public:
         base += dimi[i];
       }
   }
+
+  virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
+                              AFlatMatrix<> result,
+                              AFlatMatrix<> deriv) const
+  {
+    size_t base = 0;
+    for (size_t i : Range(ci))
+      {
+        ci[i]->EvaluateDeriv (ir, result.Rows(base,base+dimi[i]), deriv.Rows(base,base+dimi[i]));
+        base += dimi[i];
+      }
+  }
+
+
   
   virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
                               FlatArray<AFlatMatrix<>*> input,
