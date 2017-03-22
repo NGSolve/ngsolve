@@ -6,13 +6,13 @@ enable_language(Fortran)
 find_package(MPI REQUIRED)
 
 if(NOT PARMETIS_DIR)
-  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/external_projects/parmetis.cmake)
+  include(${CMAKE_CURRENT_LIST_DIR}/parmetis.cmake)
 endif(NOT PARMETIS_DIR)
 
 set(MUMPS_SRC_DIR ${CMAKE_CURRENT_BINARY_DIR}/dependencies/src/project_mumps)
 set(MUMPS_DIR ${MUMPS_SRC_DIR})
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/external_projects/mumps.inc ${CMAKE_CURRENT_BINARY_DIR}/dependencies/Makefile_mumps.inc)
+configure_file(${CMAKE_CURRENT_LIST_DIR}/mumps.inc ${CMAKE_CURRENT_BINARY_DIR}/dependencies/Makefile_mumps.inc)
 
 ExternalProject_Add(project_mumps
   DEPENDS project_parmetis

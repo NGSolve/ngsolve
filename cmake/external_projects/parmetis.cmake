@@ -6,7 +6,7 @@ ExternalProject_Add(project_parmetis
   URL "http://glaros.dtc.umn.edu/gkhome/fetch/sw/parmetis/parmetis-4.0.3.tar.gz"
   URL_MD5 f69c479586bf6bb7aff6a9bc0c739628
   DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies
-  PATCH_COMMAND patch -p1 -i ${CMAKE_CURRENT_SOURCE_DIR}/cmake/external_projects/parmetis.patch
+  PATCH_COMMAND patch -p1 -i ${CMAKE_CURRENT_LIST_DIR}/parmetis.patch
   CMAKE_ARGS
          -DCMAKE_C_FLAGS="-fPIC"
          -DMPI_INCLUDE_PATH=${MPI_C_INCLUDE_PATH}
