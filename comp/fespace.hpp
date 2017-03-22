@@ -377,8 +377,8 @@ namespace ngcomp
     virtual void GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & dnums) const;
     
     /// get coupling types of dof
-    virtual COUPLING_TYPE GetDofCouplingType (int dof) const;
-    virtual void SetDofCouplingType (int dof, COUPLING_TYPE ct) const;
+    virtual COUPLING_TYPE GetDofCouplingType (DofId dof) const;
+    virtual void SetDofCouplingType (DofId dof, COUPLING_TYPE ct) const;
     
     void CheckCouplingTypes() const;
 

@@ -398,7 +398,6 @@ namespace ngcomp
     {
       auto & mip = *new (lh) MappedIntegrationPoint<DIMS,DIMR,Complex> (ip, *this, -47);
       MappedIntegrationPoint<DIMS,DIMR> hip(ip, *this);
-      
       Vec<DIMR,Complex> point;
       
       Mat<DIMS,DIMR> hjac(hip.Jacobian());
@@ -416,8 +415,7 @@ namespace ngcomp
 
     virtual BaseMappedIntegrationRule & operator() (const IntegrationRule & ir, Allocator & lh) const
     {
-      auto & mir = *new (lh) MappedIntegrationRule<DIMS,DIMR,Complex> (ir, *this, lh);
-      return mir;
+      return *new (lh) MappedIntegrationRule<DIMS,DIMR,Complex> (ir, *this, lh);
     }
 
     virtual SIMD_BaseMappedIntegrationRule & operator() (const SIMD_IntegrationRule & ir, Allocator & lh) const
@@ -435,22 +433,20 @@ namespace ngcomp
           BASE::CalcMultiPointJacobian (ir, bmir);
           return;
         }
-
-      LocalHeapMem<100000> lh("testwise");
-      MappedIntegrationRule<DIMS,DIMR> mir_real(ir, *this, lh);
+      //LocalHeapMem<1000000> lh("testwise");
+      //MappedIntegrationRule<DIMS,DIMR> mir_real(ir, *this, lh);
 
       auto & mir_complex = dynamic_cast<MappedIntegrationRule<DIMS,DIMR,Complex>&> (bmir);
       const PML_TransformationDim<DIMR> & dimpml = 
             static_cast<const PML_TransformationDim<DIMR>&> (pml_global_trafo);
 
+      Vec<DIMR,Complex> point;
+      Mat<DIMR,DIMR,Complex> tjac;
       for (int i = 0; i < ir.Size(); i++)
         {
-          Vec<DIMR,Complex> point;
-          
-          Mat<DIMS,DIMR> hjac(mir_real[i].Jacobian());
-          
-          Mat<DIMR,DIMR,Complex> tjac;
-          dimpml.MapIntegrationPoint (mir_real[i], point, tjac);
+          MappedIntegrationPoint<DIMS,DIMR> mip(ir[i], *this);
+          Mat<DIMS,DIMR> hjac(mip.Jacobian());
+          dimpml.MapIntegrationPoint (mip, point, tjac);
                     
           mir_complex[i].Point() = point; 
           mir_complex[i].Jacobian() = tjac*hjac;
@@ -712,8 +708,8 @@ namespace ngcomp
       
       Vec<DIMR,SIMD<double>> simd_p0(p0);
       Mat<DIMR,DIMS,SIMD<double>> simd_mat(mat);
-      
-      for (int i = 0; i < hir.Size(); i++)
+
+      for (size_t i = 0; i < hir.Size(); i++)
         {
           hmir[i].Point() = simd_p0 + simd_mat * FlatVec<DIMS, const SIMD<double>> (&hir[i](0));
           hmir[i].Jacobian() = simd_mat;

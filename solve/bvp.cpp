@@ -95,7 +95,7 @@ namespace ngsolve
 	case BICGSTAB:
 	  ost << "BiCGStab" << endl; break;
         default:
-          ost << "Unkown solver-type" << endl;
+          ost << "Unknown solver-type" << endl;
         }
       ost << "precision     = " << prec << endl
 	  << "maxsteps      = " << maxsteps << endl;

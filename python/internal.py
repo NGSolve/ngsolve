@@ -28,7 +28,7 @@ class TclVariables:
     def __dir__(self):
         return list(self.__dict__.keys()) + self._attributes
 
-    # rlcomplete checks existance of attribute with this function
+    # rlcomplete checks existence of attribute with this function
     def __getattr__(self, name):
         if name in self.__dict__:
             return self.__dict__[name]
