@@ -22,7 +22,7 @@ add_library( ngslib SHARED ngspy.cpp )
 
 set_target_properties(ngslib PROPERTIES SUFFIX ".so")
 set_target_properties(ngslib PROPERTIES PREFIX "")
-target_link_libraries(ngslib ${PYTHON_LIBS} ${LAPACK_LIBRARIES})
+target_link_libraries(ngslib ${NETGEN_PYTHON_LIBRARIES} ${LAPACK_LIBRARIES})
 
 if(NETGEN_USE_GUI)
     target_link_libraries(ngslib ngsolve)
@@ -38,7 +38,7 @@ install( TARGETS ngslib ${ngs_install_dir} )
 endif(NETGEN_USE_PYTHON)
 
 if(NOT WIN32)
-    target_link_libraries( solve ngcomp ngstd ngfem ngla ngbla nglib visual ${MPI_CXX_LIBRARIES} ${PYTHON_LIBS} ${LAPACK_LIBRARIES} ${VTUNE_LIB} ${PARDISO_LIB})
+    target_link_libraries( solve ngcomp ngstd ngfem ngla ngbla nglib visual ${MPI_CXX_LIBRARIES} ${NETGEN_PYTHON_LIBRARIES} ${LAPACK_LIBRARIES} ${VTUNE_LIB} ${PARDISO_LIB})
     install( TARGETS solve ${ngs_install_dir} )
 endif(NOT WIN32)
 # target_link_libraries(ngslib ngsolve)
@@ -63,7 +63,7 @@ if (NETGEN_USE_GUI)
             ${ngsolve_object_libs}
             ngsolve.cpp shapetester.cpp 
             )
-          target_link_libraries(ngsolve nglib ${MPI_CXX_LIBRARIES} ${PYTHON_LIBS} ${LAPACK_LIBRARIES} ${TCL_LIBRARY} ${PARDISO_LIB} ${UMFPACK_LIBRARIES})
+          target_link_libraries(ngsolve nglib ${MPI_CXX_LIBRARIES} ${NETGEN_PYTHON_LIBRARIES} ${LAPACK_LIBRARIES} ${TCL_LIBRARY} ${PARDISO_LIB} ${UMFPACK_LIBRARIES})
     if(NOT WIN32)
         target_link_libraries(ngsolve solve ngcomp ngstd ngfem ngla ngbla)
     endif(NOT WIN32)
@@ -76,7 +76,7 @@ endif (NETGEN_USE_GUI)
 
 if(NOT WIN32)
     add_executable( ngs ngs.cpp)
-    target_link_libraries(ngs solve nglib ${TCL_LIBRARY} ${PYTHON_LIBS} ${LAPACK_LIBRARIES})
+    target_link_libraries(ngs solve nglib ${TCL_LIBRARY} ${NETGEN_PYTHON_LIBRARIES} ${LAPACK_LIBRARIES})
     install( TARGETS ngs DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve )
 endif(NOT WIN32)
 

@@ -15,7 +15,7 @@ endif(NOT WIN32)
 add_library( ngstd ${NGS_LIB_TYPE} ${ngstd_sources} )
 
 if(NOT WIN32)
-    target_link_libraries(ngstd ${MPI_CXX_LIBRARIES} ${PYTHON_LIBS} ${NUMA_LIB})
+    target_link_libraries(ngstd ${MPI_CXX_LIBRARIES} ${NETGEN_PYTHON_LIBRARIES} ${NUMA_LIB})
     install( TARGETS ngstd ${ngs_install_dir} )
 endif(NOT WIN32)
 
