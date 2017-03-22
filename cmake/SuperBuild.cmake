@@ -185,12 +185,12 @@ endif(USE_UMFPACK AND NOT UMFPACK_DIR)
 
 #######################################################################
 if(USE_HYPRE AND NOT HYPRE_DIR)
-  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/external_projects/hypre.cmake)
+  include(${CMAKE_CURRENT_LIST_DIR}/external_projects/hypre.cmake)
 endif(USE_HYPRE AND NOT HYPRE_DIR)
 
 #######################################################################
 if(USE_MUMPS AND NOT MUMPS_DIR)
-  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/external_projects/mumps.cmake)
+  include(${CMAKE_CURRENT_LIST_DIR}/external_projects/mumps.cmake)
 endif(USE_MUMPS AND NOT MUMPS_DIR)
 
 #######################################################################
@@ -242,14 +242,14 @@ add_custom_target(test_ngsolve
 # Check if the git submodules (i.e. netgen) are up to date
 # in case, something is wrong, emit a warning but continue
  ExternalProject_Add_Step(ngsolve check_submodules
-   COMMAND cmake -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/check_submodules.cmake
+   COMMAND cmake -P ${CMAKE_CURRENT_LIST_DIR}/check_submodules.cmake
    DEPENDERS install # Steps on which this step depends
    )
 
 # Due to 'ALWAYS 1', this step is always run which also forces a build of
 # the ngsolve subproject
  ExternalProject_Add_Step(ngsolve check_submodules1
-   COMMAND cmake -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/check_submodules.cmake
+   COMMAND cmake -P ${CMAKE_CURRENT_LIST_DIR}/check_submodules.cmake
    DEPENDEES configure # Steps on which this step depends
    DEPENDERS build     # Steps that depend on this step
    ALWAYS 1            # No stamp file, step always runs

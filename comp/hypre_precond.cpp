@@ -8,7 +8,6 @@
 
 
 #include <solve.hpp>
-//#include "HYPRE_utilities.h"
 
 namespace ngcomp
 {
