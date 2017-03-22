@@ -480,74 +480,6 @@ struct GenericPow {
   };
 
 
-class CoordCoefficientFunction : public T_CoefficientFunction<CoordCoefficientFunction>
-  {
-    int dir;
-    typedef T_CoefficientFunction<CoordCoefficientFunction> BASE;
-  public:
-    CoordCoefficientFunction (int adir) : BASE(1, false), dir(adir) { ; }
-    using BASE::Evaluate;
-    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
-    {
-      if (!ip.IsComplex())
-        return ip.GetPoint()(dir);
-      else
-        return ip.GetPointComplex()(dir).real();
-    }
-    virtual void Evaluate(const BaseMappedIntegrationRule & ir,
-                          FlatMatrix<> result) const
-    {
-      const TPMappedIntegrationRule * tpmir = dynamic_cast<const TPMappedIntegrationRule *>(&ir);
-      if(!tpmir)
-        {
-          result.Col(0) = ir.GetPoints().Col(dir);
-          return;
-        }
-      if(dir<=2)
-        {
-          for(int i=0;i<tpmir->GetIRs()[0]->Size();i++)
-            result.Rows(i*tpmir->GetIRs()[1]->Size(),(i+1)*tpmir->GetIRs()[1]->Size() ) = tpmir->GetIRs()[0]->GetPoints().Col(dir)(i);
-          return;
-        }
-      for(int i=0;i<tpmir->GetIRs()[0]->Size();i++)
-        result.Rows(i*tpmir->GetIRs()[1]->Size(),(i+1)*tpmir->GetIRs()[1]->Size()) = tpmir->GetIRs()[1]->GetPoints().Col(dir-3);
-    }
-    virtual void Evaluate(const BaseMappedIntegrationRule & ir,
-			  FlatMatrix<Complex> result) const
-    {
-      result.Col(0) = ir.GetPoints().Col(dir);
-    }
-
-    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {
-        auto v = Var(index);
-        if(dir==0) code.body += v.Assign(CodeExpr("ip.GetPoint()(0)"));
-        if(dir==1) code.body += v.Assign(CodeExpr("ip.GetPoint()(1)"));
-        if(dir==2) code.body += v.Assign(CodeExpr("ip.GetPoint()(2)"));
-    }
-
-    template <typename T>
-    void T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<T>> values) const
-    {
-      auto points = ir.GetPoints();
-      size_t nv = ir.Size();
-      __assume (nv > 0);
-      for (size_t i = 0; i < nv; i++)
-        values(i) = SIMD<double> (points.Get(i, dir));
-    }
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
-                           AFlatMatrix<double> values) const
-    {
-      Evaluate (ir, values);
-    }
-    
-  };
-
-namespace ngstd {
-  template <>
-  struct PyWrapperTraits<CoordCoefficientFunction> {
-    typedef PyWrapperDerived<CoordCoefficientFunction, ngfem::CoefficientFunction> type;
-  };
-}
 
 
 void ExportCoefficientFunction(py::module &m)
@@ -847,7 +779,7 @@ val : float
   // <shared_ptr<ParameterCoefficientFunction>, shared_ptr<CoefficientFunction> >(); 
 
   
-
+  /*
   typedef PyWrapper<CoordCoefficientFunction> PyCoordCF;
   py::class_<PyCoordCF,PyCF>
     (m, "CoordCF", "CoefficientFunction for x, y, z")
@@ -857,6 +789,12 @@ val : float
                                new (instance) PyCoordCF(make_shared<CoordCoefficientFunction>(direction));
                              })
     ;
+  */
+  m.def("CoordCF", 
+        [] (int direction) ->PyWrapper<CoefficientFunction>
+        { return MakeCoordinateCoefficientFunction(direction); },
+        "CoefficientFunction for x, y, z",
+        );
 
   class MeshSizeCF : public CoefficientFunctionNoDerivative
   {
