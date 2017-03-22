@@ -1162,14 +1162,14 @@ namespace ngcomp
       {
         code.header += Code::Map(mycode_simd, variables);
         TraverseDimensions( Dimensions(), [&](int ind, int i, int j) {
-            code.body += Var(index,i,j).Assign("SIMD<double>("+values.S()+".Get("+ToString(i)+",i))");
+            code.body += Var(index,i,j).Assign("SIMD<double>("+values.S()+".Get("+ToString(ind)+",i))");
           });
       }
     else
       {
         code.header += Code::Map(mycode, variables);
         TraverseDimensions( Dimensions(), [&](int ind, int i, int j) {
-            code.body += Var(index,i,j).Assign(values.S()+"(i,"+ToString(i)+")");
+            code.body += Var(index,i,j).Assign(values.S()+"(i,"+ToString(ind)+")");
           });
       }
   }

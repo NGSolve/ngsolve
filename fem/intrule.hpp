@@ -99,7 +99,7 @@ namespace ngfem
   class /* alignas(8) */ IntegrationPoint
   {
   private:
-    /// number within intergration Rule
+    /// number within integration Rule
     int nr; 
     /// coordinates (empty values for 1D and 2D)
     double pi[3];

@@ -5,7 +5,7 @@ Symbolic Integrators
 
 Symbolic integrators can be used to define arbitrary (multi-)physical problems. The variational formulation of the (non-)linear problem can be implemented in a very natural way. Examples of the usage of these integrators can i.e. be found in :any:`Navier Stokes Equation <how-to-navierstokes>`, :any:`Magnetic Field <whetting-cmagnet>` or :any:`Nonlinear elasticity <how-to-elasticity>`.
 
-The finite element space provides placeholder coefficient functions by the methods ``TestFunction`` and ``TrialFunction``. They have implemented cannonical derivatives and traces of the finite element space and insert the basis functions of the FESpace during assembling of the system matrices.
+The finite element space provides placeholder coefficient functions by the methods ``TestFunction`` and ``TrialFunction``. They have implemented canonical derivatives and traces of the finite element space and insert the basis functions of the FESpace during assembling of the system matrices.
 
 Linear Problems
 ----------------

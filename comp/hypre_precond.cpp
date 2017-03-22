@@ -25,7 +25,7 @@ namespace ngcomp
   HyprePreconditioner :: HyprePreconditioner (const BaseMatrix & matrix, const shared_ptr<BitArray> afreedofs)
     : Preconditioner(shared_ptr<BilinearForm>(nullptr), Flags("not_register_for_auto_update"))
   {
-    freedofs = afreedofs;
+    freedofs = afreedofs; 
     Setup (matrix);
   }
   
@@ -60,7 +60,7 @@ namespace ngcomp
 
   void HyprePreconditioner :: Setup (const BaseMatrix & matrix)
   {
-    cout <<  "Setup Hypre preconditioner" << endl;
+    cout << IM(1) << "Setup Hypre preconditioner" << endl;
     static Timer t("hypre setup");
     RegionTimer reg(t);
 
@@ -74,6 +74,7 @@ namespace ngcomp
 
     int ntasks = MyMPI_GetNTasks();
     int id = MyMPI_GetId();
+    
 
     // find global dof enumeration 
     global_nums.SetSize(ndof);
@@ -83,8 +84,6 @@ namespace ngcomp
     for (int i = 0; i < ndof; i++)
       if (pardofs -> IsMasterDof (i) && (!freedofs || freedofs -> Test(i)))
 	global_nums[i] = num_master_dofs++;
-
-    //cout << "global nums:" << endl << global_nums << endl;
     
     Array<int> first_master_dof(ntasks);
     MPI_Allgather (&num_master_dofs, 1, MPI_INT, 
@@ -105,7 +104,7 @@ namespace ngcomp
 	global_nums[i] += first_master_dof[id];
     
     ScatterDofData (global_nums, *pardofs);
-    cout << IM(1) << "num glob dofs = " << num_glob_dofs << endl;
+    cout << IM(3) << "num glob dofs = " << num_glob_dofs << endl;
 	
     VT_OFF();
 	
@@ -142,7 +141,7 @@ namespace ngcomp
 
     HYPRE_IJMatrixAssemble(A);
     HYPRE_IJMatrixGetObject(A, (void**) &parcsr_A);
-    //HYPRE_IJMatrixPrint(A, "IJ.out.A");
+    // HYPRE_IJMatrixPrint(A, "IJ.out.A");
 
     HYPRE_BoomerAMGCreate(&precond);
  
@@ -189,28 +188,28 @@ namespace ngcomp
     HYPRE_IJVectorCreate(ngs_comm, ilower, iupper,&x);
     HYPRE_IJVectorSetObjectType(x, HYPRE_PARCSR);
     HYPRE_IJVectorInitialize(x);
-    
+  
     const FlatVector<double> fvf =f.FVDouble();
     FlatVector<double> fu =u.FVDouble();
 	
     Array<int> nzglobal;
     Array<double> free_f;
-    for(auto i:Range(global_nums.Size()))
+    for(auto i : Range(global_nums.Size()))
       if (global_nums[i] != -1)
-    	{
-    	  nzglobal.Append (global_nums[i]);
-    	  free_f.Append (fvf(i));
-    	}
+	{
+	  nzglobal.Append (global_nums[i]);
+	  free_f.Append (fvf(i));
+	}
         
     Array<int> setzi;
     Array<double> zeros;
     if(iupper>=ilower)
-      for(auto k:Range(ilower,iupper+1))
+      for(auto k : Range(ilower,iupper+1))
 	{
 	  setzi.Append(k);
 	  zeros.Append(0.0);
 	}
-    
+
     int local_size = nzglobal.Size();
 
     //HYPRE_IJVectorAddToValues(b, setzi.Size(), &setzi[0], &zeros[0]);
@@ -221,6 +220,7 @@ namespace ngcomp
     if(local_size)
       HYPRE_IJVectorAddToValues(b, local_size, &nzglobal[0], &free_f[0]);
     HYPRE_IJVectorAssemble(b);
+
 	
     HYPRE_IJVectorGetObject(b, (void **) &par_b);
 
@@ -228,14 +228,15 @@ namespace ngcomp
       HYPRE_IJVectorSetValues(x, setzi.Size(), &setzi[0], &zeros[0]);
     HYPRE_IJVectorAssemble(x);
     HYPRE_IJVectorGetObject(x, (void **) &par_x);
-
-    //HYPRE_IJVectorPrint(b, "IJ.out.b");
+   
+    // HYPRE_IJVectorPrint(b, "IJ.out.b");
 
     VT_OFF();
     HYPRE_BoomerAMGSolve(precond, parcsr_A, par_b, par_x);
     VT_ON();
+
+    // HYPRE_IJVectorPrint(x, "IJ.out.x");
     
-    //HYPRE_IJVectorPrint(x, "IJ.out.x");
 
     int ndof = pardofs->GetNDofLocal();
     
@@ -246,7 +247,7 @@ namespace ngcomp
       if (pardofs->IsMasterDof(i) && global_nums[i] != -1)
 	locind[cnt++] = global_nums[i];
     int lsize = locind.Size();
-
+    
     HYPRE_IJVectorGetValues (x, lsize, &locind[0], &hu(0));
     
     for (int i = 0, cnt = 0; i < ndof; i++)

@@ -125,6 +125,7 @@ namespace ngstd
  
 #else
 
+  /*
   template <size_t ALIGN = 64>
   class AlignedAlloc
   {
@@ -134,11 +135,41 @@ namespace ngstd
     void operator delete (void * p) { _mm_free(p); }
     void operator delete[] (void * p) { _mm_free(p); }
   };
-  
+  */
+
+  template <typename T>
+  class AlignedAlloc
+  {
+    protected:
+      static void * aligned_malloc(size_t s)
+      {
+        // Assume 16 byte alignment of standard library
+        if(alignof(T)<=16)
+            return malloc(s);
+        else
+            return  _mm_malloc(s, alignof(T));
+      }
+
+      static void aligned_free(void *p)
+      {
+        if(alignof(T)<=16)
+            free(p);
+        else
+            _mm_free(p);
+      }
+
+  public:
+    void * operator new (size_t s, void *p) { return p; }
+    void * operator new (size_t s) { return aligned_malloc(s); }
+    void * operator new[] (size_t s) { return aligned_malloc(s); }
+    void operator delete (void * p) { aligned_free(p); }
+    void operator delete[] (void * p) { aligned_free(p); }
+  };
+    
 
   
   template<>
-  class alignas(32) SIMD<double> : public AlignedAlloc<>
+  class alignas(32) SIMD<double> : public AlignedAlloc<SIMD<double>>
   {
     __m256d data;
     
@@ -276,6 +307,9 @@ namespace ngstd
 
 #else
 
+  // it's only a dummy without AVX
+  template <typename T>
+  class AlignedAlloc { ; };
   
   template<>
   class SIMD<double>
@@ -405,7 +439,7 @@ INLINE ngstd::SIMD<double> atan (ngstd::SIMD<double> a) {
 
 
   template <int D, typename T>
-  class MultiSIMD
+  class MultiSIMD : public AlignedAlloc<MultiSIMD<D,T>>
   {
     SIMD<T> head;
     MultiSIMD<D-1,T> tail;
@@ -430,7 +464,7 @@ INLINE ngstd::SIMD<double> atan (ngstd::SIMD<double> a) {
   };
 
   template <typename T>
-  class MultiSIMD<2,T>
+  class MultiSIMD<2,T> : public AlignedAlloc<MultiSIMD<2,T>>
   {
     SIMD<T> v0, v1;
   public:

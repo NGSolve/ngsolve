@@ -3,7 +3,7 @@
 */
 /* facetfespace.*pp
  * An fespace for functions living on the facets (=edges in 2D, faces in 3D)
- *   - the functions on different facets are independent (no continuity accross
+ *   - the functions on different facets are independent (no continuity across
  *     vertices ( or edges in 3D))
  *   - the functions on the facets are accessed via the elements
  *     (=FacetVolumeElements), which then can access their facets;

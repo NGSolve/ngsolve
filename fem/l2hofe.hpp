@@ -93,7 +93,7 @@ namespace ngfem
     INLINE void SetVertexNumbers (const TA & avnums)
     { for (int i = 0; i < N_VERTEX; i++) vnums[i] = avnums[i]; }
 
-    /// different orders in differnt directions
+    /// different orders in different directions
     virtual void SetOrder (INT<DIM> p)  { order_inner = p; }
 
     virtual void ComputeNDof()

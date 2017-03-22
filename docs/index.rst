@@ -62,6 +62,8 @@ interface to Python is inspired by the `FEniCS project <https://fenicsproject.or
 
   how_to/symbolic_integrators.rst
 
+  how_to/pml.rst
+
 ..  * [Iterating over elements]
 
 
