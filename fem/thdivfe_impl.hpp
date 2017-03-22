@@ -56,6 +56,21 @@ namespace ngfem
       
   template <class FEL, ELEMENT_TYPE ET>
   void T_HDivFiniteElement<FEL,ET>::
+  CalcMappedShape (const SIMD<MappedIntegrationPoint<DIM,DIM>> & mip,
+                   BareSliceMatrix<SIMD<double>> shapes) const
+  {
+    Vec<DIM, AutoDiff<DIM,SIMD<double>>> adp = mip;
+    static_cast<const FEL*> (this) ->                 
+      T_CalcShape (&adp(0), SBLambda ([&] (size_t j, THDiv2Shape<DIM,SIMD<double>> shape)
+                                      {
+                                        Vec<DIM,SIMD<double>> vshape = shape;                                          
+                                        for (size_t k = 0; k < DIM; k++)
+                                          shapes(j*DIM+k, 0) = vshape(k);
+                                      }));
+  }
+  
+  template <class FEL, ELEMENT_TYPE ET>
+  void T_HDivFiniteElement<FEL,ET>::
   CalcMappedShape (const SIMD_BaseMappedIntegrationRule & bmir, 
                    BareSliceMatrix<SIMD<double>> shapes) const
   {

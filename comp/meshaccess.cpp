@@ -708,8 +708,8 @@ namespace ngcomp
       
       Vec<DIMR,SIMD<double>> simd_p0(p0);
       Mat<DIMR,DIMS,SIMD<double>> simd_mat(mat);
-      
-      for (int i = 0; i < hir.Size(); i++)
+
+      for (size_t i = 0; i < hir.Size(); i++)
         {
           hmir[i].Point() = simd_p0 + simd_mat * FlatVec<DIMS, const SIMD<double>> (&hir[i](0));
           hmir[i].Jacobian() = simd_mat;

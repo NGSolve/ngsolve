@@ -1784,6 +1784,14 @@ namespace ngfem
               
               AddABt (hbbmat2.Rows(r2), hbdbmat1 /* .Rows(r1)*/, SliceMatrix<> (elmat.Rows(r2)) /* .Cols(r1) */);
             }
+          /*
+          Matrix<> helmat = elmat;
+          simd_evaluate = false;
+          CalcLinearizedElementMatrix (fel, trafo, elveclin, elmat, lh);
+          simd_evaluate = true;          
+          double err = L2Norm(helmat-elmat);
+          if (err > 1e-5) cout << "err = " << err << endl;
+          */
           return;
         }
       catch (ExceptionNOSIMD e)
@@ -1982,6 +1990,14 @@ namespace ngfem
                   AddABt (hbbmat2.Rows(r2), hbdbmat1, SliceMatrix<> (elmat.Rows(r2)));
                 }
             }
+          /*
+          Matrix<> helmat = elmat;
+          simd_evaluate = false;
+          T_CalcLinearizedElementMatrixEB<D,SCAL,SCAL_SHAPES> (fel, trafo, elveclin, elmat, lh);
+          simd_evaluate = true;          
+          double err = L2Norm(helmat-elmat);
+          if (err > 1e-5) cout << "EB, err = " << err << endl;
+          */
           return;
         }
       catch (ExceptionNOSIMD e)
@@ -2179,6 +2195,15 @@ namespace ngfem
 
               proxy->Evaluator()->AddTrans(fel_test, simd_mir, simd_proxyvalues, ely); 
             }
+          /*
+          Vector<> hely = ely;
+          simd_evaluate = false;
+          ApplyElementMatrix (fel, trafo, elx, ely, precomputed, lh);
+          simd_evaluate = true;
+          double err = L2Norm(hely-ely);
+          if (err > 1e-8)
+            cerr << "apply, err = " << err << endl;
+          */
           return;
         }
       catch (ExceptionNOSIMD e)
