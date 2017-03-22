@@ -2986,7 +2986,6 @@ namespace ngfem
       {
         try
           {
-	    //cout << "SIMD CTV!!" << endl;
 	    int maxorder = volumefel.Order();
             
             auto eltype = eltrans.GetElementType();
@@ -3033,7 +3032,6 @@ namespace ngfem
 	  }
         catch (ExceptionNOSIMD e)
           {
-	    cout << "CTV SIMD EX" << endl;
             cout << "caught in SymbolicFacetInegtrator::CalcTraceValues: " << endl
                  << e.What() << endl;
             simd_evaluate = false;
@@ -3041,7 +3039,6 @@ namespace ngfem
           }
 	return;
       }  
-    //cout << "NO SIMD CTV!!" << endl;
 
     int maxorder = volumefel.Order();
 
@@ -3063,17 +3060,13 @@ namespace ngfem
 
     for (ProxyFunction * proxy : trial_proxies)
       if(proxy->IsOther())
-	ud.AssignMemory (proxy, ir_facet.Size(), proxy->Dimension(), lh);
-
-    for (ProxyFunction * proxy : trial_proxies)
-      if(proxy->IsOther())
       {
+	ud.AssignMemory (proxy, ir_facet.Size(), proxy->Dimension(), lh);
 	IntRange trial_range  = IntRange(0, proxy->Evaluator()->BlockDim()*volumefel.GetNDof());
 	proxy->Evaluator()->Apply(volumefel, mir, elx.Range(trial_range), ud.GetMemory(proxy), lh);
       }
     
-    size_t st;
-    st = 0;
+    size_t st = 0;
     //cout << "other-proxy dims: " << endl;
     for (ProxyFunction * proxy : trial_proxies)
       if(proxy->IsOther())
@@ -3107,7 +3100,6 @@ namespace ngfem
       {
         try
           {
-	    //cout << "SIMD AFTV!!" << endl;
             ely = 0.0;
 
 	    int maxorder = volumefel.Order();
@@ -3180,11 +3172,9 @@ namespace ngfem
                 
 		  proxy->Evaluator()->AddTrans(volumefel, simd_mir, simd_proxyvalues, ely.Range(test_range));
 		}
-
 	  }
         catch (ExceptionNOSIMD e)
           {
-	    cout << "AFTV SIMD EX" << endl;
             cout << "caught in SymbolicFacetInegtrator::CalcTraceValues: " << endl
                  << e.What() << endl;
             simd_evaluate = false;
@@ -3193,7 +3183,6 @@ namespace ngfem
           }
 	return;
       }
-    //cout << "NO SIMD AFTV!!" << endl;
 
     //cout << "apply facet from trace NOSIMD ver.." << endl;
     ely = 0.0;
@@ -3234,7 +3223,6 @@ namespace ngfem
 	    IntRange trial_range  = IntRange(0, proxy->Evaluator()->BlockDim()*volumefel.GetNDof());
 	    proxy->Evaluator()->Apply(volumefel, mir, elx.Range(trial_range), ud.GetMemory(proxy), lh);
 	  }
-	//cout << "trial proxy, other " << proxy->IsOther() << endl << ud.GetMemory(proxy) << endl;
       }
 
     FlatMatrix<> val(ir_facet.Size(), 1,lh);
@@ -3253,10 +3241,8 @@ namespace ngfem
 	      proxyvalues.Col(k) = val.Col(0);
 	    }
 
-	  //cout << "proxyvals:" << endl << proxyvalues << endl;
 
 	  for (int i = 0; i < mir.Size(); i++)
-	    // proxyvalues.Row(i) *= measure(i) * ir_facet[i].Weight();
 	    proxyvalues.Row(i) *= mir[i].GetMeasure() * ir_facet[i].Weight();
 
 	  // tapplyt.Start();
@@ -3268,7 +3254,6 @@ namespace ngfem
 
 	  ely += ely1;
 	}
-    
   }//end ApplyFromTraceValues
 
   void SymbolicFacetBilinearFormIntegrator ::

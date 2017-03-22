@@ -90,7 +90,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     py::class_<PStatDummy> (m, "PSD");
     typedef PyWrapper<PStatDummy> PyPStatDummy;
     
-    m.attr("pstat_distrtr") = py::cast(&pstat_distr);
+    m.attr("pstat_distr") = py::cast(&pstat_distr);
     m.attr("pstat_cumul") = py::cast(&pstat_cumul);
     m.attr("pstat_not_par") = py::cast(&pstat_not_par);
     
