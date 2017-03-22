@@ -1677,6 +1677,8 @@ void ExportBinaryFunction (class pybind11::module & m, string name)
   extern shared_ptr<CoefficientFunction>
   MakeVectorialCoefficientFunction (Array<shared_ptr<CoefficientFunction>> aci);
 
+  extern shared_ptr<CoefficientFunction>
+  MakeCoordinateCoefficientFunction (int comp);
 
 
 
