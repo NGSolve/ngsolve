@@ -793,9 +793,9 @@ val : float
   m.def("CoordCF", 
         [] (int direction) ->PyWrapper<CoefficientFunction>
         { return MakeCoordinateCoefficientFunction(direction); },
-        "CoefficientFunction for x, y, z",
+        "CoefficientFunction for x, y, z"
         );
-
+  
   class MeshSizeCF : public CoefficientFunctionNoDerivative
   {
   public:
