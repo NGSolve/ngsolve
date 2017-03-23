@@ -241,6 +241,11 @@ mac_test:
     CMAKE_C_COMPILER: "clang"
     CMAKE_CXX_COMPILER: "clang++"
 
+.t_gcc7: &t_gcc7
+  variables:
+    CMAKE_C_COMPILER: "gcc-7"
+    CMAKE_CXX_COMPILER: "g++-7"
+
 .t_gcc6: &t_gcc6
   variables:
     CMAKE_C_COMPILER: "gcc"
@@ -298,6 +303,10 @@ gcc6_timings:
   <<: *t_gcc6
   <<: *t_timings
 
+gcc7_timings:
+  <<: *t_gcc7
+  <<: *t_timings
+
 clang_timings:
   <<: *t_clang
   <<: *t_timings
@@ -310,6 +319,11 @@ gcc5_fm_timings:
 gcc6_fm_timings:
   <<: *t_fast_math
   <<: *t_gcc6
+  <<: *t_timings
+
+gcc7_fm_timings:
+  <<: *t_fast_math
+  <<: *t_gcc7
   <<: *t_timings
 
 clang_fm_timings:

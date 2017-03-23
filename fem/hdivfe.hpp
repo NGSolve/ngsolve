@@ -50,6 +50,9 @@ namespace ngfem
     virtual void CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
 				  SliceMatrix<> shape) const;
 
+    virtual void CalcMappedShape (const SIMD<MappedIntegrationPoint<DIM,DIM>> & mip,
+				  BareSliceMatrix<SIMD<double>> shape) const;
+
     virtual void CalcMappedShape (const MappedIntegrationRule<DIM,DIM> & mir, 
                                   SliceMatrix<> shape) const;
 
@@ -107,28 +110,14 @@ namespace ngfem
 	}
     }
     */
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const
-    {
-      cout << "HDivFE::Evaluate (simd) not overloaded" << endl;
-    }
-    
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs,
+                           BareSliceMatrix<SIMD<double>> values) const;
     virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
-                           BareSliceVector<> coefs) const
-    {
-      cout << "HDivFE::AddTrans (simd) not overloaded" << endl;
-    }
-      
-    virtual void EvaluateDiv (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareVector<SIMD<double>> values) const
-    {
-      cout << "HDivFE::EvaluateDiv (simd) not overloaded" << endl;
-    }
-    
+                           BareSliceVector<> coefs) const;
+    virtual void EvaluateDiv (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs,
+                              BareVector<SIMD<double>> values) const;
     virtual void AddDivTrans (const SIMD_BaseMappedIntegrationRule & ir, BareVector<SIMD<double>> values,
-                              BareSliceVector<> coefs) const
-    {
-      cout << "HDivFE::AddDivTrans (simd) not overloaded" << endl;
-    }
-      
+                              BareSliceVector<> coefs) const;
     
     virtual void GetFacetDofs(int i, Array<int> & dnums) const;
     // { cout  << " GetFacetDofs for nothing " << endl; dnums.SetSize(0);}; 
