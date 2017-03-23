@@ -1299,6 +1299,7 @@ namespace ngla
     if ( this->GetInverseType() == SUPERLU_DIST )
       throw Exception ("SparseMatrix::InverseMatrix:  SuperLU_DIST_Inverse not available");
 
+
     if ( BaseSparseMatrix :: GetInverseType() == SUPERLU )
       {
 #ifdef USE_SUPERLU
@@ -2356,7 +2357,7 @@ namespace ngla
     // #endif
 
     // #ifdef ASTRID
-    cout << "SPM SYM INVMAT" << endl;
+
     if ( this->GetInverseType() == SUPERLU_DIST )
       throw Exception ("SparseMatrix::InverseMatrix:  SuperLU_DIST_Inverse not available");
 
@@ -2393,10 +2394,7 @@ namespace ngla
 #endif
       }
     else
-      {
-	cout << "MAKE SHARED SPCHOL with " << this << ", subset " << subset << endl;
-	return make_shared<SparseCholesky<TM,TV_ROW,TV_COL>> (*this, subset);
-      }
+      return make_shared<SparseCholesky<TM,TV_ROW,TV_COL>> (*this, subset);
     // #endif
   }
 

@@ -480,7 +480,6 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
            return timings;
          })
     ;
-
 }
 
 

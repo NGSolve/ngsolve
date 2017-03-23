@@ -1590,22 +1590,15 @@ void NGS_ParallelRun (const string & message)
     {
 
       string command = message.substr(7);
-      cout << "detach py thread.." << endl;
       std::thread( [](string a_command){
-	  cout << "hi, i am new thread" << endl;
 	  Parallel_InitPython ();
-	  cout << "get gil" << endl;
 	  AcquireGIL gil_lock;
-	  cout << "set id " << endl;
 	  pythread_id = std::this_thread::get_id();
 	  // PythonEnvironment & py_env = PythonEnvironment::getInstance();
-	  cout << "exec py" << endl;
 	  pyenv.exec(a_command);
-	  cout << "py done, set pythread id back to master thread" << endl;
 	  pythread_id = mainthread_id;
 	  
 	}, command).detach();
-      cout << "hi, i am the netgen thread, returning now.." << endl;
     }
 #endif
   return;
