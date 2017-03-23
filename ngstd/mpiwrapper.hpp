@@ -106,47 +106,6 @@ namespace ngstd
     }
   };
 
-  /** Not sure yet if this works... **/
-  /*
-  template<typename A, typename C>
-  class MPI_Traits<tuple<A,B,C> >
-  {
-  public:
-    
-    static MPI_Datatype MPIType()
-    {
-      static MPI_Datatype MPI_T = 0;
-      if(!MPI_T)
-	{
-	  //double B[2][3] = {{1,2}{3,4}{5,6}};
-	  double block_len[2] = {2,1};
-	  double displs[2] = {0, 2*sizeof(A)};
-	  MPI_Datatype[2] types = {MPI_Datatype<A>::MPIType(), MPI_Datatype<B>::MPIType()};
-	  MPI_Type_create_struct(2, block_len, displs, types, &MPI_T);
-	}
-      return MPI_T;      
-    }
-  }
-  */
-
-  /** Not sure yet if this works... **/
-  /*
-  template<int S, typename T, typename T2>
-  class MPI_Traits<tuple<INT<S,T>,T2>>
-  {
-  public:
-    static MPI_Datatype MPIType()
-    {
-      static MPI_Datatype MPI_T = 0;
-      if(!MPI_T)
-	{
-	  double block_len[2] = {1,1};
-	  double displs[2] = {0, S*sizeof(T)};
-	  MPI_Datatype[2] types = {MPI_Datatype<A>::MPIType(), MPI_Datatype<B>::MPIType()};
-	  MPI_Type_struct(2, block_len, displs, types, &MPI_T);
-	}
-    }
-  */
 
   template <class T>
   inline MPI_Datatype MyGetMPIType ()
@@ -357,6 +316,7 @@ namespace ngstd
   }
   
   
+
   inline void MyMPI_SendCmd (const char * cmd)
   {
     int ntasks;
@@ -419,15 +379,11 @@ public:
 	}
       else
 	{
-          cout << "WORLD NULL NGS are : " << MPI_COMM_WORLD << " " << MPI_COMM_NULL << " " << ngs_comm << endl;
-	  cout << "DUPING WORLD TO NGS..:" << endl;
 	  MPI_Comm_dup ( MPI_COMM_WORLD, &ngs_comm);
-	  cout << "DUPED WORLD / NGS IS: " << ngs_comm << endl;
 	}
       
       if(ngs_comm == MPI_COMM_NULL)
 	{
-	  cout << "WARNING, MPI was already initialized but ngs_comm was not set!! Duping MPI_COMM_WORLDto ngs_comm..." << endl;
 	  MPI_Comm_dup ( MPI_COMM_WORLD, &ngs_comm);      
   	}
       

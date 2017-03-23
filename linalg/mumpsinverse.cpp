@@ -472,7 +472,7 @@ namespace ngla
     
     Array<int> global_nums;
     int num_glob_dofs;
-    pardofs -> EnumerateGlobally (inner, global_nums, num_glob_dofs);
+    pardofs -> EnumerateGlobally (inner.get(), global_nums, num_glob_dofs);
 
     int ndof = pardofs->GetNDofLocal();
 

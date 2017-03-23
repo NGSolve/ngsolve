@@ -380,6 +380,7 @@ namespace ngcomp
 	  if (bfa->GetFESpace()->IsParallel())
 	    {
 	      ParallelDofs * pardofs = &bfa->GetFESpace()->GetParallelDofs();
+
 	      pwbmat = make_shared<ParallelMatrix> (pwbmat, pardofs);
 	      pwbmat -> SetInverseType (inversetype);
 
@@ -459,6 +460,7 @@ namespace ngcomp
       static Timer timerharmonicext ("Apply BDDC preconditioner - harmonic extension");
       static Timer timerharmonicexttrans ("Apply BDDC preconditioner - harmonic extension trans");
       
+
       RegionTimer reg (timer);
 
       x.Cumulate();

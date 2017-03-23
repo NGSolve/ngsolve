@@ -856,16 +856,16 @@ namespace ngstd
 
     /// resize array, at least to size minsize. copy contents
     INLINE void ReSize (size_t minsize);
-     /*
+    /*
     {
-      size_t nsize = 2 * allocsize;
+      TSIZE nsize = 2 * allocsize;
       if (nsize < minsize) nsize = minsize;
 
       if (data)
         {
           T * p = new T[nsize];
 	
-          size_t mins = (nsize < size) ? nsize : size; 
+          TSIZE mins = (nsize < size) ? nsize : size; 
           memcpy (p, data, mins * sizeof(T));
 
           if (ownmem) delete [] data;

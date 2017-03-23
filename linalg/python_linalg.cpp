@@ -94,22 +94,23 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     m.attr("pstat_cumul") = py::cast(&pstat_cumul);
     m.attr("pstat_not_par") = py::cast(&pstat_not_par);
     
+  
     typedef BaseVector PyBaseVector;
     typedef BaseMatrix PyBaseMatrix;
 
   m.def("CreateVVector", CreateBaseVector, "size"_a, "complex"_a=false, "entrysize"_a=1);
 
   py::class_<BaseVector, shared_ptr<BaseVector>>(m, "BaseVector",
-						 py::dynamic_attr() // add dynamic attributes
-						 )
-    .def("__ngsid__", FunctionPointer( [] ( PyBaseVector & self)
-				       { return reinterpret_cast<std::uintptr_t>(&self); } ) )
+        py::dynamic_attr() // add dynamic attributes
+      )
+  .def("__ngsid__", FunctionPointer( [] ( PyBaseVector & self)
+      { return reinterpret_cast<std::uintptr_t>(&self); } ) )
     
     .def("__str__", [](PyBaseVector &self) { return ToString<BaseVector>(self); } )
     .def("__repr__", [](PyBaseVector &self) { return "basevector"; } )
     .def_property_readonly("size", py::cpp_function( [] (PyBaseVector &self) { return self.Size(); } ) )
     .def("__len__", [] (PyBaseVector &self) { return self.Size(); })
-    //     .def("__getstate__", [] (py::object self_object) {
+//     .def("__getstate__", [] (py::object self_object) {
 //         const BaseVector & self = self_object.cast<PyBaseVector>();
 //         auto dict = self_object.attr("__dict__");
 //         auto vec = self.FV<double>();
