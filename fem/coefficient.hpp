@@ -349,6 +349,13 @@ namespace ngfem
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
                            AFlatMatrix<double> values) const
     { values = val; }
+
+    virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
+                                AFlatMatrix<> result, AFlatMatrix<> deriv) const
+    {
+      result = val;
+      deriv = 0.0;
+    }
     
     virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
                                 FlatArray<AFlatMatrix<>*> input, FlatArray<AFlatMatrix<>*> dinput,

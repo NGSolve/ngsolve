@@ -2686,6 +2686,41 @@ public:
   }
 
   virtual void EvaluateDeriv(const SIMD_BaseMappedIntegrationRule & mir,
+                             AFlatMatrix<> result,
+                             AFlatMatrix<> deriv) const
+  {
+    FlatArray<int> hdims = Dimensions();
+
+    STACK_ARRAY(SIMD<double>, hmema, mir.Size()*hdims[0]*inner_dim);
+    STACK_ARRAY(SIMD<double>, hmemb, mir.Size()*inner_dim);
+    AFlatMatrix<double> va(hdims[0]*inner_dim, mir.IR().GetNIP(), &hmema[0]);
+    AFlatMatrix<double> vb(inner_dim, mir.IR().GetNIP(), &hmemb[0]);
+    STACK_ARRAY(SIMD<double>, hmemda, mir.Size()*hdims[0]*inner_dim);
+    STACK_ARRAY(SIMD<double>, hmemdb, mir.Size()*inner_dim);
+    AFlatMatrix<double> dva(hdims[0]*inner_dim, mir.IR().GetNIP(), &hmemda[0]);
+    AFlatMatrix<double> dvb(inner_dim, mir.IR().GetNIP(), &hmemdb[0]);
+    c1->EvaluateDeriv (mir, va, dva);
+    c2->EvaluateDeriv (mir, vb, dvb);
+    
+    // AFlatMatrix<> va = *input[0], vb = *input[1];
+    // AFlatMatrix<> dva = *dinput[0], dvb = *dinput[1];
+
+    result = 0.0;
+    deriv = 0.0;
+    for (size_t j = 0; j < hdims[0]; j++)
+      for (size_t k = 0; k < inner_dim; k++)
+        {
+          size_t row = j*inner_dim+k;
+          for (size_t i = 0; i < mir.Size(); i++)
+            result.Get(j,i) += va.Get(row,i)*vb.Get(k,i);
+          for (size_t i = 0; i < mir.Size(); i++)
+            deriv.Get(j,i) += dva.Get(row,i)*vb.Get(k,i) + va.Get(row,i)*dvb.Get(k,i);
+        }
+  }
+
+  
+
+  virtual void EvaluateDeriv(const SIMD_BaseMappedIntegrationRule & mir,
                              FlatArray<AFlatMatrix<>*> input,
                              FlatArray<AFlatMatrix<>*> dinput,
                              AFlatMatrix<> result,
@@ -3007,6 +3042,30 @@ public:
     
   }
 
+    virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & mir,
+                                AFlatMatrix<> result,
+                                AFlatMatrix<> deriv) const
+    {
+      FlatArray<int> dims = Dimensions();
+      size_t dim0 = dims[0], dim1 = dims[1];
+      STACK_ARRAY(SIMD<double>, hmem, dims[0]*dims[1]*mir.Size());
+      AFlatMatrix<double> in0 (dims[0]*dims[1], mir.IR().GetNIP(), &hmem[0]);
+      STACK_ARRAY(SIMD<double>, hdmem, dims[0]*dims[1]*mir.Size());
+      AFlatMatrix<double> din0 (dims[0]*dims[1], mir.IR().GetNIP(), &hdmem[0]);
+
+      c1->EvaluateDeriv (mir, in0, din0);
+      size_t s = mir.Size();
+
+      for (size_t j = 0; j < dim0; j++)
+        for (size_t k = 0; k < dim1; k++)
+          for (size_t i = 0; i < s; i++)
+            result.Get(j*dim1+k, i) = in0.Get(k*dim0+j, i);
+
+      for (int j = 0; j < dim0; j++)
+        for (int k = 0; k < dim1; k++)
+          for (size_t i = 0; i < s; i++)
+            deriv.Get(j*dim1+k, i) = din0.Get(k*dim0+j, i);
+    }
 
     virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & mir,
                                 FlatArray<AFlatMatrix<>*> input,
@@ -3405,9 +3464,9 @@ public:
                               AFlatMatrix<double> values, AFlatMatrix<double> deriv) const
   {
     STACK_ARRAY(SIMD<double>, hmem, mir.Size()*dim1);
-    AFlatMatrix<> v1(dim1, mir.Size(), hmem);
+    AFlatMatrix<> v1(dim1, mir.IR().GetNIP(), hmem);
     STACK_ARRAY(SIMD<double>, hdmem, mir.Size()*dim1);
-    AFlatMatrix<> dv1(dim1, mir.Size(), hdmem);
+    AFlatMatrix<> dv1(dim1, mir.IR().GetNIP(), hdmem);
     
     c1->EvaluateDeriv (mir, v1, dv1);
     values.Row(0) = v1.Row(comp);
@@ -3799,6 +3858,16 @@ public:
             values.Row(i) = else_values.Row(i);
             deriv.Row(i) = else_deriv.Row(i);
           }
+      /*
+      *testout << "IfPos::std" << endl
+               << "if = " << endl << Trans(if_values)
+               << "then = " << endl << Trans(then_values)
+               << "then_deriv" << endl << Trans(then_deriv)
+               << "else = " << endl << Trans(else_values)
+               << "else_deriv" << endl << Trans(else_deriv)
+               << "val = " << endl << Trans(values)
+               << "deriv = " << endl << Trans(deriv);
+      */
     }
 
     /*
@@ -3859,6 +3928,47 @@ public:
     virtual void PrintReportRec (ostream & ost, int level) const;
     virtual string GetName () const;
     */
+
+
+    virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
+                                AFlatMatrix<> values,
+                                AFlatMatrix<> deriv) const
+    {
+      int dim = Dimension();
+      STACK_ARRAY(SIMD<double>, hmem1, ir.Size());
+      AFlatMatrix<> if_values(1, ir.IR().GetNIP(), hmem1);
+      STACK_ARRAY(SIMD<double>, hmem2, ir.Size()*dim);
+      AFlatMatrix<> then_values(dim, ir.IR().GetNIP(), hmem2);
+      STACK_ARRAY(SIMD<double>, hmem3, ir.Size()*dim);
+      AFlatMatrix<> else_values(dim, ir.IR().GetNIP(), hmem3);
+      STACK_ARRAY(SIMD<double>, hmem4, ir.Size()*dim);
+      AFlatMatrix<> then_deriv(dim, ir.IR().GetNIP(), hmem4);
+      STACK_ARRAY(SIMD<double>, hmem5, ir.Size()*dim);
+      AFlatMatrix<> else_deriv(dim, ir.IR().GetNIP(), hmem5);
+
+      cf_if->Evaluate (ir, if_values);
+      cf_then->EvaluateDeriv (ir, then_values, then_deriv);
+      cf_else->EvaluateDeriv (ir, else_values, else_deriv);
+      
+      for (int i = 0; i < ir.Size(); i++)
+        for (int j = 0; j < dim; j++)
+          {
+            values.Get(j,i) = IfPos(if_values.Get(0,i), then_values.Get(j,i), else_values.Get(j,i));
+            deriv.Get(j,i) = IfPos(if_values.Get(0,i), then_deriv.Get(j,i), else_deriv.Get(j,i));
+          }
+      /*
+      *testout << "IfPos::simd" << endl
+               << "ifval = " << endl << if_values
+               << "then-val = " << endl << then_values
+               << "then-dval = " << endl << then_deriv
+               << "else-val = " << endl << else_values
+               << "else-dval = " << endl << else_deriv
+               << "val = " << endl << values
+               << "deriv = " << endl << deriv;
+      */
+    }
+
+
     
     virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
     {
