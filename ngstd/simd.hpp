@@ -125,6 +125,7 @@ namespace ngstd
  
 #else
 
+  /*
   template <size_t ALIGN = 64>
   class AlignedAlloc
   {
@@ -134,11 +135,41 @@ namespace ngstd
     void operator delete (void * p) { _mm_free(p); }
     void operator delete[] (void * p) { _mm_free(p); }
   };
-  
+  */
+
+  template <typename T>
+  class AlignedAlloc
+  {
+    protected:
+      static void * aligned_malloc(size_t s)
+      {
+        // Assume 16 byte alignment of standard library
+        if(alignof(T)<=16)
+            return malloc(s);
+        else
+            return  _mm_malloc(s, alignof(T));
+      }
+
+      static void aligned_free(void *p)
+      {
+        if(alignof(T)<=16)
+            free(p);
+        else
+            _mm_free(p);
+      }
+
+  public:
+    void * operator new (size_t s, void *p) { return p; }
+    void * operator new (size_t s) { return aligned_malloc(s); }
+    void * operator new[] (size_t s) { return aligned_malloc(s); }
+    void operator delete (void * p) { aligned_free(p); }
+    void operator delete[] (void * p) { aligned_free(p); }
+  };
+    
 
   
   template<>
-  class alignas(32) SIMD<double> : public AlignedAlloc<>
+  class alignas(32) SIMD<double> : public AlignedAlloc<SIMD<double>>
   {
     __m256d data;
     
@@ -148,18 +179,28 @@ namespace ngstd
     SIMD (const SIMD &) = default;
     SIMD & operator= (const SIMD &) = default;
 
-    SIMD (double val)
-    {
-      data = _mm256_set1_pd(val);
-    }
+    SIMD (double val) { data = _mm256_set1_pd(val); }
+    SIMD (int val)    { data = _mm256_set1_pd(val); }
+    SIMD (size_t val) { data = _mm256_set1_pd(val); }
+
+    SIMD (double const * p) { data = _mm256_loadu_pd(p); }
+    SIMD (__m256d _data) { data = _data; }
     
+    template<typename T, typename std::enable_if<std::is_convertible<T, std::function<double(int)>>::value, int>::type = 0>                                                                    SIMD (const T & func)
+    {   
+      data = _mm256_set_pd(func(3), func(2), func(1), func(0));              
+    }   
+    
+    /*
     template <typename T>
     SIMD (const T & val)
     {
 //       SIMD_function(val, std::is_convertible<T, std::function<double(int)>>());
       SIMD_function(val, has_call_operator<T>::value);
     }
-    
+    */
+
+    /*
     template <typename T>
     SIMD & operator= (const T & val)
     {
@@ -167,14 +208,16 @@ namespace ngstd
       SIMD_function(val, has_call_operator<T>::value);
       return *this;
     }
-
+    */
+    
     /*
     void * operator new (size_t s) { return  _mm_malloc(s, 64); }
     void * operator new[] (size_t s) { return  _mm_malloc(s, 64); }
     void operator delete (void * p) { _mm_free(p); }
     void operator delete[] (void * p) { _mm_free(p); }
     */
-    
+
+    /*
     template <typename Function>
     void SIMD_function (const Function & func, std::true_type)
     {
@@ -196,6 +239,7 @@ namespace ngstd
     {
       data = _data;
     }
+    */
     
     INLINE double operator[] (int i) const { return ((double*)(&data))[i]; }
     INLINE __m256d Data() const { return data; }
@@ -276,6 +320,9 @@ namespace ngstd
 
 #else
 
+  // it's only a dummy without AVX
+  template <typename T>
+  class AlignedAlloc { ; };
   
   template<>
   class SIMD<double>
@@ -405,7 +452,7 @@ INLINE ngstd::SIMD<double> atan (ngstd::SIMD<double> a) {
 
 
   template <int D, typename T>
-  class MultiSIMD
+  class MultiSIMD : public AlignedAlloc<MultiSIMD<D,T>>
   {
     SIMD<T> head;
     MultiSIMD<D-1,T> tail;
@@ -430,7 +477,7 @@ INLINE ngstd::SIMD<double> atan (ngstd::SIMD<double> a) {
   };
 
   template <typename T>
-  class MultiSIMD<2,T>
+  class MultiSIMD<2,T> : public AlignedAlloc<MultiSIMD<2,T>>
   {
     SIMD<T> v0, v1;
   public:

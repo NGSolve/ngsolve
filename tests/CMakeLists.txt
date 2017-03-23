@@ -9,7 +9,7 @@ else()
   set(test_driver "${CMAKE_CURRENT_BINARY_DIR}/pde_tester")
   add_executable( pde_tester pde_tester.cpp)
   install( TARGETS pde_tester DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve )
-  target_link_libraries(pde_tester solve interface ${TCL_LIBRARY} ${PYTHON_LIBS} ${LAPACK_LIBRARIES})
+  target_link_libraries(pde_tester solve interface ${TCL_LIBRARY} ${NETGEN_PYTHON_LIBRARIES} ${LAPACK_LIBRARIES})
 endif()
 
 file(COPY ${PROJECT_SOURCE_DIR}/pde_tutorial DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
