@@ -14,6 +14,7 @@ typedef PyWrapper<GF> PyGF;
 typedef PyWrapper<FESpace> PyFES;
 typedef PyWrapper<BaseVector> PyBaseVector;
 typedef PyWrapper<BaseMatrix> PyBaseMatrix;
+typedef PyWrapper<PDE> PyPDE;
 
 // template <typename T>
 // struct PythonTupleFromFlatArray {
@@ -58,29 +59,25 @@ public:
 
 class PyNumProc : public NumProc
 {
-
 public:
-  PyNumProc (shared_ptr<PDE> pde, const Flags & flags) : NumProc (pde, flags) { ; }
-  shared_ptr<PDE> GetPDE() const { return shared_ptr<PDE> (pde); }
-  // virtual void Do (LocalHeap & lh) { cout << "should not be called" << endl; }
+  using NumProc::NumProc;
+  virtual void Do (LocalHeap &lh) override
+  {
+      auto pylh = py::cast(lh, py::return_value_policy::reference);
+      try{
+          PYBIND11_OVERLOAD_PURE(
+                                 void,       /* Return type */
+                                 PyNumProc,  /* Parent class */
+                                 Do,         /* Name of function */
+                                 pylh
+          );
+      }
+      catch (py::error_already_set const &e) {
+          cerr << e.what() << endl;
+          PyErr_Print();
+      }
+  }
 };
-
-// class NumProcWrap : public PyNumProc, public py::wrapper<PyNumProc> {
-// public:
-//   NumProcWrap (shared_ptr<PDE> pde, const Flags & flags) : PyNumProc(pde, flags) { ; }
-//   virtual void Do(LocalHeap & lh)  {
-//     // cout << "numproc wrap - do" << endl;
-//     AcquireGIL gil_lock;
-//     try
-//       {
-//         this->get_override("Do")(boost::ref(lh));
-//       }
-//     catch (py::error_already_set const &) {
-//       cout << "caught a python error:" << endl;
-//       PyErr_Print();
-//     }
-//   }
-// };
 
 typedef PyWrapperDerived<ProxyFunction, CoefficientFunction> PyProxyFunction;
 
@@ -2524,15 +2521,18 @@ flags : dict
          py::arg("heapsize")=1000000)
     ;
 
-//   // die geht
-//   py::class_<NumProcWrap,shared_ptr<NumProcWrap>, NumProc>("PyNumProc", py::init<shared_ptr<PDE>, const Flags&>())
-//     .def("Do", py::pure_virtual(&PyNumProc::Do)) 
-//     .def_property_readonly("pde", &PyNumProc::GetPDE)
-//     ;
-//   
-//   py::implicitly_convertible 
-//     <shared_ptr<NumProcWrap>, shared_ptr<NumProc> >(); 
-// 
+  py::class_<PyNumProc, NumProc, shared_ptr<PyNumProc>> (m, "PyNumProc")
+    .def("__init__",
+         [](NumProc *instance, PyPDE pde, Flags & flags)
+                           {
+                             new (instance) PyNumProc(pde.Get(), flags);
+                           })
+    .def_property_readonly("pde", [](NumProc &self) { return PyPDE(self.GetPDE()); })
+    .def("Do", FunctionPointer([](NumProc & self, LocalHeap & lh)
+                               {
+                                 self.Do(lh);
+                               }))
+    ;
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
@@ -2546,7 +2546,6 @@ flags : dict
   PyExportSymbolTable<double> (m);
   PyExportSymbolTable<shared_ptr<double>> (m);
 
-  typedef PyWrapper<PDE> PyPDE;
   py::class_<PyPDE> (m, "PDE")
 
     // .def(py::init<const string&>())

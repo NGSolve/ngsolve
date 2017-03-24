@@ -739,23 +739,17 @@ namespace ngcomp
                 static int pynp_cnt = 0;
                 string pyname = "_pynumproc"+ToString(pynp_cnt++);
 
-                string command = pyname  + " = " + npid + " (pde,flags) \n";
 		try{
-                  // TODO:
-// 		   pyenv["pde"] = pde;
-// 		   pyenv["flags"] = make_shared<Flags>(flags);
+                    // get the python class
+                    py::object npclass = pyenv[npid.c_str()];
+                    // call constructor and release the python instance to avoid reference counting on python side
+                    py::handle np = npclass(py::cast(PyWrapper<PDE>(pde)),py::cast(flags)).release();
+                    pde->AddNumProc (name, np.cast<shared_ptr<NumProc>>());
+                }
+		catch (py::error_already_set const &e) {
+                    cerr << e.what() << endl;
+                    PyErr_Print();
 		}
-		catch (py::error_already_set const &) {
-		  PyErr_Print();
-		}
-                pyenv.exec (command);
-                py::object pynp = pyenv[pyname.c_str()];
-
-                py::extract<shared_ptr<NumProc>> np(pynp);
-                if(np.check())
-                  pde->AddNumProc (name, np());
-                else
-                  cout << "sorry, I cannot make it a numproc" << endl;
               }
 #else
               cerr << "sorry, python not enabled" << endl;
