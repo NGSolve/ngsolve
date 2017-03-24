@@ -614,7 +614,7 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
       py::keep_alive<0,1>()
     );
 
-  py::class_<FESpace::ElementRange, shared_ptr<FESpace::ElementRange>> (m, "FESpaceElementRange")
+  py::class_<FESpace::ElementRange, IntRange> (m, "FESpaceElementRange")
     .def("__iter__", [] (FESpace::ElementRange &er)
       { return py::make_iterator(er.begin(), er.end()); },
       py::keep_alive<0,1>()
@@ -1599,7 +1599,8 @@ flags : dict
     .def("Elements", 
          [](PyFES & self, VorB vb, int heapsize) 
          {
-           return make_shared<FESpace::ElementRange> (self->Elements(vb, heapsize));
+           // return make_shared<FESpace::ElementRange> (self->Elements(vb, heapsize));
+           return FESpace::ElementRange(self->Elements(vb, heapsize));
          },
          py::arg("VOL_or_BND")=VOL,py::arg("heapsize")=10000)
 
