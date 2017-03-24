@@ -446,8 +446,8 @@ namespace ngfem
       dderiv = 0.0;
     }
 
-    virtual void SetValue (double in)
-    { val = in; }
+    virtual void SetValue (double in) { val = in; }
+    virtual double GetValue () { return val; }
     virtual void PrintReport (ostream & ost) const;
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
   };
