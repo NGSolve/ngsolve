@@ -614,7 +614,7 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
       py::keep_alive<0,1>()
     );
 
-  py::class_<FESpace::ElementRange,shared_ptr<FESpace::ElementRange>, IntRange> (m, "FESpaceElementRange")
+  py::class_<FESpace::ElementRange, IntRange> (m, "FESpaceElementRange")
     .def("__iter__", [] (FESpace::ElementRange &er)
       { return py::make_iterator(er.begin(), er.end()); },
       py::keep_alive<0,1>()
