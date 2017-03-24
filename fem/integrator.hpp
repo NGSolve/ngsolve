@@ -51,6 +51,9 @@ namespace ngfem
   
     int cachecomp;
 
+    /// define only on some sub-domains
+    shared_ptr<BitArray> definedon_element = nullptr;
+    
   
   protected:
     void DeleteCurveIPs ( void );
@@ -94,6 +97,24 @@ namespace ngfem
     /// defined only on some subdomains
     void SetDefinedOn (const BitArray & adefinedon);
 
+    /// defined only on elements (elements/boundary elements/facets/..)
+    void SetDefinedOnElements (shared_ptr<BitArray> adefinedonelem)
+    {
+      definedon_element = adefinedonelem;
+    }
+
+    /// defined only on some elements/facets/boundary elements
+    shared_ptr<BitArray> GetDefinedOnElements () const { return definedon_element; } 
+    
+    /// Is Integrator defined on this element ?
+    bool DefinedOnElement (int elem) const
+    {
+      if (definedon_element != nullptr && !definedon_element->Test(elem))
+        return false;
+      else
+        return true;
+    }
+    
     /// defined only on some subdomains
     const BitArray & GetDefinedOn () const { return definedon; } 
 
