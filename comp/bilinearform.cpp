@@ -2232,6 +2232,20 @@ namespace ngcomp
             RegionTimer reg(timervol);
             ProgressOutput progress (ma, "assemble element", ma->GetNE());
 
+            if (eliminate_internal && keep_internal)
+              {
+                size_t ndof = fespace->GetNDof();
+                size_t ne = ma->GetNE();
+                harmonicext = make_shared<ElementByElementMatrix<SCAL>>(ndof, ne);
+                if (!symmetric)
+                  harmonicexttrans = make_shared<ElementByElementMatrix<SCAL>>(ndof, ne);
+                else
+                  harmonicexttrans = make_shared<Transpose>(*harmonicext);
+                innersolve = make_shared<ElementByElementMatrix<SCAL>>(ndof, ne);
+                if (store_inner)
+                  innermatrix = make_shared<ElementByElementMatrix<SCAL>>(ndof, ne);
+              }
+            
             IterateElements 
               (*fespace, VOL, clh,  [&] (FESpace::Element el, LocalHeap & lh)
                {
