@@ -767,12 +767,10 @@ val : float
                             {
                               new (instance) PyParameterCF(make_shared<ParameterCoefficientFunction>(val));
                             })
-    .def ("Set",
-          FunctionPointer ([] (PyParameterCF cf, double val)
-                           {
-                             cf->SetValue (val);
-                           }),
+    .def ("Set", [] (PyParameterCF cf, double val)  { cf->SetValue (val); },
           "modify parameter value")
+    .def ("Get", [] (PyParameterCF cf)  { return cf->GetValue(); },
+          "return parameter value")
     ;
 
   // py::implicitly_convertible 
