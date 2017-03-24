@@ -1257,7 +1257,7 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
     (m, "BFI")
     .def("__init__",
          [](PyBFI *instance, string name, int dim, py::object py_coef, py::object definedon, bool imag,
-                              string filename, Flags flags)
+                              string filename, Flags flags, py::object definedonelem)
                            {
                              Array<shared_ptr<CoefficientFunction>> coef = MakeCoefficients(py_coef);
                              auto bfi = GetIntegrators().CreateBFI (name, dim, coef);
@@ -1285,10 +1285,12 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
                              bfi -> SetFlags (flags);
                              if (imag)
                                bfi = make_shared<ComplexBilinearFormIntegrator> (bfi, Complex(0,1));
+                             if (! py::extract<DummyArgument> (definedonelem).check())
+                               bfi -> SetDefinedOnElements (py::extract<PyWrapper<shared_ptr<BitArray>>>(definedonelem)()); 
                              new (instance) PyBFI(bfi);
                            },
            py::arg("name")="",py::arg("dim")=-1,py::arg("coef"),
-           py::arg("definedon")=DummyArgument(),py::arg("imag")=false, py::arg("filename")="", py::arg("flags") = py::dict())
+         py::arg("definedon")=DummyArgument(),py::arg("imag")=false, py::arg("filename")="", py::arg("flags") = py::dict(),py::arg("definedonelements")=DummyArgument())
     
     .def("__str__", FunctionPointer( [](PyBFI self) { return ToString<BilinearFormIntegrator>(*self.Get()); } ))
 
@@ -1297,8 +1299,10 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
     .def("GetDefinedOn", FunctionPointer
          ( [] (PyBFI self) -> const BitArray &{ return self->GetDefinedOn(); } ),
          py::return_value_policy::reference)
-    
 
+    .def("SetDefinedOnElements", FunctionPointer( [](PyBFI self, shared_ptr<BitArray> ba )
+                                                  { self->SetDefinedOnElements (ba); } ))
+    
     /*
     .def("CalcElementMatrix", 
          static_cast<void(BilinearFormIntegrator::*) (const FiniteElement&, 
@@ -1372,7 +1376,8 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
     .def("__init__", 
          [](PyLFI *instance, string name, int dim, 
                               py::object py_coef,
-                              py::object definedon, bool imag, const Flags & flags)
+                              py::object definedon, bool imag, const Flags & flags,
+                              py::object definedonelem)
                            {
                              Array<shared_ptr<CoefficientFunction>> coef = MakeCoefficients(py_coef);
                              auto lfi = GetIntegrators().CreateLFI (name, dim, coef);
@@ -1387,12 +1392,15 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
  
                              if (imag)
                                lfi = make_shared<ComplexLinearFormIntegrator> (lfi, Complex(0,1));
+                             if (! py::extract<DummyArgument> (definedonelem).check())
+                               lfi -> SetDefinedOnElements (py::extract<PyWrapper<shared_ptr<BitArray>>>(definedonelem)()); 
 
                              new (instance) PyLFI(lfi);
                            },
            py::arg("name")=NULL,py::arg("dim")=-1,
            py::arg("coef"),py::arg("definedon")=DummyArgument(), 
-           py::arg("imag")=false, py::arg("flags")=py::dict())
+           py::arg("imag")=false, py::arg("flags")=py::dict(),
+           py::arg("definedonelements")=DummyArgument())
 
     /*
     .def("__init__", py::make_constructor
@@ -1426,6 +1434,8 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
     .def("GetDefinedOn", FunctionPointer
          ( [] (PyLFI self) -> const BitArray &{ return self->GetDefinedOn(); } ),
          py::return_value_policy::reference)
+    .def("SetDefinedOnElements", FunctionPointer( [](PyLFI self, shared_ptr<BitArray> ba )
+                                                  { self->SetDefinedOnElements (ba); } ))
 
     .def("CalcElementVector", 
          [] (PyLFI  self, const FiniteElement & fe, const PyElementTransformation & trafo, FlatVector<double> v, LocalHeap &lh) { self->CalcElementVector(fe, *trafo, v, lh); } )
