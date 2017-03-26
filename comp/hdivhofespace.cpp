@@ -1429,6 +1429,8 @@ namespace ngcomp
     enum { DIM_ELEMENT = D };
     enum { DIM_DMAT = D*D };
     enum { DIFFORDER = 1 };
+    static Array<int> GetDimensions() { return Array<int> ( { D, D } ); };
+    
     static constexpr double eps() { return 1e-4; } 
     ///
     template <typename AFEL, typename SIP, typename MAT,
