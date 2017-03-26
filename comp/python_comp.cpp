@@ -1707,6 +1707,9 @@ flags : dict
               {
                 global_heapsize = heapsize;
                 glh = LocalHeap(heapsize, "python-comp lh", true);
+                bool first_time = true;
+                if (first_time)
+                  { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }
               }
             self->SolveM(*rho.Get(), *vec, glh);
           },
@@ -1935,6 +1938,9 @@ used_idnrs : list of int = None
               {
                 global_heapsize = heapsize;
                 glh = LocalHeap(heapsize, "python-comp lh", true);
+                bool first_time = true;
+                if (first_time)
+                  { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }
               }
             // LocalHeap lh(heapsize, "GridFunction::Set-lh", true);
             if (reg)
@@ -2257,6 +2263,9 @@ flags : dict
                                          {
                                            global_heapsize = heapsize;
                                            glh = LocalHeap(heapsize, "python-comp lh", true);
+                                           bool first_time = true;
+                                           if (first_time)
+                                             { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }                                           
                                          }
                                        self->ReAssemble(glh,reallocate);
                                      }),
@@ -2315,6 +2324,9 @@ flags : dict
               {
                 global_heapsize = heapsize;
                 glh = LocalHeap(heapsize, "python-comp lh", true);
+                bool first_time = true;
+                if (first_time)
+                  { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }                
               }
 	    self->ApplyMatrix (*x, *y, glh);
 	  }),
@@ -2342,6 +2354,10 @@ heapsize : int
               {
                 global_heapsize = heapsize;
                 glh = LocalHeap(heapsize, "python-comp lh", true);
+                bool first_time = true;
+                if (first_time)
+                  { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }
+                
               }
 	    self->ComputeInternal (*u, *f, glh );
 	  }),
@@ -2354,6 +2370,9 @@ heapsize : int
               {
                 global_heapsize = heapsize;
                 glh = LocalHeap(heapsize, "python-comp lh", true);
+                bool first_time = true;
+                if (first_time)
+                  { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }
               }
 	    self->AssembleLinearization (*ulin, glh);
 	  }),
@@ -2454,6 +2473,9 @@ flags : dict
               {
                 global_heapsize = heapsize;
                 glh = LocalHeap(heapsize, "python-comp lh", true);
+                bool first_time = true;
+                if (first_time)
+                  { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }                
               }
             self->Assemble(glh);
           }),
@@ -2755,7 +2777,7 @@ flags : dict
   
   m.def("Integrate", 
           [](PyCF cf,
-                             shared_ptr<MeshAccess> ma, 
+             shared_ptr<MeshAccess> ma, 
 	     VorB vb, int order, py::object definedon,
 	     bool region_wise, bool element_wise, int heapsize)
                           {
@@ -2765,6 +2787,9 @@ flags : dict
 			      {
 				global_heapsize = heapsize;
 				glh = LocalHeap(heapsize, "python-comp lh", true);
+                                bool first_time = true;
+                                if (first_time)
+                                  { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }                                                
 			      }
                            py::extract<Region> defon_region(definedon);
                            if (defon_region.check())
@@ -2952,7 +2977,6 @@ flags : dict
              
              if (py::extract<py::list> (definedon).check())
                {
-                 cout << "warning: SymbolicLFI definedon changed to 1-based" << endl;
                  Array<int> defon = makeCArray<int> (definedon);
                  for (int & d : defon) d--;
                  lfi -> SetDefinedOn (defon); 
@@ -3004,7 +3028,6 @@ flags : dict
              
              if (py::extract<py::list> (definedon).check())
                {
-                 cout << "warning: SymbolicBFI definedon changed to 1-based" << endl;
                  Array<int> defon = makeCArray<int> (definedon);
                  for (int & d : defon) d--;
                  bfi -> SetDefinedOn (defon); 
