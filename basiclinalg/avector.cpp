@@ -7,7 +7,9 @@ namespace ngstd
 
 #if defined(__AVX__)
 
-#ifdef WIN32
+#if defined __INTEL_COMPILER
+  typedef const char * prefetch_ptr_t;
+#elif defined WIN32
   // MSVC needs a char*
   typedef char * prefetch_ptr_t;
 #else
