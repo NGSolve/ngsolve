@@ -2007,7 +2007,7 @@ used_idnrs : list of int = None
             if (self->GetFESpace()->GetAdditionalEvaluators().Used(name))
               {
                 auto diffop = self->GetFESpace()->GetAdditionalEvaluators()[name];
-                cout << "diffop is " << typeid(*diffop).name() << endl;
+                // cout << "diffop is " << typeid(*diffop).name() << endl;
                 auto coef = make_shared<GridFunctionCoefficientFunction> (self.Get(), diffop);
                 coef->SetDimension(diffop->Dim());
                 return py::cast(PyCF(coef));
