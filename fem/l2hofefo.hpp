@@ -273,13 +273,13 @@ namespace ngfem
           */
           int ii = 0;
           Iterate<ORDER+1>
-            ([&] (auto ix)
+            ([mass, &ii] (auto ix)
              {
                Iterate<ORDER+1-ix.value>
-                 ([&] (auto iy)
+                 ([mass, ix, &ii] (auto iy)
                   {
                     Iterate<ORDER+1-ix.value-iy.value>
-                      ([&] (auto iz)
+                      ([mass, ix, iy, &ii] (auto iz)
                        {
                          mass(ii) = 1.0 / ((2 * ix + 1) * (2 * ix + 2 * iy + 2) * (2 * ix + 2 * iy + 2 * iz + 3));
                          ii++;
