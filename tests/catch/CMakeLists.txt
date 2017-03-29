@@ -1,0 +1,34 @@
+
+if(ENABLE_UNIT_TESTS)
+if(WIN32)
+remove_definitions(-DNGS_EXPORTS)
+endif(WIN32)
+add_custom_target(unit_tests)
+
+# Build catch_main test object
+include_directories(${CATCH_INCLUDE_DIR})
+add_library(catch_main STATIC main.cpp)
+add_dependencies(unit_tests catch_main)
+
+# todo:
+# add_dependencies(unit_tests external_project_catch)
+
+# ensure the test targets are built before testing
+add_test(NAME unit_tests_built COMMAND ${CMAKE_COMMAND} --build . --target unit_tests --config ${CMAKE_BUILD_TYPE} WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../.. )
+
+macro(add_unit_test name sources)
+  add_executable(test_${name} ${sources} )
+  if (WIN32)
+    target_link_libraries(test_${name} ngsolve catch_main)
+  else(WIN32)
+    target_link_libraries(test_${name} ngfem ngstd ngcomp catch_main)
+  endif(WIN32)
+
+  add_dependencies(unit_tests test_${name})
+  add_test(NAME unit_${name} COMMAND test_${name})
+  set_tests_properties(unit_${name} PROPERTIES DEPENDS unit_tests_built)
+endmacro()
+
+add_unit_test(finiteelement finiteelement.cpp)
+add_unit_test(coefficientfunction coefficientfunction.cpp)
+endif(ENABLE_UNIT_TESTS)
