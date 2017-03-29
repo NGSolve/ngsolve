@@ -104,6 +104,11 @@ if(USE_NATIVE_ARCH)
 endif(USE_NATIVE_ARCH)
 
 #######################################################################
+if(ENABLE_UNIT_TESTS)
+  include(${CMAKE_CURRENT_LIST_DIR}/cmake/external_projects/catch.cmake)
+endif(ENABLE_UNIT_TESTS)
+
+#######################################################################
 # append install paths of software in non-standard paths (e.g. openmpi, metis, intel mkl, ...)
 # cmake -DUSE_MPI=ON -DCMAKE_PREFIX_PATH="/opt/openmpi165;/opt/metis51" ../
 set(ADDITIONAL_PATHS "" CACHE PATH "List of paths to additional libraries in non-standard locations, separated by ';'")

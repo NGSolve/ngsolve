@@ -9,6 +9,7 @@ add_custom_target(unit_tests)
 include_directories(${CATCH_INCLUDE_DIR})
 add_library(catch_main STATIC main.cpp)
 add_dependencies(unit_tests catch_main)
+add_dependencies(catch_main project_catch)
 
 # todo:
 # add_dependencies(unit_tests external_project_catch)
