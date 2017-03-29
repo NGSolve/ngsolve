@@ -4329,10 +4329,11 @@ public:
 
 // ////////////////////////// Coordinate CF ////////////////////////
 
-  class CoordCoefficientFunction : public T_CoefficientFunction<CoordCoefficientFunction>
+  class CoordCoefficientFunction
+    : public T_CoefficientFunction<CoordCoefficientFunction, CoefficientFunctionNoDerivative>
   {
     int dir;
-    typedef T_CoefficientFunction<CoordCoefficientFunction> BASE;
+    typedef T_CoefficientFunction<CoordCoefficientFunction, CoefficientFunctionNoDerivative> BASE;
   public:
     CoordCoefficientFunction (int adir) : BASE(1, false), dir(adir) { ; }
     using BASE::Evaluate;

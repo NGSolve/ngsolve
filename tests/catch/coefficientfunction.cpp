@@ -3,15 +3,18 @@
 #include <fem.hpp>
 
 using namespace ngfem;
-
+  
 #define TEST_OPERATOR_COEFFICIENTFUNCTION(CF)   \
+  {                                             \
+    /* auto c_cf_t = Compile(CF, true);  */     \
   SECTION(#CF)                                  \
   {                                             \
-    TestCoefficientFunction(CF);                \
+  TestCoefficientFunction(CF/*,c_cf_t*/);       \
+  }                                             \
   }
 
-
-void TestCoefficientFunction(shared_ptr<CoefficientFunction> cf)
+void TestCoefficientFunction(shared_ptr<CoefficientFunction> cf
+                             /* , shared_ptr<CoefficientFunction> c_cf_t */)
 {
   LocalHeap lh(100000, "lh");
   IntegrationRule ir(ET_TET, 3);
@@ -142,11 +145,14 @@ void TestCoefficientFunction(shared_ptr<CoefficientFunction> cf)
         {
           SECTION("SIMD")
             {
-              simd_vals = 0;
-              simd_derivs = 0;
-              cf->EvaluateDeriv(simd_mir, simd_vals, simd_derivs);
-              CHECK(L2Norm(vals-Trans(simd_vals)) < 1e-12);
-              CHECK(L2Norm(derivs-Trans(simd_derivs)) < 1e-12);
+              SECTION("no-compile SIMD")
+                {
+                  simd_vals = 0;
+                  simd_derivs = 0;
+                  cf->EvaluateDeriv(simd_mir, simd_vals, simd_derivs);
+                  CHECK(L2Norm(vals-Trans(simd_vals)) < 1e-12);
+                  CHECK(L2Norm(derivs-Trans(simd_derivs)) < 1e-12);
+                }
               SECTION("Compile SIMD")
                 {
                   simd_vals = 0;
@@ -181,18 +187,34 @@ TEST_CASE ("CoefficientFunctions","[fem][coefficient]")
   SECTION("ConstantCoefficientFunction")
     {
       shared_ptr<CoefficientFunction> cf = make_shared<ConstantCoefficientFunction>(1);
-      TestCoefficientFunction(cf);
+      TestCoefficientFunction(cf /* , Compile(cf,true) */);
     }
 
   auto a = make_shared<ConstantCoefficientFunction> (1);
   auto b = make_shared<ConstantCoefficientFunction> (2);
+  auto x = MakeCoordinateCoefficientFunction(0);
   auto y = MakeCoordinateCoefficientFunction(1);
-  
-  TEST_OPERATOR_COEFFICIENTFUNCTION(a+b+y);
+  auto z = MakeCoordinateCoefficientFunction(2);
+
+  TEST_OPERATOR_COEFFICIENTFUNCTION(a*x+y/(b+z));
 
   auto diffop = make_shared<T_DifferentialOperator<DiffOpId<3>>>();
   auto u = make_shared<ProxyFunction>(false, false, diffop, nullptr, nullptr, nullptr, nullptr, nullptr);
 
   TEST_OPERATOR_COEFFICIENTFUNCTION(3*u*u);
   TEST_OPERATOR_COEFFICIENTFUNCTION(MakeVectorialCoefficientFunction({u,u*u}));
+
+  auto xyz = MakeVectorialCoefficientFunction({x,u,z});
+  auto mat = MakeVectorialCoefficientFunction({a,b,x,y,z,b,u,a,b});
+  mat->SetDimensions (Array<int>({3,3}));
+  
+  TEST_OPERATOR_COEFFICIENTFUNCTION(xyz);
+  // TEST_OPERATOR_COEFFICIENTFUNCTION(NormCF(xyz));
+  TEST_OPERATOR_COEFFICIENTFUNCTION(InnerProduct(xyz,xyz));
+  TEST_OPERATOR_COEFFICIENTFUNCTION(MakeComponentCoefficientFunction(xyz, 1));
+  TEST_OPERATOR_COEFFICIENTFUNCTION(TransposeCF(mat));
+  TEST_OPERATOR_COEFFICIENTFUNCTION(mat*xyz);
+
+  auto longvec = MakeVectorialCoefficientFunction({x,y,z,x,y,z,z,x,y,x,x,x});
+  // TEST_OPERATOR_COEFFICIENTFUNCTION(InnerProduct(longvec, longvec));  
 }
