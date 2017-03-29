@@ -75,6 +75,7 @@ namespace ngfem
 #endif
 
   public:
+    using ET_trait<ET>::ElementType;
     // int loclam[2] = { 0, 1 };
     
     INLINE L2HighOrderFE () { ; }
