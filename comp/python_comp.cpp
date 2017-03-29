@@ -14,6 +14,7 @@ typedef PyWrapper<GF> PyGF;
 typedef PyWrapper<FESpace> PyFES;
 typedef PyWrapper<BaseVector> PyBaseVector;
 typedef PyWrapper<BaseMatrix> PyBaseMatrix;
+typedef PyWrapper<PDE> PyPDE;
 
 // template <typename T>
 // struct PythonTupleFromFlatArray {
@@ -58,29 +59,25 @@ public:
 
 class PyNumProc : public NumProc
 {
-
 public:
-  PyNumProc (shared_ptr<PDE> pde, const Flags & flags) : NumProc (pde, flags) { ; }
-  shared_ptr<PDE> GetPDE() const { return shared_ptr<PDE> (pde); }
-  // virtual void Do (LocalHeap & lh) { cout << "should not be called" << endl; }
+  using NumProc::NumProc;
+  virtual void Do (LocalHeap &lh) override
+  {
+      auto pylh = py::cast(lh, py::return_value_policy::reference);
+      try{
+          PYBIND11_OVERLOAD_PURE(
+                                 void,       /* Return type */
+                                 PyNumProc,  /* Parent class */
+                                 Do,         /* Name of function */
+                                 pylh
+          );
+      }
+      catch (py::error_already_set const &e) {
+          cerr << e.what() << endl;
+          PyErr_Print();
+      }
+  }
 };
-
-// class NumProcWrap : public PyNumProc, public py::wrapper<PyNumProc> {
-// public:
-//   NumProcWrap (shared_ptr<PDE> pde, const Flags & flags) : PyNumProc(pde, flags) { ; }
-//   virtual void Do(LocalHeap & lh)  {
-//     // cout << "numproc wrap - do" << endl;
-//     AcquireGIL gil_lock;
-//     try
-//       {
-//         this->get_override("Do")(boost::ref(lh));
-//       }
-//     catch (py::error_already_set const &) {
-//       cout << "caught a python error:" << endl;
-//       PyErr_Print();
-//     }
-//   }
-// };
 
 typedef PyWrapperDerived<ProxyFunction, CoefficientFunction> PyProxyFunction;
 
@@ -614,7 +611,7 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
       py::keep_alive<0,1>()
     );
 
-  py::class_<FESpace::ElementRange,shared_ptr<FESpace::ElementRange>, IntRange> (m, "FESpaceElementRange")
+  py::class_<FESpace::ElementRange, IntRange> (m, "FESpaceElementRange")
     .def("__iter__", [] (FESpace::ElementRange &er)
       { return py::make_iterator(er.begin(), er.end()); },
       py::keep_alive<0,1>()
@@ -1599,7 +1596,8 @@ flags : dict
     .def("Elements", 
          [](PyFES & self, VorB vb, int heapsize) 
          {
-           return make_shared<FESpace::ElementRange> (self->Elements(vb, heapsize));
+           // return make_shared<FESpace::ElementRange> (self->Elements(vb, heapsize));
+           return FESpace::ElementRange(self->Elements(vb, heapsize));
          },
          py::arg("VOL_or_BND")=VOL,py::arg("heapsize")=10000)
 
@@ -1709,6 +1707,9 @@ flags : dict
               {
                 global_heapsize = heapsize;
                 glh = LocalHeap(heapsize, "python-comp lh", true);
+                bool first_time = true;
+                if (first_time)
+                  { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }
               }
             self->SolveM(*rho.Get(), *vec, glh);
           },
@@ -1937,6 +1938,9 @@ used_idnrs : list of int = None
               {
                 global_heapsize = heapsize;
                 glh = LocalHeap(heapsize, "python-comp lh", true);
+                bool first_time = true;
+                if (first_time)
+                  { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }
               }
             // LocalHeap lh(heapsize, "GridFunction::Set-lh", true);
             if (reg)
@@ -2007,7 +2011,7 @@ used_idnrs : list of int = None
             if (self->GetFESpace()->GetAdditionalEvaluators().Used(name))
               {
                 auto diffop = self->GetFESpace()->GetAdditionalEvaluators()[name];
-                cout << "diffop is " << typeid(*diffop).name() << endl;
+                // cout << "diffop is " << typeid(*diffop).name() << endl;
                 auto coef = make_shared<GridFunctionCoefficientFunction> (self.Get(), diffop);
                 coef->SetDimension(diffop->Dim());
                 return py::cast(PyCF(coef));
@@ -2259,6 +2263,9 @@ flags : dict
                                          {
                                            global_heapsize = heapsize;
                                            glh = LocalHeap(heapsize, "python-comp lh", true);
+                                           bool first_time = true;
+                                           if (first_time)
+                                             { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }                                           
                                          }
                                        self->ReAssemble(glh,reallocate);
                                      }),
@@ -2317,6 +2324,9 @@ flags : dict
               {
                 global_heapsize = heapsize;
                 glh = LocalHeap(heapsize, "python-comp lh", true);
+                bool first_time = true;
+                if (first_time)
+                  { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }                
               }
 	    self->ApplyMatrix (*x, *y, glh);
 	  }),
@@ -2344,6 +2354,10 @@ heapsize : int
               {
                 global_heapsize = heapsize;
                 glh = LocalHeap(heapsize, "python-comp lh", true);
+                bool first_time = true;
+                if (first_time)
+                  { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }
+                
               }
 	    self->ComputeInternal (*u, *f, glh );
 	  }),
@@ -2356,6 +2370,9 @@ heapsize : int
               {
                 global_heapsize = heapsize;
                 glh = LocalHeap(heapsize, "python-comp lh", true);
+                bool first_time = true;
+                if (first_time)
+                  { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }
               }
 	    self->AssembleLinearization (*ulin, glh);
 	  }),
@@ -2456,6 +2473,9 @@ flags : dict
               {
                 global_heapsize = heapsize;
                 glh = LocalHeap(heapsize, "python-comp lh", true);
+                bool first_time = true;
+                if (first_time)
+                  { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }                
               }
             self->Assemble(glh);
           }),
@@ -2524,15 +2544,18 @@ flags : dict
          py::arg("heapsize")=1000000)
     ;
 
-//   // die geht
-//   py::class_<NumProcWrap,shared_ptr<NumProcWrap>, NumProc>("PyNumProc", py::init<shared_ptr<PDE>, const Flags&>())
-//     .def("Do", py::pure_virtual(&PyNumProc::Do)) 
-//     .def_property_readonly("pde", &PyNumProc::GetPDE)
-//     ;
-//   
-//   py::implicitly_convertible 
-//     <shared_ptr<NumProcWrap>, shared_ptr<NumProc> >(); 
-// 
+  py::class_<PyNumProc, NumProc, shared_ptr<PyNumProc>> (m, "PyNumProc")
+    .def("__init__",
+         [](NumProc *instance, PyPDE pde, Flags & flags)
+                           {
+                             new (instance) PyNumProc(pde.Get(), flags);
+                           })
+    .def_property_readonly("pde", [](NumProc &self) { return PyPDE(self.GetPDE()); })
+    .def("Do", FunctionPointer([](NumProc & self, LocalHeap & lh)
+                               {
+                                 self.Do(lh);
+                               }))
+    ;
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
@@ -2546,7 +2569,6 @@ flags : dict
   PyExportSymbolTable<double> (m);
   PyExportSymbolTable<shared_ptr<double>> (m);
 
-  typedef PyWrapper<PDE> PyPDE;
   py::class_<PyPDE> (m, "PDE")
 
     // .def(py::init<const string&>())
@@ -2755,7 +2777,7 @@ flags : dict
   
   m.def("Integrate", 
           [](PyCF cf,
-                             shared_ptr<MeshAccess> ma, 
+             shared_ptr<MeshAccess> ma, 
 	     VorB vb, int order, py::object definedon,
 	     bool region_wise, bool element_wise, int heapsize)
                           {
@@ -2765,6 +2787,9 @@ flags : dict
 			      {
 				global_heapsize = heapsize;
 				glh = LocalHeap(heapsize, "python-comp lh", true);
+                                bool first_time = true;
+                                if (first_time)
+                                  { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }                                                
 			      }
                            py::extract<Region> defon_region(definedon);
                            if (defon_region.check())
@@ -2938,7 +2963,7 @@ flags : dict
 
   m.def("SymbolicLFI",
           [](PyCF cf, VorB vb, bool element_boundary,
-              bool skeleton, py::object definedon) 
+              bool skeleton, py::object definedon, py::object definedonelem) 
            {
              py::extract<Region> defon_region(definedon);
              if (defon_region.check())
@@ -2952,7 +2977,6 @@ flags : dict
              
              if (py::extract<py::list> (definedon).check())
                {
-                 cout << "warning: SymbolicLFI definedon changed to 1-based" << endl;
                  Array<int> defon = makeCArray<int> (definedon);
                  for (int & d : defon) d--;
                  lfi -> SetDefinedOn (defon); 
@@ -2963,19 +2987,23 @@ flags : dict
              if (defon_region.check())
                lfi->SetDefinedOn(defon_region().Mask());
 
+             if (! py::extract<DummyArgument> (definedonelem).check())
+               lfi -> SetDefinedOnElements (py::extract<PyWrapper<shared_ptr<BitArray>>>(definedonelem)()); 
+             
              return PyWrapper<LinearFormIntegrator>(lfi);
            },
            py::arg("form"),
            py::arg("VOL_or_BND")=VOL,
            py::arg("element_boundary")=false,
            py::arg("skeleton")=false,           
-           py::arg("definedon")=DummyArgument()
+           py::arg("definedon")=DummyArgument(),
+           py::arg("definedonelements")=DummyArgument()
           );
 
   m.def("SymbolicBFI",
           [](PyCF cf, VorB vb, bool element_boundary,
              bool skeleton, py::object definedon,
-             IntegrationRule ir)
+             IntegrationRule ir, py::object definedonelem)
            {
              py::extract<Region> defon_region(definedon);
              if (defon_region.check())
@@ -3000,7 +3028,6 @@ flags : dict
              
              if (py::extract<py::list> (definedon).check())
                {
-                 cout << "warning: SymbolicBFI definedon changed to 1-based" << endl;
                  Array<int> defon = makeCArray<int> (definedon);
                  for (int & d : defon) d--;
                  bfi -> SetDefinedOn (defon); 
@@ -3016,14 +3043,17 @@ flags : dict
                  dynamic_pointer_cast<SymbolicBilinearFormIntegrator> (bfi)
                    ->SetIntegrationRule(ir);
                }
-             
+
+             if (! py::extract<DummyArgument> (definedonelem).check())
+               bfi -> SetDefinedOnElements (py::extract<PyWrapper<shared_ptr<BitArray>>>(definedonelem)()); 
              return PyWrapper<BilinearFormIntegrator>(bfi);
            },
         py::arg("form"), py::arg("VOL_or_BND")=VOL,
         py::arg("element_boundary")=false,
         py::arg("skeleton")=false,
         py::arg("definedon")=DummyArgument(),
-        py::arg("intrule")=IntegrationRule()
+        py::arg("intrule")=IntegrationRule(),
+        py::arg("definedonelements")=DummyArgument()
         );
           
   m.def("SymbolicTPBFI",
@@ -3069,7 +3099,7 @@ flags : dict
           );
           
   m.def("SymbolicEnergy",
-          [](PyCF cf, VorB vb, py::object definedon) -> PyWrapper<BilinearFormIntegrator>
+          [](PyCF cf, VorB vb, py::object definedon, py::object definedonelem) -> PyWrapper<BilinearFormIntegrator>
            {
              py::extract<Region> defon_region(definedon);
              if (defon_region.check())
@@ -3105,9 +3135,12 @@ flags : dict
                  cout << "allbool = " << all_booleans << endl;
                }
              */
+             if (! py::extract<DummyArgument> (definedonelem).check())
+               bfi -> SetDefinedOnElements (py::extract<PyWrapper<shared_ptr<BitArray>>>(definedonelem)()); 
              return PyWrapper<BilinearFormIntegrator>(bfi);
            },
-           py::arg("coefficient"), py::arg("VOL_or_BND")=VOL, py::arg("definedon")=DummyArgument()
+           py::arg("coefficient"), py::arg("VOL_or_BND")=VOL, py::arg("definedon")=DummyArgument(),
+           py::arg("definedonelements")=DummyArgument()
           );
 
 
