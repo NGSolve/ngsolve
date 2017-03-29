@@ -106,4 +106,5 @@ endif(BUILD_TYPE_UPPER STREQUAL "DEBUG")
 endif(NETGEN_USE_PYTHON OR NOT WIN32)
 
 add_subdirectory(pytest)
+add_subdirectory(catch)
 add_subdirectory(timings)
