@@ -1,3 +1,4 @@
+include (ExternalProject)
 find_program(GIT_EXECUTABLE git)
 ExternalProject_Add(
     project_catch
@@ -14,4 +15,3 @@ ExternalProject_Add(
 # Expose required variable (CATCH_INCLUDE_DIR) to parent scope
 ExternalProject_Get_Property(project_catch source_dir)
 set(CATCH_INCLUDE_DIR ${source_dir}/single_include CACHE INTERNAL "Path to include folder for Catch")
-set_vars (NGSOLVE_CMAKE_ARGS CATCH_INCLUDE_DIR)

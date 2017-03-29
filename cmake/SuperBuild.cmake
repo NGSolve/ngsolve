@@ -194,11 +194,6 @@ if(USE_MUMPS AND NOT MUMPS_DIR)
 endif(USE_MUMPS AND NOT MUMPS_DIR)
 
 #######################################################################
-if(ENABLE_UNIT_TESTS)
-  include(${CMAKE_CURRENT_LIST_DIR}/external_projects/catch.cmake)
-endif(ENABLE_UNIT_TESTS)
-
-#######################################################################
 # propagate cmake variables to NGSolve subproject
 set_vars( NGSOLVE_CMAKE_ARGS
   CMAKE_CXX_COMPILER
