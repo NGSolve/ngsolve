@@ -295,7 +295,7 @@ namespace ngfem
         shape[ii++] = Sigma_Duv_minus_uDv_w (phie1, phie0, v[i]);
       
       // element bubbles for Sigma+ space
-      if (plus)
+      if (this->plus)
         for (int i = 0; i <= oi-1; i++)
           {
             AutoDiffDiff<2> bubble = u[i]*v[oi-1-i];
