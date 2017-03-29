@@ -293,11 +293,63 @@ namespace ngfem
   }
 
 
-  template <typename TCF>
-  class T_CoefficientFunction : public CoefficientFunction
+  class NGS_DLL_HEADER CoefficientFunctionNoDerivative : public CoefficientFunction
   {
   public:
     using CoefficientFunction::CoefficientFunction;
+    
+    virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir, 
+                                AFlatMatrix<double> values, AFlatMatrix<double> deriv) const
+    {
+      Evaluate(ir, values);
+      deriv = 0.0;
+    }
+
+    virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & ir, 
+                                 AFlatMatrix<double> values, AFlatMatrix<double> deriv,
+                                 AFlatMatrix<double> dderiv) const
+    {
+      Evaluate (ir, values);
+      deriv = 0.0;
+      dderiv = 0.0;
+    }
+
+    virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
+                                FlatArray<AFlatMatrix<>*> input,
+                                FlatArray<AFlatMatrix<>*> dinput,
+                                AFlatMatrix<> result,
+                                AFlatMatrix<> deriv) const
+    {
+      Evaluate (ir, input, result);
+      deriv = 0.0;
+    }
+
+    virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & ir,
+                                 FlatArray<AFlatMatrix<>*> input,
+                                 FlatArray<AFlatMatrix<>*> dinput,
+                                 FlatArray<AFlatMatrix<>*> ddinput,
+                                 AFlatMatrix<> result,
+                                 AFlatMatrix<> deriv,
+                                 AFlatMatrix<> dderiv) const
+    {
+      Evaluate (ir, input, result);
+      deriv = 0.0;
+      dderiv = 0.0;
+    }
+  };
+
+
+  
+
+  template <typename TCF, typename BASE = CoefficientFunction>
+  class T_CoefficientFunction : public BASE
+  {
+  protected:
+    using BASE::IsComplex;
+    using BASE::Dimension;
+  public:
+    using BASE::BASE;
+      
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const
     { static_cast<const TCF*>(this) -> template T_Evaluate<double> (ir, values); }
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values) const
@@ -318,11 +370,12 @@ namespace ngfem
 
 
   /// The coefficient is constant everywhere
-  class NGS_DLL_HEADER ConstantCoefficientFunction : public T_CoefficientFunction<ConstantCoefficientFunction>
+  class NGS_DLL_HEADER ConstantCoefficientFunction
+    : public T_CoefficientFunction<ConstantCoefficientFunction, CoefficientFunctionNoDerivative>
   {
     ///
     double val;
-    typedef T_CoefficientFunction<ConstantCoefficientFunction> BASE;
+    typedef T_CoefficientFunction<ConstantCoefficientFunction, CoefficientFunctionNoDerivative> BASE;
   public:
     ///
     ConstantCoefficientFunction (double aval);
@@ -450,51 +503,6 @@ namespace ngfem
     virtual double GetValue () { return val; }
     virtual void PrintReport (ostream & ost) const;
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
-  };
-
-  class NGS_DLL_HEADER CoefficientFunctionNoDerivative : public CoefficientFunction
-  {
-  public:
-    using CoefficientFunction::CoefficientFunction;
-    
-    virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir, 
-                                AFlatMatrix<double> values, AFlatMatrix<double> deriv) const
-    {
-      Evaluate(ir, values);
-      deriv = 0.0;
-    }
-
-    virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & ir, 
-                                 AFlatMatrix<double> values, AFlatMatrix<double> deriv,
-                                 AFlatMatrix<double> dderiv) const
-    {
-      Evaluate (ir, values);
-      deriv = 0.0;
-      dderiv = 0.0;
-    }
-
-    virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
-                                FlatArray<AFlatMatrix<>*> input,
-                                FlatArray<AFlatMatrix<>*> dinput,
-                                AFlatMatrix<> result,
-                                AFlatMatrix<> deriv) const
-    {
-      Evaluate (ir, input, result);
-      deriv = 0.0;
-    }
-
-    virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & ir,
-                                 FlatArray<AFlatMatrix<>*> input,
-                                 FlatArray<AFlatMatrix<>*> dinput,
-                                 FlatArray<AFlatMatrix<>*> ddinput,
-                                 AFlatMatrix<> result,
-                                 AFlatMatrix<> deriv,
-                                 AFlatMatrix<> dderiv) const
-    {
-      Evaluate (ir, input, result);
-      deriv = 0.0;
-      dderiv = 0.0;
-    }
   };
 
   
