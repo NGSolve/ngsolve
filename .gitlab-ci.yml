@@ -37,6 +37,7 @@ stages:
     - set NETGEN_BUILD_DIR=%CI_DIR%\build
     - set INSTALL_DIR=%CI_DIR%\install
     - set NETGENDIR=%INSTALL_DIR%\bin
+    - set PATH=%NETGENDIR%;%PATH%
     - set PYTHONPATH=%INSTALL_DIR%\lib\site-packages
     - set UPLOAD_DIR=/home/tester/deploy/win64/%CI_BUILD_TAG%%CI_BUILD_REF%/
     - set CLCACHE_BASEDIR=%CI_DIR%
@@ -102,6 +103,7 @@ stages:
         -DINSTALL_DIR=%INSTALL_DIR%
         %CMAKE_CONFIG%
         -DUSE_UMFPACK=ON
+        -DENABLE_UNIT_TESTS=ON
         -DCPACK_PACKAGE_NAME=NGSolve${PACKAGE_NAME_SUFFIX}
         -DCMAKE_BUILD_TYPE=Release
     - cmake --build . --target install --config Release
@@ -168,6 +170,7 @@ mac_build:
       -DINSTALL_DIR=$INSTALL_DIR
       -DCMAKE_BUILD_TYPE=Release
       -DUSE_UMFPACK=ON
+      -DENABLE_UNIT_TESTS=ON
       -DCPACK_PACKAGE_NAME=NGSolve${PACKAGE_NAME_SUFFIX}
     - make -j10 install
     - osascript -e 'tell application "Finder" to eject (every disk whose ejectable is true)'
@@ -187,7 +190,7 @@ mac_build:
   stage: test
   script:
     - cd %NETGEN_BUILD_DIR%/ngsolve
-    - ctest -C Release -V
+    - ctest -C Release --output-on-failure
     - cd ..
 
 # skip since we have no machine with 32 bits
@@ -211,7 +214,7 @@ win64_test:
       -e LD_LIBRARY_PATH=/opt/intel/mkl/lib/intel64
       -v /opt/intel:/opt/intel
       ngsolve_${CI_PIPELINE_ID}_installed:$UBUNTU_VERSION
-      bash -c 'cd /root/build/ngsolve && make test_ngsolve ARGS="-V"'
+      bash -c 'cd /root/build/ngsolve && make test_ngsolve ARGS="--output-on-failure"'
 
 ubuntu_1510_test:
   <<: *ubuntu_1510
@@ -230,7 +233,7 @@ mac_test:
   stage: test
   script:
     - cd $BUILD_DIR/ngsolve
-    - ctest . -V
+    - ctest . --output-on-failure
 
 ############################################
 # Timings stage
