@@ -304,7 +304,7 @@ namespace ngcomp
           vb(avb), mylh(), lh(lh2)
       { ; }
 
-      INLINE ElementRange (const ElementRange & r2) = delete;
+      ElementRange (const ElementRange & r2) = delete;
 
       INLINE ElementRange (ElementRange && r2) 
         : IntRange(r2), fes(r2.fes), definedon(move(r2.definedon)), vb(r2.vb), 
@@ -314,6 +314,8 @@ namespace ngcomp
 
       INLINE ~ElementRange () { ; }
 
+      ElementRange & operator= (const ElementRange & r2) = delete;
+      
       INLINE ElementIterator begin () const 
       {
         ElementId ei = ElementId(vb,First());
