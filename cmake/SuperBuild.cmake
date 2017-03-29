@@ -194,6 +194,11 @@ if(USE_MUMPS AND NOT MUMPS_DIR)
 endif(USE_MUMPS AND NOT MUMPS_DIR)
 
 #######################################################################
+if(ENABLE_UNIT_TESTS)
+  include(${CMAKE_CURRENT_LIST_DIR}/external_projects/catch.cmake)
+endif(ENABLE_UNIT_TESTS)
+
+#######################################################################
 # propagate cmake variables to NGSolve subproject
 set_vars( NGSOLVE_CMAKE_ARGS
   CMAKE_CXX_COMPILER
@@ -216,7 +221,8 @@ set_vars( NGSOLVE_CMAKE_ARGS
   INSTALL_DIR
   NETGEN_SOURCE_DIR
   INSTALL_DEPENDENCIES 
-  INTEL_MIC 
+  INTEL_MIC
+  ENABLE_UNIT_TESTS
   )
 
 set_flags_vars(NGSOLVE_CMAKE_ARGS CMAKE_CXX_FLAGS CMAKE_SHARED_LINKER_FLAGS CMAKE_LINKER_FLAGS)
