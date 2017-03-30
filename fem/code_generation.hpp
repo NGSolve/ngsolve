@@ -24,6 +24,11 @@ namespace ngfem
     bool is_simd;
     int deriv;
 
+    string pointer;
+
+    string AddPointer(const void *p );
+
+    static unsigned id_counter;
     static string Map( string code, std::map<string,string> variables ) {
       for ( auto mapping : variables ) {
         string oldStr = '{'+mapping.first+'}';
@@ -155,93 +160,27 @@ namespace ngfem
 
 #ifdef WIN32
     HINSTANCE lib;
-    void Load( string alib_name )
-    {
-      lib_name = alib_name;
-      lib = LoadLibrary(lib_name.c_str());
-      if (!lib) throw std::runtime_error(string("Could not load library ") + lib_name);
-    }
 #else // WIN32
     void *lib;
-    void Load( string alib_name )
-    {
-      lib_name = alib_name;
-      lib = dlopen(lib_name.c_str(), RTLD_NOW);
-      if(lib == nullptr) throw std::runtime_error(dlerror());
-    }
 #endif // WIN32
 
+    void *GetRawFunction( string func_name );
 
   public:
     Library() : lib(nullptr) {}
     // Compile a given string and load the library
-    void Compile( string code )
-    {
-      static ngstd::Timer tcompile("CompiledCF::Compile");
-      static ngstd::Timer tlink("CompiledCF::Link");
-      string file_prefix = "code" + ToString(counter++);
-      ofstream codefile(file_prefix+".cpp");
-      codefile << code;
-      codefile.close();
-      cout << IM(3) << "compiling..." << endl;
-      tcompile.Start();
-#ifdef WIN32
-      string scompile = "cmd /C \"ngscxx.bat " + file_prefix + ".cpp\"";
-      string slink = "cmd /C \"ngsld.bat " + file_prefix + ".obj\"";
-#else
-      string scompile = "ngscxx -c " + file_prefix + ".cpp -o " + file_prefix + ".o";
-      string slink = "ngsld -shared " + file_prefix + ".o -o " + file_prefix + ".so -lngstd -lngfem";
-#endif
-      int err = system(scompile.c_str());
-      if (err) throw Exception ("problem calling compiler");
-      tcompile.Stop();
-      cout << IM(3) << "linking..." << endl;
-      tlink.Start();
-      err = system(slink.c_str());
-      if (err) throw Exception ("problem calling linker");      
-      tlink.Stop();
-      cout << IM(3) << "done" << endl;
-#ifdef WIN32
-      Load(file_prefix+".dll");
-#else
-      Load(file_prefix+".so");
-#endif
-    }
+    void Compile( std::vector<string> &codes );
 
-#ifdef WIN32
+    void Load( string alib_name );
+
     template <typename TFunc>
     TFunc GetFunction( string func_name )
     {
-      TFunc func = reinterpret_cast<TFunc>(GetProcAddress(lib, func_name.c_str()));
-      if(func == nullptr)
-        throw std::runtime_error(string("Could not find function ") + func_name + " in library " + lib_name);
-      return func;
+      return reinterpret_cast<TFunc>(GetRawFunction(func_name));
     }
 
-    ~Library()
-    {
-      if(lib)
-        FreeLibrary(lib);
-    }
-#else // WIN32
-    template <typename TFunc>
-    TFunc GetFunction( string func_name )
-    {
+    ~Library();
 
-      TFunc func = reinterpret_cast<TFunc>(dlsym(lib, func_name.c_str()));
-      if(func == nullptr) throw std::runtime_error(dlerror());
-      return func;
-    }
-
-    ~Library()
-    {
-      if(lib)
-      {
-        int rc = dlclose(lib);
-        if(rc != 0) cerr << "Failed to close library " << lib_name << endl;
-      }
-    }
-#endif // WIN32
   };
 }
 #endif // FILE_NGS_CODE_GENERATION___
