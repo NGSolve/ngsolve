@@ -189,7 +189,9 @@ auto b = make_shared<ConstantCoefficientFunction> (2);
 auto x = MakeCoordinateCoefficientFunction(0);
 auto y = MakeCoordinateCoefficientFunction(1);
 auto z = MakeCoordinateCoefficientFunction(2);
+auto p = make_shared<ParameterCoefficientFunction>(42.39);
 
+TEST_OPERATOR_COEFFICIENTFUNCTION(p);
 TEST_OPERATOR_COEFFICIENTFUNCTION(a*x+y/(b+z));
 
 auto diffop = make_shared<T_DifferentialOperator<DiffOpId<3>>>();
