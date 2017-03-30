@@ -9,8 +9,11 @@ namespace ngfem
         string name = "compiled_code_pointer" + ToString(id_counter++); 
         top += "extern \"C\" void* " + name + ";\n";
         stringstream s_ptr;
+#ifdef WIN32
+        s_ptr << "0x";
+#endif
         s_ptr << std::hex << p;
-        pointer += "void *" + name + " = reinterpret_cast<void*>(0x" + s_ptr.str() + ");\n";
+        pointer += "void *" + name + " = reinterpret_cast<void*>(" + s_ptr.str() + ");\n";
         return name;
     }
 
