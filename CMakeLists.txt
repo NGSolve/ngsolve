@@ -349,7 +349,11 @@ foreach( d ${ngscxx_defines} )
     endif()
 endforeach()
 
-set(ngscxx_flags "${${name}} ${CMAKE_CXX_FLAGS} -fPIC ${ngscxx_define_flags}")
+set(ngscxx_flags "${${name}} ${CMAKE_CXX_FLAGS} ${ngscxx_define_flags}")
+
+if(NOT WIN32)
+  set(ngscxx_flags "${ngscxx_flags} -fPIC")
+endif()
 
 # include directories
 set(ngscxx_include_dirs ${NETGEN_INCLUDE_DIRS} ${CMAKE_INSTALL_PREFIX}/include ${NETGEN_TCL_INCLUDE_PATH} ${NETGEN_MPI_CXX_INCLUDE_PATH} ${MKL_INCLUDE_DIRS} ${MUMPS_INCLUDE_DIR} ${NETGEN_PYTHON_INCLUDE_DIRS} ${UMFPACK_INCLUDE_DIR} ${VTUNE_INCLUDE_DIR})
@@ -404,10 +408,16 @@ if(WIN32)
     install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngscxx.bat DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve_devel )
     install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngsld.bat DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve_devel )
 else(WIN32)
-    get_property(MYCRULE GLOBAL PROPERTY RULE_LAUNCH_COMPILE)
-    get_property(MYLRULE GLOBAL PROPERTY RULE_LAUNCH_LINK)
+    set(ngscxx_compile_command "${CMAKE_CXX_COMPILER} ${ngscxx_flags} ${ngscxx_includes} $*")
+    if(CCACHE_FOUND)
+      set(ngscxx_compile_command "
+if [ -f ${CCACHE_FOUND} ]
+  then ${CCACHE_FOUND} ${ngscxx_compile_command}
+  else ${ngscxx_compile_command}
+fi")
+    endif(CCACHE_FOUND)
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngscxx "${ngscxx_header}
-${CMAKE_CXX_COMPILER} ${ngscxx_flags} ${ngscxx_includes} $*\n")
+${ngscxx_compile_command}\n")
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngsld "${ngsld_header}
 ${CMAKE_CXX_COMPILER} ${ngsld_flags} $*\n")
     install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngscxx DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve_devel )

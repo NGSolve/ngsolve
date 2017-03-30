@@ -157,7 +157,7 @@ namespace ngfem
     string comp_string = testfunction ? "test_comp" : "trial_comp";
     std::map<string,string> variables;
     variables["ud"] = "tmp_"+ToString(index)+"_0";
-    variables["this"] = "reinterpret_cast<ProxyFunction*>("+ToString(this)+")";
+    variables["this"] = "reinterpret_cast<ProxyFunction*>("+code.AddPointer(this)+")";
     variables["func_string"] = testfunction ? "testfunction" : "trialfunction";
     variables["comp_string"] = testfunction ? "test_comp" : "trial_comp";
     variables["testfunction"] = ToString(testfunction);

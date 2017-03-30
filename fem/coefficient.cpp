@@ -241,7 +241,7 @@ namespace ngfem
     if(code.deriv==1) type = "AutoDiff<1,"+type+">";
     if(code.deriv==2) type = "AutoDiffDiff<1,"+type+">";
     stringstream s;
-    s << "*reinterpret_cast<double*>(" << &val << ")";
+    s << "*reinterpret_cast<double*>(" << code.AddPointer(&val) << ")";
     code.body += Var(index).Declare(type);
     code.body += Var(index).Assign(s.str(), false);
   }
@@ -4475,6 +4475,7 @@ namespace ngstd {
       if(realcompile)
       {
         stringstream s;
+        string pointer_code;
         s << "#include<comp.hpp>" << endl;
         s << "using namespace ngcomp;" << endl;
         s << "extern \"C\" {" << endl;
@@ -4491,6 +4492,8 @@ namespace ngstd {
               cout << IM(3) << "step " << i << ": " << typeid(*steps[i]).name() << endl;
               steps[i]->GenerateCode(code, inputs[i],i);
             }
+
+            pointer_code += code.pointer;
 
             // set results
             string res_type = "double";
@@ -4541,7 +4544,11 @@ namespace ngstd {
 
         }
         s << "}" << endl;
-        library.Compile( s.str() );
+        std::vector<string> codes;
+        codes.push_back(s.str());
+        if(pointer_code.size())
+          codes.push_back(pointer_code);
+        library.Compile( codes );
         compiled_function_simd = library.GetFunction<lib_function_simd>("CompiledEvaluateSIMD");
         compiled_function = library.GetFunction<lib_function>("CompiledEvaluate");
         compiled_function_simd_deriv = library.GetFunction<lib_function_simd_deriv>("CompiledEvaluateDerivSIMD");
