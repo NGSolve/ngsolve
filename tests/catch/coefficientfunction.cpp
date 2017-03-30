@@ -4,17 +4,24 @@
 
 using namespace ngfem;
   
-#define TEST_OPERATOR_COEFFICIENTFUNCTION(CF)   \
-  {                                             \
-    /* auto c_cf_t = Compile(CF, true);  */     \
-  SECTION(#CF)                                  \
-  {                                             \
-  TestCoefficientFunction(CF/*,c_cf_t*/);       \
-  }                                             \
+#define MERGE_(a,b)  a##b
+#define LABEL_(a) MERGE_(mynamespace, a)
+#define UNIQUE_NAME LABEL_(__COUNTER__)
+
+constexpr double tolerance = 1e-8;
+
+#define TEST_OPERATOR_COEFFICIENTFUNCTION(CF)                 \
+  namespace UNIQUE_NAME {                                          \
+    auto c_cf_f = Compile(CF,false);                               \
+    auto c_cf_t = Compile(CF,true);                                \
+    TEST_CASE(#CF) {                                               \
+      TestCoefficientFunction(CF,c_cf_f,c_cf_t);                   \
+    }                                                              \
   }
 
-void TestCoefficientFunction(shared_ptr<CoefficientFunction> cf
-                             /* , shared_ptr<CoefficientFunction> c_cf_t */)
+void TestCoefficientFunction(shared_ptr<CoefficientFunction> cf,
+                             shared_ptr<CoefficientFunction> c_cf_f,
+                             shared_ptr<CoefficientFunction> c_cf_t)
 {
   LocalHeap lh(100000, "lh");
   IntegrationRule ir(ET_TET, 3);
@@ -23,8 +30,6 @@ void TestCoefficientFunction(shared_ptr<CoefficientFunction> cf
 
   SIMD_IntegrationRule simd_ir(ET_TET, 3);
   SIMD_MappedIntegrationRule<3,3> simd_mir(simd_ir, trafo, lh);
-  shared_ptr<CoefficientFunction> c_cf_f = Compile(cf,false);
-  shared_ptr<CoefficientFunction> c_cf_t = Compile(cf,false);
 
   // we compute directional derivative by the first proxy ...
   Array<ProxyFunction*> proxies;
@@ -62,28 +67,25 @@ void TestCoefficientFunction(shared_ptr<CoefficientFunction> cf
   cf->Evaluate(mir,vals);
   AMatrix<> simd_vals (cf->Dimension(), simd_ir.GetNIP());
   Matrix<> c_vals(ir.Size(), cf->Dimension());
+  Matrix<> derivs(ir.Size(), cf->Dimension());
+  cf->EvaluateDeriv(mir,vals,derivs);
+  AMatrix<> simd_derivs(cf->Dimension(),simd_ir.GetNIP());
+  Matrix<> c_derivs(ir.Size(), cf->Dimension());
 
   SECTION ("Evaluate")
     {
-      SECTION("SIMD")
-        {
-          simd_vals = 0;
-          cf->Evaluate(simd_mir, simd_vals);
-          CHECK(L2Norm(vals-Trans(simd_vals)) < 1e-12);
-        }
-
       SECTION("Compile")
         {
           c_vals = 0;
           c_cf_f->Evaluate(mir,c_vals);
-          CHECK(L2Norm(vals-c_vals) < 1e-12);
+          CHECK(L2Norm(vals-c_vals) < tolerance);
         }
 
       SECTION("TrueCompile")
         {
           c_vals = 0;
           c_cf_t->Evaluate(mir,c_vals);
-          CHECK(L2Norm(vals-c_vals) < 1e-12);
+          CHECK(L2Norm(vals-c_vals) < tolerance);
         }
 
       try
@@ -92,20 +94,20 @@ void TestCoefficientFunction(shared_ptr<CoefficientFunction> cf
             {
               simd_vals = 0;
               cf->Evaluate(simd_mir, simd_vals);
-              CHECK(L2Norm(vals-Trans(simd_vals)) < 1e-12);
+              CHECK(L2Norm(vals-Trans(simd_vals)) < tolerance);
 
               SECTION("Compile")
                 {
                   simd_vals = 0;
                   c_cf_f->Evaluate(simd_mir, simd_vals);
-                  CHECK(L2Norm(vals-Trans(simd_vals)) < 1e-12);
+                  CHECK(L2Norm(vals-Trans(simd_vals)) < tolerance);
                 }
 
               SECTION("TrueCompile")
                 {
                   simd_vals = 0;
                   c_cf_t->Evaluate(simd_mir, simd_vals);
-                  CHECK(L2Norm(vals-Trans(simd_vals)) < 1e-12);
+                  CHECK(L2Norm(vals-Trans(simd_vals)) < tolerance);
                 }
             }
         }
@@ -118,18 +120,14 @@ void TestCoefficientFunction(shared_ptr<CoefficientFunction> cf
 
   SECTION("Derivative")
     {
-      Matrix<> derivs(ir.Size(), cf->Dimension());
-      cf->EvaluateDeriv(mir,vals,derivs);
-      AMatrix<> simd_derivs(cf->Dimension(),simd_ir.GetNIP());
-      Matrix<> c_derivs(ir.Size(), cf->Dimension());
 
       SECTION("Compile")
         {
           c_vals = 0;
           c_derivs = 0;
           c_cf_f->EvaluateDeriv(mir,c_vals, c_derivs);
-          CHECK(L2Norm(vals-c_vals) < 1e-12);
-          CHECK(L2Norm(derivs-c_derivs) < 1e-12);
+          CHECK(L2Norm(vals-c_vals) < tolerance);
+          CHECK(L2Norm(derivs-c_derivs) < tolerance);
         }
 
       SECTION("TrueCompile")
@@ -137,8 +135,8 @@ void TestCoefficientFunction(shared_ptr<CoefficientFunction> cf
           c_vals = 0;
           c_derivs = 0;
           c_cf_t->EvaluateDeriv(mir,c_vals, c_derivs);
-          CHECK(L2Norm(vals-c_vals) < 1e-12);
-          CHECK(L2Norm(derivs-c_derivs) < 1e-12);
+          CHECK(L2Norm(vals-c_vals) < tolerance);
+          CHECK(L2Norm(derivs-c_derivs) < tolerance);
         }
 
       try
@@ -150,16 +148,16 @@ void TestCoefficientFunction(shared_ptr<CoefficientFunction> cf
                   simd_vals = 0;
                   simd_derivs = 0;
                   cf->EvaluateDeriv(simd_mir, simd_vals, simd_derivs);
-                  CHECK(L2Norm(vals-Trans(simd_vals)) < 1e-12);
-                  CHECK(L2Norm(derivs-Trans(simd_derivs)) < 1e-12);
+                  CHECK(L2Norm(vals-Trans(simd_vals)) < tolerance);
+                  CHECK(L2Norm(derivs-Trans(simd_derivs)) < tolerance);
                 }
               SECTION("Compile SIMD")
                 {
                   simd_vals = 0;
                   simd_derivs = 0;
                   c_cf_f->EvaluateDeriv(simd_mir, simd_vals, simd_derivs);
-                  CHECK(L2Norm(vals-Trans(simd_vals)) < 1e-12);
-                  CHECK(L2Norm(derivs-Trans(simd_derivs)) < 1e-12);
+                  CHECK(L2Norm(vals-Trans(simd_vals)) < tolerance);
+                  CHECK(L2Norm(derivs-Trans(simd_derivs)) < tolerance);
                 }
 
               SECTION("TrueCompile SIMD")
@@ -167,8 +165,8 @@ void TestCoefficientFunction(shared_ptr<CoefficientFunction> cf
                   simd_vals = 0;
                   simd_derivs = 0;
                   c_cf_t->EvaluateDeriv(simd_mir, simd_vals, simd_derivs);
-                  CHECK(L2Norm(vals-Trans(simd_vals)) < 1e-12);
-                  CHECK(L2Norm(derivs - Trans(simd_derivs)) < 1e-12);
+                  CHECK(L2Norm(vals-Trans(simd_vals)) < tolerance);
+                  CHECK(L2Norm(derivs - Trans(simd_derivs)) < tolerance);
                 }
             }
         }
@@ -181,40 +179,36 @@ void TestCoefficientFunction(shared_ptr<CoefficientFunction> cf
 }
 
 
-TEST_CASE ("CoefficientFunctions","[fem][coefficient]")
-{
-  printmessage_importance = 1;
-  SECTION("ConstantCoefficientFunction")
-    {
-      shared_ptr<CoefficientFunction> cf = make_shared<ConstantCoefficientFunction>(1);
-      TestCoefficientFunction(cf /* , Compile(cf,true) */);
-    }
+int set_printmessage_level = [](){
+    printmessage_importance = 1;
+    return 0;
+}();
 
-  auto a = make_shared<ConstantCoefficientFunction> (1);
-  auto b = make_shared<ConstantCoefficientFunction> (2);
-  auto x = MakeCoordinateCoefficientFunction(0);
-  auto y = MakeCoordinateCoefficientFunction(1);
-  auto z = MakeCoordinateCoefficientFunction(2);
+auto a = make_shared<ConstantCoefficientFunction> (1);
+auto b = make_shared<ConstantCoefficientFunction> (2);
+auto x = MakeCoordinateCoefficientFunction(0);
+auto y = MakeCoordinateCoefficientFunction(1);
+auto z = MakeCoordinateCoefficientFunction(2);
 
-  TEST_OPERATOR_COEFFICIENTFUNCTION(a*x+y/(b+z));
+TEST_OPERATOR_COEFFICIENTFUNCTION(a*x+y/(b+z));
 
-  auto diffop = make_shared<T_DifferentialOperator<DiffOpId<3>>>();
-  auto u = make_shared<ProxyFunction>(false, false, diffop, nullptr, nullptr, nullptr, nullptr, nullptr);
+auto diffop = make_shared<T_DifferentialOperator<DiffOpId<3>>>();
+auto u = make_shared<ProxyFunction>(false, false, diffop, nullptr, nullptr, nullptr, nullptr, nullptr);
 
-  TEST_OPERATOR_COEFFICIENTFUNCTION(3*u*u);
-  TEST_OPERATOR_COEFFICIENTFUNCTION(MakeVectorialCoefficientFunction({u,u*u}));
+TEST_OPERATOR_COEFFICIENTFUNCTION(3*u*u);
+TEST_OPERATOR_COEFFICIENTFUNCTION(MakeVectorialCoefficientFunction({u,u*u}));
 
-  auto xyz = MakeVectorialCoefficientFunction({x,u,z});
-  auto mat = MakeVectorialCoefficientFunction({a,b,x,y,z,b,u,a,b});
-  mat->SetDimensions (Array<int>({3,3}));
-  
-  TEST_OPERATOR_COEFFICIENTFUNCTION(xyz);
-  // TEST_OPERATOR_COEFFICIENTFUNCTION(NormCF(xyz));
-  TEST_OPERATOR_COEFFICIENTFUNCTION(InnerProduct(xyz,xyz));
-  TEST_OPERATOR_COEFFICIENTFUNCTION(MakeComponentCoefficientFunction(xyz, 1));
-  TEST_OPERATOR_COEFFICIENTFUNCTION(TransposeCF(mat));
-  TEST_OPERATOR_COEFFICIENTFUNCTION(mat*xyz);
+auto xyz = MakeVectorialCoefficientFunction({x,u,z});
+auto mat = MakeVectorialCoefficientFunction({a,b,x,y,z,b,u,a,b});
+int set_dimension = [](auto mat) {
+mat->SetDimensions (Array<int>({3,3}));
+return 1; }(mat);
+TEST_OPERATOR_COEFFICIENTFUNCTION(xyz);
+// TEST_OPERATOR_COEFFICIENTFUNCTION(NormCF(xyz));
+TEST_OPERATOR_COEFFICIENTFUNCTION(InnerProduct(xyz,xyz));
+TEST_OPERATOR_COEFFICIENTFUNCTION(MakeComponentCoefficientFunction(xyz, 1));
+TEST_OPERATOR_COEFFICIENTFUNCTION(TransposeCF(mat));
+TEST_OPERATOR_COEFFICIENTFUNCTION(mat*xyz);
 
-  auto longvec = MakeVectorialCoefficientFunction({x,y,z,x,y,z,z,x,y,x,x,x});
-  // TEST_OPERATOR_COEFFICIENTFUNCTION(InnerProduct(longvec, longvec));  
-}
+auto longvec = MakeVectorialCoefficientFunction({x,y,z,x,y,z,z,x,y,x,x,x});
+// TEST_OPERATOR_COEFFICIENTFUNCTION(InnerProduct(longvec, longvec));
