@@ -33,7 +33,7 @@ namespace ngcomp
     nelsyinverse = 1.0/nels[1];
     first_element_dof.SetSize(nel+1);
     
-    LocalHeap lh(100000,"Setup TP Space"); 
+    LocalHeap lh(10000000,"Setup TP Space"); 
 
     int ii=0;
     first_element_dof[0] = 0;
@@ -300,18 +300,19 @@ namespace ngcomp
 
   void TPHighOrderFESpace::GetSliceDofNrs(ngfem::ElementId ei, int direction, ngstd::Array<int>& dnums,LocalHeap & lh) const
   {
-    dnums.SetSize(0);
+    // dnums.SetSize(0);
     if(ei.VB() != VOL)
       return;
-    ArrayMem<int,300> dnumsx,dnumsy;
+    ArrayMem<int,3000> dnumsx,dnumsy;
     int totsize = 0;
     if(direction == 1)
     {
       Array<int> alldnums(Space(ei.Nr())->GetNDof(),lh);
       space_x->GetDofNrs(ei,dnumsx);
+      auto & space_y = Space(ei.Nr());
       for(int el=0;el<nels[direction];el++)
       {
-        Space(ei.Nr())->GetDofNrs(ElementId(el),dnumsy);
+        space_y->GetDofNrs(ElementId(el),dnumsy);
         alldnums.Range(totsize,totsize+dnumsy.Size()) = dnumsy;
         totsize+=dnumsy.Size();
       }
@@ -338,8 +339,9 @@ namespace ngcomp
       int ii=0;
       for(int i=0;i<dnumsy.Size();i++)
       {
+        int offset = dnumsy[i];
         for(int j=0;j<alldnums.Size();j++,ii++)
-          dnums[ii] = spaces_y[0]->GetNDof()*alldnums[j] + dnumsy[i];
+          dnums[ii] = spaces_y[0]->GetNDof()*alldnums[j] + offset;
       }
     }
   }
@@ -521,6 +523,7 @@ namespace ngcomp
     auto & meshx = fesx->GetMeshAccess();
     auto & meshy = fesy->GetMeshAccess();    
     LocalHeap lh(100000000,"heap");
+    BaseVector & baseout = gfustd->GetVector();
     // auto & els = dynamic_cast<TPHighOrderFE &> (tpfes->GetFE(ElementId(0),lh));
     IterateElementsTP(*tpfes,VOL,lh,
     [&] (ElementId ei0,ElementId ei1,LocalHeap & lh)
@@ -562,21 +565,52 @@ namespace ngcomp
       FlatMatrix<> shapes(fel.GetNDof(),mirstd.Size(),lh);
       shapes = 0.0;
       dynamic_cast<const BaseScalarFiniteElement &>(fel).CalcShape(irstd,shapes);
-      FlatMatrix<> shapes1(fel.GetNDof(),mirstd.Size(),lh);
-        
+      
       FlatMatrix<> elvec(fel.GetNDof(),tpfes->GetDimension(),lh),y(fel.GetNDof(),tpfes->GetDimension(),lh);
-      shapes1 = shapes;
-      for(int s=0;s<shapes.Width();s++)
-        shapes.Col(s) *= mirstd[s].GetWeight();
-      elmat = shapes1*Trans(shapes);
-      elvec = shapes * flux;
-      CalcInverse(elmat);
-      y = elmat*elvec;
-      BaseVector & baseout = gfustd->GetVector();
-      //Array<int> dnums;
-      Array<int> dnums(fel.GetNDof(),lh);
-      fes->GetDofNrs(ElementId(VOL,elnrstd),dnums);
-      baseout.SetIndirect(dnums,y.AsVector());
+      
+      const TPElementTransformation & ttptrafo = static_cast<const TPElementTransformation &>(tptrafo);
+      bool iscurved = ttptrafo.GetTrafo(0).IsCurvedElement() || ttptrafo.GetTrafo(1).IsCurvedElement();
+      
+      if( iscurved )
+      {
+        cout << "Curved"<<endl;
+        FlatMatrix<> shapes1(fel.GetNDof(),mirstd.Size(),lh);
+        shapes1 = shapes;
+        for(int s=0;s<shapes.Width();s++)
+          shapes.Col(s) *= mirstd[s].GetWeight();
+        elmat = shapes1*Trans(shapes);
+        elvec = shapes * flux;
+        CalcInverse(elmat);
+        y = elmat*elvec;
+        //Array<int> dnums;
+        Array<int> dnums(fel.GetNDof(),lh);
+        fes->GetDofNrs(ElementId(VOL,elnrstd),dnums);
+        baseout.SetIndirect(dnums,y.AsVector());
+      }
+      else
+      {
+        FlatVector<double> diag_mass(fel.GetNDof(), lh);
+        switch (fes->GetMeshAccess()->GetDimension())
+        {
+          case 1:
+            static_cast<const DGFiniteElement<1>&> (fel).GetDiagMassMatrix (diag_mass);
+          case 2:
+            static_cast<const DGFiniteElement<2>&> (fel).GetDiagMassMatrix (diag_mass);
+          case 3:
+            static_cast<const DGFiniteElement<3>&> (fel).GetDiagMassMatrix (diag_mass);
+        }
+        IntegrationRule ir(fel.ElementType(), 0);
+        BaseMappedIntegrationRule & mir = trafo(ir, lh);
+        diag_mass *= mir[0].GetMeasure();
+        for(int s=0;s<shapes.Width();s++)
+          shapes.Col(s) *= mirstd[s].GetWeight();
+        elvec = shapes * flux;
+        for (int i = 0; i < diag_mass.Size(); i++)
+          elvec.Row(i) /= diag_mass(i);
+        Array<int> dnums(fel.GetNDof(),lh);
+        fes->GetDofNrs(ElementId(VOL,elnrstd),dnums);
+        baseout.SetIndirect(dnums,elvec.AsVector());
+      }
     });
   }
 

@@ -3121,7 +3121,8 @@ used_idnrs (list of int = None): identification numbers to be made periodic
              auto & felx = spaces[0]->GetFE(ElementId(elnr),lh);
              FlatVector<> shapex(felx.GetNDof(),lh);
              dynamic_cast<const BaseScalarFiniteElement &>(felx).CalcShape(ip,shapex);
-             double val = 0.0;
+             FlatVector<> val(tpfes->GetDimension(),lh);
+             val = 0.0;
              int index = tpfes->GetIndex(elnr,0);
              Array<int> dnums;
              for(int i=index;i<index+spaces[1]->GetMeshAccess()->GetNE();i++)
@@ -3129,36 +3130,41 @@ used_idnrs (list of int = None): identification numbers to be made periodic
                auto & fely = spaces[1]->GetFE(ElementId(i-index),lh);
                tpfes->GetDofNrs(i,dnums);
                int tpndof = felx.GetNDof()*fely.GetNDof();
-               FlatVector<> elvec(tpndof,lh);
+               FlatVector<> elvec(tpndof*tpfes->GetDimension(),lh);
                gf_tp->GetElementVector(dnums,elvec);
-               FlatMatrix<> coefmat(felx.GetNDof(),fely.GetNDof(), &elvec(0));
-               FlatVector<> coefy(fely.GetNDof(),lh);
-               coefy = Trans(coefmat)*shapex;
+               FlatMatrix<> coefmat(felx.GetNDof(),fely.GetNDof()*tpfes->GetDimension(), &elvec(0));
+               FlatMatrix<> coefyasmat(fely.GetNDof(),tpfes->GetDimension(),lh);
+               // FlatVector<> coefy(fely.GetNDof()*tpfes->GetDimension(),lh);
+               coefyasmat.AsVector() = Trans(coefmat)*shapex;
                const IntegrationRule & ir = SelectIntegrationRule(fely.ElementType(),2*fely.Order());
                BaseMappedIntegrationRule & mir = spaces[1]->GetMeshAccess()->GetTrafo(ElementId(i-index),lh)(ir,lh);
-               FlatMatrixFixWidth<1> coefvals(ir.Size(),lh);
+               FlatMatrix<> coefvals(ir.Size(), tpfes->GetDimension(),lh);
                coef.Get()->Evaluate(mir,coefvals);
                FlatMatrix<> shapesy(fely.GetNDof(),ir.Size(),lh);
                dynamic_cast<const BaseScalarFiniteElement & >(fely).CalcShape(ir,shapesy);
-               FlatVector<> helper(ir.Size(),lh);
-               helper = Trans(shapesy)*coefy;
+               FlatMatrix<> helpermat(ir.Size(),tpfes->GetDimension(),lh);
+               helpermat = Trans(shapesy)*coefyasmat;
                for(int ip=0;ip<ir.Size();ip++)
-                  val+=helper(ip)*mir[ip].GetWeight()*coefvals(ip,0);
+                 for(int k=0;k<tpfes->GetDimension();k++)
+                   val(k)+=helpermat(ip,k)*mir[ip].GetWeight()*coefvals(ip,k); // This still uses only the first coefficient!!!
              }
-             return val;
+             double return_val = 0.0;
+             for(int j: Range(tpfes->GetDimension()))
+               return_val+=val(j);
+             return return_val;
            });
-   m.def("TensorProductIntegrate",[](PyGF gf_tp, PyGF gf_x, PyCF coef )
+   m.def("TensorProductIntegrate",[](PyGF gf_tp, PyGF gf_x, PyCF coef)
            {
              static Timer tall("comp.TensorProductIntegrate - total domain integral"); RegionTimer rall(tall);
              BaseVector & vec_in = gf_tp->GetVector();
              BaseVector & vec_out = gf_x->GetVector();
-             LocalHeap clh(10000000,"TensorProductIntegrate");
+             LocalHeap clh(100000000,"TensorProductIntegrate");
              shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp.Get()->GetFESpace());
              const Array<shared_ptr<FESpace> > & spaces = tpfes->Spaces(0);
              int ndofxspace = spaces[0]->GetNDof();
              auto & meshy = spaces[1]->GetMeshAccess();
-             Vector<> elvec_out(ndofxspace);
-             Matrix<> elvec_outmat(meshy->GetNE(),ndofxspace);
+             FlatVector<> elvec_out(ndofxspace*tpfes->GetDimension(),clh);
+             FlatMatrix<> elvec_outmat(meshy->GetNE(),ndofxspace*tpfes->GetDimension(),clh);
              elvec_outmat = 0.0;
              elvec_out = 0.0;
             auto & element_coloring1 = spaces[1]->ElementColoring(VOL);
@@ -3175,7 +3181,7 @@ used_idnrs (list of int = None): identification numbers to be made periodic
                   int i = els_of_col[mynr];
                   auto & fely = spaces[1]->GetFE(ElementId(i),lh);
                   int ndofy = fely.GetNDof();
-                  FlatMatrix<> elvec_slicemat(ndofy,ndofxspace,lh);
+                  FlatMatrix<> elvec_slicemat(ndofy,ndofxspace*tpfes->GetDimension(),lh);
                   Array<int> dnumsslice(ndofy*ndofxspace, lh);
                   tpfes->GetSliceDofNrs(ElementId(i),0,dnumsslice,lh);
                   vec_in.GetIndirect(dnumsslice, elvec_slicemat.AsVector());
@@ -3184,22 +3190,27 @@ used_idnrs (list of int = None): identification numbers to be made periodic
                   FlatMatrix<> shape(fely.GetNDof(),ir.Size(),lh);
                   dynamic_cast<const BaseScalarFiniteElement &>(fely).CalcShape(ir,shape);
                   BaseMappedIntegrationRule & mir = trafo(ir,lh);
-                  FlatMatrixFixWidth<1> vals(mir.Size(),lh);
+                  FlatMatrix<> vals(mir.Size(), tpfes->GetDimension(),lh);
                   coef.Get()->Evaluate(mir, vals);
                   int firstxdof = 0;
                   for(int s=0;s<ir.Size();s++)
-                    shape.Col(s)*=mir[s].GetWeight()*vals(s,0);
+                    vals.Row(s)*=mir[s].GetWeight();
                   for(int j=0;j<spaces[0]->GetMeshAccess()->GetNE();j++)
                   {
                     int ndofx = spaces[0]->GetFE(ElementId(j),lh).GetNDof();
-                    IntRange dnumsx(firstxdof, firstxdof+ndofx);
-                    FlatMatrix<> coefmat(ndofy,ndofx,lh);
+                    IntRange dnumsx(firstxdof, firstxdof+ndofx*tpfes->GetDimension());
+                    FlatMatrix<> coefmat(ndofy,ndofx*tpfes->GetDimension(),lh);
                     coefmat = elvec_slicemat.Cols(dnumsx);
-                    FlatMatrix<> tempmat(ndofx,ir.Size(),lh);
+                    FlatMatrix<> tempmat(ndofx*tpfes->GetDimension(),ir.Size(),lh);
                     tempmat = Trans(coefmat)*shape;
                     for(int s=0;s<ir.Size();s++)
+                    {
+                      for( int dof : Range(ndofx) )
+                        for(int d: Range(tpfes->GetDimension()) )
+                          tempmat(dof*tpfes->GetDimension()+d,s)*=vals(s,d);
                       elvec_outmat.Cols(dnumsx).Row(i)+=(tempmat.Col(s));
-                    firstxdof+=ndofx;
+                    }
+                    firstxdof+=ndofx*tpfes->GetDimension();
                   }
                 }
               }
@@ -3208,14 +3219,34 @@ used_idnrs (list of int = None): identification numbers to be made periodic
             for(int i=0;i<elvec_outmat.Height();i++)
               elvec_out+=elvec_outmat.Row(i);
             int firstxdof = 0;
-            for(int i=0;i<spaces[0]->GetMeshAccess()->GetNE();i++)
+            if(tpfes->GetDimension() == gf_x->GetFESpace()->GetDimension())
+              for(int i=0;i<spaces[0]->GetMeshAccess()->GetNE();i++)
+              {
+                int ndofx = spaces[0]->GetFE(ElementId(i),clh).GetNDof();
+                IntRange dnumsx(firstxdof, firstxdof+ndofx*tpfes->GetDimension());
+                firstxdof+=ndofx*tpfes->GetDimension();
+                Array<int> dofsx;
+                spaces[0]->GetDofNrs(ElementId(i),dofsx);
+                vec_out.SetIndirect(dofsx,elvec_out.Range(dnumsx));
+              }
+            else if(tpfes->GetDimension() > 1 && gf_x->GetFESpace()->GetDimension() == 1)
             {
-              int ndofx = spaces[0]->GetFE(ElementId(i),clh).GetNDof();
-              IntRange dnumsx(firstxdof, firstxdof+ndofx);
-              firstxdof+=ndofx;
-              Array<int> dofsx;
-              spaces[0]->GetDofNrs(ElementId(i),dofsx);
-              vec_out.SetIndirect(dofsx,elvec_out.Range(dnumsx));
+              FlatVector<> elvec_sum(gf_x->GetFESpace()->GetNDof(),clh);
+              elvec_sum = 0.0;
+              for(int i: Range(tpfes->GetDimension()) )
+              {
+                SliceVector<> elvec_comp(gf_x->GetFESpace()->GetNDof(), tpfes->GetDimension(), &elvec_out(i));
+                elvec_sum+=elvec_comp;
+              }
+              for(int i=0;i<spaces[0]->GetMeshAccess()->GetNE();i++)
+              {
+                int ndofx = spaces[0]->GetFE(ElementId(i),clh).GetNDof();
+                IntRange dnumsx(firstxdof, firstxdof+ndofx);
+                firstxdof+=ndofx;
+                Array<int> dofsx;
+                spaces[0]->GetDofNrs(ElementId(i),dofsx);
+                vec_out.SetIndirect(dofsx,elvec_sum.Range(dnumsx));
+              }
             }
 });
 
