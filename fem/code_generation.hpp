@@ -19,6 +19,7 @@ namespace ngfem
 {
   struct Code
   {
+    string top;
     string header;
     string body;
     bool is_simd;

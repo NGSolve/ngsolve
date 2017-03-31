@@ -4476,6 +4476,7 @@ namespace ngstd {
       {
         stringstream s;
         string pointer_code;
+        string top_code = "";
         s << "#include<comp.hpp>" << endl;
         s << "using namespace ngcomp;" << endl;
         s << "extern \"C\" {" << endl;
@@ -4494,6 +4495,7 @@ namespace ngstd {
             }
 
             pointer_code += code.pointer;
+            top_code += code.top;
 
             // set results
             string res_type = "double";
@@ -4524,6 +4526,9 @@ namespace ngstd {
             });
 
             // Function name
+#ifdef WIN32
+            s << "__declspec(dllexport) ";
+#endif
             s << "void CompiledEvaluate";
             if(deriv==2) s << "D";
             if(deriv>=1) s << "Deriv";
@@ -4544,10 +4549,14 @@ namespace ngstd {
 
         }
         s << "}" << endl;
+        string file_code = top_code + s.str();
         std::vector<string> codes;
-        codes.push_back(s.str());
-        if(pointer_code.size())
+        codes.push_back(file_code);
+        if(pointer_code.size()) {
+          pointer_code = "extern \"C\" {\n" + pointer_code;
+          pointer_code += "}\n";
           codes.push_back(pointer_code);
+        }
         library.Compile( codes );
         compiled_function_simd = library.GetFunction<lib_function_simd>("CompiledEvaluateSIMD");
         compiled_function = library.GetFunction<lib_function>("CompiledEvaluate");
