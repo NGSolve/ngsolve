@@ -2742,22 +2742,25 @@ namespace ngcomp
     if(hasinner)
     {
       timervol.Start();
-      if (task_manager)
-      {
+      // if (task_manager)
+      // {
         for (FlatArray<int> els_of_col : element_coloring0)
         {
-          SharedLoop sl(els_of_col.Range());
-          task_manager -> CreateJob
+          SharedLoop2 sl(els_of_col.Range());
+          // task_manager -> CreateJob
+          ParallelJob
           ( [&] (const TaskInfo & ti) 
           {
             LocalHeap lh = clh.Split(ti.thread_nr, ti.nthreads);
             LocalHeap xheap = chelperheap.Split(ti.thread_nr, ti.nthreads);
             for (int mynr : sl)
             {
-              HeapReset hr(xheap);
+              HeapReset hr(lh);
+              HeapReset hrx(xheap);
               int elnrx = els_of_col[mynr];
               auto & felx = spaces[0]->GetFE(ElementId(elnrx),lh);
               int ndofx = felx.GetNDof();
+              double ndofxinv = 1.0/ndofx;
               const ElementTransformation & xtrafo = meshx->GetTrafo(ElementId(elnrx), lh);
               const IntegrationRule & ir = SelectIntegrationRule(felx.ElementType(),2*felx.Order());
               BaseMappedIntegrationRule & mir = xtrafo(ir, lh);
@@ -2765,28 +2768,29 @@ namespace ngcomp
               Array<int> dnums_yslice(ndofx*ndofyspace, xheap);
               tpfes->GetSliceDofNrs(ElementId(elnrx), 1, dnums_yslice,xheap);
               x.GetIndirect (dnums_yslice, elvec_yslicemat.AsVector());
-              dynamic_cast<TensorProductBilinearFormIntegrator &>(*parts[volumeintegrals]).ApplyXElementMatrix(felx, xtrafo, elvec_yslicemat, &xheap,&mir, lh);
+              static_cast<TensorProductBilinearFormIntegrator &>(*parts[volumeintegrals]).ApplyXElementMatrix(felx, xtrafo, elvec_yslicemat, &xheap,&mir, lh);
               int firstydof = 0;
               for(int j=0;j<nely;j++)
               {
                 HeapReset hr(lh);
                 ElementId elid(j+elnrx*nely);
                 auto & tpfel = tpfes->GetFE(elid,lh);
-                int ndofy = spaces[1]->GetFE(ElementId(j),lh).GetNDof();
+                // int ndofy = spaces[1]->GetFE(ElementId(j),lh).GetNDof();
+                int ndofy = ndofxinv*tpfel.GetNDof();
                 IntRange dnumsy(firstydof, firstydof+dimspace*ndofy);
                 firstydof+=dimspace*ndofy;
                 const ElementTransformation & tptrafo = tpfes->GetTrafo(elid,lh);
-                dynamic_cast<TensorProductBilinearFormIntegrator &>(*parts[volumeintegrals]).ApplyYElementMatrix(tpfel,tptrafo,dnumsy,xtrafo.userdata,&mir,lh);
+                static_cast<TensorProductBilinearFormIntegrator &>(*parts[volumeintegrals]).ApplyYElementMatrix(tpfel,tptrafo,dnumsy,xtrafo.userdata,&mir,lh);
               }
               FlatMatrix<> elvecy_mat(ndofx,ndofyspace*dimspace,lh);
-              dynamic_cast<TensorProductBilinearFormIntegrator &>(*parts[volumeintegrals]).ApplyXElementMatrixTrans(felx,xtrafo,elvecy_mat,xtrafo.userdata,&mir,lh);
+              static_cast<TensorProductBilinearFormIntegrator &>(*parts[volumeintegrals]).ApplyXElementMatrixTrans(felx,xtrafo,elvecy_mat,xtrafo.userdata,&mir,lh);
               //elvecy_mat *= (double)val;
-              y.AddIndirect (dnums_yslice, elvecy_mat.AsVector());
+              y.AddIndirect(dnums_yslice, elvecy_mat.AsVector());
             }
           }
           );
         }
-      }
+      // }
       timervol.Stop();
     }
     bool needs_facet_loop = false;
@@ -2839,8 +2843,9 @@ namespace ngcomp
     timerfac1.Start();
     for (FlatArray<int> colfacets : spaces[0]->FacetColoring())
     {
-      SharedLoop sl(colfacets.Range());
-      task_manager -> CreateJob
+      SharedLoop2 sl(colfacets.Range());
+      // task_manager -> CreateJob
+      ParallelJob
       ( [&] (const TaskInfo & ti) 
       {
         LocalHeap lh = clh.Split(ti.thread_nr, ti.nthreads);
@@ -2857,6 +2862,7 @@ namespace ngcomp
           int el1_x = elnums_x[0];
           auto & felx1 = spaces[0]->GetFE(ElementId(el1_x),lh);
           int ndofx1 = felx1.GetNDof();
+          double ndofxinv = 1.0/ndofx1;          
           // The element facets:           
           meshx->GetElFacets(el1_x,fnums1_x);
           int facnr_x1 = fnums1_x.Pos(facet_x);
@@ -2893,7 +2899,7 @@ namespace ngcomp
               tpfes->GetDofNrs (ei1, dnums);
               FlatVector<double> elx(dnums.Size()*dimspace, lh), ely(dnums.Size()*dimspace, lh);
               x.GetIndirect(dnums, elx);
-              dynamic_cast<TensorProductFacetBilinearFormIntegrator &>(*parts[facetboundaryintegrals]).ApplyFacetMatrix(fel,facnr_x1,eltrans,vnums1, seltrans, vnums2, elx, ely, lh);
+              static_cast<TensorProductFacetBilinearFormIntegrator &>(*parts[facetboundaryintegrals]).ApplyFacetMatrix(fel,facnr_x1,eltrans,vnums1, seltrans, vnums2, elx, ely, lh);
               y.AddIndirect(dnums, ely);
             }
             continue;
@@ -2926,22 +2932,23 @@ namespace ngcomp
             tpfes->GetSliceDofNrs(ElementId(el2_x),1,dnums_yslice1,xheap);
             dnums_yslice.Append(dnums_yslice1);
             x.GetIndirect (dnums_yslice, elvec_yslicemat.AsVector());
-            dynamic_cast<TensorProductFacetBilinearFormIntegrator &>(*parts[facetvolumeintegrals]).ApplyXFacetMatrix(felx1, eltransx1, felx2,eltransx2, elvec_yslicemat, &xheap, &mirx1,&mirx2,lh);
+            static_cast<TensorProductFacetBilinearFormIntegrator &>(*parts[facetvolumeintegrals]).ApplyXFacetMatrix(felx1, eltransx1, felx2,eltransx2, elvec_yslicemat, &xheap, &mirx1,&mirx2,lh);
             int firstydof = 0;
             for(int j=0;j<nely;j++)
             {
               HeapReset hr(lh);
               ElementId elid(j+el1_x*nely);
               auto & tpfel = tpfes->GetFE(elid,lh);
-              int ndofy = spaces[1]->GetFE(ElementId(j),lh).GetNDof();
+              // int ndofy = spaces[1]->GetFE(ElementId(j),lh).GetNDof();
+              int ndofy = ndofxinv*tpfel.GetNDof();
               IntRange dnumsy(firstydof,firstydof+dimspace*ndofy);
               firstydof+=dimspace*ndofy;
               const ElementTransformation & tptrafo = tpfes->GetTrafo(elid,lh);
-              dynamic_cast<TensorProductFacetBilinearFormIntegrator &>(*parts[facetvolumeintegrals]).ApplyYElementMatrix(tpfel,tptrafo,dnumsy,eltransx1.userdata,&mirx1,lh);
+              static_cast<TensorProductFacetBilinearFormIntegrator &>(*parts[facetvolumeintegrals]).ApplyYElementMatrix(tpfel,tptrafo,dnumsy,eltransx1.userdata,&mirx1,lh);
             }
             FlatMatrix<> elmat(ndofx1+ndofx2,ndofyspace*dimspace,lh);
             elmat = 0.0;
-            dynamic_cast<TensorProductFacetBilinearFormIntegrator &>(*parts[facetvolumeintegrals]).ApplyXFacetMatrixTrans(felx1,eltransx1,felx2,eltransx2,elmat,eltransx1.userdata,&mirx1,&mirx2,lh);
+            static_cast<TensorProductFacetBilinearFormIntegrator &>(*parts[facetvolumeintegrals]).ApplyXFacetMatrixTrans(felx1,eltransx1,felx2,eltransx2,elmat,eltransx1.userdata,&mirx1,&mirx2,lh);
             //elvec_mat *= val;
             y.AddIndirect (dnums_yslice, elmat.AsVector());
           }
@@ -2952,8 +2959,9 @@ namespace ngcomp
     timerfac2.Start();
     for (FlatArray<int> colfacets : spaces[1]->FacetColoring())
     {
-      SharedLoop sl(colfacets.Range());
-      task_manager -> CreateJob
+      SharedLoop2 sl(colfacets.Range());
+      // task_manager -> CreateJob
+      ParallelJob
       ( [&] (const TaskInfo & ti) 
       {
         LocalHeap lh = clh.Split(ti.thread_nr, ti.nthreads);
@@ -2970,6 +2978,7 @@ namespace ngcomp
           int el1_y = elnums_y[0];
           auto & fely1 = spaces[1]->GetFE(ElementId(el1_y),lh);
           int ndofy1 = fely1.GetNDof();
+          double ndofyinv = 1.0/ndofy1;
           // The element facets:           
           meshy->GetElFacets(el1_y,fnums1_y);
           int facnr_y1 = fnums1_y.Pos(facet_y);
@@ -3006,7 +3015,7 @@ namespace ngcomp
                tpfes->GetDofNrs (ei1, dnums);
               FlatVector<double> elx(dnums.Size()*dimspace, lh), ely(dnums.Size()*dimspace, lh);
               x.GetIndirect(dnums, elx);
-              dynamic_cast<TensorProductFacetBilinearFormIntegrator &>(*parts[facetboundaryintegrals]).ApplyFacetMatrix(fel,facnr_y1+10,eltrans,vnums1, seltrans, vnums2, elx, ely, lh);
+              static_cast<TensorProductFacetBilinearFormIntegrator &>(*parts[facetboundaryintegrals]).ApplyFacetMatrix(fel,facnr_y1+10,eltrans,vnums1, seltrans, vnums2, elx, ely, lh);
               y.AddIndirect(dnums, ely);
             }
              continue;
@@ -3039,22 +3048,23 @@ namespace ngcomp
             tpfes->GetSliceDofNrs(ElementId(el2_y),0,dnums_xslice1,yheap);
             dnums_xslice.Append(dnums_xslice1);
             x.GetIndirect (dnums_xslice, elvec_xslicemat.AsVector());
-            dynamic_cast<TensorProductFacetBilinearFormIntegrator &>(*parts[facetvolumeintegrals]).ApplyYFacetMatrix(fely1, eltransy1, fely2,eltransy2, elvec_xslicemat, &yheap, &miry1,&miry2,lh);
+            static_cast<TensorProductFacetBilinearFormIntegrator &>(*parts[facetvolumeintegrals]).ApplyYFacetMatrix(fely1, eltransy1, fely2,eltransy2, elvec_xslicemat, &yheap, &miry1,&miry2,lh);
             int firstxdof = 0;
             for(int j=0;j<nelx;j++)
             {
               HeapReset hr(lh);
               ElementId elid(j*nely+el1_y);
               auto & tpfel = tpfes->GetFE(elid,lh);
-              int ndofx = spaces[0]->GetFE(ElementId(j),lh).GetNDof();
+              // int ndofx = spaces[0]->GetFE(ElementId(j),lh).GetNDof();
+              int ndofx = ndofyinv*tpfel.GetNDof();
               IntRange dnumsx(firstxdof,firstxdof+dimspace*ndofx);
               firstxdof+=dimspace*ndofx;
               const ElementTransformation & tptrafo = tpfes->GetTrafo(elid,lh);
-              dynamic_cast<TensorProductFacetBilinearFormIntegrator &>(*parts[facetvolumeintegrals]).ApplyXElementMatrix(tpfel,tptrafo,dnumsx,eltransy1.userdata,&miry1,lh);
+              static_cast<TensorProductFacetBilinearFormIntegrator &>(*parts[facetvolumeintegrals]).ApplyXElementMatrix(tpfel,tptrafo,dnumsx,eltransy1.userdata,&miry1,lh);
             }
             FlatMatrix<> elmat(ndofy1+ndofy2,dimspace*ndofxspace,lh);
             elmat = 0.0;
-            dynamic_cast<TensorProductFacetBilinearFormIntegrator &>(*parts[facetvolumeintegrals]).ApplyYFacetMatrixTrans(fely1,eltransy1,fely2,eltransy2,elmat,eltransy1.userdata,&miry1,&miry2,lh);
+            static_cast<TensorProductFacetBilinearFormIntegrator &>(*parts[facetvolumeintegrals]).ApplyYFacetMatrixTrans(fely1,eltransy1,fely2,eltransy2,elmat,eltransy1.userdata,&miry1,&miry2,lh);
             //elvec_mat *= val;
             y.AddIndirect (dnums_xslice, elmat.AsVector());
           } // end: if elnums.Size != 1

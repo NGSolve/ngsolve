@@ -31,7 +31,7 @@ namespace ngfem
   {
     const TPMappedIntegrationRule * tpmir = static_cast<const TPMappedIntegrationRule *>(&ir);
     auto & irs = tpmir->GetIRs();
-    coef->Evaluate(*irs[1-prolongateto],values);
+    coef->Evaluate(*irs[1-prolongateto],values.Rows(0,irs[1-prolongateto]->Size()) );
     if(prolongateto == 1)
       for(int i=irs[0]->Size()-1;i>=0;i--)
         values.Rows(i*irs[1]->Size(),(i+1)*irs[1]->Size()) = values.Row(i)(0);
@@ -678,9 +678,12 @@ namespace ngfem
       {
         SliceMatrix<> xcomp(fel.GetNDof(),x.Width(),BlockDim()*x.Width(),&x(i,0));
         DoubleSliceMatrix<> resultmat(bmatx.Height(),xcomp.Width(),flux.Width()*nipy,flux.Width()/dimy, &flux(0,i));
-        FlatMatrix<> resultmat_comp(bmatx.Height(),xcomp.Width(),lh);
-        resultmat_comp = bmatx*xcomp;
-        resultmat = resultmat_comp;
+        FlatMatrix<> resultmat_calc(bmatx.Height(),xcomp.Width(),lh);
+        FlatMatrix<> xcomp_calc(fel.GetNDof(),x.Width(),lh);        
+        xcomp_calc = xcomp;
+        resultmat_calc = bmatx*xcomp_calc;
+        resultmat = resultmat_calc;
+        // resultmat = bmatx*xcomp;
       }
     }
     else
@@ -720,8 +723,11 @@ namespace ngfem
         SliceMatrix<> resultmat(fel.GetNDof(),x.Width(),BlockDim()*x.Width(),&x(i,0));
         DoubleSliceMatrix<> fluxcomp(nipx,x.Width(),BlockDim()*dimy*nipy, BlockDim(), &flux(0,i));
         FlatMatrix<> fluxcomp_calc(nipx,x.Width(),lh);
+        FlatMatrix<> resultmat_calc(fel.GetNDof(),x.Width(),lh);
         fluxcomp_calc = fluxcomp;
-        resultmat = Trans(bmatx)*fluxcomp;
+        resultmat_calc = Trans(bmatx)*fluxcomp_calc;
+        resultmat = resultmat_calc;
+        // resultmat = Trans(bmatx)*fluxcomp;
       }
     }
     else
@@ -762,9 +768,26 @@ namespace ngfem
         SliceMatrix<> fcomp(ndofy,x.Width(),x.Width()*BlockDim(), &x(i,0));
         DoubleSliceMatrix<double> resultmat(fcomp.Width(),bmaty.Height(),BlockDim()*nipy*dimy,BlockDim(), &flux(0,i));
         FlatMatrix<double> resultmat_calc(fcomp.Width(),bmaty.Height(),lh);
-        resultmat_calc = Trans(bmaty * fcomp);
+        FlatMatrix<> fcomp_calc(x.Width(),ndofy,lh);
+        fcomp_calc = Trans(fcomp);
+        resultmat_calc = fcomp_calc*Trans(bmaty);
         resultmat = resultmat_calc;
+        // resultmat_calc = Trans(bmaty * fcomp);
+        // resultmat = resultmat_calc;
       }
+      // FlatMatrix<double, RowMajor> resultmat_calc(bmaty.Height(),x.Width()*BlockDim(),lh);
+      // FlatMatrix<double, RowMajor> fcomp_calc(ndofy,x.Width()*BlockDim(),lh);
+      // for(int i: Range(BlockDim()) )
+      // {
+        // SliceMatrix<> fcomp(ndofy,x.Width(),x.Width()*BlockDim(), &x(i,0));
+        // fcomp_calc.Cols(i*x.Width(),(i+1)*x.Width() ) = fcomp;
+      // }
+      // resultmat_calc = bmaty*fcomp_calc;
+      // for(int i : Range(BlockDim()) )
+      // {
+        // DoubleSliceMatrix<double> resultmat(x.Width()*BlockDim(),bmaty.Height(),BlockDim()*nipy*dimy,BlockDim(), &flux(0,i));
+        // resultmat = Trans(resultmat_calc).Rows(i*resultmat.Height(),(i+1)*resultmat.Height());
+      // }
     }
     else
     {
@@ -773,7 +796,7 @@ namespace ngfem
         SliceMatrix<> fcomp(ndofy,x.Width(),x.Width()*BlockDim(), &x(i,0));
         DoubleSliceMatrix<double> resultmat(bmaty.Height(),x.Width(),BlockDim()*x.Width(),BlockDim(),&dim0geq1(0,i));
         FlatMatrix<double> resultmat_calc(bmaty.Height(),x.Width(),lh);
-        resultmat_calc =  (bmaty * fcomp);
+        resultmat_calc =  bmaty * fcomp;
         resultmat = resultmat_calc;
       }
       for(int k=0;k<x.Width()/dimx;k++)
@@ -805,9 +828,23 @@ namespace ngfem
         FlatMatrix<double> fvals_calc( x.Height(), nipy*dimy,lh );
         FlatMatrix<> fcomp_calc(x.Height(), fel.GetNDof(),lh);
         fvals_calc = fvals;
-        fcomp_calc = fvals*bmaty;
+        fcomp_calc = fvals_calc*bmaty;
         fcomp = fcomp_calc;
+        // fcomp = fvals*bmaty;
       }
+      // FlatMatrix<double> fvals_calc( x.Height()*BlockDim(), nipy*dimy,lh );
+      // FlatMatrix<> fcomp_calc(x.Height()*BlockDim(), fel.GetNDof(),lh);      
+      // for(int i : Range(BlockDim()) )
+      // {
+        // DoubleSliceMatrix<double> fvals( x.Height(), nipy*dimy,BlockDim()*nipy*dimy,BlockDim(), &flux(i) );
+        // fvals_calc.Rows(i*fvals.Height(),(i+1)*fvals.Height()) = fvals;
+      // }
+      // fcomp_calc = fvals_calc*bmaty;
+      // for(int i : Range(BlockDim()) )
+      // {
+        // DoubleSliceMatrix<> fcomp(x.Height(), fel.GetNDof(),x.Dist(),BlockDim(), &x(0,i));
+        // fcomp = fcomp_calc.Rows(i*fcomp.Height(),(i+1)*fcomp.Height());
+      // }
     }
     else
     {
