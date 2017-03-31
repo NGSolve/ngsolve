@@ -1497,7 +1497,7 @@ namespace ngstd
     SIMD<double> GetMeasure() const { return measure; }
     SIMD<double> GetWeight() const { return measure * ip.Weight(); }
     SIMD<double> GetJacobiDet() const { return det; }
-    FlatVector<SIMD<double>> GetPoint() const;
+    NGS_DLL_HEADER FlatVector<SIMD<double>> GetPoint() const;
     // virtual void Print (ostream & ost) const = 0;
   };
 

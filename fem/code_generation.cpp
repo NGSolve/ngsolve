@@ -7,8 +7,13 @@ namespace ngfem
     string Code::AddPointer(const void *p)
     {
         string name = "compiled_code_pointer" + ToString(id_counter++); 
-        header += "extern void* " + name + ";\n";
-        pointer += "void *" + name + " = reinterpret_cast<void*>(" + ToString(p) + ");\n";
+        top += "extern \"C\" void* " + name + ";\n";
+        stringstream s_ptr;
+#ifdef WIN32
+        s_ptr << "0x";
+#endif
+        s_ptr << std::hex << p;
+        pointer += "void *" + name + " = reinterpret_cast<void*>(" + s_ptr.str() + ");\n";
         return name;
     }
 
@@ -53,7 +58,7 @@ namespace ngfem
       cout << IM(3) << "linking..." << endl;
       tlink.Start();
 #ifdef WIN32
-        string slink = "cmd /C \"ngsld.bat " + object_files + "\"";
+        string slink = "cmd /C \"ngsld.bat /OUT:" + prefix+".dll " + object_files + "\"";
 #else
         string slink = "ngsld -shared " + object_files + " -o " + prefix + ".so -lngstd -lngfem";
 #endif
