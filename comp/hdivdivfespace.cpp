@@ -238,17 +238,17 @@ namespace ngcomp
         }
       first_facet_dof.Last() = ndof;
 
-      for (auto i : Range(ma->GetNE()))
+      for (ElementId ei : ma->Elements(VOL))
         {
-          first_element_dof[i] = ndof;
-          switch (ma->GetElType(i))
+          first_element_dof[ei.Nr()] = ndof;
+          switch (ma->GetElType(ei))
             {
             case ET_TRIG:
               ndof += 3*(order+1)*(order+2)/2 - 3*(order+1);
               if (plus) ndof += 2*order;
               break;
             default:
-              throw Exception(string("illegal element type") + ToString(ma->GetElType(i)));
+              throw Exception(string("illegal element type") + ToString(ma->GetElType(ei)));
             }
         }
       first_element_dof.Last() = ndof;      

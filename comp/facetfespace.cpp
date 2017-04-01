@@ -233,12 +233,13 @@ namespace ngcomp
         
     for (int i = 0; i < nel; i++)
       {
-	ELEMENT_TYPE eltype=ma->GetElType(i); 
+        ElementId ei(VOL, i);
+	ELEMENT_TYPE eltype=ma->GetElType(ei); 
 	const POINT3D * points = ElementTopology :: GetVertices (eltype);	
 	
 	if (ma->GetDimension() == 2)
 	  {
-	    ma->GetElEdges (i, fanums);
+	    ma->GetElEdges (ei, fanums);
 	    for (int j=0;j<fanums.Size();j++) 
 	      fine_facet[fanums[j]] = 1; 
 	    
@@ -259,7 +260,7 @@ namespace ngcomp
 	else
 	  {
 	    Array<int> elfaces,vnums;
-	    ma->GetElFaces(i,elfaces);
+	    ma->GetElFaces(ei,elfaces);
 	    for (int j=0;j<elfaces.Size();j++) fine_facet[elfaces[j]] = 1; 
 	    
 	    if(var_order) 
@@ -343,8 +344,9 @@ namespace ngcomp
             first_inner_dof.SetSize(ne+1);
             for(int i = 0; i < ne; i++)
               {
+                ElementId ei(VOL, i);
                 first_inner_dof[i] = ndof;
-                ELEMENT_TYPE eltype = ma->GetElType(i);
+                ELEMENT_TYPE eltype = ma->GetElType(ei);
                 if(eltype == ET_TRIG)
                   ndof += 3;
                 else
@@ -382,9 +384,10 @@ namespace ngcomp
 	    first_inner_dof.SetSize(ne+1);
 	    for (int i = 0; i < ne; i++)
 	      {
+                ElementId ei(VOL, i);
 		first_inner_dof[i] = ndof;
 		
-		ELEMENT_TYPE eltype = ma->GetElType(i);
+		ELEMENT_TYPE eltype = ma->GetElType(ei);
 		for (int k = 0; k < ElementTopology::GetNFacets(eltype); k++)
 		  if (ElementTopology::GetFacetType(eltype, k) == ET_TRIG)
 		    ndof += order+1;
@@ -568,7 +571,7 @@ namespace ngcomp
         DGFiniteElement<1> * fe1d = 0;
         DGFiniteElement<2> * fe2d = 0;
 
-        switch (ma->GetSElType(ei.Nr()))
+        switch (ma->GetElType(ei))
           {
           case ET_SEGM: fe1d = new (lh) L2HighOrderFE<ET_SEGM> (); break;
           case ET_TRIG: fe2d = new (lh) L2HighOrderFE<ET_TRIG> (); break;
@@ -582,7 +585,7 @@ namespace ngcomp
         ArrayMem<int,4> ednums;
     
         ma->GetSElVertices(ei.Nr(), vnums);
-        switch (ma->GetSElType(ei.Nr()))
+        switch (ma->GetElType(ei))
           {
           case ET_SEGM:
             {
@@ -747,7 +750,7 @@ namespace ngcomp
 	  else
 	    {
 	      int innerdof = first_inner_dof[ei.Nr()];
-	      ELEMENT_TYPE eltype = ma->GetElType (ei.Nr());
+	      ELEMENT_TYPE eltype = ma->GetElType (ei);
 	      
 	      for(int i=0; i<fanums.Size(); i++)
 		{

@@ -1347,8 +1347,9 @@ when building the system matrices.
 
 
   auto fes_dummy_init = [](PyFES *instance, shared_ptr<MeshAccess> ma, const string & type, 
-                              py::dict bpflags, int order, bool is_complex,
-                              py::object dirichlet, py::object definedon, int dim)
+                           py::dict bpflags, int order, bool is_complex,
+                           py::object dirichlet, py::object definedon, int dim,
+                           py::object order_left, py::object order_right)
                            {
                              Flags flags = py::extract<Flags> (bpflags)();
 
@@ -1408,7 +1409,15 @@ when building the system matrices.
                                }
                              
                              
-                             auto fes = CreateFESpace (type, ma, flags); 
+                             auto fes = CreateFESpace (type, ma, flags);
+
+                             if (py::isinstance<py::int_> (order_left))
+                               for (auto et : element_types)
+                                 fes->SetOrderLeft (et, order_left.cast<int>());
+                             if (py::isinstance<py::int_> (order_right))
+                               for (auto et : element_types)
+                                 fes->SetOrderRight (et, order_right.cast<int>());
+                             
                              LocalHeap lh (1000000, "FESpace::Update-heap");
                              fes->Update(lh);
                              fes->FinalizeUpdate(lh);
@@ -1492,10 +1501,12 @@ flags : dict
     // the raw - constructor
     .def("__init__", 
 	 [&](PyFES *instance, const string & type, shared_ptr<MeshAccess> mesh,
-			     py::dict flags, int order, bool is_complex,
-                             py::object dirichlet, py::object definedon, int dim)
+             py::dict flags, int order, bool is_complex,
+             py::object dirichlet, py::object definedon, int dim,
+             py::object order_left, py::object order_right
+             )
                           {
-			    fes_dummy_init(instance, mesh, type, flags, order, is_complex, dirichlet, definedon, dim);
+			    fes_dummy_init(instance, mesh, type, flags, order, is_complex, dirichlet, definedon, dim, order_left, order_right);
 //                              py::cast(*instance).attr("flags") = py::cast(bp_flags);
 			     
                            },
@@ -1505,6 +1516,8 @@ flags : dict
            py::arg("dirichlet")=DummyArgument(),
            py::arg("definedon")=DummyArgument(),
           py::arg("dim")=-1,
+         py::arg("order_left")=DummyArgument(),
+         py::arg("order_right")=DummyArgument(),         
          "allowed types are: 'h1ho', 'l2ho', 'hcurlho', 'hdivho' etc."
          )
     
@@ -1593,12 +1606,28 @@ flags : dict
     .def_property_readonly("type", FunctionPointer([] (PyFES & self) { return self->type; }),
                   "type of finite element space")    
 
+    .def("SetOrder",
+         [](PyFES & self, ELEMENT_TYPE et, py::object order, py::object order_left, py::object order_right)
+         {
+           if (py::isinstance<py::int_> (order))
+             {
+               self->SetOrderLeft (et, order.cast<py::int_>());
+               self->SetOrderRight (et, order.cast<py::int_>());
+             }
+           if (py::isinstance<py::int_> (order_left))
+             self->SetOrderLeft (et, order_left.cast<py::int_>());
+           if (py::isinstance<py::int_> (order_right))
+             self->SetOrderRight (et, order_right.cast<int>());
+         },
+         py::arg("element_type"),
+         py::arg("order")=DummyArgument(),
+         py::arg("order_left")=DummyArgument(),
+         py::arg("order_right")=DummyArgument()
+         )
+    
     .def("Elements", 
          [](PyFES & self, VorB vb, int heapsize) 
-         {
-           // return make_shared<FESpace::ElementRange> (self->Elements(vb, heapsize));
-           return FESpace::ElementRange(self->Elements(vb, heapsize));
-         },
+         { return FESpace::ElementRange(self->Elements(vb, heapsize)); },
          py::arg("VOL_or_BND")=VOL,py::arg("heapsize")=10000)
 
     .def("Elements", 

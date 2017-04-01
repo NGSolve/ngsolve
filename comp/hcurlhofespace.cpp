@@ -522,16 +522,17 @@ namespace ngcomp
           usegrad_cell[el.Nr()] = true;
         }
 
-
-    for(int i=0; i<nse && gradientboundaries.Size(); i++)
-      if(gradientboundaries[ma->GetSElIndex(i)])
-	{
-	  ma->GetSElEdges(i,eledges);
-	  for(int j=0; j<eledges.Size();j++)
-	    usegrad_edge[eledges[j]] = 1;
+    if (gradientboundaries.Size())
+      // for (int i = 0; i < nse; i++)
+      for (ElementId ei : ma->Elements(BND))
+        if (gradientboundaries[ma->GetElIndex(ei)])
+          {
+            ma->GetElEdges(ei,eledges);
+            for(int j=0; j<eledges.Size();j++)
+              usegrad_edge[eledges[j]] = 1;
 	
-	  if(ma->GetDimension()==3)
-	    usegrad_face[ma->GetSElFace(i)] = 1;
+            if(ma->GetDimension()==3)
+              usegrad_face[ma->GetSElFace(ei.Nr())] = 1;
 	}
 
     ma->AllReduceNodalData (NT_EDGE, usegrad_edge, MPI_LOR);
@@ -540,13 +541,14 @@ namespace ngcomp
 	
     for (int i = 0; i < ne; i++)
       {
-	int index = ma->GetElIndex(i);
+        ElementId ei(VOL, i);
+	int index = ma->GetElIndex(ei);
 	if (!DefinedOn (VOL, index)) continue;
 
 	order_inner[i] = INT<3> (p,p,p); 	
 	INT<3,TORDER> el_orders = ma->GetElOrders(i);
 	
-	ELEMENT_TYPE eltype=ma->GetElType(i); 
+	ELEMENT_TYPE eltype=ma->GetElType(ei); 
 	const FACE * faces = ElementTopology::GetFaces (eltype);
 	const EDGE * edges = ElementTopology::GetEdges (eltype);
 	const POINT3D * points = ElementTopology :: GetVertices (eltype);
@@ -621,8 +623,9 @@ namespace ngcomp
       }
 
     for (int i = 0; i < nse; i++)
-      {	
-	if (!DefinedOn (BND, ma->GetSElIndex (i))) continue;
+      {
+        ElementId sei(BND, i);
+	if (!DefinedOn (BND, ma->GetElIndex (sei))) continue;
 	
 	ma->GetSElEdges (i, eledges);		
 	for (int j=0;j<eledges.Size();j++) fine_edge[eledges[j]] = 1; 
@@ -755,9 +758,10 @@ namespace ngcomp
     first_inner_dof.SetSize(ne+1);
     for (int i = 0; i < ne; i++)
       {
+        ElementId ei(VOL, i);
 	first_inner_dof[i] = ndof;
 	INT<3> p = order_inner[i];
-	switch(ma->GetElType(i)) 
+	switch(ma->GetElType(ei)) 
 	  {
 	  case ET_TRIG:
 	    if(p[0]>1)
@@ -921,17 +925,18 @@ namespace ngcomp
     Array<int> dnums, edge_nums, face_nums;
     for (int el = 0; el < ma->GetNE(); el++)
       {
-	if (!DefinedOn (VOL, ma->GetElIndex (el))) continue;
+        ElementId ei(VOL, el);
+	if (!DefinedOn (VOL, ma->GetElIndex (ei))) continue;
 	HeapReset hr(lh);
 	IntRange range = GetElementDofs (el);
 	ctofdof.Range (range) = LOCAL_DOF;
 
 	bool upgrade = false;
-	ELEMENT_TYPE eltype = ma->GetElType (el);
+	ELEMENT_TYPE eltype = ma->GetElType (ei);
 
 	if (eltype == ET_PRISM) 
 	  {
-	    ElementTransformation & eltrans = ma->GetTrafo (ElementId(VOL, el), lh);
+	    ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
 	    IntegrationPoint ip(0.3333, 0.3333, 0.5);
 	    MappedIntegrationPoint<3,3> mip(ip, eltrans);
 
@@ -1112,8 +1117,8 @@ namespace ngcomp
     hofe -> SetOrderEdge (order_edge[ngel.Edges()]);
     hofe -> SetUseGradEdge (usegrad_edge[ngel.Edges()]);
     
-
-    if(ma->GetSElType(ei.Nr()) == ET_SEGM)
+    
+    if(ma->GetElType(ei) == ET_SEGM)
       {
     hofe -> SetOrderCell (order_edge[ngel.edges[0]]);  // old style
     FlatArray<TORDER> aoe(1, &order_edge[ngel.edges[0]]);
@@ -2457,7 +2462,7 @@ namespace ngcomp
     bool hasprism = false;
 
     for (i = 0; !hasprism && i < ne; i++)
-      if (ma->GetElType(i) == ET_PRISM)
+      if (ma->GetElType(ElementId(VOL, i)) == ET_PRISM)
 	hasprism = true;
     
     if (!hasprism && adddirectsolverdofs.Size() == 0 &&
@@ -2502,9 +2507,10 @@ namespace ngcomp
 	    //clusters = 0;
 	    for (i = 0; i < ne; i++)
 	      {
-		if (ma->GetElType(i) == ET_PRISM)
+                ElementId ei(VOL, i);
+		if (ma->GetElType(ei) == ET_PRISM)
 		  {
-		    ma->GetElEdges (i, ednums);
+		    ma->GetElEdges (ei, ednums);
 		
 		    for (j = 6; j < 9; j++)  //vertical Edges 
 		      { 
@@ -2551,6 +2557,7 @@ namespace ngcomp
        
 	    for (i = 0; i < ne; i++)
 	      {
+                ElementId ei(VOL, i);
 		/*if (ma->GetElType(i) == ET_PYRAMID)
 		  {
 		  GetDofNrs(i,ednums);
@@ -2558,9 +2565,9 @@ namespace ngcomp
 	    
 		  }   
 		*/
-		if (ma->GetElType(i) == ET_PRISM)
+		if (ma->GetElType(ei) == ET_PRISM)
 		  {
-		    ma->GetElEdges (i, ednums);
+		    ma->GetElEdges (ei, ednums);
 		    for (j = 0; j < 6; j++)  //horizontal Edges 
 		      { 
 			int first = first_edge_dof[ednums[j]];
@@ -2615,9 +2622,9 @@ namespace ngcomp
 		      }
 		  }
 	    
-		else if (ma->GetElType(i) == ET_HEX)
+		else if (ma->GetElType(ei) == ET_HEX)
 		  {
-		    ma->GetElEdges (i, ednums);
+		    ma->GetElEdges (ei, ednums);
 		
 		    for(j=0;j<8;j++) // horizontal edges
 		      {	
@@ -2639,7 +2646,7 @@ namespace ngcomp
 			clusters[ednums[j]]=0; 
 		      }
 		
-		    ma->GetElFaces(i,fnums); // vertical faces 
+		    ma->GetElFaces(ei,fnums); // vertical faces 
 		    for(j=2;j<6;j++) 
 		      {
 		    
@@ -2682,10 +2689,11 @@ namespace ngcomp
 	
 	    for (i = 0; i < ne; i++)
 	      {
+                ElementId ei(VOL, i);
 		ma->GetElPNums(i,pnums); 
-		if (ma->GetElType(i) == ET_PRISM)
+		if (ma->GetElType(ei) == ET_PRISM)
 		  {
-		    ma->GetElEdges (i, ednums);
+		    ma->GetElEdges (ei, ednums);
 		    for (j = 0; j < 6; j++)  //horizontal Edges 
 		      { 
 			int first = first_edge_dof[ednums[j]];
@@ -2735,7 +2743,7 @@ namespace ngcomp
 		      }
 		  }
 	    
-		else if (ma->GetElType(i) == ET_HEX)
+		else if (ma->GetElType(ei) == ET_HEX)
 		  {
 		    ma->GetElEdges (i, ednums);
 		    for(j=0;j<8;j++) // horizontal edges
@@ -2796,7 +2804,8 @@ namespace ngcomp
 	
 	    for(i=0; directsolverclustered.Size() > 0 && i<ne; i++)
 	      {
-		if(directsolverclustered[ma->GetElIndex(i)])
+                ElementId ei(VOL,i);
+		if(directsolverclustered[ma->GetElIndex(ei)])
 		  {
 		    GetDofNrs(i,ednums);
 		    for(k=0; k<ednums.Size(); k++)
@@ -2887,9 +2896,10 @@ namespace ngcomp
 	
 	    for(i=0; directsolverclustered.Size() > 0 && i<ne; i++)
 	      {
-		if(directsolverclustered[ma->GetElIndex(i)])
+                ElementId ei(VOL, i);
+		if(directsolverclustered[ma->GetElIndex(ei)])
 		  {
-		    ELEMENT_TYPE eltype = ma->GetElType(i); 
+		    ELEMENT_TYPE eltype = ma->GetElType(ei); 
 		    if(eltype != ET_PRISM) continue; 
 		
 		    GetDofNrs(i,ednums);
@@ -3027,12 +3037,13 @@ namespace ngcomp
     fesh1->FinalizeUpdate(lh);
 
     for(int i=0; i < ne; i++){
-      if(!gradientdomains[ma->GetElIndex(i)]){
+      ElementId ei(VOL,i);
+      if(!gradientdomains[ma->GetElIndex(ei)]){
 	fesh1->SetElementOrder(i, 1);
-	for(auto edge : ma->GetElement(i).Edges()) {
+	for(auto edge : ma->GetElement(ei).Edges()) {
 	  fesh1->SetEdgeOrder(edge,1);
 	}
-	for(auto face : ma->GetElement(i).Faces()) {
+	for(auto face : ma->GetElement(ei).Faces()) {
 	  fesh1->SetFaceOrder(face,1);
 	}
       }
@@ -3040,14 +3051,15 @@ namespace ngcomp
     Array<int> eledges;
     int value;
     for(int i=0; i<nse; i++) {
+      ElementId sei(BND, i);
       //cout << "SElIndex: " << ma->GetSElIndex(i) << endl;
-      if(!gradientboundaries[ma->GetSElIndex(i)]){
+      if(!gradientboundaries[ma->GetElIndex(sei)]){
 	value = 1;
       }
       else{
 	value = order+1;
       }
-	ma->GetSElEdges(i,eledges);
+	ma->GetElEdges(sei,eledges);
 	for(int j=0;j<eledges.Size();j++){
 	  fesh1->SetEdgeOrder(eledges[j],value);
 	}

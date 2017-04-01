@@ -126,6 +126,30 @@ namespace ngcomp
     INLINE TElementIterator<VB> end () const { return TElementIterator<VB>(ma, r.Next()); }
   };
 
+  template <VorB VB, int DIM>
+  class DimElementIterator
+  {
+    const MeshAccess & ma;
+    size_t nr;
+  public:
+    INLINE DimElementIterator (const MeshAccess & ama, size_t anr) : ma(ama), nr(anr) { ; }
+    INLINE DimElementIterator operator++ () { return DimElementIterator(ma, ++nr); }
+    // ElementId operator*() const { return ElementId(VB,nr); }
+    INLINE Ngs_Element operator*() const; 
+    INLINE bool operator!=(DimElementIterator id2) const { return nr != id2.nr; }
+  };
+  
+  template <VorB VB, int DIM>
+  class DimElementRange
+  {
+    const MeshAccess & ma;
+    IntRange r;
+  public:
+    INLINE DimElementRange (const MeshAccess & ama, IntRange ar) : ma(ama), r(ar) { ; }
+    INLINE auto begin () const { return DimElementIterator<VB,DIM>(ma, r.First()); }
+    INLINE auto end () const { return DimElementIterator<VB,DIM>(ma, r.Next()); }
+  };
+
 
   class NodeIterator
   {
@@ -302,6 +326,13 @@ namespace ngcomp
     {
       return TElementRange<VB> (*this, IntRange (0, GetNE(VB)));
     }
+    
+    template <VorB VB, int DIM>
+      auto Elements () const
+    {
+      return DimElementRange<VB,DIM> (*this, IntRange (0, GetNE(VB)));
+    }
+
 
     NodeRange Nodes (NODE_TYPE nt) const
     {
@@ -342,21 +373,6 @@ namespace ngcomp
               func (move(el), clh);
             }
         }
-      /*
-#pragma omp parallel 
-      {
-        LocalHeap lh = clh.Split();
-        
-#pragma omp for schedule(dynamic)
-        for (int i = 0; i < GetNE(vb); i++)
-          {
-            HeapReset hr(lh);
-            ElementId ei(vb, i);
-            Ngs_Element el(GetElement(ei), ei);
-            func (move(el), lh);
-          }
-      }
-      */
     }
 
 
@@ -367,47 +383,35 @@ namespace ngcomp
 
 
     /// the geometry type of the element
+    [[deprecated("Use GetElType with ElementId(VOL, elnr) instead!")]]            
     ELEMENT_TYPE GetElType (int elnr) const
     { return GetElement(elnr).GetType(); }
 
     /// the geometry type of the boundary element
+    [[deprecated("Use GetElType with ElementId(BND, elnr) instead!")]]                
     ELEMENT_TYPE GetSElType (int elnr) const
     { return GetSElement(elnr).GetType(); }
 
+    /// the geometry type of the element    
     ELEMENT_TYPE GetElType (ElementId ei) const
     { return GetElement(ei).GetType(); }
 
 
     /// the sub-domain index of the element
+    [[deprecated("Use GetElIndex with ElementId(VOL, elnr) instead!")]]                    
     int GetElIndex (int elnr) const
     { 
       return GetElement(elnr).GetIndex();
-      /*
-      switch (dim)
-        {
-        case 1: return mesh.GetElementIndex<1>(elnr) - 1;
-        case 2: return mesh.GetElementIndex<2>(elnr) - 1;
-        case 3: default:
-          return mesh.GetElementIndex<3>(elnr) - 1;
-        }
-      */
     }
 
     /// the boundary-condition index of the boundary element
+    [[deprecated("Use GetElIndex with ElementId(BND, elnr) instead!")]]                        
     int GetSElIndex (int elnr) const
     { 
       return GetSElement(elnr).GetIndex();
-      /*
-      switch (dim)
-        {
-        case 1: return mesh.GetElementIndex<0>(elnr) - 1;
-        case 2: return mesh.GetElementIndex<1>(elnr) - 1;
-        case 3: default:
-          return mesh.GetElementIndex<2>(elnr) - 1;
-        }
-      */
     }
 
+    [[deprecated("Use GetElIndex with ElementId(BBND, elnr) instead!")]]                            
     int GetCD2ElIndex(int elnr) const
     {
       return GetCD2Element(elnr).GetIndex();
@@ -416,8 +420,6 @@ namespace ngcomp
     int GetElIndex (ElementId ei) const
     {
       return GetElement(ei).GetIndex();
-      // if (ei.IsVolume()) return GetElIndex (ei.Nr());
-      // else return GetSElIndex (ei.Nr());
     }
 
 
@@ -700,6 +702,10 @@ namespace ngcomp
 
     // returns edge numbers and edge orientation of an element. (old style function)
     void GetSElEdges (int selnr, Array<int> & ednums, Array<int> & orient) const;
+
+    /// returns the faces of an element
+    void GetElFaces (ElementId ei, Array<int> & fnums) const
+    { fnums = GetElement(ei).Faces(); }
 
     /// returns the faces of an element
     void GetElFaces (int elnr, Array<int> & fnums) const
@@ -1013,6 +1019,12 @@ namespace ngcomp
   INLINE Ngs_Element TElementIterator<VB>::operator*() const 
   {
     return ma[ElementId(VB,nr)]; 
+  }
+
+  template <VorB VB, int DIM>
+  INLINE Ngs_Element DimElementIterator<VB,DIM>::operator*() const 
+  {
+    return ma.GetElement(T_ElementId<VB,DIM>(nr));
   }
 
   
