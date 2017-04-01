@@ -1118,7 +1118,7 @@ namespace ngcomp
 	      int maxdom = -1;
 	      int ne = pde->GetMeshAccess()->GetNE();
 	      for (int i = 0; i < ne; i++)
-		maxdom = max2 (maxdom, pde->GetMeshAccess()->GetElIndex(i));
+		maxdom = max2 (maxdom, pde->GetMeshAccess()->GetElIndex(ElementId(VOL,i)));
 	      maxdom++;
 
 	      dcoeffs.SetSize(maxdom);
@@ -1128,7 +1128,7 @@ namespace ngcomp
 	      bool only_constant = true;
 	      for (int i = 0; i < ne; i++)
 		{
-		  int index = pde->GetMeshAccess()->GetElIndex(i);
+		  int index = pde->GetMeshAccess()->GetElIndex(ElementId(VOL,i));
 		  if (coeffs[index]) continue;
 
 		  string mat = pde->GetMeshAccess()->GetMaterial(ElementId(VOL,i));
@@ -1293,7 +1293,7 @@ namespace ngcomp
 	      int maxbc = -1;
 	      int nse = pde->GetMeshAccess()->GetNSE();
 	      for (int i = 0; i < nse; i++)
-		maxbc = max2 (maxbc, pde->GetMeshAccess()->GetSElIndex(i));
+		maxbc = max2 (maxbc, pde->GetMeshAccess()->GetElIndex(ElementId(BND,i)));
 	      maxbc++;
 
 	      dcoeffs.SetSize(maxbc);
@@ -1303,7 +1303,7 @@ namespace ngcomp
 	      bool only_constant = true;
 	      for (int i = 0; i < nse; i++)
 		{
-		  int index = pde->GetMeshAccess()->GetSElIndex(i);
+		  int index = pde->GetMeshAccess()->GetElIndex(ElementId(BND,i));
 		  if (coeffs[index]) continue;
 
 		  shared_ptr<EvalFunction> fun = NULL;

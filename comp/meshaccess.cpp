@@ -809,13 +809,13 @@ namespace ngcomp
     GetFacetElements ( fnums[0], elnums );
     if (elnums.Size()==1)
     {
-      in = GetElIndex(elnums[0])+1;
+      in = GetElIndex(ElementId(VOL,elnums[0]))+1;
       out = 0;
     }
     else
     {
-      out = GetElIndex(elnums[0])+1;
-      in = GetElIndex(elnums[1])+1;
+      out = GetElIndex(ElementId(VOL,elnums[0]))+1;
+      in = GetElIndex(ElementId(VOL,elnums[1]))+1;
     }
   }
 
@@ -882,7 +882,7 @@ namespace ngcomp
     int ne = GetNE(); 
     for (int i = 0; i < ne; i++)
       {
-        int elindex = GetElIndex(i);
+        int elindex = GetElIndex(ElementId(VOL,i));
         if (elindex < 0) throw Exception("mesh with negative element-index");
         ndomains = max2(ndomains, elindex);
       }
@@ -895,7 +895,8 @@ namespace ngcomp
     int nse = GetNSE(); 
     for (int i = 0; i < nse; i++)
       {
-        int elindex = GetSElIndex(i);
+        ElementId sei(BND, i);
+        int elindex = GetElIndex(sei);
         if (elindex < 0) throw Exception("mesh with negative boundary-condition number");
         nboundaries = max2(nboundaries, elindex);
       }
@@ -914,7 +915,8 @@ namespace ngcomp
         int ncd2e = nelements_cd[2];
         for (int i=0; i< ncd2e; i++)
           {
-            int elindex = GetCD2ElIndex(i);
+            ElementId ei(BBND, i);
+            int elindex = GetElIndex(ei);
             //if (elindex < 0) throw Exception ("mesh with negative cd2 condition number");
             if (elindex >=0)
               nbboundaries = max2(nbboundaries, elindex);
@@ -1698,9 +1700,9 @@ namespace ngcomp
     static FE_Prism0 prism0;
     static FE_Pyramid0 pyramid0;
     FE_Hex0 hex0;
-  
+    
     const FiniteElement * fe = NULL;
-    switch (GetElType (elnr))
+    switch (GetElType (ElementId(VOL, elnr)))
       {
       case ET_SEGM: fe = &segm0; break;
       case ET_TRIG: fe = &trig0; break;
@@ -1711,7 +1713,7 @@ namespace ngcomp
 	// case ET_HEX: fe = &hex0; break;
       default:
 	{
-	  cerr << "ElementVolume not implemented for el " << GetElType(elnr) << endl;
+	  cerr << "ElementVolume not implemented for el " << GetElType(ElementId(VOL, elnr)) << endl;
 	}
       }
   
@@ -1749,22 +1751,22 @@ namespace ngcomp
   {
     static ScalarFE<ET_TRIG,0> trig0;
     static ScalarFE<ET_QUAD,0> quad0;
-
+    ElementId sei(BND, selnr);
     const FiniteElement * fe;
-    switch (GetSElType (selnr))
+    switch (GetElType (sei))
       {
       case ET_TRIG: fe = &trig0; break;
       case ET_QUAD: fe = &quad0; break;
       default:
 	{
-	  cerr << "SurfaceElementVolume not implemented for el " << GetElType(selnr) << endl;
+	  cerr << "SurfaceElementVolume not implemented for el " << GetElType(sei) << endl;
 	  return 0;
 	}
       }
 
     LocalHeapMem<10000> lh("MeshAccess - surfaceelementvolume");
 
-    ElementTransformation & trans = GetTrafo (ElementId(BND, selnr), lh);
+    ElementTransformation & trans = GetTrafo (sei, lh);
     ConstantCoefficientFunction ccf(1);
 
     if (GetDimension() == 2)

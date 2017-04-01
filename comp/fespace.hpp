@@ -41,6 +41,15 @@ namespace ngcomp
 		      };
 		     
 
+  /**
+     constant_order .... one order for everything
+     node_type_order ... order for edges, or faces, gradients or curls, but all over the mesh
+     variable_order .... a different, anisotropic order for every mesh node
+   */
+  enum ORDER_POLICY { CONSTANT_ORDER = 0, NODE_TYPE_ORDER = 1, VARIABLE_ORDER = 2 };
+
+  
+  
   NGS_DLL_HEADER ostream & operator<< (ostream & ost, COUPLING_TYPE ct);
 
 
@@ -59,7 +68,7 @@ namespace ngcomp
   class NGS_DLL_HEADER FESpace : public NGS_Object
   {
   protected:
-    /// order of finite elements
+    /// global order of finite elements
     int order;
     /// how many components
     int dimension;
@@ -154,6 +163,36 @@ namespace ngcomp
 
     int et_bonus_order[30]; // order increase for element-type
 
+    typedef int8_t TORDER;
+
+    ORDER_POLICY order_policy = CONSTANT_ORDER;
+    
+    /*
+      the function space H(curl) has high order basis funcitons which 
+      are gradients, and additional ones which span the domain of the curl.
+      In general, for function spaces of the de Rham sequence we refer to 
+      functions in the range of the differential operator from the left to 
+      the left sub-space, and functions spanning the domain of the right 
+      differential operator as the right sub-space. 
+      
+      We can give different polynomial orders to the left and the
+      right sub-space.  This allows to define Raviart-Thomas vs BDM
+      elements, or Nedelec-type 1 vs Nedelec-type 2 elements, and
+      more: We can skip all high order gradients in H(curl), or also
+      define a (high-order) div-free H(div) space.
+
+      We can give different orders for the left and right space for different
+      element-types (like trig or quad)
+     */
+    int et_order_left[30];  // order for range of diff-op from the left 
+    int et_order_right[30]; // order for domain of diff-op to the right
+    
+    Array<TORDER> order_edge; 
+    Array<INT<2,TORDER>> order_face_left;
+    Array<INT<2,TORDER>> order_face_right; 
+    Array<INT<3,TORDER>> order_cell_left;
+    Array<INT<3,TORDER>> order_cell_right;
+    
     BitArray is_atomic_dof;
   public:
     virtual int GetSpacialDimension() const { return ma->GetDimension();}
@@ -198,6 +237,22 @@ namespace ngcomp
     void SetBonusOrder (ELEMENT_TYPE et, int bonus) 
     { et_bonus_order[et] = bonus; }
 
+    void SetOrder (ELEMENT_TYPE et, TORDER order)
+    {
+      if (order_policy == CONSTANT_ORDER) order_policy = NODE_TYPE_ORDER;
+      et_order_left[et] = et_order_right[et] = order;
+    }
+    void SetOrderLeft (ELEMENT_TYPE et, TORDER order)
+    {
+      if (order_policy == CONSTANT_ORDER) order_policy = NODE_TYPE_ORDER;      
+      et_order_left[et] = order;
+    }
+    void SetOrderRight (ELEMENT_TYPE et, TORDER order)
+    {
+      if (order_policy == CONSTANT_ORDER) order_policy = NODE_TYPE_ORDER;
+      et_order_right[et] = order;
+    }
+    
     /// how many components
     int GetDimension () const { return dimension; }
 

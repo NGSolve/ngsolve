@@ -444,9 +444,10 @@ namespace ngcomp
     first_element_dof.SetSize(ne+1);
     for (auto i : Range(ne))
       {
+        ElementId ei(VOL,i);
 	first_element_dof[i] = hndof;
 	INT<3> p = order_inner[i];
-	switch (ma->GetElType(i))
+	switch (ma->GetElType(ei))
 	  {
 	  case ET_TRIG:
 	    if(p[0] > 2)
@@ -1532,7 +1533,8 @@ namespace ngcomp
     
     for (int i = 0; i < ne; i++)
       {
-	if (ma->GetElType(i) == ET_PRISM)
+        ElementId ei(VOL, i);
+	if (ma->GetElType(ei) == ET_PRISM)
 	  {
 	    ma->GetElEdges (i, ednums);
 	    for (int j = 6; j < 9; j++)  //vertical Edges 
@@ -1556,9 +1558,9 @@ namespace ngcomp
 	      }
 	  }
 
-	else if (ma->GetElType(i) == ET_HEX)  
+	else if (ma->GetElType(ei) == ET_HEX)  
 	  {
-	    ma->GetElEdges (i, ednums);
+	    ma->GetElEdges (ei, ednums);
 	    for (int j = 8; j < 12; j++) //vertical edges
               clusters[GetEdgeDofs(ednums[j])] = 2;
 
@@ -1571,7 +1573,8 @@ namespace ngcomp
    
     for (int i =0; directsolverclustered.Size() > 0 && i<ne; i++)
       {
-	if(directsolverclustered[ma->GetElIndex(i)])
+        ElementId ei(VOL,i);
+	if(directsolverclustered[ma->GetElIndex(ei)])
 	  {
 	    GetDofNrs(i,ednums);
 	    for (int k = 0; k<ednums.Size(); k++)

@@ -132,7 +132,7 @@ namespace ngcomp
       {
 	INT<3> el_orders = ma->GetElOrders(i); 
 
-	ELEMENT_TYPE eltype=ma->GetElType(i); 
+	ELEMENT_TYPE eltype=ma->GetElType(ElementId(VOL,i)); 
 	const POINT3D * points = ElementTopology :: GetVertices (eltype);	
 	
 	if (ma->GetDimension() == 2)
@@ -271,7 +271,7 @@ namespace ngcomp
 	    for (int i = 0; i < ne; i++)
 	      {
 		first_inner_dof[i] = ndof;
-		switch (ma->GetElType(i))
+		switch (ma->GetElType(ElementId(VOL,i)))
 		  {
 		  case ET_TET: ndof += 4*(order+1)*2; break;
 		  case ET_PRISM: ndof += 2 * (2*(order+1)+3*(2*order+1)); break;
@@ -465,8 +465,8 @@ namespace ngcomp
 	    fanums.SetSize(0);
 	    dnums.SetSize(0);
 	    
-	    ELEMENT_TYPE et = ma->GetElType (ei.Nr());
-	    ma->GetElFaces (ei.Nr(), fanums);
+	    ELEMENT_TYPE et = ma->GetElType (ei);
+	    ma->GetElFaces (ei, fanums);
 	    
 	    int innerdof = first_inner_dof[ei.Nr()];
 	    for(int i=0; i<fanums.Size(); i++)
@@ -523,7 +523,7 @@ namespace ngcomp
 	  }
       }
       
-    if (!DefinedOn (VOL, ma->GetElIndex (ei.Nr())))
+    if (!DefinedOn (VOL, ma->GetElIndex (ei)))
       dnums = -1;
     // *testout << "dnums = " << endl << dnums << endl;
       }

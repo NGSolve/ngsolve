@@ -349,7 +349,7 @@ namespace ngcomp
             INT<3> pc = order_inner_curl[i];
             INT<3> p = order_inner[i];
             int inci = 0;
-            switch(ma->GetElType(i))
+            switch(ma->GetElType(ElementId(VOL,i)))
               {
               case ET_TRIG:
                 if (!ho_div_free)
@@ -441,7 +441,7 @@ namespace ngcomp
             INT<3> pc = order_inner_curl[i];
             int inci = 0;
 	     
-            switch(ma->GetElType(i))
+            switch(ma->GetElType(ElementId(VOL,i)))
               {
               case ET_TET:
                 if(p[0]>1 && !ho_div_free)
@@ -637,7 +637,7 @@ namespace ngcomp
         ArrayMem<int,4> vnums;
         ma->GetSElVertices(selnr, vnums);
         
-        switch (ma->GetSElType(selnr))
+        switch (ma->GetElType(ei))
           {
           case ET_SEGM:
             {
@@ -662,7 +662,7 @@ namespace ngcomp
             }
           default:
             throw Exception (string("HDivHighOrderFESpace::GetSFE: unsupported element ")+
-                             ElementTopology::GetElementName(ma->GetSElType(selnr)));
+                             ElementTopology::GetElementName(ma->GetElType(ei)));
           }
         
         if (discont) return *fe; 
@@ -670,7 +670,7 @@ namespace ngcomp
         ArrayMem<int, 4> ednums, order_ed;
         INT<3> order_fa;
         
-        if(ma->GetSElType(selnr) == ET_SEGM)
+        if(ma->GetElType(ei) == ET_SEGM)
           {
             HDivHighOrderNormalFiniteElement<1> * hofe =
               dynamic_cast<HDivHighOrderNormalFiniteElement<1>*> (fe);
@@ -904,6 +904,17 @@ namespace ngcomp
   void HDivHighOrderFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
     dnums.SetSize0();
+
+    if (order_policy == NODE_TYPE_ORDER)
+      {
+        auto et = ma->GetElType(ei);
+        cout << "new order policy, et = " << et
+             << ", ol = " << et_order_left[et]
+             << ", or = " << et_order_right[et]
+             << endl;
+      }
+
+    
     if(discont) 
       {
 	// lowest_order included in inner
@@ -1786,59 +1797,7 @@ namespace ngcomp
   }
 
 
-
   static RegisterFESpace<HDivHighOrderFESpace> init ("hdivho");
-
-
-
-  class Testing
-  {
-  public:
-    Testing ()
-    {
-      cout << "========== testhiv =========" << endl;
-      
-      LocalHeap lh(1000000);
-      
-      IntegrationRule ir(ET_TRIG, 4);
-      SIMD_IntegrationRule simd_ir(ir);
-      FE_ElementTransformation<2,2> trafo(ET_TRIG);
-      
-      MappedIntegrationRule<2,2> mir(ir, trafo, lh);
-      auto & simd_mir = trafo(simd_ir, lh);
-      
-      HDivHighOrderFE<ET_TRIG> fe(2);
-
-      Vector<> coef(fe.GetNDof());
-      Matrix<> vals(ir.GetNIP(), 4);
-      for (size_t i = 0; i < fe.GetNDof(); i++)
-        coef(i) = sin(i);
-      DiffOpGradientHdiv<2>::ApplyIR (fe, mir, coef, vals, lh);
-      cout.precision(16);
-      cout << "vals = " << vals << endl;
-
-      Matrix<SIMD<double>> simd_vals(4, simd_mir.Size());
-      DiffOpGradientHdiv<2>::ApplySIMDIR (fe, simd_mir, coef, BareSliceMatrix<SIMD<double>> (simd_vals));
-      cout << "vals = " << simd_vals << endl;
-
-
-
-      
-      /*
-      Matrix<double, ColMajor> bmat (4, fe.GetNDof());
-      for (int i = 0; i < mir.Size(); i++)
-        {
-          DiffOpGradientHdiv<2>::GenerateMatrix(fe, mir[i], FlatMatrix<double,ColMajor>(bmat), lh);
-          cout << "bmat = " << endl << bmat << endl;
-        }
-      Matrix<SIMD<double>> simd_mat(4*fe.GetNDof(), simd_mir.Size());
-      DiffOpGradientHdiv<2>::GenerateMatrixSIMDIR(fe, simd_mir, simd_mat);
-      cout << "simd_mat = " << endl << simd_mat << endl;
-      */
-    }
-  };
-  
-  // Testing testing;
 }
 
 

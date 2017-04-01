@@ -47,6 +47,23 @@ namespace ngcomp
     DefineDefineFlag("dgjumps");
 
     order = int (flags.GetNumFlag ("order", 1));
+
+    if (flags.NumFlagDefined("order_left"))
+      {
+        auto order_left = int(flags.GetNumFlag("order_left", 1));
+        order = max(order, order_left);
+        for (auto et : element_types)
+          SetOrderLeft (et, order_left);
+      }
+    if (flags.NumFlagDefined("order_right"))
+      {
+        auto order_right = int(flags.GetNumFlag("order_right", 1));
+        order = max(order, order_right);    
+        for (auto et : element_types)
+          SetOrderRight (et, order_right);
+      }
+    
+    
     dimension = int (flags.GetNumFlag ("dim", 1));
 
     if (flags.GetDefineFlag ("vec"))
@@ -137,7 +154,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	definedon[BND] = false;
 	for (int sel = 0; sel < ma->GetNSE(); sel++)
 	  {
-	    int index = ma->GetSElIndex(sel);
+            ElementId sei(BND, sel);
+	    int index = ma->GetElIndex(sei);
 	    int dom1, dom2;
 	    ma->GetSElNeighbouringDomains(sel, dom1, dom2);
 	    dom1--; dom2--;
@@ -192,14 +210,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	
 	for(int selnum = 0; selnum < ma->GetNSE(); selnum++)
 	  {
-	    if(definedon[BND][ma->GetSElIndex(selnum)] == false)
+            ElementId sei(BND, selnum);
+	    if(definedon[BND][ma->GetElIndex(sei)] == false)
 	      {
 		for(int i=0; i<defon.Size(); i++)
 		  {
 		    // if(StringFitsPattern(ma->GetSElBCName(selnum),*(defon[i])))
                     if(StringFitsPattern(ma->GetMaterial(ElementId(BND, selnum)),*(defon[i])))	
 		      {		
-		 	definedon[BND][ma->GetSElIndex(selnum)] = true;
+		 	definedon[BND][ma->GetElIndex(sei)] = true;
 			continue;
 		      }
 		  }
@@ -2065,7 +2084,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     else if (order == 1)
       {
-	switch (ma->GetSElType(ei.Nr()))
+	switch (ma->GetElType(ei))
 	  {
 	  case ET_SEGM:
 	    dnums.SetSize(2);
@@ -2085,7 +2104,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     else if (order == 2)
       {
-	switch (ma->GetSElType(ei.Nr()))
+	switch (ma->GetElType(ei))
 	  {
 	  case ET_SEGM:
 	    dnums.SetSize(3);

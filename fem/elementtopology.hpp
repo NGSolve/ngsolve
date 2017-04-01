@@ -25,7 +25,9 @@ namespace ngfem
 	ET_TET = 20, ET_PYRAMID = 21, ET_PRISM = 22, ET_HEX = 24 };
   
 
-
+  static constexpr auto element_types =
+    { ET_POINT, ET_SEGM, ET_TRIG, ET_QUAD,
+      ET_TET, ET_PYRAMID, ET_PRISM, ET_HEX };
 
 
   /**

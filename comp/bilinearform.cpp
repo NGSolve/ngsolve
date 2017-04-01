@@ -371,7 +371,7 @@ namespace ngcomp
               dnums_dg.SetSize(0);
               for (int k=0;k<nbelems.Size();k++){
                 int elnr=nbelems[k];
-                if (!fespace->DefinedOn (VOL,ma->GetElIndex(elnr))) continue;
+                if (!fespace->DefinedOn (VOL,ma->GetElIndex(ElementId(VOL,elnr)))) continue;
                 fespace->GetDofNrs (ElementId(VOL,elnr), dnums);
                 dnums_dg.Append(dnums);
               }
@@ -808,7 +808,7 @@ namespace ngcomp
                         
                         // clh.CleanUp(heapp);
 			
-                        if (!fespace->DefinedOn (vb,ma->GetElIndex (i))) continue;
+                        if (!fespace->DefinedOn (vb,ma->GetElIndex (id))) continue;
 			
                         const FiniteElement & fel = fespace->GetFE (id, clh);
                         ElementTransformation & eltrans = ma->GetTrafo (id, clh);
@@ -829,7 +829,7 @@ namespace ngcomp
                         for (auto & bfip : VB_parts[vb])
                           {
                             const BilinearFormIntegrator & bfi = *bfip;
-                            if (!bfi.DefinedOn (ma->GetElIndex (i))) continue;
+                            if (!bfi.DefinedOn (ma->GetElIndex (id))) continue;
                             if (!bfi.DefinedOnElement (i)) continue;
                             
                             FlatVector<double> diag;
@@ -1272,8 +1272,8 @@ namespace ngcomp
                             {
                               // if (!bfi->SkeletonForm()) continue;
                               // if (bfi->VB() == BND) continue;
-                              if (!bfi->DefinedOn (ma->GetElIndex (el1))) continue;
-                              if (!bfi->DefinedOn (ma->GetElIndex (el2))) continue;
+                              if (!bfi->DefinedOn (ma->GetElIndex (ei1))) continue;
+                              if (!bfi->DefinedOn (ma->GetElIndex (ei2))) continue;
                               if (!bfi->DefinedOnElement(i)) continue;                        
                               
                               /*
@@ -1551,8 +1551,8 @@ namespace ngcomp
                                {
                                  // if (!bfi->SkeletonForm()) continue;
                                  // if (bfi->VB() != VOL) continue;
-                                 if (!bfi->DefinedOn (ma->GetElIndex (el1))) continue;
-                                 if (!bfi->DefinedOn (ma->GetElIndex (el2))) continue;
+                                 if (!bfi->DefinedOn (ma->GetElIndex (ei1))) continue;
+                                 if (!bfi->DefinedOn (ma->GetElIndex (ei2))) continue;
                                  if (!bfi->DefinedOnElement (el1)) continue;
                                  
                                  for (auto d : dnums)
@@ -1699,15 +1699,15 @@ namespace ngcomp
                           }
                           
                           HeapReset hr(lh);
+                          ElementId sei(BND, i);
                               
-                          if (!fespace->DefinedOn (BND,ma->GetSElIndex (i))) continue;
+                          if (!fespace->DefinedOn (BND,ma->GetElIndex (sei))) continue;
                           ma->GetSElFacets(i,fnums);
                           int fac = fnums[0];
                           ma->GetFacetElements(fac,elnums);
                           int el = elnums[0];
                           ma->GetElFacets(el,fnums);
                           ElementId ei(VOL, el);
-                          ElementId sei(BND, i);
                           const FiniteElement & fel = fespace->GetFE (ei, lh);
                           int facnr = 0;
                           for (int k=0; k<fnums.Size(); k++)
@@ -1740,7 +1740,7 @@ namespace ngcomp
                               // if (bfi.VB() != BND) continue;
                               // if (!bfi.SkeletonForm()) continue;
 				  
-                              if (!bfi->DefinedOn (ma->GetSElIndex(i) )) continue;                
+                              if (!bfi->DefinedOn (ma->GetElIndex(sei) )) continue;                
                               if (!bfi->DefinedOnElement (i)) continue;
 				  
                               for (int k = 0; k < dnums.Size(); k++)
@@ -2528,15 +2528,15 @@ namespace ngcomp
                     {
                       progress.Update();                      
                       HeapReset hr(lh);
+                      ElementId sei(BND, i);
                       
-                      if (!fespace->DefinedOn (BND,ma->GetSElIndex (i))) continue;
+                      if (!fespace->DefinedOn (BND,ma->GetElIndex (sei))) continue;
                       ma->GetSElFacets(i,fnums);
                       int fac = fnums[0];
                       ma->GetFacetElements(fac,elnums);
                       int el = elnums[0];
                       ma->GetElFacets(el,fnums);
                       ElementId ei(VOL, el);
-                      ElementId sei(BND, i);
                       const FiniteElement & fel = fespace->GetFE (ei, lh);
                       int facnr = 0;
                       for (int k=0; k<fnums.Size(); k++)
@@ -2569,7 +2569,7 @@ namespace ngcomp
                           // if (bfi.VB() != BND) continue;
                           // if (!bfi.SkeletonForm()) continue;
                           
-                          if (!bfi->DefinedOn (ma->GetSElIndex(i) )) continue;                
+                          if (!bfi->DefinedOn (ma->GetElIndex(sei) )) continue;                
                           
                           for (int k = 0; k < dnums.Size(); k++)
                             if (dnums[k] != -1)
@@ -3367,27 +3367,18 @@ namespace ngcomp
                        FlatVector<SCAL> elx(dnums.Size()*fespace->GetDimension(), lh),
                          ely(dnums.Size()*fespace->GetDimension(), lh);
                        
-                       // timerDG2b.Stop();
-                       // timerDG2c.Start();                                 
                        x.GetIndirect(dnums, elx);
-                       // timerDG2c.Stop();
-                       // timerDG2c.AddFlops (dnums.Size());
-                       // timerDG2.Stop();
-                       
-                       //                                  for (int j = 0; j < NumIntegrators(); j++)
+
                        RegionTimer reg2(timerDGapply);                     
                        for (auto & bfi : facetwise_skeleton_parts[VOL])                                   
                          {
-                           if (!bfi->DefinedOn (ma->GetElIndex (el1))) continue; 
-                           if (!bfi->DefinedOn (ma->GetElIndex (el2))) continue; 
+                           if (!bfi->DefinedOn (ma->GetElIndex (ei1))) continue; 
+                           if (!bfi->DefinedOn (ma->GetElIndex (ei2))) continue; 
                            
-                           // timerDG3.Start();
                            bfi->ApplyFacetMatrix (fel1, facnr1, eltrans1, vnums1,
-                                                   fel2, facnr2, eltrans2, vnums2, elx, ely, lh);
-                           // timerDG3.Stop();
-                           // timerDG4.Start();
+                                                  fel2, facnr2, eltrans2, vnums2, elx, ely, lh);
+
                            y.AddIndirect(dnums, ely);
-                           // timerDG4.Stop();
                          }
                      }
                  });
@@ -3533,8 +3524,8 @@ namespace ngcomp
                            // if (!bfi->SkeletonForm()) continue;
                            // if (bfi->BoundaryForm()) continue;
                            // if (!bfi->GetDGFormulation().element_boundary) continue;                                     
-                           if (!bfi->DefinedOn (ma->GetElIndex (el1))) continue; //TODO: treat as surface element
-                           if (!bfi->DefinedOn (ma->GetElIndex (el2))) continue; //TODO    
+                           if (!bfi->DefinedOn (ma->GetElIndex (ei1))) continue; //TODO: treat as surface element
+                           if (!bfi->DefinedOn (ma->GetElIndex (ei2))) continue; //TODO    
                            
                            FacetBilinearFormIntegrator * fbfi = 
                              dynamic_cast<FacetBilinearFormIntegrator*>(bfi.get());
@@ -3716,7 +3707,7 @@ namespace ngcomp
                   const BilinearFormIntegrator & bfi = *parts[j];
 
                   if (bfi.BoundaryForm()) continue;
-                  if (!bfi.DefinedOn (ma->GetElIndex (i))) continue;
+                  if (!bfi.DefinedOn (ma->GetElIndex (ei))) continue;
 
 
                   bfi.ApplyLinearizedElementMatrix (fel, eltrans, elveclin, elvecx, elvecy, lh);

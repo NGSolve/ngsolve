@@ -291,7 +291,7 @@ namespace ngcomp
 		    {
 		      if (!parts[j] -> SkeletonForm()) continue;
 		      if (parts[j] -> VB()!=BND) continue;
-		      if (!parts[j] -> DefinedOn (ma->GetSElIndex (i))) continue;
+		      if (!parts[j] -> DefinedOn (ma->GetElIndex (sei))) continue;
 		      if (parts[j] -> IntegrationAlongCurve()) continue;		    
 		  
 		      int elvec_size = dnums.Size()*fespace->GetDimension();
@@ -550,12 +550,11 @@ namespace ngcomp
 	    lh.CleanUp();
 	    ElementId sei(BND, i);
 	    const FiniteElement & sfel = fespace->GetFE (sei, lh);
-	    // ma->GetSurfaceElementTransformation (i, seltrans);
 	    ElementTransformation & seltrans = ma->GetTrafo (sei, lh);
 
 	      	
 	    // (*testout) << "el = " << i << ", ind = " << ma->GetSElIndex(i) << endl;
-	    if (!parts[0]->DefinedOn (ma->GetSElIndex(i))) continue;
+	    if (!parts[0]->DefinedOn (ma->GetElIndex(sei))) continue;
 	    // (*testout) << "integrate surf el " << endl;
 	    
 	    const IntegrationRule & ir = SelectIntegrationRule (sfel.ElementType(), 5);

@@ -2405,7 +2405,7 @@ namespace ngcomp
             ElementId ei(VOL, i);
 	    const FiniteElement & fel = fes.GetFE(ei,lh2);
 	    
-	    domain = ma->GetElIndex(i);
+	    domain = ma->GetElIndex(ei);
 	    
 	    vol = ma->ElementVolume(i);
 	    
@@ -2480,10 +2480,10 @@ namespace ngcomp
       {
 	for(int i=0; i<ma->GetNSE(); i++)
 	  {
-            ElementId ei(VOL, i);
+            ElementId ei(BND, i);
 	    const FiniteElement & fel = fes.GetFE(ei,lh2);
 
-	    domain = ma->GetSElIndex(i);
+	    domain = ma->GetElIndex(ei);
 
 	    vol = ma->SurfaceElementVolume(i);
 
