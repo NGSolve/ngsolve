@@ -360,6 +360,7 @@ namespace ngcomp
         Array<int> pnums;
         for(int i=0; i< nfa; i++)
           {
+            first_facet_dof[i] = ndof;
             if (!fine_facet[i]) continue;
             int p = order_facet[i][0];
             if(highest_order_dc  && order_facet[i][0] > 0) p--;
@@ -371,7 +372,6 @@ namespace ngcomp
               case 3: inci = ((p+1)*(p+2))/2 - n_lowest_order_dofs; break;
               case 4: inci= (p+1)*(p+1) - n_lowest_order_dofs; break;
               }
-            first_facet_dof[i] = ndof;
             ndof+= inci;
           }
         first_facet_dof[nfa] = ndof;
