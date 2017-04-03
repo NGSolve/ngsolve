@@ -733,18 +733,18 @@ namespace ngcomp
       {
       case VOL:
 	{
-	  ArrayMem<int,6> fanums;
-	  ma->GetElFacets (ei.Nr(),fanums);
-	  
-	  dnums.SetSize(0);
+	  // ArrayMem<int,6> fanums;
+	  // ma->GetElFacets (ei.Nr(),fanums);
+	  auto fanums = ma->GetElFacets(ei);
+	  dnums.SetSize0();
 	  
 	  if(!highest_order_dc)
 	    {
-	      for(int i=0; i<fanums.Size(); i++)
+	      for (auto f : fanums)
 		{
 		  if (!all_dofs_together)
-		    dnums.Append(fanums[i]); // low_order
-		  dnums += GetFacetDofs (fanums[i]);
+		    dnums.Append(f); // low_order
+		  dnums += GetFacetDofs (f);
 		}
 	    }
 	  else
