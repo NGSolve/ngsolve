@@ -12,6 +12,7 @@ function(fixup_bundle app libs dirs)
     message(STATUS "fixup_bundle: preparing...")
     get_bundle_keys("${app}" "${libs}" "${dirs}" keys)
 
+    list(REMOVE_ITEM keys "Python") # skip fixup of Python
     message(STATUS "fixup_bundle: copying...")
     list(LENGTH keys n)
     math(EXPR n ${n}*2)
@@ -35,7 +36,8 @@ function(fixup_bundle app libs dirs)
     foreach(key ${keys})
       math(EXPR i ${i}+1)
       message(STATUS "${i}/${n}: fixing up '${${key}_RESOLVED_EMBEDDED_ITEM}'")
-      fixup_bundle_item("${${key}_RESOLVED_EMBEDDED_ITEM}" "${exepath}" "${dirs}")
+      # ignore dependencies to python
+      fixup_bundle_item("${${key}_RESOLVED_EMBEDDED_ITEM}" "${exepath}" "${dirs}" IGNORE_ITEM Python)
     endforeach()
 
     message(STATUS "fixup_bundle: cleaning up...")
