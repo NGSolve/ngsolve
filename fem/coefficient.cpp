@@ -3742,7 +3742,7 @@ public:
           values.Row(i) = then_values.Row(i);
         else
           values.Row(i) = else_values.Row(i);
-      
+
       // for (int i = 0; i < ir.Size(); i++)
       //   values(i) = (if_values(i) > 0) ? then_values(i) : else_values(i);
     }
@@ -3761,7 +3761,6 @@ public:
       cf_if->Evaluate (ir, if_values);
       cf_then->Evaluate (ir, then_values);
       cf_else->Evaluate (ir, else_values);
-
       for (size_t k = 0; k < dim; k++)
         for (size_t i = 0; i < nv; i++)
           values(k,i) = ngstd::IfPos (if_values.Get(i),
@@ -4609,7 +4608,6 @@ namespace ngstd {
       int mem_ptr = 0;
       ArrayMem<FlatMatrix<>,100> temp(steps.Size());
       ArrayMem<FlatMatrix<>*, 100> in(steps.Size());
-
       for (int i = 0; i < steps.Size(); i++)
         {
           temp[i].AssignMemory(ir.Size(), dim[i], &hmem[mem_ptr]);
@@ -4624,8 +4622,10 @@ namespace ngstd {
           auto inputi = inputs[i];
           for (int nr : Range(inputi))
             in[nr] = &temp[inputi[nr]];
-
           steps[i] -> Evaluate (ir, in.Range(0, inputi.Size()), temp[i]);
+
+
+
           // timers[i]->Stop();
         }
       values = temp.Last();

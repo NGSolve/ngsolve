@@ -372,7 +372,7 @@ struct GenericPow {
        {
          int facet = tpir->GetFacet();
          auto & mir = *tpir->GetIRs()[facet];
-         int dim = tpir->GetIRs()[facet]->operator[](0).Dim();
+         int dim = mir[0].Dim();
          int ii = 0;
          res = 0.0;
          if(facet == 0)
@@ -875,8 +875,15 @@ val : float
 	  return PyCF(make_shared<NormalVectorCF<1>>());
 	case 2:
 	  return PyCF(make_shared<NormalVectorCF<2>>());
-	default:
+	case 3:
 	  return PyCF(make_shared<NormalVectorCF<3>>());
+	case 4:
+	  return PyCF(make_shared<NormalVectorCF<4>>());
+	case 5:
+	  return PyCF(make_shared<NormalVectorCF<5>>());
+	case 6:
+	  return PyCF(make_shared<NormalVectorCF<6>>());
+
 	}
     }
 
