@@ -7,3 +7,4 @@ Install from sources
    installlinux.rst
    installwindows.rst
    installmacnative.rst
+   cmakeoptions.rst
