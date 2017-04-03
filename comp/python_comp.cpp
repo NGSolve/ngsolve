@@ -1,9 +1,5 @@
 #ifdef NGS_PYTHON
 
-#ifdef PARALLEL
-#include <mpi4py/mpi4py.h>
-#endif
-
 #include <regex>
 
 #include "../ngstd/python_ngstd.hpp"
@@ -18,6 +14,7 @@ typedef PyWrapper<GF> PyGF;
 typedef PyWrapper<FESpace> PyFES;
 typedef PyWrapper<BaseVector> PyBaseVector;
 typedef PyWrapper<BaseMatrix> PyBaseMatrix;
+typedef PyWrapper<PDE> PyPDE;
 
 // template <typename T>
 // struct PythonTupleFromFlatArray {
@@ -62,29 +59,25 @@ public:
 
 class PyNumProc : public NumProc
 {
-
 public:
-  PyNumProc (shared_ptr<PDE> pde, const Flags & flags) : NumProc (pde, flags) { ; }
-  shared_ptr<PDE> GetPDE() const { return shared_ptr<PDE> (pde); }
-  // virtual void Do (LocalHeap & lh) { cout << "should not be called" << endl; }
+  using NumProc::NumProc;
+  virtual void Do (LocalHeap &lh) override
+  {
+      auto pylh = py::cast(lh, py::return_value_policy::reference);
+      try{
+          PYBIND11_OVERLOAD_PURE(
+                                 void,       /* Return type */
+                                 PyNumProc,  /* Parent class */
+                                 Do,         /* Name of function */
+                                 pylh
+          );
+      }
+      catch (py::error_already_set const &e) {
+          cerr << e.what() << endl;
+          PyErr_Print();
+      }
+  }
 };
-
-// class NumProcWrap : public PyNumProc, public py::wrapper<PyNumProc> {
-// public:
-//   NumProcWrap (shared_ptr<PDE> pde, const Flags & flags) : PyNumProc(pde, flags) { ; }
-//   virtual void Do(LocalHeap & lh)  {
-//     // cout << "numproc wrap - do" << endl;
-//     AcquireGIL gil_lock;
-//     try
-//       {
-//         this->get_override("Do")(boost::ref(lh));
-//       }
-//     catch (py::error_already_set const &) {
-//       cout << "caught a python error:" << endl;
-//       PyErr_Print();
-//     }
-//   }
-// };
 
 typedef PyWrapperDerived<ProxyFunction, CoefficientFunction> PyProxyFunction;
 
@@ -199,7 +192,9 @@ typedef PyWrapper<CoefficientFunction> PyCF;
 typedef PyWrapper<PML_Transformation> PyPML;
 void ExportPml(py::module &m)
 {
-  py::class_<PyPML>(m, "PML", "Base pml object")
+  py::class_<PyPML>(m, "PML", R"raw_string(Base PML object
+
+can only be created by generator functions. Use PML(x, [y, z]) to evaluate the scaling.)raw_string")
     .def("__call__",  [](py::args varargs) {
                       PyPML self = py::extract<PyPML>(varargs[0])();
                       int dim = self.Get()->GetDimension();
@@ -224,26 +219,26 @@ void ExportPml(py::module &m)
                       Matrix<Complex> jac(dim,dim);
                       self.Get()->MapPointV(hpoint,point,jac);
                       return jac;
-                    },"evaluates jacobian at point")
+                    },"evaluate PML jacobian at point x, [y, z]")
     .def_property_readonly("dim", [] (PyPML & self) {return self.Get()->GetDimension(); },
         "dimension")
     .def_property_readonly("PML_CF", [](PyPML *instance) {
                       return PyCF(make_shared<PML_CF> (instance->Get()));
                     },
-        "the pml scaling as coefficient function")
+        "the scaling as coefficient function")
     .def_property_readonly("Jac_CF", [](PyPML *instance) {
                       return PyCF(make_shared<PML_Jac> (instance->Get()));
                     },
-        "the pml jacobian as coefficient function")
+        "the jacobian of the PML as coefficient function")
     .def_property_readonly("Det_CF", [](PyPML *instance) {
                       return PyCF(make_shared<PML_Det> (instance->Get()));
                     },
-          "the pml transformation determinant as coefficient function")
+          "the determinant of the jacobian as coefficient function")
     .def_property_readonly("JacInv_CF", [](PyPML *instance) {
                       return PyCF(make_shared<PML_JacInv> (instance->Get()));
                     },
-        "the pml jacobian inverse as coefficient function")
-    .def_property_readonly("__add__", [](PyPML pml1, PyPML pml2) {
+        "the inverse of the jacobian as coefficient function")
+    .def("__add__", [](PyPML pml1, PyPML pml2) {
                   int dim = pml1.Get()->GetDimension();
                   if (pml2.Get()->GetDimension() != dim)
                     throw Exception("Dimensions do not match");
@@ -289,7 +284,9 @@ void ExportPml(py::module &m)
           throw Exception("No valid dimension");
       },
     py::arg("origin"),py::arg("rad")=1,py::arg("alpha")=Complex(0,1),
-    "radial pml transformation");
+    R"raw_string(radial pml transformation
+
+origin is a list/tuple determining the dimenson)raw_string");
 
     m.def("Custom", [](PyCF trafo, PyCF jac) -> PyPML {
           switch (trafo.Get()->Dimension())
@@ -304,7 +301,9 @@ void ExportPml(py::module &m)
           throw Exception("No valid dimension");
         },
         py::arg("trafo"),py::arg("jac"),
-        "pml given by coefficient functions")
+        R"raw_string(custom pml transformation
+
+trafo and jac are coefficient functions of the scaling and the jacobian)raw_string")
     ;
     m.def("Cartesian", [](py::object mins,py::object maxs, Complex alpha) {
           int dim = 0;
@@ -347,7 +346,9 @@ void ExportPml(py::module &m)
           throw Exception("No valid dimension");
         },
         py::arg("mins"),py::arg("maxs"), py::arg("alpha")=Complex(0,1),
-        "cartesian pml")
+        R"raw_string(cartesian pml transformation
+
+mins and maxs are tuples/lists determining the dimension)raw_string")
     ;
     m.def("HalfSpace", [](py::object point,py::object normal, Complex alpha) {
           int dim = 0;
@@ -398,7 +399,9 @@ void ExportPml(py::module &m)
           throw Exception("No valid dimension");
         },
         py::arg("point"),py::arg("normal"), py::arg("alpha")=Complex(0,1),
-        "half space pml, scales orthogonal to specified plane in direction of normal")
+        R"raw_string(half space pml
+
+scales orthogonal to specified plane in direction of normal point and normal are given as tuples/lists determining the dimension)raw_string")
     ;
     m.def("BrickRadial", [](py::object mins,py::object maxs,py::object _origin, Complex alpha) {
           int dim = 0;
@@ -453,7 +456,9 @@ void ExportPml(py::module &m)
           throw Exception("No valid dimension");
         },
         py::arg("mins"),py::arg("maxs"), py::arg("origin")=py::make_tuple(0.,0.,0.),py::arg("alpha")=Complex(0,1),
-        "radial pml on a brick")
+        R"raw_string(radial pml on a brick
+
+mins, maxs and origin are given as tuples/lists)raw_string")
       ;
     m.def("Compound", [](PyPML pml1,PyPML pml2,py::object dims1,py::object dims2) {
           int dim1 = pml1.Get()->GetDimension();
@@ -502,11 +507,6 @@ void ExportPml(py::module &m)
           {
             throw Exception("Dimensions do not match");
           }
-            cout << dim1 << endl;
-            cout << dim2 << endl;
-            cout << vdims1 << endl;
-            cout << vdims2 << endl;
-
           switch (dim)
           {
             case 1:
@@ -541,7 +541,9 @@ void ExportPml(py::module &m)
         },
         py::arg("pml1"),py::arg("pml2"), 
         py::arg("dims1")=DummyArgument(),py::arg("dims2")=DummyArgument(),
-        "compound of two pmls, dimensions start with 1")
+        R"raw_string(tensor product of two pml transformations
+
+        dimensions are optional, given as tuples/lists and start with 1)raw_string")
       ;
 }
 
@@ -554,7 +556,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
   ExportPml(pml);
   //////////////////////////////////////////////////////////////////////////////////////////
 
-  py::enum_<VorB>(m, "VorB")
+  py::enum_<VorB>(m, "VorB", "Enum specifying the codimension. VOL is volume, BND is boundary and BBND is codimension 2 (edges in 3D, points in 2D)")
     .value("VOL", VOL)
     .value("BND", BND)
     .value("BBND", BBND)
@@ -563,7 +565,33 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
-  py::enum_<COUPLING_TYPE> (m, "COUPLING_TYPE")
+  py::enum_<COUPLING_TYPE> (m, "COUPLING_TYPE", docu_string(R"raw_string(
+Enum specifying the coupling type of a degree of freedom, each dof is
+either UNUSED_DOF, LOCAL_DOF, INTERFACE_DOF or WIREBASKET_DOF, other values
+are provided as combinations of these:
+
+UNUSED_DOF: Dof is not used, i.e the slave dofs in a :any:`Periodic` finite
+    element space.
+
+LOCAL_DOF: Inner degree of freedom, will be eliminated by static
+    condensation.
+
+INTERFACE_DOF: Degree of freedom between two elements, these will not be
+    eliminated by static condensation, but not be put into the wirebasket
+    system for i.e. a bddc :any:`Preconditioner`.
+
+NONWIREBASKET_DOF: Either a LOCAL_DOF or an INTERFACE_DOF
+
+WIREBASKET_DOF: Degree of freedom coupling with many elements (more than
+    one). These will be put into the system for a bddc preconditioner.
+    The HCurl space also treats degrees of freedom of badly shaped
+    elements as WIREBASKET_DOFs.
+
+EXTERNAL_DOF: Either INTERFACE_DOF or WIREBASKET_DOF
+
+ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
+
+)raw_string"))
     .value("UNUSED_DOF", UNUSED_DOF)
     .value("LOCAL_DOF", LOCAL_DOF)
     .value("INTERFACE_DOF", INTERFACE_DOF)
@@ -583,7 +611,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
       py::keep_alive<0,1>()
     );
 
-  py::class_<FESpace::ElementRange,shared_ptr<FESpace::ElementRange>, IntRange> (m, "FESpaceElementRange")
+  py::class_<FESpace::ElementRange, IntRange> (m, "FESpaceElementRange")
     .def("__iter__", [] (FESpace::ElementRange &er)
       { return py::make_iterator(er.begin(), er.end()); },
       py::keep_alive<0,1>()
@@ -618,7 +646,11 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
     .def_property_readonly("nr", &Ngs_Element::Nr, "the element number")    
     .def("VB", &Ngs_Element::VB, "VorB of element")   
     .def_property_readonly("vertices", [](Ngs_Element &el) {
-        return py::cast(Array<int>(el.Vertices()));
+        // return py::cast(Array<int>(el.Vertices()));
+        py::tuple tuple(el.Vertices().Size());
+        for (auto i : Range(el.Vertices()))
+          tuple[i] = py::int_(el.Vertices()[i]);
+        return tuple;
         })//, "list of global vertex numbers")
     .def_property_readonly("edges", [](Ngs_Element &el) { return py::cast(Array<int>(el.Edges()));} ,
                   "list of global edge numbers")
@@ -631,8 +663,8 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
         { return self.GetIndex(); },
         "material or boundary condition index")
     .def_property_readonly("mat", [](Ngs_Element & el)
-                                         { return el.GetMaterial() ? *el.GetMaterial() : ""; },
-                  "material or boundary condition label")
+                           { return el.GetMaterial(); },
+                           "material or boundary condition label")
     ;
 
   py::implicitly_convertible <Ngs_Element, ElementId> ();
@@ -644,8 +676,8 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                    {
                      py::list res;
                      Array<int> tmp (el.GetDofs());
-                     for( int i : tmp)
-                        res.append(py::cast(i));
+                     for (int i : tmp)
+                       res.append(py::cast(i));
                      return res;
                    },
                   "degrees of freedom of element"
@@ -810,7 +842,16 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
   //////////////////////////////////////////////////////////////////////////////////////////
   
   
-  py::class_<MeshAccess, shared_ptr<MeshAccess>>(m, "Mesh", "the mesh", py::dynamic_attr())
+  py::class_<MeshAccess, shared_ptr<MeshAccess>>(m, "Mesh", docu_string(R"raw_string(
+NGSolve interface to the Netgen mesh. Provides access and functionality
+to use the mesh for finite element calculations.
+
+Parameters
+
+mesh (netgen.Mesh): a mesh generated from Netgen
+
+
+)raw_string") , py::dynamic_attr())
     .def(py::init<shared_ptr<netgen::Mesh>>())
     .def("__ngsid__", [] ( MeshAccess & self)
         { return reinterpret_cast<std::uintptr_t>(&self); }  )
@@ -826,22 +867,14 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 #else
 
     .def("__init__",
-         [](MeshAccess *instance, const string & filename,
-                              py::object py_mpicomm)
+         [](MeshAccess *instance, const string & filename)
                            { 
-                             PyObject * py_mpicomm_ptr = py_mpicomm.ptr();
-                             if (py_mpicomm_ptr != Py_None)
-                               {
-                                 MPI_Comm * comm = PyMPIComm_Get (py_mpicomm_ptr);
-                                 ngs_comm = *comm;
-                               }
-                             else
-                               ngs_comm = MPI_COMM_WORLD;
+                             ngs_comm = MPI_COMM_WORLD;
 
                              NGSOStream::SetGlobalActive (MyMPI_GetId()==0);
                              new (instance) MeshAccess (filename, ngs_comm);
                            },
-          py::arg("filename"), py::arg("mpicomm")=DummyArgument())
+          py::arg("filename"))
 #endif
 
     
@@ -871,34 +904,32 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
          "Load mesh from file")
     
     .def("Elements", static_cast<ElementRange(MeshAccess::*)(VorB)const> (&MeshAccess::Elements),
-         (py::arg("VOL_or_BND")=VOL))
+	 (py::arg("VOL_or_BND")=VOL), docu_string("Returns an iterator over ElementIds on VorB"))
 
     .def("__getitem__", static_cast<Ngs_Element(MeshAccess::*)(ElementId)const> (&MeshAccess::operator[]))
 
-    .def ("GetNE", static_cast<size_t(MeshAccess::*)(VorB)const> (&MeshAccess::GetNE))
-    .def_property_readonly ("nv", &MeshAccess::GetNV, "number of vertices")
-    .def_property_readonly ("ne",  static_cast<size_t(MeshAccess::*)()const> (&MeshAccess::GetNE), "number of volume elements")
-    .def_property_readonly ("dim", &MeshAccess::GetDimension, "mesh dimension")
-    .def_property_readonly ("ngmesh", &MeshAccess::GetNetgenMesh, "netgen mesh")
+    .def ("GetNE", static_cast<size_t(MeshAccess::*)(VorB)const> (&MeshAccess::GetNE), docu_string("Number of elements of codimension VorB."))
+    .def_property_readonly ("nv", &MeshAccess::GetNV, "Number of vertices")
+    .def_property_readonly ("ne",  static_cast<size_t(MeshAccess::*)()const> (&MeshAccess::GetNE), "Number of volume elements")
+    .def_property_readonly ("dim", &MeshAccess::GetDimension, "Mesh dimension")
+    .def_property_readonly ("ngmesh", &MeshAccess::GetNetgenMesh, "Get the Netgen mesh")
     .def ("GetTrafo", 
           static_cast<ElementTransformation&(MeshAccess::*)(ElementId,Allocator&)const>
           (&MeshAccess::GetTrafo), 
           py::return_value_policy::reference)
 
-    .def ("GetTrafo", FunctionPointer([](MeshAccess & ma, ElementId id)
-                                      {
-                                        return &ma.GetTrafo(id, global_alloc);
-                                      }),
+    .def ("GetTrafo",
+          [](MeshAccess & ma, ElementId id) -> PyWrapper<ElementTransformation>
+          { return &ma.GetTrafo(id, global_alloc); },
           py::return_value_policy::take_ownership)
 
-    // .def("SetDeformation", &MeshAccess::SetDeformation)
-    .def("SetDeformation", FunctionPointer
-	 ([](MeshAccess & ma, PyGF gf)
-          { ma.SetDeformation(gf.Get()); }))
-    //old
-    //.def("SetRadialPML", &MeshAccess::SetRadialPML)
-    .def("SetPML", FunctionPointer
-	 ([](MeshAccess & ma,  PyPML apml, py::object definedon)
+    .def("SetDeformation", 
+	 [](MeshAccess & ma, PyGF gf)
+         { ma.SetDeformation(gf.Get()); },
+         docu_string("Deform the mesh with the given GridFunction"))
+
+    .def("SetPML", 
+	 [](MeshAccess & ma,  PyPML apml, py::object definedon)
           {
             if (py::extract<int>(definedon).check())
               {
@@ -909,13 +940,13 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
               {
                 std::regex pattern(definedon.cast<string>());
                 for (int i = 0; i < ma.GetNDomains(); i++)
-                  if (std::regex_match (ma.GetDomainMaterial(i), pattern))
+                  if (std::regex_match (ma.GetMaterial(VOL,i), pattern))
                     ma.SetPML(apml.Get(), i);
               }
-          }),
-   py::arg("pmltrafo"),py::arg("definedon"),
-   "set PML transformation on domain"
-   )
+          },
+         py::arg("pmltrafo"),py::arg("definedon"),
+         "set PML transformation on domain"
+         )
     .def("UnSetPML", [](MeshAccess & ma, py::object definedon)
           {
             if (py::extract<int>(definedon).check())
@@ -925,10 +956,11 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
               {
                 std::regex pattern(definedon.cast<string>());
                 for (int i = 0; i < ma.GetNDomains(); i++)
-                  if (std::regex_match (ma.GetDomainMaterial(i), pattern))
+                  if (std::regex_match (ma.GetMaterial(VOL,i), pattern))
                     ma.UnSetPML(i);
               }
           })
+    
     .def("GetPMLTrafos", [](MeshAccess & ma) 
       {
         py::list pml_trafos(ma.GetNDomains());
@@ -952,6 +984,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
         py::arg("dom")=1,
         "returns pml transformation on domain dom"
         )
+
     .def("UnsetDeformation", FunctionPointer
 	 ([](MeshAccess & ma){ ma.SetDeformation(nullptr);}))
     
@@ -960,10 +993,10 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 	  {
             py::list materials(ma.GetNDomains());
 	    for (int i : Range(ma.GetNDomains()))
-	      materials[i] = py::cast(ma.GetDomainMaterial(i));
+	      materials[i] = py::cast(ma.GetMaterial(VOL,i));
 	    return materials;
 	  },
-         "returns list of materials"
+	 "Returns list of materials"
          )
 
     .def("Materials",
@@ -972,7 +1005,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
             return new Region (ma, VOL, pattern);
 	  },
          py::arg("pattern"),
-         "returns mesh-region matching the given regex pattern",
+	 "Returns mesh-region matching the given regex pattern",
          py::return_value_policy::take_ownership
          )
     
@@ -981,10 +1014,10 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 	  {
             py::list materials(ma.GetNBoundaries());
 	    for (int i : Range(ma.GetNBoundaries()))
-	      materials[i] = py::cast(ma.GetBCNumBCName(i));
+	      materials[i] = py::cast(ma.GetMaterial(BND,i));
 	    return materials;
 	  },
-         "returns list of boundary conditions"
+	 "Returns list of boundary conditions"
          )
 
     .def("Boundaries",
@@ -993,7 +1026,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
             return new Region (ma, BND, pattern);
 	  },
          py::arg("pattern"),
-         "returns boundary mesh-region matching the given regex pattern",
+	 "Returns boundary mesh-region matching the given regex pattern",
          py::return_value_policy::take_ownership
          )
     .def("GetBBoundaries",
@@ -1001,10 +1034,10 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 	  {
 	    py::list bboundaries(ma.GetNBBoundaries());
 	    for (int i : Range(ma.GetNBBoundaries()))
-	      bboundaries[i] = py::cast(ma.GetCD2NumCD2Name(i));
+	      bboundaries[i] = py::cast(ma.GetMaterial(BBND,i));
 	    return bboundaries;
 	  },
-	 "returns list of boundary conditions for co dimension 2"
+	 "Returns list of boundary conditions for co dimension 2"
 	 )
     .def("BBoundaries", FunctionPointer
 	 ([](shared_ptr<MeshAccess> ma, string pattern)
@@ -1012,17 +1045,19 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 	    return new Region (ma, BBND, pattern);
 	  }),
 	 (py::arg("self"), py::arg("pattern")),
-	 "returns co dim 2 boundary mesh-region matching the given regex pattern",
+	 "Returns co dim 2 boundary mesh-region matching the given regex pattern",
 	 py::return_value_policy::take_ownership
 	 )
 
+    // TODO: explain how to mark elements
     .def("Refine",
          [](MeshAccess & ma)
           {
             ma.Refine();
           },
-         "local mesh refinement based on marked elements, uses element-bisection algorithm")
+	 "Local mesh refinement based on marked elements, uses element-bisection algorithm")
 
+    // TODO: explain how to mark vertices and edges, explain how factor is used
     .def("RefineHP",
          [](MeshAccess & ma, int levels, double factor)
           {
@@ -1030,13 +1065,16 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
             ma.UpdateBuffers();
           },
          py::arg("levels"), py::arg("factor")=0.125,
-         "geometric mesh refinement towards marked vertices and edges, uses factor for placement of new points"
+	 "Geometric mesh refinement towards marked vertices and edges, uses factor for placement of new points"
          )
 
+    // TODO: Docu string says nothing... what does refinement flag do?
     .def("SetRefinementFlag", &MeshAccess::SetRefinementFlag,
-         "set refinementflag for mesh-refinement")
+	 "Set refinementflag for mesh-refinement")
 
+    // TODO: Docu
     .def("GetParentElement", &MeshAccess::GetParentElement)
+    // TODO: Docu
     .def("GetParentVertices", FunctionPointer
          ([](MeshAccess & ma, int vnum)
           {
@@ -1045,14 +1083,13 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
             return py::make_tuple(parents[0], parents[1]);
           }))
     
+    // TODO: Docu
     .def("Curve",
          [](MeshAccess & ma, int order)
           {
             Ng_HighOrder(order);
           },
          py::arg("order"))
-
-
 
     .def("__call__",
          [](MeshAccess & ma, double x, double y, double z, VorB vb) 
@@ -1074,8 +1111,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
           , 
          py::arg("x") = 0.0, py::arg("y") = 0.0, py::arg("z") = 0.0,
          py::arg("VOL_or_BND") = VOL,
-         py::return_value_policy::reference
-         )
+	 py::return_value_policy::reference, docu_string("Get a MappedIntegrationPoint in the point (x,y,z) on the matching volume (VorB=VOL, default) or surface (VorB=BND) element. BBND elements aren't supported"))
 
     .def("Contains",
          [](MeshAccess & ma, double x, double y, double z) 
@@ -1085,7 +1121,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
             return (elnr >= 0);
           }, 
          py::arg("x") = 0.0, py::arg("y") = 0.0, py::arg("z") = 0.0
-         )
+	 ,"Checks if the point (x,y,z) is in the meshed domain (is inside a volume element)")
 
     ;
 
@@ -1100,27 +1136,33 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 
   typedef PyWrapper<CoefficientFunction> PyCF;
 
-  py::class_<PyProxyFunction, PyCF> (m, "ProxyFunction")
-    .def("Deriv", FunctionPointer
-         ([](const PyProxyFunction self)
-          { return PyProxyFunction(self->Deriv()); }),
+  py::class_<PyProxyFunction, PyCF> (m, "ProxyFunction", docu_string(R"raw_string(
+Either FESpace.TrialFunction or FESpace.TestFunction. Is a
+placeholder coefficient function for Symbolic Integrators. The
+integrators will replace it with the basis functions of the finite element space
+when building the system matrices.
+
+)raw_string"))
+    .def("Deriv", 
+         [](const PyProxyFunction self)
+         { return PyProxyFunction(self->Deriv()); },
          "take canonical derivative (grad, curl, div)")
-    .def("Trace", FunctionPointer
-         ([](const PyProxyFunction self)
-          { return PyProxyFunction(self->Trace()); }),
+    .def("Trace", 
+         [](const PyProxyFunction self)
+         { return PyProxyFunction(self->Trace()); },
          "take canonical boundary trace")
-    .def("Other", FunctionPointer
-         ([](const PyProxyFunction self, py::object bnd) 
-          {
-            if (py::extract<double> (bnd).check())
-              return PyProxyFunction(self->Other(make_shared<ConstantCoefficientFunction>(py::extract<double> (bnd)())));
-            if (py::extract<PyCF> (bnd).check())
-              return PyProxyFunction(self->Other(py::extract<PyCF> (bnd)().Get()));
-            else
-              return PyProxyFunction(self->Other(nullptr));
-          }),
+    .def("Other", 
+         [](const PyProxyFunction self, py::object bnd) 
+         {
+           if (py::extract<double> (bnd).check())
+             return PyProxyFunction(self->Other(make_shared<ConstantCoefficientFunction>(py::extract<double> (bnd)())));
+           if (py::extract<PyCF> (bnd).check())
+             return PyProxyFunction(self->Other(py::extract<PyCF> (bnd)().Get()));
+           else
+             return PyProxyFunction(self->Other(nullptr));
+         },
          "take value from neighbour element (DG)",
-          py::arg("bnd") = DummyArgument()
+         py::arg("bnd") = DummyArgument()
          )
     .def_property_readonly("derivname",
                   [](const PyProxyFunction self) -> string
@@ -1135,7 +1177,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
             if (op)
               return py::cast(PyProxyFunction(op));
             return py::none();
-          })
+	  }, "Use an additional operator of the finite element space")
     ;
 
 
@@ -1285,26 +1327,29 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 
   static size_t global_heapsize = 1000000;
   static LocalHeap glh(global_heapsize, "python-comp lh", true);
-  m.def("SetHeapSize", [](size_t heapsize)
-                                         {
-                                           if (heapsize > global_heapsize)
-                                             {
-                                               global_heapsize = heapsize;
-                                               glh = LocalHeap (heapsize, "python-comp lh", true);
-                                             }
-                                         });
-
-  m.def("SetTestoutFile", [](string filename)
-                                            {
-                                              testout = new ofstream (filename);
-                                            });
+  m.def("SetHeapSize",
+        [](size_t heapsize)
+        {
+          if (heapsize > global_heapsize)
+            {
+              global_heapsize = heapsize;
+              glh = LocalHeap (heapsize, "python-comp lh", true);
+            }
+        });
+  
+  m.def("SetTestoutFile",
+        [](string filename)
+        {
+          testout = new ofstream (filename);
+        }, "Enable some logging into file with given filename");
   
   //////////////////////////////////////////////////////////////////////////////////////////
 
 
   auto fes_dummy_init = [](PyFES *instance, shared_ptr<MeshAccess> ma, const string & type, 
-                              py::dict bpflags, int order, bool is_complex,
-                              py::object dirichlet, py::object definedon, int dim)
+                           py::dict bpflags, int order, bool is_complex,
+                           py::object dirichlet, py::object definedon, int dim,
+                           py::object order_left, py::object order_right)
                            {
                              Flags flags = py::extract<Flags> (bpflags)();
 
@@ -1331,7 +1376,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                                  std::regex pattern(dirichlet.cast<string>());
                                  Array<double> dirlist;
                                  for (int i = 0; i < ma->GetNBoundaries(); i++)
-                                   if (std::regex_match (ma->GetBCNumBCName(i), pattern))
+                                   if (std::regex_match (ma->GetMaterial(BND, i), pattern))
                                      dirlist.Append (i+1);
                                  flags.SetFlag("dirichlet", dirlist);
 // 				 bpflags["dirichlet"] = py::cast(dirlist);
@@ -1342,13 +1387,15 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                                  std::regex pattern(definedon.cast<string>());
                                  Array<double> defonlist;
                                  for (int i = 0; i < ma->GetNDomains(); i++)
-                                   if (regex_match(ma->GetDomainMaterial(i), pattern))
+                                   if (regex_match(ma->GetMaterial(VOL,i), pattern))
                                      defonlist.Append(i+1);
                                  flags.SetFlag ("definedon", defonlist);
 // 				 bpflags["definedon"] = py::cast(defonlist);
                                }
-                             py::extract<py::list> definedon_list(definedon);
-                             if (definedon_list.check())
+
+                             // py::extract<py::list> definedon_list(definedon);
+                             // if (definedon_list.check())
+                             if (py::isinstance<py::list> (definedon))
                                flags.SetFlag ("definedon", makeCArray<double> (definedon));
                              py::extract<Region> definedon_reg(definedon);
                              if (definedon_reg.check() && definedon_reg().IsVolume())
@@ -1362,7 +1409,15 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                                }
                              
                              
-                             auto fes = CreateFESpace (type, ma, flags); 
+                             auto fes = CreateFESpace (type, ma, flags);
+
+                             if (py::isinstance<py::int_> (order_left))
+                               for (auto et : element_types)
+                                 fes->SetOrderLeft (et, order_left.cast<int>());
+                             if (py::isinstance<py::int_> (order_right))
+                               for (auto et : element_types)
+                                 fes->SetOrderRight (et, order_right.cast<int>());
+                             
                              LocalHeap lh (1000000, "FESpace::Update-heap");
                              fes->Update(lh);
                              fes->FinalizeUpdate(lh);
@@ -1370,15 +1425,88 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                              };
 
   
-  py::class_<PyFES>(m, "FESpace",  "a finite element space", py::dynamic_attr())
+  py::class_<PyFES>(m, "FESpace",
+		    docu_string(R"raw_string(Finite Element Space
+
+Provides the functionality for finite element calculations. Use
+the finite element space generator functions to construct the space,
+this can sometimes provide additional functionality (e.g HCurl).
+When createing a FESpace with a generator function the set parameters
+are passed to the FESpace constructor with and the type parameter is
+set. If the space has additional functionality it is added to the space.
+
+Available generator functions
+
+H1
+HCurl
+HDiv
+L2
+FacetFESpace
+HDivDiv
+
+2 __init__ overloads:
+  1) To create a registered FESpace
+  2) To create a compound FESpace from multiple created FESpaces
+
+1)
+
+Parameters
+
+type : string
+  Type of the finite element space. This parameter is automatically
+  set if the space is constructed with a generator function.
+
+mesh : ngsolve.Mesh
+  Mesh on which the finite element space is defined on.
+
+flags : dict
+  Provide additional flags for the finite element space, possible options
+  are:
+    dgjumps : bool
+      Enable DG functionality
+    print : bool
+      Write additional debug information to testout file. This
+      file must be set by ngsolve.SetTestoutFile.
+
+order : int
+  Order of the finite element space
+
+is_complex : bool
+  Set to true if you want to specify complex (bi-)linearforms on the
+  FESpace.
+
+dirichlet : regexpr
+  Regular expression string defining the dirichlet boundary.
+  More than one boundary can be combined by the | operator,
+  Example: dirichlet = "dirichlet1|dirichlet2"
+
+definedon : list of bits
+  Define FESpace only on the given domain numbers. Must be list of
+  0s and 1s, 0 for not defined, 1 for defined.
+
+dim : int
+  Create multi dimensional FESpace (i.e. [H1]^3)
+
+2)
+
+Parameters:
+
+spaces : list of ngsolve.FESpace
+  List of the spaces for the compound finite element space
+
+flags : dict
+    Additional flags for the compound FESpace
+
+)raw_string"), py::dynamic_attr())
     // the raw - constructor
     .def("__init__", 
-         [&](PyFES *instance, const string & type, py::object bp_ma, 
-                             py::dict bp_flags, int order, bool is_complex,
-                             py::object dirichlet, py::object definedon, int dim)
+	 [&](PyFES *instance, const string & type, shared_ptr<MeshAccess> mesh,
+             py::dict flags, int order, bool is_complex,
+             py::object dirichlet, py::object definedon, int dim,
+             py::object order_left, py::object order_right
+             )
                           {
-                            shared_ptr<MeshAccess> ma = py::extract<shared_ptr<MeshAccess>>(bp_ma)();
-                            fes_dummy_init(instance, ma, type, bp_flags, order, is_complex, dirichlet, definedon, dim);
+			    fes_dummy_init(instance, mesh, type, flags, order, is_complex, dirichlet, definedon, dim, order_left, order_right);
 //                              py::cast(*instance).attr("flags") = py::cast(bp_flags);
 			     
                            },
@@ -1388,6 +1516,8 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
            py::arg("dirichlet")=DummyArgument(),
            py::arg("definedon")=DummyArgument(),
           py::arg("dim")=-1,
+         py::arg("order_left")=DummyArgument(),
+         py::arg("order_right")=DummyArgument(),         
          "allowed types are: 'h1ho', 'l2ho', 'hcurlho', 'hdivho' etc."
          )
     
@@ -1399,7 +1529,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                              Flags flags = py::extract<Flags> (bpflags)();
 
                              Array<shared_ptr<FESpace>> spaces;
-                             for( auto fes : lspaces )
+                             for (auto fes : lspaces )
                                spaces.Append(py::extract<PyFES>(fes)().Get());
                              if (spaces.Size() == 0)
                                throw Exception("Compound space must have at least one space");
@@ -1432,39 +1562,42 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
         auto self = self_object.cast<PyFES>();
         auto dict = self_object.attr("__dict__");
         auto mesh = self->GetMeshAccess();
-        return py::make_tuple( self->type, mesh, dict );
+        return py::make_tuple( self->type, mesh, self->GetFlags(), dict );
      })
     .def("__setstate__", [] (PyFES &self, py::tuple t) {
-        auto flags = t[2]["flags"].cast<Flags>();
+        auto flags = t[2].cast<Flags>();
         auto fes = CreateFESpace (t[0].cast<string>(), t[1].cast<shared_ptr<MeshAccess>>(), flags);
         LocalHeap lh (1000000, "FESpace::Update-heap");
         fes->Update(lh);
         fes->FinalizeUpdate(lh);
         new (&self) PyFES(fes);
-        py::cast(self).attr("__dict__") = t[2];
+        py::cast(self).attr("__dict__") = t[3];
      })
+    
     .def("Update", [](PyFES & self, int heapsize)
-                                   { 
-                                     LocalHeap lh (heapsize, "FESpace::Update-heap");
-                                     self->Update(lh);
-                                     self->FinalizeUpdate(lh);
-                                   },
+         { 
+           LocalHeap lh (heapsize, "FESpace::Update-heap");
+           self->Update(lh);
+           self->FinalizeUpdate(lh);
+         },
          py::arg("heapsize")=1000000,
          "update space after mesh-refinement")
 
     .def_property_readonly ("ndof", [](PyFES & self) { return self->GetNDof(); }, 
-                   "number of degrees of freedom")
+                            "number of degrees of freedom")
 
-    .def_property_readonly ("ndofglobal", [](PyFES & self) { return self->GetNDofGlobal(); }, 
-                   "global number of dofs on MPI-distributed mesh")
+    .def_property_readonly ("ndofglobal",
+                            [](PyFES & self) { return self->GetNDofGlobal(); }, 
+                            "global number of dofs on MPI-distributed mesh")
     // .def("__str__", &ToString<FESpace>)
     .def("__str__", [] (PyFES & self) { return ToString(*self.Get()); } )
     .def("__timing__", [] (PyFES & self) {
 	return py::cast(self->Timing());
       })
 
-    // .def_property_readonly("mesh", FunctionPointer ([](FESpace & self) -> shared_ptr<MeshAccess>
-    // { return self.GetMeshAccess(); }))
+    .def_property_readonly("mesh",
+                           [](PyFES & self) -> shared_ptr<MeshAccess>
+                           { return self->GetMeshAccess(); })
 
     .def_property_readonly("order", FunctionPointer([] (PyFES & self) { return OrderProxy(*self.Get()); }),
                   "proxy to set order for individual nodes")
@@ -1473,18 +1606,35 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
     .def_property_readonly("type", FunctionPointer([] (PyFES & self) { return self->type; }),
                   "type of finite element space")    
 
+    .def("SetOrder",
+         [](PyFES & self, ELEMENT_TYPE et, py::object order, py::object order_left, py::object order_right)
+         {
+           if (py::isinstance<py::int_> (order))
+             {
+               self->SetOrderLeft (et, order.cast<py::int_>());
+               self->SetOrderRight (et, order.cast<py::int_>());
+             }
+           if (py::isinstance<py::int_> (order_left))
+             self->SetOrderLeft (et, order_left.cast<py::int_>());
+           if (py::isinstance<py::int_> (order_right))
+             self->SetOrderRight (et, order_right.cast<int>());
+         },
+         py::arg("element_type"),
+         py::arg("order")=DummyArgument(),
+         py::arg("order_left")=DummyArgument(),
+         py::arg("order_right")=DummyArgument()
+         )
+    
     .def("Elements", 
-         FunctionPointer([](PyFES & self, VorB vb, int heapsize) 
-                         {
-                           return make_shared<FESpace::ElementRange> (self->Elements(vb, heapsize));
-                         }),
+         [](PyFES & self, VorB vb, int heapsize) 
+         { return FESpace::ElementRange(self->Elements(vb, heapsize)); },
          py::arg("VOL_or_BND")=VOL,py::arg("heapsize")=10000)
 
     .def("Elements", 
-         FunctionPointer([](PyFES & self, VorB vb, LocalHeap & lh) 
-                         {
-                           return make_shared<FESpace::ElementRange> (self->Elements(vb, lh));
-                         }),
+         [](PyFES & self, VorB vb, LocalHeap & lh) 
+         {
+           return make_shared<FESpace::ElementRange> (self->Elements(vb, lh));
+         },
          py::arg("VOL_or_BND")=VOL, py::arg("heap"))
 
     /*
@@ -1498,68 +1648,61 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
           py::arg("heap")=LocalHeap(0), py::arg("heapsize")=10000)
     */
 
-    .def("GetDofNrs", FunctionPointer([](PyFES & self, ElementId ei) 
-                                   {
-                                     Array<int> tmp; self->GetDofNrs(ei,tmp); 
-                                     py::tuple tuple(tmp.Size());
-                                     for( auto i : Range(tmp))
-                                        tuple[i] = py::int_(tmp[i]);
-                                     return tuple;
-                                   }))
+    .def("GetDofNrs", [](PyFES & self, ElementId ei) 
+         {
+           Array<int> tmp; self->GetDofNrs(ei,tmp); 
+           py::tuple tuple(tmp.Size());
+           for (auto i : Range(tmp))
+             tuple[i] = py::int_(tmp[i]);
+           return tuple;
+         })
 
-    .def("CouplingType", FunctionPointer ([](PyFES & self, int dofnr) -> COUPLING_TYPE
-                                          { return self.Get()->GetDofCouplingType(dofnr); }),
+    .def("CouplingType", [](PyFES & self, DofId dofnr) -> COUPLING_TYPE
+         { return self.Get()->GetDofCouplingType(dofnr); },
          py::arg("dofnr"),
          "get coupling type of a degree of freedom"
          )
-    .def("SetCouplingType", [](PyFES & self, int dofnr, COUPLING_TYPE ct) 
-                                             { return self.Get()->SetDofCouplingType(dofnr,ct); },
+    .def("SetCouplingType", [](PyFES & self, DofId dofnr, COUPLING_TYPE ct) 
+         { return self.Get()->SetDofCouplingType(dofnr,ct); },
          py::arg("dofnr"), py::arg("coupling_type"),
          "set coupling type of a degree of freedom"
          )
 
-    /*
-    .def ("GetFE", 
-          static_cast<FiniteElement&(FESpace::*)(ElementId,Allocator&)const>
-          (&FESpace::GetFE), 
+    .def ("GetFE", [](PyFES & self, ElementId ei) -> py::object
+          {
+            Allocator alloc;
+            
+            auto fe = shared_ptr<FiniteElement> (&self->GetFE(ei, alloc), NOOP_Deleter);
+            
+            auto scalfe = dynamic_pointer_cast<BaseScalarFiniteElement> (fe);
+            if (scalfe) return py::cast(scalfe);
+            
+            return py::cast(fe);
+          })
+          
+    .def ("GetFE", [](PyFES & self, ElementId ei, LocalHeap & lh)
+          {
+            return shared_ptr<FiniteElement>(&self->GetFE(ei, lh), NOOP_Deleter);
+          },
           py::return_value_policy::reference)
-    */
-    .def ("GetFE", FunctionPointer([](PyFES & self, ElementId ei) -> py::object
-                                   {
-                                     Allocator alloc;
-
-                                     auto fe = shared_ptr<FiniteElement> (&self->GetFE(ei, alloc), NOOP_Deleter);
-
-                                     auto scalfe = dynamic_pointer_cast<BaseScalarFiniteElement> (fe);
-                                     if (scalfe) return py::cast(scalfe);
-
-                                     return py::cast(fe);
-
-                                   }))
     
-    .def ("GetFE", FunctionPointer([](PyFES & self, ElementId ei, LocalHeap & lh)
-                                   {
-                                     return shared_ptr<FiniteElement>(&self->GetFE(ei, lh), NOOP_Deleter);
-                                   }),
-          py::return_value_policy::reference)
-
-
-    .def("FreeDofs", FunctionPointer
-         ( [] (const PyFES &self, bool coupling) { return self->GetFreeDofs(coupling); } ),
+    .def("FreeDofs",
+         [] (const PyFES &self, bool coupling)
+         { return self->GetFreeDofs(coupling); },
          py::arg("coupling")=false)
 
-    .def("Range", FunctionPointer
-         ( [] (const PyFES & self, int comp) -> py::slice
-           {
-             auto compspace = dynamic_pointer_cast<CompoundFESpace> (self.Get());
-             if (!compspace)
-               throw py::type_error("'Range' is available only for product spaces");
-             IntRange r = compspace->GetRange(comp);
-             return py::slice(py::int_(r.First()), py::int_(r.Next()),1);
-           }))
+    .def("Range",
+         [] (const PyFES & self, int comp) -> py::slice
+         {
+           auto compspace = dynamic_pointer_cast<CompoundFESpace> (self.Get());
+           if (!compspace)
+             throw py::type_error("'Range' is available only for product spaces");
+           IntRange r = compspace->GetRange(comp);
+           return py::slice(py::int_(r.First()), py::int_(r.Next()),1);
+         })
 
-    .def_property_readonly("components", FunctionPointer
-                  ([](PyFES & self)-> py::tuple
+    .def_property_readonly("components", 
+                  [](PyFES & self)-> py::tuple
                    { 
                      auto compspace = dynamic_pointer_cast<CompoundFESpace> (self.Get());
                      if (!compspace)
@@ -1568,39 +1711,44 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
                      for (int i = 0; i < compspace -> GetNSpaces(); i++) 
                        vecs[i]= py::cast( PyFES((*compspace)[i]) );
                      return vecs;
-                   }),
+                   },
                   "list of gridfunctions for compound gridfunction")
 
     .def("TrialFunction",
          [] (const PyFES & self) 
-           {
-             return MakeProxyFunction (*self.Get(), false);
-           }, docu_string("Gives a proxy to be used as a trialfunction in :any:`Symbolic Integrators`"))
+         {
+           return MakeProxyFunction (*self.Get(), false);
+         },
+         docu_string("Gives a proxy to be used as a trialfunction in :any:`Symbolic Integrators<symbolic-integrators>`"))
+    
     .def("TestFunction",
          [] (const PyFES & self) 
            {
              return MakeProxyFunction (*self.Get(), true);
-           }, docu_string("Gives a proxy to be used as a testfunction for :any:`Symbolic Integrators`"))
+           },
+         docu_string("Gives a proxy to be used as a testfunction for :any:`Symbolic Integrators<symbolic-integrators>`"))
 
-    .def("SolveM", FunctionPointer
-        ( [] (const PyFES & self,
-              PyCF rho, PyBaseVector vec, int heapsize)
+    .def("SolveM",
+         [] (const PyFES & self,
+             PyCF rho, PyBaseVector vec, int heapsize)
           {
-            // LocalHeap lh(heapsize, "solveM - lh", true);
             if (heapsize > global_heapsize)
               {
                 global_heapsize = heapsize;
                 glh = LocalHeap(heapsize, "python-comp lh", true);
+                bool first_time = true;
+                if (first_time)
+                  { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }
               }
             self->SolveM(*rho.Get(), *vec, glh);
-          }),
+          },
          py::arg("rho"), py::arg("vec"), py::arg("heapsize")=1000000)
         
-    .def("__eq__", FunctionPointer
-         ( [] (PyFES self, PyFES other)
-           {
-             return self.Get() == other.Get();
-           }))
+    .def("__eq__",
+         [] (PyFES self, PyFES other)
+         {
+           return self.Get() == other.Get();
+         })
     ;
   typedef PyWrapperDerived<HCurlHighOrderFESpace, FESpace> PyHCurl;
   typedef PyWrapperDerived<CompoundFESpace, FESpace> PyCompoundFES;
@@ -1654,30 +1802,29 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
             perfes->FinalizeUpdate(glh);
             return perfes;
 	  }, py::arg("fespace"), py::arg("phase")=DummyArgument(), py::arg("use_idnrs")=py::list(),
-	docu_string(R"delimiter(Generator function for periodic or quasi-periodic :any:`Finite Element Spaces`. 
+	docu_string(R"delimiter(Generator function for periodic or quasi-periodic Finite Element Spaces.
 The periodic fespace is a wrapper around a standard fespace with an 
 additional dof mapping for the periodic degrees of freedom. All dofs 
 on slave boundaries are mapped to their master dofs. Because of this, 
-the mesh needs to be periodic. To create a periodic mesh use i.e. the 
-function :any:`CSGeometry.PeriodicSurfaces`(master,slave). Low order 
-fespaces are currently not supported, so methods using them will not work. 
+the mesh needs to be periodic. Low order fespaces are currently not
+supported, so methods using them will not work.
 
-Parameters
-----------
+Parameters:
 
-fespace (FESpace): finite element space 
+fespace : ngsolve.comp.FESpace
+    finite element space
 
-phase (list of Complex = None): phase shift for quasi-periodic finite 
-    element space. The basis functions on the slave boundary are 
-    multiplied by the factor given in this list. If None (default) is 
-    given, a periodic fespace is created. The order of the list must 
-    match the order of the definition of the periodic boundaries in 
-    the mesh. 
+phase : list of Complex = None
+    phase shift for quasi-periodic finite element space. The basis
+    functions on the slave boundary are multiplied by the factor
+    given in this list. If None (default) is given, a periodic
+    fespace is created. The order of the list must match the order
+    of the definition of the periodic boundaries in the mesh.
 
-used_idnrs (list of int = None): identification numbers to be made periodic 
-    if you don't want to use all periodic identifications defined in the 
-    mesh, if None (default) all available periodic identifications are 
-    used.
+used_idnrs : list of int = None
+    identification numbers to be made periodic if you don't want to
+    use all periodic identifications defined in the mesh, if None
+    (default) all available periodic identifications are used.
 
 )delimiter"));
   /*
@@ -1744,63 +1891,58 @@ used_idnrs (list of int = None): identification numbers to be made periodic
                             auto gf = CreateGridFunction (fespace.Get(), name, flags);
                             gf->Update();
                             new (instance) PyGF(gf);
-			    py::cast(*instance).attr("__dict__")["space"] = bp_fespace;
                           },
          py::arg("space"), py::arg("name")="gfu", py::arg("multidim")=DummyArgument(),
          "creates a gridfunction in finite element space"
          )
-    .def("__ngsid__", FunctionPointer( [] ( PyGF self)
-        { return reinterpret_cast<std::uintptr_t>(self.Get().get()); } ) )
+    .def("__ngsid__", [] ( PyGF self)
+        { return reinterpret_cast<std::uintptr_t>(self.Get().get()); }) 
     .def("__getstate__", [] (py::object self_object) {
         auto self = self_object.cast<PyGF>();
-        auto vec = PyBaseVector(self->GetVectorPtr());
-	auto fes = self_object.attr("space");
-	auto perid  = self_object.attr("__persistent_id__");
-        return py::make_tuple(fes, self->GetName(), vec, self->GetMultiDim(),perid);
+        auto vec = self->GetVectorPtr()->FV<double>();
+        py::list values;
+        for (int i : Range(vec))
+          values.append(py::cast(vec(i)));
+	auto fes = PyFES(self->GetFESpace());
+	auto dict  = self_object.attr("__dict__");
+        return py::make_tuple(fes, self->GetName(), values, self->GetFlags(),dict);
         })
     .def("__setstate__", [] (PyGF &self, py::tuple t) {
          auto fespace = t[0].cast<PyFES>();
-         Flags flags;
-         flags.SetFlag ("multidim", py::extract<int>(t[3])());
+         auto flags = t[3].cast<Flags>();
          auto gf = CreateGridFunction (fespace.Get(), t[1].cast<string>(), flags);
          gf->Update();
-	 gf->GetVector() = *t[2].cast<PyBaseVector>();
+         auto values = t[2].cast<py::list>();
+         auto fvec = gf->GetVector().FV<double>();
+         for (auto i : Range(fvec.Size()))
+           fvec[i] = values[i].cast<double>();
          new (&self) PyGF(gf);
          py::object self_object = py::cast(self);
-	 self_object.attr("__persistent_id__") = t[4];
+	 self_object.attr("__dict__") = t[4];
          })
     // .def("__str__", &ToString<GF>)
     .def("__str__", [] (PyGF & self) { return ToString(*self.Get()); } )
-    .def_property_readonly("space", FunctionPointer([](py::object self) -> py::object
-                                           {
-                                             py::dict d = py::extract<py::dict>(self.attr("__dict__"))();
-                                             // if gridfunction is created from python, it has the space attribute
-                                             if (d.contains("space"))
-                                               return d["space"];
-
-                                             // if not, make a new python space object from C++ space
-                                             return py::cast(PyFES(py::extract<PyGF>(self)()->GetFESpace()));
-                                           }),
-                  "the finite element space")
+    .def_property_readonly("space", [](PyGF & self) { return PyFES(self->GetFESpace()); },
+                           "the finite element space")
     // .def_property_readonly ("space", &GF::GetFESpace, "the finite element spaces")
     .def("Update", FunctionPointer ([](PyGF self) { self->Update(); }),
          "update vector size to finite element space dimension after mesh refinement")
     
-    .def("Save", FunctionPointer([](PyGF self, string filename)
-                                 {
-                                   ofstream out(filename, ios::binary);
-                                   self->Save(out);
-                                 }))
-    .def("Load", FunctionPointer([](PyGF self, string filename)
-                                 {
-                                   ifstream in(filename, ios::binary);
-                                   self->Load(in);
-                                 }))
-    
-    .def("Set", FunctionPointer
-         ([](PyGF self, PyCF cf,
-             VorB boundary, py::object definedon, int heapsize, py::object heap)
-          {
+    .def("Save", [](PyGF self, string filename)
+         {
+           ofstream out(filename, ios::binary);
+           self->Save(out);
+         })
+    .def("Load", [](PyGF self, string filename)
+         {
+           ifstream in(filename, ios::binary);
+           self->Load(in);
+         })
+         
+    .def("Set", 
+         [](PyGF self, PyCF cf,
+            VorB boundary, py::object definedon, int heapsize, py::object heap)
+         {
              shared_ptr<TPHighOrderFESpace> tpspace = dynamic_pointer_cast<TPHighOrderFESpace>(self.Get()->GetFESpace());
              if(tpspace)
              {
@@ -1825,13 +1967,16 @@ used_idnrs (list of int = None): identification numbers to be made periodic
               {
                 global_heapsize = heapsize;
                 glh = LocalHeap(heapsize, "python-comp lh", true);
+                bool first_time = true;
+                if (first_time)
+                  { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }
               }
             // LocalHeap lh(heapsize, "GridFunction::Set-lh", true);
             if (reg)
               SetValues (cf.Get(), *self.Get(), *reg, NULL, glh);
             else
               SetValues (cf.Get(), *self.Get(), boundary, NULL, glh);
-          }),
+         },
           py::arg("coefficient"),
           py::arg("VOL_or_BND")=VOL,
           py::arg("definedon")=DummyArgument(),
@@ -1840,28 +1985,29 @@ used_idnrs (list of int = None): identification numbers to be made periodic
       )
 
 
-    .def_property_readonly("components", FunctionPointer
-                  ([](PyGF self)-> py::tuple
+    .def_property_readonly("components",
+                  [](PyGF self)-> py::tuple
                    { 
                      py::tuple vecs(self->GetNComponents());
                      for (int i = 0; i < self->GetNComponents(); i++)
                        vecs[i] = py::cast(PyGF(self->GetComponent(i)));
                      return vecs;
-                   }),
+                   },
                   "list of gridfunctions for compound gridfunction")
 
     .def_property_readonly("vec",
-                  FunctionPointer([](PyGF self) -> PyBaseVector { return self->GetVectorPtr(); }),
-                  "coefficient vector")
+                           [](PyGF self) -> PyBaseVector
+                           { return self->GetVectorPtr(); },
+                           "coefficient vector")
 
-    .def_property_readonly("vecs", FunctionPointer
-                  ([](PyGF self)-> py::list
+    .def_property_readonly("vecs", 
+                  [](PyGF self)-> py::list
                    { 
                      py::list vecs(self->GetMultiDim());
                      for (int i = 0; i < self->GetMultiDim(); i++)
                        vecs[i] = py::cast(PyBaseVector(self->GetVectorPtr(i)));
                      return vecs;
-                   }),
+                   },
                   "list of coefficient vectors for multi-dim gridfunction")
 
     /*
@@ -1878,42 +2024,41 @@ used_idnrs (list of int = None): identification numbers to be made periodic
             return make_shared<GridFunctionCoefficientFunction> (self, diffop);
           }))
     */
-    .def("Deriv", FunctionPointer
-         ([](PyGF self) -> PyCF
+    .def("Deriv",
+         [](PyGF self) -> PyCF
           {
             auto sp = make_shared<GridFunctionCoefficientFunction> (self.Get(),
                                                                     self->GetFESpace()->GetFluxEvaluator(),
                                                                     self->GetFESpace()->GetFluxEvaluator(BND));
-            // sp->SetComplex(self->GetFESpace()->IsComplex()); 
-            sp->SetDimensions(sp->Dimensions());
+            // sp->SetDimensions(sp->Dimensions());
             return PyCF(sp);
-          }))
+          })
 
-    .def("Operator", FunctionPointer
-         ([](PyGF self, string name) -> py::object // shared_ptr<CoefficientFunction>
+    .def("Operator",
+         [](PyGF self, string name) -> py::object // shared_ptr<CoefficientFunction>
           {
             if (self->GetFESpace()->GetAdditionalEvaluators().Used(name))
               {
                 auto diffop = self->GetFESpace()->GetAdditionalEvaluators()[name];
-                cout << "diffop is " << typeid(*diffop).name() << endl;
+                // cout << "diffop is " << typeid(*diffop).name() << endl;
                 auto coef = make_shared<GridFunctionCoefficientFunction> (self.Get(), diffop);
                 coef->SetDimension(diffop->Dim());
                 return py::cast(PyCF(coef));
               }
             return py::none(); //  shared_ptr<CoefficientFunction>();
-          }))
+          })
 
     
-    .def_property_readonly("derivname", FunctionPointer
-                  ([](PyGF self) -> string
+    .def_property_readonly("derivname", 
+                  [](PyGF self) -> string
                    {
                      auto deriv = self->GetFESpace()->GetFluxEvaluator();
                      if (!deriv) return "";
                      return deriv->Name();
-                   }))
+                   })
 
-    .def("__call__", FunctionPointer
-         ([](PyGF self, double x, double y, double z)
+    .def("__call__", 
+         [](PyGF self, double x, double y, double z)
           {
             auto space = self->GetFESpace();
             auto evaluator = space->GetEvaluator();
@@ -1948,12 +2093,12 @@ used_idnrs (list of int = None): identification numbers to be made periodic
                 evaluator->Apply(fel, trafo(ip, lh), elvec, values, lh);
                 return (values.Size() > 1) ? py::cast(values) : py::cast(values(0));
               }
-          }
-          ), py::arg("x") = 0.0, py::arg("y") = 0.0, py::arg("z") = 0.0)
+          },
+         py::arg("x") = 0.0, py::arg("y") = 0.0, py::arg("z") = 0.0)
 
 
-   .def("__call__", FunctionPointer
-        ([](PyGF self, const BaseMappedIntegrationPoint & mip)
+   .def("__call__", 
+        [](PyGF self, const BaseMappedIntegrationPoint & mip)
           {
             auto space = self->GetFESpace();
 
@@ -1985,12 +2130,12 @@ used_idnrs (list of int = None): identification numbers to be made periodic
                 evaluator->Apply(fel, mip, elvec, values, lh);
                 return (values.Size() > 1) ? py::cast(values) : py::cast(values(0));
               }
-          }), 
+          }, 
         py::arg("mip"))
     
 
-    .def("D", FunctionPointer
-         ([](PyGF self, const double &x, const double &y, const double &z)
+    .def("D", 
+         [](PyGF self, const double &x, const double &y, const double &z)
           {
             const FESpace & space = *self->GetFESpace();
             IntegrationPoint ip;
@@ -2047,19 +2192,18 @@ used_idnrs (list of int = None): identification numbers to be made periodic
                 else
                   return py::cast(values(0));
               }
-          }
-          ), py::arg("x") = 0.0, py::arg("y") = 0.0, py::arg("z") = 0.0)
+          },
+         py::arg("x") = 0.0, py::arg("y") = 0.0, py::arg("z") = 0.0)
 
 
-    .def("CF", FunctionPointer
-         ([](PyGF self, shared_ptr<DifferentialOperator> diffop) -> PyCF
+    .def("CF", 
+         [](PyGF self, shared_ptr<DifferentialOperator> diffop) -> PyCF
           {
             if (!diffop->Boundary())
               return PyCF(make_shared<GridFunctionCoefficientFunction> (self.Get(), diffop));
             else
               return PyCF(make_shared<GridFunctionCoefficientFunction> (self.Get(), nullptr, diffop));
-          }))
-    
+          })
     ;
 
 
@@ -2070,7 +2214,34 @@ used_idnrs (list of int = None): identification numbers to be made periodic
 
   // typedef BilinearForm BF;
   typedef PyWrapper<BilinearForm> PyBF;
-  py::class_<PyBF>(m, "BilinearForm")
+  py::class_<PyBF>(m, "BilinearForm", docu_string(R"raw_string(
+Used to store the left hand side of a PDE. integrators (ngsolve.BFI)
+to it to implement your PDE. If the left hand side is linear
+you can use BilinearForm.Assemble to assemble it after adding
+your integrators. For nonlinear usage use BilinearForm.Apply or
+BilinearForm.AssembleLinearization instead of Bilinearform.Assemble.
+
+Parameters
+
+space : ngsolve.FESpace
+  The finite element space the bilinearform is defined on. This
+  can be a compound FESpace for a mixed formulation.
+
+name : string
+  The name of the bilinearform (in python not really in use...)
+
+symmetric : bool
+  If true, only the diagonal matrix will be stored
+
+flags : dict
+  Additional options for the bilinearform, for example:
+
+    print : bool
+      Write additional debug information to testout file. This
+      file must be set by ngsolve.SetTestoutFile. Use
+      ngsolve.SetNumThreads(1) for serial output.
+
+)raw_string"))
     .def("__init__",
          [](PyBF *instance, PyFES fespace, string name, 
                               bool symmetric, py::dict bpflags)
@@ -2121,6 +2292,9 @@ used_idnrs (list of int = None): identification numbers to be made periodic
                                          {
                                            global_heapsize = heapsize;
                                            glh = LocalHeap(heapsize, "python-comp lh", true);
+                                           bool first_time = true;
+                                           if (first_time)
+                                             { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }                                           
                                          }
                                        self->ReAssemble(glh,reallocate);
                                      }),
@@ -2179,10 +2353,28 @@ used_idnrs (list of int = None): identification numbers to be made periodic
               {
                 global_heapsize = heapsize;
                 glh = LocalHeap(heapsize, "python-comp lh", true);
+                bool first_time = true;
+                if (first_time)
+                  { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }                
               }
 	    self->ApplyMatrix (*x, *y, glh);
 	  }),
-         py::arg("x"),py::arg("y"),py::arg("heapsize")=1000000)
+         py::arg("x"),py::arg("y"),py::arg("heapsize")=1000000,docu_string(R"raw_string(
+Applies a (non-)linear variational formulation to x and stores the result in y.
+
+Parameters
+
+x : ngsolve.BaseVector
+  input vector
+
+y : ngsolve.BaseVector
+  output vector
+
+heapsize : int
+  Size of the LocalHeap for that operation. If you get an error about not
+  enough heapsize increase this value.
+
+)raw_string"))
 
     .def("ComputeInternal", FunctionPointer
 	 ([](PyBF & self, PyBaseVector & u, PyBaseVector & f, int heapsize)
@@ -2191,6 +2383,10 @@ used_idnrs (list of int = None): identification numbers to be made periodic
               {
                 global_heapsize = heapsize;
                 glh = LocalHeap(heapsize, "python-comp lh", true);
+                bool first_time = true;
+                if (first_time)
+                  { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }
+                
               }
 	    self->ComputeInternal (*u, *f, glh );
 	  }),
@@ -2203,6 +2399,9 @@ used_idnrs (list of int = None): identification numbers to be made periodic
               {
                 global_heapsize = heapsize;
                 glh = LocalHeap(heapsize, "python-comp lh", true);
+                bool first_time = true;
+                if (first_time)
+                  { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }
               }
 	    self->AssembleLinearization (*ulin, glh);
 	  }),
@@ -2240,7 +2439,28 @@ used_idnrs (list of int = None): identification numbers to be made periodic
 // 
   // typedef LinearForm LF;
   typedef PyWrapper<LinearForm> PyLF;
-  py::class_<PyLF>(m, "LinearForm")
+py::class_<PyLF>(m, "LinearForm", docu_string(R"raw_string(
+Used to store the left hand side of a PDE. Add integrators
+(ngsolve.LFI) to it to implement your PDE.
+
+Parameters
+
+space : ngsolve.FESpace
+  The space the linearform is defined on. Can be a compound
+  FESpace for a mixed formulation.
+
+name : string
+  The name of the linearform (in python not really in use...)
+
+flags : dict
+  Additional options for the linearform, for example:
+
+    print : bool
+      Write additional debug information to testout file. This
+      file must be set by ngsolve.SetTestoutFile. Use
+      ngsolve.SetNumThreads(1) for serial output.
+
+)raw_string"))
     .def("__init__",
          [](PyLF *instance, PyFES fespace, string name, Flags flags) // -> shared_ptr<LinearForm>
                            {
@@ -2282,6 +2502,9 @@ used_idnrs (list of int = None): identification numbers to be made periodic
               {
                 global_heapsize = heapsize;
                 glh = LocalHeap(heapsize, "python-comp lh", true);
+                bool first_time = true;
+                if (first_time)
+                  { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }                
               }
             self->Assemble(glh);
           }),
@@ -2350,15 +2573,18 @@ used_idnrs (list of int = None): identification numbers to be made periodic
          py::arg("heapsize")=1000000)
     ;
 
-//   // die geht
-//   py::class_<NumProcWrap,shared_ptr<NumProcWrap>, NumProc>("PyNumProc", py::init<shared_ptr<PDE>, const Flags&>())
-//     .def("Do", py::pure_virtual(&PyNumProc::Do)) 
-//     .def_property_readonly("pde", &PyNumProc::GetPDE)
-//     ;
-//   
-//   py::implicitly_convertible 
-//     <shared_ptr<NumProcWrap>, shared_ptr<NumProc> >(); 
-// 
+  py::class_<PyNumProc, NumProc, shared_ptr<PyNumProc>> (m, "PyNumProc")
+    .def("__init__",
+         [](NumProc *instance, PyPDE pde, Flags & flags)
+                           {
+                             new (instance) PyNumProc(pde.Get(), flags);
+                           })
+    .def_property_readonly("pde", [](NumProc &self) { return PyPDE(self.GetPDE()); })
+    .def("Do", FunctionPointer([](NumProc & self, LocalHeap & lh)
+                               {
+                                 self.Do(lh);
+                               }))
+    ;
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
@@ -2372,7 +2598,6 @@ used_idnrs (list of int = None): identification numbers to be made periodic
   PyExportSymbolTable<double> (m);
   PyExportSymbolTable<shared_ptr<double>> (m);
 
-  typedef PyWrapper<PDE> PyPDE;
   py::class_<PyPDE> (m, "PDE")
 
     // .def(py::init<const string&>())
@@ -2391,17 +2616,9 @@ used_idnrs (list of int = None): identification numbers to be made periodic
 #else
 
     .def("__init__",
-         [](PyPDE *instance, const string & filename,
-                              py::object py_mpicomm)
+         [](PyPDE *instance, const string & filename)
                            { 
-                             PyObject * py_mpicomm_ptr = py_mpicomm.ptr();
-                             if (py_mpicomm_ptr != Py_None)
-                               {
-                                 MPI_Comm * comm = PyMPIComm_Get (py_mpicomm_ptr);
-                                 ngs_comm = *comm;
-                               }
-                             else
-                               ngs_comm = MPI_COMM_WORLD;
+                             ngs_comm = MPI_COMM_WORLD;
 
                              cout << "Rank = " << MyMPI_GetId(ngs_comm) << "/"
                                   << MyMPI_GetNTasks(ngs_comm) << endl;
@@ -2409,7 +2626,7 @@ used_idnrs (list of int = None): identification numbers to be made periodic
                              NGSOStream::SetGlobalActive (MyMPI_GetId()==0);
                              new (instance) PyPDE(LoadPDE (filename));
                            },
-          py::arg("filename"), py::arg("mpicomm")=DummyArgument()
+          py::arg("filename")
           )
 #endif
 
@@ -2589,7 +2806,7 @@ used_idnrs (list of int = None): identification numbers to be made periodic
   
   m.def("Integrate", 
           [](PyCF cf,
-                             shared_ptr<MeshAccess> ma, 
+             shared_ptr<MeshAccess> ma, 
 	     VorB vb, int order, py::object definedon,
 	     bool region_wise, bool element_wise, int heapsize)
                           {
@@ -2599,6 +2816,9 @@ used_idnrs (list of int = None): identification numbers to be made periodic
 			      {
 				global_heapsize = heapsize;
 				glh = LocalHeap(heapsize, "python-comp lh", true);
+                                bool first_time = true;
+                                if (first_time)
+                                  { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }                                                
 			      }
                            py::extract<Region> defon_region(definedon);
                            if (defon_region.check())
@@ -2772,7 +2992,7 @@ used_idnrs (list of int = None): identification numbers to be made periodic
 
   m.def("SymbolicLFI",
           [](PyCF cf, VorB vb, bool element_boundary,
-              bool skeleton, py::object definedon) 
+              bool skeleton, py::object definedon, py::object definedonelem) 
            {
              py::extract<Region> defon_region(definedon);
              if (defon_region.check())
@@ -2786,7 +3006,6 @@ used_idnrs (list of int = None): identification numbers to be made periodic
              
              if (py::extract<py::list> (definedon).check())
                {
-                 cout << "warning: SymbolicLFI definedon changed to 1-based" << endl;
                  Array<int> defon = makeCArray<int> (definedon);
                  for (int & d : defon) d--;
                  lfi -> SetDefinedOn (defon); 
@@ -2797,19 +3016,23 @@ used_idnrs (list of int = None): identification numbers to be made periodic
              if (defon_region.check())
                lfi->SetDefinedOn(defon_region().Mask());
 
+             if (! py::extract<DummyArgument> (definedonelem).check())
+               lfi -> SetDefinedOnElements (py::extract<PyWrapper<shared_ptr<BitArray>>>(definedonelem)()); 
+             
              return PyWrapper<LinearFormIntegrator>(lfi);
            },
            py::arg("form"),
            py::arg("VOL_or_BND")=VOL,
            py::arg("element_boundary")=false,
            py::arg("skeleton")=false,           
-           py::arg("definedon")=DummyArgument()
+           py::arg("definedon")=DummyArgument(),
+           py::arg("definedonelements")=DummyArgument()
           );
 
   m.def("SymbolicBFI",
           [](PyCF cf, VorB vb, bool element_boundary,
              bool skeleton, py::object definedon,
-             IntegrationRule ir)
+             IntegrationRule ir, py::object definedonelem)
            {
              py::extract<Region> defon_region(definedon);
              if (defon_region.check())
@@ -2834,7 +3057,6 @@ used_idnrs (list of int = None): identification numbers to be made periodic
              
              if (py::extract<py::list> (definedon).check())
                {
-                 cout << "warning: SymbolicBFI definedon changed to 1-based" << endl;
                  Array<int> defon = makeCArray<int> (definedon);
                  for (int & d : defon) d--;
                  bfi -> SetDefinedOn (defon); 
@@ -2850,14 +3072,17 @@ used_idnrs (list of int = None): identification numbers to be made periodic
                  dynamic_pointer_cast<SymbolicBilinearFormIntegrator> (bfi)
                    ->SetIntegrationRule(ir);
                }
-             
+
+             if (! py::extract<DummyArgument> (definedonelem).check())
+               bfi -> SetDefinedOnElements (py::extract<PyWrapper<shared_ptr<BitArray>>>(definedonelem)()); 
              return PyWrapper<BilinearFormIntegrator>(bfi);
            },
         py::arg("form"), py::arg("VOL_or_BND")=VOL,
         py::arg("element_boundary")=false,
         py::arg("skeleton")=false,
         py::arg("definedon")=DummyArgument(),
-        py::arg("intrule")=IntegrationRule()
+        py::arg("intrule")=IntegrationRule(),
+        py::arg("definedonelements")=DummyArgument()
         );
           
   m.def("SymbolicTPBFI",
@@ -2903,7 +3128,7 @@ used_idnrs (list of int = None): identification numbers to be made periodic
           );
           
   m.def("SymbolicEnergy",
-          [](PyCF cf, VorB vb, py::object definedon) -> PyWrapper<BilinearFormIntegrator>
+          [](PyCF cf, VorB vb, py::object definedon, py::object definedonelem) -> PyWrapper<BilinearFormIntegrator>
            {
              py::extract<Region> defon_region(definedon);
              if (defon_region.check())
@@ -2939,9 +3164,12 @@ used_idnrs (list of int = None): identification numbers to be made periodic
                  cout << "allbool = " << all_booleans << endl;
                }
              */
+             if (! py::extract<DummyArgument> (definedonelem).check())
+               bfi -> SetDefinedOnElements (py::extract<PyWrapper<shared_ptr<BitArray>>>(definedonelem)()); 
              return PyWrapper<BilinearFormIntegrator>(bfi);
            },
-           py::arg("coefficient"), py::arg("VOL_or_BND")=VOL, py::arg("definedon")=DummyArgument()
+           py::arg("coefficient"), py::arg("VOL_or_BND")=VOL, py::arg("definedon")=DummyArgument(),
+           py::arg("definedonelements")=DummyArgument()
           );
 
 
@@ -3327,9 +3555,6 @@ used_idnrs (list of int = None): identification numbers to be made periodic
 
   /////////////////////////////////////////////////////////////////////////////////////
 
-#ifdef PARALLEL
-  import_mpi4py();
-#endif
 }
 
 

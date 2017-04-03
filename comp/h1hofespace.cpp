@@ -18,6 +18,7 @@
 using namespace ngmg; 
 
 
+
 #ifdef PARALLEL
 
 #include "../parallel/dump.hpp"
@@ -209,10 +210,10 @@ namespace ngcomp
     if (low_order_space) low_order_space -> Update(lh);
     
     int dim = ma->GetDimension();
-    int nv = ma->GetNV();
-    int ned = (dim <= 1) ? 0 : ma->GetNEdges();
-    int nfa = (dim <= 2) ? 0 : ma->GetNFaces();
-    int ne = ma->GetNE();
+    size_t nv = ma->GetNV();
+    size_t ned = (dim <= 1) ? 0 : ma->GetNEdges();
+    size_t nfa = (dim <= 2) ? 0 : ma->GetNFaces();
+    size_t ne = ma->GetNE();
 
     used_edge.SetSize(ned); 
     used_face.SetSize(nfa); 
@@ -251,7 +252,7 @@ namespace ngcomp
     order_face = p; 
     order_inner = p;
 	
-    Array<int> eledges, elfaces, vnums;
+    Array<int> elfaces;
     if(var_order) 
       for (Ngs_Element el : ma->Elements<VOL>())
         {	
@@ -263,8 +264,8 @@ namespace ngcomp
           const EDGE * edges = ElementTopology::GetEdges (eltype);
           const POINT3D * points = ElementTopology :: GetVertices (eltype);
 
-          vnums = el.Vertices();
-          eledges = el.Edges();
+          auto vnums = el.Vertices();
+          auto eledges = el.Edges();
 	
           INT<3,TORDER> el_orders = ma->GetElOrders(i) + INT<3> (rel_order);
 
@@ -327,19 +328,16 @@ namespace ngcomp
       for (Ngs_Element el : ma->Elements<VOL>())
         {	
           if (!DefinedOn (el)) continue;
-          int i = el.Nr();
-          
-          ELEMENT_TYPE eltype = el.GetType(); 
 
           if (dim >= 2)
-            for (int e : el.Edges())
+            for (auto e : el.Edges())
               order_edge[e] = p + et_bonus_order[ET_SEGM];
           
           if (dim == 3)
-            for (int f : el.Faces())
+            for (auto f : el.Faces())
               order_face[f] = p + et_bonus_order[ma->GetFacetType(f)];
 
-          order_inner[i] = p + et_bonus_order[eltype];
+          order_inner[el.Nr()] = p + et_bonus_order[el.GetType()];
         }
 
     /* 
@@ -403,10 +401,10 @@ namespace ngcomp
   void H1HighOrderFESpace :: UpdateDofTables ()
   {
     int dim = ma->GetDimension();
-    int nv = ma->GetNV();
-    int ned = (dim <= 1) ? 0 : ma->GetNEdges();
-    int nfa = (dim <= 2) ? 0 : ma->GetNFaces();
-    int ne = ma->GetNE();
+    size_t nv = ma->GetNV();
+    size_t ned = (dim <= 1) ? 0 : ma->GetNEdges();
+    size_t nfa = (dim <= 2) ? 0 : ma->GetNFaces();
+    size_t ne = ma->GetNE();
 
     int hndof = nv;
 
@@ -443,9 +441,10 @@ namespace ngcomp
     first_element_dof.SetSize(ne+1);
     for (auto i : Range(ne))
       {
+        ElementId ei(VOL,i);
 	first_element_dof[i] = hndof;
 	INT<3> p = order_inner[i];
-	switch (ma->GetElType(i))
+	switch (ma->GetElType(ei))
 	  {
 	  case ET_TRIG:
 	    if(p[0] > 2)
@@ -505,7 +504,7 @@ namespace ngcomp
       ctofdof[i] = used_vertex[i] ? WIREBASKET_DOF : UNUSED_DOF;
 
     int dim = ma->GetDimension();
-    int ned = (dim <= 1) ? 0 : ma->GetNEdges();
+    size_t ned = (dim <= 1) ? 0 : ma->GetNEdges();
     for (auto edge : Range (ned))
       {
 	IntRange range = GetEdgeDofs (edge);
@@ -523,7 +522,7 @@ namespace ngcomp
       for (auto face : Range (ma->GetNFaces()))
 	ctofdof[GetFaceDofs(face)] = INTERFACE_DOF;
 
-    for (int el = 0; el < ma->GetNE(); el++)
+    for (auto el : Range(ma->GetNE()))
       ctofdof[GetElementDofs(el)] = LOCAL_DOF;
     
     if (print)
@@ -553,7 +552,6 @@ namespace ngcomp
     archive & level_adapted_order & nodalp2;
   }
 
-
   FiniteElement & H1HighOrderFESpace :: GetFE (ElementId ei, Allocator & alloc) const
   {
     Ngs_Element ngel = ma->GetElement(ei);
@@ -561,20 +559,13 @@ namespace ngcomp
 
     if (!DefinedOn (ei))
       {
-        switch (eltype)
-          {
-          case ET_SEGM:    return * new (alloc) ScalarDummyFE<ET_SEGM> (); break;
-          case ET_TRIG:    return * new (alloc) ScalarDummyFE<ET_TRIG> (); break;
-          case ET_QUAD:    return * new (alloc) ScalarDummyFE<ET_QUAD> (); break;
-          case ET_TET:     return * new (alloc) ScalarDummyFE<ET_TET> (); break;
-          case ET_PYRAMID: return * new (alloc) ScalarDummyFE<ET_PYRAMID> (); break;
-          case ET_PRISM:   return * new (alloc) ScalarDummyFE<ET_PRISM> (); break;
-          case ET_HEX:     return * new (alloc) ScalarDummyFE<ET_HEX> (); break;
-	  case ET_POINT:   break;
-	  }
+        return 
+          * SwitchET (eltype, [&] (auto et) -> FiniteElement*
+                      {
+                        return new (alloc) ScalarDummyFE<et.ElementType()> ();
+                      });
       }
     
-
     try
       {
         if (fixed_order && eltype == ET_TRIG)
@@ -656,81 +647,6 @@ namespace ngcomp
   }
 
 
-
-  /*
-  const FiniteElement & H1HighOrderFESpace :: GetFE (int elnr, LocalHeap & lh) const
-  {
-    Ngs_Element ngel = ma->GetElement(elnr);
-    ELEMENT_TYPE eltype = ngel.GetType();
-
-    if (!DefinedOn (ElementId (VOL, elnr)))
-      {
-        switch (eltype)
-          {
-          case ET_SEGM:    return * new (lh) ScalarDummyFE<ET_SEGM> (); break;
-          case ET_TRIG:    return * new (lh) ScalarDummyFE<ET_TRIG> (); break;
-          case ET_QUAD:    return * new (lh) ScalarDummyFE<ET_QUAD> (); break;
-          case ET_TET:     return * new (lh) ScalarDummyFE<ET_TET> (); break;
-          case ET_PYRAMID: return * new (lh) ScalarDummyFE<ET_PYRAMID> (); break;
-          case ET_PRISM:   return * new (lh) ScalarDummyFE<ET_PRISM> (); break;
-          case ET_HEX:     return * new (lh) ScalarDummyFE<ET_HEX> (); break;
-	  case ET_POINT:   break;
-	  }
-      }
-
-    if (fixed_order && eltype == ET_TRIG)
-      {
-        switch (order)
-          {
-          case 1: return *(new (lh) H1HighOrderFEFO<ET_TRIG,1> ()) -> SetVertexNumbers(ngel.vertices);
-          case 2: return *(new (lh) H1HighOrderFEFO<ET_TRIG,2> ()) -> SetVertexNumbers(ngel.vertices);
-          case 3: return *(new (lh) H1HighOrderFEFO<ET_TRIG,3> ()) -> SetVertexNumbers(ngel.vertices);
-          default:
-            ; 
-          }
-      }
-
-    if (fixed_order && eltype == ET_TET)
-      {
-        switch (order)
-          {
-          case 1: return *(new (lh) H1HighOrderFEFO<ET_TET,1> ()) -> SetVertexNumbers(ngel.vertices);
-          case 2: return *(new (lh) H1HighOrderFEFO<ET_TET,2> ()) -> SetVertexNumbers(ngel.vertices);
-          case 3: return *(new (lh) H1HighOrderFEFO<ET_TET,3> ()) -> SetVertexNumbers(ngel.vertices);
-          default:
-            ; 
-          }
-      }
-
-
-    try
-      {
-        switch (eltype)
-          {
-          case ET_SEGM:    return T_GetFE<ET_SEGM> (elnr, lh);
-
-          case ET_TRIG:    return T_GetFE<ET_TRIG> (elnr, lh);
-          case ET_QUAD:    return T_GetFE<ET_QUAD> (elnr, lh);
-
-          case ET_TET:     return T_GetFE<ET_TET> (elnr, lh);
-          case ET_PRISM:   return T_GetFE<ET_PRISM> (elnr, lh);
-          case ET_PYRAMID: return T_GetFE<ET_PYRAMID> (elnr, lh);
-          case ET_HEX:     return T_GetFE<ET_HEX> (elnr, lh);
-
-          default:
-            throw Exception ("illegal element in H1HoFeSpace::GetFE");
-          }
-      }
-    catch (Exception & e)
-      {
-        e.Append ("in H1HoFESpace::GetElement\n");
-        throw;
-      }
-  }
-  */ 
-
-
-
   template <ELEMENT_TYPE ET>
   FiniteElement & H1HighOrderFESpace :: T_GetFE (int elnr, Allocator & lh) const
   {
@@ -768,47 +684,6 @@ namespace ngcomp
     return *hofe;
   }
 
-
-
-
-
-
-
-
-  // const FiniteElement & H1HighOrderFESpace :: GetSFE (int elnr, LocalHeap & lh) const
-  // {
-  //   if (!DefinedOnBoundary (ma->GetSElIndex (elnr)))
-  //     {
-  //       switch (ma->GetSElType(elnr))
-  //         {
-  //         case ET_POINT:   return * new (lh) ScalarDummyFE<ET_POINT> (); 
-  //         case ET_SEGM:    return * new (lh) ScalarDummyFE<ET_SEGM> (); 
-  //         case ET_TRIG:    return * new (lh) ScalarDummyFE<ET_TRIG> (); 
-  //         case ET_QUAD:    return * new (lh) ScalarDummyFE<ET_QUAD> (); 
-  //         default: ;
-  //         }
-  //     }
-
-  //   try
-  //     {
-  //       switch (ma->GetSElType(elnr))
-  //         {
-  //         case ET_POINT:   return T_GetSFE<ET_POINT> (elnr, lh);
-  //         case ET_SEGM:    return T_GetSFE<ET_SEGM> (elnr, lh);
-
-  //         case ET_TRIG:    return T_GetSFE<ET_TRIG> (elnr, lh);
-  //         case ET_QUAD:    return T_GetSFE<ET_QUAD> (elnr, lh);
-
-  //         default:
-  //           throw Exception ("illegal element in H1HoFeSpace::GetSFE");
-  //         }
-  //     }
-  //   catch (Exception & e)
-  //     {
-  //       e.Append ("in H1HoFESpace::GetSElement\n");
-  //       throw;
-  //     }
-  // }
 
 
   template <ELEMENT_TYPE ET>
@@ -870,12 +745,10 @@ namespace ngcomp
   void H1HighOrderFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
     Ngs_Element ngel = ma->GetElement(ei);
+    dnums.SetSize0();
 
     if (!DefinedOn (ei))
-      {
-	dnums.SetSize0();
-	return;
-      }
+      return;
     
     dnums = ngel.Vertices();
 
@@ -962,6 +835,7 @@ namespace ngcomp
       }
     return additional;
   }
+  
   shared_ptr<Table<int>> H1HighOrderFESpace :: 
   CreateSmoothingBlocks (const Flags & precflags) const
   {
@@ -985,10 +859,10 @@ namespace ngcomp
     int smoothing_type = int(precflags.GetNumFlag("blocktype",4)); 
     if (subassembled) smoothing_type = 51;
 
-    int nv = ma->GetNV();
-    int ned = ma->GetNEdges();
-    int nfa = (ma->GetDimension() == 2) ? 0 : ma->GetNFaces();
-    int ni = (eliminate_internal) ? 0 : ma->GetNE(); 
+    size_t nv = ma->GetNV();
+    size_t ned = ma->GetNEdges();
+    size_t nfa = (ma->GetDimension() == 2) ? 0 : ma->GetNFaces();
+    size_t ni = (eliminate_internal) ? 0 : ma->GetNE(); 
    
     cout << " blocktype " << smoothing_type << endl; 
     // cout << " Use H1-Block Smoother:  "; 
@@ -1003,16 +877,22 @@ namespace ngcomp
 		
 	    if (creator.GetMode() == 1)
 	      cout << " V + E + I " << endl;
-		
-	    for (int i = 0; i < nv; i++)
-	      creator.Add (i, i);
-		
-	    for (int i = 0; i < ned; i++)
-	      creator.Add (nv+i, GetEdgeDofs(i));
 
-	    for (int i = 0; i < ni; i++)
+	    for (size_t i = 0; i < nv; i++)
+	      creator.Add (i, i);
+	    for (size_t i = 0; i < ned; i++)
+	      creator.Add (nv+i, GetEdgeDofs(i));
+	    for (size_t i = 0; i < ni; i++)
 	      creator.Add (nv+ned+i, GetElementDofs(i));
-		
+
+            /*
+            ParallelFor (nv, [&creator] (size_t i)
+                         { creator.Add (i,i); });
+            ParallelFor (ned, [&creator,nv,this] (size_t i)
+                         { creator.Add (nv+i, GetEdgeDofs(i)); });
+            ParallelFor (ni, [&creator,nv,ned,this] (size_t i)
+                         { creator.Add (nv+ned+i, GetElementDofs(i)); });
+            */
 	    break; 
 		
 	  case 2: // 2d VE + I
@@ -1098,7 +978,7 @@ namespace ngcomp
 
 	    for (int i = 0; i < ni; i++)
 	      {
-		const Ngs_Element & ngel = ma->GetElement(i);
+		const Ngs_Element & ngel = ma->GetElement(ElementId(VOL,i));
 		for (int j = 0; j < ngel.faces.Size(); j++)
 		  creator.Add (nv+ngel.faces[j], GetElementDofs(i));
 	      }
@@ -1156,7 +1036,7 @@ namespace ngcomp
 	      }
 	    
 	    for (int i = 0; i < ni; i++)
-              for (auto v : ma->GetElement(i).Vertices())
+              for (auto v : ma->GetElement(ElementId(VOL,i)).Vertices())
                 creator.Add (v, GetElementDofs(i));
 
 	    break; 
@@ -1175,7 +1055,7 @@ namespace ngcomp
 	      creator.Add(nv+ned+i, GetFaceDofs(i));
 		
 	    for (int i = 0; i < ni; i++)
-	      for (int f : ma->GetElement(i).Faces())
+	      for (int f : ma->GetElement(ElementId(VOL,i)).Faces())
 		creator.Add (nv+ned+f, GetElementDofs(i));                  
 
 	    break;
@@ -1192,14 +1072,14 @@ namespace ngcomp
                 {
 
                   ParallelFor (Range(nv), 
-                               [&] (int i) { creator.Add(i,i); });
+                               [&] (size_t i) { creator.Add(i,i); });
 
                   ParallelFor (Range(ned),
-                               [&] (int i) 
+                               [&] (size_t i) 
                                { creator.Add(nv+i,GetEdgeDofs(i)); });
                   
                   ParallelFor (Range(nfa), 
-                               [&] (int i) 
+                               [&] (size_t i) 
                                { 
                                  ArrayMem<int,4> f2ed;
                                  ma->GetFaceEdges (i, f2ed);
@@ -1209,7 +1089,7 @@ namespace ngcomp
                                });
                   
                   ParallelFor (Range(ni), 
-                               [&] (int i) 
+                               [&] (size_t i) 
                                { creator.Add(nv+ned+i,GetElementDofs(i)); });
                   
                   
@@ -1274,7 +1154,7 @@ namespace ngcomp
 
 	    for (int i = 0; i < ni; i++)
 	      {
-		const Ngs_Element & ngel = ma->GetElement(i);
+		const Ngs_Element & ngel = ma->GetElement(ElementId(VOL,i));
 		for (int j = 0; j < ngel.vertices.Size(); j++)
 		  creator.Add (ngel.vertices[j], GetElementDofs(i));
 	      }
@@ -1319,7 +1199,7 @@ namespace ngcomp
 
 	    for (int i = 0; i < ni; i++)
 	      {
-		Ngs_Element ngel = ma->GetElement (i);
+		Ngs_Element ngel = ma->GetElement (ElementId(VOL,i));
 		int rep[8];
 		      
 		for (int k = 0; k < ngel.vertices.Size(); k++)
@@ -1516,7 +1396,8 @@ namespace ngcomp
     
     for (int i = 0; i < ne; i++)
       {
-	if (ma->GetElType(i) == ET_PRISM)
+        ElementId ei(VOL, i);
+	if (ma->GetElType(ei) == ET_PRISM)
 	  {
 	    ma->GetElEdges (i, ednums);
 	    for (int j = 6; j < 9; j++)  //vertical Edges 
@@ -1540,9 +1421,9 @@ namespace ngcomp
 	      }
 	  }
 
-	else if (ma->GetElType(i) == ET_HEX)  
+	else if (ma->GetElType(ei) == ET_HEX)  
 	  {
-	    ma->GetElEdges (i, ednums);
+	    ma->GetElEdges (ei, ednums);
 	    for (int j = 8; j < 12; j++) //vertical edges
               clusters[GetEdgeDofs(ednums[j])] = 2;
 
@@ -1555,7 +1436,8 @@ namespace ngcomp
    
     for (int i =0; directsolverclustered.Size() > 0 && i<ne; i++)
       {
-	if(directsolverclustered[ma->GetElIndex(i)])
+        ElementId ei(VOL,i);
+	if(directsolverclustered[ma->GetElIndex(ei)])
 	  {
 	    GetDofNrs(i,ednums);
 	    for (int k = 0; k<ednums.Size(); k++)
@@ -1650,6 +1532,44 @@ namespace ngcomp
           feli.CalcShape (mip.IP(), mat.Row(i).Range(fel.GetRange(i)));
         }
     }
+
+    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      mat.AddSize(DIM_SPC*bfel.GetNDof(), mir.Size()) = 0.0;
+      for (int i = 0; i < DIM_SPC; i++)
+        {
+          auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
+          feli.CalcShape (mir.IR(), mat.Rows(DIM_SPC*fel.GetRange(i)).RowSlice(i, DIM_SPC));
+        }
+    }
+
+    using DiffOp<DiffOpIdVectorH1<DIM_SPC>>::ApplySIMDIR;    
+    static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      for (int i = 0; i < DIM_SPC; i++)
+        {
+          auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
+          feli.Evaluate (mir.IR(), x.Range(fel.GetRange(i)), y.Row(i));
+        }
+    }
+
+    using DiffOp<DiffOpIdVectorH1<DIM_SPC>>::AddTransSIMDIR;        
+    static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      for (int i = 0; i < DIM_SPC; i++)
+        {
+          auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
+          feli.AddTrans (mir.IR(), y.Row(i), x.Range(fel.GetRange(i)));
+        }
+    }    
+    
   };
 
 
@@ -1678,7 +1598,7 @@ namespace ngcomp
       L2HighOrderFE<ET_TRIG> fel_l2(order-2);
       L2HighOrderFE<ET_TRIG> fel_koszul( max(order-3, -1) );
       // FacetFE<ET_TRIG> fel_facet;
-      FacetVolumeFiniteElement<DIM_SPACE> & fel_facet = *new (lh) FacetFE<ET_TRIG>;
+      FacetFE<ET_TRIG> & fel_facet = *new (lh) FacetFE<ET_TRIG>;
       fel_facet.SetOrder(order-1);
       Array<int> vnums = { 1, 2, 3 } ;
       fel_facet.SetVertexNumbers(vnums);
@@ -1794,6 +1714,8 @@ namespace ngcomp
     enum { DIM_DMAT = DIM_SPC*DIM_SPC };
     enum { DIFFORDER = 0 };
 
+    static Array<int> GetDimensions() { return Array<int> ( { DIM_SPC, DIM_SPC } ); }
+      
     static string Name() { return "grad"; }
     
     template <typename FEL, typename MIP, typename MAT>
@@ -1801,13 +1723,79 @@ namespace ngcomp
                                 MAT & mat, LocalHeap & lh)
     {
       auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      /*
       mat = 0.0;
       for (int i = 0; i < DIM_SPC; i++)
         {
           auto & feli = static_cast<const ScalarFiniteElement<DIM_SPC>&> (fel[i]);
           feli.CalcMappedDShape (mip, Trans(mat.Rows(DIM_SPC*i, DIM_SPC*(i+1)).Cols(fel.GetRange(i))));
         }
+      */
+
+      HeapReset hr(lh);
+      auto & feli = static_cast<const ScalarFiniteElement<DIM_SPC>&> (fel[0]);
+      FlatMatrix<> hmat(feli.GetNDof(), DIM_SPC, lh);
+      feli.CalcMappedDShape (mip, hmat);
+      mat = 0.0;
+      for (int i = 0; i < DIM_SPC; i++)
+        mat.Rows(DIM_SPC*i, DIM_SPC*(i+1)).Cols(fel.GetRange(i)) = Trans(hmat);
     }
+
+    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> bmat)
+    {
+      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      /*
+      mat.AddSize(DIM_SPC*DIM_SPC*bfel.GetNDof(), mir.Size()) = 0.0;
+      for (int i = 0; i < DIM_SPC; i++)
+        {
+          auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
+          feli.CalcMappedDShape (mir, mat.Rows(DIM_SPC*DIM_SPC*fel.GetRange(i)).RowSlice(i,DIM_SPC));
+          // cout << "grad-mat, i = " << i << ":" << endl <<  mat.AddSize(DIM_SPC*DIM_SPC*bfel.GetNDof(), mir.Size()) << endl;
+        }
+      */
+      auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
+      auto mat = bmat.AddSize(DIM_SPC*DIM_SPC*bfel.GetNDof(), mir.Size());
+      mat = 0.0;      
+      feli.CalcMappedDShape (mir, mat);
+      for (int i = 1; i < DIM_SPC; i++)
+        {
+          auto mati = mat.Rows(DIM_SPC*DIM_SPC*fel.GetRange(i));
+          for (int j = 0; j < feli.GetNDof(); j++)
+            mati.Rows(j*DIM_SPC*DIM_SPC+i*DIM_SPC, j*DIM_SPC*DIM_SPC+(i+1)*DIM_SPC)
+              = mat.Rows(j*DIM_SPC, (j+1)*DIM_SPC);
+        }
+      for (int j = feli.GetNDof()-1; j >= 0; j--)
+        mat.Rows(j*DIM_SPC*DIM_SPC, j*DIM_SPC*DIM_SPC+DIM_SPC) = mat.Rows(j*DIM_SPC, (j+1)*DIM_SPC);
+      for (int j = feli.GetNDof()-1; j >= 0; j--)
+        mat.Rows(j*DIM_SPC*DIM_SPC+DIM_SPC, (j+1)*DIM_SPC*DIM_SPC) = 0.0;
+      // cout << "mat = " << endl << mat << endl;
+    }
+
+    using DiffOp<DiffOpGradVectorH1<DIM_SPC>>::ApplySIMDIR;    
+    static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      for (int i = 0; i < DIM_SPC; i++)
+        {
+          auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
+          feli.EvaluateGrad (mir, x.Range(fel.GetRange(i)), y.Rows(i*DIM_SPC, (i+1)*DIM_SPC));
+        }
+    }
+
+    using DiffOp<DiffOpGradVectorH1<DIM_SPC>>::AddTransSIMDIR;        
+    static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      for (int i = 0; i < DIM_SPC; i++)
+        {
+          auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
+          feli.AddGradTrans (mir, y.Rows(i*DIM_SPC, (i+1)*DIM_SPC), x.Range(fel.GetRange(i)));
+        }
+    }    
   };
 
   template <int DIM_SPC>  

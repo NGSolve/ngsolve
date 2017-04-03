@@ -107,10 +107,10 @@ namespace ngcomp
     finelevelofedge.Range (oldned, ned) = -1;
 
     for (int i = 0; i < ne; i++)
-      finelevelofedge[ma->GetElement(i).Edges()] = level-1;
+      finelevelofedge[ma->GetElement(ElementId(VOL,i)).Edges()] = level-1;
 
     for (int i = 0; i < nse; i++)
-      finelevelofedge[ma->GetSElement(i).Edges()] = level-1;
+      finelevelofedge[ma->GetElement(ElementId(BND,i)).Edges()] = level-1;
 
 
     // generate edge points, and temporary hash table
@@ -966,8 +966,9 @@ namespace ngcomp
     first_el_dof[0] = first_face_dof[nfa];
     for (i = 0; i < ne; i++)
       {
-	bool gradel = gradientdomains[ma->GetElIndex(i)];
-	switch (ma->GetElType (i))
+        ElementId ei(VOL,i);
+	bool gradel = gradientdomains[ma->GetElIndex(ei)];
+	switch (ma->GetElType (ei))
 	  {
 	  case ET_TET:
 	    first_el_dof[i+1] = first_el_dof[i] + n_tet_el_dofs; 
@@ -997,7 +998,8 @@ namespace ngcomp
 
 	for (i = 0; i < ne; i++)
 	  {
-	    if (gradientdomains[ma->GetElIndex(i)])
+            ElementId ei(VOL,i);
+	    if (gradientdomains[ma->GetElIndex(ei)])
 	      {
 		ma->GetElEdges (i, enums);
 		for (j = 0; j < enums.Size(); j++)
@@ -1015,9 +1017,10 @@ namespace ngcomp
     if (gradientboundaries.Size())
       for (i = 0; i < nse; i++)
 	{
-	  if (gradientboundaries[ma->GetSElIndex(i)])
+          ElementId sei(BND,i);
+	  if (gradientboundaries[ma->GetElIndex(sei)])
 	    {
-	      ma->GetSElEdges (i, enums);
+	      ma->GetElEdges (sei, enums);
 	      for (j = 0; j < enums.Size(); j++)
 		gradientedge[enums[j]] = 1;
 	      ma->GetSElFace (i, fnums[0], forient[0]);
@@ -1070,8 +1073,8 @@ namespace ngcomp
       default:
 	fe = 0;
       }
-
-    if (!gradientdomains[ma->GetElIndex(ei.Nr())])
+    
+    if (!gradientdomains[ma->GetElIndex(ei)])
       {
 	switch (typ)
 	  {
@@ -1091,7 +1094,7 @@ namespace ngcomp
 	stringstream str;
 	str << "FESpace " << GetClassName() 
 	    << ", undefined eltype " 
-	    << ElementTopology::GetElementName(ma->GetElType(ei.Nr()))
+	    << ElementTopology::GetElementName(ma->GetElType(ei))
 	    << ", order = " << order << endl;
 	throw Exception (str.str());
       }
@@ -1118,13 +1121,13 @@ namespace ngcomp
 	dnums.SetSize(nd);
 	dnums = -1;
 	
-	int index = ma->GetElIndex (ei.Nr());
+	int index = ma->GetElIndex (ei);
 	
 	if (!DefinedOn (VOL, index)) return;
 	
 	bool graddom = gradientdomains[index];
 	
-	switch (ma->GetElType(ei.Nr()))
+	switch (ma->GetElType(ei))
 	  {
 	  case ET_TRIG:
 	    {
@@ -1384,7 +1387,7 @@ namespace ngcomp
 	    }
 	  default:
 	    {
-	      cerr << "NedelecFE2, GetDofNrs, unkown element" << endl;
+	      cerr << "NedelecFE2, GetDofNrs, unknown element" << endl;
 	    }
 	  }
       }
@@ -1403,10 +1406,10 @@ namespace ngcomp
     dnums.SetSize(nd);
     dnums = -1;
 
-    if (!DefinedOn (BND, ma->GetSElIndex (ei.Nr())))
+    if (!DefinedOn (BND, ma->GetElIndex (ei)))
       return;
 
-    switch (ma->GetSElType(ei.Nr()))
+    switch (ma->GetElType(ei))
       {
       case ET_TRIG:
 	{
@@ -1542,7 +1545,7 @@ namespace ngcomp
 					    const Array<int> & forient,
 					    FlatVector<double> & fac) const
   {
-    bool graddom = gradientdomains[ma->GetElIndex(elnr)];
+    bool graddom = gradientdomains[ma->GetElIndex(ElementId(VOL,elnr))];
 
     fac = 1.0;
     switch (eltype)
@@ -1837,14 +1840,14 @@ namespace ngcomp
     if (boundary)
       {
 	nd = GetFE (ei, lh).GetNDof();
-	et = ma->GetSElType (elnr);
+	et = ma->GetElType (ei);
 	ma->GetSElEdges (elnr, enums, eorient);
 	ma->GetSElFace (elnr, fnums[0], forient[0]);
       }
     else
       {
 	nd = GetFE (ei, lh).GetNDof();
-	et = ma->GetElType (elnr);
+	et = ma->GetElType (ei);
 	ma->GetElEdges (elnr, enums, eorient);
 	ma->GetElFaces (elnr, fnums, forient);
       }
@@ -2589,10 +2592,11 @@ namespace ngcomp
 
     for(i=0; i<ne && (directsolverclustered.Size() > 0 || directsolvermaterials.Size() > 0); i++)
       {
-	if((directsolverclustered.Size() > 0 && directsolverclustered[ma->GetElIndex(i)]) || 
-	   directsolvermaterials.Contains(ma->GetElMaterial(i)))
+        ElementId ei(VOL,i);
+	if((directsolverclustered.Size() > 0 && directsolverclustered[ma->GetElIndex(ei)]) || 
+	   directsolvermaterials.Contains(ma->GetMaterial(ei)))
 	  {     
-	    ELEMENT_TYPE eltype = ma->GetElType(i);
+	    ELEMENT_TYPE eltype = ma->GetElType(ei);
 	    if(eltype != ET_PRISM) continue;
 
 	    GetDofNrs(i,dnums);
@@ -2729,8 +2733,9 @@ namespace ngcomp
   
     for (i = 0; i < ne; i++)
       {
+        ElementId ei(VOL, i);
 	lock.SetSize (0);
-	switch (ma->GetElType(i))
+	switch (ma->GetElType(ei))
 	  {
 	  case ET_PRISM:
 	    {

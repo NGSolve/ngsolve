@@ -483,7 +483,7 @@ namespace ngstd
 	  if (i >= size) i = 0;
 	}
     }
-    // returns 1, if new postion is created
+    // returns 1, if new position is created
     int PositionCreate (const T_HASH ind, int & apos)
     {
       int i = HashValue (ind, size);

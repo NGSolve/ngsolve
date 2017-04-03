@@ -164,7 +164,7 @@ namespace ngla
 
 	if (cnt < n)
 	  {
-	    // seperated clusters
+	    // separated clusters
 	    int cnt2 = cnt;
 	    for (int i = 0; i < n; i++)
 	      if (!cluster0[i])

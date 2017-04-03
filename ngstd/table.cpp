@@ -145,22 +145,22 @@ namespace ngstd
     line.size--;
   }
   
-  void FilteredTableCreator::Add (int blocknr, int data)
+  void FilteredTableCreator::Add (size_t blocknr, int data)
   {
     if (!takedofs||takedofs->Test(data))
       TableCreator<int>::Add(blocknr,data);
   }
 
-  void FilteredTableCreator::Add (int blocknr, IntRange range)
+  void FilteredTableCreator::Add (size_t blocknr, IntRange range)
   {
-    for (int i=range.First(); i<range.Next();i++)
+    for (size_t i=range.First(); i<range.Next();i++)
       if (!takedofs||takedofs->Test(i))
 	TableCreator<int>::Add(blocknr,i);
   }  
   
-  void FilteredTableCreator::Add (int blocknr, FlatArray<int> dofs)
+  void FilteredTableCreator::Add (size_t blocknr, FlatArray<int> dofs)
   {
-    for (int i = 0; i < dofs.Size(); i++)
+    for (size_t i = 0; i < dofs.Size(); i++)
       if (!takedofs||takedofs->Test(dofs[i]))
 	TableCreator<int>::Add(blocknr,dofs[i]);
   }  

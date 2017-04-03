@@ -900,7 +900,7 @@ namespace ngfem
       }
 
     T_CalcShape (&po[0], orders);
-    // did not work for old tensor productelements: order cancelation for lam_e
+    // did not work for old tensor productelements: order cancellation for lam_e
   }
   */
 

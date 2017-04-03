@@ -84,10 +84,12 @@ namespace ngstd
 
     /// Save flags to file
     void SaveFlags (const char * filename) const;
+    void SaveFlags (ostream & str) const;
     /// write flags to stream
     void PrintFlags (ostream & ost) const;
     /// Load flags from file
     void LoadFlags (const char * filename, SymbolTable<Flags> * sf = nullptr);
+    void LoadFlags (istream & str, SymbolTable<Flags> * sf = nullptr);
     /**
        Set command line flag.
        Flag must be in form: -name=hello -val=0.5 -defflag 

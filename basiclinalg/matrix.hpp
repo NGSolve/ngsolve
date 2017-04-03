@@ -2057,7 +2057,7 @@ namespace ngbla
 
   //
   // if possible, a slicematrix is returned
-  // if not, we return a reference to the orginal matrix
+  // if not, we return a reference to the original matrix
   // 
   
   template <typename T, typename TMAT>

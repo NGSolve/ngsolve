@@ -55,19 +55,9 @@ namespace ngstd
           return i;
       return -1;
     }
-    INLINE auto operator[] (size_t i) { return Spec()[i]; }
+    // INLINE auto & operator[] (size_t i) { return Spec()[i]; }
     INLINE auto operator[] (size_t i) const { return Spec()[i]; }
   };
-
-
-  template <typename T>
-  inline ostream & operator<< (ostream & ost, const BaseArrayObject<T> & array)
-  {
-    for (auto i : Range(array.Size()))
-      ost << i << ":" << array.Spec()[i] << endl;
-    return ost;
-  }
-
 
 
   template <typename AO>
@@ -278,6 +268,14 @@ namespace ngstd
     return ost;
   }
 
+
+  template <typename T>
+  inline ostream & operator<< (ostream & ost, const BaseArrayObject<T> & array)
+  {
+    for (auto i : Range(array.Size()))
+      ost << i << ":" << array.Spec()[i] << endl;
+    return ost;
+  }
 
 
   template <typename T, typename INDEX_ARRAY>
@@ -780,6 +778,7 @@ namespace ngstd
     /// array copy
     INLINE Array & operator= (const Array & a2)
     {
+      SetSize0 ();
       SetSize (a2.Size());
       for (size_t i = 0; i < size; i++)
         (*this)[i] = a2[i];
@@ -819,8 +818,10 @@ namespace ngstd
     template <typename T2>
     Array & operator= (const BaseArrayObject<T2> & a2)
     {
-      SetSize (a2.Spec().Size());
-      for (size_t i = 0; i < size; i++)
+      size_t newsize = a2.Spec().Size();
+      SetSize0 ();      
+      SetSize (newsize);
+      for (size_t i = 0; i < newsize; i++)
         (*this)[i] = a2.Spec()[i];
       return *this;
     }

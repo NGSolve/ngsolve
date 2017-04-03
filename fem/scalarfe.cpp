@@ -244,15 +244,13 @@ namespace ngfem
       vals.Row(i) = EvaluateGrad (ir[i], coefs);
   }
 
-  template<int D>
-  void ScalarFiniteElement<D> :: 
+  void BaseScalarFiniteElement :: 
   EvaluateGrad (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const
   {
     throw ExceptionNOSIMD (string("EvaluateGrad (simd) not implemented for class ")+typeid(*this).name());
   }
 
-  template<int D>
-  void ScalarFiniteElement<D> :: 
+  void BaseScalarFiniteElement :: 
   EvaluateGrad (const SIMD_IntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const
   {
     throw ExceptionNOSIMD (string("EvaluateGrad (simd) not implemented for class ")+typeid(*this).name());
@@ -308,6 +306,7 @@ namespace ngfem
     size_t steps;
 
     // calc shape single point
+    this -> CalcShape(ir[0], shape); //warmup
     starttime = WallTime();
     steps = 0;
     do
@@ -321,6 +320,7 @@ namespace ngfem
     timings.push_back(make_tuple("CalcShape", time/steps*1e9/GetNDof()));
 
     // evaluate IR
+    this -> Evaluate(ir, coefs, values); //warmup
     starttime = WallTime();
     steps = 0;
     do
@@ -335,6 +335,7 @@ namespace ngfem
 
     
     // evaluate IR SIMD
+    this -> Evaluate(simdir, coefs, avalues); // warmup
     starttime = WallTime();
     steps = 0;
     do
@@ -349,6 +350,7 @@ namespace ngfem
 
 
     // evaluate grad IR
+    this -> EvaluateGrad(ir, coefs, dvalues); //warmup
     starttime = WallTime();
     steps = 0;
     do
@@ -363,6 +365,7 @@ namespace ngfem
 
 
     // evaluate grad IR SIMD
+    this -> EvaluateGrad(simdir, coefs, advalues); // warmup
     starttime = WallTime();
     steps = 0;
     do
@@ -379,6 +382,7 @@ namespace ngfem
 
     
     // evaluate IR
+    this -> EvaluateTrans(ir, values, coefs); // warmup
     starttime = WallTime();
     steps = 0;
     do
@@ -392,6 +396,7 @@ namespace ngfem
     timings.push_back(make_tuple("Evaluate Trans", time/steps*1e9/(GetNDof()*ir.GetNIP())));
 
     // evaluate trans IR SIMD
+    this -> AddTrans(simdir, avalues, coefs); // warmup
     starttime = WallTime();
     steps = 0;
     do
@@ -406,6 +411,7 @@ namespace ngfem
 
 
     // evaluate trans grad IR
+    this -> EvaluateGradTrans(ir, dvalues, coefs); // warmup
     starttime = WallTime();
     steps = 0;
     do
@@ -420,6 +426,7 @@ namespace ngfem
 
 
     // evaluate trans grad IR SIMD
+    this -> AddGradTrans(simdmir, advalues, coefs); // warmup
     starttime = WallTime();
     steps = 0;
     do
@@ -461,8 +468,7 @@ namespace ngfem
 #endif
   }
 
-  template<int D>
-  void ScalarFiniteElement<D> :: 
+  void BaseScalarFiniteElement :: 
   AddGradTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
                 BareSliceVector<> coefs) const
   {

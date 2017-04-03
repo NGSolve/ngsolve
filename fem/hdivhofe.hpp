@@ -81,7 +81,7 @@ namespace ngfem
             sum += nv[j] * values(j,i);
           SIMD<double> val = sum / mip.GetJacobiDet();
 
-          TIP<DIM,SIMD<double>> tip = mip.IP();
+          TIP<DIM,SIMD<double>> tip = mip.IP().template TIp<DIM>();
           static_cast<const FEL*> (this) ->
             T_CalcShape (tip, SBLambda([&] (int nr, SIMD<double> shape)
                                        {

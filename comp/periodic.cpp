@@ -35,8 +35,11 @@ namespace ngcomp {
       space->Update (lh);
       FESpace::Update(lh);
       dofmap.SetSize (space->GetNDof());
+      vertex_map.SetSize(ma->GetNV());
       for (int i = 0; i < dofmap.Size(); i++)
 	dofmap[i] = i;
+      for (int i : Range(vertex_map.Size()))
+        vertex_map[i] = i;
 
       int nid = ma->GetNetgenMesh()->GetIdentifications().GetMaxNr();
 
@@ -49,6 +52,11 @@ namespace ngcomp {
           for (auto node_type : {NT_VERTEX, NT_EDGE, NT_FACE})
             {
               auto & periodic_nodes = ma->GetPeriodicNodes(node_type, idnr);
+              if(node_type==NT_VERTEX)
+                {
+                  for (auto per_verts : periodic_nodes)
+                    vertex_map[per_verts[1]] = vertex_map[per_verts[0]];
+                }
               for(auto node_pair : periodic_nodes)
                 {
                   space->GetDofNrs(NodeId(node_type,node_pair[0]),master_dofnrs);
@@ -80,16 +88,23 @@ namespace ngcomp {
 	  {
             auto hofe = dynamic_cast<VertexOrientedFE<ET_TRIG>*>(&fe);
             if(hofe)
-              hofe->SetVertexNumbers(dofmap[ngel.Vertices()]);
+              hofe->SetVertexNumbers(vertex_map[ngel.Vertices()]);
             break;
 	  }
 	case ET_TET:
 	  {
             auto hofe = dynamic_cast<VertexOrientedFE<ET_TET>*>(&fe);
             if(hofe)
-              hofe->SetVertexNumbers(dofmap[ngel.Vertices()]);
+              hofe->SetVertexNumbers(vertex_map[ngel.Vertices()]);
             break;
 	  }
+        case ET_SEGM:
+          {
+            auto hofe = dynamic_cast<VertexOrientedFE<ET_SEGM>*>(&fe);
+            if (hofe)
+              hofe->SetVertexNumbers(vertex_map[ngel.Vertices()]);
+            break;
+          }
         default:
           throw Exception("ElementType not implemented for PeriodicFESpace::GetFE");
 	}

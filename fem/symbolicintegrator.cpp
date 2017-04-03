@@ -25,6 +25,48 @@ namespace ngfem
   }
   */
 
+  ProxyFunction ::
+  ProxyFunction (bool atestfunction, bool ais_complex,
+                 shared_ptr<DifferentialOperator> aevaluator, 
+                 shared_ptr<DifferentialOperator> aderiv_evaluator,
+                 shared_ptr<DifferentialOperator> atrace_evaluator,
+                 shared_ptr<DifferentialOperator> atrace_deriv_evaluator,
+		 shared_ptr<DifferentialOperator> attrace_evaluator,
+		 shared_ptr<DifferentialOperator> attrace_deriv_evaluator)
+    
+    : CoefficientFunction(aevaluator ? aevaluator->Dim() : 1, ais_complex),
+      testfunction(atestfunction), is_other(false),
+      evaluator(aevaluator), 
+      deriv_evaluator(aderiv_evaluator),
+      trace_evaluator(atrace_evaluator), 
+      trace_deriv_evaluator(atrace_deriv_evaluator),
+      ttrace_evaluator(attrace_evaluator),
+      ttrace_deriv_evaluator(attrace_deriv_evaluator)
+  {
+    if (!aevaluator)
+      {
+        cerr << "don't have a primal evaluator" << endl;
+        if (trace_evaluator) cout << "trace-eval = " << typeid(*trace_evaluator).name() << endl;
+        if (deriv_evaluator) cout << "deriv-eval = " << typeid(*deriv_evaluator).name() << endl;
+        throw Exception("don't have a primal evaluator");
+      }
+    if (deriv_evaluator || trace_deriv_evaluator)
+      deriv_proxy = make_shared<ProxyFunction> (testfunction, is_complex, deriv_evaluator, nullptr,
+                                                trace_deriv_evaluator, nullptr,
+						ttrace_deriv_evaluator, nullptr);
+
+    SetDimensions (evaluator->Dimensions());
+  }
+  
+  shared_ptr<ProxyFunction> ProxyFunction :: Trace() const
+  {
+    if (!trace_evaluator)
+      throw Exception (string("don't have a trace, primal evaluator = ")+
+                       evaluator->Name());
+    
+    return make_shared<ProxyFunction> (testfunction, is_complex, trace_evaluator, trace_deriv_evaluator, ttrace_evaluator, ttrace_deriv_evaluator, nullptr, nullptr);
+  }
+  
   void ProxyFunction ::
   GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
@@ -115,7 +157,7 @@ namespace ngfem
     string comp_string = testfunction ? "test_comp" : "trial_comp";
     std::map<string,string> variables;
     variables["ud"] = "tmp_"+ToString(index)+"_0";
-    variables["this"] = "reinterpret_cast<ProxyFunction*>("+ToString(this)+")";
+    variables["this"] = "reinterpret_cast<ProxyFunction*>("+code.AddPointer(this)+")";
     variables["func_string"] = testfunction ? "testfunction" : "trialfunction";
     variables["comp_string"] = testfunction ? "test_comp" : "trial_comp";
     variables["testfunction"] = ToString(testfunction);
@@ -761,7 +803,8 @@ namespace ngfem
       trial_difforder = min2(trial_difforder, proxy->Evaluator()->DiffOrder());
     for (auto proxy : test_proxies)
       test_difforder = min2(test_difforder, proxy->Evaluator()->DiffOrder());
-
+    if (trial_proxies.Size() == 0) trial_difforder = 0;
+    
     int intorder = fel_trial.Order()+fel_test.Order();
     auto et = fel.ElementType();
     if (et == ET_TRIG || et == ET_TET)
@@ -789,7 +832,8 @@ namespace ngfem
       trial_difforder = min2(trial_difforder, proxy->Evaluator()->DiffOrder());
     for (auto proxy : test_proxies)
       test_difforder = min2(test_difforder, proxy->Evaluator()->DiffOrder());
-
+    if (trial_proxies.Size() == 0) trial_difforder = 0;
+    
     int intorder = fel_trial.Order()+fel_test.Order();
     auto et = fel.ElementType();
     if (et == ET_TRIG || et == ET_TET)
@@ -1652,28 +1696,118 @@ namespace ngfem
     // static Timer td("symbolicbfi - calclinearized dmats", 2);
     // RegionTimer reg(t);
 
+    if (simd_evaluate)
+      // if (false)
+      try
+        {
+          const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fel);
+          const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : fel;
+          const FiniteElement & fel_test = mixedfe ? mixedfe->FETest() : fel;
 
+          SIMD_IntegrationRule ir = Get_SIMD_IntegrationRule (fel, lh);
+          SIMD_BaseMappedIntegrationRule & mir = trafo(ir, lh);
 
+          ProxyUserData ud(trial_proxies.Size(), gridfunction_cfs.Size(), lh);
+          const_cast<ElementTransformation&>(trafo).userdata = &ud;
+          ud.fel = &fel;
+          ud.elx = &elveclin;
+          ud.lh = &lh;
+          for (ProxyFunction * proxy : trial_proxies)
+            {
+              ud.AssignMemory (proxy, ir.GetNIP(), proxy->Dimension(), lh);
+              proxy->Evaluator()->Apply(fel_trial, mir, elveclin, ud.GetAMemory(proxy));
+            }
+          for (CoefficientFunction * cf : gridfunction_cfs)
+            ud.AssignMemory (cf, ir.GetNIP(), cf->Dimension(), lh);
+    
+          AFlatMatrix<> val(1, mir.IR().GetNIP(), lh);
+          elmat = 0;
+    
+          for (int l1 : Range(test_proxies))
+            {
+              HeapReset hr(lh);              
+              auto proxy2 = test_proxies[l1];
+              AFlatMatrix<> bdbmat1(elmat.Width()*proxy2->Dimension(), ir.GetNIP(), lh);
+              AFlatMatrix<> hbdbmat1(elmat.Width(), proxy2->Dimension()*SIMD<double>::Size()*ir.Size(),
+                                     &bdbmat1.Get(0,0));
+              bdbmat1 = 0.0;
+              
+              for (int k1 : Range(trial_proxies))
+                {
+                  HeapReset hr(lh);
+                  auto proxy1 = trial_proxies[k1];
+                  
+                  AFlatMatrix<> proxyvalues(proxy1->Dimension()*proxy2->Dimension(), ir.GetNIP(), lh);
+                  
+                  for (size_t k = 0, kk = 0; k < proxy1->Dimension(); k++)
+                    for (size_t l = 0; l < proxy2->Dimension(); l++, kk++)
+                      {
+                        ud.trialfunction = proxy1;
+                        ud.trial_comp = k;
+                        ud.testfunction = proxy2;
+                        ud.test_comp = l;
+                        
+                        cf -> EvaluateDeriv (mir, val, proxyvalues.Rows(kk,kk+1));
+                      }
+                  
+                  for (size_t i = 0; i < mir.Size(); i++)
+                    {
+                      auto fac = mir[i].GetWeight();
+                      for (size_t j = 0; j < proxyvalues.Height(); j++)
+                        proxyvalues.Get(j,i) *= fac;
+                    }
+                  
+                  IntRange r1 = proxy1->Evaluator()->UsedDofs(fel_trial);
+                  
+                  AFlatMatrix<> bbmat1(elmat.Width()*proxy1->Dimension(), ir.GetNIP(), lh);
+                  
+                  // bbmat1 = 0.0;
+                  proxy1->Evaluator()->CalcMatrix(fel_trial, mir, bbmat1);
+                  for (auto i : r1)
+                    for (size_t j = 0; j < proxy2->Dimension(); j++)
+                      for (size_t k = 0; k < proxy1->Dimension(); k++)
+                        {
+                          bdbmat1.Row(i*proxy2->Dimension()+j) +=
+                            pw_mult (bbmat1.Row(i*proxy1->Dimension()+k),
+                                     proxyvalues.Row(k*proxy2->Dimension()+j));
+                        }
+                  
+                }
+
+              IntRange r2 = proxy2->Evaluator()->UsedDofs(fel_test);
+              
+              AFlatMatrix<> bbmat2(elmat.Height()*proxy2->Dimension(), ir.GetNIP(), lh);
+              AFlatMatrix<> hbbmat2(elmat.Height(), proxy2->Dimension()*SIMD<double>::Size()*ir.Size(),
+                                    &bbmat2.Get(0,0));
+              // bbmat2 = 0.0;
+              proxy2->Evaluator()->CalcMatrix(fel_test, mir, bbmat2);
+              
+              AddABt (hbbmat2.Rows(r2), hbdbmat1 /* .Rows(r1)*/, SliceMatrix<> (elmat.Rows(r2)) /* .Cols(r1) */);
+            }
+          /*
+          Matrix<> helmat = elmat;
+          simd_evaluate = false;
+          CalcLinearizedElementMatrix (fel, trafo, elveclin, elmat, lh);
+          simd_evaluate = true;          
+          double err = L2Norm(helmat-elmat);
+          if (err > 1e-5) cout << "err = " << err << endl;
+          */
+          return;
+        }
+      catch (ExceptionNOSIMD e)
+        {
+          cout << IM(4) << e.What() << endl
+               << "switching to scalar evaluation in CalcLinearized" << endl;
+          simd_evaluate = false;
+          CalcLinearizedElementMatrix (fel, trafo, elveclin, elmat, lh);
+          return;
+        }
+    
     const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fel);
     const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : fel;
     const FiniteElement & fel_test = mixedfe ? mixedfe->FETest() : fel;
 
-    /*
-    int trial_difforder = 99, test_difforder = 99;
-    for (auto proxy : trial_proxies)
-      trial_difforder = min2(trial_difforder, proxy->Evaluator()->DiffOrder());
-    for (auto proxy : test_proxies)
-      test_difforder = min2(test_difforder, proxy->Evaluator()->DiffOrder());
-
-    int intorder = fel_trial.Order()+fel_test.Order();
-    auto et = trafo.GetElementType();
-    if (et == ET_TRIG || et == ET_TET)
-      intorder -= test_difforder+trial_difforder;
-    */
-    
-    // IntegrationRule ir(trafo.GetElementType(), intorder);
     IntegrationRule ir = GetIntegrationRule (fel, lh);
-    // IntegrationRule ir(trafo.GetElementType(), 2*fel.Order());
     BaseMappedIntegrationRule & mir = trafo(ir, lh);
 
     ProxyUserData ud(trial_proxies.Size(), lh);
@@ -1696,12 +1830,12 @@ namespace ngfem
           HeapReset hr(lh);
           auto proxy1 = trial_proxies[k1];
           auto proxy2 = test_proxies[l1];
-          // td.Start(); 
+
           FlatTensor<3> proxyvalues(lh, mir.Size(), proxy2->Dimension(), proxy1->Dimension());
           
           for (int k = 0; k < proxy1->Dimension(); k++)
             for (int l = 0; l < proxy2->Dimension(); l++)
-              // if (nonzeros(test_cum[l1]+l, trial_cum[k1]+k))
+              // if (nonzeros(test_cum[l1]+l, trial_cum[k1]+k)) // does no work for non-linear 
               if (true)
                 {
                   ud.trialfunction = proxy1;
@@ -1711,36 +1845,12 @@ namespace ngfem
                   
                   cf -> EvaluateDeriv (mir, val, deriv);
                   proxyvalues(STAR,l,k) = deriv.Col(0);
-
-                  /*
-                  *testout << "deriv = " << deriv.Col(0);
-                  *testout << "val   = " << val.Col(0);
-                  // num-diff
-                  FlatMatrix<> deriv1(mir.Size(), 1, lh);
-                  deriv1 = deriv;
-                  double eps = 1e-6;
-                  cf -> Evaluate (mir, val);
-                  auto hmat = ud.GetMemory(proxy1);
-                  for (int i = 0; i < mir.Size(); i++)
-                    hmat(i,k) += eps;
-                  cf -> Evaluate (mir, deriv);  
-                  for (int i = 0; i < mir.Size(); i++)
-                    hmat(i,k) -= eps;
-                  deriv -= val;
-                  deriv *= 1/eps;
-                  *testout << "num-diff = " << 1/eps * (deriv.Col(0)-val.Col(0)) << endl;
-                  *testout << "err = " << deriv1-deriv << endl;
-                  if (L2Norm(deriv1-deriv) > 1e-4) *testout << "big error" << endl;
-                  */
                 }
               else
                 proxyvalues(STAR,l,k) = 0;
-          // td.Stop();
 
           for (int i = 0; i < mir.Size(); i++)
             proxyvalues(i,STAR,STAR) *= mir[i].GetWeight();
-
-          // t.AddFlops (double (mir.Size()) * proxy1->Dimension()*elmat.Width()*elmat.Height());
 
           FlatMatrix<double,ColMajor> bmat1(proxy1->Dimension(), elmat.Width(), lh);
           FlatMatrix<double,ColMajor> bmat2(proxy2->Dimension(), elmat.Height(), lh);
@@ -1783,24 +1893,126 @@ namespace ngfem
   {
     static Timer t("symbolicbfi - calclinearized EB", 2);
     static Timer td("symbolicbfi - calclinearized EB dmats", 2);
-    RegionTimer reg(t);
+    // RegionTimer reg(t);
     
-    // IntegrationRule ir(trafo.GetElementType(), 2*fel.Order());
-    // BaseMappedIntegrationRule & mir = trafo(ir, lh);
-    /*
-    ProxyUserData ud;
-    const_cast<ElementTransformation&>(trafo).userdata = &ud;
-    ud.fel = &fel;
-    ud.elx = &elveclin;
-    ud.lh = &lh;
-    */
     elmat = 0;
 
-      auto eltype = trafo.GetElementType();
-      int nfacet = ElementTopology::GetNFacets(eltype);
+    auto eltype = trafo.GetElementType();
+    int nfacet = ElementTopology::GetNFacets(eltype);
+    
+    Facet2ElementTrafo transform(eltype); 
+    
+    
+    if (simd_evaluate)
+      try
+        {
+          for (int k = 0; k < nfacet; k++)
+            {
+              HeapReset hr(lh);
+              ngfem::ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype, k);
+              
+              SIMD_IntegrationRule ir_facet(etfacet, 2*fel.Order());
+              SIMD_IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
+              SIMD_BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
+              mir.ComputeNormalsAndMeasure(eltype, k);
+              
+              ProxyUserData ud(trial_proxies.Size(), gridfunction_cfs.Size(), lh);
+              const_cast<ElementTransformation&>(trafo).userdata = &ud;
+              ud.fel = &fel;
+              ud.elx = &elveclin;
+              ud.lh = &lh;
+              for (ProxyFunction * proxy : trial_proxies)
+                {
+                  ud.AssignMemory (proxy, ir_facet.GetNIP(), proxy->Dimension(), lh);
+                  proxy->Evaluator()->Apply(fel, mir, elveclin, ud.GetAMemory(proxy));
+                }
+              for (CoefficientFunction * cf : gridfunction_cfs)
+                ud.AssignMemory (cf, ir_facet.GetNIP(), cf->Dimension(), lh);
 
-      Facet2ElementTrafo transform(eltype); 
+              AFlatMatrix<> val(1, mir.IR().GetNIP(), lh);
+    
+              for (int l1 : Range(test_proxies))
+                {
+                  HeapReset hr(lh);              
+                  auto proxy2 = test_proxies[l1];
+                  AFlatMatrix<> bdbmat1(elmat.Width()*proxy2->Dimension(), ir_facet.GetNIP(), lh);
+                  AFlatMatrix<> hbdbmat1(elmat.Width(), proxy2->Dimension()*SIMD<double>::Size()*ir_facet.Size(),
+                                         &bdbmat1.Get(0,0));
+                  bdbmat1 = 0.0;
+                  
+                  for (int k1 : Range(trial_proxies))
+                    {
+                      HeapReset hr(lh);
+                      auto proxy1 = trial_proxies[k1];
+                      
+                      AFlatMatrix<> proxyvalues(proxy1->Dimension()*proxy2->Dimension(), ir_facet.GetNIP(), lh);
+                      
+                      for (size_t k = 0, kk = 0; k < proxy1->Dimension(); k++)
+                        for (size_t l = 0; l < proxy2->Dimension(); l++, kk++)
+                          {
+                            ud.trialfunction = proxy1;
+                            ud.trial_comp = k;
+                            ud.testfunction = proxy2;
+                            ud.test_comp = l;
+                            
+                            cf -> EvaluateDeriv (mir, val, proxyvalues.Rows(kk,kk+1));
+                          }
+                      
+                      for (size_t i = 0; i < mir.Size(); i++)
+                        {
+                          auto fac = mir[i].GetWeight();
+                          for (size_t j = 0; j < proxyvalues.Height(); j++)
+                            proxyvalues.Get(j,i) *= fac;
+                        }
+                      
+                      IntRange r1 = proxy1->Evaluator()->UsedDofs(fel);
+                      AFlatMatrix<> bbmat1(elmat.Width()*proxy1->Dimension(), ir_facet.GetNIP(), lh);
+                      proxy1->Evaluator()->CalcMatrix(fel, mir, bbmat1);
+                      
+                      for (auto i : r1)
+                        for (size_t j = 0; j < proxy2->Dimension(); j++)
+                          for (size_t k = 0; k < proxy1->Dimension(); k++)
+                            {
+                              bdbmat1.Row(i*proxy2->Dimension()+j) +=
+                                pw_mult (bbmat1.Row(i*proxy1->Dimension()+k),
+                                         proxyvalues.Row(k*proxy2->Dimension()+j));
+                            }
+                      
+                    }
+                  
+                  IntRange r2 = proxy2->Evaluator()->UsedDofs(fel);
+                  
+                  AFlatMatrix<> bbmat2(elmat.Height()*proxy2->Dimension(), ir_facet.GetNIP(), lh);
+                  AFlatMatrix<> hbbmat2(elmat.Height(), proxy2->Dimension()*SIMD<double>::Size()*ir_facet.Size(),
+                                        &bbmat2.Get(0,0));
 
+                  proxy2->Evaluator()->CalcMatrix(fel, mir, bbmat2);
+                  AddABt (hbbmat2.Rows(r2), hbdbmat1, SliceMatrix<> (elmat.Rows(r2)));
+                }
+            }
+          /*
+          Matrix<> helmat = elmat;
+          simd_evaluate = false;
+          T_CalcLinearizedElementMatrixEB<D,SCAL,SCAL_SHAPES> (fel, trafo, elveclin, elmat, lh);
+          simd_evaluate = true;          
+          double err = L2Norm(helmat-elmat);
+          if (err > 1e-5) cout << "EB, err = " << err << endl;
+          */
+          return;
+        }
+      catch (ExceptionNOSIMD e)
+        {
+          cout << IM(4) << e.What() << endl
+               << "switching to scalar evaluation in CalcLinearizedEB" << endl;
+          simd_evaluate = false;
+          T_CalcLinearizedElementMatrixEB<D,SCAL,SCAL_SHAPES> (fel, trafo, elveclin, elmat, lh);
+          return;
+        }
+
+
+
+
+      
       for (int k = 0; k < nfacet; k++)
         {
           HeapReset hr(lh);
@@ -1883,50 +2095,6 @@ namespace ngfem
                     IntRange r2 = proxy2->Evaluator()->UsedDofs(fel);
                     elmat.Rows(r2).Cols(r1) += Trans (bbmat2.Cols(r2)) * bdbmat1.Cols(r1) | Lapack;
                   }
-
-
-                /*
-                int i = 0;
-                
-                enum { BS = 16 };
-                for ( ; i+BS <= mir.Size(); i+=BS)
-                  {
-                    HeapReset hr(lh);
-                    FlatMatrix<double,ColMajor> bdbmat1(BS*proxy2->Dimension(), elmat.Width(), lh);
-                    FlatMatrix<double,ColMajor> bbmat2(BS*proxy2->Dimension(), elmat.Height(), lh);
-                    
-                    for (int j = 0; j < BS; j++)
-                      {
-                        int ii = i+j;
-                        IntRange r2 = proxy2->Dimension() * IntRange(j,j+1);
-                        proxy1->Evaluator()->CalcMatrix(fel, mir[ii], bmat1, lh);
-                        proxy2->Evaluator()->CalcMatrix(fel, mir[ii], bmat2, lh);
-                        bdbmat1.Rows(r2) = proxyvalues(ii,STAR,STAR) * bmat1;
-                        bbmat2.Rows(r2) = bmat2;
-                      }
-                    elmat += Trans (bbmat2) * bdbmat1 | Lapack;
-                  }
-                
-                
-                if (i < mir.Size())
-                  {
-                    HeapReset hr(lh);
-                    int rest = mir.Size()-i;
-                    FlatMatrix<double,ColMajor> bdbmat1(rest*proxy2->Dimension(), elmat.Width(), lh);
-                    FlatMatrix<double,ColMajor> bbmat2(rest*proxy2->Dimension(), elmat.Height(), lh);
-                    
-                    for (int j = 0; j < rest; j++)
-                      {
-                        int ii = i+j;
-                        IntRange r2 = proxy2->Dimension() * IntRange(j,j+1);
-                        proxy1->Evaluator()->CalcMatrix(fel, mir[ii], bmat1, lh);
-                        proxy2->Evaluator()->CalcMatrix(fel, mir[ii], bmat2, lh);
-                        bdbmat1.Rows(r2) = proxyvalues(ii,STAR,STAR) * bmat1;
-                        bbmat2.Rows(r2) = bmat2;
-                      }
-                    elmat += Trans (bbmat2) * bdbmat1 | Lapack;
-                  }
-                */
               }
         }
   }
@@ -2027,6 +2195,15 @@ namespace ngfem
 
               proxy->Evaluator()->AddTrans(fel_test, simd_mir, simd_proxyvalues, ely); 
             }
+          /*
+          Vector<> hely = ely;
+          simd_evaluate = false;
+          ApplyElementMatrix (fel, trafo, elx, ely, precomputed, lh);
+          simd_evaluate = true;
+          double err = L2Norm(hely-ely);
+          if (err > 1e-8)
+            cerr << "apply, err = " << err << endl;
+          */
           return;
         }
       catch (ExceptionNOSIMD e)
@@ -2330,6 +2507,7 @@ namespace ngfem
           FlatTensor<3> proxyvalues(lh, mir1.Size(), proxy2->Dimension(), proxy1->Dimension());
 
           mir1.ComputeNormalsAndMeasure (eltype1, LocalFacetNr1);
+          mir2.ComputeNormalsAndMeasure (eltype2, LocalFacetNr2);
           
           for (int k = 0; k < proxy1->Dimension(); k++)
             for (int l = 0; l < proxy2->Dimension(); l++)
@@ -2643,6 +2821,7 @@ namespace ngfem
             auto & simd_mir2 = trafo2(simd_ir_facet_vol2, lh);
             
             simd_mir1.ComputeNormalsAndMeasure(eltype1, LocalFacetNr1);
+            simd_mir2.ComputeNormalsAndMeasure(eltype2, LocalFacetNr2);
             
             // evaluate proxy-values
             ProxyUserData ud(trial_proxies.Size(), gridfunction_cfs.Size(), lh);
@@ -2826,7 +3005,7 @@ namespace ngfem
     */
 
     mir1.ComputeNormalsAndMeasure (eltype1, LocalFacetNr1);
-
+    mir2.ComputeNormalsAndMeasure (eltype2, LocalFacetNr2);
 
     
     FlatMatrix<> val(ir_facet.Size(), 1,lh);

@@ -474,7 +474,7 @@ namespace ngbla
 
 
 
-    // old functions for compatibilty 
+    // old functions for compatibility 
   inline void LapackMultABt (SliceMatrix<double> a, 
 			     SliceMatrix<double> b, 
 			     SliceMatrix<double> c)
