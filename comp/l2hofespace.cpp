@@ -185,9 +185,10 @@ namespace ngcomp
     
     for(int i = 0; i < nel; i++) 
       {
-        order_inner[i] = order_inner[i] + INT<3> (et_bonus_order[ma->GetElType(i)]);
+        ElementId ei(VOL,i);
+        order_inner[i] = order_inner[i] + INT<3> (et_bonus_order[ma->GetElType(ei)]);
         order_inner[i] = Max(order_inner[i], INT<3>(0));
-        if (!DefinedOn (VOL, ma->GetElIndex (i)))
+        if (!DefinedOn (VOL, ma->GetElIndex (ei)))
           order_inner[i] = 0;
       }
     if(print) 
@@ -211,7 +212,8 @@ namespace ngcomp
     if (!all_dofs_together)
       for (int i=0; i<ma->GetNE(); i++)
 	{
-          if (!DefinedOn (VOL, ma->GetElIndex (i)))
+          ElementId ei(VOL, i);
+          if (!DefinedOn (VOL, ma->GetElIndex (ei)))
             {
               ctofdof[i] = UNUSED_DOF;
               continue;
@@ -241,9 +243,10 @@ namespace ngcomp
     first_element_dof.SetSize(nel+1);
     for (int i = 0; i < nel; i++)
       {
+        ElementId ei(VOL, i);
 	first_element_dof[i] = ndof;
 	INT<3> pi = order_inner[i]; 
-	switch (ma->GetElType(i))
+	switch (ma->GetElType(ei))
 	  {
 	  case ET_SEGM:
 	    ndof += pi[0]+1;
@@ -291,7 +294,7 @@ namespace ngcomp
     if (ei.IsVolume())
       {
         int elnr = ei.Nr();
-        Ngs_Element ngel = ma->GetElement(elnr);
+        Ngs_Element ngel = ma->GetElement(ei);
         ELEMENT_TYPE eltype = ngel.GetType();
         
         // if (!DefinedOn (ma->GetElIndex (elnr)))
@@ -344,7 +347,7 @@ namespace ngcomp
     else
       {
         int elnr = ei.Nr();
-        switch (ma->GetSElType(elnr))
+        switch (ma->GetElType(ei))
           {
           case ET_POINT: return *new (alloc) DummyFE<ET_POINT>; 
           case ET_SEGM:  return *new (alloc) DummyFE<ET_SEGM>; break;
@@ -354,7 +357,7 @@ namespace ngcomp
           default:
             stringstream str;
             str << "FESpace " << GetClassName() 
-                << ", undefined surface eltype " << ma->GetSElType(elnr) 
+                << ", undefined surface eltype " << ma->GetElType(ei) 
                 << ", order = " << order << endl;
             throw Exception (str.str());
           }
@@ -713,8 +716,9 @@ namespace ngcomp
     first_element_dof.SetSize(nel+1);
     for (int i = 0; i < nel; i++)
       {
+        ElementId sei(BND, i);
 	first_element_dof[i] = ndof;
-	switch (ma->GetSElType(i))
+	switch (ma->GetElType(sei))
 	  {
 	  case ET_SEGM:
 	    ndof += order+1;
@@ -811,7 +815,13 @@ namespace ngcomp
     switch(ei.VB())
       {
       case VOL:
-        throw Exception ("Volume elements not available for L2SurfaceHighOrderFESpace");
+        // throw Exception ("Volume elements not available for L2SurfaceHighOrderFESpace");
+        return * SwitchET (ma->GetElement(ei).GetType(),
+                           [&lh] (auto et) -> FiniteElement*
+                           {
+                             return new (lh) ScalarDummyFE<et.ElementType()>();
+                           });
+                  
       case BND:
 
         if (ma->GetDimension() == 2)

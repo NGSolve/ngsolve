@@ -950,7 +950,14 @@ namespace ngcomp
     : CoefficientFunction(1, false),
       diffop (adiffop), trace_diffop(atrace_diffop), ttrace_diffop(attrace_diffop), comp (acomp) 
   {
-    ; // SetDimensions (gf->Dimensions());    
+    ; // SetDimensions (gf->Dimensions());
+
+    if (diffop)
+      SetDimensions (diffop->Dimensions());
+    else if (trace_diffop)
+      SetDimensions (trace_diffop->Dimensions());
+    else if (ttrace_diffop)
+      SetDimensions (ttrace_diffop->Dimensions());
   }
 
   GridFunctionCoefficientFunction :: 
@@ -963,7 +970,12 @@ namespace ngcomp
       gf(agf), diffop (adiffop), trace_diffop(atrace_diffop), ttrace_diffop(attrace_diffop), comp (acomp) 
   {
     fes = gf->GetFESpace();    
-    //SetDimensions (gf->Dimensions());    
+    if (diffop)
+      SetDimensions (diffop->Dimensions());
+    else if (trace_diffop)
+      SetDimensions (trace_diffop->Dimensions());
+    else if (ttrace_diffop)
+      SetDimensions (ttrace_diffop->Dimensions());
   }
   
   GridFunctionCoefficientFunction :: 
@@ -997,6 +1009,16 @@ namespace ngcomp
 
   Array<int> GridFunctionCoefficientFunction::Dimensions() const
   {
+    if (diffop)
+      return Array<int> (diffop->Dimensions());
+    else if (trace_diffop)
+      return Array<int> (trace_diffop->Dimensions());
+    else if (ttrace_diffop)
+      return Array<int> (ttrace_diffop->Dimensions());
+
+    // is it possible ?? 
+    return Array<int> ( { Dimension() } );
+    /*
     int d = Dimension();
     if (diffop)
       {
@@ -1005,6 +1027,7 @@ namespace ngcomp
           return Array<int> ( { spacedim, d/spacedim } );
       }
     return Array<int>( { d } );
+    */
   }
 
   void GridFunctionCoefficientFunction :: GenerateCode(Code &code, FlatArray<int> inputs, int index) const
@@ -1139,14 +1162,14 @@ namespace ngcomp
       {
         code.header += Code::Map(mycode_simd, variables);
         TraverseDimensions( Dimensions(), [&](int ind, int i, int j) {
-            code.body += Var(index,i,j).Assign("SIMD<double>("+values.S()+".Get("+ToString(i)+",i))");
+            code.body += Var(index,i,j).Assign("SIMD<double>("+values.S()+".Get("+ToString(ind)+",i))");
           });
       }
     else
       {
         code.header += Code::Map(mycode, variables);
         TraverseDimensions( Dimensions(), [&](int ind, int i, int j) {
-            code.body += Var(index,i,j).Assign(values.S()+"(i,"+ToString(i)+")");
+            code.body += Var(index,i,j).Assign(values.S()+"(i,"+ToString(ind)+")");
           });
       }
   }
@@ -2382,7 +2405,7 @@ namespace ngcomp
             ElementId ei(VOL, i);
 	    const FiniteElement & fel = fes.GetFE(ei,lh2);
 	    
-	    domain = ma->GetElIndex(i);
+	    domain = ma->GetElIndex(ei);
 	    
 	    vol = ma->ElementVolume(i);
 	    
@@ -2457,10 +2480,10 @@ namespace ngcomp
       {
 	for(int i=0; i<ma->GetNSE(); i++)
 	  {
-            ElementId ei(VOL, i);
+            ElementId ei(BND, i);
 	    const FiniteElement & fel = fes.GetFE(ei,lh2);
 
-	    domain = ma->GetSElIndex(i);
+	    domain = ma->GetElIndex(ei);
 
 	    vol = ma->SurfaceElementVolume(i);
 
@@ -2781,8 +2804,8 @@ namespace ngcomp
       {
     
     
-    static Timer t("VisualizeCoefficientFunction::GetMultiSurfValue", 2); RegionTimer reg(t);
-    static Timer t2("VisualizeCoefficientFunction::GetMultiSurfValue evaluate", 2);
+        // static Timer t("VisualizeCoefficientFunction::GetMultiSurfValue", 2); RegionTimer reg(t);
+        // static Timer t2("VisualizeCoefficientFunction::GetMultiSurfValue evaluate", 2);
 
     if (cf -> IsComplex())
       {
@@ -2817,7 +2840,7 @@ namespace ngcomp
             mir[k] = MappedIntegrationPoint<2,3> (ir[k], eltrans, vx, mdxdxref);
           }
 
-        RegionTimer r2(t2);
+        // RegionTimer r2(t2);
         cf -> Evaluate (mir, mvalues1);
       }
     else
@@ -2832,7 +2855,7 @@ namespace ngcomp
                 FlatVec<2> vx( (double*)x + k*sx);
                 mir[k] = MappedIntegrationPoint<2,2> (ir[k], eltrans, vx, mdxdxref);
               }
-            RegionTimer r2(t2);            
+            // RegionTimer r2(t2);            
             cf -> Evaluate (mir, mvalues1);
           }
         else

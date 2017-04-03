@@ -16,6 +16,7 @@
 
 
 #include <comp.hpp>
+#include <../fem/hdivlofe.hpp>  
 #include <../fem/hdivhofe.hpp>  
 #include <../fem/hdivhofefo.hpp>  
 
@@ -221,7 +222,7 @@ namespace ngcomp
 	const POINT3D * points = ElementTopology :: GetVertices (eltype);
 	
 	Array<int> elfacets; 
-	ma->GetElFacets (el.Nr(),elfacets); 
+	ma->GetElFacets (el.Nr(), elfacets); 
 	
         fine_facet[elfacets] = true;
 	
@@ -249,7 +250,8 @@ namespace ngcomp
 	  }
 	else
 	  {
-	    Array<int> vnums (el.Vertices());
+	    // Array<int> vnums (el.Vertices());
+            auto vnums = el.Vertices();
 	    const FACE * faces = ElementTopology::GetFaces (eltype);
 
 	    for(int j = 0; j < elfacets.Size(); j++)
@@ -312,9 +314,9 @@ namespace ngcomp
 
   void HDivHighOrderFESpace :: UpdateDofTables()
   {
-    int nfa = ma->GetNFacets();
-    int nel = ma->GetNE();
-    int dim = ma->GetDimension();
+    size_t nfa = ma->GetNFacets();
+    size_t nel = ma->GetNE();
+    size_t dim = ma->GetDimension();
     Array<int> pnums; 
      
     first_facet_dof.SetSize(nfa+1); 
@@ -326,7 +328,7 @@ namespace ngcomp
     if(dim==2)
       {
 	// int dec_hodc = highest_order_dc ? 1 : 0;
-        for (int i = 0; i < nfa; i++)
+        for (auto i : Range(nfa))
           {
             first_facet_dof[i] = ndof;
             int inc = fine_facet[i] ? order_facet[i][0] : 0;
@@ -343,12 +345,14 @@ namespace ngcomp
         first_facet_dof[nfa] = ndof;
       
 	Array<int> fnums;
-        for(int i=0; i< nel; i++)
+        // for (auto i : Range(nel))
+        for (size_t i = 0; i < nel; i++)
           {
+            ElementId ei(VOL, i);
             INT<3> pc = order_inner_curl[i];
             INT<3> p = order_inner[i];
             int inci = 0;
-            switch(ma->GetElType(i))
+            switch(ma->GetElType(ei))
               {
               case ET_TRIG:
                 if (!ho_div_free)
@@ -368,9 +372,11 @@ namespace ngcomp
 
 	    if (highest_order_dc)
 	      {
-		ma->GetElFacets (i, fnums);	
-		for (int j = 0; j < fnums.Size(); j++)
-		  if (!boundary_facet[fnums[j]]) inci++;
+		ma->GetElFacets (ei, fnums);
+                for (auto f : fnums)
+		  if (!boundary_facet[f]) inci++;
+		// for (int j = 0; j < fnums.Size(); j++)
+                // if (!boundary_facet[fnums[j]]) inci++;
 	      }
 
             first_inner_dof[i] = ndof;
@@ -385,28 +391,29 @@ namespace ngcomp
             dc_pairs = INT<2> (-1,-1);
             
             Array<int> fnums;
-            for (int i = 0; i < ma->GetNE(); i++)
+            for (auto ei : ma->Elements(VOL))
               {
-                ma->GetElFacets (i, fnums);
+                auto i = ei.Nr();
+                ma->GetElFacets (ei, fnums);
 		int fid = first_inner_dof[i];
-                for (int k = 0; k < fnums.Size(); k++)
-		  if (!boundary_facet[fnums[k]])
+                for (auto f : fnums)
+		  if (!boundary_facet[f])
 		    {
 		      int di = fid++; // first_inner_dof[i]+k;
-		      dc_pairs[fnums[k]][1] = dc_pairs[fnums[k]][0];
-		      dc_pairs[fnums[k]][0] = di;
+		      dc_pairs[f][1] = dc_pairs[f][0];
+		      dc_pairs[f][0] = di;
 		    }
               }
           }
         else
-          dc_pairs.SetSize (0);
+          dc_pairs.SetSize0 ();
       }
     else 
       {
         int inci = 0;
-        for (int i=0; i< nfa; i++) 
+        for (size_t i = 0; i < nfa; i++) 
           {
-            inci =0; 
+            inci = 0; 
             if(fine_facet[i])
               {
                 INT<2> p = order_facet[i]; 
@@ -434,13 +441,13 @@ namespace ngcomp
         first_facet_dof[nfa] = ndof;
 	 
 	Array<int> fnums;
-        for (int i=0; i< nel; i++)
+        for (size_t i = 0; i < nel; i++)
           {
             INT<3> p = order_inner[i];
             INT<3> pc = order_inner_curl[i];
             int inci = 0;
 	     
-            switch(ma->GetElType(i))
+            switch(ma->GetElType(ElementId(VOL,i)))
               {
               case ET_TET:
                 if(p[0]>1 && !ho_div_free)
@@ -575,6 +582,8 @@ namespace ngcomp
   FiniteElement & HDivHighOrderFESpace :: T_GetFE (int elnr, bool onlyhdiv, Allocator & lh) const
   {
     Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,VOL> (elnr);
+    if (!DefinedOn(ngel)) return * new (lh) HDivDummyFE<ET>();
+    
     HDivHighOrderFE<ET> * hofe =  new (lh) HDivHighOrderFE<ET> ();
 
     hofe -> SetVertexNumbers (ngel.Vertices());
@@ -601,7 +610,7 @@ namespace ngcomp
     if (ei.IsVolume())
       {
         int elnr = ei.Nr();
-        Ngs_Element ngel = ma->GetElement(elnr);
+        Ngs_Element ngel = ma->GetElement(ei);
         ELEMENT_TYPE eltype = ngel.GetType();
         
         switch (eltype)
@@ -634,7 +643,7 @@ namespace ngcomp
         ArrayMem<int,4> vnums;
         ma->GetSElVertices(selnr, vnums);
         
-        switch (ma->GetSElType(selnr))
+        switch (ma->GetElType(ei))
           {
           case ET_SEGM:
             {
@@ -659,7 +668,7 @@ namespace ngcomp
             }
           default:
             throw Exception (string("HDivHighOrderFESpace::GetSFE: unsupported element ")+
-                             ElementTopology::GetElementName(ma->GetSElType(selnr)));
+                             ElementTopology::GetElementName(ma->GetElType(ei)));
           }
         
         if (discont) return *fe; 
@@ -667,7 +676,7 @@ namespace ngcomp
         ArrayMem<int, 4> ednums, order_ed;
         INT<3> order_fa;
         
-        if(ma->GetSElType(selnr) == ET_SEGM)
+        if(ma->GetElType(ei) == ET_SEGM)
           {
             HDivHighOrderNormalFiniteElement<1> * hofe =
               dynamic_cast<HDivHighOrderNormalFiniteElement<1>*> (fe);
@@ -757,7 +766,7 @@ namespace ngcomp
 
   const FiniteElement & HDivHighOrderFESpace :: GetHODivFE (int elnr, LocalHeap & lh) const
   {
-    Ngs_Element ngel = ma->GetElement(elnr);
+    Ngs_Element ngel = ma->GetElement(ElementId(VOL,elnr));
     ELEMENT_TYPE eltype = ngel.GetType();
     
     if (!ho_div_free) throw Exception ("You don't have hodivfree active. You are not allow to call GetHODivFE");
@@ -889,18 +898,21 @@ namespace ngcomp
   }
 
 
-  void HDivHighOrderFESpace :: 
-  GetDofRanges (ElementId ei, Array<IntRange> & dranges) const
-  {
-    cout << "getdofranges not operational" << endl;
-    dranges.SetSize(0);
-  }
-
-
 
   void HDivHighOrderFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
     dnums.SetSize0();
+
+    if (order_policy == NODE_TYPE_ORDER)
+      {
+        auto et = ma->GetElType(ei);
+        cout << "new order policy, et = " << et
+             << ", ol = " << et_order_left[et]
+             << ", or = " << et_order_right[et]
+             << endl;
+      }
+
+    
     if(discont) 
       {
 	// lowest_order included in inner
@@ -965,18 +977,17 @@ namespace ngcomp
 	else // not highest order dc
 	  {
 	    //Raviart-Thomas
-	    for (int i = 0; i < fanums.Size(); i++)
-	      dnums.Append (fanums[i]);
+            dnums += fanums;
 	    // facets
-	    for(int i=0; i<fanums.Size(); i++)
-	      dnums += GetFacetDofs (fanums[i]);
+	    for (auto f : fanums)
+	      dnums += GetFacetDofs (f);
 	    
 	    //inner
 	    dnums += GetElementDofs (ei.Nr());
 	  }
 	
 	if (!DefinedOn (ei))
-	  dnums = -1;
+          dnums.SetSize0();
       }
     if(ei.VB()==BND)
       {
@@ -1291,7 +1302,7 @@ namespace ngcomp
 
 
     //  *testout << table << endl;
-    // cout << "sucess " << endl;
+    // cout << "success " << endl;
     return make_shared<Table<int>> (table);
 
   }
@@ -1425,7 +1436,9 @@ namespace ngcomp
     enum { DIM_ELEMENT = D };
     enum { DIM_DMAT = D*D };
     enum { DIFFORDER = 1 };
-    static constexpr double eps() { return 1e-6; } 
+    static Array<int> GetDimensions() { return Array<int> ( { D, D } ); };
+    
+    static constexpr double eps() { return 1e-4; } 
     ///
     template <typename AFEL, typename SIP, typename MAT,
               typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
@@ -1447,6 +1460,76 @@ namespace ngcomp
     {
       CalcDShapeOfHDivFE<D,D*D>(static_cast<const FEL&>(fel), mip, Trans(mat), lh);
     }
+
+    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+                                      const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> mat)
+    {
+      // throw ExceptionNOSIMD("generategrad not simded");
+      auto & fel = static_cast<const FEL&>(bfel);
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<D,D>&> (bmir);
+      
+      size_t nd_u = fel.GetNDof();
+
+      STACK_ARRAY(SIMD<double>, mem1, 6*D*nd_u);
+      FlatMatrix<SIMD<double>> shape_ul(nd_u*D, 1, &mem1[0]);
+      FlatMatrix<SIMD<double>> shape_ur(nd_u*D, 1, &mem1[D*nd_u]);
+      FlatMatrix<SIMD<double>> shape_ull(nd_u*D, 1, &mem1[2*D*nd_u]);
+      FlatMatrix<SIMD<double>> shape_urr(nd_u*D, 1, &mem1[3*D*nd_u]);
+
+      FlatMatrix<SIMD<double>> dshape_u_ref(nd_u*D, 1, &mem1[4*D*nd_u]);
+      FlatMatrix<SIMD<double>> dshape_u(nd_u*D, 1, &mem1[5*D*nd_u]);
+
+      LocalHeapMem<10000> lh("diffopgrad-lh");
+
+      auto & ir = mir.IR();
+      for (size_t i = 0; i < mir.Size(); i++)
+        {
+          const SIMD<IntegrationPoint> & ip = ir[i];
+          const ElementTransformation & eltrans = mir[i].GetTransformation();
+
+          // double eps = 1e-4;
+          for (int j = 0; j < D; j++)   // d / dxj
+            {
+              HeapReset hr(lh);
+              SIMD<IntegrationPoint> ipts[4];
+              ipts[0] = ip;
+              ipts[0](j) -= eps();
+              ipts[1] = ip;
+              ipts[1](j) += eps();              
+              ipts[2] = ip;
+              ipts[2](j) -= 2*eps();
+              ipts[3] = ip;
+              ipts[3](j) += 2*eps();
+
+              SIMD_IntegrationRule ir(4, ipts);
+              SIMD_MappedIntegrationRule<D,D> mirl(ir, eltrans, lh);
+
+              fel.CalcMappedShape (mirl[0], shape_ul);
+              fel.CalcMappedShape (mirl[1], shape_ur);
+              fel.CalcMappedShape (mirl[2], shape_ull);
+              fel.CalcMappedShape (mirl[3], shape_urr);
+
+              dshape_u_ref = (1.0/(12.0*eps())) * (8.0*shape_ur-8.0*shape_ul-shape_urr+shape_ull);
+              for (size_t l = 0; l < D; l++)
+                for (size_t k = 0; k < nd_u; k++)
+                  mat(k*D*D+j*D+l, i) = dshape_u_ref(k*D+l, 0);
+            }
+          
+          for (size_t j = 0; j < D; j++)
+            for (size_t k = 0; k < nd_u; k++)
+              {
+                Vec<D,SIMD<double>> dshape_u_ref, dshape_u;
+                for (size_t l = 0; l < D; l++)
+                  dshape_u_ref(l) = mat(k*D*D+l*D+j, i);
+                
+                dshape_u = Trans(mir[i].GetJacobianInverse()) * dshape_u_ref;
+                
+                for (size_t l = 0; l < D; l++)
+                  mat(k*D*D+l*D+j, i) = dshape_u(l);
+              }
+        }
+    }
+    
     /*
     template <typename AFEL>
     static void GenerateMatrix (const AFEL & fel, 
@@ -1520,7 +1603,7 @@ namespace ngcomp
                              const TVX & x, TVY & y)
     */
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
-                             BareSliceVector<double> x, ABareSliceMatrix<double> y)
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
       int size = (bmir.Size()+1)*2000;
       STACK_ARRAY(char, data, size);
@@ -1532,11 +1615,13 @@ namespace ngcomp
       auto & fel_u = static_cast<const FEL&>(fel);
       AFlatMatrix<double> hxl(D, mir.IR().GetNIP(), lh);
       AFlatMatrix<double> hxr(D, mir.IR().GetNIP(), lh);
+      AFlatMatrix<double> hxll(D, mir.IR().GetNIP(), lh);
+      AFlatMatrix<double> hxrr(D, mir.IR().GetNIP(), lh);
       AFlatMatrix<double> hx(D, mir.IR().GetNIP(), lh);
 
       for (int k = 0; k < mir.Size(); k++)
         for (int m = 0; m < D*D; m++)
-          y.Get(m, k) = SIMD<double> (0.0).Data();
+          y(m, k) = SIMD<double> (0.0).Data();
       
       for (int j = 0; j < D; j++)
         {
@@ -1563,15 +1648,38 @@ namespace ngcomp
             SIMD_MappedIntegrationRule<D,D> mirr(irr, trafo, lh);
             fel_u.Evaluate (mirr, x, hxr);
           }
-          hx = 1.0/(2*eps()) * (hxr-hxl);
-          
+          {
+            HeapReset hr(lh);
+            SIMD_IntegrationRule irll(mir.IR().GetNIP(), lh);
+            for (int k = 0; k < irll.Size(); k++)
+              {
+                irll[k] = ir[k];
+                irll[k](j) -= 2*eps();
+              }
+            SIMD_MappedIntegrationRule<D,D> mirll(irll, trafo, lh);
+            fel_u.Evaluate (mirll, x, hxll);
+          }
+          {
+            HeapReset hr(lh);
+            SIMD_IntegrationRule irrr(mir.IR().GetNIP(), lh);
+            for (int k = 0; k < irrr.Size(); k++)
+              {
+                irrr[k] = ir[k];              
+                irrr[k](j) += 2*eps();
+              }
+            SIMD_MappedIntegrationRule<D,D> mirrr(irrr, trafo, lh);
+            fel_u.Evaluate (mirrr, x, hxrr);
+          }
+          // hx = 1.0/(2*eps()) * (hxr-hxl);
+          // dshape_u_ref = (1.0/(12.0*eps)) * (8.0*shape_ur-8.0*shape_ul-shape_urr+shape_ull);
+          hx = 1.0/(12*eps()) * (8*hxr-8*hxl-hxrr+hxll);
           for (int k = 0; k < mir.Size(); k++)
             {
               auto jacinv = mir[k].GetJacobianInverse();
               for (int l = 0; l < D; l++)
                 {
                   for (int m = 0; m < D; m++)
-                    y.Get(m*D+l, k) += (jacinv(j,m) * hx.Get(l, k)).Data();
+                    y(m*D+l, k) += (jacinv(j,m) * hx.Get(l, k)).Data();
                 }
             }
         }
@@ -1579,7 +1687,7 @@ namespace ngcomp
 
     using DiffOp<DiffOpGradientHdiv<D>>::AddTransSIMDIR;    
     static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
-                                ABareSliceMatrix<double> x, BareSliceVector<double> y)
+                                BareSliceMatrix<SIMD<double>> x, BareSliceVector<double> y)
     {
       int size = (bmir.Size()+1)*2000;
       STACK_ARRAY(char, data, size);
@@ -1601,7 +1709,7 @@ namespace ngcomp
                 {
                   SIMD<double> sum = 0;
                   for (int m = 0; m < D; m++)
-                    sum += jacinv(j,m) * x.Get(m*D+l, k);
+                    sum += jacinv(j,m) * x(m*D+l, k);
                   hx.Get(l,k) = (-(0.5/eps()) * sum).Data();
                 }
             }
@@ -1683,7 +1791,6 @@ namespace ngcomp
   {
     dnums = GetElementDofs (elnr);
   }
-
 
 
   static RegisterFESpace<HDivHighOrderFESpace> init ("hdivho");

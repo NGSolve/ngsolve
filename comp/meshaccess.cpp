@@ -335,8 +335,8 @@ namespace ngcomp
       // AFlatMatrix<double> grad(DIMS, ir.GetNIP(), lh);
       STACK_ARRAY(SIMD<double>, mem0, ir.Size());
       FlatVector<SIMD<double>> def(ir.Size(), &mem0[0]);
-      STACK_ARRAY(SIMD<double>, mem1, (3*ir.Size()));
-      FlatMatrix<SIMD<double>> grad(DIMS, ir.GetNIP(), &mem1[0]);
+      STACK_ARRAY(SIMD<double>, mem1, (DIMS*ir.Size()));
+      FlatMatrix<SIMD<double>> grad(DIMS, ir.Size(), &mem1[0]);
 
       for (int i = 0; i < DIMR; i++)
         {
@@ -398,7 +398,6 @@ namespace ngcomp
     {
       auto & mip = *new (lh) MappedIntegrationPoint<DIMS,DIMR,Complex> (ip, *this, -47);
       MappedIntegrationPoint<DIMS,DIMR> hip(ip, *this);
-      
       Vec<DIMR,Complex> point;
       
       Mat<DIMS,DIMR> hjac(hip.Jacobian());
@@ -416,8 +415,7 @@ namespace ngcomp
 
     virtual BaseMappedIntegrationRule & operator() (const IntegrationRule & ir, Allocator & lh) const
     {
-      auto & mir = *new (lh) MappedIntegrationRule<DIMS,DIMR,Complex> (ir, *this, lh);
-      return mir;
+      return *new (lh) MappedIntegrationRule<DIMS,DIMR,Complex> (ir, *this, lh);
     }
 
     virtual SIMD_BaseMappedIntegrationRule & operator() (const SIMD_IntegrationRule & ir, Allocator & lh) const
@@ -435,22 +433,20 @@ namespace ngcomp
           BASE::CalcMultiPointJacobian (ir, bmir);
           return;
         }
-
-      LocalHeapMem<100000> lh("testwise");
-      MappedIntegrationRule<DIMS,DIMR> mir_real(ir, *this, lh);
+      //LocalHeapMem<1000000> lh("testwise");
+      //MappedIntegrationRule<DIMS,DIMR> mir_real(ir, *this, lh);
 
       auto & mir_complex = dynamic_cast<MappedIntegrationRule<DIMS,DIMR,Complex>&> (bmir);
       const PML_TransformationDim<DIMR> & dimpml = 
             static_cast<const PML_TransformationDim<DIMR>&> (pml_global_trafo);
 
+      Vec<DIMR,Complex> point;
+      Mat<DIMR,DIMR,Complex> tjac;
       for (int i = 0; i < ir.Size(); i++)
         {
-          Vec<DIMR,Complex> point;
-          
-          Mat<DIMS,DIMR> hjac(mir_real[i].Jacobian());
-          
-          Mat<DIMR,DIMR,Complex> tjac;
-          dimpml.MapIntegrationPoint (mir_real[i], point, tjac);
+          MappedIntegrationPoint<DIMS,DIMR> mip(ir[i], *this);
+          Mat<DIMS,DIMR> hjac(mip.Jacobian());
+          dimpml.MapIntegrationPoint (mip, point, tjac);
                     
           mir_complex[i].Point() = point; 
           mir_complex[i].Jacobian() = tjac*hjac;
@@ -712,8 +708,8 @@ namespace ngcomp
       
       Vec<DIMR,SIMD<double>> simd_p0(p0);
       Mat<DIMR,DIMS,SIMD<double>> simd_mat(mat);
-      
-      for (int i = 0; i < hir.Size(); i++)
+
+      for (size_t i = 0; i < hir.Size(); i++)
         {
           hmir[i].Point() = simd_p0 + simd_mat * FlatVec<DIMS, const SIMD<double>> (&hir[i](0));
           hmir[i].Jacobian() = simd_mat;
@@ -813,13 +809,13 @@ namespace ngcomp
     GetFacetElements ( fnums[0], elnums );
     if (elnums.Size()==1)
     {
-      in = GetElIndex(elnums[0])+1;
+      in = GetElIndex(ElementId(VOL,elnums[0]))+1;
       out = 0;
     }
     else
     {
-      out = GetElIndex(elnums[0])+1;
-      in = GetElIndex(elnums[1])+1;
+      out = GetElIndex(ElementId(VOL,elnums[0]))+1;
+      in = GetElIndex(ElementId(VOL,elnums[1]))+1;
     }
   }
 
@@ -886,7 +882,7 @@ namespace ngcomp
     int ne = GetNE(); 
     for (int i = 0; i < ne; i++)
       {
-        int elindex = GetElIndex(i);
+        int elindex = GetElIndex(ElementId(VOL,i));
         if (elindex < 0) throw Exception("mesh with negative element-index");
         ndomains = max2(ndomains, elindex);
       }
@@ -899,7 +895,8 @@ namespace ngcomp
     int nse = GetNSE(); 
     for (int i = 0; i < nse; i++)
       {
-        int elindex = GetSElIndex(i);
+        ElementId sei(BND, i);
+        int elindex = GetElIndex(sei);
         if (elindex < 0) throw Exception("mesh with negative boundary-condition number");
         nboundaries = max2(nboundaries, elindex);
       }
@@ -918,7 +915,8 @@ namespace ngcomp
         int ncd2e = nelements_cd[2];
         for (int i=0; i< ncd2e; i++)
           {
-            int elindex = GetCD2ElIndex(i);
+            ElementId ei(BBND, i);
+            int elindex = GetElIndex(ei);
             //if (elindex < 0) throw Exception ("mesh with negative cd2 condition number");
             if (elindex >=0)
               nbboundaries = max2(nbboundaries, elindex);
@@ -1647,13 +1645,22 @@ namespace ngcomp
                     VorB avb, string pattern)
     : mesh(amesh), vb(avb)
   {
+    mask = BitArray(mesh->GetNRegions(vb));
+    mask.Clear();
+    regex re_pattern(pattern);
+
+    for (int i : Range(mask))
+      if (regex_match(mesh->GetMaterial(vb,i), re_pattern))
+        mask.Set(i);
+    
+    /*
     if (vb == VOL)
       {
         mask = BitArray(mesh->GetNDomains());
         mask.Clear();
         regex re_pattern(pattern);
         for (int i : Range(mask))
-          if (regex_match(mesh->GetDomainMaterial(i), re_pattern))
+          if (regex_match(mesh->GetMaterial(VOL,i), re_pattern))
             mask.Set(i);
       }
     else
@@ -1663,21 +1670,22 @@ namespace ngcomp
         mask.Clear();
         regex re_pattern(pattern);
         for (int i : Range(mask))
-          if (regex_match(mesh->GetBCNumBCName(i), re_pattern))
+          if (regex_match(mesh->GetMaterial(BND,i), re_pattern))
             mask.Set(i);
       }
       else
 	{
-	  mask = BitArray(mesh->GetNBBoundaries());
-	  mask.Clear();
-	  regex re_pattern(pattern);
+          mask = BitArray(mesh->GetNBBoundaries());
+          mask.Clear();
+          regex re_pattern(pattern);
 	  for(int i : Range(mask))
-	    (*testout) << "boundary condition " << i << ": " << mesh->GetCD2NumCD2Name(i) << endl;
+	    (*testout) << "boundary condition " << i << ": " << mesh->GetMaterial(BBND,i) << endl;
 	  for (int i : Range(mask))
-	    if (regex_match(mesh->GetCD2NumCD2Name(i), re_pattern))
+	    if (regex_match(mesh->GetMaterial(BBND,i), re_pattern))
 	      mask.Set(i);
 	  (*testout) << "mask: " << mask << endl;
 	}
+    */
   }      
 
 
@@ -1692,9 +1700,9 @@ namespace ngcomp
     static FE_Prism0 prism0;
     static FE_Pyramid0 pyramid0;
     FE_Hex0 hex0;
-  
+    
     const FiniteElement * fe = NULL;
-    switch (GetElType (elnr))
+    switch (GetElType (ElementId(VOL, elnr)))
       {
       case ET_SEGM: fe = &segm0; break;
       case ET_TRIG: fe = &trig0; break;
@@ -1705,7 +1713,7 @@ namespace ngcomp
 	// case ET_HEX: fe = &hex0; break;
       default:
 	{
-	  cerr << "ElementVolume not implemented for el " << GetElType(elnr) << endl;
+	  cerr << "ElementVolume not implemented for el " << GetElType(ElementId(VOL, elnr)) << endl;
 	}
       }
   
@@ -1743,22 +1751,22 @@ namespace ngcomp
   {
     static ScalarFE<ET_TRIG,0> trig0;
     static ScalarFE<ET_QUAD,0> quad0;
-
+    ElementId sei(BND, selnr);
     const FiniteElement * fe;
-    switch (GetSElType (selnr))
+    switch (GetElType (sei))
       {
       case ET_TRIG: fe = &trig0; break;
       case ET_QUAD: fe = &quad0; break;
       default:
 	{
-	  cerr << "SurfaceElementVolume not implemented for el " << GetElType(selnr) << endl;
+	  cerr << "SurfaceElementVolume not implemented for el " << GetElType(sei) << endl;
 	  return 0;
 	}
       }
 
     LocalHeapMem<10000> lh("MeshAccess - surfaceelementvolume");
 
-    ElementTransformation & trans = GetTrafo (ElementId(BND, selnr), lh);
+    ElementTransformation & trans = GetTrafo (sei, lh);
     ConstantCoefficientFunction ccf(1);
 
     if (GetDimension() == 2)
@@ -1886,6 +1894,7 @@ namespace ngcomp
   void MeshAccess :: Refine ()
   {
     static Timer t("MeshAccess::Refine"); RegionTimer reg(t);
+    nlevels = std::numeric_limits<int>::max();
     mesh.Refine(NG_REFINE_H, &NGSolveTaskManager);
     UpdateBuffers();
   }

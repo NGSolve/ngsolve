@@ -24,7 +24,7 @@ namespace ngbla
     /// the matrix entries
     T *data;
   public:
-    /// the accoring vector type
+    /// the according vector type
     typedef typename mat_traits<T>::TV_COL TV;
 
     /// Construction of FlatSymBandMatirx
@@ -178,7 +178,7 @@ namespace ngbla
     // typedef typename mat_traits<T>::TV_COL TV;
     typedef typename mat_traits<T>::TSCAL TSCAL;
 
-    /// assign dimension, bandwith and memory
+    /// assign dimension, bandwidth and memory
     FlatBandCholeskyFactors (int an, int abw, T * amem)
     { n = an, bw = abw, mem = amem; }
 

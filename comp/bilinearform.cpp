@@ -368,7 +368,7 @@ namespace ngcomp
               dnums_dg.SetSize(0);
               for (int k=0;k<nbelems.Size();k++){
                 int elnr=nbelems[k];
-                if (!fespace->DefinedOn (VOL,ma->GetElIndex(elnr))) continue;
+                if (!fespace->DefinedOn (VOL,ma->GetElIndex(ElementId(VOL,elnr)))) continue;
                 fespace->GetDofNrs (ElementId(VOL,elnr), dnums);
                 dnums_dg.Append(dnums);
               }
@@ -805,7 +805,7 @@ namespace ngcomp
                         
                         // clh.CleanUp(heapp);
 			
-                        if (!fespace->DefinedOn (vb,ma->GetElIndex (i))) continue;
+                        if (!fespace->DefinedOn (vb,ma->GetElIndex (id))) continue;
 			
                         const FiniteElement & fel = fespace->GetFE (id, clh);
                         ElementTransformation & eltrans = ma->GetTrafo (id, clh);
@@ -826,7 +826,8 @@ namespace ngcomp
                         for (auto & bfip : VB_parts[vb])
                           {
                             const BilinearFormIntegrator & bfi = *bfip;
-                            if (!bfi.DefinedOn (ma->GetElIndex (i))) continue;
+                            if (!bfi.DefinedOn (ma->GetElIndex (id))) continue;
+                            if (!bfi.DefinedOnElement (i)) continue;
                             
                             FlatVector<double> diag;
                             try
@@ -914,6 +915,7 @@ namespace ngcomp
                            {
                              const BilinearFormIntegrator & bfi = *bfip;
                              if (!bfi.DefinedOn (el.GetIndex())) continue;                        
+                             if (!bfi.DefinedOnElement (el.Nr())) continue;                        
                              
                              FlatMatrix<SCAL> elmat(elmat_size, lh);
                              
@@ -1267,8 +1269,9 @@ namespace ngcomp
                             {
                               // if (!bfi->SkeletonForm()) continue;
                               // if (bfi->VB() == BND) continue;
-                              if (!bfi->DefinedOn (ma->GetElIndex (el1))) continue;
-                              if (!bfi->DefinedOn (ma->GetElIndex (el2))) continue;
+                              if (!bfi->DefinedOn (ma->GetElIndex (ei1))) continue;
+                              if (!bfi->DefinedOn (ma->GetElIndex (ei2))) continue;
+                              if (!bfi->DefinedOnElement(i)) continue;                        
                               
                               /*
                                 for (int k = 0; k < dnums.Size(); k++)
@@ -1545,8 +1548,9 @@ namespace ngcomp
                                {
                                  // if (!bfi->SkeletonForm()) continue;
                                  // if (bfi->VB() != VOL) continue;
-                                 if (!bfi->DefinedOn (ma->GetElIndex (el1))) continue;
-                                 if (!bfi->DefinedOn (ma->GetElIndex (el2))) continue;
+                                 if (!bfi->DefinedOn (ma->GetElIndex (ei1))) continue;
+                                 if (!bfi->DefinedOn (ma->GetElIndex (ei2))) continue;
+                                 if (!bfi->DefinedOnElement (el1)) continue;
                                  
                                  for (auto d : dnums)
                                    if (d != -1) useddof[d] = true;
@@ -1692,15 +1696,15 @@ namespace ngcomp
                           }
                           
                           HeapReset hr(lh);
+                          ElementId sei(BND, i);
                               
-                          if (!fespace->DefinedOn (BND,ma->GetSElIndex (i))) continue;
+                          if (!fespace->DefinedOn (BND,ma->GetElIndex (sei))) continue;
                           ma->GetSElFacets(i,fnums);
                           int fac = fnums[0];
                           ma->GetFacetElements(fac,elnums);
                           int el = elnums[0];
                           ma->GetElFacets(el,fnums);
                           ElementId ei(VOL, el);
-                          ElementId sei(BND, i);
                           const FiniteElement & fel = fespace->GetFE (ei, lh);
                           int facnr = 0;
                           for (int k=0; k<fnums.Size(); k++)
@@ -1733,7 +1737,8 @@ namespace ngcomp
                               // if (bfi.VB() != BND) continue;
                               // if (!bfi.SkeletonForm()) continue;
 				  
-                              if (!bfi->DefinedOn (ma->GetSElIndex(i) )) continue;                
+                              if (!bfi->DefinedOn (ma->GetElIndex(sei) )) continue;                
+                              if (!bfi->DefinedOnElement (i)) continue;
 				  
                               for (int k = 0; k < dnums.Size(); k++)
                                 if (dnums[k] != -1)
@@ -2102,6 +2107,7 @@ namespace ngcomp
                          
                          if (!bfi.VolumeForm()) continue;
                          if (!bfi.DefinedOn (eltrans.GetElementIndex())) continue;
+                         if (!bfi.DefinedOnElement (ei.Nr())) continue;
                          
                          FlatMatrix<SCAL> elmat(elmat_size, lh);
                          bfi.CalcElementMatrix (fel, eltrans, elmat, lh);
@@ -2229,6 +2235,20 @@ namespace ngcomp
             RegionTimer reg(timervol);
             ProgressOutput progress (ma, "assemble element", ma->GetNE());
 
+            if (eliminate_internal && keep_internal)
+              {
+                size_t ndof = fespace->GetNDof();
+                size_t ne = ma->GetNE();
+                harmonicext = make_shared<ElementByElementMatrix<SCAL>>(ndof, ne);
+                if (!symmetric)
+                  harmonicexttrans = make_shared<ElementByElementMatrix<SCAL>>(ndof, ne);
+                else
+                  harmonicexttrans = make_shared<Transpose>(*harmonicext);
+                innersolve = make_shared<ElementByElementMatrix<SCAL>>(ndof, ne);
+                if (store_inner)
+                  innermatrix = make_shared<ElementByElementMatrix<SCAL>>(ndof, ne);
+              }
+            
             IterateElements 
               (*fespace, VOL, clh,  [&] (FESpace::Element el, LocalHeap & lh)
                {
@@ -2258,6 +2278,7 @@ namespace ngcomp
                  for (auto & bfi : VB_parts[VOL])
                    {
                      if (!bfi->DefinedOn (el.GetIndex())) continue;
+                     if (!bfi->DefinedOnElement (el.Nr())) continue;
                      
                      try
                        {
@@ -2451,6 +2472,7 @@ namespace ngcomp
                  for (auto & bfi : VB_parts[BND])
                    {
                      if (!bfi->DefinedOn (el.GetIndex())) continue;
+                     if (!bfi->DefinedOnElement (el.Nr())) continue;
                      
                      bfi->CalcLinearizedElementMatrix (fel, eltrans, elveclin, elmat, lh);
                      
@@ -2464,7 +2486,7 @@ namespace ngcomp
                          testout->precision(8);
                          (*testout) << "surface-elnum= " << el.Nr() << endl;
                          (*testout) << "eltype " << fel.ElementType() << endl;
-                         (*testout) << "boundary = " << ma->GetSElBCName (el.Nr()) << endl;
+                         (*testout) << "boundary = " << ma->GetMaterial (el) << endl;
                          (*testout) << "integrator " << bfi->Name() << endl;
                          (*testout) << "dnums = " << endl << dnums << endl;
                          (*testout) << "elveclin = " << endl << elveclin << endl;
@@ -2503,15 +2525,15 @@ namespace ngcomp
                     {
                       progress.Update();                      
                       HeapReset hr(lh);
+                      ElementId sei(BND, i);
                       
-                      if (!fespace->DefinedOn (BND,ma->GetSElIndex (i))) continue;
+                      if (!fespace->DefinedOn (BND,ma->GetElIndex (sei))) continue;
                       ma->GetSElFacets(i,fnums);
                       int fac = fnums[0];
                       ma->GetFacetElements(fac,elnums);
                       int el = elnums[0];
                       ma->GetElFacets(el,fnums);
                       ElementId ei(VOL, el);
-                      ElementId sei(BND, i);
                       const FiniteElement & fel = fespace->GetFE (ei, lh);
                       int facnr = 0;
                       for (int k=0; k<fnums.Size(); k++)
@@ -2544,7 +2566,7 @@ namespace ngcomp
                           // if (bfi.VB() != BND) continue;
                           // if (!bfi.SkeletonForm()) continue;
                           
-                          if (!bfi->DefinedOn (ma->GetSElIndex(i) )) continue;                
+                          if (!bfi->DefinedOn (ma->GetElIndex(sei) )) continue;                
                           
                           for (int k = 0; k < dnums.Size(); k++)
                             if (dnums[k] != -1)
@@ -3351,27 +3373,18 @@ namespace ngcomp
                        FlatVector<SCAL> elx(dnums.Size()*fespace->GetDimension(), lh),
                          ely(dnums.Size()*fespace->GetDimension(), lh);
                        
-                       // timerDG2b.Stop();
-                       // timerDG2c.Start();                                 
                        x.GetIndirect(dnums, elx);
-                       // timerDG2c.Stop();
-                       // timerDG2c.AddFlops (dnums.Size());
-                       // timerDG2.Stop();
-                       
-                       //                                  for (int j = 0; j < NumIntegrators(); j++)
+
                        RegionTimer reg2(timerDGapply);                     
                        for (auto & bfi : facetwise_skeleton_parts[VOL])                                   
                          {
-                           if (!bfi->DefinedOn (ma->GetElIndex (el1))) continue; 
-                           if (!bfi->DefinedOn (ma->GetElIndex (el2))) continue; 
+                           if (!bfi->DefinedOn (ma->GetElIndex (ei1))) continue; 
+                           if (!bfi->DefinedOn (ma->GetElIndex (ei2))) continue; 
                            
-                           // timerDG3.Start();
                            bfi->ApplyFacetMatrix (fel1, facnr1, eltrans1, vnums1,
-                                                   fel2, facnr2, eltrans2, vnums2, elx, ely, lh);
-                           // timerDG3.Stop();
-                           // timerDG4.Start();
+                                                  fel2, facnr2, eltrans2, vnums2, elx, ely, lh);
+
                            y.AddIndirect(dnums, ely);
-                           // timerDG4.Stop();
                          }
                      }
                  });
@@ -3517,8 +3530,8 @@ namespace ngcomp
                            // if (!bfi->SkeletonForm()) continue;
                            // if (bfi->BoundaryForm()) continue;
                            // if (!bfi->GetDGFormulation().element_boundary) continue;                                     
-                           if (!bfi->DefinedOn (ma->GetElIndex (el1))) continue; //TODO: treat as surface element
-                           if (!bfi->DefinedOn (ma->GetElIndex (el2))) continue; //TODO    
+                           if (!bfi->DefinedOn (ma->GetElIndex (ei1))) continue; //TODO: treat as surface element
+                           if (!bfi->DefinedOn (ma->GetElIndex (ei2))) continue; //TODO    
                            
                            FacetBilinearFormIntegrator * fbfi = 
                              dynamic_cast<FacetBilinearFormIntegrator*>(bfi.get());
@@ -3700,7 +3713,7 @@ namespace ngcomp
                   const BilinearFormIntegrator & bfi = *parts[j];
 
                   if (bfi.BoundaryForm()) continue;
-                  if (!bfi.DefinedOn (ma->GetElIndex (i))) continue;
+                  if (!bfi.DefinedOn (ma->GetElIndex (ei))) continue;
 
 
                   bfi.ApplyLinearizedElementMatrix (fel, eltrans, elveclin, elvecx, elvecy, lh);

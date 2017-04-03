@@ -18,7 +18,7 @@ add_library(ngfem ${NGS_LIB_TYPE}
         hybridDG.cpp diffop.cpp l2hofefo.cpp h1hofefo.cpp
         facethofe.cpp python_fem.cpp DGIntegrators.cpp pml.cpp
         h1hofe_segm.cpp h1hofe_trig.cpp symbolicintegrator.cpp tpdiffop.cpp
-        tensorproductintegrator.cpp
+        tensorproductintegrator.cpp code_generation.cpp
         )
 
 if(USE_CUDA)
@@ -31,7 +31,7 @@ if(USE_CUDA)
 endif(USE_CUDA)
 
 if(NOT WIN32)
-    target_link_libraries(ngfem ${PYTHON_LIBS} ${LAPACK_LIBRARIES})
+    target_link_libraries(ngfem ngbla ngstd ${NETGEN_PYTHON_LIBRARIES} ${LAPACK_LIBRARIES})
     install( TARGETS ngfem ${ngs_install_dir} )
 endif(NOT WIN32)
 

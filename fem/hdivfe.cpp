@@ -119,10 +119,21 @@ namespace ngfem
 
   template <int D>
   void HDivFiniteElement<D> ::
+  CalcMappedShape (const SIMD<MappedIntegrationPoint<DIM,DIM>> & mip,
+                   BareSliceMatrix<SIMD<double>> shape) const
+  {
+    throw ExceptionNOSIMD(string("SIMD - HDivFE::CalcMappedShape not overloaded, et = ")
+                          + typeid(*this).name());
+  }
+  
+  
+  template <int D>
+  void HDivFiniteElement<D> ::
   CalcMappedShape (const SIMD_BaseMappedIntegrationRule & mir, 
                    BareSliceMatrix<SIMD<double>> shapes) const
   {
-    throw ExceptionNOSIMD("SIMD - HDivFE::CalcMappedShape not overloaded");
+    throw ExceptionNOSIMD(string("SIMD - HDivFE::CalcMappedShape not overloaded, et = ")
+                          + typeid(*this).name());
   }
   
   
@@ -182,6 +193,36 @@ namespace ngfem
     dnums.SetSize(0);
   }; 
 
+  template <int D>
+  void HDivFiniteElement<D> ::
+  Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const
+  {
+    throw ExceptionNOSIMD ("HDivFE::Evaluate (simd) not overloaded");
+  }
+  
+  template <int D>
+  void HDivFiniteElement<D> ::
+  AddTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
+            BareSliceVector<> coefs) const
+  {
+    throw ExceptionNOSIMD ("HDivFE::AddTrans (simd) not overloaded");    
+  }
+  
+  template <int D>
+  void HDivFiniteElement<D> ::
+  EvaluateDiv (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareVector<SIMD<double>> values) const
+  {
+    throw ExceptionNOSIMD ("HDivFE::EvaluateDiv (simd) not overloaded");    
+  }
+    
+  template <int D>
+  void HDivFiniteElement<D> ::
+  AddDivTrans (const SIMD_BaseMappedIntegrationRule & ir, BareVector<SIMD<double>> values,
+               BareSliceVector<> coefs) const
+  {
+    throw ExceptionNOSIMD ("HDivFE::EvaluateDivTrans (simd) not overloaded");        
+  }
+      
 
 
 

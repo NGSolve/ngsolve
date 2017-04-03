@@ -5,11 +5,12 @@ endif(NOT CMAKE_BUILD_TYPE)
 cmake_minimum_required(VERSION 2.8.12)
 
 # Handle superbuild first
-option (USE_SUPERBUILD "Whether or not a superbuild should be invoked" ON)
+option( USE_SUPERBUILD   "Whether or not a superbuild should be invoked" ON)
 option( USE_LAPACK       "build ngsolve with LAPACK" ON)
 option( USE_VT           "enable vampirtrace")
-option( USE_CUDA         "enable CUDA GPU support")
+# option( USE_CUDA         "enable CUDA GPU support")
 option( USE_MKL          "enable MKL")
+option( USE_HYPRE        "enable HYPRE support")
 option( USE_MUMPS        "enable sparse direct solver MUMPS")
 option( USE_PARDISO      "enable pardiso sparse direct solver")
 option( USE_UMFPACK      "enable umfpack sparse direct solver")
@@ -18,30 +19,54 @@ option( USE_VTUNE        "include vtune pause/resume numproc")
 option( USE_NUMA         "compile with NUMA-aware code")
 option( USE_CCACHE       "use ccache")
 option( INSTALL_DEPENDENCIES "install dependencies like netgen or solver libs, useful for packaging" OFF )
+option( ENABLE_UNIT_TESTS "Enable Catch unit tests")
 if(NOT WIN32 AND NOT INTEL_MIC)
     option( USE_NATIVE_ARCH  "build which -march=native" ON)
 endif(NOT WIN32 AND NOT INTEL_MIC)
 
-set(NGSOLVE_VERSION_MAJOR 6)
-set(NGSOLVE_VERSION_MINOR 2)
-string(TIMESTAMP NGSOLVE_VERSION_PATCH "%y%U%w" )
-set(NGSOLVE_VERSION "${NGSOLVE_VERSION_MAJOR}.${NGSOLVE_VERSION_MINOR}-dev")
-set(CPACK_PACKAGE_VERSION_MAJOR ${NGSOLVE_VERSION_MAJOR})
-set(CPACK_PACKAGE_VERSION_MINOR ${NGSOLVE_VERSION_MINOR})
-set(CPACK_PACKAGE_VERSION_PATCH ${NGSOLVE_VERSION_PATCH})
+set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_modules")
+set(NETGEN_DIR "" CACHE PATH "Path to Netgen, leave empty to build Netgen automatically")
+
+find_program(GIT_FOUND git)
+if(GIT_FOUND AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
+    execute_process(COMMAND git describe --tags --long --dirty WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} OUTPUT_VARIABLE git_version_string)
+else()
+  get_filename_component(git_version_string ${CMAKE_CURRENT_SOURCE_DIR} NAME)
+  string(REGEX REPLACE "^ngsolve_(.*)" "\\1" git_version_string "${git_version_string}")
+endif()
+
+string(REGEX REPLACE "^v([0-9]+)\\..*" "\\1" NGSOLVE_VERSION_MAJOR "${git_version_string}")
+string(REGEX REPLACE "^v[0-9]+\\.([0-9]+).*" "\\1" NGSOLVE_VERSION_MINOR "${git_version_string}")
+string(REGEX REPLACE "^v[0-9]+\\.[0-9]+\\.([0-9]+).*" "\\1" NGSOLVE_VERSION_PATCH "${git_version_string}")
+string(REGEX REPLACE "^v[0-9]+\\.[0-9]+\\.[0-9]+\\-([0-9]+).*" "\\1" NGSOLVE_VERSION_TWEAK "${git_version_string}")
+string(REGEX REPLACE "^v[0-9]+\\.[0-9]+\\.[0-9]+\\-[0-9]+\\-([0-9a-z]+).*" "\\1" NGSOLVE_VERSION_HASH "${git_version_string}")
+
+set(NGSOLVE_VERSION_SHORT ${NGSOLVE_VERSION_MAJOR}.${NGSOLVE_VERSION_MINOR}.${NGSOLVE_VERSION_PATCH})
+set(NGSOLVE_VERSION_LONG ${NGSOLVE_VERSION_SHORT}-${NGSOLVE_VERSION_TWEAK}-${NGSOLVE_VERSION_HASH})
+
+if(NGSOLVE_VERSION_TWEAK)
+  # no release version - nightly build
+  set(NGSOLVE_VERSION ${NGSOLVE_VERSION_LONG})
+else()
+  # TWEAK is 0 -> current version has a tag assigned
+  set(NGSOLVE_VERSION ${NGSOLVE_VERSION_SHORT})
+endif()
+
+set(NGSOLVE_VERSION_LONG ${NGSOLVE_VERSION_SHORT}-${NGSOLVE_VERSION_TWEAK}-${NGSOLVE_VERSION_HASH})
 
 if (USE_SUPERBUILD)
   project (NGSuite)
   # execute the superbuild (this script will be invoked again without the
   # USE_SUPERBUILD option this time)
-  include (cmake_modules/SuperBuild.cmake)
-  include (cmake_modules/package.cmake)
+  include (cmake/SuperBuild.cmake)
+  include (cmake/package.cmake)
+  include(CPack)
   return()                      # stop processing this file further
 else()
   project(NGSolve)
 endif()
 
-find_package(Netgen REQUIRED CONFIG HINTS ${NETGEN_DIR} ${NETGEN_DIR}/share/cmake ${INSTALL_DIR} ${INSTALL_DIR}/share/cmake ${INSTALL_DIR}/Netgen.app/Contents/Resources/share/cmake)
+find_package(Netgen REQUIRED CONFIG HINTS ${NETGEN_DIR} ${NETGEN_DIR}/share/cmake ${INSTALL_DIR} ${INSTALL_DIR}/share/cmake ${INSTALL_DIR}/Contents/Resources/share/cmake)
 
 # set(CPACK_DEBIAN_PACKAGE_VERSION "${NGSOLVE_VERSION_MAJOR}.${NGSOLVE_VERSION_MINOR}.${NGSOLVE_VERSION_PATCH}")
 
@@ -58,19 +83,19 @@ install (FILES ${CMAKE_CURRENT_BINARY_DIR}/config.h DESTINATION include COMPONEN
 #######################################################################
 
 add_definitions(-DHAVE_NETGEN_SOURCES)
+add_definitions(-DNGSOLVE_VERSION="${NGSOLVE_VERSION}")
 #######################################################################
 if(USE_CCACHE)
-  find_program(CCACHE_FOUND ccache)
+  find_program(CCACHE_FOUND NAMES ccache ccache.bat)
   if(CCACHE_FOUND)
-    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
-    set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
+    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ${CCACHE_FOUND})
   endif(CCACHE_FOUND)
 endif(USE_CCACHE)
 
 #######################################################################
 if(INTEL_MIC)
     set(MKL_ARCH "mic")
-    include(cmake_modules/mic.cmake)
+    include(cmake/mic.cmake)
 endif(INTEL_MIC)
 
 #######################################################################
@@ -79,9 +104,14 @@ if(USE_NATIVE_ARCH)
 endif(USE_NATIVE_ARCH)
 
 #######################################################################
+if(ENABLE_UNIT_TESTS)
+  include(${CMAKE_CURRENT_LIST_DIR}/cmake/external_projects/catch.cmake)
+endif(ENABLE_UNIT_TESTS)
+
+#######################################################################
 # append install paths of software in non-standard paths (e.g. openmpi, metis, intel mkl, ...)
 # cmake -DUSE_MPI=ON -DCMAKE_PREFIX_PATH="/opt/openmpi165;/opt/metis51" ../
-set(ADDITIONAL_PATHS "" CACHE PATH "List of paths to additional libraries in non-standard locations, seperated by ';'")
+set(ADDITIONAL_PATHS "" CACHE PATH "List of paths to additional libraries in non-standard locations, separated by ';'")
 if (ADDITIONAL_PATHS)
   set(CMAKE_PREFIX_PATH ${ADDITIONAL_PATHS})
 endif (ADDITIONAL_PATHS)
@@ -100,7 +130,6 @@ endif("${isSystemDir}" STREQUAL "-1")
 
 #######################################################################
 # build options
-set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${PROJECT_SOURCE_DIR}/cmake_modules")
 if(APPLE)
   set(ngs_install_dir_bin ../MacOS)
   set(ngs_install_dir_lib ../MacOS)
@@ -120,7 +149,9 @@ include_directories (AFTER ${NETGEN_INCLUDE_DIRS})
 
 link_directories ("${CMAKE_INSTALL_PREFIX}/${ngs_install_dir_lib}")
 
-install (FILES ngsolve.tcl DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve )
+if(NETGEN_USE_GUI)
+  install (FILES ngsolve.tcl DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve )
+endif(NETGEN_USE_GUI)
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -Wall")
 
@@ -170,11 +201,10 @@ endif (NETGEN_USE_GUI)
 
 #######################################################################
 if (NETGEN_USE_MPI)
+    if(USE_MUMPS)
+      enable_language(Fortran)
+    endif(USE_MUMPS)
     find_package(MPI REQUIRED)
-    if (NETGEN_USE_PYTHON)
-      find_package(MPI4PY REQUIRED)
-      include_directories(${MPI4PY_INCLUDE_DIR})
-    endif (NETGEN_USE_PYTHON)
     add_definitions(-DPARALLEL)
     include_directories(${MPI_CXX_INCLUDE_PATH})
     set(CMAKE_EXE_LINKER_FLAGS    "${CMAKE_EXE_LINKER_FLAGS}    ${MPI_CXX_LINK_FLAGS} -ldl")
@@ -208,6 +238,7 @@ endif (USE_CUDA)
 
 #######################################################################
 if (USE_MKL)
+    find_package(MKL REQUIRED)
     include_directories(${MKL_INCLUDE_DIRS})
     add_definitions(-DUSE_MKL -DUSE_PARDISO -DLAPACK)
 
@@ -218,6 +249,12 @@ if (USE_MKL)
 endif (USE_MKL)
 
 #######################################################################
+if (USE_HYPRE)
+  find_package(HYPRE REQUIRED)
+  add_definitions(-DHYPRE)
+  include_directories(${HYPRE_INCLUDES})
+endif(USE_HYPRE)
+
 if (USE_MUMPS)
     find_package(MUMPS REQUIRED)
     add_definitions(-DUSE_MUMPS)
@@ -293,6 +330,7 @@ add_subdirectory(python)
 add_subdirectory(pde_tutorial)
 add_subdirectory(py_tutorials)
 add_subdirectory(tests)
+add_subdirectory(docs)
 
 #######################################################################
 # generate ngscxx compiler wrapper
@@ -311,13 +349,14 @@ foreach( d ${ngscxx_defines} )
     endif()
 endforeach()
 
-set(ngscxx_flags "${${name}} ${CMAKE_CXX_FLAGS} -fPIC ${ngscxx_define_flags}")
+set(ngscxx_flags "${${name}} ${CMAKE_CXX_FLAGS} ${ngscxx_define_flags}")
+
+if(NOT WIN32)
+  set(ngscxx_flags "${ngscxx_flags} -fPIC")
+endif()
 
 # include directories
 set(ngscxx_include_dirs ${NETGEN_INCLUDE_DIRS} ${CMAKE_INSTALL_PREFIX}/include ${NETGEN_TCL_INCLUDE_PATH} ${NETGEN_MPI_CXX_INCLUDE_PATH} ${MKL_INCLUDE_DIRS} ${MUMPS_INCLUDE_DIR} ${NETGEN_PYTHON_INCLUDE_DIRS} ${UMFPACK_INCLUDE_DIR} ${VTUNE_INCLUDE_DIR})
-if(NOT INSTALL_DEPENDENCIES) 
-    set(ngscxx_include_dirs ${ngscxx_include_dirs} ${NETGEN_INTERNAL_INCLUDE_DIR})
-endif(NOT INSTALL_DEPENDENCIES) 
 
 
 foreach( d ${ngscxx_include_dirs} )
@@ -334,6 +373,7 @@ if(USE_MKL AND NOT INSTALL_DEPENDENCIES)
 endif()
 
 if(APPLE)
+    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/pictures/logo.icns DESTINATION . RENAME Netgen.icns)
     if(CMAKE_OSX_SYSROOT)
         set( ngscxx_includes "-I${CMAKE_OSX_SYSROOT}/usr/include ${ngscxx_includes}" )
     endif()
@@ -368,15 +408,35 @@ if(WIN32)
     install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngscxx.bat DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve_devel )
     install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngsld.bat DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve_devel )
 else(WIN32)
-    get_property(MYCRULE GLOBAL PROPERTY RULE_LAUNCH_COMPILE)
-    get_property(MYLRULE GLOBAL PROPERTY RULE_LAUNCH_LINK)
+    set(ngscxx_compile_command "${CMAKE_CXX_COMPILER} ${ngscxx_flags} ${ngscxx_includes} $*")
+    if(CCACHE_FOUND)
+      set(ngscxx_compile_command "
+if [ -f ${CCACHE_FOUND} ]
+  then ${CCACHE_FOUND} ${ngscxx_compile_command}
+  else ${ngscxx_compile_command}
+fi")
+    endif(CCACHE_FOUND)
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngscxx "${ngscxx_header}
-${CMAKE_CXX_COMPILER} ${ngscxx_flags} ${ngscxx_includes} $*\n")
+${ngscxx_compile_command}\n")
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngsld "${ngsld_header}
 ${CMAKE_CXX_COMPILER} ${ngsld_flags} $*\n")
     install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngscxx DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve_devel )
     install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngsld DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve_devel )
 endif(WIN32)
+
+if (NETGEN_USE_MPI)
+    # generate python3 wrapper for mpi (to preload mkl and mpi libs)
+    set(ngspy_preload_libs "${MPI_C_LIBRARIES}")
+    if(USE_MKL AND NOT MKL_STATIC)
+      set(ngspy_preload_libs "${ngspy_preload_libs}:${MKL_CORE_LIBRARY}:${MKL_THREADING_LIBRARY}:${MKL_INTERFACE_LIBRARY}:${MKL_BLACS_LIBRARY}")
+    endif()
+    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngspy
+"#! /usr/bin/bash
+LD_PRELOAD=$LD_PRELOAD:${ngspy_preload_libs} ${NETGEN_PYTHON_EXECUTABLE} $*
+")
+    install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngspy DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve_devel )
+endif (NETGEN_USE_MPI)
+
 
 
 
@@ -390,13 +450,13 @@ add_custom_target(performance_tests ctest -L performance -D Experimental)
 #######################################################################
 # uninstall target
 configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/cmake_uninstall.cmake.in"
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
     IMMEDIATE @ONLY)
 # add_custom_target(uninstall
 #     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/NGSolveConfig.cmake.in
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/NGSolveConfig.cmake.in
   ${CMAKE_CURRENT_BINARY_DIR}/NGSolveConfig.cmake @ONLY)
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/NGSolveConfig.cmake DESTINATION share/cmake)

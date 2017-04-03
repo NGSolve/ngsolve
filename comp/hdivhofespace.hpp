@@ -88,8 +88,6 @@ namespace ngcomp
     ///
     // virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const override; // 2D: array =0.;
     ///
-    virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
-    ///
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
     ///
     virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & precflags) const override;
@@ -138,12 +136,12 @@ namespace ngcomp
     virtual int GetRelOrder() const override { return rel_order; } 
 
 
-    IntRange GetFacetDofs (int nr) const
+    IntRange GetFacetDofs (size_t nr) const
     {
       return IntRange (first_facet_dof[nr], first_facet_dof[nr+1]);
     }
 
-    IntRange GetElementDofs (int nr) const
+    IntRange GetElementDofs (size_t nr) const
     {
       return IntRange (first_inner_dof[nr], first_inner_dof[nr+1]);
     }

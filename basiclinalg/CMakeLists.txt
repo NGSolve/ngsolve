@@ -7,7 +7,7 @@ add_library(ngbla ${NGS_LIB_TYPE}
         )
 
 if(NOT WIN32)
-    TARGET_LINK_LIBRARIES(ngbla ngstd ${MPI_CXX_LIBRARIES} ${PYTHON_LIBS} ${LAPACK_LIBRARIES})
+    TARGET_LINK_LIBRARIES(ngbla ngstd ${MPI_CXX_LIBRARIES} ${NETGEN_PYTHON_LIBRARIES} ${LAPACK_LIBRARIES})
     INSTALL( TARGETS ngbla ${ngs_install_dir} )
 endif(NOT WIN32)
 

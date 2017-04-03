@@ -30,8 +30,10 @@ namespace ngfem
       this->order = ORDER; 
     }
 
+    static constexpr int DIM = ngfem::Dim(ET);
+
     template<typename Tx, typename TFA>  
-    static INLINE void T_CalcShape (TIP<ngfem::Dim(ET),Tx> ip, TFA & shape);
+    static INLINE void T_CalcShape (TIP<DIM,Tx> ip, TFA & shape);
   };
   
   /*

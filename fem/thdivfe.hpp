@@ -462,7 +462,17 @@ namespace ngfem
 
     virtual void CalcMappedShape (const MappedIntegrationRule<DIM,DIM> & mip,
 				  SliceMatrix<> shape) const;
-    
+
+    virtual void CalcMappedShape (const SIMD<MappedIntegrationPoint<DIM,DIM>> & mip,
+				  BareSliceMatrix<SIMD<double>> shape) const;
+
+    virtual void CalcMappedShape (const SIMD_BaseMappedIntegrationRule & mir, 
+                                  BareSliceMatrix<SIMD<double>> shapes) const;
+
+    using HDivFiniteElement<ET_trait<ET>::DIM>::CalcMappedDivShape;
+    virtual void CalcMappedDivShape (const SIMD_BaseMappedIntegrationRule & mir, 
+                                     BareSliceMatrix<SIMD<double>> divshapes) const;
+
     virtual void Evaluate (const IntegrationRule & ir, 
 			   FlatVector<double> coefs, 
 			   FlatMatrixFixWidth<DIM> vals) const;

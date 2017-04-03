@@ -233,12 +233,13 @@ namespace ngcomp
         
     for (int i = 0; i < nel; i++)
       {
-	ELEMENT_TYPE eltype=ma->GetElType(i); 
+        ElementId ei(VOL, i);
+	ELEMENT_TYPE eltype=ma->GetElType(ei); 
 	const POINT3D * points = ElementTopology :: GetVertices (eltype);	
 	
 	if (ma->GetDimension() == 2)
 	  {
-	    ma->GetElEdges (i, fanums);
+	    ma->GetElEdges (ei, fanums);
 	    for (int j=0;j<fanums.Size();j++) 
 	      fine_facet[fanums[j]] = 1; 
 	    
@@ -259,7 +260,7 @@ namespace ngcomp
 	else
 	  {
 	    Array<int> elfaces,vnums;
-	    ma->GetElFaces(i,elfaces);
+	    ma->GetElFaces(ei,elfaces);
 	    for (int j=0;j<elfaces.Size();j++) fine_facet[elfaces[j]] = 1; 
 	    
 	    if(var_order) 
@@ -343,8 +344,9 @@ namespace ngcomp
             first_inner_dof.SetSize(ne+1);
             for(int i = 0; i < ne; i++)
               {
+                ElementId ei(VOL, i);
                 first_inner_dof[i] = ndof;
-                ELEMENT_TYPE eltype = ma->GetElType(i);
+                ELEMENT_TYPE eltype = ma->GetElType(ei);
                 if(eltype == ET_TRIG)
                   ndof += 3;
                 else
@@ -360,6 +362,7 @@ namespace ngcomp
         Array<int> pnums;
         for(int i=0; i< nfa; i++)
           {
+            first_facet_dof[i] = ndof;
             if (!fine_facet[i]) continue;
             int p = order_facet[i][0];
             if(highest_order_dc  && order_facet[i][0] > 0) p--;
@@ -371,7 +374,6 @@ namespace ngcomp
               case 3: inci = ((p+1)*(p+2))/2 - n_lowest_order_dofs; break;
               case 4: inci= (p+1)*(p+1) - n_lowest_order_dofs; break;
               }
-            first_facet_dof[i] = ndof;
             ndof+= inci;
           }
         first_facet_dof[nfa] = ndof;
@@ -382,9 +384,10 @@ namespace ngcomp
 	    first_inner_dof.SetSize(ne+1);
 	    for (int i = 0; i < ne; i++)
 	      {
+                ElementId ei(VOL, i);
 		first_inner_dof[i] = ndof;
 		
-		ELEMENT_TYPE eltype = ma->GetElType(i);
+		ELEMENT_TYPE eltype = ma->GetElType(ei);
 		for (int k = 0; k < ElementTopology::GetNFacets(eltype); k++)
 		  if (ElementTopology::GetFacetType(eltype, k) == ET_TRIG)
 		    ndof += order+1;
@@ -458,7 +461,23 @@ namespace ngcomp
     if(print)
       *testout << "FacetFESpace, ctofdof = " << endl << ctofdof << endl;
   }
-  
+
+
+  template <ELEMENT_TYPE ET>
+  FiniteElement & FacetFESpace :: T_GetFE (int elnr, Allocator & alloc) const
+  {
+    Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,VOL> (elnr);
+
+    FacetFE<ET> * fe =  new (alloc) FacetFE<ET> ();
+    fe -> SetVertexNumbers (ngel.Vertices());
+    if (ET_trait<ET>::DIM >= 2)
+      for (int i = 0; i < ET_trait<ET>::N_FACET; i++)
+        fe -> SetOrder (i, order_facet[ngel.Facets()[i]][0]);
+    fe -> ComputeNDof();
+    
+    return *fe;
+  }
+
   
   // ------------------------------------------------------------------------
   FiniteElement & FacetFESpace :: GetFE (ElementId ei, Allocator  & lh) const
@@ -467,6 +486,24 @@ namespace ngcomp
       {
       case VOL:
         {
+          switch (ma->GetElType(ei))
+            {
+            case ET_POINT:   break;
+            case ET_SEGM:    return T_GetFE<ET_SEGM>(ei.Nr(), lh);              
+            case ET_TRIG:    return T_GetFE<ET_TRIG>(ei.Nr(), lh);
+            case ET_QUAD:    return T_GetFE<ET_QUAD>(ei.Nr(), lh);
+            case ET_TET:     return T_GetFE<ET_TET>(ei.Nr(), lh);
+            case ET_PYRAMID: return T_GetFE<ET_PYRAMID>(ei.Nr(), lh);
+            case ET_PRISM:   return T_GetFE<ET_PRISM>(ei.Nr(), lh);
+            case ET_HEX:     return T_GetFE<ET_HEX>(ei.Nr(), lh);
+            }
+
+          throw Exception (string("FacetFESpace ") + GetClassName() 
+                           + ", undefined eltype " 
+                           + ElementTopology::GetElementName(ma->GetElType(ei)));
+        } 
+            
+          /*
         FacetVolumeFiniteElement<1> * fe1d = NULL;
         FacetVolumeFiniteElement<2> * fe2d = NULL;
         FacetVolumeFiniteElement<3> * fe3d = NULL;;
@@ -528,12 +565,13 @@ namespace ngcomp
             return *fe3d;
           }
         }
+          */
       case BND:
         {
         DGFiniteElement<1> * fe1d = 0;
         DGFiniteElement<2> * fe2d = 0;
 
-        switch (ma->GetSElType(ei.Nr()))
+        switch (ma->GetElType(ei))
           {
           case ET_SEGM: fe1d = new (lh) L2HighOrderFE<ET_SEGM> (); break;
           case ET_TRIG: fe2d = new (lh) L2HighOrderFE<ET_TRIG> (); break;
@@ -547,7 +585,7 @@ namespace ngcomp
         ArrayMem<int,4> ednums;
     
         ma->GetSElVertices(ei.Nr(), vnums);
-        switch (ma->GetSElType(ei.Nr()))
+        switch (ma->GetElType(ei))
           {
           case ET_SEGM:
             {
@@ -712,7 +750,7 @@ namespace ngcomp
 	  else
 	    {
 	      int innerdof = first_inner_dof[ei.Nr()];
-	      ELEMENT_TYPE eltype = ma->GetElType (ei.Nr());
+	      ELEMENT_TYPE eltype = ma->GetElType (ei);
 	      
 	      for(int i=0; i<fanums.Size(); i++)
 		{

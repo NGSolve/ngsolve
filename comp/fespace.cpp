@@ -47,6 +47,23 @@ namespace ngcomp
     DefineDefineFlag("dgjumps");
 
     order = int (flags.GetNumFlag ("order", 1));
+
+    if (flags.NumFlagDefined("order_left"))
+      {
+        auto order_left = int(flags.GetNumFlag("order_left", 1));
+        order = max(order, order_left);
+        for (auto et : element_types)
+          SetOrderLeft (et, order_left);
+      }
+    if (flags.NumFlagDefined("order_right"))
+      {
+        auto order_right = int(flags.GetNumFlag("order_right", 1));
+        order = max(order, order_right);    
+        for (auto et : element_types)
+          SetOrderRight (et, order_right);
+      }
+    
+    
     dimension = int (flags.GetNumFlag ("dim", 1));
 
     if (flags.GetDefineFlag ("vec"))
@@ -123,7 +140,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    for(int i = 0; i < ma->GetNDomains(); i++)
 	      {
 		for(int j = 0; j < dmaterials.Size(); j++)
-		  if(StringFitsPattern(ma->GetDomainMaterial(i),dmaterials[j]))
+		  if(StringFitsPattern(ma->GetMaterial(VOL,i),dmaterials[j]))
 		    {
 		      definedon[VOL][i] = true;
 		      break;
@@ -137,7 +154,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	definedon[BND] = false;
 	for (int sel = 0; sel < ma->GetNSE(); sel++)
 	  {
-	    int index = ma->GetSElIndex(sel);
+            ElementId sei(BND, sel);
+	    int index = ma->GetElIndex(sei);
 	    int dom1, dom2;
 	    ma->GetSElNeighbouringDomains(sel, dom1, dom2);
 	    dom1--; dom2--;
@@ -192,13 +210,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	
 	for(int selnum = 0; selnum < ma->GetNSE(); selnum++)
 	  {
-	    if(definedon[BND][ma->GetSElIndex(selnum)] == false)
+            ElementId sei(BND, selnum);
+	    if(definedon[BND][ma->GetElIndex(sei)] == false)
 	      {
 		for(int i=0; i<defon.Size(); i++)
 		  {
-		    if(StringFitsPattern(ma->GetSElBCName(selnum),*(defon[i])))	
+		    // if(StringFitsPattern(ma->GetSElBCName(selnum),*(defon[i])))
+                    if(StringFitsPattern(ma->GetMaterial(ElementId(BND, selnum)),*(defon[i])))	
 		      {		
-		 	definedon[BND][ma->GetSElIndex(selnum)] = true;
+		 	definedon[BND][ma->GetElIndex(sei)] = true;
 			continue;
 		      }
 		  }
@@ -717,7 +737,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
 
   /// get coupling type of dof
-  COUPLING_TYPE FESpace :: GetDofCouplingType (int dof) const 
+  COUPLING_TYPE FESpace :: GetDofCouplingType (DofId dof) const 
   {
     if (ctofdof.Size()==0) //this is the standard case if the FESpace does not specify anything.
       return WIREBASKET_DOF;
@@ -725,7 +745,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     return ctofdof[dof];
   }
 
-  void FESpace :: SetDofCouplingType (int dof, COUPLING_TYPE ct) const
+  void FESpace :: SetDofCouplingType (DofId dof, COUPLING_TYPE ct) const
   {
     if (dof >= ctofdof.Size()) throw Exception("FESpace::SetDofCouplingType out of range");
     ctofdof[dof] = ct;
@@ -938,7 +958,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
     //      << (low_order_space ? "" : " low-order")
     //      << " ..." << endl;
 
-    starttime = WallTime();
     steps = 0;
     do
       {
@@ -950,6 +969,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
             GetDofNrs (ElementId(VOL,i), dnums);
 	});
 	steps++;
+        if(steps==1) starttime = WallTime();
 	time = WallTime()-starttime;
       }
     while (time < 2.0);
@@ -983,7 +1003,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
 
-    starttime = WallTime();
     steps = 0;
     do
       {
@@ -998,6 +1017,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    }
 	});
         steps++;
+        if(steps==1) starttime = WallTime();
         time = WallTime()-starttime;
       }
     while (time < 2.0);
@@ -1008,15 +1028,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
 
-    starttime = WallTime();
     steps = 0;
     do
       {
-        ParallelFor( IntRange(ma->GetNE()), [&] (int i)
+        ParallelFor( IntRange(ma->GetNE()), [&] (size_t i)
           {
-	    /* Ng_Element ngel = */ ma->GetElement(i);
+	    /* Ng_Element ngel = */ ma->GetElement(ElementId(VOL,i));
           });
         steps++;
+        if(steps==1) starttime = WallTime();
         time = WallTime()-starttime;
       }
     while (time < 2.0);
@@ -1025,7 +1045,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
     //    cout << 1e9 * time / (ma->GetNE()*steps) << " ns per Get - Ng_Element (parallel)" << endl;
 
 
-    starttime = WallTime();
     steps = 0;
     do
       {
@@ -1039,6 +1058,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
             }
         });
         steps++;
+        if(steps==1) starttime = WallTime();
         time = WallTime()-starttime;
       }
     while (time < 2.0);
@@ -2064,7 +2084,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     else if (order == 1)
       {
-	switch (ma->GetSElType(ei.Nr()))
+	switch (ma->GetElType(ei))
 	  {
 	  case ET_SEGM:
 	    dnums.SetSize(2);
@@ -2084,7 +2104,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     else if (order == 2)
       {
-	switch (ma->GetSElType(ei.Nr()))
+	switch (ma->GetElType(ei))
 	  {
 	  case ET_SEGM:
 	    dnums.SetSize(3);

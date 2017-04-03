@@ -87,11 +87,14 @@ const char* docu_string(const char* str)
       else
         replaced = true;
       auto rest = replacement.substr(start_pos+6); //first character after ":any:`"
+      auto inner_end = rest.find("<");
       auto end = rest.find("`");
-      replacement.replace(start_pos,end+7,rest.substr(0,end)); 
+      if(inner_end==std::string::npos)
+        inner_end = end;
+      replacement.replace(start_pos,end+7,rest.substr(0,inner_end)); 
     }
   if(!replaced)
-    return replacement.c_str();
+    return str;
   char * newchar = new char[replacement.size()+1];
   std::copy(replacement.begin(),replacement.end(),newchar);
   newchar[replacement.size()] = '\0';
@@ -114,6 +117,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
 
   py::class_<DummyArgument>(m, "DummyArgument")
     .def("__bool__", []( DummyArgument &self ) { return false; } )
+    .def("__repr__", [] ( DummyArgument & self) { return "<ngsolve.ngstd.DummyArgument>"; })
     ;
   
   py::class_<PajeTrace >(m, "Tracer")
@@ -186,18 +190,57 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
                                            if (b) self.Set(i); else self.Clear(i); 
                                          })
 
-    .def("Set", [] (BitArray & self, int i)
-                                 {
-                                   if (i < 0 || i >= self.Size()) 
-                                     throw py::index_error();
-                                   self.Set(i); 
-                                 })
-    .def("Clear", [] (BitArray & self, int i)
+    .def("__setitem__", [] (BitArray & self, py::slice inds, bool b) 
+                                         {
+                                           size_t start, step, n;
+                                           InitSlice( inds, self.Size(), start, step, n );
+                                           if (start == 0 && n == self.Size() && step == 1)
+                                             { // base branch
+                                               if (b)
+                                                 self.Set();
+                                               else
+                                                 self.Clear();
+                                             }
+                                           else
+                                             {
+                                               if (b)
+                                                 for (size_t i=0; i<n; i++, start+=step)
+                                                   self.Set(start);
+                                               else
+                                                 for (size_t i=0; i<n; i++, start+=step)
+                                                   self.Clear(start);
+                                             }
+                                         })
+
+
+    .def("Set", [] (BitArray & self, py::object in)
                                    {
-                                   if (i < 0 || i >= self.Size()) 
-                                     throw py::index_error();
-                                   self.Clear(i); 
-                                   })
+                                     if (py::isinstance<DummyArgument>(in))
+                                       self.Set();
+                                     else if (py::extract<int>(in).check())
+                                     {
+                                       int i = py::extract<int>(in)();
+                                       if (i < 0 || i >= self.Size()) 
+                                         throw py::index_error();
+                                       self.Set(i);
+                                     }
+                                     else
+                                       throw py::value_error();
+                                   }, py::arg("i") = DummyArgument())
+    .def("Clear", [] (BitArray & self, py::object in)
+                                   {
+                                     if (py::isinstance<DummyArgument>(in))
+                                       self.Clear();
+                                     else if (py::extract<int>(in).check())
+                                     {
+                                       int i = py::extract<int>(in)();
+                                       if (i < 0 || i >= self.Size()) 
+                                         throw py::index_error();
+                                       self.Clear(i);
+                                     }
+                                     else
+                                       throw py::value_error();
+                                   }, py::arg("i") = DummyArgument())
     .def("__ior__", [] (BitArray & self, BitArray & other)
                                  {
                                    self.Or(other); 
@@ -210,6 +253,8 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
                                  })
     ;
 
+  
+
   py::class_<Flags>(m, "Flags")
     .def(py::init<>())
     .def("__str__", &ToString<Flags>)
@@ -219,6 +264,18 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
          SetFlag(f, "", d);
          // cout << f << endl;
      })
+    .def("__getstate__", [] (py::object self_object) {
+        auto self = self_object.cast<Flags>();
+        stringstream str;
+        self.SaveFlags(str);
+        return py::make_tuple(py::cast(str.str())); 
+      })
+    .def("__setstate__", [] (Flags & self, py::tuple state) {
+        string s = state[0].cast<string>();
+        stringstream str(s);
+        new (&self) Flags();
+        self.LoadFlags(str);
+      })
     .def("Set",[](Flags & self,const py::dict & aflags)->Flags&
     {      
       cout << "we call Set(dict)" << endl;
@@ -332,6 +389,96 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
     .def(py::init<>())
     .def("__enter__", &ParallelContextManager::Enter)
     .def("__exit__", &ParallelContextManager::Exit)
+    .def("__timing__", [] ()
+         {
+           list<tuple<string,double>>timings;           
+           double starttime, time;
+           double maxtime = 0.5;
+           size_t steps;
+           
+           starttime = WallTime();
+           steps = 0;
+           do
+             {
+               for (size_t i = 0; i < 1000; i++)
+                 ParallelJob ( [] (TaskInfo ti) { ; } );
+               steps += 1000;
+               time = WallTime()-starttime;
+             }
+           while (time < maxtime);
+           timings.push_back(make_tuple("ParallelJob", time/steps*1e9));
+
+           starttime = WallTime();
+           steps = 0;
+           do
+             {
+               for (int k = 0; k < 10000; k++)
+                 {
+                   SharedLoop2 sl(1000);
+                   steps += 1;
+                 }
+               time = WallTime()-starttime;
+             }
+           while (time < maxtime);
+           timings.push_back(make_tuple("SharedLoop init", time/steps*1e9));
+
+           starttime = WallTime();
+           steps = 0;
+           do
+             {
+               for (int k = 0; k < 1000; k++)
+                 {
+                   SharedLoop2 sl(1000);
+                   ParallelJob ( [&sl] (TaskInfo ti)
+                                 {
+                                   // auto beg = sl.begin();
+                                   // auto end = sl.end();
+                                 } );
+                   steps += 1;
+                 }
+               time = WallTime()-starttime;
+             }
+           while (time < maxtime);
+           timings.push_back(make_tuple("SharedLoop begin/end", time/steps*1e9));
+           
+           
+           starttime = WallTime();
+           steps = 0;
+           do
+             {
+               for (int k = 0; k < 1000; k++)
+                 {
+                   SharedLoop2 sl(1000);
+                   ParallelJob ( [&sl] (TaskInfo ti)
+                                 {
+                                   for (auto i : sl)
+                                     ; 
+                                 } );
+                   steps += 1000;
+                 }
+               time = WallTime()-starttime;
+             }
+           while (time < maxtime);
+           timings.push_back(make_tuple("SharedLoop 1000", time/steps*1e9));
+
+           starttime = WallTime();
+           steps = 0;
+           do
+             {
+               SharedLoop2 sl(1000000);
+               ParallelJob ( [&sl] (TaskInfo ti)
+                             {
+                               for (auto i : sl)
+                                 ; 
+                             } );
+               steps += 1000000;
+               time = WallTime()-starttime;
+             }
+           while (time < maxtime);
+           timings.push_back(make_tuple("SharedLoop 1000000", time/steps*1e9));
+
+           return timings;
+         })
     ;
 }
 

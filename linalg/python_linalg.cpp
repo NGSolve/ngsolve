@@ -365,7 +365,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         { return shared_ptr<BaseVector>(self.CreateRowVector()); } )
     .def("CreateColVector", [] ( PyBaseMatrix & self) -> PyWrapper<BaseVector>
         { return shared_ptr<BaseVector>(self.CreateColVector()); } )
-
+    
     .def("AsVector", [] (BM & m) -> PyWrapper<BaseVector>
                                       {
                                         return shared_ptr<BaseVector> (&m.AsVector(), NOOP_Deleter);
@@ -465,7 +465,29 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("Transpose", [](BM &m)-> PyWrapper<BaseMatrix>
                                        { return make_shared<Transpose> (m); })
     .def("Update", [](BM &m) { m.Update(); })
-    // py::return_value_policy<py::manage_new_object>())
+
+    .def("CreateBlockSmoother", [](BM & m, py::object blocks) -> PyWrapper<BaseMatrix>
+         {
+           size_t size = py::len(blocks);
+           
+           Array<int> cnt(size);
+           size_t i = 0;
+           for (auto block : blocks)
+             cnt[i++] = py::len(block);
+           
+           i = 0;
+           Table<int> blocktable(cnt);
+           for (auto block : blocks)
+             {
+               auto row = blocktable[i++];
+               size_t j = 0;
+               for (auto val : block)
+                 row[j++] = val.cast<int>();
+             }
+           cout << "table = " << endl << blocktable << endl;
+           BaseSparseMatrix & sparse_mat = dynamic_cast<BaseSparseMatrix&>(m);
+           return sparse_mat.CreateBlockJacobiPrecond (make_shared<Table<int>> (move(blocktable)));
+         })
     ;
     m.def("TestMult", [] (BaseMatrix &m, PyBaseVector &x, PyBaseVector &y) {
         m.Mult(x, y);
@@ -474,6 +496,11 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     m.def("TestMultAdd", [] (BaseMatrix &m, double s, PyBaseVector &x, PyBaseVector &y) {
         m.MultAdd(s, x, y);
         });
+
+    /*
+  py::class_<BaseBlockJacobiPrecond, shared_ptr<BaseBlockJacobiPrecond>, BaseMatrix> (m, "BlockSmoother")
+    ;
+    */
 
 //   typedef PyWrapper<Projector> PyProjector;
   py::class_<Projector, shared_ptr<Projector>, BaseMatrix> (m, "Projector")
@@ -557,8 +584,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                                 {
                                                   Arnoldi<Complex> arnoldi (mata, matm, freedofs);
                                                   Complex shift = 0.0;
-//                                                   if (py::cast<Complex>(bpshift).check())
-                                                    shift = py::cast<Complex>(bpshift);
+                                                  shift = py::cast<Complex>(bpshift);
                                                   cout << "shift = " << shift << endl;
                                                   arnoldi.SetShift (shift);
                                                   
@@ -577,10 +603,28 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                                     vlam(i) = lam[i];
                                                   return vlam;
                                                 }
-                                              
-                                              cout << "real Arnoldi not supported" << endl;
-                                              Vector<Complex> lam(5);
-                                              return lam;
+                                              else
+                                                {
+                                                  Arnoldi<double> arnoldi (mata, matm, freedofs);
+                                                  double shift = py::cast<double>(bpshift);
+                                                  cout << "shift = " << shift << endl;
+                                                  arnoldi.SetShift (shift);
+                                                  
+                                                  int nev = py::len(vecs);
+                                                  cout << "num vecs: " << nev << endl;
+                                                  Array<shared_ptr<BaseVector>> evecs(nev);
+                                                  
+                                                  Array<Complex> lam(nev);
+                                                  arnoldi.Calc (2*nev+1, lam, nev, evecs, 0);
+                                            
+                                                  for (int i = 0; i < nev; i++)
+                                                    vecs[i].cast<BaseVector&>() = *evecs[i];
+
+                                                  Vector<Complex> vlam(nev);
+                                                  for (int i = 0; i < nev; i++)
+                                                    vlam(i) = lam[i];
+                                                  return vlam;
+                                                }
                                             },
           "Arnoldi Solver", py::arg("mata"), py::arg("matm"), py::arg("freedofs"), py::arg("vecs"), py::arg("shift")=DummyArgument()
           )
