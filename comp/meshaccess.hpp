@@ -153,7 +153,6 @@ namespace ngcomp
 
   class NodeIterator
   {
-    // const MeshAccess & ma;
     NodeId ni;
   public:
     NodeIterator (NodeId ani) : ni(ani) { ; }
@@ -165,12 +164,10 @@ namespace ngcomp
 
   class NodeRange : public IntRange
   {
-    // const MeshAccess & ma;
     NODE_TYPE nt;
   public:
     NodeRange (NODE_TYPE ant, IntRange ar) 
       : IntRange(ar), nt(ant) { ; } 
-    // ElementId First() const { return ElementId(vb, IntRange::First()); }
     NodeIterator begin () const { return NodeIterator(NodeId(nt,IntRange::First())); }
     NodeIterator end () const { return NodeIterator(NodeId(nt,IntRange::Next())); }
     NodeId operator[] (size_t nr) { return NodeId(nt, IntRange::First()+nr); }
@@ -322,7 +319,7 @@ namespace ngcomp
     }
 
     template <VorB VB>
-    TElementRange<VB> Elements () const
+      TElementRange<VB> Elements () const
     {
       return TElementRange<VB> (*this, IntRange (0, GetNE(VB)));
     }
@@ -497,10 +494,10 @@ namespace ngcomp
     */
 
     /// number of elements of dimension dim
-    int GetNElements (int dim) const { return nelements[dim]; }
+    size_t GetNElements (int dim) const { return nelements[dim]; }
 
     /// number of nodes of type nt
-    int GetNNodes (NODE_TYPE nt) const { return nnodes[nt]; }  
+    size_t GetNNodes (NODE_TYPE nt) const { return nnodes[nt]; }  
 
 
     /// the topology of a domain - element
@@ -514,6 +511,7 @@ namespace ngcomp
        to the Netgen mesh structure instead of copying point numbers
        etc. The nasty 1-0 conversion is done on the fly.
      */
+    [[deprecated("Use GetElement (ElementId ei) instead!")]]        
     INLINE Ngs_Element GetElement (int elnr, bool boundary = 0) const
     {
       switch (dim-boundary)
@@ -563,6 +561,7 @@ namespace ngcomp
        to the Netgen mesh structure instead of copying point numbers
        etc. The nasty 1-0 conversion is done on the fly.
      */
+    [[deprecated("Use GetElement (ElementId (BND,nr)) instead!")]]            
     Ngs_Element GetSElement (int elnr) const
     {
       switch (dim)
@@ -573,7 +572,8 @@ namespace ngcomp
         default: return Ngs_Element (mesh.GetElement<2> (elnr), ElementId(BND,elnr));
 	}
     }
-
+    
+    [[deprecated("Use GetElement (ElementId (BBND,nr)) instead!")]]            
     Ngs_Element GetCD2Element(int elnr) const
     {
       switch(dim)
@@ -589,7 +589,7 @@ namespace ngcomp
        returns element of compile-time fixed dimension
      */
     template <int DIM, VorB vb>
-      inline Ngs_Element GetElement (int elnr) const
+      inline Ngs_Element GetElement (size_t elnr) const
     {
       return Ngs_Element (mesh.GetElement<DIM> (elnr), ElementId(vb, elnr));
     }
@@ -649,7 +649,7 @@ namespace ngcomp
        The method is not yet fully functional.
      */
     template <int DIM>
-    netgen::Ng_Node<DIM> GetNode (int nr) const
+    netgen::Ng_Node<DIM> GetNode (size_t nr) const
     {
       return mesh.GetNode<DIM> (nr);
     }
@@ -657,12 +657,12 @@ namespace ngcomp
     /// returns the points of an element.
     /// vertices and possibly edge-midpoints
     void GetElPNums (int elnr, Array<int> & pnums) const
-    { pnums = ArrayObject (GetElement(elnr).points); }
+    { pnums = ArrayObject (GetElement(ElementId(VOL,elnr)).points); }
 
     /// returns the points of a boundary element.
     /// vertex and possibly edge-midpoints
     void GetSElPNums (int selnr, Array<int> & pnums) const
-    { pnums = ArrayObject (GetSElement(selnr).points); }
+    { pnums = ArrayObject (GetElement(ElementId(BND,selnr)).points); }
 
     void GetElPNums (ElementId ei, Array<int> & pnums) const
     { pnums = ArrayObject (GetElement(ei).points); }
@@ -670,7 +670,7 @@ namespace ngcomp
 
     /// returns the vertices of an element
     void GetElVertices (int elnr, Array<int> & vnums) const
-    { vnums = GetElement(elnr).Vertices(); }
+    { vnums = GetElement(ElementId(VOL,elnr)).Vertices(); }
     
     ///
     void GetElVertices (ElementId ei, Array<int> & vnums) const
@@ -681,7 +681,7 @@ namespace ngcomp
 
     /// returns the vertices of a boundary element
     void GetSElVertices (int selnr, Array<int> & vnums) const
-    { vnums = GetSElement(selnr).Vertices(); }
+    { vnums = GetElement(ElementId(BND,selnr)).Vertices(); }
 
     void GetElEdges (ElementId ei, Array<int> & ednums) const
     { ednums = GetElement(ei).Edges(); }
@@ -691,14 +691,14 @@ namespace ngcomp
 
     /// returns the edges of an element
     void GetElEdges (int elnr, Array<int> & ednums) const
-    { ednums = GetElement(elnr).Edges(); }
+    { ednums = GetElement(ElementId(VOL,elnr)).Edges(); }
 
     // returns edge numbers and edge orientation of an element. (old style function)
     void GetElEdges (int elnr, Array<int> & ednums, Array<int> & orient) const;
 
     /// returns the edges of a boundary element
     void GetSElEdges (int selnr, Array<int> & ednums) const
-    { ednums = ArrayObject (GetSElement(selnr).edges); }
+    { ednums = ArrayObject (GetElement(ElementId(BND,selnr)).edges); }
 
     // returns edge numbers and edge orientation of an element. (old style function)
     void GetSElEdges (int selnr, Array<int> & ednums, Array<int> & orient) const;
@@ -709,7 +709,7 @@ namespace ngcomp
 
     /// returns the faces of an element
     void GetElFaces (int elnr, Array<int> & fnums) const
-    { fnums = GetElement(elnr).Faces(); }
+    { fnums = GetElement(ElementId(VOL,elnr)).Faces(); }
 
     // returns face numbers and face orientation of an element. (old style function)
     void GetElFaces (int elnr, Array<int> & fnums, Array<int> & orient) const;
@@ -750,7 +750,7 @@ namespace ngcomp
     
     /// number of facets of an element. 
     /// facets are edges (2D) or faces (3D)
-    int GetNFacets() const { return nnodes_cd[1]; } 
+    size_t GetNFacets() const { return nnodes_cd[1]; } 
     /// facets of an element
     void GetElFacets (ElementId ei, Array<int> & fnums) const;
     void GetElFacets (int elnr, Array<int> & fnums) const;
@@ -919,7 +919,7 @@ namespace ngcomp
 
     /// is element straight or curved ?
     bool IsElementCurved (int elnr) const
-    { return GetElement(elnr).is_curved; }
+    { return GetElement(ElementId(VOL,elnr)).is_curved; }
       // { return bool (Ng_IsElementCurved (elnr+1)); }
     
     

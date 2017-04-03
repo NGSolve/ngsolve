@@ -294,7 +294,7 @@ namespace ngcomp
     if (ei.IsVolume())
       {
         int elnr = ei.Nr();
-        Ngs_Element ngel = ma->GetElement(elnr);
+        Ngs_Element ngel = ma->GetElement(ei);
         ELEMENT_TYPE eltype = ngel.GetType();
         
         // if (!DefinedOn (ma->GetElIndex (elnr)))

@@ -1031,9 +1031,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
     steps = 0;
     do
       {
-        ParallelFor( IntRange(ma->GetNE()), [&] (int i)
+        ParallelFor( IntRange(ma->GetNE()), [&] (size_t i)
           {
-	    /* Ng_Element ngel = */ ma->GetElement(i);
+	    /* Ng_Element ngel = */ ma->GetElement(ElementId(VOL,i));
           });
         steps++;
         if(steps==1) starttime = WallTime();
