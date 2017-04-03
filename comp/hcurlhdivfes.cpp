@@ -107,10 +107,10 @@ namespace ngcomp
     finelevelofedge.Range (oldned, ned) = -1;
 
     for (int i = 0; i < ne; i++)
-      finelevelofedge[ma->GetElement(i).Edges()] = level-1;
+      finelevelofedge[ma->GetElement(ElementId(VOL,i)).Edges()] = level-1;
 
     for (int i = 0; i < nse; i++)
-      finelevelofedge[ma->GetSElement(i).Edges()] = level-1;
+      finelevelofedge[ma->GetElement(ElementId(BND,i)).Edges()] = level-1;
 
 
     // generate edge points, and temporary hash table

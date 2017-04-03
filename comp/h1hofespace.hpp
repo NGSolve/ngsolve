@@ -116,17 +116,17 @@ namespace ngcomp
     virtual int GetRelOrder() const override { return rel_order; }
     virtual bool VarOrder() const override { return var_order; }
 
-    IntRange GetEdgeDofs (int nr) const
+    IntRange GetEdgeDofs (size_t nr) const
     {
       return IntRange (first_edge_dof[nr], first_edge_dof[nr+1]);
     }
 
-    IntRange GetFaceDofs (int nr) const
+    IntRange GetFaceDofs (size_t nr) const
     {
       return IntRange (first_face_dof[nr], first_face_dof[nr+1]);
     }
 
-    IntRange GetElementDofs (int nr) const
+    IntRange GetElementDofs (size_t nr) const
     {
       return IntRange (first_element_dof[nr], first_element_dof[nr+1]);
     }
