@@ -13,11 +13,15 @@ install(FILES
        )
 
 install(FILES
-        TensorProduct/TensorProductTools.py TensorProduct/make_seg_mesh.py
+        TensorProduct/make_seg_mesh.py
         TensorProduct/tp_dg_1d_1d.py
         TensorProduct/tp_dg_2d_1d.py TensorProduct/tp_dg_1d_2d.py
         DESTINATION share/ngsolve/py_tutorials/TensorProduct
         COMPONENT ngsolve_devel
+       )
+install(FILES
+       TensorProduct/TensorProductTools.py 
+       DESTINATION lib/python3/dist-packages/ngsolve
        )
 
 # install( FILES 

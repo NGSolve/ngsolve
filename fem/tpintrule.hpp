@@ -180,21 +180,38 @@ namespace ngfem
     
   };
 
-
   class ProlongateCoefficientFunction : public CoefficientFunction
   {
   private:
     shared_ptr<CoefficientFunction> coef;
     int prolongateto;
+    int dimx,dimy;
   public:
     ///
-    ProlongateCoefficientFunction(shared_ptr<CoefficientFunction> acoef,int aprolongateto,int adimension, bool ais_complex = false) : CoefficientFunction(adimension,ais_complex), coef(acoef), prolongateto(aprolongateto)
+    ProlongateCoefficientFunction(shared_ptr<CoefficientFunction> acoef,int aprolongateto,int adimension,int adimx,int adimy, bool ais_complex = false) 
+         : CoefficientFunction(adimension,ais_complex), coef(acoef), prolongateto(aprolongateto), dimx(adimx), dimy(adimy)
     { ; }
     ///
-    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const {throw Exception("ProlongateCoefficientFunction:IntegrationPoint evaluate not possible. Use Integration Rule instead ");return 0;}
-    
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const;
     ///
-    virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const;  
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const;
+    virtual void EvaluateStdRule (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const;
   };
+  
+  class ProlongateCoefficientFunctionVisualization : public CoefficientFunction
+  {
+  private:
+    const ProlongateCoefficientFunction & pcf;
+  public:
+    ///
+    ProlongateCoefficientFunctionVisualization(const ProlongateCoefficientFunction & apcf) 
+         : CoefficientFunction(apcf.Dimension(),apcf.IsComplex()), pcf(apcf)
+    { ; }
+    ///
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const { return pcf.Evaluate(ip); }
+    ///
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const { pcf.EvaluateStdRule(ir,values); }
+  };
+  
 }
 #endif // TPINTRULE_HPP
