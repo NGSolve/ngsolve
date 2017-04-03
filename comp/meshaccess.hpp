@@ -686,8 +686,7 @@ namespace ngcomp
     void GetElEdges (ElementId ei, Array<int> & ednums) const
     { ednums = GetElement(ei).Edges(); }
 
-    auto GetElEdges (ElementId ei) const
-    { return GetElement(ei).Edges(); }
+    auto GetElEdges (ElementId ei) const { return GetElement(ei).Edges(); }
 
     /// returns the edges of an element
     void GetElEdges (int elnr, Array<int> & ednums) const
@@ -753,6 +752,8 @@ namespace ngcomp
     size_t GetNFacets() const { return nnodes_cd[1]; } 
     /// facets of an element
     void GetElFacets (ElementId ei, Array<int> & fnums) const;
+    auto GetElFacets (ElementId ei) const { return GetElement(ei).Facets(); }
+    
     void GetElFacets (int elnr, Array<int> & fnums) const;
     /// facet of a surface element
     void GetSElFacets (int selnr, Array<int> & fnums) const;

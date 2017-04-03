@@ -2634,14 +2634,38 @@ namespace ngcomp
 		 const double * dxdxref, int sdxdxref,
 		 double * values, int svalues)
   {
+    if (npts > 128)
+      {
+        bool isdefined = false;
+        for (int i = 0; i < npts; i += 128)
+          {
+            int npi = min2 (128, npts-i);
+            isdefined = GetMultiValue (elnr, facetnr, npi, 
+                                       xref+i*sxref, sxref, x+i*sx, sx, dxdxref+i*sdxdxref, sdxdxref,
+                                       values+i*svalues, svalues);
+          }
+        return isdefined;
+      }
+
+    
     try
       {
-    // cout << "visualizecoef, GetMultiValue not implemented" << endl;
+        LocalHeapMem<100000> lh("viscf::GetMultiValue xref");
 
-    for (int i = 0; i < npts; i++)
-      GetValue (elnr, xref+i*sxref, x+i*sx, dxdxref+i*sdxdxref, values+i*svalues);
-    return true;
+        IntegrationRule ir(npts, lh);
+        for (size_t j = 0; j < npts; j++)
+          ir[j] = IntegrationPoint(xref[j*sxref], xref[j*sxref+1], xref[j*sxref+2]);
+        
+        ElementId ei(VOL, elnr);
+        ElementTransformation & trafo = ma->GetTrafo (ei, lh);
+        BaseMappedIntegrationRule & mir = trafo(ir, lh);
+        
+        if (!cf -> IsComplex())
+          cf -> Evaluate (mir, FlatMatrix<>(npts, GetComponents(), values));
+        else
+          cf -> Evaluate (mir, FlatMatrix<Complex>(npts, GetComponents(), reinterpret_cast<Complex*>(values)));      
 
+        return true;
       }
     catch (Exception & e)
       {

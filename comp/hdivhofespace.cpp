@@ -221,9 +221,10 @@ namespace ngcomp
 	ELEMENT_TYPE eltype = el.GetType();
 	const POINT3D * points = ElementTopology :: GetVertices (eltype);
 	
-	Array<int> elfacets; 
-	ma->GetElFacets (el.Nr(), elfacets); 
-	
+	// Array<int> elfacets; 
+	// ma->GetElFacets (el.Nr(), elfacets); 
+	auto elfacets = ma->GetElFacets (el);
+        
         fine_facet[elfacets] = true;
 	
 	if(!var_order) continue; 
