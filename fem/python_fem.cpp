@@ -870,7 +870,7 @@ val : float
     PyCF GetNormalVectorCF (int dim)
     { 
       switch(dim)
-	{
+	{ 
 	case 1:
 	  return PyCF(make_shared<NormalVectorCF<1>>());
 	case 2:
@@ -883,7 +883,9 @@ val : float
 	  return PyCF(make_shared<NormalVectorCF<5>>());
 	case 6:
 	  return PyCF(make_shared<NormalVectorCF<6>>());
-
+        default:
+          throw Exception (string("Normal-vector not implemented for dimension")
+                           +ToString(dim));
 	}
     }
 
