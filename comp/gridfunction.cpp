@@ -231,11 +231,11 @@ namespace ngcomp
     
     if (ma->GetDimension() == 2)
       {
-	bfi2d = fespace->GetIntegrator();
+	bfi2d = fespace->GetIntegrator(VOL);
       }
     else
       {
-	bfi3d = fespace->GetIntegrator();
+	bfi3d = fespace->GetIntegrator(VOL);
 	bfi2d = fespace->GetIntegrator(BND);
       }
 
@@ -1257,9 +1257,10 @@ namespace ngcomp
       trace_diffop->Apply (fel, ip, elu, result, lh2);
     else if (bfi)
       bfi->CalcFlux (fel, ip, elu, result, true, lh2);
+    else if (fes->GetEvaluator(ei.VB()))
+      fes->GetEvaluator(ei.VB()) -> Apply (fel, ip, elu, result, lh2);
     else
-      // fes->GetIntegrator(boundary) -> CalcFlux (fel, ip, elu, result, false, lh2);
-      fes->GetEvaluator(ei.VB()==BND) -> Apply (fel, ip, elu, result, lh2);
+      result = 0.0;
   }
 
   void GridFunctionCoefficientFunction :: 
@@ -1315,7 +1316,7 @@ namespace ngcomp
     else if (bfi)
       bfi->CalcFlux (fel, ip, elu, result, true, lh2);
     else
-      fes->GetIntegrator(vb==BND) -> CalcFlux (fel, ip, elu, result, false, lh2);
+      fes->GetIntegrator(vb) -> CalcFlux (fel, ip, elu, result, false, lh2);
   }
 
 
@@ -1363,10 +1364,10 @@ namespace ngcomp
       trace_diffop->Apply (fel, ir, elu, values, lh2);
     else if (bfi)
       bfi->CalcFlux (fel, ir, elu, values, true, lh2);
-    else if (fes->GetEvaluator(vb==BND))
-      fes->GetEvaluator(vb==BND) -> Apply (fel, ir, elu, values, lh2);
-    else if (fes->GetIntegrator(vb==BND))
-      fes->GetIntegrator(vb==BND) ->CalcFlux (fel, ir, elu, values, false, lh2);
+    else if (fes->GetEvaluator(vb))
+      fes->GetEvaluator(vb) -> Apply (fel, ir, elu, values, lh2);
+    else if (fes->GetIntegrator(vb))
+      fes->GetIntegrator(vb) ->CalcFlux (fel, ir, elu, values, false, lh2);
     else
       throw Exception ("don't know how I shall evaluate");
   }
@@ -1416,10 +1417,10 @@ namespace ngcomp
       trace_diffop->Apply (fel, ir, elu, values, lh2);
     else if (bfi)
       bfi->CalcFlux (fel, ir, elu, values, true, lh2);
-    else if (fes->GetEvaluator(vb==BND))
-      fes->GetEvaluator(vb==BND) -> Apply (fel, ir, elu, values, lh2);
-    else if (fes->GetIntegrator(vb==BND))
-      fes->GetIntegrator(vb==BND) ->CalcFlux (fel, ir, elu, values, false, lh2);
+    else if (fes->GetEvaluator(vb))
+      fes->GetEvaluator(vb) -> Apply (fel, ir, elu, values, lh2);
+    else if (fes->GetIntegrator(vb))
+      fes->GetIntegrator(vb) ->CalcFlux (fel, ir, elu, values, false, lh2);
     else
       throw Exception ("don't know how I shall evaluate");
   }
@@ -1484,9 +1485,9 @@ namespace ngcomp
     else if (bfi)
       throw Exception ("GridFunctionCoefficientFunction: SIMD evaluate not possible 1");
       // bfi->CalcFlux (fel, ir, elu, values, true, lh2);
-    else if (fes->GetEvaluator(vb==BND))
-      fes->GetEvaluator(vb==BND) -> Apply (fel, ir, elu, values); // , lh2);
-    else if (fes->GetIntegrator(vb==BND))
+    else if (fes->GetEvaluator(vb))
+      fes->GetEvaluator(vb) -> Apply (fel, ir, elu, values); // , lh2);
+    else if (fes->GetIntegrator(vb))
       throw Exception ("GridFunctionCoefficientFunction: SIMD evaluate not possible 2");
       // fes.GetIntegrator(boundary) ->CalcFlux (fel, ir, elu, values, false, lh2);
     else

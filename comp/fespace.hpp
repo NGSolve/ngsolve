@@ -696,7 +696,7 @@ namespace ngcomp
       return evaluator[vb];
     }
 
-    // [[deprecated("Use GetEvaluator(VorB) instead of GetEvaluator(bool)!")]]
+    [[deprecated("Use GetEvaluator(VorB) instead of GetEvaluator(bool)!")]]
     shared_ptr<DifferentialOperator> GetEvaluator (bool boundary) const
     {
       if(boundary)
@@ -710,7 +710,7 @@ namespace ngcomp
       return flux_evaluator[vb];
     }
 
-    //[[deprecated("Use GetFluxEvaluator(VorB) instead of GetFluxEvaluator(bool)!")]]
+    [[deprecated("Use GetFluxEvaluator(VorB) instead of GetFluxEvaluator(bool)!")]]
     shared_ptr<DifferentialOperator> GetFluxEvaluator (bool boundary) const
     {
       if(boundary)
@@ -723,11 +723,16 @@ namespace ngcomp
     { return SymbolTable<shared_ptr<DifferentialOperator>>(); } 
 
     /// returns function-evaluator
+    [[deprecated("Use GetIntegrator(VorB) instead of GetIntegrator(bool)!")]]    
     shared_ptr<BilinearFormIntegrator> GetIntegrator (bool vb = VOL) const
     {
       return integrator[vb];
     }
 
+    shared_ptr<BilinearFormIntegrator> GetIntegrator (VorB vb = VOL) const
+    {
+      return integrator[vb];
+    }
 
     /// special elements for hacks (used for contact, periodic-boundary-penalty-constraints, ...
     Array<SpecialElement*> specialelements;

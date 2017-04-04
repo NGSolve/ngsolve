@@ -1119,7 +1119,7 @@ namespace ngcomp
     gridfunctions.Set (name, gf);
     todo.Append(gf);
 
-    if (addcf && (gf->GetFESpace()->GetIntegrator()||gf->GetFESpace()->GetEvaluator()) )
+    if (addcf && (gf->GetFESpace()->GetIntegrator(VOL)||gf->GetFESpace()->GetEvaluator()) )
       AddCoefficientFunction (name, make_shared<GridFunctionCoefficientFunction>(gf));
     
     if (addcf && gf->GetFESpace()->GetFluxEvaluator())
