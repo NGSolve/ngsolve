@@ -789,7 +789,7 @@ namespace ngcomp
       }
       case BND:
 	{
-	  dnums.SetSize(0);
+	  dnums.SetSize0();
 	  
 	  int fnum = 0;
 	  if (ma->GetDimension() == 2)
