@@ -923,8 +923,9 @@ namespace ngcomp
       } 
     if(ei.VB()==VOL)
       {
-	ArrayMem<int,6> fanums;
-	ma->GetElFacets (ei, fanums);
+	// ArrayMem<int,6> fanums;
+	// ma->GetElFacets (ei, fanums);
+        auto fanums = ma->GetElFacets(ei);
 	if (highest_order_dc)
 	  {
 	    if (ma->GetDimension() == 2)
@@ -990,26 +991,18 @@ namespace ngcomp
 	if (!DefinedOn (ei))
           dnums.SetSize0();
       }
-    if(ei.VB()==BND)
+    else if (ei.VB()==BND)
       {
-	Array<int> fanums;
-	ma->GetElFacets (ei, fanums);
+        size_t fanum = ma->GetElFacets(ei)[0];
 	// lowest-order
-	for(int i=0;i<fanums.Size();i++) 
-	  dnums.Append (fanums[i]);
+        dnums += fanum;
 	
 	// high order
-	for (int i = 0; i < fanums.Size(); i++)
-	  dnums += IntRange (first_facet_dof[fanums[i]],
-			     first_facet_dof[fanums[i]+1]);
-	
+        dnums += GetFacetDofs (fanum);
+        
 	if (!DefinedOn (ei))
 	  dnums = -1;
       }
-    if(ei.VB()==BBND)
-	dnums.SetSize(0);
-
-    // cout << "ndof = " << dnums.Size() << endl;
   }
 
 
