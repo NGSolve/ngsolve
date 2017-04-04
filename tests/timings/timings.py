@@ -22,8 +22,7 @@ results['version'] = -1
 
 build = {}
 build['compiler'] = "@CMAKE_CXX_COMPILER_ID@-@CMAKE_CXX_COMPILER_VERSION@"
-build['native_arch'] = "@USE_NATIVE_ARCH@" == "ON"
-build['fast-math'] = "-ffast-math" in "@CMAKE_CXX_FLAGS@"
+build['cxx_flags'] = "@CMAKE_CXX_FLAGS@".strip()
 build['hostname'] = socket.gethostname()
 build['ncpus'] = multiprocessing.cpu_count()
 

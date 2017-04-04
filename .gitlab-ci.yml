@@ -259,9 +259,9 @@ mac_test:
     CMAKE_C_COMPILER: "gcc-5"
     CMAKE_CXX_COMPILER: "g++-5"
 
-.t_fast_math: &t_fast_math
+.t_omit_frame_pointer: &t_omit_frame_pointer
   before_script:
-    - export CMAKE_FLAGS="-ffast-math"
+    - export CMAKE_FLAGS="-fomit-frame-pointer"
 
 .t_timings: &t_timings
   stage: timings
@@ -282,7 +282,7 @@ mac_test:
         -DUSE_NATIVE_ARCH=ON
         -DCMAKE_C_COMPILER=$CMAKE_C_COMPILER
         -DCMAKE_CXX_COMPILER=$CMAKE_CXX_COMPILER
-        -DCMAKE_CXX_FLAGS="$CMAKE_FLAGS"
+        -DCMAKE_CXX_FLAGS="-ffast-math $CMAKE_FLAGS"
         -DUSE_MKL=ON
         -DMKL_ROOT=/opt/intel/mkl
         -DCMAKE_BUILD_TYPE=Release
@@ -314,23 +314,8 @@ clang_timings:
   <<: *t_clang
   <<: *t_timings
 
-gcc5_fm_timings:
-  <<: *t_fast_math
-  <<: *t_gcc5
-  <<: *t_timings
-
-gcc6_fm_timings:
-  <<: *t_fast_math
-  <<: *t_gcc6
-  <<: *t_timings
-
-gcc7_fm_timings:
-  <<: *t_fast_math
-  <<: *t_gcc7
-  <<: *t_timings
-
-clang_fm_timings:
-  <<: *t_fast_math
+clang_no_fp_timings:
+  <<: *t_omit_frame_pointer
   <<: *t_clang
   <<: *t_timings
 
@@ -421,7 +406,7 @@ deploy_nightly:
     - linux
     - docker
   script:
-    - /home/gitlab-runner/deploy/deploy_nightly.sh $CI_PIPELINE_ID
+    - if [ -n "${RUN_DEPLOY}" ]; then /home/gitlab-runner/deploy/deploy_nightly.sh $CI_PIPELINE_ID; fi
   only:
     - triggers
   except:
