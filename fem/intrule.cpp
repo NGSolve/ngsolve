@@ -2166,7 +2166,10 @@ namespace ngfem
     // ************************************
 
     for (int p = 0; p < 20; p++)
-      GenerateIntegrationRule (ET_SEGM, p);
+      {
+        GenerateIntegrationRule (ET_SEGM, p);
+        SIMD_SelectIntegrationRule (ET_SEGM, p);
+      }
 
     // ************************************
     // ** Triangle integration rules
@@ -2259,6 +2262,8 @@ namespace ngfem
 
     for (int p = 7; p <= 10; p++)
       GenerateIntegrationRule (ET_TRIG, p);
+    for (int p = 0; p <= 10; p++)    
+      SIMD_SelectIntegrationRule (ET_TRIG, p);
 
 
     // ************************************
@@ -2266,8 +2271,10 @@ namespace ngfem
     // ************************************
     
     for (int p = 0; p <= 10; p++)
-      GenerateIntegrationRule (ET_QUAD, p);
-
+      {
+        GenerateIntegrationRule (ET_QUAD, p);
+        SIMD_SelectIntegrationRule (ET_QUAD, p);
+      }
 
 
     // ************************************
@@ -2337,16 +2344,21 @@ namespace ngfem
     tetrules[5] = new IntegrationRule (14, qf_tetra_order5_points, qf_tetra_order5_weights);    
 
 
-
     for (int p = 6; p <= 10; p++)
       GenerateIntegrationRule (ET_TET, p);
+    for (int p = 0; p <= 10; p++)
+      SIMD_SelectIntegrationRule (ET_TET, p);
+    
 
     // ************************************
     // ** Prismatic integration rules
     // ************************************
 
     for (int p = 0; p <= 6; p++)
-      GenerateIntegrationRule (ET_PRISM, p);
+      {
+        GenerateIntegrationRule (ET_PRISM, p);
+        SIMD_SelectIntegrationRule (ET_PRISM, p);
+      }
 
 
     // ************************************
@@ -2354,15 +2366,21 @@ namespace ngfem
     // ************************************
 
     for (int p = 0; p <= 6; p++)
-      GenerateIntegrationRule (ET_PYRAMID, p);
-
-
+      {
+        GenerateIntegrationRule (ET_PYRAMID, p);
+        SIMD_SelectIntegrationRule (ET_PYRAMID, p);
+      }
+    
     // ************************************
     // ** Hexaeder integration rules
     // ************************************
 
     for (int p = 0; p <= 6; p++)
-      GenerateIntegrationRule (ET_HEX, p);
+      {
+        GenerateIntegrationRule (ET_HEX, p);
+        SIMD_SelectIntegrationRule (ET_HEX, p);
+      }
+    
 
 
 
