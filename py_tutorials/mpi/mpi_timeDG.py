@@ -53,11 +53,11 @@ with TaskManager():
         t += tau
         Redraw(blocking=True)
 
-        # u.vec.Cumulate()
-        # if count%vtk_interval==0:
-        #     vtk = VTKOutput(ma=mesh,coefs=[u],names=["sol"],filename="vtkout_p"+str(rank)+"_n"+str(int(count/vtk_interval)),subdivision=2)
-        #     vtk.Do()
-        # count = count+1;
+        #u.vec.Cumulate()
+        if count%vtk_interval==0:
+            vtk = VTKOutput(ma=mesh,coefs=[u],names=["sol"],filename="vtkout_p"+str(rank)+"_n"+str(int(count/vtk_interval)),subdivision=2)
+            vtk.Do()
+        count = count+1;
         # if rank==0:
         #     input("A??")
         MPIManager.Barrier()
