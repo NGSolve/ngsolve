@@ -517,11 +517,11 @@ namespace ngcomp
   void L2HighOrderFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
     dnums.SetSize0();
-    if (!DefinedOn (ei) || ei.VB()!=VOL) return;
+    if (!DefinedOn (ei) || ei.VB() != VOL) return;
 
     auto eldofs = GetElementDofs(ei.Nr());
-    int size = eldofs.Size();
-    int base = all_dofs_together ? 0 : 1;
+    size_t size = eldofs.Size();
+    size_t base = all_dofs_together ? 0 : 1;
     size += base;
     dnums.SetSize(size);
     if (!all_dofs_together) dnums[0] = ei.Nr();

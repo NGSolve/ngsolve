@@ -24,8 +24,8 @@ namespace ngcomp
     // order of curl-fields 
     int curl_order; 
 
-    Array<int> first_facet_dof;
-    Array<int> first_inner_dof;
+    Array<DofId> first_facet_dof;
+    Array<DofId> first_inner_dof;
 
     /// relative order to mesh-order
     int rel_order; 
@@ -136,14 +136,14 @@ namespace ngcomp
     virtual int GetRelOrder() const override { return rel_order; } 
 
 
-    IntRange GetFacetDofs (size_t nr) const
+    auto GetFacetDofs (size_t nr) const
     {
-      return IntRange (first_facet_dof[nr], first_facet_dof[nr+1]);
+      return Range (first_facet_dof[nr], first_facet_dof[nr+1]);
     }
 
-    IntRange GetElementDofs (size_t nr) const
+    auto GetElementDofs (size_t nr) const
     {
-      return IntRange (first_inner_dof[nr], first_inner_dof[nr+1]);
+      return Range (first_inner_dof[nr], first_inner_dof[nr+1]);
     }
 
   };
