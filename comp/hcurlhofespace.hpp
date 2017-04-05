@@ -23,9 +23,9 @@ namespace ngcomp
 
     // Level
     int level;
-    Array<int> first_edge_dof;
-    Array<int> first_inner_dof;
-    Array<int> first_face_dof; 
+    Array<DofId> first_edge_dof;
+    Array<DofId> first_inner_dof;
+    Array<DofId> first_face_dof; 
 
     int fn; 
     /// relative order to mesh-order
@@ -157,19 +157,19 @@ namespace ngcomp
       else return 0; 
     }
 
-    IntRange GetEdgeDofs (int nr) const
+    auto GetEdgeDofs (size_t nr) const
     {
-      return IntRange (first_edge_dof[nr], first_edge_dof[nr+1]);
+      return Range (first_edge_dof[nr], first_edge_dof[nr+1]);
     }
 
-    IntRange GetFaceDofs (int nr) const
+    auto GetFaceDofs (size_t nr) const
     {
-      return IntRange (first_face_dof[nr], first_face_dof[nr+1]);
+      return Range (first_face_dof[nr], first_face_dof[nr+1]);
     }
 
-    IntRange GetElementDofs (int nr) const
+    auto GetElementDofs (size_t nr) const
     {
-      return IntRange (first_inner_dof[nr], first_inner_dof[nr+1]);
+      return Range (first_inner_dof[nr], first_inner_dof[nr+1]);
     }
   };
 

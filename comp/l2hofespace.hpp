@@ -30,7 +30,7 @@ namespace ngcomp
     // order of elements 
     Array<INT<3> > order_inner;
     // table of first element dofnumber 
-    Array<int> first_element_dof;
+    Array<DofId> first_element_dof;
     bool all_dofs_together;
   public:
 
@@ -84,10 +84,9 @@ namespace ngcomp
     virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const override;
 
 
-    IntRange GetElementDofs (int nr) const
+    auto GetElementDofs (size_t nr) const
     {
-      return IntRange (first_element_dof[nr], 
-                       first_element_dof[nr+1]);
+      return Range (first_element_dof[nr], first_element_dof[nr+1]);
     }
 
     virtual void SolveM (CoefficientFunction & rho, BaseVector & vec,

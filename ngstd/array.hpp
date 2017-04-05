@@ -90,8 +90,8 @@ namespace ngstd
     INLINE size_t Size() const { return ar.Size(); }
     INLINE auto operator[] (size_t i) { return ar[i]; }
     INLINE auto operator[] (size_t i) const { return ar[i]; }
-    INLINE AOWrapperIterator<AOWrapper> begin () { return AOWrapperIterator<AOWrapper> (*this, 0); }
-    INLINE AOWrapperIterator<AOWrapper> end () { return AOWrapperIterator<AOWrapper> (*this, Size()); }
+    INLINE AOWrapperIterator<AOWrapper> begin () const { return AOWrapperIterator<AOWrapper> (*this, 0); }
+    INLINE AOWrapperIterator<AOWrapper> end () const { return AOWrapperIterator<AOWrapper> (*this, Size()); }
   };
 
   template <typename T>
@@ -821,8 +821,12 @@ namespace ngstd
       size_t newsize = a2.Spec().Size();
       SetSize0 ();      
       SetSize (newsize);
-      for (size_t i = 0; i < newsize; i++)
-        (*this)[i] = a2.Spec()[i];
+      // for (size_t i = 0; i < newsize; i++)
+      // (*this)[i] = a2.Spec()[i];
+      size_t i = 0;
+      for (auto val : a2.Spec())
+        (*this)[i++] = val;
+      
       return *this;
     }
 
@@ -979,8 +983,14 @@ namespace ngstd
     ArrayMem & operator= (const BaseArrayObject<T2> & a2)
     {
       this->SetSize (a2.Spec().Size());
+      /*
       for (int i = 0; i < size; i++)
         (*this)[i] = a2.Spec()[i];
+      */
+      size_t i = 0;
+      for (auto val : a2.Spec())
+        (*this)[i++] = val;
+      
       return *this;
     }
 
@@ -1047,6 +1057,7 @@ namespace ngstd
   */
   
 
+  /*
   template <typename T, typename T2>
   inline Array<T> & operator+= (Array<T> & array, const BaseArrayObject<T2> & a2)
   {
@@ -1060,7 +1071,21 @@ namespace ngstd
 
     return array;
   }
+  */
+  
+  template <typename T, typename T2>
+  inline Array<T> & operator+= (Array<T> & array, const BaseArrayObject<T2> & a2)
+  {
+    auto oldsize = array.Size();
+    auto s = a2.Spec().Size();
 
+    array.SetSize (oldsize+s);
+
+    for (auto val : a2.Spec())
+      array[oldsize++] = val;
+    
+    return array;
+  }
 
 
 
