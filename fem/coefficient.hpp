@@ -508,10 +508,12 @@ namespace ngfem
   
 
   /// The coefficient is constant in every sub-domain
-  class NGS_DLL_HEADER DomainConstantCoefficientFunction : public CoefficientFunctionNoDerivative
+  class NGS_DLL_HEADER DomainConstantCoefficientFunction  
+    : public T_CoefficientFunction<DomainConstantCoefficientFunction, CoefficientFunctionNoDerivative>
   {
     ///
     Array<double> val;
+    typedef T_CoefficientFunction<DomainConstantCoefficientFunction, CoefficientFunctionNoDerivative> BASE;    
   public:
     ///
     DomainConstantCoefficientFunction (const Array<double> & aval);
@@ -526,7 +528,10 @@ namespace ngfem
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const;
 
     // virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const;
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const;
+    // virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const;
+
+    template <typename T>
+      void T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<T>> values) const;
     
     virtual double EvaluateConst () const { return val[0]; }
     double operator[] (int i) const { return val[i]; }

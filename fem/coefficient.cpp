@@ -250,7 +250,7 @@ namespace ngfem
   
   DomainConstantCoefficientFunction :: 
   DomainConstantCoefficientFunction (const Array<double> & aval)
-    : CoefficientFunctionNoDerivative(1, false), val(aval) { ; }
+    : BASE(1, false), val(aval) { ; }
   
   double DomainConstantCoefficientFunction :: Evaluate (const BaseMappedIntegrationPoint & ip) const
   {
@@ -266,12 +266,26 @@ namespace ngfem
     values = val[elind];
   }
 
-  
+  /*
   void DomainConstantCoefficientFunction :: Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const
   {
     int elind = ir[0].GetTransformation().GetElementIndex();
     CheckRange (elind);        
     values.AddSize(Dimension(), ir.Size()) = val[elind];
+  }
+  */
+  template <typename T>
+  void DomainConstantCoefficientFunction ::
+  T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<T>> values) const
+  {
+    int elind = ir[0].GetTransformation().GetElementIndex();
+    CheckRange (elind);        
+    // values.AddSize(Dimension(), ir.Size()) = val[elind];
+
+    size_t nv = ir.Size();    
+    __assume (nv > 0);
+    for (size_t i = 0; i < nv; i++)
+      values(0,i) = val[elind];
   }
   
 
