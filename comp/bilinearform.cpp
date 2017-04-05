@@ -3243,7 +3243,8 @@ namespace ngcomp
                     // throw Exception ("skeleton-form needs \"dgjumps\" : True flag for FESpace");
 
                     // facet-loop
-          if ( (facetwise_skeleton_parts[VOL].Size() > 0) ||
+
+	  if ( (facetwise_skeleton_parts[VOL].Size() > 0) ||
                (facetwise_skeleton_parts[BND].Size() > 0) )
             
             for (auto colfacets : fespace->FacetColoring())
@@ -3281,13 +3282,13 @@ namespace ngcomp
                        int el1 = elnums[0];
                        ma->GetElFacets(el1,fnums1);
                        int facnr1 = fnums1.Pos(facet);
-                       
+		       
                        ElementId ei1(VOL, el1);
                        // timerDG1.Stop();
                        if(elnums.Size() < 2)
                          {
 #ifdef PARALLEL
-			   if( (ma->GetDistantProcs (Node(NT_FACET, facet)).Size() > 0) && (MyMPI_GetNTasks()>1) )
+			   if( (ma->GetDistantProcs (Node(StdNodeType(NT_FACET, ma->GetDimension()), facet)).Size() > 0) && (MyMPI_GetNTasks()>1) )
 			     continue;
 #endif
 			   facet2 = ma->GetPeriodicFacet(facet);
@@ -3303,7 +3304,6 @@ namespace ngcomp
                        if (elnums.Size()<2)
                          {
                            // RegionTimer reg(timerDGfacet);
-                           
                            ma->GetFacetSurfaceElements (facet, elnums);
                            int sel = elnums[0];
                            ElementId sei(BND, sel);
@@ -3332,7 +3332,6 @@ namespace ngcomp
                            
                            continue;
                          } // end if boundary facet
-                       
                        // timerDG2.Start();
                        // timerDG2a.Start();
                        int el2 = elnums[1];
@@ -3387,8 +3386,6 @@ namespace ngcomp
                  });
               }
           
-                    
-
           if (elementwise_skeleton_parts.Size())
             IterateElements 
               (*fespace, VOL, clh, 
@@ -3409,7 +3406,7 @@ namespace ngcomp
                        ma->GetFacetElements(fnums1[facnr1],elnums);
                        if (elnums.Size()<2) {
 #ifdef PARALLEL
-			 if( (ma->GetDistantProcs (Node(NT_FACET, fnums1[facnr1])).Size() > 0) && (MyMPI_GetNTasks()>1) )
+			 if( (ma->GetDistantProcs (Node(StdNodeType(NT_FACET, ma->GetDimension()), fnums1[facnr1])).Size() > 0) && (MyMPI_GetNTasks()>1) )
 			   continue;
 #endif
                          if(ma->GetPeriodicFacet(fnums1[facnr1])!=fnums1[facnr1])
@@ -3570,6 +3567,7 @@ namespace ngcomp
                });
         }
 
+	
 #ifdef PARALLEL
 	if( (MyMPI_GetNTasks()>1) &&
 	    (mpi_facet_parts.Size()) )
@@ -3601,7 +3599,7 @@ namespace ngcomp
 	      cnt = 0;
 	      for(auto facet:Range(ma->GetNFacets())) {
 		HeapReset hr(lh);
-		auto fdps = ma->GetDistantProcs(Node(NT_FACET, facet));
+		auto fdps = ma->GetDistantProcs(Node(StdNodeType(NT_FACET, ma->GetDimension()), facet));
 		//skip non-mpi facets
 		if (fdps.Size() == 0)
 		  continue;

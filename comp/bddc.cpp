@@ -230,8 +230,7 @@ namespace ngcomp
       FlatMatrix<SCAL> d = elmat.Rows(localintdofs).Cols(localintdofs) | lh;
       FlatMatrix<SCAL> het (sizew, sizei, lh);
       FlatMatrix<SCAL> he (sizei, sizew, lh);
-	  
-
+      
       if (sizei)
 	{      
 	  RegionTimer reg(timer3);
@@ -241,7 +240,6 @@ namespace ngcomp
             LapackInverse (d);
           else
             CalcInverse (d);
-
 	  if (sizew)
 	    {
 	      he = SCAL(0.0);
@@ -662,7 +660,7 @@ namespace ngcomp
     for (int i : Range(dnums))
       if (dnums[i] != -1 && freedofs->Test(dnums[i]))
         compress[cnt++] = i;
-
+    
     FlatArray<int> hdnums(used, lh);
     FlatMatrix<SCAL> helmat(used,used, lh);
     hdnums = dnums[compress];

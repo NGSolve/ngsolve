@@ -14,7 +14,7 @@ add_library(ngla ${NGS_LIB_TYPE}
         )
 
 if(NOT WIN32)
-    target_link_libraries(ngla ngbla ngstd ${NETGEN_PYTHON_LIBRARIES} ${LAPACK_LIBRARIES} ${MUMPS_LIBRARIES} ${UMFPACK_LIBRARIES} ${SCALAPACK_LIBRARY} ${MPI_Fortran_LIBRARIES} ${MPI_CXX_LIBRARIES})
+    target_link_libraries(ngla ngbla ngstd ${NETGEN_PYTHON_LIBRARIES} ${LAPACK_LIBRARIES} ${MUMPS_LIBRARIES} ${UMFPACK_LIBRARIES} ${SCALAPACK_LIBRARY} ${MPI_Fortran_LIBRARIES} ${MPI_CXX_LIBRARIES} libgfortran.so)
     install( TARGETS ngla ${ngs_install_dir} )
 endif(NOT WIN32)
 

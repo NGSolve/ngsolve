@@ -60,12 +60,16 @@ namespace ngfem
 
     /// order of internal shapes (3d only)
     Vec<N_CELL, INT<3,TORDER> > order_cell;
+    
+    bool nodalp2 = false;
 
   public:
 
     // using VertexOrientedFE<ET>::SetVertexNumbers;
     // using VertexOrientedFE<ET>::SetVertexNumber;
     // using VertexOrientedFE<ET>::GetVertexOrientedEdge;
+    
+    INLINE void SetNodalp2() { nodalp2 = true; }
     
     /// minimal constructor, orders will be set later
     INLINE H1HighOrderFE () { ; } 

@@ -6,10 +6,10 @@ rank = MPIManager.GetRank()
 print("my rank is ", rank)
 
 from netgen.geom2d import unit_square
-if rank==0:
-    mesh = unit_square.GenerateMesh(maxh=0.07)
-    mesh.Save("square.vol")
-MPIManager.Barrier()
+# if rank==0:
+#     mesh = unit_square.GenerateMesh(maxh=0.07)
+#     mesh.Save("square.vol")
+# MPIManager.Barrier()
 
 # solve the Poisson equation -Delta u = f
 # with Dirichlet boundary condition u = 0
