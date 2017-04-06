@@ -2503,6 +2503,45 @@ namespace ngla
 
 
 
+  template class SparseMatrixSymmetricTM<double>;
+  template class SparseMatrixSymmetricTM<Complex>;
+
+
+#if MAX_SYS_DIM >= 1
+  template class SparseMatrixSymmetricTM<Mat<1,1,double> >;
+  template class SparseMatrixSymmetricTM<Mat<1,1,Complex> >;
+#endif
+#if MAX_SYS_DIM >= 2
+  template class SparseMatrixSymmetricTM<Mat<2,2,double> >;
+  template class SparseMatrixSymmetricTM<Mat<2,2,Complex> >;
+#endif
+#if MAX_SYS_DIM >= 3
+  template class SparseMatrixSymmetricTM<Mat<3,3,double> >;
+  template class SparseMatrixSymmetricTM<Mat<3,3,Complex> >;
+#endif
+#if MAX_SYS_DIM >= 4
+  template class SparseMatrixSymmetricTM<Mat<4,4,double> >;
+  template class SparseMatrixSymmetricTM<Mat<4,4,Complex> >;
+#endif
+#if MAX_SYS_DIM >= 5
+  template class SparseMatrixSymmetricTM<Mat<5,5,double> >;
+  template class SparseMatrixSymmetricTM<Mat<5,5,Complex> >;
+#endif
+#if MAX_SYS_DIM >= 6
+  template class SparseMatrixSymmetricTM<Mat<6,6,double> >;
+  template class SparseMatrixSymmetricTM<Mat<6,6,Complex> >;
+#endif
+#if MAX_SYS_DIM >= 7
+  template class SparseMatrixSymmetricTM<Mat<7,7,double> >;
+  template class SparseMatrixSymmetricTM<Mat<7,7,Complex> >;
+#endif
+#if MAX_SYS_DIM >= 8
+  template class SparseMatrixSymmetricTM<Mat<8,8,double> >;
+  template class SparseMatrixSymmetricTM<Mat<8,8,Complex> >;
+#endif
+
+
+
 
 
 
