@@ -489,6 +489,8 @@ namespace ngcomp
 
   void MGPreconditioner :: Update ()
   {
+    static Timer t("MGPreconditioner::Update"); RegionTimer reg(t);
+    
     shared_ptr<BilinearForm> lo_bfa = bfa->GetLowOrderBilinearForm();
 
     INVERSETYPE invtype, loinvtype = default_inversetype;
@@ -507,6 +509,7 @@ namespace ngcomp
 
     if (bfa->GetLowOrderBilinearForm()) //  || ntasks > 1) not supported anymore
       {
+        static Timer t("MGPreconditioner::Update - fine precond"); RegionTimer reg(t);
 	delete tlp;
 
 	Smoother * fine_smoother = NULL;
