@@ -491,7 +491,7 @@ namespace ngcomp
     ///
     virtual void AddElementMatrix (FlatArray<int> dnums1,
                                    FlatArray<int> dnums2,
-                                   FlatMatrix<SCAL> elmat,
+                                   BareSliceMatrix<SCAL> elmat,
 				   ElementId id, 
 				   LocalHeap & lh) = 0;
 
@@ -560,7 +560,7 @@ namespace ngcomp
     typedef typename mat_traits<TM>::TSCAL TSCAL;
     typedef TV TV_COL;
     typedef SparseMatrix<TM,TV,TV> TMATRIX;
-    
+    TMATRIX * mymatrix;
   protected:
 
   public:
@@ -586,7 +586,7 @@ namespace ngcomp
     ///
     virtual void AddElementMatrix (FlatArray<int> dnums1,
 				   FlatArray<int> dnums2,
-				   FlatMatrix<TSCAL> elmat,
+				   BareSliceMatrix<TSCAL> elmat,
 				   ElementId id, 
 				   LocalHeap & lh);
 
@@ -606,7 +606,7 @@ namespace ngcomp
     typedef typename mat_traits<TM>::TSCAL TSCAL;
     typedef TV TV_COL;
     typedef SparseMatrixSymmetric<TM,TV> TMATRIX;
-    
+    TMATRIX * mymatrix;    
   protected:
     
 
@@ -622,7 +622,7 @@ namespace ngcomp
 
     virtual void AddElementMatrix (FlatArray<int> dnums1,
 				   FlatArray<int> dnums2,
-                                   FlatMatrix<TSCAL> elmat,
+                                   BareSliceMatrix<TSCAL> elmat,
 				   ElementId id, 
 				   LocalHeap & lh);
     /*
@@ -666,7 +666,7 @@ namespace ngcomp
     
     virtual void AddElementMatrix (FlatArray<int> dnums1,
 				   FlatArray<int> dnums2,
-                                   FlatMatrix<TSCAL> elmat,
+                                   BareSliceMatrix<TSCAL> elmat,
 				   ElementId id, 
 				   LocalHeap & lh)
     {
@@ -717,7 +717,7 @@ namespace ngcomp
 
     virtual void AddElementMatrix (FlatArray<int> dnums1,
 				   FlatArray<int> dnums2,
-				   FlatMatrix<TSCAL> elmat,
+				   BareSliceMatrix<TSCAL> elmat,
 				   ElementId id, 
 				   LocalHeap & lh);
 
@@ -910,7 +910,7 @@ namespace ngcomp
     
     virtual void AddElementMatrix (FlatArray<int> dnums1,
                                    FlatArray<int> dnums2,
-                                   FlatMatrix<SCAL> elmat,
+                                   BareSliceMatrix<SCAL> elmat,
                                    ElementId id, 
                                    LocalHeap & lh);    
   };
