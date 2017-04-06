@@ -459,7 +459,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
                 unsigned check = 0;
                 for (auto d : el.GetDofs())
-                  if (d != -1 && !IsAtomicDof(d)) check |= mask[d];
+                  if (d != -1) check |= mask[d];
 
                 if (check != UINT_MAX) // 0xFFFFFFFF)
                   {
@@ -474,9 +474,17 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
                     col[el.Nr()] = color;
                     if (color > maxcolor) maxcolor = color;
-		
-                    for (auto d : el.GetDofs())
-                      if (d != -1 && !IsAtomicDof(d)) mask[d] |= checkbit;
+
+                    if (HasAtomicDofs())
+                      {
+                        for (auto d : el.GetDofs())
+                          if (d != -1 && !IsAtomicDof(d)) mask[d] |= checkbit;
+                      }
+                    else
+                      {
+                        for (auto d : el.GetDofs())
+                          if (d != -1) mask[d] |= checkbit;
+                      }
                   }
               }
             
