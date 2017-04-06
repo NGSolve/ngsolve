@@ -1,8 +1,13 @@
+if(NOT BDIR)
+  set(BDIR ${CMAKE_CURRENT_BINARY_DIR})
+endif()
+
 find_package(Git REQUIRED)
-if(GIT_FOUND AND EXISTS ${SDIR}/.git)
-  execute_process(COMMAND git describe --tags --match "v[0-9]*" --long --dirty WORKING_DIRECTORY ${SDIR} OUTPUT_VARIABLE git_version_string)
+
+if(GIT_FOUND AND EXISTS ${CMAKE_CURRENT_LIST_DIR}/../.git)
+  execute_process(COMMAND git describe --tags --match "v[0-9]*" --long --dirty WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR} OUTPUT_VARIABLE git_version_string)
 else()
-  get_filename_component(git_version_string ${SDIR} NAME)
+  get_filename_component(git_version_string ${CMAKE_CURRENT_LIST_DIR}/.. NAME)
   string(REGEX REPLACE "^ngsolve_(.*)" "\\1" git_version_string "${git_version_string}")
 endif()
 

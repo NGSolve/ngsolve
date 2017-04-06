@@ -27,6 +27,8 @@ endif(NOT WIN32 AND NOT INTEL_MIC)
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_modules")
 set(NETGEN_DIR "" CACHE PATH "Path to Netgen, leave empty to build Netgen automatically")
 
+include (${CMAKE_CURRENT_LIST_DIR}/cmake/generate_version_file.cmake)
+
 if (USE_SUPERBUILD)
   project (NGSuite)
   # execute the superbuild (this script will be invoked again without the
@@ -54,11 +56,10 @@ install (FILES ${CMAKE_CURRENT_BINARY_DIR}/config.h DESTINATION include COMPONEN
 
 add_custom_target(generate_version_file
   cmake
-    -DSDIR=${CMAKE_CURRENT_SOURCE_DIR}
     -DBDIR=${CMAKE_CURRENT_BINARY_DIR}
-    -P cmake/generate_version_file.cmake
-    WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+    -P ${CMAKE_CURRENT_LIST_DIR}/cmake/generate_version_file.cmake
     )
+
 
 #######################################################################
 
