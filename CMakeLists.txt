@@ -27,33 +27,6 @@ endif(NOT WIN32 AND NOT INTEL_MIC)
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_modules")
 set(NETGEN_DIR "" CACHE PATH "Path to Netgen, leave empty to build Netgen automatically")
 
-find_program(GIT_FOUND git)
-if(GIT_FOUND AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
-    execute_process(COMMAND git describe --tags --long --dirty WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} OUTPUT_VARIABLE git_version_string)
-else()
-  get_filename_component(git_version_string ${CMAKE_CURRENT_SOURCE_DIR} NAME)
-  string(REGEX REPLACE "^ngsolve_(.*)" "\\1" git_version_string "${git_version_string}")
-endif()
-
-string(REGEX REPLACE "^v([0-9]+)\\..*" "\\1" NGSOLVE_VERSION_MAJOR "${git_version_string}")
-string(REGEX REPLACE "^v[0-9]+\\.([0-9]+).*" "\\1" NGSOLVE_VERSION_MINOR "${git_version_string}")
-string(REGEX REPLACE "^v[0-9]+\\.[0-9]+\\.([0-9]+).*" "\\1" NGSOLVE_VERSION_PATCH "${git_version_string}")
-string(REGEX REPLACE "^v[0-9]+\\.[0-9]+\\.[0-9]+\\-([0-9]+).*" "\\1" NGSOLVE_VERSION_TWEAK "${git_version_string}")
-string(REGEX REPLACE "^v[0-9]+\\.[0-9]+\\.[0-9]+\\-[0-9]+\\-([0-9a-z]+).*" "\\1" NGSOLVE_VERSION_HASH "${git_version_string}")
-
-set(NGSOLVE_VERSION_SHORT ${NGSOLVE_VERSION_MAJOR}.${NGSOLVE_VERSION_MINOR}.${NGSOLVE_VERSION_PATCH})
-set(NGSOLVE_VERSION_LONG ${NGSOLVE_VERSION_SHORT}-${NGSOLVE_VERSION_TWEAK}-${NGSOLVE_VERSION_HASH})
-
-if(NGSOLVE_VERSION_TWEAK)
-  # no release version - nightly build
-  set(NGSOLVE_VERSION ${NGSOLVE_VERSION_LONG})
-else()
-  # TWEAK is 0 -> current version has a tag assigned
-  set(NGSOLVE_VERSION ${NGSOLVE_VERSION_SHORT})
-endif()
-
-set(NGSOLVE_VERSION_LONG ${NGSOLVE_VERSION_SHORT}-${NGSOLVE_VERSION_TWEAK}-${NGSOLVE_VERSION_HASH})
-
 if (USE_SUPERBUILD)
   project (NGSuite)
   # execute the superbuild (this script will be invoked again without the
@@ -79,11 +52,17 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake ${CMAKE_CURRENT_BINARY
 
 install (FILES ${CMAKE_CURRENT_BINARY_DIR}/config.h DESTINATION include COMPONENT ngsolve_devel )
 
+add_custom_target(generate_version_file
+  cmake
+    -DSDIR=${CMAKE_CURRENT_SOURCE_DIR}
+    -DBDIR=${CMAKE_CURRENT_BINARY_DIR}
+    -P cmake/generate_version_file.cmake
+    WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+    )
 
 #######################################################################
 
 add_definitions(-DHAVE_NETGEN_SOURCES)
-add_definitions(-DNGSOLVE_VERSION="${NGSOLVE_VERSION}")
 #######################################################################
 if(USE_CCACHE)
   find_program(CCACHE_FOUND NAMES ccache ccache.bat)
