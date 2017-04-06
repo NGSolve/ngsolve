@@ -3943,10 +3943,9 @@ namespace ngcomp
 
     MatrixGraph * graph = this->GetGraph (this->ma->GetNLevels()-1, false);
 
-    // shared_ptr<BaseMatrix> mat = make_shared<SparseMatrix<TM,TV,TV>> (*graph, 1);
-    // if (this->spd) spmat->SetSPD();
-
     auto spmat = make_shared<SparseMatrix<TM,TV,TV>> (*graph, 1);
+    mymatrix = spmat.get();
+    
     if (this->spd) spmat->SetSPD();
     shared_ptr<BaseMatrix> mat = spmat;
 
@@ -3961,13 +3960,7 @@ namespace ngcomp
 
     if (!this->multilevel || this->low_order_bilinear_form)
       for (int i = 0; i < this->mats.Size()-1; i++)
-        {
-          /*
-          delete this->mats[i];
-          this->mats[i] = 0;
-          */
-          this->mats[i].reset();
-        }
+        this->mats[i].reset();
   }
 
 
@@ -4038,10 +4031,11 @@ namespace ngcomp
   void T_BilinearForm<TM,TV>::
   AddElementMatrix (FlatArray<int> dnums1,
                     FlatArray<int> dnums2,
-                    FlatMatrix<TSCAL> elmat,
+                    BareSliceMatrix<TSCAL> elmat,
                     ElementId id,
                     LocalHeap & lh) 
   {
+    /*
     BaseMatrix * hmat = this->mats.Last().get();
     
 #ifdef PARALLEL
@@ -4050,8 +4044,9 @@ namespace ngcomp
 #endif   
 
     TMATRIX & mat = dynamic_cast<TMATRIX&> (*hmat);
-
     mat.AddElementMatrix (dnums1, dnums2, elmat, this->fespace->HasAtomicDofs());
+    */
+    mymatrix -> TMATRIX::AddElementMatrix (dnums1, dnums2, elmat, this->fespace->HasAtomicDofs());
   }
 
 
@@ -4159,6 +4154,8 @@ namespace ngcomp
     MatrixGraph * graph = this->GetGraph (this->ma->GetNLevels()-1, true);
 
     auto spmat = make_shared<SparseMatrixSymmetric<TM,TV>> (*graph, 1);
+    mymatrix = spmat.get();
+    
     if (this->spd) spmat->SetSPD();
     shared_ptr<BaseMatrix> mat = spmat;
 
@@ -4168,18 +4165,11 @@ namespace ngcomp
 #endif
     this->mats.Append (mat);
 
-
     delete graph;
 
     if (!this->multilevel || this->low_order_bilinear_form)
       for (int i = 0; i < this->mats.Size()-1; i++)
-        {
-          /*
-          delete this->mats[i];
-          this->mats[i] = 0;
-          */
-          this->mats[i].reset();
-        }
+        this->mats[i].reset();
   }
 
 
@@ -4219,10 +4209,11 @@ namespace ngcomp
   void T_BilinearFormSymmetric<TM,TV> :: 
   AddElementMatrix (FlatArray<int> dnums1,
                     FlatArray<int> dnums2,
-                    FlatMatrix<TSCAL> elmat,
+                    BareSliceMatrix<TSCAL> elmat,
                     ElementId id, 
                     LocalHeap & lh) 
   {
+    /*
     BaseMatrix * hmat = this->mats.Last().get();
 
 #ifdef PARALLEL
@@ -4233,6 +4224,8 @@ namespace ngcomp
     TMATRIX & mat = dynamic_cast<TMATRIX&> (*hmat);
 
     mat.AddElementMatrix (dnums1, elmat, this->fespace->HasAtomicDofs());
+    */
+    mymatrix -> TMATRIX::AddElementMatrix (dnums1, elmat, this->fespace->HasAtomicDofs());
   }
 
 
@@ -4414,7 +4407,7 @@ namespace ngcomp
   void T_BilinearFormDiagonal<TM> :: 
   AddElementMatrix (FlatArray<int> dnums1,
                     FlatArray<int> dnums2,
-                    FlatMatrix<TSCAL> elmat,
+                    BareSliceMatrix<TSCAL> elmat,
                     ElementId id, 
                     LocalHeap & lh) 
   {
@@ -4439,7 +4432,7 @@ namespace ngcomp
   template <> void T_BilinearFormDiagonal<double>::
   AddElementMatrix (FlatArray<int> dnums1,
                     FlatArray<int> dnums2,
-                    FlatMatrix<double> elmat,
+                    BareSliceMatrix<double> elmat,
                     ElementId id, 
                     LocalHeap & lh) 
   {
@@ -4457,7 +4450,7 @@ namespace ngcomp
   template <> void T_BilinearFormDiagonal<Complex>::
   AddElementMatrix (FlatArray<int> dnums1,
                     FlatArray<int> dnums2,
-                    FlatMatrix<Complex> elmat,
+                    BareSliceMatrix<Complex> elmat,
                     ElementId id, 
                     LocalHeap & lh) 
   {
@@ -5082,7 +5075,7 @@ namespace ngcomp
   void ElementByElement_BilinearForm<SCAL> :: 
   AddElementMatrix (FlatArray<int> dnums1,
                     FlatArray<int> dnums2,
-                    FlatMatrix<SCAL> elmat,
+                    BareSliceMatrix<SCAL> elmat,
                     ElementId id,
                     LocalHeap & lh)
   {

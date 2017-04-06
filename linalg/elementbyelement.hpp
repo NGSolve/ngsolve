@@ -53,9 +53,9 @@ namespace ngla
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const;
 
     void AddElementMatrix (int elnr,
-                           const FlatArray<int> & dnums1,
-			   const FlatArray<int> & dnums2,
-			   const FlatMatrix<SCAL> & elmat);
+                           FlatArray<int> dnums1,
+                           FlatArray<int> dnums2,
+                           BareSliceMatrix<SCAL> elmat);
 			   
     void AddCloneElementMatrix(int elnr,
                            const FlatArray<int> & dnums1,

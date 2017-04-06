@@ -1008,13 +1008,13 @@ namespace ngla
   template <class TM>
   void SparseMatrixTM<TM> ::
   AddElementMatrix(FlatArray<int> dnums1, FlatArray<int> dnums2, 
-                   FlatMatrix<TSCAL> elmat1, bool use_atomic)
+                   BareSliceMatrix<TSCAL> elmat1, bool use_atomic)
   {
     ArrayMem<int, 50> map(dnums2.Size());
     for (int i = 0; i < map.Size(); i++) map[i] = i;
     QuickSortI (dnums2, map);
 
-    Scalar2ElemMatrix<TM, TSCAL> elmat (elmat1);
+    Scalar2ElemMatrix<TM, TSCAL> elmat (elmat1.AddSize(dnums1.Size(), dnums2.Size()));
 
     for (int i = 0; i < dnums1.Size(); i++)
       if (dnums1[i] != -1)
@@ -1594,7 +1594,7 @@ namespace ngla
 
   template <class TM>
   void SparseMatrixSymmetricTM<TM> ::
-  AddElementMatrix(FlatArray<int> dnums, FlatMatrix<TSCAL> elmat1, bool use_atomic)
+  AddElementMatrix(FlatArray<int> dnums, BareSliceMatrix<TSCAL> elmat1, bool use_atomic)
   {
     // static Timer timer ("SparseMatrixSymmetric::AddElementMatrix", 2);
     // RegionTimer reg (timer);
@@ -1605,7 +1605,7 @@ namespace ngla
     for (int i = 0; i < dnums.Size(); i++) map[i] = i;
     QuickSortI (dnums, map);
 
-    Scalar2ElemMatrix<TM, TSCAL> elmat (elmat1);
+    Scalar2ElemMatrix<TM, TSCAL> elmat (elmat1.AddSize(dnums.Size(), dnums.Size()));
 
     int first_used = 0;
     while (first_used < dnums.Size() && dnums[map[first_used]] == -1) first_used++;

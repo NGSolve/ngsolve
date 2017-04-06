@@ -1842,17 +1842,17 @@ namespace ngbla
   class Scalar2ElemMatrix 
   {
   public:
-    const FlatMatrix<TSCAL> mat;
-    Scalar2ElemMatrix (const FlatMatrix<TSCAL> amat) : mat(amat) { ; }
+    const SliceMatrix<TSCAL> mat;
+    Scalar2ElemMatrix (const SliceMatrix<TSCAL> amat) : mat(amat) { ; }
 
     enum { H = mat_traits<TM>::HEIGHT };
     enum { W = mat_traits<TM>::WIDTH };
 
-    TM operator() (int i, int j) const
+    TM operator() (size_t i, size_t j) const
     {
       TM ret;
-      for (int k = 0; k < H; k++)
-	for (int l = 0; l < W; l++)
+      for (size_t k = 0; k < H; k++)
+	for (size_t l = 0; l < W; l++)
 	  Access(ret, k,l) = mat(i*H+k, j*W+l);
       return ret;
     }
