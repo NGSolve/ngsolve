@@ -341,7 +341,8 @@ namespace ngla
 		      shared_ptr<Table<int>> ablocktable)
     : BaseBlockJacobiPrecond(ablocktable), mat(amat), 
       invdiag(ablocktable->Size())
-  { 
+  {
+    static Timer t("BlockJacobiPrecond ctor"); RegionTimer reg(t);
     cout << "BlockJacobi Preconditioner, constructor called, #blocks = " << blocktable->Size() << endl;
 
 
@@ -400,9 +401,17 @@ namespace ngla
 
 
     atomic<int> cnt(0);
-    
+    SharedLoop2 sl(blocktable->Size());
+
+    /*
     ParallelFor 
       (Range(*blocktable), [&] (int i)
+    */
+
+    ParallelJob
+      ([&] (const TaskInfo & ti)
+       {
+         for (int i : sl)
        {
          
 #ifndef __MIC__
@@ -432,7 +441,8 @@ namespace ngla
 	    blockmat(j,k) = mat((*blocktable)[i][j], (*blocktable)[i][k]);
 
 	CalcInverse (blockmat);
-       }, TasksPerThread(10));
+        // }, TasksPerThread(10));
+       } } );
 
     *testout << "block coloring";
     
@@ -819,7 +829,8 @@ namespace ngla
   BlockJacobiPrecondSymmetric (const SparseMatrixSymmetric<TM,TV> & amat, 
 			       shared_ptr<Table<int>> ablocktable)
     : BaseBlockJacobiPrecond(ablocktable), mat(amat)
-  { 
+  {
+    static Timer t("BlockJacobiPrecondSymmetric ctor"); RegionTimer reg(t);    
     cout << "symmetric BlockJacobi Preconditioner 2, constructor called, #blocks = " << blocktable->Size() << endl;
 
     lowmem = false;
