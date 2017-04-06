@@ -13,6 +13,7 @@ if(NOT WIN32)
 endif(NOT WIN32)
 
 add_library( ngstd ${NGS_LIB_TYPE} ${ngstd_sources} )
+add_dependencies( ngstd generate_version_file )
 
 if(NOT WIN32)
     target_link_libraries(ngstd ${MPI_CXX_LIBRARIES} ${NETGEN_PYTHON_LIBRARIES} ${NUMA_LIB})

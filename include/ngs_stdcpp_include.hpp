@@ -2,15 +2,6 @@
 #include <config.h>
 #endif
 
-#ifndef VERSION
-#define VERSION NGSOLVE_VERSION
-#endif
-
-#define NGS_VERSION 620
-
-
-
-
 
 #ifdef WIN32
 
