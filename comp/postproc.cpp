@@ -524,16 +524,21 @@ namespace ngcomp
     u.GetVector().Cumulate(); 	 
 #endif
 
-    FlatVector<SCAL> fluxi(dim, clh);
-    Array<int> dnums(1);
-    for (int i = 0; i < cnti.Size(); i++)
-      if (cnti[i])
-	{
-	  dnums[0] = i;
-	  u.GetElementVector (dnums, fluxi);
-	  fluxi /= double (cnti[i]);
-	  u.SetElementVector (dnums, fluxi);
-	}
+    ParallelForRange
+      (cnti.Size(), [&] (IntRange r)
+       {
+         VectorMem<10,SCAL> fluxi(dim);
+         ArrayMem<int,1> dnums(1);
+         // for (int i = 0; i < cnti.Size(); i++)
+         for (auto i : r)
+           if (cnti[i])
+             {
+               dnums[0] = i;
+               u.GetElementVector (dnums, fluxi);
+               fluxi /= double (cnti[i]);
+               u.SetElementVector (dnums, fluxi);
+             }
+       });
     
     ma->PopStatus ();
   }

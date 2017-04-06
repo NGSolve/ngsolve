@@ -937,29 +937,35 @@ namespace ngcomp
 
 	  case 4: // VE + F + I
 		
-	    if (creator.GetMode() == 1)
+            if (creator.GetMode() == 1)
               {
                 cout << " VE + F + I " << endl;
                 creator.SetSize(nv+nfa+ni);
                 break;
               }
-
-	    for (int i = 0; i < nv; i++)
-	      creator.Add(i, i);
+            
+            // for (int i = 0; i < nv; i++)
+            ParallelFor (nv, [&] (size_t i)
+              {
+                creator.Add(i, i);
+              });
 		
-	    // for (int i = 0; i < ned; i++)
+            // for (int i = 0; i < ned; i++)
             ParallelFor (ned, [&] (size_t i)
-	      {
-		Ng_Node<1> edge = ma->GetNode<1> (i);
-		for (int k = 0; k < 2; k++)
-		  creator.Add (edge.vertices[k], GetEdgeDofs(i));
-	      });
+              {
+                Ng_Node<1> edge = ma->GetNode<1> (i);
+                for (int k = 0; k < 2; k++)
+                  creator.Add (edge.vertices[k], GetEdgeDofs(i));
+              });
 	    
-	    for (int i = 0; i < nfa; i++)
-	      creator.Add(nv+i, GetFaceDofs(i));
+            for (int i = 0; i < nfa; i++)
+              creator.Add(nv+i, GetFaceDofs(i));
 	    
-	    for (int i = 0; i < ni; i++)
-	      creator.Add (nv+nfa+i, GetElementDofs(i));
+            // for (int i = 0; i < ni; i++)
+            ParallelFor (ni, [&] (size_t i)
+              {
+                creator.Add (nv+nfa+i, GetElementDofs(i));
+              });
 		
 	    break; 
 
