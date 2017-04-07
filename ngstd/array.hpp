@@ -329,11 +329,12 @@ namespace ngstd
   public:
 
     /// initialize array 
-    INLINE FlatArray () { ; } // size = 0; data = 0; }
+    INLINE FlatArray () = default;
+    // { ; } // size = 0; data = 0; }
 
     /// copy constructor allows size-type conversion 
-    INLINE FlatArray (const FlatArray<T> & a2)  
-      : size(a2.Size()), data(a2.data) { ; } 
+    INLINE FlatArray (const FlatArray<T> & a2) = default;
+    // : size(a2.Size()), data(a2.data) { ; } 
 
     /// provide size and memory
     INLINE FlatArray (size_t asize, T * adata) 
@@ -1183,8 +1184,8 @@ namespace ngstd
   {
     if (index.Size() <= 1) return;
 
-    int i = 0;
-    int j = index.Size()-1;
+    size_t i = 0;
+    size_t j = index.Size()-1;
 
     int midval = index[ (i+j)/2 ];
   
