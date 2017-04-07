@@ -751,7 +751,8 @@ namespace ngcomp
       return;
     
     dnums = ngel.Vertices();
-
+    if (fixed_order && order==1) return;
+        
     if (ma->GetDimension() >= 2)
       for (auto edge : ngel.Edges())
         dnums += GetEdgeDofs (edge);
