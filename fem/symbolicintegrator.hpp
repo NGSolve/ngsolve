@@ -473,7 +473,8 @@ public:
     VorB vb;
     bool element_boundary;
     Matrix<bool> nonzeros;    // do components interact ? 
-    Matrix<bool> nonzeros_proxies; // do proxies interact ? 
+    Matrix<bool> nonzeros_proxies; // do proxies interact ?
+    Matrix<bool> diagonal_proxies; // do proxies interact diagonally ? 
     bool elementwise_constant;
     mutable bool simd_evaluate;
     IntegrationRule ir;   // if non-empty use this integration-rule
