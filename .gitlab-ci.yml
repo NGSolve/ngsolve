@@ -244,6 +244,11 @@ mac_test:
     CMAKE_C_COMPILER: "clang"
     CMAKE_CXX_COMPILER: "clang++"
 
+.t_clang4: &t_clang4
+  variables:
+    CMAKE_C_COMPILER: "clang-4.0"
+    CMAKE_CXX_COMPILER: "clang++-4.0"
+
 .t_gcc7: &t_gcc7
   variables:
     CMAKE_C_COMPILER: "gcc-7"
@@ -317,6 +322,15 @@ clang_timings:
 clang_no_fp_timings:
   <<: *t_omit_frame_pointer
   <<: *t_clang
+  <<: *t_timings
+
+clang4_timings:
+  <<: *t_clang4
+  <<: *t_timings
+
+clang4_no_fp_timings:
+  <<: *t_omit_frame_pointer
+  <<: *t_clang4
   <<: *t_timings
 
 ############################################
