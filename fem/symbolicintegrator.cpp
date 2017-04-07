@@ -752,6 +752,7 @@ namespace ngfem
         }
     
     nonzeros_proxies = Matrix<bool>(test_proxies.Size(), trial_proxies.Size());
+    diagonal_proxies = Matrix<bool>(test_proxies.Size(), trial_proxies.Size());
     for (int k1 : Range(trial_proxies))
       for (int l1 : Range(test_proxies))
         {
@@ -759,11 +760,17 @@ namespace ngfem
           auto proxy2 = test_proxies[l1];
           
           bool is_nonzero = false;
+          bool is_diagonal = proxy1->Dimension() == proxy2->Dimension();
+          
           for (int k = 0; k < proxy1->Dimension(); k++)
             for (int l = 0; l < proxy2->Dimension(); l++)
               if (nonzeros(test_cum[l1]+l, trial_cum[k1]+k))
-                is_nonzero = true;
+                {
+                  is_nonzero = true;
+                  if (k != l) is_diagonal = false;
+                }
           nonzeros_proxies(l1, k1) = is_nonzero;
+          diagonal_proxies(l1, k1) = is_diagonal;
         }
     
     cout << IM(3) << "nonzeros: " << endl << nonzeros << endl;
@@ -918,7 +925,6 @@ namespace ngfem
                     if (k != l) is_diagonal = false;
                     is_nonzero = true;
                   }
-
 
             if (is_nonzero)
               {
@@ -1084,18 +1090,6 @@ namespace ngfem
   {
     typedef double SCAL;
     typedef double SCAL_SHAPES;
-    // static Timer t("symbolicBFI - CalcElementMatrix", 2);
-    // static Timer tsimd("symbolicBFI - CalcElementMatrix - simd", 2);
-    // static Timer tstart("symboliBFI - CalcElementMatrix startup", 2);
-    // static Timer tstart1("symboliBFI - CalcElementMatrix startup 1", 2);
-    // static Timer tmain("symboliBFI - CalcElementMatrix main", 2);
-
-    // static Timer td("symboliBFI - CalcElementMatrix dmats", 2);
-    // static Timer tb("symboliBFI - CalcElementMatrix diffops", 2);
-    // static Timer tdb("symboliBFI - CalcElementMatrix D * B", 2);
-    // static Timer tlapack("symboliBFI - CalcElementMatrix lapack", 2);
-    
-    // tstart.Start();
     
     if (element_boundary)
       {
@@ -1115,12 +1109,8 @@ namespace ngfem
           }
       }
     
-    // RegionTimer reg(t);
-
-    // const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fel);
     bool is_mixedfe = typeid(fel) == typeid(const MixedFiniteElement&);
     const MixedFiniteElement * mixedfe = static_cast<const MixedFiniteElement*> (&fel);
-    // if (is_mixedfe != ( mixedfe != nullptr) ) cout << "different" << endl;
     const FiniteElement & fel_trial = is_mixedfe ? mixedfe->FETrial() : fel;
     const FiniteElement & fel_test = is_mixedfe ? mixedfe->FETest() : fel;
 
@@ -1129,7 +1119,6 @@ namespace ngfem
     if (simd_evaluate)
       try
         {
-          // RegionTimer reg(tsimd);          
           SIMD_IntegrationRule ir = Get_SIMD_IntegrationRule (fel, lh);
           SIMD_BaseMappedIntegrationRule & mir = trafo(ir, lh);
 
@@ -1138,11 +1127,15 @@ namespace ngfem
 
           bool symmetric_so_far = true;
           int k1 = 0;
+          int k1nr = 0;
+          // extern int loop_proxy; loop_proxy++;
           for (auto proxy1 : trial_proxies)
             {
               int l1 = 0;
+              int l1nr = 0;
               for (auto proxy2 : test_proxies)
                 {
+                  /*
                   bool is_diagonal = proxy1->Dimension() == proxy2->Dimension();
                   bool is_nonzero = false;
                   
@@ -1153,16 +1146,26 @@ namespace ngfem
                           if (k != l) is_diagonal = false;
                           is_nonzero = true;
                         }
+                  */
+
+                  bool is_nonzero = nonzeros_proxies(l1nr,k1nr);
+                  bool is_diagonal = diagonal_proxies(l1nr,k1nr);
 
                   if (is_nonzero)
                     {
+                      // extern int my_docompute; my_docompute++;
+                      
                       HeapReset hr(lh);
                       bool samediffop = (*(proxy1->Evaluator()) == *(proxy2->Evaluator())) && !is_mixedfe;
                       // td.Start();
+                      /*
                       AFlatMatrix<SCAL> proxyvalues(proxy1->Dimension()*proxy2->Dimension(), ir.GetNIP(), lh);
                       AFlatMatrix<SCAL> diagproxyvalues(proxy1->Dimension(), ir.GetNIP(), lh);
                       AFlatMatrix<SCAL> val(1, ir.GetNIP(), lh);
-
+                      */
+                      FlatMatrix<SIMD<SCAL>> proxyvalues(proxy1->Dimension()*proxy2->Dimension(), ir.Size(), lh);
+                      FlatMatrix<SIMD<SCAL>> diagproxyvalues(proxy1->Dimension(), ir.Size(), lh);
+                      FlatMatrix<SIMD<SCAL>> val(1, ir.Size(), lh);
                       
                       if (!is_diagonal)
                         for (size_t k = 0, kk = 0; k < proxy1->Dimension(); k++)
@@ -1201,33 +1204,38 @@ namespace ngfem
                               */
                           }
                       // td.Stop();
-                      
+                      // extern int my_scalejac; my_scalejac++;
+
                       if (!is_diagonal)
                         for (size_t i = 0; i < mir.Size(); i++)
                           {
                             auto fac = mir[i].GetWeight();
                             for (size_t j = 0; j < proxyvalues.Height(); j++)
-                              proxyvalues.Get(j,i) *= fac;
+                              proxyvalues(j,i) *= fac;
                           }
                       else
                         for (size_t i = 0; i < mir.Size(); i++)
                           {
                             auto fac = mir[i].GetWeight();
                             for (size_t j = 0; j < proxy1->Dimension(); j++)
-                              diagproxyvalues.Get(j,i) *= fac;
+                              diagproxyvalues(j,i) *= fac;
                           }
 
                       IntRange r1 = proxy1->Evaluator()->UsedDofs(fel_trial);
                       IntRange r2 = proxy2->Evaluator()->UsedDofs(fel_test);
                       SliceMatrix<SCAL> part_elmat = elmat.Rows(r2).Cols(r1);
-                      FlatMatrix<SCAL_SHAPES,ColMajor> bmat1(proxy1->Dimension(), elmat.Width(), lh);
-                      FlatMatrix<SCAL_SHAPES,ColMajor> bmat2(proxy2->Dimension(), elmat.Height(), lh);
+                      // FlatMatrix<SCAL_SHAPES,ColMajor> bmat1(proxy1->Dimension(), elmat.Width(), lh);
+                      // FlatMatrix<SCAL_SHAPES,ColMajor> bmat2(proxy2->Dimension(), elmat.Height(), lh);
 
                       // enum { BS = 16 };
                       // for (int i = 0; i < mir.Size(); i+=BS)
                         {
+                          // extern int my_allocaflatmat; my_allocaflatmat++;
+                          
                           HeapReset hr(lh);
                           // int bs = min2(int(BS), mir.Size()-i);
+
+                          /*
                           AFlatMatrix<SCAL_SHAPES> bbmat1(elmat.Width()*proxy1->Dimension(), ir.GetNIP(), lh);
                           AFlatMatrix<SCAL> bdbmat1(elmat.Width()*proxy2->Dimension(), ir.GetNIP(), lh);
                           AFlatMatrix<SCAL_SHAPES> bbmat2 = samediffop ?
@@ -1237,25 +1245,45 @@ namespace ngfem
                                                             &bdbmat1.Get(0,0));
                           AFlatMatrix<SCAL_SHAPES> hbbmat2(elmat.Height(), proxy2->Dimension()*SIMD<double>::Size()*ir.Size(),
                                                            &bbmat2.Get(0,0));
+                          */
 
+                          FlatMatrix<SIMD<SCAL_SHAPES>> bbmat1(elmat.Width()*proxy1->Dimension(), ir.Size(), lh);
+                          FlatMatrix<SIMD<SCAL>> bdbmat1(elmat.Width()*proxy2->Dimension(), ir.Size(), lh);
+                          FlatMatrix<SIMD<SCAL_SHAPES>> bbmat2 = samediffop ?
+                            bbmat1 : FlatMatrix<SIMD<SCAL_SHAPES>>(elmat.Height()*proxy2->Dimension(), ir.Size(), lh);
+                          
+                          FlatMatrix<SIMD<SCAL_SHAPES>> hbdbmat1(elmat.Width(), proxy2->Dimension()*ir.Size(),
+                                                                 &bdbmat1(0,0));
+                          FlatMatrix<SIMD<SCAL_SHAPES>> hbbmat2(elmat.Height(), proxy2->Dimension()*ir.Size(),
+                                                                &bbmat2(0,0));
+                          
                           // tb.Start();
                           // BaseMappedIntegrationRule & bmir = mir.Range(i, i+bs, lh);
                           bbmat1 = 0.0;
                           bbmat2 = 0.0;
+
+                          // extern int my_calcbmat1; my_calcbmat1++;
+                          
                           proxy1->Evaluator()->CalcMatrix(fel_trial, mir, bbmat1);
                           
                           if (!samediffop)
                             proxy2->Evaluator()->CalcMatrix(fel_test, mir, bbmat2);
+                          // extern int my_calcbmat2; my_calcbmat2++;
 
                           // tb.Stop();
                           // tdb.Start();
                           if (is_diagonal)
-                            { // too much work, use r1 ... 
+                            {
+                              // extern int my_is_diagonal; my_is_diagonal++;
+                              // too much work, use r1 ... 
                               for (size_t i = 0, ii = 0; i < elmat.Width(); i++)
                                 for (size_t j = 0; j < proxy1->Dimension(); j++, ii++)
-                                  for (size_t k = 0; k < mir.Size(); k++)
-                                    bdbmat1.Get(ii,k) = bbmat1.Get(ii,k) * diagproxyvalues.Get(j, k);
-
+                                  bdbmat1.Row(ii) = pw_mult(bbmat1.Row(ii), diagproxyvalues.Row(j));
+                                  /*
+                                  for (size_t k = 0; k < ir.Size(); k++)
+                                    // for (auto k : Range(mir.Size()))
+                                    bdbmat1(ii,k) = bbmat1(ii,k) * diagproxyvalues(j, k);
+                                  */
                               // AFlatVector<SCAL> diagd(bs*proxy1->Dimension(), lh);
                               // diagd = diagproxyvalues.Range(i*proxy1->Dimension(),
                               // (i+bs)*proxy1->Dimension());
@@ -1263,7 +1291,8 @@ namespace ngfem
                             }
                           else
                             {
-                              bdbmat1 = 0.0;
+                              // extern int my_not_diagonal; my_not_diagonal++; 
+                              bdbmat1 = 0.0; 
                               // for (size_t i = 0; i < elmat.Width(); i++)
                               for (auto i : r1)
                                 for (size_t j = 0; j < proxy2->Dimension(); j++)
@@ -1272,8 +1301,11 @@ namespace ngfem
                                       auto res = bdbmat1.Row(i*proxy2->Dimension()+j);
                                       auto a = bbmat1.Row(i*proxy1->Dimension()+k);
                                       auto b = proxyvalues.Row(k*proxy2->Dimension()+j);
+                                      res += pw_mult(a,b);
+                                      /*
                                       for (size_t l = 0; l < mir.Size(); l++)
-                                        res.Get(l) += a.Get(l) * b.Get(l);
+                                        res(l) += a(l) * b(l);
+                                      */
                                     }
                             }
 
@@ -1285,9 +1317,11 @@ namespace ngfem
 
                           symmetric_so_far &= samediffop && is_diagonal;
                           if (symmetric_so_far)
-                            AddABtSym (hbbmat2.Rows(r2), hbdbmat1.Rows(r1), part_elmat);
+                            AddABtSym (AFlatMatrix<double>(hbbmat2.Rows(r2)),
+                                       AFlatMatrix<double> (hbdbmat1.Rows(r1)), part_elmat);
                           else
-                            AddABt (hbbmat2.Rows(r2), hbdbmat1.Rows(r1), part_elmat);
+                            AddABt (AFlatMatrix<double> (hbbmat2.Rows(r2)),
+                                    AFlatMatrix<double> (hbdbmat1.Rows(r1)), part_elmat);
                           
                           // tlapack.Stop();
                           // tlapack.AddFlops (r2.Size()*r1.Size()*bdbmat1.Width());
@@ -1299,12 +1333,15 @@ namespace ngfem
                             part_elmat(i,j) = part_elmat(j,i);
                     }
                   
-                  l1 += proxy2->Dimension();  
+                  l1 += proxy2->Dimension();
+                  l1nr++;
                 }
               k1 += proxy1->Dimension();
+              k1nr++;
             }
           // throw ExceptionNOSIMD("test1");
           // *testout << "elmat = " << endl << elmat << endl;
+          ir.NothingToDelete();
           return;
         }
       catch (ExceptionNOSIMD e)
