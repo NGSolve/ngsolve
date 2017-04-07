@@ -503,6 +503,9 @@ namespace ngbla
     
     AFlatMatrixD(size_t ah, size_t aw, SIMD<double> * mem)
       : h(ah), w(aw), data(mem) { ; } 
+
+    explicit AFlatMatrixD (const FlatMatrix<SIMD<double>> & m2)
+      : h(m2.Height()), w(m2.Width()*SIMD<double>::Size()), data(&m2(0,0)) { ; } 
     
     void AssignMemory (size_t ah, size_t aw, SIMD<double> * mem)
     {
@@ -597,7 +600,8 @@ namespace ngbla
     AFlatVector<double> Row (size_t r) const
     {
       // return AFlatVector<double> (w, (double*)&Get(r,0));
-      return AFlatVector<double> (w, &Get(r,0));
+      // return AFlatVector<double> (w, &Get(r,0));
+      return AFlatVector<double> (w, data+r*VWidth());
     }
   
     AFlatMatrixD Rows(size_t begin, size_t end) const
@@ -1253,11 +1257,11 @@ namespace ngbla
   void TransposeMatrix(SliceMatrix<> a, SliceMatrix<> b);
   extern void MultMatMat(SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c);
 
-  extern void AddABt (SliceMatrix<double> a, SliceMatrix<double> b, SliceMatrix<double> c);
+  extern void AddABt (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c);
   extern void AddABt (SliceMatrix<double> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c);
   extern void AddABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c);
 
-  extern void AddABtSym (AFlatMatrix<double> a, AFlatMatrix<double> b, SliceMatrix<double> c);
+  extern void AddABtSym (AFlatMatrix<double> a, AFlatMatrix<double> b, BareSliceMatrix<double> c);
   extern void AddABtSym (SliceMatrix<double> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c);
   extern void AddABtSym (SliceMatrix<Complex> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c);
 
