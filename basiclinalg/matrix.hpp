@@ -1589,7 +1589,7 @@ namespace ngbla
     { ; }
 
     BareSliceMatrix (const SliceMatrix<T> & mat)
-      : dist(mat.Width()), data(&mat(0,0))
+      : dist(mat.Dist()), data(&mat(0,0))
     { ; }
 
     BareSliceMatrix (size_t adist, T * adata) : dist(adist), data(adata) { ; } 
