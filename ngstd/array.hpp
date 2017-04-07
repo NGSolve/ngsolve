@@ -1184,8 +1184,8 @@ namespace ngstd
   {
     if (index.Size() <= 1) return;
 
-    size_t i = 0;
-    size_t j = index.Size()-1;
+    ptrdiff_t i = 0;
+    ptrdiff_t j = index.Size()-1;
 
     int midval = index[ (i+j)/2 ];
   
