@@ -1376,9 +1376,32 @@ namespace ngbla
     /// assign constant
     INLINE const SliceMatrix & operator= (TSCAL s) const
     {
+      /*
+      if (w == 0) return *this;
       for (size_t i = 0; i < h; i++)
-        for (size_t j = 0; j < w; j++)
-          data[i*dist+j] = s;
+        {
+          __assume (w > 0);
+          for (size_t j = 0; j < w; j++)
+            data[i*dist+j] = s;
+        }
+      */
+      if (w == 0) return *this;
+      size_t i = 0, base = 0;
+      for ( ; i+1 < h; i+=2, base += 2*dist)
+        {
+          __assume (w > 0);
+          for (auto j : Range(w))
+            {
+              data[base+j] = s;
+              data[base+dist+j] = s;
+            }
+        }
+      if (i < h)
+        {
+          __assume (w > 0);
+          for (auto j : Range(w))            
+            data[base+j] = s;
+        }
       return *this;
     }
 

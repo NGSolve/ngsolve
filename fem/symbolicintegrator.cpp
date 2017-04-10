@@ -1200,7 +1200,7 @@ namespace ngfem
                                 proxyvalues.Row(kk) = 0.0;
                             }
                       else
-                        for (int k = 0; k < proxy1->Dimension(); k++)
+                        for (size_t k = 0; k < dim_proxy1; k++)
                           {
                             ud.trialfunction = proxy1;
                             ud.trial_comp = k;
