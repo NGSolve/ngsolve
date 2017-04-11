@@ -706,6 +706,9 @@ namespace ngcomp
     void GetElFaces (ElementId ei, Array<int> & fnums) const
     { fnums = GetElement(ei).Faces(); }
 
+    auto GetElFaces (ElementId ei) const
+    { return GetElement(ei).Faces(); }
+
     /// returns the faces of an element
     void GetElFaces (int elnr, Array<int> & fnums) const
     { fnums = GetElement(ElementId(VOL,elnr)).Faces(); }
