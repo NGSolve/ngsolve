@@ -239,16 +239,21 @@ namespace ngcomp
 	
 	if (ma->GetDimension() == 2)
 	  {
+            /*
 	    ma->GetElEdges (ei, fanums);
 	    for (int j=0;j<fanums.Size();j++) 
 	      fine_facet[fanums[j]] = 1; 
-	    
+            */
+            auto fanums = ma->GetElEdges(ei);
+            for (auto f : fanums)
+              fine_facet[f] = true;
+            
 	    if(var_order)
 	      {
                 INT<3> el_orders = ma->GetElOrders(i); 
 
-		const EDGE * edges = ElementTopology::GetEdges (eltype);
-		for(int j=0; j<fanums.Size(); j++)
+                const EDGE * edges = ElementTopology::GetEdges (eltype);
+                for(int j=0; j<fanums.Size(); j++)
 		  for(int k=0;k<2;k++)
 		    if(points[edges[j][0]][k] != points[edges[j][1]][k])
 		      { 
@@ -259,15 +264,17 @@ namespace ngcomp
 	  }
 	else
 	  {
-	    Array<int> elfaces,vnums;
-	    ma->GetElFaces(ei,elfaces);
+	    // Array<int> elfaces,vnums;
+	    // ma->GetElFaces(ei,elfaces);
+            auto elfaces = ma->GetElFaces(ei); 
 	    for (int j=0;j<elfaces.Size();j++) fine_facet[elfaces[j]] = 1; 
 	    
 	    if(var_order) 
 	      {
                 INT<3> el_orders = ma->GetElOrders(i); 
 
-		ma->GetElVertices (i, vnums);
+		// ma->GetElVertices (i, vnums);
+                auto vnums = ma->GetElVertices(ei);
 		const FACE * faces = ElementTopology::GetFaces (eltype);
 		for(int j=0;j<elfaces.Size();j++)
 		  {
