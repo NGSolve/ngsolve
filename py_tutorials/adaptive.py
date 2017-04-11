@@ -59,7 +59,7 @@ f += Source(CoefficientFunction([0, 0, 1]))
 c = Preconditioner(a, type="multigrid", flags= { "inverse" : "sparsecholesky" })
 
 u = GridFunction(V)
-
+Draw (u)
 # the boundary value problem to be solved on each level
 bvp = BVP(bf=a, lf=f, gf=u, pre=c)
 
@@ -76,7 +76,8 @@ def SolveBVP():
     a.Assemble()
     f.Assemble()
     bvp.Do()
-    Draw (u)
+    # Draw (u)
+    Redraw (blocking=True)
 
 
 
