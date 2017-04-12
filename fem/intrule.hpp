@@ -1389,7 +1389,12 @@ namespace ngfem
 
   
 
-  
+  inline ostream & operator<< (ostream & ost, const BaseMappedIntegrationRule & mir)
+  {
+    for (size_t i = 0; i < mir.Size(); i++)
+      ost << mir[i] << endl;
+    return ost;
+  }
   
   template <int DIM_ELEMENT, int DIM_SPACE, typename SCAL>
   inline ostream & operator<< (ostream & ost, const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE,SCAL> & ir)
@@ -1623,8 +1628,10 @@ namespace ngstd
     
     void Print (ostream & ost) const
     {
+      ost << "ip = " << this->ip << endl;
       ost << "Point = " << this->point << endl;
       ost << "Jacobian = " << dxdxi << endl;
+      ost << "normal = " << this->GetNV() << endl;
     }
   };
 }
@@ -1846,9 +1853,9 @@ namespace ngfem
     virtual void Print (ostream & ost) const = 0;
   };
 
-  inline ostream & operator<< (ostream & ost, const SIMD_BaseMappedIntegrationRule & mip)
+  inline ostream & operator<< (ostream & ost, const SIMD_BaseMappedIntegrationRule & mir)
   {
-    mip.Print (ost);
+    mir.Print (ost);
     return ost;
   }
 
