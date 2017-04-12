@@ -1038,7 +1038,7 @@ namespace ngcomp
     VorB vb;
     BitArray mask;
   public:
-    Region (shared_ptr<MeshAccess> amesh, VorB avb, string pattern);
+    NGS_DLL_HEADER Region (shared_ptr<MeshAccess> amesh, VorB avb, string pattern);
     Region (shared_ptr<MeshAccess> amesh, VorB avb, const BitArray & amask)
       : mesh(amesh), vb(avb), mask(amask) { ; }
     Region (const Region &) = default;
