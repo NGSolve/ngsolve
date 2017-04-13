@@ -431,7 +431,7 @@ namespace ngstd
   {
   protected:
     ///
-    int size;
+    size_t size;
     ///
     Array<T_HASH> hash;
     ///
@@ -440,53 +440,58 @@ namespace ngstd
     T_HASH invalid;
   public:
     ///
-    ClosedHashTable (int asize)
+    ClosedHashTable (size_t asize)
       : size(asize), hash(asize), cont(asize)
     {
-      // hash.SetName ("i2-hashtable, hash");
-      // cont.SetName ("i2-hashtable, contents");
-      invalid = -1; // .SetAll (-1);
-      for (int i = 0; i < size; i++)
-	hash[i] = invalid;
+      invalid = -1; 
+      hash = T_HASH(invalid);
+    }
+
+    ///
+    ClosedHashTable (size_t asize, LocalHeap & lh)
+      : size(asize), hash(asize, lh), cont(asize, lh)
+    {
+      invalid = -1; 
+      hash = T_HASH(invalid);
     }
 
     /// 
-    int Size() const
+    size_t Size() const
     {
       return size;
     }
 
     /// is position used
-    bool UsedPos (int pos) const
+    bool UsedPos (size_t pos) const
     {
       return ! (hash[pos] == invalid); 
     }
 
     /// number of used elements
-    int UsedElements () const
+    size_t UsedElements () const
     {
-      int cnt = 0;
-      for (int i = 0; i < size; i++)
+      size_t cnt = 0;
+      for (size_t i = 0; i < size; i++)
 	if (hash[i] != invalid)
 	  cnt++;
       return cnt;
     }
 
-    int Position (const T_HASH ind) const
+    size_t Position (const T_HASH ind) const
     {
-      int i = HashValue(ind, size);
+      size_t i = HashValue(ind, size);
       while (1)
 	{
 	  if (hash[i] == ind) return i;
-	  if (hash[i] == invalid) return -1;
+	  if (hash[i] == invalid) return size_t(-1);
 	  i++;
 	  if (i >= size) i = 0;
 	}
     }
     // returns 1, if new position is created
-    int PositionCreate (const T_HASH ind, int & apos)
+    bool PositionCreate (const T_HASH ind, size_t & apos)
     {
-      int i = HashValue (ind, size);
+      size_t i = HashValue (ind, size);
 
       while (1)
 	{
@@ -494,12 +499,12 @@ namespace ngstd
 	    { 
 	      hash[i] = ind; 
 	      apos = i; 
-	      return 1;
+	      return true;
 	    }
 	  if (hash[i] == ind) 
 	    { 
 	      apos = i; 
-	      return 0; 
+	      return false; 
 	    }
 	  i++;
 	  if (i >= size) i = 0;
@@ -510,7 +515,7 @@ namespace ngstd
     ///
     void Set (const T_HASH & ahash, const T & acont)
     {
-      int pos;
+      size_t pos;
       PositionCreate (ahash, pos);
       hash[pos] = ahash;
       cont[pos] = acont;
@@ -518,35 +523,33 @@ namespace ngstd
     ///
     const T & Get (const T_HASH & ahash) const
     {
-      int pos = Position (ahash);
-      return cont[pos];
+      return cont[Position (ahash)];
     }
 
     ///
     bool Used (const T_HASH & ahash) const
     {
-      int pos = Position (ahash);
-      return (pos != -1);
+      return (Position (ahash) != size_t(-1));
     }
 
-    void SetData (int pos, const T_HASH & ahash, const T & acont)
+    void SetData (size_t pos, const T_HASH & ahash, const T & acont)
     {
       hash[pos] = ahash;
       cont[pos] = acont;
     }
 
-    void GetData (int pos, T_HASH & ahash, T & acont) const
+    void GetData (size_t pos, T_HASH & ahash, T & acont) const
     {
       ahash = hash[pos];
       acont = cont[pos];
     }
   
-    void SetData (int pos, const T & acont)
+    void SetData (size_t pos, const T & acont)
     {
       cont[pos] = acont;
     }
 
-    void GetData (int pos, T & acont) const
+    void GetData (size_t pos, T & acont) const
     {
       acont = cont[pos];
     }
@@ -556,26 +559,21 @@ namespace ngstd
       return pair<T_HASH,T> (hash[pos], cont[pos]);
     }
 
-
-    void SetSize (int asize)
+    void SetSize (size_t asize)
     {
       size = asize;
       hash.Alloc(size);
       cont.Alloc(size);
-      for (int i = 0; i < size; i++)
-	hash[i] = invalid;
-    }
 
-    void SetName (const char * aname)
-    {
-      cont.SetName(aname);
-      hash.SetName(aname);
+      // for (size_t i = 0; i < size; i++)
+      // hash[i] = invalid;
+      hash = T_HASH(invalid);
     }
   };
 
 
 
-
+  
 
 
 
