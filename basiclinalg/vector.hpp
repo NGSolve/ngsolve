@@ -482,7 +482,9 @@ namespace ngbla
       FlatVector<T>::operator= (v2);
     }
 
-    Vector (Vector &&) = default;
+    Vector (Vector && v2)
+      : FlatVector<T> (v2.size, v2.data)
+    { v2.data = nullptr; v2.size = 0; } 
     
     /// allocate and compute 
     template<typename TB>
