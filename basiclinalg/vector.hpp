@@ -481,6 +481,8 @@ namespace ngbla
     {
       FlatVector<T>::operator= (v2);
     }
+
+    Vector (Vector &&) = default;
     
     /// allocate and compute 
     template<typename TB>
