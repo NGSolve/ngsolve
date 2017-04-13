@@ -382,12 +382,12 @@ namespace ngcomp
     /// the geometry type of the element
     [[deprecated("Use GetElType with ElementId(VOL, elnr) instead!")]]            
     ELEMENT_TYPE GetElType (int elnr) const
-    { return GetElement(elnr).GetType(); }
+      { return GetElement(ElementId(VOL,elnr)).GetType(); }
 
     /// the geometry type of the boundary element
     [[deprecated("Use GetElType with ElementId(BND, elnr) instead!")]]                
     ELEMENT_TYPE GetSElType (int elnr) const
-    { return GetSElement(elnr).GetType(); }
+      { return GetElement(ElementId(BND,elnr)).GetType(); }
 
     /// the geometry type of the element    
     ELEMENT_TYPE GetElType (ElementId ei) const
@@ -398,20 +398,20 @@ namespace ngcomp
     [[deprecated("Use GetElIndex with ElementId(VOL, elnr) instead!")]]                    
     int GetElIndex (int elnr) const
     { 
-      return GetElement(elnr).GetIndex();
+      return GetElement(ElementId(VOL,elnr)).GetIndex();
     }
 
     /// the boundary-condition index of the boundary element
     [[deprecated("Use GetElIndex with ElementId(BND, elnr) instead!")]]                        
     int GetSElIndex (int elnr) const
     { 
-      return GetSElement(elnr).GetIndex();
+      return GetElement(ElementId(BND,elnr)).GetIndex();
     }
 
     [[deprecated("Use GetElIndex with ElementId(BBND, elnr) instead!")]]                            
     int GetCD2ElIndex(int elnr) const
     {
-      return GetCD2Element(elnr).GetIndex();
+      return GetElement(ElementId(BBND,elnr)).GetIndex();
     }
 
     int GetElIndex (ElementId ei) const
