@@ -1191,8 +1191,8 @@ namespace ngbla
     auto Height() const { return rows.Size(); }
     auto Width() const { return a.Width(); }
 
-    auto operator() (size_t i, size_t j) const { return a(rows[i], j); }
-    auto operator() (size_t i) const { return a(rows[i]); }
+    auto operator() (size_t i, size_t j) const-> decltype(a(rows[i],j)) { return a(rows[i], j); }
+    auto operator() (size_t i) const-> decltype(a(rows[i])) { return a(rows[i]); }
 
     auto Row (size_t i) const { return a.Row(rows[i]); }
 
@@ -1229,8 +1229,8 @@ namespace ngbla
     size_t Height() const { return a.Height(); }
     size_t Width() const { return cols.Size(); }
 
-    auto operator() (size_t i, size_t j) const { return a(i, cols[j]); }
-    auto operator() (size_t i) const { return a(i, cols[0]); }
+    auto operator() (size_t i, size_t j) const -> decltype(a(i, cols[j]))  { return a(i, cols[j]); }
+    auto operator() (size_t i) const -> decltype(a(i, cols[0]))  { return a(i, cols[0]); }
 
     enum { IS_LINEAR = 0 };
 
