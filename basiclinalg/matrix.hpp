@@ -455,7 +455,9 @@ namespace ngbla
     }
     
     /// move matrix
-    Matrix (Matrix && m2) = default;
+    Matrix (Matrix && m2)
+      : FlatMatrix<T> (m2.h, m2.w, m2.data)
+    { m2.data = nullptr; m2.w = 0; m2.h = 0; } 
 
     /// allocate and compute 
     template<typename TB>
