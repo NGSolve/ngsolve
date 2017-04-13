@@ -453,6 +453,9 @@ namespace ngbla
     {
       FlatMatrix<T,ORD>::operator= (m2);
     }
+    
+    /// move matrix
+    Matrix (Matrix && m2) = default;
 
     /// allocate and compute 
     template<typename TB>
