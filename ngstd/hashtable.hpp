@@ -170,35 +170,48 @@ namespace ngstd
   }
 
 
-  template <int N>
-  INLINE int HashValue (const INT<N> & ind, int size)
+  template <int N, typename TI>
+  INLINE size_t HashValue (const INT<N,TI> & ind, size_t size)
   {
-    int sum = 0;
+    INT<3,size_t> lind = ind;    
+    size_t sum = 0;
     for (int i = 0; i < N; i++)
-      sum += ind[i];
+      sum += lind[i];
     return sum % size;
   }
 
   /// hash value of 1 int
-  INLINE int HashValue (const INT<1> & ind, int size) 
+  template <typename TI>
+  INLINE size_t HashValue (const INT<1,TI> & ind, size_t size) 
   {
     return ind[0] % size;
   }
 
   /// hash value of 2 int
-  INLINE int HashValue (const INT<2> & ind, int size) 
+  template <typename TI>  
+  INLINE size_t HashValue (const INT<2,TI> & ind, size_t size) 
   {
-    INT<2,long> lind = ind;
+    INT<2,size_t> lind = ind;
     return (113*lind[0]+lind[1]) % size;
   }
 
   /// hash value of 3 int
-  INLINE int HashValue (const INT<3> & ind, int size) 
+  template <typename TI>    
+  INLINE size_t HashValue (const INT<3,TI> & ind, size_t size) 
   {
-    INT<3,long> lind = ind;
+    INT<3,size_t> lind = ind;
     return (113*lind[0]+59*lind[1]+lind[2]) % size;
   }
 
+  INLINE size_t HashValue (size_t ind, size_t size)
+  {
+    return ind%size;
+  }
+  INLINE size_t HashValue (int ind, size_t size)
+  {
+    return size_t(ind)%size;
+  }
+  
 
   // using ngstd::max;
 
@@ -520,10 +533,14 @@ namespace ngstd
       hash[pos] = ahash;
       cont[pos] = acont;
     }
+
     ///
     const T & Get (const T_HASH & ahash) const
     {
-      return cont[Position (ahash)];
+      size_t pos = Position (ahash);
+      if (pos == size_t(-1))
+        throw Exception (string("illegal key: ") + ToString(ahash) );
+      return cont[pos];
     }
 
     ///
@@ -559,6 +576,14 @@ namespace ngstd
       return pair<T_HASH,T> (hash[pos], cont[pos]);
     }
 
+    const T & operator[] (T_HASH key) const { return Get(key); }
+    T & operator[] (T_HASH key)
+    {
+      size_t pos;
+      PositionCreate(key, pos);
+      return cont[pos];
+    }
+    
     void SetSize (size_t asize)
     {
       size = asize;
@@ -571,7 +596,21 @@ namespace ngstd
     }
   };
 
-
+  template <class T_HASH, class T>  
+  ostream & operator<< (ostream & ost,
+                        const ClosedHashTable<T_HASH,T> & tab)
+  {
+    for (size_t i = 0; i < tab.Size(); i++)
+      if (tab.UsedPos(i))
+        {
+          T_HASH key;
+          T val;
+          tab.GetData (i, key, val);
+          ost << key << ": " << val << ", ";
+        }
+    return ost;
+  }
+    
 
   
 
