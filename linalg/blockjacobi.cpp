@@ -515,8 +515,9 @@ namespace ngla
                 coloring[i] = color;
                 if (color > maxcolor) maxcolor = color;
                 
-                for (int d : (*blocktable)[i] )                                
-                  mask[d] |= checkbit;
+                for (int d : (*blocktable)[i] )
+                  for(auto coupling : mat.GetRowIndices(d))
+                    mask[coupling] |= checkbit;
               }
           }
         basecol += 8*sizeof(unsigned int); // 32;
