@@ -173,7 +173,7 @@ namespace ngstd
   template <int N, typename TI>
   INLINE size_t HashValue (const INT<N,TI> & ind, size_t size)
   {
-    INT<3,size_t> lind = ind;    
+    INT<N,size_t> lind = ind;    
     size_t sum = 0;
     for (int i = 0; i < N; i++)
       sum += lind[i];
