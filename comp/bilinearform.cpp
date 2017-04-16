@@ -675,15 +675,7 @@ namespace ngcomp
 
 
   template <class SCAL>
-  S_BilinearForm<SCAL> :: ~S_BilinearForm()
-  {
-    /*
-    delete harmonicext;
-    delete harmonicexttrans;
-    delete innersolve;
-    delete innermatrix;
-    */
-  }
+  S_BilinearForm<SCAL> :: ~S_BilinearForm() { ; }
 
 
 
@@ -757,7 +749,7 @@ namespace ngcomp
                 *testout << " hasskeletonouter = " << (facetwise_skeleton_parts[BND].Size()>0) << endl;
               }
             
-            int loopsteps = 0;
+            size_t loopsteps = 0;
 	    for (VorB vb : {VOL,BND,BBND})
 	      if (VB_parts[vb].Size())
 		loopsteps += ma->GetNE(vb);
@@ -815,14 +807,6 @@ namespace ngcomp
                         FlatVector<SCAL> sum_diag(dnums.Size()*fespace->GetDimension(), clh);
                         sum_diag = 0;
                         
-                        /*
-                          for (int j = 0; j < NumIntegrators(); j++)
-                          {
-                          const BilinearFormIntegrator & bfi = *parts[j];
-                          if (bfi.SkeletonForm()) continue;
-                          if (bfi.BoundaryForm()) continue;
-			      if (!bfi.DefinedOn (ma->GetElIndex (i))) continue;
-                        */
                         for (auto & bfip : VB_parts[vb])
                           {
                             const BilinearFormIntegrator & bfi = *bfip;
@@ -834,7 +818,7 @@ namespace ngcomp
                               {
                                 bfi.CalcElementMatrixDiag (fel, eltrans, diag, clh);
 				
-                                if (printelmat) //  || fel.ElementType() == ET_TET)
+                                if (printelmat) 
                                   {
                                     testout->precision(8);
                                     (*testout) << "elnum= " << ElementId(vb,i) << endl;
@@ -1036,11 +1020,11 @@ namespace ngcomp
                                      
                                      Array<int> idnums(dim*idnums1.Size(), lh);
                                      Array<int> ednums(dim*ednums1.Size(), lh);
-                                     idnums.SetSize(0); 
-                                     ednums.SetSize(0);
-                                     for (int j = 0; j < idnums1.Size(); j++)
+                                     idnums.SetSize0(); 
+                                     ednums.SetSize0();
+                                     for (size_t j = 0; j < idnums1.Size(); j++)
                                        idnums += dim*IntRange(idnums1[j], idnums1[j]+1);
-                                     for (int j = 0; j < ednums1.Size(); j++)
+                                     for (size_t j = 0; j < ednums1.Size(); j++)
                                        ednums += dim * IntRange(ednums1[j], ednums1[j]+1);
                                      
                                      if (store_inner)
@@ -1079,16 +1063,12 @@ namespace ngcomp
                                        }
                                      
                                      innersolve ->AddElementMatrix(el.Nr(),idnums,idnums,d);
-                                     // LapackMultAddAB (b, he, 1.0, a);
                                      a += b * he | Lapack;
                                      
                                      if (spd)
-                                       {
-                                         // *testout << "schur orig = " << endl << a << endl;
-                                         Matrix<SCAL> schur(odofs.Size());
+                                       { // more stable ? 
+                                         FlatMatrix<SCAL> schur(odofs.Size(), lh);
                                          CalcSchur (sum_elmat, schur, odofs, idofs);
-					 
-                                         // *testout << "new schur = " << endl << schur << endl;
                                          a = schur;
                                        }
                                    }                             
