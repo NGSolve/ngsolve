@@ -2058,27 +2058,27 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
 #endif
 
 
-
-
-
-
-  
+  function<void()> cleanup_func;
   ProgressOutput :: ProgressOutput (shared_ptr<MeshAccess> ama,
 				    string atask, size_t atotal)
     : ma(ama), task(atask), total(atotal)
   {
     is_root = (MyMPI_GetId() == 0);
     prevtime = WallTime();
-    int glob_total = MyMPI_Reduce (total);
+    size_t glob_total = MyMPI_Reduce (total);
     if (is_root) total = glob_total;
 
     done_called = false;
     cnt = 0;
+    thd_cnt = 0;
+    cleanup_func = [this] () {  this->SumUpLocal(); };
+    TaskManager::SetCleanupFunction(cleanup_func); 
   }
 
   ProgressOutput :: ~ProgressOutput ()
   {
     Done();
+    TaskManager::SetCleanupFunction();
   }  
 
   atomic<size_t> ProgressOutput :: cnt;

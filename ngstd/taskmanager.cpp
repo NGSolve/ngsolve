@@ -21,6 +21,11 @@ namespace ngstd
 #else
   __thread int TaskManager :: thread_id;
 #endif
+
+  const function<void(TaskInfo&)> * TaskManager::func;
+  const function<void()> * TaskManager::startup_function = nullptr;
+  const function<void()> * TaskManager::cleanup_function = nullptr;
+
   
   static mutex copyex_mutex;
 
@@ -191,8 +196,9 @@ namespace ngstd
       
     for (int j = 0; j < num_nodes; j++)
       nodedata[j]->participate.store (0, memory_order_release);
-    
 
+    if (startup_function) (*startup_function)();
+    
     int thd = 0;
 
     int thds = GetNumThreads();
@@ -244,6 +250,8 @@ namespace ngstd
           complete[mynode] = true;
         }
       }
+
+    if (cleanup_function) (*cleanup_function)();
     
     for (int j = 0; j < num_nodes; j++)
       while (!complete[j])
@@ -306,7 +314,8 @@ namespace ngstd
           if (oldpart == -1) oldpart = 0;
 
         // atomic_thread_fence (memory_order_acquire);
-
+        if (startup_function) (*startup_function)();
+        
         IntRange mytasks = Range(int(ntasks)).Split (mynode, num_nodes);
           
         try
@@ -344,6 +353,8 @@ namespace ngstd
         atomic_thread_fence (memory_order_release);     
 #endif // __MIC__
 
+        if (cleanup_function) (*cleanup_function)();
+        
         jobdone = jobnr;
         mynode_data.participate--;
       }

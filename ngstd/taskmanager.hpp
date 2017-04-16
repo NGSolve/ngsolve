@@ -45,7 +45,9 @@ namespace ngstd
       NodeData() : start_cnt(0), participate(0) { ; }
     };
     
-    const function<void(TaskInfo&)> * func;
+    static const function<void(TaskInfo&)> * func;
+    static const function<void()> * startup_function;
+    static const function<void()> * cleanup_function;
     atomic<int> ntasks;
     Exception * ex;
 
@@ -97,7 +99,10 @@ namespace ngstd
     NGS_DLL_HEADER void CreateJob (const function<void(TaskInfo&)> & afunc, 
                     int antasks = task_manager->GetNumThreads());
 
-
+    static void SetStartupFunction (const function<void()> & func) { startup_function = &func; }
+    static void SetStartupFunction () { startup_function = nullptr; }
+    static void SetCleanupFunction (const function<void()> & func) { cleanup_function = &func; }
+    static void SetCleanupFunction () { cleanup_function = nullptr; }    
     /*
     template <typename TFUNC>
     INLINE void ParallelFor (IntRange r, TFUNC f, int antasks = task_manager->GetNumThreads())
