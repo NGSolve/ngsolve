@@ -427,6 +427,8 @@ namespace ngcomp
 
   void H1HighOrderFESpace :: UpdateDofTables ()
   {
+    static Timer t("H1HighOrderFESpace::UpdateDofTables"); RegionTimer reg(t);
+
     int dim = ma->GetDimension();
     size_t nv = ma->GetNV();
     size_t ned = (dim <= 1) ? 0 : ma->GetNEdges();
@@ -449,7 +451,7 @@ namespace ngcomp
       {
 	first_face_dof[i] = hndof;
 	INT<2> p = order_face[i];
-	switch(ma->GetFacetType(i))
+	switch(ma->GetFaceType(i))
 	  {
 	  case ET_TRIG:
             if (p[0] > 2)
@@ -464,7 +466,8 @@ namespace ngcomp
 	  }
       }
     first_face_dof[nfa] = hndof;
- 
+
+    /*
     first_element_dof.SetSize(ne+1);
     for (auto i : Range(ne))
       {
@@ -507,7 +510,66 @@ namespace ngcomp
       } 
     first_element_dof[ne] = hndof;
     ndof = hndof;
-   
+    */
+
+    // compute number of element dofs ...
+    first_element_dof.SetSize(ne+1);
+    ParallelFor
+      (ma->GetNE(VOL), [&] (size_t i)
+       {
+         // for (auto i : Range(ne))
+         // {
+        ElementId ei(VOL,i);
+	// first_element_dof[i] = hndof;
+        int neldof = 0;
+	INT<3> p = order_inner[i];
+	switch (ma->GetElType(ei))
+	  {
+	  case ET_TRIG:
+	    if(p[0] > 2)
+	      neldof = (p[0]-1)*(p[0]-2)/2;
+	    break;
+	  case ET_QUAD:
+	    if(p[0] > 1 && p[1] > 1)
+	      neldof = (p[0]-1)*(p[1]-1);
+	    break;
+	  case ET_TET:
+	    if(p[0] > 3)
+	      neldof = (p[0]-1)*(p[0]-2)*(p[0]-3)/6;
+	    break;
+	  case ET_PRISM:
+	    if(p[0] > 2 && p[2] > 1)
+	      hndof = (p[0]-1)*(p[0]-2)*(p[2]-1)/2;
+	    break;
+	  case ET_PYRAMID:
+	    if(p[0] > 2)
+	      neldof = (p[0]-1)*(p[0]-2)*(2*p[0]-3)/6;
+	    break;
+	  case ET_HEX:
+	    if(p[0] > 1 && p[1] > 1 && p[2] > 1) 
+	      neldof = (p[0]-1)*(p[1]-1)*(p[2]-1);
+	    break;
+          case ET_SEGM:
+            if (p[0] > 1)
+	      neldof = p[0]-1;
+            break;
+          case ET_POINT:
+            neldof = 0;
+	    break;
+	  }
+        first_element_dof[i] = neldof;        
+       });
+
+    // accumulate
+    for (auto i : Range(ne))
+      {
+        auto neldof = first_element_dof[i];
+        first_element_dof[i] = hndof;
+        hndof += neldof;
+      }
+    first_element_dof[ne] = hndof;
+    ndof = hndof;
+    
     if (print)
       {
         (*testout) << "h1 first edge = " << first_edge_dof << endl;
@@ -525,6 +587,7 @@ namespace ngcomp
 
   void H1HighOrderFESpace :: UpdateCouplingDofArray()
   {
+    static Timer t("H1HighOrderFESpace::UpdateCouplingDofArray"); RegionTimer reg(t);    
     ctofdof.SetSize(ndof);
 
     for (auto i : Range (ma->GetNV()))
