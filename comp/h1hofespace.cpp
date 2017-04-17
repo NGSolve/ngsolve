@@ -447,6 +447,7 @@ namespace ngcomp
     first_edge_dof[ned] = hndof;
 
     first_face_dof.SetSize (nfa+1);
+    /*
     for (auto i : Range (nfa))
       {
 	first_face_dof[i] = hndof;
@@ -466,7 +467,42 @@ namespace ngcomp
 	  }
       }
     first_face_dof[nfa] = hndof;
+    */
 
+    // for (auto i : Range (nfa))
+    if (nfa)
+      ParallelFor
+        (nfa, [&] (size_t i)
+         {
+           // first_face_dof[i] = hndof;
+           int neldof = 0;             
+           INT<2> p = order_face[i];
+           switch(ma->GetFaceType(i))
+             {
+             case ET_TRIG:
+               if (p[0] > 2)
+                 neldof = (p[0]-1)*(p[0]-2)/2;
+               break;
+             case ET_QUAD:
+               if (p[0] > 1 && p[1] > 1)
+                 neldof = (p[0]-1)*(p[1]-1);
+               break; 
+             default:
+               ;
+             }
+           first_face_dof[i] = neldof;
+         });
+
+    // accumulate
+    for (auto i : Range(nfa))
+      {
+        auto neldof = first_face_dof[i];
+        first_face_dof[i] = hndof;
+        hndof += neldof;
+      }
+    first_face_dof[nfa] = hndof;
+    
+    
     /*
     first_element_dof.SetSize(ne+1);
     for (auto i : Range(ne))
