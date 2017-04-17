@@ -1373,9 +1373,12 @@ namespace ngcomp
       case 1: return ET_POINT; 
       case 2: return ET_SEGM;
       default:  // i.e. dim = 3
+        /*
 	ArrayMem<int, 4> pnums;
 	GetFacePNums(fnr, pnums);
 	return (pnums.Size() == 3) ? ET_TRIG : ET_QUAD;
+        */
+        return (mesh.GetNode<2>(fnr).vertices.Size() == 3) ? ET_TRIG : ET_QUAD;
       }
   }
 
