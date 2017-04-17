@@ -763,7 +763,9 @@ namespace ngcomp
     /// vertices of a facet
     void GetFacetPNums (int fnr, Array<int> & pnums) const;
     /// geometry type of facet
-    ELEMENT_TYPE GetFacetType (int fnr) const;
+    ELEMENT_TYPE GetFaceType (int fnr) const
+    { return (mesh.GetNode<2>(fnr).vertices.Size() == 3) ? ET_TRIG : ET_QUAD; }
+    ELEMENT_TYPE GetFacetType (int fnr) const;    
     /// elements connected to facet
     void GetFacetElements (int fnr, Array<int> & elnums) const
     {

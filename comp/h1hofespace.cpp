@@ -200,8 +200,12 @@ namespace ngcomp
   void H1HighOrderFESpace :: Update(LocalHeap & lh)
   {
     static Timer timer ("H1HighOrderFESpace::Update");
+    // static Timer timer1 ("H1HighOrderFESpace::Update 1");
+    // static Timer timer2 ("H1HighOrderFESpace::Update 2");
+    // static Timer timer3 ("H1HighOrderFESpace::Update 3");
     RegionTimer reg(timer);
 
+    // timer1.Start();
     FESpace :: Update (lh);
 
     TORDER maxorder = 0;
@@ -223,24 +227,37 @@ namespace ngcomp
     used_face = false; 
     used_vertex = false; 
 
-    for (FESpace::Element el : Elements (VOL))
-      {
-        used_vertex[el.Vertices()] = true;
-        if (dim >= 2) used_edge[el.Edges()] = true;
-        if (dim == 3) used_face[el.Faces()] = true;
-      }
+    // for (FESpace::Element el : Elements (VOL))
+
+    for (auto vb : { VOL, BND })
+      ParallelFor
+        (ma->GetNE(vb), [&] (size_t nr)
+         {
+           ElementId ei(vb, nr);
+           Ngs_Element el = (*ma)[ei];
+           
+           if (!DefinedOn (el)) return; 
+           
+           used_vertex[el.Vertices()] = true;
+           if (dim >= 2) used_edge[el.Edges()] = true;
+           if (dim == 3) used_face[el.Faces()] = true;
+         });
     
+    /*
     for (FESpace::Element el : Elements (BND))
       {
         used_vertex[el.Vertices()] = true;
         if (dim >= 2) used_edge[el.Edges()] = true;
         if (dim == 3) used_face[el.Faces()] = true;
       }
+    */
     
     ma->AllReduceNodalData (NT_VERTEX, used_vertex, MPI_LOR);
     ma->AllReduceNodalData (NT_EDGE, used_edge, MPI_LOR);
     ma->AllReduceNodalData (NT_FACE, used_face, MPI_LOR);
 
+    // timer1.Stop();
+    // timer2.Start();
     
     order_edge.SetSize (ned);
     order_face.SetSize (nfa);
@@ -252,7 +269,7 @@ namespace ngcomp
     order_face = p; 
     order_inner = p;
 	
-    Array<int> elfaces;
+    // Array<int> elfaces;
     if(var_order) 
       for (Ngs_Element el : ma->Elements<VOL>())
         {	
@@ -290,6 +307,7 @@ namespace ngcomp
           
           if(dim==3)
             {
+              auto elfaces = el.Faces();              
               for(int j=0;j<elfaces.Size();j++)
                 {
                   // trig_face
@@ -325,20 +343,24 @@ namespace ngcomp
     
     else  // not var_order
       
-      for (Ngs_Element el : ma->Elements<VOL>())
-        {	
-          if (!DefinedOn (el)) continue;
+      // for (Ngs_Element el : ma->Elements<VOL>())
+      ParallelFor (ma->GetNE(VOL), [&] (size_t nr)
+                   {
+                     ElementId ei(VOL, nr);
+                     Ngs_Element el = (*ma)[ei];
+                     
+                     if (!DefinedOn (el)) return; 
+                     
+                     if (dim >= 2)
+                       for (auto e : el.Edges())
+                         order_edge[e] = p + et_bonus_order[ET_SEGM];
+                     
+                     if (dim == 3)
+                       for (auto f : el.Faces())
+                         order_face[f] = p + et_bonus_order[ma->GetFaceType(f)];
 
-          if (dim >= 2)
-            for (auto e : el.Edges())
-              order_edge[e] = p + et_bonus_order[ET_SEGM];
-          
-          if (dim == 3)
-            for (auto f : el.Faces())
-              order_face[f] = p + et_bonus_order[ma->GetFacetType(f)];
-
-          order_inner[el.Nr()] = p + et_bonus_order[el.GetType()];
-        }
+                     order_inner[el.Nr()] = p + et_bonus_order[el.GetType()];
+                   });
 
     /* 
        if (ma->GetDimension() == 2 && uniform_order_trig != -1 && uniform_order_quad != -1)
@@ -351,7 +373,10 @@ namespace ngcomp
        order_inner = INT<3> (uniform_order_quad, uniform_order_quad, uniform_order_quad);
        }
        }
-    */ 
+    */
+
+    // timer2.Stop();
+    // timer3.Start();
     
     if(uniform_order_inner > -1)  
       order_inner = uniform_order_inner;
@@ -395,6 +420,8 @@ namespace ngcomp
 
     UpdateDofTables ();
     UpdateCouplingDofArray ();
+
+    // timer3.Stop();
   }
 
 
