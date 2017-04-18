@@ -301,144 +301,63 @@ namespace ngfem
     coefs = 1;
     
     double maxtime = 0.5;
-    double starttime;
     double time;
-    size_t steps;
 
-    // calc shape single point
-    this -> CalcShape(ir[0], shape); //warmup
-    starttime = WallTime();
-    steps = 0;
-    do
-      {
-        for (size_t i = 0; i < 1000; i++)
-          this -> CalcShape(ir[0], shape);
-        steps += 1000;
-	time = WallTime()-starttime;
-      }
-    while (time < maxtime);
+    constexpr size_t steps = 1000;
+    time = RunTiming([&]() {
+                     for (size_t i = 0; i < steps; i++)
+                       this -> CalcShape(ir[0], shape);
+                     });
     timings.push_back(make_tuple("CalcShape", time/steps*1e9/GetNDof()));
 
-    // evaluate IR
-    this -> Evaluate(ir, coefs, values); //warmup
-    starttime = WallTime();
-    steps = 0;
-    do
-      {
-        for (size_t i = 0; i < 1000; i++)
-          this -> Evaluate(ir, coefs, values);
-        steps += 1000;
-	time = WallTime()-starttime;
-      }
-    while (time < maxtime);
+    time = RunTiming([&]() {
+                     for (size_t i = 0; i < steps; i++)
+                       this -> Evaluate(ir, coefs, values);
+                     }, maxtime);
     timings.push_back(make_tuple("Evaluate",time/steps*1e9/(GetNDof()*ir.GetNIP())));
 
-    
-    // evaluate IR SIMD
-    this -> Evaluate(simdir, coefs, avalues); // warmup
-    starttime = WallTime();
-    steps = 0;
-    do
-      {
-        for (size_t i = 0; i < 1000; i++)
-          this -> Evaluate(simdir, coefs, avalues);
-        steps += 1000;
-	time = WallTime()-starttime;
-      }
-    while (time < maxtime);
+    time = RunTiming([&]() {
+                     for (size_t i = 0; i < steps; i++)
+                       this -> Evaluate(simdir, coefs, avalues);
+                     }, maxtime);
     timings.push_back(make_tuple("Evaluate(SIMD)", time/steps*1e9/(GetNDof()*ir.GetNIP())));
 
-
-    // evaluate grad IR
-    this -> EvaluateGrad(ir, coefs, dvalues); //warmup
-    starttime = WallTime();
-    steps = 0;
-    do
-      {
-        for (size_t i = 0; i < 1000; i++)
-          this -> EvaluateGrad(ir, coefs, dvalues);
-        steps += 1000;
-	time = WallTime()-starttime;
-      }
-    while (time < maxtime);
+    time = RunTiming([&]() {
+                     for (size_t i = 0; i < steps; i++)
+                       this -> EvaluateGrad(ir, coefs, dvalues);
+                     }, maxtime);
     timings.push_back(make_tuple("Evaluate Grad", time/steps*1e9/(D*GetNDof()*ir.GetNIP())));
 
-
-    // evaluate grad IR SIMD
-    this -> EvaluateGrad(simdir, coefs, advalues); // warmup
-    starttime = WallTime();
-    steps = 0;
-    do
-      {
-        for (size_t i = 0; i < 1000; i++)
-          this -> EvaluateGrad(simdir, coefs, advalues);
-        steps += 1000;
-	time = WallTime()-starttime;
-      }
-    while (time < maxtime);
+    time = RunTiming([&]() {
+                     for (size_t i = 0; i < steps; i++)
+                       this -> EvaluateGrad(simdir, coefs, advalues);
+                     }, maxtime);
     timings.push_back(make_tuple("Evaluate Grad(SIMD)", time/steps*1e9/(D*GetNDof()*ir.GetNIP())));
 
-
-
-    
-    // evaluate IR
-    this -> EvaluateTrans(ir, values, coefs); // warmup
-    starttime = WallTime();
-    steps = 0;
-    do
-      {
-        for (size_t i = 0; i < 1000; i++)
-          this -> EvaluateTrans(ir, values, coefs);
-        steps += 1000;
-	time = WallTime()-starttime;
-      }
-    while (time < maxtime);
+    time = RunTiming([&]() {
+                     for (size_t i = 0; i < steps; i++)
+                       this -> EvaluateTrans(ir, values, coefs);
+                     }, maxtime);
     timings.push_back(make_tuple("Evaluate Trans", time/steps*1e9/(GetNDof()*ir.GetNIP())));
 
-    // evaluate trans IR SIMD
-    this -> AddTrans(simdir, avalues, coefs); // warmup
-    starttime = WallTime();
-    steps = 0;
-    do
-      {
-        for (size_t i = 0; i < 1000; i++)
-          this -> AddTrans(simdir, avalues, coefs);
-        steps += 1000;
-	time = WallTime()-starttime;
-      }
-    while (time < maxtime);
+    time = RunTiming([&]() {
+                     for (size_t i = 0; i < steps; i++)
+                       this -> AddTrans(simdir, avalues, coefs);
+                     }, maxtime);
     timings.push_back(make_tuple("Evaluate Trans (SIMD)", time/steps*1e9/(GetNDof()*ir.GetNIP())));
 
-
-    // evaluate trans grad IR
-    this -> EvaluateGradTrans(ir, dvalues, coefs); // warmup
-    starttime = WallTime();
-    steps = 0;
-    do
-      {
-        for (size_t i = 0; i < 1000; i++)
-          this -> EvaluateGradTrans(ir, dvalues, coefs);
-        steps += 1000;
-	time = WallTime()-starttime;
-      }
-    while (time < maxtime);
+    time = RunTiming([&]() {
+                     for (size_t i = 0; i < steps; i++)
+                       this -> EvaluateGradTrans(ir, dvalues, coefs);
+                     }, maxtime);
     timings.push_back(make_tuple("Evaluate Trans Grad", time/steps*1e9/(D*GetNDof()*ir.GetNIP())));
 
-
-    // evaluate trans grad IR SIMD
-    this -> AddGradTrans(simdmir, advalues, coefs); // warmup
-    starttime = WallTime();
-    steps = 0;
-    do
-      {
-        for (size_t i = 0; i < 1000; i++)
-          this -> AddGradTrans(simdmir, advalues, coefs);
-        steps += 1000;
-	time = WallTime()-starttime;
-      }
-    while (time < maxtime);
+    time = RunTiming([&]() {
+                     for (size_t i = 0; i < steps; i++)
+                       this -> AddGradTrans(simdmir, advalues, coefs);
+                     }, maxtime);
     timings.push_back(make_tuple("Evaluate Trans Grad(SIMD)", time/steps*1e9/(D*GetNDof()*ir.GetNIP())));
-    
+
     return timings;
   }
 
