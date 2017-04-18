@@ -63,9 +63,9 @@ if (NETGEN_USE_GUI)
             ${ngsolve_object_libs}
             ngsolve.cpp shapetester.cpp 
             )
-          target_link_libraries(ngsolve nglib ${MPI_CXX_LIBRARIES} ${NETGEN_PYTHON_LIBRARIES} ${LAPACK_LIBRARIES} ${TCL_LIBRARY} ${PARDISO_LIB} ${UMFPACK_LIBRARIES})
+          target_link_libraries(ngsolve PUBLIC nglib ${MPI_CXX_LIBRARIES} ${NETGEN_PYTHON_LIBRARIES} ${LAPACK_LIBRARIES} ${TCL_LIBRARY} PRIVATE ${PARDISO_LIB} ${UMFPACK_LIBRARIES})
     if(NOT WIN32)
-        target_link_libraries(ngsolve solve ngcomp ngstd ngfem ngla ngbla)
+        target_link_libraries(ngsolve PUBLIC solve ngcomp ngstd ngfem ngla ngbla)
     endif(NOT WIN32)
     install( TARGETS ngsolve ${ngs_install_dir} )
     if(WIN32)
