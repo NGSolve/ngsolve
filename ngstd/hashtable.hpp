@@ -472,7 +472,14 @@ namespace ngstd
       hash = T_HASH(invalid);
     }
 
-    ///
+    ClosedHashTable (FlatArray<T_HASH> _hash, FlatArray<T> _cont)
+      : size(_hash.Size()), hash(_hash.Size(), _hash.Addr(0)), cont(_cont.Size(), _cont.Addr(0))
+    {
+      invalid = -1; 
+      hash = T_HASH(invalid);
+    }
+
+    /// allocate on local heap
     ClosedHashTable (size_t asize, LocalHeap & lh)
       : size(asize), hash(asize, lh), cont(asize, lh)
     {
@@ -606,6 +613,35 @@ namespace ngstd
       // hash[i] = invalid;
       hash = T_HASH(invalid);
     }
+
+    class Iterator
+    {
+      const ClosedHashTable & tab;
+      size_t nr;
+    public:
+      Iterator (const ClosedHashTable & _tab, size_t _nr)
+        : tab(_tab), nr(_nr)
+      {
+        while (nr < tab.Size() && !tab.UsedPos(nr)) nr++;
+      }
+      Iterator & operator++()
+      {
+        nr++;
+        while (nr < tab.Size() && !tab.UsedPos(nr)) nr++;
+        return *this;
+      }
+      bool operator!= (const Iterator & it2) { return nr != it2.nr; }
+      auto operator* () const
+      {
+        T_HASH hash;
+        T val;
+        tab.GetData(nr, hash,val);
+        return std::make_pair(hash,val);
+      }
+    };
+
+    Iterator begin() const { return Iterator(*this, 0); }
+    Iterator end() const { return Iterator(*this, Size()); } 
   };
 
   template <class T_HASH, class T>  
