@@ -427,6 +427,32 @@ namespace ngstd
   };
 #endif
 
+  // Helper function for timings
+  // Run f() at least min_iterations times until max_time seconds elapsed
+  // returns minimum runtime for a call of f()
+  template<typename TFunc>
+  double RunTiming( TFunc f, double max_time = 0.5, int min_iterations = 10 )
+  {
+      // Make sure the whole test run does not exceed maxtime
+      double tend = WallTime()+max_time;
+
+      // warmup
+      f();
+
+      double tres = std::numeric_limits<double>::max();
+      int iteration = 0;
+      while(WallTime()<tend || iteration++ < min_iterations)
+      {
+          double t = -WallTime();
+          f();
+          t += WallTime();
+          tres = min2(tres, t);
+      }
+
+      return tres;
+  }
+
+
 }
 
 

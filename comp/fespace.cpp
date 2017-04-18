@@ -958,7 +958,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
   {
     double starttime;
     double time;
-    int steps;
     std::list<std::tuple<std::string,double>> results;
     LocalHeap lh (100000, "FESpace - Timing");
 
@@ -966,9 +965,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     //      << (low_order_space ? "" : " low-order")
     //      << " ..." << endl;
 
-    steps = 0;
-    do
-      {
+    time = RunTiming([&]() {
         ParallelForRange( IntRange(ma->GetNE()), [&] ( IntRange r )
         {
 	  LocalHeap &clh = lh, lh = clh.Split();
@@ -976,44 +973,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  for (int i : r)
             GetDofNrs (ElementId(VOL,i), dnums);
 	});
-	steps++;
-        if(steps==1) starttime = WallTime();
-	time = WallTime()-starttime;
-      }
-    while (time < 2.0);
-    results.push_back(std::make_tuple<std::string,double>("GetDofNrs",1e9*time / (ma->GetNE()*steps)));
-    //cout << 1e9*time / (ma->GetNE()*steps) << " ns per GetDofNrs (parallel)" << endl;
-    
-    /*
-    starttime = WallTime();
-    steps = 0;
-    do
-      {
-#pragma omp parallel
-        {
-	  LocalHeap &clh = lh, lh = clh.Split();
-#pragma omp for
-	  for (int i = 0; i < ma->GetNE(); i++)
-	    {
-              HeapReset hr(lh);
-              // FlatArray<int> dnums = 
-              GetDofNrs (ElementId (VOL, i), lh);
-	    }
-	}
-	steps++;
-	time = WallTime()-starttime;
-      }
-    while (time < 2.0);
-    
-    cout << 1e9*time / (ma->GetNE()*steps) << " ns per GetDofNrs(lh) (parallel)" << endl;
-    */
+    });
+    results.push_back(std::make_tuple<std::string,double>("GetDofNrs",1e9*time / (ma->GetNE())));
 
-
-
-
-    steps = 0;
-    do
-      {
+    time = RunTiming([&]() {
         ParallelForRange( IntRange(ma->GetNE()), [&] ( IntRange r )
         {
 	  LocalHeap &clh = lh, lh = clh.Split();
@@ -1024,38 +987,19 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	      GetFE (ElementId(VOL,i), lh);
 	    }
 	});
-        steps++;
-        if(steps==1) starttime = WallTime();
-        time = WallTime()-starttime;
-      }
-    while (time < 2.0);
+    });
+    results.push_back(std::make_tuple<std::string,double>("GetFE",1e9 * time / (ma->GetNE()))); 
 
-    results.push_back(std::make_tuple<std::string,double>("GetFE",1e9 * time / (ma->GetNE()*steps))); 
-    //    cout << 1e9 * time / (ma->GetNE()*steps) << " ns per GetFE (parallel)" << endl;
-
-
-
-
-    steps = 0;
-    do
-      {
+    time = RunTiming([&]() {
         ParallelFor( IntRange(ma->GetNE()), [&] (size_t i)
           {
 	    /* Ng_Element ngel = */ ma->GetElement(ElementId(VOL,i));
           });
-        steps++;
-        if(steps==1) starttime = WallTime();
-        time = WallTime()-starttime;
-      }
-    while (time < 2.0);
-
-    results.push_back(std::make_tuple<std::string,double>("Get Ng_Element", 1e9 * time / (ma->GetNE()*steps)));
-    //    cout << 1e9 * time / (ma->GetNE()*steps) << " ns per Get - Ng_Element (parallel)" << endl;
+    });
+    results.push_back(std::make_tuple<std::string,double>("Get Ng_Element", 1e9 * time / (ma->GetNE())));
 
 
-    steps = 0;
-    do
-      {
+    time = RunTiming([&]() {
         ParallelForRange( IntRange(ma->GetNE()), [&] ( IntRange r )
         {
 	  LocalHeap &clh = lh, lh = clh.Split();
@@ -1065,23 +1009,14 @@ lot of new non-zero entries in the matrix!\n" << endl;
               /* ElementTransformation & trafo = */ ma->GetTrafo(ElementId(VOL, i), lh);
             }
         });
-        steps++;
-        if(steps==1) starttime = WallTime();
-        time = WallTime()-starttime;
-      }
-    while (time < 2.0);
-
-    results.push_back(std::make_tuple<std::string,double>("GetTrafo", 1e9 * time / (ma->GetNE()*steps)));
-    //    cout << 1e9 * time / (ma->GetNE()*steps) << " ns per GetTrafo(parallel)" << endl;
-
-
-
+    });
+    results.push_back(std::make_tuple<std::string,double>("GetTrafo", 1e9 * time / (ma->GetNE())));
 
 #ifdef TIMINGSEQUENTIAL
 
 
     starttime = WallTime();
-    steps = 0;
+    int steps = 0;
     do
       {
         for (int i = 0; i < ma->GetNE(); i++)
