@@ -168,6 +168,18 @@ namespace ngstd
       s << (int) i2[j] << " ";
     return s;
   }
+  
+  template <int N, typename T>
+  auto begin(const INT<N,T> & ind)
+  {
+    return AOWrapperIterator<INT<N,T>> (ind, 0);
+  }
+
+  template <int N, typename T>
+  auto end(const INT<N,T> & ind)
+  {
+    return AOWrapperIterator<INT<N,T>> (ind, N);    
+  }
 
 
   template <int N, typename TI>
