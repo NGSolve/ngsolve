@@ -216,7 +216,7 @@ namespace ngfem
   ///
   ParameterCoefficientFunction ::   
   ParameterCoefficientFunction (double aval) 
-    : CoefficientFunction(1, false), val(aval) 
+    : CoefficientFunctionNoDerivative(1, false), val(aval)
   { ; }
 
   ParameterCoefficientFunction ::
