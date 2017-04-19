@@ -458,7 +458,7 @@ namespace ngfem
 
 
   /// The coefficient is constant everywhere
-  class NGS_DLL_HEADER ParameterCoefficientFunction : public CoefficientFunction
+  class NGS_DLL_HEADER ParameterCoefficientFunction : public CoefficientFunctionNoDerivative
   {
     ///
     double val;
@@ -479,25 +479,6 @@ namespace ngfem
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
                            AFlatMatrix<double> values) const
     { values = val; }
-
-    virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
-                                FlatArray<AFlatMatrix<>*> input, FlatArray<AFlatMatrix<>*> dinput,
-                                AFlatMatrix<> result, AFlatMatrix<> deriv) const
-    {
-      result = val;
-      deriv = 0.0;
-    }
-
-    virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & ir,
-                                 FlatArray<AFlatMatrix<>*> input, FlatArray<AFlatMatrix<>*> dinput,
-                                 FlatArray<AFlatMatrix<>*> ddinput,
-                                 AFlatMatrix<> result, AFlatMatrix<> deriv,
-                                 AFlatMatrix<> dderiv) const
-    {
-      result = val;
-      deriv = 0.0;
-      dderiv = 0.0;
-    }
 
     virtual void SetValue (double in) { val = in; }
     virtual double GetValue () { return val; }
