@@ -961,11 +961,11 @@ namespace ngla
         if (c.Height() < 128 && c.Width() < 128)
           // if (true)
           {
-            timer2.Start();
+            // timer2.Start();
             // c -= a * Trans(b) | Lapack;
             ngbla::SubABt(a,b,c);
-            timer2.Stop();
-            timer2.AddFlops(c.Height()*c.Width()*a.Width());
+            // timer2.Stop();
+            // timer2.AddFlops(c.Height()*c.Width()*a.Width());
           }
         else
           {
@@ -1038,10 +1038,10 @@ namespace ngla
              (size_t(c.Height())*c.Width()*a.Width() < 10000) )
           // if (true)
           {
-            timer2.Start();
+            // timer2.Start();
             ngbla::SubADBt(a,diag,b,c);
-            timer2.Stop();
-            timer2.AddFlops(size_t(c.Height())*c.Width()*a.Width());
+            // timer2.Stop();
+            // timer2.AddFlops(size_t(c.Height())*c.Width()*a.Width());
           }
         else
           {
@@ -1267,7 +1267,7 @@ namespace ngla
 	int mi = last_same - i1;
         int nk = hfirstinrow[i1+1] - hfirstinrow[i1] + 1;
         
-        factor_dense1.Start();
+        // factor_dense1.Start();
         Matrix<TM,ColMajor> tmp(nk, nk);
 
         bool big = nk > 1000;
@@ -1289,19 +1289,19 @@ namespace ngla
             tmp.Col(j).Range(j+1,nk) = FlatVector<TM>(nk-j-1, hlfact+hfirstinrow[i1+j]);
           }
 
-        factor_dense1.Stop();
+        // factor_dense1.Stop();
         
         auto A11 = tmp.Rows(0,mi).Cols(0,mi);
         auto B   = tmp.Rows(mi,nk).Cols(0,mi);
         auto A22 = tmp.Rows(mi,nk).Cols(mi,nk);
-        factor_dense.Start();
+        // factor_dense.Start();
         CalcLDL (A11);
         if (mi < nk)
           {
             CalcLDL_SolveL (A11,B);
             CalcLDL_A2 (A11.Diag(),B,A22);
           }
-        factor_dense.Stop();          
+        // factor_dense.Stop();          
 
         
         auto write_back_row = [&](int j)
@@ -1326,7 +1326,7 @@ namespace ngla
 	size_t lasti = hfirstinrow[i1+1]-1;
 	mi = lasti-firsti+1;
 
-        timerc1.Start();
+        // timerc1.Start();
 
         auto merge_row = [&] (int j)
           {
@@ -1358,9 +1358,9 @@ namespace ngla
           ParallelFor (Range(mi), merge_row);
           
 
-        timerc1.Stop();
+        // timerc1.Stop();
 
-        timerc2.Start();
+        // timerc2.Start();
 	for (int i2 = i1; i2 < last_same; i2++)
 	  {
 	    size_t first = hfirstinrow[i2] + last_same-i2-1;
@@ -1373,7 +1373,7 @@ namespace ngla
 		diag[rowindex2[j_ri]] -= Trans (lfact[j]) * q;
 	      }
 	  }
-        timerc2.Stop();
+        // timerc2.Stop();
 	i1 = last_same;
         timerc.Stop();
       }
