@@ -1765,7 +1765,7 @@ namespace ngla
                  });
     t1.Stop();
     t2.Start();
-    SparseMatrixTM<double> * trans = new SparseMatrix<double>(cnt);
+    SparseMatrixTM<double> * trans = new SparseMatrix<double>(cnt, mat.Height());
     cnt = 0;
     for (int i = 0; i < mat.Height(); i++)
       for (int ci : Range(mat.GetRowIndices(i)))
