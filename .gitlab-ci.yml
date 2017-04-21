@@ -71,6 +71,12 @@ stages:
     UBUNTU_VERSION: "16.10"
     UBUNTU_VERSION_NAME: "yakkety"
 
+.template_ubuntu_1704: &ubuntu_1704
+  <<: *ubuntu
+  variables:
+    UBUNTU_VERSION: "17.04"
+    UBUNTU_VERSION_NAME: "zesty"
+
 # MacOSX
 .template_mac: &mac
   tags:
@@ -157,6 +163,10 @@ ubuntu_1610_build:
   <<: *ubuntu_1610
   <<: *build_linux
 
+ubuntu_1704_build:
+  <<: *ubuntu_1704
+  <<: *build_linux
+
 mac_build:
   <<: *mac
   stage: build
@@ -209,6 +219,7 @@ win64_test:
     - >-
       docker run
       -e NETGENDIR=/opt/netgen/bin
+      -e NGS_NUM_THREADS=6
       -e PYTHONPATH=/opt/netgen/lib/python3/dist-packages
       -e MKLROOT=/opt/intel/mkl
       -e LD_LIBRARY_PATH=/opt/intel/mkl/lib/intel64
@@ -226,6 +237,10 @@ ubuntu_1604_test:
 
 ubuntu_1610_test:
   <<: *ubuntu_1610
+  <<: *test_linux
+
+ubuntu_1704_test:
+  <<: *ubuntu_1704
   <<: *test_linux
 
 mac_test:
@@ -350,6 +365,8 @@ linux_cleanup:
     - docker rmi -f ngsolve_${CI_PIPELINE_ID}_installed:16.04
     - docker rmi -f ngsolve_${CI_PIPELINE_ID}:16.10
     - docker rmi -f ngsolve_${CI_PIPELINE_ID}_installed:16.10
+    - docker rmi -f ngsolve_${CI_PIPELINE_ID}:17.04
+    - docker rmi -f ngsolve_${CI_PIPELINE_ID}_installed:17.04
   when: always
   allow_failure: true
 
