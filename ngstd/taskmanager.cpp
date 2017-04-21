@@ -15,7 +15,7 @@ namespace ngstd
 {
   TaskManager * task_manager = nullptr;
   bool TaskManager :: use_paje_trace = false;
-  int TaskManager :: max_threads = std::thread::hardware_concurrency();
+  int TaskManager :: max_threads = getenv("NGS_NUM_THREADS") ? atoi(getenv("NGS_NUM_THREADS")) : std::thread::hardware_concurrency();
 #ifndef __clang__      
   thread_local int TaskManager :: thread_id;
 #else
