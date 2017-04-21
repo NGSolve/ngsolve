@@ -1,3 +1,9 @@
+if [ "$UBUNTU_VERSION_NAME" == "debug" ]
+then
+  /root/src/ngsolve/tests/build_debug.sh
+  exit
+fi
+
 set -e
 cd 
 cd src/ngsolve
