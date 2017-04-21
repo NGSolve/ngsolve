@@ -575,7 +575,7 @@ namespace ngcomp
 	    break;
 	  case ET_PRISM:
 	    if(p[0] > 2 && p[2] > 1)
-	      hndof = (p[0]-1)*(p[0]-2)*(p[2]-1)/2;
+	      neldof = (p[0]-1)*(p[0]-2)*(p[2]-1)/2;
 	    break;
 	  case ET_PYRAMID:
 	    if(p[0] > 2)
