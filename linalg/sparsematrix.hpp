@@ -805,6 +805,8 @@ public:
     virtual shared_ptr<BaseMatrix> InverseMatrix (const Array<int> * clusters) const;
   };
 
+  SparseMatrixTM<double> * TransposeMatrix (const SparseMatrixTM<double> & mat);
+
   SparseMatrixTM<double> *
   MatMult (const SparseMatrix<double, double, double> & mata, const SparseMatrix<double, double, double> & matb);
 
