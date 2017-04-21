@@ -77,6 +77,12 @@ stages:
     UBUNTU_VERSION: "17.04"
     UBUNTU_VERSION_NAME: "zesty"
 
+.template_ubuntu_debug: &ubuntu_debug
+  <<: *ubuntu
+  variables:
+    UBUNTU_VERSION: "debug"
+    UBUNTU_VERSION_NAME: "debug"
+
 # MacOSX
 .template_mac: &mac
   tags:
@@ -167,6 +173,10 @@ ubuntu_1704_build:
   <<: *ubuntu_1704
   <<: *build_linux
 
+debug_build:
+  <<: *ubuntu_debug
+  <<: *build_linux
+
 mac_build:
   <<: *mac
   stage: build
@@ -241,6 +251,10 @@ ubuntu_1610_test:
 
 ubuntu_1704_test:
   <<: *ubuntu_1704
+  <<: *test_linux
+
+debug_test:
+  <<: *ubuntu_debug
   <<: *test_linux
 
 mac_test:
