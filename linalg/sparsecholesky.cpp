@@ -1261,7 +1261,7 @@ namespace ngla
           }
 
         
-        timerb.Start();
+        // timerb.Start();
 
 	// rows in same block ...
 	int mi = last_same - i1;
@@ -1316,8 +1316,8 @@ namespace ngla
         else
           ParallelFor (mi, write_back_row);
 
-        timerb.Stop();
-        timerc.Start();
+        // timerb.Stop();
+        //timerc.Start();
 
 
 	// merge rows
@@ -1375,7 +1375,7 @@ namespace ngla
 	  }
         // timerc2.Stop();
 	i1 = last_same;
-        timerc.Stop();
+        // timerc.Stop();
       }
 
     size_t j = 0;
