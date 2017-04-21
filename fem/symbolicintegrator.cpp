@@ -1983,8 +1983,8 @@ namespace ngfem
 
 
       
-      for (int k = 0; k < nfacet; k++)
-        {
+    for (int k = 0; k < nfacet; k++)
+      {
           HeapReset hr(lh);
           ngfem::ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype, k);
         

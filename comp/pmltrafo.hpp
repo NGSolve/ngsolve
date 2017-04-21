@@ -240,7 +240,7 @@ namespace ngcomp
   public:
 
     RadialPML_Transformation(double _rad, Complex _alpha, FlatVector<double> _origin) 
-      : PML_TransformationDim<DIM>(), rad(_rad), alpha(_alpha) 
+      : PML_TransformationDim<DIM>(), alpha(_alpha), rad(_rad)
     { 
       origin = 0.;
       for (int i : Range(min(int(_origin.Size()),DIM)))

@@ -83,7 +83,6 @@ namespace ngfem
     const_cast<ElementTransformation&>(tptrafo).userdata = &ud;
     ud.lh = &lh;
     ud.fel = &fel;
-    int ndofy = fel.GetNDof();
     int nipx = mirx->Size();
     int nipy = miry.Size();
     int niptp = nipx*nipy;
@@ -320,7 +319,6 @@ namespace ngfem
     const_cast<ElementTransformation&>(tptrafo).userdata = &ud;
     ud.lh = &lh;
     ud.fel = &fel;
-    int ndofy = fel.GetNDof();
     int nipx = mirx->Size();
     int nipy = miry.Size();
     int niptp = nipx*nipy;
@@ -471,7 +469,6 @@ namespace ngfem
     const_cast<ElementTransformation&>(tptrafo).userdata = &ud;
     ud.lh = &lh;
     ud.fel = &fel;
-    int ndofx = fel.GetNDof();
     int nipx = mirx.Size();
     int nipy = miry->Size();
     int niptp = nipx*nipy;

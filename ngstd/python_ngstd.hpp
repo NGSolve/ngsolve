@@ -2,15 +2,20 @@
 #define PYTHON_NGSTD_HPP___
 #ifdef NGS_PYTHON
 
+#ifdef __clang__
 #pragma clang diagnostic push
 // #pragma clang diagnostic ignored "-W#pragma-messages"
 #pragma clang diagnostic ignored "-Wunused-local-typedefs"
+#endif
+
 #include <pybind11/pybind11.h>
 #include <pybind11/operators.h>
 #include <pybind11/complex.h>
 #include <pybind11/stl.h>
 
+#ifdef __clang__
 #pragma clang diagnostic pop
+#endif
 
 #include <ngstd.hpp>
 #include <thread>
@@ -128,7 +133,7 @@ typedef py::gil_scoped_acquire AcquireGIL;
 typedef py::gil_scoped_release ReleaseGIL; 
 
 
-static void InitSlice( const py::slice &inds, size_t len, size_t &start, size_t &step, size_t &n ) {
+inline void InitSlice( const py::slice &inds, size_t len, size_t &start, size_t &step, size_t &n ) {
       size_t stop;
       if (!inds.compute(len, &start, &stop, &step, &n))                                          
         throw py::error_already_set();
