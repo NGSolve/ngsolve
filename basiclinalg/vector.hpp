@@ -1376,7 +1376,7 @@ namespace ngbla
     size_t Height() const { return height; }
     size_t Width() const { return width; }
     DummySize( size_t aheight, size_t awidth=1 ) :
-      width(awidth), height(aheight) {;}
+      height(aheight), width(awidth) {;}
   };
 #else 
   class DummySize {

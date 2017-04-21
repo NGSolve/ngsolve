@@ -75,28 +75,28 @@ void TestFiniteElement(T fel)
               for (auto i : Range(coefs.Size()))
                 coefs[i] = i*0.5;
 
-                fel.Evaluate(ir,coefs,values);
+              fel.Evaluate(ir,coefs,values);
 
-                SECTION ("SIMD", "[SIMD]")
-                  {
-                    SIMD_IntegrationRule simdir(fel.ElementType(),fel.Order());
-                    Vector<SIMD<double>> simd_values(simdir.Size());
+              SECTION ("SIMD", "[SIMD]")
+                {
+                  SIMD_IntegrationRule simdir(fel.ElementType(),fel.Order());
+                  Vector<SIMD<double>> simd_values(simdir.Size());
 
-                    try
-                      {
-                        fel.Evaluate(simdir,coefs,simd_values);
-                        AFlatVector<double> avalues(values.Size(),&simd_values[0]);
-                        SECTION("SIMD correctness", "[SIMD]")
-                          {
-                            CHECK(L2Norm(values-avalues) < 1e-10);
-                          }
-                      }
-                    catch(Exception ex)
-                      {
-                        CHECK_THROWS_AS(throw ex, ExceptionNOSIMD);
-                        WARN("SIMD not implemented");
-                      }
-                  }
+                  try
+                    {
+                      fel.Evaluate(simdir,coefs,simd_values);
+                      AFlatVector<double> avalues(values.Size(),&simd_values[0]);
+                      SECTION("SIMD correctness", "[SIMD]")
+                        {
+                          CHECK(L2Norm(values-avalues) < 1e-10);
+                        }
+                    }
+                  catch(Exception ex)
+                    {
+                      CHECK_THROWS_AS(throw ex, ExceptionNOSIMD);
+                      WARN("SIMD not implemented");
+                    }
+                }
             }
 }
 

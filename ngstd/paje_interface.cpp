@@ -432,8 +432,8 @@ namespace ngstd
           if(t.id_type==Task::ID_TIMER)
             timer_ids.insert(t.id);
 
-          for(auto id : timer_ids)
-            timer_aliases[id] = paje.DefineEntityValue( state_type_timer, NgProfiler::GetName(id).c_str(), -1 );
+      for(auto id : timer_ids)
+        timer_aliases[id] = paje.DefineEntityValue( state_type_timer, NgProfiler::GetName(id).c_str(), -1 );
 
       int timerdepth = 0;
       int maxdepth = 0;

@@ -24,7 +24,7 @@ namespace ngfem
       }
       else if(dimx == 2)
         ip.GetPoint()[0] = ip.GetPoint()[2];  
-      return coef->Evaluate(ip);
+    return coef->Evaluate(ip);
   }
 
   void ProlongateCoefficientFunction :: Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
@@ -375,9 +375,7 @@ namespace ngfem
             LocalHeap & lh) const
   {
     auto & evalx = static_cast<TPDifferentialOperator*>(diffop.get())->GetEvaluators(0);
-    auto & evaly = static_cast<TPDifferentialOperator*>(diffop.get())->GetEvaluators(1);
     int dimx = evalx->Dim();
-    int dimy = evaly->Dim();
     int nipx = mirx.IR().Size();
     FlatMatrix<double, ColMajor> bmatx( nipx*dimx, fel.GetNDof(),lh );
     evalx->CalcMatrix(fel,mirx,bmatx,lh);
