@@ -746,7 +746,10 @@ namespace ngla
                                       fx((*blocktable)[i][j]) += hy(j);
                                   }
 
-                              });
+                              },
+                              TasksPerThread(2),
+                              TotalCosts(color_balance[c].GetTotalCosts())
+                              );
             
           }
     else
