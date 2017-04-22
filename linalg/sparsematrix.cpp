@@ -1013,8 +1013,9 @@ namespace ngla
     ArrayMem<int, 50> map(dnums2.Size());
     for (int i = 0; i < map.Size(); i++) map[i] = i;
     QuickSortI (dnums2, map);
-
-    Scalar2ElemMatrix<TM, TSCAL> elmat (elmat1.AddSize(dnums1.Size(), dnums2.Size()));
+    Scalar2ElemMatrix<TM, TSCAL> elmat (elmat1);
+      // .AddSize(mat_traits<TM>::HEIGHT*dnums1.Size(),
+      // mat_traits<TM>::WIDTH*dnums2.Size()));
 
     for (int i = 0; i < dnums1.Size(); i++)
       if (dnums1[i] != -1)
@@ -1605,7 +1606,9 @@ namespace ngla
     for (int i = 0; i < dnums.Size(); i++) map[i] = i;
     QuickSortI (dnums, map);
 
-    Scalar2ElemMatrix<TM, TSCAL> elmat (elmat1.AddSize(dnums.Size(), dnums.Size()));
+    Scalar2ElemMatrix<TM, TSCAL> elmat (elmat1);
+      // .AddSize(mat_traits<TM>::HEIGHT*dnums.Size(),
+      // mat_traits<TM>::WIDTH*dnums.Size()));
 
     int first_used = 0;
     while (first_used < dnums.Size() && dnums[map[first_used]] == -1) first_used++;
