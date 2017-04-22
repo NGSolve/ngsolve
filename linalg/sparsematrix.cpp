@@ -1766,6 +1766,7 @@ namespace ngla
     t1.Stop();
     t2.Start();
     SparseMatrixTM<double> * trans = new SparseMatrix<double>(cnt, mat.Height());
+    /*
     cnt = 0;
     for (int i = 0; i < mat.Height(); i++)
       for (int ci : Range(mat.GetRowIndices(i)))
@@ -1775,6 +1776,26 @@ namespace ngla
           trans -> GetRowIndices(c)[pos] = i;
           trans -> GetRowValues(c)[pos] = mat.GetRowValues(i)[ci];
         }
+    */
+    cnt = 0;
+    ParallelFor (mat.Height(), [&] (int i)
+                 {
+                   for (int ci : Range(mat.GetRowIndices(i)))
+                     {
+                       int c = mat.GetRowIndices(i)[ci];
+                       int pos = AsAtomic(cnt[c])++;
+                       trans -> GetRowIndices(c)[pos] = i;
+                       trans -> GetRowValues(c)[pos] = mat.GetRowValues(i)[ci];
+                     }
+                 });
+
+    ParallelFor (trans->Height(), [&] (int r)
+                 {
+                   auto rowvals = trans->GetRowValues(r);
+                   BubbleSort (trans->GetRowIndices(r),
+                               FlatArray<double> (rowvals.Size(), &rowvals(0)));
+                 });
+
     t2.Stop();
     return trans;
   }
