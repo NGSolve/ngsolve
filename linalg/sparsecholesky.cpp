@@ -1941,7 +1941,7 @@ namespace ngla
                                          for (size_t j = 0; j < size; j++)
                                            hyr(j) -= Trans(vlfact(j)) * hyi;
                                        }
-
+                                     if (extdofs.Size() == 0) continue;
                                      size_t first = firstinrow[i] + range.end()-i-1;
                                      FlatVector<TM> ext_lfact (extdofs.Size(), &lfact[first]);
                                      for (size_t j = 0; j < temp.Size(); j++)
@@ -2035,17 +2035,18 @@ namespace ngla
                                  VectorMem<520,TVX> temp(extdofs.Size());
                                  for (auto j : Range(extdofs))
                                    temp(j) = hy(extdofs[j]);
-                                 
-                                 for (auto i : range)
-                                   {
-                                     size_t first = firstinrow[i] + range.end()-i-1;
-                                     FlatVector<TM> ext_lfact (extdofs.Size(), &lfact[first]);
-                                     
-                                     TVX val(0.0);
-                                     for (auto j : Range(extdofs))
-                                       val += ext_lfact(j) * temp(j);
-                                     hy(i) -= val;
-                                   }
+
+                                 if (extdofs.Size())
+                                   for (auto i : range)
+                                     {
+                                       size_t first = firstinrow[i] + range.end()-i-1;
+                                       FlatVector<TM> ext_lfact (extdofs.Size(), &lfact[first]);
+                                       
+                                       TVX val(0.0);
+                                       for (auto j : Range(extdofs))
+                                         val += ext_lfact(j) * temp(j);
+                                       hy(i) -= val;
+                                     }
                                  for (size_t i = range.end()-1; i-- > range.begin(); )
                                    {
                                      size_t size = range.end()-i-1;
