@@ -63,7 +63,7 @@ namespace ngstd
     NodeData *nodedata[8];
 
     int num_nodes;
-    int num_threads;
+    static int num_threads;
     static int max_threads;
 #ifndef __clang__    
     static thread_local int thread_id;
@@ -90,7 +90,8 @@ namespace ngstd
 
     static void SetNumThreads(int amax_threads);
     static int GetMaxThreads() { return max_threads; }
-    static int GetNumThreads() { return task_manager ? task_manager->num_threads : 1; }
+    // static int GetNumThreads() { return task_manager ? task_manager->num_threads : 1; }
+    static int GetNumThreads() { return num_threads; }
     static int GetThreadId() { return task_manager ? task_manager->thread_id : 0; }
     int GetNumNodes() const { return num_nodes; }
 
@@ -139,14 +140,25 @@ namespace ngstd
 
   INLINE int TasksPerThread (int tpt)
   {
-    return task_manager ? tpt*task_manager->GetNumThreads() : 1;
+    // return task_manager ? tpt*task_manager->GetNumThreads() : 1;
+    return tpt*TaskManager::GetNumThreads();
   }
+  
+
+  class TotalCosts
+  {
+    size_t cost;
+  public:
+    TotalCosts (size_t _cost) : cost(_cost) { ; }
+    size_t operator ()() { return cost; }
+  };
 
   template <typename TR, typename TFUNC>
   INLINE void ParallelFor (T_Range<TR> r, TFUNC f, 
-                           int antasks = task_manager ? task_manager->GetNumThreads() : 0)
+                           int antasks = task_manager ? task_manager->GetNumThreads() : 0,
+                           TotalCosts costs = 1000)
   {
-    if (task_manager)
+    if (task_manager && costs() >= 1000)
 
       task_manager -> CreateJob 
         ([r, f] (TaskInfo & ti) 
@@ -161,18 +173,26 @@ namespace ngstd
       for (auto i : r) f(i);
   }
 
+  /*
   template <typename TFUNC>
   INLINE void ParallelFor (size_t n, TFUNC f, 
                            int antasks = task_manager ? task_manager->GetNumThreads() : 0)
   {
     ParallelFor (IntRange (n), f, antasks);
   }
+  */
+  template <typename ...Args>
+  INLINE void ParallelFor (size_t n, Args...args)
+  {
+    ParallelFor (IntRange (n), args...);
+  }
   
   template <typename TR, typename TFUNC>
   INLINE void ParallelForRange (T_Range<TR> r, TFUNC f, 
-                                int antasks = task_manager ? task_manager->GetNumThreads() : 0)
+                                int antasks = task_manager ? task_manager->GetNumThreads() : 0,
+                                TotalCosts costs = 1000)
   {
-    if (task_manager)
+    if (task_manager && costs() >= 1000)
 
       task_manager -> CreateJob 
         ([r, f] (TaskInfo & ti) 
@@ -187,13 +207,19 @@ namespace ngstd
       f(r);
   }
 
+  /*
   template <typename TFUNC>
   INLINE void ParallelForRange (size_t n, TFUNC f, 
                                 int antasks = task_manager ? task_manager->GetNumThreads() : 0)
   {
     ParallelForRange (IntRange(n), f, antasks);
   }
-
+  */
+  template <typename ...Args>
+  INLINE void ParallelForRange (size_t n, Args...args)
+  {
+    ParallelForRange (IntRange(n), args...);
+  }
   
   template <typename TFUNC>
   INLINE void ParallelJob (TFUNC f, 
@@ -473,6 +499,7 @@ public:
   class Partitioning
   {
     Array<size_t> part;
+    size_t total_costs;
   public:
     Partitioning () { ; }
 
@@ -482,7 +509,7 @@ public:
     template <typename T>
     Partitioning & operator= (const Array<T> & apart) { part = apart; return *this; }
 
-
+    size_t GetTotalCosts() const { return total_costs; }
 
     template <typename TFUNC>
     void Calc (size_t n, TFUNC costs, int size = task_manager ? task_manager->GetNumThreads() : 1)
@@ -495,7 +522,7 @@ public:
           sum += costs(i);
           prefix[i] = sum;
         }
-      
+      total_costs = sum;
       part.SetSize (size+1);
       part[0] = 0;
 
@@ -573,9 +600,10 @@ public:
 
 
   template <typename TFUNC>
-  INLINE void ParallelForRange (const Partitioning & part, TFUNC f, int tasks_per_thread = 1)
+  INLINE void ParallelForRange (const Partitioning & part, TFUNC f,
+                                int tasks_per_thread = 1, TotalCosts costs = 1000)
   {
-    if (task_manager)
+    if (task_manager && costs() >= 1000)
       {
         int ntasks = tasks_per_thread * task_manager->GetNumThreads();
         if (ntasks % part.Size() != 0)
