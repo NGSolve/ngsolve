@@ -1870,8 +1870,8 @@ namespace ngbla
   class Scalar2ElemMatrix 
   {
   public:
-    const SliceMatrix<TSCAL> mat;
-    Scalar2ElemMatrix (const SliceMatrix<TSCAL> amat) : mat(amat) { ; }
+    const BareSliceMatrix<TSCAL> mat;
+    Scalar2ElemMatrix (const BareSliceMatrix<TSCAL> amat) : mat(amat) { ; }
 
     enum { H = mat_traits<TM>::HEIGHT };
     enum { W = mat_traits<TM>::WIDTH };

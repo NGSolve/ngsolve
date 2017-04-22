@@ -2686,14 +2686,14 @@ namespace ngcomp
     catch (Exception & e)
       {
         stringstream ost;
-        ost << "in Assemble BilinearForm" << endl;
+        ost << "in AssembleLinearization\n" << endl;
         e.Append (ost.str());
         throw;
       }
     catch (exception & e)
       {
         throw (Exception (string(e.what()) +
-                          string("\n in Assemble BilinearForm\n")));
+                          string("\n in AssembleLinearization\n")));
       }
   }
 
