@@ -284,90 +284,109 @@ namespace ngstd
   template <class T_HASH, class T>
   class HashTable
   {
+    /*
     DynamicTable<T_HASH> hash;
     DynamicTable<T> cont;
-
+    */
+    DynamicTable<pair<T_HASH,T>> table;
   public:
     /// Constructs a hashtable of size bags.
     INLINE HashTable (int size)
-      : hash(size), cont(size)
+    // : hash(size), cont(size)
+      : table(size)
     { ; }
     INLINE ~HashTable () { ; }
 
     /// Sets identifier ahash to value acont
     void Set (const T_HASH & ahash, const T & acont)
     {
-      int bnr = HashValue (ahash, hash.Size());
+      int bnr = HashValue (ahash, Size());
       int pos = CheckPosition (bnr, ahash);
       if (pos != -1)
-	cont.Set (bnr, pos, acont);
+	// cont.Set (bnr, pos, acont);
+        table[bnr][pos].second = acont;
       else
 	{
-	  hash.Add (bnr, ahash);
-	  cont.Add (bnr, acont);
+	  // hash.Add (bnr, ahash);
+	  // cont.Add (bnr, acont);
+          table.Add (bnr, make_pair(ahash, acont));
 	}        
     }
 
     /// get value of identifier ahash, exception if unused
     const T & Get (const T_HASH & ahash) const
     {
-      int bnr = HashValue (ahash, hash.Size());
+      int bnr = HashValue (ahash, Size());
       int pos = Position (bnr, ahash);
-      return cont.Get (bnr, pos);
+      // return cont.Get (bnr, pos);
+      return table.Get (bnr, pos).second;
     }
 
     /// get value of identifier ahash, exception if unused
     const T & Get (int bnr, int pos) const
     {
-      return cont.Get (bnr, pos);
+      // return cont.Get (bnr, pos);
+      return table.Get (bnr, pos).second;
     }
 
     /// is identifier used ?
     bool Used (const T_HASH & ahash) const
     {
-      return (CheckPosition (HashValue (ahash, hash.Size()), ahash) != -1);
+      // return (CheckPosition (HashValue (ahash, hash.Size()), ahash) != -1);
+      return (CheckPosition (HashValue (ahash, table.Size()), ahash) != -1);
     }
 
     /// is identifier used ?
     bool Used (const T_HASH & ahash, int & bnr, int & pos) const
     {
-      bnr = HashValue (ahash, hash.Size());
+      // bnr = HashValue (ahash, hash.Size());
+      bnr = HashValue (ahash, Size());
       pos = CheckPosition (bnr, ahash);
       return (pos != -1);
     }
 
 
     /// number of hash entries
-    int Size () const
+    size_t Size () const
     {
-      return hash.Size();
+      // return hash.Size();
+      return table.Size();
     }
 
     /// size of hash entry
-    int EntrySize (int bnr) const
+    size_t EntrySize (int bnr) const
     {
-      return hash[bnr].Size();
+      // return hash[bnr].Size();
+      return table[bnr].Size();
     }
 
     /// get identifier and value of entry bnr, position colnr
     void GetData (int bnr, int colnr, T_HASH & ahash, T & acont) const
     {
-      ahash = hash[bnr][colnr];
-      acont = cont[bnr][colnr];
+      // ahash = hash[bnr][colnr];
+      // acont = cont[bnr][colnr];
+      ahash = table[bnr][colnr].first;
+      acont = table[bnr][colnr].second;
     }
 
     /// set identifier and value of entry bnr, position colnr
     void SetData (int bnr, int colnr, const T_HASH & ahash, const T & acont)
     {
-      hash[bnr][colnr] = ahash;
-      cont[bnr][colnr] = acont;
+      // hash[bnr][colnr] = ahash;
+      // cont[bnr][colnr] = acont;
+      table[bnr][colnr] = make_pair(ahash, acont);
     }    
 
     /// returns position of index. returns -1 on unused
     int CheckPosition (int bnr, const T_HASH & ind) const
     {
+      /*
       for (int i = 0; i < hash[bnr].Size(); i++)
 	if (hash[bnr][i] == ind)
+	  return i;
+      */
+      for (int i = 0; i < table[bnr].Size(); i++)
+	if (table[bnr][i].first == ind)
 	  return i;
       return -1;
     }
@@ -375,8 +394,8 @@ namespace ngstd
     /// returns position of index. exception on unused
     int Position (int bnr, const T_HASH & ind) const
     {
-      for (int i = 0; i < hash[bnr].Size(); i++)
-	if (hash[bnr][i] == ind)
+      for (int i = 0; i < table[bnr].Size(); i++)
+	if (table[bnr][i].first == ind)
 	  return i;
       throw Exception ("Ask for unsused hash-value");
     }
@@ -385,12 +404,14 @@ namespace ngstd
     {
       int bnr, pos;
       if (Used (ahash, bnr, pos))
-        return cont[bnr][pos];
+        return table[bnr][pos].second;
       else
         {
-	  hash.Add (bnr, ahash);
-	  cont.Add (bnr, T(0));
-          return cont[bnr][cont[bnr].Size()-1];
+	  // hash.Add (bnr, ahash);
+	  // cont.Add (bnr, T(0));
+          table.Add (bnr, make_pair(ahash, T(0)));
+          // return cont[bnr][cont[bnr].Size()-1];
+          return table[bnr][table[bnr].Size()-1].second;
         }
     }
 
