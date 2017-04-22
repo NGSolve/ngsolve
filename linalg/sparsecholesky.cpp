@@ -1243,7 +1243,7 @@ namespace ngla
     int * hrowindex2 = rowindex2.Addr(0);
     TM * hlfact = lfact.Addr(0);
     
-
+    Array<TM> tmpmem;
     for (int i1 = 0; i1 < n;  )
       {
 	int last_same = i1;
@@ -1268,7 +1268,9 @@ namespace ngla
         int nk = hfirstinrow[i1+1] - hfirstinrow[i1] + 1;
         
         // factor_dense1.Start();
-        Matrix<TM,ColMajor> tmp(nk, nk);
+        // Matrix<TM,ColMajor> tmp(nk, nk);
+        tmpmem.SetSize(nk*nk);
+        FlatMatrix<TM,ColMajor> tmp(nk, nk, tmpmem.Addr(0));
 
         bool big = nk > 1000;
         if (big)
