@@ -416,7 +416,8 @@ namespace ngla
         auto extdofs = BlockExtDofs (i);
         first_microtask.Append (microtasks.Size());
 
-        int nb = extdofs.Size() / 256 + 1;
+        // int nb = extdofs.Size() / 256 + 1;
+        int nb = (extdofs.Size()+255) / 256;
 
         if (nb == 1)
           // if (false)
@@ -1941,7 +1942,11 @@ namespace ngla
                                          for (size_t j = 0; j < size; j++)
                                            hyr(j) -= Trans(vlfact(j)) * hyi;
                                        }
-                                     if (extdofs.Size() == 0) continue;
+                                     if (extdofs.Size() == 0)
+                                       {
+                                         // cerr << "should not be here" << endl;
+                                         continue;
+                                       }
                                      size_t first = firstinrow[i] + range.end()-i-1;
                                      FlatVector<TM> ext_lfact (extdofs.Size(), &lfact[first]);
                                      for (size_t j = 0; j < temp.Size(); j++)
