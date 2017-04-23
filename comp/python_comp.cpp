@@ -1562,11 +1562,52 @@ flags : dict
         auto self = self_object.cast<PyFES>();
         auto dict = self_object.attr("__dict__");
         auto mesh = self->GetMeshAccess();
-        return py::make_tuple( self->type, mesh, self->GetFlags(), dict );
+        if (self->type.substr(0,8)=="Periodic")
+          {
+            cout << "in periodic" << endl;
+          auto periodicFES = dynamic_pointer_cast<PeriodicFESpace>(self.Get());
+          py::list idnrs;
+          for (auto idnr : *periodicFES->GetUsedIdnrs())
+            idnrs.append(idnr);
+          auto quasiPeriodicFES = dynamic_pointer_cast<QuasiPeriodicFESpace>(periodicFES);
+          if (quasiPeriodicFES)
+            {
+              cout << "in quasiperiodicFES" << endl;
+              py::list fac;
+              auto factors = quasiPeriodicFES->GetFactors();
+              for (auto factor : *factors)
+                fac.append(factor);
+              return py::make_tuple( self->type, mesh, self->GetFlags(), dict, idnrs, true,fac);
+            }
+          else
+            return py::make_tuple( self->type, mesh, self->GetFlags(), dict, idnrs, false);
+          }
+        else
+          return py::make_tuple( self->type, mesh, self->GetFlags(), dict);
      })
     .def("__setstate__", [] (PyFES &self, py::tuple t) {
         auto flags = t[2].cast<Flags>();
-        auto fes = CreateFESpace (t[0].cast<string>(), t[1].cast<shared_ptr<MeshAccess>>(), flags);
+        auto type = t[0].cast<string>();
+        shared_ptr<FESpace> fes;
+        if (type.substr(0,8)=="Periodic")
+          {
+            auto idnrs = make_shared<Array<int>>(makeCArray<int>(t[4].cast<py::list>()));
+            cout << "in periodic" << endl;
+            if(t[5].cast<bool>())
+              {
+                cout << "in quasiperiodic" << endl;
+                auto factors = make_shared<Array<Complex>>();
+                for (auto factor : t[6].cast<py::list>())
+                  factors->Append(factor.cast<Complex>());
+                cout << "factors are: " << factors << endl;
+                fes = make_shared<QuasiPeriodicFESpace>(CreateFESpace(type.substr(8,string::npos),t[1].cast<shared_ptr<MeshAccess>>(), flags),flags,idnrs,factors);
+              }
+            else
+              fes = make_shared<PeriodicFESpace>(CreateFESpace(type.substr(8,string::npos),t[1].cast<shared_ptr<MeshAccess>>(), flags),flags,idnrs);
+            }
+        else
+          fes = CreateFESpace (type, t[1].cast<shared_ptr<MeshAccess>>(), flags);
+        cout << "fespace created" << endl;
         LocalHeap lh (1000000, "FESpace::Update-heap");
         fes->Update(lh);
         fes->FinalizeUpdate(lh);
