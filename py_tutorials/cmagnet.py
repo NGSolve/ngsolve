@@ -47,8 +47,7 @@ a += SymbolicBFI(nu*curl(u)*curl(v) + 1e-6*nu*u*v)
 
 c = Preconditioner(a, type="bddc")
 # c = Preconditioner(a, type="multigrid", flags = { "smoother" : "block" } )
-with TaskManager():
-    a.Assemble()
+a.Assemble()
 
 f = LinearForm(V)
 f += SymbolicLFI(CoefficientFunction((y,-x,0)) * v, definedon=mesh.Materials("coil"))
