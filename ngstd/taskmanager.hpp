@@ -293,7 +293,7 @@ namespace ngstd
   };
 
 
-
+  /*
 class alignas(4096) AtomicRange
 {
   mutex lock;
@@ -336,10 +336,10 @@ public:
     return non_empty;
   }
 };
+*/
 
 
 
-   /*
   // lock free popfirst
   // faster for large loops, bug slower for small loops (~1000) ????
 
@@ -354,6 +354,12 @@ public:
   {
     lock_guard<mutex> guard(lock);
     // begin = r.begin();
+    begin.store(r.begin(), std::memory_order_relaxed);
+    end = r.end();
+  }
+  
+  void SetNoLock (IntRange r)
+  {
     begin.store(r.begin(), std::memory_order_relaxed);
     end = r.end();
   }
@@ -392,7 +398,6 @@ public:
     return true;
   }
 };
-   */
 
   
 
@@ -433,6 +438,7 @@ public:
       
       SharedIterator & operator++ () { GetNext(); return *this;}
 
+      /*
       void GetNext()
       {
         while (1)
@@ -460,16 +466,53 @@ public:
                 IntRange steal;
                 if (ranges[steal_from].PopHalf(steal))
                   {
-                    /*
-                    ranges[me].Set(steal);
-                    break;
-                    */
+                    // ranges[me].Set(steal);
+                    // break;
                     myval = steal.First();
                     processed_by_me++;                    
                     if (myval+1 < steal.Next())
                       ranges[me].Set (IntRange(myval+1, steal.Next()));
                     return;
                   }
+              }
+          }
+      }
+      */
+      
+      void GetNext()
+      {
+        int nr;
+        if (ranges[me].PopFirst(nr))
+          {
+            processed_by_me++;
+            myval = nr;
+            return;
+          }
+        GetNext2();
+      }
+
+      void GetNext2()
+      {
+        processed += processed_by_me;
+        processed_by_me = 0;
+        
+        // done with my work, going to steal ...
+        while (1)
+          {
+            if (processed >= total) return;
+            // steal_from = (steal_from + 1) % ranges.Size();
+            steal_from++;
+            if (steal_from == ranges.Size()) steal_from = 0;
+            
+            // steal half of the work reserved for 'from':
+            IntRange steal;
+            if (ranges[steal_from].PopHalf(steal))
+              {
+                myval = steal.First();
+                processed_by_me++;                    
+                if (myval+1 < steal.Next())
+                  ranges[me].Set (IntRange(myval+1, steal.Next()));
+                return;
               }
           }
       }
@@ -484,8 +527,8 @@ public:
       : ranges(TaskManager::GetMaxThreads()), processed(0)
     {
       total = r.Size();
-      for (int i = 0; i < ranges.Size(); i++)
-        ranges[i].Set (r.Split(i,ranges.Size()));
+      for (size_t i = 0; i < ranges.Size(); i++)
+        ranges[i].SetNoLock (r.Split(i,ranges.Size()));
     }
     
     SharedIterator begin() { return SharedIterator (ranges, processed, total, true); }
