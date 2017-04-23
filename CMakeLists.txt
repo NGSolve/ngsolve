@@ -294,6 +294,12 @@ if(USE_VTUNE)
     endif(INTEL_MIC)
 endif(USE_VTUNE)
 
+#######################################################################
+if(${CMAKE_BUILD_TYPE} STREQUAL "Debug" OR ${CMAKE_BUILD_TYPE} STREQUAL "DEBUG")
+  set(NGS_TEST_TIMEOUT 300)
+else()
+  set(NGS_TEST_TIMEOUT 60)
+endif()
 
 #######################################################################
 
