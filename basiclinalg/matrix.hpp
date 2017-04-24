@@ -1651,7 +1651,7 @@ namespace ngbla
     
     INLINE const BareSliceMatrix Rows (size_t first, size_t next) const
     {
-      return BareSliceMatrix ( /* next-first, w, */ dist, data+first*dist, DummySize(next-first, Width()));
+      return BareSliceMatrix ( /* next-first, w, */ dist, data+first*dist, DummySize(next-first, DummySize::Width()));
     }
 
     INLINE BareVector<T> Row (size_t i) const
