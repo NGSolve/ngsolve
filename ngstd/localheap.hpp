@@ -188,7 +188,7 @@ namespace ngstd
   private: 
     ///
 #ifndef __CUDA_ARCH__
-    NGS_DLL_HEADER [[noreturn]] void ThrowException(); 
+    [[noreturn]] NGS_DLL_HEADER void ThrowException(); 
 #else
     INLINE void ThrowException() { ; }
 #endif
