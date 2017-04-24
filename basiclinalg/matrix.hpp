@@ -1635,6 +1635,8 @@ namespace ngbla
       return data[i]; 
     }
 
+    using DummySize::Height;
+    using DummySize::Width;
     /*
     /// the height
     INLINE size_t Height () const throw() { return h; }
@@ -1651,7 +1653,7 @@ namespace ngbla
     
     INLINE const BareSliceMatrix Rows (size_t first, size_t next) const
     {
-      return BareSliceMatrix ( /* next-first, w, */ dist, data+first*dist, DummySize(next-first, DummySize::Width()));
+      return BareSliceMatrix ( /* next-first, w, */ dist, data+first*dist, DummySize(next-first, Width()));
     }
 
     INLINE BareVector<T> Row (size_t i) const
@@ -1692,7 +1694,7 @@ namespace ngbla
     */
     BareSliceMatrix<T> RowSlice(size_t first, size_t adist) const
     {
-      return BareSliceMatrix<T> (dist*adist, data+first*dist, DummySize( (DummySize::Height()-first)/adist, DummySize::Width()));
+      return BareSliceMatrix<T> (dist*adist, data+first*dist, DummySize( (Height()-first)/adist, Width()));
     }
     
   };
