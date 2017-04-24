@@ -747,7 +747,8 @@ namespace ngla
                                   }
 
                               },
-                              TasksPerThread(2),
+                              // TasksPerThread(2),
+                              2,
                               TotalCosts(color_balance[c].GetTotalCosts())
                               );
             
