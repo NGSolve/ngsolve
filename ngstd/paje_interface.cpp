@@ -27,7 +27,7 @@ namespace ngstd
 
   PajeTrace :: PajeTrace(int anthreads, std::string aname)
   {
-    start_time = WallTime();
+    start_time = GetTime();
     
     nthreads = anthreads;
     tracefile_name = aname;
@@ -76,6 +76,7 @@ namespace ngstd
   class PajeFile
     {
     public:
+      typedef PajeTrace::TTimePoint TTimePoint;
       static void Hue2RGB ( double x, double &r, double &g, double &b )
         {
           double d = 1.0/6.0;
@@ -96,6 +97,13 @@ namespace ngstd
       int alias_counter;
 
       FILE * ctrace_stream;
+      TTimePoint start_time;
+
+
+      double ConvertTime(TTimePoint t) {
+          // return time in milliseconds as double
+          return std::chrono::duration<double>(t-start_time).count()*1000.0;
+      }
 
       enum PType
         {
@@ -144,26 +152,25 @@ namespace ngstd
             {
               const int &key = id;
               const int &end_container = start_container;
-              double time_ms = time * 1000.0;
               switch(event_type)
                 {
                 case PajeSetVariable:
-                  return sprintf( buf, "%d\t%.15g\ta%d\ta%d\t%.15g\n", PajeSetVariable, time_ms, type, container, var_value );
+                  return sprintf( buf, "%d\t%.15g\ta%d\ta%d\t%.15g\n", PajeSetVariable, time, type, container, var_value );
                 case PajeAddVariable:
-                  return sprintf( buf, "%d\t%.15g\ta%d\ta%d\t%.15g\n", PajeAddVariable, time_ms, type, container, var_value );
+                  return sprintf( buf, "%d\t%.15g\ta%d\ta%d\t%.15g\n", PajeAddVariable, time, type, container, var_value );
                 case PajeSubVariable:
-                  return sprintf( buf, "%d\t%.15g\ta%d\ta%d\t%.15g\n", PajeSubVariable, time_ms, type, container, var_value );
+                  return sprintf( buf, "%d\t%.15g\ta%d\ta%d\t%.15g\n", PajeSubVariable, time, type, container, var_value );
                 case PajePushState:
                   if(value_is_alias)
-                    return sprintf( buf, "%d\t%.15g\ta%d\ta%d\ta%d\t%d\n", PajePushState, time_ms, type, container, value, id);
+                    return sprintf( buf, "%d\t%.15g\ta%d\ta%d\ta%d\t%d\n", PajePushState, time, type, container, value, id);
                   else
-                    return sprintf( buf, "%d\t%.15g\ta%d\ta%d\t%d\t%d\n", PajePushState, time_ms, type, container, value, id);
+                    return sprintf( buf, "%d\t%.15g\ta%d\ta%d\t%d\t%d\n", PajePushState, time, type, container, value, id);
                 case PajePopState:
-                  return sprintf( buf, "%d\t%.15g\ta%d\ta%d\n", PajePopState, time_ms, type, container );
+                  return sprintf( buf, "%d\t%.15g\ta%d\ta%d\n", PajePopState, time, type, container );
                 case PajeStartLink:
-                  return sprintf( buf, "%d\t%.15g\ta%d\ta%d\t%d\ta%d\t%d\n", PajeStartLink, time_ms, type, container, value, start_container, key );
+                  return sprintf( buf, "%d\t%.15g\ta%d\ta%d\t%d\ta%d\t%d\n", PajeStartLink, time, type, container, value, start_container, key );
                 case PajeEndLink:
-                  return sprintf( buf, "%d\t%.15g\ta%d\ta%d\t%d\ta%d\t%d\n", PajeEndLink, time_ms, type, container, value, end_container, key );
+                  return sprintf( buf, "%d\t%.15g\ta%d\ta%d\t%d\ta%d\t%d\n", PajeEndLink, time, type, container, value, end_container, key );
                 }
               return 0;
             }
@@ -172,8 +179,9 @@ namespace ngstd
       std::vector<PajeEvent> events;
 
     public:
-      PajeFile( string filename )
+      PajeFile( string filename, TTimePoint astart_time )
         {
+          start_time = astart_time;
           ctrace_stream = fopen (filename.c_str(),"w");
           fprintf(ctrace_stream, "%s", header );
           alias_counter = 0;
@@ -244,45 +252,45 @@ namespace ngstd
       void DestroyContainer ()
         {}
 
-      void SetVariable (double time, int type, int container, double value )
+      void SetVariable (TTimePoint time, int type, int container, double value )
         {
-          events.push_back( PajeEvent( PajeSetVariable, time, type, container, value ) );
+          events.push_back( PajeEvent( PajeSetVariable, ConvertTime(time), type, container, value ) );
         }
 
-      void AddVariable (double time, int type, int container, double value )
+      void AddVariable (TTimePoint time, int type, int container, double value )
         {
-          events.push_back( PajeEvent( PajeAddVariable, time, type, container, value ) );
+          events.push_back( PajeEvent( PajeAddVariable, ConvertTime(time), type, container, value ) );
         }
 
-      void SubVariable (double time, int type, int container, double value )
+      void SubVariable (TTimePoint time, int type, int container, double value )
         {
-          events.push_back( PajeEvent( PajeSubVariable, time, type, container, value ) );
+          events.push_back( PajeEvent( PajeSubVariable, ConvertTime(time), type, container, value ) );
         }
 
       void SetState ()
         {}
 
-      void PushState ( double time, int type, int container, int value, int id = 0, bool value_is_alias = true )
+      void PushState ( TTimePoint time, int type, int container, int value, int id = 0, bool value_is_alias = true )
         {
-          events.push_back( PajeEvent( PajePushState, time, type, container, value, id) );
+          events.push_back( PajeEvent( PajePushState, ConvertTime(time), type, container, value, id) );
         }
 
-      void PopState ( double time, int type, int container )
+      void PopState ( TTimePoint time, int type, int container )
         {
-          events.push_back( PajeEvent( PajePopState, time, type, container ) );
+          events.push_back( PajeEvent( PajePopState, ConvertTime(time), type, container ) );
         }
 
       void ResetState ()
         {}
 
-      void StartLink ( double time, int type, int container, int value, int start_container, int key )
+      void StartLink ( TTimePoint time, int type, int container, int value, int start_container, int key )
         {
-          events.push_back( PajeEvent( PajeStartLink, time, type, container, value, start_container, key ) );
+          events.push_back( PajeEvent( PajeStartLink, ConvertTime(time), type, container, value, start_container, key ) );
         }
 
-      void EndLink ( double time, int type, int container, int value, int end_container, int key )
+      void EndLink ( TTimePoint time, int type, int container, int value, int end_container, int key )
         {
-          events.push_back( PajeEvent(  PajeEndLink, time, type, container, value, end_container, key ) );
+          events.push_back( PajeEvent(  PajeEndLink, ConvertTime(time), type, container, value, end_container, key ) );
         }
 
       void NewEvent ()
@@ -359,7 +367,7 @@ namespace ngstd
           cout << "max_size=0 disables tracing" << endl << endl;
         }
 
-      PajeFile paje(filename);
+      PajeFile paje(filename, start_time);
 
       const int container_type_task_manager = paje.DefineContainerType( 0, "Task Manager" );
       const int container_type_node = paje.DefineContainerType( container_type_task_manager, "Node");
@@ -375,7 +383,7 @@ namespace ngstd
 
       const int container_task_manager = paje.CreateContainer( container_type_task_manager, 0, "The task manager" );
       const int container_jobs = paje.CreateContainer( container_type_jobs, container_task_manager, "Jobs" );
-      paje.SetVariable( 0.0, variable_type_active_threads, container_jobs, 0.0 );
+      paje.SetVariable( start_time, variable_type_active_threads, container_jobs, 0.0 );
       const int container_node0 = paje.CreateContainer( container_type_node, container_task_manager, "Node 0" );
 
       std::vector <int> thread_aliases;
@@ -511,11 +519,11 @@ namespace ngstd
       int nlinks_merged = 0;
       while(nlinks_merged < nlinks)
         {
-          int minpos = 0;
-          double mintime = 1e300;
+          int minpos = -1;
+          TTimePoint mintime;
           for (int t = 0; t<nthreads; t++)
             {
-              if(pos[t] < links[t].size() && links[t][pos[t]].time < mintime)
+              if(pos[t] < links[t].size() && (links[t][pos[t]].time < mintime || minpos==-1))
                 {
                   minpos = t;
                   mintime = links[t][pos[t]].time;
