@@ -1692,7 +1692,7 @@ namespace ngbla
     */
     BareSliceMatrix<T> RowSlice(size_t first, size_t adist) const
     {
-      return BareSliceMatrix<T> (dist*adist, data+first*dist, DummySize( (Height()-first)/adist, Width()));
+      return BareSliceMatrix<T> (dist*adist, data+first*dist, DummySize( (DummySize::Height()-first)/adist, DummySize::Width()));
     }
     
   };
