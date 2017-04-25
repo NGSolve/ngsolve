@@ -33,6 +33,14 @@ namespace ngfem
     {
       DIFFOP::GenerateMatrix (fel, mip, mat, lh);        
     }
+
+    template <typename DIFFOP, typename FEL, typename MIR, typename TVX, typename TVY>
+    static void ApplyIR (const FEL & fel, const MIR & mir,
+                         const TVX & x, TVY & flux,
+                         LocalHeap & lh)
+    {
+      DIFFOP::ApplyIR (fel, mir, x, flux, lh);
+    }
   };
 
   template <> class GenerateMatrix_PMLWrapper<false>
@@ -44,6 +52,14 @@ namespace ngfem
     {
       throw Exception(string("PML not supported for diffop ")+DIFFOP::Name() +
                       "\nit might be enough to set SUPPORT_PML to true in the diffop");
+    }
+    template <typename DIFFOP, typename FEL, typename MIR, typename TVX, typename TVY>
+    static void ApplyIR (const FEL & fel, const MIR & mir,
+                         const TVX & x, TVY & y,
+                         LocalHeap & lh)
+    {
+      throw Exception(string("PML not supported for diffop ")+DIFFOP::Name() +
+                      "ApplyIR\nit might be enough to set SUPPORT_PML to true in the diffop");
     }
   };
   
@@ -142,9 +158,22 @@ namespace ngfem
          FlatMatrix<Complex> flux,
          LocalHeap & lh) const
   {
-    const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
-      static_cast<const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
-    DIFFOP::ApplyIR (bfel, mir, x, flux, lh);
+    if (bmir.IsComplex())
+      {
+        const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE,Complex> & mir =
+          static_cast<const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE,Complex>&> (bmir);
+
+        GenerateMatrix_PMLWrapper<DIFFOP::SUPPORT_PML>::template ApplyIR<DIFFOP> (bfel, mir, x, flux, lh);
+        // DIFFOP::ApplyIR (bfel, mir, x, flux, lh);
+      }
+    else
+      {
+        const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
+          static_cast<const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
+        DIFFOP::ApplyIR (bfel, mir, x, flux, lh);
+      }
+    
+
   }
 
 

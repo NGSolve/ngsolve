@@ -19,43 +19,48 @@ int link_maxwellintegrator;
   
 namespace ngfem
 {
-  /*
-  template <int D, typename FEL>
-  CurlCurlEdgeIntegrator<D,FEL> :: CurlCurlEdgeIntegrator (CoefficientFunction * coeff)
-    : T_BDBIntegrator<DiffOpCurlEdge<D>, DiagDMat<DIM_CURL_TRAIT<D>::DIM>, FEL>
-  (DiagDMat<DIM_CURL_TRAIT<D>::DIM> (coeff))
-  { ; }
-  
-  template <int D, typename FEL>
-  CurlCurlEdgeIntegrator<D,FEL> :: CurlCurlEdgeIntegrator (Array<CoefficientFunction*> & coeffs)
-    : T_BDBIntegrator<DiffOpCurlEdge<D>, DiagDMat<DIM_CURL_TRAIT<D>::DIM>, FEL> (coeffs)
-  { ; }
+ 
+ 
+  ///
+  template <int D, typename FEL = HCurlFiniteElement<D> >
+  class MassEdgeAnisotropicIntegrator 
+    : public T_BDBIntegrator<DiffOpIdEdge<D>, SymDMat<D>, FEL>
+  { 
+  };
 
 
-  template <int D, typename FEL>
-  MassEdgeIntegrator<D,FEL> :: MassEdgeIntegrator (CoefficientFunction * coeff)
-    : T_BDBIntegrator<DiffOpIdEdge<D>, DiagDMat<D>, FEL> (DiagDMat<D> (coeff))
-  { ; }
-  
-  template <int D, typename FEL>
-  MassEdgeIntegrator<D,FEL> :: MassEdgeIntegrator (Array<CoefficientFunction*> & coeffs)
-    : T_BDBIntegrator<DiffOpIdEdge<D>, DiagDMat<D>, FEL> (coeffs)
-  { ; }
 
-  CurlCurlBoundaryEdgeIntegrator ::
-  CurlCurlBoundaryEdgeIntegrator (CoefficientFunction * coeff)
-    : T_BDBIntegrator<DiffOpCurlBoundaryEdge<>, DiagDMat<1>, HCurlFiniteElement<2> > 
-  (DiagDMat<1> (coeff))
-  { ; }
-  
-  CurlCurlBoundaryEdgeIntegrator :: 
-  CurlCurlBoundaryEdgeIntegrator (Array<CoefficientFunction*> & coeffs)
-    : T_BDBIntegrator<DiffOpCurlBoundaryEdge<>, DiagDMat<1>, HCurlFiniteElement<2> > (coeffs)
-  { ; }
-  */
-  
+  template <> 
+  class MassEdgeAnisotropicIntegrator<3, HCurlFiniteElement<3> >
+    : public T_BDBIntegrator<DiffOpIdEdge<3>, SymDMat<3>, HCurlFiniteElement<3> >
+  {
+  public:
+    ///
+    MassEdgeAnisotropicIntegrator (shared_ptr<CoefficientFunction> coeff00,
+				   shared_ptr<CoefficientFunction> coeff10,
+				   shared_ptr<CoefficientFunction> coeff11,
+				   shared_ptr<CoefficientFunction> coeff20,
+				   shared_ptr<CoefficientFunction> coeff21,
+				   shared_ptr<CoefficientFunction> coeff22);
+    /*
+      : T_BDBIntegrator<DiffOpIdEdge<3>, SymDMat<3>, HCurlFiniteElement<3> >
+    (SymDMat<3> (coeff00, coeff10, coeff11, coeff20, coeff21, coeff22))
+    { ; }
+    */
 
-  // template <> 
+    static shared_ptr<BilinearFormIntegrator> Create (const Array<shared_ptr<CoefficientFunction>> & coeffs)
+    {
+      return make_shared<MassEdgeAnisotropicIntegrator> (coeffs[0], coeffs[1], coeffs[2],
+                                                         coeffs[3], coeffs[4], coeffs[5]);
+    }
+  
+    ///
+    virtual string Name () const 
+    { return "MassEdgeAnisotropic"; }
+  };
+
+
+  
   MassEdgeAnisotropicIntegrator<3, HCurlFiniteElement<3> > ::
   MassEdgeAnisotropicIntegrator (shared_ptr<CoefficientFunction> coeff00,
 				 shared_ptr<CoefficientFunction> coeff10,
@@ -69,44 +74,7 @@ namespace ngfem
   
 
 
-  /*
-  template <int D, typename FEL> SourceEdgeIntegrator<D,FEL> ::
-  SourceEdgeIntegrator (CoefficientFunction * coeff)
-    : T_BIntegrator<DiffOpIdEdge<D>, DVec<D>, FEL> (DVec<D> (coeff))
-  { ; }
 
-  template <int D, typename FEL> SourceEdgeIntegrator<D,FEL> ::
-  SourceEdgeIntegrator (CoefficientFunction * coef1,
-			CoefficientFunction * coef2)
-    : T_BIntegrator<DiffOpIdEdge<D>, DVec<D>, FEL> (DVec<D> (coef1, coef2))
-  { ; }
-
-  template <int D, typename FEL> SourceEdgeIntegrator<D,FEL> ::
-  SourceEdgeIntegrator (CoefficientFunction * coef1,
-			CoefficientFunction * coef2,
-			CoefficientFunction * coef3)
-    : T_BIntegrator<DiffOpIdEdge<D>, DVec<D>, FEL> (DVec<D> (coef1, coef2, coef3))
-  { ; }
-
-
-  template <int D, typename FEL> SourceEdgeIntegrator<D,FEL> ::
-  SourceEdgeIntegrator (Array<CoefficientFunction*> & coeffs)
-    : T_BIntegrator<DiffOpIdEdge<D>, DVec<D>, FEL> (coeffs)
-  { ; }
-
-  */
-
-
-  /*
-  template class RobinEdgeIntegrator<2>;
-  template class RobinEdgeIntegrator<3>;
-
-  template class SourceEdgeIntegrator<2>;
-  template class SourceEdgeIntegrator<3>;
-
-  template class NeumannEdgeIntegrator<2>;
-  template class NeumannEdgeIntegrator<3>;
-  */
 
   namespace maxwellint {
     
