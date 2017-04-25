@@ -256,6 +256,7 @@ ubuntu_1704_test:
 debug_test:
   <<: *ubuntu_debug
   <<: *test_linux
+  allow_failure: true
 
 mac_test:
   <<: *mac
