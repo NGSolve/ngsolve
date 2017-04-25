@@ -47,7 +47,7 @@ namespace ngfem
         string scompile = "cmd /C \"ngscxx.bat " + file_prefix + ".cpp\"";
         object_files += file_prefix+".obj ";
 #else
-        string scompile = "ccache ngscxx -c " + file_prefix + ".cpp -o " + file_prefix + ".o";
+        string scompile = "ngscxx -c " + file_prefix + ".cpp -o " + file_prefix + ".o";
         object_files += file_prefix+".o ";
 #endif
         int err = system(scompile.c_str());
