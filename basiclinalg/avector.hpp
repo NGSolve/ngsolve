@@ -621,7 +621,7 @@ namespace ngbla
     { return Cols(r.begin(), r.end()); }
     
     INLINE ABareSliceMatrix<> VCols (size_t begin, size_t end) const;
-    operator BareSliceMatrix<SIMD<double>> () const { return BareSliceMatrix<SIMD<double>> (VWidth(), data, DummySize(Height(), Width())); }
+    operator BareSliceMatrix<SIMD<double>> () const { return BareSliceMatrix<SIMD<double>> (VWidth(), data, DummySize(Height(), VWidth())); }
   };
 
   class AMatrixD : public AFlatMatrixD
