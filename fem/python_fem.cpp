@@ -686,6 +686,9 @@ val : can be one of the following:
     .def ("__rtruediv__", FunctionPointer 
           ([] (PyCF coef, double val) -> PyCF
            { return make_shared<ConstantCoefficientFunction>(val) / coef.Get(); }))
+    .def ("__rtruediv__", FunctionPointer
+          ([] (PyCF coef, Complex val) -> PyCF
+           { return make_shared<ConstantCoefficientFunctionC>(val) / coef.Get(); }))
 
     .def ("__neg__", FunctionPointer 
           ([] (PyCF coef) -> PyCF
