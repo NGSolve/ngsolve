@@ -299,6 +299,7 @@ mac_test:
     - export CMAKE_FLAGS="-fomit-frame-pointer"
 
 .t_timings: &t_timings
+  allow_failure: true
   stage: timings
   tags:
     - linux
@@ -354,11 +355,11 @@ clang_no_fp_timings:
   <<: *t_clang
   <<: *t_timings
 
-clang4_timings:
+.clang4_timings:
   <<: *t_clang4
   <<: *t_timings
 
-clang4_no_fp_timings:
+.clang4_no_fp_timings:
   <<: *t_omit_frame_pointer
   <<: *t_clang4
   <<: *t_timings
