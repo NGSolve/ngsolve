@@ -4363,7 +4363,14 @@ public:
       const TPMappedIntegrationRule * tpmir = dynamic_cast<const TPMappedIntegrationRule *>(&ir);
       if(!tpmir)
         {
-          result.Col(0) = ir.GetPoints().Col(dir);
+          if (!ir.IsComplex())
+            result.Col(0) = ir.GetPoints().Col(dir);
+          else
+            {
+              auto pnts = ir.GetPointsComplex().Col(dir);
+              for (auto i : Range(ir.Size()))
+                result(i,0) = pnts(i).real();
+            }
           return;
         }
       if(dir<=2)
