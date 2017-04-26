@@ -289,7 +289,7 @@ namespace ngfem
   };
 
   template <typename SCAL = double>
-  class ScalMappedIntegrationPoint : public BaseMappedIntegrationPoint
+  class alignas (sizeof(SCAL)) ScalMappedIntegrationPoint : public BaseMappedIntegrationPoint
   {
   protected:
     SCAL det;
@@ -1268,6 +1268,8 @@ namespace ngfem
     }
     */
     virtual SliceMatrix<> GetPoints() const = 0;
+    virtual SliceMatrix<Complex> GetPointsComplex() const
+    { throw Exception("don't have complex ir"); }
     virtual void ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr) = 0;
     virtual bool IsComplex() const = 0;
   };
@@ -1381,6 +1383,14 @@ namespace ngfem
     virtual SliceMatrix<> GetPoints() const
     {
       throw Exception("don't have real points for complex ir");
+    }
+
+    virtual SliceMatrix<Complex> GetPointsComplex() const
+    {
+      return SliceMatrix<Complex> (mips.Size(), DIM_SPACE,
+                                   //&mips[1].GetPoint()(0) - &mips[0].GetPoint()(0),
+                                   sizeof(MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE, SCAL>) / sizeof(Complex),
+                                   const_cast<Complex*> (&mips[0].GetPointComplex()(0)));
     }
 
     virtual void ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr);
