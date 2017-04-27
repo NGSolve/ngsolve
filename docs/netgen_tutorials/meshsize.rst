@@ -1,5 +1,5 @@
 Mesh Size and Refinement
-===============
+==========================
 
 CSGeometry
 -----------
@@ -14,7 +14,13 @@ mesh size when adding them to the geometry object:
 
 .. image:: res_meshsize/csg_localmeshsize.png
 
-Close Surfaces
-^^^^^^^^^^^^^^^
+Anisotropic Meshes
+^^^^^^^^^^^^^^^^^^^
 
+Netgen can create anisotropic meshes, using the close surface identification. It will fill
+the layer with prisms, which can be sliced. This is best explained in an example:
+
+.. literalinclude:: res_meshsize/closesurface_plate.py
+
+.. image:: res_meshsize/closesurface_plate.png
 
