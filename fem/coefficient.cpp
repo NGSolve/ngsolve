@@ -4363,7 +4363,14 @@ public:
       const TPMappedIntegrationRule * tpmir = dynamic_cast<const TPMappedIntegrationRule *>(&ir);
       if(!tpmir)
         {
-          result.Col(0) = ir.GetPoints().Col(dir);
+          if (!ir.IsComplex())
+            result.Col(0) = ir.GetPoints().Col(dir);
+          else
+            {
+              auto pnts = ir.GetPointsComplex().Col(dir);
+              for (auto i : Range(ir.Size()))
+                result(i,0) = pnts(i).real();
+            }
           return;
         }
       if(dir<=2)
@@ -4435,6 +4442,7 @@ namespace ngstd {
     shared_ptr<CoefficientFunction> cf;
     Array<CoefficientFunction*> steps;
     DynamicTable<int> inputs;
+    size_t max_inputsize;
     Array<int> dim;
     int totdim;
     Array<bool> is_complex;
@@ -4471,6 +4479,7 @@ namespace ngstd {
         cout << IM(3) << typeid(*cf).name() << endl;
       
       inputs = DynamicTable<int> (steps.Size());
+      max_inputsize = 0;
       
       cf -> TraverseTree
         ([&] (CoefficientFunction & stepcf)
@@ -4479,6 +4488,7 @@ namespace ngstd {
            if (!inputs[mypos].Size())
              {
                Array<CoefficientFunction*> in = stepcf.InputCoefficientFunctions();
+               max_inputsize = max2(in.Size(), max_inputsize);
                for (auto incf : in)
                  inputs.Add (mypos, steps.Pos(incf));
              }
@@ -4621,7 +4631,7 @@ namespace ngstd {
       ArrayMem<double, 10000> hmem(ir.Size()*totdim);
       int mem_ptr = 0;
       ArrayMem<FlatMatrix<>,100> temp(steps.Size());
-      ArrayMem<FlatMatrix<>*, 100> in(steps.Size());
+      ArrayMem<FlatMatrix<>*, 100> in(max_inputsize);
       for (int i = 0; i < steps.Size(); i++)
         {
           temp[i].AssignMemory(ir.Size(), dim[i], &hmem[mem_ptr]);
@@ -4657,7 +4667,7 @@ namespace ngstd {
       STACK_ARRAY(SIMD<double>, hmem, ir.Size()*totdim);      
       int mem_ptr = 0;
       ArrayMem<AFlatMatrix<double>,100> temp(steps.Size());
-      ArrayMem<AFlatMatrix<double>*,100> in(steps.Size());
+      ArrayMem<AFlatMatrix<double>*,100> in(max_inputsize);
 
       for (int i = 0; i < steps.Size(); i++)
         {
@@ -4815,7 +4825,7 @@ namespace ngstd {
       int mem_ptr = 0;
       ArrayMem<AFlatMatrix<double>,100> temp(steps.Size());
       ArrayMem<AFlatMatrix<double>,100> dtemp(steps.Size());
-      ArrayMem<AFlatMatrix<double>*,100> in(steps.Size()), din(steps.Size());
+      ArrayMem<AFlatMatrix<double>*,100> in(max_inputsize), din(max_inputsize);
 
       for (int i = 0; i < steps.Size(); i++)
         {
@@ -4859,7 +4869,7 @@ namespace ngstd {
       ArrayMem<AFlatMatrix<double>,100> temp(steps.Size());
       ArrayMem<AFlatMatrix<double>,100> dtemp(steps.Size());
       ArrayMem<AFlatMatrix<double>,100> ddtemp(steps.Size());
-      ArrayMem<AFlatMatrix<double>*,100> in(steps.Size()), din(steps.Size()), ddin(steps.Size());
+      ArrayMem<AFlatMatrix<double>*,100> in(max_inputsize), din(max_inputsize), ddin(max_inputsize);
 
       for (int i = 0; i < steps.Size(); i++)
         {

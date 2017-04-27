@@ -358,9 +358,9 @@ namespace ngfem
         static_cast<const TCF*>(this) -> template T_Evaluate<Complex> (ir, values);
       else
         {
-          BareSliceMatrix<SIMD<double>> overlay(2*values.Dist(), &values(0,0).real());
-          Evaluate (ir, overlay);
           size_t nv = ir.Size();
+          SliceMatrix<SIMD<double>> overlay(Dimension(), nv, 2*values.Dist(), &values(0,0).real());
+          Evaluate (ir, overlay);
           for (size_t i = 0; i < Dimension(); i++)
             for (size_t j = nv; j-- > 0; )
               values(i,j) = overlay(i,j);

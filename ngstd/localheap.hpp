@@ -160,7 +160,7 @@ namespace ngstd
 
       // if ( size_t(p - data) >= totsize )
 #ifndef FULLSPEED
-      if (p >= next)
+      if (likely(p >= next))
         ThrowException();
 #endif
       return oldp;
@@ -178,7 +178,7 @@ namespace ngstd
       p += size;
 
 #ifndef FULLSPEED
-      if (p >= next)
+      if (likely(p >= next))
 	ThrowException();
 #endif
 
@@ -188,7 +188,7 @@ namespace ngstd
   private: 
     ///
 #ifndef __CUDA_ARCH__
-    NGS_DLL_HEADER void ThrowException(); // __attribute__ ((noreturn));
+    [[noreturn]] NGS_DLL_HEADER void ThrowException(); 
 #else
     INLINE void ThrowException() { ; }
 #endif

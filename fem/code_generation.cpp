@@ -47,7 +47,7 @@ namespace ngfem
         string scompile = "cmd /C \"ngscxx.bat " + file_prefix + ".cpp\"";
         object_files += file_prefix+".obj ";
 #else
-        string scompile = "ccache ngscxx -c " + file_prefix + ".cpp -o " + file_prefix + ".o";
+        string scompile = "ngscxx -c " + file_prefix + ".cpp -o " + file_prefix + ".o";
         object_files += file_prefix+".o ";
 #endif
         int err = system(scompile.c_str());
@@ -60,7 +60,7 @@ namespace ngfem
 #ifdef WIN32
         string slink = "cmd /C \"ngsld.bat /OUT:" + prefix+".dll " + object_files + "\"";
 #else
-        string slink = "ngsld -shared " + object_files + " -o " + prefix + ".so -lngstd -lngfem";
+        string slink = "ngsld -shared " + object_files + " -o " + prefix + ".so -lngstd -lngbla -lngfem";
 #endif
       int err = system(slink.c_str());
       if (err) throw Exception ("problem calling linker");      
