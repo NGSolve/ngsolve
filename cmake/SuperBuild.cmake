@@ -129,7 +129,7 @@ endif(NETGEN_DIR)
 #######################################################################
 set(LAPACK_LIBRARIES CACHE INTERNAL "Lapack libraries")
 if(USE_MKL)
-    set(MKL_MULTI_THREADED OFF CACHE BOOL "Use threaded MKL libs")
+    set(MKL_MULTI_THREADED ON CACHE BOOL "Use threaded MKL libs")
 
     set(MKL_STATIC OFF CACHE BOOL "Link static MKL")
     set(MKL_SDL ON CACHE BOOL "Link single dynamic MKL lib")
