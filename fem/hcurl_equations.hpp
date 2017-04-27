@@ -704,45 +704,6 @@ public:
   };
 
 
-  ///
-  template <int D, typename FEL = HCurlFiniteElement<D> >
-  class MassEdgeAnisotropicIntegrator 
-    : public T_BDBIntegrator<DiffOpIdEdge<D>, SymDMat<D>, FEL>
-  { 
-  };
-
-
-
-  template <> 
-  class MassEdgeAnisotropicIntegrator<3, HCurlFiniteElement<3> >
-    : public T_BDBIntegrator<DiffOpIdEdge<3>, SymDMat<3>, HCurlFiniteElement<3> >
-  {
-  public:
-    ///
-    MassEdgeAnisotropicIntegrator (shared_ptr<CoefficientFunction> coeff00,
-				   shared_ptr<CoefficientFunction> coeff10,
-				   shared_ptr<CoefficientFunction> coeff11,
-				   shared_ptr<CoefficientFunction> coeff20,
-				   shared_ptr<CoefficientFunction> coeff21,
-				   shared_ptr<CoefficientFunction> coeff22);
-    /*
-      : T_BDBIntegrator<DiffOpIdEdge<3>, SymDMat<3>, HCurlFiniteElement<3> >
-    (SymDMat<3> (coeff00, coeff10, coeff11, coeff20, coeff21, coeff22))
-    { ; }
-    */
-
-    static shared_ptr<BilinearFormIntegrator> Create (const Array<shared_ptr<CoefficientFunction>> & coeffs)
-    {
-      return make_shared<MassEdgeAnisotropicIntegrator> (coeffs[0], coeffs[1], coeffs[2],
-                                                         coeffs[3], coeffs[4], coeffs[5]);
-    }
-  
-    ///
-    virtual string Name () const 
-    { return "MassEdgeAnisotropic"; }
-  };
-
-
 
 
 
@@ -941,7 +902,7 @@ public:
   // HCURL_EQUATIONS_EXTERN template class CurlCurlEdgeIntegrator<2>;
   // HCURL_EQUATIONS_EXTERN template class CurlCurlEdgeIntegrator<3>;
 
-  HCURL_EQUATIONS_EXTERN template class MassEdgeAnisotropicIntegrator<3>;
+  // HCURL_EQUATIONS_EXTERN template class MassEdgeAnisotropicIntegrator<3>;
   
   HCURL_EQUATIONS_EXTERN template class T_BDBIntegrator<DiffOpIdEdge<2>, DiagDMat<2>, HCurlFiniteElement<2>>;
   HCURL_EQUATIONS_EXTERN template class T_BDBIntegrator<DiffOpIdEdge<3>, DiagDMat<3>, HCurlFiniteElement<3>>;
