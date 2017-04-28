@@ -47,8 +47,9 @@ namespace ngcomp
     int dim;
     public:
 
-    PML_CF(shared_ptr<PML_Transformation> _pmltrafo) : 
-      dim(_pmltrafo->GetDimension()),CoefficientFunction(_pmltrafo->GetDimension(),true), pmltrafo(_pmltrafo)
+    PML_CF(shared_ptr<PML_Transformation> _pmltrafo) :
+      CoefficientFunction(_pmltrafo->GetDimension(),true), 
+      pmltrafo(_pmltrafo), dim(_pmltrafo->GetDimension())
     { ; }
     using CoefficientFunction::Evaluate;
     double Evaluate(const BaseMappedIntegrationPoint & ip) const
@@ -73,14 +74,14 @@ namespace ngcomp
   };
   
     class PML_Jac : public CoefficientFunction
-  {
+    {
     shared_ptr<PML_Transformation> pmltrafo;
     int dim;
     public:
-
+      
     PML_Jac(shared_ptr<PML_Transformation> _pmltrafo) : 
       CoefficientFunction(sqr(_pmltrafo->GetDimension()),true),
-      dim(_pmltrafo->GetDimension()), pmltrafo(_pmltrafo)
+      pmltrafo(_pmltrafo), dim(_pmltrafo->GetDimension())
     {
       SetDimensions(Array<int>({dim,dim}));
     }
@@ -115,7 +116,9 @@ namespace ngcomp
     public:
 
     PML_JacInv(shared_ptr<PML_Transformation> _pmltrafo) : 
-      dim(_pmltrafo->GetDimension()),CoefficientFunction(_pmltrafo->GetDimension()*_pmltrafo->GetDimension(),true), pmltrafo(_pmltrafo)
+      CoefficientFunction(_pmltrafo->GetDimension()*_pmltrafo->GetDimension(),true),
+      pmltrafo(_pmltrafo),
+      dim(_pmltrafo->GetDimension())
     {
       SetDimensions(Array<int>({dim,dim}));
     }
