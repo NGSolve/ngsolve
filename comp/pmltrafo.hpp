@@ -79,7 +79,8 @@ namespace ngcomp
     public:
 
     PML_Jac(shared_ptr<PML_Transformation> _pmltrafo) : 
-      dim(_pmltrafo->GetDimension()),CoefficientFunction(dim*dim,true), pmltrafo(_pmltrafo)
+      CoefficientFunction(sqr(_pmltrafo->GetDimension()),true),
+      dim(_pmltrafo->GetDimension()), pmltrafo(_pmltrafo)
     {
       SetDimensions(Array<int>({dim,dim}));
     }
