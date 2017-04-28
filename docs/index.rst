@@ -78,4 +78,6 @@ interface to Python is inspired by the `FEniCS project <https://fenicsproject.or
    netgen_tutorials/working_with_meshes.rst
 
    netgen_tutorials/manual_mesh_generation.rst
+
+   netgen_tutorials/meshsize.rst
    
