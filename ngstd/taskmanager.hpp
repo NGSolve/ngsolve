@@ -39,10 +39,11 @@ namespace ngstd
     {
     public:
       atomic<int> start_cnt;
-      atomic<int> complete_cnt;
+      // atomic<int> complete_cnt;
       atomic<int> participate;
+      atomic<int> participate_exit;
 
-      NodeData() : start_cnt(0), participate(0) { ; }
+      NodeData() : start_cnt(0), participate(0), participate_exit(0) { ; }
     };
     
     static const function<void(TaskInfo&)> * func;
