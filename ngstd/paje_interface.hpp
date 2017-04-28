@@ -110,7 +110,7 @@ namespace ngstd
       void StartTimer(int timer_id)
         {
           if(!tracing_enabled) return;
-          if(timer_events.size() == max_num_events_per_thread)
+          if(unlikely(timer_events.size() == max_num_events_per_thread))
             StopTracing();
           timer_events.push_back(TimerEvent{timer_id, GetTime(), true});
         }
@@ -118,16 +118,16 @@ namespace ngstd
       void StopTimer(int timer_id)
         {
           if(!tracing_enabled) return;
-          if(timer_events.size() == max_num_events_per_thread)
+          if(unlikely(timer_events.size() == max_num_events_per_thread))
             StopTracing();
           timer_events.push_back(TimerEvent{timer_id, GetTime(), false});
         }
 
-      int StartTask(int thread_id, int id, int id_type = Task::ID_NONE, int additional_value = -1)
+      INLINE int StartTask(int thread_id, int id, int id_type = Task::ID_NONE, int additional_value = -1)
         {
           if(!tracing_enabled) return -1;
           if(!trace_threads && !trace_thread_counter) return -1;
-          if(tasks[thread_id].size() == max_num_events_per_thread)
+          if(unlikely(tasks[thread_id].size() == max_num_events_per_thread))
             StopTracing();
           int task_num = tasks[thread_id].size();
           tasks[thread_id].push_back( Task{thread_id, id, id_type, additional_value, GetTime()} );
