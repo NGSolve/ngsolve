@@ -7,7 +7,9 @@ namespace ngstd
 
 #if defined(__AVX__)
 
-#ifdef WIN32
+#if defined __INTEL_COMPILER
+  typedef const char * prefetch_ptr_t;
+#elif defined WIN32
   // MSVC needs a char*
   typedef char * prefetch_ptr_t;
 #else
@@ -1325,11 +1327,11 @@ namespace ngbla
       }
   }
   
-  void AddABt (SliceMatrix<double> a, SliceMatrix<double> b, SliceMatrix<double> c)
+  void AddABt (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
   {
     // c += a * Trans(b);
     // return;
-    AddABt2 (a, b, c, [] (auto c, auto ab) { return c+ab; });
+    AddABt2 (a, b, c.AddSize(a.Height(),b.Height()), [] (auto c, auto ab) { return c+ab; });
   }
 
   void SubABt (SliceMatrix<double> a, SliceMatrix<double> b, SliceMatrix<double> c)
@@ -1475,8 +1477,9 @@ namespace ngbla
     }
   */
 
-  void AddABtSym (AFlatMatrix<double> a, AFlatMatrix<double> b, SliceMatrix<double> c)
+  void AddABtSym (AFlatMatrix<double> a, AFlatMatrix<double> b, BareSliceMatrix<double> bc)
   {
+    auto c = bc.AddSize(a.Height(), b.Height());
     // clear overhead
     if (a.Width() != 4*a.VWidth())
       {

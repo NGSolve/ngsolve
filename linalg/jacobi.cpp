@@ -15,22 +15,29 @@ namespace ngla
 		 shared_ptr<BitArray> ainner, bool use_par)
     : mat(amat), inner(ainner)
   { 
+    static Timer t("Jacobiprecond::ctor"); RegionTimer r(t);
     SetParallelDofs (mat.GetParallelDofs());
 
     height = mat.Height();
     invdiag.SetSize (height); 
     invdiag = TM(0.0);
 
-    for (int i = 0; i < height; i++)
-      if (!inner || inner->Test(i))
-	invdiag[i] = mat(i,i);
+    // for (int i = 0; i < height; i++)
+    ParallelFor (height, [&](size_t i)
+		 {
+		   if (!inner || inner->Test(i))
+		     invdiag[i] = mat(i,i);
+		 });
     
     if(paralleldofs!=nullptr && use_par)
 	AllReduceDofData (invdiag, MPI_SUM, *paralleldofs);  
     
-    for (int i = 0; i < height; i++)
-      if (!inner || inner->Test(i))
-	CalcInverse (invdiag[i]);
+    // for (int i = 0; i < height; i++)
+    ParallelFor (height, [&](size_t i)
+		 {
+		   if (!inner || inner->Test(i))
+		     CalcInverse (invdiag[i]);
+		 });
   }
 
   ///

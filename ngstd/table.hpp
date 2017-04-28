@@ -187,13 +187,13 @@ template <class T>
   {
   protected:  
     int mode;    // 1 .. cnt, 2 .. cnt entries, 3 .. fill table
-    atomic<int> nd;
+    atomic<size_t> nd;
     Array<atomic<int>> cnt;
     Table<T> * table;
   public:
     TableCreator()
     { nd = 0; mode = 1; table = NULL; }
-    TableCreator(int acnt)
+    TableCreator (size_t acnt)
     { nd = acnt; table = NULL; SetMode(2); }
     
     Table<T> * GetTable() { return table; }
@@ -238,7 +238,7 @@ template <class T>
 	}
     }
 
-    void SetSize (int _nd)
+    void SetSize (size_t _nd)
     {
       if (mode == 1)
         nd = _nd;
@@ -249,18 +249,19 @@ template <class T>
         }
     }
 
-    void Add (int blocknr, const T & data)
+    void Add (size_t blocknr, const T & data)
     {
-      int oldval;
       switch (mode)
 	{
 	case 1:
-          oldval = nd;
-          while (blocknr+1>nd) {
-            nd.compare_exchange_weak (oldval, blocknr+1);
-            oldval = nd;
+          {
+            size_t oldval = nd;
+            while (blocknr+1>nd) {
+              nd.compare_exchange_weak (oldval, blocknr+1);
+              oldval = nd;
+            }
+            break;
           }
-	  break;
 	case 2:
 	  cnt[blocknr]++;
 	  break;
@@ -272,47 +273,49 @@ template <class T>
     }
 
 
-    void Add (int blocknr, IntRange range)
+    void Add (size_t blocknr, IntRange range)
     {
-      int oldval;
       switch (mode)
 	{
 	case 1:
-      oldval = nd;
-      while (blocknr+1>nd) {
-          nd.compare_exchange_weak (oldval, blocknr+1);
-          oldval = nd;
-      }
-	  break;
+          {
+            size_t oldval = nd;
+            while (blocknr+1>nd) {
+              nd.compare_exchange_weak (oldval, blocknr+1);
+              oldval = nd;
+            }
+            break;
+          }
 	case 2:
 	  cnt[blocknr] += range.Size();
 	  break;
 	case 3:
-          int ci = ( cnt[blocknr] += range.Size() ) - range.Size();
-	  for (int j = 0; j < range.Size(); j++)
+          size_t ci = ( cnt[blocknr] += range.Size() ) - range.Size();
+	  for (size_t j = 0; j < range.Size(); j++)
 	    (*table)[blocknr][ci+j] = range.First()+j;
 	  break;
 	}
     }
 
-    void Add (int blocknr, const FlatArray<int> & dofs)
+    void Add (size_t blocknr, const FlatArray<int> & dofs)
     {
-      int oldval;
       switch (mode)
 	{
 	case 1:
-      oldval = nd;
-      while (blocknr+1>nd) {
-          nd.compare_exchange_weak (oldval, blocknr+1);
-          oldval = nd;
-      }
-	  break;
+          {
+            size_t oldval = nd;
+            while (blocknr+1>nd) {
+              nd.compare_exchange_weak (oldval, blocknr+1);
+              oldval = nd;
+            }
+            break;
+          }
 	case 2:
 	  cnt[blocknr] += dofs.Size();
 	  break;
 	case 3:
-          int ci = ( cnt[blocknr] += dofs.Size() ) - dofs.Size();
-	  for (int j = 0; j < dofs.Size(); j++)
+          size_t ci = ( cnt[blocknr] += dofs.Size() ) - dofs.Size();
+	  for (size_t j = 0; j < dofs.Size(); j++)
 	    (*table)[blocknr][ci+j] = dofs[j];
 	  break;
 	}
@@ -330,9 +333,9 @@ template <class T>
       : TableCreator<int>(), takedofs(atakedofs) { };
     FilteredTableCreator(int acnt, const BitArray* atakedofs)
       : TableCreator<int>(acnt),takedofs(atakedofs) { };
-    void Add (int blocknr, int data);
-    void Add (int blocknr, IntRange range);
-    void Add (int blocknr, FlatArray<int> dofs);
+    void Add (size_t blocknr, int data);
+    void Add (size_t blocknr, IntRange range);
+    void Add (size_t blocknr, FlatArray<int> dofs);
   };
 
 

@@ -221,9 +221,10 @@ namespace ngcomp
 	ELEMENT_TYPE eltype = el.GetType();
 	const POINT3D * points = ElementTopology :: GetVertices (eltype);
 	
-	Array<int> elfacets; 
-	ma->GetElFacets (el.Nr(),elfacets); 
-	
+	// Array<int> elfacets; 
+	// ma->GetElFacets (el.Nr(), elfacets); 
+	auto elfacets = ma->GetElFacets (el);
+        
         fine_facet[elfacets] = true;
 	
 	if(!var_order) continue; 
@@ -250,7 +251,8 @@ namespace ngcomp
 	  }
 	else
 	  {
-	    Array<int> vnums (el.Vertices());
+	    // Array<int> vnums (el.Vertices());
+            auto vnums = el.Vertices();
 	    const FACE * faces = ElementTopology::GetFaces (eltype);
 
 	    for(int j = 0; j < elfacets.Size(); j++)
@@ -313,9 +315,9 @@ namespace ngcomp
 
   void HDivHighOrderFESpace :: UpdateDofTables()
   {
-    int nfa = ma->GetNFacets();
-    int nel = ma->GetNE();
-    int dim = ma->GetDimension();
+    size_t nfa = ma->GetNFacets();
+    size_t nel = ma->GetNE();
+    size_t dim = ma->GetDimension();
     Array<int> pnums; 
      
     first_facet_dof.SetSize(nfa+1); 
@@ -327,7 +329,7 @@ namespace ngcomp
     if(dim==2)
       {
 	// int dec_hodc = highest_order_dc ? 1 : 0;
-        for (int i = 0; i < nfa; i++)
+        for (auto i : Range(nfa))
           {
             first_facet_dof[i] = ndof;
             int inc = fine_facet[i] ? order_facet[i][0] : 0;
@@ -344,12 +346,14 @@ namespace ngcomp
         first_facet_dof[nfa] = ndof;
       
 	Array<int> fnums;
-        for(int i=0; i< nel; i++)
+        // for (auto i : Range(nel))
+        for (size_t i = 0; i < nel; i++)
           {
+            ElementId ei(VOL, i);
             INT<3> pc = order_inner_curl[i];
             INT<3> p = order_inner[i];
             int inci = 0;
-            switch(ma->GetElType(i))
+            switch(ma->GetElType(ei))
               {
               case ET_TRIG:
                 if (!ho_div_free)
@@ -369,9 +373,11 @@ namespace ngcomp
 
 	    if (highest_order_dc)
 	      {
-		ma->GetElFacets (i, fnums);	
-		for (int j = 0; j < fnums.Size(); j++)
-		  if (!boundary_facet[fnums[j]]) inci++;
+		ma->GetElFacets (ei, fnums);
+                for (auto f : fnums)
+		  if (!boundary_facet[f]) inci++;
+		// for (int j = 0; j < fnums.Size(); j++)
+                // if (!boundary_facet[fnums[j]]) inci++;
 	      }
 
             first_inner_dof[i] = ndof;
@@ -386,28 +392,29 @@ namespace ngcomp
             dc_pairs = INT<2> (-1,-1);
             
             Array<int> fnums;
-            for (int i = 0; i < ma->GetNE(); i++)
+            for (auto ei : ma->Elements(VOL))
               {
-                ma->GetElFacets (i, fnums);
+                auto i = ei.Nr();
+                ma->GetElFacets (ei, fnums);
 		int fid = first_inner_dof[i];
-                for (int k = 0; k < fnums.Size(); k++)
-		  if (!boundary_facet[fnums[k]])
+                for (auto f : fnums)
+		  if (!boundary_facet[f])
 		    {
 		      int di = fid++; // first_inner_dof[i]+k;
-		      dc_pairs[fnums[k]][1] = dc_pairs[fnums[k]][0];
-		      dc_pairs[fnums[k]][0] = di;
+		      dc_pairs[f][1] = dc_pairs[f][0];
+		      dc_pairs[f][0] = di;
 		    }
               }
           }
         else
-          dc_pairs.SetSize (0);
+          dc_pairs.SetSize0 ();
       }
     else 
       {
         int inci = 0;
-        for (int i=0; i< nfa; i++) 
+        for (size_t i = 0; i < nfa; i++) 
           {
-            inci =0; 
+            inci = 0; 
             if(fine_facet[i])
               {
                 INT<2> p = order_facet[i]; 
@@ -435,13 +442,13 @@ namespace ngcomp
         first_facet_dof[nfa] = ndof;
 	 
 	Array<int> fnums;
-        for (int i=0; i< nel; i++)
+        for (size_t i = 0; i < nel; i++)
           {
             INT<3> p = order_inner[i];
             INT<3> pc = order_inner_curl[i];
             int inci = 0;
 	     
-            switch(ma->GetElType(i))
+            switch(ma->GetElType(ElementId(VOL,i)))
               {
               case ET_TET:
                 if(p[0]>1 && !ho_div_free)
@@ -604,7 +611,7 @@ namespace ngcomp
     if (ei.IsVolume())
       {
         int elnr = ei.Nr();
-        Ngs_Element ngel = ma->GetElement(elnr);
+        Ngs_Element ngel = ma->GetElement(ei);
         ELEMENT_TYPE eltype = ngel.GetType();
         
         switch (eltype)
@@ -637,7 +644,7 @@ namespace ngcomp
         ArrayMem<int,4> vnums;
         ma->GetSElVertices(selnr, vnums);
         
-        switch (ma->GetSElType(selnr))
+        switch (ma->GetElType(ei))
           {
           case ET_SEGM:
             {
@@ -662,7 +669,7 @@ namespace ngcomp
             }
           default:
             throw Exception (string("HDivHighOrderFESpace::GetSFE: unsupported element ")+
-                             ElementTopology::GetElementName(ma->GetSElType(selnr)));
+                             ElementTopology::GetElementName(ma->GetElType(ei)));
           }
         
         if (discont) return *fe; 
@@ -670,7 +677,7 @@ namespace ngcomp
         ArrayMem<int, 4> ednums, order_ed;
         INT<3> order_fa;
         
-        if(ma->GetSElType(selnr) == ET_SEGM)
+        if(ma->GetElType(ei) == ET_SEGM)
           {
             HDivHighOrderNormalFiniteElement<1> * hofe =
               dynamic_cast<HDivHighOrderNormalFiniteElement<1>*> (fe);
@@ -760,7 +767,7 @@ namespace ngcomp
 
   const FiniteElement & HDivHighOrderFESpace :: GetHODivFE (int elnr, LocalHeap & lh) const
   {
-    Ngs_Element ngel = ma->GetElement(elnr);
+    Ngs_Element ngel = ma->GetElement(ElementId(VOL,elnr));
     ELEMENT_TYPE eltype = ngel.GetType();
     
     if (!ho_div_free) throw Exception ("You don't have hodivfree active. You are not allow to call GetHODivFE");
@@ -892,18 +899,21 @@ namespace ngcomp
   }
 
 
-  void HDivHighOrderFESpace :: 
-  GetDofRanges (ElementId ei, Array<IntRange> & dranges) const
-  {
-    cout << "getdofranges not operational" << endl;
-    dranges.SetSize(0);
-  }
-
-
 
   void HDivHighOrderFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
     dnums.SetSize0();
+
+    if (order_policy == NODE_TYPE_ORDER)
+      {
+        auto et = ma->GetElType(ei);
+        cout << "new order policy, et = " << et
+             << ", ol = " << et_order_left[et]
+             << ", or = " << et_order_right[et]
+             << endl;
+      }
+
+    
     if(discont) 
       {
 	// lowest_order included in inner
@@ -913,8 +923,9 @@ namespace ngcomp
       } 
     if(ei.VB()==VOL)
       {
-	ArrayMem<int,6> fanums;
-	ma->GetElFacets (ei, fanums);
+	// ArrayMem<int,6> fanums;
+	// ma->GetElFacets (ei, fanums);
+        auto fanums = ma->GetElFacets(ei);
 	if (highest_order_dc)
 	  {
 	    if (ma->GetDimension() == 2)
@@ -968,40 +979,30 @@ namespace ngcomp
 	else // not highest order dc
 	  {
 	    //Raviart-Thomas
-	    for (int i = 0; i < fanums.Size(); i++)
-	      dnums.Append (fanums[i]);
+            dnums += fanums;
 	    // facets
-	    for(int i=0; i<fanums.Size(); i++)
-	      dnums += GetFacetDofs (fanums[i]);
+	    for (auto f : fanums)
+	      dnums += GetFacetDofs (f);
 	    
 	    //inner
 	    dnums += GetElementDofs (ei.Nr());
 	  }
 	
 	if (!DefinedOn (ei))
-	  // dnums = -1;
           dnums.SetSize0();
       }
-    if(ei.VB()==BND)
+    else if (ei.VB()==BND)
       {
-	Array<int> fanums;
-	ma->GetElFacets (ei, fanums);
+        size_t fanum = ma->GetElFacets(ei)[0];
 	// lowest-order
-	for(int i=0;i<fanums.Size();i++) 
-	  dnums.Append (fanums[i]);
+        dnums += fanum;
 	
 	// high order
-	for (int i = 0; i < fanums.Size(); i++)
-	  dnums += IntRange (first_facet_dof[fanums[i]],
-			     first_facet_dof[fanums[i]+1]);
-	
+        dnums += GetFacetDofs (fanum);
+        
 	if (!DefinedOn (ei))
 	  dnums = -1;
       }
-    if(ei.VB()==BBND)
-	dnums.SetSize(0);
-
-    // cout << "ndof = " << dnums.Size() << endl;
   }
 
 
@@ -1786,59 +1787,7 @@ namespace ngcomp
   }
 
 
-
   static RegisterFESpace<HDivHighOrderFESpace> init ("hdivho");
-
-
-
-  class Testing
-  {
-  public:
-    Testing ()
-    {
-      cout << "========== testhiv =========" << endl;
-      
-      LocalHeap lh(1000000);
-      
-      IntegrationRule ir(ET_TRIG, 4);
-      SIMD_IntegrationRule simd_ir(ir);
-      FE_ElementTransformation<2,2> trafo(ET_TRIG);
-      
-      MappedIntegrationRule<2,2> mir(ir, trafo, lh);
-      auto & simd_mir = trafo(simd_ir, lh);
-      
-      HDivHighOrderFE<ET_TRIG> fe(2);
-
-      Vector<> coef(fe.GetNDof());
-      Matrix<> vals(ir.GetNIP(), 4);
-      for (size_t i = 0; i < fe.GetNDof(); i++)
-        coef(i) = sin(i);
-      DiffOpGradientHdiv<2>::ApplyIR (fe, mir, coef, vals, lh);
-      cout.precision(16);
-      cout << "vals = " << vals << endl;
-
-      Matrix<SIMD<double>> simd_vals(4, simd_mir.Size());
-      DiffOpGradientHdiv<2>::ApplySIMDIR (fe, simd_mir, coef, BareSliceMatrix<SIMD<double>> (simd_vals));
-      cout << "vals = " << simd_vals << endl;
-
-
-
-      
-      /*
-      Matrix<double, ColMajor> bmat (4, fe.GetNDof());
-      for (int i = 0; i < mir.Size(); i++)
-        {
-          DiffOpGradientHdiv<2>::GenerateMatrix(fe, mir[i], FlatMatrix<double,ColMajor>(bmat), lh);
-          cout << "bmat = " << endl << bmat << endl;
-        }
-      Matrix<SIMD<double>> simd_mat(4*fe.GetNDof(), simd_mir.Size());
-      DiffOpGradientHdiv<2>::GenerateMatrixSIMDIR(fe, simd_mir, simd_mat);
-      cout << "simd_mat = " << endl << simd_mat << endl;
-      */
-    }
-  };
-  
-  // Testing testing;
 }
 
 

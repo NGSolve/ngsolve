@@ -453,6 +453,11 @@ namespace ngbla
     {
       FlatMatrix<T,ORD>::operator= (m2);
     }
+    
+    /// move matrix
+    Matrix (Matrix && m2)
+      : FlatMatrix<T> (m2.h, m2.w, m2.data)
+    { m2.data = nullptr; m2.w = 0; m2.h = 0; } 
 
     /// allocate and compute 
     template<typename TB>
@@ -1376,9 +1381,32 @@ namespace ngbla
     /// assign constant
     INLINE const SliceMatrix & operator= (TSCAL s) const
     {
+      /*
+      if (w == 0) return *this;
       for (size_t i = 0; i < h; i++)
-        for (size_t j = 0; j < w; j++)
-          data[i*dist+j] = s;
+        {
+          __assume (w > 0);
+          for (size_t j = 0; j < w; j++)
+            data[i*dist+j] = s;
+        }
+      */
+      if (w == 0) return *this;
+      size_t i = 0, base = 0;
+      for ( ; i+1 < h; i+=2, base += 2*dist)
+        {
+          __assume (w > 0);
+          for (auto j : Range(w))
+            {
+              data[base+j] = s;
+              data[base+dist+j] = s;
+            }
+        }
+      if (i < h)
+        {
+          __assume (w > 0);
+          for (auto j : Range(w))            
+            data[base+j] = s;
+        }
       return *this;
     }
 
@@ -1561,7 +1589,7 @@ namespace ngbla
 
 
   template <typename T, ORDERING ORD = RowMajor>
-  class BareSliceMatrix : public CMCPMatExpr<BareSliceMatrix<T,ORD>>
+  class BareSliceMatrix : public CMCPMatExpr<BareSliceMatrix<T,ORD>>, DummySize
   {
   protected:
     /// the height
@@ -1585,14 +1613,14 @@ namespace ngbla
     INLINE BareSliceMatrix(const BareSliceMatrix &) = default;
 
     BareSliceMatrix (const FlatMatrix<T> & mat)
-      : dist(mat.Width()), data(&mat(0,0))
+      : DummySize(mat.Height(), mat.Width()), dist(mat.Width()), data(&mat(0,0))
     { ; }
 
     BareSliceMatrix (const SliceMatrix<T> & mat)
-      : dist(mat.Width()), data(&mat(0,0))
+      : DummySize(mat.Height(), mat.Width()), dist(mat.Dist()), data(&mat(0,0))
     { ; }
 
-    BareSliceMatrix (size_t adist, T * adata) : dist(adist), data(adata) { ; } 
+    BareSliceMatrix (size_t adist, T * adata, DummySize ds) : DummySize(ds), dist(adist), data(adata) { ; } 
     
     BareSliceMatrix & operator= (const BareSliceMatrix & m) = delete;
 
@@ -1607,6 +1635,8 @@ namespace ngbla
       return data[i]; 
     }
 
+    using DummySize::Height;
+    using DummySize::Width;
     /*
     /// the height
     INLINE size_t Height () const throw() { return h; }
@@ -1623,7 +1653,7 @@ namespace ngbla
     
     INLINE const BareSliceMatrix Rows (size_t first, size_t next) const
     {
-      return BareSliceMatrix ( /* next-first, w, */ dist, data+first*dist);
+      return BareSliceMatrix ( /* next-first, w, */ dist, data+first*dist, DummySize(next-first, Width()));
     }
 
     INLINE BareVector<T> Row (size_t i) const
@@ -1664,7 +1694,7 @@ namespace ngbla
     */
     BareSliceMatrix<T> RowSlice(size_t first, size_t adist) const
     {
-      return BareSliceMatrix<T> (dist*adist, data+first*dist);
+      return BareSliceMatrix<T> (dist*adist, data+first*dist, DummySize( (Height()-first)/adist, Width()));
     }
     
   };
@@ -1842,17 +1872,17 @@ namespace ngbla
   class Scalar2ElemMatrix 
   {
   public:
-    const FlatMatrix<TSCAL> mat;
-    Scalar2ElemMatrix (const FlatMatrix<TSCAL> amat) : mat(amat) { ; }
+    const BareSliceMatrix<TSCAL> mat;
+    Scalar2ElemMatrix (const BareSliceMatrix<TSCAL> amat) : mat(amat) { ; }
 
     enum { H = mat_traits<TM>::HEIGHT };
     enum { W = mat_traits<TM>::WIDTH };
 
-    TM operator() (int i, int j) const
+    TM operator() (size_t i, size_t j) const
     {
       TM ret;
-      for (int k = 0; k < H; k++)
-	for (int l = 0; l < W; l++)
+      for (size_t k = 0; k < H; k++)
+	for (size_t l = 0; l < W; l++)
 	  Access(ret, k,l) = mat(i*H+k, j*W+l);
       return ret;
     }

@@ -45,7 +45,9 @@ namespace ngstd
       NodeData() : start_cnt(0), participate(0) { ; }
     };
     
-    const function<void(TaskInfo&)> * func;
+    static const function<void(TaskInfo&)> * func;
+    static const function<void()> * startup_function;
+    static const function<void()> * cleanup_function;
     atomic<int> ntasks;
     Exception * ex;
 
@@ -61,7 +63,7 @@ namespace ngstd
     NodeData *nodedata[8];
 
     int num_nodes;
-    int num_threads;
+    static int num_threads;
     static int max_threads;
 #ifndef __clang__    
     static thread_local int thread_id;
@@ -88,7 +90,8 @@ namespace ngstd
 
     static void SetNumThreads(int amax_threads);
     static int GetMaxThreads() { return max_threads; }
-    static int GetNumThreads() { return task_manager ? task_manager->num_threads : 1; }
+    // static int GetNumThreads() { return task_manager ? task_manager->num_threads : 1; }
+    static int GetNumThreads() { return num_threads; }
     static int GetThreadId() { return task_manager ? task_manager->thread_id : 0; }
     int GetNumNodes() const { return num_nodes; }
 
@@ -97,7 +100,10 @@ namespace ngstd
     NGS_DLL_HEADER void CreateJob (const function<void(TaskInfo&)> & afunc, 
                     int antasks = task_manager->GetNumThreads());
 
-
+    static void SetStartupFunction (const function<void()> & func) { startup_function = &func; }
+    static void SetStartupFunction () { startup_function = nullptr; }
+    static void SetCleanupFunction (const function<void()> & func) { cleanup_function = &func; }
+    static void SetCleanupFunction () { cleanup_function = nullptr; }    
     /*
     template <typename TFUNC>
     INLINE void ParallelFor (IntRange r, TFUNC f, int antasks = task_manager->GetNumThreads())
@@ -134,14 +140,25 @@ namespace ngstd
 
   INLINE int TasksPerThread (int tpt)
   {
-    return task_manager ? tpt*task_manager->GetNumThreads() : 1;
+    // return task_manager ? tpt*task_manager->GetNumThreads() : 1;
+    return tpt*TaskManager::GetNumThreads();
   }
+  
+
+  class TotalCosts
+  {
+    size_t cost;
+  public:
+    TotalCosts (size_t _cost) : cost(_cost) { ; }
+    size_t operator ()() { return cost; }
+  };
 
   template <typename TR, typename TFUNC>
   INLINE void ParallelFor (T_Range<TR> r, TFUNC f, 
-                           int antasks = task_manager ? task_manager->GetNumThreads() : 0)
+                           int antasks = task_manager ? task_manager->GetNumThreads() : 0,
+                           TotalCosts costs = 1000)
   {
-    if (task_manager)
+    if (task_manager && costs() >= 1000)
 
       task_manager -> CreateJob 
         ([r, f] (TaskInfo & ti) 
@@ -156,18 +173,26 @@ namespace ngstd
       for (auto i : r) f(i);
   }
 
+  /*
   template <typename TFUNC>
   INLINE void ParallelFor (size_t n, TFUNC f, 
                            int antasks = task_manager ? task_manager->GetNumThreads() : 0)
   {
     ParallelFor (IntRange (n), f, antasks);
   }
+  */
+  template <typename ...Args>
+  INLINE void ParallelFor (size_t n, Args...args)
+  {
+    ParallelFor (IntRange (n), args...);
+  }
   
   template <typename TR, typename TFUNC>
   INLINE void ParallelForRange (T_Range<TR> r, TFUNC f, 
-                                int antasks = task_manager ? task_manager->GetNumThreads() : 0)
+                                int antasks = task_manager ? task_manager->GetNumThreads() : 0,
+                                TotalCosts costs = 1000)
   {
-    if (task_manager)
+    if (task_manager && costs() >= 1000)
 
       task_manager -> CreateJob 
         ([r, f] (TaskInfo & ti) 
@@ -182,13 +207,19 @@ namespace ngstd
       f(r);
   }
 
+  /*
   template <typename TFUNC>
   INLINE void ParallelForRange (size_t n, TFUNC f, 
                                 int antasks = task_manager ? task_manager->GetNumThreads() : 0)
   {
     ParallelForRange (IntRange(n), f, antasks);
   }
-
+  */
+  template <typename ...Args>
+  INLINE void ParallelForRange (size_t n, Args...args)
+  {
+    ParallelForRange (IntRange(n), args...);
+  }
   
   template <typename TFUNC>
   INLINE void ParallelJob (TFUNC f, 
@@ -262,7 +293,7 @@ namespace ngstd
   };
 
 
-
+  /*
 class alignas(4096) AtomicRange
 {
   mutex lock;
@@ -305,10 +336,10 @@ public:
     return non_empty;
   }
 };
+*/
 
 
 
-   /*
   // lock free popfirst
   // faster for large loops, bug slower for small loops (~1000) ????
 
@@ -323,6 +354,12 @@ public:
   {
     lock_guard<mutex> guard(lock);
     // begin = r.begin();
+    begin.store(r.begin(), std::memory_order_relaxed);
+    end = r.end();
+  }
+  
+  void SetNoLock (IntRange r)
+  {
     begin.store(r.begin(), std::memory_order_relaxed);
     end = r.end();
   }
@@ -361,7 +398,6 @@ public:
     return true;
   }
 };
-   */
 
   
 
@@ -402,6 +438,7 @@ public:
       
       SharedIterator & operator++ () { GetNext(); return *this;}
 
+      /*
       void GetNext()
       {
         while (1)
@@ -429,16 +466,53 @@ public:
                 IntRange steal;
                 if (ranges[steal_from].PopHalf(steal))
                   {
-                    /*
-                    ranges[me].Set(steal);
-                    break;
-                    */
+                    // ranges[me].Set(steal);
+                    // break;
                     myval = steal.First();
                     processed_by_me++;                    
                     if (myval+1 < steal.Next())
                       ranges[me].Set (IntRange(myval+1, steal.Next()));
                     return;
                   }
+              }
+          }
+      }
+      */
+      
+      void GetNext()
+      {
+        int nr;
+        if (ranges[me].PopFirst(nr))
+          {
+            processed_by_me++;
+            myval = nr;
+            return;
+          }
+        GetNext2();
+      }
+
+      void GetNext2()
+      {
+        processed += processed_by_me;
+        processed_by_me = 0;
+        
+        // done with my work, going to steal ...
+        while (1)
+          {
+            if (processed >= total) return;
+            // steal_from = (steal_from + 1) % ranges.Size();
+            steal_from++;
+            if (steal_from == ranges.Size()) steal_from = 0;
+            
+            // steal half of the work reserved for 'from':
+            IntRange steal;
+            if (ranges[steal_from].PopHalf(steal))
+              {
+                myval = steal.First();
+                processed_by_me++;                    
+                if (myval+1 < steal.Next())
+                  ranges[me].Set (IntRange(myval+1, steal.Next()));
+                return;
               }
           }
       }
@@ -453,8 +527,8 @@ public:
       : ranges(TaskManager::GetMaxThreads()), processed(0)
     {
       total = r.Size();
-      for (int i = 0; i < ranges.Size(); i++)
-        ranges[i].Set (r.Split(i,ranges.Size()));
+      for (size_t i = 0; i < ranges.Size(); i++)
+        ranges[i].SetNoLock (r.Split(i,ranges.Size()));
     }
     
     SharedIterator begin() { return SharedIterator (ranges, processed, total, true); }
@@ -468,6 +542,7 @@ public:
   class Partitioning
   {
     Array<size_t> part;
+    size_t total_costs;
   public:
     Partitioning () { ; }
 
@@ -477,7 +552,7 @@ public:
     template <typename T>
     Partitioning & operator= (const Array<T> & apart) { part = apart; return *this; }
 
-
+    size_t GetTotalCosts() const { return total_costs; }
 
     template <typename TFUNC>
     void Calc (size_t n, TFUNC costs, int size = task_manager ? task_manager->GetNumThreads() : 1)
@@ -490,7 +565,7 @@ public:
           sum += costs(i);
           prefix[i] = sum;
         }
-      
+      total_costs = sum;
       part.SetSize (size+1);
       part[0] = 0;
 
@@ -568,9 +643,10 @@ public:
 
 
   template <typename TFUNC>
-  INLINE void ParallelForRange (const Partitioning & part, TFUNC f, int tasks_per_thread = 1)
+  INLINE void ParallelForRange (const Partitioning & part, TFUNC f,
+                                int tasks_per_thread = 1, TotalCosts costs = 1000)
   {
-    if (task_manager)
+    if (task_manager && costs() >= 1000)
       {
         int ntasks = tasks_per_thread * task_manager->GetNumThreads();
         if (ntasks % part.Size() != 0)

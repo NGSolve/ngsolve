@@ -231,11 +231,11 @@ namespace ngcomp
     
     if (ma->GetDimension() == 2)
       {
-	bfi2d = fespace->GetIntegrator();
+	bfi2d = fespace->GetIntegrator(VOL);
       }
     else
       {
-	bfi3d = fespace->GetIntegrator();
+	bfi3d = fespace->GetIntegrator(VOL);
 	bfi2d = fespace->GetIntegrator(BND);
       }
 
@@ -1257,9 +1257,10 @@ namespace ngcomp
       trace_diffop->Apply (fel, ip, elu, result, lh2);
     else if (bfi)
       bfi->CalcFlux (fel, ip, elu, result, true, lh2);
+    else if (fes->GetEvaluator(ei.VB()))
+      fes->GetEvaluator(ei.VB()) -> Apply (fel, ip, elu, result, lh2);
     else
-      // fes->GetIntegrator(boundary) -> CalcFlux (fel, ip, elu, result, false, lh2);
-      fes->GetEvaluator(ei.VB()==BND) -> Apply (fel, ip, elu, result, lh2);
+      result = 0.0;
   }
 
   void GridFunctionCoefficientFunction :: 
@@ -1315,7 +1316,7 @@ namespace ngcomp
     else if (bfi)
       bfi->CalcFlux (fel, ip, elu, result, true, lh2);
     else
-      fes->GetIntegrator(vb==BND) -> CalcFlux (fel, ip, elu, result, false, lh2);
+      fes->GetIntegrator(vb) -> CalcFlux (fel, ip, elu, result, false, lh2);
   }
 
 
@@ -1363,10 +1364,10 @@ namespace ngcomp
       trace_diffop->Apply (fel, ir, elu, values, lh2);
     else if (bfi)
       bfi->CalcFlux (fel, ir, elu, values, true, lh2);
-    else if (fes->GetEvaluator(vb==BND))
-      fes->GetEvaluator(vb==BND) -> Apply (fel, ir, elu, values, lh2);
-    else if (fes->GetIntegrator(vb==BND))
-      fes->GetIntegrator(vb==BND) ->CalcFlux (fel, ir, elu, values, false, lh2);
+    else if (fes->GetEvaluator(vb))
+      fes->GetEvaluator(vb) -> Apply (fel, ir, elu, values, lh2);
+    else if (fes->GetIntegrator(vb))
+      fes->GetIntegrator(vb) ->CalcFlux (fel, ir, elu, values, false, lh2);
     else
       throw Exception ("don't know how I shall evaluate");
   }
@@ -1416,10 +1417,10 @@ namespace ngcomp
       trace_diffop->Apply (fel, ir, elu, values, lh2);
     else if (bfi)
       bfi->CalcFlux (fel, ir, elu, values, true, lh2);
-    else if (fes->GetEvaluator(vb==BND))
-      fes->GetEvaluator(vb==BND) -> Apply (fel, ir, elu, values, lh2);
-    else if (fes->GetIntegrator(vb==BND))
-      fes->GetIntegrator(vb==BND) ->CalcFlux (fel, ir, elu, values, false, lh2);
+    else if (fes->GetEvaluator(vb))
+      fes->GetEvaluator(vb) -> Apply (fel, ir, elu, values, lh2);
+    else if (fes->GetIntegrator(vb))
+      fes->GetIntegrator(vb) ->CalcFlux (fel, ir, elu, values, false, lh2);
     else
       throw Exception ("don't know how I shall evaluate");
   }
@@ -1484,9 +1485,9 @@ namespace ngcomp
     else if (bfi)
       throw Exception ("GridFunctionCoefficientFunction: SIMD evaluate not possible 1");
       // bfi->CalcFlux (fel, ir, elu, values, true, lh2);
-    else if (fes->GetEvaluator(vb==BND))
-      fes->GetEvaluator(vb==BND) -> Apply (fel, ir, elu, values); // , lh2);
-    else if (fes->GetIntegrator(vb==BND))
+    else if (fes->GetEvaluator(vb))
+      fes->GetEvaluator(vb) -> Apply (fel, ir, elu, values); // , lh2);
+    else if (fes->GetIntegrator(vb))
       throw Exception ("GridFunctionCoefficientFunction: SIMD evaluate not possible 2");
       // fes.GetIntegrator(boundary) ->CalcFlux (fel, ir, elu, values, false, lh2);
     else
@@ -2405,7 +2406,7 @@ namespace ngcomp
             ElementId ei(VOL, i);
 	    const FiniteElement & fel = fes.GetFE(ei,lh2);
 	    
-	    domain = ma->GetElIndex(i);
+	    domain = ma->GetElIndex(ei);
 	    
 	    vol = ma->ElementVolume(i);
 	    
@@ -2480,10 +2481,10 @@ namespace ngcomp
       {
 	for(int i=0; i<ma->GetNSE(); i++)
 	  {
-            ElementId ei(VOL, i);
+            ElementId ei(BND, i);
 	    const FiniteElement & fel = fes.GetFE(ei,lh2);
 
-	    domain = ma->GetSElIndex(i);
+	    domain = ma->GetElIndex(ei);
 
 	    vol = ma->SurfaceElementVolume(i);
 
@@ -2634,14 +2635,38 @@ namespace ngcomp
 		 const double * dxdxref, int sdxdxref,
 		 double * values, int svalues)
   {
+    if (npts > 128)
+      {
+        bool isdefined = false;
+        for (int i = 0; i < npts; i += 128)
+          {
+            int npi = min2 (128, npts-i);
+            isdefined = GetMultiValue (elnr, facetnr, npi, 
+                                       xref+i*sxref, sxref, x+i*sx, sx, dxdxref+i*sdxdxref, sdxdxref,
+                                       values+i*svalues, svalues);
+          }
+        return isdefined;
+      }
+
+    
     try
       {
-    // cout << "visualizecoef, GetMultiValue not implemented" << endl;
+        LocalHeapMem<100000> lh("viscf::GetMultiValue xref");
 
-    for (int i = 0; i < npts; i++)
-      GetValue (elnr, xref+i*sxref, x+i*sx, dxdxref+i*sdxdxref, values+i*svalues);
-    return true;
+        IntegrationRule ir(npts, lh);
+        for (size_t j = 0; j < npts; j++)
+          ir[j] = IntegrationPoint(xref[j*sxref], xref[j*sxref+1], xref[j*sxref+2]);
+        
+        ElementId ei(VOL, elnr);
+        ElementTransformation & trafo = ma->GetTrafo (ei, lh);
+        BaseMappedIntegrationRule & mir = trafo(ir, lh);
+        
+        if (!cf -> IsComplex())
+          cf -> Evaluate (mir, FlatMatrix<>(npts, GetComponents(), values));
+        else
+          cf -> Evaluate (mir, FlatMatrix<Complex>(npts, GetComponents(), reinterpret_cast<Complex*>(values)));      
 
+        return true;
       }
     catch (Exception & e)
       {

@@ -463,8 +463,8 @@ namespace ngbla
   template <typename T = double>
   class Vector : public FlatVector<T>
   {
-    using FlatVector<T>::data;
-    using FlatVector<T>::size;
+    // using FlatVector<T>::data;
+    // using FlatVector<T>::size;
   public:
     typedef typename mat_traits<T>::TSCAL TSCAL;
 
@@ -481,6 +481,10 @@ namespace ngbla
     {
       FlatVector<T>::operator= (v2);
     }
+
+    Vector (Vector && v2)
+      : FlatVector<T> (v2.size, v2.data)
+    { v2.data = nullptr; v2.size = 0; } 
     
     /// allocate and compute 
     template<typename TB>
@@ -501,7 +505,7 @@ namespace ngbla
       */
       size_t cnt = 0;
       for (auto val : list)
-        data[cnt++] = val;
+        (*this)[cnt++] = val;
     }
 
 
@@ -552,9 +556,9 @@ namespace ngbla
     Vector & operator= (initializer_list<T> list) 
     {
       SetSize (list.size());
-      int cnt = 0;
-      for (auto i = list.begin(); i < list.end(); i++, cnt++)
-        data[cnt] = *i;
+      size_t cnt = 0;
+      for (auto val : list)
+        (*this)[cnt++] = val;
       return *this;
     }
 
@@ -656,7 +660,7 @@ namespace ngbla
                                                            static_cast<void*> (new T[as])) { ; }
 
     /// deallocates dynamic memory
-    INLINE ~VectorMem() { if (this->size > S) delete [] this->data; }
+    INLINE ~VectorMem() { if (this->Size() > S) delete [] this->data; }
 
     /// assigns constant value
     INLINE VectorMem & operator= (TSCAL scal)
@@ -1372,7 +1376,7 @@ namespace ngbla
     size_t Height() const { return height; }
     size_t Width() const { return width; }
     DummySize( size_t aheight, size_t awidth=1 ) :
-      width(awidth), height(aheight) {;}
+      height(aheight), width(awidth) {;}
   };
 #else 
   class DummySize {

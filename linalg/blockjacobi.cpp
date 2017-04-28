@@ -341,7 +341,8 @@ namespace ngla
 		      shared_ptr<Table<int>> ablocktable)
     : BaseBlockJacobiPrecond(ablocktable), mat(amat), 
       invdiag(ablocktable->Size())
-  { 
+  {
+    static Timer t("BlockJacobiPrecond ctor"); RegionTimer reg(t);
     cout << "BlockJacobi Preconditioner, constructor called, #blocks = " << blocktable->Size() << endl;
 
 
@@ -400,9 +401,16 @@ namespace ngla
 
 
     atomic<int> cnt(0);
-    
+    SharedLoop2 sl(blocktable->Size());
+
+    /*
     ParallelFor 
       (Range(*blocktable), [&] (int i)
+    */
+    ParallelJob
+      ([&] (const TaskInfo & ti)
+       {
+         for (int i : sl)
        {
          
 #ifndef __MIC__
@@ -432,15 +440,20 @@ namespace ngla
 	    blockmat(j,k) = mat((*blocktable)[i][j], (*blocktable)[i][k]);
 
 	CalcInverse (blockmat);
-       }, TasksPerThread(10));
+        // }, TasksPerThread(10));
+       } } );
 
     *testout << "block coloring";
-    
+
+    static Timer tcol("BlockJacobi-coloring");
+    tcol.Start();
+
     int nblocks = blocktable->Size();
     Array<int> coloring(nblocks);
+    coloring = -1;
+    /*
     Array<unsigned int> mask(mat.Width());
     int current_color = 0;
-    coloring = -1;
     int colored_blocks = 0;
 
     while(colored_blocks<nblocks) 
@@ -468,16 +481,57 @@ namespace ngla
 	  }
 	current_color++;
       }
-    
-    
-    TableCreator<int> creator(current_color);
+    */
+
+
+    int maxcolor = 0;
+    int basecol = 0;
+    Array<unsigned int> mask(mat.Width());
+    int found = 0;
+
+    do
+      {
+        mask = 0;
+        
+        for (auto i : Range(nblocks))
+          {
+            if (coloring[i] >= 0) continue;
+
+            unsigned check = 0;
+	    for (int d : (*blocktable)[i] )              
+              check |= mask[d];
+            
+            if (check != UINT_MAX) // 0xFFFFFFFF)
+              {
+                found++;
+                unsigned checkbit = 1;
+                int color = basecol;
+                while (check & checkbit)
+                  {
+                    color++;
+                    checkbit *= 2;
+                  }
+
+                coloring[i] = color;
+                if (color > maxcolor) maxcolor = color;
+                
+                for (int d : (*blocktable)[i] )
+                  for(auto coupling : mat.GetRowIndices(d))
+                    mask[coupling] |= checkbit;
+              }
+          }
+        basecol += 8*sizeof(unsigned int); // 32;
+      }
+    while (found < nblocks);
+    tcol.Stop();    
+
+    TableCreator<int> creator(maxcolor+1);
     for ( ; !creator.Done(); creator++)
       for (int i=0; i<nblocks; i++)
           creator.Add(coloring[i],i);
     block_coloring = creator.MoveTable();
 
-    cout << " using " << current_color << " colors" << endl;
-
+    cout << " using " << maxcolor+1 << " colors" << endl;
 
     // calc balancing:
 
@@ -692,7 +746,11 @@ namespace ngla
                                       fx((*blocktable)[i][j]) += hy(j);
                                   }
 
-                              });
+                              },
+                              // TasksPerThread(2),
+                              2,
+                              TotalCosts(color_balance[c].GetTotalCosts())
+                              );
             
           }
     else
@@ -819,7 +877,8 @@ namespace ngla
   BlockJacobiPrecondSymmetric (const SparseMatrixSymmetric<TM,TV> & amat, 
 			       shared_ptr<Table<int>> ablocktable)
     : BaseBlockJacobiPrecond(ablocktable), mat(amat)
-  { 
+  {
+    static Timer t("BlockJacobiPrecondSymmetric ctor"); RegionTimer reg(t);    
     cout << "symmetric BlockJacobi Preconditioner 2, constructor called, #blocks = " << blocktable->Size() << endl;
 
     lowmem = false;

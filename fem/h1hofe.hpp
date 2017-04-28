@@ -63,6 +63,7 @@ namespace ngfem
 
   public:
 
+    using ET_trait<ET>::ElementType;
     // using VertexOrientedFE<ET>::SetVertexNumbers;
     // using VertexOrientedFE<ET>::SetVertexNumber;
     // using VertexOrientedFE<ET>::GetVertexOrientedEdge;

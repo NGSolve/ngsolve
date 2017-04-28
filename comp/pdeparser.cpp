@@ -739,23 +739,17 @@ namespace ngcomp
                 static int pynp_cnt = 0;
                 string pyname = "_pynumproc"+ToString(pynp_cnt++);
 
-                string command = pyname  + " = " + npid + " (pde,flags) \n";
 		try{
-                  // TODO:
-// 		   pyenv["pde"] = pde;
-// 		   pyenv["flags"] = make_shared<Flags>(flags);
+                    // get the python class
+                    py::object npclass = pyenv[npid.c_str()];
+                    // call constructor and release the python instance to avoid reference counting on python side
+                    py::handle np = npclass(py::cast(PyWrapper<PDE>(pde)),py::cast(flags)).release();
+                    pde->AddNumProc (name, np.cast<shared_ptr<NumProc>>());
+                }
+		catch (py::error_already_set const &e) {
+                    cerr << e.what() << endl;
+                    PyErr_Print();
 		}
-		catch (py::error_already_set const &) {
-		  PyErr_Print();
-		}
-                pyenv.exec (command);
-                py::object pynp = pyenv[pyname.c_str()];
-
-                py::extract<shared_ptr<NumProc>> np(pynp);
-                if(np.check())
-                  pde->AddNumProc (name, np());
-                else
-                  cout << "sorry, I cannot make it a numproc" << endl;
               }
 #else
               cerr << "sorry, python not enabled" << endl;
@@ -1124,7 +1118,7 @@ namespace ngcomp
 	      int maxdom = -1;
 	      int ne = pde->GetMeshAccess()->GetNE();
 	      for (int i = 0; i < ne; i++)
-		maxdom = max2 (maxdom, pde->GetMeshAccess()->GetElIndex(i));
+		maxdom = max2 (maxdom, pde->GetMeshAccess()->GetElIndex(ElementId(VOL,i)));
 	      maxdom++;
 
 	      dcoeffs.SetSize(maxdom);
@@ -1134,7 +1128,7 @@ namespace ngcomp
 	      bool only_constant = true;
 	      for (int i = 0; i < ne; i++)
 		{
-		  int index = pde->GetMeshAccess()->GetElIndex(i);
+		  int index = pde->GetMeshAccess()->GetElIndex(ElementId(VOL,i));
 		  if (coeffs[index]) continue;
 
 		  string mat = pde->GetMeshAccess()->GetMaterial(ElementId(VOL,i));
@@ -1299,7 +1293,7 @@ namespace ngcomp
 	      int maxbc = -1;
 	      int nse = pde->GetMeshAccess()->GetNSE();
 	      for (int i = 0; i < nse; i++)
-		maxbc = max2 (maxbc, pde->GetMeshAccess()->GetSElIndex(i));
+		maxbc = max2 (maxbc, pde->GetMeshAccess()->GetElIndex(ElementId(BND,i)));
 	      maxbc++;
 
 	      dcoeffs.SetSize(maxbc);
@@ -1309,7 +1303,7 @@ namespace ngcomp
 	      bool only_constant = true;
 	      for (int i = 0; i < nse; i++)
 		{
-		  int index = pde->GetMeshAccess()->GetSElIndex(i);
+		  int index = pde->GetMeshAccess()->GetElIndex(ElementId(BND,i));
 		  if (coeffs[index]) continue;
 
 		  shared_ptr<EvalFunction> fun = NULL;

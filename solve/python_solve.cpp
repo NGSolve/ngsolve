@@ -117,7 +117,14 @@ void NGS_DLL_HEADER ExportNgsolve(py::module &m ) {
                  bool draw_vol, bool draw_surf) 
               {
                 ma->SelectMesh();
-                netgen::SolutionData * vis = new VisualizeCoefficientFunction (ma, cf.Get());
+                netgen::SolutionData * vis;
+                if(dynamic_cast<ProlongateCoefficientFunction *>(cf.Get().get()))
+                {
+                  shared_ptr<CoefficientFunction> wrapper(new ProlongateCoefficientFunctionVisualization(*static_cast<ProlongateCoefficientFunction *>(cf.Get().get())));
+                  vis = new VisualizeCoefficientFunction (ma, wrapper);
+                }
+                else
+                  vis = new VisualizeCoefficientFunction (ma, cf.Get());
                 Ng_SolutionData soldata;
                 Ng_InitSolutionData (&soldata);
   

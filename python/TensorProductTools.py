@@ -1,5 +1,4 @@
 from netgen.meshing import *
-from netgen.geom2d import unit_square
 from netgen.csg import *
 from ngsolve import *
 import netgen.meshing as ngmeshing

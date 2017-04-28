@@ -424,14 +424,14 @@ namespace ngcomp
                     }
                   else
                     {
-                      FlatMatrix<double> elmat(fel.GetNDof(), lh);
+                      FlatMatrix<SCAL> elmat(fel.GetNDof(), lh);
                       bli->CalcElementMatrix (fel, eltrans, elmat, lh);
                       
                       fes.TransformMat (ei, elmat, TRANSFORM_MAT_LEFT_RIGHT);
                       fes.TransformVec (ei, elflux, TRANSFORM_RHS);
                       if (fel.GetNDof() < 50)
                         {
-                          FlatCholeskyFactors<double> invelmat(elmat, lh);
+                          FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
                           invelmat.Mult (elflux, elfluxi);
                         }
                       else
@@ -524,16 +524,21 @@ namespace ngcomp
     u.GetVector().Cumulate(); 	 
 #endif
 
-    FlatVector<SCAL> fluxi(dim, clh);
-    Array<int> dnums(1);
-    for (int i = 0; i < cnti.Size(); i++)
-      if (cnti[i])
-	{
-	  dnums[0] = i;
-	  u.GetElementVector (dnums, fluxi);
-	  fluxi /= double (cnti[i]);
-	  u.SetElementVector (dnums, fluxi);
-	}
+    ParallelForRange
+      (cnti.Size(), [&] (IntRange r)
+       {
+         VectorMem<10,SCAL> fluxi(dim);
+         ArrayMem<int,1> dnums(1);
+         // for (int i = 0; i < cnti.Size(); i++)
+         for (auto i : r)
+           if (cnti[i])
+             {
+               dnums[0] = i;
+               u.GetElementVector (dnums, fluxi);
+               fluxi /= double (cnti[i]);
+               u.SetElementVector (dnums, fluxi);
+             }
+       });
     
     ma->PopStatus ();
   }
@@ -743,23 +748,22 @@ namespace ngcomp
     double sum = 0;
     for (int i = 0; i < ne; i++)
       {
+        ElementId ei(bound1 ? BND : VOL, i);
 	HeapReset hr (lh);
 	ma->SetThreadPercentage ( 100.0*i / ne );
 
-	int eldom = 
-	  bound1 ? ma->GetSElIndex(i) : ma->GetElIndex(i);
+	int eldom = ma->GetElIndex(ei);
+        // bound1 ? ma->GetSElIndex(i) : ma->GetElIndex(i);
 	
 	if ((domain != -1) && (domain != eldom))
 	  continue;
 
-        ElementId ei(bound1 ? BND : VOL, i);
 	const FiniteElement & fel1 = fes1.GetFE (ei, lh);
 	const FiniteElement & fel2 = fes2.GetFE (ei, lh);
 	ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
 
 	fes1.GetDofNrs (ei, dnums1);
 	fes2.GetDofNrs (ei, dnums2);
-
 
 	FlatVector<SCAL> elu1(dnums1.Size() * dim1, lh);
 	FlatVector<SCAL> elu2(dnums2.Size() * dim2, lh);
@@ -851,8 +855,7 @@ namespace ngcomp
         
 	lh.CleanUp();
 
-	int eldom = 
-	  bound1 ? ma->GetSElIndex(i) : ma->GetElIndex(i);
+	int eldom = ma->GetElIndex(ei);
 	
 	if ((domain != -1) && (domain != eldom))
 	  continue;

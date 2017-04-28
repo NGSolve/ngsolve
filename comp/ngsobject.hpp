@@ -42,7 +42,7 @@ namespace ngcomp
     /// 
     NGS_Object (shared_ptr<MeshAccess> ama, Flags aflags, const string & aname = "noname", 
                 bool checkflags = false)
-      : name(aname), ma(ama), flags(aflags), timer(aname), skipCleanUp(0)
+      : name(aname), flags(aflags), ma(ama), timer(aname), skipCleanUp(0)
     { 
       ;
     }

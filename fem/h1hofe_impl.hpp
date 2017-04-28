@@ -28,6 +28,8 @@ namespace ngfem
     using H1HighOrderFE<ET>::N_EDGE;
     using H1HighOrderFE<ET>::N_FACE;
 
+    static constexpr int DIM = ngfem::Dim(ET);
+
     // typedef LegendrePolynomial EdgeOrthoPol;
     typedef IntLegNoBubble EdgeOrthoPol;  // Integrated Legendre divided by bubble
     // typedef ChebyPolynomial EdgeOrthoPol; 
@@ -35,7 +37,7 @@ namespace ngfem
 
   public:
     template<typename Tx, typename TFA>  
-      INLINE void T_CalcShape (TIP<ngfem::Dim(ET),Tx> ip, TFA & shape) const;
+      INLINE void T_CalcShape (TIP<DIM,Tx> ip, TFA & shape) const;
   };
   
 

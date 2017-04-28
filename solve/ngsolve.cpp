@@ -1206,7 +1206,7 @@ namespace ngcomp {
 
 int NGSolve_Init (Tcl_Interp * interp)
 {
-  cout << "NGSolve-" << VERSION << endl;
+  cout << "NGSolve-" << ngsolve_version << endl;
 
 #ifdef LAPACK
   cout << "Using Lapack" << endl;

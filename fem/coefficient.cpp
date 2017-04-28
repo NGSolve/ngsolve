@@ -216,7 +216,7 @@ namespace ngfem
   ///
   ParameterCoefficientFunction ::   
   ParameterCoefficientFunction (double aval) 
-    : CoefficientFunction(1, false), val(aval) 
+    : CoefficientFunctionNoDerivative(1, false), val(aval)
   { ; }
 
   ParameterCoefficientFunction ::
@@ -241,7 +241,7 @@ namespace ngfem
     if(code.deriv==1) type = "AutoDiff<1,"+type+">";
     if(code.deriv==2) type = "AutoDiffDiff<1,"+type+">";
     stringstream s;
-    s << "*reinterpret_cast<double*>(" << &val << ")";
+    s << "*reinterpret_cast<double*>(" << code.AddPointer(&val) << ")";
     code.body += Var(index).Declare(type);
     code.body += Var(index).Assign(s.str(), false);
   }
@@ -250,7 +250,7 @@ namespace ngfem
   
   DomainConstantCoefficientFunction :: 
   DomainConstantCoefficientFunction (const Array<double> & aval)
-    : CoefficientFunctionNoDerivative(1, false), val(aval) { ; }
+    : BASE(1, false), val(aval) { ; }
   
   double DomainConstantCoefficientFunction :: Evaluate (const BaseMappedIntegrationPoint & ip) const
   {
@@ -266,12 +266,26 @@ namespace ngfem
     values = val[elind];
   }
 
-  
+  /*
   void DomainConstantCoefficientFunction :: Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const
   {
     int elind = ir[0].GetTransformation().GetElementIndex();
     CheckRange (elind);        
     values.AddSize(Dimension(), ir.Size()) = val[elind];
+  }
+  */
+  template <typename T>
+  void DomainConstantCoefficientFunction ::
+  T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<T>> values) const
+  {
+    int elind = ir[0].GetTransformation().GetElementIndex();
+    CheckRange (elind);        
+    // values.AddSize(Dimension(), ir.Size()) = val[elind];
+
+    size_t nv = ir.Size();    
+    __assume (nv > 0);
+    for (size_t i = 0; i < nv; i++)
+      values(0,i) = val[elind];
   }
   
 
@@ -3742,7 +3756,7 @@ public:
           values.Row(i) = then_values.Row(i);
         else
           values.Row(i) = else_values.Row(i);
-      
+
       // for (int i = 0; i < ir.Size(); i++)
       //   values(i) = (if_values(i) > 0) ? then_values(i) : else_values(i);
     }
@@ -3761,7 +3775,6 @@ public:
       cf_if->Evaluate (ir, if_values);
       cf_then->Evaluate (ir, then_values);
       cf_else->Evaluate (ir, else_values);
-
       for (size_t k = 0; k < dim; k++)
         for (size_t i = 0; i < nv; i++)
           values(k,i) = ngstd::IfPos (if_values.Get(i),
@@ -4329,10 +4342,11 @@ public:
 
 // ////////////////////////// Coordinate CF ////////////////////////
 
-  class CoordCoefficientFunction : public T_CoefficientFunction<CoordCoefficientFunction>
+  class CoordCoefficientFunction
+    : public T_CoefficientFunction<CoordCoefficientFunction, CoefficientFunctionNoDerivative>
   {
     int dir;
-    typedef T_CoefficientFunction<CoordCoefficientFunction> BASE;
+    typedef T_CoefficientFunction<CoordCoefficientFunction, CoefficientFunctionNoDerivative> BASE;
   public:
     CoordCoefficientFunction (int adir) : BASE(1, false), dir(adir) { ; }
     using BASE::Evaluate;
@@ -4349,7 +4363,14 @@ public:
       const TPMappedIntegrationRule * tpmir = dynamic_cast<const TPMappedIntegrationRule *>(&ir);
       if(!tpmir)
         {
-          result.Col(0) = ir.GetPoints().Col(dir);
+          if (!ir.IsComplex())
+            result.Col(0) = ir.GetPoints().Col(dir);
+          else
+            {
+              auto pnts = ir.GetPointsComplex().Col(dir);
+              for (auto i : Range(ir.Size()))
+                result(i,0) = pnts(i).real();
+            }
           return;
         }
       if(dir<=2)
@@ -4421,6 +4442,7 @@ namespace ngstd {
     shared_ptr<CoefficientFunction> cf;
     Array<CoefficientFunction*> steps;
     DynamicTable<int> inputs;
+    size_t max_inputsize;
     Array<int> dim;
     int totdim;
     Array<bool> is_complex;
@@ -4457,6 +4479,7 @@ namespace ngstd {
         cout << IM(3) << typeid(*cf).name() << endl;
       
       inputs = DynamicTable<int> (steps.Size());
+      max_inputsize = 0;
       
       cf -> TraverseTree
         ([&] (CoefficientFunction & stepcf)
@@ -4465,6 +4488,7 @@ namespace ngstd {
            if (!inputs[mypos].Size())
              {
                Array<CoefficientFunction*> in = stepcf.InputCoefficientFunctions();
+               max_inputsize = max2(in.Size(), max_inputsize);
                for (auto incf : in)
                  inputs.Add (mypos, steps.Pos(incf));
              }
@@ -4474,6 +4498,8 @@ namespace ngstd {
       if(realcompile)
       {
         stringstream s;
+        string pointer_code;
+        string top_code = "";
         s << "#include<comp.hpp>" << endl;
         s << "using namespace ngcomp;" << endl;
         s << "extern \"C\" {" << endl;
@@ -4490,6 +4516,9 @@ namespace ngstd {
               cout << IM(3) << "step " << i << ": " << typeid(*steps[i]).name() << endl;
               steps[i]->GenerateCode(code, inputs[i],i);
             }
+
+            pointer_code += code.pointer;
+            top_code += code.top;
 
             // set results
             string res_type = "double";
@@ -4520,6 +4549,9 @@ namespace ngstd {
             });
 
             // Function name
+#ifdef WIN32
+            s << "__declspec(dllexport) ";
+#endif
             s << "void CompiledEvaluate";
             if(deriv==2) s << "D";
             if(deriv>=1) s << "Deriv";
@@ -4540,7 +4572,15 @@ namespace ngstd {
 
         }
         s << "}" << endl;
-        library.Compile( s.str() );
+        string file_code = top_code + s.str();
+        std::vector<string> codes;
+        codes.push_back(file_code);
+        if(pointer_code.size()) {
+          pointer_code = "extern \"C\" {\n" + pointer_code;
+          pointer_code += "}\n";
+          codes.push_back(pointer_code);
+        }
+        library.Compile( codes );
         compiled_function_simd = library.GetFunction<lib_function_simd>("CompiledEvaluateSIMD");
         compiled_function = library.GetFunction<lib_function>("CompiledEvaluate");
         compiled_function_simd_deriv = library.GetFunction<lib_function_simd_deriv>("CompiledEvaluateDerivSIMD");
@@ -4591,8 +4631,7 @@ namespace ngstd {
       ArrayMem<double, 10000> hmem(ir.Size()*totdim);
       int mem_ptr = 0;
       ArrayMem<FlatMatrix<>,100> temp(steps.Size());
-      ArrayMem<FlatMatrix<>*, 100> in(steps.Size());
-
+      ArrayMem<FlatMatrix<>*, 100> in(max_inputsize);
       for (int i = 0; i < steps.Size(); i++)
         {
           temp[i].AssignMemory(ir.Size(), dim[i], &hmem[mem_ptr]);
@@ -4607,8 +4646,10 @@ namespace ngstd {
           auto inputi = inputs[i];
           for (int nr : Range(inputi))
             in[nr] = &temp[inputi[nr]];
-
           steps[i] -> Evaluate (ir, in.Range(0, inputi.Size()), temp[i]);
+
+
+
           // timers[i]->Stop();
         }
       values = temp.Last();
@@ -4626,7 +4667,7 @@ namespace ngstd {
       STACK_ARRAY(SIMD<double>, hmem, ir.Size()*totdim);      
       int mem_ptr = 0;
       ArrayMem<AFlatMatrix<double>,100> temp(steps.Size());
-      ArrayMem<AFlatMatrix<double>*,100> in(steps.Size());
+      ArrayMem<AFlatMatrix<double>*,100> in(max_inputsize);
 
       for (int i = 0; i < steps.Size(); i++)
         {
@@ -4784,7 +4825,7 @@ namespace ngstd {
       int mem_ptr = 0;
       ArrayMem<AFlatMatrix<double>,100> temp(steps.Size());
       ArrayMem<AFlatMatrix<double>,100> dtemp(steps.Size());
-      ArrayMem<AFlatMatrix<double>*,100> in(steps.Size()), din(steps.Size());
+      ArrayMem<AFlatMatrix<double>*,100> in(max_inputsize), din(max_inputsize);
 
       for (int i = 0; i < steps.Size(); i++)
         {
@@ -4828,7 +4869,7 @@ namespace ngstd {
       ArrayMem<AFlatMatrix<double>,100> temp(steps.Size());
       ArrayMem<AFlatMatrix<double>,100> dtemp(steps.Size());
       ArrayMem<AFlatMatrix<double>,100> ddtemp(steps.Size());
-      ArrayMem<AFlatMatrix<double>*,100> in(steps.Size()), din(steps.Size()), ddin(steps.Size());
+      ArrayMem<AFlatMatrix<double>*,100> in(max_inputsize), din(max_inputsize), ddin(max_inputsize);
 
       for (int i = 0; i < steps.Size(); i++)
         {

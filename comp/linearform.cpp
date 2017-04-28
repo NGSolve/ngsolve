@@ -217,6 +217,8 @@ namespace ngcomp
 			 if(parts[j]->VB() != vb) continue;
 			 if(!parts[j]->DefinedOn(el.GetIndex())) continue;
                          if (parts[j]->SkeletonForm()) continue;
+			 if (parts[j] -> IntegrationAlongCurve()) continue;
+
 			 int elvec_size = fel.GetNDof()*fespace->GetDimension();
 			 FlatVector<TSCAL> elvec(elvec_size, lh);
 			 
@@ -260,7 +262,7 @@ namespace ngcomp
                     lock_guard<mutex> guard(linformsurfneighprint_mutex);
 		    gcnt++;
 		    if (i % 10 == 0)
-		      cout << "\rassemble facet surface element " << i << "/" << nse << flush;
+		      cout << IM(3) << "\rassemble facet surface element " << i << "/" << nse << flush;
 		    ma->SetThreadPercentage ( 100.0*(gcnt) / (loopsteps) );
 		  }
 
@@ -291,7 +293,7 @@ namespace ngcomp
 		    {
 		      if (!parts[j] -> SkeletonForm()) continue;
 		      if (parts[j] -> VB()!=BND) continue;
-		      if (!parts[j] -> DefinedOn (ma->GetSElIndex (i))) continue;
+		      if (!parts[j] -> DefinedOn (ma->GetElIndex (sei))) continue;
 		      if (parts[j] -> IntegrationAlongCurve()) continue;		    
 		  
 		      int elvec_size = dnums.Size()*fespace->GetDimension();
@@ -319,7 +321,7 @@ namespace ngcomp
 		}
 		
 	  });//end of parallel
-	  cout << "\rassemble facet surface element  " << nse << "/" << nse << endl;	  
+	  cout << IM(3) << "\rassemble facet surface element  " << nse << "/" << nse << endl;	  
 	}//endof hasskeletonbound
 
 
@@ -355,7 +357,7 @@ namespace ngcomp
 		    
 		    if (i%500 == 0)
 		      {
-			cout << "\rassemble curvepoint " << i << "/" << parts[j]->NumCurvePoints() << flush;
+			cout << IM(3) << "\rassemble curvepoint " << i << "/" << parts[j]->NumCurvePoints() << flush;
 			ma->SetThreadPercentage(100.*i/parts[j]->NumCurvePoints());
 		      }
 		    
@@ -448,7 +450,7 @@ namespace ngcomp
 
 
 
-	    cout << "\rassemble curvepoint " << parts[j]->NumCurvePoints() << "/" 
+	    cout << IM(3) << "\rassemble curvepoint " << parts[j]->NumCurvePoints() << "/" 
 		 << parts[j]->NumCurvePoints() << endl;
 	    clh.CleanUp();
 
@@ -550,12 +552,11 @@ namespace ngcomp
 	    lh.CleanUp();
 	    ElementId sei(BND, i);
 	    const FiniteElement & sfel = fespace->GetFE (sei, lh);
-	    // ma->GetSurfaceElementTransformation (i, seltrans);
 	    ElementTransformation & seltrans = ma->GetTrafo (sei, lh);
 
 	      	
 	    // (*testout) << "el = " << i << ", ind = " << ma->GetSElIndex(i) << endl;
-	    if (!parts[0]->DefinedOn (ma->GetSElIndex(i))) continue;
+	    if (!parts[0]->DefinedOn (ma->GetElIndex(sei))) continue;
 	    // (*testout) << "integrate surf el " << endl;
 	    
 	    const IntegrationRule & ir = SelectIntegrationRule (sfel.ElementType(), 5);

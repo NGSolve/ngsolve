@@ -212,7 +212,6 @@ namespace ngbla
 
 
 
-
   /// Height of matrix
   template <class TM> 
   inline size_t Height (const TM & m)
@@ -284,8 +283,8 @@ namespace ngbla
   class MatrixNotFittingException : public Exception
   {
   public:
-    MatrixNotFittingException (const string & where, int h1, int w1,
-			       int h2, int w2)
+    MatrixNotFittingException (const string & where, size_t h1, size_t w1,
+			       size_t h2, size_t w2)
       : Exception ("") 
     {
       stringstream str;
@@ -925,8 +924,8 @@ namespace ngbla
 
     INLINE PW_Mult_Expr (const TA & aa, const TB & ab) : a(aa), b(ab) { ; }
 
-    INLINE auto operator() (size_t i) const -> decltype(a(i)*b(i)) { return a(i)*b(i); }
-    INLINE auto operator() (size_t i, size_t j) const -> decltype(a(i,j)*b(i,j)) { return a(i,j)*b(i,j); }
+    INLINE auto operator() (size_t i) const { return a(i)*b(i); }
+    INLINE auto operator() (size_t i, size_t j) const { return a(i,j)*b(i,j); }
 
     INLINE size_t Height() const { return a.Height(); }
     INLINE size_t Width() const { return a.Width(); }
@@ -960,8 +959,8 @@ namespace ngbla
 
     INLINE ScaleExpr (const TA & aa, TS as) : a(aa), s(as) { ; }
 
-    INLINE auto operator() (size_t i) const -> decltype(s*a(i)) { return s * a(i); }
-    INLINE auto operator() (size_t i, size_t j) const -> decltype(s*a(i,j)) { return s * a(i,j); }
+    INLINE auto operator() (size_t i) const { return s * a(i); }
+    INLINE auto operator() (size_t i, size_t j) const { return s * a(i,j); }
 
     INLINE size_t Height() const { return a.Height(); }
     INLINE size_t Width() const { return a.Width(); }
@@ -1015,7 +1014,7 @@ namespace ngbla
 
     INLINE MultExpr (const TA & aa, const TB & ab) : a(aa), b(ab) { ; }
 
-    INLINE auto operator() (size_t i) const -> decltype(a(0,0)*b(0,0))
+    INLINE auto operator() (size_t i) const
     { return operator()(i,0); }  
 
     INLINE auto operator() (size_t i, size_t j) const -> decltype (a(0,0)*b(0,0))
@@ -1051,11 +1050,8 @@ namespace ngbla
 
     MultExpr (const DiagMat<H,SCALA> & aa, const TB & ab) : a(aa), b(ab) { ; }
 
-    auto operator() (size_t i) const -> decltype(a(0,0)*b(0,0))
-    { return a[i] * b(i); }  
-
-    auto operator() (size_t i, size_t j) const -> decltype (a(0,0)*b(0,0))
-    { return a[i] * b(i,j); }
+    auto operator() (size_t i) const { return a[i] * b(i); }  
+    auto operator() (size_t i, size_t j) const { return a[i] * b(i,j); }
 
     const DiagMat<H,SCALA> & A() const { return a; }
     const TB & B() const { return b; }
@@ -1094,8 +1090,8 @@ namespace ngbla
     INLINE size_t Height() const { return a.Width(); }
     INLINE size_t Width() const { return a.Height(); }
 
-    INLINE auto operator() (size_t i, size_t j) const -> decltype(Trans (a(j,i))) { return Trans (a(j,i)); }
-    INLINE auto operator() (size_t i) const -> decltype(Trans(a(0,0))) { return Trans(a(0,0)); }
+    INLINE auto operator() (size_t i, size_t j) const { return Trans (a(j,i)); }
+    INLINE auto operator() (size_t i) const { return Trans(a(0,0)); }
     // auto Row (int i) const -> decltype (a.Col(i)) { return a.Col(i); }
     // auto Col (int i) const -> decltype (a.Row(i)) { return a.Row(i); }
     enum { IS_LINEAR = 0 };
@@ -1119,19 +1115,19 @@ namespace ngbla
   class SubMatrixExpr : public MatExpr<SubMatrixExpr<TA> >
   {
     TA & a;
-    int first_row, first_col;
-    int height, width;
+    size_t first_row, first_col;
+    size_t height, width;
   public:
-    SubMatrixExpr (TA & aa, int fr, int fc, int ah, int aw) 
+    SubMatrixExpr (TA & aa, size_t fr, size_t fc, size_t ah, size_t aw) 
       : a(aa), first_row(fr), first_col(fc), height(ah), width(aw) { ; }
 
-    int Height() const { return height; }
-    int Width() const { return width; }
+    size_t Height() const { return height; }
+    size_t Width() const { return width; }
 
-    auto operator() (int i, int j) -> decltype(a(0,0)) { return a(i+first_row, j+first_col); }
-    auto operator() (int i) -> decltype(a(0)) { return a(i+first_row); }
-    auto operator() (int i, int j) const -> decltype(a(0,0)) { return a(i+first_row, j+first_col); }
-    auto operator() (int i) const -> decltype(a(0)) { return a(i+first_row); }
+    // auto operator() (size_t i, size_t j) { return a(i+first_row, j+first_col); }
+    // auto operator() (size_t i) { return a(i+first_row); }
+    auto operator() (size_t i, int j) const  { return a(i+first_row, j+first_col); }
+    auto operator() (size_t i) const { return a(i+first_row); }
 
     enum { IS_LINEAR = 0 };
     enum { COL_MAJOR = TA::COL_MAJOR };
@@ -1149,18 +1145,18 @@ namespace ngbla
   class RowExpr : public MatExpr<RowExpr<TA> >
   {
     TA & a;
-    int row;
+    size_t row;
   public:
-    RowExpr (TA & aa, int r)
+    RowExpr (TA & aa, size_t r)
       : a(aa), row(r) { ; }
 
-    int Height() const { return 1; }
-    int Width() const { return a.Width(); }
+    size_t Height() const { return 1; }
+    size_t Width() const { return a.Width(); }
 
-    auto operator() (int i, int j) -> decltype(a(0,0)) { return a(row,i); }
-    auto operator() (int i) -> decltype(a(0,0)) { return a(row,i); }
-    auto operator() (int i, int j) const -> decltype(a(0,0)) { return a(row,i); }
-    auto operator() (int i) const -> decltype(a(0,0)) { return a(row,i); }
+    auto operator() (size_t i, size_t j) -> decltype(a(0,0)) { return a(row,i); }
+    auto operator() (size_t i) -> decltype(a(0,0)) { return a(row,i); }
+    auto operator() (size_t i, size_t j) const { return a(row,i); }
+    auto operator() (size_t i) const { return a(row,i); }
 
     enum { IS_LINEAR = 0 };
     
@@ -1195,10 +1191,10 @@ namespace ngbla
     auto Height() const { return rows.Size(); }
     auto Width() const { return a.Width(); }
 
-    auto operator() (size_t i, size_t j) const -> decltype(a(rows[i])) { return a(rows[i], j); }
-    auto operator() (size_t i) const -> decltype(a(rows[i])) { return a(rows[i]); }
+    auto operator() (size_t i, size_t j) const-> decltype(a(rows[i],j)) { return a(rows[i], j); }
+    auto operator() (size_t i) const-> decltype(a(rows[i])) { return a(rows[i]); }
 
-    auto Row (size_t i) const -> decltype (a.Row(rows[i])) { return a.Row(rows[i]); }
+    auto Row (size_t i) const { return a.Row(rows[i]); }
 
     enum { IS_LINEAR = 0 };
 
@@ -1230,17 +1226,11 @@ namespace ngbla
 
     ColsArrayExpr (const TA & aa, FlatArray<int> acols) : a(aa), cols(acols) { ; }
 
-    int Height() const { return a.Height(); }
-    int Width() const { return cols.Size(); }
+    size_t Height() const { return a.Height(); }
+    size_t Width() const { return cols.Size(); }
 
-    // auto operator() (int i, int j) const -> decltype(a(rows[i])) { return a(rows[i], j); }
-    // auto operator() (int i) const -> decltype(a(rows[i])) { return a(rows[i]); }
-
-    // TELEM & operator() (int i, int j) const { return a(i, cols[j]); }
-    // TELEM & operator() (int i) const { return a(i, cols[0]); }
-
-    auto operator() (int i, int j) const -> decltype(a(i,cols[j])) { return a(i, cols[j]); }
-    auto operator() (int i) const -> decltype(a(i,cols[0])) { return a(i, cols[0]); }
+    auto operator() (size_t i, size_t j) const -> decltype(a(i, cols[j]))  { return a(i, cols[j]); }
+    auto operator() (size_t i) const -> decltype(a(i, cols[0]))  { return a(i, cols[0]); }
 
     enum { IS_LINEAR = 0 };
 
@@ -1282,11 +1272,11 @@ namespace ngbla
 
     INLINE ConjExpr (const TA & aa) : a(aa) { ; }
 
-    INLINE int Height() const { return a.Height(); }
-    INLINE int Width() const { return a.Width(); }
+    INLINE size_t Height() const { return a.Height(); }
+    INLINE size_t Width() const { return a.Width(); }
  
-    INLINE auto operator() (int i, int j) const -> decltype(Conj(a(i,j))) { return Conj(a(i,j)); }
-    INLINE auto operator() (int i) const -> decltype(Conj(a(i))) { return Conj(a(i)); }
+    INLINE auto operator() (size_t i, size_t j) const { return Conj(a(i,j)); }
+    INLINE auto operator() (size_t i) const { return Conj(a(i)); }
 
     enum { IS_LINEAR = 0 };
   };
@@ -1461,9 +1451,9 @@ namespace ngbla
     int width = s.width();
     if (width == 0) width = 8;
     s.width(0);
-    for (int i = 0; i < v.Height(); i++)
+    for (size_t i = 0; i < v.Height(); i++)
       {
-	for (int j = 0 ; j < v.Width(); j++)
+	for (size_t j = 0 ; j < v.Width(); j++)
 	  s << " " << setw(width-1) << v.Spec()(i,j);
 	s << endl;
       }

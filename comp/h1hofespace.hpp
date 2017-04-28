@@ -21,9 +21,9 @@ namespace ngcomp
   protected:
     int level;
 
-    Array<int> first_edge_dof;
-    Array<int> first_face_dof;
-    Array<int> first_element_dof;
+    Array<DofId> first_edge_dof;
+    Array<DofId> first_face_dof;
+    Array<DofId> first_element_dof;
 
     // typedef short TORDER;
     typedef unsigned char TORDER;
@@ -116,19 +116,19 @@ namespace ngcomp
     virtual int GetRelOrder() const override { return rel_order; }
     virtual bool VarOrder() const override { return var_order; }
 
-    IntRange GetEdgeDofs (int nr) const
+    auto GetEdgeDofs (size_t nr) const
     {
-      return IntRange (first_edge_dof[nr], first_edge_dof[nr+1]);
+      return Range (first_edge_dof[nr], first_edge_dof[nr+1]);
     }
 
-    IntRange GetFaceDofs (int nr) const
+    auto GetFaceDofs (size_t nr) const
     {
-      return IntRange (first_face_dof[nr], first_face_dof[nr+1]);
+      return Range (first_face_dof[nr], first_face_dof[nr+1]);
     }
 
-    IntRange GetElementDofs (int nr) const
+    auto GetElementDofs (size_t nr) const
     {
-      return IntRange (first_element_dof[nr], first_element_dof[nr+1]);
+      return Range (first_element_dof[nr], first_element_dof[nr+1]);
     }
 
   };

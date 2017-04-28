@@ -32,7 +32,7 @@ class ProxyFunction : public CoefficientFunction
   SymbolTable<shared_ptr<DifferentialOperator>> additional_diffops;
   // int dim;
 public:
-  ProxyFunction (bool atestfunction, bool ais_complex,
+  NGS_DLL_HEADER ProxyFunction (bool atestfunction, bool ais_complex,
                  shared_ptr<DifferentialOperator> aevaluator, 
                  shared_ptr<DifferentialOperator> aderiv_evaluator,
                  shared_ptr<DifferentialOperator> atrace_evaluator,
@@ -43,7 +43,7 @@ public:
   bool IsTestFunction () const { return testfunction; }
   bool IsOther() const { return is_other; }
 
-  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
+  NGS_DLL_HEADER virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
   
   const shared_ptr<DifferentialOperator> & Evaluator() const { return evaluator; }
   const shared_ptr<DifferentialOperator> & DerivEvaluator() const { return deriv_evaluator; }
@@ -57,7 +57,7 @@ public:
     return deriv_proxy;
   }
 
-  shared_ptr<ProxyFunction> Trace() const;
+  NGS_DLL_HEADER shared_ptr<ProxyFunction> Trace() const;
 
   shared_ptr<ProxyFunction> Other(shared_ptr<CoefficientFunction> _boundary_values) const
   {
@@ -113,43 +113,43 @@ public:
     return tmp(0);
   }
 
-  virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
+  NGS_DLL_HEADER virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
                          FlatVector<> result) const;
 
-  virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
+  NGS_DLL_HEADER virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
                          FlatVector<Complex> result) const;
 
-  virtual void Evaluate (const BaseMappedIntegrationRule & ir,
+  NGS_DLL_HEADER virtual void Evaluate (const BaseMappedIntegrationRule & ir,
                          FlatMatrix<> result) const;
 
-  virtual void Evaluate (const BaseMappedIntegrationRule & ir,
+  NGS_DLL_HEADER virtual void Evaluate (const BaseMappedIntegrationRule & ir,
                          FlatMatrix<Complex> result) const;
 
   // virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
   // AFlatMatrix<double> values) const;
 
-  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
+  NGS_DLL_HEADER virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
                          BareSliceMatrix<SIMD<double>> values) const;
-  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
+  NGS_DLL_HEADER virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
                          BareSliceMatrix<SIMD<Complex>> values) const;
 
-  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
+  NGS_DLL_HEADER virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
                          FlatArray<AFlatMatrix<double>*> input,
                          AFlatMatrix<double> values) const;
 
-  virtual void EvaluateDeriv (const BaseMappedIntegrationRule & mir,
+  NGS_DLL_HEADER virtual void EvaluateDeriv (const BaseMappedIntegrationRule & mir,
                               FlatMatrix<> result,
                               FlatMatrix<> deriv) const;
 
-  virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & mir,
+  NGS_DLL_HEADER virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & mir,
                                FlatMatrix<> result,
                                FlatMatrix<> deriv,
                                FlatMatrix<> dderiv) const;
 
-  virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir, 
+  NGS_DLL_HEADER virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
                               AFlatMatrix<double> values, AFlatMatrix<double> deriv) const;
   
-  virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & ir, 
+  NGS_DLL_HEADER virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & ir,
                                AFlatMatrix<double> values, AFlatMatrix<double> deriv,
                                AFlatMatrix<double> dderiv) const;
   
@@ -176,7 +176,7 @@ public:
   
   virtual bool ElementwiseConstant () const { return true; }
 
-  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const;  
+  NGS_DLL_HEADER virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const;
 };
 
 class ProxyUserData
@@ -473,7 +473,9 @@ public:
     VorB vb;
     bool element_boundary;
     Matrix<bool> nonzeros;    // do components interact ? 
-    Matrix<bool> nonzeros_proxies; // do proxies interact ? 
+    Matrix<bool> nonzeros_proxies; // do proxies interact ?
+    Matrix<bool> diagonal_proxies; // do proxies interact diagonally ?
+    Matrix<bool> same_diffops; // are diffops the same ? 
     bool elementwise_constant;
     mutable bool simd_evaluate;
     IntegrationRule ir;   // if non-empty use this integration-rule
