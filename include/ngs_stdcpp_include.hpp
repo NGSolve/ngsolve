@@ -2,15 +2,6 @@
 #include <config.h>
 #endif
 
-#ifndef VERSION
-#define VERSION NGSOLVE_VERSION
-#endif
-
-#define NGS_VERSION 620
-
-
-
-
 
 #ifdef WIN32
 
@@ -157,7 +148,7 @@
 
 
 // #ifdef __clang__
-#ifdef __GNUC__
+#if defined __GNUC__ and not defined __INTEL_COMPILER
 namespace std
 {
   // avoid expensive call to complex mult by using the grammar school implementation

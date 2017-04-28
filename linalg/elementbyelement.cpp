@@ -458,9 +458,9 @@ namespace ngla
 
   template <class SCAL>
   void ElementByElementMatrix<SCAL> :: AddElementMatrix (int elnr,
-                                                         const FlatArray<int> & rowdnums_in,
-                                                         const FlatArray<int> & coldnums_in,
-                                                         const FlatMatrix<SCAL> & elmat)
+                                                         FlatArray<int> rowdnums_in,
+                                                         FlatArray<int> coldnums_in,
+                                                         BareSliceMatrix<SCAL> elmat)
   {
     ArrayMem<int,50> usedrows;
     for (int i = 0; i < rowdnums_in.Size(); i++)

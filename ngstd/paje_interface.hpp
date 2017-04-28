@@ -9,6 +9,11 @@ namespace ngstd
   extern NGS_DLL_HEADER class PajeTrace *trace;
   class PajeTrace
     {
+    public:
+      typedef std::chrono::system_clock TClock;
+      typedef TClock::time_point TTimePoint;
+
+    private:
       friend class TraceDisabler;
 
       static size_t max_tracefile_size;
@@ -16,7 +21,7 @@ namespace ngstd
       static bool trace_threads;
 
       bool tracing_enabled;
-      double start_time;
+      TTimePoint start_time;
       int nthreads;
 
     public:
@@ -46,8 +51,8 @@ namespace ngstd
         {
           int job_id;
           const std::type_info *type;
-          double start_time;
-          double stop_time;
+          TTimePoint start_time;
+          TTimePoint stop_time;
         };
 
       struct Task
@@ -59,8 +64,8 @@ namespace ngstd
 
           int additional_value;
 
-          double start_time;
-          double stop_time;
+          TTimePoint start_time;
+          TTimePoint stop_time;
 
           static constexpr int ID_NONE = -1;
           static constexpr int ID_JOB = 1;
@@ -70,7 +75,7 @@ namespace ngstd
       struct TimerEvent
         {
           int timer_id;
-          double time;
+          TTimePoint time;
           bool is_start;
           int thread_id;
 
@@ -81,7 +86,7 @@ namespace ngstd
         {
           int thread_id;
           int key;
-          double time;
+          TTimePoint time;
           bool is_start;
           bool operator < (const ThreadLink & other) const { return time < other.time; }
         };
@@ -91,9 +96,9 @@ namespace ngstd
       std::vector<TimerEvent> timer_events;
       std::vector<std::vector<ThreadLink> > links;
 
-      double GetTime()
+      TTimePoint GetTime()
         {
-          return ngstd::WallTime() - start_time;
+          return TClock::now();
         }
 
     public:
@@ -125,7 +130,7 @@ namespace ngstd
           if(tasks[thread_id].size() == max_num_events_per_thread)
             StopTracing();
           int task_num = tasks[thread_id].size();
-          tasks[thread_id].push_back( Task{thread_id, id, id_type, additional_value, GetTime(), 0.0} );
+          tasks[thread_id].push_back( Task{thread_id, id, id_type, additional_value, GetTime()} );
           return task_num;
         }
 
@@ -147,7 +152,7 @@ namespace ngstd
           if(!tracing_enabled) return;
           if(jobs.size() == max_num_events_per_thread)
             StopTracing();
-          jobs.push_back( Job{job_id, &type, GetTime(), 0.0 } );
+          jobs.push_back( Job{job_id, &type, GetTime()} );
         }
 
       void StopJob()

@@ -683,7 +683,7 @@ namespace ngfem
       // CEvalFO<REC, N>::Eval (x, values, p1, p2);
       
       S p1 = REC::P1(x), p2 = REC::P0(x);
-      Iterate<n+1> ( [&] (auto i) ALWAYS_INLINE
+      Iterate<n+1> ( [&] (auto i) LAMBDA_INLINE
         {
 	  values[i] = p2;
           RecursivePolynomial<REC>::EvalNext2 (IC<i+2>(), x, p1, p2);
@@ -695,7 +695,7 @@ namespace ngfem
                                    S x, Sy y, T && values) 
     {
       S p1(REC::P1(x,y)), p2(REC::P0(x));
-      Iterate<n+1> ( [&] (auto i) ALWAYS_INLINE
+      Iterate<n+1> ( [&] (auto i) LAMBDA_INLINE
         {
           // cout << "eval scaled, type(i) = " << typeid(i).name() << endl;
 	  values[i] = p2;

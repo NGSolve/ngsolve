@@ -70,52 +70,20 @@ namespace ngfem
     }
     
 
-    virtual void CalcFacetShapeVolIP(int fnr, const IntegrationPoint & ip, 
-				     BareSliceVector<> shape) const
-    {
-      double pt[DIM];
-      for (int i = 0; i < DIM; i++) pt[i] = ip(i);
-      static_cast<const FacetFE<ET>*>(this)->T_CalcShapeFNr (fnr, pt, shape); 
-    }
+	virtual void CalcFacetShapeVolIP(int fnr, const IntegrationPoint & ip,
+		BareSliceVector<> shape) const;
 
+	virtual void EvaluateFacetVolIp(int fnr, const SIMD_IntegrationRule & ir,
+		BareSliceVector<> coefs, ABareVector<double> values) const;
 
-    virtual void EvaluateFacetVolIp (int fnr, const SIMD_IntegrationRule & ir,
-                                     BareSliceVector<> coefs, ABareVector<double> values) const
-    {
-      FlatArray<SIMD<IntegrationPoint>> hir = ir;
-      for (int i = 0; i < hir.Size(); i++)
-        {
-          SIMD<double> pt[DIM];
-          for (int j = 0; j < DIM; j++) pt[j] = hir[i](j);
-          
-          SIMD<double> sum = 0;
-          static_cast<const FacetFE<ET>*>(this)->T_CalcShapeFNr
-            (fnr, pt, SBLambda ( [&](int j, SIMD<double> shape) { sum += coefs(j)*shape; } ));
-          values.Get(i) = sum.Data();
-        }
-    }
-
-    virtual void AddTransFacetVolIp (int fnr, const SIMD_IntegrationRule & ir,
-                                     ABareVector<double> values, BareSliceVector<> coefs) const
-    {
-      FlatArray<SIMD<IntegrationPoint>> hir = ir;
-      for (int i = 0; i < hir.Size(); i++)
-        {
-          SIMD<double> pt[DIM];
-          for (int j = 0; j < DIM; j++) pt[j] = hir[i](j);
-          
-          SIMD<double> val = values.Get(i);
-          static_cast<const FacetFE<ET>*>(this)->T_CalcShapeFNr          
-            (fnr, pt, SBLambda ( [&](int j, SIMD<double> shape) { coefs(j) += HSum(val*shape); } ));
-        }
-    }
+	virtual void AddTransFacetVolIp(int fnr, const SIMD_IntegrationRule & ir,
+		ABareVector<double> values, BareSliceVector<> coefs) const;
 
 
   private:
     template<typename Tx, typename TFA>  
     void T_CalcShapeFNr (int fnr, Tx x[ET_trait<ET>::DIM], TFA & shape) const;
   };
-
 
 #ifdef FILE_FACETHOFE_CPP
 #else

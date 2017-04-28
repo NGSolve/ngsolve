@@ -67,7 +67,7 @@ PYBIND11_PLUGIN(ngslib)
   
 #endif
 
-  cout << "importing NGSolve-" << VERSION << endl;
+  cout << "importing NGSolve-" << ngsolve_version << endl;
 
   py::module m("ngsolve", "pybind ngsolve");
     try

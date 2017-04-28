@@ -14,6 +14,7 @@ typedef PyWrapper<GF> PyGF;
 typedef PyWrapper<FESpace> PyFES;
 typedef PyWrapper<BaseVector> PyBaseVector;
 typedef PyWrapper<BaseMatrix> PyBaseMatrix;
+typedef PyWrapper<PDE> PyPDE;
 
 // template <typename T>
 // struct PythonTupleFromFlatArray {
@@ -58,29 +59,25 @@ public:
 
 class PyNumProc : public NumProc
 {
-
 public:
-  PyNumProc (shared_ptr<PDE> pde, const Flags & flags) : NumProc (pde, flags) { ; }
-  shared_ptr<PDE> GetPDE() const { return shared_ptr<PDE> (pde); }
-  // virtual void Do (LocalHeap & lh) { cout << "should not be called" << endl; }
+  using NumProc::NumProc;
+  virtual void Do (LocalHeap &lh) override
+  {
+      auto pylh = py::cast(lh, py::return_value_policy::reference);
+      try{
+          PYBIND11_OVERLOAD_PURE(
+                                 void,       /* Return type */
+                                 PyNumProc,  /* Parent class */
+                                 Do,         /* Name of function */
+                                 pylh
+          );
+      }
+      catch (py::error_already_set const &e) {
+          cerr << e.what() << endl;
+          PyErr_Print();
+      }
+  }
 };
-
-// class NumProcWrap : public PyNumProc, public py::wrapper<PyNumProc> {
-// public:
-//   NumProcWrap (shared_ptr<PDE> pde, const Flags & flags) : PyNumProc(pde, flags) { ; }
-//   virtual void Do(LocalHeap & lh)  {
-//     // cout << "numproc wrap - do" << endl;
-//     AcquireGIL gil_lock;
-//     try
-//       {
-//         this->get_override("Do")(boost::ref(lh));
-//       }
-//     catch (py::error_already_set const &) {
-//       cout << "caught a python error:" << endl;
-//       PyErr_Print();
-//     }
-//   }
-// };
 
 typedef PyWrapperDerived<ProxyFunction, CoefficientFunction> PyProxyFunction;
 
@@ -1350,8 +1347,9 @@ when building the system matrices.
 
 
   auto fes_dummy_init = [](PyFES *instance, shared_ptr<MeshAccess> ma, const string & type, 
-                              py::dict bpflags, int order, bool is_complex,
-                              py::object dirichlet, py::object definedon, int dim)
+                           py::dict bpflags, int order, bool is_complex,
+                           py::object dirichlet, py::object definedon, int dim,
+                           py::object order_left, py::object order_right)
                            {
                              Flags flags = py::extract<Flags> (bpflags)();
 
@@ -1411,7 +1409,15 @@ when building the system matrices.
                                }
                              
                              
-                             auto fes = CreateFESpace (type, ma, flags); 
+                             auto fes = CreateFESpace (type, ma, flags);
+
+                             if (py::isinstance<py::int_> (order_left))
+                               for (auto et : element_types)
+                                 fes->SetOrderLeft (et, order_left.cast<int>());
+                             if (py::isinstance<py::int_> (order_right))
+                               for (auto et : element_types)
+                                 fes->SetOrderRight (et, order_right.cast<int>());
+                             
                              LocalHeap lh (1000000, "FESpace::Update-heap");
                              fes->Update(lh);
                              fes->FinalizeUpdate(lh);
@@ -1495,10 +1501,12 @@ flags : dict
     // the raw - constructor
     .def("__init__", 
 	 [&](PyFES *instance, const string & type, shared_ptr<MeshAccess> mesh,
-			     py::dict flags, int order, bool is_complex,
-                             py::object dirichlet, py::object definedon, int dim)
+             py::dict flags, int order, bool is_complex,
+             py::object dirichlet, py::object definedon, int dim,
+             py::object order_left, py::object order_right
+             )
                           {
-			    fes_dummy_init(instance, mesh, type, flags, order, is_complex, dirichlet, definedon, dim);
+			    fes_dummy_init(instance, mesh, type, flags, order, is_complex, dirichlet, definedon, dim, order_left, order_right);
 //                              py::cast(*instance).attr("flags") = py::cast(bp_flags);
 			     
                            },
@@ -1508,6 +1516,8 @@ flags : dict
            py::arg("dirichlet")=DummyArgument(),
            py::arg("definedon")=DummyArgument(),
           py::arg("dim")=-1,
+         py::arg("order_left")=DummyArgument(),
+         py::arg("order_right")=DummyArgument(),         
          "allowed types are: 'h1ho', 'l2ho', 'hcurlho', 'hdivho' etc."
          )
     
@@ -1552,11 +1562,52 @@ flags : dict
         auto self = self_object.cast<PyFES>();
         auto dict = self_object.attr("__dict__");
         auto mesh = self->GetMeshAccess();
-        return py::make_tuple( self->type, mesh, self->GetFlags(), dict );
+        if (self->type.substr(0,8)=="Periodic")
+          {
+            cout << "in periodic" << endl;
+          auto periodicFES = dynamic_pointer_cast<PeriodicFESpace>(self.Get());
+          py::list idnrs;
+          for (auto idnr : *periodicFES->GetUsedIdnrs())
+            idnrs.append(idnr);
+          auto quasiPeriodicFES = dynamic_pointer_cast<QuasiPeriodicFESpace>(periodicFES);
+          if (quasiPeriodicFES)
+            {
+              cout << "in quasiperiodicFES" << endl;
+              py::list fac;
+              auto factors = quasiPeriodicFES->GetFactors();
+              for (auto factor : *factors)
+                fac.append(factor);
+              return py::make_tuple( self->type, mesh, self->GetFlags(), dict, idnrs, true,fac);
+            }
+          else
+            return py::make_tuple( self->type, mesh, self->GetFlags(), dict, idnrs, false);
+          }
+        else
+          return py::make_tuple( self->type, mesh, self->GetFlags(), dict);
      })
     .def("__setstate__", [] (PyFES &self, py::tuple t) {
         auto flags = t[2].cast<Flags>();
-        auto fes = CreateFESpace (t[0].cast<string>(), t[1].cast<shared_ptr<MeshAccess>>(), flags);
+        auto type = t[0].cast<string>();
+        shared_ptr<FESpace> fes;
+        if (type.substr(0,8)=="Periodic")
+          {
+            auto idnrs = make_shared<Array<int>>(makeCArray<int>(t[4].cast<py::list>()));
+            cout << "in periodic" << endl;
+            if(t[5].cast<bool>())
+              {
+                cout << "in quasiperiodic" << endl;
+                auto factors = make_shared<Array<Complex>>();
+                for (auto factor : t[6].cast<py::list>())
+                  factors->Append(factor.cast<Complex>());
+                cout << "factors are: " << factors << endl;
+                fes = make_shared<QuasiPeriodicFESpace>(CreateFESpace(type.substr(8,string::npos),t[1].cast<shared_ptr<MeshAccess>>(), flags),flags,idnrs,factors);
+              }
+            else
+              fes = make_shared<PeriodicFESpace>(CreateFESpace(type.substr(8,string::npos),t[1].cast<shared_ptr<MeshAccess>>(), flags),flags,idnrs);
+            }
+        else
+          fes = CreateFESpace (type, t[1].cast<shared_ptr<MeshAccess>>(), flags);
+        cout << "fespace created" << endl;
         LocalHeap lh (1000000, "FESpace::Update-heap");
         fes->Update(lh);
         fes->FinalizeUpdate(lh);
@@ -1596,12 +1647,28 @@ flags : dict
     .def_property_readonly("type", FunctionPointer([] (PyFES & self) { return self->type; }),
                   "type of finite element space")    
 
+    .def("SetOrder",
+         [](PyFES & self, ELEMENT_TYPE et, py::object order, py::object order_left, py::object order_right)
+         {
+           if (py::isinstance<py::int_> (order))
+             {
+               self->SetOrderLeft (et, order.cast<py::int_>());
+               self->SetOrderRight (et, order.cast<py::int_>());
+             }
+           if (py::isinstance<py::int_> (order_left))
+             self->SetOrderLeft (et, order_left.cast<py::int_>());
+           if (py::isinstance<py::int_> (order_right))
+             self->SetOrderRight (et, order_right.cast<int>());
+         },
+         py::arg("element_type"),
+         py::arg("order")=DummyArgument(),
+         py::arg("order_left")=DummyArgument(),
+         py::arg("order_right")=DummyArgument()
+         )
+    
     .def("Elements", 
          [](PyFES & self, VorB vb, int heapsize) 
-         {
-           // return make_shared<FESpace::ElementRange> (self->Elements(vb, heapsize));
-           return FESpace::ElementRange(self->Elements(vb, heapsize));
-         },
+         { return FESpace::ElementRange(self->Elements(vb, heapsize)); },
          py::arg("VOL_or_BND")=VOL,py::arg("heapsize")=10000)
 
     .def("Elements", 
@@ -1710,6 +1777,9 @@ flags : dict
               {
                 global_heapsize = heapsize;
                 glh = LocalHeap(heapsize, "python-comp lh", true);
+                bool first_time = true;
+                if (first_time)
+                  { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }
               }
             self->SolveM(*rho.Get(), *vec, glh);
           },
@@ -1938,6 +2008,9 @@ used_idnrs : list of int = None
               {
                 global_heapsize = heapsize;
                 glh = LocalHeap(heapsize, "python-comp lh", true);
+                bool first_time = true;
+                if (first_time)
+                  { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }
               }
             // LocalHeap lh(heapsize, "GridFunction::Set-lh", true);
             if (reg)
@@ -2260,6 +2333,9 @@ flags : dict
                                          {
                                            global_heapsize = heapsize;
                                            glh = LocalHeap(heapsize, "python-comp lh", true);
+                                           bool first_time = true;
+                                           if (first_time)
+                                             { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }                                           
                                          }
                                        self->ReAssemble(glh,reallocate);
                                      }),
@@ -2318,6 +2394,9 @@ flags : dict
               {
                 global_heapsize = heapsize;
                 glh = LocalHeap(heapsize, "python-comp lh", true);
+                bool first_time = true;
+                if (first_time)
+                  { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }                
               }
 	    self->ApplyMatrix (*x, *y, glh);
 	  }),
@@ -2345,6 +2424,10 @@ heapsize : int
               {
                 global_heapsize = heapsize;
                 glh = LocalHeap(heapsize, "python-comp lh", true);
+                bool first_time = true;
+                if (first_time)
+                  { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }
+                
               }
 	    self->ComputeInternal (*u, *f, glh );
 	  }),
@@ -2357,6 +2440,9 @@ heapsize : int
               {
                 global_heapsize = heapsize;
                 glh = LocalHeap(heapsize, "python-comp lh", true);
+                bool first_time = true;
+                if (first_time)
+                  { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }
               }
 	    self->AssembleLinearization (*ulin, glh);
 	  }),
@@ -2457,6 +2543,9 @@ flags : dict
               {
                 global_heapsize = heapsize;
                 glh = LocalHeap(heapsize, "python-comp lh", true);
+                bool first_time = true;
+                if (first_time)
+                  { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }                
               }
             self->Assemble(glh);
           }),
@@ -2525,15 +2614,18 @@ flags : dict
          py::arg("heapsize")=1000000)
     ;
 
-//   // die geht
-//   py::class_<NumProcWrap,shared_ptr<NumProcWrap>, NumProc>("PyNumProc", py::init<shared_ptr<PDE>, const Flags&>())
-//     .def("Do", py::pure_virtual(&PyNumProc::Do)) 
-//     .def_property_readonly("pde", &PyNumProc::GetPDE)
-//     ;
-//   
-//   py::implicitly_convertible 
-//     <shared_ptr<NumProcWrap>, shared_ptr<NumProc> >(); 
-// 
+  py::class_<PyNumProc, NumProc, shared_ptr<PyNumProc>> (m, "PyNumProc")
+    .def("__init__",
+         [](NumProc *instance, PyPDE pde, Flags & flags)
+                           {
+                             new (instance) PyNumProc(pde.Get(), flags);
+                           })
+    .def_property_readonly("pde", [](NumProc &self) { return PyPDE(self.GetPDE()); })
+    .def("Do", FunctionPointer([](NumProc & self, LocalHeap & lh)
+                               {
+                                 self.Do(lh);
+                               }))
+    ;
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
@@ -2547,7 +2639,6 @@ flags : dict
   PyExportSymbolTable<double> (m);
   PyExportSymbolTable<shared_ptr<double>> (m);
 
-  typedef PyWrapper<PDE> PyPDE;
   py::class_<PyPDE> (m, "PDE")
 
     // .def(py::init<const string&>())
@@ -2756,7 +2847,7 @@ flags : dict
   
   m.def("Integrate", 
           [](PyCF cf,
-                             shared_ptr<MeshAccess> ma, 
+             shared_ptr<MeshAccess> ma, 
 	     VorB vb, int order, py::object definedon,
 	     bool region_wise, bool element_wise, int heapsize)
                           {
@@ -2766,6 +2857,9 @@ flags : dict
 			      {
 				global_heapsize = heapsize;
 				glh = LocalHeap(heapsize, "python-comp lh", true);
+                                bool first_time = true;
+                                if (first_time)
+                                  { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }                                                
 			      }
                            py::extract<Region> defon_region(definedon);
                            if (defon_region.check())
@@ -2939,7 +3033,7 @@ flags : dict
 
   m.def("SymbolicLFI",
           [](PyCF cf, VorB vb, bool element_boundary,
-              bool skeleton, py::object definedon) 
+              bool skeleton, py::object definedon, py::object definedonelem) 
            {
              py::extract<Region> defon_region(definedon);
              if (defon_region.check())
@@ -2953,7 +3047,6 @@ flags : dict
              
              if (py::extract<py::list> (definedon).check())
                {
-                 cout << "warning: SymbolicLFI definedon changed to 1-based" << endl;
                  Array<int> defon = makeCArray<int> (definedon);
                  for (int & d : defon) d--;
                  lfi -> SetDefinedOn (defon); 
@@ -2964,19 +3057,23 @@ flags : dict
              if (defon_region.check())
                lfi->SetDefinedOn(defon_region().Mask());
 
+             if (! py::extract<DummyArgument> (definedonelem).check())
+               lfi -> SetDefinedOnElements (py::extract<PyWrapper<shared_ptr<BitArray>>>(definedonelem)()); 
+             
              return PyWrapper<LinearFormIntegrator>(lfi);
            },
            py::arg("form"),
            py::arg("VOL_or_BND")=VOL,
            py::arg("element_boundary")=false,
            py::arg("skeleton")=false,           
-           py::arg("definedon")=DummyArgument()
+           py::arg("definedon")=DummyArgument(),
+           py::arg("definedonelements")=DummyArgument()
           );
 
   m.def("SymbolicBFI",
           [](PyCF cf, VorB vb, bool element_boundary,
              bool skeleton, py::object definedon,
-             IntegrationRule ir)
+             IntegrationRule ir, py::object definedonelem)
            {
              py::extract<Region> defon_region(definedon);
              if (defon_region.check())
@@ -3001,7 +3098,6 @@ flags : dict
              
              if (py::extract<py::list> (definedon).check())
                {
-                 cout << "warning: SymbolicBFI definedon changed to 1-based" << endl;
                  Array<int> defon = makeCArray<int> (definedon);
                  for (int & d : defon) d--;
                  bfi -> SetDefinedOn (defon); 
@@ -3017,14 +3113,17 @@ flags : dict
                  dynamic_pointer_cast<SymbolicBilinearFormIntegrator> (bfi)
                    ->SetIntegrationRule(ir);
                }
-             
+
+             if (! py::extract<DummyArgument> (definedonelem).check())
+               bfi -> SetDefinedOnElements (py::extract<PyWrapper<shared_ptr<BitArray>>>(definedonelem)()); 
              return PyWrapper<BilinearFormIntegrator>(bfi);
            },
         py::arg("form"), py::arg("VOL_or_BND")=VOL,
         py::arg("element_boundary")=false,
         py::arg("skeleton")=false,
         py::arg("definedon")=DummyArgument(),
-        py::arg("intrule")=IntegrationRule()
+        py::arg("intrule")=IntegrationRule(),
+        py::arg("definedonelements")=DummyArgument()
         );
           
   m.def("SymbolicTPBFI",
@@ -3070,7 +3169,7 @@ flags : dict
           );
           
   m.def("SymbolicEnergy",
-          [](PyCF cf, VorB vb, py::object definedon) -> PyWrapper<BilinearFormIntegrator>
+          [](PyCF cf, VorB vb, py::object definedon, py::object definedonelem) -> PyWrapper<BilinearFormIntegrator>
            {
              py::extract<Region> defon_region(definedon);
              if (defon_region.check())
@@ -3106,9 +3205,12 @@ flags : dict
                  cout << "allbool = " << all_booleans << endl;
                }
              */
+             if (! py::extract<DummyArgument> (definedonelem).check())
+               bfi -> SetDefinedOnElements (py::extract<PyWrapper<shared_ptr<BitArray>>>(definedonelem)()); 
              return PyWrapper<BilinearFormIntegrator>(bfi);
            },
-           py::arg("coefficient"), py::arg("VOL_or_BND")=VOL, py::arg("definedon")=DummyArgument()
+           py::arg("coefficient"), py::arg("VOL_or_BND")=VOL, py::arg("definedon")=DummyArgument(),
+           py::arg("definedonelements")=DummyArgument()
           );
 
 
@@ -3275,11 +3377,11 @@ flags : dict
               }
               });
 
-   m.def("IntDv", [](PyGF gf_tp, py::list ax0, PyCF coef) -> double
+   m.def("TensorProductIntegrate", [](PyGF gf_tp, py::list ax0, PyCF coef) -> double
            {
-             static Timer tall("comp.IntDv - single point"); RegionTimer rall(tall);
+             static Timer tall("comp.TensorProductIntegrate - single point"); RegionTimer rall(tall);
              Array<double> x0_help = makeCArray<double> (ax0);
-             LocalHeap lh(10000000,"IntDv2");
+             LocalHeap lh(10000000,"TensorProductIntegrate");
              shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp.Get()->GetFESpace());
              const Array<shared_ptr<FESpace> > & spaces = tpfes->Spaces(0);
              FlatVector<> x0(spaces[0]->GetSpacialDimension(),&x0_help[0]);
@@ -3288,7 +3390,8 @@ flags : dict
              auto & felx = spaces[0]->GetFE(ElementId(elnr),lh);
              FlatVector<> shapex(felx.GetNDof(),lh);
              dynamic_cast<const BaseScalarFiniteElement &>(felx).CalcShape(ip,shapex);
-             double val = 0.0;
+             FlatVector<> val(tpfes->GetDimension(),lh);
+             val = 0.0;
              int index = tpfes->GetIndex(elnr,0);
              Array<int> dnums;
              for(int i=index;i<index+spaces[1]->GetMeshAccess()->GetNE();i++)
@@ -3296,36 +3399,41 @@ flags : dict
                auto & fely = spaces[1]->GetFE(ElementId(i-index),lh);
                tpfes->GetDofNrs(i,dnums);
                int tpndof = felx.GetNDof()*fely.GetNDof();
-               FlatVector<> elvec(tpndof,lh);
+               FlatVector<> elvec(tpndof*tpfes->GetDimension(),lh);
                gf_tp->GetElementVector(dnums,elvec);
-               FlatMatrix<> coefmat(felx.GetNDof(),fely.GetNDof(), &elvec(0));
-               FlatVector<> coefy(fely.GetNDof(),lh);
-               coefy = Trans(coefmat)*shapex;
+               FlatMatrix<> coefmat(felx.GetNDof(),fely.GetNDof()*tpfes->GetDimension(), &elvec(0));
+               FlatMatrix<> coefyasmat(fely.GetNDof(),tpfes->GetDimension(),lh);
+               // FlatVector<> coefy(fely.GetNDof()*tpfes->GetDimension(),lh);
+               coefyasmat.AsVector() = Trans(coefmat)*shapex;
                const IntegrationRule & ir = SelectIntegrationRule(fely.ElementType(),2*fely.Order());
                BaseMappedIntegrationRule & mir = spaces[1]->GetMeshAccess()->GetTrafo(ElementId(i-index),lh)(ir,lh);
-               FlatMatrixFixWidth<1> coefvals(ir.Size(),lh);
+               FlatMatrix<> coefvals(ir.Size(), tpfes->GetDimension(),lh);
                coef.Get()->Evaluate(mir,coefvals);
                FlatMatrix<> shapesy(fely.GetNDof(),ir.Size(),lh);
                dynamic_cast<const BaseScalarFiniteElement & >(fely).CalcShape(ir,shapesy);
-               FlatVector<> helper(ir.Size(),lh);
-               helper = Trans(shapesy)*coefy;
+               FlatMatrix<> helpermat(ir.Size(),tpfes->GetDimension(),lh);
+               helpermat = Trans(shapesy)*coefyasmat;
                for(int ip=0;ip<ir.Size();ip++)
-                  val+=helper(ip)*mir[ip].GetWeight()*coefvals(ip,0);
+                 for(int k=0;k<tpfes->GetDimension();k++)
+                   val(k)+=helpermat(ip,k)*mir[ip].GetWeight()*coefvals(ip,k); // This still uses only the first coefficient!!!
              }
-             return val;
+             double return_val = 0.0;
+             for(int j: Range(tpfes->GetDimension()))
+               return_val+=val(j);
+             return return_val;
            });
-   m.def("IntDv",[](PyGF gf_tp, PyGF gf_x, PyCF coef )
+   m.def("TensorProductIntegrate",[](PyGF gf_tp, PyGF gf_x, PyCF coef)
            {
-             static Timer tall("comp.IntDv - total domain integral"); RegionTimer rall(tall);
+             static Timer tall("comp.TensorProductIntegrate - total domain integral"); RegionTimer rall(tall);
              BaseVector & vec_in = gf_tp->GetVector();
              BaseVector & vec_out = gf_x->GetVector();
-             LocalHeap clh(10000000,"IntDv - New");
+             LocalHeap clh(100000000,"TensorProductIntegrate");
              shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp.Get()->GetFESpace());
              const Array<shared_ptr<FESpace> > & spaces = tpfes->Spaces(0);
              int ndofxspace = spaces[0]->GetNDof();
              auto & meshy = spaces[1]->GetMeshAccess();
-             Vector<> elvec_out(ndofxspace);
-             Matrix<> elvec_outmat(meshy->GetNE(),ndofxspace);
+             FlatVector<> elvec_out(ndofxspace*tpfes->GetDimension(),clh);
+             FlatMatrix<> elvec_outmat(meshy->GetNE(),ndofxspace*tpfes->GetDimension(),clh);
              elvec_outmat = 0.0;
              elvec_out = 0.0;
             auto & element_coloring1 = spaces[1]->ElementColoring(VOL);
@@ -3338,11 +3446,11 @@ flags : dict
                 LocalHeap lh = clh.Split(ti.thread_nr, ti.nthreads);
                 for (int mynr : sl)
                 {
+                  HeapReset hr(lh);
                   int i = els_of_col[mynr];
-                  ArrayMem<int,100> dnumsx;
                   auto & fely = spaces[1]->GetFE(ElementId(i),lh);
                   int ndofy = fely.GetNDof();
-                  FlatMatrix<> elvec_slicemat(ndofy,ndofxspace,lh);
+                  FlatMatrix<> elvec_slicemat(ndofy,ndofxspace*tpfes->GetDimension(),lh);
                   Array<int> dnumsslice(ndofy*ndofxspace, lh);
                   tpfes->GetSliceDofNrs(ElementId(i),0,dnumsslice,lh);
                   vec_in.GetIndirect(dnumsslice, elvec_slicemat.AsVector());
@@ -3351,25 +3459,27 @@ flags : dict
                   FlatMatrix<> shape(fely.GetNDof(),ir.Size(),lh);
                   dynamic_cast<const BaseScalarFiniteElement &>(fely).CalcShape(ir,shape);
                   BaseMappedIntegrationRule & mir = trafo(ir,lh);
-                  FlatMatrixFixWidth<1> vals(mir.Size(),lh);
+                  FlatMatrix<> vals(mir.Size(), tpfes->GetDimension(),lh);
                   coef.Get()->Evaluate(mir, vals);
                   int firstxdof = 0;
                   for(int s=0;s<ir.Size();s++)
-                    shape.Col(s)*=mir[s].GetWeight()*vals(s,0);
+                    vals.Row(s)*=mir[s].GetWeight();
                   for(int j=0;j<spaces[0]->GetMeshAccess()->GetNE();j++)
                   {
-                    HeapReset hr(lh);
                     int ndofx = spaces[0]->GetFE(ElementId(j),lh).GetNDof();
-                    IntRange dnumsx(firstxdof, firstxdof+ndofx);
-                    FlatMatrix<> coefmat(ndofx,ndofy,lh);
+                    IntRange dnumsx(firstxdof, firstxdof+ndofx*tpfes->GetDimension());
+                    FlatMatrix<> coefmat(ndofy,ndofx*tpfes->GetDimension(),lh);
                     coefmat = elvec_slicemat.Cols(dnumsx);
-                    FlatMatrix<> tempmat(ndofx,ir.Size(),lh);
-                    tempmat = coefmat*shape;
-                    Array<int> dofnrs_xspace(ndofx,lh);
-                    spaces[0]->GetDofNrs(ElementId(j),dofnrs_xspace);
+                    FlatMatrix<> tempmat(ndofx*tpfes->GetDimension(),ir.Size(),lh);
+                    tempmat = Trans(coefmat)*shape;
                     for(int s=0;s<ir.Size();s++)
+                    {
+                      for( int dof : Range(ndofx) )
+                        for(int d: Range(tpfes->GetDimension()) )
+                          tempmat(dof*tpfes->GetDimension()+d,s)*=vals(s,d);
                       elvec_outmat.Cols(dnumsx).Row(i)+=(tempmat.Col(s));
-                    firstxdof+=ndofx;
+                    }
+                    firstxdof+=ndofx*tpfes->GetDimension();
                   }
                 }
               }
@@ -3377,12 +3487,43 @@ flags : dict
             }
             for(int i=0;i<elvec_outmat.Height();i++)
               elvec_out+=elvec_outmat.Row(i);
-            vec_out.FVDouble() = elvec_out;
+            int firstxdof = 0;
+            if(tpfes->GetDimension() == gf_x->GetFESpace()->GetDimension())
+              for(int i=0;i<spaces[0]->GetMeshAccess()->GetNE();i++)
+              {
+                int ndofx = spaces[0]->GetFE(ElementId(i),clh).GetNDof();
+                IntRange dnumsx(firstxdof, firstxdof+ndofx*tpfes->GetDimension());
+                firstxdof+=ndofx*tpfes->GetDimension();
+                Array<int> dofsx;
+                spaces[0]->GetDofNrs(ElementId(i),dofsx);
+                vec_out.SetIndirect(dofsx,elvec_out.Range(dnumsx));
+              }
+            else if(tpfes->GetDimension() > 1 && gf_x->GetFESpace()->GetDimension() == 1)
+            {
+              FlatVector<> elvec_sum(gf_x->GetFESpace()->GetNDof(),clh);
+              elvec_sum = 0.0;
+              for(int i: Range(tpfes->GetDimension()) )
+              {
+                SliceVector<> elvec_comp(gf_x->GetFESpace()->GetNDof(), tpfes->GetDimension(), &elvec_out(i));
+                elvec_sum+=elvec_comp;
+              }
+              for(int i=0;i<spaces[0]->GetMeshAccess()->GetNE();i++)
+              {
+                int ndofx = spaces[0]->GetFE(ElementId(i),clh).GetNDof();
+                IntRange dnumsx(firstxdof, firstxdof+ndofx);
+                firstxdof+=ndofx;
+                Array<int> dofsx;
+                spaces[0]->GetDofNrs(ElementId(i),dofsx);
+                vec_out.SetIndirect(dofsx,elvec_sum.Range(dnumsx));
+              }
+            }
 });
 
-   m.def("ProlongateCoefficientFunction", [](PyCF cf_x, int prolongateto) -> PyCF
+   m.def("ProlongateCoefficientFunction", [](PyCF cf_x, int prolongateto, PyFES tpfes) -> PyCF
            {
-             auto pcf = make_shared<ProlongateCoefficientFunction>(cf_x.Get(),prolongateto,cf_x.Get()->Dimension(),false);
+             int dimx = dynamic_pointer_cast<TPHighOrderFESpace>(tpfes.Get())->Spaces(0)[0]->GetMeshAccess()->GetDimension();
+             int dimy = dynamic_pointer_cast<TPHighOrderFESpace>(tpfes.Get())->Spaces(0)[1]->GetMeshAccess()->GetDimension();
+             auto pcf = make_shared<ProlongateCoefficientFunction>(cf_x.Get(),prolongateto,cf_x.Get()->Dimension(),dimx,dimy,false);
              pcf->SetDimension(pcf->Dimension());
              return PyCF(pcf);
            });

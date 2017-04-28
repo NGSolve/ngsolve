@@ -44,10 +44,11 @@ namespace ngcomp
     class PML_CF : public CoefficientFunction
   {
     shared_ptr<PML_Transformation> pmltrafo;
+    int dim;
     public:
 
     PML_CF(shared_ptr<PML_Transformation> _pmltrafo) : 
-      CoefficientFunction(_pmltrafo->GetDimension(),true), pmltrafo(_pmltrafo)
+      dim(_pmltrafo->GetDimension()),CoefficientFunction(_pmltrafo->GetDimension(),true), pmltrafo(_pmltrafo)
     { ; }
     using CoefficientFunction::Evaluate;
     double Evaluate(const BaseMappedIntegrationPoint & ip) const
@@ -56,13 +57,13 @@ namespace ngcomp
     }
     void Evaluate(const BaseMappedIntegrationPoint & ip, FlatVector<Complex> values) const
     {
-      STACK_ARRAY(double,jacmem,2*Dimension()*Dimension());
-      FlatMatrix<Complex> jac(Dimension(),Dimension(),reinterpret_cast<Complex*>(&jacmem[0]));
+      STACK_ARRAY(double,jacmem,2*dim*dim);
+      FlatMatrix<Complex> jac(dim,dim,reinterpret_cast<Complex*>(&jacmem[0]));
       if (ip.IsComplex())
       {
-        STACK_ARRAY(double,pmem,Dimension());
-        FlatVector<> rpoint(Dimension(),pmem);
-        for (int i : Range(Dimension()))
+        STACK_ARRAY(double,pmem,dim);
+        FlatVector<> rpoint(dim,pmem);
+        for (int i : Range(dim))
           rpoint(i)=ip.GetPointComplex()(i).real();
         pmltrafo->MapPointV(rpoint,values,jac);
       } 
@@ -74,12 +75,13 @@ namespace ngcomp
     class PML_Jac : public CoefficientFunction
   {
     shared_ptr<PML_Transformation> pmltrafo;
+    int dim;
     public:
 
     PML_Jac(shared_ptr<PML_Transformation> _pmltrafo) : 
-      CoefficientFunction(_pmltrafo->GetDimension()*_pmltrafo->GetDimension(),true), pmltrafo(_pmltrafo)
+      dim(_pmltrafo->GetDimension()),CoefficientFunction(dim*dim,true), pmltrafo(_pmltrafo)
     {
-      SetDimensions(Array<int>({pmltrafo->GetDimension(),pmltrafo->GetDimension()}));
+      SetDimensions(Array<int>({dim,dim}));
     }
     using CoefficientFunction::Evaluate;
     double Evaluate(const BaseMappedIntegrationPoint & ip) const
@@ -88,15 +90,15 @@ namespace ngcomp
     }
     void Evaluate(const BaseMappedIntegrationPoint & ip, FlatVector<Complex> values) const
     {
-      STACK_ARRAY(double,jacmem,2*Dimension()*Dimension());
-      STACK_ARRAY(double,vmem,2*Dimension());
-      FlatMatrix<Complex> jac(Dimension(),Dimension(),reinterpret_cast<Complex*>(&jacmem[0]));
-      FlatVector<Complex> vec(Dimension(),reinterpret_cast<Complex*>(&vmem[0]));
+      STACK_ARRAY(double,jacmem,2*dim*dim);
+      STACK_ARRAY(double,vmem,dim);
+      FlatMatrix<Complex> jac(dim,dim,reinterpret_cast<Complex*>(&jacmem[0]));
+      FlatVector<Complex> vec(dim,reinterpret_cast<Complex*>(&vmem[0]));
       if (ip.IsComplex())
       {
-        STACK_ARRAY(double,pmem,Dimension());
-        FlatVector<> rpoint(Dimension(),pmem);
-        for (int i : Range(Dimension()))
+        STACK_ARRAY(double,pmem,dim);
+        FlatVector<> rpoint(dim,pmem);
+        for (int i : Range(dim))
           rpoint(i)=ip.GetPointComplex()(i).real();
         pmltrafo->MapPointV(rpoint,vec,jac);
       } 
@@ -108,12 +110,13 @@ namespace ngcomp
     class PML_JacInv : public CoefficientFunction
   {
     shared_ptr<PML_Transformation> pmltrafo;
+    int dim;
     public:
 
     PML_JacInv(shared_ptr<PML_Transformation> _pmltrafo) : 
-      CoefficientFunction(_pmltrafo->GetDimension()*_pmltrafo->GetDimension(),true), pmltrafo(_pmltrafo)
+      dim(_pmltrafo->GetDimension()),CoefficientFunction(_pmltrafo->GetDimension()*_pmltrafo->GetDimension(),true), pmltrafo(_pmltrafo)
     {
-      SetDimensions(Array<int>({pmltrafo->GetDimension(),pmltrafo->GetDimension()}));
+      SetDimensions(Array<int>({dim,dim}));
     }
     using CoefficientFunction::Evaluate;
     double Evaluate(const BaseMappedIntegrationPoint & ip) const
@@ -122,30 +125,32 @@ namespace ngcomp
     }
     void Evaluate(const BaseMappedIntegrationPoint & ip, FlatVector<Complex> values) const
     {
-      STACK_ARRAY(double,jacmem,2*Dimension()*Dimension());
-      STACK_ARRAY(double,vmem,2*Dimension());
-      FlatMatrix<Complex> jac(Dimension(),Dimension(),reinterpret_cast<Complex*>(&jacmem[0]));
-      FlatVector<Complex> vec(Dimension(),reinterpret_cast<Complex*>(&vmem[0]));
+      STACK_ARRAY(double,jacmem,2*dim*dim);
+      STACK_ARRAY(double,vmem,2*dim);
+      FlatMatrix<Complex> jac(dim,dim,reinterpret_cast<Complex*>(&jacmem[0]));
+      FlatVector<Complex> vec(dim,reinterpret_cast<Complex*>(&vmem[0]));
       if (ip.IsComplex())
       {
-        STACK_ARRAY(double,pmem,Dimension());
-        FlatVector<> rpoint(Dimension(),pmem);
-        for (int i : Range(Dimension()))
+        STACK_ARRAY(double,pmem,dim);
+        FlatVector<> rpoint(dim,pmem);
+        for (int i : Range(dim))
           rpoint(i)=ip.GetPointComplex()(i).real();
         pmltrafo->MapPointV(rpoint,vec,jac);
       } 
       else 
         pmltrafo->MapPointV(ip,vec,jac);
-      values = Inv(jac);
+      CalcInverse(jac);
+      values=jac;
     }
   };
     class PML_Det : public CoefficientFunction
   {
     shared_ptr<PML_Transformation> pmltrafo;
+    int dim;
     public:
 
     PML_Det(shared_ptr<PML_Transformation> _pmltrafo) : 
-      CoefficientFunction(1,true), pmltrafo(_pmltrafo)
+      CoefficientFunction(1,true), pmltrafo(_pmltrafo),dim(_pmltrafo->GetDimension())
     { ; }
     using CoefficientFunction::Evaluate;
     double Evaluate(const BaseMappedIntegrationPoint & ip) const
@@ -154,15 +159,15 @@ namespace ngcomp
     }
     Complex EvaluateComplex(const BaseMappedIntegrationPoint & ip) const
     {
-      STACK_ARRAY(double,jacmem,2*Dimension()*Dimension());
-      STACK_ARRAY(double,vmem,2*Dimension());
-      FlatMatrix<Complex> jac(Dimension(),Dimension(),reinterpret_cast<Complex*>(&jacmem[0]));
-      FlatVector<Complex> vec(Dimension(),reinterpret_cast<Complex*>(&vmem[0]));
+      STACK_ARRAY(double,jacmem,2*dim*dim);
+      STACK_ARRAY(double,vmem,2*dim);
+      FlatMatrix<Complex> jac(dim,dim,reinterpret_cast<Complex*>(&jacmem[0]));
+      FlatVector<Complex> vec(dim,reinterpret_cast<Complex*>(&vmem[0]));
       if (ip.IsComplex())
       {
-        STACK_ARRAY(double,pmem,Dimension());
-        FlatVector<> rpoint(Dimension(),pmem);
-        for (int i : Range(Dimension()))
+        STACK_ARRAY(double,pmem,dim);
+        FlatVector<> rpoint(dim,pmem);
+        for (int i : Range(dim))
           rpoint(i)=ip.GetPointComplex()(i).real();
         pmltrafo->MapPointV(rpoint,vec,jac);
       } 
@@ -172,15 +177,15 @@ namespace ngcomp
     }
     void Evaluate(const BaseMappedIntegrationPoint & ip, FlatVector<Complex> value) const
     {
-      STACK_ARRAY(double,jacmem,2*Dimension()*Dimension());
-      STACK_ARRAY(double,vmem,Dimension());
-      FlatMatrix<Complex> jac(Dimension(),Dimension(),reinterpret_cast<Complex*>(&jacmem[0]));
-      FlatVector<Complex> vec(Dimension(),reinterpret_cast<Complex*>(&vmem[0]));
+      STACK_ARRAY(double,jacmem,2*dim*dim);
+      STACK_ARRAY(double,vmem,dim);
+      FlatMatrix<Complex> jac(dim,dim,reinterpret_cast<Complex*>(&jacmem[0]));
+      FlatVector<Complex> vec(dim,reinterpret_cast<Complex*>(&vmem[0]));
       if (ip.IsComplex())
       {
-        STACK_ARRAY(double,pmem,Dimension());
-        FlatVector<> rpoint(Dimension(),pmem);
-        for (int i : Range(Dimension()))
+        STACK_ARRAY(double,pmem,dim);
+        FlatVector<> rpoint(dim,pmem);
+        for (int i : Range(dim))
           rpoint(i)=ip.GetPointComplex()(i).real();
         pmltrafo->MapPointV(rpoint,vec,jac);
       } 
@@ -240,7 +245,7 @@ namespace ngcomp
   public:
 
     RadialPML_Transformation(double _rad, Complex _alpha, FlatVector<double> _origin) 
-      : PML_TransformationDim<DIM>(), rad(_rad), alpha(_alpha) 
+      : PML_TransformationDim<DIM>(), alpha(_alpha), rad(_rad)
     { 
       origin = 0.;
       for (int i : Range(min(int(_origin.Size()),DIM)))

@@ -47,13 +47,15 @@ namespace ngstd
           return true;
       return false;
     }
+
+    static constexpr size_t ILLEGAL_POSITION = size_t(-1);
     template <typename T2>
-    INLINE int Pos(const T2 & el) const
+    INLINE size_t Pos(const T2 & el) const
     {
-      for (int i = 0; i < Size(); i++)
+      for (size_t i = 0; i < Size(); i++)
         if (Spec()[i] == el)
           return i;
-      return -1;
+      return ILLEGAL_POSITION;
     }
     // INLINE auto & operator[] (size_t i) { return Spec()[i]; }
     INLINE auto operator[] (size_t i) const { return Spec()[i]; }
@@ -90,8 +92,8 @@ namespace ngstd
     INLINE size_t Size() const { return ar.Size(); }
     INLINE auto operator[] (size_t i) { return ar[i]; }
     INLINE auto operator[] (size_t i) const { return ar[i]; }
-    INLINE AOWrapperIterator<AOWrapper> begin () { return AOWrapperIterator<AOWrapper> (*this, 0); }
-    INLINE AOWrapperIterator<AOWrapper> end () { return AOWrapperIterator<AOWrapper> (*this, Size()); }
+    INLINE AOWrapperIterator<AOWrapper> begin () const { return AOWrapperIterator<AOWrapper> (*this, 0); }
+    INLINE AOWrapperIterator<AOWrapper> end () const { return AOWrapperIterator<AOWrapper> (*this, Size()); }
   };
 
   template <typename T>
@@ -273,7 +275,7 @@ namespace ngstd
   inline ostream & operator<< (ostream & ost, const BaseArrayObject<T> & array)
   {
     for (auto i : Range(array.Size()))
-      ost << i << ":" << array.Spec()[i] << endl;
+      ost << i << ":" << array[i] << endl;
     return ost;
   }
 
@@ -290,8 +292,8 @@ namespace ngstd
       : ba(aba), ia(aia) { ; }
     
     INLINE size_t Size() const { return ia.Size(); }
-    INLINE T operator[] (size_t i) const { return ba[ia.Spec()[i]]; }
-    INLINE T & operator[] (size_t i) { return ba[ia.Spec()[i]]; }
+    INLINE T operator[] (size_t i) const { return ba[ia[i]]; }
+    INLINE T & operator[] (size_t i) { return ba[ia[i]]; }
 
     INLINE IndirectArray operator= (const T & val) 
     {
@@ -304,7 +306,7 @@ namespace ngstd
     INLINE IndirectArray operator= (const BaseArrayObject<T2> & a2) 
     {
       for (auto i : Range(Size()))
-	(*this)[i] = a2.Spec()[i];
+	(*this)[i] = a2[i];
       return IndirectArray (ba, ia);
     }
 
@@ -326,14 +328,16 @@ namespace ngstd
     size_t size;
     /// the data
     T * __restrict data;
+    using BaseArrayObject<FlatArray<T> >::ILLEGAL_POSITION;
   public:
 
     /// initialize array 
-    INLINE FlatArray () { ; } // size = 0; data = 0; }
+    INLINE FlatArray () = default;
+    // { ; } // size = 0; data = 0; }
 
     /// copy constructor allows size-type conversion 
-    INLINE FlatArray (const FlatArray<T> & a2)  
-      : size(a2.Size()), data(a2.data) { ; } 
+    INLINE FlatArray (const FlatArray<T> & a2) = default;
+    // : size(a2.Size()), data(a2.data) { ; } 
 
     /// provide size and memory
     INLINE FlatArray (size_t asize, T * adata) 
@@ -370,7 +374,7 @@ namespace ngstd
     INLINE const FlatArray & operator= (const BaseArrayObject<T2> & a2) const
     {
       T * hdata = data;
-      for (size_t i = 0; i < size; i++) hdata[i] = a2.Spec()[i];
+      for (size_t i = 0; i < size; i++) hdata[i] = a2[i];
       return *this;
     }
 
@@ -412,8 +416,10 @@ namespace ngstd
       return T_Range<size_t> (0, Size());
     }
     
-    INLINE const CArray<T> Addr (int pos) const
-    { return CArray<T> (data+pos); }
+    INLINE const CArray<T> Addr (size_t pos) const
+    {
+      return CArray<T> (data+pos);
+    }
 
     // const CArray<T> operator+ (int pos)
     // { return CArray<T> (data+pos); }
@@ -426,7 +432,6 @@ namespace ngstd
       if (!size)
         throw Exception ("Array should not be empty");
 #endif
-
       return data[size-1];
     }
 
@@ -468,31 +473,24 @@ namespace ngstd
     }
 
     /// first position of element elem, returns -1 if element not contained in array 
-    INLINE int Pos(const T & elem) const
+    INLINE size_t Pos(const T & el) const
     {
-      int pos = -1;
-      for(int i=0; pos==-1 && i < size; i++)
-        if(elem == (*this)[i]) pos = i;
-      return pos;
+      for (size_t i = 0; i < Size(); i++)
+        if (data[i] == el)
+          return i;
+      return ILLEGAL_POSITION;
     }
 
     /// does the array contain element elem ?
     INLINE bool Contains(const T & elem) const
     {
-      return ( Pos(elem) >= 0 );
+      return Pos(elem) != ILLEGAL_POSITION;
     }
     
     ArrayIterator<T, size_t> begin() const
     { return ArrayIterator<T,size_t> (*this, 0); }
     ArrayIterator<T, size_t> end() const
     { return ArrayIterator<T,size_t> (*this, size); }
-
-    /*
-    FlatArray<T,TSIZE> OmpSplit() const
-    {
-      return Range(ngstd::OmpSplit(Range()));
-    }
-    */
   };
 
 
@@ -592,7 +590,7 @@ namespace ngstd
       allocsize = size;
       mem_to_delete = data;
       for (size_t i = 0; i < size; i++)
-        (*this)[i] = a2[i];
+        data[i] = a2[i];
     }
 
     
@@ -604,7 +602,7 @@ namespace ngstd
       allocsize = size;
       mem_to_delete = data;
       for (size_t i = 0; i < size; i++)
-        (*this)[i] = a2.Spec()[i];
+        data[i] = a2[i];
     }
 
     Array (std::initializer_list<T> list) 
@@ -616,10 +614,6 @@ namespace ngstd
       size_t cnt = 0;
       for (auto val : list)
         data[cnt++] = val;
-      /*
-      for (auto i = list.begin(); i < list.end(); i++, cnt++)
-        data[cnt] = *i;
-      */
     }
 
     /// array merge-copy
@@ -719,8 +713,7 @@ namespace ngstd
       if(size + source.Size() >= allocsize)
         ReSize (size + source.Size() + 1);
 
-      size_t i,j;
-      for(i = size, j=0; j<source.Size(); i++, j++)
+      for(size_t i = size, j=0; j<source.Size(); i++, j++)
         data[i] = source[j];
 
       size += source.Size();
@@ -821,8 +814,12 @@ namespace ngstd
       size_t newsize = a2.Spec().Size();
       SetSize0 ();      
       SetSize (newsize);
-      for (size_t i = 0; i < newsize; i++)
-        (*this)[i] = a2.Spec()[i];
+      // for (size_t i = 0; i < newsize; i++)
+      // (*this)[i] = a2.Spec()[i];
+      size_t i = 0;
+      for (auto val : a2.Spec())
+        (*this)[i++] = val;
+      
       return *this;
     }
 
@@ -846,7 +843,6 @@ namespace ngstd
       ngstd::Swap (size, b.size);
       ngstd::Swap (data, b.data);
       ngstd::Swap (allocsize, b.allocsize);
-      // ngstd::Swap (ownmem, b.ownmem);
       ngstd::Swap (mem_to_delete, b.mem_to_delete);
     }
 
@@ -854,33 +850,9 @@ namespace ngstd
 
     /// resize array, at least to size minsize. copy contents
     INLINE void ReSize (size_t minsize);
-    /*
-    {
-      TSIZE nsize = 2 * allocsize;
-      if (nsize < minsize) nsize = minsize;
-
-      if (data)
-        {
-          T * p = new T[nsize];
-	
-          TSIZE mins = (nsize < size) ? nsize : size; 
-          memcpy (p, data, mins * sizeof(T));
-
-          if (ownmem) delete [] data;
-          ownmem = 1;
-          data = p;
-        }
-      else
-        {
-          data = new T[nsize];
-          ownmem = 1;
-        }
-    
-      allocsize = nsize;
-    }
-    */
   };
 
+  
   /// resize array, at least to size minsize. copy contents
   template <class T> 
   INLINE void Array<T> :: ReSize (size_t minsize)
@@ -939,7 +911,6 @@ namespace ngstd
         {
           data = new T[asize];
           allocsize = size;
-          // ownmem = 1;
           mem_to_delete = data;
         }
     }
@@ -969,7 +940,7 @@ namespace ngstd
     ArrayMem & operator= (const FlatArray<T> & a2)
     {
       this->SetSize (a2.Size());
-      for (int i = 0; i < size; i++)
+      for (size_t i = 0; i < size; i++)
         (*this)[i] = a2[i];
       return *this;
     }
@@ -979,8 +950,11 @@ namespace ngstd
     ArrayMem & operator= (const BaseArrayObject<T2> & a2)
     {
       this->SetSize (a2.Spec().Size());
-      for (int i = 0; i < size; i++)
-        (*this)[i] = a2.Spec()[i];
+
+      size_t i = 0;
+      for (auto val : a2.Spec())
+        (*this)[i++] = val;
+      
       return *this;
     }
 
@@ -991,15 +965,15 @@ namespace ngstd
 
 
   template <typename ... ARGS>
-  int ArraySize (Tuple<ARGS...> tup)  
+  size_t ArraySize (Tuple<ARGS...> tup)  
   { return 0;}
   
   template <typename ... ARGS>
-  int ArraySize (Tuple<int,ARGS...> tup) 
+  size_t ArraySize (Tuple<int,ARGS...> tup) 
   { return 1+ArraySize(tup.Tail()); }
   
   template <typename ... ARGS>
-  int ArraySize (Tuple<IntRange,ARGS...> tup) 
+  size_t ArraySize (Tuple<IntRange,ARGS...> tup) 
   { return tup.Head().Size()+ArraySize(tup.Tail()); }
 
   
@@ -1047,6 +1021,7 @@ namespace ngstd
   */
   
 
+  /*
   template <typename T, typename T2>
   inline Array<T> & operator+= (Array<T> & array, const BaseArrayObject<T2> & a2)
   {
@@ -1060,13 +1035,27 @@ namespace ngstd
 
     return array;
   }
+  */
+  
+  template <typename T, typename T2>
+  inline Array<T> & operator+= (Array<T> & array, const BaseArrayObject<T2> & a2)
+  {
+    auto oldsize = array.Size();
+    auto s = a2.Spec().Size();
 
+    array.SetSize (oldsize+s);
+
+    for (auto val : a2.Spec())
+      array[oldsize++] = val;
+    
+    return array;
+  }
 
 
 
   /// bubble sort array
   template <class T>
-  inline void BubbleSort (const FlatArray<T> & data)
+  inline void BubbleSort (FlatArray<T> data)
   {
     T hv;
     for (size_t i = 0; i < data.Size(); i++)
@@ -1081,7 +1070,7 @@ namespace ngstd
 
   /// bubble sort array
   template <class T, class S>
-  inline void BubbleSort (FlatArray<T> & data, FlatArray<S> & slave)
+  inline void BubbleSort (FlatArray<T> data, FlatArray<S> slave)
   {
     for (size_t i = 0; i < data.Size(); i++)
       for (size_t j = i+1; j < data.Size(); j++)
@@ -1105,8 +1094,8 @@ namespace ngstd
   {
     if (data.Size() <= 1) return;
 
-    int i = 0;
-    int j = data.Size()-1;
+    ptrdiff_t i = 0;
+    ptrdiff_t j = data.Size()-1;
 
     T midval = data[ (i+j)/2 ];
   
@@ -1158,8 +1147,8 @@ namespace ngstd
   {
     if (index.Size() <= 1) return;
 
-    int i = 0;
-    int j = index.Size()-1;
+    ptrdiff_t i = 0;
+    ptrdiff_t j = index.Size()-1;
 
     int midval = index[ (i+j)/2 ];
   
@@ -1204,8 +1193,8 @@ namespace ngstd
     const TA2 & a2;
   public:
     SumArray (const TA1 & aa1, const TA2 & aa2) : a1(aa1), a2(aa2) { ; }
-    int Size() const { return a1.Size()+a2.Size(); }
-    auto operator[] (int i) const -> decltype (xxxRemoveRef (a1[0])) 
+    size_t Size() const { return a1.Size()+a2.Size(); }
+    auto operator[] (size_t i) const -> decltype (xxxRemoveRef (a1[0])) 
     {
       return (i < a1.Size()) ? a1[i] : a2[i-a1.Size()];
     }

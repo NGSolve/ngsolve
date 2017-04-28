@@ -784,7 +784,7 @@ namespace ngsolve
       }
     else if (point.Size() >= 2)
       {
-	auto bfi = (bfa) ? bfa->GetIntegrator(0) : gfu->GetFESpace()->GetIntegrator();
+	auto bfi = (bfa) ? bfa->GetIntegrator(0) : gfu->GetFESpace()->GetIntegrator(VOL);
 
 	if (point2.Size() >= 2)
 	  {
@@ -1224,7 +1224,7 @@ namespace ngsolve
 
     const FESpace & fes = *gfu->GetFESpace();
 
-    const int components = fes.GetIntegrator()->DimFlux();
+    const int components = fes.GetIntegrator(VOL)->DimFlux();
     int ndomains;
     
     string typestring;
@@ -1237,7 +1237,7 @@ namespace ngsolve
 
 	    typestring = ".vol";
 
-	    Integrator_ptr = fes.GetIntegrator();
+	    Integrator_ptr = fes.GetIntegrator(VOL);
 	    BoundaryIntegrator_ptr = NULL;
 	    ndomains = shared_ptr<PDE>(pde)->GetMeshAccess()->GetNDomains();
 

@@ -307,7 +307,7 @@ public:
   static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
                               BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
   {
-    Cast(fel).AddTrans (mir, y, x);
+    Cast(fel).AddTransVec (mir, y, x);
   }    
 };
 

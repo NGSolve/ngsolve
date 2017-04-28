@@ -293,11 +293,63 @@ namespace ngfem
   }
 
 
-  template <typename TCF>
-  class T_CoefficientFunction : public CoefficientFunction
+  class NGS_DLL_HEADER CoefficientFunctionNoDerivative : public CoefficientFunction
   {
   public:
     using CoefficientFunction::CoefficientFunction;
+    
+    virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir, 
+                                AFlatMatrix<double> values, AFlatMatrix<double> deriv) const
+    {
+      Evaluate(ir, values);
+      deriv = 0.0;
+    }
+
+    virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & ir, 
+                                 AFlatMatrix<double> values, AFlatMatrix<double> deriv,
+                                 AFlatMatrix<double> dderiv) const
+    {
+      Evaluate (ir, values);
+      deriv = 0.0;
+      dderiv = 0.0;
+    }
+
+    virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
+                                FlatArray<AFlatMatrix<>*> input,
+                                FlatArray<AFlatMatrix<>*> dinput,
+                                AFlatMatrix<> result,
+                                AFlatMatrix<> deriv) const
+    {
+      Evaluate (ir, input, result);
+      deriv = 0.0;
+    }
+
+    virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & ir,
+                                 FlatArray<AFlatMatrix<>*> input,
+                                 FlatArray<AFlatMatrix<>*> dinput,
+                                 FlatArray<AFlatMatrix<>*> ddinput,
+                                 AFlatMatrix<> result,
+                                 AFlatMatrix<> deriv,
+                                 AFlatMatrix<> dderiv) const
+    {
+      Evaluate (ir, input, result);
+      deriv = 0.0;
+      dderiv = 0.0;
+    }
+  };
+
+
+  
+
+  template <typename TCF, typename BASE = CoefficientFunction>
+  class T_CoefficientFunction : public BASE
+  {
+  protected:
+    using BASE::IsComplex;
+    using BASE::Dimension;
+  public:
+    using BASE::BASE;
+      
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const
     { static_cast<const TCF*>(this) -> template T_Evaluate<double> (ir, values); }
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values) const
@@ -306,9 +358,9 @@ namespace ngfem
         static_cast<const TCF*>(this) -> template T_Evaluate<Complex> (ir, values);
       else
         {
-          BareSliceMatrix<SIMD<double>> overlay(2*values.Dist(), &values(0,0).real());
-          Evaluate (ir, overlay);
           size_t nv = ir.Size();
+          SliceMatrix<SIMD<double>> overlay(Dimension(), nv, 2*values.Dist(), &values(0,0).real());
+          Evaluate (ir, overlay);
           for (size_t i = 0; i < Dimension(); i++)
             for (size_t j = nv; j-- > 0; )
               values(i,j) = overlay(i,j);
@@ -318,11 +370,12 @@ namespace ngfem
 
 
   /// The coefficient is constant everywhere
-  class NGS_DLL_HEADER ConstantCoefficientFunction : public T_CoefficientFunction<ConstantCoefficientFunction>
+  class NGS_DLL_HEADER ConstantCoefficientFunction
+    : public T_CoefficientFunction<ConstantCoefficientFunction, CoefficientFunctionNoDerivative>
   {
     ///
     double val;
-    typedef T_CoefficientFunction<ConstantCoefficientFunction> BASE;
+    typedef T_CoefficientFunction<ConstantCoefficientFunction, CoefficientFunctionNoDerivative> BASE;
   public:
     ///
     ConstantCoefficientFunction (double aval);
@@ -405,7 +458,7 @@ namespace ngfem
 
 
   /// The coefficient is constant everywhere
-  class NGS_DLL_HEADER ParameterCoefficientFunction : public CoefficientFunction
+  class NGS_DLL_HEADER ParameterCoefficientFunction : public CoefficientFunctionNoDerivative
   {
     ///
     double val;
@@ -427,83 +480,21 @@ namespace ngfem
                            AFlatMatrix<double> values) const
     { values = val; }
 
-    virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
-                                FlatArray<AFlatMatrix<>*> input, FlatArray<AFlatMatrix<>*> dinput,
-                                AFlatMatrix<> result, AFlatMatrix<> deriv) const
-    {
-      result = val;
-      deriv = 0.0;
-    }
-
-    virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & ir,
-                                 FlatArray<AFlatMatrix<>*> input, FlatArray<AFlatMatrix<>*> dinput,
-                                 FlatArray<AFlatMatrix<>*> ddinput,
-                                 AFlatMatrix<> result, AFlatMatrix<> deriv,
-                                 AFlatMatrix<> dderiv) const
-    {
-      result = val;
-      deriv = 0.0;
-      dderiv = 0.0;
-    }
-
     virtual void SetValue (double in) { val = in; }
     virtual double GetValue () { return val; }
     virtual void PrintReport (ostream & ost) const;
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
   };
 
-  class NGS_DLL_HEADER CoefficientFunctionNoDerivative : public CoefficientFunction
-  {
-  public:
-    using CoefficientFunction::CoefficientFunction;
-    
-    virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir, 
-                                AFlatMatrix<double> values, AFlatMatrix<double> deriv) const
-    {
-      Evaluate(ir, values);
-      deriv = 0.0;
-    }
-
-    virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & ir, 
-                                 AFlatMatrix<double> values, AFlatMatrix<double> deriv,
-                                 AFlatMatrix<double> dderiv) const
-    {
-      Evaluate (ir, values);
-      deriv = 0.0;
-      dderiv = 0.0;
-    }
-
-    virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
-                                FlatArray<AFlatMatrix<>*> input,
-                                FlatArray<AFlatMatrix<>*> dinput,
-                                AFlatMatrix<> result,
-                                AFlatMatrix<> deriv) const
-    {
-      Evaluate (ir, input, result);
-      deriv = 0.0;
-    }
-
-    virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & ir,
-                                 FlatArray<AFlatMatrix<>*> input,
-                                 FlatArray<AFlatMatrix<>*> dinput,
-                                 FlatArray<AFlatMatrix<>*> ddinput,
-                                 AFlatMatrix<> result,
-                                 AFlatMatrix<> deriv,
-                                 AFlatMatrix<> dderiv) const
-    {
-      Evaluate (ir, input, result);
-      deriv = 0.0;
-      dderiv = 0.0;
-    }
-  };
-
   
 
   /// The coefficient is constant in every sub-domain
-  class NGS_DLL_HEADER DomainConstantCoefficientFunction : public CoefficientFunctionNoDerivative
+  class NGS_DLL_HEADER DomainConstantCoefficientFunction  
+    : public T_CoefficientFunction<DomainConstantCoefficientFunction, CoefficientFunctionNoDerivative>
   {
     ///
     Array<double> val;
+    typedef T_CoefficientFunction<DomainConstantCoefficientFunction, CoefficientFunctionNoDerivative> BASE;    
   public:
     ///
     DomainConstantCoefficientFunction (const Array<double> & aval);
@@ -518,7 +509,10 @@ namespace ngfem
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const;
 
     // virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const;
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const;
+    // virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const;
+
+    template <typename T>
+      void T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<T>> values) const;
     
     virtual double EvaluateConst () const { return val[0]; }
     double operator[] (int i) const { return val[i]; }
@@ -1678,20 +1672,20 @@ void ExportBinaryFunction (class pybind11::module & m, string name)
 #endif
 
 
-  extern shared_ptr<CoefficientFunction>
+  NGS_DLL_HEADER shared_ptr<CoefficientFunction>
   MakeComponentCoefficientFunction (shared_ptr<CoefficientFunction> c1, int comp);
   
-  extern shared_ptr<CoefficientFunction>
+  NGS_DLL_HEADER shared_ptr<CoefficientFunction>
   MakeVectorialCoefficientFunction (Array<shared_ptr<CoefficientFunction>> aci);
 
-  extern shared_ptr<CoefficientFunction>
+  NGS_DLL_HEADER shared_ptr<CoefficientFunction>
   MakeCoordinateCoefficientFunction (int comp);
 
 
 
 
   
-  extern shared_ptr<CoefficientFunction>
+  NGS_DLL_HEADER shared_ptr<CoefficientFunction>
   MakeDomainWiseCoefficientFunction (Array<shared_ptr<CoefficientFunction>> aci);
   
 
@@ -1703,38 +1697,38 @@ void ExportBinaryFunction (class pybind11::module & m, string name)
   
 
 
-  extern 
+  NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> operator+ (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2);
   
-  extern
+  NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> operator- (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2);
 
-  extern
+  NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2);
 
-  extern
+  NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> operator* (double v1, shared_ptr<CoefficientFunction> c2);
-  extern
+  NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> operator* (Complex v1, shared_ptr<CoefficientFunction> c2);
 
-  extern
+  NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> InnerProduct (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2);
 
-  extern
+  NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> operator/ (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2);
 
-  extern
+  NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> TransposeCF (shared_ptr<CoefficientFunction> coef);
 
-  extern
+  NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> NormCF (shared_ptr<CoefficientFunction> coef);
 
-  extern
+  NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> IfPos (shared_ptr<CoefficientFunction> cf_if,
                                          shared_ptr<CoefficientFunction> cf_then,
                                          shared_ptr<CoefficientFunction> cf_else);
   
-  extern    
+  NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> Compile (shared_ptr<CoefficientFunction> c, bool realcompile=false);
 }
 

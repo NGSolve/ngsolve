@@ -276,9 +276,8 @@ namespace ngfem
             Vec<DIM,SIMD<Complex>> sum = SIMD<Complex>(0.0);
             T_CalcShape (&adp(0), SBLambda ([&] (int j, HCurl_Shape<DIM,SIMD<double>> shape)
                                             {
-                                              SIMD<Complex> coef = coefs(j);
                                               Iterate<DIM> ( [&] (auto ii) {
-                                                  sum(ii.value) += shape(ii.value) * coef;
+                                                  sum(ii.value) += shape(ii.value) * coefs(j);
                                                 });
                                             }));
             for (size_t k = 0; k < DIM; k++)
@@ -406,9 +405,8 @@ namespace ngfem
             Vec<DIM_CURL,SIMD<Complex>> sum = SIMD<Complex>(0.0);
             T_CalcShape (&adp(0), SBLambda ([&] (int j, HCurl_CurlShape<DIM,SIMD<double>> shape)
                                             {
-                                              SIMD<Complex> coef = coefs(j);
 					      Iterate<DIM> ([&] (auto ii) {
-						  sum(ii.value) += shape(ii.value) * coef;
+						  sum(ii.value) += shape(ii.value) * coefs(j);
 						});
                                             }));
             for (size_t k = 0; k < DIM_CURL; k++)
