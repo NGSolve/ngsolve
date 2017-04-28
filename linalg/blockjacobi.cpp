@@ -442,7 +442,8 @@ namespace ngla
 	CalcInverse (blockmat);
         // }, TasksPerThread(10));
        } } );
-
+    
+    cout << IM(3) << "\rBuilding block " << blocktable->Size() << "/" << blocktable->Size() << flush;
     *testout << "block coloring";
 
     static Timer tcol("BlockJacobi-coloring");
