@@ -205,8 +205,8 @@ namespace ngstd
     
     for (int j = 0; j < num_nodes; j++)
       // nodedata[j]->participate.store (0, memory_order_release);
-      // nodedata[j]->participate |= 1;
-      nodedata[j]->participate.store (1, memory_order_release);
+      nodedata[j]->participate |= 1;
+      // nodedata[j]->participate.store (1, memory_order_release);
 
     if (startup_function) (*startup_function)();
     
