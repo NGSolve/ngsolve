@@ -3,7 +3,8 @@
 
 #include <limits>
 #include <vector>
-
+#include "array.hpp"
+#include <x86intrin.h>
 namespace ngstd
 {
   extern NGS_DLL_HEADER class PajeTrace *trace;
@@ -11,7 +12,8 @@ namespace ngstd
     {
     public:
       typedef std::chrono::system_clock TClock;
-      typedef TClock::time_point TTimePoint;
+      // typedef TClock::time_point TTimePoint;
+      typedef size_t TTimePoint;
 
     private:
       friend class TraceDisabler;
@@ -91,14 +93,16 @@ namespace ngstd
           bool operator < (const ThreadLink & other) const { return time < other.time; }
         };
 
-      std::vector<std::vector<Task> > tasks;
+      // std::vector<std::vector<Task> > tasks;
+      std::vector<ngstd::Array<Task> > tasks;
       std::vector<Job> jobs;
       std::vector<TimerEvent> timer_events;
       std::vector<std::vector<ThreadLink> > links;
 
       TTimePoint GetTime()
         {
-          return TClock::now();
+          // return TClock::now();
+          return TTimePoint(__rdtsc());
         }
 
     public:
@@ -127,10 +131,10 @@ namespace ngstd
         {
           if(!tracing_enabled) return -1;
           if(!trace_threads && !trace_thread_counter) return -1;
-          if(tasks[thread_id].size() == max_num_events_per_thread)
+          if(tasks[thread_id].Size() == max_num_events_per_thread)
             StopTracing();
-          int task_num = tasks[thread_id].size();
-          tasks[thread_id].push_back( Task{thread_id, id, id_type, additional_value, GetTime()} );
+          int task_num = tasks[thread_id].Size();
+          tasks[thread_id].Append( Task{thread_id, id, id_type, additional_value, GetTime()} );
           return task_num;
         }
 
