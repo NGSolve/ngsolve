@@ -105,24 +105,11 @@ namespace ngstd
     static void SetStartupFunction () { startup_function = nullptr; }
     static void SetCleanupFunction (const function<void()> & func) { cleanup_function = &func; }
     static void SetCleanupFunction () { cleanup_function = nullptr; }    
-    /*
-    template <typename TFUNC>
-    INLINE void ParallelFor (IntRange r, TFUNC f, int antasks = task_manager->GetNumThreads())
-    {
-      CreateJob 
-        ([r, f] (TaskInfo & ti) 
-         {
-           auto myrange = r.Split (ti.task_nr, ti.ntasks);
-           for (auto i : myrange) f(i);
-         }, antasks);
-    }
-    */
-
 
     void Done() { done = true; }
-
-
     void Loop(int thread_num);
+
+    static list<tuple<string,double>> Timing ();
   };
 
 
