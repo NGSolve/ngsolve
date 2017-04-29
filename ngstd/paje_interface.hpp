@@ -4,7 +4,7 @@
 #include <limits>
 #include <vector>
 #include "array.hpp"
-#include <x86intrin.h>
+// #include <x86intrin.h>   // for __rdtsc()  CPU time step counter
 namespace ngstd
 {
   extern NGS_DLL_HEADER class PajeTrace *trace;
@@ -12,8 +12,8 @@ namespace ngstd
     {
     public:
       typedef std::chrono::system_clock TClock;
-      // typedef TClock::time_point TTimePoint;
-      typedef size_t TTimePoint;
+      typedef TClock::time_point TTimePoint;
+      // typedef size_t TTimePoint;
 
     private:
       friend class TraceDisabler;
@@ -101,8 +101,8 @@ namespace ngstd
 
       TTimePoint GetTime()
         {
-          // return TClock::now();
-          return TTimePoint(__rdtsc());
+          return TClock::now();
+          // return TTimePoint(__rdtsc());
         }
 
     public:
