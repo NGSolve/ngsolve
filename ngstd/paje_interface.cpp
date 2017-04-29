@@ -46,7 +46,6 @@ namespace ngstd
       {
       // t.reserve(reserve_size);
 	t.SetAllocSize (reserve_size);
-	// t = Array<Task> (reserve_size);
 	for (auto & task : tasks)
 	  task = Task{0,0,0,0,GetTime()};
 	t.SetSize(0);
