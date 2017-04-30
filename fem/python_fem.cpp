@@ -113,12 +113,17 @@ PyCF MakeCoefficient (py::object val)
   py::extract<PyCF> ecf(val);
   if (ecf.check()) return ecf();
 
+  // cout << "type is " << py::str(val.get_type()) << endl;
+
+  // a numpy.complex converts itself to a real, and prints a warning
+  // thus we check for it first
+  if (string(py::str(val.get_type())) == "<class 'numpy.complex128'>")
+    return PyCF(make_shared<ConstantCoefficientFunctionC> (val.cast<Complex>()));    
+
   if(py::CheckCast<double>(val))
     return PyCF(make_shared<ConstantCoefficientFunction> (val.cast<double>()));
-
-  if(py::CheckCast<Complex>(val)) {
+  if(py::CheckCast<Complex>(val)) 
     return PyCF(make_shared<ConstantCoefficientFunctionC> (val.cast<Complex>()));
-  }
 
   if (py::isinstance<py::list>(val))
     {
