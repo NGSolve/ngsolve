@@ -38,12 +38,12 @@ namespace ngstd
     class NodeData
     {
     public:
-      atomic<int> start_cnt;
+      atomic<int> start_cnt{0};
       // atomic<int> complete_cnt;
-      atomic<int> participate;
-      atomic<int> participate_exit;
+      atomic<int> participate{0};
+      // atomic<int> participate_exit;
 
-      NodeData() : start_cnt(0), participate(0), participate_exit(0) { ; }
+      // NodeData() : start_cnt(0), participate(0), participate_exit(0) { ; }
     };
     
     static const function<void(TaskInfo&)> * func;
@@ -57,6 +57,7 @@ namespace ngstd
     atomic<int> complete[8];   // max nodes
     atomic<int> done;
     atomic<int> active_workers;
+    atomic<int> workers_on_node[8];   // max nodes
 
     int sleep_usecs;
     bool sleep;

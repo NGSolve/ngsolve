@@ -110,12 +110,14 @@ namespace ngstd
           void * mem = numa_alloc_onnode (sizeof(NodeData), j);
           nodedata[j] = new (mem) NodeData;
 	  complete[j] = -1;
+          workers_on_node[j] = 0;          
           // nodedata[j]->participate = -1;
         }
 #else
       num_nodes = 1;
       nodedata[0] = new NodeData;
       complete[0] = -1;
+      workers_on_node[0] = 0;
       // nodedata[0]->participate = -1;
 #endif
 
@@ -265,9 +267,9 @@ namespace ngstd
     if (cleanup_function) (*cleanup_function)();
     
     for (int j = 0; j < num_nodes; j++)
-      // while (!complete[j])
-      while (complete[j] != jobnr)
-        ;
+      if (workers_on_node[j])
+        while (complete[j] != jobnr)
+          ;
 
     if (ex)
       throw Exception (*ex);
@@ -306,6 +308,7 @@ namespace ngstd
     numa_run_on_node (mynode);
 #endif
     active_workers++;
+    workers_on_node[mynode]++;
     int jobdone = 0;
       
     while (!done)
@@ -461,14 +464,15 @@ namespace ngstd
           // int oldpart = mynode_data.participate_exit + 1;
 	  if (mynode_data.participate.compare_exchange_strong (oldpart, 0))
 	    {
-              mynode_data.participate_exit = 0;
+              // mynode_data.participate_exit = 0;
 	      complete[mynode] = jobnr; 
 	      if (mynode != 0)
 		mynode_data.start_cnt = 0;
 	    }	      
 	}
       }
-
+    
+    workers_on_node[mynode]++;
     active_workers--;
   }
 
