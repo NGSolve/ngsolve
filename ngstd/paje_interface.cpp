@@ -43,7 +43,14 @@ namespace ngstd
     tasks.resize(nthreads);
     int reserve_size = min2(1000000U, max_num_events_per_thread);
     for(auto & t : tasks)
-      t.reserve(reserve_size);
+      {
+      // t.reserve(reserve_size);
+	t.SetAllocSize (reserve_size);
+	for (auto & task : tasks)
+	  task = Task{0,0,0,0,GetTime()};
+	t.SetSize(0);
+      }
+
     
     links.resize(nthreads);
     for(auto & l : links)
@@ -347,7 +354,7 @@ namespace ngstd
     {
       int n_events = jobs.size() + timer_events.size();
       for(auto & vtasks : tasks)
-        n_events += vtasks.size();
+        n_events += vtasks.Size();
 
       cout << n_events << " events traced." << endl;
 
