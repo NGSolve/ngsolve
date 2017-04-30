@@ -38,11 +38,12 @@ namespace ngstd
     class NodeData
     {
     public:
-      atomic<int> start_cnt;
-      atomic<int> complete_cnt;
-      atomic<int> participate;
+      atomic<int> start_cnt{0};
+      // atomic<int> complete_cnt;
+      atomic<int> participate{0};
+      // atomic<int> participate_exit;
 
-      NodeData() : start_cnt(0), participate(0) { ; }
+      // NodeData() : start_cnt(0), participate(0), participate_exit(0) { ; }
     };
     
     static const function<void(TaskInfo&)> * func;
@@ -56,6 +57,7 @@ namespace ngstd
     atomic<int> complete[8];   // max nodes
     atomic<int> done;
     atomic<int> active_workers;
+    atomic<int> workers_on_node[8];   // max nodes
 
     int sleep_usecs;
     bool sleep;
@@ -104,24 +106,11 @@ namespace ngstd
     static void SetStartupFunction () { startup_function = nullptr; }
     static void SetCleanupFunction (const function<void()> & func) { cleanup_function = &func; }
     static void SetCleanupFunction () { cleanup_function = nullptr; }    
-    /*
-    template <typename TFUNC>
-    INLINE void ParallelFor (IntRange r, TFUNC f, int antasks = task_manager->GetNumThreads())
-    {
-      CreateJob 
-        ([r, f] (TaskInfo & ti) 
-         {
-           auto myrange = r.Split (ti.task_nr, ti.ntasks);
-           for (auto i : myrange) f(i);
-         }, antasks);
-    }
-    */
-
 
     void Done() { done = true; }
-
-
     void Loop(int thread_num);
+
+    static list<tuple<string,double>> Timing ();
   };
 
 

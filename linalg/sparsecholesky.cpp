@@ -1723,10 +1723,12 @@ namespace ngla
 
 
   template <typename TFUNC>
-  void RunParallelDependency (const Table<int> & dag, TFUNC func)
+  void RunParallelDependency (const Table<int> & dag,
+                              const Table<int> & trans_dag, // transposed dag
+                              TFUNC func)
   {
     Array<atomic<int>> cnt_dep(dag.Size());
-
+    /*
     for (auto & d : cnt_dep) 
       d.store (0, memory_order_relaxed);
 
@@ -1739,7 +1741,10 @@ namespace ngla
                      cnt_dep[j]++;
                  });
     t_cntdep.Stop();    
-
+    */
+    for (auto i : Range(cnt_dep))
+      cnt_dep[i].store (trans_dag[i].Size(), memory_order_relaxed);
+    
     Array<int> ready(dag.Size());
     ready.SetSize0();
     int num_final = 0;
@@ -1914,7 +1919,7 @@ namespace ngla
     */
     timer1.Start();
     
-    RunParallelDependency (micro_dependency, 
+    RunParallelDependency (micro_dependency, micro_dependency_trans,
                            [&,hy] (int nr) 
                            {
                              auto task = microtasks[nr];
@@ -2025,7 +2030,7 @@ namespace ngla
     */
 
     // advanced parallel version 
-    RunParallelDependency (micro_dependency_trans, 
+    RunParallelDependency (micro_dependency_trans, micro_dependency,
                            [&,hy] (int nr) 
                            {
                              auto task = microtasks[nr];
