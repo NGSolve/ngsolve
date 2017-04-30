@@ -11,7 +11,7 @@
 #include "paje_interface.hpp"
 
 #ifdef USE_MKL
-// extern "C" int mkl_set_num_threads_local (int);
+#include <mkl.h>
 #endif
 
 namespace ngstd
@@ -58,7 +58,7 @@ namespace ngstd
     pthread_setschedparam(pthread_self(), policy, &param);
 #endif // WIN32
 
-
+    
     task_manager->StartWorkers();
 
     ParallelFor (Range(100), [&] (int i) { ; });    // startup
@@ -316,8 +316,8 @@ namespace ngstd
 
 
 #ifdef USE_MKL
-    // not working as I expected ??? 
-    // mkl_set_num_threads_local(1);
+    auto mkl_max = mkl_get_max_threads();
+    mkl_set_num_threads_local(1);
 #endif
 
     
@@ -482,6 +482,12 @@ namespace ngstd
 	}
       }
     
+
+#ifdef USE_MKL
+    mkl_set_num_threads_local(mkl_max);
+#endif
+
+
     workers_on_node[mynode]++;
     active_workers--;
   }
