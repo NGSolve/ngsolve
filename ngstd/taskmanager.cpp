@@ -310,7 +310,14 @@ namespace ngstd
     active_workers++;
     workers_on_node[mynode]++;
     int jobdone = 0;
-      
+
+
+#ifdef USE_MKL
+    extern "C" int mkl_set_num_threads_local (int);
+    mkl_set_num_threads_local(1);
+#endif
+
+    
     while (!done)
       {
         if (complete[mynode] > jobdone)
