@@ -66,6 +66,7 @@ BaseVector.expr = property(__expr.VecExpr)
 BaseVector.data = property(__expr.Expr, __expr.expr_data)
 BaseVector.__add__ = __expr.expr_add
 BaseVector.__sub__ = __expr.expr_sub
+BaseVector.__neg__ = __expr.expr_neg
 BaseVector.__rmul__ = __expr.expr_rmul
 
 BaseMatrix.expr = property(__expr.MatExpr)
@@ -73,6 +74,7 @@ BaseMatrix.data = property(__expr.Expr, __expr.expr_data)
 BaseMatrix.T = property(__expr.TransExpr)
 BaseMatrix.__mul__ = __expr.expr_mul
 BaseMatrix.__rmul__ = __expr.expr_rmul
+BaseMatrix.__neg__ = __expr.expr_neg
 
 Timing = timing.Timing
 
