@@ -1904,7 +1904,7 @@ namespace ngla
              sizes.SetSize(mata_ci.Size());
              for (int j : Range(mata_ci))
                {
-                 ptrs[j] = &matb.GetRowIndices(mata_ci[j])[0];
+                 ptrs[j] = matb.GetRowIndices(mata_ci[j]).Addr(0);
                  sizes[j] = matb.GetRowIndices(mata_ci[j]).Size();
                }
              int cnti = 0;
@@ -1933,7 +1933,7 @@ namespace ngla
              sizes.SetSize(mata_ci.Size());
              for (int j : Range(mata_ci))
                {
-                 ptrs[j] = &matb.GetRowIndices(mata_ci[j])[0];
+                 ptrs[j] = matb.GetRowIndices(mata_ci[j]).Addr(0);
                  sizes[j] = matb.GetRowIndices(mata_ci[j]).Size();
                }
              int cnti = 0;
