@@ -6,6 +6,7 @@
 #pragma clang diagnostic push
 // #pragma clang diagnostic ignored "-W#pragma-messages"
 #pragma clang diagnostic ignored "-Wunused-local-typedefs"
+#pragma clang diagnostic ignored "-Wparentheses-equality"
 #endif
 
 #include <pybind11/pybind11.h>
