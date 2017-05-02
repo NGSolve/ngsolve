@@ -346,6 +346,9 @@ namespace ngla
   };
 
 
+  AutoVector CreateBaseVector(size_t size, bool is_complex, int es);
+
+  
   class AutoVector : public BaseVector
   {
     shared_ptr<BaseVector> vec;

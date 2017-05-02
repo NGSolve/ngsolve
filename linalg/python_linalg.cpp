@@ -3,23 +3,7 @@
 #include "../ngstd/python_ngstd.hpp"
 using namespace ngla;
 
-shared_ptr<BaseVector> CreateBaseVector(int size, bool is_complex, int es)
-{
-  shared_ptr<BaseVector> res;
-  if(es > 1)
-    {
-      if(is_complex)
-        res = make_shared<S_BaseVectorPtr<Complex>> (size, es);
-      else
-        res = make_shared<S_BaseVectorPtr<double>> (size, es);
-    }
 
-  if (is_complex)
-    res = make_shared<VVector<Complex>> (size);
-  else
-    res = make_shared<VVector<double>> (size);
-  return res;
-}
 
 void NGS_DLL_HEADER ExportNgla(py::module &m) {
   // cout << IM(1) << "exporting linalg" << endl;
@@ -79,8 +63,11 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     typedef BaseVector PyBaseVector;
     typedef BaseMatrix PyBaseMatrix;
 
-  m.def("CreateVVector", CreateBaseVector, "size"_a, "complex"_a=false, "entrysize"_a=1);
-
+    m.def("CreateVVector",
+          [] (size_t s, bool is_complex, int es) 
+          { return shared_ptr<BaseVector> (CreateBaseVector(s,is_complex, es)); },
+          "size"_a, "complex"_a=false, "entrysize"_a=1);
+    
   py::class_<BaseVector, shared_ptr<BaseVector>>(m, "BaseVector",
         py::dynamic_attr() // add dynamic attributes
       )
@@ -183,6 +170,8 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
       {
           size_t start, step, n;
           InitSlice( inds, self.Size(), start, step, n );
+          if (step != 1)
+            throw Exception ("slices with non-unit distance not allowed");
           return shared_ptr<BaseVector>(self.Range(start, start+n));
       } )
     .def("__setitem__", [](PyBaseVector & self,  int ind, double d )
@@ -197,18 +186,24 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
       {
           size_t start, step, n;
           InitSlice( inds, self.Size(), start, step, n );
+          if (step != 1)
+            throw Exception ("slices with non-unit distance not allowed");          
           self.Range(start,start+n) = d;
       } )
     .def("__setitem__", [](PyBaseVector & self,  py::slice inds, Complex z )
       {
           size_t start, step, n;
           InitSlice( inds, self.Size(), start, step, n );
+          if (step != 1)
+            throw Exception ("slices with non-unit distance not allowed");          
           self.Range(start,start+n) = z;
       } )
     .def("__setitem__", [](PyBaseVector & self, py::slice inds, PyWrapper<BaseVector> & v )
       {
         size_t start, step, n;
         InitSlice( inds, self.Size(), start, step, n );
+        if (step != 1)
+          throw Exception ("slices with non-unit distance not allowed");        
         self.Range(start, start+n) = *v;
       } )
     .def("__setitem__", [](PyBaseVector & self,  int ind, FlatVector<double> & v )

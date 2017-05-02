@@ -266,6 +266,23 @@ namespace ngla
       }
   */
 
+  AutoVector CreateBaseVector(size_t size, bool is_complex, int es)
+  {
+    shared_ptr<BaseVector> res;
+    if(es > 1)
+      {
+        if(is_complex)
+          res = make_shared<S_BaseVectorPtr<Complex>> (size, es);
+        else
+          res = make_shared<S_BaseVectorPtr<double>> (size, es);
+      }
+    
+    if (is_complex)
+      res = make_shared<VVector<Complex>> (size);
+    else
+      res = make_shared<VVector<double>> (size);
+    return res;
+  }
 
 
   template<>
