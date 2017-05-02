@@ -475,9 +475,9 @@ namespace ngstd
 	  if (mynode_data.participate.compare_exchange_strong (oldpart, 0))
 	    {
               // mynode_data.participate_exit = 0;
-	      complete[mynode] = jobnr; 
 	      if (mynode != 0)
 		mynode_data.start_cnt = 0;
+	      complete[mynode] = jobnr; 
 	    }	      
 	}
       }
