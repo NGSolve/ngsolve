@@ -23,7 +23,7 @@ interface to Python is inspired by the `FEniCS project <https://fenicsproject.or
   
   whetting_the_appetite/elasticity.rst
 
-`Installation instructions using binaries <https://ngsolve.org/downloads>`_ for Windows/Mac/Linux
+.. * `Installation instructions using binaries <https://ngsolve.org/downloads>`_ for Windows/Mac/Linux
 
 `Tutorial on Using NGSpy <http://web.pdx.edu/%7Egjay/teaching/mth610_2015.2/TutorialNGSpy.html>`_ by Jay Gopalakrishnan  
 
@@ -35,6 +35,12 @@ interface to Python is inspired by the `FEniCS project <https://fenicsproject.or
    install/install_sources.rst
    install/gettingstarted.rst
 
+
+.. toctree::
+  :maxdepth: 1
+  :caption: Central Concepts
+
+  central/meshes.rst
 
 .. toctree::
   :maxdepth: 1
@@ -61,6 +67,8 @@ interface to Python is inspired by the `FEniCS project <https://fenicsproject.or
   how_to/periodic.rst
 
   how_to/symbolic_integrators.rst
+
+  how_to/howto_definedon.rst
 
   how_to/pml.rst
 
