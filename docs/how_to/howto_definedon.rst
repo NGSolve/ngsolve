@@ -35,7 +35,8 @@ If an integrator shall be defined only on a sub-domain, we can give the region t
 Why cannot we give just say:  definedon="inner" ? An integrator internally creates an array of flags specifying whether it is defined on a region, or not. The expression SymbolicFLI(.., definedon="inner") would have no information of the mesh, and could not generated this array of flags. Creating the region from the mesh provides the connection to the mesh object.
                 
 
-You find a complete example using sub-domains is here ( :download:`example<res_definedon/definedon.py>`) (Christopher pls help to fix link)
+You find a complete example using sub-domains is here (
+:download:`example</how_to/res_definedon/definedon.py>`)
                 
 .. literalinclude:: res_definedon/definedon.py
 
