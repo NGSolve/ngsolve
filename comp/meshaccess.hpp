@@ -724,6 +724,11 @@ namespace ngcomp
 
     /// returns vertex numbers of face
     void GetFacePNums (int fnr, Array<int> & pnums) const;
+    
+    auto GetFacePNums (size_t fnr) const
+    {
+      return ArrayObject (mesh.GetNode<2> (fnr).vertices);
+    }
     /// returns vertex numbers of edge
     void GetEdgePNums (int enr, int & pn1, int & pn2) const
     {
@@ -734,7 +739,13 @@ namespace ngcomp
     /// returns vertex numbers of edge
     void GetEdgePNums (int enr, Array<int> & pnums) const;
     /// returns vertex numbers of edge
-    auto GetEdgePNums (int enr) const -> decltype(ArrayObject(INT<2>()));
+    auto GetEdgePNums (size_t enr) const -> decltype(ArrayObject(INT<2>()))
+    {
+      int v2[2];
+      Ng_GetEdge_Vertices (enr+1, v2);
+      return ArrayObject (INT<2> (v2[0]-1, v2[1]-1));
+    }
+      
     /// returns all elements connected to an edge
     void GetEdgeElements (int enr, Array<int> & elnums) const;
     /// returns all elements connected to an edge

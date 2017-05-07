@@ -14,7 +14,7 @@ namespace ngcomp
      High Order Finite Element Space
   */
 
-  typedef size_t index_edge;
+  // typedef size_t index_edge;
 
   class NGS_DLL_HEADER H1HighOrderFESpace : public FESpace
   {

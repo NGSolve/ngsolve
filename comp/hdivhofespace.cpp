@@ -174,9 +174,9 @@ namespace ngcomp
       low_order_space -> Update(lh);
     
     // int nv = ma->GetNV();
-    int nel = ma->GetNE();
-    int nfa = ma->GetNFacets();
-    int dim = ma->GetDimension();
+    size_t nel = ma->GetNE();
+    size_t nfa = ma->GetNFacets();
+    size_t dim = ma->GetDimension();
        
     order_facet.SetSize(nfa);
     order_inner.SetSize(nel); 
@@ -185,12 +185,16 @@ namespace ngcomp
     boundary_facet.SetSize(nfa); 
    
     boundary_facet = false;
+    /*
     for (int i = 0; i < ma->GetNSE(); i++)
       {
 	Array<int> elfacets; 
 	ma->GetSElFacets (i,elfacets); 
 	boundary_facet[elfacets[0]] = true;
       }
+    */
+    for (auto el : ma->Elements(BND))
+      boundary_facet[el.Facets()] = true;
 
     // cout << " order hdiv " << order << endl; 
     // cout << " curl_order hdiv " << curl_order << endl; 
@@ -209,7 +213,7 @@ namespace ngcomp
     fine_facet = 0; //!!!! 
 
 
-    for (Ngs_Element el : ma->Elements(VOL))
+    for (auto el : ma->Elements(VOL))
       {
         if (!DefinedOn (el))
           {
@@ -223,7 +227,8 @@ namespace ngcomp
 	
 	// Array<int> elfacets; 
 	// ma->GetElFacets (el.Nr(), elfacets); 
-	auto elfacets = ma->GetElFacets (el);
+	// auto elfacets = ma->GetElFacets (el);
+        auto elfacets = el.Facets();
         
         fine_facet[elfacets] = true;
 	
@@ -294,7 +299,7 @@ namespace ngcomp
     if(uniform_order_inner > -1) order_inner = uniform_order_inner;
     if(uniform_order_facet > -1) order_facet = uniform_order_facet;
 
-    for(int i=0;i<nfa;i++) if(!fine_facet[i]) order_facet[i] = INT<2> (0,0); 
+    for (auto i : Range(nfa)) if (!fine_facet[i]) order_facet[i] = INT<2> (0,0); 
 
     // by SZ ... since order_inner_curl is not working yet for hdivhofe
     order_inner_curl = order_inner; 
@@ -318,7 +323,7 @@ namespace ngcomp
     size_t nfa = ma->GetNFacets();
     size_t nel = ma->GetNE();
     size_t dim = ma->GetDimension();
-    Array<int> pnums; 
+    // Array<int> pnums; 
      
     first_facet_dof.SetSize(nfa+1); 
     first_inner_dof.SetSize(nel+1); 
@@ -391,11 +396,12 @@ namespace ngcomp
             dc_pairs.SetSize (ma->GetNFacets());
             dc_pairs = INT<2> (-1,-1);
             
-            Array<int> fnums;
+            // Array<int> fnums;
             for (auto ei : ma->Elements(VOL))
               {
                 auto i = ei.Nr();
-                ma->GetElFacets (ei, fnums);
+                // ma->GetElFacets (ei, fnums);
+                auto fnums = ma->GetElFacets(ei);
 		int fid = first_inner_dof[i];
                 for (auto f : fnums)
 		  if (!boundary_facet[f])
@@ -418,7 +424,8 @@ namespace ngcomp
             if(fine_facet[i])
               {
                 INT<2> p = order_facet[i]; 
-                ma->GetFacePNums(i,pnums);
+                // ma->GetFacePNums(i,pnums);
+                auto pnums = ma->GetFacePNums(i);
                 switch(pnums.Size())
                   {
                   case 3: //Triangle
@@ -441,7 +448,7 @@ namespace ngcomp
           }
         first_facet_dof[nfa] = ndof;
 	 
-	Array<int> fnums;
+	// Array<int> fnums;
         for (size_t i = 0; i < nel; i++)
           {
             INT<3> p = order_inner[i];
@@ -457,7 +464,8 @@ namespace ngcomp
                   inci += pc[0]*(pc[0]+1)*(pc[0]-1)/3 + pc[0]*(pc[0]-1)/2; ;
                 if (highest_order_dc) 
 		  {
-		    ma->GetElFacets (i, fnums);	
+		    // ma->GetElFacets (i, fnums);
+                    auto fnums = ma->GetElFacets(i);
 		    for (int j = 0; j < fnums.Size(); j++)
 		      if (!boundary_facet[fnums[j]]) inci += p[0]+1;
 		  }
@@ -1098,70 +1106,64 @@ namespace ngcomp
 	    for(int i=0; i<ned; i++)
 	      if(fine_facet[i])
                 {
+                  /*
                   int pn1, pn2;
                   ma->GetEdgePNums ( i, pn1, pn2);
                   cnt[offset + pn1] += 1 + first_facet_dof[i+1] - first_facet_dof[i];
                   cnt[offset + pn2] += 1 + first_facet_dof[i+1] - first_facet_dof[i];
-		
+                  */
+                  auto pn = ma->GetEdgePNums(i);
+                  cnt[offset+pn[0]] += 1 + first_facet_dof[i+1] - first_facet_dof[i];
+                  cnt[offset+pn[1]] += 1 + first_facet_dof[i+1] - first_facet_dof[i];
                 }
 
 	    offset += nnv;
 	    // edges
-	    for(int i=0; i<ned; i++)
-	      if( fine_facet[i] )
-                {
-                  cnt[offset + i] += first_facet_dof[i+1] - first_facet_dof[i];;
-                }
+	    for (auto i : Range(ned))
+	      if (fine_facet[i])
+                cnt[offset+i] += first_facet_dof[i+1] - first_facet_dof[i];;
 	    offset += ned;
 
 	    // cells
-	    for(int i=0; i<nel; i++)
-	      {
-		cnt[offset + i] += first_inner_dof[i+1] - first_inner_dof[i];;
-	      }
-
+	    for (auto i : Range(nel))
+              cnt[offset+i] += first_inner_dof[i+1] - first_inner_dof[i];;
 	  }
 
 	else
 	  {
 	    // vertex blocks
-	    for(int i=0; i<nfa; i++)
+	    for(auto i : Range(nfa))
 	      if(fine_facet[i])
 		{
 		  Array<int> edges;
 		  ma->GetFaceEdges ( i, edges);
+                  /*
 		  for ( int j = 0; j < edges.Size(); j++ )
 		    cnt[offset + edges[j]] += 1 + first_facet_dof[i+1] - first_facet_dof[i];
-		  
+                  */
+                  for (auto e : edges)
+                    cnt[offset+e] += 1 + first_facet_dof[i+1] - first_facet_dof[i];
 		}
 	    
 	    offset += ned;
 	    // edges
-	    for(int i=0; i<nfa; i++)
-	      if( fine_facet[i] )
-		{
-		  cnt[offset + i] += first_facet_dof[i+1] - first_facet_dof[i];;
-		}
+	    for (auto i : Range(nfa))
+	      if (fine_facet[i])
+                cnt[offset+i] += first_facet_dof[i+1] - first_facet_dof[i];;
 	    offset += nfa;
 
 	    // cells
-	    for(int i=0; i<nel; i++)
-	      {
-		cnt[offset + i] += first_inner_dof[i+1] - first_inner_dof[i];;
-	      }
-	    
+	    for (auto i : Range(nel))
+              cnt[offset+i] += first_inner_dof[i+1] - first_inner_dof[i];;
 	  }
 	break;
       case 2:
 	if( dim == 2 )
-	  {
-	    cerr << "not implemented" << endl;
-	  }
-
+          cerr << "not implemented" << endl;
 	else
 	  {
-	    for(int i=0; i<nfa; i++)
-	      if( fine_facet[i] )
+	    for (auto i : Range(nfa))
+	      if (fine_facet[i])
 		cnt[i] += first_facet_dof[i+1] - first_facet_dof[i];
 	  }
       }
