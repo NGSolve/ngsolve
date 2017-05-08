@@ -35,9 +35,9 @@ namespace ngfem
   {
     for (int i = 0; i < 2*level; i++)
       ost << ' ';
-    ost << "coef " << GetName()
+    ost << "coef " << GetDescription() << ","
         << (IsComplex() ? " complex" : " real")
-        << " dim=" << Dimension()
+        << ", dim=" << Dimension()
         << endl;
 
     Array<CoefficientFunction*> input = InputCoefficientFunctions();
@@ -45,7 +45,7 @@ namespace ngfem
       input[i] -> PrintReportRec (ost, level+1);
   }
   
-  string CoefficientFunction :: GetName () const
+  string CoefficientFunction :: GetDescription () const
   {
     return typeid(*this).name();
   }    
@@ -4349,6 +4349,19 @@ public:
     typedef T_CoefficientFunction<CoordCoefficientFunction, CoefficientFunctionNoDerivative> BASE;
   public:
     CoordCoefficientFunction (int adir) : BASE(1, false), dir(adir) { ; }
+    virtual string GetDescription () const
+    {
+      string dirname;
+      switch (dir)
+        {
+        case 0: dirname = "x"; break;
+        case 1: dirname = "y"; break;
+        case 2: dirname = "z"; break;
+        default: dirname = ToString(dir);
+        }
+      return string("coordinate ")+dirname;
+    }
+
     using BASE::Evaluate;
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
     {

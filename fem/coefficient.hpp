@@ -246,7 +246,7 @@ namespace ngfem
     virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const;
     virtual void PrintReport (ostream & ost) const;
     virtual void PrintReportRec (ostream & ost, int level) const;
-    virtual string GetName () const;
+    virtual string GetDescription () const;
     
     virtual void TraverseTree (const function<void(CoefficientFunction&)> & func);
     virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
@@ -1123,7 +1123,10 @@ public:
     is_complex = c1->IsComplex() || c2->IsComplex();
     SetDimensions (c1->Dimensions());
   }
-
+  virtual string GetDescription () const
+  {
+    return string("binary operation '")+opname+"'";
+  }
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
     TraverseDimensions( c1->Dimensions(), [&](int ind, int i, int j) {
