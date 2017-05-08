@@ -306,10 +306,23 @@ namespace ngcomp
     int level = ma->GetNLevels()-1;
 
     ctofdof.SetSize(GetNDof());
-
+    
+    Array<bool> fine_edge(ma->GetNEdges());
+    fine_edge = false;
+    for (Ngs_Element el : ma->Elements(VOL))
+      {
+	if (!DefinedOn (el)) continue;
+	fine_edge[ma->GetElEdges(el)] = true;
+      }
+    for (Ngs_Element sel : ma->Elements(BND))
+      {
+	if (!DefinedOn (sel)) continue;
+	fine_edge[ma->GetElEdges(sel)] = true;
+      }
+      
     for (int edge = 0; edge < ma->GetNEdges(); edge++) 
       ctofdof[edge] = 
-	(FineLevelOfEdge(edge) == level) ? WIREBASKET_DOF : UNUSED_DOF; 
+	(FineLevelOfEdge(edge) == level && fine_edge[edge]) ? WIREBASKET_DOF : UNUSED_DOF; 
   }
 
 
