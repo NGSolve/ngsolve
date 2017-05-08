@@ -44,39 +44,37 @@ def MakeGeometry():
 mesh = Mesh(MakeGeometry().GenerateMesh (maxh=0.2))
 
 
-V = H1(mesh, order=3, dirichlet=[1])
+fes = H1(mesh, order=3, dirichlet=[1])
+u = fes.TrialFunction()
+v = fes.TestFunction()
 
 # one heat conductivity coefficient per sub-domain
 lam = CoefficientFunction([1, 1000, 10])
-a = BilinearForm(V, symmetric=False)
-a += Laplace(lam)
+a = BilinearForm(fes, symmetric=False)
+a += SymbolicBFI(lam*grad(u)*grad(v))
 
 
 # heat-source in sub-domain 3
-f = LinearForm(V)
-f += Source(CoefficientFunction([0, 0, 1]))
+f = LinearForm(fes)
+f += SymbolicLFI(CoefficientFunction([0, 0, 1])*v)
 
 c = Preconditioner(a, type="multigrid", flags= { "inverse" : "sparsecholesky" })
 
-u = GridFunction(V)
-Draw (u)
-# the boundary value problem to be solved on each level
-bvp = BVP(bf=a, lf=f, gf=u, pre=c)
-
+gfu = GridFunction(fes)
+Draw (gfu)
 
 # finite element space and gridfunction to represent
 # the heatflux:
 space_flux = HDiv(mesh, order=2)
 gf_flux = GridFunction(space_flux, "flux")
 
-
 def SolveBVP():
-    V.Update()
-    u.Update()
+    fes.Update()
+    gfu.Update()
     a.Assemble()
     f.Assemble()
-    bvp.Do()
-    # Draw (u)
+    inv = CGSolver(a.mat, c.mat)
+    gfu.vec.data = inv * f.vec
     Redraw (blocking=True)
 
 
@@ -87,7 +85,7 @@ def CalcError():
     space_flux.Update()
     gf_flux.Update()
 
-    flux = lam * u.Deriv()
+    flux = lam * grad(gfu)
     # interpolate finite element flux into H(div) space:
     gf_flux.Set (flux)
 
@@ -96,7 +94,7 @@ def CalcError():
     elerr = Integrate (err, mesh, VOL, element_wise=True)
 
     maxerr = max(elerr)
-    l.append ( (V.ndof, sqrt(sum(elerr)) ))
+    l.append ( (fes.ndof, sqrt(sum(elerr)) ))
     print ("maxerr = ", maxerr)
 
     for el in mesh.Elements():
@@ -104,7 +102,7 @@ def CalcError():
 
 
 with TaskManager():
-    while V.ndof < 100000:  
+    while fes.ndof < 100000:  
         SolveBVP()
         CalcError()
         mesh.Refine()
