@@ -350,7 +350,7 @@ namespace ngcomp
 
         first_facet_dof[nfa] = ndof;
       
-	Array<int> fnums;
+	// Array<int> fnums;
         // for (auto i : Range(nel))
         for (size_t i = 0; i < nel; i++)
           {
@@ -378,11 +378,13 @@ namespace ngcomp
 
 	    if (highest_order_dc)
 	      {
+                /*
 		ma->GetElFacets (ei, fnums);
                 for (auto f : fnums)
 		  if (!boundary_facet[f]) inci++;
-		// for (int j = 0; j < fnums.Size(); j++)
-                // if (!boundary_facet[fnums[j]]) inci++;
+                */
+                for (auto f : ma->GetElFacets(ei))
+		  if (!boundary_facet[f]) inci++;
 	      }
 
             first_inner_dof[i] = ndof;
