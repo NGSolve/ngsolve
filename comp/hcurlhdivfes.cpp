@@ -106,12 +106,16 @@ namespace ngcomp
     finelevelofedge.SetSize(ned);
     finelevelofedge.Range (oldned, ned) = -1;
 
-    for (int i = 0; i < ne; i++)
-      finelevelofedge[ma->GetElement(ElementId(VOL,i)).Edges()] = level-1;
-
-    for (int i = 0; i < nse; i++)
-      finelevelofedge[ma->GetElement(ElementId(BND,i)).Edges()] = level-1;
-
+    for (Ngs_Element el : ma->Elements(VOL))
+      {
+	if (!DefinedOn (el)) continue;
+	finelevelofedge[ma->GetElEdges(el)] = level-1;
+      }
+    for (Ngs_Element sel : ma->Elements(BND))
+      {
+    	if (!DefinedOn (sel)) continue;
+	finelevelofedge[ma->GetElEdges(sel)] = level-1;
+      }
 
     // generate edge points, and temporary hash table
     ClosedHashTable<INT<2>, int> node2edge(5*ned+10);
@@ -306,7 +310,7 @@ namespace ngcomp
     int level = ma->GetNLevels()-1;
 
     ctofdof.SetSize(GetNDof());
-
+    
     for (int edge = 0; edge < ma->GetNEdges(); edge++) 
       ctofdof[edge] = 
 	(FineLevelOfEdge(edge) == level) ? WIREBASKET_DOF : UNUSED_DOF; 
