@@ -854,7 +854,14 @@ lot of new non-zero entries in the matrix!\n" << endl;
         if (ma->GetDimension() == 3)
           GetFaceDofNrs(ni.GetNr(), dnums); 
         else
-          GetInnerDofNrs(ni.GetNr(), dnums); 
+          {
+            // have to convert from face# to element# on refined meshes
+            auto surfel = ma->GetNode<2>(ni.GetNr()).surface_el;
+            if (surfel >= 0)
+              GetInnerDofNrs(surfel, dnums);
+            else
+              dnums.SetSize0();
+          }
         break;
       case NT_CELL:   GetInnerDofNrs(ni.GetNr(), dnums); break;
       case NT_ELEMENT: case NT_FACET:
