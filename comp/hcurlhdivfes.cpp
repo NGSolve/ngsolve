@@ -82,11 +82,9 @@ namespace ngcomp
   
   void NedelecFESpace :: Update(LocalHeap & lh)
   {
-    int ne = ma->GetNE();
-    int nse = ma->GetNSE();
-    int ned = ma->GetNEdges();
-    
-    Array<int> pnums, enums;
+    size_t ne = ma->GetNE();
+    size_t nse = ma->GetNSE();
+    size_t ned = ma->GetNEdges();
     
     int level = ma->GetNLevels();
     
@@ -94,51 +92,46 @@ namespace ngcomp
       return;
     
     nelevel.Append (ned);
-    
 
-    for(int i=0; i<specialelements.Size(); i++)
+    for (int i=0; i<specialelements.Size(); i++)
       delete specialelements[i];
     specialelements.DeleteAll();
 
     // new implementation of finelevelofedge - array:
     
-    int oldned = finelevelofedge.Size();
+    size_t oldned = finelevelofedge.Size();
     finelevelofedge.SetSize(ned);
     finelevelofedge.Range (oldned, ned) = -1;
 
     for (Ngs_Element el : ma->Elements(VOL))
-      {
-	if (!DefinedOn (el)) continue;
-	finelevelofedge[ma->GetElEdges(el)] = level-1;
-      }
-    for (Ngs_Element sel : ma->Elements(BND))
-      {
-    	if (!DefinedOn (sel)) continue;
-	finelevelofedge[ma->GetElEdges(sel)] = level-1;
-      }
+      if (DefinedOn (el)) 
+        finelevelofedge[el.Edges()] = level-1;
+    
+    for (Ngs_Element el : ma->Elements(BND))
+      if (DefinedOn (el)) 
+	finelevelofedge[el.Edges()] = level-1;
 
     // generate edge points, and temporary hash table
     ClosedHashTable<INT<2>, int> node2edge(5*ned+10);
 
-    edgepoints.SetSize(0);
+    edgepoints.SetSize0();
     
-    for (int i = 0; i < ned; i++)
+    for (size_t i = 0; i < ned; i++)
       {
 	INT<2> edge;
-	ma->GetEdgePNums (i, edge[0], edge[1]);
+        ma->GetEdgePNums (i, edge[0], edge[1]);
 	int edgedir = (edge[0] > edge[1]);
 	if (edgedir) Swap (edge[0], edge[1]);
 	node2edge.Set (edge, i);
 	edgepoints.Append (edge);
       }
 
-
     
     // build edge hierarchy:
     parentedges.SetSize (ned);
     parentedges = INT<2> (-1,-1);
 
-    for (int i = 0; i < ned; i++)
+    for (size_t i = 0; i < ned; i++)
       {
 	INT<2> i2 (edgepoints[i][0], edgepoints[i][1]);
 	int pa1[2], pa2[2];
