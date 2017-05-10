@@ -856,6 +856,13 @@ namespace ngcomp
       Ng_GetParentNodes (pi+1, parents);
       parents[0]--; parents[1]--; 
     }
+    INT<2> GetParentNodes (int pi) const
+    {
+      INT<2,int> parents;
+      Ng_GetParentNodes (pi+1, &parents[0]);
+      parents[0]--; parents[1]--;
+      return parents;
+    }
     /// number of parent element on next coarser mesh
     int GetParentElement (int ei) const
     { return Ng_GetParentElement (ei+1)-1; }
