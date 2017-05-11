@@ -23,7 +23,8 @@ namespace ngla
 
     auto me = FVDouble();
     t.AddFlops (me.Size());
-    
+
+    /*
     atomic<double> sum(0.0);
     ParallelForRange ( me.Range(),
                        [&] (IntRange r) 
@@ -31,6 +32,15 @@ namespace ngla
                          double mysum = ngbla::L2Norm2 (me.Range(r));
                          sum += mysum;
                        });
+    */
+    double parts[16];
+    ParallelJob ([me,&parts] (TaskInfo ti)
+                 {
+                   auto r = ::Range(me).Split (ti.task_nr, ti.ntasks);
+                   parts[ti.task_nr] = ngbla::L2Norm2 (me.Range(r));
+                 }, 16);
+    double sum = 0;
+    for (double part : parts) sum += part;
     return sqrt(double(sum));
   }
 
@@ -205,6 +215,17 @@ namespace ngla
       ist >> fv(i);
   }
 
+  size_t BaseVector :: CheckSum () const
+  {
+    size_t sum = 0;
+    auto fv = FVDouble();
+    for (auto i : ::Range(fv))
+      {
+        double val = fv(i);
+        sum += *reinterpret_cast<size_t*> (&val);
+      }
+    return sum;
+  }
 
   void BaseVector :: MemoryUsage (Array<MemoryUsageStruct*> & mu) const
   { 
@@ -615,6 +636,7 @@ namespace ngla
     auto you = v2.FVDouble();
 	
     t.AddFlops (me.Size());
+    /*
     atomic<double> scal(0);
 
     ParallelForRange (ngstd::Range(me.Size()),
@@ -623,7 +645,15 @@ namespace ngla
                         double myscal = ngbla::InnerProduct (me.Range(r), you.Range(r));
                         scal += myscal;
                       } );
-	
+    */
+    double parts[16];
+    ParallelJob ([me,you,&parts] (TaskInfo ti)
+                 {
+                   auto r = ::Range(me).Split (ti.task_nr, ti.ntasks);
+                   parts[ti.task_nr] =  ngbla::InnerProduct (me.Range(r), you.Range(r));
+                 }, 16);
+    double scal = 0;
+    for (double part : parts) scal += part;
     return scal;
   }
 
