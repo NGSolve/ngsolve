@@ -14,6 +14,7 @@
 #endif
 
 
+extern PythonEnvironment pyenv;
 
 namespace ngcomp
 {
