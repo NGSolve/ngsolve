@@ -128,8 +128,6 @@ public:
 
 
 
-extern PythonEnvironment pyenv;
-
 typedef py::gil_scoped_acquire AcquireGIL; 
 typedef py::gil_scoped_release ReleaseGIL; 
 
@@ -243,42 +241,6 @@ void PyDefVector( py::module &m, TCLASS &c )
     );
     PyDefBracketOperator<T, TELEM>(m,c);
 }
-
-//////////////////////////////////////////////////////////////////////
-// Enable numeric expressions for matrix class
-inline void PyEnableMatExpr(const char *class_name) {
-  string cn(class_name);
-  pyenv.exec(cn + ".expr = property(lambda self: MatExpr(self))");
-  pyenv.exec(cn + ".data = property(lambda self: None, lambda self, a: Expr(a).AssignTo(self.expr))");
-  pyenv.exec(cn + ".__add__ = lambda self,y: self.expr+Expr(y)");
-  pyenv.exec(cn + ".__rmul__ = lambda self,y: y*self.expr ");
-  pyenv.exec(cn + ".__mul__ = lambda self,y: MatVecExpr(self.expr, Expr(y))");
-}
-
-//////////////////////////////////////////////////////////////////////
-// Enable numeric expressions for vector class
-inline void PyEnableVecExpr(const char *class_name) {
-
-  string cn(class_name);
-  pyenv.exec(cn + ".expr = property(lambda self: VecExpr(self))");
-  pyenv.exec(cn + ".data = property(lambda self: None, lambda self, a: Expr(a).AssignTo(self.expr))");
-  pyenv.exec(cn + ".__add__ = lambda self,y: self.expr+Expr(y)");
-  pyenv.exec(cn + ".__rmul__ = lambda self,y: y*self.expr ");
-  pyenv.exec(cn + ".__getitem__ = GetSlice");
-  pyenv.exec(cn + ".__setitem__ = SetSlice");
-}
-
-//////////////////////////////////////////////////////////////////////
-// Enable Slicing support
-inline void PyEnableSlicing(const char *class_name) {
-
-  string cn(class_name);
-  pyenv.exec(cn + ".__getitem__ = GetSlice");
-  pyenv.exec(cn + ".__setitem__ = SetSlice");
-}
-
-
-
 
 
 //////////////////////////////////////////////////////////////////
