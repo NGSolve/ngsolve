@@ -212,7 +212,7 @@ namespace ngstd
   
   template <typename TFUNC>
   INLINE void ParallelJob (TFUNC f, 
-                           int antasks = task_manager ? task_manager->GetNumThreads() : 0)
+                           int antasks = task_manager ? task_manager->GetNumThreads() : 1)
   {
     if (task_manager)
 
@@ -222,10 +222,12 @@ namespace ngstd
       
       {
         TaskInfo ti;
-        ti.task_nr = 0; ti.ntasks = 1;
+        // ti.task_nr = 0; ti.ntasks = 1;
+        ti.ntasks = antasks;
         ti.thread_nr = 0; ti.nthreads = 1;
         ti.node_nr = 0; ti.nnodes = 1;
-        f(ti);
+        for (ti.task_nr = 0; ti.task_nr < antasks; ti.task_nr++)
+          f(ti);
       }
   }
 

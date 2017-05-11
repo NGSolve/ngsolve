@@ -430,7 +430,8 @@ namespace ngla
 	if (!bs) 
 	  {
 	    invdiag[i] = 0;
-	    return; // continue;
+	    // return;
+            continue;
 	  }
 	
         FlatMatrix<TM> & blockmat = invdiag[i];
@@ -616,7 +617,9 @@ namespace ngla
 
         Vector<TVX> hxmax(maxbs);
         
-        for (auto i : Range (*blocktable))
+        // for (auto i : Range (*blocktable))
+        for (int c : Range(block_coloring))
+          for (auto i : block_coloring[c])
           {
             FlatArray<int> ind = (*blocktable)[i];
             if (!ind.Size()) continue;
@@ -682,7 +685,9 @@ namespace ngla
         Vector<TVX> hxmax(maxbs);
         Vector<TVX> hymax(maxbs);
         
-        for (auto i : Range (*blocktable))
+        // for (auto i : Range (*blocktable))
+        for (int c : Range(block_coloring))
+          for (auto i : block_coloring[c])
           {
             int bs = (*blocktable)[i].Size();
             if (!bs) continue;
@@ -756,7 +761,9 @@ namespace ngla
         Vector<TVX> hymax(maxbs);
         
         for (int k = 0; k < steps; k++)
-          for (int i = 0; i < blocktable->Size(); i++)
+          for (int c : Range(block_coloring))
+            for (auto i : block_coloring[c])
+            // for (int i = 0; i < blocktable->Size(); i++)
             {
               int bs = (*blocktable)[i].Size();
               if (!bs) continue;
@@ -837,7 +844,9 @@ namespace ngla
         Vector<TVX> hymax(maxbs);
         
         for (int k = 0; k < steps; k++)
-          for (int i = blocktable->Size()-1; i >= 0; i--)
+          for (int c = block_coloring.Size()-1; c >=0; c--)           
+            for (auto i : block_coloring[c])
+              // for (int i = blocktable->Size()-1; i >= 0; i--)
             {
               int bs = (*blocktable)[i].Size();
               if (!bs) continue;
