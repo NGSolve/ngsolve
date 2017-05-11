@@ -241,7 +241,7 @@ namespace ngla
     virtual void LoadText(istream & ist);
 
     virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
-
+    virtual size_t CheckSum () const;
     // 
     // virtual shared_ptr<BaseVector> CreateVector () const = 0;
     virtual AutoVector CreateVector () const = 0;
