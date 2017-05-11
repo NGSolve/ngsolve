@@ -729,7 +729,7 @@ namespace ngstd
       // RangeCheck (i);
 #endif
 
-      data[i] = data[size-1];
+      data[i] = std::move(data[size-1]);
       size--;
     }
 
