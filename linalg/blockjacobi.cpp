@@ -450,7 +450,7 @@ namespace ngla
     static Timer tcol("BlockJacobi-coloring");
     tcol.Start();
 
-    int nblocks = blocktable->Size();
+    size_t nblocks = blocktable->Size();
     Array<int> coloring(nblocks);
     coloring = -1;
     /*
@@ -489,7 +489,7 @@ namespace ngla
     int maxcolor = 0;
     int basecol = 0;
     Array<unsigned int> mask(mat.Width());
-    int found = 0;
+    size_t found = 0;
 
     do
       {
@@ -529,8 +529,8 @@ namespace ngla
 
     TableCreator<int> creator(maxcolor+1);
     for ( ; !creator.Done(); creator++)
-      for (int i=0; i<nblocks; i++)
-          creator.Add(coloring[i],i);
+      for (size_t i = 0; i < nblocks; i++)
+          creator.Add (coloring[i], i);
     block_coloring = creator.MoveTable();
 
     cout << " using " << maxcolor+1 << " colors" << endl;
@@ -542,13 +542,17 @@ namespace ngla
     for (auto c : Range (block_coloring))
       {
         color_balance[c].Calc (block_coloring[c].Size(),
-                               [&] (int bi)
+                               [&] (size_t bi)
                                {
-                                 int blocknr = block_coloring[c][bi];
-                                 FlatArray<int> block = (*blocktable)[blocknr];
                                  int costs = 0;
+                                 size_t blocknr = block_coloring[c][bi];
+                                 /*
+                                 FlatArray<int> block = (*blocktable)[blocknr];
                                  for (int i=0; i<block.Size(); i++)
                                    costs += mat.GetRowIndices(block[i]).Size();
+                                 */
+                                 for (auto d : (*blocktable)[blocknr])
+                                   costs += mat.GetRowIndices(d).Size();
                                  return costs;
                                });
 
@@ -580,37 +584,36 @@ namespace ngla
 
 
 
-    if (task_manager)
+    // if (task_manager)
       
-      for (int c = 0; c < block_coloring.Size(); c++)
-        {
-
-          ParallelForRange (color_balance[c], 
-                            [&] (IntRange r) 
-                            {
-                              Vector<TVX> hxmax(maxbs);
-                              Vector<TVX> hymax(maxbs);
-
-                              for (int i : block_coloring[c].Range(r))
-                                {
-                                  int bs = (*blocktable)[i].Size();
-                                  if (!bs) continue;
-                                  
-                                  FlatVector<TVX> hx = hxmax.Range(0,bs); 
-                                  FlatVector<TVX> hy = hymax.Range(0,bs); 
-                                  
-                                  for (int j = 0; j < bs; j++)
-                                    hx(j) = fx((*blocktable)[i][j]);
-                                  
-                                  hy = invdiag[i] * hx;
-                                  
-                                  for (int j = 0; j < bs; j++)
-                                    fy((*blocktable)[i][j]) += s * hy(j);
-                                }
-                            });
-        }
-
-
+    for (int c : Range(block_coloring))        
+      {
+        ParallelForRange
+          (color_balance[c],  [&] (IntRange r) 
+           {
+             Vector<TVX> hxmax(maxbs);
+             Vector<TVX> hymax(maxbs);
+             
+             for (int i : block_coloring[c].Range(r))
+               {
+                 int bs = (*blocktable)[i].Size();
+                 if (!bs) continue;
+                 
+                 FlatVector<TVX> hx = hxmax.Range(0,bs); 
+                 FlatVector<TVX> hy = hymax.Range(0,bs); 
+                 
+                 for (int j = 0; j < bs; j++)
+                   hx(j) = fx((*blocktable)[i][j]);
+                 
+                 hy = invdiag[i] * hx;
+                 
+                 for (int j = 0; j < bs; j++)
+                   fy((*blocktable)[i][j]) += s * hy(j);
+               }
+           });
+      }
+    
+    /*
     else
 
       {
@@ -630,6 +633,7 @@ namespace ngla
             fy(ind) += invdiag[i] * hx;
           }
       }
+    */
   }
 
 
@@ -646,38 +650,39 @@ namespace ngla
 
 
 
-    if (task_manager)
-      
-      for (int c = 0; c < block_coloring.Size(); c++)
-        {
-          ParallelForRange (color_balance[c], 
-                            [&] (IntRange r) 
-                            {
-                              Vector<TVX> hxmax(maxbs);
-                              Vector<TVX> hymax(maxbs);
+    // if (task_manager)
 
-                              FlatArray<int> blocks = block_coloring[c];
-                              for (int ii : r) 
-                                {
-                                  int i = blocks[ii];
-                                  int bs = (*blocktable)[i].Size();
-                                  if (!bs) continue;
-                                  
-                                  FlatVector<TVX> hx = hxmax.Range(0,bs); 
-                                  FlatVector<TVX> hy = hymax.Range(0,bs); 
-                                  
-                                  for (int j = 0; j < bs; j++)
-                                    hx(j) = fx((*blocktable)[i][j]);
-                                  
-                                  hy = Trans(invdiag[i]) * hx;
-                                  
-                                  for (int j = 0; j < bs; j++)
-                                    fy((*blocktable)[i][j]) += s * hy(j);
-                                }
-                            });
-        }
-
-
+    for (int c = 0; c < block_coloring.Size(); c++)
+      {
+        ParallelForRange
+          (color_balance[c], [&] (IntRange r) 
+           {
+             Vector<TVX> hxmax(maxbs);
+             Vector<TVX> hymax(maxbs);
+             
+             FlatArray<int> blocks = block_coloring[c];
+             for (auto ii : r) 
+               {
+                 size_t i = blocks[ii];
+                 auto block = (*blocktable)[i];
+                 size_t bs = block.Size();
+                 if (!bs) continue;
+                 
+                 FlatVector<TVX> hx = hxmax.Range(0,bs); 
+                 FlatVector<TVX> hy = hymax.Range(0,bs); 
+                 
+                 for (size_t j = 0; j < bs; j++)
+                   hx(j) = fx(block[j]);
+                 
+                 hy = Trans(invdiag[i]) * hx;
+                 
+                 for (size_t j = 0; j < bs; j++)
+                   fy(block[j]) += s * hy(j);
+               }
+           });
+      }
+    
+    /*
     else
 
       {
@@ -704,6 +709,7 @@ namespace ngla
               fy((*blocktable)[i][j]) += s * hy(j);
           }
       }
+    */
   }
 
 
@@ -721,39 +727,39 @@ namespace ngla
     FlatVector<TVX> fx = x.FV<TVX> ();
 
 
-    if (task_manager)
-      
-      for (int k = 0; k < steps; k++)
-	for (int c = 0; c < block_coloring.Size(); c++)
-	  {
-            
-            ParallelForRange (color_balance[c], [&] (IntRange r)
-                              {
-                                Vector<TVX> hxmax(maxbs);
-                                Vector<TVX> hymax(maxbs);
+    // if (task_manager)
+    for (int k = 0; k < steps; k++)
+      for (int c : Range(block_coloring))              
+        {
 
-                                for (int i : block_coloring[c].Range(r))
-                                  {
-                                    int bs = (*blocktable)[i].Size();
-                                    if (!bs) continue;
-                                    
-                                    FlatVector<TVX> hx = hxmax.Range(0,bs); // (bs, hxmax.Addr(0));
-                                    FlatVector<TVX> hy = hymax.Range(0,bs); // (bs, hymax.Addr(0));
-                                    
-                                    for (int j = 0; j < bs; j++)
-                                      {
-                                        int jj = (*blocktable)[i][j];
-                                        hx(j) = fb(jj) - mat.RowTimesVector (jj, fx);
-                                      }
-                                    
-                                    hy = (invdiag[i]) * hx;
-                                    
-                                    for (int j = 0; j < bs; j++)
-                                      fx((*blocktable)[i][j]) += hy(j);
-                                  }
-
-                              });
-          }
+          ParallelForRange
+            (color_balance[c], [&] (IntRange r)
+             {
+               VectorMem<100,TVX> hxmax(maxbs);
+               VectorMem<100,TVX> hymax(maxbs);
+               
+               for (size_t i : block_coloring[c].Range(r))
+                 {
+                   FlatArray<int> block = (*blocktable)[i];
+                   size_t bs = block.Size();
+                   if (!bs) continue;
+                   
+                   FlatVector<TVX> hx = hxmax.Range(0,bs);
+                   FlatVector<TVX> hy = hymax.Range(0,bs);
+                   
+                   for (size_t j = 0; j < bs; j++)
+                     {
+                       auto jj = block[j];
+                       hx(j) = fb(jj) - mat.RowTimesVector (jj, fx);
+                     }
+                   
+                   hy = (invdiag[i]) * hx;
+                   fx(block) += hy;
+                 }
+               
+             });
+        }
+    /*
     else
       
       {
@@ -783,6 +789,7 @@ namespace ngla
                 fx((*blocktable)[i][j]) += hy(j);
             }
       }
+    */
   }
   
 
@@ -801,41 +808,39 @@ namespace ngla
     FlatVector<TVX> fx = x.FV<TVX> ();
 
 
-    if (task_manager)
-      
+    // if (task_manager)
 
-      for (int k = 0; k < steps; k++)
-        for (int c = block_coloring.Size()-1; c >=0; c--) 
-	  {
-            
-            ParallelForRange (color_balance[c], [&] (IntRange r)
-                              {
-                                Vector<TVX> hxmax(maxbs);
-                                Vector<TVX> hymax(maxbs);
-
-                                for (int i : block_coloring[c].Range(r))
-                                  {
-                                    int bs = (*blocktable)[i].Size();
-                                    if (!bs) continue;
-                                    
-                                    FlatVector<TVX> hx = hxmax.Range(0,bs); 
-                                    FlatVector<TVX> hy = hymax.Range(0,bs); 
-                                    
-                                    for (int j = 0; j < bs; j++)
-                                      {
-                                        int jj = (*blocktable)[i][j];
-                                        hx(j) = fb(jj) - mat.RowTimesVector (jj, fx);
-                                      }
-                                    
-                                    hy = (invdiag[i]) * hx;
-                                    
-                                    for (int j = 0; j < bs; j++)
-                                      fx((*blocktable)[i][j]) += hy(j);
-                                  }
-
-                              });
-          }
-
+    for (int k = 0; k < steps; k++)
+      for (int c = block_coloring.Size()-1; c >=0; c--) 
+        {
+          
+          ParallelForRange
+            (color_balance[c], [&] (IntRange r)
+             {
+               VectorMem<100,TVX> hxmax(maxbs);
+               VectorMem<100,TVX> hymax(maxbs);
+               
+               for (size_t i : block_coloring[c].Range(r))
+                 {
+                   FlatArray<int> block = (*blocktable)[i];
+                   size_t bs = block.Size();
+                   if (!bs) continue;
+                   
+                   FlatVector<TVX> hx = hxmax.Range(0,bs); 
+                   FlatVector<TVX> hy = hymax.Range(0,bs); 
+                   
+                   for (size_t j = 0; j < bs; j++)
+                     {
+                       auto jj = block[j];
+                       hx(j) = fb(jj) - mat.RowTimesVector (jj, fx);
+                     }
+                   
+                   hy = (invdiag[i]) * hx;
+                   fx(block) += hy;
+                 }
+             });
+        }
+    /*
     else
       
 
@@ -866,6 +871,7 @@ namespace ngla
                 fx((*blocktable)[i][j]) += hy(j);
             }  
       }
+    */
 
   }
 
