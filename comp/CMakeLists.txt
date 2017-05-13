@@ -21,7 +21,7 @@ add_library( ngcomp ${NGS_LIB_TYPE}
         )
 
 if(NOT WIN32)
-    target_link_libraries (ngcomp interface ngfem ngla ngbla ngstd gui ${MPI_CXX_LIBRARIES} ${NETGEN_PYTHON_LIBRARIES} ${LAPACK_LIBRARIES} ${HYPRE_LIBRARIES})
+    target_link_libraries (ngcomp interface ngfem ngla ngbla ngstd ${MPI_CXX_LIBRARIES} ${NETGEN_PYTHON_LIBRARIES} ${LAPACK_LIBRARIES} ${HYPRE_LIBRARIES})
     install( TARGETS ngcomp ${ngs_install_dir} )
 endif(NOT WIN32)
 
