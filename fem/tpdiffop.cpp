@@ -13,17 +13,19 @@ namespace ngfem
     const ElementTransformation * trafo = &(ip.GetTransformation());
     DimMappedIntegrationPoint<1> miphelp(iphelp(0), *trafo);
     if(prolongateto == 0)
-      if(dimx == 1)
       {
-        ip.GetPoint()[0] = ip.GetPoint()[1];
-        if(dimy == 2)
-        {
-          ip.GetPoint()[1] = ip.GetPoint()[2];
-          ip.GetPoint()[2] = 0.0;
-        }
+        if(dimx == 1)
+          {
+            ip.GetPoint()[0] = ip.GetPoint()[1];
+            if(dimy == 2)
+              {
+                ip.GetPoint()[1] = ip.GetPoint()[2];
+                ip.GetPoint()[2] = 0.0;
+              }
+          }
+        else if(dimx == 2)
+          ip.GetPoint()[0] = ip.GetPoint()[2];
       }
-      else if(dimx == 2)
-        ip.GetPoint()[0] = ip.GetPoint()[2];  
     return coef->Evaluate(ip);
   }
 
