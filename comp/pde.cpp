@@ -1,6 +1,7 @@
 #include <solve.hpp>
 
 #ifdef TCL
+extern "C" void Ng_TclCmd(string);
 #include <tcl.h>
 #if TCL_MAJOR_VERSION==8 && TCL_MINOR_VERSION>=4
 #define tcl_const const
@@ -1425,8 +1426,9 @@ namespace ngcomp
   void PDE :: Tcl_Eval (string str)
   {
 #ifdef TCL
-    if (!tcl_interpreter) return;
-    ::Tcl_Eval (tcl_interpreter, str.c_str());
+    Ng_TclCmd(str);
+//     if (!tcl_interpreter) return;
+//     ::Tcl_Eval (tcl_interpreter, str.c_str());
 #else
     cout << "sorry, no Tcl" << endl;
 #endif
