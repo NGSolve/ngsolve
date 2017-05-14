@@ -634,7 +634,7 @@ namespace ngcomp
           case ET_TET:     return T_GetFE<ET_TET> (elnr, false, alloc);
           case ET_PRISM:   return T_GetFE<ET_PRISM> (elnr, false, alloc);
             // case ET_PYRAMID: return T_GetFE<ET_PYRAMID> (elnr, false, alloc);
-            // case ET_HEX:     return T_GetFE<ET_HEX> (elnr, false, alloc);
+          case ET_HEX:     return T_GetFE<ET_HEX> (elnr, false, alloc);
             
           default:
             throw Exception ("illegal element in HDivHOFESpace::GetFE");
@@ -817,7 +817,7 @@ namespace ngcomp
       case ET_TET:     return T_GetFE<ET_TET> (elnr, true, lh);
       case ET_PRISM:   return T_GetFE<ET_PRISM> (elnr, true, lh);
         // case ET_PYRAMID: return T_GetFE<ET_PYRAMID> (elnr, false, lh);
-        // case ET_HEX:     return T_GetFE<ET_HEX> (elnr, true, lh);
+      case ET_HEX:     return T_GetFE<ET_HEX> (elnr, true, lh);
         
       default:
         throw Exception ("illegal element in HDivHOFeSpace::GetDivFE");
