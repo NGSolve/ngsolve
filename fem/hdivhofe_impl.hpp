@@ -49,6 +49,14 @@ namespace ngfem
     void T_CalcShape (Tx hx[], TFA & shape) const;
   };
 
+  template<>
+  class HDivHighOrderFE_Shape<ET_HEX> : public HDivHighOrderFE<ET_HEX>
+  {
+  public:
+    template<typename Tx, typename TFA>  
+    void T_CalcShape (Tx hx[], TFA & shape) const;
+  };
+
 
 
 
@@ -648,7 +656,79 @@ namespace ngfem
   }
 
 
+  template<typename Tx, typename TFA>  
+  void HDivHighOrderFE_Shape<ET_HEX> :: T_CalcShape (Tx hx[], TFA & shape) const
+  {
+    Tx x = hx[0], y = hx[1], z = hx[2];
 
+    Tx lami[8]={(1-x)*(1-y)*(1-z),x*(1-y)*(1-z),x*y*(1-z),(1-x)*y*(1-z),
+			 (1-x)*(1-y)*z,x*(1-y)*z,x*y*z,(1-x)*y*z};
+    Tx sigma[8]={(1-x)+(1-y)+(1-z),x+(1-y)+(1-z),x+y+(1-z),(1-x)+y+(1-z),
+			  (1-x)+(1-y)+z,x+(1-y)+z,x+y+z,(1-x)+y+z};
+
+    ArrayMem<Tx, 20> pol_xi(order+2),pol_eta(order+2),pol_zeta(order+2);
+
+    int ii = 6;
+
+    //Faces
+    const FACE * faces = ElementTopology::GetFaces (ET_HEX);
+    for (int i = 0; i < 6; i++)
+      {
+	INT<2> p = order_facet[i];
+
+	Tx lam_f(0);
+	for (int j = 0; j < 4; j++)
+	  lam_f += lami[faces[i][j]];
+        
+        int fmax = 0;
+	for (int j = 1; j < 4; j++)
+	  if (vnums[faces[i][j]] > vnums[faces[i][fmax]]) fmax = j;
+        
+        int f1 = (fmax+3)%4;
+        int f2 = (fmax+1)%4;
+        
+        if(vnums[faces[i][f2]] > vnums[faces[i][f1]]) swap(f1,f2); // fmax > f1 > f2;
+
+        auto xi  = sigma[faces[i][fmax]]-sigma[faces[i][f1]];
+        auto eta = sigma[faces[i][fmax]]-sigma[faces[i][f2]];
+        
+        // INT<4> f = GetFaceSort (i, vnums);	  
+	// Tx xi  = sigma[f[0]]-sigma[f[1]];
+	// Tx eta = sigma[f[0]]-sigma[f[3]];
+
+	IntLegNoBubble::EvalMult(p[0]+1, xi, 1-xi*xi, pol_xi);
+	IntLegNoBubble::EvalMult(p[1]+1,eta, 1-eta*eta, pol_eta);
+	shape[i] = wDu_Cross_Dv<3> (eta, xi, 0.25*lam_f);
+
+        for (int k = 0; k < p[0]; k++)
+          for (int l = 0; l < p[1]; l++, ii++)
+            shape[ii] = wDu_Cross_Dv<3> (pol_eta[l], pol_xi[k], 2*lam_f);
+        
+        //Typ 2
+        for (int k = 0; k < p[0]; k++)
+          shape[ii++] = wDu_Cross_Dv<3> (-eta, pol_xi[k], lam_f);
+        for (int k = 0; k < p[1]; k++)
+          shape[ii++] = wDu_Cross_Dv<3> (-xi, pol_eta[k], lam_f);
+      }
+
+    LegendrePolynomial::Eval(order, 2*x-1, pol_xi);
+    LegendrePolynomial::Eval(order, 2*y-1, pol_eta);
+    LegendrePolynomial::Eval(order, 2*z-1, pol_zeta);
+
+    auto p = order_inner;
+    for (int i = 0; i <= p[0]; i++)
+      for (int j = 0; j <= p[1]; j++)
+        for (int k = 0; k < p[2]; k++)
+          shape[ii++] = wDu_Cross_Dv<3> (x, y, pol_xi[i]*pol_eta[j]*pol_zeta[k]*z*(1-z));
+    for (int i = 0; i <= p[0]; i++)
+      for (int j = 0; j < p[1]; j++)
+        for (int k = 0; k <= p[2]; k++)
+          shape[ii++] = wDu_Cross_Dv<3> (x, z, pol_xi[i]*pol_eta[j]*pol_zeta[k]*y*(1-y));
+    for (int i = 0; i < p[0]; i++)
+      for (int j = 0; j <= p[1]; j++)
+        for (int k = 0; k <= p[2]; k++)
+          shape[ii++] = wDu_Cross_Dv<3> (y, z, pol_xi[i]*pol_eta[j]*pol_zeta[k]*x*(1-x));
+  }
 
 
 
