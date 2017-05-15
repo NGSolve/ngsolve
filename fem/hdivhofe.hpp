@@ -259,14 +259,14 @@ namespace ngfem
       
       int fmax = 0;
       for (int j = 1; j < 4; j++)
-        if (vnums[j] > vnums[fmax])
+        if (vnums[j] < vnums[fmax])
           fmax = j;
       
       int f1 = (fmax+3)%4;
       int f2 = (fmax+1)%4;
       
       int fac = 1;
-      if(vnums[f2] > vnums[f1])
+      if(vnums[f2] < vnums[f1])
         {
           swap(f1,f2); // fmax > f1 > f2;
           fac *= -1;
