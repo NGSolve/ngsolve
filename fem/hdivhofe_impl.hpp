@@ -533,7 +533,7 @@ namespace ngfem
 	 
 	int fmax = 0;
 	for (int j = 1; j < 4; j++)
-	  if (vnums[faces[i][j]] > vnums[faces[i][fmax]]) fmax = j;
+	  if (vnums[faces[i][j]] < vnums[faces[i][fmax]]) fmax = j;
 
 	int fz = 3-fmax; 
 	int ftrig = fmax^1; 
@@ -561,7 +561,7 @@ namespace ngfem
 					 lami[faces[i][ftrig]], -0.5*fac*zeta);
 					    
 
-	if (vnums[f1] > vnums[f2])
+	if (vnums[f1] < vnums[f2])
 	  {
 	    for (int k = 0; k <= p[0]-1; k++)
 	      for (int j = 0; j <= p[1]-1; j++, ii++)
@@ -575,7 +575,7 @@ namespace ngfem
 	  }
 	  
 
-        if (vnums[f1] > vnums[f2])
+        if (vnums[f1] < vnums[f2])
           {
             for (int j= 0; j <= p[0]-1; j++, ii++)
 	      shape[ii] = Du_Cross_Dv<3> (adpolxy1[j], zeta);
@@ -679,43 +679,34 @@ namespace ngfem
 	Tx lam_f(0);
 	for (int j = 0; j < 4; j++)
 	  lam_f += lami[faces[i][j]];
-        
-        int fmax = 0;
-	for (int j = 1; j < 4; j++)
-	  if (vnums[faces[i][j]] > vnums[faces[i][fmax]]) fmax = j;
-        
-        int f1 = (fmax+3)%4;
-        int f2 = (fmax+1)%4;
-        
-        if(vnums[faces[i][f2]] > vnums[faces[i][f1]]) swap(f1,f2); // fmax > f1 > f2;
 
-        auto xi  = sigma[faces[i][fmax]]-sigma[faces[i][f1]];
-        auto eta = sigma[faces[i][fmax]]-sigma[faces[i][f2]];
-        
-        // INT<4> f = GetFaceSort (i, vnums);	  
-	// Tx xi  = sigma[f[0]]-sigma[f[1]];
-	// Tx eta = sigma[f[0]]-sigma[f[3]];
+        INT<4> f = GetFaceSort (i, vnums);	  
+        Tx xi  = sigma[f[0]]-sigma[f[1]];
+        Tx eta = sigma[f[0]]-sigma[f[3]];
 
-	IntLegNoBubble::EvalMult(p[0]+1, xi, 1-xi*xi, pol_xi);
-	IntLegNoBubble::EvalMult(p[1]+1,eta, 1-eta*eta, pol_eta);
+        if (p[0] >= 1)
+          IntLegNoBubble::EvalMult(p[0]-1, xi, 1-xi*xi, pol_xi);
+        if (p[1] >= 1)
+          IntLegNoBubble::EvalMult(p[1]-1,eta, 1-eta*eta, pol_eta);
+        
 	shape[i] = wDu_Cross_Dv<3> (eta, xi, 0.25*lam_f);
 
         for (int k = 0; k < p[0]; k++)
           for (int l = 0; l < p[1]; l++, ii++)
             shape[ii] = wDu_Cross_Dv<3> (pol_eta[l], pol_xi[k], 2*lam_f);
         
-        //Typ 2
         for (int k = 0; k < p[0]; k++)
           shape[ii++] = wDu_Cross_Dv<3> (-eta, pol_xi[k], lam_f);
         for (int k = 0; k < p[1]; k++)
           shape[ii++] = wDu_Cross_Dv<3> (-xi, pol_eta[k], lam_f);
       }
 
-    LegendrePolynomial::Eval(order, 2*x-1, pol_xi);
-    LegendrePolynomial::Eval(order, 2*y-1, pol_eta);
-    LegendrePolynomial::Eval(order, 2*z-1, pol_zeta);
-
     auto p = order_inner;
+
+    LegendrePolynomial::Eval(p[0], 2*x-1, pol_xi);
+    LegendrePolynomial::Eval(p[1], 2*y-1, pol_eta);
+    LegendrePolynomial::Eval(p[2], 2*z-1, pol_zeta);
+
     for (int i = 0; i <= p[0]; i++)
       for (int j = 0; j <= p[1]; j++)
         for (int k = 0; k < p[2]; k++)
