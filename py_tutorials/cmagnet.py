@@ -49,7 +49,7 @@ c = Preconditioner(a, type="bddc")
 # c = Preconditioner(a, type="multigrid", flags = { "smoother" : "block" } )
 
 f = LinearForm(fes)
-f += SymbolicLFI(CoefficientFunction((y,-x,0)) * v, definedon=mesh.Materials("coil"))
+f += SymbolicLFI(CoefficientFunction((y,0.05-x,0)) * v, definedon=mesh.Materials("coil"))
 
 u = GridFunction(fes)
 
