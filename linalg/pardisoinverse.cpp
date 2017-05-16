@@ -21,6 +21,7 @@ extern "C"
 
 #ifdef USE_MKL
 
+  void mkl_free_buffers (void);
   void F77_FUNC(pardiso)
     (void * pt, integer * maxfct, integer * mnum, integer * mtype, integer * phase, integer * n, 
      double * a, integer * ia, integer * ja, integer * perm, integer * nrhs, integer * iparam, 
@@ -554,6 +555,9 @@ namespace ngla
     F77_FUNC(pardiso) ( pt, &maxfct, &mnum, &matrixtype, &phase, &compressed_height, NULL,
 			&rowstart[0], &indices[0], NULL, &nrhs, params, &msglevel,
 			NULL, NULL, &error );
+#ifdef USE_MKL
+    mkl_free_buffers();
+#endif // USE_MKL
     if (task_manager) task_manager -> StartWorkers();
     if (error != 0)
       cout << "Clean Up: PARDISO returned error " << error << "!" << endl;
