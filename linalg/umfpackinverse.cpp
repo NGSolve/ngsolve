@@ -9,6 +9,10 @@
 
 #ifdef USE_UMFPACK
 
+#ifdef USE_MKL
+  extern "C" void mkl_free_buffers (void);
+#endif // USE_MKL
+
 using ngbla::integer;
 
 #include <umfpack.h>
@@ -408,6 +412,10 @@ namespace ngla
       umfpack_zl_free_numeric ( &Numeric );
     else
       umfpack_dl_free_numeric ( &Numeric );
+
+#ifdef USE_MKL
+    mkl_free_buffers();
+#endif // USE_MKL
   }
 
 
