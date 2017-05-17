@@ -1044,7 +1044,6 @@ namespace ngcomp
         }
       else
         {
-      LocalHeapMem<100000> lh2("{values}");
       const GridFunction & gf = *reinterpret_cast<GridFunction*>({gf_ptr});
       const ElementTransformation &trafo = mir.GetTransformation();
       auto elnr = trafo.GetElementNr();
@@ -1060,13 +1059,14 @@ namespace ngcomp
       } else if(!fes.DefinedOn(vb,trafo.GetElementIndex())){
           {values} = 0.0;
       } else {
-          const FiniteElement & fel = fes.GetFE (ei, lh2);
+          const FiniteElement & fel = fes.GetFE (ei, gridfunction_local_heap);
           int dim = fes.GetDimension();
 
-          ArrayMem<int, 50> dnums;
+          auto &dnums = gridfunction_dnums;
           fes.GetDofNrs (ei, dnums);
 
-          VectorMem<50> elu(dnums.Size()*dim);
+          gridfunction_elu.SetSize(dnums.Size()*dim);
+          FlatVector<> elu(dnums.Size()*dim, &gridfunction_elu[0]);
 
           gf.GetElementVector ({comp}, dnums, elu);
           fes.TransformVec (ei, elu, TRANSFORM_SOL);
@@ -1077,12 +1077,12 @@ namespace ngcomp
             trace_diffop->Apply (fel, mir, elu, {values});
           else if (bfi)
             throw Exception ("GridFunctionCoefficientFunction: SIMD evaluate not possible 1");
-          // bfi->CalcFlux (fel, mir, elu, values, true, lh2);
+          // bfi->CalcFlux (fel, mir, elu, values, true, gridfunction_local_heap);
           else if (fes.GetEvaluator(vb==BND))
-            fes.GetEvaluator(vb==BND) -> Apply (fel, mir, elu, {values}); // , lh2);
+            fes.GetEvaluator(vb==BND) -> Apply (fel, mir, elu, {values}); // , gridfunction_local_heap);
           else if (fes.GetIntegrator(vb==BND))
             throw Exception ("GridFunctionCoefficientFunction: SIMD evaluate not possible 2");
-          // fes.GetIntegrator(vb==BND) ->CalcFlux (fel, mir, elu, values, false, lh2);
+          // fes.GetIntegrator(vb==BND) ->CalcFlux (fel, mir, elu, values, false, gridfunction_local_heap);
           else
             throw Exception ("GridFunctionCoefficientFunction: SIMD: don't know how I shall evaluate");
         if (ud)
@@ -1102,7 +1102,6 @@ namespace ngcomp
       STACK_ARRAY(double, {hmem}, mir.Size()*{dim});
       FlatMatrix<double>  {values}(mir.Size(), {dim}, &{hmem}[0]);
       {
-      LocalHeapMem<100000> lh2("{values}");
       const GridFunction & gf = *reinterpret_cast<GridFunction*>({gf_ptr});
       const ElementTransformation &trafo = mir.GetTransformation();
       auto elnr = trafo.GetElementNr();
@@ -1119,27 +1118,28 @@ namespace ngcomp
       } else if(!fes.DefinedOn(vb,trafo.GetElementIndex())){
           {values} = 0.0;
       } else {
-          const FiniteElement & fel = fes.GetFE (ei, lh2);
+          const FiniteElement & fel = fes.GetFE (ei, gridfunction_local_heap);
           int dim = fes.GetDimension();
 
-          ArrayMem<int, 50> dnums;
+          auto &dnums = gridfunction_dnums;
           fes.GetDofNrs (ei, dnums);
 
-          VectorMem<50> elu(dnums.Size()*dim);
+          gridfunction_elu.SetSize(dnums.Size()*dim);
+          FlatVector<> elu(dnums.Size()*dim, &gridfunction_elu[0]);
 
           gf.GetElementVector ({comp}, dnums, elu);
           fes.TransformVec (ei, elu, TRANSFORM_SOL);
 
           if (diffop && vb==VOL)
-            diffop->Apply (fel, mir, elu, {values}, lh2);
+            diffop->Apply (fel, mir, elu, {values}, gridfunction_local_heap);
           else if (trace_diffop && vb==BND)
-            trace_diffop->Apply (fel, mir, elu, {values}, lh2);
+            trace_diffop->Apply (fel, mir, elu, {values}, gridfunction_local_heap);
           else if (bfi)
-            bfi->CalcFlux (fel, mir, elu, {values}, true, lh2);
+            bfi->CalcFlux (fel, mir, elu, {values}, true, gridfunction_local_heap);
           else if (fes.GetEvaluator(vb==BND))
-            fes.GetEvaluator(vb==BND) -> Apply (fel, mir, elu, {values}, lh2);
+            fes.GetEvaluator(vb==BND) -> Apply (fel, mir, elu, {values}, gridfunction_local_heap);
           else if (fes.GetIntegrator(vb==BND))
-            fes.GetIntegrator(vb==BND) ->CalcFlux (fel, mir, elu, {values}, false, lh2);
+            fes.GetIntegrator(vb==BND) ->CalcFlux (fel, mir, elu, {values}, false, gridfunction_local_heap);
           else
             throw Exception ("don't know how I shall evaluate");
       }
