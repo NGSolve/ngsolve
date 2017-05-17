@@ -4561,6 +4561,13 @@ namespace ngstd {
                  ii++;
             });
 
+            if(code.header.find("gridfunction_local_heap") != std::string::npos)
+            {
+                code.header.insert(0, "LocalHeapMem<100000> gridfunction_local_heap(\"compiled_cf_gfheap\");\n");
+                code.header.insert(0, "ArrayMem<int, 100> gridfunction_dnums;\n");
+                code.header.insert(0, "ArrayMem<int, 100> gridfunction_elu;\n");
+            }
+
             // Function name
 #ifdef WIN32
             s << "__declspec(dllexport) ";
