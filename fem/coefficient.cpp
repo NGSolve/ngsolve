@@ -36,9 +36,12 @@ namespace ngfem
     for (int i = 0; i < 2*level; i++)
       ost << ' ';
     ost << "coef " << GetDescription() << ","
-        << (IsComplex() ? " complex" : " real")
-        << ", dim=" << Dimension()
-        << endl;
+        << (IsComplex() ? " complex" : " real");
+    if (Dimensions().Size() == 1)
+      ost << ", dim=" << Dimension();
+    else if (Dimensions().Size() == 2)
+      ost << ", dims = " << Dimensions()[0] << " x " << Dimensions()[1];
+    ost << endl;
 
     Array<CoefficientFunction*> input = InputCoefficientFunctions();
     for (int i = 0; i < input.Size(); i++)
@@ -4565,7 +4568,7 @@ namespace ngstd {
             {
                 code.header.insert(0, "LocalHeapMem<100000> gridfunction_local_heap(\"compiled_cf_gfheap\");\n");
                 code.header.insert(0, "ArrayMem<int, 100> gridfunction_dnums;\n");
-                code.header.insert(0, "ArrayMem<int, 100> gridfunction_elu;\n");
+                code.header.insert(0, "ArrayMem<double, 100> gridfunction_elu;\n");
             }
 
             // Function name
