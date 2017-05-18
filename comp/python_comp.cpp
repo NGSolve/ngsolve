@@ -2513,7 +2513,40 @@ flags : dict
           py::arg("bf"), py::arg("type"), py::arg("flags")=py::dict()
           );
 
+  //////////////////////////////////////////////////////////////////////////////////////////
+   
+#ifdef HYPRE
 
+   m.def("CreateAMSHyprePreconditioner",
+	 [](PyWrapper<FESpace> hcurlfes, PyWrapper<BilinearForm> bfa, 
+	    PyWrapper<FESpace> h1fes, PyWrapper<BaseMatrix> gradmat, 
+	    PyWrapper<BilinearForm> bfalpha, PyWrapper<BilinearForm> bfbeta, 
+	    PyWrapper<BaseVector> ozz, PyWrapper<BaseVector> zoz, PyWrapper<BaseVector> zzo, 
+	    Flags flags) -> PyWrapper<Preconditioner>
+	 {
+	   return static_pointer_cast<Preconditioner>(make_shared<HypreAMSPreconditioner>(hcurlfes.Get(), bfa.Get(), h1fes.Get(), gradmat, bfalpha.Get(), bfbeta.Get(), ozz, zoz, zzo, flags));
+	 },
+	 py::arg("hcurlfes"), py::arg("bfa"), 
+	 py::arg("h1fes"), py::arg("gradmat"), 
+	 py::arg("bfalpha"), py::arg("bfbeta"), 
+	 py::arg("ozz"), py::arg("zoz"), py::arg("zzo"), 
+	 py::arg("flags")=py::dict()
+	 );
+
+#else
+
+   m.def("CreateAMSHyprePreconditioner",
+	 [](PyWrapper<FESpace> hcurlfes, PyWrapper<BilinearForm> bfa, 
+	    PyWrapper<FESpace> h1fes, PyWrapper<BaseMatrix> gradmat, 
+	    PyWrapper<BilinearForm> bfalpha, PyWrapper<BilinearForm> bfbeta, 
+	    PyWrapper<BaseVector> ozz, PyWrapper<BaseVector> zoz, PyWrapper<BaseVector> zzo, 
+	    Flags flags) -> PyWrapper<Preconditioner>
+	 {
+	   return nullptr;
+	 }
+
+#endif
+	 
   //////////////////////////////////////////////////////////////////////////////////////////
 
   py::class_<NumProc, NGS_Object, shared_ptr<NumProc>> (m, "NumProc")
