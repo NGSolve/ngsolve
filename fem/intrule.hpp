@@ -1578,11 +1578,21 @@ namespace ngstd
 	{
 	  if (DIMR == 3)
 	    {
-	      normalvec = Cross (Vec<3,SIMD<double>> (dxdxi.Col(0)),
-				 Vec<3,SIMD<double>> (dxdxi.Col(1)));
-	      det = L2Norm (normalvec);
-	      normalvec /= det;
-	    }
+              if (DIMS == 2)
+                {
+                  normalvec = Cross (Vec<3,SIMD<double>> (dxdxi.Col(0)),
+                                     Vec<3,SIMD<double>> (dxdxi.Col(1)));
+                  det = L2Norm (normalvec);
+                  normalvec /= det;
+                }
+              else
+                {
+                  normalvec = SIMD<double>(0.0);
+		  tangentialvec = Vec<3,SIMD<double>>(dxdxi.Col(0));
+		  det = L2Norm(tangentialvec);
+		  tangentialvec /= det;
+                }
+            }
 	  else if (DIMR == 2)
 	    {
 	      det = sqrt ( sqr (dxdxi(0,0)) + sqr (dxdxi(1,0)));
