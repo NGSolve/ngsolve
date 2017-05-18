@@ -75,6 +75,7 @@ namespace ngcomp
 
 // #include "bddc.hpp"
 #include "hypre_precond.hpp"
+#include "hypre_ams_precond.hpp"
 #include "vtkoutput.hpp"
 
 #endif
