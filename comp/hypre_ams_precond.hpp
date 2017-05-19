@@ -58,8 +58,8 @@ class HypreAMSPreconditioner : public Preconditioner
   int rank, np;
   
   shared_ptr<BilinearForm> bfa; // BLF for the system
-  shared_ptr<BilinearForm> bf_alpha; // alpha-mat
-  shared_ptr<BilinearForm> bf_beta; // beta-mat
+  shared_ptr<BilinearForm> bf_alpha; // alpha-mat - currently UNUSED!
+  shared_ptr<BilinearForm> bf_beta; // beta-mat - currently UNUSED!
   shared_ptr<BaseMatrix> ngs_grad_mat; //discrete grad-mat
 
   int dimension = 3; //spatial dimension
@@ -72,6 +72,7 @@ class HypreAMSPreconditioner : public Preconditioner
   int hc_ilower, hc_iupper;
   Array<int> hc_masterdofs;
   Array<double> buf_hc;
+  Array<double> buf_z;
   Array<int> hc_intrange;
 
   shared_ptr<FESpace> h1fes;
@@ -89,15 +90,14 @@ public:
   // dummy constructors - not implemented
   HypreAMSPreconditioner (const PDE & pde, const Flags & flags, const string & name);
   HypreAMSPreconditioner (const BaseMatrix & matrix, const shared_ptr<BitArray> afreedofs); 
-  HypreAMSPreconditioner (shared_ptr<BilinearForm> bfa, const Flags & aflags,
-			  const string aname = "precond");
 
   // actually implemented!
+  HypreAMSPreconditioner (shared_ptr<BilinearForm> bfa, const Flags & aflags,
+			  const string aname = "precond");
   HypreAMSPreconditioner (shared_ptr<FESpace> ahcurlfes, shared_ptr<BilinearForm> abfa,
 			  shared_ptr<FESpace> ah1fes, shared_ptr<BaseMatrix> agrad_mat,
 			  shared_ptr<BilinearForm> abf_alpha, shared_ptr<BilinearForm> abf_beta, 
-			  shared_ptr<BaseVector> ozz, shared_ptr<BaseVector> zoz, 
-			  shared_ptr<BaseVector> zzo, Flags & flags);
+			  Flags & flags);
 
   ~HypreAMSPreconditioner ();
 	
@@ -112,7 +112,7 @@ public:
   { return "HYPRE AMG Preconditioner"; }
 
 private:
-  void Setup (const BaseMatrix & matrix);
+  void Setup ();
 };
 
 }

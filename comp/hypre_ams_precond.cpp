@@ -56,12 +56,24 @@ namespace ngcomp
       auto vals = ngsmat.GetRowValues(k);
       int row = row_gnums[k];
       s = 0;
-      for(auto j:Range(cols.Size())) {
-	if( (row_pardofs) && (matrix_cumulated) && (!row_pardofs->IsMasterDof(k)) && (!col_pardofs->IsMasterDof(cols[j])) )
-	  continue; //if someone else is master of both dofs, they have to have the fill val!
-	cg[s] = col_gnums[cols[j]];
-	vg[s++] = vals[j];
+      if( (!row_freedofs) || row_freedofs->Test(k) ) {
+	for(auto j:Range(cols.Size())) {
+	  if( (row_pardofs) && (matrix_cumulated) && (!row_pardofs->IsMasterDof(k)) && (!col_pardofs->IsMasterDof(cols[j])) )
+	    continue; //if someone else is master of both dofs, they have to have the fill val!
+	  if( (col_freedofs) && (!col_freedofs->Test(cols[j])) )
+	    continue;
+	  cg[s] = col_gnums[cols[j]];
+	  vg[s++] = vals[j];
+	}
       }
+      else { //dirichlet DOF - only a 1 @ diag
+	if( (row_pardofs) && (!row_pardofs->IsMasterDof(k)) )
+	  continue;
+	s = 1;
+	cg[0] = row;
+	vg[0] = 1.0;
+      }
+    
       if(!s) continue; //no entries to add to matrix!
       HYPRE_IJMatrixAddToValues(*ijmat, 1, &s, &row, &cg[0], &vg[0]);
     }    
@@ -87,8 +99,6 @@ namespace ngcomp
 	HYPRE_IJVectorSetValues(v, global_nums.Size(), &global_nums[0], vals);
       else
 	HYPRE_IJVectorAddToValues(v, zeros.Size(), &global_nums[0], vals);
-      // dont think i need this...
-      // HYPRE_IJVectorSetValues(v, zeros.Size(), &global_nums[0], &zeros[0]);
     }
     HYPRE_IJVectorAssemble(v);
     HYPRE_IJVectorGetObject(v, (void **) &pv);
@@ -111,9 +121,22 @@ namespace ngcomp
   
   HypreAMSPreconditioner :: HypreAMSPreconditioner (shared_ptr<BilinearForm> abfa, const Flags & aflags,
 						    const string aname)
-    : Preconditioner(abfa, aflags, aname)
+    : Preconditioner(abfa, aflags, aname), bfa(abfa), bf_beta(nullptr), bf_alpha(nullptr),
+      x(NULL), par_x(NULL), b(NULL), par_b(NULL), dimension(aflags.GetNumFlag("dimension", 3)),
+      beta_is_zero(flags.GetDefineFlag("beta_is_zero"))
   {
-    throw Exception ("HYPRE-AMS blf-interface not implemented; please use direct python-interface");
+    /** Get HC-FESpace **/
+    shared_ptr<HCurlHighOrderFESpace> hcfes = dynamic_pointer_cast<HCurlHighOrderFESpace>(abfa->GetFESpace());
+    if(hcfes==nullptr)
+      throw Exception ("HYPRE-AMS Setup needs HCurlHighOrder-FESpace");
+
+    /** Get H1-FESpace + discrete gradient matrix **/
+    this->hcurlfes = hcfes;
+    auto h1f1 = hcfes->CreateGradientSpace();
+    this->ngs_grad_mat = hcfes->CreateGradient(*h1f1);
+    this->h1fes = h1f1;
+    
+    return;
   }
 
   HypreAMSPreconditioner :: ~HypreAMSPreconditioner ()
@@ -123,42 +146,35 @@ namespace ngcomp
   
   void HypreAMSPreconditioner :: Update()
   {
-    throw Exception ("HYPRE-AMS Update not implemented; please use direct python interface");
+    /** Call setup! **/
+    this->Setup();
     return;
   }
 
   void HypreAMSPreconditioner :: FinalizeLevel (const BaseMatrix * mat)
   {
-    throw Exception ("HYPRE-AMS Finalielevel not implemented; please use direct python interface");
+    /** Call setup! **/
+    this->Setup();
     return;
   }
 
-  void HypreAMSPreconditioner :: Setup (const BaseMatrix & matrix)
-  {
-    throw Exception ("HYPRE-AMS Setup not implemented; please use direct python interface");
-    return;
-  }
-
-  /** 
-      TODO:
-      - no alpha/beta
-      - dirichlet
-      - no new vecs
-      - proper destructor
-      - cleanup
-      - (parallel still not working i believe...)
-   **/
   HypreAMSPreconditioner :: HypreAMSPreconditioner (shared_ptr<FESpace> ahcurlfes, shared_ptr<BilinearForm> abfa,
 						    shared_ptr<FESpace> ah1fes, shared_ptr<BaseMatrix> agrad_mat,
 						    shared_ptr<BilinearForm> abf_alpha, shared_ptr<BilinearForm> abf_beta, 
-						    shared_ptr<BaseVector> ozz, shared_ptr<BaseVector> zoz, 
-						    shared_ptr<BaseVector> zzo, Flags & flags)
+						    Flags & flags)
     : Preconditioner( abfa, flags, "hypreams"), bfa(abfa), ngs_grad_mat(agrad_mat), bf_alpha(abf_alpha), bf_beta(abf_beta),
-      hcurlfes(ahcurlfes), h1fes(ah1fes)
+      hcurlfes(ahcurlfes), h1fes(ah1fes), dimension(flags.GetNumFlag("dimension", 3)), beta_is_zero(flags.GetDefineFlag("beta_is_zero"))
   {
-    cout << IM(1) << "Setup AMS-Hypre preconditioner" << endl;
-    
-    static Timer t("AMS-hypre setup");
+    this-> Setup();
+  }
+
+
+  void HypreAMSPreconditioner :: Setup ()
+  {
+
+    cout << IM(1) << "Setup Hypre-AMS preconditioner" << endl;
+
+    static Timer t("Hypre-AMS setup");
     RegionTimer reg(t);
 
     HYPRE_Int err;	
@@ -170,7 +186,6 @@ namespace ngcomp
     cout << IM(2) << "NP: " << np << endl;
 
     /** Some inital book-keeping **/
-    
     auto compute_global_nums = [this](auto ndof, auto & fes, auto & pardofs, auto & global_nums,
 				      auto & ilower, auto & iupper) 
       {
@@ -199,16 +214,14 @@ namespace ngcomp
 	ilower = first_master_dof[this->rank];
 	iupper = first_master_dof[this->rank+1]-1;
       };    
-    
     this->hc_freedofs = this->hcurlfes->GetFreeDofs();
     this->hc_ndof = this->hc_freedofs->Size();
     this->h1_freedofs = this->h1fes->GetFreeDofs();
     this->h1_ndof = this->h1_freedofs->Size();
-    
     if(parallel) {
-      this->hc_pardofs = shared_ptr<ParallelDofs>(const_cast<ParallelDofs*>(abfa->GetMatrix().GetParallelDofs()), NOOP_Deleter);
+      this->hc_pardofs = shared_ptr<ParallelDofs>(const_cast<ParallelDofs*>(&this->hcurlfes->GetParallelDofs()), NOOP_Deleter);
       (void) compute_global_nums(this->hc_ndof, this->hcurlfes, this->hc_pardofs, this->hc_global_nums, this->hc_ilower, this->hc_iupper);
-      this->h1_pardofs = shared_ptr<ParallelDofs>(const_cast<ParallelDofs*>(abf_alpha->GetMatrix().GetParallelDofs()), NOOP_Deleter);
+      this->h1_pardofs = shared_ptr<ParallelDofs>(const_cast<ParallelDofs*>(&this->h1fes->GetParallelDofs()), NOOP_Deleter);
       (void) compute_global_nums(this->h1_ndof, this->h1fes, this->h1_pardofs, this->h1_global_nums, this->h1_ilower, this->h1_iupper);
       this->hc_masterdofs.SetSize(this->hc_iupper-this->hc_ilower+1);
       int s = 0;
@@ -216,10 +229,11 @@ namespace ngcomp
 	if(this->hc_pardofs->IsMasterDof(k))
 	  this->hc_masterdofs[s++] = k;
       this->buf_hc.SetSize(this->hc_masterdofs.Size());
+      this->buf_z.SetSize(this->hc_masterdofs.Size());
+      this->buf_z = 0.0;
       this->hc_intrange.SetSize(this->hc_iupper-this->hc_ilower+1);
       for(auto k:Range(this->hc_intrange.Size()))
 	this->hc_intrange[k] = this->hc_ilower+k;
-      
       ParallelVVector<double> v1(this->hc_pardofs.get());
       BaseVector & bv1(v1);
       v1.FVDouble() = 0.0;
@@ -228,7 +242,6 @@ namespace ngcomp
 	  v1.FVDouble()[k] = 1;
       bv1.SetParallelStatus(CUMULATED);
       int fdhc = (int) InnerProduct(bv1,bv1);
-
       ParallelVVector<double> v2(this->h1_pardofs.get());
       BaseVector & bv2(v2);
       v2.FVDouble() = 0.0;
@@ -236,8 +249,7 @@ namespace ngcomp
 	if(this->h1_freedofs->Test(k))
 	  v2.FVDouble()[k] = 1;
       bv2.SetParallelStatus(CUMULATED);
-      int fdh1 = (int) InnerProduct(bv2,bv2);
-      
+      int fdh1 = (int) InnerProduct(bv2,bv2);      
       cout << IM(2) << "hcurl freedofs: " << fdhc << " out of " << this->hc_pardofs->GetNDofGlobal() << endl;
       cout << IM(2) << "h1    freedofs: " << fdh1 << " out of " << this->h1_pardofs->GetNDofGlobal() << endl;
     }
@@ -256,6 +268,8 @@ namespace ngcomp
       for(auto k:Range(hc_masterdofs.Size()))
 	hc_masterdofs[k] = k;
       this->buf_hc.SetSize(this->hc_ndof);
+      this->buf_z.SetSize(this->hc_ndof);
+      this->buf_z = 0.0;
       this->hc_intrange.SetSize(this->hc_ndof);
       for(auto k:Range(this->hc_intrange.Size()))
 	this->hc_intrange[k] = this->hc_ilower+k;
@@ -263,22 +277,18 @@ namespace ngcomp
       cout << IM(2) << "h1    freedofs: " << this->h1_freedofs->NumSet() << " out of " << this->h1_freedofs->Size() << endl;
     }
 
-    // cout << "h1 fd: " << h1_freedofs->NumSet() << "/" << h1_freedofs->Size() << endl << "hc fd: " << hc_freedofs->NumSet() << "/" << hc_freedofs->Size() << endl;
-
 
     /** Setup AMS-solver **/
 
     HYPRE_AMSCreate(&this->precond); // create AMS-solver
     HYPRE_AMSSetPrintLevel(this->precond, 1); // print-level, 0=none
-    this->dimension = flags.GetNumFlag("dimension", 3);
     HYPRE_AMSSetDimension(this->precond, this->dimension); // set dimension for solver
 
-    
     /** Gradient Matrix **/
     const SparseMatrix<double>* spgrad = dynamic_cast<SparseMatrix<double>*>(this->ngs_grad_mat.get());
     (void) Create_IJMat_from_SPMat(&this->grad_mat, &this->parcsr_grad_mat, *spgrad,
 				   this->hc_pardofs, this->h1_pardofs,
-				   this->hc_freedofs, this->h1_freedofs,
+				   nullptr, nullptr,
 				   this->hc_ilower, this->hc_iupper,
 				   this->h1_ilower, this->h1_iupper,
 				   this->hc_global_nums, this->h1_global_nums, true);
@@ -286,25 +296,17 @@ namespace ngcomp
       cerr << "id = " << rank << ", HYPRE_AMSSetDiscreteGradient returned with err " << err << endl;
     
     /** alpha-poisson Matrix **/
-    // set alpha poisson mat
-    // cout << "set alpha..." << endl;
-    // HYPRE_AMSSetAlphaPoissonMatrix(this->precond, this->parcsr_alpha_mat);
-    // cout << "done!" << endl;
+    if(bf_alpha!=nullptr) {
+      // HYPRE_AMSSetAlphaPoissonMatrix(this->precond, this->parcsr_alpha_mat);
+    }
     
     /** beta-poisson Matrix**/
-    // set beta poisson mat (or tell AMS if beta is zero)
-    this->beta_is_zero = flags.GetDefineFlag("beta_is_zero");
-    // cout << "beta = zero? " << this->beta_is_zero << endl;
-    // if(this->beta_is_zero)
-    // HYPRE_AMSSetBetaPoissonMatrix(this->precond, NULL);
-    // else {
-    //   cout << "beta" << endl;
-    // create_IJ_from_blf(&this->beta_mat, &this->parcsr_beta_mat, bf_beta,
-    // 		       this->h1_global_nums, this->h1_ilower, this->h1_iupper);
-    //   cout << "done, set beta" << endl;
-    // HYPRE_AMSSetBetaPoissonMatrix(this->precond, this->parcsr_beta_mat);
-    //   cout << "done!" << endl;
-    // }
+    if(this->beta_is_zero) {
+      HYPRE_AMSSetBetaPoissonMatrix(this->precond, NULL);
+    }
+    else if(this->bf_beta!=nullptr) {
+      // HYPRE_AMSSetBetaPoissonMatrix(this->precond, this->parcsr_beta_mat);
+    }
 
     /** x, y and z vectors **/
     {
@@ -329,22 +331,18 @@ namespace ngcomp
       }
       for(auto k:Range(3))
 	(void) Create_IJVec_from_BVec (h[k], ph[k], cp[k], this->h1_global_nums, this->h1_ilower, this->h1_iupper, true);
-
       if( (err = HYPRE_AMSSetCoordinateVectors(this->precond, ph[0], ph[1], ph[2])) != 0)
-	cerr << "HYPRE_AMSSetCoordinateVectors returned with error " << err << endl;
-      
-    }	
+	cerr << "HYPRE_AMSSetCoordinateVectors returned with error " << err << endl;      
+    }
 
     /** working vectors **/
-    // set up solver
-    Array<double> zeros(this->hc_ndof);
+    Array<double> zeros(this->hc_ndof+1); //+1 for rank 0...
     zeros = 0.0;
     (void) Create_IJVec_from_BVec (this->b, this->par_b,  &zeros[0], this->hc_global_nums, this->hc_ilower, this->hc_iupper, true);
     (void) Create_IJVec_from_BVec (this->x, this->par_x,  &zeros[0], this->hc_global_nums, this->hc_ilower, this->hc_iupper, true);
-
-
+    
     /** main system matrix **/
-    const auto & matrix = bfa->GetMatrix();
+    const auto & matrix = this->bfa->GetMatrix();
     const ParallelMatrix* pma = dynamic_cast<const ParallelMatrix*>(&matrix);
     const SparseMatrix<double>* spma = dynamic_cast<const SparseMatrix<double>*>( (pma==nullptr) ? (&matrix) : (&pma->GetMatrix()) );
     if (dynamic_cast< const SparseMatrixSymmetric<double> *> (spma))
@@ -369,13 +367,12 @@ namespace ngcomp
     // HYPRE_AMSSetBetaAMGOptions(this->precond, 10, 10, 6, 0.5, 0, 0);  //symmetric l1-smoother
     // HYPRE_AMSSetAlphaAMGOptions(this->precond, 10, 10, 6, 0.5, 0, 0); //symmetric l1-smoother
 
-    // HYPRE_IJMatrixPrint(A, "IJ.out.A");
-    // HYPRE_IJMatrixPrint(grad_mat, "IJ.out.grad_mat");
+    // HYPRE_IJMatrixPrint(A, "IJ.out.2A");
+    // HYPRE_IJMatrixPrint(grad_mat, "IJ.out.2grad_mat");
     // HYPRE_IJMatrixPrint(alpha_mat, "IJ.out.alpha");
     // HYPRE_IJMatrixPrint(beta_mat, "IJ.out.beta");
 
-
-    cout << IM(1) << "AMS-Hypre setup done!" << endl;
+    cout << IM(1) << "Hypre-AMS setup done!" << endl;
     return;
   }
 
@@ -389,71 +386,45 @@ namespace ngcomp
       u.SetParallelStatus(DISTRIBUTED);
     }
     
-    /**
-       note: have to re-initialize and re-assemble vecs in every iteration!
-    **/
-    HYPRE_IJVector b;
-    HYPRE_ParVector par_b;
-    HYPRE_IJVector x;
-    HYPRE_ParVector par_x;
-
-    HYPRE_IJVectorCreate(ngs_comm, this->hc_ilower, this->hc_iupper,&b);
-    HYPRE_IJVectorSetPrintLevel(b, 1);
-    HYPRE_IJVectorSetObjectType(b, HYPRE_PARCSR);
-    HYPRE_IJVectorInitialize(b);
-
-    HYPRE_IJVectorCreate(ngs_comm, this->hc_ilower, this->hc_iupper,&x);
-    HYPRE_IJVectorSetPrintLevel(x, 1);
-    HYPRE_IJVectorSetObjectType(x, HYPRE_PARCSR);
-    HYPRE_IJVectorInitialize(x);
-
-    Array<double> zeros(this->hc_intrange.Size());
-    zeros = 0.0;
-    
+    /** re-initialize vectors **/
+    HYPRE_IJVectorInitialize(this->b);
+    HYPRE_IJVectorInitialize(this->x);
     if(this->hc_ndof) {
-      for(auto k:Range(this->buf_hc.Size())) {
-	buf_hc[k] = f.FVDouble()[this->hc_masterdofs[k]];
-      }
-      HYPRE_IJVectorSetValues(b, this->hc_intrange.Size(), &this->hc_intrange[0], &this->buf_hc[0]);
+      HYPRE_IJVectorSetValues(this->x, this->hc_intrange.Size(), &this->hc_intrange[0], &this->buf_z[0]);
+      for(auto k:Range(this->buf_hc.Size()))
+	if(this->hc_freedofs->Test(this->hc_masterdofs[k]))
+	  buf_hc[k] = f.FVDouble()[this->hc_masterdofs[k]];
+	else
+	  buf_hc[k] = 0.0;
+      HYPRE_IJVectorSetValues(this->b, this->hc_intrange.Size(), &this->hc_intrange[0], &this->buf_hc[0]);
     }
-    //HYPRE_IJVectorSetValues(b, this->hc_global_nums.Size(), &this->hc_global_nums[0], &f.FVDouble()[0]);
-    HYPRE_IJVectorAssemble(b);
-    HYPRE_IJVectorGetObject(b, (void**) &par_b);
-    
-    HYPRE_IJVectorSetValues(x, this->hc_intrange.Size(), &this->hc_intrange[0], &zeros[0]);
-    HYPRE_IJVectorAssemble(x);
-    HYPRE_IJVectorGetObject(x, (void**) &par_x);
+    HYPRE_IJVectorAssemble(this->b);    
+    HYPRE_IJVectorGetObject(this->b, (void **) &this->par_b);
+    HYPRE_IJVectorAssemble(this->x);
+    HYPRE_IJVectorGetObject(this->x, (void **) &this->par_x);
 
-    HYPRE_AMSSolve(this->precond, this->parcsr_A, par_b, par_x);
+    /** call AMS-solver **/
+    HYPRE_AMSSolve(this->precond, this->parcsr_A, this->par_b, this->par_x);
     
-    // cout << "get AMS sol!" << endl;
-    HYPRE_IJVectorGetValues(x, this->hc_intrange.Size(), &this->hc_intrange[0], &this->buf_hc[0]);
-    
+    /** get sol **/
+    HYPRE_IJVectorGetValues(x, this->hc_intrange.Size(), &this->hc_intrange[0], &this->buf_hc[0]);    
     if(this->hc_ndof) u.FVDouble() = 0.0;    
     for(auto k:Range(this->buf_hc.Size()))
       u.FVDouble()[this->hc_masterdofs[k]] = this->buf_hc[k];
-    
-    // cout << "have it!" << endl;
-    // HYPRE_IJVectorGetValues(x, this->hc_ndof, &this->hc_global_nums[0], &zeros[0]);
-    // for(auto k:Range(hc_ndof))
-    //  u.FVDouble()[k] = zeros[k];
 
-
-    if(parallel)
-      u.Cumulate();
-
-    auto ip = InnerProduct(u,f);
-    
+    /*
+    // check for positiveness of PC
+      auto ip = InnerProduct(u,f);    
     if(ip<0)
       cout << IM(1) << "                IP: " << ip << "  !!!!!!!!" << endl;
     else
       cout << IM(1) << "                IP: " << ip << endl;
+    */
     
     return;
   }
 
-
   // dont need to register, those constructors are not implemented anyways...
-  // static RegisterPreconditioner<HypreAMSPreconditioner> init_hyprepre ("AMShypre");
+  static RegisterPreconditioner<HypreAMSPreconditioner> init_hyprepre ("hypre_ams");
 }
 #endif
