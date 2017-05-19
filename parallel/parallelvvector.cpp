@@ -166,9 +166,10 @@ namespace ngla
 				  dynamic_cast<const S_BaseVector<SCAL>&>(*parv2).FVScal());
 
     // two distributed vectors -- cumulate one
-    else if ( this->Status() == parv2->Status() && this->Status() == DISTRIBUTED )
-      Cumulate();
-    
+    else if ( this->Status() == parv2->Status() && this->Status() == DISTRIBUTED ) {
+      this->Cumulate();
+      parv2->Distribute(); //in case me==other
+    }
     // two cumulated vectors -- distribute one
     else if ( this->Status() == parv2->Status() && this->Status() == CUMULATED )
       this->Distribute();

@@ -45,7 +45,16 @@ class HypreAMSPreconditioner : public Preconditioner
   HYPRE_IJMatrix beta_mat;
   HYPRE_ParCSRMatrix parcsr_beta_mat;
 
-  // ngsolve-side
+  // working vecs
+  HYPRE_IJVector b;
+  HYPRE_ParVector par_b;
+  HYPRE_IJVector x;
+  HYPRE_ParVector par_x;
+
+
+
+  // NGSOLVE-side
+
   int rank, np;
   
   shared_ptr<BilinearForm> bfa; // BLF for the system
