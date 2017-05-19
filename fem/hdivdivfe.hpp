@@ -791,8 +791,6 @@ namespace ngfem
       static int timer = NgProfiler::CreateTimer ("HDivDivPrism T_CalcShape");
       NgProfiler::RegionTimer reg (timer);
 
-      AutoDiffDiff<2> x(hx[0].Value(),0);
-      AutoDiffDiff<2> y(hx[1].Value(), 1);
       AutoDiff<2> x(hx[0].Value(),0);
       AutoDiff<2> y(hx[1].Value(), 1);
       AutoDiff<1> z(hx[2].Value(), 0);
