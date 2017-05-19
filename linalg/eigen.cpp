@@ -136,6 +136,7 @@ namespace ngla
     while (err > prec && it < maxsteps)
       {
 	//      cout << "." << flush;
+	cout << IM(2) << "eigen-it " << it << "/" << maxsteps << endl;
 	it++;
 	double cvu;
 	if(is_real)
@@ -197,7 +198,7 @@ namespace ngla
     */
     if (it >= maxsteps)
       {
-	cout << "maxsteps " << maxsteps << " exceeded !!" << endl;
+	cout << IM(1) << "maxsteps " << maxsteps << " exceeded !!" << endl;
 	retval = 2;
       }
 
