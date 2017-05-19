@@ -2290,7 +2290,7 @@ namespace ngcomp
 
 	    for (int k = 0; k < npts; k++)
 	      {
-		Mat<2,3> & mdxdxref = *new((double*)(dxdxref+k*sdxdxref)) Mat<2,3>;
+		Mat<3,2> & mdxdxref = *new((double*)(dxdxref+k*sdxdxref)) Mat<3,2>;
 		FlatVec<3> vx( (double*)x + k*sx);
 		mir[k] = MappedIntegrationPoint<2,3> (ir[k], eltrans, vx, mdxdxref);
 	      }
@@ -2939,7 +2939,7 @@ namespace ngcomp
 
         for (int k = 0; k < npts; k++)
           {
-            Mat<2,3> & mdxdxref = *new((double*)(dxdxref+k*sdxdxref)) Mat<2,3>;
+            Mat<3,2> & mdxdxref = *new((double*)(dxdxref+k*sdxdxref)) Mat<3,2>;
             FlatVec<3> vx( (double*)x + k*sx);
             mir[k] = MappedIntegrationPoint<2,3> (ir[k], eltrans, vx, mdxdxref);
           }
