@@ -850,7 +850,6 @@ namespace ngfem
         bool rotate = false;
         if(vnums[fz] > vnums[ftrig]) rotate = true;
         leg_w.SetSize(order_facet[fa][1]+incrorder_xx2_bd+1);
-        ha.SetSize(order_facet[fa][0]+incrorder_xx1_bd+1);
         LegendrePolynomial::Eval(order_facet[fa][1]+incrorder_xx2_bd,lamiz[fmax]*2-1,leg_w);
 
 
@@ -860,14 +859,14 @@ namespace ngfem
           for(int k = 0; k <= order_facet[fa][1]+incrorder_xx2_bd; k++)
             for(int l = 0; l <= order_facet[fa][0]+incrorder_xx1_bd; l++)
             {
-              shape[ii++] = Prism_SymRotRot_l1Dl2xl2Dl1_vw(lamid[fmax], lamid[ftrig], leg_u[l], leg_w[k]);
+              shape[ii++] = Prism_SymRotRot_Dl2xDl1_vw(lami[fmax], lami[ftrig], leg_u[l], leg_w[k]);
             }
 
         else
           for(int l = 0; l <= order_facet[fa][0]+incrorder_xx1_bd; l++)
             for(int k = 0; k <= order_facet[fa][1]+incrorder_xx2_bd; k++)
             {
-              shape[ii++] = Prism_SymRotRot_l1Dl2xl2Dl1_vw(lamid[fmax], lamid[ftrig], leg_u[l], leg_w[k]);
+              shape[ii++] = Prism_SymRotRot_Dl2xDl1_vw(lami[fmax], lami[ftrig], leg_u[l], leg_w[k]);
             }
 
 
@@ -879,24 +878,22 @@ namespace ngfem
       leg_u.SetSize(oi+incrorder_zz1+1);
       leg_v.SetSize(oi+incrorder_zz1+1);
       leg_w.SetSize(oi+incrorder_xx2+1);
-      u.SetSize(oi-1+incrorder_xx1+1);
-      v.SetSize(oi-1+incrorder_xx1+1);
 
-      ScaledLegendrePolynomial(oi+incrorder_zz1, lamid[0]-lamid[1], 1-lami[0]-lami[1], leg_u);
+      ScaledLegendrePolynomial(oi+incrorder_zz1, lami[0]-lami[1], 1-lami[0]-lami[1], leg_u);
       LegendrePolynomial::Eval(oi+incrorder_zz1, 2*lami[2]-1, leg_v);
       LegendrePolynomial::Eval(oi+incrorder_xx2, 2*lamiz[0]-1, leg_w);
 
       // ------------------------------------
-       shorter, not based on complex-based triangle shapes
+      // shorter, not based on complex-based triangle shapes
       for(int k=0; k<=oi+incrorder_xx2; k++)
       {
         for(int i = 0; i <= oi-1+incrorder_xx1; i++)
         {
           for(int j = 0; j+i <= oi-1+incrorder_xx1; j++)
           {
-            shape[ii++] = Prism_SymRotRot_l1Dl2xl2Dl1_vw(lamid[0], lamid[1], lamid[2]*leg_u[i]*leg_v[j], leg_w[k]);
-            shape[ii++] = Prism_SymRotRot_l1Dl2xl2Dl1_vw(lamid[2], lamid[0], lamid[1]*leg_u[i]*leg_v[j], leg_w[k]);
-            shape[ii++] = Prism_SymRotRot_l1Dl2xl2Dl1_vw(lamid[1], lamid[2], lamid[0]*leg_u[i]*leg_v[j], leg_w[k]);
+            shape[ii++] = Prism_SymRotRot_Dl2xDl1_vw(lami[0], lami[1], lami[2]*leg_u[i]*leg_v[j], leg_w[k]);
+            shape[ii++] = Prism_SymRotRot_Dl2xDl1_vw(lami[2], lami[0], lami[1]*leg_u[i]*leg_v[j], leg_w[k]);
+            shape[ii++] = Prism_SymRotRot_Dl2xDl1_vw(lami[1], lami[2], lami[0]*leg_u[i]*leg_v[j], leg_w[k]);
           }
         }
       }
