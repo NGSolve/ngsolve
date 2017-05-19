@@ -7,6 +7,7 @@
 
 #include <comp.hpp>
 #include "../fem/hdivdivfe.hpp"
+#include "hdivdivfespace.hpp"
 
 
 namespace ngcomp
@@ -21,6 +22,7 @@ namespace ngcomp
     enum { DIM_ELEMENT = D };
     enum { DIM_DMAT = D*D };
     enum { DIFFORDER = 0 };
+    enum { DIM_STRESS = D*(D+1)/2 };
 
     static Array<int> GetDimensions() { return Array<int> ( { D,D } ); }
     
@@ -28,6 +30,8 @@ namespace ngcomp
     static void GenerateMatrix(const FEL & bfel, const SIP & sip,
                                MAT & mat, LocalHeap & lh)
     {
+      static int timer = NgProfiler::CreateTimer ("HDivDiv DiffOpId GenerateMatrix");
+      NgProfiler::RegionTimer reg (timer);
       const HDivDivFiniteElement & fel =
         dynamic_cast<const HDivDivFiniteElement&> (bfel);
       
@@ -43,17 +47,31 @@ namespace ngcomp
         {
           Mat<D> sigma_ref;
           // 2D case
-          sigma_ref(0,0) = shape(i,0);
-          sigma_ref(1,1) = shape(i,1);
-          sigma_ref(0,1) = sigma_ref(1,0) = shape(i,2);
-          
+          if(D==2)
+          {
+            sigma_ref(0,0) = shape(i,0);
+            sigma_ref(1,1) = shape(i,1);
+            sigma_ref(0,1) = sigma_ref(1,0) = shape(i,2);
+          }
+          else // 3D case
+          {
+            sigma_ref(0,0) = shape(i,0);
+            sigma_ref(1,1) = shape(i,1);
+            sigma_ref(2,2) = shape(i,2);
+            sigma_ref(1,2) = sigma_ref(2,1) = shape(i,3);
+            sigma_ref(0,2) = sigma_ref(2,0) = shape(i,4);
+            sigma_ref(0,1) = sigma_ref(1,0) = shape(i,5);
+          }
+
           Mat<D> hm = jac * sigma_ref;
           Mat<D> sigma = hm * Trans(jac);
-          sigma *= (1.0 / sqr(det));
+          sigma *= (1.0 / (det));
           
           for (int j = 0; j < D*D; j++)
             mat(j, i) = sigma(j);
         }
+
+
     }
   };
 
@@ -77,6 +95,8 @@ namespace ngcomp
     static void GenerateMatrix (const FEL & bfel, const SIP & sip,
                                 MAT & mat, LocalHeap & lh)
     {
+      static int timer = NgProfiler::CreateTimer ("HDivDiv DiffOpDiv GenerateMatrix");
+      NgProfiler::RegionTimer reg (timer);
       const HDivDivFiniteElement & fel = 
         dynamic_cast<const HDivDivFiniteElement&> (bfel);
       
@@ -87,7 +107,7 @@ namespace ngcomp
       
       Mat<D> jac = sip.GetJacobian();
       double det = fabs (sip.GetJacobiDet());
-      Mat<D> sjac = (1.0/(det*det)) * jac;
+      Mat<D> sjac = (1.0/(det)) * jac;
       
       mat = sjac * Trans (div_shape);
       
@@ -179,115 +199,203 @@ namespace ngcomp
   };
   
   
-  class HDivDivFESpace : public FESpace
+  HDivDivFESpace :: HDivDivFESpace (shared_ptr<MeshAccess> ama,const Flags & flags,bool checkflags)
+    : FESpace(ama,flags)
   {
-    size_t ndof;
-    Array<int> first_facet_dof;
-    Array<int> first_element_dof;
+    order = int (flags.GetNumFlag ("order",1));
+    plus = flags.GetDefineFlag ("plus");
+    discontinuous = flags.GetDefineFlag("discontinuous");
+    uniform_order_facet = int(flags.GetNumFlag("orderfacet",order));
+    uniform_order_inner = int(flags.GetNumFlag("orderinner",order));
 
-    // add divdiv-free inner bubbles
-    bool plus;
-
-  public:
-    HDivDivFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags=false)
-      : FESpace(ama, flags)
+    auto one = make_shared<ConstantCoefficientFunction>(1);
+    // evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpBoundIdHDivSym<2>>>();
+    if(ma->GetDimension() == 2)
     {
-      order = int (flags.GetNumFlag ("order",1));
-      plus = flags.GetDefineFlag ("plus");
-      
       evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHDivDiv<2>>>();
-      auto one = make_shared<ConstantCoefficientFunction>(1);
       integrator[VOL] = make_shared<HDivDivMassIntegrator<2>> (one);
-      // evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpBoundIdHDivSym<2>>>();
       flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpDivHDivDiv<2>>>();
     }
-
-    virtual string GetClassName () const override
+    else
     {
-      return "HDivDivFESpace";
+      evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHDivDiv<3>>>();
+      integrator[VOL] = make_shared<HDivDivMassIntegrator<3>> (one);
+      flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpDivHDivDiv<3>>>();
     }
+  }
 
-    virtual void Update(LocalHeap & lh) override
+  void HDivDivFESpace :: Update(LocalHeap & lh)
+  {
+    // use order k+1 for certain inner or boundary shapes
+    // see hdivdivfe.hpp
+    int incrorder_xx1 = HDivDivFE<ET_PRISM>::incrorder_xx1;
+    int incrorder_xx2 = HDivDivFE<ET_PRISM>::incrorder_xx2;
+    int incrorder_zz1 = HDivDivFE<ET_PRISM>::incrorder_zz1;
+    int incrorder_zz2 = HDivDivFE<ET_PRISM>::incrorder_zz2;
+    int incrorder_xx1_bd = HDivDivFE<ET_PRISM>::incrorder_xx1_bd;
+    int incrorder_xx2_bd = HDivDivFE<ET_PRISM>::incrorder_xx2_bd;
+    int incrorder_zz1_bd = HDivDivFE<ET_PRISM>::incrorder_zz1_bd;
+    int incrorder_zz2_bd = HDivDivFE<ET_PRISM>::incrorder_zz2_bd;
+    first_facet_dof.SetSize (ma->GetNFacets()+1);
+    first_element_dof.SetSize (ma->GetNE()+1);
+
+    order_facet.SetSize(ma->GetNFacets());
+    order_facet = INT<2>(uniform_order_facet,uniform_order_facet);
+
+    order_inner.SetSize(ma->GetNE());
+    order_inner = INT<3>(uniform_order_inner,uniform_order_inner,uniform_order_inner);
+
+    Array<bool> fine_facet(ma->GetNFacets());
+    fine_facet = false;
+    for(auto el : ma->Elements(VOL))
+      fine_facet[el.Facets()] = true;
+
+    ndof = 0;
+    for(auto i : Range(ma->GetNFacets()))
     {
-      first_facet_dof.SetSize (ma->GetNFacets()+1);
-      first_element_dof.SetSize (ma->GetNE()+1);
-      
-      Array<bool> fine_facet(ma->GetNFacets());
-      fine_facet = false;
-      for (auto el : ma->Elements(VOL))
-        fine_facet[el.Facets()] = true;
+      first_facet_dof[i] = ndof;
+      if(!fine_facet[i]) continue;
 
-      ndof = 0;
-      for (auto i : Range(ma->GetNFacets()))
+      INT<2> of = order_facet[i];
+      switch(ma->GetFacetType(i))
+      {
+      case ET_SEGM:
+        ndof += of[0] + 1; break;
+      case ET_TRIG:
+        ndof += (of[0] + 1+incrorder_zz1_bd)*(of[0] + 2+incrorder_zz1_bd) / 2; break;
+      case ET_QUAD:
+        ndof += (of[0] + 1+incrorder_xx1_bd)*(of[1] + 1+incrorder_xx2_bd); break;
+      default:
+        throw Exception("illegal facet type");
+      }
+    }
+    first_facet_dof.Last() = ndof;
+    if(discontinuous) ndof = 0;
+
+    for(auto i : Range(ma->GetNE()))
+    {
+      first_element_dof[i] = ndof;
+      INT<3> oi = order_inner[i];
+      switch(ma->GetElType(i))
+      {
+      case ET_TRIG:
+        ndof += 3*(oi[0]+1)*(oi[0]+2)/2 - 3*(oi[0]+1);
+        if(plus) ndof += 2*oi[0];
+        if(discontinuous)
         {
-          first_facet_dof[i] = ndof;
-          if (!fine_facet[i]) continue;
-          
-          INT<2> of = order;
-          switch (ma->GetFacetType(i))
-            {
-            case ET_SEGM:
-              ndof += of[0] + 1; break;
-            case ET_TRIG:
-              ndof += (of[0] + 1)*(of[0] + 2) / 2; break;
-            case ET_QUAD:
-              ndof += (of[0] + 1)*(of[1] + 1); break;
-            default:
-              throw Exception("illegal facet type");
-            }
+          Array<int> fnums(8);
+          ma->GetElFacets(i,fnums);
+          for(int ii=0; ii<fnums.Size(); ii++)
+          {
+            ndof += first_facet_dof[fnums[ii]+1] - first_facet_dof[fnums[ii]];
+          }
         }
-      first_facet_dof.Last() = ndof;
-
-      for (ElementId ei : ma->Elements(VOL))
+        break;
+      case ET_PRISM:
+        ndof += 3*(oi[0]+1+incrorder_xx1)*(oi[0]+incrorder_xx1)*(oi[2]+1+incrorder_xx2)/2 + 
+          (oi[0]+1+incrorder_zz1)*(oi[0]+2+incrorder_zz1)*(oi[2]-1+incrorder_zz2)/2 + 
+          (oi[0]+1)*(oi[0]+2)*(oi[2]+1)/2*2;
+        if(discontinuous)
         {
-          first_element_dof[ei.Nr()] = ndof;
-          switch (ma->GetElType(ei))
-            {
-            case ET_TRIG:
-              ndof += 3*(order+1)*(order+2)/2 - 3*(order+1);
-              if (plus) ndof += 2*order;
-              break;
-            default:
-              throw Exception(string("illegal element type") + ToString(ma->GetElType(ei)));
-            }
+          Array<int> fnums(8);
+          ma->GetElFacets(i,fnums);
+          for(int ii=0; ii<fnums.Size(); ii++)
+          {
+            ndof += first_facet_dof[fnums[ii]+1] - first_facet_dof[fnums[ii]];
+          }
         }
-      first_element_dof.Last() = ndof;      
+        break;
+      default:
+        throw Exception(string("illegal element type") + ToString(ma->GetElType(i)));
+      }
     }
+    first_element_dof.Last() = ndof;
+    if(discontinuous)
+      first_facet_dof = 0;
 
-    virtual size_t GetNDof () const throw() override { return ndof; }
+    UpdateCouplingDofArray();
+  }
 
-    virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override
+  void  HDivDivFESpace :: UpdateCouplingDofArray ()
+  {
+    // coupling dof array
+
+    ctofdof.SetSize(ndof);
+    for(int i = 0; i<ndof; i++)
     {
-      Ngs_Element ngel = ma->GetElement(ei);
-
-      switch (ngel.GetType())
-        {
-          case ET_TRIG:
-            {
-              auto fe = new (alloc) HDivDivFE<ET_TRIG> (order, plus);
-              fe->SetVertexNumbers (ngel.vertices);
-              return *fe;
-            }
-        default:
-          throw Exception(string("HDivDivFESpace::GetFE: element-type ") +
-                          ToString(ngel.GetType()) + " not supported");
-        }
+      ctofdof[i] = discontinuous ? LOCAL_DOF : INTERFACE_DOF;
     }
+  }
 
-    void GetDofNrs (ElementId ei, Array<int> & dnums) const override
+
+  FiniteElement & HDivDivFESpace :: GetFE (ElementId ei,Allocator & alloc) const
+  {
+    Ngs_Element ngel = ma->GetElement(ei);
+
+    switch(ngel.GetType())
     {
-      Ngs_Element ngel = ma->GetElement(ei);
-
-      dnums.SetSize0();
-      for (auto f : ngel.Facets())
-        dnums += IntRange (first_facet_dof[f],
-                           first_facet_dof[f+1]);
-      if (ei.VB() == VOL)
-        dnums += IntRange (first_element_dof[ei.Nr()],
-                           first_element_dof[ei.Nr()+1]);
+    case ET_TRIG:
+    {
+      auto fe = new (alloc) HDivDivFE<ET_TRIG> (order,plus);
+      fe->SetVertexNumbers (ngel.vertices);
+      int ii = 0;
+      for(auto f : ngel.Facets())
+        fe->SetOrderFacet(ii++,order_facet[f]);
+      fe->SetOrderInner(order_inner[ei.Nr()]);
+      fe->ComputeNDof();
+      return *fe;
     }
-    
-  };
+    case ET_PRISM:
+    {
+      auto fe = new (alloc) HDivDivFE<ET_PRISM> (order,plus);
+      fe->SetVertexNumbers (ngel.vertices);
+      int ii = 0;
+      for(auto f : ngel.Facets())
+        fe->SetOrderFacet(ii++,order_facet[f]);
+      fe->SetOrderInner(order_inner[ei.Nr()]);
+      fe->ComputeNDof();
+      return *fe;
+    }
+    default:
+      throw Exception(string("HDivDivFESpace::GetFE: element-type ") +
+        ToString(ngel.GetType()) + " not supported");
+    }
+  }
+
+  void HDivDivFESpace ::  GetEdgeDofNrs (int ednr,Array<int> & dnums) const
+  {
+    dnums.SetSize0();
+    if(ma->GetDimension() == 2)
+      dnums += IntRange (first_facet_dof[ednr],
+        first_facet_dof[ednr+1]);
+  }
+
+  void HDivDivFESpace :: GetFaceDofNrs (int fanr,Array<int> & dnums) const
+  {
+    dnums.SetSize0();
+    if(ma->GetDimension() == 3)
+      dnums += IntRange (first_facet_dof[fanr],
+        first_facet_dof[fanr+1]);
+  }
+  void HDivDivFESpace :: GetInnerDofNrs (int elnr,Array<int> & dnums) const
+  {
+    dnums.SetSize0();
+    dnums += IntRange (first_element_dof[elnr],
+      first_element_dof[elnr+1]);
+  }
+
+  void HDivDivFESpace :: GetDofNrs (ElementId ei,Array<int> & dnums) const
+  {
+    Ngs_Element ngel = ma->GetElement(ei);
+
+    dnums.SetSize0();
+    for(auto f : ngel.Facets())
+      dnums += IntRange (first_facet_dof[f],
+        first_facet_dof[f+1]);
+    if(ei.VB() == VOL)
+      dnums += IntRange (first_element_dof[ei.Nr()],
+        first_element_dof[ei.Nr()+1]);
+  }
 
 
   static RegisterFESpace<HDivDivFESpace> init ("hdivdiv");
