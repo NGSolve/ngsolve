@@ -151,7 +151,8 @@ namespace ngstd
   void TaskManager :: StartWorkers()
   {
     done = false;
-
+    sync.SetSize(num_threads);
+    sync[0] = new atomic<int>(0);
     for (int i = 1; i < num_threads; i++)
       {
         std::thread([this,i]() { this->Loop(i); }).detach();
@@ -166,6 +167,7 @@ namespace ngstd
     done = true;
     while (active_workers)
       ;
+    delete sync[0];
     // cout << "workers all stopped !!!!!!!!!!!!!!!!!!!" << endl;
   }
 
@@ -174,7 +176,6 @@ namespace ngstd
   void TaskManager :: CreateJob (const function<void(TaskInfo&)> & afunc,
                                  int antasks)
   {
-
     trace->StartJob(jobnr, afunc.target_type());
     /*
     for (int j = 0; j < num_nodes; j++)
@@ -186,7 +187,7 @@ namespace ngstd
       }
     */
     func = &afunc;
-
+    sync[0]->store(1); // , memory_order_release);
 
     ntasks.store (antasks, memory_order_relaxed);
     ex = nullptr;
@@ -278,7 +279,8 @@ namespace ngstd
       throw Exception (*ex);
 
     trace->StopJob();
-    // atomic_thread_fence (memory_order_acquire);
+    for (auto ap : sync)
+      ap->load(); // memory_order_acquire);
   }
     
   void TaskManager :: Loop(int thd)
@@ -291,6 +293,8 @@ namespace ngstd
     static Timer texit("exit zone");
     static Timer tdec("decrement");
     thread_id = thd;
+
+    sync[thread_id] = new atomic<int>(0);
 
     int thds = GetNumThreads();
 
@@ -389,6 +393,10 @@ namespace ngstd
             }
         }
         }
+
+	for (auto ap : sync)
+	  ap->load(); // memory_order_acquire);
+        
         // atomic_thread_fence (memory_order_acquire);
         if (startup_function) (*startup_function)();
         
@@ -432,7 +440,8 @@ namespace ngstd
 #endif // __MIC__
 
         if (cleanup_function) (*cleanup_function)();
-        
+        sync[thread_id]->store(1); // , memory_order_release);
+
         jobdone = jobnr;
         
         /*
@@ -487,8 +496,8 @@ namespace ngstd
     mkl_set_num_threads_local(mkl_max);
 #endif
 
-
-    workers_on_node[mynode]++;
+    delete sync[thread_id];
+    workers_on_node[mynode]--;
     active_workers--;
   }
 

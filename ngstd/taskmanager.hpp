@@ -58,7 +58,7 @@ namespace ngstd
     atomic<int> done;
     atomic<int> active_workers;
     atomic<int> workers_on_node[8];   // max nodes
-
+    Array<atomic<int>*> sync;
     int sleep_usecs;
     bool sleep;
 
