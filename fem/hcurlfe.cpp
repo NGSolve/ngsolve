@@ -420,6 +420,19 @@ namespace ngfem
       }
   }
   
+  template <int D>
+  void HCurlFiniteElement<D> ::
+  CalcDualShape (const MappedIntegrationPoint<DIM,DIM> & mip, SliceMatrix<> shape) const
+  {
+    // throw Exception(string("CalcDualShape not implemented for H(curl) element ")+typeid(*this).name());
+    static bool first = true;
+    // if (first)
+      cerr << "CalcDualShape not implemented for H(curl) element " << typeid(*this).name() << endl;
+    first = false;
+  }
+
+
+  
   template class HCurlFiniteElement<1>;
   template class HCurlFiniteElement<2>;
   template class HCurlFiniteElement<3>;
