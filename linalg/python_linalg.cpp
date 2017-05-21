@@ -479,7 +479,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                for (auto val : block)
                  row[j++] = val.cast<int>();
              }
-           cout << "table = " << endl << blocktable << endl;
+           // cout << "table = " << endl << blocktable << endl;
            BaseSparseMatrix & sparse_mat = dynamic_cast<BaseSparseMatrix&>(m);
            return sparse_mat.CreateBlockJacobiPrecond (make_shared<Table<int>> (move(blocktable)));
          })
