@@ -299,7 +299,33 @@ namespace ngcomp
   };
 
 
+  /// Gradient operator for HCurl
+  template <int D>
+  class DiffOpHCurlDual : public DiffOp<DiffOpHCurlDual<D> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D };
+    enum { DIM_DMAT = D };
+    enum { DIFFORDER = 0 };
 
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      static_cast<const HCurlFiniteElement<D>&>(fel).CalcDualShape (mip, Trans(mat));
+    }
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      // fel.CalcDualShape (mip, mat);
+      throw Exception(string("DiffOpHCurlDual not available for mat ")+typeid(mat).name());
+    }
+  };
 
 
 
@@ -1533,7 +1559,9 @@ namespace ngcomp
       case 1:
         additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHCurl<1>>> ()); break;
       case 2:
-        additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHCurl<2>>> ()); break;
+        additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHCurl<2>>> ());
+        additional.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHCurlDual<2>>> ());
+        break;
       case 3:
         additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHCurl<3>>> ()); break;
       default:
