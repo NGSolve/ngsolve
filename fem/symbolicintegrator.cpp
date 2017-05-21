@@ -2261,6 +2261,8 @@ namespace ngfem
         IntegrationRule ir_facet(etfacet, 2*fel.Order());
         IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
         BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
+        mir.ComputeNormalsAndMeasure (eltype, k);
+        
 
         ProxyUserData ud(trial_proxies.Size(), lh);    
         const_cast<ElementTransformation&>(trafo).userdata = &ud;
@@ -2273,8 +2275,6 @@ namespace ngfem
         
         for (ProxyFunction * proxy : trial_proxies)
           proxy->Evaluator()->Apply(fel, mir, elx, ud.GetMemory(proxy), lh);
-        
-        mir.ComputeNormalsAndMeasure (eltype, k);
         
         FlatVector<> ely1(ely.Size(), lh);
         FlatMatrix<> val(mir.Size(), 1,lh);
