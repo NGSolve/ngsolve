@@ -2253,9 +2253,9 @@ used_idnrs : list of int = None
 
 //   PyExportArray<shared_ptr<BilinearFormIntegrator>> ();
 
-  // typedef BilinearForm BF;
-  typedef PyWrapper<BilinearForm> PyBF;
-  py::class_<PyBF>(m, "BilinearForm", docu_string(R"raw_string(
+  typedef BilinearForm BF;
+  py::class_<BF, shared_ptr<BilinearForm>>(m, "BilinearForm",
+                                             docu_string(R"raw_string(
 Used to store the left hand side of a PDE. integrators (ngsolve.BFI)
 to it to implement your PDE. If the left hand side is linear
 you can use BilinearForm.Assemble to assemble it after adding
@@ -2283,51 +2283,27 @@ flags : dict
       ngsolve.SetNumThreads(1) for serial output.
 
 )raw_string"))
-    .def("__init__",
-         [](PyBF *instance, PyFES fespace, string name, 
-                              bool symmetric, py::dict bpflags)
-                           {
-                             Flags flags = py::extract<Flags> (bpflags)();
-                             if (symmetric) flags.SetFlag("symmetric");
-                             new (instance) PyBF(CreateBilinearForm (fespace.Get(), name, flags));
-                           },
-           py::arg("space"),
-           py::arg("name")="bfa", 
-           py::arg("symmetric") = false,
-           py::arg("flags") = py::dict())
-    
-    .def("__init__",
-         [](PyBF *instance, PyFES trial_space, PyFES test_space,
-                              string name, py::dict bpflags)
-                           {
-                             Flags flags = py::extract<Flags> (bpflags)();
-                             new (instance) PyBF(CreateBilinearForm (trial_space.Get(), test_space.Get(), name, flags));
-                           },
-           py::arg("trialspace"),
-           py::arg("testspace"),
-           py::arg("name")="bfa", 
-           py::arg("flags") = py::dict())
 
-    .def("__str__", FunctionPointer( []( PyBF & self ) { return ToString<BilinearForm>(*self.Get()); } ))
+    .def("__str__", FunctionPointer( []( BF & self ) { return ToString<BilinearForm>(self); } ))
 
-    .def("Add", FunctionPointer ([](PyBF & self, PyWrapper<BilinearFormIntegrator> bfi) -> PyBF&
-                                 { self->AddIntegrator (bfi.Get()); return self; }),
+    .def("Add", FunctionPointer ([](BF& self, PyWrapper<BilinearFormIntegrator> bfi) -> BF&
+                                 { self.AddIntegrator (bfi.Get()); return self; }),
          py::return_value_policy::reference,
          "add integrator to bilinear-form")
     
     .def("__iadd__",FunctionPointer
-                  ([](PyBF self, PyWrapper<BilinearFormIntegrator> other) { *self += other.Get(); return self; } ))
+         ([](BF& self, PyWrapper<BilinearFormIntegrator> other) -> BilinearForm& { self += other.Get(); return self; } ))
 
     .def_property_readonly("integrators", FunctionPointer
-                  ([](PyBF & self)
+                  ([](BF & self)
                    {
                      py::list igts;
-                     for (auto igt : self->Integrators())
+                     for (auto igt : self.Integrators())
                        igts.append (py::cast(PyWrapper<BilinearFormIntegrator> (igt)));
                      return igts;
                    } ))
     
-    .def("Assemble", FunctionPointer([](PyBF & self, int heapsize, bool reallocate)
+    .def("Assemble", FunctionPointer([](BF & self, int heapsize, bool reallocate)
                                      {
                                        if (heapsize > global_heapsize)
                                          {
@@ -2337,19 +2313,19 @@ flags : dict
                                            if (first_time)
                                              { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }                                           
                                          }
-                                       self->ReAssemble(glh,reallocate);
+                                       self.ReAssemble(glh,reallocate);
                                      }),
          py::arg("heapsize")=1000000,py::arg("reallocate")=false)
 
-    .def_property_readonly("mat", FunctionPointer([](PyBF & self) -> PyBaseMatrix
+    .def_property_readonly("mat", FunctionPointer([](BF & self) -> PyBaseMatrix
                                          {
-                                           auto mat = self->GetMatrixPtr();
+                                           auto mat = self.GetMatrixPtr();
                                            if (!mat)
                                              throw py::type_error("matrix not ready - assemble bilinearform first");
                                            return mat;
                                          }))
 
-    .def("__getitem__", FunctionPointer( [](PyBF & self, py::tuple t)
+    .def("__getitem__", FunctionPointer( [](BF & self, py::tuple t)
                                          {
                                            int ind1 = py::extract<int>(t[0])();
                                            int ind2 = py::extract<int>(t[1])();
@@ -2358,7 +2334,7 @@ flags : dict
     
 
     .def_property_readonly("components", FunctionPointer
-                  ([](PyBF & self)-> py::list
+                           ([](shared_ptr<BilinearForm> self)-> py::list
                    { 
                      py::list bfs;
                      auto fes = dynamic_pointer_cast<CompoundFESpace> (self->GetFESpace());
@@ -2368,27 +2344,27 @@ flags : dict
                      int ncomp = fes->GetNSpaces();
                      for (int i = 0; i < ncomp; i++)
                        // bfs.append(shared_ptr<BilinearForm> (new ComponentBilinearForm(self.Get().get(), i, ncomp)));
-                       bfs.append(py::cast(PyWrapper<BilinearForm> (make_shared<ComponentBilinearForm>(self.Get(), i, ncomp))));
+                       bfs.append(shared_ptr<BilinearForm>(make_shared<ComponentBilinearForm>(self, i, ncomp)));
                      return bfs;
                    }),
                   "list of components for bilinearforms on compound-space")
 
     .def("__call__", FunctionPointer
-         ([](PyBF & self, const GridFunction & u, const GridFunction & v)
+         ([](BF & self, const GridFunction & u, const GridFunction & v)
           {
-            auto au = self->GetMatrix().CreateVector();
-            au = self->GetMatrix() * u.GetVector();
+            auto au = self.GetMatrix().CreateVector();
+            au = self.GetMatrix() * u.GetVector();
             return InnerProduct (au, v.GetVector());
           }))
 
     .def("Energy",FunctionPointer
-         ([](PyBF & self, PyBaseVector & x)
+         ([](BF & self, PyBaseVector & x)
           {
-            return self->Energy(*x);
+            return self.Energy(*x);
           }))
     
     .def("Apply", FunctionPointer
-	 ([](PyBF & self, PyBaseVector & x, PyBaseVector & y, int heapsize)
+	 ([](BF & self, PyBaseVector & x, PyBaseVector & y, int heapsize)
 	  {
             if (heapsize > global_heapsize)
               {
@@ -2398,7 +2374,7 @@ flags : dict
                 if (first_time)
                   { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }                
               }
-	    self->ApplyMatrix (*x, *y, glh);
+	    self.ApplyMatrix (*x, *y, glh);
 	  }),
          py::arg("x"),py::arg("y"),py::arg("heapsize")=1000000,docu_string(R"raw_string(
 Applies a (non-)linear variational formulation to x and stores the result in y.
@@ -2418,7 +2394,7 @@ heapsize : int
 )raw_string"))
 
     .def("ComputeInternal", FunctionPointer
-	 ([](PyBF & self, PyBaseVector & u, PyBaseVector & f, int heapsize)
+	 ([](BF & self, PyBaseVector & u, PyBaseVector & f, int heapsize)
 	  {
             if (heapsize > global_heapsize)
               {
@@ -2429,12 +2405,12 @@ heapsize : int
                   { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }
                 
               }
-	    self->ComputeInternal (*u, *f, glh );
+	    self.ComputeInternal (*u, *f, glh );
 	  }),
          py::arg("u"),py::arg("f"),py::arg("heapsize")=1000000)
 
     .def("AssembleLinearization", FunctionPointer
-	 ([](PyBF & self, PyBaseVector & ulin, int heapsize)
+	 ([](BF & self, PyBaseVector & ulin, int heapsize)
 	  {
             if (heapsize > global_heapsize)
               {
@@ -2444,35 +2420,57 @@ heapsize : int
                 if (first_time)
                   { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }
               }
-	    self->AssembleLinearization (*ulin, glh);
+	    self.AssembleLinearization (*ulin, glh);
 	  }),
          py::arg("ulin"),py::arg("heapsize")=1000000)
 
     .def("Flux", FunctionPointer
-         ([](PyBF & self, shared_ptr<GridFunction> gf) -> PyCF
+         ([](BF & self, shared_ptr<GridFunction> gf) -> PyCF
           {
-            return PyCF(make_shared<GridFunctionCoefficientFunction> (gf, self->GetIntegrator(0)));
+            return PyCF(make_shared<GridFunctionCoefficientFunction> (gf, self.GetIntegrator(0)));
           }))
     
     .def_property_readonly("harmonic_extension", FunctionPointer
-                  ([](PyBF & self) -> PyBaseMatrix
+                  ([](BF & self) -> PyBaseMatrix
                    {
-                     return self->GetHarmonicExtension();
+                     return self.GetHarmonicExtension();
                    })
                   )
     .def_property_readonly("harmonic_extension_trans", FunctionPointer
-                  ([](PyBF & self) -> PyBaseMatrix
+                  ([](BF & self) -> PyBaseMatrix
                    {
-                     return self->GetHarmonicExtensionTrans();
+                     return self.GetHarmonicExtensionTrans();
                    })
                   )
     .def_property_readonly("inner_solve", FunctionPointer
-                  ([](PyBF & self) -> PyBaseMatrix
+                  ([](BF & self) -> PyBaseMatrix
                    {
-                     return self->GetInnerSolve();
+                     return self.GetInnerSolve();
                    })
                   )
     ;
+
+  m.def("CreateBilinearForm",  [] (py::object class_, PyFES fespace, string name,
+                              bool symmetric, py::dict bpflags)
+                           {
+                             Flags flags = py::extract<Flags> (bpflags)();
+                             if (symmetric) flags.SetFlag("symmetric");
+                             return CreateBilinearForm (fespace.Get(), name, flags);
+                           },
+        py::arg("self"), py::arg("space"),
+           py::arg("name")="bfa",
+           py::arg("symmetric") = false,
+        py::arg("flags") = py::dict());
+  m.def("CreateBilinearForm", [](py::object class_,  PyFES trial_space, PyFES test_space,
+                              string name, py::dict bpflags)
+                           {
+                             Flags flags = py::extract<Flags> (bpflags)();
+                             return CreateBilinearForm (trial_space.Get(), test_space.Get(), name, flags);
+                           },
+        py::arg("self"), py::arg("trialspace"),
+           py::arg("testspace"),
+           py::arg("name")="bfa",
+        py::arg("flags") = py::dict());
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
@@ -2592,12 +2590,12 @@ flags : dict
 
    
    m.def("Preconditioner",
-         [](PyWrapper<BilinearForm> bfa, const string & type, Flags flags)
+         [](shared_ptr<BilinearForm> bfa, const string & type, Flags flags)
                            { 
                              auto creator = GetPreconditionerClasses().GetPreconditioner(type);
                              if (creator == nullptr)
                                throw Exception(string("nothing known about preconditioner '") + type + "'");
-                             return creator->creatorbf(bfa.Get(), flags, "noname-pre");
+                             return creator->creatorbf(bfa, flags, "noname-pre");
                            },
           py::arg("bf"), py::arg("type"), py::arg("flags")=py::dict()
           );
@@ -2632,7 +2630,7 @@ flags : dict
   PyExportSymbolTable<shared_ptr<FESpace>, PyWrapper<FESpace>> (m);
   PyExportSymbolTable<shared_ptr<CoefficientFunction>, PyWrapper<CoefficientFunction>> (m);
   PyExportSymbolTable<shared_ptr<GridFunction>, PyWrapper<GridFunction>> (m);
-  PyExportSymbolTable<shared_ptr<BilinearForm>, PyWrapper<BilinearForm>>(m);
+  PyExportSymbolTable<shared_ptr<BilinearForm>>(m);
   PyExportSymbolTable<shared_ptr<LinearForm>, PyWrapper<LinearForm>>(m);
   PyExportSymbolTable<shared_ptr<Preconditioner>, PyWrapper<Preconditioner>> (m);
   PyExportSymbolTable<shared_ptr<NumProc>, PyWrapper<NumProc>> (m);
@@ -2724,9 +2722,9 @@ flags : dict
                                   self->AddGridFunction (gf->GetName(), gf.Get());
                                 }))
 
-    .def("Add", FunctionPointer([](PyPDE self, PyWrapper<BilinearForm> bf)
+    .def("Add", FunctionPointer([](PyPDE self, shared_ptr<BilinearForm> bf)
                                 {
-                                  self->AddBilinearForm (bf->GetName(), bf.Get());
+                                  self->AddBilinearForm (bf->GetName(), bf);
                                 }))
 
     .def("Add", FunctionPointer([](PyPDE self, PyWrapper<LinearForm> lf)
