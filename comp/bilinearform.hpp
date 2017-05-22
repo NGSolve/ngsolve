@@ -919,12 +919,4 @@ namespace ngcomp
   
 }
 
-namespace ngstd
-{
-  template <>
-  struct PyWrapperTraits<ngcomp::BilinearForm> {
-    typedef PyWrapperClass<ngcomp::BilinearForm> type;
-  };
-}
-
 #endif

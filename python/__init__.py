@@ -41,6 +41,12 @@ del os
 
 from ngslib import *
 
+def __empty_init(x, *args, **kwargs):
+    return
+
+comp.BilinearForm.__new__ = comp.CreateBilinearForm
+comp.BilinearForm.__init__ = __empty_init
+
 ngstd.__all__ = ['ArrayD', 'ArrayI', 'BitArray', 'Flags', 'HeapReset', 'IntRange', 'LocalHeap', 'Timers', 'RunWithTaskManager', 'TaskManager', 'SetNumThreads']
 bla.__all__ = ['Matrix', 'Vector', 'InnerProduct', 'Norm']
 la.__all__ = ['BaseMatrix', 'BaseVector', 'CreateVVector', 'InnerProduct', 'CGSolver', 'QMRSolver', 'GMRESSolver', 'ArnoldiSolver', 'Projector']
