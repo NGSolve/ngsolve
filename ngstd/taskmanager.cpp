@@ -154,6 +154,7 @@ namespace ngstd
     sync.SetSize(num_threads);
     sync[0] = new atomic<int>(0);
     completed_tasks = 0;
+    nodedata[0]->completed_tasks = 0;
     for (int i = 1; i < num_threads; i++)
       {
         std::thread([this,i]() { this->Loop(i); }).detach();
