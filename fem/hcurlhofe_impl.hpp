@@ -1239,6 +1239,18 @@ namespace ngfem
       }
   }
 
+
+  template <ELEMENT_TYPE ET, 
+            template <ELEMENT_TYPE ET2> class TSHAPES, 
+            typename BASE>
+  void HCurlHighOrderFE<ET,TSHAPES,BASE> ::
+  CalcDualShape (const MappedIntegrationPoint<DIM,DIM> & mip, SliceMatrix<> shape) const
+  {
+    static_cast<const HCurlHighOrderFE_Shape<ET>*> (this) -> CalcDualShape2 (mip, shape);
+  }
+  
+
+  
 }
 
 

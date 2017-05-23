@@ -153,6 +153,8 @@ namespace ngstd
     done = false;
     sync.SetSize(num_threads);
     sync[0] = new atomic<int>(0);
+    completed_tasks = 0;
+    nodedata[0]->completed_tasks = 0;
     for (int i = 1; i < num_threads; i++)
       {
         std::thread([this,i]() { this->Loop(i); }).detach();
@@ -189,7 +191,7 @@ namespace ngstd
     func = &afunc;
     sync[0]->store(1); // , memory_order_release);
 
-    ntasks.store (antasks, memory_order_relaxed);
+    ntasks.store (antasks); // , memory_order_relaxed);
     ex = nullptr;
 
     // atomic_thread_fence (memory_order_release);
@@ -210,10 +212,12 @@ namespace ngstd
     jobnr++;
     
     for (int j = 0; j < num_nodes; j++)
-      // nodedata[j]->participate.store (0, memory_order_release);
-      nodedata[j]->participate |= 1;
-      // nodedata[j]->participate.store (1, memory_order_release);
-
+      {
+        // nodedata[j]->participate.store (0, memory_order_release);
+        // nodedata[j]->start_cnt = 0;
+        nodedata[j]->participate |= 1;
+        // nodedata[j]->participate.store (1, memory_order_release);
+      }
     if (startup_function) (*startup_function)();
     
     int thd = 0;
@@ -250,6 +254,7 @@ namespace ngstd
               {
 		RegionTracer t(ti.thread_nr, jobnr, RegionTracer::ID_JOB, ti.task_nr);
                 (*func)(ti); 
+                mynode_data.completed_tasks++;
               }
 
 	      // if (++mynode_data.complete_cnt == mytasks.Size())
@@ -260,6 +265,7 @@ namespace ngstd
     catch (Exception e)
       {
         {
+          // cout << "got exception in TM:" << ex->What() << endl;
           lock_guard<mutex> guard(copyex_mutex);
           delete ex;
           ex = new Exception (e);
@@ -272,8 +278,23 @@ namespace ngstd
     
     for (int j = 0; j < num_nodes; j++)
       if (workers_on_node[j])
-        while (complete[j] != jobnr)
-          ;
+        {
+          while (complete[j] != jobnr)
+            ;
+          /*
+          while (completed_tasks+ntasks/num_nodes != nodedata[j]->completed_tasks)
+            cout << "master, check node " << j << " node complete = " << nodedata[j]->completed_tasks << " should be " << completed_tasks+ntasks/num_nodes << endl;
+            ;
+          */
+        }
+
+
+    completed_tasks += ntasks / num_nodes;
+    for (int j = 0; j < num_nodes; j++)
+      if (completed_tasks != nodedata[j]->completed_tasks)
+        cout << "tasks missing: node = " << j 
+             << "global tasks = " << completed_tasks
+             << "node tasks = " << nodedata[j]->completed_tasks << endl;
 
     if (ex)
       throw Exception (*ex);
@@ -394,9 +415,17 @@ namespace ngstd
         }
         }
 
-	for (auto ap : sync)
-	  ap->load(); // memory_order_acquire);
+        // for (auto ap : sync)
+        // ap->load(); // memory_order_acquire);
         
+        for (int j = 0; j < num_nodes; j++)
+          while (completed_tasks > nodedata[j]->completed_tasks)
+            ;
+        /*
+          cout << "mynode = " << mynode << ", j = " << completed_tasks << " node comp = " << nodedata[j]->completed_tasks << endl;
+        */
+        
+
         // atomic_thread_fence (memory_order_acquire);
         if (startup_function) (*startup_function)();
         
@@ -418,6 +447,7 @@ namespace ngstd
                   {
 		    RegionTracer t(ti.thread_nr, jobnr, RegionTracer::ID_JOB, ti.task_nr);
                     (*func)(ti);
+                    mynode_data.completed_tasks++;
                   }
 		  // if (++mynode_data.complete_cnt == mytasks.Size())
                   // complete[mynode] = true;
@@ -427,6 +457,7 @@ namespace ngstd
         catch (Exception e)
           {
             {
+              // cout << "got exception in TM" << endl; 
               lock_guard<mutex> guard(copyex_mutex);
               delete ex;
               ex = new Exception (e);
@@ -443,50 +474,23 @@ namespace ngstd
         sync[thread_id]->store(1); // , memory_order_release);
 
         jobdone = jobnr;
-        
-        /*
-        mynode_data.participate--;
+
+        mynode_data.participate-=2;
 
 	{
-	  int oldpart = 0;
-	  if (mynode_data.participate.compare_exchange_weak (oldpart, -1))
-	    {
-	      complete[mynode] = jobnr; 
-	      if (mynode != 0)
-		mynode_data.start_cnt = 0;
-	    }	      
-	}
-        */
-        /*
-        {
-          int oldval = mynode_data.participate -= 2;
-          if ( (oldval & -2) == 0)
-            { 
-              mynode_data.participate &= -2;  // no one gets in 
-              if (mynode_data.participate == 0) // really the last one ? 
-                {
-                  complete[mynode] = jobnr; 
-                  if (mynode != 0)
-                    mynode_data.start_cnt = 0;              
-                }
-            }
-        }
-        */
-        {
-          // RegionTracer t(ti.thread_nr, tdec, ti.task_nr);            
-          mynode_data.participate-=2;
-          // mynode_data.participate_exit += 2;
-        }
-	{
-          // RegionTracer t(ti.thread_nr, texit, ti.task_nr);            
 	  int oldpart = 1;
-          // int oldpart = mynode_data.participate_exit + 1;
 	  if (mynode_data.participate.compare_exchange_strong (oldpart, 0))
 	    {
-              // mynode_data.participate_exit = 0;
-	      if (mynode != 0)
-		mynode_data.start_cnt = 0;
-	      complete[mynode] = jobnr; 
+              if (jobdone < jobnr.load())
+                { // reopen gate
+                  mynode_data.participate |= 1;                  
+                }
+              else
+                {
+                  if (mynode != 0)
+                    mynode_data.start_cnt = 0;
+                  complete[mynode] = jobnr.load(); 
+                }
 	    }	      
 	}
       }

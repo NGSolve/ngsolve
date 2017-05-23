@@ -303,11 +303,18 @@ public:
     y = ((1.0/mip.GetJacobiDet())* InnerProduct (x, mip.GetNV()) ) * Cast(fel).GetShape (mip.IP(), lh);
   }
 
+  using DiffOp<DiffOpIdVecHDivBoundary<D,FEL>>::ApplySIMDIR;          
+  static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                           BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+  {
+    Cast(fel).Evaluate (mir, x, y);
+  }    
+  
   using DiffOp<DiffOpIdVecHDivBoundary<D,FEL>>::AddTransSIMDIR;          
   static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
                               BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
   {
-    Cast(fel).AddTransVec (mir, y, x);
+    Cast(fel).AddTrans (mir, y, x);
   }    
 };
 
