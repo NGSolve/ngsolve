@@ -274,9 +274,10 @@ namespace ngcomp
 
     for(auto i : Range(ma->GetNE()))
     {
+      ElementId ei(VOL, i);
       first_element_dof[i] = ndof;
       INT<3> oi = order_inner[i];
-      switch(ma->GetElType(i))
+      switch(ma->GetElType(ei))
       {
       case ET_TRIG:
         ndof += 3*(oi[0]+1)*(oi[0]+2)/2 - 3*(oi[0]+1);
@@ -306,7 +307,7 @@ namespace ngcomp
         }
         break;
       default:
-        throw Exception(string("illegal element type") + ToString(ma->GetElType(i)));
+        throw Exception(string("illegal element type") + ToString(ma->GetElType(ei)));
       }
     }
     first_element_dof.Last() = ndof;
