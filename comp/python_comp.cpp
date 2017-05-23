@@ -1082,6 +1082,12 @@ mesh (netgen.Mesh): a mesh generated from Netgen
             ma.GetParentNodes (vnum, &parents[0]);
             return py::make_tuple(parents[0], parents[1]);
           }))
+
+    .def("SetElementOrder",
+         [](MeshAccess & ma, ElementId id, int order)
+         {
+           ma.SetElOrder(id.Nr(), order);
+         })
     
     // TODO: Docu
     .def("Curve",
