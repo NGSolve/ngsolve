@@ -923,8 +923,9 @@ namespace ngstd
 {
   template <>
   struct PyWrapperTraits<ngcomp::BilinearForm> {
-    typedef PyWrapperClass<ngcomp::BilinearForm> type;
+    typedef shared_ptr<ngcomp::BilinearForm> type;
   };
 }
+
 
 #endif
