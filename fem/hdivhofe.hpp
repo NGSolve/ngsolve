@@ -66,9 +66,45 @@ namespace ngfem
       static_cast<const FEL*> (this) -> T_CalcShape (tip, shape);
     }
 
-    virtual void AddTransVec (const SIMD_BaseMappedIntegrationRule & bmir,
-                              BareSliceMatrix<SIMD<double>> values,
-                              BareSliceVector<> coefs) const
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & bmir,
+                           BareSliceVector<> coefs,
+                           BareSliceMatrix<SIMD<double>> values) const
+    {
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM+1>&> (bmir);
+      for (size_t i = 0; i < mir.Size(); i++)
+        {
+          auto & mip = mir[i];
+          auto nv = mip.GetNV();
+          /*
+          SIMD<double> sum = 0.0;
+          for (size_t j = 0; j < DIM+1; j++)
+            sum += nv[j] * values(j,i);
+          SIMD<double> val = sum / mip.GetJacobiDet();
+
+          TIP<DIM,SIMD<double>> tip = mip.IP().template TIp<DIM>();
+          static_cast<const FEL*> (this) ->
+            T_CalcShape (tip, SBLambda([&] (int nr, SIMD<double> shape)
+                                       {
+                                         coefs(nr) += HSum(shape*val);
+                                       }));
+          */
+          SIMD<double> sum(0.0);
+          TIP<DIM,SIMD<double>> tip = mip.IP().template TIp<DIM>();
+          static_cast<const FEL*> (this) ->
+            T_CalcShape (tip, SBLambda([&] (int nr, SIMD<double> shape)
+                                       {
+                                         sum += coefs(nr) * shape;
+                                       }));
+          sum /= mip.GetJacobiDet();
+          for (size_t j = 0; j < DIM+1; j++)
+            values(j,i) = nv[j] * sum;
+        }
+    }
+
+    
+    virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & bmir,
+                           BareSliceMatrix<SIMD<double>> values,
+                           BareSliceVector<> coefs) const
     {
       auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM+1>&> (bmir);
       for (size_t i = 0; i < mir.Size(); i++)
