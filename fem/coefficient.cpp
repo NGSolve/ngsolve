@@ -3788,15 +3788,16 @@ public:
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
                            AFlatMatrix<double> values) const
     {
+      size_t nv = ir.Size(), dim = Dimension();      
       auto if_values = *input[0];
       auto then_values = *input[1];
       auto else_values = *input[2];
       
-      for (int k = 0; k < values.Height(); k++)
-        for (int i = 0; i < values.VWidth(); i++)
+      for (size_t k = 0; k < dim; k++)
+        for (size_t i = 0; i < nv; i++)
           values.Get(k,i) = ngstd::IfPos (if_values.Get(i),
                                           then_values.Get(k,i),
-                                          else_values.Get(k,i)); // .Data();
+                                          else_values.Get(k,i)); 
     }
 
     
@@ -3984,7 +3985,30 @@ public:
       */
     }
 
-
+    virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
+                                FlatArray<AFlatMatrix<>*> input,
+                                FlatArray<AFlatMatrix<>*> dinput,
+                                AFlatMatrix<> result,
+                                AFlatMatrix<> deriv) const
+    {
+      size_t nv = ir.Size(), dim = Dimension();      
+      auto if_values = *input[0];
+      auto then_values = *input[1];
+      auto else_values = *input[2];
+      auto then_deriv = *dinput[1];
+      auto else_deriv = *dinput[2];
+      
+      for (size_t k = 0; k < dim; k++)
+        for (size_t i = 0; i < nv; i++)
+          {
+            result.Get(k,i) = ngstd::IfPos (if_values.Get(i),
+                                            then_values.Get(k,i),
+                                            else_values.Get(k,i));
+            deriv.Get(k,i) = ngstd::IfPos (if_values.Get(i),
+                                           then_deriv.Get(k,i),
+                                           else_deriv.Get(k,i));
+          }
+    }
     
     virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
     {
