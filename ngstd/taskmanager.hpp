@@ -41,6 +41,7 @@ namespace ngstd
       atomic<int> start_cnt{0};
       // atomic<int> complete_cnt;
       atomic<int> participate{0};
+      atomic<int> completed_tasks{0};
       // atomic<int> participate_exit;
 
       // NodeData() : start_cnt(0), participate(0), participate_exit(0) { ; }
@@ -50,9 +51,10 @@ namespace ngstd
     static const function<void()> * startup_function;
     static const function<void()> * cleanup_function;
     atomic<int> ntasks;
+    atomic<int> completed_tasks;
     Exception * ex;
 
-    int jobnr;
+    atomic<int> jobnr;
 
     atomic<int> complete[8];   // max nodes
     atomic<int> done;
