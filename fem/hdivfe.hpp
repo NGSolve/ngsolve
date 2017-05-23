@@ -173,10 +173,17 @@ namespace ngfem
       return shape;
     }
 
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
+                           BareSliceVector<> coefs,
+                           BareSliceMatrix<SIMD<double>> values) const
+    {
+      throw ExceptionNOSIMD ("HDivNormalFE::Evaluate (simd) not overloaded");
+    }
+    
     // values * normal
-    virtual void AddTransVec (const SIMD_BaseMappedIntegrationRule & ir,
-                              BareSliceMatrix<SIMD<double>> values,
-                              BareSliceVector<> coefs) const
+    virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir,
+                           BareSliceMatrix<SIMD<double>> values,
+                           BareSliceVector<> coefs) const
     {
       throw ExceptionNOSIMD ("HDivNormalFE::AddTrans (simd) not overloaded");
     }
