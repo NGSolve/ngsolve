@@ -493,6 +493,23 @@ namespace ngcomp
       delete specialelements[i];
     specialelements.DeleteAll();
 
+    if (order_policy == VARIABLE_ORDER &&
+        ma->GetTimeStamp() > order_timestamp)
+      {
+        FESpace::order_edge.SetSize(ned);
+        FESpace::order_face_left.SetSize(ma->GetNNodes(NT_FACE));
+        FESpace::order_face_right.SetSize(ma->GetNNodes(NT_FACE));
+        FESpace::order_cell_left.SetSize(ma->GetNNodes(NT_CELL));
+        FESpace::order_cell_right.SetSize(ma->GetNNodes(NT_CELL));
+        FESpace::order_edge = order;
+        FESpace::order_face_left = order;
+        FESpace::order_face_right = order;
+        FESpace::order_cell_left = order;
+        FESpace::order_cell_right = order;
+        order_timestamp = ma->GetTimeStamp();
+      }
+
+    
     order_edge.SetSize (ned);   
     order_face.SetSize (nfa); 
     order_inner.SetSize (ne);
@@ -723,6 +740,61 @@ namespace ngcomp
 
   void HCurlHighOrderFESpace :: UpdateDofTables()
   {
+    if (order_policy == VARIABLE_ORDER)
+      {
+        size_t nedge = ma->GetNEdges();
+        size_t nface = ma->GetNFaces();
+        size_t ncell = ma->GetNNodes(NT_CELL);
+
+        ndof = nedge;
+        
+        first_edge_dof.SetSize (nedge+1); 
+        for (auto i : Range(nedge))
+          {
+            first_edge_dof[i] = ndof;
+            if(FESpace::order_edge[i] > 0)
+              ndof += FESpace::order_edge[i];
+          }
+        first_edge_dof[nedge] = ndof;
+
+        first_face_dof.SetSize (nface+1);
+        for (auto i : Range(nface))
+          { 
+            first_face_dof[i] = ndof; 
+            INT<2> pl = FESpace::order_face_left[i];
+            INT<2> pr = FESpace::order_face_right[i];
+            int ngrad = 0, ncurl = 0;
+            switch (ma->GetFaceType(i))
+              {
+              case ET_TRIG: 
+                {
+                  ngrad = pl[0]*(pl[0]-1)/2;
+                  ncurl = (pr[0]+2)*(pr[0]-1)/2;
+                  break;
+                }
+              case ET_QUAD:
+                {
+                  /*
+                  ndof += (usegrad_face[i]+1)*p[0]*p[1] + p[0] + p[1]; 
+                  face_ngrad[i] = usegrad_face[i]*p[0]*p[1];; 
+                  */
+                  break; 
+                }
+              default:
+                __assume(false);
+              }
+            
+            if (ngrad < 0) ngrad = 0;
+            if (ncurl < 0) ncurl = 0;
+            ndof += ngrad + ncurl;
+          } 
+        first_face_dof[nface] = ndof;   
+        return;
+      }
+
+
+
+    
     int ne = ma->GetNE();
 
     int ned = ma->GetNEdges();
@@ -908,10 +980,9 @@ namespace ngcomp
 
   void  HCurlHighOrderFESpace :: UpdateCouplingDofArray ()
   {
-    LocalHeap lh(1000000, "HCurlHighOrderFESpace::UpdateCouplingDofArray");
     ctofdof.SetSize(ndof);
     ctofdof = WIREBASKET_DOF;
-    
+
     if(discontinuous) 
       {
 	ctofdof = LOCAL_DOF;
@@ -925,9 +996,15 @@ namespace ngcomp
 
 	IntRange range = GetEdgeDofs (edge);
 	ctofdof.Range (range) = INTERFACE_DOF;
-	// if (range.Size() >= 2)
-        if (wb_loedge)
+        if (wb_loedge && range.Size() >= 1)
 	  ctofdof[range.First()] = WIREBASKET_DOF;
+      }
+
+    if (order_policy == VARIABLE_ORDER && ma->GetDimension() == 2)
+      { 
+        for (auto face : Range(ma->GetNFaces()))
+          ctofdof.Range(GetFaceDofs(face)) = LOCAL_DOF;
+        return;
       }
     
     // faces 
@@ -947,7 +1024,8 @@ namespace ngcomp
 	  */
 	}
 
-
+    
+    LocalHeap lh(1000000, "HCurlHighOrderFESpace::UpdateCouplingDofArray");
     Array<int> dnums, edge_nums, face_nums;
     for (int el = 0; el < ma->GetNE(); el++)
       {
@@ -1074,128 +1152,154 @@ namespace ngcomp
       }
       
   }
-
+  
   template <ELEMENT_TYPE ET>
-    FiniteElement & HCurlHighOrderFESpace :: T_GetFE (ElementId ei, Allocator & lh) const
+  FiniteElement & HCurlHighOrderFESpace :: T_GetFE (ElementId ei, Allocator & lh) const
   {
+    if (order_policy == VARIABLE_ORDER)
+      {
+        // cout << "ei = " << ei << endl;
+        Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,VOL> (ei.Nr());
+        if (!DefinedOn (ngel))
+          return * new (lh) HCurlDummyFE<ET>();
+        
+        HCurlHighOrderFE<ET> * hofe =  new (lh) HCurlHighOrderFE<ET> ();
+        
+        hofe -> SetVertexNumbers (ngel.vertices);
+        bool ta[12] = { true, true, true, true, true, true, true, true, true, true, true, true };
+        hofe -> SetUseGradEdge (ta);
+        hofe -> SetUseGradFace (ta);
+        /*
+        cout << "order-edge = " << int(FESpace::order_edge[ngel.Edges()[0]])
+             << int(FESpace::order_edge[ngel.Edges()[1]])
+             << int(FESpace::order_edge[ngel.Edges()[2]]) << endl;
+        cout << "order-face = " << FESpace::order_face_right[ngel.Faces()] << endl;
+        */
+        hofe -> SetOrderEdge (FESpace::order_edge[ngel.Edges()]);
+        hofe -> SetOrderFace (FESpace::order_face_right[ngel.Faces()]);
+        hofe -> SetType1 (false);
+        hofe -> ComputeNDof();
+        // cout << "                                neldof = " << hofe->GetNDof() << ", order = " << hofe->Order() << endl;
+        return *hofe;
+      }
+
+    
     switch(ei.VB())
       {
-  case VOL:
-    {
-    Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,VOL> (ei.Nr());
-    if (!DefinedOn (ngel))
-      return * new (lh) HCurlDummyFE<ET>();
-
-    HCurlHighOrderFE<ET> * hofe =  new (lh) HCurlHighOrderFE<ET> ();
-    
-    hofe -> SetVertexNumbers (ngel.vertices);
-
-    hofe -> SetOrderEdge (order_edge[ngel.Edges()]);
-    hofe -> SetUseGradEdge (usegrad_edge[ngel.Edges()]);
-
-    switch (int(ET_trait<ET>::DIM))
-      {
-  case 1:
-    throw Exception("no 1D elements in H(curl)");
-  case 2:
-    {
-    hofe -> SetOrderCell (order_inner[ei.Nr()]);   // old style
-    INT<2,TORDER> p(order_inner[ei.Nr()][0], order_inner[ei.Nr()][1]);
-    FlatArray<INT<2,TORDER> > of(1, &p);
-    hofe -> SetOrderFace (of);
+      case VOL:
+        {
+          Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,VOL> (ei.Nr());
+          if (!DefinedOn (ngel))
+            return * new (lh) HCurlDummyFE<ET>();
           
-    hofe -> SetUseGradCell (usegrad_cell[ei.Nr()]);  // old style
-    FlatArray<bool> augf(1,&usegrad_cell[ei.Nr()]);
-    hofe -> SetUseGradFace (augf); 
-    break;
-  }
-  case 3:
-    {
-    hofe -> SetOrderFace (order_face[ngel.Faces()]);
-    hofe -> SetUseGradFace (usegrad_face[ngel.Faces()]);
+          HCurlHighOrderFE<ET> * hofe =  new (lh) HCurlHighOrderFE<ET> ();
           
-    hofe -> SetOrderCell (order_inner[ei.Nr()]);
-    hofe -> SetUseGradCell (usegrad_cell[ei.Nr()]); 
-    break;
-  }
-  }
-    hofe -> SetType1 (type1);          
-    hofe -> ComputeNDof();
-    // hofe -> SetDiscontinuous(discontinuous);
-
-    return *hofe;
-  }
-  case BND:
-    {
-      if (!DefinedOn (ei))
-        return * new (lh) HCurlDummyFE<ET_TRIG> ();
-
-      if ( discontinuous )
-        return * new (lh) DummyFE<ET_SEGM>; 
-      
-
-
-    Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,BND> (ei.Nr());
-
-    HCurlHighOrderFE<ET> * hofe =  new (lh) HCurlHighOrderFE<ET> ();
-    hofe -> SetVertexNumbers (ngel.vertices);
-
-    hofe -> SetOrderEdge (order_edge[ngel.Edges()]);
-    hofe -> SetUseGradEdge (usegrad_edge[ngel.Edges()]);
-    
-    
-    if(ma->GetElType(ei) == ET_SEGM)
-      {
-    hofe -> SetOrderCell (order_edge[ngel.edges[0]]);  // old style
-    FlatArray<TORDER> aoe(1, &order_edge[ngel.edges[0]]);
-    hofe -> SetOrderEdge (aoe);
-    hofe -> SetUseGradCell (usegrad_edge[ngel.edges[0]]);  // old style
-  } 
-    else 
-      {     
-    INT<2> p = order_face[ma->GetSElFace(ei.Nr())];
-    hofe -> SetOrderCell (INT<3> (p[0],p[1],0));  // old style
-    FlatArray<INT<2> > of(1, &p);
-    hofe -> SetOrderFace (of);
-
-    FlatArray<bool> augf(1, &usegrad_face[ma->GetSElFace(ei.Nr())]);
-    hofe -> SetUseGradFace(augf); 
-    hofe -> SetUseGradCell(usegrad_face[ma->GetSElFace(ei.Nr())]);   // old style
-  }
-    hofe -> SetType1 (type1);              
-    hofe -> ComputeNDof();
-    return *hofe;
-  }
-  case BBND:
-    {
-      if (!DefinedOn (ei))
-	return * new (lh) DummyFE<ET_SEGM>; 
-
-    Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,BBND> (ei.Nr());
-
-    HCurlHighOrderFE<ET> * hofe =  new (lh) HCurlHighOrderFE<ET> ();
-    hofe -> SetVertexNumbers (ngel.vertices);
-
-    hofe -> SetOrderEdge (order_edge[ngel.Edges()]);
-    hofe -> SetUseGradEdge (usegrad_edge[ngel.Edges()]);
-    
-
-    if(ma->GetElement(ei).GetType() == ET_SEGM)
-      {
-    hofe -> SetOrderCell (order_edge[ngel.edges[0]]);  // old style
-    FlatArray<TORDER> aoe(1, &order_edge[ngel.edges[0]]);
-    hofe -> SetOrderEdge (aoe);
-    hofe -> SetUseGradCell (usegrad_edge[ngel.edges[0]]);  // old style
-  } 
-    else 
-      {
-    throw Exception("Only SEGM possible for codim 2 element of hcurlhofe space");
-  }
-    hofe -> SetType1 (type1);              
-    hofe -> ComputeNDof();
-    return *hofe;    
-  }
-  }
+          hofe -> SetVertexNumbers (ngel.vertices);
+          
+          hofe -> SetOrderEdge (order_edge[ngel.Edges()]);
+          hofe -> SetUseGradEdge (usegrad_edge[ngel.Edges()]);
+          
+          switch (int(ET_trait<ET>::DIM))
+            {
+            case 1:
+              throw Exception("no 1D elements in H(curl)");
+            case 2:
+              {
+                hofe -> SetOrderCell (order_inner[ei.Nr()]);   // old style
+                INT<2,TORDER> p(order_inner[ei.Nr()][0], order_inner[ei.Nr()][1]);
+                FlatArray<INT<2,TORDER> > of(1, &p);
+                hofe -> SetOrderFace (of);
+                
+                hofe -> SetUseGradCell (usegrad_cell[ei.Nr()]);  // old style
+                FlatArray<bool> augf(1,&usegrad_cell[ei.Nr()]);
+                hofe -> SetUseGradFace (augf); 
+                break;
+              }
+            case 3:
+              {
+                hofe -> SetOrderFace (order_face[ngel.Faces()]);
+                hofe -> SetUseGradFace (usegrad_face[ngel.Faces()]);
+                
+                hofe -> SetOrderCell (order_inner[ei.Nr()]);
+                hofe -> SetUseGradCell (usegrad_cell[ei.Nr()]); 
+                break;
+              }
+            }
+          hofe -> SetType1 (type1);          
+          hofe -> ComputeNDof();
+          // hofe -> SetDiscontinuous(discontinuous);
+          
+          return *hofe;
+        }
+      case BND:
+        {
+          if (!DefinedOn (ei))
+            return * new (lh) HCurlDummyFE<ET_TRIG> ();
+          
+          if ( discontinuous )
+            return * new (lh) DummyFE<ET_SEGM>; 
+          
+          Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,BND> (ei.Nr());
+          
+          HCurlHighOrderFE<ET> * hofe =  new (lh) HCurlHighOrderFE<ET> ();
+          hofe -> SetVertexNumbers (ngel.vertices);
+          
+          hofe -> SetOrderEdge (order_edge[ngel.Edges()]);
+          hofe -> SetUseGradEdge (usegrad_edge[ngel.Edges()]);
+          
+          
+          if(ma->GetElType(ei) == ET_SEGM)
+            {
+              hofe -> SetOrderCell (order_edge[ngel.edges[0]]);  // old style
+              FlatArray<TORDER> aoe(1, &order_edge[ngel.edges[0]]);
+              hofe -> SetOrderEdge (aoe);
+              hofe -> SetUseGradCell (usegrad_edge[ngel.edges[0]]);  // old style
+            } 
+          else 
+            {     
+              INT<2> p = order_face[ma->GetSElFace(ei.Nr())];
+              hofe -> SetOrderCell (INT<3> (p[0],p[1],0));  // old style
+              FlatArray<INT<2> > of(1, &p);
+              hofe -> SetOrderFace (of);
+              
+              FlatArray<bool> augf(1, &usegrad_face[ma->GetSElFace(ei.Nr())]);
+              hofe -> SetUseGradFace(augf); 
+              hofe -> SetUseGradCell(usegrad_face[ma->GetSElFace(ei.Nr())]);   // old style
+            }
+          hofe -> SetType1 (type1);              
+          hofe -> ComputeNDof();
+          return *hofe;
+        }
+      case BBND:
+        {
+          if (!DefinedOn (ei))
+            return * new (lh) DummyFE<ET_SEGM>; 
+          
+          Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,BBND> (ei.Nr());
+          
+          HCurlHighOrderFE<ET> * hofe =  new (lh) HCurlHighOrderFE<ET> ();
+          hofe -> SetVertexNumbers (ngel.vertices);
+          
+          hofe -> SetOrderEdge (order_edge[ngel.Edges()]);
+          hofe -> SetUseGradEdge (usegrad_edge[ngel.Edges()]);
+          
+          
+          if(ma->GetElement(ei).GetType() == ET_SEGM)
+            {
+              hofe -> SetOrderCell (order_edge[ngel.edges[0]]);  // old style
+              FlatArray<TORDER> aoe(1, &order_edge[ngel.edges[0]]);
+              hofe -> SetOrderEdge (aoe);
+              hofe -> SetUseGradCell (usegrad_edge[ngel.edges[0]]);  // old style
+            } 
+          else 
+            {
+              throw Exception("Only SEGM possible for codim 2 element of hcurlhofe space");
+            }
+          hofe -> SetType1 (type1);              
+          hofe -> ComputeNDof();
+          return *hofe;    
+        }
+      }
   }
   
   // const FiniteElement & HCurlHighOrderFESpace :: GetFE (int elnr, LocalHeap & lh) const
@@ -1494,6 +1598,14 @@ namespace ngcomp
     for (auto edge : ngel.Edges())
       dnums += GetEdgeDofs(edge);
 
+    // new style
+    if (order_policy == VARIABLE_ORDER && ma->GetDimension() == 2)
+      {
+        for (auto face : ngel.Faces())
+          dnums += GetFaceDofs(face);
+        return;
+      }
+    
     // faces 
     if (ma->GetDimension() == 3)
       for (auto face : ngel.Faces())

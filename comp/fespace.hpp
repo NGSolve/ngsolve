@@ -46,7 +46,7 @@ namespace ngcomp
      node_type_order ... order for edges, or faces, gradients or curls, but all over the mesh
      variable_order .... a different, anisotropic order for every mesh node
    */
-  enum ORDER_POLICY { CONSTANT_ORDER = 0, NODE_TYPE_ORDER = 1, VARIABLE_ORDER = 2 };
+  enum ORDER_POLICY { CONSTANT_ORDER = 0, NODE_TYPE_ORDER = 1, VARIABLE_ORDER = 2, OLDSTYLE_ORDER = 3 };
 
   
   
@@ -165,7 +165,7 @@ namespace ngcomp
 
     typedef int8_t TORDER;
 
-    ORDER_POLICY order_policy = CONSTANT_ORDER;
+    ORDER_POLICY order_policy = OLDSTYLE_ORDER;
     
     /*
       the function space H(curl) has high order basis funcitons which 
@@ -192,7 +192,7 @@ namespace ngcomp
     Array<INT<2,TORDER>> order_face_right; 
     Array<INT<3,TORDER>> order_cell_left;
     Array<INT<3,TORDER>> order_cell_right;
-    
+    size_t order_timestamp = 0;
     BitArray is_atomic_dof;
   public:
     virtual int GetSpacialDimension() const { return ma->GetDimension();}
@@ -237,22 +237,53 @@ namespace ngcomp
     void SetBonusOrder (ELEMENT_TYPE et, int bonus) 
     { et_bonus_order[et] = bonus; }
 
+    void SetOrderPolicy (ORDER_POLICY op)
+    {
+      order_policy = op;
+    }
+    
     void SetOrder (ELEMENT_TYPE et, TORDER order)
     {
-      if (order_policy == CONSTANT_ORDER) order_policy = NODE_TYPE_ORDER;
+      if (order_policy == CONSTANT_ORDER || order_policy == OLDSTYLE_ORDER)
+        order_policy = NODE_TYPE_ORDER;
       et_order_left[et] = et_order_right[et] = order;
     }
     void SetOrderLeft (ELEMENT_TYPE et, TORDER order)
     {
-      if (order_policy == CONSTANT_ORDER) order_policy = NODE_TYPE_ORDER;      
+      if (order_policy == CONSTANT_ORDER || order_policy == OLDSTYLE_ORDER)
+        order_policy = NODE_TYPE_ORDER;      
       et_order_left[et] = order;
     }
     void SetOrderRight (ELEMENT_TYPE et, TORDER order)
     {
-      if (order_policy == CONSTANT_ORDER) order_policy = NODE_TYPE_ORDER;
+      if (order_policy == CONSTANT_ORDER || order_policy == OLDSTYLE_ORDER)
+        order_policy = NODE_TYPE_ORDER;
       et_order_right[et] = order;
     }
-    
+
+    void SetOrder (NodeId ni, TORDER order)
+    {
+      switch (ni.GetType())
+        {
+        case NT_VERTEX:
+          break;
+        case NT_EDGE:
+          if (ni.GetNr() < order_edge.Size())
+            order_edge[ni.GetNr()] = order;
+          break;
+        case NT_FACE:
+          if (ni.GetNr() < order_face_left.Size())
+            order_face_left[ni.GetNr()] = order;
+          if (ni.GetNr() < order_face_right.Size())
+            order_face_right[ni.GetNr()] = order;
+          break;
+        case NT_CELL:
+          // not yet 
+          break;
+        case NT_ELEMENT: case NT_FACET:
+          break;
+        }
+    }
     /// how many components
     int GetDimension () const { return dimension; }
 

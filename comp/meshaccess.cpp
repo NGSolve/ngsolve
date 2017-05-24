@@ -824,6 +824,8 @@ namespace ngcomp
   {
     static Timer t("MeshAccess::UpdateBuffers");
     RegionTimer reg(t);
+
+    timestamp = NGS_Object::GetNextTimeStamp();
     
     if (!mesh.Valid())
       {

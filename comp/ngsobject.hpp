@@ -35,8 +35,8 @@ namespace ngcomp
     bool skipCleanUp; 
 
     /// timestamp of ngs-objects
-    static long global_timestamp;
-    int timestamp = -1;
+    static size_t global_timestamp;
+    size_t timestamp = 0;
   public:
 
     /// 
@@ -65,8 +65,8 @@ namespace ngcomp
 
     const Flags & GetFlags() const { return flags; }
 
-    int GetTimeStamp() const { return timestamp; } 
-    
+    auto GetTimeStamp() const { return timestamp; } 
+    static auto GetNextTimeStamp() { return ++global_timestamp; }
     ///
     const shared_ptr<MeshAccess> & GetMeshAccess() const
     { 

@@ -2192,7 +2192,8 @@ namespace ngcomp
     if (this->mats.Size() < this->ma->GetNLevels())
       AllocateMatrix();
 
-    timestamp = ++global_timestamp;
+    // timestamp = ++global_timestamp;
+    timestamp = GetNextTimeStamp();
 
     try
       {
