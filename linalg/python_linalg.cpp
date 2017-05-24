@@ -492,10 +492,8 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         m.MultAdd(s, x, y);
         });
 
-    /*
   py::class_<BaseBlockJacobiPrecond, shared_ptr<BaseBlockJacobiPrecond>, BaseMatrix> (m, "BlockSmoother")
     ;
-    */
 
 //   typedef PyWrapper<Projector> PyProjector;
   py::class_<Projector, shared_ptr<Projector>, BaseMatrix> (m, "Projector")
