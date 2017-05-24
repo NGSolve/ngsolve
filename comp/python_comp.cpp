@@ -642,6 +642,9 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
                       "an node identifier containing node type and node nr")
     .def(py::init<NODE_TYPE,size_t>())
     .def("__str__", &ToString<NodeId>)
+    .def("__repr__", &ToString<NodeId>)
+    .def_property_readonly("type", &NodeId::GetType, "the node type")        
+    .def_property_readonly("nr", &NodeId::GetNr, "the node number")    
     ;
 
 
@@ -655,21 +658,59 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
+
+  py::class_<FlatArray<NodeId> > class_flatarrayNI (m, "FlatArrayNI");
+  PyDefVector<FlatArray<NodeId>, NodeId>(m, class_flatarrayNI);
+  PyDefToString<FlatArray<NodeId> >(m, class_flatarrayNI);
+  class_flatarrayNI.def(py::init<int, NodeId *>());
+
+  py::class_<Array<NodeId>, FlatArray<NodeId> >(m, "ArrayNI")
+    .def(py::init<int>())
+    /*
+    .def("__init__", [](std::vector<int> const & x)
+                           {
+                             int s = x.size();
+                             shared_ptr<Array<int>> tmp (new Array<int>(s));
+                             for (int i = 0; i < s; i++)
+                               (*tmp)[i] = x[i]; 
+                             return tmp;
+                           })
+    */
+    ;
+
+  
   // TODO: make tuple not doing the right thing
   py::class_<Ngs_Element>(m, "Ngs_Element")
     .def_property_readonly("nr", &Ngs_Element::Nr, "the element number")    
     .def("VB", &Ngs_Element::VB, "VorB of element")   
-    .def_property_readonly("vertices", [](Ngs_Element &el) {
-        // return py::cast(Array<int>(el.Vertices()));
-        py::tuple tuple(el.Vertices().Size());
-        for (auto i : Range(el.Vertices()))
-          tuple[i] = py::int_(el.Vertices()[i]);
-        return tuple;
-        })//, "list of global vertex numbers")
-    .def_property_readonly("edges", [](Ngs_Element &el) { return py::cast(Array<int>(el.Edges()));} ,
-                  "list of global edge numbers")
-    .def_property_readonly("faces", [](Ngs_Element &el) { return py::cast(Array<int>(el.Faces()));} ,
-                  "list of global face numbers")
+    .def_property_readonly("vertices", [](Ngs_Element &el)
+                           {
+                             // return py::cast(Array<int>(el.Vertices()));
+                             py::tuple tuple(el.Vertices().Size());
+                             for (auto i : Range(el.Vertices()))
+                               // tuple[i] = py::int_(el.Vertices()[i]);
+                               tuple[i] = py::cast(NodeId(NT_VERTEX,el.Vertices()[i]));
+                             return tuple;
+                           },
+                           "tuple of global vertex numbers")
+    .def_property_readonly("edges", [](Ngs_Element &el)
+                           {
+                             // return py::cast(Array<int>(el.Edges()));
+                             py::tuple tuple(el.Edges().Size());
+                             for (auto i : Range(el.Edges()))
+                               tuple[i] = py::cast(NodeId(NT_EDGE,el.Edges()[i]));
+                             return tuple;
+                           } ,
+                           "tuple of global edge numbers")
+    .def_property_readonly("faces", [](Ngs_Element &el)
+                           {
+                             // return py::cast(Array<int>(el.Faces()));
+                             py::tuple tuple(el.Faces().Size());
+                             for (auto i : Range(el.Faces()))
+                               tuple[i] = py::cast(NodeId(NT_FACE,el.Faces()[i]));
+                             return tuple;
+                           } ,
+                           "tuple of global face numbers")
     .def_property_readonly("type", [](Ngs_Element &self)
         { return self.GetType(); },
         "geometric shape of element")
@@ -1691,12 +1732,11 @@ flags : dict
          )
 
     .def("SetOrder",
-         [](PyFES & self, NODE_TYPE nt, size_t nr, int order)
+         [](PyFES & self, NodeId ni, int order)
          {
-           self->SetOrder(NodeId(nt,nr), order);
+           self->SetOrder(ni, order);
          },
-         py::arg("type"),
-         py::arg("nr"),
+         py::arg("nodeid"),
          py::arg("order")
          )
 
