@@ -223,6 +223,8 @@ namespace ngcomp
     /// max boundary index for co dim 2
     int nbboundaries;
 
+    size_t timestamp = 0;
+    
     /// for ALE
     shared_ptr<GridFunction> deformation;  
 
@@ -594,7 +596,8 @@ namespace ngcomp
       return Ngs_Element (mesh.GetElement<DIM> (elnr), ElementId(vb, elnr));
     }
 
-
+    auto GetTimeStamp() const { return timestamp; }
+    
     void SetRefinementFlag (ElementId id, bool ref)
     {
       if (id.IsVolume())

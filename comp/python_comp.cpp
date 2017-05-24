@@ -638,6 +638,20 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
           "creates an element-id for a boundary element")
     ;
 
+  py::class_<NodeId> (m, "NodeId",
+                      "an node identifier containing node type and node nr")
+    .def(py::init<NODE_TYPE,size_t>())
+    .def("__str__", &ToString<NodeId>)
+    ;
+
+
+  py::enum_<ORDER_POLICY>(m, "ORDER_POLICY")
+    .value("CONSTANT", CONSTANT_ORDER)
+    .value("NODETYPE", NODE_TYPE_ORDER)
+    .value("VARIABLE", VARIABLE_ORDER)
+    .value("OLDSTYLE", OLDSTYLE_ORDER)
+    ;
+
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
@@ -911,6 +925,8 @@ mesh (netgen.Mesh): a mesh generated from Netgen
     .def ("GetNE", static_cast<size_t(MeshAccess::*)(VorB)const> (&MeshAccess::GetNE), docu_string("Number of elements of codimension VorB."))
     .def_property_readonly ("nv", &MeshAccess::GetNV, "Number of vertices")
     .def_property_readonly ("ne",  static_cast<size_t(MeshAccess::*)()const> (&MeshAccess::GetNE), "Number of volume elements")
+    .def_property_readonly ("nedge", &MeshAccess::GetNEdges, "Number of edges")
+    .def_property_readonly ("nface", &MeshAccess::GetNFaces, "Number of faces")    
     .def_property_readonly ("dim", &MeshAccess::GetDimension, "Mesh dimension")
     .def_property_readonly ("ngmesh", &MeshAccess::GetNetgenMesh, "Get the Netgen mesh")
     .def ("GetTrafo", 
@@ -1355,7 +1371,7 @@ when building the system matrices.
   auto fes_dummy_init = [](PyFES *instance, shared_ptr<MeshAccess> ma, const string & type, 
                            py::dict bpflags, int order, bool is_complex,
                            py::object dirichlet, py::object definedon, int dim,
-                           py::object order_left, py::object order_right)
+                           py::object order_left, py::object order_right, ORDER_POLICY order_policy)
                            {
                              Flags flags = py::extract<Flags> (bpflags)();
 
@@ -1416,7 +1432,8 @@ when building the system matrices.
                              
                              
                              auto fes = CreateFESpace (type, ma, flags);
-
+                             fes->SetOrderPolicy(order_policy);
+                             
                              if (py::isinstance<py::int_> (order_left))
                                for (auto et : element_types)
                                  fes->SetOrderLeft (et, order_left.cast<int>());
@@ -1509,21 +1526,22 @@ flags : dict
 	 [&](PyFES *instance, const string & type, shared_ptr<MeshAccess> mesh,
              py::dict flags, int order, bool is_complex,
              py::object dirichlet, py::object definedon, int dim,
-             py::object order_left, py::object order_right
+             py::object order_left, py::object order_right, ORDER_POLICY order_policy
              )
                           {
-			    fes_dummy_init(instance, mesh, type, flags, order, is_complex, dirichlet, definedon, dim, order_left, order_right);
+			    fes_dummy_init(instance, mesh, type, flags, order, is_complex, dirichlet, definedon, dim, order_left, order_right, order_policy);
 //                              py::cast(*instance).attr("flags") = py::cast(bp_flags);
 			     
                            },
          py::arg("type"), py::arg("mesh"), py::arg("flags") = py::dict(), 
-           py::arg("order")=-1, 
-           py::arg("complex")=false, 
-           py::arg("dirichlet")=DummyArgument(),
-           py::arg("definedon")=DummyArgument(),
-          py::arg("dim")=-1,
+         py::arg("order")=-1, 
+         py::arg("complex")=false, 
+         py::arg("dirichlet")=DummyArgument(),
+         py::arg("definedon")=DummyArgument(),
+         py::arg("dim")=-1,
          py::arg("order_left")=DummyArgument(),
-         py::arg("order_right")=DummyArgument(),         
+         py::arg("order_right")=DummyArgument(),
+         py::arg("order_policy")=OLDSTYLE_ORDER,
          "allowed types are: 'h1ho', 'l2ho', 'hcurlho', 'hdivho' etc."
          )
     
@@ -1671,6 +1689,17 @@ flags : dict
          py::arg("order_left")=DummyArgument(),
          py::arg("order_right")=DummyArgument()
          )
+
+    .def("SetOrder",
+         [](PyFES & self, NODE_TYPE nt, size_t nr, int order)
+         {
+           self->SetOrder(NodeId(nt,nr), order);
+         },
+         py::arg("type"),
+         py::arg("nr"),
+         py::arg("order")
+         )
+
     
     .def("Elements", 
          [](PyFES & self, VorB vb, int heapsize) 
