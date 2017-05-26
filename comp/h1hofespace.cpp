@@ -269,7 +269,6 @@ namespace ngcomp
     order_face = p; 
     order_inner = p;
 	
-    // Array<int> elfaces;
     if(var_order) 
       for (Ngs_Element el : ma->Elements<VOL>())
         {	
@@ -1525,7 +1524,6 @@ namespace ngcomp
     */
    
     // All Vertical Edges in one Cluster for Hex and Prism (-> 2d Problems !) 
-    Array<int> ednums; // ,fnums;
 
     //Array<int> & clusters = *new Array<int> (nd);
     //clusters = 0;
@@ -1571,7 +1569,7 @@ namespace ngcomp
 	  } 
       }
 
-   
+    Array<int> ednums; 
     for (int i =0; directsolverclustered.Size() > 0 && i<ne; i++)
       {
         ElementId ei(VOL,i);

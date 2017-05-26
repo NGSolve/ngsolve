@@ -401,11 +401,11 @@ namespace ngcomp
             // Array<int> fnums;
             for (auto ei : ma->Elements(VOL))
               {
-                auto i = ei.Nr();
+                // auto i = ei.Nr();
                 // ma->GetElFacets (ei, fnums);
-                auto fnums = ma->GetElFacets(ei);
-		int fid = first_inner_dof[i];
-                for (auto f : fnums)
+                // auto fnums = ma->GetElFacets(ei);
+		int fid = first_inner_dof[ei.Nr()];
+                for (auto f : ma->GetElFacets(ei))
 		  if (!boundary_facet[f])
 		    {
 		      int di = fid++; // first_inner_dof[i]+k;
@@ -506,7 +506,6 @@ namespace ngcomp
             dc_pairs.SetSize ((order+1)*ma->GetNFacets());
             dc_pairs = INT<2> (-1,-1);
             
-            Array<int> fnums;
             for (int i = 0; i < ma->GetNE(); i++)
               {
                 ElementId ei(VOL,i);
@@ -684,7 +683,7 @@ namespace ngcomp
         
         if (discont) return *fe; 
         
-        ArrayMem<int, 4> ednums, order_ed;
+        // ArrayMem<int, 4> ednums, order_ed;
         INT<3> order_fa;
         
         if(ma->GetElType(ei) == ET_SEGM)
@@ -693,7 +692,7 @@ namespace ngcomp
               dynamic_cast<HDivHighOrderNormalFiniteElement<1>*> (fe);
             
             // hofe -> SetVertexNumbers (vnums);
-            ednums = ma->GetElEdges(ei);
+            auto ednums = ma->GetElEdges(ei);
             // int dec = (!boundary_facet[ednums[0]] && highest_order_dc) ? 1 : 0;
             hofe -> SetOrderInner (order_facet[ednums[0]][0] /* -dec */);
             hofe -> ComputeNDof();
@@ -945,11 +944,10 @@ namespace ngcomp
 		dnums += fanums;
 		
 		int first_el_dof = eldofs.First();
-		
-		for(int i = 0; i < fanums.Size(); i++)
+                for (auto f : fanums)
 		  {
-		    dnums += GetFacetDofs (fanums[i]);
-		    if (!boundary_facet[fanums[i]])
+		    dnums += GetFacetDofs (f);
+		    if (!boundary_facet[f])
 		      dnums += first_el_dof++;
 		  }
 		dnums += IntRange (first_el_dof, eldofs.Next());
