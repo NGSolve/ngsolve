@@ -692,6 +692,7 @@ namespace ngcomp
     auto GetElEdges (ElementId ei) const { return GetElement(ei).Edges(); }
 
     /// returns the edges of an element
+    [[deprecated("Use GetElEdges(ElementId) instead!")]]            
     void GetElEdges (int elnr, Array<int> & ednums) const
     { ednums = GetElement(ElementId(VOL,elnr)).Edges(); }
 
@@ -699,6 +700,7 @@ namespace ngcomp
     void GetElEdges (int elnr, Array<int> & ednums, Array<int> & orient) const;
 
     /// returns the edges of a boundary element
+    [[deprecated("Use GetElEdges(ElementId) instead!")]]                    
     void GetSElEdges (int selnr, Array<int> & ednums) const
     { ednums = ArrayObject (GetElement(ElementId(BND,selnr)).edges); }
 
@@ -713,6 +715,7 @@ namespace ngcomp
     { return GetElement(ei).Faces(); }
 
     /// returns the faces of an element
+    [[deprecated("Use GetElFaces(ElementId) instead!")]]                    
     void GetElFaces (int elnr, Array<int> & fnums) const
     { fnums = GetElement(ElementId(VOL,elnr)).Faces(); }
 
@@ -742,13 +745,20 @@ namespace ngcomp
     /// returns vertex numbers of edge
     void GetEdgePNums (int enr, Array<int> & pnums) const;
     /// returns vertex numbers of edge
+    /*
     auto GetEdgePNums (size_t enr) const -> decltype(ArrayObject(INT<2>()))
     {
       int v2[2];
       Ng_GetEdge_Vertices (enr+1, v2);
       return ArrayObject (INT<2> (v2[0]-1, v2[1]-1));
     }
-      
+    */
+    auto GetEdgePNums (size_t enr) const
+    {
+      auto vts = mesh.GetNode<1>(enr).vertices;
+      return INT<2>(vts[0],vts[1]);
+    }
+    
     /// returns all elements connected to an edge
     void GetEdgeElements (int enr, Array<int> & elnums) const;
     /// returns all elements connected to an edge
@@ -770,9 +780,11 @@ namespace ngcomp
     /// facets of an element
     void GetElFacets (ElementId ei, Array<int> & fnums) const;
     auto GetElFacets (ElementId ei) const { return GetElement(ei).Facets(); }
-    
+
+    [[deprecated("Use GetElFacets(ElementId) instead!")]]        
     void GetElFacets (int elnr, Array<int> & fnums) const;
     /// facet of a surface element
+    [[deprecated("Use GetElFacets(ElementId) instead!")]]            
     void GetSElFacets (int selnr, Array<int> & fnums) const;
     /// vertices of a facet
     void GetFacetPNums (int fnr, Array<int> & pnums) const;
@@ -899,12 +911,12 @@ namespace ngcomp
     ngfem::ElementTransformation & GetTrafo (ElementId ei, Allocator & lh) const;
     
     template <int DIM>
-    ngfem::ElementTransformation & GetTrafoDim (int elnr, Allocator & lh) const;
+      ngfem::ElementTransformation & GetTrafoDim (size_t elnr, Allocator & lh) const;
     template <int DIM>
-    ngfem::ElementTransformation & GetSTrafoDim (int elnr, Allocator & lh) const;
+      ngfem::ElementTransformation & GetSTrafoDim (size_t elnr, Allocator & lh) const;
     template <int DIM>
-      ngfem::ElementTransformation & GetCD2TrafoDim (int elnr, Allocator & lh) const;
-
+      ngfem::ElementTransformation & GetCD2TrafoDim (size_t elnr, Allocator & lh) const;
+    
     template <VorB VB,int DIM>
       ngfem::ElementTransformation & GetTrafo (T_ElementId<VB,DIM> ei, Allocator & lh) const
     {
@@ -923,6 +935,7 @@ namespace ngcomp
     
 
     // (old style optimization)
+    [[deprecated("functionality not useful anymore, just remove function call!")]]            
     void SetPointSearchStartElement(const int el) const;
 
 
@@ -945,6 +958,7 @@ namespace ngcomp
 				   int index) const;
 
     /// is element straight or curved ?
+    [[deprecated("Use GetElement(id).is_curved instead!")]]        
     bool IsElementCurved (int elnr) const
     { return GetElement(ElementId(VOL,elnr)).is_curved; }
       // { return bool (Ng_IsElementCurved (elnr+1)); }
@@ -977,7 +991,7 @@ namespace ngcomp
     auto GetVertexElements (int vnr) const -> decltype (ArrayObject(mesh.GetNode<0> (vnr).elements))
     { return ArrayObject(mesh.GetNode<0> (vnr).elements); }
 
-    void GetVertexSurfaceElements( int vnr, Array<int>& elems) const;
+    void GetVertexSurfaceElements (int vnr, Array<int>& elems) const;
     auto GetVertexSurfaceElements (int vnr) const -> decltype (ArrayObject(mesh.GetNode<0> (vnr).bnd_elements))
     { return ArrayObject(mesh.GetNode<0> (vnr).bnd_elements); }
 

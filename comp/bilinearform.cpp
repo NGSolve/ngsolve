@@ -1202,10 +1202,10 @@ namespace ngcomp
                           ElementId ei1(VOL, el1);
                           ElementId ei2(VOL, el2);
                           
-                          ma->GetElFacets(el1,fnums);
+                          ma->GetElFacets(ei1,fnums);
                           int facnr1 = fnums.Pos(i);
                           
-                          ma->GetElFacets(el2,fnums);
+                          ma->GetElFacets(ei2,fnums);
                           int facnr2 = fnums.Pos(i);
                           
                           {

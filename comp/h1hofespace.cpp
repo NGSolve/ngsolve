@@ -1537,11 +1537,11 @@ namespace ngcomp
         ElementId ei(VOL, i);
 	if (ma->GetElType(ei) == ET_PRISM)
 	  {
-	    ma->GetElEdges (i, ednums);
+	    ma->GetElEdges (ei, ednums);
 	    for (int j = 6; j < 9; j++)  //vertical Edges 
               clusters[GetEdgeDofs(ednums[j])] = 2;
 	    
-	    ma->GetElFaces(i,fnums); // vertical faces 
+	    ma->GetElFaces(ei,fnums); // vertical faces 
 	    for (int j =2;j<5;j++) 
 	      {
                 clusters[GetFaceDofs(fnums[j])] = 0;
@@ -1565,7 +1565,7 @@ namespace ngcomp
 	    for (int j = 8; j < 12; j++) //vertical edges
               clusters[GetEdgeDofs(ednums[j])] = 2;
 
-	    ma->GetElFaces(i,fnums); // vertical faces 
+	    ma->GetElFaces(ei,fnums); // vertical faces 
 	    for (int j = 2; j < 6; j++) 
               clusters[GetFaceDofs(fnums[j])] = 3;
 	  } 
