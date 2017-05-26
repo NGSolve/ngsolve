@@ -18,8 +18,8 @@ namespace ngcomp
   template <int DIMS, int DIMR>
   class Ng_ElementTransformation : public ElementTransformation
   {
-    // const netgen::Ngx_Mesh * mesh;
     const MeshAccess * mesh;	
+
   public:
     Ng_ElementTransformation (const MeshAccess * amesh,
                               ELEMENT_TYPE aet, ElementId ei, int elindex) 
@@ -29,14 +29,6 @@ namespace ngcomp
       iscurved = true;
     }
 
-    /*
-    virtual void SetElement (bool aboundary, int aelnr, int aelindex)
-    {
-      elnr = aelnr;
-      elindex = aelindex;
-      iscurved = true;
-    }
-    */
     virtual int SpaceDim () const
     {
       return DIMR;
@@ -154,9 +146,13 @@ namespace ngcomp
          &ir[0](0), ir.Size()>1 ? &ir[1](0)-&ir[0](0) : 0,
          &mir[0].Point()(0), ir.Size()>1 ? &mir[1].Point()(0)-&mir[0].Point()(0) : 0, 
          &mir[0].Jacobian()(0,0), ir.Size()>1 ? &mir[1].Jacobian()(0,0)-&mir[0].Jacobian()(0,0) : 0);
-      
+
+      /*
       for (int i = 0; i < ir.Size(); i++)
         mir[i].Compute();
+      */
+      for (auto & mip : mir)
+        mip.Compute();
   }
 
 
@@ -803,9 +799,9 @@ namespace ngcomp
 
   void MeshAccess :: GetSElNeighbouringDomains(const int elnr, int & in, int & out) const
   {
-    ArrayMem<int, 1> elnums;
+    ArrayMem<int, 2> elnums;
     ArrayMem<int, 2> fnums;
-    GetSElFacets(elnr, fnums);
+    GetElFacets(ElementId(BND,elnr), fnums);
     GetFacetElements ( fnums[0], elnums );
     if (elnums.Size()==1)
     {
@@ -1129,12 +1125,16 @@ namespace ngcomp
   {
     // static Timer t("getedgeelements"); RegionTimer reg(t);    
     elnums.SetSize0();
-
+    /*
     int p0, p1;
     GetEdgePNums(enr, p0, p1);
 
     auto velems0 = GetVertexElements(p0);
     auto velems1 = GetVertexElements(p1);
+    */
+    auto vts = mesh.GetNode<1>(enr).vertices;
+    auto velems0 = GetVertexElements(vts[0]);
+    auto velems1 = GetVertexElements(vts[1]);
     
     /*
     // n^2 intersection 
@@ -1211,12 +1211,6 @@ namespace ngcomp
   void MeshAccess :: GetFacePNums (int fnr, Array<int> & pnums) const
   {
     pnums = ArrayObject (mesh.GetNode<2> (fnr).vertices);
-    /*
-    pnums.SetSize(4);
-    int nv = Ng_GetFace_Vertices (fnr+1, &pnums[0]);
-    pnums.SetSize(nv);
-    for (int i = 0; i < nv; i++) pnums[i]--;
-    */
   }
 
  
@@ -1266,6 +1260,7 @@ namespace ngcomp
 
   void MeshAccess :: GetFaceSurfaceElements (int fnr, Array<int> & elnums) const
   {
+    /*
     ArrayMem<int, 9> vnums;
     GetFacePNums(fnr, vnums);
 
@@ -1278,6 +1273,15 @@ namespace ngcomp
 	int sface = Ng_GetSurfaceElement_Face (vels[i]+1)-1;
         if (sface == fnr)
           elnums.Append (vels[i]);
+      }
+    */
+    size_t v0 = GetFacePNums(fnr)[0];
+    elnums.SetSize0();    
+    for (auto sel : GetVertexSurfaceElements(v0))
+      {
+        int sface = Ng_GetSurfaceElement_Face (sel+1)-1;
+        if (sface == fnr)
+          elnums.Append (sel);
       }
   }
 
@@ -1308,28 +1312,22 @@ namespace ngcomp
   void MeshAccess :: GetEdgePNums (int enr, Array<int> & pnums) const
   {
     pnums.SetSize(2);
-    Ng_GetEdge_Vertices (enr+1, &pnums[0]);
-    pnums[0] -= 1;
-    pnums[1] -= 1;
+    // Ng_GetEdge_Vertices (enr+1, &pnums[0]);
+    // pnums[0] -= 1;
+    // pnums[1] -= 1;
+    auto edge = mesh.GetNode<1>(enr);
+    pnums[0] = edge.vertices[0];
+    pnums[1] = edge.vertices[1];
   }
 
   void MeshAccess :: GetElFacets (ElementId ei, Array<int> & fnums) const
   {
+    /*
     if (dim == 1)
       fnums = GetElement(ei).Vertices();
     else
-      fnums = GetElement(ei).Facets();
-    /*
-    switch (dim)
-      {
-      case 1:
-	fnums = GetElement(ei).Vertices(); break;
-      case 2:
-	fnums = GetElement(ei).Edges(); break;
-      default:
-	fnums = GetElement(ei).Faces();
-      }
     */
+    fnums = GetElement(ei).Facets();
   }
 
   // some utility for Facets
@@ -1465,7 +1463,7 @@ namespace ngcomp
   
   template <int DIM>
   ElementTransformation & MeshAccess :: 
-  GetTrafoDim (int elnr, Allocator & lh) const
+  GetTrafoDim (size_t elnr, Allocator & lh) const
   {
     // static Timer t("MeshAccess::GetTrafoDim"); RegionTimer reg(t);
     
@@ -1528,7 +1526,7 @@ namespace ngcomp
 
   template <int DIM>
   ElementTransformation & MeshAccess :: 
-  GetSTrafoDim (int elnr, Allocator & lh) const
+  GetSTrafoDim (size_t elnr, Allocator & lh) const
   {
     // static Timer t("MeshAccess::GetTrafoDim");
 
@@ -1570,7 +1568,7 @@ namespace ngcomp
 
   template <int DIM>
   ElementTransformation & MeshAccess ::
-  GetCD2TrafoDim(int elnr, Allocator & lh) const
+  GetCD2TrafoDim (size_t elnr, Allocator & lh) const
   {
     ElementTransformation * eltrans;
     Ngs_Element el(mesh.GetElement<DIM-2>(elnr), ElementId(BBND,elnr));

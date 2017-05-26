@@ -597,7 +597,7 @@ namespace ngcomp
           case ET_SEGM:
             {
               fe1d -> SetVertexNumbers (vnums);
-              ma->GetSElEdges(ei.Nr(), ednums);
+              ma->GetElEdges(ei, ednums);
               int p = order_facet[ednums[0]][0];
               if (highest_order_dc) p--;
               fe1d -> SetOrder (p); 
@@ -802,7 +802,7 @@ namespace ngcomp
 	  if (ma->GetDimension() == 2)
 	    {
 	      ArrayMem<int, 4> fanums;
-	      ma->GetSElEdges (ei.Nr(), fanums);
+	      ma->GetElEdges (ei, fanums);
 	      fnum = fanums[0];
 	    }
 	  else

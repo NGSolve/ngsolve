@@ -268,19 +268,18 @@ namespace ngcomp
 
 		  HeapReset hr(lh);
 		  
+                  ElementId sei(BND, i);
 		  
-		  ma->GetSElFacets(i,fnums);
+		  ma->GetElFacets(sei,fnums);
 		  int fac = fnums[0];
 		  ma->GetFacetElements(fac,elnums);
 		  int el = elnums[0];
-		  ma->GetElFacets(el,fnums);
+                  ElementId ei(VOL, el);
+		  ma->GetElFacets(ei,fnums);
 		  int facnr = 0;
 		  for (int k=0; k<fnums.Size(); k++)
 		    if(fac==fnums[k]) facnr = k;
 
-                  ElementId ei(VOL, el);
-                  ElementId sei(BND, i);
-                  
 		  const FiniteElement & fel = fespace->GetFE (ei, lh);
 		
 		  ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
