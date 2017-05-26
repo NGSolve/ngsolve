@@ -591,7 +591,7 @@ namespace ngcomp
         ArrayMem<int,4> vnums;
         ArrayMem<int,4> ednums;
     
-        ma->GetSElVertices(ei.Nr(), vnums);
+        ma->GetElVertices(ei, vnums);
         switch (ma->GetElType(ei))
           {
           case ET_SEGM:

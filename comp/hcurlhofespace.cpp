@@ -595,14 +595,14 @@ namespace ngcomp
 	const FACE * faces = ElementTopology::GetFaces (eltype);
 	const EDGE * edges = ElementTopology::GetEdges (eltype);
 	const POINT3D * points = ElementTopology :: GetVertices (eltype);
-	ma->GetElVertices (i, vnums);
+	ma->GetElVertices (ei, vnums);
 	
-	ma->GetElEdges (i, eledges);		
+	ma->GetElEdges (ei, eledges);		
 	for(int j=0;j<eledges.Size();j++) fine_edge[eledges[j]] = 1; 
 	
 	if (dim == 3)
 	  {
-	    ma->GetElFaces(i, elfaces);
+	    ma->GetElFaces(ei, elfaces);
 	    for(int j=0;j<elfaces.Size();j++) fine_face[elfaces[j]] = 1; 
 	  }
 
@@ -670,7 +670,7 @@ namespace ngcomp
         ElementId sei(BND, i);
 	if (!DefinedOn (BND, ma->GetElIndex (sei))) continue;
 	
-	ma->GetSElEdges (i, eledges);		
+	ma->GetElEdges (sei, eledges);		
 	for (int j=0;j<eledges.Size();j++) fine_edge[eledges[j]] = 1; 
 
 	if(dim==3) 
@@ -923,11 +923,12 @@ namespace ngcomp
 	ndof = 0;
 	for (int el = 0; el < ne; el++ )
 	  {
+            ElementId ei(VOL,el);
 	    int ndof_inner = first_inner_dof[el+1] - first_inner_dof[el];
 	    first_inner_dof[el] = ndof;
-	    ma->GetElEdges(el, edges);
+	    ma->GetElEdges(ei, edges);
 	    if (ma->GetDimension() == 3)
-	      ma->GetElFaces(el, faces);
+	      ma->GetElFaces(ei, faces);
 
 	    for ( int ed = 0; ed < edges.Size(); ed++ )
 	      {
@@ -1048,8 +1049,8 @@ namespace ngcomp
 	    double jaclong = L2Norm (jac.Col(2));
 	    double jacplane = L2Norm (jac.Col(0)) + L2Norm (jac.Col(1));
 	      
-	    ma->GetElEdges (el, edge_nums);
-	    ma->GetElFaces (el, face_nums);
+	    ma->GetElEdges (ei, edge_nums);
+	    ma->GetElFaces (ei, face_nums);
 
 	    // vertical edges
 	    if (jaclong > 3 * jacplane)
@@ -1962,7 +1963,7 @@ namespace ngcomp
 	      // each face different stack 
 	      
 	      
-	      ma->GetElFaces(i,fanums); 
+	      ma->GetElFaces(ElementId(VOL,i),fanums); 
 	      for(j=0;j<fanums.Size();j++) 
 		{ 
 		  int fcl = ma->GetClusterRepFace(fanums[j]);
@@ -2043,7 +2044,7 @@ namespace ngcomp
 	    }
 	  for (i=0; i< ni; i++) 
 	    {
-	      ma->GetElEdges (i, enums);
+	      ma->GetElEdges (ElementId(VOL,i), enums);
 	      int ndi = first_inner_dof[i+1] - first_inner_dof[i];
 	      for (j = 0; j < enums.Size(); j++)
 		cnt[nv+enums[j]] += ndi;
@@ -2323,7 +2324,7 @@ namespace ngcomp
 	      // inner to quad-face (horizontal edge stack) 
 	      // each face different stack 
 	      
-	      ma->GetElFaces(i,fanums); 
+	      ma->GetElFaces(ElementId(VOL,i),fanums); 
 	      
 	      for(j=0;j<fanums.Size();j++) 
 		{ 
@@ -2434,7 +2435,7 @@ namespace ngcomp
 	 
 	  for (i = 0; i < ni; i++)
 	    {
-	      ma->GetElEdges (i, enums);
+	      ma->GetElEdges (ElementId(VOL,i), enums);
 	      first = first_inner_dof[i];
 	      int ndof = first_inner_dof[i+1] - first_inner_dof[i];
 	      for (j = 0; j < enums.Size(); j++)
@@ -2661,7 +2662,7 @@ namespace ngcomp
 			clusters[ednums[j]] = 1;
 		      }
 
-		    ma->GetElFaces (i, fnums); 
+		    ma->GetElFaces (ei, fnums); 
 
 		    for (j=2; j<5 ; j++)  // vertical faces
 		      {
@@ -2726,7 +2727,7 @@ namespace ngcomp
 			  clusters[k] = 1;      //verthoedge
 			clusters[ednums[j]]=1; //ned
 		      }
-		    ma->GetElFaces (i, fnums); 
+		    ma->GetElFaces (ei, fnums); 
 		
 		    for (j=2; j<5 ; j++)  // vertical faces
 		      {
@@ -2850,7 +2851,7 @@ namespace ngcomp
 			  clusters[k] = 3;      //verthoedge
 			clusters[ednums[j]]=0; //ned
 		      }
-		    ma->GetElFaces (i, fnums); 
+		    ma->GetElFaces (ei, fnums); 
 		
 		    for (j=2; j<5 ; j++)  // vertical faces
 		      {
@@ -2885,7 +2886,7 @@ namespace ngcomp
 	    
 		else if (ma->GetElType(ei) == ET_HEX)
 		  {
-		    ma->GetElEdges (i, ednums);
+		    ma->GetElEdges (ei, ednums);
 		    for(j=0;j<8;j++) // horizontal edges
 		      {	
 			int first = first_edge_dof[ednums[j]];
@@ -2905,7 +2906,7 @@ namespace ngcomp
 			clusters[ednums[j]]=0; 
 		      }
 		
-		    ma->GetElFaces(i,fnums); // vertical faces 
+		    ma->GetElFaces(ei,fnums); // vertical faces 
 		    for(j=2;j<6;j++) 
 		      {
 		    

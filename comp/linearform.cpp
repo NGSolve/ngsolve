@@ -286,7 +286,7 @@ namespace ngcomp
 		  ElementTransformation & seltrans = ma->GetTrafo (sei, lh);
 
 		  fespace->GetDofNrs (ei, dnums);
-		  ma->GetElVertices (el, vnums);		
+		  ma->GetElVertices (ei, vnums);		
 	      
 		  for (int j = 0; j < parts.Size(); j++)
 		    {
