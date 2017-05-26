@@ -998,10 +998,10 @@ namespace ngcomp
             ElementId ei(VOL,i);
 	    if (gradientdomains[ma->GetElIndex(ei)])
 	      {
-		ma->GetElEdges (i, enums);
+		ma->GetElEdges (ei, enums);
 		for (j = 0; j < enums.Size(); j++)
 		  gradientedge[enums[j]] = 1;
-		ma->GetElFaces (i, fnums, forient);
+		ma->GetElFaces (ei, fnums);
 		for (j = 0; j < fnums.Size(); j++)
 		  gradientface[fnums[j]] = 1;
 	      }
@@ -1110,7 +1110,7 @@ namespace ngcomp
 	ArrayMem<int,6> fnums, forient;
 	ArrayMem<int,12> enums;
 	
-	ma->GetElEdges (ei.Nr(), enums);
+	ma->GetElEdges (ei, enums);
 	ma->GetElFaces (ei.Nr(), fnums, forient);
 	
 	LocalHeapMem<1000> lh("NedelecFESpace2, GetDofNrs");
@@ -1396,7 +1396,7 @@ namespace ngcomp
     Array<int> enums(4, ena);
 
     ma->GetSElFace (ei.Nr(), fnum, forient);
-    ma->GetSElEdges (ei.Nr(), enums);
+    ma->GetElEdges (ei, enums);
 
     LocalHeapMem<1000> lh("NedelecFESpace2, GetSDofNrs");
     int nd = GetFE (ElementId(BND,ei.Nr()), lh).GetNDof();
@@ -2737,7 +2737,7 @@ namespace ngcomp
 	  case ET_PRISM:
 	    {
 	      ma->GetElFaces (i, fnums, forient);
-	      ma->GetElEdges (i, enums);
+	      ma->GetElEdges (ei, enums);
 	    
 	      if (order == 3)
 		{

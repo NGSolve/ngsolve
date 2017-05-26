@@ -672,6 +672,7 @@ namespace ngcomp
 
 
     /// returns the vertices of an element
+    [[deprecated("Use GetElVertices(ElementId) instead!")]]                
     void GetElVertices (int elnr, Array<int> & vnums) const
     { vnums = GetElement(ElementId(VOL,elnr)).Vertices(); }
     
@@ -683,6 +684,7 @@ namespace ngcomp
     { return GetElement(ei).Vertices(); }
 
     /// returns the vertices of a boundary element
+    [[deprecated("Use GetElVertices(ElementId) instead!")]]
     void GetSElVertices (int selnr, Array<int> & vnums) const
     { vnums = GetElement(ElementId(BND,selnr)).Vertices(); }
 

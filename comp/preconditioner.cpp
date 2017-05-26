@@ -1229,10 +1229,11 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
     weightf = 0;
     for (int i = 0; i < nel; i++)
       {
+        ElementId ei(VOL,i);
 	HeapReset hr(lh);
-	ma->GetElEdges (i, ednums);
+	ma->GetElEdges (ei, ednums);
 
-	ElementTransformation & eltrans = ma->GetTrafo (ElementId(VOL,i), lh);
+	ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
 	MappedIntegrationPoint<3,3> sip(ip, eltrans);
 
 	double vol = ma->ElementVolume (i);
@@ -1243,7 +1244,7 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
 
 	if (hcurl)
 	  {
-	    ma->GetElFaces (i, fanums);
+	    ma->GetElFaces (ei, fanums);
 	    double valf = Evaluate (*coeff, sip);
 	    for (int j = 0; j < fanums.Size(); j++)
 	      weightf[fanums[j]] += valf * vol / sqr (ai[fanums[j]]);
@@ -1254,9 +1255,10 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
     if (coefse)
       for (int i = 0; i < nsel; i++)
 	{
+          ElementId sei(BND,i);
 	  HeapReset hr(lh);
-	  ma->GetSElEdges (i, ednums);
-	  ElementTransformation & eltrans = ma->GetTrafo (ElementId(BND,i), lh);
+	  ma->GetElEdges (sei, ednums);
+	  ElementTransformation & eltrans = ma->GetTrafo (sei, lh);
 
 	  MappedIntegrationPoint<2,3> sip(ip, eltrans);
 

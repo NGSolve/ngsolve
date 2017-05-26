@@ -130,6 +130,7 @@ namespace ngcomp
         
     for (int i = 0; i < nel; i++)
       {
+        ElementId ei(VOL,i);
 	INT<3> el_orders = ma->GetElOrders(i); 
 
 	ELEMENT_TYPE eltype=ma->GetElType(ElementId(VOL,i)); 
@@ -137,7 +138,7 @@ namespace ngcomp
 	
 	if (ma->GetDimension() == 2)
 	  {
-	    ma->GetElEdges (i, fanums);
+	    ma->GetElEdges (ei, fanums);
 	    for (int j=0;j<fanums.Size();j++) 
 	      fine_facet[fanums[j]] = 1; 
 	    
@@ -156,12 +157,12 @@ namespace ngcomp
 	else
 	  {
 	    Array<int> elfaces,vnums;
-	    ma->GetElFaces(i,elfaces);
+	    ma->GetElFaces(ei,elfaces);
 	    for (int j=0;j<elfaces.Size();j++) fine_facet[elfaces[j]] = 1; 
 	    
 	    if(var_order) 
 	      {
-		ma->GetElVertices (i, vnums);
+		ma->GetElVertices (ei, vnums);
 		const FACE * faces = ElementTopology::GetFaces (eltype);
 		for(int j=0;j<elfaces.Size();j++)
 		  {
@@ -235,7 +236,7 @@ namespace ngcomp
 		first_inner_dof[i] = ndof;
 		
 		// only trigs supported:
-		ma->GetElFacets(i,fnums);
+		ma->GetElFacets(ElementId(VOL,i),fnums);
 		ndof += fnums.Size();
 	      }
 	    first_inner_dof[ne] = ndof;
@@ -348,7 +349,7 @@ namespace ngcomp
               if(ET_T::DIM==2)
                 ma->GetElEdges(ei, fanums);
               else
-                ma->GetElFaces(ei.Nr(), fanums);
+                ma->GetElFaces(ei, fanums);
               assert(vnums.Size() == ET_T::N_VERTEX);
               assert(fanums.Size() == ET_T::N_FACET);
               order_fa.SetSize(fanums.Size());
@@ -406,9 +407,9 @@ namespace ngcomp
 	
 	
 	if(ma->GetDimension() == 3)
-	  ma->GetElFaces (ei.Nr(), fanums);
+	  ma->GetElFaces (ei, fanums);
 	else // dim=2
-	  ma->GetElEdges (ei.Nr(), fanums);
+	  ma->GetElEdges (ei, fanums);
 	
 	for(int i=0; i<fanums.Size(); i++)
 	  {
@@ -434,8 +435,8 @@ namespace ngcomp
 	    
 	    fanums.SetSize(0);
 	    dnums.SetSize(0);
-	    
-	    ma->GetElEdges (ei.Nr(), fanums);
+            
+	    ma->GetElEdges (ei, fanums);
 	    
 	    int innerdof = first_inner_dof[ei.Nr()];
 	    for(int i=0; i<fanums.Size(); i++)
@@ -536,7 +537,7 @@ namespace ngcomp
 
     if ( ma->GetDimension() == 2 )
       {
-	ma->GetSElEdges ( ei.Nr(), fanums );
+	ma->GetElEdges (ei, fanums);
 	dnums.Append(fanums[0]);
 
 	first = first_facet_dof[fanums[0]];
@@ -604,7 +605,7 @@ namespace ngcomp
   
   void VectorFacetFESpace :: GetVertexNumbers(int elnr, Array<int>& vnums) const
   { 
-    ma->GetElVertices(elnr, vnums); 
+    ma->GetElVertices(ElementId(VOL,elnr), vnums); 
   };
 
   ///

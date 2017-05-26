@@ -2151,7 +2151,7 @@ namespace ngcomp
 
 		if(element != oldelement && element != -1)
 		  {		
-		    ma.GetElVertices(element,verts);
+		    ma.GetElVertices(ElementId(VOL,element),verts);
 		    Vec<3> center = 0;
 		    for(int i = 0; i<verts.Size(); i++)
 		      {
@@ -2232,7 +2232,7 @@ namespace ngcomp
 
 		if(element != oldelement)
 		  {		
-		    ma.GetElVertices(element,verts);
+		    ma.GetElVertices(ElementId(VOL,element),verts);
 		    Vec<3> center = 0;
 		    for(int i = 0; i<verts.Size(); i++)
 		      {

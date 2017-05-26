@@ -1021,77 +1021,7 @@ namespace ngcomp
               }
           }
       }
-    
- }
-
-
-#ifdef ABC
-  void MeshAccess::GetTopologicElement (int elnr, TopologicElement & topel) const
-  {
-    int help[54];
-    int nnodes;
-
-    nnodes = Ng_GetElementClosureNodes (dim, elnr, 
-                                        NodeSet (NT_VERTEX, NT_EDGE, NT_FACE, NT_CELL), help);
-        
-    topel.SetElementType (GetElType(elnr));
-    topel.Clear();
-    for (int i = 0; i < nnodes; i++)
-      topel.AddNode (Node (NODE_TYPE (help[2*i]), help[2*i+1]));
-    
-    /*    
-    // 2D case
-    ArrayMem<int, 12> nums;
-    
-    topel.SetElementType (GetElType(elnr));
-    topel.Clear();
-
-    GetElVertices (elnr, nums);
-    for (int j = 0; j < nums.Size(); j++)
-    topel.AddNode (Node (NT_VERTEX, nums[j]));
-
-    GetElEdges (elnr, nums);
-    for (int j = 0; j < nums.Size(); j++)
-    topel.AddNode (Node (NT_EDGE, nums[j]));
-
-    if (GetDimension() == 3)
-    {
-    GetElFaces (elnr, nums);
-    for (int j = 0; j < nums.Size(); j++)
-    topel.AddNode (Node (NT_FACE, nums[j]));
-        
-    topel.AddNode (Node (NT_CELL, elnr));
-    }
-    else
-    topel.AddNode (Node (NT_FACE, elnr));
-    */
   }
-#endif
-
-
-#ifdef ABC
-  void MeshAccess :: GetSegmentPNums (int snr, Array<int> & pnums) const
-  {
-    pnums = GetElement<1> (snr).Points();
-    /*
-    pnums.SetSize(3);
-    int np;
-    Ng_GetSegment (snr+1, &pnums[0], &np);
-    pnums.SetSize(np);
-
-    for (int i = 0; i < np; i++)
-      pnums[i]--;
-    */
-  }
-
-
-  int MeshAccess :: GetSegmentIndex (int snr) const
-  {
-    return mesh -> GetElementIndex<1> (snr);
-    //return Ng_GetSegmentIndex(snr+1);
-  }
-#endif
-
 
   void MeshAccess :: 
   GetElEdges (int elnr, Array<int> & ednums, Array<int> & orient) const
