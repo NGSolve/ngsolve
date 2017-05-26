@@ -1525,7 +1525,7 @@ namespace ngcomp
     */
    
     // All Vertical Edges in one Cluster for Hex and Prism (-> 2d Problems !) 
-    Array<int> ednums,fnums;
+    Array<int> ednums; // ,fnums;
 
     //Array<int> & clusters = *new Array<int> (nd);
     //clusters = 0;
@@ -1537,11 +1537,11 @@ namespace ngcomp
         ElementId ei(VOL, i);
 	if (ma->GetElType(ei) == ET_PRISM)
 	  {
-	    ma->GetElEdges (ei, ednums);
+	    auto ednums = ma->GetElEdges (ei);
 	    for (int j = 6; j < 9; j++)  //vertical Edges 
               clusters[GetEdgeDofs(ednums[j])] = 2;
 	    
-	    ma->GetElFaces(ei,fnums); // vertical faces 
+	    auto fnums = ma->GetElFaces(ei); // vertical faces 
 	    for (int j =2;j<5;j++) 
 	      {
                 clusters[GetFaceDofs(fnums[j])] = 0;
@@ -1561,11 +1561,11 @@ namespace ngcomp
 
 	else if (ma->GetElType(ei) == ET_HEX)  
 	  {
-	    ma->GetElEdges (ei, ednums);
+	    auto ednums = ma->GetElEdges (ei);
 	    for (int j = 8; j < 12; j++) //vertical edges
               clusters[GetEdgeDofs(ednums[j])] = 2;
 
-	    ma->GetElFaces(ei,fnums); // vertical faces 
+	    auto fnums = ma->GetElFaces(ei); // vertical faces 
 	    for (int j = 2; j < 6; j++) 
               clusters[GetFaceDofs(fnums[j])] = 3;
 	  } 
