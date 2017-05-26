@@ -510,7 +510,7 @@ namespace ngcomp
             for (int i = 0; i < ma->GetNE(); i++)
               {
                 ElementId ei(VOL,i);
-                ma->GetElFacets (ei, fnums);
+                auto fnums = ma->GetElFacets (ei);
 		int di = first_inner_dof[i]; // +k*(order+1);
 		    
                 for (int k = 0; k < fnums.Size(); k++)
@@ -540,8 +540,7 @@ namespace ngcomp
             ElementId ei(VOL,i);
             int incii = first_inner_dof[i+1]-first_inner_dof[i]; 
 	     	     
-            Array<int> elfacets; 
-            ma->GetElFacets (ei, elfacets);
+            auto elfacets = ma->GetElFacets (ei);
 	     
             for(int j=0; j<elfacets.Size(); j++) 
               incii+=first_facet_dof[elfacets[j]+1]-first_facet_dof[elfacets[j]]+1; // incl. lowest-order 
@@ -653,8 +652,7 @@ namespace ngcomp
         
         // if (highest_order_dc) porder--;
         
-        ArrayMem<int,4> vnums;
-        ma->GetElVertices(ei, vnums);
+        auto vnums = ma->GetElVertices(ei);
         
         switch (ma->GetElType(ei))
           {
@@ -695,7 +693,7 @@ namespace ngcomp
               dynamic_cast<HDivHighOrderNormalFiniteElement<1>*> (fe);
             
             // hofe -> SetVertexNumbers (vnums);
-            ma->GetElEdges(ei, ednums);
+            ednums = ma->GetElEdges(ei);
             // int dec = (!boundary_facet[ednums[0]] && highest_order_dc) ? 1 : 0;
             hofe -> SetOrderInner (order_facet[ednums[0]][0] /* -dec */);
             hofe -> ComputeNDof();

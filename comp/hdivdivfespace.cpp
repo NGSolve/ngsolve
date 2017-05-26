@@ -284,8 +284,7 @@ namespace ngcomp
         if(plus) ndof += 2*oi[0];
         if(discontinuous)
         {
-          Array<int> fnums(8);
-          ma->GetElFacets(ei,fnums);
+          auto fnums = ma->GetElFacets(ei);
           for(int ii=0; ii<fnums.Size(); ii++)
           {
             ndof += first_facet_dof[fnums[ii]+1] - first_facet_dof[fnums[ii]];
@@ -298,8 +297,7 @@ namespace ngcomp
           (oi[0]+1)*(oi[0]+2)*(oi[2]+1)/2*2;
         if(discontinuous)
         {
-          Array<int> fnums(8);
-          ma->GetElFacets(ei,fnums);
+          auto fnums = ma->GetElFacets(ei);
           for(int ii=0; ii<fnums.Size(); ii++)
           {
             ndof += first_facet_dof[fnums[ii]+1] - first_facet_dof[fnums[ii]];

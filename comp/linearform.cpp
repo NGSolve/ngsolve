@@ -255,7 +255,7 @@ namespace ngcomp
 	    LocalHeap lh = clh.Split();
 	    Array<int> dnums;
 	    Array<int> fnums, elnums, vnums;
-	    //Schleife fuer Facet-Integrators: 
+	    // loop for facet integrators: 
             for (int i : r)
 		{
 		  {
@@ -270,12 +270,12 @@ namespace ngcomp
 		  
                   ElementId sei(BND, i);
 		  
-		  ma->GetElFacets(sei,fnums);
+		  fnums = ma->GetElFacets(sei);
 		  int fac = fnums[0];
 		  ma->GetFacetElements(fac,elnums);
 		  int el = elnums[0];
                   ElementId ei(VOL, el);
-		  ma->GetElFacets(ei,fnums);
+		  fnums = ma->GetElFacets(ei);
 		  int facnr = 0;
 		  for (int k=0; k<fnums.Size(); k++)
 		    if(fac==fnums[k]) facnr = k;
@@ -286,7 +286,7 @@ namespace ngcomp
 		  ElementTransformation & seltrans = ma->GetTrafo (sei, lh);
 
 		  fespace->GetDofNrs (ei, dnums);
-		  ma->GetElVertices (ei, vnums);		
+		  vnums = ma->GetElVertices (ei);		
 	      
 		  for (int j = 0; j < parts.Size(); j++)
 		    {

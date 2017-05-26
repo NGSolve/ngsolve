@@ -800,8 +800,7 @@ namespace ngcomp
   void MeshAccess :: GetSElNeighbouringDomains(const int elnr, int & in, int & out) const
   {
     ArrayMem<int, 2> elnums;
-    ArrayMem<int, 2> fnums;
-    GetElFacets(ElementId(BND,elnr), fnums);
+    auto fnums = GetElFacets(ElementId(BND,elnr));
     GetFacetElements ( fnums[0], elnums );
     if (elnums.Size()==1)
     {

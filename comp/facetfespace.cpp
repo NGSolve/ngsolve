@@ -588,16 +588,15 @@ namespace ngcomp
                              ElementTopology::GetElementName(ma->GetElType(ei)));
           }
      
-        ArrayMem<int,4> vnums;
         ArrayMem<int,4> ednums;
     
-        ma->GetElVertices(ei, vnums);
+        auto vnums = ma->GetElVertices(ei);
         switch (ma->GetElType(ei))
           {
           case ET_SEGM:
             {
               fe1d -> SetVertexNumbers (vnums);
-              ma->GetElEdges(ei, ednums);
+              ednums = ma->GetElEdges(ei);
               int p = order_facet[ednums[0]][0];
               if (highest_order_dc) p--;
               fe1d -> SetOrder (p); 
@@ -801,8 +800,8 @@ namespace ngcomp
 	  int fnum = 0;
 	  if (ma->GetDimension() == 2)
 	    {
-	      ArrayMem<int, 4> fanums;
-	      ma->GetElEdges (ei, fanums);
+	      // ArrayMem<int, 4> fanums;
+	      auto fanums = ma->GetElEdges (ei);
 	      fnum = fanums[0];
 	    }
 	  else

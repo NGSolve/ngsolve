@@ -1219,7 +1219,7 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
 	  }
       }
 
-    Array<int> ednums(12), fanums(12);
+    // Array<int> fanums(12);
     LocalHeap lh (10000, "CommutingAMG");
     IntegrationPoint ip(0, 0, 0, 0);
 
@@ -1231,7 +1231,7 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
       {
         ElementId ei(VOL,i);
 	HeapReset hr(lh);
-	ma->GetElEdges (ei, ednums);
+	auto ednums = ma->GetElEdges (ei);
 
 	ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
 	MappedIntegrationPoint<3,3> sip(ip, eltrans);
@@ -1244,7 +1244,7 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
 
 	if (hcurl)
 	  {
-	    ma->GetElFaces (ei, fanums);
+	    auto fanums = ma->GetElFaces (ei);
 	    double valf = Evaluate (*coeff, sip);
 	    for (int j = 0; j < fanums.Size(); j++)
 	      weightf[fanums[j]] += valf * vol / sqr (ai[fanums[j]]);
@@ -1257,7 +1257,7 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
 	{
           ElementId sei(BND,i);
 	  HeapReset hr(lh);
-	  ma->GetElEdges (sei, ednums);
+	  auto ednums = ma->GetElEdges (sei);
 	  ElementTransformation & eltrans = ma->GetTrafo (sei, lh);
 
 	  MappedIntegrationPoint<2,3> sip(ip, eltrans);

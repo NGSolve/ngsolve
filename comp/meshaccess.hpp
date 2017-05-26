@@ -675,8 +675,8 @@ namespace ngcomp
     [[deprecated("Use GetElVertices(ElementId) instead!")]]                
     void GetElVertices (int elnr, Array<int> & vnums) const
     { vnums = GetElement(ElementId(VOL,elnr)).Vertices(); }
-    
     ///
+    [[deprecated("Use GetElVertices(ElementId) -> vnums instead!")]]                
     void GetElVertices (ElementId ei, Array<int> & vnums) const
     { vnums = GetElement(ei).Vertices(); }
 
@@ -684,10 +684,11 @@ namespace ngcomp
     { return GetElement(ei).Vertices(); }
 
     /// returns the vertices of a boundary element
-    [[deprecated("Use GetElVertices(ElementId) instead!")]]
+    [[deprecated("Use vnums = GetElVertices(ElementId) instead!")]]
     void GetSElVertices (int selnr, Array<int> & vnums) const
     { vnums = GetElement(ElementId(BND,selnr)).Vertices(); }
 
+    [[deprecated("Use enums = GetElEdges(ElementId) instead! ")]]    
     void GetElEdges (ElementId ei, Array<int> & ednums) const
     { ednums = GetElement(ei).Edges(); }
 
@@ -710,6 +711,7 @@ namespace ngcomp
     void GetSElEdges (int selnr, Array<int> & ednums, Array<int> & orient) const;
 
     /// returns the faces of an element
+    [[deprecated("Use fanums = GetElFaces(ElementId) instead!")]]        
     void GetElFaces (ElementId ei, Array<int> & fnums) const
     { fnums = GetElement(ei).Faces(); }
 
@@ -760,7 +762,6 @@ namespace ngcomp
       auto vts = mesh.GetNode<1>(enr).vertices;
       return INT<2>(vts[0],vts[1]);
     }
-    
     /// returns all elements connected to an edge
     void GetEdgeElements (int enr, Array<int> & elnums) const;
     /// returns all elements connected to an edge
@@ -780,6 +781,7 @@ namespace ngcomp
     /// facets are edges (2D) or faces (3D)
     size_t GetNFacets() const { return nnodes_cd[1]; } 
     /// facets of an element
+    [[deprecated("Use fanums = GetElFacets(ElementId) instead!")]]            
     void GetElFacets (ElementId ei, Array<int> & fnums) const;
     auto GetElFacets (ElementId ei) const { return GetElement(ei).Facets(); }
 
