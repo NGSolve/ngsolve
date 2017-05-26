@@ -670,21 +670,15 @@ namespace ngcomp
         ElementId sei(BND, i);
 	if (!DefinedOn (BND, ma->GetElIndex (sei))) continue;
 	
-	auto eledges = ma->GetElEdges (sei);		
-	for (int j=0;j<eledges.Size();j++) fine_edge[eledges[j]] = 1; 
-
+        // auto eledges = ma->GetElEdges (sei);		
+	// for (int j=0;j<eledges.Size();j++) fine_edge[eledges[j]] = 1;
+        fine_edge[ma->GetElEdges(sei)] = true;
 	if(dim==3) 
-	  {
-	    int elface = ma->GetSElFace(i);
-	    fine_face[elface] = 1; 
-	  }
+          fine_face[ma->GetSElFace(i)] = true; 
       }
-
 
     ma->AllReduceNodalData (NT_EDGE, fine_edge, MPI_LOR);
     ma->AllReduceNodalData (NT_FACE, fine_face, MPI_LOR);
-
-
 
       	
     if(!var_order) { maxorder = order; minorder = order;} 
@@ -710,7 +704,6 @@ namespace ngcomp
     
     for(int i=0;i<order_face.Size();i++) 
       if(!fine_face[i]) order_face[i] = INT<2> (0,0);  
-
 
     UpdateDofTables(); 
     UpdateCouplingDofArray();
