@@ -776,6 +776,14 @@ namespace ngcomp
     // void GetSegmentPNums (int snr, Array<int> & pnums) const;
     /// index of 1D element
     // int GetSegmentIndex (int snr) const;
+
+    void GetVertexElements (size_t vnr, Array<int> & elems) const;
+    auto GetVertexElements (size_t vnr) const // -> decltype (ArrayObject(mesh.GetNode<0> (vnr).elements))
+    { return ArrayObject(mesh.GetNode<0> (vnr).elements); }
+
+    void GetVertexSurfaceElements (size_t vnr, Array<int> & elems) const;
+    auto GetVertexSurfaceElements (size_t vnr) const // -> decltype (ArrayObject(mesh.GetNode<0> (vnr).bnd_elements))
+    { return ArrayObject(mesh.GetNode<0> (vnr).bnd_elements); }
     
     /// number of facets of an element. 
     /// facets are edges (2D) or faces (3D)
@@ -990,14 +998,6 @@ namespace ngcomp
     virtual void UnSetTerminate(void) const;
     virtual bool ShouldTerminate(void) const;
   
-    ///// Added by Roman Stainko ....
-    void GetVertexElements (int vnr, Array<int>& elems) const;
-    auto GetVertexElements (int vnr) const -> decltype (ArrayObject(mesh.GetNode<0> (vnr).elements))
-    { return ArrayObject(mesh.GetNode<0> (vnr).elements); }
-
-    void GetVertexSurfaceElements (int vnr, Array<int>& elems) const;
-    auto GetVertexSurfaceElements (int vnr) const -> decltype (ArrayObject(mesh.GetNode<0> (vnr).bnd_elements))
-    { return ArrayObject(mesh.GetNode<0> (vnr).bnd_elements); }
 
 
   private:
