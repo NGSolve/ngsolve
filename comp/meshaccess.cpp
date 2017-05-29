@@ -1371,7 +1371,7 @@ namespace ngcomp
     return (Ng_ShouldTerminate() != 0);
   }
   
-  void MeshAccess :: GetVertexElements (int vnr, Array<int> & elnrs) const
+  void MeshAccess :: GetVertexElements (size_t vnr, Array<int> & elnrs) const
   {
     elnrs = ArrayObject(mesh.GetNode<0> (vnr).elements);
     /*
@@ -1922,14 +1922,10 @@ namespace ngcomp
       }
   }
 
-
-///// Added by Roman Stainko ....
-void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
-{
+  void MeshAccess::GetVertexSurfaceElements (size_t vnr, Array<int> & elems) const
+  {
     elems = GetVertexSurfaceElements(vnr);
-}
-
-
+  }
 
   void MeshAccess::SetHigherIntegrationOrder(int elnr)
   {
@@ -1965,13 +1961,13 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
 
 #ifdef PARALLEL
  
-  size_t MeshAccess ::GetGlobalNodeNum (Node node) const
+  size_t MeshAccess ::GetGlobalNodeNum (NodeId node) const
   {
     int glob = NgPar_GetGlobalNodeNum (node.GetType(), node.GetNr());
     return glob;
   }
   
-  void MeshAccess :: GetDistantProcs (Node node, Array<int> & procs) const
+  void MeshAccess :: GetDistantProcs (NodeId node, Array<int> & procs) const
   {
     procs.SetSize( NgPar_GetNDistantNodeNums(node.GetType(), node.GetNr()) );
     NgPar_GetDistantNodeNums ( node.GetType(), node.GetNr(), &procs[0] );

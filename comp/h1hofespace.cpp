@@ -1427,7 +1427,6 @@ namespace ngcomp
       }
     return shared_ptr<Table<int>> (creator.GetTable());
   }
-
     
 
 
