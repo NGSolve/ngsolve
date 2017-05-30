@@ -106,32 +106,30 @@ shared_ptr<CoefficientFunction> MakeCoefficient (py::object py_coef)
 }
 */
 typedef CoefficientFunction CF;
-typedef PyWrapper<CoefficientFunction> PyCF;
 
-PyCF MakeCoefficient (py::object val)
+shared_ptr<CF> MakeCoefficient(py::object val);
+
+unique_ptr<CF> MakeUniqueCoefficient (py::object val)
 {
-  py::extract<PyCF> ecf(val);
-  if (ecf.check()) return ecf();
-
-  // cout << "type is " << py::str(val.get_type()) << endl;
-
+  py::extract<shared_ptr<CF>> ecf(val);
+  
   // a numpy.complex converts itself to a real, and prints a warning
   // thus we check for it first
   if (string(py::str(val.get_type())) == "<class 'numpy.complex128'>")
-    return PyCF(make_shared<ConstantCoefficientFunctionC> (val.cast<Complex>()));    
+    return make_unique<ConstantCoefficientFunctionC> (val.cast<Complex>());
 
   if(py::CheckCast<double>(val))
-    return PyCF(make_shared<ConstantCoefficientFunction> (val.cast<double>()));
+    return make_unique<ConstantCoefficientFunction> (val.cast<double>());
   if(py::CheckCast<Complex>(val)) 
-    return PyCF(make_shared<ConstantCoefficientFunctionC> (val.cast<Complex>()));
+    return make_unique<ConstantCoefficientFunctionC> (val.cast<Complex>());
 
   if (py::isinstance<py::list>(val))
     {
       py::list el(val);
       Array<shared_ptr<CoefficientFunction>> cflist(py::len(el));
       for (int i : Range(cflist))
-        cflist[i] = MakeCoefficient(el[i]).Get();
-      return PyCF(MakeDomainWiseCoefficientFunction(move(cflist)));
+        cflist[i] = MakeCoefficient(el[i]);
+      return MakeDomainWiseCoefficientFunction(move(cflist));
     }
 
   if (py::isinstance<py::tuple>(val))
@@ -139,12 +137,20 @@ PyCF MakeCoefficient (py::object val)
       py::tuple et(val);
       Array<shared_ptr<CoefficientFunction>> cflist(py::len(et));
       for (int i : Range(cflist))
-        cflist[i] = MakeCoefficient(et[i]).Get();
-      return PyCF(MakeVectorialCoefficientFunction(move(cflist)));
+        cflist[i] = MakeCoefficient(et[i]);
+      return MakeVectorialCoefficientFunction(move(cflist));
     }
 
 
   throw Exception ("cannot make coefficient");
+}
+
+
+shared_ptr<CF> MakeCoefficient (py::object val)
+{
+  py::extract<shared_ptr<CF>> ecf(val);
+  if (ecf.check()) return ecf();
+  return MakeUniqueCoefficient(val);
 }
 
 Array<shared_ptr<CoefficientFunction>> MakeCoefficients (py::object py_coef)
@@ -154,16 +160,16 @@ Array<shared_ptr<CoefficientFunction>> MakeCoefficients (py::object py_coef)
     {
       auto l = py::extract<py::list>(py_coef)();
       for (int i = 0; i < py::len(l); i++)
-        tmp += MakeCoefficient(l[i]).Get();
+        tmp += MakeCoefficient(l[i]);
     }
   else if (py::extract<py::tuple>(py_coef).check())
     {
       auto l = py::extract<py::tuple>(py_coef)();
       for (int i = 0; i < py::len(l); i++)
-        tmp += MakeCoefficient(l[i]).Get();
+        tmp += MakeCoefficient(l[i]);
     }
   else
-    tmp += MakeCoefficient(py_coef).Get();
+    tmp += MakeCoefficient(py_coef);
 
   // return move(tmp);  // clang recommends not to move it ...
   return tmp;
@@ -178,10 +184,10 @@ void ExportStdMathFunction(py::module &m, string name)
            [] (py::object x) -> py::object
             {
               FUNC func;
-              if (py::extract<PyCF>(x).check())
+              if (py::extract<shared_ptr<CF>>(x).check())
                 {
-                  auto coef = py::extract<PyCF>(x)();
-                  return py::cast(PyCF(UnaryOpCF(coef.Get(), func, /* func, */ FUNC::Name())));
+                  auto coef = py::extract<shared_ptr<CF>>(x)();
+                  return py::cast(UnaryOpCF(coef, func, /* func, */ FUNC::Name()));
                 }
               py::extract<double> ed(x);
               if (ed.check()) return py::cast(func(ed()));
@@ -203,10 +209,10 @@ namespace ngfem
     m.def (name.c_str(),
            [creator, func_real, func_complex] (py::object x) -> py::object
            {
-             if (py::extract<PyCF>(x).check())
+             if (py::extract<shared_ptr<CF>>(x).check())
                {
-                 auto coef = py::extract<PyCF>(x)();
-                 return py::cast(PyCF(creator(coef.Get())));
+                 auto coef = py::extract<shared_ptr<CF>>(x)();
+                 return py::cast(creator(coef));
              }
              
              py::extract<double> ed(x);
@@ -228,11 +234,11 @@ namespace ngfem
     m.def (name.c_str(),
            [creator, func_real, func_complex] (py::object x, py::object y) -> py::object
            {
-             if (py::extract<PyCF>(x).check() && py::extract<PyCF>(y).check())
+             if (py::extract<shared_ptr<CF>>(x).check() && py::extract<shared_ptr<CF>>(y).check())
                {
-                 auto coefx = py::extract<PyCF>(x)();
-                 auto coefy = py::extract<PyCF>(y)();
-                 return py::cast(PyCF(creator(coefx.Get(), coefy.Get())));
+                 auto coefx = py::extract<shared_ptr<CF>>(x)();
+                 auto coefy = py::extract<shared_ptr<CF>>(y)();
+                 return py::cast(creator(coefx, coefy));
              }
              
              py::extract<double> edx(x);
@@ -257,12 +263,12 @@ void ExportStdMathFunction2(py::module &m, string name)
          [] (py::object x, py::object y) -> py::object
          {
            FUNC func;
-           if (py::extract<PyCF>(x).check() || py::extract<PyCF>(y).check())
+           if (py::extract<shared_ptr<CF>>(x).check() || py::extract<shared_ptr<CF>>(y).check())
              {
-               auto cx = MakeCoefficient(x);
-               auto cy = MakeCoefficient(y);
-               return py::cast(PyCF(BinaryOpCF(cx.Get(), cy.Get(), func,
-                                               [](bool a, bool b) { return a||b; }, 'X' /* FUNC::Name() */)));
+               shared_ptr<CoefficientFunction> cx = MakeCoefficient(x);
+               shared_ptr<CoefficientFunction> cy = MakeCoefficient(y);
+               return py::cast(BinaryOpCF(cx, cy, func,
+                                          [](bool a, bool b) { return a||b; }, 'X' /* FUNC::Name() */));
              }
            py::extract<double> dx(x), dy(y);
            if (dx.check() && dy.check()) return py::cast(func(dx(), dy()));
@@ -489,7 +495,29 @@ struct GenericPow {
 
 void ExportCoefficientFunction(py::module &m)
 {
-  py::class_<PyWrapper<CoefficientFunction>>
+  m.def("CreateCoefficientFunction", [] (py::object self, py::object val, py::object dims)
+        {
+          unique_ptr<CoefficientFunction> coef = MakeUniqueCoefficient(val);
+          if(dims)
+            {
+              try {
+                Array<int> cdims = makeCArray<int> (dims);
+                cout << "in createcoefficientfunction, set dimensions to " << cdims << endl;
+                coef->SetDimensions(cdims);
+              }
+              catch (py::type_error){ }
+            }
+          return coef.release();
+        },
+        py::arg("self"), py::arg("coef"),py::arg("dims")=DummyArgument(),
+         "Construct a CoefficientFunction from either one of\n"
+         "  a scalar (float or complex)\n"
+         "  a tuple of scalars and or CFs to define a vector-valued CF\n"
+         "     use dims=(h,w) to define matrix-valued CF\n"
+         "  a list of scalars and or CFs to define a domain-wise CF"
+        );
+
+  py::class_<CoefficientFunction, shared_ptr<CoefficientFunction>>
     (m, "CoefficientFunction",
 R"raw(A CoefficientFunction (CF) is some function defined on a mesh.
 Examples are coordinates x, y, z, domain-wise constants, solution-fields, ...
@@ -509,32 +537,11 @@ val : can be one of the following:
     and mesh.GetBoundaries()
 )raw")
 
-    .def("__init__",
-         [](PyCF *instance, py::object val, py::object dims)
-                           {
-                             auto coef = new (instance) PyCF(MakeCoefficient(val));
-                             if (dims)
-                               {
-                                 try {
-                                   Array<int> cdims = makeCArray<int> (dims);
-                                   coef->Get()->SetDimensions(cdims);
-                                 }
-                                 catch (py::type_error){ }
-                               }
-                           },
-          py::arg("coef"),py::arg("dims")=DummyArgument(),
-         "Construct a CoefficientFunction from either one of\n"
-         "  a scalar (float or complex)\n"
-         "  a tuple of scalars and or CFs to define a vector-valued CF\n"
-         "     use dims=(h,w) to define matrix-valued CF\n"
-         "  a list of scalars and or CFs to define a domain-wise CF"
-         )
-    .def("__str__", FunctionPointer( [](PyCF self) { return ToString<CoefficientFunction>(*self.Get());}))
+    .def("__str__", FunctionPointer( [](CF& self) { return ToString<>(self);}))
 
     .def("__call__", FunctionPointer
-	 ([] (PyCF self_wrapper, BaseMappedIntegrationPoint & mip) -> py::object
+	 ([] (CF& self, BaseMappedIntegrationPoint & mip) -> py::object
 	  {
-            CF & self = *self_wrapper.Get();
 	    if (!self.IsComplex())
 	      {
                 if (self.Dimension() == 1)
@@ -560,7 +567,7 @@ val : can be one of the following:
          py::arg("mip"),
          "evaluate CF at a mapped integrationpoint mip. mip can be generated by calling mesh(x,y,z)")
     .def_property_readonly("dim",
-         [] (PyCF self) { return self->Dimension(); } ,
+         [] (CF& self) { return self.Dimension(); } ,
                   "number of components of CF")
 
     /*
@@ -569,19 +576,21 @@ val : can be one of the following:
                   "shape of CF:  (dim) for vector, (h,w) for matrix")    
     */
     .def_property("dims",
-                  [] (PyCF self) { return Array<int>(self->Dimensions()); } ,
-                  [] (PyCF self, py::tuple tup) { self->SetDimensions(makeCArray<int>(tup)); } ,
+                  [] (shared_ptr<CF> self) {
+                    cout << "my dimensions in dims are " << self->Dimensions() << endl;
+                    return Array<int>(self->Dimensions()); } ,
+                  [] (shared_ptr<CF> self, py::tuple tup) { self->SetDimensions(makeCArray<int>(tup)); } ,
                   "shape of CF:  (dim) for vector, (h,w) for matrix")    
     
-    .def("__getitem__", FunctionPointer( [](PyCF self, int comp) -> PyCF
+    .def("__getitem__", FunctionPointer( [](shared_ptr<CF> self, int comp)
                                          {
                                            if (comp < 0 || comp >= self->Dimension())
                                              throw py::index_error();
-                                           return PyCF(MakeComponentCoefficientFunction (self.Get(), comp));
+                                           return MakeComponentCoefficientFunction (self, comp);
                                          }),
          py::arg("comp"),         
          "returns component comp of vectorial CF")
-    .def("__getitem__", FunctionPointer( [](PyCF self, py::tuple comps) -> PyCF
+    .def("__getitem__", FunctionPointer( [](shared_ptr<CF> self, py::tuple comps)
                                          {
                                            if (py::len(comps) != 2)
                                              throw py::index_error();
@@ -595,120 +604,120 @@ val : can be one of the following:
                                              throw py::index_error();
 
                                            int comp = c1 * dims[1] + c2;
-                                           return PyCF(MakeComponentCoefficientFunction (self.Get(), comp));
+                                           return MakeComponentCoefficientFunction (self, comp);
                                          }))
 
     // coefficient expressions
     .def ("__add__", FunctionPointer 
-          ([] (PyCF c1, PyCF c2) -> PyCF { return c1.Get()+c2.Get(); } ))
+          ([] (shared_ptr<CF> c1, shared_ptr<CF> c2) { return c1+c2; } ))
     .def ("__add__", FunctionPointer 
-          ([] (PyCF coef, double val) -> PyCF
+          ([] (shared_ptr<CF> coef, double val)
            {
-             return coef.Get() + make_shared<ConstantCoefficientFunction>(val);
+             return coef + make_shared<ConstantCoefficientFunction>(val);
            }))
     .def ("__radd__", FunctionPointer 
-          ([] (PyCF coef, double val) -> PyCF
-           { return coef.Get() + make_shared<ConstantCoefficientFunction>(val); }))
+          ([] (shared_ptr<CF> coef, double val)
+           { return coef + make_shared<ConstantCoefficientFunction>(val); }))
 
     .def ("__sub__", FunctionPointer 
-          ([] (PyCF c1, PyCF c2) -> PyCF
-           { return c1.Get()-c2.Get(); }))
+          ([] (shared_ptr<CF> c1, shared_ptr<CF> c2)
+           { return c1-c2; }))
 
     .def ("__sub__", FunctionPointer 
-          ([] (PyCF coef, double val) -> PyCF
-           { return coef.Get() - make_shared<ConstantCoefficientFunction>(val); }))
+          ([] (shared_ptr<CF> coef, double val)
+           { return coef - make_shared<ConstantCoefficientFunction>(val); }))
 
     .def ("__rsub__", FunctionPointer 
-          ([] (PyCF coef, double val) -> PyCF
-           { return make_shared<ConstantCoefficientFunction>(val) - coef.Get(); }))
+          ([] (shared_ptr<CF> coef, double val)
+           { return make_shared<ConstantCoefficientFunction>(val) - coef; }))
 
     .def ("__mul__", FunctionPointer 
-          ([] (PyCF c1, PyCF c2) -> PyCF
+          ([] (shared_ptr<CF> c1, shared_ptr<CF> c2)
            {
-             return c1.Get()*c2.Get();
+             return c1*c2;
            } ))
 
     .def ("__pow__", FunctionPointer 
-          ([] (PyCF c1, PyCF c2) -> PyCF
+          ([] (shared_ptr<CF> c1, shared_ptr<CF> c2)
            {
              GenericPow func;
-             return BinaryOpCF(c1.Get(), c2.Get(), func,
+             return BinaryOpCF(c1, c2, func,
                                [](bool a, bool b) { return a||b; }, 'X' /* FUNC::Name() */);
            } ))
 
     .def ("InnerProduct", FunctionPointer
-          ([] (PyCF c1, PyCF c2) -> PyCF
+          ([] (shared_ptr<CF> c1, shared_ptr<CF> c2)
            { 
-             return InnerProduct (c1.Get(), c2.Get());
+             return InnerProduct (c1, c2);
            }))
           
-    .def("Norm", FunctionPointer ( [](PyCF x) -> PyCF { return NormCF(x.Get()); }))
+    .def("Norm", FunctionPointer ( [](shared_ptr<CF> x) { return NormCF(x); }))
 
 
     // it's using the complex functions anyway ...
     // it seems to take the double-version now
     .def ("__mul__", FunctionPointer 
-          ([] (PyCF coef, double val) -> PyCF
+          ([] (shared_ptr<CF> coef, double val)
            {
-             return val * coef.Get(); 
+             return val * coef; 
            }))
     .def ("__rmul__", FunctionPointer 
-          ([] (PyCF coef, double val) -> PyCF
-           { return val * coef.Get(); }
+          ([] (shared_ptr<CF> coef, double val)
+           { return val * coef; }
            ))
 
     .def ("__mul__", FunctionPointer 
-          ([] (PyCF coef, Complex val) -> PyCF
+          ([] (shared_ptr<CF> coef, Complex val)
            {
              if (val.imag() == 0)
-               return val.real() * coef.Get();
+               return val.real() * coef;
              else
-               return val * coef.Get();
+               return val * coef;
            }))
     .def ("__rmul__", FunctionPointer 
-          ([] (PyCF coef, Complex val) -> PyCF
+          ([] (shared_ptr<CF> coef, Complex val)
            { 
              if (val.imag() == 0)
-               return val.real() * coef.Get();
+               return val.real() * coef;
              else
-               return val * coef.Get();
+               return val * coef;
            }))
 
     .def ("__truediv__", FunctionPointer 
-          ([] (PyCF coef, PyCF coef2) -> PyCF
-           { return coef.Get()/coef2.Get();
+          ([] (shared_ptr<CF> coef, shared_ptr<CF> coef2)
+           { return coef/coef2;
            }))
 
     .def ("__truediv__", FunctionPointer 
-          ([] (PyCF coef, double val) -> PyCF
+          ([] (shared_ptr<CF> coef, double val)
            // { return coef.Get() * make_shared<ConstantCoefficientFunction>(1/val); }))
-           { return (1/val) * coef.Get(); }))
+           { return (1/val) * coef; }))
 
     .def ("__truediv__", FunctionPointer 
-          ([] (PyCF coef, Complex val) -> PyCF
-           { return (1.0/val) * coef.Get(); }))
+          ([] (shared_ptr<CF> coef, Complex val)
+           { return (1.0/val) * coef; }))
 
     .def ("__rtruediv__", FunctionPointer 
-          ([] (PyCF coef, double val) -> PyCF
-           { return make_shared<ConstantCoefficientFunction>(val) / coef.Get(); }))
+          ([] (shared_ptr<CF> coef, double val)
+           { return make_shared<ConstantCoefficientFunction>(val) / coef; }))
     .def ("__rtruediv__", FunctionPointer
-          ([] (PyCF coef, Complex val) -> PyCF
-           { return make_shared<ConstantCoefficientFunctionC>(val) / coef.Get(); }))
+          ([] (shared_ptr<CF> coef, Complex val)
+           { return make_shared<ConstantCoefficientFunctionC>(val) / coef; }))
 
     .def ("__neg__", FunctionPointer 
-          ([] (PyCF coef) -> PyCF
-           { return -1.0 * coef.Get(); }))
+          ([] (shared_ptr<CF> coef)
+           { return -1.0 * coef; }))
 
     .def_property_readonly ("trans", FunctionPointer
-                   ([] (PyCF coef) -> PyCF
+                   ([] (shared_ptr<CF> coef)
                     {
-                      return TransposeCF(coef.Get());
+                      return TransposeCF(coef);
                     }),
                    "transpose of matrix-valued CF")
 
     .def ("Compile", FunctionPointer
-          ([] (PyCF coef, bool realcompile) -> PyCF
-           { return Compile (coef.Get(), realcompile); }),
+          ([] (shared_ptr<CF> coef, bool realcompile)
+           { return Compile (coef, realcompile); }),
            py::arg("realcompile")=false,
           "compile list of individual steps, experimental improvement for deep trees")
     ;
@@ -726,11 +735,11 @@ val : can be one of the following:
   ExportStdMathFunction2<GenericPow>(m, "pow");
   
   m.def ("IfPos", FunctionPointer 
-           ([] (PyCF c1, py::object then_obj, py::object else_obj) -> PyCF
+           ([] (shared_ptr<CF> c1, py::object then_obj, py::object else_obj)
             {
-              return IfPos(c1.Get(),
-                           MakeCoefficient(then_obj).Get(),
-                           MakeCoefficient(else_obj).Get());
+              return IfPos(c1,
+                           MakeCoefficient(then_obj),
+                           MakeCoefficient(else_obj));
             } ),docu_string(R"raw_string(Returns new CoefficientFunction with values then_obj if c1 is positive and else_obj else.
 
 Parameters:
@@ -748,21 +757,20 @@ else_obj : object
 )raw_string"))
     ;
   
-  typedef PyWrapper<ConstantCoefficientFunction> PyConstCF;
-  py::class_<PyConstCF,PyCF>
+  py::class_<ConstantCoefficientFunction, shared_ptr<ConstantCoefficientFunction>, CF>
     (m, "ConstantCF", "same as CoefficientFunction(c), obsolete")
      .def("__init__", 
-          [](PyConstCF *instance, double value)
+          [](ConstantCoefficientFunction *instance, double value)
                              {
-                               new (instance) PyConstCF(make_shared<ConstantCoefficientFunction>(value));
+                               new (instance) ConstantCoefficientFunction(value);
                              })
     ;
 
   // py::implicitly_convertible 
   // <shared_ptr<ConstantCoefficientFunction>, shared_ptr<CoefficientFunction> >(); 
 
-  typedef PyWrapper<ParameterCoefficientFunction> PyParameterCF;
-  py::class_<PyParameterCF,PyCF>
+         typedef shared_ptr<ParameterCoefficientFunction> spParameterCF;
+         py::class_<ParameterCoefficientFunction, spParameterCF, CF>
     (m, "Parameter", docu_string(R"raw_string(CoefficientFunction with a modifiable value
 
 Parameters:
@@ -771,13 +779,13 @@ val : float
   Parameter value
 )raw_string"))
     .def ("__init__",
-          [] (PyParameterCF *instance, double val)
+          [] (ParameterCoefficientFunction *instance, double val)
                             {
-                              new (instance) PyParameterCF(make_shared<ParameterCoefficientFunction>(val));
+                              new (instance) ParameterCoefficientFunction(val);
                             })
-    .def ("Set", [] (PyParameterCF cf, double val)  { cf->SetValue (val); },
+         .def ("Set", [] (spParameterCF cf, double val)  { cf->SetValue (val); },
           "modify parameter value")
-    .def ("Get", [] (PyParameterCF cf)  { return cf->GetValue(); },
+    .def ("Get", [] (spParameterCF cf)  { return cf->GetValue(); },
           "return parameter value")
     ;
 
@@ -797,7 +805,7 @@ val : float
     ;
   */
   m.def("CoordCF", 
-        [] (int direction) ->PyWrapper<CoefficientFunction>
+        [] (int direction)
         { return MakeCoordinateCoefficientFunction(direction); },
         "CoefficientFunction for x, y, z"
         );
@@ -872,41 +880,41 @@ val : float
   class SpecialCoefficientFunctions
   {
   public:
-    PyCF GetMeshSizeCF ()
-    { return PyCF(make_shared<MeshSizeCF>()); }
+    shared_ptr<CF> GetMeshSizeCF ()
+    { return make_shared<MeshSizeCF>(); }
 
-    PyCF GetNormalVectorCF (int dim)
+    shared_ptr<CF> GetNormalVectorCF (int dim)
     { 
       switch(dim)
 	{ 
 	case 1:
-	  return PyCF(make_shared<NormalVectorCF<1>>());
+	  return make_shared<NormalVectorCF<1>>();
 	case 2:
-	  return PyCF(make_shared<NormalVectorCF<2>>());
+	  return make_shared<NormalVectorCF<2>>();
 	case 3:
-	  return PyCF(make_shared<NormalVectorCF<3>>());
+	  return make_shared<NormalVectorCF<3>>();
 	case 4:
-	  return PyCF(make_shared<NormalVectorCF<4>>());
+	  return make_shared<NormalVectorCF<4>>();
 	case 5:
-	  return PyCF(make_shared<NormalVectorCF<5>>());
+	  return make_shared<NormalVectorCF<5>>();
 	case 6:
-	  return PyCF(make_shared<NormalVectorCF<6>>());
+	  return make_shared<NormalVectorCF<6>>();
         default:
           throw Exception (string("Normal-vector not implemented for dimension")
                            +ToString(dim));
 	}
     }
 
-    PyCF GetTangentialVectorCF (int dim)
+    shared_ptr<CF> GetTangentialVectorCF (int dim)
     { 
       switch(dim)
 	{
 	case 1:
-	  return PyCF(make_shared<TangentialVectorCF<1>>());
+	  return make_shared<TangentialVectorCF<1>>();
 	case 2:
-	  return PyCF(make_shared<TangentialVectorCF<2>>());
+	  return make_shared<TangentialVectorCF<2>>();
 	default:
-	  return PyCF(make_shared<TangentialVectorCF<3>>());
+	  return make_shared<TangentialVectorCF<3>>();
 	}
     }
   };
@@ -948,9 +956,9 @@ vals : list of float
     .def("__str__", &ToString<BSpline>)
     .def("__call__", &BSpline::Evaluate)
     .def("__call__", FunctionPointer
-         ([](shared_ptr<BSpline> sp, PyCF coef) -> PyCF
+         ([](shared_ptr<BSpline> sp, shared_ptr<CF> coef)
           {
-            return UnaryOpCF (coef.Get(), GenericBSpline(sp) /* , GenericBSpline(sp) */);
+            return UnaryOpCF (coef, GenericBSpline(sp) /* , GenericBSpline(sp) */);
           }))
     .def("Integrate", 
          FunctionPointer([](const BSpline & sp) { return make_shared<BSpline>(sp.Integrate()); }))
@@ -1512,26 +1520,25 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
 //         }))
 //     ;
 
-  typedef PyWrapper<DomainVariableCoefficientFunction> PyDomVarCF;
-  py::class_<PyDomVarCF,PyCF>
+  typedef shared_ptr<DomainVariableCoefficientFunction> spDomVarCF;
+  py::class_<DomainVariableCoefficientFunction, spDomVarCF, CF>
     (m, "VariableCF")
     .def("__init__",
-         [](PyDomVarCF *instance, string str)
+         [](DomainVariableCoefficientFunction *instance, string str)
                            {
                              auto ef = make_shared<EvalFunction> (str);
-                             new (instance) PyDomVarCF(make_shared<DomainVariableCoefficientFunction>
-                               (Array<shared_ptr<EvalFunction>> ({ ef })));
+                             new (instance) DomainVariableCoefficientFunction(Array<shared_ptr<EvalFunction>> ({ ef }));
                            })
     ;
 
-  typedef PyWrapper<DomainConstantCoefficientFunction> PyDomConstCF;
-  py::class_<PyDomConstCF,PyCF>
+  typedef shared_ptr<DomainConstantCoefficientFunction> spDomConstCF;
+py::class_<DomainConstantCoefficientFunction, spDomConstCF, CF>
     (m, "DomainConstantCF")
     .def("__init__",
-         [](PyDomConstCF *instance, py::object coefs)
+         [](DomainConstantCoefficientFunction *instance, py::object coefs)
                            {
                              Array<double> darray (makeCArray<double> (coefs));
-                             new (instance) PyDomConstCF(make_shared<DomainConstantCoefficientFunction> (darray));
+                             new (instance) DomainConstantCoefficientFunction (darray);
                            })
     ;
 

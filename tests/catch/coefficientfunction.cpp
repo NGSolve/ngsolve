@@ -200,8 +200,8 @@ auto u = make_shared<ProxyFunction>(false, false, diffop, nullptr, nullptr, null
 TEST_OPERATOR_COEFFICIENTFUNCTION(3*u*u);
 TEST_OPERATOR_COEFFICIENTFUNCTION(MakeVectorialCoefficientFunction({u,u*u}));
 
-auto xyz = MakeVectorialCoefficientFunction({x,u,z});
-auto mat = MakeVectorialCoefficientFunction({a,b,x,y,z,b,u,a,b});
+shared_ptr<CoefficientFunction> xyz = MakeVectorialCoefficientFunction({x,u,z});
+shared_ptr<CoefficientFunction> mat = MakeVectorialCoefficientFunction({a,b,x,y,z,b,u,a,b});
 int set_dimension = [](auto mat) {
 mat->SetDimensions (Array<int>({3,3}));
 return 1; }(mat);
