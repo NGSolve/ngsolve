@@ -777,12 +777,12 @@ namespace ngcomp
   shared_ptr<LinearForm> CreateLinearForm (shared_ptr<FESpace> space,
                                            const string & name, const Flags & flags)
   {
-    LinearForm * lfp = 
-      CreateVecObject  <T_LinearForm, LinearForm> 
+    shared_ptr<LinearForm> lf = 
+      CreateSharedVecObject  <T_LinearForm, LinearForm> 
       (space->GetDimension() * int(flags.GetNumFlag("cacheblocksize",1)), 
        space->IsComplex(), space, name, flags);
   
-    shared_ptr<LinearForm> lf(lfp);
+    // shared_ptr<LinearForm> lf(lfp);
     
     lf->SetIndependent (flags.GetDefineFlag ("independent"));
     if (flags.GetDefineFlag ( "noinitialassembling" )) lf->SetNoInitialAssembling();
