@@ -913,10 +913,17 @@ namespace ngcomp
   shared_ptr<GridFunction> CreateGridFunction (shared_ptr<FESpace> space,
                                                const string & name, const Flags & flags)
   {
+    /*
     shared_ptr<GridFunction> gf 
       ((GridFunction*)CreateVecObject  <T_GridFunction, GridFunction> // , const FESpace, const string, const Flags>
        (space->GetDimension() * int(flags.GetNumFlag("cacheblocksize",1)), 
        space->IsComplex(), space, name, flags));
+    */
+
+    shared_ptr<GridFunction> gf =
+      CreateSharedVecObject<T_GridFunction, GridFunction> 
+      (space->GetDimension() * int(flags.GetNumFlag("cacheblocksize",1)), 
+       space->IsComplex(), space, name, flags);
   
     gf->SetCacheBlockSize(int(flags.GetNumFlag("cacheblocksize",1)));
     

@@ -145,6 +145,52 @@ namespace ngcomp
 
 
 
+
+  
+  template <template <class T> class Object, class Base, int ACTDIM, typename ... ARG>
+  class TCreateSharedVecObjectS {
+  public:
+    static shared_ptr<Base> Create (int dim, bool iscomplex, ARG & ... arg)
+    {
+      if (dim == ACTDIM) 
+        {
+          if (iscomplex)
+            return make_shared<Object<Vec<ACTDIM,Complex>>> (arg...);
+          else
+            return make_shared<Object<Vec<ACTDIM,double>>> (arg...);
+        }
+      else return TCreateSharedVecObjectS<Object, Base, ACTDIM-1, ARG...>::Create(dim, iscomplex, arg...);
+    }
+  };
+  
+  template <template <class T> class Object, class Base, typename ... ARG>
+  class TCreateSharedVecObjectS<Object, Base, 1, ARG...> {
+  public:
+    static shared_ptr<Base> Create (int dim, bool iscomplex, ARG & ... arg)
+    { 
+      if (dim == 1) 
+        {
+          if (iscomplex)
+            return make_shared<Object<Complex>> (arg...);
+          else
+            return make_shared<Object<double>> (arg...);
+        }
+      throw Exception ("illegal CreateVecObject, dim = "
+                       + ToString(dim) + '\n');
+    }
+  };
+  
+  template <template <class T> class Object, class Base, typename ... ARG>
+  shared_ptr<Base> CreateSharedVecObject (int dim, bool iscomplex, ARG && ... arg)
+  {
+    return TCreateSharedVecObjectS<Object, Base, 12, ARG...>::Create (dim, iscomplex, arg ...);
+  }
+  
+
+
+
+  
+
   /*
     template <template <class T> class Object, class Base, class SCAL, class ARG, int ACTDIM>
     class TCreateVecObjectS {
