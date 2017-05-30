@@ -89,10 +89,13 @@ void NGS_DLL_HEADER ExportNgsolve(py::module &m ) {
       ;
     
     m.def ("Draw",
-             [](PyGF gf, int sd, bool autoscale, double min, double max)
+           [](shared_ptr<GridFunction> gf, int sd, bool autoscale, double min, double max)
               {
+                cout << "in draw" << endl;
+                cout << "gf in draw = " << *gf << endl;
+                cout << "dims of gf =  " << gf->Dimensions() << endl;
                 gf->GetMeshAccess()->SelectMesh();
-                Visualize (gf.Get(), gf->GetName());
+                Visualize (gf, gf->GetName());
                 if (gf->Dimension() == 1)
                   Ng_TclCmd (string("set ::visoptions.scalfunction ")+gf->GetName()+":1;\n");
                 else
@@ -112,27 +115,27 @@ void NGS_DLL_HEADER ExportNgsolve(py::module &m ) {
 
     
     m.def ("Draw", FunctionPointer
-             ([](PyWrapper<CoefficientFunction> cf, shared_ptr<MeshAccess> ma, string name,
+             ([](shared_ptr<CoefficientFunction> cf, shared_ptr<MeshAccess> ma, string name,
                  int sd, bool autoscale, double min, double max,
                  bool draw_vol, bool draw_surf) 
               {
                 ma->SelectMesh();
                 netgen::SolutionData * vis;
-                if(dynamic_cast<ProlongateCoefficientFunction *>(cf.Get().get()))
+                if(dynamic_cast<ProlongateCoefficientFunction *>(cf.get()))
                 {
-                  shared_ptr<CoefficientFunction> wrapper(new ProlongateCoefficientFunctionVisualization(*static_cast<ProlongateCoefficientFunction *>(cf.Get().get())));
+                  shared_ptr<CoefficientFunction> wrapper(new ProlongateCoefficientFunctionVisualization(*static_cast<ProlongateCoefficientFunction *>(cf.get())));
                   vis = new VisualizeCoefficientFunction (ma, wrapper);
                 }
                 else
-                  vis = new VisualizeCoefficientFunction (ma, cf.Get());
+                  vis = new VisualizeCoefficientFunction (ma, cf);
                 Ng_SolutionData soldata;
                 Ng_InitSolutionData (&soldata);
   
                 soldata.name = (char*)name.c_str();
                 soldata.data = 0;
-                soldata.components = cf.Get() -> Dimension();
+                soldata.components = cf -> Dimension();
                 if (cf->IsComplex()) soldata.components *= 2;
-                soldata.iscomplex = cf.Get() -> IsComplex();
+                soldata.iscomplex = cf -> IsComplex();
                 soldata.draw_surface = draw_surf;
                 soldata.draw_volume  = draw_vol; 
                 /* 

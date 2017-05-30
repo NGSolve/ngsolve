@@ -41,7 +41,7 @@ namespace ngcomp
     /// scalar valued or vector valued
     virtual bool IsComplex() const;
     virtual int Dimension() const;
-    virtual Array<int> Dimensions() const;
+    virtual Array<int> CreateDimensions() const;
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const;
     virtual Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const;
@@ -284,7 +284,7 @@ namespace ngcomp
 
 
   extern NGS_DLL_HEADER 
-  shared_ptr<GridFunction> CreateGridFunction (shared_ptr<FESpace> space,
+  unique_ptr<GridFunction> CreateGridFunction (shared_ptr<FESpace> space,
                                                const string & name, const Flags & flags);
 
   /// compatibility with old codes
@@ -462,14 +462,6 @@ namespace ngcomp
 
 
 
-}
-
-namespace ngstd
-{
-  template <>
-  struct PyWrapperTraits<ngcomp::GridFunction> {
-    typedef PyWrapperDerived<ngcomp::GridFunction, ngfem::CoefficientFunction> type;
-  };
 }
 
 

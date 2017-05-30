@@ -41,11 +41,30 @@ del os
 
 from ngslib import *
 
+storemyinit = None
+
 def __empty_init(x, *args, **kwargs):
+    print("call my empty init")
     return
+def __init_with_reset_init(x,*args,**kwargs):
+    global storemyinit
+    x.__class__.__init__ = storemyinit
+    storemyinit = None
+    
+def __printout(x,val):
+    global storemyinit
+    if isinstance(val,CoefficientFunction):
+        storemyinit = val.__class__.__init__
+        val.__class__.__init__ = __init_with_reset_init
+        return val
+    return fem.CreateCoefficientFunction(x,val)
 
 comp.BilinearForm.__new__ = comp.CreateBilinearForm
 comp.BilinearForm.__init__ = __empty_init
+fem.CoefficientFunction.__new__ = __printout
+fem.CoefficientFunction.__init__ = __init_with_reset_init
+comp.GridFunction.__new__ = comp.CreateGridFunction
+comp.GridFunction.__init__ = __empty_init
 
 ngstd.__all__ = ['ArrayD', 'ArrayI', 'BitArray', 'Flags', 'HeapReset', 'IntRange', 'LocalHeap', 'Timers', 'RunWithTaskManager', 'TaskManager', 'SetNumThreads']
 bla.__all__ = ['Matrix', 'Vector', 'InnerProduct', 'Norm']

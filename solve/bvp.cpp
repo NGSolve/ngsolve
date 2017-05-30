@@ -773,13 +773,13 @@ void ExportBVP(py::module &m)
            ([](shared_ptr<PDE> pde,
                shared_ptr<BilinearForm> bfa,
                PyWrapper<LinearForm> lff,
-               PyWrapper<GridFunction> gfu,
+               shared_ptr<GridFunction> gfu,
                PyWrapper<Preconditioner> pre,
                int maxsteps,
                double prec) -> shared_ptr<NumProc>
             
             {
-              return make_shared<NumProcBVP> (bfa, lff.Get(), gfu.Get(), pre, maxsteps, prec);
+              return make_shared<NumProcBVP> (bfa, lff.Get(), gfu, pre, maxsteps, prec);
             }),
             py::arg("pde"),
             py::arg("bf"), py::arg("lf"), py::arg("gf"), 
@@ -789,13 +789,13 @@ void ExportBVP(py::module &m)
   m.def ("BVP", FunctionPointer
            ([](shared_ptr<BilinearForm> bfa,
                PyWrapper<LinearForm> lff,
-               PyWrapper<GridFunction> gfu,
+               shared_ptr<GridFunction> gfu,
                PyWrapper<Preconditioner> pre,
                int maxsteps,
                double prec) -> shared_ptr<NumProc>
             
             {
-              return make_shared<NumProcBVP> (bfa, lff.Get(), gfu.Get(), pre, maxsteps, prec);
+              return make_shared<NumProcBVP> (bfa, lff.Get(), gfu, pre, maxsteps, prec);
             }),
             py::arg("bf"), py::arg("lf"), py::arg("gf"), 
             py::arg("pre"), py::arg("maxsteps")=100, py::arg("prec")=1e-8
