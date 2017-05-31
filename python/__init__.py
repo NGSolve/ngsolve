@@ -47,6 +47,19 @@ def __empty_init(x, *args, **kwargs):
 comp.BilinearForm.__new__ = comp.CreateBilinearForm
 comp.BilinearForm.__init__ = __empty_init
 
+def TmpRedraw(*args, **kwargs):
+    solve._Redraw(*args, **kwargs)
+    try:
+        import netgen
+        import tkinter
+        while(netgen.gui.win.tk.dooneevent(tkinter._tkinter.DONT_WAIT)):
+            pass
+    except:
+        pass
+
+solve.Redraw = TmpRedraw
+del TmpRedraw
+
 ngstd.__all__ = ['ArrayD', 'ArrayI', 'BitArray', 'Flags', 'HeapReset', 'IntRange', 'LocalHeap', 'Timers', 'RunWithTaskManager', 'TaskManager', 'SetNumThreads']
 bla.__all__ = ['Matrix', 'Vector', 'InnerProduct', 'Norm']
 la.__all__ = ['BaseMatrix', 'BaseVector', 'CreateVVector', 'InnerProduct', 'CGSolver', 'QMRSolver', 'GMRESSolver', 'ArnoldiSolver', 'Projector']
