@@ -745,18 +745,6 @@ else_obj : object
 )raw_string"))
     ;
   
-  py::class_<ConstantCoefficientFunction, shared_ptr<ConstantCoefficientFunction>, CF>
-    (m, "ConstantCF", "same as CoefficientFunction(c), obsolete")
-     .def("__init__", 
-          [](ConstantCoefficientFunction *instance, double value)
-                             {
-                               new (instance) ConstantCoefficientFunction(value);
-                             })
-    ;
-
-  // py::implicitly_convertible 
-  // <shared_ptr<ConstantCoefficientFunction>, shared_ptr<CoefficientFunction> >(); 
-
          typedef shared_ptr<ParameterCoefficientFunction> spParameterCF;
          py::class_<ParameterCoefficientFunction, spParameterCF, CF>
     (m, "Parameter", docu_string(R"raw_string(CoefficientFunction with a modifiable value
@@ -777,21 +765,6 @@ val : float
           "return parameter value")
     ;
 
-  // py::implicitly_convertible 
-  // <shared_ptr<ParameterCoefficientFunction>, shared_ptr<CoefficientFunction> >(); 
-
-  
-  /*
-  typedef PyWrapper<CoordCoefficientFunction> PyCoordCF;
-  py::class_<PyCoordCF,PyCF>
-    (m, "CoordCF", "CoefficientFunction for x, y, z")
-     .def("__init__",
-          [](PyCoordCF *instance, int direction)
-                             {
-                               new (instance) PyCoordCF(make_shared<CoordCoefficientFunction>(direction));
-                             })
-    ;
-  */
   m.def("CoordCF", 
         [] (int direction)
         { return MakeCoordinateCoefficientFunction(direction); },
@@ -1507,28 +1480,6 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
 //           return self->GetCoordinates(ip);
 //         }))
 //     ;
-
-  typedef shared_ptr<DomainVariableCoefficientFunction> spDomVarCF;
-  py::class_<DomainVariableCoefficientFunction, spDomVarCF, CF>
-    (m, "VariableCF")
-    .def("__init__",
-         [](DomainVariableCoefficientFunction *instance, string str)
-                           {
-                             auto ef = make_shared<EvalFunction> (str);
-                             new (instance) DomainVariableCoefficientFunction(Array<shared_ptr<EvalFunction>> ({ ef }));
-                           })
-    ;
-
-  typedef shared_ptr<DomainConstantCoefficientFunction> spDomConstCF;
-py::class_<DomainConstantCoefficientFunction, spDomConstCF, CF>
-    (m, "DomainConstantCF")
-    .def("__init__",
-         [](DomainConstantCoefficientFunction *instance, py::object coefs)
-                           {
-                             Array<double> darray (makeCArray<double> (coefs));
-                             new (instance) DomainConstantCoefficientFunction (darray);
-                           })
-    ;
 
   m.def ("SetPMLParameters", 
            [] (double rad, double alpha)

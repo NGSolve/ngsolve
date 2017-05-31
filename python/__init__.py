@@ -45,33 +45,20 @@ storemyinit = None
 
 def __empty_init(x, *args, **kwargs):
     return
-def __init_with_reset_init(x,*args,**kwargs):
-    global storemyinit
-    x.__class__.__init__ = storemyinit
-    storemyinit = None
-    
-def __CreateCoefficientWithStoreInit(x,val):
-    global storemyinit
-    if isinstance(val,CoefficientFunction):
-        retval = val
-    else:
-        retval = fem.CreateCoefficientFunction(x,val)
-    storemyinit = retval.__class__.__init__
-    retval.__class__.__init__ = __init_with_reset_init
-    return retval
 
 comp.BilinearForm.__new__ = comp.CreateBilinearForm
 comp.BilinearForm.__init__ = __empty_init
-fem.CoefficientFunction.__new__ = __CreateCoefficientWithStoreInit
-fem.CoefficientFunction.__init__ = __init_with_reset_init
+fem.CoefficientFunction.__new__ = fem.CreateCoefficientFunction
+fem.CoefficientFunction.__init__ = __empty_init
 comp.GridFunction.__new__ = comp.CreateGridFunction
 comp.GridFunction.__init__ = __empty_init
+
 
 ngstd.__all__ = ['ArrayD', 'ArrayI', 'BitArray', 'Flags', 'HeapReset', 'IntRange', 'LocalHeap', 'Timers', 'RunWithTaskManager', 'TaskManager', 'SetNumThreads']
 bla.__all__ = ['Matrix', 'Vector', 'InnerProduct', 'Norm']
 la.__all__ = ['BaseMatrix', 'BaseVector', 'CreateVVector', 'InnerProduct', 'CGSolver', 'QMRSolver', 'GMRESSolver', 'ArnoldiSolver', 'Projector']
-fem.__all__ =  ['BFI', 'CoefficientFunction',  'DomainConstantCF',  'Parameter', 'CoordCF', 'ET', 'ElementTransformation', 'ElementTopology', 'FiniteElement', 'ScalarFE', 'H1FE', 'HEX', 'L2FE', 'LFI', 'POINT', 'PRISM', 'PYRAMID', 'QUAD', 'SEGM', 'TET', 'TRIG', 'VERTEX', 'EDGE', 'FACE', 'CELL', 'ELEMENT', 'FACET', 'VariableCF', 'SetPMLParameters', 'sin', 'cos', 'tan', 'atan', 'exp', 'log', 'sqrt', 'Conj', 'atan2', 'pow', 'specialcf', \
-           'BlockBFI', 'BlockLFI', 'CompoundBFI', 'CompoundLFI', 'ConstantCF', 'BSpline', \
+fem.__all__ =  ['BFI', 'CoefficientFunction', 'Parameter', 'CoordCF', 'ET', 'ElementTransformation', 'ElementTopology', 'FiniteElement', 'ScalarFE', 'H1FE', 'HEX', 'L2FE', 'LFI', 'POINT', 'PRISM', 'PYRAMID', 'QUAD', 'SEGM', 'TET', 'TRIG', 'VERTEX', 'EDGE', 'FACE', 'CELL', 'ELEMENT', 'FACET', 'SetPMLParameters', 'sin', 'cos', 'tan', 'atan', 'exp', 'log', 'sqrt', 'Conj', 'atan2', 'pow', 'specialcf', \
+           'BlockBFI', 'BlockLFI', 'CompoundBFI', 'CompoundLFI', 'BSpline', \
            'IntegrationRule', 'IfPos' \
            ]
 # TODO: fem:'PythonCF' comp:'PyNumProc'
