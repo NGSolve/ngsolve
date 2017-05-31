@@ -1972,7 +1972,7 @@ used_idnrs : list of int = None
           return gf;
         },"empty creator function overload for pickling support");
   
-  py::class_<GF,shared_ptr<GF>, CoefficientFunction>
+  py::class_<GF,shared_ptr<GF>, CoefficientFunction, NGSObject>
     (m, "GridFunction",  "a field approximated in some finite element space", py::dynamic_attr())
 
     // .def_static("__new__", [](py::object classname, PyWrapper<FESpace> fes, string & name,

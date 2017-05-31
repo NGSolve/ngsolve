@@ -16,7 +16,8 @@ namespace ngcomp
   class NGS_DLL_HEADER GridFunctionCoefficientFunction : public CoefficientFunction
   {
   protected:
-    shared_ptr<GridFunction> gf;
+    shared_ptr<GridFunction> gf_shared_ptr;
+    GridFunction* gf;
     shared_ptr<FESpace> fes;
     shared_ptr<DifferentialOperator> diffop[3];
     // shared_ptr<DifferentialOperator> trace_diffop;
@@ -41,7 +42,7 @@ namespace ngcomp
     /// scalar valued or vector valued
     virtual bool IsComplex() const;
     virtual int Dimension() const;
-    virtual Array<int> CreateDimensions() const;
+    virtual Array<int> Dimensions() const;
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const;
     virtual Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const;
@@ -76,22 +77,6 @@ namespace ngcomp
 
 
 
-  extern NGS_DLL_HEADER
-  shared_ptr<GridFunction> CreateGridFunction (shared_ptr<FESpace> space,
-                                               const string & name, const Flags & flags);
-
-  /// compatibility with old codes
-  inline
-  shared_ptr<GridFunction> CreateGridFunction (const FESpace * space,
-                                               const string & name, const Flags & flags)
-  {
-    return
-      CreateGridFunction (shared_ptr<FESpace> (const_cast<FESpace*>(space), NOOP_Deleter),
-                          name, flags);
-  }
-
-
-
  
 
   /** 
@@ -100,8 +85,6 @@ namespace ngcomp
   class NGS_DLL_HEADER GridFunction 
     : public NGS_Object, public GridFunctionCoefficientFunction
   {
-  friend shared_ptr<GridFunction> CreateGridFunction (shared_ptr<FESpace> space,
-                                               const string & name, const Flags & flags);
   protected:
     /// the finite element space
     shared_ptr<FESpace> fespace;
@@ -120,13 +103,11 @@ namespace ngcomp
     Array<shared_ptr<BaseVector>> vec;
     /// component GridFunctions if fespace is a CompoundFESpace
     Array<shared_ptr<GridFunction>> compgfs;
+  public:
     /// 
     GridFunction (shared_ptr<FESpace> afespace, 
 		  const string & name = "gfu", 
 		  const Flags & flags = Flags());
-    /// 
-    void SetGF( shared_ptr<GridFunction> gfa ) { gf = gfa; }
-  public:
     ///
     virtual ~GridFunction ();
     ///
@@ -300,6 +281,22 @@ namespace ngcomp
     virtual void Update ();
   };
 
+
+
+
+  extern NGS_DLL_HEADER 
+  shared_ptr<GridFunction> CreateGridFunction (shared_ptr<FESpace> space,
+                                               const string & name, const Flags & flags);
+
+  /// compatibility with old codes
+  inline 
+  shared_ptr<GridFunction> CreateGridFunction (const FESpace * space,
+                                               const string & name, const Flags & flags)
+  {
+    return 
+      CreateGridFunction (shared_ptr<FESpace> (const_cast<FESpace*>(space), NOOP_Deleter), 
+                          name, flags);
+  }
 
 
 
