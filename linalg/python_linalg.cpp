@@ -461,7 +461,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                        { return make_shared<Transpose> (m); })
     .def("Update", [](BM &m) { m.Update(); })
 
-    .def("CreateBlockSmoother", [](BM & m, py::object blocks) -> PyWrapper<BaseMatrix>
+    .def("CreateBlockSmoother", [](BM & m, py::object blocks)
          {
            size_t size = py::len(blocks);
            
@@ -479,23 +479,22 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                for (auto val : block)
                  row[j++] = val.cast<int>();
              }
-           // cout << "table = " << endl << blocktable << endl;
+
            BaseSparseMatrix & sparse_mat = dynamic_cast<BaseSparseMatrix&>(m);
            return sparse_mat.CreateBlockJacobiPrecond (make_shared<Table<int>> (move(blocktable)));
          })
     ;
-    m.def("TestMult", [] (BaseMatrix &m, PyBaseVector &x, PyBaseVector &y) {
-        m.Mult(x, y);
-        });
 
-    m.def("TestMultAdd", [] (BaseMatrix &m, double s, PyBaseVector &x, PyBaseVector &y) {
-        m.MultAdd(s, x, y);
-        });
-
-    /*
-  py::class_<BaseBlockJacobiPrecond, shared_ptr<BaseBlockJacobiPrecond>, BaseMatrix> (m, "BlockSmoother")
+  py::class_<BaseBlockJacobiPrecond, shared_ptr<BaseBlockJacobiPrecond>, BaseMatrix>
+    (m, "BlockSmoother",
+     "block Jacobi and block Gauss-Seidel smoothing")
+    .def("Smooth", &BaseBlockJacobiPrecond::GSSmooth,
+         py::arg("x"), py::arg("b"), py::arg("steps"),
+         "performs steps block-Gauss-Seidel iterations for the linear system A x = b")
+    .def("SmoothBack", &BaseBlockJacobiPrecond::GSSmoothBack,
+         py::arg("x"), py::arg("b"), py::arg("steps"),
+         "performs steps block-Gauss-Seidel iterations for the linear system A x = b in reverse order")
     ;
-    */
 
 //   typedef PyWrapper<Projector> PyProjector;
   py::class_<Projector, shared_ptr<Projector>, BaseMatrix> (m, "Projector")

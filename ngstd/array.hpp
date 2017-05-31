@@ -929,6 +929,26 @@ namespace ngstd
       Array<T>::operator= (a2);
     }
   
+    ArrayMem(ArrayMem && a2)
+      : Array<T> (a2.Size(), (T*)mem)
+    {
+      if (a2.mem_to_delete)
+        {
+          mem_to_delete = a2.mem_to_delete;
+          data = a2.data;
+          allocsize = a2.allocsize;
+          a2.mem_to_delete = nullptr;
+          a2.data = nullptr;
+          a2.size = 0;
+        }
+      else
+        {
+          allocsize = S;
+          for (size_t i = 0; i < S; i++)
+            mem[i] = a2.mem[i];
+        }
+    }
+  
 
     ArrayMem & operator= (const T & val)
     {

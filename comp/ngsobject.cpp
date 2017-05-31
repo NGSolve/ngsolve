@@ -3,7 +3,7 @@
 
 namespace ngcomp {
 
-  long NGS_Object :: global_timestamp = 0;
+  size_t NGS_Object :: global_timestamp = 1;
   
   NGS_Object :: ~NGS_Object () { ; }
 

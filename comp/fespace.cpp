@@ -1589,7 +1589,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     ArrayMem<int,27> pnums;
 
     if (order == 1)
-      ma->GetElVertices(ei, pnums);
+      pnums = ma->GetElVertices(ei);
     else
       ma->GetElPNums (ei, pnums);
 
@@ -1786,7 +1786,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void NonconformingFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
-    ma->GetElEdges(ei,dnums);
+    dnums = ma->GetElEdges(ei);
     if (!DefinedOn(ei))
       dnums = -1;
   }
