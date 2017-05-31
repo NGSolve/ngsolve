@@ -68,13 +68,12 @@ namespace ngcomp
                                        afespace->GetEvaluator(BBND)),
       fespace(afespace)
   {
-// This is now done in CreateGridFunction after the constructor
-//     GridFunctionCoefficientFunction::gf = shared_ptr<GridFunction>(this,NOOP_Deleter);
-
+    GridFunctionCoefficientFunction::gf = this;
     GridFunctionCoefficientFunction::fes = fespace;
 
     is_complex = fespace->IsComplex();
     if (fespace->GetEvaluator(VOL) || fespace->GetEvaluator(BND))
+      SetDimensions (GridFunctionCoefficientFunction::Dimensions());
     nested = flags.GetDefineFlag ("nested");
     visual = !flags.GetDefineFlag ("novisual");
     multidim = int (flags.GetNumFlag ("multidim", 1));
@@ -918,8 +917,6 @@ namespace ngcomp
       CreateSharedVecObject<T_GridFunction, GridFunction> 
       (space->GetDimension() * int(flags.GetNumFlag("cacheblocksize",1)), 
        space->IsComplex(), space, name, flags);
-
-    gf->SetGF(shared_ptr<GridFunction>(gf.get(), NOOP_Deleter));
   
     gf->SetCacheBlockSize(int(flags.GetNumFlag("cacheblocksize",1)));
     
@@ -939,7 +936,7 @@ namespace ngcomp
 
   GridFunctionCoefficientFunction :: 
   GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, int acomp)
-    : CoefficientFunction(1, agf->GetFESpace()->IsComplex()), gf(agf) /*, diffop (NULL)*/ , comp (acomp) 
+    : CoefficientFunction(1, agf->GetFESpace()->IsComplex()), gf(agf.get()), gf_shared_ptr(agf) /*, diffop (NULL)*/ , comp (acomp) 
   {
     fes = gf->GetFESpace();
     SetDimensions (gf->Dimensions());
@@ -987,7 +984,8 @@ namespace ngcomp
 				   shared_ptr<DifferentialOperator> attrace_diffop,
                                    int acomp)
     : CoefficientFunction(1,agf->IsComplex()),
-      gf(agf),
+      gf(agf.get()),
+      gf_shared_ptr(agf),
       // diffop (adiffop), trace_diffop(atrace_diffop), ttrace_diffop(attrace_diffop),
       diffop{adiffop,atrace_diffop,attrace_diffop},
       comp (acomp) 
@@ -996,7 +994,6 @@ namespace ngcomp
     for (auto vb : { VOL, BND, BBND } )
       if (diffop[vb])
         {
-          cout << "in gfcf constructor, set dimensions to " << diffop[vb]->Dimensions() << endl;
           SetDimensions (diffop[vb]->Dimensions());
           break;
         }
@@ -1014,10 +1011,9 @@ namespace ngcomp
   GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, 
 				   shared_ptr<BilinearFormIntegrator> abfi, int acomp)
     : CoefficientFunction(1, agf->IsComplex()),
-      gf(agf), /* bfi (abfi), */ comp (acomp) 
+      gf(agf.get()), gf_shared_ptr(agf), /* bfi (abfi), */ comp (acomp) 
   {
     fes = gf->GetFESpace();
-    cout << "in 2nd gfcf constructor, set dimensions to " << gf->Dimensions() << endl;
     SetDimensions (gf->Dimensions());
     diffop[abfi->VB()] = make_shared<CalcFluxDifferentialOperator> (abfi, false);
     /*
@@ -1051,7 +1047,7 @@ namespace ngcomp
                     typeid(*gf->GetFESpace()).name());
   }
 
-  Array<int> GridFunctionCoefficientFunction::CreateDimensions() const
+  Array<int> GridFunctionCoefficientFunction::Dimensions() const
   {
     for (auto vb : { VOL, BND, BBND })
       if (diffop[vb])
@@ -1205,7 +1201,7 @@ namespace ngcomp
     std::map<string,string> variables;
     auto values = Var("values", index);
     variables["values"] = values.S();
-    variables["gf_ptr"] =  code.AddPointer(gf.get());  // ToString(gf.get());
+    variables["gf_ptr"] =  code.AddPointer(gf);
     variables["gfcf_ptr"] = code.AddPointer(this); // ToString(this);
     variables["fes_ptr"] = code.AddPointer(fes.get()); // ToString(fes.get());
     // variables["diffop_ptr"] = ToString(diffop[VOL].get());
