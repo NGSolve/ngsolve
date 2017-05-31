@@ -3697,10 +3697,10 @@ public:
   }
 };
 
-  unique_ptr<CoefficientFunction>
+  shared_ptr<CoefficientFunction>
   MakeDomainWiseCoefficientFunction (Array<shared_ptr<CoefficientFunction>> aci)
   {
-    return make_unique<DomainWiseCoefficientFunction> (move (aci));
+    return make_shared<DomainWiseCoefficientFunction> (move (aci));
   }
 
 
@@ -4360,10 +4360,10 @@ public:
   }
 
 
-  unique_ptr<CoefficientFunction>
+  shared_ptr<CoefficientFunction>
   MakeVectorialCoefficientFunction (Array<shared_ptr<CoefficientFunction>> aci)
   {
-    return make_unique<VectorialCoefficientFunction> (move (aci));
+    return make_shared<VectorialCoefficientFunction> (move (aci));
   }
 
 

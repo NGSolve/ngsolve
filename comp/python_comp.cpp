@@ -1633,7 +1633,6 @@ flags : dict
         auto mesh = self->GetMeshAccess();
         if (self->type.substr(0,8)=="Periodic")
           {
-            cout << "in periodic" << endl;
           auto periodicFES = dynamic_pointer_cast<PeriodicFESpace>(self.Get());
           py::list idnrs;
           for (auto idnr : *periodicFES->GetUsedIdnrs())
@@ -1641,7 +1640,6 @@ flags : dict
           auto quasiPeriodicFES = dynamic_pointer_cast<QuasiPeriodicFESpace>(periodicFES);
           if (quasiPeriodicFES)
             {
-              cout << "in quasiperiodicFES" << endl;
               py::list fac;
               auto factors = quasiPeriodicFES->GetFactors();
               for (auto factor : *factors)
@@ -1655,21 +1653,17 @@ flags : dict
           return py::make_tuple( self->type, mesh, self->GetFlags(), dict);
      })
     .def("__setstate__", [] (PyFES &self, py::tuple t) {
-        cout << "in fes setstate" << endl;
         auto flags = t[2].cast<Flags>();
         auto type = t[0].cast<string>();
         shared_ptr<FESpace> fes;
         if (type.substr(0,8)=="Periodic")
           {
             auto idnrs = make_shared<Array<int>>(makeCArray<int>(t[4].cast<py::list>()));
-            cout << "in periodic" << endl;
             if(t[5].cast<bool>())
               {
-                cout << "in quasiperiodic" << endl;
                 auto factors = make_shared<Array<Complex>>();
                 for (auto factor : t[6].cast<py::list>())
                   factors->Append(factor.cast<Complex>());
-                cout << "factors are: " << factors << endl;
                 fes = make_shared<QuasiPeriodicFESpace>(CreateFESpace(type.substr(8,string::npos),t[1].cast<shared_ptr<MeshAccess>>(), flags),flags,idnrs,factors);
               }
             else
@@ -1677,7 +1671,6 @@ flags : dict
             }
         else
           fes = CreateFESpace (type, t[1].cast<shared_ptr<MeshAccess>>(), flags);
-        cout << "fespace created" << endl;
         LocalHeap lh (1000000, "FESpace::Update-heap");
         fes->Update(lh);
         fes->FinalizeUpdate(lh);
@@ -1953,16 +1946,11 @@ used_idnrs : list of int = None
   m.def("CreateGridFunction", [](py::object classname, PyWrapper<FESpace> fes, string & name,
                                 int multidim)
     {
-      cout << "in gf constructor" << endl;
       Flags flags;
       flags.SetFlag("novisual");
       flags.SetFlag("multidim",multidim);
-      cout << "fes = " << *fes.Get() << endl;
-      cout << "space dim = " << fes->GetDimension() << endl;
       shared_ptr<GridFunction> gf = CreateGridFunction(fes.Get(), name, flags);
       gf->Update();
-      cout << "dims at end of python constructor = " << gf->Dimensions() << endl;
-      cout << "gf at end of python constructor = " << *gf << endl;
       return gf;
     }, py::arg("self"), py::arg("space"), py::arg("name")="gfu", py::arg("multidim")=1,
         "creates a gridfunction in finite element space");
@@ -1972,7 +1960,7 @@ used_idnrs : list of int = None
           return gf;
         },"empty creator function overload for pickling support");
   
-  py::class_<GF,shared_ptr<GF>, CoefficientFunction, NGSObject>
+  py::class_<GF,shared_ptr<GF>, CoefficientFunction, NGS_Object>
     (m, "GridFunction",  "a field approximated in some finite element space", py::dynamic_attr())
 
     // .def_static("__new__", [](py::object classname, PyWrapper<FESpace> fes, string & name,
@@ -2019,7 +2007,6 @@ used_idnrs : list of int = None
     //     return py::make_tuple(fes, self->GetName(), values, self->GetFlags(),dict);
     //     })
     .def("__setstate__", [] (shared_ptr<GF> self, py::tuple t) {
-        cout << "in gf setstate" << endl;
          auto values = t[0].cast<py::list>();
          auto fvec = self->GetVector().FV<double>();
          for (auto i : Range(fvec.Size()))

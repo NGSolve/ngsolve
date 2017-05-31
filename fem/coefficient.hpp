@@ -148,12 +148,9 @@ namespace ngfem
     
     void SetDimensions (FlatArray<int> adims)
     {
-      cout << "In CF.SetDimensions, dims = " << adims << endl;
-      cout << "dims are = " << dims << endl;
       dims = adims;
       dimension = 1;
       for (int d : dims) dimension *= d;
-      cout << "dims after = " << dims << endl;
     }
 
     /*
@@ -1681,7 +1678,7 @@ void ExportBinaryFunction (class pybind11::module & m, string name)
   NGS_DLL_HEADER shared_ptr<CoefficientFunction>
   MakeComponentCoefficientFunction (shared_ptr<CoefficientFunction> c1, int comp);
   
-  NGS_DLL_HEADER unique_ptr<CoefficientFunction>
+  NGS_DLL_HEADER shared_ptr<CoefficientFunction>
   MakeVectorialCoefficientFunction (Array<shared_ptr<CoefficientFunction>> aci);
 
   NGS_DLL_HEADER shared_ptr<CoefficientFunction>
@@ -1691,7 +1688,7 @@ void ExportBinaryFunction (class pybind11::module & m, string name)
 
 
   
-  NGS_DLL_HEADER unique_ptr<CoefficientFunction>
+  NGS_DLL_HEADER shared_ptr<CoefficientFunction>
   MakeDomainWiseCoefficientFunction (Array<shared_ptr<CoefficientFunction>> aci);
   
 

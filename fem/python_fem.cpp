@@ -488,12 +488,11 @@ void ExportCoefficientFunction(py::module &m)
 {
   m.def("CreateCoefficientFunction", [] (py::object self, py::object val, py::object dims)
         {
-          shared_ptr<CoefficientFunction> coef = MakeCoefficient(val);
+          auto coef = MakeCoefficient(val);
           if(dims)
             {
               try {
                 Array<int> cdims = makeCArray<int> (dims);
-                cout << "in createcoefficientfunction, set dimensions to " << cdims << endl;
                 coef->SetDimensions(cdims);
               }
               catch (py::type_error){ }
@@ -567,9 +566,7 @@ val : can be one of the following:
                   "shape of CF:  (dim) for vector, (h,w) for matrix")    
     */
     .def_property("dims",
-                  [] (shared_ptr<CF> self) {
-                    cout << "my dimensions in dims are " << self->Dimensions() << endl;
-                    return Array<int>(self->Dimensions()); } ,
+                  [] (shared_ptr<CF> self) { return Array<int>(self->Dimensions()); } ,
                   [] (shared_ptr<CF> self, py::tuple tup) { self->SetDimensions(makeCArray<int>(tup)); } ,
                   "shape of CF:  (dim) for vector, (h,w) for matrix")    
     
