@@ -1243,7 +1243,7 @@ namespace ngfem
     char * baseip;
     size_t incr;
     
-  public:
+  public:    
     INLINE BaseMappedIntegrationRule (const IntegrationRule & air,
                                       const ElementTransformation & aeltrans)
       : ir(air.Size(),&air[0]), eltrans(aeltrans) { ; }
@@ -1259,14 +1259,10 @@ namespace ngfem
     { return *static_cast<BaseMappedIntegrationPoint*> ((void*)(baseip+i*incr)); }
 
     virtual BaseMappedIntegrationRule & Range(size_t first, size_t next, LocalHeap & lh) const = 0;
-    /*
-    {
-      BaseMappedIntegrationRule mir(ir.Range(first,next), eltrans);
-      mir.baseip = baseip + incr * first;
-      mir.incr = incr;
-      return move(mir);
-    }
-    */
+
+    auto begin () const { return AOWrapperIterator<BaseMappedIntegrationRule> (*this, 0); }
+    auto end () const { return AOWrapperIterator<BaseMappedIntegrationRule> (*this, Size()); }
+    
     virtual SliceMatrix<> GetPoints() const = 0;
     virtual SliceMatrix<Complex> GetPointsComplex() const
     { throw Exception("don't have complex ir"); }
@@ -1320,11 +1316,13 @@ namespace ngfem
     {
       return *new (lh) MappedIntegrationRule (ir.Range(first,next), eltrans, mips.Range(first,next));
     }
+
+    auto begin() { return mips.begin(); }
+    auto end() { return mips.end(); }
     
     virtual SliceMatrix<> GetPoints() const
     {
       return SliceMatrix<> (mips.Size(), DIM_SPACE*sizeof(SCAL)/sizeof(double),
-                            //&mips[1].GetPoint()(0) - &mips[0].GetPoint()(0),
                             sizeof(MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE, SCAL>) / sizeof(double),
                             const_cast<double*> (&mips[0].GetPoint()(0)));
     }
@@ -1398,23 +1396,18 @@ namespace ngfem
   };
 
   
+  ostream & operator<< (ostream & ost, const BaseMappedIntegrationRule & mir);
 
-  inline ostream & operator<< (ostream & ost, const BaseMappedIntegrationRule & mir)
-  {
-    for (size_t i = 0; i < mir.Size(); i++)
-      ost << mir[i] << endl;
-    return ost;
-  }
   
   template <int DIM_ELEMENT, int DIM_SPACE, typename SCAL>
-  inline ostream & operator<< (ostream & ost, const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE,SCAL> & ir)
+  inline ostream & operator<< (ostream & ost, const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE,SCAL> & mir)
   {
-    for (size_t i = 0; i < ir.Size(); i++)
-      ost << ir[i] << endl;
+    for (auto & mip : mir)
+      ost << mip << endl;
     return ost;
   }
-  
-  // #define SpecificIntegrationPoint MappedIntegrationPoint
+
+  // deprecated, don't use SpecificIntegrationPoint anymore
   template <int DIMS, int DIMR, typename SCAL>   
   using SpecificIntegrationPoint = MappedIntegrationPoint<DIMS,DIMR,SCAL>;
 }

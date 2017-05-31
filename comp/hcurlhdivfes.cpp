@@ -351,9 +351,9 @@ namespace ngcomp
   void NedelecFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
     if (DefinedOn (ei))
-      ma->GetElEdges (ei, dnums);
+      dnums = ma->GetElEdges (ei);
     else
-      dnums.SetSize(0);
+      dnums.SetSize0();
   }
 
 
@@ -998,10 +998,10 @@ namespace ngcomp
             ElementId ei(VOL,i);
 	    if (gradientdomains[ma->GetElIndex(ei)])
 	      {
-		ma->GetElEdges (i, enums);
+		auto enums = ma->GetElEdges (ei);
 		for (j = 0; j < enums.Size(); j++)
 		  gradientedge[enums[j]] = 1;
-		ma->GetElFaces (i, fnums, forient);
+		auto fnums = ma->GetElFaces (ei);
 		for (j = 0; j < fnums.Size(); j++)
 		  gradientface[fnums[j]] = 1;
 	      }
@@ -1017,7 +1017,7 @@ namespace ngcomp
           ElementId sei(BND,i);
 	  if (gradientboundaries[ma->GetElIndex(sei)])
 	    {
-	      ma->GetElEdges (sei, enums);
+	      auto enums = ma->GetElEdges (sei);
 	      for (j = 0; j < enums.Size(); j++)
 		gradientedge[enums[j]] = 1;
 	      ma->GetSElFace (i, fnums[0], forient[0]);
@@ -1108,9 +1108,9 @@ namespace ngcomp
 	int j;
 
 	ArrayMem<int,6> fnums, forient;
-	ArrayMem<int,12> enums;
+	// ArrayMem<int,12> enums;
 	
-	ma->GetElEdges (ei.Nr(), enums);
+	auto enums = ma->GetElEdges (ei);
 	ma->GetElFaces (ei.Nr(), fnums, forient);
 	
 	LocalHeapMem<1000> lh("NedelecFESpace2, GetDofNrs");
@@ -1392,11 +1392,9 @@ namespace ngcomp
       {
 
     int fnum, forient;
-    int ena[4];
-    Array<int> enums(4, ena);
 
     ma->GetSElFace (ei.Nr(), fnum, forient);
-    ma->GetSElEdges (ei.Nr(), enums);
+    auto enums = ma->GetElEdges (ei);
 
     LocalHeapMem<1000> lh("NedelecFESpace2, GetSDofNrs");
     int nd = GetFE (ElementId(BND,ei.Nr()), lh).GetNDof();
@@ -2721,7 +2719,6 @@ namespace ngcomp
     Array<int> dnums(1);
 
     Array<int> fnums, forient;
-    Array<int> enums;
     Array<int> lock;
 
     cout << "type is " << typeid(mat).name() << endl;
@@ -2737,7 +2734,7 @@ namespace ngcomp
 	  case ET_PRISM:
 	    {
 	      ma->GetElFaces (i, fnums, forient);
-	      ma->GetElEdges (i, enums);
+	      auto enums = ma->GetElEdges (ei);
 	    
 	      if (order == 3)
 		{

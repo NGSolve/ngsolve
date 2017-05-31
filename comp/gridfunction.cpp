@@ -74,11 +74,7 @@ namespace ngcomp
     GridFunctionCoefficientFunction::fes = fespace;
 
     is_complex = fespace->IsComplex();
-    cout << "set dimensions to " << GridFunctionCoefficientFunction::CreateDimensions() << endl;
-    cout << "do I set it? " << (fespace->GetEvaluator(VOL) || fespace->GetEvaluator(BND)) << endl;
     if (fespace->GetEvaluator(VOL) || fespace->GetEvaluator(BND))
-      SetDimensions (GridFunctionCoefficientFunction::CreateDimensions());
-    cout << "dimensions after = " << CoefficientFunction::Dimensions() << endl;
     nested = flags.GetDefineFlag ("nested");
     visual = !flags.GetDefineFlag ("novisual");
     multidim = int (flags.GetNumFlag ("multidim", 1));
@@ -918,12 +914,10 @@ namespace ngcomp
   shared_ptr<GridFunction> CreateGridFunction (shared_ptr<FESpace> space,
                                                const string & name, const Flags & flags)
   {
-    cout << "space dim in creategf = " << space->GetDimension() << endl;
-    cout << "cacheblocksize = " << int(flags.GetNumFlag("cacheblocksize",1)) << endl;
-    shared_ptr<GridFunction> gf = dynamic_pointer_cast<GridFunction>(
-      (CreateVecObjectShared  <T_GridFunction, GridFunction> // , const FESpace, const string, const Flags>
-       (space->GetDimension() * int(flags.GetNumFlag("cacheblocksize",1)), 
-        space->IsComplex(), space, name, flags)));
+    shared_ptr<GridFunction> gf =
+      CreateSharedVecObject<T_GridFunction, GridFunction> 
+      (space->GetDimension() * int(flags.GetNumFlag("cacheblocksize",1)), 
+       space->IsComplex(), space, name, flags);
 
     gf->SetGF(shared_ptr<GridFunction>(gf.get(), NOOP_Deleter));
   
@@ -1211,15 +1205,15 @@ namespace ngcomp
     std::map<string,string> variables;
     auto values = Var("values", index);
     variables["values"] = values.S();
-    variables["gf_ptr"] = ToString(gf.get());
-    variables["gfcf_ptr"] = ToString(this);
-    variables["fes_ptr"] = ToString(fes.get());
+    variables["gf_ptr"] =  code.AddPointer(gf.get());  // ToString(gf.get());
+    variables["gfcf_ptr"] = code.AddPointer(this); // ToString(this);
+    variables["fes_ptr"] = code.AddPointer(fes.get()); // ToString(fes.get());
     // variables["diffop_ptr"] = ToString(diffop[VOL].get());
     // variables["trace_diffop_ptr"] = ToString(diffop[BND].get());
     // variables["bfi_ptr"] = ToString(trace_diffop.get());
-    variables["diffop_vol_ptr"] = ToString(diffop[VOL].get());
-    variables["diffop_bnd_ptr"] = ToString(diffop[BND].get());
-    variables["diffop_bbnd_ptr"] = ToString(diffop[BBND].get());
+    variables["diffop_vol_ptr"] = code.AddPointer(diffop[VOL].get()); // ToString(diffop[VOL].get());
+    variables["diffop_bnd_ptr"] = code.AddPointer(diffop[BND].get()); // ToString(diffop[BND].get());
+    variables["diffop_bbnd_ptr"] = code.AddPointer(diffop[BBND].get()); // ToString(diffop[BBND].get());
     variables["comp"] = ToString(comp);
     variables["dim"] = ToString(Dimension());
     variables["hmem"] = Var("hmem", index).S();

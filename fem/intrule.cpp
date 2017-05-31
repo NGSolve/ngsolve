@@ -312,11 +312,27 @@ namespace ngfem
 
   ostream & operator<< (ostream & ost, const IntegrationRule & ir)
   {
+    /*
     for (size_t i = 0; i < ir.GetNIP(); i++)
       ost << ir[i] << endl;
+    */
+    for (auto & ip : ir)
+      ost << ip << endl;      
     return ost;
   }
 
+  ostream & operator<< (ostream & ost, const BaseMappedIntegrationRule & mir)
+  {
+    /*
+    for (size_t i = 0; i < mir.Size(); i++)
+      ost << mir[i] << endl;
+    */
+    for (auto & mip : mir)
+      ost << mip << endl;
+    return ost;
+  }
+
+  
 
   template <int DIM_ELEMENT, int DIM_SPACE, typename SCAL>
   MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE,SCAL> :: 

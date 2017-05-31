@@ -44,10 +44,10 @@ namespace ngcomp
     {
       dnums.SetSize0();
     }
-    virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const;
+    virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const override;
 
-    virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const;
-    virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const;
+    virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const override;
+    virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const override;
 
     void GetDofNrs (ElementId ei, Array<int> & dnums) const override;
     

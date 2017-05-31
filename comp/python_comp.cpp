@@ -636,24 +636,84 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
           "creates an element-id for a boundary element")
     ;
 
+  py::class_<NodeId> (m, "NodeId",
+                      "an node identifier containing node type and node nr")
+    .def(py::init<NODE_TYPE,size_t>())
+    .def("__str__", &ToString<NodeId>)
+    // .def("__repr__", &ToString<NodeId>)
+    .def("__repr__", [](NodeId & self)
+         { return string("NodeId(")+ToString(self.GetType())+","+ToString(self.GetNr())+")"; })
+    .def(py::self!=py::self)
+    .def(py::self==py::self)
+    .def("__hash__" , &NodeId::GetNr)    
+    .def_property_readonly("type", &NodeId::GetType, "the node type")        
+    .def_property_readonly("nr", &NodeId::GetNr, "the node number")    
+    ;
+
+
+  py::enum_<ORDER_POLICY>(m, "ORDER_POLICY")
+    .value("CONSTANT", CONSTANT_ORDER)
+    .value("NODETYPE", NODE_TYPE_ORDER)
+    .value("VARIABLE", VARIABLE_ORDER)
+    .value("OLDSTYLE", OLDSTYLE_ORDER)
+    ;
+
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
+
+  py::class_<FlatArray<NodeId> > class_flatarrayNI (m, "FlatArrayNI");
+  PyDefVector<FlatArray<NodeId>, NodeId>(m, class_flatarrayNI);
+  PyDefToString<FlatArray<NodeId> >(m, class_flatarrayNI);
+  class_flatarrayNI.def(py::init<int, NodeId *>());
+
+  py::class_<Array<NodeId>, FlatArray<NodeId> >(m, "ArrayNI")
+    .def(py::init<int>())
+    /*
+    .def("__init__", [](std::vector<int> const & x)
+                           {
+                             int s = x.size();
+                             shared_ptr<Array<int>> tmp (new Array<int>(s));
+                             for (int i = 0; i < s; i++)
+                               (*tmp)[i] = x[i]; 
+                             return tmp;
+                           })
+    */
+    ;
+
+  
   // TODO: make tuple not doing the right thing
   py::class_<Ngs_Element>(m, "Ngs_Element")
     .def_property_readonly("nr", &Ngs_Element::Nr, "the element number")    
     .def("VB", &Ngs_Element::VB, "VorB of element")   
-    .def_property_readonly("vertices", [](Ngs_Element &el) {
-        // return py::cast(Array<int>(el.Vertices()));
-        py::tuple tuple(el.Vertices().Size());
-        for (auto i : Range(el.Vertices()))
-          tuple[i] = py::int_(el.Vertices()[i]);
-        return tuple;
-        })//, "list of global vertex numbers")
-    .def_property_readonly("edges", [](Ngs_Element &el) { return py::cast(Array<int>(el.Edges()));} ,
-                  "list of global edge numbers")
-    .def_property_readonly("faces", [](Ngs_Element &el) { return py::cast(Array<int>(el.Faces()));} ,
-                  "list of global face numbers")
+    .def_property_readonly("vertices", [](Ngs_Element &el)
+                           {
+                             // return py::cast(Array<int>(el.Vertices()));
+                             py::tuple tuple(el.Vertices().Size());
+                             for (auto i : Range(el.Vertices()))
+                               // tuple[i] = py::int_(el.Vertices()[i]);
+                               tuple[i] = py::cast(NodeId(NT_VERTEX,el.Vertices()[i]));
+                             return tuple;
+                           },
+                           "tuple of global vertex numbers")
+    .def_property_readonly("edges", [](Ngs_Element &el)
+                           {
+                             // return py::cast(Array<int>(el.Edges()));
+                             py::tuple tuple(el.Edges().Size());
+                             for (auto i : Range(el.Edges()))
+                               tuple[i] = py::cast(NodeId(NT_EDGE,el.Edges()[i]));
+                             return tuple;
+                           } ,
+                           "tuple of global edge numbers")
+    .def_property_readonly("faces", [](Ngs_Element &el)
+                           {
+                             // return py::cast(Array<int>(el.Faces()));
+                             py::tuple tuple(el.Faces().Size());
+                             for (auto i : Range(el.Faces()))
+                               tuple[i] = py::cast(NodeId(NT_FACE,el.Faces()[i]));
+                             return tuple;
+                           } ,
+                           "tuple of global face numbers")
     .def_property_readonly("type", [](Ngs_Element &self)
         { return self.GetType(); },
         "geometric shape of element")
@@ -909,6 +969,8 @@ mesh (netgen.Mesh): a mesh generated from Netgen
     .def ("GetNE", static_cast<size_t(MeshAccess::*)(VorB)const> (&MeshAccess::GetNE), docu_string("Number of elements of codimension VorB."))
     .def_property_readonly ("nv", &MeshAccess::GetNV, "Number of vertices")
     .def_property_readonly ("ne",  static_cast<size_t(MeshAccess::*)()const> (&MeshAccess::GetNE), "Number of volume elements")
+    .def_property_readonly ("nedge", &MeshAccess::GetNEdges, "Number of edges")
+    .def_property_readonly ("nface", &MeshAccess::GetNFaces, "Number of faces")    
     .def_property_readonly ("dim", &MeshAccess::GetDimension, "Mesh dimension")
     .def_property_readonly ("ngmesh", &MeshAccess::GetNetgenMesh, "Get the Netgen mesh")
     .def ("GetTrafo", 
@@ -1080,6 +1142,12 @@ mesh (netgen.Mesh): a mesh generated from Netgen
             ma.GetParentNodes (vnum, &parents[0]);
             return py::make_tuple(parents[0], parents[1]);
           }))
+
+    .def("SetElementOrder",
+         [](MeshAccess & ma, ElementId id, int order)
+         {
+           ma.SetElOrder(id.Nr(), order);
+         })
     
     // TODO: Docu
     .def("Curve",
@@ -1348,7 +1416,7 @@ when building the system matrices.
   auto fes_dummy_init = [](PyFES *instance, shared_ptr<MeshAccess> ma, const string & type, 
                            py::dict bpflags, int order, bool is_complex,
                            py::object dirichlet, py::object definedon, int dim,
-                           py::object order_left, py::object order_right)
+                           py::object order_left, py::object order_right, ORDER_POLICY order_policy)
                            {
                              Flags flags = py::extract<Flags> (bpflags)();
 
@@ -1409,7 +1477,8 @@ when building the system matrices.
                              
                              
                              auto fes = CreateFESpace (type, ma, flags);
-
+                             fes->SetOrderPolicy(order_policy);
+                             
                              if (py::isinstance<py::int_> (order_left))
                                for (auto et : element_types)
                                  fes->SetOrderLeft (et, order_left.cast<int>());
@@ -1502,21 +1571,22 @@ flags : dict
 	 [&](PyFES *instance, const string & type, shared_ptr<MeshAccess> mesh,
              py::dict flags, int order, bool is_complex,
              py::object dirichlet, py::object definedon, int dim,
-             py::object order_left, py::object order_right
+             py::object order_left, py::object order_right, ORDER_POLICY order_policy
              )
                           {
-			    fes_dummy_init(instance, mesh, type, flags, order, is_complex, dirichlet, definedon, dim, order_left, order_right);
+			    fes_dummy_init(instance, mesh, type, flags, order, is_complex, dirichlet, definedon, dim, order_left, order_right, order_policy);
 //                              py::cast(*instance).attr("flags") = py::cast(bp_flags);
 			     
                            },
          py::arg("type"), py::arg("mesh"), py::arg("flags") = py::dict(), 
-           py::arg("order")=-1, 
-           py::arg("complex")=false, 
-           py::arg("dirichlet")=DummyArgument(),
-           py::arg("definedon")=DummyArgument(),
-          py::arg("dim")=-1,
+         py::arg("order")=-1, 
+         py::arg("complex")=false, 
+         py::arg("dirichlet")=DummyArgument(),
+         py::arg("definedon")=DummyArgument(),
+         py::arg("dim")=-1,
          py::arg("order_left")=DummyArgument(),
-         py::arg("order_right")=DummyArgument(),         
+         py::arg("order_right")=DummyArgument(),
+         py::arg("order_policy")=OLDSTYLE_ORDER,
          "allowed types are: 'h1ho', 'l2ho', 'hcurlho', 'hdivho' etc."
          )
     
@@ -1665,6 +1735,16 @@ flags : dict
          py::arg("order_left")=DummyArgument(),
          py::arg("order_right")=DummyArgument()
          )
+
+    .def("SetOrder",
+         [](PyFES & self, NodeId ni, int order)
+         {
+           self->SetOrder(ni, order);
+         },
+         py::arg("nodeid"),
+         py::arg("order")
+         )
+
     
     .def("Elements", 
          [](PyFES & self, VorB vb, int heapsize) 

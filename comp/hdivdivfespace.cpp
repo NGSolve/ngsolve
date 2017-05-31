@@ -274,21 +274,25 @@ namespace ngcomp
 
     for(auto i : Range(ma->GetNE()))
     {
+      ElementId ei(VOL, i);
       first_element_dof[i] = ndof;
       INT<3> oi = order_inner[i];
-      switch(ma->GetElType(i))
+      switch(ma->GetElType(ei))
       {
       case ET_TRIG:
         ndof += 3*(oi[0]+1)*(oi[0]+2)/2 - 3*(oi[0]+1);
         if(plus) ndof += 2*oi[0];
         if(discontinuous)
         {
-          Array<int> fnums(8);
-          ma->GetElFacets(i,fnums);
+          /*
+          auto fnums = ma->GetElFacets(ei);
           for(int ii=0; ii<fnums.Size(); ii++)
           {
             ndof += first_facet_dof[fnums[ii]+1] - first_facet_dof[fnums[ii]];
           }
+          */
+          for (auto f : ma->GetElFacets(ei))
+            ndof += first_facet_dof[f+1] - first_facet_dof[f];            
         }
         break;
       case ET_PRISM:
@@ -297,16 +301,19 @@ namespace ngcomp
           (oi[0]+1)*(oi[0]+2)*(oi[2]+1)/2*2;
         if(discontinuous)
         {
-          Array<int> fnums(8);
-          ma->GetElFacets(i,fnums);
+          /*
+          auto fnums = ma->GetElFacets(ei);
           for(int ii=0; ii<fnums.Size(); ii++)
           {
             ndof += first_facet_dof[fnums[ii]+1] - first_facet_dof[fnums[ii]];
           }
+          */
+          for (auto f : ma->GetElFacets(ei))
+            ndof += first_facet_dof[f+1] - first_facet_dof[f];            
         }
         break;
       default:
-        throw Exception(string("illegal element type") + ToString(ma->GetElType(i)));
+        throw Exception(string("illegal element type") + ToString(ma->GetElType(ei)));
       }
     }
     first_element_dof.Last() = ndof;

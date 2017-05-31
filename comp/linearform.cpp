@@ -255,7 +255,7 @@ namespace ngcomp
 	    LocalHeap lh = clh.Split();
 	    Array<int> dnums;
 	    Array<int> fnums, elnums, vnums;
-	    //Schleife fuer Facet-Integrators: 
+	    // loop for facet integrators: 
             for (int i : r)
 		{
 		  {
@@ -268,26 +268,25 @@ namespace ngcomp
 
 		  HeapReset hr(lh);
 		  
+                  ElementId sei(BND, i);
 		  
-		  ma->GetSElFacets(i,fnums);
+		  fnums = ma->GetElFacets(sei);
 		  int fac = fnums[0];
 		  ma->GetFacetElements(fac,elnums);
 		  int el = elnums[0];
-		  ma->GetElFacets(el,fnums);
+                  ElementId ei(VOL, el);
+		  fnums = ma->GetElFacets(ei);
 		  int facnr = 0;
 		  for (int k=0; k<fnums.Size(); k++)
 		    if(fac==fnums[k]) facnr = k;
 
-                  ElementId ei(VOL, el);
-                  ElementId sei(BND, i);
-                  
 		  const FiniteElement & fel = fespace->GetFE (ei, lh);
 		
 		  ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
 		  ElementTransformation & seltrans = ma->GetTrafo (sei, lh);
 
 		  fespace->GetDofNrs (ei, dnums);
-		  ma->GetElVertices (el, vnums);		
+		  vnums = ma->GetElVertices (ei);		
 	      
 		  for (int j = 0; j < parts.Size(); j++)
 		    {
@@ -778,12 +777,12 @@ namespace ngcomp
   shared_ptr<LinearForm> CreateLinearForm (shared_ptr<FESpace> space,
                                            const string & name, const Flags & flags)
   {
-    LinearForm * lfp = 
-      CreateVecObject  <T_LinearForm, LinearForm> 
+    shared_ptr<LinearForm> lf = 
+      CreateSharedVecObject  <T_LinearForm, LinearForm> 
       (space->GetDimension() * int(flags.GetNumFlag("cacheblocksize",1)), 
        space->IsComplex(), space, name, flags);
   
-    shared_ptr<LinearForm> lf(lfp);
+    // shared_ptr<LinearForm> lf(lfp);
     
     lf->SetIndependent (flags.GetDefineFlag ("independent"));
     if (flags.GetDefineFlag ( "noinitialassembling" )) lf->SetNoInitialAssembling();
