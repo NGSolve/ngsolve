@@ -68,7 +68,9 @@ namespace ngcomp
                                        afespace->GetEvaluator(BBND)),
       fespace(afespace)
   {
-    GridFunctionCoefficientFunction::gf = shared_ptr<GridFunction>(this,NOOP_Deleter);
+// This is now done in CreateGridFunction after the constructor
+//     GridFunctionCoefficientFunction::gf = shared_ptr<GridFunction>(this,NOOP_Deleter);
+
     GridFunctionCoefficientFunction::fes = fespace;
 
     is_complex = fespace->IsComplex();
@@ -913,15 +915,17 @@ namespace ngcomp
   }
   */
 
-  unique_ptr<GridFunction> CreateGridFunction (shared_ptr<FESpace> space,
+  shared_ptr<GridFunction> CreateGridFunction (shared_ptr<FESpace> space,
                                                const string & name, const Flags & flags)
   {
     cout << "space dim in creategf = " << space->GetDimension() << endl;
     cout << "cacheblocksize = " << int(flags.GetNumFlag("cacheblocksize",1)) << endl;
-    unique_ptr<GridFunction> gf
-      ((GridFunction*)CreateVecObject  <T_GridFunction, GridFunction> // , const FESpace, const string, const Flags>
+    shared_ptr<GridFunction> gf = dynamic_pointer_cast<GridFunction>(
+      (CreateVecObjectShared  <T_GridFunction, GridFunction> // , const FESpace, const string, const Flags>
        (space->GetDimension() * int(flags.GetNumFlag("cacheblocksize",1)), 
-        space->IsComplex(), space, name, flags));
+        space->IsComplex(), space, name, flags)));
+
+    gf->SetGF(shared_ptr<GridFunction>(gf.get(), NOOP_Deleter));
   
     gf->SetCacheBlockSize(int(flags.GetNumFlag("cacheblocksize",1)));
     
