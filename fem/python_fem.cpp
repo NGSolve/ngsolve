@@ -107,21 +107,20 @@ shared_ptr<CoefficientFunction> MakeCoefficient (py::object py_coef)
 */
 typedef CoefficientFunction CF;
 
-shared_ptr<CF> MakeCoefficient(py::object val);
-
-unique_ptr<CF> MakeUniqueCoefficient (py::object val)
+shared_ptr<CF> MakeCoefficient (py::object val)
 {
   py::extract<shared_ptr<CF>> ecf(val);
+  if (ecf.check()) return ecf();
   
   // a numpy.complex converts itself to a real, and prints a warning
   // thus we check for it first
   if (string(py::str(val.get_type())) == "<class 'numpy.complex128'>")
-    return make_unique<ConstantCoefficientFunctionC> (val.cast<Complex>());
+    return make_shared<ConstantCoefficientFunctionC> (val.cast<Complex>());
 
   if(py::CheckCast<double>(val))
-    return make_unique<ConstantCoefficientFunction> (val.cast<double>());
+    return make_shared<ConstantCoefficientFunction> (val.cast<double>());
   if(py::CheckCast<Complex>(val)) 
-    return make_unique<ConstantCoefficientFunctionC> (val.cast<Complex>());
+    return make_shared<ConstantCoefficientFunctionC> (val.cast<Complex>());
 
   if (py::isinstance<py::list>(val))
     {
@@ -143,14 +142,6 @@ unique_ptr<CF> MakeUniqueCoefficient (py::object val)
 
 
   throw Exception ("cannot make coefficient");
-}
-
-
-shared_ptr<CF> MakeCoefficient (py::object val)
-{
-  py::extract<shared_ptr<CF>> ecf(val);
-  if (ecf.check()) return ecf();
-  return MakeUniqueCoefficient(val);
 }
 
 Array<shared_ptr<CoefficientFunction>> MakeCoefficients (py::object py_coef)
@@ -497,7 +488,7 @@ void ExportCoefficientFunction(py::module &m)
 {
   m.def("CreateCoefficientFunction", [] (py::object self, py::object val, py::object dims)
         {
-          unique_ptr<CoefficientFunction> coef = MakeUniqueCoefficient(val);
+          shared_ptr<CoefficientFunction> coef = MakeCoefficient(val);
           if(dims)
             {
               try {
@@ -507,7 +498,7 @@ void ExportCoefficientFunction(py::module &m)
               }
               catch (py::type_error){ }
             }
-          return coef.release();
+          return coef;
         },
         py::arg("self"), py::arg("coef"),py::arg("dims")=DummyArgument(),
          "Construct a CoefficientFunction from either one of\n"

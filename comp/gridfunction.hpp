@@ -76,6 +76,22 @@ namespace ngcomp
 
 
 
+  extern NGS_DLL_HEADER
+  shared_ptr<GridFunction> CreateGridFunction (shared_ptr<FESpace> space,
+                                               const string & name, const Flags & flags);
+
+  /// compatibility with old codes
+  inline
+  shared_ptr<GridFunction> CreateGridFunction (const FESpace * space,
+                                               const string & name, const Flags & flags)
+  {
+    return
+      CreateGridFunction (shared_ptr<FESpace> (const_cast<FESpace*>(space), NOOP_Deleter),
+                          name, flags);
+  }
+
+
+
  
 
   /** 
@@ -84,6 +100,8 @@ namespace ngcomp
   class NGS_DLL_HEADER GridFunction 
     : public NGS_Object, public GridFunctionCoefficientFunction
   {
+  friend shared_ptr<GridFunction> CreateGridFunction (shared_ptr<FESpace> space,
+                                               const string & name, const Flags & flags);
   protected:
     /// the finite element space
     shared_ptr<FESpace> fespace;
@@ -102,11 +120,13 @@ namespace ngcomp
     Array<shared_ptr<BaseVector>> vec;
     /// component GridFunctions if fespace is a CompoundFESpace
     Array<shared_ptr<GridFunction>> compgfs;
-  public:
     /// 
     GridFunction (shared_ptr<FESpace> afespace, 
 		  const string & name = "gfu", 
 		  const Flags & flags = Flags());
+    /// 
+    void SetGF( shared_ptr<GridFunction> gfa ) { gf = gfa; }
+  public:
     ///
     virtual ~GridFunction ();
     ///
@@ -280,22 +300,6 @@ namespace ngcomp
     virtual void Update ();
   };
 
-
-
-
-  extern NGS_DLL_HEADER 
-  unique_ptr<GridFunction> CreateGridFunction (shared_ptr<FESpace> space,
-                                               const string & name, const Flags & flags);
-
-  /// compatibility with old codes
-  inline 
-  shared_ptr<GridFunction> CreateGridFunction (const FESpace * space,
-                                               const string & name, const Flags & flags)
-  {
-    return 
-      CreateGridFunction (shared_ptr<FESpace> (const_cast<FESpace*>(space), NOOP_Deleter), 
-                          name, flags);
-  }
 
 
 
