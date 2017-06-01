@@ -13,6 +13,9 @@ add_library(ngla ${NGS_LIB_TYPE}
         python_linalg.cpp umfpackinverse.cpp
         )
 
+target_compile_definitions(ngla PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
+target_include_directories(ngla PUBLIC ${NETGEN_INCLUDE_DIRS})
+
 if(NOT WIN32)
     target_link_libraries(ngla PUBLIC ngbla ngstd ${NETGEN_PYTHON_LIBRARIES} ${LAPACK_LIBRARIES}
 PRIVATE ${MUMPS_LIBRARIES} ${UMFPACK_LIBRARIES} ${SCALAPACK_LIBRARY} ${MPI_Fortran_LIBRARIES} ${MPI_CXX_LIBRARIES})
@@ -31,7 +34,7 @@ install( FILES
         special_matrix.hpp superluinverse.hpp mumpsinverse.hpp
         umfpackinverse.hpp vvector.hpp     
         elementbyelement.hpp arnoldi.hpp paralleldofs.hpp cuda_linalg.hpp
-        DESTINATION include
+        DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
         COMPONENT ngsolve_devel
        )
 

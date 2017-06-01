@@ -13,7 +13,7 @@ void NGS_DLL_HEADER ExportNgsolve(py::module &m ) {
 
     m.def ("Tcl_Eval", &Ng_TclCmd);
 
-    m.def ("Redraw", 
+    m.def ("_Redraw",
             ([](bool blocking) {Ng_Redraw(blocking);}),
              py::arg("blocking")=false
              );

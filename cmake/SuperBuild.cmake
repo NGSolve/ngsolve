@@ -19,8 +19,7 @@ foreach(CACHE_VAR ${CACHE_VARS})
   endif()
 endforeach()
 
-set(INSTALL_DIR CACHE PATH "Install path")
-set(NETGEN_DIR CACHE PATH "Path where Netgen is already installed. Setting this variable will skip the Netgen buildand override the setting of INSTALL_DIR")
+set(NETGEN_DIR CACHE PATH "Path where Netgen is already installed. Setting this variable will skip the Netgen build and override the setting of CMAKE_INSTALL_PREFIX")
 
 macro(set_vars VAR_OUT)
   foreach(varname ${ARGN})
@@ -69,26 +68,15 @@ endif(WIN32)
 
 #######################################################################
 if(NETGEN_DIR)
-  message(STATUS "Since NETGEN_SOURCE_DIR is given, assume Netgen is already installed")
   message(STATUS "Looking for NetgenConfig.cmake...")
-  find_package(Netgen REQUIRED CONFIG HINTS ${NETGEN_DIR}/share/cmake $ENV{NETGENDIR}/../share/cmake)
-  set(INSTALL_DIR ${NETGEN_DIR})
+  find_package(Netgen REQUIRED CONFIG HINTS ${NETGEN_DIR} ${NETGEN_DIR}/lib/cmake ${NETGEN_DIR}/share/cmake $ENV{NETGENDIR}/../share/cmake)
+  set(CMAKE_INSTALL_PREFIX ${NETGEN_DIR} CACHE PATH "Installation directory" FORCE)
   add_custom_target(netgen_project)
 else(NETGEN_DIR)
   message(STATUS "Build Netgen from git submodule")
-#   execute_process(COMMAND git submodule update --init --recursive WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
   execute_process(COMMAND cmake -P cmake/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} )
   add_custom_target(check_submodules_start ALL cmake -P cmake/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} )
   add_custom_target(check_submodules_stop ALL cmake -P cmake/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} DEPENDS ngsolve)
-  if(NOT INSTALL_DIR)
-    if(APPLE)
-      set(INSTALL_DIR /Applications/Netgen.app)
-    elseif(WIN32)
-      set(INSTALL_DIR C:/Netgen)
-    else()
-      set(INSTALL_DIR /opt/netgen)
-    endif()
-  endif(NOT INSTALL_DIR)
   set (NETGEN_CMAKE_ARGS)
   # propagate netgen-specific settings to Netgen subproject
   set_vars( NETGEN_CMAKE_ARGS
@@ -96,7 +84,7 @@ else(NETGEN_DIR)
     CMAKE_C_COMPILER
     CMAKE_BUILD_TYPE
 
-    INSTALL_DIR
+    CMAKE_INSTALL_PREFIX
     INSTALL_DEPENDENCIES
     INSTALL_PROFILES
     INTEL_MIC
@@ -124,9 +112,7 @@ else(NETGEN_DIR)
 endif(NETGEN_DIR)
 
 #######################################################################
-# find netgen
 
-#######################################################################
 set(LAPACK_LIBRARIES CACHE INTERNAL "Lapack libraries")
 if(USE_MKL)
     set(MKL_MULTI_THREADED ON CACHE BOOL "Use threaded MKL libs")
@@ -155,9 +141,9 @@ if (USE_LAPACK)
           BUILD_IN_SOURCE 1
           CONFIGURE_COMMAND ""
           BUILD_COMMAND ""
-          INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_directory . ${INSTALL_DIR}
+          INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_directory . ${CMAKE_INSTALL_PREFIX}
           )
-        set(LAPACK_LIBRARIES ${INSTALL_DIR}/lib/BLAS.lib)
+        set(LAPACK_LIBRARIES ${CMAKE_INSTALL_PREFIX}/lib/BLAS.lib)
         list(APPEND LAPACK_PROJECTS win_download_lapack)
       else(WIN32)
         find_package(LAPACK)
@@ -199,6 +185,7 @@ set_vars( NGSOLVE_CMAKE_ARGS
   CMAKE_CXX_COMPILER
   CMAKE_C_COMPILER
   CMAKE_BUILD_TYPE
+  CMAKE_INSTALL_PREFIX
 
   USE_LAPACK
   USE_MPI
@@ -213,8 +200,8 @@ set_vars( NGSOLVE_CMAKE_ARGS
   USE_NUMA
   USE_CCACHE
   USE_NATIVE_ARCH
-  INSTALL_DIR
-  NETGEN_SOURCE_DIR
+  NETGEN_DIR
+  Netgen_DIR
   INSTALL_DEPENDENCIES 
   INTEL_MIC
   ENABLE_UNIT_TESTS
@@ -225,7 +212,7 @@ set_flags_vars(NGSOLVE_CMAKE_ARGS CMAKE_CXX_FLAGS CMAKE_SHARED_LINKER_FLAGS CMAK
 ExternalProject_Add (ngsolve
   DEPENDS ${DEPENDENCIES} ${LAPACK_PROJECTS}
   SOURCE_DIR ${PROJECT_SOURCE_DIR}
-  CMAKE_ARGS ${NGSOLVE_CMAKE_ARGS} -DUSE_SUPERBUILD=OFF
+  CMAKE_ARGS ${NGSOLVE_CMAKE_ARGS} -DUSE_SUPERBUILD=OFF -DCMAKE_PREFIX_PATH="${CMAKE_INSTALL_PREFIX} ${CMAKE_PREFIX_PATH}"
   INSTALL_COMMAND ""
   BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/ngsolve
   BUILD_COMMAND ${COMMON_BUILD_COMMAND}
@@ -259,8 +246,8 @@ add_custom_target(test_ngsolve
 
 
 if(WIN32)
-  file(TO_NATIVE_PATH ${INSTALL_DIR}/bin netgendir)
-  file(TO_NATIVE_PATH ${INSTALL_DIR}/${PYTHON_PACKAGES_INSTALL_DIR} pythonpath)
+  file(TO_NATIVE_PATH ${CMAKE_INSTALL_PREFIX}/bin netgendir)
+  file(TO_NATIVE_PATH ${CMAKE_INSTALL_PREFIX}/${PYTHON_PACKAGES_INSTALL_DIR} pythonpath)
   add_custom_target(set_netgendir
     setx NETGENDIR  ${netgendir}
   )

@@ -52,7 +52,7 @@ std::thread::id pythread_id = std::this_thread::get_id();
 std::thread::id mainthread_id = std::this_thread::get_id();
 
 
-void SpawnPython (string initfile)
+void SpawnPython ()
 {
   if(pythread_id != mainthread_id) 
     {
@@ -60,13 +60,13 @@ void SpawnPython (string initfile)
     }
   else
     {
-      std::thread([](string init_file_) 
+      std::thread([]()
                   {
                     AcquireGIL gil_lock;
                     try{
                       Ng_SetRunning (1); 
                       pythread_id = std::this_thread::get_id();
-                      pyenv.exec_file(init_file_.c_str());
+                      pyenv.exec("import ngsolve.__console;ngsolve.__console.startConsole()");
                       Ng_SetRunning (0); 
                     }
                     catch (py::error_already_set const &) {
@@ -76,7 +76,7 @@ void SpawnPython (string initfile)
                     
                     pythread_id = mainthread_id;
                     
-                  }, initfile).detach();
+                  }).detach();
       /*
       cout << IM(1)
           << "ngs-python objects are available in ngstd, bla, ...\n"
@@ -858,9 +858,7 @@ int NGS_PythonShell (ClientData clientData,
       return TCL_ERROR;
   }
 #ifdef NGS_PYTHON
-  string initfile = netgen::ngdir + dirslash + "init.py";
-  cout << "python init file = " << initfile << endl;
-  SpawnPython(initfile);
+  SpawnPython();
   return TCL_OK;
 #else
   cerr << "Sorry, you have to compile ngsolve with Python" << endl;
@@ -1281,9 +1279,6 @@ int NGSolve_Init (Tcl_Interp * interp)
   // In case we start the GUI from python, no further initialization is needed here
   if(netgen::netgen_executable_started)
   {
-    string initfile = netgen::ngdir + dirslash + "init.py";
-    cout << "python init file = " << initfile << endl;
-
     Py_Initialize();
     PyEval_InitThreads();
 
@@ -1309,7 +1304,7 @@ int NGSolve_Init (Tcl_Interp * interp)
         PyEval_SaveThread();
 
         // Dummy SpawnPython (to avoid nasty Python GIL error)
-        std::thread([](string init_file_)
+        std::thread([]()
                     {
                       AcquireGIL gil_lock;
                       try{
@@ -1319,7 +1314,7 @@ int NGSolve_Init (Tcl_Interp * interp)
                       catch (py::error_already_set const &) {
                         PyErr_Print();
                       }
-                    }, initfile).detach();
+                    }).detach();
       }
   }
 #endif

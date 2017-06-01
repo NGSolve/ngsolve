@@ -258,7 +258,8 @@ namespace ngcomp
 	      ( ((p[0]+1)*(p[0]+2)) - 2) :  ( 2 * (p[0]+1) * (p[1]+1) - 2 );
 
 	    first_facet_dof[i] = ndof;
-	    ndof += inci;
+            if (fine_facet[i])
+              ndof += inci;
 	  }
 	first_facet_dof[nfacets] = ndof;
 
