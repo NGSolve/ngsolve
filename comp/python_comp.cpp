@@ -1874,7 +1874,7 @@ used_idnrs : list of int = None
                 // cout << "diffop is " << typeid(*diffop).name() << endl;
                 auto coef = make_shared<GridFunctionCoefficientFunction> (self, diffop);
                 coef->SetDimensions(diffop->Dimensions());
-                return py::cast(coef);
+                return py::cast(shared_ptr<CoefficientFunction>(coef));
               }
             return py::none(); //  shared_ptr<CoefficientFunction>();
           })
