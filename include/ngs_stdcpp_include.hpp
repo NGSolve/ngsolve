@@ -1,8 +1,3 @@
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-
 #ifdef WIN32
 
 // This function or variable may be unsafe. Consider using _ftime64_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.

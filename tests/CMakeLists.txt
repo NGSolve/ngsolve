@@ -8,7 +8,7 @@ if(NETGEN_USE_PYTHON)
 else()
   set(test_driver "${CMAKE_CURRENT_BINARY_DIR}/pde_tester")
   add_executable( pde_tester pde_tester.cpp)
-  install( TARGETS pde_tester DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve )
+  install( TARGETS pde_tester DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve )
   target_link_libraries(pde_tester solve interface gui ${NETGEN_PYTHON_LIBRARIES} ${LAPACK_LIBRARIES})
 endif()
 

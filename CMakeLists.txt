@@ -29,8 +29,26 @@ set(NETGEN_DIR "" CACHE PATH "Path to Netgen, leave empty to build Netgen automa
 
 include (${CMAKE_CURRENT_LIST_DIR}/cmake/generate_version_file.cmake)
 
+if(APPLE)
+  set(INSTALL_DIR_DEFAULT /Applications/Netgen.app)
+else(APPLE)
+  if(WIN32)
+    set(INSTALL_DIR_DEFAULT "C:/netgen")
+  else(WIN32)
+    set(INSTALL_DIR_DEFAULT /opt/netgen)
+  endif(WIN32)
+endif(APPLE)
+
+if(INSTALL_DIR)
+  message(WARNING "INSTALL_DIR is deprecated, use CMAKE_INSTALL_PREFIX instead")
+  set(INSTALL_DIR_DEFAULT ${INSTALL_DIR})
+endif(INSTALL_DIR)
+
 if (USE_SUPERBUILD)
   project (NGSuite)
+  if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    set(CMAKE_INSTALL_PREFIX "${INSTALL_DIR_DEFAULT}" CACHE PATH "Install directory" FORCE)
+  endif()
   # execute the superbuild (this script will be invoked again without the
   # USE_SUPERBUILD option this time)
   include (cmake/SuperBuild.cmake)
@@ -39,20 +57,37 @@ if (USE_SUPERBUILD)
   return()                      # stop processing this file further
 else()
   project(NGSolve)
+  if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    set(CMAKE_INSTALL_PREFIX "${INSTALL_DIR_DEFAULT}" CACHE PATH "Install directory" FORCE)
+  endif()
 endif()
 
-find_package(Netgen REQUIRED CONFIG HINTS ${NETGEN_DIR} ${NETGEN_DIR}/share/cmake ${INSTALL_DIR} ${INSTALL_DIR}/share/cmake ${INSTALL_DIR}/Contents/Resources/share/cmake)
+find_package(Netgen REQUIRED CONFIG HINTS ${CMAKE_INSTALL_PREFIX}/Contents/Resources)
 
-# set(CPACK_DEBIAN_PACKAGE_VERSION "${NGSOLVE_VERSION_MAJOR}.${NGSOLVE_VERSION_MINOR}.${NGSOLVE_VERSION_PATCH}")
+set(NGSOLVE_INSTALL_DIR_PYTHON  ${NETGEN_INSTALL_DIR_PYTHON})
+set(NGSOLVE_INSTALL_DIR_BIN     ${NETGEN_INSTALL_DIR_BIN})
+set(NGSOLVE_INSTALL_DIR_LIB     ${NETGEN_INSTALL_DIR_LIB})
+set(NGSOLVE_INSTALL_DIR_INCLUDE ${NETGEN_INSTALL_DIR_INCLUDE})
+set(NGSOLVE_INSTALL_DIR_RES     ${NETGEN_INSTALL_DIR_RES})
+string(REPLACE "netgen" "ngsolve" NGSOLVE_INSTALL_DIR_CMAKE ${NETGEN_INSTALL_DIR_CMAKE})
 
 #######################################################################
+
+set(NGSOLVE_COMPILE_DEFINITIONS "")
+list(APPEND NGSOLVE_COMPILE_DEFINITIONS HAVE_NETGEN_SOURCES)
+
+#######################################################################
+
 include (CheckIncludeFiles)
 check_include_files (dlfcn.h HAVE_DLFCN_H)
 include (CheckCXXSymbolExists)
 check_cxx_symbol_exists ( abi::__cxa_demangle "cxxabi.h" HAVE_CXA_DEMANGLE )
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config.h)
-
-install (FILES ${CMAKE_CURRENT_BINARY_DIR}/config.h DESTINATION include COMPONENT ngsolve_devel )
+if(HAVE_DLFCN_H)
+    list(APPEND NGSOLVE_COMPILE_DEFINITIONS HAVE_DLFCN_H)
+endif()
+if(HAVE_CXA_DEMANGLE)
+    list(APPEND NGSOLVE_COMPILE_DEFINITIONS HAVE_CXA_DEMANGLE)
+endif()
 
 add_custom_target(generate_version_file
   cmake
@@ -60,10 +95,6 @@ add_custom_target(generate_version_file
     -P ${CMAKE_CURRENT_LIST_DIR}/cmake/generate_version_file.cmake
     )
 
-
-#######################################################################
-
-add_definitions(-DHAVE_NETGEN_SOURCES)
 #######################################################################
 if(USE_CCACHE)
   find_program(CCACHE_FOUND NAMES ccache ccache.bat)
@@ -98,39 +129,21 @@ endif (ADDITIONAL_PATHS)
 
 #######################################################################
 # use rpath
-set(CMAKE_INSTALL_PREFIX ${NETGEN_DIR} CACHE INTERNAL "Prefix prepended to install directories" FORCE)
-set(CMAKE_SKIP_BUILD_RPATH  FALSE)
-set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE) 
-set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib" isSystemDir)
-if("${isSystemDir}" STREQUAL "-1")
-   set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
-endif("${isSystemDir}" STREQUAL "-1")
+set(CMAKE_MACOSX_RPATH TRUE)
+set(CMAKE_INSTALL_RPATH "${NETGEN_RPATH_TOKEN};${NETGEN_RPATH_TOKEN}/${NETGEN_RPATH}")
 
 #######################################################################
-# build options
-if(APPLE)
-  set(ngs_install_dir_bin ../MacOS)
-  set(ngs_install_dir_lib ../MacOS)
-else(APPLE)
-  set(ngs_install_dir_bin bin)
-  set(ngs_install_dir_lib lib)
-endif(APPLE)
-set(ngs_install_dir EXPORT ngsolve-targets RUNTIME DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve LIBRARY DESTINATION ${ngs_install_dir_lib} COMPONENT ngsolve_devel ARCHIVE DESTINATION ${ngs_install_dir_lib} COMPONENT ngsolve_devel )
-install(EXPORT ngsolve-targets DESTINATION share/cmake)
+set(ngs_install_dir EXPORT ngsolve-targets RUNTIME DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve LIBRARY DESTINATION ${NGSOLVE_INSTALL_DIR_LIB} COMPONENT ngsolve_devel ARCHIVE DESTINATION ${NGSOLVE_INSTALL_DIR_LIB} COMPONENT ngsolve_devel )
+install(EXPORT ngsolve-targets DESTINATION ${NGSOLVE_INSTALL_DIR_CMAKE})
 
-add_definitions(-DHAVE_CONFIG_H)
-add_definitions(-DUSE_TIMEOFDAY)
+list(APPEND NGSOLVE_COMPILE_DEFINITIONS USE_TIMEOFDAY)
 
 include_directories (BEFORE ${PROJECT_SOURCE_DIR}/include)
 include_directories (BEFORE ${PROJECT_BINARY_DIR})
 include_directories (AFTER ${NETGEN_INCLUDE_DIRS})
 
-link_directories ("${CMAKE_INSTALL_PREFIX}/${ngs_install_dir_lib}")
-
 if(NETGEN_USE_GUI)
-  install (FILES ngsolve.tcl DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve )
+  install (FILES ngsolve.tcl DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve )
 endif(NETGEN_USE_GUI)
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -Wall")
@@ -147,8 +160,8 @@ macro(get_WIN32_WINNT version)
 endmacro()
 get_WIN32_WINNT(ver)
 if(WIN32)
-    add_definitions(-D_WIN32_WINNT=${ver} -DNOMINMAX)
-    add_definitions(-DMSVC_EXPRESS -D_CRT_SECURE_NO_WARNINGS -DNGS_EXPORTS)
+    add_definitions(-DNGS_EXPORTS)
+    list(APPEND NGSOLVE_COMPILE_DEFINITIONS -DNOMINMAX -D_WIN32_WINNT=${ver} -DMSVC_EXPRESS -D_CRT_SECURE_NO_WARNINGS )
 
     # build convenience (aka object) libraries in windows)
     set(NGS_LIB_TYPE OBJECT)
@@ -167,15 +180,13 @@ else(WIN32)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 endif(WIN32)
 if(APPLE)
-#    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -undefined dynamic_lookup")
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -undefined dynamic_lookup")
-    add_definitions(-DMSG_NOSIGNAL=0)
-#     set(CMAKE_SHARED_LIBRARY_SUFFIX ".so")
+    list(APPEND NGSOLVE_COMPILE_DEFINITIONS MSG_NOSIGNAL=0)
 endif(APPLE)
 
 #######################################################################
 if (NETGEN_USE_GUI)
-    add_definitions(-DTCL)
+    list(APPEND NGSOLVE_COMPILE_DEFINITIONS TCL)
     include_directories(${NETGEN_TCL_INCLUDE_PATH})
 endif (NETGEN_USE_GUI)
 
@@ -185,25 +196,24 @@ if (NETGEN_USE_MPI)
       enable_language(Fortran)
     endif(USE_MUMPS)
     find_package(MPI REQUIRED)
-    add_definitions(-DPARALLEL)
+    list(APPEND NGSOLVE_COMPILE_DEFINITIONS PARALLEL)
     include_directories(${MPI_CXX_INCLUDE_PATH})
     set(CMAKE_EXE_LINKER_FLAGS    "${CMAKE_EXE_LINKER_FLAGS}    ${MPI_CXX_LINK_FLAGS} -ldl")
     set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} ${MPI_CXX_LINK_FLAGS} -ldl")
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${MPI_CXX_LINK_FLAGS} -ldl")
 endif (NETGEN_USE_MPI)
-# set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-undefined")
 
 #######################################################################
 if (USE_LAPACK)
     if(NOT LAPACK_LIBRARIES)
       find_package(LAPACK REQUIRED)
     endif()
-    add_definitions(-DLAPACK)
+    list(APPEND NGSOLVE_COMPILE_DEFINITIONS LAPACK)
 endif (USE_LAPACK)
 
 #######################################################################
 if (USE_VT)
-    add_definitions(-DVTRACE)
+    list(APPEND NGSOLVE_COMPILE_DEFINITIONS VTRACE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -t:inst manual")
 endif (USE_VT)
 
@@ -220,31 +230,31 @@ endif (USE_CUDA)
 if (USE_MKL)
     find_package(MKL REQUIRED)
     include_directories(${MKL_INCLUDE_DIRS})
-    add_definitions(-DUSE_MKL -DUSE_PARDISO -DLAPACK)
+    list(APPEND NGSOLVE_COMPILE_DEFINITIONS USE_MKL USE_PARDISO LAPACK)
 
 
     if("${MKL_INTERFACE_LAYER}" STREQUAL "_ilp64")
-        add_definitions(-DMKL_ILP64)
+      list(APPEND NGSOLVE_COMPILE_DEFINITIONS MKL_ILP64)
     endif()
 endif (USE_MKL)
 
 #######################################################################
 if (USE_HYPRE)
   find_package(HYPRE REQUIRED)
-  add_definitions(-DHYPRE)
+  list(APPEND NGSOLVE_COMPILE_DEFINITIONS HYPRE)
   include_directories(${HYPRE_INCLUDES})
 endif(USE_HYPRE)
 
 if (USE_MUMPS)
     find_package(MUMPS REQUIRED)
-    add_definitions(-DUSE_MUMPS)
+    list(APPEND NGSOLVE_COMPILE_DEFINITIONS USE_MUMPS)
     include_directories(${MUMPS_INCLUDE_DIR})
     link_directories(${MUMPS_DIR}/lib)
 endif (USE_MUMPS)
 
 #######################################################################
 if (NETGEN_USE_PYTHON)
-    add_definitions(-DNGS_PYTHON)
+    list(APPEND NGSOLVE_COMPILE_DEFINITIONS NGS_PYTHON)
     include_directories(${NETGEN_PYBIND_INCLUDE_DIR})
     include_directories(${NETGEN_PYTHON_INCLUDE_DIRS})
 endif (NETGEN_USE_PYTHON)
@@ -252,8 +262,8 @@ endif (NETGEN_USE_PYTHON)
 #######################################################################
 
 if(USE_PARDISO)
-  add_definitions(-DUSE_PARDISO)
-  add_definitions(-DUSE_PARDISO400)
+  list(APPEND NGSOLVE_COMPILE_DEFINITIONS USE_PARDISO)
+  list(APPEND NGSOLVE_COMPILE_DEFINITIONS USE_PARDISO400)
   if(NOT PARDISO_LIB)
       find_library(PARDISO_LIB NAMES libpardiso500-GNU481-X86-64.so)
   endif(NOT PARDISO_LIB)
@@ -271,19 +281,19 @@ if(USE_UMFPACK)
   include(${USE_SuiteSparse})
   include_directories(${SuiteSparse_INCLUDE_DIRS})
   set(UMFPACK_LIBRARIES ${SuiteSparse_LIBRARIES} CACHE STRING "List of UMFPACK libraries")
-  add_definitions(-DUSE_UMFPACK)
+  list(APPEND NGSOLVE_COMPILE_DEFINITIONS USE_UMFPACK)
 endif(USE_UMFPACK)
 
 #######################################################################
 if(USE_NUMA)
-    add_definitions(-DUSE_NUMA)
+    list(APPEND NGSOLVE_COMPILE_DEFINITIONS USE_NUMA)
     find_library(NUMA_LIB libnuma.so)
 endif(USE_NUMA)
 
 
 #######################################################################
 if(USE_VTUNE)
-    add_definitions(-DVTUNE)
+    list(APPEND NGSOLVE_COMPILE_DEFINITIONS VTUNE)
     find_path(VTUNE_INCLUDE_DIR libittnotify.h)
     include_directories(${VTUNE_INCLUDE_DIR})
     get_filename_component(VTUNE_DIR ${VTUNE_INCLUDE_DIR} PATH)
@@ -322,10 +332,9 @@ add_subdirectory(docs)
 # generate ngscxx compiler wrapper
 
 # compile flags and preprocessor definitions
-get_directory_property( ngscxx_defines COMPILE_DEFINITIONS )
 string(TOUPPER "CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE}" name)
 
-foreach( d ${ngscxx_defines} )
+foreach( d ${NGSOLVE_COMPILE_DEFINITIONS} )
     if(WIN32)
       if(NOT ${d} STREQUAL "NGS_EXPORTS")
         set( ngscxx_define_flags "${ngscxx_define_flags} /D${d}" )
@@ -359,7 +368,7 @@ if(USE_MKL AND NOT INSTALL_DEPENDENCIES)
 endif()
 
 if(APPLE)
-    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/pictures/logo.icns DESTINATION . RENAME Netgen.icns)
+    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/pictures/logo.icns DESTINATION ${NGSOLVE_INSTALL_DIR_RES}/../ RENAME Netgen.icns)
     if(CMAKE_OSX_SYSROOT)
         set( ngscxx_includes "-isysroot ${CMAKE_OSX_SYSROOT} ${ngscxx_includes}" )
     endif()
@@ -377,9 +386,9 @@ Netgen_BUNDLE=\"`echo \"$0\" | sed -e 's/\\/Contents\\/MacOS\\/ngsld//'`\"
 Netgen_MACOS=\"$Netgen_BUNDLE/Contents/MacOS\"
 ")
 elseif(WIN32)
-  set(ngsld_flags "${ngsld_flags} /LIBPATH:${INSTALL_DIR}/lib nglib.lib libngsolve.lib" )
+  set(ngsld_flags "${ngsld_flags} /LIBPATH:${NETGEN_LIBRARY_DIR} nglib.lib libngsolve.lib" )
 else()
-    set(ngsld_flags "${ngsld_flags} -L${INSTALL_DIR}/lib -Wl,--rpath=${INSTALL_DIR}/lib" )
+    set(ngsld_flags "${ngsld_flags} -L${NETGEN_LIBRARY_DIR} -Wl,--rpath=${NETGEN_LIBRARY_DIR}" )
     set(ngscxx_header "#!/bin/sh")
     set(ngsld_header "#!/bin/sh")
 endif()
@@ -391,8 +400,8 @@ if(WIN32)
       "call \"${VC_DIR}/vcvarsall.bat\" amd64\ncl /c ${ngscxx_flags} ${ngscxx_includes} %*\n")
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngsld.bat
       "call \"${VC_DIR}/vcvarsall.bat\" amd64\nlink /DLL %* ${ngsld_flags}\n")
-    install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngscxx.bat DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve_devel )
-    install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngsld.bat DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve_devel )
+    install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngscxx.bat DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve_devel )
+    install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngsld.bat DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve_devel )
 else(WIN32)
     set(ngscxx_compile_command "${CMAKE_CXX_COMPILER} ${ngscxx_flags} ${ngscxx_includes} $*")
     if(CCACHE_FOUND)
@@ -406,8 +415,8 @@ fi")
 ${ngscxx_compile_command}\n")
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngsld "${ngsld_header}
 ${CMAKE_CXX_COMPILER} ${ngsld_flags} $*\n")
-    install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngscxx DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve_devel )
-    install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngsld DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve_devel )
+install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngscxx DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve_devel )
+install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngsld DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve_devel )
 endif(WIN32)
 
 if (NETGEN_USE_MPI)
@@ -420,7 +429,7 @@ if (NETGEN_USE_MPI)
 "#! /usr/bin/bash
 LD_PRELOAD=$LD_PRELOAD:${ngspy_preload_libs} ${NETGEN_PYTHON_EXECUTABLE} $*
 ")
-    install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngspy DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve_devel )
+    install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngspy DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve_devel )
 endif (NETGEN_USE_MPI)
 
 
@@ -445,7 +454,7 @@ configure_file(
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/NGSolveConfig.cmake.in
   ${CMAKE_CURRENT_BINARY_DIR}/NGSolveConfig.cmake @ONLY)
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/NGSolveConfig.cmake DESTINATION share/cmake)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/NGSolveConfig.cmake DESTINATION ${NGSOLVE_INSTALL_DIR_CMAKE})
 
 
 #######################################################################
