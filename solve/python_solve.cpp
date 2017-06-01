@@ -5,7 +5,6 @@ using namespace ngsolve;
 
 
 typedef GridFunction GF;
-typedef PyWrapper<GF> PyGF;
 
 extern void ExportBVP(py::module &m);
 extern void ExportDrawFlux(py::module &m);
@@ -114,8 +113,7 @@ void NGS_DLL_HEADER ExportNgsolve(py::module &m ) {
              );
 
     
-    m.def ("Draw", FunctionPointer
-             ([](shared_ptr<CoefficientFunction> cf, shared_ptr<MeshAccess> ma, string name,
+    m.def ("Draw", [](shared_ptr<CoefficientFunction> cf, shared_ptr<MeshAccess> ma, string name,
                  int sd, bool autoscale, double min, double max,
                  bool draw_vol, bool draw_surf) 
               {
@@ -165,7 +163,7 @@ void NGS_DLL_HEADER ExportNgsolve(py::module &m ) {
                 Ng_TclCmd ("Ng_Vis_Set parameters;\n");
                 Ng_TclCmd ("set ::selectvisual solution;\n");
 
-              }),
+              },
               py::arg("cf"),py::arg("mesh"),py::arg("name"),
               py::arg("sd")=2,py::arg("autoscale")=true,
 	      py::arg("min")=0.0,py::arg("max")=1.0,

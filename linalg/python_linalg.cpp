@@ -6,63 +6,7 @@ using namespace ngla;
 
 
 void NGS_DLL_HEADER ExportNgla(py::module &m) {
-  // cout << IM(1) << "exporting linalg" << endl;
-    // TODO
-//     py::object expr_module = py::import("ngsolve.__expr");
-//     py::object expr_namespace = expr_module.attr("__dict__");
-
-
-//     struct BaseVector_pickle_suite : py::pickle_suite
-//     {
-//       static
-//       py::tuple getinitargs(const BaseVector & v)
-//       {
-// 	int es = v.EntrySize();
-// 	if(v.IsComplex())
-// 	  es /= 2;
-//      return bp::make_tuple(v.Size(), v.IsComplex(), es); 
-//       }
-// 
-//       static
-//       py::tuple getstate(py::object obj)
-//       {
-//         /*
-//         const BaseVector & vec = py::extract<BaseVector const&>(obj)();
-//         py::list data;
-//         for (int i : Range(vec))
-//           data.append (vec.FV<double>()(i));
-//         */
-//         auto vec = py::extract<BaseVector const&>(obj)().FV<double>();
-//         py::list data;
-//         for (int i : Range(vec))
-//           data.append (vec(i));
-//         return py::make_tuple (obj.attr("__dict__"), data);
-//       }
-//     
-//       static
-//       void setstate(py::object obj, py::tuple state)
-//       {
-//         py::dict d = py::extract<py::dict>(obj.attr("__dict__"))();
-//         d.update(state[0]);
-//         py::list data = py::extract<py::list>(state[1]);
-//         auto vec = py::extract<BaseVector const&>(obj)().FV<double>();
-//         for (int i : Range(vec))
-//           vec(i) = py::extract<double> (data[i]);
-//         /*
-//         BaseVector & vec = py::extract<BaseVector&>(obj)();
-//         for (int i : Range(vec))
-//           vec.FV<double>()(i) = py::extract<double> (data[i]);
-//         */
-//       }
-// 
-//     static bool getstate_manages_dict() { return true; }
-//   };
     
-    
-  
-    typedef BaseVector PyBaseVector;
-    typedef BaseMatrix PyBaseMatrix;
-
     m.def("CreateVVector",
           [] (size_t s, bool is_complex, int es) 
           { return shared_ptr<BaseVector> (CreateBaseVector(s,is_complex, es)); },
@@ -71,43 +15,17 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
   py::class_<BaseVector, shared_ptr<BaseVector>>(m, "BaseVector",
         py::dynamic_attr() // add dynamic attributes
       )
-  .def("__ngsid__", FunctionPointer( [] ( PyBaseVector & self)
-      { return reinterpret_cast<std::uintptr_t>(&self); } ) )
+  .def("__ngsid__",  [] ( BaseVector & self)
+      { return reinterpret_cast<std::uintptr_t>(&self); }  )
     
-    .def("__str__", [](PyBaseVector &self) { return ToString<BaseVector>(self); } )
-    .def("__repr__", [](PyBaseVector &self) { return "basevector"; } )
-    .def_property_readonly("size", py::cpp_function( [] (PyBaseVector &self) { return self.Size(); } ) )
-    .def("__len__", [] (PyBaseVector &self) { return self.Size(); })
-//     .def("__getstate__", [] (py::object self_object) {
-//         const BaseVector & self = self_object.cast<PyBaseVector>();
-//         auto dict = self_object.attr("__dict__");
-//         auto vec = self.FV<double>();
-//         py::list values;
-//         for (int i : Range(vec))
-//           values.append (py::cast(vec(i)));
-//        return py::make_tuple( vec.Size(), self.IsComplex(), self.EntrySize(), values, dict );
-//      })
-//     .def("__setstate__", [] (PyBaseVector &self, py::tuple t) {
-//          auto vec = CreateBaseVector( t[0].cast<int>(), t[1].cast<bool>(), t[2].cast<int>());
-//          new (&self) PyBaseVector(vec);
-//          py::object vec_object = py::cast(self);
-//          auto fvec = vec->FVDouble();
-//          py::list values = t[3].cast<py::list>();
-//          for (int i : Range(fvec.Size()))
-//                 fvec[i] = values[i].cast<double>();
-//          // restore dynamic attributes (necessary for persistent id in NgsPickler)
-//          vec_object.attr("__dict__") = t[4];
-//      })
-    .def("CreateVector", [] ( PyBaseVector & self) -> PyWrapper<BaseVector>
+    .def("__str__", [](BaseVector &self) { return ToString<BaseVector>(self); } )
+    .def("__repr__", [](BaseVector &self) { return "basevector"; } )
+    .def_property_readonly("size", py::cpp_function( [] (BaseVector &self) { return self.Size(); } ) )
+    .def("__len__", [] (BaseVector &self) { return self.Size(); })
+    .def("CreateVector", [] ( BaseVector & self)
         { return shared_ptr<BaseVector>(self.CreateVector()); } )
 
-    /*
-    .def("Assign", FunctionPointer([](PyBaseVector & self, BaseVector & v2, double s)->void { self.Set(s, v2); }))
-    .def("Add", FunctionPointer([](PyBaseVector & self, BaseVector & v2, double s)->void { self.Add(s, v2); }))
-    .def("Assign", FunctionPointer([](PyBaseVector & self, BaseVector & v2, Complex s)->void { self.Set(s, v2); }))
-    .def("Add", FunctionPointer([](PyBaseVector & self, BaseVector & v2, Complex s)->void { self.Add(s, v2); }))
-    */
-    .def("Assign",[](PyBaseVector & self, PyBaseVector & v2, py::object s)->void 
+    .def("Assign",[](BaseVector & self, BaseVector & v2, py::object s)->void
                                    { 
                                      if ( py::extract<double>(s).check() )
                                        {
@@ -121,7 +39,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                        }
                                      throw Exception ("BaseVector::Assign called with non-scalar type");
                                    })
-    .def("Add",[](PyBaseVector & self, PyBaseVector & v2, py::object s)->void 
+    .def("Add",[](BaseVector & self, BaseVector & v2, py::object s)->void
                                    { 
                                      if ( py::extract<double>(s).check() )
                                        {
@@ -144,7 +62,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 //     .def("__sub__" , py::object(expr_namespace["expr_sub"]) )
 //     .def("__rmul__" , py::object(expr_namespace["expr_rmul"]) )
     .def("__getitem__",
-          [](PyBaseVector & self,  int ind )
+          [](BaseVector & self,  int ind )
            {
              if (ind < 0 || ind >= self.Size()) 
                throw py::index_error();
@@ -166,7 +84,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                    return py::cast(self.SV<double>()(ind));
              }
            } )
-    .def("__getitem__", [](PyBaseVector & self,  py::slice inds ) -> PyWrapper<BaseVector>
+    .def("__getitem__", [](BaseVector & self,  py::slice inds )
       {
           size_t start, step, n;
           InitSlice( inds, self.Size(), start, step, n );
@@ -174,15 +92,15 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
             throw Exception ("slices with non-unit distance not allowed");
           return shared_ptr<BaseVector>(self.Range(start, start+n));
       } )
-    .def("__setitem__", [](PyBaseVector & self,  int ind, double d )
+    .def("__setitem__", [](BaseVector & self,  int ind, double d )
       {
           self.Range(ind,ind+1) = d;
       } )
-    .def("__setitem__", [](PyBaseVector & self,  int ind, Complex z ) 
+    .def("__setitem__", [](BaseVector & self,  int ind, Complex z )
       {
         self.Range(ind,ind+1) = z;
       } )
-    .def("__setitem__", [](PyBaseVector & self,  py::slice inds, double d )
+    .def("__setitem__", [](BaseVector & self,  py::slice inds, double d )
       {
           size_t start, step, n;
           InitSlice( inds, self.Size(), start, step, n );
@@ -190,7 +108,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
             throw Exception ("slices with non-unit distance not allowed");          
           self.Range(start,start+n) = d;
       } )
-    .def("__setitem__", [](PyBaseVector & self,  py::slice inds, Complex z )
+    .def("__setitem__", [](BaseVector & self,  py::slice inds, Complex z )
       {
           size_t start, step, n;
           InitSlice( inds, self.Size(), start, step, n );
@@ -198,7 +116,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
             throw Exception ("slices with non-unit distance not allowed");          
           self.Range(start,start+n) = z;
       } )
-    .def("__setitem__", [](PyBaseVector & self, py::slice inds, PyWrapper<BaseVector> & v )
+    .def("__setitem__", [](BaseVector & self, py::slice inds, shared_ptr<BaseVector> v )
       {
         size_t start, step, n;
         InitSlice( inds, self.Size(), start, step, n );
@@ -206,25 +124,25 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
           throw Exception ("slices with non-unit distance not allowed");        
         self.Range(start, start+n) = *v;
       } )
-    .def("__setitem__", [](PyBaseVector & self,  int ind, FlatVector<double> & v )
+    .def("__setitem__", [](BaseVector & self,  int ind, FlatVector<double> & v )
       {
           if( self.IsComplex() )
             self.SV<Complex>()(ind) = v;
           else
             self.SV<double>()(ind) = v;
       } )
-    .def("__setitem__", [](PyBaseVector & self,  int ind, FlatVector<Complex> & v )
+    .def("__setitem__", [](BaseVector & self,  int ind, FlatVector<Complex> & v )
       {
           if( self.IsComplex() )
             self.SV<Complex>()(ind) = v;
           else
             throw py::index_error("cannot assign complex values to real vector");
       } )
-    .def("__iadd__", [](PyBaseVector & self,  PyBaseVector & other) -> BaseVector& { self += other; return self;})
-    .def("__isub__", [](PyBaseVector & self,  PyBaseVector & other) -> BaseVector& { self -= other; return self;})
-    .def("__imul__", [](PyBaseVector & self,  double scal) -> BaseVector& { self *= scal; return self;})
-    .def("__imul__", [](PyBaseVector & self,  Complex scal) -> BaseVector& { self *= scal; return self;})
-    .def("InnerProduct", [](PyBaseVector & self, PyBaseVector & other, bool conjugate)
+    .def("__iadd__", [](BaseVector & self,  BaseVector & other) -> BaseVector& { self += other; return self;})
+    .def("__isub__", [](BaseVector & self,  BaseVector & other) -> BaseVector& { self -= other; return self;})
+    .def("__imul__", [](BaseVector & self,  double scal) -> BaseVector& { self *= scal; return self;})
+    .def("__imul__", [](BaseVector & self,  Complex scal) -> BaseVector& { self *= scal; return self;})
+    .def("InnerProduct", [](BaseVector & self, BaseVector & other, bool conjugate)
                                           {
                                             if (self.IsComplex())
                                               {
@@ -238,18 +156,18 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                           },
          "InnerProduct", py::arg("other"), py::arg("conjugate")=py::cast(true)         
          )
-    .def("Norm",  [](PyBaseVector & self) { return self.L2Norm(); })
-    .def("Range", [](PyBaseVector & self, int from, int to) -> shared_ptr<BaseVector>
+    .def("Norm",  [](BaseVector & self) { return self.L2Norm(); })
+    .def("Range", [](BaseVector & self, int from, int to) -> shared_ptr<BaseVector>
                                    {
                                      return shared_ptr<BaseVector>(self.Range(from,to));
                                    })
-    .def("FV", FunctionPointer ([] (PyBaseVector & self)
+    .def("FV", [] (BaseVector & self)
                                 {
                                   if (!self.IsComplex())
                                     return py::cast(self.FVDouble());
                                   else
                                     return py::cast(self.FVComplex());
-                                }))
+                                })
     ;       
 
   // m.def("InnerProduct",[](BaseVector & v1, BaseVector & v2)->double { return InnerProduct(v1,v2); })
@@ -259,15 +177,15 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
   ;
   
 
-  typedef PyBaseMatrix BM;
+  typedef BaseMatrix BM;
   // typedef BaseVector BV;
 
-    class PyBaseMatrixTrampoline : public BaseMatrix {
+    class BaseMatrixTrampoline : public BaseMatrix {
     public:
       using BaseMatrix::BaseMatrix;
-      PyBaseMatrixTrampoline() : BaseMatrix()
+      BaseMatrixTrampoline() : BaseMatrix()
           {
-            static_assert( sizeof(BaseMatrix)==sizeof(PyBaseMatrixTrampoline), "slkdf");
+            static_assert( sizeof(BaseMatrix)==sizeof(BaseMatrixTrampoline), "slkdf");
           }
 
       bool IsComplex() const override { 
@@ -341,27 +259,27 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
   
 
 
-  py::class_<BaseMatrix, PyWrapper<BaseMatrix>, PyBaseMatrixTrampoline>(m, "BaseMatrix")
+  py::class_<BaseMatrix, shared_ptr<BaseMatrix>, BaseMatrixTrampoline>(m, "BaseMatrix")
     .def("__init__", [](BaseMatrix *instance) { 
-        new (instance) PyBaseMatrixTrampoline(); }
+        new (instance) BaseMatrixTrampoline(); }
         )
-    .def("__str__", [](PyBaseMatrix &self) { return ToString<BaseMatrix>(self); } )
-    .def_property_readonly("height", [] ( PyBaseMatrix & self)
+    .def("__str__", [](BaseMatrix &self) { return ToString<BaseMatrix>(self); } )
+    .def_property_readonly("height", [] ( BaseMatrix & self)
         { return self.Height(); } )
-    .def_property_readonly("width", [] ( PyBaseMatrix & self)
+    .def_property_readonly("width", [] ( BaseMatrix & self)
         { return self.Width(); } )
 
     // .def("CreateMatrix", &BaseMatrix::CreateMatrix)
-    .def("CreateMatrix", [] ( PyBaseMatrix & self) -> PyWrapper<BaseMatrix>
+    .def("CreateMatrix", [] ( BaseMatrix & self)
         { return self.CreateMatrix(); } )
 
     
-    .def("CreateRowVector", [] ( PyBaseMatrix & self) -> PyWrapper<BaseVector>
+    .def("CreateRowVector", [] ( BaseMatrix & self)
         { return shared_ptr<BaseVector>(self.CreateRowVector()); } )
-    .def("CreateColVector", [] ( PyBaseMatrix & self) -> PyWrapper<BaseVector>
+    .def("CreateColVector", [] ( BaseMatrix & self)
         { return shared_ptr<BaseVector>(self.CreateColVector()); } )
     
-    .def("AsVector", [] (BM & m) -> PyWrapper<BaseVector>
+    .def("AsVector", [] (BM & m)
                                       {
                                         return shared_ptr<BaseVector> (&m.AsVector(), NOOP_Deleter);
                                       })
@@ -418,25 +336,25 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 				   throw Exception ("COO needs real or complex-valued sparse matrix");
                                  })
 
-    .def("Mult",        FunctionPointer( [](BaseMatrix &m, BaseVector &x, BaseVector &y) { m.Mult(x, y); }))
-    .def("MultAdd",     FunctionPointer( [](BaseMatrix &m, double s, BaseVector &x, BaseVector &y) { m.MultAdd (s, x, y); }))
-    .def("MultTrans",   FunctionPointer( [](BaseMatrix &m, double s, BaseVector &x, BaseVector &y) { y=0; m.MultTransAdd (1.0, x, y); }))
-    .def("MultTransAdd", FunctionPointer( [](BaseMatrix &m, double s, BaseVector &x, BaseVector &y) { m.MultTransAdd (s, x, y); }))
-    .def("MultScale",   FunctionPointer( [](BaseMatrix &m, double s, BaseVector &x, BaseVector &y)
+    .def("Mult",         [](BaseMatrix &m, BaseVector &x, BaseVector &y) { m.Mult(x, y); })
+    .def("MultAdd",      [](BaseMatrix &m, double s, BaseVector &x, BaseVector &y) { m.MultAdd (s, x, y); })
+    .def("MultTrans",    [](BaseMatrix &m, double s, BaseVector &x, BaseVector &y) { y=0; m.MultTransAdd (1.0, x, y); })
+    .def("MultTransAdd",  [](BaseMatrix &m, double s, BaseVector &x, BaseVector &y) { m.MultTransAdd (s, x, y); })
+    .def("MultScale",    [](BaseMatrix &m, double s, BaseVector &x, BaseVector &y)
           {
               m.Mult (x,y);
               if(s!=1.0)
                   y *= s;
-          }) )
-    .def("MultAdd",     FunctionPointer( [](BaseMatrix &m, Complex s, BaseVector &x, BaseVector &y) { m.MultAdd (s, x, y); }))
-    .def("MultTrans",   FunctionPointer( [](BaseMatrix &m, Complex s, BaseVector &x, BaseVector &y) { y=0; m.MultTransAdd (1.0, x, y); }))
-    .def("MultTransAdd", FunctionPointer( [](BaseMatrix &m, Complex s, BaseVector &x, BaseVector &y) { m.MultTransAdd (s, x, y); }))
-    .def("MultScale",   FunctionPointer( [](BaseMatrix &m, Complex s, BaseVector &x, BaseVector &y)
+          } )
+    .def("MultAdd",      [](BaseMatrix &m, Complex s, BaseVector &x, BaseVector &y) { m.MultAdd (s, x, y); })
+    .def("MultTrans",    [](BaseMatrix &m, Complex s, BaseVector &x, BaseVector &y) { y=0; m.MultTransAdd (1.0, x, y); })
+    .def("MultTransAdd",  [](BaseMatrix &m, Complex s, BaseVector &x, BaseVector &y) { m.MultTransAdd (s, x, y); })
+    .def("MultScale",    [](BaseMatrix &m, Complex s, BaseVector &x, BaseVector &y)
           {
               m.Mult (x,y);
               if(s!=1.0)
                   y *= s;
-          }) )
+          } )
 
     .def("__iadd__", [] (BM &m, BM &m2) { 
         m.AsVector()+=m2.AsVector();
@@ -448,17 +366,14 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                             })
 
     .def("Inverse", [](BM &m, shared_ptr<BitArray> freedofs, string inverse)
-                                     -> PyWrapper<BaseMatrix>
                                      { 
                                        if (inverse != "") m.SetInverseType(inverse);
                                        return m.InverseMatrix(freedofs);
                                      }
          ,"Inverse", py::arg("freedofs"), py::arg("inverse")=py::str("")
          )
-    .def("Inverse", [](BM &m)-> PyWrapper<BaseMatrix>
-                                     { return m.InverseMatrix(); })
-    .def("Transpose", [](BM &m)-> PyWrapper<BaseMatrix>
-                                       { return make_shared<Transpose> (m); })
+    .def("Inverse", [](BM &m)  { return m.InverseMatrix(); })
+    .def("Transpose", [](BM &m) { return make_shared<Transpose> (m); })
     .def("Update", [](BM &m) { m.Update(); })
 
     .def("CreateBlockSmoother", [](BM & m, py::object blocks)
@@ -496,7 +411,6 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
          "performs steps block-Gauss-Seidel iterations for the linear system A x = b in reverse order")
     ;
 
-//   typedef PyWrapper<Projector> PyProjector;
   py::class_<Projector, shared_ptr<Projector>, BaseMatrix> (m, "Projector")
   .def("__init__", []( Projector *instance, const BitArray &array, bool b ) {
       new (instance) Projector(array, b);
@@ -507,7 +421,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("GetSteps", &KrylovSpaceSolver::GetSteps)
     ;
 
-  m.def("CGSolver", [](const PyBaseMatrix & mat, const PyBaseMatrix & pre,
+  m.def("CGSolver", [](const BaseMatrix & mat, const BaseMatrix & pre,
                                           bool iscomplex, bool printrates, 
                                           double precision, int maxsteps)
                                        {
@@ -528,7 +442,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
           )
     ;
 
-  m.def("GMRESSolver", [](const PyBaseMatrix & mat, const PyBaseMatrix & pre,
+  m.def("GMRESSolver", [](const BaseMatrix & mat, const BaseMatrix & pre,
                                            bool printrates, 
                                            double precision, int maxsteps)
                                         {
@@ -547,12 +461,12 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
           )
     ;
   
-  py::class_<PyWrapper<QMRSolver<double>>, shared_ptr<QMRSolver<double>>, PyBaseMatrix> (m, "QMRSolverD")
+  py::class_<QMRSolver<double>, shared_ptr<QMRSolver<double>>, BaseMatrix> (m, "QMRSolverD")
     ;
-  py::class_<PyWrapper<QMRSolver<Complex>>, shared_ptr<QMRSolver<Complex>>, PyBaseMatrix> (m, "QMRSolverC")
+  py::class_<QMRSolver<Complex>, shared_ptr<QMRSolver<Complex>>, BaseMatrix> (m, "QMRSolverC")
     ;
 
-  m.def("QMRSolver", [](const PyBaseMatrix & mat, const PyBaseMatrix & pre,
+  m.def("QMRSolver", [](const BaseMatrix & mat, const BaseMatrix & pre,
                                            bool printrates, 
                                            double precision, int maxsteps)
                                         {
@@ -571,7 +485,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
           )
     ;
   
-  m.def("ArnoldiSolver", [](PyBaseMatrix & mata, PyBaseMatrix & matm, shared_ptr<BitArray> freedofs,
+  m.def("ArnoldiSolver", [](BaseMatrix & mata, BaseMatrix & matm, shared_ptr<BitArray> freedofs,
                                                py::list vecs, py::object bpshift)
                                             {
                                               if (mata.IsComplex())
@@ -626,7 +540,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 
   
 
-  m.def("DoArchive" , [](shared_ptr<Archive> & arch, PyBaseMatrix & mat) 
+  m.def("DoArchive" , [](shared_ptr<Archive> & arch, BaseMatrix & mat)
                                          { cout << "output basematrix" << endl;
                                            mat.DoArchive(*arch); return arch; });
                                            

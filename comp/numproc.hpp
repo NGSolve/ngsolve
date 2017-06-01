@@ -120,12 +120,4 @@ public:
 
 
 }
-
-namespace ngstd
-{
-  template <>
-  struct PyWrapperTraits<ngcomp::NumProc> {
-    typedef PyWrapperClass<ngcomp::NumProc> type;
-  };
-}
 #endif

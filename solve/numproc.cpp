@@ -3502,8 +3502,7 @@ void ExportDrawFlux(py::module &m)
 {
   // cout << "exporting CalcFlux and DrawFlux numproc" << endl;
 
-  m.def ("CalcFlux", FunctionPointer
-           ([](shared_ptr<PDE> pde,
+  m.def ("CalcFlux", [](shared_ptr<PDE> pde,
                shared_ptr<BilinearForm> bfa,
                shared_ptr<GridFunction> gfu,
                shared_ptr<GridFunction> gfflux,
@@ -3511,12 +3510,11 @@ void ExportDrawFlux(py::module &m)
 
             {
               return make_shared<NumProcCalcFlux> (pde, bfa, gfu, gfflux, applyd);
-            }),
+            },
             py::arg("pde"), py::arg("bf"), py::arg("gf"),
             py::arg("flux"), py::arg("applyd")=false
 	   );
-  m.def ("DrawFlux", FunctionPointer
-           ([](shared_ptr<BilinearForm> bfa,
+  m.def ("DrawFlux", [](shared_ptr<BilinearForm> bfa,
                shared_ptr<GridFunction> gfu,
                const string & alabel,
                bool applyd,
@@ -3524,7 +3522,7 @@ void ExportDrawFlux(py::module &m)
             
             {
               return make_shared<NumProcDrawFlux> (bfa, gfu, alabel, applyd, useall);
-            }),
+            },
             py::arg("bf"), py::arg("gf"), 
             py::arg("label")="flux", py::arg("applyd")=false, py::arg("useall")=false
 	   );
