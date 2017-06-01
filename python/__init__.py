@@ -84,6 +84,9 @@ comp.FESpace.__init__ = __empty_init
 comp.HCurl.__new__ = __hcurl_new
 comp.HCurl.__init__ = __empty_init
 
+comp.Periodic.__new__ = comp.CreatePeriodicFESpace
+comp.Periodic.__init__ = __empty_init
+
 
 
 ngstd.__all__ = ['ArrayD', 'ArrayI', 'BitArray', 'Flags', 'HeapReset', 'IntRange', 'LocalHeap', 'Timers', 'RunWithTaskManager', 'TaskManager', 'SetNumThreads']

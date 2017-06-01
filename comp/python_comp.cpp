@@ -1214,11 +1214,10 @@ when building the system matrices.
 
 
   m.def("CreateFESpace", [] (py::object self_class, const string & type, shared_ptr<MeshAccess> ma,
-                             py::dict bpflags, int order, bool is_complex,
+                             Flags & flags, int order, bool is_complex,
                              py::object dirichlet, py::object definedon, int dim,
                              py::object order_left, py::object order_right, ORDER_POLICY order_policy)
         {
-          Flags flags = py::extract<Flags> (bpflags)();
 
           if (order > -1) {
             flags.SetFlag ("order", order);
@@ -1295,10 +1294,8 @@ when building the system matrices.
         "allowed types are: 'h1ho', 'l2ho', 'hcurlho', 'hdivho' etc."
         );
   
-  m.def("CreateFESpace", [] (py::object self_class, py::list lspaces, py::dict bpflags)
+  m.def("CreateFESpace", [] (py::object self_class, py::list lspaces, Flags& flags)
         {
-          Flags flags = py::extract<Flags> (bpflags)();
-
           Array<shared_ptr<FESpace>> spaces;
           for (auto fes : lspaces )
             spaces.Append(py::extract<shared_ptr<FESpace>>(fes)());
@@ -1400,61 +1397,55 @@ flags : dict
 
 )raw_string"), py::dynamic_attr())
     .def("__ngsid__", [] (shared_ptr<FESpace> self)
-        { return reinterpret_cast<std::uintptr_t>(self.get()); } )
+         { return reinterpret_cast<std::uintptr_t>(self.get()); } )
     .def("__reduce__", [&] (py::object fes_obj)
          {
+           auto setstate_args = py::make_tuple(fes_obj.attr("__dict__"));
+           py::tuple constructor_args;
+           auto fes = py::cast<shared_ptr<FESpace>>(fes_obj);
+           auto flags = fes->GetFlags();
+           auto comp_fes = dynamic_pointer_cast<CompoundFESpace>(fes);
+           // pickle a compound fespace
+           if(comp_fes)
+             {
+               py::list lst;
+               for(auto i : Range(comp_fes->GetNSpaces()))
+                 {
+                   lst.append((*comp_fes)[i]);
+                 }
+               constructor_args = py::make_tuple(lst,flags);
+             }
+           // pickle periodic spaces
+           auto per_fes = dynamic_pointer_cast<PeriodicFESpace>(fes);
+           if (per_fes)
+             {
+               py::list idnrs;
+               for (auto idnr : *per_fes->GetUsedIdnrs())
+                 idnrs.append(idnr);
+               auto quasiper_fes = dynamic_pointer_cast<QuasiPeriodicFESpace>(per_fes);
+               if (quasiper_fes)
+                 {
+                   py::list fac;
+                   for(auto factor : *quasiper_fes->GetFactors())
+                     fac.append(factor);
+                   constructor_args = py::make_tuple(per_fes->GetBaseSpace(),fac,idnrs);
+                 }
+               else
+                 {
+                   constructor_args = py::make_tuple(per_fes->GetBaseSpace(),DummyArgument(),idnrs);
+                 }
+             }
+           // pickle other fespace
+           if (!comp_fes && !per_fes)
+             {
+               auto mesh = fes->GetMeshAccess();
+               auto type = fes->type;
+               //TODO: pickle order policies
+               constructor_args = py::make_tuple(type,mesh,flags);
+             }
+           return py::make_tuple(fes_obj.attr("__class__"), constructor_args, setstate_args);
          })
-    // TODO: pickling
-    // .def("__getstate__", [] (py::object self_object) {
-    //     auto self = self_object.cast<shared_ptr<FESpace>>();
-    //     auto dict = self_object.attr("__dict__");
-    //     auto mesh = self->GetMeshAccess();
-    //     if (self->type.substr(0,8)=="Periodic")
-    //       {
-    //       auto periodicFES = dynamic_pointer_cast<PeriodicFESpace>(self);
-    //       py::list idnrs;
-    //       for (auto idnr : *periodicFES->GetUsedIdnrs())
-    //         idnrs.append(idnr);
-    //       auto quasiPeriodicFES = dynamic_pointer_cast<QuasiPeriodicFESpace>(periodicFES);
-    //       if (quasiPeriodicFES)
-    //         {
-    //           py::list fac;
-    //           auto factors = quasiPeriodicFES->GetFactors();
-    //           for (auto factor : *factors)
-    //             fac.append(factor);
-    //           return py::make_tuple( self->type, mesh, self->GetFlags(), dict, idnrs, true,fac);
-    //         }
-    //       else
-    //         return py::make_tuple( self->type, mesh, self->GetFlags(), dict, idnrs, false);
-    //       }
-    //     else
-    //       return py::make_tuple( self->type, mesh, self->GetFlags(), dict);
-    //  })
-    // .def("__setstate__", [] (shared_ptr<FESpace> self, py::tuple t) {
-    //     auto flags = t[2].cast<Flags>();
-    //     auto type = t[0].cast<string>();
-    //     shared_ptr<FESpace> fes;
-    //     if (type.substr(0,8)=="Periodic")
-    //       {
-    //         auto idnrs = make_shared<Array<int>>(makeCArray<int>(t[4].cast<py::list>()));
-    //         if(t[5].cast<bool>())
-    //           {
-    //             auto factors = make_shared<Array<Complex>>();
-    //             for (auto factor : t[6].cast<py::list>())
-    //               factors->Append(factor.cast<Complex>());
-    //             fes = make_shared<QuasiPeriodicFESpace>(CreateFESpace(type.substr(8,string::npos),t[1].cast<shared_ptr<MeshAccess>>(), flags),flags,idnrs,factors);
-    //           }
-    //         else
-    //           fes = make_shared<PeriodicFESpace>(CreateFESpace(type.substr(8,string::npos),t[1].cast<shared_ptr<MeshAccess>>(), flags),flags,idnrs);
-    //         }
-    //     else
-    //       fes = CreateFESpace (type, t[1].cast<shared_ptr<MeshAccess>>(), flags);
-    //     LocalHeap lh (1000000, "FESpace::Update-heap");
-    //     fes->Update(lh);
-    //     fes->FinalizeUpdate(lh);
-    //     new (&self) PyFES(fes);
-    //     py::cast(self).attr("__dict__") = t[3];
-    //  })
+    .def("__setstate__", [] (py::object self, py::tuple state) { self.attr("__dict__") = state[0]; })
     
     .def("Update", [](shared_ptr<FESpace> self, int heapsize)
          { 
@@ -1654,8 +1645,9 @@ flags : dict
   //   (m, "CompoundFESpace")
   //   .def("Range", &CompoundFESpace::GetRange)
   //   ;
-  
-  m.def("Periodic", [] (shared_ptr<FESpace> & fes, py::object phase, py::object use_idnrs )
+
+  m.def("CreatePeriodicFESpace", [](py::object self_class, shared_ptr<FESpace> & fes,
+                                    py::object phase, py::object use_idnrs )
           {
             Flags flags = fes->GetFlags();
 	    shared_ptr<Array<int>> a_used_idnrs;
@@ -1687,8 +1679,12 @@ flags : dict
             perfes->Update(glh);
             perfes->FinalizeUpdate(glh);
             return perfes;
-	  }, py::arg("fespace"), py::arg("phase")=DummyArgument(), py::arg("use_idnrs")=py::list(),
-	docu_string(R"delimiter(Generator function for periodic or quasi-periodic Finite Element Spaces.
+	  },
+        py::arg("self_class"), py::arg("fespace"), py::arg("phase")=DummyArgument(),
+        py::arg("use_idnrs")=py::list());
+
+  py::class_<PeriodicFESpace, shared_ptr<PeriodicFESpace>, FESpace>(m, "Periodic",
+	docu_string(R"delimiter(Periodic or quasi-periodic Finite Element Spaces.
 The periodic fespace is a wrapper around a standard fespace with an 
 additional dof mapping for the periodic degrees of freedom. All dofs 
 on slave boundaries are mapped to their master dofs. Because of this, 
@@ -1712,7 +1708,8 @@ used_idnrs : list of int = None
     use all periodic identifications defined in the mesh, if None
     (default) all available periodic identifications are used.
 
-)delimiter"));
+)delimiter"))
+    ;
   
 
   m.def("CreateGridFunction", [](py::object classname, shared_ptr<FESpace> fes, string & name,
