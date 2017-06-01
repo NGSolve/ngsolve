@@ -20,9 +20,9 @@ stages:
     - set CMAKE_GENERATOR=Visual Studio 14 2015
     - set CI_DIR=C:\ci\%CI_PIPELINE_ID%_32
     - set NETGEN_BUILD_DIR=%CI_DIR%\build
-    - set INSTALL_DIR=%CI_DIR%\install
-    - set NETGENDIR=%INSTALL_DIR%\bin
-    - set PYTHONPATH=%INSTALL_DIR%\lib\site-packages
+    - set CMAKE_INSTALL_PREFIX=%CI_DIR%\install
+    - set NETGENDIR=%CMAKE_INSTALL_PREFIX%\bin
+    - set PYTHONPATH=%CMAKE_INSTALL_PREFIX%\lib\site-packages
     - set CMAKE_CONFIG=-DUSE_MKL=OFF -DUSE_OCC=ON
 
 .template_windows_64: &win64
@@ -35,10 +35,10 @@ stages:
     - set CMAKE_GENERATOR=Ninja
     - set CI_DIR=C:\ci\%CI_PIPELINE_ID%_64
     - set NETGEN_BUILD_DIR=%CI_DIR%\build
-    - set INSTALL_DIR=%CI_DIR%\install
-    - set NETGENDIR=%INSTALL_DIR%\bin
+    - set CMAKE_INSTALL_PREFIX=%CI_DIR%\install
+    - set NETGENDIR=%CMAKE_INSTALL_PREFIX%\bin
     - set PATH=%NETGENDIR%;%PATH%
-    - set PYTHONPATH=%INSTALL_DIR%\lib\site-packages
+    - set PYTHONPATH=%CMAKE_INSTALL_PREFIX%\lib\site-packages
     - set UPLOAD_DIR=/home/tester/deploy/win64/%CI_BUILD_TAG%%CI_BUILD_REF%/
     - set CLCACHE_BASEDIR=%CI_DIR%
     - set CMAKE_CONFIG=-DUSE_OCC=ON -DUSE_CCACHE=ON -DUSE_MKL=ON -DMKL_STATIC=ON -DMKL_ROOT="C:/Intel/compilers_and_libraries/windows/mkl"
@@ -89,10 +89,10 @@ stages:
     - mac
   before_script:
     - export BUILD_DIR=/tmp/$CI_PIPELINE_ID
-    - export INSTALL_DIR=/tmp/$CI_PIPELINE_ID/install/Netgen.app
+    - export CMAKE_INSTALL_PREFIX=/tmp/$CI_PIPELINE_ID/install/Netgen.app
     - export MACOSX_DEPLOYMENT_TARGET=10.9
-    - export PYTHONPATH=$INSTALL_DIR/Contents/Resources/lib/python3.6/site-packages:.
-    - export NETGENDIR=$INSTALL_DIR/Contents/MacOS
+    - export PYTHONPATH=$CMAKE_INSTALL_PREFIX/Contents/Resources/lib/python3.6/site-packages:.
+    - export NETGENDIR=$CMAKE_INSTALL_PREFIX/Contents/MacOS
     - export DYLD_LIBRARY_PATH=$NETGENDIR
     - export DYLD_FRAMEWORK_PATH=$NETGENDIR/../Frameworks
     - export PATH=$NETGENDIR:$PATH
@@ -112,7 +112,7 @@ stages:
     - >-
         cmake %CI_PROJECT_DIR%
         -G"%CMAKE_GENERATOR%"
-        -DINSTALL_DIR=%INSTALL_DIR%
+        -DCMAKE_INSTALL_PREFIX=%CMAKE_INSTALL_PREFIX%
         %CMAKE_CONFIG%
         -DUSE_UMFPACK=ON
         -DENABLE_UNIT_TESTS=ON
@@ -187,7 +187,7 @@ mac_build:
     - cd $BUILD_DIR
     - >-
       cmake $CI_PROJECT_DIR
-      -DINSTALL_DIR=$INSTALL_DIR
+      -DCMAKE_INSTALL_PREFIX=$CMAKE_INSTALL_PREFIX
       -DCMAKE_BUILD_TYPE=Release
       -DUSE_UMFPACK=ON
       -DENABLE_UNIT_TESTS=ON
@@ -316,7 +316,7 @@ mac_test:
     - >-
         cmake ..
         -DUSE_CCACHE=ON
-        -DINSTALL_DIR=$CI_PROJECT_DIR/install
+        -DCMAKE_INSTALL_PREFIX=$CI_PROJECT_DIR/install
         -DUSE_NATIVE_ARCH=ON
         -DCMAKE_C_COMPILER=$CMAKE_C_COMPILER
         -DCMAKE_CXX_COMPILER=$CMAKE_CXX_COMPILER

@@ -21,6 +21,9 @@ add_library(ngfem ${NGS_LIB_TYPE}
         tensorproductintegrator.cpp code_generation.cpp
         )
 
+target_compile_definitions(ngfem PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
+target_include_directories(ngfem PUBLIC ${NETGEN_INCLUDE_DIRS})
+
 if(USE_CUDA)
     cuda_add_library( cuda_fem STATIC
             test.cu test1.cu fem_kernels.cu
@@ -50,8 +53,6 @@ install( FILES
         diffop_impl.hpp hcurlhofe_impl.hpp thcurlfe.hpp tpdiffop.hpp tpintrule.hpp
         thcurlfe_impl.hpp symbolicintegrator.hpp code_generation.hpp 
         tensorproductintegrator.hpp fe_interfaces.hpp
-        DESTINATION include
+        DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
         COMPONENT ngsolve_devel
        )
-
-# install (FILES ngfemcf.py DESTINATION python)
