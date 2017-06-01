@@ -13,12 +13,6 @@ ssh-add <(echo "$SSH_PRIVATE_KEY")
 mkdir -p ~/.ssh
 [[ -f /.dockerenv ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
 
-export UPLOAD_DIR=deploy/builds/$CI_PIPELINE_ID/ubuntu/${UBUNTU_VERSION_NAME}_amd64
-rsync -ztrl --del -e ssh \
-  --rsync-path="mkdir -p $UPLOAD_DIR && rsync" \
-  *.deb \
-  gitlab-runner@vector.asc.tuwien.ac.at:$UPLOAD_DIR/
-
 cd 
 cd src/ngsolve
 git submodule update --init --recursive
@@ -54,4 +48,11 @@ then
     docs/html/* \
     gitlab-runner@vector.asc.tuwien.ac.at:deploy/builds/$CI_PIPELINE_ID/docu/
 fi
+cd ..
+
+export UPLOAD_DIR=deploy/builds/$CI_PIPELINE_ID/ubuntu/${UBUNTU_VERSION_NAME}_amd64
+rsync -ztrl --del -e ssh \
+  --rsync-path="mkdir -p $UPLOAD_DIR && rsync" \
+  *.deb \
+  gitlab-runner@vector.asc.tuwien.ac.at:$UPLOAD_DIR/
 
