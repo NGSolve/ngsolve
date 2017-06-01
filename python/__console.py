@@ -1,4 +1,3 @@
-print ("Hello from init.py")
 import code
 # import ngfemcf
 # import ngmpi
@@ -98,6 +97,6 @@ def startConsole():
     shell.interact(banner="NGS-Python console is up ...")
 
 
-startConsole()
+# startConsole()
 
 

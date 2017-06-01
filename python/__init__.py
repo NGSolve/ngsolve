@@ -10,36 +10,7 @@ ngsolve.fem .... finite elements and integrators
 ngsolve.comp ... function spaces, forms
 """
 
-from os import environ
-import os
-from sys import path
-
-from sys import platform as __platform
-if __platform.startswith('linux'):
-    path.append(os.path.abspath(os.path.dirname(__file__)+'/../../../'))
-if __platform.startswith('win'):
-    path.append(os.path.abspath(os.path.dirname(__file__)+'/../../../bin'))
-if __platform.startswith('darwin'):
-    path.append(os.path.abspath(os.path.dirname(__file__)+'/../../../../../MacOS/'))
-    
-del environ
-del path
-del os
-
-#old
-# __all__ = ['ngstd','bla','fem','la','comp','solve','utils']
-
-
-#new:
-# from ngsolve.ngstd import *
-# from ngsolve.bla import *
-# from ngsolve.la import *
-# from ngsolve.fem import *
-# from ngsolve.comp import *
-# from ngsolve.solve import *
-# from ngsolve.utils import *
-
-from ngslib import *
+from ngsolve.ngslib import *
 
 storemyinit = None
 
@@ -87,7 +58,18 @@ comp.HCurl.__init__ = __empty_init
 comp.Periodic.__new__ = comp.CreatePeriodicFESpace
 comp.Periodic.__init__ = __empty_init
 
+def TmpRedraw(*args, **kwargs):
+    solve._Redraw(*args, **kwargs)
+    try:
+        import netgen
+        import tkinter
+        while(netgen.gui.win.tk.dooneevent(tkinter._tkinter.DONT_WAIT)):
+            pass
+    except:
+        pass
 
+solve.Redraw = TmpRedraw
+del TmpRedraw
 
 ngstd.__all__ = ['ArrayD', 'ArrayI', 'BitArray', 'Flags', 'HeapReset', 'IntRange', 'LocalHeap', 'Timers', 'RunWithTaskManager', 'TaskManager', 'SetNumThreads']
 bla.__all__ = ['Matrix', 'Vector', 'InnerProduct', 'Norm']

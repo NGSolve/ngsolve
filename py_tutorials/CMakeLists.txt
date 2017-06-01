@@ -1,6 +1,6 @@
 install(FILES
         poisson.py adaptive.py cmagnet.py navierstokes.py elasticity.py
-        DESTINATION share/ngsolve/py_tutorials/intro
+        DESTINATION ${NGSOLVE_INSTALL_DIR_RES}/ngsolve/py_tutorials/intro
         COMPONENT ngsolve_devel
        )
 
@@ -8,7 +8,7 @@ install(FILES
         mixed.py hybrid_mixed.py hybrid_dg.py nonlin.py taskmanager.py
         pickling.py DG/timeDG-skeleton.py DG/timeDGwave.py
         DG/timeDG.py DG/timeDGlap.py
-        DESTINATION share/ngsolve/py_tutorials/howto
+        DESTINATION ${NGSOLVE_INSTALL_DIR_RES}/ngsolve/py_tutorials/howto
         COMPONENT ngsolve_devel
        )
 
@@ -16,15 +16,9 @@ install(FILES
         TensorProduct/make_seg_mesh.py
         TensorProduct/tp_dg_1d_1d.py
         TensorProduct/tp_dg_2d_1d.py TensorProduct/tp_dg_1d_2d.py
-        DESTINATION share/ngsolve/py_tutorials/TensorProduct
+        DESTINATION ${NGSOLVE_INSTALL_DIR_RES}/ngsolve/py_tutorials/TensorProduct
         COMPONENT ngsolve_devel
        )
-
-# install( FILES 
-#        ale.pde ale.py all_in_one.py assemble.py bla.py cg.py cube.vol.gz d1_square.pde instat.pde instat.py integrator.py linalg.py mesh.py module1.py square.in2d square.vol
-#        DESTINATION share/ngsolve/py_tutorials
-#        COMPONENT ngsolve_devel
-#       )
 
 include(CTest)
 foreach(py_test assemble.py poisson.py adaptive.py cmagnet.py mixed.py hybrid_mixed.py hybrid_dg.py taskmanager.py )

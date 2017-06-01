@@ -1652,6 +1652,11 @@ namespace ngcomp
 
   void HCurlHighOrderFESpace :: GetInnerDofNrs (int elnr, Array<int> & dnums) const
   {
+    if (order_policy == VARIABLE_ORDER && ma->GetDimension() == 2)
+      {
+        dnums.SetSize0();
+        return;
+      }
     dnums = GetElementDofs (elnr);
   }
 
