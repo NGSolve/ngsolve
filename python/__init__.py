@@ -43,15 +43,47 @@ from ngslib import *
 
 storemyinit = None
 
+
 def __empty_init(x, *args, **kwargs):
     return
 
+def __hcurl_new(class_t, *args,**kwargs):
+    return comp.CreateFESpace(class_t,"hcurlho",*args,**kwargs)
+
+# assign creator functions to __new__
 comp.BilinearForm.__new__ = comp.CreateBilinearForm
 comp.BilinearForm.__init__ = __empty_init
+
 fem.CoefficientFunction.__new__ = fem.CreateCoefficientFunction
 fem.CoefficientFunction.__init__ = __empty_init
+
 comp.GridFunction.__new__ = comp.CreateGridFunction
 comp.GridFunction.__init__ = __empty_init
+
+comp.LinearForm.__new__ = comp.CreateLinearForm
+comp.LinearForm.__init__ = __empty_init
+
+comp.PDE.__new__ = comp.CreatePDE
+comp.PDE.__init__ = __empty_init
+
+comp.VTKOutput.__new__ = comp.CreateVTKOutput
+comp.VTKOutput.__init__ = __empty_init
+
+fem.ElementTransformation.__new__ = fem.CreateElementTransformation
+fem.ElementTransformation.__init__ = __empty_init
+
+fem.BFI.__new__ = fem.CreateBilinearFormIntegrator
+fem.BFI.__init__ = __empty_init
+
+fem.LFI.__new__ = fem.CreateLinearFormIntegrator
+fem.LFI.__init__ = __empty_init
+
+comp.FESpace.__new__ = comp.CreateFESpace
+comp.FESpace.__init__ = __empty_init
+
+comp.HCurl.__new__ = __hcurl_new
+comp.HCurl.__init__ = __empty_init
+
 
 
 ngstd.__all__ = ['ArrayD', 'ArrayI', 'BitArray', 'Flags', 'HeapReset', 'IntRange', 'LocalHeap', 'Timers', 'RunWithTaskManager', 'TaskManager', 'SetNumThreads']
@@ -62,7 +94,7 @@ fem.__all__ =  ['BFI', 'CoefficientFunction', 'Parameter', 'CoordCF', 'ET', 'Ele
            'IntegrationRule', 'IfPos' \
            ]
 # TODO: fem:'PythonCF' comp:'PyNumProc'
-comp.__all__ =  ['BBND','BND', 'BilinearForm', 'COUPLING_TYPE', 'CompoundFESpace', 'ElementId', 'BndElementId', 'FESpace', 'GridFunction', 'LinearForm', 'Mesh', 'NodeId', 'ORDER_POLICY', 'Preconditioner', 'VOL', 'NumProc', 'PDE', 'Integrate', 'SymbolicLFI', 'SymbolicBFI', 'SymbolicEnergy', 'VTKOutput', 'SetHeapSize', 'SetTestoutFile', 'ngsglobals','pml','Periodic']           
+comp.__all__ =  ['BBND','BND', 'BilinearForm', 'COUPLING_TYPE', 'ElementId', 'BndElementId', 'FESpace','HCurl' , 'GridFunction', 'LinearForm', 'Mesh', 'NodeId', 'ORDER_POLICY', 'Preconditioner', 'VOL', 'NumProc', 'PDE', 'Integrate', 'SymbolicLFI', 'SymbolicBFI', 'SymbolicEnergy', 'VTKOutput', 'SetHeapSize', 'SetTestoutFile', 'ngsglobals','pml','Periodic']           
 solve.__all__ =  ['Redraw', 'BVP', 'CalcFlux', 'Draw', 'DrawFlux', 'SetVisualization']
 
 from ngsolve.ngstd import *
