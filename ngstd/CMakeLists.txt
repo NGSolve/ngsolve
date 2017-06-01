@@ -14,6 +14,7 @@ endif(NOT WIN32)
 
 add_library( ngstd ${NGS_LIB_TYPE} ${ngstd_sources} )
 target_compile_definitions(ngstd PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
+target_compile_options(ngstd PUBLIC ${NGSOLVE_COMPILE_OPTIONS})
 target_include_directories(ngstd PUBLIC ${NETGEN_INCLUDE_DIRS})
 
 add_dependencies( ngstd generate_version_file )

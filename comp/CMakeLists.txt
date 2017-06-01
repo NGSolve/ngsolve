@@ -21,6 +21,7 @@ add_library( ngcomp ${NGS_LIB_TYPE}
         )
 
 target_compile_definitions(ngcomp PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
+target_compile_options(ngcomp PUBLIC ${NGSOLVE_COMPILE_OPTIONS})
 target_include_directories(ngcomp PUBLIC ${NETGEN_INCLUDE_DIRS})
 
 if(NOT WIN32)

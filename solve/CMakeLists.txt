@@ -18,6 +18,7 @@ add_library( solve ${NGS_LIB_TYPE}
         )
 
 target_compile_definitions(solve PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
+target_compile_options(solve PUBLIC ${NGSOLVE_COMPILE_OPTIONS})
 target_include_directories(solve PUBLIC ${NETGEN_INCLUDE_DIRS})
 
 if(NETGEN_USE_PYTHON)
@@ -70,6 +71,7 @@ if (NETGEN_USE_GUI)
 
     target_link_libraries(ngsolve PUBLIC nglib ${MPI_CXX_LIBRARIES} ${NETGEN_PYTHON_LIBRARIES} ${LAPACK_LIBRARIES} PRIVATE ${PARDISO_LIB} ${UMFPACK_LIBRARIES})
     target_compile_definitions(ngsolve PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
+    target_compile_options(ngsolve PUBLIC ${NGSOLVE_COMPILE_OPTIONS})
     target_include_directories(ngsolve PUBLIC ${NETGEN_INCLUDE_DIRS})
 
     if(NOT WIN32)

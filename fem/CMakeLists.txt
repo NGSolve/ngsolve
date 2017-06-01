@@ -22,6 +22,7 @@ add_library(ngfem ${NGS_LIB_TYPE}
         )
 
 target_compile_definitions(ngfem PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
+target_compile_options(ngfem PUBLIC ${NGSOLVE_COMPILE_OPTIONS})
 target_include_directories(ngfem PUBLIC ${NETGEN_INCLUDE_DIRS})
 
 if(USE_CUDA)
