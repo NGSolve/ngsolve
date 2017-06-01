@@ -1432,7 +1432,7 @@ flags : dict
                  }
                else
                  {
-                   constructor_args = py::make_tuple(per_fes->GetBaseSpace(),DummyArgument(),idnrs);
+                   constructor_args = py::make_tuple(per_fes->GetBaseSpace(),py::none(),idnrs);
                  }
              }
            // pickle other fespace
@@ -1670,7 +1670,7 @@ flags : dict
 		  }
 		perfes = make_shared<QuasiPeriodicFESpace>(fes,flags,a_used_idnrs,a_phase);
 	      }
-	    else if (py::isinstance<DummyArgument>(phase))
+	    else if (py::isinstance<DummyArgument>(phase) || phase.is_none())
 	      {
 	      perfes = make_shared<PeriodicFESpace>(fes,flags,a_used_idnrs);
 	      }
