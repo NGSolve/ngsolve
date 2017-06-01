@@ -12,11 +12,51 @@ ngsolve.comp ... function spaces, forms
 
 from ngsolve.ngslib import *
 
+storemyinit = None
+
+
 def __empty_init(x, *args, **kwargs):
     return
 
+def __hcurl_new(class_t, *args,**kwargs):
+    return comp.CreateFESpace(class_t,"hcurlho",*args,**kwargs)
+
+# assign creator functions to __new__
 comp.BilinearForm.__new__ = comp.CreateBilinearForm
 comp.BilinearForm.__init__ = __empty_init
+
+fem.CoefficientFunction.__new__ = fem.CreateCoefficientFunction
+fem.CoefficientFunction.__init__ = __empty_init
+
+comp.GridFunction.__new__ = comp.CreateGridFunction
+comp.GridFunction.__init__ = __empty_init
+
+comp.LinearForm.__new__ = comp.CreateLinearForm
+comp.LinearForm.__init__ = __empty_init
+
+comp.PDE.__new__ = comp.CreatePDE
+comp.PDE.__init__ = __empty_init
+
+comp.VTKOutput.__new__ = comp.CreateVTKOutput
+comp.VTKOutput.__init__ = __empty_init
+
+fem.ElementTransformation.__new__ = fem.CreateElementTransformation
+fem.ElementTransformation.__init__ = __empty_init
+
+fem.BFI.__new__ = fem.CreateBilinearFormIntegrator
+fem.BFI.__init__ = __empty_init
+
+fem.LFI.__new__ = fem.CreateLinearFormIntegrator
+fem.LFI.__init__ = __empty_init
+
+comp.FESpace.__new__ = comp.CreateFESpace
+comp.FESpace.__init__ = __empty_init
+
+comp.HCurl.__new__ = __hcurl_new
+comp.HCurl.__init__ = __empty_init
+
+comp.Periodic.__new__ = comp.CreatePeriodicFESpace
+comp.Periodic.__init__ = __empty_init
 
 def TmpRedraw(*args, **kwargs):
     solve._Redraw(*args, **kwargs)
@@ -34,12 +74,12 @@ del TmpRedraw
 ngstd.__all__ = ['ArrayD', 'ArrayI', 'BitArray', 'Flags', 'HeapReset', 'IntRange', 'LocalHeap', 'Timers', 'RunWithTaskManager', 'TaskManager', 'SetNumThreads']
 bla.__all__ = ['Matrix', 'Vector', 'InnerProduct', 'Norm']
 la.__all__ = ['BaseMatrix', 'BaseVector', 'CreateVVector', 'InnerProduct', 'CGSolver', 'QMRSolver', 'GMRESSolver', 'ArnoldiSolver', 'Projector']
-fem.__all__ =  ['BFI', 'CoefficientFunction',  'DomainConstantCF',  'Parameter', 'CoordCF', 'ET', 'ElementTransformation', 'ElementTopology', 'FiniteElement', 'ScalarFE', 'H1FE', 'HEX', 'L2FE', 'LFI', 'POINT', 'PRISM', 'PYRAMID', 'QUAD', 'SEGM', 'TET', 'TRIG', 'VERTEX', 'EDGE', 'FACE', 'CELL', 'ELEMENT', 'FACET', 'VariableCF', 'SetPMLParameters', 'sin', 'cos', 'tan', 'atan', 'exp', 'log', 'sqrt', 'Conj', 'atan2', 'pow', 'specialcf', \
-           'BlockBFI', 'BlockLFI', 'CompoundBFI', 'CompoundLFI', 'ConstantCF', 'BSpline', \
+fem.__all__ =  ['BFI', 'CoefficientFunction', 'Parameter', 'CoordCF', 'ET', 'ElementTransformation', 'ElementTopology', 'FiniteElement', 'ScalarFE', 'H1FE', 'HEX', 'L2FE', 'LFI', 'POINT', 'PRISM', 'PYRAMID', 'QUAD', 'SEGM', 'TET', 'TRIG', 'VERTEX', 'EDGE', 'FACE', 'CELL', 'ELEMENT', 'FACET', 'SetPMLParameters', 'sin', 'cos', 'tan', 'atan', 'exp', 'log', 'sqrt', 'Conj', 'atan2', 'pow', 'specialcf', \
+           'BlockBFI', 'BlockLFI', 'CompoundBFI', 'CompoundLFI', 'BSpline', \
            'IntegrationRule', 'IfPos' \
            ]
 # TODO: fem:'PythonCF' comp:'PyNumProc'
-comp.__all__ =  ['BBND','BND', 'BilinearForm', 'COUPLING_TYPE', 'CompoundFESpace', 'ElementId', 'BndElementId', 'FESpace', 'GridFunction', 'LinearForm', 'Mesh', 'NodeId', 'ORDER_POLICY', 'Preconditioner', 'VOL', 'NumProc', 'PDE', 'Integrate', 'SymbolicLFI', 'SymbolicBFI', 'SymbolicEnergy', 'VTKOutput', 'SetHeapSize', 'SetTestoutFile', 'ngsglobals','pml','Periodic']           
+comp.__all__ =  ['BBND','BND', 'BilinearForm', 'COUPLING_TYPE', 'ElementId', 'BndElementId', 'FESpace','HCurl' , 'GridFunction', 'LinearForm', 'Mesh', 'NodeId', 'ORDER_POLICY', 'Preconditioner', 'VOL', 'NumProc', 'PDE', 'Integrate', 'SymbolicLFI', 'SymbolicBFI', 'SymbolicEnergy', 'VTKOutput', 'SetHeapSize', 'SetTestoutFile', 'ngsglobals','pml','Periodic']           
 solve.__all__ =  ['Redraw', 'BVP', 'CalcFlux', 'Draw', 'DrawFlux', 'SetVisualization']
 
 from ngsolve.ngstd import *

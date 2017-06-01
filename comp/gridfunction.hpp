@@ -16,7 +16,8 @@ namespace ngcomp
   class NGS_DLL_HEADER GridFunctionCoefficientFunction : public CoefficientFunction
   {
   protected:
-    shared_ptr<GridFunction> gf;
+    shared_ptr<GridFunction> gf_shared_ptr;
+    GridFunction* gf;
     shared_ptr<FESpace> fes;
     shared_ptr<DifferentialOperator> diffop[3];
     // shared_ptr<DifferentialOperator> trace_diffop;
@@ -462,14 +463,6 @@ namespace ngcomp
 
 
 
-}
-
-namespace ngstd
-{
-  template <>
-  struct PyWrapperTraits<ngcomp::GridFunction> {
-    typedef PyWrapperDerived<ngcomp::GridFunction, ngfem::CoefficientFunction> type;
-  };
 }
 
 

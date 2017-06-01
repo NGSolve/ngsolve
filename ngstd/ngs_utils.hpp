@@ -19,98 +19,12 @@ namespace ngstd
   }
   
 
-  //////////////////////////////////////////////////////////////////////
-  // Lambda to function pointer conversion,  M. Hochsteger
-  
-  template <typename Function>
-  struct function_traits
-    : public function_traits<decltype(&Function::operator())> 
-  { };
-  
-  template <typename ClassType, typename ReturnType, typename... Args>
-  struct function_traits<ReturnType(ClassType::*)(Args...) const> 
-  {
-    typedef ReturnType (*pointer)(Args...);
-    typedef ReturnType return_type;
-  };
-  
-  template <typename Function>
-  typename function_traits<Function>::pointer
-  FunctionPointer (const Function& lambda) 
-  {
-    return static_cast<typename function_traits<Function>::pointer>(lambda);
-  }
-
-  template <typename Function>
-  typename function_traits<Function>::return_type
-  GetReturnValue (Function func) 
-  {
-    typename function_traits<Function>::return_type *dummy;
-    return *dummy;
-  }
-
-
   // ////////////////    integral constants
 
   template <int N>
   using IC = integral_constant<int,N>;
 
-  /*
-  template <int I1, int I2>
-  constexpr INLINE IC<I1+I2> operator+ (IC<I1> i1, IC<I2> i2) { return IC<I1+I2>(); }
-  */
-
-  template <typename T>
-  class PyWrapperClass {
-  protected:
-    shared_ptr<T> ptr;
-  public:
-    PyWrapperClass() {;}
-    // templated constructor to allow initialization with shared_ptr to derived class object
-    template <typename TPtr>
-    PyWrapperClass(shared_ptr<TPtr> aptr) : ptr(aptr) {}
-    template <typename TPtr>
-    PyWrapperClass(TPtr * aptr) : ptr(aptr) {}
-    const shared_ptr<T> Get() const { return ptr; }
-    shared_ptr<T> Get() { return ptr; }
-    T* operator ->() { return ptr.get(); }
-    T& operator *() { return *ptr.get(); }
-    const T* operator ->() const { return ptr.get(); }
-    const T& operator *() const { return *ptr.get(); }
-    virtual ~PyWrapperClass() { }
-  };
-
-
-  template <typename T, typename BASE>
-  class PyWrapperDerived : public PyWrapperClass<BASE>
-  {
-    using PyWrapperClass<BASE>::ptr;
-  public:
-    PyWrapperDerived() {;}
-    PyWrapperDerived(shared_ptr<T> aptr) : PyWrapperClass<BASE>(aptr) {;}
-    const shared_ptr<T> Get() const { return dynamic_pointer_cast<T>(ptr); }
-    shared_ptr<T> Get() { return dynamic_pointer_cast<T>(ptr); }
-    T* operator ->() { return Get().get(); }
-    const T* operator ->() const { return Get().get(); }
-    T& operator *() { return *Get().get(); }
-    const T& operator *() const { return *Get().get(); }    
-    virtual ~PyWrapperDerived() {}
-  };
-
-
-
-
-  template <typename T>
-  struct PyWrapperTraits {
-    typedef T type;
-  };
-
-
-  template <typename T>
-  using PyWrapper = typename PyWrapperTraits<T>::type;
 }
-
- 
 namespace std
 {
   template <int I1, int I2>
