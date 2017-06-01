@@ -161,7 +161,7 @@ endmacro()
 get_WIN32_WINNT(ver)
 if(WIN32)
     add_definitions(-DNGS_EXPORTS)
-    list(APPEND NGSOLVE_COMPILE_DEFINITIONS -DNOMINMAX -D_WIN32_WINNT=${ver} -DMSVC_EXPRESS -D_CRT_SECURE_NO_WARNINGS )
+    list(APPEND NGSOLVE_COMPILE_DEFINITIONS NOMINMAX _WIN32_WINNT=${ver} MSVC_EXPRESS _CRT_SECURE_NO_WARNINGS )
 
     # build convenience (aka object) libraries in windows)
     set(NGS_LIB_TYPE OBJECT)
