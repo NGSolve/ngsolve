@@ -36,7 +36,7 @@ else:
 
     build = {}
     build['compiler'] = "@CMAKE_CXX_COMPILER_ID@-@CMAKE_CXX_COMPILER_VERSION@"
-    build['cxx_flags'] = "@CMAKE_CXX_FLAGS@".strip()
+    build['cxx_flags'] = "@CMAKE_CXX_FLAGS@ @NGSOLVE_COMPILE_OPTIONS@".strip()
     build['hostname'] = socket.gethostname()
     build['ncpus'] = multiprocessing.cpu_count()
 

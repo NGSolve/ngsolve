@@ -74,6 +74,7 @@ string(REPLACE "netgen" "ngsolve" NGSOLVE_INSTALL_DIR_CMAKE ${NETGEN_INSTALL_DIR
 #######################################################################
 
 set(NGSOLVE_COMPILE_DEFINITIONS "")
+set(NGSOLVE_COMPILE_OPTIONS "")
 list(APPEND NGSOLVE_COMPILE_DEFINITIONS HAVE_NETGEN_SOURCES)
 
 #######################################################################
@@ -111,7 +112,7 @@ endif(INTEL_MIC)
 
 #######################################################################
 if(USE_NATIVE_ARCH)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
+    list(APPEND NGSOLVE_COMPILE_OPTIONS -march=native)
 endif(USE_NATIVE_ARCH)
 
 #######################################################################
@@ -168,16 +169,16 @@ if(WIN32)
 
     if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
         # Intel Compiler
-        set(CMAKE_CXX_FLAGS "/Od ${CMAKE_CXX_FLAGS} /MP /Qstd=c++14 /Qopt-report-file:report.log")
+        list(APPEND NGSOLVE_COMPILE_OPTIONS /Od /MP /Qstd=c++14 /Qopt-report-file:report.log)
     else()
         # MS Visual Compiler
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /bigobj")
+        list(APPEND NGSOLVE_COMPILE_OPTIONS /MP /bigobj)
     endif()
 
 else(WIN32)
     # build shared libraries in windows)
     set(NGS_LIB_TYPE SHARED)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+    list(APPEND NGSOLVE_COMPILE_OPTIONS -std=c++14)
 endif(WIN32)
 if(APPLE)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -undefined dynamic_lookup")
@@ -214,7 +215,8 @@ endif (USE_LAPACK)
 #######################################################################
 if (USE_VT)
     list(APPEND NGSOLVE_COMPILE_DEFINITIONS VTRACE)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -t:inst manual")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ")
+    list(APPEND NGSOLVE_COMPILE_OPTIONS -t:inst manual)
 endif (USE_VT)
 
 #######################################################################
@@ -271,7 +273,7 @@ if(USE_PARDISO)
       message(FATAL_ERROR "Could NOT find Pardiso")
   endif(NOT PARDISO_LIB)
   find_package(OpenMP)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+  list(APPEND NGSOLVE_COMPILE_OPTIONS ${OpenMP_CXX_FLAGS})
 endif(USE_PARDISO)
 
 #######################################################################
@@ -346,6 +348,9 @@ endforeach()
 
 set(ngscxx_flags "${${name}} ${CMAKE_CXX_FLAGS} ${ngscxx_define_flags}")
 
+foreach( opt ${NGSOLVE_COMPILE_OPTIONS} )
+    set(ngscxx_flags "${ngscxx_flags} ${opt}")
+endforeach()
 if(NOT WIN32)
   set(ngscxx_flags "${ngscxx_flags} -fPIC")
 endif()
@@ -461,7 +466,7 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/NGSolveConfig.cmake DESTINATION ${NGSO
 # Configure message
 # TODO: other message in case of failure
 string(TOUPPER "CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE}" name)
-set(flags "${${name}} ${CMAKE_CXX_FLAGS}")
+set(flags "${ngscxx_flags}")
 message("
 ------------------------------------------------------------------------
   ${PROJECT_NAME} ${NGSOLVE_VERSION}:  Automatic configuration OK.

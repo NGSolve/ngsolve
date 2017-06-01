@@ -14,6 +14,7 @@ add_library(ngla ${NGS_LIB_TYPE}
         )
 
 target_compile_definitions(ngla PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
+target_compile_options(ngla PUBLIC ${NGSOLVE_COMPILE_OPTIONS})
 target_include_directories(ngla PUBLIC ${NETGEN_INCLUDE_DIRS})
 
 if(NOT WIN32)
