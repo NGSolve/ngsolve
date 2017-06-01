@@ -12,8 +12,6 @@ ngsolve.comp ... function spaces, forms
 
 from ngsolve.ngslib import *
 
-storemyinit = None
-
 
 def __empty_init(x, *args, **kwargs):
     return
@@ -21,11 +19,20 @@ def __empty_init(x, *args, **kwargs):
 def __hcurl_new(class_t, *args,**kwargs):
     return comp.CreateFESpace(class_t,"hcurlho",*args,**kwargs)
 
+def __mynew(thisclass, creatorfunction):
+    pybind_constructor = thisclass.__new__
+    def foo(class_t, *args,**kwargs):
+        if class_t is thisclass:
+            return  creatorfunction(class_t, *args, **kwargs)
+        else:
+            return pybind_constructor(class_t,*args,**kwargs)
+    return foo
+
 # assign creator functions to __new__
 comp.BilinearForm.__new__ = comp.CreateBilinearForm
 comp.BilinearForm.__init__ = __empty_init
 
-fem.CoefficientFunction.__new__ = fem.CreateCoefficientFunction
+fem.CoefficientFunction.__new__ = __mynew(fem.CoefficientFunction,fem.CreateCoefficientFunction)
 fem.CoefficientFunction.__init__ = __empty_init
 
 comp.GridFunction.__new__ = comp.CreateGridFunction
