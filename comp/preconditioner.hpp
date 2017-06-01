@@ -372,14 +372,5 @@ namespace ngcomp
 
 }
 
-namespace ngstd
-{
-  template <>
-  struct PyWrapperTraits<ngcomp::Preconditioner> {
-    typedef shared_ptr<ngcomp::Preconditioner> type;
-  };
-}
-
-
 #endif
 

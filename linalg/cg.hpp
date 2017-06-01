@@ -365,33 +365,4 @@ namespace ngla
 
 }
 
-namespace ngstd
-{
-  template <>
-  struct PyWrapperTraits<ngla::CGSolver<double>> {
-    typedef ngla::CGSolver<double> type;
-  };
-  template <>
-  struct PyWrapperTraits<ngla::CGSolver<Complex>> {
-    typedef ngla::CGSolver<Complex> type;
-  };
-  template <>
-  struct PyWrapperTraits<ngla::GMRESSolver<double>> {
-    typedef ngla::GMRESSolver<double> type;
-  };
-  template <>
-  struct PyWrapperTraits<ngla::GMRESSolver<Complex>> {
-    typedef ngla::GMRESSolver<Complex> type;
-  };
-  template <>
-  struct PyWrapperTraits<ngla::QMRSolver<double>> {
-    typedef ngla::QMRSolver<double> type;
-  };
-  template <>
-  struct PyWrapperTraits<ngla::QMRSolver<Complex>> {
-    typedef ngla::QMRSolver<Complex> type;
-  };
-}
-
-
 #endif

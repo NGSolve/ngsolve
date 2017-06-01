@@ -913,7 +913,7 @@ namespace ngcomp
           {
             string name, fesname;
             archive & name & fesname;
-            auto gf = CreateGridFunction (GetFESpace(fesname), name, { "novisual" } );
+            shared_ptr<GridFunction> gf = CreateGridFunction (GetFESpace(fesname), name, { "novisual" } );
             // cout << "got gf, type = " << typeid(*gf).name() << endl;
             AddGridFunction (name, gf);
             gridfunctions[i] -> DoArchive (archive);
@@ -1109,7 +1109,7 @@ namespace ngcomp
 
     auto space = GetFESpace(spacename);
  
-    auto gf = CreateGridFunction (space, name, flags);
+    shared_ptr<GridFunction> gf = CreateGridFunction (space, name, flags);
     AddGridFunction (name, gf, true); // flags.GetDefineFlag ("addcoef"));
     return gf;
   }

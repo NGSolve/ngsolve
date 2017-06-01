@@ -305,15 +305,6 @@ namespace ngfem
 }
 
 
-namespace ngstd
-{
-  template <>
-  struct PyWrapperTraits<ngfem::ElementTransformation > {
-    typedef PyWrapperClass<ngfem::ElementTransformation> type;
-  };
-}
-
-
 #endif
 
 

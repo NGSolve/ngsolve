@@ -1216,12 +1216,4 @@ namespace ngcomp
 
 }
 
-namespace ngstd
-{
-  template <>
-  struct PyWrapperTraits<ngcomp::PML_Transformation> {
-    typedef PyWrapperClass<ngcomp::PML_Transformation> type;
-  };
-}
-
 #endif

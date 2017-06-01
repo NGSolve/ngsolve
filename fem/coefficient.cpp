@@ -4459,15 +4459,6 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
 }
 
 
-/*
-namespace ngstd {
-  template <>
-  struct PyWrapperTraits<CoordCoefficientFunction> {
-    typedef PyWrapperDerived<CoordCoefficientFunction, ngfem::CoefficientFunction> type;
-  };
-}
-*/
-
   // ///////////////////////////// Compiled CF /////////////////////////
 // int myglobalvar;
 // int myglobalvar_eval;

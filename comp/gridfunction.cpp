@@ -68,7 +68,7 @@ namespace ngcomp
                                        afespace->GetEvaluator(BBND)),
       fespace(afespace)
   {
-    GridFunctionCoefficientFunction::gf = shared_ptr<GridFunction>(this,NOOP_Deleter);
+    GridFunctionCoefficientFunction::gf = this;
     GridFunctionCoefficientFunction::fes = fespace;
 
     is_complex = fespace->IsComplex();
@@ -913,13 +913,6 @@ namespace ngcomp
   shared_ptr<GridFunction> CreateGridFunction (shared_ptr<FESpace> space,
                                                const string & name, const Flags & flags)
   {
-    /*
-    shared_ptr<GridFunction> gf 
-      ((GridFunction*)CreateVecObject  <T_GridFunction, GridFunction> // , const FESpace, const string, const Flags>
-       (space->GetDimension() * int(flags.GetNumFlag("cacheblocksize",1)), 
-       space->IsComplex(), space, name, flags));
-    */
-
     shared_ptr<GridFunction> gf =
       CreateSharedVecObject<T_GridFunction, GridFunction> 
       (space->GetDimension() * int(flags.GetNumFlag("cacheblocksize",1)), 
@@ -943,7 +936,7 @@ namespace ngcomp
 
   GridFunctionCoefficientFunction :: 
   GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, int acomp)
-    : CoefficientFunction(1, agf->GetFESpace()->IsComplex()), gf(agf) /*, diffop (NULL)*/ , comp (acomp) 
+    : CoefficientFunction(1, agf->GetFESpace()->IsComplex()), gf(agf.get()), gf_shared_ptr(agf) /*, diffop (NULL)*/ , comp (acomp) 
   {
     fes = gf->GetFESpace();
     SetDimensions (gf->Dimensions());
@@ -991,7 +984,8 @@ namespace ngcomp
 				   shared_ptr<DifferentialOperator> attrace_diffop,
                                    int acomp)
     : CoefficientFunction(1,agf->IsComplex()),
-      gf(agf),
+      gf(agf.get()),
+      gf_shared_ptr(agf),
       // diffop (adiffop), trace_diffop(atrace_diffop), ttrace_diffop(attrace_diffop),
       diffop{adiffop,atrace_diffop,attrace_diffop},
       comp (acomp) 
@@ -1017,7 +1011,7 @@ namespace ngcomp
   GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, 
 				   shared_ptr<BilinearFormIntegrator> abfi, int acomp)
     : CoefficientFunction(1, agf->IsComplex()),
-      gf(agf), /* bfi (abfi), */ comp (acomp) 
+      gf(agf.get()), gf_shared_ptr(agf), /* bfi (abfi), */ comp (acomp) 
   {
     fes = gf->GetFESpace();
     SetDimensions (gf->Dimensions());
@@ -1207,7 +1201,7 @@ namespace ngcomp
     std::map<string,string> variables;
     auto values = Var("values", index);
     variables["values"] = values.S();
-    variables["gf_ptr"] =  code.AddPointer(gf.get());  // ToString(gf.get());
+    variables["gf_ptr"] =  code.AddPointer(gf);
     variables["gfcf_ptr"] = code.AddPointer(this); // ToString(this);
     variables["fes_ptr"] = code.AddPointer(fes.get()); // ToString(fes.get());
     // variables["diffop_ptr"] = ToString(diffop[VOL].get());

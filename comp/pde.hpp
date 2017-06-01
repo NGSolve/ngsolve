@@ -471,12 +471,4 @@ namespace ngcomp
 
 }
 
-namespace ngstd
-{
-  template <>
-  struct PyWrapperTraits<ngcomp::PDE> {
-    typedef PyWrapperClass<ngcomp::PDE> type;
-  };
-}
-
 #endif
