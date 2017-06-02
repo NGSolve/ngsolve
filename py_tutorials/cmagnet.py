@@ -41,7 +41,7 @@ mu0 = 1.257e-6
 nu_coef = [ 1/(mu0*mur[mat]) for mat in mesh.GetMaterials() ]
 print ("nu_coef=", nu_coef)
 
-nu = DomainConstantCF (nu_coef)
+nu = CoefficientFunction(nu_coef)
 a = BilinearForm(fes, symmetric=True)
 a += SymbolicBFI(nu*curl(u)*curl(v) + 1e-6*nu*u*v)
 

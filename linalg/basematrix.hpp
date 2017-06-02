@@ -331,12 +331,4 @@ namespace ngla
 
 }
 
-namespace ngstd
-{
-  template <>
-  struct PyWrapperTraits<ngla::BaseMatrix> {
-    typedef shared_ptr<ngla::BaseMatrix> type;
-  };
-}
-
 #endif

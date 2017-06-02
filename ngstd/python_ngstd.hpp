@@ -262,7 +262,7 @@ inline ostream & operator<< (ostream & ost, PyRef<T> ref)
   return ost;
 }
 
-template<typename T> struct PyTraits {};
+template<typename T> struct PyTraits { };
 template<> struct PyTraits<double> {typedef py::float_ type;};
 template<> struct PyTraits<string> {typedef py::str type;};
 template<> struct PyTraits<bool> {typedef py::bool_ type;};
@@ -297,6 +297,14 @@ Array<T> makeCArray(const py::object & obj)
   throw py::type_error("Cannot convert Python object to C Array");
 }
 
+template<typename T>
+Array<T> makeCArraySharedPtr(const py::list & obj)
+{
+  Array<T> C_vdL(py::len(obj));
+  for (int i = 0; i < py::len(obj); i++)
+    C_vdL[i] = py::extract<T>(obj[i])();
+  return std::move(C_vdL);
+}
 template<typename T>
 Array<decltype(std::declval<T>().Get())> makeCArrayUnpackWrapper(const py::list & obj)
 {

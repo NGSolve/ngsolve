@@ -290,11 +290,11 @@ namespace ngstd
 
 
     completed_tasks += ntasks / num_nodes;
-    for (int j = 0; j < num_nodes; j++)
-      if (completed_tasks != nodedata[j]->completed_tasks)
-        cout << "tasks missing: node = " << j 
-             << "global tasks = " << completed_tasks
-             << "node tasks = " << nodedata[j]->completed_tasks << endl;
+//     for (int j = 0; j < num_nodes; j++)
+//       if (completed_tasks != nodedata[j]->completed_tasks)
+//         cout << "tasks missing: node = " << j 
+//              << "global tasks = " << completed_tasks
+//              << "node tasks = " << nodedata[j]->completed_tasks << endl;
 
     if (ex)
       throw Exception (*ex);

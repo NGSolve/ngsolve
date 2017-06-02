@@ -73,7 +73,9 @@ string(REPLACE "netgen" "ngsolve" NGSOLVE_INSTALL_DIR_CMAKE ${NETGEN_INSTALL_DIR
 
 #######################################################################
 
+set(NGSOLVE_COMPILE_INCLUDE_DIRS "")
 set(NGSOLVE_COMPILE_DEFINITIONS "")
+set(NGSOLVE_COMPILE_OPTIONS "")
 list(APPEND NGSOLVE_COMPILE_DEFINITIONS HAVE_NETGEN_SOURCES)
 
 #######################################################################
@@ -111,7 +113,7 @@ endif(INTEL_MIC)
 
 #######################################################################
 if(USE_NATIVE_ARCH)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
+    list(APPEND NGSOLVE_COMPILE_OPTIONS -march=native)
 endif(USE_NATIVE_ARCH)
 
 #######################################################################
@@ -140,10 +142,14 @@ list(APPEND NGSOLVE_COMPILE_DEFINITIONS USE_TIMEOFDAY)
 
 include_directories (BEFORE ${PROJECT_SOURCE_DIR}/include)
 include_directories (BEFORE ${PROJECT_BINARY_DIR})
-include_directories (AFTER ${NETGEN_INCLUDE_DIRS})
+list(APPEND NGSOLVE_INCLUDE_DIRS ${NETGEN_INCLUDE_DIRS})
 
 if(NETGEN_USE_GUI)
-  install (FILES ngsolve.tcl DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve )
+  file(RELATIVE_PATH BIN_TO_LIB_RELPATH ${NETGEN_BINARY_DIR} ${NETGEN_LIBRARY_DIR})
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ngsolve.tcl
+    ${CMAKE_CURRENT_BINARY_DIR}/ngsolve.tcl @ONLY)
+
+  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ngsolve.tcl DESTINATION ${NGSOLVE_INSTALL_DIR_BIN})
 endif(NETGEN_USE_GUI)
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -Wall")
@@ -168,16 +174,16 @@ if(WIN32)
 
     if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
         # Intel Compiler
-        set(CMAKE_CXX_FLAGS "/Od ${CMAKE_CXX_FLAGS} /MP /Qstd=c++14 /Qopt-report-file:report.log")
+        list(APPEND NGSOLVE_COMPILE_OPTIONS /Od /MP /Qstd=c++14 /Qopt-report-file:report.log)
     else()
         # MS Visual Compiler
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /bigobj")
+        list(APPEND NGSOLVE_COMPILE_OPTIONS /MP /bigobj)
     endif()
 
 else(WIN32)
     # build shared libraries in windows)
     set(NGS_LIB_TYPE SHARED)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+    list(APPEND NGSOLVE_COMPILE_OPTIONS -std=c++14)
 endif(WIN32)
 if(APPLE)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -undefined dynamic_lookup")
@@ -187,7 +193,7 @@ endif(APPLE)
 #######################################################################
 if (NETGEN_USE_GUI)
     list(APPEND NGSOLVE_COMPILE_DEFINITIONS TCL)
-    include_directories(${NETGEN_TCL_INCLUDE_PATH})
+    list(APPEND NGSOLVE_INCLUDE_DIRS ${NETGEN_TCL_INCLUDE_PATH})
 endif (NETGEN_USE_GUI)
 
 #######################################################################
@@ -214,7 +220,8 @@ endif (USE_LAPACK)
 #######################################################################
 if (USE_VT)
     list(APPEND NGSOLVE_COMPILE_DEFINITIONS VTRACE)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -t:inst manual")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ")
+    list(APPEND NGSOLVE_COMPILE_OPTIONS -t:inst manual)
 endif (USE_VT)
 
 #######################################################################
@@ -255,8 +262,7 @@ endif (USE_MUMPS)
 #######################################################################
 if (NETGEN_USE_PYTHON)
     list(APPEND NGSOLVE_COMPILE_DEFINITIONS NGS_PYTHON)
-    include_directories(${NETGEN_PYBIND_INCLUDE_DIR})
-    include_directories(${NETGEN_PYTHON_INCLUDE_DIRS})
+    list(APPEND NGSOLVE_INCLUDE_DIRS ${NETGEN_PYBIND_INCLUDE_DIR} ${NETGEN_PYTHON_INCLUDE_DIRS})
 endif (NETGEN_USE_PYTHON)
 
 #######################################################################
@@ -271,7 +277,7 @@ if(USE_PARDISO)
       message(FATAL_ERROR "Could NOT find Pardiso")
   endif(NOT PARDISO_LIB)
   find_package(OpenMP)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+  list(APPEND NGSOLVE_COMPILE_OPTIONS ${OpenMP_CXX_FLAGS})
 endif(USE_PARDISO)
 
 #######################################################################
@@ -346,6 +352,9 @@ endforeach()
 
 set(ngscxx_flags "${${name}} ${CMAKE_CXX_FLAGS} ${ngscxx_define_flags}")
 
+foreach( opt ${NGSOLVE_COMPILE_OPTIONS} )
+    set(ngscxx_flags "${ngscxx_flags} ${opt}")
+endforeach()
 if(NOT WIN32)
   set(ngscxx_flags "${ngscxx_flags} -fPIC")
 endif()
@@ -461,7 +470,7 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/NGSolveConfig.cmake DESTINATION ${NGSO
 # Configure message
 # TODO: other message in case of failure
 string(TOUPPER "CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE}" name)
-set(flags "${${name}} ${CMAKE_CXX_FLAGS}")
+set(flags "${ngscxx_flags}")
 message("
 ------------------------------------------------------------------------
   ${PROJECT_NAME} ${NGSOLVE_VERSION}:  Automatic configuration OK.
