@@ -8,7 +8,7 @@ add_library(ngbla ${NGS_LIB_TYPE}
 
 target_compile_definitions(ngbla PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
 target_compile_options(ngbla PUBLIC ${NGSOLVE_COMPILE_OPTIONS})
-target_include_directories(ngbla PUBLIC ${NETGEN_INCLUDE_DIRS})
+target_include_directories(ngbla PUBLIC ${NGSOLVE_INCLUDE_DIRS})
 
 if(NOT WIN32)
     target_link_libraries(ngbla ngstd ${MPI_CXX_LIBRARIES} ${NETGEN_PYTHON_LIBRARIES} ${LAPACK_LIBRARIES})

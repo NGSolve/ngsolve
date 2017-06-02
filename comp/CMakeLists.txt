@@ -22,7 +22,7 @@ add_library( ngcomp ${NGS_LIB_TYPE}
 
 target_compile_definitions(ngcomp PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
 target_compile_options(ngcomp PUBLIC ${NGSOLVE_COMPILE_OPTIONS})
-target_include_directories(ngcomp PUBLIC ${NETGEN_INCLUDE_DIRS})
+target_include_directories(ngcomp PUBLIC ${NGSOLVE_INCLUDE_DIRS})
 
 if(NOT WIN32)
     target_link_libraries (ngcomp interface ngfem ngla ngbla ngstd ${MPI_CXX_LIBRARIES} ${NETGEN_PYTHON_LIBRARIES} ${LAPACK_LIBRARIES} ${HYPRE_LIBRARIES})
