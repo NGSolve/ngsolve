@@ -73,6 +73,7 @@ string(REPLACE "netgen" "ngsolve" NGSOLVE_INSTALL_DIR_CMAKE ${NETGEN_INSTALL_DIR
 
 #######################################################################
 
+set(NGSOLVE_COMPILE_INCLUDE_DIRS "")
 set(NGSOLVE_COMPILE_DEFINITIONS "")
 set(NGSOLVE_COMPILE_OPTIONS "")
 list(APPEND NGSOLVE_COMPILE_DEFINITIONS HAVE_NETGEN_SOURCES)
@@ -141,7 +142,7 @@ list(APPEND NGSOLVE_COMPILE_DEFINITIONS USE_TIMEOFDAY)
 
 include_directories (BEFORE ${PROJECT_SOURCE_DIR}/include)
 include_directories (BEFORE ${PROJECT_BINARY_DIR})
-include_directories (AFTER ${NETGEN_INCLUDE_DIRS})
+list(APPEND NGSOLVE_INCLUDE_DIRS ${NETGEN_INCLUDE_DIRS})
 
 if(NETGEN_USE_GUI)
   install (FILES ngsolve.tcl DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve )
@@ -188,7 +189,7 @@ endif(APPLE)
 #######################################################################
 if (NETGEN_USE_GUI)
     list(APPEND NGSOLVE_COMPILE_DEFINITIONS TCL)
-    include_directories(${NETGEN_TCL_INCLUDE_PATH})
+    list(APPEND NGSOLVE_INCLUDE_DIRS ${NETGEN_TCL_INCLUDE_PATH})
 endif (NETGEN_USE_GUI)
 
 #######################################################################
@@ -257,8 +258,7 @@ endif (USE_MUMPS)
 #######################################################################
 if (NETGEN_USE_PYTHON)
     list(APPEND NGSOLVE_COMPILE_DEFINITIONS NGS_PYTHON)
-    include_directories(${NETGEN_PYBIND_INCLUDE_DIR})
-    include_directories(${NETGEN_PYTHON_INCLUDE_DIRS})
+    list(APPEND NGSOLVE_INCLUDE_DIRS ${NETGEN_PYBIND_INCLUDE_DIR} ${NETGEN_PYTHON_INCLUDE_DIRS})
 endif (NETGEN_USE_PYTHON)
 
 #######################################################################
