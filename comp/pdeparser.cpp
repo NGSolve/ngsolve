@@ -744,7 +744,7 @@ namespace ngcomp
                     // get the python class
                     py::object npclass = pyenv[npid.c_str()];
                     // call constructor and release the python instance to avoid reference counting on python side
-                    py::handle np = npclass(py::cast(PyWrapper<PDE>(pde)),py::cast(flags)).release();
+                    py::handle np = npclass(py::cast(pde),py::cast(flags)).release();
                     pde->AddNumProc (name, np.cast<shared_ptr<NumProc>>());
                 }
 		catch (py::error_already_set const &e) {
