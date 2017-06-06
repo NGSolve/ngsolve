@@ -66,6 +66,42 @@ namespace ngfem
       static_cast<const FEL*> (this) -> T_CalcShape (tip, shape);
     }
 
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & bmir,
+                           BareSliceVector<> coefs,
+                           BareSliceMatrix<SIMD<double>> values) const
+    {
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM+1>&> (bmir);
+      for (size_t i = 0; i < mir.Size(); i++)
+        {
+          auto & mip = mir[i];
+          auto nv = mip.GetNV();
+          /*
+          SIMD<double> sum = 0.0;
+          for (size_t j = 0; j < DIM+1; j++)
+            sum += nv[j] * values(j,i);
+          SIMD<double> val = sum / mip.GetJacobiDet();
+
+          TIP<DIM,SIMD<double>> tip = mip.IP().template TIp<DIM>();
+          static_cast<const FEL*> (this) ->
+            T_CalcShape (tip, SBLambda([&] (int nr, SIMD<double> shape)
+                                       {
+                                         coefs(nr) += HSum(shape*val);
+                                       }));
+          */
+          SIMD<double> sum(0.0);
+          TIP<DIM,SIMD<double>> tip = mip.IP().template TIp<DIM>();
+          static_cast<const FEL*> (this) ->
+            T_CalcShape (tip, SBLambda([&] (int nr, SIMD<double> shape)
+                                       {
+                                         sum += coefs(nr) * shape;
+                                       }));
+          sum /= mip.GetJacobiDet();
+          for (size_t j = 0; j < DIM+1; j++)
+            values(j,i) = nv[j] * sum;
+        }
+    }
+
+    
     virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & bmir,
                            BareSliceMatrix<SIMD<double>> values,
                            BareSliceVector<> coefs) const
@@ -77,7 +113,7 @@ namespace ngfem
           auto nv = mip.GetNV();
           
           SIMD<double> sum = 0.0;
-          for (size_t j = 0; j < DIM; j++)
+          for (size_t j = 0; j < DIM+1; j++)
             sum += nv[j] * values(j,i);
           SIMD<double> val = sum / mip.GetJacobiDet();
 
@@ -259,14 +295,14 @@ namespace ngfem
       
       int fmax = 0;
       for (int j = 1; j < 4; j++)
-        if (vnums[j] > vnums[fmax])
+        if (vnums[j] < vnums[fmax])
           fmax = j;
       
       int f1 = (fmax+3)%4;
       int f2 = (fmax+1)%4;
       
       int fac = 1;
-      if(vnums[f2] > vnums[f1])
+      if(vnums[f2] < vnums[f1])
         {
           swap(f1,f2); // fmax > f1 > f2;
           fac *= -1;
@@ -439,11 +475,13 @@ namespace ngfem
   HDIVHOFE_EXTERN template class HDivHighOrderFE<ET_QUAD>;
   HDIVHOFE_EXTERN template class HDivHighOrderFE<ET_TET>;
   HDIVHOFE_EXTERN template class HDivHighOrderFE<ET_PRISM>;
+  HDIVHOFE_EXTERN template class HDivHighOrderFE<ET_HEX>;
 
   HDIVHOFE_EXTERN template class T_HDivFiniteElement<HDivHighOrderFE_Shape<ET_TRIG>, ET_TRIG>;
   HDIVHOFE_EXTERN template class T_HDivFiniteElement<HDivHighOrderFE_Shape<ET_QUAD>, ET_QUAD>;
   HDIVHOFE_EXTERN template class T_HDivFiniteElement<HDivHighOrderFE_Shape<ET_TET>, ET_TET>;
   HDIVHOFE_EXTERN template class T_HDivFiniteElement<HDivHighOrderFE_Shape<ET_PRISM>, ET_PRISM>;
+  HDIVHOFE_EXTERN template class T_HDivFiniteElement<HDivHighOrderFE_Shape<ET_HEX>, ET_HEX>;
 }
 
 #endif

@@ -416,7 +416,8 @@ namespace ngla
         auto extdofs = BlockExtDofs (i);
         first_microtask.Append (microtasks.Size());
 
-        int nb = extdofs.Size() / 256 + 1;
+        // int nb = extdofs.Size() / 256 + 1;
+        int nb = (extdofs.Size()+255) / 256;
 
         if (nb == 1)
           // if (false)
@@ -961,11 +962,11 @@ namespace ngla
         if (c.Height() < 128 && c.Width() < 128)
           // if (true)
           {
-            timer2.Start();
+            // timer2.Start();
             // c -= a * Trans(b) | Lapack;
             ngbla::SubABt(a,b,c);
-            timer2.Stop();
-            timer2.AddFlops(c.Height()*c.Width()*a.Width());
+            // timer2.Stop();
+            // timer2.AddFlops(c.Height()*c.Width()*a.Width());
           }
         else
           {
@@ -1038,10 +1039,10 @@ namespace ngla
              (size_t(c.Height())*c.Width()*a.Width() < 10000) )
           // if (true)
           {
-            timer2.Start();
+            // timer2.Start();
             ngbla::SubADBt(a,diag,b,c);
-            timer2.Stop();
-            timer2.AddFlops(size_t(c.Height())*c.Width()*a.Width());
+            // timer2.Stop();
+            // timer2.AddFlops(size_t(c.Height())*c.Width()*a.Width());
           }
         else
           {
@@ -1243,7 +1244,7 @@ namespace ngla
     int * hrowindex2 = rowindex2.Addr(0);
     TM * hlfact = lfact.Addr(0);
     
-
+    Array<TM> tmpmem;
     for (int i1 = 0; i1 < n;  )
       {
 	int last_same = i1;
@@ -1261,14 +1262,16 @@ namespace ngla
           }
 
         
-        timerb.Start();
+        // timerb.Start();
 
 	// rows in same block ...
 	int mi = last_same - i1;
         int nk = hfirstinrow[i1+1] - hfirstinrow[i1] + 1;
         
-        factor_dense1.Start();
-        Matrix<TM,ColMajor> tmp(nk, nk);
+        // factor_dense1.Start();
+        // Matrix<TM,ColMajor> tmp(nk, nk);
+        tmpmem.SetSize(nk*nk);
+        FlatMatrix<TM,ColMajor> tmp(nk, nk, tmpmem.Addr(0));
 
         bool big = nk > 1000;
         if (big)
@@ -1289,19 +1292,19 @@ namespace ngla
             tmp.Col(j).Range(j+1,nk) = FlatVector<TM>(nk-j-1, hlfact+hfirstinrow[i1+j]);
           }
 
-        factor_dense1.Stop();
+        // factor_dense1.Stop();
         
         auto A11 = tmp.Rows(0,mi).Cols(0,mi);
         auto B   = tmp.Rows(mi,nk).Cols(0,mi);
         auto A22 = tmp.Rows(mi,nk).Cols(mi,nk);
-        factor_dense.Start();
+        // factor_dense.Start();
         CalcLDL (A11);
         if (mi < nk)
           {
             CalcLDL_SolveL (A11,B);
             CalcLDL_A2 (A11.Diag(),B,A22);
           }
-        factor_dense.Stop();          
+        // factor_dense.Stop();          
 
         
         auto write_back_row = [&](int j)
@@ -1316,8 +1319,8 @@ namespace ngla
         else
           ParallelFor (mi, write_back_row);
 
-        timerb.Stop();
-        timerc.Start();
+        // timerb.Stop();
+        //timerc.Start();
 
 
 	// merge rows
@@ -1326,7 +1329,7 @@ namespace ngla
 	size_t lasti = hfirstinrow[i1+1]-1;
 	mi = lasti-firsti+1;
 
-        timerc1.Start();
+        // timerc1.Start();
 
         auto merge_row = [&] (int j)
           {
@@ -1358,9 +1361,9 @@ namespace ngla
           ParallelFor (Range(mi), merge_row);
           
 
-        timerc1.Stop();
+        // timerc1.Stop();
 
-        timerc2.Start();
+        // timerc2.Start();
 	for (int i2 = i1; i2 < last_same; i2++)
 	  {
 	    size_t first = hfirstinrow[i2] + last_same-i2-1;
@@ -1373,9 +1376,9 @@ namespace ngla
 		diag[rowindex2[j_ri]] -= Trans (lfact[j]) * q;
 	      }
 	  }
-        timerc2.Stop();
+        // timerc2.Stop();
 	i1 = last_same;
-        timerc.Stop();
+        // timerc.Stop();
       }
 
     size_t j = 0;
@@ -1720,10 +1723,12 @@ namespace ngla
 
 
   template <typename TFUNC>
-  void RunParallelDependency (const Table<int> & dag, TFUNC func)
+  void RunParallelDependency (const Table<int> & dag,
+                              const Table<int> & trans_dag, // transposed dag
+                              TFUNC func)
   {
     Array<atomic<int>> cnt_dep(dag.Size());
-
+    /*
     for (auto & d : cnt_dep) 
       d.store (0, memory_order_relaxed);
 
@@ -1736,7 +1741,10 @@ namespace ngla
                      cnt_dep[j]++;
                  });
     t_cntdep.Stop();    
-
+    */
+    for (auto i : Range(cnt_dep))
+      cnt_dep[i].store (trans_dag[i].Size(), memory_order_relaxed);
+    
     Array<int> ready(dag.Size());
     ready.SetSize0();
     int num_final = 0;
@@ -1911,7 +1919,7 @@ namespace ngla
     */
     timer1.Start();
     
-    RunParallelDependency (micro_dependency, 
+    RunParallelDependency (micro_dependency, micro_dependency_trans,
                            [&,hy] (int nr) 
                            {
                              auto task = microtasks[nr];
@@ -1939,7 +1947,11 @@ namespace ngla
                                          for (size_t j = 0; j < size; j++)
                                            hyr(j) -= Trans(vlfact(j)) * hyi;
                                        }
-
+                                     if (extdofs.Size() == 0)
+                                       {
+                                         // cerr << "should not be here" << endl;
+                                         continue;
+                                       }
                                      size_t first = firstinrow[i] + range.end()-i-1;
                                      FlatVector<TM> ext_lfact (extdofs.Size(), &lfact[first]);
                                      for (size_t j = 0; j < temp.Size(); j++)
@@ -2018,7 +2030,7 @@ namespace ngla
     */
 
     // advanced parallel version 
-    RunParallelDependency (micro_dependency_trans, 
+    RunParallelDependency (micro_dependency_trans, micro_dependency,
                            [&,hy] (int nr) 
                            {
                              auto task = microtasks[nr];
@@ -2033,17 +2045,18 @@ namespace ngla
                                  VectorMem<520,TVX> temp(extdofs.Size());
                                  for (auto j : Range(extdofs))
                                    temp(j) = hy(extdofs[j]);
-                                 
-                                 for (auto i : range)
-                                   {
-                                     size_t first = firstinrow[i] + range.end()-i-1;
-                                     FlatVector<TM> ext_lfact (extdofs.Size(), &lfact[first]);
-                                     
-                                     TVX val(0.0);
-                                     for (auto j : Range(extdofs))
-                                       val += ext_lfact(j) * temp(j);
-                                     hy(i) -= val;
-                                   }
+
+                                 if (extdofs.Size())
+                                   for (auto i : range)
+                                     {
+                                       size_t first = firstinrow[i] + range.end()-i-1;
+                                       FlatVector<TM> ext_lfact (extdofs.Size(), &lfact[first]);
+                                       
+                                       TVX val(0.0);
+                                       for (auto j : Range(extdofs))
+                                         val += ext_lfact(j) * temp(j);
+                                       hy(i) -= val;
+                                     }
                                  for (size_t i = range.end()-1; i-- > range.begin(); )
                                    {
                                      size_t size = range.end()-i-1;

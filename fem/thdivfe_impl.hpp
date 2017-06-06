@@ -88,7 +88,23 @@ namespace ngfem
       }
   }
 
-  
+  template <class FEL, ELEMENT_TYPE ET>
+  void T_HDivFiniteElement<FEL,ET>::
+  CalcMappedDivShape (const SIMD_BaseMappedIntegrationRule & bmir, 
+                      BareSliceMatrix<SIMD<double>> divshapes) const
+  {
+    auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
+    for (size_t i = 0; i < mir.Size(); i++)
+      {
+        Vec<DIM, AutoDiff<DIM,SIMD<double>>> adp = mir[i];
+        static_cast<const FEL*> (this) ->                 
+          T_CalcShape (&adp(0), SBLambda ([&] (size_t j, THDiv2DivShape<DIM,SIMD<double>> val)
+                                          {
+                                            divshapes(j, i) = val;
+                                          }));
+      }
+  }
+
   template <class FEL, ELEMENT_TYPE ET>
   void  T_HDivFiniteElement<FEL,ET> :: 
   Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, 

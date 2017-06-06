@@ -12,6 +12,7 @@ function(fixup_bundle app libs dirs)
     message(STATUS "fixup_bundle: preparing...")
     get_bundle_keys("${app}" "${libs}" "${dirs}" keys)
 
+    list(REMOVE_ITEM keys "Python") # skip fixup of Python
     message(STATUS "fixup_bundle: copying...")
     list(LENGTH keys n)
     math(EXPR n ${n}*2)
@@ -35,7 +36,8 @@ function(fixup_bundle app libs dirs)
     foreach(key ${keys})
       math(EXPR i ${i}+1)
       message(STATUS "${i}/${n}: fixing up '${${key}_RESOLVED_EMBEDDED_ITEM}'")
-      fixup_bundle_item("${${key}_RESOLVED_EMBEDDED_ITEM}" "${exepath}" "${dirs}")
+      # ignore dependencies to python
+      fixup_bundle_item("${${key}_RESOLVED_EMBEDDED_ITEM}" "${exepath}" "${dirs}" IGNORE_ITEM Python)
     endforeach()
 
     message(STATUS "fixup_bundle: cleaning up...")
@@ -48,13 +50,21 @@ function(fixup_bundle app libs dirs)
   message(STATUS "fixup_bundle: done")
 endfunction()
 
-set(APP @INSTALL_DIR@)
+get_filename_component(APPNAME @CMAKE_INSTALL_PREFIX@ NAME)
+set(APP "${CMAKE_CURRENT_BINARY_DIR}/bundle_dir/${APPNAME}")
 set(MACOS_DIR ${APP}/Contents/MacOS)
 
 set(BU_CHMOD_BUNDLE_ITEMS ON)
 
+message("copy @CMAKE_INSTALL_PREFIX@ dir to bundle_dir")
+execute_process(COMMAND mkdir bundle_dir)
+execute_process(COMMAND cp -r @CMAKE_INSTALL_PREFIX@ bundle_dir)
+execute_process(COMMAND ln -s /Applications bundle_dir/Applications)
+
 file(GLOB libs ${MACOS_DIR}/*.dylib ${MACOS_DIR}/*.so)
 message("libraries to fix: ${libs}")
 fixup_bundle( ${MACOS_DIR}/netgen "${libs}" ${MACOS_DIR} )
-execute_process(COMMAND ln -s /Applications @INSTALL_DIR@/../Applications)
-execute_process(COMMAND hdiutil create -size 200m -volname NGSolve -srcfolder @INSTALL_DIR@/.. -ov -format UDZO NGSolve-@NGSOLVE_VERSION@.dmg)
+message("create image")
+execute_process(COMMAND hdiutil create -size 200m -volname NGSolve -srcfolder bundle_dir -ov -format UDZO NGSolve-@NGSOLVE_VERSION@.dmg)
+message("delete bundle_dir")
+execute_process(COMMAND rm -r bundle_dir)

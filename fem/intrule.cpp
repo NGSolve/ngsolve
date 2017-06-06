@@ -312,11 +312,27 @@ namespace ngfem
 
   ostream & operator<< (ostream & ost, const IntegrationRule & ir)
   {
+    /*
     for (size_t i = 0; i < ir.GetNIP(); i++)
       ost << ir[i] << endl;
+    */
+    for (auto & ip : ir)
+      ost << ip << endl;      
     return ost;
   }
 
+  ostream & operator<< (ostream & ost, const BaseMappedIntegrationRule & mir)
+  {
+    /*
+    for (size_t i = 0; i < mir.Size(); i++)
+      ost << mir[i] << endl;
+    */
+    for (auto & mip : mir)
+      ost << mip << endl;
+    return ost;
+  }
+
+  
 
   template <int DIM_ELEMENT, int DIM_SPACE, typename SCAL>
   MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE,SCAL> :: 
@@ -395,6 +411,7 @@ namespace ngfem
   template class MappedIntegrationRule<1,3>;
   template class MappedIntegrationRule<2,3>;
 
+  template class MappedIntegrationRule<0,0, Complex>;
   template class MappedIntegrationRule<1,1, Complex>;
   template class MappedIntegrationRule<2,2, Complex>;
   template class MappedIntegrationRule<3,3, Complex>;
@@ -2166,7 +2183,10 @@ namespace ngfem
     // ************************************
 
     for (int p = 0; p < 20; p++)
-      GenerateIntegrationRule (ET_SEGM, p);
+      {
+        GenerateIntegrationRule (ET_SEGM, p);
+        SIMD_SelectIntegrationRule (ET_SEGM, p);
+      }
 
     // ************************************
     // ** Triangle integration rules
@@ -2259,6 +2279,8 @@ namespace ngfem
 
     for (int p = 7; p <= 10; p++)
       GenerateIntegrationRule (ET_TRIG, p);
+    for (int p = 0; p <= 10; p++)    
+      SIMD_SelectIntegrationRule (ET_TRIG, p);
 
 
     // ************************************
@@ -2266,8 +2288,10 @@ namespace ngfem
     // ************************************
     
     for (int p = 0; p <= 10; p++)
-      GenerateIntegrationRule (ET_QUAD, p);
-
+      {
+        GenerateIntegrationRule (ET_QUAD, p);
+        SIMD_SelectIntegrationRule (ET_QUAD, p);
+      }
 
 
     // ************************************
@@ -2337,16 +2361,21 @@ namespace ngfem
     tetrules[5] = new IntegrationRule (14, qf_tetra_order5_points, qf_tetra_order5_weights);    
 
 
-
     for (int p = 6; p <= 10; p++)
       GenerateIntegrationRule (ET_TET, p);
+    for (int p = 0; p <= 10; p++)
+      SIMD_SelectIntegrationRule (ET_TET, p);
+    
 
     // ************************************
     // ** Prismatic integration rules
     // ************************************
 
     for (int p = 0; p <= 6; p++)
-      GenerateIntegrationRule (ET_PRISM, p);
+      {
+        GenerateIntegrationRule (ET_PRISM, p);
+        SIMD_SelectIntegrationRule (ET_PRISM, p);
+      }
 
 
     // ************************************
@@ -2354,15 +2383,21 @@ namespace ngfem
     // ************************************
 
     for (int p = 0; p <= 6; p++)
-      GenerateIntegrationRule (ET_PYRAMID, p);
-
-
+      {
+        GenerateIntegrationRule (ET_PYRAMID, p);
+        SIMD_SelectIntegrationRule (ET_PYRAMID, p);
+      }
+    
     // ************************************
     // ** Hexaeder integration rules
     // ************************************
 
     for (int p = 0; p <= 6; p++)
-      GenerateIntegrationRule (ET_HEX, p);
+      {
+        GenerateIntegrationRule (ET_HEX, p);
+        SIMD_SelectIntegrationRule (ET_HEX, p);
+      }
+    
 
 
 
@@ -3067,13 +3102,15 @@ namespace ngfem
   {
     nip = _nip;
   }
-  
+
+  /*
   SIMD_IntegrationRule::~SIMD_IntegrationRule()
   {
     if (mem_to_delete)
       _mm_free(mem_to_delete);
     mem_to_delete = nullptr;
   }
+  */
   
   template <int DIM_ELEMENT, int DIM_SPACE>
   SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> :: 

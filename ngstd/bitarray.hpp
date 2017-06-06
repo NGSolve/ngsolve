@@ -64,7 +64,7 @@ public:
   void Set (size_t i)
   {
 #ifdef DEBUG
-    if (i < 0 || i >= size)
+    if (i >= size)
       throw RangeException ("Bitarray::Set", i, 0, size-1);
 #endif
     unsigned char * p = data+Addr(i);
@@ -78,7 +78,7 @@ public:
   void Clear (size_t i)
   { 
 #ifdef DEBUG
-    if (i < 0 || i >= size)
+    if (i >= size)
       throw RangeException ("Bitarray::Clear", i, 0, size-1);
 #endif
     data[Addr(i)] &= ~Mask(i); 

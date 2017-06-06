@@ -82,11 +82,9 @@ namespace ngcomp
   
   void NedelecFESpace :: Update(LocalHeap & lh)
   {
-    int ne = ma->GetNE();
-    int nse = ma->GetNSE();
-    int ned = ma->GetNEdges();
-    
-    Array<int> pnums, enums;
+    size_t ne = ma->GetNE();
+    size_t nse = ma->GetNSE();
+    size_t ned = ma->GetNEdges();
     
     int level = ma->GetNLevels();
     
@@ -94,47 +92,46 @@ namespace ngcomp
       return;
     
     nelevel.Append (ned);
-    
 
-    for(int i=0; i<specialelements.Size(); i++)
+    for (int i=0; i<specialelements.Size(); i++)
       delete specialelements[i];
     specialelements.DeleteAll();
 
     // new implementation of finelevelofedge - array:
     
-    int oldned = finelevelofedge.Size();
+    size_t oldned = finelevelofedge.Size();
     finelevelofedge.SetSize(ned);
     finelevelofedge.Range (oldned, ned) = -1;
 
-    for (int i = 0; i < ne; i++)
-      finelevelofedge[ma->GetElement(i).Edges()] = level-1;
-
-    for (int i = 0; i < nse; i++)
-      finelevelofedge[ma->GetSElement(i).Edges()] = level-1;
-
+    for (Ngs_Element el : ma->Elements(VOL))
+      if (DefinedOn (el)) 
+        finelevelofedge[el.Edges()] = level-1;
+    
+    for (Ngs_Element el : ma->Elements(BND))
+      if (DefinedOn (el)) 
+	finelevelofedge[el.Edges()] = level-1;
 
     // generate edge points, and temporary hash table
     ClosedHashTable<INT<2>, int> node2edge(5*ned+10);
 
-    edgepoints.SetSize(0);
+    edgepoints.SetSize0();
     
-    for (int i = 0; i < ned; i++)
+    for (size_t i = 0; i < ned; i++)
       {
 	INT<2> edge;
-	ma->GetEdgePNums (i, edge[0], edge[1]);
+        ma->GetEdgePNums (i, edge[0], edge[1]);
 	int edgedir = (edge[0] > edge[1]);
 	if (edgedir) Swap (edge[0], edge[1]);
 	node2edge.Set (edge, i);
 	edgepoints.Append (edge);
       }
 
-
     
     // build edge hierarchy:
     parentedges.SetSize (ned);
     parentedges = INT<2> (-1,-1);
 
-    for (int i = 0; i < ned; i++)
+    for (size_t i = 0; i < ned; i++)
       {
 	INT<2> i2 (edgepoints[i][0], edgepoints[i][1]);
 	int pa1[2], pa2[2];
@@ -306,7 +303,7 @@ namespace ngcomp
     int level = ma->GetNLevels()-1;
 
     ctofdof.SetSize(GetNDof());
-
+    
     for (int edge = 0; edge < ma->GetNEdges(); edge++) 
       ctofdof[edge] = 
 	(FineLevelOfEdge(edge) == level) ? WIREBASKET_DOF : UNUSED_DOF; 
@@ -354,9 +351,9 @@ namespace ngcomp
   void NedelecFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
     if (DefinedOn (ei))
-      ma->GetElEdges (ei, dnums);
+      dnums = ma->GetElEdges (ei);
     else
-      dnums.SetSize(0);
+      dnums.SetSize0();
   }
 
 
@@ -966,8 +963,9 @@ namespace ngcomp
     first_el_dof[0] = first_face_dof[nfa];
     for (i = 0; i < ne; i++)
       {
-	bool gradel = gradientdomains[ma->GetElIndex(i)];
-	switch (ma->GetElType (i))
+        ElementId ei(VOL,i);
+	bool gradel = gradientdomains[ma->GetElIndex(ei)];
+	switch (ma->GetElType (ei))
 	  {
 	  case ET_TET:
 	    first_el_dof[i+1] = first_el_dof[i] + n_tet_el_dofs; 
@@ -997,12 +995,13 @@ namespace ngcomp
 
 	for (i = 0; i < ne; i++)
 	  {
-	    if (gradientdomains[ma->GetElIndex(i)])
+            ElementId ei(VOL,i);
+	    if (gradientdomains[ma->GetElIndex(ei)])
 	      {
-		ma->GetElEdges (i, enums);
+		auto enums = ma->GetElEdges (ei);
 		for (j = 0; j < enums.Size(); j++)
 		  gradientedge[enums[j]] = 1;
-		ma->GetElFaces (i, fnums, forient);
+		auto fnums = ma->GetElFaces (ei);
 		for (j = 0; j < fnums.Size(); j++)
 		  gradientface[fnums[j]] = 1;
 	      }
@@ -1015,9 +1014,10 @@ namespace ngcomp
     if (gradientboundaries.Size())
       for (i = 0; i < nse; i++)
 	{
-	  if (gradientboundaries[ma->GetSElIndex(i)])
+          ElementId sei(BND,i);
+	  if (gradientboundaries[ma->GetElIndex(sei)])
 	    {
-	      ma->GetSElEdges (i, enums);
+	      auto enums = ma->GetElEdges (sei);
 	      for (j = 0; j < enums.Size(); j++)
 		gradientedge[enums[j]] = 1;
 	      ma->GetSElFace (i, fnums[0], forient[0]);
@@ -1070,8 +1070,8 @@ namespace ngcomp
       default:
 	fe = 0;
       }
-
-    if (!gradientdomains[ma->GetElIndex(ei.Nr())])
+    
+    if (!gradientdomains[ma->GetElIndex(ei)])
       {
 	switch (typ)
 	  {
@@ -1091,7 +1091,7 @@ namespace ngcomp
 	stringstream str;
 	str << "FESpace " << GetClassName() 
 	    << ", undefined eltype " 
-	    << ElementTopology::GetElementName(ma->GetElType(ei.Nr()))
+	    << ElementTopology::GetElementName(ma->GetElType(ei))
 	    << ", order = " << order << endl;
 	throw Exception (str.str());
       }
@@ -1108,9 +1108,9 @@ namespace ngcomp
 	int j;
 
 	ArrayMem<int,6> fnums, forient;
-	ArrayMem<int,12> enums;
+	// ArrayMem<int,12> enums;
 	
-	ma->GetElEdges (ei.Nr(), enums);
+	auto enums = ma->GetElEdges (ei);
 	ma->GetElFaces (ei.Nr(), fnums, forient);
 	
 	LocalHeapMem<1000> lh("NedelecFESpace2, GetDofNrs");
@@ -1118,13 +1118,13 @@ namespace ngcomp
 	dnums.SetSize(nd);
 	dnums = -1;
 	
-	int index = ma->GetElIndex (ei.Nr());
+	int index = ma->GetElIndex (ei);
 	
 	if (!DefinedOn (VOL, index)) return;
 	
 	bool graddom = gradientdomains[index];
 	
-	switch (ma->GetElType(ei.Nr()))
+	switch (ma->GetElType(ei))
 	  {
 	  case ET_TRIG:
 	    {
@@ -1392,21 +1392,19 @@ namespace ngcomp
       {
 
     int fnum, forient;
-    int ena[4];
-    Array<int> enums(4, ena);
 
     ma->GetSElFace (ei.Nr(), fnum, forient);
-    ma->GetSElEdges (ei.Nr(), enums);
+    auto enums = ma->GetElEdges (ei);
 
     LocalHeapMem<1000> lh("NedelecFESpace2, GetSDofNrs");
     int nd = GetFE (ElementId(BND,ei.Nr()), lh).GetNDof();
     dnums.SetSize(nd);
     dnums = -1;
 
-    if (!DefinedOn (BND, ma->GetSElIndex (ei.Nr())))
+    if (!DefinedOn (BND, ma->GetElIndex (ei)))
       return;
 
-    switch (ma->GetSElType(ei.Nr()))
+    switch (ma->GetElType(ei))
       {
       case ET_TRIG:
 	{
@@ -1542,7 +1540,7 @@ namespace ngcomp
 					    const Array<int> & forient,
 					    FlatVector<double> & fac) const
   {
-    bool graddom = gradientdomains[ma->GetElIndex(elnr)];
+    bool graddom = gradientdomains[ma->GetElIndex(ElementId(VOL,elnr))];
 
     fac = 1.0;
     switch (eltype)
@@ -1837,14 +1835,14 @@ namespace ngcomp
     if (boundary)
       {
 	nd = GetFE (ei, lh).GetNDof();
-	et = ma->GetSElType (elnr);
+	et = ma->GetElType (ei);
 	ma->GetSElEdges (elnr, enums, eorient);
 	ma->GetSElFace (elnr, fnums[0], forient[0]);
       }
     else
       {
 	nd = GetFE (ei, lh).GetNDof();
-	et = ma->GetElType (elnr);
+	et = ma->GetElType (ei);
 	ma->GetElEdges (elnr, enums, eorient);
 	ma->GetElFaces (elnr, fnums, forient);
       }
@@ -2589,10 +2587,11 @@ namespace ngcomp
 
     for(i=0; i<ne && (directsolverclustered.Size() > 0 || directsolvermaterials.Size() > 0); i++)
       {
-	if((directsolverclustered.Size() > 0 && directsolverclustered[ma->GetElIndex(i)]) || 
-	   directsolvermaterials.Contains(ma->GetMaterial(ElementId(VOL,i))))
+        ElementId ei(VOL,i);
+	if((directsolverclustered.Size() > 0 && directsolverclustered[ma->GetElIndex(ei)]) || 
+	   directsolvermaterials.Contains(ma->GetMaterial(ei)))
 	  {     
-	    ELEMENT_TYPE eltype = ma->GetElType(i);
+	    ELEMENT_TYPE eltype = ma->GetElType(ei);
 	    if(eltype != ET_PRISM) continue;
 
 	    GetDofNrs(i,dnums);
@@ -2720,7 +2719,6 @@ namespace ngcomp
     Array<int> dnums(1);
 
     Array<int> fnums, forient;
-    Array<int> enums;
     Array<int> lock;
 
     cout << "type is " << typeid(mat).name() << endl;
@@ -2729,13 +2727,14 @@ namespace ngcomp
   
     for (i = 0; i < ne; i++)
       {
+        ElementId ei(VOL, i);
 	lock.SetSize (0);
-	switch (ma->GetElType(i))
+	switch (ma->GetElType(ei))
 	  {
 	  case ET_PRISM:
 	    {
 	      ma->GetElFaces (i, fnums, forient);
-	      ma->GetElEdges (i, enums);
+	      auto enums = ma->GetElEdges (ei);
 	    
 	      if (order == 3)
 		{

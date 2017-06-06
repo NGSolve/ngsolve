@@ -1,4 +1,11 @@
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/timings.py ${CMAKE_CURRENT_BINARY_DIR}/timings.py)
-add_custom_target(timings ${NETGEN_PYTHON_EXECUTABLE} timings.py
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+find_program(NUMACTL_EXECUTABLE numactl)
+if(NUMACTL_EXECUTABLE)
+  set(SET_CPU_BINDING numactl -C 0)
+endif(NUMACTL_EXECUTABLE)
+
+add_custom_target(timings
+  COMMAND ${SET_CPU_BINDING} ${NETGEN_PYTHON_EXECUTABLE} timings.py -s
+  COMMAND ${NETGEN_PYTHON_EXECUTABLE} timings.py -ap
+  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )

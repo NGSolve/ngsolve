@@ -25,10 +25,10 @@ def circle_evs(geom,pmltrafo):
     mesh.Curve(5)
     # define constant hpref = 4
 
-    mesh.SetPML(pmltrafo,1)
+    mesh.SetPML(pmltrafo,2)
     #SetPMLParameters (rad=0.8, alpha=2)
 
-    fes = H1(mesh, order=4, complex=True, dirichlet=[3])
+    fes = H1(mesh, order=6, complex=True, dirichlet=[3])
     u = fes.TrialFunction()
     v = fes.TestFunction()
 
@@ -46,14 +46,14 @@ def circle_evs(geom,pmltrafo):
     Draw(u)
     return lam
 geom = ccc(0.5,0.6,1.2)
-pr=pml.Radial(0.6,2j)
+pr=pml.Radial((0,0),0.6,2j)
 lamr=circle_evs(geom,pr)
 
 geom = cbb(0.5,0.6,1.2)
 pc=pml.Cartesian((-0.6,-0.6),(0.6,0.6),2j)
 lamc=circle_evs(geom,pc)
 
-pbr=pml.BrickRadial((-0.6,-0.6),(0.6,0.6),2j)
+pbr=pml.BrickRadial((-0.6,-0.6),(0.6,0.6),(0,0),2j)
 lamb=circle_evs(geom,pbr)
 
 plot([sqrt(l).real for l in lamr],[sqrt(l).imag for l in lamr],'xr')

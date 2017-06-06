@@ -784,7 +784,7 @@ namespace ngsolve
       }
     else if (point.Size() >= 2)
       {
-	auto bfi = (bfa) ? bfa->GetIntegrator(0) : gfu->GetFESpace()->GetIntegrator();
+	auto bfi = (bfa) ? bfa->GetIntegrator(0) : gfu->GetFESpace()->GetIntegrator(VOL);
 
 	if (point2.Size() >= 2)
 	  {
@@ -1224,7 +1224,7 @@ namespace ngsolve
 
     const FESpace & fes = *gfu->GetFESpace();
 
-    const int components = fes.GetIntegrator()->DimFlux();
+    const int components = fes.GetIntegrator(VOL)->DimFlux();
     int ndomains;
     
     string typestring;
@@ -1237,7 +1237,7 @@ namespace ngsolve
 
 	    typestring = ".vol";
 
-	    Integrator_ptr = fes.GetIntegrator();
+	    Integrator_ptr = fes.GetIntegrator(VOL);
 	    BoundaryIntegrator_ptr = NULL;
 	    ndomains = shared_ptr<PDE>(pde)->GetMeshAccess()->GetNDomains();
 
@@ -3502,8 +3502,7 @@ void ExportDrawFlux(py::module &m)
 {
   // cout << "exporting CalcFlux and DrawFlux numproc" << endl;
 
-  m.def ("CalcFlux", FunctionPointer
-           ([](shared_ptr<PDE> pde,
+  m.def ("CalcFlux", [](shared_ptr<PDE> pde,
                shared_ptr<BilinearForm> bfa,
                shared_ptr<GridFunction> gfu,
                shared_ptr<GridFunction> gfflux,
@@ -3511,12 +3510,11 @@ void ExportDrawFlux(py::module &m)
 
             {
               return make_shared<NumProcCalcFlux> (pde, bfa, gfu, gfflux, applyd);
-            }),
+            },
             py::arg("pde"), py::arg("bf"), py::arg("gf"),
             py::arg("flux"), py::arg("applyd")=false
 	   );
-  m.def ("DrawFlux", FunctionPointer
-           ([](shared_ptr<BilinearForm> bfa,
+  m.def ("DrawFlux", [](shared_ptr<BilinearForm> bfa,
                shared_ptr<GridFunction> gfu,
                const string & alabel,
                bool applyd,
@@ -3524,7 +3522,7 @@ void ExportDrawFlux(py::module &m)
             
             {
               return make_shared<NumProcDrawFlux> (bfa, gfu, alabel, applyd, useall);
-            }),
+            },
             py::arg("bf"), py::arg("gf"), 
             py::arg("label")="flux", py::arg("applyd")=false, py::arg("useall")=false
 	   );

@@ -7,6 +7,16 @@ import json
 import os
 ngsglobals.msg_level=0
 
+import argparse
+parser = argparse.ArgumentParser(description='Time some NGSolve functions')
+parser.add_argument('-s', '--sequential',  action="store_true", help='Do sequential timings')
+parser.add_argument('-p', '--parallel',    action="store_true", help='Do parallel timings')
+parser.add_argument('-a', '--append_data', action="store_true", help='Instead of generating new output file, append data to existing one')
+
+args = parser.parse_args()
+if not (args.parallel or args.sequential):
+    parser.error("No timings requested, specify either -s or -p")
+
 mesh2 = Mesh(unit_square.GenerateMesh(maxh=0.03))
 mesh3 = Mesh(unit_cube.GenerateMesh(maxh=0.1))
 meshes = [mesh2, mesh3]
@@ -15,23 +25,27 @@ orders = [1,4]
 fes_types = [H1, L2, HDiv, HCurl]
 fes_names = ["H1", "L2", "HDiv", "HCurl"]
 
-results = {}
-if "CI_BUILD_REF" in os.environ:
-    results['commit'] = os.environ["CI_BUILD_REF"]
-results['version'] = -1
+if args.append_data:
+    results = json.load(open('results.json','r'))
+    timings = results['timings']
+else:
+    results = {"timings":{}}
+    if "CI_BUILD_REF" in os.environ:
+        results['commit'] = os.environ["CI_BUILD_REF"]
+    results['version'] = -1
 
-build = {}
-build['compiler'] = "@CMAKE_CXX_COMPILER_ID@-@CMAKE_CXX_COMPILER_VERSION@"
-build['native_arch'] = "@USE_NATIVE_ARCH@" == "ON"
-build['fast-math'] = "-ffast-math" in "@CMAKE_CXX_FLAGS@"
-build['hostname'] = socket.gethostname()
-build['ncpus'] = multiprocessing.cpu_count()
+    build = {}
+    build['compiler'] = "@CMAKE_CXX_COMPILER_ID@-@CMAKE_CXX_COMPILER_VERSION@"
+    build['cxx_flags'] = "@CMAKE_CXX_FLAGS@ @NGSOLVE_COMPILE_OPTIONS@".strip()
+    build['hostname'] = socket.gethostname()
+    build['ncpus'] = multiprocessing.cpu_count()
 
-results['build'] = build
+    results['build'] = build
 
-timings = {}
+    timings = results["timings"]
+    timings["FESpace"] = []
+    timings["Element"] = []
 
-timings_fes = []
 
 # test fespaces
 for mesh in meshes:
@@ -41,58 +55,56 @@ for mesh in meshes:
             fes_name = fes_names[i]
 
             fes = fes_type(mesh,order=order)
-            timing = Timing(name="h1",obj=fes,parallel=True,serial=True)
-            for t in timing.timings:
-                tim = {}
-                tim['dimension'] = mesh.dim
-                tim['fespace'] = fes_name
-                tim['order'] = order
-                tim['name'] = t[0]
-                tim['time'] = t[1]
-                tim['taskmanager'] = 0
-                tim['nthreads'] = 1
-                timings_fes.append(tim)
+            timing = Timing(name="h1",obj=fes,parallel=args.parallel,serial=args.sequential)
+            if args.sequential:
+                for t in timing.timings:
+                    tim = {}
+                    tim['dimension'] = mesh.dim
+                    tim['fespace'] = fes_name
+                    tim['order'] = order
+                    tim['name'] = t[0]
+                    tim['time'] = t[1]
+                    tim['taskmanager'] = 0
+                    tim['nthreads'] = 1
+                    timings["FESpace"].append(tim)
 
-            for t in timing.timings_par:
-                tim = {}
-                tim['dimension'] = mesh.dim
-                tim['fespace'] = fes_name
-                tim['order'] = order
-                tim['name'] = t[0]
-                tim['time'] = t[1]
-                tim['taskmanager'] = 1
-                tim['nthreads'] = ngsglobals.numthreads
-                timings_fes.append(tim)
+            if args.parallel:
+                for t in timing.timings_par:
+                    tim = {}
+                    tim['dimension'] = mesh.dim
+                    tim['fespace'] = fes_name
+                    tim['order'] = order
+                    tim['name'] = t[0]
+                    tim['time'] = t[1]
+                    tim['taskmanager'] = 1
+                    tim['nthreads'] = ngsglobals.numthreads
+                    timings["FESpace"].append(tim)
 
-timings["FESpace"] = timings_fes
 
 orders = [1,2,4,8]
 mesh2 = Mesh(unit_square.GenerateMesh(maxh=3))
 mesh3 = Mesh(unit_cube.GenerateMesh(maxh=1))
 meshes = [mesh2, mesh3]
 
-timings_el = []
-# test elements
-for mesh in meshes:
-    for order in orders:
-        for i in range(len(fes_types)):
-            fes_type = fes_types[i]
-            fes_name = fes_names[i]
-            el_name = fes_name + ("_TRIG" if mesh.dim ==2 else "_TET")
+if args.sequential:
+    # test elements
+    for mesh in meshes:
+        for order in orders:
+            for i in range(len(fes_types)):
+                fes_type = fes_types[i]
+                fes_name = fes_names[i]
+                el_name = fes_name + ("_TRIG" if mesh.dim ==2 else "_TET")
 
-            fes = fes_type(mesh,order=order)
-            timing = Timing(name=el_name, obj=fes.GetFE(ElementId(VOL,1)), parallel=False, serial=True)
-            for t in timing.timings:
-                tim = {}
-                tim['element'] = el_name
-                tim['order'] = order
-                tim['name'] = t[0]
-                tim['time'] = t[1]
-                timings_el.append(tim)
+                fes = fes_type(mesh,order=order)
+                timing = Timing(name=el_name, obj=fes.GetFE(ElementId(VOL,1)), parallel=False, serial=True)
+                for t in timing.timings:
+                    tim = {}
+                    tim['element'] = el_name
+                    tim['order'] = order
+                    tim['name'] = t[0]
+                    tim['time'] = t[1]
+                    timings["Element"].append(tim)
 
-timings["Element"] = timings_el
-timings["groups"] = ["FESpace", "Element"]
 
-results['timings'] = timings
 json.dump(results,open('results.json','w'))
 

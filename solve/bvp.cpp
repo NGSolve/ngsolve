@@ -769,34 +769,32 @@ void ExportBVP(py::module &m)
 {
   // cout << "exporting bvp numproc" << endl;
 
-  m.def ("BVP", FunctionPointer
-           ([](shared_ptr<PDE> pde,
-               PyWrapper<BilinearForm> bfa,
-               PyWrapper<LinearForm> lff,
-               PyWrapper<GridFunction> gfu,
-               PyWrapper<Preconditioner> pre,
+  m.def ("BVP", [](shared_ptr<PDE> pde,
+               shared_ptr<BilinearForm> bfa,
+               shared_ptr<LinearForm> lff,
+               shared_ptr<GridFunction> gfu,
+               shared_ptr<Preconditioner> pre,
                int maxsteps,
                double prec) -> shared_ptr<NumProc>
             
             {
-              return make_shared<NumProcBVP> (bfa.Get(), lff.Get(), gfu.Get(), pre, maxsteps, prec);
-            }),
+              return make_shared<NumProcBVP> (bfa, lff, gfu, pre, maxsteps, prec);
+            },
             py::arg("pde"),
             py::arg("bf"), py::arg("lf"), py::arg("gf"), 
             py::arg("pre")=DummyArgument(), py::arg("maxsteps")=100, py::arg("prec")=1e-8
 	   );
 
-  m.def ("BVP", FunctionPointer
-           ([](PyWrapper<BilinearForm> bfa,
-               PyWrapper<LinearForm> lff,
-               PyWrapper<GridFunction> gfu,
-               PyWrapper<Preconditioner> pre,
+  m.def ("BVP", [](shared_ptr<BilinearForm> bfa,
+               shared_ptr<LinearForm> lff,
+               shared_ptr<GridFunction> gfu,
+               shared_ptr<Preconditioner> pre,
                int maxsteps,
                double prec) -> shared_ptr<NumProc>
             
             {
-              return make_shared<NumProcBVP> (bfa.Get(), lff.Get(), gfu.Get(), pre, maxsteps, prec);
-            }),
+              return make_shared<NumProcBVP> (bfa, lff, gfu, pre, maxsteps, prec);
+            },
             py::arg("bf"), py::arg("lf"), py::arg("gf"), 
             py::arg("pre"), py::arg("maxsteps")=100, py::arg("prec")=1e-8
 	   );

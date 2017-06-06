@@ -3,12 +3,19 @@
 
 #include <limits>
 #include <vector>
-
+#include "array.hpp"
+// #include <x86intrin.h>   // for __rdtsc()  CPU time step counter
 namespace ngstd
 {
   extern NGS_DLL_HEADER class PajeTrace *trace;
   class PajeTrace
     {
+    public:
+      typedef std::chrono::system_clock TClock;
+      typedef TClock::time_point TTimePoint;
+      // typedef size_t TTimePoint;
+
+    private:
       friend class TraceDisabler;
 
       static size_t max_tracefile_size;
@@ -16,7 +23,7 @@ namespace ngstd
       static bool trace_threads;
 
       bool tracing_enabled;
-      double start_time;
+      TTimePoint start_time;
       int nthreads;
 
     public:
@@ -46,8 +53,8 @@ namespace ngstd
         {
           int job_id;
           const std::type_info *type;
-          double start_time;
-          double stop_time;
+          TTimePoint start_time;
+          TTimePoint stop_time;
         };
 
       struct Task
@@ -59,8 +66,8 @@ namespace ngstd
 
           int additional_value;
 
-          double start_time;
-          double stop_time;
+          TTimePoint start_time;
+          TTimePoint stop_time;
 
           static constexpr int ID_NONE = -1;
           static constexpr int ID_JOB = 1;
@@ -70,7 +77,7 @@ namespace ngstd
       struct TimerEvent
         {
           int timer_id;
-          double time;
+          TTimePoint time;
           bool is_start;
           int thread_id;
 
@@ -81,19 +88,21 @@ namespace ngstd
         {
           int thread_id;
           int key;
-          double time;
+          TTimePoint time;
           bool is_start;
           bool operator < (const ThreadLink & other) const { return time < other.time; }
         };
 
-      std::vector<std::vector<Task> > tasks;
+      // std::vector<std::vector<Task> > tasks;
+      std::vector<ngstd::Array<Task> > tasks;
       std::vector<Job> jobs;
       std::vector<TimerEvent> timer_events;
       std::vector<std::vector<ThreadLink> > links;
 
-      double GetTime()
+      TTimePoint GetTime()
         {
-          return ngstd::WallTime() - start_time;
+          return TClock::now();
+          // return TTimePoint(__rdtsc());
         }
 
     public:
@@ -105,7 +114,7 @@ namespace ngstd
       void StartTimer(int timer_id)
         {
           if(!tracing_enabled) return;
-          if(timer_events.size() == max_num_events_per_thread)
+          if(unlikely(timer_events.size() == max_num_events_per_thread))
             StopTracing();
           timer_events.push_back(TimerEvent{timer_id, GetTime(), true});
         }
@@ -113,19 +122,19 @@ namespace ngstd
       void StopTimer(int timer_id)
         {
           if(!tracing_enabled) return;
-          if(timer_events.size() == max_num_events_per_thread)
+          if(unlikely(timer_events.size() == max_num_events_per_thread))
             StopTracing();
           timer_events.push_back(TimerEvent{timer_id, GetTime(), false});
         }
 
-      int StartTask(int thread_id, int id, int id_type = Task::ID_NONE, int additional_value = -1)
+      INLINE int StartTask(int thread_id, int id, int id_type = Task::ID_NONE, int additional_value = -1)
         {
           if(!tracing_enabled) return -1;
           if(!trace_threads && !trace_thread_counter) return -1;
-          if(tasks[thread_id].size() == max_num_events_per_thread)
+	  if(unlikely(tasks[thread_id].Size() == max_num_events_per_thread))
             StopTracing();
-          int task_num = tasks[thread_id].size();
-          tasks[thread_id].push_back( Task{thread_id, id, id_type, additional_value, GetTime(), 0.0} );
+          int task_num = tasks[thread_id].Size();
+          tasks[thread_id].Append( Task{thread_id, id, id_type, additional_value, GetTime()} );
           return task_num;
         }
 
@@ -147,7 +156,7 @@ namespace ngstd
           if(!tracing_enabled) return;
           if(jobs.size() == max_num_events_per_thread)
             StopTracing();
-          jobs.push_back( Job{job_id, &type, GetTime(), 0.0 } );
+          jobs.push_back( Job{job_id, &type, GetTime()} );
         }
 
       void StopJob()

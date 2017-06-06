@@ -51,6 +51,9 @@ namespace ngfem
   
     int cachecomp;
 
+    /// define only on some sub-domains
+    shared_ptr<BitArray> definedon_element = nullptr;
+    
   
   protected:
     void DeleteCurveIPs ( void );
@@ -94,6 +97,24 @@ namespace ngfem
     /// defined only on some subdomains
     void SetDefinedOn (const BitArray & adefinedon);
 
+    /// defined only on elements (elements/boundary elements/facets/..)
+    void SetDefinedOnElements (shared_ptr<BitArray> adefinedonelem)
+    {
+      definedon_element = adefinedonelem;
+    }
+
+    /// defined only on some elements/facets/boundary elements
+    shared_ptr<BitArray> GetDefinedOnElements () const { return definedon_element; } 
+    
+    /// Is Integrator defined on this element ?
+    bool DefinedOnElement (int elem) const
+    {
+      if (definedon_element != nullptr && !definedon_element->Test(elem))
+        return false;
+      else
+        return true;
+    }
+    
     /// defined only on some subdomains
     const BitArray & GetDefinedOn () const { return definedon; } 
 
@@ -1593,7 +1614,122 @@ namespace ngfem
   };
 
 
+  class CalcFluxDifferentialOperator : public DifferentialOperator
+  {
+    shared_ptr<BilinearFormIntegrator> bfi;
+    bool applyd;
+  public:
+    CalcFluxDifferentialOperator (shared_ptr<BilinearFormIntegrator> _bfi, bool _applyd)
+      : DifferentialOperator(_bfi->DimFlux(), 1, _bfi->VB(), 0), bfi(_bfi)
+    { ; }
 
+    virtual void
+    CalcMatrix (const FiniteElement & fel,
+		const BaseMappedIntegrationPoint & mip,
+		SliceMatrix<double,ColMajor> mat,   
+		LocalHeap & lh) const
+    {
+      throw Exception ("CalcFluxDifferentialOperator::CalcMatrix not available");
+    }
+
+    virtual void
+    CalcMatrix (const FiniteElement & fel,
+		const BaseMappedIntegrationPoint & bmip,
+		SliceMatrix<Complex,ColMajor> mat, 
+		LocalHeap & lh) const
+    {
+      throw Exception ("CalcFluxDifferentialOperator::CalcMatrix not available");
+    }
+      
+    virtual void
+    CalcMatrix (const FiniteElement & fel,
+                const BaseMappedIntegrationRule & mir,
+		SliceMatrix<double,ColMajor> mat,   
+		LocalHeap & lh) const
+    {
+      throw Exception ("CalcFluxDifferentialOperator::CalcMatrix not available");
+    }
+
+    NGS_DLL_HEADER virtual void
+    CalcMatrix (const FiniteElement & fel,
+		const BaseMappedIntegrationRule & mir,
+		SliceMatrix<Complex,ColMajor> mat,   
+		LocalHeap & lh) const
+    {
+      throw Exception ("CalcFluxDifferentialOperator::CalcMatrix not available");
+    }
+      
+    
+    NGS_DLL_HEADER virtual void
+    CalcMatrix (const FiniteElement & fel,
+		const SIMD_BaseMappedIntegrationRule & mir,
+		BareSliceMatrix<SIMD<double>> mat) const
+    {
+      throw Exception ("CalcFluxDifferentialOperator::CalcMatrix not available");
+    }
+
+    virtual void
+    Apply (const FiniteElement & fel,
+	   const BaseMappedIntegrationPoint & mip,
+	   FlatVector<double> x, 
+	   FlatVector<double> flux,
+	   LocalHeap & lh) const
+    {
+      bfi->CalcFlux(fel, mip, x, flux, applyd, lh);
+    }
+
+    NGS_DLL_HEADER virtual void
+    Apply (const FiniteElement & fel,
+	   const BaseMappedIntegrationPoint & mip,
+	   FlatVector<Complex> x, 
+	   FlatVector<Complex> flux,
+	   LocalHeap & lh) const
+    {
+      bfi->CalcFlux(fel, mip, x, flux, applyd, lh);
+    }
+
+    NGS_DLL_HEADER virtual void
+    Apply (const FiniteElement & fel,
+	   const BaseMappedIntegrationRule & mir,
+	   FlatVector<double> x, 
+	   FlatMatrix<double> flux,
+	   LocalHeap & lh) const
+    {
+      bfi->CalcFlux(fel, mir, x, flux, applyd, lh);
+    }
+
+    NGS_DLL_HEADER virtual void
+    Apply (const FiniteElement & fel,
+	   const BaseMappedIntegrationRule & mir,
+	   FlatVector<Complex> x, 
+	   FlatMatrix<Complex> flux,
+	   LocalHeap & lh) const
+    {
+      bfi->CalcFlux(fel, mir, x, flux, applyd, lh);
+    }
+
+
+    NGS_DLL_HEADER virtual void
+    Apply (const FiniteElement & fel,
+	   const SIMD_BaseMappedIntegrationRule & mir,
+	   BareSliceVector<double> x, 
+	   BareSliceMatrix<SIMD<double>> flux) const
+    {
+      // bfi->CalcFlux(fel, mir, x, flux, applyd);
+      throw ExceptionNOSIMD (string("CalcFluxDiffop: simd is not supported"));
+    }
+
+    NGS_DLL_HEADER virtual void
+    Apply (const FiniteElement & fel,
+	   const SIMD_BaseMappedIntegrationRule & mir,
+	   BareSliceVector<Complex> x, 
+	   BareSliceMatrix<SIMD<Complex>> flux) const
+    {
+      // bfi->CalcFlux(fel, mir, x, flux, applyd);
+      throw ExceptionNOSIMD (string("CalcFluxDiffop: simd is not supported"));
+    }
+    
+  };
 
 
   /// container for all integrators
@@ -1756,24 +1892,4 @@ namespace ngfem
 
 
 }
-namespace ngstd
-{
-  template <>
-  struct PyWrapperTraits<ngfem::LinearFormIntegrator > {
-    typedef PyWrapperClass<ngfem::LinearFormIntegrator> type;
-  };
-  template <>
-  struct PyWrapperTraits<ngfem::BilinearFormIntegrator > {
-    typedef PyWrapperClass<ngfem::BilinearFormIntegrator> type;
-  };
-  template <>
-  struct PyWrapperTraits<ngfem::CompoundBilinearFormIntegrator > {
-    typedef PyWrapperDerived<ngfem::CompoundBilinearFormIntegrator , ngfem::BilinearFormIntegrator > type;
-  };
-  template <>
-  struct PyWrapperTraits<ngfem::BlockBilinearFormIntegrator > {
-    typedef PyWrapperDerived<ngfem::BlockBilinearFormIntegrator , ngfem::BilinearFormIntegrator > type;
-  };
-}
-
 #endif

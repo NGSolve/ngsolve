@@ -450,7 +450,7 @@ namespace ngcomp
     virtual int VWidth() const { return bfa->GetMatrix().VHeight(); }
 
     
-    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const
+    virtual void Mult (const BaseVector & x, BaseVector & y) const
     {
       static Timer timer ("Apply BDDC preconditioner");
       static Timer timerifs ("Apply BDDC preconditioner - apply ifs");

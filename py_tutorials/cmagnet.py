@@ -30,33 +30,35 @@ mesh.Curve(5)
 
 ngsglobals.msg_level = 5
 
-V = HCurl(mesh, order=4, dirichlet="outer", flags = { "nograds" : True })
+fes = HCurl(mesh, order=4, dirichlet="outer", flags = { "nograds" : True })
 
 # u and v refer to trial and test-functions in the definition of forms below
-u = V.TrialFunction()
-v = V.TestFunction()
+u = fes.TrialFunction()
+v = fes.TestFunction()
 
 mur = { "core" : 1000, "coil" : 1, "air" : 1 }
 mu0 = 1.257e-6
 nu_coef = [ 1/(mu0*mur[mat]) for mat in mesh.GetMaterials() ]
 print ("nu_coef=", nu_coef)
 
-nu = DomainConstantCF (nu_coef)
-a = BilinearForm(V, symmetric=True)
+nu = CoefficientFunction(nu_coef)
+a = BilinearForm(fes, symmetric=True)
 a += SymbolicBFI(nu*curl(u)*curl(v) + 1e-6*nu*u*v)
 
 c = Preconditioner(a, type="bddc")
 # c = Preconditioner(a, type="multigrid", flags = { "smoother" : "block" } )
-a.Assemble()
 
-f = LinearForm(V)
-f += SymbolicLFI(CoefficientFunction((y,-x,0)) * v, definedon=mesh.Materials("coil"))
-f.Assemble()
+f = LinearForm(fes)
+f += SymbolicLFI(CoefficientFunction((y,0.05-x,0)) * v, definedon=mesh.Materials("coil"))
 
-u = GridFunction(V)
+u = GridFunction(fes)
 
-solver = CGSolver(mat=a.mat, pre=c.mat)
-u.vec.data = solver * f.vec
+
+with TaskManager():
+    a.Assemble()
+    f.Assemble()
+    solver = CGSolver(mat=a.mat, pre=c.mat)
+    u.vec.data = solver * f.vec
 
 
 Draw (u.Deriv(), mesh, "B-field", draw_surf=False)

@@ -9,6 +9,8 @@ mesh.Curve(5)
 # define constant hpref = 4
 
 SetPMLParameters (rad=0.8, alpha=2)
+p=pml.Radial((0,0),0.8,2j)
+mesh.SetPML(p,'pml')
 
 fes = H1(mesh, order=4, complex=True, dirichlet=[3])
 u = fes.TrialFunction()

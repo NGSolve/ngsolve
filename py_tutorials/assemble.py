@@ -11,7 +11,7 @@ lap = BFI ("laplace", coef=4.8)
 for el in v.Elements():
     print ("el: ", el)
     mat = lap.CalcElementMatrix(el.GetFE(), el.GetTrafo())
-    print ("Element matrix of element ", el, ":\n", mat)
+    print ("Element matrix of element", ElementId(el), ":\n", mat)
     print ("dofs: ", el.dofs, "\n")
 
 

@@ -5,7 +5,6 @@ using namespace ngsolve;
 
 
 typedef GridFunction GF;
-typedef PyWrapper<GF> PyGF;
 
 extern void ExportBVP(py::module &m);
 extern void ExportDrawFlux(py::module &m);
@@ -14,7 +13,7 @@ void NGS_DLL_HEADER ExportNgsolve(py::module &m ) {
 
     m.def ("Tcl_Eval", &Ng_TclCmd);
 
-    m.def ("Redraw", 
+    m.def ("_Redraw",
             ([](bool blocking) {Ng_Redraw(blocking);}),
              py::arg("blocking")=false
              );
@@ -89,10 +88,13 @@ void NGS_DLL_HEADER ExportNgsolve(py::module &m ) {
       ;
     
     m.def ("Draw",
-             [](PyGF gf, int sd, bool autoscale, double min, double max)
+           [](shared_ptr<GridFunction> gf, int sd, bool autoscale, double min, double max)
               {
+                cout << "in draw" << endl;
+                cout << "gf in draw = " << *gf << endl;
+                cout << "dims of gf =  " << gf->Dimensions() << endl;
                 gf->GetMeshAccess()->SelectMesh();
-                Visualize (gf.Get(), gf->GetName());
+                Visualize (gf, gf->GetName());
                 if (gf->Dimension() == 1)
                   Ng_TclCmd (string("set ::visoptions.scalfunction ")+gf->GetName()+":1;\n");
                 else
@@ -111,21 +113,27 @@ void NGS_DLL_HEADER ExportNgsolve(py::module &m ) {
              );
 
     
-    m.def ("Draw", FunctionPointer
-             ([](PyWrapper<CoefficientFunction> cf, shared_ptr<MeshAccess> ma, string name,
+    m.def ("Draw", [](shared_ptr<CoefficientFunction> cf, shared_ptr<MeshAccess> ma, string name,
                  int sd, bool autoscale, double min, double max,
                  bool draw_vol, bool draw_surf) 
               {
                 ma->SelectMesh();
-                netgen::SolutionData * vis = new VisualizeCoefficientFunction (ma, cf.Get());
+                netgen::SolutionData * vis;
+                if(dynamic_cast<ProlongateCoefficientFunction *>(cf.get()))
+                {
+                  shared_ptr<CoefficientFunction> wrapper(new ProlongateCoefficientFunctionVisualization(*static_cast<ProlongateCoefficientFunction *>(cf.get())));
+                  vis = new VisualizeCoefficientFunction (ma, wrapper);
+                }
+                else
+                  vis = new VisualizeCoefficientFunction (ma, cf);
                 Ng_SolutionData soldata;
                 Ng_InitSolutionData (&soldata);
   
                 soldata.name = (char*)name.c_str();
                 soldata.data = 0;
-                soldata.components = cf.Get() -> Dimension();
+                soldata.components = cf -> Dimension();
                 if (cf->IsComplex()) soldata.components *= 2;
-                soldata.iscomplex = cf.Get() -> IsComplex();
+                soldata.iscomplex = cf -> IsComplex();
                 soldata.draw_surface = draw_surf;
                 soldata.draw_volume  = draw_vol; 
                 /* 
@@ -155,7 +163,7 @@ void NGS_DLL_HEADER ExportNgsolve(py::module &m ) {
                 Ng_TclCmd ("Ng_Vis_Set parameters;\n");
                 Ng_TclCmd ("set ::selectvisual solution;\n");
 
-              }),
+              },
               py::arg("cf"),py::arg("mesh"),py::arg("name"),
               py::arg("sd")=2,py::arg("autoscale")=true,
 	      py::arg("min")=0.0,py::arg("max")=1.0,
