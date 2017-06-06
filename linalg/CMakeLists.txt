@@ -25,7 +25,6 @@ PRIVATE ${MUMPS_LIBRARIES} ${UMFPACK_LIBRARIES} ${SCALAPACK_LIBRARY} ${MPI_Fortr
         # Create dummy fortran lib
         # This forces cmake to link fortran runtime libraries to ngla
         file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/dummy.f "")
-        enable_language(Fortran)
         add_library(dummy_fortran ${CMAKE_CURRENT_BINARY_DIR}/dummy.f)
         target_link_libraries(ngla PUBLIC dummy_fortran )
         install( TARGETS dummy_fortran ${ngs_install_dir} )
