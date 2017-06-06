@@ -132,6 +132,7 @@ endif (ADDITIONAL_PATHS)
 #######################################################################
 # use rpath
 set(CMAKE_MACOSX_RPATH TRUE)
+SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 set(CMAKE_INSTALL_RPATH "${NETGEN_RPATH_TOKEN};${NETGEN_RPATH_TOKEN}/${NETGEN_RPATH}")
 
 #######################################################################
@@ -139,10 +140,12 @@ set(ngs_install_dir EXPORT ngsolve-targets RUNTIME DESTINATION ${NGSOLVE_INSTALL
 install(EXPORT ngsolve-targets DESTINATION ${NGSOLVE_INSTALL_DIR_CMAKE})
 
 list(APPEND NGSOLVE_COMPILE_DEFINITIONS USE_TIMEOFDAY)
+list(APPEND NGSOLVE_INCLUDE_DIRS $<INSTALL_INTERFACE:${NETGEN_INSTALL_DIR_INCLUDE}>)
+list(APPEND NGSOLVE_INCLUDE_DIRS $<INSTALL_INTERFACE:${NETGEN_INSTALL_DIR_INCLUDE}/include>)
 
 include_directories (BEFORE ${PROJECT_SOURCE_DIR}/include)
 include_directories (BEFORE ${PROJECT_BINARY_DIR})
-list(APPEND NGSOLVE_INCLUDE_DIRS ${NETGEN_INCLUDE_DIRS})
+include_directories (AFTER ${NETGEN_INCLUDE_DIRS})
 
 if(NETGEN_USE_GUI)
   file(RELATIVE_PATH BIN_TO_LIB_RELPATH ${NETGEN_BINARY_DIR} ${NETGEN_LIBRARY_DIR})
@@ -434,8 +437,9 @@ if (NETGEN_USE_MPI)
     if(USE_MKL AND NOT MKL_STATIC)
       set(ngspy_preload_libs "${ngspy_preload_libs}:${MKL_CORE_LIBRARY}:${MKL_THREADING_LIBRARY}:${MKL_INTERFACE_LIBRARY}:${MKL_BLACS_LIBRARY}")
     endif()
+    find_program(BASH bash)
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngspy
-"#! /usr/bin/bash
+"#! ${BASH}
 LD_PRELOAD=$LD_PRELOAD:${ngspy_preload_libs} ${NETGEN_PYTHON_EXECUTABLE} $*
 ")
     install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngspy DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve_devel )
@@ -461,7 +465,7 @@ configure_file(
 #     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/NGSolveConfig.cmake.in
-  ${CMAKE_CURRENT_BINARY_DIR}/NGSolveConfig.cmake @ONLY)
+  ${CMAKE_CURRENT_BINARY_DIR}/NGSolveConfig.cmake @ONLY ESCAPE_QUOTES)
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/NGSolveConfig.cmake DESTINATION ${NGSOLVE_INSTALL_DIR_CMAKE})
 

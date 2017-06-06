@@ -1474,14 +1474,13 @@ void Parallel_InitPython ()
       py::module m = py::module::import("__main__");
       pyenv = PythonEnvironment (m);
       {
-	m.def ("SetDefaultPDE", 
-	       FunctionPointer([](shared_ptr<PDE> apde) 
+	m.def ("SetDefaultPDE", [](shared_ptr<PDE> apde)
 			       {  
 				 pde = apde;
 				 pde->GetMeshAccess()->SelectMesh();
 				 Ng_Redraw();
 				 return; 
-			       }));
+			       });
 	m.def ("Redraw", 
 	       []() {Ng_Redraw();});
       }

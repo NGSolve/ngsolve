@@ -20,7 +20,7 @@ target_include_directories(ngstd PUBLIC ${NGSOLVE_INCLUDE_DIRS})
 add_dependencies( ngstd generate_version_file )
 
 if(NOT WIN32)
-    target_link_libraries(ngstd ${MPI_CXX_LIBRARIES} ${NETGEN_PYTHON_LIBRARIES} ${NUMA_LIB})
+    target_link_libraries(ngstd ${MKL_MINIMAL_LIBRARY} ${MPI_CXX_LIBRARIES} ${NETGEN_PYTHON_LIBRARIES} ${NUMA_LIB})
     install( TARGETS ngstd ${ngs_install_dir} )
 endif(NOT WIN32)
 
