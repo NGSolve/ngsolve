@@ -35,17 +35,20 @@ namespace ngfem
   {
     for (int i = 0; i < 2*level; i++)
       ost << ' ';
-    ost << "coef " << GetName()
-        << (IsComplex() ? " complex" : " real")
-        << " dim=" << Dimension()
-        << endl;
+    ost << "coef " << GetDescription() << ","
+        << (IsComplex() ? " complex" : " real");
+    if (Dimensions().Size() == 1)
+      ost << ", dim=" << Dimension();
+    else if (Dimensions().Size() == 2)
+      ost << ", dims = " << Dimensions()[0] << " x " << Dimensions()[1];
+    ost << endl;
 
     Array<CoefficientFunction*> input = InputCoefficientFunctions();
     for (int i = 0; i < input.Size(); i++)
       input[i] -> PrintReportRec (ost, level+1);
   }
   
-  string CoefficientFunction :: GetName () const
+  string CoefficientFunction :: GetDescription () const
   {
     return typeid(*this).name();
   }    
@@ -216,7 +219,7 @@ namespace ngfem
   ///
   ParameterCoefficientFunction ::   
   ParameterCoefficientFunction (double aval) 
-    : CoefficientFunction(1, false), val(aval) 
+    : CoefficientFunctionNoDerivative(1, false), val(aval)
   { ; }
 
   ParameterCoefficientFunction ::
@@ -241,7 +244,7 @@ namespace ngfem
     if(code.deriv==1) type = "AutoDiff<1,"+type+">";
     if(code.deriv==2) type = "AutoDiffDiff<1,"+type+">";
     stringstream s;
-    s << "*reinterpret_cast<double*>(" << &val << ")";
+    s << "*reinterpret_cast<double*>(" << code.AddPointer(&val) << ")";
     code.body += Var(index).Declare(type);
     code.body += Var(index).Assign(s.str(), false);
   }
@@ -250,7 +253,7 @@ namespace ngfem
   
   DomainConstantCoefficientFunction :: 
   DomainConstantCoefficientFunction (const Array<double> & aval)
-    : CoefficientFunctionNoDerivative(1, false), val(aval) { ; }
+    : BASE(1, false), val(aval) { ; }
   
   double DomainConstantCoefficientFunction :: Evaluate (const BaseMappedIntegrationPoint & ip) const
   {
@@ -266,12 +269,26 @@ namespace ngfem
     values = val[elind];
   }
 
-  
+  /*
   void DomainConstantCoefficientFunction :: Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const
   {
     int elind = ir[0].GetTransformation().GetElementIndex();
     CheckRange (elind);        
     values.AddSize(Dimension(), ir.Size()) = val[elind];
+  }
+  */
+  template <typename T>
+  void DomainConstantCoefficientFunction ::
+  T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<T>> values) const
+  {
+    int elind = ir[0].GetTransformation().GetElementIndex();
+    CheckRange (elind);        
+    // values.AddSize(Dimension(), ir.Size()) = val[elind];
+
+    size_t nv = ir.Size();    
+    __assume (nv > 0);
+    for (size_t i = 0; i < nv; i++)
+      values(0,i) = val[elind];
   }
   
 
@@ -2686,6 +2703,41 @@ public:
   }
 
   virtual void EvaluateDeriv(const SIMD_BaseMappedIntegrationRule & mir,
+                             AFlatMatrix<> result,
+                             AFlatMatrix<> deriv) const
+  {
+    FlatArray<int> hdims = Dimensions();
+
+    STACK_ARRAY(SIMD<double>, hmema, mir.Size()*hdims[0]*inner_dim);
+    STACK_ARRAY(SIMD<double>, hmemb, mir.Size()*inner_dim);
+    AFlatMatrix<double> va(hdims[0]*inner_dim, mir.IR().GetNIP(), &hmema[0]);
+    AFlatMatrix<double> vb(inner_dim, mir.IR().GetNIP(), &hmemb[0]);
+    STACK_ARRAY(SIMD<double>, hmemda, mir.Size()*hdims[0]*inner_dim);
+    STACK_ARRAY(SIMD<double>, hmemdb, mir.Size()*inner_dim);
+    AFlatMatrix<double> dva(hdims[0]*inner_dim, mir.IR().GetNIP(), &hmemda[0]);
+    AFlatMatrix<double> dvb(inner_dim, mir.IR().GetNIP(), &hmemdb[0]);
+    c1->EvaluateDeriv (mir, va, dva);
+    c2->EvaluateDeriv (mir, vb, dvb);
+    
+    // AFlatMatrix<> va = *input[0], vb = *input[1];
+    // AFlatMatrix<> dva = *dinput[0], dvb = *dinput[1];
+
+    result = 0.0;
+    deriv = 0.0;
+    for (size_t j = 0; j < hdims[0]; j++)
+      for (size_t k = 0; k < inner_dim; k++)
+        {
+          size_t row = j*inner_dim+k;
+          for (size_t i = 0; i < mir.Size(); i++)
+            result.Get(j,i) += va.Get(row,i)*vb.Get(k,i);
+          for (size_t i = 0; i < mir.Size(); i++)
+            deriv.Get(j,i) += dva.Get(row,i)*vb.Get(k,i) + va.Get(row,i)*dvb.Get(k,i);
+        }
+  }
+
+  
+
+  virtual void EvaluateDeriv(const SIMD_BaseMappedIntegrationRule & mir,
                              FlatArray<AFlatMatrix<>*> input,
                              FlatArray<AFlatMatrix<>*> dinput,
                              AFlatMatrix<> result,
@@ -3007,6 +3059,30 @@ public:
     
   }
 
+    virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & mir,
+                                AFlatMatrix<> result,
+                                AFlatMatrix<> deriv) const
+    {
+      FlatArray<int> dims = Dimensions();
+      size_t dim0 = dims[0], dim1 = dims[1];
+      STACK_ARRAY(SIMD<double>, hmem, dims[0]*dims[1]*mir.Size());
+      AFlatMatrix<double> in0 (dims[0]*dims[1], mir.IR().GetNIP(), &hmem[0]);
+      STACK_ARRAY(SIMD<double>, hdmem, dims[0]*dims[1]*mir.Size());
+      AFlatMatrix<double> din0 (dims[0]*dims[1], mir.IR().GetNIP(), &hdmem[0]);
+
+      c1->EvaluateDeriv (mir, in0, din0);
+      size_t s = mir.Size();
+
+      for (size_t j = 0; j < dim0; j++)
+        for (size_t k = 0; k < dim1; k++)
+          for (size_t i = 0; i < s; i++)
+            result.Get(j*dim1+k, i) = in0.Get(k*dim0+j, i);
+
+      for (int j = 0; j < dim0; j++)
+        for (int k = 0; k < dim1; k++)
+          for (size_t i = 0; i < s; i++)
+            deriv.Get(j*dim1+k, i) = din0.Get(k*dim0+j, i);
+    }
 
     virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & mir,
                                 FlatArray<AFlatMatrix<>*> input,
@@ -3405,9 +3481,9 @@ public:
                               AFlatMatrix<double> values, AFlatMatrix<double> deriv) const
   {
     STACK_ARRAY(SIMD<double>, hmem, mir.Size()*dim1);
-    AFlatMatrix<> v1(dim1, mir.Size(), hmem);
+    AFlatMatrix<> v1(dim1, mir.IR().GetNIP(), hmem);
     STACK_ARRAY(SIMD<double>, hdmem, mir.Size()*dim1);
-    AFlatMatrix<> dv1(dim1, mir.Size(), hdmem);
+    AFlatMatrix<> dv1(dim1, mir.IR().GetNIP(), hdmem);
     
     c1->EvaluateDeriv (mir, v1, dv1);
     values.Row(0) = v1.Row(comp);
@@ -3683,7 +3759,7 @@ public:
           values.Row(i) = then_values.Row(i);
         else
           values.Row(i) = else_values.Row(i);
-      
+
       // for (int i = 0; i < ir.Size(); i++)
       //   values(i) = (if_values(i) > 0) ? then_values(i) : else_values(i);
     }
@@ -3702,7 +3778,6 @@ public:
       cf_if->Evaluate (ir, if_values);
       cf_then->Evaluate (ir, then_values);
       cf_else->Evaluate (ir, else_values);
-
       for (size_t k = 0; k < dim; k++)
         for (size_t i = 0; i < nv; i++)
           values(k,i) = ngstd::IfPos (if_values.Get(i),
@@ -3713,15 +3788,16 @@ public:
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
                            AFlatMatrix<double> values) const
     {
+      size_t nv = ir.Size(), dim = Dimension();      
       auto if_values = *input[0];
       auto then_values = *input[1];
       auto else_values = *input[2];
       
-      for (int k = 0; k < values.Height(); k++)
-        for (int i = 0; i < values.VWidth(); i++)
+      for (size_t k = 0; k < dim; k++)
+        for (size_t i = 0; i < nv; i++)
           values.Get(k,i) = ngstd::IfPos (if_values.Get(i),
                                           then_values.Get(k,i),
-                                          else_values.Get(k,i)); // .Data();
+                                          else_values.Get(k,i)); 
     }
 
     
@@ -3799,6 +3875,16 @@ public:
             values.Row(i) = else_values.Row(i);
             deriv.Row(i) = else_deriv.Row(i);
           }
+      /*
+      *testout << "IfPos::std" << endl
+               << "if = " << endl << Trans(if_values)
+               << "then = " << endl << Trans(then_values)
+               << "then_deriv" << endl << Trans(then_deriv)
+               << "else = " << endl << Trans(else_values)
+               << "else_deriv" << endl << Trans(else_deriv)
+               << "val = " << endl << Trans(values)
+               << "deriv = " << endl << Trans(deriv);
+      */
     }
 
     /*
@@ -3859,6 +3945,70 @@ public:
     virtual void PrintReportRec (ostream & ost, int level) const;
     virtual string GetName () const;
     */
+
+
+    virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
+                                AFlatMatrix<> values,
+                                AFlatMatrix<> deriv) const
+    {
+      int dim = Dimension();
+      STACK_ARRAY(SIMD<double>, hmem1, ir.Size());
+      AFlatMatrix<> if_values(1, ir.IR().GetNIP(), hmem1);
+      STACK_ARRAY(SIMD<double>, hmem2, ir.Size()*dim);
+      AFlatMatrix<> then_values(dim, ir.IR().GetNIP(), hmem2);
+      STACK_ARRAY(SIMD<double>, hmem3, ir.Size()*dim);
+      AFlatMatrix<> else_values(dim, ir.IR().GetNIP(), hmem3);
+      STACK_ARRAY(SIMD<double>, hmem4, ir.Size()*dim);
+      AFlatMatrix<> then_deriv(dim, ir.IR().GetNIP(), hmem4);
+      STACK_ARRAY(SIMD<double>, hmem5, ir.Size()*dim);
+      AFlatMatrix<> else_deriv(dim, ir.IR().GetNIP(), hmem5);
+
+      cf_if->Evaluate (ir, if_values);
+      cf_then->EvaluateDeriv (ir, then_values, then_deriv);
+      cf_else->EvaluateDeriv (ir, else_values, else_deriv);
+      
+      for (int i = 0; i < ir.Size(); i++)
+        for (int j = 0; j < dim; j++)
+          {
+            values.Get(j,i) = IfPos(if_values.Get(0,i), then_values.Get(j,i), else_values.Get(j,i));
+            deriv.Get(j,i) = IfPos(if_values.Get(0,i), then_deriv.Get(j,i), else_deriv.Get(j,i));
+          }
+      /*
+      *testout << "IfPos::simd" << endl
+               << "ifval = " << endl << if_values
+               << "then-val = " << endl << then_values
+               << "then-dval = " << endl << then_deriv
+               << "else-val = " << endl << else_values
+               << "else-dval = " << endl << else_deriv
+               << "val = " << endl << values
+               << "deriv = " << endl << deriv;
+      */
+    }
+
+    virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
+                                FlatArray<AFlatMatrix<>*> input,
+                                FlatArray<AFlatMatrix<>*> dinput,
+                                AFlatMatrix<> result,
+                                AFlatMatrix<> deriv) const
+    {
+      size_t nv = ir.Size(), dim = Dimension();      
+      auto if_values = *input[0];
+      auto then_values = *input[1];
+      auto else_values = *input[2];
+      auto then_deriv = *dinput[1];
+      auto else_deriv = *dinput[2];
+      
+      for (size_t k = 0; k < dim; k++)
+        for (size_t i = 0; i < nv; i++)
+          {
+            result.Get(k,i) = ngstd::IfPos (if_values.Get(i),
+                                            then_values.Get(k,i),
+                                            else_values.Get(k,i));
+            deriv.Get(k,i) = ngstd::IfPos (if_values.Get(i),
+                                           then_deriv.Get(k,i),
+                                           else_deriv.Get(k,i));
+          }
+    }
     
     virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
     {
@@ -4219,12 +4369,26 @@ public:
 
 // ////////////////////////// Coordinate CF ////////////////////////
 
-  class CoordCoefficientFunction : public T_CoefficientFunction<CoordCoefficientFunction>
+  class CoordCoefficientFunction
+    : public T_CoefficientFunction<CoordCoefficientFunction, CoefficientFunctionNoDerivative>
   {
     int dir;
-    typedef T_CoefficientFunction<CoordCoefficientFunction> BASE;
+    typedef T_CoefficientFunction<CoordCoefficientFunction, CoefficientFunctionNoDerivative> BASE;
   public:
     CoordCoefficientFunction (int adir) : BASE(1, false), dir(adir) { ; }
+    virtual string GetDescription () const
+    {
+      string dirname;
+      switch (dir)
+        {
+        case 0: dirname = "x"; break;
+        case 1: dirname = "y"; break;
+        case 2: dirname = "z"; break;
+        default: dirname = ToString(dir);
+        }
+      return string("coordinate ")+dirname;
+    }
+
     using BASE::Evaluate;
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
     {
@@ -4239,7 +4403,14 @@ public:
       const TPMappedIntegrationRule * tpmir = dynamic_cast<const TPMappedIntegrationRule *>(&ir);
       if(!tpmir)
         {
-          result.Col(0) = ir.GetPoints().Col(dir);
+          if (!ir.IsComplex())
+            result.Col(0) = ir.GetPoints().Col(dir);
+          else
+            {
+              auto pnts = ir.GetPointsComplex().Col(dir);
+              for (auto i : Range(ir.Size()))
+                result(i,0) = pnts(i).real();
+            }
           return;
         }
       if(dir<=2)
@@ -4288,15 +4459,6 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
 }
 
 
-/*
-namespace ngstd {
-  template <>
-  struct PyWrapperTraits<CoordCoefficientFunction> {
-    typedef PyWrapperDerived<CoordCoefficientFunction, ngfem::CoefficientFunction> type;
-  };
-}
-*/
-
   // ///////////////////////////// Compiled CF /////////////////////////
 // int myglobalvar;
 // int myglobalvar_eval;
@@ -4311,6 +4473,7 @@ namespace ngstd {
     shared_ptr<CoefficientFunction> cf;
     Array<CoefficientFunction*> steps;
     DynamicTable<int> inputs;
+    size_t max_inputsize;
     Array<int> dim;
     int totdim;
     Array<bool> is_complex;
@@ -4347,6 +4510,7 @@ namespace ngstd {
         cout << IM(3) << typeid(*cf).name() << endl;
       
       inputs = DynamicTable<int> (steps.Size());
+      max_inputsize = 0;
       
       cf -> TraverseTree
         ([&] (CoefficientFunction & stepcf)
@@ -4355,6 +4519,7 @@ namespace ngstd {
            if (!inputs[mypos].Size())
              {
                Array<CoefficientFunction*> in = stepcf.InputCoefficientFunctions();
+               max_inputsize = max2(in.Size(), max_inputsize);
                for (auto incf : in)
                  inputs.Add (mypos, steps.Pos(incf));
              }
@@ -4364,6 +4529,8 @@ namespace ngstd {
       if(realcompile)
       {
         stringstream s;
+        string pointer_code;
+        string top_code = "";
         s << "#include<comp.hpp>" << endl;
         s << "using namespace ngcomp;" << endl;
         s << "extern \"C\" {" << endl;
@@ -4380,6 +4547,9 @@ namespace ngstd {
               cout << IM(3) << "step " << i << ": " << typeid(*steps[i]).name() << endl;
               steps[i]->GenerateCode(code, inputs[i],i);
             }
+
+            pointer_code += code.pointer;
+            top_code += code.top;
 
             // set results
             string res_type = "double";
@@ -4409,7 +4579,17 @@ namespace ngstd {
                  ii++;
             });
 
+            if(code.header.find("gridfunction_local_heap") != std::string::npos)
+            {
+                code.header.insert(0, "LocalHeapMem<100000> gridfunction_local_heap(\"compiled_cf_gfheap\");\n");
+                code.header.insert(0, "ArrayMem<int, 100> gridfunction_dnums;\n");
+                code.header.insert(0, "ArrayMem<double, 100> gridfunction_elu;\n");
+            }
+
             // Function name
+#ifdef WIN32
+            s << "__declspec(dllexport) ";
+#endif
             s << "void CompiledEvaluate";
             if(deriv==2) s << "D";
             if(deriv>=1) s << "Deriv";
@@ -4430,7 +4610,15 @@ namespace ngstd {
 
         }
         s << "}" << endl;
-        library.Compile( s.str() );
+        string file_code = top_code + s.str();
+        std::vector<string> codes;
+        codes.push_back(file_code);
+        if(pointer_code.size()) {
+          pointer_code = "extern \"C\" {\n" + pointer_code;
+          pointer_code += "}\n";
+          codes.push_back(pointer_code);
+        }
+        library.Compile( codes );
         compiled_function_simd = library.GetFunction<lib_function_simd>("CompiledEvaluateSIMD");
         compiled_function = library.GetFunction<lib_function>("CompiledEvaluate");
         compiled_function_simd_deriv = library.GetFunction<lib_function_simd_deriv>("CompiledEvaluateDerivSIMD");
@@ -4481,8 +4669,7 @@ namespace ngstd {
       ArrayMem<double, 10000> hmem(ir.Size()*totdim);
       int mem_ptr = 0;
       ArrayMem<FlatMatrix<>,100> temp(steps.Size());
-      ArrayMem<FlatMatrix<>*, 100> in(steps.Size());
-
+      ArrayMem<FlatMatrix<>*, 100> in(max_inputsize);
       for (int i = 0; i < steps.Size(); i++)
         {
           temp[i].AssignMemory(ir.Size(), dim[i], &hmem[mem_ptr]);
@@ -4497,8 +4684,10 @@ namespace ngstd {
           auto inputi = inputs[i];
           for (int nr : Range(inputi))
             in[nr] = &temp[inputi[nr]];
-
           steps[i] -> Evaluate (ir, in.Range(0, inputi.Size()), temp[i]);
+
+
+
           // timers[i]->Stop();
         }
       values = temp.Last();
@@ -4516,7 +4705,7 @@ namespace ngstd {
       STACK_ARRAY(SIMD<double>, hmem, ir.Size()*totdim);      
       int mem_ptr = 0;
       ArrayMem<AFlatMatrix<double>,100> temp(steps.Size());
-      ArrayMem<AFlatMatrix<double>*,100> in(steps.Size());
+      ArrayMem<AFlatMatrix<double>*,100> in(max_inputsize);
 
       for (int i = 0; i < steps.Size(); i++)
         {
@@ -4674,7 +4863,7 @@ namespace ngstd {
       int mem_ptr = 0;
       ArrayMem<AFlatMatrix<double>,100> temp(steps.Size());
       ArrayMem<AFlatMatrix<double>,100> dtemp(steps.Size());
-      ArrayMem<AFlatMatrix<double>*,100> in(steps.Size()), din(steps.Size());
+      ArrayMem<AFlatMatrix<double>*,100> in(max_inputsize), din(max_inputsize);
 
       for (int i = 0; i < steps.Size(); i++)
         {
@@ -4718,7 +4907,7 @@ namespace ngstd {
       ArrayMem<AFlatMatrix<double>,100> temp(steps.Size());
       ArrayMem<AFlatMatrix<double>,100> dtemp(steps.Size());
       ArrayMem<AFlatMatrix<double>,100> ddtemp(steps.Size());
-      ArrayMem<AFlatMatrix<double>*,100> in(steps.Size()), din(steps.Size()), ddin(steps.Size());
+      ArrayMem<AFlatMatrix<double>*,100> in(max_inputsize), din(max_inputsize), ddin(max_inputsize);
 
       for (int i = 0; i < steps.Size(); i++)
         {

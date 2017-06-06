@@ -64,10 +64,11 @@ namespace ngcomp
       GridFunctionCoefficientFunction (shared_ptr<DifferentialOperator>(),
                                        shared_ptr<DifferentialOperator>()), // gridfunction-CF with null-ptr diffop
       */
-      GridFunctionCoefficientFunction (afespace->GetEvaluator(VOL), afespace->GetEvaluator(BND)),
+      GridFunctionCoefficientFunction (afespace->GetEvaluator(VOL), afespace->GetEvaluator(BND),
+                                       afespace->GetEvaluator(BBND)),
       fespace(afespace)
   {
-    GridFunctionCoefficientFunction::gf = shared_ptr<GridFunction>(this,NOOP_Deleter);
+    GridFunctionCoefficientFunction::gf = this;
     GridFunctionCoefficientFunction::fes = fespace;
 
     is_complex = fespace->IsComplex();
@@ -231,11 +232,11 @@ namespace ngcomp
     
     if (ma->GetDimension() == 2)
       {
-	bfi2d = fespace->GetIntegrator();
+	bfi2d = fespace->GetIntegrator(VOL);
       }
     else
       {
-	bfi3d = fespace->GetIntegrator();
+	bfi3d = fespace->GetIntegrator(VOL);
 	bfi2d = fespace->GetIntegrator(BND);
       }
 
@@ -912,10 +913,10 @@ namespace ngcomp
   shared_ptr<GridFunction> CreateGridFunction (shared_ptr<FESpace> space,
                                                const string & name, const Flags & flags)
   {
-    shared_ptr<GridFunction> gf 
-      ((GridFunction*)CreateVecObject  <T_GridFunction, GridFunction> // , const FESpace, const string, const Flags>
-       (space->GetDimension() * int(flags.GetNumFlag("cacheblocksize",1)), 
-       space->IsComplex(), space, name, flags));
+    shared_ptr<GridFunction> gf =
+      CreateSharedVecObject<T_GridFunction, GridFunction> 
+      (space->GetDimension() * int(flags.GetNumFlag("cacheblocksize",1)), 
+       space->IsComplex(), space, name, flags);
   
     gf->SetCacheBlockSize(int(flags.GetNumFlag("cacheblocksize",1)));
     
@@ -935,11 +936,17 @@ namespace ngcomp
 
   GridFunctionCoefficientFunction :: 
   GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, int acomp)
-    : CoefficientFunction(1, agf->GetFESpace()->IsComplex()), gf(agf), diffop (NULL), comp (acomp) 
+    : CoefficientFunction(1, agf->GetFESpace()->IsComplex()), gf(agf.get()), gf_shared_ptr(agf) /*, diffop (NULL)*/ , comp (acomp) 
   {
     fes = gf->GetFESpace();
     SetDimensions (gf->Dimensions());
-    diffop = gf->GetFESpace()->GetEvaluator();
+    /*
+    diffop = gf->GetFESpace()->GetEvaluator(VOL);
+    trace_diffop = gf->GetFESpace()->GetEvaluator(BND);
+    ttrace_diffop = gf->GetFESpace()->GetEvaluator(BBND);
+    */
+    for (auto vb : { VOL, BND, BBND })
+      diffop[vb] = gf->GetFESpace()->GetEvaluator(vb);
   }
 
   GridFunctionCoefficientFunction :: 
@@ -948,16 +955,26 @@ namespace ngcomp
 				   shared_ptr<DifferentialOperator> attrace_diffop,
                                    int acomp)
     : CoefficientFunction(1, false),
-      diffop (adiffop), trace_diffop(atrace_diffop), ttrace_diffop(attrace_diffop), comp (acomp) 
+      // diffop (adiffop), trace_diffop(atrace_diffop), ttrace_diffop(attrace_diffop),
+      diffop{adiffop,atrace_diffop, attrace_diffop},
+      comp (acomp) 
   {
     ; // SetDimensions (gf->Dimensions());
 
+    for (auto vb : { VOL, BND, BBND } )
+      if (diffop[vb])
+        {
+          SetDimensions (diffop[vb]->Dimensions());
+          break;
+        }
+    /*
     if (diffop)
       SetDimensions (diffop->Dimensions());
     else if (trace_diffop)
       SetDimensions (trace_diffop->Dimensions());
     else if (ttrace_diffop)
       SetDimensions (ttrace_diffop->Dimensions());
+    */
   }
 
   GridFunctionCoefficientFunction :: 
@@ -967,25 +984,44 @@ namespace ngcomp
 				   shared_ptr<DifferentialOperator> attrace_diffop,
                                    int acomp)
     : CoefficientFunction(1,agf->IsComplex()),
-      gf(agf), diffop (adiffop), trace_diffop(atrace_diffop), ttrace_diffop(attrace_diffop), comp (acomp) 
+      gf(agf.get()),
+      gf_shared_ptr(agf),
+      // diffop (adiffop), trace_diffop(atrace_diffop), ttrace_diffop(attrace_diffop),
+      diffop{adiffop,atrace_diffop,attrace_diffop},
+      comp (acomp) 
   {
-    fes = gf->GetFESpace();    
+    fes = gf->GetFESpace();
+    for (auto vb : { VOL, BND, BBND } )
+      if (diffop[vb])
+        {
+          SetDimensions (diffop[vb]->Dimensions());
+          break;
+        }
+    /*
     if (diffop)
       SetDimensions (diffop->Dimensions());
     else if (trace_diffop)
       SetDimensions (trace_diffop->Dimensions());
     else if (ttrace_diffop)
       SetDimensions (ttrace_diffop->Dimensions());
+    */
   }
   
   GridFunctionCoefficientFunction :: 
   GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, 
 				   shared_ptr<BilinearFormIntegrator> abfi, int acomp)
     : CoefficientFunction(1, agf->IsComplex()),
-      gf(agf), bfi (abfi), comp (acomp) 
+      gf(agf.get()), gf_shared_ptr(agf), /* bfi (abfi), */ comp (acomp) 
   {
     fes = gf->GetFESpace();
-    SetDimensions (gf->Dimensions());    
+    SetDimensions (gf->Dimensions());
+    diffop[abfi->VB()] = make_shared<CalcFluxDifferentialOperator> (abfi, false);
+    /*
+    if (bfi->VB() == VOL)
+    diffop = make_shared<CalcFluxDifferentialOperator> (bfi, false);
+    else if (bfi->VB() == BND)
+      diffop = make_shared<CalcFluxDifferentialOperator> (bfi, false);      
+    */
   }
 
 
@@ -996,26 +1032,34 @@ namespace ngcomp
   }
 
   int GridFunctionCoefficientFunction::Dimension() const
-  { 
+  {
+    for (auto vb : { VOL, BND, BBND })
+      if (diffop[vb])
+        return diffop[vb]->Dim();
+    /*
     if (diffop) return diffop->Dim();
     if (trace_diffop) return trace_diffop->Dim();
     if (bfi) return bfi->DimFlux();
     if (gf->GetFESpace()->GetEvaluator())
       return gf->GetFESpace()->GetEvaluator()->Dim();
-
+    */
     throw Exception(string ("don't know my dimension, space is ") +
                     typeid(*gf->GetFESpace()).name());
   }
 
   Array<int> GridFunctionCoefficientFunction::Dimensions() const
   {
+    for (auto vb : { VOL, BND, BBND })
+      if (diffop[vb])
+        return Array<int> (diffop[vb]->Dimensions());
+    /*
     if (diffop)
       return Array<int> (diffop->Dimensions());
     else if (trace_diffop)
       return Array<int> (trace_diffop->Dimensions());
     else if (ttrace_diffop)
       return Array<int> (ttrace_diffop->Dimensions());
-
+    */
     // is it possible ?? 
     return Array<int> ( { Dimension() } );
     /*
@@ -1044,7 +1088,6 @@ namespace ngcomp
         }
       else
         {
-      LocalHeapMem<100000> lh2("{values}");
       const GridFunction & gf = *reinterpret_cast<GridFunction*>({gf_ptr});
       const ElementTransformation &trafo = mir.GetTransformation();
       auto elnr = trafo.GetElementNr();
@@ -1052,37 +1095,42 @@ namespace ngcomp
       const FESpace & fes = *reinterpret_cast<FESpace*>({fes_ptr});
       auto vb = trafo.VB();
       ElementId ei(vb, elnr);
-      DifferentialOperator * diffop = (DifferentialOperator*){diffop_ptr};
-      DifferentialOperator * trace_diffop = (DifferentialOperator*){trace_diffop_ptr};
-      BilinearFormIntegrator * bfi = (BilinearFormIntegrator*){bfi_ptr};
+      // DifferentialOperator * diffop = (DifferentialOperator*){diffop_ptr};
+      // DifferentialOperator * trace_diffop = (DifferentialOperator*){trace_diffop_ptr};
+      DifferentialOperator * diffop[3] = { (DifferentialOperator*){diffop_vol_ptr}, (DifferentialOperator*){diffop_bnd_ptr}, (DifferentialOperator*){diffop_bbnd_ptr}};
+      // BilinearFormIntegrator * bfi = (BilinearFormIntegrator*){bfi_ptr};
       if (!trafo.BelongsToMesh((void*)(fes.GetMeshAccess().get()))) {
           throw Exception ("SIMD - evaluation not available for different meshes");
       } else if(!fes.DefinedOn(vb,trafo.GetElementIndex())){
           {values} = 0.0;
       } else {
-          const FiniteElement & fel = fes.GetFE (ei, lh2);
+          const FiniteElement & fel = fes.GetFE (ei, gridfunction_local_heap);
           int dim = fes.GetDimension();
 
-          ArrayMem<int, 50> dnums;
+          auto &dnums = gridfunction_dnums;
           fes.GetDofNrs (ei, dnums);
 
-          VectorMem<50> elu(dnums.Size()*dim);
+          gridfunction_elu.SetSize(dnums.Size()*dim);
+          FlatVector<> elu(dnums.Size()*dim, &gridfunction_elu[0]);
 
           gf.GetElementVector ({comp}, dnums, elu);
           fes.TransformVec (ei, elu, TRANSFORM_SOL);
-
+/*
           if (diffop && vb==VOL)
             diffop->Apply (fel, mir, elu, {values});
           else if (trace_diffop && vb==BND)
             trace_diffop->Apply (fel, mir, elu, {values});
           else if (bfi)
             throw Exception ("GridFunctionCoefficientFunction: SIMD evaluate not possible 1");
-          // bfi->CalcFlux (fel, mir, elu, values, true, lh2);
-          else if (fes.GetEvaluator(vb==BND))
-            fes.GetEvaluator(vb==BND) -> Apply (fel, mir, elu, {values}); // , lh2);
-          else if (fes.GetIntegrator(vb==BND))
+          // bfi->CalcFlux (fel, mir, elu, values, true, gridfunction_local_heap);
+          else if (fes.GetEvaluator(vb))
+            fes.GetEvaluator(vb) -> Apply (fel, mir, elu, {values}); // , gridfunction_local_heap);
+          else if (fes.GetIntegrator(vb))
             throw Exception ("GridFunctionCoefficientFunction: SIMD evaluate not possible 2");
-          // fes.GetIntegrator(vb==BND) ->CalcFlux (fel, mir, elu, values, false, lh2);
+          // fes.GetIntegrator(vb) ->CalcFlux (fel, mir, elu, values, false, gridfunction_local_heap);
+*/
+          if (diffop[vb])
+             diffop[vb]->Apply (fel, mir, elu, {values});
           else
             throw Exception ("GridFunctionCoefficientFunction: SIMD: don't know how I shall evaluate");
         if (ud)
@@ -1102,16 +1150,17 @@ namespace ngcomp
       STACK_ARRAY(double, {hmem}, mir.Size()*{dim});
       FlatMatrix<double>  {values}(mir.Size(), {dim}, &{hmem}[0]);
       {
-      LocalHeapMem<100000> lh2("{values}");
       const GridFunction & gf = *reinterpret_cast<GridFunction*>({gf_ptr});
       const ElementTransformation &trafo = mir.GetTransformation();
       auto elnr = trafo.GetElementNr();
       const FESpace &fes = *gf.GetFESpace();
       auto vb = trafo.VB();
       ElementId ei(vb, elnr);
-      DifferentialOperator * diffop = (DifferentialOperator*){diffop_ptr};
-      DifferentialOperator * trace_diffop = (DifferentialOperator*){trace_diffop_ptr};
-      BilinearFormIntegrator * bfi = (BilinearFormIntegrator*){bfi_ptr};
+      // DifferentialOperator * diffop = (DifferentialOperator*){diffop_ptr};
+      // DifferentialOperator * trace_diffop = (DifferentialOperator*){trace_diffop_ptr};
+      // DifferentialOperator * trace_diffop[3] = (DifferentialOperator*){diffop_vol,diffop_bnd,diffop_bbnd};
+      DifferentialOperator * diffop[3] = { (DifferentialOperator*){diffop_vol_ptr}, (DifferentialOperator*){diffop_bnd_ptr}, (DifferentialOperator*){diffop_bbnd_ptr}};
+      // BilinearFormIntegrator * bfi = (BilinearFormIntegrator*){bfi_ptr};
       if (!trafo.BelongsToMesh((void*)(fes.GetMeshAccess().get()))) {
           gf.Evaluate(mir, {values});
           //for (auto i : Range(mir.Size()))
@@ -1119,27 +1168,31 @@ namespace ngcomp
       } else if(!fes.DefinedOn(vb,trafo.GetElementIndex())){
           {values} = 0.0;
       } else {
-          const FiniteElement & fel = fes.GetFE (ei, lh2);
+          const FiniteElement & fel = fes.GetFE (ei, gridfunction_local_heap);
           int dim = fes.GetDimension();
 
-          ArrayMem<int, 50> dnums;
+          auto &dnums = gridfunction_dnums;
           fes.GetDofNrs (ei, dnums);
 
-          VectorMem<50> elu(dnums.Size()*dim);
+          gridfunction_elu.SetSize(dnums.Size()*dim);
+          FlatVector<> elu(dnums.Size()*dim, &gridfunction_elu[0]);
 
           gf.GetElementVector ({comp}, dnums, elu);
           fes.TransformVec (ei, elu, TRANSFORM_SOL);
-
+/*
           if (diffop && vb==VOL)
-            diffop->Apply (fel, mir, elu, {values}, lh2);
+            diffop->Apply (fel, mir, elu, {values}, gridfunction_local_heap);
           else if (trace_diffop && vb==BND)
-            trace_diffop->Apply (fel, mir, elu, {values}, lh2);
+            trace_diffop->Apply (fel, mir, elu, {values}, gridfunction_local_heap);
           else if (bfi)
-            bfi->CalcFlux (fel, mir, elu, {values}, true, lh2);
-          else if (fes.GetEvaluator(vb==BND))
-            fes.GetEvaluator(vb==BND) -> Apply (fel, mir, elu, {values}, lh2);
-          else if (fes.GetIntegrator(vb==BND))
-            fes.GetIntegrator(vb==BND) ->CalcFlux (fel, mir, elu, {values}, false, lh2);
+            bfi->CalcFlux (fel, mir, elu, {values}, true, gridfunction_local_heap);
+          else if (fes.GetEvaluator(vb))
+            fes.GetEvaluator(vb) -> Apply (fel, mir, elu, {values}, gridfunction_local_heap);
+          else if (fes.GetIntegrator(vb))
+            fes.GetIntegrator(vb) ->CalcFlux (fel, mir, elu, {values}, false, gridfunction_local_heap);
+*/
+          if (diffop[vb])
+             diffop[vb]->Apply (fel, mir, elu, {values}, gridfunction_local_heap);
           else
             throw Exception ("don't know how I shall evaluate");
       }
@@ -1148,12 +1201,15 @@ namespace ngcomp
     std::map<string,string> variables;
     auto values = Var("values", index);
     variables["values"] = values.S();
-    variables["gf_ptr"] = ToString(gf.get());
-    variables["gfcf_ptr"] = ToString(this);
-    variables["fes_ptr"] = ToString(fes.get());
-    variables["diffop_ptr"] = ToString(diffop.get());
-    variables["trace_diffop_ptr"] = ToString(trace_diffop.get());
-    variables["bfi_ptr"] = ToString(trace_diffop.get());
+    variables["gf_ptr"] =  code.AddPointer(gf);
+    variables["gfcf_ptr"] = code.AddPointer(this); // ToString(this);
+    variables["fes_ptr"] = code.AddPointer(fes.get()); // ToString(fes.get());
+    // variables["diffop_ptr"] = ToString(diffop[VOL].get());
+    // variables["trace_diffop_ptr"] = ToString(diffop[BND].get());
+    // variables["bfi_ptr"] = ToString(trace_diffop.get());
+    variables["diffop_vol_ptr"] = code.AddPointer(diffop[VOL].get()); // ToString(diffop[VOL].get());
+    variables["diffop_bnd_ptr"] = code.AddPointer(diffop[BND].get()); // ToString(diffop[BND].get());
+    variables["diffop_bbnd_ptr"] = code.AddPointer(diffop[BBND].get()); // ToString(diffop[BBND].get());
     variables["comp"] = ToString(comp);
     variables["dim"] = ToString(Dimension());
     variables["hmem"] = Var("hmem", index).S();
@@ -1251,15 +1307,20 @@ namespace ngcomp
 
     gf->GetElementVector (comp, dnums, elu);
     fes->TransformVec (ei, elu, TRANSFORM_SOL);
+    if (diffop[ei.VB()])
+      diffop[ei.VB()] -> Apply(fel, ip, elu, result, lh2);
+    /*
     if (diffop && ei.VB()==VOL)
       diffop->Apply (fel, ip, elu, result, lh2);
     else if (trace_diffop && ei.VB()==BND)
       trace_diffop->Apply (fel, ip, elu, result, lh2);
     else if (bfi)
       bfi->CalcFlux (fel, ip, elu, result, true, lh2);
+    else if (fes->GetEvaluator(ei.VB()))
+      fes->GetEvaluator(ei.VB()) -> Apply (fel, ip, elu, result, lh2);
+    */
     else
-      // fes->GetIntegrator(boundary) -> CalcFlux (fel, ip, elu, result, false, lh2);
-      fes->GetEvaluator(ei.VB()==BND) -> Apply (fel, ip, elu, result, lh2);
+      result = 0.0;
   }
 
   void GridFunctionCoefficientFunction :: 
@@ -1308,6 +1369,11 @@ namespace ngcomp
     gf->GetElementVector (comp, dnums, elu);
     fes->TransformVec (ei, elu, TRANSFORM_SOL);
 
+    if (diffop[vb])
+      diffop[vb]->Apply (fel, ip, elu, result, lh2);
+    else
+      result = 0.0;
+    /*
     if (diffop && vb==VOL)
       diffop->Apply (fel, ip, elu, result, lh2);
     else if (trace_diffop && vb==BND)
@@ -1315,7 +1381,8 @@ namespace ngcomp
     else if (bfi)
       bfi->CalcFlux (fel, ip, elu, result, true, lh2);
     else
-      fes->GetIntegrator(vb==BND) -> CalcFlux (fel, ip, elu, result, false, lh2);
+      fes->GetIntegrator(vb) -> CalcFlux (fel, ip, elu, result, false, lh2);
+    */
   }
 
 
@@ -1357,16 +1424,20 @@ namespace ngcomp
     gf->GetElementVector (comp, dnums, elu);
     fes->TransformVec (ElementId(vb, elnr), elu, TRANSFORM_SOL);
 
+    if (diffop[vb])
+      diffop[vb]->Apply (fel, ir, elu, values, lh2);
+    /*
     if (diffop && vb==VOL)
       diffop->Apply (fel, ir, elu, values, lh2);
     else if (trace_diffop && vb==BND)
       trace_diffop->Apply (fel, ir, elu, values, lh2);
     else if (bfi)
       bfi->CalcFlux (fel, ir, elu, values, true, lh2);
-    else if (fes->GetEvaluator(vb==BND))
-      fes->GetEvaluator(vb==BND) -> Apply (fel, ir, elu, values, lh2);
-    else if (fes->GetIntegrator(vb==BND))
-      fes->GetIntegrator(vb==BND) ->CalcFlux (fel, ir, elu, values, false, lh2);
+    else if (fes->GetEvaluator(vb))
+      fes->GetEvaluator(vb) -> Apply (fel, ir, elu, values, lh2);
+    else if (fes->GetIntegrator(vb))
+      fes->GetIntegrator(vb) ->CalcFlux (fel, ir, elu, values, false, lh2);
+    */
     else
       throw Exception ("don't know how I shall evaluate");
   }
@@ -1410,16 +1481,20 @@ namespace ngcomp
     gf->GetElementVector (comp, dnums, elu);
     fes->TransformVec (ei, elu, TRANSFORM_SOL);
 
+    /*
     if (diffop && vb==VOL)
       diffop->Apply (fel, ir, elu, values, lh2);
     else if (trace_diffop && vb==BND)
       trace_diffop->Apply (fel, ir, elu, values, lh2);
     else if (bfi)
       bfi->CalcFlux (fel, ir, elu, values, true, lh2);
-    else if (fes->GetEvaluator(vb==BND))
-      fes->GetEvaluator(vb==BND) -> Apply (fel, ir, elu, values, lh2);
-    else if (fes->GetIntegrator(vb==BND))
-      fes->GetIntegrator(vb==BND) ->CalcFlux (fel, ir, elu, values, false, lh2);
+    else if (fes->GetEvaluator(vb))
+      fes->GetEvaluator(vb) -> Apply (fel, ir, elu, values, lh2);
+    else if (fes->GetIntegrator(vb))
+      fes->GetIntegrator(vb) ->CalcFlux (fel, ir, elu, values, false, lh2);
+    */
+    if (diffop[vb])
+      diffop[vb]->Apply (fel, ir, elu, values, lh2);
     else
       throw Exception ("don't know how I shall evaluate");
   }
@@ -1476,7 +1551,7 @@ namespace ngcomp
 
     gf->GetElementVector (comp, dnums, elu);
     fes->TransformVec (ei, elu, TRANSFORM_SOL);
-
+    /*
     if (diffop && vb==VOL)
       diffop->Apply (fel, ir, elu, values); // , lh2);
     else if (trace_diffop && vb==BND)
@@ -1484,11 +1559,14 @@ namespace ngcomp
     else if (bfi)
       throw Exception ("GridFunctionCoefficientFunction: SIMD evaluate not possible 1");
       // bfi->CalcFlux (fel, ir, elu, values, true, lh2);
-    else if (fes->GetEvaluator(vb==BND))
-      fes->GetEvaluator(vb==BND) -> Apply (fel, ir, elu, values); // , lh2);
-    else if (fes->GetIntegrator(vb==BND))
+    else if (fes->GetEvaluator(vb))
+      fes->GetEvaluator(vb) -> Apply (fel, ir, elu, values); // , lh2);
+    else if (fes->GetIntegrator(vb))
       throw Exception ("GridFunctionCoefficientFunction: SIMD evaluate not possible 2");
       // fes.GetIntegrator(boundary) ->CalcFlux (fel, ir, elu, values, false, lh2);
+    */
+    if (diffop[vb])
+      diffop[vb]->Apply (fel, ir, elu, values);
     else
       throw Exception ("GridFunctionCoefficientFunction: SIMD: don't know how I shall evaluate");
 
@@ -1543,7 +1621,7 @@ namespace ngcomp
 
     gf->GetElementVector (comp, dnums, elu);
     fes.TransformVec (ei, elu, TRANSFORM_SOL);
-
+    /*
     if (diffop && vb==VOL)
       diffop->Apply (fel, ir, elu, values); // , lh2);
     else if (trace_diffop && vb==BND)
@@ -1558,6 +1636,9 @@ namespace ngcomp
     else if (fes.GetIntegrator(vb))
       throw Exception ("GridFunctionCoefficientFunction: SIMD evaluate not possible 2");
       // fes.GetIntegrator(boundary) ->CalcFlux (fel, ir, elu, values, false, lh2);
+      */
+    if (diffop[vb])
+      diffop[vb]->Apply (fel, ir, elu, values);    
     else
       throw Exception ("GridFunctionCoefficientFunction: SIMD: don't know how I shall evaluate");    
   }
@@ -2210,7 +2291,7 @@ namespace ngcomp
 
 	    for (int k = 0; k < npts; k++)
 	      {
-		Mat<2,3> & mdxdxref = *new((double*)(dxdxref+k*sdxdxref)) Mat<2,3>;
+		Mat<3,2> & mdxdxref = *new((double*)(dxdxref+k*sdxdxref)) Mat<3,2>;
 		FlatVec<3> vx( (double*)x + k*sx);
 		mir[k] = MappedIntegrationPoint<2,3> (ir[k], eltrans, vx, mdxdxref);
 	      }
@@ -2405,7 +2486,7 @@ namespace ngcomp
             ElementId ei(VOL, i);
 	    const FiniteElement & fel = fes.GetFE(ei,lh2);
 	    
-	    domain = ma->GetElIndex(i);
+	    domain = ma->GetElIndex(ei);
 	    
 	    vol = ma->ElementVolume(i);
 	    
@@ -2480,10 +2561,10 @@ namespace ngcomp
       {
 	for(int i=0; i<ma->GetNSE(); i++)
 	  {
-            ElementId ei(VOL, i);
+            ElementId ei(BND, i);
 	    const FiniteElement & fel = fes.GetFE(ei,lh2);
 
-	    domain = ma->GetSElIndex(i);
+	    domain = ma->GetElIndex(ei);
 
 	    vol = ma->SurfaceElementVolume(i);
 
@@ -2634,14 +2715,38 @@ namespace ngcomp
 		 const double * dxdxref, int sdxdxref,
 		 double * values, int svalues)
   {
+    if (npts > 128)
+      {
+        bool isdefined = false;
+        for (int i = 0; i < npts; i += 128)
+          {
+            int npi = min2 (128, npts-i);
+            isdefined = GetMultiValue (elnr, facetnr, npi, 
+                                       xref+i*sxref, sxref, x+i*sx, sx, dxdxref+i*sdxdxref, sdxdxref,
+                                       values+i*svalues, svalues);
+          }
+        return isdefined;
+      }
+
+    
     try
       {
-    // cout << "visualizecoef, GetMultiValue not implemented" << endl;
+        LocalHeapMem<100000> lh("viscf::GetMultiValue xref");
 
-    for (int i = 0; i < npts; i++)
-      GetValue (elnr, xref+i*sxref, x+i*sx, dxdxref+i*sdxdxref, values+i*svalues);
-    return true;
+        IntegrationRule ir(npts, lh);
+        for (size_t j = 0; j < npts; j++)
+          ir[j] = IntegrationPoint(xref[j*sxref], xref[j*sxref+1], xref[j*sxref+2]);
+        
+        ElementId ei(VOL, elnr);
+        ElementTransformation & trafo = ma->GetTrafo (ei, lh);
+        BaseMappedIntegrationRule & mir = trafo(ir, lh);
+        
+        if (!cf -> IsComplex())
+          cf -> Evaluate (mir, FlatMatrix<>(npts, GetComponents(), values));
+        else
+          cf -> Evaluate (mir, FlatMatrix<Complex>(npts, GetComponents(), reinterpret_cast<Complex*>(values)));      
 
+        return true;
       }
     catch (Exception & e)
       {
@@ -2835,7 +2940,7 @@ namespace ngcomp
 
         for (int k = 0; k < npts; k++)
           {
-            Mat<2,3> & mdxdxref = *new((double*)(dxdxref+k*sdxdxref)) Mat<2,3>;
+            Mat<3,2> & mdxdxref = *new((double*)(dxdxref+k*sdxdxref)) Mat<3,2>;
             FlatVec<3> vx( (double*)x + k*sx);
             mir[k] = MappedIntegrationPoint<2,3> (ir[k], eltrans, vx, mdxdxref);
           }

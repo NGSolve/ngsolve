@@ -121,6 +121,13 @@ namespace ngfem
     { type1 = t1; }
     
     void ComputeNDof();
+
+    virtual void CalcDualShape (const MappedIntegrationPoint<DIM,DIM> & mip, SliceMatrix<> shape) const;
+    /*
+    {
+      static_cast<const HCurlHighOrderFE_Shape<ET>*> (this) -> CalcDualShape2 (mip, shape);
+    }
+    */
   };
 
 }  

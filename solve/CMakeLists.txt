@@ -17,6 +17,10 @@ add_library( solve ${NGS_LIB_TYPE}
         ${solve_object_libs}
         )
 
+target_compile_definitions(solve PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
+target_compile_options(solve PUBLIC ${NGSOLVE_COMPILE_OPTIONS})
+target_include_directories(solve PUBLIC ${NGSOLVE_INCLUDE_DIRS})
+
 if(NETGEN_USE_PYTHON)
 add_library( ngslib SHARED ngspy.cpp )
 
@@ -24,17 +28,18 @@ set_target_properties(ngslib PROPERTIES SUFFIX ".so")
 set_target_properties(ngslib PROPERTIES PREFIX "")
 target_link_libraries(ngslib ${NETGEN_PYTHON_LIBRARIES} ${LAPACK_LIBRARIES})
 
-if(NETGEN_USE_GUI)
+if(NETGEN_USE_GUI AND WIN32)
     target_link_libraries(ngslib ngsolve)
-else(NETGEN_USE_GUI)
+else(NETGEN_USE_GUI AND WIN32)
     target_link_libraries(ngslib solve)
-endif(NETGEN_USE_GUI)
+endif(NETGEN_USE_GUI AND WIN32)
 
 if(WIN32)
     set_target_properties( ngslib PROPERTIES SUFFIX ".pyd" )
 endif(WIN32)
 
-install( TARGETS ngslib ${ngs_install_dir} )
+set_target_properties(ngslib PROPERTIES INSTALL_RPATH "${NETGEN_RPATH_TOKEN}/../${NETGEN_PYTHON_RPATH}")
+install(TARGETS ngslib DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve)
 endif(NETGEN_USE_PYTHON)
 
 if(NOT WIN32)
@@ -63,11 +68,19 @@ if (NETGEN_USE_GUI)
             ${ngsolve_object_libs}
             ngsolve.cpp shapetester.cpp 
             )
-          target_link_libraries(ngsolve nglib ${MPI_CXX_LIBRARIES} ${NETGEN_PYTHON_LIBRARIES} ${LAPACK_LIBRARIES} ${TCL_LIBRARY} ${PARDISO_LIB} ${UMFPACK_LIBRARIES})
+
+    target_link_libraries(ngsolve PUBLIC nglib ${MPI_CXX_LIBRARIES} ${NETGEN_PYTHON_LIBRARIES} ${LAPACK_LIBRARIES} PRIVATE ${PARDISO_LIB} ${UMFPACK_LIBRARIES})
+    target_compile_definitions(ngsolve PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
+    target_compile_options(ngsolve PUBLIC ${NGSOLVE_COMPILE_OPTIONS})
+    target_include_directories(ngsolve PUBLIC ${NGSOLVE_INCLUDE_DIRS})
+
     if(NOT WIN32)
-        target_link_libraries(ngsolve solve ngcomp ngstd ngfem ngla ngbla)
+        target_link_libraries(ngsolve PUBLIC solve ngcomp ngstd ngfem ngla ngbla)
     endif(NOT WIN32)
     install( TARGETS ngsolve ${ngs_install_dir} )
+    if(NOT APPLE)
+        target_link_libraries( ngsolve PUBLIC gui)
+    endif()
     if(WIN32)
         set_target_properties( ngsolve PROPERTIES OUTPUT_NAME libngsolve )
     endif(WIN32)
@@ -76,8 +89,8 @@ endif (NETGEN_USE_GUI)
 
 if(NOT WIN32)
     add_executable( ngs ngs.cpp)
-    target_link_libraries(ngs solve nglib ${TCL_LIBRARY} ${NETGEN_PYTHON_LIBRARIES} ${LAPACK_LIBRARIES})
-    install( TARGETS ngs DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve )
+    target_link_libraries(ngs solve)
+    install( TARGETS ngs DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve )
 endif(NOT WIN32)
 
-install( FILES solve.hpp DESTINATION include  COMPONENT ngsolve_devel )
+install( FILES solve.hpp DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE} COMPONENT ngsolve_devel )

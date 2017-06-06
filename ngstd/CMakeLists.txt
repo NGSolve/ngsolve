@@ -13,9 +13,14 @@ if(NOT WIN32)
 endif(NOT WIN32)
 
 add_library( ngstd ${NGS_LIB_TYPE} ${ngstd_sources} )
+target_compile_definitions(ngstd PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
+target_compile_options(ngstd PUBLIC ${NGSOLVE_COMPILE_OPTIONS})
+target_include_directories(ngstd PUBLIC ${NGSOLVE_INCLUDE_DIRS})
+
+add_dependencies( ngstd generate_version_file )
 
 if(NOT WIN32)
-    target_link_libraries(ngstd ${MPI_CXX_LIBRARIES} ${NETGEN_PYTHON_LIBRARIES} ${NUMA_LIB})
+    target_link_libraries(ngstd ${MKL_MINIMAL_LIBRARY} ${MPI_CXX_LIBRARIES} ${NETGEN_PYTHON_LIBRARIES} ${NUMA_LIB})
     install( TARGETS ngstd ${ngs_install_dir} )
 endif(NOT WIN32)
 
@@ -28,9 +33,6 @@ install( FILES
         polorder.hpp archive.hpp archive_base.hpp sockets.hpp cuda_ngstd.hpp  
         mycomplex.hpp tuple.hpp paje_interface.hpp python_ngstd.hpp ngs_utils.hpp
         taskmanager.hpp bspline.hpp simd.hpp simd_complex.hpp
-        DESTINATION include
+        DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
         COMPONENT ngsolve_devel
        )
-
-install (PROGRAMS init.py DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve )
-

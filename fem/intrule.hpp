@@ -289,7 +289,7 @@ namespace ngfem
   };
 
   template <typename SCAL = double>
-  class ScalMappedIntegrationPoint : public BaseMappedIntegrationPoint
+  class alignas (sizeof(SCAL)) ScalMappedIntegrationPoint : public BaseMappedIntegrationPoint
   {
   protected:
     SCAL det;
@@ -1243,7 +1243,7 @@ namespace ngfem
     char * baseip;
     size_t incr;
     
-  public:
+  public:    
     INLINE BaseMappedIntegrationRule (const IntegrationRule & air,
                                       const ElementTransformation & aeltrans)
       : ir(air.Size(),&air[0]), eltrans(aeltrans) { ; }
@@ -1259,15 +1259,13 @@ namespace ngfem
     { return *static_cast<BaseMappedIntegrationPoint*> ((void*)(baseip+i*incr)); }
 
     virtual BaseMappedIntegrationRule & Range(size_t first, size_t next, LocalHeap & lh) const = 0;
-    /*
-    {
-      BaseMappedIntegrationRule mir(ir.Range(first,next), eltrans);
-      mir.baseip = baseip + incr * first;
-      mir.incr = incr;
-      return move(mir);
-    }
-    */
+
+    auto begin () const { return AOWrapperIterator<BaseMappedIntegrationRule> (*this, 0); }
+    auto end () const { return AOWrapperIterator<BaseMappedIntegrationRule> (*this, Size()); }
+    
     virtual SliceMatrix<> GetPoints() const = 0;
+    virtual SliceMatrix<Complex> GetPointsComplex() const
+    { throw Exception("don't have complex ir"); }
     virtual void ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr) = 0;
     virtual bool IsComplex() const = 0;
   };
@@ -1318,11 +1316,13 @@ namespace ngfem
     {
       return *new (lh) MappedIntegrationRule (ir.Range(first,next), eltrans, mips.Range(first,next));
     }
+
+    auto begin() { return mips.begin(); }
+    auto end() { return mips.end(); }
     
     virtual SliceMatrix<> GetPoints() const
     {
       return SliceMatrix<> (mips.Size(), DIM_SPACE*sizeof(SCAL)/sizeof(double),
-                            //&mips[1].GetPoint()(0) - &mips[0].GetPoint()(0),
                             sizeof(MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE, SCAL>) / sizeof(double),
                             const_cast<double*> (&mips[0].GetPoint()(0)));
     }
@@ -1383,23 +1383,31 @@ namespace ngfem
       throw Exception("don't have real points for complex ir");
     }
 
+    virtual SliceMatrix<Complex> GetPointsComplex() const
+    {
+      return SliceMatrix<Complex> (mips.Size(), DIM_SPACE,
+                                   //&mips[1].GetPoint()(0) - &mips[0].GetPoint()(0),
+                                   sizeof(MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE, SCAL>) / sizeof(Complex),
+                                   const_cast<Complex*> (&mips[0].GetPointComplex()(0)));
+    }
+
     virtual void ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr);
     virtual bool IsComplex() const { return true; }     
   };
 
   
+  ostream & operator<< (ostream & ost, const BaseMappedIntegrationRule & mir);
 
   
-  
   template <int DIM_ELEMENT, int DIM_SPACE, typename SCAL>
-  inline ostream & operator<< (ostream & ost, const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE,SCAL> & ir)
+  inline ostream & operator<< (ostream & ost, const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE,SCAL> & mir)
   {
-    for (size_t i = 0; i < ir.Size(); i++)
-      ost << ir[i] << endl;
+    for (auto & mip : mir)
+      ost << mip << endl;
     return ost;
   }
-  
-  // #define SpecificIntegrationPoint MappedIntegrationPoint
+
+  // deprecated, don't use SpecificIntegrationPoint anymore
   template <int DIMS, int DIMR, typename SCAL>   
   using SpecificIntegrationPoint = MappedIntegrationPoint<DIMS,DIMR,SCAL>;
 }
@@ -1497,7 +1505,7 @@ namespace ngstd
     SIMD<double> GetMeasure() const { return measure; }
     SIMD<double> GetWeight() const { return measure * ip.Weight(); }
     SIMD<double> GetJacobiDet() const { return det; }
-    FlatVector<SIMD<double>> GetPoint() const;
+    NGS_DLL_HEADER FlatVector<SIMD<double>> GetPoint() const;
     // virtual void Print (ostream & ost) const = 0;
   };
 
@@ -1563,11 +1571,21 @@ namespace ngstd
 	{
 	  if (DIMR == 3)
 	    {
-	      normalvec = Cross (Vec<3,SIMD<double>> (dxdxi.Col(0)),
-				 Vec<3,SIMD<double>> (dxdxi.Col(1)));
-	      det = L2Norm (normalvec);
-	      normalvec /= det;
-	    }
+              if (DIMS == 2)
+                {
+                  normalvec = Cross (Vec<3,SIMD<double>> (dxdxi.Col(0)),
+                                     Vec<3,SIMD<double>> (dxdxi.Col(1)));
+                  det = L2Norm (normalvec);
+                  normalvec /= det;
+                }
+              else
+                {
+                  normalvec = SIMD<double>(0.0);
+		  tangentialvec = Vec<3,SIMD<double>>(dxdxi.Col(0));
+		  det = L2Norm(tangentialvec);
+		  tangentialvec /= det;
+                }
+            }
 	  else if (DIMR == 2)
 	    {
 	      det = sqrt ( sqr (dxdxi(0,0)) + sqr (dxdxi(1,0)));
@@ -1623,8 +1641,10 @@ namespace ngstd
     
     void Print (ostream & ost) const
     {
+      ost << "ip = " << this->ip << endl;
       ost << "Point = " << this->point << endl;
       ost << "Jacobian = " << dxdxi << endl;
+      ost << "normal = " << this->GetNV() << endl;
     }
   };
 }
@@ -1758,7 +1778,12 @@ namespace ngfem
     SIMD_IntegrationRule (const IntegrationRule & ir);
     SIMD_IntegrationRule (const IntegrationRule & ir, LocalHeap & lh);
     SIMD_IntegrationRule (int nip, LocalHeap & lh);
-    NGS_DLL_HEADER ~SIMD_IntegrationRule ();
+    NGS_DLL_HEADER ~SIMD_IntegrationRule ()
+    {
+      if (mem_to_delete) _mm_free(mem_to_delete);
+      mem_to_delete = nullptr;
+    }
+
     SIMD_IntegrationRule & operator= (const SIMD_IntegrationRule &) = delete;
     SIMD_IntegrationRule & operator= (SIMD_IntegrationRule &&) = default;
     
@@ -1841,9 +1866,9 @@ namespace ngfem
     virtual void Print (ostream & ost) const = 0;
   };
 
-  inline ostream & operator<< (ostream & ost, const SIMD_BaseMappedIntegrationRule & mip)
+  inline ostream & operator<< (ostream & ost, const SIMD_BaseMappedIntegrationRule & mir)
   {
-    mip.Print (ost);
+    mir.Print (ost);
     return ost;
   }
 

@@ -403,7 +403,7 @@ public:
 
     virtual void AddElementMatrix(FlatArray<int> dnums1, 
                                   FlatArray<int> dnums2, 
-                                  FlatMatrix<TSCAL> elmat,
+                                  BareSliceMatrix<TSCAL> elmat,
                                   bool use_atomic = false);
 
     virtual BaseVector & AsVector() 
@@ -595,11 +595,12 @@ public:
 
   public:
     typedef typename mat_traits<TM>::TSCAL TSCAL;
-    virtual void AddElementMatrix(FlatArray<int> dnums, FlatMatrix<TSCAL> elmat, bool use_atomic = false);
+    virtual void AddElementMatrix(FlatArray<int> dnums, BareSliceMatrix<TSCAL> elmat,
+                                  bool use_atomic = false);
 
     virtual void AddElementMatrix(FlatArray<int> dnums1, 
 				  FlatArray<int> dnums2, 
-				  FlatMatrix<TSCAL> elmat,
+				  BareSliceMatrix<TSCAL> elmat,
                                   bool use_atomic = false)
     {
       AddElementMatrix (dnums1, elmat, use_atomic);
@@ -803,6 +804,8 @@ public:
     virtual shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<BitArray> subset = nullptr) const;
     virtual shared_ptr<BaseMatrix> InverseMatrix (const Array<int> * clusters) const;
   };
+
+  SparseMatrixTM<double> * TransposeMatrix (const SparseMatrixTM<double> & mat);
 
   SparseMatrixTM<double> *
   MatMult (const SparseMatrix<double, double, double> & mata, const SparseMatrix<double, double, double> & matb);

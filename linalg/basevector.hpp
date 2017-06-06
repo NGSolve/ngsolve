@@ -241,7 +241,7 @@ namespace ngla
     virtual void LoadText(istream & ist);
 
     virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
-
+    virtual size_t CheckSum () const;
     // 
     // virtual shared_ptr<BaseVector> CreateVector () const = 0;
     virtual AutoVector CreateVector () const = 0;
@@ -346,6 +346,9 @@ namespace ngla
   };
 
 
+  AutoVector CreateBaseVector(size_t size, bool is_complex, int es);
+
+  
   class AutoVector : public BaseVector
   {
     shared_ptr<BaseVector> vec;
@@ -966,15 +969,6 @@ namespace ngla
     return v.L2Norm();
   }
 
-}
-
-
-namespace ngstd
-{
-  template <>
-  struct PyWrapperTraits<ngla::BaseVector> {
-    typedef shared_ptr<ngla::BaseVector> type;
-  };
 }
 
 #endif

@@ -20,8 +20,12 @@ add_library( ngcomp ${NGS_LIB_TYPE}
         periodic.cpp hypre_ams_precond.cpp
         )
 
+target_compile_definitions(ngcomp PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
+target_compile_options(ngcomp PUBLIC ${NGSOLVE_COMPILE_OPTIONS})
+target_include_directories(ngcomp PUBLIC ${NGSOLVE_INCLUDE_DIRS})
+
 if(NOT WIN32)
-    target_link_libraries (ngcomp interface ngfem ngla ngbla ngstd ${TCL_LIBRARY} ${MPI_CXX_LIBRARIES} ${NETGEN_PYTHON_LIBRARIES} ${LAPACK_LIBRARIES} ${HYPRE_LIBRARIES})
+    target_link_libraries (ngcomp interface ngfem ngla ngbla ngstd ${MPI_CXX_LIBRARIES} ${NETGEN_PYTHON_LIBRARIES} ${LAPACK_LIBRARIES} ${HYPRE_LIBRARIES})
     install( TARGETS ngcomp ${ngs_install_dir} )
 endif(NOT WIN32)
 
@@ -31,8 +35,8 @@ install( FILES
         hcurlhofespace.hpp hdivfes.hpp hdivhofespace.hpp		   
         l2hofespace.hpp tpfes.hpp linearform.hpp meshaccess.hpp ngsobject.hpp	   
         postproc.hpp preconditioner.hpp vectorfacetfespace.hpp hypre_precond.hpp 
-	pde.hpp numproc.hpp vtkoutput.hpp pmltrafo.hpp periodic.hpp hypre_ams_precond.hpp
-        DESTINATION include
+        pde.hpp numproc.hpp vtkoutput.hpp pmltrafo.hpp periodic.hpp  hypre_ams_precond.hpp
+        DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
         COMPONENT ngsolve_devel
        )
 

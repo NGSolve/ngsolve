@@ -179,18 +179,28 @@ namespace ngstd
     SIMD (const SIMD &) = default;
     SIMD & operator= (const SIMD &) = default;
 
-    SIMD (double val)
-    {
-      data = _mm256_set1_pd(val);
-    }
+    SIMD (double val) { data = _mm256_set1_pd(val); }
+    SIMD (int val)    { data = _mm256_set1_pd(val); }
+    SIMD (size_t val) { data = _mm256_set1_pd(val); }
+
+    SIMD (double const * p) { data = _mm256_loadu_pd(p); }
+    SIMD (__m256d _data) { data = _data; }
     
+    template<typename T, typename std::enable_if<std::is_convertible<T, std::function<double(int)>>::value, int>::type = 0>                                                                    SIMD (const T & func)
+    {   
+      data = _mm256_set_pd(func(3), func(2), func(1), func(0));              
+    }   
+    
+    /*
     template <typename T>
     SIMD (const T & val)
     {
 //       SIMD_function(val, std::is_convertible<T, std::function<double(int)>>());
       SIMD_function(val, has_call_operator<T>::value);
     }
-    
+    */
+
+    /*
     template <typename T>
     SIMD & operator= (const T & val)
     {
@@ -198,14 +208,16 @@ namespace ngstd
       SIMD_function(val, has_call_operator<T>::value);
       return *this;
     }
-
+    */
+    
     /*
     void * operator new (size_t s) { return  _mm_malloc(s, 64); }
     void * operator new[] (size_t s) { return  _mm_malloc(s, 64); }
     void operator delete (void * p) { _mm_free(p); }
     void operator delete[] (void * p) { _mm_free(p); }
     */
-    
+
+    /*
     template <typename Function>
     void SIMD_function (const Function & func, std::true_type)
     {
@@ -227,6 +239,7 @@ namespace ngstd
     {
       data = _data;
     }
+    */
     
     INLINE double operator[] (int i) const { return ((double*)(&data))[i]; }
     INLINE __m256d Data() const { return data; }
@@ -321,37 +334,23 @@ namespace ngstd
     SIMD () = default;
     SIMD (const SIMD &) = default;
     SIMD & operator= (const SIMD &) = default;
+    SIMD (double val) { data = val; }
+    SIMD (int val)    { data = val; }
+    SIMD (size_t val) { data = val; }
+    SIMD (double const * p) { data = *p; }
     
-    template <typename T>
-    SIMD (const T & val)
-    {
-//       SIMD_function(val, std::is_convertible<T, std::function<double(int)>>());
-      SIMD_function(val, has_call_operator<T>::value);
-    }
     
-    template <typename T>
-    SIMD & operator= (const T & val)
-    {
-//       SIMD_function(val, std::is_convertible<T, std::function<double(int)>>());
-      SIMD_function(val, has_call_operator<T>::value);
-      return *this;
-    }
-    
-    template <typename Function>
-    void SIMD_function (const Function & func, std::true_type)
+    template <typename T, typename std::enable_if<std::is_convertible<T,std::function<double(int)>>::value,int>::type = 0>
+    SIMD (const T & func)
     {
       data = func(0);
     }
     
-    // not a function
-    void SIMD_function (double const * p, std::false_type)
+    template <typename T, typename std::enable_if<std::is_convertible<T,std::function<double(int)>>::value,int>::type = 0>
+    SIMD & operator= (const T & func)
     {
-      data = *p;
-    }
-    
-    void SIMD_function (double val, std::false_type)
-    {
-      data = val;
+      data = func(0);
+      return *this;
     }
     
     double operator[] (int i) const { return ((double*)(&data))[i]; }

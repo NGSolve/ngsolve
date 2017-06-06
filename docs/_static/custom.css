@@ -2,3 +2,50 @@
 .wy-nav-side {
     padding-bottom: 3em;
 }
+
+table.docutils {
+    width: 100%;
+    table-layout: fixed;
+}
+
+.wy-table td, .rst-content table.docutils td {
+    overflow: hidden;
+}
+/*
+table.docutils span.scrollable {
+    display: block;
+    overflow: auto;
+}
+*/
+
+table.rows p {
+    font-size: 100%;
+}
+
+table.rows th {
+    background-color: #2980B9;
+    border-style: solid solid solid solid;
+    border-width: 0px 0px 0px 0px;
+    border-color: #AAAAAA;
+    text-align: center;
+    color: white;
+}
+table.rows td {
+    white-space: normal;
+    border-style: solid solid solid solid;
+    border-width: 0px 0px 0px 0px;
+    border-color: #AAAAAA;
+}
+
+table.rows tr {
+    border-style: solid solid solid solid;
+    border-width: 0px 0px 0px 0px;
+    border-color: #AAAAAA;
+}
+
+table.rows tr:nth-child(even) {
+    background-color: white;
+}
+table.rows tr:nth-child(odd) {
+    background-color: grey;
+}

@@ -2,15 +2,21 @@
 #define PYTHON_NGSTD_HPP___
 #ifdef NGS_PYTHON
 
+#ifdef __clang__
 #pragma clang diagnostic push
 // #pragma clang diagnostic ignored "-W#pragma-messages"
 #pragma clang diagnostic ignored "-Wunused-local-typedefs"
+#pragma clang diagnostic ignored "-Wparentheses-equality"
+#endif
+
 #include <pybind11/pybind11.h>
 #include <pybind11/operators.h>
 #include <pybind11/complex.h>
 #include <pybind11/stl.h>
 
+#ifdef __clang__
 #pragma clang diagnostic pop
+#endif
 
 #include <ngstd.hpp>
 #include <thread>
@@ -122,13 +128,11 @@ public:
 
 
 
-extern PythonEnvironment pyenv;
-
 typedef py::gil_scoped_acquire AcquireGIL; 
 typedef py::gil_scoped_release ReleaseGIL; 
 
 
-static void InitSlice( const py::slice &inds, size_t len, size_t &start, size_t &step, size_t &n ) {
+inline void InitSlice( const py::slice &inds, size_t len, size_t &start, size_t &step, size_t &n ) {
       size_t stop;
       if (!inds.compute(len, &start, &stop, &step, &n))                                          
         throw py::error_already_set();
@@ -238,42 +242,6 @@ void PyDefVector( py::module &m, TCLASS &c )
     PyDefBracketOperator<T, TELEM>(m,c);
 }
 
-//////////////////////////////////////////////////////////////////////
-// Enable numeric expressions for matrix class
-inline void PyEnableMatExpr(const char *class_name) {
-  string cn(class_name);
-  pyenv.exec(cn + ".expr = property(lambda self: MatExpr(self))");
-  pyenv.exec(cn + ".data = property(lambda self: None, lambda self, a: Expr(a).AssignTo(self.expr))");
-  pyenv.exec(cn + ".__add__ = lambda self,y: self.expr+Expr(y)");
-  pyenv.exec(cn + ".__rmul__ = lambda self,y: y*self.expr ");
-  pyenv.exec(cn + ".__mul__ = lambda self,y: MatVecExpr(self.expr, Expr(y))");
-}
-
-//////////////////////////////////////////////////////////////////////
-// Enable numeric expressions for vector class
-inline void PyEnableVecExpr(const char *class_name) {
-
-  string cn(class_name);
-  pyenv.exec(cn + ".expr = property(lambda self: VecExpr(self))");
-  pyenv.exec(cn + ".data = property(lambda self: None, lambda self, a: Expr(a).AssignTo(self.expr))");
-  pyenv.exec(cn + ".__add__ = lambda self,y: self.expr+Expr(y)");
-  pyenv.exec(cn + ".__rmul__ = lambda self,y: y*self.expr ");
-  pyenv.exec(cn + ".__getitem__ = GetSlice");
-  pyenv.exec(cn + ".__setitem__ = SetSlice");
-}
-
-//////////////////////////////////////////////////////////////////////
-// Enable Slicing support
-inline void PyEnableSlicing(const char *class_name) {
-
-  string cn(class_name);
-  pyenv.exec(cn + ".__getitem__ = GetSlice");
-  pyenv.exec(cn + ".__setitem__ = SetSlice");
-}
-
-
-
-
 
 //////////////////////////////////////////////////////////////////
 // SymbolTable - template
@@ -294,7 +262,7 @@ inline ostream & operator<< (ostream & ost, PyRef<T> ref)
   return ost;
 }
 
-template<typename T> struct PyTraits {};
+template<typename T> struct PyTraits { };
 template<> struct PyTraits<double> {typedef py::float_ type;};
 template<> struct PyTraits<string> {typedef py::str type;};
 template<> struct PyTraits<bool> {typedef py::bool_ type;};
@@ -329,6 +297,14 @@ Array<T> makeCArray(const py::object & obj)
   throw py::type_error("Cannot convert Python object to C Array");
 }
 
+template<typename T>
+Array<T> makeCArraySharedPtr(const py::list & obj)
+{
+  Array<T> C_vdL(py::len(obj));
+  for (int i = 0; i < py::len(obj); i++)
+    C_vdL[i] = py::extract<T>(obj[i])();
+  return std::move(C_vdL);
+}
 template<typename T>
 Array<decltype(std::declval<T>().Get())> makeCArrayUnpackWrapper(const py::list & obj)
 {

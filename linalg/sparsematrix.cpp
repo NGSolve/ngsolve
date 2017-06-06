@@ -40,9 +40,18 @@ namespace ngla
     
     // colnr.SetSize (nze+1);
     colnr = NumaDistributedArray<int> (nze+1);
-    
+
     for (size_t i = 0; i < nze; i++)
       colnr[i] = -1;
+
+    /*
+    FlatArray<int> hcolnr = colnr;
+    ParallelForRange (nze,
+		      [hcolnr] (auto myrange)
+		      {
+			hcolnr.Range(myrange) = -1;
+		      });
+    */
     colnr[nze] = 0;
 
     CalcBalancing ();
@@ -1008,13 +1017,14 @@ namespace ngla
   template <class TM>
   void SparseMatrixTM<TM> ::
   AddElementMatrix(FlatArray<int> dnums1, FlatArray<int> dnums2, 
-                   FlatMatrix<TSCAL> elmat1, bool use_atomic)
+                   BareSliceMatrix<TSCAL> elmat1, bool use_atomic)
   {
     ArrayMem<int, 50> map(dnums2.Size());
     for (int i = 0; i < map.Size(); i++) map[i] = i;
     QuickSortI (dnums2, map);
-
     Scalar2ElemMatrix<TM, TSCAL> elmat (elmat1);
+      // .AddSize(mat_traits<TM>::HEIGHT*dnums1.Size(),
+      // mat_traits<TM>::WIDTH*dnums2.Size()));
 
     for (int i = 0; i < dnums1.Size(); i++)
       if (dnums1[i] != -1)
@@ -1594,7 +1604,7 @@ namespace ngla
 
   template <class TM>
   void SparseMatrixSymmetricTM<TM> ::
-  AddElementMatrix(FlatArray<int> dnums, FlatMatrix<TSCAL> elmat1, bool use_atomic)
+  AddElementMatrix(FlatArray<int> dnums, BareSliceMatrix<TSCAL> elmat1, bool use_atomic)
   {
     // static Timer timer ("SparseMatrixSymmetric::AddElementMatrix", 2);
     // RegionTimer reg (timer);
@@ -1606,6 +1616,8 @@ namespace ngla
     QuickSortI (dnums, map);
 
     Scalar2ElemMatrix<TM, TSCAL> elmat (elmat1);
+      // .AddSize(mat_traits<TM>::HEIGHT*dnums.Size(),
+      // mat_traits<TM>::WIDTH*dnums.Size()));
 
     int first_used = 0;
     while (first_used < dnums.Size() && dnums[map[first_used]] == -1) first_used++;
@@ -1765,7 +1777,8 @@ namespace ngla
                  });
     t1.Stop();
     t2.Start();
-    SparseMatrixTM<double> * trans = new SparseMatrix<double>(cnt);
+    SparseMatrixTM<double> * trans = new SparseMatrix<double>(cnt, mat.Height());
+    /*
     cnt = 0;
     for (int i = 0; i < mat.Height(); i++)
       for (int ci : Range(mat.GetRowIndices(i)))
@@ -1775,6 +1788,26 @@ namespace ngla
           trans -> GetRowIndices(c)[pos] = i;
           trans -> GetRowValues(c)[pos] = mat.GetRowValues(i)[ci];
         }
+    */
+    cnt = 0;
+    ParallelFor (mat.Height(), [&] (int i)
+                 {
+                   for (int ci : Range(mat.GetRowIndices(i)))
+                     {
+                       int c = mat.GetRowIndices(i)[ci];
+                       int pos = AsAtomic(cnt[c])++;
+                       trans -> GetRowIndices(c)[pos] = i;
+                       trans -> GetRowValues(c)[pos] = mat.GetRowValues(i)[ci];
+                     }
+                 });
+
+    ParallelFor (trans->Height(), [&] (int r)
+                 {
+                   auto rowvals = trans->GetRowValues(r);
+                   BubbleSort (trans->GetRowIndices(r),
+                               FlatArray<double> (rowvals.Size(), &rowvals(0)));
+                 });
+
     t2.Stop();
     return trans;
   }
@@ -1871,7 +1904,7 @@ namespace ngla
              sizes.SetSize(mata_ci.Size());
              for (int j : Range(mata_ci))
                {
-                 ptrs[j] = &matb.GetRowIndices(mata_ci[j])[0];
+                 ptrs[j] = matb.GetRowIndices(mata_ci[j]).Addr(0);
                  sizes[j] = matb.GetRowIndices(mata_ci[j]).Size();
                }
              int cnti = 0;
@@ -1900,7 +1933,7 @@ namespace ngla
              sizes.SetSize(mata_ci.Size());
              for (int j : Range(mata_ci))
                {
-                 ptrs[j] = &matb.GetRowIndices(mata_ci[j])[0];
+                 ptrs[j] = matb.GetRowIndices(mata_ci[j]).Addr(0);
                  sizes[j] = matb.GetRowIndices(mata_ci[j]).Size();
                }
              int cnti = 0;
@@ -2499,6 +2532,45 @@ namespace ngla
 #if MAX_SYS_DIM >= 8
   template class SparseMatrixTM<Mat<8,8,double> >;
   template class SparseMatrixTM<Mat<8,8,Complex> >;
+#endif
+
+
+
+  template class SparseMatrixSymmetricTM<double>;
+  template class SparseMatrixSymmetricTM<Complex>;
+
+
+#if MAX_SYS_DIM >= 1
+  template class SparseMatrixSymmetricTM<Mat<1,1,double> >;
+  template class SparseMatrixSymmetricTM<Mat<1,1,Complex> >;
+#endif
+#if MAX_SYS_DIM >= 2
+  template class SparseMatrixSymmetricTM<Mat<2,2,double> >;
+  template class SparseMatrixSymmetricTM<Mat<2,2,Complex> >;
+#endif
+#if MAX_SYS_DIM >= 3
+  template class SparseMatrixSymmetricTM<Mat<3,3,double> >;
+  template class SparseMatrixSymmetricTM<Mat<3,3,Complex> >;
+#endif
+#if MAX_SYS_DIM >= 4
+  template class SparseMatrixSymmetricTM<Mat<4,4,double> >;
+  template class SparseMatrixSymmetricTM<Mat<4,4,Complex> >;
+#endif
+#if MAX_SYS_DIM >= 5
+  template class SparseMatrixSymmetricTM<Mat<5,5,double> >;
+  template class SparseMatrixSymmetricTM<Mat<5,5,Complex> >;
+#endif
+#if MAX_SYS_DIM >= 6
+  template class SparseMatrixSymmetricTM<Mat<6,6,double> >;
+  template class SparseMatrixSymmetricTM<Mat<6,6,Complex> >;
+#endif
+#if MAX_SYS_DIM >= 7
+  template class SparseMatrixSymmetricTM<Mat<7,7,double> >;
+  template class SparseMatrixSymmetricTM<Mat<7,7,Complex> >;
+#endif
+#if MAX_SYS_DIM >= 8
+  template class SparseMatrixSymmetricTM<Mat<8,8,double> >;
+  template class SparseMatrixSymmetricTM<Mat<8,8,Complex> >;
 #endif
 
 

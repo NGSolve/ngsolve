@@ -16,6 +16,9 @@ def expr_add(a,b):
 def expr_sub(a,b):
     return Expr(a) - Expr(b)
 
+def expr_neg(a):
+    return -Expr(a)
+
 def expr_mul(a,b):
     return Expr(a) * Expr(b)
 
@@ -46,6 +49,9 @@ class BaseExpr:
 
     def __sub__(self, other):
         return SumExpr(self, Expr(other).Scale(-1))
+    
+    def __neg__(self):
+        return self.Scale(-1)
     
     def __str__(self):
         return str(self.s) + '*' +str(self.a)

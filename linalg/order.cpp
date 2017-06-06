@@ -152,6 +152,7 @@ namespace ngla
   void MinimumDegreeOrdering :: EliminateMasterVertex (int v)
   {
     static Timer t("MDO::EliminateMaster", 2);
+    /*
     static Timer t1("MDO::EliminateMaster 1", 2);
     static Timer t2("MDO::EliminateMaster 2", 2);
     static Timer t2a("MDO::EliminateMaster 2a", 2);
@@ -159,9 +160,10 @@ namespace ngla
     static Timer t2c("MDO::EliminateMaster 2c", 2);
     static Timer t3("MDO::EliminateMaster 3", 2);
     static Timer t4("MDO::EliminateMaster 4 (calcdeg)", 2);
+    */
     RegionTimer reg(t);
 
-    t1.Start();
+    // t1.Start();
     // (*testout) << "Eliminate Master Vertex " << v  << endl;
 
     // int numslaves = NumSlaves (v);
@@ -207,7 +209,7 @@ namespace ngla
 	while (p2 != p1);
       }
 
-    t1.Stop();
+    // t1.Stop();
 
 
     if (!newp)
@@ -233,8 +235,8 @@ namespace ngla
     // close new clique
     newp -> clmaster -> next = newp;
       
-    t2.Start();
-    t2a.Start();
+    // t2.Start();
+    // t2a.Start();
 
 
     // find dominated cliques
@@ -295,8 +297,8 @@ namespace ngla
       while (p3 != newp);
     }
     
-    t2a.Stop();
-    t2b.Start();
+    // t2a.Stop();
+    // t2b.Start();
     
     {
       // clear flag
@@ -357,8 +359,8 @@ namespace ngla
       cliques[v] = NULL;
     }
     
-    t2b.Stop();
-    t2c.Start();
+    // t2b.Stop();
+    // t2c.Start();
 
 
     // find equivalent cliques
@@ -415,11 +417,11 @@ namespace ngla
       }
     while (p3 != newp);
 
-    t2c.Stop();
-    t2.Stop();
+    // t2c.Stop();
+    // t2.Stop();
 
 
-    t3.Start();
+    // t3.Start();
 
     {
       // setup elimination data structures for vertex v
@@ -514,10 +516,10 @@ namespace ngla
               cliques[v3o] = nullptr;
             }
         }
-      t3.Stop();
+      // t3.Stop();
     }
     
-    t4.Start();
+    // t4.Start();
     // calc master degrees in new clique
     if (anymaster)
       {
@@ -529,7 +531,7 @@ namespace ngla
           }
         while (p3 != anymaster);      
       }
-    t4.Stop();
+    // t4.Stop();
   }
 
 

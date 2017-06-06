@@ -143,6 +143,7 @@ namespace ngfem
                                                  BareSliceVector<> coefs) const
     { throw ExceptionNOSIMD("HCurlFE - simd addcurltrans not overloaded"); }
 
+    NGS_DLL_HEADER virtual void CalcDualShape (const MappedIntegrationPoint<DIM,DIM> & mip, SliceMatrix<> shape) const;
   protected:
     ///
     virtual void CalcShape1 (const IntegrationPoint & ip, 

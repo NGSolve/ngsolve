@@ -31,7 +31,15 @@ Here, the assembling operates in parallel. The finite element space
 provides a coloring such that elements of the same color can be
 processed simultaneously. Also helper functions such as sparse matrix
 graph creation uses parallel loops.
-                  
+
+The default number of threads is the (logical) number of cores.
+It can be overwritten by the environment variable NGS_NUM_THREADS,
+or by calling the python function
+
+.. code-block:: python
+
+                SetNumThreads ( num_threads )
+
 
 Another typical example for parallel execution are equation
 solvers. Here is a piece of code of the conjugate gradient solver from

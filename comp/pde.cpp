@@ -1,6 +1,7 @@
 #include <solve.hpp>
 
 #ifdef TCL
+extern "C" void Ng_TclCmd(string);
 #include <tcl.h>
 #if TCL_MAJOR_VERSION==8 && TCL_MINOR_VERSION>=4
 #define tcl_const const
@@ -912,7 +913,7 @@ namespace ngcomp
           {
             string name, fesname;
             archive & name & fesname;
-            auto gf = CreateGridFunction (GetFESpace(fesname), name, { "novisual" } );
+            shared_ptr<GridFunction> gf = CreateGridFunction (GetFESpace(fesname), name, { "novisual" } );
             // cout << "got gf, type = " << typeid(*gf).name() << endl;
             AddGridFunction (name, gf);
             gridfunctions[i] -> DoArchive (archive);
@@ -1108,7 +1109,7 @@ namespace ngcomp
 
     auto space = GetFESpace(spacename);
  
-    auto gf = CreateGridFunction (space, name, flags);
+    shared_ptr<GridFunction> gf = CreateGridFunction (space, name, flags);
     AddGridFunction (name, gf, true); // flags.GetDefineFlag ("addcoef"));
     return gf;
   }
@@ -1119,7 +1120,7 @@ namespace ngcomp
     gridfunctions.Set (name, gf);
     todo.Append(gf);
 
-    if (addcf && (gf->GetFESpace()->GetIntegrator()||gf->GetFESpace()->GetEvaluator()) )
+    if (addcf && (gf->GetFESpace()->GetIntegrator(VOL)||gf->GetFESpace()->GetEvaluator()) )
       AddCoefficientFunction (name, make_shared<GridFunctionCoefficientFunction>(gf));
     
     if (addcf && gf->GetFESpace()->GetFluxEvaluator())
@@ -1425,8 +1426,9 @@ namespace ngcomp
   void PDE :: Tcl_Eval (string str)
   {
 #ifdef TCL
-    if (!tcl_interpreter) return;
-    ::Tcl_Eval (tcl_interpreter, str.c_str());
+    Ng_TclCmd(str);
+//     if (!tcl_interpreter) return;
+//     ::Tcl_Eval (tcl_interpreter, str.c_str());
 #else
     cout << "sorry, no Tcl" << endl;
 #endif

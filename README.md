@@ -1,2 +1,1 @@
-Please use the wiki of the ngsolve-docu project: [ngsolve-docu-wiki][]
-[ngsolve-docu-wiki]: https://gitlab.asc.tuwien.ac.at/jschoeberl/ngsolve-docu/wikis/home
+find the docu on [ngsolve.org](https://www.ngsolve.org)

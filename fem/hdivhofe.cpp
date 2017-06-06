@@ -519,6 +519,9 @@ namespace ngfem
                   ndof += (order_inner[0]-1)*(order_inner[0]+1)*(order_inner[0]+2)/2;
               */
               break;
+            case ET_HEX:
+              ndof = 3*(p+1)*(p+1)*p;
+              break; 
             }
         }
         else
@@ -562,6 +565,9 @@ namespace ngfem
               */
                 }
               break;
+            case ET_HEX:
+              ndof += 3*(p+1)*(p+1)*p;              
+              break; 
             }
         }
 	// cout << "ndof, tot = " << ndof << endl;

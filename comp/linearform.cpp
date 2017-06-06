@@ -217,6 +217,8 @@ namespace ngcomp
 			 if(parts[j]->VB() != vb) continue;
 			 if(!parts[j]->DefinedOn(el.GetIndex())) continue;
                          if (parts[j]->SkeletonForm()) continue;
+			 if (parts[j] -> IntegrationAlongCurve()) continue;
+
 			 int elvec_size = fel.GetNDof()*fespace->GetDimension();
 			 FlatVector<TSCAL> elvec(elvec_size, lh);
 			 
@@ -253,45 +255,44 @@ namespace ngcomp
 	    LocalHeap lh = clh.Split();
 	    Array<int> dnums;
 	    Array<int> fnums, elnums, vnums;
-	    //Schleife fuer Facet-Integrators: 
+	    // loop for facet integrators: 
             for (int i : r)
 		{
 		  {
                     lock_guard<mutex> guard(linformsurfneighprint_mutex);
 		    gcnt++;
 		    if (i % 10 == 0)
-		      cout << "\rassemble facet surface element " << i << "/" << nse << flush;
+		      cout << IM(3) << "\rassemble facet surface element " << i << "/" << nse << flush;
 		    ma->SetThreadPercentage ( 100.0*(gcnt) / (loopsteps) );
 		  }
 
 		  HeapReset hr(lh);
 		  
+                  ElementId sei(BND, i);
 		  
-		  ma->GetSElFacets(i,fnums);
+		  fnums = ma->GetElFacets(sei);
 		  int fac = fnums[0];
 		  ma->GetFacetElements(fac,elnums);
 		  int el = elnums[0];
-		  ma->GetElFacets(el,fnums);
+                  ElementId ei(VOL, el);
+		  fnums = ma->GetElFacets(ei);
 		  int facnr = 0;
 		  for (int k=0; k<fnums.Size(); k++)
 		    if(fac==fnums[k]) facnr = k;
 
-                  ElementId ei(VOL, el);
-                  ElementId sei(BND, i);
-                  
 		  const FiniteElement & fel = fespace->GetFE (ei, lh);
 		
 		  ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
 		  ElementTransformation & seltrans = ma->GetTrafo (sei, lh);
 
 		  fespace->GetDofNrs (ei, dnums);
-		  ma->GetElVertices (el, vnums);		
+		  vnums = ma->GetElVertices (ei);		
 	      
 		  for (int j = 0; j < parts.Size(); j++)
 		    {
 		      if (!parts[j] -> SkeletonForm()) continue;
 		      if (parts[j] -> VB()!=BND) continue;
-		      if (!parts[j] -> DefinedOn (ma->GetSElIndex (i))) continue;
+		      if (!parts[j] -> DefinedOn (ma->GetElIndex (sei))) continue;
 		      if (parts[j] -> IntegrationAlongCurve()) continue;		    
 		  
 		      int elvec_size = dnums.Size()*fespace->GetDimension();
@@ -319,7 +320,7 @@ namespace ngcomp
 		}
 		
 	  });//end of parallel
-	  cout << "\rassemble facet surface element  " << nse << "/" << nse << endl;	  
+	  cout << IM(3) << "\rassemble facet surface element  " << nse << "/" << nse << endl;	  
 	}//endof hasskeletonbound
 
 
@@ -355,7 +356,7 @@ namespace ngcomp
 		    
 		    if (i%500 == 0)
 		      {
-			cout << "\rassemble curvepoint " << i << "/" << parts[j]->NumCurvePoints() << flush;
+			cout << IM(3) << "\rassemble curvepoint " << i << "/" << parts[j]->NumCurvePoints() << flush;
 			ma->SetThreadPercentage(100.*i/parts[j]->NumCurvePoints());
 		      }
 		    
@@ -448,7 +449,7 @@ namespace ngcomp
 
 
 
-	    cout << "\rassemble curvepoint " << parts[j]->NumCurvePoints() << "/" 
+	    cout << IM(3) << "\rassemble curvepoint " << parts[j]->NumCurvePoints() << "/" 
 		 << parts[j]->NumCurvePoints() << endl;
 	    clh.CleanUp();
 
@@ -550,12 +551,11 @@ namespace ngcomp
 	    lh.CleanUp();
 	    ElementId sei(BND, i);
 	    const FiniteElement & sfel = fespace->GetFE (sei, lh);
-	    // ma->GetSurfaceElementTransformation (i, seltrans);
 	    ElementTransformation & seltrans = ma->GetTrafo (sei, lh);
 
 	      	
 	    // (*testout) << "el = " << i << ", ind = " << ma->GetSElIndex(i) << endl;
-	    if (!parts[0]->DefinedOn (ma->GetSElIndex(i))) continue;
+	    if (!parts[0]->DefinedOn (ma->GetElIndex(sei))) continue;
 	    // (*testout) << "integrate surf el " << endl;
 	    
 	    const IntegrationRule & ir = SelectIntegrationRule (sfel.ElementType(), 5);
@@ -777,12 +777,12 @@ namespace ngcomp
   shared_ptr<LinearForm> CreateLinearForm (shared_ptr<FESpace> space,
                                            const string & name, const Flags & flags)
   {
-    LinearForm * lfp = 
-      CreateVecObject  <T_LinearForm, LinearForm> 
+    shared_ptr<LinearForm> lf = 
+      CreateSharedVecObject  <T_LinearForm, LinearForm> 
       (space->GetDimension() * int(flags.GetNumFlag("cacheblocksize",1)), 
        space->IsComplex(), space, name, flags);
   
-    shared_ptr<LinearForm> lf(lfp);
+    // shared_ptr<LinearForm> lf(lfp);
     
     lf->SetIndependent (flags.GetDefineFlag ("independent"));
     if (flags.GetDefineFlag ( "noinitialassembling" )) lf->SetNoInitialAssembling();

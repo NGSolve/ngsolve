@@ -18,8 +18,12 @@ add_library(ngfem ${NGS_LIB_TYPE}
         hybridDG.cpp diffop.cpp l2hofefo.cpp h1hofefo.cpp
         facethofe.cpp python_fem.cpp DGIntegrators.cpp pml.cpp
         h1hofe_segm.cpp h1hofe_trig.cpp symbolicintegrator.cpp tpdiffop.cpp
-        tensorproductintegrator.cpp
+        tensorproductintegrator.cpp code_generation.cpp
         )
+
+target_compile_definitions(ngfem PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
+target_compile_options(ngfem PUBLIC ${NGSOLVE_COMPILE_OPTIONS})
+target_include_directories(ngfem PUBLIC ${NGSOLVE_INCLUDE_DIRS})
 
 if(USE_CUDA)
     cuda_add_library( cuda_fem STATIC
@@ -50,8 +54,6 @@ install( FILES
         diffop_impl.hpp hcurlhofe_impl.hpp thcurlfe.hpp tpdiffop.hpp tpintrule.hpp
         thcurlfe_impl.hpp symbolicintegrator.hpp code_generation.hpp 
         tensorproductintegrator.hpp fe_interfaces.hpp
-        DESTINATION include
+        DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
         COMPONENT ngsolve_devel
        )
-
-# install (FILES ngfemcf.py DESTINATION python)

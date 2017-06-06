@@ -1,7 +1,21 @@
 set(PACKAGE_VERSION "@NGSOLVE_VERSION@")
+find_package(Netgen CONFIG REQUIRED HINTS
+  ${CMAKE_CURRENT_LIST_DIR}
+  ${CMAKE_CURRENT_LIST_DIR}/..
+  ${CMAKE_CURRENT_LIST_DIR}/../netgen
+)
+
+get_filename_component(NGSOLVE_DIR  "${NETGEN_DIR}"  ABSOLUTE)
+
+get_filename_component(NGSOLVE_INCLUDE_DIR  "${NETGEN_INCLUDE_DIR}"  ABSOLUTE)
+get_filename_component(NGSOLVE_BINARY_DIR   "${NETGEN_BINARY_DIR}"   ABSOLUTE)
+get_filename_component(NGSOLVE_LIBRARY_DIR  "${NETGEN_LIBRARY_DIR}"  ABSOLUTE)
+get_filename_component(NGSOLVE_PYTHON_DIR   "${NETGEN_PYTHON_DIR}"   ABSOLUTE)
+get_filename_component(NGSOLVE_RESOURCE_DIR "${NETGEN_RESOURCE_DIR}" ABSOLUTE)
+
 set(NGSOLVE_INSTALL_DIR "@CMAKE_INSTALL_PREFIX@")
 
-set(NGSOLVE_INCLUDE_DIR "@CMAKE_INSTALL_PREFIX@/include")
+set(NGSOLVE_INCLUDE_DIRS "@NGSOLVE_INCLUDE_DIRS@;${NETGEN_INCLUDE_DIRS}")
 
 set(NGSOLVE_CXX_COMPILER "@CMAKE_CXX_COMPILER@")
 
@@ -40,4 +54,31 @@ set(NGSOLVE_COMPILE_FLAGS "@ngscxx_define_flags@" CACHE STRING "Preprocessor def
 set(NGSOLVE_LINK_FLAGS "@ngsld_flags@" CACHE STRING "Link flags set in ngsld")
 set(NGSOLVE_INCLUDE_DIRS @ngscxx_include_dirs@ CACHE STRING "Include dirs set in ngscxx")
 
+set(NGSOLVE_INSTALL_DIR_PYTHON  @NGSOLVE_INSTALL_DIR_PYTHON@)
+set(NGSOLVE_INSTALL_DIR_BIN     @NGSOLVE_INSTALL_DIR_BIN@)
+set(NGSOLVE_INSTALL_DIR_LIB     @NGSOLVE_INSTALL_DIR_LIB@)
+set(NGSOLVE_INSTALL_DIR_INCLUDE @NGSOLVE_INSTALL_DIR_INCLUDE@)
+set(NGSOLVE_INSTALL_DIR_CMAKE   @NGSOLVE_INSTALL_DIR_CMAKE@)
+set(NGSOLVE_INSTALL_DIR_RES     @NGSOLVE_INSTALL_DIR_RES@)
+
 include(${CMAKE_CURRENT_LIST_DIR}/ngsolve-targets.cmake)
+if(@NETGEN_USE_PYTHON@)
+  function(add_ngsolve_python_module target)
+    add_library(${target} SHARED ${ARGN})
+
+    set_target_properties(${target} PROPERTIES PREFIX "")
+    target_link_libraries(${target} @NETGEN_PYTHON_LIBRARIES@)
+
+    if(NETGEN_USE_GUI AND WIN32)
+      target_link_libraries(${target} ngsolve)
+    else(NETGEN_USE_GUI AND WIN32)
+      target_link_libraries(${target} solve)
+    endif(NETGEN_USE_GUI AND WIN32)
+
+    if(WIN32)
+      set_target_properties( ${target} PROPERTIES SUFFIX ".pyd" )
+    else(WIN32)
+      set_target_properties(${target} PROPERTIES SUFFIX ".so")
+    endif(WIN32)
+endfunction()
+endif(@NETGEN_USE_PYTHON@)

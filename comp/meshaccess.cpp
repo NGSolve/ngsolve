@@ -18,8 +18,8 @@ namespace ngcomp
   template <int DIMS, int DIMR>
   class Ng_ElementTransformation : public ElementTransformation
   {
-    // const netgen::Ngx_Mesh * mesh;
     const MeshAccess * mesh;	
+
   public:
     Ng_ElementTransformation (const MeshAccess * amesh,
                               ELEMENT_TYPE aet, ElementId ei, int elindex) 
@@ -29,14 +29,6 @@ namespace ngcomp
       iscurved = true;
     }
 
-    /*
-    virtual void SetElement (bool aboundary, int aelnr, int aelindex)
-    {
-      elnr = aelnr;
-      elindex = aelindex;
-      iscurved = true;
-    }
-    */
     virtual int SpaceDim () const
     {
       return DIMR;
@@ -154,9 +146,13 @@ namespace ngcomp
          &ir[0](0), ir.Size()>1 ? &ir[1](0)-&ir[0](0) : 0,
          &mir[0].Point()(0), ir.Size()>1 ? &mir[1].Point()(0)-&mir[0].Point()(0) : 0, 
          &mir[0].Jacobian()(0,0), ir.Size()>1 ? &mir[1].Jacobian()(0,0)-&mir[0].Jacobian()(0,0) : 0);
-      
+
+      /*
       for (int i = 0; i < ir.Size(); i++)
         mir[i].Compute();
+      */
+      for (auto & mip : mir)
+        mip.Compute();
   }
 
 
@@ -803,19 +799,18 @@ namespace ngcomp
 
   void MeshAccess :: GetSElNeighbouringDomains(const int elnr, int & in, int & out) const
   {
-    ArrayMem<int, 1> elnums;
-    ArrayMem<int, 2> fnums;
-    GetSElFacets(elnr, fnums);
+    ArrayMem<int, 2> elnums;
+    auto fnums = GetElFacets(ElementId(BND,elnr));
     GetFacetElements ( fnums[0], elnums );
     if (elnums.Size()==1)
     {
-      in = GetElIndex(elnums[0])+1;
+      in = GetElIndex(ElementId(VOL,elnums[0]))+1;
       out = 0;
     }
     else
     {
-      out = GetElIndex(elnums[0])+1;
-      in = GetElIndex(elnums[1])+1;
+      out = GetElIndex(ElementId(VOL,elnums[0]))+1;
+      in = GetElIndex(ElementId(VOL,elnums[1]))+1;
     }
   }
 
@@ -824,6 +819,8 @@ namespace ngcomp
   {
     static Timer t("MeshAccess::UpdateBuffers");
     RegionTimer reg(t);
+
+    timestamp = NGS_Object::GetNextTimeStamp();
     
     if (!mesh.Valid())
       {
@@ -882,7 +879,7 @@ namespace ngcomp
     int ne = GetNE(); 
     for (int i = 0; i < ne; i++)
       {
-        int elindex = GetElIndex(i);
+        int elindex = GetElIndex(ElementId(VOL,i));
         if (elindex < 0) throw Exception("mesh with negative element-index");
         ndomains = max2(ndomains, elindex);
       }
@@ -895,7 +892,8 @@ namespace ngcomp
     int nse = GetNSE(); 
     for (int i = 0; i < nse; i++)
       {
-        int elindex = GetSElIndex(i);
+        ElementId sei(BND, i);
+        int elindex = GetElIndex(sei);
         if (elindex < 0) throw Exception("mesh with negative boundary-condition number");
         nboundaries = max2(nboundaries, elindex);
       }
@@ -914,7 +912,8 @@ namespace ngcomp
         int ncd2e = nelements_cd[2];
         for (int i=0; i< ncd2e; i++)
           {
-            int elindex = GetCD2ElIndex(i);
+            ElementId ei(BBND, i);
+            int elindex = GetElIndex(ei);
             //if (elindex < 0) throw Exception ("mesh with negative cd2 condition number");
             if (elindex >=0)
               nbboundaries = max2(nbboundaries, elindex);
@@ -1021,77 +1020,7 @@ namespace ngcomp
               }
           }
       }
-    
- }
-
-
-#ifdef ABC
-  void MeshAccess::GetTopologicElement (int elnr, TopologicElement & topel) const
-  {
-    int help[54];
-    int nnodes;
-
-    nnodes = Ng_GetElementClosureNodes (dim, elnr, 
-                                        NodeSet (NT_VERTEX, NT_EDGE, NT_FACE, NT_CELL), help);
-        
-    topel.SetElementType (GetElType(elnr));
-    topel.Clear();
-    for (int i = 0; i < nnodes; i++)
-      topel.AddNode (Node (NODE_TYPE (help[2*i]), help[2*i+1]));
-    
-    /*    
-    // 2D case
-    ArrayMem<int, 12> nums;
-    
-    topel.SetElementType (GetElType(elnr));
-    topel.Clear();
-
-    GetElVertices (elnr, nums);
-    for (int j = 0; j < nums.Size(); j++)
-    topel.AddNode (Node (NT_VERTEX, nums[j]));
-
-    GetElEdges (elnr, nums);
-    for (int j = 0; j < nums.Size(); j++)
-    topel.AddNode (Node (NT_EDGE, nums[j]));
-
-    if (GetDimension() == 3)
-    {
-    GetElFaces (elnr, nums);
-    for (int j = 0; j < nums.Size(); j++)
-    topel.AddNode (Node (NT_FACE, nums[j]));
-        
-    topel.AddNode (Node (NT_CELL, elnr));
-    }
-    else
-    topel.AddNode (Node (NT_FACE, elnr));
-    */
   }
-#endif
-
-
-#ifdef ABC
-  void MeshAccess :: GetSegmentPNums (int snr, Array<int> & pnums) const
-  {
-    pnums = GetElement<1> (snr).Points();
-    /*
-    pnums.SetSize(3);
-    int np;
-    Ng_GetSegment (snr+1, &pnums[0], &np);
-    pnums.SetSize(np);
-
-    for (int i = 0; i < np; i++)
-      pnums[i]--;
-    */
-  }
-
-
-  int MeshAccess :: GetSegmentIndex (int snr) const
-  {
-    return mesh -> GetElementIndex<1> (snr);
-    //return Ng_GetSegmentIndex(snr+1);
-  }
-#endif
-
 
   void MeshAccess :: 
   GetElEdges (int elnr, Array<int> & ednums, Array<int> & orient) const
@@ -1125,12 +1054,16 @@ namespace ngcomp
   {
     // static Timer t("getedgeelements"); RegionTimer reg(t);    
     elnums.SetSize0();
-
+    /*
     int p0, p1;
     GetEdgePNums(enr, p0, p1);
 
     auto velems0 = GetVertexElements(p0);
     auto velems1 = GetVertexElements(p1);
+    */
+    auto vts = mesh.GetNode<1>(enr).vertices;
+    auto velems0 = GetVertexElements(vts[0]);
+    auto velems1 = GetVertexElements(vts[1]);
     
     /*
     // n^2 intersection 
@@ -1207,12 +1140,6 @@ namespace ngcomp
   void MeshAccess :: GetFacePNums (int fnr, Array<int> & pnums) const
   {
     pnums = ArrayObject (mesh.GetNode<2> (fnr).vertices);
-    /*
-    pnums.SetSize(4);
-    int nv = Ng_GetFace_Vertices (fnr+1, &pnums[0]);
-    pnums.SetSize(nv);
-    for (int i = 0; i < nv; i++) pnums[i]--;
-    */
   }
 
  
@@ -1262,6 +1189,7 @@ namespace ngcomp
 
   void MeshAccess :: GetFaceSurfaceElements (int fnr, Array<int> & elnums) const
   {
+    /*
     ArrayMem<int, 9> vnums;
     GetFacePNums(fnr, vnums);
 
@@ -1274,6 +1202,15 @@ namespace ngcomp
 	int sface = Ng_GetSurfaceElement_Face (vels[i]+1)-1;
         if (sface == fnr)
           elnums.Append (vels[i]);
+      }
+    */
+    size_t v0 = GetFacePNums(fnr)[0];
+    elnums.SetSize0();    
+    for (auto sel : GetVertexSurfaceElements(v0))
+      {
+        int sface = Ng_GetSurfaceElement_Face (sel+1)-1;
+        if (sface == fnr)
+          elnums.Append (sel);
       }
   }
 
@@ -1292,38 +1229,34 @@ namespace ngcomp
   }
   */
 
+  /*
   auto MeshAccess :: GetEdgePNums (int enr) const -> decltype(ArrayObject(INT<2>()))
   {
     int v2[2];
     Ng_GetEdge_Vertices (enr+1, v2);
     return ArrayObject (INT<2> (v2[0]-1, v2[1]-1));
   }
+  */
 
   void MeshAccess :: GetEdgePNums (int enr, Array<int> & pnums) const
   {
     pnums.SetSize(2);
-    Ng_GetEdge_Vertices (enr+1, &pnums[0]);
-    pnums[0] -= 1;
-    pnums[1] -= 1;
+    // Ng_GetEdge_Vertices (enr+1, &pnums[0]);
+    // pnums[0] -= 1;
+    // pnums[1] -= 1;
+    auto edge = mesh.GetNode<1>(enr);
+    pnums[0] = edge.vertices[0];
+    pnums[1] = edge.vertices[1];
   }
 
   void MeshAccess :: GetElFacets (ElementId ei, Array<int> & fnums) const
   {
+    /*
     if (dim == 1)
       fnums = GetElement(ei).Vertices();
     else
-      fnums = GetElement(ei).Facets();
-    /*
-    switch (dim)
-      {
-      case 1:
-	fnums = GetElement(ei).Vertices(); break;
-      case 2:
-	fnums = GetElement(ei).Edges(); break;
-      default:
-	fnums = GetElement(ei).Faces();
-      }
     */
+    fnums = GetElement(ei).Facets();
   }
 
   // some utility for Facets
@@ -1371,9 +1304,12 @@ namespace ngcomp
       case 1: return ET_POINT; 
       case 2: return ET_SEGM;
       default:  // i.e. dim = 3
+        /*
 	ArrayMem<int, 4> pnums;
 	GetFacePNums(fnr, pnums);
 	return (pnums.Size() == 3) ? ET_TRIG : ET_QUAD;
+        */
+        return (mesh.GetNode<2>(fnr).vertices.Size() == 3) ? ET_TRIG : ET_QUAD;
       }
   }
 
@@ -1435,7 +1371,7 @@ namespace ngcomp
     return (Ng_ShouldTerminate() != 0);
   }
   
-  void MeshAccess :: GetVertexElements (int vnr, Array<int> & elnrs) const
+  void MeshAccess :: GetVertexElements (size_t vnr, Array<int> & elnrs) const
   {
     elnrs = ArrayObject(mesh.GetNode<0> (vnr).elements);
     /*
@@ -1456,7 +1392,7 @@ namespace ngcomp
   
   template <int DIM>
   ElementTransformation & MeshAccess :: 
-  GetTrafoDim (int elnr, Allocator & lh) const
+  GetTrafoDim (size_t elnr, Allocator & lh) const
   {
     // static Timer t("MeshAccess::GetTrafoDim"); RegionTimer reg(t);
     
@@ -1519,7 +1455,7 @@ namespace ngcomp
 
   template <int DIM>
   ElementTransformation & MeshAccess :: 
-  GetSTrafoDim (int elnr, Allocator & lh) const
+  GetSTrafoDim (size_t elnr, Allocator & lh) const
   {
     // static Timer t("MeshAccess::GetTrafoDim");
 
@@ -1561,7 +1497,7 @@ namespace ngcomp
 
   template <int DIM>
   ElementTransformation & MeshAccess ::
-  GetCD2TrafoDim(int elnr, Allocator & lh) const
+  GetCD2TrafoDim (size_t elnr, Allocator & lh) const
   {
     ElementTransformation * eltrans;
     Ngs_Element el(mesh.GetElement<DIM-2>(elnr), ElementId(BBND,elnr));
@@ -1698,9 +1634,9 @@ namespace ngcomp
     static FE_Prism0 prism0;
     static FE_Pyramid0 pyramid0;
     FE_Hex0 hex0;
-  
+    
     const FiniteElement * fe = NULL;
-    switch (GetElType (elnr))
+    switch (GetElType (ElementId(VOL, elnr)))
       {
       case ET_SEGM: fe = &segm0; break;
       case ET_TRIG: fe = &trig0; break;
@@ -1711,7 +1647,7 @@ namespace ngcomp
 	// case ET_HEX: fe = &hex0; break;
       default:
 	{
-	  cerr << "ElementVolume not implemented for el " << GetElType(elnr) << endl;
+	  cerr << "ElementVolume not implemented for el " << GetElType(ElementId(VOL, elnr)) << endl;
 	}
       }
   
@@ -1749,22 +1685,22 @@ namespace ngcomp
   {
     static ScalarFE<ET_TRIG,0> trig0;
     static ScalarFE<ET_QUAD,0> quad0;
-
+    ElementId sei(BND, selnr);
     const FiniteElement * fe;
-    switch (GetSElType (selnr))
+    switch (GetElType (sei))
       {
       case ET_TRIG: fe = &trig0; break;
       case ET_QUAD: fe = &quad0; break;
       default:
 	{
-	  cerr << "SurfaceElementVolume not implemented for el " << GetElType(selnr) << endl;
+	  cerr << "SurfaceElementVolume not implemented for el " << GetElType(sei) << endl;
 	  return 0;
 	}
       }
 
     LocalHeapMem<10000> lh("MeshAccess - surfaceelementvolume");
 
-    ElementTransformation & trans = GetTrafo (ElementId(BND, selnr), lh);
+    ElementTransformation & trans = GetTrafo (sei, lh);
     ConstantCoefficientFunction ccf(1);
 
     if (GetDimension() == 2)
@@ -1986,14 +1922,10 @@ namespace ngcomp
       }
   }
 
-
-///// Added by Roman Stainko ....
-void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
-{
+  void MeshAccess::GetVertexSurfaceElements (size_t vnr, Array<int> & elems) const
+  {
     elems = GetVertexSurfaceElements(vnr);
-}
-
-
+  }
 
   void MeshAccess::SetHigherIntegrationOrder(int elnr)
   {
@@ -2029,13 +1961,13 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
 
 #ifdef PARALLEL
  
-  size_t MeshAccess ::GetGlobalNodeNum (Node node) const
+  size_t MeshAccess ::GetGlobalNodeNum (NodeId node) const
   {
     int glob = NgPar_GetGlobalNodeNum (node.GetType(), node.GetNr());
     return glob;
   }
   
-  void MeshAccess :: GetDistantProcs (Node node, Array<int> & procs) const
+  void MeshAccess :: GetDistantProcs (NodeId node, Array<int> & procs) const
   {
     procs.SetSize( NgPar_GetNDistantNodeNums(node.GetType(), node.GetNr()) );
     NgPar_GetDistantNodeNums ( node.GetType(), node.GetNr(), &procs[0] );
@@ -2056,27 +1988,27 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
 #endif
 
 
-
-
-
-
-  
+  function<void()> cleanup_func;
   ProgressOutput :: ProgressOutput (shared_ptr<MeshAccess> ama,
 				    string atask, size_t atotal)
     : ma(ama), task(atask), total(atotal)
   {
     is_root = (MyMPI_GetId() == 0);
     prevtime = WallTime();
-    int glob_total = MyMPI_Reduce (total);
+    size_t glob_total = MyMPI_Reduce (total);
     if (is_root) total = glob_total;
 
     done_called = false;
     cnt = 0;
+    thd_cnt = 0;
+    cleanup_func = [this] () {  this->SumUpLocal(); };
+    TaskManager::SetCleanupFunction(cleanup_func); 
   }
 
   ProgressOutput :: ~ProgressOutput ()
   {
     Done();
+    TaskManager::SetCleanupFunction();
   }  
 
   atomic<size_t> ProgressOutput :: cnt;

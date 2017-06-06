@@ -30,6 +30,7 @@ using namespace ngsolve;
 namespace netgen
 {
     DLL_HEADER extern string ngdir;
+    DLL_HEADER extern bool netgen_executable_started;
 }
 
 #ifdef SOCKETS
@@ -41,6 +42,8 @@ namespace netgen
 // #include <dlfcn.h>  // dlopen of python lib ???
 #include "../ngstd/python_ngstd.hpp"
 
+extern PythonEnvironment pyenv;
+
 void * ptr = (void*)PyOS_InputHook;
 
 
@@ -49,7 +52,7 @@ std::thread::id pythread_id = std::this_thread::get_id();
 std::thread::id mainthread_id = std::this_thread::get_id();
 
 
-void SpawnPython (string initfile)
+void SpawnPython ()
 {
   if(pythread_id != mainthread_id) 
     {
@@ -57,13 +60,13 @@ void SpawnPython (string initfile)
     }
   else
     {
-      std::thread([](string init_file_) 
+      std::thread([]()
                   {
                     AcquireGIL gil_lock;
                     try{
                       Ng_SetRunning (1); 
                       pythread_id = std::this_thread::get_id();
-                      pyenv.exec_file(init_file_.c_str());
+                      pyenv.exec("import ngsolve.__console;ngsolve.__console.startConsole()");
                       Ng_SetRunning (0); 
                     }
                     catch (py::error_already_set const &) {
@@ -73,7 +76,7 @@ void SpawnPython (string initfile)
                     
                     pythread_id = mainthread_id;
                     
-                  }, initfile).detach();
+                  }).detach();
       /*
       cout << IM(1)
           << "ngs-python objects are available in ngstd, bla, ...\n"
@@ -521,6 +524,10 @@ int NGS_LoadPy (ClientData clientData,
 		Tcl_Interp * interp,
 		int argc, tcl_const char *argv[])
 {
+  if(!netgen::netgen_executable_started) {
+      Tcl_SetResult (interp, (char*)"This feature is not available when running from Python", TCL_STATIC);
+      return TCL_ERROR;
+  }
 
   if (Ng_IsRunning())
     {
@@ -782,6 +789,7 @@ int NGS_RestorePDE (ClientData clientData,
       pde->DoArchive (archive);
 
 #ifdef NGS_PYTHON
+  if(netgen::netgen_executable_started)
       {
         AcquireGIL gil_lock;
         pyenv["pde"] = py::cast(pde);
@@ -818,6 +826,7 @@ int NGS_SocketLoad (ClientData clientData,
           pde->DoArchive (archive);
 
 #ifdef NGS_PYTHON
+          if(netgen::netgen_executable_started)
 	  {
 	    AcquireGIL gil_lock;
 	    pyenv["pde"] = py::cast(pde);
@@ -844,10 +853,12 @@ int NGS_PythonShell (ClientData clientData,
                     Tcl_Interp * interp,
                     int argc, tcl_const char *argv[])
 {
+  if(!netgen::netgen_executable_started) {
+      Tcl_SetResult (interp, (char*)"This feature is not available when running from Python", TCL_STATIC);
+      return TCL_ERROR;
+  }
 #ifdef NGS_PYTHON
-  string initfile = netgen::ngdir + dirslash + "init.py";
-  cout << "python init file = " << initfile << endl;
-  SpawnPython(initfile);
+  SpawnPython();
   return TCL_OK;
 #else
   cerr << "Sorry, you have to compile ngsolve with Python" << endl;
@@ -1206,7 +1217,7 @@ namespace ngcomp {
 
 int NGSolve_Init (Tcl_Interp * interp)
 {
-  cout << "NGSolve-" << VERSION << endl;
+  cout << "NGSolve-" << ngsolve_version << endl;
 
 #ifdef LAPACK
   cout << "Using Lapack" << endl;
@@ -1264,54 +1275,48 @@ int NGSolve_Init (Tcl_Interp * interp)
 
 #ifdef NGS_PYTHON
 
-  // void * handle = dlopen ("libpython3.2mu.so", RTLD_LAZY | RTLD_GLOBAL);
-
-  string initfile = netgen::ngdir + dirslash + "init.py";
-  cout << "python init file = " << initfile << endl;
-
-  Py_Initialize();
-  PyEval_InitThreads();
-  
-  py::module main_module = py::module::import("__main__");
-  pyenv = PythonEnvironment (main_module);
-  
+  // Only initialize a python environment if Netgen was started using the executable
+  // In case we start the GUI from python, no further initialization is needed here
+  if(netgen::netgen_executable_started)
   {
-    main_module.def ("SetDefaultPDE", 
-            [](shared_ptr<PDE> apde) 
-                             {  
-                               pde = apde;
-                               pde->GetMeshAccess()->SelectMesh();
-                               Ng_Redraw();
-                               return; 
-                             });
-  }
+    Py_Initialize();
+    PyEval_InitThreads();
 
-  if (MyMPI_GetId() == 0) 
+    py::module main_module = py::module::import("__main__");
+    pyenv = PythonEnvironment (main_module);
+
     {
-      pyenv.exec("from ngsolve import *");
-//       PyEval_ReleaseLock();
-      // Release GIL on this thread and reset thread state
-      // to enable python operations on other threads
-      PyEval_SaveThread();
-
-//       SpawnPython (initfile);
-      // Dummy SpawnPython (to avoid nasty Python GIL error)
-      std::thread([](string init_file_) 
-                  {
-                    AcquireGIL gil_lock;
-                    try{
-                    pyenv.exec("from ngsolve import *");
-                    pyenv.exec("from netgen import *");
-                    }
-                    catch (py::error_already_set const &) {
-                      PyErr_Print();
-                    }
-                  }, initfile).detach();
+      main_module.def ("SetDefaultPDE",
+              [](shared_ptr<PDE> apde)
+                               {
+                                 pde = apde;
+                                 pde->GetMeshAccess()->SelectMesh();
+                                 Ng_Redraw();
+                                 return;
+                               });
     }
 
-  
+    if (MyMPI_GetId() == 0)
+      {
+        pyenv.exec("from ngsolve import *");
+        // Release GIL on this thread and reset thread state
+        // to enable python operations on other threads
+        PyEval_SaveThread();
 
-
+        // Dummy SpawnPython (to avoid nasty Python GIL error)
+        std::thread([]()
+                    {
+                      AcquireGIL gil_lock;
+                      try{
+                      pyenv.exec("from ngsolve import *");
+                      pyenv.exec("from netgen import *");
+                      }
+                      catch (py::error_already_set const &) {
+                        PyErr_Print();
+                      }
+                    }).detach();
+      }
+  }
 #endif
 
 
@@ -1469,14 +1474,13 @@ void Parallel_InitPython ()
       py::module m = py::module::import("__main__");
       pyenv = PythonEnvironment (m);
       {
-	m.def ("SetDefaultPDE", 
-	       FunctionPointer([](shared_ptr<PDE> apde) 
+	m.def ("SetDefaultPDE", [](shared_ptr<PDE> apde)
 			       {  
 				 pde = apde;
 				 pde->GetMeshAccess()->SelectMesh();
 				 Ng_Redraw();
 				 return; 
-			       }));
+			       });
 	m.def ("Redraw", 
 	       []() {Ng_Redraw();});
       }
