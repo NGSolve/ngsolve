@@ -436,8 +436,9 @@ if (NETGEN_USE_MPI)
     if(USE_MKL AND NOT MKL_STATIC)
       set(ngspy_preload_libs "${ngspy_preload_libs}:${MKL_CORE_LIBRARY}:${MKL_THREADING_LIBRARY}:${MKL_INTERFACE_LIBRARY}:${MKL_BLACS_LIBRARY}")
     endif()
+    find_program(BASH bash)
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngspy
-"#! /usr/bin/bash
+"#! ${BASH}
 LD_PRELOAD=$LD_PRELOAD:${ngspy_preload_libs} ${NETGEN_PYTHON_EXECUTABLE} $*
 ")
     install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngspy DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve_devel )
