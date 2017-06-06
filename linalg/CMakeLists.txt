@@ -21,6 +21,15 @@ if(NOT WIN32)
     target_link_libraries(ngla PUBLIC ngbla ngstd ${NETGEN_PYTHON_LIBRARIES} ${LAPACK_LIBRARIES}
 PRIVATE ${MUMPS_LIBRARIES} ${UMFPACK_LIBRARIES} ${SCALAPACK_LIBRARY} ${MPI_Fortran_LIBRARIES} ${MPI_CXX_LIBRARIES})
     install( TARGETS ngla ${ngs_install_dir} )
+    if(USE_MUMPS)
+        # Create dummy fortran lib
+        # This forces cmake to link fortran runtime libraries to ngla
+        file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/dummy.f "")
+        enable_language(Fortran)
+        add_library(dummy_fortran ${CMAKE_CURRENT_BINARY_DIR}/dummy.f)
+        target_link_libraries(ngla PUBLIC dummy_fortran )
+        install( TARGETS dummy_fortran ${ngs_install_dir} )
+    endif()
 endif(NOT WIN32)
 
 if(USE_CUDA)
