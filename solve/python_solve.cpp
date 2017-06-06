@@ -58,7 +58,7 @@ void NGS_DLL_HEADER ExportNgsolve(py::module &m ) {
                    py::tuple norm = py::extract<py::tuple>(clipnormal)();
                    if (py::len(norm)==3)
                      {
-                       cout << "setting clipping normal" << endl;
+                       // cout << "setting clipping normal" << endl;
                        // tclstring << "set ::viewoptions.clipping.enable 1" << endl
                        Ng_TclCmd ("set ::viewoptions.clipping.nx "+ToString(py::extract<double>(norm[0])())+";\n");
                        Ng_TclCmd ("set ::viewoptions.clipping.ny "+ToString(py::extract<double>(norm[1])())+";\n");
@@ -90,9 +90,9 @@ void NGS_DLL_HEADER ExportNgsolve(py::module &m ) {
     m.def ("Draw",
            [](shared_ptr<GridFunction> gf, int sd, bool autoscale, double min, double max)
               {
-                cout << "in draw" << endl;
-                cout << "gf in draw = " << *gf << endl;
-                cout << "dims of gf =  " << gf->Dimensions() << endl;
+                // cout << "in draw" << endl;
+                // cout << "gf in draw = " << *gf << endl;
+                // cout << "dims of gf =  " << gf->Dimensions() << endl;
                 gf->GetMeshAccess()->SelectMesh();
                 Visualize (gf, gf->GetName());
                 if (gf->Dimension() == 1)
