@@ -12,28 +12,42 @@ ngsolve.comp ... function spaces, forms
 
 from ngsolve.ngslib import *
 
+storemyinit = None
 
 def __empty_init(x, *args, **kwargs):
+    return
+
+def __empty_init_reset_init(x,*args,**kwargs):
+    global storemyinit
+    x.__class__.__init__ = storemyinit
+    storemyinit = None
     return
 
 def __hcurl_new(class_t, *args,**kwargs):
     return comp.CreateFESpace(class_t,"hcurlho",*args,**kwargs)
 
-def __mynew(thisclass, creatorfunction):
+def __monkeypatch_new(thisclass, creatorfunction):
     pybind_constructor = thisclass.__new__
-    def foo(class_t, *args,**kwargs):
-        if class_t is thisclass:
-            return  creatorfunction(class_t, *args, **kwargs)
-        else:
+    def patched_new(class_t, *args,**kwargs):
+        global storemyinit
+        # if called from subclass which has a __init__ implementation, call the pybind
+        # __new__ instead
+        if class_t is not thisclass and hasattr(class_t,"__init__"):
+            print("we are calling pybind constructor, init = ", class_t.__init__)
             return pybind_constructor(class_t,*args,**kwargs)
-    return foo
+        else:
+            print("Calling creatorfunction constructor!")
+            storemyinit = class_t.__init__
+            class_t.__init__ = __empty_init_reset_init
+            return  creatorfunction(class_t, *args, **kwargs)
+    return patched_new
+
 
 # assign creator functions to __new__
 comp.BilinearForm.__new__ = comp.CreateBilinearForm
 comp.BilinearForm.__init__ = __empty_init
 
-fem.CoefficientFunction.__new__ = __mynew(fem.CoefficientFunction,fem.CreateCoefficientFunction)
-fem.CoefficientFunction.__init__ = __empty_init
+fem.CoefficientFunction.__new__ = __monkeypatch_new(fem.CoefficientFunction,fem.CreateCoefficientFunction)
 
 comp.GridFunction.__new__ = comp.CreateGridFunction
 comp.GridFunction.__init__ = __empty_init
@@ -56,8 +70,7 @@ fem.BFI.__init__ = __empty_init
 fem.LFI.__new__ = fem.CreateLinearFormIntegrator
 fem.LFI.__init__ = __empty_init
 
-comp.FESpace.__new__ = comp.CreateFESpace
-comp.FESpace.__init__ = __empty_init
+comp.FESpace.__new__ = __monkeypatch_new(comp.FESpace, comp.CreateFESpace)
 
 comp.HCurl.__new__ = __hcurl_new
 comp.HCurl.__init__ = __empty_init
