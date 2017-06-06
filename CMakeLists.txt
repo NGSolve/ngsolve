@@ -200,6 +200,9 @@ endif (NETGEN_USE_GUI)
 
 #######################################################################
 if (NETGEN_USE_MPI)
+    if(USE_MUMPS)
+      enable_language(Fortran)
+    endif(USE_MUMPS)
     find_package(MPI REQUIRED)
     list(APPEND NGSOLVE_COMPILE_DEFINITIONS PARALLEL)
     include_directories(${MPI_CXX_INCLUDE_PATH})
