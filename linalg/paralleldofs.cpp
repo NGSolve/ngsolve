@@ -107,7 +107,7 @@ namespace ngla
     size_t nlocal = 0;
     for (int i = 0; i < ndof; i++)
       if (ismasterdof.Test(i)) nlocal++;
-    global_ndof = MyMPI_AllReduce (nlocal);
+    global_ndof = MyMPI_AllReduce (nlocal, MPI_SUM, comm);
   }
 
 
