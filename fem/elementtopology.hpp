@@ -566,10 +566,10 @@ namespace ngfem
   }
 
 
-  ostream & operator<< (ostream & ost, ELEMENT_TYPE et);
-  ostream & operator<< (ostream & ost, NODE_TYPE nt);
+  NGS_DLL_HEADER ostream & operator<< (ostream & ost, ELEMENT_TYPE et);
+  NGS_DLL_HEADER ostream & operator<< (ostream & ost, NODE_TYPE nt);
 
-  ostream & operator<< (ostream & ost, const NodeId & node);
+  NGS_DLL_HEADER ostream & operator<< (ostream & ost, const NodeId & node);
 
   /**
      A binary representation of selecting V-E-F-C Nodes.

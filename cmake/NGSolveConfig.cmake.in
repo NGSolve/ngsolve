@@ -67,7 +67,6 @@ if(@NETGEN_USE_PYTHON@)
     add_library(${target} SHARED ${ARGN})
 
     set_target_properties(${target} PROPERTIES PREFIX "")
-    target_link_libraries(${target} @NETGEN_PYTHON_LIBRARIES@)
 
     if(NETGEN_USE_GUI AND WIN32)
       target_link_libraries(${target} ngsolve)
