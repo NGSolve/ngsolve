@@ -110,4 +110,16 @@ def NgsUnpickler(*args, **kargs):
     return unpickler
 
 
-__all__ = ['x', 'y', 'z', 'Laplace', 'Mass', 'Source', 'Neumann', 'H1', 'FacetFESpace', 'HCurl', 'HDiv', 'L2', 'HDivDiv', 'grad', 'curl', 'div','NgsPickler', 'NgsUnpickler', 'Mesh' ]
+
+def ConstantCF(val):
+    print ("Warning: ConstantCF deprecated, just use CoefficientFunction(val)")
+    return CoefficientFunction(val)
+
+def DomainConstantCF(values):
+    print ("Warning: DomainConstantCF deprecated, just use CoefficientFunction([values])")
+    return CoefficientFunction(values)
+
+
+__all__ = ['x', 'y', 'z', 'Laplace', 'Mass', 'Source', 'Neumann', 'H1', 'FacetFESpace', 'HCurl', 'HDiv', 'L2', 'HDivDiv', 'grad', 'curl', 'div','NgsPickler', 'NgsUnpickler', 'Mesh', 'ConstantCF', 'DomainConstantCF' ]
+
+
