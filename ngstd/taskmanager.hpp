@@ -67,8 +67,8 @@ namespace ngstd
     NodeData *nodedata[8];
 
     int num_nodes;
-    static int num_threads;
-    static int max_threads;
+    NGS_DLL_HEADER static int num_threads;
+    NGS_DLL_HEADER static int max_threads;
 #ifndef __clang__    
     static thread_local int thread_id;
 #else

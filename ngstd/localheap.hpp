@@ -204,7 +204,7 @@ namespace ngstd
     INLINE size_t Available () const throw () { return (totsize - (p-data)); }
 
     /// Split free memory on heap into pieces for each thread
-    LocalHeap Split () const;
+    NGS_DLL_HEADER LocalHeap Split () const;
 
     /// Split free memory on heap into pieces
     INLINE LocalHeap Split (int partnr, int nparts) const
