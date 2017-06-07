@@ -33,10 +33,8 @@ def __monkeypatch_new(thisclass, creatorfunction):
         # if called from subclass which has a __init__ implementation, call the pybind
         # __new__ instead
         if class_t is not thisclass and hasattr(class_t,"__init__"):
-            print("we are calling pybind constructor, init = ", class_t.__init__)
             return pybind_constructor(class_t,*args,**kwargs)
         else:
-            print("Calling creatorfunction constructor!")
             storemyinit = class_t.__init__
             class_t.__init__ = __empty_init_reset_init
             return  creatorfunction(class_t, *args, **kwargs)
