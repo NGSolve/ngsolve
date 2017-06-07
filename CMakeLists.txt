@@ -92,7 +92,7 @@ if(HAVE_CXA_DEMANGLE)
 endif()
 
 add_custom_target(generate_version_file
-  cmake
+  ${CMAKE_COMMAND}
     -DBDIR=${CMAKE_CURRENT_BINARY_DIR}
     -P ${CMAKE_CURRENT_LIST_DIR}/cmake/generate_version_file.cmake
     )
