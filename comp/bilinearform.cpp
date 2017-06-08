@@ -3296,7 +3296,7 @@ namespace ngcomp
                        if(elnums.Size() < 2)
                          {
 #ifdef PARALLEL
-			   if( (ma->GetDistantProcs (Node(StdNodeType(NT_FACET, ma->GetDimension()), facet)).Size() > 0) && (MyMPI_GetNTasks()>1) )
+			   if( (ma->GetDistantProcs (NodeId(StdNodeType(NT_FACET, ma->GetDimension()), facet)).Size() > 0) && (MyMPI_GetNTasks()>1) )
 			     continue;
 #endif
                            facet2 = ma->GetPeriodicFacet(facet);
@@ -3409,7 +3409,7 @@ namespace ngcomp
                        ma->GetFacetElements(fnums1[facnr1],elnums);
                        if (elnums.Size()<2) {
 #ifdef PARALLEL
-			 if( (ma->GetDistantProcs (Node(StdNodeType(NT_FACET, ma->GetDimension()), fnums1[facnr1])).Size() > 0) && (MyMPI_GetNTasks()>1) )
+			 if( (ma->GetDistantProcs (NodeId(StdNodeType(NT_FACET, ma->GetDimension()), fnums1[facnr1])).Size() > 0) && (MyMPI_GetNTasks()>1) )
 			   continue;
 #endif
                          if(ma->GetPeriodicFacet(fnums1[facnr1])!=fnums1[facnr1])
@@ -3601,24 +3601,31 @@ namespace ngcomp
 	    for(auto loop:mpi_loop_range) {
 	      cnt = 0;
 	      for(auto facet:Range(ma->GetNFacets())) {
-		HeapReset hr(lh);
-		auto fdps = ma->GetDistantProcs(Node(StdNodeType(NT_FACET, ma->GetDimension()), facet));
+		NodeId facet_id(StdNodeType(NT_FACET, ma->GetDimension()), facet);
+		if(!fine_facet.Test(facet)) continue;
+		auto fdps = ma->GetDistantProcs(facet_id);
 		//skip non-mpi facets
 		if (fdps.Size() == 0)
 		  continue;
 		auto d = fdps[0];
+		HeapReset hr(lh);
+		
 		ma->GetFacetElements(facet, elnums);
-		ElementId el(VOL, elnums[0]);
-		ma->GetElFacets(elnums[0], fnums);
+
+		ElementId eiv(VOL, elnums[0]);
+
+		fnums = ma->GetElFacets(eiv);
 		int facetnr = fnums.Pos(facet);
 
-		const FiniteElement & fel = fespace->GetFE (el, lh);
+		const FiniteElement & fel = fespace->GetFE (eiv, lh);
+		
+		
 		Array<int> dnums(fel.GetNDof(), lh);
-		ma->GetElVertices (el, vnums);
+		vnums = ma->GetElVertices(eiv);
 
-		ElementTransformation & eltrans = ma->GetTrafo (el, lh);
-		fespace->GetDofNrs (el, dnums);
-	    
+		ElementTransformation & eltrans = ma->GetTrafo (eiv, lh);
+		fespace->GetDofNrs (eiv, dnums);
+
 		for(auto igt:mpi_facet_parts) {
 
 		  FlatVector<SCAL> elx(dnums.Size()*this->fespace->GetDimension(), lh);
