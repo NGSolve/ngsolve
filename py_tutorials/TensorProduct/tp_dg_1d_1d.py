@@ -4,8 +4,8 @@ from ngsolve.comp import *
 from ngsolve import *
 from ngsolve.comp import TensorProductFESpace, Transfer2StdMesh, SymbolicTPBFI
 
-mesh1 = Mesh(SegMesh(20,0,1,1))
-mesh2 = Mesh(SegMesh(20,0,1,1))
+mesh1 = Mesh(SegMesh(20,0,1,periodic=True))
+mesh2 = Mesh(SegMesh(20,0,1,periodic=True))
 
 tpmesh = Mesh(MakeTensorProductMesh(mesh1,mesh2))
 Draw(tpmesh)
