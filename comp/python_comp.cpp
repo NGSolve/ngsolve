@@ -1646,12 +1646,12 @@ flags : dict
     .def("Average",
          [] (shared_ptr<HDivHighOrderFESpace> hdivfes, BaseVector & bv)
          {
-           const Array<INT<2>> & pairs = hdivfes->GetDCPairs();
+           auto & pairs = hdivfes->GetDCPairs();
            auto fu = bv.FV<double>();
-           for (int k = 0; k < pairs.Size(); k++)
+           for (auto pair : pairs)
              {
-               auto f1 = pairs[k][0];
-               auto f2 = pairs[k][1];
+               auto f1 = pair[0];
+               auto f2 = pair[1];
                if (f2 != -1)
                  {
                    double mean = 0.5 * (fu(f1) + fu(f2));
