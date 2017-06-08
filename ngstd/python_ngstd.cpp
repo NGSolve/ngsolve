@@ -110,6 +110,10 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
     .def("GetRank", &MPIManager::GetRank)
     .def("GetNP", &MPIManager::GetNP)
     ;
+  
+  m.def("GlobalSum", [] (double x) { return MyMPI_AllReduce(x); });
+  m.def("GlobalSum", [] (int x) { return MyMPI_AllReduce(x); });
+  m.def("GlobalSum", [] (size_t x) { return MyMPI_AllReduce(x); });
 
   std::string nested_name = "ngstd";
 

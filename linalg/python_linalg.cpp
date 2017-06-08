@@ -4,26 +4,15 @@
 using namespace ngla;
 
 
-
-class PStatDummy
-{
-public:
-  PARALLEL_STATUS ps;
-
-  PStatDummy(PARALLEL_STATUS aps) { ps = aps; } 
-};
-
-static PStatDummy pstat_distr(DISTRIBUTED);
-static PStatDummy pstat_cumul(CUMULATED);
-static PStatDummy pstat_not_par(NOT_PARALLEL);
-  
   
 void NGS_DLL_HEADER ExportNgla(py::module &m) {
 
-    m.attr("pstat_distr") = py::cast(&pstat_distr);
-    m.attr("pstat_cumul") = py::cast(&pstat_cumul);
-    m.attr("pstat_not_par") = py::cast(&pstat_not_par);
-
+  py::enum_<PARALLEL_STATUS>(m, "PARALLEL_STATUS", "enum of possible parallel ")
+    .value("DISTRIBUTED", DISTRIBUTED)
+    .value("CUMULATED", CUMULATED)
+    .value("NOT_PARALLEL", NOT_PARALLEL)
+    .export_values()
+    ;
     
     m.def("CreateVVector",
           [] (size_t s, bool is_complex, int es) 
@@ -185,13 +174,11 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                     return py::cast(self.FVDouble());
                                   else
                                     return py::cast(self.FVComplex());
-                                }))
+                                })
     .def("Distribute", [] (BaseVector & self) { self.Distribute(); } ) 
     .def("Cumulate", [] (BaseVector & self) { self.Cumulate(); } ) 
-    .def("GetParallelStatus", [] (BaseVector & self) -> int { return self.GetParallelStatus(); } )
-    .def("SetParallelStatus", [] (BaseVector & self, PyPStatDummy stat) { self.SetParallelStatus(stat.ps); } )
-                                })
-    ;       
+    .def("GetParallelStatus", [] (BaseVector & self) { return self.GetParallelStatus(); } )
+    .def("SetParallelStatus", [] (BaseVector & self, PARALLEL_STATUS stat) { self.SetParallelStatus(stat); });
 
   // m.def("InnerProduct",[](BaseVector & v1, BaseVector & v2)->double { return InnerProduct(v1,v2); })
   m.def ("InnerProduct",

@@ -197,6 +197,9 @@ namespace ngcomp
     {
       y = 0;
       AddMatrix (1, x, y, lh);
+#ifdef PARALLEL
+      y.SetParallelStatus(DISTRIBUTED);
+#endif
     }
 
     /// y += val * Mat * x

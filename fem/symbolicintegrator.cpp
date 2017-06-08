@@ -3036,7 +3036,7 @@ namespace ngfem
             Facet2ElementTrafo transform(eltype, ElVertices); 
             
             SIMD_IntegrationRule simd_ir_facet(etfacet, 2*maxorder);
-            
+	    
             auto & simd_ir_facet_vol = transform(LocalFacetNr, simd_ir_facet, lh);
             auto & simd_mir = eltrans(simd_ir_facet_vol, lh);
             simd_mir.ComputeNormalsAndMeasure(eltype, LocalFacetNr);
@@ -3044,7 +3044,6 @@ namespace ngfem
             ProxyUserData ud(trial_proxies.Size(), lh);
             const_cast<ElementTransformation&>(eltrans).userdata = &ud;
             ud.fel = &volumefel;   // necessary to check remember-map
-            // ud.elx = &elx;
             ud.lh = &lh;
             for (ProxyFunction * proxy : trial_proxies)
 	      if(proxy->IsOther())
@@ -3097,7 +3096,6 @@ namespace ngfem
     ProxyUserData ud(trial_proxies.Size(), lh);
     const_cast<ElementTransformation&>(eltrans).userdata = &ud;
     ud.fel = &volumefel;   // necessary to check remember-map
-    // ud.elx = &elx;
     ud.lh = &lh;
 
     for (ProxyFunction * proxy : trial_proxies)
@@ -3109,25 +3107,19 @@ namespace ngfem
       }
     
     size_t st = 0;
-    //cout << "other-proxy dims: " << endl;
     for (ProxyFunction * proxy : trial_proxies)
       if(proxy->IsOther())
 	{
 	  st += ud.GetMemory(proxy).AsVector().Size();
-	  //cout << ud.GetMemory(proxy).AsVector().Size() << endl;
 	}
 
-    //cout << "total: " << st << endl;
     trace.AssignMemory(st, lh);
-    //cout << "trace ptr: " << (long int) &trace[0] << endl;
     st = 0;
     
     for (ProxyFunction * proxy : trial_proxies)
       if(proxy->IsOther())
 	for(auto k:Range(ud.GetMemory(proxy).AsVector().Size()))
 	  trace[st++] = ud.GetMemory(proxy).AsVector()[k];
-
-    //cout << "return traces: " << endl << trace << endl;
     
   }//end CalcTraceValues (double)
 
@@ -3174,16 +3166,12 @@ namespace ngfem
 			mem(k) = SIMD<double>(&trace[ctrace]);
 			ctrace+=SIMD<double>::Size();
 		      }
-		    //cout << "mem , other " << proxy->IsOther() << ":" << endl << mem << endl;
 		  }
 		else
 		  {
 		    IntRange trial_range  = IntRange(0, volumefel.GetNDof());
 		    trial_range = proxy->Evaluator()->BlockDim() * trial_range;
-		    proxy->Evaluator()->Apply(volumefel, simd_mir, elx.Range(trial_range), ud.GetAMemory(proxy)); // , lh);
-
-		    // auto mem = ud.GetAMemory(proxy);
-		    // cout << "mem, other " << proxy->IsOther() << ":" << endl << mem << endl;
+		    proxy->Evaluator()->Apply(volumefel, simd_mir, elx.Range(trial_range), ud.GetAMemory(proxy));
 		  }
 		
 	      }
@@ -3207,7 +3195,6 @@ namespace ngfem
 		      for (int j = 0; j < row.VSize(); j++)
 			row.Get(j) *= simd_mir[j].GetMeasure().Data() * simd_ir_facet[j].Weight().Data();
 		    }
-		  // tapplyt.Start();
 		  IntRange test_range  = IntRange(0, volumefel.GetNDof());
 		  int blockdim = proxy->Evaluator()->BlockDim();
 		  test_range = blockdim * test_range;
@@ -3226,7 +3213,6 @@ namespace ngfem
 	return;
       }
 
-    //cout << "apply facet from trace NOSIMD ver.." << endl;
     ely = 0.0;
     FlatVector<> ely1(ely.Size(), lh);
 
@@ -3239,10 +3225,6 @@ namespace ngfem
     IntegrationRule & ir_facet_vol = transform(LocalFacetNr, ir_facet, lh);
     BaseMappedIntegrationRule & mir = eltrans(ir_facet_vol, lh);
     mir.ComputeNormalsAndMeasure(eltype, LocalFacetNr);
-
-    // cout << "mir is : " << endl;
-    // for(auto nvn:Range(mir.Size()))
-    //   cout << "point " << nvn << endl << mir[nvn] << endl;
         
     ProxyUserData ud(trial_proxies.Size(), lh);
     const_cast<ElementTransformation&>(eltrans).userdata = &ud;
@@ -3287,11 +3269,9 @@ namespace ngfem
 	  for (int i = 0; i < mir.Size(); i++)
 	    proxyvalues.Row(i) *= mir[i].GetMeasure() * ir_facet[i].Weight();
 
-	  // tapplyt.Start();
 	  ely1 = 0.0;
 	  IntRange test_range  = IntRange(0, proxy->Evaluator()->BlockDim()*volumefel.GetNDof());
 	  
-	  //proxy->Evaluator()->AddTrans(volumefel, simd_mir, simd_proxyvalues, ely.Range(test_range));
 	  proxy->Evaluator()->ApplyTrans(volumefel, mir, proxyvalues, ely1.Range(test_range), lh);
 
 	  ely += ely1;
