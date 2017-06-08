@@ -35,9 +35,13 @@ def __monkeypatch_new(thisclass, creatorfunction):
         if class_t is not thisclass and hasattr(class_t,"__init__"):
             return pybind_constructor(class_t,*args,**kwargs)
         else:
-            storemyinit = class_t.__init__
-            class_t.__init__ = __empty_init_reset_init
-            return  creatorfunction(class_t, *args, **kwargs)
+            result = creatorfunction(class_t,*args,**kwargs)
+            if hasattr(result.__class__, "__init__"):
+                storemyinit = result.__class__.__init__
+                result.__class__.__init__ = __empty_init_reset_init
+            else:
+                result.__class__.__init__ = __empty_init
+            return result
     return patched_new
 
 
