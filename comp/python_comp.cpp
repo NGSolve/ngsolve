@@ -1644,28 +1644,22 @@ flags : dict
   py::class_<HDivHighOrderFESpace, shared_ptr<HDivHighOrderFESpace>,FESpace>
     (m, "HDiv")
     .def("Average",
-         [] (shared_ptr<HDivHighOrderFESpace> fes, BaseVector & bv)
+         [] (shared_ptr<HDivHighOrderFESpace> hdivfes, BaseVector & bv)
          {
-           auto hdivfes = dynamic_pointer_cast<HDivHighOrderFESpace>(fes);
-           if (hdivfes)
+           const Array<INT<2>> & pairs = hdivfes->GetDCPairs();
+           auto fu = bv.FV<double>();
+           for (int k = 0; k < pairs.Size(); k++)
              {
-               const Array<INT<2>> & pairs = hdivfes->GetDCPairs();
-               auto fu = bv.FV<double>();
-               for (int k = 0; k < pairs.Size(); k++)
+               auto f1 = pairs[k][0];
+               auto f2 = pairs[k][1];
+               if (f2 != -1)
                  {
-                   auto f1 = pairs[k][0];
-                   auto f2 = pairs[k][1];
-                   if (f2 != -1)
-                     {
-                       double mean = 0.5 * (fu(f1) + fu(f2));
-                       fu(f1) = fu(f2) = mean;
-                     }
-                   else if (f1 != -1)
-                     fu(f1) = 0.0;
+                   double mean = 0.5 * (fu(f1) + fu(f2));
+                   fu(f1) = fu(f2) = mean;
                  }
+               else if (f1 != -1)
+                 fu(f1) = 0.0;
              }
-           else
-             throw Exception("average only works for hdiv");
          },
          py::arg("vector"))
     ;
