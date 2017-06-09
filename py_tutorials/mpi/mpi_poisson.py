@@ -43,17 +43,19 @@ mesh = Mesh(ngmesh)
 
 # build H1-FESpace as usual
 V = H1(mesh, order=3, dirichlet=[1,2,3,4])
+u = fes.TrialFunction()
+v = fes.TestFunction()
 
 print("rank "+str(rank)+" has "+str(V.ndof)+" of "+str(V.ndofglobal)+" dofs!")
 
 # RHS does not change either!
 f = LinearForm (V)
-f += Source (32 * (y*(1-y)+x*(1-x)))
+f += SymbolicLFI(32 * (y*(1-y)+x*(1-x)) * v)
 f.Assemble()
 
 # neither does the BLF!
 a = BilinearForm (V, symmetric=False)
-a += Laplace (1)
+a += SymbolicBFI(grad(u)*grad(v))
 
 # Some possible preconditioners: 
 #c = Preconditioner(a, type="direct", flags={"inverse":"mumps"}) # direct solve with mumps
