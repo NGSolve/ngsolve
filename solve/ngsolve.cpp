@@ -66,7 +66,12 @@ void SpawnPython ()
                     try{
                       Ng_SetRunning (1); 
                       pythread_id = std::this_thread::get_id();
-                      pyenv.exec("import ngsolve.__console;ngsolve.__console.startConsole()");
+                      pyenv.exec(
+                                 "import ngsolve.__console;"
+                                 "_vars2 = globals();"
+                                 "_vars2.update(locals());"
+                                 "ngsolve.__console.startConsole(_vars2)"
+                      );
                       Ng_SetRunning (0); 
                     }
                     catch (py::error_already_set const &) {
@@ -1283,7 +1288,6 @@ int NGSolve_Init (Tcl_Interp * interp)
     PyEval_InitThreads();
 
     py::module main_module = py::module::import("__main__");
-    pyenv = PythonEnvironment (main_module);
 
     {
       main_module.def ("SetDefaultPDE",

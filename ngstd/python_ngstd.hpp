@@ -10,6 +10,7 @@
 #endif
 
 #include <pybind11/pybind11.h>
+#include <pybind11/eval.h>
 #include <pybind11/operators.h>
 #include <pybind11/complex.h>
 #include <pybind11/stl.h>
@@ -62,22 +63,15 @@ struct DummyArgument {};
 
 class PythonEnvironment
 {
-  py::object main_module; 
-  py::object main_namespace; 
-
 public:
 
   PythonEnvironment () { ; }
-  PythonEnvironment (py::object _module)
-    : main_module(_module), 
-      main_namespace(main_module.attr("__dict__")) 
-  { ; }
 
   virtual ~PythonEnvironment() { }
   
-  auto operator[] ( const char *s ) -> decltype(main_namespace[s]) 
+  auto operator[] ( const char *s )
   {
-    return main_namespace[s];
+    return py::module::import("__main__").attr(s);
   }
   
   virtual void exec(const string s) 
