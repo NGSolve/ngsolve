@@ -1476,7 +1476,7 @@ void Parallel_InitPython ()
       Py_Initialize();
       PyEval_InitThreads();
       py::module m = py::module::import("__main__");
-      pyenv = PythonEnvironment (m);
+      // pyenv = PythonEnvironment (m);
       {
 	m.def ("SetDefaultPDE", [](shared_ptr<PDE> apde)
 			       {  
