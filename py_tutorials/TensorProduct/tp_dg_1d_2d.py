@@ -6,7 +6,7 @@ from ngsolve.comp import TensorProductFESpace, Transfer2StdMesh, SymbolicTPBFI
 from netgen.geom2d import unit_square
 
 
-mesh1 = Mesh(SegMesh(20,0,1,1))
+mesh1 = Mesh(SegMesh(20,0,1))
 mesh2 = Mesh(unit_square.GenerateMesh(maxh=0.15))
 
 tpmesh = Mesh(MakeTensorProductMesh(mesh1,mesh2))
@@ -27,8 +27,7 @@ v = tpfes.TestFunction()
 vx = v.Operator("gradx")
 vy = v.Operator("grady")
 
-b = CoefficientFunction( (x1-0.5,0.5-x,1) )
-b = CoefficientFunction( (1,0,0) )
+b = CoefficientFunction( (x1-0.5,0.5-x,0) )
 
 uin = CoefficientFunction(0.0)
 

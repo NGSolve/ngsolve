@@ -7,7 +7,7 @@ from netgen.geom2d import unit_square
 
 
 mesh1 = Mesh(unit_square.GenerateMesh(maxh=0.15))
-mesh2 = Mesh(SegMesh(20,0,1,1))
+mesh2 = Mesh(SegMesh(20,0,1))
 
 tpmesh = Mesh(MakeTensorProductMesh(mesh1,mesh2))
 Draw(tpmesh)

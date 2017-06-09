@@ -8,7 +8,7 @@ def AddEdgeEls (p1, dx, facenr, n, pids,mesh):
         elpids = [pids[p] for p in pnum]
         mesh.Add (Element1D(elpids,index=1))
 
-def SegMesh(n,x0,x1,per):
+def SegMesh(n,x0,x1,periodic=False):
     mesh = Mesh(dim=1)
     pids = []
     for i in range(n+1):
@@ -16,6 +16,8 @@ def SegMesh(n,x0,x1,per):
     AddEdgeEls(0,1,1,n,pids,mesh)
     mesh.Add (Element0D( pids[0], index=1))
     mesh.Add (Element0D( pids[n], index=2))
-    if per == 1:
+    mesh.SetBCName(0,"left")
+    mesh.SetBCName(1,"right")
+    if periodic == True:
         mesh.AddPointIdentification(pids[0],pids[n],1,2)
     return mesh

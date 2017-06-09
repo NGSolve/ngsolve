@@ -92,7 +92,7 @@ if(HAVE_CXA_DEMANGLE)
 endif()
 
 add_custom_target(generate_version_file
-  cmake
+  ${CMAKE_COMMAND}
     -DBDIR=${CMAKE_CURRENT_BINARY_DIR}
     -P ${CMAKE_CURRENT_LIST_DIR}/cmake/generate_version_file.cmake
     )
@@ -132,11 +132,12 @@ endif (ADDITIONAL_PATHS)
 #######################################################################
 # use rpath
 set(CMAKE_MACOSX_RPATH TRUE)
+SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 set(CMAKE_INSTALL_RPATH "${NETGEN_RPATH_TOKEN};${NETGEN_RPATH_TOKEN}/${NETGEN_RPATH}")
 
 #######################################################################
 set(ngs_install_dir EXPORT ngsolve-targets RUNTIME DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve LIBRARY DESTINATION ${NGSOLVE_INSTALL_DIR_LIB} COMPONENT ngsolve_devel ARCHIVE DESTINATION ${NGSOLVE_INSTALL_DIR_LIB} COMPONENT ngsolve_devel )
-install(EXPORT ngsolve-targets DESTINATION ${NGSOLVE_INSTALL_DIR_CMAKE})
+install(EXPORT ngsolve-targets DESTINATION ${NGSOLVE_INSTALL_DIR_CMAKE} COMPONENT ngsolve_devel)
 
 list(APPEND NGSOLVE_COMPILE_DEFINITIONS USE_TIMEOFDAY)
 list(APPEND NGSOLVE_INCLUDE_DIRS $<INSTALL_INTERFACE:${NETGEN_INSTALL_DIR_INCLUDE}>)
@@ -151,7 +152,7 @@ if(NETGEN_USE_GUI)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ngsolve.tcl
     ${CMAKE_CURRENT_BINARY_DIR}/ngsolve.tcl @ONLY)
 
-  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ngsolve.tcl DESTINATION ${NGSOLVE_INSTALL_DIR_BIN})
+  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ngsolve.tcl DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve)
 endif(NETGEN_USE_GUI)
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -Wall")
@@ -436,8 +437,9 @@ if (NETGEN_USE_MPI)
     if(USE_MKL AND NOT MKL_STATIC)
       set(ngspy_preload_libs "${ngspy_preload_libs}:${MKL_CORE_LIBRARY}:${MKL_THREADING_LIBRARY}:${MKL_INTERFACE_LIBRARY}:${MKL_BLACS_LIBRARY}")
     endif()
+    find_program(BASH bash)
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngspy
-"#! /usr/bin/bash
+"#! ${BASH}
 LD_PRELOAD=$LD_PRELOAD:${ngspy_preload_libs} ${NETGEN_PYTHON_EXECUTABLE} $*
 ")
     install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngspy DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve_devel )
@@ -465,7 +467,7 @@ configure_file(
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/NGSolveConfig.cmake.in
   ${CMAKE_CURRENT_BINARY_DIR}/NGSolveConfig.cmake @ONLY ESCAPE_QUOTES)
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/NGSolveConfig.cmake DESTINATION ${NGSOLVE_INSTALL_DIR_CMAKE})
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/NGSolveConfig.cmake DESTINATION ${NGSOLVE_INSTALL_DIR_CMAKE} COMPONENT ngsolve_devel)
 
 
 #######################################################################

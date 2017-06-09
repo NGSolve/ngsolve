@@ -38,26 +38,25 @@ namespace ngsolve
     {
       gfu = apde->GetGridFunction (flags.GetStringFlag ("gridfunction", ""));
       dof = int(flags.GetNumFlag ("dof", 0));
-
       apde->Tcl_Eval (
-		"set w .shapetester;"
-		"toplevel $w;" 
-		"wm withdraw $w\n"
-		"wm geom $w +100+100;"
-		"wm deiconify $w;"
-		"wm title $w \"Shape Tester\"\n"
-		"set dofnr 0;"
-		"tixControl $w.dof -label \"Dof number: \" -integer true -variable dofnr -min 0 "
-		"-options { entry.width 5 label.width 12 label.anchor e } "
-		"-command { NGS_DrawShape };"
-		"pack $w.dof\n"
-		"focus .options_dlg\n"
-		);
-
+        "set w .shapetester;"
+        "toplevel $w;" 
+        "wm withdraw $w\n"
+        "wm geom $w +100+100;"
+        "wm deiconify $w;"
+        "wm title $w \"Shape Tester\"\n"
+        "set dofnr 0\n"
+        "ttk::frame $w.frame;"
+        "ttk::label $w.frame.l -text \"Dof number\"\n;"
+        "ttk::spinbox $w.frame.dofnr -from 0 -to 1e9 -textvariable dofnr -width 5 -command { NGS_DrawShape $dofnr }\n"
+        "pack $w.frame.dofnr $w.frame.l -side left -anchor w;"
+        "pack $w.frame -padx 10 -pady 10\n"
+        "focus .options_dlg\n"
+        );
       Tcl_CreateCommand (apde->GetTclInterpreter(), 
-			 "NGS_DrawShape", NGS_DrawShape,
-			 (ClientData)NULL,
-			 (Tcl_CmdDeleteProc*) NULL);
+            "NGS_DrawShape", NGS_DrawShape,
+            (ClientData)NULL,
+            (Tcl_CmdDeleteProc*) NULL);
       shapetester = this;
     }
 

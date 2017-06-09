@@ -1,6 +1,7 @@
 from netgen.meshing import *
 from netgen.csg import *
 from ngsolve import *
+from ngsolve.comp import TensorProductFESpace, Transfer2StdMesh, SymbolicTPBFI, ProlongateCoefficientFunction, TensorProductIntegrate
 import netgen.meshing as ngmeshing
 
 x1 = CoordCF(3)

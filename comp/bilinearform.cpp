@@ -2913,8 +2913,11 @@ namespace ngcomp
               tpfes->GetDofNrs (ei1, dnums);
               FlatVector<double> elx(dnums.Size()*dimspace, lh), ely(dnums.Size()*dimspace, lh);
               x.GetIndirect(dnums, elx);
-              static_cast<TensorProductFacetBilinearFormIntegrator &>(*parts[facetboundaryintegrals]).ApplyFacetMatrix(fel,facnr_x1,eltrans,vnums1, seltrans, vnums2, elx, ely, lh);
-              y.AddIndirect(dnums, ely);
+              if( facetboundaryintegrals != -1)
+              {
+                static_cast<TensorProductFacetBilinearFormIntegrator &>(*parts[facetboundaryintegrals]).ApplyFacetMatrix(fel,facnr_x1,eltrans,vnums1, seltrans, vnums2, elx, ely, lh);
+                y.AddIndirect(dnums, ely);
+              }
             }
             continue;
           }
@@ -3029,8 +3032,11 @@ namespace ngcomp
                tpfes->GetDofNrs (ei1, dnums);
               FlatVector<double> elx(dnums.Size()*dimspace, lh), ely(dnums.Size()*dimspace, lh);
               x.GetIndirect(dnums, elx);
-              static_cast<TensorProductFacetBilinearFormIntegrator &>(*parts[facetboundaryintegrals]).ApplyFacetMatrix(fel,facnr_y1+10,eltrans,vnums1, seltrans, vnums2, elx, ely, lh);
-              y.AddIndirect(dnums, ely);
+              if ( facetboundaryintegrals != -1)
+              {
+                static_cast<TensorProductFacetBilinearFormIntegrator &>(*parts[facetboundaryintegrals]).ApplyFacetMatrix(fel,facnr_y1+10,eltrans,vnums1, seltrans, vnums2, elx, ely, lh);
+                y.AddIndirect(dnums, ely);
+              }
             }
              continue;
           }

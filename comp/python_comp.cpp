@@ -1443,7 +1443,17 @@ flags : dict
                //TODO: pickle order policies
                constructor_args = py::make_tuple(type,mesh,flags);
              }
-           return py::make_tuple(fes_obj.attr("__class__"), constructor_args, setstate_args);
+           // if fes has no __init__ then it's constructed with FESpace(...)
+           py::object class_obj = fes_obj.attr("__class__");
+           try
+             {
+               class_obj(*constructor_args);
+             }
+           catch(exception e)
+             {
+               class_obj = py::module::import("ngsolve.comp").attr("FESpace");
+             }
+           return py::make_tuple(class_obj, constructor_args, setstate_args);
          })
     .def("__setstate__", [] (py::object self, py::tuple state) { self.attr("__dict__") = state[0]; })
     
@@ -1639,6 +1649,29 @@ flags : dict
 	  shared_ptr<BaseMatrix> grad = self->CreateGradient(*fesh1);
 	  return py::make_tuple(grad, fesh1);
 	})
+    ;
+  
+  py::class_<HDivHighOrderFESpace, shared_ptr<HDivHighOrderFESpace>,FESpace>
+    (m, "HDiv")
+    .def("Average",
+         [] (shared_ptr<HDivHighOrderFESpace> hdivfes, BaseVector & bv)
+         {
+           auto & pairs = hdivfes->GetDCPairs();
+           auto fu = bv.FV<double>();
+           for (auto pair : pairs)
+             {
+               auto f1 = pair[0];
+               auto f2 = pair[1];
+               if (f2 != -1)
+                 {
+                   double mean = 0.5 * (fu(f1) + fu(f2));
+                   fu(f1) = fu(f2) = mean;
+                 }
+               else if (f1 != -1)
+                 fu(f1) = 0.0;
+             }
+         },
+         py::arg("vector"))
     ;
   
   // py::class_<CompoundFESpace, shared_ptr<CompoundFESpace>, FESpace>
@@ -3110,7 +3143,7 @@ flags : dict
             }
 });
 
-   m.def("ProlongateCoefficientFunction", [](spCF cf_x, int prolongateto, shared_ptr<FESpace> tpfes)
+   m.def("ProlongateCoefficientFunction", [](spCF cf_x, int prolongateto, shared_ptr<FESpace> tpfes) -> shared_ptr<CoefficientFunction>
            {
              int dimx = dynamic_pointer_cast<TPHighOrderFESpace>(tpfes)->Spaces(0)[0]->GetMeshAccess()->GetDimension();
              int dimy = dynamic_pointer_cast<TPHighOrderFESpace>(tpfes)->Spaces(0)[1]->GetMeshAccess()->GetDimension();
