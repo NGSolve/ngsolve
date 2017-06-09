@@ -38,8 +38,7 @@ ngmesh = netgen.Mesh(dim=3)
 ngmesh.Load("some_mesh.vol")
 mesh = Mesh(ngmesh)
 
-# this does not work yet with mpi!
-# mesh.Curve(5)
+mesh.Curve(5)
 
 ngsglobals.msg_level = 5
 
