@@ -3596,6 +3596,15 @@ namespace ngcomp
 	    LocalHeap &lh(clh);
 	    Array<int> elnums(2, lh), fnums(6, lh), vnums(8, lh);
 
+	    size_t ne = ma->GetNE(VOL);
+	    BitArray fine_facet(ma->GetNFacets());
+	    fine_facet.Clear();
+	    Array<int> elfacets;
+	    for (int i = 0; i < ne; ++i) {
+	      auto elfacets = ma->GetElFacets(ElementId(VOL,i));
+	      for (auto f : elfacets) fine_facet.Set(f);
+	    }
+
 	    auto mpi_loop_range = (have_mpi_facet_data)?Range(1,3):Range(0,3);
 	    
 	    for(auto loop:mpi_loop_range) {
