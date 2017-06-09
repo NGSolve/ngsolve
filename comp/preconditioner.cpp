@@ -75,8 +75,8 @@ namespace ngcomp
       {
         EigenSystem eigen (amat, pre);
         eigen.SetPrecision(1e-30);
-        // eigen.SetMaxSteps(1000); 
-	
+        eigen.SetMaxSteps(1000); 
+        
         eigen.SetPrecision(1e-15);
         eigenretval = eigen.Calc();
         eigen.PrintEigenValues (*testout);

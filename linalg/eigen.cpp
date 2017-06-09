@@ -136,7 +136,7 @@ namespace ngla
     while (err > prec && it < maxsteps)
       {
 	//      cout << "." << flush;
-	cout << IM(2) << "eigen-it " << it << "/" << maxsteps << endl;
+	cout << IM(3) << "eigen-it " << it << "/" << maxsteps << endl;
 	it++;
 	double cvu;
 	if(is_real)
