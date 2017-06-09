@@ -1443,7 +1443,17 @@ flags : dict
                //TODO: pickle order policies
                constructor_args = py::make_tuple(type,mesh,flags);
              }
-           return py::make_tuple(fes_obj.attr("__class__"), constructor_args, setstate_args);
+           // if fes has no __init__ then it's constructed with FESpace(...)
+           py::object class_obj = fes_obj.attr("__class__");
+           try
+             {
+               class_obj(*constructor_args);
+             }
+           catch(exception e)
+             {
+               class_obj = py::module::import("ngsolve.comp").attr("FESpace");
+             }
+           return py::make_tuple(class_obj, constructor_args, setstate_args);
          })
     .def("__setstate__", [] (py::object self, py::tuple state) { self.attr("__dict__") = state[0]; })
     
