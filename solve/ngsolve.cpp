@@ -1489,7 +1489,7 @@ void Parallel_InitPython ()
 	       []() {Ng_Redraw();});
       }
       
-      cout << "ini (parallel) python complete" << endl;	  
+      // cout << "ini python complete" << endl;	  
 
       pyenv.exec("from ngsolve import *");
       //PyEval_ReleaseLock();

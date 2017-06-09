@@ -4,7 +4,7 @@
 using namespace ngla;
 
 
-  
+
 void NGS_DLL_HEADER ExportNgla(py::module &m) {
 
   py::enum_<PARALLEL_STATUS>(m, "PARALLEL_STATUS", "enum of possible parallel ")

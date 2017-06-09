@@ -639,13 +639,12 @@ namespace ngcomp
 	IntRange range = GetEdgeDofs (edge);
         if (wb_edge)
           ctofdof[range] = WIREBASKET_DOF;
-	else 
+        else
           {
             ctofdof[range] = INTERFACE_DOF;
             if ( (wb_loedge||nodalp2) && (range.Size() > 0))
               ctofdof[range.First()] = WIREBASKET_DOF;
           }
-
       }
 
     if (ma->GetDimension() == 3)
