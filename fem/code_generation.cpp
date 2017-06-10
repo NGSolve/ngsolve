@@ -69,7 +69,7 @@ namespace ngfem
 #ifdef WIN32
       Load(prefix+".dll");
 #else
-      Load(prefix+".so");
+      Load("./"+prefix+".so");
 #endif
     }
 
