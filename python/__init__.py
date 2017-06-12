@@ -23,9 +23,6 @@ def __empty_init_reset_init(x,*args,**kwargs):
     storemyinit = None
     return
 
-def __hcurl_new(class_t, *args,**kwargs):
-    return comp.CreateFESpace(class_t,"hcurlho",*args,**kwargs)
-
 def __monkeypatch_new(thisclass, creatorfunction):
     pybind_constructor = thisclass.__new__
     def patched_new(class_t, *args,**kwargs):
@@ -66,16 +63,11 @@ comp.VTKOutput.__init__ = __empty_init
 fem.ElementTransformation.__new__ = fem.CreateElementTransformation
 fem.ElementTransformation.__init__ = __empty_init
 
-fem.BFI.__new__ = fem.CreateBilinearFormIntegrator
-fem.BFI.__init__ = __empty_init
+fem.BFI.__new__ = __monkeypatch_new(fem.BFI, fem.CreateBilinearFormIntegrator)
 
-fem.LFI.__new__ = fem.CreateLinearFormIntegrator
-fem.LFI.__init__ = __empty_init
+fem.LFI.__new__ = __monkeypatch_new(fem.LFI, fem.CreateLinearFormIntegrator)
 
 comp.FESpace.__new__ = __monkeypatch_new(comp.FESpace, comp.CreateFESpace)
-
-comp.HCurl.__new__ = __hcurl_new
-comp.HCurl.__init__ = __empty_init
 
 comp.Periodic.__new__ = comp.CreatePeriodicFESpace
 comp.Periodic.__init__ = __empty_init
