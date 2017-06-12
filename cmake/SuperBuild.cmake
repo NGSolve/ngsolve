@@ -248,7 +248,7 @@ add_custom_target(test_ngsolve
 
 if(WIN32)
   file(TO_NATIVE_PATH ${CMAKE_INSTALL_PREFIX}/bin netgendir)
-  file(TO_NATIVE_PATH ${CMAKE_INSTALL_PREFIX}/${PYTHON_PACKAGES_INSTALL_DIR} pythonpath)
+  file(TO_NATIVE_PATH ${CMAKE_INSTALL_PREFIX}/${NETGEN_PYTHON_PACKAGES_INSTALL_DIR} pythonpath)
   add_custom_target(set_netgendir
     setx NETGENDIR  ${netgendir}
   )
