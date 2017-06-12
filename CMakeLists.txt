@@ -363,7 +363,7 @@ if(NOT WIN32)
 endif()
 
 # include directories
-set(ngscxx_include_dirs ${NETGEN_TCL_INCLUDE_PATH} ${NETGEN_MPI_CXX_INCLUDE_PATH} ${MKL_INCLUDE_DIRS} ${MUMPS_INCLUDE_DIR} ${NETGEN_PYTHON_INCLUDE_DIRS} ${UMFPACK_INCLUDE_DIR} ${VTUNE_INCLUDE_DIR})
+set(ngscxx_include_dirs ${NETGEN_MPI_CXX_INCLUDE_PATH} ${MKL_INCLUDE_DIRS} ${MUMPS_INCLUDE_DIR} ${NETGEN_PYTHON_INCLUDE_DIRS} ${UMFPACK_INCLUDE_DIR} ${VTUNE_INCLUDE_DIR})
 
 
 foreach( d ${ngscxx_include_dirs} )
@@ -377,8 +377,8 @@ endforeach()
 file(RELATIVE_PATH BIN_TO_INC_RELPATH ${NETGEN_BINARY_DIR} ${NETGEN_INCLUDE_DIR})
 if(WIN32)
   set( ngscxx_set_script_dir "set NGSCXX_DIR=%~dp0" )
-  set( ngscxx_includes "${ngscxx_includes} /I\"%NGSCXX_DIR%\\${BIN_TO_INC_RELPATH}\"" )
-  set( ngscxx_includes "${ngscxx_includes} /I\"%NGSCXX_DIR%\\${BIN_TO_INC_RELPATH}\\include\"" )
+  set( ngscxx_includes "${ngscxx_includes} /I\"%NGSCXX_DIR%/${BIN_TO_INC_RELPATH}\"" )
+  set( ngscxx_includes "${ngscxx_includes} /I\"%NGSCXX_DIR%/${BIN_TO_INC_RELPATH}/include\"" )
 else()
   set( ngscxx_set_script_dir "NGSCXX_DIR=$( cd $(dirname $0); pwd )" )
   set( ngscxx_includes "${ngscxx_includes} -I\$NGSCXX_DIR/${BIN_TO_INC_RELPATH}" )
@@ -413,7 +413,7 @@ Netgen_MACOS=\"$Netgen_BUNDLE/Contents/MacOS\"
 ")
 file(RELATIVE_PATH BIN_TO_LIB_RELPATH ${NETGEN_BINARY_DIR} ${NETGEN_LIBRARY_DIR})
 elseif(WIN32)
-    set(ngsld_flags "${ngsld_flags} /LIBPATH:%NGSCXX_DIR%\\${BIN_TO_LIB_RELPATH} nglib.lib libngsolve.lib" )
+    set(ngsld_flags "${ngsld_flags} /LIBPATH:\"%NGSCXX_DIR%/${BIN_TO_LIB_RELPATH}\" nglib.lib libngsolve.lib" )
 else()
     set(ngsld_flags "${ngsld_flags} -L\$NGSCXX_DIR/${BIN_TO_LIB_RELPATH} -Wl,--rpath=\$NGSCXX_DIR/${BIN_TO_LIB_RELPATH}" )
     set(ngscxx_header
@@ -430,9 +430,9 @@ if(WIN32)
     get_filename_component(VC_BIN_DIR ${CMAKE_CXX_COMPILER} PATH)
     get_filename_component(VC_DIR ${VC_BIN_DIR}/../../ ABSOLUTE)
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngscxx.bat 
-      "call \"${VC_DIR}/vcvarsall.bat\" amd64\ncl /c ${ngscxx_flags} ${ngscxx_includes} %*\n")
+      "${ngscxx_set_script_dir}\n call \"${VC_DIR}/vcvarsall.bat\" amd64\ncl /c ${ngscxx_flags} ${ngscxx_includes} %*\n")
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngsld.bat
-      "call \"${VC_DIR}/vcvarsall.bat\" amd64\nlink /DLL %* ${ngsld_flags}\n")
+      "${ngscxx_set_script_dir}\n call \"${VC_DIR}/vcvarsall.bat\" amd64\nlink /DLL %* ${ngsld_flags}\n")
     install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngscxx.bat DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve_devel )
     install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngsld.bat DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve_devel )
 else(WIN32)
