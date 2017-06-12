@@ -363,7 +363,7 @@ if(NOT WIN32)
 endif()
 
 # include directories
-set(ngscxx_include_dirs ${NETGEN_INCLUDE_DIRS} ${CMAKE_INSTALL_PREFIX}/include ${NETGEN_TCL_INCLUDE_PATH} ${NETGEN_MPI_CXX_INCLUDE_PATH} ${MKL_INCLUDE_DIRS} ${MUMPS_INCLUDE_DIR} ${NETGEN_PYTHON_INCLUDE_DIRS} ${UMFPACK_INCLUDE_DIR} ${VTUNE_INCLUDE_DIR})
+set(ngscxx_include_dirs ${NETGEN_TCL_INCLUDE_PATH} ${NETGEN_MPI_CXX_INCLUDE_PATH} ${MKL_INCLUDE_DIRS} ${MUMPS_INCLUDE_DIR} ${NETGEN_PYTHON_INCLUDE_DIRS} ${UMFPACK_INCLUDE_DIR} ${VTUNE_INCLUDE_DIR})
 
 
 foreach( d ${ngscxx_include_dirs} )
@@ -373,6 +373,18 @@ foreach( d ${ngscxx_include_dirs} )
     set( ngscxx_includes "${ngscxx_includes} -I${d}" )
   endif()
 endforeach()
+
+file(RELATIVE_PATH BIN_TO_INC_RELPATH ${NETGEN_BINARY_DIR} ${NETGEN_INCLUDE_DIR})
+if(WIN32)
+  set( ngscxx_set_script_dir "set NGSCXX_DIR=%~dp0" )
+  set( ngscxx_includes "${ngscxx_includes} /I\"%NGSCXX_DIR%\\${BIN_TO_INC_RELPATH}\"" )
+  set( ngscxx_includes "${ngscxx_includes} /I\"%NGSCXX_DIR%\\${BIN_TO_INC_RELPATH}\\include\"" )
+else()
+  set( ngscxx_set_script_dir "NGSCXX_DIR=$( cd $(dirname $0); pwd )" )
+  set( ngscxx_includes "${ngscxx_includes} -I\$NGSCXX_DIR/${BIN_TO_INC_RELPATH}" )
+  set( ngscxx_includes "${ngscxx_includes} -I\$NGSCXX_DIR/${BIN_TO_INC_RELPATH}/include" )
+  find_program(BASH bash REQUIRED)
+endif()
 
 # linker flags
 if(USE_MKL AND NOT INSTALL_DEPENDENCIES)
@@ -388,21 +400,30 @@ if(APPLE)
     set(ngscxx_includes "${ngscxx_includes} -I$Netgen_BUNDLE/Contents/Resources/include" )  
     set(ngsld_flags "${ngsld_flags} -L$Netgen_BUNDLE/Contents/MacOS  -undefined dynamic_lookup" )
     set(ngscxx_header "\
-#!/bin/sh
+#!${BASH}
+${ngscxx_set_script_dir}
 Netgen_BUNDLE=\"`echo \"$0\" | sed -e 's/\\/Contents\\/MacOS\\/ngscxx//'`\"
 Netgen_MACOS=\"$Netgen_BUNDLE/Contents/MacOS\"
 ")
     set(ngsld_header "\
-#!/bin/sh
+#!${BASH}
+${ngscxx_set_script_dir}
 Netgen_BUNDLE=\"`echo \"$0\" | sed -e 's/\\/Contents\\/MacOS\\/ngsld//'`\"
 Netgen_MACOS=\"$Netgen_BUNDLE/Contents/MacOS\"
 ")
+file(RELATIVE_PATH BIN_TO_LIB_RELPATH ${NETGEN_BINARY_DIR} ${NETGEN_LIBRARY_DIR})
 elseif(WIN32)
-  set(ngsld_flags "${ngsld_flags} /LIBPATH:${NETGEN_LIBRARY_DIR} nglib.lib libngsolve.lib" )
+    set(ngsld_flags "${ngsld_flags} /LIBPATH:%NGSCXX_DIR%\\${BIN_TO_LIB_RELPATH} nglib.lib libngsolve.lib" )
 else()
-    set(ngsld_flags "${ngsld_flags} -L${NETGEN_LIBRARY_DIR} -Wl,--rpath=${NETGEN_LIBRARY_DIR}" )
-    set(ngscxx_header "#!/bin/sh")
-    set(ngsld_header "#!/bin/sh")
+    set(ngsld_flags "${ngsld_flags} -L\$NGSCXX_DIR/${BIN_TO_LIB_RELPATH} -Wl,--rpath=\$NGSCXX_DIR/${BIN_TO_LIB_RELPATH}" )
+    set(ngscxx_header
+"#!${BASH}
+${ngscxx_set_script_dir}
+")
+    set(ngsld_header
+"#!${BASH}
+${ngscxx_set_script_dir}
+")
 endif()
 
 if(WIN32)
