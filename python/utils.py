@@ -32,9 +32,9 @@ def L2(mesh, **args):
     """ Create L2 finite element space. """
     return FESpace("l2ho", mesh, **args)
 
-#def HCurl(mesh, **args):
-#    """ Create H(curl) finite element space. """
-#    return FESpace("hcurlho", mesh, **args)
+def HCurl(mesh, **args):
+   """ Create H(curl) finite element space. """
+   return FESpace("hcurlho", mesh, **args)
 
 def HDiv(mesh, **args):
     """ Create H(div) finite element space. """
