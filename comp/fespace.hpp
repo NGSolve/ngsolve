@@ -821,7 +821,7 @@ namespace ngcomp
 
 
 
-  extern void IterateElements (const FESpace & fes, 
+  extern NGS_DLL_HEADER void IterateElements (const FESpace & fes,
 			       VorB vb, 
 			       LocalHeap & clh, 
 			       const function<void(FESpace::Element,LocalHeap&)> & func);
