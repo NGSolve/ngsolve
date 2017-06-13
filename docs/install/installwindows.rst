@@ -68,7 +68,7 @@ the sources. The standard configuring command looks like this:
 
        mkdir build
        cd build
-       cmake "../src" -DINSTALL_DIR="BASEDIR/install" -G "Visual Studio 14 Win64"
+       cmake "../src" -DCMAKE_INSTALL_PREFIX="BASEDIR/install" -G "Visual Studio 14 Win64"
 
 There are many options for cmake, which you can find using
 
