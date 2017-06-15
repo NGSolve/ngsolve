@@ -168,19 +168,19 @@ can only be created by generator functions. Use PML(x, [y, z]) to evaluate the s
                     },"evaluate PML jacobian at point x, [y, z]")
     .def_property_readonly("dim", [] (shared_ptr<PML> self) {return self->GetDimension(); },
         "dimension")
-    .def_property_readonly("PML_CF", [](shared_ptr<PML> self) {
+    .def_property_readonly("PML_CF", [](shared_ptr<PML> self)->shared_ptr<CF> {
         return make_shared<PML_CF> (self);
       },
       "the scaling as coefficient function")
-    .def_property_readonly("Jac_CF", [](shared_ptr<PML>self) {
+    .def_property_readonly("Jac_CF", [](shared_ptr<PML>self)->shared_ptr<CF> {
         return make_shared<PML_Jac> (self);
       },
       "the jacobian of the PML as coefficient function")
-    .def_property_readonly("Det_CF", [](shared_ptr<PML> self) {
+    .def_property_readonly("Det_CF", [](shared_ptr<PML> self)->shared_ptr<CF> {
         return make_shared<PML_Det> (self);
       },
       "the determinant of the jacobian as coefficient function")
-    .def_property_readonly("JacInv_CF", [](shared_ptr<PML> self) {
+    .def_property_readonly("JacInv_CF", [](shared_ptr<PML> self)->shared_ptr<CF> {
         return make_shared<PML_JacInv> (self);
       },
       "the inverse of the jacobian as coefficient function")
