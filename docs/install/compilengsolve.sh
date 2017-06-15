@@ -5,7 +5,7 @@ cd $BASEDIR/ngsolve-src && git submodule update --init --recursive
 mkdir $BASEDIR/ngsolve-build
 mkdir $BASEDIR/ngsolve-install
 cd $BASEDIR/ngsolve-build
-cmake -DINSTALL_DIR=${BASEDIR}/ngsolve-install ${BASEDIR}/ngsolve-src
+cmake -DCMAKE_INSTALL_PREFIX=${BASEDIR}/ngsolve-install ${BASEDIR}/ngsolve-src
 make -j4
 make install
 echo "export NETGENDIR=${BASEDIR}/ngsolve-install/bin" >> ~/.bashrc
