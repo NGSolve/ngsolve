@@ -79,5 +79,7 @@ if(@NETGEN_USE_PYTHON@)
     else(WIN32)
       set_target_properties(${target} PROPERTIES SUFFIX ".so")
     endif(WIN32)
+
+    set_target_properties(${target} PROPERTIES INSTALL_RPATH "${NGSOLVE_LIBRARY_DIR}")
 endfunction()
 endif(@NETGEN_USE_PYTHON@)

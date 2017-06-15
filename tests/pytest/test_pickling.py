@@ -122,3 +122,10 @@ def test_pickle_periodic():
         u2 = unpickler.load()
 
     assert sqrt(Integrate((u-u2)*(u-u2),mesh)) < 1e-14
+
+
+if __name__ == "__main__":
+    test_pickle_gridfunction_real()
+    test_pickle_gridfunction_complex()
+    test_pickle_compoundfespace()
+    test_pickle_periodic()

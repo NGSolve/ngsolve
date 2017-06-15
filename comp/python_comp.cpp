@@ -578,8 +578,7 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
     .def_property_readonly("nr", &ElementId::Nr, "the element number")    
     .def("VB", &ElementId::VB, "VorB of element")
     .def(py::self!=py::self)
-    .def("__eq__" , [](ElementId &self, ElementId &other)
-         { return !(self!=other); } )
+    .def(py::self==py::self)
     .def("__hash__" , &ElementId::Nr)
     ;
   
@@ -592,7 +591,6 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
                       "an node identifier containing node type and node nr")
     .def(py::init<NODE_TYPE,size_t>())
     .def("__str__", &ToString<NodeId>)
-    // .def("__repr__", &ToString<NodeId>)
     .def("__repr__", [](NodeId & self)
          { return string("NodeId(")+ToString(self.GetType())+","+ToString(self.GetNr())+")"; })
     .def(py::self!=py::self)
@@ -621,16 +619,6 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
 
   py::class_<Array<NodeId>, FlatArray<NodeId> >(m, "ArrayNI")
     .def(py::init<int>())
-    /*
-    .def("__init__", [](std::vector<int> const & x)
-                           {
-                             int s = x.size();
-                             shared_ptr<Array<int>> tmp (new Array<int>(s));
-                             for (int i = 0; i < s; i++)
-                               (*tmp)[i] = x[i]; 
-                             return tmp;
-                           })
-    */
     ;
 
   
@@ -1443,7 +1431,17 @@ flags : dict
                //TODO: pickle order policies
                constructor_args = py::make_tuple(type,mesh,flags);
              }
-           return py::make_tuple(fes_obj.attr("__class__"), constructor_args, setstate_args);
+           // if fes has no __init__ then it's constructed with FESpace(...)
+           py::object class_obj = fes_obj.attr("__class__");
+           try
+             {
+               class_obj(*constructor_args);
+             }
+           catch(exception e)
+             {
+               class_obj = py::module::import("ngsolve.comp").attr("FESpace");
+             }
+           return py::make_tuple(class_obj, constructor_args, setstate_args);
          })
     .def("__setstate__", [] (py::object self, py::tuple state) { self.attr("__dict__") = state[0]; })
     
@@ -1538,6 +1536,15 @@ flags : dict
            return tuple;
          })
 
+    .def("GetDofNrs", [](shared_ptr<FESpace> self, NodeId ni)
+         {
+           Array<int> tmp; self->GetDofNrs(ni,tmp); 
+           py::tuple tuple(tmp.Size());
+           for (auto i : Range(tmp))
+             tuple[i] = py::int_(tmp[i]);
+           return tuple;
+         })
+
     .def("CouplingType", [](shared_ptr<FESpace> self, DofId dofnr) -> COUPLING_TYPE
          { return self->GetDofCouplingType(dofnr); },
          py::arg("dofnr"),
@@ -1553,7 +1560,7 @@ flags : dict
           {
             Allocator alloc;
             
-            auto fe = shared_ptr<FiniteElement> (&self->GetFE(ei, alloc), NOOP_Deleter);
+            auto fe = shared_ptr<FiniteElement> (&self->GetFE(ei, alloc)); // , NOOP_Deleter);
             
             auto scalfe = dynamic_pointer_cast<BaseScalarFiniteElement> (fe);
             if (scalfe) return py::cast(scalfe);
@@ -1639,6 +1646,29 @@ flags : dict
 	  shared_ptr<BaseMatrix> grad = self->CreateGradient(*fesh1);
 	  return py::make_tuple(grad, fesh1);
 	})
+    ;
+  
+  py::class_<HDivHighOrderFESpace, shared_ptr<HDivHighOrderFESpace>,FESpace>
+    (m, "HDiv")
+    .def("Average",
+         [] (shared_ptr<HDivHighOrderFESpace> hdivfes, BaseVector & bv)
+         {
+           auto & pairs = hdivfes->GetDCPairs();
+           auto fu = bv.FV<double>();
+           for (auto pair : pairs)
+             {
+               auto f1 = pair[0];
+               auto f2 = pair[1];
+               if (f2 != -1)
+                 {
+                   double mean = 0.5 * (fu(f1) + fu(f2));
+                   fu(f1) = fu(f2) = mean;
+                 }
+               else if (f1 != -1)
+                 fu(f1) = 0.0;
+             }
+         },
+         py::arg("vector"))
     ;
   
   // py::class_<CompoundFESpace, shared_ptr<CompoundFESpace>, FESpace>

@@ -68,7 +68,7 @@ Change into the directory for builds and call cmake with a link to the source di
 .. code:: bash
 
    cd $BASEDIR/ngsolve-build
-   cmake -DINSTALL_DIR=${BASEDIR}/ngsolve-install ${BASEDIR}/ngsolve-src
+   cmake -DCMAKE_INSTALL_PREFIX=${BASEDIR}/ngsolve-install ${BASEDIR}/ngsolve-src
 
 Building
 ========
