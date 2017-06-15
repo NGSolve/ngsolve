@@ -436,7 +436,7 @@ public:
     bool element_boundary;
     mutable bool simd_evaluate = true;
   public:
-    SymbolicLinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb,
+    NGS_DLL_HEADER SymbolicLinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb,
                                   bool aelement_boundary);
 
     virtual VorB VB() const { return vb; }
@@ -482,15 +482,15 @@ public:
     SIMD_IntegrationRule simd_ir;   // if non-empty use this integration-rule
     
   public:
-    SymbolicBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb,
+    NGS_DLL_HEADER SymbolicBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb,
                                     bool aelement_boundary);
 
     virtual VorB VB() const { return vb; }
     virtual bool IsSymmetric() const { return true; }  // correct would be: don't know
     virtual string Name () const { return string ("Symbolic BFI"); }
 
-    virtual IntegrationRule GetIntegrationRule (const FiniteElement & fel, LocalHeap & lh) const;
-    virtual SIMD_IntegrationRule Get_SIMD_IntegrationRule (const FiniteElement & fel, LocalHeap & lh) const;
+    NGS_DLL_HEADER virtual IntegrationRule GetIntegrationRule (const FiniteElement & fel, LocalHeap & lh) const;
+    NGS_DLL_HEADER virtual SIMD_IntegrationRule Get_SIMD_IntegrationRule (const FiniteElement & fel, LocalHeap & lh) const;
     // virtual IntegrationRule GetIntegrationRuleEB (const FiniteElement & fel, int facetnr, LocalHeap & lh) const;
     // virtual SIMD_IntegrationRule Get_SIMD_IntegrationRuleEB (const FiniteElement & fel, int facetnr, LocalHeap & lh) const;
     
@@ -591,7 +591,7 @@ public:
     bool neighbor_testfunction;
     mutable bool simd_evaluate;
   public:
-    SymbolicFacetBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb, bool aelement_boundary);
+    NGS_DLL_HEADER SymbolicFacetBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb, bool aelement_boundary);
 
     virtual VorB VB() const { return vb; }
     virtual bool BoundaryForm() const { return vb == BND; }
@@ -600,7 +600,7 @@ public:
     virtual DGFormulation GetDGFormulation() const { return DGFormulation(neighbor_testfunction,
                                                                           element_boundary); }
     
-    virtual void
+    NGS_DLL_HEADER virtual void
     CalcFacetMatrix (const FiniteElement & volumefel1, int LocalFacetNr1,
                      const ElementTransformation & eltrans1, FlatArray<int> & ElVertices1,
                      const FiniteElement & volumefel2, int LocalFacetNr2,
@@ -608,14 +608,14 @@ public:
                      FlatMatrix<double> elmat,
                      LocalHeap & lh) const;
 
-    virtual void
+    NGS_DLL_HEADER virtual void
     CalcFacetMatrix (const FiniteElement & volumefel, int LocalFacetNr,
                      const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
                      const ElementTransformation & seltrans, FlatArray<int> & SElVertices,  
                      FlatMatrix<double> elmat,
                      LocalHeap & lh) const;
 
-    virtual void
+    NGS_DLL_HEADER virtual void
     CalcLinearizedFacetMatrix (const FiniteElement & volumefel, int LocalFacetNr,
                                const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
                                const ElementTransformation & seltrans, FlatArray<int> & SElVertices,  
