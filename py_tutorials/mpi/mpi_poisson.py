@@ -75,17 +75,10 @@ u.vec.data = CGSolver(a.mat, c.mat) * f.vec  # use CG-solver with preconditioner
 #exact solution
 exact = 16*x*(1-x)*y*(1-y)
 
-# Integrate error locally & sum up afterwards
-# loc_error = Integrate ( (u-exact)*(u-exact), mesh, integrate_locally = True)
-# print("local error on proc "+str(rank)+" is: "+str(loc_error))
-# glob_error = GlobalSum(loc_error)
-# if rank==0:
-#     print ("L2-error:", sqrt(glob_error) )
-
-# Integrate error globally - integrate_locally is False by default
-glob_error = Integrate ( (u-exact)*(u-exact) , mesh, integrate_locally = False)
+# error 
+error = Integrate ( (u-exact)*(u-exact) , mesh)
 if rank==0:
-    print("L2-error", sqrt(glob_error) )
+    print("L2-error", error )
 
 
 # do VTK-output
