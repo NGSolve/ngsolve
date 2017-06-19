@@ -5,7 +5,6 @@ from ngsolve import *
 from ngsolve.ngstd import MPIManager
 from ngsolve.la import DISTRIBUTED
 from ngsolve.la import CUMULATED
-from ngsolve.ngstd import GlobalSum
 
 rank = MPIManager.GetRank()
 np = MPIManager.GetNP()
