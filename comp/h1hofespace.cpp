@@ -1816,8 +1816,14 @@ namespace ngcomp
           fel_hdiv.CalcMappedDivShape (mir[j], div_shape);
           fel_u.CalcMappedDShape (mir[j], grad_u);
           fel_u.CalcShape (ir[j], shape_u);
-          fel_l2.CalcShape(ir[j], shape_l2);
-          fel_koszul.CalcShape(ir[j], shape_koszul);
+	  
+	  //shape_l2 = 0;
+	  if(fel_l2.GetNDof() > 0)
+	    fel_l2.CalcShape(ir[j], shape_l2);
+
+	  // shape_koszul = 0;
+	  if(fel_koszul.GetNDof() > 0)
+	    fel_koszul.CalcShape(ir[j], shape_koszul);
 
           mat.Rows(r_div) += mir[j].GetWeight() * shape_l2.Range(1, shape_l2.Size()) * Trans(div_shape);
           for (int l = 0; l < DIM_SPACE; l++)

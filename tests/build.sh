@@ -39,18 +39,21 @@ make -j12
 make install
 make package
 cd ngsolve
+
+export UPLOAD_DIR=deploy/builds/$CI_PIPELINE_ID/ubuntu/${UBUNTU_VERSION_NAME}_amd64
+
 if [ "zesty" = "$UBUNTU_VERSION_NAME" ]
 then
   echo "build docu"
   make docs
   echo "upload docu"
   rsync -ztrl --del -e ssh \
+    --rsync-path="mkdir -p deploy/builds/$CI_PIPELINE_ID/docu/ && rsync" \
     docs/html/* \
     gitlab-runner@vector.asc.tuwien.ac.at:deploy/builds/$CI_PIPELINE_ID/docu/
 fi
 cd ..
 
-export UPLOAD_DIR=deploy/builds/$CI_PIPELINE_ID/ubuntu/${UBUNTU_VERSION_NAME}_amd64
 rsync -ztrl --del -e ssh \
   --rsync-path="mkdir -p $UPLOAD_DIR && rsync" \
   *.deb \

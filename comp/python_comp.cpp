@@ -168,19 +168,19 @@ can only be created by generator functions. Use PML(x, [y, z]) to evaluate the s
                     },"evaluate PML jacobian at point x, [y, z]")
     .def_property_readonly("dim", [] (shared_ptr<PML> self) {return self->GetDimension(); },
         "dimension")
-    .def_property_readonly("PML_CF", [](shared_ptr<PML> self) {
+    .def_property_readonly("PML_CF", [](shared_ptr<PML> self)->shared_ptr<CF> {
         return make_shared<PML_CF> (self);
       },
       "the scaling as coefficient function")
-    .def_property_readonly("Jac_CF", [](shared_ptr<PML>self) {
+    .def_property_readonly("Jac_CF", [](shared_ptr<PML>self)->shared_ptr<CF> {
         return make_shared<PML_Jac> (self);
       },
       "the jacobian of the PML as coefficient function")
-    .def_property_readonly("Det_CF", [](shared_ptr<PML> self) {
+    .def_property_readonly("Det_CF", [](shared_ptr<PML> self)->shared_ptr<CF> {
         return make_shared<PML_Det> (self);
       },
       "the determinant of the jacobian as coefficient function")
-    .def_property_readonly("JacInv_CF", [](shared_ptr<PML> self) {
+    .def_property_readonly("JacInv_CF", [](shared_ptr<PML> self)->shared_ptr<CF> {
         return make_shared<PML_JacInv> (self);
       },
       "the inverse of the jacobian as coefficient function")
@@ -578,8 +578,7 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
     .def_property_readonly("nr", &ElementId::Nr, "the element number")    
     .def("VB", &ElementId::VB, "VorB of element")
     .def(py::self!=py::self)
-    .def("__eq__" , [](ElementId &self, ElementId &other)
-         { return !(self!=other); } )
+    .def(py::self==py::self)
     .def("__hash__" , &ElementId::Nr)
     ;
   
@@ -592,7 +591,6 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
                       "an node identifier containing node type and node nr")
     .def(py::init<NODE_TYPE,size_t>())
     .def("__str__", &ToString<NodeId>)
-    // .def("__repr__", &ToString<NodeId>)
     .def("__repr__", [](NodeId & self)
          { return string("NodeId(")+ToString(self.GetType())+","+ToString(self.GetNr())+")"; })
     .def(py::self!=py::self)
@@ -621,16 +619,6 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
 
   py::class_<Array<NodeId>, FlatArray<NodeId> >(m, "ArrayNI")
     .def(py::init<int>())
-    /*
-    .def("__init__", [](std::vector<int> const & x)
-                           {
-                             int s = x.size();
-                             shared_ptr<Array<int>> tmp (new Array<int>(s));
-                             for (int i = 0; i < s; i++)
-                               (*tmp)[i] = x[i]; 
-                             return tmp;
-                           })
-    */
     ;
 
   
@@ -1548,6 +1536,15 @@ flags : dict
            return tuple;
          })
 
+    .def("GetDofNrs", [](shared_ptr<FESpace> self, NodeId ni)
+         {
+           Array<int> tmp; self->GetDofNrs(ni,tmp); 
+           py::tuple tuple(tmp.Size());
+           for (auto i : Range(tmp))
+             tuple[i] = py::int_(tmp[i]);
+           return tuple;
+         })
+
     .def("CouplingType", [](shared_ptr<FESpace> self, DofId dofnr) -> COUPLING_TYPE
          { return self->GetDofCouplingType(dofnr); },
          py::arg("dofnr"),
@@ -1563,7 +1560,7 @@ flags : dict
           {
             Allocator alloc;
             
-            auto fe = shared_ptr<FiniteElement> (&self->GetFE(ei, alloc), NOOP_Deleter);
+            auto fe = shared_ptr<FiniteElement> (&self->GetFE(ei, alloc)); // , NOOP_Deleter);
             
             auto scalfe = dynamic_pointer_cast<BaseScalarFiniteElement> (fe);
             if (scalfe) return py::cast(scalfe);
