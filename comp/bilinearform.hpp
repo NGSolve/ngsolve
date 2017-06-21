@@ -69,6 +69,10 @@ namespace ngcomp
     // loop over elements
     Array<shared_ptr<BilinearFormIntegrator>> elementwise_skeleton_parts;
 
+#ifdef PARALLEL
+    Array<shared_ptr<FacetBilinearFormIntegrator> > mpi_facet_parts;
+#endif
+    
     /*
     Array<BilinearFormIntegrator*> independent_parts;
     Array<bool> independent_parts_deletable;
@@ -193,6 +197,9 @@ namespace ngcomp
     {
       y = 0;
       AddMatrix (1, x, y, lh);
+#ifdef PARALLEL
+      y.SetParallelStatus(DISTRIBUTED);
+#endif
     }
 
     /// y += val * Mat * x
@@ -395,6 +402,14 @@ namespace ngcomp
     shared_ptr<ElementByElementMatrix<SCAL>> innersolve; //  = NULL;
     shared_ptr<ElementByElementMatrix<SCAL>> innermatrix; //  = NULL;
 
+#ifdef PARALLEL
+    //data for mpi-facets; only has data if there are relevant integrators in the BLF!
+    mutable bool have_mpi_facet_data = false;
+    mutable Table<SCAL> send_table;
+    mutable Table<SCAL> recv_table;
+#endif
+    
+    
         
   public:
     /// 

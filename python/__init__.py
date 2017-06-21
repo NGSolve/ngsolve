@@ -105,6 +105,9 @@ from ngsolve.solve import *
 from ngsolve.utils import *
 from . import timing
 
+from ngsolve.ngstd import MPIManager
+MPIManager.InitMPI()
+
 from . import __expr
 BaseVector.expr = property(__expr.VecExpr)
 BaseVector.data = property(__expr.Expr, __expr.expr_data)

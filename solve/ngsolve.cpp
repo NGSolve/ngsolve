@@ -1476,7 +1476,7 @@ void Parallel_InitPython ()
       Py_Initialize();
       PyEval_InitThreads();
       py::module m = py::module::import("__main__");
-      pyenv = PythonEnvironment (m);
+      // pyenv = PythonEnvironment (m);
       {
 	m.def ("SetDefaultPDE", [](shared_ptr<PDE> apde)
 			       {  
@@ -1489,7 +1489,7 @@ void Parallel_InitPython ()
 	       []() {Ng_Redraw();});
       }
       
-      cout << "ini python complete" << endl;	  
+      // cout << "ini python complete" << endl;	  
 
       pyenv.exec("from ngsolve import *");
       //PyEval_ReleaseLock();
@@ -1596,12 +1596,17 @@ void NGS_ParallelRun (const string & message)
 #ifdef NGS_PYTHON
   else if (message.substr(0,7) == "ngs_py " ) 
     {
-      Parallel_InitPython ();
 
       string command = message.substr(7);
-      AcquireGIL gil_lock;
-      // PythonEnvironment & py_env = PythonEnvironment::getInstance();
-      pyenv.exec(command);
+      std::thread( [](string a_command){
+	  Parallel_InitPython ();
+	  AcquireGIL gil_lock;
+	  pythread_id = std::this_thread::get_id();
+	  // PythonEnvironment & py_env = PythonEnvironment::getInstance();
+	  pyenv.exec(a_command);
+	  pythread_id = mainthread_id;
+	  
+	}, command).detach();
     }
 #endif
   return;

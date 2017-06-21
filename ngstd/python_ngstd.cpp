@@ -110,6 +110,20 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
     .def("GetRank", &MPIManager::GetRank)
     .def("GetNP", &MPIManager::GetNP)
     ;
+  
+  m.def("GlobalSum", [] (double x) { return MyMPI_AllReduce(x); });
+  /** Complex + complex mpi_traits is in bla.hpp;  mympi_allreduce doesnt find it **/
+  m.def("GlobalSum", [] (Complex x) { 
+#ifdef PARALLEL
+      Complex global_d;
+      MPI_Allreduce (&x, &global_d, 1, MPI_DOUBLE_COMPLEX, MPI_SUM, ngs_comm);
+      return global_d;
+#else
+      return x;
+#endif
+    });
+  m.def("GlobalSum", [] (int x) { return MyMPI_AllReduce(x); });
+  m.def("GlobalSum", [] (size_t x) { return MyMPI_AllReduce(x); });
 
   std::string nested_name = "ngstd";
 
