@@ -17,6 +17,13 @@ def ProcessNotebooks(args):
 # clear all output in ipynb files
 ProcessNotebooks(['jupyter','nbconvert','--to','notebook', '--inplace', '--ClearOutputPreprocessor.enabled=True'])
 
+# zip all ipynb files
+nbs = [f for f in glob.iglob('**/*.ipynb', recursive=True)]
+subprocess.run(['zip', dest+'/i-tutorials.zip',*nbs])
+
+# execute jupyter files
+ProcessNotebooks(['jupyter','nbconvert','--to','notebook', '--inplace', '--execute'])
+
 # convert all ipynb files to html
 ProcessNotebooks(['jupyter','nbconvert','--to','html'])
 
