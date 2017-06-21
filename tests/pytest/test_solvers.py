@@ -3,9 +3,9 @@ from ngsolve import *
 import pytest
 
 def test_arnoldi():
-    mesh = Mesh(unit_square.GenerateMesh(maxh=0.2))
-    fes1 = H1(mesh,order=5,complex=True,dirichlet="top|bottom|left|right")
-    fes2 = H1(mesh,order=2,complex=True,dirichlet="top|bottom|left|right")
+    mesh = Mesh(unit_square.GenerateMesh(maxh=0.3))
+    fes1 = H1(mesh,order=10,complex=True,dirichlet="top|bottom|left|right")
+    fes2 = H1(mesh,order=10,complex=True,dirichlet="top|bottom|left|right")
     fes = FESpace([fes1,fes2])
 
     u1,u2 = fes.TrialFunction()
@@ -37,9 +37,9 @@ def test_arnoldi():
         evec.vec.data = u.components[1].vecs[i]
         error = Integrate(Norm(laplace(evec) + lam[i].real*lam[i].real*evec),mesh)
         print("error[",i,"] = ",error)
-        assert error < 1e-10
+        assert error < 1e-8
 
-    Draw(laplace(u.components[0]),mesh,"laplace")
+    Draw(laplace(evec),mesh,"laplace")
 
 
 
