@@ -2388,6 +2388,7 @@ flags : dict
   //////////////////////////////////////////////////////////////////////////////////////////
 
   py::class_<Preconditioner, shared_ptr<Preconditioner>, BaseMatrix>(m, "CPreconditioner")
+    .def ("Test", [](Preconditioner &pre) { pre.Test();} )
     .def ("Update", [](Preconditioner &pre) { pre.Update();} )
     .def_property_readonly("mat", [](Preconditioner &self)
                    {
@@ -2460,8 +2461,8 @@ flags : dict
                            { 
                              ngs_comm = MPI_COMM_WORLD;
 
-                             cout << "Rank = " << MyMPI_GetId(ngs_comm) << "/"
-                                  << MyMPI_GetNTasks(ngs_comm) << endl;
+                             //cout << "Rank = " << MyMPI_GetId(ngs_comm) << "/"
+                             //     << MyMPI_GetNTasks(ngs_comm) << endl;
 
                              NGSOStream::SetGlobalActive (MyMPI_GetId()==0);
                              return LoadPDE (filename);
@@ -2637,7 +2638,7 @@ flags : dict
         [](spCF cf,
              shared_ptr<MeshAccess> ma, 
 	     VorB vb, int order, py::object definedon,
-	     bool region_wise, bool element_wise, int heapsize)
+	   bool region_wise, bool element_wise, int heapsize)
                           {
                             static Timer t("Integrate CF"); RegionTimer reg(t);
                             // static mutex addcomplex_mutex;
@@ -2722,14 +2723,30 @@ flags : dict
                                        element_sum(el.Nr()) = hsum(0);
                                    });
                                 py::object result;
-                                if (region_wise)
+                                if (region_wise) {
+#ifdef PARALLEL
+				  Vector<> rs2(ma->GetNRegions(vb));
+				  MPI_Allreduce(&region_sum(0), &rs2(0), ma->GetNRegions(vb), MPI_DOUBLE, MPI_SUM, ngs_comm);
+				  region_sum = rs2;
+#endif
                                   result = py::list(py::cast(region_sum));
+				}
                                 else if (element_wise)
-                                  result = py::cast(element_sum);
-                                else if(dim==1)
-				    result = py::cast(sum(0));
-                                else
-                                  result = py::cast(sum);
+				  result = py::cast(element_sum);
+                                else if(dim==1) {
+#ifdef PARALLEL
+				  sum(0) = MyMPI_AllReduce(sum(0));
+#endif
+				  result = py::cast(sum(0));
+                                }
+				else {
+#ifdef PARALLEL
+				  Vector<> gsum(dim);
+				  MPI_Allreduce(&sum(0), &gsum(0), dim, MPI_DOUBLE, MPI_SUM, ngs_comm);
+				  sum = gsum;
+#endif
+				  result = py::cast(sum);
+				}
                                 return result;
                               }
                             else
@@ -2794,19 +2811,35 @@ flags : dict
                                    });
                                 
                                 py::object result;
-                                if (region_wise)
+                                if (region_wise) {
+#ifdef PARALLEL
+				  Vector<Complex> rs2(ma->GetNRegions(vb));
+				  MPI_Allreduce(&region_sum(0), &rs2(0), ma->GetNRegions(vb), MPI_Traits<Complex>::MPIType(), MPI_SUM, ngs_comm);
+				  region_sum = rs2;
+#endif
                                   result = py::list(py::cast(region_sum));
+				}
                                 else if (element_wise)
                                   result = py::cast(element_sum);
-                                else if(dim==1)
+                                else if(dim==1) {
+#ifdef PARALLEL
+				  sum(0) = MyMPI_AllReduce(sum(0));
+#endif
 				  result = py::cast(sum(0));
-				else
-                                  result = py::cast(sum);
+				}
+				else {
+#ifdef PARALLEL
+				  Vector<Complex> gsum(dim);
+				  MPI_Allreduce(&sum(0), &gsum(0), dim, MPI_Traits<Complex>::MPIType(), MPI_SUM, ngs_comm);
+				  sum = gsum;
+#endif
+				  result = py::cast(sum);
+				}
                                 return result;
                               }
                           },
-           py::arg("cf"), py::arg("mesh"), py::arg("VOL_or_BND")=VOL, 
-           py::arg("order")=5,
+	py::arg("cf"), py::arg("mesh"), py::arg("VOL_or_BND")=VOL, 
+	py::arg("order")=5,
 	py::arg("definedon")=DummyArgument(),
            py::arg("region_wise")=false,
 	py::arg("element_wise")=false,

@@ -141,40 +141,40 @@ namespace ngstd
     MPI_Barrier (comm);
   }
 
-  inline void MyMPI_Send (int i, int dest, int tag = MPI_TAG_SOLVE)
+  inline void MyMPI_Send (int i, int dest, int tag = MPI_TAG_SOLVE, MPI_Comm comm = ngs_comm)
   {
     int hi = i;
-    MPI_Send (&hi, 1, MPI_INT, dest, tag, ngs_comm);
+    MPI_Send (&hi, 1, MPI_INT, dest, tag, comm);
   }
 
-  inline void MyMPI_Recv (int & i, int src, int tag = MPI_TAG_SOLVE)
+  inline void MyMPI_Recv (int & i, int src, int tag = MPI_TAG_SOLVE, MPI_Comm comm = ngs_comm)
   {
-    MPI_Recv (&i, 1, MPI_INT, src, tag, ngs_comm, MPI_STATUS_IGNORE);
+    MPI_Recv (&i, 1, MPI_INT, src, tag, comm, MPI_STATUS_IGNORE);
   }
 
-  inline void MyMPI_Send (double i, int dest, int tag = MPI_TAG_SOLVE)
+  inline void MyMPI_Send (double i, int dest, int tag = MPI_TAG_SOLVE, MPI_Comm comm = ngs_comm)
   {
-    MPI_Send (&i, 1, MPI_DOUBLE, dest, tag, ngs_comm);
+    MPI_Send (&i, 1, MPI_DOUBLE, dest, tag, comm);
   }
 
-  inline void MyMPI_Recv (double & i, int src, int tag = MPI_TAG_SOLVE)
+  inline void MyMPI_Recv (double & i, int src, int tag = MPI_TAG_SOLVE, MPI_Comm comm = ngs_comm)
   {
-    MPI_Recv (&i, 1, MPI_DOUBLE, src, tag, ngs_comm, MPI_STATUS_IGNORE);
+    MPI_Recv (&i, 1, MPI_DOUBLE, src, tag, comm, MPI_STATUS_IGNORE);
   }
 
-  inline void MyMPI_Send (const string & s, int dest, int tag = MPI_TAG_SOLVE)
+  inline void MyMPI_Send (const string & s, int dest, int tag = MPI_TAG_SOLVE, MPI_Comm comm = ngs_comm)
   {
-    MPI_Send( const_cast<char*> (s.c_str()), s.length(), MPI_CHAR, dest, tag, ngs_comm);
+    MPI_Send( const_cast<char*> (s.c_str()), s.length(), MPI_CHAR, dest, tag, comm);
   }
 
-  inline void MyMPI_Recv (string & s, int src, int tag = MPI_TAG_SOLVE)
+  inline void MyMPI_Recv (string & s, int src, int tag = MPI_TAG_SOLVE, MPI_Comm comm = ngs_comm)
   {
     MPI_Status status;
     int len;
-    MPI_Probe (src, tag, ngs_comm, &status);
+    MPI_Probe (src, tag, comm, &status);
     MPI_Get_count (&status, MPI_CHAR, &len);
     s.resize (len); 
-    MPI_Recv(&s[0], len, MPI_CHAR, src, tag, ngs_comm, MPI_STATUS_IGNORE);
+    MPI_Recv(&s[0], len, MPI_CHAR, src, tag, comm, MPI_STATUS_IGNORE);
   }
 
   template <typename T>
@@ -200,7 +200,7 @@ namespace ngstd
   }
 
   template <typename T>
-  inline void MyMPI_AllGather (T d, FlatArray<T> recv, MPI_Comm comm)
+  inline void MyMPI_AllGather (T d, FlatArray<T> recv, MPI_Comm comm = ngs_comm)
   {
     static Timer t("dummy - AllGather");
     RegionTimer r(t);
@@ -211,7 +211,7 @@ namespace ngstd
 
 
   template <typename T>
-  inline void MyMPI_AllToAll (FlatArray<T> send, FlatArray<T> recv, MPI_Comm comm)
+  inline void MyMPI_AllToAll (FlatArray<T> send, FlatArray<T> recv, MPI_Comm comm = ngs_comm)
   {
     static Timer t("dummy - AlltoAll");
     RegionTimer r(t);
@@ -319,14 +319,14 @@ namespace ngstd
 
   inline void MyMPI_SendCmd (const char * cmd)
   {
-    char buf[10000];
-    strcpy (buf, cmd);
-
     int ntasks;
     MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
+
+    if(ntasks==1)
+      return;
+    
     for (int dest = 1; dest < ntasks; dest++)
-      MPI_Send( &buf, 10000, MPI_CHAR, dest, MPI_TAG_CMD, MPI_COMM_WORLD);
-    // changed from BSend (for VSC)
+      MPI_Send( cmd, (strlen(cmd)+1), MPI_CHAR, dest, MPI_TAG_CMD, MPI_COMM_WORLD);
   }
 
 
@@ -374,11 +374,21 @@ public:
 	      int argc2 = argc;
 	      MPI_Init(&argc2, argv);
 	    }
+	  ngs_comm = MPI_COMM_WORLD;
 	  initialized_by_me = true;
 	}
-      ngs_comm = MPI_COMM_WORLD;
+      else
+	{
+	  MPI_Comm_dup ( MPI_COMM_WORLD, &ngs_comm);
+	}
+      
+      if(ngs_comm == MPI_COMM_NULL)
+	{
+	  MPI_Comm_dup ( MPI_COMM_WORLD, &ngs_comm);      
+  	}
+      
       NGSOStream::SetGlobalActive (MyMPI_GetId() == 0);
-      if (MyMPI_GetNTasks (MPI_COMM_WORLD) > 1)
+      if (MyMPI_GetNTasks () > 1)
 	TaskManager::SetNumThreads (1);
     }
 
@@ -389,7 +399,7 @@ public:
     }
 
     static void InitMPIB(){ InitMPI(); }
-    static void Barrier() { MPI_Barrier(MPI_COMM_WORLD); }
+    static void Barrier() { MPI_Barrier(ngs_comm); }
     static double GetWT() { return MPI_Wtime(); }
     static int GetRank() { return MyMPI_GetId(); }
     static int GetNP() { return MyMPI_GetNTasks(); }

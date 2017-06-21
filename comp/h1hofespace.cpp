@@ -624,10 +624,14 @@ namespace ngcomp
   {
     static Timer t("H1HighOrderFESpace::UpdateCouplingDofArray"); RegionTimer reg(t);    
     ctofdof.SetSize(ndof);
-
-    for (auto i : Range (ma->GetNV()))
-      ctofdof[i] = used_vertex[i] ? WIREBASKET_DOF : UNUSED_DOF;
-
+    
+    if(!nodalp2)
+      for (auto i : Range (ma->GetNV()))
+	ctofdof[i] = used_vertex[i] ? WIREBASKET_DOF : UNUSED_DOF;
+    else
+      for (auto i : Range (ma->GetNV()))
+	ctofdof[i] = used_vertex[i] ? WIREBASKET_DOF : UNUSED_DOF;
+      
     int dim = ma->GetDimension();
     size_t ned = (dim <= 1) ? 0 : ma->GetNEdges();
     for (auto edge : Range (ned))
@@ -638,7 +642,7 @@ namespace ngcomp
         else
           {
             ctofdof[range] = INTERFACE_DOF;
-            if (wb_loedge && (range.Size() > 0))
+            if ( (wb_loedge||nodalp2) && (range.Size() > 0))
               ctofdof[range.First()] = WIREBASKET_DOF;
           }
       }
@@ -791,6 +795,8 @@ namespace ngcomp
 
       case 2:
         {
+	  if(nodalp2)
+	    hofe -> SetNodalp2();
           hofe -> SetOrderEdge (order_edge[ngel.Edges()] );
           hofe -> SetOrderFace (0, order_inner[elnr]);
           break;
@@ -798,6 +804,8 @@ namespace ngcomp
 
       case 3: default:  
         {
+	  if(nodalp2)
+	    hofe -> SetNodalp2();
           hofe -> SetOrderEdge (order_edge[ngel.Edges()]);
           hofe -> SetOrderFace (order_face[ngel.Faces()]);
           hofe -> SetOrderCell (order_inner[elnr]);

@@ -107,12 +107,12 @@ namespace ngla
     size_t nlocal = 0;
     for (int i = 0; i < ndof; i++)
       if (ismasterdof.Test(i)) nlocal++;
-    global_ndof = MyMPI_AllReduce (nlocal);
+    global_ndof = MyMPI_AllReduce (nlocal, MPI_SUM, comm);
   }
 
 
   
-  void ParallelDofs :: EnumerateGlobally (const BitArray * freedofs, 
+  void ParallelDofs :: EnumerateGlobally (shared_ptr<BitArray> freedofs, 
 					  Array<int> & global_nums,
 					  int & num_glob_dofs) const
   {

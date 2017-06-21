@@ -171,22 +171,42 @@ namespace ngfem
     Tx lam[4] = { ip.x, ip.y, ip.z, 1-ip.x-ip.y-ip.z };
 
     // vertex shapes
-    for (int i = 0; i < 4; i++) shape[i] = lam[i];
+    //for (int i = 0; i < 4; i++) shape[i] = lam[i];
+    if (!nodalp2)
+      for (int i = 0; i < 4; i++)
+	shape[i] = lam[i];
+    else
+      for (int i = 0; i < 4; i++)
+	shape[i] = 0.25*lam[i]*(2*lam[i]-1);
 
     int ii = 4; 
 
     // edge dofs
-    for (int i = 0; i < N_EDGE; i++)
-      if (order_edge[i] >= 2)
-	{
-          // INT<2> e = GetEdgeSort (i, vnums);
-          INT<2> e = GetVertexOrientedEdge (i);
-	  EdgeOrthoPol::EvalScaledMult (order_edge[i]-2, 
-                                        lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
-                                        lam[e[0]]*lam[e[1]], shape+ii);
-	  ii += order_edge[i]-1;
-	}
-
+    if(!nodalp2) {
+      for (int i = 0; i < N_EDGE; i++)
+	if (order_edge[i] >= 2)
+	  {
+	    // INT<2> e = GetEdgeSort (i, vnums);
+	    INT<2> e = GetVertexOrientedEdge (i);
+	    EdgeOrthoPol::EvalScaledMult (order_edge[i]-2, 
+					  lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
+					  lam[e[0]]*lam[e[1]], shape+ii);
+	    ii += order_edge[i]-1;
+	  }
+    }
+    else {
+      for (int i = 0; i < N_EDGE; i++)
+	if (order_edge[i] >= 2)
+	  {
+	    INT<2> e = GetEdgeSort (i, vnums);
+	    
+	    LegendrePolynomial::EvalScaledMult (order_edge[i]-2, 
+						lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
+						lam[e[0]]*lam[e[1]], shape.Addr(ii));
+	    ii += order_edge[i]-1;
+	  }
+    }
+    
     // face dofs
     for (int i = 0; i < N_FACE; i++)
       if (order_face[i][0] >= 3)
