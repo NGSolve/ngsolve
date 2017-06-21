@@ -6,13 +6,19 @@ procs = []
 
 dest = '../docs/i-tutorials'
 
-# convert all ipynb files to html
-for f in glob.iglob('**/*.ipynb', recursive=True):
-    procs.append(subprocess.Popen(['jupyter','nbconvert','--to','html',f]))
+def ProcessNotebooks(args):
+    for f in glob.iglob('**/*.ipynb', recursive=True):
+        procs.append(subprocess.Popen([*args,f]))
 
-# wait for processes to finish
-for p in procs:
-    p.wait()
+    # wait for processes to finish
+    for p in procs:
+        p.wait()
+
+# clear all output in ipynb files
+ProcessNotebooks(['jupyter','nbconvert','--to','notebook', '--inplace', '--ClearOutputPreprocessor.enabled=True'])
+
+# convert all ipynb files to html
+ProcessNotebooks(['jupyter','nbconvert','--to','html'])
 
 # replace links to .ipynb files by .html
 for f in glob.iglob('**/*.html', recursive=True):
