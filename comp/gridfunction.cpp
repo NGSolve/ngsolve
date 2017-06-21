@@ -763,6 +763,7 @@ namespace ngcomp
     const CompoundFESpace & cfes = dynamic_cast<const CompoundFESpace&> (*gf_parent.GetFESpace().get());
 
     this -> vec.SetSize (gf_parent.GetMultiDim());
+    GridFunction::multidim = gf_parent.GetMultiDim();
     for (int i = 0; i < gf_parent.GetMultiDim(); i++)
       (this->vec)[i] = gf_parent.GetVector(i).Range (cfes.GetRange(comp));
   
