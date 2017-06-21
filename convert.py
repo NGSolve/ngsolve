@@ -1,7 +1,10 @@
 import glob
 import subprocess
+import os.path
 
 procs = []
+
+dest = '../docs/i-tutorials'
 
 # convert all ipynb files to html
 for f in glob.iglob('**/*.ipynb', recursive=True):
@@ -13,17 +16,20 @@ for p in procs:
 
 # replace links to .ipynb files by .html
 for f in glob.iglob('**/*.html', recursive=True):
-    subprocess.run(['sed','-i','s/\.ipynb/\.html/g',f])
+    if not f.endswith('before_we_start.html'):
+        subprocess.run(['sed','-i','s/\.ipynb/\.html/g',f])
 
 # create dir to copy html files to
-subprocess.run(['mkdir','../html_i-tutorials'])
-
-# copy all html files to dir for upload
-htmls = [f for f in glob.iglob('**/*.html', recursive=True)]
-print(htmls)
-for f in htmls:
-    subprocess.run(['cp',f,'--parents','../html_i-tutorials'])
+subprocess.run(['mkdir',dest])
 
 # zip all ipynb files
 nbs = [f for f in glob.iglob('**/*.ipynb', recursive=True)]
-subprocess.run(['zip','../html_i-tutorials/i-tutorials.zip',*nbs])
+subprocess.run(['zip', dest+'/i-tutorials.zip',*nbs])
+
+# copy all html files and resources (e.g. png) to destination
+all_files = [f for f in glob.iglob('**', recursive=True)]
+all_files = filter(lambda f: not os.path.isdir(f), all_files)
+all_files = filter(lambda f: not f.endswith('.ipynb'), all_files)
+all_files = filter(lambda f: not f.endswith('.py'), all_files)
+for f in all_files:
+    subprocess.run(['cp',f,'--parents',dest])
