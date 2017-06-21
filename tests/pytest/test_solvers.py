@@ -4,7 +4,7 @@ import pytest
 
 def test_arnoldi():
     mesh = Mesh(unit_square.GenerateMesh(maxh=0.3))
-    fes1 = H1(mesh,order=10,complex=True,dirichlet="top|bottom|left|right")
+    fes1 = L2(mesh,order=8,complex=True,dirichlet="top|bottom|left|right")
     fes2 = H1(mesh,order=10,complex=True,dirichlet="top|bottom|left|right")
     fes = FESpace([fes1,fes2])
 
@@ -12,10 +12,10 @@ def test_arnoldi():
     v1,v2 = fes.TestFunction()
 
     a = BilinearForm(fes)
-    a += SymbolicBFI(grad(u2)*grad(v1)+u1*v2)
+    a += SymbolicBFI(grad(u2)*grad(v2)+u1*v1)
 
     m = BilinearForm(fes)
-    m += SymbolicBFI(u1*v1+u2*v2)
+    m += SymbolicBFI(u1*v2+u2*v1)
 
     u = GridFunction(fes,multidim=40)
 
@@ -37,7 +37,7 @@ def test_arnoldi():
         evec.vec.data = u.components[1].vecs[i]
         error = Integrate(Norm(laplace(evec) + lam[i].real*lam[i].real*evec),mesh)
         print("error[",i,"] = ",error)
-        assert error < 1e-8
+        assert error < 1e-7
 
     Draw(laplace(evec),mesh,"laplace")
 
