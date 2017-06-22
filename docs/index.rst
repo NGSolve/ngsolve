@@ -74,6 +74,14 @@ interface to Python is inspired by the `FEniCS project <https://fenicsproject.or
 
 ..  * [Iterating over elements]
 
+.. include:: mylittlengs/README.rst
+
+.. toctree::
+   :maxdepth: 1
+   :caption: C++ Tutorials
+
+   mylittlengs/1_Basic/basic
+   mylittlengs/2_Advanced/advanced
 
 .. toctree::
    :maxdepth: 1
