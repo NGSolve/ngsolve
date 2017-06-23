@@ -13,9 +13,9 @@ install(FILES
        )
 
 install(FILES
-        TensorProduct/make_seg_mesh.py
         TensorProduct/tp_dg_1d_1d.py
         TensorProduct/tp_dg_2d_1d.py TensorProduct/tp_dg_1d_2d.py
+        TensorProduct/tp_dg_2d_2d.py
         DESTINATION ${NGSOLVE_INSTALL_DIR_RES}/ngsolve/py_tutorials/TensorProduct
         COMPONENT ngsolve_devel
        )

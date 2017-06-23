@@ -2831,7 +2831,7 @@ namespace ngcomp
           }
           if (dgform.element_boundary)
           {
-            throw Exception("Element boundary formulation is not currently not implemented for tensor product spaces, please reformulate as skeleton integrals");
+            throw Exception("Element boundary formulation is not implemented for tensor product spaces, please reformulate as skeleton integrals");
             needs_element_boundary_loop = true;
           }
         }
@@ -2844,8 +2844,6 @@ namespace ngcomp
           if (dgform.neighbor_testfunction)
             neighbor_testfunction = true;
         }
-      if (needs_facet_loop && !fespace->UsesDGCoupling())
-        throw Exception ("skeleton-form needs \"dgjumps\" : True flag for FESpace");
     }
     else
       return;
