@@ -2374,7 +2374,7 @@ flags : dict
                        
                      int ncomp = fes->GetNSpaces();
                      for (int i = 0; i < ncomp; i++)
-                       lfs.append(make_shared<ComponentLinearForm>(self, i, ncomp));
+                       lfs.append(shared_ptr<LinearForm>(make_shared<ComponentLinearForm>(self, i, ncomp)));
                      return lfs;
                    }, "list of components for linearforms on compound-space")
     
