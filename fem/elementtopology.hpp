@@ -385,6 +385,7 @@ namespace ngfem
     
       switch (et)
 	{
+        case ET_POINT: return nullptr;
 	case ET_SEGM: return segm_edges;
 	case ET_TRIG: return trig_edges;
 	case ET_QUAD: return quad_edges;
@@ -456,7 +457,8 @@ namespace ngfem
 	case ET_TRIG: return trig_faces;
 	case ET_QUAD: return quad_faces;
         
-	case ET_SEGM: return NULL;
+	case ET_SEGM: return nullptr;
+        case ET_POINT: return nullptr;          
 	default:
 	  break;
 	}
