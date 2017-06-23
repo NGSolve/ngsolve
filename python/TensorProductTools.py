@@ -1,12 +1,45 @@
 from netgen.meshing import *
 from netgen.csg import *
-from ngsolve import *
+#from ngsolve import *
 from ngsolve.comp import TensorProductFESpace, Transfer2StdMesh, SymbolicTPBFI, ProlongateCoefficientFunction, TensorProductIntegrate
 import netgen.meshing as ngmeshing
+from netgen.geom2d import SplineGeometry
+import math
 
-x1 = CoordCF(3)
-y1 = CoordCF(4)
-z1 = CoordCF(5)
+
+
+def AddEdgeEls (p1, dx, facenr, n, pids,mesh):
+    for i in range(n):
+        base = p1 + i*dx
+        pnum = [base, base+dx]
+        elpids = [pids[p] for p in pnum]
+        mesh.Add (Element1D(elpids,index=1))
+
+def SegMesh(n,x0,x1,periodic=False):
+    mesh = Mesh(dim=1)
+    pids = []
+    for i in range(n+1):
+        pids.append (mesh.Add (MeshPoint(Pnt(x0+(x1-x0)*i/n, 0, 0))))
+    AddEdgeEls(0,1,1,n,pids,mesh)
+    mesh.Add (Element0D( pids[0], index=1))
+    mesh.Add (Element0D( pids[n], index=2))
+    mesh.SetBCName(0,"left")
+    mesh.SetBCName(1,"right")
+    if periodic == True:
+        mesh.AddPointIdentification(pids[0],pids[n],1,2)
+    return mesh
+
+# create a hexagonal mesh with corner points on the unit circle
+def MakeHexagonalMesh2D(maxh=0.1):
+    geo = SplineGeometry()
+    pnums = [ geo.AddPoint(math.cos(phi),math.sin(phi)) for phi in [xx*math.pi/3 for xx in range(6)] ]
+    l1 = geo.Append(["line", 0, 1], leftdomain=1, rightdomain=0, bc="upperRight")
+    geo.Append(["line", 4, 3], leftdomain=0, rightdomain=1, bc="lowerLeft", copy = l1)
+    l2 = geo.Append(["line", 1, 2], leftdomain=1, rightdomain=0, bc="upperCenter")
+    geo.Append(["line", 5, 4], leftdomain=0, rightdomain=1, bc="lowerCenter", copy = l2)
+    l3 = geo.Append(["line", 2, 3], leftdomain=1, rightdomain=0, bc="upperLeft")
+    geo.Append(["line", 0, 5], leftdomain=0, rightdomain=1, bc="lowerRight", copy = l3)
+    return geo.GenerateMesh(maxh=maxh)
 
 def MakeTensorProductMesh(mesh1,mesh2):
     if mesh1.dim + mesh2.dim >3:

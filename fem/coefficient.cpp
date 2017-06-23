@@ -4400,27 +4400,14 @@ public:
     virtual void Evaluate(const BaseMappedIntegrationRule & ir,
                           FlatMatrix<> result) const
     {
-      const TPMappedIntegrationRule * tpmir = dynamic_cast<const TPMappedIntegrationRule *>(&ir);
-      if(!tpmir)
-        {
-          if (!ir.IsComplex())
-            result.Col(0) = ir.GetPoints().Col(dir);
-          else
-            {
-              auto pnts = ir.GetPointsComplex().Col(dir);
-              for (auto i : Range(ir.Size()))
-                result(i,0) = pnts(i).real();
-            }
-          return;
-        }
-      if(dir<=2)
-        {
-          for(int i=0;i<tpmir->GetIRs()[0]->Size();i++)
-            result.Rows(i*tpmir->GetIRs()[1]->Size(),(i+1)*tpmir->GetIRs()[1]->Size() ) = tpmir->GetIRs()[0]->GetPoints().Col(dir)(i);
-          return;
-        }
-      for(int i=0;i<tpmir->GetIRs()[0]->Size();i++)
-        result.Rows(i*tpmir->GetIRs()[1]->Size(),(i+1)*tpmir->GetIRs()[1]->Size()) = tpmir->GetIRs()[1]->GetPoints().Col(dir-3);
+      if (!ir.IsComplex())
+        result.Col(0) = ir.GetPoints().Col(dir);
+      else
+      {
+        auto pnts = ir.GetPointsComplex().Col(dir);
+        for (auto i : Range(ir.Size()))
+          result(i,0) = pnts(i).real();
+      }
     }
     virtual void Evaluate(const BaseMappedIntegrationRule & ir,
 			  FlatMatrix<Complex> result) const

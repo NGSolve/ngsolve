@@ -119,8 +119,8 @@ namespace ngcomp
                 VorB vb, 
                 LocalHeap & clh, 
                 const function<void(ElementId,ElementId,LocalHeap&)> & func);
-    extern void Transfer2StdMesh(const GridFunction * gfutp, GridFunction* gfustd);
-    extern void Transfer2TPMesh(const CoefficientFunction * cfstd, GridFunction* gfutp);
+    extern void Transfer2StdMesh(const GridFunction * gfutp, GridFunction* gfustd,LocalHeap & lh);
+    extern void Transfer2TPMesh(const CoefficientFunction * cfstd, GridFunction* gfutp,LocalHeap & lh);
 
     
 }

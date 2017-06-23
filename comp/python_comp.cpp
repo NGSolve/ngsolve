@@ -1806,12 +1806,7 @@ used_idnrs : list of int = None
          [](shared_ptr<GF> self, spCF cf,
             VorB boundary, py::object definedon, int heapsize, py::object heap)
          {
-           shared_ptr<TPHighOrderFESpace> tpspace = dynamic_pointer_cast<TPHighOrderFESpace>(self->GetFESpace());
-             if(tpspace)
-             {
-               Transfer2TPMesh(cf.get(),self.get());
-               return;
-            }          
+           shared_ptr<TPHighOrderFESpace> tpspace = dynamic_pointer_cast<TPHighOrderFESpace>(self->GetFESpace());          
             Region * reg = nullptr;
             if (py::extract<Region&> (definedon).check())
               reg = &py::extract<Region&>(definedon)();
@@ -1819,6 +1814,11 @@ used_idnrs : list of int = None
             if (py::extract<LocalHeap&> (heap).check())
               {
                 LocalHeap & lh = py::extract<LocalHeap&> (heap)();
+                if(tpspace)
+                {
+                  Transfer2TPMesh(cf.get(),self.get(),lh);
+                  return;
+                }
                 if (reg)
                   SetValues (cf, *self, *reg, NULL, lh);
                 else
@@ -1835,6 +1835,11 @@ used_idnrs : list of int = None
                   { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }
               }
             // LocalHeap lh(heapsize, "GridFunction::Set-lh", true);
+            if(tpspace)
+            {
+              Transfer2TPMesh(cf.get(),self.get(),glh);
+              return;
+            }            
             if (reg)
               SetValues (cf, *self, *reg, NULL, glh);
             else
@@ -2845,12 +2850,6 @@ flags : dict
 	py::arg("element_wise")=false,
 	py::arg("heapsize") = 1000000)
     ;
-  
-
-
-
-
-
 
   m.def("SymbolicLFI",
           [](spCF cf, VorB vb, bool element_boundary,
@@ -3029,7 +3028,10 @@ flags : dict
                 shared_ptr<FESpace> space( new TPHighOrderFESpace( spaces[0],spaces_y, flags ) );
                 return space;             
               }
-              });
+            },
+            py::arg("spaces"),
+            py::arg("flags")=Flags()
+           );
 
    m.def("TensorProductIntegrate", [](shared_ptr<GF> gf_tp, py::list ax0, spCF coef) -> double
            {
@@ -3114,10 +3116,14 @@ flags : dict
                   dynamic_cast<const BaseScalarFiniteElement &>(fely).CalcShape(ir,shape);
                   BaseMappedIntegrationRule & mir = trafo(ir,lh);
                   FlatMatrix<> vals(mir.Size(), tpfes->GetDimension(),lh);
-                  coef->Evaluate(mir, vals);
-                  int firstxdof = 0;
+                  if(coef)
+                    coef->Evaluate(mir, vals);
+                  else
+                    vals = 1.0;
                   for(int s=0;s<ir.Size();s++)
                     vals.Row(s)*=mir[s].GetWeight();
+                  
+                  int firstxdof = 0;
                   for(int j=0;j<spaces[0]->GetMeshAccess()->GetNE();j++)
                   {
                     int ndofx = spaces[0]->GetFE(ElementId(j),lh).GetNDof();
@@ -3135,6 +3141,7 @@ flags : dict
                     }
                     firstxdof+=ndofx*tpfes->GetDimension();
                   }
+
                 }
               }
               );
@@ -3142,6 +3149,9 @@ flags : dict
             for(int i=0;i<elvec_outmat.Height();i++)
               elvec_out+=elvec_outmat.Row(i);
             int firstxdof = 0;
+            // In case the x gridfunction and the Tensor space have equal number
+            // of components write the integral of each component into the component
+            // x gridfunction
             if(tpfes->GetDimension() == gf_x->GetFESpace()->GetDimension())
               for(int i=0;i<spaces[0]->GetMeshAccess()->GetNE();i++)
               {
@@ -3152,6 +3162,8 @@ flags : dict
                 spaces[0]->GetDofNrs(ElementId(i),dofsx);
                 vec_out.SetIndirect(dofsx,elvec_out.Range(dnumsx));
               }
+            // In case the x gridfunction has 1 component and the Tensor space has more than
+            // one component, write the sum of the integral of each component into the x gridfunction
             else if(tpfes->GetDimension() > 1 && gf_x->GetFESpace()->GetDimension() == 1)
             {
               FlatVector<> elvec_sum(gf_x->GetFESpace()->GetNDof(),clh);
@@ -3171,7 +3183,11 @@ flags : dict
                 vec_out.SetIndirect(dofsx,elvec_sum.Range(dnumsx));
               }
             }
-});
+   },
+   py::arg("gftp"),
+   py::arg("gfx"),
+   py::arg("weight")=nullptr
+   );
 
    m.def("ProlongateCoefficientFunction", [](spCF cf_x, int prolongateto, shared_ptr<FESpace> tpfes) -> shared_ptr<CoefficientFunction>
            {
@@ -3192,12 +3208,21 @@ flags : dict
                 cout << "GridFunction gf_x is not defined on first space"<<endl;
               });
    m.def("Transfer2StdMesh", [](const shared_ptr<GF> gfutp,
-                                shared_ptr<GF> gfustd )
+                                shared_ptr<GF> gfustd, int heapsize )
             {
+              if (heapsize > global_heapsize)
+              {
+                global_heapsize = heapsize;
+                glh = LocalHeap(heapsize, "python-comp lh", true);
+              }
               static Timer tall("comp.Transfer2StdMesh"); RegionTimer rall(tall);
-              Transfer2StdMesh(gfutp.get(),gfustd.get());
+              Transfer2StdMesh(gfutp.get(),gfustd.get(),glh);
               return;
-             });
+             },
+             py::arg("gftp"),
+             py::arg("gfstd"),
+             py::arg() = 1000000
+        );
    
    m.def("Transfer2StdMesh", [](const spCF cftp, shared_ptr<GF> gfustd )
             {
