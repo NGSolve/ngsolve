@@ -1,8 +1,6 @@
 from ngsolve.TensorProductTools import *
-from make_seg_mesh import *
 from ngsolve.comp import *
 from ngsolve import *
-from ngsolve.comp import TensorProductFESpace, Transfer2StdMesh, SymbolicTPBFI
 from netgen.geom2d import unit_square
 
 
@@ -15,9 +13,9 @@ Draw(tpmesh)
 n=3
 m=3
 
-fesx = L2(mesh1,order=n,flags={'dgjumps':True})
-fesy = L2(mesh2,order=m,flags={'dgjumps':True})
-tpfes = TensorProductFESpace([fesx,fesy],{'dgjumps':True})
+fesx = L2(mesh1,order=n)
+fesy = L2(mesh2,order=m)
+tpfes = TensorProductFESpace([fesx,fesy])
 
 fes = L2(tpmesh,order=n)
 
@@ -27,7 +25,7 @@ v = tpfes.TestFunction()
 vx = v.Operator("gradx")
 vy = v.Operator("grady")
 
-b = CoefficientFunction( (x1-0.5,0.5-x,0) )
+b = CoefficientFunction( (ProlongateCoefficientFunction(x-0.5,0,tpfes),ProlongateCoefficientFunction(0.5-x,1,tpfes),0) )
 
 uin = CoefficientFunction(0.0)
 
@@ -50,7 +48,7 @@ v = GridFunction(tpfes)
 
 uu = GridFunction(fes)
 
-u.Set(exp(-70*(x-0.25)*(x-0.25)-70*(x1-0.25)*(x1-0.25)-70*(y1-0.75)*(y1-0.75)))
+u.Set(exp(ProlongateCoefficientFunction( -70*(x-0.25)*(x-0.25),1,tpfes) + ProlongateCoefficientFunction(-70*(x-0.25)*(x-0.25)-70*(y-0.75)*(y-0.75),0,tpfes) ))
 Transfer2StdMesh(u,uu)
 Draw(uu,sd=3,autoscale=False)
 
@@ -70,6 +68,6 @@ def Run(nsteps):
             print("Step ",i+1, "/",nsteps)
             Step()
 
-Run(10000)
+Run(100)
 for t in Timers():
     print(t["counts"], t["time"], t["name"])
