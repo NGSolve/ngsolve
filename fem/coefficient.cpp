@@ -3246,6 +3246,8 @@ public:
   {
     switch (c1->Dimension())
       {
+      case 1:
+        return make_shared<T_MultVecVecCoefficientFunction<1>> (c1, c2);
       case 2:
         return make_shared<T_MultVecVecCoefficientFunction<2>> (c1, c2);
       case 3:
