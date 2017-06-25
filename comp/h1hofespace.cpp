@@ -184,9 +184,9 @@ namespace ngcomp
         */
       }
 
-    // auto one = make_shared<ConstantCoefficientFunction> (1);
-    // integrator[VOL] = CreateBFI("mass", ma->GetDimension(), one);
-    // integrator[BND] = CreateBFI("robin", ma->GetDimension(), one);
+    auto one = make_shared<ConstantCoefficientFunction> (1);
+    integrator[VOL] = CreateBFI("mass", ma->GetDimension(), one);
+    integrator[BND] = CreateBFI("robin", ma->GetDimension(), one);
 
     switch (ma->GetDimension())
       {
@@ -199,13 +199,13 @@ namespace ngcomp
       default:
         ;
       }
-    /*
+
     if (dimension > 1)
       {
 	integrator[VOL] = make_shared<BlockBilinearFormIntegrator> (integrator[VOL], dimension);
         integrator[BND] = make_shared<BlockBilinearFormIntegrator> (integrator[BND], dimension);
       }
-    */
+
     prol = make_shared<LinearProlongation> (*this);
   }
 
