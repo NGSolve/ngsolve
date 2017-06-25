@@ -169,24 +169,43 @@ namespace ngcomp
       }
     if (dimension > 1)
       {
+        for (auto vb : { VOL,BND })
+          {
+            evaluator[vb] = make_shared<BlockDifferentialOperator> (evaluator[vb], dimension);
+            flux_evaluator[vb] = make_shared<BlockDifferentialOperator> (flux_evaluator[vb], dimension);            
+          }
+        /*
 	evaluator[VOL] = make_shared<BlockDifferentialOperator> (evaluator[VOL], dimension);
 	flux_evaluator[VOL] = make_shared<BlockDifferentialOperator> (flux_evaluator[VOL], dimension);
 	evaluator[BND] = 
 	  make_shared<BlockDifferentialOperator> (evaluator[BND], dimension);
 	flux_evaluator[BND] = 
 	  make_shared<BlockDifferentialOperator> (flux_evaluator[BND], dimension);
+        */
       }
 
-    auto one = make_shared<ConstantCoefficientFunction> (1);
-    integrator[VOL] = CreateBFI("mass", ma->GetDimension(), one);
-    integrator[BND] = CreateBFI("robin", ma->GetDimension(), one);
+    // auto one = make_shared<ConstantCoefficientFunction> (1);
+    // integrator[VOL] = CreateBFI("mass", ma->GetDimension(), one);
+    // integrator[BND] = CreateBFI("robin", ma->GetDimension(), one);
 
+    switch (ma->GetDimension())
+      {
+      case 1:
+        additional_evaluators.Set ("hesse", make_shared<T_DifferentialOperator<DiffOpHesse<1>>> ()); break;
+      case 2:
+        additional_evaluators.Set ("hesse", make_shared<T_DifferentialOperator<DiffOpHesse<2>>> ()); break;
+      case 3:
+        additional_evaluators.Set ("hesse", make_shared<T_DifferentialOperator<DiffOpHesse<3>>> ()); break;
+      default:
+        ;
+      }
+    /*
     if (dimension > 1)
       {
 	integrator[VOL] = make_shared<BlockBilinearFormIntegrator> (integrator[VOL], dimension);
         integrator[BND] = make_shared<BlockBilinearFormIntegrator> (integrator[BND], dimension);
       }
-
+    */
     prol = make_shared<LinearProlongation> (*this);
   }
 
@@ -603,7 +622,8 @@ namespace ngcomp
         hndof += neldof;
       }
     first_element_dof[ne] = hndof;
-    ndof = hndof;
+    // ndof = hndof;
+    SetNDof(hndof);
     
     if (print)
       {
@@ -612,10 +632,11 @@ namespace ngcomp
         (*testout) << "h1 first inner = " << first_element_dof << endl;
       }
 
+    /*
     while (ma->GetNLevels() > ndlevel.Size())
       ndlevel.Append (ndof);
     ndlevel.Last() = ndof;
-
+    */
     prol->Update();
   }
 
@@ -623,7 +644,7 @@ namespace ngcomp
   void H1HighOrderFESpace :: UpdateCouplingDofArray()
   {
     static Timer t("H1HighOrderFESpace::UpdateCouplingDofArray"); RegionTimer reg(t);    
-    ctofdof.SetSize(ndof);
+    ctofdof.SetSize(GetNDof());
     
     if(!nodalp2)
       for (auto i : Range (ma->GetNV()))
@@ -677,7 +698,7 @@ namespace ngcomp
       & uniform_order_edge & uniform_order_quad & uniform_order_trig;
     archive & dom_order_min & dom_order_max;
     // archive & smoother;
-    archive & ndlevel;
+    // archive & ndlevel;
     archive & level_adapted_order & nodalp2;
   }
 
@@ -868,12 +889,12 @@ namespace ngcomp
     return *hofe;
   }
  
-
+  /*
   size_t H1HighOrderFESpace :: GetNDofLevel (int alevel) const
   {
     return ndlevel[alevel];
   }
-
+  */
 
   void H1HighOrderFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
@@ -951,7 +972,7 @@ namespace ngcomp
     dnums = GetElementDofs (elnr);
   }
 
-  
+  /*
   SymbolTable<shared_ptr<DifferentialOperator>>
   H1HighOrderFESpace :: GetAdditionalEvaluators () const
   {
@@ -969,6 +990,7 @@ namespace ngcomp
       }
     return additional;
   }
+  */
   
   shared_ptr<Table<int>> H1HighOrderFESpace :: 
   CreateSmoothingBlocks (const Flags & precflags) const

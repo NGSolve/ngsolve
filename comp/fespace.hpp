@@ -194,6 +194,15 @@ namespace ngcomp
     Array<INT<3,TORDER>> order_cell_right;
     size_t order_timestamp = 0;
     BitArray is_atomic_dof;
+
+    
+    // move ndof and ndof_level to FESpace base class
+  private:
+    size_t ndof;
+    Array<size_t> ndof_level;
+  protected:
+    void SetNDof (size_t _ndof);
+    
   public:
     virtual int GetSpacialDimension() const { return ma->GetDimension();}
     string type;
@@ -292,11 +301,12 @@ namespace ngcomp
 
 
     /// number of (process-local) dofs
-    virtual size_t GetNDof () const = 0;
+    virtual size_t GetNDof () const { return ndof; } 
     /// number of dofs on the level
-    virtual size_t GetNDofLevel (int level) const;
+    virtual size_t GetNDofLevel (int level) const { return ndof_level[level]; } 
 
-    
+    SymbolTable<shared_ptr<DifferentialOperator>> additional_evaluators;
+       
     class Element : public Ngs_Element
     {
       const FESpace & fes;
@@ -751,7 +761,7 @@ namespace ngcomp
     }
 
     virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const
-    { return SymbolTable<shared_ptr<DifferentialOperator>>(); } 
+    { return additional_evaluators; } 
 
     /// returns function-evaluator
     [[deprecated("Use GetIntegrator(VorB) instead of GetIntegrator(bool)!")]]    

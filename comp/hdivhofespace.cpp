@@ -125,8 +125,8 @@ namespace ngcomp
 
 
     auto one = make_shared<ConstantCoefficientFunction> (1);
-    integrator[VOL]= GetIntegrators().CreateBFI("masshdiv", ma->GetDimension(), one);
-    integrator[BND] = GetIntegrators().CreateBFI("robinhdiv", ma->GetDimension(), one);
+    // integrator[VOL]= GetIntegrators().CreateBFI("masshdiv", ma->GetDimension(), one);
+    // integrator[BND] = GetIntegrators().CreateBFI("robinhdiv", ma->GetDimension(), one);
     
     if (ma->GetDimension() == 2)
       {
@@ -141,12 +141,14 @@ namespace ngcomp
         flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpDivHDiv<3>>>();
       }
 
+    /*
     if (dimension > 1)
       {
         integrator[VOL]= make_shared<BlockBilinearFormIntegrator> (integrator[VOL], dimension);
         integrator[BND] = make_shared<BlockBilinearFormIntegrator> (integrator[BND], dimension);
       }
-
+    */
+    
     highest_order_dc = flags.GetDefineFlag("highest_order_dc");
     if (highest_order_dc) {
       *testout << "highest_order_dc is active!" << endl;
