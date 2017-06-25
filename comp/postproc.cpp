@@ -350,7 +350,15 @@ namespace ngcomp
       diffop = fes.GetEvaluator(vb).get();
     shared_ptr<BilinearFormIntegrator> bli = fes.GetIntegrator(vb);
     if (!bli)
-      throw Exception ("no integrator available");
+      {
+        cout << IM(5) << "make a symbolic integrator for interpolation" << endl;
+        auto trial = make_shared<ProxyFunction>(false, false, fes.GetEvaluator(vb),
+                                                nullptr, nullptr, nullptr, nullptr, nullptr);
+        auto test  = make_shared<ProxyFunction>(true, false, fes.GetEvaluator(vb),
+                                                nullptr, nullptr, nullptr, nullptr, nullptr);
+        bli = make_shared<SymbolicBilinearFormIntegrator> (InnerProduct(trial,test), vb, false);
+        // throw Exception ("no integrator available");
+      }
 
     int dimflux = diffop ? diffop->Dim() : bli->DimFlux(); 
     if (coef -> Dimension() != dimflux)
@@ -411,7 +419,7 @@ namespace ngcomp
                   else
                     throw ExceptionNOSIMD("need diffop");
 
-                  if (dim > 1)
+                  if (dim > 1 && typeid(*bli)==typeid(BlockBilinearFormIntegrator))
                     {
                       FlatMatrix<SCAL> elmat(fel.GetNDof(), lh);
                       const BlockBilinearFormIntegrator & bbli = 
@@ -424,7 +432,7 @@ namespace ngcomp
                     }
                   else
                     {
-                      FlatMatrix<SCAL> elmat(fel.GetNDof(), lh);
+                      FlatMatrix<SCAL> elmat(fel.GetNDof()*dim, lh);
                       bli->CalcElementMatrix (fel, eltrans, elmat, lh);
                       
                       fes.TransformMat (ei, elmat, TRANSFORM_MAT_LEFT_RIGHT);
@@ -474,7 +482,7 @@ namespace ngcomp
 	  else
 	    bli->ApplyBTrans (fel, mir, mfluxi, elflux, lh);
 
-	  if (dim > 1)
+	  if (dim > 1 && typeid(*bli)==typeid(BlockBilinearFormIntegrator))
 	    {
 	      FlatMatrix<SCAL> elmat(fel.GetNDof(), lh);
 	      const BlockBilinearFormIntegrator & bbli = 
@@ -487,7 +495,7 @@ namespace ngcomp
 	    }
 	  else
 	    {
-	      FlatMatrix<double> elmat(fel.GetNDof(), lh);
+	      FlatMatrix<double> elmat(fel.GetNDof()*dim, lh);
 	      bli->CalcElementMatrix (fel, eltrans, elmat, lh);
 
 	      fes.TransformMat (ei, elmat, TRANSFORM_MAT_LEFT_RIGHT);

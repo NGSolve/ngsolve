@@ -699,13 +699,13 @@ namespace ngfem
             if (nodecf.StoreUserData())
               gridfunction_cfs.Append (&nodecf);
         });
-    cout << IM(3) << "num test_proxies " << test_proxies.Size() << endl;
-    cout << IM(3) << "num trial_proxies " << trial_proxies.Size() << endl;
-    cout << IM(3) << "cumulated test_proxy dims  " << test_cum << endl;
-    cout << IM(3) << "cumulated trial_proxy dims " << trial_cum << endl;
+    cout << IM(5) << "num test_proxies " << test_proxies.Size() << endl;
+    cout << IM(5) << "num trial_proxies " << trial_proxies.Size() << endl;
+    cout << IM(5) << "cumulated test_proxy dims  " << test_cum << endl;
+    cout << IM(5) << "cumulated trial_proxy dims " << trial_cum << endl;
 
     elementwise_constant = cf -> ElementwiseConstant();
-    cout << IM(3) << "element-wise constant = " << elementwise_constant << endl;
+    cout << IM(5) << "element-wise constant = " << elementwise_constant << endl;
 
     // find non-zeros
     int cnttest = 0, cnttrial = 0;
@@ -760,8 +760,8 @@ namespace ngfem
           same_diffops(l1,k1) = *(proxy2->Evaluator()) == *(proxy1->Evaluator());
         }
     
-    cout << IM(3) << "nonzeros: " << endl << nonzeros << endl;
-    cout << IM(3) << "nonzeros_proxies: " << endl << nonzeros_proxies << endl;
+    cout << IM(5) << "nonzeros: " << endl << nonzeros << endl;
+    cout << IM(5) << "nonzeros_proxies: " << endl << nonzeros_proxies << endl;
   }
 
 

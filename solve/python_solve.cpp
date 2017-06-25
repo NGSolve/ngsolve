@@ -94,7 +94,30 @@ void NGS_DLL_HEADER ExportNgsolve(py::module &m ) {
                 // cout << "gf in draw = " << *gf << endl;
                 // cout << "dims of gf =  " << gf->Dimensions() << endl;
                 gf->GetMeshAccess()->SelectMesh();
-                Visualize (gf, gf->GetName());
+                // Visualize (gf, gf->GetName());
+
+                netgen::SolutionData * vis = new VisualizeCoefficientFunction (gf->GetMeshAccess(), gf);
+                Ng_SolutionData soldata;
+                Ng_InitSolutionData (&soldata);
+  
+                soldata.name = gf->GetName().c_str();
+                soldata.data = 0;
+                soldata.components = gf -> Dimension();
+                if (gf->IsComplex()) soldata.components *= 2;
+                soldata.iscomplex = gf -> IsComplex();
+                soldata.draw_surface = true; // draw_surf;
+                soldata.draw_volume  = true; // draw_vol; 
+                /* 
+                if (flags.GetDefineFlag("volume"))
+                  soldata.draw_surface = false;
+                if (flags.GetDefineFlag("boundary"))
+                  soldata.draw_volume = false;
+                */
+                soldata.dist = 1;
+                soldata.soltype = NG_SOLUTION_VIRTUAL_FUNCTION;
+                soldata.solclass = vis;
+                Ng_SetSolutionData (&soldata);
+                
                 if (gf->Dimension() == 1)
                   Ng_TclCmd (string("set ::visoptions.scalfunction ")+gf->GetName()+":1;\n");
                 else

@@ -20,7 +20,7 @@
 
 using namespace ngmg;
 
-using FE_Quad1 = ScalarFE<ET_QUAD,1>;
+// using FE_Quad1 = ScalarFE<ET_QUAD,1>;
 
 namespace ngcomp
 {
@@ -293,7 +293,14 @@ lot of new non-zero entries in the matrix!\n" << endl;
     delete paralleldofs;
   }
   
-
+  void FESpace :: SetNDof (size_t _ndof)
+  {
+    ndof = _ndof;
+    while (ma->GetNLevels() > ndof_level.Size())
+      ndof_level.Append (ndof);
+    ndof_level.Last() = ndof;
+  }
+  
   void FESpace :: Update(LocalHeap & lh)
   {
     if (print)
@@ -955,12 +962,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
     archive & dirichlet_vertex & dirichlet_edge & dirichlet_face;
   }
 
-
+  /*
   size_t FESpace :: GetNDofLevel (int level) const
   {
     return GetNDof();
   } 
-
+  */
+  
   std::list<std::tuple<std::string,double>> FESpace :: Timing () const
   {
     double starttime;
