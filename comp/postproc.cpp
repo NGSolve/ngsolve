@@ -361,14 +361,23 @@ namespace ngcomp
     if (!diffop)
       diffop = fes.GetEvaluator(vb).get();
     shared_ptr<BilinearFormIntegrator> bli = fes.GetIntegrator(vb);
+    shared_ptr<BilinearFormIntegrator> single_bli = bli;
+    if (dynamic_pointer_cast<BlockBilinearFormIntegrator> (single_bli))
+      single_bli = dynamic_pointer_cast<BlockBilinearFormIntegrator> (single_bli)->BlockPtr();
+    
     if (!bli)
       {
         cout << IM(5) << "make a symbolic integrator for interpolation" << endl;
-        auto trial = make_shared<ProxyFunction>(false, false, fes.GetEvaluator(vb),
+        auto single_evaluator =  fes.GetEvaluator(vb);
+        if (dynamic_pointer_cast<BlockDifferentialOperator>(single_evaluator))
+          single_evaluator = dynamic_pointer_cast<BlockDifferentialOperator>(single_evaluator)->BaseDiffOp();
+        
+        auto trial = make_shared<ProxyFunction>(false, false, single_evaluator,
                                                 nullptr, nullptr, nullptr, nullptr, nullptr);
-        auto test  = make_shared<ProxyFunction>(true, false, fes.GetEvaluator(vb),
+        auto test  = make_shared<ProxyFunction>(true, false, single_evaluator,
                                                 nullptr, nullptr, nullptr, nullptr, nullptr);
         bli = make_shared<SymbolicBilinearFormIntegrator> (InnerProduct(trial,test), vb, false);
+        single_bli = bli;
         // throw Exception ("no integrator available");
       }
 
@@ -431,12 +440,10 @@ namespace ngcomp
                   else
                     throw ExceptionNOSIMD("need diffop");
 
-                  if (dim > 1 && typeid(*bli)==typeid(BlockBilinearFormIntegrator))
+                  if (dim > 1) //  && typeid(*bli)==typeid(BlockBilinearFormIntegrator))
                     {
                       FlatMatrix<SCAL> elmat(fel.GetNDof(), lh);
-                      const BlockBilinearFormIntegrator & bbli = 
-                        dynamic_cast<const BlockBilinearFormIntegrator&> (*bli.get());
-                      bbli . Block() . CalcElementMatrix (fel, eltrans, elmat, lh);
+                      single_bli->CalcElementMatrix (fel, eltrans, elmat, lh);                      
                       FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
                       
                       for (int j = 0; j < dim; j++)
@@ -444,7 +451,7 @@ namespace ngcomp
                     }
                   else
                     {
-                      FlatMatrix<SCAL> elmat(fel.GetNDof()*dim, lh);
+                      FlatMatrix<SCAL> elmat(fel.GetNDof(), lh);
                       bli->CalcElementMatrix (fel, eltrans, elmat, lh);
                       
                       fes.TransformMat (ei, elmat, TRANSFORM_MAT_LEFT_RIGHT);
@@ -494,12 +501,13 @@ namespace ngcomp
 	  else
 	    bli->ApplyBTrans (fel, mir, mfluxi, elflux, lh);
 
-	  if (dim > 1 && typeid(*bli)==typeid(BlockBilinearFormIntegrator))
+	  if (dim > 1)
 	    {
 	      FlatMatrix<SCAL> elmat(fel.GetNDof(), lh);
-	      const BlockBilinearFormIntegrator & bbli = 
-		dynamic_cast<const BlockBilinearFormIntegrator&> (*bli.get());
-	      bbli . Block() . CalcElementMatrix (fel, eltrans, elmat, lh);
+	      // const BlockBilinearFormIntegrator & bbli = 
+              // dynamic_cast<const BlockBilinearFormIntegrator&> (*bli.get());
+	      // bbli . Block() . CalcElementMatrix (fel, eltrans, elmat, lh);
+              single_bli->CalcElementMatrix (fel, eltrans, elmat, lh);
 	      FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
               
 	      for (int j = 0; j < dim; j++)
