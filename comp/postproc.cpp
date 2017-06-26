@@ -625,7 +625,8 @@ namespace ngcomp
     int dimflux = fesflux.GetDimension();
     int dimfluxvec = bli->DimFlux(); // fesflux.GetDimension();
 
-    shared_ptr<BilinearFormIntegrator> fluxbli = fesflux.GetIntegrator(vb);
+    // shared_ptr<BilinearFormIntegrator> fluxbli = fesflux.GetIntegrator(vb);
+    shared_ptr<DifferentialOperator> flux_diffop = fesflux.GetEvaluator(vb);
 
     Array<int> dnums;
     Array<int> dnumsflux;
@@ -668,8 +669,12 @@ namespace ngcomp
 	
 	BaseMappedIntegrationRule & mir = eltrans(ir, lh);
 	bli->CalcFlux (fel, mir, elu, mfluxi, 1, lh);
-	fluxbli->CalcFlux (felflux, mir, elflux, mfluxi2, 0, lh);
-	
+        // fluxbli->CalcFlux (felflux, mir, elflux, mfluxi2, 0, lh);
+        // cout << "mfluxi2 - bli = " << mfluxi2 << endl;
+        // mfluxi2 = 0;
+        flux_diffop->Apply (felflux, mir, elflux, mfluxi2, lh);
+        // cout << "mfluxi2 - diffop = " << mfluxi2 << endl;
+        
 	mfluxi -= mfluxi2;
 	
 	bli->ApplyDMatInv (fel, mir, mfluxi, mfluxi2, lh);

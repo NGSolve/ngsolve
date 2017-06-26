@@ -446,10 +446,12 @@ namespace ngcomp
 
 
     // Evaluator
+    /*
     static ConstantCoefficientFunction one(1);
     integrator[VOL] = GetIntegrators().CreateBFI("massedge", ma->GetDimension(), &one);
     if (!discontinuous)
       integrator[BND] = GetIntegrators().CreateBFI("robinedge", ma->GetDimension(), &one); 
+    */
     
     if (ma->GetDimension() == 2)
       {

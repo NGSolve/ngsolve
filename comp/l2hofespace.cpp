@@ -88,11 +88,12 @@ namespace ngcomp
 	throw Exception ("Flag 'variableorder' for l2ho is obsolete. \n  Either choose uniform order by -order= .. \n -relorder=.. for relative mesh order "); 
       }
 
+    /*
     integrator[VOL] = CreateBFI("mass", ma->GetDimension(),
                            make_shared<ConstantCoefficientFunction>(1));
-
     if (dimension > 1)
       integrator[VOL] = make_shared<BlockBilinearFormIntegrator> (integrator[VOL], dimension);
+    */
 
     
 
