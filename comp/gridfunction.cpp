@@ -225,11 +225,44 @@ namespace ngcomp
       }
     */
 
-    shared_ptr<BilinearFormIntegrator> bfi2d, bfi3d;
 
     auto fespace = gf->GetFESpace();
     auto ma = fespace->GetMeshAccess();
+
+    shared_ptr<DifferentialOperator> eval_2d, eval_3d;    
+    if (ma->GetDimension() == 2)
+      {
+	eval_2d = fespace->GetEvaluator(VOL);
+      }
+    else
+      {
+	eval_3d = fespace->GetEvaluator(VOL);
+	eval_2d = fespace->GetEvaluator(BND);
+      }
+
     
+    netgen::SolutionData * vis = new VisualizeCoefficientFunction (ma, gf);
+    Ng_SolutionData soldata;
+    Ng_InitSolutionData (&soldata);
+  
+    soldata.name = given_name;
+    soldata.data = 0;
+    soldata.components = gf -> Dimension();
+    if (gf->IsComplex()) soldata.components *= 2;
+    soldata.iscomplex = gf -> IsComplex();
+    soldata.draw_surface = eval_2d != nullptr;
+    soldata.draw_volume  = eval_3d != nullptr;
+
+    soldata.dist = 1;
+    soldata.soltype = NG_SOLUTION_VIRTUAL_FUNCTION;
+    soldata.solclass = vis;
+    Ng_SetSolutionData (&soldata);
+    
+
+    
+    /*
+    shared_ptr<BilinearFormIntegrator> bfi2d, bfi3d;
+
     if (ma->GetDimension() == 2)
       {
 	bfi2d = fespace->GetIntegrator(VOL);
@@ -262,6 +295,7 @@ namespace ngcomp
 	soldata.solclass = vis;
 	Ng_SetSolutionData (&soldata);    
       }
+    */
   }
 
 
@@ -1390,6 +1424,12 @@ namespace ngcomp
   void GridFunctionCoefficientFunction :: 
   Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
   {
+    if (gf -> GetLevelUpdated() < gf->GetMeshAccess()->GetNLevels())
+      {
+        values = 0.0;
+        return;
+      }
+    
     LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evalute 3");
     // static Timer timer ("GFCoeffFunc::Eval-vec", 2);
     // RegionTimer reg (timer);
