@@ -905,13 +905,14 @@ namespace ngcomp
                          int elmat_size = dnums.Size()*fespace->GetDimension();
                          FlatMatrix<SCAL> sum_elmat(elmat_size, lh);
                          sum_elmat = 0;
-			 
+			 bool elem_has_integrator = false;
                          for (auto & bfip : VB_parts[vb])
                            {
                              const BilinearFormIntegrator & bfi = *bfip;
                              if (!bfi.DefinedOn (el.GetIndex())) continue;                        
                              if (!bfi.DefinedOnElement (el.Nr())) continue;                        
-                             
+
+                             elem_has_integrator = true;
                              FlatMatrix<SCAL> elmat(elmat_size, lh);
                              
                              try
@@ -947,6 +948,8 @@ namespace ngcomp
                              
                              sum_elmat += elmat;
                            }
+
+                         if (!elem_has_integrator) return;
                          
                          fespace->TransformMat (el, sum_elmat, TRANSFORM_MAT_LEFT_RIGHT);
 			 
