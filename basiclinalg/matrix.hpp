@@ -1658,7 +1658,7 @@ namespace ngbla
 
     INLINE BareSliceVector<T> Col (size_t col)
     {
-      return SliceVector<T> (Height(), dist, data+col*dist);
+      return SliceVector<T> (Height(), dist, data+col);
     }
     
     INLINE BareVector<T> Row (size_t i) const
