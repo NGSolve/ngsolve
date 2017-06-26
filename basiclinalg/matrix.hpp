@@ -1656,6 +1656,11 @@ namespace ngbla
       return BareSliceMatrix ( /* next-first, w, */ dist, data+first*dist, DummySize(next-first, Width()));
     }
 
+    INLINE BareSliceVector<T> Col (size_t col)
+    {
+      return SliceVector<T> (Height(), dist, data+col*dist);
+    }
+    
     INLINE BareVector<T> Row (size_t i) const
     {
       return BareVector<T> (data+i*dist);

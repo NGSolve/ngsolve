@@ -262,7 +262,36 @@ namespace ngfem
               const SIMD_BaseMappedIntegrationRule & mir,
               BareSliceMatrix<SIMD<double>> mat) const
   {
-    throw ExceptionNOSIMD("BlockDifferentialOperator::CalcMatrix does not support SIMD");
+    diffop->CalcMatrix(fel, mir, mat.RowSlice(0, dim*dim));
+    
+    size_t hdim = dim;   // how many copies
+    size_t dim_diffop = diffop->Dim();
+    size_t hdim2 = hdim*hdim;
+    size_t dim_dim_do = hdim*dim_diffop;
+    size_t dim2_dim_do = hdim2*dim_diffop;
+
+    STACK_ARRAY(SIMD<double>, hval, dim_diffop);
+    
+    size_t nip = mir.Size();
+    if (comp == -1) 
+      for (size_t i = 0; i < fel.GetNDof(); i++)
+        {
+          auto mati = mat.Rows(dim2_dim_do*IntRange(i,i+1));
+          for (size_t j = 0; j < nip; j++)
+            {
+              auto col = mati.Col(j);
+
+              for (size_t l = 0; l < dim_diffop; l++)
+                hval[l] = col(l*hdim2);
+              
+              col.AddSize(dim2_dim_do) = 0;
+            
+              for (size_t l = 0; l < dim_diffop; l++)
+                col.Slice(l*hdim, dim_dim_do+1).AddSize(hdim) = hval[l];
+            }
+        }
+    else
+      throw ExceptionNOSIMD("BlockDifferentialOperator::CalcMatrix does not support SIMD");
   }
   
 
