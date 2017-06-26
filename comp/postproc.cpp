@@ -38,15 +38,24 @@ namespace ngcomp
     int dimfluxvec = bli->DimFlux(); 
 
     shared_ptr<BilinearFormIntegrator> fluxbli = fesflux.GetIntegrator(vb);
+    shared_ptr<BilinearFormIntegrator> single_fluxbli = fluxbli;
+    if (dynamic_pointer_cast<BlockBilinearFormIntegrator> (single_fluxbli))
+      single_fluxbli = dynamic_pointer_cast<BlockBilinearFormIntegrator> (single_fluxbli)->BlockPtr();
+    
     auto flux_evaluator = fesflux.GetEvaluator(vb);
     if (!fluxbli)
       {
         cout << IM(5) << "make a symbolic integrator for CalcFluxProject" << endl;
-        auto trial = make_shared<ProxyFunction>(false, false, flux_evaluator,
+        auto single_evaluator =  flux_evaluator;
+        if (dynamic_pointer_cast<BlockDifferentialOperator>(single_evaluator))
+          single_evaluator = dynamic_pointer_cast<BlockDifferentialOperator>(single_evaluator)->BaseDiffOp();
+        
+        auto trial = make_shared<ProxyFunction>(false, false, single_evaluator,
                                                 nullptr, nullptr, nullptr, nullptr, nullptr);
-        auto test  = make_shared<ProxyFunction>(true, false, flux_evaluator,
+        auto test  = make_shared<ProxyFunction>(true, false, single_evaluator,
                                                 nullptr, nullptr, nullptr, nullptr, nullptr);
         fluxbli = make_shared<SymbolicBilinearFormIntegrator> (InnerProduct(trial,test), vb, false);
+        single_fluxbli = fluxbli;
         // throw Exception ("no integrator available");
       }
 
@@ -57,14 +66,6 @@ namespace ngcomp
 
     ProgressOutput progress (ma, "postprocessing element", ne);
 
-    /*
-#pragma omp parallel
-    {
-      LocalHeap slh = clh.Split();
-      
-      auto flux_elements = fesflux.Elements(VorB(bound));
-    */
-    
     IterateElements  
       (fesflux, vb, clh, 
        [&] (Ngs_Element ei, LocalHeap & lh)
@@ -84,8 +85,6 @@ namespace ngcomp
 
          Array<int> dnumsflux(felflux.GetNDof(), lh);
          fesflux.GetDofNrs(ei, dnumsflux);
-
-         // FlatArray<int> dnumsflux = flux_elements[ei].GetDofs();
 
          FlatVector<SCAL> elu(dnums.Size() * dim, lh);
          FlatVector<SCAL> elflux(dnumsflux.Size() * dimflux, lh);
@@ -110,12 +109,10 @@ namespace ngcomp
          // fluxbli->ApplyBTrans (felflux, mir, mfluxi, elflux, lh);
          flux_evaluator->ApplyTrans (felflux, mir, mfluxi, elflux, lh);
          
-         if (dimflux > 1 && typeid(*fluxbli)==typeid(BlockBilinearFormIntegrator))
+         if (dimflux > 1) 
            {
              FlatMatrix<SCAL> elmat(dnumsflux.Size(), lh);
-             const BlockBilinearFormIntegrator & bbli = 
-               dynamic_cast<const BlockBilinearFormIntegrator&> (*fluxbli.get());
-             bbli.Block().CalcElementMatrix (felflux, eltrans, elmat, lh);
+             single_fluxbli->CalcElementMatrix (felflux, eltrans, elmat, lh);
              FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
              
              for (int j = 0; j < dimflux; j++)
@@ -124,7 +121,7 @@ namespace ngcomp
            }
          else
            {
-             FlatMatrix<SCAL> elmat(dnumsflux.Size()*dimflux, lh);
+             FlatMatrix<SCAL> elmat(dnumsflux.Size(), lh);
              fluxbli->CalcElementMatrix (felflux, eltrans, elmat, lh);
              FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
              invelmat.Mult (elflux, elfluxi);
