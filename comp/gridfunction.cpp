@@ -1109,6 +1109,15 @@ namespace ngcomp
     */
   }
 
+
+    
+  bool GridFunctionCoefficientFunction :: DefinedOn (ElementId id)
+  {
+    return fes->DefinedOn(id);
+  }
+    
+
+  
   void GridFunctionCoefficientFunction :: GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
     string mycode_simd = R"CODE_( 
@@ -2730,6 +2739,7 @@ namespace ngcomp
     LocalHeapMem<100000> lh("viscf::GetValue xref");
     IntegrationPoint ip(xref[0],xref[1],xref[2]);
     ElementId ei(VOL, elnr);
+    if (!cf->DefinedOn(ei)) return false;
     ElementTransformation & trafo = ma->GetTrafo (ei, lh);
     BaseMappedIntegrationPoint & mip = trafo(ip, lh);
     if (!cf -> IsComplex())
@@ -2779,6 +2789,7 @@ namespace ngcomp
           ir[j] = IntegrationPoint(xref[j*sxref], xref[j*sxref+1], xref[j*sxref+2]);
         
         ElementId ei(VOL, elnr);
+        if (!cf->DefinedOn(ei)) return false;        
         ElementTransformation & trafo = ma->GetTrafo (ei, lh);
         BaseMappedIntegrationRule & mir = trafo(ir, lh);
         
@@ -2812,6 +2823,7 @@ namespace ngcomp
     ip.FacetNr() = facetnr;
     VorB vb = ma->GetDimension() == 3 ? BND : VOL;
     ElementId ei(vb, elnr);
+    if (!cf->DefinedOn(ei)) return false;    
     ElementTransformation & trafo = ma->GetTrafo (ei, lh);
     BaseMappedIntegrationPoint & mip = trafo(ip, lh);
 
@@ -2861,6 +2873,7 @@ namespace ngcomp
         
         bool bound = (ma->GetDimension() == 3);
         ElementId ei(bound ? BND : VOL, selnr);
+        if (!cf->DefinedOn(ei)) return false;
         
         LocalHeapMem<1000000> lh("viscf::getmultisurfvalue");
         ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
@@ -2962,7 +2975,8 @@ namespace ngcomp
     
     VorB vb = (ma->GetDimension() == 3) ? BND : VOL;
     ElementId ei(vb, selnr);
-        
+    if (!cf->DefinedOn(ei)) return false;
+    
     LocalHeapMem<100000> lh("viscf::getmultisurfvalue");
     ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
 
