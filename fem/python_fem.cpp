@@ -99,15 +99,15 @@ shared_ptr<CF> MakeCoefficient (py::object val)
 Array<shared_ptr<CoefficientFunction>> MakeCoefficients (py::object py_coef)
 {
   Array<shared_ptr<CoefficientFunction>> tmp;
-  if (py::extract<py::list>(py_coef).check())
+  if (py::isinstance<py::list>(py_coef))
     {
-      auto l = py::extract<py::list>(py_coef)();
+      auto l = py_coef.cast<py::list>();
       for (int i = 0; i < py::len(l); i++)
         tmp += MakeCoefficient(l[i]);
     }
-  else if (py::extract<py::tuple>(py_coef).check())
+  else if (py::isinstance<py::tuple>(py_coef))
     {
-      auto l = py::extract<py::tuple>(py_coef)();
+      auto l = py_coef.cast<py::tuple>();
       for (int i = 0; i < py::len(l); i++)
         tmp += MakeCoefficient(l[i]);
     }
