@@ -65,7 +65,8 @@ namespace ngcomp
 
           Mat<D> hm = jac * sigma_ref;
           Mat<D> sigma = hm * Trans(jac);
-          sigma *= (1.0 / (det));
+          
+          sigma *= (D == 2) ? (1/sqr(det)) : 1/det;
           
           for (int j = 0; j < D*D; j++)
             mat(j, i) = sigma(j);
@@ -107,7 +108,8 @@ namespace ngcomp
       
       Mat<D> jac = sip.GetJacobian();
       double det = fabs (sip.GetJacobiDet());
-      Mat<D> sjac = (1.0/(det)) * jac;
+      double fac = (D == 2) ? (1/sqr(det)) : 1/det;
+      Mat<D> sjac = fac * jac;
       
       mat = sjac * Trans (div_shape);
       
@@ -344,7 +346,7 @@ namespace ngcomp
     case ET_TRIG:
     {
       auto fe = new (alloc) HDivDivFE<ET_TRIG> (order,plus);
-      fe->SetVertexNumbers (ngel.vertices);
+      fe->SetVertexNumbers (ngel.Vertices());
       int ii = 0;
       for(auto f : ngel.Facets())
         fe->SetOrderFacet(ii++,order_facet[f]);
@@ -394,14 +396,14 @@ namespace ngcomp
   void HDivDivFESpace :: GetDofNrs (ElementId ei,Array<int> & dnums) const
   {
     Ngs_Element ngel = ma->GetElement(ei);
-
+    
     dnums.SetSize0();
     for(auto f : ngel.Facets())
       dnums += IntRange (first_facet_dof[f],
-        first_facet_dof[f+1]);
+                         first_facet_dof[f+1]);
     if(ei.VB() == VOL)
       dnums += IntRange (first_element_dof[ei.Nr()],
-        first_element_dof[ei.Nr()+1]);
+                         first_element_dof[ei.Nr()+1]);
   }
 
 
