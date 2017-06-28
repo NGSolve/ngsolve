@@ -36,24 +36,28 @@ namespace ngfem
 
   
   template <ELEMENT_TYPE ET>
-  class T_HDivDivFE : public HDivDivFiniteElement
+  class T_HDivDivFE : public HDivDivFiniteElement,
+    public VertexOrientedFE<ET>
   {
   protected:
     enum { DIM = ET_trait<ET>::DIM };
     enum { DIM_STRESS = (DIM*(DIM+1))/2 };
     
-    enum { N_VERTEX = ET_trait<ET>::N_VERTEX };
-    enum { N_FACET   = ET_trait<ET>::N_FACET };    
-    
-    size_t vnums[N_VERTEX];
-    INT<DIM-1> order_facet[N_FACET];
+    using VertexOrientedFE<ET>::vnums;
+
+    //enum { N_VERTEX = ET_trait<ET>::N_VERTEX };
+    //enum { N_FACET   = ET_trait<ET>::N_FACET };    
+    //
+    //size_t vnums[N_VERTEX];
+    INT<DIM-1> order_facet[ET_trait<ET>::N_FACET];
     INT<DIM> order_inner;
 
     // additional div-div free bubbles
     bool plus;
 
   public:
-
+    using VertexOrientedFE<ET>::SetVertexNumbers;
+    
     T_HDivDivFE (int aorder, bool _plus = false)
       : plus(_plus)
     {
@@ -62,20 +66,11 @@ namespace ngfem
       order_inner = aorder;
       //ndof = DIM*(DIM+1)/2 * ET_trait<ET>::PolDimension(aorder);
 
-      //if (plus)
-      //  {
-      //    order++;
-      //    ndof += 2*aorder;
-      //  }
     }
     
     virtual ELEMENT_TYPE ElementType() const { return ET; }
     const HDivDivFE<ET> * Cast() const { return static_cast<const HDivDivFE<ET>*> (this); } 
     
-    template <typename TA> 
-    void SetVertexNumbers (const TA & avnums)
-    { for (int i = 0; i < N_VERTEX; i++) vnums[i] = avnums[i]; }
-
     INLINE void SetOrderFacet (int nr, INT<DIM-1,int> order) { order_facet[nr] = order; }
     INLINE void SetOrderInner (INT<DIM,int> order) { order_inner = order; }
 
@@ -617,9 +612,6 @@ namespace ngfem
    template <typename TFA> 
     void T_CalcShape (AutoDiffDiff<3> hx[3], TFA & shape) const
     {
-      static int timer = NgProfiler::CreateTimer ("HDivDivPrism T_CalcShape");
-      NgProfiler::RegionTimer reg (timer);
-
       AutoDiffDiff<2> x(hx[0].Value(),0);
       AutoDiffDiff<2> y(hx[1].Value(),1);
       AutoDiff<2> xd(hx[0].Value(),0);
@@ -788,9 +780,6 @@ namespace ngfem
     template <typename TFA> 
     void T_CalcShape_NoComplex (AutoDiffDiff<3> hx[3], TFA & shape) const
     {
-      static int timer = NgProfiler::CreateTimer ("HDivDivPrism T_CalcShape");
-      NgProfiler::RegionTimer reg (timer);
-
       AutoDiff<2> x(hx[0].Value(),0);
       AutoDiff<2> y(hx[1].Value(), 1);
       AutoDiff<1> z(hx[2].Value(), 0);
