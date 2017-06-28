@@ -30,8 +30,6 @@ namespace ngcomp
     static void GenerateMatrix(const FEL & bfel, const SIP & sip,
                                MAT & mat, LocalHeap & lh)
     {
-      static int timer = NgProfiler::CreateTimer ("HDivDiv DiffOpId GenerateMatrix");
-      NgProfiler::RegionTimer reg (timer);
       const HDivDivFiniteElement & fel =
         dynamic_cast<const HDivDivFiniteElement&> (bfel);
       
@@ -65,8 +63,7 @@ namespace ngcomp
 
           Mat<D> hm = jac * sigma_ref;
           Mat<D> sigma = hm * Trans(jac);
-          
-          sigma *= (D == 2) ? (1/sqr(det)) : 1/det;
+          sigma *= (1.0 / sqr(det));
           
           for (int j = 0; j < D*D; j++)
             mat(j, i) = sigma(j);
@@ -77,7 +74,82 @@ namespace ngcomp
   };
 
 
-  
+    template<int D>
+  class DiffOpVecIdHDivDiv : public DiffOp<DiffOpVecIdHDivDiv<D> >
+  { 
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D };
+    enum { DIM_DMAT =  D*(D+1)/2 };
+    enum { DIFFORDER = 0 };
+    enum { DIM_STRESS = D*(D+1)/2 };
+
+    static Array<int> GetDimensions() { return Array<int> ( {  D*(D+1)/2, 1 } ); }
+    
+    template <typename FEL, typename SIP, typename MAT>
+    static void GenerateMatrix(const FEL & bfel, const SIP & sip,
+                               MAT & mat, LocalHeap & lh)
+    {
+      const HDivDivFiniteElement & fel =
+        dynamic_cast<const HDivDivFiniteElement&> (bfel);
+      
+      int nd = fel.GetNDof();
+      
+      Mat<D> jac = sip.GetJacobian();
+      double det = fabs(sip.GetJacobiDet());
+      
+      FlatMatrix<> shape(nd, D*(D+1)/2, lh);
+      fel.CalcShape(sip.IP(), shape);
+
+      for (int i = 0; i < fel.GetNDof(); i++)
+        {
+          Mat<D> sigma_ref;
+          // 2D case
+          if(D==2)
+          {
+            sigma_ref(0,0) = shape(i,0);
+            sigma_ref(1,1) = shape(i,1);
+            sigma_ref(0,1) = sigma_ref(1,0) = shape(i,2);
+          }
+          else // 3D case
+          {
+            sigma_ref(0,0) = shape(i,0);
+            sigma_ref(1,1) = shape(i,1);
+            sigma_ref(2,2) = shape(i,2);
+            sigma_ref(1,2) = sigma_ref(2,1) = shape(i,3);
+            sigma_ref(0,2) = sigma_ref(2,0) = shape(i,4);
+            sigma_ref(0,1) = sigma_ref(1,0) = shape(i,5);
+          }
+
+          Mat<D> hm = jac * sigma_ref;
+          Mat<D> sigma = hm * Trans(jac);
+          sigma *= (1.0 / sqr(det));
+          
+          //for (int j = 0; j < D*D; j++)
+          //  mat(j, i) = sigma(j);
+          // 2D case
+          if(D==2)
+          {
+            mat(0,i) = sigma(0,0);
+            mat(1,i) = sigma(1,1);
+            mat(2,i) = sigma(1,0);
+          }
+          else // 3D case
+          {
+            mat(0,i) = sigma(0,0);
+            mat(1,i) = sigma(1,1);
+            mat(2,i) = sigma(2,2);
+            mat(3,i) = sigma(1,2);
+            mat(4,i) = sigma(0,2);
+            mat(5,i) = sigma(0,1);
+          }
+        }
+
+
+    }
+  };
+
 
   template <int D> class DiffOpDivHDivDiv : public DiffOp<DiffOpDivHDivDiv<D> >
   {
@@ -96,8 +168,6 @@ namespace ngcomp
     static void GenerateMatrix (const FEL & bfel, const SIP & sip,
                                 MAT & mat, LocalHeap & lh)
     {
-      static int timer = NgProfiler::CreateTimer ("HDivDiv DiffOpDiv GenerateMatrix");
-      NgProfiler::RegionTimer reg (timer);
       const HDivDivFiniteElement & fel = 
         dynamic_cast<const HDivDivFiniteElement&> (bfel);
       
@@ -108,16 +178,14 @@ namespace ngcomp
       
       Mat<D> jac = sip.GetJacobian();
       double det = fabs (sip.GetJacobiDet());
-      double fac = (D == 2) ? (1/sqr(det)) : 1/det;
-      Mat<D> sjac = fac * jac;
+      Mat<D> sjac = (1.0/sqr(det)) * jac;
       
       mat = sjac * Trans (div_shape);
       
       //for non-curved elements, divergence transformation is finished, otherwise derivatives of Jacobian have to be computed...
       if (!sip.GetTransformation().IsCurvedElement()) return;
-      
-      /*
-      FlatMatrixFixWidth<DIM_STRESS> shape(nd, lh);
+
+      FlatMatrix<> shape(DIM_STRESS,nd, lh);
       fel.CalcShape (sip.IP(), shape);
       
       Mat<D> inv_jac = sip.GetJacobianInverse();
@@ -186,7 +254,7 @@ namespace ngcomp
           for ( int j = 0; j < D; j++)
             mat(j,i) += hv2(j);
         }
-      */
+      
     }
   };
   
@@ -323,6 +391,11 @@ namespace ngcomp
       first_facet_dof = 0;
 
     UpdateCouplingDofArray();
+    if (print)
+    {
+      *testout << "Hdivdiv firstfacetdof = " << first_facet_dof << endl;
+      *testout << "Hdivdiv firsteldof = " << first_element_dof << endl;
+    }
   }
 
   void  HDivDivFESpace :: UpdateCouplingDofArray ()
@@ -340,6 +413,25 @@ namespace ngcomp
   FiniteElement & HDivDivFESpace :: GetFE (ElementId ei,Allocator & alloc) const
   {
     Ngs_Element ngel = ma->GetElement(ei);
+    if (!ei.IsVolume())
+    {
+      if(!discontinuous)
+        throw Exception(string("HDivDivFESpace::GetFE: not supported for boundary elements "));
+      switch(ma->GetElType(ei))
+      {
+      case ET_POINT: return *new (alloc) DummyFE<ET_POINT>;
+      case ET_SEGM:  return *new (alloc) DummyFE<ET_SEGM>; break;
+      case ET_TRIG:  return *new (alloc) DummyFE<ET_TRIG>; break;
+      case ET_QUAD:  return *new (alloc) DummyFE<ET_QUAD>; break;
+
+      default:
+        stringstream str;
+        str << "FESpace " << GetClassName()
+          << ", undefined surface eltype " << ma->GetElType(ei)
+          << ", order = " << order << endl;
+        throw Exception (str.str());
+      }
+    }
 
     switch(ngel.GetType())
     {
@@ -405,6 +497,25 @@ namespace ngcomp
       dnums += IntRange (first_element_dof[ei.Nr()],
                          first_element_dof[ei.Nr()+1]);
   }
+
+
+  SymbolTable<shared_ptr<DifferentialOperator>>
+    HDivDivFESpace :: GetAdditionalEvaluators () const
+  {
+    SymbolTable<shared_ptr<DifferentialOperator>> additional;
+    switch(ma->GetDimension())
+    {
+    case 2:
+      additional.Set ("vec",make_shared<T_DifferentialOperator<DiffOpVecIdHDivDiv<2>>> ()); break;
+      break;
+    case 3:
+      additional.Set ("vec",make_shared<T_DifferentialOperator<DiffOpVecIdHDivDiv<3>>> ()); break;
+    default:
+      ;
+    }
+    return additional;
+  }
+
 
 
   static RegisterFESpace<HDivDivFESpace> init ("hdivdiv");
