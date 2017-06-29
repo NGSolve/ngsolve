@@ -30,8 +30,8 @@ namespace ngcomp
     static void GenerateMatrix(const FEL & bfel, const SIP & sip,
                                MAT & mat, LocalHeap & lh)
     {
-      const HDivDivFiniteElement & fel =
-        dynamic_cast<const HDivDivFiniteElement&> (bfel);
+      const HDivDivFiniteElement<D> & fel =
+        dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
       
       int nd = fel.GetNDof();
       
@@ -73,6 +73,48 @@ namespace ngcomp
     }
   };
 
+  template<int D>
+  class DiffOpVecIdHDivDiv_testnewtransform : public DiffOp<DiffOpVecIdHDivDiv_testnewtransform<D> >
+  { 
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D };
+    enum { DIM_DMAT = D*(D+1)/2 };
+    enum { DIFFORDER = 0 };
+    enum { DIM_STRESS = D*(D+1)/2 };
+
+    static Array<int> GetDimensions() { return Array<int> ( { D*(D+1)/2,1 } ); }
+    
+    template <typename FEL, typename SIP>
+    static void GenerateMatrix(const FEL & bfel, const SIP & mip,
+                               SliceMatrix<double,ColMajor> mat, LocalHeap & lh)
+    {
+      const HDivDivFiniteElement<D> & fel =
+        dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
+      fel.CalcMappedShape (mip, Trans(mat));
+    }
+
+    // when implemented as above, writing directly into mat,
+    // does not work for MAT = FlatMatrixFixWidth ??
+    template <typename FEL,typename SIP,typename MAT>
+    static void GenerateMatrix(const FEL & bfel,const SIP & sip,
+      MAT & mat,LocalHeap & lh)
+    {
+      //cout << "not so efficient" << endl;
+      const HDivDivFiniteElement<D> & fel =
+        dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
+      int nd = fel.GetNDof();
+      FlatMatrix<> shape(nd,DIM_DMAT, lh);
+      fel.CalcMappedShape(sip, shape);
+      for(int i=0; i<nd; i++)
+        for(int j = 0; j <DIM_DMAT; j++)
+          mat(j,i) = shape(i,j);
+
+    }
+  };
+
+
 
     template<int D>
   class DiffOpVecIdHDivDiv : public DiffOp<DiffOpVecIdHDivDiv<D> >
@@ -91,8 +133,8 @@ namespace ngcomp
     static void GenerateMatrix(const FEL & bfel, const SIP & sip,
                                MAT & mat, LocalHeap & lh)
     {
-      const HDivDivFiniteElement & fel =
-        dynamic_cast<const HDivDivFiniteElement&> (bfel);
+      const HDivDivFiniteElement<D> & fel =
+        dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
       
       int nd = fel.GetNDof();
       
@@ -150,6 +192,33 @@ namespace ngcomp
     }
   };
 
+  template<int D>
+  class DiffOpDivHDivDiv_testnewtransform : public DiffOp<DiffOpDivHDivDiv_testnewtransform<D> >
+  { 
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D };
+    enum { DIM_DMAT = D };
+    enum { DIFFORDER = 1 };
+    enum { DIM_STRESS = (D*(D+1))/2 };
+    
+    template <typename FEL, typename SIP>
+    static void GenerateMatrix(const FEL & bfel, const SIP & mip,
+                               SliceMatrix<double,ColMajor> mat, LocalHeap & lh)
+    {
+      const HDivDivFiniteElement<D> & fel =
+        dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
+
+      fel.CalcMappedDivShape (mip, Trans(mat));
+    }
+    template <typename FEL,typename SIP,typename MAT>
+    static void GenerateMatrix(const FEL & bfel,const SIP & sip,
+      MAT & mat,LocalHeap & lh)
+    {
+      cout << "Div not implemented" << endl;
+    }
+  };
 
   template <int D> class DiffOpDivHDivDiv : public DiffOp<DiffOpDivHDivDiv<D> >
   {
@@ -168,8 +237,8 @@ namespace ngcomp
     static void GenerateMatrix (const FEL & bfel, const SIP & sip,
                                 MAT & mat, LocalHeap & lh)
     {
-      const HDivDivFiniteElement & fel = 
-        dynamic_cast<const HDivDivFiniteElement&> (bfel);
+      const HDivDivFiniteElement<D> & fel = 
+        dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
       
       int nd = fel.GetNDof();
       
@@ -506,16 +575,20 @@ namespace ngcomp
     switch(ma->GetDimension())
     {
     case 2:
-      additional.Set ("vec",make_shared<T_DifferentialOperator<DiffOpVecIdHDivDiv<2>>> ()); break;
+      additional.Set ("vec",make_shared<T_DifferentialOperator<DiffOpVecIdHDivDiv<2>>> ()); 
+      additional.Set ("scary_vecid",make_shared<T_DifferentialOperator<DiffOpVecIdHDivDiv_testnewtransform<2>>> ()); 
+      additional.Set ("scary_div",make_shared<T_DifferentialOperator<DiffOpDivHDivDiv_testnewtransform<2>>> ()); 
       break;
     case 3:
-      additional.Set ("vec",make_shared<T_DifferentialOperator<DiffOpVecIdHDivDiv<3>>> ()); break;
+      additional.Set ("vec",make_shared<T_DifferentialOperator<DiffOpVecIdHDivDiv<3>>> ());
+      additional.Set ("scary_vecid",make_shared<T_DifferentialOperator<DiffOpVecIdHDivDiv_testnewtransform<3>>> ());
+      additional.Set ("scary_div",make_shared<T_DifferentialOperator<DiffOpDivHDivDiv_testnewtransform<3>>> ());
     default:
       ;
     }
     return additional;
   }
-
+  
 
 
   static RegisterFESpace<HDivDivFESpace> init ("hdivdiv");
