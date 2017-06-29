@@ -229,7 +229,7 @@ namespace ngfem
     {
       // compute hessian of lambda_i
       hessian_lambdai = 0;
-      // indices as in my computations by hand, to avoid errors in first implementation
+      // indices as in my computations by hand, to avoid errors in first implementation 
       for(int m=0; m<DIMR; m++)
         for(int n=0; n<DIMR; n++)
           for(int j=0; j<DIMS; j++)
