@@ -11,7 +11,7 @@
 namespace ngfem
 {
 
-  
+  template <int DIM>
   class HDivDivFiniteElement : public FiniteElement
   {
   public:
@@ -28,6 +28,13 @@ namespace ngfem
     virtual void CalcDivDivShape (const IntegrationPoint & ip, 
                                   FlatVector<> ddshape) const;
     */
+    virtual void CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
+      BareSliceMatrix<double> shape) const = 0;
+
+    virtual void CalcMappedDivShape (const MappedIntegrationPoint<DIM,DIM> & mip,
+      BareSliceMatrix<double> shape) const = 0;
+
+
   };
   
 
@@ -36,7 +43,7 @@ namespace ngfem
 
   
   template <ELEMENT_TYPE ET>
-  class T_HDivDivFE : public HDivDivFiniteElement,
+  class T_HDivDivFE : public HDivDivFiniteElement<ET_trait<ET>::DIM>,
     public VertexOrientedFE<ET>
   {
   protected:
@@ -82,15 +89,47 @@ namespace ngfem
     virtual void CalcShape (const IntegrationPoint & ip, 
                             BareSliceMatrix<double> shape) const
     {
-      AutoDiffDiff<DIM> hx[DIM];
+      //AutoDiffDiff<DIM> hx[DIM];
+      //for ( int i=0; i<DIM; i++)
+      //{
+      //  hx[i] = AutoDiffDiff<DIM>(ip(i),i);
+      //}
+      Vec<DIM, AutoDiffDiff<DIM>> adp;
       for ( int i=0; i<DIM; i++)
       {
-        hx[i] = AutoDiffDiff<DIM>(ip(i),i);
+        adp(i) = AutoDiffDiff<DIM>(ip(i),i);
+        //cout << "ip = " << ip << endl;
+        //cout <<  "adp = " << adp(i) << endl;
       }
 
-      Cast() -> T_CalcShape (hx, SBLambda([&] (int nr, auto val)
+      Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM>> (adp), SBLambda([&] (int nr, auto val)
                                           {
                                             shape.Row(nr).AddSize(DIM_STRESS) = val.Shape();
+                                          }));
+    }
+
+    virtual void CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
+                            BareSliceMatrix<double> shape) const
+    {
+      // very scary, compute dlami/dxj and d2lami/dxjdxk on mapped element and put it into AutoDiffDiff
+      //cout << "mapping integration point " << mip << endl;
+      Vec<DIM, AutoDiffDiff<DIM>> adp = mip;
+
+      Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM>> (adp), SBLambda([&] (int nr, auto val)
+                                          {
+                                            shape.Row(nr).AddSize(DIM_STRESS) = val.Shape();
+                                          }));
+    }
+
+    virtual void CalcMappedDivShape (const MappedIntegrationPoint<DIM,DIM> & mip,
+                            BareSliceMatrix<double> shape) const
+    {
+      // very scary, compute dlami/dxj and d2lami/dxjdxk on mapped element and put it into AutoDiffDiff
+      Vec<DIM, AutoDiffDiff<DIM>> adp = mip;
+
+      Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM>> (adp), SBLambda([&] (int nr, auto val)
+                                          {
+                                            shape.Row(nr).AddSize(DIM) = val.DivShape();
                                           }));
     }
 
@@ -98,13 +137,14 @@ namespace ngfem
     virtual void CalcDivShape (const IntegrationPoint & ip, 
                                BareSliceMatrix<double> shape) const
     {
-      AutoDiffDiff<DIM> hx[DIM];
+      //AutoDiffDiff<DIM> hx[DIM];
+      Vec<DIM, AutoDiffDiff<DIM>> adp;
       for ( int i=0; i<DIM; i++)
       {
-        hx[i] = AutoDiffDiff<DIM>(ip(i),i);
+        adp[i] = AutoDiffDiff<DIM>(ip(i),i);
       }
       
-      Cast() -> T_CalcShape (hx, SBLambda([&] (int nr, auto val)
+      Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM>> (adp), SBLambda([&] (int nr, auto val)
                                           {
                                             shape.Row(nr).AddSize(DIM) = val.DivShape();
                                           }));
@@ -215,7 +255,7 @@ namespace ngfem
 
   
   // ***************** Sigma ((vDu - uDv) w) ****************************** */
-  // where u, v are linear hat basis functions (i.e. vDu - uDv is Nedelec0 edge basis function)
+  // where u, v are NOW POSSIBLY NON-linear hat basis functions (i.e. vDu - uDv is Nedelec0 edge basis function)
   template <int D> class T_Sigma_Duv_minus_uDv_w;
   template <> class T_Sigma_Duv_minus_uDv_w<2>
   {
@@ -230,12 +270,21 @@ namespace ngfem
 
     Vec<2> DivShape()
     {
-      return Vec<2> (0.5*w.DDValue(0,1)*(v.DValue(1)*u.Value() - u.DValue(1)*v.Value()) 
-        -0.5*w.DDValue(1,1)*(v.DValue(0)*u.Value() - u.DValue(0)*v.Value())
-        +1.5*w.DValue(1)*(v.DValue(1)*u.DValue(0) - u.DValue(1)*v.DValue(0)),
-        0.5*w.DDValue(0,1)*(v.DValue(0)*u.Value() - u.DValue(0)*v.Value()) 
-        -0.5*w.DDValue(0,0)*(v.DValue(1)*u.Value() - u.DValue(1)*v.Value())
-        +1.5*w.DValue(0)*(v.DValue(0)*u.DValue(1) - u.DValue(0)*v.DValue(1))
+      double uxx = u.DDValue(0,0), uyy = u.DDValue(1,1), uxy = u.DDValue(0,1);
+      double ux = u.DValue(0), uy = u.DValue(1);
+      double vxx = v.DDValue(0,0), vyy = v.DDValue(1,1), vxy = v.DDValue(0,1);
+      double vx = v.DValue(0), vy = v.DValue(1);
+      double wxx = w.DDValue(0,0), wyy = w.DDValue(1,1), wxy = w.DDValue(0,1);
+      double wx = w.DValue(0), wy = w.DValue(1);
+
+      return Vec<2> (0.5*wxy*(vy*u.Value() - uy*v.Value()) 
+        -0.5*wyy*(vx*u.Value() - ux*v.Value())
+        +1.5*wy*(vy*ux - uy*vx) + 0.5*wy*(vxy*u.Value()-uxy*v.Value()) 
+        -0.5*wx*(vyy*u.Value()-uyy*v.Value()),
+        0.5*wxy*(vx*u.Value() - ux*v.Value()) 
+        -0.5*wxx*(vy*u.Value() - uy*v.Value())
+        +1.5*wx*(vx*uy - ux*vy) + 0.5*wx*(vxy*u.Value()-uxy*v.Value()) 
+        -0.5*wy*(vxx*u.Value()-uxx*v.Value())
         ); 
     }
 
@@ -279,8 +328,9 @@ namespace ngfem
   template <ELEMENT_TYPE ET> class HDivDivFE : public T_HDivDivFE<ET> 
   {
   public:
-    template <typename TFA> 
-    void T_CalcShape (AutoDiffDiff<ET_trait<ET>::DIM> hx[ET_trait<ET>::DIM], TFA & shape) const
+    template <typename Tx, typename TFA> 
+    //void T_CalcShape (AutoDiffDiff<ET_trait<ET>::DIM> hx[ET_trait<ET>::DIM], TFA & shape) const
+    void T_CalcShape (TIP<ET_trait<ET>::DIM,Tx> ip, TFA & shape) const
     {
       throw Exception ("Hdivdivfe not implementend for element type");
     }
@@ -312,10 +362,10 @@ namespace ngfem
       ndof += ninner;
 
     }
-   template <typename TFA> 
-    void T_CalcShape (AutoDiffDiff<2> hx[2], TFA & shape) const
+   template <typename Tx, typename TFA> 
+    void T_CalcShape (TIP<2,Tx> ip/*AutoDiffDiff<2> hx[2]*/, TFA & shape) const
     {
-      auto x = hx[0], y = hx[1];
+      auto x = ip.x, y = ip.y;
       AutoDiffDiff<2> ddlami[3] ={ x, y, 1-x-y };
       
       int ii = 0;
@@ -609,14 +659,14 @@ namespace ngfem
       order = max3(order, oi0+incrorder_zz1, oi2+incrorder_zz2);
 
     }
-   template <typename TFA> 
-    void T_CalcShape (AutoDiffDiff<3> hx[3], TFA & shape) const
+   template <typename Tx, typename TFA> 
+    void T_CalcShape (TIP<3,Tx> ip, TFA & shape) const
     {
-      AutoDiffDiff<2> x(hx[0].Value(),0);
-      AutoDiffDiff<2> y(hx[1].Value(),1);
-      AutoDiff<2> xd(hx[0].Value(),0);
-      AutoDiff<2> yd(hx[1].Value(),1);
-      AutoDiff<1> z(hx[2].Value(), 0);
+      AutoDiffDiff<2> x(ip.x.Value(),0);
+      AutoDiffDiff<2> y(ip.y.Value(),1);
+      AutoDiff<2> xd(ip.x.Value(),0);
+      AutoDiff<2> yd(ip.y.Value(),1);
+      AutoDiff<1> z(ip.z.Value(), 0);
       AutoDiffDiff<2> lami[6] ={ x,y,1-x-y,x,y,1-x-y };
       AutoDiff<2> lamid[6] ={ xd,yd,1-xd-yd,xd,yd,1-xd-yd };
       AutoDiff<1> lamiz[6] ={ 1-z,1-z,1-z,z,z,z };
