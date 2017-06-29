@@ -470,6 +470,10 @@ namespace ngfem
       return adp;
     }
 
+
+    operator Vec<DIMS, AutoDiffDiff<DIMR,TSCAL>> () const;
+
+
     ///
     INLINE VorB VB() const { return VorB(DIMR-DIMS); }
     //INLINE int IsBoundary () const { return DIMS != DIMR; }
