@@ -16,7 +16,9 @@ namespace ngfem
   {
   public:
     using FiniteElement::FiniteElement;
-    
+    using FiniteElement::ndof;
+    using FiniteElement::order;
+
     // sigma_xx, sigma_yy, sigma_xy
     virtual void CalcShape (const IntegrationPoint & ip, 
                             BareSliceMatrix<double> shape) const = 0;
@@ -51,6 +53,8 @@ namespace ngfem
     enum { DIM_STRESS = (DIM*(DIM+1))/2 };
     
     using VertexOrientedFE<ET>::vnums;
+    using HDivDivFiniteElement<ET_trait<ET>::DIM>::ndof;
+    using HDivDivFiniteElement<ET_trait<ET>::DIM>::order;
 
     //enum { N_VERTEX = ET_trait<ET>::N_VERTEX };
     //enum { N_FACET   = ET_trait<ET>::N_FACET };    
@@ -114,7 +118,11 @@ namespace ngfem
       // very scary, compute dlami/dxj and d2lami/dxjdxk on mapped element and put it into AutoDiffDiff
       //cout << "mapping integration point " << mip << endl;
       Vec<DIM, AutoDiffDiff<DIM>> adp = mip;
-
+      Mat<DIM> hesse0(0.);
+      for ( int i=0; i<DIM; i++)
+      {
+        adp(i).LoadHessian(&hesse0(0));
+      }
       Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM>> (adp), SBLambda([&] (int nr, auto val)
                                           {
                                             shape.Row(nr).AddSize(DIM_STRESS) = val.Shape();
@@ -327,6 +335,9 @@ namespace ngfem
   
   template <ELEMENT_TYPE ET> class HDivDivFE : public T_HDivDivFE<ET> 
   {
+  protected:
+    using T_HDivDivFE<ET> :: order;
+    using T_HDivDivFE<ET> :: ndof;
   public:
     template <typename Tx, typename TFA> 
     //void T_CalcShape (AutoDiffDiff<ET_trait<ET>::DIM> hx[ET_trait<ET>::DIM], TFA & shape) const
