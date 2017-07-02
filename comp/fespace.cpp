@@ -8,7 +8,6 @@
    Finite Element Space
 */
 
-// #pragma implementation "fespace.hpp"
 
 #include <comp.hpp>
 #include <multigrid.hpp>
@@ -19,8 +18,6 @@
 
 
 using namespace ngmg;
-
-// using FE_Quad1 = ScalarFE<ET_QUAD,1>;
 
 namespace ngcomp
 {
@@ -1535,27 +1532,30 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
   }
 
+  /*
   size_t NodalFESpace :: GetNDof () const throw()
   {
     return ndlevel.Last();
   }
-
+  */
+  
   void NodalFESpace :: Update(LocalHeap & lh)
   {
     FESpace :: Update (lh);
     if (low_order_space) low_order_space -> Update(lh);
 
-    if (ma->GetNLevels() > ndlevel.Size())
+    // if (ma->GetNLevels() > ndlevel.Size())
       {
 	int ndof = ma->GetNV();
 
         for (auto el : Elements(VOL))
-          for (int d : el.GetDofs()) ndof = max2(ndof, d+1);              
+          for (DofId d : el.GetDofs()) ndof = max2(ndof, d+1);              
 
         for (auto el : Elements(BND))
-          for (int d : el.GetDofs()) ndof = max2(ndof, d+1);           
+          for (DofId d : el.GetDofs()) ndof = max2(ndof, d+1);           
 
-	ndlevel.Append (ndof);
+	// ndlevel.Append (ndof);
+        SetNDof(ndof);
       }
 
     prol->Update();
@@ -1573,43 +1573,26 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void NodalFESpace :: DoArchive (Archive & archive)
   {
+    ;
+    /*
     if (archive.Input())
       {
 	ndlevel.SetSize(1);
 	ndlevel[0] = ma->GetNV();
       }
+    */
   }
 
+  /*
   size_t NodalFESpace :: GetNDofLevel (int level) const
   {
     return ndlevel[level];
   }
-
-
-  void NodalFESpace :: GetDofRanges (ElementId ei, Array<IntRange> & dranges) const
-  {
-    if (!DefinedOn (ei)) 
-      {
-        dranges.SetSize(0);
-        return;
-      }
-
-    ArrayMem<int,27> pnums;
-
-    if (order == 1)
-      pnums = ma->GetElVertices(ei);
-    else
-      ma->GetElPNums (ei, pnums);
-
-    dranges.SetSize(pnums.Size());
-    for (int i = 0; i < pnums.Size(); i++)
-      dranges[i] = IntRange (pnums[i], pnums[i]+1);
-  }
-
+  */
 
 
  
-  void NodalFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
+  void NodalFESpace :: GetDofNrs (ElementId ei, Array<DofId> & dnums) const
   {
     dnums = ma->GetElement(ei).Vertices();
 
@@ -1870,14 +1853,17 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void ElementFESpace :: Update(LocalHeap & lh)
   {
+    /*
     while (ma->GetNLevels() > ndlevel.Size())
       ndlevel.Append (n_el_dofs * ma->GetNE());
+    */
+    SetNDof (n_el_dofs * ma->GetNE());
   }
 
   void ElementFESpace :: DoArchive (Archive & archive)
   {
     FESpace :: DoArchive (archive);
-    archive & ndlevel & n_el_dofs;
+    archive /* & ndlevel */ & n_el_dofs;
   }
 
   FiniteElement & ElementFESpace :: GetFE (ElementId ei, Allocator & lh) const
@@ -1949,12 +1935,14 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  dnums[i] = n_el_dofs*ei.Nr()+i;
       }
   }
-  
+
+  /*
   size_t ElementFESpace :: GetNDofLevel (int level) const
   {
     return ndlevel[level];
   }
-
+  */
+  
   /*
   const FiniteElement & ElementFESpace :: GetSFE (int selnr) const
   {
@@ -2153,8 +2141,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	cummulative_nd[i+1] = cummulative_nd[i] + spaces[i]->GetNDof();
       }
 
-    while (ma->GetNLevels() > ndlevel.Size())
-      ndlevel.Append (cummulative_nd.Last());
+    SetNDof (cummulative_nd.Last());
+    // while (ma->GetNLevels() > ndlevel.Size())
+    // ndlevel.Append (cummulative_nd.Last());
 
 
     /*
@@ -2292,16 +2281,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     return *new (alloc) CompoundFiniteElement (fea);
   }
 
-  /*
-  const FiniteElement & CompoundFESpace :: GetFE (int elnr, LocalHeap & lh) const
-  {
-    FlatArray<const FiniteElement*> fea(spaces.Size(), lh);
-    for (int i = 0; i < fea.Size(); i++)
-      fea[i] = &spaces[i]->GetFE(elnr, lh);
-    return *new (lh) CompoundFiniteElement (fea);
-  }
-  */
-  
+
   void CompoundFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
     ArrayMem<int,500> hdnums;
@@ -2384,30 +2364,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
   }
   
-
-  void CompoundFESpace :: GetDofRanges (ElementId ei, Array<IntRange> & dranges) const
-  {
-  /*
-    dranges.SetSize (0);
-    for (int i = 0; i < spaces.Size(); i++)
-      {
-        int osize = dranges.Size();
-
-        Array<IntRange> hdranges(dranges.AllocSize()-osize, &dranges[osize]);
-        hdranges.SetSize(0);
-	spaces[i]->GetDofRanges (ei, hdranges);
-        int nsize = osize + hdranges.Size();
-
-        dranges.SetSize (nsize);
-        for (int j = 0; j < hdranges.Size(); j++)
-          if (hdranges[j].First() != -1)
-            dranges[osize+j] = hdranges[j]+cummulative_nd[i];
-          else
-            dranges[osize+j] = hdranges[j];
-      }
-  */
-  }
-
 
 
   /*

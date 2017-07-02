@@ -467,8 +467,6 @@ namespace ngcomp
     
     Table<int> CreateDofTable (VorB vorb) const;
 
-    // virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
-
     // FlatArray<int> GetDofNrs (ElementId ei, LocalHeap & lh) const;
     
     /// get coupling types of dofs
@@ -929,7 +927,7 @@ namespace ngcomp
   class NGS_DLL_HEADER NodalFESpace : public FESpace
   {
     ///
-    Array<int> ndlevel;
+    // Array<int> ndlevel;
     bool hb_defined;
 
   public:
@@ -952,16 +950,14 @@ namespace ngcomp
 
     virtual FiniteElement & GetFE(ElementId ei, Allocator & lh) const override;
     ///
-    virtual size_t GetNDof () const throw() override;
+    // virtual size_t GetNDof () const throw() override;
     ///
-    virtual size_t GetNDofLevel (int level) const override;
+    // virtual size_t GetNDofLevel (int level) const override;
     ///
-    using FESpace::GetDofNrs;
-    virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const override;
+    // using FESpace::GetDofNrs;
+    virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
     ///
 
-    virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
-  
     virtual void GetVertexDofNrs (int vnr, Array<DofId> & dnums) const override;
     virtual void GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const override;
     virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const override;
@@ -1008,7 +1004,7 @@ namespace ngcomp
   class NGS_DLL_HEADER ElementFESpace : public FESpace
   {
     ///  Array<int> startelement;
-    Array<int> ndlevel;
+    // Array<int> ndlevel;
     int n_el_dofs;
   public:
     ///
@@ -1029,7 +1025,7 @@ namespace ngcomp
 
     virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
     ///
-    virtual size_t GetNDof () const throw() override { return ndlevel.Last(); }
+    // virtual size_t GetNDof () const throw() override { return ndlevel.Last(); }
   
     ///
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
@@ -1102,7 +1098,7 @@ namespace ngcomp
     /// cummlated number of dofs of components
     Array<int> cummulative_nd;
     /// dofs on each multigrid level
-    Array<int> ndlevel;
+    /// Array<int> ndlevel;
   public:
     /// generates a compound space.
     /// components will be added later
@@ -1136,9 +1132,9 @@ namespace ngcomp
     virtual void UpdateCouplingDofArray();
 
     /// 
-    virtual size_t GetNDof () const throw() { return cummulative_nd.Last(); } 
+    // virtual size_t GetNDof () const throw() { return cummulative_nd.Last(); } 
     ///
-    virtual size_t GetNDofLevel (int level) const { return ndlevel[level]; }
+    // virtual size_t GetNDofLevel (int level) const { return ndlevel[level]; }
 
     IntRange GetRange (int spacenr) const
     { 
@@ -1150,13 +1146,6 @@ namespace ngcomp
 
     /// returns a compound finite element
     virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const;
-
-    /// returns a compound finite element
-    // virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
-    ///
-    // virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const;
-    ///
-    // virtual const FiniteElement & GetCD2FE (int cd2elnr, LocalHeap & lh) const;
     ///
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const;
     ///
@@ -1165,7 +1154,6 @@ namespace ngcomp
     virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const;
     virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const;
 
-    virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
     
     template <class T> NGS_DLL_HEADER
       void T_TransformMat (ElementId ei, 
