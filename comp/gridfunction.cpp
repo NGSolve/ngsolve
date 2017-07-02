@@ -240,24 +240,25 @@ namespace ngcomp
 	eval_2d = fespace->GetEvaluator(BND);
       }
 
-    
-    netgen::SolutionData * vis = new VisualizeCoefficientFunction (ma, gf);
-    Ng_SolutionData soldata;
-    Ng_InitSolutionData (&soldata);
-  
-    soldata.name = given_name;
-    soldata.data = 0;
-    soldata.components = gf -> Dimension();
-    if (gf->IsComplex()) soldata.components *= 2;
-    soldata.iscomplex = gf -> IsComplex();
-    soldata.draw_surface = eval_2d != nullptr;
-    soldata.draw_volume  = eval_3d != nullptr;
-
-    soldata.dist = 1;
-    soldata.soltype = NG_SOLUTION_VIRTUAL_FUNCTION;
-    soldata.solclass = vis;
-    Ng_SetSolutionData (&soldata);
-    
+    if (eval_2d || eval_3d)
+      {
+        netgen::SolutionData * vis = new VisualizeCoefficientFunction (ma, gf);
+        Ng_SolutionData soldata;
+        Ng_InitSolutionData (&soldata);
+        
+        soldata.name = given_name;
+        soldata.data = 0;
+        soldata.components = gf -> Dimension();
+        if (gf->IsComplex()) soldata.components *= 2;
+        soldata.iscomplex = gf -> IsComplex();
+        soldata.draw_surface = eval_2d != nullptr;
+        soldata.draw_volume  = eval_3d != nullptr;
+        
+        soldata.dist = 1;
+        soldata.soltype = NG_SOLUTION_VIRTUAL_FUNCTION;
+        soldata.solclass = vis;
+        Ng_SetSolutionData (&soldata);
+      }
 
     
     /*
