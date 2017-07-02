@@ -467,34 +467,11 @@ namespace ngcomp
     first_edge_dof[ned] = hndof;
 
     first_face_dof.SetSize (nfa+1);
-    /*
-    for (auto i : Range (nfa))
-      {
-	first_face_dof[i] = hndof;
-	INT<2> p = order_face[i];
-	switch(ma->GetFaceType(i))
-	  {
-	  case ET_TRIG:
-            if (p[0] > 2)
-              hndof += (p[0]-1)*(p[0]-2)/2;
-	    break;
-	  case ET_QUAD:
-	    if (p[0] > 1 && p[1] > 1)
-	      hndof += (p[0]-1)*(p[1]-1);
-	    break; 
-	  default:
-            ;
-	  }
-      }
-    first_face_dof[nfa] = hndof;
-    */
 
-    // for (auto i : Range (nfa))
     if (nfa)
       ParallelFor
         (nfa, [&] (size_t i)
          {
-           // first_face_dof[i] = hndof;
            int neldof = 0;             
            INT<2> p = order_face[i];
            switch(ma->GetFaceType(i))
@@ -522,61 +499,13 @@ namespace ngcomp
       }
     first_face_dof[nfa] = hndof;
     
-    
-    /*
-    first_element_dof.SetSize(ne+1);
-    for (auto i : Range(ne))
-      {
-        ElementId ei(VOL,i);
-	first_element_dof[i] = hndof;
-	INT<3> p = order_inner[i];
-	switch (ma->GetElType(ei))
-	  {
-	  case ET_TRIG:
-	    if(p[0] > 2)
-	      hndof += (p[0]-1)*(p[0]-2)/2;
-	    break;
-	  case ET_QUAD:
-	    if(p[0] > 1 && p[1] > 1)
-	      hndof += (p[0]-1)*(p[1]-1);
-	    break;
-	  case ET_TET:
-	    if(p[0] > 3)
-	      hndof += (p[0]-1)*(p[0]-2)*(p[0]-3)/6;
-	    break;
-	  case ET_PRISM:
-	    if(p[0] > 2 && p[2] > 1)
-	      hndof += (p[0]-1)*(p[0]-2)*(p[2]-1)/2;
-	    break;
-	  case ET_PYRAMID:
-	    if(p[0] > 2)
-	      hndof += (p[0]-1)*(p[0]-2)*(2*p[0]-3)/6;
-	    break;
-	  case ET_HEX:
-	    if(p[0] > 1 && p[1] > 1 && p[2] > 1) 
-	      hndof += (p[0]-1)*(p[1]-1)*(p[2]-1);
-	    break;
-          case ET_SEGM:
-            if (p[0] > 1)
-	      hndof += p[0]-1;
-            break;
-          case ET_POINT:
-	    break;
-	  }
-      } 
-    first_element_dof[ne] = hndof;
-    ndof = hndof;
-    */
 
     // compute number of element dofs ...
     first_element_dof.SetSize(ne+1);
     ParallelFor
       (ma->GetNE(VOL), [&] (size_t i)
        {
-         // for (auto i : Range(ne))
-         // {
         ElementId ei(VOL,i);
-	// first_element_dof[i] = hndof;
         int neldof = 0;
 	INT<3> p = order_inner[i];
 	switch (ma->GetElType(ei))
@@ -974,25 +903,6 @@ namespace ngcomp
     dnums = GetElementDofs (elnr);
   }
 
-  /*
-  SymbolTable<shared_ptr<DifferentialOperator>>
-  H1HighOrderFESpace :: GetAdditionalEvaluators () const
-  {
-    SymbolTable<shared_ptr<DifferentialOperator>> additional;
-    switch (ma->GetDimension())
-      {
-      case 1:
-        additional.Set ("hesse", make_shared<T_DifferentialOperator<DiffOpHesse<1>>> ()); break;
-      case 2:
-        additional.Set ("hesse", make_shared<T_DifferentialOperator<DiffOpHesse<2>>> ()); break;
-      case 3:
-        additional.Set ("hesse", make_shared<T_DifferentialOperator<DiffOpHesse<3>>> ()); break;
-      default:
-        ;
-      }
-    return additional;
-  }
-  */
   
   shared_ptr<Table<int>> H1HighOrderFESpace :: 
   CreateSmoothingBlocks (const Flags & precflags) const
