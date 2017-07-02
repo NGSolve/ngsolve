@@ -1031,7 +1031,7 @@ namespace ngcomp
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
 
     ///
-    virtual size_t GetNDofLevel (int level) const override;
+    // virtual size_t GetNDofLevel (int level) const override;
 
 
     virtual void GetVertexDofNrs (int vnr, Array<DofId> & dnums) const override
