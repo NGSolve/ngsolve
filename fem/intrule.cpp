@@ -180,6 +180,18 @@ namespace ngfem
 
 
   template <int DIMS,int DIMR,typename SCAL>
+  Vec<DIMS, AutoDiffDiff<DIMR,SCAL>> MappedIntegrationPoint<DIMS,DIMR,SCAL> :: LinearizedBarycentricCoordinates() const
+  {
+    Vec<DIMS,AutoDiffDiff<DIMR,SCAL> > adp;
+    Mat<DIMS,DIMR,SCAL> ijac = GetJacobianInverse();
+    for(int i = 0; i < DIMS; i++)
+    {
+      adp(i) = AutoDiffDiff<DIMR,SCAL> (this->IP()(i),&ijac(i,0));
+    }
+    return adp;
+  }
+
+  template <int DIMS,int DIMR,typename SCAL>
     MappedIntegrationPoint<DIMS,DIMR,SCAL> ::
     operator  Vec<DIMS,AutoDiffDiff<DIMR,SCAL>> () const
   {

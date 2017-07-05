@@ -73,6 +73,14 @@ public:
     dval[diffindex] = 1;
   }
 
+  INLINE AutoDiffDiff (SCAL aval, const SCAL * grad)
+  {
+    val = aval;
+    LoadGradient (grad);
+    for (int i = 0; i < D*D; i++)
+      ddval[i] = 0;
+  }
+
   INLINE AutoDiffDiff (SCAL aval, const SCAL * grad, const SCAL * hesse)
   {
     val = aval;
