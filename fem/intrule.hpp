@@ -470,9 +470,11 @@ namespace ngfem
       return adp;
     }
 
-
+    // barycentric coordinates on mapped element, with derivatives and hessian
     operator Vec<DIMS, AutoDiffDiff<DIMR,TSCAL>> () const;
 
+    // barycentric coordinates on mapped element, with derivatives, but hessian = 0
+    Vec<DIMS, AutoDiffDiff<DIMR,TSCAL>> LinearizedBarycentricCoordinates() const;
 
     ///
     INLINE VorB VB() const { return VorB(DIMR-DIMS); }

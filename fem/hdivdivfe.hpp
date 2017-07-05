@@ -36,6 +36,8 @@ namespace ngfem
     virtual void CalcMappedDivShape (const MappedIntegrationPoint<DIM,DIM> & mip,
       BareSliceMatrix<double> shape) const = 0;
 
+    virtual void CalcMappedShapeDelta (const MappedIntegrationPoint<DIM,DIM> & mip,
+      BareSliceMatrix<double> shape,double delta,int n,int m) const = 0;
 
   };
   
@@ -93,17 +95,10 @@ namespace ngfem
     virtual void CalcShape (const IntegrationPoint & ip, 
                             BareSliceMatrix<double> shape) const
     {
-      //AutoDiffDiff<DIM> hx[DIM];
-      //for ( int i=0; i<DIM; i++)
-      //{
-      //  hx[i] = AutoDiffDiff<DIM>(ip(i),i);
-      //}
       Vec<DIM, AutoDiffDiff<DIM>> adp;
       for ( int i=0; i<DIM; i++)
       {
         adp(i) = AutoDiffDiff<DIM>(ip(i),i);
-        //cout << "ip = " << ip << endl;
-        //cout <<  "adp = " << adp(i) << endl;
       }
 
       Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM>> (adp), SBLambda([&] (int nr, auto val)
@@ -116,13 +111,19 @@ namespace ngfem
                             BareSliceMatrix<double> shape) const
     {
       // very scary, compute dlami/dxj and d2lami/dxjdxk on mapped element and put it into AutoDiffDiff
-      //cout << "mapping integration point " << mip << endl;
-      Vec<DIM, AutoDiffDiff<DIM>> adp = mip;
-      Mat<DIM> hesse0(0.);
-      for ( int i=0; i<DIM; i++)
-      {
-        adp(i).LoadHessian(&hesse0(0));
-      }
+      Vec<DIM, AutoDiffDiff<DIM>> adp = mip.LinearizedBarycentricCoordinates();
+      Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM>> (adp), SBLambda([&] (int nr, auto val)
+                                          {
+                                            shape.Row(nr).AddSize(DIM_STRESS) = val.Shape();
+                                          }));
+    }
+
+    virtual void CalcMappedShapeDelta (const MappedIntegrationPoint<DIM,DIM> & mip,
+      BareSliceMatrix<double> shape, double delta, int n, int m) const
+    {
+      // very scary, compute dlami/dxj and d2lami/dxjdxk on mapped element and put it into AutoDiffDiff
+      Vec<DIM, AutoDiffDiff<DIM>> adp = mip.LinearizedBarycentricCoordinates();
+      adp(n).DValue(m) += delta;
       Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM>> (adp), SBLambda([&] (int nr, auto val)
                                           {
                                             shape.Row(nr).AddSize(DIM_STRESS) = val.Shape();
@@ -133,7 +134,8 @@ namespace ngfem
                             BareSliceMatrix<double> shape) const
     {
       // very scary, compute dlami/dxj and d2lami/dxjdxk on mapped element and put it into AutoDiffDiff
-      Vec<DIM, AutoDiffDiff<DIM>> adp = mip;
+      //Vec<DIM, AutoDiffDiff<DIM>> adp = mip;
+      Vec<DIM, AutoDiffDiff<DIM>> adp = mip.LinearizedBarycentricCoordinates();
 
       Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM>> (adp), SBLambda([&] (int nr, auto val)
                                           {
@@ -300,7 +302,41 @@ namespace ngfem
   
 
   
-  // ***************** symrotrot( Dlam2 times  Dlam1) v ****************************** */
+  //// ***************** symrotrot( Dlam2 times  Dlam1) v ****************************** */
+  //class T_SymRotRot_Dl2xDl1_v_diffdiff
+  //{
+  //  AutoDiffDiff<2> l1,l2,v;
+  //public:
+  //  T_SymRotRot_Dl2xDl1_v_diffdiff  (AutoDiffDiff<2> lam1, AutoDiffDiff<2> lam2, AutoDiffDiff<2> av) : l1(lam1), l2(lam2), v(av) { ; }
+
+  //  Vec<3> Shape() { return Vec<3> (v.Value()*(l1.DValue(1)*l2.DValue(1)),
+  //    v.Value()*(l1.DValue(0)*l2.DValue(0)),
+  //    -0.5*v.Value()*(l1.DValue(1)*l2.DValue(0) + l1.DValue(0)*l2.DValue(1))
+  //    ); }
+
+  //  Vec<2> DivShape()
+  //  {
+  //    // todo
+  //    double lam1 = l1.Value();
+  //    double lam1x = l1.DValue(0);
+  //    double lam1y = l1.DValue(1);
+  //    double lam2 = l2.Value();
+  //    double lam2x = l2.DValue(0);
+  //    double lam2y = l2.DValue(1);
+  //    double lam1xx = l1.DDValue(0,0), lam1xy = l1.DDValue(1,0), lam1yy = l1.DDValue(1,1);
+  //    double lam2xx = l2.DDValue(0,0), lam2xy = l2.DDValue(1,0), lam2yy = l2.DDValue(1,1);
+  //    return Vec<2> (
+  //      v.DValue(0)*(lam1y*lam2y) - 0.5*v.DValue(1)*(lam1x*lam2y+lam1y*lam2x)
+  //      + v.Value()*(lam1xy*lam2y+lam1y*lam2xy) - 0.5*v.Value()*(lam1yy*lam2x+lam1y*lam2xy+lam1xy*lam2y+lam1x*lam2yy),
+  //      -0.5*v.DValue(0)*(lam1x*lam2y+lam1y*lam2x) + v.DValue(1)*(lam1x*lam2x)
+  //      +v.Value()*(lam1xy*lam2x+lam1x*lam2xy) - 0.5*v.Value()*(lam1xy*lam2x+lam1y*lam2xx + lam1xx*lam2y+lam1x*lam2xy)
+  //      ); 
+  //  }
+
+  //};
+
+  //auto SymRotRot_Dl2xDl1_v_diffdiff (AutoDiffDiff<2> lam1, AutoDiffDiff<2> lam2, AutoDiffDiff<2> av) { return T_SymRotRot_Dl2xDl1_v_diffdiff(lam1, lam2, av); }
+
   class T_SymRotRot_Dl2xDl1_v
   {
     AutoDiff<2> l1,l2,v;
@@ -321,7 +357,7 @@ namespace ngfem
       double lam2x = l2.DValue(0);
       double lam2y = l2.DValue(1);
       return Vec<2> (
-        v.DValue(0)*(lam1y*lam2y) - 0.5*v.DValue(1)*(lam1x*lam2y+lam1y*lam2x),
+        v.DValue(0)*(lam1y*lam2y) - 0.5*v.DValue(1)*(lam1x*lam2y+lam1y*lam2x)
         -0.5*v.DValue(0)*(lam1x*lam2y+lam1y*lam2x) + v.DValue(1)*(lam1x*lam2x)
         ); 
     }
@@ -399,9 +435,13 @@ namespace ngfem
           // edge functions are all div-free!
           IntegratedLegendreMonomialExt::CalcTrigExt(maxorder_facet+2,
                                                      le-ls, 1-le-ls, ha);
+
+          //ScaledLegendrePolynomial(maxorder_facet,le-ls, 1-le-ls,ha);
+
           
           for (int l = 0; l <= order_facet[i][0]; l++)
             shape[ii++] = SigmaGrad (ha[l]);
+            //shape[ii++] = SymRotRot_Dl2xDl1_v_diffdiff(le, ls, ha[l]);
         }
       
       int es = 0; int ee = 1; int et = 2;
@@ -411,6 +451,26 @@ namespace ngfem
       
       int oi=order_inner[0];
       int oi_plus = oi; //plus ? oi+1 : oi;
+
+      //// ----------------------------
+      //ScaledLegendrePolynomial(oi, le-ls,1-le-ls,u);
+      //LegendrePolynomial::Eval(oi, 2*lt-1, v);
+
+      //// ------------------------------------
+      //// shorter, not based on complex-based triangle shapes
+      //  for(int i = 0; i <= oi-1; i++)
+      //  {
+      //    for(int j = 0; j+i <= oi-1; j++)
+      //    {
+      //      shape[ii++] = SymRotRot_Dl2xDl1_v_diffdiff(ddlami[0], ddlami[1], ddlami[2]*u[i]*v[j]);
+      //      shape[ii++] = SymRotRot_Dl2xDl1_v_diffdiff(ddlami[2], ddlami[0], ddlami[1]*u[i]*v[j]);
+      //      shape[ii++] = SymRotRot_Dl2xDl1_v_diffdiff(ddlami[1], ddlami[2], ddlami[0]*u[i]*v[j]);
+      //    }
+      //  }
+     
+
+      //      // ----------------------------
+
 
       IntegratedLegendreMonomialExt::CalcTrigExt(oi_plus+3,le-ls,1-le-ls,u);
       LegendrePolynomial::EvalMult(oi_plus+1, 2*lt-1, lt, v);
