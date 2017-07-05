@@ -357,7 +357,7 @@ namespace ngfem
       double lam2x = l2.DValue(0);
       double lam2y = l2.DValue(1);
       return Vec<2> (
-        v.DValue(0)*(lam1y*lam2y) - 0.5*v.DValue(1)*(lam1x*lam2y+lam1y*lam2x)
+        v.DValue(0)*(lam1y*lam2y) - 0.5*v.DValue(1)*(lam1x*lam2y+lam1y*lam2x),
         -0.5*v.DValue(0)*(lam1x*lam2y+lam1y*lam2x) + v.DValue(1)*(lam1x*lam2x)
         ); 
     }
