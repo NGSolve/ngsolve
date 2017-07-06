@@ -53,6 +53,11 @@ The solution of this problem plotted in 2D and in 3D:
    :width: 49%        
 .. image:: res_periodic/periodic3d.png
    :width: 49%
+
+.. caution:: Since the dofs are mapped to the other side, periodic spaces are not possible on meshes
+             with only one element in the direction of the periodic boundaries (then the
+             elementmatrix would need to be of different size and NGSolve cannot handle that). So make
+             sure that the meshsize is less than half your domain width!
            
 You can download these examples here: :download:`1D<res_periodic/periodic1D.py>`, :download:`2D<res_periodic/periodic2D.py>`, :download:`3D<res_periodic/periodic3D.py>`.
 
