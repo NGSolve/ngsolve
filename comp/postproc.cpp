@@ -512,14 +512,14 @@ namespace ngcomp
 	    }
 	  else
 	    {
-	      FlatMatrix<double> elmat(fel.GetNDof()*dim, lh);
+	      FlatMatrix<SCAL> elmat(fel.GetNDof()*dim, lh);
 	      bli->CalcElementMatrix (fel, eltrans, elmat, lh);
 
 	      fes.TransformMat (ei, elmat, TRANSFORM_MAT_LEFT_RIGHT);
 	      fes.TransformVec (ei, elflux, TRANSFORM_RHS);
               if (fel.GetNDof() < 50)
                 {
-                  FlatCholeskyFactors<double> invelmat(elmat, lh);
+                  FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
                   invelmat.Mult (elflux, elfluxi);
                 }
               else
