@@ -489,8 +489,10 @@ namespace ngcomp
     // { return lodofs_per_node[nt]; }
 
     /// get dofs on vertex vnr
+    [[deprecated("Use GetDofNrs(NODE_TYPE(NT_VERTEX,nr) instead")]]
     virtual void GetVertexDofNrs (int vnr, Array<DofId> & dnums) const;
     /// get dofs on edge enr
+    [[deprecated("Use GetDofNrs(NODE_TYPE(NT_EDGE,nr) instead")]]    
     virtual void GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const;
     /// get dofs on face fnr
     virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const;
@@ -580,11 +582,11 @@ namespace ngcomp
     { return dirichlet_boundaries.Size() && dirichlet_boundaries[i]; }
 
     /// is vertex on Dirichlet boundary ?
-    bool IsDirichletVertex (int i) const { return dirichlet_vertex.Size() && dirichlet_vertex[i]; }
+    bool IsDirichletVertex (size_t i) const { return dirichlet_vertex.Size() && dirichlet_vertex[i]; }
     /// is edge on Dirichlet boundary ?
-    bool IsDirichletEdge (int i) const { return dirichlet_edge.Size() && dirichlet_edge[i]; }
+    bool IsDirichletEdge (size_t i) const { return dirichlet_edge.Size() && dirichlet_edge[i]; }
     /// is face on Dirichlet boundary ?
-    bool IsDirichletFace (int i) const { return dirichlet_face.Size() && dirichlet_face[i]; }
+    bool IsDirichletFace (size_t i) const { return dirichlet_face.Size() && dirichlet_face[i]; }
 
     void GetFilteredDofs(COUPLING_TYPE doffilter, BitArray & output, bool freedofsonly=true) const;
     /// 
@@ -1148,8 +1150,11 @@ namespace ngcomp
     virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const;
     ///
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const;
+    virtual void GetDofNrs (NodeId ni, Array<DofId> & dnums) const;
     ///
+    [[deprecated("Use GetDofNrs(NODE_TYPE(NT_VERTEX,nr) instead")]]    
     virtual void GetVertexDofNrs (int vnr, Array<DofId> & dnums) const;
+    [[deprecated("Use GetDofNrs(NODE_TYPE(NT_EDGE,nr) instead")]]    
     virtual void GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const;
     virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const;
     virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const;

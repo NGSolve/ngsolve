@@ -386,20 +386,20 @@ lot of new non-zero entries in the matrix!\n" << endl;
           for (int d : el.GetDofs())
             if (d != -1) dirichlet_dofs.Set (d);
 
-    Array<int> dnums;
-    for (int i : Range(dirichlet_vertex))
+    Array<DofId> dnums;
+    for (auto i : Range(dirichlet_vertex))
       if (dirichlet_vertex[i])
 	{
-	  GetVertexDofNrs (i, dnums);
-	  for (int d : dnums)
+	  GetDofNrs (NodeId(NT_VERTEX,i), dnums);
+	  for (DofId d : dnums)
 	    if (d != -1) dirichlet_dofs.Set (d);
 	}
 
-    for (int i : Range(dirichlet_edge))
+    for (auto i : Range(dirichlet_edge))
       if (dirichlet_edge[i])
 	{
-	  GetEdgeDofNrs (i, dnums);
-	  for (int d : dnums)
+	  GetDofNrs (NodeId(NT_EDGE,i), dnums);
+	  for (DofId d : dnums)
 	    if (d != -1) dirichlet_dofs.Set (d);
 	}
 
@@ -2108,10 +2108,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
     if(parseflags) CheckFlags(flags);
     
     auto hprol = make_shared<CompoundProlongation> (this);
-    /*
-    for (int i = 0; i < spaces.Size(); i++)
-      hprol -> AddProlongation (spaces[i]->GetProlongation());
-    */
     for (auto space : spaces)
       hprol -> AddProlongation (space->GetProlongation());      
     prol = hprol;
@@ -2303,6 +2299,28 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
   }
 
+  void CompoundFESpace :: GetDofNrs (NodeId ni, Array<DofId> & dnums) const
+  {
+    ArrayMem<int,500> hdnums;
+    dnums.SetSize0();
+    for (int i = 0; i < spaces.Size(); i++)
+      {
+	spaces[i]->GetDofNrs (ni, hdnums);
+        int base = dnums.Size();
+        int base_cum = cummulative_nd[i];
+        dnums.SetSize(base+hdnums.Size());
+
+        for (auto j : Range(hdnums))
+          {
+            int val = hdnums[j];
+            if (val != -1)
+              val += base_cum;
+            dnums[base+j] = val;
+          }
+      }
+  }
+  
+
   void CompoundFESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
   {
     ArrayMem<int,500> hdnums;
@@ -2366,26 +2384,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
   
 
 
-  /*
-  const FiniteElement & CompoundFESpace :: GetSFE (int elnr, LocalHeap & lh) const
-  {
-    FlatArray<const FiniteElement*> fea(spaces.Size(), lh);
-    for (int i = 0; i < fea.Size(); i++)
-      fea[i] = &spaces[i]->GetSFE(elnr, lh);
-    return *new (lh) CompoundFiniteElement (fea);
-  }
-
-  const FiniteElement & CompoundFESpace :: GetCD2FE (int elnr, LocalHeap & lh) const
-  {
-    FlatArray<const FiniteElement*> fea(spaces.Size(), lh);
-    for (int i = 0; i < fea.Size(); i++)
-      fea[i] = &spaces[i]->GetCD2FE(elnr, lh);
-    return *new (lh) CompoundFiniteElement (fea);
-  }
-  */
-
-
-
 
 
   template <class T>
@@ -2396,11 +2394,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
     LocalHeapMem<100005> lh("CompoundFESpace - transformmat");
     for (int i = 0; i < spaces.Size(); i++)
       {
-        /*
-	int nd = boundary  ?
-	  spaces[i]->GetSFE(elnr, lh).GetNDof()
-	  : spaces[i]->GetFE(elnr, lh).GetNDof();
-        */
         HeapReset hr(lh);
         size_t nd = spaces[i]->GetFE(ei, lh).GetNDof();
 
@@ -2418,18 +2411,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
     LocalHeapMem<100006> lh("CompoundFESpace - transformvec");
     for (int i = 0, base = 0; i < spaces.Size(); i++)
       {
-        /*
-	int nd = boundary ? 
-	  spaces[i]->GetSFE(elnr, lh).GetNDof() :
-	  spaces[i]->GetFE(elnr, lh).GetNDof();
-	
-	lh.CleanUp();
-        */
         HeapReset hr(lh);
         int nd = spaces[i]->GetFE(ei, lh).GetNDof();
 
-
-	// VEC svec (nd, &vec(base));
 	spaces[i]->TransformVec (ei, vec.Range(base, base+nd), tt);
 	base += nd;
       }

@@ -1042,13 +1042,13 @@ namespace ngcomp
 	Array<int> & clusters = *new Array<int> (GetNDof());
 	clusters = 0;
 
-	Array<int> dnums;
+	Array<DofId> dnums;
 	int nfa = ma->GetNFacets();
 
 	for (int i = 0; i < nfa; i++)
 	  {
 	    if (ma->GetDimension() == 2)
-	      GetEdgeDofNrs (i, dnums);
+	      GetDofNrs (NodeId(NT_EDGE,i), dnums);
 	    else
 	      GetFaceDofNrs (i, dnums);
 
@@ -1099,7 +1099,7 @@ namespace ngcomp
 		for (int i = 0; i < nv; i++)
                   {
                     dnums.SetSize(0);
-                    GetVertexDofNrs(i,dnums);
+                    GetDofNrs(NodeId(NT_VERTEX,i),dnums);
                     if (dnums.Size()>0)
                       creator.Add (i, dnums[0]);
                   }
@@ -1110,7 +1110,7 @@ namespace ngcomp
 		for (int k = 0; k < 2; k++){
 		  dnums.SetSize(0);
 		  if (ma->GetDimension() == 2){
-		    GetEdgeDofNrs(i,dnums);
+		    GetDofNrs(NodeId(NT_EDGE,i),dnums);
 		    creator.Add (edge.vertices[k], dnums[0]);
 		  }
 		}
@@ -1136,7 +1136,7 @@ namespace ngcomp
 		for (int i = 0; i < ned; i++)
 		  if (!IsDirichletEdge(i))
 		    {
-		      GetEdgeDofNrs(i,dnums);
+		      GetDofNrs(NodeId(NT_EDGE,i),dnums);
 		      for (int l=0;l<dnums.Size();l++)
 			creator.Add (i, dnums[l]);
 		    }
@@ -1151,14 +1151,14 @@ namespace ngcomp
 	      cout << "Facet-by-facet blocks" << endl;
 		
 	    
-	    Array<int> dnums;
-	    int nfa = ma->GetNFacets();
-	    for (int i = 0; i < nfa; i++)
+	    Array<DofId> dnums;
+	    size_t nfa = ma->GetNFacets();
+	    for (size_t i = 0; i < nfa; i++)
 	      {
 		if (ma->GetDimension() == 2)
 		  {
 		    if (IsDirichletEdge (i)) continue;
-		    GetEdgeDofNrs (i, dnums);
+		    GetDofNrs (NodeId(NT_EDGE,i), dnums);
 		  }
 		else
 		  {
@@ -1166,8 +1166,8 @@ namespace ngcomp
 		    GetFaceDofNrs (i, dnums);
 		  }
 
-		for (int l = 0; l < dnums.Size(); l++)
-		  creator.Add (i, dnums[l]);
+		for (auto d : dnums)
+		  creator.Add (i, d);
 	      }
 	    break; 	    
 	  }
