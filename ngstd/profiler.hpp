@@ -152,6 +152,15 @@ namespace ngstd
       VT_USER_END (const_cast<char*> (names[nr].c_str())); 
     }
 
+    static void StartThreadTimer (size_t nr, size_t tid)
+    {
+      thread_times[tid*SIZE+nr] -= __rdtsc();
+    }
+
+    static void StopThreadTimer (size_t nr, size_t tid)
+    {
+      thread_times[tid*SIZE+nr] += __rdtsc();
+    }
 #endif
 
 
