@@ -16,7 +16,7 @@
 #include <sys/timeb.h>
 #include <sys/types.h>
 #include <winsock.h>
-
+#include <intrin.h>   // for __rdtsc()  CPU time step counter
 
 inline void gettimeofday(struct timeval* t,void* timezone)
 {       struct _timeb timebuffer;
@@ -27,10 +27,10 @@ inline void gettimeofday(struct timeval* t,void* timezone)
 
 #else
 #include <sys/time.h>
+#include <x86intrin.h>   // for __rdtsc()  CPU time step counter
 #endif
 
 #include <chrono>
-#include <x86intrin.h>   // for __rdtsc()  CPU time step counter
 
 namespace ngstd {
   extern NGS_DLL_HEADER std::chrono::time_point<std::chrono::system_clock> wall_time_start;
