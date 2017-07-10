@@ -240,24 +240,25 @@ namespace ngcomp
 	eval_2d = fespace->GetEvaluator(BND);
       }
 
-    
-    netgen::SolutionData * vis = new VisualizeCoefficientFunction (ma, gf);
-    Ng_SolutionData soldata;
-    Ng_InitSolutionData (&soldata);
-  
-    soldata.name = given_name;
-    soldata.data = 0;
-    soldata.components = gf -> Dimension();
-    if (gf->IsComplex()) soldata.components *= 2;
-    soldata.iscomplex = gf -> IsComplex();
-    soldata.draw_surface = eval_2d != nullptr;
-    soldata.draw_volume  = eval_3d != nullptr;
-
-    soldata.dist = 1;
-    soldata.soltype = NG_SOLUTION_VIRTUAL_FUNCTION;
-    soldata.solclass = vis;
-    Ng_SetSolutionData (&soldata);
-    
+    if (eval_2d || eval_3d)
+      {
+        netgen::SolutionData * vis = new VisualizeCoefficientFunction (ma, gf);
+        Ng_SolutionData soldata;
+        Ng_InitSolutionData (&soldata);
+        
+        soldata.name = given_name;
+        soldata.data = 0;
+        soldata.components = gf -> Dimension();
+        if (gf->IsComplex()) soldata.components *= 2;
+        soldata.iscomplex = gf -> IsComplex();
+        soldata.draw_surface = eval_2d != nullptr;
+        soldata.draw_volume  = eval_3d != nullptr;
+        
+        soldata.dist = 1;
+        soldata.soltype = NG_SOLUTION_VIRTUAL_FUNCTION;
+        soldata.solclass = vis;
+        Ng_SetSolutionData (&soldata);
+      }
 
     
     /*
@@ -1374,6 +1375,11 @@ namespace ngcomp
     static Timer timer ("GFCoeffFunc::Eval-scal", 3);
     RegionTimer reg (timer);
 
+    if (gf -> GetLevelUpdated() < gf->GetMeshAccess()->GetNLevels())
+      {
+        result = 0.0;
+        return;
+      }
     
     const int elnr = ip.GetTransformation().GetElementNr();
     VorB vb = ip.GetTransformation().VB();
@@ -1495,6 +1501,13 @@ namespace ngcomp
   void GridFunctionCoefficientFunction :: 
   Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const
   {
+    if (gf -> GetLevelUpdated() < gf->GetMeshAccess()->GetNLevels())
+      {
+        values = 0.0;
+        return;
+      }
+
+    
     LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evalute 3");
     // static Timer timer ("GFCoeffFunc::Eval-vec", 2);
     // RegionTimer reg (timer);
@@ -1553,6 +1566,12 @@ namespace ngcomp
   Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
             BareSliceMatrix<SIMD<double>> bvalues) const
   {
+    if (gf -> GetLevelUpdated() < gf->GetMeshAccess()->GetNLevels())
+      {
+        bvalues.AddSize(Dimension(), ir.Size()) = 0.0;
+        return;
+      }
+    
     ProxyUserData * ud = (ProxyUserData*)ir.GetTransformation().userdata;
     if (ud)
       {
@@ -1638,6 +1657,13 @@ namespace ngcomp
     LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evalute 3");
 
     auto values = bvalues.AddSize(Dimension(), ir.Size());
+
+    if (gf -> GetLevelUpdated() < gf->GetMeshAccess()->GetNLevels())
+      {
+        values = 0.0;
+        return;
+      }
+    
     const ElementTransformation & trafo = ir.GetTransformation();
     
     int elnr = trafo.GetElementNr();

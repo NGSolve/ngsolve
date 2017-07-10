@@ -286,11 +286,10 @@ endif(USE_PARDISO)
 #######################################################################
 
 if(USE_UMFPACK)
-  find_package(SuiteSparse NO_MODULE HINTS ${UMFPACK_DIR})
-  include(${USE_SuiteSparse})
-  include_directories(${SuiteSparse_INCLUDE_DIRS})
-  set(UMFPACK_LIBRARIES ${SuiteSparse_LIBRARIES} CACHE STRING "List of UMFPACK libraries")
+  set(SuiteSparse_USE_LAPACK_BLAS ON)
+  find_package(suitesparse REQUIRED NO_MODULE HINTS ${UMFPACK_DIR})
   list(APPEND NGSOLVE_COMPILE_DEFINITIONS USE_UMFPACK)
+  set(UMFPACK_LIBRARIES SuiteSparse::umfpack)
 endif(USE_UMFPACK)
 
 #######################################################################

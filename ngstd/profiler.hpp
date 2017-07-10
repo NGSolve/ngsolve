@@ -16,7 +16,7 @@
 #include <sys/timeb.h>
 #include <sys/types.h>
 #include <winsock.h>
-
+#include <intrin.h>   // for __rdtsc()  CPU time step counter
 
 inline void gettimeofday(struct timeval* t,void* timezone)
 {       struct _timeb timebuffer;
@@ -27,6 +27,7 @@ inline void gettimeofday(struct timeval* t,void* timezone)
 
 #else
 #include <sys/time.h>
+#include <x86intrin.h>   // for __rdtsc()  CPU time step counter
 #endif
 
 #include <chrono>
@@ -66,7 +67,7 @@ namespace ngstd
   {
   public:
     /// maximal number of timers
-    enum { SIZE = 1000000 };
+    enum { SIZE = 1024*1024 };
     //  static long int tottimes[SIZE];
     // static long int starttimes[SIZE];
 
@@ -80,6 +81,7 @@ namespace ngstd
     NGS_DLL_HEADER static string names[SIZE];
     NGS_DLL_HEADER static int usedcounter[SIZE];
 
+    NGS_DLL_HEADER static size_t * thread_times;
   private:
 
     // int total_timer;
@@ -123,7 +125,17 @@ namespace ngstd
       AsAtomic(tottimes[nr]) += time.tv_sec + 1e-6 * time.tv_usec;
       VT_USER_END (const_cast<char*> (names[nr].c_str())); 
     }
-  
+
+    static void StartThreadTimer (size_t nr, size_t tid)
+    {
+      thread_times[tid*SIZE+nr] -= __rdtsc();
+    }
+
+    static void StopThreadTimer (size_t nr, size_t tid)
+    {
+      thread_times[tid*SIZE+nr] += __rdtsc();
+    }
+      
 #else
   
     /// start timer of index nr
@@ -273,6 +285,19 @@ namespace ngstd
     RegionTimer (Timer & atimer) : timer(atimer) { timer.Start(); }
     /// stop timer
     ~RegionTimer () { timer.Stop(); }
+  };
+
+  class ThreadRegionTimer
+  {
+    size_t nr;
+    size_t tid;
+  public:
+    /// start timer
+    ThreadRegionTimer (size_t _nr, size_t _tid) : nr(_nr), tid(_tid)
+    { NgProfiler::StartThreadTimer(nr, tid); }
+    /// stop timer
+    ~ThreadRegionTimer ()
+    { NgProfiler::StopThreadTimer(nr, tid); }
   };
 
   class RegionTracer

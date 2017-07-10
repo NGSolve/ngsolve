@@ -511,6 +511,12 @@ namespace ngfem
   }
   */
 
+  static Timer telvec("SymbolicLFI::CalcElVec");
+  static Timer telvec_mapping("SymbolicLFI::mapping");
+  static Timer telvec_zero("SymbolicLFI::zero");
+  static Timer telvec_applytrans("SymbolicLFI::applytrans");
+  static Timer telvec_dvec("SymbolicLFI::dvec");
+  
   template <typename SCAL>   
   void SymbolicLinearFormIntegrator ::
   T_CalcElementVector (const FiniteElement & fel,
@@ -570,17 +576,25 @@ namespace ngfem
       {
         try
           {
-            // static Timer t("symbolicLFI - CalcElementVector (SIMD)", 2); RegionTimer reg(t);    
+            // static Timer t("symbolicLFI - CalcElementVector (SIMD)", 2); RegionTimer reg(t);
+            size_t tid = TaskManager::GetThreadId();
+            NgProfiler::StartThreadTimer(telvec, tid);
+            
             HeapReset hr(lh);
+            NgProfiler::StartThreadTimer(telvec_mapping, tid);
             SIMD_IntegrationRule ir(trafo.GetElementType(), 2*fel.Order());
             auto & mir = trafo(ir, lh);
+            NgProfiler::StopThreadTimer(telvec_mapping, tid);
             
+            NgProfiler::StartThreadTimer(telvec_zero, tid);            
             ProxyUserData ud;
             const_cast<ElementTransformation&>(trafo).userdata = &ud;
             
             elvec = 0;
+            NgProfiler::StopThreadTimer(telvec_zero, tid);                        
             for (auto proxy : proxies)
               {
+                NgProfiler::StartThreadTimer(telvec_dvec, tid);
                 FlatMatrix<SIMD<SCAL>> proxyvalues(proxy->Dimension(), ir.Size(), lh);
                 for (size_t k = 0; k < proxy->Dimension(); k++)
                   {
@@ -591,9 +605,13 @@ namespace ngfem
                     for (size_t i = 0; i < mir.Size(); i++)
                       proxyvalues(k,i) *= mir[i].GetWeight();
                   }
+                NgProfiler::StopThreadTimer(telvec_dvec, tid);
                 
+                NgProfiler::StartThreadTimer(telvec_applytrans, tid);                                
                 proxy->Evaluator()->AddTrans(fel, mir, proxyvalues, elvec);
+                NgProfiler::StopThreadTimer(telvec_applytrans, tid);                                                
               }
+            NgProfiler::StopThreadTimer(telvec, tid);
           }
         catch (ExceptionNOSIMD e)
           {

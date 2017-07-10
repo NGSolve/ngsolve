@@ -16,6 +16,9 @@ add_library(ngla ${NGS_LIB_TYPE}
 target_compile_definitions(ngla PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
 target_compile_options(ngla PUBLIC ${NGSOLVE_COMPILE_OPTIONS})
 target_include_directories(ngla PUBLIC ${NGSOLVE_INCLUDE_DIRS})
+if(WIN32)
+    target_include_directories(ngla PUBLIC $<TARGET_PROPERTY:${UMFPACK_LIBRARIES},INTERFACE_INCLUDE_DIRECTORIES>)
+endif()
 
 if(NOT WIN32)
     target_link_libraries(ngla PUBLIC ngbla ngstd ${NETGEN_PYTHON_LIBRARIES} ${LAPACK_LIBRARIES}
