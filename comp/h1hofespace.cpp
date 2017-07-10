@@ -633,8 +633,12 @@ namespace ngcomp
     archive & level_adapted_order & nodalp2;
   }
 
+  Timer tgetfe("H1FESpace::GetFE");
   FiniteElement & H1HighOrderFESpace :: GetFE (ElementId ei, Allocator & alloc) const
   {
+    size_t tid = TaskManager::GetThreadId();
+    ThreadRegionTimer reg(tgetfe, tid);
+    
     Ngs_Element ngel = ma->GetElement(ei);
     ELEMENT_TYPE eltype = ngel.GetType();
 
