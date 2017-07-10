@@ -1126,8 +1126,8 @@ namespace ngbla
 
     // auto operator() (size_t i, size_t j) { return a(i+first_row, j+first_col); }
     // auto operator() (size_t i) { return a(i+first_row); }
-    auto operator() (size_t i, int j) const  { return a(i+first_row, j+first_col); }
-    auto operator() (size_t i) const { return a(i+first_row); }
+    decltype(auto) operator() (size_t i, int j) const  { return a(i+first_row, j+first_col); }
+    decltype(auto) operator() (size_t i) const { return a(i+first_row); }
 
     enum { IS_LINEAR = 0 };
     enum { COL_MAJOR = TA::COL_MAJOR };

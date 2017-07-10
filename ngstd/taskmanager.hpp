@@ -69,11 +69,11 @@ namespace ngstd
     int num_nodes;
     NGS_DLL_HEADER static int num_threads;
     NGS_DLL_HEADER static int max_threads;
-#ifndef __clang__    
+    // #ifndef __clang__    
     static thread_local int thread_id;
-#else
-    static __thread int thread_id;
-#endif
+    // #else
+    // static __thread int thread_id;
+    // #endif
     
     static bool use_paje_trace;
   public:

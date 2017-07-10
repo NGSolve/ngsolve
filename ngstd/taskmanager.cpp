@@ -20,11 +20,11 @@ namespace ngstd
   bool TaskManager :: use_paje_trace = false;
   int TaskManager :: max_threads = getenv("NGS_NUM_THREADS") ? atoi(getenv("NGS_NUM_THREADS")) : std::thread::hardware_concurrency();
   int TaskManager :: num_threads = 1;
-#ifndef __clang__      
+  // #ifndef __clang__      
   thread_local int TaskManager :: thread_id;
-#else
-  __thread int TaskManager :: thread_id;
-#endif
+  // #else
+  // __thread int TaskManager :: thread_id;
+  // #endif
 
   const function<void(TaskInfo&)> * TaskManager::func;
   const function<void()> * TaskManager::startup_function = nullptr;
@@ -160,6 +160,12 @@ namespace ngstd
         std::thread([this,i]() { this->Loop(i); }).detach();
       }
 
+    size_t alloc_size = num_threads*NgProfiler::SIZE;
+    cout << "alloc threadtimes: " << alloc_size << endl;
+    NgProfiler::thread_times = new size_t[alloc_size];
+    for (size_t i = 0; i < alloc_size; i++)
+      NgProfiler::thread_times[i] = 0;
+
     while (active_workers < num_threads-1)
       ;
   }
@@ -167,6 +173,12 @@ namespace ngstd
   void TaskManager :: StopWorkers()
   {
     done = true;
+
+    // collect timings
+    for (size_t i = 0; i < num_threads; i++)
+      for (size_t j = 0; j < NgProfiler::SIZE; j++)
+        NgProfiler::tottimes[j] += 1.0/3.1e9 * NgProfiler::thread_times[i*NgProfiler::SIZE+j];
+    
     while (active_workers)
       ;
     delete sync[0];

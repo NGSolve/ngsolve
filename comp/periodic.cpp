@@ -112,11 +112,15 @@ namespace ngcomp {
     }
 
 
-  void PeriodicFESpace :: GetDofNrs(ElementId ei, Array<int> & dnums) const
+  void PeriodicFESpace :: GetDofNrs(ElementId ei, Array<DofId> & dnums) const
     {
       space->GetDofNrs(ei,dnums);
+      for (auto & d : dnums)
+        if (d != -1) d = dofmap[d];
+      /*
       for (int i = 0; i< dnums.Size(); i++)
 	dnums[i] = dofmap[dnums[i]];
+      */
     }
 
   QuasiPeriodicFESpace :: QuasiPeriodicFESpace(shared_ptr<FESpace> fespace, const Flags & flags, shared_ptr<Array<int>> aused_idnrs, shared_ptr<Array<Complex>> afactors) :

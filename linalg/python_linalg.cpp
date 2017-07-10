@@ -385,8 +385,11 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("Inverse", [](BM &m)  { return m.InverseMatrix(); })
     .def("Transpose", [](BM &m) { return make_shared<Transpose> (m); })
     .def("Update", [](BM &m) { m.Update(); })
+    ;
 
-    .def("CreateBlockSmoother", [](BM & m, py::object blocks)
+  py::class_<BaseSparseMatrix, shared_ptr<BaseSparseMatrix>, BaseMatrix>
+    (m, "BaseSparseMatrix", "sparse matrix of any type")
+    .def("CreateBlockSmoother", [](BaseSparseMatrix & m, py::object blocks)
          {
            size_t size = py::len(blocks);
            
@@ -405,9 +408,19 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                  row[j++] = val.cast<int>();
              }
 
-           BaseSparseMatrix & sparse_mat = dynamic_cast<BaseSparseMatrix&>(m);
-           return sparse_mat.CreateBlockJacobiPrecond (make_shared<Table<int>> (move(blocktable)));
+           // BaseSparseMatrix & sparse_mat = dynamic_cast<BaseSparseMatrix&>(m);
+           auto pre = m.CreateBlockJacobiPrecond (make_shared<Table<int>> (move(blocktable)));
+           return pre;
          })
+    ;
+
+  py::class_<S_BaseMatrix<double>, shared_ptr<S_BaseMatrix<double>>, BaseMatrix>
+    (m, "S_BaseMatrixD", "base sparse matrix double")
+    ;
+
+  py::class_<SparseMatrix<double>, shared_ptr<SparseMatrix<double>>, BaseSparseMatrix, S_BaseMatrix<double> >
+    (m, "SparseMatrixD",
+     "a sparse matrix in CSR storage, entries are real")
     ;
 
   py::class_<BaseBlockJacobiPrecond, shared_ptr<BaseBlockJacobiPrecond>, BaseMatrix>
