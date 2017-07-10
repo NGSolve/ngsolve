@@ -18,7 +18,7 @@ namespace ngla
 
     SparseMatrixTM<double> * prol;
   
-    BaseSparseMatrix * coarsemat;
+    shared_ptr<BaseSparseMatrix> coarsemat;
     shared_ptr<BaseJacobiPrecond> jacobi;
     shared_ptr<BaseBlockJacobiPrecond> bjacobi;
     shared_ptr<BaseMatrix> inv;
