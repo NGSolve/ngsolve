@@ -185,7 +185,7 @@ namespace ngcomp
       //for non-curved elements, divergence transformation is finished, otherwise derivatives of Jacobian have to be computed...
       if (!sip.GetTransformation().IsCurvedElement()) return;
 
-      FlatMatrix<> shape(DIM_STRESS,nd, lh);
+      FlatMatrix<> shape(nd, DIM_STRESS, lh);
       fel.CalcShape (sip.IP(), shape);
       
       Mat<D> inv_jac = sip.GetJacobianInverse();
