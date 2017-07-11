@@ -161,7 +161,6 @@ namespace ngstd
       }
 
     size_t alloc_size = num_threads*NgProfiler::SIZE;
-    cout << "alloc threadtimes: " << alloc_size << endl;
     NgProfiler::thread_times = new size_t[alloc_size];
     for (size_t i = 0; i < alloc_size; i++)
       NgProfiler::thread_times[i] = 0;
@@ -169,7 +168,7 @@ namespace ngstd
     while (active_workers < num_threads-1)
       ;
   }
- 
+  extern size_t dummy_thread_times[NgProfiler::SIZE];
   void TaskManager :: StopWorkers()
   {
     done = true;
@@ -178,7 +177,8 @@ namespace ngstd
     for (size_t i = 0; i < num_threads; i++)
       for (size_t j = 0; j < NgProfiler::SIZE; j++)
         NgProfiler::tottimes[j] += 1.0/3.1e9 * NgProfiler::thread_times[i*NgProfiler::SIZE+j];
-    
+    delete [] NgProfiler::thread_times;
+    NgProfiler::thread_times = dummy_thread_times;
     while (active_workers)
       ;
     delete sync[0];
