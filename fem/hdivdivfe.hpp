@@ -30,14 +30,14 @@ namespace ngfem
     virtual void CalcDivDivShape (const IntegrationPoint & ip, 
                                   FlatVector<> ddshape) const;
     */
-    virtual void CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
+    virtual void CalcMappedShape_Matrix (const MappedIntegrationPoint<DIM,DIM> & mip,
+      BareSliceMatrix<double> shape) const = 0;
+
+    virtual void CalcMappedShape_Vector (const MappedIntegrationPoint<DIM,DIM> & mip,
       BareSliceMatrix<double> shape) const = 0;
 
     virtual void CalcMappedDivShape (const MappedIntegrationPoint<DIM,DIM> & mip,
       BareSliceMatrix<double> shape) const = 0;
-
-    virtual void CalcMappedShapeDelta (const MappedIntegrationPoint<DIM,DIM> & mip,
-      BareSliceMatrix<double> shape,double delta,int n,int m) const = 0;
 
   };
   
@@ -107,7 +107,7 @@ namespace ngfem
                                           }));
     }
 
-    virtual void CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
+    virtual void CalcMappedShape_Vector (const MappedIntegrationPoint<DIM,DIM> & mip,
                             BareSliceMatrix<double> shape) const
     {
       // very scary, compute dlami/dxj and d2lami/dxjdxk on mapped element and put it into AutoDiffDiff
@@ -118,17 +118,35 @@ namespace ngfem
                                           }));
     }
 
-    virtual void CalcMappedShapeDelta (const MappedIntegrationPoint<DIM,DIM> & mip,
-      BareSliceMatrix<double> shape, double delta, int n, int m) const
+    virtual void CalcMappedShape_Matrix (const MappedIntegrationPoint<DIM,DIM> & mip,
+                            BareSliceMatrix<double> shape) const
     {
       // very scary, compute dlami/dxj and d2lami/dxjdxk on mapped element and put it into AutoDiffDiff
       Vec<DIM, AutoDiffDiff<DIM>> adp = mip.LinearizedBarycentricCoordinates();
-      adp(n).DValue(m) += delta;
-      Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM>> (adp), SBLambda([&] (int nr, auto val)
-                                          {
-                                            shape.Row(nr).AddSize(DIM_STRESS) = val.Shape();
-                                          }));
+      Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM>> (adp),SBLambda([&](int nr,auto val)
+      {
+        Vec<DIM_STRESS> vecshape = val.Shape();
+        Vec<DIM*DIM> matshape;
+        switch (DIM)
+        {
+        case 2:
+          matshape(0) = vecshape(0);
+          matshape(3) = vecshape(1);
+          matshape(1) = matshape(2) = vecshape(2);
+          break;
+        case 3:
+          matshape(0) = vecshape(0);
+          matshape(4) = vecshape(1);
+          matshape(8) = vecshape(2);
+          matshape(1) = matshape(3) = vecshape(5);
+          matshape(2) = matshape(6) = vecshape(4);
+          matshape(5) = matshape(7) = vecshape(3);
+          break;
+        }
+        shape.Row(nr).AddSize(DIM*DIM) = matshape;
+      }));
     }
+
 
     virtual void CalcMappedDivShape (const MappedIntegrationPoint<DIM,DIM> & mip,
                             BareSliceMatrix<double> shape) const

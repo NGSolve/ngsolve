@@ -283,7 +283,7 @@ namespace ngcomp
     {
       const HDivDivFiniteElement<D> & fel =
         dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
-      fel.CalcMappedShape (mip,Trans(mat));
+      fel.CalcMappedShape_Vector (mip,Trans(mat));
     }
 
     // when implemented as above, writing directly into mat,
@@ -297,7 +297,48 @@ namespace ngcomp
         dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
       int nd = fel.GetNDof();
       FlatMatrix<> shape(nd,DIM_DMAT,lh);
-      fel.CalcMappedShape(sip,shape);
+      fel.CalcMappedShape_Vector(sip,shape);
+      for(int i=0; i<nd; i++)
+        for(int j = 0; j <DIM_DMAT; j++)
+          mat(j,i) = shape(i,j);
+
+    }
+  };
+
+  template<int D>
+  class DiffOpIdHDivDiv_testnewtransform: public DiffOp<DiffOpIdHDivDiv_testnewtransform<D> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D };
+    enum { DIM_DMAT = D*D };
+    enum { DIFFORDER = 0 };
+    enum { DIM_STRESS = D*D };
+
+    static Array<int> GetDimensions() { return Array<int> ({D,D}); }
+
+    template <typename FEL,typename SIP>
+    static void GenerateMatrix(const FEL & bfel,const SIP & mip,
+      SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
+    {
+      const HDivDivFiniteElement<D> & fel =
+        dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
+      fel.CalcMappedShape_Matrix (mip,Trans(mat));
+    }
+
+    // when implemented as above, writing directly into mat,
+    // does not work for MAT = FlatMatrixFixWidth ??
+    template <typename FEL,typename SIP,typename MAT>
+    static void GenerateMatrix(const FEL & bfel,const SIP & sip,
+      MAT & mat,LocalHeap & lh)
+    {
+      //cout << "not so efficient" << endl;
+      const HDivDivFiniteElement<D> & fel =
+        dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
+      int nd = fel.GetNDof();
+      FlatMatrix<> shape(nd,DIM_DMAT,lh);
+      fel.CalcMappedShape_Matrix(sip,shape);
       for(int i=0; i<nd; i++)
         for(int j = 0; j <DIM_DMAT; j++)
           mat(j,i) = shape(i,j);
@@ -330,8 +371,8 @@ namespace ngcomp
       if (!sip.GetTransformation().IsCurvedElement()) return;
 
       int nd = fel.GetNDof();
-      FlatMatrix<> shape(nd,DIM_STRESS,lh);
-      fel.CalcMappedShape(sip,shape);
+      FlatMatrix<> shape(nd,D*D,lh);
+      fel.CalcMappedShape_Matrix(sip,shape);
 
       Mat<D> jac = sip.GetJacobian();
       Mat<D> inv_jac = sip.GetJacobianInverse();
@@ -376,21 +417,25 @@ namespace ngcomp
       {
         for (int k=0; k<D; k++)
         {
-        if (D == 2)
-        {
-          mat(k,i) += sip.GetJacobiDet() * (finvT_h_tilde_finv[k](0,0) * shape(i,0) 
-            + finvT_h_tilde_finv[k](1,1) * shape(i,1) 
-            + (finvT_h_tilde_finv[k](0,1)+finvT_h_tilde_finv[k](1,0))*shape(i,2));
-        }
-        else if (D == 3)
-        {
-          mat(k,i) += sip.GetJacobiDet() * (finvT_h_tilde_finv[k](0,0) * shape(i,0) 
-            + finvT_h_tilde_finv[k](1,1) * shape(i,1)
-            + finvT_h_tilde_finv[k](2,2) * shape(i,2)
-            + (finvT_h_tilde_finv[k](0,1)+finvT_h_tilde_finv[k](1,0))*shape(i,5)
-            + (finvT_h_tilde_finv[k](0,2)+finvT_h_tilde_finv[k](2,0))*shape(i,4)
-            + (finvT_h_tilde_finv[k](2,1)+finvT_h_tilde_finv[k](1,2))*shape(i,3));
-        }
+          for (int j=0; j<D*D; j++)
+          {
+            mat(k,i) += sip.GetJacobiDet() * finvT_h_tilde_finv[k](j) * shape(i,j);
+          }
+        //if (D == 2)
+        //{
+        //  mat(k,i) += sip.GetJacobiDet() * (finvT_h_tilde_finv[k](0,0) * shape(i,0) 
+        //    + finvT_h_tilde_finv[k](1,1) * shape(i,1) 
+        //    + (finvT_h_tilde_finv[k](0,1)+finvT_h_tilde_finv[k](1,0))*shape(i,2));
+        //}
+        //else if (D == 3)
+        //{
+        //  mat(k,i) += sip.GetJacobiDet() * (finvT_h_tilde_finv[k](0,0) * shape(i,0) 
+        //    + finvT_h_tilde_finv[k](1,1) * shape(i,1)
+        //    + finvT_h_tilde_finv[k](2,2) * shape(i,2)
+        //    + (finvT_h_tilde_finv[k](0,1)+finvT_h_tilde_finv[k](1,0))*shape(i,5)
+        //    + (finvT_h_tilde_finv[k](0,2)+finvT_h_tilde_finv[k](2,0))*shape(i,4)
+        //    + (finvT_h_tilde_finv[k](2,1)+finvT_h_tilde_finv[k](1,2))*shape(i,3));
+        //}
         }
       }
     }
@@ -651,11 +696,13 @@ namespace ngcomp
     {
     case 2:
       additional.Set ("vec",make_shared<T_DifferentialOperator<DiffOpVecIdHDivDiv<2>>> ());
+      additional.Set ("scary_id",make_shared<T_DifferentialOperator<DiffOpIdHDivDiv_testnewtransform<2>>> ());
       additional.Set ("scary_vecid",make_shared<T_DifferentialOperator<DiffOpVecIdHDivDiv_testnewtransform<2>>> ());
       additional.Set ("scary_div",make_shared<T_DifferentialOperator<DiffOpDivHDivDiv_testnewtransform<2>>> ());
       break;
     case 3:
       additional.Set ("vec",make_shared<T_DifferentialOperator<DiffOpVecIdHDivDiv<3>>> ());
+      additional.Set ("scary_id",make_shared<T_DifferentialOperator<DiffOpIdHDivDiv_testnewtransform<3>>> ());
       additional.Set ("scary_vecid",make_shared<T_DifferentialOperator<DiffOpVecIdHDivDiv_testnewtransform<3>>> ());
       additional.Set ("scary_div",make_shared<T_DifferentialOperator<DiffOpDivHDivDiv_testnewtransform<3>>> ());
     default:
