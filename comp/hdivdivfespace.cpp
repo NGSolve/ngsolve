@@ -14,258 +14,7 @@ namespace ngcomp
 {
   
   template<int D>
-  class DiffOpIdHDivDiv : public DiffOp<DiffOpIdHDivDiv<D> >
-  { 
-  public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = D*D };
-    enum { DIFFORDER = 0 };
-    enum { DIM_STRESS = D*(D+1)/2 };
-
-    static Array<int> GetDimensions() { return Array<int> ( { D,D } ); }
-    
-    template <typename FEL, typename SIP, typename MAT>
-    static void GenerateMatrix(const FEL & bfel, const SIP & sip,
-                               MAT & mat, LocalHeap & lh)
-    {
-      const HDivDivFiniteElement<D> & fel =
-        dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
-      
-      int nd = fel.GetNDof();
-      
-      Mat<D> jac = sip.GetJacobian();
-      double det = fabs(sip.GetJacobiDet());
-      
-      FlatMatrix<> shape(nd, D*(D+1)/2, lh);
-      fel.CalcShape(sip.IP(), shape);
-
-      for (int i = 0; i < fel.GetNDof(); i++)
-        {
-          Mat<D> sigma_ref;
-          // 2D case
-          if(D==2)
-          {
-            sigma_ref(0,0) = shape(i,0);
-            sigma_ref(1,1) = shape(i,1);
-            sigma_ref(0,1) = sigma_ref(1,0) = shape(i,2);
-          }
-          else // 3D case
-          {
-            sigma_ref(0,0) = shape(i,0);
-            sigma_ref(1,1) = shape(i,1);
-            sigma_ref(2,2) = shape(i,2);
-            sigma_ref(1,2) = sigma_ref(2,1) = shape(i,3);
-            sigma_ref(0,2) = sigma_ref(2,0) = shape(i,4);
-            sigma_ref(0,1) = sigma_ref(1,0) = shape(i,5);
-          }
-
-          Mat<D> hm = jac * sigma_ref;
-          Mat<D> sigma = hm * Trans(jac);
-          sigma *= (1.0 / sqr(det));
-          
-          for (int j = 0; j < D*D; j++)
-            mat(j, i) = sigma(j);
-        }
-
-
-    }
-  };
-
-
-    template<int D>
-  class DiffOpVecIdHDivDiv : public DiffOp<DiffOpVecIdHDivDiv<D> >
-  { 
-  public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT =  D*(D+1)/2 };
-    enum { DIFFORDER = 0 };
-    enum { DIM_STRESS = D*(D+1)/2 };
-
-    static Array<int> GetDimensions() { return Array<int> ( {  D*(D+1)/2, 1 } ); }
-    
-    template <typename FEL, typename SIP, typename MAT>
-    static void GenerateMatrix(const FEL & bfel, const SIP & sip,
-                               MAT & mat, LocalHeap & lh)
-    {
-      const HDivDivFiniteElement<D> & fel =
-        dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
-      
-      int nd = fel.GetNDof();
-      
-      Mat<D> jac = sip.GetJacobian();
-      double det = fabs(sip.GetJacobiDet());
-      
-      FlatMatrix<> shape(nd, D*(D+1)/2, lh);
-      fel.CalcShape(sip.IP(), shape);
-
-      for (int i = 0; i < fel.GetNDof(); i++)
-        {
-          Mat<D> sigma_ref;
-          // 2D case
-          if(D==2)
-          {
-            sigma_ref(0,0) = shape(i,0);
-            sigma_ref(1,1) = shape(i,1);
-            sigma_ref(0,1) = sigma_ref(1,0) = shape(i,2);
-          }
-          else // 3D case
-          {
-            sigma_ref(0,0) = shape(i,0);
-            sigma_ref(1,1) = shape(i,1);
-            sigma_ref(2,2) = shape(i,2);
-            sigma_ref(1,2) = sigma_ref(2,1) = shape(i,3);
-            sigma_ref(0,2) = sigma_ref(2,0) = shape(i,4);
-            sigma_ref(0,1) = sigma_ref(1,0) = shape(i,5);
-          }
-
-          Mat<D> hm = jac * sigma_ref;
-          Mat<D> sigma = hm * Trans(jac);
-          sigma *= (1.0 / sqr(det));
-          
-          //for (int j = 0; j < D*D; j++)
-          //  mat(j, i) = sigma(j);
-          // 2D case
-          if(D==2)
-          {
-            mat(0,i) = sigma(0,0);
-            mat(1,i) = sigma(1,1);
-            mat(2,i) = sigma(1,0);
-          }
-          else // 3D case
-          {
-            mat(0,i) = sigma(0,0);
-            mat(1,i) = sigma(1,1);
-            mat(2,i) = sigma(2,2);
-            mat(3,i) = sigma(1,2);
-            mat(4,i) = sigma(0,2);
-            mat(5,i) = sigma(0,1);
-          }
-        }
-
-
-    }
-  };
-
-
-
-  template <int D> class DiffOpDivHDivDiv : public DiffOp<DiffOpDivHDivDiv<D> >
-  {
-    
-  public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = D };
-    enum { DIFFORDER = 1 };
-    enum { DIM_STRESS = (D*(D+1))/2 };
-    
-    static string Name() { return "div"; }
-
-    template <typename FEL, typename SIP, typename MAT>
-    static void GenerateMatrix (const FEL & bfel, const SIP & sip,
-                                MAT & mat, LocalHeap & lh)
-    {
-      static int timer = NgProfiler::CreateTimer ("old div");
-      NgProfiler::RegionTimer reg (timer);
-
-      const HDivDivFiniteElement<D> & fel = 
-        dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
-      
-      int nd = fel.GetNDof();
-      
-      FlatMatrix<> div_shape(nd, D, lh);
-      fel.CalcDivShape (sip.IP(), div_shape);
-      
-      Mat<D> jac = sip.GetJacobian();
-      double det = fabs (sip.GetJacobiDet());
-      Mat<D> sjac = (1.0/sqr(det)) * jac;
-      
-      mat = sjac * Trans (div_shape);
-      
-      //for non-curved elements, divergence transformation is finished, otherwise derivatives of Jacobian have to be computed...
-      if (!sip.GetTransformation().IsCurvedElement()) return;
-
-      FlatMatrix<> shape(nd, DIM_STRESS, lh);
-      fel.CalcShape (sip.IP(), shape);
-      
-      Mat<D> inv_jac = sip.GetJacobianInverse();
-
-      Mat<D> hesse[3];
-      sip.CalcHesse (hesse[0], hesse[1], hesse[2]);
-      
-      Mat<D,D,AutoDiff<D> > fad;
-      for (int i = 0; i < D; i++)
-	{
-          for (int j = 0; j < D; j++)
-            {
-              fad(i,j).Value() = jac(i,j);
-              for (int k = 0; k < D; k++)
-                fad(i,j).DValue(k) = hesse[i](j,k);
-            }
-	}
-      
-      AutoDiff<D> ad_det = Det (fad);
-      
-      if (ad_det.Value() < 0.0)
-        {
-            // 	cout << "neg det" << endl;
-          ad_det *= -1;
-        }    
-      
-      AutoDiff<D> iad_det = 1.0 / ad_det;
-      fad *= iad_det;
-      
-      for (int i = 0; i < nd; i++)
-        {
-          Mat<D> sigma_ref;
-          
-          if ( D == 2 )
-            {
-              sigma_ref(0,0) = shape(i, 0);
-              sigma_ref(1,1) = shape(i, 1);
-              sigma_ref(0,1) = sigma_ref(1,0) = shape(i, 2);
-            }
-          else
-            {
-              sigma_ref(0,0) = shape(i, 0);
-              sigma_ref(1,1) = shape(i, 1);
-              sigma_ref(2,2) = shape(i, 2);
-              sigma_ref(0,1) = sigma_ref(1,0) = shape(i, 3);
-              sigma_ref(0,2) = sigma_ref(2,0) = shape(i, 4);
-              sigma_ref(2,1) = sigma_ref(1,2) = shape(i, 5);
-            }
-          
-          Vec<D> hv2;
-          hv2 = 0.0;
-          for (int j = 0; j < D; j++)
-            for (int k = 0; k < D; k++)
-              for (int l = 0; l < D; l++)
-                hv2(k) += fad(k,l).DValue(j) * sigma_ref(l,j);
-          
-          hv2 *= iad_det.Value();
-          
-          // this term is zero, check why
-          //for ( int j = 0; j < D; j++ )
-          //  for ( int k = 0; k < D; k++ )
-          //    for ( int l = 0; l < D; l++ )
-          //      for ( int m = 0; m < D; m++ )
-          //        for ( int n = 0; n < D; n++ )
-          //          hv2(n) += inv_jac(m,k) *fad(n,j).Value() * sigma_ref(j,l) * fad(k,l).DValue(m);
-          
-          for ( int j = 0; j < D; j++)
-            mat(j,i) += hv2(j);
-        }
-      
-    }
-  };
-  
-  // EXPERIMENTAL
-  template<int D>
-  class DiffOpVecIdHDivDiv_testnewtransform: public DiffOp<DiffOpVecIdHDivDiv_testnewtransform<D> >
+  class DiffOpVecIdHDivDiv: public DiffOp<DiffOpVecIdHDivDiv<D> >
   {
   public:
     enum { DIM = 1 };
@@ -292,7 +41,6 @@ namespace ngcomp
     static void GenerateMatrix(const FEL & bfel,const SIP & sip,
       MAT & mat,LocalHeap & lh)
     {
-      //cout << "not so efficient" << endl;
       const HDivDivFiniteElement<D> & fel =
         dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
       int nd = fel.GetNDof();
@@ -306,7 +54,7 @@ namespace ngcomp
   };
 
   template<int D>
-  class DiffOpIdHDivDiv_testnewtransform: public DiffOp<DiffOpIdHDivDiv_testnewtransform<D> >
+  class DiffOpIdHDivDiv: public DiffOp<DiffOpIdHDivDiv<D> >
   {
   public:
     enum { DIM = 1 };
@@ -347,7 +95,7 @@ namespace ngcomp
   };
 
   template<int D>
-  class DiffOpDivHDivDiv_testnewtransform: public DiffOp<DiffOpDivHDivDiv_testnewtransform<D> >
+  class DiffOpDivHDivDiv: public DiffOp<DiffOpDivHDivDiv<D> >
   {
   public:
     enum { DIM = 1 };
@@ -361,8 +109,6 @@ namespace ngcomp
     static void GenerateMatrix(const FEL & bfel,const SIP & sip,
       SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
     {
-      static int timer = NgProfiler::CreateTimer ("new div");
-      NgProfiler::RegionTimer reg (timer);
       const HDivDivFiniteElement<D> & fel =
         dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
 
@@ -395,7 +141,6 @@ namespace ngcomp
       
       if (ad_det.Value() < 0.0)
         {
-          // cout << "neg det" << endl;
           ad_det *= -1;
         }    
       
@@ -421,21 +166,6 @@ namespace ngcomp
           {
             mat(k,i) += sip.GetJacobiDet() * finvT_h_tilde_finv[k](j) * shape(i,j);
           }
-        //if (D == 2)
-        //{
-        //  mat(k,i) += sip.GetJacobiDet() * (finvT_h_tilde_finv[k](0,0) * shape(i,0) 
-        //    + finvT_h_tilde_finv[k](1,1) * shape(i,1) 
-        //    + (finvT_h_tilde_finv[k](0,1)+finvT_h_tilde_finv[k](1,0))*shape(i,2));
-        //}
-        //else if (D == 3)
-        //{
-        //  mat(k,i) += sip.GetJacobiDet() * (finvT_h_tilde_finv[k](0,0) * shape(i,0) 
-        //    + finvT_h_tilde_finv[k](1,1) * shape(i,1)
-        //    + finvT_h_tilde_finv[k](2,2) * shape(i,2)
-        //    + (finvT_h_tilde_finv[k](0,1)+finvT_h_tilde_finv[k](1,0))*shape(i,5)
-        //    + (finvT_h_tilde_finv[k](0,2)+finvT_h_tilde_finv[k](2,0))*shape(i,4)
-        //    + (finvT_h_tilde_finv[k](2,1)+finvT_h_tilde_finv[k](1,2))*shape(i,3));
-        //}
         }
       }
     }
@@ -696,15 +426,10 @@ namespace ngcomp
     {
     case 2:
       additional.Set ("vec",make_shared<T_DifferentialOperator<DiffOpVecIdHDivDiv<2>>> ());
-      additional.Set ("scary_id",make_shared<T_DifferentialOperator<DiffOpIdHDivDiv_testnewtransform<2>>> ());
-      additional.Set ("scary_vecid",make_shared<T_DifferentialOperator<DiffOpVecIdHDivDiv_testnewtransform<2>>> ());
-      additional.Set ("scary_div",make_shared<T_DifferentialOperator<DiffOpDivHDivDiv_testnewtransform<2>>> ());
       break;
     case 3:
       additional.Set ("vec",make_shared<T_DifferentialOperator<DiffOpVecIdHDivDiv<3>>> ());
-      additional.Set ("scary_id",make_shared<T_DifferentialOperator<DiffOpIdHDivDiv_testnewtransform<3>>> ());
-      additional.Set ("scary_vecid",make_shared<T_DifferentialOperator<DiffOpVecIdHDivDiv_testnewtransform<3>>> ());
-      additional.Set ("scary_div",make_shared<T_DifferentialOperator<DiffOpDivHDivDiv_testnewtransform<3>>> ());
+      break;
     default:
       ;
     }
