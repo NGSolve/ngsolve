@@ -46,7 +46,7 @@ namespace ngfem
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
     ///
     virtual int NumRegions () { return INT_MAX; }
-    virtual bool DefinedOn (ElementId id) { return true; }
+    virtual bool DefinedOn (const ElementTransformation & trafo) { return true; }
     ///
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const = 0;
     
