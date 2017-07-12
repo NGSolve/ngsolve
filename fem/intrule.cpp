@@ -180,18 +180,6 @@ namespace ngfem
 
 
   template <int DIMS,int DIMR,typename SCAL>
-  Vec<DIMS, AutoDiffDiff<DIMR,SCAL>> MappedIntegrationPoint<DIMS,DIMR,SCAL> :: LinearizedBarycentricCoordinates() const
-  {
-    Vec<DIMS,AutoDiffDiff<DIMR,SCAL> > adp;
-    Mat<DIMS,DIMR,SCAL> ijac = GetJacobianInverse();
-    for(int i = 0; i < DIMS; i++)
-    {
-      adp(i) = AutoDiffDiff<DIMR,SCAL> (this->IP()(i),&ijac(i,0));
-    }
-    return adp;
-  }
-
-  template <int DIMS,int DIMR,typename SCAL>
     MappedIntegrationPoint<DIMS,DIMR,SCAL> ::
     operator  Vec<DIMS,AutoDiffDiff<DIMR,SCAL>> () const
   {
@@ -207,10 +195,7 @@ namespace ngfem
   //{
   //  Vec<DIMS,AutoDiffDiff<DIMR,double> > adp;
 
-    //cout << "this = " << *this << endl;
-    //cout << "this->IP = " << this->IP() << endl;
     Mat<DIMS,DIMR,SCAL> ijac = GetJacobianInverse();
-    //cout << "ijac = " << ijac << endl;
     Mat<2> hesse2d[3];
     Mat<3> hesse3d[3];
     FlatMatrix<double> hesse[3];
@@ -220,7 +205,6 @@ namespace ngfem
       CalcHesse (hesse2d[0],hesse2d[1]);
       hesse[0].AssignMemory(2,2,&(hesse2d[0](0)));
       hesse[1].AssignMemory(2,2,&(hesse2d[1](0)));
-      //cout << "hesse = " << hesse[0] << endl << hesse[1] << endl;
     }
     else if(DIMR==3 && DIMS==2)
     {
@@ -250,7 +234,6 @@ namespace ngfem
                 hessian_lambdai(m,n) -=  ijac(j,n)*ijac(i,alpha)*hesse[alpha](j,k)*ijac(k,m);
       adp[i] = AutoDiffDiff<DIMR,SCAL> (this->IP()(i),&ijac(i,0),&hessian_lambdai(0,0));
 
-      //cout << "adp = " << adp[i] << endl;
     }
     return adp;
   }

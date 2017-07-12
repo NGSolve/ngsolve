@@ -474,7 +474,16 @@ namespace ngfem
     operator Vec<DIMS, AutoDiffDiff<DIMR,TSCAL>> () const;
 
     // barycentric coordinates on mapped element, with derivatives, but hessian = 0
-    Vec<DIMS, AutoDiffDiff<DIMR,TSCAL>> LinearizedBarycentricCoordinates() const;
+    INLINE Vec<DIMS,AutoDiffDiff<DIMR,TSCAL>> LinearizedBarycentricCoordinates() const
+    {
+      Vec<DIMS,AutoDiffDiff<DIMR,TSCAL> > adp;
+      Mat<DIMS,DIMR,TSCAL> ijac = GetJacobianInverse();
+      for(int i = 0; i < DIMS; i++)
+      {
+        adp(i) = AutoDiffDiff<DIMR,TSCAL> (this->IP()(i),&ijac(i,0));
+      }
+      return adp;
+    }
 
     ///
     INLINE VorB VB() const { return VorB(DIMR-DIMS); }
