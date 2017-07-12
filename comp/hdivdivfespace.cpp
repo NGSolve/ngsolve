@@ -248,12 +248,13 @@ namespace ngcomp
           
           hv2 *= iad_det.Value();
           
-          for ( int j = 0; j < D; j++ )
-            for ( int k = 0; k < D; k++ )
-              for ( int l = 0; l < D; l++ )
-                for ( int m = 0; m < D; m++ )
-                  for ( int n = 0; n < D; n++ )
-                    hv2(n) += inv_jac(m,k) *fad(n,j).Value() * sigma_ref(j,l) * fad(k,l).DValue(m);
+          // this term is zero, check why
+          //for ( int j = 0; j < D; j++ )
+          //  for ( int k = 0; k < D; k++ )
+          //    for ( int l = 0; l < D; l++ )
+          //      for ( int m = 0; m < D; m++ )
+          //        for ( int n = 0; n < D; n++ )
+          //          hv2(n) += inv_jac(m,k) *fad(n,j).Value() * sigma_ref(j,l) * fad(k,l).DValue(m);
           
           for ( int j = 0; j < D; j++)
             mat(j,i) += hv2(j);
@@ -323,12 +324,14 @@ namespace ngcomp
       NgProfiler::RegionTimer reg (timer);
       const HDivDivFiniteElement<D> & fel =
         dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
-      int nd = fel.GetNDof();
-      FlatMatrix<> shape(nd,DIM_STRESS,lh);
-
-      fel.CalcMappedShape(sip,shape);
 
       fel.CalcMappedDivShape (sip,Trans(mat));
+      //for non-curved elements, divergence transformation is finished, otherwise derivatives of Jacobian have to be computed...
+      if (!sip.GetTransformation().IsCurvedElement()) return;
+
+      int nd = fel.GetNDof();
+      FlatMatrix<> shape(nd,DIM_STRESS,lh);
+      fel.CalcMappedShape(sip,shape);
 
       Mat<D> jac = sip.GetJacobian();
       Mat<D> inv_jac = sip.GetJacobianInverse();
