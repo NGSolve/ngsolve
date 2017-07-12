@@ -169,6 +169,9 @@ namespace ngcomp
     static void GenerateMatrix (const FEL & bfel, const SIP & sip,
                                 MAT & mat, LocalHeap & lh)
     {
+      static int timer = NgProfiler::CreateTimer ("old div");
+      NgProfiler::RegionTimer reg (timer);
+
       const HDivDivFiniteElement<D> & fel = 
         dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
       
@@ -313,36 +316,78 @@ namespace ngcomp
     enum { DIM_STRESS = (D*(D+1))/2 };
 
     template <typename FEL,typename SIP>
-    static void GenerateMatrix(const FEL & bfel,const SIP & mip,
+    static void GenerateMatrix(const FEL & bfel,const SIP & sip,
       SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
     {
+      static int timer = NgProfiler::CreateTimer ("new div");
+      NgProfiler::RegionTimer reg (timer);
       const HDivDivFiniteElement<D> & fel =
         dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
       int nd = fel.GetNDof();
       FlatMatrix<> shape(nd,DIM_STRESS,lh);
-      FlatMatrix<> deltashape(nd,DIM_STRESS,lh);
-      Vec<D,AutoDiffDiff<D>> adp = mip;
 
-      fel.CalcMappedShape(mip,shape);
+      fel.CalcMappedShape(sip,shape);
 
-      fel.CalcMappedDivShape (mip,Trans(mat));
+      fel.CalcMappedDivShape (sip,Trans(mat));
 
-      // compute difference quotient d sigma_jk / d (mip(n).DValue(n))
-      for(int i=0; i<nd; i++)
-      {
-        double delta = 1e-8;
-        for(int n=0; n<D; n++)
+      Mat<D> jac = sip.GetJacobian();
+      Mat<D> inv_jac = sip.GetJacobianInverse();
+
+      Mat<D> hesse[3], finvT_h_tilde_finv[3];
+      sip.CalcHesse (hesse[0], hesse[1], hesse[2]);
+      
+      Mat<D,D,AutoDiff<D> > f_tilde;
+      for (int i = 0; i < D; i++)
+	{
+          for (int j = 0; j < D; j++)
+            {
+              f_tilde(i,j).Value() = jac(i,j);
+              for (int k = 0; k < D; k++)
+                f_tilde(i,j).DValue(k) = hesse[i](j,k);
+            }
+	}
+      
+      AutoDiff<D> ad_det = Det (f_tilde);
+      
+      if (ad_det.Value() < 0.0)
         {
-          for(int m=0; m<D; m++)
-          {
-            int k=0;
-            fel.CalcMappedShapeDelta(mip,deltashape,delta,n,m);
-            mat(0,i) += (deltashape(i,0) - shape(i,0))/delta * adp(n).DDValue(m,k);
-            mat(1,i) += (deltashape(i,2) - shape(i,2))/delta * adp(n).DDValue(m,k);
-            k=1;
-            mat(0,i) += (deltashape(i,2) - shape(i,2))/delta * adp(n).DDValue(m,k);
-            mat(1,i) += (deltashape(i,1) - shape(i,1))/delta * adp(n).DDValue(m,k);
-          }
+          // cout << "neg det" << endl;
+          ad_det *= -1;
+        }    
+      
+      AutoDiff<D> iad_det = 1.0 / ad_det;
+      f_tilde *= iad_det;
+
+      
+      for (int i=0; i<D; i++)
+      {
+        finvT_h_tilde_finv[i] = 0;
+        for (int alpha=0; alpha<D; alpha++)
+          for (int beta=0; beta<D; beta++)
+            for (int gamma=0; gamma<D; gamma++)
+              for (int delta=0; delta<D; delta++)
+                finvT_h_tilde_finv[i](alpha,beta) += inv_jac(gamma,alpha)*f_tilde(i,gamma).DValue(delta)*inv_jac(delta,beta);
+      }
+
+      for (int i=0; i<nd; i++)
+      {
+        for (int k=0; k<D; k++)
+        {
+        if (D == 2)
+        {
+          mat(k,i) += sip.GetJacobiDet() * (finvT_h_tilde_finv[k](0,0) * shape(i,0) 
+            + finvT_h_tilde_finv[k](1,1) * shape(i,1) 
+            + (finvT_h_tilde_finv[k](0,1)+finvT_h_tilde_finv[k](1,0))*shape(i,2));
+        }
+        else if (D == 3)
+        {
+          mat(k,i) += sip.GetJacobiDet() * (finvT_h_tilde_finv[k](0,0) * shape(i,0) 
+            + finvT_h_tilde_finv[k](1,1) * shape(i,1)
+            + finvT_h_tilde_finv[k](2,2) * shape(i,2)
+            + (finvT_h_tilde_finv[k](0,1)+finvT_h_tilde_finv[k](1,0))*shape(i,5)
+            + (finvT_h_tilde_finv[k](0,2)+finvT_h_tilde_finv[k](2,0))*shape(i,4)
+            + (finvT_h_tilde_finv[k](2,1)+finvT_h_tilde_finv[k](1,2))*shape(i,3));
+        }
         }
       }
     }
