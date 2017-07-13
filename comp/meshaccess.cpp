@@ -242,20 +242,6 @@ namespace ngcomp
     virtual void CalcJacobian (const IntegrationPoint & ip,
 			       FlatMatrix<> dxdxi) const
     {
-      /*
-      Mat<DIMR,DIMS> tmp, itmp;
-      Ng_ElementTransformation<DIMS,DIMR>::CalcJacobian (ip, tmp);
-      itmp = Inv (tmp);
-
-      Mat<DIMR,DIMR> def, mdef;
-      for (int i = 0; i < DIMR; i++)
-        def.Row(i) = fel->EvaluateGrad (ip, elvecs.Row(i));
-      
-      mdef = def*itmp;
-      mdef += Id<DIMR>();
-      dxdxi = mdef * tmp;
-      */
-
       Mat<DIMR,DIMS> tmp;
       BASE::CalcJacobian (ip, tmp);
 
@@ -326,9 +312,6 @@ namespace ngcomp
       
       BASE::CalcMultiPointJacobian (ir, bmir);
 
-      // LocalHeapMem<100000> lh("tmp");
-      // AFlatVector<double> def(ir.GetNIP(), lh);
-      // AFlatMatrix<double> grad(DIMS, ir.GetNIP(), lh);
       STACK_ARRAY(SIMD<double>, mem0, ir.Size());
       FlatVector<SIMD<double>> def(ir.Size(), &mem0[0]);
       STACK_ARRAY(SIMD<double>, mem1, (DIMS*ir.Size()));
