@@ -91,9 +91,30 @@ namespace ngcomp {
               hofe->SetVertexNumbers(vertex_map[ngel.Vertices()]);
             break;
 	  }
+	case ET_QUAD:
+	  {
+            auto hofe = dynamic_cast<VertexOrientedFE<ET_QUAD>*>(&fe);
+            if(hofe)
+              hofe->SetVertexNumbers(vertex_map[ngel.Vertices()]);
+            break;
+	  }
 	case ET_TET:
 	  {
             auto hofe = dynamic_cast<VertexOrientedFE<ET_TET>*>(&fe);
+            if(hofe)
+              hofe->SetVertexNumbers(vertex_map[ngel.Vertices()]);
+            break;
+	  }
+	case ET_PRISM:
+	  {
+            auto hofe = dynamic_cast<VertexOrientedFE<ET_PRISM>*>(&fe);
+            if(hofe)
+              hofe->SetVertexNumbers(vertex_map[ngel.Vertices()]);
+            break;
+	  }
+	case ET_HEX:
+	  {
+            auto hofe = dynamic_cast<VertexOrientedFE<ET_HEX>*>(&fe);
             if(hofe)
               hofe->SetVertexNumbers(vertex_map[ngel.Vertices()]);
             break;
