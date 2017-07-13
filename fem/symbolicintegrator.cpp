@@ -841,13 +841,13 @@ namespace ngfem
   
   template <typename SCAL, typename SCAL_SHAPES>
   void SymbolicBilinearFormIntegrator ::
-  T_CalcElementMatrix (const FiniteElement & fel,
-                       const ElementTransformation & trafo, 
-                       FlatMatrix<SCAL> elmat,
-                       LocalHeap & lh) const
+  T_CalcElementMatrixAdd (const FiniteElement & fel,
+                          const ElementTransformation & trafo, 
+                          FlatMatrix<SCAL> elmat,
+                          LocalHeap & lh) const
     
   { 
-    static Timer t("symbolicBFI - CalcElementMatrix", 2);
+    // static Timer t("symbolicBFI - CalcElementMatrix", 2);
     // static Timer tstart("symboliBFI - CalcElementMatrix startup", 2);
     // static Timer tstart1("symboliBFI - CalcElementMatrix startup 1", 2);
     // static Timer tmain("symboliBFI - CalcElementMatrix main", 2);
@@ -866,27 +866,26 @@ namespace ngfem
         switch (trafo.SpaceDim())
           {
           case 1:
-            T_CalcElementMatrixEB<1,SCAL, SCAL_SHAPES> (fel, trafo, elmat, lh);
+            T_CalcElementMatrixEBAdd<1,SCAL, SCAL_SHAPES> (fel, trafo, elmat, lh);
             return;
           case 2:
-            T_CalcElementMatrixEB<2,SCAL, SCAL_SHAPES> (fel, trafo, elmat, lh);
+            T_CalcElementMatrixEBAdd<2,SCAL, SCAL_SHAPES> (fel, trafo, elmat, lh);
             return;
           case 3:
-            T_CalcElementMatrixEB<3,SCAL, SCAL_SHAPES> (fel, trafo, elmat, lh);
+            T_CalcElementMatrixEBAdd<3,SCAL, SCAL_SHAPES> (fel, trafo, elmat, lh);
             return;
           default:
             throw Exception ("Illegal space dimension" + ToString(trafo.SpaceDim()));
           }
       }
     
-    RegionTimer reg(t);
+    // RegionTimer reg(t);
 
     const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fel);
     const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : fel;
     const FiniteElement & fel_test = mixedfe ? mixedfe->FETest() : fel;
 
-    elmat = 0;
-
+    //elmat = 0;
     IntegrationRule ir = GetIntegrationRule (fel, lh);
     // IntegrationRule ir = fel_trial.GetIR(intorder);
     BaseMappedIntegrationRule & mir = trafo(ir, lh);
@@ -1066,10 +1065,10 @@ namespace ngfem
 #ifdef SIMD_CALCMATRIX
   template <>
   void SymbolicBilinearFormIntegrator ::
-  T_CalcElementMatrix<double,double> (const FiniteElement & fel,
-                                      const ElementTransformation & trafo, 
-                                      FlatMatrix<> elmat,
-                                      LocalHeap & lh) const
+  T_CalcElementMatrixAdd<double,double> (const FiniteElement & fel,
+                                         const ElementTransformation & trafo, 
+                                         FlatMatrix<> elmat,
+                                         LocalHeap & lh) const
     
   {
     typedef double SCAL;
@@ -1080,13 +1079,13 @@ namespace ngfem
         switch (trafo.SpaceDim())
           {
           case 1:
-            T_CalcElementMatrixEB<1,SCAL, SCAL_SHAPES> (fel, trafo, elmat, lh);
+            T_CalcElementMatrixEBAdd<1,SCAL, SCAL_SHAPES> (fel, trafo, elmat, lh);
             return;
           case 2:
-            T_CalcElementMatrixEB<2,SCAL, SCAL_SHAPES> (fel, trafo, elmat, lh);
+            T_CalcElementMatrixEBAdd<2,SCAL, SCAL_SHAPES> (fel, trafo, elmat, lh);
             return;
           case 3:
-            T_CalcElementMatrixEB<3,SCAL, SCAL_SHAPES> (fel, trafo, elmat, lh);
+            T_CalcElementMatrixEBAdd<3,SCAL, SCAL_SHAPES> (fel, trafo, elmat, lh);
             return;
           default:
             throw Exception ("Illegal space dimension" + ToString(trafo.SpaceDim()));
@@ -1099,7 +1098,7 @@ namespace ngfem
     const FiniteElement & fel_test = is_mixedfe ? mixedfe->FETest() : fel;
 
     
-    elmat = 0;
+    // elmat = 0;
     if (simd_evaluate)
       try
         {
@@ -1263,7 +1262,7 @@ namespace ngfem
           cout << IM(4) << e.What() << endl
                << "switching to scalar evaluation" << endl;
           simd_evaluate = false;
-          T_CalcElementMatrix (fel, trafo, elmat, lh);
+          T_CalcElementMatrixAdd (fel, trafo, elmat, lh);
           return;
         }
     
@@ -1451,7 +1450,8 @@ namespace ngfem
                      FlatMatrix<double> elmat,
                      LocalHeap & lh) const
   {
-    T_CalcElementMatrix<double> (fel, trafo, elmat, lh);
+    elmat = 0.0;
+    T_CalcElementMatrixAdd<double,double> (fel, trafo, elmat, lh);
   }
   
   void 
@@ -1461,10 +1461,34 @@ namespace ngfem
                      FlatMatrix<Complex> elmat,
                      LocalHeap & lh) const
   {
+    elmat = 0.0;
     if (fel.ComplexShapes() || trafo.IsComplex())
-      T_CalcElementMatrix<Complex,Complex> (fel, trafo, elmat, lh);
+      T_CalcElementMatrixAdd<Complex,Complex> (fel, trafo, elmat, lh);
     else
-      T_CalcElementMatrix<Complex,double> (fel, trafo, elmat, lh);
+      T_CalcElementMatrixAdd<Complex,double> (fel, trafo, elmat, lh);
+  }
+
+  void 
+  SymbolicBilinearFormIntegrator ::
+  CalcElementMatrixAdd (const FiniteElement & fel,
+                        const ElementTransformation & trafo, 
+                        FlatMatrix<double> elmat,
+                        LocalHeap & lh) const
+  {
+    T_CalcElementMatrixAdd<double,double> (fel, trafo, elmat, lh);
+  }
+  
+  void 
+  SymbolicBilinearFormIntegrator ::
+  CalcElementMatrixAdd (const FiniteElement & fel,
+                        const ElementTransformation & trafo, 
+                        FlatMatrix<Complex> elmat,
+                        LocalHeap & lh) const
+  {
+    if (fel.ComplexShapes() || trafo.IsComplex())
+      T_CalcElementMatrixAdd<Complex,Complex> (fel, trafo, elmat, lh);
+    else
+      T_CalcElementMatrixAdd<Complex,double> (fel, trafo, elmat, lh);
   }
 
 
@@ -1472,10 +1496,10 @@ namespace ngfem
 
   template <int D, typename SCAL, typename SCAL_SHAPES>
   void SymbolicBilinearFormIntegrator ::
-  T_CalcElementMatrixEB (const FiniteElement & fel,
-                           const ElementTransformation & trafo, 
-                           FlatMatrix<SCAL> elmat,
-                           LocalHeap & lh) const
+  T_CalcElementMatrixEBAdd (const FiniteElement & fel,
+                            const ElementTransformation & trafo, 
+                            FlatMatrix<SCAL> elmat,
+                            LocalHeap & lh) const
       
     {
       static Timer t("symbolicBFI - CalcElementMatrix EB", 2);
@@ -1488,7 +1512,7 @@ namespace ngfem
       */
       // RegionTimer reg(t);
 
-      elmat = 0;
+      // elmat = 0;
 
       const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fel);
       const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : fel;

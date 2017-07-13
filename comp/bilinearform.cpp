@@ -913,42 +913,61 @@ namespace ngcomp
                              if (!bfi.DefinedOnElement (el.Nr())) continue;                        
 
                              elem_has_integrator = true;
-                             FlatMatrix<SCAL> elmat(elmat_size, lh);
-                             
-                             try
-                               {
-                                 bfi.CalcElementMatrix (fel, eltrans, elmat, lh);
-                                 
-                                 if (printelmat)
-                                   {
-                                     lock_guard<mutex> guard(printelmat_mutex);
-                                     testout->precision(8);
-                                     *testout << "elnum = " << el << endl;
-                                     *testout << "eltype = " << fel.ElementType() << endl;
-                                     *testout << "integrator = " << bfi.Name() << endl;
-                                     *testout << "dnums = " << endl << dnums << endl;
-                                     *testout << "ct = ";
-                                     for (auto d : dnums)
-                                       if (d == -1) *testout << "0 ";
-                                       else *testout << fespace->GetDofCouplingType (d) << " ";
-                                     *testout << endl;
-                                     *testout << "element-index = " << eltrans.GetElementIndex() << endl;
-                                     *testout << "elmat = " << endl << elmat << endl;
-                                   }
-				 
-                                 if (elmat_ev)
-                                   LapackEigenSystem(elmat, lh);
-                               }
-                             catch (exception & e)
-                               {
-                                 throw (Exception (string(e.what()) +
-                                                   string("in Assemble Element Matrix, bfi = ") + 
-                                                   bfi.Name() + string("\n")));
-                               }
-                             
-                             sum_elmat += elmat;
-                           }
 
+                             if (printelmat || elmat_ev)
+                               {
+                                 HeapReset hr(lh);
+                                 FlatMatrix<SCAL> elmat(elmat_size, lh);
+                                 
+                                 try
+                                   {
+                                     bfi.CalcElementMatrix (fel, eltrans, elmat, lh);
+                                     
+                                     if (printelmat)
+                                       {
+                                         lock_guard<mutex> guard(printelmat_mutex);
+                                         testout->precision(8);
+                                         *testout << "elnum = " << el << endl;
+                                         *testout << "eltype = " << fel.ElementType() << endl;
+                                         *testout << "integrator = " << bfi.Name() << endl;
+                                         *testout << "dnums = " << endl << dnums << endl;
+                                         *testout << "ct = ";
+                                         for (auto d : dnums)
+                                           if (d == -1) *testout << "0 ";
+                                           else *testout << fespace->GetDofCouplingType (d) << " ";
+                                         *testout << endl;
+                                         *testout << "element-index = " << eltrans.GetElementIndex() << endl;
+                                         *testout << "elmat = " << endl << elmat << endl;
+                                       }
+                                     
+                                     if (elmat_ev)
+                                       LapackEigenSystem(elmat, lh);
+                                   }
+                                 catch (exception & e)
+                                   {
+                                     throw (Exception (string(e.what()) +
+                                                       string("in Assemble Element Matrix, bfi = ") + 
+                                                       bfi.Name() + string("\n")));
+                                   }
+                                 
+                                 sum_elmat += elmat;
+                               }
+                             else
+                               {
+                                 try
+                                   {
+                                     bfi.CalcElementMatrixAdd (fel, eltrans, sum_elmat, lh);
+                                   }
+                                 catch (exception & e)
+                                   {
+                                     throw (Exception (string(e.what()) +
+                                                       string("in Assemble Element Matrix, bfi = ") + 
+                                                       bfi.Name() + string("\n")));
+                                   }
+                               }
+                           }
+                         
+                         
                          if (!elem_has_integrator) return;
                          
                          fespace->TransformMat (el, sum_elmat, TRANSFORM_MAT_LEFT_RIGHT);
