@@ -19,6 +19,14 @@ namespace ngfem
     using FiniteElement::ndof;
     using FiniteElement::order;
 
+    // old style, still needed for prisms
+    virtual void CalcShape (const IntegrationPoint & ip, 
+                            BareSliceMatrix<double> shape) const = 0;
+
+    virtual void CalcDivShape (const IntegrationPoint & ip, 
+                               BareSliceMatrix<double> divshape) const = 0;
+
+    // new implementation, used for trigs
     virtual void CalcMappedShape_Matrix (const MappedIntegrationPoint<DIM,DIM> & mip,
       BareSliceMatrix<double> shape) const = 0;
 
@@ -81,6 +89,39 @@ namespace ngfem
       cout << "Error, T_HDivDivFE<ET>:: ComputeNDof not available, only for ET == TRIG" << endl;
     }
 
+    // old style, still needed for prisms
+    virtual void CalcShape (const IntegrationPoint & ip, 
+                            BareSliceMatrix<double> shape) const
+    {
+      Vec<DIM, AutoDiffDiff<DIM>> adp;
+      for ( int i=0; i<DIM; i++)
+      {
+        adp(i) = AutoDiffDiff<DIM>(ip(i),i);
+      }
+
+      Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM>> (adp), SBLambda([&] (int nr, auto val)
+                                          {
+                                            shape.Row(nr).AddSize(DIM_STRESS) = val.Shape();
+                                          }));
+    }
+
+    virtual void CalcDivShape (const IntegrationPoint & ip,
+                               BareSliceMatrix<double> shape) const
+    {
+      //AutoDiffDiff<DIM> hx[DIM];
+      Vec<DIM, AutoDiffDiff<DIM>> adp;
+      for ( int i=0; i<DIM; i++)
+      {
+        adp[i] = AutoDiffDiff<DIM>(ip(i),i);
+      }
+      
+      Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM>> (adp), SBLambda([&] (int nr, auto val)
+                                          {
+                                            shape.Row(nr).AddSize(DIM) = val.DivShape();
+                                          }));
+    }
+
+    // new style, used for trigs
     virtual void CalcMappedShape_Vector (const MappedIntegrationPoint<DIM,DIM> & mip,
                             BareSliceMatrix<double> shape) const
     {
