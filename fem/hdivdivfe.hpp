@@ -37,8 +37,28 @@ namespace ngfem
       BareSliceMatrix<double> shape) const = 0;
 
   };
-  
 
+  template <int D,typename VEC,typename MAT>
+  void VecToSymMat(const VEC & vec,MAT & mat)
+  {
+    switch(D)
+    {
+    case 2:
+      mat(0) = vec(0);
+      mat(3) = vec(1);
+      mat(1) = mat(2) = vec(2);
+      break;
+    case 3:
+      mat(0) = vec(0);
+      mat(4) = vec(1);
+      mat(8) = vec(2);
+      mat(1) = mat(3) = vec(5);
+      mat(2) = mat(6) = vec(4);
+      mat(5) = mat(7) = vec(3);
+      break;
+    }
+
+  }
 
   template <ELEMENT_TYPE ET> class HDivDivFE;
 
@@ -132,27 +152,7 @@ namespace ngfem
                                           }));
     }
 
-    template <int D, typename VEC, typename MAT>
-    void VecToSymMat(const VEC & vec, MAT & mat)
-    {
-      switch(D)
-      {
-      case 2:
-        mat(0) = vec(0);
-        mat(3) = vec(1);
-        mat(1) = mat(2) = vec(2);
-        break;
-      case 3:
-        mat(0) = vec(0);
-        mat(4) = vec(1);
-        mat(8) = vec(2);
-        mat(1) = mat(3) = vec(5);
-        mat(2) = mat(6) = vec(4);
-        mat(5) = mat(7) = vec(3);
-        break;
-      }
 
-    }
     virtual void CalcMappedShape_Matrix (const MappedIntegrationPoint<DIM,DIM> & mip,
                             BareSliceMatrix<double> shape) const
     {
