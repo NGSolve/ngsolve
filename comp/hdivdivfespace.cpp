@@ -35,8 +35,6 @@ namespace ngcomp
       fel.CalcMappedShape_Vector (mip,Trans(mat));
     }
 
-    // when implemented as above, writing directly into mat,
-    // does not work for MAT = FlatMatrixFixWidth ??
     template <typename FEL,typename SIP,typename MAT>
     static void GenerateMatrix(const FEL & bfel,const SIP & sip,
       MAT & mat,LocalHeap & lh)
@@ -75,13 +73,10 @@ namespace ngcomp
       fel.CalcMappedShape_Matrix (mip,Trans(mat));
     }
 
-    // when implemented as above, writing directly into mat,
-    // does not work for MAT = FlatMatrixFixWidth ??
     template <typename FEL,typename SIP,typename MAT>
     static void GenerateMatrix(const FEL & bfel,const SIP & sip,
       MAT & mat,LocalHeap & lh)
     {
-      //cout << "not so efficient" << endl;
       const HDivDivFiniteElement<D> & fel =
         dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
       int nd = fel.GetNDof();
@@ -113,9 +108,6 @@ namespace ngcomp
         dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
 
       fel.CalcMappedDivShape (sip, Trans(mat));
-      //for non-curved elements, divergence transformation is finished, otherwise derivatives of Jacobian have to be computed...
-      if (!sip.GetTransformation().IsCurvedElement()) return;
-      AddNonlinearTerms(fel, sip, mat, lh);
     }
 
     template <typename FEL,typename SIP,typename MAT>
@@ -133,69 +125,8 @@ namespace ngcomp
         for (int j=0; j<D; j++)
           mat(j,i) = divshape(i,j);
 
-      //for non-curved elements, divergence transformation is finished, otherwise derivatives of Jacobian have to be computed...
-      if (!sip.GetTransformation().IsCurvedElement()) return;
-      AddNonlinearTerms(fel, sip, mat, lh);
     }
 
-    template <typename SIP, typename MAT>
-    static void AddNonlinearTerms(const HDivDivFiniteElement<D> & fel, const SIP & sip,
-      MAT & mat, LocalHeap& lh)
-    {
-      HeapReset hr(lh);
-      int nd = fel.GetNDof();
-      FlatMatrix<> shape(nd,D*D,lh);
-      fel.CalcMappedShape_Matrix(sip,shape);
-
-      Mat<D> jac = sip.GetJacobian();
-      Mat<D> inv_jac = sip.GetJacobianInverse();
-
-      Mat<D> hesse[3], finvT_h_tilde_finv[3];
-      sip.CalcHesse (hesse[0], hesse[1], hesse[2]);
-      
-      Mat<D,D,AutoDiff<D> > f_tilde;
-      for (int i = 0; i < D; i++)
-	{
-          for (int j = 0; j < D; j++)
-            {
-              f_tilde(i,j).Value() = jac(i,j);
-              for (int k = 0; k < D; k++)
-                f_tilde(i,j).DValue(k) = hesse[i](j,k);
-            }
-	}
-      
-      AutoDiff<D> ad_det = Det (f_tilde);
-      
-      if (ad_det.Value() < 0.0)
-        {
-          ad_det *= -1;
-        }    
-      
-      AutoDiff<D> iad_det = 1.0 / ad_det;
-      f_tilde *= iad_det;
-
-      
-      for (int i=0; i<D; i++)
-      {
-        finvT_h_tilde_finv[i] = 0;
-        for (int alpha=0; alpha<D; alpha++)
-          for (int beta=0; beta<D; beta++)
-            for (int gamma=0; gamma<D; gamma++)
-              for (int delta=0; delta<D; delta++)
-                finvT_h_tilde_finv[i](alpha,beta) += inv_jac(gamma,alpha)*f_tilde(i,gamma).DValue(delta)*inv_jac(delta,beta);
-      }
-
-      for (int i=0; i<nd; i++)
-      {
-        for (int k=0; k<D; k++)
-        {
-          for (int j=0; j<D*D; j++)
-          {
-            mat(k,i) += sip.GetJacobiDet() * finvT_h_tilde_finv[k](j) * shape(i,j);
-          }
-        }
-      }
-    }
   };
 
 
