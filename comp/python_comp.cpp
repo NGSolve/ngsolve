@@ -2929,7 +2929,7 @@ flags : dict
 
              if (ir.Size())
                {
-                 cout << "ir = " << ir << endl;
+                 cout << IM(5) << "ir = " << ir << endl;
                  dynamic_pointer_cast<SymbolicBilinearFormIntegrator> (bfi)
                    ->SetIntegrationRule(ir);
                }

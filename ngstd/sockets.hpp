@@ -7,14 +7,12 @@
 
 
 #include <ngstd.hpp>
-using namespace ngstd;
 
 
 #include <iostream>
 #include <typeinfo>
 #include <sys/types.h>
 
-using namespace std;
 
 
 #ifdef WIN32

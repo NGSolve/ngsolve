@@ -116,7 +116,7 @@ namespace ngbla
     /// copy vector. sizes must match
     INLINE const FlatVector & operator= (const FlatVector & v) const
     {
-      for (auto i : ::Range(size))
+      for (auto i : ngstd::Range(size))
 	data[i] = v(i);
       return *this;
     }
@@ -352,7 +352,7 @@ namespace ngbla
     ALWAYS_INLINE const FlatVector & operator+= (const Expr<TB> & v) const
     {
       if (TB::IS_LINEAR)
-        for (auto i : ::Range(size))
+        for (auto i : ngstd::Range(size))
           (*this)(i) += v.Spec()(i);
       else
 	for (size_t i = 0; i < size; i++)

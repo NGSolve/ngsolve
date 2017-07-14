@@ -3581,6 +3581,12 @@ public:
   }
   */
   
+  virtual bool DefinedOn (const ElementTransformation & trafo)
+  {
+    int matindex = trafo.GetElementIndex();
+    return (matindex < ci.Size() && ci[matindex]);
+  }
+
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
     code.body += "// DomainWiseCoefficientFunction: not implemented\n;";
