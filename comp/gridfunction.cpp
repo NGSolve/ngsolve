@@ -1112,9 +1112,9 @@ namespace ngcomp
 
 
     
-  bool GridFunctionCoefficientFunction :: DefinedOn (ElementId id)
+  bool GridFunctionCoefficientFunction :: DefinedOn (const ElementTransformation & trafo)
   {
-    return fes->DefinedOn(id);
+    return fes->DefinedOn(trafo.VB(), trafo.GetElementIndex());
   }
     
 
@@ -2765,8 +2765,8 @@ namespace ngcomp
     LocalHeapMem<100000> lh("viscf::GetValue xref");
     IntegrationPoint ip(xref[0],xref[1],xref[2]);
     ElementId ei(VOL, elnr);
-    if (!cf->DefinedOn(ei)) return false;
     ElementTransformation & trafo = ma->GetTrafo (ei, lh);
+    if (!cf->DefinedOn(trafo)) return false;
     BaseMappedIntegrationPoint & mip = trafo(ip, lh);
     if (!cf -> IsComplex())
       cf -> Evaluate (mip, FlatVector<>(GetComponents(), values));
@@ -2815,8 +2815,8 @@ namespace ngcomp
           ir[j] = IntegrationPoint(xref[j*sxref], xref[j*sxref+1], xref[j*sxref+2]);
         
         ElementId ei(VOL, elnr);
-        if (!cf->DefinedOn(ei)) return false;        
         ElementTransformation & trafo = ma->GetTrafo (ei, lh);
+        if (!cf->DefinedOn(trafo)) return false;        
         BaseMappedIntegrationRule & mir = trafo(ir, lh);
         
         if (!cf -> IsComplex())
@@ -2849,8 +2849,8 @@ namespace ngcomp
     ip.FacetNr() = facetnr;
     VorB vb = ma->GetDimension() == 3 ? BND : VOL;
     ElementId ei(vb, elnr);
-    if (!cf->DefinedOn(ei)) return false;    
     ElementTransformation & trafo = ma->GetTrafo (ei, lh);
+    if (!cf->DefinedOn(trafo)) return false;    
     BaseMappedIntegrationPoint & mip = trafo(ip, lh);
 
     if (!cf -> IsComplex())
@@ -2899,10 +2899,10 @@ namespace ngcomp
         
         bool bound = (ma->GetDimension() == 3);
         ElementId ei(bound ? BND : VOL, selnr);
-        if (!cf->DefinedOn(ei)) return false;
         
         LocalHeapMem<1000000> lh("viscf::getmultisurfvalue");
         ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
+        if (!cf->DefinedOn(eltrans)) return false;
 
         FlatMatrix<SIMD<double>> mvalues(GetComponents(), npts, (SIMD<double>*)values);
 
@@ -3001,10 +3001,10 @@ namespace ngcomp
     
     VorB vb = (ma->GetDimension() == 3) ? BND : VOL;
     ElementId ei(vb, selnr);
-    if (!cf->DefinedOn(ei)) return false;
     
     LocalHeapMem<100000> lh("viscf::getmultisurfvalue");
     ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
+    if (!cf->DefinedOn(eltrans)) return false;
 
     FlatMatrix<> mvalues1(npts, GetComponents(), lh);
 

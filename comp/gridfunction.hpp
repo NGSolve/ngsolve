@@ -43,7 +43,7 @@ namespace ngcomp
     virtual bool IsComplex() const;
     virtual int Dimension() const;
     virtual Array<int> Dimensions() const;
-    virtual bool DefinedOn (ElementId id);
+    virtual bool DefinedOn (const ElementTransformation & trafo);
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const;
     virtual Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const;

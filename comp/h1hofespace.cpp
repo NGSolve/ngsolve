@@ -636,8 +636,8 @@ namespace ngcomp
   Timer tgetfe("H1FESpace::GetFE");
   FiniteElement & H1HighOrderFESpace :: GetFE (ElementId ei, Allocator & alloc) const
   {
-    size_t tid = TaskManager::GetThreadId();
-    ThreadRegionTimer reg(tgetfe, tid);
+    // size_t tid = TaskManager::GetThreadId();
+    // ThreadRegionTimer reg(tgetfe, tid);
     
     Ngs_Element ngel = ma->GetElement(ei);
     ELEMENT_TYPE eltype = ngel.GetType();
@@ -1591,13 +1591,13 @@ namespace ngcomp
 
 
 
-  template <int DIM_SPC>
+  template <int DIM_SPC, VorB VB = VOL>
   class DiffOpIdVectorH1 : public DiffOp<DiffOpIdVectorH1<DIM_SPC> >
   {
   public:
     enum { DIM = 1 };
     enum { DIM_SPACE = DIM_SPC };
-    enum { DIM_ELEMENT = DIM_SPC };
+    enum { DIM_ELEMENT = DIM_SPC-VB };
     enum { DIM_DMAT = DIM_SPC };
     enum { DIFFORDER = 0 };
 
@@ -1934,10 +1934,21 @@ namespace ngcomp
       for (int i = 0; i <  ma->GetDimension(); i++)
         AddSpace (make_shared<H1HighOrderFESpace> (ama, flags));
 
-      evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdVectorH1<2>>>();
-      flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradVectorH1<2>>>();
-      auto one = make_shared<ConstantCoefficientFunction>(1);      
-      integrator[VOL] = make_shared<VectorH1MassIntegrator<2>>(one);
+      switch (ma->GetDimension())
+        {
+        case 2:
+          evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdVectorH1<2>>>();
+          flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradVectorH1<2>>>();
+          evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdVectorH1<2,BND>>>();
+          break;
+        case 3:
+          evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdVectorH1<3>>>();
+          flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradVectorH1<3>>>();
+          evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdVectorH1<3,BND>>>();
+          break;
+          // auto one = make_shared<ConstantCoefficientFunction>(1);
+          // integrator[VOL] = make_shared<VectorH1MassIntegrator<2>>(one);
+        }
     }
 
     virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const
@@ -1956,7 +1967,7 @@ namespace ngcomp
 
     
   
-  static RegisterFESpace<H1HighOrderFESpace> init ("h1ho");
+    static RegisterFESpace<H1HighOrderFESpace> init ("h1ho");
   static RegisterFESpace<VectorH1FESpace> initvec ("VectorH1");
 }
  
