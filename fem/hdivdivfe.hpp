@@ -132,6 +132,27 @@ namespace ngfem
                                           }));
     }
 
+    template <int D, typename VEC, typename MAT>
+    void VecToSymMat(const VEC & vec, MAT & mat)
+    {
+      switch(D)
+      {
+      case 2:
+        mat(0) = vec(0);
+        mat(3) = vec(1);
+        mat(1) = mat(2) = vec(2);
+        break;
+      case 3:
+        mat(0) = vec(0);
+        mat(4) = vec(1);
+        mat(8) = vec(2);
+        mat(1) = mat(3) = vec(5);
+        mat(2) = mat(6) = vec(4);
+        mat(5) = mat(7) = vec(3);
+        break;
+      }
+
+    }
     virtual void CalcMappedShape_Matrix (const MappedIntegrationPoint<DIM,DIM> & mip,
                             BareSliceMatrix<double> shape) const
     {
@@ -139,24 +160,8 @@ namespace ngfem
       Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM>> (adp),SBLambda([&](int nr,auto val)
       {
         Vec<DIM_STRESS> vecshape = val.Shape();
-        Vec<DIM*DIM> matshape;
-        switch (DIM)
-        {
-        case 2:
-          matshape(0) = vecshape(0);
-          matshape(3) = vecshape(1);
-          matshape(1) = matshape(2) = vecshape(2);
-          break;
-        case 3:
-          matshape(0) = vecshape(0);
-          matshape(4) = vecshape(1);
-          matshape(8) = vecshape(2);
-          matshape(1) = matshape(3) = vecshape(5);
-          matshape(2) = matshape(6) = vecshape(4);
-          matshape(5) = matshape(7) = vecshape(3);
-          break;
-        }
-        shape.Row(nr).AddSize(DIM*DIM) = matshape;
+        BareVector<double> matshape = shape.Row(nr);
+        VecToSymMat<DIM> (vecshape, matshape);
       }));
     }
 
@@ -166,10 +171,70 @@ namespace ngfem
     {
       Vec<DIM, AutoDiffDiff<DIM>> adp = mip.LinearizedBarycentricCoordinates();
 
-      Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM>> (adp), SBLambda([&] (int nr, auto val)
-                                          {
-                                            shape.Row(nr).AddSize(DIM) = val.DivShape();
-                                          }));
+      if(!mip.GetTransformation().IsCurvedElement()) // non-curved element
+      {
+        Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM>> (adp),SBLambda([&](int nr,auto val)
+        {
+          shape.Row(nr).AddSize(DIM) = val.DivShape();
+        }));
+      }
+      else // curved element
+      {
+
+        Mat<DIM> jac = mip.GetJacobian();
+        Mat<DIM> inv_jac = mip.GetJacobianInverse();
+        Mat<DIM> hesse[3],finvT_h_tilde_finv[3];
+        mip.CalcHesse (hesse[0],hesse[1],hesse[2]);
+
+        Mat<DIM,DIM,AutoDiff<DIM> > f_tilde;
+        for(int i = 0; i < DIM; i++)
+        {
+          for(int j = 0; j < DIM; j++)
+          {
+            f_tilde(i,j).Value() = jac(i,j);
+            for(int k = 0; k < DIM; k++)
+              f_tilde(i,j).DValue(k) = hesse[i](j,k);
+          }
+        }
+
+        AutoDiff<DIM> ad_det = Det (f_tilde);
+
+        if(ad_det.Value() < 0.0)
+        {
+          ad_det *= -1;
+        }
+
+        AutoDiff<DIM> iad_det = 1.0 / ad_det;
+        f_tilde *= iad_det;
+
+        for(int i=0; i<DIM; i++)
+        {
+          finvT_h_tilde_finv[i] = 0;
+          for(int alpha=0; alpha<DIM; alpha++)
+            for(int beta=0; beta<DIM; beta++)
+              for(int gamma=0; gamma<DIM; gamma++)
+                for(int delta=0; delta<DIM; delta++)
+                  finvT_h_tilde_finv[i](alpha,beta) += inv_jac(gamma,alpha)*f_tilde(i,gamma).DValue(delta)*inv_jac(delta,beta);
+        }
+
+        Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM>> (adp),SBLambda([&](int nr,auto val)
+                                  {
+                                    shape.Row(nr).AddSize(DIM) = val.DivShape();
+                                    BareVector<double> divshape = shape.Row(nr);
+                                    Vec<DIM_STRESS> vecshape = val.Shape();
+                                    Vec<DIM*DIM> matshape;
+                                    VecToSymMat<DIM> (vecshape, matshape);
+
+                                    for(int k=0; k<DIM; k++)
+                                    {
+                                      for(int j=0; j<DIM*DIM; j++)
+                                      {
+                                        divshape(k) += mip.GetJacobiDet() * finvT_h_tilde_finv[k](j) * matshape(j);
+                                      }
+                                    }
+                                    
+                                  }));
+      }
     }
 
   };
