@@ -1147,6 +1147,9 @@ public:
     func(*this);
   }
 
+  virtual bool DefinedOn (const ElementTransformation & trafo)
+  { return c1->DefinedOn(trafo) && c2->DefinedOn(trafo); }
+
   virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
   { return Array<CoefficientFunction*>({ c1.get(), c2.get() }); }
 
