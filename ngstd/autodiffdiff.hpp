@@ -368,7 +368,12 @@ inline AutoDiffDiff<D, SCAL> Inv (const AutoDiffDiff<D, SCAL> & x)
   AutoDiffDiff<D, SCAL> res(1.0 / x.Value());
   for (int i = 0; i < D; i++)
     res.DValue(i) = -x.DValue(i) / (x.Value() * x.Value());
-  cout << "ADD::Inv not implemented" << endl;
+
+  SCAL fac1 = 2/(x.Value()*x.Value()*x.Value());
+  SCAL fac2 = 1/sqr(x.Value());
+  for (int i = 0; i < D; i++)
+    for (int j = 0; j < D; j++)
+      res.DDValue(i,j) = fac1*x.DValue(i)*x.DValue(j) - fac2*x.DDValue(i,j);
   return res;
 }
 
