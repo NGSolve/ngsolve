@@ -1643,6 +1643,12 @@ namespace ngcomp
 
   void HCurlHighOrderFESpace :: GetFaceDofNrs (int fanr, Array<int> & dnums) const
   {
+    if (order_policy == VARIABLE_ORDER)
+      {
+        dnums = GetFaceDofs(fanr);
+        return;
+      }
+   
     if (discontinuous) 
       {
         dnums.SetSize(0);
