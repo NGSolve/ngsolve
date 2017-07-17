@@ -1791,16 +1791,26 @@ used_idnrs : list of int = None
     .def("Update", [](GF& self) { self.Update(); },
          "update vector size to finite element space dimension after mesh refinement")
     
-    .def("Save", [](GF& self, string filename)
+    .def("Save", [](GF& self, string filename, bool parallel)
          {
            ofstream out(filename, ios::binary);
-           self.Save(out);
-         })
-    .def("Load", [](GF& self, string filename)
+           if (parallel)
+             self.Save(out);
+           else
+             for (auto d : self.GetVector().FVDouble())
+               SaveBin(out, d);
+         },
+         py::arg("filename"), py::arg("parallel")=false)
+    .def("Load", [](GF& self, string filename, bool parallel)
          {
            ifstream in(filename, ios::binary);
-           self.Load(in);
-         })
+           if (parallel)
+             self.Load(in);
+           else
+             for (auto & d : self.GetVector().FVDouble())
+               LoadBin(in, d);
+         },
+         py::arg("filename"), py::arg("parallel")=false)         
          
     .def("Set", 
          [](shared_ptr<GF> self, spCF cf,
