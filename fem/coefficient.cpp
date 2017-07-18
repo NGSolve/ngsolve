@@ -904,6 +904,9 @@ public:
   virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
   { return Array<CoefficientFunction*>({ c1.get() }); }
 
+  virtual bool DefinedOn (const ElementTransformation & trafo)
+  { return c1->DefinedOn(trafo); }
+    
   using BASE::Evaluate;
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
   {

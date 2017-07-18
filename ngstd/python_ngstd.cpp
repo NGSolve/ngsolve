@@ -265,6 +265,12 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
                                    self.And(other); 
                                    return self;
                                  })
+    .def("__invert__", [] (BitArray & self)
+         {
+           BitArray hba = self;
+           hba.Invert();
+           return hba;
+         })
     ;
 
   
