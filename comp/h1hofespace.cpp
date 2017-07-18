@@ -725,15 +725,12 @@ namespace ngcomp
                {
                  Ngs_Element ngel = ma->GetElement<et.DIM,BND> (ei.Nr());
 
-                 // auto hofe =  new (alloc) H1HighOrderFE<et> ();
+                 // MSVC15 gets confused:
+                 // auto hofe =  new (alloc) H1HighOrderFE<et.ElementType()> ();
+                 
                  constexpr ELEMENT_TYPE ET = et.ElementType();
                  auto hofe =  new (alloc) H1HighOrderFE<ET> ();
-                 /*
-                 auto hofe =  new (alloc)
-                   H1HighOrderFE<et.ElementType(),
-                                 H1HighOrderFE_Shape<et.ElementType()>,
-                                 T_ScalarFiniteElement< H1HighOrderFE_Shape<et.ElementType()>,et.ElementType()> >();
-                 */
+
                  hofe -> SetVertexNumbers (ngel.vertices);
 
                  if (et.DIM >= 1)
