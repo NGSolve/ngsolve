@@ -644,10 +644,16 @@ namespace ngcomp
 
     if (!DefinedOn (ei))
       {
-        return 
+        return
+          /*
           * SwitchET (eltype, [&] (auto et) -> FiniteElement*
                       {
                         return new (alloc) ScalarDummyFE<et.ElementType()> ();
+                      });
+          */
+          SwitchET (eltype, [&] (auto et) -> FiniteElement&
+                      {
+                        return *new (alloc) ScalarDummyFE<et.ElementType()> ();
                       });
       }
     
@@ -700,6 +706,7 @@ namespace ngcomp
         else
 	  if (ei.IsBoundary())
           {
+            /*
             switch (eltype)
               {
               case ET_POINT:   return T_GetSFE<ET_POINT> (elnr, alloc);
@@ -711,6 +718,27 @@ namespace ngcomp
               default:
                 throw Exception ("illegal element in H1HoFeSpace::GetSFE");
               }
+            */
+            return SwitchET<ET_POINT,ET_SEGM,ET_TRIG,ET_QUAD> 
+              (eltype,
+               [&] (auto et) -> FiniteElement&
+               {
+                 Ngs_Element ngel = ma->GetElement<et.DIM,BND> (ei.Nr());
+
+                 // auto hofe =  new (alloc) H1HighOrderFE<et> ();
+                 auto hofe =  new (alloc) H1HighOrderFE<et.ElementType()> ();
+    
+                 hofe -> SetVertexNumbers (ngel.vertices);
+
+                 if (et.DIM >= 1)
+                   hofe -> SetOrderEdge (order_edge[ngel.Edges()]);
+
+                 if (et.DIM >= 2)
+                   hofe -> SetOrderFace (0, order_face[ma->GetSElFace(ei.Nr())]);
+                 
+                 hofe -> ComputeNDof();
+                 return *hofe;
+               });
           }
 	  else
 	    {
@@ -726,7 +754,7 @@ namespace ngcomp
 
     catch (Exception & e)
       {
-        e.Append ("in H1HoFESpace::GetElement\n");
+        e.Append (string("in H1HoFESpace::GetElement, ei = ")+ToString(ei));
         throw;
       }
   }
