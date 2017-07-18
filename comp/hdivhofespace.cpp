@@ -644,6 +644,12 @@ namespace ngcomp
       }
     else
       {
+        if (!DefinedOn(ei))
+          return SwitchET(ma->GetElType(ei), [&] (auto et) -> FiniteElement&
+                          {
+                            return * new (alloc) HDivNormalDummyFE<et.ElementType()>();
+                          });
+        
         int selnr = ei.Nr();
         FiniteElement * fe = 0;
         
@@ -1011,7 +1017,8 @@ namespace ngcomp
         dnums += GetFacetDofs (fanum);
         
 	if (!DefinedOn (ei))
-	  dnums = -1;
+          dnums.SetSize0();
+        // dnums = -1;
       }
   }
 
