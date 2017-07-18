@@ -726,7 +726,10 @@ namespace ngcomp
                  Ngs_Element ngel = ma->GetElement<et.DIM,BND> (ei.Nr());
 
                  // auto hofe =  new (alloc) H1HighOrderFE<et> ();
-                 auto hofe =  new (alloc) H1HighOrderFE<et.ElementType()> ();
+                 auto hofe =  new (alloc)
+                   H1HighOrderFE<et.ElementType(),
+                                 H1HighOrderFE_Shape<et.ElementType()>,
+                                 T_ScalarFiniteElement< H1HighOrderFE_Shape<et.ElementType()>,et.ElementType()> >();
     
                  hofe -> SetVertexNumbers (ngel.vertices);
 
