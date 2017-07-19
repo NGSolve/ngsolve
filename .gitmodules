@@ -1,4 +1,4 @@
 [submodule "external_dependencies/netgen"]
 	path = external_dependencies/netgen
-	url = git@github.com:NGSolve/netgen.git
+	url = https://github.com/NGSolve/netgen.git
 	ignore = dirty
