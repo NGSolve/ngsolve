@@ -50,7 +50,7 @@ Move to the folder, git clone the NGSolve repository.
 .. code:: bash
    
    cd $NGROOT
-   git clone git://git.code.sf.net/p/ngsolve/git ngsolve-src
+   git clone https://github.com/NGSolve/ngsolve.git ngsolve-src
 	    
 To also fetch the dependencies (Netgen) we must tell git to load the submodules
 
