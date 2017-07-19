@@ -1294,7 +1294,7 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
                                                   { self->SetDefinedOnElements (ba); } )
 
     .def("CalcElementVector", 
-         [] (shared_ptr<LFI>  self, const FiniteElement & fe, const ElementTransformation& trafo, FlatVector<double> v, LocalHeap &lh) { self->CalcElementVector(fe, trafo, v, lh); } )
+        static_cast<void(LinearFormIntegrator::*)(const FiniteElement&, const ElementTransformation&, FlatVector<double>, LocalHeap&)const>(&LinearFormIntegrator::CalcElementVector))
     .def("CalcElementVector",
          [] (shared_ptr<LFI>  self, const FiniteElement & fe, const ElementTransformation& trafo,
              int heapsize)
