@@ -1,6 +1,6 @@
 export BASEDIR=~/ngsuite
 mkdir -p $BASEDIR
-cd $BASEDIR && git clone git://git.code.sf.net/p/ngsolve/git ngsolve-src
+cd $BASEDIR && git clone https://github.com/NGSolve/ngsolve.git ngsolve-src
 cd $BASEDIR/ngsolve-src && git submodule update --init --recursive
 mkdir $BASEDIR/ngsolve-build
 mkdir $BASEDIR/ngsolve-install
