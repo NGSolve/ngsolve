@@ -113,7 +113,6 @@ endif(NETGEN_DIR)
 
 #######################################################################
 
-set(LAPACK_LIBRARIES CACHE INTERNAL "Lapack libraries")
 if(USE_MKL)
     set(MKL_MULTI_THREADED ON CACHE BOOL "Use threaded MKL libs")
 
@@ -146,11 +145,16 @@ if (USE_LAPACK)
         set(LAPACK_LIBRARIES ${CMAKE_INSTALL_PREFIX}/lib/BLAS.lib)
         list(APPEND LAPACK_PROJECTS win_download_lapack)
       else(WIN32)
-        find_package(LAPACK)
+        find_library(LAPACK_LIBRARIES openblas)
+        if(NOT LAPACK_LIBRARIES)
+          find_package(LAPACK REQUIRED)
+        endif()
       endif(WIN32)
     endif()
     set_vars(NGSOLVE_CMAKE_ARGS LAPACK_LIBRARIES)
 endif (USE_LAPACK)
+
+set(LAPACK_LIBRARIES ${LAPACK_LIBRARIES} CACHE INTERNAL "Lapack libraries")
 
 #######################################################################
 if(USE_UMFPACK)
