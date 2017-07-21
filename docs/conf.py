@@ -54,7 +54,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'NGS-Py'
-copyright = '2016, Netgen/NGSolve team'
+copyright = '2017, Netgen/NGSolve team'
 author = 'Netgen/NGSolve team'
 
 # The version info for the project you're documenting, acts as replacement for
