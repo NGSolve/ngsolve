@@ -15,7 +15,7 @@ add_library(ngla ${NGS_LIB_TYPE}
 
 target_compile_definitions(ngla PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
 target_compile_options(ngla PUBLIC ${NGSOLVE_COMPILE_OPTIONS})
-target_include_directories(ngla PUBLIC ${NGSOLVE_INCLUDE_DIRS})
+target_include_directories(ngla PUBLIC ${NGSOLVE_INCLUDE_DIRS} PRIVATE ${UMFPACK_INCLUDE_DIR})
 if(WIN32 AND USE_UMFPACK)
     target_include_directories(ngla PUBLIC $<TARGET_PROPERTY:${UMFPACK_LIBRARIES},INTERFACE_INCLUDE_DIRECTORIES>)
 endif()
