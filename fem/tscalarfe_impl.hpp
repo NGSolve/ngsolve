@@ -857,9 +857,29 @@ namespace ngfem
                                    }));
           }
       }
+   else if (bmir.DimSpace() == DIM+1)
+     {
+       constexpr int DIM1 = DIM<3 ? DIM+1 : DIM;
+       auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM1>&> (bmir);
+       for (size_t i = 0; i < mir.Size(); i++)
+         {
+           SIMD<double> * pdshapes = &dshapes(0,i);
+           size_t dist = dshapes.Dist();
+            
+           TIP<DIM,AutoDiffRec<DIM1,SIMD<double>>> adp = GetTIP(mir[i]);
+           T_CalcShape (adp,
+                        SBLambda ([&] (size_t j, AutoDiffRec<DIM1,SIMD<double>> shape)
+                                  { 
+                                    Iterate<DIM1> ( [&] (size_t ii) {
+                                        *pdshapes = shape.DValue(ii);
+                                        pdshapes += dist;
+                                      });
+                                  }));
+         }
+     }
    else
      {
-       cout << "EvaluateGrad(simd) called for boudnary (not implemented)" << endl;        
+       cout << "EvaluateGrad(simd) called for bboundary (not implemented)" << endl;        
      }
   }
   
