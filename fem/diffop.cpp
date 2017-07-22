@@ -68,6 +68,16 @@ namespace ngfem
   }
   
   void DifferentialOperator ::
+  CalcMatrix (const FiniteElement & fel,
+              const SIMD_BaseMappedIntegrationRule & mir,
+              BareSliceMatrix<SIMD<Complex>> mat) const
+  {
+    throw ExceptionNOSIMD(string("Error: DifferentialOperator::CalcMatrix does not support SIMD<Complex>, type = ")
+                          + typeid(*this).name());
+    
+  }
+  
+  void DifferentialOperator ::
   Apply (const FiniteElement & fel,
          const BaseMappedIntegrationPoint & mip,
          FlatVector<double> x, 
