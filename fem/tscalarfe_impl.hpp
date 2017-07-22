@@ -869,11 +869,18 @@ namespace ngfem
            TIP<DIM,AutoDiffRec<DIM1,SIMD<double>>> adp = GetTIP(mir[i]);
            T_CalcShape (adp,
                         SBLambda ([&] (size_t j, AutoDiffRec<DIM1,SIMD<double>> shape)
-                                  { 
+                                  {
+                                    /*
                                     Iterate<DIM1> ( [&] (size_t ii) {
                                         *pdshapes = shape.DValue(ii);
                                         pdshapes += dist;
                                       });
+                                    */
+                                    for (size_t k = 0; k < DIM1; k++)
+                                      {
+                                        *pdshapes = shape.DValue(k);
+                                        pdshapes += dist;
+                                      }
                                   }));
          }
      }
