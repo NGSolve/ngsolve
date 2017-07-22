@@ -421,6 +421,17 @@ public:
     IntRange r = BlockDim() * fel.GetRange(comp);
     diffop->AddTrans (fel[comp], bmir, flux, x.Range(r));
   }
+  
+  NGS_DLL_HEADER virtual void
+  AddTrans (const FiniteElement & bfel,
+            const SIMD_BaseMappedIntegrationRule & bmir,
+            BareSliceMatrix<SIMD<Complex>> flux,
+            BareSliceVector<Complex> x) const
+  {
+    const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
+    IntRange r = BlockDim() * fel.GetRange(comp);
+    diffop->AddTrans (fel[comp], bmir, flux, x.Range(r));
+  }
 };
 
 

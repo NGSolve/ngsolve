@@ -226,8 +226,7 @@ namespace ngfem
             BareSliceMatrix<SIMD<double>> flux,
             BareSliceVector<double> x) const
   {
-    throw ExceptionNOSIMD (string("DifferentialOperator :: AddTrans ( ... SIMD ... ) not overloaded") +
-                           + typeid(*this).name());
+    throw ExceptionNOSIMD (string("DifferentialOperator :: AddTrans ( ... SIMD ... ) not overloaded for class ") + typeid(*this).name());
   }
 
   void DifferentialOperator ::
@@ -236,8 +235,7 @@ namespace ngfem
             BareSliceMatrix<SIMD<Complex>> flux,
             BareSliceVector<Complex> x) const
   {
-    throw ExceptionNOSIMD (string("DifferentialOperator :: AddTrans ( ... SIMD<Complex> ... ) not overloaded") +
-                           + typeid(*this).name());
+    throw ExceptionNOSIMD (string("DifferentialOperator :: AddTrans ( ... SIMD<Complex> ... ) not overloaded for class ") + typeid(*this).name());
   }
 
   
