@@ -837,8 +837,8 @@ namespace ngfem
   }
 
 
-
-  
+#define xxNOSIMD1
+#ifdef NOSIMD1
   template <typename SCAL, typename SCAL_SHAPES>
   void SymbolicBilinearFormIntegrator ::
   T_CalcElementMatrixAdd (const FiniteElement & fel,
@@ -1060,19 +1060,147 @@ namespace ngfem
         k1 += proxy1->Dimension();
       }
   }
-
+#endif
+  
 #define SIMD_CALCMATRIX
 #ifdef SIMD_CALCMATRIX
-  template <>
+
+
+  void AddABtSym (FlatMatrix<SIMD<double>> a,
+                  FlatMatrix<SIMD<double>> b,
+                  SliceMatrix<double> c)
+  {
+    AddABtSym (AFlatMatrix<double>(a), AFlatMatrix<double> (b), c);
+  }
+  
+  void AddABt (FlatMatrix<SIMD<double>> a,
+               FlatMatrix<SIMD<double>> b,
+               SliceMatrix<double> c)
+  {
+    AddABt (AFlatMatrix<double>(a), AFlatMatrix<double> (b), c);
+  }
+
+  void AddABt (FlatMatrix<SIMD<Complex>> a,
+               FlatMatrix<SIMD<Complex>> b,
+               SliceMatrix<Complex> c)
+  {
+    // AddABt (AFlatMatrix<double>(a), AFlatMatrix<double> (b), c);
+    for (size_t i = 0; i < c.Height(); i++)
+      for (size_t j = 0; j < c.Width(); j++)
+        {
+          SIMD<Complex> sum(0.0);
+          for (size_t k = 0; k < a.Width(); k++)
+            sum += a(i,k) * b(j,k);
+          c(i,j) += HSum(sum);
+        }
+  }
+  
+  void AddABtSym (FlatMatrix<SIMD<Complex>> a,
+                  FlatMatrix<SIMD<Complex>> b,
+                  SliceMatrix<Complex> c)
+  {
+    AddABt (a, b, c);
+  }
+  /*
+  void AddABt (FlatMatrix<SIMD<double>> a,
+               FlatMatrix<SIMD<Complex>> b,
+               SliceMatrix<Complex> c)
+  {
+    size_t i = 0;
+    for ( ; i < c.Height()-1; i+=2)
+      for (size_t j = 0; j < c.Width(); j++)
+        {
+          SIMD<Complex> sum1(0.0);
+          SIMD<Complex> sum2(0.0);
+          for (size_t k = 0; k < a.Width(); k++)
+            {
+              sum1 += a(i,k) * b(j,k);
+              sum2 += a(i+1,k) * b(j,k);
+            }
+          c(i,j) += HSum(sum1);
+          c(i+1,j) += HSum(sum2);
+        }
+    
+    if (i < c.Height())
+      for (size_t j = 0; j < c.Width(); j++)
+        {
+          SIMD<Complex> sum(0.0);
+          for (size_t k = 0; k < a.Width(); k++)
+            sum += a(i,k) * b(j,k);
+          c(i,j) += HSum(sum);
+        }
+  }
+  */
+  
+  void AddABt (FlatMatrix<SIMD<double>> a,
+               FlatMatrix<SIMD<Complex>> b,
+               SliceMatrix<Complex> c)
+  {
+    size_t i = 0;
+    size_t wa = a.Width();
+    size_t wb = b.Width();
+    if (wa == 0) return;
+    
+    for ( ; i < c.Height()-1; i+=2)
+      {
+        auto pa1 = &a(i,0);
+        auto pa2 = pa1 + wa;
+        auto pb = &b(0,0);
+        for (size_t j = 0; j < c.Width(); j++, pb += wb)
+          {
+            SIMD<Complex> sum1(0.0);
+            SIMD<Complex> sum2(0.0);
+            __assume (wa > 0);
+            for (size_t k = 0; k < wa; k++)
+              {
+                sum1 += pa1[k] * pb[k];
+                sum2 += pa2[k] * pb[k];
+              }
+            c(i,j) += HSum(sum1);
+            c(i+1,j) += HSum(sum2);
+          }
+      }
+    
+    if (i < c.Height())
+      for (size_t j = 0; j < c.Width(); j++)
+        {
+          SIMD<Complex> sum(0.0);
+          for (size_t k = 0; k < wa; k++)
+            sum += a(i,k) * b(j,k);
+          c(i,j) += HSum(sum);
+        }
+  }
+
+
+  
+  
+  void AddABtSym (FlatMatrix<SIMD<double>> a,
+                  FlatMatrix<SIMD<Complex>> b,
+                  SliceMatrix<Complex> c)
+  {
+    // AddABtSym (AFlatMatrix<double>(a), AFlatMatrix<double> (b), c);
+    AddABt (a, b, c);
+  }
+  
+
+  Timer timer_SymbBFI("SymbolicBFI");
+  Timer timer_SymbBFIbmat("SymbolicBFI bmat");
+  Timer timer_SymbBFIdmat("SymbolicBFI dmat");
+  Timer timer_SymbBFImult("SymbolicBFI mult");
+
+
+  template <typename SCAL, typename SCAL_SHAPES>
   void SymbolicBilinearFormIntegrator ::
-  T_CalcElementMatrixAdd<double,double> (const FiniteElement & fel,
-                                         const ElementTransformation & trafo, 
-                                         FlatMatrix<> elmat,
-                                         LocalHeap & lh) const
+  // template <>
+  // void SymbolicBilinearFormIntegrator ::
+  T_CalcElementMatrixAdd (const FiniteElement & fel,
+                          const ElementTransformation & trafo, 
+                          FlatMatrix<SCAL> elmat,
+                          LocalHeap & lh) const
     
   {
-    typedef double SCAL;
-    typedef double SCAL_SHAPES;
+    // typedef double SCAL;
+    // typedef double SCAL_SHAPES;
     
     if (element_boundary)
       {
@@ -1102,6 +1230,8 @@ namespace ngfem
     if (simd_evaluate)
       try
         {
+          ThreadRegionTimer reg(timer_SymbBFI, TaskManager::GetThreadId());
+          
           SIMD_IntegrationRule ir = Get_SIMD_IntegrationRule (fel, lh);
           SIMD_BaseMappedIntegrationRule & mir = trafo(ir, lh);
 
@@ -1136,7 +1266,8 @@ namespace ngfem
                       FlatMatrix<SIMD<SCAL>> proxyvalues(dim_proxy1*dim_proxy2, ir.Size(), lh);
                       FlatMatrix<SIMD<SCAL>> diagproxyvalues(dim_proxy1, ir.Size(), lh);
                       FlatMatrix<SIMD<SCAL>> val(1, ir.Size(), lh);
-                      
+                      {
+                      ThreadRegionTimer regdmat(timer_SymbBFIdmat, TaskManager::GetThreadId());                      
                       if (!is_diagonal)
                         for (size_t k = 0, kk = 0; k < dim_proxy1; k++)
                           for (size_t l = 0; l < dim_proxy2; l++, kk++)
@@ -1164,7 +1295,7 @@ namespace ngfem
                             cf -> Evaluate (mir, diagproxyvalues.Rows(k,k+1));
                           }
                       // td.Stop();
-
+                      }
 
                       if (!is_diagonal)
                         for (size_t i = 0; i < ir.Size(); i++)
@@ -1184,19 +1315,20 @@ namespace ngfem
                       FlatMatrix<SIMD<SCAL_SHAPES>> bbmat2 = samediffop ?
                         bbmat1 : FlatMatrix<SIMD<SCAL_SHAPES>>(elmat.Height()*dim_proxy2, ir.Size(), lh);
                       
-                      FlatMatrix<SIMD<SCAL_SHAPES>> hbdbmat1(elmat.Width(), dim_proxy2*ir.Size(),
-                                                             &bdbmat1(0,0));
+                      FlatMatrix<SIMD<SCAL>> hbdbmat1(elmat.Width(), dim_proxy2*ir.Size(),
+                                                      &bdbmat1(0,0));
                       FlatMatrix<SIMD<SCAL_SHAPES>> hbbmat2(elmat.Height(), dim_proxy2*ir.Size(),
                                                             &bbmat2(0,0));
                       
                       // bbmat1 = 0.0;
                       // bbmat2 = 0.0;
-                          
+                      {
+                      ThreadRegionTimer regbmat(timer_SymbBFIbmat, TaskManager::GetThreadId());
                       proxy1->Evaluator()->CalcMatrix(fel_trial, mir, bbmat1);
                       
                       if (!samediffop)
                         proxy2->Evaluator()->CalcMatrix(fel_test, mir, bbmat2);
-
+                      }
                       if (is_diagonal)
                         {
                           /*
@@ -1232,15 +1364,24 @@ namespace ngfem
                       
                       // elmat.Rows(r2).Cols(r1) += bbmat2.Rows(r2) * Trans(bdbmat1.Rows(r1));
                       // AddABt (bbmat2.Rows(r2), bdbmat1.Rows(r1), elmat.Rows(r2).Cols(r1));
-                      
+
                       symmetric_so_far &= samediffop && is_diagonal;
+                      /*
                       if (symmetric_so_far)
                         AddABtSym (AFlatMatrix<double>(hbbmat2.Rows(r2)),
                                    AFlatMatrix<double> (hbdbmat1.Rows(r1)), part_elmat);
                       else
                         AddABt (AFlatMatrix<double> (hbbmat2.Rows(r2)),
                                 AFlatMatrix<double> (hbdbmat1.Rows(r1)), part_elmat);
-                  
+                      */
+
+                      {
+                      ThreadRegionTimer regdmult(timer_SymbBFImult, TaskManager::GetThreadId());
+                      if (symmetric_so_far)
+                        AddABtSym (hbbmat2.Rows(r2), hbdbmat1.Rows(r1), part_elmat);
+                      else
+                        AddABt (hbbmat2.Rows(r2), hbdbmat1.Rows(r1), part_elmat);
+                      }
                       if (symmetric_so_far)
                         for (size_t i = 0; i < part_elmat.Height(); i++)
                           for (size_t j = i+1; j < part_elmat.Width(); j++)
