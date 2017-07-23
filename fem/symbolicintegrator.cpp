@@ -1131,6 +1131,8 @@ namespace ngfem
         }
   }
   */
+
+
   
   void AddABt (FlatMatrix<SIMD<double>> a,
                FlatMatrix<SIMD<Complex>> b,
@@ -1156,8 +1158,14 @@ namespace ngfem
                 sum1 += pa1[k] * pb[k];
                 sum2 += pa2[k] * pb[k];
               }
+            /*
             c(i,j) += HSum(sum1);
             c(i+1,j) += HSum(sum2);
+            */
+            Complex s1, s2;
+            std::tie(s1,s2) = HSum(sum1, sum2);
+            c(i,j) += s1;
+            c(i+1,j) += s2;
           }
       }
     
@@ -1176,10 +1184,47 @@ namespace ngfem
   
   void AddABtSym (FlatMatrix<SIMD<double>> a,
                   FlatMatrix<SIMD<Complex>> b,
-                  SliceMatrix<Complex> c)
+                  BareSliceMatrix<Complex> c)
   {
-    // AddABtSym (AFlatMatrix<double>(a), AFlatMatrix<double> (b), c);
-    AddABt (a, b, c);
+    // AddABt (a, b, c);
+    size_t da = a.Width();
+    size_t db = b.Width();
+    size_t wa = a.Width();
+    size_t ha = a.Height();
+    size_t hb = b.Height();
+    if (wa == 0) return;
+    
+    size_t i = 0;
+    for ( ; i < ha-1; i+=2)
+      {
+        auto pa1 = &a(i,0);
+        auto pa2 = pa1 + da;
+        auto pb = &b(0,0);
+        for (size_t j = 0; j <= i+1; j++, pb += db)
+          {
+            SIMD<Complex> sum1(0.0);
+            SIMD<Complex> sum2(0.0);
+            __assume (wa > 0);
+            for (size_t k = 0; k < wa; k++)
+              {
+                sum1 += pa1[k] * pb[k];
+                sum2 += pa2[k] * pb[k];
+              }
+            Complex s1, s2;
+            std::tie(s1,s2) = HSum(sum1, sum2);
+            c(i,j) += s1;
+            c(i+1,j) += s2;
+          }
+      }
+    
+    if (i < ha)
+      for (size_t j = 0; j < hb; j++)
+        {
+          SIMD<Complex> sum(0.0);
+          for (size_t k = 0; k < wa; k++)
+            sum += a(i,k) * b(j,k);
+          c(i,j) += HSum(sum);
+        }
   }
   
 
