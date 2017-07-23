@@ -1184,7 +1184,7 @@ namespace ngfem
   
   void AddABtSym (FlatMatrix<SIMD<double>> a,
                   FlatMatrix<SIMD<Complex>> b,
-                  BareSliceMatrix<Complex> c)
+                  SliceMatrix<Complex> c)
   {
     // AddABt (a, b, c);
     size_t da = a.Width();
