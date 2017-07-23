@@ -305,13 +305,14 @@ namespace ngstd
     return make_tuple(_mm_cvtsd_f64 (hv2),  _mm_cvtsd_f64(_mm_shuffle_pd (hv2, hv2, 3)));
   }
 
-  INLINE SIMD<double> HSum (SIMD<double> v1, SIMD<double> v2, SIMD<double> v3, SIMD<double> v4)
+  INLINE auto HSum (SIMD<double> v1, SIMD<double> v2, SIMD<double> v3, SIMD<double> v4)
   {
     __m256d hsum1 = _mm256_hadd_pd (v1.Data(), v2.Data());
     __m256d hsum2 = _mm256_hadd_pd (v3.Data(), v4.Data());
     __m256d hsum = _mm256_add_pd (_mm256_permute2f128_pd (hsum1, hsum2, 1+2*16),
                                   _mm256_blend_pd (hsum1, hsum2, 12));
-    return hsum;
+    // return hsum;
+    return make_tuple(hsum[0], hsum[1], hsum[2], hsum[3]);
   }
   
 #endif  
@@ -384,6 +385,8 @@ namespace ngstd
   { return sd.Data(); }
   INLINE auto HSum (SIMD<double> sd1, SIMD<double> sd2)
   { return make_tuple(sd1.Data(), sd2.Data()); }
+  INLINE auto HSum (SIMD<double> sd1, SIMD<double> sd2, SIMD<double> sd3, SIMD<double> sd4)
+  { return make_tuple(sd1.Data(), sd2.Data(), sd3.Data(), sd4.Data()); }
 #endif
 
 
