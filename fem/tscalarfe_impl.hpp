@@ -175,9 +175,12 @@ namespace ngfem
                                   sum = FMA(MultiSIMD<2,double>(*pcoefs), shape, sum);
                                   pcoefs += dist; }
                                 ));
-        
+
+        /*
         values(i) = sum.template Get<0>().Data();
         values(i+1) = sum.template Get<1>().Data();          
+        */
+        std::tie(values(i), values(i+1)) = sum;
       }
 
     if (i < hir.Size())

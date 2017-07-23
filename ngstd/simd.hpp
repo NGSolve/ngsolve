@@ -460,6 +460,8 @@ INLINE ngstd::SIMD<double> atan (ngstd::SIMD<double> a) {
     SIMD<T> Get() const { return NR==0 ? head : tail.template Get<NR-1>(); }
     template <int NR>
     SIMD<T> & Get() { return NR==0 ? head : tail.template Get<NR-1>(); }
+    auto MakeTuple () { return tuple_cat(tuple<SIMD<T>&> (head), tail.MakeTuple()); }
+    operator auto () { return MakeTuple(); }
   };
 
   template <typename T>
@@ -481,6 +483,9 @@ INLINE ngstd::SIMD<double> atan (ngstd::SIMD<double> a) {
     SIMD<T> Get() const { return NR==0 ? v0 : v1; }
     template <int NR>
     SIMD<T> & Get() { return NR==0 ? v0 : v1; }
+
+    auto MakeTuple () { return tuple<SIMD<T>&,SIMD<T>&>(v0, v1); }
+    operator auto () { return MakeTuple(); }
   };
 
   template <int D> INLINE MultiSIMD<D,double> operator+ (MultiSIMD<D,double> a, MultiSIMD<D,double> b)
