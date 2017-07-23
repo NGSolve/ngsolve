@@ -242,8 +242,12 @@ namespace ngstd
     */
     
     INLINE double operator[] (int i) const { return ((double*)(&data))[i]; }
+    INLINE double & operator[] (int i) { return ((double*)(&data))[i]; }
     INLINE __m256d Data() const { return data; }
     INLINE __m256d & Data() { return data; }
+
+    auto MakeTuple () { return tuple<double&,double&,double&,double&>((*this)[0], (*this)[1], (*this)[2], (*this)[3]); }
+    operator auto () { return MakeTuple(); }
   };
 #endif
 
@@ -311,8 +315,8 @@ namespace ngstd
     __m256d hsum2 = _mm256_hadd_pd (v3.Data(), v4.Data());
     SIMD<double> hsum = _mm256_add_pd (_mm256_permute2f128_pd (hsum1, hsum2, 1+2*16),
                                        _mm256_blend_pd (hsum1, hsum2, 12));
-    // return hsum;
-    return make_tuple(hsum[0], hsum[1], hsum[2], hsum[3]);
+    return hsum;
+    // return make_tuple(hsum[0], hsum[1], hsum[2], hsum[3]);
   }
   
 #endif  
