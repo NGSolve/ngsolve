@@ -246,8 +246,8 @@ namespace ngstd
     INLINE __m256d Data() const { return data; }
     INLINE __m256d & Data() { return data; }
 
-    auto MakeTuple () { return tuple<double&,double&,double&,double&>((*this)[0], (*this)[1], (*this)[2], (*this)[3]); }
-    operator auto () { return MakeTuple(); }
+    operator tuple<double&,double&,double&,double&> ()
+    { return tuple<double&,double&,double&,double&>((*this)[0], (*this)[1], (*this)[2], (*this)[3]); }
   };
 #endif
 
@@ -468,7 +468,8 @@ INLINE ngstd::SIMD<double> atan (ngstd::SIMD<double> a) {
     template <int NR>
     SIMD<T> & Get() { return NR==0 ? head : tail.template Get<NR-1>(); }
     auto MakeTuple () { return tuple_cat(tuple<SIMD<T>&> (head), tail.MakeTuple()); }
-    operator auto () { return MakeTuple(); }
+    // not yet possible for MSVC
+    // operator auto () { return MakeTuple(); }
   };
 
   template <typename T>
@@ -492,7 +493,7 @@ INLINE ngstd::SIMD<double> atan (ngstd::SIMD<double> a) {
     SIMD<T> & Get() { return NR==0 ? v0 : v1; }
 
     auto MakeTuple () { return tuple<SIMD<T>&,SIMD<T>&>(v0, v1); }
-    operator auto () { return MakeTuple(); }
+    // operator auto () { return MakeTuple(); }
   };
 
   template <int D> INLINE MultiSIMD<D,double> operator+ (MultiSIMD<D,double> a, MultiSIMD<D,double> b)
