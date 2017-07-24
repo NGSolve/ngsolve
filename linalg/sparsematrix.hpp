@@ -396,6 +396,8 @@ public:
 	return nul;
     }
 
+    void PrefetchRow (int rownr) const;
+    
     FlatVector<TM> GetRowValues(int i) const
       // { return FlatVector<TM> (firsti[i+1]-firsti[i], &data[firsti[i]]); }
     { return FlatVector<TM> (firsti[i+1]-firsti[i], data+firsti[i]); }

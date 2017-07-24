@@ -1012,6 +1012,30 @@ namespace ngla
   }
 
 
+  template <class TM>
+  void SparseMatrixTM<TM> ::
+  PrefetchRow (int rownr) const
+  {
+#ifdef __GNUC__
+    size_t fi = firsti[rownr], fin = firsti[rownr+1];
+    int * pi = &colnr[fi], * pin = &colnr[fi+1];
+    while (pi < pin)
+      {
+        _mm_prefetch (reinterpret_cast<void*>(pi), _MM_HINT_T2);
+        pi += 64/sizeof(int);
+      }
+
+    TM * vi = &data[fi], * vin = &data[fi+1];
+    while (pi < pin)
+      {
+        _mm_prefetch (reinterpret_cast<void*>(vi), _MM_HINT_T2);
+        vi += 64/sizeof(double);
+      }
+    // _mm_prefetch (reinterpret_cast<void*>(&this->GetRowIndices(rownr)[0]), _MM_HINT_T2);
+    // _mm_prefetch (reinterpret_cast<void*>(&this->GetRowValues(rownr)[0]), _MM_HINT_T2);    
+#endif
+    ;
+  }
 
 
   template <class TM>
@@ -1600,7 +1624,9 @@ namespace ngla
 
 
 
-
+  Timer timer_addelmat("SparseMatrixSymmetric::AddElementMatrix");
+  Timer timer_addelmat1("SparseMatrixSymmetric::AddElementMatrix 1");
+  Timer timer_addelmat2("SparseMatrixSymmetric::AddElementMatrix 2");
 
   template <class TM>
   void SparseMatrixSymmetricTM<TM> ::
@@ -1608,40 +1634,92 @@ namespace ngla
   {
     // static Timer timer ("SparseMatrixSymmetric::AddElementMatrix", 2);
     // RegionTimer reg (timer);
+    ThreadRegionTimer reg (timer_addelmat, TaskManager::GetThreadId());
 
     // ArrayMem<int, 50> map(dnums.Size());
     STACK_ARRAY(int, hmap, dnums.Size());
     FlatArray<int> map(dnums.Size(), hmap);
-    for (int i = 0; i < dnums.Size(); i++) map[i] = i;
-    QuickSortI (dnums, map);
 
+    {
+      ThreadRegionTimer reg1 (timer_addelmat1, TaskManager::GetThreadId());
+      for (int i = 0; i < dnums.Size(); i++) map[i] = i;
+      QuickSortI (dnums, map);
+    }
+
+    STACK_ARRAY(int, dnumsmap, dnums.Size());
+    for (int i = 0; i < dnums.Size(); i++)
+      dnumsmap[i] = dnums[map[i]];
+    
     Scalar2ElemMatrix<TM, TSCAL> elmat (elmat1);
       // .AddSize(mat_traits<TM>::HEIGHT*dnums.Size(),
       // mat_traits<TM>::WIDTH*dnums.Size()));
 
     int first_used = 0;
     while (first_used < dnums.Size() && dnums[map[first_used]] == -1) first_used++;
+    
+    ThreadRegionTimer reg2 (timer_addelmat2, TaskManager::GetThreadId());
 
-    for (int i1 = first_used; i1 < dnums.Size(); i1++)
-      {
-	FlatArray<int> rowind = this->GetRowIndices(dnums[map[i1]]);
-	FlatVector<TM> rowvals = this->GetRowValues(dnums[map[i1]]);
-        auto elmat_row = elmat.Rows(map[i1], map[i1]+1);
+    if (use_atomic)
+      for (int i1 = first_used; i1 < dnums.Size(); i1++)
+        {
+          // FlatArray<int> rowind = this->GetRowIndices(dnums[map[i1]]);
+          // FlatVector<TM> rowvals = this->GetRowValues(dnums[map[i1]]);
+          FlatArray<int> rowind = this->GetRowIndices(dnumsmap[i1]);
+          FlatVector<TM> rowvals = this->GetRowValues(dnumsmap[i1]);
+          auto elmat_row = elmat.Rows(map[i1], map[i1]+1);
 
-	for (int j1 = first_used, k = 0; j1 <= i1; j1++, k++)
-	  {
-	    while (rowind[k] != dnums[map[j1]])
-	      {
-		k++;
-		if (k >= rowind.Size())
-		  throw Exception ("SparseMatrixSymmetricTM::AddElementMatrix: illegal dnums");
-	      }
-            if (use_atomic)
-              // rowvals(k) += elmat_row(0, map[j1]);
+          size_t k = 0;
+          for (int j1 = first_used; j1 <= i1; j1++, k++)
+            {
+              // while (rowind[k] != dnums[map[j1]])
+              while (rowind[k] != dnumsmap[j1])
+                {
+                  k++;
+                  if (k >= rowind.Size())
+                    throw Exception ("SparseMatrixSymmetricTM::AddElementMatrix: illegal dnums");
+                }
               MyAtomicAdd (rowvals(k), elmat_row(0, map[j1]));
-            else
+            }
+        }
+    else
+      {
+        if (first_used+1 < dnums.Size())
+          {
+            this->PrefetchRow(dnums[map[first_used+1]]);
+            // _mm_prefetch (reinterpret_cast<void*>(&this->GetRowIndices(dnums[map[first_used+1]])[0]), _MM_HINT_T2);
+            // _mm_prefetch (reinterpret_cast<void*>(&this->GetRowValues(dnums[map[first_used+1]])[0]), _MM_HINT_T2);
+          }
+
+        for (int i1 = first_used; i1 < dnums.Size(); i1++)
+        {
+          if (i1+2 < dnums.Size())
+            this->PrefetchRow(dnums[map[i1+2]]);
+          /*
+          if (i1+2 < dnums.Size())
+            {
+              _mm_prefetch (reinterpret_cast<void*>(&this->GetRowIndices(dnums[map[i1+2]])[0]), _MM_HINT_T2);
+              _mm_prefetch (reinterpret_cast<void*>(&this->GetRowValues(dnums[map[i1+2]])[0]), _MM_HINT_T2);
+            }
+          */
+          // FlatArray<int> rowind = this->GetRowIndices(dnums[map[i1]]);
+          // FlatVector<TM> rowvals = this->GetRowValues(dnums[map[i1]]);
+          FlatArray<int> rowind = this->GetRowIndices(dnumsmap[i1]);
+          FlatVector<TM> rowvals = this->GetRowValues(dnumsmap[i1]);
+          auto elmat_row = elmat.Rows(map[i1], map[i1]+1);
+
+          size_t k = 0;
+          for (int j1 = first_used; j1 <= i1; j1++, k++)
+            {
+              // while (rowind[k] != dnums[map[j1]])
+              while (rowind[k] != dnumsmap[j1])
+                {
+                  k++;
+                  if (unlikely(k >= rowind.Size()))
+                    throw Exception ("SparseMatrixSymmetricTM::AddElementMatrix: illegal dnums");
+                }
               rowvals(k) += elmat_row(0, map[j1]);
-	  }
+            }
+        }
       }
   }
   
