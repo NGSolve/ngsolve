@@ -13,6 +13,7 @@ namespace ngbla
   
   template <int H, int W, typename T> class Mat;
   template <typename T = double, ORDERING ORD = RowMajor> class SliceMatrix;
+  template <typename T = double, ORDERING ORD = RowMajor> class BareSliceMatrix;
   // template <typename T> class SliceMatrixColMajor;
   template <typename T> class DoubleSliceMatrix;
 
@@ -208,6 +209,11 @@ namespace ngbla
       return SliceMatrix<T> (h, range.Next()-range.First(), w, data+range.First());
     }
 
+    BareSliceMatrix<T> RowSlice(size_t first, size_t adist) const
+    {
+      return BareSliceMatrix<T> (w*adist, data+first*w, DummySize( (Height()-first)/adist, w));
+    }
+    
     INLINE operator SliceMatrix<T> () const
     {
       return SliceMatrix<T> (h, w, w, data);
@@ -1588,7 +1594,7 @@ namespace ngbla
 
 
 
-  template <typename T, ORDERING ORD = RowMajor>
+  template <typename T, ORDERING ORD> //  = RowMajor>
   class BareSliceMatrix : public CMCPMatExpr<BareSliceMatrix<T,ORD>>, DummySize
   {
   protected:
