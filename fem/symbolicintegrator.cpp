@@ -578,23 +578,23 @@ namespace ngfem
           {
             // static Timer t("symbolicLFI - CalcElementVector (SIMD)", 2); RegionTimer reg(t);
             size_t tid = TaskManager::GetThreadId();
-            NgProfiler::StartThreadTimer(telvec, tid);
+            // NgProfiler::StartThreadTimer(telvec, tid);
             
             HeapReset hr(lh);
-            NgProfiler::StartThreadTimer(telvec_mapping, tid);
+            // NgProfiler::StartThreadTimer(telvec_mapping, tid);
             SIMD_IntegrationRule ir(trafo.GetElementType(), 2*fel.Order());
             auto & mir = trafo(ir, lh);
-            NgProfiler::StopThreadTimer(telvec_mapping, tid);
+            // NgProfiler::StopThreadTimer(telvec_mapping, tid);
             
-            NgProfiler::StartThreadTimer(telvec_zero, tid);            
+            // NgProfiler::StartThreadTimer(telvec_zero, tid);            
             ProxyUserData ud;
             const_cast<ElementTransformation&>(trafo).userdata = &ud;
             
             elvec = 0;
-            NgProfiler::StopThreadTimer(telvec_zero, tid);                        
+            // NgProfiler::StopThreadTimer(telvec_zero, tid);                        
             for (auto proxy : proxies)
               {
-                NgProfiler::StartThreadTimer(telvec_dvec, tid);
+                // NgProfiler::StartThreadTimer(telvec_dvec, tid);
                 FlatMatrix<SIMD<SCAL>> proxyvalues(proxy->Dimension(), ir.Size(), lh);
                 for (size_t k = 0; k < proxy->Dimension(); k++)
                   {
@@ -605,13 +605,13 @@ namespace ngfem
                     for (size_t i = 0; i < mir.Size(); i++)
                       proxyvalues(k,i) *= mir[i].GetWeight();
                   }
-                NgProfiler::StopThreadTimer(telvec_dvec, tid);
+                // NgProfiler::StopThreadTimer(telvec_dvec, tid);
                 
-                NgProfiler::StartThreadTimer(telvec_applytrans, tid);                                
+                // NgProfiler::StartThreadTimer(telvec_applytrans, tid);                                
                 proxy->Evaluator()->AddTrans(fel, mir, proxyvalues, elvec);
-                NgProfiler::StopThreadTimer(telvec_applytrans, tid);                                                
+                // NgProfiler::StopThreadTimer(telvec_applytrans, tid);
               }
-            NgProfiler::StopThreadTimer(telvec, tid);
+            // NgProfiler::StopThreadTimer(telvec, tid);
           }
         catch (ExceptionNOSIMD e)
           {
@@ -780,6 +780,13 @@ namespace ngfem
     
     cout << IM(5) << "nonzeros: " << endl << nonzeros << endl;
     cout << IM(5) << "nonzeros_proxies: " << endl << nonzeros_proxies << endl;
+
+    trial_difforder = 99, test_difforder = 99;
+    for (auto proxy : trial_proxies)
+      trial_difforder = min2(trial_difforder, proxy->Evaluator()->DiffOrder());
+    for (auto proxy : test_proxies)
+      test_difforder = min2(test_difforder, proxy->Evaluator()->DiffOrder());
+    if (trial_proxies.Size() == 0) trial_difforder = 0;
   }
 
 
@@ -798,12 +805,14 @@ namespace ngfem
     const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : fel;
     const FiniteElement & fel_test = mixedfe ? mixedfe->FETest() : fel;
 
+    /*
     int trial_difforder = 99, test_difforder = 99;
     for (auto proxy : trial_proxies)
       trial_difforder = min2(trial_difforder, proxy->Evaluator()->DiffOrder());
     for (auto proxy : test_proxies)
       test_difforder = min2(test_difforder, proxy->Evaluator()->DiffOrder());
     if (trial_proxies.Size() == 0) trial_difforder = 0;
+    */
     
     int intorder = fel_trial.Order()+fel_test.Order();
     auto et = fel.ElementType();
@@ -811,7 +820,7 @@ namespace ngfem
       intorder -= test_difforder+trial_difforder;
     return IntegrationRule (et, intorder);
   }
-  
+
   SIMD_IntegrationRule SymbolicBilinearFormIntegrator ::
   Get_SIMD_IntegrationRule (const FiniteElement & fel, LocalHeap & lh) const
   {
@@ -822,12 +831,14 @@ namespace ngfem
     const FiniteElement & fel_trial = is_mixed ? mixedfe->FETrial() : fel;
     const FiniteElement & fel_test = is_mixed ? mixedfe->FETest() : fel;
 
+    /*
     int trial_difforder = 99, test_difforder = 99;
     for (auto proxy : trial_proxies)
       trial_difforder = min2(trial_difforder, proxy->Evaluator()->DiffOrder());
     for (auto proxy : test_proxies)
       test_difforder = min2(test_difforder, proxy->Evaluator()->DiffOrder());
     if (trial_proxies.Size() == 0) trial_difforder = 0;
+    */
     
     int intorder = fel_trial.Order()+fel_test.Order();
     auto et = fel.ElementType();
@@ -1229,6 +1240,9 @@ namespace ngfem
   
 
   Timer timer_SymbBFI("SymbolicBFI");
+  Timer timer_SymbBFIstart("SymbolicBFI start");
+  Timer timer_SymbBFIscale("SymbolicBFI scale");
+  Timer timer_SymbBFIbd("SymbolicBFI bd");
   Timer timer_SymbBFIbmat("SymbolicBFI bmat");
   Timer timer_SymbBFIdmat("SymbolicBFI dmat");
   Timer timer_SymbBFImult("SymbolicBFI mult");
@@ -1276,9 +1290,12 @@ namespace ngfem
       try
         {
           ThreadRegionTimer reg(timer_SymbBFI, TaskManager::GetThreadId());
-          
+          // NgProfiler::StartThreadTimer (timer_SymbBFIstart, TaskManager::GetThreadId());
+
           SIMD_IntegrationRule ir = Get_SIMD_IntegrationRule (fel, lh);
           SIMD_BaseMappedIntegrationRule & mir = trafo(ir, lh);
+
+          // NgProfiler::StopThreadTimer (timer_SymbBFIstart, TaskManager::GetThreadId());
 
           ProxyUserData ud;
           const_cast<ElementTransformation&>(trafo).userdata = &ud;
@@ -1286,7 +1303,7 @@ namespace ngfem
           bool symmetric_so_far = true;
           int k1 = 0;
           int k1nr = 0;
-
+          
           for (auto proxy1 : trial_proxies)
             {
               int l1 = 0;
@@ -1312,7 +1329,7 @@ namespace ngfem
                       FlatMatrix<SIMD<SCAL>> diagproxyvalues(dim_proxy1, ir.Size(), lh);
                       FlatMatrix<SIMD<SCAL>> val(1, ir.Size(), lh);
                       {
-                      ThreadRegionTimer regdmat(timer_SymbBFIdmat, TaskManager::GetThreadId());                      
+                        // ThreadRegionTimer regdmat(timer_SymbBFIdmat, TaskManager::GetThreadId());                      
                       if (!is_diagonal)
                         for (size_t k = 0, kk = 0; k < dim_proxy1; k++)
                           for (size_t l = 0; l < dim_proxy2; l++, kk++)
@@ -1341,7 +1358,7 @@ namespace ngfem
                           }
                       // td.Stop();
                       }
-
+                      // NgProfiler::StartThreadTimer (timer_SymbBFIscale, TaskManager::GetThreadId());                      
                       if (!is_diagonal)
                         for (size_t i = 0; i < ir.Size(); i++)
                           proxyvalues.Col(i) *= mir[i].GetWeight();
@@ -1364,33 +1381,72 @@ namespace ngfem
                                                       &bdbmat1(0,0));
                       FlatMatrix<SIMD<SCAL_SHAPES>> hbbmat2(elmat.Height(), dim_proxy2*ir.Size(),
                                                             &bbmat2(0,0));
-                      
+
+                      // NgProfiler::StopThreadTimer (timer_SymbBFIscale, TaskManager::GetThreadId());
                       // bbmat1 = 0.0;
                       // bbmat2 = 0.0;
                       {
-                      ThreadRegionTimer regbmat(timer_SymbBFIbmat, TaskManager::GetThreadId());
+                        // ThreadRegionTimer regbmat(timer_SymbBFIbmat, TaskManager::GetThreadId());
                       proxy1->Evaluator()->CalcMatrix(fel_trial, mir, bbmat1);
                       
                       if (!samediffop)
                         proxy2->Evaluator()->CalcMatrix(fel_test, mir, bbmat2);
                       }
+
                       if (is_diagonal)
                         {
+                          // NgProfiler::StartThreadTimer (timer_SymbBFIbd, TaskManager::GetThreadId());                      
                           /*
                           // too much work, use r1 ...
                           for (size_t i = 0, ii = 0; i < elmat.Width(); i++)
                           for (size_t j = 0; j < dim_proxy1; j++, ii++)
                           bdbmat1.Row(ii) = pw_mult(bbmat1.Row(ii), diagproxyvalues.Row(j));
                           */
+                          
+                          /*
+
                           size_t ii = r1.First()*dim_proxy1;
                           for (size_t i : r1)
                             for (size_t j = 0; j < dim_proxy1; j++, ii++)
                               bdbmat1.Row(ii) = pw_mult(bbmat1.Row(ii), diagproxyvalues.Row(j));
+                          */
+
+                          /*
+                          for (size_t j = 0; j < dim_proxy1; j++)
+                            for (size_t k = 0; k <  bdbmat1.Width(); k++)
+                              {
+                                auto proxy = diagproxyvalues(j,k);
+                                size_t ii = r1.First()*dim_proxy1+j;
+                                for (size_t i : r1)
+                                  {
+                                    bdbmat1(ii, k) = proxy * bbmat1(ii, k);
+                                    ii += dim_proxy1;
+                                  }
+                              }
+                          */
+                          
+                          size_t sr1 = r1.Size();
+                          for (size_t j = 0; j < dim_proxy1; j++)
+                            {
+                              auto hbbmat1 = bbmat1.RowSlice(j,dim_proxy1).Rows(r1);
+                              auto hbdbmat1 = bdbmat1.RowSlice(j,dim_proxy1).Rows(r1);
+                              
+                              for (size_t k = 0; k < bdbmat1.Width(); k++)
+                                {
+                                  auto col_bdbmat = hbdbmat1.Col(k);
+                                  auto col_bbmat = hbbmat1.Col(k);
+                                  auto proxy = diagproxyvalues(j,k);
+                                  for (size_t i1 = 0; i1 < sr1; i1++)
+                                    col_bdbmat(i1) = proxy * col_bbmat(i1);
+                                }
+                            }
                           
                           // AFlatVector<SCAL> diagd(bs*proxy1->Dimension(), lh);
                           // diagd = diagproxyvalues.Range(i*proxy1->Dimension(),
                           // (i+bs)*proxy1->Dimension());
                           // MultMatDiagMat(bbmat1, diagd, bdbmat1);
+                          // NgProfiler::StopThreadTimer (timer_SymbBFIbd, TaskManager::GetThreadId());                                            
+                          
                         }
                       else
                         {
@@ -1406,7 +1462,7 @@ namespace ngfem
                                   res += pw_mult(a,b);
                                 }
                         }
-                      
+
                       // elmat.Rows(r2).Cols(r1) += bbmat2.Rows(r2) * Trans(bdbmat1.Rows(r1));
                       // AddABt (bbmat2.Rows(r2), bdbmat1.Rows(r1), elmat.Rows(r2).Cols(r1));
 
@@ -1421,7 +1477,7 @@ namespace ngfem
                       */
 
                       {
-                      ThreadRegionTimer regdmult(timer_SymbBFImult, TaskManager::GetThreadId());
+                        // ThreadRegionTimer regdmult(timer_SymbBFImult, TaskManager::GetThreadId());
                       if (symmetric_so_far)
                         AddABtSym (hbbmat2.Rows(r2), hbdbmat1.Rows(r1), part_elmat);
                       else
