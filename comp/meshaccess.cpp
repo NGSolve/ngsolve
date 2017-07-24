@@ -693,12 +693,8 @@ namespace ngcomp
         {
           hmir[i].Point() = simd_p0 + simd_mat * FlatVec<DIMS, const SIMD<double>> (&hir[i](0));
           hmir[i].Jacobian() = simd_mat;
+          hmir[i].Compute();
         }
-
-      // static Timer tcompute("eltrafo - const, compute");
-      // RegionTimer r2(tcompute);
-      for (int i = 0; i < hir.Size(); i++)
-        hmir[i].Compute();
     }
   };
   
