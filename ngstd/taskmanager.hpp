@@ -96,7 +96,7 @@ namespace ngstd
     static int GetMaxThreads() { return max_threads; }
     // static int GetNumThreads() { return task_manager ? task_manager->num_threads : 1; }
     static int GetNumThreads() { return num_threads; }
-    static int GetThreadId() { return task_manager ? task_manager->thread_id : 0; }
+    static int GetThreadId() { return thread_id; } // task_manager ? task_manager->thread_id : 0; }
     int GetNumNodes() const { return num_nodes; }
 
     static void SetPajeTrace (bool use)  { use_paje_trace = use; }
