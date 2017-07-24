@@ -934,6 +934,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     
     if (is_block)
       bli = make_shared<BlockBilinearFormIntegrator> (bli, block_dim);
+    const_cast<shared_ptr<BilinearFormIntegrator>&> (integrator[vb]) = bli;
     return bli;
   }
 
