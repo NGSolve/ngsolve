@@ -491,7 +491,7 @@ public:
     mutable bool simd_evaluate;
     IntegrationRule ir;   // if non-empty use this integration-rule
     SIMD_IntegrationRule simd_ir;   // if non-empty use this integration-rule
-    
+    int trial_difforder, test_difforder;
   public:
     NGS_DLL_HEADER SymbolicBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb,
                                     bool aelement_boundary);
