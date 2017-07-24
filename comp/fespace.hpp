@@ -770,11 +770,13 @@ namespace ngcomp
       return integrator[vb];
     }
 
-    shared_ptr<BilinearFormIntegrator> GetIntegrator (VorB vb = VOL) const
+    shared_ptr<BilinearFormIntegrator> GetIntegrator (VorB vb = VOL) const;
+    /*
     {
       return integrator[vb];
     }
-
+    */
+    
     /// special elements for hacks (used for contact, periodic-boundary-penalty-constraints, ...
     Array<SpecialElement*> specialelements;
 

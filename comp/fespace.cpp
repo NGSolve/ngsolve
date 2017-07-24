@@ -896,7 +896,46 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
 
- 
+  shared_ptr<BilinearFormIntegrator> FESpace :: GetIntegrator (VorB vb) const
+  {
+    if (integrator[vb])
+      return integrator[vb];
+
+    /*
+        auto single_evaluator =  flux_evaluator;
+        if (dynamic_pointer_cast<BlockDifferentialOperator>(single_evaluator))
+          single_evaluator = dynamic_pointer_cast<BlockDifferentialOperator>(single_evaluator)->BaseDiffOp();
+        
+        auto trial = make_shared<ProxyFunction>(false, false, single_evaluator,
+                                                nullptr, nullptr, nullptr, nullptr, nullptr);
+        auto test  = make_shared<ProxyFunction>(true, false, single_evaluator,
+                                                nullptr, nullptr, nullptr, nullptr, nullptr);
+        fluxbli = make_shared<SymbolicBilinearFormIntegrator> (InnerProduct(trial,test), vb, false);
+        single_fluxbli = fluxbli;
+    */
+    auto evaluator = GetEvaluator(vb);
+    if (!evaluator) return nullptr;
+    
+    bool is_block = false;
+    int block_dim;
+    auto block_evaluator = dynamic_pointer_cast<BlockDifferentialOperator> (evaluator);
+    if (block_evaluator)
+      {
+        is_block = true;
+        block_dim = block_evaluator->BlockDim();
+        evaluator = block_evaluator->BaseDiffOp();
+      }
+    auto trial = make_shared<ProxyFunction>(false, false, evaluator,
+                                            nullptr, nullptr, nullptr, nullptr, nullptr);
+    auto test  = make_shared<ProxyFunction>(true, false, evaluator,
+                                            nullptr, nullptr, nullptr, nullptr, nullptr);
+    shared_ptr<BilinearFormIntegrator> bli =
+      make_shared<SymbolicBilinearFormIntegrator> (InnerProduct(trial,test), vb, false);
+    
+    if (is_block)
+      bli = make_shared<BlockBilinearFormIntegrator> (bli, block_dim);
+    return bli;
+  }
 
   const FiniteElement & FESpace :: GetSFE (int selnr, LocalHeap & lh) const
   {
