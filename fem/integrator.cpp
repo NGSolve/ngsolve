@@ -352,9 +352,13 @@ namespace ngfem
 	    bool applyd,
 	    LocalHeap & lh) const
   {
+    /*
     cerr << "calcflux<double> called for base class, should be overloaded in " 
 	 << typeid(*this).name()
 	 << endl;
+    */
+    throw Exception(string("calcflux<double> called for base class, should be overloaded in ")+
+                    typeid(*this).name());
   }
 
 
