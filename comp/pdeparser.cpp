@@ -11,10 +11,10 @@
 
 #ifdef NGS_PYTHON
 #include "../ngstd/python_ngstd.hpp"
+extern PythonEnvironment pyenv;
 #endif
 
 
-extern PythonEnvironment pyenv;
 
 namespace ngcomp
 {
