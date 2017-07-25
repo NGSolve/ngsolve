@@ -255,15 +255,36 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
                                      else
                                        throw py::value_error();
                                    }, py::arg("i") = DummyArgument())
-    .def("__ior__", [] (BitArray & self, BitArray & other)
+
+
+    .def(py::self | py::self)
+    .def(py::self & py::self)
+    .def(py::self |= py::self)
+    .def(py::self &= py::self)
+    .def(~py::self)
+
+    /*
+    .def("__ior__", [] (BitArray & self, BitArray & other) -> BitArray&
                                  {
                                    self.Or(other); 
                                    return self;
                                  })
-    .def("__iand__", [] (BitArray & self, BitArray & other)
+    .def("__iand__", [] (BitArray & self, BitArray & other) -> BitArray&
                                  {
                                    self.And(other); 
                                    return self;
+                                 })
+    .def("__or__", [] (BitArray & self, BitArray & other)
+                                 {
+                                   BitArray res = self;
+                                   res.Or(other); 
+                                   return res;
+                                 })
+    .def("__and__", [] (BitArray & self, BitArray & other)
+                                 {
+                                   BitArray res = self;                                   
+                                   res.And(other); 
+                                   return res;
                                  })
     .def("__invert__", [] (BitArray & self)
          {
@@ -271,6 +292,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
            hba.Invert();
            return hba;
          })
+    */
     ;
 
   
