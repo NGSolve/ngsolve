@@ -215,7 +215,6 @@ endif (NETGEN_USE_MPI)
 
 #######################################################################
 if (USE_LAPACK)
-    find_library(LAPACK_LIBRARIES libopenblas.so)
     if(NOT LAPACK_LIBRARIES)
       find_package(LAPACK REQUIRED)
     endif()
