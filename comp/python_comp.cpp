@@ -2088,26 +2088,31 @@ used_idnrs : list of int = None
 
 //   PyExportArray<shared_ptr<BilinearFormIntegrator>> ();
 
-  m.def("CreateBilinearForm",  [] (py::object class_, shared_ptr<FESpace> fespace, string name,
-                              bool symmetric, py::dict bpflags)
+  m.def("CreateBilinearForm", [] (py::object class_, shared_ptr<FESpace> fespace, string name,
+                                  bool symmetric, bool check_unused, py::dict bpflags)
                            {
                              Flags flags = py::extract<Flags> (bpflags)();
                              if (symmetric) flags.SetFlag("symmetric");
-                             return CreateBilinearForm (fespace, name, flags);
+                             auto biform = CreateBilinearForm (fespace, name, flags);
+                             biform -> SetCheckUnused (check_unused);                             
+                             return biform;
                            },
         py::arg("self"), py::arg("space"),
-           py::arg("name")="bfa",
-           py::arg("symmetric") = false,
+        py::arg("name")="bfa",
+        py::arg("symmetric") = false, py::arg("check_unused")=true,
         py::arg("flags") = py::dict());
+  
   m.def("CreateBilinearForm", [](py::object class_,  shared_ptr<FESpace> trial_space, shared_ptr<FESpace> test_space,
-                              string name, py::dict bpflags)
+                                 string name, bool check_unused, py::dict bpflags)
                            {
                              Flags flags = py::extract<Flags> (bpflags)();
-                             return CreateBilinearForm (trial_space, test_space, name, flags);
+                             auto biform = CreateBilinearForm (trial_space, test_space, name, flags);
+                             biform -> SetCheckUnused (check_unused);
+                             return biform;
                            },
         py::arg("self"), py::arg("trialspace"),
-           py::arg("testspace"),
-           py::arg("name")="bfa",
+        py::arg("testspace"),
+        py::arg("name")="bfa", py::arg("check_unused")=true,
         py::arg("flags") = py::dict());
 
 

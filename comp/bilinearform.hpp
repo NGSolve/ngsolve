@@ -46,7 +46,8 @@ namespace ngcomp
     double eps_regularization; 
     /// diagonal value for unused dofs
     double unuseddiag;
-    
+    /// check if all dofs declared used are used in assemble
+    bool check_unused = true;
     /// low order bilinear-form, 0 if not used
     shared_ptr<BilinearForm> low_order_bilinear_form;
 
@@ -337,6 +338,7 @@ namespace ngcomp
     void SetPrint (bool ap);
     void SetPrintElmat (bool ap);
     void SetElmatEigenValues (bool ee);
+    void SetCheckUnused (bool b);
     
     /// computes low-order matrices from fines matrix
     void GalerkinProjection ();
