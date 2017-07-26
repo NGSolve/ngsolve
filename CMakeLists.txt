@@ -555,7 +555,7 @@ message("
 ")
 
 if (ADDITIONAL_PATHS)
-  message(WARNING "The use of ADDITIONAL_PATHS is depricated, use CMAKE_PREFIX_PATH instead.")
+  message(WARNING "The use of ADDITIONAL_PATHS is deprecated, use CMAKE_PREFIX_PATH instead.")
 endif (ADDITIONAL_PATHS)
 
 
