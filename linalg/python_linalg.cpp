@@ -293,58 +293,6 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                       {
                                         return shared_ptr<BaseVector> (&m.AsVector(), NOOP_Deleter);
                                       })
-    .def("COO", [] (BM & m) -> py::object
-                                 {
-                                   SparseMatrix<double> * sp = dynamic_cast<SparseMatrix<double>*> (&m);
-                                   if (sp)
-                                     {
-                                       size_t nze = sp->NZE();
-                                       Array<int> ri(nze), ci(nze);
-                                       Vector<double> vals(nze);
-                                       for (size_t i = 0, ii = 0; i < sp->Height(); i++)
-                                         {
-                                           FlatArray<int> ind = sp->GetRowIndices(i);
-                                           FlatVector<double> rv = sp->GetRowValues(i);
-                                           for (int j = 0; j < ind.Size(); j++, ii++)
-                                             {
-                                               ri[ii] = i;
-                                               ci[ii] = ind[j];
-                                               vals[ii] = rv[j];
-                                             }
-                                         }
-
-                                       py::object pyri = py::cast(std::move(ri));
-                                       py::object pyci = py::cast(std::move(ci));
-                                       py::object pyvals = py::cast(std::move(vals));
-                                       return py::make_tuple (pyri, pyci, pyvals);
-                                     }
-				   
-				   SparseMatrix<Complex> * spc
-				     = dynamic_cast<SparseMatrix<Complex>*> (&m);
-				   if (spc)
-				     {
-                                       size_t nze = spc->NZE();
-                                       Array<int> ri(nze), ci(nze);
-                                       Vector<Complex> vals(nze);
-                                       for (size_t i = 0, ii = 0; i < spc->Height(); i++)
-                                         {
-                                           FlatArray<int> ind = spc->GetRowIndices(i);
-                                           FlatVector<Complex> rv = spc->GetRowValues(i);
-                                           for (int j = 0; j < ind.Size(); j++, ii++)
-                                             {
-                                               ri[ii] = i;
-                                               ci[ii] = ind[j];
-                                               vals[ii] = rv[j];
-                                             }
-                                         }
-                                       py::object pyri = py::cast(std::move(ri));
-                                       py::object pyci = py::cast(std::move(ci));
-                                       py::object pyvals = py::cast(std::move(vals));
-                                       return py::make_tuple (pyri, pyci, pyvals);
-				     }
-				   
-				   throw Exception ("COO needs real or complex-valued sparse matrix");
-                                 })
 
     .def("Mult",         [](BaseMatrix &m, BaseVector &x, BaseVector &y) { m.Mult(x, y); })
     .def("MultAdd",      [](BaseMatrix &m, double s, BaseVector &x, BaseVector &y) { m.MultAdd (s, x, y); })
@@ -412,6 +360,59 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
            auto pre = m.CreateBlockJacobiPrecond (make_shared<Table<int>> (move(blocktable)));
            return pre;
          })
+
+    .def("COO", [] (BM & m) -> py::object
+         {
+           SparseMatrix<double> * sp = dynamic_cast<SparseMatrix<double>*> (&m);
+           if (sp)
+             {
+               size_t nze = sp->NZE();
+               Array<int> ri(nze), ci(nze);
+               Vector<double> vals(nze);
+               for (size_t i = 0, ii = 0; i < sp->Height(); i++)
+                 {
+                   FlatArray<int> ind = sp->GetRowIndices(i);
+                   FlatVector<double> rv = sp->GetRowValues(i);
+                   for (int j = 0; j < ind.Size(); j++, ii++)
+                     {
+                       ri[ii] = i;
+                       ci[ii] = ind[j];
+                       vals[ii] = rv[j];
+                     }
+                 }
+               
+               py::object pyri = py::cast(std::move(ri));
+               py::object pyci = py::cast(std::move(ci));
+               py::object pyvals = py::cast(std::move(vals));
+               return py::make_tuple (pyri, pyci, pyvals);
+             }
+           
+           SparseMatrix<Complex> * spc
+             = dynamic_cast<SparseMatrix<Complex>*> (&m);
+           if (spc)
+             {
+               size_t nze = spc->NZE();
+               Array<int> ri(nze), ci(nze);
+               Vector<Complex> vals(nze);
+               for (size_t i = 0, ii = 0; i < spc->Height(); i++)
+                 {
+                   FlatArray<int> ind = spc->GetRowIndices(i);
+                   FlatVector<Complex> rv = spc->GetRowValues(i);
+                   for (int j = 0; j < ind.Size(); j++, ii++)
+                     {
+                       ri[ii] = i;
+                       ci[ii] = ind[j];
+                       vals[ii] = rv[j];
+                     }
+                 }
+               py::object pyri = py::cast(std::move(ri));
+               py::object pyci = py::cast(std::move(ci));
+               py::object pyvals = py::cast(std::move(vals));
+               return py::make_tuple (pyri, pyci, pyvals);
+             }
+           
+           throw Exception ("COO needs real or complex-valued sparse matrix");
+         })
     ;
 
   py::class_<S_BaseMatrix<double>, shared_ptr<S_BaseMatrix<double>>, BaseMatrix>
@@ -421,6 +422,20 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
   py::class_<SparseMatrix<double>, shared_ptr<SparseMatrix<double>>, BaseSparseMatrix, S_BaseMatrix<double> >
     (m, "SparseMatrixD",
      "a sparse matrix in CSR storage, entries are real")
+    .def("__getitem__",
+         [](const SparseMatrix<double> & self, py::tuple t)
+         {
+           size_t row = t[0].cast<size_t>();
+           size_t col = t[1].cast<size_t>();
+           return self(row,col);
+         })
+    .def("__setitem__",
+         [](SparseMatrix<double> & self, py::tuple t, double value)
+         {
+           size_t row = t[0].cast<size_t>();
+           size_t col = t[1].cast<size_t>();
+           self(row,col) = value;
+         })
     ;
 
   py::class_<BaseBlockJacobiPrecond, shared_ptr<BaseBlockJacobiPrecond>, BaseMatrix>
