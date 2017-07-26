@@ -112,7 +112,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
     ;
   
   m.def("GlobalSum", [] (double x) { return MyMPI_AllReduce(x); });
-  /** Complex + complex mpi_traits is in bla.hpp;  mympi_allreduce doesnt find it **/
+  /** Complex + complex mpi_traits is in bla.hpp;  mympi_allreduce doesn't find it **/
   m.def("GlobalSum", [] (Complex x) { 
 #ifdef PARALLEL
       Complex global_d;
