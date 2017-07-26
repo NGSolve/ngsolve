@@ -185,7 +185,7 @@ namespace ngcomp
 
     cout << IM(2) << "NP: " << np << endl;
 
-    /** Some inital book-keeping **/
+    /** Some initial book-keeping **/
     auto compute_global_nums = [this](auto ndof, auto & fes, auto & pardofs, auto & global_nums,
 				      auto & ilower, auto & iupper) 
       {
@@ -424,7 +424,7 @@ namespace ngcomp
     return;
   }
 
-  // dont need to register, those constructors are not implemented anyways...
+  // don't need to register, those constructors are not implemented anyways...
   static RegisterPreconditioner<HypreAMSPreconditioner> init_hyprepre ("hypre_ams");
 }
 #endif
