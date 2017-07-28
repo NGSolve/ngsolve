@@ -1159,7 +1159,6 @@ namespace ngfem
         return;
       }
     
-    ThreadRegionTimer reg(timer_SymbBFIAddABtdc1, TaskManager::GetThreadId());        
     size_t i = 0;
     size_t wa = a.Width();
     size_t wb = b.Width();
