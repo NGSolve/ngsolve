@@ -1145,21 +1145,34 @@ namespace ngfem
 
 
   
-  void AddABt (FlatMatrix<SIMD<double>> a,
-               FlatMatrix<SIMD<Complex>> b,
+  void AddABt (SliceMatrix<SIMD<double>> a,
+               SliceMatrix<SIMD<Complex>> b,
                SliceMatrix<Complex> c)
   {
+    if (a.Width() > 64)
+      {
+        for (size_t k = 0; k < a.Width(); k+=64)
+          {
+            size_t k2 = min(k+64, a.Width());
+            AddABt (a.Cols(k,k2), b.Cols(k,k2), c);
+          }
+        return;
+      }
+    
+    ThreadRegionTimer reg(timer_SymbBFIAddABtdc1, TaskManager::GetThreadId());        
     size_t i = 0;
     size_t wa = a.Width();
     size_t wb = b.Width();
+    size_t da = a.Dist();
+    size_t db = b.Dist();
     if (wa == 0) return;
     
-    for ( ; i < c.Height()-1; i+=2)
+    for ( ; i+1 < c.Height(); i+=2)
       {
         auto pa1 = &a(i,0);
-        auto pa2 = pa1 + wa;
+        auto pa2 = pa1 + da;
         auto pb = &b(0,0);
-        for (size_t j = 0; j < c.Width(); j++, pb += wb)
+        for (size_t j = 0; j < c.Width(); j++, pb += db)
           {
             SIMD<Complex> sum1(0.0);
             SIMD<Complex> sum2(0.0);
@@ -1206,7 +1219,7 @@ namespace ngfem
     if (wa == 0) return;
     
     size_t i = 0;
-    for ( ; i < ha-1; i+=2)
+    for ( ; i+1 < ha; i+=2)
       {
         auto pa1 = &a(i,0);
         auto pa2 = pa1 + da;
