@@ -1394,7 +1394,7 @@ namespace ngbla
 
 
   template <typename TA, typename TB, typename TC>
-  INLINE void AddABt (SliceMatrix<TA> a, SliceMatrix<TB>, BareSliceMatrix<TC> c)
+  INLINE void AddABt (SliceMatrix<TA> a, SliceMatrix<TB> b, BareSliceMatrix<TC> c)
   {
     c += a * Trans(b) | Lapack;
     // LapackMultAdd (a, Trans(b), 1.0, c, 1.0);
