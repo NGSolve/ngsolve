@@ -1085,7 +1085,8 @@ namespace ngfem
     AddABtSym (AFlatMatrix<double>(a), AFlatMatrix<double> (b), c);
 #else
     AddABtSym (SliceMatrix<double> (AFlatMatrix<double>(a)),
-               SliceMatrix<double> (AFlatMatrix<double>(b)), c);    
+               SliceMatrix<double> (AFlatMatrix<double>(b)),
+               BareSliceMatrix<double> (c));    
 #endif
   }
   
