@@ -1394,22 +1394,22 @@ namespace ngbla
 
 
   INLINE void AddABt (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
-  { c += a * Trans(b) | Lapack; }
+  { c.AddSize(a.Height(), b.Height()) += a * Trans(b) | Lapack; }
   
   INLINE void AddABtSym (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
-  { c += a * Trans(b) | Lapack; }
+  { c.AddSize(a.Height(), b.Height()) += a * Trans(b) | Lapack; }
 
   INLINE void AddABt (SliceMatrix<double> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> c)
-  { c += a * Trans(b) | Lapack; }
+  { c.AddSize(a.Height(), b.Height()) += a * Trans(b) | Lapack; }
   
   INLINE void AddABtSym (SliceMatrix<double> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> c)
-  { c += a * Trans(b) | Lapack; }
+  { c.AddSize(a.Height(), b.Height()) += a * Trans(b) | Lapack; }
 
   INLINE void AddABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> c)
-  { c += a * Trans(b) | Lapack; }
+  { c.AddSize(a.Height(), b.Height()) += a * Trans(b) | Lapack; }
   
   INLINE void AddABtSym (SliceMatrix<Complex> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> c)
-  { c += a * Trans(b) | Lapack; }
+  { c.AddSize(a.Height(), b.Height()) += a * Trans(b) | Lapack; }
 
 
 
