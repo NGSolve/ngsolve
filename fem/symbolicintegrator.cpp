@@ -1081,13 +1081,8 @@ namespace ngfem
                   FlatMatrix<SIMD<double>> b,
                   BareSliceMatrix<double> c)
   {
-#ifdef __AVX__
-    AddABtSym (AFlatMatrix<double>(a), AFlatMatrix<double> (b), c);
-#else
     AddABtSym (SliceMatrix<double> (AFlatMatrix<double>(a)),
-               SliceMatrix<double> (AFlatMatrix<double>(b)),
-               c);    
-#endif
+               SliceMatrix<double> (AFlatMatrix<double>(b)), c);
   }
   
   void AddABt (FlatMatrix<SIMD<double>> a,
@@ -1095,7 +1090,7 @@ namespace ngfem
                BareSliceMatrix<double> c)
   {
     AddABt (SliceMatrix<double> (AFlatMatrix<double>(a)),
-            SliceMatrix<double> (AFlatMatrix<double> (b)), c);
+            SliceMatrix<double> (AFlatMatrix<double>(b)), c);
   }
 
   void AddABt (FlatMatrix<SIMD<Complex>> a,
@@ -1160,7 +1155,7 @@ namespace ngfem
       {
         for (size_t k = 0; k < a.Width(); k+=64)
           {
-            size_t k2 = min(k+64, a.Width());
+            size_t k2 = min2(k+64, a.Width());
             AddABt (a.Cols(k,k2), b.Cols(k,k2), c);
           }
         return;

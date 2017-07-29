@@ -1477,6 +1477,7 @@ namespace ngbla
     }
   */
 
+  /*
   void AddABtSym (AFlatMatrix<double> a, AFlatMatrix<double> b, BareSliceMatrix<double> bc)
   {
     auto c = bc.AddSize(a.Height(), b.Height());
@@ -1552,9 +1553,101 @@ namespace ngbla
       for (int i = j; i < c.Height(); i++)
         c(i,j) += InnerProduct(a.Row(i), b.Row(j));
   }
+  */
+
+  template <int R>
+  void AddABtSymR (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> bc)
+  {
+    auto c = bc.AddSize(a.Height(), b.Height());
+
+    // clear overhead
+    /*
+    if (a.Width() != 4*a.VWidth())
+      {
+        int r = 4*a.VWidth()-a.Width();
+        __m256i mask = my_mm256_cmpgt_epi64(_mm256_set1_epi64x(r),
+                                            _mm256_set_epi64x(0,1,2,3));
+
+        __m256d zero = _mm256_setzero_pd();
+        for (int i = 0; i < a.Height(); i++)
+          _mm256_maskstore_pd((double*)&a.Get(i, a.VWidth()-1), mask, zero);
+        for (int i = 0; i < b.Height(); i++)
+          _mm256_maskstore_pd((double*)&b.Get(i, b.VWidth()-1), mask, zero);
+      }
+    */
+    if (a.Width() == 0) return;
+  
+    int j = 0;
+    for ( ; j+3 < c.Width(); j += 4)
+      {
+        int i = j;
+        double * pc = &c(i,j);
+        for ( ; i+3 < c.Height(); i += 4)
+          {
+            SIMD<double> s1, s2, s3, s4;
+            tie (s1,s2,s3,s4) = 
+              MyScal4x4<R> (a.Width()/2,
+                            &a(i,0), &a(i+1,0), &a(i+2,0), &a(i+3,0),
+                            &b(j,0), &b(j+1,0), &b(j+2,0), &b(j+3,0));
+            
+            s1 += _mm256_loadu_pd(pc);
+            _mm256_storeu_pd(pc, s1.Data());
+            pc += c.Dist();
+            s2 += _mm256_loadu_pd(pc);
+            _mm256_storeu_pd(pc, s2.Data());
+            pc += c.Dist();          
+            s3 += _mm256_loadu_pd(pc);
+            _mm256_storeu_pd(pc, s3.Data());
+            pc += c.Dist();
+            s4 += _mm256_loadu_pd(pc);
+            _mm256_storeu_pd(pc, s4.Data());
+            pc += c.Dist();          
+          }
+
+        if (i+1 < c.Height())
+          {
+            SIMD<double> s1, s2;
+            tie (s1, s2) = 
+              MyScal2x4<R> (a.Width()/4,
+                         &a(i,0), &a(i+1,0),
+                         &b(j,0), &b(j+1,0), &b(j+2,0), &b(j+3,0));
+            s1 += _mm256_loadu_pd(pc);
+            _mm256_storeu_pd(pc, s1.Data());
+            pc += c.Dist();
+            s2 += _mm256_loadu_pd(pc);
+            _mm256_storeu_pd(pc, s2.Data());
+            pc += c.Dist();
+            i += 2;
+          }
+
+        if (i < c.Height())
+          {
+            SIMD<double> s1;
+            s1 = MyScal1x4<R> (a.Width()/4, &a(i,0),
+                               &b(j,0), &b(j+1,0), &b(j+2,0), &b(j+3,0));
+            
+            s1 += _mm256_loadu_pd(pc);
+            _mm256_storeu_pd(pc, s1.Data());
+          }
+      }
+
+    for ( ; j < c.Width(); j++)
+      for (int i = j; i < c.Height(); i++)
+        c(i,j) += InnerProduct(a.Row(i), b.Row(j));
+  }
 
 
-
+  void AddABtSym (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> bc)
+  {
+    switch (a.Width() % 4)
+      {
+      case 0: AddABtSymR<0> (a, b, bc); break;
+      case 1: AddABtSymR<1> (a, b, bc); break;
+      case 2: AddABtSymR<2> (a, b, bc); break;
+      case 3: AddABtSymR<3> (a, b, bc); break;
+      default: __assume(false);
+      }
+  }
 
 
 
