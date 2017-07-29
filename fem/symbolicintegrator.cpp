@@ -1079,20 +1079,20 @@ namespace ngfem
 
   void AddABtSym (FlatMatrix<SIMD<double>> a,
                   FlatMatrix<SIMD<double>> b,
-                  SliceMatrix<double> c)
+                  BareSliceMatrix<double> c)
   {
 #ifdef __AVX__
     AddABtSym (AFlatMatrix<double>(a), AFlatMatrix<double> (b), c);
 #else
     AddABtSym (SliceMatrix<double> (AFlatMatrix<double>(a)),
                SliceMatrix<double> (AFlatMatrix<double>(b)),
-               BareSliceMatrix<double> (c));    
+               c);    
 #endif
   }
   
   void AddABt (FlatMatrix<SIMD<double>> a,
                FlatMatrix<SIMD<double>> b,
-               SliceMatrix<double> c)
+               BareSliceMatrix<double> c)
   {
     AddABt (SliceMatrix<double> (AFlatMatrix<double>(a)),
             SliceMatrix<double> (AFlatMatrix<double> (b)), c);
