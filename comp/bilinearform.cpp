@@ -3497,15 +3497,14 @@ namespace ngcomp
                    for (int facnr1 : Range(fnums1))
                      {
                        HeapReset hr(lh);
-                       int facet2 = fnums1[facnr1];
+                       
                        ma->GetFacetElements(fnums1[facnr1],elnums);
                        if (elnums.Size()<2) {
 #ifdef PARALLEL
 			 if( (ma->GetDistantProcs (NodeId(StdNodeType(NT_FACET, ma->GetDimension()), fnums1[facnr1])).Size() > 0) && (MyMPI_GetNTasks()>1) )
 			   continue;
 #endif
-                         facet2 = ma->GetPeriodicFacet(fnums1[facnr1]);
-                         if(facet2!=fnums1[facnr1])
+                         if(ma->GetPeriodicFacet(fnums1[facnr1])!=fnums1[facnr1])
                            {
                              ma->GetFacetElements (ma->GetPeriodicFacet(fnums1[facnr1]), elnums_per);
                              elnums.Append(elnums_per[0]);
@@ -3577,7 +3576,7 @@ namespace ngcomp
                        ElementId ei2(VOL, el2);
                        
                        fnums2 = ma->GetElFacets(ei2);
-                       int facnr2 = fnums2.Pos(ma->GetPeriodicFacet(facet2));
+                       int facnr2 = fnums2.Pos(ma->GetPeriodicFacet(fnums1[facnr1]));
 
                        ElementTransformation & eltrans1 = ma->GetTrafo (ei1, lh);
                        ElementTransformation & eltrans2 = ma->GetTrafo (ei2, lh);
