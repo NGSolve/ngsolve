@@ -21,7 +21,7 @@ namespace ngfem
 		 shared_ptr<DifferentialOperator> attrace_evaluator,
 		 shared_ptr<DifferentialOperator> attrace_deriv_evaluator)
     
-    : CoefficientFunction(aevaluator ? aevaluator->Dim() : 1, ais_complex),
+    : CoefficientFunction(aevaluator ? aevaluator->Dim() : 1,  /* ais_complex */ false),
       testfunction(atestfunction), is_other(false),
       evaluator(aevaluator), 
       deriv_evaluator(aderiv_evaluator),
@@ -1097,7 +1097,6 @@ namespace ngfem
                FlatMatrix<SIMD<Complex>> b,
                SliceMatrix<Complex> c)
   {
-    // AddABt (AFlatMatrix<double>(a), AFlatMatrix<double> (b), c);
     for (size_t i = 0; i < c.Height(); i++)
       for (size_t j = 0; j < c.Width(); j++)
         {
@@ -1356,6 +1355,99 @@ namespace ngfem
         }
   }
   
+  void AddABt (FlatMatrix<SIMD<double>> a,
+               FlatMatrix<SIMD<double>> b,
+               SliceMatrix<Complex> c)
+  {
+    constexpr size_t M = 92;
+    constexpr size_t N = 64;
+    double mem[M*N];
+    for (size_t i = 0; i < a.Height(); i += M)
+      {
+        size_t i2 = min2(a.Height(), i+M);
+        for (size_t j = 0; j < b.Height(); j += N)
+          {
+            size_t j2 = min2(b.Height(), j+N);
+            FlatMatrix<double> tempc(i2-i, j2-j, &mem[0]);
+            tempc = 0.0;
+            AddABt (a.Rows(i,i2), b.Rows(j,j2), tempc);
+            c.Rows(i,i2).Cols(j,j2) += tempc;
+          }
+      }
+  }
+  
+  void AddABtSym (FlatMatrix<SIMD<double>> a,
+                  FlatMatrix<SIMD<double>> b,
+                  SliceMatrix<Complex> c)
+  {
+    constexpr size_t N = 92;
+    double mem[N*N];
+    for (size_t i = 0; i < a.Height(); i += N)
+      {
+        size_t i2 = min2(a.Height(), i+N);
+        for (size_t j = 0; j < i; j += N)
+          {
+            size_t j2 = min2(b.Height(), j+N);
+            FlatMatrix<double> tempc(i2-i, j2-j, &mem[0]);
+            tempc = 0.0;
+            AddABt (a.Rows(i,i2), b.Rows(j,j2), tempc);
+            c.Rows(i,i2).Cols(j,j2) += tempc;
+          }
+        // j == i
+        FlatMatrix<double> tempc(i2-i, i2-i, &mem[0]);
+        tempc = 0.0;
+        AddABtSym (a.Rows(i,i2), b.Rows(i,i2), tempc);
+        c.Rows(i,i2).Cols(i,i2) += tempc;
+      }
+  }
+  
+  void AddABt (SliceMatrix<double> a,
+               SliceMatrix<double> b,
+               SliceMatrix<Complex> c)
+  {
+    constexpr size_t M = 92;
+    constexpr size_t N = 64;
+    double mem[M*N];
+    for (size_t i = 0; i < a.Height(); i += M)
+      {
+        size_t i2 = min2(a.Height(), i+M);
+        for (size_t j = 0; j < b.Height(); j += N)
+          {
+            size_t j2 = min2(b.Height(), j+N);
+            FlatMatrix<double> tempc(i2-i, j2-j, &mem[0]);
+            tempc = 0.0;
+            AddABt (a.Rows(i,i2), b.Rows(j,j2), tempc);
+            c.Rows(i,i2).Cols(j,j2) += tempc;
+          }
+      }
+  }
+  
+  void AddABtSym (SliceMatrix<double> a,
+                  SliceMatrix<double> b,
+                  SliceMatrix<Complex> c)
+  {
+    constexpr size_t N = 92;
+    double mem[N*N];
+    for (size_t i = 0; i < a.Height(); i += N)
+      {
+        size_t i2 = min2(a.Height(), i+N);
+        for (size_t j = 0; j < i; j += N)
+          {
+            size_t j2 = min2(b.Height(), j+N);
+            FlatMatrix<double> tempc(i2-i, j2-j, &mem[0]);
+            tempc = 0.0;
+            AddABt (a.Rows(i,i2), b.Rows(j,j2), tempc);
+            c.Rows(i,i2).Cols(j,j2) += tempc;
+          }
+        // j == i
+        FlatMatrix<double> tempc(i2-i, i2-i, &mem[0]);
+        tempc = 0.0;
+        AddABtSym (a.Rows(i,i2), b.Rows(i,i2), tempc);
+        c.Rows(i,i2).Cols(i,i2) += tempc;
+      }
+  }
+
+  
 
   Timer timer_SymbBFI("SymbolicBFI");
   Timer timer_SymbBFIstart("SymbolicBFI start");
@@ -1367,13 +1459,13 @@ namespace ngfem
   Timer timer_SymbBFImultsym("SymbolicBFI multsym");
 
 
-  template <typename SCAL, typename SCAL_SHAPES>
+  template <typename SCAL, typename SCAL_SHAPES, typename SCAL_RES>
   void SymbolicBilinearFormIntegrator ::
   // template <>
   // void SymbolicBilinearFormIntegrator ::
   T_CalcElementMatrixAdd (const FiniteElement & fel,
                           const ElementTransformation & trafo, 
-                          FlatMatrix<SCAL> elmat,
+                          FlatMatrix<SCAL_RES> elmat,
                           LocalHeap & lh) const
     
   {
@@ -1385,13 +1477,13 @@ namespace ngfem
         switch (trafo.SpaceDim())
           {
           case 1:
-            T_CalcElementMatrixEBAdd<1,SCAL, SCAL_SHAPES> (fel, trafo, elmat, lh);
+            T_CalcElementMatrixEBAdd<1,SCAL, SCAL_SHAPES, SCAL_RES> (fel, trafo, elmat, lh);
             return;
           case 2:
-            T_CalcElementMatrixEBAdd<2,SCAL, SCAL_SHAPES> (fel, trafo, elmat, lh);
+            T_CalcElementMatrixEBAdd<2,SCAL, SCAL_SHAPES, SCAL_RES> (fel, trafo, elmat, lh);
             return;
           case 3:
-            T_CalcElementMatrixEBAdd<3,SCAL, SCAL_SHAPES> (fel, trafo, elmat, lh);
+            T_CalcElementMatrixEBAdd<3,SCAL, SCAL_SHAPES, SCAL_RES> (fel, trafo, elmat, lh);
             return;
           default:
             throw Exception ("Illegal space dimension" + ToString(trafo.SpaceDim()));
@@ -1488,7 +1580,7 @@ namespace ngfem
 
                       IntRange r1 = proxy1->Evaluator()->UsedDofs(fel_trial);
                       IntRange r2 = proxy2->Evaluator()->UsedDofs(fel_test);
-                      SliceMatrix<SCAL> part_elmat = elmat.Rows(r2).Cols(r1);
+                      SliceMatrix<SCAL_RES> part_elmat = elmat.Rows(r2).Cols(r1);
 
                           
                       FlatMatrix<SIMD<SCAL_SHAPES>> bbmat1(elmat.Width()*dim_proxy1, ir.Size(), lh);
@@ -1632,7 +1724,7 @@ namespace ngfem
           cout << IM(4) << e.What() << endl
                << "switching to scalar evaluation" << endl;
           simd_evaluate = false;
-          T_CalcElementMatrixAdd (fel, trafo, elmat, lh);
+          T_CalcElementMatrixAdd<SCAL, SCAL_SHAPES, SCAL_RES> (fel, trafo, elmat, lh);
           return;
         }
     
@@ -1737,7 +1829,7 @@ namespace ngfem
                   }
                 IntRange r1 = proxy1->Evaluator()->UsedDofs(fel_trial);
                 IntRange r2 = proxy2->Evaluator()->UsedDofs(fel_test);
-                SliceMatrix<SCAL> part_elmat = elmat.Rows(r2).Cols(r1);
+                SliceMatrix<SCAL_RES> part_elmat = elmat.Rows(r2).Cols(r1);
                 FlatMatrix<SCAL_SHAPES,ColMajor> bmat1(proxy1->Dimension(), elmat.Width(), lh);
                 FlatMatrix<SCAL_SHAPES,ColMajor> bmat2(proxy2->Dimension(), elmat.Height(), lh);
 
@@ -1821,7 +1913,7 @@ namespace ngfem
                      LocalHeap & lh) const
   {
     elmat = 0.0;
-    T_CalcElementMatrixAdd<double,double> (fel, trafo, elmat, lh);
+    T_CalcElementMatrixAdd<double,double,double> (fel, trafo, elmat, lh);
   }
   
   void 
@@ -1833,9 +1925,14 @@ namespace ngfem
   {
     elmat = 0.0;
     if (fel.ComplexShapes() || trafo.IsComplex())
-      T_CalcElementMatrixAdd<Complex,Complex> (fel, trafo, elmat, lh);
+      T_CalcElementMatrixAdd<Complex,Complex,Complex> (fel, trafo, elmat, lh);
     else
-      T_CalcElementMatrixAdd<Complex,double> (fel, trafo, elmat, lh);
+      {
+        if (cf->IsComplex())
+          T_CalcElementMatrixAdd<Complex,double,Complex> (fel, trafo, elmat, lh);
+        else
+          T_CalcElementMatrixAdd<double,double,Complex> (fel, trafo, elmat, lh);
+      }
   }
 
   void 
@@ -1845,7 +1942,7 @@ namespace ngfem
                         FlatMatrix<double> elmat,
                         LocalHeap & lh) const
   {
-    T_CalcElementMatrixAdd<double,double> (fel, trafo, elmat, lh);
+    T_CalcElementMatrixAdd<double,double,double> (fel, trafo, elmat, lh);
   }
   
   void 
@@ -1856,19 +1953,22 @@ namespace ngfem
                         LocalHeap & lh) const
   {
     if (fel.ComplexShapes() || trafo.IsComplex())
-      T_CalcElementMatrixAdd<Complex,Complex> (fel, trafo, elmat, lh);
+      T_CalcElementMatrixAdd<Complex,Complex,Complex> (fel, trafo, elmat, lh);
     else
-      T_CalcElementMatrixAdd<Complex,double> (fel, trafo, elmat, lh);
+      if (cf->IsComplex())
+        T_CalcElementMatrixAdd<Complex,double,Complex> (fel, trafo, elmat, lh);
+      else
+        T_CalcElementMatrixAdd<double,double,Complex> (fel, trafo, elmat, lh);
   }
 
 
   
 
-  template <int D, typename SCAL, typename SCAL_SHAPES>
+  template <int D, typename SCAL, typename SCAL_SHAPES, typename SCAL_RES>
   void SymbolicBilinearFormIntegrator ::
   T_CalcElementMatrixEBAdd (const FiniteElement & fel,
                             const ElementTransformation & trafo, 
-                            FlatMatrix<SCAL> elmat,
+                            FlatMatrix<SCAL_RES> elmat,
                             LocalHeap & lh) const
       
     {
@@ -1959,7 +2059,7 @@ namespace ngfem
                 
                 IntRange r1 = proxy1->Evaluator()->UsedDofs(fel_trial);
                 IntRange r2 = proxy2->Evaluator()->UsedDofs(fel_test);
-                SliceMatrix<SCAL> part_elmat = elmat.Rows(r2).Cols(r1);
+                SliceMatrix<SCAL_RES> part_elmat = elmat.Rows(r2).Cols(r1);
 
                 constexpr size_t BS = 16;
                 for (size_t i = 0; i < mir.Size(); i+=BS)

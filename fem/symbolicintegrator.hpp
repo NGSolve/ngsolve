@@ -544,16 +544,16 @@ public:
                           LocalHeap & lh) const;    
 
     
-    template <typename SCAL, typename SCAL_SHAPES = double>
+    template <typename SCAL, typename SCAL_SHAPES, typename SCAL_RES>
     void T_CalcElementMatrixAdd (const FiniteElement & fel,
                                  const ElementTransformation & trafo, 
-                                 FlatMatrix<SCAL> elmat,
+                                 FlatMatrix<SCAL_RES> elmat,
                                  LocalHeap & lh) const;
 
-    template <int D, typename SCAL, typename SCAL_SHAPES>
+    template <int D, typename SCAL, typename SCAL_SHAPES, typename SCAL_RES>
     void T_CalcElementMatrixEBAdd (const FiniteElement & fel,
                                    const ElementTransformation & trafo, 
-                                   FlatMatrix<SCAL> elmat,
+                                   FlatMatrix<SCAL_RES> elmat,
                                    LocalHeap & lh) const;
     
     virtual void 
