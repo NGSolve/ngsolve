@@ -1231,7 +1231,7 @@ namespace ngfem
     // M * K * sizeof(SIMD<Complex>) = 32 * 64 * 64 = 128 KB
     for (size_t k = 0; k < b.Height(); k+= bs)
       {
-        size_t k2 = min(k+bs, b.Height());
+        size_t k2 = min2(k+bs, b.Height());
         FlatMatrix<SIMD<Complex>> tempb(k2-k, b.Width(), &memb[0]);
         tempb = b.Rows(k,k2);
         AddABt1 (a, tempb, c.Cols(k,k2));
