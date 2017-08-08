@@ -28,6 +28,8 @@ namespace ngstd
 
   size_t dummy_thread_times[NgProfiler::SIZE];
   size_t * NgProfiler::thread_times = dummy_thread_times;
+  size_t dummy_thread_flops[NgProfiler::SIZE];
+  size_t * NgProfiler::thread_flops = dummy_thread_flops;
 
   NgProfiler :: NgProfiler()
   {
