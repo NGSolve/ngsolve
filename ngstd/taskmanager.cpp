@@ -164,11 +164,15 @@ namespace ngstd
     NgProfiler::thread_times = new size_t[alloc_size];
     for (size_t i = 0; i < alloc_size; i++)
       NgProfiler::thread_times[i] = 0;
+    NgProfiler::thread_flops = new size_t[alloc_size];
+    for (size_t i = 0; i < alloc_size; i++)
+      NgProfiler::thread_flops[i] = 0;
 
     while (active_workers < num_threads-1)
       ;
   }
   extern size_t dummy_thread_times[NgProfiler::SIZE];
+  extern size_t dummy_thread_flops[NgProfiler::SIZE];
   void TaskManager :: StopWorkers()
   {
     done = true;
@@ -176,9 +180,14 @@ namespace ngstd
     // collect timings
     for (size_t i = 0; i < num_threads; i++)
       for (size_t j = 0; j < NgProfiler::SIZE; j++)
-        NgProfiler::tottimes[j] += 1.0/3.1e9 * NgProfiler::thread_times[i*NgProfiler::SIZE+j];
+        {
+          NgProfiler::tottimes[j] += 1.0/3.1e9 * NgProfiler::thread_times[i*NgProfiler::SIZE+j];
+          NgProfiler::flops[j] += NgProfiler::thread_flops[i*NgProfiler::SIZE+j];
+        }
     delete [] NgProfiler::thread_times;
     NgProfiler::thread_times = dummy_thread_times;
+    delete [] NgProfiler::thread_flops;
+    NgProfiler::thread_flops = dummy_thread_flops;    
     while (active_workers)
       ;
     delete sync[0];
