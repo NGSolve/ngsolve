@@ -290,7 +290,19 @@ public:
   }
   
   virtual ~CompoundDifferentialOperator () = default;
+  shared_ptr<DifferentialOperator> BaseDiffOp() const { return diffop; } 
+  int Component () const { return comp; }
 
+  virtual bool operator== (const DifferentialOperator & diffop2) const
+  {
+    const CompoundDifferentialOperator * do2 =
+      dynamic_cast<const CompoundDifferentialOperator*> (&diffop2);
+    if (do2 && do2->Component() == Component())
+      return *diffop == *(do2->diffop);
+    return false;
+  }
+
+  
   virtual string Name() const { return diffop->Name(); }
 
   virtual IntRange UsedDofs(const FiniteElement & bfel) const
