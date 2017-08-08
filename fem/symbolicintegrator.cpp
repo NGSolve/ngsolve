@@ -1146,21 +1146,11 @@ namespace ngfem
   */
 
 
-  
-  void AddABt (SliceMatrix<SIMD<double>> a,
-               SliceMatrix<SIMD<Complex>> b,
-               SliceMatrix<Complex> c)
+      
+  void AddABt1 (SliceMatrix<SIMD<double>> a,
+                SliceMatrix<SIMD<Complex>> b,
+                SliceMatrix<Complex> c)
   {
-    if (a.Width() > 64)
-      {
-        for (size_t k = 0; k < a.Width(); k+=64)
-          {
-            size_t k2 = min2(k+64, a.Width());
-            AddABt (a.Cols(k,k2), b.Cols(k,k2), c);
-          }
-        return;
-      }
-    
     size_t i = 0;
     size_t wa = a.Width();
     size_t wb = b.Width();
@@ -1172,21 +1162,45 @@ namespace ngfem
       {
         auto pa1 = &a(i,0);
         auto pa2 = pa1 + da;
-        auto pb = &b(0,0);
-        for (size_t j = 0; j < c.Width(); j++, pb += db)
+        auto pb1 = &b(0,0);
+        size_t j = 0;
+        for ( ; j+1 < c.Width(); j+=2, pb1 += 2*db)
+          // for ( ; j+1 < c.Width(); j+=1, pb1 += db)
+          {
+            auto pb2 = pb1 + db;
+            
+            SIMD<Complex> sum11(0.0);
+            SIMD<Complex> sum21(0.0);
+            SIMD<Complex> sum12(0.0);
+            SIMD<Complex> sum22(0.0);
+            __assume (wa > 0);
+            for (size_t k = 0; k < wa; k++)
+              {
+                sum11 += pa1[k] * pb1[k];
+                sum21 += pa2[k] * pb1[k];
+                sum12 += pa1[k] * pb2[k];
+                sum22 += pa2[k] * pb2[k];
+              }
+
+            Complex s11, s21, s12, s22;
+            std::tie(s11,s21) = HSum(sum11, sum21);
+            std::tie(s12,s22) = HSum(sum12, sum22);
+            c(i,j) += s11;
+            c(i,j+1) += s12;
+            c(i+1,j) += s21;
+            c(i+1,j+1) += s22;
+          }
+        if (j < c.Width())
           {
             SIMD<Complex> sum1(0.0);
             SIMD<Complex> sum2(0.0);
             __assume (wa > 0);
             for (size_t k = 0; k < wa; k++)
               {
-                sum1 += pa1[k] * pb[k];
-                sum2 += pa2[k] * pb[k];
+                sum1 += pa1[k] * pb1[k];
+                sum2 += pa2[k] * pb1[k];
               }
-            /*
-            c(i,j) += HSum(sum1);
-            c(i+1,j) += HSum(sum2);
-            */
+
             Complex s1, s2;
             std::tie(s1,s2) = HSum(sum1, sum2);
             c(i,j) += s1;
@@ -1204,6 +1218,41 @@ namespace ngfem
         }
   }
 
+  Timer timer_addabtdc ("AddABt-double-complex");
+  Timer timer_addabtdcsym ("AddABt-double-complex, sym");
+
+  // block and pack B
+  template <size_t K>
+  void AddABt2 (SliceMatrix<SIMD<double>> a,
+                SliceMatrix<SIMD<Complex>> b,
+                SliceMatrix<Complex> c)
+  {
+    constexpr size_t bs = 32;
+    SIMD<Complex> memb[bs*K];
+    // M * K * sizeof(SIMD<Complex>) = 32 * 64 * 64 = 128 KB
+    for (size_t k = 0; k < b.Height(); k+= bs)
+      {
+        size_t k2 = min(k+bs, b.Height());
+        FlatMatrix<SIMD<Complex>> tempb(k2-k, b.Width(), &memb[0]);
+        tempb = b.Rows(k,k2);
+        AddABt1 (a, tempb, c.Cols(k,k2));
+      }
+  }
+  
+  void AddABt (SliceMatrix<SIMD<double>> a,
+               SliceMatrix<SIMD<Complex>> b,
+               SliceMatrix<Complex> c)
+  {
+    ThreadRegionTimer reg(timer_addabtdc, TaskManager::GetThreadId());
+    NgProfiler::AddThreadFlops(timer_addabtdc, TaskManager::GetThreadId(),
+                               a.Height()*b.Height()*a.Width()*8);
+    constexpr size_t bs = 64;
+    for (size_t k = 0; k < a.Width(); k+=bs)
+      {
+        size_t k2 = min2(k+bs, a.Width());
+        AddABt2<bs> (a.Cols(k,k2), b.Cols(k,k2), c);
+      }
+  }
 
   
   
@@ -1211,12 +1260,53 @@ namespace ngfem
                   FlatMatrix<SIMD<Complex>> b,
                   SliceMatrix<Complex> c)
   {
+    size_t ha = a.Height();
+    size_t bs = 192;
+    if (ha > bs)
+      {
+        AddABtSym(a.Rows(0,bs), b.Rows(0,bs), c.Rows(0,bs).Cols(0,bs));
+        AddABt(a.Rows(bs,ha), b.Rows(0,bs), c.Rows(bs,ha).Cols(0,bs));
+        AddABtSym(a.Rows(bs,ha), b.Rows(bs,ha), c.Rows(bs,ha).Cols(bs,ha));
+        return;
+      }
+    
+    bs = 96;
+    if (ha > bs)
+      {
+        AddABtSym(a.Rows(0,bs), b.Rows(0,bs), c.Rows(0,bs).Cols(0,bs));
+        AddABt(a.Rows(bs,ha), b.Rows(0,bs), c.Rows(bs,ha).Cols(0,bs));
+        AddABtSym(a.Rows(bs,ha), b.Rows(bs,ha), c.Rows(bs,ha).Cols(bs,ha));
+        return;
+      }
+
+    bs = 48;
+    if (ha > bs)
+      {
+        AddABtSym(a.Rows(0,bs), b.Rows(0,bs), c.Rows(0,bs).Cols(0,bs));
+        AddABt(a.Rows(bs,ha), b.Rows(0,bs), c.Rows(bs,ha).Cols(0,bs));
+        AddABtSym(a.Rows(bs,ha), b.Rows(bs,ha), c.Rows(bs,ha).Cols(bs,ha));
+        return;
+      }
+    bs = 24;
+    if (ha > bs)
+      {
+        AddABtSym(a.Rows(0,bs), b.Rows(0,bs), c.Rows(0,bs).Cols(0,bs));
+        AddABt(a.Rows(bs,ha), b.Rows(0,bs), c.Rows(bs,ha).Cols(0,bs));
+        AddABtSym(a.Rows(bs,ha), b.Rows(bs,ha), c.Rows(bs,ha).Cols(bs,ha));
+        return;
+      }
+    
+    ThreadRegionTimer reg(timer_addabtdcsym, TaskManager::GetThreadId());
+    NgProfiler::AddThreadFlops(timer_addabtdcsym, TaskManager::GetThreadId(),
+                               a.Height()*b.Height()*a.Width()*8);
+    
     // AddABt (a, b, c);
     size_t da = a.Width();
     size_t db = b.Width();
     size_t wa = a.Width();
-    size_t ha = a.Height();
+    // size_t ha = a.Height();
     size_t hb = b.Height();
+    size_t dc = c.Dist();
     if (wa == 0) return;
     
     size_t i = 0;
@@ -1224,21 +1314,35 @@ namespace ngfem
       {
         auto pa1 = &a(i,0);
         auto pa2 = pa1 + da;
-        auto pb = &b(0,0);
-        for (size_t j = 0; j <= i+1; j++, pb += db)
+        auto pb1 = &b(0,0);
+        auto pc = &c(i,0);
+
+        for (size_t j = 0; j <= i; j+=2, pb1 += 2*db)
           {
-            SIMD<Complex> sum1(0.0);
-            SIMD<Complex> sum2(0.0);
+            auto pb2 = pb1 + db;
+            
+            SIMD<Complex> sum11(0.0);
+            SIMD<Complex> sum21(0.0);
+            SIMD<Complex> sum12(0.0);
+            SIMD<Complex> sum22(0.0);
+
             __assume (wa > 0);
             for (size_t k = 0; k < wa; k++)
               {
-                sum1 += pa1[k] * pb[k];
-                sum2 += pa2[k] * pb[k];
+                sum11 += pa1[k] * pb1[k];
+                sum21 += pa2[k] * pb1[k];
+                sum12 += pa1[k] * pb2[k];
+                sum22 += pa2[k] * pb2[k];
               }
-            Complex s1, s2;
-            std::tie(s1,s2) = HSum(sum1, sum2);
-            c(i,j) += s1;
-            c(i+1,j) += s2;
+
+            Complex s11, s21, s12, s22;
+            std::tie(s11,s12) = HSum(sum11, sum12);
+            std::tie(s21,s22) = HSum(sum21, sum22);
+
+            pc[j] += s11;
+            pc[j+1] += s12;            
+            pc[j+dc] += s21;
+            pc[j+dc+1] += s22;            
           }
       }
     
@@ -1260,6 +1364,7 @@ namespace ngfem
   Timer timer_SymbBFIbmat("SymbolicBFI bmat");
   Timer timer_SymbBFIdmat("SymbolicBFI dmat");
   Timer timer_SymbBFImult("SymbolicBFI mult");
+  Timer timer_SymbBFImultsym("SymbolicBFI multsym");
 
 
   template <typename SCAL, typename SCAL_SHAPES>
@@ -1491,11 +1596,20 @@ namespace ngfem
                       */
 
                       {
-                        // ThreadRegionTimer regdmult(timer_SymbBFImult, TaskManager::GetThreadId());
                       if (symmetric_so_far)
-                        AddABtSym (hbbmat2.Rows(r2), hbdbmat1.Rows(r1), part_elmat);
+                        {
+                          ThreadRegionTimer regdmult(timer_SymbBFImultsym, TaskManager::GetThreadId());
+                          NgProfiler::AddThreadFlops(timer_SymbBFImultsym, TaskManager::GetThreadId(),
+                                                     SIMD<double>::Size()*2*r2.Size()*(r1.Size()+1)*hbbmat2.Width() / 2);
+                          AddABtSym (hbbmat2.Rows(r2), hbdbmat1.Rows(r1), part_elmat);
+                        }
                       else
-                        AddABt (hbbmat2.Rows(r2), hbdbmat1.Rows(r1), part_elmat);
+                        {
+                          ThreadRegionTimer regdmult(timer_SymbBFImult, TaskManager::GetThreadId());
+                          NgProfiler::AddThreadFlops(timer_SymbBFImult, TaskManager::GetThreadId(),
+                                                     SIMD<double>::Size()*2*r2.Size()*r1.Size()*hbbmat2.Width());
+                          AddABt (hbbmat2.Rows(r2), hbdbmat1.Rows(r1), part_elmat);
+                        }
                       }
                       if (symmetric_so_far)
                         for (size_t i = 0; i < part_elmat.Height(); i++)
