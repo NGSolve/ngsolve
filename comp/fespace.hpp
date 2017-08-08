@@ -489,10 +489,10 @@ namespace ngcomp
     // { return lodofs_per_node[nt]; }
 
     /// get dofs on vertex vnr
-    [[deprecated("Use GetDofNrs(NODE_TYPE(NT_VERTEX,nr) instead")]]
+    // [[deprecated("Use GetDofNrs(NODE_TYPE(NT_VERTEX,nr) instead")]]
     virtual void GetVertexDofNrs (int vnr, Array<DofId> & dnums) const;
     /// get dofs on edge enr
-    [[deprecated("Use GetDofNrs(NODE_TYPE(NT_EDGE,nr) instead")]]    
+    // [[deprecated("Use GetDofNrs(NODE_TYPE(NT_EDGE,nr) instead")]]    
     virtual void GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const;
     /// get dofs on face fnr
     virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const;
