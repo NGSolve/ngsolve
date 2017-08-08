@@ -1037,12 +1037,15 @@ namespace ngla
     ;
   }
 
-
+  Timer timer_addelmat_nonsym("SparseMatrix::AddElementMatrix");
+  
   template <class TM>
   void SparseMatrixTM<TM> ::
   AddElementMatrix(FlatArray<int> dnums1, FlatArray<int> dnums2, 
                    BareSliceMatrix<TSCAL> elmat1, bool use_atomic)
   {
+    ThreadRegionTimer reg (timer_addelmat_nonsym, TaskManager::GetThreadId());
+    
     ArrayMem<int, 50> map(dnums2.Size());
     for (int i = 0; i < map.Size(); i++) map[i] = i;
     QuickSortI (dnums2, map);
