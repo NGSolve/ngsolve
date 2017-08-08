@@ -1685,7 +1685,7 @@ namespace ngbla
     */
     INLINE const BareSliceMatrix Cols (size_t first, size_t next) const
     {
-      return BareSliceMatrix (dist, data+first);
+      return BareSliceMatrix (dist, data+first, DummySize(Height(), next-first));
     }
 
     INLINE const BareSliceMatrix Rows (IntRange range) const
