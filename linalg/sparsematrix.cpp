@@ -1026,13 +1026,11 @@ namespace ngla
       }
 
     TM * vi = &data[fi], * vin = &data[fi+1];
-    while (pi < pin)
+    while (vi < vin)
       {
         _mm_prefetch (reinterpret_cast<void*>(vi), _MM_HINT_T2);
         vi += 64/sizeof(double);
       }
-    // _mm_prefetch (reinterpret_cast<void*>(&this->GetRowIndices(rownr)[0]), _MM_HINT_T2);
-    // _mm_prefetch (reinterpret_cast<void*>(&this->GetRowValues(rownr)[0]), _MM_HINT_T2);    
 #endif
     ;
   }
