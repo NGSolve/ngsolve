@@ -368,7 +368,12 @@ namespace ngfem
     NGS_DLL_HEADER MappedIntegrationPoint () = default;
     ///
     NGS_DLL_HEADER MappedIntegrationPoint (const IntegrationPoint & aip,
-					   const ElementTransformation & aeltrans);
+					   const ElementTransformation & aeltrans)
+      : DimMappedIntegrationPoint<DIMR,SCAL> (aip, aeltrans)
+    {
+      this->eltrans->CalcPointJacobian(this->IP(), this->point, dxdxi);
+      this->Compute();
+    }
 
     INLINE MappedIntegrationPoint (const IntegrationPoint & aip,
 			    const ElementTransformation & aeltrans,
@@ -406,6 +411,7 @@ namespace ngfem
 				     Vec<3,SCAL> (dxdxi.Col(1)));
 		  det = L2Norm (normalvec);
 		  normalvec /= det;
+                  tangentialvec = TSCAL(0.0);
 		}
 	      else
 		{
@@ -422,13 +428,14 @@ namespace ngfem
 
 	      normalvec(0) = -dxdxi(1,0) / det;
 	      normalvec(1) = dxdxi(0,0) / det;
+              tangentialvec = TSCAL(0.0);
 	    }
 	  else
 	    {
 	      det = 1.0;
 	      normalvec = 1.0;
+              tangentialvec = TSCAL(0.0);
 	    }
-	  tangentialvec = TSCAL(0.0);
 	}
       this->measure = fabs (det);
     }
