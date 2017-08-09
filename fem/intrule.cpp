@@ -136,48 +136,6 @@ namespace ngfem
     return eltrans->VB();
   }
 
-  
-  template <int S, int R, typename SCAL>
-  MappedIntegrationPoint<S,R,SCAL> :: 
-  MappedIntegrationPoint (const IntegrationPoint & aip,
-			  const ElementTransformation & aeltrans)
-    : DimMappedIntegrationPoint<R,SCAL> (aip, aeltrans)
-  {
-    this->eltrans->CalcPointJacobian(this->IP(), this->point, dxdxi);
-
-    if (S == R)
-      {
-	det = Det (dxdxi); 
-	if(det == 0) 
-	  { 
-	    throw Exception ("Jacobi-det is zero");
-	  } 
-	if (det < 0 && 0)
-	  {
-	    throw Exception ("Jacobi-det is negative");
-	  }
-	// dxidx = Inv (dxdxi);
-      }
-    else
-      {
-	if (R == 3)
-	  {
-            normalvec = Cross (Vec<3,SCAL> (dxdxi.Col(0)),
-                               Vec<3,SCAL> (dxdxi.Col(1)));
-            det = L2Norm (normalvec);
-            normalvec /= det;
-	  }
-	else
-	  {
-	    det = sqrt ( sqr (dxdxi(0,0)) + sqr (dxdxi(1,0)));
-
-	    normalvec(0) = -dxdxi(1,0) / det;
-	    normalvec(1) = dxdxi(0,0) / det;
-	  }
-      }
-    this->measure = fabs (det);
-  }
-
 
   template <int S, int R, typename SCAL>
   void MappedIntegrationPoint<S,R,SCAL> :: 
