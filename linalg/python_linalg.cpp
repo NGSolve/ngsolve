@@ -418,6 +418,9 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
   py::class_<S_BaseMatrix<double>, shared_ptr<S_BaseMatrix<double>>, BaseMatrix>
     (m, "S_BaseMatrixD", "base sparse matrix double")
     ;
+  py::class_<S_BaseMatrix<Complex>, shared_ptr<S_BaseMatrix<Complex>>, BaseMatrix>
+    (m, "S_BaseMatrixC", "base sparse matrix complex")
+    ;
 
   py::class_<SparseMatrix<double>, shared_ptr<SparseMatrix<double>>, BaseSparseMatrix, S_BaseMatrix<double> >
     (m, "SparseMatrixD",
@@ -431,6 +434,25 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
          })
     .def("__setitem__",
          [](SparseMatrix<double> & self, py::tuple t, double value)
+         {
+           size_t row = t[0].cast<size_t>();
+           size_t col = t[1].cast<size_t>();
+           self(row,col) = value;
+         })
+    ;
+
+  py::class_<SparseMatrix<Complex>, shared_ptr<SparseMatrix<Complex>>, BaseSparseMatrix, S_BaseMatrix<Complex>>
+    (m, "SparseMatrixC",
+     "a sparse matrix in CSR storage, entries are complex")
+    .def("__getitem__",
+         [](const SparseMatrix<Complex> & self, py::tuple t)
+         {
+           size_t row = t[0].cast<size_t>();
+           size_t col = t[1].cast<size_t>();
+           return self(row,col);
+         })
+    .def("__setitem__",
+         [](SparseMatrix<Complex> & self, py::tuple t, Complex value)
          {
            size_t row = t[0].cast<size_t>();
            size_t col = t[1].cast<size_t>();
