@@ -1357,7 +1357,7 @@ flags : dict
 order : int
   Order of the finite element space
 
-is_complex : bool
+complex : bool
   Set to true if you want to specify complex (bi-)linearforms on the
   FESpace.
 
