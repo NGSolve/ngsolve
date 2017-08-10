@@ -1202,58 +1202,13 @@ when building the system matrices.
 
 
   m.def("CreateFESpace", [] (py::object self_class, const string & type, shared_ptr<MeshAccess> ma,
-                             Flags & flags, int order, bool is_complex,
-                             py::object dirichlet, py::object definedon, int dim,
-                             py::object order_left, py::object order_right, ORDER_POLICY order_policy)
+                             py::object order_left, py::object order_right, ORDER_POLICY order_policy,
+                             py::kwargs kwargs)
         {
+          py::list info;
+          info.append(ma);
+          auto flags = CreateFlagsFromKwArgs(self_class, kwargs, info);
 
-          if (order > -1) {
-            flags.SetFlag ("order", order);
-          }
-          if (dim > -1) {
-            flags.SetFlag ("dim", dim);
-          }
-          if (is_complex) {
-            flags.SetFlag ("complex");
-          }
-
-          if (py::isinstance<py::list>(dirichlet)) {
-            flags.SetFlag("dirichlet", makeCArray<double>(py::list(dirichlet)));
-          }
-
-          if (py::isinstance<py::str>(dirichlet))
-            {
-              std::regex pattern(dirichlet.cast<string>());
-              Array<double> dirlist;
-              for (int i = 0; i < ma->GetNBoundaries(); i++)
-                if (std::regex_match (ma->GetMaterial(BND, i), pattern))
-                  dirlist.Append (i+1);
-              flags.SetFlag("dirichlet", dirlist);
-            }
-
-          if (py::isinstance<py::str>(definedon))
-            {
-              std::regex pattern(definedon.cast<string>());
-              Array<double> defonlist;
-              for (int i = 0; i < ma->GetNDomains(); i++)
-                if (regex_match(ma->GetMaterial(VOL,i), pattern))
-                  defonlist.Append(i+1);
-              flags.SetFlag ("definedon", defonlist);
-            }
-
-          if (py::isinstance<py::list> (definedon))
-            flags.SetFlag ("definedon", makeCArray<double> (definedon));
-          py::extract<Region> definedon_reg(definedon);
-          if (definedon_reg.check() && definedon_reg().IsVolume())
-            {
-              Array<double> defonlist;
-              for (int i = 0; i < definedon_reg().Mask().Size(); i++)
-                if (definedon_reg().Mask().Test(i))
-                  defonlist.Append(i+1);
-              flags.SetFlag ("definedon", defonlist);
-            }
-                             
-                             
           auto fes = CreateFESpace (type, ma, flags);
           fes->SetOrderPolicy(order_policy);
                              
@@ -1270,12 +1225,7 @@ when building the system matrices.
           return fes;
         },
         py::arg("self_class"),
-        py::arg("type"), py::arg("mesh"), py::arg("flags") = py::dict(),
-        py::arg("order")=-1,
-        py::arg("complex")=false,
-        py::arg("dirichlet")=DummyArgument(),
-        py::arg("definedon")=DummyArgument(),
-        py::arg("dim")=-1,
+        py::arg("type"), py::arg("mesh"),
         py::arg("order_left")=DummyArgument(),
         py::arg("order_right")=DummyArgument(),
         py::arg("order_policy")=OLDSTYLE_ORDER,
@@ -1384,6 +1334,54 @@ flags : dict
     Additional flags for the compound FESpace
 
 )raw_string"), py::dynamic_attr())
+
+    .def_static("__flags_doc__", [] (py::object self)
+         {
+           py::dict flags_doc;
+           flags_doc["order"] = "int = 1\n  order of finite element space";
+           flags_doc["is_complex"] = "bool = false";
+           flags_doc["dirichlet"] = R"raw_string(regexpr
+  Regular expression string defining the dirichlet boundary.
+  More than one boundary can be combined by the | operator,
+  Example: dirichlet = "dirichlet1|dirichlet2")raw_string";
+
+           flags_doc["definedon"] = R"raw_string(list of bits
+  Define FESpace only on the given domain numbers. Must be list of
+  0s and 1s, 0 for not defined, 1 for defined.)raw_string";
+
+           flags_doc["dim"] = "int\n  Create multi dimensional FESpace (i.e. [H1]^3)";
+           return flags_doc;
+         })
+    .def_static("__special_treated_flags__", [] (py::object pyclass)
+                {
+                  // CAUTION: Do not use references as arguments for cpp function lambdas
+                  // pybind11 somehow removes the references and creates copies!
+                  // pass arguments either by value or by pointer!
+                  py::dict special;
+                  special["dirichlet"] =
+                    py::cpp_function([] (py::object dirichlet, Flags* flags, py::list info)
+                                     {
+                                       auto ma = py::cast<shared_ptr<MeshAccess>>(info[0]);
+                                       if(py::isinstance<py::list>(dirichlet))
+                                         {
+                                           flags->SetFlag("dirichlet",
+                                                         makeCArray<double>(py::list(dirichlet)));
+                                           return;
+                                         }
+                                       if (py::isinstance<py::str>(dirichlet))
+                                         {
+                                           std::regex pattern(dirichlet.cast<string>());
+                                           Array<double> dirlist;
+                                           for (int i = 0; i < ma->GetNBoundaries(); i++)
+                                             if (std::regex_match (ma->GetMaterial(BND, i), pattern))
+                                               {
+                                                 dirlist.Append (i+1);
+                                               }
+                                           flags->SetFlag("dirichlet", dirlist);
+                                         }
+                                     });
+                  return special;
+                })
     .def("__ngsid__", [] (shared_ptr<FESpace> self)
          { return reinterpret_cast<std::uintptr_t>(self.get()); } )
     .def("__reduce__", [&] (py::object fes_obj)

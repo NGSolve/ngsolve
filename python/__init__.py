@@ -85,6 +85,27 @@ def TmpRedraw(*args, **kwargs):
 solve.Redraw = TmpRedraw
 del TmpRedraw
 
+
+# add flags docu to docstring
+all_classes = comp.__dict__
+for classname in all_classes:
+    instance = all_classes[classname]
+    try:
+        flags_doc = instance.__flags_doc__(instance)
+        if instance.__doc__ == None:
+            try:
+                instance.__doc__ = super(instance,instance).__doc__
+            except Exception:
+                pass
+            if instance.__doc__ == None:
+                instance.__doc__ = ""
+        instance.__doc__ += "\n Keyword arguments can be:\n"
+        for name in flags_doc:
+            instance.__doc__ += name + ": " + flags_doc[name] + "\n"
+    except AttributeError:
+        pass
+
+
 ngstd.__all__ = ['ArrayD', 'ArrayI', 'BitArray', 'Flags', 'HeapReset', 'IntRange', 'LocalHeap', 'Timers', 'RunWithTaskManager', 'TaskManager', 'SetNumThreads']
 bla.__all__ = ['Matrix', 'Vector', 'InnerProduct', 'Norm']
 la.__all__ = ['BaseMatrix', 'BaseVector', 'CreateVVector', 'InnerProduct', 'CGSolver', 'QMRSolver', 'GMRESSolver', 'ArnoldiSolver', 'Projector']
