@@ -1018,14 +1018,14 @@ namespace ngla
   {
 #ifdef __GNUC__
     size_t fi = firsti[rownr], fin = firsti[rownr+1];
-    int * pi = &colnr[fi], * pin = &colnr[fi+1];
+    int * pi = &colnr[fi], * pin = &colnr[fin];
     while (pi < pin)
       {
         _mm_prefetch (reinterpret_cast<void*>(pi), _MM_HINT_T2);
         pi += 64/sizeof(int);
       }
 
-    TM * vi = &data[fi], * vin = &data[fi+1];
+    TM * vi = &data[fi], * vin = &data[fin];
     while (vi < vin)
       {
         _mm_prefetch (reinterpret_cast<void*>(vi), _MM_HINT_T2);
@@ -1043,6 +1043,7 @@ namespace ngla
                    BareSliceMatrix<TSCAL> elmat1, bool use_atomic)
   {
     ThreadRegionTimer reg (timer_addelmat_nonsym, TaskManager::GetThreadId());
+    NgProfiler::AddThreadFlops (timer_addelmat_nonsym, TaskManager::GetThreadId(), dnums1.Size()*dnums2.Size());
     
     ArrayMem<int, 50> map(dnums2.Size());
     for (int i = 0; i < map.Size(); i++) map[i] = i;
@@ -1636,6 +1637,7 @@ namespace ngla
     // static Timer timer ("SparseMatrixSymmetric::AddElementMatrix", 2);
     // RegionTimer reg (timer);
     ThreadRegionTimer reg (timer_addelmat, TaskManager::GetThreadId());
+    NgProfiler::AddThreadFlops (timer_addelmat, TaskManager::GetThreadId(), dnums.Size()*(dnums.Size()+1)/2);    
 
     // ArrayMem<int, 50> map(dnums.Size());
     STACK_ARRAY(int, hmap, dnums.Size());
@@ -1695,13 +1697,7 @@ namespace ngla
         {
           if (i1+2 < dnums.Size())
             this->PrefetchRow(dnums[map[i1+2]]);
-          /*
-          if (i1+2 < dnums.Size())
-            {
-              _mm_prefetch (reinterpret_cast<void*>(&this->GetRowIndices(dnums[map[i1+2]])[0]), _MM_HINT_T2);
-              _mm_prefetch (reinterpret_cast<void*>(&this->GetRowValues(dnums[map[i1+2]])[0]), _MM_HINT_T2);
-            }
-          */
+
           // FlatArray<int> rowind = this->GetRowIndices(dnums[map[i1]]);
           // FlatVector<TM> rowvals = this->GetRowValues(dnums[map[i1]]);
           FlatArray<int> rowind = this->GetRowIndices(dnumsmap[i1]);

@@ -1249,6 +1249,8 @@ namespace ngfem
     const ElementTransformation & eltrans;
     char * baseip;
     size_t incr;
+    // mir on other element as needed for evaluating DG jump terms
+    const BaseMappedIntegrationRule * other_mir = nullptr;
     
   public:    
     INLINE BaseMappedIntegrationRule (const IntegrationRule & air,
@@ -1275,6 +1277,10 @@ namespace ngfem
     { throw Exception("don't have complex ir"); }
     virtual void ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr) = 0;
     virtual bool IsComplex() const = 0;
+
+    // for DG jump terms
+    void SetOtherMIR (const BaseMappedIntegrationRule * other) { other_mir = other; }
+    auto GetOtherMIR () const { return other_mir; }
   };
 
   template <int DIM_ELEMENT, int DIM_SPACE, typename SCAL = double>
@@ -1848,6 +1854,9 @@ namespace ngfem
     char * baseip;
     size_t incr;
     int dim_element, dim_space;
+
+    // mir on other element as needed for evaluating DG jump terms
+    const SIMD_BaseMappedIntegrationRule * other_mir = nullptr;
   public:
     SIMD_BaseMappedIntegrationRule (const SIMD_IntegrationRule & air,
                                     const ElementTransformation & aeltrans)
@@ -1871,6 +1880,10 @@ namespace ngfem
     INLINE int DimSpace() const { return dim_space; }
     virtual ABareMatrix<double> GetPoints() const = 0;
     virtual void Print (ostream & ost) const = 0;
+
+    // for DG jump terms
+    void SetOtherMIR (const SIMD_BaseMappedIntegrationRule * other) { other_mir = other; }
+    auto GetOtherMIR () const { return other_mir; }
   };
 
   inline ostream & operator<< (ostream & ost, const SIMD_BaseMappedIntegrationRule & mir)
