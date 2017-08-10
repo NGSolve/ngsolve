@@ -517,8 +517,14 @@ public:
     
   public:
     SharedLoop2 (IntRange r)
-      : ranges(TaskManager::GetMaxThreads()), processed(0)
+      : ranges(TaskManager::GetMaxThreads())
     {
+      Reset (r);
+    }
+
+    void Reset (IntRange r)
+    {
+      processed.store(0, std::memory_order_relaxed);
       total = r.Size();
       for (size_t i = 0; i < ranges.Size(); i++)
         ranges[i].SetNoLock (r.Split(i,ranges.Size()));
