@@ -1152,7 +1152,6 @@ namespace ngfem
   {
     size_t i = 0;
     size_t wa = a.Width();
-    size_t wb = b.Width();
     size_t da = a.Dist();
     size_t db = b.Dist();
     if (wa == 0) return;
@@ -2818,7 +2817,10 @@ namespace ngfem
     Facet2ElementTrafo transform1(eltype1, ElVertices); 
     IntegrationRule & ir_facet_vol1 = transform1(LocalFacetNr, ir_facet, lh);
     BaseMappedIntegrationRule & mir1 = trafo1(ir_facet_vol1, lh);
-    // auto & smir = strafo(ir_facet, lh);
+    auto & smir = strafo(ir_facet, lh);
+
+    mir1.SetOtherMIR (&smir);
+    smir.SetOtherMIR (&mir1);
     
     // evaluate proxy-values
     ProxyUserData ud;
@@ -2933,6 +2935,9 @@ namespace ngfem
     Facet2ElementTrafo transform2(eltype2, ElVertices2); 
     IntegrationRule & ir_facet_vol2 = transform2(LocalFacetNr2, ir_facet, lh);
     BaseMappedIntegrationRule & mir2 = trafo2(ir_facet_vol2, lh);
+
+    mir1.SetOtherMIR (&mir2);
+    mir2.SetOtherMIR (&mir1);
 
     ProxyUserData ud;
     const_cast<ElementTransformation&>(trafo1).userdata = &ud;
@@ -3252,6 +3257,10 @@ namespace ngfem
             
             auto & simd_ir_facet_vol2 = transform2(LocalFacetNr2, simd_ir_facet, lh);
             auto & simd_mir2 = trafo2(simd_ir_facet_vol2, lh);
+
+            simd_mir1.SetOtherMIR(&simd_mir2);
+            simd_mir2.SetOtherMIR(&simd_mir1);
+
             
             simd_mir1.ComputeNormalsAndMeasure(eltype1, LocalFacetNr1);
             simd_mir2.ComputeNormalsAndMeasure(eltype2, LocalFacetNr2);
@@ -3368,6 +3377,8 @@ namespace ngfem
     IntegrationRule & ir_facet_vol2 = transform2(LocalFacetNr2, ir_facet, lh);
     BaseMappedIntegrationRule & mir2 = trafo2(ir_facet_vol2, lh);
 
+    mir1.SetOtherMIR (&mir2);
+    mir2.SetOtherMIR (&mir1);
 
     // ts1.Stop();
     // ts2.Start();
@@ -3783,6 +3794,9 @@ namespace ngfem
             auto & mir1 = trafo1(ir_facet_vol1, lh);
             auto & smir = strafo(ir_facet_surf, lh);
 
+            mir1.SetOtherMIR(&smir);
+            smir.SetOtherMIR(&mir1);
+
             mir1.ComputeNormalsAndMeasure(eltype1, LocalFacetNr);
             
             ProxyUserData ud(trial_proxies.Size(), lh);
@@ -3875,6 +3889,9 @@ namespace ngfem
     IntegrationRule & ir_facet_surf = stransform(ir_facet, lh);
     BaseMappedIntegrationRule & mir1 = trafo1(ir_facet_vol1, lh);
     auto & smir = strafo(ir_facet_surf, lh);
+
+    mir1.SetOtherMIR (&smir);
+    smir.SetOtherMIR (&mir1);
     
     // evaluate proxy-values
     ProxyUserData ud(trial_proxies.Size(), lh);

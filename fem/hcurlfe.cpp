@@ -426,7 +426,7 @@ namespace ngfem
   {
     // throw Exception(string("CalcDualShape not implemented for H(curl) element ")+typeid(*this).name());
     static bool first = true;
-    // if (first)
+    if (first)
       cerr << "CalcDualShape not implemented for H(curl) element " << typeid(*this).name() << endl;
     first = false;
   }
