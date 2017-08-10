@@ -69,7 +69,7 @@ Draw (Norm(velocity), mesh, "velocity", sd=3)
 t = 0
 with TaskManager():
     while t < tend:
-        print ("t=", t)
+        print ("t=", t, end="\r")
 
         conv.Apply (gfu.vec, res)
         res.data += a.mat*gfu.vec
