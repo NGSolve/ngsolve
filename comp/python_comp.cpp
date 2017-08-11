@@ -1335,7 +1335,7 @@ flags : dict
 
 )raw_string"), py::dynamic_attr())
 
-    .def_static("__flags_doc__", [] (py::object self)
+    .def_static("__flags_doc__", [] ()
          {
            py::dict flags_doc;
            flags_doc["order"] = "int = 1\n  order of finite element space";
@@ -1352,37 +1352,74 @@ flags : dict
            flags_doc["dim"] = "int\n  Create multi dimensional FESpace (i.e. [H1]^3)";
            return flags_doc;
          })
-    .def_static("__special_treated_flags__", [] (py::object pyclass)
+    .def_static("__special_treated_flags__", [] ()
                 {
                   // CAUTION: Do not use references as arguments for cpp function lambdas
                   // pybind11 somehow removes the references and creates copies!
                   // pass arguments either by value or by pointer!
-                  py::dict special;
-                  special["dirichlet"] =
-                    py::cpp_function([] (py::object dirichlet, Flags* flags, py::list info)
-                                     {
-                                       auto ma = py::cast<shared_ptr<MeshAccess>>(info[0]);
-                                       if(py::isinstance<py::list>(dirichlet))
-                                         {
-                                           flags->SetFlag("dirichlet",
-                                                         makeCArray<double>(py::list(dirichlet)));
-                                           return;
-                                         }
-                                       if (py::isinstance<py::str>(dirichlet))
-                                         {
-                                           std::regex pattern(dirichlet.cast<string>());
-                                           Array<double> dirlist;
-                                           for (int i = 0; i < ma->GetNBoundaries(); i++)
-                                             if (std::regex_match (ma->GetMaterial(BND, i), pattern))
-                                               {
-                                                 dirlist.Append (i+1);
-                                               }
-                                           flags->SetFlag("dirichlet", dirlist);
-                                         }
-                                     });
-                  return special;
-                })
-    .def("__ngsid__", [] (shared_ptr<FESpace> self)
+                  py::dict special
+                    (
+                     py::arg("dirichlet") = py::cpp_function
+                     ([] (py::object dirichlet, Flags* flags, py::list info)
+                      {
+                        auto ma = py::cast<shared_ptr<MeshAccess>>(info[0]);
+                        if(py::isinstance<py::list>(dirichlet))
+                          {
+                            flags->SetFlag("dirichlet",
+                                           makeCArray<double>(py::list(dirichlet)));
+                            return;
+                          }
+                        if (py::isinstance<py::str>(dirichlet))
+                          {
+                            std::regex pattern(dirichlet.cast<string>());
+                            Array<double> dirlist;
+                            for (int i = 0; i < ma->GetNBoundaries(); i++)
+                              if (std::regex_match (ma->GetMaterial(BND, i), pattern))
+                                {
+                                  dirlist.Append (i+1);
+                                }
+                            flags->SetFlag("dirichlet", dirlist);
+                          }
+                      }),
+                     py::arg("definedon") = py::cpp_function
+                     ([] (py::object definedon, Flags* flags, py::list info)
+                      {
+                        auto ma = py::cast<shared_ptr<MeshAccess>>(info[0]);
+                        if (py::isinstance<py::str>(definedon))
+                          {
+                            std::regex pattern(definedon.cast<string>());
+                            Array<double> defonlist;
+                            for (int i = 0; i < ma->GetNDomains(); i++)
+                              if (regex_match(ma->GetMaterial(VOL,i), pattern))
+                                defonlist.Append(i+1);
+                            flags->SetFlag ("definedon", defonlist);
+                          }
+
+                        if (py::isinstance<py::list> (definedon))
+                          flags->SetFlag ("definedon", makeCArray<double> (definedon));
+
+                        py::extract<Region> definedon_reg(definedon);
+                        if (definedon_reg.check() && definedon_reg().IsVolume())
+                          {
+                            Array<double> defonlist;
+                            for (int i = 0; i < definedon_reg().Mask().Size(); i++)
+                              if (definedon_reg().Mask().Test(i))
+                                defonlist.Append(i+1);
+                            flags->SetFlag ("definedon", defonlist);
+                          }
+                        if (definedon_reg.check() && definedon_reg().VB()==BND)
+                          {
+                            Array<double> defonlist;
+                            for (auto i : Range(definedon_reg().Mask().Size()))
+                              if(definedon_reg().Mask().Test(i))
+                                defonlist.Append(i+1);
+                            flags->SetFlag("definedonbound", defonlist);
+                          }
+                      })
+                     );
+                     return special;
+                     })
+                .def("__ngsid__", [] (shared_ptr<FESpace> self)
          { return reinterpret_cast<std::uintptr_t>(self.get()); } )
     .def("__reduce__", [&] (py::object fes_obj)
          {
@@ -1648,6 +1685,18 @@ flags : dict
   
   py::class_<HDivHighOrderFESpace, shared_ptr<HDivHighOrderFESpace>,FESpace>
     (m, "HDiv")
+    .def("__init__", [] (py::object self, shared_ptr<MeshAccess> ma, py::kwargs kwargs)
+         {
+           auto myclass = self.attr("__class__");
+           py::list info;
+           info.append(ma);
+           auto flags = CreateFlagsFromKwArgs(myclass, kwargs, info);
+           auto instance = py::cast<HDivHighOrderFESpace*>(self);
+           new (instance) HDivHighOrderFESpace(ma, flags);
+           LocalHeap lh(int(1e7), "HDiv::Update-heap");
+           instance->Update(lh);
+           instance->FinalizeUpdate(lh);
+         })
     .def("Average",
          [] (shared_ptr<HDivHighOrderFESpace> hdivfes, BaseVector & bv)
          {

@@ -91,7 +91,7 @@ all_classes = comp.__dict__
 for classname in all_classes:
     instance = all_classes[classname]
     try:
-        flags_doc = instance.__flags_doc__(instance)
+        flags_doc = instance.__flags_doc__()
         if instance.__doc__ == None:
             try:
                 instance.__doc__ = super(instance,instance).__doc__
@@ -114,7 +114,7 @@ fem.__all__ =  ['BFI', 'CoefficientFunction', 'Parameter', 'CoordCF', 'ET', 'Ele
            'IntegrationRule', 'IfPos' \
            ]
 # TODO: fem:'PythonCF' comp:'PyNumProc'
-comp.__all__ =  ['BBND','BND', 'BilinearForm', 'COUPLING_TYPE', 'ElementId', 'BndElementId', 'FESpace','HCurl' , 'GridFunction', 'LinearForm', 'Mesh', 'NodeId', 'ORDER_POLICY', 'Preconditioner', 'VOL', 'NumProc', 'PDE', 'Integrate', 'SymbolicLFI', 'SymbolicBFI', 'SymbolicEnergy', 'VTKOutput', 'SetHeapSize', 'SetTestoutFile', 'ngsglobals','pml','Periodic']           
+comp.__all__ =  ['BBND','BND', 'BilinearForm', 'COUPLING_TYPE', 'ElementId', 'BndElementId', 'FESpace','HCurl' , 'GridFunction', 'LinearForm', 'Mesh', 'NodeId', 'ORDER_POLICY', 'Preconditioner', 'VOL', 'NumProc', 'PDE', 'Integrate', 'SymbolicLFI', 'SymbolicBFI', 'SymbolicEnergy', 'VTKOutput', 'SetHeapSize', 'SetTestoutFile', 'ngsglobals','pml','Periodic','HDiv']           
 solve.__all__ =  ['Redraw', 'BVP', 'CalcFlux', 'Draw', 'DrawFlux', 'SetVisualization']
 
 from ngsolve.ngstd import *

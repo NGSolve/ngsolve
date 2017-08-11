@@ -46,9 +46,9 @@ def HCurl(mesh, **args):
    """ Create H(curl) finite element space. """
    return FESpace("hcurlho", mesh, **args)
 
-def HDiv(mesh, **args):
-    """ Create H(div) finite element space. """
-    return FESpace("hdivho", mesh, **args)
+# def HDiv(mesh, **args):
+#     """ Create H(div) finite element space. """
+#     return FESpace("hdivho", mesh, **args)
 
 def FacetFESpace(mesh, **args):
     """ Create Facet finite element space. """
@@ -130,6 +130,6 @@ def DomainConstantCF(values):
     return CoefficientFunction(values)
 
 
-__all__ = ['x', 'y', 'z', 'Laplace', 'Mass', 'Source', 'Neumann', 'H1', 'VectorH1', 'FacetFESpace', 'HCurl', 'HDiv', 'L2', 'SurfaceL2', 'HDivDiv', 'grad', 'curl', 'div','NgsPickler', 'NgsUnpickler', 'Mesh', 'ConstantCF', 'DomainConstantCF' ]
+__all__ = ['x', 'y', 'z', 'Laplace', 'Mass', 'Source', 'Neumann', 'H1', 'VectorH1', 'FacetFESpace', 'HCurl', 'L2', 'SurfaceL2', 'HDivDiv', 'grad', 'curl', 'div','NgsPickler', 'NgsUnpickler', 'Mesh', 'ConstantCF', 'DomainConstantCF' ]
 
 
