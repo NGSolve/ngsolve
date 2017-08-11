@@ -109,7 +109,8 @@ namespace ngstd
 
       double ConvertTime(TTimePoint t) {
           // return time in milliseconds as double
-          return std::chrono::duration<double>(t-start_time).count()*1000.0;
+        return std::chrono::duration<double>(t-start_time).count()*1000.0;
+        // return std::chrono::duration<double>(t-start_time).count() / 2.7e3;
       }
 
       enum PType
