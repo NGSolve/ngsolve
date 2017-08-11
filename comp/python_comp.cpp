@@ -1217,6 +1217,16 @@ when building the system matrices.
         py::arg("type"), py::arg("mesh"),
         "allowed types are: 'h1ho', 'l2ho', 'hcurlho', 'hdivho' etc."
         );
+
+  m.def("CreateFESpace", [] (py::object self_class, const string & type, shared_ptr<MeshAccess> ma,
+                             Flags flags, bool)
+        {
+          auto fes = CreateFESpace(type,ma,flags);
+          LocalHeap lh(int(1e7),"lh FESpace update unpickle");
+          fes->Update(lh);
+          fes->FinalizeUpdate(lh);
+          return fes;
+        }, "This constructor is for unpickling only!");
   
   m.def("CreateFESpace", [] (py::object self_class, py::list lspaces, Flags& flags)
         {
@@ -1470,7 +1480,8 @@ flags : dict
                auto mesh = fes->GetMeshAccess();
                auto type = fes->type;
                //TODO: pickle order policies
-               constructor_args = py::make_tuple(type,mesh,flags);
+               // boolean at end is to call correct unpickling constructor
+               constructor_args = py::make_tuple(type,mesh,flags,true);
              }
            // if fes has no __init__ then it's constructed with FESpace(...)
            py::object class_obj = fes_obj.attr("__class__");

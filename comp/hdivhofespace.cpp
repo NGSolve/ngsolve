@@ -28,6 +28,7 @@ namespace ngcomp
   HDivHighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags)
     : FESpace (ama, flags)
   {
+    type = "hdivho";
     name="HDivHighOrderFESpace(hdivho)";
     // allowed flags
     DefineNumFlag("relorder");
