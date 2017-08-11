@@ -75,7 +75,7 @@ void SetFlag(Flags &flags, string s, py::object value)
 
 Flags CreateFlagsFromKwArgs(const py::object& pyclass, const py::kwargs& kwargs, py::list info)
 {
-  auto flags_doc = pyclass.attr("__flags_doc__")(pyclass);
+  auto flags_doc = pyclass.attr("__flags_doc__")();
   py::dict flags_dict;
 
   if (kwargs.contains("flags"))
@@ -95,7 +95,7 @@ Flags CreateFlagsFromKwArgs(const py::object& pyclass, const py::kwargs& kwargs,
   py::dict special;
   try
     {
-      special = pyclass.attr("__special_treated_flags__")(pyclass);
+      special = pyclass.attr("__special_treated_flags__")();
     }
   catch(std::exception e)
     {  }
