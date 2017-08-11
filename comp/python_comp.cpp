@@ -1202,7 +1202,6 @@ when building the system matrices.
 
 
   m.def("CreateFESpace", [] (py::object self_class, const string & type, shared_ptr<MeshAccess> ma,
-                             py::object order_left, py::object order_right, ORDER_POLICY order_policy,
                              py::kwargs kwargs)
         {
           py::list info;
@@ -1210,25 +1209,12 @@ when building the system matrices.
           auto flags = CreateFlagsFromKwArgs(self_class, kwargs, info);
 
           auto fes = CreateFESpace (type, ma, flags);
-          fes->SetOrderPolicy(order_policy);
-                             
-          if (py::isinstance<py::int_> (order_left))
-            for (auto et : element_types)
-              fes->SetOrderLeft (et, order_left.cast<int>());
-          if (py::isinstance<py::int_> (order_right))
-            for (auto et : element_types)
-              fes->SetOrderRight (et, order_right.cast<int>());
-                             
-          LocalHeap lh (1000000, "FESpace::Update-heap");
-          fes->Update(lh);
-          fes->FinalizeUpdate(lh);
-          return fes;
+          auto pyfes = py::cast(fes);
+          pyfes.attr("__initialize__")(**kwargs);
+          return pyfes;
         },
         py::arg("self_class"),
         py::arg("type"), py::arg("mesh"),
-        py::arg("order_left")=DummyArgument(),
-        py::arg("order_right")=DummyArgument(),
-        py::arg("order_policy")=OLDSTYLE_ORDER,
         "allowed types are: 'h1ho', 'l2ho', 'hcurlho', 'hdivho' etc."
         );
   
@@ -1415,11 +1401,31 @@ flags : dict
                                 defonlist.Append(i+1);
                             flags->SetFlag("definedonbound", defonlist);
                           }
-                      })
+                      }),
+
+                     // the following flags are processed in __initialize__ and should not create flags
+                     py::arg("order_policy") = py::cpp_function([](py::object, Flags*, py::list) { ; }),
+                     py::arg("order_left") = py::cpp_function([] (py::object, Flags*, py::list) { ; }),
+                     py::arg("order_right") = py::cpp_function([] (py::object, Flags*, py::list) { ; })
                      );
                      return special;
                      })
-                .def("__ngsid__", [] (shared_ptr<FESpace> self)
+    .def("__initialize__", [] (FESpace& self, py::kwargs kwargs)
+         {
+           if(kwargs.contains("order_policy"))
+              self.SetOrderPolicy(py::cast<ORDER_POLICY>(kwargs["order_policy"]));
+           if(kwargs.contains("order_left"))
+             for (auto et : element_types)
+               self.SetOrderLeft(et, py::cast<int>(kwargs["order_left"]));
+           if (kwargs.contains("order_right"))
+               for (auto et : element_types)
+                 self.SetOrderRight(et, py::cast<int>(kwargs["order_right"]));
+               
+           LocalHeap lh(int(1e7),"FESpace::Update lh");
+           self.Update(lh);
+           self.FinalizeUpdate(lh);
+         })
+    .def("__ngsid__", [] (shared_ptr<FESpace> self)
          { return reinterpret_cast<std::uintptr_t>(self.get()); } )
     .def("__reduce__", [&] (py::object fes_obj)
          {
@@ -1693,9 +1699,7 @@ flags : dict
            auto flags = CreateFlagsFromKwArgs(myclass, kwargs, info);
            auto instance = py::cast<HDivHighOrderFESpace*>(self);
            new (instance) HDivHighOrderFESpace(ma, flags);
-           LocalHeap lh(int(1e7), "HDiv::Update-heap");
-           instance->Update(lh);
-           instance->FinalizeUpdate(lh);
+           self.attr("__initialize__")(**kwargs);
          })
     .def("Average",
          [] (shared_ptr<HDivHighOrderFESpace> hdivfes, BaseVector & bv)
