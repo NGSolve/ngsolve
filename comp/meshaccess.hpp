@@ -787,17 +787,22 @@ namespace ngcomp
     
     /// number of facets of an element. 
     /// facets are edges (2D) or faces (3D)
-    size_t GetNFacets() const { return nnodes_cd[1]; } 
+    size_t GetNFacets() const { return nnodes_cd[1]; }
+    
     /// facets of an element
-    [[deprecated("Use fanums = GetElFacets(ElementId) instead!")]]            
-    void GetElFacets (ElementId ei, Array<int> & fnums) const;
     auto GetElFacets (ElementId ei) const { return GetElement(ei).Facets(); }
 
+    [[deprecated("Use fanums = GetElFacets(ElementId) instead!")]]            
+    void GetElFacets (ElementId ei, Array<int> & fnums) const
+      { fnums = GetElFacets(ei); }
     [[deprecated("Use GetElFacets(ElementId) instead!")]]        
-    void GetElFacets (int elnr, Array<int> & fnums) const;
+    void GetElFacets (int elnr, Array<int> & fnums) const
+      { fnums = GetElFacets(ElementId(VOL, elnr)); }      
     /// facet of a surface element
     [[deprecated("Use GetElFacets(ElementId) instead!")]]            
-    void GetSElFacets (int selnr, Array<int> & fnums) const;
+    void GetSElFacets (int selnr, Array<int> & fnums) const
+      { fnums = GetElFacets(ElementId(BND, selnr)); }
+
     /// vertices of a facet
     void GetFacetPNums (int fnr, Array<int> & pnums) const;
     /// geometry type of facet

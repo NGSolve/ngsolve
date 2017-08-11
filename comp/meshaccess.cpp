@@ -1229,13 +1229,9 @@ namespace ngcomp
     pnums[1] = edge.vertices[1];
   }
 
+  /*
   void MeshAccess :: GetElFacets (ElementId ei, Array<int> & fnums) const
   {
-    /*
-    if (dim == 1)
-      fnums = GetElement(ei).Vertices();
-    else
-    */
     fnums = GetElement(ei).Facets();
   }
 
@@ -1250,7 +1246,9 @@ namespace ngcomp
         fnums = GetElement<3,VOL> (elnr).Faces();
       }
   } 
-    
+  */
+  
+  /*
   void MeshAccess :: GetSElFacets (int selnr, Array<int> & fnums) const
   {
     switch (dim)
@@ -1266,6 +1264,7 @@ namespace ngcomp
         }
       }
   }
+  */
   
   void MeshAccess :: GetFacetPNums (int fnr, Array<int> & pnums) const
   {
