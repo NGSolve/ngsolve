@@ -335,7 +335,7 @@ public:
 
   // lock free popfirst
   // faster for large loops, bug slower for small loops (~1000) ????
-
+   /*
   class alignas(4096) AtomicRange
 {
   mutex lock;
@@ -357,11 +357,11 @@ public:
     end = r.end();
   }
 
-  IntRange Get()
-  {
-    lock_guard<mutex> guard(lock);
-    return IntRange(begin, end);
-  }
+  // IntRange Get()
+  // {
+  //   lock_guard<mutex> guard(lock);
+  //   return IntRange(begin, end);
+  // }
 
   bool PopFirst (int & first)
   {
@@ -392,15 +392,71 @@ public:
   }
 };
 
-  
+
+  // inline ostream & operator<< (ostream & ost, AtomicRange & r)
+  // {
+  //   ost << r.Get();
+  //   return ost;
+  // }
+  */
 
 
-  inline ostream & operator<< (ostream & ost, AtomicRange & r)
+   
+   class alignas(4096) AtomicRange
   {
-    ost << r.Get();
-    return ost;
-  }
+    // mutex lock;
+    atomic<size_t> begin;
+    atomic<size_t> end;
+  public:
+    
+    void Set (IntRange r)
+    {
+      begin.store(numeric_limits<size_t>::max(), memory_order_release);
+      end.store(r.end(), memory_order_release);
+      begin.store(r.begin(), std::memory_order_release);
+    }
+  
+    void SetNoLock (IntRange r) { Set(r); }
 
+    // IntRange Get()
+    // {
+    //   lock_guard<mutex> guard(lock);
+    //   return IntRange(begin, end);
+    // }
+    
+    bool PopFirst (size_t & first)
+    {
+      // int oldbegin = begin;
+      size_t oldbegin = begin.load(std::memory_order_acquire);
+      if (oldbegin >= end) return false;
+      while (!begin.compare_exchange_weak (oldbegin, oldbegin+1,
+                                           std::memory_order_relaxed, std::memory_order_relaxed))
+        if (oldbegin >= end) return false;
+      
+      first = oldbegin;
+      return true;
+    }
+    
+    bool PopHalf (IntRange & r)
+    {
+      // int oldbegin = begin;
+      size_t oldbegin = begin.load(std::memory_order_acquire);
+      size_t oldend = end.load(std::memory_order_acquire);
+      if (oldbegin >= oldend) return false;
+      
+      // lock_guard<mutex> guard(lock);    
+      while (!begin.compare_exchange_weak (oldbegin, (oldbegin+oldend+1)/2,
+                                           std::memory_order_relaxed, std::memory_order_relaxed))
+        {
+          if (oldbegin >= oldend) return false;
+          oldend = end.load(std::memory_order_acquire);
+        }
+      
+      r = IntRange(oldbegin, (oldbegin+oldend+1)/2);
+      return true;
+    }
+  };
+  
 
 
 
@@ -474,7 +530,7 @@ public:
       
       void GetNext()
       {
-        int nr;
+        size_t nr;
         if (ranges[me].PopFirst(nr))
           {
             processed_by_me++;
