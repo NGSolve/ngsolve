@@ -20,11 +20,11 @@ namespace ngstd
   bool TaskManager :: use_paje_trace = false;
   int TaskManager :: max_threads = getenv("NGS_NUM_THREADS") ? atoi(getenv("NGS_NUM_THREADS")) : std::thread::hardware_concurrency();
   int TaskManager :: num_threads = 1;
-  // #ifndef __clang__      
+#ifndef __clang__      
   thread_local int TaskManager :: thread_id = 0;
-  // #else
-  // __thread int TaskManager :: thread_id;
-  // #endif
+#else
+  __thread int TaskManager :: thread_id;
+#endif
 
   const function<void(TaskInfo&)> * TaskManager::func;
   const function<void()> * TaskManager::startup_function = nullptr;
@@ -159,7 +159,8 @@ namespace ngstd
       {
         std::thread([this,i]() { this->Loop(i); }).detach();
       }
-
+    thread_id = 0;
+    
     size_t alloc_size = num_threads*NgProfiler::SIZE;
     NgProfiler::thread_times = new size_t[alloc_size];
     for (size_t i = 0; i < alloc_size; i++)
