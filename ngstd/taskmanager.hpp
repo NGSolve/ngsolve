@@ -69,11 +69,11 @@ namespace ngstd
     int num_nodes;
     NGS_DLL_HEADER static int num_threads;
     NGS_DLL_HEADER static int max_threads;
-    // #ifndef __clang__    
+#ifndef __clang__    
     static thread_local int thread_id;
-    // #else
-    // static __thread int thread_id;
-    // #endif
+#else
+    static __thread int thread_id;
+#endif
     
     static bool use_paje_trace;
   public:
@@ -416,7 +416,11 @@ public:
       begin.store(r.begin(), std::memory_order_release);
     }
   
-    void SetNoLock (IntRange r) { Set(r); }
+    void SetNoLock (IntRange r)
+    {
+      end.store(r.end(), memory_order_release);
+      begin.store(r.begin(), std::memory_order_release);
+    }
 
     // IntRange Get()
     // {
@@ -448,8 +452,8 @@ public:
       while (!begin.compare_exchange_weak (oldbegin, (oldbegin+oldend+1)/2,
                                            std::memory_order_relaxed, std::memory_order_relaxed))
         {
-          if (oldbegin >= oldend) return false;
           oldend = end.load(std::memory_order_acquire);
+          if (oldbegin >= oldend) return false;
         }
       
       r = IntRange(oldbegin, (oldbegin+oldend+1)/2);
@@ -463,71 +467,32 @@ public:
   class SharedLoop2
   {
     Array<AtomicRange> ranges;
-    atomic<int> processed;
-    int total;
+    atomic<size_t> processed;
+    atomic<size_t> total;
     
     class SharedIterator
     {
       FlatArray<AtomicRange> ranges;
-      atomic<int> & processed;
-      int total;
-      int myval;
-      int processed_by_me = 0;
+      atomic<size_t> & processed;
+      size_t total;
+      size_t myval;
+      size_t processed_by_me = 0;
       int me;
       int steal_from;
     public:
-      SharedIterator (FlatArray<AtomicRange> _ranges, atomic<int> & _processed, int _total, bool begin_it)
+      SharedIterator (FlatArray<AtomicRange> _ranges, atomic<size_t> & _processed, size_t _total, bool begin_it)
         : ranges(_ranges), processed(_processed), total(_total)
       {
-        me = TaskManager::GetThreadId();
-        steal_from = me;
         if (begin_it)
-          GetNext();
+          {
+            me = TaskManager::GetThreadId();
+            steal_from = me;
+            GetNext();
+          }
       }
       
       SharedIterator & operator++ () { GetNext(); return *this;}
 
-      /*
-      void GetNext()
-      {
-        while (1)
-          {
-            int nr;
-            if (ranges[me].PopFirst(nr))
-              {
-                processed_by_me++;
-                myval = nr;
-                return;
-              }
-
-            processed += processed_by_me;
-            processed_by_me = 0;
-
-            // done with my work, going to steal ...
-            while (1)
-              {
-                if (processed >= total) return;
-                // steal_from = (steal_from + 1) % ranges.Size();
-                steal_from++;
-                if (steal_from == ranges.Size()) steal_from = 0;
-            
-                // steal half of the work reserved for 'from':
-                IntRange steal;
-                if (ranges[steal_from].PopHalf(steal))
-                  {
-                    // ranges[me].Set(steal);
-                    // break;
-                    myval = steal.First();
-                    processed_by_me++;                    
-                    if (myval+1 < steal.Next())
-                      ranges[me].Set (IntRange(myval+1, steal.Next()));
-                    return;
-                  }
-              }
-          }
-      }
-      */
-      
       void GetNext()
       {
         size_t nr;
@@ -566,7 +531,7 @@ public:
           }
       }
       
-      int operator* () const { return myval; }
+      size_t operator* () const { return myval; }
       bool operator!= (const SharedIterator & it2) const { return processed < total; }
     };
     
@@ -580,10 +545,11 @@ public:
 
     void Reset (IntRange r)
     {
-      processed.store(0, std::memory_order_relaxed);
-      total = r.Size();
       for (size_t i = 0; i < ranges.Size(); i++)
         ranges[i].SetNoLock (r.Split(i,ranges.Size()));
+      
+      total.store(r.Size(), std::memory_order_relaxed);
+      processed.store(0, std::memory_order_release);
     }
     
     SharedIterator begin() { return SharedIterator (ranges, processed, total, true); }
