@@ -160,8 +160,8 @@ namespace ngstd
   void TaskManager :: StartWorkers()
   {
     done = false;
-    sync.SetSize(num_threads);
-    sync[0] = new atomic<int>(0);
+    // sync.SetSize(num_threads);
+    // sync[0] = new atomic<int>(0);
     completed_tasks = 0;
     nodedata[0]->completed_tasks = 0;
     for (int i = 1; i < num_threads; i++)
@@ -200,7 +200,7 @@ namespace ngstd
     NgProfiler::thread_flops = dummy_thread_flops;    
     while (active_workers)
       ;
-    delete sync[0];
+    // delete sync[0];
     // cout << "workers all stopped !!!!!!!!!!!!!!!!!!!" << endl;
   }
 
@@ -220,7 +220,7 @@ namespace ngstd
       }
     */
     func = &afunc;
-    sync[0]->store(1); // , memory_order_release);
+    // sync[0]->store(1); // , memory_order_release);
 
     ntasks.store (antasks); // , memory_order_relaxed);
     ex = nullptr;
@@ -331,8 +331,8 @@ namespace ngstd
       throw Exception (*ex);
 
     trace->StopJob();
-    for (auto ap : sync)
-      ap->load(); // memory_order_acquire);
+    // for (auto ap : sync)
+    // ap->load(); // memory_order_acquire);
   }
     
   void TaskManager :: Loop(int thd)
@@ -346,7 +346,7 @@ namespace ngstd
     static Timer tdec("decrement");
     thread_id = thd;
 
-    sync[thread_id] = new atomic<int>(0);
+    // sync[thread_id] = new atomic<int>(0);
 
     int thds = GetNumThreads();
 
@@ -502,7 +502,7 @@ namespace ngstd
 #endif // __MIC__
 
         if (cleanup_function) (*cleanup_function)();
-        sync[thread_id]->store(1); // , memory_order_release);
+        // sync[thread_id]->store(1); // , memory_order_release);
 
         jobdone = jobnr;
 
@@ -531,7 +531,7 @@ namespace ngstd
     mkl_set_num_threads_local(mkl_max);
 #endif
 
-    delete sync[thread_id];
+    // delete sync[thread_id];
     workers_on_node[mynode]--;
     active_workers--;
   }
