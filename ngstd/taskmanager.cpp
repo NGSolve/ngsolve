@@ -285,7 +285,7 @@ namespace ngstd
               {
 		RegionTracer t(ti.thread_nr, jobnr, RegionTracer::ID_JOB, ti.task_nr);
                 (*func)(ti); 
-                mynode_data.completed_tasks++;
+                // mynode_data.completed_tasks++;
               }
 
 	      // if (++mynode_data.complete_cnt == mytasks.Size())
@@ -397,53 +397,19 @@ namespace ngstd
               }
             continue;
           }
-        
-        /*
-        while (mynode_data.participate.load(memory_order_relaxed) == -1)
-          {
-            RegionTracer t(ti.thread_nr, tCAS1, ti.task_nr);            
-            if (done.load(memory_order_relaxed))
-              {
-                active_workers--;
-                return;
-              }
-          }
-        */
 
-
-        /*
-        int oldpart = 0;
-        while (! mynode_data.participate.compare_exchange_weak (oldpart, oldpart+1))
-	  {
-            RegionTracer t(ti.thread_nr, tCAS, ti.task_nr);
-	    if (oldpart == -1) oldpart = 0;
-            if (done.load(memory_order_relaxed))
-	      {
-		active_workers--;
-		return;
-	      }
-	  }
-        */
-
-        /*
-        int oldpart = 0;
-        if (! mynode_data.participate.compare_exchange_weak (oldpart, oldpart+1))
-          continue;
-        */
-
-        // non-atomic fast check ...
         {
           // RegionTracer t(ti.thread_nr, tADD, ti.task_nr);
-        if ( (mynode_data.participate & 1) == 0) continue;
 
-        {
+          // non-atomic fast check ...
+          if ( (mynode_data.participate & 1) == 0) continue;
+
           int oldval = mynode_data.participate += 2;
           if ( (oldval & 1) == 0)
             { // job not active, going out again
               mynode_data.participate -= 2;
               continue;
             }
-        }
         }
 
         // for (auto ap : sync)
@@ -456,7 +422,6 @@ namespace ngstd
             ;
         */
 
-        
         // atomic_thread_fence (memory_order_acquire);
         if (startup_function) (*startup_function)();
         
@@ -476,9 +441,9 @@ namespace ngstd
                 ti.ntasks = ntasks;
                 
                   {
-		    RegionTracer t(ti.thread_nr, jobnr, RegionTracer::ID_JOB, ti.task_nr);
+                    RegionTracer t(ti.thread_nr, jobnr, RegionTracer::ID_JOB, ti.task_nr);
                     (*func)(ti);
-                    mynode_data.completed_tasks++;
+                    // mynode_data.completed_tasks++;
                   }
 		  // if (++mynode_data.complete_cnt == mytasks.Size())
                   // complete[mynode] = true;
