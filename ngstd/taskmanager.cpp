@@ -762,7 +762,7 @@ namespace ngstd
         time = WallTime()-starttime;
       }
     while (time < maxtime);
-    timings.push_back(make_tuple("SharedLoop 1000000, time per iteration", time/steps*1e9));
+    timings.push_back(make_tuple("SharedLoop2 1000000, time per iteration", time/steps*1e9));
     }
     
     return timings;
