@@ -464,6 +464,7 @@ public:
     Array<AtomicRange> ranges;
     atomic<size_t> processed;
     atomic<size_t> total;
+    atomic<int> participants;
     
     class SharedIterator
     {
@@ -475,12 +476,14 @@ public:
       int me;
       int steal_from;
     public:
-      SharedIterator (FlatArray<AtomicRange> _ranges, atomic<size_t> & _processed, size_t _total, bool begin_it)
+      SharedIterator (FlatArray<AtomicRange> _ranges, atomic<size_t> & _processed, size_t _total,
+                      int _me, bool begin_it)
         : ranges(_ranges), processed(_processed), total(_total)
       {
         if (begin_it)
           {
-            me = TaskManager::GetThreadId();
+            // me = TaskManager::GetThreadId();
+            me = _me;
             steal_from = me;
             GetNext();
           }
@@ -509,7 +512,7 @@ public:
         while (1)
           {
             if (processed >= total) return;
-            // steal_from = (steal_from + 1) % ranges.Size();
+
             steal_from++;
             if (steal_from == ranges.Size()) steal_from = 0;
             
@@ -544,11 +547,21 @@ public:
         ranges[i].SetNoLock (r.Split(i,ranges.Size()));
       
       total.store(r.Size(), std::memory_order_relaxed);
+      participants.store(0, std::memory_order_relaxed);
       processed.store(0, std::memory_order_release);
     }
     
-    SharedIterator begin() { return SharedIterator (ranges, processed, total, true); }
-    SharedIterator end()   { return SharedIterator (ranges, processed, total, false); }
+    SharedIterator begin()
+    {
+      int me = participants++;
+      if (me < ranges.Size())
+        return SharedIterator (ranges, processed, total, me, true);
+      else
+        // more participants than buckets. set processed to total, and the loop is terminated immediately
+        return SharedIterator (ranges, total, total, me, true);
+    }
+    
+    SharedIterator end()   { return SharedIterator (ranges, processed, total, -1, false); }
   };
 
 
