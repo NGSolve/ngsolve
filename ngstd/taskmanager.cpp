@@ -320,7 +320,7 @@ namespace ngstd
         }
 
 
-    completed_tasks += ntasks / num_nodes;
+    //    completed_tasks += ntasks / num_nodes;
 //     for (int j = 0; j < num_nodes; j++)
 //       if (completed_tasks != nodedata[j]->completed_tasks)
 //         cout << "tasks missing: node = " << j 
