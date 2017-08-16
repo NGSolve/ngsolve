@@ -80,7 +80,7 @@ Flags CreateFlagsFromKwArgs(const py::object& pyclass, const py::kwargs& kwargs,
 
   if (kwargs.contains("flags"))
     {
-      cout  << "WARNING: using flags as kwarg is deprecated in " << py::str(pyclass)
+      cout  << IM(2) << "WARNING: using flags as kwarg is deprecated in " << py::str(pyclass)
            << ", use the flag arguments as kwargs instead!" << endl;
       auto addflags = py::cast<py::dict>(kwargs["flags"]);
       for (auto item : addflags)
@@ -88,8 +88,8 @@ Flags CreateFlagsFromKwArgs(const py::object& pyclass, const py::kwargs& kwargs,
     }
   for (auto item : kwargs)
       if (!flags_doc.contains(item.first.cast<string>()) && !(item.first.cast<string>() == "flags"))
-        cout << "WARNING: kwarg '" << item.first.cast<string>()
-             << "' does not match any flags option for "
+        cout << IM(2) << "WARNING: kwarg '" << item.first.cast<string>()
+             << "' is an undocumented flags option for class "
              << std::string(py::str(pyclass)) << ", maybe there is a typo?" << endl;
 
   py::dict special;
