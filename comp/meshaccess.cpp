@@ -1514,8 +1514,8 @@ namespace ngcomp
 
   ngfem::ElementTransformation & MeshAccess :: GetTrafo (ElementId ei, Allocator & lh) const
   {
-    int elnr = ei.Nr();
-    VorB vb = ei.VB();
+    auto elnr = ei.Nr();
+    VorB vb = ei.VB(); 
     
     switch(vb)
       {
@@ -1992,13 +1992,16 @@ namespace ngcomp
 
   atomic<size_t> ProgressOutput :: cnt;
   thread_local size_t ProgressOutput :: thd_cnt = 0;
-  thread_local double ProgressOutput :: thd_prev_time = WallTime();
-  
+  // thread_local double ProgressOutput :: thd_prev_time = WallTime();
+  thread_local size_t ProgressOutput :: thd_prev_time = __rdtsc();
+  size_t tsc_wait = 0.05*2.7e9; // rough 
   void ProgressOutput :: Update ()
   {
     thd_cnt++;
-    double time = WallTime();
-    if (time > thd_prev_time+0.05)
+    // double time = WallTime();
+    size_t time = __rdtsc();
+    // if (time > thd_prev_time+0.05)
+    if (time > thd_prev_time+tsc_wait)
       {
         thd_prev_time = time;
         cnt += thd_cnt;

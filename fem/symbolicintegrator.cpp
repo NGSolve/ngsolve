@@ -1446,6 +1446,56 @@ namespace ngfem
       }
   }
 
+
+  template <typename SCAL>
+  void ExtendSymmetric (SliceMatrix<SCAL> elmat)
+  {
+    /*
+    size_t h = elmat.Height();
+    for (size_t i = 0; i+1 < h; i++)
+      for (size_t j = i+1; j < h; j++)
+        elmat(i,j) = elmat(j,i);
+    */
+
+    size_t h = elmat.Height();
+    size_t d = elmat.Dist();
+    size_t i = 0, di = 0;
+    for ( ; i+2 < h; i+=2, di+=2*d)
+      {
+        elmat(di+i+1) = elmat(di+d+i);
+        size_t j = i+2, dj = di+2*d;
+        for ( ; j+1 < h; j+=2, dj+=2*d)
+          {
+            SCAL tmp00 = elmat(dj+i);
+            SCAL tmp01 = elmat(dj+i+1);
+            SCAL tmp10 = elmat(dj+d+i);
+            SCAL tmp11 = elmat(dj+d+i+1);
+            elmat(di+j) = tmp00;
+            elmat(di+d+j) = tmp01;
+            elmat(di+j+1) = tmp10;
+            elmat(di+d+j+1) = tmp11;
+          }
+        if (j < h)
+          {
+            SCAL tmp0 = elmat(dj+i);
+            SCAL tmp1 = elmat(dj+i+1);
+            elmat(di+j) = tmp0;
+            elmat(di+d+j) = tmp1;
+          }
+      }
+    /*
+    for ( ; i+1 < h; i++)
+      for (size_t j = i+1; j < h; j++)
+        elmat(i,j) = elmat(j,i);
+    */
+    if (i+1 < h)
+      elmat(di+i+1) = elmat(di+d+i);
+  }
+
+  void ExtendSymmetric1 (SliceMatrix<double> elmat)
+  {
+    ExtendSymmetric (elmat);
+  }
   
 
   Timer timer_SymbBFI("SymbolicBFI");
@@ -1703,9 +1753,15 @@ namespace ngfem
                         }
                       }
                       if (symmetric_so_far)
-                        for (size_t i = 0; i < part_elmat.Height(); i++)
-                          for (size_t j = i+1; j < part_elmat.Width(); j++)
-                            part_elmat(i,j) = part_elmat(j,i);
+                        {
+                          ExtendSymmetric (part_elmat);
+                          /*
+                          size_t h = part_elmat.Height();
+                          for (size_t i = 0; i+1 < h; i++)
+                            for (size_t j = i+1; j < h; j++)
+                              part_elmat(i,j) = part_elmat(j,i);
+                          */
+                        }
                     }
               
                   l1 += proxy2->Dimension();
