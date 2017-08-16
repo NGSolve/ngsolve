@@ -1152,7 +1152,6 @@ namespace ngfem
   {
     size_t i = 0;
     size_t wa = a.Width();
-    size_t wb = b.Width();
     size_t da = a.Dist();
     size_t db = b.Dist();
     if (wa == 0) return;
@@ -1447,6 +1446,56 @@ namespace ngfem
       }
   }
 
+
+  template <typename SCAL>
+  void ExtendSymmetric (SliceMatrix<SCAL> elmat)
+  {
+    /*
+    size_t h = elmat.Height();
+    for (size_t i = 0; i+1 < h; i++)
+      for (size_t j = i+1; j < h; j++)
+        elmat(i,j) = elmat(j,i);
+    */
+
+    size_t h = elmat.Height();
+    size_t d = elmat.Dist();
+    size_t i = 0, di = 0;
+    for ( ; i+2 < h; i+=2, di+=2*d)
+      {
+        elmat(di+i+1) = elmat(di+d+i);
+        size_t j = i+2, dj = di+2*d;
+        for ( ; j+1 < h; j+=2, dj+=2*d)
+          {
+            SCAL tmp00 = elmat(dj+i);
+            SCAL tmp01 = elmat(dj+i+1);
+            SCAL tmp10 = elmat(dj+d+i);
+            SCAL tmp11 = elmat(dj+d+i+1);
+            elmat(di+j) = tmp00;
+            elmat(di+d+j) = tmp01;
+            elmat(di+j+1) = tmp10;
+            elmat(di+d+j+1) = tmp11;
+          }
+        if (j < h)
+          {
+            SCAL tmp0 = elmat(dj+i);
+            SCAL tmp1 = elmat(dj+i+1);
+            elmat(di+j) = tmp0;
+            elmat(di+d+j) = tmp1;
+          }
+      }
+    /*
+    for ( ; i+1 < h; i++)
+      for (size_t j = i+1; j < h; j++)
+        elmat(i,j) = elmat(j,i);
+    */
+    if (i+1 < h)
+      elmat(di+i+1) = elmat(di+d+i);
+  }
+
+  void ExtendSymmetric1 (SliceMatrix<double> elmat)
+  {
+    ExtendSymmetric (elmat);
+  }
   
 
   Timer timer_SymbBFI("SymbolicBFI");
@@ -1704,9 +1753,15 @@ namespace ngfem
                         }
                       }
                       if (symmetric_so_far)
-                        for (size_t i = 0; i < part_elmat.Height(); i++)
-                          for (size_t j = i+1; j < part_elmat.Width(); j++)
-                            part_elmat(i,j) = part_elmat(j,i);
+                        {
+                          ExtendSymmetric (part_elmat);
+                          /*
+                          size_t h = part_elmat.Height();
+                          for (size_t i = 0; i+1 < h; i++)
+                            for (size_t j = i+1; j < h; j++)
+                              part_elmat(i,j) = part_elmat(j,i);
+                          */
+                        }
                     }
               
                   l1 += proxy2->Dimension();
@@ -2818,7 +2873,10 @@ namespace ngfem
     Facet2ElementTrafo transform1(eltype1, ElVertices); 
     IntegrationRule & ir_facet_vol1 = transform1(LocalFacetNr, ir_facet, lh);
     BaseMappedIntegrationRule & mir1 = trafo1(ir_facet_vol1, lh);
-    // auto & smir = strafo(ir_facet, lh);
+    auto & smir = strafo(ir_facet, lh);
+
+    mir1.SetOtherMIR (&smir);
+    smir.SetOtherMIR (&mir1);
     
     // evaluate proxy-values
     ProxyUserData ud;
@@ -2933,6 +2991,9 @@ namespace ngfem
     Facet2ElementTrafo transform2(eltype2, ElVertices2); 
     IntegrationRule & ir_facet_vol2 = transform2(LocalFacetNr2, ir_facet, lh);
     BaseMappedIntegrationRule & mir2 = trafo2(ir_facet_vol2, lh);
+
+    mir1.SetOtherMIR (&mir2);
+    mir2.SetOtherMIR (&mir1);
 
     ProxyUserData ud;
     const_cast<ElementTransformation&>(trafo1).userdata = &ud;
@@ -3252,6 +3313,10 @@ namespace ngfem
             
             auto & simd_ir_facet_vol2 = transform2(LocalFacetNr2, simd_ir_facet, lh);
             auto & simd_mir2 = trafo2(simd_ir_facet_vol2, lh);
+
+            simd_mir1.SetOtherMIR(&simd_mir2);
+            simd_mir2.SetOtherMIR(&simd_mir1);
+
             
             simd_mir1.ComputeNormalsAndMeasure(eltype1, LocalFacetNr1);
             simd_mir2.ComputeNormalsAndMeasure(eltype2, LocalFacetNr2);
@@ -3368,6 +3433,8 @@ namespace ngfem
     IntegrationRule & ir_facet_vol2 = transform2(LocalFacetNr2, ir_facet, lh);
     BaseMappedIntegrationRule & mir2 = trafo2(ir_facet_vol2, lh);
 
+    mir1.SetOtherMIR (&mir2);
+    mir2.SetOtherMIR (&mir1);
 
     // ts1.Stop();
     // ts2.Start();
@@ -3783,6 +3850,9 @@ namespace ngfem
             auto & mir1 = trafo1(ir_facet_vol1, lh);
             auto & smir = strafo(ir_facet_surf, lh);
 
+            mir1.SetOtherMIR(&smir);
+            smir.SetOtherMIR(&mir1);
+
             mir1.ComputeNormalsAndMeasure(eltype1, LocalFacetNr);
             
             ProxyUserData ud(trial_proxies.Size(), lh);
@@ -3875,6 +3945,9 @@ namespace ngfem
     IntegrationRule & ir_facet_surf = stransform(ir_facet, lh);
     BaseMappedIntegrationRule & mir1 = trafo1(ir_facet_vol1, lh);
     auto & smir = strafo(ir_facet_surf, lh);
+
+    mir1.SetOtherMIR (&smir);
+    smir.SetOtherMIR (&mir1);
     
     // evaluate proxy-values
     ProxyUserData ud(trial_proxies.Size(), lh);
