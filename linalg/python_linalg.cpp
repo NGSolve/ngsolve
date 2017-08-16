@@ -205,7 +205,23 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
             IsComplex,          /* Name of function */
             );
       }
+      
+      int VHeight() const override { 
+        PYBIND11_OVERLOAD_PURE(
+            int, /* Return type */
+            BaseMatrix,      /* Parent class */
+            Height,          /* Name of function */
+            );
+      }
 
+      int VWidth() const override { 
+        PYBIND11_OVERLOAD_PURE(
+            int, /* Return type */
+            BaseMatrix,      /* Parent class */
+            Width,          /* Name of function */
+            );
+      }
+      
       void Mult (const BaseVector & x, BaseVector & y) const override {
         pybind11::gil_scoped_acquire gil;
         pybind11::function overload = pybind11::get_overload(this, "Mult");
@@ -278,7 +294,6 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         { return self.Height(); } )
     .def_property_readonly("width", [] ( BaseMatrix & self)
         { return self.Width(); } )
-
     // .def("CreateMatrix", &BaseMatrix::CreateMatrix)
     .def("CreateMatrix", [] ( BaseMatrix & self)
         { return self.CreateMatrix(); } )
