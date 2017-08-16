@@ -1429,7 +1429,7 @@ namespace ngbla
     INLINE TELEM & operator() (size_t i) const
     {
 #ifdef CHECK_RANGE
-      CheckMatRange(h,w,i);
+      CheckMatRange(h,dist,i);
 #endif
       return data[i]; 
     }
