@@ -1161,12 +1161,12 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
     (m, "DifferentialOperator")
     ;
 
-  m.def("CreateBilinearFormIntegrator", [] (py::object self_class, py::object py_coef,
-                                            const string name, int dim, bool imag,
+  m.def("CreateBilinearFormIntegrator", [] (py::object self_class, const string name,
+                                            py::object py_coef, int dim, bool imag,
                                             string filename, py::kwargs kwargs)
         -> shared_ptr<BilinearFormIntegrator>
         {
-          auto flags = CreateFlagsFromKwArgs(self_class,flags);
+          auto flags = CreateFlagsFromKwArgs(self_class,kwargs);
           Array<shared_ptr<CoefficientFunction>> coef = MakeCoefficients(py_coef);
           auto bfi = GetIntegrators().CreateBFI (name, dim, coef);
 
@@ -1181,11 +1181,11 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
           bfi -> SetFlags (flags);
           if (imag)
             bfi = make_shared<ComplexBilinearFormIntegrator> (bfi, Complex(0,1));
-          self_class.attr("__initialize__")(bfi,kwargs);
+          self_class.attr("__initialize__")(bfi,**kwargs);
           return bfi;
         },
-        py::arg("self_class"),py::arg("coef"),
-        py::arg("name")="",py::arg("dim")=-1,
+        py::arg("self_class"), py::arg("name")="",
+        py::arg("coef"),py::arg("dim")=-1,
         py::arg("imag")=false, py::arg("filename")=""
         );
 
@@ -1225,15 +1225,15 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
                  {
                    Array<int> defon = makeCArray<int> (definedon_list());
                    for (int & d : defon) d--;
-                   self.SetDefinedOn (defon);
+                   self->SetDefinedOn (defon);
                  }
                else if (py::extract<BitArray> (definedon).check())
-                 self.SetDefinedOn (py::extract<BitArray> (definedon)());
+                 self->SetDefinedOn (py::extract<BitArray> (definedon)());
                else if (!py::extract<DummyArgument>(definedon).check())
                  throw Exception (string ("cannot handle definedon of type <todo>"));
              }
            if(kwargs.contains("definedonelem"))
-               self.SetDefinedOnElements(py::cast<shared_ptr<BitArray>>(kwargs["definedonelem"]));
+               self->SetDefinedOnElements(py::cast<shared_ptr<BitArray>>(kwargs["definedonelem"]));
          })
     .def("__str__",  [](shared_ptr<BFI> self) { return ToString<BilinearFormIntegrator>(*self); } )
 

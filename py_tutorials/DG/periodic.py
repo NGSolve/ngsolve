@@ -21,7 +21,7 @@ mesh = Mesh(periodic.GenerateMesh(maxh=0.05))
 
 
 order=4
-fes = L2(mesh, order=order, flags = { "dgjumps" : True })
+fes = L2(mesh, order=order, dgjumps = True)
 u = fes.TrialFunction()
 v = fes.TestFunction()
 

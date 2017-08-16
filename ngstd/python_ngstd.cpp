@@ -87,7 +87,8 @@ Flags CreateFlagsFromKwArgs(const py::object& pyclass, const py::kwargs& kwargs,
         flags_dict[item.first.cast<string>().c_str()] = item.second;
     }
   for (auto item : kwargs)
-      if (!flags_doc.contains(item.first.cast<string>()) && !(item.first.cast<string>() == "flags"))
+    if (!flags_doc.contains(item.first.cast<string>().c_str()) &&
+        !(item.first.cast<string>() == "flags"))
         cout << IM(2) << "WARNING: kwarg '" << item.first.cast<string>()
              << "' is an undocumented flags option for class "
              << std::string(py::str(pyclass)) << ", maybe there is a typo?" << endl;
@@ -102,11 +103,11 @@ Flags CreateFlagsFromKwArgs(const py::object& pyclass, const py::kwargs& kwargs,
 
   for (auto item : kwargs)
     {
-      auto name = item.first.cast<string>().c_str();
+      auto name = item.first.cast<string>();
       if (name != "flags")
         {
-          if(!special.contains(name))
-            flags_dict[name] = item.second;
+          if(!special.contains(name.c_str()))
+            flags_dict[name.c_str()] = item.second;
         }
     }
 
@@ -114,11 +115,11 @@ Flags CreateFlagsFromKwArgs(const py::object& pyclass, const py::kwargs& kwargs,
 
   for (auto item : kwargs)
     {
-      auto name = item.first.cast<string>().c_str();
+      auto name = item.first.cast<string>();
       if (name != "flags")
         {
-          if(special.contains(name))
-            special[name](item.second, &flags, info);
+          if(special.contains(name.c_str()))
+            special[name.c_str()](item.second, &flags, info);
         }
     }
   return flags;
