@@ -3550,8 +3550,11 @@ public:
   {
     return make_shared<ComponentCoefficientFunction> (c1, comp);
   }
-  
 
+
+
+
+// ************************ DomainWiseCoefficientFunction *************************************
 
 class DomainWiseCoefficientFunction : public T_CoefficientFunction<DomainWiseCoefficientFunction>
 {
@@ -3713,6 +3716,123 @@ public:
   {
     return make_shared<DomainWiseCoefficientFunction> (move (aci));
   }
+
+
+
+
+
+
+// ************************ OtherCoefficientFunction *************************************
+
+class OtherCoefficientFunction : public T_CoefficientFunction<OtherCoefficientFunction>
+{
+  shared_ptr<CoefficientFunction> c1;
+  typedef T_CoefficientFunction<OtherCoefficientFunction> BASE;
+  using BASE::Evaluate;
+public:
+  OtherCoefficientFunction (shared_ptr<CoefficientFunction> ac1)
+    : BASE(ac1->Dimension(), ac1->IsComplex()), c1(ac1)
+  { ; }
+
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
+  {
+    throw Exception ("OtherCF::GenerateCode not available");
+  }
+
+  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)   
+  {
+    c1->TraverseTree (func);
+    func(*this);
+  }
+
+  virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
+  {
+    Array<CoefficientFunction*> cfa;
+    cfa.Append (c1.get());
+    return Array<CoefficientFunction*>(cfa);
+  } 
+  
+  
+  virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
+  {
+    throw Exception ("OtherCF::Evaluated (mip) not available");    
+  }
+
+  virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
+                        FlatVector<> result) const
+  {
+    throw Exception ("OtherCF::Evaluated (mip) not available");        
+  }
+
+
+  virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
+  {
+    if (!ir.GetOtherMIR()) throw Exception ("other mir not set, pls report to developers");
+    c1->Evaluate (*ir.GetOtherMIR(), values);
+  }
+
+  virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const
+  {
+    if (!ir.GetOtherMIR()) throw Exception ("other mir not set, pls report to developers");    
+    c1->Evaluate (*ir.GetOtherMIR(), values);    
+  }
+
+  template <typename T>
+  void T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<T>> values) const
+  {
+    if (!ir.GetOtherMIR()) throw Exception ("other mir not set, pls report to developers");    
+    c1->Evaluate (*ir.GetOtherMIR(), values);    
+  }
+
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
+                         AFlatMatrix<double> values) const
+  {
+    // compile not available
+    if (!ir.GetOtherMIR()) throw Exception ("other mir not set, pls report to developers");    
+    c1->Evaluate (*ir.GetOtherMIR(), values);        
+  }
+  
+  virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
+                        FlatVector<Complex> result) const
+  {
+    throw Exception ("OtherCF::Evaluated (mip) not available");        
+  }
+  
+  virtual Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const
+  {
+    throw Exception ("OtherCF::Evaluated (mip) not available");            
+  }
+    
+  virtual void EvaluateDeriv(const BaseMappedIntegrationRule & mir,
+                             FlatMatrix<> result,
+                             FlatMatrix<> deriv) const
+  {
+    if (!mir.GetOtherMIR()) throw Exception ("other mir not set, pls report to developers");    
+    c1->EvaluateDeriv (*mir.GetOtherMIR(), result, deriv);            
+  }
+
+  virtual void EvaluateDDeriv(const BaseMappedIntegrationRule & mir,
+                              FlatMatrix<> result,
+                              FlatMatrix<> deriv,
+                              FlatMatrix<> dderiv) const
+  {
+    if (!mir.GetOtherMIR()) throw Exception ("other mir not set, pls report to developers");    
+    c1->EvaluateDDeriv (*mir.GetOtherMIR(), result, deriv, dderiv);                
+  }
+};
+
+shared_ptr<CoefficientFunction>
+MakeOtherCoefficientFunction (shared_ptr<CoefficientFunction> me)
+{
+  me->TraverseTree
+    ( [&] (CoefficientFunction & nodecf)
+      {
+        if (dynamic_cast<const ProxyFunction*> (&nodecf))
+          throw Exception ("You cannot create an other - CoefficientFunction from a tree involving a ProxyFunction\n  ---> use the Other()-operator on sub-trees");
+      }
+      );
+  return make_shared<OtherCoefficientFunction> (me);
+}
 
 
 

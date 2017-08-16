@@ -60,7 +60,7 @@ namespace ngstd
     atomic<int> done;
     atomic<int> active_workers;
     atomic<int> workers_on_node[8];   // max nodes
-    Array<atomic<int>*> sync;
+    // Array<atomic<int>*> sync;
     int sleep_usecs;
     bool sleep;
 
@@ -69,12 +69,7 @@ namespace ngstd
     int num_nodes;
     NGS_DLL_HEADER static int num_threads;
     NGS_DLL_HEADER static int max_threads;
-    // #ifndef __clang__    
-    static thread_local int thread_id;
-    // #else
-    // static __thread int thread_id;
-    // #endif
-    
+
     static bool use_paje_trace;
   public:
     
@@ -96,7 +91,7 @@ namespace ngstd
     static int GetMaxThreads() { return max_threads; }
     // static int GetNumThreads() { return task_manager ? task_manager->num_threads : 1; }
     static int GetNumThreads() { return num_threads; }
-    static int GetThreadId() { return thread_id; } // task_manager ? task_manager->thread_id : 0; }
+    static int GetThreadId(); //  { return thread_id; } 
     int GetNumNodes() const { return num_nodes; }
 
     static void SetPajeTrace (bool use)  { use_paje_trace = use; }
@@ -335,7 +330,7 @@ public:
 
   // lock free popfirst
   // faster for large loops, bug slower for small loops (~1000) ????
-
+   /*
   class alignas(4096) AtomicRange
 {
   mutex lock;
@@ -357,11 +352,11 @@ public:
     end = r.end();
   }
 
-  IntRange Get()
-  {
-    lock_guard<mutex> guard(lock);
-    return IntRange(begin, end);
-  }
+  // IntRange Get()
+  // {
+  //   lock_guard<mutex> guard(lock);
+  //   return IntRange(begin, end);
+  // }
 
   bool PopFirst (int & first)
   {
@@ -392,89 +387,113 @@ public:
   }
 };
 
-  
+
+  // inline ostream & operator<< (ostream & ost, AtomicRange & r)
+  // {
+  //   ost << r.Get();
+  //   return ost;
+  // }
+  */
 
 
-  inline ostream & operator<< (ostream & ost, AtomicRange & r)
+   
+   class alignas(4096) AtomicRange
   {
-    ost << r.Get();
-    return ost;
-  }
+    // mutex lock;
+    atomic<size_t> begin;
+    atomic<size_t> end;
+  public:
+    
+    void Set (IntRange r)
+    {
+      begin.store(numeric_limits<size_t>::max(), memory_order_release);
+      end.store(r.end(), memory_order_release);
+      begin.store(r.begin(), std::memory_order_release);
+    }
+  
+    void SetNoLock (IntRange r)
+    {
+      end.store(r.end(), memory_order_release);
+      begin.store(r.begin(), std::memory_order_release);
+    }
 
+    // IntRange Get()
+    // {
+    //   lock_guard<mutex> guard(lock);
+    //   return IntRange(begin, end);
+    // }
+    
+    bool PopFirst (size_t & first)
+    {
+      // int oldbegin = begin;
+      size_t oldbegin = begin.load(std::memory_order_acquire);
+      if (oldbegin >= end) return false;
+      while (!begin.compare_exchange_weak (oldbegin, oldbegin+1,
+                                           std::memory_order_relaxed, std::memory_order_relaxed))
+        if (oldbegin >= end) return false;
+      
+      first = oldbegin;
+      return true;
+    }
+    
+    bool PopHalf (IntRange & r)
+    {
+      // int oldbegin = begin;
+      size_t oldbegin = begin.load(std::memory_order_acquire);
+      size_t oldend = end.load(std::memory_order_acquire);
+      if (oldbegin >= oldend) return false;
+      
+      // lock_guard<mutex> guard(lock);    
+      while (!begin.compare_exchange_weak (oldbegin, (oldbegin+oldend+1)/2,
+                                           std::memory_order_relaxed, std::memory_order_relaxed))
+        {
+          oldend = end.load(std::memory_order_acquire);
+          if (oldbegin >= oldend) return false;
+        }
+      
+      r = IntRange(oldbegin, (oldbegin+oldend+1)/2);
+      return true;
+    }
+  };
+  
 
 
 
   class SharedLoop2
   {
     Array<AtomicRange> ranges;
-    atomic<int> processed;
-    int total;
+    atomic<size_t> processed;
+    atomic<size_t> total;
+    atomic<int> participants;
     
     class SharedIterator
     {
       FlatArray<AtomicRange> ranges;
-      atomic<int> & processed;
-      int total;
-      int myval;
-      int processed_by_me = 0;
+      atomic<size_t> & processed;
+      size_t total;
+      size_t myval;
+      size_t processed_by_me = 0;
       int me;
       int steal_from;
     public:
-      SharedIterator (FlatArray<AtomicRange> _ranges, atomic<int> & _processed, int _total, bool begin_it)
+      SharedIterator (FlatArray<AtomicRange> _ranges, atomic<size_t> & _processed, size_t _total,
+                      int _me, bool begin_it)
         : ranges(_ranges), processed(_processed), total(_total)
       {
-        me = TaskManager::GetThreadId();
-        steal_from = me;
         if (begin_it)
-          GetNext();
+          {
+            // me = TaskManager::GetThreadId();
+            me = _me;
+            steal_from = me;
+            GetNext();
+          }
       }
       
       SharedIterator & operator++ () { GetNext(); return *this;}
 
-      /*
       void GetNext()
       {
-        while (1)
-          {
-            int nr;
-            if (ranges[me].PopFirst(nr))
-              {
-                processed_by_me++;
-                myval = nr;
-                return;
-              }
-
-            processed += processed_by_me;
-            processed_by_me = 0;
-
-            // done with my work, going to steal ...
-            while (1)
-              {
-                if (processed >= total) return;
-                // steal_from = (steal_from + 1) % ranges.Size();
-                steal_from++;
-                if (steal_from == ranges.Size()) steal_from = 0;
-            
-                // steal half of the work reserved for 'from':
-                IntRange steal;
-                if (ranges[steal_from].PopHalf(steal))
-                  {
-                    // ranges[me].Set(steal);
-                    // break;
-                    myval = steal.First();
-                    processed_by_me++;                    
-                    if (myval+1 < steal.Next())
-                      ranges[me].Set (IntRange(myval+1, steal.Next()));
-                    return;
-                  }
-              }
-          }
-      }
-      */
-      
-      void GetNext()
-      {
-        int nr;
+        size_t nr;
         if (ranges[me].PopFirst(nr))
           {
             processed_by_me++;
@@ -493,7 +512,7 @@ public:
         while (1)
           {
             if (processed >= total) return;
-            // steal_from = (steal_from + 1) % ranges.Size();
+
             steal_from++;
             if (steal_from == ranges.Size()) steal_from = 0;
             
@@ -510,22 +529,39 @@ public:
           }
       }
       
-      int operator* () const { return myval; }
+      size_t operator* () const { return myval; }
       bool operator!= (const SharedIterator & it2) const { return processed < total; }
     };
     
     
   public:
     SharedLoop2 (IntRange r)
-      : ranges(TaskManager::GetMaxThreads()), processed(0)
+      : ranges(TaskManager::GetNumThreads())
     {
-      total = r.Size();
+      Reset (r);
+    }
+
+    void Reset (IntRange r)
+    {
       for (size_t i = 0; i < ranges.Size(); i++)
         ranges[i].SetNoLock (r.Split(i,ranges.Size()));
+      
+      total.store(r.Size(), std::memory_order_relaxed);
+      participants.store(0, std::memory_order_relaxed);
+      processed.store(0, std::memory_order_release);
     }
     
-    SharedIterator begin() { return SharedIterator (ranges, processed, total, true); }
-    SharedIterator end()   { return SharedIterator (ranges, processed, total, false); }
+    SharedIterator begin()
+    {
+      int me = participants++;
+      if (me < ranges.Size())
+        return SharedIterator (ranges, processed, total, me, true);
+      else
+        // more participants than buckets. set processed to total, and the loop is terminated immediately
+        return SharedIterator (ranges, total, total, me, true);
+    }
+    
+    SharedIterator end()   { return SharedIterator (ranges, processed, total, -1, false); }
   };
 
 

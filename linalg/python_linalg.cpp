@@ -328,9 +328,9 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                        if (inverse != "") m.SetInverseType(inverse);
                                        return m.InverseMatrix(freedofs);
                                      }
-         ,"Inverse", py::arg("freedofs"), py::arg("inverse")=py::str("")
+         ,"Inverse", py::arg("freedofs")=nullptr, py::arg("inverse")=py::str("")
          )
-    .def("Inverse", [](BM &m)  { return m.InverseMatrix(); })
+    // .def("Inverse", [](BM &m)  { return m.InverseMatrix(); })
     .def("Transpose", [](BM &m) { return make_shared<Transpose> (m); })
     .def("Update", [](BM &m) { m.Update(); })
     ;

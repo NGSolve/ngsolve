@@ -375,11 +375,24 @@ namespace ngcomp
         {
           //add dofs of neighbour elements as well
           Array<DofId> dnums_dg;
+          Array<int> elnums_per;
 
           for (int i = 0; i < nf; i++)
             {
               nbelems.SetSize(0);
               ma->GetFacetElements(i,elnums);
+
+              // timerDG1.Stop();
+              if(elnums.Size() < 2)
+              {
+                int facet2 = ma->GetPeriodicFacet(i);
+                if(facet2 > i)
+                {
+                  ma->GetFacetElements (facet2, elnums_per);
+                  elnums.Append(elnums_per[0]);
+                }
+              }
+              
               for (int k=0; k<elnums.Size(); k++)
                 nbelems.Append(elnums[k]);
 
@@ -1229,6 +1242,8 @@ namespace ngcomp
                     {
                       LocalHeap lh = clh.Split();
                       
+                      Array<int> elnums_per(2, lh);
+
                       Array<int> dnums, dnums1, dnums2, elnums, fnums, vnums1, vnums2;
                       for (int i : r)
                         {
@@ -1239,8 +1254,24 @@ namespace ngcomp
                           
                           ma->GetFacetElements(i,elnums);
                           el1 = elnums[0];
+
+                          int fac2 = i;
+                          // timerDG1.Stop();
+                          if(elnums.Size() < 2)
+                          {
+                            int facet2 = ma->GetPeriodicFacet(i);
+                            if(facet2 > i)
+                            {
+                              ma->GetFacetElements (facet2, elnums_per);
+                              elnums.Append(elnums_per[0]);
+                              fac2 = facet2;
+                            }
+                            else
+                              continue;
+                          }
                           
                           if(elnums.Size()<2) continue;
+                          
                           el2 = elnums[1];
                                   
                           ElementId ei1(VOL, el1);
@@ -1250,7 +1281,7 @@ namespace ngcomp
                           int facnr1 = fnums.Pos(i);
                           
                           fnums = ma->GetElFacets(ei2);
-                          int facnr2 = fnums.Pos(i);
+                          int facnr2 = fnums.Pos(fac2);
                           
                           {
                             lock_guard<mutex> guard(printmatasstatus2_mutex);
@@ -1450,7 +1481,7 @@ namespace ngcomp
                    {
                      LocalHeap lh = clh.Split();
                      
-                     Array<int> dnums, dnums1, dnums2, elnums, fnums1, fnums2, vnums1, vnums2;
+                     Array<int> dnums, dnums1, dnums2, elnums, elnums_per, fnums1, fnums2, vnums1, vnums2;
                      for (int el1 : r)
                        {
                          ElementId ei1(VOL, el1);
@@ -1460,6 +1491,20 @@ namespace ngcomp
                              HeapReset hr(lh);
                              
                              ma->GetFacetElements(fnums1[facnr1],elnums);
+
+                             int facet2 = fnums1[facnr1];
+                             // timerDG1.Stop();
+                             if(elnums.Size() < 2)
+                             {
+                               facet2 = ma->GetPeriodicFacet(fnums1[facnr1]);
+                               if(facet2 != fnums1[facnr1])
+                               {
+                                 ma->GetFacetElements (facet2, elnums_per);
+                                 elnums.Append(elnums_per[0]);
+                               }
+                             }
+
+                             
                              if (elnums.Size()<2)
                                {
                                  ma->GetFacetSurfaceElements (fnums1[facnr1], elnums);
@@ -1532,7 +1577,7 @@ namespace ngcomp
                              int el2 = elnums[0] + elnums[1] - el1;
                              ElementId ei2(VOL, el2);
                              fnums2 = ma->GetElFacets(ei2);
-                             int facnr2 = fnums2.Pos(fnums1[facnr1]);
+                             int facnr2 = fnums2.Pos(facet2);
                              
                              {
                                lock_guard<mutex> guard(printmatasstatus2_mutex);

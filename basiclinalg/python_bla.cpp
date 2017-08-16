@@ -498,7 +498,7 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
 
 
     m.def("CheckPerformance",
-             [] (int n, int m, int k)
+             [] (size_t n, size_t m, size_t k)
                               {
                                 Matrix<> a(n,k), b(m,k), c(n,m);
                                 a = 1; b = 2;
@@ -543,6 +543,66 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
                                 t2.Stop();
                                 cout << "Task-manager Lapack GFlops = " << 8 * 1e-9 * n*k*m*its / t2.GetTime() << endl;
                                 }
+
+
+                                { // Lapack - Inverse
+                                  Matrix<> a(n,n);
+                                  a = 1e-5;
+                                  for (size_t i : Range(n)) a(i,i) = 1;
+
+                                  size_t ops = n*n*n;
+                                  size_t runs = 1e10/ops+1;
+                                  LapackInverse (a);
+                                  
+                                  Timer t("inverse");
+                                  t.Start();
+                                  for (size_t j = 0; j < runs; j++)
+                                    LapackInverse (a);
+                                  t.Stop();
+                                  cout << "LapackInverse GFlops = " << 1e-9 * ops*runs / t.GetTime() << endl;
+                                }
+
+                                { // Lapack - Inverse
+                                  Matrix<> a(n,n);
+                                  a = 1e-5;
+                                  for (size_t i : Range(n)) a(i,i) = 1;
+
+                                  size_t ops = n*n*n;
+                                  size_t runs = 1e10/ops+1;
+                                  LapackInverseSPD (a);
+                                  
+                                  Timer t("inverse");
+                                  t.Start();
+                                  for (size_t j = 0; j < runs; j++)
+                                    LapackInverse (a);
+                                  t.Stop();
+                                  cout << "LapackInverse GFlops = " << 1e-9 * ops*runs / t.GetTime() << endl;
+                                }
+
+
+
+                                { // LDL 
+                                  Matrix<double,ColMajor> a(n,n), ah(n,n);
+                                  ah = 1e-5;
+                                  for (size_t i : Range(n)) ah(i,i) = 1;
+
+                                  size_t ops = n*n*n/6;
+                                  size_t runs = 1e10/ops+1;
+                                  a = ah;
+                                  CalcLDL (a.Rows(0,n).Cols(0,n));  
+                                  
+                                  Timer t("LDL");
+                                  t.Start();
+                                  for (size_t j = 0; j < runs; j++)
+                                    {
+                                      a = ah;
+                                      CalcLDL (a.Rows(0,n).Cols(0,n));
+                                    }
+                                  t.Stop();
+                                  cout << "CalcLDL GFlops = " << 1e-9 * ops*runs / t.GetTime() << endl;
+                                }
+
+                                
                               });
              }
 

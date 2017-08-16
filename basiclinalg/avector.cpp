@@ -1577,10 +1577,10 @@ namespace ngbla
     */
     if (a.Width() == 0) return;
   
-    int j = 0;
+    size_t j = 0;
     for ( ; j+3 < c.Width(); j += 4)
       {
-        int i = j;
+        size_t i = j;
         double * pc = &c(i,j);
         for ( ; i+3 < c.Height(); i += 4)
           {
@@ -1631,8 +1631,34 @@ namespace ngbla
           }
       }
 
+    // tuning for rest 3
+    if (j+3 == c.Width())
+      {
+        double sum00 = c(j  ,j  );
+        double sum10 = c(j+1,j  );
+        double sum11 = c(j+1,j+1);
+        double sum20 = c(j+2,j  );
+        double sum21 = c(j+2,j+1);
+        double sum22 = c(j+2,j+2);
+        for (size_t k = 0; k < a.Width(); k++)
+          {
+            sum00 += a(j  ,k) * b(j  ,k);
+            sum10 += a(j+1,k) * b(j  ,k);
+            sum11 += a(j+1,k) * b(j+1,k);
+            sum20 += a(j+2,k) * b(j  ,k);
+            sum21 += a(j+2,k) * b(j+1,k);
+            sum22 += a(j+2,k) * b(j+2,k);
+          }
+        c(j  ,j  ) = sum00;
+        c(j+1,j  ) = sum10;
+        c(j+1,j+1) = sum11;
+        c(j+2,j  ) = sum20;
+        c(j+2,j+1) = sum21;
+        c(j+2,j+2) = sum22;
+        return;
+      }
     for ( ; j < c.Width(); j++)
-      for (int i = j; i < c.Height(); i++)
+      for (size_t i = j; i < c.Height(); i++)
         c(i,j) += InnerProduct(a.Row(i), b.Row(j));
   }
 

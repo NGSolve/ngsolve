@@ -580,10 +580,13 @@ val : can be one of the following:
            { 
              return InnerProduct (c1, c2);
            })
-          
+    
     .def("Norm",  [](shared_ptr<CF> x) { return NormCF(x); })
-
-
+    
+    .def ("Other",
+          [](shared_ptr<CF> x) { return MakeOtherCoefficientFunction(x); },
+          "evaluate on other element, as needed for DG jumps")
+    
     // it's using the complex functions anyway ...
     // it seems to take the double-version now
     .def ("__mul__", [] (shared_ptr<CF> coef, double val)
