@@ -1135,7 +1135,8 @@ namespace ngcomp
 
     static atomic<size_t> cnt;
     static thread_local size_t thd_cnt;
-    static thread_local double thd_prev_time;
+    // static thread_local double thd_prev_time;
+    static thread_local size_t thd_prev_time;
   public:
     NGS_DLL_HEADER ProgressOutput (shared_ptr<MeshAccess> ama,
                                    string atask, size_t atotal);
