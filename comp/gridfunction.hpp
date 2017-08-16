@@ -44,6 +44,8 @@ namespace ngcomp
     virtual int Dimension() const;
     virtual Array<int> Dimensions() const;
     virtual bool DefinedOn (const ElementTransformation & trafo);
+    void SelectComponent (int acomp) { comp = acomp; }
+    const GridFunction & GetGridFunction() const { return *gf; }
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const;
     virtual Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const;
@@ -460,6 +462,10 @@ namespace ngcomp
 
     void Analyze(Array<double> & minima, Array<double> & maxima, Array<double> & averages, int component = -1);
     void Analyze(Array<double> & minima, Array<double> & maxima, Array<double> & averages_times_volumes, Array<double> & volumes, int component = -1);
+
+
+    virtual int GetNumMultiDimComponents ();
+    virtual void SetMultiDimComponent (int mc);
   };
 
 
