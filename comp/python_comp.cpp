@@ -1292,33 +1292,7 @@ type : string
 mesh : ngsolve.Mesh
   Mesh on which the finite element space is defined on.
 
-flags : dict
-  Provide additional flags for the finite element space, possible options
-  are:
-    dgjumps : bool
-      Enable DG functionality
-    print : bool
-      Write additional debug information to testout file. This
-      file must be set by ngsolve.SetTestoutFile.
-
-order : int
-  Order of the finite element space
-
-complex : bool
-  Set to true if you want to specify complex (bi-)linearforms on the
-  FESpace.
-
-dirichlet : regexpr
-  Regular expression string defining the dirichlet boundary.
-  More than one boundary can be combined by the | operator,
-  Example: dirichlet = "dirichlet1|dirichlet2"
-
-definedon : list of bits
-  Define FESpace only on the given domain numbers. Must be list of
-  0s and 1s, 0 for not defined, 1 for defined.
-
-dim : int
-  Create multi dimensional FESpace (i.e. [H1]^3)
+kwargs : For a description of the possible kwargs have a look a bit further down.
 
 2)
 
@@ -1327,28 +1301,28 @@ Parameters:
 spaces : list of ngsolve.FESpace
   List of the spaces for the compound finite element space
 
-flags : dict
-    Additional flags for the compound FESpace
+kwargs : For a description of the possible kwargs have a look a bit further down.
 
 )raw_string"), py::dynamic_attr())
 
     .def_static("__flags_doc__", [] ()
          {
-           py::dict flags_doc;
-           flags_doc["order"] = "int = 1\n  order of finite element space";
-           flags_doc["is_complex"] = "bool = false";
-           flags_doc["dirichlet"] = R"raw_string(regexpr
-  Regular expression string defining the dirichlet boundary.
-  More than one boundary can be combined by the | operator,
-  Example: dirichlet = "dirichlet1|dirichlet2")raw_string";
-
-           flags_doc["definedon"] = R"raw_string(Region or regexpr
-  FESpace is only defined on specified Region, created with mesh.Materials("regexpr")
-  or mesh.Boundaries("regexpr").
-  If given a regexpr, the Region is assumed to be mesh.Materials("regexpr").)raw_string";
-
-           flags_doc["dim"] = "int\n  Create multi dimensional FESpace (i.e. [H1]^3)";
-           return flags_doc;
+           return py::dict
+             (
+              py::arg("order") = "int = 1\n"
+              "  order of finite element space",
+              py::arg("is_complex") = "bool = False",
+              py::arg("dirichlet") = "regexpr\n"
+              "  Regular expression string defining the dirichlet boundary.\n"
+              "  More than one boundary can be combined by the | operator,\n"
+              "  i.e.: dirichlet = 'top|right'",
+              py::arg("definedon") = "Region or regexpr\n"
+              "  FESpace is only defined on specific Region, created with mesh.Materials('regexpr')\n"
+              "  or mesh.Boundaries('regexpr'). If given a regexpr, the region is assumed to be\n"
+              "  mesh.Materials('regexpr').",
+              py::arg("dim") = "int = 1\n"
+              "  Create multi dimensional FESpace (i.e. [H1]^3)"
+              );
          })
     .def_static("__special_treated_flags__", [] ()
                 {
@@ -1704,6 +1678,15 @@ flags : dict
            new (instance) HCurlHighOrderFESpace(ma, flags);
            self.attr("__initialize__")(**kwargs);
          })
+    .def_static("__flags_doc__", [] ()
+                {
+                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
+                                                  attr("FESpace").
+                                                  attr("__flags_doc__")());
+                  flags_doc["nograds"] = "bool = False\n"
+                    "  Remove higher order gradients of H1 basis functions from HCurl FESpace";
+                  return flags_doc;
+                })
     .def("CreateGradient", [](shared_ptr<HCurlHighOrderFESpace> self) {
 	  auto fesh1 = self->CreateGradientSpace();
 	  shared_ptr<BaseMatrix> grad = self->CreateGradient(*fesh1);
@@ -2430,11 +2413,11 @@ flags : dict
                   return py::dict
                     (
                      py::arg("print") = "bool\n"
-                     "Write additional debug information to testout file.\n"
-                     "This file must be set by ngsolve.SetTestoutFile. Use\n"
-                     "ngsolve.SetNumThreads(1) for serial output.",
+                     "  Write additional debug information to testout file.\n"
+                     "  This file must be set by ngsolve.SetTestoutFile. Use\n"
+                     "  ngsolve.SetNumThreads(1) for serial output.",
                      py::arg("printelvec") = "bool\n"
-                     "print element vectors to testout file"
+                     "  print element vectors to testout file"
                      );
                 })
     .def("__str__",  [](LF & self ) { return ToString<LinearForm>(self); } )
