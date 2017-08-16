@@ -1311,7 +1311,7 @@ kwargs : For a description of the possible kwargs have a look a bit further down
              (
               py::arg("order") = "int = 1\n"
               "  order of finite element space",
-              py::arg("is_complex") = "bool = False",
+              py::arg("complex") = "bool = False",
               py::arg("dirichlet") = "regexpr\n"
               "  Regular expression string defining the dirichlet boundary.\n"
               "  More than one boundary can be combined by the | operator,\n"
@@ -1321,7 +1321,9 @@ kwargs : For a description of the possible kwargs have a look a bit further down
               "  or mesh.Boundaries('regexpr'). If given a regexpr, the region is assumed to be\n"
               "  mesh.Materials('regexpr').",
               py::arg("dim") = "int = 1\n"
-              "  Create multi dimensional FESpace (i.e. [H1]^3)"
+              "  Create multi dimensional FESpace (i.e. [H1]^3)",
+              py::arg("dgjumps") = "bool = False\n"
+              "  Enable discontinuous space for DG methods, the space has more dofs then"
               );
          })
     .def_static("__special_treated_flags__", [] ()
@@ -1706,6 +1708,15 @@ kwargs : For a description of the possible kwargs have a look a bit further down
            new (instance) HDivHighOrderFESpace(ma, flags);
            self.attr("__initialize__")(**kwargs);
          })
+    .def_static("__flags_doc__", [] ()
+                {
+                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
+                                                  attr("FESpace").
+                                                  attr("__flags_doc__")());
+                  flags_doc["discontinuous"] = "bool = False\n"
+                    "  Create discontinuous HDiv space";
+                  return flags_doc;
+                })
     .def("Average",
          [] (shared_ptr<HDivHighOrderFESpace> hdivfes, BaseVector & bv)
          {
@@ -2205,14 +2216,24 @@ check_unused : bool
                 {
                   return py::dict
                     (
+                     py::arg("eliminate_internal") = "bool = False\n"
+                     "  Set up BilinearForm for static condensation of internal\n"
+                     "  bubbles. Static condensation has to be done by user,\n"
+                     "  this enables only the use of the members harmonic_extension,\n"
+                     "  harmonic_extension_trans and inner_solve. Have a look at the\n"
+                     "  documentation for further information.",
                      py::arg("print") = "bool = False\n"
-                     "Write additional information to testout file. \n"
-                     "This file must be set by ngsolve.SetTestoutFile. Use \n"
-                     "ngsolve.SetNumThreads(1) for serial output",
+                     "  Write additional information to testout file. \n"
+                     "  This file must be set by ngsolve.SetTestoutFile. Use \n"
+                     "  ngsolve.SetNumThreads(1) for serial output",
                      py::arg("printelmat") = "bool = False\n"
-                     "Write element matrices to testout file",
+                     "  Write element matrices to testout file",
                      py::arg("symmetric") = "bool = False\n"
-                     "If set true, only half the matrix is stored"
+                     "  If set true, only half the matrix is stored",
+                     py::arg("nonassemble") = "bool = False\n"
+                     "  BilinearForm will not allocate memory for assembling.\n"
+                     "  optimization feature for (nonlinear) problems where the\n"
+                     "  form is only applied but never assembled."
                      );
                 })
 
@@ -2482,7 +2503,10 @@ flags : dict
                 {
                   return py::dict
                     (
-                     py::arg("inverse") = "Inverse type used in Preconditioner"
+                     py::arg("inverse") = "Inverse type used in Preconditioner",
+                     py::arg("test") = "bool = False\n"
+                     "  Computes condition number for preconditioner, if testout file\n"
+                     "  is set, prints eigenvalues to file."
                      );
                 })
     .def ("Test", [](Preconditioner &pre) { pre.Test();} )

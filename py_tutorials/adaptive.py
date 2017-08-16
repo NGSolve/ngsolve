@@ -58,7 +58,7 @@ a += SymbolicBFI(lam*grad(u)*grad(v))
 f = LinearForm(fes)
 f += SymbolicLFI(CoefficientFunction([0, 0, 1])*v)
 
-c = Preconditioner(a, type="multigrid", flags= { "inverse" : "sparsecholesky" })
+c = Preconditioner(a, type="multigrid", inverse = sparsecholesky)
 
 gfu = GridFunction(fes)
 Draw (gfu)

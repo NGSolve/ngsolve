@@ -25,11 +25,11 @@ grad_v = v.Deriv()
 n = specialcf.normal(mesh.dim)
 h = specialcf.mesh_size
 
-a = BilinearForm(fes, symmetric=True, flags = { "eliminate_internal" : True })
+a = BilinearForm(fes, symmetric=True, eliminate_internal = True)
 a += SymbolicBFI(grad(u) * grad(v))
 a += SymbolicBFI(grad(u)*n*(vhat-v)+grad(v)*n*(uhat-u)+10*order*order/h*(u-uhat)*(v-vhat), element_boundary=True)
 
-c = Preconditioner(type="direct", bf=a, flags = { "inverse" : "sparsecholesky" } )
+c = Preconditioner(type="direct", bf=a, inverse = "sparsecholesky")
 # c = Preconditioner(type="bddc", bf=a)
 
 a.Assemble()
