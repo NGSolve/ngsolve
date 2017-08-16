@@ -1025,7 +1025,7 @@ namespace ngla
         pi += 64/sizeof(int);
       }
 
-    TM * vi = &data[fi], * vin = &data[fin];
+    TM * vi = &data[fi], * vin = (&data[fin-1])+1;
     while (vi < vin)
       {
         _mm_prefetch (reinterpret_cast<void*>(vi), _MM_HINT_T2);
