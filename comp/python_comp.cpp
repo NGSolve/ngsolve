@@ -1202,7 +1202,7 @@ when building the system matrices.
 
 
   // Just to call the right constructor for unpickling
-  py::class_<SelectUnpicklingConstructor>(m,"SelectUnpicklingConstructor");
+  py::class_<SelectUnpicklingConstructor>(m,"SelectUnpicklingConstructor", py::dynamic_attr());
   
   //////////////////////////////////////////////////////////////////////////////////////////
 
