@@ -8,7 +8,7 @@ mesh = Mesh(unit_square.GenerateMesh(maxh=0.2))
 # mesh.Refine()
 
 order = 2
-fes1 = HDiv(mesh, order=order, flags = { "discontinuous" : True } )
+fes1 = HDiv(mesh, order=order, discontinuous=True)
 fes2 = L2(mesh, order=order-1)
 fes3 = FacetFESpace(mesh, order=order, dirichlet=[1,2,3])
 
@@ -19,12 +19,12 @@ tau,v,vhat = fes.TestFunction()
 
 n = specialcf.normal(mesh.dim)
 
-a = BilinearForm(fes, symmetric=False, flags = { "eliminate_internal" : True }) 
+a = BilinearForm(fes, symmetric=False, eliminate_internal = True)
 a += SymbolicBFI(sigma*tau + div(sigma)*v + div(tau)*u)
 a += SymbolicBFI(sigma*n*vhat+tau*n*uhat, element_boundary=True)
 
-# c = Preconditioner(type="direct", bf=a, flags = { "inverse" : "sparsecholesky" } )
-# c = Preconditioner(type="direct", bf=a, flags = { "inverse" : "pardiso" } )
+# c = Preconditioner(type="direct", bf=a, inverse = sparsecholesky)
+# c = Preconditioner(type="direct", bf=a, inverse = pardiso)
 # c = Preconditioner(type="local", bf=a)
 c = Preconditioner(type="bddc", bf=a)
 

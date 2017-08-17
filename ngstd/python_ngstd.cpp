@@ -73,6 +73,58 @@ void SetFlag(Flags &flags, string s, py::object value)
     }
 }
 
+Flags CreateFlagsFromKwArgs(const py::object& pyclass, const py::kwargs& kwargs, py::list info)
+{
+  auto flags_doc = pyclass.attr("__flags_doc__")();
+  py::dict flags_dict;
+
+  if (kwargs.contains("flags"))
+    {
+      cout  << IM(2) << "WARNING: using flags as kwarg is deprecated in " << py::str(pyclass)
+           << ", use the flag arguments as kwargs instead!" << endl;
+      auto addflags = py::cast<py::dict>(kwargs["flags"]);
+      for (auto item : addflags)
+        flags_dict[item.first.cast<string>().c_str()] = item.second;
+    }
+  for (auto item : kwargs)
+    if (!flags_doc.contains(item.first.cast<string>().c_str()) &&
+        !(item.first.cast<string>() == "flags"))
+        cout << IM(2) << "WARNING: kwarg '" << item.first.cast<string>()
+             << "' is an undocumented flags option for class "
+             << std::string(py::str(pyclass)) << ", maybe there is a typo?" << endl;
+
+  py::dict special;
+  try
+    {
+      special = pyclass.attr("__special_treated_flags__")();
+    }
+  catch(std::exception e)
+    {  }
+
+  for (auto item : kwargs)
+    {
+      auto name = item.first.cast<string>();
+      if (name != "flags")
+        {
+          if(!special.contains(name.c_str()))
+            flags_dict[name.c_str()] = item.second;
+        }
+    }
+
+  auto flags = py::extract<Flags>(flags_dict)();
+
+  for (auto item : kwargs)
+    {
+      auto name = item.first.cast<string>();
+      if (name != "flags")
+        {
+          if(special.contains(name.c_str()))
+            special[name.c_str()](item.second, &flags, info);
+        }
+    }
+  return flags;
+}
+
 const char* docu_string(const char* str)
 {
   if(getenv("NETGEN_DOCUMENTATION_RST_FORMAT"))

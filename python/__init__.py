@@ -43,34 +43,24 @@ def __monkeypatch_new(thisclass, creatorfunction):
 
 
 # assign creator functions to __new__
-comp.BilinearForm.__new__ = comp.CreateBilinearForm
-comp.BilinearForm.__init__ = __empty_init
+creator_functions = {
+    fem.ElementTransformation : fem.CreateElementTransformation,
+    fem.CoefficientFunction : fem.CreateCoefficientFunction,
+    fem.BFI : fem.CreateBilinearFormIntegrator,
+    fem.LFI : fem.CreateLinearFormIntegrator,
+    comp.BilinearForm : comp.CreateBilinearForm,
+    comp.LinearForm : comp.CreateLinearForm,
+    comp.Preconditioner : comp.CreatePreconditioner,
+    comp.GridFunction : comp.CreateGridFunction,
+    comp.PDE : comp.CreatePDE,
+    comp.VTKOutput : comp.CreateVTKOutput,
+    comp.FESpace : comp.CreateFESpace,
+    comp.Periodic : comp.CreatePeriodicFESpace
+    }
 
-fem.CoefficientFunction.__new__ = __monkeypatch_new(fem.CoefficientFunction,fem.CreateCoefficientFunction)
+for pclass, creator in creator_functions.items():
+    pclass.__new__ = __monkeypatch_new(pclass,creator)
 
-comp.GridFunction.__new__ = comp.CreateGridFunction
-comp.GridFunction.__init__ = __empty_init
-
-comp.LinearForm.__new__ = comp.CreateLinearForm
-comp.LinearForm.__init__ = __empty_init
-
-comp.PDE.__new__ = comp.CreatePDE
-comp.PDE.__init__ = __empty_init
-
-comp.VTKOutput.__new__ = comp.CreateVTKOutput
-comp.VTKOutput.__init__ = __empty_init
-
-fem.ElementTransformation.__new__ = fem.CreateElementTransformation
-fem.ElementTransformation.__init__ = __empty_init
-
-fem.BFI.__new__ = __monkeypatch_new(fem.BFI, fem.CreateBilinearFormIntegrator)
-
-fem.LFI.__new__ = __monkeypatch_new(fem.LFI, fem.CreateLinearFormIntegrator)
-
-comp.FESpace.__new__ = __monkeypatch_new(comp.FESpace, comp.CreateFESpace)
-
-comp.Periodic.__new__ = comp.CreatePeriodicFESpace
-comp.Periodic.__init__ = __empty_init
 
 # creator function for unpickling of BaseVector
 def CreateBaseVector(size,iscomplex,entrysize, entries,_dict):
@@ -93,6 +83,8 @@ def TmpRedraw(*args, **kwargs):
 solve.Redraw = TmpRedraw
 del TmpRedraw
 
+
+
 ngstd.__all__ = ['ArrayD', 'ArrayI', 'BitArray', 'Flags', 'HeapReset', 'IntRange', 'LocalHeap', 'Timers', 'RunWithTaskManager', 'TaskManager', 'SetNumThreads']
 bla.__all__ = ['Matrix', 'Vector', 'InnerProduct', 'Norm']
 la.__all__ = ['BaseMatrix', 'BaseVector', 'CreateVVector', 'InnerProduct', 'CGSolver', 'QMRSolver', 'GMRESSolver', 'ArnoldiSolver', 'Projector']
@@ -101,7 +93,7 @@ fem.__all__ =  ['BFI', 'CoefficientFunction', 'Parameter', 'CoordCF', 'ET', 'Ele
            'IntegrationRule', 'IfPos' \
            ]
 # TODO: fem:'PythonCF' comp:'PyNumProc'
-comp.__all__ =  ['BBND','BND', 'BilinearForm', 'COUPLING_TYPE', 'ElementId', 'BndElementId', 'FESpace','HCurl' , 'GridFunction', 'LinearForm', 'Mesh', 'NodeId', 'ORDER_POLICY', 'Preconditioner', 'VOL', 'NumProc', 'PDE', 'Integrate', 'SymbolicLFI', 'SymbolicBFI', 'SymbolicEnergy', 'VTKOutput', 'SetHeapSize', 'SetTestoutFile', 'ngsglobals','pml','Periodic']           
+comp.__all__ =  ['BBND','BND', 'BilinearForm', 'COUPLING_TYPE', 'ElementId', 'BndElementId', 'FESpace','HCurl' , 'GridFunction', 'LinearForm', 'Mesh', 'NodeId', 'ORDER_POLICY', 'Preconditioner', 'VOL', 'NumProc', 'PDE', 'Integrate', 'SymbolicLFI', 'SymbolicBFI', 'SymbolicEnergy', 'VTKOutput', 'SetHeapSize', 'SetTestoutFile', 'ngsglobals','pml','Periodic','HDiv','HCurl']           
 solve.__all__ =  ['Redraw', 'BVP', 'CalcFlux', 'Draw', 'DrawFlux', 'SetVisualization']
 
 from ngsolve.ngstd import *
@@ -112,6 +104,20 @@ from ngsolve.comp import *
 from ngsolve.solve import *
 from ngsolve.utils import *
 from . import timing
+
+# add flags docu to docstring
+all_classes = comp.__dict__
+for classname in all_classes:
+    instance = all_classes[classname]
+    try:
+        flags_doc = instance.__flags_doc__()
+        if instance.__doc__ == None:
+            instance.__doc__ = ""
+        instance.__doc__ += "\n Keyword arguments can be:\n"
+        for name in flags_doc:
+            instance.__doc__ += name + ": " + flags_doc[name] + "\n"
+    except AttributeError:
+        pass
 
 from ngsolve.ngstd import MPIManager
 MPIManager.InitMPI()

@@ -134,6 +134,8 @@ public:
 };
 static GlobalDummyVariables globvar;
 
+struct SelectUnpicklingConstructor { };
+
 void ExportPml(py::module &m)
 {
   typedef CoefficientFunction CF;
@@ -1195,90 +1197,45 @@ when building the system matrices.
         {
           testout = new ofstream (filename);
         }, "Enable some logging into file with given filename");
+
+
+  // Just to call the right constructor for unpickling
+  py::class_<SelectUnpicklingConstructor>(m,"SelectUnpicklingConstructor")
+    .def("__getstate__", [] (py::object self) { return py::make_tuple(); })
+    .def("__setstate__", [] (SelectUnpicklingConstructor* instance, py::tuple state)
+         {
+           new (instance) SelectUnpicklingConstructor();
+         });
   
   //////////////////////////////////////////////////////////////////////////////////////////
 
 
   m.def("CreateFESpace", [] (py::object self_class, const string & type, shared_ptr<MeshAccess> ma,
-                             Flags & flags, int order, bool is_complex,
-                             py::object dirichlet, py::object definedon, int dim,
-                             py::object order_left, py::object order_right, ORDER_POLICY order_policy)
+                             py::kwargs kwargs)
         {
+          py::list info;
+          info.append(ma);
+          auto flags = CreateFlagsFromKwArgs(self_class, kwargs, info);
 
-          if (order > -1) {
-            flags.SetFlag ("order", order);
-          }
-          if (dim > -1) {
-            flags.SetFlag ("dim", dim);
-          }
-          if (is_complex) {
-            flags.SetFlag ("complex");
-          }
-
-          if (py::isinstance<py::list>(dirichlet)) {
-            flags.SetFlag("dirichlet", makeCArray<double>(py::list(dirichlet)));
-          }
-
-          if (py::isinstance<py::str>(dirichlet))
-            {
-              std::regex pattern(dirichlet.cast<string>());
-              Array<double> dirlist;
-              for (int i = 0; i < ma->GetNBoundaries(); i++)
-                if (std::regex_match (ma->GetMaterial(BND, i), pattern))
-                  dirlist.Append (i+1);
-              flags.SetFlag("dirichlet", dirlist);
-            }
-
-          if (py::isinstance<py::str>(definedon))
-            {
-              std::regex pattern(definedon.cast<string>());
-              Array<double> defonlist;
-              for (int i = 0; i < ma->GetNDomains(); i++)
-                if (regex_match(ma->GetMaterial(VOL,i), pattern))
-                  defonlist.Append(i+1);
-              flags.SetFlag ("definedon", defonlist);
-            }
-
-          if (py::isinstance<py::list> (definedon))
-            flags.SetFlag ("definedon", makeCArray<double> (definedon));
-          py::extract<Region> definedon_reg(definedon);
-          if (definedon_reg.check() && definedon_reg().IsVolume())
-            {
-              Array<double> defonlist;
-              for (int i = 0; i < definedon_reg().Mask().Size(); i++)
-                if (definedon_reg().Mask().Test(i))
-                  defonlist.Append(i+1);
-              flags.SetFlag ("definedon", defonlist);
-            }
-                             
-                             
           auto fes = CreateFESpace (type, ma, flags);
-          fes->SetOrderPolicy(order_policy);
-                             
-          if (py::isinstance<py::int_> (order_left))
-            for (auto et : element_types)
-              fes->SetOrderLeft (et, order_left.cast<int>());
-          if (py::isinstance<py::int_> (order_right))
-            for (auto et : element_types)
-              fes->SetOrderRight (et, order_right.cast<int>());
-                             
-          LocalHeap lh (1000000, "FESpace::Update-heap");
+          auto pyfes = py::cast(fes);
+          pyfes.attr("__initialize__")(**kwargs);
+          return pyfes;
+        },
+        py::arg("self_class"),
+        py::arg("type"), py::arg("mesh"),
+        "allowed types are: 'h1ho', 'l2ho', 'hcurlho', 'hdivho' etc."
+        );
+
+  m.def("CreateFESpace", [] (py::object self_class, const string & type, shared_ptr<MeshAccess> ma,
+                             Flags flags, SelectUnpicklingConstructor)
+        {
+          auto fes = CreateFESpace(type,ma,flags);
+          LocalHeap lh(int(1e7),"lh FESpace update unpickle");
           fes->Update(lh);
           fes->FinalizeUpdate(lh);
           return fes;
-        },
-        py::arg("self_class"),
-        py::arg("type"), py::arg("mesh"), py::arg("flags") = py::dict(),
-        py::arg("order")=-1,
-        py::arg("complex")=false,
-        py::arg("dirichlet")=DummyArgument(),
-        py::arg("definedon")=DummyArgument(),
-        py::arg("dim")=-1,
-        py::arg("order_left")=DummyArgument(),
-        py::arg("order_right")=DummyArgument(),
-        py::arg("order_policy")=OLDSTYLE_ORDER,
-        "allowed types are: 'h1ho', 'l2ho', 'hcurlho', 'hdivho' etc."
-        );
+        }, "This constructor is for unpickling only!");
   
   m.def("CreateFESpace", [] (py::object self_class, py::list lspaces, Flags& flags)
         {
@@ -1312,14 +1269,9 @@ when building the system matrices.
   py::class_<FESpace, shared_ptr<FESpace>>(m, "FESpace",
 		    docu_string(R"raw_string(Finite Element Space
 
-Provides the functionality for finite element calculations. Use
-the finite element space generator functions to construct the space,
-this can sometimes provide additional functionality (e.g HCurl).
-When createing a FESpace with a generator function the set parameters
-are passed to the FESpace constructor with and the type parameter is
-set. If the space has additional functionality it is added to the space.
+Provides the functionality for finite element calculations.
 
-Available generator functions
+Some available FESpaces are:
 
 H1
 HCurl
@@ -1343,33 +1295,7 @@ type : string
 mesh : ngsolve.Mesh
   Mesh on which the finite element space is defined on.
 
-flags : dict
-  Provide additional flags for the finite element space, possible options
-  are:
-    dgjumps : bool
-      Enable DG functionality
-    print : bool
-      Write additional debug information to testout file. This
-      file must be set by ngsolve.SetTestoutFile.
-
-order : int
-  Order of the finite element space
-
-complex : bool
-  Set to true if you want to specify complex (bi-)linearforms on the
-  FESpace.
-
-dirichlet : regexpr
-  Regular expression string defining the dirichlet boundary.
-  More than one boundary can be combined by the | operator,
-  Example: dirichlet = "dirichlet1|dirichlet2"
-
-definedon : list of bits
-  Define FESpace only on the given domain numbers. Must be list of
-  0s and 1s, 0 for not defined, 1 for defined.
-
-dim : int
-  Create multi dimensional FESpace (i.e. [H1]^3)
+kwargs : For a description of the possible kwargs have a look a bit further down.
 
 2)
 
@@ -1378,10 +1304,121 @@ Parameters:
 spaces : list of ngsolve.FESpace
   List of the spaces for the compound finite element space
 
-flags : dict
-    Additional flags for the compound FESpace
+kwargs : For a description of the possible kwargs have a look a bit further down.
 
 )raw_string"), py::dynamic_attr())
+
+    .def_static("__flags_doc__", [] ()
+         {
+           return py::dict
+             (
+              py::arg("order") = "int = 1\n"
+              "  order of finite element space",
+              py::arg("complex") = "bool = False",
+              py::arg("dirichlet") = "regexpr\n"
+              "  Regular expression string defining the dirichlet boundary.\n"
+              "  More than one boundary can be combined by the | operator,\n"
+              "  i.e.: dirichlet = 'top|right'",
+              py::arg("definedon") = "Region or regexpr\n"
+              "  FESpace is only defined on specific Region, created with mesh.Materials('regexpr')\n"
+              "  or mesh.Boundaries('regexpr'). If given a regexpr, the region is assumed to be\n"
+              "  mesh.Materials('regexpr').",
+              py::arg("dim") = "int = 1\n"
+              "  Create multi dimensional FESpace (i.e. [H1]^3)",
+              py::arg("dgjumps") = "bool = False\n"
+              "  Enable discontinuous space for DG methods, this flag is needed for DG methods,\n"
+              "  since the dofs have a different coupling then and this changes the sparsity\n"
+              "  pattern of matrices."
+              );
+         })
+    .def_static("__special_treated_flags__", [] ()
+                {
+                  // CAUTION: Do not use references as arguments for cpp function lambdas
+                  // pybind11 somehow removes the references and creates copies!
+                  // pass arguments either by value or by pointer!
+                  py::dict special
+                    (
+                     py::arg("dirichlet") = py::cpp_function
+                     ([] (py::object dirichlet, Flags* flags, py::list info)
+                      {
+                        auto ma = py::cast<shared_ptr<MeshAccess>>(info[0]);
+                        if(py::isinstance<py::list>(dirichlet))
+                          {
+                            flags->SetFlag("dirichlet",
+                                           makeCArray<double>(py::list(dirichlet)));
+                            return;
+                          }
+                        if (py::isinstance<py::str>(dirichlet))
+                          {
+                            std::regex pattern(dirichlet.cast<string>());
+                            Array<double> dirlist;
+                            for (int i = 0; i < ma->GetNBoundaries(); i++)
+                              if (std::regex_match (ma->GetMaterial(BND, i), pattern))
+                                {
+                                  dirlist.Append (i+1);
+                                }
+                            flags->SetFlag("dirichlet", dirlist);
+                          }
+                      }),
+                     py::arg("definedon") = py::cpp_function
+                     ([] (py::object definedon, Flags* flags, py::list info)
+                      {
+                        auto ma = py::cast<shared_ptr<MeshAccess>>(info[0]);
+                        if (py::isinstance<py::str>(definedon))
+                          {
+                            std::regex pattern(definedon.cast<string>());
+                            Array<double> defonlist;
+                            for (int i = 0; i < ma->GetNDomains(); i++)
+                              if (regex_match(ma->GetMaterial(VOL,i), pattern))
+                                defonlist.Append(i+1);
+                            flags->SetFlag ("definedon", defonlist);
+                          }
+
+                        if (py::isinstance<py::list> (definedon))
+                          flags->SetFlag ("definedon", makeCArray<double> (definedon));
+
+                        py::extract<Region> definedon_reg(definedon);
+                        if (definedon_reg.check() && definedon_reg().IsVolume())
+                          {
+                            Array<double> defonlist;
+                            for (int i = 0; i < definedon_reg().Mask().Size(); i++)
+                              if (definedon_reg().Mask().Test(i))
+                                defonlist.Append(i+1);
+                            flags->SetFlag ("definedon", defonlist);
+                          }
+                        if (definedon_reg.check() && definedon_reg().VB()==BND)
+                          {
+                            Array<double> defonlist;
+                            for (auto i : Range(definedon_reg().Mask().Size()))
+                              if(definedon_reg().Mask().Test(i))
+                                defonlist.Append(i+1);
+                            flags->SetFlag("definedonbound", defonlist);
+                          }
+                      }),
+
+                     // the following kwargs are processed in __initialize__ and should not create flags
+                     py::arg("order_policy") = py::cpp_function([](py::object, Flags*, py::list) { ; }),
+                     py::arg("order_left") = py::cpp_function([] (py::object, Flags*, py::list) { ; }),
+                     py::arg("order_right") = py::cpp_function([] (py::object, Flags*, py::list) { ; })
+                     );
+                     return special;
+                     })
+    .def("__initialize__", [] (FESpace& self, py::kwargs kwargs)
+         {
+           if(kwargs.contains("order_policy"))
+              self.SetOrderPolicy(py::cast<ORDER_POLICY>(kwargs["order_policy"]));
+           if(kwargs.contains("order_left"))
+             for (auto et : element_types)
+               self.SetOrderLeft(et, py::cast<int>(kwargs["order_left"]));
+           if (kwargs.contains("order_right"))
+               for (auto et : element_types)
+                 self.SetOrderRight(et, py::cast<int>(kwargs["order_right"]));
+           LocalHeap lh(int(1e7),"FESpace::Update lh");
+           self.Update(lh);
+           self.FinalizeUpdate(lh);
+         })
+    .def("__ngsid__", [] (shared_ptr<FESpace> self)
+         { return reinterpret_cast<std::uintptr_t>(self.get()); } )
     .def("__reduce__", [] (py::object fes_obj)
          {
            auto setstate_args = py::make_tuple(fes_obj.attr("__dict__"));
@@ -1425,7 +1462,7 @@ flags : dict
                auto mesh = fes->GetMeshAccess();
                auto type = fes->type;
                //TODO: pickle order policies
-               constructor_args = py::make_tuple(type,mesh,flags);
+               constructor_args = py::make_tuple(type,mesh,flags,SelectUnpicklingConstructor());
              }
            // if fes has no __init__ then it's constructed with FESpace(...)
            py::object class_obj = fes_obj.attr("__class__");
@@ -1637,6 +1674,25 @@ flags : dict
 
   py::class_<HCurlHighOrderFESpace, shared_ptr<HCurlHighOrderFESpace>,FESpace>
     (m, "HCurl")
+    .def("__init__", [] (py::object self, shared_ptr<MeshAccess> ma, py::kwargs kwargs)
+         {
+           auto myclass = self.attr("__class__");
+           py::list info;
+           info.append(ma);
+           auto flags = CreateFlagsFromKwArgs(myclass, kwargs, info);
+           auto instance = py::cast<HCurlHighOrderFESpace*>(self);
+           new (instance) HCurlHighOrderFESpace(ma, flags);
+           self.attr("__initialize__")(**kwargs);
+         })
+    .def_static("__flags_doc__", [] ()
+                {
+                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
+                                                  attr("FESpace").
+                                                  attr("__flags_doc__")());
+                  flags_doc["nograds"] = "bool = False\n"
+                    "  Remove higher order gradients of H1 basis functions from HCurl FESpace";
+                  return flags_doc;
+                })
     .def("CreateGradient", [](shared_ptr<HCurlHighOrderFESpace> self) {
 	  auto fesh1 = self->CreateGradientSpace();
 	  shared_ptr<BaseMatrix> grad = self->CreateGradient(*fesh1);
@@ -1646,6 +1702,25 @@ flags : dict
   
   py::class_<HDivHighOrderFESpace, shared_ptr<HDivHighOrderFESpace>,FESpace>
     (m, "HDiv")
+    .def("__init__", [] (py::object self, shared_ptr<MeshAccess> ma, py::kwargs kwargs)
+         {
+           auto myclass = self.attr("__class__");
+           py::list info;
+           info.append(ma);
+           auto flags = CreateFlagsFromKwArgs(myclass, kwargs, info);
+           auto instance = py::cast<HDivHighOrderFESpace*>(self);
+           new (instance) HDivHighOrderFESpace(ma, flags);
+           self.attr("__initialize__")(**kwargs);
+         })
+    .def_static("__flags_doc__", [] ()
+                {
+                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
+                                                  attr("FESpace").
+                                                  attr("__flags_doc__")());
+                  flags_doc["discontinuous"] = "bool = False\n"
+                    "  Create discontinuous HDiv space";
+                  return flags_doc;
+                })
     .def("Average",
          [] (shared_ptr<HDivHighOrderFESpace> hdivfes, BaseVector & bv)
          {
@@ -1739,24 +1814,34 @@ used_idnrs : list of int = None
   
 
   m.def("CreateGridFunction", [](py::object classname, shared_ptr<FESpace> fes, string & name,
-                                int multidim)
+                                 py::kwargs kwargs)
     {
-      Flags flags;
+      auto flags = CreateFlagsFromKwArgs(classname, kwargs);
       flags.SetFlag("novisual");
-      flags.SetFlag("multidim",multidim);
-      shared_ptr<GridFunction> gf = CreateGridFunction(fes, name, flags);
+      auto gf = CreateGridFunction(fes, name, flags);
       gf->Update();
       return gf;
-    }, py::arg("self"), py::arg("space"), py::arg("name")="gfu", py::arg("multidim")=1,
+    }, py::arg("self"), py::arg("space"), py::arg("name")="gfu",
         "creates a gridfunction in finite element space");
-  m.def("CreateGridFunction", [](py::object classname)
+  m.def("CreateGridFunction", [](py::object classname, shared_ptr<FESpace> fes, const string& name,
+                                 Flags flags, SelectUnpicklingConstructor)
         {
-          shared_ptr<GF> gf = nullptr;
+          auto gf = CreateGridFunction(fes,name,flags);
+          gf->Update();
           return gf;
-        },"empty creator function overload for pickling support");
+        },"For unpickling only!");
   
   py::class_<GF,shared_ptr<GF>, CoefficientFunction, NGS_Object>
     (m, "GridFunction",  "a field approximated in some finite element space", py::dynamic_attr())
+    .def_static("__flags_doc__", [] ()
+                {
+                  return py::dict
+                    (
+                     py::arg("multidim") = "Multidimensional GridFunction"
+                     );
+                })
+    .def("__ngsid__", [] (shared_ptr<GF> self)
+        { return reinterpret_cast<std::uintptr_t>(self.get()); })
     .def("__reduce__", [](py::object self_obj)
          {
            auto self = py::cast<shared_ptr<GF>>(self_obj);
@@ -1768,7 +1853,7 @@ used_idnrs : list of int = None
            auto creategf = py::module::import("ngsolve.comp").attr("CreateGridFunction");
            auto dict = self_obj.attr("__dict__");
            return py::make_tuple(self_obj.attr("__class__"),
-                                 py::make_tuple(fes,self->GetName(),self->GetMultiDim()),
+                                 py::make_tuple(fes,self->GetName(),self->GetFlags(),SelectUnpicklingConstructor()),
                                  py::make_tuple(values,dict));
          })
     .def("__setstate__", [] (shared_ptr<GF> self, py::tuple t) {
@@ -2082,32 +2167,30 @@ used_idnrs : list of int = None
 
 //   PyExportArray<shared_ptr<BilinearFormIntegrator>> ();
 
-  m.def("CreateBilinearForm", [] (py::object class_, shared_ptr<FESpace> fespace, string name,
-                                  bool symmetric, bool check_unused, py::dict bpflags)
+  m.def("CreateBilinearForm", [] (py::object class_, shared_ptr<FESpace> fespace, bool check_unused,
+                                  string name, py::kwargs kwargs)
                            {
-                             Flags flags = py::extract<Flags> (bpflags)();
-                             if (symmetric) flags.SetFlag("symmetric");
+                             auto flags = CreateFlagsFromKwArgs(class_,kwargs);
                              auto biform = CreateBilinearForm (fespace, name, flags);
                              biform -> SetCheckUnused (check_unused);                             
                              return biform;
                            },
         py::arg("self"), py::arg("space"),
-        py::arg("name")="bfa",
-        py::arg("symmetric") = false, py::arg("check_unused")=true,
-        py::arg("flags") = py::dict());
+        py::arg("check_unused")=true,
+        py::arg("name")="bfa");
   
-  m.def("CreateBilinearForm", [](py::object class_,  shared_ptr<FESpace> trial_space, shared_ptr<FESpace> test_space,
-                                 string name, bool check_unused, py::dict bpflags)
+  m.def("CreateBilinearForm", [](py::object class_,  shared_ptr<FESpace> trial_space,
+                                 shared_ptr<FESpace> test_space, string name,
+                                 bool check_unused, py::kwargs kwargs)
                            {
-                             Flags flags = py::extract<Flags> (bpflags)();
+                             auto flags = CreateFlagsFromKwArgs(class_,kwargs);
                              auto biform = CreateBilinearForm (trial_space, test_space, name, flags);
                              biform -> SetCheckUnused (check_unused);
                              return biform;
                            },
         py::arg("self"), py::arg("trialspace"),
         py::arg("testspace"),
-        py::arg("name")="bfa", py::arg("check_unused")=true,
-        py::arg("flags") = py::dict());
+        py::arg("name")="bfa", py::arg("check_unused")=true);
 
 
   typedef BilinearForm BF;
@@ -2126,32 +2209,37 @@ space : ngsolve.FESpace
   can be a compound FESpace for a mixed formulation.
 
 name : string
-  The name of the bilinearform (in python not really in use...)
+  Give a name to the BilinearForm - not really a use case in Python
 
-symmetric : bool
-  If true, only the diagonal matrix will be stored
-
-flags : dict
-  Additional options for the bilinearform, for example:
-
-    print : bool
-      Write additional debug information to testout file. This
-      file must be set by ngsolve.SetTestoutFile. Use
-      ngsolve.SetNumThreads(1) for serial output.
+check_unused : bool
+  If set prints warnings if not UNUSED_DOFS are not used
 
 )raw_string"))
-    // .def_static("__new__", [] (py::object class_, PyFES fespace, string name,
-    //                            bool symmetric, py::dict bpflags)
-    //             {
-    //               Flags flags = py::extract<Flags> (bpflags)();
-    //               if (symmetric) flags.SetFlag("symmetric");
-    //               return CreateBilinearForm (fespace, name, flags);
-    //             },
-    //             py::arg("class"),
-    //             py::arg("space"),
-    //             py::arg("name")="bfa",
-    //             py::arg("symmetric") = false,
-    //             py::arg("flags") = py::dict())
+
+    .def_static("__flags_doc__", [] ()
+                {
+                  return py::dict
+                    (
+                     py::arg("eliminate_internal") = "bool = False\n"
+                     "  Set up BilinearForm for static condensation of internal\n"
+                     "  bubbles. Static condensation has to be done by user,\n"
+                     "  this enables only the use of the members harmonic_extension,\n"
+                     "  harmonic_extension_trans and inner_solve. Have a look at the\n"
+                     "  documentation for further information.",
+                     py::arg("print") = "bool = False\n"
+                     "  Write additional information to testout file. \n"
+                     "  This file must be set by ngsolve.SetTestoutFile. Use \n"
+                     "  ngsolve.SetNumThreads(1) for serial output",
+                     py::arg("printelmat") = "bool = False\n"
+                     "  Write element matrices to testout file",
+                     py::arg("symmetric") = "bool = False\n"
+                     "  If set true, only half the matrix is stored",
+                     py::arg("nonassemble") = "bool = False\n"
+                     "  BilinearForm will not allocate memory for assembling.\n"
+                     "  optimization feature for (nonlinear) problems where the\n"
+                     "  form is only applied but never assembled."
+                     );
+                })
 
     .def("__str__",  []( BF & self ) { return ToString<BilinearForm>(self); } )
 
@@ -2313,13 +2401,14 @@ heapsize : int
 //
 
   m.def("CreateLinearForm", [] (py::object self_class,
-                                shared_ptr<FESpace> fespace, string name, Flags flags)
+                                shared_ptr<FESpace> fespace, string name, py::kwargs kwargs)
                            {
+                             auto flags = CreateFlagsFromKwArgs(self_class,kwargs);
                              auto f = CreateLinearForm (fespace, name, flags);
                              f->AllocateVector();
                              return py::cast(f);
                            },
-        py::arg("self_class"), py::arg("space"), py::arg("name")="lff", py::arg("flags") = py::dict());
+        py::arg("self_class"), py::arg("space"), py::arg("name")="lff");
 
   typedef LinearForm LF;
   py::class_<LF, shared_ptr<LF>, NGS_Object>(m, "LinearForm", docu_string(R"raw_string(
@@ -2344,6 +2433,18 @@ flags : dict
       ngsolve.SetNumThreads(1) for serial output.
 
 )raw_string"))
+    .def_static("__flags_doc__", [] ()
+                {
+                  return py::dict
+                    (
+                     py::arg("print") = "bool\n"
+                     "  Write additional debug information to testout file.\n"
+                     "  This file must be set by ngsolve.SetTestoutFile. Use\n"
+                     "  ngsolve.SetNumThreads(1) for serial output.",
+                     py::arg("printelvec") = "bool\n"
+                     "  print element vectors to testout file"
+                     );
+                })
     .def("__str__",  [](LF & self ) { return ToString<LinearForm>(self); } )
 
     .def_property_readonly("vec", [] (shared_ptr<LF> self)
@@ -2401,7 +2502,17 @@ flags : dict
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
-  py::class_<Preconditioner, shared_ptr<Preconditioner>, BaseMatrix>(m, "CPreconditioner")
+  py::class_<Preconditioner, shared_ptr<Preconditioner>, BaseMatrix>(m, "Preconditioner")
+    .def_static("__flags_doc__", [] ()
+                {
+                  return py::dict
+                    (
+                     py::arg("inverse") = "Inverse type used in Preconditioner",
+                     py::arg("test") = "bool = False\n"
+                     "  Computes condition number for preconditioner, if testout file\n"
+                     "  is set, prints eigenvalues to file."
+                     );
+                })
     .def ("Test", [](Preconditioner &pre) { pre.Test();} )
     .def ("Update", [](Preconditioner &pre) { pre.Update();} )
     .def_property_readonly("mat", [](Preconditioner &self)
@@ -2411,16 +2522,18 @@ flags : dict
     ;
 
    
-   m.def("Preconditioner",
-         [](shared_ptr<BilinearForm> bfa, const string & type, Flags flags)
-                           { 
-                             auto creator = GetPreconditionerClasses().GetPreconditioner(type);
-                             if (creator == nullptr)
-                               throw Exception(string("nothing known about preconditioner '") + type + "'");
-                             return creator->creatorbf(bfa, flags, "noname-pre");
-                           },
-          py::arg("bf"), py::arg("type"), py::arg("flags")=py::dict()
-          );
+   m.def("CreatePreconditioner",
+         [](py::object self_class, shared_ptr<BilinearForm> bfa,
+            const string & type, py::kwargs kwargs)
+         {
+           auto flags = CreateFlagsFromKwArgs(self_class,kwargs);
+           auto creator = GetPreconditionerClasses().GetPreconditioner(type);
+           if (creator == nullptr)
+             throw Exception(string("nothing known about preconditioner '") + type + "'");
+           return creator->creatorbf(bfa, flags, "noname-pre");
+         },
+         py::arg("self_class"),py::arg("bf"), py::arg("type")
+         );
 
 
   //////////////////////////////////////////////////////////////////////////////////////////
