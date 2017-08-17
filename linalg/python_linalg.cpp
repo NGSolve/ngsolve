@@ -15,16 +15,27 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     ;
     
     m.def("CreateVVector",
-          [] (size_t s, bool is_complex, int es) 
-          { return shared_ptr<BaseVector> (CreateBaseVector(s,is_complex, es)); },
+          [] (size_t s, bool is_complex, int es) -> shared_ptr<BaseVector>
+          { return CreateBaseVector(s,is_complex, es); },
           "size"_a, "complex"_a=false, "entrysize"_a=1);
     
   py::class_<BaseVector, shared_ptr<BaseVector>>(m, "BaseVector",
         py::dynamic_attr() // add dynamic attributes
       )
-  .def("__ngsid__",  [] ( BaseVector & self)
-      { return reinterpret_cast<std::uintptr_t>(&self); }  )
-    
+    .def("__reduce__", [] (py::object self_object)
+         {
+           auto constructor = py::module::import("ngsolve").attr("CreateBaseVector");
+           auto self = py::cast<shared_ptr<BaseVector>>(self_object);
+           auto entries = py::list();
+           if(self->IsComplex())
+             for(auto entry : self->FV<Complex>())
+               entries.append(py::cast(entry));
+           else
+             for(auto entry : self->FV<double>())
+               entries.append(py::cast(entry));
+           auto constructor_args = py::make_tuple(self->Size(),self->IsComplex(),self->EntrySize(),entries,self_object.attr("__dict__"));
+           return py::make_tuple(constructor, constructor_args);
+         })
     .def("__str__", [](BaseVector &self) { return ToString<BaseVector>(self); } )
     .def("__repr__", [](BaseVector &self) { return "basevector"; } )
     .def_property_readonly("size", py::cpp_function( [] (BaseVector &self) { return self.Size(); } ) )
@@ -346,7 +357,6 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
          ,"Inverse", py::arg("freedofs")=nullptr, py::arg("inverse")=py::str("")
          )
     // .def("Inverse", [](BM &m)  { return m.InverseMatrix(); })
-    .def("Transpose", [](BM &m) { return make_shared<Transpose> (m); })
     .def("Update", [](BM &m) { m.Update(); })
     ;
 

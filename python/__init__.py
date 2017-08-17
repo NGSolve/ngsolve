@@ -62,6 +62,14 @@ for pclass, creator in creator_functions.items():
     pclass.__new__ = __monkeypatch_new(pclass,creator)
 
 
+# creator function for unpickling of BaseVector
+def CreateBaseVector(size,iscomplex,entrysize, entries,_dict):
+    vec = la.CreateVVector(size,iscomplex,entrysize)
+    for i,val in enumerate(entries):
+        vec[i] = val
+    vec.__dict__ = _dict
+    return vec
+
 def TmpRedraw(*args, **kwargs):
     solve._Redraw(*args, **kwargs)
     try:
