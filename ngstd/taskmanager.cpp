@@ -337,6 +337,7 @@ namespace ngstd
     
   void TaskManager :: Loop(int thd)
   {
+    /*
     static Timer tADD("add entry counter");
     static Timer tCASready1("spin-CAS ready tick1");
     static Timer tCASready2("spin-CAS ready tick2");
@@ -344,6 +345,7 @@ namespace ngstd
     static Timer tCAS1("spin-CAS wait");
     static Timer texit("exit zone");
     static Timer tdec("decrement");
+    */
     thread_id = thd;
 
     // sync[thread_id] = new atomic<int>(0);
