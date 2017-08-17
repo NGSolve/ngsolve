@@ -21,7 +21,7 @@ install(FILES
        )
 
 include(CTest)
-foreach(py_test assemble.py bla.py poisson.py adaptive.py cmagnet.py mixed.py hybrid_mixed.py hybrid_dg.py taskmanager.py compound.py)
+foreach(py_test assemble.py bla.py poisson.py adaptive.py cmagnet.py mixed.py hybrid_mixed.py hybrid_dg.py taskmanager.py compound.py pickling.py)
   add_test(NAME ${py_test} COMMAND ${NETGEN_PYTHON_EXECUTABLE} ${py_test} WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
   set_tests_properties ( ${py_test} PROPERTIES TIMEOUT ${NGS_TEST_TIMEOUT} )
 endforeach()

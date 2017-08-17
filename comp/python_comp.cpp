@@ -1386,7 +1386,7 @@ flags : dict
 )raw_string"), py::dynamic_attr())
     .def("__ngsid__", [] (shared_ptr<FESpace> self)
          { return reinterpret_cast<std::uintptr_t>(self.get()); } )
-    .def("__reduce__", [&] (py::object fes_obj)
+    .def("__reduce__", [] (py::object fes_obj)
          {
            auto setstate_args = py::make_tuple(fes_obj.attr("__dict__"));
            py::tuple constructor_args;

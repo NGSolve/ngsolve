@@ -4,23 +4,23 @@ import netgen.geom2d
 mesh = Mesh (netgen.geom2d.unit_square.GenerateMesh(maxh=0.1))
 
 v = FESpace ("h1ho", mesh, order=4, dirichlet=[1])
+v2 = L2(mesh,order=2)
 u = GridFunction (v)
-
-data = [u.vec, u.vec, u.vec]
+u2 = GridFunction(v)
+vec = u.vec
+data = [v,v2,u,u2,u.vec]
 
 import pickle
-# store same vector three times
 pickler = pickle.Pickler(open ("1.dat", "wb"))
 pickler.dump (data)
 del pickler
 
-# NgsPickler recognizes redundancies -> smaller files
-pickler = NgsPickler(open ("2.dat", "wb"))
-pickler.dump (data)
-del pickler
+unpickler = pickle.Unpickler(open("1.dat","rb"))
+fes,fes2,w,w2,z = unpickler.load()
 
-# Use NgsUnpickler to load data again
-unpickler = NgsUnpickler(open ("2.dat", "rb"))
-loaded_data = unpickler.load()
-del unpickler
-print(loaded_data)
+assert fes.mesh is fes2.mesh
+assert w.space is w2.space
+
+assert len(z) == len(u.vec)
+for i in range(len(u.vec)):
+    assert u.vec[i] == z[i]
