@@ -70,6 +70,14 @@ namespace ngstd
     NGS_DLL_HEADER static int num_threads;
     NGS_DLL_HEADER static int max_threads;
 
+
+
+#ifndef __clang__      
+    static thread_local int thread_id;
+#else
+    static __thread int thread_id;
+#endif
+    
     static bool use_paje_trace;
   public:
     
@@ -91,7 +99,7 @@ namespace ngstd
     static int GetMaxThreads() { return max_threads; }
     // static int GetNumThreads() { return task_manager ? task_manager->num_threads : 1; }
     static int GetNumThreads() { return num_threads; }
-    static int GetThreadId(); //  { return thread_id; } 
+    static int GetThreadId() { return thread_id; } 
     int GetNumNodes() const { return num_nodes; }
 
     static void SetPajeTrace (bool use)  { use_paje_trace = use; }
@@ -553,12 +561,15 @@ public:
     
     SharedIterator begin()
     {
+      /*
       int me = participants++;
       if (me < ranges.Size())
         return SharedIterator (ranges, processed, total, me, true);
       else
         // more participants than buckets. set processed to total, and the loop is terminated immediately
         return SharedIterator (ranges, total, total, me, true);
+      */
+      return SharedIterator (ranges, processed, total, TaskManager::GetThreadId(), true);      
     }
     
     SharedIterator end()   { return SharedIterator (ranges, processed, total, -1, false); }
