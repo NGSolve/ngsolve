@@ -776,8 +776,6 @@ mesh (netgen.Mesh): a mesh generated from Netgen
 
 )raw_string") , py::dynamic_attr())
     .def(py::init<shared_ptr<netgen::Mesh>>())
-    .def("__ngsid__", [] ( MeshAccess & self)
-        { return reinterpret_cast<std::uintptr_t>(&self); }  )
     
 #ifndef PARALLEL
     .def("__init__",
@@ -1415,14 +1413,13 @@ kwargs : For a description of the possible kwargs have a look a bit further down
            if (kwargs.contains("order_right"))
                for (auto et : element_types)
                  self.SetOrderRight(et, py::cast<int>(kwargs["order_right"]));
-               
            LocalHeap lh(int(1e7),"FESpace::Update lh");
            self.Update(lh);
            self.FinalizeUpdate(lh);
          })
     .def("__ngsid__", [] (shared_ptr<FESpace> self)
          { return reinterpret_cast<std::uintptr_t>(self.get()); } )
-    .def("__reduce__", [&] (py::object fes_obj)
+    .def("__reduce__", [] (py::object fes_obj)
          {
            auto setstate_args = py::make_tuple(fes_obj.attr("__dict__"));
            py::tuple constructor_args;

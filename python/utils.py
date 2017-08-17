@@ -75,44 +75,6 @@ def div(func):
     return func.Deriv()
 
 
-import pickle
-
-def NgsPickler(*args, **kargs):
-    pickler = pickle.Pickler(*args, **kargs)
-    dumped_pids = []
-
-    def my_persistent_id(obj):
-        try:
-            pid = obj.__ngsid__()
-            if pid in dumped_pids:
-                return dumped_pids.index(pid)
-            else:
-                dumped_pids.append(pid)
-                obj.__persistent_id__ = dumped_pids.index(pid)
-                return obj
-        except:
-            return None
-
-    pickler.persistent_id = my_persistent_id
-    return pickler
-
-def NgsUnpickler(*args, **kargs):
-    unpickler = pickle.Unpickler(*args, **kargs)
-    loaded_pids = {}
-
-    def my_persistent_load(pid):
-        if hasattr(pid,'__ngsid__'):
-            loaded_pids[pid.__persistent_id__] = pid
-            del pid.__persistent_id__
-            return pid
-        else:
-            return loaded_pids[pid]
-
-    unpickler.persistent_load = my_persistent_load
-    return unpickler
-
-
-
 def ConstantCF(val):
     print ("Warning: ConstantCF deprecated, just use CoefficientFunction(val)")
     return CoefficientFunction(val)
