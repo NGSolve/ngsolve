@@ -342,6 +342,7 @@ namespace ngcomp
     : FESpace (ama, aflags),
       flags(aflags)
   {
+    type = "hcurlho";
     name="HCurlHighOrderFESpace(hcurlho)";
     
     // define flags

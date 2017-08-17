@@ -14,8 +14,8 @@ geo.AddRectangle( (0, 0), (10, 1), bcs = ("bottom", "right", "top", "left"))
 mesh = Mesh( geo.GenerateMesh(maxh=0.5))
 
 order = 3
-V = HDivDiv(mesh, order=order-1, dirichlet="bottom|right|top", flags = { "plus" : True } )
-Q = HCurl(mesh, order=order, dirichlet="left", flags = { "type1" : True } )
+V = HDivDiv(mesh, order=order-1, dirichlet="bottom|right|top", plus = True)
+Q = HCurl(mesh, order=order, dirichlet="left", type1 = True)
 X = FESpace([V,Q])
 
 print ("ndof-V:", V.ndof, ", ndof-Q:", Q.ndof)

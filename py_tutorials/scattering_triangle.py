@@ -60,7 +60,7 @@ uscat.vec.data += a.mat.Inverse(freedofs=fes.FreeDofs(), inverse="sparsecholesky
 Draw (uin, mesh, "uin")
 Draw (uscat, mesh, "uscat")
 Draw (uin-uscat, mesh, "utot")
-cf=mesh.GetPMLTrafo(2).PML_CF(2)
+cf=mesh.GetPMLTrafo(2).PML_CF
 mesh.UnSetPML(2)
 Draw (cf-Conj(cf),mesh,"scaling")
 
