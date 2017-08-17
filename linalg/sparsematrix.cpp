@@ -1025,7 +1025,7 @@ namespace ngla
         pi += 64/sizeof(int);
       }
 
-    TM * vi = &data[fi], * vin = &data[fin];
+    TM * vi = &data[fi], * vin = (&data[fin-1])+1;
     while (vi < vin)
       {
         _mm_prefetch (reinterpret_cast<void*>(vi), _MM_HINT_T2);
@@ -1627,8 +1627,6 @@ namespace ngla
 
 
   Timer timer_addelmat("SparseMatrixSymmetric::AddElementMatrix");
-  Timer timer_addelmat1("SparseMatrixSymmetric::AddElementMatrix 1");
-  Timer timer_addelmat2("SparseMatrixSymmetric::AddElementMatrix 2");
 
   template <class TM>
   void SparseMatrixSymmetricTM<TM> ::
@@ -1644,7 +1642,6 @@ namespace ngla
     FlatArray<int> map(dnums.Size(), hmap);
 
     {
-      ThreadRegionTimer reg1 (timer_addelmat1, TaskManager::GetThreadId());
       for (int i = 0; i < dnums.Size(); i++) map[i] = i;
       QuickSortI (dnums, map);
     }
@@ -1660,8 +1657,6 @@ namespace ngla
     int first_used = 0;
     while (first_used < dnums.Size() && dnums[map[first_used]] == -1) first_used++;
     
-    ThreadRegionTimer reg2 (timer_addelmat2, TaskManager::GetThreadId());
-
     if (use_atomic)
       for (int i1 = first_used; i1 < dnums.Size(); i1++)
         {

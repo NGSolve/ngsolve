@@ -3082,7 +3082,21 @@ namespace ngcomp
   }
 
 
+  int VisualizeCoefficientFunction :: GetNumMultiDimComponents ()
+  {
+    auto gfcf = dynamic_pointer_cast <GridFunctionCoefficientFunction> (cf);
+    if (!gfcf) return 1;
+    return gfcf->GetGridFunction().GetMultiDim();
+  }
 
+  void VisualizeCoefficientFunction :: SetMultiDimComponent (int mc)
+  {
+    auto gfcf = dynamic_pointer_cast <GridFunctionCoefficientFunction> (cf);
+    if (!gfcf) return;
+    if (mc >= 0 && mc < gfcf->GetGridFunction().GetMultiDim())
+      gfcf->SelectComponent(mc); 
+  }
+    
 
 
 

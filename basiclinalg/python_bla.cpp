@@ -120,7 +120,7 @@ void PyMatAccess( TCLASS &c )
             try {
               auto row_slice = rows.cast<py::slice>();
               auto col_slice = cols.cast<py::slice>();
-              return py::cast(ColGetSlice(RowGetSlice(self, row_slice()), col_slice()));
+              return py::cast(ColGetSlice(RowGetSlice(self, row_slice), col_slice));
             } catch (py::error_already_set const &) {
               cerr << "Invalid Matrix access!" << endl;
               PyErr_Print();
@@ -180,7 +180,7 @@ void PyMatAccess( TCLASS &c )
             try {
               py::slice row_slice = rows.cast<py::slice> ();
               size_t start, step, n;
-              InitSlice( row_slice(), self.Height(), start, step, n );
+              InitSlice( row_slice, self.Height(), start, step, n );
               for (int i=0; i<n; i++, start+=step) {
                 py::object row = py::cast(self.Row(start));
                 row.attr("__setitem__")(cols,val);
@@ -201,14 +201,13 @@ void PyMatAccess( TCLASS &c )
               auto row_slice = rows.cast<py::slice> ();
               auto col_slice = cols.cast<py::slice> ();
               size_t start, step, n;
-              InitSlice( row_slice(), self.Height(), start, step, n );
+              InitSlice( row_slice, self.Height(), start, step, n );
               for (int i=0; i<n; i++, start+=step) {
                 py::object row = py::cast(self.Row(start));
                 py::object f = row.attr("__setitem__");
                 f(self, cols, rmat.Row(i));
               }
             } catch (py::error_already_set const &) {
-              cerr << "Invalid Matrix access!" << endl;
               PyErr_Print();
             }
           }

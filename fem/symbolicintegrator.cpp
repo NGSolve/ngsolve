@@ -511,11 +511,13 @@ namespace ngfem
   }
   */
 
+  /*
   static Timer telvec("SymbolicLFI::CalcElVec");
   static Timer telvec_mapping("SymbolicLFI::mapping");
   static Timer telvec_zero("SymbolicLFI::zero");
   static Timer telvec_applytrans("SymbolicLFI::applytrans");
   static Timer telvec_dvec("SymbolicLFI::dvec");
+  */
   
   template <typename SCAL>   
   void SymbolicLinearFormIntegrator ::
@@ -1498,6 +1500,7 @@ namespace ngfem
   }
   
 
+  /*
   Timer timer_SymbBFI("SymbolicBFI");
   Timer timer_SymbBFIstart("SymbolicBFI start");
   Timer timer_SymbBFIscale("SymbolicBFI scale");
@@ -1506,7 +1509,7 @@ namespace ngfem
   Timer timer_SymbBFIdmat("SymbolicBFI dmat");
   Timer timer_SymbBFImult("SymbolicBFI mult");
   Timer timer_SymbBFImultsym("SymbolicBFI multsym");
-
+  */
 
   template <typename SCAL, typename SCAL_SHAPES, typename SCAL_RES>
   void SymbolicBilinearFormIntegrator ::
@@ -1549,7 +1552,7 @@ namespace ngfem
     if (simd_evaluate)
       try
         {
-          ThreadRegionTimer reg(timer_SymbBFI, TaskManager::GetThreadId());
+          // ThreadRegionTimer reg(timer_SymbBFI, TaskManager::GetThreadId());
           // NgProfiler::StartThreadTimer (timer_SymbBFIstart, TaskManager::GetThreadId());
 
           SIMD_IntegrationRule ir = Get_SIMD_IntegrationRule (fel, lh);
@@ -1739,16 +1742,20 @@ namespace ngfem
                       {
                       if (symmetric_so_far)
                         {
-                          ThreadRegionTimer regdmult(timer_SymbBFImultsym, TaskManager::GetThreadId());
-                          NgProfiler::AddThreadFlops(timer_SymbBFImultsym, TaskManager::GetThreadId(),
-                                                     SIMD<double>::Size()*2*r2.Size()*(r1.Size()+1)*hbbmat2.Width() / 2);
+                          /*
+                            ThreadRegionTimer regdmult(timer_SymbBFImultsym, TaskManager::GetThreadId());
+                            NgProfiler::AddThreadFlops(timer_SymbBFImultsym, TaskManager::GetThreadId(),
+                            SIMD<double>::Size()*2*r2.Size()*(r1.Size()+1)*hbbmat2.Width() / 2);
+                          */
                           AddABtSym (hbbmat2.Rows(r2), hbdbmat1.Rows(r1), part_elmat);
                         }
                       else
                         {
+                          /*
                           ThreadRegionTimer regdmult(timer_SymbBFImult, TaskManager::GetThreadId());
                           NgProfiler::AddThreadFlops(timer_SymbBFImult, TaskManager::GetThreadId(),
                                                      SIMD<double>::Size()*2*r2.Size()*r1.Size()*hbbmat2.Width());
+                          */
                           AddABt (hbbmat2.Rows(r2), hbdbmat1.Rows(r1), part_elmat);
                         }
                       }
@@ -2027,7 +2034,7 @@ namespace ngfem
                             LocalHeap & lh) const
       
     {
-      static Timer t("symbolicBFI - CalcElementMatrix EB", 2);
+      // static Timer t("symbolicBFI - CalcElementMatrix EB", 2);
       /*
       static Timer tir("symbolicBFI - CalcElementMatrix EB - intrules", 2);
       static Timer td("symbolicBFI - CalcElementMatrix EB - dmats", 2);
