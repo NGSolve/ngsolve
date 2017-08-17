@@ -21,13 +21,12 @@ namespace ngstd
   int TaskManager :: max_threads = getenv("NGS_NUM_THREADS") ? atoi(getenv("NGS_NUM_THREADS")) : std::thread::hardware_concurrency();
   int TaskManager :: num_threads = 1;
 
-  /*
-#ifndef __clangxx__      
+  
+#ifndef __clang__      
   thread_local int TaskManager :: thread_id = 0;
 #else
   __thread int TaskManager :: thread_id;
 #endif
-  */
   
   thread_local int thread_id = 0;
 
@@ -152,10 +151,12 @@ namespace ngstd
     trace = nullptr;
   }
 
+  /*
   int TaskManager :: GetThreadId()
   {
     return thread_id;
   }
+  */
   
   void TaskManager :: StartWorkers()
   {
