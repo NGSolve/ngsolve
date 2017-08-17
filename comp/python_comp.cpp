@@ -774,8 +774,6 @@ mesh (netgen.Mesh): a mesh generated from Netgen
 
 )raw_string") , py::dynamic_attr())
     .def(py::init<shared_ptr<netgen::Mesh>>())
-    .def("__ngsid__", [] ( MeshAccess & self)
-        { return reinterpret_cast<std::uintptr_t>(&self); }  )
     
 #ifndef PARALLEL
     .def("__init__",
@@ -1384,8 +1382,6 @@ flags : dict
     Additional flags for the compound FESpace
 
 )raw_string"), py::dynamic_attr())
-    .def("__ngsid__", [] (shared_ptr<FESpace> self)
-         { return reinterpret_cast<std::uintptr_t>(self.get()); } )
     .def("__reduce__", [] (py::object fes_obj)
          {
            auto setstate_args = py::make_tuple(fes_obj.attr("__dict__"));
@@ -1761,8 +1757,6 @@ used_idnrs : list of int = None
   
   py::class_<GF,shared_ptr<GF>, CoefficientFunction, NGS_Object>
     (m, "GridFunction",  "a field approximated in some finite element space", py::dynamic_attr())
-    .def("__ngsid__", [] (shared_ptr<GF> self)
-        { return reinterpret_cast<std::uintptr_t>(self.get()); })
     .def("__reduce__", [](py::object self_obj)
          {
            auto self = py::cast<shared_ptr<GF>>(self_obj);

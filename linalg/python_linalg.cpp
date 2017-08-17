@@ -22,8 +22,6 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
   py::class_<BaseVector, shared_ptr<BaseVector>>(m, "BaseVector",
         py::dynamic_attr() // add dynamic attributes
       )
-  .def("__ngsid__",  [] ( BaseVector & self)
-      { return reinterpret_cast<std::uintptr_t>(&self); }  )
     .def("__reduce__", [] (py::object self_object)
          {
            auto constructor = py::module::import("ngsolve").attr("CreateBaseVector");
