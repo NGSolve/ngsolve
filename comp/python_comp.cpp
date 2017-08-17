@@ -1323,7 +1323,9 @@ kwargs : For a description of the possible kwargs have a look a bit further down
               py::arg("dim") = "int = 1\n"
               "  Create multi dimensional FESpace (i.e. [H1]^3)",
               py::arg("dgjumps") = "bool = False\n"
-              "  Enable discontinuous space for DG methods, the space has more dofs then"
+              "  Enable discontinuous space for DG methods, this flag is needed for DG methods,\n"
+              "  since the dofs have a different coupling then and this changes the sparsity\n"
+              "  pattern of matrices."
               );
          })
     .def_static("__special_treated_flags__", [] ()
