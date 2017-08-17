@@ -72,6 +72,14 @@ comp.FESpace.__new__ = __monkeypatch_new(comp.FESpace, comp.CreateFESpace)
 comp.Periodic.__new__ = comp.CreatePeriodicFESpace
 comp.Periodic.__init__ = __empty_init
 
+# creator function for unpickling of BaseVector
+def CreateBaseVector(size,iscomplex,entrysize, entries,_dict):
+    vec = la.CreateVVector(size,iscomplex,entrysize)
+    for i,val in enumerate(entries):
+        vec[i] = val
+    vec.__dict__ = _dict
+    return vec
+
 def TmpRedraw(*args, **kwargs):
     solve._Redraw(*args, **kwargs)
     try:
