@@ -441,6 +441,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     else
       for (auto vb : { VOL, BND, BBND })
       {
+        /*
         tcol.Start();
         Array<int> col(ma->GetNE(vb));
         col = -1;
@@ -450,19 +451,23 @@ lot of new non-zero entries in the matrix!\n" << endl;
         int basecol = 0;
         Array<unsigned int> mask(GetNDof());
 
-        int cnt = 0, found = 0;
+        size_t cnt = 0, found = 0;
         for (ElementId el : Elements(vb)) { cnt++; (void)el; } // no warning 
 
         do
           {
             mask = 0;
 
-            for (auto el : Elements(vb))
+            Array<DofId> dofs;
+            // for (auto el : Elements(vb))
+            for (auto el : ma->Elements(vb))
               {
+                if (!DefinedOn(el)) continue;
                 if (col[el.Nr()] >= 0) continue;
 
                 unsigned check = 0;
-                for (auto d : el.GetDofs())
+                GetDofNrs(el, dofs);
+                for (auto d : dofs) // el.GetDofs())
                   if (d != -1) check |= mask[d];
 
                 if (check != UINT_MAX) // 0xFFFFFFFF)
@@ -481,12 +486,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
                     if (HasAtomicDofs())
                       {
-                        for (auto d : el.GetDofs())
+                        for (auto d : dofs) // el.GetDofs())
                           if (d != -1 && !IsAtomicDof(d)) mask[d] |= checkbit;
                       }
                     else
                       {
-                        for (auto d : el.GetDofs())
+                        for (auto d : dofs) // el.GetDofs())
                           if (d != -1) mask[d] |= checkbit;
                       }
                   }
@@ -496,55 +501,173 @@ lot of new non-zero entries in the matrix!\n" << endl;
           }
         while (found < cnt);
 
-	/*
-	  // didn't help anything ...
-	cout << "have " << maxcolor+1 << " colors, try to reduce ***************** " << endl;
+        tcol.Stop();
 
-	DynamicTable<int> dof2color(GetNDof());
-	for (auto el : Elements(vb))
-	  for (auto d : el.GetDofs())
-	    dof2color.Add(d, col[el.Nr()]);
+        Array<int> cntcol(maxcolor+1);
+        cntcol = 0;
 
-	*testout << "dof2color = " << endl << dof2color << endl;
+        for (ElementId el : Elements(vb))
+          cntcol[col[el.Nr()]]++;
+        
+        Table<int> & coloring = element_coloring[vb];
+        coloring = Table<int> (cntcol);
 
-	for (int c = 0; c <= maxcolor; c++)
-	  {
-	    *testout << "try to reschedule color " << c << endl;
-	    
-	    bool remove_col = true;
-	    int cntmove = 0, cnttot = 0;
-	    
-	    for (auto el : Elements(vb))
-	      if (col[el.Nr()] == c)
-		{
-		  bool resched = false;
+	cntcol = 0;
+        for (ElementId el : Elements(vb))
+          coloring[col[el.Nr()]][cntcol[col[el.Nr()]]++] = el.Nr();
+        */
 
-		  for (int newcol = c+1; newcol <= maxcolor; newcol++)
-		    {
-		      bool possible = true;
-		      for (auto d : el.GetDofs())
-			if (dof2color[d].Contains(newcol))
-			  {
-			    possible = false; 
-			    break;
-			  }
-		      if (possible) resched = true;
-		    }
 
-		  if (resched) cntmove++;
-		  cnttot++;
-		  if (!resched) 
-		    {
-		      *testout << "cannot move el with dofs " << el.GetDofs() << endl;
-		      remove_col = false;
-		    }
-		}
+        
+        // parallel coloring
+        
+        tcol.Start();
 
-	    *testout << "could move " << cntmove << " out of " << cnttot << endl;
-	    if (remove_col) cout << "could remove color" << endl;
-	  }
+        size_t numparts = 10;
+        Array<Table<int>> partcolorings(numparts);
 
-	*/
+        ParallelJob
+          ([&] (TaskInfo ti)
+           {
+             auto myels = ma->Elements(vb).Split(ti.task_nr, ti.ntasks);
+             Array<int> mycol(myels.Size());
+             mycol = -1;
+             int maxcolor = 0;
+             int basecol = 0;
+             Array<unsigned int> mask(GetNDof());
+
+             bool done = false;
+             while (!done)
+               {
+                 done = true;
+                 mask = 0;
+                 
+                 Array<DofId> dofs;
+                 for (auto el : myels)
+                   {
+                     if (!DefinedOn(el)) continue;
+                     if (mycol[el.Nr()-myels.First().Nr()] >= 0) continue;
+                     
+                     unsigned check = 0;
+                     GetDofNrs(el, dofs);
+                     for (auto d : dofs) 
+                       if (d != -1) check |= mask[d];
+
+                     if (check != UINT_MAX) // 0xFFFFFFFF)
+                       {
+                         done = false;
+                         unsigned checkbit = 1;
+                         int color = basecol;
+                         while (check & checkbit)
+                           {
+                             color++;
+                             checkbit *= 2;
+                           }
+                         
+                         mycol[el.Nr()-myels.First().Nr()] = color;
+                         if (color > maxcolor) maxcolor = color;
+                         
+                         if (HasAtomicDofs())
+                           {
+                             for (auto d : dofs)
+                               if (d != -1 && !IsAtomicDof(d)) mask[d] |= checkbit;
+                           }
+                         else
+                           {
+                             for (auto d : dofs) 
+                               if (d != -1) mask[d] |= checkbit;
+                           }
+                       }
+                   }
+                 basecol += 8*sizeof(unsigned int); // 32;                 
+               }
+             
+             // create part-table:
+
+             Array<int> cntcol(maxcolor+1);
+             cntcol = 0;
+             for (auto c : mycol)
+               if (c != -1) cntcol[c]++;
+             
+             Table<int> mycoloring(cntcol);
+             cntcol = 0;
+             for (auto el : myels)
+               {
+                 int c = mycol[el.Nr()-myels.First().Nr()];
+                 if (c != -1)
+                   mycoloring[c][cntcol[c]++] = el.Nr();
+               }
+             
+             partcolorings[ti.task_nr] = move(mycoloring);
+             
+           }, numparts);
+        
+
+        // merge colors
+        Array<int> col(ma->GetNE(vb));
+        col = -1;
+
+        int maxcolor = 0;
+        int basecol = 0;
+        Array<unsigned int> mask(GetNDof());
+
+        atomic<bool> done(false);
+        while (!done)
+          {
+            done = true;
+            mask = 0;
+
+            for (auto & coloring : partcolorings)
+              for (auto color : coloring)
+                {
+                  ParallelForRange
+                    (color.Size(),
+                     [&] (IntRange myrange)
+                     {
+                       Array<DofId> dofs;
+                       bool mydone = true;
+                       for (auto nr : color.Range(myrange))
+                         {
+                           ElementId el(vb, nr);
+                           if (col[nr] >= 0) continue;
+                           
+                           unsigned check = 0;
+                           GetDofNrs(el, dofs);
+                           for (auto d : dofs) // el.GetDofs())
+                             if (d != -1) check |= mask[d];
+                           
+                           if (check != UINT_MAX) // 0xFFFFFFFF)
+                             {
+                               mydone = false;
+                               unsigned checkbit = 1;
+                               int color = basecol;
+                               while (check & checkbit)
+                                 {
+                                   color++;
+                                   checkbit *= 2;
+                                 }
+                               
+                               col[el.Nr()] = color;
+                               if (color > maxcolor) maxcolor = color;
+                               
+                               if (HasAtomicDofs())
+                                 {
+                                   for (auto d : dofs) // el.GetDofs())
+                                     if (d != -1 && !IsAtomicDof(d)) mask[d] |= checkbit;
+                                 }
+                               else
+                                 {
+                                   for (auto d : dofs) // el.GetDofs())
+                                     if (d != -1) mask[d] |= checkbit;
+                                 }
+                             }
+                         }
+
+                       if (!mydone) done = false;
+                     });
+                }
+            basecol += 8*sizeof(unsigned int); // 32;
+          }
         
         tcol.Stop();
 
@@ -561,6 +684,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
         for (ElementId el : Elements(vb))
           coloring[col[el.Nr()]][cntcol[col[el.Nr()]]++] = el.Nr();
 
+        
         if (print)
           *testout << "needed " << maxcolor+1 << " colors" 
                    << " for " << ((vb == VOL) ? "vol" : "bnd") << endl;
