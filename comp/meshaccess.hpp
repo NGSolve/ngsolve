@@ -100,6 +100,7 @@ namespace ngcomp
     ElementIterator begin () const { return ElementIterator(ma, ElementId(vb,IntRange::First())); }
     ElementIterator end () const { return ElementIterator(ma, ElementId(vb,IntRange::Next())); }
     ElementId operator[] (int nr) { return ElementId(vb, IntRange::First()+nr); }
+    ElementRange Split(size_t nr, size_t tot) { return ElementRange(ma, vb, IntRange::Split(nr,tot)); }
   };
 
   template <VorB VB>
