@@ -1296,16 +1296,25 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
           if (!lfi) throw Exception(string("undefined integrator '")+name+
                                     "' in "+ToString(dim)+ " dimension having 1 coefficient");
 
-                             
-          auto definedon_list = py::extract<py::list>(definedon);
-          if (definedon_list.check())
-            lfi -> SetDefinedOn (makeCArray<int> (definedon_list()));
- 
-          if (imag)
-            lfi = make_shared<ComplexLinearFormIntegrator> (lfi, Complex(0,1));
+          if(hasattr(definedon,"Mask"))
+            {
+              auto vb = py::cast<VorB>(definedon.attr("VB")());
+              if(vb != lfi->VB())
+                throw Exception(string("LinearFormIntegrator ") + name + " not defined for " +
+                                (vb==VOL ? "VOL" : (vb==BND ? "BND" : "BBND")));
+            lfi->SetDefinedOn(py::cast<BitArray>(definedon.attr("Mask")()));
+            }
+          if (py::extract<py::list> (definedon).check())
+               {
+                 Array<int> defon = makeCArray<int> (definedon);
+                 for (int & d : defon) d--;
+                 lfi -> SetDefinedOn (defon);
+               }
           if (! py::extract<DummyArgument> (definedonelem).check())
             lfi -> SetDefinedOnElements (py::extract<shared_ptr<BitArray>>(definedonelem)());
 
+          if (imag)
+            lfi = make_shared<ComplexLinearFormIntegrator> (lfi, Complex(0,1));
           return lfi;
         },
         py::arg("self_class"),
