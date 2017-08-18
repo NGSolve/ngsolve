@@ -948,8 +948,16 @@ namespace ngstd
             mem[i] = a2.mem[i];
         }
     }
+    
+    ArrayMem (std::initializer_list<T> list)
+      : ArrayMem (list.size())
+    {
+      size_t cnt = 0;
+      for (auto val : list)
+        data[cnt++] = val;
+    }
   
-
+    
     ArrayMem & operator= (const T & val)
     {
       FlatArray<T>::operator= (val);
