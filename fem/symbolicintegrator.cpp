@@ -876,6 +876,10 @@ namespace ngfem
     
     if (element_boundary)
       {
+        T_CalcElementMatrixEBAdd<SCAL, SCAL_SHAPES> (fel, trafo, elmat, lh);
+        return;
+        
+        /*
         switch (trafo.SpaceDim())
           {
           case 1:
@@ -890,6 +894,7 @@ namespace ngfem
           default:
             throw Exception ("Illegal space dimension" + ToString(trafo.SpaceDim()));
           }
+        */
       }
     
     // RegionTimer reg(t);
@@ -1526,6 +1531,9 @@ namespace ngfem
     
     if (element_boundary)
       {
+        T_CalcElementMatrixEBAdd<SCAL, SCAL_SHAPES, SCAL_RES> (fel, trafo, elmat, lh);
+        return;
+        /*
         switch (trafo.SpaceDim())
           {
           case 1:
@@ -1540,6 +1548,7 @@ namespace ngfem
           default:
             throw Exception ("Illegal space dimension" + ToString(trafo.SpaceDim()));
           }
+        */
       }
     
     bool is_mixedfe = typeid(fel) == typeid(const MixedFiniteElement&);
@@ -2026,7 +2035,7 @@ namespace ngfem
 
   
 
-  template <int D, typename SCAL, typename SCAL_SHAPES, typename SCAL_RES>
+  template <typename SCAL, typename SCAL_SHAPES, typename SCAL_RES>
   void SymbolicBilinearFormIntegrator ::
   T_CalcElementMatrixEBAdd (const FiniteElement & fel,
                             const ElementTransformation & trafo, 
@@ -2181,6 +2190,10 @@ namespace ngfem
       
     if (element_boundary)
       {
+        T_CalcLinearizedElementMatrixEB<double,double> (fel, trafo, elveclin, elmat, lh);
+        return;
+        
+        /*
         switch (trafo.SpaceDim())
           {
           case 1:
@@ -2195,6 +2208,7 @@ namespace ngfem
           default:
             throw Exception ("Illegal space dimension" + ToString(trafo.SpaceDim()));
           }
+        */
       }
 
     
@@ -2388,7 +2402,7 @@ namespace ngfem
 
 
 
-  template <int D, typename SCAL, typename SCAL_SHAPES>
+  template <typename SCAL, typename SCAL_SHAPES>
   void SymbolicBilinearFormIntegrator ::
   T_CalcLinearizedElementMatrixEB (const FiniteElement & fel,
                                    const ElementTransformation & trafo, 
@@ -2510,7 +2524,7 @@ namespace ngfem
           cout << IM(4) << e.What() << endl
                << "switching to scalar evaluation in CalcLinearizedEB" << endl;
           simd_evaluate = false;
-          T_CalcLinearizedElementMatrixEB<D,SCAL,SCAL_SHAPES> (fel, trafo, elveclin, elmat, lh);
+          T_CalcLinearizedElementMatrixEB<SCAL,SCAL_SHAPES> (fel, trafo, elveclin, elmat, lh);
           return;
         }
 
@@ -2633,6 +2647,9 @@ namespace ngfem
 
     if (element_boundary)
       {
+        T_ApplyElementMatrixEB<double,double> (fel, trafo, elx, ely, precomputed, lh);
+        return;
+        /*
         switch (trafo.SpaceDim())
           {
           case 1:
@@ -2647,6 +2664,7 @@ namespace ngfem
           default:
             throw Exception ("Illegal space dimension" + ToString(trafo.SpaceDim()));
           }
+        */
       }
 
 
@@ -2771,7 +2789,7 @@ namespace ngfem
  
   
   
-  template <int D, typename SCAL, typename SCAL_SHAPES>
+  template <typename SCAL, typename SCAL_SHAPES>
   void SymbolicBilinearFormIntegrator ::
   T_ApplyElementMatrixEB (const FiniteElement & fel, 
                           const ElementTransformation & trafo, 
