@@ -439,6 +439,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  element_coloring[vb] = Table<int>(low_order_space->element_coloring[vb]);
       }
     else
+      {
+        
+      Array<mutex> locks(GetNDof());
+
       for (auto vb : { VOL, BND, BBND })
       {
         /*
@@ -527,7 +531,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
         
         int basecol = 0;
         Array<unsigned int> mask(GetNDof());
-        Array<mutex> locks(GetNDof());
 
         atomic<int> found(0);
         size_t cnt = 0;
@@ -562,7 +565,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
                      else
                        for (int i = dofs.Size()-1; i >= 0; i--)
                          if (dofs[i] == -1) dofs.DeleteElement(i);
-                     QuickSort (dofs);
+                     QuickSort (dofs);   // sort to avoid dead-locks
                      
                      for (auto d : dofs) 
                        locks[d].lock();
@@ -786,7 +789,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
           *testout << "needed " << maxcolor+1 << " colors" 
                    << " for " << ((vb == VOL) ? "vol" : "bnd") << endl;
       }
-
+      }
+    
     // invalidate facet_coloring
     facet_coloring = Table<int>();
        
