@@ -357,6 +357,23 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
   }
 
+  class MyMutex
+  {
+    atomic<bool> m;
+  public:
+    MyMutex() : m(false) { ; }
+    void lock()
+    {
+      bool should = false;
+      while (!m.compare_exchange_weak(should, true))
+        _mm_pause();
+    }
+    void unlock()
+    {
+      m = false;
+    }
+  };
+  
   void FESpace :: FinalizeUpdate(LocalHeap & lh)
   {
     static Timer timer ("FESpace::FinalizeUpdate");
@@ -442,7 +459,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     else
       {
         tcolmutex.Start();
-      Array<mutex> locks(GetNDof());
+      Array<MyMutex> locks(GetNDof());
       tcolmutex.Stop();
       
       for (auto vb : { VOL, BND, BBND })
