@@ -372,7 +372,7 @@ namespace ngla
     */
 
     static Timer timer("MatrixGraph");
-    static Timer timer_zero("MatrixGraph - zero");
+    static Timer timer_dof2el("MatrixGraph - build dof2el table");
     static Timer timer_prefix("MatrixGraph - prefix");    
     RegionTimer reg (timer);
 
@@ -385,7 +385,7 @@ namespace ngla
     ParallelFor (Range(colelements.Size()), 
                  [&] (int i) { QuickSort (colelements[i]); });
     
-    timer_zero.Start();
+    timer_dof2el.Start();
     for ( ; !creator.Done(); creator++)
       {    
         ParallelFor (Range(rowelements.Size()),
@@ -396,7 +396,7 @@ namespace ngla
                      },
                      TasksPerThread(10));
       }
-    timer_zero.Stop();
+    timer_dof2el.Stop();
 
     Table<int> dof2element = creator.MoveTable();
 
@@ -548,7 +548,7 @@ namespace ngla
               }
             firsti[size] = nze;
             */
-
+            
             timer_prefix.Start();
             Array<size_t> partial_sums(TaskManager::GetNumThreads()+1);
             partial_sums[0] = 0;
@@ -564,6 +564,7 @@ namespace ngla
 
             for (size_t i = 1; i < partial_sums.Size(); i++)
               partial_sums[i] += partial_sums[i-1];
+
             ParallelJob
               ([&] (TaskInfo ti)
                {
