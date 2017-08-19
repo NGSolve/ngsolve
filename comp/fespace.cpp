@@ -361,6 +361,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   {
     static Timer timer ("FESpace::FinalizeUpdate");
     static Timer tcol ("FESpace::FinalizeUpdate - coloring");
+    static Timer tcolmutex ("FESpace::FinalizeUpdate - coloring, init mutex");
     
     if (low_order_space) low_order_space -> FinalizeUpdate(lh);
 
@@ -440,9 +441,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     else
       {
-        
+        tcolmutex.Start();
       Array<mutex> locks(GetNDof());
-
+      tcolmutex.Stop();
+      
       for (auto vb : { VOL, BND, BBND })
       {
         /*
@@ -550,7 +552,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
                  
                  for (size_t nr : myrange)
                    {
-                     ElementId el = { VOL, nr };
+                     ElementId el = { vb, nr };
                      if (!DefinedOn(el)) continue;
                      if (col[el.Nr()] >= 0) continue;
                      
