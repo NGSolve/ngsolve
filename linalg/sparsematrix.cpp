@@ -399,7 +399,12 @@ namespace ngla
     Table<int> dof2element = creator.MoveTable();
 
     Array<int> cnt(ndof);
-    cnt = 0;
+    // cnt = 0;
+    ParallelJob ([&] (TaskInfo ti)
+                 {
+                   auto r = Range(ndof).Split(ti.task_nr, ti.ntasks);
+                   cnt[r] = 0;
+                 });
 
     /*
     class ProfileData
