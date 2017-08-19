@@ -149,6 +149,7 @@ namespace ngstd
   {
     delete trace;
     trace = nullptr;
+    num_threads = 1;
   }
 
   /*
