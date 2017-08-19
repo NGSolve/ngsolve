@@ -401,7 +401,7 @@ namespace ngla
     Array<int> cnt(ndof);
     cnt = 0;
 
-
+    /*
     class ProfileData
     {
     public:
@@ -409,7 +409,7 @@ namespace ngla
       int size;
     };
     Array<ProfileData> prof(ndof);
-    
+    */
     
 
 
@@ -433,8 +433,8 @@ namespace ngla
                  // auto myr = Range(ndof).Split (ti.task_nr,ti.ntasks);
                  for (int i : myr)
                    {
-                     prof[i].tstart = WallTime();
-                     prof[i].size = dof2element[i].Size();
+                     // prof[i].tstart = WallTime();
+                     // prof[i].size = dof2element[i].Size();
 
                      sizes.SetSize(dof2element[i].Size());
                      ptrs.SetSize(dof2element[i].Size());
@@ -459,7 +459,7 @@ namespace ngla
                                      cnti++; 
                                    } );
 
-                     prof[i].tend = WallTime();
+                     // prof[i].tend = WallTime();
                    }
                },
                TasksPerThread(20));
