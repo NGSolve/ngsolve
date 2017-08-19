@@ -372,6 +372,8 @@ namespace ngla
     */
 
     static Timer timer("MatrixGraph");
+    static Timer timer_zero("MatrixGraph - zero");
+    static Timer timer_prefix("MatrixGraph - prefix");    
     RegionTimer reg (timer);
 
     bool includediag = (&rowelements == &colelements);
@@ -383,7 +385,7 @@ namespace ngla
     ParallelFor (Range(colelements.Size()), 
                  [&] (int i) { QuickSort (colelements[i]); });
     
-
+    timer_zero.Start();
     for ( ; !creator.Done(); creator++)
       {    
         ParallelFor (Range(rowelements.Size()),
@@ -394,7 +396,7 @@ namespace ngla
                      },
                      TasksPerThread(10));
       }
-
+    timer_zero.Stop();
 
     Table<int> dof2element = creator.MoveTable();
 
@@ -547,6 +549,7 @@ namespace ngla
             firsti[size] = nze;
             */
 
+            timer_prefix.Start();
             Array<size_t> partial_sums(TaskManager::GetNumThreads()+1);
             partial_sums[0] = 0;
             ParallelJob
@@ -574,6 +577,7 @@ namespace ngla
                });
             nze = partial_sums[partial_sums.Size()-1];
             firsti[size] = nze;
+            timer_prefix.Stop();
             
             colnr = NumaDistributedArray<int> (nze+1);
 
