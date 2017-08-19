@@ -576,35 +576,47 @@ namespace ngcomp
   {
     static Timer t("H1HighOrderFESpace::UpdateCouplingDofArray"); RegionTimer reg(t);    
     ctofdof.SetSize(GetNDof());
+
+
+    ParallelFor
+      (ma->GetNV(), [&] (size_t i)
+       {
+         ctofdof[i] = used_vertex[i] ? WIREBASKET_DOF : UNUSED_DOF;
+       });
     
-    if(!nodalp2)
-      for (auto i : Range (ma->GetNV()))
-	ctofdof[i] = used_vertex[i] ? WIREBASKET_DOF : UNUSED_DOF;
-    else
-      for (auto i : Range (ma->GetNV()))
-	ctofdof[i] = used_vertex[i] ? WIREBASKET_DOF : UNUSED_DOF;
-      
     int dim = ma->GetDimension();
     size_t ned = (dim <= 1) ? 0 : ma->GetNEdges();
-    for (auto edge : Range (ned))
-      {
-	IntRange range = GetEdgeDofs (edge);
-        if (wb_edge)
-          ctofdof[range] = WIREBASKET_DOF;
-        else
-          {
-            ctofdof[range] = INTERFACE_DOF;
-            if ( (wb_loedge||nodalp2) && (range.Size() > 0))
-              ctofdof[range.First()] = WIREBASKET_DOF;
-          }
-      }
+    // for (auto edge : Range (ned))
+    ParallelFor
+      (ned, [&] (size_t edge)
+       {
+         IntRange range = GetEdgeDofs (edge);
+         if (wb_edge)
+           ctofdof[range] = WIREBASKET_DOF;
+         else
+           {
+             ctofdof[range] = INTERFACE_DOF;
+             if ( (wb_loedge||nodalp2) && (range.Size() > 0))
+               ctofdof[range.First()] = WIREBASKET_DOF;
+           }
+       });
 
     if (ma->GetDimension() == 3)
-      for (auto face : Range (ma->GetNFaces()))
-	ctofdof[GetFaceDofs(face)] = INTERFACE_DOF;
+      // for (auto face : Range (ma->GetNFaces()))
+      ParallelFor
+        (ma->GetNFaces(),
+         [&] (size_t face)
+         {
+           ctofdof[GetFaceDofs(face)] = INTERFACE_DOF;
+         });
 
-    for (auto el : Range(ma->GetNE()))
-      ctofdof[GetElementDofs(el)] = LOCAL_DOF;
+    // for (auto el : Range(ma->GetNE()))
+    ParallelFor
+      (ma->GetNE(),
+       [&] (size_t el)
+       {
+         ctofdof[GetElementDofs(el)] = LOCAL_DOF;
+       });
     
     if (print)
       *testout << "ctofdof: " << endl << ctofdof << endl;
