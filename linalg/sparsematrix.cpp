@@ -532,7 +532,7 @@ namespace ngla
             owner = true;
             
             firsti.SetSize (size+1);
-            
+            /*
             nze = 0;
             for (int i = 0; i < size; i++)
               {
@@ -540,6 +540,36 @@ namespace ngla
                 nze += cnt[i];
               }
             firsti[size] = nze;
+            */
+
+            Array<size_t> partial_sums(TaskManager::GetNumThreads()+1);
+            partial_sums[0] = 0;
+            ParallelJob
+              ([&] (TaskInfo ti)
+               {
+                 IntRange r = IntRange(size).Split(ti.task_nr, ti.ntasks);
+                 size_t mysum = 0;
+                 for (size_t i : r)
+                   mysum += cnt[i];
+                 partial_sums[ti.task_nr+1] = mysum;
+               });
+
+            for (size_t i = 1; i < partial_sums.Size(); i++)
+              partial_sums[i] += partial_sums[i-1];
+            ParallelJob
+              ([&] (TaskInfo ti)
+               {
+                 IntRange r = IntRange(size).Split(ti.task_nr, ti.ntasks);
+                 size_t mysum = partial_sums[ti.task_nr];
+                 for (size_t i : r)
+                   {
+                     firsti[i] = mysum;
+                     mysum += cnt[i];
+                   }
+               });
+            nze = partial_sums[partial_sums.Size()-1];
+            firsti[size] = nze;
+            
             colnr = NumaDistributedArray<int> (nze+1);
 
 	    CalcBalancing ();
