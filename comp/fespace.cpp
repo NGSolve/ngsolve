@@ -518,7 +518,104 @@ lot of new non-zero entries in the matrix!\n" << endl;
         */
 
 
+
+        tcol.Start();
+        Array<int> col(ma->GetNE(vb));
+        col = -1;
+
+        int maxcolor = 0;
         
+        int basecol = 0;
+        Array<unsigned int> mask(GetNDof());
+        Array<mutex> locks(GetNDof());
+
+        atomic<int> found(0);
+        size_t cnt = 0;
+        for (ElementId el : Elements(vb)) { cnt++; (void)el; } // no warning 
+
+        while (found < cnt)
+          {
+            mask = 0;
+
+            size_t ne = ma->GetNE(vb);
+
+            ParallelForRange
+              (ne, [&] (IntRange myrange)
+               {
+                 Array<DofId> dofs;
+                 size_t myfound = 0;
+                 
+                 for (size_t nr : myrange)
+                   {
+                     ElementId el = { VOL, nr };
+                     if (!DefinedOn(el)) continue;
+                     if (col[el.Nr()] >= 0) continue;
+                     
+                     unsigned check = 0;
+                     GetDofNrs(el, dofs);
+                     
+                     if (HasAtomicDofs())
+                       {
+                         for (int i = dofs.Size()-1; i >= 0; i--)
+                           if (dofs[i] == -1 || IsAtomicDof(dofs[i])) dofs.DeleteElement(i);
+                       }
+                     else
+                       for (int i = dofs.Size()-1; i >= 0; i--)
+                         if (dofs[i] == -1) dofs.DeleteElement(i);
+                     QuickSort (dofs);
+                     
+                     for (auto d : dofs) 
+                       locks[d].lock();
+                     
+                     for (auto d : dofs) 
+                       check |= mask[d];
+                     
+                     if (check != UINT_MAX) // 0xFFFFFFFF)
+                       {
+                         myfound++;
+                         unsigned checkbit = 1;
+                         int color = basecol;
+                         while (check & checkbit)
+                           {
+                             color++;
+                             checkbit *= 2;
+                           }
+                         
+                         col[el.Nr()] = color;
+                         if (color > maxcolor) maxcolor = color;
+                         
+                         for (auto d : dofs) // el.GetDofs())
+                           mask[d] |= checkbit;
+                       }
+                     
+                     for (auto d : dofs) 
+                       locks[d].unlock();
+                   }
+                 found += myfound;
+               });
+                 
+            basecol += 8*sizeof(unsigned int); // 32;
+          }
+
+        tcol.Stop();
+
+        Array<int> cntcol(maxcolor+1);
+        cntcol = 0;
+
+        for (ElementId el : Elements(vb))
+          cntcol[col[el.Nr()]]++;
+        
+        Table<int> & coloring = element_coloring[vb];
+        coloring = Table<int> (cntcol);
+
+	cntcol = 0;
+        for (ElementId el : Elements(vb))
+          coloring[col[el.Nr()]][cntcol[col[el.Nr()]]++] = el.Nr();
+
+
+        
+        
+        /*
         // parallel coloring
         
         tcol.Start();
@@ -683,7 +780,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	cntcol = 0;
         for (ElementId el : Elements(vb))
           coloring[col[el.Nr()]][cntcol[col[el.Nr()]]++] = el.Nr();
-
+        */
         
         if (print)
           *testout << "needed " << maxcolor+1 << " colors" 
@@ -1188,6 +1285,33 @@ lot of new non-zero entries in the matrix!\n" << endl;
     });
     results.push_back(std::make_tuple<std::string,double>("GetTrafo", 1e9 * time / (ma->GetNE())));
 
+
+    Array<int> global(GetNDof());
+    global = 0;
+    time = RunTiming([&]() {
+        ParallelForRange( IntRange(ma->GetNE()), [&] ( IntRange r )
+        {
+          Array<DofId> dnums;
+          for (size_t i : r)
+            {
+              GetDofNrs( { VOL, i }, dnums);
+              for (auto d : dnums)
+                {
+                // global[d]++;
+                  AsAtomic (global[d])++;
+                  AsAtomic (global[d])++;
+                  // int oldval = 0;
+                  // AsAtomic (global[d]).compare_exchange_strong (oldval, 1);
+                  // AsAtomic (global[d]).compare_exchange_strong (oldval, 0);
+                }
+                                                                
+            }
+        });
+    });
+    results.push_back(std::make_tuple<std::string,double>("Count els of dof", 1e9 * time / (ma->GetNE())));
+
+
+    
 #ifdef TIMINGSEQUENTIAL
 
 
