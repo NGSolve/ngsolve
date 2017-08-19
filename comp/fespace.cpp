@@ -366,7 +366,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
     {
       bool should = false;
       while (!m.compare_exchange_weak(should, true))
-        _mm_pause();
+        {
+          should = false;
+          _mm_pause();
+        }
     }
     void unlock()
     {
