@@ -599,6 +599,7 @@ public:
     {
       Array<size_t> prefix (n);
 
+      /*
       size_t sum = 0;
       for (auto i : ngstd::Range(n))
         {
@@ -606,11 +607,46 @@ public:
           prefix[i] = sum;
         }
       total_costs = sum;
+      */
+      
+      Array<size_t> partial_sums(TaskManager::GetNumThreads()+1);
+      partial_sums[0] = 0;
+      ParallelJob
+        ([&] (TaskInfo ti)
+         {
+           IntRange r = IntRange(size).Split(ti.task_nr, ti.ntasks);
+           size_t mysum = 0;
+           for (size_t i : r)
+             {
+               size_t c = costs(i);
+               mysum += c;
+               prefix[i] = c;
+             }
+           partial_sums[ti.task_nr+1] = mysum;
+         });
+      
+      for (size_t i = 1; i < partial_sums.Size(); i++)
+        partial_sums[i] += partial_sums[i-1];
+      total_costs = partial_sums.Last();
+      
+      ParallelJob
+        ([&] (TaskInfo ti)
+         {
+           IntRange r = IntRange(size).Split(ti.task_nr, ti.ntasks);
+           size_t mysum = partial_sums[ti.task_nr];
+           for (size_t i : r)
+             {
+               mysum += prefix[i];
+               prefix[i] = mysum;
+             }
+         });
+      
+
       part.SetSize (size+1);
       part[0] = 0;
 
       for (int i = 1; i <= size; i++)
-        part[i] = BinSearch (prefix, sum*i/size);      
+        part[i] = BinSearch (prefix, total_costs*i/size);      
     }
     
     size_t Size() const { return part.Size()-1; }
