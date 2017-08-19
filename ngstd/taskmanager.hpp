@@ -614,7 +614,7 @@ public:
       ParallelJob
         ([&] (TaskInfo ti)
          {
-           IntRange r = IntRange(size).Split(ti.task_nr, ti.ntasks);
+           IntRange r = IntRange(n).Split(ti.task_nr, ti.ntasks);
            size_t mysum = 0;
            for (size_t i : r)
              {
@@ -632,7 +632,7 @@ public:
       ParallelJob
         ([&] (TaskInfo ti)
          {
-           IntRange r = IntRange(size).Split(ti.task_nr, ti.ntasks);
+           IntRange r = IntRange(n).Split(ti.task_nr, ti.ntasks);
            size_t mysum = partial_sums[ti.task_nr];
            for (size_t i : r)
              {
