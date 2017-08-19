@@ -361,7 +361,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   {
     atomic<bool> m;
   public:
-    MyMutex() : m(false) { ; }
+    MyMutex() { m.store(false, memory_order_relaxed); }
     void lock()
     {
       bool should = false;
