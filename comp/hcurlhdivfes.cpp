@@ -1975,7 +1975,7 @@ namespace ngcomp
 
     ArrayMem<int,12> pnums;
     ArrayMem<int,37> dnums, dcluster;
-    ArrayMem<int,12> enums, eorient, fnums, forient, fpnum1, fpnum2;
+    ArrayMem<int,12> eorient, fnums, forient, fpnum1, fpnum2;
     ArrayMem<int,12> ecluster, fcluster;
 
     // int elcluster;
@@ -2120,7 +2120,8 @@ namespace ngcomp
 		  int cl = ma->GetClusterRepFace (i);
 		  if (cl < 0) continue;
 		
-		  ma->GetFaceEdges (i, enums);
+		  // ma->GetFaceEdges (i, enums);
+                  auto enums = ma->GetFaceEdges (i);
 
 		  int nd = first_face_dof[i+1] - first_face_dof[i];
 		  if (nd == n_quad_face_dofs) continue;
