@@ -392,7 +392,12 @@ namespace ngstd
       const int container_task_manager = paje.CreateContainer( container_type_task_manager, 0, "The task manager" );
       const int container_jobs = paje.CreateContainer( container_type_jobs, container_task_manager, "Jobs" );
       paje.SetVariable( start_time, variable_type_active_threads, container_jobs, 0.0 );
-      const int container_node0 = paje.CreateContainer( container_type_node, container_task_manager, "Node 0" );
+
+      const int num_nodes = task_manager ? task_manager->GetNumNodes() : 1;
+      std::vector<int> container_nodes;
+
+      for(int i : Range(num_nodes))
+          container_nodes.push_back( paje.CreateContainer( container_type_node, container_task_manager, "Node " + ToString(i) ));
 
       std::vector <int> thread_aliases;
       if(trace_threads)
@@ -400,7 +405,7 @@ namespace ngstd
           {
             char name[20];
             sprintf(name, "Thread %d", i);
-            thread_aliases.push_back( paje.CreateContainer( container_type_thread, container_node0, name ) );
+            thread_aliases.push_back( paje.CreateContainer( container_type_thread, container_nodes[i*num_nodes/nthreads], name ) );
           }
 
       std::map<const std::type_info *, int> job_map;
@@ -564,8 +569,8 @@ namespace ngstd
                       // Avoid links on same thread
                       if(sl.thread_id != l.thread_id)
                         {
-                          paje.StartLink( sl.time, link_type, container_node0, l.key, thread_aliases[sl.thread_id], l.key);
-                          paje.EndLink(    l.time, link_type, container_node0, l.key, thread_aliases[l.thread_id], l.key);
+                          paje.StartLink( sl.time, link_type, container_nodes[sl.thread_id*num_nodes/nthreads], l.key, thread_aliases[sl.thread_id], l.key);
+                          paje.EndLink(    l.time, link_type, container_nodes[l.thread_id*num_nodes/nthreads], l.key, thread_aliases[l.thread_id], l.key);
                         }
                       started_links.erase(started_links.begin()+i);
                     }
