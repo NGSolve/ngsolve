@@ -1716,7 +1716,7 @@ namespace ngcomp
     
     Array<int> vnums; 
     // Array<int> orient; 
-    Array<int> ednums, fanums, f2ed;
+    Array<int> fanums;
     
     // int augv = augmented; 
 
@@ -1987,7 +1987,7 @@ namespace ngcomp
 		ma->GetFacePNums(i,vnums); 
 		if(vnums.Size()==4) continue; 
 		int fcl = ma->GetClusterRepFace(i); 
-		ma->GetFaceEdges(i,ednums); 
+		auto ednums = ma->GetFaceEdges(i); 
 		
 		int nd = first_face_dof[i+1] - first_face_dof[i] - excl_grads*face_ngrad[i]; 
 		for(j=0;j<ednums.Size();j++)
@@ -2046,7 +2046,7 @@ namespace ngcomp
 	    cnt[nv+i]= first_edge_dof[i+1]-first_edge_dof[i];
 	  for (i = 0; i < nfa; i++)
 	    {
-	      ma->GetFaceEdges (i, f2ed);
+	      auto f2ed = ma->GetFaceEdges (i);
 	      for (j = 0; j < f2ed.Size(); j++)
 		cnt[nv+f2ed[j]] +=  first_face_dof[i+1]-first_face_dof[i];
 	    }
@@ -2350,7 +2350,7 @@ namespace ngcomp
 		ma->GetFacePNums(i,vnums); 
 		if(vnums.Size()==4) continue; 
 		int fcl = ma->GetClusterRepFace(i); 
-		ma->GetFaceEdges(i,ednums); 
+		auto ednums = ma->GetFaceEdges(i); 
 		
 		for(j=0;j<ednums.Size();j++)
 		  {
@@ -2435,7 +2435,7 @@ namespace ngcomp
 	    {
 	      first = first_face_dof[i];
 	      int ndof = first_face_dof[i+1]-first;
-	      ma->GetFaceEdges (i, f2ed);
+	      auto f2ed = ma->GetFaceEdges (i);
 	      for (k = 0; k < f2ed.Size(); k++)
 		for (j = 0; j < ndof; j++)
 		  table[nv+f2ed[k]][cnt[nv+f2ed[k]]++] = first+j;

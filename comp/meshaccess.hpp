@@ -768,7 +768,15 @@ namespace ngcomp
     /// returns all elements connected to an edge
     void GetEdgeSurfaceElements (int enr, Array<int> & elnums) const;
     /// returns all edges of a face
+    // [[deprecated("Use GetFaceEdges(fnr) -> edges instead!")]]                
     void GetFaceEdges (int fnr, Array<int> & edges) const;
+    INLINE ArrayMem<int,4> GetFaceEdges (size_t fnr) const
+    {
+      ArrayMem<int,4> f2ed;
+      GetFaceEdges (fnr, f2ed);
+      f2ed.NothingToDelete(); // dynamic allocation never needed
+      return f2ed;
+    }
     /// returns elements connected to a face
     void GetFaceElements (int fnr, Array<int> & elnums) const;
     /// returns surface elements connected to a face
