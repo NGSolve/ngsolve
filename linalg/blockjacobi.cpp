@@ -394,8 +394,9 @@ namespace ngla
     totmem = 0;
     for (auto i : Range (*blocktable))
       {
-        int bs = (*blocktable)[i].Size();
-        new ( & invdiag[i] ) FlatMatrix<TM> (bs, bs, &bigmem[totmem]);
+        size_t bs = (*blocktable)[i].Size();
+        // new ( & invdiag[i] ) FlatMatrix<TM> (bs, bs, &bigmem[totmem]);
+        new ( & invdiag[i] ) FlatMatrix<TM> (bs, bs, bigmem.Addr(totmem));
         totmem += sqr (bs);
       }
 
