@@ -416,8 +416,12 @@ namespace ngcomp
 
     if (!fespace2)
       {
+        /*
         graph = new MatrixGraph (ndof, *creator.GetTable(), *creator.GetTable(), symmetric);
         delete creator.GetTable();
+        */
+        auto table = creator.MoveTable();
+        graph = new MatrixGraph (ndof, table, table, symmetric);        
       }
     else
       {
@@ -475,11 +479,16 @@ namespace ngcomp
 	      }
 	  }
 
+        /*
         graph = new MatrixGraph (fespace2->GetNDof(), *creator2.GetTable(), *creator.GetTable(), symmetric);        
         delete creator.GetTable();
         delete creator2.GetTable();
+        */
+        auto table = creator.MoveTable();
+        auto table2 = creator2.MoveTable();
+        graph = new MatrixGraph (fespace2->GetNDof(), table2, table, symmetric);
       }
-
+    
     graph -> FindSameNZE();
     return graph;
   }

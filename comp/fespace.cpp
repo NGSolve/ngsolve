@@ -1457,16 +1457,17 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   shared_ptr<Table<int>> FESpace :: CreateSmoothingBlocks (const Flags & flags) const
   {
-    int nd = GetNDof();
+    size_t nd = GetNDof();
     TableCreator<int> creator;
 
     for ( ; !creator.Done(); creator++)
       {
-	for (int i = 0; i < nd; i++)
+	for (size_t i = 0; i < nd; i++)
 	  if (!IsDirichletDof(i))
 	    creator.Add (i, i);
       }
-    return shared_ptr<Table<int>> (creator.GetTable());
+    // return shared_ptr<Table<int>> (creator.GetTable());
+    return make_shared<Table<int>> (creator.MoveTable());
   }
 
     
