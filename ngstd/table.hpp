@@ -189,14 +189,14 @@ template <class T>
     int mode;    // 1 .. cnt, 2 .. cnt entries, 3 .. fill table
     atomic<size_t> nd;
     Array<atomic<int>> cnt;
-    Table<T> * table;
+    Table<T> table;
   public:
     TableCreator()
-    { nd = 0; mode = 1; table = NULL; }
+    { nd = 0; mode = 1; /* table = NULL; */ }
     TableCreator (size_t acnt)
-    { nd = acnt; table = NULL; SetMode(2); }
+    { nd = acnt; /* table = NULL; */ SetMode(2); }
     
-    Table<T> * GetTable() { return table; }
+    // Table<T> * GetTable() { return &table; }
 
     /*
     operator Table<T> () 
@@ -209,10 +209,13 @@ template <class T>
     */
     Table<T> MoveTable() 
     {
+      /*
       Table<T> tmp (std::move(*table));
       delete table;
       table = NULL;
       return std::move(tmp);
+      */
+      return move(table);
     }
 
 
@@ -231,7 +234,8 @@ template <class T>
 	}
       if (mode == 3)
 	{
-	  table = new Table<T> (cnt);
+	  //table = new Table<T> (cnt);
+          table = Table<T> (cnt);
           // for (auto & ci : cnt) ci = 0;
           for (auto & ci : cnt) ci.store (0, memory_order_relaxed);
           // cnt = 0;
@@ -267,7 +271,8 @@ template <class T>
 	  break;
 	case 3:
           int ci = cnt[blocknr]++;
-          (*table)[blocknr][ci] = data;
+          // (*table)[blocknr][ci] = data;
+          table[blocknr][ci] = data;
 	  break;
 	}
     }
@@ -292,7 +297,8 @@ template <class T>
 	case 3:
           size_t ci = ( cnt[blocknr] += range.Size() ) - range.Size();
 	  for (size_t j = 0; j < range.Size(); j++)
-	    (*table)[blocknr][ci+j] = range.First()+j;
+	    // (*table)[blocknr][ci+j] = range.First()+j;
+            table[blocknr][ci+j] = range.First()+j;
 	  break;
 	}
     }
@@ -316,7 +322,8 @@ template <class T>
 	case 3:
           size_t ci = ( cnt[blocknr] += dofs.Size() ) - dofs.Size();
 	  for (size_t j = 0; j < dofs.Size(); j++)
-	    (*table)[blocknr][ci+j] = dofs[j];
+	    // (*table)[blocknr][ci+j] = dofs[j];
+            table[blocknr][ci+j] = dofs[j];
 	  break;
 	}
     }
