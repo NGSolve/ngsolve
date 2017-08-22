@@ -407,6 +407,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
           for (int d : el.GetDofs())
             if (d != -1) dirichlet_dofs.Set (d);
 
+    /*
     Array<DofId> dnums;
     for (auto i : Range(dirichlet_vertex))
       if (dirichlet_vertex[i])
@@ -415,7 +416,22 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  for (DofId d : dnums)
 	    if (d != -1) dirichlet_dofs.Set (d);
 	}
+    */
+    ParallelForRange
+      (dirichlet_vertex.Size(),
+       [&] (IntRange r)
+       {
+         Array<DofId> dnums;
+         for (auto i : r)
+           if (dirichlet_vertex[i])
+             {
+               GetDofNrs (NodeId(NT_VERTEX,i), dnums);
+               for (DofId d : dnums)
+                 if (d != -1) dirichlet_dofs.Set (d);
+             }
+       });
 
+    /*
     for (auto i : Range(dirichlet_edge))
       if (dirichlet_edge[i])
 	{
@@ -423,12 +439,27 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  for (DofId d : dnums)
 	    if (d != -1) dirichlet_dofs.Set (d);
 	}
+    */
+    ParallelForRange
+      (dirichlet_edge.Size(),
+       [&] (IntRange r)
+       {
+         Array<DofId> dnums;         
+         for (auto i : r)
+           if (dirichlet_edge[i])
+             {
+               GetDofNrs (NodeId(NT_EDGE,i), dnums);
+               for (DofId d : dnums)
+                 if (d != -1) dirichlet_dofs.Set (d);
+             }
+       });
 
+    Array<DofId> dnums;             
     for (int i : Range(dirichlet_face))
       if (dirichlet_face[i])
 	{
 	  GetFaceDofNrs (i, dnums);
-	  for (int d : dnums)
+	  for (DofId d : dnums)
 	    if (d != -1) dirichlet_dofs.Set (d);
 	}
 

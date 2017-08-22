@@ -1315,7 +1315,7 @@ namespace ngcomp
 
   void MeshAccess::CalcIdentifiedFacets()
   {
-    Timer t("CalcIdentifiedFacets"); RegionTimer reg(t);
+    static Timer t("CalcIdentifiedFacets"); RegionTimer reg(t);
     identified_facets.SetSize(nnodes_cd[1]);
     for(auto i : Range(identified_facets.Size()))
       identified_facets[i] = std::tuple<int,int>(i,1);
