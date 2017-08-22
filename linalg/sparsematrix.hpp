@@ -408,6 +408,10 @@ public:
                                   BareSliceMatrix<TSCAL> elmat,
                                   bool use_atomic = false);
 
+    virtual void AddElementMatrixSymmetric(FlatArray<int> dnums,
+                                           BareSliceMatrix<TSCAL> elmat,
+                                           bool use_atomic = false);
+    
     virtual BaseVector & AsVector() 
     {
       // asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)&data[0]);
@@ -438,7 +442,7 @@ public:
 
 
   template<class TM, class TV_ROW, class TV_COL>
-  class NGS_DLL_HEADER SparseMatrix : virtual public SparseMatrixTM<TM>
+  class NGS_DLL_HEADER SparseMatrix : /* virtual */ public SparseMatrixTM<TM>
   {
   public:
     using SparseMatrixTM<TM>::firsti;
@@ -574,7 +578,7 @@ public:
     virtual void DoArchive (Archive & ar);
   };
 
-
+#ifdef REMOVED
   /// A symmetric sparse matrix
   template<class TM>
   class NGS_DLL_HEADER SparseMatrixSymmetricTM : virtual public SparseMatrixTM<TM>
@@ -597,23 +601,19 @@ public:
 
   public:
     typedef typename mat_traits<TM>::TSCAL TSCAL;
-    virtual void AddElementMatrix(FlatArray<int> dnums, BareSliceMatrix<TSCAL> elmat,
-                                  bool use_atomic = false);
-
-    virtual void AddElementMatrix(FlatArray<int> dnums1, 
-				  FlatArray<int> dnums2, 
-				  BareSliceMatrix<TSCAL> elmat,
-                                  bool use_atomic = false)
-    {
-      AddElementMatrix (dnums1, elmat, use_atomic);
-    }
+    /*
+    virtual void AddElementMatrixSymmetric(FlatArray<int> dnums, BareSliceMatrix<TSCAL> elmat,
+                                           bool use_atomic = false);
+    */
   };
-
+#endif
+  
 
   /// A symmetric sparse matrix
   template<class TM, class TV>
-  class NGS_DLL_HEADER SparseMatrixSymmetric : virtual public SparseMatrixSymmetricTM<TM>, 
-					       virtual public SparseMatrix<TM,TV,TV>
+  class NGS_DLL_HEADER SparseMatrixSymmetric :
+    // virtual public SparseMatrixSymmetricTM<TM>, 
+    /* virtual */ public SparseMatrix<TM,TV,TV>
   {
 
   public:
@@ -628,21 +628,21 @@ public:
     typedef TV TVX;
 
     SparseMatrixSymmetric (int as, int max_elsperrow)
-      : SparseMatrixTM<TM> (as, max_elsperrow) , 
-	SparseMatrixSymmetricTM<TM> (as, max_elsperrow),
-	SparseMatrix<TM,TV,TV> (as, max_elsperrow)
+      // : SparseMatrixTM<TM> (as, max_elsperrow) , 
+      // SparseMatrixSymmetricTM<TM> (as, max_elsperrow),
+      : SparseMatrix<TM,TV,TV> (as, max_elsperrow)
     { ; }
   
     SparseMatrixSymmetric (const Array<int> & elsperrow)
-      : SparseMatrixTM<TM> (elsperrow, elsperrow.Size()), 
-	SparseMatrixSymmetricTM<TM> (elsperrow),
-	SparseMatrix<TM,TV,TV> (elsperrow, elsperrow.Size())
+      // : SparseMatrixTM<TM> (elsperrow, elsperrow.Size()), 
+      // SparseMatrixSymmetricTM<TM> (elsperrow),
+      : SparseMatrix<TM,TV,TV> (elsperrow, elsperrow.Size())
     { ; }
 
     SparseMatrixSymmetric (int size, const Table<int> & rowelements)
-      : SparseMatrixTM<TM> (size, rowelements, rowelements, true),
-	SparseMatrixSymmetricTM<TM> (size, rowelements),
-	SparseMatrix<TM,TV,TV> (size, rowelements, rowelements, true)
+      // : SparseMatrixTM<TM> (size, rowelements, rowelements, true),
+      // SparseMatrixSymmetricTM<TM> (size, rowelements),
+      : SparseMatrix<TM,TV,TV> (size, rowelements, rowelements, true)
     { ; }
 
     SparseMatrixSymmetric (const MatrixGraph & agraph, bool stealgraph);
@@ -653,21 +653,22 @@ public:
     { ; }
     */
     SparseMatrixSymmetric (const SparseMatrixSymmetric & amat)
-      : SparseMatrixTM<TM> (amat), 
-	SparseMatrixSymmetricTM<TM> (amat),
-	SparseMatrix<TM,TV,TV> (amat)
+      // : SparseMatrixTM<TM> (amat), 
+      // SparseMatrixSymmetricTM<TM> (amat),
+      : SparseMatrix<TM,TV,TV> (amat)
     { 
       this->AsVector() = amat.AsVector(); 
     }
 
-    SparseMatrixSymmetric (const SparseMatrixSymmetricTM<TM> & amat)
-      : SparseMatrixTM<TM> (amat), 
-	SparseMatrixSymmetricTM<TM> (amat),
-	SparseMatrix<TM,TV,TV> (amat)
-    { 
-      this->AsVector() = amat.AsVector(); 
-    }
-
+    // SparseMatrixSymmetric (const SparseMatrixSymmetricTM<TM> & amat)
+    SparseMatrixSymmetric (const SparseMatrixTM<TM> & amat)
+      // : SparseMatrixTM<TM> (amat), 
+      // SparseMatrixSymmetricTM<TM> (amat),
+      : SparseMatrix<TM,TV,TV> (amat)
+      { 
+        this->AsVector() = amat.AsVector(); 
+      }
+    
   
 
 
@@ -695,6 +696,14 @@ public:
     }
     */
 
+    virtual void AddElementMatrix(FlatArray<int> dnums1, 
+				  FlatArray<int> dnums2, 
+				  BareSliceMatrix<TSCAL> elmat,
+                                  bool use_atomic = false)
+    {
+      this->AddElementMatrixSymmetric (dnums1, elmat, use_atomic);
+    }
+    
     virtual shared_ptr<BaseJacobiPrecond> CreateJacobiPrecond (shared_ptr<BitArray> inner) const
     { 
       return make_shared<JacobiPrecondSymmetric<TM,TV>> (*this, inner);

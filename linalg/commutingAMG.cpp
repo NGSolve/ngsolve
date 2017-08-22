@@ -1105,7 +1105,7 @@ namespace ngla
 
     h1mat = mat.Restrict (*grad);
     //    dynamic_cast<SparseMatrixSymmetric<Mat<1,1> >&> (*h1mat) (0,0) += 1;
-    dynamic_cast<SparseMatrixSymmetricTM<double>&> (*h1mat)(0,0) += 1;
+    dynamic_cast<SparseMatrixTM<double>&> (*h1mat)(0,0) += 1;
 
     if (recAMG)
       {

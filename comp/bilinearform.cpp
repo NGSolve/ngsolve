@@ -4443,7 +4443,7 @@ namespace ngcomp
 
     mat.AddElementMatrix (dnums1, elmat, this->fespace->HasAtomicDofs());
     */
-    mymatrix -> TMATRIX::AddElementMatrix (dnums1, elmat, this->fespace->HasAtomicDofs());
+    mymatrix -> TMATRIX::AddElementMatrixSymmetric (dnums1, elmat, this->fespace->HasAtomicDofs());
   }
 
 
