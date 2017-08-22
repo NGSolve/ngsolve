@@ -18,6 +18,7 @@ namespace ngstd
 */
 class BitArray
 {
+protected:
   /// number of bits
   size_t size;
 

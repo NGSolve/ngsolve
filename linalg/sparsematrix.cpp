@@ -527,7 +527,7 @@ namespace ngla
                      else
                        colnr.Range(firsti[i], firsti[i+1]) = rowdofs;
                    }
-               });
+               }, TasksPerThread(5));
             
           }
         
