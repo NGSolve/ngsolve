@@ -749,6 +749,29 @@ public:
 
 
 
+  template <typename FUNC, typename OP, typename T>
+  auto ParallelReduce (size_t n, FUNC f, OP op, T initial)
+  {
+    /*
+    for (size_t i = 0; i < n; i++)
+      initial = op(initial, f(i));
+    */
+    Array<T> part_reduce(TaskManager::GetNumThreads());
+    ParallelJob ([&] (TaskInfo ti)
+                 {
+                   auto r = Range(n).Split(ti.task_nr, ti.ntasks);
+                   auto var = initial;
+                   for (auto i : r)
+                     var = op(var, f(i));
+                   part_reduce[ti.task_nr] = var;
+                 });
+    for (auto v : part_reduce)
+      initial = op(initial, v);
+    return initial;
+  }
+
+
+
 }
 
 
