@@ -68,6 +68,11 @@ public:
 };
 
 
+  template <typename TI> 
+  extern size_t* TablePrefixSum (FlatArray<TI> entysize);
+  
+
+  
 /** 
     A compact Table container.
     A table contains size entries of variable size. 
@@ -99,16 +104,19 @@ public:
   template <typename TI>
   INLINE Table (FlatArray<TI> entrysize)
   {
-    size_t cnt = 0;
     size  = entrysize.Size();
-    
-    index = new size_t[size+1];
+    /*
+      size_t cnt = 0;
+      index = new size_t[size+1];
     for (size_t i = 0; i < size; i++)
       {
 	index[i] = cnt;
 	cnt += entrysize[i];
       }
     index[size] = cnt;
+    */
+    index = TablePrefixSum (entrysize);
+    size_t cnt = index[size];
     data = new T[cnt];
   }
 

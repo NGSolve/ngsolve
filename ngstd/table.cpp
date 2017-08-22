@@ -45,7 +45,62 @@ namespace ngstd
   }
   */
 
+  template <typename TI> 
+  size_t * TablePrefixSum (FlatArray<TI> entrysize)
+  {
+    /*
+    size_t size  = entrysize.Size();
+    size_t * index = new size_t[size+1];
 
+    size_t cnt = 0;
+    for (size_t i = 0; i < size; i++)
+      {
+	index[i] = cnt;
+	cnt += entrysize[i];
+      }
+    index[size] = cnt;
+    return index;
+    */
+
+    size_t size  = entrysize.Size();
+    size_t * index = new size_t[size+1];
+
+    Array<size_t> partial_sums(TaskManager::GetNumThreads()+1);
+    partial_sums[0] = 0;
+    ParallelJob
+      ([&] (TaskInfo ti)
+       {
+         IntRange r = IntRange(size).Split(ti.task_nr, ti.ntasks);
+         size_t mysum = 0;
+         for (size_t i : r)
+           mysum += entrysize[i];
+         partial_sums[ti.task_nr+1] = mysum;
+       });
+
+    for (size_t i = 1; i < partial_sums.Size(); i++)
+      partial_sums[i] += partial_sums[i-1];
+
+    ParallelJob
+      ([&] (TaskInfo ti)
+       {
+         IntRange r = IntRange(size).Split(ti.task_nr, ti.ntasks);
+         size_t mysum = partial_sums[ti.task_nr];
+         for (size_t i : r)
+           {
+             index[i] = mysum;
+             mysum += entrysize[i];
+           }
+       });
+    index[size] = partial_sums.Last();
+
+    return index;
+  }
+
+  template size_t * TablePrefixSum (FlatArray<int> entrysize);
+  template size_t * TablePrefixSum (FlatArray<unsigned int> entrysize);
+  template size_t * TablePrefixSum (FlatArray<size_t> entrysize);
+  template size_t * TablePrefixSum (FlatArray<atomic<int>> entrysize);
+  
   BaseDynamicTable :: BaseDynamicTable (int size)
     : data(size)
   {
