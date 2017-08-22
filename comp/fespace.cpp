@@ -381,6 +381,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   {
     static Timer timer ("FESpace::FinalizeUpdate");
     static Timer tcol ("FESpace::FinalizeUpdate - coloring");
+    static Timer tcolbits ("FESpace::FinalizeUpdate - bitarrays");
     static Timer tcolmutex ("FESpace::FinalizeUpdate - coloring, init mutex");
     
     if (low_order_space) low_order_space -> FinalizeUpdate(lh);
@@ -462,7 +463,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  for (DofId d : dnums)
 	    if (d != -1) dirichlet_dofs.Set (d);
 	}
-
+    
+    tcolbits.Start();
     free_dofs = make_shared<BitArray>(GetNDof());
     *free_dofs = dirichlet_dofs;
     free_dofs->Invert();
@@ -479,6 +481,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if (print)
       *testout << "freedofs = " << endl << *free_dofs << endl;
+    tcolbits.Stop();
     
     UpdateParallelDofs();
 
