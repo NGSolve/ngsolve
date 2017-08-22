@@ -873,7 +873,6 @@ namespace ngcomp
                       pair<int,int> (std::numeric_limits<int>::max(),
                                      std::numeric_limits<int>::min()));
 
-    cout << "min/max = " << minmax.first << "/" << minmax.second << endl;
     ndomains = minmax.second;
     if (minmax.first < 0)
       throw Exception("mesh with negative element-index");      
@@ -1316,6 +1315,7 @@ namespace ngcomp
 
   void MeshAccess::CalcIdentifiedFacets()
   {
+    Timer t("CalcIdentifiedFacets"); RegionTimer reg(t);
     identified_facets.SetSize(nnodes_cd[1]);
     for(auto i : Range(identified_facets.Size()))
       identified_facets[i] = std::tuple<int,int>(i,1);
