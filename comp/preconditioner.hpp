@@ -143,8 +143,9 @@ namespace ngcomp
     ///
     virtual void Update ();
     ///
-    virtual const BaseMatrix & GetMatrix() const
-    { return *new SparseMatrix<double> (1,1); } // *premat; }
+    virtual const BaseMatrix & GetMatrix() const;
+    // { return *new SparseMatrix<double> (1,1); } // *premat; }
+    // { return *premat; }
     ///
     virtual const char * ClassName() const
     { return "TwoLevel Preconditioner"; }
