@@ -70,8 +70,10 @@ public:
 
   template <typename TI> 
   extern size_t* TablePrefixSum (FlatArray<TI> entysize);
-  
-
+  DLL_HEADER extern template size_t * TablePrefixSum (FlatArray<int> entrysize);
+  DLL_HEADER extern template size_t * TablePrefixSum (FlatArray<unsigned int> entrysize);
+  DLL_HEADER extern template size_t * TablePrefixSum (FlatArray<size_t> entrysize);
+  DLL_HEADER extern template size_t * TablePrefixSum (FlatArray<atomic<int>> entrysize);
   
 /** 
     A compact Table container.
@@ -104,17 +106,20 @@ public:
   template <typename TI>
   INLINE Table (FlatArray<TI> entrysize)
   {
-    size  = entrysize.Size();
     /*
-      size_t cnt = 0;
-      index = new size_t[size+1];
+    size  = entrysize.Size();
+    size_t cnt = 0;
+    index = new size_t[size+1];
     for (size_t i = 0; i < size; i++)
       {
 	index[i] = cnt;
 	cnt += entrysize[i];
       }
     index[size] = cnt;
+    data = new T[cnt];
     */
+
+    size  = entrysize.Size();    
     index = TablePrefixSum (entrysize);
     size_t cnt = index[size];
     data = new T[cnt];

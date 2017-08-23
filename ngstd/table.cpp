@@ -45,6 +45,7 @@ namespace ngstd
   }
   */
 
+
   template <typename TI> 
   size_t * TablePrefixSum (FlatArray<TI> entrysize)
   {
