@@ -602,7 +602,40 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
     .def_property_readonly("nr", &NodeId::GetNr, "the node number")    
     ;
 
+  class MeshNode : public NodeId
+  {
+    const MeshAccess & ma;
+  public:
+    MeshNode (NodeId _ni, const MeshAccess & _ma)
+      : NodeId(_ni), ma(_ma) { ; }
+    auto & Mesh() { return ma; }
+  };
 
+  py::class_<MeshNode> (m, "MeshNode", "an node within a mesh")
+    .def_property_readonly("vertices", [](MeshNode & node)
+                           {
+                             if (node.GetType() == NT_EDGE)
+                               {
+                                 auto verts = node.Mesh().GetEdgePNums(node.GetNr());
+                                 py::tuple tup(2);
+                                 for (size_t i = 0; i < 2; i++)
+                                   tup[i] = py::cast(NodeId(NT_VERTEX, verts[i]));
+                                 return tup;
+                               }
+                             if (node.GetType() == NT_FACE)
+                               {
+                                 auto verts = node.Mesh().GetFacePNums(node.GetNr());
+                                 py::tuple tup(verts.Size());
+                                 for (size_t i = 0; i < verts.Size(); i++)
+                                   tup[i] = py::cast(NodeId(NT_VERTEX, verts[i]));
+                                 return tup;
+                               }
+                             throw py::type_error("vertices only available for edge and face nodes\n");
+                           },
+                           "tuple of global vertex numbers")
+    
+    ;
+    
   py::enum_<ORDER_POLICY>(m, "ORDER_POLICY")
     .value("CONSTANT", CONSTANT_ORDER)
     .value("NODETYPE", NODE_TYPE_ORDER)
@@ -829,6 +862,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
 	 (py::arg("VOL_or_BND")=VOL), docu_string("Returns an iterator over ElementIds on VorB"))
 
     .def("__getitem__", static_cast<Ngs_Element(MeshAccess::*)(ElementId)const> (&MeshAccess::operator[]))
+    .def("__getitem__", [](MeshAccess & self, NodeId ni) { return MeshNode(ni, self); })
 
     .def ("GetNE", static_cast<size_t(MeshAccess::*)(VorB)const> (&MeshAccess::GetNE), docu_string("Number of elements of codimension VorB."))
     .def_property_readonly ("nv", &MeshAccess::GetNV, "Number of vertices")
