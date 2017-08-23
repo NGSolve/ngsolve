@@ -69,11 +69,11 @@ public:
 
 
   template <typename TI> 
-  extern size_t* TablePrefixSum (FlatArray<TI> entysize);
-  DLL_HEADER extern template size_t * TablePrefixSum (FlatArray<int> entrysize);
-  DLL_HEADER extern template size_t * TablePrefixSum (FlatArray<unsigned int> entrysize);
-  DLL_HEADER extern template size_t * TablePrefixSum (FlatArray<size_t> entrysize);
-  DLL_HEADER extern template size_t * TablePrefixSum (FlatArray<atomic<int>> entrysize);
+  extern DLL_HEADER size_t * TablePrefixSum (FlatArray<TI> entysize);
+  extern DLL_HEADER size_t * TablePrefixSum (FlatArray<int> entrysize);
+  extern DLL_HEADER size_t * TablePrefixSum (FlatArray<unsigned int> entrysize);
+  extern DLL_HEADER size_t * TablePrefixSum (FlatArray<size_t> entrysize);
+  extern DLL_HEADER size_t * TablePrefixSum (FlatArray<atomic<int>> entrysize);
   
 /** 
     A compact Table container.
