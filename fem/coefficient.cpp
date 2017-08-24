@@ -4220,7 +4220,15 @@ public:
         cf->NonZeroPattern(ud, nonzero.Range(base,base+dimi));
         base += dimi;
       }
-  }  
+  }
+
+  virtual bool DefinedOn (const ElementTransformation & trafo)
+  {
+    for (auto & cf : ci)
+      if (!cf->DefinedOn(trafo)) return false;
+    return true;
+  }
+  
 
   using BASE::Evaluate;  
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
@@ -4765,10 +4773,21 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
     {
       return cf -> Evaluate(ip);
-      // throw Exception ("compiled mip evaluate not implemented");
     }
 
+    virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
+			  FlatVector<> result) const
+    {
+      cf->Evaluate (ip, result);      
+    }
 
+    virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
+			  FlatVector<Complex> result) const
+    {
+      cf->Evaluate (ip, result);
+    }
+
+    
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
     {
       if(compiled_function)
