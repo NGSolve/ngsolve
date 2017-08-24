@@ -264,6 +264,25 @@ struct GenericSqrt {
   template <typename T> T operator() (T x) const { return sqrt(x); }
   static string Name() { return "sqrt"; }
 };
+struct GenericFloor {
+  template <typename T> T operator() (T x) const { return floor(x); }
+  Complex operator() (Complex x) const { throw Exception("no floor for Complex"); }  
+  // SIMD<double> operator() (SIMD<double> x) const { throw ExceptionNOSIMD("no floor for simd"); }
+  SIMD<Complex> operator() (SIMD<Complex> x) const { throw ExceptionNOSIMD("no floor for simd"); }  
+  // AutoDiff<1> operator() (AutoDiff<1> x) const { throw Exception("no floor for AD"); }
+  AutoDiffDiff<1> operator() (AutoDiffDiff<1> x) const { throw Exception("no floor for ADD"); }
+  static string Name() { return "floor"; }
+};
+struct GenericCeil {
+  template <typename T> T operator() (T x) const { return ceil(x); }
+  Complex operator() (Complex x) const { throw Exception("no ceil for Complex"); }  
+  // SIMD<double> operator() (SIMD<double> x) const { throw ExceptionNOSIMD("no ceil for simd"); }
+  SIMD<Complex> operator() (SIMD<Complex> x) const { throw ExceptionNOSIMD("no ceil for simd"); }  
+  // AutoDiff<1> operator() (AutoDiff<1> x) const { throw Exception("no ceil for AD"); }
+  AutoDiffDiff<1> operator() (AutoDiffDiff<1> x) const { throw Exception("no ceil for ADD"); }
+  static string Name() { return "ceil"; }
+};
+
 struct GenericConj {
   template <typename T> T operator() (T x) const { return Conj(x); } // from bla
   static string Name() { return "conj"; }
@@ -650,6 +669,8 @@ val : can be one of the following:
   ExportStdMathFunction<GenericLog>(m, "log");
   ExportStdMathFunction<GenericATan>(m, "atan");
   ExportStdMathFunction<GenericSqrt>(m, "sqrt");
+  ExportStdMathFunction<GenericFloor>(m, "floor");
+  ExportStdMathFunction<GenericCeil>(m, "ceil");
   ExportStdMathFunction<GenericConj>(m, "Conj");
 
   ExportStdMathFunction2<GenericATan2>(m, "atan2");
