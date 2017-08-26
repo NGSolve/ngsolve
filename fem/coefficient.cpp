@@ -3565,9 +3565,9 @@ public:
   DomainWiseCoefficientFunction (Array<shared_ptr<CoefficientFunction>> aci)
     : BASE(1, false), ci(aci) 
   { 
-    for (auto cf : ci)
+    for (auto & cf : ci)
       if (cf && cf->IsComplex()) is_complex = true;
-    for (auto cf : ci)
+    for (auto & cf : ci)
       if (cf) SetDimension(cf->Dimension());
   }
 
@@ -3600,8 +3600,9 @@ public:
 
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)   
   {
-    for (auto cf : ci)
-      cf->TraverseTree (func);
+    for (auto & cf : ci)
+      if (cf)
+        cf->TraverseTree (func);
     func(*this);
   }
 

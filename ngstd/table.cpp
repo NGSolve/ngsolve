@@ -97,10 +97,11 @@ namespace ngstd
     return index;
   }
 
-  size_t * TablePrefixSum (FlatArray<int> entrysize);
-  size_t * TablePrefixSum (FlatArray<unsigned int> entrysize);
-  size_t * TablePrefixSum (FlatArray<size_t> entrysize);
-  size_t * TablePrefixSum (FlatArray<atomic<int>> entrysize);
+
+  DLL_HEADER template size_t * TablePrefixSum<int> (FlatArray<int> entrysize);
+  DLL_HEADER template size_t * TablePrefixSum<unsigned int> (FlatArray<unsigned int> entrysize);
+  DLL_HEADER template size_t * TablePrefixSum<size_t> (FlatArray<size_t> entrysize);
+  DLL_HEADER template size_t * TablePrefixSum<atomic<int>> (FlatArray<atomic<int>> entrysize);
 #endif
   
   BaseDynamicTable :: BaseDynamicTable (int size)

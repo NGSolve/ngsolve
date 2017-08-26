@@ -418,7 +418,8 @@ namespace ngcomp
        
     fast_pfem = flags.GetDefineFlag ("fast");
     discontinuous = flags.GetDefineFlag ("discontinuous");
-
+    if (flags.GetDefineFlag ("no_couplingtype_upgrade"))
+      ctupgrade = false;
     Flags loflags = flags;
     loflags.SetFlag ("order", 1);
     /*
