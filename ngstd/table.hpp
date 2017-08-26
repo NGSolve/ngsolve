@@ -67,13 +67,14 @@ public:
   Iterator end() const { return Iterator(*this, size); }
 };
 
+  // #define PARALLEL_TABLE
 #ifdef PARALLEL_TABLE
   template <typename TI> 
-  extern DLL_HEADER size_t * TablePrefixSum (FlatArray<TI> entysize);
-  extern DLL_HEADER size_t * TablePrefixSum (FlatArray<int> entrysize);
-  extern DLL_HEADER size_t * TablePrefixSum (FlatArray<unsigned int> entrysize);
-  extern DLL_HEADER size_t * TablePrefixSum (FlatArray<size_t> entrysize);
-  extern DLL_HEADER size_t * TablePrefixSum (FlatArray<atomic<int>> entrysize);
+  DLL_HEADER size_t * TablePrefixSum (FlatArray<TI> entysize);
+  extern DLL_HEADER template size_t * TablePrefixSum<int> (FlatArray<int> entrysize);
+  extern DLL_HEADER template size_t * TablePrefixSum<unsigned int> (FlatArray<unsigned int> entrysize);
+  extern DLL_HEADER template size_t * TablePrefixSum<size_t> (FlatArray<size_t> entrysize);
+  extern DLL_HEADER template size_t * TablePrefixSum<atomic<int>> (FlatArray<atomic<int>> entrysize);
 #endif
   
   

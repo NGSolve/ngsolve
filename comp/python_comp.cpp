@@ -1619,7 +1619,7 @@ kwargs : For a description of the possible kwargs have a look a bit further down
          "get coupling type of a degree of freedom"
          )
     .def("SetCouplingType", [](shared_ptr<FESpace> self, DofId dofnr, COUPLING_TYPE ct)
-         { return self->SetDofCouplingType(dofnr,ct); },
+         { self->SetDofCouplingType(dofnr,ct); },
          py::arg("dofnr"), py::arg("coupling_type"),
          "set coupling type of a degree of freedom"
          )
