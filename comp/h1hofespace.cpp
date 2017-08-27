@@ -584,7 +584,7 @@ namespace ngcomp
          ctofdof[i] = used_vertex[i] ? WIREBASKET_DOF : UNUSED_DOF;
        });
     */
-    ctofdof = [&] (size_t i)
+    ctofdof.Range(0,ma->GetNV()) = [&] (size_t i)
       { return used_vertex[i] ? WIREBASKET_DOF : UNUSED_DOF; }  | tasks;
     
 
