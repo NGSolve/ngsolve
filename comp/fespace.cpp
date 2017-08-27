@@ -594,7 +594,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
         while (found < cnt)
           {
-            mask = 0   | tasks;
+            mask = 0   | 1_tasks_per_thread;
             /*
             ParallelForRange
               (mask.Size(), [&] (IntRange myrange)
