@@ -577,13 +577,18 @@ namespace ngcomp
     static Timer t("H1HighOrderFESpace::UpdateCouplingDofArray"); RegionTimer reg(t);    
     ctofdof.SetSize(GetNDof());
 
-
+    /*
     ParallelFor
       (ma->GetNV(), [&] (size_t i)
        {
          ctofdof[i] = used_vertex[i] ? WIREBASKET_DOF : UNUSED_DOF;
        });
+    */
+    ctofdof = [&] (size_t i)
+      { return used_vertex[i] ? WIREBASKET_DOF : UNUSED_DOF; }  | tasks;
     
+
+      
     int dim = ma->GetDimension();
     size_t ned = (dim <= 1) ? 0 : ma->GetNEdges();
     // for (auto edge : Range (ned))

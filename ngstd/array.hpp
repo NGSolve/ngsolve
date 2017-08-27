@@ -385,6 +385,11 @@ namespace ngstd
       return *this;
     }
 
+    template <typename T2>
+    const FlatArray operator= (ParallelValue<T2> val);
+    template <typename T2>
+    const FlatArray operator= (ParallelFunction<T2> val);
+
     /// copies pointers
     INLINE const FlatArray & Assign (const FlatArray & a2)
     {
@@ -838,6 +843,20 @@ namespace ngstd
     }
       
 
+    template <typename T2>
+    Array & operator= (ParallelValue<T2> val)
+    {
+      FlatArray<T>::operator= (val);
+      return *this;
+    }
+    template <typename T2>
+    Array & operator= (ParallelFunction<T2> val)
+    {
+      FlatArray<T>::operator= (val);
+      return *this;
+    }
+
+    
     INLINE void Swap (Array & b)
     {
       ngstd::Swap (size, b.size);

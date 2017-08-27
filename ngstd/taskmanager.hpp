@@ -779,6 +779,69 @@ public:
 
 
 
+
+  
+
+  //  some suggar for working with arrays 
+
+  template <typename T> template <typename T2>
+  const FlatArray<T> FlatArray<T>::operator= (ParallelValue<T2> val)
+  {
+    ParallelForRange (Size(),
+                      [this, val] (IntRange r)
+                      {
+                        for (auto i : r)
+                          (*this)[i] = val;
+                      });
+    return *this;
+  }
+
+  template <typename T> template <typename T2>
+  const FlatArray<T> FlatArray<T>::operator= (ParallelFunction<T2> func)
+  {
+    ParallelForRange (Size(),
+                      [this, func] (IntRange r)
+                      {
+                        for (auto i : r)
+                          (*this)[i] = func(i);
+                      });
+    return *this;
+  }
+
+class Tasks
+{
+  size_t num;
+public:
+  Tasks (size_t _num = TaskManager::GetNumThreads()) : num(_num) { ; }
+  auto GetNum() const { return num; } 
+};
+
+template <typename T, typename std::enable_if<ngstd::has_call_operator<T>::value, int>::type = 0>                                  
+inline ParallelFunction<T> operator| (const T & func, Tasks tasks)
+{
+  return func;
+}
+
+template <typename T, typename std::enable_if<!ngstd::has_call_operator<T>::value, int>::type = 0>                                  
+inline ParallelValue<T> operator| (const T & obj, Tasks tasks)
+{
+  return obj;
+}
+
+inline Tasks operator "" _tasks_per_thread (unsigned long long n)
+{
+  return Tasks(n * TaskManager::GetNumThreads());
+}
+
+class DefaultTasks
+{
+public:
+  operator Tasks () const { return TaskManager::GetNumThreads(); }
+};
+static DefaultTasks tasks;
+
+
+
 }
 
 
