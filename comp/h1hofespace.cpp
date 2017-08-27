@@ -585,7 +585,7 @@ namespace ngcomp
        });
     */
     ctofdof.Range(0,ma->GetNV()) = [&] (size_t i)
-      { return used_vertex[i] ? WIREBASKET_DOF : UNUSED_DOF; }  | tasks;
+      { return used_vertex[i] ? WIREBASKET_DOF : UNUSED_DOF; }  | 1_tasks_per_thread;
     
 
       
@@ -996,39 +996,43 @@ namespace ngcomp
 	  case 1:  // 2d: V + E + I
 		
 	    if (creator.GetMode() == 1)
-	      cout << " V + E + I " << endl;
-
+              {
+                cout << " V + E + I " << endl;
+                creator.SetSize(nv+ned+ni);
+                continue;
+              }
+            /*
 	    for (size_t i = 0; i < nv; i++)
 	      creator.Add (i, i);
 	    for (size_t i = 0; i < ned; i++)
 	      creator.Add (nv+i, GetEdgeDofs(i));
 	    for (size_t i = 0; i < ni; i++)
 	      creator.Add (nv+ned+i, GetElementDofs(i));
+            */
 
-            /*
             ParallelFor (nv, [&creator] (size_t i)
                          { creator.Add (i,i); });
             ParallelFor (ned, [&creator,nv,this] (size_t i)
                          { creator.Add (nv+i, GetEdgeDofs(i)); });
             ParallelFor (ni, [&creator,nv,ned,this] (size_t i)
                          { creator.Add (nv+ned+i, GetElementDofs(i)); });
-            */
 	    break; 
 		
 	  case 2: // 2d VE + I
 
 	    if (creator.GetMode() == 1)
-	      cout << " 2d VE + I " << endl; 
+              {
+                cout << " 2d VE + I " << endl;
+                creator.SetSize(nv+ned+ni);
+                continue;
+              }
 
 	    for (int i = 0; i < nv; i++)
 	      creator.Add(i, i);
 
-	    for (int i = 0; i < ned; i++)
-	      {
-		Ng_Node<1> edge = ma->GetNode<1> (i);
-		for (int k = 0; k < 2; k++)
-		  creator.Add (edge.vertices[k], GetEdgeDofs(i));
-	      }
+	    for (auto i : Range(ned))
+              for (auto v : ma->GetEdgePNums(i))
+                creator.Add (v, GetEdgeDofs(i));
 		
 	    for (int i = 0; i < ni; i++)
 	      creator.Add (nv+ned+i, GetElementDofs(i));
@@ -1064,28 +1068,20 @@ namespace ngcomp
                 break;
               }
             
-            // for (int i = 0; i < nv; i++)
-            ParallelFor (nv, [&] (size_t i)
-              {
-                creator.Add(i, i);
-              });
+            ParallelFor (nv, [&creator] (size_t i)
+              { creator.Add(i, i); });
 		
-            // for (int i = 0; i < ned; i++)
-            ParallelFor (ned, [&] (size_t i)
+            ParallelFor (ned, [&creator,this,&ma=*ma] (size_t i)
               {
-                Ng_Node<1> edge = ma->GetNode<1> (i);
-                for (int k = 0; k < 2; k++)
-                  creator.Add (edge.vertices[k], GetEdgeDofs(i));
+                for (auto v : ma.GetEdgePNums(i))
+                  creator.Add (v, GetEdgeDofs(i));
               });
 	    
             for (int i = 0; i < nfa; i++)
               creator.Add(nv+i, GetFaceDofs(i));
 	    
-            // for (int i = 0; i < ni; i++)
             ParallelFor (ni, [&] (size_t i)
-              {
-                creator.Add (nv+nfa+i, GetElementDofs(i));
-              });
+              { creator.Add (nv+nfa+i, GetElementDofs(i)); });
 		
 	    break; 
 
@@ -1098,21 +1094,16 @@ namespace ngcomp
 	      creator.Add(i, i);
 		
 	    for (int i = 0; i < ned; i++)
-	      {
-		Ng_Node<1> edge = ma->GetNode<1> (i);
-                for (int k = 0; k < 2; k++)
-                  creator.Add (edge.vertices[k], GetEdgeDofs(i));
-	      }
+              for (auto v : ma->GetEdgePNums(i))
+                creator.Add (v, GetEdgeDofs(i));
 	    
 	    for (int i = 0; i < nfa; i++)
 	      creator.Add(nv+i, GetFaceDofs(i));
 
-	    for (int i = 0; i < ni; i++)
-	      {
-		const Ngs_Element & ngel = ma->GetElement(ElementId(VOL,i));
-		for (int j = 0; j < ngel.faces.Size(); j++)
-		  creator.Add (nv+ngel.faces[j], GetElementDofs(i));
-	      }
+	    for (size_t i = 0; i < ni; i++)
+              for (auto f : ma->GetElement( { VOL, i } ).Faces())
+                creator.Add (nv+f, GetElementDofs(i));                  
+
 	    break; 
 
 
@@ -1198,36 +1189,25 @@ namespace ngcomp
                 {
                   cout << " V + EF + I " << endl; 
 		  creator.SetSize(nv+ned+ni);
+                  continue;
                 }
-              else
-                {
 
-                  ParallelFor (Range(nv), 
-                               [&] (size_t i) { creator.Add(i,i); });
-
-                  ParallelFor (Range(ned),
-                               [&] (size_t i) 
-                               { creator.Add(nv+i,GetEdgeDofs(i)); });
-                  
-                  ParallelFor (Range(nfa), 
-                               [&] (size_t i) 
-                               {
-                                 /*
-                                 ArrayMem<int,4> f2ed;
-                                 ma->GetFaceEdges (i, f2ed);
-                                 for (int edge : f2ed)
-                                   creator.Add (nv+edge, GetFaceDofs(i));
-                                 f2ed.NothingToDelete();
-                                 */
-                                 for (auto edge : ma->GetFaceEdges(i))
-                                   creator.Add (nv+edge, GetFaceDofs(i));                                   
-                               });
-                  
-                  ParallelFor (Range(ni), 
-                               [&] (size_t i) 
-                               { creator.Add(nv+ned+i,GetElementDofs(i)); });
-                  
-                  
+              ParallelFor (nv, [&] (size_t i)
+                           { creator.Add(i,i); });
+              
+              ParallelFor (ned, [&] (size_t i) 
+                           { creator.Add(nv+i,GetEdgeDofs(i)); });
+              
+              ParallelFor (nfa, [&] (size_t i) 
+                           {
+                             for (auto edge : ma->GetFaceEdges(i))
+                               creator.Add (nv+edge, GetFaceDofs(i));                                   
+                           });
+              
+              ParallelFor (ni, [&] (size_t i) 
+                           { creator.Add(nv+ned+i,GetElementDofs(i)); });
+              
+              
                   /*
                   for (int i = 0; i < nv; i++)
                     creator.Add (i, i);
@@ -1250,7 +1230,6 @@ namespace ngcomp
                   for (int i = 0; i < ni; i++)
                     creator.Add (nv+ned+i, GetElementDofs(i));
                   */
-                }
             break; 
           }
         
