@@ -433,7 +433,9 @@ namespace ngbla
   };
 
 
-  enum  T_Lapack { Lapack };
+  // enum  T_Lapack { Lapack };
+  class T_Lapack { };
+  static T_Lapack Lapack;
   
   template <typename TA>
   INLINE LapackExpr<TA> operator| (const Expr<TA> & a, T_Lapack /* tl */)
