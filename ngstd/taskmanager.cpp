@@ -34,6 +34,23 @@ namespace ngstd
   const function<void()> * TaskManager::startup_function = nullptr;
   const function<void()> * TaskManager::cleanup_function = nullptr;
 
+  atomic<int> TaskManager::ntasks;
+  atomic<int> TaskManager::completed_tasks;
+  Exception * TaskManager::ex;
+  
+  atomic<int> TaskManager::jobnr;
+  
+  atomic<int> TaskManager::complete[8];   // max nodes
+  atomic<int> TaskManager::done;
+  atomic<int> TaskManager::active_workers;
+  atomic<int> TaskManager::workers_on_node[8];   // max nodes
+
+  
+  int TaskManager::sleep_usecs = 1000;
+  bool TaskManager::sleep = false;
+
+  TaskManager::NodeData *TaskManager::nodedata[8];
+  int TaskManager::num_nodes;
   
   static mutex copyex_mutex;
 
@@ -121,6 +138,9 @@ namespace ngstd
           // nodedata[j]->participate = -1;
         }
 #else
+
+
+
       num_nodes = 1;
       nodedata[0] = new NodeData;
       complete[0] = -1;
@@ -211,6 +231,22 @@ namespace ngstd
   void TaskManager :: CreateJob (const function<void(TaskInfo&)> & afunc,
                                  int antasks)
   {
+    if (num_threads == 1 || !task_manager)
+      {
+        if (startup_function) (*startup_function)();
+        
+        TaskInfo ti;
+        ti.ntasks = antasks;
+        ti.thread_nr = 0; ti.nthreads = 1;
+        ti.node_nr = 0; ti.nnodes = 1;
+        for (ti.task_nr = 0; ti.task_nr < antasks; ti.task_nr++)
+          afunc(ti);
+
+        if (cleanup_function) (*cleanup_function)();        
+        return;
+      }
+
+    
     trace->StartJob(jobnr, afunc.target_type());
     /*
     for (int j = 0; j < num_nodes; j++)

@@ -50,23 +50,23 @@ namespace ngstd
     static const function<void(TaskInfo&)> * func;
     static const function<void()> * startup_function;
     static const function<void()> * cleanup_function;
-    atomic<int> ntasks;
-    atomic<int> completed_tasks;
-    Exception * ex;
+    static atomic<int> ntasks;
+    static atomic<int> completed_tasks;
+    static Exception * ex;
 
-    atomic<int> jobnr;
+    static atomic<int> jobnr;
 
-    atomic<int> complete[8];   // max nodes
-    atomic<int> done;
-    atomic<int> active_workers;
-    atomic<int> workers_on_node[8];   // max nodes
+    static atomic<int> complete[8];   // max nodes
+    static atomic<int> done;
+    static atomic<int> active_workers;
+    static atomic<int> workers_on_node[8];   // max nodes
     // Array<atomic<int>*> sync;
-    int sleep_usecs;
-    bool sleep;
+    static int sleep_usecs;
+    static bool sleep;
 
-    NodeData *nodedata[8];
+    static NodeData *nodedata[8];
 
-    int num_nodes;
+    static int num_nodes;
     NGS_DLL_HEADER static int num_threads;
     NGS_DLL_HEADER static int max_threads;
 
@@ -104,7 +104,7 @@ namespace ngstd
 
     static void SetPajeTrace (bool use)  { use_paje_trace = use; }
     
-    NGS_DLL_HEADER void CreateJob (const function<void(TaskInfo&)> & afunc, 
+    NGS_DLL_HEADER static void CreateJob (const function<void(TaskInfo&)> & afunc, 
                     int antasks = task_manager->GetNumThreads());
 
     static void SetStartupFunction (const function<void()> & func) { startup_function = &func; }
@@ -149,12 +149,13 @@ namespace ngstd
 
   template <typename TR, typename TFUNC>
   INLINE void ParallelFor (T_Range<TR> r, TFUNC f, 
-                           int antasks = task_manager ? task_manager->GetNumThreads() : 0,
+                           // int antasks = task_manager ? task_manager->GetNumThreads() : 0,
+                           int antasks = TaskManager::GetNumThreads(),
                            TotalCosts costs = 1000)
   {
-    if (task_manager && costs() >= 1000)
+    // if (task_manager && costs() >= 1000)
 
-      task_manager -> CreateJob 
+    TaskManager::CreateJob 
         ([r, f] (TaskInfo & ti) 
          {
            auto myrange = r.Split (ti.task_nr, ti.ntasks);
@@ -162,9 +163,10 @@ namespace ngstd
          }, 
          antasks);
 
+      /*
     else
-
       for (auto i : r) f(i);
+      */
   }
 
   /*
@@ -183,22 +185,23 @@ namespace ngstd
   
   template <typename TR, typename TFUNC>
   INLINE void ParallelForRange (T_Range<TR> r, TFUNC f, 
-                                int antasks = task_manager ? task_manager->GetNumThreads() : 0,
+                                // int antasks = task_manager ? task_manager->GetNumThreads() : 0,
+                                int antasks = TaskManager::GetNumThreads(),
                                 TotalCosts costs = 1000)
   {
-    if (task_manager && costs() >= 1000)
+    // if (task_manager && costs() >= 1000)
 
-      task_manager -> CreateJob 
+    TaskManager::CreateJob 
         ([r, f] (TaskInfo & ti) 
          {
            auto myrange = r.Split (ti.task_nr, ti.ntasks);
            f(myrange);
          }, 
          antasks);
-
+    /*
     else
-
       f(r);
+    */
   }
 
   /*
@@ -216,9 +219,12 @@ namespace ngstd
   }
   
   template <typename TFUNC>
-  INLINE void ParallelJob (TFUNC f, 
-                           int antasks = task_manager ? task_manager->GetNumThreads() : 1)
+  INLINE void ParallelJob (TFUNC f,
+                           // int antasks = task_manager ? task_manager->GetNumThreads() : 1)
+                           int antasks = TaskManager::GetNumThreads())
   {
+    TaskManager::CreateJob (f, antasks);
+    /*
     if (task_manager)
 
       task_manager -> CreateJob (f, antasks);
@@ -234,6 +240,7 @@ namespace ngstd
         for (ti.task_nr = 0; ti.task_nr < antasks; ti.task_nr++)
           f(ti);
       }
+    */
   }
 
   
