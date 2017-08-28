@@ -6,6 +6,7 @@ add_library(parallel OBJECT
 
 set_target_properties( parallel PROPERTIES POSITION_INDEPENDENT_CODE ON )
 target_compile_definitions(parallel PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
+target_compile_definitions(parallel PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})
 target_compile_options(parallel PUBLIC ${NGSOLVE_COMPILE_OPTIONS})
 target_include_directories(parallel PUBLIC ${NGSOLVE_INCLUDE_DIRS})
 
