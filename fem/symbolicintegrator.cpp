@@ -2671,11 +2671,16 @@ namespace ngfem
     if (simd_evaluate)
       try
         {
-          static Timer tall("SymbolicBFI::Apply - all", 4); RegionTimer rall(tall);
-
+          // static Timer tall("SymbolicBFI::Apply - all", 4); RegionTimer rall(tall);
+          /*
           const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fel);
           const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : fel;
           const FiniteElement & fel_test = mixedfe ? mixedfe->FETest() : fel;
+          */
+          bool is_mixed = typeid(fel) == typeid(const MixedFiniteElement&);
+          const MixedFiniteElement * mixedfe = static_cast<const MixedFiniteElement*> (&fel);    
+          const FiniteElement & fel_trial = is_mixed ? mixedfe->FETrial() : fel;
+          const FiniteElement & fel_test = is_mixed ? mixedfe->FETest() : fel;
 
           HeapReset hr(lh);
 
@@ -2700,21 +2705,31 @@ namespace ngfem
             {
               HeapReset hr(lh);
 
-              AFlatMatrix<double> simd_proxyvalues(proxy->Dimension(), simd_ir.GetNIP(), lh);
+              // AFlatMatrix<double> simd_proxyvalues(proxy->Dimension(), simd_ir.GetNIP(), lh);
+              FlatMatrix<SIMD<double>> simd_proxyvalues(proxy->Dimension(), simd_ir.Size(), lh);
               for (int k = 0; k < proxy->Dimension(); k++)
                 {
                   ud.testfunction = proxy;
                   ud.test_comp = k;
                   cf -> Evaluate (simd_mir, simd_proxyvalues.Rows(k,k+1));
                 }
-              
+
+              /*
               for (size_t i = 0; i < simd_proxyvalues.Height(); i++)
                 {
                   auto row = simd_proxyvalues.Row(i);
                   for (size_t j = 0; j < row.VSize(); j++)
                     row.Get(j) *= simd_mir[j].GetMeasure().Data() * simd_ir[j].Weight().Data();
                 }
+              */
 
+              for (size_t i = 0; i < simd_proxyvalues.Height(); i++)
+                {
+                  auto row = simd_proxyvalues.Row(i);
+                  for (size_t j = 0; j < row.Size(); j++)
+                    row(j) *= simd_mir[j].GetWeight(); //  * simd_ir[j].Weight();
+                }
+              
               proxy->Evaluator()->AddTrans(fel_test, simd_mir, simd_proxyvalues, ely); 
             }
           /*
