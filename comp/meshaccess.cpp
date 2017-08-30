@@ -1000,6 +1000,17 @@ namespace ngcomp
               }
           }
       }
+    
+    for(auto id : Range(1,nid+1))
+    {
+      if (GetDimension() == 3)
+      {
+        auto & pairs = GetPeriodicNodes(NT_FACE, id);
+        for(auto pair : pairs)
+          for(auto l : Range(2))
+            identified_facets[pair[l]] = std::tuple<int,int>(pair[1-l],2);
+      }
+    }    
   }
 
   void MeshAccess :: 
