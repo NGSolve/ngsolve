@@ -367,7 +367,7 @@ template <> inline void PyExportSymbolTable<shared_ptr<double>, shared_ptr<doubl
 }
 
 // Parse python kwargs to flags
-Flags CreateFlagsFromKwArgs(const py::object& pyclass, const py::kwargs& kwargs, py::list info = py::list());
+Flags NGS_DLL_HEADER CreateFlagsFromKwArgs(const py::object& pyclass, const py::kwargs& kwargs, py::list info = py::list());
 
 // replace docu links with plain text for help function
 const char* docu_string(const char* str);

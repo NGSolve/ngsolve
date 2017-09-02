@@ -73,7 +73,7 @@ void SetFlag(Flags &flags, string s, py::object value)
     }
 }
 
-Flags CreateFlagsFromKwArgs(const py::object& pyclass, const py::kwargs& kwargs, py::list info)
+Flags NGS_DLL_HEADER CreateFlagsFromKwArgs(const py::object& pyclass, const py::kwargs& kwargs, py::list info)
 {
   auto flags_doc = pyclass.attr("__flags_doc__")();
   py::dict flags_dict;
@@ -198,7 +198,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
   PyDefToString<FlatArray<double>>(m, class_flatarrayd);
   
   py::class_<Array<double>, FlatArray<double> >(m, "ArrayD")
-    .def(py::init<int>())
+    .def(py::init( [] (int n) { return new Array<double>(n); }))
     .def("__init__", [](Array<double> &a, std::vector<double> const & x)
                            {
                              int s = x.size();
@@ -218,7 +218,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
   class_flatarrayi.def(py::init<int, int *>());
 
   py::class_<Array<int>, FlatArray<int> >(m, "ArrayI")
-    .def(py::init<int>())
+    .def(py::init( [] (int n) { return new Array<int>(n); }))
     .def("__init__", [](std::vector<int> const & x)
                            {
                              int s = x.size();
@@ -239,8 +239,8 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
     ;
   
   py::class_<ngstd::BitArray, shared_ptr<BitArray>> (m, "BitArray")
-    .def(py::init<int>())
-    .def(py::init<const BitArray&>())
+    .def(py::init( [] (int n) { return new BitArray(n); }))
+    .def(py::init([](const BitArray& a) { return make_shared<BitArray>(a); } ))
     .def("__str__", &ToString<BitArray>)
     .def("__len__", &BitArray::Size)
     .def("__getitem__", [] (BitArray & self, int i) 
