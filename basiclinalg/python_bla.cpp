@@ -357,11 +357,11 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
         ;
 
     py::class_<VD, FVD> cvd(m, "VectorD", py::buffer_protocol());
-    cvd.def(py::init<int>());
+    cvd.def(py::init( [] (int n) { return new VD(n); }));
     PyDefVecBuffer<VD>(cvd);
 
     py::class_<VC, FVC > cvc(m, "VectorC", py::buffer_protocol());
-    cvc.def(py::init<int>());
+    cvc.def(py::init( [] (int n) { return new VC(n); }));
     PyDefVecBuffer<VC>(cvc);
 
     m.def("Vector",
@@ -468,12 +468,12 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
     PyDefMatBuffer<FMC>(class_FMC);
 
     auto class_MD = py::class_<Matrix<double>, FMD>(m, "MatrixD", py::buffer_protocol())
-        .def(py::init<int, int>())
+        .def(py::init( [] (int n, int m) { return new Matrix<double>(n, m); }))
         ;
     PyDefMatBuffer<Matrix<>>(class_MD);
 
     auto class_MC = py::class_<Matrix<Complex>, FMC >(m, "MatrixC", py::buffer_protocol())
-        .def(py::init<int, int>())
+        .def(py::init( [] (int n, int m) { return new Matrix<Complex>(n, m); }))
         ;
     PyDefMatBuffer<Matrix<Complex>>(class_MC);
 

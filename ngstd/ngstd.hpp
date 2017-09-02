@@ -28,7 +28,11 @@
 
 
 #else
-   #define DLL_HEADER 
+   #if __GNUC__ >= 4
+      #define DLL_HEADER __attribute__ ((visibility ("default")))
+   #else
+      #define DLL_HEADER
+   #endif
 // #define NGS_DLL_HEADER 
 
 
@@ -40,8 +44,8 @@
    #endif
 */
 
-   #ifdef NGS_EXPORTS
-      #define NGS_DLL_HEADER   __attribute__ ((visibility ("default")))
+   #if __GNUC__ >= 4
+      #define NGS_DLL_HEADER __attribute__ ((visibility ("default")))
    #else
       #define NGS_DLL_HEADER
    #endif
