@@ -1857,6 +1857,8 @@ namespace ngfem
 
     // mir on other element as needed for evaluating DG jump terms
     const SIMD_BaseMappedIntegrationRule * other_mir = nullptr;
+
+    BareSliceMatrix<SIMD<double>> points{0,nullptr,DummySize(0,0)};
   public:
     SIMD_BaseMappedIntegrationRule (const SIMD_IntegrationRule & air,
                                     const ElementTransformation & aeltrans)
@@ -1878,7 +1880,9 @@ namespace ngfem
     { return *static_cast<const SIMD<BaseMappedIntegrationPoint>*> ((void*)(baseip+i*incr)); }
     INLINE int DimElement() const { return dim_element; }
     INLINE int DimSpace() const { return dim_space; }
-    virtual ABareMatrix<double> GetPoints() const = 0;
+    // virtual ABareMatrix<double> GetPoints() const = 0;
+    // virtual BareSliceMatrix<SIMD<double>> GetPoints() const = 0;
+    BareSliceMatrix<SIMD<double>> GetPoints() const { return points; }
     virtual void Print (ostream & ost) const = 0;
 
     // for DG jump terms
@@ -1913,6 +1917,10 @@ namespace ngfem
 
         for (size_t i = 0; i < ir.Size(); i++)
           new (&mips[i]) SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>> (ir[i], eltrans, -1);
+
+        new (&points) BareSliceMatrix<SIMD<double>> (sizeof(SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>>)/sizeof(SIMD<double>),
+                                                     &mips[0].Point()(0),
+                                                     DummySize(mips.Size(), DIM_SPACE));
       }
 
     virtual void ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr);
@@ -1920,11 +1928,14 @@ namespace ngfem
     { 
       return mips[i]; 
     }
-    virtual ABareMatrix<double> GetPoints() const
+    /*
+    virtual BareSliceMatrix<SIMD<double>> GetPoints() const
     {
-      return ABareMatrix<double> (&mips[0].Point()(0),
-                                  sizeof(SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>>)/sizeof(SIMD<double>));
+      return BareSliceMatrix<SIMD<double>> (sizeof(SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>>)/sizeof(SIMD<double>),
+                                            &mips[0].Point()(0),
+                                            DummySize(mips.Size(), DIM_SPACE));
     }
+    */
     virtual void Print (ostream & ost) const;
   };
 }

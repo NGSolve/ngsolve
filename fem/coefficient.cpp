@@ -4557,9 +4557,14 @@ public:
 
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {
         auto v = Var(index);
+        /*
         if(dir==0) code.body += v.Assign(CodeExpr("ip.GetPoint()(0)"));
         if(dir==1) code.body += v.Assign(CodeExpr("ip.GetPoint()(1)"));
         if(dir==2) code.body += v.Assign(CodeExpr("ip.GetPoint()(2)"));
+        */
+        if(dir==0) code.body += v.Assign(CodeExpr("mir.GetPoints()(i,0)"));
+        if(dir==1) code.body += v.Assign(CodeExpr("mir.GetPoints()(i,1)"));
+        if(dir==2) code.body += v.Assign(CodeExpr("mir.GetPoints()(i,2)"));
     }
 
     template <typename T>
@@ -4569,7 +4574,8 @@ public:
       size_t nv = ir.Size();
       __assume (nv > 0);
       for (size_t i = 0; i < nv; i++)
-        values(i) = SIMD<double> (points.Get(i, dir));
+        values(i) = points(i, dir);
+        // values(i) = SIMD<double> (points.Get(i, dir));
     }
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
                            AFlatMatrix<double> values) const

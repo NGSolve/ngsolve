@@ -1518,37 +1518,16 @@ namespace ngfem
 
   template <typename SCAL, typename SCAL_SHAPES, typename SCAL_RES>
   void SymbolicBilinearFormIntegrator ::
-  // template <>
-  // void SymbolicBilinearFormIntegrator ::
   T_CalcElementMatrixAdd (const FiniteElement & fel,
                           const ElementTransformation & trafo, 
                           FlatMatrix<SCAL_RES> elmat,
                           LocalHeap & lh) const
     
   {
-    // typedef double SCAL;
-    // typedef double SCAL_SHAPES;
-    
     if (element_boundary)
       {
         T_CalcElementMatrixEBAdd<SCAL, SCAL_SHAPES, SCAL_RES> (fel, trafo, elmat, lh);
         return;
-        /*
-        switch (trafo.SpaceDim())
-          {
-          case 1:
-            T_CalcElementMatrixEBAdd<1,SCAL, SCAL_SHAPES, SCAL_RES> (fel, trafo, elmat, lh);
-            return;
-          case 2:
-            T_CalcElementMatrixEBAdd<2,SCAL, SCAL_SHAPES, SCAL_RES> (fel, trafo, elmat, lh);
-            return;
-          case 3:
-            T_CalcElementMatrixEBAdd<3,SCAL, SCAL_SHAPES, SCAL_RES> (fel, trafo, elmat, lh);
-            return;
-          default:
-            throw Exception ("Illegal space dimension" + ToString(trafo.SpaceDim()));
-          }
-        */
       }
     
     bool is_mixedfe = typeid(fel) == typeid(const MixedFiniteElement&);
@@ -1557,7 +1536,6 @@ namespace ngfem
     const FiniteElement & fel_test = is_mixedfe ? mixedfe->FETest() : fel;
 
     
-    // elmat = 0;
     if (simd_evaluate)
       try
         {
@@ -1668,33 +1646,12 @@ namespace ngfem
                       if (is_diagonal)
                         {
                           // NgProfiler::StartThreadTimer (timer_SymbBFIbd, TaskManager::GetThreadId());                      
-                          /*
-                          // too much work, use r1 ...
-                          for (size_t i = 0, ii = 0; i < elmat.Width(); i++)
-                          for (size_t j = 0; j < dim_proxy1; j++, ii++)
-                          bdbmat1.Row(ii) = pw_mult(bbmat1.Row(ii), diagproxyvalues.Row(j));
-                          */
                           
                           /*
-
                           size_t ii = r1.First()*dim_proxy1;
                           for (size_t i : r1)
                             for (size_t j = 0; j < dim_proxy1; j++, ii++)
                               bdbmat1.Row(ii) = pw_mult(bbmat1.Row(ii), diagproxyvalues.Row(j));
-                          */
-
-                          /*
-                          for (size_t j = 0; j < dim_proxy1; j++)
-                            for (size_t k = 0; k <  bdbmat1.Width(); k++)
-                              {
-                                auto proxy = diagproxyvalues(j,k);
-                                size_t ii = r1.First()*dim_proxy1+j;
-                                for (size_t i : r1)
-                                  {
-                                    bdbmat1(ii, k) = proxy * bbmat1(ii, k);
-                                    ii += dim_proxy1;
-                                  }
-                              }
                           */
                           
                           size_t sr1 = r1.Size();
@@ -1705,11 +1662,14 @@ namespace ngfem
                               
                               for (size_t k = 0; k < bdbmat1.Width(); k++)
                                 {
+                                  /*
                                   auto col_bdbmat = hbdbmat1.Col(k);
                                   auto col_bbmat = hbbmat1.Col(k);
                                   auto proxy = diagproxyvalues(j,k);
                                   for (size_t i1 = 0; i1 < sr1; i1++)
                                     col_bdbmat(i1) = proxy * col_bbmat(i1);
+                                  */
+                                  hbdbmat1.Col(k).AddSize(r1.Size()) = diagproxyvalues(j,k) * hbbmat1.Col(k);
                                 }
                             }
                           
@@ -2649,22 +2609,6 @@ namespace ngfem
       {
         T_ApplyElementMatrixEB<double,double> (fel, trafo, elx, ely, precomputed, lh);
         return;
-        /*
-        switch (trafo.SpaceDim())
-          {
-          case 1:
-            T_ApplyElementMatrixEB<1,double,double> (fel, trafo, elx, ely, precomputed, lh);
-            return;
-          case 2:
-            T_ApplyElementMatrixEB<2,double,double> (fel, trafo, elx, ely, precomputed, lh);            
-            return;
-          case 3:
-            T_ApplyElementMatrixEB<3,double,double> (fel, trafo, elx, ely, precomputed, lh);            
-            return;
-          default:
-            throw Exception ("Illegal space dimension" + ToString(trafo.SpaceDim()));
-          }
-        */
       }
 
 
