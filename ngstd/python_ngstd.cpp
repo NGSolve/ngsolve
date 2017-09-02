@@ -193,7 +193,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
     ;
 
   py::class_<FlatArray<double> > class_flatarrayd (m, "FlatArrayD");
-  class_flatarrayd.def(py::init<int, double *>());
+  class_flatarrayd.def(py::init<size_t, double *>());
   PyDefVector<FlatArray<double>, double>(m, class_flatarrayd);
   PyDefToString<FlatArray<double>>(m, class_flatarrayd);
   
@@ -215,7 +215,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
   py::class_<FlatArray<int> > class_flatarrayi (m, "FlatArrayI");
   PyDefVector<FlatArray<int>, int>(m, class_flatarrayi);
   PyDefToString<FlatArray<int> >(m, class_flatarrayi);
-  class_flatarrayi.def(py::init<int, int *>());
+  class_flatarrayi.def(py::init<size_t, int *>());
 
   py::class_<Array<int>, FlatArray<int> >(m, "ArrayI")
     .def(py::init( [] (int n) { return new Array<int>(n); }))
@@ -409,7 +409,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
   py::implicitly_convertible<py::dict, Flags>();
 
   py::class_<ngstd::IntRange> py_intrange (m, "IntRange");
-  py_intrange.def( py::init<int,int>());
+  py_intrange.def( py::init<size_t,size_t>());
   py_intrange.def("__str__", &ToString<IntRange>);
   py_intrange.def("__iter__", [] (ngstd::IntRange & i)
       { return py::make_iterator(i.begin(), i.end()); },
