@@ -339,12 +339,12 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
     typedef Vector<Complex> VC;
 
     ExportVector< FVD, VD, double>(m, "FlatVectorD")
-        .def(py::init<int, double *>())
+        .def(py::init<size_t, double *>())
         .def("Range",    static_cast</* const */ FVD (FVD::*)(size_t,size_t) const> (&FVD::Range ) )
       ;
     ExportVector< FVC, VC, Complex>(m, "FlatVectorC")
         .def(py::self*=double())
-        .def(py::init<int, Complex *>())
+        .def(py::init<size_t, Complex *>())
         .def("Range",    static_cast</* const */ FVC (FVC::*)(size_t,size_t) const> (&FVC::Range ) )
         ;
 
