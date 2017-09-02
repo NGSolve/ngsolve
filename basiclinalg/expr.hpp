@@ -998,6 +998,13 @@ namespace ngbla
     return ScaleExpr<TA, SIMD<double>> (a.Spec(), b);
   }
   
+  template <typename TA>
+  INLINE ScaleExpr<TA, SIMD<Complex> >  
+  operator* (SIMD<Complex> b, const Expr<TA> & a)
+  {
+    return ScaleExpr<TA, SIMD<Complex>> (a.Spec(), b);
+  }
+  
 
 
 
