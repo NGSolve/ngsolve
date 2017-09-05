@@ -21,7 +21,7 @@ f = LinearForm(fes)
 f += SymbolicLFI(32 * (y*(1-y)+x*(1-x)) * v)
 
 # the bilinear-form 
-a = BilinearForm(fes, symmetric=False)
+a = BilinearForm(fes, symmetric=True)
 a += SymbolicBFI(grad(u)*grad(v))
 
 a.Assemble()

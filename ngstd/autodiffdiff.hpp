@@ -498,6 +498,23 @@ INLINE AutoDiffDiff<D, SCAL> atan (AutoDiffDiff<D, SCAL> x)
   return res;
 }
 
+
+
+using std::floor;
+template<int D, typename SCAL>
+INLINE AutoDiffDiff<D,SCAL> floor (const AutoDiffDiff<D,SCAL> & x)
+{
+  return floor(x.Value());
+}
+
+using std::ceil;
+template<int D, typename SCAL>
+INLINE AutoDiffDiff<D,SCAL> ceil (const AutoDiffDiff<D,SCAL> & x)
+{
+  return ceil(x.Value());  
+}
+
+
 template <int D, typename SCAL, typename TB, typename TC>
 auto IfPos (AutoDiffDiff<D,SCAL> a, TB b, TC c) -> decltype(IfPos (a.Value(), b, c))
 {

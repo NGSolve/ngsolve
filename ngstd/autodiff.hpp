@@ -470,6 +470,29 @@ template <int D, typename SCAL>
 INLINE AutoDiff<D,SCAL> tan (AutoDiff<D,SCAL> x)
 { return sin(x) / cos(x); }
 
+using std::floor;
+template<int D, typename SCAL>
+INLINE AutoDiff<D,SCAL> floor (const AutoDiff<D,SCAL> & x)
+{
+  AutoDiff<D,SCAL> res;
+  res.Value() = floor(x.Value());
+  for (int j = 0; j < D; j++)
+    res.DValue(j) = 0.0;
+  return res;
+}
+
+using std::ceil;
+template<int D, typename SCAL>
+INLINE AutoDiff<D,SCAL> ceil (const AutoDiff<D,SCAL> & x)
+{
+  AutoDiff<D,SCAL> res;
+  res.Value() = ceil(x.Value());
+  for (int j = 0; j < D; j++)
+    res.DValue(j) = 0.0;
+  return res;
+}
+
+
 using std::atan;
 template <int D, typename SCAL>
 INLINE AutoDiff<D,SCAL> atan (AutoDiff<D,SCAL> x)

@@ -22,6 +22,7 @@ add_library(ngfem ${NGS_LIB_TYPE}
         )
 
 target_compile_definitions(ngfem PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
+target_compile_definitions(ngfem PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})
 target_compile_options(ngfem PUBLIC ${NGSOLVE_COMPILE_OPTIONS})
 target_include_directories(ngfem PUBLIC ${NGSOLVE_INCLUDE_DIRS})
 
@@ -35,7 +36,8 @@ if(USE_CUDA)
 endif(USE_CUDA)
 
 if(NOT WIN32)
-    target_link_libraries(ngfem ngbla ngstd ${NETGEN_PYTHON_LIBRARIES} ${LAPACK_LIBRARIES})
+    target_link_libraries(ngfem PUBLIC ngbla ngstd ${NETGEN_PYTHON_LIBRARIES})
+    target_link_libraries(ngfem ${LAPACK_CMAKE_LINK_INTERFACE} ${LAPACK_LIBRARIES})
     install( TARGETS ngfem ${ngs_install_dir} )
 endif(NOT WIN32)
 
