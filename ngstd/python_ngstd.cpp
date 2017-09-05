@@ -73,7 +73,7 @@ void SetFlag(Flags &flags, string s, py::object value)
     }
 }
 
-Flags CreateFlagsFromKwArgs(const py::object& pyclass, const py::kwargs& kwargs, py::list info)
+Flags NGS_DLL_HEADER CreateFlagsFromKwArgs(const py::object& pyclass, const py::kwargs& kwargs, py::list info)
 {
   auto flags_doc = pyclass.attr("__flags_doc__")();
   py::dict flags_dict;
@@ -193,12 +193,12 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
     ;
 
   py::class_<FlatArray<double> > class_flatarrayd (m, "FlatArrayD");
-  class_flatarrayd.def(py::init<int, double *>());
+  class_flatarrayd.def(py::init<size_t, double *>());
   PyDefVector<FlatArray<double>, double>(m, class_flatarrayd);
   PyDefToString<FlatArray<double>>(m, class_flatarrayd);
   
   py::class_<Array<double>, FlatArray<double> >(m, "ArrayD")
-    .def(py::init<int>())
+    .def(py::init( [] (int n) { return new Array<double>(n); }))
     .def("__init__", [](Array<double> &a, std::vector<double> const & x)
                            {
                              int s = x.size();
@@ -215,10 +215,10 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
   py::class_<FlatArray<int> > class_flatarrayi (m, "FlatArrayI");
   PyDefVector<FlatArray<int>, int>(m, class_flatarrayi);
   PyDefToString<FlatArray<int> >(m, class_flatarrayi);
-  class_flatarrayi.def(py::init<int, int *>());
+  class_flatarrayi.def(py::init<size_t, int *>());
 
   py::class_<Array<int>, FlatArray<int> >(m, "ArrayI")
-    .def(py::init<int>())
+    .def(py::init( [] (int n) { return new Array<int>(n); }))
     .def("__init__", [](std::vector<int> const & x)
                            {
                              int s = x.size();
@@ -239,8 +239,8 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
     ;
   
   py::class_<ngstd::BitArray, shared_ptr<BitArray>> (m, "BitArray")
-    .def(py::init<int>())
-    .def(py::init<const BitArray&>())
+    .def(py::init( [] (int n) { return new BitArray(n); }))
+    .def(py::init([](const BitArray& a) { return make_shared<BitArray>(a); } ))
     .def("__str__", &ToString<BitArray>)
     .def("__len__", &BitArray::Size)
     .def("__getitem__", [] (BitArray & self, int i) 
@@ -409,7 +409,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
   py::implicitly_convertible<py::dict, Flags>();
 
   py::class_<ngstd::IntRange> py_intrange (m, "IntRange");
-  py_intrange.def( py::init<int,int>());
+  py_intrange.def( py::init<size_t,size_t>());
   py_intrange.def("__str__", &ToString<IntRange>);
   py_intrange.def("__iter__", [] (ngstd::IntRange & i)
       { return py::make_iterator(i.begin(), i.end()); },
