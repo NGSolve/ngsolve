@@ -573,8 +573,8 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
 
   py::class_<ElementId> (m, "ElementId", 
                          "an element identifier containing element number and Volume/Boundary flag")
-    .def(py::init<VorB,int>())
-    .def(py::init<int>())
+    .def(py::init<VorB,size_t>())
+    .def(py::init<size_t>())
     .def(py::init<Ngs_Element>())
     .def("__str__", &ToString<ElementId>)
     .def_property_readonly("nr", &ElementId::Nr, "the element number")    
@@ -650,10 +650,10 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
   py::class_<FlatArray<NodeId> > class_flatarrayNI (m, "FlatArrayNI");
   PyDefVector<FlatArray<NodeId>, NodeId>(m, class_flatarrayNI);
   PyDefToString<FlatArray<NodeId> >(m, class_flatarrayNI);
-  class_flatarrayNI.def(py::init<int, NodeId *>());
+  class_flatarrayNI.def(py::init<size_t, NodeId *>());
 
   py::class_<Array<NodeId>, FlatArray<NodeId> >(m, "ArrayNI")
-    .def(py::init<int>())
+    .def(py::init<size_t>())
     ;
 
   

@@ -4,7 +4,7 @@ import pickle
 import io
 
 
-def test_pickle_gridfunction_real():
+def _test_pickle_gridfunction_real():
     mesh = Mesh(unit_square.GenerateMesh(maxh=0.3))
     fes = H1(mesh,order=3,dirichlet=[1,2,3,4])
     u,v = fes.TrialFunction(), fes.TestFunction()
@@ -32,7 +32,7 @@ def test_pickle_gridfunction_real():
     assert sqrt(Integrate((u-u2)*(u-u2),mesh)) < 1e-14
 
 
-def test_pickle_gridfunction_complex():
+def _test_pickle_gridfunction_complex():
     mesh = Mesh(unit_square.GenerateMesh(maxh=0.3))
     fes = H1(mesh,order=3,complex=True,dirichlet=[1,2,3,4])
     u,v = fes.TrialFunction(), fes.TestFunction()
@@ -59,7 +59,7 @@ def test_pickle_gridfunction_complex():
     error = sqrt(Integrate(Conj(u-u2)*(u-u2),mesh))
     assert error.real < 1e-14 and error.imag < 1e-14
 
-def test_pickle_compoundfespace():
+def _test_pickle_compoundfespace():
     mesh = Mesh(unit_square.GenerateMesh(maxh=0.3))
     fes1 = HDiv(mesh,order=2)
     fes2 = L2(mesh,order=1)
@@ -92,7 +92,7 @@ def test_pickle_compoundfespace():
     errorflux = sqrt(Integrate((flux1[0]-flux2[0])*(flux1[0]-flux2[0])+(flux1[1]-flux2[1])*(flux1[1]-flux2[1]),mesh))
     assert error < 1e-14 and errorflux < 1e-14
 
-def test_pickle_periodic():
+def _test_pickle_periodic():
     periodic = SplineGeometry()
     pnts = [ (0,0), (1,0), (1,1), (0,1) ]
     pnums = [periodic.AppendPoint(*p) for p in pnts]
