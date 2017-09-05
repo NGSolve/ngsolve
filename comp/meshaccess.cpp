@@ -856,13 +856,34 @@ namespace ngcomp
     
 
     ndomains = -1;
-    int ne = GetNE(); 
+    int ne = GetNE();
+    
+    auto minmax =
+      ParallelReduce (ne,
+                      [&] (size_t i)
+                      {
+                        auto ind = GetElIndex(ElementId(VOL, i));
+                        return make_pair(ind, ind);
+                      },
+                      [] (pair<int,int> a, pair<int,int> b)
+                      {
+                        return make_pair(min2(a.first, b.first),
+                                         max2(a.second, b.second));
+                      },
+                      pair<int,int> (std::numeric_limits<int>::max(),
+                                     std::numeric_limits<int>::min()));
+
+    ndomains = minmax.second;
+    if (minmax.first < 0)
+      throw Exception("mesh with negative element-index");      
+    /*
     for (int i = 0; i < ne; i++)
       {
         int elindex = GetElIndex(ElementId(VOL,i));
         if (elindex < 0) throw Exception("mesh with negative element-index");
         ndomains = max2(ndomains, elindex);
       }
+    */
 
     ndomains++;
     ndomains = MyMPI_AllReduce (ndomains, MPI_MAX);
@@ -1305,6 +1326,7 @@ namespace ngcomp
 
   void MeshAccess::CalcIdentifiedFacets()
   {
+    static Timer t("CalcIdentifiedFacets"); RegionTimer reg(t);
     identified_facets.SetSize(nnodes_cd[1]);
     for(auto i : Range(identified_facets.Size()))
       identified_facets[i] = std::tuple<int,int>(i,1);

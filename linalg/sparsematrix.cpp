@@ -527,7 +527,7 @@ namespace ngla
                      else
                        colnr.Range(firsti[i], firsti[i+1]) = rowdofs;
                    }
-               });
+               }, TasksPerThread(5));
             
           }
         
@@ -1669,8 +1669,8 @@ namespace ngla
   Timer timer_addelmat("SparseMatrixSymmetric::AddElementMatrix");
 
   template <class TM>
-  void SparseMatrixSymmetricTM<TM> ::
-  AddElementMatrix(FlatArray<int> dnums, BareSliceMatrix<TSCAL> elmat1, bool use_atomic)
+  void SparseMatrixTM<TM> ::
+  AddElementMatrixSymmetric(FlatArray<int> dnums, BareSliceMatrix<TSCAL> elmat1, bool use_atomic)
   {
     // static Timer timer ("SparseMatrixSymmetric::AddElementMatrix", 2);
     // RegionTimer reg (timer);
@@ -1759,9 +1759,9 @@ namespace ngla
   template <class TM, class TV>
   SparseMatrixSymmetric<TM,TV> :: 
   SparseMatrixSymmetric (const MatrixGraph & agraph, bool stealgraph)
-    : SparseMatrixTM<TM> (agraph, stealgraph), 
-      SparseMatrixSymmetricTM<TM> (agraph, stealgraph),
-      SparseMatrix<TM,TV,TV> (agraph, stealgraph)
+    // : SparseMatrixTM<TM> (agraph, stealgraph), 
+    // SparseMatrixSymmetricTM<TM> (agraph, stealgraph),
+    : SparseMatrix<TM,TV,TV> (agraph, stealgraph)
   { ; }
 
   template <class TM, class TV>
@@ -2645,7 +2645,7 @@ namespace ngla
 #endif
 
 
-
+  /*
   template class SparseMatrixSymmetricTM<double>;
   template class SparseMatrixSymmetricTM<Complex>;
 
@@ -2682,7 +2682,7 @@ namespace ngla
   template class SparseMatrixSymmetricTM<Mat<8,8,double> >;
   template class SparseMatrixSymmetricTM<Mat<8,8,Complex> >;
 #endif
-
+  */
 
 
 

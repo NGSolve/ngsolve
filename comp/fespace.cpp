@@ -381,6 +381,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   {
     static Timer timer ("FESpace::FinalizeUpdate");
     static Timer tcol ("FESpace::FinalizeUpdate - coloring");
+    static Timer tcolbits ("FESpace::FinalizeUpdate - bitarrays");
     static Timer tcolmutex ("FESpace::FinalizeUpdate - coloring, init mutex");
     
     if (low_order_space) low_order_space -> FinalizeUpdate(lh);
@@ -407,6 +408,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
           for (int d : el.GetDofs())
             if (d != -1) dirichlet_dofs.Set (d);
 
+    /*
     Array<DofId> dnums;
     for (auto i : Range(dirichlet_vertex))
       if (dirichlet_vertex[i])
@@ -415,7 +417,22 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  for (DofId d : dnums)
 	    if (d != -1) dirichlet_dofs.Set (d);
 	}
+    */
+    ParallelForRange
+      (dirichlet_vertex.Size(),
+       [&] (IntRange r)
+       {
+         Array<DofId> dnums;
+         for (auto i : r)
+           if (dirichlet_vertex[i])
+             {
+               GetDofNrs (NodeId(NT_VERTEX,i), dnums);
+               for (DofId d : dnums)
+                 if (d != -1) dirichlet_dofs.Set (d);
+             }
+       });
 
+    /*
     for (auto i : Range(dirichlet_edge))
       if (dirichlet_edge[i])
 	{
@@ -423,15 +440,31 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  for (DofId d : dnums)
 	    if (d != -1) dirichlet_dofs.Set (d);
 	}
+    */
+    ParallelForRange
+      (dirichlet_edge.Size(),
+       [&] (IntRange r)
+       {
+         Array<DofId> dnums;         
+         for (auto i : r)
+           if (dirichlet_edge[i])
+             {
+               GetDofNrs (NodeId(NT_EDGE,i), dnums);
+               for (DofId d : dnums)
+                 if (d != -1) dirichlet_dofs.Set (d);
+             }
+       });
 
+    Array<DofId> dnums;             
     for (int i : Range(dirichlet_face))
       if (dirichlet_face[i])
 	{
 	  GetFaceDofNrs (i, dnums);
-	  for (int d : dnums)
+	  for (DofId d : dnums)
 	    if (d != -1) dirichlet_dofs.Set (d);
 	}
-
+    
+    tcolbits.Start();
     free_dofs = make_shared<BitArray>(GetNDof());
     *free_dofs = dirichlet_dofs;
     free_dofs->Invert();
@@ -448,6 +481,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if (print)
       *testout << "freedofs = " << endl << *free_dofs << endl;
+    tcolbits.Stop();
     
     UpdateParallelDofs();
 
@@ -560,7 +594,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
         while (found < cnt)
           {
-            // mask = 0;
+            // mask = 0   | tasks;
+
             ParallelForRange
               (mask.Size(), [&] (IntRange myrange)
                { for (auto i : myrange) mask[i] = 0; });

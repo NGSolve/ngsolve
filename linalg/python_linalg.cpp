@@ -536,6 +536,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
   py::class_<SparseMatrixSymmetric<Complex>, shared_ptr<SparseMatrixSymmetric<Complex>>, SparseMatrix<Complex>>
     (m, "SparseMatrixSymmetricC");
 
+  
   py::class_<BaseBlockJacobiPrecond, shared_ptr<BaseBlockJacobiPrecond>, BaseMatrix>
     (m, "BlockSmoother",
      "block Jacobi and block Gauss-Seidel smoothing")

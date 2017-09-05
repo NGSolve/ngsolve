@@ -67,7 +67,17 @@ public:
   Iterator end() const { return Iterator(*this, size); }
 };
 
-
+  // #define PARALLEL_TABLE
+#ifdef PARALLEL_TABLE
+  template <typename TI> 
+  DLL_HEADER size_t * TablePrefixSum (FlatArray<TI> entysize);
+  extern DLL_HEADER template size_t * TablePrefixSum<int> (FlatArray<int> entrysize);
+  extern DLL_HEADER template size_t * TablePrefixSum<unsigned int> (FlatArray<unsigned int> entrysize);
+  extern DLL_HEADER template size_t * TablePrefixSum<size_t> (FlatArray<size_t> entrysize);
+  extern DLL_HEADER template size_t * TablePrefixSum<atomic<int>> (FlatArray<atomic<int>> entrysize);
+#endif
+  
+  
 /** 
     A compact Table container.
     A table contains size entries of variable size. 
@@ -99,9 +109,9 @@ public:
   template <typename TI>
   INLINE Table (FlatArray<TI> entrysize)
   {
-    size_t cnt = 0;
+#ifndef PARALLEL_TABLE    
     size  = entrysize.Size();
-    
+    size_t cnt = 0;
     index = new size_t[size+1];
     for (size_t i = 0; i < size; i++)
       {
@@ -110,6 +120,12 @@ public:
       }
     index[size] = cnt;
     data = new T[cnt];
+#else
+    size  = entrysize.Size();    
+    index = TablePrefixSum (entrysize);
+    size_t cnt = index[size];
+    data = new T[cnt];
+#endif
   }
 
   explicit INLINE Table (const Table<T> & tab2)
