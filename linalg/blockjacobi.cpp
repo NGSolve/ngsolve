@@ -13,26 +13,6 @@ namespace ngla
   
   static mutex buildingblockupdate_mutex;
 
-  /*
-  template <typename Tarray>
-  int BinSearch(const Tarray & v, int i) {
-    int n = v.Size();
-    
-    int first = 0;
-    int last = n-1;
-    if(v[0]>i) return 0;
-    if(v[n-1] <= i) return n;
-    while(last-first>1) {
-        int m = (first+last)/2;
-        if(v[m]<i)
-            first = m;
-        else
-            last = m;
-    }
-    return first;
-}
-  */
-
 
   BaseBlockJacobiPrecond :: 
   BaseBlockJacobiPrecond (shared_ptr<Table<int>> ablocktable)
@@ -47,9 +27,7 @@ namespace ngla
 
   BaseBlockJacobiPrecond :: 
   ~BaseBlockJacobiPrecond ()
-  {
-    ; // delete &blocktable;
-  }
+  { ; }
 
 
   int BaseBlockJacobiPrecond ::
@@ -63,19 +41,15 @@ namespace ngla
 	
 	// bool print = 0;
 	
-	int n = block.Size();
+	size_t n = block.Size();
 	
 	void * heapp = lh.GetPointer();
 
 
 	FlatArray<int> reorder(n, lh), newnum(n, lh), dist(n, lh), cluster0(n,lh);
 	// FlatArray<int> block_inv(graph.Size(), lh);
-	
-	// for(int i=0; i<graph.Size(); i++)
-	// block_inv[i] = -1;
 
-
-	for (int i = 0; i < n; i++)
+	for (size_t i = 0; i < n; i++)
 	  if (block[i] >= 0 && block[i] < graph.Size())
 	    {
 	      if (block_inv[block[i]] != -1)
@@ -114,7 +88,7 @@ namespace ngla
 	do
 	  {
 	    changed = 0;
-	    for (int j = 0; j < n; j++)
+	    for (size_t j = 0; j < n; j++)
 	      {
 		FlatArray<int> row = graph.GetRowIndices(block[j]);
 		for (int k = 0; k < row.Size(); k++)
@@ -348,40 +322,11 @@ namespace ngla
 
     double prevtime = WallTime();
 
-    /*
-    for (int i = 0; i < blocktable.Size(); i++)
-      {
-        if (clock()-prevtime > 0.1 * CLOCKS_PER_SEC)
-          {
-            cout << "\rBuilding block " << i << flush;
-            prevtime = clock();
-          }
-
-
-	int bs = blocktable[i].Size();
-	if (!bs) 
-	  {
-	    invdiag[i] = 0;
-	    continue;
-	  }
-	
-	Matrix<TM> blockmat(bs);
-	invdiag[i] = new Matrix<TM> (bs);
-        
-	for (int j = 0; j < bs; j++)
-	  for (int k = 0; k < bs; k++)
-	    blockmat(j,k) = mat(blocktable[i][j], blocktable[i][k]);
-	
-        CalcInverse (blockmat, *invdiag[i]);
-      }
-    */
-
-
+    
     // find nze element in all blocks together 
-
     nze = 0;
     for (auto block : *blocktable)
-      for (int row : block)
+      for (auto row : block)
 	nze += amat.GetRowIndices(row).Size();
 
     size_t totmem = 0;
@@ -395,7 +340,6 @@ namespace ngla
     for (auto i : Range (*blocktable))
       {
         size_t bs = (*blocktable)[i].Size();
-        // new ( & invdiag[i] ) FlatMatrix<TM> (bs, bs, &bigmem[totmem]);
         new ( & invdiag[i] ) FlatMatrix<TM> (bs, bs, bigmem.Addr(totmem));
         totmem += sqr (bs);
       }
@@ -454,38 +398,6 @@ namespace ngla
     size_t nblocks = blocktable->Size();
     Array<int> coloring(nblocks);
     coloring = -1;
-    /*
-    Array<unsigned int> mask(mat.Width());
-    int current_color = 0;
-    int colored_blocks = 0;
-
-    while(colored_blocks<nblocks) 
-      {
-	mask = 0;
-	for (int i=0; i<nblocks; i++) 
-	  {
-	    if (coloring[i]>-1) continue;
-	    bool is_free = true;
-	    for (int d : (*blocktable)[i] )
-	      if(mask[d]) 
-		{
-		  is_free = false;
-		  break;
-		}
-	    
-	    if(is_free) 
-	      {
-		coloring[i] = current_color;
-		colored_blocks++;
-		for (int d : (*blocktable)[i]) 
-		    for(auto coupling : mat.GetRowIndices(d)) 
-		      mask[coupling] = 1;
-	      }
-	  }
-	current_color++;
-      }
-    */
-
 
     int maxcolor = 0;
     int basecol = 0;
@@ -547,11 +459,7 @@ namespace ngla
                                {
                                  int costs = 0;
                                  size_t blocknr = block_coloring[c][bi];
-                                 /*
-                                 FlatArray<int> block = (*blocktable)[blocknr];
-                                 for (int i=0; i<block.Size(); i++)
-                                   costs += mat.GetRowIndices(block[i]).Size();
-                                 */
+
                                  for (auto d : (*blocktable)[blocknr])
                                    costs += mat.GetRowIndices(d).Size();
                                  return costs;
@@ -560,7 +468,6 @@ namespace ngla
       }
 
     cout << "\rBlockJacobi Preconditioner built" << endl;
-
   }
 
   ///
@@ -584,9 +491,6 @@ namespace ngla
     FlatVector<TVX> fy = y.FV<TVX> ();
 
 
-
-    // if (task_manager)
-      
     for (int c : Range(block_coloring))        
       {
         ParallelForRange
@@ -613,28 +517,6 @@ namespace ngla
                }
            });
       }
-    
-    /*
-    else
-
-      {
-
-        Vector<TVX> hxmax(maxbs);
-        
-        // for (auto i : Range (*blocktable))
-        for (int c : Range(block_coloring))
-          for (auto i : block_coloring[c])
-          {
-            FlatArray<int> ind = (*blocktable)[i];
-            if (!ind.Size()) continue;
-            
-            FlatVector<TVX> hx = hxmax.Range(0, ind.Size()); // (ind.Size(), hxmax.Addr(0));
-            
-            hx = s * fx(ind);
-            fy(ind) += invdiag[i] * hx;
-          }
-      }
-    */
   }
 
 
@@ -647,11 +529,6 @@ namespace ngla
 
     FlatVector<TVX> fx = x.FV<TVX> ();
     FlatVector<TVX> fy = y.FV<TVX> ();
-
-
-
-
-    // if (task_manager)
 
     for (int c = 0; c < block_coloring.Size(); c++)
       {
@@ -682,35 +559,6 @@ namespace ngla
                }
            });
       }
-    
-    /*
-    else
-
-      {
-
-        Vector<TVX> hxmax(maxbs);
-        Vector<TVX> hymax(maxbs);
-        
-        // for (auto i : Range (*blocktable))
-        for (int c : Range(block_coloring))
-          for (auto i : block_coloring[c])
-          {
-            int bs = (*blocktable)[i].Size();
-            if (!bs) continue;
-            
-            FlatVector<TVX> hx = hxmax.Range(0,bs); // (bs, hxmax.Addr(0));
-            FlatVector<TVX> hy = hymax.Range(0,bs); // (bs, hymax.Addr(0));
-            
-            for (int j = 0; j < bs; j++)
-              hx(j) = fx((*blocktable)[i][j]);
-            
-            hy = Trans(invdiag[i]) * hx;
-            
-            for (int j = 0; j < bs; j++)
-              fy((*blocktable)[i][j]) += s * hy(j);
-          }
-      }
-    */
   }
 
 
@@ -727,12 +575,9 @@ namespace ngla
     FlatVector<TVX> fb = b.FV<TVX> (); 
     FlatVector<TVX> fx = x.FV<TVX> ();
 
-
-    // if (task_manager)
     for (int k = 0; k < steps; k++)
       for (int c : Range(block_coloring))              
         {
-
           ParallelForRange
             (color_balance[c], [&] (IntRange r)
              {
@@ -760,37 +605,6 @@ namespace ngla
                
              });
         }
-    /*
-    else
-      
-      {
-        Vector<TVX> hxmax(maxbs);
-        Vector<TVX> hymax(maxbs);
-        
-        for (int k = 0; k < steps; k++)
-          for (int c : Range(block_coloring))
-            for (auto i : block_coloring[c])
-            // for (int i = 0; i < blocktable->Size(); i++)
-            {
-              int bs = (*blocktable)[i].Size();
-              if (!bs) continue;
-              
-              FlatVector<TVX> hx = hxmax.Range(0,bs); // (bs, hxmax.Addr(0));
-              FlatVector<TVX> hy = hymax.Range(0,bs); // (bs, hymax.Addr(0));
-              
-              for (int j = 0; j < bs; j++)
-                {
-                  int jj = (*blocktable)[i][j];
-                  hx(j) = fb(jj) - mat.RowTimesVector (jj, fx);
-                }
-              
-              hy = (invdiag[i]) * hx;
-              
-              for (int j = 0; j < bs; j++)
-                fx((*blocktable)[i][j]) += hy(j);
-            }
-      }
-    */
   }
   
 
@@ -808,13 +622,9 @@ namespace ngla
     const FlatVector<TVX> fb = b.FV<TVX> (); 
     FlatVector<TVX> fx = x.FV<TVX> ();
 
-
-    // if (task_manager)
-
     for (int k = 0; k < steps; k++)
       for (int c = block_coloring.Size()-1; c >=0; c--) 
         {
-          
           ParallelForRange
             (color_balance[c], [&] (IntRange r)
              {
@@ -841,40 +651,7 @@ namespace ngla
                  }
              });
         }
-    /*
-    else
-      
-
-      {
-        Vector<TVX> hxmax(maxbs);
-        Vector<TVX> hymax(maxbs);
-        
-        for (int k = 0; k < steps; k++)
-          for (int c = block_coloring.Size()-1; c >=0; c--)           
-            for (auto i : block_coloring[c])
-              // for (int i = blocktable->Size()-1; i >= 0; i--)
-            {
-              int bs = (*blocktable)[i].Size();
-              if (!bs) continue;
-              
-              FlatVector<TVX> hx = hxmax.Range (0, bs); // (bs, hxmax.Addr(0));
-              FlatVector<TVX> hy = hymax.Range (0, bs); // (bs, hymax.Addr(0));
-              
-              for (int j = 0; j < bs; j++)
-                {
-                  int jj = (*blocktable)[i][j];
-                  hx(j) = fb(jj) - mat.RowTimesVector (jj, fx);
-                }
-              
-              hy = (invdiag[i]) * hx;
-              
-              for (int j = 0; j < bs; j++)
-                fx((*blocktable)[i][j]) += hy(j);
-            }  
-      }
-    */
-
-  }
+   }
 
 
 
@@ -904,23 +681,10 @@ namespace ngla
 	maxbs = (*blocktable)[i].Size();
 
 
-    /*
-    blockstart.Alloc(n);
-    blocksize.Alloc(n);
-    blockbw.Alloc(n);
-    */
     blockstart.SetSize(n);
     blocksize.SetSize(n);
     blockbw.SetSize(n);
 
-    /*
-    blockstart.SetName ("BlockJacobi, Table 1");
-    blocksize.SetName ("BlockJacobi, Table 2");
-    blockbw.SetName ("BlockJacobi, Table 3");
-
-    for (int i = 0; i < NBLOCKS; i++)
-      data[i].SetName ("BlockJacobi");
-    */
 
     // int alloc = n;
     int memneed[NBLOCKS];
@@ -951,13 +715,9 @@ namespace ngla
       {
 	for (int i = 0; i < NBLOCKS; i++)
 	  data[i].SetSize(memneed[i]);
-	  // data[i].Alloc (memneed[i]);
 
         clock_t prevtime = clock();
         atomic<int> cnt(0);
-
-        // #pragma omp parallel for	
-        // for (int i = 0; i < blocktable.Size(); i++)
         
         ParallelFor ( Range(*blocktable),
                       [&] (int i)
@@ -997,8 +757,6 @@ namespace ngla
         
     cout << IM(3) << "\rBuilding block " << blocktable->Size() << "/" << blocktable->Size() << endl;
     // cout << "\rBuilt symmetric BlockJacobi Preconditioner" << endl;
-
-
 
 
 
