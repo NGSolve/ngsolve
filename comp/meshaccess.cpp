@@ -871,7 +871,7 @@ namespace ngcomp
                                          max2(a.second, b.second));
                       },
                       pair<int,int> (std::numeric_limits<int>::max(),
-                                     std::numeric_limits<int>::min()));
+                                     0));
 
     ndomains = minmax.second;
     if (minmax.first < 0)
