@@ -317,6 +317,10 @@ namespace ngla
       invdiag(ablocktable->Size())
   {
     static Timer t("BlockJacobiPrecond ctor"); RegionTimer reg(t);
+    static Timer tinv("BlockJacobiPrecond ctor inv");
+    static Timer tget("BlockJacobiPrecond ctor get");
+    static Timer tprep("BlockJacobiPrecond ctor prep");
+    static Timer tpar("BlockJacobiPrecond ctor par");
     cout << "BlockJacobi Preconditioner, constructor called, #blocks = " << blocktable->Size() << endl;
 
 
@@ -325,10 +329,23 @@ namespace ngla
     
     // find nze element in all blocks together 
     nze = 0;
+    /*
     for (auto block : *blocktable)
       for (auto row : block)
 	nze += amat.GetRowIndices(row).Size();
-
+    */
+    nze = 
+      ParallelReduce (blocktable->Size(),
+                      [&] (size_t i)
+                      {
+                        size_t nze = 0;
+                        for (auto row : (*blocktable)[i])
+                          nze += amat.GetRowIndices(row).Size();
+                        return nze;
+                      },
+                      [] (size_t a, size_t b) { return a+b; },
+                      0);
+    
     size_t totmem = 0;
 
     for (auto i : Range (*blocktable))
@@ -355,9 +372,11 @@ namespace ngla
     ParallelJob
       ([&] (const TaskInfo & ti)
        {
+         NgProfiler::StartThreadTimer (tpar, TaskManager::GetThreadId());         
          for (int i : sl)
        {
-         
+         NgProfiler::StartThreadTimer (tprep, TaskManager::GetThreadId());
+         /*
 #ifndef __MIC__
 	cnt++;
         double time = WallTime();
@@ -370,24 +389,31 @@ namespace ngla
 	    }
 	  }
 #endif // __MIC__
-	
-	int bs = (*blocktable)[i].Size();
-	if (!bs) 
+         */
+        auto blocki = (*blocktable)[i];
+        QuickSort (blocki);
+	if (!blocki.Size()) 
 	  {
+            NgProfiler::StopThreadTimer (tprep, TaskManager::GetThreadId());                             
 	    invdiag[i] = 0;
 	    // return;
             continue;
 	  }
 	
         FlatMatrix<TM> & blockmat = invdiag[i];
-        
-	for (int j = 0; j < bs; j++)
-	  for (int k = 0; k < bs; k++)
-	    blockmat(j,k) = mat((*blocktable)[i][j], (*blocktable)[i][k]);
-
+        NgProfiler::StopThreadTimer (tprep, TaskManager::GetThreadId());                 
+        NgProfiler::StartThreadTimer (tget, TaskManager::GetThreadId());
+	for (size_t j = 0; j < blocki.Size(); j++)
+	  for (size_t k = 0; k < blocki.Size(); k++)
+	    blockmat(j,k) = mat(blocki[j], blocki[k]);
+        NgProfiler::StopThreadTimer (tget, TaskManager::GetThreadId());                         
+        NgProfiler::StartThreadTimer (tinv, TaskManager::GetThreadId());
 	CalcInverse (blockmat);
+        NgProfiler::StopThreadTimer (tinv, TaskManager::GetThreadId());        
         // }, TasksPerThread(10));
-       } } );
+       }
+         NgProfiler::StopThreadTimer (tpar, TaskManager::GetThreadId());                  
+       } );
     
     cout << IM(3) << "\rBuilding block " << blocktable->Size() << "/" << blocktable->Size() << flush;
     *testout << "block coloring";
