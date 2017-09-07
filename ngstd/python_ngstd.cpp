@@ -488,10 +488,9 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
 }
 
 
-PYBIND11_PLUGIN(libngstd) {
-  py::module m("ngstd", "pybind ngstd");
+PYBIND11_MODULE(libngstd, m) {
+  m.attr("__name__") = "ngstd";
   ExportNgstd(m);
-  return m.ptr();
 }
 
 

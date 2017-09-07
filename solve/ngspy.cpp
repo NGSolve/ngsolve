@@ -25,8 +25,9 @@ void NGS_DLL_HEADER ExportNgsolve(py::module &m);
 
 
 
-PYBIND11_PLUGIN(ngslib)
+PYBIND11_MODULE(ngslib, m)
 {
+  m.attr("__name__") = "ngsolve";
   /*
   py::object module(py::handle<>(py::borrowed(PyImport_AddModule("ngsolve"))));
   py::object parent = py::import("__main__");
@@ -69,7 +70,6 @@ PYBIND11_PLUGIN(ngslib)
 
   cout << "importing NGSolve-" << ngsolve_version << endl;
 
-  py::module m("ngsolve", "pybind ngsolve");
     try
     {
         py::module ngstd = m.def_submodule("ngstd", "pybind ngstd");
@@ -98,7 +98,6 @@ PYBIND11_PLUGIN(ngslib)
         std::cerr << "\n\nCaught Python Exception:\n" << std::endl;
         PyErr_Print();
     }
-  return m.ptr();
 }
 
 
