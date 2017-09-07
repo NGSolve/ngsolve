@@ -3434,10 +3434,9 @@ flags : dict
 
 
 
-PYBIND11_PLUGIN(libngcomp) {
-  py::module m("comp", "pybind comp");
+PYBIND11_MODULE(libngcomp, m) {
+  m.attr("__name__") = "comp";
   ExportNgcomp(m);
-  return m.ptr();
 }
 
 #endif // NGS_PYTHON

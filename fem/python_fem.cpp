@@ -1415,10 +1415,9 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
 }
 
 
-PYBIND11_PLUGIN(libngfem) {
-  py::module m("fem", "pybind fem");
+PYBIND11_MODULE(libngfem, m) {
+  m.attr("__name__") = "fem";
   ExportNgfem(m);
-  return m.ptr();
 }
 
 

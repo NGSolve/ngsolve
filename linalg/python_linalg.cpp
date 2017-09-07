@@ -685,10 +685,9 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 
 
 
-PYBIND11_PLUGIN(libngla) {
-  py::module m("la", "pybind la");
+PYBIND11_MODULE(libngla, m) {
+  m.attr("__name__") = "la";
   ExportNgla(m);
-  return m.ptr();
 }
 
 

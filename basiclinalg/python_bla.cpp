@@ -605,10 +605,9 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
                               });
              }
 
-PYBIND11_PLUGIN(libngbla) {
-  py::module m("bla", "pybind bla");
+PYBIND11_MODULE(libngbla, m) {
+  m.attr("__name__") = "bla";
   ExportNgbla(m);
-  return m.ptr();
 }
 
 #endif // NGS_PYTHON
