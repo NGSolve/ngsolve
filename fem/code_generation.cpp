@@ -2,7 +2,7 @@
 
 namespace ngfem
 {
-    unsigned Code::id_counter = 0;
+    atomic<unsigned> Code::id_counter{0};
 
     string Code::AddPointer(const void *p)
     {
