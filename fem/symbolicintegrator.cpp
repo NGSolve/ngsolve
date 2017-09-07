@@ -127,7 +127,7 @@ namespace ngfem
       else
         body += "} else ";
     }
-
+    body += "{\n";
     if(testfunction)
       TraverseDimensions( dims, [&](int ind, int i, int j) {
         if(code.deriv==0) body += Var(index,i,j).Assign( Var("comp", index,i,j), false );
@@ -139,6 +139,7 @@ namespace ngfem
         if(code.deriv==0) body += Var(index,i,j).Assign( Var("comp", index,i,j), false );
         if(code.deriv>=1) body += Var(index,i,j).Call("DValue","0").Assign( Var("comp", index,i,j).Call("DValue","0"), false );
       });
+    body += "}\n";
 
     string func_string = testfunction ? "testfunction" : "trialfunction";
     string comp_string = testfunction ? "test_comp" : "trial_comp";
