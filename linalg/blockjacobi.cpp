@@ -328,8 +328,8 @@ namespace ngla
 
     
     // find nze element in all blocks together 
-    nze = 0;
     /*
+    nze = 0;
     for (auto block : *blocktable)
       for (auto row : block)
 	nze += amat.GetRowIndices(row).Size();
@@ -345,11 +345,17 @@ namespace ngla
                       },
                       [] (size_t a, size_t b) { return a+b; },
                       0);
-    
-    size_t totmem = 0;
 
+    /*
+    size_t totmem = 0;
     for (auto i : Range (*blocktable))
       totmem += sqr ((*blocktable)[i].Size());
+    */
+    size_t totmem = 
+      ParallelReduce (blocktable->Size(),
+                      [&] (size_t i) { return sqr ((*blocktable)[i].Size()); },
+                      [] (size_t a, size_t b) { return a+b; },
+                      0);
 
     bigmem.SetSize(totmem);
     
