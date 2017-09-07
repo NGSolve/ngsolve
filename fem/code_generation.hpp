@@ -29,7 +29,7 @@ namespace ngfem
 
     string AddPointer(const void *p );
 
-    static unsigned id_counter;
+    static atomic<unsigned> id_counter;
     static string Map( string code, std::map<string,string> variables ) {
       for ( auto mapping : variables ) {
         string oldStr = '{'+mapping.first+'}';
