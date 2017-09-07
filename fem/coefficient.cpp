@@ -4557,14 +4557,8 @@ public:
 
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {
         auto v = Var(index);
-        /*
-        if(dir==0) code.body += v.Assign(CodeExpr("ip.GetPoint()(0)"));
-        if(dir==1) code.body += v.Assign(CodeExpr("ip.GetPoint()(1)"));
-        if(dir==2) code.body += v.Assign(CodeExpr("ip.GetPoint()(2)"));
-        */
-        if(dir==0) code.body += v.Assign(CodeExpr("mir.GetPoints()(i,0)"));
-        if(dir==1) code.body += v.Assign(CodeExpr("mir.GetPoints()(i,1)"));
-        if(dir==2) code.body += v.Assign(CodeExpr("mir.GetPoints()(i,2)"));
+        // code.body += v.Assign(CodeExpr(string("mir.GetPoints()(i,")+ToString(dir)+")"));
+        code.body += v.Assign(CodeExpr(string("points(i,")+ToString(dir)+")"));
     }
 
     template <typename T>
@@ -4736,6 +4730,7 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
               s << ", " << param_type << parameters[i];
             s << " ) {" << endl;
             s << code.header << endl;
+            s << "auto points = mir.GetPoints();" << endl;
             s << "for ( auto i : Range(mir)) {" << endl;
             s << "auto & ip = mir[i];" << endl;
             s << code.body << endl;
