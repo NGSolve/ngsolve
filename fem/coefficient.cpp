@@ -4751,13 +4751,20 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
           pointer_code += "}\n";
           codes.push_back(pointer_code);
         }
-        library.Compile( codes );
-        compiled_function_simd = library.GetFunction<lib_function_simd>("CompiledEvaluateSIMD");
-        compiled_function = library.GetFunction<lib_function>("CompiledEvaluate");
-        compiled_function_simd_deriv = library.GetFunction<lib_function_simd_deriv>("CompiledEvaluateDerivSIMD");
-        compiled_function_deriv = library.GetFunction<lib_function_deriv>("CompiledEvaluateDeriv");
-        compiled_function_simd_dderiv = library.GetFunction<lib_function_simd_dderiv>("CompiledEvaluateDDerivSIMD");
-        compiled_function_dderiv = library.GetFunction<lib_function_dderiv>("CompiledEvaluateDDeriv");
+        std::thread( [this, codes] () {
+          try {
+              library.Compile( codes );
+              compiled_function_simd = library.GetFunction<lib_function_simd>("CompiledEvaluateSIMD");
+              compiled_function = library.GetFunction<lib_function>("CompiledEvaluate");
+              compiled_function_simd_deriv = library.GetFunction<lib_function_simd_deriv>("CompiledEvaluateDerivSIMD");
+              compiled_function_deriv = library.GetFunction<lib_function_deriv>("CompiledEvaluateDeriv");
+              compiled_function_simd_dderiv = library.GetFunction<lib_function_simd_dderiv>("CompiledEvaluateDDerivSIMD");
+              compiled_function_dderiv = library.GetFunction<lib_function_dderiv>("CompiledEvaluateDDeriv");
+              cout << IM(7) << "Compilation done" << endl;
+          } catch (const std::exception &e) {
+              cerr << IM(3) << "Compilation of CoefficientFunction failed: " << e.what() << endl;
+          }
+        }).detach();
       }
     }
 
