@@ -98,7 +98,7 @@ namespace ngfem
           " ||  (({ud}->testfunction == {this}) && ({ud}->test_comp=="+ToString(ind)+")))\n";
         }
         else
-          header += "if({ud}->{comp_string}=="+ToString(ind)+")\n";
+          header += "if({ud}->{comp_string}=="+ToString(ind)+" && {ud}->{func_string} == {this})\n";
         header += Var("comp", index,i,j).S() + string("{get_component}") + " = 1.0;\n";
     });
     string body = "";
@@ -127,10 +127,7 @@ namespace ngfem
       else
         body += "} else ";
     }
-    if(!testfunction && code.deriv==2)
-      body += "{\n";
-    else
-      body += "if({ud}->{func_string} == {this}) {\n";
+
     if(testfunction)
       TraverseDimensions( dims, [&](int ind, int i, int j) {
         if(code.deriv==0) body += Var(index,i,j).Assign( Var("comp", index,i,j), false );
@@ -142,7 +139,6 @@ namespace ngfem
         if(code.deriv==0) body += Var(index,i,j).Assign( Var("comp", index,i,j), false );
         if(code.deriv>=1) body += Var(index,i,j).Call("DValue","0").Assign( Var("comp", index,i,j).Call("DValue","0"), false );
       });
-    body += "}\n";
 
     string func_string = testfunction ? "testfunction" : "trialfunction";
     string comp_string = testfunction ? "test_comp" : "trial_comp";
