@@ -170,7 +170,7 @@ namespace ngfem
   public:
     Library() : lib(nullptr) {}
     // Compile a given string and load the library
-    void Compile( std::vector<string> &codes );
+    void Compile( const std::vector<string> &codes );
 
     void Load( string alib_name );
 
