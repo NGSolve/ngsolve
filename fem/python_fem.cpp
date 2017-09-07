@@ -656,9 +656,10 @@ val : can be one of the following:
                     },
                    "transpose of matrix-valued CF")
 
-    .def ("Compile", [] (shared_ptr<CF> coef, bool realcompile)
-           { return Compile (coef, realcompile); },
+    .def ("Compile", [] (shared_ptr<CF> coef, bool realcompile, int maxderiv)
+           { return Compile (coef, realcompile, maxderiv); },
            py::arg("realcompile")=false,
+           py::arg("maxderiv")=2,
           "compile list of individual steps, experimental improvement for deep trees")
     ;
 
