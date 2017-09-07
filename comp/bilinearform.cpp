@@ -1297,7 +1297,7 @@ namespace ngcomp
                             cnt++;
                             gcnt++;
                             if (cnt % 10 == 0)
-                              cout << "\rassemble inner facet element " << cnt << "/" << nf << flush;
+                              cout << IM(3) << "\rassemble inner facet element " << cnt << "/" << nf << flush;
                             ma->SetThreadPercentage ( 100.0*(gcnt) / (loopsteps) );
                           }
                           
