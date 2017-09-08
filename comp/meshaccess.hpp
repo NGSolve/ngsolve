@@ -215,14 +215,16 @@ namespace ngcomp
     /// number of multigrid levels 
     int nlevels;
 
+    int nregions[3];
+    
     /// max domain index
-    int ndomains;
+    int & ndomains = nregions[0];
 
     /// max boundary index
-    int nboundaries;
+    int & nboundaries = nregions[1];
 
     /// max boundary index for co dim 2
-    int nbboundaries;
+    int & nbboundaries = nregions[2];
 
     size_t timestamp = 0;
     
@@ -295,7 +297,8 @@ namespace ngcomp
 
     int GetNRegions (VorB vb) const
     {
-      return (vb == VOL) ? ndomains : ((vb==BND) ? nboundaries : nbboundaries);
+      return nregions[vb];
+      // return (vb == VOL) ? ndomains : ((vb==BND) ? nboundaries : nbboundaries);
     }
 
     /// returns point coordinate
@@ -439,6 +442,13 @@ namespace ngcomp
         case BBND: return mesh.GetMaterialCD<2> (region_nr);
         }
     }
+
+    auto GetMaterials (VorB vb) const
+    {
+      return ArrayObject (GetNRegions(vb),
+                          [this,vb] (size_t i) { return this->GetMaterial(vb, i); });
+    }
+
     
     /// the material of the element
     [[deprecated("Use GetMaterial with ElementId(VOL, elnr) instead!")]]        
