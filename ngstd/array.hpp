@@ -108,7 +108,20 @@ namespace ngstd
     return AOWrapper<T> (ar);
   }
 
-
+  template <typename FUNC>
+  auto ArrayObject (size_t s, FUNC f)
+  {
+    class Dummy
+    {
+      size_t s;
+      FUNC f;
+    public:
+      Dummy (size_t _s, FUNC _f) : s(_s), f(_f) { ; }
+      size_t Size() const { return s; }
+      auto operator[] (size_t i) const { return f(i); }
+    };
+    return ArrayObject(Dummy(s,f));
+  }
 
 
 

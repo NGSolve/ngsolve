@@ -18,6 +18,31 @@ public:
 };
 
 
+template <typename T>
+py::tuple MakePyTuple (const BaseArrayObject<T> & ao)
+{
+  size_t s = ao.Size();
+  py::tuple tup(s);
+  for (size_t i = 0; i < s; i++)
+    tup[i] = ao[i];
+  return tup;
+}
+
+/*
+namespace pybind11
+{
+  template <typename T>
+  py::tuple cast (const BaseArrayObject<T> & ao)
+  {
+    size_t s = ao.Size();
+    py::tuple tup(s);
+    for (size_t i = 0; i < s; i++)
+      tup[i] = ao[i];
+    return tup;
+  }
+}
+*/
+
 class PyNumProc : public NumProc
 {
 public:
@@ -612,15 +637,22 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
   };
 
   py::class_<MeshNode> (m, "MeshNode", "an node within a mesh")
-    .def_property_readonly("vertices", [](MeshNode & node)
+    .def_property_readonly("vertices", [](MeshNode & node) -> py::tuple
                            {
                              if (node.GetType() == NT_EDGE)
                                {
+                                 /*
                                  auto verts = node.Mesh().GetEdgePNums(node.GetNr());
                                  py::tuple tup(2);
                                  for (size_t i = 0; i < 2; i++)
                                    tup[i] = py::cast(NodeId(NT_VERTEX, verts[i]));
                                  return tup;
+                                 */
+                                 auto verts = node.Mesh().GetEdgePNums(node.GetNr());
+                                 vector<NodeId> tup(2);
+                                 for (size_t i = 0; i < 2; i++)
+                                   tup[i] = NodeId(NT_VERTEX, verts[i]);
+                                 return py::cast(tup);
                                }
                              if (node.GetType() == NT_FACE)
                                {
@@ -948,10 +980,19 @@ mesh (netgen.Mesh): a mesh generated from Netgen
     .def("GetMaterials",
 	 [](const MeshAccess & ma)
 	  {
+            /*
             py::list materials(ma.GetNDomains());
 	    for (int i : Range(ma.GetNDomains()))
 	      materials[i] = py::cast(ma.GetMaterial(VOL,i));
+            */
+            /*
+            py::list materials;
+            for (auto m : ma.GetMaterials(VOL);
+              materials.append(m);
 	    return materials;
+            */
+            return MakePyTuple(ma.GetMaterials(VOL));
+            // return py::cast(ma.GetMaterials(VOL));
 	  },
 	 "Returns list of materials"
          )
@@ -959,20 +1000,23 @@ mesh (netgen.Mesh): a mesh generated from Netgen
     .def("Materials",
 	 [](shared_ptr<MeshAccess> ma, string pattern) 
 	  {
-            return new Region (ma, VOL, pattern);
+            return Region (ma, VOL, pattern);
 	  },
          py::arg("pattern"),
-	 "Returns mesh-region matching the given regex pattern",
-         py::return_value_policy::take_ownership
+	 "Returns mesh-region matching the given regex pattern"
          )
     
     .def("GetBoundaries",
 	 [](const MeshAccess & ma)
 	  {
+            /*
             py::list materials(ma.GetNBoundaries());
 	    for (int i : Range(ma.GetNBoundaries()))
 	      materials[i] = py::cast(ma.GetMaterial(BND,i));
 	    return materials;
+            */
+            return MakePyTuple(ma.GetMaterials(BND));
+            // return py::cast(ma.GetMaterials(BND));            
 	  },
 	 "Returns list of boundary conditions"
          )
@@ -980,29 +1024,31 @@ mesh (netgen.Mesh): a mesh generated from Netgen
     .def("Boundaries",
 	 [](shared_ptr<MeshAccess> ma, string pattern)
 	  {
-            return new Region (ma, BND, pattern);
+            return Region (ma, BND, pattern);
 	  },
          py::arg("pattern"),
-	 "Returns boundary mesh-region matching the given regex pattern",
-         py::return_value_policy::take_ownership
+	 "Returns boundary mesh-region matching the given regex pattern"
          )
     .def("GetBBoundaries",
 	 [](const MeshAccess & ma)
 	  {
+            /*
 	    py::list bboundaries(ma.GetNBBoundaries());
 	    for (int i : Range(ma.GetNBBoundaries()))
 	      bboundaries[i] = py::cast(ma.GetMaterial(BBND,i));
 	    return bboundaries;
+            */
+            return MakePyTuple(ma.GetMaterials(BBND));
+            // return py::cast(ma.GetMaterials(BBND));
 	  },
 	 "Returns list of boundary conditions for co dimension 2"
 	 )
     .def("BBoundaries", [](shared_ptr<MeshAccess> ma, string pattern)
 	  {
-	    return new Region (ma, BBND, pattern);
+	    return Region (ma, BBND, pattern);
 	  },
 	 (py::arg("self"), py::arg("pattern")),
-	 "Returns co dim 2 boundary mesh-region matching the given regex pattern",
-	 py::return_value_policy::take_ownership
+	 "Returns co dim 2 boundary mesh-region matching the given regex pattern"
 	 )
 
     // TODO: explain how to mark elements
