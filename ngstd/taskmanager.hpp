@@ -412,7 +412,7 @@ public:
 
 
    
-   class alignas(4096) AtomicRange
+   class alignas(4096) AtomicRange : public AlignedAlloc<AtomicRange>
   {
     // mutex lock;
     atomic<size_t> begin;
