@@ -14,7 +14,7 @@ namespace ngstd
 
   /// N integers
   template <int N, typename T = int>
-  class INT
+  class INT : public BaseArrayObject<INT<N,T>>
   {
     /// data
     T i[(N>0)?N:1];
@@ -65,7 +65,7 @@ namespace ngstd
         i[j] = ao.Spec()[j];
     }
     
-    INLINE int Size() const { return N; }
+    INLINE size_t Size() const { return N; }
     /// all ints equal ?
     INLINE bool operator== (const INT & in2) const
     { 
