@@ -123,7 +123,13 @@ namespace ngstd
     return ArrayObject(Dummy(s,f));
   }
 
-
+  template <typename T, typename FUNC>
+  auto Substitute (const BaseArrayObject<T> & ao, FUNC f)
+  {
+    return ArrayObject(ao.Size(),
+                       [&ao,f] (size_t i) { return f(ao[i]); });
+  }
+  
 
 
 
