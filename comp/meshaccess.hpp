@@ -336,14 +336,34 @@ namespace ngcomp
       return DimElementRange<VB,DIM> (*this, IntRange (0, GetNE(VB)));
     }
 
-
+    /*
     NodeRange Nodes (NODE_TYPE nt) const
     {
       return NodeRange (nt, IntRange (0, GetNNodes(nt)));
     }
+    */
+    auto Nodes (NODE_TYPE nt) const
+    {
+      return T_Range<NodeId> (NodeId(nt, 0), NodeId(nt, GetNNodes(nt)));
+    }
 
+    template <NODE_TYPE nt>
+      auto Nodes () const
+    {
+      return T_Range<T_NodeId<nt>> (0, GetNNodes(nt));
+    }
 
-
+    // using Vertices = Nodes<NT_VERTEX>;
+    auto Vertices() const { return Nodes<NT_VERTEX>(); }
+    auto Edges() const { return Nodes<NT_EDGE>(); }
+    auto Faces() const { return Nodes<NT_FACE>(); }
+    auto Cells() const { return Nodes<NT_CELL>(); }
+    /*
+    auto Vertices () const
+    {
+      return T_Range<T_NodeId<NT_VERTEX>> (0, GetNNodes(NT_VERTEX));
+    }
+    */
     template <typename TFUNC>
     void IterateElements (VorB vb, 
                           LocalHeap & clh, 
