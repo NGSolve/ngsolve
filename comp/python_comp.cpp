@@ -625,8 +625,11 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
                       "an node identifier containing node type and node nr")
     .def(py::init<NODE_TYPE,size_t>())
     .def("__str__", &ToString<NodeId>)
+    .def("__repr__", &ToString<NodeId>)
+    /*
     .def("__repr__", [](NodeId & self)
          { return string("NodeId(")+ToString(self.GetType())+","+ToString(self.GetNr())+")"; })
+    */
     .def(py::self!=py::self)
     .def(py::self==py::self)
     .def("__hash__" , &NodeId::GetNr)    
@@ -641,11 +644,14 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
     MeshNode (NodeId _ni, const MeshAccess & _ma)
       : NodeId(_ni), ma(_ma) { ; }
     auto & Mesh() { return ma; }
+    MeshNode operator++ (int) { return MeshNode(NodeId::operator++(0),ma); }
+    MeshNode operator++ () { return MeshNode(NodeId::operator++(), ma); }
   };
 
-  py::class_<MeshNode> (m, "MeshNode", "a node within a mesh")
+  py::class_<MeshNode, NodeId> (m, "MeshNode", "a node within a mesh")
     .def_property_readonly("vertices", [](MeshNode & node) -> py::tuple
                            {
+                             const MeshAccess & mesh = node.Mesh();
                              if (node.GetType() == NT_EDGE)
                                {
                                  /*
@@ -655,8 +661,11 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
                                    tup[i] = py::cast(NodeId(NT_VERTEX, verts[i]));
                                  return tup;
                                  */
+                                 
+                                 auto Nr2MeshVert = [&mesh] (size_t nr)
+                                   { return MeshNode(NodeId(NT_VERTEX,nr), mesh); };
                                  auto verts = node.Mesh().GetEdgePNums(node.GetNr());
-                                 return MakePyTuple (Substitute(verts, Nr2Vert));
+                                 return MakePyTuple (Substitute(verts, Nr2MeshVert));
                                }
                              if (node.GetType() == NT_FACE)
                                {
@@ -684,9 +693,15 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
     );
   */
   py::class_<ngstd::T_Range<NodeId>> (m, "NodeRange")
-    // .def("__len__", [] (T_Range<NodeId> r) { return r.end().Nr()-r.begin().Nr(); })
     .def("__len__", &T_Range<NodeId>::Size)
     .def("__iter__", [] (ngstd::T_Range<NodeId> & r)
+         { return py::make_iterator(r.begin(), r.end()); },
+         py::keep_alive<0,1>())
+    ;
+
+  py::class_<ngstd::T_Range<MeshNode>> (m, "MeshNodeRange")
+    .def("__len__", &T_Range<MeshNode>::Size)
+    .def("__iter__", [] (ngstd::T_Range<MeshNode> & r)
          { return py::make_iterator(r.begin(), r.end()); },
          py::keep_alive<0,1>())
     ;
@@ -916,16 +931,26 @@ mesh (netgen.Mesh): a mesh generated from Netgen
 
     .def_property_readonly ("vertices", [] (shared_ptr<MeshAccess> mesh)
           {
-            return mesh->Nodes(NT_VERTEX);
-          })
+            // return mesh->Nodes(NT_VERTEX);
+            return T_Range<MeshNode> (MeshNode(NodeId(NT_VERTEX, 0), *mesh),
+                                      MeshNode(NodeId(NT_VERTEX, mesh->GetNNodes(NT_VERTEX)), *mesh));
+          }, "iterable of mesh vertices")
     .def_property_readonly ("edges", [] (shared_ptr<MeshAccess> mesh)
           {
-            return mesh->Nodes(NT_EDGE);
-          })
+            return T_Range<MeshNode> (MeshNode(NodeId(NT_EDGE, 0), *mesh),
+                                      MeshNode(NodeId(NT_EDGE, mesh->GetNNodes(NT_EDGE)), *mesh));
+            /*
+            return T_Range<NodeId> (NodeId(NT_EDGE, 0),
+                                    NodeId(NT_EDGE, mesh->GetNNodes(NT_EDGE)));
+            */
+            // return mesh->Nodes(NT_EDGE);
+          }, "iterable of mesh edges")
     .def_property_readonly ("faces", [] (shared_ptr<MeshAccess> mesh)
           {
-            return mesh->Nodes(NT_FACE);
-          })
+            // return mesh->Nodes(NT_FACE);
+            return T_Range<MeshNode> (MeshNode(NodeId(NT_FACE, 0), *mesh),
+                                      MeshNode(NodeId(NT_FACE, mesh->GetNNodes(NT_FACE)), *mesh));
+          }, "iterable of mesh faces")
     
     .def ("GetTrafo", 
           static_cast<ElementTransformation&(MeshAccess::*)(ElementId,Allocator&)const>
