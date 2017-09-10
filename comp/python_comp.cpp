@@ -675,7 +675,22 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
                            "tuple of global vertex numbers")
     
     ;
-    
+
+  /*
+  py::class_<ngstd::T_Range<NodeId>> py_intrange (m, "NodeRange");
+  py_intrange.def("__iter__", [] (ngstd::T_Range<NodeId> & r)
+      { return py::make_iterator(r.begin(), r.end()); },
+      py::keep_alive<0,1>()
+    );
+  */
+  py::class_<ngstd::T_Range<NodeId>> (m, "NodeRange")
+    // .def("__len__", [] (T_Range<NodeId> r) { return r.end().Nr()-r.begin().Nr(); })
+    .def("__len__", &T_Range<NodeId>::Size)
+    .def("__iter__", [] (ngstd::T_Range<NodeId> & r)
+         { return py::make_iterator(r.begin(), r.end()); },
+         py::keep_alive<0,1>())
+    ;
+  
   py::enum_<ORDER_POLICY>(m, "ORDER_POLICY")
     .value("CONSTANT", CONSTANT_ORDER)
     .value("NODETYPE", NODE_TYPE_ORDER)
@@ -898,6 +913,20 @@ mesh (netgen.Mesh): a mesh generated from Netgen
     .def_property_readonly ("nface", &MeshAccess::GetNFaces, "Number of faces")    
     .def_property_readonly ("dim", &MeshAccess::GetDimension, "Mesh dimension")
     .def_property_readonly ("ngmesh", &MeshAccess::GetNetgenMesh, "Get the Netgen mesh")
+
+    .def_property_readonly ("vertices", [] (shared_ptr<MeshAccess> mesh)
+          {
+            return mesh->Nodes(NT_VERTEX);
+          })
+    .def_property_readonly ("edges", [] (shared_ptr<MeshAccess> mesh)
+          {
+            return mesh->Nodes(NT_EDGE);
+          })
+    .def_property_readonly ("faces", [] (shared_ptr<MeshAccess> mesh)
+          {
+            return mesh->Nodes(NT_FACE);
+          })
+    
     .def ("GetTrafo", 
           static_cast<ElementTransformation&(MeshAccess::*)(ElementId,Allocator&)const>
           (&MeshAccess::GetTrafo), 
