@@ -665,7 +665,7 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
                                  auto Nr2MeshVert = [&mesh] (size_t nr)
                                    { return MeshNode(NodeId(NT_VERTEX,nr), mesh); };
                                  auto verts = node.Mesh().GetEdgePNums(node.GetNr());
-                                 return MakePyTuple (Substitute(verts, Nr2MeshVert));
+                                 return MakePyTuple (Substitute(ArrayObject(verts), Nr2MeshVert));
                                }
                              if (node.GetType() == NT_FACE)
                                {
