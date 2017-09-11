@@ -14,7 +14,7 @@ namespace ngstd
 
   /// N integers
   template <int N, typename T = int>
-  class INT : public BaseArrayObject<INT<N,T>>
+  class INT
   {
     /// data
     T i[(N>0)?N:1];
