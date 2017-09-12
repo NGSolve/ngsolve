@@ -4613,7 +4613,7 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
     lib_function_dderiv compiled_function_dderiv = nullptr;
     lib_function_simd_dderiv compiled_function_simd_dderiv = nullptr;
   public:
-    CompiledCoefficientFunction (shared_ptr<CoefficientFunction> acf, bool realcompile, int maxderiv)
+    CompiledCoefficientFunction (shared_ptr<CoefficientFunction> acf, bool realcompile, int maxderiv, bool wait )
       : CoefficientFunction(acf->Dimension(), acf->IsComplex()), cf(acf) // , compiled_function(nullptr), compiled_function_simd(nullptr)
     {
       SetDimensions (cf->Dimensions());
@@ -4746,7 +4746,7 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
           pointer_code += "}\n";
           codes.push_back(pointer_code);
         }
-        std::thread( [this, codes, maxderiv] () {
+        std::thread thread{ [this, codes, maxderiv] () {
           try {
               library.Compile( codes );
               compiled_function_simd = library.GetFunction<lib_function_simd>("CompiledEvaluateSIMD");
@@ -4765,7 +4765,11 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
           } catch (const std::exception &e) {
               cerr << IM(3) << "Compilation of CoefficientFunction failed: " << e.what() << endl;
           }
-        }).detach();
+        }};
+        if(wait)
+            thread.join();
+        else
+            thread.detach();
       }
     }
 
@@ -5103,9 +5107,9 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
 
 
 
-  shared_ptr<CoefficientFunction> Compile (shared_ptr<CoefficientFunction> c, bool realcompile, int maxderiv)
+  shared_ptr<CoefficientFunction> Compile (shared_ptr<CoefficientFunction> c, bool realcompile, int maxderiv, bool wait)
   {
-    return make_shared<CompiledCoefficientFunction> (c, realcompile, maxderiv);
+    return make_shared<CompiledCoefficientFunction> (c, realcompile, maxderiv, wait);
   }
   
 
