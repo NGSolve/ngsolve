@@ -151,7 +151,7 @@ namespace ngcomp
     INLINE auto end () const { return DimElementIterator<VB,DIM>(ma, r.Next()); }
   };
 
-
+  /*
   class NodeIterator
   {
     NodeId ni;
@@ -173,7 +173,7 @@ namespace ngcomp
     NodeIterator end () const { return NodeIterator(NodeId(nt,IntRange::Next())); }
     NodeId operator[] (size_t nr) { return NodeId(nt, IntRange::First()+nr); }
   };
-
+  */
 
   /** 
       Access to mesh topology and geometry.
@@ -817,11 +817,11 @@ namespace ngcomp
     // int GetSegmentIndex (int snr) const;
 
     void GetVertexElements (size_t vnr, Array<int> & elems) const;
-    auto GetVertexElements (size_t vnr) const // -> decltype (ArrayObject(mesh.GetNode<0> (vnr).elements))
+    auto GetVertexElements (size_t vnr) const 
     { return ArrayObject(mesh.GetNode<0> (vnr).elements); }
 
     void GetVertexSurfaceElements (size_t vnr, Array<int> & elems) const;
-    auto GetVertexSurfaceElements (size_t vnr) const // -> decltype (ArrayObject(mesh.GetNode<0> (vnr).bnd_elements))
+    auto GetVertexSurfaceElements (size_t vnr) const 
     { return ArrayObject(mesh.GetNode<0> (vnr).bnd_elements); }
     
     /// number of facets of an element. 
