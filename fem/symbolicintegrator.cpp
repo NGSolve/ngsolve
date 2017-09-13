@@ -1531,8 +1531,7 @@ namespace ngfem
     const MixedFiniteElement * mixedfe = static_cast<const MixedFiniteElement*> (&fel);
     const FiniteElement & fel_trial = is_mixedfe ? mixedfe->FETrial() : fel;
     const FiniteElement & fel_test = is_mixedfe ? mixedfe->FETest() : fel;
-
-    
+    size_t first_std_eval = 0;
     if (simd_evaluate)
       try
         {
@@ -1563,6 +1562,7 @@ namespace ngfem
                   // bool is_nonzero = nonzeros_proxies(l1nr,k1nr);
                   // bool is_diagonal = diagonal_proxies(l1nr,k1nr);
                   size_t tt_pair = l1nr*trial_proxies.Size()+k1nr;
+                  first_std_eval = k1nr*test_proxies.Size()+l1nr;  // in case of SIMDException
                   bool is_nonzero = nonzeros_proxies(tt_pair);
                   bool is_diagonal = diagonal_proxies(tt_pair);
 
@@ -1752,8 +1752,8 @@ namespace ngfem
           cout << IM(4) << e.What() << endl
                << "switching to scalar evaluation" << endl;
           simd_evaluate = false;
-          T_CalcElementMatrixAdd<SCAL, SCAL_SHAPES, SCAL_RES> (fel, trafo, elmat, lh);
-          return;
+          // T_CalcElementMatrixAdd<SCAL, SCAL_SHAPES, SCAL_RES> (fel, trafo, elmat, lh);
+          // return;
         }
     
 
@@ -1768,9 +1768,11 @@ namespace ngfem
     // tstart.Stop();
     bool symmetric_so_far = true;
     int k1 = 0;
+    int k1nr = 0;
     for (auto proxy1 : trial_proxies)
       {
         int l1 = 0;
+        int l1nr = 0;
         for (auto proxy2 : test_proxies)
           {
             bool is_diagonal = proxy1->Dimension() == proxy2->Dimension();
@@ -1784,8 +1786,7 @@ namespace ngfem
                     is_nonzero = true;
                   }
 
-
-            if (is_nonzero)
+            if (is_nonzero  && k1nr*test_proxies.Size()+l1nr >= first_std_eval)
               {
                 HeapReset hr(lh);
                 bool samediffop = *(proxy1->Evaluator()) == *(proxy2->Evaluator());
@@ -1926,9 +1927,11 @@ namespace ngfem
                       part_elmat(i,j) = part_elmat(j,i);
               }
             
-            l1 += proxy2->Dimension();  
+            l1 += proxy2->Dimension();
+            l1nr++;
           }
         k1 += proxy1->Dimension();
+        k1nr++;
       }
   }
 #endif  
