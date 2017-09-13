@@ -1842,17 +1842,9 @@ namespace ngcomp
                                 MAT & mat, LocalHeap & lh)
     {
       auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
-      /*
-      mat = 0.0;
-      for (int i = 0; i < DIM_SPC; i++)
-        {
-          auto & feli = static_cast<const ScalarFiniteElement<DIM_SPC>&> (fel[i]);
-          feli.CalcMappedDShape (mip, Trans(mat.Rows(DIM_SPC*i, DIM_SPC*(i+1)).Cols(fel.GetRange(i))));
-        }
-      */
+      auto & feli = static_cast<const ScalarFiniteElement<DIM_SPC>&> (fel[0]);
 
       HeapReset hr(lh);
-      auto & feli = static_cast<const ScalarFiniteElement<DIM_SPC>&> (fel[0]);
       FlatMatrix<> hmat(feli.GetNDof(), DIM_SPC, lh);
       feli.CalcMappedDShape (mip, hmat);
       mat = 0.0;
@@ -1938,11 +1930,28 @@ namespace ngcomp
       
       mat = 0.0;
       size_t n1 = feli.GetNDof();
+      HeapReset hr(lh);
       FlatMatrix<> tmp(n1, DIM_SPC, lh);
       feli.CalcMappedDShape (mip, tmp);
       
       for (int i = 0; i < DIM_SPC; i++)
         mat.Row(0).Range(i*n1, (i+1)*n1) = tmp.Col(i);
+    }
+
+    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> bmat)
+    {
+      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
+      
+      auto mat = bmat.AddSize(DIM_SPC*bfel.GetNDof(), mir.Size());
+      ArrayMem<SIMD<double>,100> mem(DIM_SPC*bfel.GetNDof()*mir.Size());
+      FlatMatrix<SIMD<double>> hmat(DIM_SPC*bfel.GetNDof(), mir.Size(), &mem[0]);
+      feli.CalcMappedDShape (mir, hmat);
+      for (size_t i = 0; i < DIM_SPC; i++)
+        for (size_t j = 0; j < feli.GetNDof(); j++)
+          mat.Row(i*feli.GetNDof()+j) = hmat.Row(i+j*DIM_SPC);
     }
   };
 
@@ -1972,17 +1981,22 @@ namespace ngcomp
           evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdVectorH1<2>>>();
           flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradVectorH1<2>>>();
           evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdVectorH1<2,BND>>>();
+          additional_evaluators.Set ("div", make_shared<T_DifferentialOperator<DiffOpDivVectorH1<2>>> ()); 
+          additional_evaluators.Set ("divfree_reconstruction", make_shared<T_DifferentialOperator<DiffOpDivFreeReconstructVectorH1<2>>> ());
+          
           break;
         case 3:
           evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdVectorH1<3>>>();
           flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradVectorH1<3>>>();
           evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdVectorH1<3,BND>>>();
+          additional_evaluators.Set ("div", make_shared<T_DifferentialOperator<DiffOpDivVectorH1<3>>> ()); 
           break;
           // auto one = make_shared<ConstantCoefficientFunction>(1);
           // integrator[VOL] = make_shared<VectorH1MassIntegrator<2>>(one);
         }
     }
 
+    /*
     virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const
     {
       SymbolTable<shared_ptr<DifferentialOperator>> additional;
@@ -1992,7 +2006,7 @@ namespace ngcomp
       
       return additional;
     }
-
+    */
     
   };
     
