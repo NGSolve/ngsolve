@@ -1537,6 +1537,9 @@ namespace ngstd
 
     INLINE const Vec<R,SIMD<double>> GetNV () const { return normalvec; }
     INLINE void SetNV (Vec<R,SIMD<double>> vec) { normalvec = vec; }
+
+    INLINE const Vec<R,SIMD<double>> GetTV () const { return tangentialvec; }
+    INLINE void SetTV (Vec<R,SIMD<double>> vec) { tangentialvec = vec; }
   };
 
   template <int DIMS, int DIMR>

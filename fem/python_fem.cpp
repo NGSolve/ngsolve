@@ -450,6 +450,19 @@ struct GenericPow {
         throw Exception("illegal dim of tangential vector");
       res = static_cast<const DimMappedIntegrationPoint<D>&>(ip).GetTV();
     }
+    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {
+        string miptype;
+        if(code.is_simd)
+          miptype = "SIMD<DimMappedIntegrationPoint<"+ToString(D)+">>*";
+        else
+          miptype = "DimMappedIntegrationPoint<"+ToString(D)+">*";
+        auto tv_expr = CodeExpr("static_cast<const "+miptype+">(&ip)->GetTV()");
+        auto tv = Var("tmp", index);
+        code.body += tv.Assign(tv_expr);
+        for( int i : Range(D))
+          code.body += Var(index,i).Assign(tv(i));
+    }
+    
   };
 
 

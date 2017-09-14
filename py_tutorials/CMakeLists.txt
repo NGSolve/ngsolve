@@ -1,5 +1,6 @@
 install(FILES
-        poisson.py adaptive.py cmagnet.py navierstokes.py elasticity.py
+        poisson.py adaptive.py cmagnet.py navierstokes.py
+        elasticity.py poisson.ipynb
         DESTINATION ${NGSOLVE_INSTALL_DIR_RES}/ngsolve/py_tutorials/intro
         COMPONENT ngsolve_devel
        )
