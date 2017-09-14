@@ -50,6 +50,10 @@ def HDivDiv(mesh, **args):
     """ Create H(div-div) finite element space. """
     return FESpace("hdivdiv", mesh, **args)
 
+def NumberSpace(mesh, **args):
+    """ Create space of real or complex numbers. """
+    return FESpace("number", mesh, **args)
+
 
 def grad(func):
     if func.derivname == "grad":
@@ -103,6 +107,6 @@ def Det(mat):
 
 
 
-__all__ = ['x', 'y', 'z', 'Laplace', 'Mass', 'Source', 'Neumann', 'H1', 'VectorH1', 'FacetFESpace', 'L2', 'SurfaceL2', 'HDivDiv', 'grad', 'curl', 'div','Mesh', 'ConstantCF', 'DomainConstantCF', 'Id', 'Trace', 'Det']
+__all__ = ['x', 'y', 'z', 'Laplace', 'Mass', 'Source', 'Neumann', 'H1', 'VectorH1', 'FacetFESpace', 'L2', 'SurfaceL2', 'HDivDiv', 'NumberSpace', 'grad', 'curl', 'div','Mesh', 'ConstantCF', 'DomainConstantCF', 'Id', 'Trace', 'Det']
 
 
