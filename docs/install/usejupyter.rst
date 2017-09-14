@@ -18,7 +18,7 @@ Now, download the first NGSolve Jupyter notebook :download:`poisson.ipynb</../py
 
 .. code:: bash
 
-   jupter notebook poisson.ipynb
+   jupyter notebook poisson.ipynb
 
 Step though the notebook by pressing "Shift-Enter" for every cell. A separate visualization window will pop up showing the generated mesh and computed solution.
 
