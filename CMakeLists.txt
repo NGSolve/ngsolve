@@ -2,7 +2,7 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING INTERNAL)
 endif(NOT CMAKE_BUILD_TYPE)
 
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.3)
 
 # Handle superbuild first
 option( USE_SUPERBUILD   "Whether or not a superbuild should be invoked" ON)
