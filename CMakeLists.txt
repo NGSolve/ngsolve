@@ -179,7 +179,7 @@ if(WIN32)
 
     if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
         # Intel Compiler
-        list(APPEND NGSOLVE_COMPILE_OPTIONS /Od /MP /Qstd=c++14 /Qopt-report-file:report.log)
+        list(APPEND NGSOLVE_COMPILE_OPTIONS /Od /MP $<$<COMPILE_LANGUAGE:CXX>:/Qstd=c++14> /Qopt-report-file:report.log)
     else()
         # MS Visual Compiler
         list(APPEND NGSOLVE_COMPILE_OPTIONS /MP /bigobj)
@@ -188,7 +188,7 @@ if(WIN32)
 else(WIN32)
     # build shared libraries in windows)
     set(NGS_LIB_TYPE SHARED)
-    list(APPEND NGSOLVE_COMPILE_OPTIONS -std=c++14)
+    list(APPEND NGSOLVE_COMPILE_OPTIONS $<$<COMPILE_LANGUAGE:CXX>:-std=c++14>)
 endif(WIN32)
 if(APPLE)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -undefined dynamic_lookup")
