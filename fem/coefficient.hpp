@@ -1736,6 +1736,11 @@ void ExportBinaryFunction (class pybind11::module & m, string name)
   shared_ptr<CoefficientFunction> IfPos (shared_ptr<CoefficientFunction> cf_if,
                                          shared_ptr<CoefficientFunction> cf_then,
                                          shared_ptr<CoefficientFunction> cf_else);
+
+  NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> Real(shared_ptr<CoefficientFunction> cf);
+  NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> Imag(shared_ptr<CoefficientFunction> cf);
   
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> Compile (shared_ptr<CoefficientFunction> c, bool realcompile=false, int maxderiv=2, bool wait=false);

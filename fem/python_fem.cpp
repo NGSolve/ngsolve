@@ -690,6 +690,15 @@ val : can be one of the following:
 
   ExportStdMathFunction2<GenericATan2>(m, "atan2");
   ExportStdMathFunction2<GenericPow>(m, "pow");
+
+  m.def("Real", [](shared_ptr<CF> cf)
+        {
+          return Real(cf);
+        }, "real part of CoefficientFunction");
+  m.def("Imag", [](shared_ptr<CF> cf)
+        {
+          return Imag(cf);
+        }, "imaginary part of CoefficientFunction");
   
   m.def ("IfPos", [] (shared_ptr<CF> c1, py::object then_obj, py::object else_obj)
             {

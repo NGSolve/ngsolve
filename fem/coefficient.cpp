@@ -5120,7 +5120,52 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
     }
   };
 
+  class RealCF : public CoefficientFunction
+  {
+    shared_ptr<CoefficientFunction> cf;
+  public:
+    RealCF(shared_ptr<CoefficientFunction> _cf) : cf(_cf), CoefficientFunction(1,false)
+    { ; }
 
+    virtual double Evaluate(const BaseMappedIntegrationPoint& ip) const override
+    {
+      if(cf->IsComplex())
+        {
+          Vec<1,Complex> val;
+          cf->Evaluate(ip,val);
+          return val(0).real();
+        }
+      return cf->Evaluate(ip);
+    }
+  };
+
+  class ImagCF : public CoefficientFunction
+  {
+    shared_ptr<CoefficientFunction> cf;
+  public:
+    ImagCF(shared_ptr<CoefficientFunction> _cf) : cf(_cf), CoefficientFunction(1,false)
+    { ; }
+
+    virtual double Evaluate(const BaseMappedIntegrationPoint& ip) const override
+    {
+      if(cf->IsComplex())
+        {
+          Vec<1,Complex> val;
+          cf->Evaluate(ip,val);
+          return val(0).imag();
+        }
+      throw Exception("real cf has no imag part!");
+    }
+  };
+
+  shared_ptr<CoefficientFunction> Real(shared_ptr<CoefficientFunction> cf)
+  {
+    return make_shared<RealCF>(cf);
+  }
+  shared_ptr<CoefficientFunction> Imag(shared_ptr<CoefficientFunction> cf)
+  {
+    return make_shared<ImagCF>(cf);
+  }
 
   shared_ptr<CoefficientFunction> Compile (shared_ptr<CoefficientFunction> c, bool realcompile, int maxderiv, bool wait)
   {
