@@ -341,23 +341,6 @@ else()
 endif()
 
 #######################################################################
-
-add_subdirectory(include)
-add_subdirectory(ngstd)
-add_subdirectory(basiclinalg)
-add_subdirectory(parallel)
-add_subdirectory(linalg)
-add_subdirectory(fem)
-add_subdirectory(multigrid)
-add_subdirectory(comp)
-add_subdirectory(solve)
-add_subdirectory(python)
-add_subdirectory(pde_tutorial)
-add_subdirectory(py_tutorials)
-add_subdirectory(tests)
-add_subdirectory(docs)
-
-#######################################################################
 # generate ngscxx compiler wrapper
 
 # compile flags and preprocessor definitions
@@ -447,6 +430,7 @@ ${ngscxx_set_script_dir}
 endif()
 
 if(WIN32)
+    set(NGSCXX_COMMAND ngscxx.bat)
     get_filename_component(VC_BIN_DIR ${CMAKE_CXX_COMPILER} PATH)
     get_filename_component(VC_DIR ${VC_BIN_DIR}/../../ ABSOLUTE)
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngscxx.bat 
@@ -456,6 +440,7 @@ if(WIN32)
     install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngscxx.bat DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve_devel )
     install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngsld.bat DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve_devel )
 else(WIN32)
+    set(NGSCXX_COMMAND ngscxx)
     set(ngscxx_compile_command "${CMAKE_CXX_COMPILER} ${ngscxx_flags} ${ngscxx_includes} $*")
     if(CCACHE_FOUND)
       set(ngscxx_compile_command "
@@ -464,8 +449,9 @@ if [ -f ${CCACHE_FOUND} ]
   else ${ngscxx_compile_command}
 fi")
     endif(CCACHE_FOUND)
-    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngscxx "${ngscxx_header}
+    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngscxx_preconfig "${ngscxx_header}
 ${ngscxx_compile_command}\n")
+    file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ngscxx INPUT ${CMAKE_CURRENT_BINARY_DIR}/ngscxx_preconfig CONDITION $<COMPILE_LANGUAGE:CXX> )
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngsld "${ngsld_header}
 ${CMAKE_CXX_COMPILER} ${ngsld_flags} $*\n")
 install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngscxx DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve_devel )
@@ -486,6 +472,23 @@ LD_PRELOAD=$LD_PRELOAD:${ngspy_preload_libs} ${NETGEN_PYTHON_EXECUTABLE} $*
     install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngspy DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve_devel )
 endif (NETGEN_USE_MPI)
 
+
+#######################################################################
+
+add_subdirectory(include)
+add_subdirectory(ngstd)
+add_subdirectory(basiclinalg)
+add_subdirectory(parallel)
+add_subdirectory(linalg)
+add_subdirectory(fem)
+add_subdirectory(multigrid)
+add_subdirectory(comp)
+add_subdirectory(solve)
+add_subdirectory(python)
+add_subdirectory(pde_tutorial)
+add_subdirectory(py_tutorials)
+add_subdirectory(tests)
+add_subdirectory(docs)
 
 
 
