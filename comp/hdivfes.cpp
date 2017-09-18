@@ -59,6 +59,24 @@ namespace ngcomp
       coeffs[0] = shared_ptr<CoefficientFunction> (new ConstantCoefficientFunction(1));
       integrator[VOL] = GetIntegrators().CreateBFI("masshdiv", 2, coeffs);
     }
+    if (ma->GetDimension() == 3)
+    {
+      Array<shared_ptr<CoefficientFunction>> coeffs(1);
+      coeffs[0] = shared_ptr<CoefficientFunction> (new ConstantCoefficientFunction(1));
+      integrator[VOL] = GetIntegrators().CreateBFI("masshdiv", 3, coeffs);
+    }
+    if (ma->GetDimension() == 2)
+      {
+        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHDiv<2>>>();
+        evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdVecHDivBoundary<2>>>();
+        flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpDivHDiv<2>>>();
+      }
+    else
+      {
+        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHDiv<3>>>();
+        evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdVecHDivBoundary<3>>>();
+        flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpDivHDiv<3>>>();
+      }
   }
       
     RaviartThomasFESpace :: ~RaviartThomasFESpace ()
