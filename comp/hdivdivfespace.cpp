@@ -351,9 +351,9 @@ namespace ngcomp
               sigma_ref(0,0) = shape(i, 0);
               sigma_ref(1,1) = shape(i, 1);
               sigma_ref(2,2) = shape(i, 2);
-              sigma_ref(0,1) = sigma_ref(1,0) = shape(i, 3);
+              sigma_ref(2,1) = sigma_ref(1,2) = shape(i, 3);
               sigma_ref(0,2) = sigma_ref(2,0) = shape(i, 4);
-              sigma_ref(2,1) = sigma_ref(1,2) = shape(i, 5);
+              sigma_ref(0,1) = sigma_ref(1,0) = shape(i, 5);
             }
           
           Vec<D> hv2;
@@ -528,6 +528,19 @@ namespace ngcomp
     {
       ctofdof[i] = discontinuous ? LOCAL_DOF : INTERFACE_DOF;
     }
+    if (discontinuous) return;
+
+    Array<int> innerdofs;
+    for(auto e: ma->Elements())
+    {
+      GetInnerDofNrs(e.Nr(), innerdofs);
+      for (int dof: innerdofs)
+      {
+        ctofdof[dof] = LOCAL_DOF;
+      }
+    }
+
+
   }
 
 

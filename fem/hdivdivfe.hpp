@@ -198,12 +198,6 @@ namespace ngfem
         }
 
         AutoDiff<DIM> ad_det = Det (f_tilde);
-
-        if(ad_det.Value() < 0.0)
-        {
-          ad_det *= -1;
-        }
-
         AutoDiff<DIM> iad_det = 1.0 / ad_det;
         f_tilde *= iad_det;
 
@@ -612,6 +606,45 @@ namespace ngfem
   auto S_zz (AutoDiff<D> au, AutoDiff<D> av, AutoDiff<1> aw)
   { return T_S_zz<D+1>(au, av, aw); }
 
+  // *****************new S_zz(uvw) ****************************** */
+  // write uvw into zz component
+  template <int D> class T_S_zz_new;
+  template <> class T_S_zz_new<3>
+  {
+    AutoDiffDiff<3> u;
+    AutoDiffDiff<3> lam1;
+    AutoDiffDiff<3> lam2;
+  public:
+    T_S_zz_new ( AutoDiffDiff<3> au, AutoDiffDiff<3> alam1, AutoDiffDiff<3> alam2) : u(au), lam1(alam1), lam2(alam2) { ; }
+    Vec<6> Shape() 
+    { 
+      Vec<6> sigma(0.);
+      sigma[0] = u.Value()*lam1.DValue(0)*lam2.DValue(0);
+      sigma[1] = u.Value()*lam1.DValue(1)*lam2.DValue(1);
+      sigma[2] = u.Value()*lam1.DValue(2)*lam2.DValue(2);
+      sigma[3] = 0.5*u.Value()*(lam1.DValue(2)*lam2.DValue(1) + lam2.DValue(2)*lam1.DValue(1));
+      sigma[4] = 0.5*u.Value()*(lam1.DValue(2)*lam2.DValue(0) + lam2.DValue(2)*lam1.DValue(0));
+      sigma[5] = 0.5*u.Value()*(lam1.DValue(0)*lam2.DValue(1) + lam2.DValue(0)*lam1.DValue(1));
+      return sigma;
+    }
+
+    Vec<3> DivShape()
+    {
+      return Vec<3> (u.DValue(0)*lam1.DValue(0)*lam2.DValue(0) + 
+        0.5*(u.DValue(1)*(lam1.DValue(0)*lam2.DValue(1)+lam2.DValue(0)*lam1.DValue(1)) + u.DValue(2)*(lam1.DValue(0)*lam2.DValue(2)+lam2.DValue(0)*lam1.DValue(2))),
+        u.DValue(1)*lam1.DValue(1)*lam2.DValue(1) + 
+        0.5*(u.DValue(0)*(lam1.DValue(0)*lam2.DValue(1)+lam2.DValue(0)*lam1.DValue(1)) + u.DValue(2)*(lam1.DValue(1)*lam2.DValue(2)+lam2.DValue(1)*lam1.DValue(2))),
+        u.DValue(2)*lam1.DValue(2)*lam2.DValue(2) + 
+        0.5*(u.DValue(0)*(lam1.DValue(0)*lam2.DValue(2)+lam2.DValue(0)*lam1.DValue(2)) + u.DValue(1)*(lam1.DValue(1)*lam2.DValue(2)+lam2.DValue(1)*lam1.DValue(2)))
+        );
+    }
+
+  };
+  
+  template <int D>
+  auto S_zz_new (AutoDiffDiff<D> au, AutoDiffDiff<D> alamz, AutoDiffDiff<D> alamzz)
+  { return T_S_zz_new<D>(au, alamz, alamzz); }
+
 
     // ***************** S_xz ****************************** */
   template <int D> class T_S_xz;
@@ -647,6 +680,10 @@ namespace ngfem
   template <int D>
   auto S_xz (int comp, AutoDiff<D> auv, AutoDiff<1> aw)
   { return T_S_xz<D+1>(comp,auv, aw); }
+
+
+
+
 
   class Prism_wSigmaGradu
   {
@@ -767,6 +804,52 @@ namespace ngfem
 
   };
 
+  class Prism_SymRotRot_Dl2xDl1_vw_new
+  {
+    AutoDiffDiff<3> l1,l2,lz;
+    AutoDiffDiff<3> u;
+  public:
+    Prism_SymRotRot_Dl2xDl1_vw_new ( AutoDiffDiff<3> lam1, AutoDiffDiff<3> lam2, AutoDiffDiff<3> alz, AutoDiffDiff<3> av) : l1(lam1), l2(lam2), lz(alz), u(av) { ; }
+    Vec<6> Shape() 
+    { 
+      auto rotlam1 = Cross(l1, lz);
+      auto rotlam2 = Cross(l2, lz);
+
+      Vec<6> sigma(0.);
+      sigma[0] = u.Value()*rotlam1.DValue(0)*rotlam2.DValue(0);
+      sigma[1] = u.Value()*rotlam1.DValue(1)*rotlam2.DValue(1);
+      sigma[2] = u.Value()*rotlam1.DValue(2)*rotlam2.DValue(2);
+      sigma[3] = 0.5*u.Value()*(rotlam1.DValue(2)*rotlam2.DValue(1) + rotlam2.DValue(2)*rotlam1.DValue(1));
+      sigma[4] = 0.5*u.Value()*(rotlam1.DValue(2)*rotlam2.DValue(0) + rotlam2.DValue(2)*rotlam1.DValue(0));
+      sigma[5] = 0.5*u.Value()*(rotlam1.DValue(0)*rotlam2.DValue(1) + rotlam2.DValue(0)*rotlam1.DValue(1));
+      return sigma;
+    }
+
+    INLINE AutoDiffDiff<3> Cross (const AutoDiffDiff<3> & u,
+      const AutoDiffDiff<3> & v)
+    {
+      double hv[3];
+      hv[0] = u.DValue(1)*v.DValue(2)-u.DValue(2)*v.DValue(1);
+      hv[1] = u.DValue(2)*v.DValue(0)-u.DValue(0)*v.DValue(2);
+      hv[2] = u.DValue(0)*v.DValue(1)-u.DValue(1)*v.DValue(0);
+      return AutoDiffDiff<3> (0,hv);
+    }
+    Vec<3> DivShape()
+    {
+      auto lam1 = Cross(l1, lz);
+      auto lam2 = Cross(l2, lz);
+      return Vec<3> (u.DValue(0)*lam1.DValue(0)*lam2.DValue(0) + 
+        0.5*(u.DValue(1)*(lam1.DValue(0)*lam2.DValue(1)+lam2.DValue(0)*lam1.DValue(1)) + u.DValue(2)*(lam1.DValue(0)*lam2.DValue(2)+lam2.DValue(0)*lam1.DValue(2))),
+        u.DValue(1)*lam1.DValue(1)*lam2.DValue(1) + 
+        0.5*(u.DValue(0)*(lam1.DValue(0)*lam2.DValue(1)+lam2.DValue(0)*lam1.DValue(1)) + u.DValue(2)*(lam1.DValue(1)*lam2.DValue(2)+lam2.DValue(1)*lam1.DValue(2))),
+        u.DValue(2)*lam1.DValue(2)*lam2.DValue(2) + 
+        0.5*(u.DValue(0)*(lam1.DValue(0)*lam2.DValue(2)+lam2.DValue(0)*lam1.DValue(2)) + u.DValue(1)*(lam1.DValue(1)*lam2.DValue(2)+lam2.DValue(1)*lam1.DValue(2)))
+        );
+    }
+
+  };
+
+
   template <> class HDivDivFE<ET_PRISM> : public T_HDivDivFE<ET_PRISM> 
   {
   public:
@@ -808,7 +891,7 @@ namespace ngfem
 
     }
    template <typename Tx, typename TFA> 
-    void T_CalcShape (TIP<3,Tx> ip, TFA & shape) const
+    void T_CalcShape_Complex (TIP<3,Tx> ip, TFA & shape) const
     {
       AutoDiffDiff<2> x(ip.x.Value(),0);
       AutoDiffDiff<2> y(ip.y.Value(),1);
@@ -973,17 +1056,36 @@ namespace ngfem
 
     };
 
+
+    //INLINE AutoDiffDiff<3> Cross (const AutoDiffDiff<3> & u,
+    //  const AutoDiffDiff<3> & v)
+    //{
+    //  double hv[3];
+    //  hv[0] = u.DValue(1)*v.DValue(2)-u.DValue(2)*v.DValue(1);
+    //  hv[1] = u.DValue(2)*v.DValue(0)-u.DValue(0)*v.DValue(2);
+    //  hv[2] = u.DValue(0)*v.DValue(1)-u.DValue(1)*v.DValue(0);
+    //  return AutoDiffDiff<3> (0,hv);
+    //}
+
+
     // alternative to T_CalcShape, with "simpler" shape functions,
     // that are described in anisotropic paper
-    template <typename TFA> 
-    void T_CalcShape_NoComplex (AutoDiffDiff<3> hx[3], TFA & shape) const
+    //template <typename TFA> 
+    //void T_CalcShape (AutoDiffDiff<3> hx[3], TFA & shape) const
+    template <typename Tx, typename TFA> 
+    void T_CalcShape/*_nocomplex*/ (TIP<3,Tx> ip, TFA & shape) const
+    //{
+    //  AutoDiffDiff<2> x(ip.x.Value(),0);
+    //  AutoDiffDiff<2> y(ip.y.Value(),1);
     {
-      AutoDiff<2> x(hx[0].Value(),0);
-      AutoDiff<2> y(hx[1].Value(), 1);
-      AutoDiff<1> z(hx[2].Value(), 0);
-      AutoDiff<2> lami[6] ={ x,y,1-x-y,x,y,1-x-y };
-      AutoDiff<1> lamiz[6] ={ 1-z,1-z,1-z,z,z,z };
-
+      //AutoDiff<3> x(ip.x.Value(),0);
+      //AutoDiff<3> y(ip.y.Value(), 1);
+      //AutoDiff<3> z(ip.z.Value(), 2);
+      //AutoDiff<3> lami[6] ={ x,y,1-x-y,x,y,1-x-y };
+      //AutoDiff<3> lamiz[6] ={ 1-z,1-z,1-z,z,z,z };
+      auto x = ip.x, y = ip.y, z = ip.z;
+      AutoDiffDiff<3> lx[6] ={ x, y, 1-x-y, x, y, 1-x-y };
+      AutoDiffDiff<3> lz[6] ={ 1-z,1-z,1-z,z,z,z };
       int ii = 0;
       
       int maxorder_facet =
@@ -991,8 +1093,8 @@ namespace ngfem
 
       const FACE * faces = ElementTopology::GetFaces(ET_PRISM);
 
-      ArrayMem<AutoDiff<2>,20> leg_u(order+2), leg_v(order+3);
-      ArrayMem<AutoDiff<1>,20> leg_w(order+2);
+      ArrayMem<AutoDiffDiff<3>,20> leg_u(order+2), leg_v(order+3);
+      ArrayMem<AutoDiffDiff<3>,20> leg_w(order+2);
 
       
       // Trig faces, (p+1)(p+2)/2
@@ -1007,12 +1109,13 @@ namespace ngfem
         
         leg_u.SetSize(order_facet[fa][0]+incrorder_zz1_bd+1);
         leg_v.SetSize(order_facet[fa][0]+incrorder_zz1_bd+1);
-        ScaledLegendrePolynomial(order_facet[fa][0]+incrorder_zz1_bd,lami[fav[0]]-lami[fav[1]],1-lami[fav[0]]-lami[fav[1]],leg_u);
-        LegendrePolynomial::Eval(order_facet[fa][0]+incrorder_zz1_bd,2 * lami[fav[2]] - 1,leg_v);
+        ScaledLegendrePolynomial(order_facet[fa][0]+incrorder_zz1_bd,lx[fav[0]]-lx[fav[1]],1-lx[fav[0]]-lx[fav[1]],leg_u);
+        LegendrePolynomial::Eval(order_facet[fa][0]+incrorder_zz1_bd,2 * lx[fav[2]] - 1,leg_v);
 
         for(int j = 0; j <= order_facet[fa][0]+incrorder_zz1_bd; j++)
           for(int k = 0; k <= order_facet[fa][0]+incrorder_zz1_bd-j; k++)
-            shape[ii++] = S_zz(leg_u[j],leg_v[k],lamiz[fav[0]]);
+            shape[ii++] = Prism_SymRotRot_Dl2xDl1_vw_new(lx[fav[0]], lx[fav[1]], lx[fav[2]], leg_u[j]*leg_v[k]*lz[fav[0]]); // S_zz_new(leg_u[j]*leg_v[k]*lz[fav[0]], lz[fav[0]], lz[fav[0]]);
+            //shape[ii++] = S_zz_new(leg_u[j]*leg_v[k]*lz[fav[0]], lz[fav[0]], lz[fav[0]]);
       }
       // quad faces -- use face bubbles of trig multiplied by leg_w
       // (px+1)(pz+1)
@@ -1037,23 +1140,23 @@ namespace ngfem
         bool rotate = false;
         if(vnums[fz] > vnums[ftrig]) rotate = true;
         leg_w.SetSize(order_facet[fa][1]+incrorder_xx2_bd+1);
-        LegendrePolynomial::Eval(order_facet[fa][1]+incrorder_xx2_bd,lamiz[fmax]*2-1,leg_w);
+        LegendrePolynomial::Eval(order_facet[fa][1]+incrorder_xx2_bd,lz[fmax]*2-1,leg_w);
 
 
-        ScaledLegendrePolynomial(order_facet[fa][0]+incrorder_xx1_bd, lami[fmax]-lami[ftrig], 1-lami[fmax]-lami[ftrig], leg_u);      
+        ScaledLegendrePolynomial(order_facet[fa][0]+incrorder_xx1_bd, lx[fmax]-lx[ftrig], 1-lx[fmax]-lx[ftrig], leg_u);      
 
         if(rotate)
           for(int k = 0; k <= order_facet[fa][1]+incrorder_xx2_bd; k++)
             for(int l = 0; l <= order_facet[fa][0]+incrorder_xx1_bd; l++)
             {
-              shape[ii++] = Prism_SymRotRot_Dl2xDl1_vw(lami[fmax], lami[ftrig], leg_u[l], leg_w[k]);
+              shape[ii++] = Prism_SymRotRot_Dl2xDl1_vw_new(lx[fmax], lx[ftrig], lz[fmax], leg_u[l]* leg_w[k]);
             }
 
         else
           for(int l = 0; l <= order_facet[fa][0]+incrorder_xx1_bd; l++)
             for(int k = 0; k <= order_facet[fa][1]+incrorder_xx2_bd; k++)
             {
-              shape[ii++] = Prism_SymRotRot_Dl2xDl1_vw(lami[fmax], lami[ftrig], leg_u[l], leg_w[k]);
+              shape[ii++] = Prism_SymRotRot_Dl2xDl1_vw_new(lx[fmax], lx[ftrig], lz[fmax], leg_u[l]* leg_w[k]);
             }
 
 
@@ -1066,9 +1169,9 @@ namespace ngfem
       leg_v.SetSize(oi+incrorder_zz1+1);
       leg_w.SetSize(oi+incrorder_xx2+1);
 
-      ScaledLegendrePolynomial(oi+incrorder_zz1, lami[0]-lami[1], 1-lami[0]-lami[1], leg_u);
-      LegendrePolynomial::Eval(oi+incrorder_zz1, 2*lami[2]-1, leg_v);
-      LegendrePolynomial::Eval(oi+incrorder_xx2, 2*lamiz[0]-1, leg_w);
+      ScaledLegendrePolynomial(oi+incrorder_zz1, lx[0]-lx[1], 1-lx[0]-lx[1], leg_u);
+      LegendrePolynomial::Eval(oi+incrorder_zz1, 2*lx[2]-1, leg_v);
+      LegendrePolynomial::Eval(oi+incrorder_xx2, 2*lz[0]-1, leg_w);
 
       // ------------------------------------
       // shorter, not based on complex-based triangle shapes
@@ -1078,9 +1181,9 @@ namespace ngfem
         {
           for(int j = 0; j+i <= oi-1+incrorder_xx1; j++)
           {
-            shape[ii++] = Prism_SymRotRot_Dl2xDl1_vw(lami[0], lami[1], lami[2]*leg_u[i]*leg_v[j], leg_w[k]);
-            shape[ii++] = Prism_SymRotRot_Dl2xDl1_vw(lami[2], lami[0], lami[1]*leg_u[i]*leg_v[j], leg_w[k]);
-            shape[ii++] = Prism_SymRotRot_Dl2xDl1_vw(lami[1], lami[2], lami[0]*leg_u[i]*leg_v[j], leg_w[k]);
+            shape[ii++] = Prism_SymRotRot_Dl2xDl1_vw_new(lx[0], lx[1], lz[0], lx[2]*leg_u[i]*leg_v[j]* leg_w[k]);
+            shape[ii++] = Prism_SymRotRot_Dl2xDl1_vw_new(lx[2], lx[0], lz[0], lx[1]*leg_u[i]*leg_v[j]* leg_w[k]);
+            shape[ii++] = Prism_SymRotRot_Dl2xDl1_vw_new(lx[1], lx[2], lz[0], lx[0]*leg_u[i]*leg_v[j]* leg_w[k]);
           }
         }
       }
@@ -1091,11 +1194,13 @@ namespace ngfem
       {
         for (int j=0; j+i<=oi; j++)
         {
-          AutoDiff<2> uv = leg_u[i]*leg_v[j];
+          AutoDiffDiff<3> uv = leg_u[i]*leg_v[j];
           for (int k=0; k<=oi; k++)
           {
-            shape[ii++] = S_xz(0,uv, leg_w[k]);
-            shape[ii++] = S_xz(1,uv, leg_w[k]);
+            shape[ii++] = Prism_SymRotRot_Dl2xDl1_vw_new(lz[0], lx[1], lx[0], uv* leg_w[k]);
+            //S_zz_new(uv*leg_w[k], lx[0], lz[0]);
+            shape[ii++] = Prism_SymRotRot_Dl2xDl1_vw_new(lz[0], lx[0], lx[1], uv* leg_w[k]);
+            //S_zz_new(uv*leg_w[k], lx[1], lz[0]);
           }
         }
       }
@@ -1103,12 +1208,13 @@ namespace ngfem
       // S_zz
       for(int k=0; k<=oi-2+incrorder_zz2; k++)
       {
-        AutoDiff<1> bubw = leg_w[k]*lamiz[0]*(1-lamiz[0]);
+        AutoDiffDiff<3> bubw = leg_w[k]*lz[0]*(1-lz[0]);
         for(int i=0; i<=oi+incrorder_zz1; i++)
         {
           for(int j=0; j<=oi+incrorder_zz1-i; j++)
           {
-            shape[ii++] = S_zz(leg_u[i],leg_v[j],bubw);
+            shape[ii++] = Prism_SymRotRot_Dl2xDl1_vw_new(lx[0], lx[2], lx[1], leg_u[i]*leg_v[j]*bubw);
+            //S_zz_new(leg_u[i]*leg_v[j]*bubw, lz[0], lz[0]);
           }
         }
       }
