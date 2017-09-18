@@ -3871,8 +3871,15 @@ MakeOtherCoefficientFunction (shared_ptr<CoefficientFunction> me)
       else
         return cf_else->Evaluate(ip);      
     }
+
+    virtual void Evaluate (const BaseMappedIntegrationPoint& ip, FlatVector<double> values) const
+    {
+      if(cf_if->Evaluate(ip) > 0)
+        cf_then->Evaluate(ip,values);
+      else
+        cf_else->Evaluate(ip,values);
+    }
     
-    ///
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
     {
       STACK_ARRAY(double, hmem1, ir.Size());
@@ -3894,6 +3901,14 @@ MakeOtherCoefficientFunction (shared_ptr<CoefficientFunction> me)
 
       // for (int i = 0; i < ir.Size(); i++)
       //   values(i) = (if_values(i) > 0) ? then_values(i) : else_values(i);
+    }
+
+    virtual void Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<Complex> values) const
+    {
+      if(cf_if->Evaluate(ip)>0)
+        cf_then->Evaluate(ip,values);
+      else
+        cf_else->Evaluate(ip,values);
     }
 
 
