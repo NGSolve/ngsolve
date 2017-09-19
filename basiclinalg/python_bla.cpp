@@ -477,6 +477,9 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
         ;
     PyDefMatBuffer<Matrix<Complex>>(class_MC);
 
+    auto class_Mat2 = py::class_<Mat<2,2,double>>(m,"Mat2", py::buffer_protocol());
+    PyDefMatBuffer<Mat<2,2,double>>(class_Mat2);
+
     m.def("Matrix",
             [] (int h, int w, bool is_complex) {
                 if(is_complex) return py::cast(Matrix<Complex>(h,w));
