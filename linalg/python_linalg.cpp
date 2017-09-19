@@ -7,7 +7,10 @@ using namespace ngla;
 template<typename T>
 void ExportSparseMatrix(py::module m)
 {
-  py::class_<SparseMatrix<T>, shared_ptr<SparseMatrix<T>>, BaseSparseMatrix>
+  py::class_<S_BaseMatrix<T>, shared_ptr<S_BaseMatrix<T>>, BaseMatrix>
+    (m, (string("S_BaseMatrix") + typeid(T).name()).c_str(), "base sparse matrix")
+    ;
+  py::class_<SparseMatrix<T>, shared_ptr<SparseMatrix<T>>, BaseSparseMatrix, S_BaseMatrix<typename mat_traits<T>::TSCAL>>
     (m, (string("SparseMatrix") + typeid(T).name()).c_str(),
      "a sparse matrix in CSR storage")
     .def("__getitem__",
