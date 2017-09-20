@@ -1245,63 +1245,7 @@ when building the system matrices.
   //////////////////////////////////////////////////////////////////////////////////////////
 
 
-  m.def("CreateFESpace", [] (py::object self_class, const string & type, shared_ptr<MeshAccess> ma,
-                             py::kwargs kwargs)
-        {
-          py::list info;
-          info.append(ma);
-          auto flags = CreateFlagsFromKwArgs(self_class, kwargs, info);
-
-          auto fes = CreateFESpace (type, ma, flags);
-          auto pyfes = py::cast(fes);
-          pyfes.attr("__initialize__")(**kwargs);
-          return pyfes;
-        },
-        py::arg("self_class"),
-        py::arg("type"), py::arg("mesh"),
-        "allowed types are: 'h1ho', 'l2ho', 'hcurlho', 'hdivho' etc."
-        );
-
-  m.def("CreateFESpace", [] (py::object self_class, const string & type, shared_ptr<MeshAccess> ma,
-                             Flags flags, SelectUnpicklingConstructor)
-        {
-          auto fes = CreateFESpace(type,ma,flags);
-          LocalHeap lh(int(1e7),"lh FESpace update unpickle");
-          fes->Update(lh);
-          fes->FinalizeUpdate(lh);
-          return fes;
-        }, "This constructor is for unpickling only!");
-  
-  m.def("CreateFESpace", [] (py::object self_class, py::list lspaces, Flags& flags)
-        {
-          Array<shared_ptr<FESpace>> spaces;
-          for (auto fes : lspaces )
-            spaces.Append(py::extract<shared_ptr<FESpace>>(fes)());
-          if (spaces.Size() == 0)
-            throw Exception("Compound space must have at least one space");
-          int dim = spaces[0]->GetDimension();
-          for (auto space : spaces)
-            if (space->GetDimension() != dim)
-              throw Exception("Compound space of spaces with different dimensions is not allowed");
-          flags.SetFlag ("dim", dim);
-          bool is_complex = spaces[0]->IsComplex() || flags.GetDefineFlag("complex");
-          for (auto space : spaces)
-            if (space->IsComplex() != is_complex)
-              throw Exception("Compound space of spaces with complex and real spaces is not allowed");
-          if (is_complex)
-            flags.SetFlag ("complex");
-          shared_ptr<FESpace> fes = make_shared<CompoundFESpace> (spaces[0]->GetMeshAccess(), spaces, flags);
-          LocalHeap lh (1000000, "FESpace::Update-heap");
-          fes->Update(lh);
-          fes->FinalizeUpdate(lh);
-          return fes;
-          //                              py::cast(*instance).attr("flags") = bpflags;
-        },
-        py::arg("self_class"),py::arg("spaces"), py::arg("flags") = py::dict(),
-        "construct compound-FESpace from list of component spaces"
-        );
-
-  py::class_<FESpace, shared_ptr<FESpace>>(m, "FESpace",
+  auto fes_class = py::class_<FESpace, shared_ptr<FESpace>>(m, "FESpace",
 		    docu_string(R"raw_string(Finite Element Space
 
 Provides the functionality for finite element calculations.
@@ -1341,7 +1285,60 @@ spaces : list of ngsolve.FESpace
 
 kwargs : For a description of the possible kwargs have a look a bit further down.
 
-)raw_string"), py::dynamic_attr())
+)raw_string"), py::dynamic_attr());
+  fes_class
+    .def(py::init([] (const string & type, shared_ptr<MeshAccess> ma,
+                      Flags flags, SelectUnpicklingConstructor)
+                  {
+                    auto fes = CreateFESpace(type,ma,flags);
+                    LocalHeap lh(int(1e7),"lh FESpace update unpickle");
+                    fes->Update(lh);
+                    fes->FinalizeUpdate(lh);
+                    return fes;
+                  }), "This constructor is for unpickling only!")
+    .def(py::init([] (py::list lspaces, Flags& flags)
+                  {
+                    Array<shared_ptr<FESpace>> spaces;
+                    for (auto fes : lspaces )
+                      spaces.Append(py::extract<shared_ptr<FESpace>>(fes)());
+                    if (spaces.Size() == 0)
+                      throw Exception("Compound space must have at least one space");
+                    int dim = spaces[0]->GetDimension();
+                    for (auto space : spaces)
+                      if (space->GetDimension() != dim)
+                        throw Exception("Compound space of spaces with different dimensions is not allowed");
+                    flags.SetFlag ("dim", dim);
+                    bool is_complex = spaces[0]->IsComplex() || flags.GetDefineFlag("complex");
+                    for (auto space : spaces)
+                      if (space->IsComplex() != is_complex)
+                        throw Exception("Compound space of spaces with complex and real spaces is not allowed");
+                    if (is_complex)
+                      flags.SetFlag ("complex");
+                    shared_ptr<FESpace> fes = make_shared<CompoundFESpace> (spaces[0]->GetMeshAccess(), spaces, flags);
+                    LocalHeap lh (1000000, "FESpace::Update-heap");
+                    fes->Update(lh);
+                    fes->FinalizeUpdate(lh);
+                    return fes;
+                    //                              py::cast(*instance).attr("flags") = bpflags;
+                  }),
+                  py::arg("spaces"), py::arg("flags") = py::dict(),
+                  "construct compound-FESpace from list of component spaces"
+                  )
+    .def(py::init([fes_class] (const string & type, shared_ptr<MeshAccess> ma,
+                      py::kwargs kwargs)
+                  {
+                    py::list info;
+                    info.append(ma);
+                    auto flags = CreateFlagsFromKwArgs(fes_class, kwargs, info);
+
+                    auto fes = CreateFESpace (type, ma, flags);
+                    auto pyfes = py::cast(fes);
+                    pyfes.attr("__initialize__")(**kwargs);
+                    return fes;
+                  }),
+                  py::arg("type"), py::arg("mesh"),
+                  "allowed types are: 'h1ho', 'l2ho', 'hcurlho', 'hdivho' etc."
+                  )
 
     .def_static("__flags_doc__", [] ()
          {
@@ -1782,43 +1779,6 @@ kwargs : For a description of the possible kwargs have a look a bit further down
   //   .def("Range", &CompoundFESpace::GetRange)
   //   ;
 
-  m.def("CreatePeriodicFESpace", [](py::object self_class, shared_ptr<FESpace> & fes,
-                                    py::object phase, py::object use_idnrs )
-          {
-            Flags flags = fes->GetFlags();
-	    shared_ptr<Array<int>> a_used_idnrs;
-	    if(py::extract<py::list>(use_idnrs).check())
-	      a_used_idnrs = make_shared<Array<int>>(makeCArray<int>(py::extract<py::list>(use_idnrs)()));
-	    else
-	      throw Exception("Argument for use_idnrs in Periodic must be list of identification numbers (int)");
-	    shared_ptr<FESpace> perfes;
-	    auto ext = py::extract<py::list>(phase);
-	    if(ext.check())
-	      {
-		auto a_phase = make_shared<Array<Complex>>(py::len(ext()));
-		for (auto i : Range(a_phase->Size()))
-		  {
-		    auto ext_value = py::extract<Complex>(ext()[i]);
-		    if(ext_value.check())
-		      (*a_phase)[i] = ext_value();
-		    else
-		      throw Exception("Periodic FESpace needs a list of complex castable values as parameter phase");
-		  }
-		perfes = make_shared<QuasiPeriodicFESpace>(fes,flags,a_used_idnrs,a_phase);
-	      }
-	    else if (py::isinstance<DummyArgument>(phase) || phase.is_none())
-	      {
-	      perfes = make_shared<PeriodicFESpace>(fes,flags,a_used_idnrs);
-	      }
-	    else
-	      throw Exception("Periodic FESpace needs a list of complex castable values as parameter 'phase'");
-            perfes->Update(glh);
-            perfes->FinalizeUpdate(glh);
-            return perfes;
-	  },
-        py::arg("self_class"), py::arg("fespace"), py::arg("phase")=DummyArgument(),
-        py::arg("use_idnrs")=py::list());
-
   py::class_<PeriodicFESpace, shared_ptr<PeriodicFESpace>, FESpace>(m, "Periodic",
 	docu_string(R"delimiter(Periodic or quasi-periodic Finite Element Spaces.
 The periodic fespace is a wrapper around a standard fespace with an 
@@ -1845,29 +1805,63 @@ used_idnrs : list of int = None
     (default) all available periodic identifications are used.
 
 )delimiter"))
+    .def(py::init([] (shared_ptr<FESpace> & fes,
+                      py::object phase, py::object use_idnrs )
+                  {
+                    Flags flags = fes->GetFlags();
+                    shared_ptr<Array<int>> a_used_idnrs;
+                    if(py::extract<py::list>(use_idnrs).check())
+                      a_used_idnrs = make_shared<Array<int>>(makeCArray<int>(py::extract<py::list>(use_idnrs)()));
+                    else
+                      throw Exception("Argument for use_idnrs in Periodic must be list of identification numbers (int)");
+                    shared_ptr<PeriodicFESpace> perfes;
+                    auto ext = py::extract<py::list>(phase);
+                    if(ext.check())
+                      {
+                        auto a_phase = make_shared<Array<Complex>>(py::len(ext()));
+                        for (auto i : Range(a_phase->Size()))
+                          {
+                            auto ext_value = py::extract<Complex>(ext()[i]);
+                            if(ext_value.check())
+                              (*a_phase)[i] = ext_value();
+                            else
+                              throw Exception("Periodic FESpace needs a list of complex castable values as parameter phase");
+                          }
+                        perfes = make_shared<QuasiPeriodicFESpace>(fes,flags,a_used_idnrs,a_phase);
+                      }
+                    else if (py::isinstance<DummyArgument>(phase) || phase.is_none())
+                      {
+                        perfes = make_shared<PeriodicFESpace>(fes,flags,a_used_idnrs);
+                      }
+                    else
+                      throw Exception("Periodic FESpace needs a list of complex castable values as parameter 'phase'");
+                    perfes->Update(glh);
+                    perfes->FinalizeUpdate(glh);
+                    return perfes;
+                  }), py::arg("fespace"), py::arg("phase")=DummyArgument(),
+                  py::arg("use_idnrs")=py::list())
     ;
   
-
-  m.def("CreateGridFunction", [](py::object classname, shared_ptr<FESpace> fes, string & name,
+  auto gf_class = py::class_<GF,shared_ptr<GF>, CoefficientFunction, NGS_Object>
+    (m, "GridFunction",  "a field approximated in some finite element space", py::dynamic_attr());
+  gf_class
+    .def(py::init([gf_class](shared_ptr<FESpace> fes, string & name,
                                  py::kwargs kwargs)
     {
-      auto flags = CreateFlagsFromKwArgs(classname, kwargs);
+      auto flags = CreateFlagsFromKwArgs(gf_class, kwargs);
       flags.SetFlag("novisual");
       auto gf = CreateGridFunction(fes, name, flags);
       gf->Update();
       return gf;
-    }, py::arg("self"), py::arg("space"), py::arg("name")="gfu",
-        "creates a gridfunction in finite element space");
-  m.def("CreateGridFunction", [](py::object classname, shared_ptr<FESpace> fes, const string& name,
+    }), py::arg("space"), py::arg("name")="gfu",
+         "creates a gridfunction in finite element space")
+    .def(py::init([](shared_ptr<FESpace> fes, const string& name,
                                  Flags flags, SelectUnpicklingConstructor)
         {
           auto gf = CreateGridFunction(fes,name,flags);
           gf->Update();
           return gf;
-        },"For unpickling only!");
-  
-  py::class_<GF,shared_ptr<GF>, CoefficientFunction, NGS_Object>
-    (m, "GridFunction",  "a field approximated in some finite element space", py::dynamic_attr())
+        }),"For unpickling only!")
     .def_static("__flags_doc__", [] ()
                 {
                   return py::dict
@@ -2202,34 +2196,8 @@ used_idnrs : list of int = None
 
 //   PyExportArray<shared_ptr<BilinearFormIntegrator>> ();
 
-  m.def("CreateBilinearForm", [] (py::object class_, shared_ptr<FESpace> fespace, bool check_unused,
-                                  string name, py::kwargs kwargs)
-                           {
-                             auto flags = CreateFlagsFromKwArgs(class_,kwargs);
-                             auto biform = CreateBilinearForm (fespace, name, flags);
-                             biform -> SetCheckUnused (check_unused);                             
-                             return biform;
-                           },
-        py::arg("self"), py::arg("space"),
-        py::arg("check_unused")=true,
-        py::arg("name")="bfa");
-  
-  m.def("CreateBilinearForm", [](py::object class_,  shared_ptr<FESpace> trial_space,
-                                 shared_ptr<FESpace> test_space, string name,
-                                 bool check_unused, py::kwargs kwargs)
-                           {
-                             auto flags = CreateFlagsFromKwArgs(class_,kwargs);
-                             auto biform = CreateBilinearForm (trial_space, test_space, name, flags);
-                             biform -> SetCheckUnused (check_unused);
-                             return biform;
-                           },
-        py::arg("self"), py::arg("trialspace"),
-        py::arg("testspace"),
-        py::arg("name")="bfa", py::arg("check_unused")=true);
-
-
   typedef BilinearForm BF;
-  py::class_<BF, shared_ptr<BilinearForm>>(m, "BilinearForm",
+  auto bf_class = py::class_<BF, shared_ptr<BilinearForm>>(m, "BilinearForm",
                                              docu_string(R"raw_string(
 Used to store the left hand side of a PDE. integrators (ngsolve.BFI)
 to it to implement your PDE. If the left hand side is linear
@@ -2249,7 +2217,31 @@ name : string
 check_unused : bool
   If set prints warnings if not UNUSED_DOFS are not used
 
-)raw_string"))
+)raw_string"));
+  bf_class
+    .def(py::init([bf_class] (shared_ptr<FESpace> fespace, bool check_unused,
+                      string name, py::kwargs kwargs)
+                  {
+                    auto flags = CreateFlagsFromKwArgs(bf_class,kwargs);
+                    auto biform = CreateBilinearForm (fespace, name, flags);
+                    biform -> SetCheckUnused (check_unused);
+                    return biform;
+                  }),
+         py::arg("space"),
+         py::arg("check_unused")=true,
+         py::arg("name")="bfa")
+    .def(py::init([bf_class](shared_ptr<FESpace> trial_space,
+                     shared_ptr<FESpace> test_space, string name,
+                     bool check_unused, py::kwargs kwargs)
+                  {
+                    auto flags = CreateFlagsFromKwArgs(bf_class,kwargs);
+                    auto biform = CreateBilinearForm (trial_space, test_space, name, flags);
+                    biform -> SetCheckUnused (check_unused);
+                    return biform;
+                  }),
+         py::arg("trialspace"),
+         py::arg("testspace"),
+         py::arg("name")="bfa", py::arg("check_unused")=true)
 
     .def_static("__flags_doc__", [] ()
                 {
@@ -2435,18 +2427,8 @@ heapsize : int
 //   PyExportArray<shared_ptr<LinearFormIntegrator>> ();
 //
 
-  m.def("CreateLinearForm", [] (py::object self_class,
-                                shared_ptr<FESpace> fespace, string name, py::kwargs kwargs)
-                           {
-                             auto flags = CreateFlagsFromKwArgs(self_class,kwargs);
-                             auto f = CreateLinearForm (fespace, name, flags);
-                             f->AllocateVector();
-                             return py::cast(f);
-                           },
-        py::arg("self_class"), py::arg("space"), py::arg("name")="lff");
-
   typedef LinearForm LF;
-  py::class_<LF, shared_ptr<LF>, NGS_Object>(m, "LinearForm", docu_string(R"raw_string(
+  auto lf_class = py::class_<LF, shared_ptr<LF>, NGS_Object>(m, "LinearForm", docu_string(R"raw_string(
 Used to store the left hand side of a PDE. Add integrators
 (ngsolve.LFI) to it to implement your PDE.
 
@@ -2467,7 +2449,16 @@ flags : dict
       file must be set by ngsolve.SetTestoutFile. Use
       ngsolve.SetNumThreads(1) for serial output.
 
-)raw_string"))
+)raw_string"));
+  lf_class
+    .def(py::init([lf_class] (shared_ptr<FESpace> fespace, string name, py::kwargs kwargs)
+                  {
+                    auto flags = CreateFlagsFromKwArgs(lf_class,kwargs);
+                    auto f = CreateLinearForm (fespace, name, flags);
+                    f->AllocateVector();
+                    return f;
+                  }),
+         py::arg("space"), py::arg("name")="lff")
     .def_static("__flags_doc__", [] ()
                 {
                   return py::dict
@@ -2537,7 +2528,18 @@ flags : dict
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
-  py::class_<Preconditioner, shared_ptr<Preconditioner>, BaseMatrix>(m, "Preconditioner")
+  auto prec_class = py::class_<Preconditioner, shared_ptr<Preconditioner>, BaseMatrix>(m, "Preconditioner");
+  prec_class
+    .def(py::init([prec_class](shared_ptr<BilinearForm> bfa, const string & type, py::kwargs kwargs)
+         {
+           auto flags = CreateFlagsFromKwArgs(prec_class,kwargs);
+           auto creator = GetPreconditionerClasses().GetPreconditioner(type);
+           if (creator == nullptr)
+             throw Exception(string("nothing known about preconditioner '") + type + "'");
+           return creator->creatorbf(bfa, flags, "noname-pre");
+         }),
+         py::arg("bf"), py::arg("type"))
+
     .def_static("__flags_doc__", [] ()
                 {
                   return py::dict
@@ -2555,21 +2557,6 @@ flags : dict
                      return self.GetMatrixPtr();
                    })
     ;
-
-   
-   m.def("CreatePreconditioner",
-         [](py::object self_class, shared_ptr<BilinearForm> bfa,
-            const string & type, py::kwargs kwargs)
-         {
-           auto flags = CreateFlagsFromKwArgs(self_class,kwargs);
-           auto creator = GetPreconditionerClasses().GetPreconditioner(type);
-           if (creator == nullptr)
-             throw Exception(string("nothing known about preconditioner '") + type + "'");
-           return creator->creatorbf(bfa, flags, "noname-pre");
-         },
-         py::arg("self_class"),py::arg("bf"), py::arg("type")
-         );
-
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
@@ -2607,19 +2594,15 @@ flags : dict
   PyExportSymbolTable<double> (m);
   PyExportSymbolTable<shared_ptr<double>> (m);
 
+    py::class_<PDE, shared_ptr<PDE>> (m, "PDE")
 
 #ifndef PARALLEL
-    m.def("CreatePDE", [] (py::object self_class, const string & filename)
-                           { 
-                             return LoadPDE (filename);
-                           },
-          py::arg("self_object"), py::arg("filename")
-          );
-
+      .def(py::init([] (const string & filename)
+                    {
+                      return LoadPDE (filename);
+                    }), py::arg("filename"))
 #else
-
-    m.def("CreatePDE",
-          [](py::object self_class, const string & filename)
+      .def(py::init([](const string & filename)
                            { 
                              ngs_comm = MPI_COMM_WORLD;
 
@@ -2628,12 +2611,8 @@ flags : dict
 
                              NGSOStream::SetGlobalActive (MyMPI_GetId()==0);
                              return LoadPDE (filename);
-                           },
-          py::arg("self_class"), py::arg("filename")
-          );
+                           }), py::arg("self_class"), py::arg("filename"))
 #endif
-
-    py::class_<PDE, shared_ptr<PDE>> (m, "PDE")
 
     .def(py::init<>())
 
@@ -3387,9 +3366,10 @@ flags : dict
               static Timer tall("comp.Transfer2StdMesh"); RegionTimer rall(tall);
               return;
              });
-  
-   m.def("CreateVTKOutput", [] (py::object self_class, shared_ptr<MeshAccess> ma, py::list coefs_list,
-                                py::list names_list, string filename, int subdivision, int only_element)
+
+   py::class_<BaseVTKOutput, shared_ptr<BaseVTKOutput>>(m, "VTKOutput")
+    .def(py::init([] (shared_ptr<MeshAccess> ma, py::list coefs_list,
+                      py::list names_list, string filename, int subdivision, int only_element)
          -> shared_ptr<BaseVTKOutput>
          {
            Array<shared_ptr<CoefficientFunction> > coefs
@@ -3402,16 +3382,14 @@ flags : dict
            else
              ret = make_shared<VTKOutput<3>> (ma, coefs, names, filename, subdivision, only_element);
            return ret;
-         },
-         py::arg("self_class"),
+         }),
          py::arg("ma"),
          py::arg("coefs")= py::list(),
          py::arg("names") = py::list(),
          py::arg("filename") = "vtkout",
          py::arg("subdivision") = 0,
          py::arg("only_element") = -1
-         );
-  py::class_<BaseVTKOutput, shared_ptr<BaseVTKOutput>>(m, "VTKOutput")
+         )
     .def("Do", [](shared_ptr<BaseVTKOutput> self, int heapsize)
                                { 
                                  LocalHeap lh (heapsize, "VTKOutput-heap");
