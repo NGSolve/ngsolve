@@ -7,6 +7,10 @@ using namespace ngla;
 template<typename T>
 void ExportSparseMatrix(py::module m)
 {
+  typedef typename mat_traits<T>::TSCAL TSCAL;
+  static constexpr bool is_double = std::is_same<double, TSCAL>::value;
+  static constexpr bool is_complex = std::is_same<Complex, TSCAL>::value;
+  static_assert(is_complex || is_double, "TSCAL has to be either Complex or double");
   py::class_<S_BaseMatrix<T>, shared_ptr<S_BaseMatrix<T>>, BaseMatrix>
     (m, (string("S_BaseMatrix") + typeid(T).name()).c_str(), "base sparse matrix")
     ;
