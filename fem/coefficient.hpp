@@ -1688,7 +1688,9 @@ void ExportBinaryFunction (class pybind11::module & m, string name)
   NGS_DLL_HEADER shared_ptr<CoefficientFunction>
   MakeCoordinateCoefficientFunction (int comp);
 
-
+  // for DG jump terms 
+  NGS_DLL_HEADER shared_ptr<CoefficientFunction>
+  MakeOtherCoefficientFunction (shared_ptr<CoefficientFunction> me);
 
 
   
@@ -1736,7 +1738,7 @@ void ExportBinaryFunction (class pybind11::module & m, string name)
                                          shared_ptr<CoefficientFunction> cf_else);
   
   NGS_DLL_HEADER
-  shared_ptr<CoefficientFunction> Compile (shared_ptr<CoefficientFunction> c, bool realcompile=false);
+  shared_ptr<CoefficientFunction> Compile (shared_ptr<CoefficientFunction> c, bool realcompile=false, int maxderiv=2, bool wait=false);
 }
 
 

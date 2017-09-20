@@ -82,6 +82,7 @@ namespace ngstd
     NGS_DLL_HEADER static int usedcounter[SIZE];
 
     NGS_DLL_HEADER static size_t * thread_times;
+    NGS_DLL_HEADER static size_t * thread_flops;
   private:
 
     // int total_timer;
@@ -135,6 +136,11 @@ namespace ngstd
     {
       thread_times[tid*SIZE+nr] += __rdtsc();
     }
+
+    static void AddThreadFlops (size_t nr, size_t tid, size_t flops)
+    {
+      thread_flops[tid*SIZE+nr] += flops;
+    }
       
 #else
   
@@ -161,6 +167,12 @@ namespace ngstd
     {
       thread_times[tid*SIZE+nr] += __rdtsc();
     }
+
+    static void AddThreadFlops (size_t nr, size_t tid, size_t flops)
+    {
+      thread_flops[tid*SIZE+nr] += flops;
+    }
+    
 #endif
 
 

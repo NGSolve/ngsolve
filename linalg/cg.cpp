@@ -276,10 +276,12 @@ namespace ngla
 	auto d = f.CreateVector();
 
 	BaseMatrix * smalla;
-
+        /*
 	if(dynamic_cast< const SparseMatrixSymmetricTM<SCAL> *>(a))
 	  smalla = new SparseMatrixSymmetric<SCAL,SCAL>(*dynamic_cast< const SparseMatrixSymmetricTM<SCAL> *>(a));
-	else if (dynamic_cast< const SparseMatrixTM<SCAL> *>(a))
+	else
+        */
+        if (dynamic_cast< const SparseMatrixTM<SCAL> *>(a))
 	  smalla = new SparseMatrix<SCAL,SCAL>(*dynamic_cast< const SparseMatrixTM<SCAL> *>(a));
 	else
 	  throw Exception("Assumption about bilinearform wrong.");

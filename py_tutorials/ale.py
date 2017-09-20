@@ -1,12 +1,7 @@
 print ("hello from ale.py")
 
-
-from ngsolve.solve import *
-from ngsolve.comp import *
-from ngsolve.fem import *
-from ngsolve.la import *
-from ngsolve.bla import *
-from ngsolve.ngstd import *
+from ngsolve import *
+from ngsolve.comp import PyNumProc
 
 from math import sin
 from time import sleep
@@ -20,7 +15,7 @@ class npALE(PyNumProc):
         pde = self.pde
 
         d = pde.gridfunctions["def"]
-        d.Set(VariableCF("(2*y*(1-y)*x*(1-x),(3*y*(1-y)*x*(1-x))"))
+        d.Set(CoefficientFunction((2*y*(1-y)*x*(1-x),(3*y*(1-y)*x*(1-x)))))
         pde.Mesh().SetDeformation (d)
 
         u = pde.gridfunctions["u"]
@@ -63,7 +58,7 @@ class npALE_instat(PyNumProc):
     
         mstar = a.mat.CreateMatrix()
 
-        d.Set(VariableCF("(1*y*x*(1-x),(1*y*x*(1-x))"))
+        d.Set(CoefficientFunction((1*y*x*(1-x),(1*y*x*(1-x)))))
         dmax = d.vec.CreateVector()
         dold = d.vec.CreateVector()
         

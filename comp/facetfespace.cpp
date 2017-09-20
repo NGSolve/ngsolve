@@ -1172,7 +1172,8 @@ namespace ngcomp
 	    break; 	    
 	  }
       }
-    return shared_ptr<Table<int>> (creator.GetTable());
+    // return shared_ptr<Table<int>> (creator.GetTable());
+    return make_shared<Table<int>> (creator.MoveTable());
   }
 
 

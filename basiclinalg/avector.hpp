@@ -330,7 +330,7 @@ namespace ngbla
     INLINE const AFlatVectorD & operator= (const SIMDExpr<TB> & v) const
     {
       // for (size_t i = 0; i < vsize(); i++)
-      for (auto i : ::Range(vsize()))       
+      for (auto i : ngstd::Range(vsize()))       
         data[i] = v.Spec().Get(i);
       return *this;
     }
@@ -339,7 +339,7 @@ namespace ngbla
     INLINE const AFlatVectorD & operator+= (const SIMDExpr<TB> & v) const
     {
       // for (size_t i = 0; i < vsize(); i++)
-      for (auto i : ::Range(vsize()))
+      for (auto i : ngstd::Range(vsize()))
         data[i] += v.Spec().Get(i);
       return *this;
     }
@@ -1261,7 +1261,8 @@ namespace ngbla
   extern void AddABt (SliceMatrix<double> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c);
   extern void AddABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c);
 
-  extern void AddABtSym (AFlatMatrix<double> a, AFlatMatrix<double> b, BareSliceMatrix<double> c);
+  //extern void AddABtSym (AFlatMatrix<double> a, AFlatMatrix<double> b, BareSliceMatrix<double> c);
+  extern void AddABtSym (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c);
   extern void AddABtSym (SliceMatrix<double> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c);
   extern void AddABtSym (SliceMatrix<Complex> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c);
 
@@ -1277,139 +1278,29 @@ namespace ngbla
 
 #else // __AVX__
 
-  // template <typename T>
-  // using AFlatMatrix = FlatMatrix<T>;
 
-
-
-  /*
-    class AFlatVectorD : public FlatVector<double>
-    {
-    public:
-    AFlatVectorD (int as, LocalHeap & lh)
-    : FlatVector<double> (as, lh) { ; }
-    AFlatVectorD (int as, double * p)
-    : FlatVector<double> (as, p) { ; }
-    AFlatVectorD (int as, SIMD<double> * p)
-    : FlatVector<double> (as, &p->Data()) { ; }
+  INLINE void AddABt (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
+  { c.AddSize(a.Height(), b.Height()) += a * Trans(b) | Lapack; }
   
-    AFlatVectorD & operator= (const AFlatVectorD & v2)  
-    { FlatVector<double>::operator= (v2); return *this; }
-    AFlatVectorD & operator= (double d)
-    { FlatVector<double>::operator= (d); return *this; }
-    template<typename TB>
-    const AFlatVectorD & operator= (const Expr<TB> & v) const
-    { FlatVector<double>::operator= (v); return *this; }
+  INLINE void AddABtSym (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
+  { c.AddSize(a.Height(), b.Height()) += a * Trans(b) | Lapack; }
+
+  INLINE void AddABt (SliceMatrix<double> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> c)
+  { c.AddSize(a.Height(), b.Height()) += a * Trans(b) | Lapack; }
   
-    int VSize() const { return size; }
-    double & Get(int i) const { return (*this)[i]; }
-    double & Get(int i) { return (*this)[i]; }  
-    };
+  INLINE void AddABtSym (SliceMatrix<double> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> c)
+  { c.AddSize(a.Height(), b.Height()) += a * Trans(b) | Lapack; }
 
-    class AFlatMatrixD : public FlatMatrix<double>
-    {
-    public:
-    AFlatMatrixD () = default;  
-    AFlatMatrixD (int ah, int aw, LocalHeap & lh)
-    : FlatMatrix<double> (ah, aw, lh) { ; }
-    AFlatMatrixD (int ah, int aw, double * p)
-    : FlatMatrix<double> (ah, aw, p) { ; }
-    AFlatMatrixD (int ah, int aw, SIMD<double> * p)
-    : FlatMatrix<double> (ah, aw, &p->Data()) { ; }
-
-
-    AFlatMatrixD & operator= (const AFlatMatrixD & m2)  
-    { FlatMatrix<double>::operator= (m2); return *this; }
+  INLINE void AddABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> c)
+  { c.AddSize(a.Height(), b.Height()) += a * Trans(b) | Lapack; }
   
-    AFlatMatrixD & operator= (double d)
-    { FlatMatrix<double>::operator= (d); return *this; }
-
-    template<typename TB>
-    INLINE const AFlatMatrixD & operator= (const Expr<TB> & v) const
-    { FlatMatrix<double>::operator= (v); return *this; }
-
-
-    int VWidth() const { return Width(); }
-
-    double & Get(int i) const { return (*this)(i); }
-    double & Get(int i) { return (*this)(i); }  
-    double & Get(int i, int j) const { return (*this)(i,j); }
-    double & Get(int i, int j) { return (*this)(i,j); }  
-
-    AFlatVectorD Row(int i) const
-    { return AFlatVectorD(Width(), &(*this)(i,0)); } 
-    AFlatMatrixD Rows(int i, int j) const
-    { return AFlatMatrixD(j-i, Width(), &(*this)(i,0)); }
-    AFlatMatrixD Rows(IntRange r) const
-    { return Rows(r.begin(), r.end()); }
-    };
-
-
-
-
-    template <>
-    class ABareVector<double>
-    {
-    double * __restrict data;
-    public:
-    ABareVector(double * _data) : data(_data) { ; }
-    ABareVector(AFlatVector<double> vec) : data(&vec.Get(0)) { ; } 
-    ABareVector(const ABareVector &) = default;
-
-    double & operator() (int i) const
-    {
-    return ((double*)data)[i]; 
-    }
-
-    double & operator() (int i, int j) const
-    {
-    return ((double*)data)[i]; 
-    }
-    double & Get(int i) const { return data[i]; }
-    };
-
-    template <>
-    class ABareMatrix<double>
-    {
-    double * __restrict data;
-    int dist;   // dist in simds
-    public:
-    ABareMatrix(double * _data, int _dist) : data(_data), dist(_dist) { ; }
-    ABareMatrix(SIMD<double> * _data, int _dist) : data(&_data->Data()), dist(_dist) { ; }
-    ABareMatrix(AFlatMatrix<double> mat) : data(&mat.Get(0,0)), dist(&mat.Get(1,0)-&mat.Get(0,0)) { ; }
-    ABareMatrix(const ABareMatrix &) = default;
-
-    double & operator() (int i, int j) const
-    {
-    return ((double*)data)[i*dist+j]; 
-    }
-    double & Get(int i, int j) const { return data[i*dist+j]; }
-    ABareVector<double> Row(int i) const { return ABareVector<double> (data+i*dist); }
-    ABareMatrix<double> Rows(int first, int next) const { return ABareMatrix<double> (data+first*dist, dist); }
-    ABareMatrix<double> Rows(IntRange r) const { return Rows(r.First(), r.Next()); } 
-    ABareMatrix<double> RowSlice(int first, int adist) const { return ABareMatrix<double> (data+first*dist, dist*adist); } 
-    };
-  */
-
-
-
-  template <typename TA, typename TB, typename TC>
-  INLINE void AddABt (const TA & a, const TB & b, SliceMatrix<TC> c)
-  {
-    c += a * Trans(b) | Lapack;
-    // LapackMultAdd (a, Trans(b), 1.0, c, 1.0);
-  }
-
-  template <typename TA, typename TB, typename TC>
-  INLINE void AddABtSym (const TA & a, const TB & b, SliceMatrix<TC> c)
-  {
-    c += a * Trans(b) | Lapack;
-    // LapackMultAdd (a, Trans(b), 1.0, c, 1.0);
-  }
-
+  INLINE void AddABtSym (SliceMatrix<Complex> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> c)
+  { c.AddSize(a.Height(), b.Height()) += a * Trans(b) | Lapack; }
 
 #endif // __AVX__
 
+
+  
   template <typename TA, typename TB, typename TC, ORDERING ORD>
   INLINE void SubABt (const TA & a, const TB & b, SliceMatrix<TC,ORD> c)
   {
@@ -1417,5 +1308,25 @@ namespace ngbla
     // LapackMultAdd (a, Trans(b), 1.0, c, 1.0);
   }
 
+
+  extern 
+  void SubAtDB (SliceMatrix<double> a,
+                SliceVector<double> diag,
+                SliceMatrix<double> b, SliceMatrix<double> c);
+
+  extern 
+  void SubAtDB (SliceMatrix<Complex> a,
+                SliceVector<Complex> diag,
+                SliceMatrix<Complex> b, SliceMatrix<Complex> c);
+
+  template <typename T>
+  void SubADBt (SliceMatrix<T,ColMajor> a,
+                SliceVector<T> diag,
+                SliceMatrix<T,ColMajor> b, SliceMatrix<T,ColMajor> c)
+  {
+    SubAtDB (Trans(b), diag, Trans(a), Trans(c));
+  }  
+
+  
 }
 #endif // FILE_AVECTOR

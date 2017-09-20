@@ -357,10 +357,32 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
   }
 
+  class MyMutex
+  {
+    atomic<bool> m;
+  public:
+    MyMutex() { m.store(false, memory_order_relaxed); }
+    void lock()
+    {
+      bool should = false;
+      while (!m.compare_exchange_weak(should, true))
+        {
+          should = false;
+          _mm_pause();
+        }
+    }
+    void unlock()
+    {
+      m = false;
+    }
+  };
+  
   void FESpace :: FinalizeUpdate(LocalHeap & lh)
   {
     static Timer timer ("FESpace::FinalizeUpdate");
     static Timer tcol ("FESpace::FinalizeUpdate - coloring");
+    static Timer tcolbits ("FESpace::FinalizeUpdate - bitarrays");
+    static Timer tcolmutex ("FESpace::FinalizeUpdate - coloring, init mutex");
     
     if (low_order_space) low_order_space -> FinalizeUpdate(lh);
 
@@ -386,6 +408,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
           for (int d : el.GetDofs())
             if (d != -1) dirichlet_dofs.Set (d);
 
+    /*
     Array<DofId> dnums;
     for (auto i : Range(dirichlet_vertex))
       if (dirichlet_vertex[i])
@@ -394,7 +417,22 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  for (DofId d : dnums)
 	    if (d != -1) dirichlet_dofs.Set (d);
 	}
+    */
+    ParallelForRange
+      (dirichlet_vertex.Size(),
+       [&] (IntRange r)
+       {
+         Array<DofId> dnums;
+         for (auto i : r)
+           if (dirichlet_vertex[i])
+             {
+               GetDofNrs (NodeId(NT_VERTEX,i), dnums);
+               for (DofId d : dnums)
+                 if (d != -1) dirichlet_dofs.Set (d);
+             }
+       });
 
+    /*
     for (auto i : Range(dirichlet_edge))
       if (dirichlet_edge[i])
 	{
@@ -402,15 +440,31 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  for (DofId d : dnums)
 	    if (d != -1) dirichlet_dofs.Set (d);
 	}
+    */
+    ParallelForRange
+      (dirichlet_edge.Size(),
+       [&] (IntRange r)
+       {
+         Array<DofId> dnums;         
+         for (auto i : r)
+           if (dirichlet_edge[i])
+             {
+               GetDofNrs (NodeId(NT_EDGE,i), dnums);
+               for (DofId d : dnums)
+                 if (d != -1) dirichlet_dofs.Set (d);
+             }
+       });
 
+    Array<DofId> dnums;             
     for (int i : Range(dirichlet_face))
       if (dirichlet_face[i])
 	{
 	  GetFaceDofNrs (i, dnums);
-	  for (int d : dnums)
+	  for (DofId d : dnums)
 	    if (d != -1) dirichlet_dofs.Set (d);
 	}
-
+    
+    tcolbits.Start();
     free_dofs = make_shared<BitArray>(GetNDof());
     *free_dofs = dirichlet_dofs;
     free_dofs->Invert();
@@ -427,6 +481,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if (print)
       *testout << "freedofs = " << endl << *free_dofs << endl;
+    tcolbits.Stop();
     
     UpdateParallelDofs();
 
@@ -439,8 +494,14 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  element_coloring[vb] = Table<int>(low_order_space->element_coloring[vb]);
       }
     else
+      {
+        tcolmutex.Start();
+      Array<MyMutex> locks(GetNDof());
+      tcolmutex.Stop();
+      
       for (auto vb : { VOL, BND, BBND })
       {
+        /*
         tcol.Start();
         Array<int> col(ma->GetNE(vb));
         col = -1;
@@ -450,19 +511,23 @@ lot of new non-zero entries in the matrix!\n" << endl;
         int basecol = 0;
         Array<unsigned int> mask(GetNDof());
 
-        int cnt = 0, found = 0;
+        size_t cnt = 0, found = 0;
         for (ElementId el : Elements(vb)) { cnt++; (void)el; } // no warning 
 
         do
           {
             mask = 0;
 
-            for (auto el : Elements(vb))
+            Array<DofId> dofs;
+            // for (auto el : Elements(vb))
+            for (auto el : ma->Elements(vb))
               {
+                if (!DefinedOn(el)) continue;
                 if (col[el.Nr()] >= 0) continue;
 
                 unsigned check = 0;
-                for (auto d : el.GetDofs())
+                GetDofNrs(el, dofs);
+                for (auto d : dofs) // el.GetDofs())
                   if (d != -1) check |= mask[d];
 
                 if (check != UINT_MAX) // 0xFFFFFFFF)
@@ -481,12 +546,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
                     if (HasAtomicDofs())
                       {
-                        for (auto d : el.GetDofs())
+                        for (auto d : dofs) // el.GetDofs())
                           if (d != -1 && !IsAtomicDof(d)) mask[d] |= checkbit;
                       }
                     else
                       {
-                        for (auto d : el.GetDofs())
+                        for (auto d : dofs) // el.GetDofs())
                           if (d != -1) mask[d] |= checkbit;
                       }
                   }
@@ -496,56 +561,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
           }
         while (found < cnt);
 
-	/*
-	  // didn't help anything ...
-	cout << "have " << maxcolor+1 << " colors, try to reduce ***************** " << endl;
-
-	DynamicTable<int> dof2color(GetNDof());
-	for (auto el : Elements(vb))
-	  for (auto d : el.GetDofs())
-	    dof2color.Add(d, col[el.Nr()]);
-
-	*testout << "dof2color = " << endl << dof2color << endl;
-
-	for (int c = 0; c <= maxcolor; c++)
-	  {
-	    *testout << "try to reschedule color " << c << endl;
-	    
-	    bool remove_col = true;
-	    int cntmove = 0, cnttot = 0;
-	    
-	    for (auto el : Elements(vb))
-	      if (col[el.Nr()] == c)
-		{
-		  bool resched = false;
-
-		  for (int newcol = c+1; newcol <= maxcolor; newcol++)
-		    {
-		      bool possible = true;
-		      for (auto d : el.GetDofs())
-			if (dof2color[d].Contains(newcol))
-			  {
-			    possible = false; 
-			    break;
-			  }
-		      if (possible) resched = true;
-		    }
-
-		  if (resched) cntmove++;
-		  cnttot++;
-		  if (!resched) 
-		    {
-		      *testout << "cannot move el with dofs " << el.GetDofs() << endl;
-		      remove_col = false;
-		    }
-		}
-
-	    *testout << "could move " << cntmove << " out of " << cnttot << endl;
-	    if (remove_col) cout << "could remove color" << endl;
-	  }
-
-	*/
-        
         tcol.Stop();
 
         Array<int> cntcol(maxcolor+1);
@@ -560,12 +575,112 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	cntcol = 0;
         for (ElementId el : Elements(vb))
           coloring[col[el.Nr()]][cntcol[col[el.Nr()]]++] = el.Nr();
+        */
 
+
+
+        tcol.Start();
+        Array<int> col(ma->GetNE(vb));
+        col = -1;
+
+        int maxcolor = 0;
+        
+        int basecol = 0;
+        Array<unsigned int> mask(GetNDof());
+
+        atomic<int> found(0);
+        size_t cnt = 0;
+        for (ElementId el : Elements(vb)) { cnt++; (void)el; } // no warning 
+
+        while (found < cnt)
+          {
+            // mask = 0   | tasks;
+
+            ParallelForRange
+              (mask.Size(),
+               [&] (IntRange myrange) { mask[myrange] = 0; });
+
+            size_t ne = ma->GetNE(vb);
+
+            ParallelForRange
+              (ne, [&] (IntRange myrange)
+               {
+                 Array<DofId> dofs;
+                 size_t myfound = 0;
+                 
+                 for (size_t nr : myrange)
+                   {
+                     ElementId el = { vb, nr };
+                     if (!DefinedOn(el)) continue;
+                     if (col[el.Nr()] >= 0) continue;
+                     
+                     unsigned check = 0;
+                     GetDofNrs(el, dofs);
+                     
+                     if (HasAtomicDofs())
+                       {
+                         for (int i = dofs.Size()-1; i >= 0; i--)
+                           if (dofs[i] == -1 || IsAtomicDof(dofs[i])) dofs.DeleteElement(i);
+                       }
+                     else
+                       for (int i = dofs.Size()-1; i >= 0; i--)
+                         if (dofs[i] == -1) dofs.DeleteElement(i);
+                     QuickSort (dofs);   // sort to avoid dead-locks
+                     
+                     for (auto d : dofs) 
+                       locks[d].lock();
+                     
+                     for (auto d : dofs) 
+                       check |= mask[d];
+                     
+                     if (check != UINT_MAX) // 0xFFFFFFFF)
+                       {
+                         myfound++;
+                         unsigned checkbit = 1;
+                         int color = basecol;
+                         while (check & checkbit)
+                           {
+                             color++;
+                             checkbit *= 2;
+                           }
+                         
+                         col[el.Nr()] = color;
+                         if (color > maxcolor) maxcolor = color;
+                         
+                         for (auto d : dofs) // el.GetDofs())
+                           mask[d] |= checkbit;
+                       }
+                     
+                     for (auto d : dofs) 
+                       locks[d].unlock();
+                   }
+                 found += myfound;
+               });
+                 
+            basecol += 8*sizeof(unsigned int); // 32;
+          }
+
+        tcol.Stop();
+
+        Array<int> cntcol(maxcolor+1);
+        cntcol = 0;
+
+        for (ElementId el : Elements(vb))
+          cntcol[col[el.Nr()]]++;
+        
+        Table<int> & coloring = element_coloring[vb];
+        coloring = Table<int> (cntcol);
+
+	cntcol = 0;
+        for (ElementId el : Elements(vb))
+          coloring[col[el.Nr()]][cntcol[col[el.Nr()]]++] = el.Nr();
+        
         if (print)
           *testout << "needed " << maxcolor+1 << " colors" 
                    << " for " << ((vb == VOL) ? "vol" : "bnd") << endl;
       }
-
+      }
+    
     // invalidate facet_coloring
     facet_coloring = Table<int>();
        
@@ -1064,6 +1179,33 @@ lot of new non-zero entries in the matrix!\n" << endl;
     });
     results.push_back(std::make_tuple<std::string,double>("GetTrafo", 1e9 * time / (ma->GetNE())));
 
+
+    Array<int> global(GetNDof());
+    global = 0;
+    time = RunTiming([&]() {
+        ParallelForRange( IntRange(ma->GetNE()), [&] ( IntRange r )
+        {
+          Array<DofId> dnums;
+          for (size_t i : r)
+            {
+              GetDofNrs( { VOL, i }, dnums);
+              for (auto d : dnums)
+                {
+                // global[d]++;
+                  AsAtomic (global[d])++;
+                  AsAtomic (global[d])++;
+                  // int oldval = 0;
+                  // AsAtomic (global[d]).compare_exchange_strong (oldval, 1);
+                  // AsAtomic (global[d]).compare_exchange_strong (oldval, 0);
+                }
+                                                                
+            }
+        });
+    });
+    results.push_back(std::make_tuple<std::string,double>("Count els of dof", 1e9 * time / (ma->GetNE())));
+
+
+    
 #ifdef TIMINGSEQUENTIAL
 
 
@@ -1180,16 +1322,17 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   shared_ptr<Table<int>> FESpace :: CreateSmoothingBlocks (const Flags & flags) const
   {
-    int nd = GetNDof();
+    size_t nd = GetNDof();
     TableCreator<int> creator;
 
     for ( ; !creator.Done(); creator++)
       {
-	for (int i = 0; i < nd; i++)
+	for (size_t i = 0; i < nd; i++)
 	  if (!IsDirichletDof(i))
 	    creator.Add (i, i);
       }
-    return shared_ptr<Table<int>> (creator.GetTable());
+    // return shared_ptr<Table<int>> (creator.GetTable());
+    return make_shared<Table<int>> (creator.MoveTable());
   }
 
     

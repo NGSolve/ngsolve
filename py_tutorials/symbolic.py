@@ -1,11 +1,8 @@
-from ngsolve.fem import *
-from ngsolve.comp import *
-from ngsolve.utils import *
-
-import netgen
+from ngsolve import *
+from netgen.csg import unit_cube
 
 ngsglobals.msg_level = 1
-mesh = Mesh (netgen.csg.unit_cube.GenerateMesh(maxh=0.2))
+mesh = Mesh (unit_cube.GenerateMesh(maxh=0.2))
 
 import timeit
 

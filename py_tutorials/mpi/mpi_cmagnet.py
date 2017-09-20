@@ -41,7 +41,7 @@ mesh.Curve(5)
 
 ngsglobals.msg_level = 5
 
-fes = HCurl(mesh, order=4, dirichlet="outer", flags = { "nograds" : True })
+fes = HCurl(mesh, order=4, dirichlet="outer", nograds = True)
 
 u = fes.TrialFunction()
 v = fes.TestFunction()
@@ -56,7 +56,7 @@ a = BilinearForm(fes, symmetric=True)
 a += SymbolicBFI(nu*curl(u)*curl(v) + 1e-6*nu*u*v)
 
 #c = Preconditioner(a, type="bddc", flags={"inverse":"masterinverse"})
-c = Preconditioner(a, type="bddc", flags={"inverse":"mumps"})
+c = Preconditioner(a, type="bddc", inverse = "mumps")
 
 f = LinearForm(fes)
 f += SymbolicLFI(CoefficientFunction((y,0.05-x,0)) * v, definedon=mesh.Materials("coil"))

@@ -100,6 +100,7 @@ namespace ngcomp
     ElementIterator begin () const { return ElementIterator(ma, ElementId(vb,IntRange::First())); }
     ElementIterator end () const { return ElementIterator(ma, ElementId(vb,IntRange::Next())); }
     ElementId operator[] (int nr) { return ElementId(vb, IntRange::First()+nr); }
+    ElementRange Split(size_t nr, size_t tot) { return ElementRange(ma, vb, IntRange::Split(nr,tot)); }
   };
 
   template <VorB VB>
@@ -150,7 +151,7 @@ namespace ngcomp
     INLINE auto end () const { return DimElementIterator<VB,DIM>(ma, r.Next()); }
   };
 
-
+  /*
   class NodeIterator
   {
     NodeId ni;
@@ -172,7 +173,7 @@ namespace ngcomp
     NodeIterator end () const { return NodeIterator(NodeId(nt,IntRange::Next())); }
     NodeId operator[] (size_t nr) { return NodeId(nt, IntRange::First()+nr); }
   };
-
+  */
 
   /** 
       Access to mesh topology and geometry.
@@ -214,14 +215,16 @@ namespace ngcomp
     /// number of multigrid levels 
     int nlevels;
 
+    int nregions[3];
+    
     /// max domain index
-    int ndomains;
+    int & ndomains = nregions[0];
 
     /// max boundary index
-    int nboundaries;
+    int & nboundaries = nregions[1];
 
     /// max boundary index for co dim 2
-    int nbboundaries;
+    int & nbboundaries = nregions[2];
 
     size_t timestamp = 0;
     
@@ -294,7 +297,8 @@ namespace ngcomp
 
     int GetNRegions (VorB vb) const
     {
-      return (vb == VOL) ? ndomains : ((vb==BND) ? nboundaries : nbboundaries);
+      return nregions[vb];
+      // return (vb == VOL) ? ndomains : ((vb==BND) ? nboundaries : nbboundaries);
     }
 
     /// returns point coordinate
@@ -332,14 +336,34 @@ namespace ngcomp
       return DimElementRange<VB,DIM> (*this, IntRange (0, GetNE(VB)));
     }
 
-
+    /*
     NodeRange Nodes (NODE_TYPE nt) const
     {
       return NodeRange (nt, IntRange (0, GetNNodes(nt)));
     }
+    */
+    auto Nodes (NODE_TYPE nt) const
+    {
+      return T_Range<NodeId> (NodeId(nt, 0), NodeId(nt, GetNNodes(nt)));
+    }
 
+    template <NODE_TYPE nt>
+      auto Nodes () const
+    {
+      return T_Range<T_NodeId<nt>> (0, GetNNodes(nt));
+    }
 
-
+    // using Vertices = Nodes<NT_VERTEX>;
+    auto Vertices() const { return Nodes<NT_VERTEX>(); }
+    auto Edges() const { return Nodes<NT_EDGE>(); }
+    auto Faces() const { return Nodes<NT_FACE>(); }
+    auto Cells() const { return Nodes<NT_CELL>(); }
+    /*
+    auto Vertices () const
+    {
+      return T_Range<T_NodeId<NT_VERTEX>> (0, GetNNodes(NT_VERTEX));
+    }
+    */
     template <typename TFUNC>
     void IterateElements (VorB vb, 
                           LocalHeap & clh, 
@@ -438,6 +462,13 @@ namespace ngcomp
         case BBND: return mesh.GetMaterialCD<2> (region_nr);
         }
     }
+
+    auto GetMaterials (VorB vb) const
+    {
+      return ArrayObject (GetNRegions(vb),
+                          [this,vb] (size_t i) { return this->GetMaterial(vb, i); });
+    }
+
     
     /// the material of the element
     [[deprecated("Use GetMaterial with ElementId(VOL, elnr) instead!")]]        
@@ -767,7 +798,15 @@ namespace ngcomp
     /// returns all elements connected to an edge
     void GetEdgeSurfaceElements (int enr, Array<int> & elnums) const;
     /// returns all edges of a face
+    // [[deprecated("Use GetFaceEdges(fnr) -> edges instead!")]]                
     void GetFaceEdges (int fnr, Array<int> & edges) const;
+    INLINE ArrayMem<int,4> GetFaceEdges (size_t fnr) const
+    {
+      ArrayMem<int,4> f2ed;
+      GetFaceEdges (fnr, f2ed);
+      f2ed.NothingToDelete(); // dynamic allocation never needed
+      return f2ed;
+    }
     /// returns elements connected to a face
     void GetFaceElements (int fnr, Array<int> & elnums) const;
     /// returns surface elements connected to a face
@@ -778,26 +817,31 @@ namespace ngcomp
     // int GetSegmentIndex (int snr) const;
 
     void GetVertexElements (size_t vnr, Array<int> & elems) const;
-    auto GetVertexElements (size_t vnr) const // -> decltype (ArrayObject(mesh.GetNode<0> (vnr).elements))
+    auto GetVertexElements (size_t vnr) const 
     { return ArrayObject(mesh.GetNode<0> (vnr).elements); }
 
     void GetVertexSurfaceElements (size_t vnr, Array<int> & elems) const;
-    auto GetVertexSurfaceElements (size_t vnr) const // -> decltype (ArrayObject(mesh.GetNode<0> (vnr).bnd_elements))
+    auto GetVertexSurfaceElements (size_t vnr) const 
     { return ArrayObject(mesh.GetNode<0> (vnr).bnd_elements); }
     
     /// number of facets of an element. 
     /// facets are edges (2D) or faces (3D)
-    size_t GetNFacets() const { return nnodes_cd[1]; } 
+    size_t GetNFacets() const { return nnodes_cd[1]; }
+    
     /// facets of an element
-    [[deprecated("Use fanums = GetElFacets(ElementId) instead!")]]            
-    void GetElFacets (ElementId ei, Array<int> & fnums) const;
     auto GetElFacets (ElementId ei) const { return GetElement(ei).Facets(); }
 
+    [[deprecated("Use fanums = GetElFacets(ElementId) instead!")]]            
+    void GetElFacets (ElementId ei, Array<int> & fnums) const
+      { fnums = GetElFacets(ei); }
     [[deprecated("Use GetElFacets(ElementId) instead!")]]        
-    void GetElFacets (int elnr, Array<int> & fnums) const;
+    void GetElFacets (int elnr, Array<int> & fnums) const
+      { fnums = GetElFacets(ElementId(VOL, elnr)); }      
     /// facet of a surface element
     [[deprecated("Use GetElFacets(ElementId) instead!")]]            
-    void GetSElFacets (int selnr, Array<int> & fnums) const;
+    void GetSElFacets (int selnr, Array<int> & fnums) const
+      { fnums = GetElFacets(ElementId(BND, selnr)); }
+
     /// vertices of a facet
     void GetFacetPNums (int fnr, Array<int> & pnums) const;
     /// geometry type of facet
@@ -1130,7 +1174,8 @@ namespace ngcomp
 
     static atomic<size_t> cnt;
     static thread_local size_t thd_cnt;
-    static thread_local double thd_prev_time;
+    // static thread_local double thd_prev_time;
+    static thread_local size_t thd_prev_time;
   public:
     NGS_DLL_HEADER ProgressOutput (shared_ptr<MeshAccess> ama,
                                    string atask, size_t atotal);

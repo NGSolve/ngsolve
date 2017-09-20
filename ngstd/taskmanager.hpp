@@ -50,30 +50,33 @@ namespace ngstd
     static const function<void(TaskInfo&)> * func;
     static const function<void()> * startup_function;
     static const function<void()> * cleanup_function;
-    atomic<int> ntasks;
-    atomic<int> completed_tasks;
-    Exception * ex;
+    static atomic<int> ntasks;
+    static atomic<int> completed_tasks;
+    static Exception * ex;
 
-    atomic<int> jobnr;
+    static atomic<int> jobnr;
 
-    atomic<int> complete[8];   // max nodes
-    atomic<int> done;
-    atomic<int> active_workers;
-    atomic<int> workers_on_node[8];   // max nodes
-    Array<atomic<int>*> sync;
-    int sleep_usecs;
-    bool sleep;
+    static atomic<int> complete[8];   // max nodes
+    static atomic<int> done;
+    static atomic<int> active_workers;
+    static atomic<int> workers_on_node[8];   // max nodes
+    // Array<atomic<int>*> sync;
+    static int sleep_usecs;
+    static bool sleep;
 
-    NodeData *nodedata[8];
+    static NodeData *nodedata[8];
 
-    int num_nodes;
+    static int num_nodes;
     NGS_DLL_HEADER static int num_threads;
     NGS_DLL_HEADER static int max_threads;
-    // #ifndef __clang__    
+
+
+
+#ifndef __clang__      
     static thread_local int thread_id;
-    // #else
-    // static __thread int thread_id;
-    // #endif
+#else
+    static __thread int thread_id;
+#endif
     
     static bool use_paje_trace;
   public:
@@ -96,12 +99,12 @@ namespace ngstd
     static int GetMaxThreads() { return max_threads; }
     // static int GetNumThreads() { return task_manager ? task_manager->num_threads : 1; }
     static int GetNumThreads() { return num_threads; }
-    static int GetThreadId() { return thread_id; } // task_manager ? task_manager->thread_id : 0; }
+    static int GetThreadId() { return thread_id; } 
     int GetNumNodes() const { return num_nodes; }
 
     static void SetPajeTrace (bool use)  { use_paje_trace = use; }
     
-    NGS_DLL_HEADER void CreateJob (const function<void(TaskInfo&)> & afunc, 
+    NGS_DLL_HEADER static void CreateJob (const function<void(TaskInfo&)> & afunc, 
                     int antasks = task_manager->GetNumThreads());
 
     static void SetStartupFunction (const function<void()> & func) { startup_function = &func; }
@@ -146,12 +149,13 @@ namespace ngstd
 
   template <typename TR, typename TFUNC>
   INLINE void ParallelFor (T_Range<TR> r, TFUNC f, 
-                           int antasks = task_manager ? task_manager->GetNumThreads() : 0,
+                           // int antasks = task_manager ? task_manager->GetNumThreads() : 0,
+                           int antasks = TaskManager::GetNumThreads(),
                            TotalCosts costs = 1000)
   {
-    if (task_manager && costs() >= 1000)
+    // if (task_manager && costs() >= 1000)
 
-      task_manager -> CreateJob 
+    TaskManager::CreateJob 
         ([r, f] (TaskInfo & ti) 
          {
            auto myrange = r.Split (ti.task_nr, ti.ntasks);
@@ -159,9 +163,10 @@ namespace ngstd
          }, 
          antasks);
 
+      /*
     else
-
       for (auto i : r) f(i);
+      */
   }
 
   /*
@@ -180,22 +185,23 @@ namespace ngstd
   
   template <typename TR, typename TFUNC>
   INLINE void ParallelForRange (T_Range<TR> r, TFUNC f, 
-                                int antasks = task_manager ? task_manager->GetNumThreads() : 0,
+                                // int antasks = task_manager ? task_manager->GetNumThreads() : 0,
+                                int antasks = TaskManager::GetNumThreads(),
                                 TotalCosts costs = 1000)
   {
-    if (task_manager && costs() >= 1000)
+    // if (task_manager && costs() >= 1000)
 
-      task_manager -> CreateJob 
+    TaskManager::CreateJob 
         ([r, f] (TaskInfo & ti) 
          {
            auto myrange = r.Split (ti.task_nr, ti.ntasks);
            f(myrange);
          }, 
          antasks);
-
+    /*
     else
-
       f(r);
+    */
   }
 
   /*
@@ -213,9 +219,12 @@ namespace ngstd
   }
   
   template <typename TFUNC>
-  INLINE void ParallelJob (TFUNC f, 
-                           int antasks = task_manager ? task_manager->GetNumThreads() : 1)
+  INLINE void ParallelJob (TFUNC f,
+                           // int antasks = task_manager ? task_manager->GetNumThreads() : 1)
+                           int antasks = TaskManager::GetNumThreads())
   {
+    TaskManager::CreateJob (f, antasks);
+    /*
     if (task_manager)
 
       task_manager -> CreateJob (f, antasks);
@@ -231,6 +240,7 @@ namespace ngstd
         for (ti.task_nr = 0; ti.task_nr < antasks; ti.task_nr++)
           f(ti);
       }
+    */
   }
 
   
@@ -335,7 +345,7 @@ public:
 
   // lock free popfirst
   // faster for large loops, bug slower for small loops (~1000) ????
-
+   /*
   class alignas(4096) AtomicRange
 {
   mutex lock;
@@ -357,11 +367,11 @@ public:
     end = r.end();
   }
 
-  IntRange Get()
-  {
-    lock_guard<mutex> guard(lock);
-    return IntRange(begin, end);
-  }
+  // IntRange Get()
+  // {
+  //   lock_guard<mutex> guard(lock);
+  //   return IntRange(begin, end);
+  // }
 
   bool PopFirst (int & first)
   {
@@ -392,89 +402,113 @@ public:
   }
 };
 
-  
+
+  // inline ostream & operator<< (ostream & ost, AtomicRange & r)
+  // {
+  //   ost << r.Get();
+  //   return ost;
+  // }
+  */
 
 
-  inline ostream & operator<< (ostream & ost, AtomicRange & r)
+   
+   class alignas(4096) AtomicRange : public AlignedAlloc<AtomicRange>
   {
-    ost << r.Get();
-    return ost;
-  }
+    // mutex lock;
+    atomic<size_t> begin;
+    atomic<size_t> end;
+  public:
+    
+    void Set (IntRange r)
+    {
+      begin.store(numeric_limits<size_t>::max(), memory_order_release);
+      end.store(r.end(), memory_order_release);
+      begin.store(r.begin(), std::memory_order_release);
+    }
+  
+    void SetNoLock (IntRange r)
+    {
+      end.store(r.end(), memory_order_release);
+      begin.store(r.begin(), std::memory_order_release);
+    }
 
+    // IntRange Get()
+    // {
+    //   lock_guard<mutex> guard(lock);
+    //   return IntRange(begin, end);
+    // }
+    
+    bool PopFirst (size_t & first)
+    {
+      // int oldbegin = begin;
+      size_t oldbegin = begin.load(std::memory_order_acquire);
+      if (oldbegin >= end) return false;
+      while (!begin.compare_exchange_weak (oldbegin, oldbegin+1,
+                                           std::memory_order_relaxed, std::memory_order_relaxed))
+        if (oldbegin >= end) return false;
+      
+      first = oldbegin;
+      return true;
+    }
+    
+    bool PopHalf (IntRange & r)
+    {
+      // int oldbegin = begin;
+      size_t oldbegin = begin.load(std::memory_order_acquire);
+      size_t oldend = end.load(std::memory_order_acquire);
+      if (oldbegin >= oldend) return false;
+      
+      // lock_guard<mutex> guard(lock);    
+      while (!begin.compare_exchange_weak (oldbegin, (oldbegin+oldend+1)/2,
+                                           std::memory_order_relaxed, std::memory_order_relaxed))
+        {
+          oldend = end.load(std::memory_order_acquire);
+          if (oldbegin >= oldend) return false;
+        }
+      
+      r = IntRange(oldbegin, (oldbegin+oldend+1)/2);
+      return true;
+    }
+  };
+  
 
 
 
   class SharedLoop2
   {
     Array<AtomicRange> ranges;
-    atomic<int> processed;
-    int total;
+    atomic<size_t> processed;
+    atomic<size_t> total;
+    atomic<int> participants;
     
     class SharedIterator
     {
       FlatArray<AtomicRange> ranges;
-      atomic<int> & processed;
-      int total;
-      int myval;
-      int processed_by_me = 0;
+      atomic<size_t> & processed;
+      size_t total;
+      size_t myval;
+      size_t processed_by_me = 0;
       int me;
       int steal_from;
     public:
-      SharedIterator (FlatArray<AtomicRange> _ranges, atomic<int> & _processed, int _total, bool begin_it)
+      SharedIterator (FlatArray<AtomicRange> _ranges, atomic<size_t> & _processed, size_t _total,
+                      int _me, bool begin_it)
         : ranges(_ranges), processed(_processed), total(_total)
       {
-        me = TaskManager::GetThreadId();
-        steal_from = me;
         if (begin_it)
-          GetNext();
+          {
+            // me = TaskManager::GetThreadId();
+            me = _me;
+            steal_from = me;
+            GetNext();
+          }
       }
       
       SharedIterator & operator++ () { GetNext(); return *this;}
 
-      /*
       void GetNext()
       {
-        while (1)
-          {
-            int nr;
-            if (ranges[me].PopFirst(nr))
-              {
-                processed_by_me++;
-                myval = nr;
-                return;
-              }
-
-            processed += processed_by_me;
-            processed_by_me = 0;
-
-            // done with my work, going to steal ...
-            while (1)
-              {
-                if (processed >= total) return;
-                // steal_from = (steal_from + 1) % ranges.Size();
-                steal_from++;
-                if (steal_from == ranges.Size()) steal_from = 0;
-            
-                // steal half of the work reserved for 'from':
-                IntRange steal;
-                if (ranges[steal_from].PopHalf(steal))
-                  {
-                    // ranges[me].Set(steal);
-                    // break;
-                    myval = steal.First();
-                    processed_by_me++;                    
-                    if (myval+1 < steal.Next())
-                      ranges[me].Set (IntRange(myval+1, steal.Next()));
-                    return;
-                  }
-              }
-          }
-      }
-      */
-      
-      void GetNext()
-      {
-        int nr;
+        size_t nr;
         if (ranges[me].PopFirst(nr))
           {
             processed_by_me++;
@@ -493,7 +527,7 @@ public:
         while (1)
           {
             if (processed >= total) return;
-            // steal_from = (steal_from + 1) % ranges.Size();
+
             steal_from++;
             if (steal_from == ranges.Size()) steal_from = 0;
             
@@ -510,22 +544,42 @@ public:
           }
       }
       
-      int operator* () const { return myval; }
+      size_t operator* () const { return myval; }
       bool operator!= (const SharedIterator & it2) const { return processed < total; }
     };
     
     
   public:
     SharedLoop2 (IntRange r)
-      : ranges(TaskManager::GetMaxThreads()), processed(0)
+      : ranges(TaskManager::GetNumThreads())
     {
-      total = r.Size();
+      Reset (r);
+    }
+
+    void Reset (IntRange r)
+    {
       for (size_t i = 0; i < ranges.Size(); i++)
         ranges[i].SetNoLock (r.Split(i,ranges.Size()));
+      
+      total.store(r.Size(), std::memory_order_relaxed);
+      participants.store(0, std::memory_order_relaxed);
+      processed.store(0, std::memory_order_release);
     }
     
-    SharedIterator begin() { return SharedIterator (ranges, processed, total, true); }
-    SharedIterator end()   { return SharedIterator (ranges, processed, total, false); }
+    SharedIterator begin()
+    {
+      /*
+      int me = participants++;
+      if (me < ranges.Size())
+        return SharedIterator (ranges, processed, total, me, true);
+      else
+        // more participants than buckets. set processed to total, and the loop is terminated immediately
+        return SharedIterator (ranges, total, total, me, true);
+      */
+      return SharedIterator (ranges, processed, total, TaskManager::GetThreadId(), true);      
+    }
+    
+    SharedIterator end()   { return SharedIterator (ranges, processed, total, -1, false); }
   };
 
 
@@ -552,6 +606,7 @@ public:
     {
       Array<size_t> prefix (n);
 
+      /*
       size_t sum = 0;
       for (auto i : ngstd::Range(n))
         {
@@ -559,11 +614,46 @@ public:
           prefix[i] = sum;
         }
       total_costs = sum;
+      */
+      
+      Array<size_t> partial_sums(TaskManager::GetNumThreads()+1);
+      partial_sums[0] = 0;
+      ParallelJob
+        ([&] (TaskInfo ti)
+         {
+           IntRange r = IntRange(n).Split(ti.task_nr, ti.ntasks);
+           size_t mysum = 0;
+           for (size_t i : r)
+             {
+               size_t c = costs(i);
+               mysum += c;
+               prefix[i] = c;
+             }
+           partial_sums[ti.task_nr+1] = mysum;
+         });
+      
+      for (size_t i = 1; i < partial_sums.Size(); i++)
+        partial_sums[i] += partial_sums[i-1];
+      total_costs = partial_sums.Last();
+      
+      ParallelJob
+        ([&] (TaskInfo ti)
+         {
+           IntRange r = IntRange(n).Split(ti.task_nr, ti.ntasks);
+           size_t mysum = partial_sums[ti.task_nr];
+           for (size_t i : r)
+             {
+               mysum += prefix[i];
+               prefix[i] = mysum;
+             }
+         });
+      
+
       part.SetSize (size+1);
       part[0] = 0;
 
       for (int i = 1; i <= size; i++)
-        part[i] = BinSearch (prefix, sum*i/size);      
+        part[i] = BinSearch (prefix, total_costs*i/size);      
     }
     
     size_t Size() const { return part.Size()-1; }
@@ -663,6 +753,92 @@ public:
   }
 
 
+
+
+
+  template <typename FUNC, typename OP, typename T>
+  auto ParallelReduce (size_t n, FUNC f, OP op, T initial)
+  {
+    /*
+    for (size_t i = 0; i < n; i++)
+      initial = op(initial, f(i));
+    */
+    Array<T> part_reduce(TaskManager::GetNumThreads());
+    ParallelJob ([&] (TaskInfo ti)
+                 {
+                   auto r = Range(n).Split(ti.task_nr, ti.ntasks);
+                   auto var = initial;
+                   for (auto i : r)
+                     var = op(var, f(i));
+                   part_reduce[ti.task_nr] = var;
+                 });
+    for (auto v : part_reduce)
+      initial = op(initial, v);
+    return initial;
+  }
+
+
+
+
+  
+
+  //  some suggar for working with arrays 
+
+  template <typename T> template <typename T2>
+  const FlatArray<T> FlatArray<T>::operator= (ParallelValue<T2> val)
+  {
+    ParallelForRange (Size(),
+                      [this, val] (IntRange r)
+                      {
+                        for (auto i : r)
+                          (*this)[i] = val;
+                      });
+    return *this;
+  }
+
+  template <typename T> template <typename T2>
+  const FlatArray<T> FlatArray<T>::operator= (ParallelFunction<T2> func)
+  {
+    ParallelForRange (Size(),
+                      [this, func] (IntRange r)
+                      {
+                        for (auto i : r)
+                          (*this)[i] = func(i);
+                      });
+    return *this;
+  }
+
+class Tasks
+{
+  size_t num;
+public:
+  Tasks (size_t _num = TaskManager::GetNumThreads()) : num(_num) { ; }
+  auto GetNum() const { return num; } 
+};
+
+template <typename T, typename std::enable_if<ngstd::has_call_operator<T>::value, int>::type = 0>                                  
+inline ParallelFunction<T> operator| (const T & func, Tasks tasks)
+{
+  return func;
+}
+
+template <typename T, typename std::enable_if<!ngstd::has_call_operator<T>::value, int>::type = 0>                                  
+inline ParallelValue<T> operator| (const T & obj, Tasks tasks)
+{
+  return obj;
+}
+
+inline Tasks operator "" _tasks_per_thread (unsigned long long n)
+{
+  return Tasks(n * TaskManager::GetNumThreads());
+}
+
+class DefaultTasks
+{
+public:
+  operator Tasks () const { return TaskManager::GetNumThreads(); }
+};
+static DefaultTasks tasks;
 
 
 

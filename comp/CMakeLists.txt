@@ -21,11 +21,13 @@ add_library( ngcomp ${NGS_LIB_TYPE}
         )
 
 target_compile_definitions(ngcomp PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
+target_compile_definitions(ngcomp PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})
 target_compile_options(ngcomp PUBLIC ${NGSOLVE_COMPILE_OPTIONS})
 target_include_directories(ngcomp PUBLIC ${NGSOLVE_INCLUDE_DIRS})
 
 if(NOT WIN32)
-    target_link_libraries (ngcomp interface ngfem ngla ngbla ngstd ${MPI_CXX_LIBRARIES} ${NETGEN_PYTHON_LIBRARIES} ${LAPACK_LIBRARIES} ${HYPRE_LIBRARIES})
+    target_link_libraries (ngcomp PUBLIC interface ngfem ngla ngbla ngstd ${MPI_CXX_LIBRARIES} ${NETGEN_PYTHON_LIBRARIES} ${HYPRE_LIBRARIES})
+    target_link_libraries(ngcomp ${LAPACK_CMAKE_LINK_INTERFACE} ${LAPACK_LIBRARIES})
     install( TARGETS ngcomp ${ngs_install_dir} )
 endif(NOT WIN32)
 

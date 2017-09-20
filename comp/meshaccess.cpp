@@ -856,13 +856,34 @@ namespace ngcomp
     
 
     ndomains = -1;
-    int ne = GetNE(); 
+    int ne = GetNE();
+    
+    auto minmax =
+      ParallelReduce (ne,
+                      [&] (size_t i)
+                      {
+                        auto ind = GetElIndex(ElementId(VOL, i));
+                        return make_pair(ind, ind);
+                      },
+                      [] (pair<int,int> a, pair<int,int> b)
+                      {
+                        return make_pair(min2(a.first, b.first),
+                                         max2(a.second, b.second));
+                      },
+                      pair<int,int> (std::numeric_limits<int>::max(),
+                                     0));
+
+    ndomains = minmax.second;
+    if (minmax.first < 0)
+      throw Exception("mesh with negative element-index");      
+    /*
     for (int i = 0; i < ne; i++)
       {
         int elindex = GetElIndex(ElementId(VOL,i));
         if (elindex < 0) throw Exception("mesh with negative element-index");
         ndomains = max2(ndomains, elindex);
       }
+    */
 
     ndomains++;
     ndomains = MyMPI_AllReduce (ndomains, MPI_MAX);
@@ -1000,6 +1021,17 @@ namespace ngcomp
               }
           }
       }
+    
+    for(auto id : Range(1,nid+1))
+    {
+      if (GetDimension() == 3)
+      {
+        auto & pairs = GetPeriodicNodes(NT_FACE, id);
+        for(auto pair : pairs)
+          for(auto l : Range(2))
+            identified_facets[pair[l]] = std::tuple<int,int>(pair[1-l],2);
+      }
+    }    
   }
 
   void MeshAccess :: 
@@ -1229,13 +1261,9 @@ namespace ngcomp
     pnums[1] = edge.vertices[1];
   }
 
+  /*
   void MeshAccess :: GetElFacets (ElementId ei, Array<int> & fnums) const
   {
-    /*
-    if (dim == 1)
-      fnums = GetElement(ei).Vertices();
-    else
-    */
     fnums = GetElement(ei).Facets();
   }
 
@@ -1250,7 +1278,9 @@ namespace ngcomp
         fnums = GetElement<3,VOL> (elnr).Faces();
       }
   } 
-    
+  */
+  
+  /*
   void MeshAccess :: GetSElFacets (int selnr, Array<int> & fnums) const
   {
     switch (dim)
@@ -1266,6 +1296,7 @@ namespace ngcomp
         }
       }
   }
+  */
   
   void MeshAccess :: GetFacetPNums (int fnr, Array<int> & pnums) const
   {
@@ -1295,6 +1326,7 @@ namespace ngcomp
 
   void MeshAccess::CalcIdentifiedFacets()
   {
+    static Timer t("CalcIdentifiedFacets"); RegionTimer reg(t);
     identified_facets.SetSize(nnodes_cd[1]);
     for(auto i : Range(identified_facets.Size()))
       identified_facets[i] = std::tuple<int,int>(i,1);
@@ -1515,8 +1547,8 @@ namespace ngcomp
 
   ngfem::ElementTransformation & MeshAccess :: GetTrafo (ElementId ei, Allocator & lh) const
   {
-    int elnr = ei.Nr();
-    VorB vb = ei.VB();
+    auto elnr = ei.Nr();
+    VorB vb = ei.VB(); 
     
     switch(vb)
       {
@@ -1993,13 +2025,16 @@ namespace ngcomp
 
   atomic<size_t> ProgressOutput :: cnt;
   thread_local size_t ProgressOutput :: thd_cnt = 0;
-  thread_local double ProgressOutput :: thd_prev_time = WallTime();
-  
+  // thread_local double ProgressOutput :: thd_prev_time = WallTime();
+  thread_local size_t ProgressOutput :: thd_prev_time = __rdtsc();
+  size_t tsc_wait = 0.05*2.7e9; // rough 
   void ProgressOutput :: Update ()
   {
     thd_cnt++;
-    double time = WallTime();
-    if (time > thd_prev_time+0.05)
+    // double time = WallTime();
+    size_t time = __rdtsc();
+    // if (time > thd_prev_time+0.05)
+    if (time > thd_prev_time+tsc_wait)
       {
         thd_prev_time = time;
         cnt += thd_cnt;

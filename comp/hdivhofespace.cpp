@@ -28,6 +28,7 @@ namespace ngcomp
   HDivHighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags)
     : FESpace (ama, flags)
   {
+    type = "hdivho";
     name="HDivHighOrderFESpace(hdivho)";
     // allowed flags
     DefineNumFlag("relorder");
@@ -1144,13 +1145,13 @@ namespace ngcomp
 	    for(auto i : Range(nfa))
 	      if(fine_facet[i])
 		{
-		  Array<int> edges;
-		  ma->GetFaceEdges ( i, edges);
+		  // Array<int> edges;
+		  // ma->GetFaceEdges ( i, edges);
                   /*
 		  for ( int j = 0; j < edges.Size(); j++ )
 		    cnt[offset + edges[j]] += 1 + first_facet_dof[i+1] - first_facet_dof[i];
                   */
-                  for (auto e : edges)
+                  for (auto e : ma->GetFaceEdges(i))
                     cnt[offset+e] += 1 + first_facet_dof[i+1] - first_facet_dof[i];
 		}
 	    

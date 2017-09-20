@@ -58,7 +58,7 @@ mstar.Assemble()
 inv = mstar.mat.Inverse(X.FreeDofs(), inverse="sparsecholesky")
 
 # the non-linear term 
-conv = BilinearForm(X, flags = { "nonassemble" : True })
+conv = BilinearForm(X, nonassemble = True)
 conv += SymbolicBFI( CoefficientFunction( (ux,uy) ) * (grad(ux)*vx+grad(uy)*vy) )
 
 # for visualization
@@ -69,7 +69,7 @@ Draw (Norm(velocity), mesh, "velocity", sd=3)
 t = 0
 with TaskManager():
     while t < tend:
-        print ("t=", t)
+        print ("t=", t, end="\r")
 
         conv.Apply (gfu.vec, res)
         res.data += a.mat*gfu.vec

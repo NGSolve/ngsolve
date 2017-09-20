@@ -120,7 +120,7 @@ void PyMatAccess( TCLASS &c )
             try {
               auto row_slice = rows.cast<py::slice>();
               auto col_slice = cols.cast<py::slice>();
-              return py::cast(ColGetSlice(RowGetSlice(self, row_slice()), col_slice()));
+              return py::cast(ColGetSlice(RowGetSlice(self, row_slice), col_slice));
             } catch (py::error_already_set const &) {
               cerr << "Invalid Matrix access!" << endl;
               PyErr_Print();
@@ -180,7 +180,7 @@ void PyMatAccess( TCLASS &c )
             try {
               py::slice row_slice = rows.cast<py::slice> ();
               size_t start, step, n;
-              InitSlice( row_slice(), self.Height(), start, step, n );
+              InitSlice( row_slice, self.Height(), start, step, n );
               for (int i=0; i<n; i++, start+=step) {
                 py::object row = py::cast(self.Row(start));
                 row.attr("__setitem__")(cols,val);
@@ -201,14 +201,13 @@ void PyMatAccess( TCLASS &c )
               auto row_slice = rows.cast<py::slice> ();
               auto col_slice = cols.cast<py::slice> ();
               size_t start, step, n;
-              InitSlice( row_slice(), self.Height(), start, step, n );
+              InitSlice( row_slice, self.Height(), start, step, n );
               for (int i=0; i<n; i++, start+=step) {
                 py::object row = py::cast(self.Row(start));
                 py::object f = row.attr("__setitem__");
                 f(self, cols, rmat.Row(i));
               }
             } catch (py::error_already_set const &) {
-              cerr << "Invalid Matrix access!" << endl;
               PyErr_Print();
             }
           }
@@ -340,12 +339,12 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
     typedef Vector<Complex> VC;
 
     ExportVector< FVD, VD, double>(m, "FlatVectorD")
-        .def(py::init<int, double *>())
+        .def(py::init<size_t, double *>())
         .def("Range",    static_cast</* const */ FVD (FVD::*)(size_t,size_t) const> (&FVD::Range ) )
       ;
     ExportVector< FVC, VC, Complex>(m, "FlatVectorC")
         .def(py::self*=double())
-        .def(py::init<int, Complex *>())
+        .def(py::init<size_t, Complex *>())
         .def("Range",    static_cast</* const */ FVC (FVC::*)(size_t,size_t) const> (&FVC::Range ) )
         ;
 
@@ -358,11 +357,11 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
         ;
 
     py::class_<VD, FVD> cvd(m, "VectorD", py::buffer_protocol());
-    cvd.def(py::init<int>());
+    cvd.def(py::init( [] (int n) { return new VD(n); }));
     PyDefVecBuffer<VD>(cvd);
 
     py::class_<VC, FVC > cvc(m, "VectorC", py::buffer_protocol());
-    cvc.def(py::init<int>());
+    cvc.def(py::init( [] (int n) { return new VC(n); }));
     PyDefVecBuffer<VC>(cvc);
 
     m.def("Vector",
@@ -469,12 +468,12 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
     PyDefMatBuffer<FMC>(class_FMC);
 
     auto class_MD = py::class_<Matrix<double>, FMD>(m, "MatrixD", py::buffer_protocol())
-        .def(py::init<int, int>())
+        .def(py::init( [] (int n, int m) { return new Matrix<double>(n, m); }))
         ;
     PyDefMatBuffer<Matrix<>>(class_MD);
 
     auto class_MC = py::class_<Matrix<Complex>, FMC >(m, "MatrixC", py::buffer_protocol())
-        .def(py::init<int, int>())
+        .def(py::init( [] (int n, int m) { return new Matrix<Complex>(n, m); }))
         ;
     PyDefMatBuffer<Matrix<Complex>>(class_MC);
 
@@ -498,7 +497,7 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
 
 
     m.def("CheckPerformance",
-             [] (int n, int m, int k)
+             [] (size_t n, size_t m, size_t k)
                               {
                                 Matrix<> a(n,k), b(m,k), c(n,m);
                                 a = 1; b = 2;
@@ -543,6 +542,66 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
                                 t2.Stop();
                                 cout << "Task-manager Lapack GFlops = " << 8 * 1e-9 * n*k*m*its / t2.GetTime() << endl;
                                 }
+
+
+                                { // Lapack - Inverse
+                                  Matrix<> a(n,n);
+                                  a = 1e-5;
+                                  for (size_t i : Range(n)) a(i,i) = 1;
+
+                                  size_t ops = n*n*n;
+                                  size_t runs = 1e10/ops+1;
+                                  LapackInverse (a);
+                                  
+                                  Timer t("inverse");
+                                  t.Start();
+                                  for (size_t j = 0; j < runs; j++)
+                                    LapackInverse (a);
+                                  t.Stop();
+                                  cout << "LapackInverse GFlops = " << 1e-9 * ops*runs / t.GetTime() << endl;
+                                }
+
+                                { // Lapack - Inverse
+                                  Matrix<> a(n,n);
+                                  a = 1e-5;
+                                  for (size_t i : Range(n)) a(i,i) = 1;
+
+                                  size_t ops = n*n*n;
+                                  size_t runs = 1e10/ops+1;
+                                  LapackInverseSPD (a);
+                                  
+                                  Timer t("inverse");
+                                  t.Start();
+                                  for (size_t j = 0; j < runs; j++)
+                                    LapackInverse (a);
+                                  t.Stop();
+                                  cout << "LapackInverse GFlops = " << 1e-9 * ops*runs / t.GetTime() << endl;
+                                }
+
+
+
+                                { // LDL 
+                                  Matrix<double,ColMajor> a(n,n), ah(n,n);
+                                  ah = 1e-5;
+                                  for (size_t i : Range(n)) ah(i,i) = 1;
+
+                                  size_t ops = n*n*n/6;
+                                  size_t runs = 1e10/ops+1;
+                                  a = ah;
+                                  CalcLDL (a.Rows(0,n).Cols(0,n));  
+                                  
+                                  Timer t("LDL");
+                                  t.Start();
+                                  for (size_t j = 0; j < runs; j++)
+                                    {
+                                      a = ah;
+                                      CalcLDL (a.Rows(0,n).Cols(0,n));
+                                    }
+                                  t.Stop();
+                                  cout << "CalcLDL GFlops = " << 1e-9 * ops*runs / t.GetTime() << endl;
+                                }
+
+                                
                               });
              }
 

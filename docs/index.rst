@@ -34,6 +34,7 @@ interface to Python is inspired by the `FEniCS project <https://fenicsproject.or
    Download installer <https://ngsolve.org/downloads>
    install/install_sources.rst
    install/gettingstarted.rst
+   install/usejupyter.rst
 
 
 .. toctree::
