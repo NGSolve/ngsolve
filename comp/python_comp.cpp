@@ -3485,10 +3485,20 @@ flags : dict
            Array<string > names
              = makeCArray<string> (names_list);
            shared_ptr<BaseVTKOutput> ret;
-           if (ma->GetDimension() == 2)
+           bool issimplicial = true;
+           for (auto e : ma->Elements())
+           {
+             if (ma->GetElType(e) != ET_TRIG && ma->GetElType(e) != ET_TET)
+               issimplicial = false;
+           }
+           if (ma->GetDimension() == 2 && issimplicial)
              ret = make_shared<VTKOutput<2>> (ma, coefs, names, filename, subdivision, only_element);
-           else
+           else if (ma->GetDimension() == 3  && issimplicial)
              ret = make_shared<VTKOutput<3>> (ma, coefs, names, filename, subdivision, only_element);
+           else if (ma->GetDimension() == 2)
+             ret = make_shared<NonSimplicialVTKOutput<2>> (ma, coefs, names, filename, subdivision, only_element);
+           else
+             ret = make_shared<NonSimplicialVTKOutput<3>> (ma, coefs, names, filename, subdivision, only_element);
            return ret;
          },
          py::arg("self_class"),

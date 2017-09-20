@@ -72,6 +72,46 @@ namespace ngcomp
     virtual void Do (LocalHeap & lh, const BitArray * drawelems = 0);
   };
 
+  template <int D>
+  class NonSimplicialVTKOutput: public BaseVTKOutput
+  {
+  protected:
+
+    shared_ptr<MeshAccess> ma = nullptr;
+    Array<shared_ptr<CoefficientFunction>> coefs;
+    Array<string> fieldnames;
+    string filename;
+    int subdivision;
+    int only_element = -1;
+
+    Array<shared_ptr<ValueField>> value_field;
+    Array<Vec<D>> points;
+    Array<INT<ELEMENT_MAXPOINTS+1>> cells;
+
+    int output_cnt = 0;
+    
+    shared_ptr<ofstream> fileout;
+    
+  public:
+
+    NonSimplicialVTKOutput (const Array<shared_ptr<CoefficientFunction>> &,
+               const Flags &,shared_ptr<MeshAccess>);
+
+    NonSimplicialVTKOutput (shared_ptr<MeshAccess>, const Array<shared_ptr<CoefficientFunction>> &,
+               const Array<string> &, string, int, int);
+    
+    void ResetArrays();
+    
+    void FillReferenceData(ELEMENT_TYPE et, Array<IntegrationPoint> & ref_coords, Array<INT<ELEMENT_MAXPOINTS+1>> & ref_trigs);    
+    // void FillReferenceData3D(Array<IntegrationPoint> & ref_coords, Array<INT<D+1>> & ref_tets);
+    void PrintPoints();
+    void PrintCells();
+    void PrintCellTypes();
+    void PrintFieldData();    
+
+    virtual void Do (LocalHeap & lh, const BitArray * drawelems = 0);
+  };
+
 
   class NumProcVTKOutput : public NumProc
   {
