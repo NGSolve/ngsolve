@@ -19,14 +19,14 @@ namespace ngfem
     using FiniteElement::ndof;
     using FiniteElement::order;
 
-    // old style, still needed for prisms
+    // old style
     virtual void CalcShape (const IntegrationPoint & ip, 
                             BareSliceMatrix<double> shape) const = 0;
 
     virtual void CalcDivShape (const IntegrationPoint & ip, 
                                BareSliceMatrix<double> divshape) const = 0;
 
-    // new implementation, used for trigs
+    // new implementation
     virtual void CalcMappedShape_Matrix (const MappedIntegrationPoint<DIM,DIM> & mip,
       BareSliceMatrix<double> shape) const = 0;
 
@@ -109,7 +109,7 @@ namespace ngfem
       cout << "Error, T_HDivDivFE<ET>:: ComputeNDof not available, only for ET == TRIG" << endl;
     }
 
-    // old style, still needed for prisms
+    // old style
     virtual void CalcShape (const IntegrationPoint & ip, 
                             BareSliceMatrix<double> shape) const
     {
@@ -128,7 +128,6 @@ namespace ngfem
     virtual void CalcDivShape (const IntegrationPoint & ip,
                                BareSliceMatrix<double> shape) const
     {
-      //AutoDiffDiff<DIM> hx[DIM];
       Vec<DIM, AutoDiffDiff<DIM>> adp;
       for ( int i=0; i<DIM; i++)
       {
@@ -141,7 +140,7 @@ namespace ngfem
                                           }));
     }
 
-    // new style, used for trigs
+    // new style
     virtual void CalcMappedShape_Vector (const MappedIntegrationPoint<DIM,DIM> & mip,
                             BareSliceMatrix<double> shape) const
     {
@@ -391,40 +390,6 @@ namespace ngfem
   
 
   
-  //// ***************** symrotrot( Dlam2 times  Dlam1) v ****************************** */
-  //class T_SymRotRot_Dl2xDl1_v_diffdiff
-  //{
-  //  AutoDiffDiff<2> l1,l2,v;
-  //public:
-  //  T_SymRotRot_Dl2xDl1_v_diffdiff  (AutoDiffDiff<2> lam1, AutoDiffDiff<2> lam2, AutoDiffDiff<2> av) : l1(lam1), l2(lam2), v(av) { ; }
-
-  //  Vec<3> Shape() { return Vec<3> (v.Value()*(l1.DValue(1)*l2.DValue(1)),
-  //    v.Value()*(l1.DValue(0)*l2.DValue(0)),
-  //    -0.5*v.Value()*(l1.DValue(1)*l2.DValue(0) + l1.DValue(0)*l2.DValue(1))
-  //    ); }
-
-  //  Vec<2> DivShape()
-  //  {
-  //    // todo
-  //    double lam1 = l1.Value();
-  //    double lam1x = l1.DValue(0);
-  //    double lam1y = l1.DValue(1);
-  //    double lam2 = l2.Value();
-  //    double lam2x = l2.DValue(0);
-  //    double lam2y = l2.DValue(1);
-  //    double lam1xx = l1.DDValue(0,0), lam1xy = l1.DDValue(1,0), lam1yy = l1.DDValue(1,1);
-  //    double lam2xx = l2.DDValue(0,0), lam2xy = l2.DDValue(1,0), lam2yy = l2.DDValue(1,1);
-  //    return Vec<2> (
-  //      v.DValue(0)*(lam1y*lam2y) - 0.5*v.DValue(1)*(lam1x*lam2y+lam1y*lam2x)
-  //      + v.Value()*(lam1xy*lam2y+lam1y*lam2xy) - 0.5*v.Value()*(lam1yy*lam2x+lam1y*lam2xy+lam1xy*lam2y+lam1x*lam2yy),
-  //      -0.5*v.DValue(0)*(lam1x*lam2y+lam1y*lam2x) + v.DValue(1)*(lam1x*lam2x)
-  //      +v.Value()*(lam1xy*lam2x+lam1x*lam2xy) - 0.5*v.Value()*(lam1xy*lam2x+lam1y*lam2xx + lam1xx*lam2y+lam1x*lam2xy)
-  //      ); 
-  //  }
-
-  //};
-
-  //auto SymRotRot_Dl2xDl1_v_diffdiff (AutoDiffDiff<2> lam1, AutoDiffDiff<2> lam2, AutoDiffDiff<2> av) { return T_SymRotRot_Dl2xDl1_v_diffdiff(lam1, lam2, av); }
 
   class T_SymRotRot_Dl2xDl1_v
   {
@@ -465,7 +430,6 @@ namespace ngfem
     using T_HDivDivFE<ET> :: ndof;
   public:
     template <typename Tx, typename TFA> 
-    //void T_CalcShape (AutoDiffDiff<ET_trait<ET>::DIM> hx[ET_trait<ET>::DIM], TFA & shape) const
     void T_CalcShape (TIP<ET_trait<ET>::DIM,Tx> ip, TFA & shape) const
     {
       throw Exception ("Hdivdivfe not implementend for element type");
@@ -541,25 +505,6 @@ namespace ngfem
       int oi=order_inner[0];
       int oi_plus = oi; //plus ? oi+1 : oi;
 
-      //// ----------------------------
-      //ScaledLegendrePolynomial(oi, le-ls,1-le-ls,u);
-      //LegendrePolynomial::Eval(oi, 2*lt-1, v);
-
-      //// ------------------------------------
-      //// shorter, not based on complex-based triangle shapes
-      //  for(int i = 0; i <= oi-1; i++)
-      //  {
-      //    for(int j = 0; j+i <= oi-1; j++)
-      //    {
-      //      shape[ii++] = SymRotRot_Dl2xDl1_v_diffdiff(ddlami[0], ddlami[1], ddlami[2]*u[i]*v[j]);
-      //      shape[ii++] = SymRotRot_Dl2xDl1_v_diffdiff(ddlami[2], ddlami[0], ddlami[1]*u[i]*v[j]);
-      //      shape[ii++] = SymRotRot_Dl2xDl1_v_diffdiff(ddlami[1], ddlami[2], ddlami[0]*u[i]*v[j]);
-      //    }
-      //  }
-     
-
-      //      // ----------------------------
-
 
       IntegratedLegendreMonomialExt::CalcTrigExt(oi_plus+3,le-ls,1-le-ls,u);
       LegendrePolynomial::EvalMult(oi_plus+1, 2*lt-1, lt, v);
@@ -623,7 +568,8 @@ namespace ngfem
   template <int D>
   auto S_zz (AutoDiff<D> au, AutoDiff<D> av, AutoDiff<1> aw)
   { return T_S_zz<D+1>(au, av, aw); }
-    // ***************** S_xz ****************************** */
+    
+  // ***************** S_xz ****************************** */
   template <int D> class T_S_xz;
   template <> class T_S_xz<3>
   {
@@ -867,6 +813,9 @@ namespace ngfem
       order = max3(order, oi0+incrorder_zz1, oi2+incrorder_zz2);
 
     }
+
+    // works only with old-style Transformation
+    // does not work with CalcMappedShape
    template <typename Tx, typename TFA> 
     void T_CalcShape_Complex (TIP<3,Tx> ip, TFA & shape) const
     {
