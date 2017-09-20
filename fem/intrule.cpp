@@ -137,67 +137,8 @@ namespace ngfem
   }
 
 
-  template <int DIMS,int DIMR,typename SCAL>
-    MappedIntegrationPoint<DIMS,DIMR,SCAL> ::
-    operator  Vec<DIMS,AutoDiffDiff<DIMR,SCAL>> () const
-  {
-    //throw Exception("MappedIntegrationPoint -> AutoDiffDiff implemented only for double");
-    Vec<DIMS,AutoDiffDiff<DIMR,SCAL> > adp;
-  //  return adp;
-  //}
-
-
-  //template <int DIMS,int DIMR> 
-  //MappedIntegrationPoint<DIMS,DIMR,double> ::
-  //  operator Vec<DIMS,AutoDiffDiff<DIMR,double>> () const
-  //{
-  //  Vec<DIMS,AutoDiffDiff<DIMR,double> > adp;
-
-    Mat<DIMS,DIMR,SCAL> ijac = GetJacobianInverse();
-    Mat<2> hesse2d[3];
-    Mat<3> hesse3d[3];
-    FlatMatrix<double> hesse[3];
-    Mat<DIMR,DIMR,SCAL> hessian_lambdai;
-    if(DIMR==2 && DIMS==2)
-    {
-      CalcHesse (hesse2d[0],hesse2d[1]);
-      hesse[0].AssignMemory(2,2,&(hesse2d[0](0)));
-      hesse[1].AssignMemory(2,2,&(hesse2d[1](0)));
-    }
-    else if(DIMR==3 && DIMS==2)
-    {
-      CalcHesse (hesse2d[0],hesse2d[1],hesse2d[2]);
-      hesse[0].AssignMemory(2,2,&(hesse2d[0](0)));
-      hesse[1].AssignMemory(2,2,&(hesse2d[1](0)));
-      hesse[2].AssignMemory(2,2,&(hesse2d[2](0)));
-    }
-    else if(DIMR==3 && DIMS==3)
-    {
-      CalcHesse (hesse3d[0],hesse3d[1],hesse3d[2]);
-      hesse[0].AssignMemory(3,3,&(hesse3d[0](0)));
-      hesse[1].AssignMemory(3,3,&(hesse3d[1](0)));
-      hesse[2].AssignMemory(3,3,&(hesse3d[2](0)));
-    }
-
-    for(int i = 0; i < DIMS; i++)
-    {
-      // compute hessian of lambda_i
-      hessian_lambdai = 0;
-      // indices as in my computations by hand, to avoid errors in first implementation 
-      for(int m=0; m<DIMR; m++)
-        for(int n=0; n<DIMR; n++)
-          for(int j=0; j<DIMS; j++)
-            for(int k=0; k<DIMS; k++)
-              for(int alpha=0; alpha<DIMR; alpha++)
-                hessian_lambdai(m,n) -=  ijac(j,n)*ijac(i,alpha)*hesse[alpha](j,k)*ijac(k,m);
-      adp[i] = AutoDiffDiff<DIMR,SCAL> (this->IP()(i),&ijac(i,0),&hessian_lambdai(0,0));
-
-    }
-    return adp;
-  }
-
-  template <int S,int R,typename SCAL>
-  void MappedIntegrationPoint<S,R,SCAL> ::
+  template <int S, int R, typename SCAL>
+  void MappedIntegrationPoint<S,R,SCAL> :: 
   CalcHesse (Mat<2> & ddx1, Mat<2> & ddx2) const
   {
     double eps = 1e-6;
