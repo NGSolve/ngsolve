@@ -45,7 +45,7 @@ Load a geometry and generate a mesh
 
 First we need to locate the geometry files (e.g. \*.geo, \*.stl, \*.in2d). Usually they can be found in:
 
-- Linux: ``/opt/netgen/share/netgen``
+- Linux: ``/usr/share/netgen``
 - Windows: ``$INSTALL_DIR/share/netgen``
 - Mac OS X: ``/Applications/Netgen.app/Contents/Resources/share/netgen``
 
@@ -62,7 +62,7 @@ Load and execute python files
 
 Again we need to locate the python tutorial. Usually they can be found in:
 
-- Linux: ``/opt/netgen/share/ngsolve/py_tutorials/intro``
+- Linux: ``/usr/share/ngsolve/py_tutorials/intro``
 - Windows: ``$INSTALL_DIR/share/ngsolve/py_tutorials/intro``
 - Mac OS X: ``/Applications/Netgen.app/Contents/Resources/share/ngsolve/py_tutorials/intro``
     

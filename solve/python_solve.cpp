@@ -96,7 +96,10 @@ void NGS_DLL_HEADER ExportNgsolve(py::module &m ) {
                 gf->GetMeshAccess()->SelectMesh();
                 // Visualize (gf, gf->GetName());
 
-                netgen::SolutionData * vis = new VisualizeCoefficientFunction (gf->GetMeshAccess(), gf);
+                // netgen::SolutionData * vis = new VisualizeCoefficientFunction (gf->GetMeshAccess(), gf);
+                auto gfcf = make_shared<GridFunctionCoefficientFunction> (gf);
+                netgen::SolutionData * vis = new VisualizeCoefficientFunction (gf->GetMeshAccess(), gfcf);                
+
                 Ng_SolutionData soldata;
                 Ng_InitSolutionData (&soldata);
   

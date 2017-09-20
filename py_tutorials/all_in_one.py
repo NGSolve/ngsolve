@@ -18,13 +18,13 @@ f += Source (coef=x*y)
 
 f.Assemble()
 
-a = BilinearForm (v, symmetric=True, flags = { "eliminate_internal" : False })
+a = BilinearForm (v, symmetric=True, eliminate_internal = False)
 a += Mass (coef=1)
 a += Laplace (coef=1)
 
 
-# c = Preconditioner (a, "multigrid", { "test" : True, "smoother" : "block", "finesmoothingsteps" : 1 })
-c = Preconditioner (a, "bddc", { "test" : True })
+# c = Preconditioner (a, type = "multigrid", test = True, smoother = "block", finesmoothingsteps = 1)
+c = Preconditioner (a, type = "bddc", test = True)
 
 print ("now assemble the matrix ...")
 a.Assemble()

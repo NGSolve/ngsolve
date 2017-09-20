@@ -1,15 +1,16 @@
 from ngsolve import *
+import ngsolve.utils as utils
 
-pde = comp.PDE("d1_square.pde")
+pde = PDE("d1_square.pde")
 pde.Solve()
 mesh = pde.Mesh()
 
 v = pde.spaces["v"]
 
-lap = fem.BFI (name="laplace", coef=utils.x*utils.y)
-src = fem.LFI (name="source", coef=4.8)
+lap = BFI (name="laplace", coef=utils.x*utils.y)
+src = LFI (name="source", coef=4.8)
 
-i = comp.ElementId(comp.VOL,1)
+i = ElementId(VOL,1)
 el = v.GetFE(i)
 trafo = mesh.GetTrafo(i)
 

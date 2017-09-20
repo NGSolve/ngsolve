@@ -14,6 +14,7 @@ add_library(ngla ${NGS_LIB_TYPE}
         )
 
 target_compile_definitions(ngla PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
+target_compile_definitions(ngla PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})
 target_compile_options(ngla PUBLIC ${NGSOLVE_COMPILE_OPTIONS})
 target_include_directories(ngla PUBLIC ${NGSOLVE_INCLUDE_DIRS} PRIVATE ${UMFPACK_INCLUDE_DIR})
 if(WIN32 AND USE_UMFPACK)
@@ -21,8 +22,9 @@ if(WIN32 AND USE_UMFPACK)
 endif()
 
 if(NOT WIN32)
-    target_link_libraries(ngla PUBLIC ngbla ngstd ${NETGEN_PYTHON_LIBRARIES} ${LAPACK_LIBRARIES}
+    target_link_libraries(ngla PUBLIC ngbla ngstd ${NETGEN_PYTHON_LIBRARIES}
 PRIVATE ${MUMPS_LIBRARIES} ${UMFPACK_LIBRARIES} ${SCALAPACK_LIBRARY} ${MPI_Fortran_LIBRARIES} ${MPI_CXX_LIBRARIES})
+    target_link_libraries(ngla ${LAPACK_CMAKE_LINK_INTERFACE} ${LAPACK_LIBRARIES})
     install( TARGETS ngla ${ngs_install_dir} )
     if(USE_MUMPS)
         # Create dummy fortran lib

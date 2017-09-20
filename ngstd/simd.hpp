@@ -46,14 +46,6 @@ namespace ngstd
 {
   template <typename T> class SIMD;
 
-  template <typename T>
-  struct has_call_operator
-  {
-      template <typename C> static std::true_type check( decltype( sizeof(&C::operator() )) ) { return std::true_type(); }
-      template <typename> static std::false_type check(...) { return std::false_type(); }
-      typedef decltype( check<T>(sizeof(char)) ) type;
-      static constexpr type value = type();
-  };
 
 #ifdef __AVX__
 
@@ -270,6 +262,8 @@ namespace ngstd
 
 #ifdef __AVX512F__
   INLINE SIMD<double> sqrt (SIMD<double> a) { return _mm512_sqrt_pd(a.Data()); }
+  INLINE SIMD<double> floor (SIMD<double> a) { return _mm512_floor_pd(a.Data()); }
+  INLINE SIMD<double> ceil (SIMD<double> a) { return _mm512_ceil_pd(a.Data()); }  
   INLINE SIMD<double> fabs (SIMD<double> a) { return _mm512_max_pd(a.Data(), -a.Data()); }
   INLINE SIMD<double> IfPos (SIMD<double> a, SIMD<double> b, SIMD<double> c)
   {
@@ -289,6 +283,8 @@ namespace ngstd
 
 #else
   INLINE SIMD<double> sqrt (SIMD<double> a) { return _mm256_sqrt_pd(a.Data()); }
+  INLINE SIMD<double> floor (SIMD<double> a) { return _mm256_floor_pd(a.Data()); }
+  INLINE SIMD<double> ceil (SIMD<double> a) { return _mm256_ceil_pd(a.Data()); }
   INLINE SIMD<double> fabs (SIMD<double> a) { return _mm256_max_pd(a.Data(), -a.Data()); }
   INLINE SIMD<double> IfPos (SIMD<double> a, SIMD<double> b, SIMD<double> c)
   {
@@ -377,6 +373,8 @@ namespace ngstd
   INLINE SIMD<double> operator/= (SIMD<double> & a, SIMD<double> b) { return a.Data()/=b.Data(); }
 
   INLINE SIMD<double> sqrt (SIMD<double> a) { return std::sqrt(a.Data()); }
+  INLINE SIMD<double> floor (SIMD<double> a) { return std::floor(a.Data()); }
+  INLINE SIMD<double> ceil (SIMD<double> a) { return std::ceil(a.Data()); }
   INLINE SIMD<double> fabs (SIMD<double> a) { return std::fabs(a.Data()); }
   INLINE SIMD<double> L2Norm2 (SIMD<double> a) { return a.Data()*a.Data(); }
   INLINE SIMD<double> Trans (SIMD<double> a) { return a; }

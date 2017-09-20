@@ -57,10 +57,10 @@ a = BilinearForm (V, symmetric=False)
 a += SymbolicBFI(grad(u)*grad(v))
 
 # Some possible preconditioners: 
-#c = Preconditioner(a, type="direct", flags={"inverse":"mumps"}) # direct solve with mumps
-#c = Preconditioner(a, type="bddc", flags={"inverse":"mumps"})   # BBDC + mumps for coarse inverse 
+#c = Preconditioner(a, type="direct", inverse = "mumps") # direct solve with mumps
+#c = Preconditioner(a, type="bddc", inverse = "mumps")   # BBDC + mumps for coarse inverse
 #c = Preconditioner(a, type="hypre")                             # BoomerAMG (use only for order 1)
-c = Preconditioner(a, type="bddc", flags={"usehypre":True})     # BDDC + BoomerAMG for coarse matrix
+c = Preconditioner(a, type="bddc", usehypre = True)     # BDDC + BoomerAMG for coarse matrix
 
 a.Assemble()
 

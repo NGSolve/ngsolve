@@ -433,7 +433,9 @@ namespace ngbla
   };
 
 
-  enum  T_Lapack { Lapack };
+  // enum  T_Lapack { Lapack };
+  class T_Lapack { };
+  static T_Lapack Lapack;
   
   template <typename TA>
   INLINE LapackExpr<TA> operator| (const Expr<TA> & a, T_Lapack /* tl */)
@@ -994,6 +996,13 @@ namespace ngbla
   operator* (SIMD<double> b, const Expr<TA> & a)
   {
     return ScaleExpr<TA, SIMD<double>> (a.Spec(), b);
+  }
+  
+  template <typename TA>
+  INLINE ScaleExpr<TA, SIMD<Complex> >  
+  operator* (SIMD<Complex> b, const Expr<TA> & a)
+  {
+    return ScaleExpr<TA, SIMD<Complex>> (a.Spec(), b);
   }
   
 

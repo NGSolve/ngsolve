@@ -372,6 +372,8 @@ namespace ngla
     */
 
     static Timer timer("MatrixGraph");
+    static Timer timer_dof2el("MatrixGraph - build dof2el table");
+    static Timer timer_prefix("MatrixGraph - prefix");    
     RegionTimer reg (timer);
 
     bool includediag = (&rowelements == &colelements);
@@ -383,7 +385,7 @@ namespace ngla
     ParallelFor (Range(colelements.Size()), 
                  [&] (int i) { QuickSort (colelements[i]); });
     
-
+    timer_dof2el.Start();
     for ( ; !creator.Done(); creator++)
       {    
         ParallelFor (Range(rowelements.Size()),
@@ -394,14 +396,19 @@ namespace ngla
                      },
                      TasksPerThread(10));
       }
-
+    timer_dof2el.Stop();
 
     Table<int> dof2element = creator.MoveTable();
 
     Array<int> cnt(ndof);
-    cnt = 0;
+    // cnt = 0;
+    ParallelJob ([&] (TaskInfo ti)
+                 {
+                   auto r = Range(ndof).Split(ti.task_nr, ti.ntasks);
+                   cnt[r] = 0;
+                 });
 
-
+    /*
     class ProfileData
     {
     public:
@@ -409,7 +416,7 @@ namespace ngla
       int size;
     };
     Array<ProfileData> prof(ndof);
-    
+    */
     
 
 
@@ -433,8 +440,8 @@ namespace ngla
                  // auto myr = Range(ndof).Split (ti.task_nr,ti.ntasks);
                  for (int i : myr)
                    {
-                     prof[i].tstart = WallTime();
-                     prof[i].size = dof2element[i].Size();
+                     // prof[i].tstart = WallTime();
+                     // prof[i].size = dof2element[i].Size();
 
                      sizes.SetSize(dof2element[i].Size());
                      ptrs.SetSize(dof2element[i].Size());
@@ -459,7 +466,7 @@ namespace ngla
                                      cnti++; 
                                    } );
 
-                     prof[i].tend = WallTime();
+                     // prof[i].tend = WallTime();
                    }
                },
                TasksPerThread(20));
@@ -520,7 +527,7 @@ namespace ngla
                      else
                        colnr.Range(firsti[i], firsti[i+1]) = rowdofs;
                    }
-               });
+               }, TasksPerThread(5));
             
           }
         
@@ -532,7 +539,7 @@ namespace ngla
             owner = true;
             
             firsti.SetSize (size+1);
-            
+            /*
             nze = 0;
             for (int i = 0; i < size; i++)
               {
@@ -540,6 +547,39 @@ namespace ngla
                 nze += cnt[i];
               }
             firsti[size] = nze;
+            */
+            
+            timer_prefix.Start();
+            Array<size_t> partial_sums(TaskManager::GetNumThreads()+1);
+            partial_sums[0] = 0;
+            ParallelJob
+              ([&] (TaskInfo ti)
+               {
+                 IntRange r = IntRange(size).Split(ti.task_nr, ti.ntasks);
+                 size_t mysum = 0;
+                 for (size_t i : r)
+                   mysum += cnt[i];
+                 partial_sums[ti.task_nr+1] = mysum;
+               });
+
+            for (size_t i = 1; i < partial_sums.Size(); i++)
+              partial_sums[i] += partial_sums[i-1];
+
+            ParallelJob
+              ([&] (TaskInfo ti)
+               {
+                 IntRange r = IntRange(size).Split(ti.task_nr, ti.ntasks);
+                 size_t mysum = partial_sums[ti.task_nr];
+                 for (size_t i : r)
+                   {
+                     firsti[i] = mysum;
+                     mysum += cnt[i];
+                   }
+               });
+            nze = partial_sums[partial_sums.Size()-1];
+            firsti[size] = nze;
+            timer_prefix.Stop();
+            
             colnr = NumaDistributedArray<int> (nze+1);
 
 	    CalcBalancing ();
@@ -1018,31 +1058,33 @@ namespace ngla
   {
 #ifdef __GNUC__
     size_t fi = firsti[rownr], fin = firsti[rownr+1];
-    int * pi = &colnr[fi], * pin = &colnr[fi+1];
+    int * pi = &colnr[fi], * pin = &colnr[fin];
     while (pi < pin)
       {
         _mm_prefetch (reinterpret_cast<void*>(pi), _MM_HINT_T2);
         pi += 64/sizeof(int);
       }
 
-    TM * vi = &data[fi], * vin = &data[fi+1];
-    while (pi < pin)
+    TM * vi = &data[fi], * vin = (&data[fin-1])+1;
+    while (vi < vin)
       {
         _mm_prefetch (reinterpret_cast<void*>(vi), _MM_HINT_T2);
         vi += 64/sizeof(double);
       }
-    // _mm_prefetch (reinterpret_cast<void*>(&this->GetRowIndices(rownr)[0]), _MM_HINT_T2);
-    // _mm_prefetch (reinterpret_cast<void*>(&this->GetRowValues(rownr)[0]), _MM_HINT_T2);    
 #endif
     ;
   }
 
-
+  Timer timer_addelmat_nonsym("SparseMatrix::AddElementMatrix");
+  
   template <class TM>
   void SparseMatrixTM<TM> ::
   AddElementMatrix(FlatArray<int> dnums1, FlatArray<int> dnums2, 
                    BareSliceMatrix<TSCAL> elmat1, bool use_atomic)
   {
+    ThreadRegionTimer reg (timer_addelmat_nonsym, TaskManager::GetThreadId());
+    NgProfiler::AddThreadFlops (timer_addelmat_nonsym, TaskManager::GetThreadId(), dnums1.Size()*dnums2.Size());
+    
     ArrayMem<int, 50> map(dnums2.Size());
     for (int i = 0; i < map.Size(); i++) map[i] = i;
     QuickSortI (dnums2, map);
@@ -1625,23 +1667,21 @@ namespace ngla
 
 
   Timer timer_addelmat("SparseMatrixSymmetric::AddElementMatrix");
-  Timer timer_addelmat1("SparseMatrixSymmetric::AddElementMatrix 1");
-  Timer timer_addelmat2("SparseMatrixSymmetric::AddElementMatrix 2");
 
   template <class TM>
-  void SparseMatrixSymmetricTM<TM> ::
-  AddElementMatrix(FlatArray<int> dnums, BareSliceMatrix<TSCAL> elmat1, bool use_atomic)
+  void SparseMatrixTM<TM> ::
+  AddElementMatrixSymmetric(FlatArray<int> dnums, BareSliceMatrix<TSCAL> elmat1, bool use_atomic)
   {
     // static Timer timer ("SparseMatrixSymmetric::AddElementMatrix", 2);
     // RegionTimer reg (timer);
     ThreadRegionTimer reg (timer_addelmat, TaskManager::GetThreadId());
+    NgProfiler::AddThreadFlops (timer_addelmat, TaskManager::GetThreadId(), dnums.Size()*(dnums.Size()+1)/2);    
 
     // ArrayMem<int, 50> map(dnums.Size());
     STACK_ARRAY(int, hmap, dnums.Size());
     FlatArray<int> map(dnums.Size(), hmap);
 
     {
-      ThreadRegionTimer reg1 (timer_addelmat1, TaskManager::GetThreadId());
       for (int i = 0; i < dnums.Size(); i++) map[i] = i;
       QuickSortI (dnums, map);
     }
@@ -1657,8 +1697,6 @@ namespace ngla
     int first_used = 0;
     while (first_used < dnums.Size() && dnums[map[first_used]] == -1) first_used++;
     
-    ThreadRegionTimer reg2 (timer_addelmat2, TaskManager::GetThreadId());
-
     if (use_atomic)
       for (int i1 = first_used; i1 < dnums.Size(); i1++)
         {
@@ -1694,13 +1732,7 @@ namespace ngla
         {
           if (i1+2 < dnums.Size())
             this->PrefetchRow(dnums[map[i1+2]]);
-          /*
-          if (i1+2 < dnums.Size())
-            {
-              _mm_prefetch (reinterpret_cast<void*>(&this->GetRowIndices(dnums[map[i1+2]])[0]), _MM_HINT_T2);
-              _mm_prefetch (reinterpret_cast<void*>(&this->GetRowValues(dnums[map[i1+2]])[0]), _MM_HINT_T2);
-            }
-          */
+
           // FlatArray<int> rowind = this->GetRowIndices(dnums[map[i1]]);
           // FlatVector<TM> rowvals = this->GetRowValues(dnums[map[i1]]);
           FlatArray<int> rowind = this->GetRowIndices(dnumsmap[i1]);
@@ -1727,9 +1759,9 @@ namespace ngla
   template <class TM, class TV>
   SparseMatrixSymmetric<TM,TV> :: 
   SparseMatrixSymmetric (const MatrixGraph & agraph, bool stealgraph)
-    : SparseMatrixTM<TM> (agraph, stealgraph), 
-      SparseMatrixSymmetricTM<TM> (agraph, stealgraph),
-      SparseMatrix<TM,TV,TV> (agraph, stealgraph)
+    // : SparseMatrixTM<TM> (agraph, stealgraph), 
+    // SparseMatrixSymmetricTM<TM> (agraph, stealgraph),
+    : SparseMatrix<TM,TV,TV> (agraph, stealgraph)
   { ; }
 
   template <class TM, class TV>
@@ -2613,7 +2645,7 @@ namespace ngla
 #endif
 
 
-
+  /*
   template class SparseMatrixSymmetricTM<double>;
   template class SparseMatrixSymmetricTM<Complex>;
 
@@ -2650,7 +2682,7 @@ namespace ngla
   template class SparseMatrixSymmetricTM<Mat<8,8,double> >;
   template class SparseMatrixSymmetricTM<Mat<8,8,Complex> >;
 #endif
-
+  */
 
 
 

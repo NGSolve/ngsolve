@@ -290,7 +290,19 @@ public:
   }
   
   virtual ~CompoundDifferentialOperator () = default;
+  shared_ptr<DifferentialOperator> BaseDiffOp() const { return diffop; } 
+  int Component () const { return comp; }
 
+  virtual bool operator== (const DifferentialOperator & diffop2) const
+  {
+    const CompoundDifferentialOperator * do2 =
+      dynamic_cast<const CompoundDifferentialOperator*> (&diffop2);
+    if (do2 && do2->Component() == Component())
+      return *diffop == *(do2->diffop);
+    return false;
+  }
+
+  
   virtual string Name() const { return diffop->Name(); }
 
   virtual IntRange UsedDofs(const FiniteElement & bfel) const
@@ -532,16 +544,16 @@ public:
                           LocalHeap & lh) const;    
 
     
-    template <typename SCAL, typename SCAL_SHAPES = double>
+    template <typename SCAL, typename SCAL_SHAPES, typename SCAL_RES>
     void T_CalcElementMatrixAdd (const FiniteElement & fel,
                                  const ElementTransformation & trafo, 
-                                 FlatMatrix<SCAL> elmat,
+                                 FlatMatrix<SCAL_RES> elmat,
                                  LocalHeap & lh) const;
 
-    template <int D, typename SCAL, typename SCAL_SHAPES>
+    template <typename SCAL, typename SCAL_SHAPES, typename SCAL_RES>
     void T_CalcElementMatrixEBAdd (const FiniteElement & fel,
                                    const ElementTransformation & trafo, 
-                                   FlatMatrix<SCAL> elmat,
+                                   FlatMatrix<SCAL_RES> elmat,
                                    LocalHeap & lh) const;
     
     virtual void 
@@ -551,7 +563,7 @@ public:
                                  FlatMatrix<double> elmat,
                                  LocalHeap & lh) const;
 
-    template <int D, typename SCAL, typename SCAL_SHAPES>
+    template <typename SCAL, typename SCAL_SHAPES>
     void T_CalcLinearizedElementMatrixEB (const FiniteElement & fel,
                                           const ElementTransformation & trafo, 
                                           FlatVector<double> elveclin,
@@ -566,7 +578,7 @@ public:
 			void * precomputed,
 			LocalHeap & lh) const;
 
-    template <int D, typename SCAL, typename SCAL_SHAPES>
+    template <typename SCAL, typename SCAL_SHAPES>
     void T_ApplyElementMatrixEB (const FiniteElement & fel, 
                                  const ElementTransformation & trafo, 
                                  const FlatVector<double> elx, 

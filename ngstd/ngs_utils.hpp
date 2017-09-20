@@ -145,6 +145,18 @@ namespace std
       return result;
     }
   };
+
+
+
+  template <typename T>
+  struct has_call_operator
+  {
+      template <typename C> static std::true_type check( decltype( sizeof(&C::operator() )) ) { return std::true_type(); }
+      template <typename> static std::false_type check(...) { return std::false_type(); }
+      typedef decltype( check<T>(sizeof(char)) ) type;
+      static constexpr type value = type();
+  };
+
   
 }
 

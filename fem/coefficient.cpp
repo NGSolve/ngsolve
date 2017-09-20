@@ -3550,8 +3550,11 @@ public:
   {
     return make_shared<ComponentCoefficientFunction> (c1, comp);
   }
-  
 
+
+
+
+// ************************ DomainWiseCoefficientFunction *************************************
 
 class DomainWiseCoefficientFunction : public T_CoefficientFunction<DomainWiseCoefficientFunction>
 {
@@ -3562,9 +3565,9 @@ public:
   DomainWiseCoefficientFunction (Array<shared_ptr<CoefficientFunction>> aci)
     : BASE(1, false), ci(aci) 
   { 
-    for (auto cf : ci)
+    for (auto & cf : ci)
       if (cf && cf->IsComplex()) is_complex = true;
-    for (auto cf : ci)
+    for (auto & cf : ci)
       if (cf) SetDimension(cf->Dimension());
   }
 
@@ -3597,8 +3600,9 @@ public:
 
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)   
   {
-    for (auto cf : ci)
-      cf->TraverseTree (func);
+    for (auto & cf : ci)
+      if (cf)
+        cf->TraverseTree (func);
     func(*this);
   }
 
@@ -3719,6 +3723,123 @@ public:
 
 
 
+// ************************ OtherCoefficientFunction *************************************
+
+class OtherCoefficientFunction : public T_CoefficientFunction<OtherCoefficientFunction>
+{
+  shared_ptr<CoefficientFunction> c1;
+  typedef T_CoefficientFunction<OtherCoefficientFunction> BASE;
+  using BASE::Evaluate;
+public:
+  OtherCoefficientFunction (shared_ptr<CoefficientFunction> ac1)
+    : BASE(ac1->Dimension(), ac1->IsComplex()), c1(ac1)
+  { ; }
+
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
+  {
+    throw Exception ("OtherCF::GenerateCode not available");
+  }
+
+  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)   
+  {
+    c1->TraverseTree (func);
+    func(*this);
+  }
+
+  virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
+  {
+    Array<CoefficientFunction*> cfa;
+    cfa.Append (c1.get());
+    return Array<CoefficientFunction*>(cfa);
+  } 
+  
+  
+  virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
+  {
+    throw Exception ("OtherCF::Evaluated (mip) not available");    
+  }
+
+  virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
+                        FlatVector<> result) const
+  {
+    throw Exception ("OtherCF::Evaluated (mip) not available");        
+  }
+
+
+  virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
+  {
+    if (!ir.GetOtherMIR()) throw Exception ("other mir not set, pls report to developers");
+    c1->Evaluate (*ir.GetOtherMIR(), values);
+  }
+
+  virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const
+  {
+    if (!ir.GetOtherMIR()) throw Exception ("other mir not set, pls report to developers");    
+    c1->Evaluate (*ir.GetOtherMIR(), values);    
+  }
+
+  template <typename T>
+  void T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<T>> values) const
+  {
+    if (!ir.GetOtherMIR()) throw Exception ("other mir not set, pls report to developers");    
+    c1->Evaluate (*ir.GetOtherMIR(), values);    
+  }
+
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
+                         AFlatMatrix<double> values) const
+  {
+    // compile not available
+    if (!ir.GetOtherMIR()) throw Exception ("other mir not set, pls report to developers");    
+    c1->Evaluate (*ir.GetOtherMIR(), values);        
+  }
+  
+  virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
+                        FlatVector<Complex> result) const
+  {
+    throw Exception ("OtherCF::Evaluated (mip) not available");        
+  }
+  
+  virtual Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const
+  {
+    throw Exception ("OtherCF::Evaluated (mip) not available");            
+  }
+    
+  virtual void EvaluateDeriv(const BaseMappedIntegrationRule & mir,
+                             FlatMatrix<> result,
+                             FlatMatrix<> deriv) const
+  {
+    if (!mir.GetOtherMIR()) throw Exception ("other mir not set, pls report to developers");    
+    c1->EvaluateDeriv (*mir.GetOtherMIR(), result, deriv);            
+  }
+
+  virtual void EvaluateDDeriv(const BaseMappedIntegrationRule & mir,
+                              FlatMatrix<> result,
+                              FlatMatrix<> deriv,
+                              FlatMatrix<> dderiv) const
+  {
+    if (!mir.GetOtherMIR()) throw Exception ("other mir not set, pls report to developers");    
+    c1->EvaluateDDeriv (*mir.GetOtherMIR(), result, deriv, dderiv);                
+  }
+};
+
+shared_ptr<CoefficientFunction>
+MakeOtherCoefficientFunction (shared_ptr<CoefficientFunction> me)
+{
+  me->TraverseTree
+    ( [&] (CoefficientFunction & nodecf)
+      {
+        if (dynamic_cast<const ProxyFunction*> (&nodecf))
+          throw Exception ("You cannot create an other - CoefficientFunction from a tree involving a ProxyFunction\n  ---> use the Other()-operator on sub-trees");
+      }
+      );
+  return make_shared<OtherCoefficientFunction> (me);
+}
+
+
+
+
+
+
 
   
 
@@ -3750,8 +3871,15 @@ public:
       else
         return cf_else->Evaluate(ip);      
     }
+
+    virtual void Evaluate (const BaseMappedIntegrationPoint& ip, FlatVector<double> values) const
+    {
+      if(cf_if->Evaluate(ip) > 0)
+        cf_then->Evaluate(ip,values);
+      else
+        cf_else->Evaluate(ip,values);
+    }
     
-    ///
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
     {
       STACK_ARRAY(double, hmem1, ir.Size());
@@ -3773,6 +3901,14 @@ public:
 
       // for (int i = 0; i < ir.Size(); i++)
       //   values(i) = (if_values(i) > 0) ? then_values(i) : else_values(i);
+    }
+
+    virtual void Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<Complex> values) const
+    {
+      if(cf_if->Evaluate(ip)>0)
+        cf_then->Evaluate(ip,values);
+      else
+        cf_else->Evaluate(ip,values);
     }
 
 
@@ -4100,7 +4236,15 @@ public:
         cf->NonZeroPattern(ud, nonzero.Range(base,base+dimi));
         base += dimi;
       }
-  }  
+  }
+
+  virtual bool DefinedOn (const ElementTransformation & trafo)
+  {
+    for (auto & cf : ci)
+      if (!cf->DefinedOn(trafo)) return false;
+    return true;
+  }
+  
 
   using BASE::Evaluate;  
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
@@ -4428,9 +4572,8 @@ public:
 
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {
         auto v = Var(index);
-        if(dir==0) code.body += v.Assign(CodeExpr("ip.GetPoint()(0)"));
-        if(dir==1) code.body += v.Assign(CodeExpr("ip.GetPoint()(1)"));
-        if(dir==2) code.body += v.Assign(CodeExpr("ip.GetPoint()(2)"));
+        // code.body += v.Assign(CodeExpr(string("mir.GetPoints()(i,")+ToString(dir)+")"));
+        code.body += v.Assign(CodeExpr(string("points(i,")+ToString(dir)+")"));
     }
 
     template <typename T>
@@ -4440,7 +4583,8 @@ public:
       size_t nv = ir.Size();
       __assume (nv > 0);
       for (size_t i = 0; i < nv; i++)
-        values(i) = SIMD<double> (points.Get(i, dir));
+        values(i) = points(i, dir);
+        // values(i) = SIMD<double> (points.Get(i, dir));
     }
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
                            AFlatMatrix<double> values) const
@@ -4484,7 +4628,7 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
     lib_function_dderiv compiled_function_dderiv = nullptr;
     lib_function_simd_dderiv compiled_function_simd_dderiv = nullptr;
   public:
-    CompiledCoefficientFunction (shared_ptr<CoefficientFunction> acf, bool realcompile)
+    CompiledCoefficientFunction (shared_ptr<CoefficientFunction> acf, bool realcompile, int maxderiv, bool wait )
       : CoefficientFunction(acf->Dimension(), acf->IsComplex()), cf(acf) // , compiled_function(nullptr), compiled_function_simd(nullptr)
     {
       SetDimensions (cf->Dimensions());
@@ -4535,7 +4679,7 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
 
         string parameters[3] = {"results", "deriv", "dderiv"};
 
-        for (int deriv : Range(3))
+        for (int deriv : Range(maxderiv+1))
         for (auto simd : {false,true}) {
             cout << IM(3) << "Compiled CF:" << endl;
             Code code;
@@ -4601,6 +4745,7 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
               s << ", " << param_type << parameters[i];
             s << " ) {" << endl;
             s << code.header << endl;
+            s << "auto points = mir.GetPoints();" << endl;
             s << "for ( auto i : Range(mir)) {" << endl;
             s << "auto & ip = mir[i];" << endl;
             s << code.body << endl;
@@ -4616,13 +4761,30 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
           pointer_code += "}\n";
           codes.push_back(pointer_code);
         }
-        library.Compile( codes );
-        compiled_function_simd = library.GetFunction<lib_function_simd>("CompiledEvaluateSIMD");
-        compiled_function = library.GetFunction<lib_function>("CompiledEvaluate");
-        compiled_function_simd_deriv = library.GetFunction<lib_function_simd_deriv>("CompiledEvaluateDerivSIMD");
-        compiled_function_deriv = library.GetFunction<lib_function_deriv>("CompiledEvaluateDeriv");
-        compiled_function_simd_dderiv = library.GetFunction<lib_function_simd_dderiv>("CompiledEvaluateDDerivSIMD");
-        compiled_function_dderiv = library.GetFunction<lib_function_dderiv>("CompiledEvaluateDDeriv");
+        std::thread thread{ [this, codes, maxderiv] () {
+          try {
+              library.Compile( codes );
+              compiled_function_simd = library.GetFunction<lib_function_simd>("CompiledEvaluateSIMD");
+              compiled_function = library.GetFunction<lib_function>("CompiledEvaluate");
+              if(maxderiv>0)
+              {
+                  compiled_function_simd_deriv = library.GetFunction<lib_function_simd_deriv>("CompiledEvaluateDerivSIMD");
+                  compiled_function_deriv = library.GetFunction<lib_function_deriv>("CompiledEvaluateDeriv");
+              }
+              if(maxderiv>1)
+              {
+                  compiled_function_simd_dderiv = library.GetFunction<lib_function_simd_dderiv>("CompiledEvaluateDDerivSIMD");
+                  compiled_function_dderiv = library.GetFunction<lib_function_dderiv>("CompiledEvaluateDDeriv");
+              }
+              cout << IM(7) << "Compilation done" << endl;
+          } catch (const std::exception &e) {
+              cerr << IM(3) << "Compilation of CoefficientFunction failed: " << e.what() << endl;
+          }
+        }};
+        if(wait)
+            thread.join();
+        else
+            thread.detach();
       }
     }
 
@@ -4645,10 +4807,21 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
     {
       return cf -> Evaluate(ip);
-      // throw Exception ("compiled mip evaluate not implemented");
     }
 
+    virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
+			  FlatVector<> result) const
+    {
+      cf->Evaluate (ip, result);      
+    }
 
+    virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
+			  FlatVector<Complex> result) const
+    {
+      cf->Evaluate (ip, result);
+    }
+
+    
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
     {
       if(compiled_function)
@@ -4949,9 +5122,9 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
 
 
 
-  shared_ptr<CoefficientFunction> Compile (shared_ptr<CoefficientFunction> c, bool realcompile)
+  shared_ptr<CoefficientFunction> Compile (shared_ptr<CoefficientFunction> c, bool realcompile, int maxderiv, bool wait)
   {
-    return make_shared<CompiledCoefficientFunction> (c, realcompile);
+    return make_shared<CompiledCoefficientFunction> (c, realcompile, maxderiv, wait);
   }
   
 

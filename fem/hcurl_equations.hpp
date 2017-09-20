@@ -179,6 +179,8 @@ namespace ngfem
 
     static string Name() { return "curl"; }
 
+    static constexpr bool SUPPORT_PML = true;
+
     template <typename AFEL, typename MIP, typename MAT>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)

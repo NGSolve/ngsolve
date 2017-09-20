@@ -77,7 +77,7 @@ mstar.Assemble()
 inv = mstar.mat.Inverse(X.FreeDofs(), inverse="mumps")
 
 # the non-linear term 
-conv = BilinearForm(X, flags = { "nonassemble" : True })
+conv = BilinearForm(X, nonassemble = True)
 conv += SymbolicBFI( CoefficientFunction( (ux,uy) ) * (grad(ux)*vx+grad(uy)*vy) )
 
 t = 0
