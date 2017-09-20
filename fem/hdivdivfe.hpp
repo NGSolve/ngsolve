@@ -145,8 +145,14 @@ namespace ngfem
     virtual void CalcMappedShape_Vector (const MappedIntegrationPoint<DIM,DIM> & mip,
                             BareSliceMatrix<double> shape) const
     {
-      Vec<DIM, AutoDiffDiff<DIM>> adp = mip.LinearizedBarycentricCoordinates();
-      Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM>> (adp), SBLambda([&] (int nr, auto val)
+      Vec<DIM, AutoDiff<DIM>> adp = mip;
+      Vec<DIM, AutoDiffDiff<DIM>> addp;
+      for (int i=0; i<DIM; i++)
+      {
+        addp[i].Value() = adp[i].Value();
+        addp[i].LoadGradient(&adp[i].DValue(0));
+      }
+      Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM>> (addp), SBLambda([&] (int nr, auto val)
                                           {
                                             shape.Row(nr).AddSize(DIM_STRESS) = val.Shape();
                                           }));
@@ -156,8 +162,14 @@ namespace ngfem
     virtual void CalcMappedShape_Matrix (const MappedIntegrationPoint<DIM,DIM> & mip,
                             BareSliceMatrix<double> shape) const
     {
-      Vec<DIM, AutoDiffDiff<DIM>> adp = mip.LinearizedBarycentricCoordinates();
-      Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM>> (adp),SBLambda([&](int nr,auto val)
+      Vec<DIM, AutoDiff<DIM>> adp = mip;
+      Vec<DIM, AutoDiffDiff<DIM>> addp;
+      for (int i=0; i<DIM; i++)
+      {
+        addp[i].Value() = adp[i].Value();
+        addp[i].LoadGradient(&adp[i].DValue(0));
+      }
+      Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM>> (addp),SBLambda([&](int nr,auto val)
       {
         Vec<DIM_STRESS> vecshape = val.Shape();
         BareVector<double> matshape = shape.Row(nr);
@@ -169,11 +181,17 @@ namespace ngfem
     virtual void CalcMappedDivShape (const MappedIntegrationPoint<DIM,DIM> & mip,
                             BareSliceMatrix<double> shape) const
     {
-      Vec<DIM, AutoDiffDiff<DIM>> adp = mip.LinearizedBarycentricCoordinates();
+      Vec<DIM, AutoDiff<DIM>> adp = mip;
+      Vec<DIM, AutoDiffDiff<DIM>> addp;
+      for (int i=0; i<DIM; i++)
+      {
+        addp[i].Value() = adp[i].Value();
+        addp[i].LoadGradient(&adp[i].DValue(0));
+      }
 
       if(!mip.GetTransformation().IsCurvedElement()) // non-curved element
       {
-        Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM>> (adp),SBLambda([&](int nr,auto val)
+        Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM>> (addp),SBLambda([&](int nr,auto val)
         {
           shape.Row(nr).AddSize(DIM) = val.DivShape();
         }));
@@ -211,7 +229,7 @@ namespace ngfem
                   finvT_h_tilde_finv[i](alpha,beta) += inv_jac(gamma,alpha)*f_tilde(i,gamma).DValue(delta)*inv_jac(delta,beta);
         }
 
-        Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM>> (adp),SBLambda([&](int nr,auto val)
+        Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM>> (addp),SBLambda([&](int nr,auto val)
                                   {
                                     shape.Row(nr).AddSize(DIM) = val.DivShape();
                                     BareVector<double> divshape = shape.Row(nr);
