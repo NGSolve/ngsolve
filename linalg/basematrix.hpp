@@ -145,7 +145,6 @@ namespace ngla
   template <typename SCAL>
   class NGS_DLL_HEADER S_BaseMatrix : virtual public BaseMatrix
   {
-    static_assert(std::is_same<SCAL, double>::value || std::is_same<SCAL, Complex>::value, "TSCAL has to be either Complex or double");
   public:
     ///
     S_BaseMatrix ();

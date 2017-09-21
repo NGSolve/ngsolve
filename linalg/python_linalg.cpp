@@ -7,13 +7,6 @@ using namespace ngla;
 template<typename T>
 void ExportSparseMatrix(py::module m)
 {
-  typedef typename mat_traits<T>::TSCAL TSCAL;
-  static constexpr bool is_double = std::is_same<double, TSCAL>::value;
-  static constexpr bool is_complex = std::is_same<Complex, TSCAL>::value;
-  static_assert(is_complex || is_double, "TSCAL has to be either Complex or double");
-  py::class_<S_BaseMatrix<T>, shared_ptr<S_BaseMatrix<T>>, BaseMatrix>
-    (m, (string("S_BaseMatrix") + typeid(T).name()).c_str(), "base sparse matrix")
-    ;
   py::class_<SparseMatrix<T>, shared_ptr<SparseMatrix<T>>, BaseSparseMatrix, S_BaseMatrix<typename mat_traits<T>::TSCAL>>
     (m, (string("SparseMatrix") + typeid(T).name()).c_str(),
      "a sparse matrix in CSR storage")
@@ -494,6 +487,11 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
          })
     */
     ;
+
+  py::class_<S_BaseMatrix<double>, shared_ptr<S_BaseMatrix<double>>, BaseMatrix>
+    (m, "S_BaseMatrixD", "base sparse matrix");
+  py::class_<S_BaseMatrix<Complex>, shared_ptr<S_BaseMatrix<Complex>>, BaseMatrix>
+    (m, "S_BaseMatrixC", "base sparse matrix");
 
   ExportSparseMatrix<double>(m);
   ExportSparseMatrix<Complex>(m);
