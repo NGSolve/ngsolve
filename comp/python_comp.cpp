@@ -2706,7 +2706,7 @@ flags : dict
 
                              NGSOStream::SetGlobalActive (MyMPI_GetId()==0);
                              return LoadPDE (filename);
-                           }), py::arg("self_class"), py::arg("filename"))
+                           }), py::arg("filename"))
 #endif
 
     .def(py::init<>())
