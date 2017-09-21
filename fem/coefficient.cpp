@@ -4761,8 +4761,8 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
           pointer_code += "}\n";
           codes.push_back(pointer_code);
         }
-        std::thread thread{ [this, codes, maxderiv] () {
-          try {
+
+        auto compile_func = [this, codes, maxderiv] () {
               library.Compile( codes );
               compiled_function_simd = library.GetFunction<lib_function_simd>("CompiledEvaluateSIMD");
               compiled_function = library.GetFunction<lib_function>("CompiledEvaluate");
@@ -4777,14 +4777,17 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
                   compiled_function_dderiv = library.GetFunction<lib_function_dderiv>("CompiledEvaluateDDeriv");
               }
               cout << IM(7) << "Compilation done" << endl;
+        };
+        if(wait)
+            compile_func();
+        else
+        {
+          try {
+            std::thread( compile_func ).detach();
           } catch (const std::exception &e) {
               cerr << IM(3) << "Compilation of CoefficientFunction failed: " << e.what() << endl;
           }
-        }};
-        if(wait)
-            thread.join();
-        else
-            thread.detach();
+        }
       }
     }
 
