@@ -496,7 +496,9 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
   ExportSparseMatrix<double>(m);
   ExportSparseMatrix<Complex>(m);
   ExportSparseMatrix<Mat<2,2,double>>(m);
-
+  ExportSparseMatrix<Mat<2,2,Complex>>(m);
+  ExportSparseMatrix<Mat<3,3,double>>(m);
+  ExportSparseMatrix<Mat<3,3,Complex>>(m);
   
   py::class_<BaseBlockJacobiPrecond, shared_ptr<BaseBlockJacobiPrecond>, BaseMatrix>
     (m, "BlockSmoother",
