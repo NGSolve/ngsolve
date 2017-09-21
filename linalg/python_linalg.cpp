@@ -22,20 +22,24 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
   py::class_<BaseVector, shared_ptr<BaseVector>>(m, "BaseVector",
         py::dynamic_attr() // add dynamic attributes
       )
-    .def("__reduce__", [] (py::object self_object)
-         {
-           auto constructor = py::module::import("ngsolve").attr("CreateBaseVector");
-           auto self = py::cast<shared_ptr<BaseVector>>(self_object);
-           auto entries = py::list();
-           if(self->IsComplex())
-             for(auto entry : self->FV<Complex>())
-               entries.append(py::cast(entry));
-           else
-             for(auto entry : self->FV<double>())
-               entries.append(py::cast(entry));
-           auto constructor_args = py::make_tuple(self->Size(),self->IsComplex(),self->EntrySize(),entries,self_object.attr("__dict__"));
-           return py::make_tuple(constructor, constructor_args);
-         })
+    .def(py::pickle([] (const BaseVector& bv)
+                    {
+                      py::list lst;
+                      for(auto val : bv.FVDouble())
+                        lst.append(val);
+                      return py::make_tuple(bv.Size(),bv.IsComplex(),bv.EntrySize(),lst);
+                    },
+                    [] (py::tuple state) -> shared_ptr<BaseVector>
+                    {
+                      auto bv = CreateBaseVector(state[0].cast<size_t>(),
+                                                 state[1].cast<bool>(),
+                                                 state[2].cast<size_t>());
+                      auto lst = state[3].cast<py::list>();
+                      for(auto i : Range(py::len(lst)))
+                        bv.FVDouble()[i] = lst[i].cast<double>();
+                      return bv;
+                    }
+                    ))
     .def("__str__", [](BaseVector &self) { return ToString<BaseVector>(self); } )
     .def("__repr__", [](BaseVector &self) { return "basevector"; } )
     .def_property_readonly("size", py::cpp_function( [] (BaseVector &self) { return self.Size(); } ) )
@@ -685,10 +689,9 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 
 
 
-PYBIND11_PLUGIN(libngla) {
-  py::module m("la", "pybind la");
+PYBIND11_MODULE(libngla, m) {
+  m.attr("__name__") = "la";
   ExportNgla(m);
-  return m.ptr();
 }
 
 
