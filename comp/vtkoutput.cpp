@@ -51,16 +51,15 @@ namespace ngcomp
   }
     
   /// Fill principil lattices (points and connections on subdivided reference simplex) in 2D
-  template<>
-  void VTKOutput<2>::FillReferenceData(Array<IntegrationPoint> & ref_coords, Array<INT<2+1>> & ref_trigs)
+  template<int D>
+  void VTKOutput<D>::FillReferenceTrig(Array<IntegrationPoint> & ref_coords,Array<INT<ELEMENT_MAXPOINTS+1>> & ref_elems)
   {
-    enum { D = 2 };
     if (subdivision == 0)
     {
       ref_coords.Append(IntegrationPoint(0.0,0.0,0.0));
       ref_coords.Append(IntegrationPoint(1.0,0.0,0.0));
       ref_coords.Append(IntegrationPoint(0.0,1.0,0.0));
-      ref_trigs.Append(INT<D+1>(0,1,2));
+      ref_elems.Append(INT<ELEMENT_MAXPOINTS+1>(3,0,1,2));
     }
     else
     {
@@ -85,19 +84,62 @@ namespace ngcomp
             int pidx_incr_i = pidx+1;
             int pidx_incr_j = pidx+s-i;
 
-            ref_trigs.Append(INT<3>(pidx,pidx_incr_i,pidx_incr_j));
+            ref_elems.Append(INT<ELEMENT_MAXPOINTS+1>(3,pidx,pidx_incr_i,pidx_incr_j));
 
             int pidx_incr_ij = pidx_incr_j + 1;
 
             if(i+j+1<r) 
-              ref_trigs.Append(INT<3>(pidx_incr_i,pidx_incr_ij,pidx_incr_j));
+              ref_elems.Append(INT<ELEMENT_MAXPOINTS+1>(3,pidx_incr_i,pidx_incr_ij,pidx_incr_j));
           }              
+    }
+  }
+  /// Fill principil lattices (points and connections on subdivided reference simplex) in 2D
+  template<int D>
+  void VTKOutput<D>::FillReferenceQuad(Array<IntegrationPoint> & ref_coords,Array<INT<ELEMENT_MAXPOINTS+1>> & ref_elems)
+  {
+    if(subdivision == 0)
+    {
+      ref_coords.Append(IntegrationPoint(0.0,0.0,0.0));
+      ref_coords.Append(IntegrationPoint(1.0,0.0,0.0));
+      ref_coords.Append(IntegrationPoint(1.0,1.0,0.0));
+      ref_coords.Append(IntegrationPoint(0.0,1.0,0.0));
+      INT<ELEMENT_MAXPOINTS+1> quad;
+      quad[0] = 4;
+      quad[1] = 0;
+      quad[2] = 1;
+      quad[3] = 2;
+      quad[4] = 3;
+      ref_elems.Append(quad);
+    }
+    else
+    {
+      const int r = 1<<subdivision;
+      const int s = r + 1;
+
+      const double h = 1.0/r;
+
+      int pidx = 0;
+      for(int i = 0; i <= r; ++i)
+        for(int j = 0; j <= r; ++j)
+        {
+          ref_coords.Append(IntegrationPoint(j*h,i*h));
+        }
+
+      for(int i = 0; i < r; ++i)
+      {
+        int incr_i = r+1;
+        pidx = i*incr_i;
+        for(int j = 0; j < r; ++j,pidx++)
+        {
+          ref_elems.Append(INT<ELEMENT_MAXPOINTS+1>(4, pidx, pidx+1, pidx+incr_i+1, pidx+incr_i));
+        }
+      }
     }
   }
 
   /// Fill principil lattices (points and connections on subdivided reference simplex) in 3D
   template <int D> 
-  void VTKOutput<D>::FillReferenceData(Array<IntegrationPoint> & ref_coords, Array<INT<D+1>> & ref_tets)
+  void VTKOutput<D>::FillReferenceTet(Array<IntegrationPoint> & ref_coords,Array<INT<ELEMENT_MAXPOINTS+1>> & ref_elems)
   {
     if (subdivision == 0)
     {
@@ -105,7 +147,7 @@ namespace ngcomp
       ref_coords.Append(IntegrationPoint(1.0,0.0,0.0));
       ref_coords.Append(IntegrationPoint(0.0,1.0,0.0));
       ref_coords.Append(IntegrationPoint(0.0,0.0,1.0));
-      ref_tets.Append(INT<D+1>(0,1,2,3));
+      ref_elems.Append(INT<ELEMENT_MAXPOINTS+1>(4,0,1,2,3));
     }
     else
     {
@@ -122,7 +164,6 @@ namespace ngcomp
             ref_coords.Append(IntegrationPoint(i*h,j*h,k*h));
           }
 
-      pidx = 0;
       for (int i = 0; i <= r; ++i)
         for (int j = 0; i+j <= r; ++j)
           for (int k = 0; i+j+k <= r; ++k, pidx++)
@@ -139,19 +180,75 @@ namespace ngcomp
             int pidx_incr_ki = pidx+(s-i)*(s+1-i)/2-j + 1;
             int pidx_incr_kij = pidx+(s-i)*(s+1-i)/2-j + s-(i+1)-j + 1;
 
-            ref_tets.Append(INT<4>(pidx,pidx_incr_k,pidx_incr_j,pidx_incr_i));
+            ref_elems.Append(INT<ELEMENT_MAXPOINTS+1>(4,pidx,pidx_incr_k,pidx_incr_j,pidx_incr_i));
             if (i+j+k+1 == r)
               continue;
 
-            ref_tets.Append(INT<4>(pidx_incr_k,pidx_incr_kj,pidx_incr_j,pidx_incr_i));
-            ref_tets.Append(INT<4>(pidx_incr_k,pidx_incr_kj,pidx_incr_ki,pidx_incr_i));
+            ref_elems.Append(INT<ELEMENT_MAXPOINTS+1>(4,pidx_incr_k,pidx_incr_kj,pidx_incr_j,pidx_incr_i));
+            ref_elems.Append(INT<ELEMENT_MAXPOINTS+1>(4,pidx_incr_k,pidx_incr_kj,pidx_incr_ki,pidx_incr_i));
 
-            ref_tets.Append(INT<4>(pidx_incr_j,pidx_incr_i,pidx_incr_kj,pidx_incr_ij));
-            ref_tets.Append(INT<4>(pidx_incr_i,pidx_incr_kj,pidx_incr_ij,pidx_incr_ki));
+            ref_elems.Append(INT<ELEMENT_MAXPOINTS+1>(4,pidx_incr_j,pidx_incr_i,pidx_incr_kj,pidx_incr_ij));
+            ref_elems.Append(INT<ELEMENT_MAXPOINTS+1>(4,pidx_incr_i,pidx_incr_kj,pidx_incr_ij,pidx_incr_ki));
            
             if (i+j+k+2 != r)
-              ref_tets.Append(INT<4>(pidx_incr_kj,pidx_incr_ij,pidx_incr_ki,pidx_incr_kij));
+              ref_elems.Append(INT<ELEMENT_MAXPOINTS+1>(4,pidx_incr_kj,pidx_incr_ij,pidx_incr_ki,pidx_incr_kij));
           }              
+    }
+  }
+  
+  template <int D> 
+  void VTKOutput<D>::FillReferencePrism(Array<IntegrationPoint> & ref_coords,Array<INT<ELEMENT_MAXPOINTS+1>> & ref_elems)
+  {
+    if(subdivision == 0)
+    {
+      ref_coords.Append(IntegrationPoint(0.0,0.0,0.0));
+      ref_coords.Append(IntegrationPoint(1.0,0.0,0.0));
+      ref_coords.Append(IntegrationPoint(0.0,1.0,0.0));
+      ref_coords.Append(IntegrationPoint(0.0,0.0,1.0));
+      ref_coords.Append(IntegrationPoint(1.0,0.0,1.0));
+      ref_coords.Append(IntegrationPoint(0.0,1.0,1.0));
+      INT<ELEMENT_MAXPOINTS+1> elem;
+      elem[0] = 6;
+      for(int i=0; i<ElementTopology::GetNVertices(ET_PRISM); i++)
+        elem[i+1] = i;
+      ref_elems.Append(elem);
+    }
+    else
+    {
+      const int r = 1<<subdivision;
+      const int s = r + 1;
+
+      const double h = 1.0/r;
+
+      int pidx = 0;
+      for(int k=0; k<=r; k++)
+        for(int i = 0; i <= r; ++i)
+          for(int j = 0; i+j <= r; ++j)
+          {
+          ref_coords.Append(IntegrationPoint(j*h,i*h,k*h));
+        }
+
+      pidx = 0;
+      for(int k=0; k<r; k++)
+      {
+        int incr_k = (r+2)*(r+1)/2;
+        pidx = k*incr_k;
+        for(int i = 0; i <= r; ++i)
+          for(int j = 0; i+j <= r; ++j,pidx++)
+          {
+            // int pidx_curr = pidx;
+            if(i+j == r) continue;
+            int pidx_incr_i = pidx+1;
+            int pidx_incr_j = pidx+s-i;
+
+            ref_elems.Append(INT<ELEMENT_MAXPOINTS+1>(6, pidx, pidx_incr_i, pidx_incr_j, pidx+incr_k, pidx_incr_i+incr_k, pidx_incr_j+incr_k, 0, 0 ));
+              
+            int pidx_incr_ij = pidx_incr_j + 1;
+
+            if(i+j+1<r)
+              ref_elems.Append(INT<ELEMENT_MAXPOINTS+1>(6, pidx_incr_i, pidx_incr_ij, pidx_incr_j, pidx_incr_i+incr_k, pidx_incr_ij+incr_k, pidx_incr_j+incr_k,0,0));
+          }
+      }
     }
   }
 
@@ -173,9 +270,22 @@ namespace ngcomp
   template <int D> 
   void VTKOutput<D>::PrintCells()
   {
-    *fileout << "CELLS " << cells.Size() << " " << (D+2) * cells.Size() << endl;
+    // count number of data for cells, one + number of vertices
+    int ndata = 0;
     for (auto c : cells)
-      *fileout << D+1 <<" " << c << endl;
+    {
+      ndata++;
+      ndata += c[0];
+    }
+    *fileout << "CELLS " << cells.Size() << " " << ndata << endl;
+    for (auto c : cells)
+    {
+      int nv = c[0];
+      *fileout << nv << "\t";
+      for (int i=0; i<nv; i++)
+        *fileout << c[i+1] << "\t";
+      *fileout << endl;
+    }
   }
 
   /// output of cell types (here only simplices)
@@ -183,12 +293,33 @@ namespace ngcomp
   void VTKOutput<D>::PrintCellTypes()
   {
     *fileout << "CELL_TYPES " << cells.Size() << endl;
+    int factor = (1<<subdivision)*(1<<subdivision);
     if (D==3)
-      for (auto c : cells)
-        { *fileout << "10 " << endl; (void)c; } // no warning 
-    else
-      for (auto c : cells)
-        { *fileout << "5 " << endl; (void)c; } // no warning 
+      factor *= (1<<subdivision);
+    for (auto e : ma->Elements(VOL))
+    {
+      switch(ma->GetElType(e))
+      {
+      case ET_TET:
+        for(int i=0; i<factor; i++)
+          *fileout << "10 " << endl; //(void)c;
+        break;
+      case ET_QUAD:
+        for(int i=0; i<factor; i++)
+          *fileout << "9 " << endl;
+        break;
+      case ET_TRIG:
+        for(int i=0; i<factor; i++)
+          *fileout << "5 " << endl;
+        break;
+      case ET_PRISM:
+        for(int i=0; i<factor; i++)
+          *fileout << "13 " << endl;
+        break;
+      default:
+        cout << "VTKOutput Element Type " << ma->GetElType(e) << " not supported!" << endl;
+      }
+    }
     *fileout << "CELL_DATA " << cells.Size() << endl;
     *fileout << "POINT_DATA " << points.Size() << endl;
   }
@@ -230,15 +361,20 @@ namespace ngcomp
 
     ResetArrays();
 
-    Array<IntegrationPoint> ref_vertices(0);
-    Array<INT<D+1>> ref_tets(0);
+    Array<IntegrationPoint> ref_vertices_tet(0), ref_vertices_prism(0), ref_vertices_trig(0), ref_vertices_quad(0);
+    Array<INT<ELEMENT_MAXPOINTS+1>> ref_tets(0), ref_prisms(0), ref_trigs(0), ref_quads(0);
+    FlatArray<IntegrationPoint> ref_vertices;
+    FlatArray<INT<ELEMENT_MAXPOINTS+1>> ref_elems;
     /*
     if (D==3)
       FillReferenceData3D(ref_vertices,ref_tets);
     else
       FillReferenceData2D(ref_vertices,ref_tets);
     */
-    FillReferenceData(ref_vertices,ref_tets);
+    FillReferenceTet(ref_vertices_tet,ref_tets);
+    FillReferencePrism(ref_vertices_prism,ref_prisms);
+    FillReferenceQuad(ref_vertices_quad,ref_quads);
+    FillReferenceTrig(ref_vertices_trig,ref_trigs);
       
     // header:
     *fileout << "# vtk DataFile Version 3.0" << endl;
@@ -259,6 +395,27 @@ namespace ngcomp
 
       ElementId ei(VOL, elnr);
       ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
+      ELEMENT_TYPE eltype = ma->GetElType(ei);
+
+      switch(eltype)
+      {
+      case ET_TRIG:
+        ref_vertices.Assign(ref_vertices_trig);
+        ref_elems.Assign(ref_trigs);
+        break;
+      case ET_QUAD:
+        ref_vertices.Assign(ref_vertices_quad);
+        ref_elems.Assign(ref_quads);
+        break;
+      case ET_TET:
+        ref_vertices.Assign(ref_vertices_tet);
+        ref_elems.Assign(ref_tets);
+        break;
+      case ET_PRISM:
+        ref_vertices.Assign(ref_vertices_prism);
+        ref_elems.Assign(ref_prisms);
+        break;
+      }
 
       int offset = points.Size();
       for ( auto ip : ref_vertices)
@@ -280,12 +437,12 @@ namespace ngcomp
         }
       }
       
-      for ( auto tet : ref_tets)
+      for ( auto elem : ref_elems)
       {
-        INT<D+1> new_tet = tet;
-        for (int i = 0; i < D+1; ++i)
-          new_tet[i] += offset;
-        cells.Append(new_tet);
+        INT<ELEMENT_MAXPOINTS+1> new_elem = elem;
+        for (int i = 1; i <= new_elem[0]; ++i)
+          new_elem[i] += offset;
+        cells.Append(new_elem);
       }
 
     }
