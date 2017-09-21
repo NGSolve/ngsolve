@@ -470,26 +470,6 @@ struct GenericPow {
 
 void ExportCoefficientFunction(py::module &m)
 {
-  m.def("CreateCoefficientFunction", [] (py::object self, py::object val, py::object dims)
-        {
-          auto coef = MakeCoefficient(val);
-          if(dims)
-            {
-              try {
-                Array<int> cdims = makeCArray<int> (dims);
-                coef->SetDimensions(cdims);
-              }
-              catch (py::type_error){ }
-            }
-          return coef;
-        },
-        py::arg("self"), py::arg("coef"),py::arg("dims")=DummyArgument(),
-         "Construct a CoefficientFunction from either one of\n"
-         "  a scalar (float or complex)\n"
-         "  a tuple of scalars and or CFs to define a vector-valued CF\n"
-         "     use dims=(h,w) to define matrix-valued CF\n"
-         "  a list of scalars and or CFs to define a domain-wise CF"
-        );
 
   py::class_<CoefficientFunction, shared_ptr<CoefficientFunction>>
     (m, "CoefficientFunction",
@@ -510,7 +490,26 @@ val : can be one of the following:
     Creates a domain-wise CF, use with generator expressions and mesh.GetMaterials()
     and mesh.GetBoundaries()
 )raw")
-
+    .def(py::init([] (py::object val, py::object dims)
+        {
+          auto coef = MakeCoefficient(val);
+          if(dims)
+            {
+              try {
+                Array<int> cdims = makeCArray<int> (dims);
+                coef->SetDimensions(cdims);
+              }
+              catch (py::type_error){ }
+            }
+          return coef;
+        }),
+        py::arg("coef"),py::arg("dims")=DummyArgument(),
+         "Construct a CoefficientFunction from either one of\n"
+         "  a scalar (float or complex)\n"
+         "  a tuple of scalars and or CFs to define a vector-valued CF\n"
+         "     use dims=(h,w) to define matrix-valued CF\n"
+         "  a list of scalars and or CFs to define a domain-wise CF"
+        )
     .def("__str__",  [](CF& self) { return ToString<>(self);})
 
     .def("__call__", [] (CF& self, BaseMappedIntegrationPoint & mip) -> py::object
@@ -1175,7 +1174,8 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
                                                })
     ;
 
-  m.def("CreateElementTransformation", [] (py::object self_class, ELEMENT_TYPE et, py::list vertices)
+  py::class_<ElementTransformation, shared_ptr<ElementTransformation>>(m, "ElementTransformation")
+    .def(py::init([] (ELEMENT_TYPE et, py::list vertices)
         -> shared_ptr<ElementTransformation>
         {
           int nv = ElementTopology::GetNVertices(et);
@@ -1195,10 +1195,8 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
             default:
               throw Exception ("cannot create ElementTransformation");
             }
-        },
-        py::arg("self_class"), py::arg("et")=ET_TRIG,py::arg("vertices"));
-    
-  py::class_<ElementTransformation, shared_ptr<ElementTransformation>>(m, "ElementTransformation")
+        }),
+        py::arg("et")=ET_TRIG,py::arg("vertices"))
     .def_property_readonly("VB", &ElementTransformation::VB)
     .def_property_readonly("spacedim", &ElementTransformation::SpaceDim)
     .def_property_readonly("elementid", &ElementTransformation::GetElementId)
@@ -1222,12 +1220,14 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
     (m, "DifferentialOperator")
     ;
 
-  m.def("CreateBilinearFormIntegrator", [] (py::object self_class, const string name,
-                                            py::object py_coef, int dim, bool imag,
-                                            string filename, py::kwargs kwargs)
+  typedef BilinearFormIntegrator BFI;
+  auto bfi_class = py::class_<BFI, shared_ptr<BFI>> (m, "BFI");
+  bfi_class
+    .def(py::init([bfi_class] (const string name, py::object py_coef, int dim, bool imag,
+                      string filename, py::kwargs kwargs)
         -> shared_ptr<BilinearFormIntegrator>
         {
-          auto flags = CreateFlagsFromKwArgs(self_class,kwargs);
+          auto flags = CreateFlagsFromKwArgs(bfi_class,kwargs);
           Array<shared_ptr<CoefficientFunction>> coef = MakeCoefficients(py_coef);
           auto bfi = GetIntegrators().CreateBFI (name, dim, coef);
 
@@ -1242,17 +1242,13 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
           bfi -> SetFlags (flags);
           if (imag)
             bfi = make_shared<ComplexBilinearFormIntegrator> (bfi, Complex(0,1));
-          self_class.attr("__initialize__")(bfi,**kwargs);
+          bfi_class.attr("__initialize__")(bfi,**kwargs);
           return bfi;
-        },
-        py::arg("self_class"), py::arg("name")="",
+        }),
+        py::arg("name")="",
         py::arg("coef"),py::arg("dim")=-1,
         py::arg("imag")=false, py::arg("filename")=""
-        );
-
-  typedef BilinearFormIntegrator BFI;
-  py::class_<BFI, shared_ptr<BFI>>
-    (m, "BFI")
+        )
     .def_static("__flags_doc__", [] ()
          {
            return py::dict
@@ -1346,47 +1342,46 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
            py::arg("bfi")=NULL, py::arg("dim")=2, py::arg("comp")=0
       );
 
-  m.def("CreateLinearFormIntegrator", [] (py::object self_class, string name, int dim,
-                                          py::object py_coef,
-                                          py::object definedon, bool imag, const Flags & flags,
-                                          py::object definedonelem)
-        {
-          Array<shared_ptr<CoefficientFunction>> coef = MakeCoefficients(py_coef);
-          auto lfi = GetIntegrators().CreateLFI (name, dim, coef);
-
-          if (!lfi) throw Exception(string("undefined integrator '")+name+
-                                    "' in "+ToString(dim)+ " dimension having 1 coefficient");
-
-          if(hasattr(definedon,"Mask"))
-            {
-              auto vb = py::cast<VorB>(definedon.attr("VB")());
-              if(vb != lfi->VB())
-                throw Exception(string("LinearFormIntegrator ") + name + " not defined for " +
-                                (vb==VOL ? "VOL" : (vb==BND ? "BND" : "BBND")));
-            lfi->SetDefinedOn(py::cast<BitArray>(definedon.attr("Mask")()));
-            }
-          if (py::extract<py::list> (definedon).check())
-               {
-                 Array<int> defon = makeCArray<int> (definedon);
-                 for (int & d : defon) d--;
-                 lfi -> SetDefinedOn (defon);
-               }
-          if (! py::extract<DummyArgument> (definedonelem).check())
-            lfi -> SetDefinedOnElements (py::extract<shared_ptr<BitArray>>(definedonelem)());
-
-          if (imag)
-            lfi = make_shared<ComplexLinearFormIntegrator> (lfi, Complex(0,1));
-          return lfi;
-        },
-        py::arg("self_class"),
-        py::arg("name")=NULL,py::arg("dim")=-1,
-        py::arg("coef"),py::arg("definedon")=DummyArgument(),
-        py::arg("imag")=false, py::arg("flags")=py::dict(),
-        py::arg("definedonelements")=DummyArgument());
-
   typedef LinearFormIntegrator LFI;
   py::class_<LFI, shared_ptr<LFI>>
     (m, "LFI")
+    .def(py::init([] (string name, int dim,
+                      py::object py_coef,
+                      py::object definedon, bool imag, const Flags & flags,
+                      py::object definedonelem)
+                  {
+                    Array<shared_ptr<CoefficientFunction>> coef = MakeCoefficients(py_coef);
+                    auto lfi = GetIntegrators().CreateLFI (name, dim, coef);
+
+                    if (!lfi) throw Exception(string("undefined integrator '")+name+
+                                              "' in "+ToString(dim)+ " dimension having 1 coefficient");
+
+                    if(hasattr(definedon,"Mask"))
+                      {
+                        auto vb = py::cast<VorB>(definedon.attr("VB")());
+                        if(vb != lfi->VB())
+                          throw Exception(string("LinearFormIntegrator ") + name + " not defined for " +
+                                          (vb==VOL ? "VOL" : (vb==BND ? "BND" : "BBND")));
+                        lfi->SetDefinedOn(py::cast<BitArray>(definedon.attr("Mask")()));
+                      }
+                    if (py::extract<py::list> (definedon).check())
+                      {
+                        Array<int> defon = makeCArray<int> (definedon);
+                        for (int & d : defon) d--;
+                        lfi -> SetDefinedOn (defon);
+                      }
+                    if (! py::extract<DummyArgument> (definedonelem).check())
+                      lfi -> SetDefinedOnElements (py::extract<shared_ptr<BitArray>>(definedonelem)());
+
+                    if (imag)
+                      lfi = make_shared<ComplexLinearFormIntegrator> (lfi, Complex(0,1));
+                    return lfi;
+                  }),
+         py::arg("name")=NULL,py::arg("dim")=-1,
+         py::arg("coef"),py::arg("definedon")=DummyArgument(),
+         py::arg("imag")=false, py::arg("flags")=py::dict(),
+         py::arg("definedonelements")=DummyArgument())
+
     .def("__str__",  [](shared_ptr<LFI> self) { return ToString<LinearFormIntegrator>(*self); } )
     
     // .def("GetDefinedOn", &Integrator::GetDefinedOn)
@@ -1455,10 +1450,9 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
 }
 
 
-PYBIND11_PLUGIN(libngfem) {
-  py::module m("fem", "pybind fem");
+PYBIND11_MODULE(libngfem, m) {
+  m.attr("__name__") = "fem";
   ExportNgfem(m);
-  return m.ptr();
 }
 
 

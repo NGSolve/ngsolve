@@ -205,10 +205,9 @@ void NGS_DLL_HEADER ExportNgsolve(py::module &m ) {
 }
 
 
-PYBIND11_PLUGIN(libngsolve) {
-  py::module m("solve", "pybind solve");
+PYBIND11_MODULE(libngsolve, m) {
+  m.attr("__name__") = "ngsolve";
   ExportNgsolve(m);
-  return m.ptr();
 }
 
 

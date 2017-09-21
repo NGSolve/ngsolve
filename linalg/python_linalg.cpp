@@ -4,6 +4,54 @@
 using namespace ngla;
 
 
+template<typename T>
+void ExportSparseMatrix(py::module m)
+{
+  py::class_<SparseMatrix<T>, shared_ptr<SparseMatrix<T>>, BaseSparseMatrix, S_BaseMatrix<typename mat_traits<T>::TSCAL>>
+    (m, (string("SparseMatrix") + typeid(T).name()).c_str(),
+     "a sparse matrix in CSR storage")
+    .def("__getitem__",
+         [](const SparseMatrix<T> & self, py::tuple t)
+         {
+           size_t row = t[0].cast<size_t>();
+           size_t col = t[1].cast<size_t>();
+           return self(row,col);
+         })
+    .def("__setitem__",
+         [](SparseMatrix<T> & self, py::tuple t, T value)
+         {
+           size_t row = t[0].cast<size_t>();
+           size_t col = t[1].cast<size_t>();
+           self(row,col) = value;
+         })
+
+    .def("COO", [] (SparseMatrix<T> * sp) -> py::object
+         {
+           size_t nze = sp->NZE();
+           Array<int> ri(nze), ci(nze);
+           Vector<T> vals(nze);
+           for (size_t i = 0, ii = 0; i < sp->Height(); i++)
+             {
+               FlatArray<int> ind = sp->GetRowIndices(i);
+               FlatVector<T> rv = sp->GetRowValues(i);
+               for (int j = 0; j < ind.Size(); j++, ii++)
+                 {
+                   ri[ii] = i;
+                   ci[ii] = ind[j];
+                   vals[ii] = rv[j];
+                 }
+             }
+
+           py::object pyri = py::cast(std::move(ri));
+           py::object pyci = py::cast(std::move(ci));
+           py::object pyvals = py::cast(std::move(vals));
+           return py::make_tuple (pyri, pyci, pyvals);
+         })
+    ;
+
+  py::class_<SparseMatrixSymmetric<T>, shared_ptr<SparseMatrixSymmetric<T>>, SparseMatrix<T>>
+    (m, (string("SparseMatrixSymmetric") + typeid(T).name()).c_str());
+}
 
 void NGS_DLL_HEADER ExportNgla(py::module &m) {
 
@@ -22,20 +70,24 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
   py::class_<BaseVector, shared_ptr<BaseVector>>(m, "BaseVector",
         py::dynamic_attr() // add dynamic attributes
       )
-    .def("__reduce__", [] (py::object self_object)
-         {
-           auto constructor = py::module::import("ngsolve").attr("CreateBaseVector");
-           auto self = py::cast<shared_ptr<BaseVector>>(self_object);
-           auto entries = py::list();
-           if(self->IsComplex())
-             for(auto entry : self->FV<Complex>())
-               entries.append(py::cast(entry));
-           else
-             for(auto entry : self->FV<double>())
-               entries.append(py::cast(entry));
-           auto constructor_args = py::make_tuple(self->Size(),self->IsComplex(),self->EntrySize(),entries,self_object.attr("__dict__"));
-           return py::make_tuple(constructor, constructor_args);
-         })
+    .def(py::pickle([] (const BaseVector& bv)
+                    {
+                      py::list lst;
+                      for(auto val : bv.FVDouble())
+                        lst.append(val);
+                      return py::make_tuple(bv.Size(),bv.IsComplex(),bv.EntrySize(),lst);
+                    },
+                    [] (py::tuple state) -> shared_ptr<BaseVector>
+                    {
+                      auto bv = CreateBaseVector(state[0].cast<size_t>(),
+                                                 state[1].cast<bool>(),
+                                                 state[2].cast<size_t>());
+                      auto lst = state[3].cast<py::list>();
+                      for(auto i : Range(py::len(lst)))
+                        bv.FVDouble()[i] = lst[i].cast<double>();
+                      return bv;
+                    }
+                    ))
     .def("__str__", [](BaseVector &self) { return ToString<BaseVector>(self); } )
     .def("__repr__", [](BaseVector &self) { return "basevector"; } )
     .def_property_readonly("size", py::cpp_function( [] (BaseVector &self) { return self.Size(); } ) )
@@ -441,101 +493,16 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     ;
 
   py::class_<S_BaseMatrix<double>, shared_ptr<S_BaseMatrix<double>>, BaseMatrix>
-    (m, "S_BaseMatrixD", "base sparse matrix double")
-    ;
+    (m, "S_BaseMatrixD", "base sparse matrix");
   py::class_<S_BaseMatrix<Complex>, shared_ptr<S_BaseMatrix<Complex>>, BaseMatrix>
-    (m, "S_BaseMatrixC", "base sparse matrix complex")
-    ;
+    (m, "S_BaseMatrixC", "base sparse matrix");
 
-  py::class_<SparseMatrix<double>, shared_ptr<SparseMatrix<double>>, BaseSparseMatrix, S_BaseMatrix<double> >
-    (m, "SparseMatrixD",
-     "a sparse matrix in CSR storage, entries are real")
-    .def("__getitem__",
-         [](const SparseMatrix<double> & self, py::tuple t)
-         {
-           size_t row = t[0].cast<size_t>();
-           size_t col = t[1].cast<size_t>();
-           return self(row,col);
-         })
-    .def("__setitem__",
-         [](SparseMatrix<double> & self, py::tuple t, double value)
-         {
-           size_t row = t[0].cast<size_t>();
-           size_t col = t[1].cast<size_t>();
-           self(row,col) = value;
-         })
-    
-    .def("COO", [] (SparseMatrix<double> * sp) -> py::object
-         {
-           size_t nze = sp->NZE();
-           Array<int> ri(nze), ci(nze);
-           Vector<double> vals(nze);
-           for (size_t i = 0, ii = 0; i < sp->Height(); i++)
-             {
-               FlatArray<int> ind = sp->GetRowIndices(i);
-               FlatVector<double> rv = sp->GetRowValues(i);
-               for (int j = 0; j < ind.Size(); j++, ii++)
-                 {
-                   ri[ii] = i;
-                   ci[ii] = ind[j];
-                   vals[ii] = rv[j];
-                 }
-             }
-           
-           py::object pyri = py::cast(std::move(ri));
-           py::object pyci = py::cast(std::move(ci));
-           py::object pyvals = py::cast(std::move(vals));
-           return py::make_tuple (pyri, pyci, pyvals);
-         })
-    ;
-         
-  py::class_<SparseMatrix<Complex>, shared_ptr<SparseMatrix<Complex>>, BaseSparseMatrix, S_BaseMatrix<Complex>>
-    (m, "SparseMatrixC",
-     "a sparse matrix in CSR storage, entries are complex")
-    .def("__getitem__",
-         [](const SparseMatrix<Complex> & self, py::tuple t)
-         {
-           size_t row = t[0].cast<size_t>();
-           size_t col = t[1].cast<size_t>();
-           return self(row,col);
-         })
-    .def("__setitem__",
-         [](SparseMatrix<Complex> & self, py::tuple t, Complex value)
-         {
-           size_t row = t[0].cast<size_t>();
-           size_t col = t[1].cast<size_t>();
-           self(row,col) = value;
-         })
-    .def("COO", [] (SparseMatrix<Complex> * spc) -> py::object
-         {
-           size_t nze = spc->NZE();
-           Array<int> ri(nze), ci(nze);
-           Vector<Complex> vals(nze);
-           for (size_t i = 0, ii = 0; i < spc->Height(); i++)
-             {
-               FlatArray<int> ind = spc->GetRowIndices(i);
-               FlatVector<Complex> rv = spc->GetRowValues(i);
-               for (int j = 0; j < ind.Size(); j++, ii++)
-                 {
-                   ri[ii] = i;
-                   ci[ii] = ind[j];
-                   vals[ii] = rv[j];
-                 }
-             }
-           py::object pyri = py::cast(std::move(ri));
-           py::object pyci = py::cast(std::move(ci));
-           py::object pyvals = py::cast(std::move(vals));
-           return py::make_tuple (pyri, pyci, pyvals);
-         })
-    ;
-
-
-  py::class_<SparseMatrixSymmetric<double>, shared_ptr<SparseMatrixSymmetric<double>>, SparseMatrix<double>>
-    (m, "SparseMatrixSymmetricD");
-
-  py::class_<SparseMatrixSymmetric<Complex>, shared_ptr<SparseMatrixSymmetric<Complex>>, SparseMatrix<Complex>>
-    (m, "SparseMatrixSymmetricC");
-
+  ExportSparseMatrix<double>(m);
+  ExportSparseMatrix<Complex>(m);
+  ExportSparseMatrix<Mat<2,2,double>>(m);
+  ExportSparseMatrix<Mat<2,2,Complex>>(m);
+  ExportSparseMatrix<Mat<3,3,double>>(m);
+  ExportSparseMatrix<Mat<3,3,Complex>>(m);
   
   py::class_<BaseBlockJacobiPrecond, shared_ptr<BaseBlockJacobiPrecond>, BaseMatrix>
     (m, "BlockSmoother",
@@ -685,10 +652,9 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 
 
 
-PYBIND11_PLUGIN(libngla) {
-  py::module m("la", "pybind la");
+PYBIND11_MODULE(libngla, m) {
+  m.attr("__name__") = "la";
   ExportNgla(m);
-  return m.ptr();
 }
 
 
