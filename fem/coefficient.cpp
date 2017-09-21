@@ -3595,7 +3595,29 @@ public:
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
-    code.body += "// DomainWiseCoefficientFunction: not implemented\n;";
+    code.body += "// DomainWiseCoefficientFunction:\n";
+    string type = "decltype(0.0";
+    for(int in : inputs)
+        type += "+decltype("+Var(in).S()+")()";
+    type += ")";
+    TraverseDimensions( Dimensions(), [&](int ind, int i, int j) {
+        code.body += Var(index,i,j).Declare(type);
+    });
+    code.body += "switch(domain_index) {\n";
+    for(int domain : Range(inputs))
+    {
+        code.body += "case " + ToLiteral(domain) + ": \n";
+        TraverseDimensions( Dimensions(), [&](int ind, int i, int j) {
+            code.body += "  "+Var(index, i, j).Assign(Var(inputs[domain], i, j), false);
+        });
+        code.body += "  break;\n";
+    }
+    code.body += "default: \n";
+    TraverseDimensions( Dimensions(), [&](int ind, int i, int j) {
+        code.body += "  "+Var(index, i, j).Assign(string("0.0"), false);
+    });
+    code.body += "  break;\n";
+    code.body += "}\n";
   }
 
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)   
@@ -4746,6 +4768,7 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
             s << " ) {" << endl;
             s << code.header << endl;
             s << "auto points = mir.GetPoints();" << endl;
+            s << "auto domain_index = mir.GetTransformation().GetElementIndex();" << endl;
             s << "for ( auto i : Range(mir)) {" << endl;
             s << "auto & ip = mir[i];" << endl;
             s << code.body << endl;
