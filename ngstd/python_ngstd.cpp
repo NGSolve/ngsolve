@@ -73,7 +73,7 @@ void SetFlag(Flags &flags, string s, py::object value)
     }
 }
 
-Flags NGS_DLL_HEADER CreateFlagsFromKwArgs(const py::object& pyclass, const py::kwargs& kwargs, py::list info)
+Flags NGS_DLL_HEADER CreateFlagsFromKwArgs(py::object pyclass, const py::kwargs& kwargs, py::list info)
 {
   auto flags_doc = pyclass.attr("__flags_doc__")();
   py::dict flags_dict;
@@ -488,10 +488,9 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
 }
 
 
-PYBIND11_PLUGIN(libngstd) {
-  py::module m("ngstd", "pybind ngstd");
+PYBIND11_MODULE(libngstd, m) {
+  m.attr("__name__") = "ngstd";
   ExportNgstd(m);
-  return m.ptr();
 }
 
 
