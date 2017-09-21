@@ -50,6 +50,10 @@ def HDivDiv(mesh, **args):
     """ Create H(div-div) finite element space. """
     return FESpace("hdivdiv", mesh, **args)
 
+def NumberSpace(mesh, **args):
+    """ Create space of real or complex numbers. """
+    return FESpace("number", mesh, **args)
+
 
 def grad(func):
     if func.derivname == "grad":
@@ -84,6 +88,25 @@ def DomainConstantCF(values):
     return CoefficientFunction(values)
 
 
-__all__ = ['x', 'y', 'z', 'Laplace', 'Mass', 'Source', 'Neumann', 'H1', 'VectorH1', 'FacetFESpace', 'L2', 'SurfaceL2', 'HDivDiv', 'grad', 'curl', 'div','Mesh', 'ConstantCF', 'DomainConstantCF' ]
+def Id(dim):
+    return CoefficientFunction( tuple( [1 if i==j else 0 for i in range(dim) for j in range(dim)]), dims=(dim,dim) )
+
+def Trace(mat):
+    return sum( [mat[i,i] for i in range(mat.dims[0]) ])
+
+def Det(mat):
+    if mat.dims[0] == 1:
+        return mat[0,0]
+    elif mat.dims[0] == 2:
+        return mat[0,0]*mat[1,1]-mat[0,1]*mat[1,0]
+    elif mat.dims[0] == 3:
+        return mat[0,0]*(mat[1,1]*mat[2,2]-mat[1,2]*mat[2,1]) \
+              +mat[1,0]*(mat[2,1]*mat[0,2]-mat[2,2]*mat[0,1]) \
+              +mat[2,0]*(mat[0,1]*mat[1,2]-mat[0,2]*mat[1,1])
+
+
+
+
+__all__ = ['x', 'y', 'z', 'Laplace', 'Mass', 'Source', 'Neumann', 'H1', 'VectorH1', 'FacetFESpace', 'L2', 'SurfaceL2', 'HDivDiv', 'NumberSpace', 'grad', 'curl', 'div','Mesh', 'ConstantCF', 'DomainConstantCF', 'Id', 'Trace', 'Det']
 
 

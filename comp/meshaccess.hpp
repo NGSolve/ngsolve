@@ -151,7 +151,7 @@ namespace ngcomp
     INLINE auto end () const { return DimElementIterator<VB,DIM>(ma, r.Next()); }
   };
 
-
+  /*
   class NodeIterator
   {
     NodeId ni;
@@ -173,7 +173,7 @@ namespace ngcomp
     NodeIterator end () const { return NodeIterator(NodeId(nt,IntRange::Next())); }
     NodeId operator[] (size_t nr) { return NodeId(nt, IntRange::First()+nr); }
   };
-
+  */
 
   /** 
       Access to mesh topology and geometry.
@@ -215,14 +215,16 @@ namespace ngcomp
     /// number of multigrid levels 
     int nlevels;
 
+    int nregions[3];
+    
     /// max domain index
-    int ndomains;
+    int & ndomains = nregions[0];
 
     /// max boundary index
-    int nboundaries;
+    int & nboundaries = nregions[1];
 
     /// max boundary index for co dim 2
-    int nbboundaries;
+    int & nbboundaries = nregions[2];
 
     size_t timestamp = 0;
     
@@ -295,7 +297,8 @@ namespace ngcomp
 
     int GetNRegions (VorB vb) const
     {
-      return (vb == VOL) ? ndomains : ((vb==BND) ? nboundaries : nbboundaries);
+      return nregions[vb];
+      // return (vb == VOL) ? ndomains : ((vb==BND) ? nboundaries : nbboundaries);
     }
 
     /// returns point coordinate
@@ -333,14 +336,34 @@ namespace ngcomp
       return DimElementRange<VB,DIM> (*this, IntRange (0, GetNE(VB)));
     }
 
-
+    /*
     NodeRange Nodes (NODE_TYPE nt) const
     {
       return NodeRange (nt, IntRange (0, GetNNodes(nt)));
     }
+    */
+    auto Nodes (NODE_TYPE nt) const
+    {
+      return T_Range<NodeId> (NodeId(nt, 0), NodeId(nt, GetNNodes(nt)));
+    }
 
+    template <NODE_TYPE nt>
+      auto Nodes () const
+    {
+      return T_Range<T_NodeId<nt>> (0, GetNNodes(nt));
+    }
 
-
+    // using Vertices = Nodes<NT_VERTEX>;
+    auto Vertices() const { return Nodes<NT_VERTEX>(); }
+    auto Edges() const { return Nodes<NT_EDGE>(); }
+    auto Faces() const { return Nodes<NT_FACE>(); }
+    auto Cells() const { return Nodes<NT_CELL>(); }
+    /*
+    auto Vertices () const
+    {
+      return T_Range<T_NodeId<NT_VERTEX>> (0, GetNNodes(NT_VERTEX));
+    }
+    */
     template <typename TFUNC>
     void IterateElements (VorB vb, 
                           LocalHeap & clh, 
@@ -439,6 +462,13 @@ namespace ngcomp
         case BBND: return mesh.GetMaterialCD<2> (region_nr);
         }
     }
+
+    auto GetMaterials (VorB vb) const
+    {
+      return ArrayObject (GetNRegions(vb),
+                          [this,vb] (size_t i) { return this->GetMaterial(vb, i); });
+    }
+
     
     /// the material of the element
     [[deprecated("Use GetMaterial with ElementId(VOL, elnr) instead!")]]        
@@ -787,11 +817,11 @@ namespace ngcomp
     // int GetSegmentIndex (int snr) const;
 
     void GetVertexElements (size_t vnr, Array<int> & elems) const;
-    auto GetVertexElements (size_t vnr) const // -> decltype (ArrayObject(mesh.GetNode<0> (vnr).elements))
+    auto GetVertexElements (size_t vnr) const 
     { return ArrayObject(mesh.GetNode<0> (vnr).elements); }
 
     void GetVertexSurfaceElements (size_t vnr, Array<int> & elems) const;
-    auto GetVertexSurfaceElements (size_t vnr) const // -> decltype (ArrayObject(mesh.GetNode<0> (vnr).bnd_elements))
+    auto GetVertexSurfaceElements (size_t vnr) const 
     { return ArrayObject(mesh.GetNode<0> (vnr).bnd_elements); }
     
     /// number of facets of an element. 
