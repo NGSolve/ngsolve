@@ -1603,7 +1603,13 @@ kwargs : For a description of the possible kwargs have a look a bit further down
          },
          py::arg("heapsize")=1000000,
          "update space after mesh-refinement")
-
+     .def("FinalizeUpdate", [](shared_ptr<FESpace> self, int heapsize)
+         { 
+           LocalHeap lh (heapsize, "FESpace::FinalizeUpdate-heap");
+           self->FinalizeUpdate(lh);
+         },
+         py::arg("heapsize")=1000000,
+         "finalize update")
     .def_property_readonly ("ndof", [](shared_ptr<FESpace> self) { return self->GetNDof(); },
                             "number of degrees of freedom")
 
