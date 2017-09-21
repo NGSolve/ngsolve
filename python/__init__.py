@@ -9,6 +9,7 @@ ngsolve.bla .... simple vectors and matrices
 ngsolve.fem .... finite elements and integrators
 ngsolve.comp ... function spaces, forms
 """
+import netgen
 
 from ngsolve.ngslib import *
 

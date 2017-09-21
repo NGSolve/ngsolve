@@ -108,9 +108,28 @@ namespace ngstd
     return AOWrapper<T> (ar);
   }
 
+  template <typename FUNC>
+  auto ArrayObject (size_t s, FUNC f)
+  {
+    class Dummy
+    {
+      size_t s;
+      FUNC f;
+    public:
+      Dummy (size_t _s, FUNC _f) : s(_s), f(_f) { ; }
+      size_t Size() const { return s; }
+      auto operator[] (size_t i) const { return f(i); }
+    };
+    return ArrayObject(Dummy(s,f));
+  }
 
-
-
+  template <typename T, typename FUNC>
+  auto Substitute (const BaseArrayObject<T> & ao, FUNC f)
+  {
+    return ArrayObject(ao.Size(),
+                       [&ao,f] (size_t i) { return f(ao[i]); });
+  }
+  
 
 
 
@@ -193,7 +212,7 @@ namespace ngstd
       INLINE T_Range(T_Range<T2> r2) : first(r2.First()), next(r2.Next()) { ; }
     INLINE T First() const { return first; }
     INLINE T Next() const { return next; }
-    INLINE T Size() const { return next-first; }
+    INLINE auto Size() const { return next-first; }
     INLINE T operator[] (T i) const { return first+i; }
     INLINE bool Contains (T i) const { return ((i >= first) && (i < next)); }
 

@@ -89,17 +89,24 @@ namespace ngfem
 
   inline CodeExpr Var(double val)
   {
-    return CodeExpr(ToString(val));
+    stringstream ss;
+    ss << ToString(val);
+    ss << " /* (" << std::setprecision(16);
+    ss << val << ") */";
+    return ss.str();
   }
 
   inline CodeExpr Var(Complex val)
   {
-    string res("Complex(");
-    res += ToString(val.real());
-    res += ",";
-    res += ToString(val.imag());
-    res += ")";
-    return res;
+    stringstream ss;
+    ss << "Complex(";
+    ss << ToString(val.real());
+    ss << ",";
+    ss << ToString(val.imag());
+    ss << ")";
+    ss << " /* (" << std::setprecision(16);
+    ss << val.real() << ", " << val.imag() << ") */";
+    return ss.str();
   }
 
   inline CodeExpr Var(string name, int i, int j=0, int k=0)

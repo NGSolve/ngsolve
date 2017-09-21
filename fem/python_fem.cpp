@@ -450,6 +450,19 @@ struct GenericPow {
         throw Exception("illegal dim of tangential vector");
       res = static_cast<const DimMappedIntegrationPoint<D>&>(ip).GetTV();
     }
+    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {
+        string miptype;
+        if(code.is_simd)
+          miptype = "SIMD<DimMappedIntegrationPoint<"+ToString(D)+">>*";
+        else
+          miptype = "DimMappedIntegrationPoint<"+ToString(D)+">*";
+        auto tv_expr = CodeExpr("static_cast<const "+miptype+">(&ip)->GetTV()");
+        auto tv = Var("tmp", index);
+        code.body += tv.Assign(tv_expr);
+        for( int i : Range(D))
+          code.body += Var(index,i).Assign(tv(i));
+    }
+    
   };
 
 
@@ -655,9 +668,11 @@ val : can be one of the following:
                     },
                    "transpose of matrix-valued CF")
 
-    .def ("Compile", [] (shared_ptr<CF> coef, bool realcompile)
-           { return Compile (coef, realcompile); },
+    .def ("Compile", [] (shared_ptr<CF> coef, bool realcompile, int maxderiv, bool wait)
+           { return Compile (coef, realcompile, maxderiv, wait); },
            py::arg("realcompile")=false,
+           py::arg("maxderiv")=2,
+           py::arg("wait")=false,
           "compile list of individual steps, experimental improvement for deep trees")
     ;
 
@@ -772,18 +787,41 @@ val : float
 
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {
       if(code.is_simd)
-        code.body += Var(index).Assign( CodeExpr("pow(ip.GetJacobiDet(), 1.0/mir.DimElement())"));
+      {
+        string type = "SIMD<double>";
+        code.body += Var(index).Declare(type);
+        code.body += "if (mir[0].IP().FacetNr() != -1)\n{";
+        code.body +=  Var(index).Assign( CodeExpr("fabs (ip.GetJacobiDet()) / ip.GetMeasure()"), false );
+        code.body += "}else\n";
+        code.body += Var(index).Assign( CodeExpr("pow(fabs(ip.GetJacobiDet()), 1.0/mir.DimElement())"), false);
+      }
       else
       {
         code.body += Var(index).Declare( "double" );
         code.body += R"CODE_(
         {
           double tmp_res = 0.0;
+          if (ip.IP().FacetNr() != -1)
+          {
+          double det = 1;
+          switch (ip.Dim())
+            {
+            case 1: det = fabs (static_cast<const MappedIntegrationPoint<1,1>&> (ip).GetJacobiDet()); break;
+            case 2: det = fabs (static_cast<const MappedIntegrationPoint<2,2>&> (ip).GetJacobiDet()); break;
+            case 3: det = fabs (static_cast<const MappedIntegrationPoint<3,3>&> (ip).GetJacobiDet()); break;
+            default:
+              throw Exception("Illegal dimension in MeshSizeCF");
+            }
+          tmp_res = det/ip.GetMeasure();
+          }
+          else
+          {
           switch (ip.Dim()) {
             case 1:  tmp_res =      fabs (static_cast<const MappedIntegrationPoint<1,1>&> (ip).GetJacobiDet()); break;
             case 2:  tmp_res = pow (fabs (static_cast<const MappedIntegrationPoint<2,2>&> (ip).GetJacobiDet()), 1.0/2); break;
             default: tmp_res = pow (fabs (static_cast<const MappedIntegrationPoint<3,3>&> (ip).GetJacobiDet()), 1.0/3);
-        }
+            }
+          }
         )CODE_" + Var(index).S() + " = tmp_res;\n}\n;";
       }
     }

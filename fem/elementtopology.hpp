@@ -490,7 +490,7 @@ namespace ngfem
      number. The number can be with respect to the local element
      numbering, or can be the global numbering on the mesh.
   */
-  class NGS_DLL_HEADER NodeId
+  class /* NGS_DLL_HEADER */ NodeId
   {
     NODE_TYPE nt;
     size_t nodenr;
@@ -519,9 +519,39 @@ namespace ngfem
     // NodeId operator*() const { return *this; }
     bool operator!=(const NodeId id2) const { return nodenr != id2.nodenr || nt != id2.nt; }
     bool operator==(const NodeId id2) const { return nodenr == id2.nodenr && nt == id2.nt; }
+    size_t operator- (NodeId id2) const { return nodenr-id2.nodenr; }
   };
   typedef NodeId Node;
 
+  template <NODE_TYPE nt>
+  class T_NodeId
+  {
+    size_t nodenr;
+
+  public:
+    T_NodeId () = default;
+    T_NodeId (const T_NodeId & n2) = default;
+  
+    /// construct node from number
+    T_NodeId (size_t anodenr)
+      : nodenr(anodenr) { ; }
+
+    /// returns type of the node
+    NODE_TYPE GetType () const { return nt; }
+
+    /// returns number of the node
+    size_t GetNr() const { return nodenr; }
+
+    operator size_t () const { return nodenr; }
+    T_NodeId operator++ (int) { return T_NodeId(nodenr++); }
+    T_NodeId operator++ () { return T_NodeId(++nodenr); }
+    bool operator!=(const T_NodeId id2) const { return nodenr != id2.nodenr; }
+    bool operator==(const T_NodeId id2) const { return nodenr == id2.nodenr; }
+    size_t operator- (T_NodeId id2) const { return nodenr-id2.nodenr; }
+    operator NodeId () const { return NodeId(nt, nodenr); }
+  };
+
+  
   
   inline int CalcNodeId (ELEMENT_TYPE et, const NodeId & node)
   {
