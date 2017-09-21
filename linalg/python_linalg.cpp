@@ -22,14 +22,12 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
   py::class_<BaseVector, shared_ptr<BaseVector>>(m, "BaseVector",
         py::dynamic_attr() // add dynamic attributes
       )
-    .def(py::pickle([] (py::object self)
+    .def(py::pickle([] (const BaseVector& bv)
                     {
-                      auto dict = self.attr("__dict__");
-                      auto bv = py::cast<BaseVector*>(self);
                       py::list lst;
-                      for(auto val : bv->FVDouble())
+                      for(auto val : bv.FVDouble())
                         lst.append(val);
-                      return py::make_tuple(bv->Size(),bv->IsComplex(),bv->EntrySize(),lst,dict);
+                      return py::make_tuple(bv.Size(),bv.IsComplex(),bv.EntrySize(),lst);
                     },
                     [] (py::tuple state) -> shared_ptr<BaseVector>
                     {
@@ -39,7 +37,6 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                       auto lst = state[3].cast<py::list>();
                       for(auto i : Range(py::len(lst)))
                         bv.FVDouble()[i] = lst[i].cast<double>();
-                      py::cast(bv).attr("__dict__") = state[4];
                       return bv;
                     }
                     ))
