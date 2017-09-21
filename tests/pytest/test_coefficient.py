@@ -26,6 +26,13 @@ def test_mesh_size_cf():
         for val in v:
             assert abs(val) < 1e-14
 
+def test_real():
+    mesh = Mesh(unit_square.GenerateMesh(maxh=0.2))
+    cf = CoefficientFunction(1+2j)
+    assert cf.real(mesh(0.4,0.4)) == 1
+    assert cf.imag(mesh(0.2,0.6)) == 2
+
 if __name__ == "__main__":
     test_ParameterCF()
     test_mesh_size_cf()
+    test_real()
