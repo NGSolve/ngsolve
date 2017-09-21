@@ -31,7 +31,7 @@ namespace ngcomp
       FESpace::FinalizeUpdate(lh);
     }
 
-    shared_ptr<Array<int>> GetUsedIdnrs() { return used_idnrs; }
+    shared_ptr<Array<int>> GetUsedIdnrs() const { return used_idnrs; }
     virtual string GetClassName() const override { return "Periodic" + space->GetClassName(); }
     shared_ptr<FESpace> GetBaseSpace() const { return space; }
     
@@ -87,7 +87,7 @@ namespace ngcomp
 
     virtual void Update (LocalHeap & lh) override;
 
-    shared_ptr<Array<Complex>> GetFactors() { return factors; }
+    shared_ptr<Array<Complex>> GetFactors() const { return factors; }
 
     virtual void VTransformMR (ElementId ei, SliceMatrix<double> mat, TRANSFORM_TYPE tt) const override;
     virtual void VTransformMC (ElementId ei, SliceMatrix<Complex> mat, TRANSFORM_TYPE tt) const override;

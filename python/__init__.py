@@ -12,14 +12,6 @@ ngsolve.comp ... function spaces, forms
 
 from ngsolve.ngslib import *
 
-# creator function for unpickling of BaseVector
-def CreateBaseVector(size,iscomplex,entrysize, entries,_dict):
-    vec = la.CreateVVector(size,iscomplex,entrysize)
-    for i,val in enumerate(entries):
-        vec[i] = val
-    vec.__dict__ = _dict
-    return vec
-
 def TmpRedraw(*args, **kwargs):
     solve._Redraw(*args, **kwargs)
     try:
@@ -54,6 +46,7 @@ from ngsolve.comp import *
 from ngsolve.solve import *
 from ngsolve.utils import *
 from . import timing
+
 
 # add flags docu to docstring
 all_classes = comp.__dict__
