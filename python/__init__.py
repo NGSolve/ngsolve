@@ -13,64 +13,6 @@ import netgen
 
 from ngsolve.ngslib import *
 
-storemyinit = None
-
-def __empty_init(x, *args, **kwargs):
-    return
-
-def __empty_init_reset_init(x,*args,**kwargs):
-    global storemyinit
-    x.__class__.__init__ = storemyinit
-    storemyinit = None
-    return
-
-def __monkeypatch_new(thisclass, creatorfunction):
-    pybind_constructor = thisclass.__new__
-    def patched_new(class_t, *args,**kwargs):
-        global storemyinit
-        # if called from subclass which has a __init__ implementation, call the pybind
-        # __new__ instead
-        if class_t is not thisclass and hasattr(class_t,"__init__"):
-            return pybind_constructor(class_t,*args,**kwargs)
-        else:
-            result = creatorfunction(class_t,*args,**kwargs)
-            if hasattr(result.__class__, "__init__"):
-                storemyinit = result.__class__.__init__
-                result.__class__.__init__ = __empty_init_reset_init
-            else:
-                result.__class__.__init__ = __empty_init
-            return result
-    return patched_new
-
-
-# assign creator functions to __new__
-creator_functions = {
-    fem.ElementTransformation : fem.CreateElementTransformation,
-    fem.CoefficientFunction : fem.CreateCoefficientFunction,
-    fem.BFI : fem.CreateBilinearFormIntegrator,
-    fem.LFI : fem.CreateLinearFormIntegrator,
-    comp.BilinearForm : comp.CreateBilinearForm,
-    comp.LinearForm : comp.CreateLinearForm,
-    comp.Preconditioner : comp.CreatePreconditioner,
-    comp.GridFunction : comp.CreateGridFunction,
-    comp.PDE : comp.CreatePDE,
-    comp.VTKOutput : comp.CreateVTKOutput,
-    comp.FESpace : comp.CreateFESpace,
-    comp.Periodic : comp.CreatePeriodicFESpace
-    }
-
-for pclass, creator in creator_functions.items():
-    pclass.__new__ = __monkeypatch_new(pclass,creator)
-
-
-# creator function for unpickling of BaseVector
-def CreateBaseVector(size,iscomplex,entrysize, entries,_dict):
-    vec = la.CreateVVector(size,iscomplex,entrysize)
-    for i,val in enumerate(entries):
-        vec[i] = val
-    vec.__dict__ = _dict
-    return vec
-
 def TmpRedraw(*args, **kwargs):
     solve._Redraw(*args, **kwargs)
     try:
@@ -105,6 +47,7 @@ from ngsolve.comp import *
 from ngsolve.solve import *
 from ngsolve.utils import *
 from . import timing
+
 
 # add flags docu to docstring
 all_classes = comp.__dict__

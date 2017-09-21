@@ -22,8 +22,8 @@ template <int D, typename SCAL = double>
 class AutoDiffDiff
 {
   SCAL val;
-  SCAL dval[D];
-  SCAL ddval[D*D];
+  SCAL dval[D?D:1];
+  SCAL ddval[D?D*D:1];
 public:
 
   typedef AutoDiffDiff<D, SCAL> TELEM;
@@ -73,6 +73,21 @@ public:
     dval[diffindex] = 1;
   }
 
+  INLINE AutoDiffDiff (SCAL aval, const SCAL * grad)
+  {
+    val = aval;
+    LoadGradient (grad);
+    for (int i = 0; i < D*D; i++)
+      ddval[i] = 0;
+  }
+
+  INLINE AutoDiffDiff (SCAL aval, const SCAL * grad, const SCAL * hesse)
+  {
+    val = aval;
+    LoadGradient (grad);
+    LoadHessian (hesse);
+  }
+
   /// assign constant value
   AutoDiffDiff & operator= (SCAL aval) throw()
   {
@@ -82,6 +97,30 @@ public:
     for (int i = 0; i < D*D; i++)
       ddval[i] = 0;
     return *this;
+  }
+
+  INLINE void StoreGradient (SCAL * p) const 
+  {
+    for (int i = 0; i < D; i++)
+      p[i] = dval[i];
+  }
+
+  INLINE void LoadGradient (const SCAL * p) 
+  {
+    for (int i = 0; i < D; i++)
+      dval[i] = p[i];
+  }
+
+  INLINE void StoreHessian (SCAL * p) const 
+  {
+    for (int i = 0; i < D*D; i++)
+      p[i] = ddval[i];
+  }
+
+  INLINE void LoadHessian (const SCAL * p) 
+  {
+    for (int i = 0; i < D*D; i++)
+      ddval[i] = p[i];
   }
 
   /// returns value
