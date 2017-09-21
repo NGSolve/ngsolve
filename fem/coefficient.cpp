@@ -301,15 +301,15 @@ namespace ngfem
 
   void DomainConstantCoefficientFunction :: GenerateCode(Code &code, FlatArray<int> inputs, int index) const
     {
-      code.header += "double tmp_" + ToString(index) + "["+ToString(val.Size())+"] = {";
+      code.header += "double tmp_" + ToLiteral(index) + "["+ToLiteral(val.Size())+"] = {";
       for (auto i : Range(val))
       {
-        code.header += ToString(val[i]);
+        code.header += ToLiteral(val[i]);
         if(i<val.Size()-1)
           code.header += ", ";
       }
       code.header += "};\n";
-      code.header += Var(index).Assign("tmp_"+ToString(index) + "[mir.GetTransformation().GetElementIndex()]");
+      code.header += Var(index).Assign("tmp_"+ToLiteral(index) + "[mir.GetTransformation().GetElementIndex()]");
     }
 
 
@@ -2082,8 +2082,8 @@ public:
       throw Exception("Mult of non-matrices called");
     if (dims_c1[1] != dims_c2[0])
       throw Exception(string("Matrix dimensions don't fit: m1 is ") +
-                      ToString(dims_c1[0]) + " x " + ToString(dims_c1[1]) +
-                      ", m2 is " + ToString(dims_c2[0]) + " x " + ToString(dims_c2[1]) );
+                      ToLiteral(dims_c1[0]) + " x " + ToLiteral(dims_c1[1]) +
+                      ", m2 is " + ToLiteral(dims_c2[0]) + " x " + ToLiteral(dims_c2[1]) );
     // dims = { dims_c1[0], dims_c2[1] };
     SetDimensions( Array<int> ({ dims_c1[0], dims_c2[1] }));
     inner_dim = dims_c1[1];
@@ -2486,7 +2486,7 @@ public:
       throw Exception("Not a mat-vec multiplication");
     if (dims_c1[1] != dims_c2[0])
       throw Exception(string ("Matrix dimensions don't fit: mat is ") +
-                      ToString(dims_c1[0]) + " x " + ToString(dims_c1[1]) + ", vec is " + ToString(dims_c2[0]));
+                      ToLiteral(dims_c1[0]) + " x " + ToLiteral(dims_c1[1]) + ", vec is " + ToLiteral(dims_c2[0]));
     // dims = Array<int> ({ dims_c1[0] });
     SetDimensions (Array<int> ({ dims_c1[0] }));
     inner_dim = dims_c1[1];
@@ -4539,7 +4539,7 @@ public:
         case 0: dirname = "x"; break;
         case 1: dirname = "y"; break;
         case 2: dirname = "z"; break;
-        default: dirname = ToString(dir);
+        default: dirname = ToLiteral(dir);
         }
       return string("coordinate ")+dirname;
     }
@@ -4572,8 +4572,8 @@ public:
 
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {
         auto v = Var(index);
-        // code.body += v.Assign(CodeExpr(string("mir.GetPoints()(i,")+ToString(dir)+")"));
-        code.body += v.Assign(CodeExpr(string("points(i,")+ToString(dir)+")"));
+        // code.body += v.Assign(CodeExpr(string("mir.GetPoints()(i,")+ToLiteral(dir)+")"));
+        code.body += v.Assign(CodeExpr(string("points(i,")+ToLiteral(dir)+")"));
     }
 
     template <typename T>
@@ -4702,8 +4702,8 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
             TraverseDimensions( cf->Dimensions(), [&](int ind, int i, int j) {
                  code.body += Var(steps.Size(),i,j).Declare(res_type);
                  code.body += Var(steps.Size(),i,j).Assign(Var(steps.Size()-1,i,j),false);
-                 string sget = "(i," + ToString(ii) + ") =";
-                 if(simd) sget = "(" + ToString(ii) + ",i) =";
+                 string sget = "(i," + ToLiteral(ii) + ") =";
+                 if(simd) sget = "(" + ToLiteral(ii) + ",i) =";
 
                  for (auto ideriv : Range(deriv+1))
                  {

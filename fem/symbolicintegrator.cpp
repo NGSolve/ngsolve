@@ -94,11 +94,11 @@ namespace ngfem
         header += Var("comp", index,i,j).Declare("{scal_type}", 0.0);
         if(!testfunction && code.deriv==2)
         {
-          header += "if(( ({ud}->trialfunction == {this}) && ({ud}->trial_comp=="+ToString(ind)+"))\n"+
-          " ||  (({ud}->testfunction == {this}) && ({ud}->test_comp=="+ToString(ind)+")))\n";
+          header += "if(( ({ud}->trialfunction == {this}) && ({ud}->trial_comp=="+ToLiteral(ind)+"))\n"+
+          " ||  (({ud}->testfunction == {this}) && ({ud}->test_comp=="+ToLiteral(ind)+")))\n";
         }
         else
-          header += "if({ud}->{comp_string}=="+ToString(ind)+" && {ud}->{func_string} == {this})\n";
+          header += "if({ud}->{comp_string}=="+ToLiteral(ind)+" && {ud}->{func_string} == {this})\n";
         header += Var("comp", index,i,j).S() + string("{get_component}") + " = 1.0;\n";
     });
     string body = "";
@@ -116,9 +116,9 @@ namespace ngfem
             var += ".Value()";
           string values = "{values}";
           if(code.is_simd)
-            values += "(" + ToString(ind) + ",i)";
+            values += "(" + ToLiteral(ind) + ",i)";
           else
-            values += "(i," + ToString(ind) + ")";
+            values += "(i," + ToLiteral(ind) + ")";
 
           body += var + " = " + values + ";\n";
       });
@@ -144,11 +144,11 @@ namespace ngfem
     string func_string = testfunction ? "testfunction" : "trialfunction";
     string comp_string = testfunction ? "test_comp" : "trial_comp";
     std::map<string,string> variables;
-    variables["ud"] = "tmp_"+ToString(index)+"_0";
+    variables["ud"] = "tmp_"+ToLiteral(index)+"_0";
     variables["this"] = "reinterpret_cast<ProxyFunction*>("+code.AddPointer(this)+")";
     variables["func_string"] = testfunction ? "testfunction" : "trialfunction";
     variables["comp_string"] = testfunction ? "test_comp" : "trial_comp";
-    variables["testfunction"] = ToString(testfunction);
+    variables["testfunction"] = ToLiteral(testfunction);
 
     variables["flatmatrix"] = code.is_simd ? "FlatMatrix<SIMD<double>>" : "FlatMatrix<double>";
 
