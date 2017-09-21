@@ -134,7 +134,17 @@ public:
 };
 static GlobalDummyVariables globvar;
 
-struct SelectUnpicklingConstructor { };
+template<typename FESPACE>
+shared_ptr<FESPACE> fesUnpickle(py::tuple state)
+{
+  auto fes = CreateFESpace(state[0].cast<string>(),
+                           state[1].cast<shared_ptr<MeshAccess>>(),
+                           state[2].cast<Flags>());
+  LocalHeap lh (1000000, "FESpace::Update-heap");
+  fes->Update(lh);
+  fes->FinalizeUpdate(lh);
+  return dynamic_pointer_cast<FESPACE>(fes);
+};
 
 void ExportPml(py::module &m)
 {
@@ -838,23 +848,19 @@ mesh (netgen.Mesh): a mesh generated from Netgen
            {
              return self == other;
            })
-
-    .def("__getstate__", [] (py::object self_object) {
-        auto self = self_object.cast<MeshAccess>();
-        stringstream str;
-        self.SaveMesh(str);
-        auto dict = self_object.attr("__dict__");
-        return py::make_tuple(py::cast(str.str()), dict);
-       })
-    .def("__setstate__", [](MeshAccess *instance, py::tuple state) {
-        string s = state[0].cast<string>();
-        stringstream str(s);
-        new (instance) MeshAccess();
-        instance->LoadMesh (str);
-         // restore dynamic attributes (necessary for persistent id in NgsPickler)
-         py::object self_object = py::cast(*instance);
-         self_object.attr("__dict__") = state[1];
-    })
+    .def(py::pickle([](const MeshAccess& ma)
+                    {
+                      stringstream ss;
+                      ma.SaveMesh(ss);
+                      return py::make_tuple(ss.str());
+                    },
+                    [] (py::tuple state)
+                    {
+                      auto ma = make_shared<MeshAccess>();
+                      stringstream ss(state[0].cast<string>());
+                      ma->LoadMesh(ss);
+                      return ma;
+                    }))
     .def("LoadMesh", static_cast<void(MeshAccess::*)(const string &)>(&MeshAccess::LoadMesh),
          "Load mesh from file")
     
@@ -1234,16 +1240,16 @@ when building the system matrices.
         }, "Enable some logging into file with given filename");
 
 
-  // Just to call the right constructor for unpickling
-  py::class_<SelectUnpicklingConstructor>(m,"SelectUnpicklingConstructor")
-    .def("__getstate__", [] (py::object self) { return py::make_tuple(); })
-    .def("__setstate__", [] (SelectUnpicklingConstructor* instance, py::tuple state)
-         {
-           new (instance) SelectUnpicklingConstructor();
-         });
-  
   //////////////////////////////////////////////////////////////////////////////////////////
 
+  auto fesPickle = [](const FESpace& fes)
+    {
+      auto flags = fes.GetFlags();
+      auto mesh = fes.GetMeshAccess();
+      auto type = fes.type;
+      // TODO: pickle order policies
+      return py::make_tuple(type,mesh,flags);
+    };
 
   auto fes_class = py::class_<FESpace, shared_ptr<FESpace>>(m, "FESpace",
 		    docu_string(R"raw_string(Finite Element Space
@@ -1287,15 +1293,6 @@ kwargs : For a description of the possible kwargs have a look a bit further down
 
 )raw_string"), py::dynamic_attr());
   fes_class
-    .def(py::init([] (const string & type, shared_ptr<MeshAccess> ma,
-                      Flags flags, SelectUnpicklingConstructor)
-                  {
-                    auto fes = CreateFESpace(type,ma,flags);
-                    LocalHeap lh(int(1e7),"lh FESpace update unpickle");
-                    fes->Update(lh);
-                    fes->FinalizeUpdate(lh);
-                    return fes;
-                  }), "This constructor is for unpickling only!")
     .def(py::init([] (py::list lspaces, Flags& flags)
                   {
                     Array<shared_ptr<FESpace>> spaces;
@@ -1449,67 +1446,7 @@ kwargs : For a description of the possible kwargs have a look a bit further down
            self.Update(lh);
            self.FinalizeUpdate(lh);
          })
-    .def("__ngsid__", [] (shared_ptr<FESpace> self)
-         { return reinterpret_cast<std::uintptr_t>(self.get()); } )
-    .def("__reduce__", [] (py::object fes_obj)
-         {
-           auto setstate_args = py::make_tuple(fes_obj.attr("__dict__"));
-           py::tuple constructor_args;
-           auto fes = py::cast<shared_ptr<FESpace>>(fes_obj);
-           auto flags = fes->GetFlags();
-           auto comp_fes = dynamic_pointer_cast<CompoundFESpace>(fes);
-           // pickle a compound fespace
-           if(comp_fes)
-             {
-               py::list lst;
-               for(auto i : Range(comp_fes->GetNSpaces()))
-                 {
-                   lst.append((*comp_fes)[i]);
-                 }
-               constructor_args = py::make_tuple(lst,flags);
-             }
-           // pickle periodic spaces
-           auto per_fes = dynamic_pointer_cast<PeriodicFESpace>(fes);
-           if (per_fes)
-             {
-               py::list idnrs;
-               for (auto idnr : *per_fes->GetUsedIdnrs())
-                 idnrs.append(idnr);
-               auto quasiper_fes = dynamic_pointer_cast<QuasiPeriodicFESpace>(per_fes);
-               if (quasiper_fes)
-                 {
-                   py::list fac;
-                   for(auto factor : *quasiper_fes->GetFactors())
-                     fac.append(factor);
-                   constructor_args = py::make_tuple(per_fes->GetBaseSpace(),fac,idnrs);
-                 }
-               else
-                 {
-                   constructor_args = py::make_tuple(per_fes->GetBaseSpace(),py::none(),idnrs);
-                 }
-             }
-           // pickle other fespace
-           if (!comp_fes && !per_fes)
-             {
-               auto mesh = fes->GetMeshAccess();
-               auto type = fes->type;
-               //TODO: pickle order policies
-               constructor_args = py::make_tuple(type,mesh,flags,SelectUnpicklingConstructor());
-             }
-           // if fes has no __init__ then it's constructed with FESpace(...)
-           py::object class_obj = fes_obj.attr("__class__");
-           try
-             {
-               class_obj(*constructor_args);
-             }
-           catch(exception e)
-             {
-               class_obj = py::module::import("ngsolve.comp").attr("FESpace");
-             }
-           return py::make_tuple(class_obj, constructor_args, setstate_args);
-         })
-    .def("__setstate__", [] (py::object self, py::tuple state) { self.attr("__dict__") = state[0]; })
-    
+    .def(py::pickle(fesPickle, (shared_ptr<FESpace>(*)(py::tuple)) fesUnpickle<FESpace>))
     .def("Update", [](shared_ptr<FESpace> self, int heapsize)
          { 
            LocalHeap lh (heapsize, "FESpace::Update-heap");
@@ -1716,6 +1653,8 @@ kwargs : For a description of the possible kwargs have a look a bit further down
            new (instance) HCurlHighOrderFESpace(ma, flags);
            self.attr("__initialize__")(**kwargs);
          })
+    .def(py::pickle(fesPickle, (shared_ptr<HCurlHighOrderFESpace>(*)(py::tuple))
+                    fesUnpickle<HCurlHighOrderFESpace>))
     .def_static("__flags_doc__", [] ()
                 {
                   auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
@@ -1731,6 +1670,38 @@ kwargs : For a description of the possible kwargs have a look a bit further down
 	  return py::make_tuple(grad, fesh1);
 	})
     ;
+
+  py::class_<CompoundFESpace, shared_ptr<CompoundFESpace>, FESpace>
+    (m,"CompoundFESpace")
+    .def(py::pickle([] (py::object pyfes)
+                    {
+                      auto fes = py::cast<shared_ptr<CompoundFESpace>>(pyfes);
+                      auto flags = fes->GetFlags();
+                      py::list lst;
+                      for(auto i : Range(fes->GetNSpaces()))
+                        {
+                          lst.append((*fes)[i]);
+                        }
+                      return py::make_tuple(lst,flags,pyfes.attr("__dict__"));
+                    },
+                    [] (py::tuple state)
+                    {
+                      Array<shared_ptr<FESpace>> spaces;
+                      cout << "load spaces" << endl << flush;
+                      for (auto pyfes : state[0].cast<py::list>())
+                        spaces.Append(pyfes.cast<shared_ptr<FESpace>>());
+                      cout << "done, create compound space" << endl << flush;
+                      auto fes = make_shared<CompoundFESpace>
+                        (spaces[0]->GetMeshAccess(), spaces, state[1].cast<Flags>());
+                      cout << "done, update" << endl << flush;
+                      LocalHeap lh (1000000, "FESpace::Update-heap");
+                      fes->Update(lh);
+                      fes->FinalizeUpdate(lh);
+                      cout << "finished" << endl << flush;
+                      py::cast(fes).attr("__dict__") = state[2];
+                      return fes;
+                    }))
+    ;
   
   py::class_<HDivHighOrderFESpace, shared_ptr<HDivHighOrderFESpace>,FESpace>
     (m, "HDiv")
@@ -1744,6 +1715,8 @@ kwargs : For a description of the possible kwargs have a look a bit further down
            new (instance) HDivHighOrderFESpace(ma, flags);
            self.attr("__initialize__")(**kwargs);
          })
+    .def(py::pickle(fesPickle,(shared_ptr<HDivHighOrderFESpace>(*)(py::tuple))
+                    fesUnpickle<HDivHighOrderFESpace>))
     .def_static("__flags_doc__", [] ()
                 {
                   auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
@@ -1840,6 +1813,43 @@ used_idnrs : list of int = None
                     return perfes;
                   }), py::arg("fespace"), py::arg("phase")=DummyArgument(),
                   py::arg("use_idnrs")=py::list())
+    .def(py::pickle([](const PeriodicFESpace* per_fes)
+                    {
+                      py::list idnrs;
+                      for (auto idnr : *per_fes->GetUsedIdnrs())
+                        idnrs.append(idnr);
+                      auto quasiper_fes = dynamic_cast<const QuasiPeriodicFESpace*>(per_fes);
+                      if(quasiper_fes)
+                        {
+                          py::list fac;
+                          for(auto factor : *quasiper_fes->GetFactors())
+                            fac.append(factor);
+                          return py::make_tuple(per_fes->GetBaseSpace(),idnrs,fac);
+                        }
+                      return py::make_tuple(per_fes->GetBaseSpace(),idnrs);
+                    },
+                    [] (py::tuple state) -> shared_ptr<PeriodicFESpace>
+                    {
+                      auto idnrs = make_shared<Array<int>>();
+                      for (auto id : state[1].cast<py::list>())
+                        idnrs->Append(id.cast<int>());
+                      if(py::len(state)==3)
+                        {
+                          auto facs = make_shared<Array<Complex>>();
+                          for (auto fac : state[2].cast<py::list>())
+                            facs->Append(fac.cast<Complex>());
+                          auto fes = make_shared<QuasiPeriodicFESpace>
+                            (state[0].cast<shared_ptr<FESpace>>(), Flags(),idnrs,facs);
+                          fes->Update(glh);
+                          fes->FinalizeUpdate(glh);
+                          return fes;
+                        }
+                      auto fes = make_shared<PeriodicFESpace>(state[0].cast<shared_ptr<FESpace>>(),
+                                                              Flags(),idnrs);
+                      fes->Update(glh);
+                      fes->FinalizeUpdate(glh);
+                      return fes;
+                    }))
     ;
   
   auto gf_class = py::class_<GF,shared_ptr<GF>, CoefficientFunction, NGS_Object>
@@ -1855,13 +1865,6 @@ used_idnrs : list of int = None
       return gf;
     }), py::arg("space"), py::arg("name")="gfu",
          "creates a gridfunction in finite element space")
-    .def(py::init([](shared_ptr<FESpace> fes, const string& name,
-                                 Flags flags, SelectUnpicklingConstructor)
-        {
-          auto gf = CreateGridFunction(fes,name,flags);
-          gf->Update();
-          return gf;
-        }),"For unpickling only!")
     .def_static("__flags_doc__", [] ()
                 {
                   return py::dict
@@ -1869,30 +1872,28 @@ used_idnrs : list of int = None
                      py::arg("multidim") = "Multidimensional GridFunction"
                      );
                 })
-    .def("__ngsid__", [] (shared_ptr<GF> self)
-        { return reinterpret_cast<std::uintptr_t>(self.get()); })
-    .def("__reduce__", [](py::object self_obj)
-         {
-           auto self = py::cast<shared_ptr<GF>>(self_obj);
-           auto vec = self->GetVectorPtr()->FV<double>();
-           py::list values;
-           for (int i : Range(vec))
-             values.append(py::cast(vec(i)));
-           auto fes = self->GetFESpace();
-           auto creategf = py::module::import("ngsolve.comp").attr("CreateGridFunction");
-           auto dict = self_obj.attr("__dict__");
-           return py::make_tuple(self_obj.attr("__class__"),
-                                 py::make_tuple(fes,self->GetName(),self->GetFlags(),SelectUnpicklingConstructor()),
-                                 py::make_tuple(values,dict));
-         })
-    .def("__setstate__", [] (shared_ptr<GF> self, py::tuple t) {
-         auto values = t[0].cast<py::list>();
-         auto fvec = self->GetVector().FV<double>();
-         for (auto i : Range(fvec.Size()))
-           fvec[i] = values[i].cast<double>();
-         auto self_obj = py::cast(self);
-         self_obj.attr("__dict__") = t[1];
-         })
+    .def(py::pickle([] (const GridFunction& gf)
+                    {
+                      auto fes = gf.GetFESpace();
+                      auto flags = gf.GetFlags();
+                      auto name = gf.GetName();
+                      py::list lst;
+                      for(auto val : gf.GetVector().FVDouble())
+                        lst.append(val);
+                      return py::make_tuple(fes,name,flags, lst);
+                    },
+                    [] (py::tuple state)
+                    {
+                      auto gf = CreateGridFunction(state[0].cast<shared_ptr<FESpace>>(),
+                                                   state[1].cast<string>(),
+                                                   state[2].cast<Flags>());
+                      gf->Update();
+                      auto lst = state[3].cast<py::list>();
+                      for(auto i : Range(py::len(lst)))
+                        gf->GetVector().FVDouble()[i] = lst[i].cast<double>();
+                      return gf;
+                    }
+                    ))
     .def("__str__", [] (GF & self) { return ToString(self); } )
     .def_property_readonly("space", [](GF & self) { return self.GetFESpace(); },
                            "the finite element space")
