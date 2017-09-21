@@ -84,6 +84,7 @@ template <class T>
 inline string ToString (const T& t)
 {
   stringstream ss;
+  ss << std::hexfloat;
   ss << t;
   return ss.str();
 }
