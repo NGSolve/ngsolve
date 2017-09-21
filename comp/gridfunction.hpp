@@ -459,6 +459,7 @@ namespace ngcomp
                                     __m256d * values);
 #endif
 
+    virtual bool GetSegmentValue (int segnr, double xref, double * values);
 
     void Analyze(Array<double> & minima, Array<double> & maxima, Array<double> & averages, int component = -1);
     void Analyze(Array<double> & minima, Array<double> & maxima, Array<double> & averages_times_volumes, Array<double> & volumes, int component = -1);
