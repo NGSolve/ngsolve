@@ -2869,6 +2869,39 @@ namespace ngcomp
       }
   }
 
+
+  bool VisualizeCoefficientFunction ::  
+  GetSegmentValue (int segnr, double xref, double * values)
+  {
+    try
+      {
+        LocalHeapMem<100000> lh("viscf::GetSurfValue");
+        IntegrationPoint ip(xref);
+        VorB vb = VOL;
+        if (ma->GetDimension()==2) vb = BND;
+        if (ma->GetDimension()==3) vb = BBND;
+        ElementId ei(vb, segnr);
+        ElementTransformation & trafo = ma->GetTrafo (ei, lh);
+        if (!cf->DefinedOn(trafo)) return false;    
+        BaseMappedIntegrationPoint & mip = trafo(ip, lh);
+        
+        if (!cf -> IsComplex())
+          cf -> Evaluate (mip, FlatVector<>(GetComponents(), values));
+        else
+          cf -> Evaluate (mip, FlatVector<Complex>(GetComponents(), values));
+        
+        return true;
+      }
+    catch (Exception & e)
+      {
+        cout << "VisualizeCoefficientFunction::GetSegmentValue caught exception: " << endl
+             << e.What();
+        return 0;
+      }
+  }
+
+
+  
   bool VisualizeCoefficientFunction ::  GetSurfValue (int selnr, int facetnr, 
 						      const double xref[], const double x[], const double dxdxref[],
 						      double * values)
