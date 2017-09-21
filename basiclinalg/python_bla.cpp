@@ -477,6 +477,23 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
         ;
     PyDefMatBuffer<Matrix<Complex>>(class_MC);
 
+    auto class_Mat2D = py::class_<Mat<2,2,double>>(m,"Mat2D", py::buffer_protocol());
+    PyDefMatBuffer<Mat<2,2,double>>(class_Mat2D);
+    class_Mat2D.def("__getitem__", [](Mat<2,2,double> self, py::tuple i)
+                    { return self(i[0].cast<size_t>(),i[1].cast<size_t>()); });
+    auto class_Mat2C = py::class_<Mat<2,2,Complex>>(m,"Mat2C", py::buffer_protocol());
+    PyDefMatBuffer<Mat<2,2,Complex>>(class_Mat2C);
+    class_Mat2C.def("__getitem__", [](Mat<2,2,Complex> self, py::tuple i)
+                    { return self(i[0].cast<size_t>(),i[1].cast<size_t>()); });
+    auto class_Mat3D = py::class_<Mat<3,3,double>>(m,"Mat3D", py::buffer_protocol());
+    PyDefMatBuffer<Mat<3,3,double>>(class_Mat3D);
+    class_Mat3D.def("__getitem__", [](Mat<3,3,double> self, py::tuple i)
+                    { return self(i[0].cast<size_t>(),i[1].cast<size_t>()); });
+    auto class_Mat3C = py::class_<Mat<3,3,Complex>>(m,"Mat3C", py::buffer_protocol());
+    PyDefMatBuffer<Mat<3,3,Complex>>(class_Mat3C);
+    class_Mat3C.def("__getitem__", [](Mat<3,3,Complex> self, py::tuple i)
+                    { return self(i[0].cast<size_t>(),i[1].cast<size_t>()); });
+
     m.def("Matrix",
             [] (int h, int w, bool is_complex) {
                 if(is_complex) return py::cast(Matrix<Complex>(h,w));
