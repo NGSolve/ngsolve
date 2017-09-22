@@ -107,8 +107,9 @@ namespace ngcomp
             }
         */
 
-	for (VorB vb : {VOL,BND,BBND})
+	for (VorB vb : {VOL,BND,BBND,BBBND})
 	  {
+            if (int(vb) > ma->GetDimension()) continue;
 	    for (auto lfi : parts)
 	      {
 		if(lfi->VB()==vb)
@@ -143,7 +144,7 @@ namespace ngcomp
 	  }
 
 
-	bool hasparts[] = {false,false,false};
+	bool hasparts[] = {false,false,false,false};
 	bool hasskeletonparts[] = {false,false};
 
 	for(int j = 0; j < parts.Size(); j++)
@@ -173,7 +174,7 @@ namespace ngcomp
 	  }
 
 	int loopsteps = 0;
-	for(VorB vb : {VOL,BND,BBND})
+	for(VorB vb : {VOL,BND,BBND,BBBND})
 	  {
 	    if(hasparts[vb]){
 	      int ne = ma->GetNE(vb);
@@ -192,13 +193,14 @@ namespace ngcomp
 	
 	timer1.Stop();
 
-	for(VorB vb : {VOL,BND,BBND})
+	for(VorB vb : {VOL,BND,BBND,BBBND})
 	  {
 	    if(hasparts[vb])
 	      {
 		int ne = ma->GetNE(vb);
-		string vb_str = vb==VOL ? "VOL" : (vb==BND ? "BND" : "BBND");
-		ProgressOutput progress (ma, string("assemble ") + vb_str + string(" element"),ne);
+		// string vb_str = vb==VOL ? "VOL" : (vb==BND ? "BND" : "BBND");
+		// ProgressOutput progress (ma, string("assemble ") + vb_str + string(" element"),ne);
+                ProgressOutput progress (ma, string("assemble ") + ToString(vb) + string(" element"),ne);
 		gcnt += ne;
 		IterateElements
 		  (*fespace,vb,clh,[&] (FESpace::Element el, LocalHeap &lh)
@@ -209,9 +211,6 @@ namespace ngcomp
 		     auto & fel = el.GetFE();
 		     auto & eltrans = el.GetTrafo();
 
-		     // Vec<3> start, end;
-		     // eltrans.CalcPoint(IntegrationPoint(0),start);
-		     // eltrans.CalcPoint(IntegrationPoint(1),end);
 		     for(int j = 0; j<parts.Size(); j++)
 		       {
 			 if(parts[j]->VB() != vb) continue;
@@ -221,7 +220,6 @@ namespace ngcomp
 
 			 int elvec_size = fel.GetNDof()*fespace->GetDimension();
 			 FlatVector<TSCAL> elvec(elvec_size, lh);
-			 
 			 parts[j] -> CalcElementVector (fel, eltrans, elvec, lh);
 			 
 			 if (printelvec)
