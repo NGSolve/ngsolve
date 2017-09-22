@@ -839,6 +839,11 @@ namespace ngcomp
 	    nnodes[i] = mesh.GetNNodes(i);
 	    nelements[i] = mesh.GetNElements(i);
 	  }
+	for (int i = 0; i < 4; i++)  
+	  {
+	    nnodes_cd[i] = 0;
+	    nelements_cd[i] = 0;
+	  }
 	for (int i = 0; i <= dim; i++)
 	  {
 	    nnodes_cd[i] = nnodes[dim-i];
