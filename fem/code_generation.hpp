@@ -17,6 +17,23 @@
 
 namespace ngfem
 {
+  template <typename T>
+  string ToLiteral(const T & val)
+  {
+      stringstream ss;
+#if (defined __cpp_hex_float) && (__cpp_hex_float <= __cplusplus)
+      ss << std::hexfloat;
+      ss << val;
+      ss << " /* (" << std::setprecision(16) << std::scientific;
+      ss << val << ") */";
+#else
+      ss << std::setprecision(16);
+      ss << val;
+#endif
+      return ss.str();
+  }
+
+
   struct Code
   {
     string top;
@@ -63,7 +80,7 @@ namespace ngfem
     void operator /=(CodeExpr other) { code = "(" + S()+Op('/')+other.S() + ')'; }
 
     operator string () { return code; }
-    CodeExpr operator ()(int i) { return CodeExpr( S() + '(' + ToString(i) + ')' ); }
+    CodeExpr operator ()(int i) { return CodeExpr( S() + '(' + ToLiteral(i) + ')' ); }
     CodeExpr Func(string s) { return CodeExpr( s + "(" + S() + ")" ); }
     CodeExpr Call(string s, string args="") { return CodeExpr( S()+'.'+ s + "(" + args + ")"); }
     string Assign (CodeExpr other, bool declare = true)
@@ -83,40 +100,28 @@ namespace ngfem
     template<typename TVal>
     string Declare(string type, TVal value )
     {
-      return type + " " + code + "("+ToString(value)+");\n";
+      return type + " " + code + "("+ToLiteral(value)+");\n";
     }
   };
 
   inline CodeExpr Var(double val)
   {
-    stringstream ss;
-    ss << ToString(val);
-    ss << " /* (" << std::setprecision(16);
-    ss << val << ") */";
-    return ss.str();
+    return ToLiteral(val);
   }
 
   inline CodeExpr Var(Complex val)
   {
-    stringstream ss;
-    ss << "Complex(";
-    ss << ToString(val.real());
-    ss << ",";
-    ss << ToString(val.imag());
-    ss << ")";
-    ss << " /* (" << std::setprecision(16);
-    ss << val.real() << ", " << val.imag() << ") */";
-    return ss.str();
+    return ToLiteral(val);
   }
 
   inline CodeExpr Var(string name, int i, int j=0, int k=0)
   {
-    return CodeExpr(name + '_' + ToString(i) + '_' + ToString(j) + '_' + ToString(k));
+    return CodeExpr(name + '_' + ToLiteral(i) + '_' + ToLiteral(j) + '_' + ToLiteral(k));
   }
 
   inline CodeExpr Var(int i, int j=0, int k=0)
   {
-    return CodeExpr("var_" + ToString(i) + '_' + ToString(j) + '_' + ToString(k));
+    return CodeExpr("var_" + ToLiteral(i) + '_' + ToLiteral(j) + '_' + ToLiteral(k));
   }
 
   template<typename TFunc>
