@@ -282,7 +282,7 @@ namespace ngfem
     FlatVector<Complex> GetPointComplex() const;
     FlatMatrix<Complex> GetJacobianComplex() const;
     // dimension of range
-    int Dim() const;  
+    NGS_DLL_HEADER int Dim() const;  
     VorB VB() const; 
     bool IsComplex() const { return is_complex; }
     void SetOwnsTrafo (bool aowns_trafo = true) { owns_trafo = aowns_trafo; }
