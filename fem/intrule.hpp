@@ -413,7 +413,7 @@ namespace ngfem
 		  normalvec /= det;
                   tangentialvec = TSCAL(0.0);
 		}
-	      else
+	      else if (DIMS == 1)
 		{
 		  // CHECK!
 		  normalvec = TSCAL(0.0);
@@ -421,6 +421,10 @@ namespace ngfem
 		  det = L2Norm(tangentialvec);
 		  tangentialvec /= det;
 		}
+              else
+                {
+                  det = 1;
+                }
 	    }
 	  else if (DIMR == 2)
 	    {
@@ -1594,12 +1598,16 @@ namespace ngstd
                   det = L2Norm (normalvec);
                   normalvec /= det;
                 }
-              else
+              else if (DIMS == 1)
                 {
                   normalvec = SIMD<double>(0.0);
 		  tangentialvec = Vec<3,SIMD<double>>(dxdxi.Col(0));
 		  det = L2Norm(tangentialvec);
 		  tangentialvec /= det;
+                }
+              else
+                {
+                  det = 1;
                 }
             }
 	  else if (DIMR == 2)

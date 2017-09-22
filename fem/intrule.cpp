@@ -40,6 +40,7 @@ namespace ngfem
       case 2: return static_cast<const DimMappedIntegrationPoint<2>&> (*this).GetPoint();
       case 3: return static_cast<const DimMappedIntegrationPoint<3>&> (*this).GetPoint();
       }
+
     throw Exception("BaseMappedIntegrationPoint::GetPoint, illegal dimension");
   }
 
@@ -58,6 +59,7 @@ namespace ngfem
 	  case 2: return static_cast<const MappedIntegrationPoint<2,2>&> (*this).GetJacobian();
 	  case 3: return static_cast<const MappedIntegrationPoint<3,3>&> (*this).GetJacobian();
 	  }
+        break;
       case BND:
 	switch (eltrans->SpaceDim())
 	  {
@@ -65,12 +67,20 @@ namespace ngfem
 	  case 2: return static_cast<const MappedIntegrationPoint<1,2>&> (*this).GetJacobian();
 	  case 3: return static_cast<const MappedIntegrationPoint<2,3>&> (*this).GetJacobian();
 	  }
+        break;
       case BBND:
 	switch (eltrans->SpaceDim())
 	  {
 	  case 2: return static_cast<const MappedIntegrationPoint<0,2>&> (*this).GetJacobian();
 	  case 3: return static_cast<const MappedIntegrationPoint<1,3>&> (*this).GetJacobian();
 	  }
+        break;
+      case BBBND:
+	switch (eltrans->SpaceDim())
+	  {
+	  case 3: return static_cast<const MappedIntegrationPoint<0,3>&> (*this).GetJacobian();
+	  }
+        break;
       }
     throw Exception("BaseMappedIntegrationPoint::GetJacobian, illegal dimension");
   }
@@ -96,33 +106,42 @@ namespace ngfem
   
   FlatMatrix<Complex> BaseMappedIntegrationPoint :: GetJacobianComplex() const
   {
-  if (is_complex)
-  {
-      switch(eltrans->VB())
-        {
-        case VOL:
-    switch (eltrans->SpaceDim())
+    if (is_complex)
       {
-      case 1: return static_cast<const MappedIntegrationPoint<1,1,Complex>&> (*this).GetJacobian();
-      case 2: return static_cast<const MappedIntegrationPoint<2,2,Complex>&> (*this).GetJacobian();
-      case 3: return static_cast<const MappedIntegrationPoint<3,3,Complex>&> (*this).GetJacobian();
+        switch(eltrans->VB())
+          {
+          case VOL:
+            switch (eltrans->SpaceDim())
+              {
+              case 1: return static_cast<const MappedIntegrationPoint<1,1,Complex>&> (*this).GetJacobian();
+              case 2: return static_cast<const MappedIntegrationPoint<2,2,Complex>&> (*this).GetJacobian();
+              case 3: return static_cast<const MappedIntegrationPoint<3,3,Complex>&> (*this).GetJacobian();
+              }
+            break;
+          case BND:
+            switch (eltrans->SpaceDim())
+              {
+              case 1: return static_cast<const MappedIntegrationPoint<0,1,Complex>&> (*this).GetJacobian();
+              case 2: return static_cast<const MappedIntegrationPoint<1,2,Complex>&> (*this).GetJacobian();
+              case 3: return static_cast<const MappedIntegrationPoint<2,3,Complex>&> (*this).GetJacobian();
+              }
+            break;
+          case BBND:
+            switch (eltrans->SpaceDim())
+              {
+              case 2: return static_cast<const MappedIntegrationPoint<0,2,Complex>&> (*this).GetJacobian();
+              case 3: return static_cast<const MappedIntegrationPoint<1,3,Complex>&> (*this).GetJacobian();
+              }
+            break;
+          case BBBND:
+            switch (eltrans->SpaceDim())
+              {
+              case 3: return static_cast<const MappedIntegrationPoint<0,3,Complex>&> (*this).GetJacobian();
+              }
+            break;
+          }
+        throw Exception("BaseMappedIntegrationPoint::GetJacobian, illegal dimension");
       }
-        case BND:
-    switch (eltrans->SpaceDim())
-      {
-      case 1: return static_cast<const MappedIntegrationPoint<0,1,Complex>&> (*this).GetJacobian();
-      case 2: return static_cast<const MappedIntegrationPoint<1,2,Complex>&> (*this).GetJacobian();
-      case 3: return static_cast<const MappedIntegrationPoint<2,3,Complex>&> (*this).GetJacobian();
-      }
-        case BBND:
-    switch (eltrans->SpaceDim())
-      {
-      case 2: return static_cast<const MappedIntegrationPoint<0,2,Complex>&> (*this).GetJacobian();
-      case 3: return static_cast<const MappedIntegrationPoint<1,3,Complex>&> (*this).GetJacobian();
-      }
-        }
-      throw Exception("BaseMappedIntegrationPoint::GetJacobian, illegal dimension");
-  }
     throw Exception("BaseMappedIntegrationPoint::GetPointComplex, is not complex");
   }
   

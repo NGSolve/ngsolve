@@ -211,7 +211,7 @@ namespace ngcomp
     /// number of elements of co-dimension i
     size_t nelements_cd[4];
     ///
-    size_t ne_vb[3];  // index with VorB
+    // size_t ne_vb[3];  // index with VorB = nelements_cd !!!
     /// number of multigrid levels 
     int nlevels;
 
@@ -278,7 +278,8 @@ namespace ngcomp
     size_t GetNCD2E() const { return nelements_cd[2]; }
 
     /// number of volume or boundary elements
-    size_t GetNE(VorB vb) const { return ne_vb[vb]; } 
+    // size_t GetNE(VorB vb) const { return ne_vb[vb]; }
+    size_t GetNE(VorB vb) const { return nelements_cd[vb]; } 
 
     /// number of edges in the whole mesh
     size_t GetNEdges() const { return nnodes[1]; }     
@@ -460,6 +461,7 @@ namespace ngcomp
         case VOL: return mesh.GetMaterialCD<0> (region_nr);
         case BND: return mesh.GetMaterialCD<1> (region_nr);
         case BBND: return mesh.GetMaterialCD<2> (region_nr);
+        case BBBND: return mesh.GetMaterialCD<3> (region_nr);
         }
     }
 

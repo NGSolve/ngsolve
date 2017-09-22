@@ -1135,6 +1135,7 @@ namespace ngcomp
   {
     switch(ma->GetElType(ei))
       {
+      case ET_POINT:   return * new (lh) DummyFE<ET_POINT>; 
       case ET_SEGM:    return T_GetFE<ET_SEGM> (ei, lh);
         
       case ET_TRIG:    return T_GetFE<ET_TRIG> (ei, lh);
