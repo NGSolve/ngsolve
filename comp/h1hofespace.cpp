@@ -164,6 +164,8 @@ namespace ngcomp
           flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<3>>>();
           evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
           flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpGradientBoundary<3>>>();
+          evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpId<3>>>();
+          evaluator[BBBND] = make_shared<T_DifferentialOperator<DiffOpId<3>>>();
           break;
         }
       }
@@ -760,7 +762,7 @@ namespace ngcomp
                  return *hofe;
                });
           }
-	  else
+	  else if (ei.VB() == BBND)
 	    {
 	      switch (eltype)
 		{
@@ -770,6 +772,24 @@ namespace ngcomp
 		  throw Exception ("illegal element in H1HoFeSpace::GetCD2FE");
 		}
 	    }
+          else
+            {
+	      switch (eltype)
+		{
+		case ET_POINT:
+                  {
+                    Ngs_Element ngel = ma->GetElement<0,BBBND> (elnr);
+                    
+                    H1HighOrderFE<ET_POINT> * hofe = new (alloc) H1HighOrderFE<ET_POINT> ();
+                    hofe -> SetVertexNumbers (ngel.vertices);
+                    hofe -> ComputeNDof();
+                    return *hofe;
+                  }
+		default:
+		  throw Exception ("illegal element in H1HoFeSpace::GetCD3FE");
+		}
+              
+            }
       }
 
     catch (Exception & e)

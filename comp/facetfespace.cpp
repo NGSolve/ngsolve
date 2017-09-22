@@ -622,6 +622,8 @@ namespace ngcomp
         }
       case BBND:
         throw Exception("No BBND GetFE implemented for FacetFESpace");
+      case BBBND:
+        throw Exception("No BBBND GetFE implemented for FacetFESpace");
       }
   }
 
@@ -811,7 +813,7 @@ namespace ngcomp
 	  dnums += GetFacetDofs(fnum);
 	}
 	break;
-      case BBND:
+      case BBND: case BBBND:
 	dnums.SetSize(0);
       }
   }

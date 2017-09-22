@@ -84,11 +84,14 @@ namespace ngfem
 
 
 
-  enum VorB { VOL, BND, BBND };
+  enum VorB { VOL, BND, BBND, BBBND };
   inline void operator++(VorB & vb, int)  { vb = VorB(vb+1); } 
   inline ostream & operator<< (ostream & ost, VorB vb)
   {
-    if (vb == VOL) ost << "VOL"; else if (vb==BND) ost << "BND"; else ost << "BBND";
+    if (vb == VOL) ost << "VOL";
+    else if (vb==BND) ost << "BND";
+    else if (vb==BBND) ost << "BBND";
+    else ost << "BBBND";
     return ost;
   }
 

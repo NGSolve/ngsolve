@@ -554,6 +554,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
     .value("VOL", VOL)
     .value("BND", BND)
     .value("BBND", BBND)
+    .value("BBBND", BBBND)
     .export_values()
     ;
 
