@@ -458,13 +458,18 @@ public:
     VorB vb;
     bool element_boundary;
     mutable bool simd_evaluate = true;
+    IntegrationRule ir;   // if non-empty use this integration-rule
+    SIMD_IntegrationRule simd_ir;   // if non-empty use this integration-rule
+
   public:
     NGS_DLL_HEADER SymbolicLinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb,
                                   bool aelement_boundary);
 
     virtual VorB VB() const { return vb; }
     virtual string Name () const { return string ("Symbolic LFI"); }
-    
+
+    void SetIntegrationRule (const IntegrationRule & _ir);
+
     virtual void 
     CalcElementVector (const FiniteElement & fel,
 		       const ElementTransformation & trafo, 
@@ -598,6 +603,9 @@ public:
     Array<int> test_cum;    // cumulated dimension of proxies
     VorB vb;                // only BND supported by now
     // bool element_boundary;  /// not needed (by now ???)
+    IntegrationRule ir;   // if non-empty use this integration-rule
+    SIMD_IntegrationRule simd_ir;   // if non-empty use this integration-rule
+
   public:
     SymbolicFacetLinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb);
 

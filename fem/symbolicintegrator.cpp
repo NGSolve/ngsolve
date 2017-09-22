@@ -465,6 +465,12 @@ namespace ngfem
        });
   }
 
+  void SymbolicLinearFormIntegrator::SetIntegrationRule(const IntegrationRule &_ir)
+  {
+    ir = _ir.Copy();
+    simd_ir = SIMD_IntegrationRule(ir);
+  }
+
   /*
   template <typename SCAL> 
   void SymbolicLinearFormIntegrator ::

@@ -3084,7 +3084,8 @@ flags : dict
 
   m.def("SymbolicLFI",
           [](spCF cf, VorB vb, bool element_boundary,
-              bool skeleton, py::object definedon, py::object definedonelem) 
+              bool skeleton, py::object definedon,
+	      IntegrationRule ir, py::object definedonelem) 
            {
              py::extract<Region> defon_region(definedon);
              if (defon_region.check())
@@ -3108,6 +3109,13 @@ flags : dict
              if (defon_region.check())
                lfi->SetDefinedOn(defon_region().Mask());
 
+	     if (ir.Size())
+               {
+                 cout << IM(5) << "ir = " << ir << endl;
+                 dynamic_pointer_cast<SymbolicLinearFormIntegrator>
+		   (lfi)->SetIntegrationRule(ir);                   
+               }
+
              if (! py::extract<DummyArgument> (definedonelem).check())
                lfi -> SetDefinedOnElements (py::extract<shared_ptr<BitArray>>(definedonelem)());
 
@@ -3118,6 +3126,7 @@ flags : dict
            py::arg("element_boundary")=false,
            py::arg("skeleton")=false,           
            py::arg("definedon")=DummyArgument(),
+	   py::arg("intrule")=IntegrationRule(),
            py::arg("definedonelements")=DummyArgument()
           );
 
