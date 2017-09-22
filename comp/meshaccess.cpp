@@ -814,7 +814,7 @@ namespace ngcomp
         nnodes[NT_ELEMENT] = 0;
         nnodes[NT_FACET] = 0;
         dim = -1;
-        ne_vb[VOL] = ne_vb[BND] = ne_vb[BBND] = 0;
+        // ne_vb[VOL] = ne_vb[BND] = ne_vb[BBND] = 0;
         return;
       }
 
@@ -830,7 +830,7 @@ namespace ngcomp
             nnodes_cd[i] = 0;
             nelements_cd[i] = 0;
           }
-        ne_vb[VOL] = ne_vb[BND] = ne_vb[BBND] = 0;
+        // ne_vb[VOL] = ne_vb[BND] = ne_vb[BBND] = 0;
       }
     else
       {
@@ -844,17 +844,18 @@ namespace ngcomp
 	    nnodes_cd[i] = nnodes[dim-i];
 	    nelements_cd[i] = nelements[dim-i];
 	  }
+        /*
         ne_vb[VOL] = nelements_cd[0];
         ne_vb[BND] = nelements_cd[1];
 	if(dim==1)
 	  ne_vb[BBND] = 0;
 	else 
 	  ne_vb[BBND] = nelements_cd[2];
+        */
       }
     nnodes[NT_ELEMENT] = nnodes[StdNodeType (NT_ELEMENT, dim)];
     nnodes[NT_FACET] = nnodes[StdNodeType (NT_FACET, dim)];
     
-
     ndomains = -1;
     int ne = GetNE();
     
@@ -1583,6 +1584,24 @@ namespace ngcomp
 	  default:
 	    throw Exception ("MeshAccess::GetCD2Trafo, illegal dimension");
 	  }
+
+      case BBBND:
+        {
+          ElementTransformation * eltrans;
+          Ngs_Element el(mesh.GetElement<0>(elnr), ElementId(BBBND,elnr));
+          GridFunction * loc_deformation = deformation.get();
+          if(loc_deformation)
+            eltrans = new (lh) ALE_ElementTransformation<0,3, Ng_ElementTransformation<0,3>>
+              (this,el.GetType(),
+               ElementId(BBBND,elnr), el.GetIndex(),
+               loc_deformation,
+               dynamic_cast<LocalHeap&>(lh));
+          else 
+            eltrans = new (lh) Ng_ConstElementTransformation<0,3> (this, el.GetType(),
+                                                                   ElementId(BBBND,elnr), el.GetIndex());
+          
+          return *eltrans;
+        }
       }
   }
 

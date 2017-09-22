@@ -391,9 +391,9 @@ struct GenericPow {
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {
         string miptype;
         if(code.is_simd)
-          miptype = "SIMD<DimMappedIntegrationPoint<"+ToString(D)+">>*";
+          miptype = "SIMD<DimMappedIntegrationPoint<"+ToLiteral(D)+">>*";
         else
-          miptype = "DimMappedIntegrationPoint<"+ToString(D)+">*";
+          miptype = "DimMappedIntegrationPoint<"+ToLiteral(D)+">*";
         auto nv_expr = CodeExpr("static_cast<const "+miptype+">(&ip)->GetNV()");
         auto nv = Var("tmp", index);
         code.body += nv.Assign(nv_expr);
@@ -453,9 +453,9 @@ struct GenericPow {
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {
         string miptype;
         if(code.is_simd)
-          miptype = "SIMD<DimMappedIntegrationPoint<"+ToString(D)+">>*";
+          miptype = "SIMD<DimMappedIntegrationPoint<"+ToLiteral(D)+">>*";
         else
-          miptype = "DimMappedIntegrationPoint<"+ToString(D)+">*";
+          miptype = "DimMappedIntegrationPoint<"+ToLiteral(D)+">*";
         auto tv_expr = CodeExpr("static_cast<const "+miptype+">(&ip)->GetTV()");
         auto tv = Var("tmp", index);
         code.body += tv.Assign(tv_expr);

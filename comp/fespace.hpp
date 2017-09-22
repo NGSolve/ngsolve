@@ -131,11 +131,11 @@ namespace ngcomp
     FiniteElement * dummy_point; // = new DummyFE<ET_POINT>();
 
     /// Evaluator for visualization (new style)
-    shared_ptr<DifferentialOperator> evaluator[3];
+    shared_ptr<DifferentialOperator> evaluator[4];
     /// Evaluator for flux
-    shared_ptr<DifferentialOperator> flux_evaluator[3];
+    shared_ptr<DifferentialOperator> flux_evaluator[4];
     /// Evaluator for visualization (old style)
-    shared_ptr<BilinearFormIntegrator> integrator[3];
+    shared_ptr<BilinearFormIntegrator> integrator[4];
 
     /// if non-zero, pointer to low order space
     shared_ptr<FESpace> low_order_space; 
@@ -153,7 +153,7 @@ namespace ngcomp
     Array<int> directelementclusters;
 
     
-    Table<int> element_coloring[3]; 
+    Table<int> element_coloring[4]; 
     Table<int> facet_coloring;  // elements on facet in own colors (DG)
     Array<COUPLING_TYPE> ctofdof;
 

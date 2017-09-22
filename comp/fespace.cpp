@@ -490,7 +490,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if (low_order_space)
       {
-	for(auto vb : {VOL, BND, BBND})
+	for(auto vb : {VOL, BND, BBND, BBBND})
 	  element_coloring[vb] = Table<int>(low_order_space->element_coloring[vb]);
       }
     else
@@ -499,7 +499,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       Array<MyMutex> locks(GetNDof());
       tcolmutex.Stop();
       
-      for (auto vb : { VOL, BND, BBND })
+      for (auto vb : { VOL, BND, BBND, BBBND })
       {
         /*
         tcol.Start();
