@@ -643,7 +643,7 @@ namespace ngcomp
             throw Exception ("illegal element in HDivHOFESpace::GetFE");
           }
       }
-    else
+    else if (ei.VB()  == BND)
       {
         if (!DefinedOn(ei))
           return SwitchET(ma->GetElType(ei), [&] (auto et) -> FiniteElement&
@@ -733,6 +733,14 @@ namespace ngcomp
         
         return *fe;
       }
+    else
+      switch (ma->GetElement(ei).GetType())
+        {
+        case ET_POINT: return * new (alloc) DummyFE<ET_POINT>();
+        case ET_SEGM: return * new (alloc) DummyFE<ET_SEGM>();
+        default:
+          __assume(false);
+        }
   }
   
   // const FiniteElement & HDivHighOrderFESpace :: GetFE (int elnr, LocalHeap & lh) const
