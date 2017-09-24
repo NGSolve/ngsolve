@@ -2296,6 +2296,7 @@ namespace ngcomp
     static mutex addelmatboundary1_mutex;
 
     RegionTimer reg (timer);
+    ma->PushStatus ("Assemble Linearization");
 
     if (this->mats.Size() < this->ma->GetNLevels())
       AllocateMatrix();
@@ -2803,6 +2804,7 @@ namespace ngcomp
         throw (Exception (string(e.what()) +
                           string("\n in AssembleLinearization\n")));
       }
+    ma->PopStatus();
   }
 
 
