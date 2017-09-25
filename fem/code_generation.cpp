@@ -2,7 +2,7 @@
 
 namespace ngfem
 {
-    unsigned Code::id_counter = 0;
+    atomic<unsigned> Code::id_counter{0};
 
     string Code::AddPointer(const void *p)
     {
@@ -29,7 +29,7 @@ namespace ngfem
 #endif // WIN32
     }
 
-    void Library::Compile( std::vector<string> &codes )
+    void Library::Compile(const std::vector<string> &codes )
     {
       static ngstd::Timer tcompile("CompiledCF::Compile");
       static ngstd::Timer tlink("CompiledCF::Link");

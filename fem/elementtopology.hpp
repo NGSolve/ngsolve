@@ -84,11 +84,14 @@ namespace ngfem
 
 
 
-  enum VorB { VOL, BND, BBND };
+  enum VorB { VOL, BND, BBND, BBBND };
   inline void operator++(VorB & vb, int)  { vb = VorB(vb+1); } 
   inline ostream & operator<< (ostream & ost, VorB vb)
   {
-    if (vb == VOL) ost << "VOL"; else if (vb==BND) ost << "BND"; else ost << "BBND";
+    if (vb == VOL) ost << "VOL";
+    else if (vb==BND) ost << "BND";
+    else if (vb==BBND) ost << "BBND";
+    else ost << "BBBND";
     return ost;
   }
 
@@ -385,6 +388,7 @@ namespace ngfem
     
       switch (et)
 	{
+        case ET_POINT: return nullptr;
 	case ET_SEGM: return segm_edges;
 	case ET_TRIG: return trig_edges;
 	case ET_QUAD: return quad_edges;
@@ -456,7 +460,8 @@ namespace ngfem
 	case ET_TRIG: return trig_faces;
 	case ET_QUAD: return quad_faces;
         
-	case ET_SEGM: return NULL;
+	case ET_SEGM: return nullptr;
+        case ET_POINT: return nullptr;          
 	default:
 	  break;
 	}
@@ -488,7 +493,7 @@ namespace ngfem
      number. The number can be with respect to the local element
      numbering, or can be the global numbering on the mesh.
   */
-  class NGS_DLL_HEADER NodeId
+  class /* NGS_DLL_HEADER */ NodeId
   {
     NODE_TYPE nt;
     size_t nodenr;
@@ -517,9 +522,39 @@ namespace ngfem
     // NodeId operator*() const { return *this; }
     bool operator!=(const NodeId id2) const { return nodenr != id2.nodenr || nt != id2.nt; }
     bool operator==(const NodeId id2) const { return nodenr == id2.nodenr && nt == id2.nt; }
+    size_t operator- (NodeId id2) const { return nodenr-id2.nodenr; }
   };
   typedef NodeId Node;
 
+  template <NODE_TYPE nt>
+  class T_NodeId
+  {
+    size_t nodenr;
+
+  public:
+    T_NodeId () = default;
+    T_NodeId (const T_NodeId & n2) = default;
+  
+    /// construct node from number
+    T_NodeId (size_t anodenr)
+      : nodenr(anodenr) { ; }
+
+    /// returns type of the node
+    NODE_TYPE GetType () const { return nt; }
+
+    /// returns number of the node
+    size_t GetNr() const { return nodenr; }
+
+    operator size_t () const { return nodenr; }
+    T_NodeId operator++ (int) { return T_NodeId(nodenr++); }
+    T_NodeId operator++ () { return T_NodeId(++nodenr); }
+    bool operator!=(const T_NodeId id2) const { return nodenr != id2.nodenr; }
+    bool operator==(const T_NodeId id2) const { return nodenr == id2.nodenr; }
+    size_t operator- (T_NodeId id2) const { return nodenr-id2.nodenr; }
+    operator NodeId () const { return NodeId(nt, nodenr); }
+  };
+
+  
   
   inline int CalcNodeId (ELEMENT_TYPE et, const NodeId & node)
   {
@@ -1517,7 +1552,7 @@ namespace ngfem
   }
 
   template <typename FUNC>
-  auto SwitchET (ELEMENT_TYPE et, FUNC f)
+  decltype(auto) SwitchET (ELEMENT_TYPE et, FUNC f)
   {
     switch (et)
       {
@@ -1535,7 +1570,7 @@ namespace ngfem
   }
 
   template<ELEMENT_TYPE ET1, typename FUNC>
-  auto SwitchET (ELEMENT_TYPE et, FUNC f)
+  decltype(auto) SwitchET (ELEMENT_TYPE et, FUNC f)
   {
     if (et != ET1)
       throw Exception("Element type not defined!");
@@ -1543,7 +1578,7 @@ namespace ngfem
   }
   
   template<ELEMENT_TYPE ET1, ELEMENT_TYPE ET2, ELEMENT_TYPE ... ET_REST, typename FUNC>
-  auto SwitchET (ELEMENT_TYPE et, FUNC f)
+  decltype(auto) SwitchET (ELEMENT_TYPE et, FUNC f)
   {
     if (et==ET1)
       return f(ET_trait<ET1>());

@@ -183,6 +183,34 @@ namespace ngfem
     elmat = rmat;
   }
 
+  
+  void BilinearFormIntegrator ::
+  CalcElementMatrixAdd (const FiniteElement & fel,
+                        const ElementTransformation & eltrans, 
+                        FlatMatrix<double> elmat,
+                        LocalHeap & lh) const
+  {
+    HeapReset hr(lh);
+    FlatMatrix<double> helmat(elmat.Height(), elmat.Width(), lh);
+    CalcElementMatrix(fel, eltrans, helmat, lh);
+    elmat += helmat;
+  }
+
+  void BilinearFormIntegrator ::    
+  CalcElementMatrixAdd (const FiniteElement & fel,
+                        const ElementTransformation & eltrans, 
+                        FlatMatrix<Complex> elmat,
+                        LocalHeap & lh) const
+  {
+    HeapReset hr(lh);
+    FlatMatrix<Complex> helmat(elmat.Height(), elmat.Width(), lh);
+    CalcElementMatrix(fel, eltrans, helmat, lh);
+    elmat += helmat;
+  }
+  
+
+
+  
   void BilinearFormIntegrator ::
   CalcElementMatrixDiag (const FiniteElement & fel,
 			     const ElementTransformation & eltrans, 
@@ -324,9 +352,13 @@ namespace ngfem
 	    bool applyd,
 	    LocalHeap & lh) const
   {
+    /*
     cerr << "calcflux<double> called for base class, should be overloaded in " 
 	 << typeid(*this).name()
 	 << endl;
+    */
+    throw Exception(string("calcflux<double> called for base class, should be overloaded in ")+
+                    typeid(*this).name());
   }
 
 

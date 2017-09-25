@@ -73,6 +73,58 @@ void SetFlag(Flags &flags, string s, py::object value)
     }
 }
 
+Flags NGS_DLL_HEADER CreateFlagsFromKwArgs(py::object pyclass, const py::kwargs& kwargs, py::list info)
+{
+  auto flags_doc = pyclass.attr("__flags_doc__")();
+  py::dict flags_dict;
+
+  if (kwargs.contains("flags"))
+    {
+      cout  << IM(2) << "WARNING: using flags as kwarg is deprecated in " << py::str(pyclass)
+           << ", use the flag arguments as kwargs instead!" << endl;
+      auto addflags = py::cast<py::dict>(kwargs["flags"]);
+      for (auto item : addflags)
+        flags_dict[item.first.cast<string>().c_str()] = item.second;
+    }
+  for (auto item : kwargs)
+    if (!flags_doc.contains(item.first.cast<string>().c_str()) &&
+        !(item.first.cast<string>() == "flags"))
+        cout << IM(2) << "WARNING: kwarg '" << item.first.cast<string>()
+             << "' is an undocumented flags option for class "
+             << std::string(py::str(pyclass)) << ", maybe there is a typo?" << endl;
+
+  py::dict special;
+  try
+    {
+      special = pyclass.attr("__special_treated_flags__")();
+    }
+  catch(std::exception e)
+    {  }
+
+  for (auto item : kwargs)
+    {
+      auto name = item.first.cast<string>();
+      if (name != "flags")
+        {
+          if(!special.contains(name.c_str()))
+            flags_dict[name.c_str()] = item.second;
+        }
+    }
+
+  auto flags = py::extract<Flags>(flags_dict)();
+
+  for (auto item : kwargs)
+    {
+      auto name = item.first.cast<string>();
+      if (name != "flags")
+        {
+          if(special.contains(name.c_str()))
+            special[name.c_str()](item.second, &flags, info);
+        }
+    }
+  return flags;
+}
+
 const char* docu_string(const char* str)
 {
   if(getenv("NETGEN_DOCUMENTATION_RST_FORMAT"))
@@ -112,7 +164,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
     ;
   
   m.def("GlobalSum", [] (double x) { return MyMPI_AllReduce(x); });
-  /** Complex + complex mpi_traits is in bla.hpp;  mympi_allreduce doesnt find it **/
+  /** Complex + complex mpi_traits is in bla.hpp;  mympi_allreduce doesn't find it **/
   m.def("GlobalSum", [] (Complex x) { 
 #ifdef PARALLEL
       Complex global_d;
@@ -141,12 +193,12 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
     ;
 
   py::class_<FlatArray<double> > class_flatarrayd (m, "FlatArrayD");
-  class_flatarrayd.def(py::init<int, double *>());
+  class_flatarrayd.def(py::init<size_t, double *>());
   PyDefVector<FlatArray<double>, double>(m, class_flatarrayd);
   PyDefToString<FlatArray<double>>(m, class_flatarrayd);
   
   py::class_<Array<double>, FlatArray<double> >(m, "ArrayD")
-    .def(py::init<int>())
+    .def(py::init( [] (int n) { return new Array<double>(n); }))
     .def("__init__", [](Array<double> &a, std::vector<double> const & x)
                            {
                              int s = x.size();
@@ -163,10 +215,10 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
   py::class_<FlatArray<int> > class_flatarrayi (m, "FlatArrayI");
   PyDefVector<FlatArray<int>, int>(m, class_flatarrayi);
   PyDefToString<FlatArray<int> >(m, class_flatarrayi);
-  class_flatarrayi.def(py::init<int, int *>());
+  class_flatarrayi.def(py::init<size_t, int *>());
 
   py::class_<Array<int>, FlatArray<int> >(m, "ArrayI")
-    .def(py::init<int>())
+    .def(py::init( [] (int n) { return new Array<int>(n); }))
     .def("__init__", [](std::vector<int> const & x)
                            {
                              int s = x.size();
@@ -187,8 +239,8 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
     ;
   
   py::class_<ngstd::BitArray, shared_ptr<BitArray>> (m, "BitArray")
-    .def(py::init<int>())
-    .def(py::init<const BitArray&>())
+    .def(py::init( [] (int n) { return new BitArray(n); }))
+    .def(py::init([](const BitArray& a) { return make_shared<BitArray>(a); } ))
     .def("__str__", &ToString<BitArray>)
     .def("__len__", &BitArray::Size)
     .def("__getitem__", [] (BitArray & self, int i) 
@@ -255,16 +307,44 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
                                      else
                                        throw py::value_error();
                                    }, py::arg("i") = DummyArgument())
-    .def("__ior__", [] (BitArray & self, BitArray & other)
+
+
+    .def(py::self | py::self)
+    .def(py::self & py::self)
+    .def(py::self |= py::self)
+    .def(py::self &= py::self)
+    .def(~py::self)
+
+    /*
+    .def("__ior__", [] (BitArray & self, BitArray & other) -> BitArray&
                                  {
                                    self.Or(other); 
                                    return self;
                                  })
-    .def("__iand__", [] (BitArray & self, BitArray & other)
+    .def("__iand__", [] (BitArray & self, BitArray & other) -> BitArray&
                                  {
                                    self.And(other); 
                                    return self;
                                  })
+    .def("__or__", [] (BitArray & self, BitArray & other)
+                                 {
+                                   BitArray res = self;
+                                   res.Or(other); 
+                                   return res;
+                                 })
+    .def("__and__", [] (BitArray & self, BitArray & other)
+                                 {
+                                   BitArray res = self;                                   
+                                   res.And(other); 
+                                   return res;
+                                 })
+    .def("__invert__", [] (BitArray & self)
+         {
+           BitArray hba = self;
+           hba.Invert();
+           return hba;
+         })
+    */
     ;
 
   
@@ -329,7 +409,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
   py::implicitly_convertible<py::dict, Flags>();
 
   py::class_<ngstd::IntRange> py_intrange (m, "IntRange");
-  py_intrange.def( py::init<int,int>());
+  py_intrange.def( py::init<size_t,size_t>());
   py_intrange.def("__str__", &ToString<IntRange>);
   py_intrange.def("__iter__", [] (ngstd::IntRange & i)
       { return py::make_iterator(i.begin(), i.end()); },
@@ -408,10 +488,9 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
 }
 
 
-PYBIND11_PLUGIN(libngstd) {
-  py::module m("ngstd", "pybind ngstd");
+PYBIND11_MODULE(libngstd, m) {
+  m.attr("__name__") = "ngstd";
   ExportNgstd(m);
-  return m.ptr();
 }
 
 

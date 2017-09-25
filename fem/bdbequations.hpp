@@ -158,6 +158,14 @@ namespace ngfem
       mat = Trans (mip.GetJacobianInverse ()) * 
 	Trans (static_cast<const FEL&>(fel).GetDShape(mip.IP(),lh));
     }
+
+    static void GenerateMatrixSIMDIR (const FiniteElement & fel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      static_cast<const FEL&>(fel).CalcMappedDShape (mir, mat);      
+    }
+    
   };
 
 

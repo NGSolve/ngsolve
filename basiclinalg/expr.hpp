@@ -433,7 +433,9 @@ namespace ngbla
   };
 
 
-  enum  T_Lapack { Lapack };
+  // enum  T_Lapack { Lapack };
+  class T_Lapack { };
+  static T_Lapack Lapack;
   
   template <typename TA>
   INLINE LapackExpr<TA> operator| (const Expr<TA> & a, T_Lapack /* tl */)
@@ -996,6 +998,13 @@ namespace ngbla
     return ScaleExpr<TA, SIMD<double>> (a.Spec(), b);
   }
   
+  template <typename TA>
+  INLINE ScaleExpr<TA, SIMD<Complex> >  
+  operator* (SIMD<Complex> b, const Expr<TA> & a)
+  {
+    return ScaleExpr<TA, SIMD<Complex>> (a.Spec(), b);
+  }
+  
 
 
 
@@ -1126,8 +1135,8 @@ namespace ngbla
 
     // auto operator() (size_t i, size_t j) { return a(i+first_row, j+first_col); }
     // auto operator() (size_t i) { return a(i+first_row); }
-    auto operator() (size_t i, int j) const  { return a(i+first_row, j+first_col); }
-    auto operator() (size_t i) const { return a(i+first_row); }
+    decltype(auto) operator() (size_t i, int j) const  { return a(i+first_row, j+first_col); }
+    decltype(auto) operator() (size_t i) const { return a(i+first_row); }
 
     enum { IS_LINEAR = 0 };
     enum { COL_MAJOR = TA::COL_MAJOR };

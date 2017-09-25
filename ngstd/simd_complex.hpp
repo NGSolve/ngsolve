@@ -114,9 +114,17 @@ namespace ngstd
   
   INLINE Complex HSum (SIMD<Complex> sc)
   {
-    return Complex (HSum(sc.real()), HSum(sc.imag()));
+    double re, im;
+    std::tie(re,im) = HSum(sc.real(), sc.imag());
+    return Complex(re,im);
   }
 
+  INLINE auto HSum (SIMD<Complex> sc1, SIMD<Complex> sc2)
+  {
+    double re1, im1, re2, im2;
+    std::tie(re1,im1,re2,im2) = HSum(sc1.real(), sc1.imag(), sc2.real(), sc2.imag());
+    return make_tuple(Complex(re1,im1), Complex(re2,im2));
+  }
   
   INLINE ostream & operator<< (ostream & ost, SIMD<Complex> c)
   {

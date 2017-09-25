@@ -118,29 +118,37 @@ namespace ngla
     umfpack_dl_defaults(Control);
 
     double *data = reinterpret_cast<double *>(&values[0]);
-    if(is_complex)
+    try
       {
-        status = umfpack_zl_symbolic ( compressed_height, compressed_height, &rowstart[0], &indices[0], data, nullptr, &Symbolic, Control, Info );
-        umfpack_zl_report_status( nullptr, status );
-        if( status!= UMFPACK_OK ) throw Exception("UmfpackInverse: Symbolic factorization failed.");
+        if(is_complex)
+          {
+            status = umfpack_zl_symbolic ( compressed_height, compressed_height, &rowstart[0], &indices[0], data, nullptr, &Symbolic, Control, Info );
+            umfpack_zl_report_status( nullptr, status );
+            if( status!= UMFPACK_OK ) throw Exception("UmfpackInverse: Symbolic factorization failed.");
 
-        status = umfpack_zl_numeric (&rowstart[0], &indices[0], data, nullptr, Symbolic, &Numeric, nullptr, nullptr );
-        umfpack_zl_report_status( nullptr, status );
-        if( status!= UMFPACK_OK ) throw Exception("UmfpackInverse: Numeric factorization failed.");
+            status = umfpack_zl_numeric (&rowstart[0], &indices[0], data, nullptr, Symbolic, &Numeric, nullptr, nullptr );
+            umfpack_zl_report_status( nullptr, status );
+            if( status!= UMFPACK_OK ) throw Exception("UmfpackInverse: Numeric factorization failed.");
 
-        umfpack_zl_free_symbolic ( &Symbolic );
+            umfpack_zl_free_symbolic ( &Symbolic );
+          }
+        else
+          {
+            status = umfpack_dl_symbolic ( compressed_height, compressed_height, &rowstart[0], &indices[0], data, &Symbolic, Control, Info );
+            umfpack_dl_report_status( nullptr, status );
+            if( status!= UMFPACK_OK ) throw Exception("UmfpackInverse: Symbolic factorization failed.");
+
+            status = umfpack_dl_numeric (&rowstart[0], &indices[0], data, Symbolic, &Numeric, nullptr, nullptr );
+            umfpack_dl_report_status( nullptr, status );
+            if( status!= UMFPACK_OK ) throw Exception("UmfpackInverse: Numeric factorization failed.");
+
+            umfpack_dl_free_symbolic ( &Symbolic );
+          }
       }
-    else
+    catch(Exception e)
       {
-        status = umfpack_dl_symbolic ( compressed_height, compressed_height, &rowstart[0], &indices[0], data, &Symbolic, Control, Info );
-        umfpack_dl_report_status( nullptr, status );
-        if( status!= UMFPACK_OK ) throw Exception("UmfpackInverse: Symbolic factorization failed.");
-
-        status = umfpack_dl_numeric (&rowstart[0], &indices[0], data, Symbolic, &Numeric, nullptr, nullptr );
-        umfpack_dl_report_status( nullptr, status );
-        if( status!= UMFPACK_OK ) throw Exception("UmfpackInverse: Numeric factorization failed.");
-
-        umfpack_dl_free_symbolic ( &Symbolic );
+        if (task_manager) task_manager -> StartWorkers();
+        throw e;
       }
 
     if (task_manager) task_manager -> StartWorkers();

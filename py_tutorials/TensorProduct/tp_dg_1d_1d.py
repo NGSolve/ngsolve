@@ -1,11 +1,9 @@
 from ngsolve.TensorProductTools import *
-from make_seg_mesh import *
 from ngsolve.comp import *
 from ngsolve import *
-from ngsolve.comp import TensorProductFESpace, Transfer2StdMesh, SymbolicTPBFI
 
-mesh1 = Mesh(SegMesh(20,0,1,periodic=True))
-mesh2 = Mesh(SegMesh(20,0,1,periodic=True))
+mesh1 = Mesh(SegMesh(20,0,1,periodic=True) )
+mesh2 = Mesh(SegMesh(20,0,1,periodic=True) )
 
 tpmesh = Mesh(MakeTensorProductMesh(mesh1,mesh2))
 Draw(tpmesh)
@@ -13,23 +11,20 @@ Draw(tpmesh)
 n=5
 m=5
 
-fesx = L2(mesh1,order=n,flags={'dgjumps':True})
-fesy = L2(mesh2,order=m,flags={'dgjumps':True})
+fesx = L2(mesh1,order=n)
+fesy = L2(mesh2,order=m)
 
-tpfes = TensorProductFESpace([fesx,fesy],{'dgjumps':True})
+tpfes = TensorProductFESpace([fesx,fesy])
 
 fes = L2(tpmesh,order=n)
 u = tpfes.TrialFunction()
 v = tpfes.TestFunction()
 vx = v.Operator("gradx")
 vy = v.Operator("grady")
-#b = (-1)*CoefficientFunction( (x1-0.5,-x+0.5) )
 b = (-1)*CoefficientFunction( (0.25,0.5) )
-#b = CoefficientFunction( (0.3,1) )
 
 
-uin = IfPos((1.0-x1)*(x1-0.5),sin((x1-0.5)*2*3.14159),0) + IfPos((x1-0.0)*(0.5-x1),sin((x1)*2*3.14159),0)
-#uin = CoefficientFunction(0.4*sin(x1*3.14159) + 0.4*sin(x*3.14159) )
+uin = ProlongateCoefficientFunction(IfPos((1.0-x)*(x-0.5),sin((x-0.5)*2*3.14159),0) + IfPos((x-0.0)*(0.5-x),sin((x)*2*3.14159),0) , 0 , tpfes)
 
 gradv = CoefficientFunction((vx,vy))
 
@@ -49,7 +44,7 @@ v = GridFunction(tpfes)
 
 uu = GridFunction(fes)
 print("Setting")
-u.Set(exp(-200*(x-0.4)*(x-0.4)-200*(x1-0.4)*(x1-0.4)))
+u.Set(exp( ProlongateCoefficientFunction(-200*(x-0.4)*(x-0.4), 1, tpfes)+ ProlongateCoefficientFunction(-200*(x-0.4)*(x-0.4),0,tpfes) ) )
 print("Done")
 Transfer2StdMesh(u,uu)
 
@@ -79,6 +74,6 @@ def Run(nsteps):
                 Redraw()
 
 Transfer2StdMesh(u,uu)
-Run(1500)
+Run(100)
 for t in Timers():
     print(t["counts"], t["time"], t["name"])

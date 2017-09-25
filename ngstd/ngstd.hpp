@@ -28,7 +28,11 @@
 
 
 #else
-   #define DLL_HEADER 
+   #if __GNUC__ >= 4
+      #define DLL_HEADER __attribute__ ((visibility ("default")))
+   #else
+      #define DLL_HEADER
+   #endif
 // #define NGS_DLL_HEADER 
 
 
@@ -40,8 +44,8 @@
    #endif
 */
 
-   #ifdef NGS_EXPORTS
-      #define NGS_DLL_HEADER   __attribute__ ((visibility ("default")))
+   #if __GNUC__ >= 4
+      #define NGS_DLL_HEADER __attribute__ ((visibility ("default")))
    #else
       #define NGS_DLL_HEADER
    #endif
@@ -101,6 +105,24 @@ Specific data types Exception, BitArray, Flags, LocalHeap, BlockAllocator, NgPro
 namespace ngstd
 {
   using namespace std;
+  template <typename T>
+  class ParallelValue
+  {
+    T val;
+  public:
+    ParallelValue (const T & _val) : val(_val) { ; }
+    operator T () const { return val; }
+  };
+  
+  template <typename FUNC> class ParallelFunction
+  {
+    FUNC f;
+  public:
+    ParallelFunction (const FUNC & _f) : f(_f) { ; }
+    operator FUNC () const { return f; }
+    auto operator() (size_t i) const { return f(i); }
+  };
+  
 }
 
 #include <ngs_defines.hpp>
@@ -118,6 +140,7 @@ namespace ngstd
 #include "simd.hpp"
 #include "simd_complex.hpp"
 #include "tuple.hpp"
+
 #include "array.hpp"
 #include "table.hpp"
 #include "symboltable.hpp"

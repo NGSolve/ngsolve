@@ -18,6 +18,7 @@ namespace ngstd
 */
 class BitArray
 {
+protected:
   /// number of bits
   size_t size;
 
@@ -130,6 +131,40 @@ private:
 
 };
 
+
+  inline BitArray & operator|= (BitArray & me, const BitArray & you)
+  {
+    me.Or(you);
+    return me;
+  }
+
+  inline BitArray & operator&= (BitArray & me, const BitArray & you)
+  {
+    me.And(you);
+    return me;
+  }
+  
+  inline BitArray operator| (const BitArray & a, const BitArray & b)
+  {
+    BitArray res = a;
+    res |= b;
+    return res;
+  }
+
+  inline BitArray operator& (const BitArray & a, const BitArray & b)
+  {
+    BitArray res = a;
+    res &= b;
+    return res;
+  }
+
+  inline BitArray operator~ (const BitArray & a)
+  {
+    BitArray res = a;
+    res.Invert();
+    return res;
+  }
+  
 
 /// prints BitArray
 NGS_DLL_HEADER ostream & operator<<(ostream & s, const BitArray & ba);

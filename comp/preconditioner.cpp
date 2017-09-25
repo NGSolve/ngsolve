@@ -938,6 +938,11 @@ namespace ngcomp
     delete premat;
   }
 
+  const BaseMatrix & TwoLevelPreconditioner :: GetMatrix() const
+  {
+    return *premat;
+  }
+  
   void TwoLevelPreconditioner :: Update ()
   {
     /*

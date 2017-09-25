@@ -1,6 +1,6 @@
 from netgen.geom2d import *
 from ngsolve import *
-from ngsolve.utils import NgsPickler, NgsUnpickler
+import pickle
 import io
 
 
@@ -21,12 +21,12 @@ def test_pickle_gridfunction_real():
         u.vec.data = a.mat.Inverse(fes.FreeDofs()) * f.vec
 
     with io.BytesIO() as f:
-        pickler = NgsPickler(f)
+        pickler = pickle.Pickler(f)
         pickler.dump(u)
         data = f.getvalue()
 
     with io.BytesIO(data) as f:
-        unpickler = NgsUnpickler(f)
+        unpickler = pickle.Unpickler(f)
         u2 = unpickler.load()
 
     assert sqrt(Integrate((u-u2)*(u-u2),mesh)) < 1e-14
@@ -49,12 +49,28 @@ def test_pickle_gridfunction_complex():
         u.vec.data = a.mat.Inverse(fes.FreeDofs()) * f.vec
 
     with io.BytesIO() as f:
-        pickler = NgsPickler(f)
+        pickler = pickle.Pickler(f)
         pickler.dump(u)
         data = f.getvalue()
 
     with io.BytesIO(data) as f:
-        unpickler = NgsUnpickler(f)
+        unpickler = pickle.Unpickler(f)
+        u2 = unpickler.load()
+    error = sqrt(Integrate(Conj(u-u2)*(u-u2),mesh))
+    assert error.real < 1e-14 and error.imag < 1e-14
+
+def test_pickle_hcurl():
+    mesh = Mesh(unit_square.GenerateMesh(maxh=0.3))
+    fes = HCurl(mesh,order=3)
+    u = GridFunction(fes)
+    u.Set(CoefficientFunction((1,1)))
+    with io.BytesIO() as f:
+        pickler = pickle.Pickler(f)
+        pickler.dump(u)
+        data = f.getvalue()
+
+    with io.BytesIO(data) as f:
+        unpickler = pickle.Unpickler(f)
         u2 = unpickler.load()
     error = sqrt(Integrate(Conj(u-u2)*(u-u2),mesh))
     assert error.real < 1e-14 and error.imag < 1e-14
@@ -79,12 +95,12 @@ def test_pickle_compoundfespace():
         u.vec.data = a.mat.Inverse(fes.FreeDofs()) * f.vec
 
     with io.BytesIO() as f:
-        pickler = NgsPickler(f)
+        pickler = pickle.Pickler(f)
         pickler.dump(u)
         data = f.getvalue()
 
     with io.BytesIO(data) as f:
-        unpickler = NgsUnpickler(f)
+        unpickler = pickle.Unpickler(f)
         u2 = unpickler.load()
     flux1, flux2 = u.components[0], u2.components[0]
     sol1, sol2 = u.components[1], u2.components[1]
@@ -113,12 +129,12 @@ def test_pickle_periodic():
         f.Assemble()
         u.vec.data = a.mat.Inverse(fes.FreeDofs()) * f.vec
     with io.BytesIO() as f:
-        pickler = NgsPickler(f)
+        pickler = pickle.Pickler(f)
         pickler.dump(u)
         data = f.getvalue()
 
     with io.BytesIO(data) as f:
-        unpickler = NgsUnpickler(f)
+        unpickler = pickle.Unpickler(f)
         u2 = unpickler.load()
 
     assert sqrt(Integrate((u-u2)*(u-u2),mesh)) < 1e-14
@@ -128,4 +144,5 @@ if __name__ == "__main__":
     test_pickle_gridfunction_real()
     test_pickle_gridfunction_complex()
     test_pickle_compoundfespace()
+    test_pickle_hcurl()
     test_pickle_periodic()

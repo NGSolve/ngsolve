@@ -30,7 +30,7 @@ mesh.Curve(5)
 
 ngsglobals.msg_level = 5
 
-fes = HCurl(mesh, order=4, dirichlet="outer", flags = { "nograds" : True })
+fes = HCurl(mesh, order=4, dirichlet="outer", nograds = True)
 
 # u and v refer to trial and test-functions in the definition of forms below
 u = fes.TrialFunction()

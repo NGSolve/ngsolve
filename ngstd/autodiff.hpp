@@ -470,6 +470,29 @@ template <int D, typename SCAL>
 INLINE AutoDiff<D,SCAL> tan (AutoDiff<D,SCAL> x)
 { return sin(x) / cos(x); }
 
+using std::floor;
+template<int D, typename SCAL>
+INLINE AutoDiff<D,SCAL> floor (const AutoDiff<D,SCAL> & x)
+{
+  AutoDiff<D,SCAL> res;
+  res.Value() = floor(x.Value());
+  for (int j = 0; j < D; j++)
+    res.DValue(j) = 0.0;
+  return res;
+}
+
+using std::ceil;
+template<int D, typename SCAL>
+INLINE AutoDiff<D,SCAL> ceil (const AutoDiff<D,SCAL> & x)
+{
+  AutoDiff<D,SCAL> res;
+  res.Value() = ceil(x.Value());
+  for (int j = 0; j < D; j++)
+    res.DValue(j) = 0.0;
+  return res;
+}
+
+
 using std::atan;
 template <int D, typename SCAL>
 INLINE AutoDiff<D,SCAL> atan (AutoDiff<D,SCAL> x)
@@ -535,6 +558,7 @@ INLINE AutoDiff<D,SCAL> atan (AutoDiff<D,SCAL> x)
     auto & Rec() { return rec; }
     auto & Last() { return last; }
   };
+
   
   template <typename SCAL>
   class AutoDiffRec<0,SCAL>
@@ -544,20 +568,22 @@ INLINE AutoDiff<D,SCAL> atan (AutoDiff<D,SCAL> x)
     AutoDiffRec () = default;
     AutoDiffRec (const AutoDiffRec &) = default;
     AutoDiffRec (SCAL _val) : val(_val) { ; }
-    AutoDiffRec (SCAL _val, SCAL _last) : val(_val) { ; }
+    AutoDiffRec (SCAL _val, SCAL /* _dummylast */) : val(_val) { ; }
 
     AutoDiffRec & operator= (const AutoDiffRec &) = default;
     AutoDiffRec & operator= (SCAL aval) { val = aval; return *this; }
 
     SCAL Value() const { return val; }
-    SCAL DValue(int i) const { return val; }
+    SCAL DValue(int i) const { return SCAL(0); }
     SCAL & Value() { return val; }
-    SCAL & DValue(int i) { return val; }
+    // SCAL & DValue(int i) { return val; }
     auto Rec() const { return val; }
-    auto Last() const { return val; }
+    auto Last() const { return SCAL(0); }
     auto & Rec() { return val; }
-    auto & Last() { return val; }
+    // auto & Last() { return val; }
   };
+
+
   template <typename SCAL>
   class AutoDiffRec<1,SCAL>
   {
@@ -582,7 +608,7 @@ INLINE AutoDiff<D,SCAL> atan (AutoDiff<D,SCAL> x)
     auto & Rec() { return val; }
     auto & Last() { return last; }
   };
-  
+
   template <int D, typename SCAL>
   AutoDiffRec<D,SCAL> operator+ (double a, AutoDiffRec<D,SCAL> b)
   {

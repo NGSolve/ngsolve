@@ -88,7 +88,7 @@ The function *IfPos* provides CoefficientFunctions depending on some condition:
 Parameter CoefficientFunction
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If you want a CoefficientFunction with a variable paramater, instead of using a 
+If you want a CoefficientFunction with a variable parameter, instead of using a 
 new *BilinearForm* every time you can use a *Parameter* CF. The parameter can be 
 modified with the *Set* method and when assembling the BilinearForm again, the 
 updated parameter is used.

@@ -22,8 +22,8 @@ template <int D, typename SCAL = double>
 class AutoDiffDiff
 {
   SCAL val;
-  SCAL dval[D];
-  SCAL ddval[D*D];
+  SCAL dval[D?D:1];
+  SCAL ddval[D?D*D:1];
 public:
 
   typedef AutoDiffDiff<D, SCAL> TELEM;
@@ -73,6 +73,21 @@ public:
     dval[diffindex] = 1;
   }
 
+  INLINE AutoDiffDiff (SCAL aval, const SCAL * grad)
+  {
+    val = aval;
+    LoadGradient (grad);
+    for (int i = 0; i < D*D; i++)
+      ddval[i] = 0;
+  }
+
+  INLINE AutoDiffDiff (SCAL aval, const SCAL * grad, const SCAL * hesse)
+  {
+    val = aval;
+    LoadGradient (grad);
+    LoadHessian (hesse);
+  }
+
   /// assign constant value
   AutoDiffDiff & operator= (SCAL aval) throw()
   {
@@ -82,6 +97,30 @@ public:
     for (int i = 0; i < D*D; i++)
       ddval[i] = 0;
     return *this;
+  }
+
+  INLINE void StoreGradient (SCAL * p) const 
+  {
+    for (int i = 0; i < D; i++)
+      p[i] = dval[i];
+  }
+
+  INLINE void LoadGradient (const SCAL * p) 
+  {
+    for (int i = 0; i < D; i++)
+      dval[i] = p[i];
+  }
+
+  INLINE void StoreHessian (SCAL * p) const 
+  {
+    for (int i = 0; i < D*D; i++)
+      p[i] = ddval[i];
+  }
+
+  INLINE void LoadHessian (const SCAL * p) 
+  {
+    for (int i = 0; i < D*D; i++)
+      ddval[i] = p[i];
   }
 
   /// returns value
@@ -368,7 +407,12 @@ inline AutoDiffDiff<D, SCAL> Inv (const AutoDiffDiff<D, SCAL> & x)
   AutoDiffDiff<D, SCAL> res(1.0 / x.Value());
   for (int i = 0; i < D; i++)
     res.DValue(i) = -x.DValue(i) / (x.Value() * x.Value());
-  cout << "ADD::Inv not implemented" << endl;
+
+  SCAL fac1 = 2/(x.Value()*x.Value()*x.Value());
+  SCAL fac2 = 1/sqr(x.Value());
+  for (int i = 0; i < D; i++)
+    for (int j = 0; j < D; j++)
+      res.DDValue(i,j) = fac1*x.DValue(i)*x.DValue(j) - fac2*x.DDValue(i,j);
   return res;
 }
 
@@ -492,6 +536,23 @@ INLINE AutoDiffDiff<D, SCAL> atan (AutoDiffDiff<D, SCAL> x)
       res.DDValue(k,l) = -2*x.Value()/((1+x.Value()*x.Value())*(1+x.Value()*x.Value())) * x.DValue(k) * x.DValue(l) + x.DDValue(k,l)/(1+x.Value()*x.Value());
   return res;
 }
+
+
+
+using std::floor;
+template<int D, typename SCAL>
+INLINE AutoDiffDiff<D,SCAL> floor (const AutoDiffDiff<D,SCAL> & x)
+{
+  return floor(x.Value());
+}
+
+using std::ceil;
+template<int D, typename SCAL>
+INLINE AutoDiffDiff<D,SCAL> ceil (const AutoDiffDiff<D,SCAL> & x)
+{
+  return ceil(x.Value());  
+}
+
 
 template <int D, typename SCAL, typename TB, typename TC>
 auto IfPos (AutoDiffDiff<D,SCAL> a, TB b, TC c) -> decltype(IfPos (a.Value(), b, c))

@@ -2,7 +2,7 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING INTERNAL)
 endif(NOT CMAKE_BUILD_TYPE)
 
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.3)
 
 # Handle superbuild first
 option( USE_SUPERBUILD   "Whether or not a superbuild should be invoked" ON)
@@ -51,6 +51,7 @@ if (USE_SUPERBUILD)
   endif()
   # execute the superbuild (this script will be invoked again without the
   # USE_SUPERBUILD option this time)
+  option( BUILD_UMFPACK "Download and build UMFPACK automatically" ON )
   include (cmake/SuperBuild.cmake)
   include (cmake/package.cmake)
   include(CPack)
@@ -75,6 +76,7 @@ string(REPLACE "netgen" "ngsolve" NGSOLVE_INSTALL_DIR_CMAKE ${NETGEN_INSTALL_DIR
 
 set(NGSOLVE_COMPILE_INCLUDE_DIRS "")
 set(NGSOLVE_COMPILE_DEFINITIONS "")
+set(NGSOLVE_COMPILE_DEFINITIONS_PRIVATE "")
 set(NGSOLVE_COMPILE_OPTIONS "")
 list(APPEND NGSOLVE_COMPILE_DEFINITIONS HAVE_NETGEN_SOURCES)
 
@@ -177,7 +179,7 @@ if(WIN32)
 
     if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
         # Intel Compiler
-        list(APPEND NGSOLVE_COMPILE_OPTIONS /Od /MP /Qstd=c++14 /Qopt-report-file:report.log)
+        list(APPEND NGSOLVE_COMPILE_OPTIONS /Od /MP $<$<COMPILE_LANGUAGE:CXX>:/Qstd=c++14> /Qopt-report-file:report.log)
     else()
         # MS Visual Compiler
         list(APPEND NGSOLVE_COMPILE_OPTIONS /MP /bigobj)
@@ -186,7 +188,7 @@ if(WIN32)
 else(WIN32)
     # build shared libraries in windows)
     set(NGS_LIB_TYPE SHARED)
-    list(APPEND NGSOLVE_COMPILE_OPTIONS -std=c++14)
+    list(APPEND NGSOLVE_COMPILE_OPTIONS $<$<COMPILE_LANGUAGE:CXX>:-std=c++14>)
 endif(WIN32)
 if(APPLE)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -undefined dynamic_lookup")
@@ -217,7 +219,6 @@ if (USE_LAPACK)
     if(NOT LAPACK_LIBRARIES)
       find_package(LAPACK REQUIRED)
     endif()
-    list(APPEND NGSOLVE_COMPILE_DEFINITIONS LAPACK)
 endif (USE_LAPACK)
 
 #######################################################################
@@ -240,13 +241,22 @@ endif (USE_CUDA)
 if (USE_MKL)
     find_package(MKL REQUIRED)
     include_directories(${MKL_INCLUDE_DIRS})
-    list(APPEND NGSOLVE_COMPILE_DEFINITIONS USE_MKL USE_PARDISO LAPACK)
+    list(APPEND NGSOLVE_COMPILE_DEFINITIONS USE_PARDISO)
+    list(APPEND NGSOLVE_COMPILE_DEFINITIONS_PRIVATE USE_MKL)
 
 
     if("${MKL_INTERFACE_LAYER}" STREQUAL "_ilp64")
       list(APPEND NGSOLVE_COMPILE_DEFINITIONS MKL_ILP64)
     endif()
 endif (USE_MKL)
+
+if(MKL_STATIC)
+  set(LAPACK_CMAKE_LINK_INTERFACE PRIVATE)
+  list(APPEND NGSOLVE_COMPILE_DEFINITIONS_PRIVATE LAPACK)
+else()
+  set(LAPACK_CMAKE_LINK_INTERFACE PUBLIC)
+  list(APPEND NGSOLVE_COMPILE_DEFINITIONS LAPACK)
+endif()
 
 #######################################################################
 if (USE_HYPRE)
@@ -286,10 +296,20 @@ endif(USE_PARDISO)
 #######################################################################
 
 if(USE_UMFPACK)
-  find_package(SuiteSparse NO_MODULE HINTS ${UMFPACK_DIR})
-  include(${USE_SuiteSparse})
-  include_directories(${SuiteSparse_INCLUDE_DIRS})
-  set(UMFPACK_LIBRARIES ${SuiteSparse_LIBRARIES} CACHE STRING "List of UMFPACK libraries")
+  set(SuiteSparse_USE_LAPACK_BLAS ON)
+  find_package(suitesparse QUIET NO_MODULE HINTS ${UMFPACK_DIR})
+  if(suitesparse_FOUND)
+    set(UMFPACK_LIBRARIES SuiteSparse::umfpack)
+  else()
+    # UMFPACK was not built with Superbuild, look for it manually
+    find_library(UMFPACK_LIB REQUIRED NAMES umfpack HINTS ${UMFPACK_DIR}/lib ${UMFPACK_DIR}/lib64)
+    find_library(CHOLMOD_LIB REQUIRED NAMES cholmod HINTS ${UMFPACK_DIR}/lib ${UMFPACK_DIR}/lib64)
+    find_library(AMD_LIB REQUIRED NAMES amd HINTS ${UMFPACK_DIR}/lib ${UMFPACK_DIR}/lib64)
+    find_library(CCOLAMD_LIB REQUIRED NAMES ccolamd HINTS ${UMFPACK_DIR}/lib ${UMFPACK_DIR}/lib64)
+    find_library(SUITESPARSECONFIG_LIB REQUIRED NAMES suitesparseconfig HINTS ${UMFPACK_DIR}/lib ${UMFPACK_DIR}/lib64)
+    set(UMFPACK_LIBRARIES ${UMFPACK_LIB} ${CHOLMOD_LIB} ${AMD_LIB} ${CCOLAMD_LIB} ${SUITESPARSECONFIG_LIB})
+    find_path(UMFPACK_INCLUDE_DIR REQUIRED NAMES umfpack.h PATH_SUFFIXES suitesparse HINTS ${UMFPACK_DIR}/include ${UMFPACK_DIR}/include/suitesparse)
+  endif()
   list(APPEND NGSOLVE_COMPILE_DEFINITIONS USE_UMFPACK)
 endif(USE_UMFPACK)
 
@@ -319,23 +339,6 @@ if(${CMAKE_BUILD_TYPE} STREQUAL "Debug" OR ${CMAKE_BUILD_TYPE} STREQUAL "DEBUG")
 else()
   set(NGS_TEST_TIMEOUT 60)
 endif()
-
-#######################################################################
-
-add_subdirectory(include)
-add_subdirectory(ngstd)
-add_subdirectory(basiclinalg)
-add_subdirectory(parallel)
-add_subdirectory(linalg)
-add_subdirectory(fem)
-add_subdirectory(multigrid)
-add_subdirectory(comp)
-add_subdirectory(solve)
-add_subdirectory(python)
-add_subdirectory(pde_tutorial)
-add_subdirectory(py_tutorials)
-add_subdirectory(tests)
-add_subdirectory(docs)
 
 #######################################################################
 # generate ngscxx compiler wrapper
@@ -387,7 +390,7 @@ else()
 endif()
 
 # linker flags
-if(USE_MKL AND NOT INSTALL_DEPENDENCIES)
+if(USE_MKL AND NOT INSTALL_DEPENDENCIES AND NOT MKL_STATIC)
     set( ngsld_flags "${ngsld_flags} ${MKL_LINK_FLAGS}" )
 endif()
 
@@ -427,6 +430,7 @@ ${ngscxx_set_script_dir}
 endif()
 
 if(WIN32)
+    set(NGSCXX_COMMAND ngscxx.bat)
     get_filename_component(VC_BIN_DIR ${CMAKE_CXX_COMPILER} PATH)
     get_filename_component(VC_DIR ${VC_BIN_DIR}/../../ ABSOLUTE)
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngscxx.bat 
@@ -436,6 +440,7 @@ if(WIN32)
     install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngscxx.bat DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve_devel )
     install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngsld.bat DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve_devel )
 else(WIN32)
+    set(NGSCXX_COMMAND ngscxx)
     set(ngscxx_compile_command "${CMAKE_CXX_COMPILER} ${ngscxx_flags} ${ngscxx_includes} $*")
     if(CCACHE_FOUND)
       set(ngscxx_compile_command "
@@ -444,8 +449,9 @@ if [ -f ${CCACHE_FOUND} ]
   else ${ngscxx_compile_command}
 fi")
     endif(CCACHE_FOUND)
-    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngscxx "${ngscxx_header}
+    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngscxx_preconfig "${ngscxx_header}
 ${ngscxx_compile_command}\n")
+    file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ngscxx INPUT ${CMAKE_CURRENT_BINARY_DIR}/ngscxx_preconfig CONDITION $<COMPILE_LANGUAGE:CXX> )
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngsld "${ngsld_header}
 ${CMAKE_CXX_COMPILER} ${ngsld_flags} $*\n")
 install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngscxx DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve_devel )
@@ -466,6 +472,23 @@ LD_PRELOAD=$LD_PRELOAD:${ngspy_preload_libs} ${NETGEN_PYTHON_EXECUTABLE} $*
     install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngspy DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve_devel )
 endif (NETGEN_USE_MPI)
 
+
+#######################################################################
+
+add_subdirectory(include)
+add_subdirectory(ngstd)
+add_subdirectory(basiclinalg)
+add_subdirectory(parallel)
+add_subdirectory(linalg)
+add_subdirectory(fem)
+add_subdirectory(multigrid)
+add_subdirectory(comp)
+add_subdirectory(solve)
+add_subdirectory(python)
+add_subdirectory(pde_tutorial)
+add_subdirectory(py_tutorials)
+add_subdirectory(tests)
+add_subdirectory(docs)
 
 
 
@@ -544,7 +567,7 @@ message("
 ")
 
 if (ADDITIONAL_PATHS)
-  message(WARNING "The use of ADDITIONAL_PATHS is depricated, use CMAKE_PREFIX_PATH instead.")
+  message(WARNING "The use of ADDITIONAL_PATHS is deprecated, use CMAKE_PREFIX_PATH instead.")
 endif (ADDITIONAL_PATHS)
 
 

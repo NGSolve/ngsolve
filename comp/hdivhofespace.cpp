@@ -28,6 +28,7 @@ namespace ngcomp
   HDivHighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags)
     : FESpace (ama, flags)
   {
+    type = "hdivho";
     name="HDivHighOrderFESpace(hdivho)";
     // allowed flags
     DefineNumFlag("relorder");
@@ -125,8 +126,8 @@ namespace ngcomp
 
 
     auto one = make_shared<ConstantCoefficientFunction> (1);
-    integrator[VOL]= GetIntegrators().CreateBFI("masshdiv", ma->GetDimension(), one);
-    integrator[BND] = GetIntegrators().CreateBFI("robinhdiv", ma->GetDimension(), one);
+    // integrator[VOL]= GetIntegrators().CreateBFI("masshdiv", ma->GetDimension(), one);
+    // integrator[BND] = GetIntegrators().CreateBFI("robinhdiv", ma->GetDimension(), one);
     
     if (ma->GetDimension() == 2)
       {
@@ -141,12 +142,14 @@ namespace ngcomp
         flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpDivHDiv<3>>>();
       }
 
+    /*
     if (dimension > 1)
       {
         integrator[VOL]= make_shared<BlockBilinearFormIntegrator> (integrator[VOL], dimension);
         integrator[BND] = make_shared<BlockBilinearFormIntegrator> (integrator[BND], dimension);
       }
-
+    */
+    
     highest_order_dc = flags.GetDefineFlag("highest_order_dc");
     if (highest_order_dc) {
       *testout << "highest_order_dc is active!" << endl;
@@ -640,8 +643,14 @@ namespace ngcomp
             throw Exception ("illegal element in HDivHOFESpace::GetFE");
           }
       }
-    else
+    else if (ei.VB()  == BND)
       {
+        if (!DefinedOn(ei))
+          return SwitchET(ma->GetElType(ei), [&] (auto et) -> FiniteElement&
+                          {
+                            return * new (alloc) HDivNormalDummyFE<et.ElementType()>();
+                          });
+        
         int selnr = ei.Nr();
         FiniteElement * fe = 0;
         
@@ -724,6 +733,14 @@ namespace ngcomp
         
         return *fe;
       }
+    else
+      switch (ma->GetElement(ei).GetType())
+        {
+        case ET_POINT: return * new (alloc) DummyFE<ET_POINT>();
+        case ET_SEGM: return * new (alloc) DummyFE<ET_SEGM>();
+        default:
+          __assume(false);
+        }
   }
   
   // const FiniteElement & HDivHighOrderFESpace :: GetFE (int elnr, LocalHeap & lh) const
@@ -1009,7 +1026,8 @@ namespace ngcomp
         dnums += GetFacetDofs (fanum);
         
 	if (!DefinedOn (ei))
-	  dnums = -1;
+          dnums.SetSize0();
+        // dnums = -1;
       }
   }
 
@@ -1135,13 +1153,13 @@ namespace ngcomp
 	    for(auto i : Range(nfa))
 	      if(fine_facet[i])
 		{
-		  Array<int> edges;
-		  ma->GetFaceEdges ( i, edges);
+		  // Array<int> edges;
+		  // ma->GetFaceEdges ( i, edges);
                   /*
 		  for ( int j = 0; j < edges.Size(); j++ )
 		    cnt[offset + edges[j]] += 1 + first_facet_dof[i+1] - first_facet_dof[i];
                   */
-                  for (auto e : edges)
+                  for (auto e : ma->GetFaceEdges(i))
                     cnt[offset+e] += 1 + first_facet_dof[i+1] - first_facet_dof[i];
 		}
 	    

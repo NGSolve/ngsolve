@@ -3,6 +3,7 @@ from ngsolve import *
 import pytest
 
 def test_arnoldi():
+    SetHeapSize (10*1000*1000)
     mesh = Mesh(unit_square.GenerateMesh(maxh=0.3))
     fes1 = L2(mesh,order=8,complex=True,dirichlet="top|bottom|left|right")
     fes2 = H1(mesh,order=10,complex=True,dirichlet="top|bottom|left|right")

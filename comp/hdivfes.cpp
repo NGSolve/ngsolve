@@ -59,6 +59,24 @@ namespace ngcomp
       coeffs[0] = shared_ptr<CoefficientFunction> (new ConstantCoefficientFunction(1));
       integrator[VOL] = GetIntegrators().CreateBFI("masshdiv", 2, coeffs);
     }
+    if (ma->GetDimension() == 3)
+    {
+      Array<shared_ptr<CoefficientFunction>> coeffs(1);
+      coeffs[0] = shared_ptr<CoefficientFunction> (new ConstantCoefficientFunction(1));
+      integrator[VOL] = GetIntegrators().CreateBFI("masshdiv", 3, coeffs);
+    }
+    if (ma->GetDimension() == 2)
+      {
+        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHDiv<2>>>();
+        evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdVecHDivBoundary<2>>>();
+        flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpDivHDiv<2>>>();
+      }
+    else
+      {
+        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHDiv<3>>>();
+        evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdVecHDivBoundary<3>>>();
+        flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpDivHDiv<3>>>();
+      }
   }
       
     RaviartThomasFESpace :: ~RaviartThomasFESpace ()
@@ -130,6 +148,7 @@ namespace ngcomp
 	
 	if (!DefinedOn (ei))
 	  dnums = -1;
+        return;
       }
 
     if(ei.VB()==BND)
@@ -142,13 +161,16 @@ namespace ngcomp
 	    
 	    if (!DefinedOn(ei))
 	      dnums = -1;
-      }
-	if(ei.VB()==BBND)
-	  dnums.SetSize(0);
+            
+          }
     // (*testout) << "el = " << elnr << ", dofs = " << dnums << endl;
-  }
+      }
   
-  
+    if(ei.VB()==BBND || ei.VB()==BBBND)
+      {
+        dnums.SetSize0();
+        return;
+      }
 
     /*
       int eoa[12];

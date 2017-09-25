@@ -72,6 +72,7 @@ namespace ngcomp
     template <ELEMENT_TYPE ET>
     FiniteElement & T_GetFE (int elnr, Allocator & alloc) const;
 
+    using FESpace::GetDofNrs;
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
     ///
     virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;

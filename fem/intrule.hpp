@@ -282,7 +282,7 @@ namespace ngfem
     FlatVector<Complex> GetPointComplex() const;
     FlatMatrix<Complex> GetJacobianComplex() const;
     // dimension of range
-    int Dim() const;  
+    NGS_DLL_HEADER int Dim() const;  
     VorB VB() const; 
     bool IsComplex() const { return is_complex; }
     void SetOwnsTrafo (bool aowns_trafo = true) { owns_trafo = aowns_trafo; }
@@ -368,7 +368,12 @@ namespace ngfem
     NGS_DLL_HEADER MappedIntegrationPoint () = default;
     ///
     NGS_DLL_HEADER MappedIntegrationPoint (const IntegrationPoint & aip,
-					   const ElementTransformation & aeltrans);
+					   const ElementTransformation & aeltrans)
+      : DimMappedIntegrationPoint<DIMR,SCAL> (aip, aeltrans)
+    {
+      this->eltrans->CalcPointJacobian(this->IP(), this->point, dxdxi);
+      this->Compute();
+    }
 
     INLINE MappedIntegrationPoint (const IntegrationPoint & aip,
 			    const ElementTransformation & aeltrans,
@@ -406,8 +411,9 @@ namespace ngfem
 				     Vec<3,SCAL> (dxdxi.Col(1)));
 		  det = L2Norm (normalvec);
 		  normalvec /= det;
+                  tangentialvec = TSCAL(0.0);
 		}
-	      else
+	      else if (DIMS == 1)
 		{
 		  // CHECK!
 		  normalvec = TSCAL(0.0);
@@ -415,6 +421,10 @@ namespace ngfem
 		  det = L2Norm(tangentialvec);
 		  tangentialvec /= det;
 		}
+              else
+                {
+                  det = 1;
+                }
 	    }
 	  else if (DIMR == 2)
 	    {
@@ -422,13 +432,14 @@ namespace ngfem
 
 	      normalvec(0) = -dxdxi(1,0) / det;
 	      normalvec(1) = dxdxi(0,0) / det;
+              tangentialvec = TSCAL(0.0);
 	    }
 	  else
 	    {
 	      det = 1.0;
 	      normalvec = 1.0;
+              tangentialvec = TSCAL(0.0);
 	    }
-	  tangentialvec = TSCAL(0.0);
 	}
       this->measure = fabs (det);
     }
@@ -1242,6 +1253,8 @@ namespace ngfem
     const ElementTransformation & eltrans;
     char * baseip;
     size_t incr;
+    // mir on other element as needed for evaluating DG jump terms
+    const BaseMappedIntegrationRule * other_mir = nullptr;
     
   public:    
     INLINE BaseMappedIntegrationRule (const IntegrationRule & air,
@@ -1268,6 +1281,10 @@ namespace ngfem
     { throw Exception("don't have complex ir"); }
     virtual void ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr) = 0;
     virtual bool IsComplex() const = 0;
+
+    // for DG jump terms
+    void SetOtherMIR (const BaseMappedIntegrationRule * other) { other_mir = other; }
+    auto GetOtherMIR () const { return other_mir; }
   };
 
   template <int DIM_ELEMENT, int DIM_SPACE, typename SCAL = double>
@@ -1524,6 +1541,9 @@ namespace ngstd
 
     INLINE const Vec<R,SIMD<double>> GetNV () const { return normalvec; }
     INLINE void SetNV (Vec<R,SIMD<double>> vec) { normalvec = vec; }
+
+    INLINE const Vec<R,SIMD<double>> GetTV () const { return tangentialvec; }
+    INLINE void SetTV (Vec<R,SIMD<double>> vec) { tangentialvec = vec; }
   };
 
   template <int DIMS, int DIMR>
@@ -1578,12 +1598,16 @@ namespace ngstd
                   det = L2Norm (normalvec);
                   normalvec /= det;
                 }
-              else
+              else if (DIMS == 1)
                 {
                   normalvec = SIMD<double>(0.0);
 		  tangentialvec = Vec<3,SIMD<double>>(dxdxi.Col(0));
 		  det = L2Norm(tangentialvec);
 		  tangentialvec /= det;
+                }
+              else
+                {
+                  det = 1;
                 }
             }
 	  else if (DIMR == 2)
@@ -1841,6 +1865,11 @@ namespace ngfem
     char * baseip;
     size_t incr;
     int dim_element, dim_space;
+
+    // mir on other element as needed for evaluating DG jump terms
+    const SIMD_BaseMappedIntegrationRule * other_mir = nullptr;
+
+    BareSliceMatrix<SIMD<double>> points{0,nullptr,DummySize(0,0)};
   public:
     SIMD_BaseMappedIntegrationRule (const SIMD_IntegrationRule & air,
                                     const ElementTransformation & aeltrans)
@@ -1862,8 +1891,14 @@ namespace ngfem
     { return *static_cast<const SIMD<BaseMappedIntegrationPoint>*> ((void*)(baseip+i*incr)); }
     INLINE int DimElement() const { return dim_element; }
     INLINE int DimSpace() const { return dim_space; }
-    virtual ABareMatrix<double> GetPoints() const = 0;
+    // virtual ABareMatrix<double> GetPoints() const = 0;
+    // virtual BareSliceMatrix<SIMD<double>> GetPoints() const = 0;
+    BareSliceMatrix<SIMD<double>> GetPoints() const { return points; }
     virtual void Print (ostream & ost) const = 0;
+
+    // for DG jump terms
+    void SetOtherMIR (const SIMD_BaseMappedIntegrationRule * other) { other_mir = other; }
+    auto GetOtherMIR () const { return other_mir; }
   };
 
   inline ostream & operator<< (ostream & ost, const SIMD_BaseMappedIntegrationRule & mir)
@@ -1893,6 +1928,10 @@ namespace ngfem
 
         for (size_t i = 0; i < ir.Size(); i++)
           new (&mips[i]) SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>> (ir[i], eltrans, -1);
+
+        new (&points) BareSliceMatrix<SIMD<double>> (sizeof(SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>>)/sizeof(SIMD<double>),
+                                                     &mips[0].Point()(0),
+                                                     DummySize(mips.Size(), DIM_SPACE));
       }
 
     virtual void ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr);
@@ -1900,11 +1939,14 @@ namespace ngfem
     { 
       return mips[i]; 
     }
-    virtual ABareMatrix<double> GetPoints() const
+    /*
+    virtual BareSliceMatrix<SIMD<double>> GetPoints() const
     {
-      return ABareMatrix<double> (&mips[0].Point()(0),
-                                  sizeof(SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>>)/sizeof(SIMD<double>));
+      return BareSliceMatrix<SIMD<double>> (sizeof(SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>>)/sizeof(SIMD<double>),
+                                            &mips[0].Point()(0),
+                                            DummySize(mips.Size(), DIM_SPACE));
     }
+    */
     virtual void Print (ostream & ost) const;
   };
 }
