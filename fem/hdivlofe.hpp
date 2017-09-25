@@ -20,6 +20,16 @@ namespace ngfem
 			    SliceMatrix<> shape) const { ; }
   };
 
+  template <ELEMENT_TYPE ET>
+  class HDivNormalDummyFE : public HDivNormalFiniteElement<ET_trait<ET>::DIM>
+  {
+  public:
+    HDivNormalDummyFE() : HDivNormalFiniteElement<ET_trait<ET>::DIM> (0,0) { ; }
+    virtual ELEMENT_TYPE ElementType() const { return ET; }
+    virtual void CalcShape (const IntegrationPoint & ip, 
+			    FlatVector<> shape) const { ; }
+  };
+
 
   ///
   class FE_RTTrig0 : public HDivFiniteElement<2>

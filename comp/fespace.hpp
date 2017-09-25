@@ -131,11 +131,11 @@ namespace ngcomp
     FiniteElement * dummy_point; // = new DummyFE<ET_POINT>();
 
     /// Evaluator for visualization (new style)
-    shared_ptr<DifferentialOperator> evaluator[3];
+    shared_ptr<DifferentialOperator> evaluator[4];
     /// Evaluator for flux
-    shared_ptr<DifferentialOperator> flux_evaluator[3];
+    shared_ptr<DifferentialOperator> flux_evaluator[4];
     /// Evaluator for visualization (old style)
-    shared_ptr<BilinearFormIntegrator> integrator[3];
+    shared_ptr<BilinearFormIntegrator> integrator[4];
 
     /// if non-zero, pointer to low order space
     shared_ptr<FESpace> low_order_space; 
@@ -153,7 +153,7 @@ namespace ngcomp
     Array<int> directelementclusters;
 
     
-    Table<int> element_coloring[3]; 
+    Table<int> element_coloring[4]; 
     Table<int> facet_coloring;  // elements on facet in own colors (DG)
     Array<COUPLING_TYPE> ctofdof;
 
@@ -194,6 +194,15 @@ namespace ngcomp
     Array<INT<3,TORDER>> order_cell_right;
     size_t order_timestamp = 0;
     BitArray is_atomic_dof;
+
+    
+    // move ndof and ndof_level to FESpace base class
+  private:
+    size_t ndof;
+    Array<size_t> ndof_level;
+  protected:
+    void SetNDof (size_t _ndof);
+    
   public:
     virtual int GetSpacialDimension() const { return ma->GetDimension();}
     string type;
@@ -292,11 +301,12 @@ namespace ngcomp
 
 
     /// number of (process-local) dofs
-    virtual size_t GetNDof () const = 0;
+    virtual size_t GetNDof () const { return ndof; } 
     /// number of dofs on the level
-    virtual size_t GetNDofLevel (int level) const;
+    virtual size_t GetNDofLevel (int level) const { return ndof_level[level]; } 
 
-    
+    SymbolTable<shared_ptr<DifferentialOperator>> additional_evaluators;
+       
     class Element : public Ngs_Element
     {
       const FESpace & fes;
@@ -457,8 +467,6 @@ namespace ngcomp
     
     Table<int> CreateDofTable (VorB vorb) const;
 
-    // virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
-
     // FlatArray<int> GetDofNrs (ElementId ei, LocalHeap & lh) const;
     
     /// get coupling types of dofs
@@ -481,8 +489,10 @@ namespace ngcomp
     // { return lodofs_per_node[nt]; }
 
     /// get dofs on vertex vnr
+    // [[deprecated("Use GetDofNrs(NODE_TYPE(NT_VERTEX,nr) instead")]]
     virtual void GetVertexDofNrs (int vnr, Array<DofId> & dnums) const;
     /// get dofs on edge enr
+    // [[deprecated("Use GetDofNrs(NODE_TYPE(NT_EDGE,nr) instead")]]    
     virtual void GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const;
     /// get dofs on face fnr
     virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const;
@@ -572,11 +582,11 @@ namespace ngcomp
     { return dirichlet_boundaries.Size() && dirichlet_boundaries[i]; }
 
     /// is vertex on Dirichlet boundary ?
-    bool IsDirichletVertex (int i) const { return dirichlet_vertex.Size() && dirichlet_vertex[i]; }
+    bool IsDirichletVertex (size_t i) const { return dirichlet_vertex.Size() && dirichlet_vertex[i]; }
     /// is edge on Dirichlet boundary ?
-    bool IsDirichletEdge (int i) const { return dirichlet_edge.Size() && dirichlet_edge[i]; }
+    bool IsDirichletEdge (size_t i) const { return dirichlet_edge.Size() && dirichlet_edge[i]; }
     /// is face on Dirichlet boundary ?
-    bool IsDirichletFace (int i) const { return dirichlet_face.Size() && dirichlet_face[i]; }
+    bool IsDirichletFace (size_t i) const { return dirichlet_face.Size() && dirichlet_face[i]; }
 
     void GetFilteredDofs(COUPLING_TYPE doffilter, BitArray & output, bool freedofsonly=true) const;
     /// 
@@ -751,7 +761,7 @@ namespace ngcomp
     }
 
     virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const
-    { return SymbolTable<shared_ptr<DifferentialOperator>>(); } 
+    { return additional_evaluators; } 
 
     /// returns function-evaluator
     [[deprecated("Use GetIntegrator(VorB) instead of GetIntegrator(bool)!")]]    
@@ -760,11 +770,13 @@ namespace ngcomp
       return integrator[vb];
     }
 
-    shared_ptr<BilinearFormIntegrator> GetIntegrator (VorB vb = VOL) const
+    shared_ptr<BilinearFormIntegrator> GetIntegrator (VorB vb = VOL) const;
+    /*
     {
       return integrator[vb];
     }
-
+    */
+    
     /// special elements for hacks (used for contact, periodic-boundary-penalty-constraints, ...
     Array<SpecialElement*> specialelements;
 
@@ -919,7 +931,7 @@ namespace ngcomp
   class NGS_DLL_HEADER NodalFESpace : public FESpace
   {
     ///
-    Array<int> ndlevel;
+    // Array<int> ndlevel;
     bool hb_defined;
 
   public:
@@ -942,16 +954,14 @@ namespace ngcomp
 
     virtual FiniteElement & GetFE(ElementId ei, Allocator & lh) const override;
     ///
-    virtual size_t GetNDof () const throw() override;
+    // virtual size_t GetNDof () const throw() override;
     ///
-    virtual size_t GetNDofLevel (int level) const override;
+    // virtual size_t GetNDofLevel (int level) const override;
     ///
-    using FESpace::GetDofNrs;
-    virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const override;
+    // using FESpace::GetDofNrs;
+    virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
     ///
 
-    virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
-  
     virtual void GetVertexDofNrs (int vnr, Array<DofId> & dnums) const override;
     virtual void GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const override;
     virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const override;
@@ -998,7 +1008,7 @@ namespace ngcomp
   class NGS_DLL_HEADER ElementFESpace : public FESpace
   {
     ///  Array<int> startelement;
-    Array<int> ndlevel;
+    // Array<int> ndlevel;
     int n_el_dofs;
   public:
     ///
@@ -1019,13 +1029,13 @@ namespace ngcomp
 
     virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
     ///
-    virtual size_t GetNDof () const throw() override { return ndlevel.Last(); }
+    // virtual size_t GetNDof () const throw() override { return ndlevel.Last(); }
   
     ///
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
 
     ///
-    virtual size_t GetNDofLevel (int level) const override;
+    // virtual size_t GetNDofLevel (int level) const override;
 
 
     virtual void GetVertexDofNrs (int vnr, Array<DofId> & dnums) const override
@@ -1092,7 +1102,7 @@ namespace ngcomp
     /// cummlated number of dofs of components
     Array<int> cummulative_nd;
     /// dofs on each multigrid level
-    Array<int> ndlevel;
+    /// Array<int> ndlevel;
   public:
     /// generates a compound space.
     /// components will be added later
@@ -1126,9 +1136,9 @@ namespace ngcomp
     virtual void UpdateCouplingDofArray();
 
     /// 
-    virtual size_t GetNDof () const throw() { return cummulative_nd.Last(); } 
+    // virtual size_t GetNDof () const throw() { return cummulative_nd.Last(); } 
     ///
-    virtual size_t GetNDofLevel (int level) const { return ndlevel[level]; }
+    // virtual size_t GetNDofLevel (int level) const { return ndlevel[level]; }
 
     IntRange GetRange (int spacenr) const
     { 
@@ -1140,22 +1150,17 @@ namespace ngcomp
 
     /// returns a compound finite element
     virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const;
-
-    /// returns a compound finite element
-    // virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
-    ///
-    // virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const;
-    ///
-    // virtual const FiniteElement & GetCD2FE (int cd2elnr, LocalHeap & lh) const;
     ///
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const;
+    virtual void GetDofNrs (NodeId ni, Array<DofId> & dnums) const;
     ///
+    [[deprecated("Use GetDofNrs(NODE_TYPE(NT_VERTEX,nr) instead")]]    
     virtual void GetVertexDofNrs (int vnr, Array<DofId> & dnums) const;
+    [[deprecated("Use GetDofNrs(NODE_TYPE(NT_EDGE,nr) instead")]]    
     virtual void GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const;
     virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const;
     virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const;
 
-    virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
     
     template <class T> NGS_DLL_HEADER
       void T_TransformMat (ElementId ei, 

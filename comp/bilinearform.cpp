@@ -216,7 +216,6 @@ namespace ngcomp
     
     if (low_order_bilinear_form)
       low_order_bilinear_form -> AddIntegrator (parts.Last());
-
     return *this;
   }
 
@@ -257,11 +256,18 @@ namespace ngcomp
       low_order_bilinear_form -> SetPrintElmat (ap);
   }
 
-  void BilinearForm ::  SetElmatEigenValues (bool ee)
+  void BilinearForm :: SetElmatEigenValues (bool ee)
   { 
     elmat_ev = ee;
     if (low_order_bilinear_form)
       low_order_bilinear_form -> SetElmatEigenValues (ee);
+  }
+
+  void BilinearForm :: SetCheckUnused (bool b)
+  {
+    check_unused = b;
+    if (low_order_bilinear_form)
+      low_order_bilinear_form -> SetCheckUnused (b);
   }
 
   void BilinearForm :: SetPreconditioner (Preconditioner * pre)
@@ -368,11 +374,24 @@ namespace ngcomp
         {
           //add dofs of neighbour elements as well
           Array<DofId> dnums_dg;
+          Array<int> elnums_per;
 
           for (int i = 0; i < nf; i++)
             {
               nbelems.SetSize(0);
               ma->GetFacetElements(i,elnums);
+
+              // timerDG1.Stop();
+              if(elnums.Size() < 2)
+              {
+                int facet2 = ma->GetPeriodicFacet(i);
+                if(facet2 > i)
+                {
+                  ma->GetFacetElements (facet2, elnums_per);
+                  elnums.Append(elnums_per[0]);
+                }
+              }
+              
               for (int k=0; k<elnums.Size(); k++)
                 nbelems.Append(elnums[k]);
 
@@ -396,8 +415,12 @@ namespace ngcomp
 
     if (!fespace2)
       {
+        /*
         graph = new MatrixGraph (ndof, *creator.GetTable(), *creator.GetTable(), symmetric);
         delete creator.GetTable();
+        */
+        auto table = creator.MoveTable();
+        graph = new MatrixGraph (ndof, table, table, symmetric);        
       }
     else
       {
@@ -455,11 +478,16 @@ namespace ngcomp
 	      }
 	  }
 
+        /*
         graph = new MatrixGraph (fespace2->GetNDof(), *creator2.GetTable(), *creator.GetTable(), symmetric);        
         delete creator.GetTable();
         delete creator2.GetTable();
+        */
+        auto table = creator.MoveTable();
+        auto table2 = creator2.MoveTable();
+        graph = new MatrixGraph (fespace2->GetNDof(), table2, table, symmetric);
       }
-
+    
     graph -> FindSameNZE();
     return graph;
   }
@@ -744,7 +772,8 @@ namespace ngcomp
  
             size_t ndof = fespace->GetNDof();
             Array<bool> useddof(ndof);
-            useddof = false;
+            if (check_unused)
+              useddof = false;
 
             size_t nf = ma->GetNFacets();
 
@@ -855,10 +884,11 @@ namespace ngcomp
                           }
 			
                         AddDiagElementMatrix (dnums, sum_diag, 1, i, clh);
-                        
-                        for (int j = 0; j < dnums.Size(); j++)
-                          if (dnums[j] != -1)
-                            useddof[dnums[j]] = true;
+
+                        if (check_unused)
+                          for (int j = 0; j < dnums.Size(); j++)
+                            if (dnums[j] != -1)
+                              useddof[dnums[j]] = true;
                       }
                     cout << IM(3) << "\rassemble element " << ne << "/" << ne << endl;
                   }
@@ -905,48 +935,70 @@ namespace ngcomp
                          int elmat_size = dnums.Size()*fespace->GetDimension();
                          FlatMatrix<SCAL> sum_elmat(elmat_size, lh);
                          sum_elmat = 0;
-			 
+			 bool elem_has_integrator = false;
                          for (auto & bfip : VB_parts[vb])
                            {
                              const BilinearFormIntegrator & bfi = *bfip;
                              if (!bfi.DefinedOn (el.GetIndex())) continue;                        
                              if (!bfi.DefinedOnElement (el.Nr())) continue;                        
-                             
-                             FlatMatrix<SCAL> elmat(elmat_size, lh);
-                             
-                             try
+
+                             elem_has_integrator = true;
+
+                             if (printelmat || elmat_ev)
                                {
-                                 bfi.CalcElementMatrix (fel, eltrans, elmat, lh);
+                                 HeapReset hr(lh);
+                                 FlatMatrix<SCAL> elmat(elmat_size, lh);
                                  
-                                 if (printelmat)
+                                 try
                                    {
-                                     lock_guard<mutex> guard(printelmat_mutex);
-                                     testout->precision(8);
-                                     *testout << "elnum = " << el << endl;
-                                     *testout << "eltype = " << fel.ElementType() << endl;
-                                     *testout << "integrator = " << bfi.Name() << endl;
-                                     *testout << "dnums = " << endl << dnums << endl;
-                                     *testout << "ct = ";
-                                     for (auto d : dnums)
-                                       if (d == -1) *testout << "0 ";
-                                       else *testout << fespace->GetDofCouplingType (d) << " ";
-                                     *testout << endl;
-                                     *testout << "element-index = " << eltrans.GetElementIndex() << endl;
-                                     *testout << "elmat = " << endl << elmat << endl;
+                                     bfi.CalcElementMatrix (fel, eltrans, elmat, lh);
+                                     
+                                     if (printelmat)
+                                       {
+                                         lock_guard<mutex> guard(printelmat_mutex);
+                                         testout->precision(8);
+                                         *testout << "elnum = " << el << endl;
+                                         *testout << "eltype = " << fel.ElementType() << endl;
+                                         *testout << "integrator = " << bfi.Name() << endl;
+                                         *testout << "dnums = " << endl << dnums << endl;
+                                         *testout << "ct = ";
+                                         for (auto d : dnums)
+                                           if (d == -1) *testout << "0 ";
+                                           else *testout << fespace->GetDofCouplingType (d) << " ";
+                                         *testout << endl;
+                                         *testout << "element-index = " << eltrans.GetElementIndex() << endl;
+                                         *testout << "elmat = " << endl << elmat << endl;
+                                       }
+                                     
+                                     if (elmat_ev)
+                                       LapackEigenSystem(elmat, lh);
                                    }
-				 
-                                 if (elmat_ev)
-                                   LapackEigenSystem(elmat, lh);
+                                 catch (exception & e)
+                                   {
+                                     throw (Exception (string(e.what()) +
+                                                       string("in Assemble Element Matrix, bfi = ") + 
+                                                       bfi.Name() + string("\n")));
+                                   }
+                                 
+                                 sum_elmat += elmat;
                                }
-                             catch (exception & e)
+                             else
                                {
-                                 throw (Exception (string(e.what()) +
-                                                   string("in Assemble Element Matrix, bfi = ") + 
-                                                   bfi.Name() + string("\n")));
+                                 try
+                                   {
+                                     bfi.CalcElementMatrixAdd (fel, eltrans, sum_elmat, lh);
+                                   }
+                                 catch (exception & e)
+                                   {
+                                     throw (Exception (string(e.what()) +
+                                                       string("in Assemble Element Matrix, bfi = ") + 
+                                                       bfi.Name() + string("\n")));
+                                   }
                                }
-                             
-                             sum_elmat += elmat;
                            }
+                         
+                         
+                         if (!elem_has_integrator) return;
                          
                          fespace->TransformMat (el, sum_elmat, TRANSFORM_MAT_LEFT_RIGHT);
 			 
@@ -1127,12 +1179,14 @@ namespace ngcomp
 			 
                          for (auto pre : preconditioners)
                            pre -> AddElementMatrix (dnums, sum_elmat, el, lh);
-                         
-                         if (printelmat)
-                           *testout << "set these as useddof: " << dnums << endl;
-                         for (auto d : dnums)
-                           if (d != -1) useddof[d] = true;
-                         
+
+                         if (check_unused)
+                           {
+                             if (printelmat)
+                               *testout << "set these as useddof: " << dnums << endl;
+                             for (auto d : dnums)
+                               if (d != -1) useddof[d] = true;
+                           }
                          // timer3_VB[vb].Stop();
                        });
                     progress.Done();
@@ -1196,6 +1250,8 @@ namespace ngcomp
                     {
                       LocalHeap lh = clh.Split();
                       
+                      Array<int> elnums_per(2, lh);
+
                       Array<int> dnums, dnums1, dnums2, elnums, fnums, vnums1, vnums2;
                       for (int i : r)
                         {
@@ -1206,8 +1262,24 @@ namespace ngcomp
                           
                           ma->GetFacetElements(i,elnums);
                           el1 = elnums[0];
+
+                          int fac2 = i;
+                          // timerDG1.Stop();
+                          if(elnums.Size() < 2)
+                          {
+                            int facet2 = ma->GetPeriodicFacet(i);
+                            if(facet2 > i)
+                            {
+                              ma->GetFacetElements (facet2, elnums_per);
+                              elnums.Append(elnums_per[0]);
+                              fac2 = facet2;
+                            }
+                            else
+                              continue;
+                          }
                           
                           if(elnums.Size()<2) continue;
+                          
                           el2 = elnums[1];
                                   
                           ElementId ei1(VOL, el1);
@@ -1217,14 +1289,14 @@ namespace ngcomp
                           int facnr1 = fnums.Pos(i);
                           
                           fnums = ma->GetElFacets(ei2);
-                          int facnr2 = fnums.Pos(i);
+                          int facnr2 = fnums.Pos(fac2);
                           
                           {
                             lock_guard<mutex> guard(printmatasstatus2_mutex);
                             cnt++;
                             gcnt++;
                             if (cnt % 10 == 0)
-                              cout << "\rassemble inner facet element " << cnt << "/" << nf << flush;
+                              cout << IM(3) << "\rassemble inner facet element " << cnt << "/" << nf << flush;
                             ma->SetThreadPercentage ( 100.0*(gcnt) / (loopsteps) );
                           }
                           
@@ -1269,8 +1341,9 @@ namespace ngcomp
                                 if (dnums[k] != -1)
                                 useddof[dnums[k]] = true;
                               */
-                              for (auto d : dnums)
-                                if (d != -1) useddof[d] = true;
+                              if (check_unused)
+                                for (auto d : dnums)
+                                  if (d != -1) useddof[d] = true;
                               
                               int elmat_size = (dnums1.Size()+dnums2.Size())*fespace->GetDimension();
                               FlatMatrix<SCAL> elmat(elmat_size, lh);
@@ -1401,7 +1474,7 @@ namespace ngcomp
                             }
                         }
                     });
-                cout << "\rassemble inner facet element " << nf << "/" << nf << endl;
+                cout << IM(3) << "\rassemble inner facet element " << nf << "/" << nf << endl;
                 
               }
 
@@ -1416,7 +1489,7 @@ namespace ngcomp
                    {
                      LocalHeap lh = clh.Split();
                      
-                     Array<int> dnums, dnums1, dnums2, elnums, fnums1, fnums2, vnums1, vnums2;
+                     Array<int> dnums, dnums1, dnums2, elnums, elnums_per, fnums1, fnums2, vnums1, vnums2;
                      for (int el1 : r)
                        {
                          ElementId ei1(VOL, el1);
@@ -1426,6 +1499,20 @@ namespace ngcomp
                              HeapReset hr(lh);
                              
                              ma->GetFacetElements(fnums1[facnr1],elnums);
+
+                             int facet2 = fnums1[facnr1];
+                             // timerDG1.Stop();
+                             if(elnums.Size() < 2)
+                             {
+                               facet2 = ma->GetPeriodicFacet(fnums1[facnr1]);
+                               if(facet2 != fnums1[facnr1])
+                               {
+                                 ma->GetFacetElements (facet2, elnums_per);
+                                 elnums.Append(elnums_per[0]);
+                               }
+                             }
+
+                             
                              if (elnums.Size()<2)
                                {
                                  ma->GetFacetSurfaceElements (fnums1[facnr1], elnums);
@@ -1461,9 +1548,10 @@ namespace ngcomp
                                      // if (bfi.VB()!=VOL) continue;
                                      // if (!bfi.SkeletonForm()) continue;
                                      // if (!bfi.GetDGFormulation().element_boundary) continue;
-                                     
-                                     for (auto d : dnums)
-                                       if (d != -1) useddof[d] = true;
+
+                                     if (check_unused)
+                                       for (auto d : dnums)
+                                         if (d != -1) useddof[d] = true;
                                      
                                      int elmat_size = dnums.Size()*fespace->GetDimension();
                                      FlatMatrix<SCAL> elmat(elmat_size, lh);
@@ -1497,14 +1585,14 @@ namespace ngcomp
                              int el2 = elnums[0] + elnums[1] - el1;
                              ElementId ei2(VOL, el2);
                              fnums2 = ma->GetElFacets(ei2);
-                             int facnr2 = fnums2.Pos(fnums1[facnr1]);
+                             int facnr2 = fnums2.Pos(facet2);
                              
                              {
                                lock_guard<mutex> guard(printmatasstatus2_mutex);
                                cnt++;
                                gcnt++;
                                if (cnt % 10 == 0)
-                                 cout << "\rassemble inner facet element " << cnt << "/" << nf << flush;
+                                 cout << IM(3) << "\rassemble inner facet element " << cnt << "/" << nf << flush;
                                ma->SetThreadPercentage ( 100.0*(gcnt) / (loopsteps) );
                              }
                              
@@ -1542,9 +1630,10 @@ namespace ngcomp
                                  if (!bfi->DefinedOn (ma->GetElIndex (ei1))) continue;
                                  if (!bfi->DefinedOn (ma->GetElIndex (ei2))) continue;
                                  if (!bfi->DefinedOnElement (el1)) continue;
-                                 
-                                 for (auto d : dnums)
-                                   if (d != -1) useddof[d] = true;
+
+                                 if (check_unused)
+                                   for (auto d : dnums)
+                                     if (d != -1) useddof[d] = true;
                                  
                                  int elmat_size = (dnums1.Size()+dnums2.Size())*fespace->GetDimension();
                                  FlatMatrix<SCAL> elmat(elmat_size, lh);
@@ -1661,7 +1750,7 @@ namespace ngcomp
                            }
                        }                             
                    });
-                cout << "\rassemble inner facet element " << nf << "/" << nf << endl;
+                cout << IM(3) << "\rassemble inner facet element " << nf << "/" << nf << endl;
               } // if (elementwise_skeleton_parts.Size())
                 
             if (facetwise_skeleton_parts[BND].Size())
@@ -1730,10 +1819,11 @@ namespace ngcomp
 				  
                               if (!bfi->DefinedOn (ma->GetElIndex(sei) )) continue;                
                               if (!bfi->DefinedOnElement (i)) continue;
-				  
-                              for (int k = 0; k < dnums.Size(); k++)
-                                if (dnums[k] != -1)
-                                  useddof[dnums[k]] = true;
+
+                              if (check_unused)
+                                for (int k = 0; k < dnums.Size(); k++)
+                                  if (dnums[k] != -1)
+                                    useddof[dnums[k]] = true;
                                   
                               int elmat_size = dnums.Size()*fespace->GetDimension();
                               FlatMatrix<SCAL> elmat(elmat_size, lh);
@@ -1830,9 +1920,10 @@ namespace ngcomp
                   
                   {
                     lock_guard<mutex> guard(printmatspecel2_mutex);
-                    for (int j = 0; j < dnums.Size(); j++)
-                      if (dnums[j] != -1)
-                        useddof[dnums[j]] = true;
+                    if (check_unused)
+                      for (int j = 0; j < dnums.Size(); j++)
+                        if (dnums[j] != -1)
+                          useddof[dnums[j]] = true;
                     
                     AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), lh);
                   }
@@ -1862,10 +1953,11 @@ namespace ngcomp
                     AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), clh);
                   }
               }
-            if (unuseddiag != 0)
+            if (unuseddiag != 0 && check_unused)
               {
                 for (int i = 0; i < elmat.Height(); i++)
                   elmat(i, i) = unuseddiag;
+
                 for (int i = 0; i < ndof; i++)
                   if (!useddof[i])
                     {
@@ -1880,20 +1972,22 @@ namespace ngcomp
             if (print)
               (*testout) << "mat = " << endl << GetMatrix() << endl;
 
-            size_t cntused = 0;
-            for (bool u : useddof)
-              if (u) cntused++;
-            
-            if (cntused < useddof.Size())
-              cout << IM(4) << "used " << cntused
-                   << ", unused = " << useddof.Size()-cntused
-                   << ", total = " << useddof.Size() << endl;
-            
+            if (check_unused)
+              {
+                size_t cntused = 0;
+                for (bool u : useddof)
+                  if (u) cntused++;
+                
+                if (cntused < useddof.Size())
+                  cout << IM(4) << "used " << cntused
+                       << ", unused = " << useddof.Size()-cntused
+                       << ", total = " << useddof.Size() << endl;
+              }
             
             int MASK = eliminate_internal ? EXTERNAL_DOF : ANY_DOF;
             bool first_time = true;
 
-            if (MyMPI_GetNTasks() == 1)
+            if (MyMPI_GetNTasks() == 1 && check_unused)
               for (int i = 0; i < useddof.Size(); i++)
                 if (useddof[i] != 
                     ((fespace->GetDofCouplingType(i) & MASK) != 0) )
@@ -1903,7 +1997,10 @@ namespace ngcomp
                              << " ct = " << fespace->GetDofCouplingType(i) << endl;
                   
                     if (first_time)
-                      cerr << "used dof inconsistency" << endl;
+                      {
+                        cerr << "used dof inconsistency" << endl;
+                        cerr << "(silence this warning by setting BilinearForm(...check_unused=False) )" << endl;
+                      }
                     first_time = false;
                   }
             
@@ -2199,6 +2296,7 @@ namespace ngcomp
     static mutex addelmatboundary1_mutex;
 
     RegionTimer reg (timer);
+    ma->PushStatus ("Assemble Linearization");
 
     if (this->mats.Size() < this->ma->GetNLevels())
       AllocateMatrix();
@@ -2209,8 +2307,8 @@ namespace ngcomp
     try
       {
         int ndof = fespace->GetNDof();
-        BitArray useddof(ndof);
-        useddof.Clear();
+        Array<bool> useddof(ndof);
+        useddof = false;
       
         BaseMatrix & mat = GetMatrix();
         mat = 0.0;
@@ -2257,7 +2355,7 @@ namespace ngcomp
                    }
 
                  for (auto d : dnums) 
-                   if (d != -1) useddof.Set (d);
+                   if (d != -1) useddof[d] = true;
                  
                  FlatMatrix<SCAL> sum_elmat(dnums.Size()*fespace->GetDimension(), lh);
                  FlatMatrix<SCAL> elmat(dnums.Size()*fespace->GetDimension(), lh);
@@ -2451,7 +2549,7 @@ namespace ngcomp
                  fespace->GetDofNrs (el, dnums);
 
                  for (auto d : dnums)
-                   if (d != -1) useddof.Set(d);
+                   if (d != -1) useddof[d] = true;
 
                  FlatVector<SCAL> elveclin (dnums.Size()*fespace->GetDimension(), lh);
                  FlatMatrix<SCAL> elmat (dnums.Size()*fespace->GetDimension(), lh);
@@ -2496,9 +2594,9 @@ namespace ngcomp
         
 
         if (facetwise_skeleton_parts[VOL].Size())
-          throw Exception ("CalcLinearization for skeleton-VOL not implemented");
+          throw Exception ("CalcLinearization for facet-wise skeleton-VOL not implemented");
         if (elementwise_skeleton_parts.Size())
-          throw Exception ("CalcLinearization for skeleton-VOL not implemented");
+          throw Exception ("CalcLinearization for element-wise skeleton-VOL not implemented");
         
 
         if (facetwise_skeleton_parts[BND].Size())
@@ -2562,7 +2660,7 @@ namespace ngcomp
                           
                           for (int k = 0; k < dnums.Size(); k++)
                             if (dnums[k] != -1)
-                              useddof.Set(dnums[k]);
+                              useddof[dnums[k]] = true;
                           
                           int elmat_size = dnums.Size()*fespace->GetDimension();
                           FlatMatrix<SCAL> elmat(elmat_size, lh);
@@ -2636,7 +2734,7 @@ namespace ngcomp
           
             for (int j = 0; j < dnums.Size(); j++)
               if (dnums[j] != -1)
-                useddof.Set (dnums[j]);
+                useddof[dnums[j]] = true;
           
             FlatMatrix<SCAL> elmat;
             el.Assemble (elmat, clh);
@@ -2665,7 +2763,7 @@ namespace ngcomp
             for (int i = 0; i < elmat.Height(); i++)
               elmat(i, i) = unuseddiag;
             for (int i = 0; i < ndof; i++)
-              if (!useddof.Test (i))
+              if (!useddof[i])
                 {
                   dnums[0] = i;
                   AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), clh);
@@ -2685,12 +2783,11 @@ namespace ngcomp
         */
         int cntused = 0;
         for (int i = 0; i < useddof.Size(); i++)
-          if (useddof.Test(i))
+          if (useddof[i])
             cntused++;
         cout << IM(5) << "used " << cntused
              << ", unused = " << useddof.Size()-cntused
              << ", total = " << useddof.Size() << endl;
-  
 
         for (int j = 0; j < preconditioners.Size(); j++)
           preconditioners[j] -> FinalizeLevel(&GetMatrix());
@@ -2707,6 +2804,7 @@ namespace ngcomp
         throw (Exception (string(e.what()) +
                           string("\n in AssembleLinearization\n")));
       }
+    ma->PopStatus();
   }
 
 
@@ -2831,7 +2929,7 @@ namespace ngcomp
           }
           if (dgform.element_boundary)
           {
-            throw Exception("Element boundary formulation is not currently not implemented for tensor product spaces, please reformulate as skeleton integrals");
+            throw Exception("Element boundary formulation is not implemented for tensor product spaces, please reformulate as skeleton integrals");
             needs_element_boundary_loop = true;
           }
         }
@@ -2844,8 +2942,6 @@ namespace ngcomp
           if (dgform.neighbor_testfunction)
             neighbor_testfunction = true;
         }
-      if (needs_facet_loop && !fespace->UsesDGCoupling())
-        throw Exception ("skeleton-form needs \"dgjumps\" : True flag for FESpace");
     }
     else
       return;
@@ -3162,7 +3258,7 @@ namespace ngcomp
           }
         */      
 
-        for (auto vb : { VOL, BND, BBND } )
+        for (auto vb : { VOL, BND, BBND, BBBND } )
           if (VB_parts[vb].Size())
             {
               RegionTimer reg (timervol);
@@ -3922,6 +4018,33 @@ namespace ngcomp
       {
         LocalHeap lh (2000000, "biform-energy", true);
 
+        for (auto vb : { VOL, BND, BBND, BBBND })
+          IterateElements 
+            (*fespace, vb, lh, 
+             [&] (FESpace::Element ei, LocalHeap & lh)
+             {
+               const FiniteElement & fel = fespace->GetFE (ei, lh);
+               ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
+
+               FlatArray<int> dnums = ei.GetDofs();
+               FlatVector<SCAL> elvecx (dnums.Size()*GetFESpace()->GetDimension(), lh);
+               
+               x.GetIndirect (dnums, elvecx);
+               fespace->TransformVec (ei, elvecx, TRANSFORM_SOL);
+               
+               double energy_T = 0;
+
+               for (auto & bfi : VB_parts[vb])
+                 {
+		   if (!bfi->DefinedOn (ei.GetIndex())) continue;
+                   energy_T += bfi->Energy (fel, eltrans, elvecx, lh);
+                 }
+
+               energy += energy_T;
+             });
+
+        
+        /*
         bool hasbound = false;
         bool hasinner = false;
 
@@ -3986,7 +4109,8 @@ namespace ngcomp
                   energy += bfi.Energy (fel, eltrans, elvecx, lh);
                 }
             }
-
+        */
+        Array<int> dnums;
         for (int i = 0; i < fespace->specialelements.Size(); i++)
           {
             HeapReset hr(lh);
@@ -4348,7 +4472,7 @@ namespace ngcomp
 
     mat.AddElementMatrix (dnums1, elmat, this->fespace->HasAtomicDofs());
     */
-    mymatrix -> TMATRIX::AddElementMatrix (dnums1, elmat, this->fespace->HasAtomicDofs());
+    mymatrix -> TMATRIX::AddElementMatrixSymmetric (dnums1, elmat, this->fespace->HasAtomicDofs());
   }
 
 

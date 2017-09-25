@@ -46,7 +46,8 @@ namespace ngcomp
     double eps_regularization; 
     /// diagonal value for unused dofs
     double unuseddiag;
-    
+    /// check if all dofs declared used are used in assemble
+    bool check_unused = true;
     /// low order bilinear-form, 0 if not used
     shared_ptr<BilinearForm> low_order_bilinear_form;
 
@@ -61,7 +62,7 @@ namespace ngcomp
 
     /// bilinearform-integrators
     Array<shared_ptr<BilinearFormIntegrator>> parts;
-    Array<shared_ptr<BilinearFormIntegrator>> VB_parts[3];
+    Array<shared_ptr<BilinearFormIntegrator>> VB_parts[4];
 
     // loop over facets, VB=0 .. inner facets, VB=1 .. boundary facets
     Array<shared_ptr<FacetBilinearFormIntegrator>> facetwise_skeleton_parts[2];
@@ -337,6 +338,7 @@ namespace ngcomp
     void SetPrint (bool ap);
     void SetPrintElmat (bool ap);
     void SetElmatEigenValues (bool ee);
+    void SetCheckUnused (bool b);
     
     /// computes low-order matrices from fines matrix
     void GalerkinProjection ();

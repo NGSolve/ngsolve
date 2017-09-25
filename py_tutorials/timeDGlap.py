@@ -35,7 +35,7 @@ mesh = Mesh (unit_square.GenerateMesh(maxh=0.05))
 
 
 order=4
-fes = L2(mesh, order=order,flags = {"dgjumps":True})
+fes = L2(mesh, order=order, dgjumps = True)
 fes2 = H1(mesh, order=order)
 
 u = fes.TrialFunction()
@@ -55,28 +55,28 @@ cf3 =    2 * ( (order+1)**2)/h * (u-u.Other(bnd=0)) * v
 
 a += SymbolicBFI ( grad(u) * grad(v) )
 a += SymbolicBFI (  cf1+cf2+cf3,VOL, element_boundary=True)
-a += SymbolicBFI ( -cf1-cf2-cf3,BND, skeleton=True,definedon=[0,1,2,3])
-#a += SymbolicBFI ( -cf1-cf2-cf3,BND, skeleton=True,definedon=[1,3])
+a += SymbolicBFI ( -cf1-cf2-cf3,BND, skeleton=True)
+#a += SymbolicBFI ( -cf1-cf2-cf3, skeleton=True,definedon=mesh.Boundaries("top|bottom"))
 #a += SymbolicBFI( h*u*v )
 
 l = LinearForm(fes)
 l += SymbolicLFI ( 8.0*pi*pi*uex*v )                                     # volume force
-#l += SymbolicLFI ( 1e-1*uex*v,BND,skeleton=True,definedon=[0])          # dirichlet data
-l += SymbolicLFI ( n*grad(uex)*v,BND,skeleton=True,definedon=[0,1,2,3] ) # neumann data
+#l += SymbolicLFI ( 1e-1*uex*v,skeleton=True,definedon=mesh.Boundaries("left")) # dirichlet data
+l += SymbolicLFI ( n*grad(uex)*v,BND,skeleton=True) # neumann data
 
 diff = GridFunction(fes)
 ddiff = GridFunction(fes)
 l.Assemble()
 a.Assemble()
 ugf.vec[:]= 0
-ugf[fes.GetDofNrs(ElementId(50))[0]] = 1
+ugf.vec[fes.GetDofNrs(ElementId(50))[0]] = 1
 s=fes.FreeDofs()
 s.Clear(fes.GetDofNrs(ElementId(50))[0])
 invmat = a.mat.Inverse(s)
 w = ugf.vec.CreateVector()
 a.Apply(ugf.vec,w)
 helper = ugf.vec.CreateVector()
-helper = l.vec - w
+helper.data = l.vec - w
 ugf.vec.data = invmat*helper
 
 diff.vec.data=ugf.vec-uex.vec

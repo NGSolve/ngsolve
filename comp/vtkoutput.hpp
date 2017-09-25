@@ -46,7 +46,7 @@ namespace ngcomp
 
     Array<shared_ptr<ValueField>> value_field;
     Array<Vec<D>> points;
-    Array<INT<D+1>> cells;
+    Array<INT<ELEMENT_MAXPOINTS+1>> cells;
 
     int output_cnt = 0;
     
@@ -62,7 +62,10 @@ namespace ngcomp
     
     void ResetArrays();
     
-    void FillReferenceData(Array<IntegrationPoint> & ref_coords, Array<INT<D+1>> & ref_trigs);    
+    void FillReferenceTrig(Array<IntegrationPoint> & ref_coords,Array<INT<ELEMENT_MAXPOINTS+1>> & ref_elems);    
+    void FillReferenceQuad(Array<IntegrationPoint> & ref_coords,Array<INT<ELEMENT_MAXPOINTS+1>> & ref_elems);    
+    void FillReferenceTet(Array<IntegrationPoint> & ref_coords,Array<INT<ELEMENT_MAXPOINTS+1>> & ref_elems);    
+    void FillReferencePrism(Array<IntegrationPoint> & ref_coords,Array<INT<ELEMENT_MAXPOINTS+1>> & ref_elems);    
     // void FillReferenceData3D(Array<IntegrationPoint> & ref_coords, Array<INT<D+1>> & ref_tets);
     void PrintPoints();
     void PrintCells();

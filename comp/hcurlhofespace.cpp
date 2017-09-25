@@ -342,6 +342,7 @@ namespace ngcomp
     : FESpace (ama, aflags),
       flags(aflags)
   {
+    type = "hcurlho";
     name="HCurlHighOrderFESpace(hcurlho)";
     
     // define flags
@@ -417,7 +418,8 @@ namespace ngcomp
        
     fast_pfem = flags.GetDefineFlag ("fast");
     discontinuous = flags.GetDefineFlag ("discontinuous");
-
+    if (flags.GetDefineFlag ("no_couplingtype_upgrade"))
+      ctupgrade = false;
     Flags loflags = flags;
     loflags.SetFlag ("order", 1);
     /*
@@ -446,10 +448,12 @@ namespace ngcomp
 
 
     // Evaluator
+    /*
     static ConstantCoefficientFunction one(1);
     integrator[VOL] = GetIntegrators().CreateBFI("massedge", ma->GetDimension(), &one);
     if (!discontinuous)
       integrator[BND] = GetIntegrators().CreateBFI("robinedge", ma->GetDimension(), &one); 
+    */
     
     if (ma->GetDimension() == 2)
       {
@@ -1131,6 +1135,7 @@ namespace ngcomp
   {
     switch(ma->GetElType(ei))
       {
+      case ET_POINT:   return * new (lh) DummyFE<ET_POINT>; 
       case ET_SEGM:    return T_GetFE<ET_SEGM> (ei, lh);
         
       case ET_TRIG:    return T_GetFE<ET_TRIG> (ei, lh);
@@ -1227,11 +1232,11 @@ namespace ngcomp
         }
       case BND:
         {
-          if (!DefinedOn (ei))
-            return * new (lh) HCurlDummyFE<ET_TRIG> ();
-          
           if ( discontinuous )
-            return * new (lh) DummyFE<ET_SEGM>; 
+            return * new (lh) DummyFE<ET>; 
+
+          if (!DefinedOn (ei))
+            return * new (lh) HCurlDummyFE<ET> ();
           
           Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,BND> (ei.Nr());
           
@@ -1641,6 +1646,12 @@ namespace ngcomp
 
   void HCurlHighOrderFESpace :: GetFaceDofNrs (int fanr, Array<int> & dnums) const
   {
+    if (order_policy == VARIABLE_ORDER)
+      {
+        dnums = GetFaceDofs(fanr);
+        return;
+      }
+   
     if (discontinuous) 
       {
         dnums.SetSize(0);
@@ -1707,7 +1718,7 @@ namespace ngcomp
     
     Array<int> vnums; 
     // Array<int> orient; 
-    Array<int> ednums, fanums, f2ed;
+    Array<int> fanums;
     
     // int augv = augmented; 
 
@@ -1745,7 +1756,8 @@ namespace ngcomp
 	  }
 
 	
-	return shared_ptr<Table<int>> (creator.GetTable());
+	// return shared_ptr<Table<int>> (creator.GetTable());
+        return make_shared<Table<int>> (creator.MoveTable());
       }
 
 
@@ -1977,7 +1989,7 @@ namespace ngcomp
 		ma->GetFacePNums(i,vnums); 
 		if(vnums.Size()==4) continue; 
 		int fcl = ma->GetClusterRepFace(i); 
-		ma->GetFaceEdges(i,ednums); 
+		auto ednums = ma->GetFaceEdges(i); 
 		
 		int nd = first_face_dof[i+1] - first_face_dof[i] - excl_grads*face_ngrad[i]; 
 		for(j=0;j<ednums.Size();j++)
@@ -2036,7 +2048,7 @@ namespace ngcomp
 	    cnt[nv+i]= first_edge_dof[i+1]-first_edge_dof[i];
 	  for (i = 0; i < nfa; i++)
 	    {
-	      ma->GetFaceEdges (i, f2ed);
+	      auto f2ed = ma->GetFaceEdges (i);
 	      for (j = 0; j < f2ed.Size(); j++)
 		cnt[nv+f2ed[j]] +=  first_face_dof[i+1]-first_face_dof[i];
 	    }
@@ -2340,7 +2352,7 @@ namespace ngcomp
 		ma->GetFacePNums(i,vnums); 
 		if(vnums.Size()==4) continue; 
 		int fcl = ma->GetClusterRepFace(i); 
-		ma->GetFaceEdges(i,ednums); 
+		auto ednums = ma->GetFaceEdges(i); 
 		
 		for(j=0;j<ednums.Size();j++)
 		  {
@@ -2425,7 +2437,7 @@ namespace ngcomp
 	    {
 	      first = first_face_dof[i];
 	      int ndof = first_face_dof[i+1]-first;
-	      ma->GetFaceEdges (i, f2ed);
+	      auto f2ed = ma->GetFaceEdges (i);
 	      for (k = 0; k < f2ed.Size(); k++)
 		for (j = 0; j < ndof; j++)
 		  table[nv+f2ed[k]][cnt[nv+f2ed[k]]++] = first+j;

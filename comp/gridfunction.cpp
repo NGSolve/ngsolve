@@ -225,11 +225,45 @@ namespace ngcomp
       }
     */
 
-    shared_ptr<BilinearFormIntegrator> bfi2d, bfi3d;
 
     auto fespace = gf->GetFESpace();
     auto ma = fespace->GetMeshAccess();
+
+    shared_ptr<DifferentialOperator> eval_2d, eval_3d;    
+    if (ma->GetDimension() == 2)
+      {
+	eval_2d = fespace->GetEvaluator(VOL);
+      }
+    else
+      {
+	eval_3d = fespace->GetEvaluator(VOL);
+	eval_2d = fespace->GetEvaluator(BND);
+      }
+
+    if (eval_2d || eval_3d)
+      {
+        netgen::SolutionData * vis = new VisualizeCoefficientFunction (ma, gf);
+        Ng_SolutionData soldata;
+        Ng_InitSolutionData (&soldata);
+        
+        soldata.name = given_name;
+        soldata.data = 0;
+        soldata.components = gf -> Dimension();
+        if (gf->IsComplex()) soldata.components *= 2;
+        soldata.iscomplex = gf -> IsComplex();
+        soldata.draw_surface = eval_2d != nullptr;
+        soldata.draw_volume  = eval_3d != nullptr;
+        
+        soldata.dist = 1;
+        soldata.soltype = NG_SOLUTION_VIRTUAL_FUNCTION;
+        soldata.solclass = vis;
+        Ng_SetSolutionData (&soldata);
+      }
+
     
+    /*
+    shared_ptr<BilinearFormIntegrator> bfi2d, bfi3d;
+
     if (ma->GetDimension() == 2)
       {
 	bfi2d = fespace->GetIntegrator(VOL);
@@ -262,6 +296,7 @@ namespace ngcomp
 	soldata.solclass = vis;
 	Ng_SetSolutionData (&soldata);    
       }
+    */
   }
 
 
@@ -1075,6 +1110,15 @@ namespace ngcomp
     */
   }
 
+
+    
+  bool GridFunctionCoefficientFunction :: DefinedOn (const ElementTransformation & trafo)
+  {
+    return fes->DefinedOn(trafo.VB(), trafo.GetElementIndex());
+  }
+    
+
+  
   void GridFunctionCoefficientFunction :: GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
     string mycode_simd = R"CODE_( 
@@ -1331,6 +1375,11 @@ namespace ngcomp
     static Timer timer ("GFCoeffFunc::Eval-scal", 3);
     RegionTimer reg (timer);
 
+    if (gf -> GetLevelUpdated() < gf->GetMeshAccess()->GetNLevels())
+      {
+        result = 0.0;
+        return;
+      }
     
     const int elnr = ip.GetTransformation().GetElementNr();
     VorB vb = ip.GetTransformation().VB();
@@ -1390,6 +1439,12 @@ namespace ngcomp
   void GridFunctionCoefficientFunction :: 
   Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
   {
+    if (gf -> GetLevelUpdated() < gf->GetMeshAccess()->GetNLevels())
+      {
+        values = 0.0;
+        return;
+      }
+    
     LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evalute 3");
     // static Timer timer ("GFCoeffFunc::Eval-vec", 2);
     // RegionTimer reg (timer);
@@ -1446,6 +1501,13 @@ namespace ngcomp
   void GridFunctionCoefficientFunction :: 
   Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const
   {
+    if (gf -> GetLevelUpdated() < gf->GetMeshAccess()->GetNLevels())
+      {
+        values = 0.0;
+        return;
+      }
+
+    
     LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evalute 3");
     // static Timer timer ("GFCoeffFunc::Eval-vec", 2);
     // RegionTimer reg (timer);
@@ -1504,6 +1566,12 @@ namespace ngcomp
   Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
             BareSliceMatrix<SIMD<double>> bvalues) const
   {
+    if (gf -> GetLevelUpdated() < gf->GetMeshAccess()->GetNLevels())
+      {
+        bvalues.AddSize(Dimension(), ir.Size()) = 0.0;
+        return;
+      }
+    
     ProxyUserData * ud = (ProxyUserData*)ir.GetTransformation().userdata;
     if (ud)
       {
@@ -1589,6 +1657,13 @@ namespace ngcomp
     LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evalute 3");
 
     auto values = bvalues.AddSize(Dimension(), ir.Size());
+
+    if (gf -> GetLevelUpdated() < gf->GetMeshAccess()->GetNLevels())
+      {
+        values = 0.0;
+        return;
+      }
+    
     const ElementTransformation & trafo = ir.GetTransformation();
     
     int elnr = trafo.GetElementNr();
@@ -2691,6 +2766,7 @@ namespace ngcomp
     IntegrationPoint ip(xref[0],xref[1],xref[2]);
     ElementId ei(VOL, elnr);
     ElementTransformation & trafo = ma->GetTrafo (ei, lh);
+    if (!cf->DefinedOn(trafo)) return false;
     BaseMappedIntegrationPoint & mip = trafo(ip, lh);
     if (!cf -> IsComplex())
       cf -> Evaluate (mip, FlatVector<>(GetComponents(), values));
@@ -2740,6 +2816,7 @@ namespace ngcomp
         
         ElementId ei(VOL, elnr);
         ElementTransformation & trafo = ma->GetTrafo (ei, lh);
+        if (!cf->DefinedOn(trafo)) return false;        
         BaseMappedIntegrationRule & mir = trafo(ir, lh);
         
         if (!cf -> IsComplex())
@@ -2773,6 +2850,7 @@ namespace ngcomp
     VorB vb = ma->GetDimension() == 3 ? BND : VOL;
     ElementId ei(vb, elnr);
     ElementTransformation & trafo = ma->GetTrafo (ei, lh);
+    if (!cf->DefinedOn(trafo)) return false;    
     BaseMappedIntegrationPoint & mip = trafo(ip, lh);
 
     if (!cf -> IsComplex())
@@ -2791,6 +2869,39 @@ namespace ngcomp
       }
   }
 
+
+  bool VisualizeCoefficientFunction ::  
+  GetSegmentValue (int segnr, double xref, double * values)
+  {
+    try
+      {
+        LocalHeapMem<100000> lh("viscf::GetSurfValue");
+        IntegrationPoint ip(xref);
+        VorB vb = VOL;
+        if (ma->GetDimension()==2) vb = BND;
+        if (ma->GetDimension()==3) vb = BBND;
+        ElementId ei(vb, segnr);
+        ElementTransformation & trafo = ma->GetTrafo (ei, lh);
+        if (!cf->DefinedOn(trafo)) return false;    
+        BaseMappedIntegrationPoint & mip = trafo(ip, lh);
+        
+        if (!cf -> IsComplex())
+          cf -> Evaluate (mip, FlatVector<>(GetComponents(), values));
+        else
+          cf -> Evaluate (mip, FlatVector<Complex>(GetComponents(), values));
+        
+        return true;
+      }
+    catch (Exception & e)
+      {
+        cout << "VisualizeCoefficientFunction::GetSegmentValue caught exception: " << endl
+             << e.What();
+        return 0;
+      }
+  }
+
+
+  
   bool VisualizeCoefficientFunction ::  GetSurfValue (int selnr, int facetnr, 
 						      const double xref[], const double x[], const double dxdxref[],
 						      double * values)
@@ -2824,6 +2935,7 @@ namespace ngcomp
         
         LocalHeapMem<1000000> lh("viscf::getmultisurfvalue");
         ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
+        if (!cf->DefinedOn(eltrans)) return false;
 
         FlatMatrix<SIMD<double>> mvalues(GetComponents(), npts, (SIMD<double>*)values);
 
@@ -2922,9 +3034,10 @@ namespace ngcomp
     
     VorB vb = (ma->GetDimension() == 3) ? BND : VOL;
     ElementId ei(vb, selnr);
-        
+    
     LocalHeapMem<100000> lh("viscf::getmultisurfvalue");
     ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
+    if (!cf->DefinedOn(eltrans)) return false;
 
     FlatMatrix<> mvalues1(npts, GetComponents(), lh);
 
@@ -3002,7 +3115,21 @@ namespace ngcomp
   }
 
 
+  int VisualizeCoefficientFunction :: GetNumMultiDimComponents ()
+  {
+    auto gfcf = dynamic_pointer_cast <GridFunctionCoefficientFunction> (cf);
+    if (!gfcf) return 1;
+    return gfcf->GetGridFunction().GetMultiDim();
+  }
 
+  void VisualizeCoefficientFunction :: SetMultiDimComponent (int mc)
+  {
+    auto gfcf = dynamic_pointer_cast <GridFunctionCoefficientFunction> (cf);
+    if (!gfcf) return;
+    if (mc >= 0 && mc < gfcf->GetGridFunction().GetMultiDim())
+      gfcf->SelectComponent(mc); 
+  }
+    
 
 
 

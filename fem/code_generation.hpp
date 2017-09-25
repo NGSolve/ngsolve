@@ -17,6 +17,23 @@
 
 namespace ngfem
 {
+  template <typename T>
+  string ToLiteral(const T & val)
+  {
+      stringstream ss;
+#if (defined __cpp_hex_float) && (__cpp_hex_float <= __cplusplus)
+      ss << std::hexfloat;
+      ss << val;
+      ss << " /* (" << std::setprecision(16) << std::scientific;
+      ss << val << ") */";
+#else
+      ss << std::setprecision(16);
+      ss << val;
+#endif
+      return ss.str();
+  }
+
+
   struct Code
   {
     string top;
@@ -29,7 +46,7 @@ namespace ngfem
 
     string AddPointer(const void *p );
 
-    static unsigned id_counter;
+    static atomic<unsigned> id_counter;
     static string Map( string code, std::map<string,string> variables ) {
       for ( auto mapping : variables ) {
         string oldStr = '{'+mapping.first+'}';
@@ -63,7 +80,7 @@ namespace ngfem
     void operator /=(CodeExpr other) { code = "(" + S()+Op('/')+other.S() + ')'; }
 
     operator string () { return code; }
-    CodeExpr operator ()(int i) { return CodeExpr( S() + '(' + ToString(i) + ')' ); }
+    CodeExpr operator ()(int i) { return CodeExpr( S() + '(' + ToLiteral(i) + ')' ); }
     CodeExpr Func(string s) { return CodeExpr( s + "(" + S() + ")" ); }
     CodeExpr Call(string s, string args="") { return CodeExpr( S()+'.'+ s + "(" + args + ")"); }
     string Assign (CodeExpr other, bool declare = true)
@@ -83,33 +100,28 @@ namespace ngfem
     template<typename TVal>
     string Declare(string type, TVal value )
     {
-      return type + " " + code + "("+ToString(value)+");\n";
+      return type + " " + code + "("+ToLiteral(value)+");\n";
     }
   };
 
   inline CodeExpr Var(double val)
   {
-    return CodeExpr(ToString(val));
+    return ToLiteral(val);
   }
 
   inline CodeExpr Var(Complex val)
   {
-    string res("Complex(");
-    res += ToString(val.real());
-    res += ",";
-    res += ToString(val.imag());
-    res += ")";
-    return res;
+    return ToLiteral(val);
   }
 
   inline CodeExpr Var(string name, int i, int j=0, int k=0)
   {
-    return CodeExpr(name + '_' + ToString(i) + '_' + ToString(j) + '_' + ToString(k));
+    return CodeExpr(name + '_' + ToLiteral(i) + '_' + ToLiteral(j) + '_' + ToLiteral(k));
   }
 
   inline CodeExpr Var(int i, int j=0, int k=0)
   {
-    return CodeExpr("var_" + ToString(i) + '_' + ToString(j) + '_' + ToString(k));
+    return CodeExpr("var_" + ToLiteral(i) + '_' + ToLiteral(j) + '_' + ToLiteral(k));
   }
 
   template<typename TFunc>
@@ -170,7 +182,7 @@ namespace ngfem
   public:
     Library() : lib(nullptr) {}
     // Compile a given string and load the library
-    void Compile( std::vector<string> &codes );
+    void Compile( const std::vector<string> &codes );
 
     void Load( string alib_name );
 

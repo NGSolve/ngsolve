@@ -53,12 +53,6 @@ stages:
     - ls
     - docker info
 
-.template_ubuntu_1510: &ubuntu_1510
-  <<: *ubuntu
-  variables:
-    UBUNTU_VERSION: "15.10"
-    UBUNTU_VERSION_NAME: "wily"
-
 .template_ubuntu_1604: &ubuntu_1604
   <<: *ubuntu
   variables:
@@ -152,10 +146,6 @@ win64_build:
       bash /root/src/ngsolve/tests/build.sh
     - docker commit `cat ngsolve_${CI_PIPELINE_ID}_$UBUNTU_VERSION.id` ngsolve_${CI_PIPELINE_ID}_installed:$UBUNTU_VERSION
 
-ubuntu_1510_build:
-  <<: *ubuntu_1510
-  <<: *build_linux
-
 ubuntu_1604_build:
   <<: *ubuntu_1604
   <<: *build_linux
@@ -235,10 +225,6 @@ win64_test:
       -v /opt/intel:/opt/intel
       ngsolve_${CI_PIPELINE_ID}_installed:$UBUNTU_VERSION
       bash -c 'cd /root/build/ngsolve && make test_ngsolve ARGS="--output-on-failure"'
-
-ubuntu_1510_test:
-  <<: *ubuntu_1510
-  <<: *test_linux
 
 ubuntu_1604_test:
   <<: *ubuntu_1604
@@ -421,17 +407,17 @@ cleanup_mac:
 # Deploy stage
 ############################################
 
-deploy_sourceforge:
+deploy_github:
   stage: deploy
   tags:
     - linux
     - docker
   script:
-    - git remote add sourceforge ssh://mhochste@git.code.sf.net/p/ngsolve/git || true
+    - git remote add github git@github.com:NGSolve/ngsolve.git || true
     - git remote update
     - git checkout master
     - git pull origin master
-    - git push sourceforge master
+    - git push github master
   only:
     - master
 

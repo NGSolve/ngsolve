@@ -65,11 +65,11 @@ namespace ngstd
 #include "expr.hpp"
 #include "vector.hpp"
 #include "matrix.hpp"
+#include "avector.hpp"
 #include "cholesky.hpp"
 #include "symmetricmatrix.hpp"
 #include "bandmatrix.hpp"
 #include "tensor.hpp"
-#include "avector.hpp"
 
 #include "cuda_bla.hpp"
 

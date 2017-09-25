@@ -46,6 +46,7 @@ namespace ngfem
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
     ///
     virtual int NumRegions () { return INT_MAX; }
+    virtual bool DefinedOn (const ElementTransformation & trafo) { return true; }
     ///
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const = 0;
     
@@ -1146,6 +1147,9 @@ public:
     func(*this);
   }
 
+  virtual bool DefinedOn (const ElementTransformation & trafo)
+  { return c1->DefinedOn(trafo) && c2->DefinedOn(trafo); }
+
   virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
   { return Array<CoefficientFunction*>({ c1.get(), c2.get() }); }
 
@@ -1684,7 +1688,9 @@ void ExportBinaryFunction (class pybind11::module & m, string name)
   NGS_DLL_HEADER shared_ptr<CoefficientFunction>
   MakeCoordinateCoefficientFunction (int comp);
 
-
+  // for DG jump terms 
+  NGS_DLL_HEADER shared_ptr<CoefficientFunction>
+  MakeOtherCoefficientFunction (shared_ptr<CoefficientFunction> me);
 
 
   
@@ -1732,7 +1738,7 @@ void ExportBinaryFunction (class pybind11::module & m, string name)
                                          shared_ptr<CoefficientFunction> cf_else);
   
   NGS_DLL_HEADER
-  shared_ptr<CoefficientFunction> Compile (shared_ptr<CoefficientFunction> c, bool realcompile=false);
+  shared_ptr<CoefficientFunction> Compile (shared_ptr<CoefficientFunction> c, bool realcompile=false, int maxderiv=2, bool wait=false);
 }
 
 

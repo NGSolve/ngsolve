@@ -29,25 +29,25 @@ namespace ngcomp
       iscurved = true;
     }
 
-    virtual int SpaceDim () const
+    virtual int SpaceDim () const override
     {
       return DIMR;
     }
 
-    virtual VorB VB() const
+    virtual VorB VB() const override
     {
       return VorB(int(DIMR)-int(DIMS));
     }
 
-    virtual bool BelongsToMesh (const void * mesh2) const 
+    virtual bool BelongsToMesh (const void * mesh2) const override
     {
       // return mesh == &(static_cast<const MeshAccess*> (mesh2) -> mesh);
       return mesh == mesh2;
     }
 
-    virtual const void * GetMesh () const { return mesh; }
+    virtual const void * GetMesh () const override { return mesh; }
 
-    virtual void GetSort (FlatArray<int> sort) const
+    virtual void GetSort (FlatArray<int> sort) const override
     {
       int vnums[12];
 
@@ -96,40 +96,40 @@ namespace ngcomp
 
 
     virtual void CalcJacobian (const IntegrationPoint & ip,
-			       FlatMatrix<> dxdxi) const
+			       FlatMatrix<> dxdxi) const override
     {
       mesh->mesh.ElementTransformation <DIMS,DIMR> (elnr, &ip(0), NULL, &dxdxi(0));
     }
     
     virtual void CalcPoint (const IntegrationPoint & ip,
-			    FlatVector<> point) const
+			    FlatVector<> point) const override
     {
       mesh->mesh.ElementTransformation <DIMS,DIMR> (elnr, &ip(0), &point(0), NULL);
     }
 
     virtual void CalcPointJacobian (const IntegrationPoint & ip,
-				    FlatVector<> point, FlatMatrix<> dxdxi) const
+				    FlatVector<> point, FlatMatrix<> dxdxi) const override
     {
       mesh->mesh.ElementTransformation <DIMS,DIMR> (elnr, &ip(0), &point(0), &dxdxi(0));
     }
 
-    virtual BaseMappedIntegrationPoint & operator() (const IntegrationPoint & ip, Allocator & lh) const
+    virtual BaseMappedIntegrationPoint & operator() (const IntegrationPoint & ip, Allocator & lh) const override
     {
       return *new (lh) MappedIntegrationPoint<DIMS,DIMR> (ip, *this);
     }
 
-    virtual BaseMappedIntegrationRule & operator() (const IntegrationRule & ir, Allocator & lh) const
+    virtual BaseMappedIntegrationRule & operator() (const IntegrationRule & ir, Allocator & lh) const override
     {
       return *new (lh) MappedIntegrationRule<DIMS,DIMR> (ir, *this, lh);
     }
 
-    virtual SIMD_BaseMappedIntegrationRule & operator() (const SIMD_IntegrationRule & ir, Allocator & lh) const
+    virtual SIMD_BaseMappedIntegrationRule & operator() (const SIMD_IntegrationRule & ir, Allocator & lh) const override
     {
       return *new (lh) SIMD_MappedIntegrationRule<DIMS,DIMR> (ir, *this, lh);
     }
 
     virtual void CalcMultiPointJacobian (const IntegrationRule & ir,
-					 BaseMappedIntegrationRule & bmir) const
+					 BaseMappedIntegrationRule & bmir) const override
     {
       if (sizeof(IntegrationPoint) % 8 != 0)
         {
@@ -157,7 +157,7 @@ namespace ngcomp
 
 
     virtual void CalcMultiPointJacobian (const SIMD_IntegrationRule & ir,
-					 SIMD_BaseMappedIntegrationRule & bmir) const
+					 SIMD_BaseMappedIntegrationRule & bmir) const override
     {
       // static Timer t("eltrafo - nonconst, calcmultipoint"); RegionTimer reg(t);
       // t.AddFlops (ir.GetNIP());
@@ -202,6 +202,7 @@ namespace ngcomp
       : BASE(amesh, aet, ei, elindex), 
         deform(adeform) 
     {
+      this->iscurved = true;
       fel = dynamic_cast<const ScalarFiniteElement<DIMS>*> (&deform->GetFESpace()->GetFE(ei, lh));
 
       Array<int> dnums(fel->GetNDof(), lh);
@@ -240,22 +241,8 @@ namespace ngcomp
 
 
     virtual void CalcJacobian (const IntegrationPoint & ip,
-			       FlatMatrix<> dxdxi) const
+			       FlatMatrix<> dxdxi) const override
     {
-      /*
-      Mat<DIMR,DIMS> tmp, itmp;
-      Ng_ElementTransformation<DIMS,DIMR>::CalcJacobian (ip, tmp);
-      itmp = Inv (tmp);
-
-      Mat<DIMR,DIMR> def, mdef;
-      for (int i = 0; i < DIMR; i++)
-        def.Row(i) = fel->EvaluateGrad (ip, elvecs.Row(i));
-      
-      mdef = def*itmp;
-      mdef += Id<DIMR>();
-      dxdxi = mdef * tmp;
-      */
-
       Mat<DIMR,DIMS> tmp;
       BASE::CalcJacobian (ip, tmp);
 
@@ -266,7 +253,7 @@ namespace ngcomp
     }
     
     virtual void CalcPoint (const IntegrationPoint & ip,
-			    FlatVector<> point) const
+			    FlatVector<> point) const override
     {
       Vec<DIMR> tmp;
       BASE::CalcPoint (ip, tmp);
@@ -278,7 +265,7 @@ namespace ngcomp
     }
 
     virtual void CalcPointJacobian (const IntegrationPoint & ip,
-				    FlatVector<> point, FlatMatrix<> dxdxi) const
+				    FlatVector<> point, FlatMatrix<> dxdxi) const override
     {
       CalcJacobian (ip, dxdxi);
       CalcPoint (ip, point);
@@ -286,7 +273,7 @@ namespace ngcomp
     }
 
     virtual void CalcMultiPointJacobian (const IntegrationRule & ir,
-					 BaseMappedIntegrationRule & bmir) const
+					 BaseMappedIntegrationRule & bmir) const override
     {
       if (sizeof(IntegrationPoint) % 8 != 0)
         {
@@ -319,16 +306,13 @@ namespace ngcomp
     }
     
     virtual void CalcMultiPointJacobian (const SIMD_IntegrationRule & ir,
-					 SIMD_BaseMappedIntegrationRule & bmir) const
+					 SIMD_BaseMappedIntegrationRule & bmir) const override
     {
       SIMD_MappedIntegrationRule<DIMS,DIMR> & mir = 
 	static_cast<SIMD_MappedIntegrationRule<DIMS,DIMR> &> (bmir);
       
       BASE::CalcMultiPointJacobian (ir, bmir);
 
-      // LocalHeapMem<100000> lh("tmp");
-      // AFlatVector<double> def(ir.GetNIP(), lh);
-      // AFlatMatrix<double> grad(DIMS, ir.GetNIP(), lh);
       STACK_ARRAY(SIMD<double>, mem0, ir.Size());
       FlatVector<SIMD<double>> def(ir.Size(), &mem0[0]);
       STACK_ARRAY(SIMD<double>, mem1, (DIMS*ir.Size()));
@@ -577,25 +561,25 @@ namespace ngcomp
     }
     */
 
-    virtual int SpaceDim () const
+    virtual int SpaceDim () const override
     {
       return DIMR;
     }
 
-    virtual VorB VB() const
+    virtual VorB VB() const override
     {
       return VorB(int(DIMR)-int(DIMS));
     }
     
-    virtual bool BelongsToMesh (const void * mesh2) const 
+    virtual bool BelongsToMesh (const void * mesh2) const override 
     {
       // return mesh == &(static_cast<const MeshAccess*> (mesh2) -> mesh);
       return mesh == mesh2;
     }
 
-    virtual const void * GetMesh () const { return mesh; }
+    virtual const void * GetMesh () const override { return mesh; }
 
-    virtual void GetSort (FlatArray<int> sort) const
+    virtual void GetSort (FlatArray<int> sort) const override
     {
       int vnums[12];
 
@@ -644,43 +628,43 @@ namespace ngcomp
 
 
     virtual void CalcJacobian (const IntegrationPoint & ip,
-			       FlatMatrix<> dxdxi) const
+			       FlatMatrix<> dxdxi) const override
     {
       // dxdxi = mat;
       FlatMatrixFixWidth<DIMS> (DIMR, &dxdxi(0,0)) = mat;
     }
     
     virtual void CalcPoint (const IntegrationPoint & ip,
-			    FlatVector<> point) const
+			    FlatVector<> point) const override
     {
       // point = p0 + mat * FlatVec<DIMS, const double> (&ip(0));
       FlatVec<DIMR> (&point(0)) = p0 + mat * FlatVec<DIMS, const double> (&ip(0));
     }
 
     virtual void CalcPointJacobian (const IntegrationPoint & ip,
-				    FlatVector<> point, FlatMatrix<> dxdxi) const
+				    FlatVector<> point, FlatMatrix<> dxdxi) const override
     {
       FlatVec<DIMR> (&point(0)) = p0 + mat * FlatVec<DIMS, const double> (&ip(0));
       FlatMatrixFixWidth<DIMS> (DIMR, &dxdxi(0,0)) = mat;
     }
 
-    virtual BaseMappedIntegrationPoint & operator() (const IntegrationPoint & ip, Allocator & lh) const
+    virtual BaseMappedIntegrationPoint & operator() (const IntegrationPoint & ip, Allocator & lh) const override
     {
       return *new (lh) MappedIntegrationPoint<DIMS,DIMR> (ip, *this);
     }
 
-    virtual BaseMappedIntegrationRule & operator() (const IntegrationRule & ir, Allocator & lh) const
+    virtual BaseMappedIntegrationRule & operator() (const IntegrationRule & ir, Allocator & lh) const override
     {
       return *new (lh) MappedIntegrationRule<DIMS,DIMR> (ir, *this, lh);
     }    
 
-    virtual SIMD_BaseMappedIntegrationRule & operator() (const SIMD_IntegrationRule & ir, Allocator & lh) const
+    virtual SIMD_BaseMappedIntegrationRule & operator() (const SIMD_IntegrationRule & ir, Allocator & lh) const override
     {
       return *new (lh) SIMD_MappedIntegrationRule<DIMS,DIMR> (ir, *this, lh);
     }
 
     virtual void CalcMultiPointJacobian (const IntegrationRule & ir,
-					 BaseMappedIntegrationRule & bmir) const
+					 BaseMappedIntegrationRule & bmir) const override
     {
       MappedIntegrationRule<DIMS,DIMR> & mir = static_cast<MappedIntegrationRule<DIMS,DIMR> &> (bmir);
       for (int i = 0; i < ir.Size(); i++)
@@ -693,7 +677,7 @@ namespace ngcomp
     }
 
     virtual void CalcMultiPointJacobian (const SIMD_IntegrationRule & ir,
-					 SIMD_BaseMappedIntegrationRule & bmir) const
+					 SIMD_BaseMappedIntegrationRule & bmir) const override
     {
       // static Timer t("eltrafo - const, calcmultipoint"); RegionTimer reg(t);
       // t.AddFlops (ir.GetNIP());
@@ -709,12 +693,8 @@ namespace ngcomp
         {
           hmir[i].Point() = simd_p0 + simd_mat * FlatVec<DIMS, const SIMD<double>> (&hir[i](0));
           hmir[i].Jacobian() = simd_mat;
+          hmir[i].Compute();
         }
-
-      // static Timer tcompute("eltrafo - const, compute");
-      // RegionTimer r2(tcompute);
-      for (int i = 0; i < hir.Size(); i++)
-        hmir[i].Compute();
     }
   };
   
@@ -834,7 +814,7 @@ namespace ngcomp
         nnodes[NT_ELEMENT] = 0;
         nnodes[NT_FACET] = 0;
         dim = -1;
-        ne_vb[VOL] = ne_vb[BND] = ne_vb[BBND] = 0;
+        // ne_vb[VOL] = ne_vb[BND] = ne_vb[BBND] = 0;
         return;
       }
 
@@ -850,7 +830,7 @@ namespace ngcomp
             nnodes_cd[i] = 0;
             nelements_cd[i] = 0;
           }
-        ne_vb[VOL] = ne_vb[BND] = ne_vb[BBND] = 0;
+        // ne_vb[VOL] = ne_vb[BND] = ne_vb[BBND] = 0;
       }
     else
       {
@@ -859,30 +839,57 @@ namespace ngcomp
 	    nnodes[i] = mesh.GetNNodes(i);
 	    nelements[i] = mesh.GetNElements(i);
 	  }
+	for (int i = 0; i < 4; i++)  
+	  {
+	    nnodes_cd[i] = 0;
+	    nelements_cd[i] = 0;
+	  }
 	for (int i = 0; i <= dim; i++)
 	  {
 	    nnodes_cd[i] = nnodes[dim-i];
 	    nelements_cd[i] = nelements[dim-i];
 	  }
+        /*
         ne_vb[VOL] = nelements_cd[0];
         ne_vb[BND] = nelements_cd[1];
 	if(dim==1)
 	  ne_vb[BBND] = 0;
 	else 
 	  ne_vb[BBND] = nelements_cd[2];
+        */
       }
     nnodes[NT_ELEMENT] = nnodes[StdNodeType (NT_ELEMENT, dim)];
     nnodes[NT_FACET] = nnodes[StdNodeType (NT_FACET, dim)];
     
-
     ndomains = -1;
-    int ne = GetNE(); 
+    int ne = GetNE();
+    
+    auto minmax =
+      ParallelReduce (ne,
+                      [&] (size_t i)
+                      {
+                        auto ind = GetElIndex(ElementId(VOL, i));
+                        return make_pair(ind, ind);
+                      },
+                      [] (pair<int,int> a, pair<int,int> b)
+                      {
+                        return make_pair(min2(a.first, b.first),
+                                         max2(a.second, b.second));
+                      },
+                      pair<int,int> (std::numeric_limits<int>::max(),
+                                     0));
+
+    ndomains = minmax.second;
+    if (minmax.first < 0)
+      throw Exception("mesh with negative element-index");      
+    /*
     for (int i = 0; i < ne; i++)
       {
         int elindex = GetElIndex(ElementId(VOL,i));
         if (elindex < 0) throw Exception("mesh with negative element-index");
         ndomains = max2(ndomains, elindex);
       }
+    */
 
     ndomains++;
     ndomains = MyMPI_AllReduce (ndomains, MPI_MAX);
@@ -1020,6 +1027,17 @@ namespace ngcomp
               }
           }
       }
+    
+    for(auto id : Range(1,nid+1))
+    {
+      if (GetDimension() == 3)
+      {
+        auto & pairs = GetPeriodicNodes(NT_FACE, id);
+        for(auto pair : pairs)
+          for(auto l : Range(2))
+            identified_facets[pair[l]] = std::tuple<int,int>(pair[1-l],2);
+      }
+    }    
   }
 
   void MeshAccess :: 
@@ -1249,13 +1267,9 @@ namespace ngcomp
     pnums[1] = edge.vertices[1];
   }
 
+  /*
   void MeshAccess :: GetElFacets (ElementId ei, Array<int> & fnums) const
   {
-    /*
-    if (dim == 1)
-      fnums = GetElement(ei).Vertices();
-    else
-    */
     fnums = GetElement(ei).Facets();
   }
 
@@ -1270,7 +1284,9 @@ namespace ngcomp
         fnums = GetElement<3,VOL> (elnr).Faces();
       }
   } 
-    
+  */
+  
+  /*
   void MeshAccess :: GetSElFacets (int selnr, Array<int> & fnums) const
   {
     switch (dim)
@@ -1286,6 +1302,7 @@ namespace ngcomp
         }
       }
   }
+  */
   
   void MeshAccess :: GetFacetPNums (int fnr, Array<int> & pnums) const
   {
@@ -1315,6 +1332,7 @@ namespace ngcomp
 
   void MeshAccess::CalcIdentifiedFacets()
   {
+    static Timer t("CalcIdentifiedFacets"); RegionTimer reg(t);
     identified_facets.SetSize(nnodes_cd[1]);
     for(auto i : Range(identified_facets.Size()))
       identified_facets[i] = std::tuple<int,int>(i,1);
@@ -1535,8 +1553,8 @@ namespace ngcomp
 
   ngfem::ElementTransformation & MeshAccess :: GetTrafo (ElementId ei, Allocator & lh) const
   {
-    int elnr = ei.Nr();
-    VorB vb = ei.VB();
+    auto elnr = ei.Nr();
+    VorB vb = ei.VB(); 
     
     switch(vb)
       {
@@ -1571,6 +1589,24 @@ namespace ngcomp
 	  default:
 	    throw Exception ("MeshAccess::GetCD2Trafo, illegal dimension");
 	  }
+
+      case BBBND:
+        {
+          ElementTransformation * eltrans;
+          Ngs_Element el(mesh.GetElement<0>(elnr), ElementId(BBBND,elnr));
+          GridFunction * loc_deformation = deformation.get();
+          if(loc_deformation)
+            eltrans = new (lh) ALE_ElementTransformation<0,3, Ng_ElementTransformation<0,3>>
+              (this,el.GetType(),
+               ElementId(BBBND,elnr), el.GetIndex(),
+               loc_deformation,
+               dynamic_cast<LocalHeap&>(lh));
+          else 
+            eltrans = new (lh) Ng_ConstElementTransformation<0,3> (this, el.GetType(),
+                                                                   ElementId(BBBND,elnr), el.GetIndex());
+          
+          return *eltrans;
+        }
       }
   }
 
@@ -2013,13 +2049,16 @@ namespace ngcomp
 
   atomic<size_t> ProgressOutput :: cnt;
   thread_local size_t ProgressOutput :: thd_cnt = 0;
-  thread_local double ProgressOutput :: thd_prev_time = WallTime();
-  
+  // thread_local double ProgressOutput :: thd_prev_time = WallTime();
+  thread_local size_t ProgressOutput :: thd_prev_time = __rdtsc();
+  size_t tsc_wait = 0.05*2.7e9; // rough 
   void ProgressOutput :: Update ()
   {
     thd_cnt++;
-    double time = WallTime();
-    if (time > thd_prev_time+0.05)
+    // double time = WallTime();
+    size_t time = __rdtsc();
+    // if (time > thd_prev_time+0.05)
+    if (time > thd_prev_time+tsc_wait)
       {
         thd_prev_time = time;
         cnt += thd_cnt;

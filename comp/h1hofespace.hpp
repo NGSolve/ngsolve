@@ -40,7 +40,7 @@ namespace ngcomp
     Array<bool> used_edge; 
     Array<bool> used_face; 
 
-    int ndof;
+    // int ndof;
     int uniform_order_inner;
     int uniform_order_face;
     int uniform_order_edge;
@@ -50,7 +50,7 @@ namespace ngcomp
     Array<INT<3>> dom_order_max;
     // int smoother; 
   
-    Array<int> ndlevel;
+    // Array<int> ndlevel;
 
     bool level_adapted_order; 
     bool nodalp2;
@@ -71,9 +71,9 @@ namespace ngcomp
     virtual void DoArchive (Archive & archive) override;
 
     ///
-    virtual size_t GetNDof () const throw() override { return ndof; }
+    // virtual size_t GetNDof () const throw() override { return ndof; }
     ///
-    virtual size_t GetNDofLevel (int alevel) const override;
+    // virtual size_t GetNDofLevel (int alevel) const override;
     ///
     virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override;
     /// 
@@ -98,7 +98,7 @@ namespace ngcomp
     virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const override;
     virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const override;
     ///
-    virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const override;
+    // virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const override;
     virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & precflags) const override; 
     // virtual void CreateSmoothingBlocks2 (SmoothingBlocksCreator & sbc, const Flags & precflags) const; 
     ///

@@ -31,7 +31,7 @@ namespace ngcomp
       FESpace::FinalizeUpdate(lh);
     }
 
-    shared_ptr<Array<int>> GetUsedIdnrs() { return used_idnrs; }
+    shared_ptr<Array<int>> GetUsedIdnrs() const { return used_idnrs; }
     virtual string GetClassName() const override { return "Periodic" + space->GetClassName(); }
     shared_ptr<FESpace> GetBaseSpace() const { return space; }
     
@@ -40,17 +40,22 @@ namespace ngcomp
     virtual size_t GetNDof () const override { return space->GetNDof(); }
     virtual size_t GetNDofLevel (int level) const override { return space->GetNDofLevel(level); }
 
-    virtual void GetDofNrs(ElementId ei, Array<int> & dnums) const override;
+    virtual void GetDofNrs(ElementId ei, Array<DofId> & dnums) const override;
 
     virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const override
     { return space->GetAdditionalEvaluators (); }
 
+    [[deprecated("Use GetDofNrs(NODE_TYPE(NT_VERTEX,nr) instead")]]    
     virtual void GetVertexDofNrs (int vnr,  Array<DofId> & dnums) const override
     { space->GetVertexDofNrs(vnr, dnums); }
+
+    [[deprecated("Use GetDofNrs(NODE_TYPE(NT_EDGE,nr) instead")]]        
     virtual void GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const override
     { space->GetEdgeDofNrs (ednr, dnums); }
+    
     virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const override
     { space->GetFaceDofNrs(fanr, dnums); }
+    
     virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const override
     { space->GetInnerDofNrs(elnr, dnums); }
 
@@ -82,7 +87,7 @@ namespace ngcomp
 
     virtual void Update (LocalHeap & lh) override;
 
-    shared_ptr<Array<Complex>> GetFactors() { return factors; }
+    shared_ptr<Array<Complex>> GetFactors() const { return factors; }
 
     virtual void VTransformMR (ElementId ei, SliceMatrix<double> mat, TRANSFORM_TYPE tt) const override;
     virtual void VTransformMC (ElementId ei, SliceMatrix<Complex> mat, TRANSFORM_TYPE tt) const override;

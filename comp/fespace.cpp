@@ -8,7 +8,6 @@
    Finite Element Space
 */
 
-// #pragma implementation "fespace.hpp"
 
 #include <comp.hpp>
 #include <multigrid.hpp>
@@ -19,8 +18,6 @@
 
 
 using namespace ngmg;
-
-using FE_Quad1 = ScalarFE<ET_QUAD,1>;
 
 namespace ngcomp
 {
@@ -293,7 +290,14 @@ lot of new non-zero entries in the matrix!\n" << endl;
     delete paralleldofs;
   }
   
-
+  void FESpace :: SetNDof (size_t _ndof)
+  {
+    ndof = _ndof;
+    while (ma->GetNLevels() > ndof_level.Size())
+      ndof_level.Append (ndof);
+    ndof_level.Last() = ndof;
+  }
+  
   void FESpace :: Update(LocalHeap & lh)
   {
     if (print)
@@ -353,10 +357,32 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
   }
 
+  class MyMutex
+  {
+    atomic<bool> m;
+  public:
+    MyMutex() { m.store(false, memory_order_relaxed); }
+    void lock()
+    {
+      bool should = false;
+      while (!m.compare_exchange_weak(should, true))
+        {
+          should = false;
+          _mm_pause();
+        }
+    }
+    void unlock()
+    {
+      m = false;
+    }
+  };
+  
   void FESpace :: FinalizeUpdate(LocalHeap & lh)
   {
     static Timer timer ("FESpace::FinalizeUpdate");
     static Timer tcol ("FESpace::FinalizeUpdate - coloring");
+    static Timer tcolbits ("FESpace::FinalizeUpdate - bitarrays");
+    static Timer tcolmutex ("FESpace::FinalizeUpdate - coloring, init mutex");
     
     if (low_order_space) low_order_space -> FinalizeUpdate(lh);
 
@@ -382,31 +408,63 @@ lot of new non-zero entries in the matrix!\n" << endl;
           for (int d : el.GetDofs())
             if (d != -1) dirichlet_dofs.Set (d);
 
-    Array<int> dnums;
-    for (int i : Range(dirichlet_vertex))
+    /*
+    Array<DofId> dnums;
+    for (auto i : Range(dirichlet_vertex))
       if (dirichlet_vertex[i])
 	{
-	  GetVertexDofNrs (i, dnums);
-	  for (int d : dnums)
+	  GetDofNrs (NodeId(NT_VERTEX,i), dnums);
+	  for (DofId d : dnums)
 	    if (d != -1) dirichlet_dofs.Set (d);
 	}
+    */
+    ParallelForRange
+      (dirichlet_vertex.Size(),
+       [&] (IntRange r)
+       {
+         Array<DofId> dnums;
+         for (auto i : r)
+           if (dirichlet_vertex[i])
+             {
+               GetDofNrs (NodeId(NT_VERTEX,i), dnums);
+               for (DofId d : dnums)
+                 if (d != -1) dirichlet_dofs.Set (d);
+             }
+       });
 
-    for (int i : Range(dirichlet_edge))
+    /*
+    for (auto i : Range(dirichlet_edge))
       if (dirichlet_edge[i])
 	{
-	  GetEdgeDofNrs (i, dnums);
-	  for (int d : dnums)
+	  GetDofNrs (NodeId(NT_EDGE,i), dnums);
+	  for (DofId d : dnums)
 	    if (d != -1) dirichlet_dofs.Set (d);
 	}
+    */
+    ParallelForRange
+      (dirichlet_edge.Size(),
+       [&] (IntRange r)
+       {
+         Array<DofId> dnums;         
+         for (auto i : r)
+           if (dirichlet_edge[i])
+             {
+               GetDofNrs (NodeId(NT_EDGE,i), dnums);
+               for (DofId d : dnums)
+                 if (d != -1) dirichlet_dofs.Set (d);
+             }
+       });
 
+    Array<DofId> dnums;             
     for (int i : Range(dirichlet_face))
       if (dirichlet_face[i])
 	{
 	  GetFaceDofNrs (i, dnums);
-	  for (int d : dnums)
+	  for (DofId d : dnums)
 	    if (d != -1) dirichlet_dofs.Set (d);
 	}
-
+    
+    tcolbits.Start();
     free_dofs = make_shared<BitArray>(GetNDof());
     *free_dofs = dirichlet_dofs;
     free_dofs->Invert();
@@ -423,6 +481,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if (print)
       *testout << "freedofs = " << endl << *free_dofs << endl;
+    tcolbits.Stop();
     
     UpdateParallelDofs();
 
@@ -431,12 +490,18 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if (low_order_space)
       {
-	for(auto vb : {VOL, BND, BBND})
+	for(auto vb : {VOL, BND, BBND, BBBND})
 	  element_coloring[vb] = Table<int>(low_order_space->element_coloring[vb]);
       }
     else
-      for (auto vb : { VOL, BND, BBND })
       {
+        tcolmutex.Start();
+      Array<MyMutex> locks(GetNDof());
+      tcolmutex.Stop();
+      
+      for (auto vb : { VOL, BND, BBND, BBBND })
+      {
+        /*
         tcol.Start();
         Array<int> col(ma->GetNE(vb));
         col = -1;
@@ -446,19 +511,23 @@ lot of new non-zero entries in the matrix!\n" << endl;
         int basecol = 0;
         Array<unsigned int> mask(GetNDof());
 
-        int cnt = 0, found = 0;
+        size_t cnt = 0, found = 0;
         for (ElementId el : Elements(vb)) { cnt++; (void)el; } // no warning 
 
         do
           {
             mask = 0;
 
-            for (auto el : Elements(vb))
+            Array<DofId> dofs;
+            // for (auto el : Elements(vb))
+            for (auto el : ma->Elements(vb))
               {
+                if (!DefinedOn(el)) continue;
                 if (col[el.Nr()] >= 0) continue;
 
                 unsigned check = 0;
-                for (auto d : el.GetDofs())
+                GetDofNrs(el, dofs);
+                for (auto d : dofs) // el.GetDofs())
                   if (d != -1) check |= mask[d];
 
                 if (check != UINT_MAX) // 0xFFFFFFFF)
@@ -477,12 +546,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
                     if (HasAtomicDofs())
                       {
-                        for (auto d : el.GetDofs())
+                        for (auto d : dofs) // el.GetDofs())
                           if (d != -1 && !IsAtomicDof(d)) mask[d] |= checkbit;
                       }
                     else
                       {
-                        for (auto d : el.GetDofs())
+                        for (auto d : dofs) // el.GetDofs())
                           if (d != -1) mask[d] |= checkbit;
                       }
                   }
@@ -492,56 +561,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
           }
         while (found < cnt);
 
-	/*
-	  // didn't help anything ...
-	cout << "have " << maxcolor+1 << " colors, try to reduce ***************** " << endl;
-
-	DynamicTable<int> dof2color(GetNDof());
-	for (auto el : Elements(vb))
-	  for (auto d : el.GetDofs())
-	    dof2color.Add(d, col[el.Nr()]);
-
-	*testout << "dof2color = " << endl << dof2color << endl;
-
-	for (int c = 0; c <= maxcolor; c++)
-	  {
-	    *testout << "try to reschedule color " << c << endl;
-	    
-	    bool remove_col = true;
-	    int cntmove = 0, cnttot = 0;
-	    
-	    for (auto el : Elements(vb))
-	      if (col[el.Nr()] == c)
-		{
-		  bool resched = false;
-
-		  for (int newcol = c+1; newcol <= maxcolor; newcol++)
-		    {
-		      bool possible = true;
-		      for (auto d : el.GetDofs())
-			if (dof2color[d].Contains(newcol))
-			  {
-			    possible = false; 
-			    break;
-			  }
-		      if (possible) resched = true;
-		    }
-
-		  if (resched) cntmove++;
-		  cnttot++;
-		  if (!resched) 
-		    {
-		      *testout << "cannot move el with dofs " << el.GetDofs() << endl;
-		      remove_col = false;
-		    }
-		}
-
-	    *testout << "could move " << cntmove << " out of " << cnttot << endl;
-	    if (remove_col) cout << "could remove color" << endl;
-	  }
-
-	*/
-        
         tcol.Stop();
 
         Array<int> cntcol(maxcolor+1);
@@ -556,12 +575,112 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	cntcol = 0;
         for (ElementId el : Elements(vb))
           coloring[col[el.Nr()]][cntcol[col[el.Nr()]]++] = el.Nr();
+        */
 
+
+
+        tcol.Start();
+        Array<int> col(ma->GetNE(vb));
+        col = -1;
+
+        int maxcolor = 0;
+        
+        int basecol = 0;
+        Array<unsigned int> mask(GetNDof());
+
+        atomic<int> found(0);
+        size_t cnt = 0;
+        for (ElementId el : Elements(vb)) { cnt++; (void)el; } // no warning 
+
+        while (found < cnt)
+          {
+            // mask = 0   | tasks;
+
+            ParallelForRange
+              (mask.Size(),
+               [&] (IntRange myrange) { mask[myrange] = 0; });
+
+            size_t ne = ma->GetNE(vb);
+
+            ParallelForRange
+              (ne, [&] (IntRange myrange)
+               {
+                 Array<DofId> dofs;
+                 size_t myfound = 0;
+                 
+                 for (size_t nr : myrange)
+                   {
+                     ElementId el = { vb, nr };
+                     if (!DefinedOn(el)) continue;
+                     if (col[el.Nr()] >= 0) continue;
+                     
+                     unsigned check = 0;
+                     GetDofNrs(el, dofs);
+                     
+                     if (HasAtomicDofs())
+                       {
+                         for (int i = dofs.Size()-1; i >= 0; i--)
+                           if (dofs[i] == -1 || IsAtomicDof(dofs[i])) dofs.DeleteElement(i);
+                       }
+                     else
+                       for (int i = dofs.Size()-1; i >= 0; i--)
+                         if (dofs[i] == -1) dofs.DeleteElement(i);
+                     QuickSort (dofs);   // sort to avoid dead-locks
+                     
+                     for (auto d : dofs) 
+                       locks[d].lock();
+                     
+                     for (auto d : dofs) 
+                       check |= mask[d];
+                     
+                     if (check != UINT_MAX) // 0xFFFFFFFF)
+                       {
+                         myfound++;
+                         unsigned checkbit = 1;
+                         int color = basecol;
+                         while (check & checkbit)
+                           {
+                             color++;
+                             checkbit *= 2;
+                           }
+                         
+                         col[el.Nr()] = color;
+                         if (color > maxcolor) maxcolor = color;
+                         
+                         for (auto d : dofs) // el.GetDofs())
+                           mask[d] |= checkbit;
+                       }
+                     
+                     for (auto d : dofs) 
+                       locks[d].unlock();
+                   }
+                 found += myfound;
+               });
+                 
+            basecol += 8*sizeof(unsigned int); // 32;
+          }
+
+        tcol.Stop();
+
+        Array<int> cntcol(maxcolor+1);
+        cntcol = 0;
+
+        for (ElementId el : Elements(vb))
+          cntcol[col[el.Nr()]]++;
+        
+        Table<int> & coloring = element_coloring[vb];
+        coloring = Table<int> (cntcol);
+
+	cntcol = 0;
+        for (ElementId el : Elements(vb))
+          coloring[col[el.Nr()]][cntcol[col[el.Nr()]]++] = el.Nr();
+        
         if (print)
           *testout << "needed " << maxcolor+1 << " colors" 
                    << " for " << ((vb == VOL) ? "vol" : "bnd") << endl;
       }
-
+      }
+    
     // invalidate facet_coloring
     facet_coloring = Table<int>();
        
@@ -892,7 +1011,47 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
 
- 
+  shared_ptr<BilinearFormIntegrator> FESpace :: GetIntegrator (VorB vb) const
+  {
+    if (integrator[vb])
+      return integrator[vb];
+
+    /*
+        auto single_evaluator =  flux_evaluator;
+        if (dynamic_pointer_cast<BlockDifferentialOperator>(single_evaluator))
+          single_evaluator = dynamic_pointer_cast<BlockDifferentialOperator>(single_evaluator)->BaseDiffOp();
+        
+        auto trial = make_shared<ProxyFunction>(false, false, single_evaluator,
+                                                nullptr, nullptr, nullptr, nullptr, nullptr);
+        auto test  = make_shared<ProxyFunction>(true, false, single_evaluator,
+                                                nullptr, nullptr, nullptr, nullptr, nullptr);
+        fluxbli = make_shared<SymbolicBilinearFormIntegrator> (InnerProduct(trial,test), vb, false);
+        single_fluxbli = fluxbli;
+    */
+    auto evaluator = GetEvaluator(vb);
+    if (!evaluator) return nullptr;
+    
+    bool is_block = false;
+    int block_dim;
+    auto block_evaluator = dynamic_pointer_cast<BlockDifferentialOperator> (evaluator);
+    if (block_evaluator)
+      {
+        is_block = true;
+        block_dim = block_evaluator->BlockDim();
+        evaluator = block_evaluator->BaseDiffOp();
+      }
+    auto trial = make_shared<ProxyFunction>(false, false, evaluator,
+                                            nullptr, nullptr, nullptr, nullptr, nullptr);
+    auto test  = make_shared<ProxyFunction>(true, false, evaluator,
+                                            nullptr, nullptr, nullptr, nullptr, nullptr);
+    shared_ptr<BilinearFormIntegrator> bli =
+      make_shared<SymbolicBilinearFormIntegrator> (InnerProduct(trial,test), vb, false);
+    
+    if (is_block)
+      bli = make_shared<BlockBilinearFormIntegrator> (bli, block_dim);
+    const_cast<shared_ptr<BilinearFormIntegrator>&> (integrator[vb]) = bli;
+    return bli;
+  }
 
   const FiniteElement & FESpace :: GetSFE (int selnr, LocalHeap & lh) const
   {
@@ -955,12 +1114,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
     archive & dirichlet_vertex & dirichlet_edge & dirichlet_face;
   }
 
-
+  /*
   size_t FESpace :: GetNDofLevel (int level) const
   {
     return GetNDof();
   } 
-
+  */
+  
   std::list<std::tuple<std::string,double>> FESpace :: Timing () const
   {
     double starttime;
@@ -1019,6 +1179,33 @@ lot of new non-zero entries in the matrix!\n" << endl;
     });
     results.push_back(std::make_tuple<std::string,double>("GetTrafo", 1e9 * time / (ma->GetNE())));
 
+
+    Array<int> global(GetNDof());
+    global = 0;
+    time = RunTiming([&]() {
+        ParallelForRange( IntRange(ma->GetNE()), [&] ( IntRange r )
+        {
+          Array<DofId> dnums;
+          for (size_t i : r)
+            {
+              GetDofNrs( { VOL, i }, dnums);
+              for (auto d : dnums)
+                {
+                // global[d]++;
+                  AsAtomic (global[d])++;
+                  AsAtomic (global[d])++;
+                  // int oldval = 0;
+                  // AsAtomic (global[d]).compare_exchange_strong (oldval, 1);
+                  // AsAtomic (global[d]).compare_exchange_strong (oldval, 0);
+                }
+                                                                
+            }
+        });
+    });
+    results.push_back(std::make_tuple<std::string,double>("Count els of dof", 1e9 * time / (ma->GetNE())));
+
+
+    
 #ifdef TIMINGSEQUENTIAL
 
 
@@ -1135,16 +1322,17 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   shared_ptr<Table<int>> FESpace :: CreateSmoothingBlocks (const Flags & flags) const
   {
-    int nd = GetNDof();
+    size_t nd = GetNDof();
     TableCreator<int> creator;
 
     for ( ; !creator.Done(); creator++)
       {
-	for (int i = 0; i < nd; i++)
+	for (size_t i = 0; i < nd; i++)
 	  if (!IsDirichletDof(i))
 	    creator.Add (i, i);
       }
-    return shared_ptr<Table<int>> (creator.GetTable());
+    // return shared_ptr<Table<int>> (creator.GetTable());
+    return make_shared<Table<int>> (creator.MoveTable());
   }
 
     
@@ -1527,27 +1715,30 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
   }
 
+  /*
   size_t NodalFESpace :: GetNDof () const throw()
   {
     return ndlevel.Last();
   }
-
+  */
+  
   void NodalFESpace :: Update(LocalHeap & lh)
   {
     FESpace :: Update (lh);
     if (low_order_space) low_order_space -> Update(lh);
 
-    if (ma->GetNLevels() > ndlevel.Size())
+    // if (ma->GetNLevels() > ndlevel.Size())
       {
 	int ndof = ma->GetNV();
 
         for (auto el : Elements(VOL))
-          for (int d : el.GetDofs()) ndof = max2(ndof, d+1);              
+          for (DofId d : el.GetDofs()) ndof = max2(ndof, d+1);              
 
         for (auto el : Elements(BND))
-          for (int d : el.GetDofs()) ndof = max2(ndof, d+1);           
+          for (DofId d : el.GetDofs()) ndof = max2(ndof, d+1);           
 
-	ndlevel.Append (ndof);
+	// ndlevel.Append (ndof);
+        SetNDof(ndof);
       }
 
     prol->Update();
@@ -1565,43 +1756,26 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void NodalFESpace :: DoArchive (Archive & archive)
   {
+    ;
+    /*
     if (archive.Input())
       {
 	ndlevel.SetSize(1);
 	ndlevel[0] = ma->GetNV();
       }
+    */
   }
 
+  /*
   size_t NodalFESpace :: GetNDofLevel (int level) const
   {
     return ndlevel[level];
   }
-
-
-  void NodalFESpace :: GetDofRanges (ElementId ei, Array<IntRange> & dranges) const
-  {
-    if (!DefinedOn (ei)) 
-      {
-        dranges.SetSize(0);
-        return;
-      }
-
-    ArrayMem<int,27> pnums;
-
-    if (order == 1)
-      pnums = ma->GetElVertices(ei);
-    else
-      ma->GetElPNums (ei, pnums);
-
-    dranges.SetSize(pnums.Size());
-    for (int i = 0; i < pnums.Size(); i++)
-      dranges[i] = IntRange (pnums[i], pnums[i]+1);
-  }
-
+  */
 
 
  
-  void NodalFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
+  void NodalFESpace :: GetDofNrs (ElementId ei, Array<DofId> & dnums) const
   {
     dnums = ma->GetElement(ei).Vertices();
 
@@ -1862,14 +2036,17 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void ElementFESpace :: Update(LocalHeap & lh)
   {
+    /*
     while (ma->GetNLevels() > ndlevel.Size())
       ndlevel.Append (n_el_dofs * ma->GetNE());
+    */
+    SetNDof (n_el_dofs * ma->GetNE());
   }
 
   void ElementFESpace :: DoArchive (Archive & archive)
   {
     FESpace :: DoArchive (archive);
-    archive & ndlevel & n_el_dofs;
+    archive /* & ndlevel */ & n_el_dofs;
   }
 
   FiniteElement & ElementFESpace :: GetFE (ElementId ei, Allocator & lh) const
@@ -1941,12 +2118,14 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  dnums[i] = n_el_dofs*ei.Nr()+i;
       }
   }
-  
+
+  /*
   size_t ElementFESpace :: GetNDofLevel (int level) const
   {
     return ndlevel[level];
   }
-
+  */
+  
   /*
   const FiniteElement & ElementFESpace :: GetSFE (int selnr) const
   {
@@ -2112,10 +2291,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
     if(parseflags) CheckFlags(flags);
     
     auto hprol = make_shared<CompoundProlongation> (this);
-    /*
-    for (int i = 0; i < spaces.Size(); i++)
-      hprol -> AddProlongation (spaces[i]->GetProlongation());
-    */
     for (auto space : spaces)
       hprol -> AddProlongation (space->GetProlongation());      
     prol = hprol;
@@ -2145,8 +2320,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	cummulative_nd[i+1] = cummulative_nd[i] + spaces[i]->GetNDof();
       }
 
-    while (ma->GetNLevels() > ndlevel.Size())
-      ndlevel.Append (cummulative_nd.Last());
+    SetNDof (cummulative_nd.Last());
+    // while (ma->GetNLevels() > ndlevel.Size())
+    // ndlevel.Append (cummulative_nd.Last());
 
 
     /*
@@ -2284,16 +2460,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     return *new (alloc) CompoundFiniteElement (fea);
   }
 
-  /*
-  const FiniteElement & CompoundFESpace :: GetFE (int elnr, LocalHeap & lh) const
-  {
-    FlatArray<const FiniteElement*> fea(spaces.Size(), lh);
-    for (int i = 0; i < fea.Size(); i++)
-      fea[i] = &spaces[i]->GetFE(elnr, lh);
-    return *new (lh) CompoundFiniteElement (fea);
-  }
-  */
-  
+
   void CompoundFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
     ArrayMem<int,500> hdnums;
@@ -2314,6 +2481,28 @@ lot of new non-zero entries in the matrix!\n" << endl;
           }
       }
   }
+
+  void CompoundFESpace :: GetDofNrs (NodeId ni, Array<DofId> & dnums) const
+  {
+    ArrayMem<int,500> hdnums;
+    dnums.SetSize0();
+    for (int i = 0; i < spaces.Size(); i++)
+      {
+	spaces[i]->GetDofNrs (ni, hdnums);
+        int base = dnums.Size();
+        int base_cum = cummulative_nd[i];
+        dnums.SetSize(base+hdnums.Size());
+
+        for (auto j : Range(hdnums))
+          {
+            int val = hdnums[j];
+            if (val != -1)
+              val += base_cum;
+            dnums[base+j] = val;
+          }
+      }
+  }
+  
 
   void CompoundFESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
   {
@@ -2377,50 +2566,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
   
 
-  void CompoundFESpace :: GetDofRanges (ElementId ei, Array<IntRange> & dranges) const
-  {
-  /*
-    dranges.SetSize (0);
-    for (int i = 0; i < spaces.Size(); i++)
-      {
-        int osize = dranges.Size();
-
-        Array<IntRange> hdranges(dranges.AllocSize()-osize, &dranges[osize]);
-        hdranges.SetSize(0);
-	spaces[i]->GetDofRanges (ei, hdranges);
-        int nsize = osize + hdranges.Size();
-
-        dranges.SetSize (nsize);
-        for (int j = 0; j < hdranges.Size(); j++)
-          if (hdranges[j].First() != -1)
-            dranges[osize+j] = hdranges[j]+cummulative_nd[i];
-          else
-            dranges[osize+j] = hdranges[j];
-      }
-  */
-  }
-
-
-
-  /*
-  const FiniteElement & CompoundFESpace :: GetSFE (int elnr, LocalHeap & lh) const
-  {
-    FlatArray<const FiniteElement*> fea(spaces.Size(), lh);
-    for (int i = 0; i < fea.Size(); i++)
-      fea[i] = &spaces[i]->GetSFE(elnr, lh);
-    return *new (lh) CompoundFiniteElement (fea);
-  }
-
-  const FiniteElement & CompoundFESpace :: GetCD2FE (int elnr, LocalHeap & lh) const
-  {
-    FlatArray<const FiniteElement*> fea(spaces.Size(), lh);
-    for (int i = 0; i < fea.Size(); i++)
-      fea[i] = &spaces[i]->GetCD2FE(elnr, lh);
-    return *new (lh) CompoundFiniteElement (fea);
-  }
-  */
-
-
 
 
 
@@ -2432,11 +2577,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
     LocalHeapMem<100005> lh("CompoundFESpace - transformmat");
     for (int i = 0; i < spaces.Size(); i++)
       {
-        /*
-	int nd = boundary  ?
-	  spaces[i]->GetSFE(elnr, lh).GetNDof()
-	  : spaces[i]->GetFE(elnr, lh).GetNDof();
-        */
         HeapReset hr(lh);
         size_t nd = spaces[i]->GetFE(ei, lh).GetNDof();
 
@@ -2454,18 +2594,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
     LocalHeapMem<100006> lh("CompoundFESpace - transformvec");
     for (int i = 0, base = 0; i < spaces.Size(); i++)
       {
-        /*
-	int nd = boundary ? 
-	  spaces[i]->GetSFE(elnr, lh).GetNDof() :
-	  spaces[i]->GetFE(elnr, lh).GetNDof();
-	
-	lh.CleanUp();
-        */
         HeapReset hr(lh);
         int nd = spaces[i]->GetFE(ei, lh).GetNDof();
 
-
-	// VEC svec (nd, &vec(base));
 	spaces[i]->TransformVec (ei, vec.Range(base, base+nd), tt);
 	base += nd;
       }

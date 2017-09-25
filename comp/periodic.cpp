@@ -91,9 +91,30 @@ namespace ngcomp {
               hofe->SetVertexNumbers(vertex_map[ngel.Vertices()]);
             break;
 	  }
+	case ET_QUAD:
+	  {
+            auto hofe = dynamic_cast<VertexOrientedFE<ET_QUAD>*>(&fe);
+            if(hofe)
+              hofe->SetVertexNumbers(vertex_map[ngel.Vertices()]);
+            break;
+	  }
 	case ET_TET:
 	  {
             auto hofe = dynamic_cast<VertexOrientedFE<ET_TET>*>(&fe);
+            if(hofe)
+              hofe->SetVertexNumbers(vertex_map[ngel.Vertices()]);
+            break;
+	  }
+	case ET_PRISM:
+	  {
+            auto hofe = dynamic_cast<VertexOrientedFE<ET_PRISM>*>(&fe);
+            if(hofe)
+              hofe->SetVertexNumbers(vertex_map[ngel.Vertices()]);
+            break;
+	  }
+	case ET_HEX:
+	  {
+            auto hofe = dynamic_cast<VertexOrientedFE<ET_HEX>*>(&fe);
             if(hofe)
               hofe->SetVertexNumbers(vertex_map[ngel.Vertices()]);
             break;
@@ -112,11 +133,15 @@ namespace ngcomp {
     }
 
 
-  void PeriodicFESpace :: GetDofNrs(ElementId ei, Array<int> & dnums) const
+  void PeriodicFESpace :: GetDofNrs(ElementId ei, Array<DofId> & dnums) const
     {
       space->GetDofNrs(ei,dnums);
+      for (auto & d : dnums)
+        if (d != -1) d = dofmap[d];
+      /*
       for (int i = 0; i< dnums.Size(); i++)
 	dnums[i] = dofmap[dnums[i]];
+      */
     }
 
   QuasiPeriodicFESpace :: QuasiPeriodicFESpace(shared_ptr<FESpace> fespace, const Flags & flags, shared_ptr<Array<int>> aused_idnrs, shared_ptr<Array<Complex>> afactors) :

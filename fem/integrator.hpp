@@ -268,7 +268,29 @@ namespace ngfem
 		       FlatMatrix<Complex> elmat,
 		       LocalHeap & lh) const;
 
+    /**
+       Computes the element matrix.
+       Add the element to elmat
+    */
+    virtual void
+      CalcElementMatrixAdd (const FiniteElement & fel,
+                            const ElementTransformation & eltrans, 
+                            FlatMatrix<double> elmat,
+                            LocalHeap & lh) const;
 
+    /**
+       Computes the element matrix.
+       Complex version
+       Add the element to elmat
+    */
+    virtual void
+      CalcElementMatrixAdd (const FiniteElement & fel,
+                            const ElementTransformation & eltrans, 
+                            FlatMatrix<Complex> elmat,
+                            LocalHeap & lh) const;
+    
+
+    
     virtual void
     CalcElementMatrixIndependent (const FiniteElement & bfel_master,
                                   const FiniteElement & bfel_master_element,				    

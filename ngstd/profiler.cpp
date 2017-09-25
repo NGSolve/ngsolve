@@ -26,6 +26,11 @@ namespace ngstd
   int NgProfiler::usedcounter[SIZE];
   string NgProfiler::filename;
 
+  size_t dummy_thread_times[NgProfiler::SIZE];
+  size_t * NgProfiler::thread_times = dummy_thread_times;
+  size_t dummy_thread_flops[NgProfiler::SIZE];
+  size_t * NgProfiler::thread_flops = dummy_thread_flops;
+
   NgProfiler :: NgProfiler()
   {
     for (int i = 0; i < SIZE; i++)

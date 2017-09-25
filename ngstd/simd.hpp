@@ -46,14 +46,6 @@ namespace ngstd
 {
   template <typename T> class SIMD;
 
-  template <typename T>
-  struct has_call_operator
-  {
-      template <typename C> static std::true_type check( decltype( sizeof(&C::operator() )) ) { return std::true_type(); }
-      template <typename> static std::false_type check(...) { return std::false_type(); }
-      typedef decltype( check<T>(sizeof(char)) ) type;
-      static constexpr type value = type();
-  };
 
 #ifdef __AVX__
 
@@ -242,8 +234,12 @@ namespace ngstd
     */
     
     INLINE double operator[] (int i) const { return ((double*)(&data))[i]; }
+    INLINE double & operator[] (int i) { return ((double*)(&data))[i]; }
     INLINE __m256d Data() const { return data; }
     INLINE __m256d & Data() { return data; }
+
+    operator tuple<double&,double&,double&,double&> ()
+    { return tuple<double&,double&,double&,double&>((*this)[0], (*this)[1], (*this)[2], (*this)[3]); }
   };
 #endif
 
@@ -266,6 +262,8 @@ namespace ngstd
 
 #ifdef __AVX512F__
   INLINE SIMD<double> sqrt (SIMD<double> a) { return _mm512_sqrt_pd(a.Data()); }
+  INLINE SIMD<double> floor (SIMD<double> a) { return _mm512_floor_pd(a.Data()); }
+  INLINE SIMD<double> ceil (SIMD<double> a) { return _mm512_ceil_pd(a.Data()); }  
   INLINE SIMD<double> fabs (SIMD<double> a) { return _mm512_max_pd(a.Data(), -a.Data()); }
   INLINE SIMD<double> IfPos (SIMD<double> a, SIMD<double> b, SIMD<double> c)
   {
@@ -285,6 +283,8 @@ namespace ngstd
 
 #else
   INLINE SIMD<double> sqrt (SIMD<double> a) { return _mm256_sqrt_pd(a.Data()); }
+  INLINE SIMD<double> floor (SIMD<double> a) { return _mm256_floor_pd(a.Data()); }
+  INLINE SIMD<double> ceil (SIMD<double> a) { return _mm256_ceil_pd(a.Data()); }
   INLINE SIMD<double> fabs (SIMD<double> a) { return _mm256_max_pd(a.Data(), -a.Data()); }
   INLINE SIMD<double> IfPos (SIMD<double> a, SIMD<double> b, SIMD<double> c)
   {
@@ -305,13 +305,14 @@ namespace ngstd
     return make_tuple(_mm_cvtsd_f64 (hv2),  _mm_cvtsd_f64(_mm_shuffle_pd (hv2, hv2, 3)));
   }
 
-  INLINE SIMD<double> HSum (SIMD<double> v1, SIMD<double> v2, SIMD<double> v3, SIMD<double> v4)
+  INLINE auto HSum (SIMD<double> v1, SIMD<double> v2, SIMD<double> v3, SIMD<double> v4)
   {
     __m256d hsum1 = _mm256_hadd_pd (v1.Data(), v2.Data());
     __m256d hsum2 = _mm256_hadd_pd (v3.Data(), v4.Data());
-    __m256d hsum = _mm256_add_pd (_mm256_permute2f128_pd (hsum1, hsum2, 1+2*16),
-                                  _mm256_blend_pd (hsum1, hsum2, 12));
+    SIMD<double> hsum = _mm256_add_pd (_mm256_permute2f128_pd (hsum1, hsum2, 1+2*16),
+                                       _mm256_blend_pd (hsum1, hsum2, 12));
     return hsum;
+    // return make_tuple(hsum[0], hsum[1], hsum[2], hsum[3]);
   }
   
 #endif  
@@ -372,6 +373,8 @@ namespace ngstd
   INLINE SIMD<double> operator/= (SIMD<double> & a, SIMD<double> b) { return a.Data()/=b.Data(); }
 
   INLINE SIMD<double> sqrt (SIMD<double> a) { return std::sqrt(a.Data()); }
+  INLINE SIMD<double> floor (SIMD<double> a) { return std::floor(a.Data()); }
+  INLINE SIMD<double> ceil (SIMD<double> a) { return std::ceil(a.Data()); }
   INLINE SIMD<double> fabs (SIMD<double> a) { return std::fabs(a.Data()); }
   INLINE SIMD<double> L2Norm2 (SIMD<double> a) { return a.Data()*a.Data(); }
   INLINE SIMD<double> Trans (SIMD<double> a) { return a; }
@@ -384,6 +387,8 @@ namespace ngstd
   { return sd.Data(); }
   INLINE auto HSum (SIMD<double> sd1, SIMD<double> sd2)
   { return make_tuple(sd1.Data(), sd2.Data()); }
+  INLINE auto HSum (SIMD<double> sd1, SIMD<double> sd2, SIMD<double> sd3, SIMD<double> sd4)
+  { return make_tuple(sd1.Data(), sd2.Data(), sd3.Data(), sd4.Data()); }
 #endif
 
 
@@ -460,6 +465,9 @@ INLINE ngstd::SIMD<double> atan (ngstd::SIMD<double> a) {
     SIMD<T> Get() const { return NR==0 ? head : tail.template Get<NR-1>(); }
     template <int NR>
     SIMD<T> & Get() { return NR==0 ? head : tail.template Get<NR-1>(); }
+    auto MakeTuple () { return tuple_cat(tuple<SIMD<T>&> (head), tail.MakeTuple()); }
+    // not yet possible for MSVC
+    // operator auto () { return MakeTuple(); }
   };
 
   template <typename T>
@@ -481,6 +489,9 @@ INLINE ngstd::SIMD<double> atan (ngstd::SIMD<double> a) {
     SIMD<T> Get() const { return NR==0 ? v0 : v1; }
     template <int NR>
     SIMD<T> & Get() { return NR==0 ? v0 : v1; }
+
+    auto MakeTuple () { return tuple<SIMD<T>&,SIMD<T>&>(v0, v1); }
+    operator tuple<SIMD<T>&,SIMD<T>&> () { return MakeTuple(); }
   };
 
   template <int D> INLINE MultiSIMD<D,double> operator+ (MultiSIMD<D,double> a, MultiSIMD<D,double> b)

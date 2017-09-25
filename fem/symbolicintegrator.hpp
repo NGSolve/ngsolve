@@ -290,7 +290,19 @@ public:
   }
   
   virtual ~CompoundDifferentialOperator () = default;
+  shared_ptr<DifferentialOperator> BaseDiffOp() const { return diffop; } 
+  int Component () const { return comp; }
 
+  virtual bool operator== (const DifferentialOperator & diffop2) const
+  {
+    const CompoundDifferentialOperator * do2 =
+      dynamic_cast<const CompoundDifferentialOperator*> (&diffop2);
+    if (do2 && do2->Component() == Component())
+      return *diffop == *(do2->diffop);
+    return false;
+  }
+
+  
   virtual string Name() const { return diffop->Name(); }
 
   virtual IntRange UsedDofs(const FiniteElement & bfel) const
@@ -421,6 +433,17 @@ public:
     IntRange r = BlockDim() * fel.GetRange(comp);
     diffop->AddTrans (fel[comp], bmir, flux, x.Range(r));
   }
+  
+  NGS_DLL_HEADER virtual void
+  AddTrans (const FiniteElement & bfel,
+            const SIMD_BaseMappedIntegrationRule & bmir,
+            BareSliceMatrix<SIMD<Complex>> flux,
+            BareSliceVector<Complex> x) const
+  {
+    const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
+    IntRange r = BlockDim() * fel.GetRange(comp);
+    diffop->AddTrans (fel[comp], bmir, flux, x.Range(r));
+  }
 };
 
 
@@ -435,13 +458,18 @@ public:
     VorB vb;
     bool element_boundary;
     mutable bool simd_evaluate = true;
+    IntegrationRule ir;   // if non-empty use this integration-rule
+    SIMD_IntegrationRule simd_ir;   // if non-empty use this integration-rule
+
   public:
     NGS_DLL_HEADER SymbolicLinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb,
                                   bool aelement_boundary);
 
     virtual VorB VB() const { return vb; }
     virtual string Name () const { return string ("Symbolic LFI"); }
-    
+
+    void SetIntegrationRule (const IntegrationRule & _ir);
+
     virtual void 
     CalcElementVector (const FiniteElement & fel,
 		       const ElementTransformation & trafo, 
@@ -480,7 +508,7 @@ public:
     mutable bool simd_evaluate;
     IntegrationRule ir;   // if non-empty use this integration-rule
     SIMD_IntegrationRule simd_ir;   // if non-empty use this integration-rule
-    
+    int trial_difforder, test_difforder;
   public:
     NGS_DLL_HEADER SymbolicBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb,
                                     bool aelement_boundary);
@@ -507,19 +535,32 @@ public:
 		       const ElementTransformation & trafo, 
 		       FlatMatrix<Complex> elmat,
 		       LocalHeap & lh) const;    
-      
-    template <typename SCAL, typename SCAL_SHAPES = double>
-    void T_CalcElementMatrix (const FiniteElement & fel,
-                              const ElementTransformation & trafo, 
-                              FlatMatrix<SCAL> elmat,
-                              LocalHeap & lh) const;
 
-    template <int D, typename SCAL, typename SCAL_SHAPES>
-    void T_CalcElementMatrixEB (const FiniteElement & fel,
-                                const ElementTransformation & trafo, 
-                                FlatMatrix<SCAL> elmat,
-                                LocalHeap & lh) const;
+    virtual void 
+    CalcElementMatrixAdd (const FiniteElement & fel,
+                          const ElementTransformation & trafo, 
+                          FlatMatrix<double> elmat,
+                          LocalHeap & lh) const;
+    
+    virtual void 
+    CalcElementMatrixAdd (const FiniteElement & fel,
+                          const ElementTransformation & trafo, 
+                          FlatMatrix<Complex> elmat,
+                          LocalHeap & lh) const;    
 
+    
+    template <typename SCAL, typename SCAL_SHAPES, typename SCAL_RES>
+    void T_CalcElementMatrixAdd (const FiniteElement & fel,
+                                 const ElementTransformation & trafo, 
+                                 FlatMatrix<SCAL_RES> elmat,
+                                 LocalHeap & lh) const;
+
+    template <typename SCAL, typename SCAL_SHAPES, typename SCAL_RES>
+    void T_CalcElementMatrixEBAdd (const FiniteElement & fel,
+                                   const ElementTransformation & trafo, 
+                                   FlatMatrix<SCAL_RES> elmat,
+                                   LocalHeap & lh) const;
+    
     virtual void 
     CalcLinearizedElementMatrix (const FiniteElement & fel,
                                  const ElementTransformation & trafo, 
@@ -527,7 +568,7 @@ public:
                                  FlatMatrix<double> elmat,
                                  LocalHeap & lh) const;
 
-    template <int D, typename SCAL, typename SCAL_SHAPES>
+    template <typename SCAL, typename SCAL_SHAPES>
     void T_CalcLinearizedElementMatrixEB (const FiniteElement & fel,
                                           const ElementTransformation & trafo, 
                                           FlatVector<double> elveclin,
@@ -542,7 +583,7 @@ public:
 			void * precomputed,
 			LocalHeap & lh) const;
 
-    template <int D, typename SCAL, typename SCAL_SHAPES>
+    template <typename SCAL, typename SCAL_SHAPES>
     void T_ApplyElementMatrixEB (const FiniteElement & fel, 
                                  const ElementTransformation & trafo, 
                                  const FlatVector<double> elx, 
@@ -562,6 +603,9 @@ public:
     Array<int> test_cum;    // cumulated dimension of proxies
     VorB vb;                // only BND supported by now
     // bool element_boundary;  /// not needed (by now ???)
+    IntegrationRule ir;   // if non-empty use this integration-rule
+    SIMD_IntegrationRule simd_ir;   // if non-empty use this integration-rule
+
   public:
     SymbolicFacetLinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb);
 

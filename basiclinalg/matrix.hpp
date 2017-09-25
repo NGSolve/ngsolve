@@ -13,6 +13,7 @@ namespace ngbla
   
   template <int H, int W, typename T> class Mat;
   template <typename T = double, ORDERING ORD = RowMajor> class SliceMatrix;
+  template <typename T = double, ORDERING ORD = RowMajor> class BareSliceMatrix;
   // template <typename T> class SliceMatrixColMajor;
   template <typename T> class DoubleSliceMatrix;
 
@@ -208,6 +209,11 @@ namespace ngbla
       return SliceMatrix<T> (h, range.Next()-range.First(), w, data+range.First());
     }
 
+    BareSliceMatrix<T> RowSlice(size_t first, size_t adist) const
+    {
+      return BareSliceMatrix<T> (w*adist, data+first*w, DummySize( (Height()-first)/adist, w));
+    }
+    
     INLINE operator SliceMatrix<T> () const
     {
       return SliceMatrix<T> (h, w, w, data);
@@ -1423,7 +1429,7 @@ namespace ngbla
     INLINE TELEM & operator() (size_t i) const
     {
 #ifdef CHECK_RANGE
-      CheckMatRange(h,w,i);
+      CheckMatRange(h,dist,i);
 #endif
       return data[i]; 
     }
@@ -1588,7 +1594,7 @@ namespace ngbla
 
 
 
-  template <typename T, ORDERING ORD = RowMajor>
+  template <typename T, ORDERING ORD> //  = RowMajor>
   class BareSliceMatrix : public CMCPMatExpr<BareSliceMatrix<T,ORD>>, DummySize
   {
   protected:
@@ -1656,6 +1662,11 @@ namespace ngbla
       return BareSliceMatrix ( /* next-first, w, */ dist, data+first*dist, DummySize(next-first, Width()));
     }
 
+    INLINE BareSliceVector<T> Col (size_t col)
+    {
+      return SliceVector<T> (Height(), dist, data+col);
+    }
+    
     INLINE BareVector<T> Row (size_t i) const
     {
       return BareVector<T> (data+i*dist);
@@ -1674,7 +1685,7 @@ namespace ngbla
     */
     INLINE const BareSliceMatrix Cols (size_t first, size_t next) const
     {
-      return BareSliceMatrix (dist, data+first);
+      return BareSliceMatrix (dist, data+first, DummySize(Height(), next-first));
     }
 
     INLINE const BareSliceMatrix Rows (IntRange range) const

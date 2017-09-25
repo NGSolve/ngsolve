@@ -26,7 +26,7 @@ namespace ngla
     cout << "ne = " << ne << ", nv = " << nv << endl;
 
     jacobi = 0;
-    coarsemat = 0;
+    coarsemat = nullptr;
     inv = 0;
 
     if (nv < 20 || levels == 0)
@@ -225,7 +225,7 @@ namespace ngla
     delete recAMG;
 
     // delete jacobi;
-    delete coarsemat;
+    // delete coarsemat;
     // delete inv;
   }
   
@@ -262,7 +262,7 @@ namespace ngla
 
     if (recAMG)
       {
-	coarsemat = mat.Restrict (*prol);
+	coarsemat = shared_ptr<BaseSparseMatrix>(mat.Restrict (*prol));
 	recAMG -> ComputeMatrices (*coarsemat);
 	inv = 0;
       }
@@ -1100,12 +1100,12 @@ namespace ngla
     cout << "compute HCurl matrices" << endl;
 
     pmat = &mat;
-    coarsemat = mat.Restrict (*prol);
+    coarsemat = shared_ptr<BaseSparseMatrix>(mat.Restrict (*prol));
     jacobi = mat.CreateJacobiPrecond ();
 
     h1mat = mat.Restrict (*grad);
     //    dynamic_cast<SparseMatrixSymmetric<Mat<1,1> >&> (*h1mat) (0,0) += 1;
-    dynamic_cast<SparseMatrixSymmetricTM<double>&> (*h1mat)(0,0) += 1;
+    dynamic_cast<SparseMatrixTM<double>&> (*h1mat)(0,0) += 1;
 
     if (recAMG)
       {

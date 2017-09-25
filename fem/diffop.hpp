@@ -240,6 +240,11 @@ namespace ngfem
 		BareSliceMatrix<SIMD<double>> mat) const;
 
     NGS_DLL_HEADER virtual void
+    CalcMatrix (const FiniteElement & fel,
+		const SIMD_BaseMappedIntegrationRule & mir,
+		BareSliceMatrix<SIMD<Complex>> mat) const;
+
+    NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & fel,
 	   const BaseMappedIntegrationPoint & mip,
 	   FlatVector<double> x, 
