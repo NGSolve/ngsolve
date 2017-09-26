@@ -32,4 +32,5 @@ endmacro()
 
 add_unit_test(finiteelement finiteelement.cpp)
 add_unit_test(coefficientfunction coefficientfunction.cpp)
+add_unit_test(meshaccess meshaccess.cpp)
 endif(ENABLE_UNIT_TESTS)
