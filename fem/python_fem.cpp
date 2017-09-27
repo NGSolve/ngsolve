@@ -1305,7 +1305,7 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
                              const FiniteElement & fe, const ElementTransformation &trafo,
                              int heapsize)
                          {
-                           Matrix<> mat(fe.GetNDof());
+                           Matrix<> mat(fe.GetNDof()*fe.Dim());
                            while (true)
                              {
                                try
