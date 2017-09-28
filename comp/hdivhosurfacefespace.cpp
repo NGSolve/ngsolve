@@ -259,13 +259,37 @@ namespace ngcomp
 
 
   FiniteElement & HDivHighOrderSurfaceFESpace :: GetFE (ElementId ei, Allocator & alloc) const
-  {
+  {    
     throw Exception("No volume elements available");
   }
 
- FiniteElement & HDivHighOrderSurfaceFESpace :: GetSFE (ElementId ei, Allocator & alloc) const
+  FiniteElement & HDivHighOrderSurfaceFESpace :: GetSFE (ElementId ei, Allocator & alloc) const
   {
-    throw Exception("No surface elements available");
+    //int elnr = ei.Nr();
+    
+    switch (ma->GetElType(ei))
+      {
+      case ET_TRIG: return T_GetSFE<ET_TRIG>(ei, false, alloc);
+      case ET_QUAD: return T_GetSFE<ET_QUAD>(ei, false, alloc);
+      
+      default: throw Exception("illigal element in HDivHighOrderSurfaceFESpace::GetSFE");
+      }   
+  }
+
+  template<ELEMENT_TYPE ET>
+    FiniteElement & HDivHighOrderSurfaceFESpace::T_GetSFE(ElementId ei, bool onlyhdiv, Allocator & lh) const
+  {
+    Ngs_Element ngel = ma->GetElement(ei);
+    HDivHighOrderFE<ET>* hofe = new (lh)HDivHighOrderFE<ET>();
+    hofe->SetOrderInner(order);
+    hofe->SetVertexNumbers(ngel.Vertices());
+
+    Array<int> facet_order(ngel.Edges());
+    facet_order = order;
+    hofe->SetOrderFacet(facet_order);
+    hofe->ComputeNDof();    
+
+    return *hofe;
   }
   
   const FiniteElement & HDivHighOrderSurfaceFESpace :: GetHODivFE (int elnr, LocalHeap & lh) const
