@@ -53,13 +53,11 @@ namespace ngcomp
     
     virtual size_t GetNDof () const throw() override;
     
-    virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override;
-    
-    //virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const;
+    virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override;        
     virtual FiniteElement & GetSFE (ElementId ei, Allocator & alloc) const;
 
     template <ELEMENT_TYPE ET>
-      FiniteElement & T_GetSFE (int elnr, bool onlyhdiv, Allocator & lh) const;
+      FiniteElement & T_GetSFE (ElementId ei, bool onlyhdiv, Allocator & alloc) const;
 
     virtual const FiniteElement & GetHODivFE (int elnr, LocalHeap & lh) const;
        
