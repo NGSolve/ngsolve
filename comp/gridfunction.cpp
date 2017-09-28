@@ -168,7 +168,7 @@ namespace ngcomp
 
       }
     if (archive.Input())
-      Visualize(shared_from_this()), name);
+      Visualize(dynamic_pointer_cast<GridFunction> (shared_from_this()), name);
   }
 
 
