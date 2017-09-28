@@ -54,6 +54,9 @@ auto NodalData (MeshAccess & ma, Array<TELEM> & a) -> Array<TELEM> & { return a;
 
 namespace ngcomp
 {
+
+  void Visualize(GridFunction * gf, const string & given_name);
+  
   using namespace ngmg;
   
   GridFunction :: GridFunction (shared_ptr<FESpace> afespace, const string & name,
@@ -165,7 +168,7 @@ namespace ngcomp
 
       }
     if (archive.Input())
-      Visualize(shared_ptr<GridFunction>(this, NOOP_Deleter), name);
+      Visualize(shared_from_this()), name);
   }
 
 
@@ -299,6 +302,11 @@ namespace ngcomp
     */
   }
 
+  void Visualize(GridFunction * gf, const string & given_name)
+  {
+    shared_ptr<int> dummysp = make_shared<int>(1);
+    Visualize(shared_ptr<GridFunction> (dummysp, gf), given_name);
+  }
 
 
   shared_ptr<GridFunction> GridFunction :: 
@@ -781,7 +789,7 @@ namespace ngcomp
     
     // this->Visualize (this->name);
     if (this->visual)
-      Visualize (shared_ptr<GridFunction> (this, NOOP_Deleter), this->name);
+      Visualize (this, this->name);
   }
 
   template <class SCAL>
@@ -855,8 +863,12 @@ namespace ngcomp
       }    
 
     // this->Visualize (this->name);
+    /*
     if (this->visual)
       Visualize(shared_ptr<GridFunction> (this, NOOP_Deleter), this->name);
+    */
+    if (this->visual)
+      Visualize(this, this->name);
   }
 
 
