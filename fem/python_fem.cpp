@@ -492,7 +492,13 @@ val : can be one of the following:
 )raw")
     .def(py::init([] (py::object val, py::object dims)
         {
-          auto coef = MakeCoefficient(val);
+          shared_ptr<CoefficientFunction> coef;
+          
+          py::extract<shared_ptr<CF>> ecf(val);
+          if (ecf.check())
+            coef = UnaryOpCF (ecf(), [](auto x) { return x; }, " ");
+          else
+            coef = MakeCoefficient(val);
           if(dims)
             {
               try {
