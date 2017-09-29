@@ -595,7 +595,7 @@ namespace ngbla
     /// fill with scalar
     INLINE Mat (TSCAL s) 
     {
-      for (int i = 0; i < H*W; i++) 
+      for (size_t i = 0; i < H*W; i++) 
         data[i] = s;
     }
 
@@ -621,45 +621,45 @@ namespace ngbla
     /// fill values
     INLINE Mat & operator= (TSCAL s) 
     {
-      for (int i = 0; i < H*W; i++)
+      for (size_t i = 0; i < H*W; i++)
         data[i] = s;
       return *this;
     }
 
     /// linear access
-    INLINE TELEM & operator() (int i) { return data[i]; }
+    INLINE TELEM & operator() (size_t i) { return data[i]; }
     /// access element
-    INLINE TELEM & operator() (int i, int j) { return data[i*W+j]; }
+    INLINE TELEM & operator() (size_t i, size_t j) { return data[i*W+j]; }
     /// linear access
-    INLINE const TELEM & operator() (int i) const { return data[i]; }
+    INLINE const TELEM & operator() (size_t i) const { return data[i]; }
     /// access element
-    INLINE const TELEM & operator() (int i, int j) const { return data[i*W+j]; }
+    INLINE const TELEM & operator() (size_t i, size_t j) const { return data[i*W+j]; }
 
     /// the height
-    INLINE int Height () const { return H; }
+    INLINE size_t Height () const { return H; }
     /// the width
-    INLINE int Width () const { return W; }
+    INLINE size_t Width () const { return W; }
 
     ///
-    INLINE const FlatVec<W,T> Row (int i) 
+    INLINE const FlatVec<W,T> Row (size_t i) 
     {
       return FlatVec<W,T> (&(*this)(i,0));
     }
 
     ///
-    INLINE const FlatVec<W,const T> Row (int i) const
+    INLINE const FlatVec<W,const T> Row (size_t i) const
     {
       return FlatVec<W,const T> (&(*this)(i,0));
     }
 
     ///
-    INLINE const FixSliceVector<W,T> Col (int i) 
+    INLINE const FixSliceVector<W,T> Col (size_t i) 
     {
       return FixSliceVector<W,T> (H, &(*this)(0,i));
     }
 
     ///
-    INLINE const FixSliceVector<W,const T> Col (int i) const
+    INLINE const FixSliceVector<W,const T> Col (size_t i) const
     {
       return FixSliceVector<W,const T> (H, &(*this)(0,i));
     }
