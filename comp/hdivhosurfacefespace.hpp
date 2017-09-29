@@ -53,8 +53,7 @@ namespace ngcomp
     
     virtual size_t GetNDof () const throw() override;
     
-    virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override;        
-    virtual FiniteElement & GetSFE (ElementId ei, Allocator & alloc) const;
+    virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override;            
 
     template <ELEMENT_TYPE ET>
       FiniteElement & T_GetSFE (ElementId ei, bool onlyhdiv, Allocator & alloc) const;
@@ -62,9 +61,9 @@ namespace ngcomp
     virtual const FiniteElement & GetHODivFE (int elnr, LocalHeap & lh) const;
        
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
-    virtual void GetSDofNrs (ElementId ei, Array<DofId> & dnums) const;
+    //virtual void GetSDofNrs (ElementId ei, Array<DofId> & dnums) const;
     
-    //const Array<INT<2>> & GetDCPairs () const { return dc_pairs; }
+    const Array<INT<2>> & GetDCPairs () const { return dc_pairs; }
 
     virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const override;
 

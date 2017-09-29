@@ -3,10 +3,59 @@
 #include <hdivhofe.hpp>  
 #include <hdivhofefo.hpp>  
 
-#include "hdivhosurfacefespace.hpp"  
-
 namespace ngcomp
 {
+
+    template <int D, typename FEL = HDivFiniteElement<D-1> >
+class DiffOpIdHDivSurface : public DiffOp<DiffOpIdHDivSurface<D, FEL> >
+{
+public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D-1 };
+    enum { DIM_DMAT = D };
+    enum { DIFFORDER = 0 };
+
+    static const FEL & Cast(const FiniteElement & fel)
+    {
+        return static_cast<const FEL&> (fel);
+    }
+
+    template <typename AFEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+				MAT & mat, LocalHeap & lh)
+    {
+      mat = (1.0 / mip.GetJacobiDet()) *mip.GetJacobian () * 
+	Trans (static_cast<const FEL&>(fel).GetShape(mip.IP(),lh));
+    }
+
+};
+
+template <int D, typename FEL = HDivFiniteElement<D-1> >
+class DiffOpDivHDivSurface : public DiffOp<DiffOpDivHDivSurface<D, FEL> >
+{
+public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D-1 };
+    enum { DIM_DMAT = 1 };
+    enum { DIFFORDER = 0 };
+
+    static const FEL & Cast(const FiniteElement & fel)
+    {
+        return static_cast<const FEL&> (fel);
+    }
+
+    template <typename AFEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+				MAT & mat, LocalHeap & lh)
+    {
+      mat = (1.0 / mip.GetJacobiDet()) * 
+	Trans (static_cast<const FEL&>(fel).GetDivShape(mip.IP(),lh));
+    }
+
+};
+
 
   HDivHighOrderSurfaceFESpace ::  
   HDivHighOrderSurfaceFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags)
@@ -43,8 +92,11 @@ namespace ngcomp
       }
     else
       {
-	
-	evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdVecHDivBoundary<3>>>();
+	evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHDiv<3>>>();	
+	evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdHDivSurface<3>>>();
+
+	flux_evaluator[VOL] =  make_shared<T_DifferentialOperator<DiffOpDivHDiv<3>>>();
+	flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpDivHDivSurface<3>>>();       	
       }
     
     highest_order_dc = flags.GetDefineFlag("highest_order_dc");
@@ -69,6 +121,11 @@ namespace ngcomp
        
     first_facet_dof.SetSize(nfa+1);
     first_inner_dof.SetSize(nel+1);
+
+    //order_facet.SetSize(nfa);
+    //order_inner.SetSize(nel);    
+    //order_facet = order;
+    //order_inner = order;
     
     /////////////// old ///////////////
     /*
@@ -148,6 +205,7 @@ namespace ngcomp
 	for (auto i : Range(nfa))
           {
             first_facet_dof[i] = ndof;
+	    ndof += order;
             //int inc = fine_facet[i] ? order_facet[i][0] : 0;
 	    //if (highest_order_dc && !boundary_facet[i]) inc--;
             //if (inc > 0) ndof += inc;            
@@ -238,6 +296,7 @@ namespace ngcomp
 
   void HDivHighOrderSurfaceFESpace :: UpdateCouplingDofArray()
   {
+    throw Exception("Not updated yet!!!");
     ctofdof.SetSize(ndof);
     if(discont) 
       {
@@ -259,21 +318,21 @@ namespace ngcomp
 
 
   FiniteElement & HDivHighOrderSurfaceFESpace :: GetFE (ElementId ei, Allocator & alloc) const
-  {    
-    throw Exception("No volume elements available");
-  }
-
-  FiniteElement & HDivHighOrderSurfaceFESpace :: GetSFE (ElementId ei, Allocator & alloc) const
   {
-    //int elnr = ei.Nr();
-    
-    switch (ma->GetElType(ei))
+     if (ei.IsVolume())
       {
-      case ET_TRIG: return T_GetSFE<ET_TRIG>(ei, false, alloc);
-      case ET_QUAD: return T_GetSFE<ET_QUAD>(ei, false, alloc);
+	throw Exception("No volume elements available");
+      }
+     else if (ei.VB()  == BND)
+       {
+	 switch (ma->GetElType(ei))
+	   {
+	   case ET_TRIG: return T_GetSFE<ET_TRIG>(ei, false, alloc);
+	   case ET_QUAD: return T_GetSFE<ET_QUAD>(ei, false, alloc);
       
-      default: throw Exception("illigal element in HDivHighOrderSurfaceFESpace::GetSFE");
-      }   
+	   default: throw Exception("illigal element in HDivHighOrderSurfaceFESpace::GetSFE");
+	   }   
+       }	 
   }
 
   template<ELEMENT_TYPE ET>
@@ -316,16 +375,16 @@ namespace ngcomp
 
   void HDivHighOrderSurfaceFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
+    //cout<<"in Get DofNrs"<<endl;
     dnums.SetSize0();
-  }
-
-  void HDivHighOrderSurfaceFESpace :: GetSDofNrs (ElementId ei, Array<int> & dnums) const
-  {
-    dnums.SetSize0();
-    
-    if(ei.VB()==BND)
+    if(ei.VB()==VOL)
+      {
+	dnums.SetSize0();
+      }
+    else if(ei.VB()==BND)
       {
 	auto fanums = ma->GetElEdges(ei);
+	//cout<<"fanums="<<fanums<<endl;
 	
 	if (highest_order_dc)
 	  {
@@ -340,7 +399,7 @@ namespace ngcomp
 		if (!boundary_facet[f])
 		  dnums += first_el_dof++;
 	      }
-	    dnums += IntRange (first_el_dof, eldofs.Next());
+	    dnums += IntRange (first_el_dof, eldofs.Next());	    
 	  }	         
 	else
 	  {
@@ -351,15 +410,25 @@ namespace ngcomp
 	    for (auto f : fanums)
 	      dnums += GetFacetDofs (f);
 	    
+	    
+	    
 	    //inner
 	    dnums += GetElementDofs (ei.Nr());
+	    //cout<<"element dofs = "<<GetElementDofs (ei.Nr())<<endl;
+	    //cout<<"dnums"<<dnums;
+	    //getchar();
+	    
 	  }
 	
 	if (!DefinedOn (ei))
-          dnums.SetSize0();
+	  {
+	    dnums.SetSize0();	  
+	  }
       }
+    /*
     else if (ei.VB()==BBND)
       {
+	//dnums.SetSize0();
 	throw Exception("GetSDofNrs for BBND not implemented yet");
 	  /*
 	 size_t fanum = ma->GetElFacets(ei)[0];
@@ -372,8 +441,9 @@ namespace ngcomp
 	if (!DefinedOn (ei))
           dnums.SetSize0();
         // dnums = -1;
-	*/
-	  }
+
+	  }	*/
+    
   }
 
   void HDivHighOrderSurfaceFESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
@@ -414,7 +484,9 @@ namespace ngcomp
 	}*/
     return additional;
   }
-  
+
+
+
 
   static RegisterFESpace<HDivHighOrderSurfaceFESpace> init ("hdivhosurface");
 }
