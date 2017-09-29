@@ -72,6 +72,7 @@ PYBIND11_MODULE(ngslib, m)
 
     try
     {
+        m.attr("__version__") = ngsolve_version;
         py::module ngstd = m.def_submodule("ngstd", "pybind ngstd");
         ExportNgstd(ngstd);
         py::module bla = m.def_submodule("bla", "pybind bla");
