@@ -56,6 +56,113 @@ public:
 
 };
 
+  
+ template<int D, int BMATDIM>
+    void CalcDShapeOfHDivFE(const HDivFiniteElement<D>& fel_u, const MappedIntegrationPoint<D,D+1>& sip, SliceMatrix<> bmatu, LocalHeap& lh){
+      HeapReset hr(lh);
+      // bmatu = 0;
+      // evaluate dshape by numerical diff
+      //fel_u, eltrans, sip, returnval, lh
+      int nd_u = fel_u.GetNDof();
+      const IntegrationPoint& ip = sip.IP();//volume_ir[i];
+      const ElementTransformation & eltrans = sip.GetTransformation();
+      FlatMatrixFixWidth<D> shape_ul(nd_u, lh);
+      FlatMatrixFixWidth<D> shape_ur(nd_u, lh);
+      FlatMatrixFixWidth<D> shape_ull(nd_u, lh);
+      FlatMatrixFixWidth<D> shape_urr(nd_u, lh);
+      FlatMatrixFixWidth<D> dshape_u_ref(nd_u, lh);//(shape_ur); ///saves "reserved lh-memory"
+      FlatMatrixFixWidth<D> dshape_u(nd_u, lh);//(shape_ul);///saves "reserved lh-memory"
+
+      double eps = 1e-4;
+      for (int j = 0; j < D; j++)   // d / dxj
+      {
+        IntegrationPoint ipl(ip);
+        ipl(j) -= eps;
+        MappedIntegrationPoint<D,D> sipl(ipl, eltrans);
+
+        IntegrationPoint ipr(ip);
+        ipr(j) += eps;
+        MappedIntegrationPoint<D,D> sipr(ipr, eltrans);
+
+        IntegrationPoint ipll(ip);
+        ipll(j) -= 2*eps;
+        MappedIntegrationPoint<D,D> sipll(ipll, eltrans);
+
+        IntegrationPoint iprr(ip);
+        iprr(j) += 2*eps;
+        MappedIntegrationPoint<D,D> siprr(iprr, eltrans);
+
+        fel_u.CalcMappedShape (sipl, shape_ul);
+        fel_u.CalcMappedShape (sipr, shape_ur);
+        fel_u.CalcMappedShape (sipll, shape_ull);
+        fel_u.CalcMappedShape (siprr, shape_urr);
+
+        dshape_u_ref = (1.0/(12.0*eps)) * (8.0*shape_ur-8.0*shape_ul-shape_urr+shape_ull);
+
+        // dshape_u_ref = (1.0/(2*eps)) * (shape_ur-shape_ul);
+        // dshape_u_ref = (1.0/(4*eps)) * (shape_urr-shape_ull);
+
+        /*
+	  for (int k = 0; k < nd_u; k++)
+          for (int l = 0; l < D; l++)
+          bmatu(k, j*D+l) = dshape_u_ref(k,l);
+        */
+        for (int l = 0; l < D; l++)
+          bmatu.Col(j*D+l) = dshape_u_ref.Col(l);
+      }
+      
+      for (int j = 0; j < D; j++)
+	{
+	  for (int k = 0; k < nd_u; k++)
+	    for (int l = 0; l < D; l++)
+	      dshape_u_ref(k,l) = bmatu(k, l*D+j);
+	  
+	  dshape_u = dshape_u_ref * sip.GetJacobianInverse();
+
+	  for (int k = 0; k < nd_u; k++)
+	    for (int l = 0; l < D; l++)
+	      bmatu(k, l*D+j) = dshape_u(k,l);
+	}
+    }
+
+  
+  //Gradient operator of HDivSurface
+  template <int D, typename FEL = HDivFiniteElement<D-1> >
+  class DiffOpGradientHdivSurface : public DiffOp<DiffOpGradientHdivSurface<D> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D-1 };
+    enum { DIM_DMAT = D*D };
+    enum { DIFFORDER = 1 };
+
+    //??? 
+    //static Array<int> GetDimensions() { return Array<int> ( { D, D } ); };
+    static constexpr double eps() { return 1e-4; }
+
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+                                                  static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                                                                              MAT mat, LocalHeap & lh)
+    {
+      CalcDShapeOfHDivFE<D-1,D*(D-1)>(static_cast<const FEL&>(fel), mip, Trans(mat), lh);
+    }
+
+    template <typename AFEL, typename MIP, class TVX, class TVY>
+    static void Apply (const AFEL & fel, const MIP & mip,
+                       const TVX & x, TVY & y,
+                       LocalHeap & lh) 
+    {
+      // typedef typename TVX::TSCAL TSCAL;
+      HeapReset hr(lh);
+      FlatMatrixFixWidth<D*D> hm(fel.GetNDof(),lh);
+      CalcDShapeOfHDivFE<D-1,D*(D-1)>(static_cast<const FEL&>(fel), mip, hm, lh);
+      y = Trans(hm)*x;
+    }
+
+
+  };
 
   HDivHighOrderSurfaceFESpace ::  
   HDivHighOrderSurfaceFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags)
@@ -96,7 +203,7 @@ public:
 	evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdHDivSurface<3>>>();
 
 	flux_evaluator[VOL] =  make_shared<T_DifferentialOperator<DiffOpDivHDiv<3>>>();
-	flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpDivHDivSurface<3>>>();       	
+	flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpDivHDivSurface<3>>>();
       }
     
     highest_order_dc = flags.GetDefineFlag("highest_order_dc");
@@ -318,7 +425,7 @@ public:
 
 
   FiniteElement & HDivHighOrderSurfaceFESpace :: GetFE (ElementId ei, Allocator & alloc) const
-  {
+  {   
      if (ei.IsVolume())
       {
 	throw Exception("No volume elements available");
@@ -332,7 +439,7 @@ public:
       
 	   default: throw Exception("illigal element in HDivHighOrderSurfaceFESpace::GetSFE");
 	   }   
-       }	 
+       }     
   }
 
   template<ELEMENT_TYPE ET>
@@ -374,8 +481,7 @@ public:
   }
 
   void HDivHighOrderSurfaceFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
-  {
-    //cout<<"in Get DofNrs"<<endl;
+  {    
     dnums.SetSize0();
     if(ei.VB()==VOL)
       {
@@ -425,24 +531,12 @@ public:
 	    dnums.SetSize0();	  
 	  }
       }
-    /*
     else if (ei.VB()==BBND)
       {
-	//dnums.SetSize0();
-	throw Exception("GetSDofNrs for BBND not implemented yet");
-	  /*
-	 size_t fanum = ma->GetElFacets(ei)[0];
-	// lowest-order
-        dnums += fanum;
-	
-	// high order
-        dnums += GetFacetDofs (fanum);
-        
-	if (!DefinedOn (ei))
-          dnums.SetSize0();
-        // dnums = -1;
-
-	  }	*/
+	auto fanums = ma->GetElEdges(ei);	
+	dnums += fanums;	
+	dnums += GetFacetDofs (fanums[0]);	
+      }    
     
   }
 
@@ -470,18 +564,18 @@ public:
   HDivHighOrderSurfaceFESpace :: GetAdditionalEvaluators () const
   {
     SymbolTable<shared_ptr<DifferentialOperator>> additional;
-    /*
+    
     switch (ma->GetDimension())
       {
       case 1:
-        additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHdiv<1>>> ()); break;
+	throw Exception("wrong dimension"); 
       case 2:
-        additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHdiv<2>>> ()); break;
+	throw Exception("wrong dimension"); 
       case 3:
-        additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHdiv<3>>> ()); break;
+        additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHdivSurface<3>>> ()); break;
       default:
         ;
-	}*/
+	}
     return additional;
   }
 
