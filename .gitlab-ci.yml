@@ -360,14 +360,13 @@ linux_cleanup:
     - docker
   script:
     # remove built docker images
-    - docker rmi -f ngsolve_${CI_PIPELINE_ID}:15.10
-    - docker rmi -f ngsolve_${CI_PIPELINE_ID}_installed:15.10
     - docker rmi -f ngsolve_${CI_PIPELINE_ID}:16.04
     - docker rmi -f ngsolve_${CI_PIPELINE_ID}_installed:16.04
     - docker rmi -f ngsolve_${CI_PIPELINE_ID}:16.10
     - docker rmi -f ngsolve_${CI_PIPELINE_ID}_installed:16.10
     - docker rmi -f ngsolve_${CI_PIPELINE_ID}:17.04
     - docker rmi -f ngsolve_${CI_PIPELINE_ID}_installed:17.04
+    - docker ps -a | awk '{ print $1,$2 }' | grep ngolve_${CI_PIPELINE_ID} | awk '{print $1 }' | xargs -I {} docker rm {}
   when: always
   allow_failure: true
 
