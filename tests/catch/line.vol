@@ -1,0 +1,31 @@
+mesh3d
+dimension
+1
+geomtype
+0
+
+# surfnr    bcnr   domin  domout      np      p1      p2      p3
+surfaceelements
+0
+
+
+#  matnr      np      p1      p2      p3      p4
+volumeelements
+0
+
+
+# surfid  0   p1   p2   trignum1    trignum2   domin/surfnr1    domout/surfnr2   ednr1   dist1   ednr2   dist2 
+edgesegmentsgi2
+1
+       1       0       1       2        8        0       -1       -1        1            0        0            0
+
+
+#          X             Y             Z
+points
+2
+    0.0000000000000000      0.0000000000000000      0.0000000000000000
+    1.0000000000000000      0.0000000000000000      0.0000000000000000
+
+
+endmesh
+
