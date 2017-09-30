@@ -67,6 +67,8 @@ namespace ngcomp
     { 
       evaluator[VOL] = make_shared<T_DifferentialOperator<NumberDiffOp>>();
       evaluator[BND] = make_shared<T_DifferentialOperator<NumberDiffOp>>();
+      evaluator[BBND] = make_shared<T_DifferentialOperator<NumberDiffOp>>();
+      evaluator[BBBND] = make_shared<T_DifferentialOperator<NumberDiffOp>>();
       is_atomic_dof = BitArray(1);
       is_atomic_dof = true;
     }
