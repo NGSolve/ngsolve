@@ -32,4 +32,6 @@ endmacro()
 
 add_unit_test(finiteelement finiteelement.cpp)
 add_unit_test(coefficientfunction coefficientfunction.cpp)
+file(COPY line.vol square.vol cube.vol DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+add_unit_test(meshaccess meshaccess.cpp)
 endif(ENABLE_UNIT_TESTS)
