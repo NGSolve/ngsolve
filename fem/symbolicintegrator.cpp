@@ -2572,7 +2572,9 @@ namespace ngfem
                     
                     IntRange r1 = proxy1->Evaluator()->UsedDofs(fel);
                     IntRange r2 = proxy2->Evaluator()->UsedDofs(fel);
-                    elmat.Rows(r2).Cols(r1) += Trans (bbmat2.Cols(r2)) * bdbmat1.Cols(r1) | Lapack;
+                    // elmat.Rows(r2).Cols(r1) += Trans (bbmat2.Cols(r2)) * bdbmat1.Cols(r1) | Lapack;
+                    AddABt (Trans(bbmat2).Rows(r2), Trans(bdbmat1).Rows(r1),
+                            SliceMatrix<> (elmat.Rows(r2).Cols(r1)));
                   }
               }
         }
@@ -4061,6 +4063,7 @@ namespace ngfem
     static Timer tint("symbolicenergy - calclinearized intrules", 2);
     static Timer tapply("symbolicenergy - calclinearized apply", 2);
     static Timer td("symbolicenergy - calclinearized dmats", 2);
+    static Timer td1("symbolicenergy - calclinearized dmats, eval", 2);
     static Timer tb("symbolicenergy - calclinearized bmats", 2);
     static Timer tbd("symbolicenergy - calclinearized bd", 2);
     static Timer tmult("symbolicenergy - calclinearized mult", 2);
@@ -4220,7 +4223,7 @@ namespace ngfem
     elmat = 0;
     
 
-    NgProfiler::StartThreadTimer(td, tid);
+    // NgProfiler::StartThreadTimer(td, tid);
     
     FlatArray<FlatMatrix<>> diags(trial_proxies.Size(), lh);
     for (int k1 : Range(trial_proxies))
@@ -4233,12 +4236,14 @@ namespace ngfem
             ud.trial_comp = k;
             ud.testfunction = proxy;
             ud.test_comp = k;
+            // NgProfiler::StartThreadTimer(td1, tid);
             cf -> EvaluateDDeriv (mir, val, deriv, dderiv);
+            // NgProfiler::StopThreadTimer(td1, tid);
 
             diags[k1].Col(k) = dderiv.Col(0);
           }
       }
-    NgProfiler::StopThreadTimer(td, tid);
+    // NgProfiler::StopThreadTimer(td, tid);
            
     
     for (int k1 : Range(trial_proxies))
@@ -4260,8 +4265,11 @@ namespace ngfem
                 ud.trial_comp = k;
                 ud.testfunction = proxy2;
                 ud.test_comp = l;
-                
+
+                NgProfiler::StartThreadTimer(td1, tid);
                 cf -> EvaluateDDeriv (mir, val, deriv, dderiv);
+                NgProfiler::StopThreadTimer(td1, tid);
+                
                 proxyvalues(STAR,l,k) = dderiv.Col(0);
                 
                 if (proxy1 != proxy2 || k != l)  // computed mixed second derivatives
@@ -4298,6 +4306,10 @@ namespace ngfem
           FlatMatrix<double,ColMajor> bmat1(proxy1->Dimension(), elmat.Width(), lh);
           FlatMatrix<double,ColMajor> bmat2(proxy2->Dimension(), elmat.Height(), lh);
 
+          IntRange r1 = proxy1->Evaluator()->UsedDofs(fel);
+          IntRange r2 = proxy2->Evaluator()->UsedDofs(fel);
+          SliceMatrix<> part_elmat = elmat.Rows(r2).Cols(r1);
+
           constexpr size_t BS = 16;
           size_t i = 0;
           for ( ; i < mir.Size(); i+=BS)
@@ -4310,7 +4322,7 @@ namespace ngfem
               for (size_t j = 0; j < bs; j++)
                 {
                   size_t ii = i+j;
-                  IntRange r2 = proxy2->Dimension() * IntRange(j,j+1);
+                  IntRange r3 = proxy2->Dimension() * IntRange(j,j+1);
                   // tb.Start();
                   NgProfiler::StartThreadTimer(tb, tid);                  
                   proxy1->Evaluator()->CalcMatrix(fel, mir[ii], bmat1, lh);
@@ -4320,15 +4332,16 @@ namespace ngfem
                   NgProfiler::StartThreadTimer(tbd, tid);
                   // extern int myvar;
                   // myvar++;
-                  bdbmat1.Rows(r2) = proxyvalues(ii,STAR,STAR) * bmat1;
+                  bdbmat1.Rows(r3).Cols(r1) = proxyvalues(ii,STAR,STAR) * bmat1.Cols(r1);
                   // myvar++;                  
                   NgProfiler::StopThreadTimer(tbd, tid);
-                  bbmat2.Rows(r2) = bmat2;
+                  bbmat2.Rows(r3).Cols(r2) = bmat2.Cols(r2);
                 }
               // tmult.Start();
               NgProfiler::StartThreadTimer(tmult, tid);                                
               // elmat += Trans (bbmat2) * bdbmat1 | Lapack;
-              AddABt (Trans(bbmat2), Trans(bdbmat1), elmat);
+              // AddABt (Trans(bbmat2), Trans(bdbmat1), elmat);
+              AddABt (Trans(bbmat2).Rows(r2), Trans(bdbmat1).Rows(r1), part_elmat);
               NgProfiler::StopThreadTimer(tmult, tid);                                              
               // tmult.Stop();
             }
