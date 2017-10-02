@@ -1303,16 +1303,25 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
     .def("CalcElementMatrix",
          [] (shared_ptr<BFI> self,
              const FiniteElement & fe, const ElementTransformation &trafo,
-             int heapsize, int dim)
+             int heapsize, bool complex)
                          {
-                           Matrix<> mat(fe.GetNDof() * dim);
                            while (true)
                              {
                                try
                                  {
                                    LocalHeap lh(heapsize);
-                                   self->CalcElementMatrix (fe, trafo, mat, lh);
-                                   return mat;
+                                   if (complex)
+                                     {
+                                       Matrix<Complex> mat(fe.GetNDof() * self->GetDimension());
+                                       self->CalcElementMatrix(fe,trafo,mat,lh);
+                                       return py::cast(mat);
+                                     }
+                                   else
+                                     {
+                                       Matrix<> mat(fe.GetNDof() * self->GetDimension());
+                                       self->CalcElementMatrix (fe, trafo, mat, lh);
+                                       return py::cast(mat);
+                                     }
                                  }
                                catch (LocalHeapOverflow ex)
                                  {
@@ -1320,28 +1329,7 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
                                  }
                              }
                          },
-         py::arg("fel"),py::arg("trafo"),py::arg("heapsize")=10000, py::arg("dim") = 1)
-    .def("CalcElementMatrixComplex",
-         [] (shared_ptr<BFI> self,
-             const FiniteElement & fe, const ElementTransformation &trafo,
-             int heapsize, int dim)
-                         {
-                           Matrix<Complex> mat(fe.GetNDof() * dim);
-                           while (true)
-                             {
-                               try
-                                 {
-                                   LocalHeap lh(heapsize);
-                                   self->CalcElementMatrix (fe, trafo, mat, lh);
-                                   return mat;
-                                 }
-                               catch (LocalHeapOverflow ex)
-                                 {
-                                   heapsize *= 10;
-                                 }
-                             }
-                         },
-         py::arg("fel"),py::arg("trafo"),py::arg("heapsize")=10000, py::arg("dim")=1)
+         py::arg("fel"),py::arg("trafo"),py::arg("heapsize")=10000, py::arg("complex") = false)
     ;
 
 
@@ -1413,16 +1401,25 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
         static_cast<void(LinearFormIntegrator::*)(const FiniteElement&, const ElementTransformation&, FlatVector<double>, LocalHeap&)const>(&LinearFormIntegrator::CalcElementVector))
     .def("CalcElementVector",
          [] (shared_ptr<LFI>  self, const FiniteElement & fe, const ElementTransformation& trafo,
-             int heapsize)
+             int heapsize, bool complex)
          {
-           Vector<> vec(fe.GetNDof());
            while (true)
              {
                try
                  {
                    LocalHeap lh(heapsize);
-                   self->CalcElementVector (fe, trafo, vec, lh);
-                   return vec;
+                   if (complex)
+                     {
+                       Vector<Complex> vec(fe.GetNDof() * self->GetDimension());
+                       self->CalcElementVector(fe,trafo,vec,lh);
+                       return py::cast(vec);
+                     }
+                   else
+                     {
+                       Vector<> vec(fe.GetNDof() * self->GetDimension());
+                       self->CalcElementVector (fe, trafo, vec, lh);
+                       return py::cast(vec);
+                     }
                  }
                catch (LocalHeapOverflow ex)
                  {
@@ -1430,7 +1427,7 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
                  }
              };
          },
-         py::arg("fel"),py::arg("trafo"),py::arg("heapsize")=10000)
+         py::arg("fel"),py::arg("trafo"),py::arg("heapsize")=10000, py::arg("complex")=false)
     ;
 
 
