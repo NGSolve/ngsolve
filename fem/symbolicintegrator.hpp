@@ -702,6 +702,7 @@ public:
     VorB vb;
     Array<ProxyFunction*> trial_proxies;
     mutable bool simd_evaluate;
+    std::map<ELEMENT_TYPE,IntegrationRule> userdefined_intrules;
     
   public:
     SymbolicEnergy (shared_ptr<CoefficientFunction> acf, VorB avb);
@@ -709,6 +710,11 @@ public:
     virtual VorB VB() const { return vb; }
     virtual bool IsSymmetric() const { return true; } 
     virtual string Name () const { return string ("Symbolic Energy"); }
+
+    void SetIntegrationRule(ELEMENT_TYPE et, IntegrationRule&& ir)
+    {
+      userdefined_intrules[et] = std::forward<IntegrationRule>(ir);
+    }
     
     virtual void 
     CalcElementMatrix (const FiniteElement & fel,
