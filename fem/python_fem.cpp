@@ -1302,10 +1302,10 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
 
     .def("CalcElementMatrix",
          [] (shared_ptr<BFI> self,
-                             const FiniteElement & fe, const ElementTransformation &trafo,
-                             int heapsize)
+             const FiniteElement & fe, const ElementTransformation &trafo,
+             int heapsize, int dim)
                          {
-                           Matrix<> mat(fe.GetNDof()*fe.Dim());
+                           Matrix<> mat(fe.GetNDof() * dim);
                            while (true)
                              {
                                try
@@ -1318,9 +1318,30 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
                                  {
                                    heapsize *= 10;
                                  }
-                             };
+                             }
                          },
-         py::arg("fel"),py::arg("trafo"),py::arg("heapsize")=10000)
+         py::arg("fel"),py::arg("trafo"),py::arg("heapsize")=10000, py::arg("dim") = 1)
+    .def("CalcElementMatrixComplex",
+         [] (shared_ptr<BFI> self,
+             const FiniteElement & fe, const ElementTransformation &trafo,
+             int heapsize, int dim)
+                         {
+                           Matrix<Complex> mat(fe.GetNDof() * dim);
+                           while (true)
+                             {
+                               try
+                                 {
+                                   LocalHeap lh(heapsize);
+                                   self->CalcElementMatrix (fe, trafo, mat, lh);
+                                   return mat;
+                                 }
+                               catch (LocalHeapOverflow ex)
+                                 {
+                                   heapsize *= 10;
+                                 }
+                             }
+                         },
+         py::arg("fel"),py::arg("trafo"),py::arg("heapsize")=10000, py::arg("dim")=1)
     ;
 
 
