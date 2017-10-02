@@ -851,6 +851,7 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
 
   py::class_<Region> (m, "Region", "a subset of volume or boundary elements")
     .def(py::init<shared_ptr<MeshAccess>,VorB,string>())
+    .def(py::init<shared_ptr<MeshAccess>,VorB,BitArray>())
     .def("Mask",[](Region & reg)->BitArray { return reg.Mask(); })
     .def("VB", [](Region & reg) { return VorB(reg); })
     .def(py::self + py::self)

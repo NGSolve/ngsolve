@@ -241,6 +241,14 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
   py::class_<ngstd::BitArray, shared_ptr<BitArray>> (m, "BitArray")
     .def(py::init( [] (int n) { return new BitArray(n); }))
     .def(py::init([](const BitArray& a) { return make_shared<BitArray>(a); } ))
+    .def(py::init([](const vector<bool> & a)
+                  {
+                    auto ba = make_shared<BitArray>(a.size());
+                    ba->Clear();
+                    for (size_t i = 0; i < a.size(); i++)
+                      if (a[i]) ba->Set(i);
+                    return ba;
+                  } ))
     .def("__str__", &ToString<BitArray>)
     .def("__len__", &BitArray::Size)
     .def("__getitem__", [] (BitArray & self, int i) 
