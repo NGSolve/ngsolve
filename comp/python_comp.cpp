@@ -3231,7 +3231,8 @@ flags : dict
           );
           
   m.def("SymbolicEnergy",
-          [](spCF cf, VorB vb, py::object definedon, py::object definedonelem) -> shared_ptr<BilinearFormIntegrator>
+        [](spCF cf, VorB vb, py::object definedon, py::object definedonelem,
+           py::dict integration_rules) -> shared_ptr<BilinearFormIntegrator>
            {
              py::extract<Region> defon_region(definedon);
              if (defon_region.check())
@@ -3246,10 +3247,16 @@ flags : dict
                }
              if (! py::extract<DummyArgument> (definedonelem).check())
                bfi -> SetDefinedOnElements (py::extract<shared_ptr<BitArray>>(definedonelem)());
+             for (auto vals : integration_rules)
+               {
+                 dynamic_pointer_cast<SymbolicEnergy>(bfi) ->
+                   SetIntegrationRule(py::cast<ELEMENT_TYPE>(vals.first),
+                                      py::cast<IntegrationRule>(vals.second));
+               }
              return bfi;
            },
            py::arg("coefficient"), py::arg("VOL_or_BND")=VOL, py::arg("definedon")=DummyArgument(),
-           py::arg("definedonelements")=DummyArgument()
+        py::arg("definedonelements")=DummyArgument(), py::arg("intrules")=py::dict()
           );
 
 

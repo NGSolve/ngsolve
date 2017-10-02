@@ -4077,10 +4077,11 @@ namespace ngfem
         try
           {
             // tint.Start();
-            IntegrationRule std_ir(trafo.GetElementType(), 2*fel.Order());
+            auto ir_iter = userdefined_intrules.find(trafo.GetElementType());
+            IntegrationRule std_ir = ir_iter == userdefined_intrules.end() ?
+              IntegrationRule(trafo.GetElementType(), 2*fel.Order()) : ir_iter->second;
+            SIMD_IntegrationRule ir = SIMD_IntegrationRule(std_ir);
             auto & std_mir = trafo(std_ir, lh);
-
-            SIMD_IntegrationRule ir(trafo.GetElementType(), 2*fel.Order());
             auto & mir = trafo(ir, lh);
             // tint.Stop();
             // tapply.Start();
@@ -4201,8 +4202,10 @@ namespace ngfem
         return;
       }
     
-    
-    IntegrationRule ir(trafo.GetElementType(), 2*fel.Order());
+    // tint.Start();
+    auto ir_iter = userdefined_intrules.find(trafo.GetElementType());
+    IntegrationRule ir = ir_iter == userdefined_intrules.end() ?
+      IntegrationRule(trafo.GetElementType(), 2*fel.Order()) : ir_iter->second;
     BaseMappedIntegrationRule & mir = trafo(ir, lh);
 
     NgProfiler::StartThreadTimer(tapply, tid);
@@ -4394,7 +4397,9 @@ namespace ngfem
                                    FlatVector<double> elx, 
                                    LocalHeap & lh) const
   {
-    IntegrationRule ir(trafo.GetElementType(), 2*fel.Order());
+    auto ir_iter = userdefined_intrules.find(trafo.GetElementType());
+    IntegrationRule ir = ir_iter == userdefined_intrules.end() ?
+      IntegrationRule(trafo.GetElementType(), 2*fel.Order()) : ir_iter->second;
     BaseMappedIntegrationRule & mir = trafo(ir, lh);
 
     ProxyUserData ud(trial_proxies.Size(), lh);
@@ -4449,7 +4454,9 @@ namespace ngfem
             RegionTimer reg(t);            
             // ts.Start();
             HeapReset hr(lh);
-            SIMD_IntegrationRule ir(trafo.GetElementType(), 2*fel.Order());
+            auto ir_iter = userdefined_intrules.find(trafo.GetElementType());
+            SIMD_IntegrationRule ir = ir_iter == userdefined_intrules.end()?
+              SIMD_IntegrationRule(trafo.GetElementType(), 2*fel.Order()) : SIMD_IntegrationRule(ir_iter->second);
             auto & mir = trafo(ir, lh);
             
             for (ProxyFunction * proxy : trial_proxies)
@@ -4498,7 +4505,9 @@ namespace ngfem
       }
     
     HeapReset hr(lh);
-    IntegrationRule ir(trafo.GetElementType(), 2*fel.Order());
+    auto ir_iter = userdefined_intrules.find(trafo.GetElementType());
+    IntegrationRule ir = ir_iter == userdefined_intrules.end() ?
+      IntegrationRule(trafo.GetElementType(), 2*fel.Order()) : ir_iter->second;
     BaseMappedIntegrationRule & mir = trafo(ir, lh);
 
     for (ProxyFunction * proxy : trial_proxies)
