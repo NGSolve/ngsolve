@@ -18,7 +18,7 @@
 namespace ngfem
 {
   template <typename T>
-  string ToLiteral(const T & val)
+  inline string ToLiteral(const T & val)
   {
       stringstream ss;
 #if (defined __cpp_hex_float) && (__cpp_hex_float <= __cplusplus)
@@ -31,6 +31,14 @@ namespace ngfem
       ss << val;
 #endif
       return ss.str();
+  }
+
+  template<>
+  inline string ToLiteral (const int &val)
+  {
+    stringstream ss;
+    ss << val;
+    return ss.str();
   }
 
 
