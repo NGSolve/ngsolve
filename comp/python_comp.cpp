@@ -3113,7 +3113,7 @@ flags : dict
 
 	     if (ir.Size())
                {
-                 cout << IM(5) << "ir = " << ir << endl;
+                 cout << IM(1) << "WARNING: Setting the integration rule for all element types is deprecated, use LFI.SetIntegrationRule(ELEMENT_TYPE, IntegrationRule) instead!" << endl;
                  dynamic_pointer_cast<SymbolicLinearFormIntegrator>
 		   (lfi)->SetIntegrationRule(ir);                   
                }
@@ -3171,7 +3171,7 @@ flags : dict
 
              if (ir.Size())
                {
-                 cout << IM(5) << "ir = " << ir << endl;
+                 cout << IM(1) << "WARNING: Setting the integration rule for all element types is deprecated, use BFI.SetIntegrationRule(ELEMENT_TYPE, IntegrationRule) instead!" << endl;
                  dynamic_pointer_cast<SymbolicBilinearFormIntegrator> (bfi)
                    ->SetIntegrationRule(ir);
                }
@@ -3231,8 +3231,8 @@ flags : dict
           );
           
   m.def("SymbolicEnergy",
-        [](spCF cf, VorB vb, py::object definedon, py::object definedonelem,
-           py::dict integration_rules) -> shared_ptr<BilinearFormIntegrator>
+        [](spCF cf, VorB vb, py::object definedon, py::object definedonelem)
+        -> shared_ptr<BilinearFormIntegrator>
            {
              py::extract<Region> defon_region(definedon);
              if (defon_region.check())
@@ -3247,16 +3247,10 @@ flags : dict
                }
              if (! py::extract<DummyArgument> (definedonelem).check())
                bfi -> SetDefinedOnElements (py::extract<shared_ptr<BitArray>>(definedonelem)());
-             for (auto vals : integration_rules)
-               {
-                 dynamic_pointer_cast<SymbolicEnergy>(bfi) ->
-                   SetIntegrationRule(py::cast<ELEMENT_TYPE>(vals.first),
-                                      py::cast<IntegrationRule>(vals.second));
-               }
              return bfi;
            },
            py::arg("coefficient"), py::arg("VOL_or_BND")=VOL, py::arg("definedon")=DummyArgument(),
-        py::arg("definedonelements")=DummyArgument(), py::arg("intrules")=py::dict()
+        py::arg("definedonelements")=DummyArgument()
           );
 
 
