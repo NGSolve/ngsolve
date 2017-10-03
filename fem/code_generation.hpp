@@ -119,7 +119,7 @@ namespace ngfem
 
   inline CodeExpr Var(Complex val)
   {
-    return ToLiteral(val);
+    return "Complex"+ToLiteral(val);
   }
 
   inline CodeExpr Var(string name, int i, int j=0, int k=0)
