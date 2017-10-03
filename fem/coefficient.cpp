@@ -4634,6 +4634,10 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
     typedef void (*lib_function_simd_deriv)(const ngfem::SIMD_BaseMappedIntegrationRule &, BareSliceMatrix<SIMD<double>>, BareSliceMatrix<SIMD<double>>);
     typedef void (*lib_function_dderiv)(const ngfem::BaseMappedIntegrationRule &, ngbla::FlatMatrix<double>, ngbla::FlatMatrix<double>, ngbla::FlatMatrix<double>);
     typedef void (*lib_function_simd_dderiv)(const ngfem::SIMD_BaseMappedIntegrationRule &, BareSliceMatrix<SIMD<double>>, BareSliceMatrix<SIMD<double>>, BareSliceMatrix<SIMD<double>>);
+
+    typedef void (*lib_function_complex)(const ngfem::BaseMappedIntegrationRule &, ngbla::FlatMatrix<Complex>);
+    typedef void (*lib_function_simd_complex)(const ngfem::SIMD_BaseMappedIntegrationRule &, BareSliceMatrix<SIMD<Complex>>);
+
     shared_ptr<CoefficientFunction> cf;
     Array<CoefficientFunction*> steps;
     DynamicTable<int> inputs;
@@ -4649,6 +4653,10 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
     lib_function_simd_deriv compiled_function_simd_deriv = nullptr;
     lib_function_dderiv compiled_function_dderiv = nullptr;
     lib_function_simd_dderiv compiled_function_simd_dderiv = nullptr;
+
+    lib_function_complex compiled_function_complex = nullptr;
+    lib_function_simd_complex compiled_function_simd_complex = nullptr;
+
   public:
     CompiledCoefficientFunction (shared_ptr<CoefficientFunction> acf, bool realcompile, int maxderiv, bool wait )
       : CoefficientFunction(acf->Dimension(), acf->IsComplex()), cf(acf) // , compiled_function(nullptr), compiled_function_simd(nullptr)
@@ -4692,6 +4700,8 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
 
       if(realcompile)
       {
+        if(cf->IsComplex())
+            maxderiv = 0;
         stringstream s;
         string pointer_code;
         string top_code = "";
@@ -4716,7 +4726,8 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
             top_code += code.top;
 
             // set results
-            string res_type = "double";
+            string scal_type = cf->IsComplex() ? "Complex" : "double";
+            string res_type = scal_type;
             if(simd) res_type = "SIMD<" + res_type + ">";
             if(deriv==1) res_type = "AutoDiff<1," + res_type + ">";
             if(deriv==2) res_type = "AutoDiffDiff<1," + res_type + ">";
@@ -4760,8 +4771,8 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
             if(simd) s << "SIMD";
 
             // Function parameters
-            string param_type = simd ? "BareSliceMatrix<SIMD<double>> " : "FlatMatrix<> ";
-            if (simd && deriv == 0) param_type = "BareSliceMatrix<SIMD<double>> ";
+            string param_type = simd ? "BareSliceMatrix<SIMD<"+scal_type+">> " : "FlatMatrix<"+scal_type+"> ";
+            if (simd && deriv == 0) param_type = "BareSliceMatrix<SIMD<"+scal_type+">> ";
             s << "( " << (simd?"SIMD_":"") << "BaseMappedIntegrationRule &mir";
             for(auto i : Range(deriv+1))
               s << ", " << param_type << parameters[i];
@@ -4787,17 +4798,25 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
 
         auto compile_func = [this, codes, maxderiv] () {
               library.Compile( codes );
-              compiled_function_simd = library.GetFunction<lib_function_simd>("CompiledEvaluateSIMD");
-              compiled_function = library.GetFunction<lib_function>("CompiledEvaluate");
-              if(maxderiv>0)
+              if(cf->IsComplex())
               {
-                  compiled_function_simd_deriv = library.GetFunction<lib_function_simd_deriv>("CompiledEvaluateDerivSIMD");
-                  compiled_function_deriv = library.GetFunction<lib_function_deriv>("CompiledEvaluateDeriv");
+                  compiled_function_simd_complex = library.GetFunction<lib_function_simd_complex>("CompiledEvaluateSIMD");
+                  compiled_function_complex = library.GetFunction<lib_function_complex>("CompiledEvaluate");
               }
-              if(maxderiv>1)
+              else
               {
-                  compiled_function_simd_dderiv = library.GetFunction<lib_function_simd_dderiv>("CompiledEvaluateDDerivSIMD");
-                  compiled_function_dderiv = library.GetFunction<lib_function_dderiv>("CompiledEvaluateDDeriv");
+                  compiled_function_simd = library.GetFunction<lib_function_simd>("CompiledEvaluateSIMD");
+                  compiled_function = library.GetFunction<lib_function>("CompiledEvaluate");
+                  if(maxderiv>0)
+                  {
+                      compiled_function_simd_deriv = library.GetFunction<lib_function_simd_deriv>("CompiledEvaluateDerivSIMD");
+                      compiled_function_deriv = library.GetFunction<lib_function_deriv>("CompiledEvaluateDeriv");
+                  }
+                  if(maxderiv>1)
+                  {
+                      compiled_function_simd_dderiv = library.GetFunction<lib_function_simd_dderiv>("CompiledEvaluateDDerivSIMD");
+                      compiled_function_dderiv = library.GetFunction<lib_function_dderiv>("CompiledEvaluateDDeriv");
+                  }
               }
               cout << IM(7) << "Compilation done" << endl;
         };
@@ -4923,6 +4942,32 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
 
       BareSliceMatrix<SIMD<double>> temp_last = temp.Last();
       values.AddSize(Dimension(), ir.Size()) = temp_last;
+    }
+
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const
+    {
+      if(compiled_function_complex)
+      {
+          compiled_function_complex(ir,values);
+          return;
+      }
+      else
+      {
+          cf->Evaluate (ir, values);
+      }
+    }
+
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values) const
+    {
+      if(compiled_function_simd_complex)
+      {
+        compiled_function_simd_complex(ir,values);
+        return;
+      }
+      else
+      {
+          cf->Evaluate (ir, values);
+      }
     }
 
 
