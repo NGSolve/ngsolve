@@ -1307,7 +1307,11 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
 
     .def("SetDefinedOnElements",  [](shared_ptr<BFI> self, shared_ptr<BitArray> ba )
                                                   { self->SetDefinedOnElements (ba); } )
-
+    .def("SetIntegrationRule", [] (shared_ptr<BFI> self, ELEMENT_TYPE et, IntegrationRule ir)
+         {
+           self -> SetIntegrationRule(et,ir);
+           return self;
+         })
     .def("CalcElementMatrix",
          [] (shared_ptr<BFI> self,
                              const FiniteElement & fe, const ElementTransformation &trafo,
@@ -1395,6 +1399,11 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
          py::return_value_policy::reference)
     .def("SetDefinedOnElements",  [](shared_ptr<LFI> self, shared_ptr<BitArray> ba )
                                                   { self->SetDefinedOnElements (ba); } )
+    .def("SetIntegrationRule", [](shared_ptr<LFI> self, ELEMENT_TYPE et, IntegrationRule ir)
+         {
+           self->SetIntegrationRule(et,ir);
+           return self;
+         })
 
     .def("CalcElementVector", 
         static_cast<void(LinearFormIntegrator::*)(const FiniteElement&, const ElementTransformation&, FlatVector<double>, LocalHeap&)const>(&LinearFormIntegrator::CalcElementVector))
