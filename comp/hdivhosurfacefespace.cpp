@@ -57,71 +57,79 @@ public:
 };
 
   
- template<int D, int BMATDIM>
-    void CalcDShapeOfHDivFE(const HDivFiniteElement<D>& fel_u, const MappedIntegrationPoint<D,D+1>& sip, SliceMatrix<> bmatu, LocalHeap& lh){
+ template<int D>
+    void CalcDShapeOfHDivSurfaceFE(const HDivFiniteElement<D>& fel_u, const MappedIntegrationPoint<D,D+1>& sip, SliceMatrix<> bmatu, LocalHeap& lh){
       HeapReset hr(lh);
-      // bmatu = 0;
-      // evaluate dshape by numerical diff
-      //fel_u, eltrans, sip, returnval, lh
+      bmatu = 0;
+      
       int nd_u = fel_u.GetNDof();
-      const IntegrationPoint& ip = sip.IP();//volume_ir[i];
+      const IntegrationPoint& ip = sip.IP();
+      
       const ElementTransformation & eltrans = sip.GetTransformation();
-      FlatMatrixFixWidth<D> shape_ul(nd_u, lh);
-      FlatMatrixFixWidth<D> shape_ur(nd_u, lh);
-      FlatMatrixFixWidth<D> shape_ull(nd_u, lh);
-      FlatMatrixFixWidth<D> shape_urr(nd_u, lh);
-      FlatMatrixFixWidth<D> dshape_u_ref(nd_u, lh);//(shape_ur); ///saves "reserved lh-memory"
-      FlatMatrixFixWidth<D> dshape_u(nd_u, lh);//(shape_ul);///saves "reserved lh-memory"
-
-      double eps = 1e-4;
+      FlatMatrixFixWidth<D> shape_ul_ref(nd_u, lh);
+      FlatMatrixFixWidth<D+1> shape_ul(nd_u, lh);
+      FlatMatrixFixWidth<D> shape_ur_ref(nd_u, lh);
+      FlatMatrixFixWidth<D+1> shape_ur(nd_u, lh);
+      FlatMatrixFixWidth<D> shape_ull_ref(nd_u, lh);
+      FlatMatrixFixWidth<D+1> shape_ull(nd_u, lh);
+      FlatMatrixFixWidth<D> shape_urr_ref(nd_u, lh);
+      FlatMatrixFixWidth<D+1> shape_urr(nd_u, lh);
+      FlatMatrixFixWidth<D+1> dshape_u_ref(nd_u, lh);
+      FlatMatrixFixWidth<D> dshape_u_ref_2(nd_u, lh);
+      FlatMatrixFixWidth<D+1> dshape_u(nd_u, lh);
+      
+      double eps = 1e-4;    
+      
       for (int j = 0; j < D; j++)   // d / dxj
       {
         IntegrationPoint ipl(ip);
         ipl(j) -= eps;
-        MappedIntegrationPoint<D,D> sipl(ipl, eltrans);
+        MappedIntegrationPoint<D,D+1> sipl(ipl, eltrans);
 
         IntegrationPoint ipr(ip);
         ipr(j) += eps;
-        MappedIntegrationPoint<D,D> sipr(ipr, eltrans);
+        MappedIntegrationPoint<D,D+1> sipr(ipr, eltrans);
 
         IntegrationPoint ipll(ip);
         ipll(j) -= 2*eps;
-        MappedIntegrationPoint<D,D> sipll(ipll, eltrans);
+        MappedIntegrationPoint<D,D+1> sipll(ipll, eltrans);
 
         IntegrationPoint iprr(ip);
         iprr(j) += 2*eps;
-        MappedIntegrationPoint<D,D> siprr(iprr, eltrans);
+        MappedIntegrationPoint<D,D+1> siprr(iprr, eltrans);
 
-        fel_u.CalcMappedShape (sipl, shape_ul);
-        fel_u.CalcMappedShape (sipr, shape_ur);
-        fel_u.CalcMappedShape (sipll, shape_ull);
-        fel_u.CalcMappedShape (siprr, shape_urr);
+	//Calc mapped shape using piola trafo
+	fel_u.CalcShape (ipl, shape_ul_ref);	
+	shape_ul =Trans((1.0 / sipl.GetJacobiDet()) * sipl.GetJacobian() * Trans(shape_ul_ref));
+	
+	fel_u.CalcShape (ipr, shape_ur_ref);
+	shape_ur = Trans((1.0 / sipr.GetJacobiDet()) * sipr.GetJacobian () * Trans(shape_ur_ref));
+	
+	fel_u.CalcShape (ipll, shape_ull_ref);
+	shape_ull = Trans((1.0 / sipll.GetJacobiDet()) * sipll.GetJacobian() * Trans(shape_ull_ref));
+	
+	fel_u.CalcShape (iprr, shape_urr_ref);
+	shape_urr = Trans((1.0 / siprr.GetJacobiDet()) * siprr.GetJacobian() * Trans(shape_urr_ref));
 
         dshape_u_ref = (1.0/(12.0*eps)) * (8.0*shape_ur-8.0*shape_ul-shape_urr+shape_ull);
 
-        // dshape_u_ref = (1.0/(2*eps)) * (shape_ur-shape_ul);
-        // dshape_u_ref = (1.0/(4*eps)) * (shape_urr-shape_ull);
-
-        /*
-	  for (int k = 0; k < nd_u; k++)
-          for (int l = 0; l < D; l++)
-          bmatu(k, j*D+l) = dshape_u_ref(k,l);
-        */
-        for (int l = 0; l < D; l++)
-          bmatu.Col(j*D+l) = dshape_u_ref.Col(l);
+	
+        for (int l = 0; l < D+1; l++)
+          bmatu.Col(j*(D+1)+l) = dshape_u_ref.Col(l);
       }
       
-      for (int j = 0; j < D; j++)
+      for (int j = 0; j < D+1; j++)
 	{
 	  for (int k = 0; k < nd_u; k++)
 	    for (int l = 0; l < D; l++)
-	      dshape_u_ref(k,l) = bmatu(k, l*D+j);
-	  
-	  dshape_u = dshape_u_ref * sip.GetJacobianInverse();
+	      dshape_u_ref_2(k,l) = bmatu(k, l*(D+1)+j);
 
+	 
+	  dshape_u = dshape_u_ref_2 * sip.GetJacobianInverse();	
+	  
 	  for (int k = 0; k < nd_u; k++)
-	    for (int l = 0; l < D; l++)
-	      bmatu(k, l*D+j) = dshape_u(k,l);
+	    for (int l = 0; l < D+1; l++)
+	      bmatu(k, l*(D+1)+j) = dshape_u(k,l);
 	}
     }
 
@@ -137,7 +145,6 @@ public:
     enum { DIM_DMAT = D*D };
     enum { DIFFORDER = 1 };
 
-    //??? 
     //static Array<int> GetDimensions() { return Array<int> ( { D, D } ); };
     static constexpr double eps() { return 1e-4; }
 
@@ -145,8 +152,8 @@ public:
               typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
                                                   static void GenerateMatrix (const AFEL & fel, const MIP & mip,
                                                                               MAT mat, LocalHeap & lh)
-    {
-      CalcDShapeOfHDivFE<D-1,D*(D-1)>(static_cast<const FEL&>(fel), mip, Trans(mat), lh);
+    {      
+      CalcDShapeOfHDivSurfaceFE<D-1>(static_cast<const FEL&>(fel), mip, Trans(mat), lh);
     }
 
     template <typename AFEL, typename MIP, class TVX, class TVY>
@@ -157,7 +164,7 @@ public:
       // typedef typename TVX::TSCAL TSCAL;
       HeapReset hr(lh);
       FlatMatrixFixWidth<D*D> hm(fel.GetNDof(),lh);
-      CalcDShapeOfHDivFE<D-1,D*(D-1)>(static_cast<const FEL&>(fel), mip, hm, lh);
+      CalcDShapeOfHDivSurfaceFE<D-1>(static_cast<const FEL&>(fel), mip, hm, lh);
       y = Trans(hm)*x;
     }
 
@@ -403,7 +410,7 @@ public:
 
   void HDivHighOrderSurfaceFESpace :: UpdateCouplingDofArray()
   {
-    throw Exception("Not updated yet!!!");
+    throw Exception("This is copy paste! Not updated yet!!!");
     ctofdof.SetSize(ndof);
     if(discont) 
       {
@@ -490,7 +497,6 @@ public:
     else if(ei.VB()==BND)
       {
 	auto fanums = ma->GetElEdges(ei);
-	//cout<<"fanums="<<fanums<<endl;
 	
 	if (highest_order_dc)
 	  {
@@ -514,16 +520,10 @@ public:
 	    
 	    // edges
 	    for (auto f : fanums)
-	      dnums += GetFacetDofs (f);
-	    
-	    
-	    
+	      dnums += GetFacetDofs (f);   
+	    	    
 	    //inner
 	    dnums += GetElementDofs (ei.Nr());
-	    //cout<<"element dofs = "<<GetElementDofs (ei.Nr())<<endl;
-	    //cout<<"dnums"<<dnums;
-	    //getchar();
-	    
 	  }
 	
 	if (!DefinedOn (ei))
@@ -578,9 +578,6 @@ public:
 	}
     return additional;
   }
-
-
-
 
   static RegisterFESpace<HDivHighOrderSurfaceFESpace> init ("hdivhosurface");
 }
