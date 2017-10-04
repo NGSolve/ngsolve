@@ -465,6 +465,7 @@ public:
 
     virtual VorB VB() const { return vb; }
     virtual string Name () const { return string ("Symbolic LFI"); }
+    virtual int GetDimension() const override { return proxies[0]->Evaluator()->BlockDim(); }
 
     virtual void 
     CalcElementVector (const FiniteElement & fel,
@@ -517,6 +518,10 @@ public:
     // virtual IntegrationRule GetIntegrationRuleEB (const FiniteElement & fel, int facetnr, LocalHeap & lh) const;
     // virtual SIMD_IntegrationRule Get_SIMD_IntegrationRuleEB (const FiniteElement & fel, int facetnr, LocalHeap & lh) const;
     
+    void SetIntegrationRule (const IntegrationRule & _ir);
+
+    virtual int GetDimension() const override { return trial_proxies[0]->Evaluator()->BlockDim(); }
+
     virtual void 
     CalcElementMatrix (const FiniteElement & fel,
 		       const ElementTransformation & trafo, 
