@@ -53,7 +53,8 @@ namespace ngfem
 
     /// define only on some sub-domains
     shared_ptr<BitArray> definedon_element = nullptr;
-    
+    std::array<unique_ptr<IntegrationRule>,25> userdefined_intrules;
+    std::array<unique_ptr<SIMD_IntegrationRule>,25> userdefined_simd_intrules;
   
   protected:
     void DeleteCurveIPs ( void );
@@ -101,6 +102,30 @@ namespace ngfem
     void SetDefinedOnElements (shared_ptr<BitArray> adefinedonelem)
     {
       definedon_element = adefinedonelem;
+    }
+
+    void SetIntegrationRule(ELEMENT_TYPE et, const IntegrationRule& ir)
+    {
+      userdefined_intrules[int(et)] = make_unique<IntegrationRule>(ir.Copy());
+      userdefined_simd_intrules[int(et)] = make_unique<SIMD_IntegrationRule>(*userdefined_intrules[int(et)]);
+    }
+
+    void SetIntegrationRule(const IntegrationRule& ir)
+    {
+      for(auto i : Range(25))
+        {
+          userdefined_intrules[i] = make_unique<IntegrationRule>(ir.Copy());
+          userdefined_simd_intrules[i] = make_unique<SIMD_IntegrationRule>(*userdefined_intrules[i]);
+        }
+    }
+
+    inline const IntegrationRule& GetIntegrationRule(ELEMENT_TYPE et, int order) const
+    {
+      return userdefined_intrules[et] ? *userdefined_intrules[et] : SelectIntegrationRule(et,order);
+    }
+    inline const SIMD_IntegrationRule& GetSIMDIntegrationRule(ELEMENT_TYPE et, int order) const
+    {
+      return userdefined_simd_intrules[et] ? *userdefined_simd_intrules[et] : SIMD_SelectIntegrationRule(et,order);
     }
 
     /// defined only on some elements/facets/boundary elements
