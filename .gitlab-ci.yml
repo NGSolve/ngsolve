@@ -335,15 +335,6 @@ clang_no_fp_timings:
   <<: *t_clang
   <<: *t_timings
 
-.clang4_timings:
-  <<: *t_clang4
-  <<: *t_timings
-
-.clang4_no_fp_timings:
-  <<: *t_omit_frame_pointer
-  <<: *t_clang4
-  <<: *t_timings
-
 ############################################
 # Cleanup stage
 ############################################
