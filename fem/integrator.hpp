@@ -106,8 +106,8 @@ namespace ngfem
 
     void SetIntegrationRule(ELEMENT_TYPE et, const IntegrationRule& ir)
     {
-      userdefined_intrules[int(et)] = make_unique<IntegrationRule>(ir);
-      userdefined_simd_intrules[int(et)] = make_unique<SIMD_IntegrationRule>(ir);
+      userdefined_intrules[int(et)] = make_unique<IntegrationRule>(ir.Copy());
+      userdefined_simd_intrules[int(et)] = make_unique<SIMD_IntegrationRule>(*userdefined_intrules[int(et)]);
     }
 
     void SetIntegrationRule(const IntegrationRule& ir)
