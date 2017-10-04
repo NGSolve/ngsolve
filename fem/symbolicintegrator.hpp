@@ -518,8 +518,6 @@ public:
     // virtual IntegrationRule GetIntegrationRuleEB (const FiniteElement & fel, int facetnr, LocalHeap & lh) const;
     // virtual SIMD_IntegrationRule Get_SIMD_IntegrationRuleEB (const FiniteElement & fel, int facetnr, LocalHeap & lh) const;
     
-    void SetIntegrationRule (const IntegrationRule & _ir);
-
     virtual int GetDimension() const override { return trial_proxies[0]->Evaluator()->BlockDim(); }
 
     virtual void 
