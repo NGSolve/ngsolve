@@ -10,6 +10,7 @@
 
 #include <fem.hpp>
 #include <../ngstd/evalfunc.hpp>
+#include <algorithm>
 
 
 
@@ -4739,14 +4740,16 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
 
       if(realcompile)
       {
+        std::vector<string> link_flags;
         if(cf->IsComplex())
             maxderiv = 0;
         stringstream s;
         string pointer_code;
-        string top_code = "";
-        s << "#include<fem.hpp>" << endl;
-        s << "using namespace ngfem;" << endl;
-        s << "extern \"C\" {" << endl;
+        string top_code = ""
+             "#include<fem.hpp>\n"
+             "using namespace ngfem;\n"
+             "extern \"C\" {\n"
+             ;
 
         string parameters[3] = {"results", "deriv", "dderiv"};
 
@@ -4824,6 +4827,10 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
             s << code.body << endl;
             s << "}\n}" << endl << endl;
 
+            for(const auto &lib : code.link_flags)
+                if(std::find(std::begin(link_flags), std::end(link_flags), lib) == std::end(link_flags))
+                    link_flags.push_back(lib);
+
         }
         s << "}" << endl;
         string file_code = top_code + s.str();
@@ -4835,8 +4842,8 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
           codes.push_back(pointer_code);
         }
 
-        auto compile_func = [this, codes, maxderiv] () {
-              library.Compile( codes );
+        auto compile_func = [this, codes, link_flags, maxderiv] () {
+              library.Compile( codes, link_flags );
               if(cf->IsComplex())
               {
                   compiled_function_simd_complex = library.GetFunction<lib_function_simd_complex>("CompiledEvaluateSIMD");

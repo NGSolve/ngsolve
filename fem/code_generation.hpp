@@ -49,10 +49,13 @@ namespace ngfem
     string body;
     bool is_simd;
     int deriv;
+    std::vector<string> link_flags;
 
     string pointer;
 
     string AddPointer(const void *p );
+
+    void AddLinkFlag(string flag);
 
     static atomic<unsigned> id_counter;
     static string Map( string code, std::map<string,string> variables ) {
@@ -190,7 +193,7 @@ namespace ngfem
   public:
     Library() : lib(nullptr) {}
     // Compile a given string and load the library
-    void Compile( const std::vector<string> &codes );
+    void Compile(const std::vector<string> &codes, const std::vector<string> &libraries );
 
     void Load( string alib_name );
 
