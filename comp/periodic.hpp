@@ -46,15 +46,15 @@ namespace ngcomp
     { return space->GetAdditionalEvaluators (); }
 
     [[deprecated("Use GetDofNrs(NODE_TYPE(NT_VERTEX,nr) instead")]]    
-    virtual void GetVertexDofNrs (int vnr,  Array<DofId> & dnums) const override
-    { space->GetVertexDofNrs(vnr, dnums); }
+    virtual void GetVertexDofNrs (int vnr,  Array<DofId> & dnums) const override;
+    //{ space->GetVertexDofNrs(vnr, dnums); }
 
     [[deprecated("Use GetDofNrs(NODE_TYPE(NT_EDGE,nr) instead")]]        
-    virtual void GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const override
-    { space->GetEdgeDofNrs (ednr, dnums); }
+    virtual void GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const override;
+    //{ space->GetEdgeDofNrs (ednr, dnums); }
     
-    virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const override
-    { space->GetFaceDofNrs(fanr, dnums); }
+    virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const override;
+    //{ space->GetFaceDofNrs(fanr, dnums); }
     
     virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const override
     { space->GetInnerDofNrs(elnr, dnums); }
