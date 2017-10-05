@@ -1819,6 +1819,10 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                                                   attr("__flags_doc__")());
                   flags_doc["discontinuous"] = "bool = False\n"
                     "  Create discontinuous HDiv space";
+		  flags_doc["hodivfree"] = "bool = False\n"
+		    "  Remove high order element bubbles with non zero divergence";
+		  flags_doc["highest_order_dc"] = "bool = False\n"
+                    "  Activates relaxed H(div)-conformity. Allows normal discontinuity of highest order facet basis functions";
                   return flags_doc;
                 })
     .def("Average",
