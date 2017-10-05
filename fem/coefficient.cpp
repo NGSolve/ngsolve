@@ -24,8 +24,8 @@ namespace ngfem
   {
     string mycode =
       string("// GenerateCode() not overloaded for: ") + Demangle(typeid(*this).name()) + "\n"
-      + R"CODE_(    STACK_ARRAY({vscal_type}, {hmem}, mir.Size()*{dim});
-    {values_type} {values}({rows}, {cols}, &{hmem}[0]);
+      + R"CODE_(    STACK_ARRAY({stack_type}, {hmem}, {stack_size});
+    {values_type} {values}({rows}, {cols}, reinterpret_cast<{vscal_type}*>(&{hmem}[0]));
     {
       const CoefficientFunction & cf = *reinterpret_cast<CoefficientFunction*>({this});
       {values} = 0.0;
@@ -39,11 +39,13 @@ namespace ngfem
     string cols = "mir.IR().Size()";
 
     std::map<string,string> variables;
+    variables["scal_type"] = scal_type;
     variables["vscal_type"] = vscal_type;
     variables["values_type"] = "FlatMatrix<"+vscal_type+">";
     variables["values"] = values.S();
     variables["this"] =  code.AddPointer(this);
-    variables["dim"] = ToString(Dimension());
+    variables["stack_type"] = code.is_simd ? "SIMD<double>" : "double";
+    variables["stack_size"] = "mir.Size()*sizeof("+scal_type+")/sizeof(double)*"+ToString(Dimension());
     variables["rows"] = code.is_simd ? rows : cols;
     variables["cols"] = code.is_simd ? cols : rows;
     variables["hmem"] = Var("hmem", index).S();
