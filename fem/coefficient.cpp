@@ -4744,8 +4744,8 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
         stringstream s;
         string pointer_code;
         string top_code = "";
-        s << "#include<comp.hpp>" << endl;
-        s << "using namespace ngcomp;" << endl;
+        s << "#include<fem.hpp>" << endl;
+        s << "using namespace ngfem;" << endl;
         s << "extern \"C\" {" << endl;
 
         string parameters[3] = {"results", "deriv", "dderiv"};
