@@ -6,7 +6,7 @@
 namespace ngcomp
 {
 
-    template <int D, typename FEL = HDivFiniteElement<D-1> >
+  template <int D, typename FEL = HDivFiniteElement<D-1> >
 class DiffOpIdHDivSurface : public DiffOp<DiffOpIdHDivSurface<D, FEL> >
 {
 public:
@@ -29,7 +29,60 @@ public:
 	Trans (static_cast<const FEL&>(fel).GetShape(mip.IP(),lh));
     }
 
+  /*
+  template <typename AFEL, typename MIP, class TVX, class TVY>
+  static void ApplyTrans (const AFEL & fel, const MIP & mip,
+			  const TVX & x, TVY & y,
+			  LocalHeap & lh) 
+  {
+    throw Exception("in DiffOpIdHDivSurface::ApplyTrans");
+    HeapReset hr(lh);
+    typedef typename TVX::TSCAL TSCAL;
+    
+    Vec<D,TSCAL> hv = Trans (mip.GetJacobian()) * x;
+    hv *= (1.0/mip.GetJacobiDet());
+    y = Cast(fel).GetShape(mip.IP(),lh) * hv;
+  }
+  */
+
 };
+
+
+template <int D, typename FEL = HDivNormalFiniteElement<D-2> >
+class DiffOpIdVecHDivSurfaceBoundary : public DiffOp<DiffOpIdVecHDivSurfaceBoundary<D, FEL> >
+{
+public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D-2 };
+    enum { DIM_DMAT = D };
+    enum { DIFFORDER = 0 };
+
+    static const FEL & Cast(const FiniteElement & fel)
+    {
+        return static_cast<const FEL&> (fel);
+    }
+
+    template <typename AFEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+				MAT & mat, LocalHeap & lh)
+    {
+
+      throw Exception("Does not work yet!!!! eltrans 1D -> 3D, no normal vector available");
+      auto normal = Vec<3>(mip.GetNV());      
+      auto tangential = mip.GetTV();      
+      Vec<3> normalel = Cross(normal, tangential);
+      getchar();
+	
+      auto scaled_nv = (1.0/mip.GetJacobiDet()) * mip.GetNV();
+      mat = scaled_nv * Trans(Cast(fel).GetShape (mip.IP(), lh));
+      //throw Exception("in DiffOpIdVecHDivSurfaceBoundary::GenerateMatrix");      
+    }
+
+};
+
+  
+  
 
 template <int D, typename FEL = HDivFiniteElement<D-1> >
 class DiffOpDivHDivSurface : public DiffOp<DiffOpDivHDivSurface<D, FEL> >
@@ -208,6 +261,7 @@ public:
       {
 	evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHDiv<3>>>();	
 	evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdHDivSurface<3>>>();
+	evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpIdVecHDivSurfaceBoundary<3>>>();
 
 	flux_evaluator[VOL] =  make_shared<T_DifferentialOperator<DiffOpDivHDiv<3>>>();
 	flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpDivHDivSurface<3>>>();
@@ -446,7 +500,28 @@ public:
       
 	   default: throw Exception("illigal element in HDivHighOrderSurfaceFESpace::GetSFE");
 	   }   
-       }     
+       }
+     else if (ei.VB() == BBND)
+       {
+	 if(ma->GetElType(ei) == ET_SEGM)
+          {
+	    Ngs_Element ngel = ma->GetElement(ei);
+	    //HDivHighOrderNormalFiniteElement<1> * hofe = new (alloc)HDivHighOrderNormalFiniteElement<1>();
+	    auto * fe = new (alloc)HDivHighOrderNormalSegm<TrigExtensionMonomial>(order);
+	    fe -> SetVertexNumbers(ngel.Vertices());
+
+	    //I thnk this is not needed if we have a global edge order...
+	    HDivHighOrderNormalFiniteElement<1> * hofe =
+              dynamic_cast<HDivHighOrderNormalFiniteElement<1>*> (fe);
+	    	    
+	    hofe -> SetOrderInner(order);
+	    hofe -> ComputeNDof();
+
+	    return *hofe;
+	  }
+	 else
+	   throw Exception("illegal element in HDivHighOrderSurfaceFESpace :: GetFE BBND");
+       }
   }
 
   template<ELEMENT_TYPE ET>
