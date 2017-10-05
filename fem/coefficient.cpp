@@ -22,7 +22,44 @@ namespace ngfem
 
   void CoefficientFunction :: GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
-    code.header += string("// Missing implementation: ") + typeid(*this).name() + "\n";
+    string mycode =
+      string("// GenerateCode() not overloaded for: ") + Demangle(typeid(*this).name()) + "\n"
+      + R"CODE_(    STACK_ARRAY({vscal_type}, {hmem}, mir.Size()*{dim});
+    {values_type} {values}({rows}, {cols}, &{hmem}[0]);
+    {
+      const CoefficientFunction & cf = *reinterpret_cast<CoefficientFunction*>({this});
+      {values} = 0.0;
+      cf.Evaluate(mir, {values});
+    }
+    )CODE_";
+    auto values = Var("values", index);
+    string scal_type = IsComplex() ? "Complex" : "double";
+    string vscal_type = code.is_simd ? "SIMD<"+scal_type+">" : scal_type;
+    string rows = ToString(Dimension());
+    string cols = "mir.IR().Size()";
+
+    std::map<string,string> variables;
+    variables["vscal_type"] = vscal_type;
+    variables["values_type"] = "FlatMatrix<"+vscal_type+">";
+    variables["values"] = values.S();
+    variables["this"] =  code.AddPointer(this);
+    variables["dim"] = ToString(Dimension());
+    variables["rows"] = code.is_simd ? rows : cols;
+    variables["cols"] = code.is_simd ? cols : rows;
+    variables["hmem"] = Var("hmem", index).S();
+    code.header += Code::Map(mycode, variables);
+    if(code.is_simd)
+      {
+        TraverseDimensions( Dimensions(), [&](int ind, int i, int j) {
+            code.body += Var(index,i,j).Assign(values.S()+"("+ToString(ind)+",i)");
+          });
+      }
+    else
+      {
+        TraverseDimensions( Dimensions(), [&](int ind, int i, int j) {
+            code.body += Var(index,i,j).Assign(values.S()+"(i,"+ToString(ind)+")");
+          });
+      }
   }
 
   void CoefficientFunction :: PrintReport (ostream & ost) const
