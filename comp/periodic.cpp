@@ -132,16 +132,12 @@ namespace ngcomp {
       return fe;
     }
 
-
+  
   void PeriodicFESpace :: GetDofNrs(ElementId ei, Array<DofId> & dnums) const
     {
       space->GetDofNrs(ei,dnums);
       for (auto & d : dnums)
         if (d != -1) d = dofmap[d];
-      /*
-      for (int i = 0; i< dnums.Size(); i++)
-	dnums[i] = dofmap[dnums[i]];
-      */
     }
 
     void PeriodicFESpace :: GetDofNrs (NodeId ni, Array<DofId> & dnums) const

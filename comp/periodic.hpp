@@ -40,22 +40,19 @@ namespace ngcomp
     virtual size_t GetNDof () const override { return space->GetNDof(); }
     virtual size_t GetNDofLevel (int level) const override { return space->GetNDofLevel(level); }
 
-    virtual void GetDofNrs(ElementId ei, Array<DofId> & dnums) const override;
-    virtual void GetDofNrs (NodeId ni, Array<DofId> & dnums) const;
+    virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
+    virtual void GetDofNrs (NodeId ni, Array<DofId> & dnums) const override;
 
     virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const override
     { return space->GetAdditionalEvaluators (); }
 
     [[deprecated("Use GetDofNrs(NODE_TYPE(NT_VERTEX,nr) instead")]]    
     virtual void GetVertexDofNrs (int vnr,  Array<DofId> & dnums) const override;
-    //{ space->GetVertexDofNrs(vnr, dnums); }
 
     [[deprecated("Use GetDofNrs(NODE_TYPE(NT_EDGE,nr) instead")]]        
     virtual void GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const override;
-    //{ space->GetEdgeDofNrs (ednr, dnums); }
     
     virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const override;
-    //{ space->GetFaceDofNrs(fanr, dnums); }
     
     virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const override
     { space->GetInnerDofNrs(elnr, dnums); }
