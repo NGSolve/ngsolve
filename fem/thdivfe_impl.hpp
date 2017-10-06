@@ -161,7 +161,7 @@ namespace ngfem
         Vec<DIM, AutoDiff<DIM,SIMD<double>>> adp = mir[i];
         Vec<DIM,SIMD<double>> sum(0.0);
         static_cast<const FEL*> (this) ->         
-          T_CalcShape (&adp(0), SBLambda ([&] (size_t j, THDiv2Shape<DIM,SIMD<double>> shape)
+          T_CalcShape (&adp(0), SBLambda ([coefs,&sum] (size_t j, THDiv2Shape<DIM,SIMD<double>> shape)
                                           {
                                             Vec<DIM,SIMD<double>> vshape = shape;
                                             sum += coefs(j) * vshape;
@@ -180,13 +180,17 @@ namespace ngfem
     for (size_t i = 0; i < mir.Size(); i++)
       {
         Vec<DIM, AutoDiff<DIM,SIMD<double>>> adp = mir[i];
+        Vec<DIM, SIMD<double>> vali;
+        for (int k = 0; k < DIM; k++)
+          vali(k) = values(k,i);
         static_cast<const FEL*> (this) -> 
-          T_CalcShape (&adp(0), SBLambda ([&] (size_t j, THDiv2Shape<DIM,SIMD<double>> shape)
+          T_CalcShape (&adp(0), SBLambda ([=] (size_t j, THDiv2Shape<DIM,SIMD<double>> shape)
                                           {
                                             Vec<DIM,SIMD<double>> vshape = shape;                                            
                                             SIMD<double> sum = 0.0;
                                             for (int k = 0; k < DIM; k++)
-                                              sum += values(k,i) * vshape(k);
+                                              // sum += values(k,i) * vshape(k);
+                                              sum += vali(k) * vshape(k);
                                             coefs(j) += HSum(sum);
                                           }));
       }
