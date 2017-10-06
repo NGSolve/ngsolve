@@ -463,21 +463,21 @@ public:
     NGS_DLL_HEADER SymbolicLinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb,
                                   bool aelement_boundary);
 
-    virtual VorB VB() const { return vb; }
-    virtual string Name () const { return string ("Symbolic LFI"); }
+    virtual VorB VB() const override { return vb; }
+    virtual string Name () const override { return string ("Symbolic LFI"); }
     virtual int GetDimension() const override { return proxies[0]->Evaluator()->BlockDim(); }
 
     virtual void 
     CalcElementVector (const FiniteElement & fel,
 		       const ElementTransformation & trafo, 
 		       FlatVector<double> elvec,
-		       LocalHeap & lh) const;
+		       LocalHeap & lh) const override;
       
     virtual void 
     CalcElementVector (const FiniteElement & fel,
 		       const ElementTransformation & trafo, 
 		       FlatVector<Complex> elvec,
-		       LocalHeap & lh) const;
+		       LocalHeap & lh) const override;
 
     template <typename SCAL> 
     void T_CalcElementVector (const FiniteElement & fel,
@@ -508,9 +508,9 @@ public:
     NGS_DLL_HEADER SymbolicBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb,
                                     bool aelement_boundary);
 
-    virtual VorB VB() const { return vb; }
-    virtual bool IsSymmetric() const { return true; }  // correct would be: don't know
-    virtual string Name () const { return string ("Symbolic BFI"); }
+    virtual VorB VB() const override { return vb; }
+    virtual bool IsSymmetric() const override { return true; }  // correct would be: don't know
+    virtual string Name () const override { return string ("Symbolic BFI"); }
 
     using Integrator::GetIntegrationRule;
     NGS_DLL_HEADER virtual const IntegrationRule& GetIntegrationRule (const FiniteElement & fel, LocalHeap & lh) const;
@@ -524,25 +524,25 @@ public:
     CalcElementMatrix (const FiniteElement & fel,
 		       const ElementTransformation & trafo, 
 		       FlatMatrix<double> elmat,
-		       LocalHeap & lh) const;
+		       LocalHeap & lh) const override;
 
     virtual void 
     CalcElementMatrix (const FiniteElement & fel,
 		       const ElementTransformation & trafo, 
 		       FlatMatrix<Complex> elmat,
-		       LocalHeap & lh) const;    
+		       LocalHeap & lh) const override;    
 
     virtual void 
     CalcElementMatrixAdd (const FiniteElement & fel,
                           const ElementTransformation & trafo, 
                           FlatMatrix<double> elmat,
-                          LocalHeap & lh) const;
+                          LocalHeap & lh) const override;
     
     virtual void 
     CalcElementMatrixAdd (const FiniteElement & fel,
                           const ElementTransformation & trafo, 
                           FlatMatrix<Complex> elmat,
-                          LocalHeap & lh) const;    
+                          LocalHeap & lh) const override;    
 
     
     template <typename SCAL, typename SCAL_SHAPES, typename SCAL_RES>
@@ -562,7 +562,7 @@ public:
                                  const ElementTransformation & trafo, 
 				 FlatVector<double> elveclin,
                                  FlatMatrix<double> elmat,
-                                 LocalHeap & lh) const;
+                                 LocalHeap & lh) const override;
 
     template <typename SCAL, typename SCAL_SHAPES>
     void T_CalcLinearizedElementMatrixEB (const FiniteElement & fel,
@@ -577,7 +577,7 @@ public:
 			const FlatVector<double> elx, 
 			FlatVector<double> ely,
 			void * precomputed,
-			LocalHeap & lh) const;
+			LocalHeap & lh) const override;
 
     template <typename SCAL, typename SCAL_SHAPES>
     void T_ApplyElementMatrixEB (const FiniteElement & fel, 
