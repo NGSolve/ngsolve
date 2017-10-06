@@ -1,8 +1,15 @@
 #include "fem.hpp"
+#include <algorithm>
 
 namespace ngfem
 {
     atomic<unsigned> Code::id_counter{0};
+
+    void Code::AddLinkFlag(string flag)
+    {
+        if(std::find(std::begin(link_flags), std::end(link_flags), flag) == std::end(link_flags))
+          link_flags.push_back(flag);
+    }
 
     string Code::AddPointer(const void *p)
     {
@@ -29,7 +36,7 @@ namespace ngfem
 #endif // WIN32
     }
 
-    void Library::Compile(const std::vector<string> &codes )
+    void Library::Compile(const std::vector<string> &codes, const std::vector<string> &link_flags )
     {
       static ngstd::Timer tcompile("CompiledCF::Compile");
       static ngstd::Timer tlink("CompiledCF::Link");
@@ -61,6 +68,8 @@ namespace ngfem
         string slink = "cmd /C \"ngsld.bat /OUT:" + prefix+".dll " + object_files + "\"";
 #else
         string slink = "ngsld -shared " + object_files + " -o " + prefix + ".so -lngstd -lngbla -lngfem";
+        for (auto flag : link_flags)
+            slink += " "+flag;
 #endif
       int err = system(slink.c_str());
       if (err) throw Exception ("problem calling linker");      

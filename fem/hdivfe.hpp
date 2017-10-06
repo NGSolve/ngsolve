@@ -139,7 +139,7 @@ namespace ngfem
 			     int order, int shape = 1) const;
 
 
-    NGS_DLL_HEADER virtual std::list<std::tuple<std::string,double>> Timing () const;
+    virtual std::list<std::tuple<std::string,double>> Timing () const;
   };
 
 
