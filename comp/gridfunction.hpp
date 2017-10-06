@@ -46,7 +46,6 @@ namespace ngcomp
     virtual bool DefinedOn (const ElementTransformation & trafo);
     void SelectComponent (int acomp) { comp = acomp; }
     const GridFunction & GetGridFunction() const { return *gf; }
-    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const;
     virtual Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const;
 
