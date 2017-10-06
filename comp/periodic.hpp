@@ -41,6 +41,7 @@ namespace ngcomp
     virtual size_t GetNDofLevel (int level) const override { return space->GetNDofLevel(level); }
 
     virtual void GetDofNrs(ElementId ei, Array<DofId> & dnums) const override;
+    virtual void GetDofNrs (NodeId ni, Array<DofId> & dnums) const;
 
     virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const override
     { return space->GetAdditionalEvaluators (); }

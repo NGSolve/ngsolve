@@ -144,6 +144,12 @@ namespace ngcomp {
       */
     }
 
+    void PeriodicFESpace :: GetDofNrs (NodeId ni, Array<DofId> & dnums) const
+    {
+      space->GetDofNrs(ni, dnums);
+      for (auto & d : dnums)
+        if (d != -1) d = dofmap[d];
+    }
 
     void PeriodicFESpace :: GetVertexDofNrs (int vnr,  Array<DofId> & dnums) const
     { 
