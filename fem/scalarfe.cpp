@@ -296,6 +296,7 @@ namespace ngfem
     Matrix<SIMD<double>> advalues(D, simdir.Size());
     FE_ElementTransformation<D,D> trafo(ElementType());
     static LocalHeap lh (100000, "FE - Timing");
+    auto & mir = trafo(ir, lh);
     auto & simdmir = trafo(simdir, lh);
     
     coefs = 1;
@@ -330,7 +331,7 @@ namespace ngfem
 
     time = RunTiming([&]() {
                      for (size_t i = 0; i < steps; i++)
-                       this -> EvaluateGrad(simdir, coefs, advalues);
+                       this -> EvaluateGrad(simdmir, coefs, advalues);
                      }, maxtime);
     timings.push_back(make_tuple("Evaluate Grad(SIMD)", time/steps*1e9/(D*GetNDof()*ir.GetNIP())));
 
