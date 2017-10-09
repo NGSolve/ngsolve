@@ -3256,7 +3256,8 @@ namespace ngfem
             static Timer tapply("SymbolicFacetBFI::Apply - apply", 2);
             static Timer tcoef("SymbolicFacetBFI::Apply - coef", 2);
             static Timer tapplyt("SymbolicFacetBFI::Apply - apply-trans", 2); 
-            
+
+            ThreadRegionTimer reg(tall, TaskManager::GetThreadId());
             HeapReset hr(lh);
             // tall.Start();
             
