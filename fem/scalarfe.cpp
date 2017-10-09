@@ -296,6 +296,7 @@ namespace ngfem
     Matrix<SIMD<double>> advalues(D, simdir.Size());
     FE_ElementTransformation<D,D> trafo(ElementType());
     static LocalHeap lh (100000, "FE - Timing");
+    HeapReset hr(lh);
     auto & mir = trafo(ir, lh);
     auto & simdmir = trafo(simdir, lh);
     
