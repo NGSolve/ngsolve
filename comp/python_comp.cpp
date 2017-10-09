@@ -2377,6 +2377,7 @@ check_unused : bool
          "add integrator to bilinear-form")
     
     .def("__iadd__",[](BF& self, shared_ptr<BilinearFormIntegrator> other) -> BilinearForm& { self += other; return self; } )
+    .def_property_readonly("space", [](BF& self) { return self.GetFESpace(); })
 
     .def_property_readonly("integrators", [](BF & self)
                    {
