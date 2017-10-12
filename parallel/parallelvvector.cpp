@@ -141,7 +141,7 @@ namespace ngla
   void ParallelBaseVector :: ISend ( int dest, MPI_Request & request ) const
   {
     MPI_Datatype mpi_t = this->paralleldofs->MyGetMPI_Type(dest);
-    MPI_Isend( Memory(), 1, mpi_t, dest, MPI_TAG_SOLVE, ngs_comm, &request);
+    MPI_Isend( Memory(), 1, mpi_t, dest, MPI_TAG_SOLVE, this->paralleldofs->GetCommunicator(), &request);
   }
 
   /*
@@ -300,7 +300,7 @@ namespace ngla
     MPI_Irecv( &( (*recvvalues)[dest][0]), 
 	       (*recvvalues)[dest].Size(), 
 	       MPI_TS, dest, 
-	       MPI_TAG_SOLVE, ngs_comm, &request);
+	       MPI_TAG_SOLVE, this->paralleldofs->GetCommunicator(), &request);
   }
 
   /*
