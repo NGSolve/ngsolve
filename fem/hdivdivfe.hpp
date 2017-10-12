@@ -727,16 +727,17 @@ namespace ngfem
 
   };
 
-  class Prism_Dl1xDl3_symtensor_Dl2xDl3_u
+  class Prism_Dl1xDl3_symtensor_Dl2xDl4_u
   {
-    AutoDiff<3> l1,l2,l3;
+    AutoDiff<3> l1,l2,l3, l4;
     AutoDiff<3> u;
   public:
-    Prism_Dl1xDl3_symtensor_Dl2xDl3_u ( AutoDiff<3> lam1, AutoDiff<3> lam2, AutoDiff<3> alz, AutoDiff<3> av) : l1(lam1), l2(lam2), l3(alz), u(av) { ; }
+    Prism_Dl1xDl3_symtensor_Dl2xDl4_u ( AutoDiff<3> lam1, AutoDiff<3> lam2, AutoDiff<3> alz1, AutoDiff<3> alz2, AutoDiff<3> av) 
+      : l1(lam1), l2(lam2), l3(alz1), l4(alz2), u(av) { ; }
     Vec<6> Shape() 
     { 
       auto rotlam1 = Cross(l1, l3);
-      auto rotlam2 = Cross(l2, l3);
+      auto rotlam2 = Cross(l2, l4);
 
       Vec<6> sigma(0.);
       sigma[0] = u.Value()*rotlam1.DValue(0)*rotlam2.DValue(0);
@@ -760,7 +761,7 @@ namespace ngfem
     Vec<3> DivShape()
     {
       auto lam1 = Cross(l1, l3);
-      auto lam2 = Cross(l2, l3);
+      auto lam2 = Cross(l2, l4);
       return Vec<3> (u.DValue(0)*lam1.DValue(0)*lam2.DValue(0) + 
         0.5*(u.DValue(1)*(lam1.DValue(0)*lam2.DValue(1)+lam2.DValue(0)*lam1.DValue(1)) + u.DValue(2)*(lam1.DValue(0)*lam2.DValue(2)+lam2.DValue(0)*lam1.DValue(2))),
         u.DValue(1)*lam1.DValue(1)*lam2.DValue(1) + 
@@ -1025,7 +1026,7 @@ namespace ngfem
 
         for(int j = 0; j <= order_facet[fa][0]+incrorder_zz1_bd; j++)
           for(int k = 0; k <= order_facet[fa][0]+incrorder_zz1_bd-j; k++)
-            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl3_u(lx[fav[0]], lx[fav[1]], lx[fav[2]], leg_u[j]*leg_v[k]*lz[fav[0]]);
+            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u(lx[fav[0]], lx[fav[1]], lx[fav[2]], lx[fav[2]], leg_u[j]*leg_v[k]*lz[fav[0]]);
       }
       // quad faces -- use face bubbles of trig multiplied by leg_w
       // (px+1)(pz+1)
@@ -1053,20 +1054,20 @@ namespace ngfem
         LegendrePolynomial::Eval(order_facet[fa][1]+incrorder_xx2_bd,lz[fmax]*2-1,leg_w);
 
 
-        ScaledLegendrePolynomial(order_facet[fa][0]+incrorder_xx1_bd, lx[fmax]-lx[ftrig], 1-lx[fmax]-lx[ftrig], leg_u);      
+        ScaledLegendrePolynomial(order_facet[fa][0]+incrorder_xx1_bd, lx[fmax]-lx[ftrig], lx[fmax]+lx[ftrig], leg_u);      
 
         if(rotate)
           for(int k = 0; k <= order_facet[fa][1]+incrorder_xx2_bd; k++)
             for(int l = 0; l <= order_facet[fa][0]+incrorder_xx1_bd; l++)
             {
-              shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl3_u(lx[fmax], lx[ftrig], lz[fmax], leg_u[l]* leg_w[k]);
+              shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u(lz[fmax], lz[fz], lx[fmax], lx[ftrig], leg_u[l]* leg_w[k]);
             }
 
         else
           for(int l = 0; l <= order_facet[fa][0]+incrorder_xx1_bd; l++)
             for(int k = 0; k <= order_facet[fa][1]+incrorder_xx2_bd; k++)
             {
-              shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl3_u(lx[fmax], lx[ftrig], lz[fmax], leg_u[l]* leg_w[k]);
+              shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u(lx[fmax], lx[ftrig], lz[fmax], lz[fz], leg_u[l]* leg_w[k]);
             }
 
 
@@ -1083,17 +1084,15 @@ namespace ngfem
       LegendrePolynomial::Eval(oi+incrorder_zz1, 2*lx[2]-1, leg_v);
       LegendrePolynomial::Eval(oi+incrorder_xx2, 2*lz[0]-1, leg_w);
 
-      // ------------------------------------
-      // shorter, not based on complex-based triangle shapes
       for(int k=0; k<=oi+incrorder_xx2; k++)
       {
         for(int i = 0; i <= oi-1+incrorder_xx1; i++)
         {
           for(int j = 0; j+i <= oi-1+incrorder_xx1; j++)
           {
-            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl3_u(lx[0], lx[1], lz[0], lx[2]*leg_u[i]*leg_v[j]* leg_w[k]);
-            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl3_u(lx[2], lx[0], lz[0], lx[1]*leg_u[i]*leg_v[j]* leg_w[k]);
-            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl3_u(lx[1], lx[2], lz[0], lx[0]*leg_u[i]*leg_v[j]* leg_w[k]);
+            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u(lx[0], lx[1], lz[0], lz[0], lx[2]*leg_u[i]*leg_v[j]* leg_w[k]);
+            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u(lx[2], lx[0], lz[0], lz[0], lx[1]*leg_u[i]*leg_v[j]* leg_w[k]);
+            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u(lx[1], lx[2], lz[0], lz[0], lx[0]*leg_u[i]*leg_v[j]* leg_w[k]);
           }
         }
       }
@@ -1106,8 +1105,8 @@ namespace ngfem
         {
           for (int k=0; k<=oi; k++)
           {
-            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl3_u(lz[0], lx[1], lx[0], leg_u[i]*leg_v[j]*leg_w[k]);
-            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl3_u(lz[0], lx[0], lx[1], leg_u[i]*leg_v[j]*leg_w[k]);
+            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u(lz[0], lx[1], lx[0], lx[0], leg_u[i]*leg_v[j]*leg_w[k]);
+            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u(lz[0], lx[0], lx[1], lx[1], leg_u[i]*leg_v[j]*leg_w[k]);
           }
         }
       }
@@ -1120,7 +1119,7 @@ namespace ngfem
         {
           for(int j=0; j<=oi+incrorder_zz1-i; j++)
           {
-            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl3_u(lx[0], lx[2], lx[1], leg_u[i]*leg_v[j]*bubw);
+            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u(lx[0], lx[2], lx[1], lx[1], leg_u[i]*leg_v[j]*bubw);
           }
         }
       }
@@ -1129,6 +1128,247 @@ namespace ngfem
     };
 
   };
+
+
+
+
+  ////////////////////// SURFACE ////////////////////////////
+    template <int DIM>
+  class HDivDivSurfaceFiniteElement : public FiniteElement
+  {
+  public:
+    using FiniteElement::FiniteElement;
+    using FiniteElement::ndof;
+    using FiniteElement::order;
+
+    virtual void CalcMappedShape_Matrix (const MappedIntegrationPoint<DIM,DIM+1> & mip,
+      BareSliceMatrix<double> shape) const = 0;
+
+    virtual void CalcMappedShape_Vector (const MappedIntegrationPoint<DIM,DIM+1> & mip,
+      BareSliceMatrix<double> shape) const = 0;
+
+  };
+
+
+  template <ELEMENT_TYPE ET> class HDivDivSurfaceFE;
+
+  
+  template <ELEMENT_TYPE ET>
+  class T_HDivDivSurfaceFE : public HDivDivSurfaceFiniteElement<ET_trait<ET>::DIM>,
+    public VertexOrientedFE<ET>
+  {
+  protected:
+    enum { DIM = ET_trait<ET>::DIM };
+    enum { DIM_STRESS = ((DIM+2)*(DIM+1))/2 };
+    
+    using VertexOrientedFE<ET>::vnums;
+    using HDivDivSurfaceFiniteElement<ET_trait<ET>::DIM>::ndof;
+    using HDivDivSurfaceFiniteElement<ET_trait<ET>::DIM>::order;
+
+    INT<DIM> order_inner;
+
+
+  public:
+    using VertexOrientedFE<ET>::SetVertexNumbers;
+    
+    T_HDivDivSurfaceFE (int aorder)
+    {
+      order = aorder;
+      order_inner = aorder;
+    }
+    
+    virtual ELEMENT_TYPE ElementType() const { return ET; }
+    const HDivDivSurfaceFE<ET> * Cast() const { return static_cast<const HDivDivSurfaceFE<ET>*> (this); } 
+    
+    INLINE void SetOrderInner (INT<DIM,int> order) { order_inner = order; }
+
+    virtual void ComputeNDof()
+    {
+      cout << "Error, T_HDivDivSurfaceFE<ET>:: ComputeNDof not available for base class" << endl;
+    }
+
+    virtual void CalcMappedShape_Vector (const MappedIntegrationPoint<DIM,DIM+1> & mip,
+                            BareSliceMatrix<double> shape) const
+    {
+      Vec<DIM, AutoDiff<DIM+1>> adp = mip;
+      Vec<DIM, AutoDiffDiff<DIM+1>> addp;
+      for (int i=0; i<DIM+1; i++)
+      {
+        addp[i].Value() = adp[i].Value();
+        addp[i].LoadGradient(&adp[i].DValue(0));
+      }
+      Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM+1>> (addp), SBLambda([&] (int nr, auto val)
+                                          {
+                                            shape.Row(nr).AddSize(DIM_STRESS) = val.Shape();
+                                          }));
+    }
+
+
+    virtual void CalcMappedShape_Matrix (const MappedIntegrationPoint<DIM,DIM+1> & mip,
+                            BareSliceMatrix<double> shape) const
+    {
+      Vec<DIM, AutoDiff<DIM+1>> adp = mip;
+      Vec<DIM, AutoDiffDiff<DIM+1>> addp;
+      for (int i=0; i<DIM+1; i++)
+      {
+        addp[i].Value() = adp[i].Value();
+        addp[i].LoadGradient(&adp[i].DValue(0));
+      }
+      Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM+1>> (addp),SBLambda([&](int nr,auto val)
+      {
+        Vec<DIM_STRESS> vecshape = val.Shape();
+        BareVector<double> matshape = shape.Row(nr);
+        VecToSymMat<DIM+1> (vecshape, matshape);
+      }));
+    }
+
+
+  };
+
+  template <> class HDivDivSurfaceFE<ET_SEGM> : public T_HDivDivSurfaceFE<ET_SEGM> 
+  {
+    
+  public:
+    using T_HDivDivSurfaceFE<ET_SEGM> :: T_HDivDivSurfaceFE;
+
+    virtual void ComputeNDof()
+    {
+      order = 0;
+      ndof = 0;
+      ndof += order_inner[0]+1;
+      order = max2(order,order_inner[0]);
+
+    }
+   template <typename Tx, typename TFA> 
+    void T_CalcShape (TIP<1,Tx> ip/*AutoDiffDiff<2> hx[2]*/, TFA & shape) const
+    {
+      auto x = ip.x;
+      AutoDiffDiff<2> ddlami[2] ={ x, 1-x };
+      
+      int ii = 0;
+      
+      ArrayMem<AutoDiffDiff<2>,20> u(order_inner[0]+2);
+      
+      int es = 0,ee = 1;
+      if(vnums[es] > vnums[ee]) swap (es,ee);
+
+      AutoDiffDiff<2> ls = ddlami[es],le = ddlami[ee];
+
+      IntegratedLegendreMonomialExt::Calc(order_inner[0]+2, le-ls,u);
+
+      for(int l = 0; l <= order_inner[0]; l++)
+        shape[ii++] = SigmaGrad (u[l]);
+
+      
+    };
+  };
+
+
+  template <> class HDivDivSurfaceFE<ET_TRIG> : public T_HDivDivSurfaceFE<ET_TRIG> 
+  {
+    
+  public:
+    using T_HDivDivSurfaceFE<ET_TRIG> :: T_HDivDivSurfaceFE;
+
+    virtual void ComputeNDof()
+    {
+      order = 0;
+      ndof = 0;
+      ndof += (order_inner[0]+1+HDivDivFE<ET_PRISM>::incrorder_zz1_bd)*(order_inner[0]+2+HDivDivFE<ET_PRISM>::incrorder_zz1_bd)/2;
+      order = max2(order, order_inner[0]+HDivDivFE<ET_PRISM>::incrorder_zz1_bd);
+    }
+
+
+    template <typename Tx, typename TFA> 
+    void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
+    {
+      AutoDiffDiff<3> x = ip.x, y = ip.y;
+      AutoDiff<3> xx(x.Value(), &x.DValue(0));
+      AutoDiff<3> yy(y.Value(), &y.DValue(0));
+      AutoDiff<3> lx[6] ={ xx, yy, 1-xx-yy};
+      int ii = 0;
+
+      ArrayMem<AutoDiff<3>,20> leg_u(order_inner[0]+2), leg_v(order_inner[0]+3);
+
+      
+        int fav[3] ={0,1,2};
+
+        //Sort vertices  first edge op minimal vertex
+        if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]);
+        if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
+        if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]);
+        
+        leg_u.SetSize(order_inner[0]+HDivDivFE<ET_PRISM>::incrorder_zz1_bd+1);
+        leg_v.SetSize(order_inner[0]+HDivDivFE<ET_PRISM>::incrorder_zz1_bd+1);
+        ScaledLegendrePolynomial(order_inner[0]+HDivDivFE<ET_PRISM>::incrorder_zz1_bd,lx[fav[0]]-lx[fav[1]],1-lx[fav[0]]-lx[fav[1]],leg_u);
+        LegendrePolynomial::Eval(order_inner[0]+HDivDivFE<ET_PRISM>::incrorder_zz1_bd,2 * lx[fav[2]] - 1,leg_v);
+
+        for(int j = 0; j <= order_inner[0]+HDivDivFE<ET_PRISM>::incrorder_zz1_bd; j++)
+          for(int k = 0; k <= order_inner[0]+HDivDivFE<ET_PRISM>::incrorder_zz1_bd-j; k++)
+            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u(lx[fav[0]], lx[fav[1]], lx[fav[2]], lx[fav[2]], leg_u[j]*leg_v[k]);
+      }
+  };
+
+
+    template <> class HDivDivSurfaceFE<ET_QUAD> : public T_HDivDivSurfaceFE<ET_QUAD> 
+  {
+    
+  public:
+    using T_HDivDivSurfaceFE<ET_QUAD> :: T_HDivDivSurfaceFE;
+
+    virtual void ComputeNDof()
+    {
+      order = 0;
+      ndof = 0;
+      ndof += (order_inner[0]+1+HDivDivFE<ET_PRISM>::incrorder_xx1_bd)*(order_inner[1]+1+HDivDivFE<ET_PRISM>::incrorder_xx2_bd);
+      order = max2(order, order_inner[0]+HDivDivFE<ET_PRISM>::incrorder_xx1_bd);
+      order = max2(order, order_inner[1]+HDivDivFE<ET_PRISM>::incrorder_xx2_bd);
+    }
+
+
+    template <typename Tx, typename TFA> 
+    void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
+    {
+      AutoDiffDiff<3> x = ip.x, z = ip.y;
+      AutoDiff<3> xx(x.Value(), &x.DValue(0));
+      AutoDiff<3> zz(z.Value(), &z.DValue(0));
+      AutoDiff<3> sigma[4] = {1-xx+1-zz, xx+1-zz, xx+zz, 1-xx+zz};
+      int ii = 0;
+      
+
+      ArrayMem<AutoDiff<3>,20> leg_u(order_inner[0]+2);
+      ArrayMem<AutoDiff<3>,20> leg_w(order_inner[1]+2);
+
+      
+      int fmax = 0;
+      for(int j = 1; j < 4; j++)
+        if(vnums[j] > vnums[fmax]) fmax = j;
+
+      int f1, f2;
+      f1 = (fmax+1)%4;
+      f2 = (fmax+3)%4;
+
+
+      if(vnums[f1] > vnums[f2])
+      {
+        swap(f1,f2);
+      }
+
+      LegendrePolynomial::Eval(order_inner[0],sigma[fmax] - sigma[f1],leg_u);
+      LegendrePolynomial::Eval(order_inner[0],sigma[fmax] - sigma[f2],leg_w);
+
+      for(int k = 0; k <= order_inner[0]+HDivDivFE<ET_PRISM>::incrorder_xx2_bd; k++)
+        for(int l = 0; l <= order_inner[0]+HDivDivFE<ET_PRISM>::incrorder_xx1_bd; l++)
+        {
+          shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u(0.5*(sigma[fmax]-sigma[f2]),-0.5*(sigma[fmax]-sigma[f2]),
+            0.5*(sigma[fmax]-sigma[f1]),-0.5*(sigma[fmax]-sigma[f1]),leg_u[l]* leg_w[k]);
+        }
+                
+
+    }
+  };
+
+
 
 
 }
