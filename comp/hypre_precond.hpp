@@ -49,6 +49,7 @@ public:
   virtual void Mult (const BaseVector & f, BaseVector & u) const;
   virtual int VHeight() const { return pardofs->GetNDofLocal();}
   virtual int VWidth() const { return pardofs->GetNDofLocal();}
+  virtual const BaseMatrix & GetAMatrix() const override { return bfa->GetMatrix(); }
 
   virtual const char * ClassName() const
   { return "HYPRE AMG Preconditioner"; }
