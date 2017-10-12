@@ -24,8 +24,9 @@ namespace ngla
   {
     inv = nullptr;
     
-    int id = MyMPI_GetId (pardofs -> GetCommunicator());
-    int ntasks = MyMPI_GetNTasks (pardofs -> GetCommunicator());
+    MPI_Comm comm = pardofs->GetCommunicator();
+    int id = MyMPI_GetId (comm);
+    int ntasks = MyMPI_GetNTasks(comm);
 
     // consistent enumeration
     
@@ -42,7 +43,7 @@ namespace ngla
     Array<int> first_master_dof(ntasks);
     MPI_Allgather (&num_master_dofs, 1, MPI_INT, 
 		   &first_master_dof[0], 1, MPI_INT, 
-		   pardofs -> GetCommunicator());
+		   comm);
 
     
     int num_glob_dofs = 0;
@@ -145,10 +146,10 @@ namespace ngla
 		  }
 	    }
 
-	MyMPI_Send (rows, 0);
-	MyMPI_Send (cols, 0);
-	MyMPI_Send (vals, 0);
-	MyMPI_Send (global_nums, 0);
+	MyMPI_Send (rows, 0, MPI_TAG_SOLVE, comm);
+	MyMPI_Send (cols, 0, MPI_TAG_SOLVE, comm);
+	MyMPI_Send (vals, 0, MPI_TAG_SOLVE, comm);
+	MyMPI_Send (global_nums, 0, MPI_TAG_SOLVE, comm);
 
 #ifdef USE_MUMPS
 	if (mat.GetInverseType() == MUMPS)
@@ -165,6 +166,9 @@ namespace ngla
       {
 	cout << "create masterinverse" << endl;
 
+	bool symmetric = (dynamic_cast<const SparseMatrixSymmetric<TM>*>(&mat) != NULL);
+	cout << "symmetric? " << symmetric << endl;
+
 	Array<int> rows, cols;
 	Array<TM> vals;
 	HashTable<INT<1>, int> ht_globdofs(100000);
@@ -176,10 +180,10 @@ namespace ngla
 	    Array<TM> hvals;
 	    Array<int> hglobid;
 
-	    MyMPI_Recv (hrows, src);
-	    MyMPI_Recv (hcols, src);
-	    MyMPI_Recv (hvals, src);
-	    MyMPI_Recv (hglobid, src);
+	    MyMPI_Recv (hrows, src, MPI_TAG_SOLVE, comm);
+	    MyMPI_Recv (hcols, src, MPI_TAG_SOLVE, comm);
+	    MyMPI_Recv (hvals, src, MPI_TAG_SOLVE, comm);
+	    MyMPI_Recv (hglobid, src, MPI_TAG_SOLVE, comm);
 
 	    *testout << "got from P" << src << ":" << endl
 		     << "rows " << endl << hrows << endl
@@ -212,7 +216,7 @@ namespace ngla
 	for (int i = 0; i < rows.Size(); i++)
 	  {
 	    int r = rows[i], c = cols[i];
-	    if (r < c) swap (r, c);
+	    if (symmetric && (r < c)) swap (r, c);
 	    graph.AddUnique (r, c);
 	  }
 
@@ -225,12 +229,13 @@ namespace ngla
 	cout << "now build matrix" << endl;
 
 	// SparseMatrixSymmetric<TM> matrix(els_per_row);
-        auto matrix = make_shared<SparseMatrixSymmetric<TM>> (els_per_row);
+        auto matrix = symmetric ? make_shared<SparseMatrixSymmetric<TM>> (els_per_row)
+	  : make_shared<SparseMatrix<TM>> (els_per_row);
 
 	for (int i = 0; i < rows.Size(); i++)
 	  {
 	    int r = rows[i], c = cols[i];
-	    if (r < c) swap (r, c);
+	    if (symmetric && (r < c) ) swap (r, c);
 	    matrix->CreatePosition(r, c);
 	  }
 	matrix->AsVector() = 0.0;
@@ -238,7 +243,7 @@ namespace ngla
 	for (int i = 0; i < rows.Size(); i++)
 	  {
 	    int r = rows[i], c = cols[i];
-	    if (r < c) swap (r, c);
+	    if (symmetric && (r < c)) swap (r, c);
 	    (*matrix)(r,c) += vals[i];
 	  }
 
@@ -261,9 +266,10 @@ namespace ngla
   void MasterInverse<TM> :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
     typedef typename mat_traits<TM>::TV_ROW TV;
-
-    int id = MyMPI_GetId (pardofs -> GetCommunicator());
-    int ntasks = MyMPI_GetNTasks (pardofs -> GetCommunicator());
+    
+    MPI_Comm comm = pardofs->GetCommunicator();
+    int id = MyMPI_GetId(comm);
+    int ntasks = MyMPI_GetNTasks(comm);
 
     bool is_x_cum = (dynamic_cast_ParallelBaseVector(x) . Status() == CUMULATED);
     x.Distribute();
@@ -278,14 +284,14 @@ namespace ngla
 	for (int i = 0; i < select.Size(); i++)
 	  lx[i] = fx(select[i]);
 	
-	MPI_Request request = MyMPI_ISend (lx, 0, MPI_TAG_SOLVE);
+	MPI_Request request = MyMPI_ISend (lx, 0, MPI_TAG_SOLVE, comm);
 	MPI_Request_free (&request);
 
 	// only for MUMPS:
 	if (inv)
 	  y = (*inv) * x;
 	
-	request = MyMPI_IRecv (lx, 0, MPI_TAG_SOLVE);
+	request = MyMPI_IRecv (lx, 0, MPI_TAG_SOLVE, comm);
 	MPI_Wait (&request, MPI_STATUS_IGNORE);
 
 	for (int i = 0; i < select.Size(); i++)
@@ -310,7 +316,7 @@ namespace ngla
 	    FlatArray<int> selecti = loc2glob[src];
 
 	    Array<TV> lx(selecti.Size());
-	    MyMPI_Recv (lx, src);
+	    MyMPI_Recv (lx, src, MPI_TAG_SOLVE, comm);
 
 	    for (int i = 0; i < selecti.Size(); i++)
 	      hx(selecti[i]) += lx[i];
@@ -324,7 +330,7 @@ namespace ngla
 	    FlatArray<int> selecti = loc2glob[src];
 	    for (int j = 0; j < selecti.Size(); j++)
 	      exdata[src][j] = hy(selecti[j]);
-	    requ.Append (MyMPI_ISend (exdata[src], src, MPI_TAG_SOLVE));
+	    requ.Append (MyMPI_ISend (exdata[src], src, MPI_TAG_SOLVE, comm));
 	  }
 	MyMPI_WaitAll (requ);
       }
@@ -422,7 +428,7 @@ namespace ngla
     if (!dmat) return NULL;
 
 #ifdef USE_MUMPS
-    bool symmetric = dynamic_cast<const SparseMatrixSymmetricTM<TM>*> (mat.get()) != NULL;
+    bool symmetric = dynamic_cast<const SparseMatrixSymmetric<TM>*> (mat.get()) != NULL;
     if (mat->GetInverseType() == MUMPS)
       return make_shared<ParallelMumpsInverse<TM>> (*dmat, subset, nullptr, paralleldofs, symmetric);
     else 
