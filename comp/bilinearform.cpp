@@ -3405,6 +3405,8 @@ namespace ngcomp
                            if(facet2 > facet)
                              {
                                ma->GetFacetElements (facet2, elnums_per);
+                               if (elnums_per.Size() > 1)
+                                 throw Exception("DG-Apply failed due to invalid periodicity.");
                                elnums.Append(elnums_per[0]);
                              }
                            else if(facet2 < facet)
@@ -3507,16 +3509,21 @@ namespace ngcomp
                    for (int facnr1 : Range(fnums1))
                      {
                        HeapReset hr(lh);
-                       
-                       ma->GetFacetElements(fnums1[facnr1],elnums);
+                       int facet = fnums1[facnr1];
+                       int facet2 = fnums1[facnr1];
+
+                       ma->GetFacetElements(facet,elnums);
                        if (elnums.Size()<2) {
 #ifdef PARALLEL
 			 if( (ma->GetDistantProcs (NodeId(StdNodeType(NT_FACET, ma->GetDimension()), fnums1[facnr1])).Size() > 0) && (MyMPI_GetNTasks()>1) )
 			   continue;
 #endif
-                         if(ma->GetPeriodicFacet(fnums1[facnr1])!=fnums1[facnr1])
+                         facet2 = ma->GetPeriodicFacet(fnums1[facnr1]);
+                         if(facet2!=facet)
                            {
-                             ma->GetFacetElements (ma->GetPeriodicFacet(fnums1[facnr1]), elnums_per);
+                             ma->GetFacetElements (facet2, elnums_per);
+                             if (elnums_per.Size() > 1)
+                               throw Exception("DG-Apply failed due to invalid periodicity.");
                              elnums.Append(elnums_per[0]);
                            }
                        }
@@ -3586,8 +3593,8 @@ namespace ngcomp
                        ElementId ei2(VOL, el2);
                        
                        fnums2 = ma->GetElFacets(ei2);
-                       int facnr2 = fnums2.Pos(ma->GetPeriodicFacet(fnums1[facnr1]));
-
+                       int facnr2 = fnums2.Pos(facet2);
+                       
                        ElementTransformation & eltrans1 = ma->GetTrafo (ei1, lh);
                        ElementTransformation & eltrans2 = ma->GetTrafo (ei2, lh);
                        
