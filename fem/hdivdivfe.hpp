@@ -1132,6 +1132,143 @@ namespace ngfem
 
 
 
+    template <> class HDivDivFE<ET_HEX> : public T_HDivDivFE<ET_HEX> 
+  {
+  public:
+    using T_HDivDivFE<ET_HEX> :: T_HDivDivFE;
+
+    virtual void ComputeNDof()
+    {
+      order = 0;
+      ndof = 0;
+      for (int i=0; i<6; i++)
+      {
+        ndof += (order_facet[i][0]+1)*(order_facet[i][0]+1);
+        order = max2(order, order_facet[i][0]);
+      }
+      int p = order_inner[0];
+      int ninner = 3*p*(p+2)*(p+2) + 3*(p+2)*(p+1)*(p+1);
+      ndof += ninner; 
+
+      order = max2(order, p);
+
+    }
+
+
+    template <typename Tx, typename TFA> 
+    void T_CalcShape (TIP<3,Tx> ip, TFA & shape) const
+    {
+      AutoDiffDiff<3> x = ip.x, y = ip.y, z = ip.z;
+      AutoDiff<3> xx(x.Value(), &x.DValue(0));
+      AutoDiff<3> yy(y.Value(), &y.DValue(0));
+      AutoDiff<3> zz(z.Value(), &z.DValue(0));
+      AutoDiff<3> lx[2] ={ 1-xx, xx};
+      AutoDiff<3> ly[2] ={ 1-yy, yy};
+      AutoDiff<3> lz[2] ={ 1-zz, zz};
+      AutoDiff<3> sigma[8] = {1-xx + 1-yy + 1-zz,
+        xx + 1-yy + 1-zz,
+        xx + yy + 1-zz,
+        1-xx + yy + 1-zz,
+        1-xx + 1-yy + zz,
+        xx + 1-yy + zz,
+        xx + yy + zz,
+        1-xx + yy + zz};
+      int ii = 0;
+      
+      int maxorder_facet =
+        max2(order_facet[0][0],max2(order_facet[1][0],order_facet[2][0]));
+
+      const FACE * faces = ElementTopology::GetFaces(ET_HEX);
+
+      ArrayMem<AutoDiff<3>,20> leg_u(order+2), leg_v(order+3);
+      ArrayMem<AutoDiff<3>,20> leg_w(order+2);
+      AutoDiff<3> lam_face;
+      
+      for(int fa = 0; fa < 6; fa++)
+      {
+        int fmax = 0;
+        lam_face = -1 + 0.25*sigma[faces[fa][0]];
+        for(int j = 1; j < 4; j++)
+        {
+          if(vnums[faces[fa][j]] > vnums[faces[fa][fmax]]) fmax = j;
+          lam_face += sigma[faces[fa][j]]*0.25;
+        }
+
+        int fz,ftrig;
+
+        fz = 3 - fmax;
+        ftrig = fmax^1;
+
+        fmax = faces[fa][fmax];
+        fz = faces[fa][fz];
+        ftrig = faces[fa][ftrig];
+
+
+        int orderz = order_facet[fa][1];
+
+        if(vnums[fz] < vnums[ftrig]) swap(fz, ftrig);
+        int p = order_facet[fa][0];
+        LegendrePolynomial::Eval(p, sigma[fmax] - sigma[ftrig],leg_u);
+        LegendrePolynomial::Eval(p, sigma[fmax] - sigma[fz],leg_v);
+
+        for(int k = 0; k <= p; k++)
+          for(int l = 0; l <= p; l++)
+          {
+            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u(0.5*(sigma[fmax] - sigma[fz]),-0.5*(sigma[fmax] - sigma[fz]),
+              0.5*(sigma[fmax] - sigma[ftrig]),-0.5*(sigma[fmax] - sigma[ftrig]),leg_u[l]* leg_v[k]*lam_face);
+          }
+
+
+
+      }
+
+
+
+      int oi = order_inner[0];
+      leg_u.SetSize(oi+1);
+      leg_v.SetSize(oi+1);
+      leg_w.SetSize(oi+1);
+
+      LegendrePolynomial::Eval(oi+1,sigma[0] - sigma[1],leg_u);
+      LegendrePolynomial::Eval(oi+1,sigma[0] - sigma[3],leg_v);
+      LegendrePolynomial::Eval(oi+1,sigma[0] - sigma[4],leg_w);
+
+      for(int k=0; k<=oi-1; k++)
+      {
+        for(int i = 0; i <= oi+1; i++)
+        {
+          for(int j = 0; j <= oi+1; j++)
+          {
+            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u(lx[0], lx[1], lz[0], lz[1], ly[0]*ly[1]*leg_u[i]*leg_v[k]* leg_w[j]);
+            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u(lx[0], lx[1], ly[0], ly[1], lz[0]*lz[1]*leg_u[i]*leg_v[j]* leg_w[k]);
+            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u(ly[0], ly[1], lz[0], lz[1], lx[0]*lx[1]*leg_u[k]*leg_v[j]* leg_w[i]);
+          }
+        }
+      }
+
+
+      // S_xz
+      for (int i=0; i<=oi; i++)
+      {
+        for (int j=0; j<=oi; j++)
+        {
+          for (int k=0; k<=oi+1; k++)
+          {
+            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u(lx[0], lx[0], ly[0], lz[0], leg_u[k]*leg_v[j]*leg_w[i]);
+            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u(ly[0], ly[0], lx[0], lz[0], leg_u[i]*leg_v[k]*leg_w[j]);
+            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u(lz[0], lz[0], lx[0], ly[0], leg_u[i]*leg_v[j]*leg_w[k]);
+          }
+        }
+      }
+
+
+    };
+
+  };
+
+
+
+
   ////////////////////// SURFACE ////////////////////////////
     template <int DIM>
   class HDivDivSurfaceFiniteElement : public FiniteElement
