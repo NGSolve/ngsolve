@@ -880,7 +880,7 @@ namespace ngla
 
     RegionTimer reg (factor_timer);
     
-    int n = nused; // Height();
+    size_t n = nused; // Height();
     if (n > 20)
       cout << IM(4) << " factor SPD " << flush;
 
@@ -891,9 +891,9 @@ namespace ngla
     TM * hlfact = lfact.Addr(0);
     
     Array<TM> tmpmem;
-    for (int i1 = 0; i1 < n;  )
+    for (size_t i1 = 0; i1 < n;  )
       {
-	int last_same = i1;
+	size_t last_same = i1;
 	while (last_same < n && blocknrs[last_same] == blocknrs[i1])
           {
             last_same++;
@@ -911,8 +911,8 @@ namespace ngla
         // timerb.Start();
 
 	// rows in same block ...
-	int mi = last_same - i1;
-        int nk = hfirstinrow[i1+1] - hfirstinrow[i1] + 1;
+	size_t mi = last_same - i1;
+        size_t nk = hfirstinrow[i1+1] - hfirstinrow[i1] + 1;
         
         // factor_dense1.Start();
         // Matrix<TM,ColMajor> tmp(nk, nk);
@@ -932,7 +932,7 @@ namespace ngla
             tmp = TM(0.0);
           }
 
-	for (int j = 0; j < mi; j++)
+	for (size_t j = 0; j < mi; j++)
 	  {
             tmp(j,j) = diag[i1+j];
             tmp.Col(j).Range(j+1,nk) = FlatVector<TM>(nk-j-1, hlfact+hfirstinrow[i1+j]);
@@ -953,14 +953,14 @@ namespace ngla
         // factor_dense.Stop();          
 
         
-        auto write_back_row = [&](int j)
+        auto write_back_row = [&](size_t j)
           {
             diag[i1+j] = A11(j,j);
             FlatVector<TM>(nk-j-1, hlfact+hfirstinrow[i1+j]) = tmp.Col(j).Range(j+1,nk);
           };
 
         if (mi < 10)
-          for (int j = 0; j < mi; j++)
+          for (size_t j = 0; j < mi; j++)
             write_back_row(j);
         else
           ParallelFor (mi, write_back_row);
@@ -977,7 +977,7 @@ namespace ngla
 
         // timerc1.Start();
 
-        auto merge_row = [&] (int j)
+        auto merge_row = [&] (size_t j)
           {
             auto sum = A22.Col(j);
             
@@ -985,9 +985,9 @@ namespace ngla
             size_t firstj = hfirstinrow[hrowindex2[firsti_ri+j]];
             size_t firstj_ri = hfirstinrow_ri[hrowindex2[firsti_ri+j]];
             
-            for (int k = j+1; k < mi; k++)
+            for (size_t k = j+1; k < mi; k++)
               {
-                int kk = hrowindex2[firsti_ri+k];
+                size_t kk = hrowindex2[firsti_ri+k];
                 while (hrowindex2[firstj_ri] != kk)
                   {
                     firstj++;
@@ -1001,7 +1001,7 @@ namespace ngla
           };
 
         if (mi < 100)
-          for (int j = 0; j < mi; j++)
+          for (size_t j = 0; j < mi; j++)
             merge_row(j);
         else
           ParallelFor (Range(mi), merge_row);
@@ -1010,7 +1010,7 @@ namespace ngla
         // timerc1.Stop();
 
         // timerc2.Start();
-	for (int i2 = i1; i2 < last_same; i2++)
+	for (size_t i2 = i1; i2 < last_same; i2++)
 	  {
 	    size_t first = hfirstinrow[i2] + last_same-i2-1;
 	    size_t last = hfirstinrow[i2+1];
@@ -1028,7 +1028,7 @@ namespace ngla
       }
 
     size_t j = 0;
-    for (int i = 0; i < n; i++)
+    for (size_t i = 0; i < n; i++)
       {
 	TM ai = diag[i];
 	size_t last = hfirstinrow[i+1];
