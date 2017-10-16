@@ -2126,7 +2126,7 @@ used_idnrs : list of int = None
                      return vecs;
                    },
                   "list of gridfunctions for compound gridfunction")
-
+    
     .def_property_readonly("vec",
                            [](shared_ptr<GF> self)
                            { return self->GetVectorPtr(); },
@@ -2171,7 +2171,7 @@ used_idnrs : list of int = None
               {
                 auto diffop = self->GetFESpace()->GetAdditionalEvaluators()[name];
                 // cout << "diffop is " << typeid(*diffop).name() << endl;
-                auto coef = make_shared<GridFunctionCoefficientFunction> (self, diffop);
+                auto coef = make_shared<GridFunctionCoefficientFunction> (self, diffop, diffop, diffop);
                 coef->SetDimensions(diffop->Dimensions());
                 return py::cast(shared_ptr<CoefficientFunction>(coef));
               }
