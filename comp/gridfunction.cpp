@@ -54,6 +54,9 @@ auto NodalData (MeshAccess & ma, Array<TELEM> & a) -> Array<TELEM> & { return a;
 
 namespace ngcomp
 {
+
+  void Visualize(GridFunction * gf, const string & given_name);
+  
   using namespace ngmg;
   
   GridFunction :: GridFunction (shared_ptr<FESpace> afespace, const string & name,
@@ -165,7 +168,7 @@ namespace ngcomp
 
       }
     if (archive.Input())
-      Visualize(shared_ptr<GridFunction>(this, NOOP_Deleter), name);
+      Visualize(dynamic_pointer_cast<GridFunction> (shared_from_this()), name);
   }
 
 
@@ -299,6 +302,11 @@ namespace ngcomp
     */
   }
 
+  void Visualize(GridFunction * gf, const string & given_name)
+  {
+    shared_ptr<int> dummysp = make_shared<int>(1);
+    Visualize(shared_ptr<GridFunction> (dummysp, gf), given_name);
+  }
 
 
   shared_ptr<GridFunction> GridFunction :: 
@@ -781,7 +789,7 @@ namespace ngcomp
     
     // this->Visualize (this->name);
     if (this->visual)
-      Visualize (shared_ptr<GridFunction> (this, NOOP_Deleter), this->name);
+      Visualize (this, this->name);
   }
 
   template <class SCAL>
@@ -855,8 +863,12 @@ namespace ngcomp
       }    
 
     // this->Visualize (this->name);
+    /*
     if (this->visual)
       Visualize(shared_ptr<GridFunction> (this, NOOP_Deleter), this->name);
+    */
+    if (this->visual)
+      Visualize(this, this->name);
   }
 
 
@@ -1117,164 +1129,6 @@ namespace ngcomp
     return fes->DefinedOn(trafo.VB(), trafo.GetElementIndex());
   }
     
-
-  
-  void GridFunctionCoefficientFunction :: GenerateCode(Code &code, FlatArray<int> inputs, int index) const
-  {
-    string mycode_simd = R"CODE_( 
-      STACK_ARRAY(SIMD<double>, {hmem}, mir.Size()*{dim});
-      AFlatMatrix<double>  {values}({dim}, mir.IR().GetNIP(), &{hmem}[0] /* .Data() */);
-      {
-      auto gfcf = reinterpret_cast<GridFunctionCoefficientFunction*>({gfcf_ptr});
-      ProxyUserData * ud = (ProxyUserData*)mir.GetTransformation().userdata;
-      if (ud && ud->HasMemory(gfcf) && ud->Computed(gfcf))
-        {
-          {values} = AFlatMatrix<double> ({dim}, mir.IR().GetNIP(), &ud->GetAMemory(gfcf)(0,0));
-        }
-      else
-        {
-      const GridFunction & gf = *reinterpret_cast<GridFunction*>({gf_ptr});
-      const ElementTransformation &trafo = mir.GetTransformation();
-      auto elnr = trafo.GetElementNr();
-      // const FESpace &fes = *gf.GetFESpace();
-      const FESpace & fes = *reinterpret_cast<FESpace*>({fes_ptr});
-      auto vb = trafo.VB();
-      ElementId ei(vb, elnr);
-      // DifferentialOperator * diffop = (DifferentialOperator*){diffop_ptr};
-      // DifferentialOperator * trace_diffop = (DifferentialOperator*){trace_diffop_ptr};
-      DifferentialOperator * diffop[3] = { (DifferentialOperator*){diffop_vol_ptr}, (DifferentialOperator*){diffop_bnd_ptr}, (DifferentialOperator*){diffop_bbnd_ptr}};
-      // BilinearFormIntegrator * bfi = (BilinearFormIntegrator*){bfi_ptr};
-      if (!trafo.BelongsToMesh((void*)(fes.GetMeshAccess().get()))) {
-          throw Exception ("SIMD - evaluation not available for different meshes");
-      } else if(!fes.DefinedOn(vb,trafo.GetElementIndex())){
-          {values} = 0.0;
-      } else {
-          const FiniteElement & fel = fes.GetFE (ei, gridfunction_local_heap);
-          int dim = fes.GetDimension();
-
-          auto &dnums = gridfunction_dnums;
-          fes.GetDofNrs (ei, dnums);
-
-          gridfunction_elu.SetSize(dnums.Size()*dim);
-          FlatVector<> elu(dnums.Size()*dim, &gridfunction_elu[0]);
-
-          gf.GetElementVector ({comp}, dnums, elu);
-          fes.TransformVec (ei, elu, TRANSFORM_SOL);
-/*
-          if (diffop && vb==VOL)
-            diffop->Apply (fel, mir, elu, {values});
-          else if (trace_diffop && vb==BND)
-            trace_diffop->Apply (fel, mir, elu, {values});
-          else if (bfi)
-            throw Exception ("GridFunctionCoefficientFunction: SIMD evaluate not possible 1");
-          // bfi->CalcFlux (fel, mir, elu, values, true, gridfunction_local_heap);
-          else if (fes.GetEvaluator(vb))
-            fes.GetEvaluator(vb) -> Apply (fel, mir, elu, {values}); // , gridfunction_local_heap);
-          else if (fes.GetIntegrator(vb))
-            throw Exception ("GridFunctionCoefficientFunction: SIMD evaluate not possible 2");
-          // fes.GetIntegrator(vb) ->CalcFlux (fel, mir, elu, values, false, gridfunction_local_heap);
-*/
-          if (diffop[vb])
-             diffop[vb]->Apply (fel, mir, elu, {values});
-          else
-            throw Exception ("GridFunctionCoefficientFunction: SIMD: don't know how I shall evaluate");
-        if (ud)
-          {
-            if (ud->HasMemory(gfcf))
-              {
-                ud->GetAMemory(gfcf) = BareSliceMatrix<SIMD<double>> ({values});
-                ud->SetComputed(gfcf);
-              }
-          }    
-        }
-      }
-      }
-    )CODE_";
-    string mycode = R"CODE_( 
-      // Matrix<>  {values}{mir.Size(), {dim}};
-      STACK_ARRAY(double, {hmem}, mir.Size()*{dim});
-      FlatMatrix<double>  {values}(mir.Size(), {dim}, &{hmem}[0]);
-      {
-      const GridFunction & gf = *reinterpret_cast<GridFunction*>({gf_ptr});
-      const ElementTransformation &trafo = mir.GetTransformation();
-      auto elnr = trafo.GetElementNr();
-      const FESpace &fes = *gf.GetFESpace();
-      auto vb = trafo.VB();
-      ElementId ei(vb, elnr);
-      // DifferentialOperator * diffop = (DifferentialOperator*){diffop_ptr};
-      // DifferentialOperator * trace_diffop = (DifferentialOperator*){trace_diffop_ptr};
-      // DifferentialOperator * trace_diffop[3] = (DifferentialOperator*){diffop_vol,diffop_bnd,diffop_bbnd};
-      DifferentialOperator * diffop[3] = { (DifferentialOperator*){diffop_vol_ptr}, (DifferentialOperator*){diffop_bnd_ptr}, (DifferentialOperator*){diffop_bbnd_ptr}};
-      // BilinearFormIntegrator * bfi = (BilinearFormIntegrator*){bfi_ptr};
-      if (!trafo.BelongsToMesh((void*)(fes.GetMeshAccess().get()))) {
-          gf.Evaluate(mir, {values});
-          //for (auto i : Range(mir.Size()))
-          //  gf.Evaluate(mir[i], {values}.Row(i));
-      } else if(!fes.DefinedOn(vb,trafo.GetElementIndex())){
-          {values} = 0.0;
-      } else {
-          const FiniteElement & fel = fes.GetFE (ei, gridfunction_local_heap);
-          int dim = fes.GetDimension();
-
-          auto &dnums = gridfunction_dnums;
-          fes.GetDofNrs (ei, dnums);
-
-          gridfunction_elu.SetSize(dnums.Size()*dim);
-          FlatVector<> elu(dnums.Size()*dim, &gridfunction_elu[0]);
-
-          gf.GetElementVector ({comp}, dnums, elu);
-          fes.TransformVec (ei, elu, TRANSFORM_SOL);
-/*
-          if (diffop && vb==VOL)
-            diffop->Apply (fel, mir, elu, {values}, gridfunction_local_heap);
-          else if (trace_diffop && vb==BND)
-            trace_diffop->Apply (fel, mir, elu, {values}, gridfunction_local_heap);
-          else if (bfi)
-            bfi->CalcFlux (fel, mir, elu, {values}, true, gridfunction_local_heap);
-          else if (fes.GetEvaluator(vb))
-            fes.GetEvaluator(vb) -> Apply (fel, mir, elu, {values}, gridfunction_local_heap);
-          else if (fes.GetIntegrator(vb))
-            fes.GetIntegrator(vb) ->CalcFlux (fel, mir, elu, {values}, false, gridfunction_local_heap);
-*/
-          if (diffop[vb])
-             diffop[vb]->Apply (fel, mir, elu, {values}, gridfunction_local_heap);
-          else
-            throw Exception ("don't know how I shall evaluate");
-      }
-      }
-    )CODE_";
-    std::map<string,string> variables;
-    auto values = Var("values", index);
-    variables["values"] = values.S();
-    variables["gf_ptr"] =  code.AddPointer(gf);
-    variables["gfcf_ptr"] = code.AddPointer(this); // ToString(this);
-    variables["fes_ptr"] = code.AddPointer(fes.get()); // ToString(fes.get());
-    // variables["diffop_ptr"] = ToString(diffop[VOL].get());
-    // variables["trace_diffop_ptr"] = ToString(diffop[BND].get());
-    // variables["bfi_ptr"] = ToString(trace_diffop.get());
-    variables["diffop_vol_ptr"] = code.AddPointer(diffop[VOL].get()); // ToString(diffop[VOL].get());
-    variables["diffop_bnd_ptr"] = code.AddPointer(diffop[BND].get()); // ToString(diffop[BND].get());
-    variables["diffop_bbnd_ptr"] = code.AddPointer(diffop[BBND].get()); // ToString(diffop[BBND].get());
-    variables["comp"] = ToString(comp);
-    variables["dim"] = ToString(Dimension());
-    variables["hmem"] = Var("hmem", index).S();
-
-    if(code.is_simd)
-      {
-        code.header += Code::Map(mycode_simd, variables);
-        TraverseDimensions( Dimensions(), [&](int ind, int i, int j) {
-            code.body += Var(index,i,j).Assign("SIMD<double>("+values.S()+".Get("+ToString(ind)+",i))");
-          });
-      }
-    else
-      {
-        code.header += Code::Map(mycode, variables);
-        TraverseDimensions( Dimensions(), [&](int ind, int i, int j) {
-            code.body += Var(index,i,j).Assign(values.S()+"(i,"+ToString(ind)+")");
-          });
-      }
-  }
-  
   bool GridFunctionCoefficientFunction::IsComplex() const
   {
     return gf->GetFESpace()->IsComplex(); 

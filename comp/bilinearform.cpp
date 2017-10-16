@@ -2532,14 +2532,14 @@ namespace ngcomp
             progress.Done();
           }
 
-      
-        if (VB_parts[BND].Size())
+        for (auto vb : { BND, BBND, BBBND })
+        if (VB_parts[vb].Size())
           {
             RegionTimer reg(timerbound);
-            ProgressOutput progress (ma, "assemble surface element", ma->GetNE(BND));
+            ProgressOutput progress (ma, "assemble surface element", ma->GetNE(vb));
 
             IterateElements 
-              (*fespace, BND, clh,  [&] (FESpace::Element el, LocalHeap & lh)
+              (*fespace, vb, clh,  [&] (FESpace::Element el, LocalHeap & lh)
                {
                  progress.Update();
                  
@@ -2559,7 +2559,7 @@ namespace ngcomp
                  lin.GetIndirect (dnums, elveclin);
                  fespace->TransformVec (el, elveclin, TRANSFORM_SOL);
 
-                 for (auto & bfi : VB_parts[BND])
+                 for (auto & bfi : VB_parts[vb])
                    {
                      if (!bfi->DefinedOn (el.GetIndex())) continue;
                      if (!bfi->DefinedOnElement (el.Nr())) continue;

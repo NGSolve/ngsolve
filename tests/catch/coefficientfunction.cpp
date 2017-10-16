@@ -13,7 +13,7 @@ constexpr double tolerance = 1e-8;
 #define TEST_OPERATOR_COEFFICIENTFUNCTION(CF)                 \
   namespace UNIQUE_NAME {                                          \
     auto c_cf_f = Compile(CF,false);                               \
-    auto c_cf_t = Compile(CF,true);                                \
+    auto c_cf_t = Compile(CF,true, 2, true);                       \
     TEST_CASE(#CF) {                                               \
       TestCoefficientFunction(CF,c_cf_f,c_cf_t);                   \
     }                                                              \

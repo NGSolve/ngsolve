@@ -132,17 +132,42 @@ namespace ngcomp {
       return fe;
     }
 
-
+  
   void PeriodicFESpace :: GetDofNrs(ElementId ei, Array<DofId> & dnums) const
     {
       space->GetDofNrs(ei,dnums);
       for (auto & d : dnums)
         if (d != -1) d = dofmap[d];
-      /*
-      for (int i = 0; i< dnums.Size(); i++)
-	dnums[i] = dofmap[dnums[i]];
-      */
     }
+
+    void PeriodicFESpace :: GetDofNrs (NodeId ni, Array<DofId> & dnums) const
+    {
+      space->GetDofNrs(ni, dnums);
+      for (auto & d : dnums)
+        if (d != -1) d = dofmap[d];
+    }
+
+    void PeriodicFESpace :: GetVertexDofNrs (int vnr,  Array<DofId> & dnums) const
+    { 
+      space->GetVertexDofNrs(vnr, dnums); 
+      for (auto & d : dnums)
+        if (d != -1) d = dofmap[d];
+    }
+
+    void PeriodicFESpace :: GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const
+    { 
+      space->GetEdgeDofNrs (ednr, dnums); 
+      for (auto & d : dnums)
+        if (d != -1) d = dofmap[d];
+    }
+    
+    void PeriodicFESpace :: GetFaceDofNrs (int fanr, Array<DofId> & dnums) const
+    { 
+      space->GetFaceDofNrs(fanr, dnums); 
+      for (auto & d : dnums)
+        if (d != -1) d = dofmap[d];
+    }
+
 
   QuasiPeriodicFESpace :: QuasiPeriodicFESpace(shared_ptr<FESpace> fespace, const Flags & flags, shared_ptr<Array<int>> aused_idnrs, shared_ptr<Array<Complex>> afactors) :
     PeriodicFESpace(fespace, flags, aused_idnrs), factors(afactors)

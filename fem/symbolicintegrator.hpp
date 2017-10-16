@@ -458,29 +458,26 @@ public:
     VorB vb;
     bool element_boundary;
     mutable bool simd_evaluate = true;
-    IntegrationRule ir;   // if non-empty use this integration-rule
-    SIMD_IntegrationRule simd_ir;   // if non-empty use this integration-rule
 
   public:
     NGS_DLL_HEADER SymbolicLinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb,
                                   bool aelement_boundary);
 
-    virtual VorB VB() const { return vb; }
-    virtual string Name () const { return string ("Symbolic LFI"); }
-
-    void SetIntegrationRule (const IntegrationRule & _ir);
+    virtual VorB VB() const override { return vb; }
+    virtual string Name () const override { return string ("Symbolic LFI"); }
+    virtual int GetDimension() const override { return proxies[0]->Evaluator()->BlockDim(); }
 
     virtual void 
     CalcElementVector (const FiniteElement & fel,
 		       const ElementTransformation & trafo, 
 		       FlatVector<double> elvec,
-		       LocalHeap & lh) const;
+		       LocalHeap & lh) const override;
       
     virtual void 
     CalcElementVector (const FiniteElement & fel,
 		       const ElementTransformation & trafo, 
 		       FlatVector<Complex> elvec,
-		       LocalHeap & lh) const;
+		       LocalHeap & lh) const override;
 
     template <typename SCAL> 
     void T_CalcElementVector (const FiniteElement & fel,
@@ -506,47 +503,46 @@ public:
     Matrix<bool> same_diffops; // are diffops the same ? 
     bool elementwise_constant;
     mutable bool simd_evaluate;
-    IntegrationRule ir;   // if non-empty use this integration-rule
-    SIMD_IntegrationRule simd_ir;   // if non-empty use this integration-rule
     int trial_difforder, test_difforder;
   public:
     NGS_DLL_HEADER SymbolicBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb,
                                     bool aelement_boundary);
 
-    virtual VorB VB() const { return vb; }
-    virtual bool IsSymmetric() const { return true; }  // correct would be: don't know
-    virtual string Name () const { return string ("Symbolic BFI"); }
+    virtual VorB VB() const override { return vb; }
+    virtual bool IsSymmetric() const override { return true; }  // correct would be: don't know
+    virtual string Name () const override { return string ("Symbolic BFI"); }
 
-    NGS_DLL_HEADER virtual IntegrationRule GetIntegrationRule (const FiniteElement & fel, LocalHeap & lh) const;
-    NGS_DLL_HEADER virtual SIMD_IntegrationRule Get_SIMD_IntegrationRule (const FiniteElement & fel, LocalHeap & lh) const;
+    using Integrator::GetIntegrationRule;
+    NGS_DLL_HEADER virtual const IntegrationRule& GetIntegrationRule (const FiniteElement & fel, LocalHeap & lh) const;
+    NGS_DLL_HEADER virtual const SIMD_IntegrationRule& Get_SIMD_IntegrationRule (const FiniteElement & fel, LocalHeap & lh) const;
     // virtual IntegrationRule GetIntegrationRuleEB (const FiniteElement & fel, int facetnr, LocalHeap & lh) const;
     // virtual SIMD_IntegrationRule Get_SIMD_IntegrationRuleEB (const FiniteElement & fel, int facetnr, LocalHeap & lh) const;
     
-    void SetIntegrationRule (const IntegrationRule & _ir);
-    
+    virtual int GetDimension() const override { return trial_proxies[0]->Evaluator()->BlockDim(); }
+
     virtual void 
     CalcElementMatrix (const FiniteElement & fel,
 		       const ElementTransformation & trafo, 
 		       FlatMatrix<double> elmat,
-		       LocalHeap & lh) const;
+		       LocalHeap & lh) const override;
 
     virtual void 
     CalcElementMatrix (const FiniteElement & fel,
 		       const ElementTransformation & trafo, 
 		       FlatMatrix<Complex> elmat,
-		       LocalHeap & lh) const;    
+		       LocalHeap & lh) const override;    
 
     virtual void 
     CalcElementMatrixAdd (const FiniteElement & fel,
                           const ElementTransformation & trafo, 
                           FlatMatrix<double> elmat,
-                          LocalHeap & lh) const;
+                          LocalHeap & lh) const override;
     
     virtual void 
     CalcElementMatrixAdd (const FiniteElement & fel,
                           const ElementTransformation & trafo, 
                           FlatMatrix<Complex> elmat,
-                          LocalHeap & lh) const;    
+                          LocalHeap & lh) const override;    
 
     
     template <typename SCAL, typename SCAL_SHAPES, typename SCAL_RES>
@@ -566,7 +562,7 @@ public:
                                  const ElementTransformation & trafo, 
 				 FlatVector<double> elveclin,
                                  FlatMatrix<double> elmat,
-                                 LocalHeap & lh) const;
+                                 LocalHeap & lh) const override;
 
     template <typename SCAL, typename SCAL_SHAPES>
     void T_CalcLinearizedElementMatrixEB (const FiniteElement & fel,
@@ -581,7 +577,7 @@ public:
 			const FlatVector<double> elx, 
 			FlatVector<double> ely,
 			void * precomputed,
-			LocalHeap & lh) const;
+			LocalHeap & lh) const override;
 
     template <typename SCAL, typename SCAL_SHAPES>
     void T_ApplyElementMatrixEB (const FiniteElement & fel, 
@@ -709,7 +705,7 @@ public:
     virtual VorB VB() const { return vb; }
     virtual bool IsSymmetric() const { return true; } 
     virtual string Name () const { return string ("Symbolic Energy"); }
-    
+
     virtual void 
     CalcElementMatrix (const FiniteElement & fel,
 		       const ElementTransformation & trafo, 

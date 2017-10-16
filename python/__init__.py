@@ -12,6 +12,7 @@ ngsolve.comp ... function spaces, forms
 import netgen
 
 from ngsolve.ngslib import *
+from ngsolve.ngslib import __version__
 
 def TmpRedraw(*args, **kwargs):
     solve._Redraw(*args, **kwargs)
