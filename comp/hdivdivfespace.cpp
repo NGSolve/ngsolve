@@ -543,6 +543,14 @@ namespace ngcomp
             ndof += first_facet_dof[f+1] - first_facet_dof[f];            
         }
         break;
+      case ET_TET:
+        ndof += (oi[0]+1)*(oi[0]+2)*(oi[0]+1);
+        if(discontinuous)
+        {
+          for (auto f : ma->GetElFacets(ei))
+            ndof += first_facet_dof[f+1] - first_facet_dof[f];            
+        }
+        break;
       default:
         throw Exception(string("illegal element type") + ToString(ma->GetElType(ei)));
       }
@@ -665,6 +673,17 @@ namespace ngcomp
     case ET_HEX:
     {
       auto fe = new (alloc) HDivDivFE<ET_HEX> (order,plus);
+      fe->SetVertexNumbers (ngel.vertices);
+      int ii = 0;
+      for(auto f : ngel.Facets())
+        fe->SetOrderFacet(ii++,order_facet[f]);
+      fe->SetOrderInner(order_inner[ei.Nr()]);
+      fe->ComputeNDof();
+      return *fe;
+    }
+    case ET_TET:
+    {
+      auto fe = new (alloc) HDivDivFE<ET_TET> (order,plus);
       fe->SetVertexNumbers (ngel.vertices);
       int ii = 0;
       for(auto f : ngel.Facets())
