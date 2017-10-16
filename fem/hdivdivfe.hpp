@@ -1021,7 +1021,7 @@ namespace ngfem
         
         leg_u.SetSize(order_facet[fa][0]+incrorder_zz1_bd+1);
         leg_v.SetSize(order_facet[fa][0]+incrorder_zz1_bd+1);
-        ScaledLegendrePolynomial(order_facet[fa][0]+incrorder_zz1_bd,lx[fav[0]]-lx[fav[1]],1-lx[fav[0]]-lx[fav[1]],leg_u);
+        ScaledLegendrePolynomial(order_facet[fa][0]+incrorder_zz1_bd,lx[fav[0]]-lx[fav[1]],lx[fav[0]]+lx[fav[1]],leg_u);
         LegendrePolynomial::Eval(order_facet[fa][0]+incrorder_zz1_bd,2 * lx[fav[2]] - 1,leg_v);
 
         for(int j = 0; j <= order_facet[fa][0]+incrorder_zz1_bd; j++)
@@ -1080,7 +1080,7 @@ namespace ngfem
       leg_v.SetSize(oi+incrorder_zz1+1);
       leg_w.SetSize(oi+incrorder_xx2+1);
 
-      ScaledLegendrePolynomial(oi+incrorder_zz1, lx[0]-lx[1], 1-lx[0]-lx[1], leg_u);
+      ScaledLegendrePolynomial(oi+incrorder_zz1, lx[0]-lx[1], lx[0]+lx[1], leg_u);
       LegendrePolynomial::Eval(oi+incrorder_zz1, 2*lx[2]-1, leg_v);
       LegendrePolynomial::Eval(oi+incrorder_xx2, 2*lz[0]-1, leg_w);
 
@@ -1130,9 +1130,116 @@ namespace ngfem
   };
 
 
+  template <> class HDivDivFE<ET_TET> : public T_HDivDivFE<ET_TET> 
+  {
+  public:
+    using T_HDivDivFE<ET_TET> :: T_HDivDivFE;
+
+    virtual void ComputeNDof()
+    {
+      order = 0;
+      ndof = 0;
+      for (int i=0; i<4; i++)
+      {
+        ndof += (order_facet[i][0]+1)*(order_facet[i][0]+2)/2;
+        order = max2(order, order_facet[i][0]);
+      }
+      int p = order_inner[0];
+      int ninner = (p+1)*(p+2)*(p+1);
+      ndof += ninner; 
+
+      order = max2(order, p);
+
+    }
 
 
-    template <> class HDivDivFE<ET_HEX> : public T_HDivDivFE<ET_HEX> 
+    template <typename Tx, typename TFA> 
+    void T_CalcShape (TIP<3,Tx> ip, TFA & shape) const
+    {
+      AutoDiffDiff<3> x = ip.x, y = ip.y, z = ip.z;
+      AutoDiff<3> xx(x.Value(), &x.DValue(0));
+      AutoDiff<3> yy(y.Value(), &y.DValue(0));
+      AutoDiff<3> zz(z.Value(), &z.DValue(0));
+      AutoDiff<3> lam[4] = {xx, yy, zz, 1-xx-yy-zz};
+      int ii = 0;
+      
+      const FACE * faces = ElementTopology::GetFaces(ET_TET);
+
+      ArrayMem<AutoDiff<3>,20> leg_u(order+2), leg_v(order+3);
+      ArrayMem<AutoDiff<3>,20> leg_w(order+2);
+      
+      for(int fa = 0; fa < 4; fa++)
+      {
+        int fav[3] = {faces[fa][0], faces[fa][1], faces[fa][2]};
+
+        int p = order_facet[fa][0];
+        //Sort vertices  first edge op minimal vertex
+        if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0], fav[1]);
+        if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1], fav[2]);
+        if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0], fav[1]);
+
+        ScaledLegendrePolynomial(p+1, lam[fav[0]]-lam[fav[1]],lam[fav[0]]+lam[fav[1]],leg_u);
+        LegendrePolynomial::Eval(p+1, 2 * lam[fav[2]] - 1,leg_v);
+
+        for(int j = 0; j <= p; j++)
+          for(int k = 0; k+j <= p; k++)
+          {
+            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u(lam[fav[0]], lam[fav[1]],
+              lam[fav[2]], lam[fav[2]],leg_u[j]* leg_v[k]);
+          }
+
+
+
+      }
+
+
+
+      int oi = order_inner[0];
+      leg_u.SetSize(oi+1);
+      leg_v.SetSize(oi+1);
+      leg_w.SetSize(oi+1);
+
+      ScaledLegendrePolynomial(oi+1,lam[0]-lam[1],lam[0]+lam[1],leg_u);
+      ScaledLegendrePolynomial(oi+1,lam[2]-lam[0]-lam[1],lam[0]+lam[1]+lam[2],leg_v);
+      LegendrePolynomial::Eval(oi+1,2 * lam[3] - 1,leg_w);
+
+      for(int k=0; k<=oi; k++)
+      {
+        for(int i = 0; i+k <= oi; i++)
+        {
+          for(int j = 0; j+i+k <= oi; j++)
+          {
+            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u(lam[0], lam[1], lam[2], lam[3], leg_u[i]*leg_v[k]* leg_w[j]);
+            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u(lam[0], lam[2], lam[1], lam[3], leg_u[i]*leg_v[j]* leg_w[k]);
+          }
+        }
+      }
+
+
+      for(int fa = 0; fa < 4; fa++)
+      {
+        int fav[3] = {faces[fa][0], faces[fa][1], faces[fa][2]};
+        for(int k=0; k<=oi-1; k++)
+        {
+          for(int i = 0; i+k <= oi-1; i++)
+          {
+            for(int j = 0; j+i+k <= oi-1; j++)
+            {
+              shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u(lam[fav[0]],lam[fav[0]],lam[fav[1]],lam[fav[2]],
+                (1-lam[fav[0]]-lam[fav[1]]-lam[fav[2]])*leg_u[i]*leg_v[k]* leg_w[j]);
+            }
+          }
+        }
+
+      }
+
+    };
+
+  };
+
+
+
+  template <> class HDivDivFE<ET_HEX> : public T_HDivDivFE<ET_HEX> 
   {
   public:
     using T_HDivDivFE<ET_HEX> :: T_HDivDivFE;
@@ -1437,7 +1544,7 @@ namespace ngfem
         
         leg_u.SetSize(order_inner[0]+HDivDivFE<ET_PRISM>::incrorder_zz1_bd+1);
         leg_v.SetSize(order_inner[0]+HDivDivFE<ET_PRISM>::incrorder_zz1_bd+1);
-        ScaledLegendrePolynomial(order_inner[0]+HDivDivFE<ET_PRISM>::incrorder_zz1_bd,lx[fav[0]]-lx[fav[1]],1-lx[fav[0]]-lx[fav[1]],leg_u);
+        ScaledLegendrePolynomial(order_inner[0]+HDivDivFE<ET_PRISM>::incrorder_zz1_bd,lx[fav[0]]-lx[fav[1]],lx[fav[0]]+lx[fav[1]],leg_u);
         LegendrePolynomial::Eval(order_inner[0]+HDivDivFE<ET_PRISM>::incrorder_zz1_bd,2 * lx[fav[2]] - 1,leg_v);
 
         for(int j = 0; j <= order_inner[0]+HDivDivFE<ET_PRISM>::incrorder_zz1_bd; j++)
