@@ -26,7 +26,7 @@ public:
 				MAT & mat, LocalHeap & lh)
     {
       mat = (1.0 / mip.GetJacobiDet()) *mip.GetJacobian () * 
-	Trans (static_cast<const FEL&>(fel).GetShape(mip.IP(),lh));
+	Trans (Cast(fel).GetShape(mip.IP(),lh));
     }
 
   /*
@@ -45,6 +45,24 @@ public:
   }
   */
 
+  /*
+  using DiffOp<DiffOpIdHDivSurface<D,FEL>>::AddTransSIMDIR;          
+  static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                              BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+  {
+    Cast(fel).AddTrans (mir, y, x);
+  }
+  */
+
+  /*
+  static void GenerateMatrixSIMDIR (const FiniteElement & fel,
+                                    const SIMD_BaseMappedIntegrationRule & mir, BareSliceMatrix<SIMD<double>> mat)
+  {
+    
+    Cast(fel).CalcMappedShape (mir, mat);
+    
+    }*/
+  
 };
 
 
@@ -221,7 +239,31 @@ public:
       y = Trans(hm)*x;
     }
 
+    /*
+     static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+                                      const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> mat)
+    {
+      throw Exception("in DiffOpGradientHdivSurface::GenerateMatrixSIMDIR");
+    }
 
+    
+    using DiffOp<DiffOpGradientHdivSurface<D>>::ApplySIMDIR;
+    
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      throw Exception("in DiffOpGradientHdivSurface::ApplySIMDIR");
+    }
+
+
+    using DiffOp<DiffOpGradientHdivSurface<D>>::AddTransSIMDIR;    
+    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
+                                BareSliceMatrix<SIMD<double>> x, BareSliceVector<double> y)
+    {
+      throw Exception("in DiffOpGradientHdivSurface::AddTransSIMDIR");
+
+    }
+    */
   };
 
   HDivHighOrderSurfaceFESpace ::  
