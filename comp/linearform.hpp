@@ -21,6 +21,7 @@ namespace ngcomp
     shared_ptr<FESpace> fespace;
     ///
     Array<shared_ptr<LinearFormIntegrator>> parts;
+    Array<shared_ptr<LinearFormIntegrator>> VB_parts[4];
     /// do the integration on independent meshes
     bool independent;
     /// print the assembled vector to testout

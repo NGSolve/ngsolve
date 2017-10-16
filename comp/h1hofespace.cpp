@@ -1851,7 +1851,7 @@ namespace ngcomp
     enum { DIM_SPACE = DIM_SPC };
     enum { DIM_ELEMENT = DIM_SPC };
     enum { DIM_DMAT = DIM_SPC*DIM_SPC };
-    enum { DIFFORDER = 0 };
+    enum { DIFFORDER = 1 };
 
     static Array<int> GetDimensions() { return Array<int> ( { DIM_SPC, DIM_SPC } ); }
       
@@ -1929,6 +1929,40 @@ namespace ngcomp
     }    
   };
 
+
+  template <int DIM_SPC>
+  class DiffOpGradBoundaryVectorH1 : public DiffOp<DiffOpGradBoundaryVectorH1<DIM_SPC> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = DIM_SPC };
+    enum { DIM_ELEMENT = DIM_SPC-1 };
+    enum { DIM_DMAT = DIM_SPC*DIM_SPC };
+    enum { DIFFORDER = 1 };
+
+    static Array<int> GetDimensions() { return Array<int> ( { DIM_SPC, DIM_SPC } ); }
+      
+    static string Name() { return "gradbnd"; }
+    
+    template <typename FEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const FEL & bfel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & feli = static_cast<const ScalarFiniteElement<DIM_ELEMENT>&> (fel[0]);
+
+      HeapReset hr(lh);
+      FlatMatrix<> hmat(feli.GetNDof(), DIM_ELEMENT, lh);
+      FlatMatrix<> mapped_hmat(feli.GetNDof(), DIM_SPACE, lh);
+      feli.CalcDShape (mip.IP(), hmat);
+      mapped_hmat = hmat * mip.GetJacobianInverse();
+      mat = 0.0;
+      for (int i = 0; i < DIM_SPC; i++)
+        mat.Rows(DIM_SPC*i, DIM_SPC*(i+1)).Cols(fel.GetRange(i)) = Trans(mapped_hmat);
+    }
+  };
+
+  
   template <int DIM_SPC>  
   class DiffOpDivVectorH1 : public DiffOp<DiffOpDivVectorH1<DIM_SPC> >
   {
@@ -2009,6 +2043,7 @@ namespace ngcomp
           evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdVectorH1<3>>>();
           flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradVectorH1<3>>>();
           evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdVectorH1<3,BND>>>();
+          flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpGradBoundaryVectorH1<3>>>();          
           additional_evaluators.Set ("div", make_shared<T_DifferentialOperator<DiffOpDivVectorH1<3>>> ()); 
           break;
           // auto one = make_shared<ConstantCoefficientFunction>(1);

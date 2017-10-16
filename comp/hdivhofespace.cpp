@@ -740,6 +740,7 @@ namespace ngcomp
         case ET_SEGM: return * new (alloc) DummyFE<ET_SEGM>();
         default:
           __assume(false);
+          throw Exception("HDiv - impossible element");
         }
   }
   

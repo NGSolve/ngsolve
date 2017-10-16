@@ -259,11 +259,6 @@ mac_test:
     CMAKE_C_COMPILER: "clang"
     CMAKE_CXX_COMPILER: "clang++"
 
-.t_clang4: &t_clang4
-  variables:
-    CMAKE_C_COMPILER: "clang-4.0"
-    CMAKE_CXX_COMPILER: "clang++-4.0"
-
 .t_gcc7: &t_gcc7
   variables:
     CMAKE_C_COMPILER: "gcc-7"
@@ -271,8 +266,8 @@ mac_test:
 
 .t_gcc6: &t_gcc6
   variables:
-    CMAKE_C_COMPILER: "gcc"
-    CMAKE_CXX_COMPILER: "g++"
+    CMAKE_C_COMPILER: "gcc-6"
+    CMAKE_CXX_COMPILER: "g++-6"
 
 .t_gcc5: &t_gcc5
   variables:
@@ -340,15 +335,6 @@ clang_no_fp_timings:
   <<: *t_clang
   <<: *t_timings
 
-.clang4_timings:
-  <<: *t_clang4
-  <<: *t_timings
-
-.clang4_no_fp_timings:
-  <<: *t_omit_frame_pointer
-  <<: *t_clang4
-  <<: *t_timings
-
 ############################################
 # Cleanup stage
 ############################################
@@ -360,14 +346,15 @@ linux_cleanup:
     - docker
   script:
     # remove built docker images
-    - docker rmi -f ngsolve_${CI_PIPELINE_ID}:15.10
-    - docker rmi -f ngsolve_${CI_PIPELINE_ID}_installed:15.10
+    - docker ps -a | awk '{ print $1,$2 }' | grep ngsolve_${CI_PIPELINE_ID} | awk '{print $1 }' | xargs -I {} docker rm {}
     - docker rmi -f ngsolve_${CI_PIPELINE_ID}:16.04
     - docker rmi -f ngsolve_${CI_PIPELINE_ID}_installed:16.04
     - docker rmi -f ngsolve_${CI_PIPELINE_ID}:16.10
     - docker rmi -f ngsolve_${CI_PIPELINE_ID}_installed:16.10
     - docker rmi -f ngsolve_${CI_PIPELINE_ID}:17.04
     - docker rmi -f ngsolve_${CI_PIPELINE_ID}_installed:17.04
+    - docker rmi -f ngsolve_${CI_PIPELINE_ID}:debug
+    - docker rmi -f ngsolve_${CI_PIPELINE_ID}_installed:debug
   when: always
   allow_failure: true
 

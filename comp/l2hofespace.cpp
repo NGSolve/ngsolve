@@ -812,18 +812,8 @@ namespace ngcomp
 
   FiniteElement & L2SurfaceHighOrderFESpace :: GetFE (ElementId ei, Allocator & lh) const
   {
-    switch(ei.VB())
+    if (ei.VB() == BND)
       {
-      case VOL:
-        // throw Exception ("Volume elements not available for L2SurfaceHighOrderFESpace");
-        return * SwitchET (ma->GetElement(ei).GetType(),
-                           [&lh] (auto et) -> FiniteElement*
-                           {
-                             return new (lh) ScalarDummyFE<et.ElementType()>();
-                           });
-                  
-      case BND:
-
         if (ma->GetDimension() == 2)
           {
             DGFiniteElement<1> * fe1d = 0;
@@ -861,10 +851,16 @@ namespace ngcomp
             fe2d -> ComputeNDof(); 
             return *fe2d;
           }
-
-      case BBND:
-        throw Exception ("BBND elements not available for L2SurfaceHighOrderFESpace");
       }
+    
+    else
+
+      return * SwitchET (ma->GetElement(ei).GetType(),
+                         [&lh] (auto et) -> FiniteElement*
+                         {
+                           return new (lh) ScalarDummyFE<et.ElementType()>();
+                         });
+    
   }
   // const FiniteElement & L2SurfaceHighOrderFESpace :: GetFE (int elnr, LocalHeap & lh) const
   // {

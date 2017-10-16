@@ -1298,6 +1298,8 @@ namespace ngcomp
           hofe -> ComputeNDof();
           return *hofe;    
         }
+      case BBBND:
+        return * new (lh) DummyFE<ET_POINT>; 
       }
   }
   

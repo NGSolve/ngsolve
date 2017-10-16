@@ -137,6 +137,9 @@ namespace ngfem
     void ComputeFaceMoments (int fnr, ScalarFiniteElement<DIM-1> & testfe,
 			     FlatMatrix<> & moments,
 			     int order, int shape = 1) const;
+
+
+    virtual std::list<std::tuple<std::string,double>> Timing () const;
   };
 
 

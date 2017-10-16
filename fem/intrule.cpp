@@ -3020,6 +3020,11 @@ namespace ngfem
                   const IntegrationRule & irx = SelectIntegrationRuleJacobi10(order);
                   tmp->SetIRX (new SIMD_IntegrationRule(irx));
                   tmp->SetIRY (&SIMD_SelectIntegrationRule (ET_SEGM, order));
+                  if (tmp->GetNIP() != tmp->GetIRX().GetNIP()*tmp->GetIRY().GetNIP())
+                    {
+                      tmp->SetIRX(nullptr);
+                      tmp->SetIRY(nullptr);
+                    }
                   break;
                 }
               case ET_TET:
@@ -3029,6 +3034,12 @@ namespace ngfem
                   tmp->SetIRX (new SIMD_IntegrationRule(irx));
                   tmp->SetIRY (new SIMD_IntegrationRule(iry));                  
                   tmp->SetIRZ (&SIMD_SelectIntegrationRule (ET_SEGM, order));
+                  if (tmp->GetNIP() != tmp->GetIRX().GetNIP()*tmp->GetIRY().GetNIP()*tmp->GetIRZ().GetNIP())
+                    {
+                      tmp->SetIRX(nullptr);
+                      tmp->SetIRY(nullptr);
+                      tmp->SetIRZ(nullptr);
+                    }
                   break;
                 }
               case ET_HEX:
@@ -3284,6 +3295,7 @@ namespace ngfem
       {
       case ET_TET:
         {
+          if (irfacet.IsTP())
           switch (fnr)
             {
             case 0:
@@ -3369,9 +3381,11 @@ namespace ngfem
                     irvol.SetIRZ (ir1d); break;
                   }
               }
+            /*
             irvol.SetIRX(nullptr);
             irvol.SetIRY(nullptr);
             irvol.SetIRZ(nullptr);
+            */
           }
         }
       default:

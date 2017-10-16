@@ -205,7 +205,7 @@ namespace ngfem
     Tx lami[4] = {(1-x)*(1-y),x*(1-y),x*y,(1-x)*y};  
     Tx sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};  
 
-    int ii = 4;
+    size_t ii = 4;
     ArrayMem<Tx, 10> pol_xi(order+2), pol_eta(order+2);
 
     if (!only_ho_div){
@@ -304,11 +304,11 @@ namespace ngfem
     Tx lami[4] = { x, y, z, 1-x-y-z };
 
 	
-    int ii = 4; 
+    size_t ii = 4; 
     if (!only_ho_div)
     {
       const FACE * faces = ElementTopology::GetFaces (ET_TET);
-      for (int i = 0; i < 4; i++)
+      for (size_t i = 0; i < 4; i++)
         {
           int p = order_facet[i][0];
 

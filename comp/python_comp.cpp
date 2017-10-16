@@ -851,6 +851,7 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
 
   py::class_<Region> (m, "Region", "a subset of volume or boundary elements")
     .def(py::init<shared_ptr<MeshAccess>,VorB,string>())
+    .def(py::init<shared_ptr<MeshAccess>,VorB,BitArray>())
     .def("Mask",[](Region & reg)->BitArray { return reg.Mask(); })
     .def("VB", [](Region & reg) { return VorB(reg); })
     .def(py::self + py::self)
@@ -1161,7 +1162,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
           , 
          py::arg("x") = 0.0, py::arg("y") = 0.0, py::arg("z") = 0.0,
          py::arg("VOL_or_BND") = VOL,
-	 py::return_value_policy::reference, docu_string("Get a MappedIntegrationPoint in the point (x,y,z) on the matching volume (VorB=VOL, default) or surface (VorB=BND) element. BBND elements aren't supported"))
+	 docu_string("Get a MappedIntegrationPoint in the point (x,y,z) on the matching volume (VorB=VOL, default) or surface (VorB=BND) element. BBND elements aren't supported"))
 
     .def("Contains",
          [](MeshAccess & ma, double x, double y, double z) 
@@ -2422,6 +2423,7 @@ check_unused : bool
          "add integrator to bilinear-form")
     
     .def("__iadd__",[](BF& self, shared_ptr<BilinearFormIntegrator> other) -> BilinearForm& { self += other; return self; } )
+    .def_property_readonly("space", [](BF& self) { return self.GetFESpace(); })
 
     .def_property_readonly("integrators", [](BF & self)
                    {
@@ -3162,7 +3164,7 @@ flags : dict
 
 	     if (ir.Size())
                {
-                 cout << IM(5) << "ir = " << ir << endl;
+                 cout << IM(1) << "WARNING: Setting the integration rule for all element types is deprecated, use LFI.SetIntegrationRule(ELEMENT_TYPE, IntegrationRule) instead!" << endl;
                  dynamic_pointer_cast<SymbolicLinearFormIntegrator>
 		   (lfi)->SetIntegrationRule(ir);                   
                }
@@ -3220,7 +3222,7 @@ flags : dict
 
              if (ir.Size())
                {
-                 cout << IM(5) << "ir = " << ir << endl;
+                 cout << IM(1) << "WARNING: Setting the integration rule for all element types is deprecated, use BFI.SetIntegrationRule(ELEMENT_TYPE, IntegrationRule) instead!" << endl;
                  dynamic_pointer_cast<SymbolicBilinearFormIntegrator> (bfi)
                    ->SetIntegrationRule(ir);
                }
@@ -3280,7 +3282,8 @@ flags : dict
           );
           
   m.def("SymbolicEnergy",
-          [](spCF cf, VorB vb, py::object definedon, py::object definedonelem) -> shared_ptr<BilinearFormIntegrator>
+        [](spCF cf, VorB vb, py::object definedon, py::object definedonelem)
+        -> shared_ptr<BilinearFormIntegrator>
            {
              py::extract<Region> defon_region(definedon);
              if (defon_region.check())
@@ -3298,7 +3301,7 @@ flags : dict
              return bfi;
            },
            py::arg("coefficient"), py::arg("VOL_or_BND")=VOL, py::arg("definedon")=DummyArgument(),
-           py::arg("definedonelements")=DummyArgument()
+        py::arg("definedonelements")=DummyArgument()
           );
 
 
