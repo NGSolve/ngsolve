@@ -27,6 +27,8 @@ namespace ngcomp
     if (anydim) lfi = anydim->GetLFI (ma->GetDimension());
 
     parts.Append (lfi);
+    if (!lfi->SkeletonForm() && !lfi->IntegrationAlongCurve())
+      VB_parts[lfi->VB()].Append(lfi);
     return *this;
   }
   
@@ -211,29 +213,31 @@ namespace ngcomp
 		     auto & fel = el.GetFE();
 		     auto & eltrans = el.GetTrafo();
 
-		     for(int j = 0; j<parts.Size(); j++)
+		     // for(int j = 0; j<parts.Size(); j++)
+                     for (auto & lfip : VB_parts[vb])
 		       {
-			 if(parts[j]->VB() != vb) continue;
-			 if(!parts[j]->DefinedOn(el.GetIndex())) continue;
-                         if (parts[j]->SkeletonForm()) continue;
-			 if (parts[j] -> IntegrationAlongCurve()) continue;
-
+			 // if(parts[j]->VB() != vb) continue;
+			 // if(!parts[j]->DefinedOn(el.GetIndex())) continue;
+                         // if (parts[j]->SkeletonForm()) continue;
+			 // if (parts[j] -> IntegrationAlongCurve()) continue;
+                         if(!lfip->DefinedOn(el.GetIndex())) continue;
+                         
 			 int elvec_size = fel.GetNDof()*fespace->GetDimension();
 			 FlatVector<TSCAL> elvec(elvec_size, lh);
-			 parts[j] -> CalcElementVector (fel, eltrans, elvec, lh);
+			 lfip -> CalcElementVector (fel, eltrans, elvec, lh);
 			 
 			 if (printelvec)
 			   {
 			     testout->precision(8);
 			     *testout << "elnum = " << el.Nr() << endl
-				      << "integrator " << parts[j]->Name() << endl
+				      << "integrator " << lfip->Name() << endl
 				      << "dnums = " << endl << el.GetDofs() << endl
 				      << "element-index = " << eltrans.GetElementIndex() << endl
 				      << "elvec = " << endl << elvec << endl;
 			   }
 			 
 			 fespace->TransformVec (el, elvec, TRANSFORM_RHS);
-			 AddElementVector (el.GetDofs(), elvec, parts[j]->CacheComp()-1);
+			 AddElementVector (el.GetDofs(), elvec, lfip->CacheComp()-1);
 		       }
 		   });
 	      }
