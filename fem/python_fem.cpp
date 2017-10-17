@@ -606,6 +606,33 @@ val : can be one of the following:
              return c1*c2;
            } )
 
+    .def ("__pow__", [] (shared_ptr<CF> c1, int p)
+           {
+             shared_ptr<CF> one = make_shared<ConstantCoefficientFunction>(1.0);
+             if(p==0) return one;
+
+             unsigned n = abs(p);
+             shared_ptr<CF> square = c1;
+             shared_ptr<CF> res;
+
+             // exponentiation by squaring
+             while(n)
+             {
+               if(n%2)
+               {
+                 // check if res was not yet assigned any value
+                 res = res ? res*square : square;
+               }
+               square = square*square;
+               n /= 2;
+             }
+
+             if(p<0)
+               return one/res;
+             else
+               return res;
+           } )
+
     .def ("__pow__", [] (shared_ptr<CF> c1, shared_ptr<CF> c2)
            {
              GenericPow func;
