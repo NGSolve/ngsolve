@@ -148,7 +148,7 @@ namespace ngfem
       Vec<DIM, AutoDiffDiff<DIM>> addp;
       for (int i=0; i<DIM; i++)
       {
-        addp[i].Value() = adp[i].Value();
+        addp[i] = adp[i].Value();
         addp[i].LoadGradient(&adp[i].DValue(0));
       }
       Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM>> (addp), SBLambda([&] (int nr, auto val)
@@ -165,7 +165,7 @@ namespace ngfem
       Vec<DIM, AutoDiffDiff<DIM>> addp;
       for (int i=0; i<DIM; i++)
       {
-        addp[i].Value() = adp[i].Value();
+        addp[i] = adp[i].Value();
         addp[i].LoadGradient(&adp[i].DValue(0));
       }
       Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM>> (addp),SBLambda([&](int nr,auto val)
@@ -184,7 +184,7 @@ namespace ngfem
       Vec<DIM, AutoDiffDiff<DIM>> addp;
       for (int i=0; i<DIM; i++)
       {
-        addp[i].Value() = adp[i].Value();
+        addp[i] = adp[i].Value();
         addp[i].LoadGradient(&adp[i].DValue(0));
       }
 
@@ -197,7 +197,6 @@ namespace ngfem
       }
       else // curved element
       {
-
         Mat<DIM> jac = mip.GetJacobian();
         Mat<DIM> inv_jac = mip.GetJacobianInverse();
         Mat<DIM> hesse[3],finvT_h_tilde_finv[3];
@@ -278,8 +277,8 @@ namespace ngfem
     AutoDiffDiff<2> u, v;
   public:
     T_Sigma_u_Gradv  (AutoDiffDiff<2> au, AutoDiffDiff<2> av) : u(au), v(av) { ; }
-    Vec<3> Shape() { return Vec<3> (u.Value()*v.DDValue(1,1) + u.DValue(1)*v.DValue(1),
-                                    u.Value()*v.DDValue(0,0) + u.DValue(0)*v.DValue(0),
+    Vec<3> Shape() { return Vec<3> ((u.Value()*v.DDValue(1,1) + u.DValue(1)*v.DValue(1)),
+                                    (u.Value()*v.DDValue(0,0) + u.DValue(0)*v.DValue(0)),
                                     -u.Value()*v.DDValue(1,0) - 0.5 * (u.DValue(0)*v.DValue(1)+u.DValue(1)*v.DValue(0))); }
     Vec<2> DivShape()
     {
@@ -295,7 +294,6 @@ namespace ngfem
   
   template <int D>
   auto Sigma_u_Gradv (AutoDiffDiff<D> au, AutoDiffDiff<D> av) { return T_Sigma_u_Gradv<D>(au, av); }
-  
   
   // ***************** Type2 ****************************** */
   // ????
@@ -351,7 +349,29 @@ namespace ngfem
   template <int D>
   auto Type3 (AutoDiffDiff<D> au, AutoDiffDiff<D> av) { return T_Type3<D>(au, av); }
 
+ 
+  template <int D> class T_vSigmaGradu;
+  template <> class T_vSigmaGradu<2>
+  {
+    AutoDiffDiff<2> u,v;
+  public:
+    T_vSigmaGradu  (AutoDiffDiff<2> au, AutoDiffDiff<2> av) : u(au), v(av) { ; }
+    Vec<3> Shape() { return Vec<3> (u.DDValue(1,1)*v.Value(),
+                                    u.DDValue(0,0)*v.Value(),  -(u.DDValue(0,1)*v.Value()));}
+    Vec<2> DivShape()
+    {
+      double uxx = u.DDValue(0,0), uyy = u.DDValue(1,1), uxy = u.DDValue(0,1);
+      double ux = u.DValue(0), uy = u.DValue(1);
+      double vxx = v.DDValue(0,0), vyy = v.DDValue(1,1), vxy = v.DDValue(0,1);
+      double vx = v.DValue(0), vy = v.DValue(1);
+
+      return Vec<2> (uyy*vx- uxy*vy, uxx*vy- uxy*vx);
+    }
+  };
   
+  template <int D>
+  auto vSigmaGradu (AutoDiffDiff<D> au, AutoDiffDiff<D> av) { return T_vSigmaGradu<D>(au, av); }
+
   // ***************** Sigma ((vDu - uDv) w) ****************************** */
   // where u, v are NOW POSSIBLY NON-linear hat basis functions (i.e. vDu - uDv is Nedelec0 edge basis function)
   template <int D> class T_Sigma_Duv_minus_uDv_w;
@@ -541,6 +561,94 @@ namespace ngfem
     };
   };
   
+  template <> class HDivDivFE<ET_QUAD> : public T_HDivDivFE<ET_QUAD> 
+  {
+    
+  public:
+    using T_HDivDivFE<ET_QUAD> :: T_HDivDivFE;
+
+    enum {incsg = -1};
+    enum {incsugv = -1};
+
+    virtual void ComputeNDof()
+    {
+      order = 0;
+      ndof = 0;
+      for (int i=0; i<4; i++)
+      {
+        ndof += order_facet[i][0]+1;
+        order = max2(order, order_facet[i][0]);
+      }
+      int ninner = (order_inner[0]+1+incsg)*(order_inner[0]+1+incsg) + 
+        (order_inner[0]+2)*(order_inner[0]) *2 +
+        2*(order_inner[0]+1+incsugv) +1;
+      order = max2(order, order_inner[0]);
+      order += 5;
+      ndof += ninner;
+
+    }
+   template <typename Tx, typename TFA> 
+    void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
+    {
+      auto x = ip.x, y = ip.y;
+      AutoDiffDiff<2> lx[4] ={1-x, x, x, 1-x};
+      AutoDiffDiff<2> ly[4] = {1-y, 1-y, y, y};
+      
+      int ii = 0;
+      
+
+      const EDGE * edges = ElementTopology::GetEdges(ET_QUAD);
+
+      ArrayMem<AutoDiffDiff<2>,20> u(order+2), v(order+2);
+      
+      for (int i = 0; i < 4; i++)
+        {
+          int es = edges[i][0], ee = edges[i][1];
+          if (vnums[es] > vnums[ee]) swap (es,ee);
+          
+          AutoDiffDiff<2> xi = lx[ee]+ly[ee]-lx[es]-ly[es];
+          AutoDiffDiff<2> eta = lx[es]*ly[es]+lx[ee]*ly[ee];
+
+	  IntegratedLegendreMonomialExt::Calc(order_facet[i][0]+2,xi,u);
+
+          
+          for (int l = 0; l <= order_facet[i][0]; l++)
+            shape[ii++] = SigmaGrad (eta*u[l]);
+        }
+
+
+      int oi=order_inner[0];
+
+
+      IntegratedLegendreMonomialExt::Calc(oi+3,lx[0]-lx[1],u);
+      IntegratedLegendreMonomialExt::Calc(oi+3,ly[0]-ly[2],v);
+      
+      
+      for(int i = 0; i <= oi+incsg; i++)
+      {
+        for(int j = 0; j <= oi+incsg; j++)
+        {
+          shape[ii++] = SigmaGrad(u[i]*v[j]);
+        }
+      }
+      for(int i = 0; i <= oi+1; i++)
+      {
+        for(int j = 0; j <= oi-1; j++)
+        {
+          shape[ii++] = vSigmaGradu(u[i],v[j]);
+          shape[ii++] = vSigmaGradu(v[i],u[j]);
+        }
+      }
+
+      shape[ii++] = Sigma_u_Gradv(lx[0], ly[0]);
+
+      for(int i = 0; i <= oi+incsugv; i++)
+      {
+        shape[ii++] = Sigma_u_Gradv(u[i], ly[0]);
+        shape[ii++] = Sigma_u_Gradv(v[i], lx[0]); //
+      }
+    };
+  };
 
   // ***************** S_zz(uvw) ****************************** */
   // write uvw into zz component
@@ -1438,7 +1546,7 @@ namespace ngfem
       Vec<DIM, AutoDiffDiff<DIM+1>> addp;
       for (int i=0; i<DIM+1; i++)
       {
-        addp[i].Value() = adp[i].Value();
+        addp[i] = adp[i].Value();
         addp[i].LoadGradient(&adp[i].DValue(0));
       }
       Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM+1>> (addp), SBLambda([&] (int nr, auto val)
@@ -1455,7 +1563,7 @@ namespace ngfem
       Vec<DIM, AutoDiffDiff<DIM+1>> addp;
       for (int i=0; i<DIM+1; i++)
       {
-        addp[i].Value() = adp[i].Value();
+        addp[i] = adp[i].Value();
         addp[i].LoadGradient(&adp[i].DValue(0));
       }
       Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM+1>> (addp),SBLambda([&](int nr,auto val)
