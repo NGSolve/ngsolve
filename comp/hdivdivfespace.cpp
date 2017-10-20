@@ -525,19 +525,39 @@ namespace ngcomp
             ndof += first_facet_dof[f+1] - first_facet_dof[f];            
         }
         break;
+      case ET_QUAD:
+        //ndof += 2*(oi[0]+2)*(oi[0]+1) +1;
+        ndof += (oi[0]+1+HDivDivFE<ET_QUAD>::incsg)*(oi [0]+1+HDivDivFE<ET_QUAD>::incsg)
+          + (oi[0]+2)*(oi[0])*2
+          + 2*(oi[0]+1+HDivDivFE<ET_QUAD>::incsugv) +1;
+        if(discontinuous)
+        {
+          for (auto f : ma->GetElFacets(ei))
+            ndof += first_facet_dof[f+1] - first_facet_dof[f];            
+        }
+        break;
       case ET_PRISM:
         ndof += 3*(oi[0]+1+incrorder_xx1)*(oi[0]+incrorder_xx1)*(oi[2]+1+incrorder_xx2)/2 + 
           (oi[0]+1+incrorder_zz1)*(oi[0]+2+incrorder_zz1)*(oi[2]-1+incrorder_zz2)/2 + 
           (oi[0]+1)*(oi[0]+2)*(oi[2]+1)/2*2;
         if(discontinuous)
         {
-          /*
-          auto fnums = ma->GetElFacets(ei);
-          for(int ii=0; ii<fnums.Size(); ii++)
-          {
-            ndof += first_facet_dof[fnums[ii]+1] - first_facet_dof[fnums[ii]];
-          }
-          */
+          for (auto f : ma->GetElFacets(ei))
+            ndof += first_facet_dof[f+1] - first_facet_dof[f];            
+        }
+        break;
+      case ET_HEX:
+        ndof += 3*(oi[0]+2)*(oi[0])*(oi[0]+2) + 3*(oi[0]+1)*(oi[0]+2)*(oi[0]+1);
+        if(discontinuous)
+        {
+          for (auto f : ma->GetElFacets(ei))
+            ndof += first_facet_dof[f+1] - first_facet_dof[f];            
+        }
+        break;
+      case ET_TET:
+        ndof += (oi[0]+1)*(oi[0]+2)*(oi[0]+1);
+        if(discontinuous)
+        {
           for (auto f : ma->GetElFacets(ei))
             ndof += first_facet_dof[f+1] - first_facet_dof[f];            
         }
@@ -650,9 +670,42 @@ namespace ngcomp
       fe->ComputeNDof();
       return *fe;
     }
+    case ET_QUAD:
+    {
+      auto fe = new (alloc) HDivDivFE<ET_QUAD> (order,plus);
+      fe->SetVertexNumbers (ngel.Vertices());
+      int ii = 0;
+      for(auto f : ngel.Facets())
+        fe->SetOrderFacet(ii++,order_facet[f]);
+      fe->SetOrderInner(order_inner[ei.Nr()]);
+      fe->ComputeNDof();
+      return *fe;
+    }
     case ET_PRISM:
     {
       auto fe = new (alloc) HDivDivFE<ET_PRISM> (order,plus);
+      fe->SetVertexNumbers (ngel.vertices);
+      int ii = 0;
+      for(auto f : ngel.Facets())
+        fe->SetOrderFacet(ii++,order_facet[f]);
+      fe->SetOrderInner(order_inner[ei.Nr()]);
+      fe->ComputeNDof();
+      return *fe;
+    }
+    case ET_HEX:
+    {
+      auto fe = new (alloc) HDivDivFE<ET_HEX> (order,plus);
+      fe->SetVertexNumbers (ngel.vertices);
+      int ii = 0;
+      for(auto f : ngel.Facets())
+        fe->SetOrderFacet(ii++,order_facet[f]);
+      fe->SetOrderInner(order_inner[ei.Nr()]);
+      fe->ComputeNDof();
+      return *fe;
+    }
+    case ET_TET:
+    {
+      auto fe = new (alloc) HDivDivFE<ET_TET> (order,plus);
       fe->SetVertexNumbers (ngel.vertices);
       int ii = 0;
       for(auto f : ngel.Facets())
