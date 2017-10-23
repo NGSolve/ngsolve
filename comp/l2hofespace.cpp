@@ -290,7 +290,6 @@ namespace ngcomp
 
   FiniteElement & L2HighOrderFESpace :: GetFE (ElementId ei, Allocator & alloc) const
   {
-    if (ei.VB()==BBND) throw Exception ("BBND not available in L2HighOrderFESpace");
     if (ei.IsVolume())
       {
         int elnr = ei.Nr();
@@ -346,13 +345,12 @@ namespace ngcomp
       }
     else
       {
-        int elnr = ei.Nr();
         switch (ma->GetElType(ei))
           {
           case ET_POINT: return *new (alloc) DummyFE<ET_POINT>; 
-          case ET_SEGM:  return *new (alloc) DummyFE<ET_SEGM>; break;
-          case ET_TRIG:  return *new (alloc) DummyFE<ET_TRIG>; break;
-          case ET_QUAD:  return *new (alloc) DummyFE<ET_QUAD>; break;
+          case ET_SEGM:  return *new (alloc) DummyFE<ET_SEGM>;
+          case ET_TRIG:  return *new (alloc) DummyFE<ET_TRIG>;
+          case ET_QUAD:  return *new (alloc) DummyFE<ET_QUAD>;
             
           default:
             stringstream str;
