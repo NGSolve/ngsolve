@@ -2879,6 +2879,12 @@ namespace ngcomp
         // static Timer t("VisualizeCoefficientFunction::GetMultiSurfValue", 2); RegionTimer reg(t);
         // static Timer t2("VisualizeCoefficientFunction::GetMultiSurfValue evaluate", 2);
 
+    VorB vb = (ma->GetDimension() == 3) ? BND : VOL;
+    ElementId ei(vb, selnr);
+    LocalHeapMem<100000> lh("viscf::getmultisurfvalue");
+    ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
+    if (!cf->DefinedOn(eltrans)) return false;
+
     if (cf -> IsComplex())
       {
         for (int i = 0; i < npts; i++)
@@ -2886,12 +2892,6 @@ namespace ngcomp
         return true;
       }
     
-    VorB vb = (ma->GetDimension() == 3) ? BND : VOL;
-    ElementId ei(vb, selnr);
-    
-    LocalHeapMem<100000> lh("viscf::getmultisurfvalue");
-    ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
-    if (!cf->DefinedOn(eltrans)) return false;
 
     FlatMatrix<> mvalues1(npts, GetComponents(), lh);
 
