@@ -147,10 +147,6 @@ namespace ngcomp
          &mir[0].Point()(0), ir.Size()>1 ? &mir[1].Point()(0)-&mir[0].Point()(0) : 0, 
          &mir[0].Jacobian()(0,0), ir.Size()>1 ? &mir[1].Jacobian()(0,0)-&mir[0].Jacobian()(0,0) : 0);
 
-      /*
-      for (int i = 0; i < ir.Size(); i++)
-        mir[i].Compute();
-      */
       for (auto & mip : mir)
         mip.Compute();
   }
@@ -814,7 +810,6 @@ namespace ngcomp
         nnodes[NT_ELEMENT] = 0;
         nnodes[NT_FACET] = 0;
         dim = -1;
-        // ne_vb[VOL] = ne_vb[BND] = ne_vb[BBND] = 0;
         return;
       }
 
@@ -830,7 +825,6 @@ namespace ngcomp
             nnodes_cd[i] = 0;
             nelements_cd[i] = 0;
           }
-        // ne_vb[VOL] = ne_vb[BND] = ne_vb[BBND] = 0;
       }
     else
       {
@@ -849,23 +843,16 @@ namespace ngcomp
 	    nnodes_cd[i] = nnodes[dim-i];
 	    nelements_cd[i] = nelements[dim-i];
 	  }
-        /*
-        ne_vb[VOL] = nelements_cd[0];
-        ne_vb[BND] = nelements_cd[1];
-	if(dim==1)
-	  ne_vb[BBND] = 0;
-	else 
-	  ne_vb[BBND] = nelements_cd[2];
-        */
       }
     nnodes[NT_ELEMENT] = nnodes[StdNodeType (NT_ELEMENT, dim)];
     nnodes[NT_FACET] = nnodes[StdNodeType (NT_FACET, dim)];
-    
+
+    int & ndomains = nregions[0];    
     ndomains = -1;
-    int ne = GetNE();
+    // int ne = GetNE();
     
     auto minmax =
-      ParallelReduce (ne,
+      ParallelReduce (GetNE(VOL),
                       [&] (size_t i)
                       {
                         auto ind = GetElIndex(ElementId(VOL, i));
@@ -894,21 +881,21 @@ namespace ngcomp
     ndomains++;
     ndomains = MyMPI_AllReduce (ndomains, MPI_MAX);
     pml_trafos.SetSize(ndomains);
-
-    nboundaries = -1;
-    int nse = GetNSE(); 
-    for (int i = 0; i < nse; i++)
+    
+    int nboundaries = -1;
+    for (auto el : Elements(BND))
       {
-        ElementId sei(BND, i);
-        int elindex = GetElIndex(sei);
+        int elindex = el.GetIndex();
         if (elindex < 0) throw Exception("mesh with negative boundary-condition number");
         nboundaries = max2(nboundaries, elindex);
       }
-
     nboundaries++;
     nboundaries = MyMPI_AllReduce (nboundaries, MPI_MAX);
+    nregions[1] = nboundaries;
 
     CalcIdentifiedFacets();
+
+    int & nbboundaries = nregions[BBND];
     if(mesh.GetDimension() == 1)
       {
         nbboundaries = 0;
@@ -916,11 +903,13 @@ namespace ngcomp
     else
       {
         nbboundaries = -1;
-        int ncd2e = nelements_cd[2];
-        for (int i=0; i< ncd2e; i++)
+        // int ncd2e = nelements_cd[2];
+        // for (int i=0; i< ncd2e; i++)
+        for (auto el : Elements(BBND))          
           {
-            ElementId ei(BBND, i);
-            int elindex = GetElIndex(ei);
+            // ElementId ei(BBND, i);
+            // int elindex = GetElIndex(ei);
+            int elindex = el.GetIndex();            
             //if (elindex < 0) throw Exception ("mesh with negative cd2 condition number");
             if (elindex >=0)
               nbboundaries = max2(nbboundaries, elindex);
@@ -1072,13 +1061,7 @@ namespace ngcomp
   {
     // static Timer t("getedgeelements"); RegionTimer reg(t);    
     elnums.SetSize0();
-    /*
-    int p0, p1;
-    GetEdgePNums(enr, p0, p1);
 
-    auto velems0 = GetVertexElements(p0);
-    auto velems1 = GetVertexElements(p1);
-    */
     auto vts = mesh.GetNode<1>(enr).vertices;
     auto velems0 = GetVertexElements(vts[0]);
     auto velems1 = GetVertexElements(vts[1]);
@@ -1105,14 +1088,10 @@ namespace ngcomp
   {
     // static Timer t("getedgesurfelements"); RegionTimer reg(t);
     elnums.SetSize0();
-    // ArrayMem<int,3> pnums;
+
     int p0, p1;
-    // ArrayMem<int,50> velems0, velems1; 
     GetEdgePNums(enr, p0, p1);
-    /*
-    GetVertexSurfaceElements(p0, velems0);
-    GetVertexSurfaceElements(p1, velems1);
-    */
+
     auto velems0 = GetVertexSurfaceElements(p0);
     auto velems1 = GetVertexSurfaceElements(p1);
     // now compare
@@ -1232,77 +1211,15 @@ namespace ngcomp
       }
   }
 
-
-  /*
-  void MeshAccess :: GetEdgePNums (int enr, int & pn1, int & pn2) const
-  {
-    auto edge = mesh.GetNode<1>(enr);
-    pn1 = edge.vertices[0];
-    pn2 = edge.vertices[1];
-
-    // int v2[2];
-    // Ng_GetEdge_Vertices (enr+1, v2);
-    // pn1 = v2[0]-1;
-    // pn2 = v2[1]-1;
-  }
-  */
-
-  /*
-  auto MeshAccess :: GetEdgePNums (int enr) const -> decltype(ArrayObject(INT<2>()))
-  {
-    int v2[2];
-    Ng_GetEdge_Vertices (enr+1, v2);
-    return ArrayObject (INT<2> (v2[0]-1, v2[1]-1));
-  }
-  */
-
+  
   void MeshAccess :: GetEdgePNums (int enr, Array<int> & pnums) const
   {
     pnums.SetSize(2);
-    // Ng_GetEdge_Vertices (enr+1, &pnums[0]);
-    // pnums[0] -= 1;
-    // pnums[1] -= 1;
     auto edge = mesh.GetNode<1>(enr);
     pnums[0] = edge.vertices[0];
     pnums[1] = edge.vertices[1];
   }
 
-  /*
-  void MeshAccess :: GetElFacets (ElementId ei, Array<int> & fnums) const
-  {
-    fnums = GetElement(ei).Facets();
-  }
-
-  // some utility for Facets
-  void MeshAccess :: GetElFacets (int elnr, Array<int> & fnums) const
-  {
-    switch (dim)
-      {
-      case 1: fnums = GetElement<1,VOL> (elnr).Vertices(); break;
-      case 2: fnums = GetElement<2,VOL> (elnr).Edges(); break;
-      default:
-        fnums = GetElement<3,VOL> (elnr).Faces();
-      }
-  } 
-  */
-  
-  /*
-  void MeshAccess :: GetSElFacets (int selnr, Array<int> & fnums) const
-  {
-    switch (dim)
-      {
-      case 1:
-        GetSElVertices(selnr, fnums); break;
-      case 2:
-        GetSElEdges(selnr, fnums); break;
-      default:
-        {
-          fnums.SetSize(1);
-          fnums[0] = GetSElFace(selnr);
-        }
-      }
-  }
-  */
   
   void MeshAccess :: GetFacetPNums (int fnr, Array<int> & pnums) const
   {
@@ -1622,40 +1539,6 @@ namespace ngcomp
     for (int i : Range(mask))
       if (regex_match(mesh->GetMaterial(vb,i), re_pattern))
         mask.Set(i);
-    
-    /*
-    if (vb == VOL)
-      {
-        mask = BitArray(mesh->GetNDomains());
-        mask.Clear();
-        regex re_pattern(pattern);
-        for (int i : Range(mask))
-          if (regex_match(mesh->GetMaterial(VOL,i), re_pattern))
-            mask.Set(i);
-      }
-    else
-      if (vb==BND)
-      {
-        mask = BitArray(mesh->GetNBoundaries());
-        mask.Clear();
-        regex re_pattern(pattern);
-        for (int i : Range(mask))
-          if (regex_match(mesh->GetMaterial(BND,i), re_pattern))
-            mask.Set(i);
-      }
-      else
-	{
-          mask = BitArray(mesh->GetNBBoundaries());
-          mask.Clear();
-          regex re_pattern(pattern);
-	  for(int i : Range(mask))
-	    (*testout) << "boundary condition " << i << ": " << mesh->GetMaterial(BBND,i) << endl;
-	  for (int i : Range(mask))
-	    if (regex_match(mesh->GetMaterial(BBND,i), re_pattern))
-	      mask.Set(i);
-	  (*testout) << "mask: " << mask << endl;
-	}
-    */
   }      
 
 

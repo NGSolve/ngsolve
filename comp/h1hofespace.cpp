@@ -171,26 +171,15 @@ namespace ngcomp
       }
     if (dimension > 1)
       {
-        for (auto vb : { VOL,BND })
+        for (auto vb : { VOL,BND, BBND, BBBND })
           {
-            evaluator[vb] = make_shared<BlockDifferentialOperator> (evaluator[vb], dimension);
-            flux_evaluator[vb] = make_shared<BlockDifferentialOperator> (flux_evaluator[vb], dimension);            
+            if (evaluator[vb])
+              evaluator[vb] = make_shared<BlockDifferentialOperator> (evaluator[vb], dimension);
+            if (flux_evaluator[vb])
+              flux_evaluator[vb] = make_shared<BlockDifferentialOperator> (flux_evaluator[vb], dimension);            
           }
-        /*
-	evaluator[VOL] = make_shared<BlockDifferentialOperator> (evaluator[VOL], dimension);
-	flux_evaluator[VOL] = make_shared<BlockDifferentialOperator> (flux_evaluator[VOL], dimension);
-	evaluator[BND] = 
-	  make_shared<BlockDifferentialOperator> (evaluator[BND], dimension);
-	flux_evaluator[BND] = 
-	  make_shared<BlockDifferentialOperator> (flux_evaluator[BND], dimension);
-        */
       }
 
-    /*
-    auto one = make_shared<ConstantCoefficientFunction> (1);
-    integrator[VOL] = CreateBFI("mass", ma->GetDimension(), one);
-    integrator[BND] = CreateBFI("robin", ma->GetDimension(), one);
-    */
     switch (ma->GetDimension())
       {
       case 1:
@@ -203,13 +192,6 @@ namespace ngcomp
         ;
       }
 
-    /*
-    if (dimension > 1)
-      {
-	integrator[VOL] = make_shared<BlockBilinearFormIntegrator> (integrator[VOL], dimension);
-        integrator[BND] = make_shared<BlockBilinearFormIntegrator> (integrator[BND], dimension);
-      }
-    */
     prol = make_shared<LinearProlongation> (*this);
   }
 
