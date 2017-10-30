@@ -1565,7 +1565,12 @@ kwargs : For a description of the possible kwargs have a look a bit further down
     .def_property_readonly("globalorder", [] (shared_ptr<FESpace> self) { return self->GetOrder(); },
                   "query global order of space")    
     .def_property_readonly("type", [] (shared_ptr<FESpace> self) { return self->type; },
-                  "type of finite element space")    
+                  "type of finite element space")
+
+    .def("SetDefinedOn", [] (FESpace& self, Region& reg)
+         {
+           self.SetDefinedOn(reg.VB(),reg.Mask());
+         }, py::arg("Region"))
 
     .def("SetOrder",
          [](shared_ptr<FESpace> self, ELEMENT_TYPE et, py::object order, py::object order_left, py::object order_right)
