@@ -221,6 +221,8 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("__isub__", [](BaseVector & self,  BaseVector & other) -> BaseVector& { self -= other; return self;})
     .def("__imul__", [](BaseVector & self,  double scal) -> BaseVector& { self *= scal; return self;})
     .def("__imul__", [](BaseVector & self,  Complex scal) -> BaseVector& { self *= scal; return self;})
+    .def("__itruediv__", [](BaseVector & self,  double scal) -> BaseVector& { self /= scal; return self;})
+    .def("__itruediv__", [](BaseVector & self,  Complex scal) -> BaseVector& { self /= scal; return self;})
     .def("InnerProduct", [](BaseVector & self, BaseVector & other, bool conjugate)
                                           {
                                             if (self.IsComplex())
