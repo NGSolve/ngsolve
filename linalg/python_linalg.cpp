@@ -92,9 +92,18 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("__repr__", [](BaseVector &self) { return "basevector"; } )
     .def_property_readonly("size", py::cpp_function( [] (BaseVector &self) { return self.Size(); } ) )
     .def("__len__", [] (BaseVector &self) { return self.Size(); })
-    .def("CreateVector", [] ( BaseVector & self)
-        { return shared_ptr<BaseVector>(self.CreateVector()); } )
-
+    .def("CreateVector", [] (BaseVector & self)
+         { return shared_ptr<BaseVector>(self.CreateVector()); },
+         "creates a new vector of same type, contents is undefined")
+    
+    .def("Copy", [] (BaseVector & self)
+         {
+           auto hv = shared_ptr<BaseVector>(self.CreateVector());
+           *hv = self;
+           return hv;
+         },
+         "creates a new vector of same type, copy contents")
+    
     .def("Assign",[](BaseVector & self, BaseVector & v2, py::object s)->void
                                    { 
                                      if ( py::extract<double>(s).check() )
