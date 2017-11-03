@@ -250,6 +250,10 @@ namespace ngfem
   template <int DIM, typename SCAL>
   INLINE Class_Du<DIM,SCAL> Du (AutoDiff<DIM,SCAL> u)
   { return Class_Du<DIM,SCAL> (u); }
+  
+  template <int DIM, typename SCAL>
+  INLINE Class_Du<DIM,SCAL> Du (AutoDiffRec<DIM,SCAL> u)
+  { return Class_Du<DIM,SCAL> (u); }
 
 
 
@@ -286,6 +290,10 @@ namespace ngfem
 
   template <int DIM, typename SCAL>
   INLINE Class_uDv<DIM,SCAL> uDv (AutoDiff<DIM,SCAL> u, AutoDiff<DIM,SCAL> v)
+  { return Class_uDv<DIM,SCAL> (u,v); }
+  
+  template <int DIM, typename SCAL>
+  INLINE Class_uDv<DIM,SCAL> uDv (AutoDiffRec<DIM,SCAL> u, AutoDiffRec<DIM,SCAL> v)
   { return Class_uDv<DIM,SCAL> (u,v); }
 
 
@@ -324,6 +332,10 @@ namespace ngfem
   uDv_minus_vDu (AutoDiff<DIM,SCAL> u, AutoDiff<DIM,SCAL> v)
   { return Class_uDv_minus_vDu<DIM,SCAL> (u,v); }
 
+  template <int DIM, typename SCAL>
+  INLINE Class_uDv_minus_vDu<DIM,SCAL> 
+  uDv_minus_vDu (AutoDiffRec<DIM,SCAL> u, AutoDiffRec<DIM,SCAL> v)
+  { return Class_uDv_minus_vDu<DIM,SCAL> (u,v); }
 
 
 
@@ -365,6 +377,10 @@ namespace ngfem
   wuDv_minus_wvDu (AutoDiff<DIM,SCAL> u, AutoDiff<DIM,SCAL> v, AutoDiff<DIM,SCAL> w)
   { return Class_wuDv_minus_wvDu<DIM,SCAL> (u,v,w); }
 
+  template <int DIM, typename SCAL>
+  INLINE Class_wuDv_minus_wvDu<DIM,SCAL> 
+  wuDv_minus_wvDu (AutoDiffRec<DIM,SCAL> u, AutoDiffRec<DIM,SCAL> v, AutoDiffRec<DIM,SCAL> w)
+  { return Class_wuDv_minus_wvDu<DIM,SCAL> (u,v,w); }
 
 
 

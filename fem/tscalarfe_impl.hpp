@@ -44,7 +44,7 @@ namespace ngfem
     // Vec<DIM, AutoDiff<DIM> > adp = ip;
     TIP<DIM,AutoDiff<DIM>> tip = ip;
     T_CalcShape (tip, // TIP<DIM,AutoDiff<DIM>> (ip),
-                 SBLambda ([&] (int i, AutoDiff<DIM> shape)
+                 SBLambda ([dshape] (auto i, AutoDiff<DIM> shape)
                            { shape.StoreGradient (&dshape(i,0)) ; }));
   }
 

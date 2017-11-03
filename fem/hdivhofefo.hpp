@@ -145,10 +145,10 @@ namespace ngfem
 
 
     template<typename Tx, typename TFA>   
-    void T_CalcShape (Tx hx[2], TFA & shape) const
+    void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
     {
       if (only_ho_div && (ORDER <= 1)) return;
-      Tx x = hx[0], y = hx[1];
+      Tx x = ip.x, y = ip.y;
       Tx lami[3] = { x, y, 1-x-y };
 
       Tx adpol1[ORDER], adpol2[ORDER];
