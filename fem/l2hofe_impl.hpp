@@ -375,9 +375,9 @@ namespace ngfem
       
     LegendrePolynomial (p, xi, polx);
     LegendrePolynomial (q, eta, poly);
-      
-    for (int i = 0, ii = 0; i <= p; i++)
-      for (int j = 0; j <= q; j++)
+
+    for (size_t i = 0, ii = 0; i <= p; i++)
+      for (size_t j = 0; j <= q; j++)
         shape[ii++] = polx[i] * poly[j];
   }
 
