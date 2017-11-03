@@ -421,6 +421,7 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
         class_FMD.def("Inverse", [](FMD & self, FMD & inv) {
 	    CalcInverse(self,inv); return;
 	  });
+        class_FMD.def_property_readonly("I", py::cpp_function([](FMD &self) { return Inv(self); } ) );        
         PyDefMatBuffer<FMD>(class_FMD);
 
 
