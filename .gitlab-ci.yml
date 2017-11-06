@@ -360,17 +360,17 @@ linux_cleanup:
     - docker
   script:
     # remove built docker images
-    - docker ps -a | awk '{ print $1,$2 }' | grep ngsolve_${CI_PIPELINE_ID} | awk '{print $1 }' | xargs -I {} docker rm {}
-    - docker rmi -f ngsolve_${CI_PIPELINE_ID}:16.04
-    - docker rmi -f ngsolve_${CI_PIPELINE_ID}_installed:16.04
-    - docker rmi -f ngsolve_${CI_PIPELINE_ID}:16.10
-    - docker rmi -f ngsolve_${CI_PIPELINE_ID}_installed:16.10
-    - docker rmi -f ngsolve_${CI_PIPELINE_ID}:17.04
-    - docker rmi -f ngsolve_${CI_PIPELINE_ID}_installed:17.04
-    - docker rmi -f ngsolve_${CI_PIPELINE_ID}:17.10
-    - docker rmi -f ngsolve_${CI_PIPELINE_ID}_installed:17.10
-    - docker rmi -f ngsolve_${CI_PIPELINE_ID}:debug
-    - docker rmi -f ngsolve_${CI_PIPELINE_ID}_installed:debug
+    - docker ps -a | awk '{ print $1,$2 }' | grep ngsolve_${CI_PIPELINE_ID} | awk '{print $1 }' | xargs -I {} docker rm {} || true
+    - docker rmi -f ngsolve_${CI_PIPELINE_ID}:16.04 || true
+    - docker rmi -f ngsolve_${CI_PIPELINE_ID}_installed:16.04 || true
+    - docker rmi -f ngsolve_${CI_PIPELINE_ID}:16.10 || true
+    - docker rmi -f ngsolve_${CI_PIPELINE_ID}_installed:16.10 || true
+    - docker rmi -f ngsolve_${CI_PIPELINE_ID}:17.04 || true
+    - docker rmi -f ngsolve_${CI_PIPELINE_ID}_installed:17.04 || true
+    - docker rmi -f ngsolve_${CI_PIPELINE_ID}:17.10 || true
+    - docker rmi -f ngsolve_${CI_PIPELINE_ID}_installed:17.10 || true
+    - docker rmi -f ngsolve_${CI_PIPELINE_ID}:debug || true
+    - docker rmi -f ngsolve_${CI_PIPELINE_ID}_installed:debug || true
   when: always
   allow_failure: true
 
