@@ -3,7 +3,8 @@ find_program(GIT_EXECUTABLE git)
 ExternalProject_Add(
     project_catch
     PREFIX ${CMAKE_BINARY_DIR}/catch
-    GIT_REPOSITORY https://github.com/philsquared/Catch.git
+    GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+    GIT_TAG v2.0.1
     TIMEOUT 10
     UPDATE_COMMAND "" # ${GIT_EXECUTABLE} pull
     CONFIGURE_COMMAND ""
