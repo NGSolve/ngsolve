@@ -71,6 +71,12 @@ stages:
     UBUNTU_VERSION: "17.04"
     UBUNTU_VERSION_NAME: "zesty"
 
+.template_ubuntu_1710: &ubuntu_1710
+  <<: *ubuntu
+  variables:
+    UBUNTU_VERSION: "17.10"
+    UBUNTU_VERSION_NAME: "artful"
+
 .template_ubuntu_debug: &ubuntu_debug
   <<: *ubuntu
   variables:
@@ -158,6 +164,10 @@ ubuntu_1704_build:
   <<: *ubuntu_1704
   <<: *build_linux
 
+ubuntu_1710_build:
+  <<: *ubuntu_1710
+  <<: *build_linux
+
 debug_build:
   <<: *ubuntu_debug
   <<: *build_linux
@@ -236,6 +246,10 @@ ubuntu_1610_test:
 
 ubuntu_1704_test:
   <<: *ubuntu_1704
+  <<: *test_linux
+
+ubuntu_1710_test:
+  <<: *ubuntu_1710
   <<: *test_linux
 
 debug_test:
@@ -353,6 +367,8 @@ linux_cleanup:
     - docker rmi -f ngsolve_${CI_PIPELINE_ID}_installed:16.10
     - docker rmi -f ngsolve_${CI_PIPELINE_ID}:17.04
     - docker rmi -f ngsolve_${CI_PIPELINE_ID}_installed:17.04
+    - docker rmi -f ngsolve_${CI_PIPELINE_ID}:17.10
+    - docker rmi -f ngsolve_${CI_PIPELINE_ID}_installed:17.10
     - docker rmi -f ngsolve_${CI_PIPELINE_ID}:debug
     - docker rmi -f ngsolve_${CI_PIPELINE_ID}_installed:debug
   when: always
