@@ -70,8 +70,8 @@ namespace ngcomp
       // auto fes = bfa -> GetFESpace();
       shared_ptr<MeshAccess> ma = fes->GetMeshAccess();
 
-      Array<int> wbdcnt(ma->GetNE()+ma->GetNSE());
-      Array<int> ifcnt(ma->GetNE()+ma->GetNSE());
+      Array<int> wbdcnt(ma->GetNE()+ma->GetNSE()+ma->GetNCD2E());
+      Array<int> ifcnt(ma->GetNE()+ma->GetNSE()+ma->GetNCD2E());
       wbdcnt = 0;
       ifcnt = 0;
       const BitArray & freedofs = *fes->GetFreeDofs();
@@ -79,12 +79,12 @@ namespace ngcomp
 
       LocalHeap lh(10000, "BDDC-constr, dummy heap");
       
-      for (auto vb : { VOL, BND })
+      for (auto vb : { VOL, BND, BBND })
         IterateElements 
           (*fes, vb, lh, 
            [&] (FESpace::Element el, LocalHeap & lh)
            {
-             int base = (vb == VOL) ? 0 : ma->GetNE();
+             int base = (vb == VOL) ? 0 : ((vb == BND) ? ma->GetNE() : ma->GetNE() + ma->GetNSE());
              for (auto d : el.GetDofs())
                {
                  if (d == -1) continue;
@@ -103,12 +103,12 @@ namespace ngcomp
       Table<int> el2wbdofs(wbdcnt);   // wirebasket dofs on each element
       Table<int> el2ifdofs(ifcnt);    // interface dofs on each element
       
-      for (auto vb : { VOL, BND })
+      for (auto vb : { VOL, BND, BBND })
         IterateElements 
           (*fes, vb, lh, 
            [&] (FESpace::Element el, LocalHeap & lh)
            {
-             int base = (vb == VOL) ? 0 : ma->GetNE();
+             int base = (vb == VOL) ? 0 : ((vb == BND) ? ma->GetNE() : ma->GetNE() + ma->GetNSE());
              int lifcnt = 0;
              int lwbcnt = 0;
 
