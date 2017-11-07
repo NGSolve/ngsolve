@@ -1231,9 +1231,8 @@ int NGSolve_Init (Tcl_Interp * interp)
 #endif
 
 
-#ifdef USE_PARDISO
+if(is_pardiso_available)
   cout << "Including sparse direct solver Pardiso" << endl;
-#endif
 
 #ifdef USE_UMFPACK
   cout << "Including sparse direct solver UMFPACK" << endl;

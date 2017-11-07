@@ -1386,11 +1386,10 @@ namespace ngla
       }
     else if (  BaseSparseMatrix :: GetInverseType()  == PARDISO ||  BaseSparseMatrix :: GetInverseType()  == PARDISOSPD)
       {
-#ifdef USE_PARDISO
-	return make_shared<PardisoInverse<TM,TV_ROW,TV_COL>> (*this, subset);
-#else
-	throw Exception ("SparseMatrix::InverseMatrix:  PardisoInverse not available");
-#endif
+        if(is_pardiso_available)
+          return make_shared<PardisoInverse<TM,TV_ROW,TV_COL>> (*this, subset);
+        else
+          throw Exception ("SparseMatrix::InverseMatrix:  PardisoInverse not available");
       }
     else if (  BaseSparseMatrix :: GetInverseType()  == UMFPACK)
       {
@@ -1447,11 +1446,10 @@ namespace ngla
       }
     else if ( BaseSparseMatrix :: GetInverseType()  == PARDISO ||  BaseSparseMatrix :: GetInverseType()  == PARDISOSPD)
       {
-#ifdef USE_PARDISO
-	return make_shared<PardisoInverse<TM,TV_ROW,TV_COL>> (*this, nullptr, clusters);
-#else
-	throw Exception ("SparseMatrix::InverseMatrix:  PardisoInverse not available");
-#endif
+        if(is_pardiso_available)
+          return make_shared<PardisoInverse<TM,TV_ROW,TV_COL>> (*this, nullptr, clusters);
+        else
+          throw Exception ("SparseMatrix::InverseMatrix:  PardisoInverse not available");
       }
     else if (  BaseSparseMatrix :: GetInverseType()  == UMFPACK)
       {
@@ -2514,11 +2512,10 @@ namespace ngla
       }
     else if ( BaseSparseMatrix :: GetInverseType()  == PARDISO ||  BaseSparseMatrix :: GetInverseType()  == PARDISOSPD)
       {
-#ifdef USE_PARDISO
-	return make_shared<PardisoInverse<TM,TV_ROW,TV_COL>> (*this, subset, nullptr, 1);
-#else
-	throw Exception ("SparseMatrix::InverseMatrix:  PardisoInverse not available");
-#endif
+        if(is_pardiso_available)
+          return make_shared<PardisoInverse<TM,TV_ROW,TV_COL>> (*this, subset, nullptr, 1);
+        else
+          throw Exception ("SparseMatrix::InverseMatrix:  PardisoInverse not available");
       }
     else if (  BaseSparseMatrix :: GetInverseType()  == UMFPACK)
       {
@@ -2572,11 +2569,10 @@ namespace ngla
       }
     else if (  BaseSparseMatrix :: GetInverseType()  == PARDISO ||  BaseSparseMatrix :: GetInverseType()  == PARDISOSPD)
       {
-#ifdef USE_PARDISO
-	return make_shared<PardisoInverse<TM,TV_ROW,TV_COL>> (*this, nullptr, clusters, 1);
-#else
-	throw Exception ("SparseMatrix::InverseMatrix:  PardisoInverse not available");
-#endif
+        if(is_pardiso_available)
+          return make_shared<PardisoInverse<TM,TV_ROW,TV_COL>> (*this, nullptr, clusters, 1);
+        else
+          throw Exception ("SparseMatrix::InverseMatrix:  PardisoInverse not available");
       }
     else if (  BaseSparseMatrix :: GetInverseType()  == UMFPACK)
       {

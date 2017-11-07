@@ -19,6 +19,7 @@
 namespace ngla
 {
   using ngbla::integer;
+  extern bool is_pardiso_available;
 
 
   /*
