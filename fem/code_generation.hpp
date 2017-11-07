@@ -7,12 +7,6 @@
 /* Date:   13. Apr. 2016                                             */
 /*********************************************************************/
 
-#ifdef WIN32
-#include <windows.h>
-#else // WIN32
-#include <dlfcn.h>
-#endif //WIN32
-
 #include <map>
 
 namespace ngfem
@@ -177,34 +171,7 @@ namespace ngfem
     }
   }
 
-  class Library
-  {
-    static int counter; // defined in coefficient.cpp
-    string lib_name;
+  unique_ptr<SharedLibrary> CompileCode(const std::vector<string> &codes, const std::vector<string> &libraries );
 
-#ifdef WIN32
-    HINSTANCE lib;
-#else // WIN32
-    void *lib;
-#endif // WIN32
-
-    void *GetRawFunction( string func_name );
-
-  public:
-    Library() : lib(nullptr) {}
-    // Compile a given string and load the library
-    void Compile(const std::vector<string> &codes, const std::vector<string> &libraries );
-
-    void Load( string alib_name );
-
-    template <typename TFunc>
-    TFunc GetFunction( string func_name )
-    {
-      return reinterpret_cast<TFunc>(GetRawFunction(func_name));
-    }
-
-    ~Library();
-
-  };
 }
 #endif // FILE_NGS_CODE_GENERATION___

@@ -7,6 +7,11 @@
 /* Date:   Oct. 14                                                        */
 /**************************************************************************/
 
+#ifdef WIN32
+#include <windows.h>
+#else // WIN32
+#include <dlfcn.h>
+#endif //WIN32
 
 namespace ngstd
 {
@@ -24,6 +29,78 @@ namespace ngstd
   template <int N>
   using IC = integral_constant<int,N>;
 
+  // Class to handle/load shared libraries
+  class SharedLibrary
+  {
+    string lib_name;
+
+#ifdef WIN32
+    HINSTANCE lib;
+#else // WIN32
+    void *lib;
+#endif // WIN32
+
+  public:
+    SharedLibrary() : lib(nullptr) {}
+    SharedLibrary(string lib_name_) : lib(nullptr)
+    {
+      Load(lib_name_);
+    }
+
+    SharedLibrary(const SharedLibrary &) = delete;
+    SharedLibrary & operator =(const SharedLibrary &) = delete;
+
+    ~SharedLibrary()
+    {
+      Unload();
+    }
+
+    template <typename TFunc>
+    TFunc GetFunction( string func_name )
+    {
+      return reinterpret_cast<TFunc>(GetRawFunction(func_name));
+    }
+
+    void Load( string alib_name )
+    {
+      Unload();
+      lib_name = alib_name;
+#ifdef WIN32
+      lib = LoadLibrary(lib_name.c_str());
+      if (!lib) throw std::runtime_error(string("Could not load library ") + lib_name);
+#else // WIN32
+      lib = dlopen(lib_name.c_str(), RTLD_NOW);
+      if(lib == nullptr) throw std::runtime_error(dlerror());
+#endif // WIN32
+    }
+
+    void Unload() {
+      if(lib)
+      {
+#ifdef WIN32
+        FreeLibrary(lib);
+#else // WIN32
+        int rc = dlclose(lib);
+        if(rc != 0) cerr << "Failed to close library " << lib_name << endl;
+#endif // WIN32
+      }
+    }
+
+    void* GetRawFunction( string func_name )
+    {
+#ifdef WIN32
+      void* func = GetProcAddress(lib, func_name.c_str());
+      if(func == nullptr)
+        throw std::runtime_error(string("Could not find function ") + func_name + " in library " + lib_name);
+#else // WIN32
+      void* func = dlsym(lib, func_name.c_str());
+      if(func == nullptr)
+          throw std::runtime_error(dlerror());
+#endif // WIN32
+
+      return func;
+    }
+  };
 }
 namespace std
 {
