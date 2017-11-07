@@ -189,7 +189,7 @@ mac_build:
       -DUSE_UMFPACK=ON
       -DENABLE_UNIT_TESTS=ON
       -DCPACK_PACKAGE_NAME=NGSolve${PACKAGE_NAME_SUFFIX}
-    - make -j10 install
+    - make -j5 install
     - osascript -e 'tell application "Finder" to eject (every disk whose ejectable is true)'
     - make bundle
     - >-
