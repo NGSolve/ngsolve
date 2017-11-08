@@ -56,3 +56,6 @@ def VideoAddFrame():
 
 def VideoFinalize():
     ngsolve.solve.Tcl_Eval("Ng_VideoClip .ndraw finalize;\n")
+
+def SnapShot(filename):
+    ngsolve.solve.Tcl_Eval("Ng_SnapShot .ndraw {};\n".format(filename))
