@@ -2032,25 +2032,39 @@ namespace ngcomp
           // integrator[VOL] = make_shared<VectorH1MassIntegrator<2>>(one);
         }
     }
-
-    /*
-    virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const
-    {
-      SymbolTable<shared_ptr<DifferentialOperator>> additional;
-      
-      additional.Set ("div", make_shared<T_DifferentialOperator<DiffOpDivVectorH1<2>>> ()); 
-      additional.Set ("divfree_reconstruction", make_shared<T_DifferentialOperator<DiffOpDivFreeReconstructVectorH1<2>>> ());
-      
-      return additional;
-    }
-    */
-    
   };
     
 
+
+  class VectorL2FESpace : public CompoundFESpace
+  {
+  public:
+    VectorL2FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, 
+                     bool checkflags = false)
+      : CompoundFESpace(ama, flags)
+    {
+      for (int i = 0; i <  ma->GetDimension(); i++)
+        AddSpace (make_shared<L2HighOrderFESpace> (ama, flags));
+
+      switch (ma->GetDimension())
+        {
+        case 2:
+          evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdVectorH1<2>>>();
+          flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradVectorH1<2>>>();
+          break;
+        case 3:
+          evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdVectorH1<3>>>();
+          flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradVectorH1<3>>>();
+          break;
+        }
+    }
+  };
+    
+
+  
     
   
-    static RegisterFESpace<H1HighOrderFESpace> init ("h1ho");
+  static RegisterFESpace<H1HighOrderFESpace> init ("h1ho");
   static RegisterFESpace<VectorH1FESpace> initvec ("VectorH1");
 }
  
