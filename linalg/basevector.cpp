@@ -296,6 +296,7 @@ namespace ngla
           res = make_shared<S_BaseVectorPtr<Complex>> (size, es);
         else
           res = make_shared<S_BaseVectorPtr<double>> (size, es);
+        return res;
       }
     
     if (is_complex)
