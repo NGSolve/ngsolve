@@ -417,8 +417,21 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                        if (inverse != "") m.SetInverseType(inverse);
                                        return m.InverseMatrix(freedofs);
                                      }
-         ,"Inverse", py::arg("freedofs")=nullptr, py::arg("inverse")=py::str("")
-         )
+         ,"Inverse", py::arg("freedofs")=nullptr, py::arg("inverse")=py::str(""), 
+         docu_string(R"raw_string(Calculate inverse of sparse matrix"
+Parameters
+
+freedofs : BitArray
+  If set, invert only the rows/columns the matrix defined by the bit array, otherwise invert the whole matrix
+
+inverse : string
+  Solver to use, allowed values are:
+    sparsecholesky - internal solver of NGSolve for symmetric matrices
+    umfpack        - solver by Suitesparse/UMFPACK (if NGSolve was configured with USE_UMFPACK=ON)
+    pardiso        - PARDISO, either provided by libpardiso (USE_PARDISO=ON) or Intel MKL (USE_MKL=ON).
+                     If neither Pardiso nor Intel MKL was linked at compile-time, NGSolve will look
+                     for libmkl_rt in LD_LIBRARY_PATH (Unix) or PATH (Windows) at run-time.
+)raw_string"))
     // .def("Inverse", [](BM &m)  { return m.InverseMatrix(); })
     .def("Update", [](BM &m) { m.Update(); })
     ;

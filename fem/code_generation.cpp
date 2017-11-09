@@ -24,20 +24,9 @@ namespace ngfem
         return name;
     }
 
-    void Library::Load( string alib_name )
+    unique_ptr<SharedLibrary> CompileCode(const std::vector<string> &codes, const std::vector<string> &link_flags )
     {
-      lib_name = alib_name;
-#ifdef WIN32
-      lib = LoadLibrary(lib_name.c_str());
-      if (!lib) throw std::runtime_error(string("Could not load library ") + lib_name);
-#else // WIN32
-      lib = dlopen(lib_name.c_str(), RTLD_NOW);
-      if(lib == nullptr) throw std::runtime_error(dlerror());
-#endif // WIN32
-    }
-
-    void Library::Compile(const std::vector<string> &codes, const std::vector<string> &link_flags )
-    {
+      static int counter = 0;
       static ngstd::Timer tcompile("CompiledCF::Compile");
       static ngstd::Timer tlink("CompiledCF::Link");
       string object_files;
@@ -75,41 +64,13 @@ namespace ngfem
       if (err) throw Exception ("problem calling linker");      
       tlink.Stop();
       cout << IM(3) << "done" << endl;
+      auto library = make_unique<SharedLibrary>();
 #ifdef WIN32
-      Load(prefix+".dll");
+      library->Load(prefix+".dll");
 #else
-      Load("./"+prefix+".so");
+      library->Load("./"+prefix+".so");
 #endif
+      return library;
     }
 
-    void* Library::GetRawFunction( string func_name )
-    {
-#ifdef WIN32
-      void* func = GetProcAddress(lib, func_name.c_str());
-      if(func == nullptr)
-        throw std::runtime_error(string("Could not find function ") + func_name + " in library " + lib_name);
-
-#else // WIN32
-      void* func = dlsym(lib, func_name.c_str());
-      if(func == nullptr)
-          throw std::runtime_error(dlerror());
-
-#endif // WIN32
-
-      return func;
-    }
-
-    Library::~Library()
-    {
-      if(lib)
-      {
-
-#ifdef WIN32
-        FreeLibrary(lib);
-#else // WIN32
-        int rc = dlclose(lib);
-        if(rc != 0) cerr << "Failed to close library " << lib_name << endl;
-#endif // WIN32
-      }
-    }
 }
