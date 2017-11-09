@@ -377,19 +377,19 @@ namespace ngfem
                      for (size_t i = 0; i < steps; i++)
                        this -> CalcShape(ir[0], shape);
                      });
-    timings.push_back(make_tuple("CalcShape", time/steps*1e9/GetNDof()));
+    timings.push_back(make_tuple("CalcShape", time/steps*1e9/(D*GetNDof())));
 
     time = RunTiming([&]() {
                      for (size_t i = 0; i < steps; i++)
                        this -> Evaluate(ir, coefs, values);
                      }, maxtime);
-    timings.push_back(make_tuple("Evaluate",time/steps*1e9/(GetNDof()*ir.GetNIP())));
+    timings.push_back(make_tuple("Evaluate",time/steps*1e9/(D*GetNDof()*ir.GetNIP())));
 
     time = RunTiming([&]() {
                      for (size_t i = 0; i < steps; i++)
                        this -> Evaluate(simdmir, coefs, avalues);
                      }, maxtime);
-    timings.push_back(make_tuple("Evaluate(SIMD)", time/steps*1e9/(GetNDof()*ir.GetNIP())));
+    timings.push_back(make_tuple("Evaluate(SIMD)", time/steps*1e9/(D*GetNDof()*ir.GetNIP())));
 
     /*
     time = RunTiming([&]() {
@@ -402,19 +402,19 @@ namespace ngfem
                      for (size_t i = 0; i < steps; i++)
                        this -> EvaluateDiv(simdmir, coefs, adivvalues);
                      }, maxtime);
-    timings.push_back(make_tuple("Evaluate Grad(SIMD)", time/steps*1e9/(D*GetNDof()*ir.GetNIP())));
+    timings.push_back(make_tuple("Evaluate Grad(SIMD)", time/steps*1e9/(GetNDof()*ir.GetNIP())));
 
     time = RunTiming([&]() {
                      for (size_t i = 0; i < steps; i++)
                        this -> EvaluateTrans(ir, values, coefs);
                      }, maxtime);
-    timings.push_back(make_tuple("Evaluate Trans", time/steps*1e9/(GetNDof()*ir.GetNIP())));
+    timings.push_back(make_tuple("Evaluate Trans", time/steps*1e9/(D*GetNDof()*ir.GetNIP())));
 
     time = RunTiming([&]() {
                      for (size_t i = 0; i < steps; i++)
                        this -> AddTrans(simdmir, avalues, coefs);
                      }, maxtime);
-    timings.push_back(make_tuple("Evaluate Trans (SIMD)", time/steps*1e9/(GetNDof()*ir.GetNIP())));
+    timings.push_back(make_tuple("Evaluate Trans (SIMD)", time/steps*1e9/(D*GetNDof()*ir.GetNIP())));
 
     /*
     time = RunTiming([&]() {
@@ -428,7 +428,7 @@ namespace ngfem
                      for (size_t i = 0; i < steps; i++)
                        this -> AddDivTrans(simdmir, adivvalues, coefs);
                      }, maxtime);
-    timings.push_back(make_tuple("Evaluate Trans Grad(SIMD)", time/steps*1e9/(D*GetNDof()*ir.GetNIP())));
+    timings.push_back(make_tuple("Evaluate Trans Grad(SIMD)", time/steps*1e9/(GetNDof()*ir.GetNIP())));
 
     return timings;
   }
