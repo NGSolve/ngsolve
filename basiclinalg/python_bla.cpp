@@ -531,6 +531,35 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
                                   cout << "Lapack GFlops = " << 1e-9 * n*k*m*its / t.GetTime() << endl;
                                 }
 
+
+                                {
+                                  Timer t("own AddABt");
+                                  t.Start();
+                                  c = 0.0;
+                                  for (int j = 0; j < its; j++)
+                                    // c = a * Trans(b) | Lapack;
+                                    AddABt (a, b, c);
+                                  t.Stop();
+                                  cout << "own AddABt GFlops = " << 1e-9 * n*k*m*its / t.GetTime() << endl;
+                                }
+
+
+                                {
+                                  Timer t("own AddABt");
+                                  t.Start();
+                                  c = 0.0;
+                                  Matrix<> bt = Trans(b);
+                                  for (int j = 0; j < its; j++)
+                                    // c = a * Trans(b) | Lapack;
+                                    MultMatMat (a, bt, c);
+                                  t.Stop();
+                                  cout << "own MultMatMat GFlops = " << 1e-9 * n*k*m*its / t.GetTime() << endl;
+                                }
+
+
+
+
+                                
                                 /*
                                 {
                                   Timer t("matmat2");
