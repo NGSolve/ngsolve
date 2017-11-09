@@ -551,7 +551,7 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
                                   Matrix<> bt = Trans(b);
                                   for (int j = 0; j < its; j++)
                                     // c = a * Trans(b) | Lapack;
-                                    MultMatMat (a, bt, c);
+                                    MultMatMat<double,double,double> (a, bt, c);
                                   t.Stop();
                                   cout << "own MultMatMat GFlops = " << 1e-9 * n*k*m*its / t.GetTime() << endl;
                                 }
