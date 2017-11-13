@@ -324,7 +324,7 @@ namespace ngla
     cout << "BlockJacobi Preconditioner, constructor called, #blocks = " << blocktable->Size() << endl;
 
 
-    double prevtime = WallTime();
+    // double prevtime = WallTime();
 
     
     // find nze element in all blocks together 
