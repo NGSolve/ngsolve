@@ -487,6 +487,8 @@ namespace ngstd
     ///
     size_t size;
     ///
+    size_t used;
+    ///
     Array<T_HASH> hash;
     ///
     Array<T> cont;
@@ -494,15 +496,18 @@ namespace ngstd
     T_HASH invalid;
   public:
     ///
-    ClosedHashTable (size_t asize)
-      : size(asize), hash(asize), cont(asize)
+    ClosedHashTable (size_t asize = 128)
+      : size(asize), used(0), hash(asize), cont(asize)
     {
       invalid = -1; 
       hash = T_HASH(invalid);
     }
 
+    ClosedHashTable (ClosedHashTable && ht2) = default;
+
+      // who needs that ? 
     ClosedHashTable (FlatArray<T_HASH> _hash, FlatArray<T> _cont)
-      : size(_hash.Size()), hash(_hash.Size(), _hash.Addr(0)), cont(_cont.Size(), _cont.Addr(0))
+      : size(_hash.Size()), used(0), hash(_hash.Size(), _hash.Addr(0)), cont(_cont.Size(), _cont.Addr(0))
     {
       invalid = -1; 
       hash = T_HASH(invalid);
@@ -515,6 +520,8 @@ namespace ngstd
       invalid = -1; 
       hash = T_HASH(invalid);
     }
+
+    ClosedHashTable & operator= (ClosedHashTable && ht2) = default;
 
     /// 
     size_t Size() const
@@ -531,11 +538,14 @@ namespace ngstd
     /// number of used elements
     size_t UsedElements () const
     {
+      return used;
+      /*
       size_t cnt = 0;
       for (size_t i = 0; i < size; i++)
 	if (hash[i] != invalid)
 	  cnt++;
       return cnt;
+      */
     }
 
     size_t Position (const T_HASH ind) const
@@ -549,9 +559,20 @@ namespace ngstd
 	  if (i >= size) i = 0;
 	}
     }
-    // returns 1, if new position is created
+
+    void DoubleSize()
+    {
+      ClosedHashTable tmp(2*Size());
+      for (auto both : *this)
+        tmp[both.first] = both.second;
+      *this = move(tmp);
+    }
+    
+    // returns true if new position is created
     bool PositionCreate (const T_HASH ind, size_t & apos)
     {
+      if (UsedElements()*2 > Size()) DoubleSize();
+      
       size_t i = HashValue (ind, size);
 
       while (1)
@@ -559,7 +580,8 @@ namespace ngstd
 	  if (hash[i] == invalid)
 	    { 
 	      hash[i] = ind; 
-	      apos = i; 
+	      apos = i;
+              used++;
 	      return true;
 	    }
 	  if (hash[i] == ind) 
@@ -619,7 +641,7 @@ namespace ngstd
       acont = cont[pos];
     }
 
-    pair<T_HASH,T> GetBoth (int pos) const
+    pair<T_HASH,T> GetBoth (size_t pos) const
     {
       return pair<T_HASH,T> (hash[pos], cont[pos]);
     }
@@ -643,6 +665,27 @@ namespace ngstd
       hash = T_HASH(invalid);
     }
 
+    void Delete (T_HASH key)
+    {
+      size_t pos = Position(key);
+      if (pos == size_t(-1)) return;
+      hash[pos] = invalid; used--;
+      
+      while (1)
+        {
+          size_t nextpos = pos+1;
+          if (nextpos == size) nextpos = 0;
+          if (hash[nextpos] == invalid) break;
+          
+          auto key = hash[nextpos];
+          auto val = cont[nextpos];
+          hash[pos] = invalid; used--;
+          
+          Set (key, val);
+          pos = nextpos;
+        }
+    }
+    
     class Iterator
     {
       const ClosedHashTable & tab;
