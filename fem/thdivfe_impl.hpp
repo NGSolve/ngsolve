@@ -53,7 +53,7 @@ namespace ngfem
   CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
 		   SliceMatrix<> shape) const
   {   
-    Vec<DIM,AutoDiff<DIM>> adp = mip;
+    // Vec<DIM,AutoDiff<DIM>> adp = mip;
     // TIP<DIM,AutoDiff<DIM>> pt(Vec<DIM, AutoDiff<DIM>> (mip));
       
     static_cast<const FEL*> (this) -> 
