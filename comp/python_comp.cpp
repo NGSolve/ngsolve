@@ -73,18 +73,18 @@ public:
 };
 
 
-py::object MakeProxyFunction2 (const FESpace & fes,
-                              bool testfunction,
-                              const function<shared_ptr<ProxyFunction>(shared_ptr<ProxyFunction>)> & addblock)
+py::object MakeProxyFunction2 (shared_ptr<FESpace> fes,
+                               bool testfunction,
+                               const function<shared_ptr<ProxyFunction>(shared_ptr<ProxyFunction>)> & addblock)
 {
-  auto compspace = dynamic_cast<const CompoundFESpace*> (&fes);
-  if (compspace && !fes.GetEvaluator())
+  auto compspace = dynamic_pointer_cast<CompoundFESpace> (fes);
+  if (compspace && !fes->GetEvaluator())
     {
       py::list l;
       int nspace = compspace->GetNSpaces();
       for (int i = 0; i < nspace; i++)
         {
-          l.append (MakeProxyFunction2 ( *(*compspace)[i], testfunction,
+          l.append (MakeProxyFunction2 ((*compspace)[i], testfunction,
                                          [&] (shared_ptr<ProxyFunction> proxy)
                                          {
                                            auto block_eval = make_shared<CompoundDifferentialOperator> (proxy->Evaluator(), i);
@@ -103,7 +103,7 @@ py::object MakeProxyFunction2 (const FESpace & fes,
 					   shared_ptr <CompoundDifferentialOperator> block_ttrace_deriv_eval = nullptr;
 					   if (proxy->TTraceDerivEvaluator() != nullptr)
 					     block_ttrace_deriv_eval = make_shared<CompoundDifferentialOperator> (proxy->TTraceDerivEvaluator(),i);
-                                           auto block_proxy = make_shared<ProxyFunction> (/* &fes, */ testfunction, fes.IsComplex(),                                                                                          block_eval, block_deriv_eval, block_trace_eval, block_trace_deriv_eval,
+                                           auto block_proxy = make_shared<ProxyFunction> (fes, testfunction, fes->IsComplex(),                                                                                          block_eval, block_deriv_eval, block_trace_eval, block_trace_deriv_eval,
 					  block_ttrace_eval, block_ttrace_deriv_eval);
 
                                            SymbolTable<shared_ptr<DifferentialOperator>> add = proxy->GetAdditionalEvaluators();
@@ -118,14 +118,14 @@ py::object MakeProxyFunction2 (const FESpace & fes,
       return l;
     }
 
-  auto proxy = make_shared<ProxyFunction>  (testfunction, fes.IsComplex(),
-                                            fes.GetEvaluator(),
-                                            fes.GetFluxEvaluator(),
-                                            fes.GetEvaluator(BND),
-                                            fes.GetFluxEvaluator(BND),
-					    fes.GetEvaluator(BBND),
-					    fes.GetFluxEvaluator(BBND));
-  auto add_diffops = fes.GetAdditionalEvaluators();
+  auto proxy = make_shared<ProxyFunction>  (fes, testfunction, fes->IsComplex(),
+                                            fes->GetEvaluator(),
+                                            fes->GetFluxEvaluator(),
+                                            fes->GetEvaluator(BND),
+                                            fes->GetFluxEvaluator(BND),
+					    fes->GetEvaluator(BBND),
+					    fes->GetFluxEvaluator(BBND));
+  auto add_diffops = fes->GetAdditionalEvaluators();
   for (int i = 0; i < add_diffops.Size(); i++)
     proxy->SetAdditionalEvaluator (add_diffops.GetName(i), add_diffops[i]);
 
@@ -133,7 +133,7 @@ py::object MakeProxyFunction2 (const FESpace & fes,
   return py::cast(proxy);
 }
 
-py::object MakeProxyFunction (const FESpace & fes,
+py::object MakeProxyFunction (shared_ptr<FESpace> fes,
                               bool testfunction) 
 {
   return 
@@ -1708,14 +1708,14 @@ kwargs : For a description of the possible kwargs have a look a bit further down
     .def("TrialFunction",
          [] (const shared_ptr<FESpace> self)
          {
-           return MakeProxyFunction (*self, false);
+           return MakeProxyFunction (self, false);
          },
          docu_string("Gives a proxy to be used as a trialfunction in :any:`Symbolic Integrators<symbolic-integrators>`"))
     
     .def("TestFunction",
          [] (const shared_ptr<FESpace> self)
            {
-             return MakeProxyFunction (*self, true);
+             return MakeProxyFunction (self, true);
            },
          docu_string("Gives a proxy to be used as a testfunction for :any:`Symbolic Integrators<symbolic-integrators>`"))
 

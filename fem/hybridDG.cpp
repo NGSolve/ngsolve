@@ -35,7 +35,7 @@ namespace ngfem
     virtual VorB VB() const
     { return VOL; }
     
-    virtual bool IsSymmetric () const { return true; }
+    virtual xbool IsSymmetric () const { return true; }
 
     virtual void CalcElementMatrix (const FiniteElement & fel,
 				    const ElementTransformation & eltrans, 
@@ -526,7 +526,7 @@ namespace ngfem
 
     virtual VorB VB() const
     { return VOL; }
-    virtual bool IsSymmetric () const { return true; }
+    virtual xbool IsSymmetric () const { return true; }
 
     virtual void CalcElementMatrix (const FiniteElement & fel,
 				    const ElementTransformation & eltrans, 
@@ -708,7 +708,7 @@ namespace ngfem
     virtual VorB VB() const
     { return VOL; }
 
-    virtual bool IsSymmetric () const { return true; }
+    virtual xbool IsSymmetric () const { return true; }
 
     virtual void CalcElementMatrix (const FiniteElement & fel,
 				    const ElementTransformation & eltrans, 
@@ -898,7 +898,7 @@ namespace ngfem
     virtual VorB VB() const
     { return VOL; }
 
-    virtual bool IsSymmetric () const { return true; }
+    virtual xbool IsSymmetric () const { return true; }
 
     virtual void CalcElementMatrix (const FiniteElement & fel,
 				    const ElementTransformation & eltrans, 
@@ -1749,7 +1749,7 @@ namespace ngfem
 
     virtual VorB VB() const
     { return VOL; }
-    virtual bool IsSymmetric () const { return false; }
+    virtual xbool IsSymmetric () const { return false; }
 
     virtual void CalcElementMatrix (const FiniteElement & fel,
 				    const ElementTransformation & eltrans, 

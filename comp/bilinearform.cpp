@@ -180,7 +180,7 @@ namespace ngcomp
     */
     bfi = FixDimension(bfi, fespace->GetSpacialDimension());
     
-    if (symmetric && !bfi->IsSymmetric())
+    if (symmetric && bfi->IsSymmetric().IsFalse())
       throw Exception (string ("Adding non-symmetric integrator to symmetric bilinear-form\n")+
                        string ("bfi is ")+bfi->Name());
 
@@ -212,7 +212,18 @@ namespace ngcomp
           }
       }
     else
-      VB_parts[bfi->VB()].Append(bfi);
+      {
+        // the first parts are the symmetric ones ...
+        if (bfi->IsSymmetric().IsTrue())
+          {
+            size_t pos = 0;
+            while (pos < VB_parts[bfi->VB()].Size() && VB_parts[bfi->VB()][pos]->IsSymmetric().IsTrue())
+              pos++;
+            VB_parts[bfi->VB()].Insert(pos, bfi);            
+          }
+        else
+          VB_parts[bfi->VB()].Append(bfi);
+      }
     
     if (low_order_bilinear_form)
       low_order_bilinear_form -> AddIntegrator (parts.Last());

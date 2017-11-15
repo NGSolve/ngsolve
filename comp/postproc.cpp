@@ -22,10 +22,10 @@ namespace ngcomp
     static int timer = NgProfiler::CreateTimer ("CalcFluxProject");
     NgProfiler::RegionTimer reg (timer);
     
-    const FESpace & fes = *u.GetFESpace();
-    const FESpace & fesflux = *flux.GetFESpace();
+    auto fes = u.GetFESpace();
+    auto fesflux = flux.GetFESpace();
 
-    shared_ptr<MeshAccess> ma = fesflux.GetMeshAccess();
+    shared_ptr<MeshAccess> ma = fesflux->GetMeshAccess();
 
     ma->PushStatus ("Post-processing");
     
@@ -33,16 +33,16 @@ namespace ngcomp
     auto vb = bli->VB();
 
     int ne      = ma->GetNE(vb);
-    int dim     = fes.GetDimension();
-    int dimflux = fesflux.GetDimension();
+    int dim     = fes->GetDimension();
+    int dimflux = fesflux->GetDimension();
     int dimfluxvec = bli->DimFlux(); 
 
-    shared_ptr<BilinearFormIntegrator> fluxbli = fesflux.GetIntegrator(vb);
+    shared_ptr<BilinearFormIntegrator> fluxbli = fesflux->GetIntegrator(vb);
     shared_ptr<BilinearFormIntegrator> single_fluxbli = fluxbli;
     if (dynamic_pointer_cast<BlockBilinearFormIntegrator> (single_fluxbli))
       single_fluxbli = dynamic_pointer_cast<BlockBilinearFormIntegrator> (single_fluxbli)->BlockPtr();
     
-    auto flux_evaluator = fesflux.GetEvaluator(vb);
+    auto flux_evaluator = fesflux->GetEvaluator(vb);
     if (!fluxbli)
       {
         cout << IM(5) << "make a symbolic integrator for CalcFluxProject" << endl;
@@ -50,16 +50,16 @@ namespace ngcomp
         if (dynamic_pointer_cast<BlockDifferentialOperator>(single_evaluator))
           single_evaluator = dynamic_pointer_cast<BlockDifferentialOperator>(single_evaluator)->BaseDiffOp();
         
-        auto trial = make_shared<ProxyFunction>(false, false, single_evaluator,
+        auto trial = make_shared<ProxyFunction>(fesflux, false, false, single_evaluator,
                                                 nullptr, nullptr, nullptr, nullptr, nullptr);
-        auto test  = make_shared<ProxyFunction>(true, false, single_evaluator,
+        auto test  = make_shared<ProxyFunction>(fesflux, true, false, single_evaluator,
                                                 nullptr, nullptr, nullptr, nullptr, nullptr);
         fluxbli = make_shared<SymbolicBilinearFormIntegrator> (InnerProduct(trial,test), vb, false);
         single_fluxbli = fluxbli;
         // throw Exception ("no integrator available");
       }
 
-    Array<int> cnti(fesflux.GetNDof());
+    Array<int> cnti(fesflux->GetNDof());
     cnti = 0;
 
     flux.GetVector() = 0.0;
@@ -67,7 +67,7 @@ namespace ngcomp
     ProgressOutput progress (ma, "postprocessing element", ne);
 
     IterateElements  
-      (fesflux, vb, clh, 
+      (*fesflux, vb, clh, 
        [&] (Ngs_Element ei, LocalHeap & lh)
        {
          HeapReset hr(lh);
@@ -75,16 +75,16 @@ namespace ngcomp
          
          if (!domains[ei.GetIndex()]) return;;
 
-         const FiniteElement & fel = fes.GetFE (ei, lh);
-         const FiniteElement & felflux = fesflux.GetFE (ei, lh);
+         const FiniteElement & fel = fes->GetFE (ei, lh);
+         const FiniteElement & felflux = fesflux->GetFE (ei, lh);
 	 
          ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
 
          Array<int> dnums(fel.GetNDof(), lh);
-         fes.GetDofNrs (ei, dnums);
+         fes->GetDofNrs (ei, dnums);
 
          Array<int> dnumsflux(felflux.GetNDof(), lh);
-         fesflux.GetDofNrs(ei, dnumsflux);
+         fesflux->GetDofNrs(ei, dnumsflux);
 
          FlatVector<SCAL> elu(dnums.Size() * dim, lh);
          FlatVector<SCAL> elflux(dnumsflux.Size() * dimflux, lh);
@@ -92,7 +92,7 @@ namespace ngcomp
          FlatVector<SCAL> fluxi(dimfluxvec, lh);
 	 
          u.GetElementVector (dnums, elu);
-         fes.TransformVec (ei, elu, TRANSFORM_SOL);
+         fes->TransformVec (ei, elu, TRANSFORM_SOL);
          
          IntegrationRule ir(fel.ElementType(), 
                             max2(fel.Order(),felflux.Order())+felflux.Order());
@@ -127,7 +127,7 @@ namespace ngcomp
              invelmat.Mult (elflux, elfluxi);
            }
          
-         fesflux.TransformVec (ei, elfluxi, TRANSFORM_SOL);
+         fesflux->TransformVec (ei, elfluxi, TRANSFORM_SOL);
 	  
 	  
          flux.GetElementVector (dnumsflux, elflux);
@@ -143,7 +143,7 @@ namespace ngcomp
     progress.Done();
     
 #ifdef PARALLEL
-    AllReduceDofData (cnti, MPI_SUM, fesflux.GetParallelDofs());
+    AllReduceDofData (cnti, MPI_SUM, fesflux->GetParallelDofs());
     flux.GetVector().SetParallelStatus(DISTRIBUTED);
     flux.GetVector().Cumulate(); 	 
 #endif
@@ -350,14 +350,14 @@ namespace ngcomp
 
     S_GridFunction<SCAL> & u = dynamic_cast<S_GridFunction<SCAL> &> (bu);
 
-    const FESpace & fes = *u.GetFESpace();
-    shared_ptr<MeshAccess> ma = fes.GetMeshAccess(); 
-    int dim   = fes.GetDimension();
+    auto fes = u.GetFESpace();
+    shared_ptr<MeshAccess> ma = fes->GetMeshAccess(); 
+    int dim   = fes->GetDimension();
     ma->PushStatus("setvalues");
 
     if (!diffop)
-      diffop = fes.GetEvaluator(vb).get();
-    shared_ptr<BilinearFormIntegrator> bli = fes.GetIntegrator(vb);
+      diffop = fes->GetEvaluator(vb).get();
+    shared_ptr<BilinearFormIntegrator> bli = fes->GetIntegrator(vb);
     shared_ptr<BilinearFormIntegrator> single_bli = bli;
     if (dynamic_pointer_cast<BlockBilinearFormIntegrator> (single_bli))
       single_bli = dynamic_pointer_cast<BlockBilinearFormIntegrator> (single_bli)->BlockPtr();
@@ -365,13 +365,13 @@ namespace ngcomp
     if (!bli)
       {
         cout << IM(5) << "make a symbolic integrator for interpolation" << endl;
-        auto single_evaluator =  fes.GetEvaluator(vb);
+        auto single_evaluator =  fes->GetEvaluator(vb);
         if (dynamic_pointer_cast<BlockDifferentialOperator>(single_evaluator))
           single_evaluator = dynamic_pointer_cast<BlockDifferentialOperator>(single_evaluator)->BaseDiffOp();
         
-        auto trial = make_shared<ProxyFunction>(false, false, single_evaluator,
+        auto trial = make_shared<ProxyFunction>(fes, false, false, single_evaluator,
                                                 nullptr, nullptr, nullptr, nullptr, nullptr);
-        auto test  = make_shared<ProxyFunction>(true, false, single_evaluator,
+        auto test  = make_shared<ProxyFunction>(fes, true, false, single_evaluator,
                                                 nullptr, nullptr, nullptr, nullptr, nullptr);
         bli = make_shared<SymbolicBilinearFormIntegrator> (InnerProduct(trial,test), vb, false);
         single_bli = bli;
@@ -382,7 +382,7 @@ namespace ngcomp
     if (coef -> Dimension() != dimflux)
       throw Exception(string("Error in SetValues: gridfunction-dim = ") + ToString(dimflux) +
                       ", but coefficient-dim = " + ToString(coef->Dimension()));
-    Array<int> cnti(fes.GetNDof());
+    Array<int> cnti(fes->GetNDof());
     cnti = 0;
 
     u.GetVector() = 0.0;
@@ -392,7 +392,7 @@ namespace ngcomp
 
     
     IterateElements 
-      (fes, vb, clh, 
+      (*fes, vb, clh, 
        [&] (FESpace::Element ei, LocalHeap & lh)
        {
           progress.Update ();
@@ -403,11 +403,11 @@ namespace ngcomp
             }
           else
             {
-              if (vb==BND && !fes.IsDirichletBoundary(ei.GetIndex()))
+              if (vb==BND && !fes->IsDirichletBoundary(ei.GetIndex()))
                 return;
             }
           
-	  const FiniteElement & fel = fes.GetFE (ei, lh);
+	  const FiniteElement & fel = fes->GetFE (ei, lh);
 	  const ElementTransformation & eltrans = ma->GetTrafo (ei, lh); 
 
           // Array<int> dnums(fel.GetNDof(), lh);
@@ -451,8 +451,8 @@ namespace ngcomp
                       FlatMatrix<SCAL> elmat(fel.GetNDof(), lh);
                       bli->CalcElementMatrix (fel, eltrans, elmat, lh);
                       
-                      fes.TransformMat (ei, elmat, TRANSFORM_MAT_LEFT_RIGHT);
-                      fes.TransformVec (ei, elflux, TRANSFORM_RHS);
+                      fes->TransformMat (ei, elmat, TRANSFORM_MAT_LEFT_RIGHT);
+                      fes->TransformVec (ei, elflux, TRANSFORM_RHS);
                       if (fel.GetNDof() < 50)
                         {
                           FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
@@ -515,8 +515,8 @@ namespace ngcomp
 	      FlatMatrix<SCAL> elmat(fel.GetNDof()*dim, lh);
 	      bli->CalcElementMatrix (fel, eltrans, elmat, lh);
 
-	      fes.TransformMat (ei, elmat, TRANSFORM_MAT_LEFT_RIGHT);
-	      fes.TransformVec (ei, elflux, TRANSFORM_RHS);
+	      fes->TransformMat (ei, elmat, TRANSFORM_MAT_LEFT_RIGHT);
+	      fes->TransformVec (ei, elflux, TRANSFORM_RHS);
               if (fel.GetNDof() < 50)
                 {
                   FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
@@ -544,7 +544,7 @@ namespace ngcomp
 
     
 #ifdef PARALLEL
-    AllReduceDofData (cnti, MPI_SUM, fes.GetParallelDofs());
+    AllReduceDofData (cnti, MPI_SUM, fes->GetParallelDofs());
     u.GetVector().SetParallelStatus(DISTRIBUTED);
     u.GetVector().Cumulate(); 	 
 #endif

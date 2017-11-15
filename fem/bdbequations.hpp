@@ -401,8 +401,16 @@ namespace ngfem
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
     {
-      HeapReset hr(lh);
-      mat.Row(0) = static_cast<const FEL&>(fel).GetShape(mip.IP(), lh);
+      // HeapReset hr(lh);
+      // mat.Row(0) = static_cast<const FEL&>(fel).GetShape(mip.IP(), lh);
+      Cast(fel).CalcShape (mip.IP(), mat.Row(0));
+    }
+
+    static void GenerateMatrixSIMDIR (const FiniteElement & fel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      Cast(fel).CalcShape (mir.IR(), mat);      
     }
 
     template <typename AFEL, typename MIP, class TVX, class TVY>
