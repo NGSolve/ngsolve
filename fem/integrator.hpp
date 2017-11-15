@@ -269,7 +269,7 @@ namespace ngfem
     virtual ~BilinearFormIntegrator ();
 
     /// generates symmetric matrix ? 
-    virtual bool IsSymmetric () const = 0;
+    virtual xbool IsSymmetric () const = 0;
 
     /// components of flux
     virtual int DimFlux () const { return -1; }
@@ -853,7 +853,7 @@ namespace ngfem
 
     virtual VorB VB () const
     { return bfi->VB(); }
-    virtual bool IsSymmetric () const { return bfi->IsSymmetric(); }
+    virtual xbool IsSymmetric () const { return bfi->IsSymmetric(); }
     virtual int DimFlux () const 
     { return (comp == -1) ? dim * bfi->DimFlux() : bfi->DimFlux(); }
     int GetDim() const { return dim; }
@@ -1002,7 +1002,7 @@ namespace ngfem
     { return bfi->DimElement(); }
     virtual int DimSpace () const
     { return bfi->DimSpace(); }
-    virtual bool IsSymmetric () const
+    virtual xbool IsSymmetric () const
     { return bfi->IsSymmetric(); }
 
 
@@ -1131,7 +1131,7 @@ namespace ngfem
     { return bfi->DimElement(); }
     virtual int DimSpace () const
     { return bfi->DimSpace(); }
-    virtual bool IsSymmetric () const
+    virtual xbool IsSymmetric () const
     { return bfi->IsSymmetric(); }
 
     virtual void CheckElement (const FiniteElement & el) const
@@ -1179,7 +1179,7 @@ namespace ngfem
     { throw Exception("BFI AnyDim - DimElement not available"); }
     virtual int DimSpace () const
     { throw Exception("BFI AnyDim - DimSpace not available"); }
-    virtual bool IsSymmetric () const
+    virtual xbool IsSymmetric () const
     { return any_dim->IsSymmetric(); }
 
     virtual void CheckElement (const FiniteElement & el) const;
@@ -1218,7 +1218,7 @@ namespace ngfem
     { return bfi->DimElement(); }
     virtual int DimSpace () const
     { return bfi->DimSpace(); }
-    virtual bool IsSymmetric () const
+    virtual xbool IsSymmetric () const
     { return bfi->IsSymmetric(); }
     virtual bool SkeletonForm () const
     { return bfi->SkeletonForm(); }

@@ -1053,9 +1053,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
         block_dim = block_evaluator->BlockDim();
         evaluator = block_evaluator->BaseDiffOp();
       }
-    auto trial = make_shared<ProxyFunction>(false, false, evaluator,
+    auto trial = make_shared<ProxyFunction>(dynamic_pointer_cast<FESpace>(const_cast<FESpace*>(this)->shared_from_this()),
+                                            false, false, evaluator,
                                             nullptr, nullptr, nullptr, nullptr, nullptr);
-    auto test  = make_shared<ProxyFunction>(true, false, evaluator,
+    auto test  = make_shared<ProxyFunction>(dynamic_pointer_cast<FESpace>(const_cast<FESpace*>(this)->shared_from_this()),
+                                            true, false, evaluator,
                                             nullptr, nullptr, nullptr, nullptr, nullptr);
     shared_ptr<BilinearFormIntegrator> bli =
       make_shared<SymbolicBilinearFormIntegrator> (InnerProduct(trial,test), vb, false);

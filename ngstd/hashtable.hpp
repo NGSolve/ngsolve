@@ -190,6 +190,10 @@ namespace ngstd
   }
 
 
+
+
+
+  
   template <int N, typename TI>
   INLINE size_t HashValue (const INT<N,TI> & ind, size_t size)
   {
@@ -233,6 +237,57 @@ namespace ngstd
   }
   
 
+
+
+
+
+  
+  template <int N, typename TI>
+  INLINE size_t HashValue2 (const INT<N,TI> & ind, size_t mask)
+  {
+    INT<N,size_t> lind = ind;    
+    size_t sum = 0;
+    for (int i = 0; i < N; i++)
+      sum += lind[i];
+    return sum & mask;
+  }
+
+  /// hash value of 1 int
+  template <typename TI>
+  INLINE size_t HashValue2 (const INT<1,TI> & ind, size_t mask) 
+  {
+    return ind[0] & mask;
+  }
+
+  /// hash value of 2 int
+  template <typename TI>  
+  INLINE size_t HashValue2 (const INT<2,TI> & ind, size_t mask) 
+  {
+    INT<2,size_t> lind = ind;
+    return (113*lind[0]+lind[1]) & mask;
+  }
+
+  /// hash value of 3 int
+  template <typename TI>    
+  INLINE size_t HashValue2 (const INT<3,TI> & ind, size_t mask) 
+  {
+    INT<3,size_t> lind = ind;
+    return (113*lind[0]+59*lind[1]+lind[2]) & mask;
+  }
+
+  INLINE size_t HashValue2 (size_t ind, size_t mask)
+  {
+    return ind & mask;
+  }
+  INLINE size_t HashValue2 (int ind, size_t mask)
+  {
+    return size_t(ind) & mask;
+  }
+  
+
+
+
+  
   // using ngstd::max;
 
   template <int D, typename T>
@@ -472,6 +527,12 @@ namespace ngstd
 
 
 
+  inline size_t RoundUp2 (size_t i)
+  {
+    size_t res = 1;
+    while (res < i) res *= 2; // hope it will never be too large 
+    return res; 
+  }
 
 
 
@@ -486,6 +547,7 @@ namespace ngstd
   protected:
     ///
     size_t size;
+    size_t mask;
     ///
     size_t used;
     ///
@@ -497,8 +559,9 @@ namespace ngstd
   public:
     ///
     ClosedHashTable (size_t asize = 128)
-      : size(asize), used(0), hash(asize), cont(asize)
+      : size(RoundUp2(asize)), used(0), hash(size), cont(size)
     {
+      mask = size-1;
       invalid = -1; 
       hash = T_HASH(invalid);
     }
@@ -550,7 +613,7 @@ namespace ngstd
 
     size_t Position (const T_HASH ind) const
     {
-      size_t i = HashValue(ind, size);
+      size_t i = HashValue2(ind, mask);
       while (1)
 	{
 	  if (hash[i] == ind) return i;
@@ -573,7 +636,7 @@ namespace ngstd
     {
       if (UsedElements()*2 > Size()) DoubleSize();
       
-      size_t i = HashValue (ind, size);
+      size_t i = HashValue2 (ind, mask);
 
       while (1)
 	{

@@ -722,7 +722,17 @@ namespace ngstd
       return size;
     }
 
-
+    /// Add element at end of array. reallocation if necessary.
+    INLINE void Insert (size_t pos, const T & el)
+    {
+      if (size == allocsize) 
+        ReSize (size+1);
+      for (size_t i = size; i > pos; i--)
+        data[i] = data[i-1];
+      data[pos] = el;
+      size++;
+    }
+    
     INLINE Array<T> & operator += (const T & el)
     {
       Append (el);

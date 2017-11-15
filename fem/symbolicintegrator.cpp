@@ -13,7 +13,8 @@ namespace ngfem
 {
   
   ProxyFunction ::
-  ProxyFunction (bool atestfunction, bool ais_complex,
+  ProxyFunction (shared_ptr<ngcomp::FESpace> afes,
+                 bool atestfunction, bool ais_complex,
                  shared_ptr<DifferentialOperator> aevaluator, 
                  shared_ptr<DifferentialOperator> aderiv_evaluator,
                  shared_ptr<DifferentialOperator> atrace_evaluator,
@@ -22,6 +23,7 @@ namespace ngfem
 		 shared_ptr<DifferentialOperator> attrace_deriv_evaluator)
     
     : CoefficientFunction(aevaluator ? aevaluator->Dim() : 1,  /* ais_complex */ false),
+      fes(afes),
       testfunction(atestfunction), is_other(false),
       evaluator(aevaluator), 
       deriv_evaluator(aderiv_evaluator),
@@ -40,7 +42,7 @@ namespace ngfem
       }
     */
     if (deriv_evaluator || trace_deriv_evaluator)
-      deriv_proxy = make_shared<ProxyFunction> (testfunction, is_complex,
+      deriv_proxy = make_shared<ProxyFunction> (fes, testfunction, is_complex,
                                                 deriv_evaluator, nullptr,
                                                 trace_deriv_evaluator, nullptr,
 						ttrace_deriv_evaluator, nullptr);
@@ -58,7 +60,7 @@ namespace ngfem
       throw Exception (string("don't have a trace, primal evaluator = ")+
                        evaluator->Name());
     
-    return make_shared<ProxyFunction> (testfunction, is_complex,
+    return make_shared<ProxyFunction> (fes, testfunction, is_complex,
                                        trace_evaluator, trace_deriv_evaluator,
                                        ttrace_evaluator, ttrace_deriv_evaluator,
                                        nullptr, nullptr);
@@ -762,6 +764,7 @@ namespace ngfem
     nonzeros_proxies = Matrix<bool>(test_proxies.Size(), trial_proxies.Size());
     diagonal_proxies = Matrix<bool>(test_proxies.Size(), trial_proxies.Size());
     same_diffops = Matrix<bool>(test_proxies.Size(), trial_proxies.Size());
+    is_symmetric = true;
     for (int k1 : Range(trial_proxies))
       for (int l1 : Range(test_proxies))
         {
@@ -780,12 +783,16 @@ namespace ngfem
                 }
           nonzeros_proxies(l1, k1) = is_nonzero;
           diagonal_proxies(l1, k1) = is_diagonal;
-          same_diffops(l1,k1) = *(proxy2->Evaluator()) == *(proxy1->Evaluator());
+          // same_diffops(l1,k1) = *(proxy2->Evaluator()) == *(proxy1->Evaluator());
+          // same objects, not only equal objects, what implies also the same space
+          same_diffops(l1,k1) = proxy2->Evaluator() == proxy1->Evaluator();
+          if (nonzeros_proxies(l1,k1) && (!diagonal_proxies(l1,k1) || !same_diffops(l1,k1))) is_symmetric = false;
         }
     
     cout << IM(5) << "nonzeros: " << endl << nonzeros << endl;
     cout << IM(5) << "nonzeros_proxies: " << endl << nonzeros_proxies << endl;
-
+    cout << IM(5) << "symmetric: " << endl << is_symmetric << endl;
+    
     trial_difforder = 99, test_difforder = 99;
     for (auto proxy : trial_proxies)
       trial_difforder = min2(trial_difforder, proxy->Evaluator()->DiffOrder());
@@ -909,7 +916,7 @@ namespace ngfem
     
     
     // tstart.Stop();
-    bool symmetric_so_far = true;
+    // bool symmetric_so_far = true;
     int k1 = 0;
     for (auto proxy1 : trial_proxies)
       {
@@ -1052,9 +1059,10 @@ namespace ngfem
                     // elmat.Rows(r2).Cols(r1) += bbmat2.Rows(r2) * Trans(bdbmat1.Rows(r1));
                     // AddABt (bbmat2.Rows(r2), bdbmat1.Rows(r1), elmat.Rows(r2).Cols(r1));
 
-                    symmetric_so_far &= samediffop && is_diagonal;
+                    // symmetric_so_far &= samediffop && is_diagonal;
 
-                    if (symmetric_so_far)
+                    // if (symmetric_so_far)
+                    if (is_symmetric)
                       AddABtSym (bbmat2.Rows(r2), bdbmat1.Rows(r1), part_elmat);
                     else
                       AddABt (bbmat2.Rows(r2), bdbmat1.Rows(r1), part_elmat);
@@ -1063,7 +1071,8 @@ namespace ngfem
                     // tlapack.AddFlops (r2.Size()*r1.Size()*bdbmat1.Width());
                   }
 
-                if (symmetric_so_far)
+                // if (symmetric_so_far)
+                if (is_symmetric)
                   for (int i = 0; i < part_elmat.Height(); i++)
                     for (int j = i+1; j < part_elmat.Width(); j++)
                       part_elmat(i,j) = part_elmat(j,i);
