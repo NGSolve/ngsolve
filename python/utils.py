@@ -80,8 +80,8 @@ def div(func):
         return func.Deriv()
     add = func.Operator("div")
     if add:
-        return add        
-    return func.Deriv()
+        return add
+    raise Exception("cannot form div")    
 
 
 def ConstantCF(val):
