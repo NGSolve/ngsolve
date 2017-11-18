@@ -793,13 +793,143 @@ namespace ngstd
         }
     return ost;
   }
-    
 
   
+  template <typename TI>  
+  INLINE size_t HashValue (const INT<2,TI> ind)
+  {
+    INT<2,size_t> lind = ind;
+    return 113*lind[0]+lind[1];
+  }
 
 
+  template <typename TKEY, typename T>
+  class ParallelHashTable
+  {
+    class ClosedHT
+    {
+      Array<TKEY> keys;
+      Array<T> values;
+      size_t used;
+      
+    public:
+      ClosedHT(size_t asize = 256) : keys(asize), values(asize), used(0)
+      {
+        keys = TKEY(-1);
+      }
+      
+      size_t Used () const { return used; }
+
+      ClosedHT & operator= (ClosedHT&&) = default;
+
+      void Resize()
+      {
+        ClosedHT tmp(keys.Size()*2);
+        for (size_t i = 0; i < keys.Size(); i++)
+          if (keys[i] != TKEY(-1))
+            {
+              TKEY hkey = keys[i];
+              T hval = values[i];
+              size_t hhash = HashValue(hkey);
+              size_t hhash2 = hhash / 256;
+              tmp.Do(hkey, [hval] (T & v) { v = hval; }, hhash2);
+            }
+        (*this) = move(tmp);
+      }
+      
+      template <typename TFUNC>
+      void Do (TKEY key, TFUNC func, size_t hash)
+      {
+        if (used > keys.Size()/2)
+          Resize();
+
+        size_t pos = hash & (keys.Size()-1);
+        while (1)
+          {
+            if (keys[pos] == key)
+              break;
+            if (keys[pos] == TKEY(-1))
+              {
+                keys[pos] = key;
+                values[pos] = T(0);
+                used++;
+                break;
+              }
+            pos++;
+            if (pos == keys.Size()) pos = 0;
+          }
+        func(values[pos]);
+      }
+
+      template <typename TFUNC>
+      void Iterate (TFUNC func) const
+      {
+        for (size_t i = 0; i < keys.Size(); i++)
+          if (keys[i] != TKEY(-1))
+            func(keys[i], values[i]);
+      }
+        
+      void Print (ostream & ost) const
+      {
+        for (size_t i = 0; i < keys.Size(); i++)
+          if (keys[i] != TKEY(-1))
+            ost << keys[i] << ": " << values[i] << ", ";
+      }
+    };
+
+    Array<ClosedHT> hts;
+    Array<class MyMutex> locks;
+
+  public:
+    ParallelHashTable() : hts(256), locks(256) { ; }
+    size_t NumBuckets() const { return hts.Size(); }
+
+    template <typename TFUNC>
+    void Do (TKEY key, TFUNC func)
+    {
+      size_t hash = HashValue(key);
+      size_t hash1 = hash % 256;
+      size_t hash2 = hash / 256;
+      
+      locks[hash1].lock();
+      hts[hash1].Do (key, func, hash2);
+      locks[hash1].unlock();
+    }
+
+    template <typename TFUNC>
+    void Iterate(TFUNC func) const
+    {
+      for (auto & bucket : hts)
+        bucket.Iterate(func);
+    }
+
+    template <typename TFUNC>
+    void Iterate(size_t nr, TFUNC func) const
+    {
+      hts[nr].Iterate(func);
+    }
+    
+
+    void Print (ostream & ost) const
+    {
+      for (size_t i : Range(hts))
+        if (hts[i].Used() > 0)
+          {
+            ost << i << ": ";
+            hts[i].Print(ost);
+          }
+    }
+  };
+
+  template <typename TKEY, typename T>
+  inline ostream & operator<< (ostream & ost, const ParallelHashTable<TKEY,T> & ht)
+  {
+    ht.Print(ost);
+    return ost;
+  }
 
 
+    
   template <int N, typename T>
   Archive & operator & (Archive & archive, INT<N,T> & mi)
   {
