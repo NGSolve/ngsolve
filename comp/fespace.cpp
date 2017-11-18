@@ -357,26 +357,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
   }
 
-  class MyMutex
-  {
-    atomic<bool> m;
-  public:
-    MyMutex() { m.store(false, memory_order_relaxed); }
-    void lock()
-    {
-      bool should = false;
-      while (!m.compare_exchange_weak(should, true))
-        {
-          should = false;
-          _mm_pause();
-        }
-    }
-    void unlock()
-    {
-      m = false;
-    }
-  };
-  
+
   void FESpace :: FinalizeUpdate(LocalHeap & lh)
   {
     static Timer timer ("FESpace::FinalizeUpdate");
