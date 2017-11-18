@@ -883,7 +883,13 @@ namespace ngstd
   public:
     ParallelHashTable() : hts(256), locks(256) { ; }
     size_t NumBuckets() const { return hts.Size(); }
-
+    size_t Used() const
+    {
+      size_t used = 0;
+      for (auto & ht : hts)
+        used += ht.Used();
+      return used;
+    }  
     template <typename TFUNC>
     void Do (TKEY key, TFUNC func)
     {
