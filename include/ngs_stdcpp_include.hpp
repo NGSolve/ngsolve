@@ -125,6 +125,8 @@
 #endif
 
 
+#include <immintrin.h>
+
 
 #ifndef __assume
 #ifdef __GNUC__
