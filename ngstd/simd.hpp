@@ -7,7 +7,7 @@
 /* Date:   25. Mar. 16                                                    */
 /**************************************************************************/
 
-#include <immintrin.h>
+// #include <immintrin.h>
 
 #ifdef WIN32
 #ifndef AVX_OPERATORS_DEFINED

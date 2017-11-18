@@ -13,6 +13,7 @@
 #include <dlfcn.h>
 #endif //WIN32
 
+
 namespace ngstd
 {
 
@@ -160,6 +161,30 @@ namespace std
     */
   }
 
+  
+
+  class MyMutex
+  {
+    atomic<bool> m;
+  public:
+    MyMutex() { m.store(false, memory_order_relaxed); }
+    void lock()
+    {
+      bool should = false;
+      while (!m.compare_exchange_weak(should, true))
+        {
+          should = false;
+          _mm_pause();
+        }
+    }
+    void unlock()
+    {
+      m = false;
+    }
+  };
+  
+
+  
   
 #if defined(__GNUC__)
   inline bool likely (bool x) { return __builtin_expect((x), true); }
