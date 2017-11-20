@@ -817,7 +817,8 @@ namespace ngstd
       {
         keys = TKEY(-1);
       }
-      
+
+      size_t Size () const { return keys.Size(); }
       size_t Used () const { return used; }
 
       ClosedHT & operator= (ClosedHT&&) = default;
@@ -921,6 +922,8 @@ namespace ngstd
   public:
     ParallelHashTable() : hts(256), locks(256) { ; }
     size_t NumBuckets() const { return hts.Size(); }
+    size_t BucketSize(size_t nr) const { return hts[nr].Size(); }
+    size_t Used (size_t nr) const { return hts[nr].Used(); } 
     size_t Used() const
     {
       size_t used = 0;
