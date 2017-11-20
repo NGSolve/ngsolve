@@ -183,7 +183,13 @@ namespace std
     }
   };
   
-
+  class MyLock
+  {
+    MyMutex & mutex;
+  public:
+    MyLock (MyMutex & amutex) : mutex(amutex) { mutex.lock(); }
+    ~MyLock () { mutex.unlock(); }
+  };
   
   
 #if defined(__GNUC__)
