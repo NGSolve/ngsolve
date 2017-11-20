@@ -878,7 +878,9 @@ namespace ngstd
     };
 
     Array<ClosedHT> hts;
-    Array<class MyMutex> locks;
+    class alignas(64) MyMutex64 : public MyMutex { };
+    
+    Array<MyMutex64> locks;
 
   public:
     ParallelHashTable() : hts(256), locks(256) { ; }
