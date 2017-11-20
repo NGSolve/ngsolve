@@ -832,7 +832,7 @@ namespace ngstd
               T hval = values[i];
               size_t hhash = HashValue(hkey);
               size_t hhash2 = hhash / 256;
-              tmp.Do(hkey, [hval] (T & v) { v = hval; }, hhash2);
+              tmp.DoSave(hkey, [hval] (T & v) { v = hval; }, hhash2);
             }
         (*this) = move(tmp);
       }
@@ -842,7 +842,12 @@ namespace ngstd
       {
         if (used > keys.Size()/2)
           Resize();
-
+        return DoSave (key, func, hash);
+      }
+      
+      template <typename TFUNC>
+      auto DoSave (TKEY key, TFUNC func, size_t hash)
+      {
         size_t pos = hash & (keys.Size()-1);
         while (1)
           {
@@ -860,6 +865,37 @@ namespace ngstd
           }
         return func(values[pos]);
       }
+      
+      T Get (TKEY key, size_t hash)
+      {
+        size_t pos = hash & (keys.Size()-1);
+        while (1)
+          {
+            if (keys[pos] == key)
+              return values[pos];
+            if (keys[pos] == TKEY(-1))
+              throw Exception ("ParallelHashTable::Get of unused key");
+            pos++;
+            if (pos == keys.Size()) pos = 0;
+          }
+      }
+
+      size_t GetCosts (TKEY key, size_t hash)
+      {
+        size_t pos = hash & (keys.Size()-1);
+        size_t costs = 1;
+        while (1)
+          {
+            if (keys[pos] == key)
+              return costs;
+            if (keys[pos] == TKEY(-1))
+              throw Exception ("ParallelHashTable::Get of unused key");
+            costs++;
+            pos++;
+            if (pos == keys.Size()) pos = 0;
+          }
+      }
+
 
       template <typename TFUNC>
       void Iterate (TFUNC func) const
@@ -905,7 +941,26 @@ namespace ngstd
       MyLock lock(locks[hash1]);
       return hts[hash1].Do (key, func, hash2);
     }
+    
+    T Get (TKEY key)
+    {
+      size_t hash = HashValue(key);
+      size_t hash1 = hash % 256;
+      size_t hash2 = hash / 256;
+      
+      return hts[hash1].Get (key, hash2);
+    }
 
+    auto GetCosts (TKEY key)
+    {
+      size_t hash = HashValue(key);
+      size_t hash1 = hash % 256;
+      size_t hash2 = hash / 256;
+      
+      return hts[hash1].GetCosts (key, hash2);
+    }
+
+    
     template <typename TFUNC>
     void Iterate(TFUNC func) const
     {
