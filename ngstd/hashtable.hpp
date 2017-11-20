@@ -838,7 +838,7 @@ namespace ngstd
       }
       
       template <typename TFUNC>
-      void Do (TKEY key, TFUNC func, size_t hash)
+      auto Do (TKEY key, TFUNC func, size_t hash)
       {
         if (used > keys.Size()/2)
           Resize();
@@ -858,7 +858,7 @@ namespace ngstd
             pos++;
             if (pos == keys.Size()) pos = 0;
           }
-        func(values[pos]);
+        return func(values[pos]);
       }
 
       template <typename TFUNC>
@@ -891,15 +891,17 @@ namespace ngstd
       return used;
     }  
     template <typename TFUNC>
-    void Do (TKEY key, TFUNC func)
+    auto Do (TKEY key, TFUNC func)
     {
       size_t hash = HashValue(key);
       size_t hash1 = hash % 256;
       size_t hash2 = hash / 256;
       
-      locks[hash1].lock();
-      hts[hash1].Do (key, func, hash2);
-      locks[hash1].unlock();
+      // locks[hash1].lock();
+      // hts[hash1].Do (key, func, hash2);
+      // locks[hash1].unlock();
+      MyLock lock(locks[hash1]);
+      return hts[hash1].Do (key, func, hash2);
     }
 
     template <typename TFUNC>
