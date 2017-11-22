@@ -123,6 +123,8 @@ namespace ngcomp
     enum { DIFFORDER = 1 };
     enum { DIM_STRESS = (D*(D+1))/2 };
 
+    static string Name() { return "div"; }
+
     template <typename AFEL, typename MIP, typename MAT>
     static void GenerateMatrix (const AFEL & bfel, const MIP & sip,
                                 MAT & mat, LocalHeap & lh)
