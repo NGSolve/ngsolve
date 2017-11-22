@@ -1240,7 +1240,7 @@ namespace ngcomp
     ElementId ei(vb, elnr);
 
     // const FESpace & fes = *gf->GetFESpace();
-    shared_ptr<MeshAccess>  ma = fes->GetMeshAccess();
+    const shared_ptr<MeshAccess> & ma = fes->GetMeshAccess();
     
     if (!ip.GetTransformation().BelongsToMesh (ma.get()))
       {
