@@ -3259,8 +3259,9 @@ flags : dict
                bfi -> SetDefinedOnElements (py::extract<shared_ptr<BitArray>>(definedonelem)());
              return bfi;
            },
-        py::arg("coefficient"), py::arg("VOL_or_BND")=VOL, py::arg("element_boundary")=false,
-        py::arg("definedon")=DummyArgument(), py::arg("definedonelements")=DummyArgument()
+        py::arg("coefficient"), py::arg("VOL_or_BND")=VOL, 
+        py::arg("definedon")=DummyArgument(), py::arg("element_boundary")=false,
+        py::arg("definedonelements")=DummyArgument()
           );
 
 
