@@ -986,7 +986,7 @@ namespace ngcomp
     size_t nfa = (ma->GetDimension() == 2) ? 0 : ma->GetNFaces();
     size_t ni = (eliminate_internal) ? 0 : ma->GetNE(); 
    
-    cout << " blocktype " << smoothing_type << endl; 
+    cout << IM(4) << " blocktype " << smoothing_type << endl;
     // cout << " Use H1-Block Smoother:  "; 
 
     FilteredTableCreator creator(GetFreeDofs().get());
@@ -1065,7 +1065,7 @@ namespace ngcomp
 		
             if (creator.GetMode() == 1)
               {
-                cout << " VE + F + I " << endl;
+                cout << IM(4) << " VE + F + I " << endl;
                 creator.SetSize(nv+nfa+ni);
                 break;
               }
@@ -1410,26 +1410,28 @@ namespace ngcomp
     
 
 
-  Array<int> * 
+  shared_ptr<Array<int>>
   H1HighOrderFESpace :: CreateDirectSolverClusters (const Flags & flags) const
   {
     if (flags.GetDefineFlag("subassembled"))
     {
 	cout << "creating bddc-coarse grid(vertices)" << endl;
-	Array<int> & clusters = *new Array<int> (GetNDof());
+        auto spclusters = make_shared<Array<int>> (GetNDof());
+	Array<int> & clusters = *spclusters;
 	clusters = 0;
 	int nv = ma->GetNV();
 	for (int i = 0; i < nv; i++)
 	  if (!IsDirichletVertex(i))
 	    clusters[i] = 1;		
-	return &clusters;	
+	return spclusters;
     }
     
     if (flags.NumFlagDefined ("ds_order"))
       {
 	int ds_order = int (flags.GetNumFlag ("ds_order", 1));
 
-	Array<int> & clusters = *new Array<int> (GetNDof());
+        auto spclusters = make_shared<Array<int>> (GetNDof());
+	Array<int> & clusters = *spclusters;
 	clusters = 0;
 	
 	int ned = ma->GetNEdges();
@@ -1475,7 +1477,7 @@ namespace ngcomp
 	  }
 	*/
 
-	return &clusters;
+	return spclusters;
       }
 
 
@@ -1486,7 +1488,8 @@ namespace ngcomp
     // int nv = ma->GetNV();
     // int nd = GetNDof();
     int ne = ma->GetNE();
-    Array<int> & clusters = *new Array<int> (GetNDof());
+    auto spclusters = make_shared<Array<int>> (GetNDof());
+    Array<int> & clusters = *spclusters;
     clusters = 0;
 
     // all vertices in global space
@@ -1606,11 +1609,10 @@ namespace ngcomp
       if (clusters[i]) nonzero = true;
     if (!nonzero)
       {
-	delete &clusters;
-	return 0;
+	return nullptr;
       }
 
-    return &clusters;
+    return spclusters;
   }
 
   template<>

@@ -2370,7 +2370,12 @@ check_unused : bool
                      py::arg("nonassemble") = "bool = False\n"
                      "  BilinearForm will not allocate memory for assembling.\n"
                      "  optimization feature for (nonlinear) problems where the\n"
-                     "  form is only applied but never assembled."
+                     "  form is only applied but never assembled.",
+                     py::arg("project") = "bool = False\n"
+                     "  When calling bf.Assemble, all saved coarse matrices from\n"
+                     "  mesh refinements are updated as well using a Galerkin projection\n"
+                     "  of the matrix on the finest grid. This is needed to use the multigrid\n"
+                     "  preconditioner with a changing bilinearform."
                      );
                 })
 
@@ -2663,6 +2668,28 @@ flags : dict
                    {
                      return self.GetMatrixPtr();
                    })
+    ;
+
+  auto prec_multigrid = py::class_<MGPreconditioner, shared_ptr<MGPreconditioner>, Preconditioner>
+    (m,"MultiGridPreconditioner");
+  prec_multigrid
+    .def(py::init([prec_multigrid](shared_ptr<BilinearForm> bfa, py::kwargs kwargs)
+                  {
+                    auto flags = CreateFlagsFromKwArgs(prec_multigrid, kwargs);
+                    return make_shared<MGPreconditioner>(bfa,flags);
+                  }), py::arg("bf"))
+    .def_static("__flags_doc__", [prec_class] ()
+                {
+                  auto mg_flags = py::cast<py::dict>(prec_class.attr("__flags_doc__")());
+                  mg_flags["updateall"] = "bool = False\n"
+                    "  Update all smoothing levels when calling Update";
+                  mg_flags["smoother"] = "string = 'point'\n"
+                    "  Smoother between multigrid levels, available options are:\n"
+                    "    'point': Gauss-Seidel-Smoother\n"
+                    "    'line':  Anisotropic smoother\n"
+                    "    'block': Block smoother";
+                  return mg_flags;
+                })
     ;
 
   //////////////////////////////////////////////////////////////////////////////////////////

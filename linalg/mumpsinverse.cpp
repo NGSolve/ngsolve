@@ -31,7 +31,7 @@ namespace ngla
   MumpsInverse<TM,TV_ROW,TV_COL> :: 
   MumpsInverse (const SparseMatrix<TM,TV_ROW,TV_COL> & a, 
                 shared_ptr<BitArray> ainner,
-                const Array<int> * acluster,
+                shared_ptr<const Array<int>> acluster,
                 bool asymmetric)
   { 
     static Timer timer ("Mumps Inverse");
@@ -421,7 +421,7 @@ namespace ngla
   ParallelMumpsInverse<TM,TV> :: 
   ParallelMumpsInverse (const BaseSparseMatrix & ba, 
 			shared_ptr<BitArray> inner,
-			const Array<int> * cluster,
+			shared_ptr<const Array<int>> cluster,
 			const ParallelDofs * pardofs,
 			bool asymmetric)
   { 

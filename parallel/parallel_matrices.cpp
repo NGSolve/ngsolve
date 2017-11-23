@@ -438,7 +438,7 @@ namespace ngla
 
 
 
-  shared_ptr<BaseMatrix> ParallelMatrix::InverseMatrix (const Array<int> * clusters) const
+  shared_ptr<BaseMatrix> ParallelMatrix::InverseMatrix (shared_ptr<const Array<int>> clusters) const
   {
     throw Exception ("ParallelMatrix::Inverse(cluster) not available");
   }

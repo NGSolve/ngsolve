@@ -1802,10 +1802,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
 
   
-  Array<int> * 
+  shared_ptr<Array<int>>
   NodalFESpace :: CreateDirectSolverClusters (const Flags & flags) const
   {
-    Array<int> & clusters = *new Array<int> (GetNDof());
+    auto spclusters = make_shared<Array<int>> (GetNDof());
+    Array<int> & clusters = *spclusters;
     clusters = 0;
 
     const int stdoffset = 1;
@@ -1829,11 +1830,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
       if (clusters[i]) nonzero = true;
     if (!nonzero)
       {
-	delete &clusters;
-	return 0;
+	return nullptr;
       }
 
-    return &clusters;
+    return spclusters;
   }
 
 
