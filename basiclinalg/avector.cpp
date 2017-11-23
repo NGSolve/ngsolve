@@ -32,10 +32,13 @@ namespace ngbla
 {
 
 
-#if defined (__AVX__)
+#if defined (__AVX__) && not defined(__AVX512F__)
 
 
+  inline SIMD<double,4> operator+= (SIMD<double,4> & a, __m256d b) { return a += SIMD<double,4>(b); }
+  inline SIMD<double,4> operator-= (SIMD<double,4> & a, __m256d b) { return a -= SIMD<double,4>(b); }  
 
+  
   INLINE __m256d HAdd (__m256d v1, __m256d v2, __m256d v3, __m256d v4)
   {
     __m256d hsum1 = _mm256_hadd_pd (v1, v2);
@@ -209,10 +212,10 @@ namespace ngbla
 #pragma nounroll      
     for ( ; i < 4*n; i+=4)
       {
-        sum11 += _mm256_loadu_pd(a1+i) * _mm256_loadu_pd(b1+i);
-        sum12 += _mm256_loadu_pd(a1+i) * _mm256_loadu_pd(b2+i);
-        sum13 += _mm256_loadu_pd(a1+i) * _mm256_loadu_pd(b3+i);
-        sum14 += _mm256_loadu_pd(a1+i) * _mm256_loadu_pd(b4+i);
+        sum11 += SIMD<double> (_mm256_loadu_pd(a1+i) * _mm256_loadu_pd(b1+i));
+        sum12 += SIMD<double> (_mm256_loadu_pd(a1+i) * _mm256_loadu_pd(b2+i));
+        sum13 += SIMD<double> (_mm256_loadu_pd(a1+i) * _mm256_loadu_pd(b3+i));
+        sum14 += SIMD<double> (_mm256_loadu_pd(a1+i) * _mm256_loadu_pd(b4+i));
       }
 
     if (R > 0)
@@ -225,10 +228,10 @@ namespace ngbla
           case 3: mask = _mm256_set_epi64x(0,-1,-1,-1); break;
           default: ;
           }
-        sum11 += _mm256_maskload_pd (a1+i, mask) * _mm256_maskload_pd (b1+i, mask);
-        sum12 += _mm256_maskload_pd (a1+i, mask) * _mm256_maskload_pd (b2+i, mask);      
-        sum13 += _mm256_maskload_pd (a1+i, mask) * _mm256_maskload_pd (b3+i, mask);
-        sum14 += _mm256_maskload_pd (a1+i, mask) * _mm256_maskload_pd (b4+i, mask);
+        sum11 += SIMD<double> (_mm256_maskload_pd (a1+i, mask) * _mm256_maskload_pd (b1+i, mask));
+        sum12 += SIMD<double> (_mm256_maskload_pd (a1+i, mask) * _mm256_maskload_pd (b2+i, mask));      
+        sum13 += SIMD<double> (_mm256_maskload_pd (a1+i, mask) * _mm256_maskload_pd (b3+i, mask));
+        sum14 += SIMD<double> (_mm256_maskload_pd (a1+i, mask) * _mm256_maskload_pd (b4+i, mask));
       }
     return SIMD<double> (HAdd (sum11.Data(), sum12.Data(), sum13.Data(), sum14.Data()));
   }
@@ -2532,7 +2535,7 @@ namespace ngbla
   constexpr size_t NB = 96;
   constexpr size_t NK = 128;
   
-#if defined (__AVX__)
+#if defined (__AVX__) && not defined(__AVX512F__)
 
   // prefetch a row-major matrix
   void PreFetchMatrix (size_t h, size_t w, double * p, size_t dist)
