@@ -113,11 +113,11 @@ def Cross(a,b):
     return CoefficientFunction( (a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]) )
 
 def Cof(m):
-    if mat.dims[0] == 1:
+    if m.dims[0] == 1:
         return CoefficientFunction(1, dims=(1,1))
-    elif mat.dims[0] == 2:
+    elif m.dims[0] == 2:
         return CoefficientFunction( (m[1,1], -m[1,0], -m[0,1], m[0,0]), dims=(2,2) )
-    elif mat.dims[0] == 3:
+    elif m.dims[0] == 3:
         return CoefficientFunction( 
                     ( m[1,1]*m[2,2]-m[2,1]*m[1,2],
                      -m[1,0]*m[2,2]+m[2,0]*m[1,2],
