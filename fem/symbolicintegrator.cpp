@@ -3317,7 +3317,7 @@ namespace ngfem
               {
                 HeapReset hr(lh);
                 // tcoef.Start();
-                AFlatMatrix<double> simd_proxyvalues(proxy->Dimension(), simd_ir_facet.GetNIP(), lh);        
+                FlatMatrix<SIMD<double>> simd_proxyvalues(proxy->Dimension(), simd_ir_facet.Size(), lh);        
                 
                 for (int k = 0; k < proxy->Dimension(); k++)
                   {
@@ -3329,8 +3329,8 @@ namespace ngfem
                 for (int i = 0; i < simd_proxyvalues.Height(); i++)
                   {
                     auto row = simd_proxyvalues.Row(i);
-                    for (int j = 0; j < row.VSize(); j++)
-                      row.Get(j) *= simd_mir1[j].GetMeasure().Data() * simd_ir_facet[j].Weight().Data();
+                    for (int j = 0; j < row.Size(); j++)
+                      row(j) *= simd_mir1[j].GetMeasure() * simd_ir_facet[j].Weight();
                   }
                 // tcoef.Stop();
                 // tapplyt.Start();
@@ -3677,7 +3677,7 @@ namespace ngfem
               if(!proxy->IsOther())
 		{
 		  HeapReset hr(lh);
-		  AFlatMatrix<double> simd_proxyvalues(proxy->Dimension(), simd_ir_facet.GetNIP(), lh); 
+		  FlatMatrix<SIMD<double>> simd_proxyvalues(proxy->Dimension(), simd_ir_facet.Size(), lh); 
                 
 		  for (int k = 0; k < proxy->Dimension(); k++)
 		    {
@@ -3689,8 +3689,8 @@ namespace ngfem
 		  for (int i = 0; i < simd_proxyvalues.Height(); i++)
 		    {
 		      auto row = simd_proxyvalues.Row(i);
-		      for (int j = 0; j < row.VSize(); j++)
-			row.Get(j) *= simd_mir[j].GetMeasure().Data() * simd_ir_facet[j].Weight().Data();
+		      for (int j = 0; j < row.Size(); j++)
+			row(j) *= simd_mir[j].GetMeasure() * simd_ir_facet[j].Weight();
 		    }
 		  IntRange test_range  = IntRange(0, volumefel.GetNDof());
 		  int blockdim = proxy->Evaluator()->BlockDim();
@@ -3847,7 +3847,7 @@ namespace ngfem
             for (auto proxy : test_proxies)
               {
                 HeapReset hr(lh);
-                AFlatMatrix<double> proxyvalues(proxy->Dimension(), ir_facet.GetNIP(), lh);
+                FlatMatrix<SIMD<double>> proxyvalues(proxy->Dimension(), ir_facet.Size(), lh);
                 
                 for (int k = 0; k < proxy->Dimension(); k++)
                   {
@@ -3859,8 +3859,8 @@ namespace ngfem
                 for (int i = 0; i < proxyvalues.Height(); i++)
                   {
                     auto row = proxyvalues.Row(i);
-                    for (int j = 0; j < row.VSize(); j++)
-                      row.Get(j) *= mir1[j].GetMeasure().Data() * ir_facet[j].Weight().Data();
+                    for (int j = 0; j < row.Size(); j++)
+                      row(j) *= mir1[j].GetMeasure() * ir_facet[j].Weight();
                   }
                 
                 if (proxy->IsOther() && proxy->BoundaryValues())
@@ -4412,23 +4412,23 @@ namespace ngfem
               proxy->Evaluator()->Apply(fel, mir, elx, ud.GetAMemory(proxy));
             
             ely = 0;
-            AFlatMatrix<double> val(1, ir.GetNIP(), lh);
+            FlatMatrix<SIMD<double>> val(1, ir.Size(), lh);
             for (auto proxy : trial_proxies)
               {
                 HeapReset hr(lh);
-                AFlatMatrix<double> proxyvalues(proxy->Dimension(), ir.GetNIP(), lh);
+                FlatMatrix<SIMD<double>> proxyvalues(proxy->Dimension(), ir.Size(), lh);
                 for (int k = 0; k < proxy->Dimension(); k++)
                   {
                     ud.trialfunction = proxy;
                     ud.trial_comp = k;
-                    cf -> EvaluateDeriv (mir, val, proxyvalues.Rows(k,k+1));
+                    cf -> EvaluateDeriv (mir, AFlatMatrix<>(val), AFlatMatrix<>(proxyvalues.Rows(k,k+1)));
                   }
 
                 for (int i = 0; i < proxyvalues.Height(); i++)
                   {
                     auto row = proxyvalues.Row(i);
-                    for (int j = 0; j < row.VSize(); j++)
-                      row.Get(j) *= mir[j].GetMeasure().Data() * ir[j].Weight().Data();
+                    for (int j = 0; j < row.Size(); j++)
+                      row(j) *= mir[j].GetMeasure() * ir[j].Weight();
                   }
                 
                 proxy->Evaluator()->AddTrans(fel, mir, proxyvalues, ely);
