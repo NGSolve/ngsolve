@@ -1517,7 +1517,7 @@ namespace ngfem
         T_CalcElementMatrixEBAdd<SCAL, SCAL_SHAPES, SCAL_RES> (fel, trafo, elmat, lh);
         return;
       }
-    
+
     bool is_mixedfe = typeid(fel) == typeid(const MixedFiniteElement&);
     const MixedFiniteElement * mixedfe = static_cast<const MixedFiniteElement*> (&fel);
     const FiniteElement & fel_trial = is_mixedfe ? mixedfe->FETrial() : fel;
