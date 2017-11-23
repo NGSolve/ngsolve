@@ -185,7 +185,7 @@ namespace ngla
     return NULL;
   }
   
-  shared_ptr<BaseMatrix> BaseMatrix :: InverseMatrix (const Array<int> * clusters) const
+  shared_ptr<BaseMatrix> BaseMatrix :: InverseMatrix (shared_ptr<const Array<int>> clusters) const
   {
     cerr << "BaseMatrix::InverseMatrix not available" << endl;
     return NULL;

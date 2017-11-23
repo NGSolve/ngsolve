@@ -37,16 +37,13 @@ namespace ngmg
     const BilinearForm & biform;
   
     ///
-    Smoother * smoother;
+    shared_ptr<Smoother> smoother;
     ///
     shared_ptr<Prolongation> prolongation;
     ///
     shared_ptr<BaseMatrix> coarsegridpre;
     ///
     double checksumcgpre;
-    ///
-    int ownsmoother, ownprolongation, owncoarsegridpre;
-		    
     ///
     COARSETYPE coarsetype;
     ///
@@ -64,15 +61,12 @@ namespace ngmg
     MultigridPreconditioner (const MeshAccess & ama,
 			     const FESpace & afespace,
 			     const BilinearForm & abiform,
-			     Smoother * asmoother,
+			     shared_ptr<Smoother> asmoother,
 			     shared_ptr<Prolongation> aprolongation);
     ///
     ~MultigridPreconditioner ();
     ///
-    virtual bool IsComplex() const { return fespace.IsComplex(); } 
-
-    ///
-    void FreeMem(void);
+    virtual bool IsComplex() const override { return fespace.IsComplex(); }
 
     ///
     void SetSmoothingSteps (int sstep);
@@ -87,27 +81,20 @@ namespace ngmg
     ///
     void SetCoarseSmoothingSteps (int cstep);
 
-    ///
-    void SetOwnSmoother (int os = 1);
-    ///
-    void SetOwnProlongation (int op = 1);
-    ///
-    void SetOwnCoarseGridPreconditioner (int oc = 1);
-    ///
     void SetUpdateAll (int ua = 1);
     ///
     void SetUpdateAlways (bool ua = 1) { update_always = ua; }
     ///
-    virtual void Update ();
+    virtual void Update () override;
 
     ///
-    virtual void Mult (const BaseVector & x, BaseVector & y) const;
+    virtual void Mult (const BaseVector & x, BaseVector & y) const override;
 
     ///
     void MGM (int level, BaseVector & u, 
 	      const BaseVector & f, int incsm = 1) const;
     ///
-    virtual AutoVector CreateVector () const
+    virtual AutoVector CreateVector () const override
     { return biform.GetMatrix().CreateVector(); }
   
     ///
@@ -121,18 +108,18 @@ namespace ngmg
     { return *prolongation; }
 
 
-    virtual int VHeight() const
+    virtual int VHeight() const override
     {
       return biform.GetMatrix().Height();
     }
 
-    virtual int VWidth() const
+    virtual int VWidth() const override
     {
       return biform.GetMatrix().VWidth();
     }
 
 
-    virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
+    virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const override;
   };
 
 
@@ -149,35 +136,30 @@ namespace ngmg
     ///
     const BaseMatrix * cpre;
     ///
-    Smoother * smoother;
+    shared_ptr<Smoother> smoother;
     ///
     int level;
     ///
     int smoothingsteps;
-    ///
-    bool own_smoother;
   public:
     ///
     TwoLevelMatrix (const BaseMatrix * amat, 
 		    const BaseMatrix * acpre, 
-		    Smoother * asmoother, int alevel);
+		    shared_ptr<Smoother> asmoother, int alevel);
     ///
     ~TwoLevelMatrix ();
 
-    virtual bool IsComplex() const { return mat->IsComplex(); } 
+    virtual bool IsComplex() const override { return mat->IsComplex(); }
 
     ///
-    void FreeMem(void);
+
+    virtual void Mult (const BaseVector & x, BaseVector & y) const override;
     ///
-    virtual void Mult (const BaseVector & x, BaseVector & y) const;
+    virtual AutoVector CreateVector () const override;
     ///
-    virtual AutoVector CreateVector () const;
-    ///
-    virtual ostream & Print (ostream & s) const;
+    virtual ostream & Print (ostream & s) const override;
     ///
     void SetSmoothingSteps(int ass) { smoothingsteps = ass; }
-    ///
-    void SetOwnSmoother (bool aos) { own_smoother = aos; }
     ///
     const Smoother & GetSmoother() const
     { return *smoother; }
@@ -185,19 +167,19 @@ namespace ngmg
     Smoother & GetSmoother()
     { return *smoother; }
     ///
-    virtual void Update();
+    virtual void Update() override;
 
-    virtual int VHeight() const
+    virtual int VHeight() const override
     {
       return mat->Height();
     }
 
-    virtual int VWidth() const
+    virtual int VWidth() const override
     {
       return mat->VWidth();
     }
   
-    virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
+    virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const override;
   };
 
 }

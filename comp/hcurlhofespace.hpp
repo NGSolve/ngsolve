@@ -112,7 +112,7 @@ namespace ngcomp
   
     //virtual BitArray * CreateIntermediatePlanes (int type = 0) const;
     ///
-    virtual Array<int> * CreateDirectSolverClusters (const Flags & precflags) const override;
+    virtual shared_ptr<Array<int>> CreateDirectSolverClusters (const Flags & precflags) const override;
     ///
     shared_ptr<H1HighOrderFESpace> CreateGradientSpace() const;
     shared_ptr<SparseMatrix<double>> CreateGradient() const {
