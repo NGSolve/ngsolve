@@ -349,27 +349,27 @@ namespace ngcomp
 	  Flags flags;
 	  flags.SetFlag("eliminate_internal");
 	  flags.SetFlag("subassembled");
-	  cout << "call Create Smoothing Blocks of " << bfa->GetFESpace()->GetName() << endl;
+	  cout << IM(1) << "call Create Smoothing Blocks of " << bfa->GetFESpace()->GetName() << endl;
 	  shared_ptr<Table<int>> blocks = (bfa->GetFESpace()->CreateSmoothingBlocks(flags));
-	  cout << "has blocks" << endl << endl;
+	  cout << IM(1) << "has blocks" << endl << endl;
 	  // *testout << "blocks = " << endl << blocks << endl;
 	  // *testout << "pwbmat = " << endl << *pwbmat << endl;
-	  cout << "call block-jacobi inverse" << endl;
+	  cout << IM(1) << "call block-jacobi inverse" << endl;
 
 	  inv = dynamic_pointer_cast<BaseSparseMatrix> (pwbmat)->CreateBlockJacobiPrecond(blocks, 0, 0, 0);
 	  // inv = dynamic_cast<BaseSparseMatrix*> (pwbmat)->CreateJacobiPrecond(wb_free_dofs);
 
-	  cout << "has inverse" << endl << endl;
+	  cout << IM(1) << "has inverse" << endl << endl;
 	  // *testout << "blockjacobi = " << endl << *inv << endl;
 	  
 	  //Coarse Grid of Wirebasket
-	  cout << "call directsolverclusters inverse" << endl;
+	  cout << IM(1) << "call directsolverclusters inverse" << endl;
 	  Array<int> & clusters = *(bfa->GetFESpace()->CreateDirectSolverClusters(flags));
-	  cout << "has clusters" << endl << endl;
+	  cout << IM(1) << "has clusters" << endl << endl;
 	  
-	  cout << "call coarse wirebasket grid inverse" << endl;
+	  cout << IM(1) << "call coarse wirebasket grid inverse" << endl;
 	  inv_coarse = pwbmat->InverseMatrix(&clusters);
-	  cout << "has inverse" << endl << endl;
+	  cout << IM(1) << "has inverse" << endl << endl;
 	  
 	  tmp = new VVector<>(ndof);
 	  tmp2 = new VVector<>(ndof);
@@ -412,18 +412,18 @@ namespace ngcomp
 
               if (coarse)
               {
-                cout << "call wirebasket preconditioner finalize ( with " << cntfreedofs 
+                cout << IM(1) << "call wirebasket preconditioner finalize ( with " << cntfreedofs
                      << " free dofs out of " << pwbmat->Height() << " )" << endl;
                 // throw Exception("combination of coarse and block not implemented! ");
                 dynamic_pointer_cast<Preconditioner>(inv) -> FinalizeLevel(pwbmat.get());
               }
               else
               {
-                cout << "call wirebasket inverse ( with " << cntfreedofs 
+                cout << IM(1) << "call wirebasket inverse ( with " << cntfreedofs
                      << " free dofs out of " << pwbmat->Height() << " )" << endl;
                 inv = pwbmat->InverseMatrix(wb_free_dofs);
               }
-	      cout << "has inverse" << endl;
+	      cout << IM(1) << "has inverse" << endl;
 	      tmp = new VVector<TV>(ndof);
 	    }
 	}
