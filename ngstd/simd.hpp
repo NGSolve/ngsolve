@@ -303,6 +303,10 @@ namespace ngstd
   
   template <int N>
   INLINE SIMD<double,N> operator+ (SIMD<double,N> a, SIMD<double,N> b) { return a.Data()+b.Data(); }
+  template <int N>
+  INLINE SIMD<double,N> operator+ (SIMD<double,N> a, double b) { return a+SIMD<double,N>(b); }
+  template <int N>
+  INLINE SIMD<double,N> operator+ (double a, SIMD<double,N> b) { return SIMD<double,N>(a)+b; }
   template <int N>  
   INLINE SIMD<double,N> operator- (SIMD<double,N> a, SIMD<double,N> b) { return a.Data()-b.Data(); }
   template <int N>  
@@ -314,17 +318,23 @@ namespace ngstd
   template <int N>  
   INLINE SIMD<double,N> operator* (SIMD<double,N> a, SIMD<double,N> b) { return a.Data()*b.Data(); }
   template <int N>  
-  INLINE SIMD<double,N> operator/ (SIMD<double,N> a, SIMD<double,N> b) { return a.Data()/b.Data(); }
-  template <int N>  
   INLINE SIMD<double,N> operator* (double a, SIMD<double,N> b) { return SIMD<double,N>(a)*b; }
   template <int N>  
   INLINE SIMD<double,N> operator* (SIMD<double,N> b, double a) { return SIMD<double,N>(a)*b; }
+  template <int N>  
+  INLINE SIMD<double,N> operator/ (SIMD<double,N> a, SIMD<double,N> b) { return a.Data()/b.Data(); }
+  template <int N>  
+  INLINE SIMD<double,N> operator/ (SIMD<double,N> a, double b) { return a/SIMD<double,N>(b); }
+  template <int N>  
+  INLINE SIMD<double,N> operator/ (double a, SIMD<double,N> b) { return SIMD<double,N>(a)/b; }
   template <int N>  
   INLINE SIMD<double,N> & operator+= (SIMD<double,N> & a, SIMD<double,N> b) { a.Data()+=b.Data(); return a; }
   template <int N>  
   INLINE SIMD<double,N> & operator+= (SIMD<double,N> & a, double b) { a+=SIMD<double,N>(b); return a; }
   template <int N>  
   INLINE SIMD<double,N> & operator-= (SIMD<double,N> & a, SIMD<double,N> b) { a.Data()-=b.Data(); return a; }
+  template <int N>  
+  INLINE SIMD<double,N> & operator-= (SIMD<double,N> & a, double b) { a-=SIMD<double,N>(b); return a; }
   template <int N>  
   INLINE SIMD<double,N> & operator*= (SIMD<double,N> & a, SIMD<double,N> b) { a.Data()*=b.Data(); return a; }
   template <int N>  
