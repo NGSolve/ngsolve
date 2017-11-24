@@ -1252,7 +1252,7 @@ namespace ngbla
   }
 
 
-#if defined(__AVX__)
+#if defined(__AVX__) && not defined(__AVX512F__)
 
   void TransposeMatrix(SliceMatrix<> a, SliceMatrix<> b);
   extern void MultMatMat(SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c);

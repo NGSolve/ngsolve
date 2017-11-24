@@ -1629,15 +1629,15 @@ namespace ngcomp
       auto & ir = mir.IR();
       const ElementTransformation & trafo = mir.GetTransformation();
       auto & fel_u = static_cast<const FEL&>(fel);
-      AFlatMatrix<double> hxl(D, mir.IR().GetNIP(), lh);
-      AFlatMatrix<double> hxr(D, mir.IR().GetNIP(), lh);
-      AFlatMatrix<double> hxll(D, mir.IR().GetNIP(), lh);
-      AFlatMatrix<double> hxrr(D, mir.IR().GetNIP(), lh);
-      AFlatMatrix<double> hx(D, mir.IR().GetNIP(), lh);
+      FlatMatrix<SIMD<double>> hxl(D, mir.IR().Size(), lh);
+      FlatMatrix<SIMD<double>> hxr(D, mir.IR().Size(), lh);
+      FlatMatrix<SIMD<double>> hxll(D, mir.IR().Size(), lh);
+      FlatMatrix<SIMD<double>> hxrr(D, mir.IR().Size(), lh);
+      FlatMatrix<SIMD<double>> hx(D, mir.IR().Size(), lh);
 
       for (int k = 0; k < mir.Size(); k++)
         for (int m = 0; m < D*D; m++)
-          y(m, k) = SIMD<double> (0.0).Data();
+          y(m, k) = SIMD<double> (0.0);
       
       for (int j = 0; j < D; j++)
         {
@@ -1695,7 +1695,7 @@ namespace ngcomp
               for (int l = 0; l < D; l++)
                 {
                   for (int m = 0; m < D; m++)
-                    y(m*D+l, k) += (jacinv(j,m) * hx.Get(l, k)).Data();
+                    y(m*D+l, k) += jacinv(j,m) * hx(l, k);
                 }
             }
         }

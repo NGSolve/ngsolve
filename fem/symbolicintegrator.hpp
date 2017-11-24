@@ -703,10 +703,11 @@ public:
     shared_ptr<CoefficientFunction> cf;
     VorB vb;
     Array<ProxyFunction*> trial_proxies;
+    bool element_boundary;    
     mutable bool simd_evaluate;
     
   public:
-    SymbolicEnergy (shared_ptr<CoefficientFunction> acf, VorB avb);
+    SymbolicEnergy (shared_ptr<CoefficientFunction> acf, VorB avb, bool aelement_boundary);
 
     virtual VorB VB() const { return vb; }
     virtual xbool IsSymmetric() const { return maybe; } 
@@ -728,6 +729,14 @@ public:
                                  FlatMatrix<double> elmat,
                                  LocalHeap & lh) const;
 
+    void 
+    AddLinearizedElementMatrix (const FiniteElement & fel,
+                                ProxyUserData & trafo, 
+                                const BaseMappedIntegrationRule & mir, 
+                                FlatVector<double> elveclin,
+                                FlatMatrix<double> elmat,
+                                LocalHeap & lh) const;
+
 
     virtual double Energy (const FiniteElement & fel, 
 			   const ElementTransformation & trafo, 
@@ -741,8 +750,6 @@ public:
 			FlatVector<double> ely,
 			void * precomputed,
 			LocalHeap & lh) const;
-    
-
   };
   
 
