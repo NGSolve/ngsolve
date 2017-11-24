@@ -159,6 +159,8 @@ namespace ngstd
 
     SIMD (double const * p) { data = _mm256_loadu_pd(p); }
     SIMD (__m256d _data) { data = _data; }
+
+    void Store (double * p) { _mm256_storeu_pd(p, data); }
     
     template<typename T, typename std::enable_if<std::is_convertible<T, std::function<double(int)>>::value, int>::type = 0>                                                                    SIMD (const T & func)
     {   
@@ -233,18 +235,25 @@ namespace ngstd
   class alignas(64) SIMD<double,8> 
   {
     __m512d data;
-    
   public:
     static constexpr int Size() { return 8; }
     SIMD () = default;
     SIMD (const SIMD &) = default;
     SIMD & operator= (const SIMD &) = default;
 
-    SIMD (double val)
-    {
-      data = _mm512_set1_pd(val);
-    }
+    SIMD (double val) { data = _mm512_set1_pd(val); }
+    SIMD (double const * p) { data = _mm512_loadu_pd(p); }
+    SIMD (__m512d _data) { data = _data; }
     
+    template<typename T, typename std::enable_if<std::is_convertible<T, std::function<double(int)>>::value, int>::type = 0>
+      SIMD (const T & func)
+    {   
+      data = _mm512_set_pd(func(7), func(6), func(5), func(4), func(3), func(2), func(1), func(0));              
+    }
+
+    void Store (double * p) { _mm512_storeu_pd(p, data); }    
+    
+    /*
     template <typename T>
     SIMD (const T & val)
     {
@@ -259,6 +268,7 @@ namespace ngstd
       SIMD_function(val, has_call_operator<T>::value);
       return *this;
     }
+    */
     
     template <typename Function>
     void SIMD_function (const Function & func, std::true_type)
@@ -268,7 +278,7 @@ namespace ngstd
                            func(3), func(2), func(1), func(0));
       */
       data = (__m512){ func(7), func(6), func(5), func(4),
-                       func(3), func(2), func(1), func(0));
+                       func(3), func(2), func(1), func(0) };
                        
       
     }
@@ -293,7 +303,7 @@ namespace ngstd
     INLINE __m512d Data() const { return data; }
     INLINE __m512d & Data() { return data; }
   };
- 
+
 #endif
   
 
@@ -349,27 +359,6 @@ namespace ngstd
 
 
   
-#ifdef __AVX512F__
-  INLINE SIMD<double,8> sqrt (SIMD<double,8> a) { return _mm512_sqrt_pd(a.Data()); }
-  INLINE SIMD<double,8> floor (SIMD<double,8> a) { return _mm512_floor_pd(a.Data()); }
-  INLINE SIMD<double,8> ceil (SIMD<double,8> a) { return _mm512_ceil_pd(a.Data()); }  
-  INLINE SIMD<double,8> fabs (SIMD<double,8> a) { return _mm512_max_pd(a.Data(), -a.Data()); }
-  INLINE SIMD<double,8> IfPos (SIMD<double,8> a, SIMD<double> b, SIMD<double> c)
-  {
-    /*
-    auto cp = _mm512_cmp_pd (a.Data(), _mm512_setzero_pd(), _CMP_GT_OS);
-    return _mm512_blendv_pd(c.Data(), b.Data(), cp);
-    */
-    throw Exception ("IfPos missing for AVX512");
-  }
-
-  INLINE double HSum (SIMD<double,8> sd)
-  {
-    throw Exception ("HSum missing for AVX512");    
-    // __m128d hv = _mm_add_pd (_mm256_extractf128_pd(sd.Data(),0), _mm256_extractf128_pd(sd.Data(),1));
-    // return _mm_cvtsd_f64 (_mm_hadd_pd (hv, hv));
-  }
-#endif
   
 #ifdef __AVX__
   INLINE SIMD<double,4> sqrt (SIMD<double,4> a) { return _mm256_sqrt_pd(a.Data()); }
@@ -408,6 +397,51 @@ namespace ngstd
 #endif  
   
 
+#ifdef __AVX512F__
+  INLINE SIMD<double,8> sqrt (SIMD<double,8> a) { return _mm512_sqrt_pd(a.Data()); }
+  INLINE SIMD<double,8> floor (SIMD<double,8> a) { return _mm512_floor_pd(a.Data()); }
+  INLINE SIMD<double,8> ceil (SIMD<double,8> a) { return _mm512_ceil_pd(a.Data()); }  
+  INLINE SIMD<double,8> fabs (SIMD<double,8> a) { return _mm512_max_pd(a.Data(), -a.Data()); }
+  INLINE SIMD<double,8> IfPos (SIMD<double,8> a, SIMD<double> b, SIMD<double> c)
+  {
+    /*
+    auto cp = _mm512_cmp_pd (a.Data(), _mm512_setzero_pd(), _CMP_GT_OS);
+    return _mm512_blendv_pd(c.Data(), b.Data(), cp);
+    */
+    throw Exception ("IfPos missing for AVX512");
+  }
+
+   
+  INLINE double HSum (SIMD<double,8> sd)
+  {
+    SIMD<double,4> low = _mm512_extractf64x4_pd(sd.Data(),0);
+    SIMD<double,4> high = _mm512_extractf64x4_pd(sd.Data(),1);
+    return HSum(low)+HSum(high);
+  }
+
+  INLINE auto HSum (SIMD<double,8> sd1, SIMD<double,8> sd2)
+  {
+    return std::make_tuple(HSum(sd1), HSum(sd2));
+  }
+
+  INLINE SIMD<double,4> HSum (SIMD<double,8> v1, SIMD<double,8> v2, SIMD<double,8> v3, SIMD<double,8> v4)
+  {
+    SIMD<double,4> high1 = _mm512_extractf64x4_pd(v1.Data(),1);
+    SIMD<double,4> high2 = _mm512_extractf64x4_pd(v2.Data(),1);
+    SIMD<double,4> high3 = _mm512_extractf64x4_pd(v3.Data(),1);
+    SIMD<double,4> high4 = _mm512_extractf64x4_pd(v4.Data(),1);
+    SIMD<double,4> low1 = _mm512_extractf64x4_pd(v1.Data(),0);
+    SIMD<double,4> low2 = _mm512_extractf64x4_pd(v2.Data(),0);
+    SIMD<double,4> low3 = _mm512_extractf64x4_pd(v3.Data(),0);
+    SIMD<double,4> low4 = _mm512_extractf64x4_pd(v4.Data(),0);
+    return HSum(low1,low2,low3,low4) + HSum(high1,high2,high3,high4);
+  }
+  
+#endif
+
+
+
+  
 
 
   /*  
@@ -622,7 +656,7 @@ namespace ngstd
   }
   INLINE SIMD<double,8> FMA (const double & a, SIMD<double,8> b, SIMD<double,8> c)
   {
-    return _mm512_fmadd_pd (_mm256_set1_pd(a), b.Data(), c.Data());    
+    return _mm512_fmadd_pd (_mm512_set1_pd(a), b.Data(), c.Data());    
   }
 #endif
 #ifdef __AVX2__

@@ -27,7 +27,21 @@ namespace ngstd
     SIMD<double> & real() { return re; }
     SIMD<double> & imag() { return im; }
 
-#if defined (__AVX__)
+#ifdef __AVX512F__
+    void Load (Complex * p)
+    {
+      __m512d c1 = _mm512_loadu_pd((double*)p);
+      __m512d c2 = _mm512_loadu_pd((double*)(p+4));
+      re = _mm512_unpacklo_pd(c1,c2);
+      im = _mm512_unpackhi_pd(c1,c2);
+    }
+    void Store (Complex * p) const
+    {
+      _mm512_storeu_pd ((double*)p, _mm512_unpacklo_pd(re.Data(),im.Data()));
+      _mm512_storeu_pd ((double*)(p+4), _mm512_unpackhi_pd(re.Data(),im.Data()));
+    }
+
+#elif  defined (__AVX__)
     void Load (Complex * p)
     {
       __m256d c1 = _mm256_loadu_pd((double*)p);
