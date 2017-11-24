@@ -674,7 +674,7 @@ namespace ngmg
   BlockSmoother :: 
   BlockSmoother  (const MeshAccess & ama,
 		  const BilinearForm & abiform, const Flags & aflags)
-    : Smoother(aflags), /* ma(ama), */ biform(abiform), constraint(NULL), direct(NULL)
+    : Smoother(aflags), biform(abiform), constraint(nullptr), direct(nullptr)
   {
     Update();
   }
@@ -683,24 +683,19 @@ namespace ngmg
   BlockSmoother  (const MeshAccess & ama,
 		  const BilinearForm & abiform,
 		  const LinearForm & aconstraint, const Flags & aflags)
-    : Smoother(aflags), /* ma(ama), */ biform(abiform), constraint(&aconstraint), direct(NULL)
+    : Smoother(aflags), /* ma(ama), */ biform(abiform), constraint(&aconstraint), direct(nullptr)
   {
     Update();
   }
 
   BlockSmoother :: ~BlockSmoother()
-  {
-    // for (int i = 0; i < jac.Size(); i++) delete jac[i];
-    // for (int i = 0; i < inv.Size(); i++) delete inv[i];
-    delete direct;
-  }
+  { ; }
   
   void BlockSmoother :: Update (bool force_update)
   {
     int level = biform.GetNLevels();
    
     if (level < 0) return;
-
     if(updateall)
       {
 	// for (int i = 0; i < jac.Size(); i++) delete jac[i];
@@ -714,26 +709,36 @@ namespace ngmg
     
     if (biform.UsesEliminateInternal())
       flags.SetFlag("eliminate_internal");
-    shared_ptr<Table<int>> it = biform.GetFESpace()->CreateSmoothingBlocks(flags);
+
+    while(smoothing_blocks.Size() < level)
+      smoothing_blocks.Append(nullptr);
+
+    if (!smoothing_blocks.Last())
+      smoothing_blocks.Last() = biform.GetFESpace()->CreateSmoothingBlocks(flags);
 
 
     while (jac.Size() < level)
-      jac.Append(NULL);
+      jac.Append(nullptr);
 
 #ifndef PARALLELxxx
-    if (!constraint)
+    int startlevel = updateall ? 1 : level;
+    for(auto lvl : Range(startlevel,level+1))
       {
-	// delete jac[level-1];
-	jac[level-1] = dynamic_cast<const BaseSparseMatrix&> 
-	  (biform.GetMatrix()).CreateBlockJacobiPrecond(it);
-      }
-    else
-      {
-	jac[level-1] = dynamic_cast<const BaseSparseMatrix&> 
-	  (biform.GetMatrix()).CreateBlockJacobiPrecond(it, &constraint->GetVector());
+        if (!constraint)
+          {
+            jac[lvl-1] = dynamic_cast<const BaseSparseMatrix&>
+              (biform.GetMatrix(lvl-1)).CreateBlockJacobiPrecond(smoothing_blocks[lvl-1]);
+          }
+        else
+          {
+            jac[lvl-1] = dynamic_cast<const BaseSparseMatrix&>
+              (biform.GetMatrix(lvl-1)).CreateBlockJacobiPrecond(smoothing_blocks[lvl-1], &constraint->GetVector());
+          }
       }
 #else
 
+    if(updateall)
+      throw Exception("Not working with updateall!");
     bool isparallel = false;
     if ( id >= 1 ) isparallel = true;
 
@@ -758,17 +763,15 @@ namespace ngmg
 	if (!constraint)
 	  jac[level-1] = dynamic_cast<const BaseSparseMatrix&> 
 	    (biform.GetMatrix()).CreateBlockJacobiPrecond(*it);
+
 	else
-	  {
 	    jac[level-1] = dynamic_cast<const BaseSparseMatrix&> 
 	      (biform.GetMatrix()).CreateBlockJacobiPrecond(*it, &constraint->GetVector());
-	  }
-
       }
 #endif
 
     while (inv.Size() < level)
-      inv.Append(NULL);  
+      inv.Append(nullptr);
   
     //   BitArray * planedofs = biform.GetFESpace().CreateIntermediatePlanes();
     //   if (planedofs)
@@ -779,11 +782,12 @@ namespace ngmg
     //   else
     //     {
   
-    delete direct;
     direct = biform.GetFESpace()->CreateDirectSolverClusters(flags);
 
     if (direct)
       {
+        if(updateall)
+          throw Exception("Update all doesn't work with direct inverse yet...");
 	if (biform.UsesEliminateInternal())
 	  {
 	    const FESpace & fes = *biform.GetFESpace();

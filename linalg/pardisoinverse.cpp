@@ -124,7 +124,7 @@ namespace ngla
   PardisoInverseTM<TM> :: 
   PardisoInverseTM (const SparseMatrixTM<TM> & a, 
 		    shared_ptr<BitArray> ainner,
-		    const Array<int> * acluster,
+		    shared_ptr<const Array<int>> acluster,
 		    int asymmetric)
     : SparseFactorization (a, ainner, acluster)
   { 

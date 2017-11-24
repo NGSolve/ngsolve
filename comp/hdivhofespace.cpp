@@ -1334,9 +1334,10 @@ namespace ngcomp
   // 1) low order dofs  --  default
 
 
-  Array<int> * HDivHighOrderFESpace :: CreateDirectSolverClusters (const Flags & precflags) const
+  shared_ptr<Array<int>> HDivHighOrderFESpace :: CreateDirectSolverClusters (const Flags & precflags) const
   {
-    Array<int> & clusters = *new Array<int> (ndof);
+    auto spclusters = make_shared<Array<int>> (ndof);
+    Array<int> & clusters = *spclusters;
 
     int clustertype = int(precflags.GetNumFlag("ds_cluster",1)); 
     cout << " DirectSolverCluster Clustertype " << clustertype << endl; 
@@ -1366,7 +1367,7 @@ namespace ngcomp
         break;
 
       }
-    return &clusters;
+    return spclusters;
 
   }
 

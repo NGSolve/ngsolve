@@ -66,13 +66,13 @@ namespace ngla
     bool symmetric, iscomplex;
 
     shared_ptr<BitArray> inner;
-    const Array<int> * cluster;
+    shared_ptr<const Array<int>> cluster;
 
   public:
     ///
     MumpsInverse (const SparseMatrix<TM,TV_ROW,TV_COL> & a, 
                   shared_ptr<BitArray> ainner = nullptr,
-                  const Array<int> * acluster = nullptr,
+                  shared_ptr<const Array<int>> acluster = nullptr,
                   bool symmetric = false);
 
     ///
@@ -122,7 +122,7 @@ namespace ngla
     ///
     ParallelMumpsInverse (const BaseSparseMatrix & a, 
 			  shared_ptr<BitArray> ainner,
-			  const Array<int> * acluster,
+			  shared_ptr<const Array<int>> acluster,
 			  const ParallelDofs * pardofs,
 			  bool symmetric = 0);
 
