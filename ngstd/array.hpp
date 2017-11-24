@@ -1300,6 +1300,8 @@ namespace ngstd
 
     const T * Ptr () const { return tail.Ptr(); }
     const T & operator[] (size_t i) const { return Ptr()[i]; }
+    template <int NR>
+    T & Elem() { return (NR==S-1) ? head : tail.template Elem<NR>(); }
   };
 
   template <typename T>
@@ -1316,6 +1318,12 @@ namespace ngstd
 
     const T * Ptr () const { return &head; }
     const T & operator[] (size_t i) const { return Ptr()[i]; }
+    template <int NR>    
+    T & Elem()
+    {
+      // assert(NR==0, "HTArray index error");
+      return head;
+    }
   };
 
   template <typename T>
@@ -1332,6 +1340,13 @@ namespace ngstd
 
     const T * Ptr () const { return &head; }
     const T & operator[] (size_t i) const { return Ptr()[i]; }
+    template <int NR>        
+    T & Elem()
+    {
+      // assert(false, "HTArray index error");
+      return head;
+    }
+
   };
 
   template<size_t S, typename T>
