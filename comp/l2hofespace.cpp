@@ -638,7 +638,7 @@ namespace ngcomp
                              {
                                static_cast<const BaseScalarFiniteElement&> (fel).Evaluate (ir, melx.Col(comp), pntvals);
                                for (int i = 0; i < ir.Size(); i++)
-                                 pntvals(i) *= (ir[i].Weight() / mir[i].GetMeasure()).Data();
+                                 pntvals(i) *= ir[i].Weight() / mir[i].GetMeasure();
                                melx.Col(comp) = 0.0;
                                static_cast<const BaseScalarFiniteElement&> (fel).AddTrans (ir, pntvals, melx.Col(comp));
                              }
