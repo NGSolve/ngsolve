@@ -112,8 +112,27 @@ def Det(mat):
 def Cross(a,b):
     return CoefficientFunction( (a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]) )
 
+def Cof(m):
+    if m.dims[0] == 1:
+        return CoefficientFunction(1, dims=(1,1))
+    elif m.dims[0] == 2:
+        return CoefficientFunction( (m[1,1], -m[1,0], -m[0,1], m[0,0]), dims=(2,2) )
+    elif m.dims[0] == 3:
+        return CoefficientFunction( 
+                    ( m[1,1]*m[2,2]-m[2,1]*m[1,2],
+                     -m[1,0]*m[2,2]+m[2,0]*m[1,2],
+                      m[1,0]*m[2,1]-m[2,0]*m[1,1],
+    
+                     -m[0,1]*m[2,2]+m[2,1]*m[0,2],
+                      m[0,0]*m[2,2]-m[2,0]*m[0,2], 
+                     -m[0,0]*m[2,1]+m[2,0]*m[0,1],
+    
+                      m[0,1]*m[1,2]-m[1,1]*m[0,2], 
+                     -m[0,0]*m[1,2]+m[1,0]*m[0,2], 
+                      m[0,0]*m[1,1]-m[1,0]*m[0,1] ), dims=(3,3) )
 
 
-__all__ = ['x', 'y', 'z', 'Laplace', 'Mass', 'Source', 'Neumann', 'H1', 'VectorH1', 'FacetFESpace', 'L2', 'VectorL2', 'SurfaceL2', 'HDivDiv', 'NumberSpace', 'grad', 'curl', 'div','Mesh', 'ConstantCF', 'DomainConstantCF', 'Id', 'Trace', 'Det', 'Cross']
+
+__all__ = ['x', 'y', 'z', 'Laplace', 'Mass', 'Source', 'Neumann', 'H1', 'VectorH1', 'FacetFESpace', 'L2', 'VectorL2', 'SurfaceL2', 'HDivDiv', 'NumberSpace', 'grad', 'curl', 'div','Mesh', 'ConstantCF', 'DomainConstantCF', 'Id', 'Trace', 'Det', 'Cross', 'Cof']
 
 

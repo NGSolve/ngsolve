@@ -26,7 +26,7 @@ namespace ngstd
     SIMD<double> imag() const { return im; }
     SIMD<double> & real() { return re; }
     SIMD<double> & imag() { return im; }
-    
+
 #if defined (__AVX__)
     void Load (Complex * p)
     {
@@ -46,6 +46,7 @@ namespace ngstd
       __m256i mask1 = my_mm256_cmpgt_epi64(_mm256_set1_epi64x(mask&3),
                                            _mm256_set_epi64x(1, 1, 0, 0));
       __m256i mask2 = my_mm256_cmpgt_epi64(_mm256_set1_epi64x(mask&3),
+
                                            _mm256_set_epi64x(3, 3, 2, 2));
       
       __m256d c1 = _mm256_maskload_pd((double*)p, mask1);
@@ -75,7 +76,6 @@ namespace ngstd
       *p = Complex(re.Data(), im.Data());
     }
 #endif
-    
   };
     
   INLINE SIMD<Complex> operator+ (SIMD<Complex> a, SIMD<Complex> b)

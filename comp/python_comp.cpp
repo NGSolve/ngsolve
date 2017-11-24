@@ -3268,14 +3268,14 @@ flags : dict
           );
           
   m.def("SymbolicEnergy",
-        [](spCF cf, VorB vb, py::object definedon, py::object definedonelem)
+        [](spCF cf, VorB vb, py::object definedon, bool element_boundary, py::object definedonelem)
         -> shared_ptr<BilinearFormIntegrator>
            {
              py::extract<Region> defon_region(definedon);
              if (defon_region.check())
                vb = VorB(defon_region());
 
-             auto bfi = make_shared<SymbolicEnergy> (cf, vb);
+             auto bfi = make_shared<SymbolicEnergy> (cf, vb, element_boundary);
              
              if (defon_region.check())
                {
@@ -3286,7 +3286,8 @@ flags : dict
                bfi -> SetDefinedOnElements (py::extract<shared_ptr<BitArray>>(definedonelem)());
              return bfi;
            },
-           py::arg("coefficient"), py::arg("VOL_or_BND")=VOL, py::arg("definedon")=DummyArgument(),
+        py::arg("coefficient"), py::arg("VOL_or_BND")=VOL, 
+        py::arg("definedon")=DummyArgument(), py::arg("element_boundary")=false,
         py::arg("definedonelements")=DummyArgument()
           );
 
