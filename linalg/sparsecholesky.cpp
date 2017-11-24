@@ -37,7 +37,7 @@ namespace ngla
   SparseCholeskyTM<TM> :: 
   SparseCholeskyTM (const SparseMatrixTM<TM> & a, 
                     shared_ptr<BitArray> ainner,
-                    const Array<int> * acluster,
+                    shared_ptr<const Array<int>> acluster,
                     bool allow_refactor)
     : SparseFactorization (a, ainner, acluster), mat(a)
   { 
@@ -1797,7 +1797,7 @@ namespace ngla
   SparseFactorization ::     
   SparseFactorization (const BaseSparseMatrix & amatrix,
 		       shared_ptr<BitArray> ainner,
-		       const Array<int> * acluster)
+		       shared_ptr<const Array<int>> acluster)
     : matrix(const_cast<BaseSparseMatrix&>(amatrix).SharedFromThis<BaseSparseMatrix>()),
       inner(ainner), cluster(acluster)
   { 
@@ -1829,12 +1829,12 @@ namespace ngla
     auto hvec2 = u.CreateVector();
 
     hvec1 = y;
-    matrix.lock()->MultAdd1 (-1, u, hvec1, inner.get(), cluster);
+    matrix.lock()->MultAdd1 (-1, u, hvec1, inner.get(), cluster.get());
 
     hvec2 = (*this) * hvec1;
     u += hvec2;
     
-    matrix.lock()->MultAdd2 (-1, hvec2, y, inner.get(), cluster);
+    matrix.lock()->MultAdd2 (-1, hvec2, y, inner.get(), cluster.get());
   }
   
 

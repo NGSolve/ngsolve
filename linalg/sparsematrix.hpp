@@ -294,13 +294,13 @@ public:
     }
 
     virtual shared_ptr<BaseMatrix>
-    InverseMatrix (const Array<int> * clusters) const
+      InverseMatrix (shared_ptr<const Array<int>> clusters) const override
     { 
       throw Exception ("BaseSparseMatrix::CreateInverse called");
     }
 
-    virtual BaseSparseMatrix * Restrict (const SparseMatrixTM<double> & prol,
-					 BaseSparseMatrix* cmat = NULL ) const
+    virtual shared_ptr<BaseSparseMatrix> Restrict (const SparseMatrixTM<double> & prol,
+                                                   shared_ptr<BaseSparseMatrix> cmat = nullptr ) const
     {
       throw Exception ("BaseSparseMatrix::Restrict");
     }
@@ -499,10 +499,10 @@ public:
     }
 
     virtual shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<BitArray> subset = nullptr) const;
-    virtual shared_ptr<BaseMatrix> InverseMatrix (const Array<int> * clusters) const;
+    virtual shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<const Array<int>> clusters) const override;
 
-    virtual BaseSparseMatrix * Restrict (const SparseMatrixTM<double> & prol,
-					 BaseSparseMatrix* cmat = NULL ) const;
+    virtual shared_ptr<BaseSparseMatrix> Restrict (const SparseMatrixTM<double> & prol,
+					 shared_ptr<BaseSparseMatrix> cmat = nullptr) const;
 
   
     ///
@@ -719,8 +719,8 @@ public:
     }
 
 
-    virtual BaseSparseMatrix * Restrict (const SparseMatrixTM<double> & prol,
-					 BaseSparseMatrix* cmat = NULL ) const;
+    virtual shared_ptr<BaseSparseMatrix> Restrict (const SparseMatrixTM<double> & prol,
+					 shared_ptr<BaseSparseMatrix> cmat = nullptr) const;
 
     ///
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
@@ -813,12 +813,12 @@ public:
     BaseSparseMatrix & AddMerge (double s, const SparseMatrixSymmetric  & m2);
 
     virtual shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<BitArray> subset = nullptr) const;
-    virtual shared_ptr<BaseMatrix> InverseMatrix (const Array<int> * clusters) const;
+    virtual shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<const Array<int>> clusters) const override;
   };
 
-  SparseMatrixTM<double> * TransposeMatrix (const SparseMatrixTM<double> & mat);
+  shared_ptr<SparseMatrixTM<double>> TransposeMatrix (const SparseMatrixTM<double> & mat);
 
-  SparseMatrixTM<double> *
+  shared_ptr<SparseMatrixTM<double>>
   MatMult (const SparseMatrix<double, double, double> & mata, const SparseMatrix<double, double, double> & matb);
 
 #ifdef GOLD

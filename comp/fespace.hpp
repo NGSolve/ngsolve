@@ -592,8 +592,8 @@ namespace ngcomp
     /// 
     virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & flags) const;
     /// for anisotropic plane smoothing:
-    virtual Array<int> * CreateDirectSolverClusters (const Flags & flags) const
-    { return 0; }
+    virtual shared_ptr<Array<int>> CreateDirectSolverClusters (const Flags & flags) const
+    { return nullptr; }
 
     virtual void AddDirectSolverClusterDof(int dn) const
     { adddirectsolverdofs.Append(dn); }
@@ -967,7 +967,7 @@ namespace ngcomp
     virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const override;
     virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const override;
 
-    virtual Array<int> * CreateDirectSolverClusters (const Flags & flags) const override;
+    virtual shared_ptr<Array<int>> CreateDirectSolverClusters (const Flags & flags) const override;
   };
 
 

@@ -5127,11 +5127,8 @@ namespace ngcomp
             Restrict( *prolMat, &( dynamic_cast< BaseSparseMatrix& >
             ( GetMatrix( i-1 ) ) ) ) );
           */
-          mats[i-1] =
-            shared_ptr<BaseMatrix>
-            ( dynamic_cast< const BaseSparseMatrix& >(GetMatrix(i) ).
-              Restrict( *prolMat, &( dynamic_cast< BaseSparseMatrix& >
-                                     (GetMatrix( i-1 ) ) ) ) );
+          mats[i-1] = dynamic_cast< const BaseSparseMatrix& >(GetMatrix(i)).
+            Restrict(*prolMat,dynamic_pointer_cast<BaseSparseMatrix>(GetMatrixPtr(i-1)));
           
           delete prolMat;
         }

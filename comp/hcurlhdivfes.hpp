@@ -267,7 +267,7 @@ public:
   SparseMatrix<double> * CreateGradient() const;
 
   
-  virtual Array<int> * CreateDirectSolverClusters (const Flags & flags) const override;
+  virtual shared_ptr<Array<int>> CreateDirectSolverClusters (const Flags & flags) const override;
 
 
   virtual void GetVertexDofNrs (int vnr, Array<DofId> & dnums) const override;
