@@ -778,16 +778,21 @@ namespace ngcomp
     ArrayMem<int, 2> elnums;
     auto fnums = GetElFacets(ElementId(BND,elnr));
     GetFacetElements ( fnums[0], elnums );
-    if (elnums.Size()==1)
-    {
-      in = GetElIndex(ElementId(VOL,elnums[0]))+1;
-      out = 0;
-    }
+    if (elnums.Size()==0)
+      {  // surface mesh only
+        in = 0;
+        out = 0;
+      }
+    else if (elnums.Size()==1)
+      {
+        in = GetElIndex(ElementId(VOL,elnums[0]))+1;
+        out = 0;
+      }
     else
-    {
-      out = GetElIndex(ElementId(VOL,elnums[0]))+1;
-      in = GetElIndex(ElementId(VOL,elnums[1]))+1;
-    }
+      {
+        out = GetElIndex(ElementId(VOL,elnums[0]))+1;
+        in = GetElIndex(ElementId(VOL,elnums[1]))+1;
+      }
   }
 
 
