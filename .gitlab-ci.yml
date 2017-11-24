@@ -39,15 +39,33 @@ stages:
     - set NETGENDIR=%CMAKE_INSTALL_PREFIX%\bin
     - set PATH=%NETGENDIR%;%PATH%
     - set PYTHONPATH=%CMAKE_INSTALL_PREFIX%\lib\site-packages
-    - set UPLOAD_DIR=/home/tester/deploy/win64/%CI_BUILD_TAG%%CI_BUILD_REF%/
     - set CLCACHE_BASEDIR=%CI_DIR%
     - set CMAKE_CONFIG=-DUSE_OCC=ON -DUSE_CCACHE=ON -DUSE_MKL=ON -DMKL_STATIC=ON -DMKL_ROOT="C:/Intel/compilers_and_libraries/windows/mkl"
+
+.template_windows_64_avx: &win64_avx
+  tags:
+    - windows
+    - x64
+    - avx
+  before_script:
+    - "echo off"
+    - 'call "%VS140COMNTOOLS%\..\..\VC\vcvarsall" x64'
+    - set CMAKE_GENERATOR=Ninja
+    - set CI_DIR=C:\ci\%CI_PIPELINE_ID%_64_AVX
+    - set NETGEN_BUILD_DIR=%CI_DIR%\build_avx
+    - set CMAKE_INSTALL_PREFIX=%CI_DIR%\install_avx
+    - set NETGENDIR=%CMAKE_INSTALL_PREFIX%\bin
+    - set PATH=%NETGENDIR%;%PATH%
+    - set PYTHONPATH=%CMAKE_INSTALL_PREFIX%\lib\site-packages
+    - set CLCACHE_BASEDIR=%CI_DIR%
+    - set CMAKE_CONFIG=-DCMAKE_CXX_FLAGS="/arch:AVX -DWIN32=1" -DUSE_OCC=ON -DUSE_CCACHE=ON -DUSE_MKL=ON -DMKL_STATIC=ON -DMKL_ROOT="C:/Intel/compilers_and_libraries/windows/mkl"
 
 # Linux
 .template_ubuntu: &ubuntu
   tags:
     - linux
     - docker
+    - avx
   before_script:
     - pwd
     - ls
@@ -76,6 +94,12 @@ stages:
   variables:
     UBUNTU_VERSION: "17.10"
     UBUNTU_VERSION_NAME: "artful"
+
+.template_ubuntu_avx: &ubuntu_avx
+  <<: *ubuntu
+  variables:
+    UBUNTU_VERSION: "avx"
+    UBUNTU_VERSION_NAME: "avx"
 
 .template_ubuntu_debug: &ubuntu_debug
   <<: *ubuntu
@@ -123,6 +147,24 @@ stages:
       *.msi
       gitlab-runner@vector.asc.tuwien.ac.at:deploy/builds/%CI_PIPELINE_ID%/windows/
 
+.template_build_win_avx: &build_win_avx
+  stage: build
+  script:
+    - git submodule update --init --recursive
+    - rd /s /q %NETGEN_BUILD_DIR%
+    - mkdir %NETGEN_BUILD_DIR%
+    - cd %NETGEN_BUILD_DIR%
+    - >-
+        cmake %CI_PROJECT_DIR%
+        -G"%CMAKE_GENERATOR%"
+        -DCMAKE_INSTALL_PREFIX=%CMAKE_INSTALL_PREFIX%
+        %CMAKE_CONFIG%
+        -DUSE_UMFPACK=ON
+        -DENABLE_UNIT_TESTS=ON
+        -DCPACK_PACKAGE_NAME=NGSolve${PACKAGE_NAME_SUFFIX}
+        -DCMAKE_BUILD_TYPE=Release
+    - cmake --build . --target install --config Release
+
 .win32_build:
   <<: *win32
   <<: *build_win
@@ -130,6 +172,11 @@ stages:
 win64_build:
   <<: *win64
   <<: *build_win
+
+win64_avx_build:
+  <<: *win64_avx
+  <<: *build_win_avx
+
 
 # Linux
 .template_build_linux: &build_linux
@@ -166,6 +213,10 @@ ubuntu_1704_build:
 
 ubuntu_1710_build:
   <<: *ubuntu_1710
+  <<: *build_linux
+
+ubuntu_avx_build:
+  <<: *ubuntu_avx
   <<: *build_linux
 
 debug_build:
@@ -219,6 +270,10 @@ win64_test:
   <<: *win64
   <<: *test_win
 
+win64_avx_test:
+  <<: *win64_avx
+  <<: *test_win
+
 # Linux
 .template_test_linux: &test_linux
   stage: test
@@ -249,6 +304,10 @@ ubuntu_1704_test:
   <<: *test_linux
 
 ubuntu_1710_test:
+  <<: *ubuntu_1710
+  <<: *test_linux
+
+ubuntu_avx_test:
   <<: *ubuntu_1710
   <<: *test_linux
 
