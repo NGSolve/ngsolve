@@ -182,7 +182,7 @@ namespace ngstd
     SIMD (int val)    { data = val; }
     SIMD (size_t val) { data = val; }
     SIMD (double const * p) { data = *p; }
-    
+    SIMD (double const * p, SIMD<mask64,1> mask) { if (mask.Data()) data = *p; }
     
     template <typename T, typename std::enable_if<std::is_convertible<T,std::function<double(int)>>::value,int>::type = 0>
     SIMD (const T & func)
