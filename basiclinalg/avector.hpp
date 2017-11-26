@@ -1255,7 +1255,7 @@ namespace ngbla
 #if defined(__AVX__) && not defined(__AVX512F__)
 
   void TransposeMatrix(SliceMatrix<> a, SliceMatrix<> b);
-  extern void MultMatMat(SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c);
+  extern void MultMatMat (SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c);
 
   extern void AddABt (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c);
   extern void AddABt (SliceMatrix<double> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c);
@@ -1278,7 +1278,11 @@ namespace ngbla
 
 #else // __AVX__
 
-
+  extern void MultMatMat (SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
+  {
+    c = a * b;    
+  }
+  
   INLINE void AddABt (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
   { c.AddSize(a.Height(), b.Height()) += a * Trans(b) | Lapack; }
   
