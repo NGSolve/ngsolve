@@ -135,6 +135,24 @@ namespace ngstd
     mask64 operator[] (int i) const { return ((mask64*)(&mask))[i]; }    
   };
 #endif
+
+
+#ifdef __AVX512F__
+  template <> 
+  class SIMD<mask64,8>
+  {
+    __mmask8 mask;
+  public:
+    SIMD (size_t i)
+      : mask(_mm512_cmpgt_epi64_mask(_mm512_set1_epi64(i),
+                                     _mm512_set_epi64(7, 6, 5, 4, 3, 2, 1, 0)))
+    { ; }
+    __mmask8 Data() const { return mask; }
+    static constexpr int Size() { return 8; }    
+    // mask64 operator[] (int i) const { return ((mask64*)(&mask))[i]; }    
+  };
+#endif
+
   
   template<>
   class SIMD<double,1>
@@ -704,6 +722,26 @@ namespace ngstd
     return _mm256_fmadd_pd (_mm256_set1_pd(a), b.Data(), c.Data());
   }
 #endif
+
+  // update form of fma
+  template <int N>
+  void FMAasm (SIMD<double,N> a, SIMD<double,N> b, SIMD<double,N> & sum)
+  {
+    sum = FMA(a,b,sum);
+  }
+
+#ifdef __AVX2__
+  INLINE void FMAasm (SIMD<double,4> a, SIMD<double,4> b, SIMD<double,4> & sum)
+  {
+    asm ("vfmadd231pd %[a], %[b], %[sum]"
+         : [sum] "+x" (sum.Data())
+         : [a] "x" (a.Data()), [b] "x" (b.Data())
+         );
+  }
+#endif
+
+
+  
   
   template <int D>
   INLINE MultiSIMD<D,double> FMA(MultiSIMD<D,double> a, MultiSIMD<D,double> b, MultiSIMD<D,double> c)
