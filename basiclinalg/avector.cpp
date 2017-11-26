@@ -49,22 +49,6 @@ namespace ngbla
   }
 
 
-  // update form of fma
-  template <int N>
-  void FMAasm (SIMD<double,N> a, SIMD<double,N> b, SIMD<double,N> & sum)
-  {
-    sum = FMA(a,b,sum);
-  }
-
-#ifdef __AVX2__
-  INLINE void FMAasm (SIMD<double,4> a, SIMD<double,4> b, SIMD<double,4> & sum)
-  {
-    asm ("vfmadd231pd %[a], %[b], %[sum]"
-         : [sum] "+x" (sum.Data())
-         : [a] "x" (a.Data()), [b] "x" (b.Data())
-         );
-  }
-#endif
   
 #include "matkernel.hpp"
 
@@ -500,12 +484,16 @@ namespace ngbla
   template <int R = 0>
   INLINE auto MyScal3x4 (size_t n, double * pa, size_t da, double * pb, size_t db)
   {
+    return MatKernelScalAB<3,4> (SIMD<double>::Size()*n+R, pa, da, pb, db);    
     return MyScal3x4<R> (n, pa, pa+da, pa+2*da, pb, pb+db, pb+2*db, pb+3*db);
   }
 #else
   template <int R = 0>
   INLINE auto MyScal3x4 (size_t n, double * pa, size_t da, double * pb, size_t db)
   {
+    return MatKernelScalAB<3,4> (SIMD<double>::Size()*n+R, pa, da, pb, db);
+
+    
     SIMD<double> sum11(0.0), sum12(0.0), sum13(0.0), sum14(0.0);
     SIMD<double> sum21(0.0), sum22(0.0), sum23(0.0), sum24(0.0);
     SIMD<double> sum31(0.0), sum32(0.0), sum33(0.0), sum34(0.0);
@@ -1349,14 +1337,14 @@ namespace ngbla
       }
   }
   
-  void AddABt (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
+  void XXAddABt (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
   {
     // c += a * Trans(b);
     // return;
     AddABt2 (a, b, c.AddSize(a.Height(),b.Height()), [] (auto c, auto ab) { return c+ab; });
   }
 
-  void SubABt (SliceMatrix<double> a, SliceMatrix<double> b, SliceMatrix<double> c)
+  void XXSubABt (SliceMatrix<double> a, SliceMatrix<double> b, SliceMatrix<double> c)
   {
     // c -= a * Trans(b);
     // return;
@@ -3873,96 +3861,6 @@ namespace ngbla
 
 
 
-  
-  INLINE void MatKernel2MultABMask(SIMD<mask64> mask, SliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
-  {
-    size_t r = 0;
-    size_t da = a.Dist();
-    size_t dc = c.Dist();
-    double * pa = &a(0,0);
-    double * pc = &c(0,0);
-    for ( ; r+4 <= a.Height(); r += 4, pa += 4*da, pc += 4*dc)
-      MatKernelMultABMask<4> (a.Width(), mask, pa, da, &b(0,0), b.Dist(), pc, dc);
-    switch (a.Height()-r)
-      {
-      case 0: break;
-      case 1:
-        MatKernelMultABMask<1> (a.Width(), mask, pa, da, &b(0,0), b.Dist(), pc, dc);
-        break;
-      case 2:
-        MatKernelMultABMask<2> (a.Width(), mask, pa, da, &b(0,0), b.Dist(), pc, dc);
-        break;
-      case 3:
-        MatKernelMultABMask<3> (a.Width(), mask, pa, da, &b(0,0), b.Dist(), pc, dc);
-        break;
-      default:
-        ;
-      }
-    
-  }
-  
-  // b.Width() = W * SIMD
-  template <int W>
-  INLINE void MatKernel2MultAB(SliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
-  {
-    size_t r = 0;
-    size_t da = a.Dist();
-    size_t dc = c.Dist();
-    double * pa = &a(0,0);
-    double * pc = &c(0,0);
-    for ( ; r+4 <= a.Height(); r += 4, pa += 4*da, pc += 4*dc)
-      MatKernelMultAB<4,W> (a.Width(), pa, da, &b(0,0), b.Dist(), pc, dc);
-    switch (a.Height()-r)
-      {
-      case 0: break;
-      case 1:
-        MatKernelMultAB<1,W> (a.Width(), pa, da, &b(0,0), b.Dist(), pc, dc);
-        break;
-      case 2:
-        MatKernelMultAB<2,W> (a.Width(), pa, da, &b(0,0), b.Dist(), pc, dc);
-        break;
-      case 3:
-        MatKernelMultAB<3,W> (a.Width(), pa, da, &b(0,0), b.Dist(), pc, dc);
-        break;
-      default:
-        ;
-      }
-    return;
-  }
-
-
-  // c = a * b
-  void MultMatMat(SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
-  {
-    /*
-    size_t k = 0;
-    for ( ; k+7 < b.Width(); k += 8)
-      MultMatMat8(a, b.Cols(k,k+8), c.Cols(k,k+8));
-    */
-    /*
-    size_t k = 0;
-    for ( ; k+7 < b.Width(); k += 8)
-      MatKernel2MultAB<2>(a, b.Cols(k,k+8), c.Cols(k,k+8));
-    */
-    size_t k = 0;
-    constexpr size_t SW = SIMD<double>::Size();
-    for ( ; k+3*SW <= b.Width(); k += 3*SW)
-      MatKernel2MultAB<3>(a, b.Cols(k,k+3*SW), c.Cols(k,k+3*SW));
-    for ( ; k+SW <= b.Width(); k += SW)
-      MatKernel2MultAB<1>(a, b.Cols(k,k+SW), c.Cols(k,k+SW));
-
-    if (k < b.Width())
-      MatKernel2MultABMask(SIMD<mask64>(b.Width()-k), a, b.Cols(k,k+SW), c.Cols(k,k+SW));
-    /*
-    for ( ; k < b.Width(); k += 4)
-      {
-        size_t end = min2(b.Width(), k+4);
-        MultMatMat4(a, b.Cols(k,end), c.Cols(k,end));
-      }
-    */
-  }
-
-
 
   // c = a * Diag (d)
   void MultMatDiagMat(AFlatMatrixD a, AFlatVectorD diag, AFlatMatrixD c)
@@ -4187,11 +4085,12 @@ namespace ngbla
         }
   }
 
+  /*
   void MultMatMat (SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
   {
     c = a * b;    
   }
-
+  */
   
 #endif
 

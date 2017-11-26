@@ -1237,12 +1237,9 @@ namespace ngbla
     b = Trans(a);
   }
 
-  template <typename TA, typename TB, typename TC>
-  void MultMatMat(SliceMatrix<TA> a, SliceMatrix<TB> b, SliceMatrix<TC> c)
-  {
-    c = a * b;
-  }
-
+  /*
+  */
+  
   // c = a * Diag (diag)
   template <typename TA, typename TB, typename TC>
   void MultMatDiagMat(TA a, TB diag, TC c)
@@ -1251,7 +1248,6 @@ namespace ngbla
       c.Col(i) = diag(i) * a.Col(i);
   }
 
-  extern void MultMatMat (SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c);
 
 #if defined(__AVX__) && not defined(__AVX512F__)
 
