@@ -100,8 +100,41 @@ namespace ngstd
 #endif
 
 
+#ifdef __AVX__
+#if defined(__AVX2__)
+  INLINE __m256i my_mm256_cmpgt_epi64 (__m256i a, __m256i b)
+  {
+    return _mm256_cmpgt_epi64 (a,b);
+  }
+#else
+  INLINE __m256i my_mm256_cmpgt_epi64 (__m256i a, __m256i b)
+  {
+    __m128i rlo = _mm_cmpgt_epi64(_mm256_extractf128_si256(a, 0),
+                                  _mm256_extractf128_si256(b, 0));
+    __m128i rhi = _mm_cmpgt_epi64(_mm256_extractf128_si256(a, 1),
+                                  _mm256_extractf128_si256(b, 1));
+    return _mm256_insertf128_si256 (_mm256_castsi128_si256(rlo), rhi, 1);
+  }
+#endif
+#endif
 
-
+  typedef int64_t mask64;
+  
+#ifdef __AVX__
+  template <> 
+  class SIMD<mask64,4>
+  {
+    __m256i mask;
+  public:
+    SIMD (size_t i)
+      : mask(my_mm256_cmpgt_epi64(_mm256_set1_epi64x(i),
+                                  _mm256_set_epi64x(3, 2, 1, 0)))
+    { ; }
+    __m256i Data() const { return mask; }
+    static constexpr int Size() { return 4; }    
+    mask64 operator[] (int i) const { return ((mask64*)(&mask))[i]; }    
+  };
+#endif
   
   template<>
   class SIMD<double,1>
@@ -158,9 +191,11 @@ namespace ngstd
     SIMD (size_t val) { data = _mm256_set1_pd(val); }
 
     SIMD (double const * p) { data = _mm256_loadu_pd(p); }
+    SIMD (double const * p, SIMD<mask64,4> mask) { data = _mm256_maskload_pd(p, mask.Data()); }
     SIMD (__m256d _data) { data = _data; }
 
     void Store (double * p) { _mm256_storeu_pd(p, data); }
+    void Store (double * p, SIMD<mask64,4> mask) { _mm256_maskstore_pd(p, mask.Data(), data); }    
     
     template<typename T, typename std::enable_if<std::is_convertible<T, std::function<double(int)>>::value, int>::type = 0>                                                                    SIMD (const T & func)
     {   
@@ -683,23 +718,6 @@ namespace ngstd
   }
 
 
-#ifdef __AVX__
-#if defined(__AVX2__)
-  INLINE __m256i my_mm256_cmpgt_epi64 (__m256i a, __m256i b)
-  {
-    return _mm256_cmpgt_epi64 (a,b);
-  }
-#else
-  INLINE __m256i my_mm256_cmpgt_epi64 (__m256i a, __m256i b)
-  {
-    __m128i rlo = _mm_cmpgt_epi64(_mm256_extractf128_si256(a, 0),
-                                  _mm256_extractf128_si256(b, 0));
-    __m128i rhi = _mm_cmpgt_epi64(_mm256_extractf128_si256(a, 1),
-                                  _mm256_extractf128_si256(b, 1));
-    return _mm256_insertf128_si256 (_mm256_castsi128_si256(rlo), rhi, 1);
-  }
-#endif
-#endif
   
   class ExceptionNOSIMD : public Exception
   {
