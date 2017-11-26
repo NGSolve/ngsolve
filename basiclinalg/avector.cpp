@@ -4161,7 +4161,7 @@ namespace ngbla
       }
   }
 
-#else
+#else // AVX
 
   void MySubAtDB_BB (
                      Complex * pa, size_t da,
@@ -4186,6 +4186,13 @@ namespace ngbla
           pc[i*dc+j] = sum;
         }
   }
+
+  void MultMatMat (SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
+  {
+    c = a * b;    
+  }
+
+  
 #endif
 
   constexpr size_t CNA = 32;
