@@ -265,7 +265,7 @@ namespace ngstd
     SIMD (double val) { data = _mm256_set1_pd(val); }
     SIMD (int val)    { data = _mm256_set1_pd(val); }
     SIMD (size_t val) { data = _mm256_set1_pd(val); }
-    SIMD (double v0, double v1, double v2, doulbe v3) { data = _mm256_set_pd(v3,v2,v1,v0); }
+    SIMD (double v0, double v1, double v2, double v3) { data = _mm256_set_pd(v3,v2,v1,v0); }
     SIMD (double const * p) { data = _mm256_loadu_pd(p); }
     SIMD (double const * p, SIMD<mask64,4> mask) { data = _mm256_maskload_pd(p, mask.Data()); }
     SIMD (__m256d _data) { data = _data; }
