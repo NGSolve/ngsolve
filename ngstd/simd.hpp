@@ -438,6 +438,10 @@ namespace ngstd
   INLINE SIMD<double,N> operator+ (double a, SIMD<double,N> b) { return SIMD<double,N>(a)+b; }
   template <int N>  
   INLINE SIMD<double,N> operator- (SIMD<double,N> a, SIMD<double,N> b) { return a.Data()-b.Data(); }
+#ifndef __AVX__
+  INLINE SIMD<double,4> operator- (SIMD<double,4> a, SIMD<double,4> b) { return { a.Lo()-b.Lo(), a.Hi()-b.Hi() }; }
+#endif
+
   template <int N>  
   INLINE SIMD<double,N> operator- (double a, SIMD<double,N> b) { return SIMD<double,N>(a)-b; }
   template <int N>  
