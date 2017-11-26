@@ -216,7 +216,7 @@ namespace ngstd
     static constexpr int Size() { return 2; }
     SIMD () = default;
     SIMD (const SIMD &) = default;
-    SIMD (double v0, double v1) { data = _mm128_set_pd(v1,v0); }
+    SIMD (double v0, double v1) { data = _mm_set_pd(v1,v0); }
     
     SIMD & operator= (const SIMD &) = default;
 
@@ -233,7 +233,7 @@ namespace ngstd
     
     template<typename T, typename std::enable_if<std::is_convertible<T, std::function<double(int)>>::value, int>::type = 0>                                                                    SIMD (const T & func)
     {   
-      data = _mm128_set_pd(func(1), func(0));              
+      data = _mm_set_pd(func(1), func(0));              
     }   
     
     INLINE double operator[] (int i) const { return ((double*)(&data))[i]; }
