@@ -358,6 +358,8 @@ namespace ngstd
 
     SIMD (double val) { data = _mm512_set1_pd(val); }
     SIMD (double const * p) { data = _mm512_loadu_pd(p); }
+    SIMD (double const * p, SIMD<mask64,8> mask)
+      { data = _mm512_mask_load_pd(_mm512_setzero_pd(), mask.Data(), p); }
     SIMD (__m512d _data) { data = _data; }
     
     template<typename T, typename std::enable_if<std::is_convertible<T, std::function<double(int)>>::value, int>::type = 0>
@@ -366,7 +368,8 @@ namespace ngstd
       data = _mm512_set_pd(func(7), func(6), func(5), func(4), func(3), func(2), func(1), func(0));              
     }
 
-    void Store (double * p) { _mm512_storeu_pd(p, data); }    
+    void Store (double * p) { _mm512_storeu_pd(p, data); }
+    void Store (double * p, SIMD<mask64,8> mask) { _mm512_mask_store_pd(p, mask.Data(), data); }    
     
     /*
     template <typename T>
