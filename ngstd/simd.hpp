@@ -119,6 +119,20 @@ namespace ngstd
 #endif
 
   typedef int64_t mask64;
+
+  template <> 
+  class SIMD<mask64,1>
+  {
+    mask64 mask;
+  public:
+    SIMD (size_t i)
+      : mask(i > 0 ? -1 : 0) { ; }
+    bool Data() const { return mask; }
+    static constexpr int Size() { return 1; }    
+    mask64 operator[] (int i) const { return ((mask64*)(&mask))[i]; }    
+  };
+
+
   
 #ifdef __AVX__
   template <> 
@@ -182,6 +196,9 @@ namespace ngstd
       data = func(0);
       return *this;
     }
+
+    void Store (double * p) { *p = data; }
+    void Store (double * p, SIMD<mask64,1> mask) { if (mask.Data()) *p = data; }
     
     double operator[] (int i) const { return ((double*)(&data))[i]; }
     double Data() const { return data; }
