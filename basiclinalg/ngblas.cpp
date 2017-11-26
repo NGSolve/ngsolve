@@ -6,7 +6,6 @@ namespace ngbla
 {
 
 #include "matkernel.hpp"
-
   
   INLINE void MatKernel2MultABMask(SIMD<mask64> mask, size_t ha, size_t wa, BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
   {
@@ -143,62 +142,52 @@ namespace ngbla
   
 
   template <typename FUNC>
-  void TAddABt3 (SliceMatrix<double> a, SliceMatrix<double> b, SliceMatrix<double> c,
+  void TAddABt3 (size_t wa, size_t ha, size_t hb,
+                 double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc,
                  FUNC func)
   {
     constexpr size_t bs = 32;  // height b
-    size_t hb = b.Height();
-    size_t i = 0;
-    double * pa = &a(0,0);
-    double * pb = &b(0,0);
-    for (size_t i = 0; i < hb; i += bs, pb += bs*b.Dist())
-      {
-        size_t wc = min2(bs, hb-i);
-        TAddABt4 (a.Width(), c.Height(), wc, pa, a.Dist(), pb, b.Dist(), &c(i,0), c.Dist(), func);
-      }
+    for (size_t i = 0; i < hb; i += bs, pb += bs*db, pc += bs)
+      TAddABt4 (wa, ha, min2(bs, hb-i),
+                pa, da, pb, db, pc, dc, func);
   }
 
   template <typename FUNC>
-  void TAddABt2 (SliceMatrix<double> a, SliceMatrix<double> b, SliceMatrix<double> c,
+  void TAddABt2 (size_t wa, size_t ha, size_t hb,
+                 double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc,
+                 // SliceMatrix<double> a, SliceMatrix<double> b, SliceMatrix<double> c,
                  FUNC func)
   {
-    constexpr size_t bs = 96;  // height a
-    size_t ha = a.Height();
-    size_t i = 0;
-    for (size_t i = 0; i < ha; i += bs)
-      {
-        size_t i2 = i+bs;
-        if (i2 > ha) i2 = ha;
-        TAddABt3(a.Rows(i,i+i2), b, c.Rows(i,i2), func);
-      }
+    constexpr size_t bs = 96; // height a
+    for (size_t i = 0; i < ha; i += bs, pa += bs*da, pc += bs*dc)
+      TAddABt3(wa, min2(bs, ha-i), hb,
+               pa, da, pb, db, pc, dc, func);
   }
 
   
   template <typename FUNC>
-  void TAddABt1 (SliceMatrix<double> a, SliceMatrix<double> b, SliceMatrix<double> c,
+  void TAddABt1 (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c,
                 FUNC func)
   {
     constexpr size_t bs = 256; // inner-product loop
     size_t wa = a.Width();
-    for (size_t i = 0; i < wa; i += bs)
-      {
-        size_t i2 = i + bs;
-        if (i2 > wa) i2 = wa;
-        TAddABt2 (a.Cols(i, i2), b.Cols(i,i2), c, func);
-      }
+    double *pa = &a(0);
+    double *pb = &b(0);
+    double *pc = &c(0);
+    for (size_t i = 0; i < wa; i += bs, pa+=bs, pb+=bs)
+      TAddABt2 (min2(bs,wa-i), a.Height(), b.Height(),
+                pa, a.Dist(), pb, b.Dist(), pc, c.Dist(), func);
   }
   
   void AddABt (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
   {
     // c += a * Trans(b);
-    // return;
-    TAddABt1 (a, b, c.AddSize(a.Height(),b.Height()), [] (auto c, auto ab) { return c+ab; });
+    TAddABt1 (a, b, c, [] (auto c, auto ab) { return c+ab; });
   }
 
   void SubABt (SliceMatrix<double> a, SliceMatrix<double> b, SliceMatrix<double> c)
   {
     // c -= a * Trans(b);
-    // return;
     TAddABt1 (a, b, c, [] (auto c, auto ab) { return c-ab; });
   }
 
