@@ -49,6 +49,25 @@ namespace ngbla
   }
 
 
+  // update form of fma
+  template <int N>
+  void FMAasm (SIMD<double,N> a, SIMD<double,N> b, SIMD<double,N> & sum)
+  {
+    sum = FMA(a,b,sum);
+  }
+
+#ifdef __AVX2__
+  INLINE void FMAasm (SIMD<double,4> a, SIMD<double,4> b, SIMD<double,4> & sum)
+  {
+    asm ("vfmadd231pd %[a], %[b], %[sum]"
+         : [sum] "+x" (sum.Data())
+         : [a] "x" (a.Data()), [b] "x" (b.Data())
+         );
+  }
+#endif
+  
+#include "matkernel.hpp"
+
   INLINE auto Transpose (__m256d a, __m256d b, __m256d c, __m256d d)
   {
     __m256d loab = _mm256_unpacklo_pd (a, b);
@@ -3613,7 +3632,7 @@ namespace ngbla
   
   
   // mat-mat product
-
+  /*
   // b.Width <= 4
   INLINE
   void MultMatMat4(SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
@@ -3621,20 +3640,6 @@ namespace ngbla
     __m256i mask = my_mm256_cmpgt_epi64(_mm256_set1_epi64x(b.Width()),
                                         _mm256_set_epi64x(3, 2, 1, 0));
 
-    /*
-      __m256i mask;
-      switch (b.Width())
-      {
-      case 1:
-      mask = _mm256_set_epi64x(0,0,0,-1); break;
-      case 2:
-      mask = _mm256_set_epi64x(0,0,-1,-1); break;
-      case 3:
-      mask = _mm256_set_epi64x(0,-1,-1,-1); break;
-      case 4:
-      mask = _mm256_set_epi64x(-1,-1,-1,-1); break;
-      }
-    */
     unsigned int da = a.Dist();
     int wa = a.Width();
     int r = 0;
@@ -3749,8 +3754,9 @@ namespace ngbla
         _mm256_maskstore_pd(bpc + 0*dc, mask, sum);
       }
   }
+  */
 
-  // b.Width() = 8
+    /*
   INLINE
   void MultMatMat8(SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
   {
@@ -3863,22 +3869,97 @@ namespace ngbla
         ar += da;
       }
   }
+    */
 
 
 
+  
+  INLINE void MatKernel2MultABMask(SIMD<mask64> mask, SliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
+  {
+    size_t r = 0;
+    size_t da = a.Dist();
+    size_t dc = c.Dist();
+    double * pa = &a(0,0);
+    double * pc = &c(0,0);
+    for ( ; r+4 <= a.Height(); r += 4, pa += 4*da, pc += 4*dc)
+      MatKernelMultABMask<4> (a.Width(), mask, pa, da, &b(0,0), b.Dist(), pc, dc);
+    switch (a.Height()-r)
+      {
+      case 0: break;
+      case 1:
+        MatKernelMultABMask<1> (a.Width(), mask, pa, da, &b(0,0), b.Dist(), pc, dc);
+        break;
+      case 2:
+        MatKernelMultABMask<2> (a.Width(), mask, pa, da, &b(0,0), b.Dist(), pc, dc);
+        break;
+      case 3:
+        MatKernelMultABMask<3> (a.Width(), mask, pa, da, &b(0,0), b.Dist(), pc, dc);
+        break;
+      default:
+        ;
+      }
+    
+  }
+  
+  // b.Width() = W * SIMD
+  template <int W>
+  INLINE void MatKernel2MultAB(SliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
+  {
+    size_t r = 0;
+    size_t da = a.Dist();
+    size_t dc = c.Dist();
+    double * pa = &a(0,0);
+    double * pc = &c(0,0);
+    for ( ; r+4 <= a.Height(); r += 4, pa += 4*da, pc += 4*dc)
+      MatKernelMultAB<4,W> (a.Width(), pa, da, &b(0,0), b.Dist(), pc, dc);
+    switch (a.Height()-r)
+      {
+      case 0: break;
+      case 1:
+        MatKernelMultAB<1,W> (a.Width(), pa, da, &b(0,0), b.Dist(), pc, dc);
+        break;
+      case 2:
+        MatKernelMultAB<2,W> (a.Width(), pa, da, &b(0,0), b.Dist(), pc, dc);
+        break;
+      case 3:
+        MatKernelMultAB<3,W> (a.Width(), pa, da, &b(0,0), b.Dist(), pc, dc);
+        break;
+      default:
+        ;
+      }
+    return;
+  }
 
 
   // c = a * b
   void MultMatMat(SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
   {
+    /*
     size_t k = 0;
     for ( ; k+7 < b.Width(); k += 8)
       MultMatMat8(a, b.Cols(k,k+8), c.Cols(k,k+8));
+    */
+    /*
+    size_t k = 0;
+    for ( ; k+7 < b.Width(); k += 8)
+      MatKernel2MultAB<2>(a, b.Cols(k,k+8), c.Cols(k,k+8));
+    */
+    size_t k = 0;
+    constexpr size_t SW = SIMD<double>::Size();
+    for ( ; k+3*SW <= b.Width(); k += 3*SW)
+      MatKernel2MultAB<3>(a, b.Cols(k,k+3*SW), c.Cols(k,k+3*SW));
+    for ( ; k+SW <= b.Width(); k += SW)
+      MatKernel2MultAB<1>(a, b.Cols(k,k+SW), c.Cols(k,k+SW));
+
+    if (k < b.Width())
+      MatKernel2MultABMask(SIMD<mask64>(b.Width()-k), a, b.Cols(k,k+SW), c.Cols(k,k+SW));
+    /*
     for ( ; k < b.Width(); k += 4)
       {
         size_t end = min2(b.Width(), k+4);
         MultMatMat4(a, b.Cols(k,end), c.Cols(k,end));
       }
+    */
   }
 
 
