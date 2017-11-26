@@ -216,6 +216,8 @@ namespace ngstd
     static constexpr int Size() { return 2; }
     SIMD () = default;
     SIMD (const SIMD &) = default;
+    SIMD (double v0, double v1) { data = _mm128_set_pd(v1,v0); }
+    
     SIMD & operator= (const SIMD &) = default;
 
     SIMD (double val) { data = _mm_set1_pd(val); }
@@ -263,7 +265,7 @@ namespace ngstd
     SIMD (double val) { data = _mm256_set1_pd(val); }
     SIMD (int val)    { data = _mm256_set1_pd(val); }
     SIMD (size_t val) { data = _mm256_set1_pd(val); }
-
+    SIMD (double v0, double v1, double v2, doulbe v3) { data = _mm256_set_pd(v3,v2,v1,v0); }
     SIMD (double const * p) { data = _mm256_loadu_pd(p); }
     SIMD (double const * p, SIMD<mask64,4> mask) { data = _mm256_maskload_pd(p, mask.Data()); }
     SIMD (__m256d _data) { data = _data; }
@@ -275,56 +277,6 @@ namespace ngstd
     {   
       data = _mm256_set_pd(func(3), func(2), func(1), func(0));              
     }   
-    
-    /*
-    template <typename T>
-    SIMD (const T & val)
-    {
-//       SIMD_function(val, std::is_convertible<T, std::function<double(int)>>());
-      SIMD_function(val, has_call_operator<T>::value);
-    }
-    */
-
-    /*
-    template <typename T>
-    SIMD & operator= (const T & val)
-    {
-//       SIMD_function(val, std::is_convertible<T, std::function<double(int)>>());
-      SIMD_function(val, has_call_operator<T>::value);
-      return *this;
-    }
-    */
-    
-    /*
-    void * operator new (size_t s) { return  _mm_malloc(s, 64); }
-    void * operator new[] (size_t s) { return  _mm_malloc(s, 64); }
-    void operator delete (void * p) { _mm_free(p); }
-    void operator delete[] (void * p) { _mm_free(p); }
-    */
-
-    /*
-    template <typename Function>
-    void SIMD_function (const Function & func, std::true_type)
-    {
-      data = _mm256_set_pd(func(3), func(2), func(1), func(0));
-    }
-    
-    // not a function
-    void SIMD_function (double const * p, std::false_type)
-    {
-      data = _mm256_loadu_pd(p);
-    }
-    
-    void SIMD_function (double val, std::false_type)
-    {
-      data = _mm256_set1_pd(val);
-    }
-    
-    void SIMD_function (__m256d _data, std::false_type)
-    {
-      data = _data;
-    }
-    */
     
     INLINE double operator[] (int i) const { return ((double*)(&data))[i]; }
     INLINE double & operator[] (int i) { return ((double*)(&data))[i]; }
@@ -347,7 +299,13 @@ namespace ngstd
     static constexpr int Size() { return 4; }
     SIMD () = default;
     SIMD (const SIMD &) = default;
-    SIMD (SIMD<double,2> lo, SIMD<double,2> hi) : data{lo,hi} { ; } 
+    SIMD (SIMD<double,2> lo, SIMD<double,2> hi) : data{lo,hi} { ; }
+    SIMD (double v0, double v1, double v2, doulbe v3)
+      {
+        data[0] = SIMD<double,2>(v0,v1);
+        data[1] = SIMD<double,2>(v2,v3);
+      }
+    
     SIMD & operator= (const SIMD &) = default;
 
     SIMD (double val) : data{val,val} { ; }
@@ -635,7 +593,7 @@ namespace ngstd
   INLINE auto HSum (SIMD<double,1> sd1, SIMD<double,1> sd2)
   { return make_tuple(sd1.Data(), sd2.Data()); }
   INLINE auto HSum (SIMD<double,1> sd1, SIMD<double,1> sd2, SIMD<double,1> sd3, SIMD<double,1> sd4)
-  { return make_tuple(sd1.Data(), sd2.Data(), sd3.Data(), sd4.Data()); }
+  { return SIMD<double,4>(sd1.Data(), sd2.Data(), sd3.Data(), sd4.Data()); }
 
 
 
