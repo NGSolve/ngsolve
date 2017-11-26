@@ -300,7 +300,7 @@ namespace ngstd
     SIMD () = default;
     SIMD (const SIMD &) = default;
     SIMD (SIMD<double,2> lo, SIMD<double,2> hi) : data{lo,hi} { ; }
-    SIMD (double v0, double v1, double v2, doulbe v3)
+    SIMD (double v0, double v1, double v2, double v3)
       {
         data[0] = SIMD<double,2>(v0,v1);
         data[1] = SIMD<double,2>(v2,v3);
