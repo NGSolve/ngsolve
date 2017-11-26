@@ -189,6 +189,45 @@ namespace ngstd
   };
   
 
+#ifdef __SSE__
+  template<>
+  class alignas(16) SIMD<double,2> : public AlignedAlloc<SIMD<double,2>>
+  {
+    __m128d data;
+    
+  public:
+    static constexpr int Size() { return 2; }
+    SIMD () = default;
+    SIMD (const SIMD &) = default;
+    SIMD & operator= (const SIMD &) = default;
+
+    SIMD (double val) { data = _mm_set1_pd(val); }
+    SIMD (int val)    { data = _mm_set1_pd(val); }
+    SIMD (size_t val) { data = _mm_set1_pd(val); }
+
+    SIMD (double const * p) { data = _mm_loadu_pd(p); }
+    // SIMD (double const * p, SIMD<mask64,4> mask) { data = _mm256_maskload_pd(p, mask.Data()); }
+    SIMD (__m128d _data) { data = _data; }
+
+    void Store (double * p) { _mm_storeu_pd(p, data); }
+    // void Store (double * p, SIMD<mask64,4> mask) { _mm256_maskstore_pd(p, mask.Data(), data); }    
+    
+    template<typename T, typename std::enable_if<std::is_convertible<T, std::function<double(int)>>::value, int>::type = 0>                                                                    SIMD (const T & func)
+    {   
+      data = _mm128_set_pd(func(1), func(0));              
+    }   
+    
+    INLINE double operator[] (int i) const { return ((double*)(&data))[i]; }
+    INLINE double & operator[] (int i) { return ((double*)(&data))[i]; }
+    INLINE __m128d Data() const { return data; }
+    INLINE __m128d & Data() { return data; }
+
+    operator tuple<double&,double&> ()
+    { return tuple<double&,double&>((*this)[0], (*this)[1]); }
+  };
+#endif
+
+  
   
 
 #ifdef __AVX__
@@ -278,6 +317,54 @@ namespace ngstd
     operator tuple<double&,double&,double&,double&> ()
     { return tuple<double&,double&,double&,double&>((*this)[0], (*this)[1], (*this)[2], (*this)[3]); }
   };
+
+
+#else // AVX
+
+  template<>
+  class alignas(32) SIMD<double,4> : public AlignedAlloc<SIMD<double,4>>
+  {
+    SIMD<double,2> data[2];
+    
+  public:
+    static constexpr int Size() { return 4; }
+    SIMD () = default;
+    SIMD (const SIMD &) = default;
+    SIMD (SIMD<double,2> lo, SIMD<double,2> hi) : data{lo,hi} { ; } 
+    SIMD & operator= (const SIMD &) = default;
+
+    SIMD (double val) : data{val,val} { ; }
+    SIMD (int val)    : data{val,val} { ; } 
+    SIMD (size_t val) : data{val,val} { ; } 
+
+    SIMD (double const * p) : data{p,p+2} { ; }
+    // SIMD (double const * p, SIMD<mask64,4> mask) { data = _mm256_maskload_pd(p, mask.Data()); }
+    // SIMD (__m256d _data) { data = _data; }
+
+    void Store (double * p) { data[0].Store(p); data[1].Store(p); }
+    // void Store (double * p, SIMD<mask64,4> mask) { _mm256_maskstore_pd(p, mask.Data(), data); }    
+
+    /*
+    template<typename T, typename std::enable_if<std::is_convertible<T, std::function<double(int)>>::value, int>::type = 0>                                                                    SIMD (const T & func)
+    {   
+      data[0] =  = _mm256_set_pd(func(3), func(2), func(1), func(0));              
+    }   
+    */
+
+    auto Lo() const { return data[0]; }
+    auto & Lo() { return data[0]; }
+    auto Hi() const { return data[1]; }
+    auto & Hi() { return data[1]; }
+    
+    INLINE double operator[] (int i) const { return ((double*)(&data[0]))[i]; }
+    INLINE double & operator[] (int i) { return ((double*)(&data[0]))[i]; }
+    // INLINE __m256d Data() const { return data; }
+    // INLINE __m256d & Data() { return data; }
+
+    operator tuple<double&,double&,double&,double&> ()
+    { return tuple<double&,double&,double&,double&>((*this)[0], (*this)[1], (*this)[2], (*this)[3]); }
+  };
+
 #endif
 
 
@@ -366,6 +453,10 @@ namespace ngstd
   
   template <int N>
   INLINE SIMD<double,N> operator+ (SIMD<double,N> a, SIMD<double,N> b) { return a.Data()+b.Data(); }
+#ifndef __AVX__
+  INLINE SIMD<double,4> operator+ (SIMD<double,4> a, SIMD<double,4> b) { return { a.Lo()+b.Lo(), a.Hi()+b.Hi() }; }
+#endif
+  
   template <int N>
   INLINE SIMD<double,N> operator+ (SIMD<double,N> a, double b) { return a+SIMD<double,N>(b); }
   template <int N>
