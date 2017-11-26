@@ -206,7 +206,7 @@ namespace ngstd
   };
   
 
-#ifdef __SSE__
+#if (defined(__SSE__) || defined(_M_AMD64) || defined(_M_X64))
   template<>
   class alignas(16) SIMD<double,2> : public AlignedAlloc<SIMD<double,2>>
   {
