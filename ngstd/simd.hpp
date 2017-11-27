@@ -547,21 +547,34 @@ namespace ngstd
 
   
 #ifdef __SSE__
+
+  
+  INLINE __m128d my_mm_hadd_pd(__m128d a, __m128d b) {
+#if defined(__SSE3__) || defined(__AVX__)
+    return _mm_hadd_pd(a,b); 
+#else
+    return _mm_add_pd( _mm_unpacklo_pd(a,b), _mm_unpackhi_pd(a,b) );
+#endif
+  }
+
+  
+  
   INLINE double HSum (SIMD<double,2> sd)
   {
-    return _mm_cvtsd_f64 (_mm_hadd_pd (sd.Data(), sd.Data()));
+    return _mm_cvtsd_f64 (my_mm_hadd_pd (sd.Data(), sd.Data()));
   }
 
   INLINE auto HSum (SIMD<double,2> sd1, SIMD<double,2> sd2)
   {
-    __m128d hv2 = _mm_hadd_pd(sd1.Data(), sd2.Data());
-    return SIMD<double,2>(_mm_cvtsd_f64 (hv2),  _mm_cvtsd_f64(_mm_shuffle_pd (hv2, hv2, 3)));
+    __m128d hv2 = my_mm_hadd_pd(sd1.Data(), sd2.Data());
+    return SIMD<double,2> (hv2);
+    // return SIMD<double,2>(_mm_cvtsd_f64 (hv2),  _mm_cvtsd_f64(_mm_shuffle_pd (hv2, hv2, 3)));
   }
 
   INLINE auto HSum (SIMD<double,2> v1, SIMD<double,2> v2, SIMD<double,2> v3, SIMD<double,2> v4)
   {
-    SIMD<double,2> hsum1 = _mm_hadd_pd (v1.Data(), v2.Data());
-    SIMD<double,2> hsum2 = _mm_hadd_pd (v3.Data(), v4.Data());
+    SIMD<double,2> hsum1 = my_mm_hadd_pd (v1.Data(), v2.Data());
+    SIMD<double,2> hsum2 = my_mm_hadd_pd (v3.Data(), v4.Data());
     return SIMD<double,4> (hsum1, hsum2);
   }
 #endif
