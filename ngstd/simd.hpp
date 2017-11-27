@@ -273,7 +273,7 @@ namespace ngstd
 #ifdef __AVX__
         data = _mm_maskload_pd(p, mask.Data());
 #else
-        data = _mm_and_pd(mask.Data(), _mm_loadu_pd(p));
+        data = _mm_castsi128_pd(_mm_and_pd(mask.Data(), _mm_castpd_si128(_mm_loadu_pd(p)));
 #endif
       }
     SIMD (__m128d _data) { data = _data; }
@@ -284,7 +284,8 @@ namespace ngstd
 #ifdef __AVX__
       _mm_maskstore_pd(p, mask.Data(), data);
 #else      
-      _mm_storeu_pd (p, _mm_or_pd (_mm_and_pd(mask.Data(), data), _mm_andnot_pd(mask.Data(), _mm_loadu_pd(p))));
+      _mm_storeu_pd (p, _mm_castsi128_pd(_mm_or_pd (_mm_and_pd(mask.Data(), _mm_castpd_si128(data)),
+                                                    _mm_andnot_pd(mask.Data(), _mm_loadu_pd(p)))));
 #endif
     }    
     
