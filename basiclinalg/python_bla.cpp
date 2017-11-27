@@ -545,7 +545,7 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
 
 
                                 {
-                                  Timer t("own AddABt");
+                                  Timer t("own MultMatMat");
                                   t.Start();
                                   c = 0.0;
                                   Matrix<> bt = Trans(b);
@@ -556,6 +556,18 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
                                   cout << "own MultMatMat GFlops = " << 1e-9 * n*k*m*its / t.GetTime() << endl;
                                 }
 
+                                {
+                                  Timer t("own AlignedMultMatMat");
+                                  t.Start();
+                                  Matrix<SIMD<double>> bt(k,m);
+                                  Matrix<SIMD<double>> c(n,m);
+                                  c = SIMD<double>(0.0);
+                                  for (int j = 0; j < its; j++)
+                                    // c = a * Trans(b) | Lapack;
+                                    MultMatMat (a, bt, c);
+                                  t.Stop();
+                                  cout << "own AlignedMultMatMat GFlops = " << SIMD<double>::Size()*1e-9 * n*k*m*its / t.GetTime() << endl;
+                                }
 
 
 

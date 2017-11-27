@@ -4,6 +4,7 @@
 using namespace ngstd;
 
 enum OP { ADD, SUB, SET };
+
 /*
   C = A * B
   C += A * B
@@ -63,6 +64,70 @@ void GenerateMultAB (ostream & out, int h, int w, OP op)
   
   out << "}" << endl;
 }
+
+
+/*
+  C = A * B
+  C += A * B
+  C -= A * B
+
+  A ... h x n
+  B ... n x w*SIMD.Size
+ */
+void AlignedGenerateMultAB (ostream & out, int h, int w, OP op)
+{
+  
+  out << "template <> void MatKernelAlignedMultAB<" << h << ", " << w << ">" << endl
+      << "    (size_t n," << endl
+      << "     double * pa, size_t da," << endl
+      << "     SIMD<double> * pb, size_t db," << endl
+      << "     SIMD<double> * pc, size_t dc)" << endl
+      << "{" << endl;
+
+  out << "SIMD<double> * hpc = pc;" << endl;
+
+  if (op == SET)
+    {
+      for (int i = 0; i < h; i++)
+        for (int j = 0; j < w; j++)
+          out << "SIMD<double> sum" << i << j << "(0);" << endl;
+    }
+  else
+    {
+      for (int i = 0; i < h; i++)
+        {
+          for (int j = 0; j < w; j++)
+            out << "SIMD<double> sum" << i << j << "(pc+" << j << ");" << endl;
+          out << "pc += dc;" << endl;
+        }
+      out << "pc = hpc;" << endl;
+    }
+  
+  out << "for (size_t i = 0; i < n; i++, pa++, pb += db) {" << endl;
+  for (int i = 0; i < w; i++)
+    out << "SIMD<double> b" << i << "(pb[" << i << "]);" << endl;
+
+  for (int i = 0; i < h; i++)
+    {
+      out << "SIMD<double> a" << i << "(pa["<< i << "*da]);" << endl;
+      for (int j = 0; j < w; j++)
+        // out << "sum" << j << i << " += a" << j << " * b" << i << ";" << endl;
+        out << "FMAasm(a"<<i<<",b" << j << ",sum" << i << j << ");" << endl;
+    }
+  out << "}" << endl;
+
+  for (int i = 0; i < h; i++)
+    {
+      for (int j = 0; j < w; j++)
+        // out << "sum"<< i << j << ".Store(pc+" << j << ");" << endl;
+        out << "pc[" << j << "]= sum"  << i << j << ";" << endl;
+      out << "pc += dc;" << endl;
+    }
+  
+  out << "}" << endl;
+}
+
+
 
 
 void GenerateMultABMask (ostream & out, int h, OP op)
@@ -239,20 +304,24 @@ int main ()
   out << "template <size_t H, size_t W>" << endl
       << "static void MatKernelMultAB" << endl
       << "(size_t n, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc);" << endl;
+  out << "template <size_t H, size_t W>" << endl
+      << "static void MatKernelAlignedMultAB" << endl
+      << "(size_t n, double * pa, size_t da, SIMD<double> * pb, size_t db, SIMD<double> * pc, size_t dc);" << endl;
 
-  GenerateMultAB (out, 1, 1, SET);  
-  GenerateMultAB (out, 2, 1, SET);
-  GenerateMultAB (out, 3, 1, SET);
-  GenerateMultAB (out, 4, 1, SET);
-  GenerateMultAB (out, 1, 2, SET);  
-  GenerateMultAB (out, 2, 2, SET);
-  GenerateMultAB (out, 3, 2, SET);
-  GenerateMultAB (out, 4, 2, SET);
-  GenerateMultAB (out, 1, 3, SET);  
-  GenerateMultAB (out, 2, 3, SET);
-  GenerateMultAB (out, 3, 3, SET);
-  GenerateMultAB (out, 4, 3, SET);
+  for (int i = 1; i <= 3; i++)
+    {
+      GenerateMultAB (out, 1, i, SET);  
+      GenerateMultAB (out, 2, i, SET);
+      GenerateMultAB (out, 3, i, SET);
+      GenerateMultAB (out, 4, i, SET);
+      GenerateMultAB (out, 6, i, SET);
 
+      AlignedGenerateMultAB (out, 1, i, SET);  
+      AlignedGenerateMultAB (out, 2, i, SET);
+      AlignedGenerateMultAB (out, 3, i, SET);
+      AlignedGenerateMultAB (out, 4, i, SET);
+      AlignedGenerateMultAB (out, 6, i, SET);
+    }
 
 
   out << "template <size_t H>" << endl

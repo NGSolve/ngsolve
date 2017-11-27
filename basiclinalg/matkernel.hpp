@@ -1,6 +1,9 @@
 template <size_t H, size_t W>
 static void MatKernelMultAB
 (size_t n, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc);
+template <size_t H, size_t W>
+static void MatKernelAlignedMultAB
+(size_t n, double * pa, size_t da, SIMD<double> * pb, size_t db, SIMD<double> * pc, size_t dc);
 template <> void MatKernelMultAB<1, 1>
     (size_t n,
      double * pa, size_t da,
@@ -97,6 +100,183 @@ pc += dc;
 sum20.Store(pc+SW*0);
 pc += dc;
 sum30.Store(pc+SW*0);
+pc += dc;
+}
+template <> void MatKernelMultAB<6, 1>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+double * hpc = pc;
+SIMD<double> sum00(0);
+SIMD<double> sum10(0);
+SIMD<double> sum20(0);
+SIMD<double> sum30(0);
+SIMD<double> sum40(0);
+SIMD<double> sum50(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0(pb+0*SW);
+SIMD<double> a0(pa[0*da]);
+FMAasm(a0,b0,sum00);
+SIMD<double> a1(pa[1*da]);
+FMAasm(a1,b0,sum10);
+SIMD<double> a2(pa[2*da]);
+FMAasm(a2,b0,sum20);
+SIMD<double> a3(pa[3*da]);
+FMAasm(a3,b0,sum30);
+SIMD<double> a4(pa[4*da]);
+FMAasm(a4,b0,sum40);
+SIMD<double> a5(pa[5*da]);
+FMAasm(a5,b0,sum50);
+}
+sum00.Store(pc+SW*0);
+pc += dc;
+sum10.Store(pc+SW*0);
+pc += dc;
+sum20.Store(pc+SW*0);
+pc += dc;
+sum30.Store(pc+SW*0);
+pc += dc;
+sum40.Store(pc+SW*0);
+pc += dc;
+sum50.Store(pc+SW*0);
+pc += dc;
+}
+template <> void MatKernelAlignedMultAB<1, 1>
+    (size_t n,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     SIMD<double> * pc, size_t dc)
+{
+SIMD<double> * hpc = pc;
+SIMD<double> sum00(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0(pb[0]);
+SIMD<double> a0(pa[0*da]);
+FMAasm(a0,b0,sum00);
+}
+pc[0]= sum00;
+pc += dc;
+}
+template <> void MatKernelAlignedMultAB<2, 1>
+    (size_t n,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     SIMD<double> * pc, size_t dc)
+{
+SIMD<double> * hpc = pc;
+SIMD<double> sum00(0);
+SIMD<double> sum10(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0(pb[0]);
+SIMD<double> a0(pa[0*da]);
+FMAasm(a0,b0,sum00);
+SIMD<double> a1(pa[1*da]);
+FMAasm(a1,b0,sum10);
+}
+pc[0]= sum00;
+pc += dc;
+pc[0]= sum10;
+pc += dc;
+}
+template <> void MatKernelAlignedMultAB<3, 1>
+    (size_t n,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     SIMD<double> * pc, size_t dc)
+{
+SIMD<double> * hpc = pc;
+SIMD<double> sum00(0);
+SIMD<double> sum10(0);
+SIMD<double> sum20(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0(pb[0]);
+SIMD<double> a0(pa[0*da]);
+FMAasm(a0,b0,sum00);
+SIMD<double> a1(pa[1*da]);
+FMAasm(a1,b0,sum10);
+SIMD<double> a2(pa[2*da]);
+FMAasm(a2,b0,sum20);
+}
+pc[0]= sum00;
+pc += dc;
+pc[0]= sum10;
+pc += dc;
+pc[0]= sum20;
+pc += dc;
+}
+template <> void MatKernelAlignedMultAB<4, 1>
+    (size_t n,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     SIMD<double> * pc, size_t dc)
+{
+SIMD<double> * hpc = pc;
+SIMD<double> sum00(0);
+SIMD<double> sum10(0);
+SIMD<double> sum20(0);
+SIMD<double> sum30(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0(pb[0]);
+SIMD<double> a0(pa[0*da]);
+FMAasm(a0,b0,sum00);
+SIMD<double> a1(pa[1*da]);
+FMAasm(a1,b0,sum10);
+SIMD<double> a2(pa[2*da]);
+FMAasm(a2,b0,sum20);
+SIMD<double> a3(pa[3*da]);
+FMAasm(a3,b0,sum30);
+}
+pc[0]= sum00;
+pc += dc;
+pc[0]= sum10;
+pc += dc;
+pc[0]= sum20;
+pc += dc;
+pc[0]= sum30;
+pc += dc;
+}
+template <> void MatKernelAlignedMultAB<6, 1>
+    (size_t n,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     SIMD<double> * pc, size_t dc)
+{
+SIMD<double> * hpc = pc;
+SIMD<double> sum00(0);
+SIMD<double> sum10(0);
+SIMD<double> sum20(0);
+SIMD<double> sum30(0);
+SIMD<double> sum40(0);
+SIMD<double> sum50(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0(pb[0]);
+SIMD<double> a0(pa[0*da]);
+FMAasm(a0,b0,sum00);
+SIMD<double> a1(pa[1*da]);
+FMAasm(a1,b0,sum10);
+SIMD<double> a2(pa[2*da]);
+FMAasm(a2,b0,sum20);
+SIMD<double> a3(pa[3*da]);
+FMAasm(a3,b0,sum30);
+SIMD<double> a4(pa[4*da]);
+FMAasm(a4,b0,sum40);
+SIMD<double> a5(pa[5*da]);
+FMAasm(a5,b0,sum50);
+}
+pc[0]= sum00;
+pc += dc;
+pc[0]= sum10;
+pc += dc;
+pc[0]= sum20;
+pc += dc;
+pc[0]= sum30;
+pc += dc;
+pc[0]= sum40;
+pc += dc;
+pc[0]= sum50;
 pc += dc;
 }
 template <> void MatKernelMultAB<1, 2>
@@ -229,6 +409,255 @@ sum21.Store(pc+SW*1);
 pc += dc;
 sum30.Store(pc+SW*0);
 sum31.Store(pc+SW*1);
+pc += dc;
+}
+template <> void MatKernelMultAB<6, 2>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+double * hpc = pc;
+SIMD<double> sum00(0);
+SIMD<double> sum01(0);
+SIMD<double> sum10(0);
+SIMD<double> sum11(0);
+SIMD<double> sum20(0);
+SIMD<double> sum21(0);
+SIMD<double> sum30(0);
+SIMD<double> sum31(0);
+SIMD<double> sum40(0);
+SIMD<double> sum41(0);
+SIMD<double> sum50(0);
+SIMD<double> sum51(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0(pb+0*SW);
+SIMD<double> b1(pb+1*SW);
+SIMD<double> a0(pa[0*da]);
+FMAasm(a0,b0,sum00);
+FMAasm(a0,b1,sum01);
+SIMD<double> a1(pa[1*da]);
+FMAasm(a1,b0,sum10);
+FMAasm(a1,b1,sum11);
+SIMD<double> a2(pa[2*da]);
+FMAasm(a2,b0,sum20);
+FMAasm(a2,b1,sum21);
+SIMD<double> a3(pa[3*da]);
+FMAasm(a3,b0,sum30);
+FMAasm(a3,b1,sum31);
+SIMD<double> a4(pa[4*da]);
+FMAasm(a4,b0,sum40);
+FMAasm(a4,b1,sum41);
+SIMD<double> a5(pa[5*da]);
+FMAasm(a5,b0,sum50);
+FMAasm(a5,b1,sum51);
+}
+sum00.Store(pc+SW*0);
+sum01.Store(pc+SW*1);
+pc += dc;
+sum10.Store(pc+SW*0);
+sum11.Store(pc+SW*1);
+pc += dc;
+sum20.Store(pc+SW*0);
+sum21.Store(pc+SW*1);
+pc += dc;
+sum30.Store(pc+SW*0);
+sum31.Store(pc+SW*1);
+pc += dc;
+sum40.Store(pc+SW*0);
+sum41.Store(pc+SW*1);
+pc += dc;
+sum50.Store(pc+SW*0);
+sum51.Store(pc+SW*1);
+pc += dc;
+}
+template <> void MatKernelAlignedMultAB<1, 2>
+    (size_t n,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     SIMD<double> * pc, size_t dc)
+{
+SIMD<double> * hpc = pc;
+SIMD<double> sum00(0);
+SIMD<double> sum01(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0(pb[0]);
+SIMD<double> b1(pb[1]);
+SIMD<double> a0(pa[0*da]);
+FMAasm(a0,b0,sum00);
+FMAasm(a0,b1,sum01);
+}
+pc[0]= sum00;
+pc[1]= sum01;
+pc += dc;
+}
+template <> void MatKernelAlignedMultAB<2, 2>
+    (size_t n,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     SIMD<double> * pc, size_t dc)
+{
+SIMD<double> * hpc = pc;
+SIMD<double> sum00(0);
+SIMD<double> sum01(0);
+SIMD<double> sum10(0);
+SIMD<double> sum11(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0(pb[0]);
+SIMD<double> b1(pb[1]);
+SIMD<double> a0(pa[0*da]);
+FMAasm(a0,b0,sum00);
+FMAasm(a0,b1,sum01);
+SIMD<double> a1(pa[1*da]);
+FMAasm(a1,b0,sum10);
+FMAasm(a1,b1,sum11);
+}
+pc[0]= sum00;
+pc[1]= sum01;
+pc += dc;
+pc[0]= sum10;
+pc[1]= sum11;
+pc += dc;
+}
+template <> void MatKernelAlignedMultAB<3, 2>
+    (size_t n,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     SIMD<double> * pc, size_t dc)
+{
+SIMD<double> * hpc = pc;
+SIMD<double> sum00(0);
+SIMD<double> sum01(0);
+SIMD<double> sum10(0);
+SIMD<double> sum11(0);
+SIMD<double> sum20(0);
+SIMD<double> sum21(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0(pb[0]);
+SIMD<double> b1(pb[1]);
+SIMD<double> a0(pa[0*da]);
+FMAasm(a0,b0,sum00);
+FMAasm(a0,b1,sum01);
+SIMD<double> a1(pa[1*da]);
+FMAasm(a1,b0,sum10);
+FMAasm(a1,b1,sum11);
+SIMD<double> a2(pa[2*da]);
+FMAasm(a2,b0,sum20);
+FMAasm(a2,b1,sum21);
+}
+pc[0]= sum00;
+pc[1]= sum01;
+pc += dc;
+pc[0]= sum10;
+pc[1]= sum11;
+pc += dc;
+pc[0]= sum20;
+pc[1]= sum21;
+pc += dc;
+}
+template <> void MatKernelAlignedMultAB<4, 2>
+    (size_t n,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     SIMD<double> * pc, size_t dc)
+{
+SIMD<double> * hpc = pc;
+SIMD<double> sum00(0);
+SIMD<double> sum01(0);
+SIMD<double> sum10(0);
+SIMD<double> sum11(0);
+SIMD<double> sum20(0);
+SIMD<double> sum21(0);
+SIMD<double> sum30(0);
+SIMD<double> sum31(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0(pb[0]);
+SIMD<double> b1(pb[1]);
+SIMD<double> a0(pa[0*da]);
+FMAasm(a0,b0,sum00);
+FMAasm(a0,b1,sum01);
+SIMD<double> a1(pa[1*da]);
+FMAasm(a1,b0,sum10);
+FMAasm(a1,b1,sum11);
+SIMD<double> a2(pa[2*da]);
+FMAasm(a2,b0,sum20);
+FMAasm(a2,b1,sum21);
+SIMD<double> a3(pa[3*da]);
+FMAasm(a3,b0,sum30);
+FMAasm(a3,b1,sum31);
+}
+pc[0]= sum00;
+pc[1]= sum01;
+pc += dc;
+pc[0]= sum10;
+pc[1]= sum11;
+pc += dc;
+pc[0]= sum20;
+pc[1]= sum21;
+pc += dc;
+pc[0]= sum30;
+pc[1]= sum31;
+pc += dc;
+}
+template <> void MatKernelAlignedMultAB<6, 2>
+    (size_t n,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     SIMD<double> * pc, size_t dc)
+{
+SIMD<double> * hpc = pc;
+SIMD<double> sum00(0);
+SIMD<double> sum01(0);
+SIMD<double> sum10(0);
+SIMD<double> sum11(0);
+SIMD<double> sum20(0);
+SIMD<double> sum21(0);
+SIMD<double> sum30(0);
+SIMD<double> sum31(0);
+SIMD<double> sum40(0);
+SIMD<double> sum41(0);
+SIMD<double> sum50(0);
+SIMD<double> sum51(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0(pb[0]);
+SIMD<double> b1(pb[1]);
+SIMD<double> a0(pa[0*da]);
+FMAasm(a0,b0,sum00);
+FMAasm(a0,b1,sum01);
+SIMD<double> a1(pa[1*da]);
+FMAasm(a1,b0,sum10);
+FMAasm(a1,b1,sum11);
+SIMD<double> a2(pa[2*da]);
+FMAasm(a2,b0,sum20);
+FMAasm(a2,b1,sum21);
+SIMD<double> a3(pa[3*da]);
+FMAasm(a3,b0,sum30);
+FMAasm(a3,b1,sum31);
+SIMD<double> a4(pa[4*da]);
+FMAasm(a4,b0,sum40);
+FMAasm(a4,b1,sum41);
+SIMD<double> a5(pa[5*da]);
+FMAasm(a5,b0,sum50);
+FMAasm(a5,b1,sum51);
+}
+pc[0]= sum00;
+pc[1]= sum01;
+pc += dc;
+pc[0]= sum10;
+pc[1]= sum11;
+pc += dc;
+pc[0]= sum20;
+pc[1]= sum21;
+pc += dc;
+pc[0]= sum30;
+pc[1]= sum31;
+pc += dc;
+pc[0]= sum40;
+pc[1]= sum41;
+pc += dc;
+pc[0]= sum50;
+pc[1]= sum51;
 pc += dc;
 }
 template <> void MatKernelMultAB<1, 3>
@@ -395,6 +824,327 @@ pc += dc;
 sum30.Store(pc+SW*0);
 sum31.Store(pc+SW*1);
 sum32.Store(pc+SW*2);
+pc += dc;
+}
+template <> void MatKernelMultAB<6, 3>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db,
+     double * pc, size_t dc)
+{
+constexpr int SW = SIMD<double>::Size();
+double * hpc = pc;
+SIMD<double> sum00(0);
+SIMD<double> sum01(0);
+SIMD<double> sum02(0);
+SIMD<double> sum10(0);
+SIMD<double> sum11(0);
+SIMD<double> sum12(0);
+SIMD<double> sum20(0);
+SIMD<double> sum21(0);
+SIMD<double> sum22(0);
+SIMD<double> sum30(0);
+SIMD<double> sum31(0);
+SIMD<double> sum32(0);
+SIMD<double> sum40(0);
+SIMD<double> sum41(0);
+SIMD<double> sum42(0);
+SIMD<double> sum50(0);
+SIMD<double> sum51(0);
+SIMD<double> sum52(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0(pb+0*SW);
+SIMD<double> b1(pb+1*SW);
+SIMD<double> b2(pb+2*SW);
+SIMD<double> a0(pa[0*da]);
+FMAasm(a0,b0,sum00);
+FMAasm(a0,b1,sum01);
+FMAasm(a0,b2,sum02);
+SIMD<double> a1(pa[1*da]);
+FMAasm(a1,b0,sum10);
+FMAasm(a1,b1,sum11);
+FMAasm(a1,b2,sum12);
+SIMD<double> a2(pa[2*da]);
+FMAasm(a2,b0,sum20);
+FMAasm(a2,b1,sum21);
+FMAasm(a2,b2,sum22);
+SIMD<double> a3(pa[3*da]);
+FMAasm(a3,b0,sum30);
+FMAasm(a3,b1,sum31);
+FMAasm(a3,b2,sum32);
+SIMD<double> a4(pa[4*da]);
+FMAasm(a4,b0,sum40);
+FMAasm(a4,b1,sum41);
+FMAasm(a4,b2,sum42);
+SIMD<double> a5(pa[5*da]);
+FMAasm(a5,b0,sum50);
+FMAasm(a5,b1,sum51);
+FMAasm(a5,b2,sum52);
+}
+sum00.Store(pc+SW*0);
+sum01.Store(pc+SW*1);
+sum02.Store(pc+SW*2);
+pc += dc;
+sum10.Store(pc+SW*0);
+sum11.Store(pc+SW*1);
+sum12.Store(pc+SW*2);
+pc += dc;
+sum20.Store(pc+SW*0);
+sum21.Store(pc+SW*1);
+sum22.Store(pc+SW*2);
+pc += dc;
+sum30.Store(pc+SW*0);
+sum31.Store(pc+SW*1);
+sum32.Store(pc+SW*2);
+pc += dc;
+sum40.Store(pc+SW*0);
+sum41.Store(pc+SW*1);
+sum42.Store(pc+SW*2);
+pc += dc;
+sum50.Store(pc+SW*0);
+sum51.Store(pc+SW*1);
+sum52.Store(pc+SW*2);
+pc += dc;
+}
+template <> void MatKernelAlignedMultAB<1, 3>
+    (size_t n,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     SIMD<double> * pc, size_t dc)
+{
+SIMD<double> * hpc = pc;
+SIMD<double> sum00(0);
+SIMD<double> sum01(0);
+SIMD<double> sum02(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0(pb[0]);
+SIMD<double> b1(pb[1]);
+SIMD<double> b2(pb[2]);
+SIMD<double> a0(pa[0*da]);
+FMAasm(a0,b0,sum00);
+FMAasm(a0,b1,sum01);
+FMAasm(a0,b2,sum02);
+}
+pc[0]= sum00;
+pc[1]= sum01;
+pc[2]= sum02;
+pc += dc;
+}
+template <> void MatKernelAlignedMultAB<2, 3>
+    (size_t n,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     SIMD<double> * pc, size_t dc)
+{
+SIMD<double> * hpc = pc;
+SIMD<double> sum00(0);
+SIMD<double> sum01(0);
+SIMD<double> sum02(0);
+SIMD<double> sum10(0);
+SIMD<double> sum11(0);
+SIMD<double> sum12(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0(pb[0]);
+SIMD<double> b1(pb[1]);
+SIMD<double> b2(pb[2]);
+SIMD<double> a0(pa[0*da]);
+FMAasm(a0,b0,sum00);
+FMAasm(a0,b1,sum01);
+FMAasm(a0,b2,sum02);
+SIMD<double> a1(pa[1*da]);
+FMAasm(a1,b0,sum10);
+FMAasm(a1,b1,sum11);
+FMAasm(a1,b2,sum12);
+}
+pc[0]= sum00;
+pc[1]= sum01;
+pc[2]= sum02;
+pc += dc;
+pc[0]= sum10;
+pc[1]= sum11;
+pc[2]= sum12;
+pc += dc;
+}
+template <> void MatKernelAlignedMultAB<3, 3>
+    (size_t n,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     SIMD<double> * pc, size_t dc)
+{
+SIMD<double> * hpc = pc;
+SIMD<double> sum00(0);
+SIMD<double> sum01(0);
+SIMD<double> sum02(0);
+SIMD<double> sum10(0);
+SIMD<double> sum11(0);
+SIMD<double> sum12(0);
+SIMD<double> sum20(0);
+SIMD<double> sum21(0);
+SIMD<double> sum22(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0(pb[0]);
+SIMD<double> b1(pb[1]);
+SIMD<double> b2(pb[2]);
+SIMD<double> a0(pa[0*da]);
+FMAasm(a0,b0,sum00);
+FMAasm(a0,b1,sum01);
+FMAasm(a0,b2,sum02);
+SIMD<double> a1(pa[1*da]);
+FMAasm(a1,b0,sum10);
+FMAasm(a1,b1,sum11);
+FMAasm(a1,b2,sum12);
+SIMD<double> a2(pa[2*da]);
+FMAasm(a2,b0,sum20);
+FMAasm(a2,b1,sum21);
+FMAasm(a2,b2,sum22);
+}
+pc[0]= sum00;
+pc[1]= sum01;
+pc[2]= sum02;
+pc += dc;
+pc[0]= sum10;
+pc[1]= sum11;
+pc[2]= sum12;
+pc += dc;
+pc[0]= sum20;
+pc[1]= sum21;
+pc[2]= sum22;
+pc += dc;
+}
+template <> void MatKernelAlignedMultAB<4, 3>
+    (size_t n,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     SIMD<double> * pc, size_t dc)
+{
+SIMD<double> * hpc = pc;
+SIMD<double> sum00(0);
+SIMD<double> sum01(0);
+SIMD<double> sum02(0);
+SIMD<double> sum10(0);
+SIMD<double> sum11(0);
+SIMD<double> sum12(0);
+SIMD<double> sum20(0);
+SIMD<double> sum21(0);
+SIMD<double> sum22(0);
+SIMD<double> sum30(0);
+SIMD<double> sum31(0);
+SIMD<double> sum32(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0(pb[0]);
+SIMD<double> b1(pb[1]);
+SIMD<double> b2(pb[2]);
+SIMD<double> a0(pa[0*da]);
+FMAasm(a0,b0,sum00);
+FMAasm(a0,b1,sum01);
+FMAasm(a0,b2,sum02);
+SIMD<double> a1(pa[1*da]);
+FMAasm(a1,b0,sum10);
+FMAasm(a1,b1,sum11);
+FMAasm(a1,b2,sum12);
+SIMD<double> a2(pa[2*da]);
+FMAasm(a2,b0,sum20);
+FMAasm(a2,b1,sum21);
+FMAasm(a2,b2,sum22);
+SIMD<double> a3(pa[3*da]);
+FMAasm(a3,b0,sum30);
+FMAasm(a3,b1,sum31);
+FMAasm(a3,b2,sum32);
+}
+pc[0]= sum00;
+pc[1]= sum01;
+pc[2]= sum02;
+pc += dc;
+pc[0]= sum10;
+pc[1]= sum11;
+pc[2]= sum12;
+pc += dc;
+pc[0]= sum20;
+pc[1]= sum21;
+pc[2]= sum22;
+pc += dc;
+pc[0]= sum30;
+pc[1]= sum31;
+pc[2]= sum32;
+pc += dc;
+}
+template <> void MatKernelAlignedMultAB<6, 3>
+    (size_t n,
+     double * pa, size_t da,
+     SIMD<double> * pb, size_t db,
+     SIMD<double> * pc, size_t dc)
+{
+SIMD<double> * hpc = pc;
+SIMD<double> sum00(0);
+SIMD<double> sum01(0);
+SIMD<double> sum02(0);
+SIMD<double> sum10(0);
+SIMD<double> sum11(0);
+SIMD<double> sum12(0);
+SIMD<double> sum20(0);
+SIMD<double> sum21(0);
+SIMD<double> sum22(0);
+SIMD<double> sum30(0);
+SIMD<double> sum31(0);
+SIMD<double> sum32(0);
+SIMD<double> sum40(0);
+SIMD<double> sum41(0);
+SIMD<double> sum42(0);
+SIMD<double> sum50(0);
+SIMD<double> sum51(0);
+SIMD<double> sum52(0);
+for (size_t i = 0; i < n; i++, pa++, pb += db) {
+SIMD<double> b0(pb[0]);
+SIMD<double> b1(pb[1]);
+SIMD<double> b2(pb[2]);
+SIMD<double> a0(pa[0*da]);
+FMAasm(a0,b0,sum00);
+FMAasm(a0,b1,sum01);
+FMAasm(a0,b2,sum02);
+SIMD<double> a1(pa[1*da]);
+FMAasm(a1,b0,sum10);
+FMAasm(a1,b1,sum11);
+FMAasm(a1,b2,sum12);
+SIMD<double> a2(pa[2*da]);
+FMAasm(a2,b0,sum20);
+FMAasm(a2,b1,sum21);
+FMAasm(a2,b2,sum22);
+SIMD<double> a3(pa[3*da]);
+FMAasm(a3,b0,sum30);
+FMAasm(a3,b1,sum31);
+FMAasm(a3,b2,sum32);
+SIMD<double> a4(pa[4*da]);
+FMAasm(a4,b0,sum40);
+FMAasm(a4,b1,sum41);
+FMAasm(a4,b2,sum42);
+SIMD<double> a5(pa[5*da]);
+FMAasm(a5,b0,sum50);
+FMAasm(a5,b1,sum51);
+FMAasm(a5,b2,sum52);
+}
+pc[0]= sum00;
+pc[1]= sum01;
+pc[2]= sum02;
+pc += dc;
+pc[0]= sum10;
+pc[1]= sum11;
+pc[2]= sum12;
+pc += dc;
+pc[0]= sum20;
+pc[1]= sum21;
+pc[2]= sum22;
+pc += dc;
+pc[0]= sum30;
+pc[1]= sum31;
+pc[2]= sum32;
+pc += dc;
+pc[0]= sum40;
+pc[1]= sum41;
+pc[2]= sum42;
+pc += dc;
+pc[0]= sum50;
+pc[1]= sum51;
+pc[2]= sum52;
 pc += dc;
 }
 template <size_t H>

@@ -21,6 +21,17 @@ namespace ngbla
   }
 
 
+  extern void MultMatMat (size_t ha, size_t wa, size_t wb,
+                          BareSliceMatrix<> a, BareSliceMatrix<SIMD<double>> b, BareSliceMatrix<SIMD<double>> c);
+  
+  inline void MultMatMat (SliceMatrix<> a, SliceMatrix<SIMD<double>> b, SliceMatrix<SIMD<double>> c)
+  {
+    MultMatMat (a.Height(), a.Width(), b.Width(), a, b, c);
+  }
+
+
+  
+
   extern void AddABt (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c);  
   extern void SubABt (SliceMatrix<double> a, SliceMatrix<double> b, SliceMatrix<double> c);
 
