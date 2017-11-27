@@ -6,33 +6,7 @@ namespace ngbla
 {
 
 #include "matkernel.hpp"
-  
-  INLINE void MatKernel2MultABMask(SIMD<mask64> mask, size_t ha, size_t wa, BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
-  {
-    size_t r = 0;
-    size_t da = a.Dist();
-    size_t dc = c.Dist();
-    double * pa = &a(0,0);
-    double * pc = &c(0,0);
-    for ( ; r+4 <= ha; r += 4, pa += 4*da, pc += 4*dc)
-      MatKernelMultABMask<4> (wa, mask, pa, da, &b(0,0), b.Dist(), pc, dc);
-    switch (ha-r)
-      {
-      case 0: break;
-      case 1:
-        MatKernelMultABMask<1> (wa, mask, pa, da, &b(0,0), b.Dist(), pc, dc);
-        break;
-      case 2:
-        MatKernelMultABMask<2> (wa, mask, pa, da, &b(0,0), b.Dist(), pc, dc);
-        break;
-      case 3:
-        MatKernelMultABMask<3> (wa, mask, pa, da, &b(0,0), b.Dist(), pc, dc);
-        break;
-      default:
-        ;
-      }
-    
-  }
+
   
   // b.Width() = W * SIMD
   template <int W>
@@ -64,6 +38,32 @@ namespace ngbla
     return;
   }
 
+  INLINE void MatKernel2MultABMask(SIMD<mask64> mask, size_t ha, size_t wa, BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
+  {
+    size_t r = 0;
+    size_t da = a.Dist();
+    size_t dc = c.Dist();
+    double * pa = &a(0,0);
+    double * pc = &c(0,0);
+    for ( ; r+4 <= ha; r += 4, pa += 4*da, pc += 4*dc)
+      MatKernelMultABMask<4> (wa, mask, pa, da, &b(0,0), b.Dist(), pc, dc);
+    switch (ha-r)
+      {
+      case 0: break;
+      case 1:
+        MatKernelMultABMask<1> (wa, mask, pa, da, &b(0,0), b.Dist(), pc, dc);
+        break;
+      case 2:
+        MatKernelMultABMask<2> (wa, mask, pa, da, &b(0,0), b.Dist(), pc, dc);
+        break;
+      case 3:
+        MatKernelMultABMask<3> (wa, mask, pa, da, &b(0,0), b.Dist(), pc, dc);
+        break;
+      default:
+        ;
+      }
+    
+  }
 
   // c = a * b
   void MultMatMat (size_t ha, size_t wa, size_t wb,
@@ -82,8 +82,53 @@ namespace ngbla
 
 
 
+  // b.Width() = W * SIMD
+  template <int W>
+  INLINE void MatKernel2MultAB(size_t ha, size_t wa,
+                               BareSliceMatrix<> a,
+                               BareSliceMatrix<SIMD<double>> b, BareSliceMatrix<SIMD<double>> c)
+  {
+    size_t r = 0;
+    size_t da = a.Dist();
+    size_t dc = c.Dist();
+    double * pa = &a(0,0);
+    SIMD<double> * pc = &c(0,0);
+    for ( ; r+4 <= ha; r += 4, pa += 4*da, pc += 4*dc)
+      MatKernelAlignedMultAB<4,W> (wa, pa, da, &b(0,0), b.Dist(), pc, dc);
+    switch (ha-r)
+      {
+      case 0: break;
+      case 1:
+        MatKernelAlignedMultAB<1,W> (wa, pa, da, &b(0,0), b.Dist(), pc, dc);
+        break;
+      case 2:
+        MatKernelAlignedMultAB<2,W> (wa, pa, da, &b(0,0), b.Dist(), pc, dc);
+        break;
+      case 3:
+        MatKernelAlignedMultAB<3,W> (wa, pa, da, &b(0,0), b.Dist(), pc, dc);
+        break;
+      default:
+        ;
+      }
+    return;
+  }
+
+  // c = a * b
+  void MultMatMat (size_t ha, size_t wa, size_t wb,
+                   BareSliceMatrix<> a, BareSliceMatrix<SIMD<double>> b, BareSliceMatrix<SIMD<double>> c)
+  {
+    size_t k = 0;
+    constexpr size_t SW = SIMD<double>::Size();
+    for ( ; k+3 <= wb; k += 3)
+      MatKernel2MultAB<3>(ha, wa, a, b.Cols(k,k+3), c.Cols(k,k+3));
+    for ( ; k+SW <= wb; k += SW)
+      MatKernel2MultAB<1>(ha, wa, a, b.Cols(k,k+SW), c.Cols(k,k+SW));
+  }
 
 
+
+
+  
 
   template <typename FUNC>
   INLINE void TAddABt4 (size_t wa, size_t hc, size_t wc,
