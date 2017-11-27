@@ -24,7 +24,7 @@ namespace ngstd
                                 _mm256_set_epi64x(1, 1, 0, 0));
 
 #elif __SSE__
-    return int(i) > 0;
+    return int(nr) > 0;
 #else
     return false;
 #endif
@@ -108,7 +108,7 @@ namespace ngstd
     void Store (Complex * p, size_t mask) const
     {
       __mmask8 mask1 = _mm512_cmpgt_epi64_mask(_mm512_set1_epi64(mask&3),
-                                                 _mm512_set_epi64(3, 3, 2, 2, 1, 1, 0, 0));
+                                               _mm512_set_epi64(3, 3, 2, 2, 1, 1, 0, 0));
       __mmask8 mask2 = _mm512_cmpgt_epi64_mask(_mm512_set1_epi64(mask&3),
                                                  _mm512_set_epi64(7, 7, 6, 6, 5, 5, 4, 4));
       _mm512_mask_store_pd ((double*)p, mask1,  _mm512_unpacklo_pd(re.Data(), im.Data()));
