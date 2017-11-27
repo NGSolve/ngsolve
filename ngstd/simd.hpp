@@ -167,7 +167,7 @@ namespace ngstd
       : mask(_mm_cmpgt_epi32(_mm_set1_epi32(i),
                              _mm_set_epi32(1, 1, 0, 0)))
     { ; }
-    SIMD (__m128i _mmask) : mask(_mask) { ; }
+    SIMD (__m128i _mask) : mask(_mask) { ; }
     __m128i Data() const { return mask; }
     static constexpr int Size() { return 2; }    
     mask64 operator[] (int i) const { return ((mask64*)(&mask))[i]; }    
@@ -203,7 +203,7 @@ namespace ngstd
       : mask(_mm512_cmpgt_epi64_mask(_mm512_set1_epi64(i),
                                      _mm512_set_epi64(7, 6, 5, 4, 3, 2, 1, 0)))
     { ; }
-    SIMD (__mask8 _mask) : mask(_mask) { ; }        
+    SIMD (__mmask8 _mask) : mask(_mask) { ; }        
     __mmask8 Data() const { return mask; }
     static constexpr int Size() { return 8; }    
     // mask64 operator[] (int i) const { return ((mask64*)(&mask))[i]; }    
