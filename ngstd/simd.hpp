@@ -545,6 +545,27 @@ namespace ngstd
 
 
   
+#ifdef __SSE__
+  INLINE double HSum (SIMD<double,2> sd)
+  {
+    return _mm_cvtsd_f64 (_mm_hadd_pd (sd.Data(), sd.Data()));
+  }
+
+  INLINE auto HSum (SIMD<double,2> sd1, SIMD<double,2> sd2)
+  {
+    __m128d hv2 = _mm_hadd_pd(sd1.Data(), sd2.Data());
+    return make_tuple(_mm_cvtsd_f64 (hv2),  _mm_cvtsd_f64(_mm_shuffle_pd (hv2, hv2, 3)));
+  }
+
+  INLINE auto HSum (SIMD<double,2> v1, SIMD<double,2> v2, SIMD<double,2> v3, SIMD<double,2> v4)
+  {
+    __m128d hsum1 = _mm256_hadd_pd (v1.Data(), v2.Data());
+    __m128d hsum2 = _mm256_hadd_pd (v3.Data(), v4.Data());
+    return make_tuple(hsum1[0], hsum1[1], hsum2[0], hsum2[1]);
+  }
+#endif
+
+
   
 #ifdef __AVX__
   INLINE SIMD<double,4> sqrt (SIMD<double,4> a) { return _mm256_sqrt_pd(a.Data()); }
