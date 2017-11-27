@@ -167,7 +167,7 @@ namespace ngstd
       : mask(_mm_cmpgt_epi32(_mm_set1_epi32(i),
                              _mm_set_epi32(1, 1, 0, 0)))
     { ; }
-    SIMD (__m128i _mask) : mask(_mask) { ; }
+    SIMD (__m128i _mmask) : mask(_mask) { ; }
     __m128i Data() const { return mask; }
     static constexpr int Size() { return 2; }    
     mask64 operator[] (int i) const { return ((mask64*)(&mask))[i]; }    
@@ -907,8 +907,10 @@ namespace ngstd
     sum = FMA(a,b,sum);
   }
 
-  /*
-#ifdef __AVX2__
+#if defined(__AVX2__) && not defined(__AVX512F__)
+  // make sure to use the update-version of fma
+  // important in matrix kernels using 12 sum-registers, 3 a-values and updated b-value
+  // avx512 has enough registers, and gcc seems to use only the first 16 z-regs
   INLINE void FMAasm (SIMD<double,4> a, SIMD<double,4> b, SIMD<double,4> & sum)
   {
     asm ("vfmadd231pd %[a], %[b], %[sum]"
@@ -917,7 +919,7 @@ namespace ngstd
          );
   }
 #endif
-  */
+
 
   
   
