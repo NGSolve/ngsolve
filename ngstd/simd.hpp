@@ -324,6 +324,7 @@ namespace ngstd
     SIMD (int val)    { data = _mm256_set1_pd(val); }
     SIMD (size_t val) { data = _mm256_set1_pd(val); }
     SIMD (double v0, double v1, double v2, double v3) { data = _mm256_set_pd(v3,v2,v1,v0); }
+    SIMD (SIMD<double,2> v0, SIMD<double,2> v1) : SIMD(v0[0], v0[1], v1[0], v1[1]) { ; }
     SIMD (double const * p) { data = _mm256_loadu_pd(p); }
     SIMD (double const * p, SIMD<mask64,4> mask) { data = _mm256_maskload_pd(p, mask.Data()); }
     SIMD (__m256d _data) { data = _data; }
@@ -554,14 +555,14 @@ namespace ngstd
   INLINE auto HSum (SIMD<double,2> sd1, SIMD<double,2> sd2)
   {
     __m128d hv2 = _mm_hadd_pd(sd1.Data(), sd2.Data());
-    return make_tuple(_mm_cvtsd_f64 (hv2),  _mm_cvtsd_f64(_mm_shuffle_pd (hv2, hv2, 3)));
+    return SIMD<double,2>(_mm_cvtsd_f64 (hv2),  _mm_cvtsd_f64(_mm_shuffle_pd (hv2, hv2, 3)));
   }
 
   INLINE auto HSum (SIMD<double,2> v1, SIMD<double,2> v2, SIMD<double,2> v3, SIMD<double,2> v4)
   {
     SIMD<double,2> hsum1 = _mm_hadd_pd (v1.Data(), v2.Data());
     SIMD<double,2> hsum2 = _mm_hadd_pd (v3.Data(), v4.Data());
-    return make_tuple(hsum1[0], hsum1[1], hsum2[0], hsum2[1]);
+    return SIMD<double,4> (hsum1, hsum2);
   }
 #endif
 
@@ -588,7 +589,7 @@ namespace ngstd
   {
     __m256d hv = _mm256_hadd_pd(sd1.Data(), sd2.Data());
     __m128d hv2 = _mm_add_pd (_mm256_extractf128_pd(hv,0), _mm256_extractf128_pd(hv,1));
-    return make_tuple(_mm_cvtsd_f64 (hv2),  _mm_cvtsd_f64(_mm_shuffle_pd (hv2, hv2, 3)));
+    return SIMD<double,2>(_mm_cvtsd_f64 (hv2),  _mm_cvtsd_f64(_mm_shuffle_pd (hv2, hv2, 3)));
   }
 
   INLINE auto HSum (SIMD<double,4> v1, SIMD<double,4> v2, SIMD<double,4> v3, SIMD<double,4> v4)
@@ -679,7 +680,7 @@ namespace ngstd
   INLINE double HSum (SIMD<double,1> sd)
   { return sd.Data(); }
   INLINE auto HSum (SIMD<double,1> sd1, SIMD<double,1> sd2)
-  { return make_tuple(sd1.Data(), sd2.Data()); }
+  { return SIMD<double,2>(sd1.Data(), sd2.Data()); }
   INLINE auto HSum (SIMD<double,1> sd1, SIMD<double,1> sd2, SIMD<double,1> sd3, SIMD<double,1> sd4)
   { return SIMD<double,4>(sd1.Data(), sd2.Data(), sd3.Data(), sd4.Data()); }
 
@@ -936,7 +937,8 @@ namespace ngstd
   }
 #endif
 
-  
+  template <int i, typename T, int N>
+  T get(SIMD<T,N> a) { return a[i]; }
   
   class ExceptionNOSIMD : public Exception
   {
