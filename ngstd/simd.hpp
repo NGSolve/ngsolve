@@ -45,11 +45,25 @@ INLINE __m256d operator/= (__m256d &a, __m256d b) { return a = a/b; }
 namespace ngstd
 {
 
+  // MSVC does not define SSE. It's always present on 64bit cpus
+#if (defined(_M_AMD64) || defined(_M_X64) || defined(__AVX__))
+#ifndef __SSE__
+#define __SSE__
+#endif
+#ifndef __SSE2__
+#define __SSE2__
+#endif
+#endif
+
+
+  
   constexpr int GetDefaultSIMDSize() {
 #if defined __AVX512F__
     return 8;
 #elif defined __AVX__
     return 4;
+#elif defined __SSE__
+    return 2;
 #else
     return 1;
 #endif
@@ -61,6 +75,9 @@ namespace ngstd
 #elif defined __AVX__
     typedef __m256 tAVX;
     typedef __m256d tAVXd; 
+#elif defined __SSE__
+    typedef __m128 tAVX;
+    typedef __m128d tAVXd; 
 #endif
 
   template <typename T, int N=GetDefaultSIMDSize()> class SIMD;
@@ -140,6 +157,22 @@ namespace ngstd
   };
 
 
+#ifdef __SSE__
+  template <> 
+  class SIMD<mask64,2>
+  {
+    __m128i mask;
+  public:
+    SIMD (int i)
+      : mask(_mm_cmpgt_epi32(_mm_set1_epi32(i),
+                             _mm_set_epi32(1, 1, 0, 0)))
+    { ; }
+    __m128i Data() const { return mask; }
+    static constexpr int Size() { return 2; }    
+    mask64 operator[] (int i) const { return ((mask64*)(&mask))[i]; }    
+  };
+#endif
+  
   
 #ifdef __AVX__
   template <> 
@@ -213,7 +246,7 @@ namespace ngstd
   };
   
 
-#if (defined(__SSE__) || defined(_M_AMD64) || defined(_M_X64))
+#ifdef __SSE__
   template<>
   class alignas(16) SIMD<double,2> : public AlignedAlloc<SIMD<double,2>>
   {
