@@ -357,6 +357,8 @@ namespace ngstd
     SIMD & operator= (const SIMD &) = default;
 
     SIMD (double val) { data = _mm512_set1_pd(val); }
+    SIMD (int val)    { data = _mm512_set1_pd(val); }
+    SIMD (size_t val) { data = _mm512_set1_pd(val); }
     SIMD (double const * p) { data = _mm512_loadu_pd(p); }
     SIMD (double const * p, SIMD<mask64,8> mask)
       { data = _mm512_mask_load_pd(_mm512_setzero_pd(), mask.Data(), p); }
@@ -803,6 +805,7 @@ namespace ngstd
     sum = FMA(a,b,sum);
   }
 
+  /*
 #ifdef __AVX2__
   INLINE void FMAasm (SIMD<double,4> a, SIMD<double,4> b, SIMD<double,4> & sum)
   {
@@ -812,7 +815,7 @@ namespace ngstd
          );
   }
 #endif
-
+  */
 
   
   
