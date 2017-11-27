@@ -557,7 +557,17 @@ namespace ngstd
 #endif
   }
 
-  
+  INLINE SIMD<double,2> sqrt (SIMD<double,2> a) { return _mm_sqrt_pd(a.Data()); }
+  INLINE SIMD<double,2> fabs (SIMD<double,2> a) { return _mm_max_pd(a.Data(), -a.Data()); }
+  using std::floor;
+  INLINE SIMD<double,2> floor (SIMD<double,2> a)
+  { return ngstd::SIMD<double,2>([&](int i)->double { return floor(a[i]); } ); }
+  using std::ceil;  
+  INLINE SIMD<double,2> ceil (SIMD<double,2> a) 
+  { return ngstd::SIMD<double,2>([&](int i)->double { return ceil(a[i]); } ); }
+  INLINE SIMD<double,2> IfPos (SIMD<double,2> a, SIMD<double,4> b, SIMD<double,2> c)
+  { return ngstd::SIMD<double,2>([&](int i)->double { return a[i]>0 ? b[i] : c[i]; }); }
+
   
   INLINE double HSum (SIMD<double,2> sd)
   {
@@ -578,7 +588,6 @@ namespace ngstd
     return SIMD<double,4> (hsum1, hsum2);
   }
 #endif
-
 
   
 #ifdef __AVX__

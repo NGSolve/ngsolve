@@ -18,12 +18,12 @@ namespace ngstd
     return _mm512_cmpgt_epi64_mask(_mm512_set1_epi64(nr),
                                    _mm512_set_epi64(3, 3, 2, 2, 1, 1, 0, 0));
     
-#elif __AVX__
+#elif defined(__AVX__)
 
     return my_mm256_cmpgt_epi64(_mm256_set1_epi64x(nr),
                                 _mm256_set_epi64x(1, 1, 0, 0));
 
-#elif __SSE__
+#elif defined(__SSE__)
     return int(nr) > 0;
 #else
     return false;
