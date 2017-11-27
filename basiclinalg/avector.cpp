@@ -3933,23 +3933,24 @@ namespace ngbla
       {
         SIMD<Complex> scale (*pscale);
         size_t j = 0;
-        for ( ; j+16 <= w; j+=16)
+        size_t WS = SIMD<double>::Size();
+        for ( ; j+4*WS <= w; j+=4*WS)
           {
             SIMD<Complex> val1, val2, val3, val4;
             val1.Load(ps+j);
-            val2.Load(ps+j+4);
-            val3.Load(ps+j+8);
-            val4.Load(ps+j+12);
+            val2.Load(ps+j+WS);
+            val3.Load(ps+j+2*WS);
+            val4.Load(ps+j+3*WS);
             val1 = val1 * scale;
             val2 = val2 * scale;
             val3 = val3 * scale;
             val4 = val4 * scale;
             val1.Store(pd+j);
-            val2.Store(pd+j+4);
-            val3.Store(pd+j+8);
-            val4.Store(pd+j+12);
+            val2.Store(pd+j+WS);
+            val3.Store(pd+j+2*WS);
+            val4.Store(pd+j+3*WS);
           }
-        for ( ; j+4 <= w; j+=4)
+        for ( ; j+WS <= w; j+=WS)
           {
             SIMD<Complex> val;
             val.Load(ps+j);
