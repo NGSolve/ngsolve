@@ -2129,10 +2129,10 @@ namespace ngcomp
   template <class SCAL>
   bool VisualizeGridFunction<SCAL> ::
   GetMultiSurfValue (size_t selnr, size_t facetnr, size_t npts,
-                     const __m256d * xref, 
-                     const __m256d * x, 
-                     const __m256d * dxdxref, 
-                     __m256d * values)
+                     const tAVXd * xref, 
+                     const tAVXd * x, 
+                     const tAVXd * dxdxref, 
+                     tAVXd * values)
   {
     cout << "GetMultiSurf - gf not implemented" << endl;
     return false;
@@ -2768,10 +2768,10 @@ namespace ngcomp
 #ifdef __AVX__  
   bool VisualizeCoefficientFunction ::    
   GetMultiSurfValue (size_t selnr, size_t facetnr, size_t npts,
-                     const __m256d * xref, 
-                     const __m256d * x, 
-                     const __m256d * dxdxref, 
-                     __m256d * values)
+                     const tAVXd * xref, 
+                     const tAVXd * x, 
+                     const tAVXd * dxdxref, 
+                     tAVXd * values)
   {
     try
       {
