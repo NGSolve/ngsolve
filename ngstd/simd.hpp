@@ -559,8 +559,8 @@ namespace ngstd
 
   INLINE auto HSum (SIMD<double,2> v1, SIMD<double,2> v2, SIMD<double,2> v3, SIMD<double,2> v4)
   {
-    __m128d hsum1 = _mm_hadd_pd (v1.Data(), v2.Data());
-    __m128d hsum2 = _mm_hadd_pd (v3.Data(), v4.Data());
+    SIMD<double,2> hsum1 = _mm_hadd_pd (v1.Data(), v2.Data());
+    SIMD<double,2> hsum2 = _mm_hadd_pd (v3.Data(), v4.Data());
     return make_tuple(hsum1[0], hsum1[1], hsum2[0], hsum2[1]);
   }
 #endif
