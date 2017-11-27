@@ -55,6 +55,13 @@ namespace ngstd
 #endif
   }
   
+#if defined __AVX512F__
+    typedef __m512 tAVX;
+    typedef __m512d tAVXd;
+#elif defined __AVX__
+    typedef __m256 tAVX;
+    typedef __m256d tAVXd; 
+#endif
 
   template <typename T, int N=GetDefaultSIMDSize()> class SIMD;
 
