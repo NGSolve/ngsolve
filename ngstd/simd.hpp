@@ -565,7 +565,7 @@ namespace ngstd
   using std::ceil;  
   INLINE SIMD<double,2> ceil (SIMD<double,2> a) 
   { return ngstd::SIMD<double,2>([&](int i)->double { return ceil(a[i]); } ); }
-  INLINE SIMD<double,2> IfPos (SIMD<double,2> a, SIMD<double,4> b, SIMD<double,2> c)
+  INLINE SIMD<double,2> IfPos (SIMD<double,2> a, SIMD<double,2> b, SIMD<double,2> c)
   { return ngstd::SIMD<double,2>([&](int i)->double { return a[i]>0 ? b[i] : c[i]; }); }
 
   
