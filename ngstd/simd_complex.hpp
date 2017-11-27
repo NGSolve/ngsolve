@@ -10,7 +10,28 @@
 namespace ngstd
 {
   typedef std::complex<double> Complex;
+
+  INLINE SIMD<mask64> Mask128 (size_t nr)
+  {
+#ifdef __AVX512F__  
+
+    return _mm512_cmpgt_epi64_mask(_mm512_set1_epi64(nr),
+                                   _mm512_set_epi64(3, 3, 2, 2, 1, 1, 0, 0));
     
+#elif __AVX__
+
+    return my_mm256_cmpgt_epi64(_mm256_set1_epi64x(nr),
+                                _mm256_set_epi64x(1, 1, 0, 0));
+
+#elif __SSE__
+    return int(i) > 0;
+#else
+    return false;
+#endif
+  }
+
+
+  
   template <>
   class SIMD<Complex>
   {
@@ -27,11 +48,43 @@ namespace ngstd
     SIMD<double> & real() { return re; }
     SIMD<double> & imag() { return im; }
 
+
+    void Load (Complex * p)
+    {
+      SIMD<double> c1((double*)p);
+      SIMD<double> c2((double*)(p+SIMD<double>::Size()/2));
+      tie(re,im) = Unpack(c1,c2);
+    }
+
+    void Store (Complex * p)
+    {
+      SIMD<double> h1, h2;
+      tie(h1,h2) = Unpack(re,im);
+      h1.Store((double*)p);
+      h2.Store((double*)(p+SIMD<double>::Size()/2));
+    }
+
+    void Load (Complex * p, int nr)
+    {
+      SIMD<double> c1((double*)p, Mask128(nr));
+      SIMD<double> c2((double*)(p+SIMD<double>::Size()/2), Mask128(nr-SIMD<double>::Size()/2));
+      tie(re,im) = Unpack(c1,c2);
+    }
+
+    void Store (Complex * p, int nr)
+    {
+      SIMD<double> h1, h2;
+      tie(h1,h2) = Unpack(re,im);
+      h1.Store((double*)p, Mask128(nr));
+      h2.Store((double*)(p+SIMD<double>::Size()/2), Mask128(nr-SIMD<double>::Size()/2));
+    }
+    
+#ifdef __NONE__    
 #ifdef __AVX512F__
     void Load (Complex * p)
     {
-      __m512d c1 = _mm512_loadu_pd((double*)p);
-      __m512d c2 = _mm512_loadu_pd((double*)(p+4));
+      __m512d c1 = _mm512_mask_load_pd(_mm512_setzero_pd(), mask1, (double*)p);
+      __m512d c2 = _mm512_mask_load_pd(_mm512_setzero_pd(), mask2, (double*)(p+4));
       re = _mm512_unpacklo_pd(c1,c2);
       im = _mm512_unpackhi_pd(c1,c2);
     }
@@ -111,6 +164,7 @@ namespace ngstd
       *p = Complex(re.Data(), im.Data());
     }
 #endif
+#endif // NONE
   };
     
   INLINE SIMD<Complex> operator+ (SIMD<Complex> a, SIMD<Complex> b)
