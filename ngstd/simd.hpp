@@ -268,11 +268,25 @@ namespace ngstd
     SIMD (size_t val) { data = _mm_set1_pd(val); }
 
     SIMD (double const * p) { data = _mm_loadu_pd(p); }
-    // SIMD (double const * p, SIMD<mask64,4> mask) { data = _mm256_maskload_pd(p, mask.Data()); }
+    SIMD (double const * p, SIMD<mask64,2> mask)
+      {
+#ifdef __AVX__
+        data = _mm_maskload_pd(p, mask.Data());
+#else
+        data = _mm_and_pd(mask.Data(), _mm_loadu_pd(p));
+#endif
+      }
     SIMD (__m128d _data) { data = _data; }
 
     void Store (double * p) { _mm_storeu_pd(p, data); }
-    // void Store (double * p, SIMD<mask64,4> mask) { _mm256_maskstore_pd(p, mask.Data(), data); }    
+    void Store (double * p, SIMD<mask64,2> mask)
+    {
+#ifdef __AVX__
+      _mm_maskstore_pd(p, mask.Data(), data);
+#else      
+      _mm_storeu_pd (p, _mm_or_pd (_mm_and_pd(mask.Data(), data), _mm_andnot_pd(mask.Data(), _mm_loadu_pd(p))));
+#endif
+    }    
     
     template<typename T, typename std::enable_if<std::is_convertible<T, std::function<double(int)>>::value, int>::type = 0>                                                                    SIMD (const T & func)
     {   
