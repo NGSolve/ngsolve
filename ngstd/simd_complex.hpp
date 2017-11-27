@@ -40,6 +40,27 @@ namespace ngstd
       _mm512_storeu_pd ((double*)p, _mm512_unpacklo_pd(re.Data(),im.Data()));
       _mm512_storeu_pd ((double*)(p+4), _mm512_unpackhi_pd(re.Data(),im.Data()));
     }
+    void Load (Complex * p, size_t mask)
+    {
+      __mmask8 mask1 = _mm512_cmpgt_epi64_mask(_mm512_set1_epi64(mask&3),
+                                                 _mm512_set_epi64(3, 3, 2, 2, 1, 1, 0, 0));
+      __mmask8 mask2 = _mm512_cmpgt_epi64_mask(_mm512_set1_epi64(mask&3),
+                                                 _mm512_set_epi64(7, 7, 6, 6, 5, 5, 4, 4));
+
+      __m512d c1 = _mm512_mask_load_pd(_mm512_setzero_pd(), mask1, (double*)p);
+      __m512d c2 = _mm512_mask_load_pd(_mm512_setzero_pd(), mask2, (double*)(p+4));
+      re = _mm512_unpacklo_pd(c1,c2);
+      im = _mm512_unpackhi_pd(c1,c2);
+    }
+    void Store (Complex * p, size_t mask) const
+    {
+      __mmask8 mask1 = _mm512_cmpgt_epi64_mask(_mm512_set1_epi64(mask&3),
+                                                 _mm512_set_epi64(3, 3, 2, 2, 1, 1, 0, 0));
+      __mmask8 mask2 = _mm512_cmpgt_epi64_mask(_mm512_set1_epi64(mask&3),
+                                                 _mm512_set_epi64(7, 7, 6, 6, 5, 5, 4, 4));
+      _mm512_mask_store_pd ((double*)p, mask1,  _mm512_unpacklo_pd(re.Data(), im.Data()));
+      _mm512_mask_store_pd ((double*)(p+4), mask2, _mm512_unpackhi_pd(re.Data(), im.Data()));
+    }
 
 #elif  defined (__AVX__)
     void Load (Complex * p)
