@@ -167,6 +167,7 @@ namespace ngstd
       : mask(_mm_cmpgt_epi32(_mm_set1_epi32(i),
                              _mm_set_epi32(1, 1, 0, 0)))
     { ; }
+    SIMD (__m128i _mask) : mask(_mask) { ; }
     __m128i Data() const { return mask; }
     static constexpr int Size() { return 2; }    
     mask64 operator[] (int i) const { return ((mask64*)(&mask))[i]; }    
@@ -184,6 +185,7 @@ namespace ngstd
       : mask(my_mm256_cmpgt_epi64(_mm256_set1_epi64x(i),
                                   _mm256_set_epi64x(3, 2, 1, 0)))
     { ; }
+    SIMD (__m256i _mask) : mask(_mask) { ; }    
     __m256i Data() const { return mask; }
     static constexpr int Size() { return 4; }    
     mask64 operator[] (int i) const { return ((mask64*)(&mask))[i]; }    
@@ -201,6 +203,7 @@ namespace ngstd
       : mask(_mm512_cmpgt_epi64_mask(_mm512_set1_epi64(i),
                                      _mm512_set_epi64(7, 6, 5, 4, 3, 2, 1, 0)))
     { ; }
+    SIMD (__mask8 _mask) : mask(_mask) { ; }        
     __mmask8 Data() const { return mask; }
     static constexpr int Size() { return 8; }    
     // mask64 operator[] (int i) const { return ((mask64*)(&mask))[i]; }    
@@ -872,6 +875,32 @@ namespace ngstd
   }
 
 
+
+#ifdef __AVX512F__
+  INLINE auto Unpack (SIMD<double,8> a, SIMD<double,8> b)
+  {
+    return make_tuple(SIMD<double,8>(_mm512_unpacklo_pd(a.Data(),b.Data())),
+                      SIMD<double,8>(_mm512_unpackhi_pd(a.Data(),b.Data())));
+  }
+#endif
+
+#ifdef __AVX__
+  INLINE auto Unpack (SIMD<double,4> a, SIMD<double,4> b)
+  {
+    return make_tuple(SIMD<double,4>(_mm256_unpacklo_pd(a.Data(),b.Data())),
+                      SIMD<double,4>(_mm256_unpackhi_pd(a.Data(),b.Data())));
+  }
+#endif
+
+#ifdef __SSE__
+  INLINE auto Unpack (SIMD<double,2> a, SIMD<double,2> b)
+  {
+    return make_tuple(SIMD<double,2>(_mm_unpacklo_pd(a.Data(),b.Data())),
+                      SIMD<double,2>(_mm_unpackhi_pd(a.Data(),b.Data())));
+  }
+#endif
+
+  
   
   class ExceptionNOSIMD : public Exception
   {
