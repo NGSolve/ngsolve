@@ -796,7 +796,7 @@ namespace ngcomp
   S_ComponentGridFunction<SCAL> :: 
   ~S_ComponentGridFunction ()
   {
-    this -> vec = NULL;  // base-class desctructor must not delete the vector
+    this -> vec = NULL;  // base-class destructor must not delete the vector
   }
 
 

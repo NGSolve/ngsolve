@@ -2614,7 +2614,7 @@ namespace ngcomp
           {
             int ne = ma->GetNE(BND);
             
-            ProgressOutput progress (ma, "assemble skelton element", ne);
+            ProgressOutput progress (ma, "assemble skeleton element", ne);
             
             ParallelForRange
               ( IntRange(ne), [&] ( IntRange r )

@@ -14,7 +14,7 @@ Configure Netgen and NGSolve with:
 ./configure  --enable-parallel   CXX=mpic++ 
 
 
-run Netgen  in parallel (with 8 proceses) with
+run Netgen in parallel (with 8 proceses) with
 
 mpiexec -np 8 netgen
 
