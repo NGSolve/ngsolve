@@ -59,3 +59,12 @@ def VideoFinalize():
 
 def SnapShot(filename):
     ngsolve.solve.Tcl_Eval("Ng_SnapShot .ndraw {};\n".format(filename))
+
+def Move(dx, dy):
+    ngsolve.solve.Tcl_Eval("Ng_MouseMove 0 0 {} {} move; redraw;\n".format(dx, -dy))
+
+def Rotate(dx, dy):
+    ngsolve.solve.Tcl_Eval("Ng_MouseMove 0 0 {} {} rotate; redraw;\n".format(dx, -dy))
+
+def Zoom(z):
+    ngsolve.solve.Tcl_Eval("Ng_MouseMove 0 0 0 {} zoom; redraw;\n".format(-z))
