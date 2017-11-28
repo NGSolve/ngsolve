@@ -375,7 +375,7 @@ namespace ngstd
     // SIMD (double const * p, SIMD<mask64,4> mask) { data = _mm256_maskload_pd(p, mask.Data()); }
     // SIMD (__m256d _data) { data = _data; }
 
-    void Store (double * p) { data[0].Store(p); data[1].Store(p); }
+    void Store (double * p) { data[0].Store(p); data[1].Store(p+2); }
     // void Store (double * p, SIMD<mask64,4> mask) { _mm256_maskstore_pd(p, mask.Data(), data); }    
 
     /*
