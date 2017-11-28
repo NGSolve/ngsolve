@@ -406,7 +406,7 @@ namespace ngstd
   
 #ifdef __AVX512F__
   template<>
-  class alignas(64) SIMD<double,8> 
+  class alignas(64) SIMD<double,8> : public AlignedAlloc<SIMD<double,8>>
   {
     __m512d data;
   public:
