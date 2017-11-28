@@ -3968,7 +3968,7 @@ namespace ngbla
 
   
 
-#ifdef __AVX__
+#ifdef defined (__AVX__) && not defined(__AVX512F__)
   
   void KernelScal4x4Trans (Complex * pa, size_t da,
                            Complex * pb, size_t db,
