@@ -1512,6 +1512,9 @@ namespace ngfem
                           LocalHeap & lh) const
     
   {
+    // static Timer t("SymbolicBFI::CalcElementMatrixAdd", 2);
+    // ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+    
     if (element_boundary)
       {
         T_CalcElementMatrixEBAdd<SCAL, SCAL_SHAPES, SCAL_RES> (fel, trafo, elmat, lh);

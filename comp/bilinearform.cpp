@@ -249,9 +249,7 @@ namespace ngcomp
   */
 
   BilinearForm :: ~BilinearForm ()
-  {
-    ; // delete low_order_bilinear_form;
-  }
+  { ; }
 
   void BilinearForm :: SetPrint (bool ap)
   { 
@@ -297,13 +295,13 @@ namespace ngcomp
     static Timer timer ("BilinearForm::GetGraph");
     RegionTimer reg (timer);
 
-    int ndof = fespace->GetNDof();
-    int nf = ma->GetNFacets();
-    int neV = ma->GetNE(VOL);
-    int neB = ma->GetNE(BND);
-    int neBB = ma->GetNE(BBND);
+    size_t ndof = fespace->GetNDof();
+    size_t nf = ma->GetNFacets();
+    size_t neV = ma->GetNE(VOL);
+    size_t neB = ma->GetNE(BND);
+    size_t neBB = ma->GetNE(BBND);
     const Array<SpecialElement*> & specialelements = fespace->GetSpecialElements();
-    int nspe = specialelements.Size();
+    size_t nspe = specialelements.Size();
 
     Array<DofId> dnums;
     Array<int> fnums; //facets of one element
@@ -353,24 +351,25 @@ namespace ngcomp
         */
 	for(VorB vb : {VOL, BND, BBND})
 	  {
-	    int nre = ma->GetNE(vb);
-	    ParallelForRange (Range(nre), [&](IntRange r)
-			      {
-				Array<DofId> dnums;
-				for (auto i : r)
-				  {
-				    auto eid = ElementId(vb,i);
-				    if (!fespace->DefinedOn (vb,ma->GetElIndex(eid))) continue;
-				    
-				    if (vb == VOL && eliminate_internal)
-				      fespace->GetDofNrs (i, dnums, EXTERNAL_DOF);
-				    else
-				      fespace->GetDofNrs (eid, dnums);
-				    int shift = (vb==VOL) ? 0 : ((vb==BND) ? neV : neV+neB);
-				    for (int d : dnums)
-				      if (d != -1) creator.Add (shift+i, d);
-                              }
-			      });
+            size_t shift = (vb==VOL) ? 0 : ((vb==BND) ? neV : neV+neB);
+	    ParallelForRange
+              (ma->GetNE(vb), [&](IntRange r)
+               {
+                 Array<DofId> dnums;
+                 for (auto i : r)
+                   {
+                     auto eid = ElementId(vb,i);
+                     if (!fespace->DefinedOn (vb, ma->GetElIndex(eid))) continue;
+                     
+                     if (vb == VOL && eliminate_internal)
+                       fespace->GetDofNrs (i, dnums, EXTERNAL_DOF);
+                     else
+                       fespace->GetDofNrs (eid, dnums);
+                     
+                     for (DofId d : dnums)
+                       if (d != -1) creator.Add (shift+i, d);
+                   }
+               });
 	  }
 
         
@@ -4300,17 +4299,6 @@ namespace ngcomp
                     ElementId id,
                     LocalHeap & lh) 
   {
-    /*
-    BaseMatrix * hmat = this->mats.Last().get();
-    
-#ifdef PARALLEL
-    ParallelMatrix * parmat = dynamic_cast<ParallelMatrix*> (hmat);
-    if (parmat) hmat = &parmat->GetMatrix();
-#endif   
-
-    TMATRIX & mat = dynamic_cast<TMATRIX&> (*hmat);
-    mat.AddElementMatrix (dnums1, dnums2, elmat, this->fespace->HasAtomicDofs());
-    */
     mymatrix -> TMATRIX::AddElementMatrix (dnums1, dnums2, elmat, this->fespace->HasAtomicDofs());
   }
 
@@ -4478,18 +4466,6 @@ namespace ngcomp
                     ElementId id, 
                     LocalHeap & lh) 
   {
-    /*
-    BaseMatrix * hmat = this->mats.Last().get();
-
-#ifdef PARALLEL
-    ParallelMatrix * parmat = dynamic_cast<ParallelMatrix*> (hmat);
-    if (parmat) hmat = &parmat->GetMatrix();
-#endif   
-
-    TMATRIX & mat = dynamic_cast<TMATRIX&> (*hmat);
-
-    mat.AddElementMatrix (dnums1, elmat, this->fespace->HasAtomicDofs());
-    */
     mymatrix -> TMATRIX::AddElementMatrixSymmetric (dnums1, elmat, this->fespace->HasAtomicDofs());
   }
 
@@ -4526,73 +4502,6 @@ namespace ngcomp
       }
   }
 
-#ifdef NONE
-  template <class TM, class TV>
-  void T_BilinearFormSymmetric<TM,TV>::ApplyElementMatrix(const BaseVector & x,
-                                                          BaseVector & y,
-                                                          const TSCAL & val,
-                                                          const Array<int> & dnums,
-                                                          const ElementTransformation & eltrans,
-                                                          const int elnum,
-                                                          const int type,
-                                                          int & cnt,
-                                                          LocalHeap & lh,
-                                                          const FiniteElement * fel,
-                                                          const SpecialElement * sel) const
-  {
-    FlatVector<typename mat_traits<TV>::TSCAL> elvecx (dnums.Size() * this->GetFESpace()->GetDimension(), lh);
-    FlatVector<typename mat_traits<TV>::TSCAL> elvecy (dnums.Size() * this->GetFESpace()->GetDimension(), lh);
-                      
-    x.GetIndirect (dnums, elvecx);
-
-    if(type == 0 || type == 1)
-      {
-        this->fespace->TransformVec (elnum, (type == 1), elvecx, TRANSFORM_SOL);
-
-        for (int j = 0; j < this->NumIntegrators(); j++)
-          {
-            BilinearFormIntegrator & bfi = *this->parts[j];
-            if (bfi.SkeletonForm()) continue;
-            if (type == 0 && bfi.BoundaryForm()) continue;
-            if (type == 0 && !bfi.DefinedOn (this->ma->GetElIndex (elnum))) continue;
-            if (type == 1 && !bfi.BoundaryForm()) continue;
-            
-            
-            static Timer elementtimer ("Element matrix application", 2);
-            elementtimer.Start();
-            
-            if (this->precompute)
-              // bfi.ApplyElementMatrix (*fel, eltrans, elvecx, elvecy, this->precomputed_data[cnt++], lh);
-              bfi.ApplyElementMatrix (*fel, eltrans, elvecx, elvecy, 
-                                      this->precomputed_data[elnum*this->NumIntegrators()+j], lh);
-            else
-              bfi.ApplyElementMatrix (*fel, eltrans, elvecx, elvecy, 0, lh);
-            
-            elementtimer.Stop();
-            
-            /*
-              testout->precision (12);
-              (*testout) << "el " << i << ", dom = " << ma->GetElIndex(i) << ",integrator = " << typeid(bfi).name() << endl
-              << "elx = " << elvecx 
-              << "ely = " << elvecy << endl;
-            */
-            BilinearForm::GetFESpace()->TransformVec (elnum, (type == 1), elvecy, TRANSFORM_RHS);
-            elvecy *= val;
-            y.AddIndirect (dnums, elvecy);
-          }
-      }
-    else if (type == 2)
-      {
-        sel->Apply (elvecx, elvecy, lh);
-        elvecy *= val;
-        y.AddIndirect (dnums, elvecy);
-      }
-                      
-  }
-#endif
-
-
-
 
 
 
@@ -4617,14 +4526,9 @@ namespace ngcomp
   template <class TM>
   T_BilinearFormDiagonal<TM> :: 
   ~T_BilinearFormDiagonal ()
-  {
-    /*
-    for (int i = 0; i < this->mats.Size(); i++)
-      delete this->mats[i];
-    */
-  }
+  { ; }
 
-  ///
+
   template <class TM>
   void T_BilinearFormDiagonal<TM> :: 
   AllocateMatrix ()
@@ -4643,13 +4547,7 @@ namespace ngcomp
 
     if (!this->multilevel || this->low_order_bilinear_form)
       for (int i = 0; i < this->mats.Size()-1; i++)
-        {
-          /*
-          delete this->mats[i];
-          this->mats[i] = 0;
-          */
-          this->mats[i].reset();
-        }
+        this->mats[i].reset();
   }
 
 
