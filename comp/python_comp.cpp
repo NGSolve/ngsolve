@@ -1788,17 +1788,13 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                     [] (py::tuple state)
                     {
                       Array<shared_ptr<FESpace>> spaces;
-                      cout << "load spaces" << endl << flush;
                       for (auto pyfes : state[0].cast<py::list>())
                         spaces.Append(pyfes.cast<shared_ptr<FESpace>>());
-                      cout << "done, create compound space" << endl << flush;
                       auto fes = make_shared<CompoundFESpace>
                         (spaces[0]->GetMeshAccess(), spaces, state[1].cast<Flags>());
-                      cout << "done, update" << endl << flush;
                       LocalHeap lh (1000000, "FESpace::Update-heap");
                       fes->Update(lh);
                       fes->FinalizeUpdate(lh);
-                      cout << "finished" << endl << flush;
                       py::cast(fes).attr("__dict__") = state[2];
                       return fes;
                     }))
