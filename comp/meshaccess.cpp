@@ -898,7 +898,6 @@ namespace ngcomp
     nboundaries = MyMPI_AllReduce (nboundaries, MPI_MAX);
     nregions[1] = nboundaries;
 
-    CalcIdentifiedFacets();
 
     int & nbboundaries = nregions[BBND];
     if(mesh.GetDimension() == 1)
@@ -1022,16 +1021,7 @@ namespace ngcomp
           }
       }
     
-    for(auto id : Range(1,nid+1))
-    {
-      if (GetDimension() == 3)
-      {
-        auto & pairs = GetPeriodicNodes(NT_FACE, id);
-        for(auto pair : pairs)
-          for(auto l : Range(2))
-            identified_facets[pair[l]] = std::tuple<int,int>(pair[1-l],2);
-      }
-    }    
+    CalcIdentifiedFacets();
   }
 
   void MeshAccess :: 
@@ -1266,13 +1256,9 @@ namespace ngcomp
       {
 	// for periodic identification by now
 	if (idents.GetType(id) != 2) continue;
-	Array<INT<2>> pairs;
-	switch(mesh.GetDimension())
-	  {
-	  case 1: GetPeriodicVertices(id,pairs); break;
-	  case 2: GetPeriodicEdges(id,pairs); break;
-	    // default: // here should be a 3D version
-	  }
+        auto dim  = mesh.GetDimension();
+	auto& pairs = GetPeriodicNodes(dim == 3 ? NT_FACE : (dim == 2 ? NT_EDGE : NT_VERTEX),id);
+
 	for(auto pair : pairs)
 	  for(auto l : Range(2))
 	    identified_facets[pair[l]] = std::tuple<int,int>(pair[1-l],2);
