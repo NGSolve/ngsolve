@@ -5,6 +5,16 @@ using namespace ngstd;
 
 enum OP { ADD, SUB, SET };
 
+string ToString (OP op)
+{
+  switch (op)
+    {
+    case SET: return "SET";
+    case ADD: return "ADD";
+    case SUB: return "SUB";
+    }
+}
+
 /*
   C = A * B
   C += A * B
@@ -13,13 +23,12 @@ enum OP { ADD, SUB, SET };
   A ... h x n
   B ... n x w*SIMD.Size
  */
-void GenerateMultAB (ostream & out, int h, int w, OP op)
+void GenerateMultAB (ostream & out, int h, int w, OP op, bool aligned_b)
 {
-  
-  out << "template <> void MatKernelMultAB<" << h << ", " << w << ">" << endl
-      << "    (size_t n," << endl
+  out << "template <> INLINE void MatKernelMultAB<" << h << ", " << w << ", " << ToString(op) << ">" << endl;
+  out << "    (size_t n," << endl
       << "     double * pa, size_t da," << endl
-      << "     double * pb, size_t db," << endl
+      << "     " << (aligned_b ? "SIMD<double>" : "double") << " * pb, size_t db," << endl
       << "     double * pc, size_t dc)" << endl
       << "{" << endl;
   out << "constexpr int SW = SIMD<double>::Size();" << endl
@@ -43,8 +52,12 @@ void GenerateMultAB (ostream & out, int h, int w, OP op)
     }
   
   out << "for (size_t i = 0; i < n; i++, pa++, pb += db) {" << endl;
-  for (int i = 0; i < w; i++)
-    out << "SIMD<double> b" << i << "(pb+" << i << "*SW);" << endl;
+  if (aligned_b)
+    for (int i = 0; i < w; i++)
+      out << "SIMD<double> b" << i << " = pb[" << i << "];" << endl;
+  else
+    for (int i = 0; i < w; i++)
+      out << "SIMD<double> b" << i << "(pb+" << i << "*SW);" << endl;
 
   for (int i = 0; i < h; i++)
     {
@@ -64,6 +77,18 @@ void GenerateMultAB (ostream & out, int h, int w, OP op)
   
   out << "}" << endl;
 }
+
+
+void GenerateMultAB (ostream & out, int h, int w)
+{
+  GenerateMultAB (out, h, w, SET, false);
+  GenerateMultAB (out, h, w, ADD, false);
+  GenerateMultAB (out, h, w, SET, true);
+  GenerateMultAB (out, h, w, ADD, true);
+}
+
+
+
 
 
 /*
@@ -130,13 +155,13 @@ void AlignedGenerateMultAB (ostream & out, int h, int w, OP op)
 
 
 
-void GenerateMultABMask (ostream & out, int h, OP op)
+void GenerateMultABMask (ostream & out, int h, OP op, bool aligned_b)
 {
-  
-  out << "template <> void MatKernelMultABMask<" << h << ">" << endl
-      << "    (size_t n, SIMD<mask64> mask," << endl
+  out << "template <> void MatKernelMultABMask<" << h << ", " << ToString(op) << ">" << endl;
+    
+  out << "    (size_t n, SIMD<mask64> mask," << endl
       << "     double * pa, size_t da," << endl
-      << "     double * pb, size_t db," << endl
+      << "     " << (aligned_b ? "SIMD<double>" : "double") << " * pb, size_t db," << endl    
       << "     double * pc, size_t dc)" << endl
       << "{" << endl;
   out << "constexpr int SW = SIMD<double>::Size();" << endl
@@ -158,7 +183,7 @@ void GenerateMultABMask (ostream & out, int h, OP op)
     }
   
   out << "for (size_t i = 0; i < n; i++, pa++, pb += db) {" << endl;
-  out << "SIMD<double> b(pb,mask);" << endl;
+  out << "SIMD<double> b((double*)pb,mask);" << endl;
 
   for (int i = 0; i < h; i++)
     {
@@ -176,7 +201,13 @@ void GenerateMultABMask (ostream & out, int h, OP op)
   out << "}" << endl;
 }
 
-
+void GenerateMultABMask (ostream & out, int h)
+{
+  GenerateMultABMask (out, h, SET, false);
+  GenerateMultABMask (out, h, ADD, false);
+  GenerateMultABMask (out, h, SET, true);
+  GenerateMultABMask (out, h, ADD, true);
+}
 
 
 /*
@@ -301,21 +332,26 @@ int main ()
 {
   ofstream out("matkernel.hpp");
 
-  out << "template <size_t H, size_t W>" << endl
+  out << "enum OPERATION { ADD, SUB, SET };" << endl;
+
+  out << "template <size_t H, size_t W, OPERATION OP>" << endl
       << "static void MatKernelMultAB" << endl
       << "(size_t n, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc);" << endl;
+  out << "template <size_t H, size_t W, OPERATION OP>" << endl
+      << "static void MatKernelMultAB" << endl
+      << "(size_t n, double * pa, size_t da, SIMD<double> * pb, size_t db, double * pc, size_t dc);" << endl;
   out << "template <size_t H, size_t W>" << endl
       << "static void MatKernelAlignedMultAB" << endl
       << "(size_t n, double * pa, size_t da, SIMD<double> * pb, size_t db, SIMD<double> * pc, size_t dc);" << endl;
 
   for (int i = 1; i <= 3; i++)
     {
-      GenerateMultAB (out, 1, i, SET);  
-      GenerateMultAB (out, 2, i, SET);
-      GenerateMultAB (out, 3, i, SET);
-      GenerateMultAB (out, 4, i, SET);
-      GenerateMultAB (out, 6, i, SET);
-
+      GenerateMultAB (out, 1, i);  
+      GenerateMultAB (out, 2, i);
+      GenerateMultAB (out, 3, i);
+      GenerateMultAB (out, 4, i);
+      GenerateMultAB (out, 6, i);
+      
       AlignedGenerateMultAB (out, 1, i, SET);  
       AlignedGenerateMultAB (out, 2, i, SET);
       AlignedGenerateMultAB (out, 3, i, SET);
@@ -324,14 +360,17 @@ int main ()
     }
 
 
-  out << "template <size_t H>" << endl
+  out << "template <size_t H, OPERATION OP>" << endl
       << "static void MatKernelMultABMask" << endl
       << "(size_t n, SIMD<mask64> mask, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc);" << endl;
+  out << "template <size_t H, OPERATION OP>" << endl
+      << "static void MatKernelMultABMask" << endl
+      << "(size_t n, SIMD<mask64> mask, double * pa, size_t da, SIMD<double> * pb, size_t db, double * pc, size_t dc);" << endl;
 
-  GenerateMultABMask (out, 1, SET);  
-  GenerateMultABMask (out, 2, SET);
-  GenerateMultABMask (out, 3, SET);
-  GenerateMultABMask (out, 4, SET);
+  GenerateMultABMask (out, 1);  
+  GenerateMultABMask (out, 2);
+  GenerateMultABMask (out, 3);
+  GenerateMultABMask (out, 4);
 
   
   // Scal AB

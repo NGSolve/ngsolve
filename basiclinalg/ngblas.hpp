@@ -36,6 +36,8 @@ namespace ngbla
   extern void SubABt (SliceMatrix<double> a, SliceMatrix<double> b, SliceMatrix<double> c);
 
   
+  extern list<tuple<string,double>> Timing (int what, size_t n, size_t m, size_t k);
+
 }
 
 
