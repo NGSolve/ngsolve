@@ -513,7 +513,7 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
              [] (py::object x) -> py::object
                               { return py::object(x.attr("Norm")) (); });
 
-
+    m.def("__timing__", &ngbla::Timing);
     m.def("CheckPerformance",
              [] (size_t n, size_t m, size_t k)
                               {
