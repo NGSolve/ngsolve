@@ -396,8 +396,7 @@ namespace ngbla
             cout << "max width = " << WA << endl;
           }
         Matrix<> b(n,m);
-        alignas (64) SIMD<double> mema[n*WA/SIMD<double>::Size()];
-          // Matrix<SIMD<double>> a(n,WA/SIMD<double>::Size());
+        STACK_ARRAY(SIMD<double>, mema, n*WA/SIMD<double>::Size());
         FlatMatrix<SIMD<double>> a(n,WA/SIMD<double>::Size(),&mema[0]);
         b = 1;
         double tot = n*m;
