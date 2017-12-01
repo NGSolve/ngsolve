@@ -380,6 +380,7 @@ namespace ngbla
           "10 .. C = A * B,   A=n*m, B=m*k, C=n*k\n"
           "20 .. C = A * B    A=n*m, B=n*k', C=n*k', k'=round(k), B aligned\n"
           "100.. MultAddKernel  C += A * B,  C=4x12\n"
+          "101.. MultAddKernel  C += A * B,  C=4x12\n,  B aligned"
              << endl;
         return list<tuple<string,double>>();
       }
@@ -468,6 +469,24 @@ namespace ngbla
         }
       }
 
+    if (what == 0 || what == 101)
+      {
+        // C=A*B
+        Matrix<> a(4,n), c(4,12);
+        Matrix<SIMD<double>> b(n, 3);
+        a = 1; b = SIMD<double>(2); c = 0;
+        double tot = n*4*12;
+        int its = 1e10 / tot + 1;
+        {
+          Timer t("C = A*B");
+          t.Start();
+          for (int j = 0; j < its; j++)
+            MatKernelMultAB<4,3,ADD>(n,&a(0), a.Width(), &b(0), b.Width(), &c(0), c.Width());
+          t.Stop();
+          cout << "Lapack GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("MatKernelAddAB", 1e-9 * tot*its / t.GetTime()));
+        }
+      }
 
     return timings;
   }
