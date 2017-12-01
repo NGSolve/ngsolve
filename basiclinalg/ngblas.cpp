@@ -379,14 +379,16 @@ namespace ngbla
           "2 ... A = 0,   A = n*m,     but sliced\n"
           "10 .. C = A * B,   A=n*m, B=m*k, C=n*k\n"
           "20 .. C = A * B    A=n*m, B=n*k', C=n*k', k'=round(k), B aligned\n"
-          "100.. MultAddKernel  C += A * B,  C=4x12\n"
-          "101.. MultAddKernel  C += A * B,  C=4x12\n,  B aligned"
+          "100.. MultAddKernel  C += A * B,  A=4*n, B=n*3SW\n"
+          "101.. MultAddKernel  C += A * B,  A=4*n, B=n*3SW, B aligned\n"
+          "110.. MultAddKernel2  C += A * B,  A=4*n, B=n*m, m multiple of 3*SW\n"
+          "111.. MultAddKernel2  C += A * B,  A=4*n, B=n*m, m multiple of 3*SW, B aligned\n"
              << endl;
         return list<tuple<string,double>>();
       }
 
     list<tuple<string,double>> timings;
-
+    constexpr int SW = SIMD<double>::Size();
     if (what == 0 || what == 1)
       {
         // A = B
@@ -454,9 +456,9 @@ namespace ngbla
     if (what == 0 || what == 100)
       {
         // C=A*B
-        Matrix<> a(4,n), b(n,12), c(4,12);
+        Matrix<> a(4,n), b(n,3*SW), c(4,3*SW);
         a = 1; b = 2; c = 0;
-        double tot = n*4*12;
+        double tot = n*4*3*SW;
         int its = 1e10 / tot + 1;
         {
           Timer t("C = A*B");
@@ -464,7 +466,7 @@ namespace ngbla
           for (int j = 0; j < its; j++)
             MatKernelMultAB<4,3,ADD>(n,&a(0), a.Width(), &b(0), b.Width(), &c(0), c.Width());
           t.Stop();
-          cout << "Lapack GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
+          cout << "MatKernelAddAB 3x4 = " << 1e-9 * tot*its / t.GetTime() << endl;
           timings.push_back(make_tuple("MatKernelAddAB", 1e-9 * tot*its / t.GetTime()));
         }
       }
@@ -472,10 +474,10 @@ namespace ngbla
     if (what == 0 || what == 101)
       {
         // C=A*B
-        Matrix<> a(4,n), c(4,12);
+        Matrix<> a(4,n), c(4,3*SW);
         Matrix<SIMD<double>> b(n, 3);
         a = 1; b = SIMD<double>(2); c = 0;
-        double tot = n*4*12;
+        double tot = n*4*3*SW;
         int its = 1e10 / tot + 1;
         {
           Timer t("C = A*B");
@@ -483,11 +485,55 @@ namespace ngbla
           for (int j = 0; j < its; j++)
             MatKernelMultAB<4,3,ADD>(n,&a(0), a.Width(), &b(0), b.Width(), &c(0), c.Width());
           t.Stop();
-          cout << "Lapack GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
+          cout << "MatKernelAddAB 3x4, algined GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("MatKernelAddAB aligned", 1e-9 * tot*its / t.GetTime()));
+        }
+      }
+
+    if (what == 0 || what == 110)
+      {
+        // C=A*B
+        if (m % (3*SW) != 0)
+          cout << "m should be a multiple of 3*SIMD::Size" << endl;
+        Matrix<> a(4,n), b(n,m), c(4,m);
+        a = 1; b = 2; c = 0;
+        double tot = n*4*m;
+        int its = 1e10 / tot + 1;
+        {
+          Timer t("C = A*B");
+          t.Start();
+          for (int j = 0; j < its; j++)
+            for (int i = 0; i+3*SW <= m; i += 3*SW)
+              MatKernelMultAB<4,3,ADD>(n,&a(0), a.Width(), &b(i), b.Width(), &c(i), c.Width());
+          t.Stop();
+          cout << "MatKernel2AddAB 3x4 = " << 1e-9 * tot*its / t.GetTime() << endl;
           timings.push_back(make_tuple("MatKernelAddAB", 1e-9 * tot*its / t.GetTime()));
         }
       }
 
+    if (what == 0 || what == 111)
+      {
+        // C=A*B
+        if (m % (3*SW) != 0)
+          cout << "m should be a multiple of 3*SIMD::Size" << endl;
+        Matrix<> a(4,n), c(4,m);
+        Matrix<SIMD<double>> b(n, m/SW);
+        a = 1; b = SIMD<double>(2); c = 0;
+        double tot = n*4*m;
+        int its = 1e10 / tot + 1;
+        {
+          Timer t("C = A*B");
+          t.Start();
+          for (int j = 0; j < its; j++)
+            for (int i = 0; i+3*SW <= m; i += 3*SW)            
+              MatKernelMultAB<4,3,ADD>(n,&a(0), a.Width(), &b(i/SW), b.Width(), &c(i), c.Width());
+          t.Stop();
+          cout << "MatKernel2AddAB 3x4, algined GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("MatKernelAddAB aligned", 1e-9 * tot*its / t.GetTime()));
+        }
+      }
+
+    
     return timings;
   }
 
