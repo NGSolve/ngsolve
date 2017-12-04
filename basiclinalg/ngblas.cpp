@@ -378,7 +378,9 @@ namespace ngbla
           "1 ... A = B,   A,B = n*m,   A = aligned, fixed dist\n"
           "2 ... A = 0,   A = n*m,     but sliced\n"
           "10 .. C = A * B,   A=n*m, B=m*k, C=n*k\n"
-          "20 .. C = A * B    A=n*m, B=n*k', C=n*k', k'=round(k), B aligned\n"
+          // "20 .. C = A * B    A=n*m, B=n*k', C=n*k', k'=round(k), B aligned\n"
+          "50 .. C += A * B^t,   A=n*k, B=m*k, C=n*m\n"
+          "51 .. C += A * B^t,   A=n*k, B=m*k, C=n*m\n,  A,B aligned"
           "100.. MultAddKernel  C += A * B,  A=4*n, B=n*3SW\n"
           "101.. MultAddKernel  C += A * B,  A=4*n, B=n*3SW, B aligned\n"
           "110.. MultAddKernel2  C += A * B,  A=4*n, B=n*m, m multiple of 3*SW\n"
@@ -452,6 +454,50 @@ namespace ngbla
           timings.push_back(make_tuple("MultMatMat", 1e-9 * n*m*k*its / t.GetTime()));
         }
       }
+
+    if (what == 0 || what == 50)
+      {
+        // C=A*B^t
+        Matrix<> a(n,k), b(m,k), c(n,m);
+        a = 1; b = 2;
+        c = 0.0;        
+        double tot = n*m*k;
+        int its = 1e10 / tot + 1;
+        {
+          Timer t("C = A*B");
+          t.Start();
+          for (int j = 0; j < its; j++)
+            AddABt(a,b,c);
+          t.Stop();
+          cout << "AddABt GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("AddABt", 1e-9 * tot *its / t.GetTime()));
+        }
+      }
+
+    if (what == 0 || what == 51)
+      {
+        // C=A*B^t
+        if (k % SW != 0)
+          cout << "k should be a multiple of " << SW << endl;
+        size_t ks = k/SW;
+        Matrix<SIMD<double>> a(n,ks), b(m,ks);
+        Matrix<> c(n,m);
+        a = SIMD<double>(1); b = SIMD<double>(2);
+        c = 0.0;
+        double tot = n*m*k;
+        int its = 1e10 / tot + 1;
+        {
+          Timer t("C = A*B");
+          t.Start();
+          for (int j = 0; j < its; j++)
+            AddABt(SliceMatrix<double> (AFlatMatrix<double>(a)),
+                   SliceMatrix<double> (AFlatMatrix<double>(b)),c);
+          t.Stop();
+          cout << "AddABt GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("AddABt", 1e-9 * tot *its / t.GetTime()));
+        }
+      }
+
     
     if (what == 0 || what == 100)
       {
