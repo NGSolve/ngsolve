@@ -215,12 +215,12 @@ void GenerateMultABMask (ostream & out, int h)
   A ... h x n
   B ... w * n
  */
-void GenerateScalAB (ostream & out, int h, int w)
+void GenerateScalAB (ostream & out, int h, int w, bool simded)
 {
   out << "template <> INLINE auto MatKernelScalAB<" << h << ", " << w << ">" << endl
       << "    (size_t n," << endl
-      << "     double * pa, size_t da," << endl
-      << "     double * pb, size_t db)" << endl
+      << "     " << (simded ? "SIMD<double>" : "double") << " * pa, size_t da," << endl
+      << "     " << (simded ? "SIMD<double>" : "double") << " * pb, size_t db)" << endl
       << "{" << endl;
   out << "constexpr int SW = SIMD<double>::Size();" << endl;
 
@@ -229,37 +229,49 @@ void GenerateScalAB (ostream & out, int h, int w)
       out << "SIMD<double> sum" << i << j << "(0);" << endl;
 
   out << "size_t i = 0;" << endl;
-  out << "for ( ; i+SW <= n; i+=SW) {" << endl;
+  if (!simded)
+    out << "for ( ; i+SW <= n; i+=SW) {" << endl;
+  else
+    out << "for ( ; i < n; i++) {" << endl;
+  
   for (int i = 0; i < h; i++)
-    out << "SIMD<double> a" << i << "(pa+" << i << "*da+i);" << endl;
+    if (simded)
+      out << "SIMD<double> a" << i << "(pa[" << i << "*da+i]);" << endl;
+    else
+      out << "SIMD<double> a" << i << "(pa+" << i << "*da+i);" << endl;
   // for (int i = 0; i < w; i++)
   // out << "SIMD<double> b" << i << "(pb+" << i << "*db+i);" << endl;
 
   for (int j = 0; j < w; j++)
     {
-      out << "SIMD<double> b" << j << "(pb+" << j << "*db+i);" << endl;    
+      if (simded)
+        out << "SIMD<double> b" << j << "(pb[" << j << "*db+i]);" << endl;
+      else
+        out << "SIMD<double> b" << j << "(pb+" << j << "*db+i);" << endl;    
       for (int i = 0; i < h; i++)
         // out << "sum" << j << i << " += a" << j << " * b" << i << ";" << endl;
         out << "FMAasm(a"<<i<<",b" << j << ",sum" << i << j << ");" << endl;
     }
   out << "}" << endl;
 
-  out << "size_t r = n % SW;" << endl;
-  out << "if (r) {" << endl;
-  out << "SIMD<mask64> mask(r);" << endl;
-  for (int i = 0; i < h; i++)
-    out << "SIMD<double> a" << i << "(pa+" << i << "*da+i, mask);" << endl;
-  for (int i = 0; i < w; i++)
-    out << "SIMD<double> b" << i << "(pb+" << i << "*db+i, mask);" << endl;
-
-  for (int i = 0; i < h; i++)
+  if (!simded)
     {
-      for (int j = 0; j < w; j++)
-        // out << "sum" << j << i << " += a" << j << " * b" << i << ";" << endl;
-        out << "FMAasm(a"<<i<<",b" << j << ",sum" << i << j << ");" << endl;
+      out << "size_t r = n % SW;" << endl;
+      out << "if (r) {" << endl;
+      out << "SIMD<mask64> mask(r);" << endl;
+      for (int i = 0; i < h; i++)
+        out << "SIMD<double> a" << i << "(pa+" << i << "*da+i, mask);" << endl;
+      for (int i = 0; i < w; i++)
+        out << "SIMD<double> b" << i << "(pb+" << i << "*db+i, mask);" << endl;
+      
+      for (int i = 0; i < h; i++)
+        {
+          for (int j = 0; j < w; j++)
+            // out << "sum" << j << i << " += a" << j << " * b" << i << ";" << endl;
+            out << "FMAasm(a"<<i<<",b" << j << ",sum" << i << j << ");" << endl;
+        }
+      out << "}" << endl;
     }
-  out << "}" << endl;
-    
   
   out << "return make_tuple(";
   for (int i = 0; i < h; i++)
@@ -283,7 +295,11 @@ void GenerateScalAB (ostream & out, int h, int w)
 }
 
 
-
+void GenerateScalAB (ostream & out, int h, int w)
+{
+  GenerateScalAB(out, h, w, false);
+  GenerateScalAB(out, h, w, true);
+}
 
 
 void GenKernel (ofstream & out, int h, int w)
@@ -383,6 +399,10 @@ int main ()
       << "    (size_t n," << endl
       << "     double * pa, size_t da," << endl
       << "     double * pb, size_t db);" << endl;
+  out << "template <size_t H, size_t W> static auto MatKernelScalAB" << endl
+      << "    (size_t n," << endl
+      << "     SIMD<double> * pa, size_t da," << endl
+      << "     SIMD<double> * pb, size_t db);" << endl;
 
   GenerateScalAB (out, 6, 4);  
   GenerateScalAB (out, 3, 4);  
