@@ -169,7 +169,6 @@ namespace ngcomp
 
       Vec<3, AutoDiff<2>> n = Cross(Vec<3,AutoDiff<2>>(fad.Col(0)),Vec<3,AutoDiff<2>>(fad.Col(1)));
       AutoDiff<2> ad_det = sqrt(n(0)*n(0)+n(1)*n(1)+n(2)*n(2));//L2Norm2(n);
-
       if (ad_det.Value() < 0.0)
         {
           // 	cout << "neg det" << endl;
@@ -188,8 +187,7 @@ namespace ngcomp
           sigma_ref(0,1) = sigma_ref(1,0) = shape(i, 2);
 	 
 	
-          Vec<3> hv2;
-          hv2 = 0.0;
+          Vec<3> hv2 = 0.0;
           for (int j = 0; j < 2; j++)
             for (int k = 0; k < 3; k++)
               for (int l = 0; l < 2; l++)
@@ -197,13 +195,18 @@ namespace ngcomp
 
           hv2 *= iad_det.Value();
 
+          /*
+            // this term is zero !!!
+          Vec<3> hv2b = 0.0;
           for ( int j = 0; j < 2; j++ )
-            for ( int k = 0; k < 2; k++ )
+            for ( int k = 0; k < 3; k++ )    // fix index
               for ( int l = 0; l < 2; l++ )
                 for ( int m = 0; m < 2; m++ )
                   for ( int n = 0; n < 3; n++ )
-                    hv2(n) += inv_jac(m,k) *fad(n,j).Value() * sigma_ref(j,l) * fad(k,l).DValue(m);
-
+                    hv2b(n) += inv_jac(m,k) *fad(n,j).Value() * sigma_ref(j,l) * fad(k,l).DValue(m);
+          cout << "hv2b = " << hv2b << endl;
+          */
+          
           for ( int j = 0; j < 3; j++)
             mat(j,i) += hv2(j);
         }
