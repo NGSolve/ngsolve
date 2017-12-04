@@ -641,6 +641,13 @@ namespace ngstd
     throw Exception ("IfPos missing for AVX512");
   }
 
+
+  INLINE auto Unpack (SIMD<double,8> a, SIMD<double,8> b)
+  {
+    return make_tuple(SIMD<double,8>(_mm512_unpacklo_pd(a.Data(),b.Data())),
+                      SIMD<double,8>(_mm512_unpackhi_pd(a.Data(),b.Data())));
+  }
+  
    
   INLINE double HSum (SIMD<double,8> sd)
   {
@@ -656,6 +663,7 @@ namespace ngstd
 
   INLINE SIMD<double,4> HSum (SIMD<double,8> v1, SIMD<double,8> v2, SIMD<double,8> v3, SIMD<double,8> v4)
   {
+    /*
     SIMD<double,4> high1 = _mm512_extractf64x4_pd(v1.Data(),1);
     SIMD<double,4> high2 = _mm512_extractf64x4_pd(v2.Data(),1);
     SIMD<double,4> high3 = _mm512_extractf64x4_pd(v3.Data(),1);
@@ -665,6 +673,19 @@ namespace ngstd
     SIMD<double,4> low3 = _mm512_extractf64x4_pd(v3.Data(),0);
     SIMD<double,4> low4 = _mm512_extractf64x4_pd(v4.Data(),0);
     return HSum(low1,low2,low3,low4) + HSum(high1,high2,high3,high4);
+    */
+    
+    SIMD<double> lo,hi;
+    tie(lo,hi) = Unpack(v1, v2);
+    SIMD<double> sum01 = lo+hi;
+    tie(lo,hi) = Unpack(v3, v4);
+    SIMD<double> sum23 = lo+hi;
+    // sum01  b a b a b a b a
+    // sum23  d c d c d c d c
+    // __m512 perm = _mm512_permutex2var_pd (sum01.Data(), _mm512_set_epi64(1,2,3,4,5,6,7,8), sum23.Data());
+    __m256d ab =  _mm512_extractf64x4_pd(sum01.Data(),0) + _mm512_extractf64x4_pd(sum01.Data(),1);
+    __m256d cd =  _mm512_extractf64x4_pd(sum23.Data(),0) + _mm512_extractf64x4_pd(sum23.Data(),1);
+    return _mm256_add_pd (_mm256_permute2f128_pd (ab, cd, 1+2*16), _mm256_blend_pd (ab, cd, 12));
   }
   
 #endif
@@ -938,11 +959,6 @@ namespace ngstd
 
 
 #ifdef __AVX512F__
-  INLINE auto Unpack (SIMD<double,8> a, SIMD<double,8> b)
-  {
-    return make_tuple(SIMD<double,8>(_mm512_unpacklo_pd(a.Data(),b.Data())),
-                      SIMD<double,8>(_mm512_unpackhi_pd(a.Data(),b.Data())));
-  }
 #endif
 
 #ifdef __AVX__
