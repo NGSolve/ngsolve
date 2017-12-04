@@ -157,6 +157,12 @@ namespace ngbla
   void MultMatMat (size_t ha, size_t wa, size_t wb,
                    BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
   {
+#ifdef __AVX512F__
+    constexpr size_t HA = 6;
+#else
+    constexpr size_t HA = 4;
+#endif
+    
     // blockwise B, fits into L2 cache
     constexpr size_t BBH = 128;
     constexpr size_t BBW = 96;
@@ -180,15 +186,21 @@ namespace ngbla
           if (i == 0)
             {
               size_t k = 0;
-              for ( ; k+4 <= ha; k += 4, pa += 4*a.Dist(), pc += 4 * c.Dist())
+              for ( ; k+HA <= ha; k += HA, pa += HA*a.Dist(), pc += HA * c.Dist())
                 // MatKernel2AddAB<4,SET> (hbi, wbi, pa, a.Dist(),  (double*)&bb[0], BBW, pc, c.Dist());
-                MatKernel2AddAB<4,SET> (hbi, wbi, pa, a.Dist(),  &bb[0], BBW/SW, pc, c.Dist());
+                MatKernel2AddAB<HA,SET> (hbi, wbi, pa, a.Dist(),  &bb[0], BBW/SW, pc, c.Dist());
               switch (ha-k)
                 {
                 case 0: break;
                 case 1: MatKernel2AddAB<1,SET> (hbi, wbi, pa, a.Dist(), (double*)&bb[0], BBW, pc, c.Dist()); break;
                 case 2: MatKernel2AddAB<2,SET> (hbi, wbi, pa, a.Dist(), (double*)&bb[0], BBW, pc, c.Dist()); break;
                 case 3: MatKernel2AddAB<3,SET> (hbi, wbi, pa, a.Dist(), (double*)&bb[0], BBW, pc, c.Dist()); break;
+                case 4:
+                  if (HA > 4)
+                    MatKernel2AddAB<4,SET> (hbi, wbi, pa, a.Dist(), (double*)&bb[0], BBW, pc, c.Dist()); break;
+                case 5:
+                  if (HA > 5)
+                    MatKernel2AddAB<5,SET> (hbi, wbi, pa, a.Dist(), (double*)&bb[0], BBW, pc, c.Dist()); break;
                 default: ; 
                 }
               
@@ -196,15 +208,21 @@ namespace ngbla
           else
             {
               size_t k = 0;
-              for ( ; k+4 <= ha; k += 4, pa += 4*a.Dist(), pc += 4 * c.Dist())
-                MatKernel2AddAB<4,ADD> (hbi, wbi, pa, a.Dist(), (double*)&bb[0], BBW, pc, c.Dist());
+              for ( ; k+HA <= ha; k += HA, pa += HA*a.Dist(), pc += HA * c.Dist())
+                MatKernel2AddAB<HA,ADD> (hbi, wbi, pa, a.Dist(), (double*)&bb[0], BBW, pc, c.Dist());
               switch (ha-k)
                 {
                 case 0: break;
                 case 1: MatKernel2AddAB<1,ADD> (hbi, wbi, pa, a.Dist(), (double*)&bb[0], BBW, pc, c.Dist()); break;
                 case 2: MatKernel2AddAB<2,ADD> (hbi, wbi, pa, a.Dist(), (double*)&bb[0], BBW, pc, c.Dist()); break;
                 case 3: MatKernel2AddAB<3,ADD> (hbi, wbi, pa, a.Dist(), (double*)&bb[0], BBW, pc, c.Dist()); break;
-                default: ; 
+                case 4:
+                  if (HA > 4)
+                    MatKernel2AddAB<4,ADD> (hbi, wbi, pa, a.Dist(), (double*)&bb[0], BBW, pc, c.Dist()); break;
+                case 5:
+                  if (HA > 5)
+                    MatKernel2AddAB<5,ADD> (hbi, wbi, pa, a.Dist(), (double*)&bb[0], BBW, pc, c.Dist()); break;
+                default: ;
                 }
             }
         }
@@ -265,34 +283,54 @@ namespace ngbla
                         double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc,
                         FUNC func)
   {
+#ifdef __AVX512F__
+    constexpr size_t HA = 6;
+#else
+    constexpr size_t HA = 3;
+#endif
+    
     double * pb0 = pb;
     size_t i = 0;
-    for ( ; i+3 <= hc; i += 3, pa += 3*da, pc += 3*dc)
+    for ( ; i+HA <= hc; i += HA, pa += HA*da, pc += HA*dc)
       {
-        double * pc1 = pc;
-        double * pc2 = pc1 + dc;
-        double * pc3 = pc2 + dc;
+        // double * pc1 = pc;
+        // double * pc2 = pc1 + dc;
+        // double * pc3 = pc2 + dc;
         double * pb = pb0;
         size_t j = 0;
         for ( ; j+4 <= wc; j += 4, pb += 4*db)
           {
-            auto scal = MatKernelScalAB<3,4>(wa, pa, da, pb, db);
+            auto scal = MatKernelScalAB<HA,4>(wa, pa, da, pb, db);
+            Iterate<HA> ([&] (auto i) {
+                double * pci = pc+i.value*dc+j;
+                auto si = func (SIMD<double,4>(pci), get<i.value>(scal));
+                si.Store(pci);
+              });
+            /*
             auto s1 = func (SIMD<double,4>(pc1+j), get<0>(scal));
             auto s2 = func (SIMD<double,4>(pc2+j), get<1>(scal));
             auto s3 = func (SIMD<double,4>(pc3+j), get<2>(scal));
             s1.Store(pc1+j);
             s2.Store(pc2+j);
             s3.Store(pc3+j);
+            */
           }
         for ( ; j < wc; j++, pb += db)
           {
-            auto scal = MatKernelScalAB<3,1>(wa, pa, da, pb, db);
+            auto scal = MatKernelScalAB<HA,1>(wa, pa, da, pb, db);
+            Iterate<HA> ([&] (auto i) {
+                double * pci = pc+i.value*dc+j;
+                auto si = func (*pci, get<i.value>(scal));
+                *pci = si;
+              });
+            /*
             auto s1 = func (pc1[j], get<0>(scal));
             auto s2 = func (pc2[j], get<1>(scal));
             auto s3 = func (pc3[j], get<2>(scal));
             pc1[j] = s1;
             pc2[j] = s2;
             pc3[j] = s3;
+            */
           }
       }
     for ( ; i < hc; i ++, pa += da, pc += dc)
