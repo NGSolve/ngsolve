@@ -350,12 +350,14 @@ int main ()
       GenerateMultAB (out, 2, i);
       GenerateMultAB (out, 3, i);
       GenerateMultAB (out, 4, i);
+      GenerateMultAB (out, 5, i);
       GenerateMultAB (out, 6, i);
       
       AlignedGenerateMultAB (out, 1, i, SET);  
       AlignedGenerateMultAB (out, 2, i, SET);
       AlignedGenerateMultAB (out, 3, i, SET);
       AlignedGenerateMultAB (out, 4, i, SET);
+      AlignedGenerateMultAB (out, 5, i, SET);
       AlignedGenerateMultAB (out, 6, i, SET);
     }
 
@@ -371,6 +373,8 @@ int main ()
   GenerateMultABMask (out, 2);
   GenerateMultABMask (out, 3);
   GenerateMultABMask (out, 4);
+  GenerateMultABMask (out, 5);
+  GenerateMultABMask (out, 6);
 
   
   // Scal AB
@@ -379,9 +383,11 @@ int main ()
       << "    (size_t n," << endl
       << "     double * pa, size_t da," << endl
       << "     double * pb, size_t db);" << endl;
-  
+
+  GenerateScalAB (out, 6, 4);  
   GenerateScalAB (out, 3, 4);  
-  GenerateScalAB (out, 1, 4);  
+  GenerateScalAB (out, 1, 4);
+  GenerateScalAB (out, 6, 1);  
   GenerateScalAB (out, 3, 1);  
   GenerateScalAB (out, 1, 1);  
 
