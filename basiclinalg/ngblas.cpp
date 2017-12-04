@@ -154,8 +154,8 @@ namespace ngbla
       MatKernelMultABMask<H,OP>(hb, SIMD<mask64>(wb-l), pa, da, pb+lb, db, pc+l, dc);
   }
   
-  void MultMatMat (size_t ha, size_t wa, size_t wb,
-                   BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
+  void MultMatMat_intern (size_t ha, size_t wa, size_t wb,
+                          BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
   {
 #ifdef __AVX512F__
     constexpr size_t HA = 6;
@@ -262,8 +262,8 @@ namespace ngbla
   }
 
   // c = a * b
-  void MultMatMat (size_t ha, size_t wa, size_t wb,
-                   BareSliceMatrix<> a, BareSliceMatrix<SIMD<double>> b, BareSliceMatrix<SIMD<double>> c)
+  void MultMatMat_intern (size_t ha, size_t wa, size_t wb,
+                          BareSliceMatrix<> a, BareSliceMatrix<SIMD<double>> b, BareSliceMatrix<SIMD<double>> c)
   {
     size_t k = 0;
     constexpr size_t SW = SIMD<double>::Size();
@@ -293,9 +293,6 @@ namespace ngbla
     size_t i = 0;
     for ( ; i+HA <= hc; i += HA, pa += HA*da, pc += HA*dc)
       {
-        // double * pc1 = pc;
-        // double * pc2 = pc1 + dc;
-        // double * pc3 = pc2 + dc;
         double * pb = pb0;
         size_t j = 0;
         for ( ; j+4 <= wc; j += 4, pb += 4*db)
@@ -306,14 +303,6 @@ namespace ngbla
                 auto si = func (SIMD<double,4>(pci), get<i.value>(scal));
                 si.Store(pci);
               });
-            /*
-            auto s1 = func (SIMD<double,4>(pc1+j), get<0>(scal));
-            auto s2 = func (SIMD<double,4>(pc2+j), get<1>(scal));
-            auto s3 = func (SIMD<double,4>(pc3+j), get<2>(scal));
-            s1.Store(pc1+j);
-            s2.Store(pc2+j);
-            s3.Store(pc3+j);
-            */
           }
         for ( ; j < wc; j++, pb += db)
           {
@@ -323,14 +312,6 @@ namespace ngbla
                 auto si = func (*pci, get<i.value>(scal));
                 *pci = si;
               });
-            /*
-            auto s1 = func (pc1[j], get<0>(scal));
-            auto s2 = func (pc2[j], get<1>(scal));
-            auto s3 = func (pc3[j], get<2>(scal));
-            pc1[j] = s1;
-            pc2[j] = s2;
-            pc3[j] = s3;
-            */
           }
       }
     for ( ; i < hc; i ++, pa += da, pc += dc)
@@ -398,7 +379,7 @@ namespace ngbla
     TAddABt1 (a, b, c, [] (auto c, auto ab) { return c+ab; });
   }
 
-  void SubABt (SliceMatrix<double> a, SliceMatrix<double> b, SliceMatrix<double> c)
+  void SubABt (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
   {
     // c -= a * Trans(b);
     TAddABt1 (a, b, c, [] (auto c, auto ab) { return c-ab; });
@@ -406,6 +387,123 @@ namespace ngbla
 
 
 
+
+
+
+  /* ***************************** A * B^T, A,B SIMD *********************************** */
+
+  template <typename FUNC>
+  INLINE void TAddABt4 (size_t wa, size_t hc, size_t wc,
+                        SIMD<double> * pa, size_t da, SIMD<double> * pb, size_t db, double * pc, size_t dc,
+                        FUNC func)
+  {
+#ifdef __AVX512F__
+    constexpr size_t HA = 6;
+#else
+    constexpr size_t HA = 3;
+#endif
+    
+    SIMD<double> * pb0 = pb;
+    size_t i = 0;
+    for ( ; i+HA <= hc; i += HA, pa += HA*da, pc += HA*dc)
+      {
+        SIMD<double> * pb = pb0;
+        size_t j = 0;
+        for ( ; j+4 <= wc; j += 4, pb += 4*db)
+          {
+            auto scal = MatKernelScalAB<HA,4>(wa, pa, da, pb, db);
+            Iterate<HA> ([&] (auto i) {
+                double * pci = pc+i.value*dc+j;
+                auto si = func (SIMD<double,4>(pci), get<i.value>(scal));
+                si.Store(pci);
+              });
+          }
+        for ( ; j < wc; j++, pb += db)
+          {
+            auto scal = MatKernelScalAB<HA,1>(wa, pa, da, pb, db);
+            Iterate<HA> ([&] (auto i) {
+                double * pci = pc+i.value*dc+j;
+                auto si = func (*pci, get<i.value>(scal));
+                *pci = si;
+              });
+          }
+      }
+    for ( ; i < hc; i ++, pa += da, pc += dc)
+      {
+        double * pc1 = pc;
+        SIMD<double> * pb = pb0;
+        size_t j = 0;
+        for ( ; j+4 <= wc; j += 4, pb += 4*db)
+          {
+            auto scal = MatKernelScalAB<1,4>(wa, pa, da, pb, db);
+            auto s1 = func (SIMD<double,4>(pc1+j), get<0>(scal));
+            s1.Store(pc1+j);
+          }
+        for ( ; j < wc; j++, pb += db)
+          {
+            auto scal = MatKernelScalAB<1,1>(wa, pa, da, pb, db);
+            auto s1 = func (pc1[j], get<0>(scal));
+            pc1[j] = s1;
+          }
+      }
+  }
+  
+
+  template <typename FUNC>
+  void TAddABt3 (size_t wa, size_t ha, size_t hb,
+                 SIMD<double> * pa, size_t da, SIMD<double> * pb, size_t db, double * pc, size_t dc,
+                 FUNC func)
+  {
+    constexpr size_t bs = 32;  // height b
+    for (size_t i = 0; i < hb; i += bs, pb += bs*db, pc += bs)
+      TAddABt4 (wa, ha, min2(bs, hb-i),
+                pa, da, pb, db, pc, dc, func);
+  }
+
+  template <typename FUNC>
+  void TAddABt2 (size_t wa, size_t ha, size_t hb,
+                 SIMD<double> * pa, size_t da, SIMD<double> * pb, size_t db, double * pc, size_t dc,
+                 FUNC func)
+  {
+    constexpr size_t bs = 96; // height a
+    for (size_t i = 0; i < ha; i += bs, pa += bs*da, pc += bs*dc)
+      TAddABt3(wa, min2(bs, ha-i), hb,
+               pa, da, pb, db, pc, dc, func);
+  }
+
+  
+  template <typename FUNC>
+  void TAddABt1 (SliceMatrix<SIMD<double>> a, SliceMatrix<SIMD<double>> b, BareSliceMatrix<double> c,
+                 FUNC func)
+  {
+    constexpr size_t bs = 256; // inner-product loop
+    size_t wa = a.Width();
+    SIMD<double> *pa = &a(0);
+    SIMD<double> *pb = &b(0);
+    double *pc = &c(0);
+    for (size_t i = 0; i < wa; i += bs, pa+=bs, pb+=bs)
+      TAddABt2 (min2(bs,wa-i), a.Height(), b.Height(),
+                pa, a.Dist(), pb, b.Dist(), pc, c.Dist(), func);
+  }
+  
+  void AddABt (SliceMatrix<SIMD<double>> a, SliceMatrix<SIMD<double>> b, BareSliceMatrix<double> c)
+  {
+    // c += a * Trans(b);
+    TAddABt1 (a, b, c, [] (auto c, auto ab) { return c+ab; });
+  }
+
+  void SubABt (SliceMatrix<SIMD<double>> a, SliceMatrix<SIMD<double>> b, BareSliceMatrix<double> c)
+  {
+    // c -= a * Trans(b);
+    TAddABt1 (a, b, c, [] (auto c, auto ab) { return c-ab; });
+  }
+
+
+
+
+
+
+  
   list<tuple<string,double>> Timing (int what, size_t n, size_t m, size_t k)
   {
     if (what < 0)
@@ -423,6 +521,8 @@ namespace ngbla
           "101.. MultAddKernel  C += A * B,  A=4*n, B=n*3SW, B aligned\n"
           "110.. MultAddKernel2  C += A * B,  A=4*n, B=n*m, m multiple of 3*SW\n"
           "111.. MultAddKernel2  C += A * B,  A=4*n, B=n*m, m multiple of 3*SW, B aligned\n"
+          "150.. ScalKernel     C = A * B^t,  A=4*n, B = 3*n\n"
+          "151.. ScalKernel     C = A * B^t,  A=4*n, B = 3*n\n, A,B aligned"
              << endl;
         return list<tuple<string,double>>();
       }
@@ -616,6 +716,60 @@ namespace ngbla
           timings.push_back(make_tuple("MatKernelAddAB aligned", 1e-9 * tot*its / t.GetTime()));
         }
       }
+
+
+
+
+    if (what == 0 || what == 150)
+      {
+        // C=A*B
+        Matrix<> a(4,n), b(4,n), c(3,4);
+        a = 1; b = 2; c = 0;
+        double tot = n*4*3;
+        int its = 1e10 / tot + 1;
+        SIMD<double,4> sum(0);
+        {
+          Timer t("C = A*B");
+          t.Start();
+          for (int j = 0; j < its; j++)
+            {
+              auto res = MatKernelScalAB<3,4>(n,&a(0), a.Width(), &b(0), b.Width());
+              sum += get<0>(res) + get<1>(res) + get<2>(res);
+            }
+          t.Stop();
+          cout << sum;
+          cout << "MatKernelScalAB 4x3 = " << 1e-9 * tot*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("MatKernelScalAB 4x3", 1e-9 * tot*its / t.GetTime()));
+        }
+      }
+    
+
+    if (what == 0 || what == 151)
+      {
+        // C=A*B
+        Matrix<SIMD<double>> a(4,n), b(4,n);
+        Matrix<> c(3,4);
+        a = SIMD<double>(1); b = SIMD<double>(2); c = 0;
+        double tot = n*4*3*SW;
+        int its = 1e10 / tot + 1;
+        SIMD<double,4> sum(0);
+        {
+          Timer t("C = A*B");
+          t.Start();
+          for (int j = 0; j < its; j++)
+            {
+              auto res = MatKernelScalAB<3,4>(n,&a(0), a.Width(), &b(0), b.Width());
+              sum += get<0>(res) + get<1>(res) + get<2>(res);
+            }
+          t.Stop();
+          cout << sum;
+          cout << "MatKernelScalAB, simd 4x3 = " << 1e-9 * tot*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("MatKernelScalAB, simd 4x3", 1e-9 * tot*its / t.GetTime()));
+        }
+      }
+    
+
+
 
     
     return timings;

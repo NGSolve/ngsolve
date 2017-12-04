@@ -1079,7 +1079,8 @@ namespace ngfem
     AddABtSym (SliceMatrix<double> (AFlatMatrix<double>(a)),
                SliceMatrix<double> (AFlatMatrix<double>(b)), c);
   }
-  
+  /*
+    --> in ngblas
   void AddABt (FlatMatrix<SIMD<double>> a,
                FlatMatrix<SIMD<double>> b,
                BareSliceMatrix<double> c)
@@ -1087,6 +1088,7 @@ namespace ngfem
     AddABt (SliceMatrix<double> (AFlatMatrix<double>(a)),
             SliceMatrix<double> (AFlatMatrix<double>(b)), c);
   }
+  */
 
   void AddABt (FlatMatrix<SIMD<Complex>> a,
                FlatMatrix<SIMD<Complex>> b,
