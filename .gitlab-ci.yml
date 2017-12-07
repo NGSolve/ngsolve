@@ -179,7 +179,6 @@ linux_cleanup:
 linux_cleanup_avx512:
   stage: cleanup
   tags:
-    - linux
     - docker
     - avx512
   script:
