@@ -50,6 +50,7 @@ namespace ngfem
     Array <int> continuous_curveparts;
   
     int cachecomp;
+    int bonus_intorder = 0;
 
     /// define only on some sub-domains
     shared_ptr<BitArray> definedon_element = nullptr;
@@ -180,6 +181,9 @@ namespace ngfem
       return integration_order;
     }
 
+    void SetBonusIntegrationOrder (int bo)
+    { bonus_intorder = bo; }
+    
     /// benefit from constant coefficient
     void SetConstantCoefficient (bool acc = 1)
     { const_coef = acc; }

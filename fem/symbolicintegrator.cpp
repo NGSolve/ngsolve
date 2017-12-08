@@ -545,7 +545,7 @@ namespace ngfem
             HeapReset hr(lh);
             ngfem::ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype, k);
             
-            const IntegrationRule& ir_facet = GetIntegrationRule(etfacet, 2*fel.Order());
+            const IntegrationRule& ir_facet = GetIntegrationRule(etfacet, 2*fel.Order()+bonus_intorder);
             IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
             BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
             
@@ -589,7 +589,7 @@ namespace ngfem
             
             HeapReset hr(lh);
             // NgProfiler::StartThreadTimer(telvec_mapping, tid);
-            const SIMD_IntegrationRule& ir = GetSIMDIntegrationRule(trafo.GetElementType(), 2*fel.Order());
+            const SIMD_IntegrationRule& ir = GetSIMDIntegrationRule(trafo.GetElementType(), 2*fel.Order()+bonus_intorder);
             auto & mir = trafo(ir, lh);
             // NgProfiler::StopThreadTimer(telvec_mapping, tid);
             
@@ -633,7 +633,7 @@ namespace ngfem
         // static Timer t("symbolicLFI - CalcElementVector", 2); RegionTimer reg(t);
         HeapReset hr(lh);
         // IntegrationRule ir(trafo.GetElementType(), 2*fel.Order());
-        const IntegrationRule& ir = fel.GetIR(2*fel.Order());
+        const IntegrationRule& ir = fel.GetIR(2*fel.Order()+bonus_intorder);
         BaseMappedIntegrationRule & mir = trafo(ir, lh);
         
         FlatVector<SCAL> elvec1(elvec.Size(), lh);
@@ -819,7 +819,7 @@ namespace ngfem
     if (trial_proxies.Size() == 0) trial_difforder = 0;
     */
     
-    int intorder = fel_trial.Order()+fel_test.Order();
+    int intorder = fel_trial.Order()+fel_test.Order()+bonus_intorder;
     auto et = fel.ElementType();
     if (et == ET_TRIG || et == ET_TET)
       intorder -= test_difforder+trial_difforder;
@@ -845,7 +845,7 @@ namespace ngfem
     if (trial_proxies.Size() == 0) trial_difforder = 0;
     */
     
-    int intorder = fel_trial.Order()+fel_test.Order();
+    int intorder = fel_trial.Order()+fel_test.Order()+bonus_intorder;
     auto et = fel.ElementType();
     if (et == ET_TRIG || et == ET_TET)
       intorder -= test_difforder+trial_difforder;
