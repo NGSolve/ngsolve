@@ -37,6 +37,34 @@ namespace ngbla
 
   extern void AddABt (SliceMatrix<SIMD<double>> a, SliceMatrix<SIMD<double>> b, BareSliceMatrix<double> c);  
   extern void SubABt (SliceMatrix<SIMD<double>> a, SliceMatrix<SIMD<double>> b, BareSliceMatrix<double> c);
+
+
+  //  copied from symbolicintegrator, needs some rework 
+  extern void AddABtSym (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c);    
+  extern void AddABtSym (SliceMatrix<SIMD<double>> a, SliceMatrix<SIMD<double>> b, BareSliceMatrix<double> c);
+  
+  extern void AddABt (FlatMatrix<SIMD<Complex>> a, FlatMatrix<SIMD<Complex>> b, SliceMatrix<Complex> c);
+  extern void AddABtSym (FlatMatrix<SIMD<Complex>> a, FlatMatrix<SIMD<Complex>> b, SliceMatrix<Complex> c);
+  extern void AddABt (SliceMatrix<SIMD<double>> a, SliceMatrix<SIMD<Complex>> b, SliceMatrix<Complex> c);
+  extern void AddABtSym (FlatMatrix<SIMD<double>> a,
+                         FlatMatrix<SIMD<Complex>> b,
+                         SliceMatrix<Complex> c);
+  extern void AddABt (FlatMatrix<SIMD<double>> a,
+                      FlatMatrix<SIMD<double>> b,
+                      SliceMatrix<Complex> c);
+
+  extern void AddABtSym (FlatMatrix<SIMD<double>> a,
+                         FlatMatrix<SIMD<double>> b,
+                         SliceMatrix<Complex> c);
+  
+  extern void AddABt (SliceMatrix<double> a,
+                      SliceMatrix<double> b,
+                      SliceMatrix<Complex> c);
+
+  extern void AddABtSym (SliceMatrix<double> a,
+                         SliceMatrix<double> b,
+                         SliceMatrix<Complex> c);
+  
   
   extern list<tuple<string,double>> Timing (int what, size_t n, size_t m, size_t k);
 

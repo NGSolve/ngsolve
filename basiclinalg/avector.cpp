@@ -1565,26 +1565,13 @@ namespace ngbla
   }
   */
 
+
+  /*
+    // now in ngblas, new version
   template <int R>
   void AddABtSymR (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> bc)
   {
     auto c = bc.AddSize(a.Height(), b.Height());
-
-    // clear overhead
-    /*
-    if (a.Width() != 4*a.VWidth())
-      {
-        int r = 4*a.VWidth()-a.Width();
-        __m256i mask = my_mm256_cmpgt_epi64(_mm256_set1_epi64x(r),
-                                            _mm256_set_epi64x(0,1,2,3));
-
-        __m256d zero = _mm256_setzero_pd();
-        for (int i = 0; i < a.Height(); i++)
-          _mm256_maskstore_pd((double*)&a.Get(i, a.VWidth()-1), mask, zero);
-        for (int i = 0; i < b.Height(); i++)
-          _mm256_maskstore_pd((double*)&b.Get(i, b.VWidth()-1), mask, zero);
-      }
-    */
     if (a.Width() == 0) return;
   
     size_t j = 0;
@@ -1684,7 +1671,7 @@ namespace ngbla
       default: __assume(false);
       }
   }
-
+  */
 
 
 

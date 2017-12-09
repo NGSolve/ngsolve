@@ -261,13 +261,11 @@ void GenerateScalAB (ostream & out, int h, int w, bool simded)
       out << "SIMD<mask64> mask(r);" << endl;
       for (int i = 0; i < h; i++)
         out << "SIMD<double> a" << i << "(pa+" << i << "*da+i, mask);" << endl;
-      for (int i = 0; i < w; i++)
-        out << "SIMD<double> b" << i << "(pb+" << i << "*db+i, mask);" << endl;
       
-      for (int i = 0; i < h; i++)
+      for (int j = 0; j < w; j++)
         {
-          for (int j = 0; j < w; j++)
-            // out << "sum" << j << i << " += a" << j << " * b" << i << ";" << endl;
+          out << "SIMD<double> b" << j << "(pb+" << j << "*db+i, mask);" << endl;
+          for (int i = 0; i < h; i++)
             out << "FMAasm(a"<<i<<",b" << j << ",sum" << i << j << ");" << endl;
         }
       out << "}" << endl;
