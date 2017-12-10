@@ -882,17 +882,114 @@ namespace ngbla
                            double * pc, size_t dc,
                            size_t ninner, size_t na, size_t nb
                            );
+
+  /*
+  void MyTranspose (SliceMatrix<> a, SliceMatrix<> b)
+  {
+    size_t j = 0;
+    size_t ha = a.Height();
+    size_t wa = a.Width();
+    size_t da = a.Dist();
+    size_t db = b.Dist();
+    for ( ; j+4 <= wa; j+=4)
+      {
+        size_t i = 0;
+        for ( ; i+4 <= ha; i+=4)
+          {
+            double * pa = &a(i,j);
+            double * pb = &b(j,i);
+            SIMD<double,4> a0(pa);
+            SIMD<double,4> a1(pa+1*da);
+            SIMD<double,4> a2(pa+2*da);
+            SIMD<double,4> a3(pa+3*da);
+            SIMD<double,4> b0, b1, b2, b3;
+            Transpose(a0,a1,a2,a3, b0,b1,b2,b3);
+            b0.Store(pb);
+            b1.Store(pb+1*db);
+            b2.Store(pb+2*db);
+            b3.Store(pb+3*db);
+          }
+        for ( ; i < ha; i++)
+          {
+            double * pa = &a(i,j);
+            double * pb = &b(j,i);
+            pb[0] = pa[0];
+            pb[db] = pa[1];
+            pb[2*db] = pa[2];
+            pb[3*db] = pa[3];
+          }
+      }
+    for ( ; j < wa; j++)
+      b.Row(j) = a.Col(j);
+  }
+  */
+
+  // scale every row from a .. 
+  void MyTransposeScaleNeg (SliceMatrix<> a, SliceMatrix<> b,
+                            SliceVector<> d)
+  {
+    size_t ha = a.Height();
+    size_t wa = a.Width();
+    size_t da = a.Dist();
+    size_t db = b.Dist();
+    size_t j = 0;
+    for ( ; j+4 <= ha; j+=4)
+      {
+        double d0 = -d(j);
+        double d1 = -d(j+1);
+        double d2 = -d(j+2);
+        double d3 = -d(j+3);
+        SIMD<double> di(d0,d1,d2,d3);
+        size_t i = 0;
+        double * pa = &a(j,0);
+        double * pb = &b(0,j);
+        for ( ; i+4 <= wa; i+=4, pa += 4, pb += 4*db)
+          {
+            // double * pa = &a(j,i);
+            // double * pb = &b(i,j);
+            SIMD<double,4> a0(pa);
+            SIMD<double,4> a1(pa+1*da);
+            SIMD<double,4> a2(pa+2*da);
+            SIMD<double,4> a3(pa+3*da);
+            SIMD<double,4> b0, b1, b2, b3;
+            Transpose(a0,a1,a2,a3, b0,b1,b2,b3);
+            b0 *= di;
+            b1 *= di;
+            b2 *= di;
+            b3 *= di;
+            b0.Store(pb);
+            b1.Store(pb+1*db);
+            b2.Store(pb+2*db);
+            b3.Store(pb+3*db);
+          }
+        for ( ; i < wa; i++)
+          {
+            double * pa = &a(j,i);
+            double * pb = &b(i,j);
+            pb[0] = pa[0*da]*d0;
+            pb[1] = pa[1*da]*d1;
+            pb[2] = pa[2*da]*d2;
+            pb[3] = pa[3*da]*d3;
+          }
+      }
+    for ( ; j < ha; j++)
+      b.Col(j) = (-d(j)) * a.Row(j);
+  }
+
+
+
   
   void SubAtDB_BP (SliceMatrix<double> a,
                    SliceVector<double> diag,
                    SliceMatrix<double> b, SliceMatrix<double> c)
   {
-    alignas (64) double mema[(NA+8)*NK];
+    alignas (64) double mema[NA*NK];
     size_t na = a.Width();
     size_t nb = b.Width();
     size_t ha = a.Height();
     
     /*
+    alignas (64) double mema[(NA+8)*NK];
     CopyMatrixInVTransScaleRows (ha, na,
                                  &a(0,0), a.Dist(), &mema[0], NA+8,
                                  &diag(0), diag.Dist());
@@ -908,14 +1005,15 @@ namespace ngbla
 #endif
 
     double * pa = &mema[0];
-    size_t da = NA+8;
+    size_t da = NA;
     size_t db = b.Dist();
     double * pc = &c(0);
 
-    SliceMatrix<> loca(a.Width(), a.Height(), NA+8, &mema[0]);
-    loca = Trans(a);
-    for (size_t i = 0; i < loca.Width(); i++)
-      loca.Col(i) *= -diag(i);
+    SliceMatrix<> loca(a.Width(), a.Height(), NA, &mema[0]);
+    MyTransposeScaleNeg (a, loca, diag);
+    // loca = Trans(a);
+    // for (size_t i = 0; i < loca.Width(); i++)
+    // loca.Col(i) *= -diag(i);
     // c += loca * b;
     // return;
 
