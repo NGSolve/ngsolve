@@ -760,8 +760,8 @@ namespace ngstd
 
   
 
-  INLINE void Transpose (SIMD<double,4> a1, SIMD<double,4> a2, SIMD <double,4> a3, SIMD<double,4> a4,
-                         SIMD<double,4> & b1, SIMD<double,4> & b2, SIMD<double,4> & b3, SIMD<double,4> & b4)
+  INLINE void SIMDTranspose (SIMD<double,4> a1, SIMD<double,4> a2, SIMD <double,4> a3, SIMD<double,4> a4,
+                             SIMD<double,4> & b1, SIMD<double,4> & b2, SIMD<double,4> & b3, SIMD<double,4> & b4)
   {
     SIMD<double,4> h1,h2,h3,h4;
     tie(h1,h2) = Unpack(a1,a2);

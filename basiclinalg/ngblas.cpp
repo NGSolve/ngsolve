@@ -952,7 +952,7 @@ namespace ngbla
             SIMD<double,4> a2(pa+2*da);
             SIMD<double,4> a3(pa+3*da);
             SIMD<double,4> b0, b1, b2, b3;
-            Transpose(a0,a1,a2,a3, b0,b1,b2,b3);
+            SIMDTranspose(a0,a1,a2,a3, b0,b1,b2,b3);
             b0 *= di;
             b1 *= di;
             b2 *= di;
