@@ -3567,7 +3567,7 @@ namespace ngbla
 #endif
 
   
-  
+  /*
   void MySubAtDB_PM (SliceMatrix<double> a,
                      SliceVector<double> diag,
                      SliceMatrix<double> b, SliceMatrix<double> c)
@@ -3580,7 +3580,7 @@ namespace ngbla
     if (i < k)
       MySubAtDB_BP (a.Rows(i,k), diag.Range(i,k), b.Rows(i,k), c);      
   }
-  
+
   void SubAtDB (SliceMatrix<double> a,
                 SliceVector<double> diag,
                 SliceMatrix<double> b, SliceMatrix<double> c)
@@ -3593,7 +3593,7 @@ namespace ngbla
     if (i < na)
       MySubAtDB_PM (a.Cols(i,na), diag, b, c.Rows(i,na));
   }
-
+  */
   
 
 

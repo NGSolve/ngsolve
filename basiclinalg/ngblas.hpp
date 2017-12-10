@@ -65,6 +65,15 @@ namespace ngbla
                          SliceMatrix<double> b,
                          SliceMatrix<Complex> c);
   
+
+
+  // for Cholesky and SparseCholesky
+  extern 
+  void SubAtDB (SliceMatrix<double> a,
+                SliceVector<double> diag,
+                SliceMatrix<double> b, SliceMatrix<double> c);
+
+
   
   extern list<tuple<string,double>> Timing (int what, size_t n, size_t m, size_t k);
 

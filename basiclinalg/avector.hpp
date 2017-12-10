@@ -1302,12 +1302,15 @@ namespace ngbla
     // LapackMultAdd (a, Trans(b), 1.0, c, 1.0);
   }
 
-
+  /*
+    --> ngblas
   extern 
   void SubAtDB (SliceMatrix<double> a,
                 SliceVector<double> diag,
                 SliceMatrix<double> b, SliceMatrix<double> c);
+  */
 
+  
   extern 
   void SubAtDB (SliceMatrix<Complex> a,
                 SliceVector<Complex> diag,
