@@ -302,6 +302,13 @@ namespace ngstd
     operator tuple<double&,double&> ()
     { return tuple<double&,double&>((*this)[0], (*this)[1]); }
   };
+
+  INLINE auto Unpack (SIMD<double,2> a, SIMD<double,2> b)
+  {
+    return make_tuple(SIMD<double,2>(_mm_unpacklo_pd(a.Data(),b.Data())),
+                      SIMD<double,2>(_mm_unpackhi_pd(a.Data(),b.Data())));
+  }
+  
 #endif
 
   
@@ -342,10 +349,19 @@ namespace ngstd
     INLINE __m256d Data() const { return data; }
     INLINE __m256d & Data() { return data; }
 
+    SIMD<double,2> Lo() const { return _mm256_extractf128_pd(data, 0); }
+    SIMD<double,2> Hi() const { return _mm256_extractf128_pd(data, 1); }
+
     operator tuple<double&,double&,double&,double&> ()
     { return tuple<double&,double&,double&,double&>((*this)[0], (*this)[1], (*this)[2], (*this)[3]); }
   };
 
+  INLINE auto Unpack (SIMD<double,4> a, SIMD<double,4> b)
+  {
+    return make_tuple(SIMD<double,4>(_mm256_unpacklo_pd(a.Data(),b.Data())),
+                      SIMD<double,4>(_mm256_unpackhi_pd(a.Data(),b.Data())));
+  }
+  
 
 #else // AVX
 
@@ -399,6 +415,15 @@ namespace ngstd
     { return tuple<double&,double&,double&,double&>((*this)[0], (*this)[1], (*this)[2], (*this)[3]); }
   };
 
+
+  INLINE auto Unpack (SIMD<double,4> a, SIMD<double,4> b)
+  {
+    SIMD<double,2> h1,h2,h3,h4;
+    tie(h1,h2) = Unpack(a.Lo(), b.Lo());
+    tie(h3,h4) = Unpack(a.Hi(), b.Hi());
+    return make_tuple(SIMD<double,4> (h1,h3), SIMD<double,4>(h2,h4));
+  }  
+  
 #endif
 
 
@@ -603,7 +628,8 @@ namespace ngstd
 
   INLINE double HSum (SIMD<double,4> sd)
   {
-    __m128d hv = _mm_add_pd (_mm256_extractf128_pd(sd.Data(),0), _mm256_extractf128_pd(sd.Data(),1));
+    // __m128d hv = _mm_add_pd (_mm256_extractf128_pd(sd.Data(),0), _mm256_extractf128_pd(sd.Data(),1));
+    __m128d hv = (sd.Lo()+sd.Hi()).Data();
     return _mm_cvtsd_f64 (_mm_hadd_pd (hv, hv));
   }
 
@@ -728,7 +754,19 @@ namespace ngstd
   { return SIMD<double,4>(sd1.Data(), sd2.Data(), sd3.Data(), sd4.Data()); }
 
 
+  
 
+  INLINE void Transpose (SIMD<double,4> a1, SIMD<double,4> a2, SIMD <double,4> a3, SIMD<double,4> a4,
+                         SIMD<double,4> & b1, SIMD<double,4> & b2, SIMD<double,4> & b3, SIMD<double,4> & b4)
+  {
+    SIMD<double,4> h1,h2,h3,h4;
+    tie(h1,h2) = Unpack(a1,a2);
+    tie(h3,h4) = Unpack(a3,a4);
+    b1 = SIMD<double,4> (h1.Lo(), h3.Lo());
+    b2 = SIMD<double,4> (h2.Lo(), h4.Lo());
+    b3 = SIMD<double,4> (h1.Hi(), h3.Hi());
+    b4 = SIMD<double,4> (h2.Hi(), h4.Hi());
+  }
 
 
   
@@ -962,19 +1000,9 @@ namespace ngstd
 #endif
 
 #ifdef __AVX__
-  INLINE auto Unpack (SIMD<double,4> a, SIMD<double,4> b)
-  {
-    return make_tuple(SIMD<double,4>(_mm256_unpacklo_pd(a.Data(),b.Data())),
-                      SIMD<double,4>(_mm256_unpackhi_pd(a.Data(),b.Data())));
-  }
 #endif
 
 #ifdef __SSE__
-  INLINE auto Unpack (SIMD<double,2> a, SIMD<double,2> b)
-  {
-    return make_tuple(SIMD<double,2>(_mm_unpacklo_pd(a.Data(),b.Data())),
-                      SIMD<double,2>(_mm_unpackhi_pd(a.Data(),b.Data())));
-  }
 #endif
 
   template <int i, typename T, int N>
