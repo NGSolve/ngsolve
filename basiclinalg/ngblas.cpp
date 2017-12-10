@@ -955,7 +955,9 @@ namespace ngbla
                    SliceVector<double> diag,
                    SliceMatrix<double> b, SliceMatrix<double> c)
   {
+    constexpr size_t SW = SIMD<double>::Size();
     alignas (64) double mema[NA*NK];
+    SIMD<double> memb[3*NK];
     size_t na = a.Width();
     size_t nb = b.Width();
     size_t ha = a.Height();
@@ -972,7 +974,6 @@ namespace ngbla
     constexpr size_t HA = 4;
 #endif
 
-    double * pa = &mema[0];
     size_t da = NA;
     size_t db = b.Dist();
     double * pc = &c(0);
@@ -980,6 +981,61 @@ namespace ngbla
     SliceMatrix<> loca(a.Width(), a.Height(), NA, &mema[0]);
     MyTransposeScaleNeg (a, loca, diag);
 
+    size_t j = 0;
+    for ( ; j+3*SW <= nb; j += 3*SW)
+      {
+        for (size_t i = 0; i < b.Height(); i++)
+          {
+            memb[3*i  ] = SIMD<double>(&b(i,j));
+            memb[3*i+1] = SIMD<double>(&b(i,j+SW));
+            memb[3*i+2] = SIMD<double>(&b(i,j+2*SW));
+          }
+        
+        double * pc =&c(0,j);
+        double * pa = &mema[0];
+        size_t k = 0;
+        for ( ; k+HA <= na; k += HA, pa += HA*da, pc += HA * c.Dist())
+          MatKernelMultAB<HA,3,ADD> (ha, pa, da, &memb[0], 3, pc, c.Dist());
+        switch (na-k) 
+          {
+          case 0: break;
+          case 1: MatKernelMultAB<1,3,ADD> (ha, pa, da, &memb[0], 3, pc, c.Dist()); break;
+          case 2: MatKernelMultAB<2,3,ADD> (ha, pa, da, &memb[0], 3, pc, c.Dist()); break;
+          case 3: MatKernelMultAB<3,3,ADD> (ha, pa, da, &memb[0], 3, pc, c.Dist()); break;
+          case 4:
+            if (HA > 4)
+              MatKernelMultAB<4,3,ADD> (ha, pa, da, &memb[0], 3, pc, c.Dist()); break;
+          case 5:
+            if (HA > 5)
+              MatKernelMultAB<5,3,ADD> (ha, pa, da, &memb[0], 3, pc, c.Dist()); break;
+          default: ;
+          }
+      }
+
+    if (j == nb) return;
+    SliceMatrix<> locb(b.Height(), nb-j, 3*SW, (double*)&memb[0]);
+    locb = b.Cols(j, nb);
+    pc =&c(0,j);
+    double * pa = &mema[0];    
+    size_t k = 0;
+    for ( ; k+HA <= na; k += HA, pa += HA*da, pc += HA * c.Dist())
+      MatKernel2AddAB<HA,ADD> (ha, nb-j, pa, da, &locb(0), 3*SW, pc, c.Dist());
+    switch (na-k) 
+      {
+      case 0: break;
+      case 1: MatKernel2AddAB<1,ADD> (ha, nb-j, pa, da, &locb(0), 3*SW, pc, c.Dist()); break;
+      case 2: MatKernel2AddAB<2,ADD> (ha, nb-j, pa, da, &locb(0), 3*SW, pc, c.Dist()); break;
+      case 3: MatKernel2AddAB<3,ADD> (ha, nb-j, pa, da, &locb(0), 3*SW, pc, c.Dist()); break;
+      case 4:
+        if (HA > 4)
+          MatKernel2AddAB<4,ADD> (ha, nb-j, pa, da, &locb(0), 3*SW, pc, c.Dist()); break;
+      case 5:
+        if (HA > 5)
+          MatKernel2AddAB<5,ADD> (ha, nb-j, pa, da, &locb(0), 3*SW, pc, c.Dist()); break;
+      default: ;
+      }
+
+    /*
     size_t k = 0;
     for ( ; k+HA <= na; k += HA, pa += HA*da, pc += HA * c.Dist())
       MatKernel2AddAB<HA,ADD> (ha, nb, pa, da, &b(0), db, pc, c.Dist());
@@ -997,6 +1053,7 @@ namespace ngbla
           MatKernel2AddAB<5,ADD> (ha, nb, pa, da, &b(0), db, pc, c.Dist()); break;
       default: ;
       }
+    */
   }
   
   void SubAtDB_PM (SliceMatrix<double> a,
