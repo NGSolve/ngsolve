@@ -863,6 +863,107 @@ namespace ngbla
   }
 
 
+  /* ************************** SubAtDB ***************************** */
+
+  static constexpr size_t NA = 128;
+  static constexpr size_t NB = 96;
+  static constexpr size_t NK = 128;
+
+  extern
+  void CopyMatrixInVTransScaleRows (size_t h, size_t w,
+                                    double * ps, size_t dists,
+                                    double * pd, size_t distd,
+                                    double * pscale, size_t distscale);
+
+  extern
+  void KernelScalNxMTrans (
+                           double * pa, size_t da,
+                           double * pb, size_t db,
+                           double * pc, size_t dc,
+                           size_t ninner, size_t na, size_t nb
+                           );
+  
+  void SubAtDB_BP (SliceMatrix<double> a,
+                   SliceVector<double> diag,
+                   SliceMatrix<double> b, SliceMatrix<double> c)
+  {
+    alignas (64) double mema[(NA+8)*NK];
+    size_t na = a.Width();
+    size_t nb = b.Width();
+    size_t ha = a.Height();
+    
+    /*
+    CopyMatrixInVTransScaleRows (ha, na,
+                                 &a(0,0), a.Dist(), &mema[0], NA+8,
+                                 &diag(0), diag.Dist());
+
+    KernelScalNxMTrans(mema, NA+8, &b(0,0), b.Dist(), &c(0,0), c.Dist(),
+                       ha, na, nb);
+    return;
+    */
+#ifdef __AVX512F__
+    constexpr size_t HA = 6;
+#else
+    constexpr size_t HA = 4;
+#endif
+
+    double * pa = &mema[0];
+    size_t da = NA+8;
+    size_t db = b.Dist();
+    double * pc = &c(0);
+
+    SliceMatrix<> loca(a.Width(), a.Height(), NA+8, &mema[0]);
+    loca = Trans(a);
+    for (size_t i = 0; i < loca.Width(); i++)
+      loca.Col(i) *= -diag(i);
+    // c += loca * b;
+    // return;
+
+    size_t k = 0;
+    for ( ; k+HA <= na; k += HA, pa += HA*da, pc += HA * c.Dist())
+      MatKernel2AddAB<HA,ADD> (ha, nb, pa, da, &b(0), db, pc, c.Dist());
+    switch (na-k) 
+      {
+      case 0: break;
+      case 1: MatKernel2AddAB<1,ADD> (ha, nb, pa, da, &b(0), db, pc, c.Dist()); break;
+      case 2: MatKernel2AddAB<2,ADD> (ha, nb, pa, da, &b(0), db, pc, c.Dist()); break;
+      case 3: MatKernel2AddAB<3,ADD> (ha, nb, pa, da, &b(0), db, pc, c.Dist()); break;
+      case 4:
+        if (HA > 4)
+          MatKernel2AddAB<4,ADD> (ha, nb, pa, da, &b(0), db, pc, c.Dist()); break;
+      case 5:
+        if (HA > 5)
+          MatKernel2AddAB<5,ADD> (ha, nb, pa, da, &b(0), db, pc, c.Dist()); break;
+      default: ;
+      }
+    
+  }
+  
+  void SubAtDB_PM (SliceMatrix<double> a,
+                     SliceVector<double> diag,
+                     SliceMatrix<double> b, SliceMatrix<double> c)
+  {
+    constexpr size_t bs = NK;
+    for (size_t i = 0; i < a.Height(); i += bs)
+      {
+        size_t i2 = min2(i+bs, a.Height());
+        SubAtDB_BP (a.Rows(i,i2), diag.Range(i,i2), b.Rows(i,i2), c);
+      }
+  }
+  
+  void SubAtDB (SliceMatrix<double> a,
+                SliceVector<double> diag,
+                SliceMatrix<double> b, SliceMatrix<double> c)
+  {
+    constexpr size_t bs = NA;
+    for (size_t i = 0; i < a.Width(); i += bs)
+      {
+        size_t i2 = min2(i+bs, a.Width());
+        SubAtDB_PM (a.Cols(i,i2), diag, b, c.Rows(i,i2));
+      }
+  }
+
+
 
   /**************** timings *********************** */
 

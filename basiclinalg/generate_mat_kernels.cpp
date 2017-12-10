@@ -63,8 +63,10 @@ void GenerateMultAB (ostream & out, int h, int w, OP op, bool aligned_b)
     {
       out << "SIMD<double> a" << i << "(pa["<< i << "*da]);" << endl;
       for (int j = 0; j < w; j++)
-        // out << "sum" << j << i << " += a" << j << " * b" << i << ";" << endl;
-        out << "FMAasm(a"<<i<<",b" << j << ",sum" << i << j << ");" << endl;
+        if (op == ADD || op == SET)
+          out << "FMAasm(a"<<i<<",b" << j << ",sum" << i << j << ");" << endl;
+        else
+          out << "sum" << i << j << " -= a" << i << " * b" << j << ";" << endl;
     }
   out << "}" << endl;
 
@@ -83,8 +85,10 @@ void GenerateMultAB (ostream & out, int h, int w)
 {
   GenerateMultAB (out, h, w, SET, false);
   GenerateMultAB (out, h, w, ADD, false);
+  GenerateMultAB (out, h, w, SUB, false);
   GenerateMultAB (out, h, w, SET, true);
   GenerateMultAB (out, h, w, ADD, true);
+  GenerateMultAB (out, h, w, SUB, true);
 }
 
 
@@ -188,7 +192,10 @@ void GenerateMultABMask (ostream & out, int h, OP op, bool aligned_b)
   for (int i = 0; i < h; i++)
     {
       out << "SIMD<double> a" << i << "(pa["<< i << "*da]);" << endl;
-      out << "FMAasm(a"<<i<<",b,sum" << i << ");" << endl;
+      if (op == SET || op == ADD)
+        out << "FMAasm(a"<<i<<",b,sum" << i << ");" << endl;
+      else
+        out << "sum" << i << " -= a" << i << "*b;" << endl;
     }
   out << "}" << endl;
 
@@ -205,8 +212,10 @@ void GenerateMultABMask (ostream & out, int h)
 {
   GenerateMultABMask (out, h, SET, false);
   GenerateMultABMask (out, h, ADD, false);
+  GenerateMultABMask (out, h, SUB, false);
   GenerateMultABMask (out, h, SET, true);
   GenerateMultABMask (out, h, ADD, true);
+  GenerateMultABMask (out, h, SUB, true);
 }
 
 
