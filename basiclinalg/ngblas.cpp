@@ -939,7 +939,7 @@ namespace ngbla
         double d1 = -d(j+1);
         double d2 = -d(j+2);
         double d3 = -d(j+3);
-        SIMD<double> di(d0,d1,d2,d3);
+        SIMD<double,4> di(d0,d1,d2,d3);
         size_t i = 0;
         double * pa = &a(j,0);
         double * pb = &b(0,j);
@@ -998,6 +998,14 @@ namespace ngbla
                        ha, na, nb);
     return;
     */
+
+    
+    // loca = Trans(a);
+    // for (size_t i = 0; i < loca.Width(); i++)
+    // loca.Col(i) *= -diag(i);
+    // c += loca * b;
+    // return;
+
 #ifdef __AVX512F__
     constexpr size_t HA = 6;
 #else
@@ -1011,11 +1019,6 @@ namespace ngbla
 
     SliceMatrix<> loca(a.Width(), a.Height(), NA, &mema[0]);
     MyTransposeScaleNeg (a, loca, diag);
-    // loca = Trans(a);
-    // for (size_t i = 0; i < loca.Width(); i++)
-    // loca.Col(i) *= -diag(i);
-    // c += loca * b;
-    // return;
 
     size_t k = 0;
     for ( ; k+HA <= na; k += HA, pa += HA*da, pc += HA * c.Dist())
@@ -1034,7 +1037,6 @@ namespace ngbla
           MatKernel2AddAB<5,ADD> (ha, nb, pa, da, &b(0), db, pc, c.Dist()); break;
       default: ;
       }
-    
   }
   
   void SubAtDB_PM (SliceMatrix<double> a,
