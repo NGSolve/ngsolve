@@ -869,19 +869,6 @@ namespace ngbla
   static constexpr size_t NB = 96;
   static constexpr size_t NK = 128;
 
-  extern
-  void CopyMatrixInVTransScaleRows (size_t h, size_t w,
-                                    double * ps, size_t dists,
-                                    double * pd, size_t distd,
-                                    double * pscale, size_t distscale);
-
-  extern
-  void KernelScalNxMTrans (
-                           double * pa, size_t da,
-                           double * pb, size_t db,
-                           double * pc, size_t dc,
-                           size_t ninner, size_t na, size_t nb
-                           );
 
   /*
   void MyTranspose (SliceMatrix<> a, SliceMatrix<> b)
@@ -935,47 +922,32 @@ namespace ngbla
     size_t j = 0;
     for ( ; j+4 <= ha; j+=4)
       {
-        double d0 = -d(j);
-        double d1 = -d(j+1);
-        double d2 = -d(j+2);
-        double d3 = -d(j+3);
-        SIMD<double,4> di(d0,d1,d2,d3);
+        SIMD<double,4> di(-d(j), -d(j+1), -d(j+2), -d(j+3));
         size_t i = 0;
         double * pa = &a(j,0);
         double * pb = &b(0,j);
         for ( ; i+4 <= wa; i+=4, pa += 4, pb += 4*db)
           {
-            // double * pa = &a(j,i);
-            // double * pb = &b(i,j);
             SIMD<double,4> a0(pa);
             SIMD<double,4> a1(pa+1*da);
             SIMD<double,4> a2(pa+2*da);
             SIMD<double,4> a3(pa+3*da);
             SIMD<double,4> b0, b1, b2, b3;
             SIMDTranspose(a0,a1,a2,a3, b0,b1,b2,b3);
-            b0 *= di;
-            b1 *= di;
-            b2 *= di;
-            b3 *= di;
-            b0.Store(pb);
-            b1.Store(pb+1*db);
-            b2.Store(pb+2*db);
-            b3.Store(pb+3*db);
+            (b0*di).Store(pb);
+            (b1*di).Store(pb+1*db);
+            (b2*di).Store(pb+2*db);
+            (b3*di).Store(pb+3*db);
           }
-        for ( ; i < wa; i++)
+        for ( ; i < wa; i++, pa++, pb+=db)
           {
-            double * pa = &a(j,i);
-            double * pb = &b(i,j);
-            pb[0] = pa[0*da]*d0;
-            pb[1] = pa[1*da]*d1;
-            pb[2] = pa[2*da]*d2;
-            pb[3] = pa[3*da]*d3;
+            SIMD<double,4> b0(pa[0], pa[1*da], pa[2*da], pa[3*da]);
+            (b0*di).Store(pb);
           }
       }
     for ( ; j < ha; j++)
       b.Col(j) = (-d(j)) * a.Row(j);
   }
-
 
 
   
@@ -987,18 +959,6 @@ namespace ngbla
     size_t na = a.Width();
     size_t nb = b.Width();
     size_t ha = a.Height();
-    
-    /*
-    alignas (64) double mema[(NA+8)*NK];
-    CopyMatrixInVTransScaleRows (ha, na,
-                                 &a(0,0), a.Dist(), &mema[0], NA+8,
-                                 &diag(0), diag.Dist());
-
-    KernelScalNxMTrans(mema, NA+8, &b(0,0), b.Dist(), &c(0,0), c.Dist(),
-                       ha, na, nb);
-    return;
-    */
-
     
     // loca = Trans(a);
     // for (size_t i = 0; i < loca.Width(); i++)
@@ -1040,13 +1000,12 @@ namespace ngbla
   }
   
   void SubAtDB_PM (SliceMatrix<double> a,
-                     SliceVector<double> diag,
-                     SliceMatrix<double> b, SliceMatrix<double> c)
+                   SliceVector<double> diag,
+                   SliceMatrix<double> b, SliceMatrix<double> c)
   {
-    constexpr size_t bs = NK;
-    for (size_t i = 0; i < a.Height(); i += bs)
+    for (size_t i = 0; i < a.Height(); i += NK)
       {
-        size_t i2 = min2(i+bs, a.Height());
+        size_t i2 = min2(i+NK, a.Height());
         SubAtDB_BP (a.Rows(i,i2), diag.Range(i,i2), b.Rows(i,i2), c);
       }
   }
@@ -1055,10 +1014,9 @@ namespace ngbla
                 SliceVector<double> diag,
                 SliceMatrix<double> b, SliceMatrix<double> c)
   {
-    constexpr size_t bs = NA;
-    for (size_t i = 0; i < a.Width(); i += bs)
+    for (size_t i = 0; i < a.Width(); i += NA)
       {
-        size_t i2 = min2(i+bs, a.Width());
+        size_t i2 = min2(i+NA, a.Width());
         SubAtDB_PM (a.Cols(i,i2), diag, b, c.Rows(i,i2));
       }
   }
