@@ -82,7 +82,7 @@ namespace ngbla
       return (n > i && i >= j && j >= 0 && i-j < bw);
     }
   
-    /// assignes a constant value
+    /// assigns a constant value
     FlatSymBandMatrix & operator= (const T & val)
     {
       for (int i = 0; i < bw * n; i++)
@@ -127,7 +127,7 @@ namespace ngbla
     ~SymBandMatrix ()
     { delete [] this->data; }
 
-    /// assignes a constant value
+    /// assigns a constant value
     SymBandMatrix & operator= (const T & val)
     {
       for (int i = 0; i < this->bw * this->n; i++)

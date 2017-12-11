@@ -23,7 +23,7 @@ namespace ngcomp
     bool timing;
     bool print;
 
-    /// if true, the update in SolveBVP() is ignored, Update() has to be called explicitely.
+    /// if true, the update in SolveBVP() is ignored, Update() has to be called explicitly.
     bool laterupdate;
 
     double * testresult_ok;
