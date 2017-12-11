@@ -102,7 +102,7 @@ namespace ngfem
 
   /**
      Scalar finite element.
-     Provides shape functions and derivaties.
+     Provides shape functions and derivatives.
   */
   template <int D>
   class ScalarFiniteElement : public BaseScalarFiniteElement

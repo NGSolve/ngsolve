@@ -1096,7 +1096,7 @@ namespace ngfem
 
     // alternative to T_CalcShape, with "simpler" shape functions,
     // that are described in anisotropic paper
-    // works with CalcMappedShape etc. routines, also for curved elments
+    // works with CalcMappedShape etc. routines, also for curved elements
     template <typename Tx, typename TFA> 
     void T_CalcShape/*_nocomplex*/ (TIP<3,Tx> ip, TFA & shape) const
     {

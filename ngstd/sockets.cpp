@@ -315,17 +315,17 @@ namespace ngstd
     if(latesterror == ECONNREFUSED)
       return "No one listening on the remote address.";
     if(latesterror == ETIMEDOUT)
-      return "Timeout  while  attempting  connection. The server may be too busy to accept new connections. Note that for IP sockets the timeout may be very long when syncookies are enabled on the server.";
+      return "Timeout while attempting connection. The server may be too busy to accept new connections. Note that for IP sockets the timeout may be very long when syncookies are enabled on the server.";
     if(latesterror == ENETUNREACH)
       return "Network is unreachable.";
     if(latesterror == EINPROGRESS)
-      return "The  socket  is  non-blocking and the connection cannot be completed immediately.  It is possible to select(2) or poll(2) for completion by selecting  the  socket  for  writing. After  select  indicates  writability,  use getsockopt(2) to read the SO_ERROR option at level SOL_SOCKET to determine whether connect completed successfully (SO_ERROR is  zero) or  unsuccessfully (SO_ERROR is one of the usual error codes listed here, explaining the reason for the failure).";
+      return "The socket is non-blocking and the connection cannot be completed immediately. It is possible to select(2) or poll(2) for completion by selecting the socket for writing. After select indicates writability, use getsockopt(2) to read the SO_ERROR option at level SOL_SOCKET to determine whether connect completed successfully (SO_ERROR is zero) or unsuccessfully (SO_ERROR is one of the usual error codes listed here, explaining the reason for the failure).";
     if(latesterror == EALREADY)
       return "The socket is non-blocking and a previous connection attempt has not yet been completed.";
     if(latesterror == EAGAIN)
-      return "No  more  free local ports or insufficient entries in the routing cache. For PF_INET see the net.ipv4.ip_local_port_range sysctl in ip(7) on how to increase the number of  local ports.";
+      return "No more free local ports or insufficient entries in the routing cache. For PF_INET see the net.ipv4.ip_local_port_range sysctl in ip(7) on how to increase the number of local ports.";
     if(latesterror == EPERM)
-      return "The  user  tried  to  connect to a broadcast address without having the socket broadcast flag enabled or the connection request failed because of a local firewall rule.";
+      return "The user tried to connect to a broadcast address without having the socket broadcast flag enabled or the connection request failed because of a local firewall rule.";
 #endif
 
     

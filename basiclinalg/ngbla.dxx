@@ -12,7 +12,7 @@ frequent allocation and dealloction of dynamic objects. The generated
 code is comparable to a manually optimized code.
 
 The main idea is the following: The operator* (matrix, vector) returns a symbolic
-object matrix-vector product without evaluating it. The computations are done in the assignement,
+object matrix-vector product without evaluating it. The computations are done in the assignment,
 where the required memory for storing the result is available.
 
 A good introduction to expression templates is 
