@@ -947,6 +947,7 @@ namespace ngcomp
 	first_face_dof = 0;
       }
 
+    SetNDof(ndof);
     *testout << "Hcurlho edge dofs: " << first_edge_dof[0] << "-" << first_edge_dof[ned] << endl;
     *testout << "Hcurlho face dofs: " << first_face_dof[0] << "-" << first_face_dof[nfa] << endl;
     *testout << "Hcurlho inner dofs: " << first_inner_dof[0] << "-" << first_inner_dof[ne] << endl;
