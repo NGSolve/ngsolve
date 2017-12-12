@@ -1095,7 +1095,8 @@ namespace ngbla
           "10 .. C = A * B,   A=n*m, B=m*k, C=n*k\n"
           // "20 .. C = A * B    A=n*m, B=n*k', C=n*k', k'=round(k), B aligned\n"
           "50 .. C += A * B^t,   A=n*k, B=m*k, C=n*m\n"
-          "51 .. C += A * B^t,   A=n*k, B=m*k, C=n*m\n,  A,B aligned"
+          "51 .. C += A * B^t,   A=n*k, B=m*k, C=n*m,  A,B aligned\n"
+          "60 .. C -= A^t * D B,  A=n*k, B=n*m, C = k*m, D=diag\n"
           "100.. MultAddKernel  C += A * B,  A=4*n, B=n*3SW\n"
           "101.. MultAddKernel  C += A * B,  A=4*n, B=n*3SW, B aligned\n"
           "110.. MultAddKernel2  C += A * B,  A=4*n, B=n*m, m multiple of 3*SW\n"
@@ -1212,6 +1213,26 @@ namespace ngbla
           t.Stop();
           cout << "AddABt GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
           timings.push_back(make_tuple("AddABt", 1e-9 * tot *its / t.GetTime()));
+        }
+      }
+
+    if (what == 0 || what == 60)
+      {
+        // C=A*B^t
+        Matrix<> a(n,k), b(n,m), c(k,m);
+        Vector<> d(n);
+        a = 1, b = 1, d = 2;
+        c = 0.0;
+        double tot = n*m*k;
+        int its = 1e10 / tot + 1;
+        {
+          Timer t("C -= A^t*D*B");
+          t.Start();
+          for (int j = 0; j < its; j++)
+            SubAtDB(a, d, b, c);
+          t.Stop();
+          cout << "AddAtDB GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("AddAtDB", 1e-9 * tot *its / t.GetTime()));
         }
       }
 
