@@ -654,8 +654,32 @@ namespace ngcomp
 
 
 
+  template <int D, typename FEL = ScalarFiniteElement<D-1> >
+  class DiffOpSurfaceGradient : public DiffOp<DiffOpSurfaceGradient<D, FEL> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D-1 };
+    enum { DIM_DMAT = D };
+    enum { DIFFORDER = 1 };
 
+    ///
+    template <typename AFEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+				MAT & mat, LocalHeap & lh)
+    {
+      mat = Trans (mip.GetJacobianInverse ()) * 
+	Trans (static_cast<const FEL&>(fel).GetDShape(mip.IP(),lh));
+    }
 
+    static void GenerateMatrixSIMDIR (const FiniteElement & fel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      static_cast<const FEL&>(fel).CalcMappedDShape (mir, mat);      
+    }
+  };
 
 
   L2SurfaceHighOrderFESpace ::  
@@ -688,7 +712,9 @@ namespace ngcomp
 	integrator[BND] = 
           make_shared<RobinIntegrator<3>> (make_shared<ConstantCoefficientFunction>(1));
         evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
-        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<3>>>(); // for dimension      
+        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<3>>>(); // for dimension
+	flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpSurfaceGradient<3>>>();
+          
       }
 
     if (dimension > 1)
