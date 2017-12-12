@@ -76,16 +76,16 @@ class VecExpr(BaseExpr):
 
 class MatExpr(BaseExpr):
     def MultScale(self, s, x, y):
-        self.a.MultScale(s*self.s,x.a,y.a)
+        self.a.MultScale(s*self.s*x.s,x.a,y.a)
 
     def MultTrans(self, s, x, y):
-        self.a.MultTrans(s*self.s,x.a,y.a)
+        self.a.MultTrans(s*self.s*x.s,x.a,y.a)
 
     def MultAdd(self, s, x, y):
-        self.a.MultAdd(s*self.s,x.a,y.a)
+        self.a.MultAdd(s*self.s*x.s,x.a,y.a)
 
     def MultTransAdd(self, s, x, y):
-        self.a.MultTransAdd(s*self.s,x.a,y.a)
+        self.a.MultTransAdd(s*self.s*x.s,x.a,y.a)
 
     def __mul__(self, other):
         if isinstance(Expr(other), VecExpr):

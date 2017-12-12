@@ -1386,11 +1386,10 @@ namespace ngla
       }
     else if (  BaseSparseMatrix :: GetInverseType()  == PARDISO ||  BaseSparseMatrix :: GetInverseType()  == PARDISOSPD)
       {
-#ifdef USE_PARDISO
-	return make_shared<PardisoInverse<TM,TV_ROW,TV_COL>> (*this, subset);
-#else
-	throw Exception ("SparseMatrix::InverseMatrix:  PardisoInverse not available");
-#endif
+        if(is_pardiso_available)
+          return make_shared<PardisoInverse<TM,TV_ROW,TV_COL>> (*this, subset);
+        else
+          throw Exception ("SparseMatrix::InverseMatrix:  PardisoInverse not available");
       }
     else if (  BaseSparseMatrix :: GetInverseType()  == UMFPACK)
       {
@@ -1418,7 +1417,7 @@ namespace ngla
 
   template <class TM, class TV_ROW, class TV_COL>
   shared_ptr<BaseMatrix> SparseMatrix<TM,TV_ROW,TV_COL> ::
-  InverseMatrix (const Array<int> * clusters) const
+  InverseMatrix (shared_ptr<const Array<int>> clusters) const
   {
     // #ifndef ASTRID
     // #ifdef USE_SUPERLU
@@ -1447,11 +1446,10 @@ namespace ngla
       }
     else if ( BaseSparseMatrix :: GetInverseType()  == PARDISO ||  BaseSparseMatrix :: GetInverseType()  == PARDISOSPD)
       {
-#ifdef USE_PARDISO
-	return make_shared<PardisoInverse<TM,TV_ROW,TV_COL>> (*this, nullptr, clusters);
-#else
-	throw Exception ("SparseMatrix::InverseMatrix:  PardisoInverse not available");
-#endif
+        if(is_pardiso_available)
+          return make_shared<PardisoInverse<TM,TV_ROW,TV_COL>> (*this, nullptr, clusters);
+        else
+          throw Exception ("SparseMatrix::InverseMatrix:  PardisoInverse not available");
       }
     else if (  BaseSparseMatrix :: GetInverseType()  == UMFPACK)
       {
@@ -1530,9 +1528,9 @@ namespace ngla
 
 
   template<class TM, class TV_ROW, class TV_COL>
-  BaseSparseMatrix * 
+  shared_ptr<BaseSparseMatrix>
   SparseMatrix<TM,TV_ROW,TV_COL> :: Restrict (const SparseMatrixTM<double> & prol,
-                                  BaseSparseMatrix* acmat ) const
+                                  shared_ptr<BaseSparseMatrix> acmat ) const
   {
     static Timer t ("sparsematrix - restrict");
     static Timer tbuild ("sparsematrix - restrict, build matrix");
@@ -1541,8 +1539,7 @@ namespace ngla
     
     int n = this->Height();
 
-    SparseMatrixTM<TM>* cmat = 
-      dynamic_cast< SparseMatrixTM<TM>* > ( acmat );
+    auto cmat = dynamic_pointer_cast<SparseMatrixTM<TM>> (acmat);
  
     // if no coarse matrix, build up matrix-graph!
     if ( !cmat )
@@ -1606,7 +1603,7 @@ namespace ngla
 		}
 	    }
 
-	cmat = new SparseMatrix<TM,TV_ROW,TV_COL> (cnt);
+	cmat = make_shared<SparseMatrix<TM,TV_ROW,TV_COL>> (cnt);
 
 	marks = -1;
 	for (int i = 0; i < nc; i++)
@@ -1871,7 +1868,7 @@ namespace ngla
 
 
 
-  SparseMatrixTM<double> *
+  shared_ptr<SparseMatrixTM<double>>
   TransposeMatrix (const SparseMatrixTM<double> & mat)
   {
     static Timer t1("TransposeMatrix 1");
@@ -1887,7 +1884,7 @@ namespace ngla
                  });
     t1.Stop();
     t2.Start();
-    SparseMatrixTM<double> * trans = new SparseMatrix<double>(cnt, mat.Height());
+    auto trans = make_shared<SparseMatrix<double>>(cnt, mat.Height());
     /*
     cnt = 0;
     for (int i = 0; i < mat.Height(); i++)
@@ -1922,7 +1919,7 @@ namespace ngla
     return trans;
   }
 
-  SparseMatrix<double,double> *
+  shared_ptr<SparseMatrix<double,double>>
   MakeFullMatrix (const SparseMatrix<double, double> & mat)
   {
     Array<int> cnt(mat.Width());
@@ -1934,7 +1931,7 @@ namespace ngla
           if (c < i) cnt[c]++;
       }
     
-    SparseMatrix<double,double> * full = new SparseMatrix<double>(cnt);
+    auto full = make_shared<SparseMatrix<double>>(cnt);
     cnt = 0;
 
     //for (int i = 0; i < mat.Height(); i++)
@@ -1960,7 +1957,7 @@ namespace ngla
     return full;    
   }
 
-  SparseMatrixSymmetric<double,double> *
+  shared_ptr<SparseMatrixSymmetric<double,double>>
   GetSymmetricMatrix (SparseMatrixTM<double> & mat)
   {
     Array<int> cnt(mat.Width());
@@ -1970,7 +1967,7 @@ namespace ngla
         if (c <= i)
           cnt[i]++;
 
-    auto * full = new SparseMatrixSymmetric<double>(cnt);
+    auto full = make_shared<SparseMatrixSymmetric<double>>(cnt);
     cnt = 0;
 
     for (int i = 0; i < mat.Height(); i++)
@@ -1986,7 +1983,7 @@ namespace ngla
 
 
   template <typename TM_Res, typename TM1, typename TM2>
-  SparseMatrixTM<TM_Res> *
+  shared_ptr<SparseMatrixTM<TM_Res>>
   MatMult (const SparseMatrixTM<TM1> & mata, const SparseMatrixTM<TM2> & matb)
   {
     static Timer t ("sparse matrix multiplication");
@@ -2027,7 +2024,7 @@ namespace ngla
     t1a.Stop();
     t1b.Start();
     t1b1.Start();
-    SparseMatrixTM<TM_Res> * prod = new SparseMatrix<TM_Res>(cnt, matb.Width());
+    auto prod = make_shared<SparseMatrix<TM_Res>>(cnt, matb.Width());
     prod->AsVector() = 0.0;
     t1b1.Stop();
     // fill col-indices
@@ -2123,16 +2120,16 @@ namespace ngla
     return prod;
   }
 
-  SparseMatrixTM<double> *
-  MatMult (const SparseMatrix<double, double, double> & mata, const SparseMatrix<double, double, double> & matb)
+  shared_ptr<SparseMatrixTM<double>> MatMult (const SparseMatrix<double, double, double> & mata,
+                const SparseMatrix<double, double, double> & matb)
   {
     return MatMult<double, double, double>(mata, matb);
   }
 
   template <class TM, class TV>
-  BaseSparseMatrix * 
+  shared_ptr<BaseSparseMatrix>
   SparseMatrixSymmetric<TM,TV> :: Restrict (const SparseMatrixTM<double> & prol,
-					    BaseSparseMatrix* acmat ) const
+					    shared_ptr<BaseSparseMatrix> acmat ) const
   {
     static Timer t ("sparsematrix - restrict");
     static Timer tbuild ("sparsematrix - restrict, build matrix");
@@ -2141,8 +2138,7 @@ namespace ngla
     
     int n = this->Height();
 
-    SparseMatrixSymmetric<TM,TV>* cmat = 
-      dynamic_cast< SparseMatrixSymmetric<TM,TV>* > ( acmat );
+    auto cmat = dynamic_pointer_cast<SparseMatrixSymmetric<TM,TV>>(acmat);
  
     // if no coarse matrix, build up matrix-graph!
     if ( !cmat )
@@ -2206,7 +2202,7 @@ namespace ngla
 		}
 	    }
 
-	cmat = new SparseMatrixSymmetric<TM,TV> (cnt);
+	cmat = make_shared<SparseMatrixSymmetric<TM,TV>> (cnt);
 
 	marks = -1;
 	for (int i = 0; i < nc; i++)
@@ -2267,9 +2263,9 @@ namespace ngla
 
 
 
-  template <> BaseSparseMatrix *
+  template <> shared_ptr<BaseSparseMatrix>
   SparseMatrix<double> :: Restrict (const SparseMatrixTM<double> & prol,
-                                    BaseSparseMatrix* acmat ) const
+                                    shared_ptr<BaseSparseMatrix> acmat ) const
   {
     static Timer t ("sparsematrix - restrict");
     RegionTimer reg(t);
@@ -2278,15 +2274,12 @@ namespace ngla
 
     auto prod1 = MatMult<double, double, double>(*this, prol);
     auto prod = MatMult<double, double, double>(*prolT, *prod1);
-
-    delete prod1;
-    delete prolT;
     return prod;
   }
 
-  template <> BaseSparseMatrix *
+  template <> shared_ptr<BaseSparseMatrix>
   SparseMatrix<std::complex<double>> :: Restrict (const SparseMatrixTM<double> & prol,
-                                                  BaseSparseMatrix* acmat ) const
+                                                  shared_ptr<BaseSparseMatrix> acmat ) const
   {
     static Timer t ("sparsematrix - restrict");
     RegionTimer reg(t);
@@ -2295,9 +2288,6 @@ namespace ngla
 
     auto prod1 = MatMult<std::complex<double>, std::complex<double>, double>(*this, prol);
     auto prod = MatMult<std::complex<double>, double, std::complex<double>>(*prolT, *prod1);
-
-    delete prod1;
-    delete prolT;
     return prod;
   }
 
@@ -2305,9 +2295,9 @@ namespace ngla
 
 
 
-  template <> BaseSparseMatrix *
+  template <> shared_ptr<BaseSparseMatrix>
   SparseMatrixSymmetric<double,double> :: Restrict (const SparseMatrixTM<double> & prol,
-                                                    BaseSparseMatrix* acmat ) const
+                                                    shared_ptr<BaseSparseMatrix> acmat ) const
   {
     static Timer t ("sparsematrixsymmetric - restrict");
     RegionTimer reg(t);
@@ -2319,11 +2309,6 @@ namespace ngla
     auto prod = MatMult<double, double, double>(*prolT, *prod1);
 
     auto prodhalf = GetSymmetricMatrix (*prod);
-
-    delete prod;
-    delete prod1;
-    delete full;
-    delete prolT;
     return prodhalf;
 
 
@@ -2514,11 +2499,10 @@ namespace ngla
       }
     else if ( BaseSparseMatrix :: GetInverseType()  == PARDISO ||  BaseSparseMatrix :: GetInverseType()  == PARDISOSPD)
       {
-#ifdef USE_PARDISO
-	return make_shared<PardisoInverse<TM,TV_ROW,TV_COL>> (*this, subset, nullptr, 1);
-#else
-	throw Exception ("SparseMatrix::InverseMatrix:  PardisoInverse not available");
-#endif
+        if(is_pardiso_available)
+          return make_shared<PardisoInverse<TM,TV_ROW,TV_COL>> (*this, subset, nullptr, 1);
+        else
+          throw Exception ("SparseMatrix::InverseMatrix:  PardisoInverse not available");
       }
     else if (  BaseSparseMatrix :: GetInverseType()  == UMFPACK)
       {
@@ -2542,7 +2526,7 @@ namespace ngla
   }
 
   template <class TM, class TV>
-  shared_ptr<BaseMatrix> SparseMatrixSymmetric<TM,TV> :: InverseMatrix (const Array<int> * clusters) const
+  shared_ptr<BaseMatrix> SparseMatrixSymmetric<TM,TV> :: InverseMatrix (shared_ptr<const Array<int>> clusters) const
   {
     // #ifndef ASTRID
     // #ifdef USE_SUPERLU
@@ -2572,11 +2556,10 @@ namespace ngla
       }
     else if (  BaseSparseMatrix :: GetInverseType()  == PARDISO ||  BaseSparseMatrix :: GetInverseType()  == PARDISOSPD)
       {
-#ifdef USE_PARDISO
-	return make_shared<PardisoInverse<TM,TV_ROW,TV_COL>> (*this, nullptr, clusters, 1);
-#else
-	throw Exception ("SparseMatrix::InverseMatrix:  PardisoInverse not available");
-#endif
+        if(is_pardiso_available)
+          return make_shared<PardisoInverse<TM,TV_ROW,TV_COL>> (*this, nullptr, clusters, 1);
+        else
+          throw Exception ("SparseMatrix::InverseMatrix:  PardisoInverse not available");
       }
     else if (  BaseSparseMatrix :: GetInverseType()  == UMFPACK)
       {

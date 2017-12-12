@@ -99,7 +99,7 @@ namespace ngcomp
     ElementId First() const { return ElementId(vb, IntRange::First()); }
     ElementIterator begin () const { return ElementIterator(ma, ElementId(vb,IntRange::First())); }
     ElementIterator end () const { return ElementIterator(ma, ElementId(vb,IntRange::Next())); }
-    ElementId operator[] (int nr) { return ElementId(vb, IntRange::First()+nr); }
+    ElementId operator[] (size_t nr) { return ElementId(vb, IntRange::First()+nr); }
     ElementRange Split(size_t nr, size_t tot) { return ElementRange(ma, vb, IntRange::Split(nr,tot)); }
   };
 
@@ -210,21 +210,19 @@ namespace ngcomp
     size_t nelements[4];  
     /// number of elements of co-dimension i
     size_t nelements_cd[4];
-    ///
-    // size_t ne_vb[3];  // index with VorB = nelements_cd !!!
     /// number of multigrid levels 
     int nlevels;
 
     int nregions[3];
     
     /// max domain index
-    int & ndomains = nregions[0];
+    // int & ndomains = nregions[0];
 
     /// max boundary index
-    int & nboundaries = nregions[1];
+    // int & nboundaries = nregions[1];
 
     /// max boundary index for co dim 2
-    int & nbboundaries = nregions[2];
+    // int & nbboundaries = nregions[2];
 
     size_t timestamp = 0;
     
@@ -289,18 +287,15 @@ namespace ngcomp
 
 
     /// maximal sub-domain (material) index. range is [0, ndomains)
-    int GetNDomains () const  { return ndomains; }
+    int GetNDomains () const  { return nregions[VOL]; }
 
     /// maximal boundary condition index. range is [0, nboundaries)
-    int GetNBoundaries () const { return nboundaries; }
+    int GetNBoundaries () const { return nregions[BND]; }
 
-    int GetNBBoundaries() const { return nbboundaries; }
+    [[deprecated("Use GetNRegions (BBND) instead!")]]            
+    int GetNBBoundaries() const { return nregions[BBND]; }
 
-    int GetNRegions (VorB vb) const
-    {
-      return nregions[vb];
-      // return (vb == VOL) ? ndomains : ((vb==BND) ? nboundaries : nbboundaries);
-    }
+    int GetNRegions (VorB vb) const { return nregions[vb]; }
 
     /// returns point coordinate
     template <int D>
@@ -652,7 +647,7 @@ namespace ngcomp
 
     void SetPML (shared_ptr<PML_Transformation> pml_trafo, int _domnr)
     {
-      if (_domnr>=ndomains)
+      if (_domnr>=nregions[VOL])
         throw Exception("MeshAccess::SetPML: was not able to set PML, domain index too high!");
       if (pml_trafo->GetDimension()!=dim)
         throw Exception("MeshAccess::SetPML: dimension of PML = "+ToString(pml_trafo->GetDimension())+" does not fit mesh dimension!");
@@ -661,7 +656,7 @@ namespace ngcomp
     
     void UnSetPML (int _domnr)
     {
-      if (_domnr>=ndomains)
+      if (_domnr>=nregions[VOL])
         throw Exception("MeshAccess::UnSetPML: was not able to unset PML, domain index too high!");
       pml_trafos[_domnr] = nullptr; 
     }
@@ -670,7 +665,7 @@ namespace ngcomp
 
     shared_ptr<PML_Transformation> GetPML(int _domnr)
     {
-      if (_domnr>=ndomains)
+      if (_domnr>=nregions[VOL])
         throw Exception("MeshAccess::GetPML: was not able to get PML, domain index too high!");
       return pml_trafos[_domnr];
     }

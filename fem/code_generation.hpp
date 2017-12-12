@@ -7,18 +7,12 @@
 /* Date:   13. Apr. 2016                                             */
 /*********************************************************************/
 
-#ifdef WIN32
-#include <windows.h>
-#else // WIN32
-#include <dlfcn.h>
-#endif //WIN32
-
 #include <map>
 
 namespace ngfem
 {
   template <typename T>
-  string ToLiteral(const T & val)
+  inline string ToLiteral(const T & val)
   {
       stringstream ss;
 #if (defined __cpp_hex_float) && (__cpp_hex_float <= __cplusplus)
@@ -33,6 +27,14 @@ namespace ngfem
       return ss.str();
   }
 
+  template<>
+  inline string ToLiteral (const int &val)
+  {
+    stringstream ss;
+    ss << val;
+    return ss.str();
+  }
+
 
   struct Code
   {
@@ -41,10 +43,13 @@ namespace ngfem
     string body;
     bool is_simd;
     int deriv;
+    std::vector<string> link_flags;
 
     string pointer;
 
     string AddPointer(const void *p );
+
+    void AddLinkFlag(string flag);
 
     static atomic<unsigned> id_counter;
     static string Map( string code, std::map<string,string> variables ) {
@@ -111,7 +116,7 @@ namespace ngfem
 
   inline CodeExpr Var(Complex val)
   {
-    return ToLiteral(val);
+    return "Complex"+ToLiteral(val);
   }
 
   inline CodeExpr Var(string name, int i, int j=0, int k=0)
@@ -166,34 +171,7 @@ namespace ngfem
     }
   }
 
-  class Library
-  {
-    static int counter; // defined in coefficient.cpp
-    string lib_name;
+  unique_ptr<SharedLibrary> CompileCode(const std::vector<string> &codes, const std::vector<string> &libraries );
 
-#ifdef WIN32
-    HINSTANCE lib;
-#else // WIN32
-    void *lib;
-#endif // WIN32
-
-    void *GetRawFunction( string func_name );
-
-  public:
-    Library() : lib(nullptr) {}
-    // Compile a given string and load the library
-    void Compile( const std::vector<string> &codes );
-
-    void Load( string alib_name );
-
-    template <typename TFunc>
-    TFunc GetFunction( string func_name )
-    {
-      return reinterpret_cast<TFunc>(GetRawFunction(func_name));
-    }
-
-    ~Library();
-
-  };
 }
 #endif // FILE_NGS_CODE_GENERATION___

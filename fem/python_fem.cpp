@@ -492,7 +492,13 @@ val : can be one of the following:
 )raw")
     .def(py::init([] (py::object val, py::object dims)
         {
-          auto coef = MakeCoefficient(val);
+          shared_ptr<CoefficientFunction> coef;
+          
+          py::extract<shared_ptr<CF>> ecf(val);
+          if (ecf.check())
+            coef = UnaryOpCF (ecf(), [](auto x) { return x; }, " ");
+          else
+            coef = MakeCoefficient(val);
           if(dims)
             {
               try {
@@ -600,6 +606,33 @@ val : can be one of the following:
              return c1*c2;
            } )
 
+    .def ("__pow__", [] (shared_ptr<CF> c1, int p)
+           {
+             shared_ptr<CF> one = make_shared<ConstantCoefficientFunction>(1.0);
+             if(p==0) return one;
+
+             unsigned n = abs(p);
+             shared_ptr<CF> square = c1;
+             shared_ptr<CF> res;
+
+             // exponentiation by squaring
+             while(n)
+             {
+               if(n%2)
+               {
+                 // check if res was not yet assigned any value
+                 res = res ? res*square : square;
+               }
+               square = square*square;
+               n /= 2;
+             }
+
+             if(p<0)
+               return one/res;
+             else
+               return res;
+           } )
+
     .def ("__pow__", [] (shared_ptr<CF> c1, shared_ptr<CF> c2)
            {
              GenericPow func;
@@ -667,6 +700,8 @@ val : can be one of the following:
                       return TransposeCF(coef);
                     },
                    "transpose of matrix-valued CF")
+    .def_property_readonly ("real", [](shared_ptr<CF> coef) { return Real(coef); }, "real part of CF")
+    .def_property_readonly ("imag", [](shared_ptr<CF> coef) { return Imag(coef); }, "imaginary part of CF")
 
     .def ("Compile", [] (shared_ptr<CF> coef, bool realcompile, int maxderiv, bool wait)
            { return Compile (coef, realcompile, maxderiv, wait); },
@@ -689,7 +724,7 @@ val : can be one of the following:
 
   ExportStdMathFunction2<GenericATan2>(m, "atan2");
   ExportStdMathFunction2<GenericPow>(m, "pow");
-  
+
   m.def ("IfPos", [] (shared_ptr<CF> c1, py::object then_obj, py::object else_obj)
             {
               return IfPos(c1,
@@ -1299,28 +1334,41 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
 
     .def("SetDefinedOnElements",  [](shared_ptr<BFI> self, shared_ptr<BitArray> ba )
                                                   { self->SetDefinedOnElements (ba); } )
-
+    .def("SetIntegrationRule", [] (shared_ptr<BFI> self, ELEMENT_TYPE et, IntegrationRule ir)
+         {
+           self -> SetIntegrationRule(et,ir);
+           return self;
+         })
     .def("CalcElementMatrix",
          [] (shared_ptr<BFI> self,
-                             const FiniteElement & fe, const ElementTransformation &trafo,
-                             int heapsize)
+             const FiniteElement & fe, const ElementTransformation &trafo,
+             int heapsize, bool complex)
                          {
-                           Matrix<> mat(fe.GetNDof());
                            while (true)
                              {
                                try
                                  {
                                    LocalHeap lh(heapsize);
-                                   self->CalcElementMatrix (fe, trafo, mat, lh);
-                                   return mat;
+                                   if (complex)
+                                     {
+                                       Matrix<Complex> mat(fe.GetNDof() * self->GetDimension());
+                                       self->CalcElementMatrix(fe,trafo,mat,lh);
+                                       return py::cast(mat);
+                                     }
+                                   else
+                                     {
+                                       Matrix<> mat(fe.GetNDof() * self->GetDimension());
+                                       self->CalcElementMatrix (fe, trafo, mat, lh);
+                                       return py::cast(mat);
+                                     }
                                  }
                                catch (LocalHeapOverflow ex)
                                  {
                                    heapsize *= 10;
                                  }
-                             };
+                             }
                          },
-         py::arg("fel"),py::arg("trafo"),py::arg("heapsize")=10000)
+         py::arg("fel"),py::arg("trafo"),py::arg("heapsize")=10000, py::arg("complex") = false)
     ;
 
 
@@ -1387,21 +1435,35 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
          py::return_value_policy::reference)
     .def("SetDefinedOnElements",  [](shared_ptr<LFI> self, shared_ptr<BitArray> ba )
                                                   { self->SetDefinedOnElements (ba); } )
+    .def("SetIntegrationRule", [](shared_ptr<LFI> self, ELEMENT_TYPE et, IntegrationRule ir)
+         {
+           self->SetIntegrationRule(et,ir);
+           return self;
+         })
 
     .def("CalcElementVector", 
         static_cast<void(LinearFormIntegrator::*)(const FiniteElement&, const ElementTransformation&, FlatVector<double>, LocalHeap&)const>(&LinearFormIntegrator::CalcElementVector))
     .def("CalcElementVector",
          [] (shared_ptr<LFI>  self, const FiniteElement & fe, const ElementTransformation& trafo,
-             int heapsize)
+             int heapsize, bool complex)
          {
-           Vector<> vec(fe.GetNDof());
            while (true)
              {
                try
                  {
                    LocalHeap lh(heapsize);
-                   self->CalcElementVector (fe, trafo, vec, lh);
-                   return vec;
+                   if (complex)
+                     {
+                       Vector<Complex> vec(fe.GetNDof() * self->GetDimension());
+                       self->CalcElementVector(fe,trafo,vec,lh);
+                       return py::cast(vec);
+                     }
+                   else
+                     {
+                       Vector<> vec(fe.GetNDof() * self->GetDimension());
+                       self->CalcElementVector (fe, trafo, vec, lh);
+                       return py::cast(vec);
+                     }
                  }
                catch (LocalHeapOverflow ex)
                  {
@@ -1409,7 +1471,7 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
                  }
              };
          },
-         py::arg("fel"),py::arg("trafo"),py::arg("heapsize")=10000)
+         py::arg("fel"),py::arg("trafo"),py::arg("heapsize")=10000, py::arg("complex")=false)
     ;
 
 

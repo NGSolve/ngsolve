@@ -288,24 +288,24 @@ public:
 
 
     virtual shared_ptr<BaseMatrix>
-      InverseMatrix (shared_ptr<BitArray> subset = nullptr) const
+      InverseMatrix (shared_ptr<BitArray> subset = nullptr) const override
     { 
       throw Exception ("BaseSparseMatrix::CreateInverse called");
     }
 
     virtual shared_ptr<BaseMatrix>
-    InverseMatrix (const Array<int> * clusters) const
+      InverseMatrix (shared_ptr<const Array<int>> clusters) const override
     { 
       throw Exception ("BaseSparseMatrix::CreateInverse called");
     }
 
-    virtual BaseSparseMatrix * Restrict (const SparseMatrixTM<double> & prol,
-					 BaseSparseMatrix* cmat = NULL ) const
+    virtual shared_ptr<BaseSparseMatrix> Restrict (const SparseMatrixTM<double> & prol,
+                                                   shared_ptr<BaseSparseMatrix> cmat = nullptr ) const
     {
       throw Exception ("BaseSparseMatrix::Restrict");
     }
 
-    virtual INVERSETYPE SetInverseType ( INVERSETYPE ainversetype ) const
+    virtual INVERSETYPE SetInverseType ( INVERSETYPE ainversetype ) const override
     {
 
       INVERSETYPE old_invtype = inversetype;
@@ -313,9 +313,9 @@ public:
       return old_invtype;
     }
 
-    virtual INVERSETYPE SetInverseType ( string ainversetype ) const;
+    virtual INVERSETYPE SetInverseType ( string ainversetype ) const override;
 
-    virtual INVERSETYPE  GetInverseType () const
+    virtual INVERSETYPE  GetInverseType () const override
     { return inversetype; }
 
     void SetSPD (bool aspd = true) { spd = aspd; }
@@ -478,13 +478,13 @@ public:
     SparseMatrix (const SparseMatrixTM<TM> & amat)
       : SparseMatrixTM<TM> (amat) { ; }
 
-    virtual shared_ptr<BaseMatrix> CreateMatrix () const;
+    virtual shared_ptr<BaseMatrix> CreateMatrix () const override;
     // virtual BaseMatrix * CreateMatrix (const Array<int> & elsperrow) const;
     ///
-    virtual AutoVector CreateVector () const;
+    virtual AutoVector CreateVector () const override;
 
     virtual shared_ptr<BaseJacobiPrecond>
-      CreateJacobiPrecond (shared_ptr<BitArray> inner) const
+      CreateJacobiPrecond (shared_ptr<BitArray> inner) const override
     { 
       return make_shared<JacobiPrecond<TM,TV_ROW,TV_COL>> (*this, inner);
     }
@@ -493,16 +493,16 @@ public:
       CreateBlockJacobiPrecond (shared_ptr<Table<int>> blocks,
                                 const BaseVector * constraint = 0,
                                 bool parallel = 1,
-                                shared_ptr<BitArray> freedofs = NULL) const
+                                shared_ptr<BitArray> freedofs = NULL) const override
     { 
       return make_shared<BlockJacobiPrecond<TM,TV_ROW,TV_COL>> (*this, blocks );
     }
 
-    virtual shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<BitArray> subset = nullptr) const;
-    virtual shared_ptr<BaseMatrix> InverseMatrix (const Array<int> * clusters) const;
+    virtual shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<BitArray> subset = nullptr) const override;
+    virtual shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<const Array<int>> clusters) const override;
 
-    virtual BaseSparseMatrix * Restrict (const SparseMatrixTM<double> & prol,
-					 BaseSparseMatrix* cmat = NULL ) const;
+    virtual shared_ptr<BaseSparseMatrix> Restrict (const SparseMatrixTM<double> & prol,
+					 shared_ptr<BaseSparseMatrix> cmat = nullptr) const override;
 
   
     ///
@@ -570,12 +570,12 @@ public:
     }
 
 
-    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
-    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const;
-    virtual void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const;
-    virtual void MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const;
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    virtual void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const override;
+    virtual void MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const override;
 
-    virtual void DoArchive (Archive & ar);
+    virtual void DoArchive (Archive & ar) override;
   };
 
 #ifdef REMOVED
@@ -684,7 +684,7 @@ public:
       return *this;
     }
 
-    virtual shared_ptr<BaseMatrix> CreateMatrix () const
+    virtual shared_ptr<BaseMatrix> CreateMatrix () const override
     {
       return make_shared<SparseMatrixSymmetric> (*this);
     }
@@ -699,12 +699,12 @@ public:
     virtual void AddElementMatrix(FlatArray<int> dnums1, 
 				  FlatArray<int> dnums2, 
 				  BareSliceMatrix<TSCAL> elmat,
-                                  bool use_atomic = false)
+                                  bool use_atomic = false) override
     {
       this->AddElementMatrixSymmetric (dnums1, elmat, use_atomic);
     }
     
-    virtual shared_ptr<BaseJacobiPrecond> CreateJacobiPrecond (shared_ptr<BitArray> inner) const
+    virtual shared_ptr<BaseJacobiPrecond> CreateJacobiPrecond (shared_ptr<BitArray> inner) const override
     { 
       return make_shared<JacobiPrecondSymmetric<TM,TV>> (*this, inner);
     }
@@ -713,19 +713,19 @@ public:
       CreateBlockJacobiPrecond (shared_ptr<Table<int>> blocks,
                                 const BaseVector * constraint = 0,
                                 bool parallel  = 1,
-                                shared_ptr<BitArray> freedofs = NULL) const
+                                shared_ptr<BitArray> freedofs = NULL) const override
     { 
       return make_shared<BlockJacobiPrecondSymmetric<TM,TV>> (*this, blocks);
     }
 
 
-    virtual BaseSparseMatrix * Restrict (const SparseMatrixTM<double> & prol,
-					 BaseSparseMatrix* cmat = NULL ) const;
+    virtual shared_ptr<BaseSparseMatrix> Restrict (const SparseMatrixTM<double> & prol,
+					 shared_ptr<BaseSparseMatrix> cmat = nullptr) const override;
 
     ///
-    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
 
-    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override
     {
       MultAdd (s, x, y);
     }
@@ -736,7 +736,7 @@ public:
     */
     virtual void MultAdd1 (double s, const BaseVector & x, BaseVector & y,
 			   const BitArray * ainner = NULL,
-			   const Array<int> * acluster = NULL) const;
+			   const Array<int> * acluster = NULL) const override;
 
 
     /*
@@ -744,7 +744,7 @@ public:
     */
     virtual void MultAdd2 (double s, const BaseVector & x, BaseVector & y,
 			   const BitArray * ainner = NULL,
-			   const Array<int> * acluster = NULL) const;
+			   const Array<int> * acluster = NULL) const override;
     
 
 
@@ -812,13 +812,13 @@ public:
   
     BaseSparseMatrix & AddMerge (double s, const SparseMatrixSymmetric  & m2);
 
-    virtual shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<BitArray> subset = nullptr) const;
-    virtual shared_ptr<BaseMatrix> InverseMatrix (const Array<int> * clusters) const;
+    virtual shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<BitArray> subset = nullptr) const override;
+    virtual shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<const Array<int>> clusters) const override;
   };
 
-  SparseMatrixTM<double> * TransposeMatrix (const SparseMatrixTM<double> & mat);
+  shared_ptr<SparseMatrixTM<double>> TransposeMatrix (const SparseMatrixTM<double> & mat);
 
-  SparseMatrixTM<double> *
+  shared_ptr<SparseMatrixTM<double>>
   MatMult (const SparseMatrix<double, double, double> & mata, const SparseMatrix<double, double, double> & matb);
 
 #ifdef GOLD

@@ -287,15 +287,17 @@ namespace ngfem
   list<tuple<string,double>> ScalarFiniteElement<D> :: Timing () const
   {
     list<tuple<string,double>>timings;
-    IntegrationRule ir(ElementType(), Order());
-    SIMD_IntegrationRule simdir(ElementType(), Order());
+    IntegrationRule ir(ElementType(), 2*Order());
+    SIMD_IntegrationRule simdir(ElementType(), 2*Order());
     Vector<> shape(GetNDof()), coefs(GetNDof());
     Vector<> values(ir.Size());
     Matrix<> dvalues(ir.Size(), D);
     Vector<SIMD<double>> avalues(simdir.Size());
     Matrix<SIMD<double>> advalues(D, simdir.Size());
     FE_ElementTransformation<D,D> trafo(ElementType());
-    static LocalHeap lh (100000, "FE - Timing");
+    static LocalHeap lh (10000000, "FE - Timing");
+    HeapReset hr(lh);
+    auto & mir = trafo(ir, lh);
     auto & simdmir = trafo(simdir, lh);
     
     coefs = 1;
@@ -330,7 +332,7 @@ namespace ngfem
 
     time = RunTiming([&]() {
                      for (size_t i = 0; i < steps; i++)
-                       this -> EvaluateGrad(simdir, coefs, advalues);
+                       this -> EvaluateGrad(simdmir, coefs, advalues);
                      }, maxtime);
     timings.push_back(make_tuple("Evaluate Grad(SIMD)", time/steps*1e9/(D*GetNDof()*ir.GetNIP())));
 

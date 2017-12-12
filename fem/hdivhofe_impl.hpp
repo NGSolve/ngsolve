@@ -19,7 +19,8 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx hx[2], TFA & shape) const; 
+    // void T_CalcShape (Tx hx[2], TFA & shape) const;
+    INLINE void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const; 
   };
 
   template <>
@@ -27,7 +28,7 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx hx[2], TFA & shape) const; 
+    INLINE void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const; 
   };
 
   template<> 
@@ -37,7 +38,7 @@ namespace ngfem
     typedef TetShapesFaceLegendre T_FACESHAPES; 
   public:
     template<typename Tx, typename TFA>  
-    inline void T_CalcShape (Tx hx[], TFA & shape) const;
+    inline void T_CalcShape (TIP<3,Tx> ip, TFA & shape) const;
   };
 
   template<>
@@ -46,7 +47,7 @@ namespace ngfem
     typedef TrigShapesInnerLegendre T_TRIGFACESHAPES;
   public:
     template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx hx[], TFA & shape) const;
+    void T_CalcShape (TIP<3,Tx> ip, TFA & shape) const;
   };
 
   template<>
@@ -54,7 +55,7 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx hx[], TFA & shape) const;
+    void T_CalcShape (TIP<3,Tx> ip, TFA & shape) const;
   };
 
 
@@ -63,11 +64,11 @@ namespace ngfem
 
 
   template<typename Tx, typename TFA>  
-  INLINE void  HDivHighOrderFE_Shape<ET_TRIG> :: T_CalcShape (Tx hx[2], TFA & shape) const
+  INLINE void  HDivHighOrderFE_Shape<ET_TRIG> :: T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
   {
     if (only_ho_div && (order_inner[0] <= 1)) return;
 
-    Tx lam[3] = { hx[0], hx[1], 1-hx[0]-hx[1] };
+    Tx lam[3] = { ip.x, ip.y, 1-ip.x-ip.y };
 
     int ii = 3; 
     if (!only_ho_div)
@@ -196,18 +197,21 @@ namespace ngfem
 
 
   template<typename Tx, typename TFA>  
-  void  HDivHighOrderFE_Shape<ET_QUAD> :: T_CalcShape (Tx hx[2], TFA & shape) const
+  void  HDivHighOrderFE_Shape<ET_QUAD> :: T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
   {
 
     if (only_ho_div && (order_inner[0]<=1 && order_inner[1]<=1)) return;
-    Tx x = hx[0], y = hx[1];
+    Tx x = ip.x, y = ip.y;
 
     Tx lami[4] = {(1-x)*(1-y),x*(1-y),x*y,(1-x)*y};  
     Tx sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};  
 
-    int ii = 4;
-    ArrayMem<Tx, 10> pol_xi(order+2), pol_eta(order+2);
-
+    size_t ii = 4;
+    // ArrayMem<Tx, 10> pol_xi(order+2), pol_eta(order+2);
+    STACK_ARRAY(Tx, mem, 2*order+4);
+    Tx * pol_xi = &mem[0];
+    Tx * pol_eta = &mem[order+2];
+    
     if (!only_ho_div){
       // edges
       const EDGE * edges = ElementTopology::GetEdges (ET_QUAD);
@@ -228,15 +232,24 @@ namespace ngfem
         {
           // T_ORTHOPOL::Calc (p+1, xi, pol_xi);  
           // LegendrePolynomial::
+          /*
           IntLegNoBubble::
             EvalMult (p-1, xi, 0.25*(1-xi*xi), pol_xi);
           for (int j = 0; j < p; j++)
             shape[ii++] = Du<2> (pol_xi[j] * lam_e);
+          */
+          IntLegNoBubble::
+            EvalMult (p-1, xi, 0.25*(1-xi*xi)*lam_e,
+                      SBLambda([&] (size_t j, Tx val)
+                               {
+                                 shape[ii++] = Du<2> (val);
+                               }));
         }
         }
     }
     else
       ii = 0;
+
     // INT<2> p = order_face[0]; // (order_cell[0],order_cell[1]);
     INT<2> p (order_inner[0], order_inner[1]); // (order_cell[0],order_cell[1]);
     int fmax = 0; 
@@ -250,17 +263,23 @@ namespace ngfem
     
     Tx xi = sigma[fmax]-sigma[f1];  // in [-1,1]
     Tx eta = sigma[fmax]-sigma[f2]; // in [-1,1]
-    
+
+    /*
     T_ORTHOPOL::Calc(p[0]+1, xi,pol_xi);
     T_ORTHOPOL::Calc(p[1]+1,eta,pol_eta);
-
+    */
+    IntLegNoBubble::EvalMult (p[0]-1, xi, 0.25*(1-xi*xi), pol_xi);
+    IntLegNoBubble::EvalMult (p[1]-1, eta, 0.25*(1-eta*eta), pol_eta);
     if (!only_ho_div)
     {    
       //Gradient fields 
       // if(usegrad_face[0])
-      for (int k = 0; k < p[0]; k++)
-        for (int j= 0; j < p[1]; j++)
-          shape[ii++] = Du<2> (pol_xi[k]*pol_eta[j]);
+      for (size_t k = 0; k < p[0]; k++)
+        {
+          auto val_k = pol_xi[k];
+          for (size_t j= 0; j < p[1]; j++)
+            shape[ii++] = Du<2> (val_k*pol_eta[j]);
+        }
     }
 
     if (!ho_div_free)
@@ -269,7 +288,9 @@ namespace ngfem
         for (int k = 0; k < p[0]; k++)
           for (int j= 0; j < p[1]; j++)
             shape[ii++] = uDv_minus_vDu<2> (pol_eta[j], pol_xi[k]);
-        
+
+        // extern int myvar;
+        // myvar++;
         //Missing ones 
         for(int j = 0; j< p[0]; j++)
           shape[ii++] = uDv<2> (0.5*pol_xi[j], eta);
@@ -278,7 +299,7 @@ namespace ngfem
           shape[ii++] = uDv<2> (0.5*pol_eta[j], xi); 
       }
 
-    if (ii != ndof) cout << "ndof = " << ndof << ", but ii = " << ii << endl;
+    // if (ii != ndof) cout << "ndof = " << ndof << ", but ii = " << ii << endl;
   }
 
 
@@ -297,18 +318,18 @@ namespace ngfem
   
   /// compute shape
   template<typename Tx, typename TFA>  
-  inline void HDivHighOrderFE_Shape<ET_TET> :: T_CalcShape (Tx hx[], TFA & shape) const
+  inline void HDivHighOrderFE_Shape<ET_TET> :: T_CalcShape (TIP<3,Tx> ip, TFA & shape) const
   {
     if (only_ho_div && order_inner[0]<=1) return;
-    Tx x = hx[0], y = hx[1], z = hx[2];
+    Tx x = ip.x, y = ip.y, z = ip.z;
     Tx lami[4] = { x, y, z, 1-x-y-z };
 
 	
-    int ii = 4; 
+    size_t ii = 4; 
     if (!only_ho_div)
     {
       const FACE * faces = ElementTopology::GetFaces (ET_TET);
-      for (int i = 0; i < 4; i++)
+      for (size_t i = 0; i < 4; i++)
         {
           int p = order_facet[i][0];
 
@@ -457,9 +478,9 @@ namespace ngfem
 
 
   template<typename Tx, typename TFA>  
-  void HDivHighOrderFE_Shape<ET_PRISM> :: T_CalcShape (Tx hx[], TFA & shape) const
+  void HDivHighOrderFE_Shape<ET_PRISM> :: T_CalcShape (TIP<3,Tx> ip, TFA & shape) const
   {
-    Tx x = hx[0], y = hx[1], z = hx[2];
+    Tx x = ip.x, y = ip.y, z = ip.z;
 
     Tx lami[6] = { x, y, 1-x-y, x, y, 1-x-y };
     Tx muz[6]  = { 1-z, 1-z, 1-z, z, z, z };
@@ -657,9 +678,9 @@ namespace ngfem
 
 
   template<typename Tx, typename TFA>  
-  void HDivHighOrderFE_Shape<ET_HEX> :: T_CalcShape (Tx hx[], TFA & shape) const
+  void HDivHighOrderFE_Shape<ET_HEX> :: T_CalcShape (TIP<3,Tx> ip, TFA & shape) const
   {
-    Tx x = hx[0], y = hx[1], z = hx[2];
+    Tx x = ip.x, y = ip.y, z = ip.z;
 
     Tx lami[8]={(1-x)*(1-y)*(1-z),x*(1-y)*(1-z),x*y*(1-z),(1-x)*y*(1-z),
 			 (1-x)*(1-y)*z,x*(1-y)*z,x*y*z,(1-x)*y*z};

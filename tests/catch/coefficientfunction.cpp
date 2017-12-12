@@ -13,7 +13,7 @@ constexpr double tolerance = 1e-8;
 #define TEST_OPERATOR_COEFFICIENTFUNCTION(CF)                 \
   namespace UNIQUE_NAME {                                          \
     auto c_cf_f = Compile(CF,false);                               \
-    auto c_cf_t = Compile(CF,true);                                \
+    auto c_cf_t = Compile(CF,true, 2, true);                       \
     TEST_CASE(#CF) {                                               \
       TestCoefficientFunction(CF,c_cf_f,c_cf_t);                   \
     }                                                              \
@@ -195,7 +195,7 @@ TEST_OPERATOR_COEFFICIENTFUNCTION(p);
 TEST_OPERATOR_COEFFICIENTFUNCTION(a*x+y/(b+z));
 
 auto diffop = make_shared<T_DifferentialOperator<DiffOpId<3>>>();
-auto u = make_shared<ProxyFunction>(false, false, diffop, nullptr, nullptr, nullptr, nullptr, nullptr);
+auto u = make_shared<ProxyFunction>(shared_ptr<ngcomp::FESpace>(), false, false, diffop, nullptr, nullptr, nullptr, nullptr, nullptr);
 
 TEST_OPERATOR_COEFFICIENTFUNCTION(3*u*u);
 TEST_OPERATOR_COEFFICIENTFUNCTION(MakeVectorialCoefficientFunction({u,u*u}));

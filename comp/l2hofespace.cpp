@@ -290,7 +290,6 @@ namespace ngcomp
 
   FiniteElement & L2HighOrderFESpace :: GetFE (ElementId ei, Allocator & alloc) const
   {
-    if (ei.VB()==BBND) throw Exception ("BBND not available in L2HighOrderFESpace");
     if (ei.IsVolume())
       {
         int elnr = ei.Nr();
@@ -346,13 +345,12 @@ namespace ngcomp
       }
     else
       {
-        int elnr = ei.Nr();
         switch (ma->GetElType(ei))
           {
           case ET_POINT: return *new (alloc) DummyFE<ET_POINT>; 
-          case ET_SEGM:  return *new (alloc) DummyFE<ET_SEGM>; break;
-          case ET_TRIG:  return *new (alloc) DummyFE<ET_TRIG>; break;
-          case ET_QUAD:  return *new (alloc) DummyFE<ET_QUAD>; break;
+          case ET_SEGM:  return *new (alloc) DummyFE<ET_SEGM>;
+          case ET_TRIG:  return *new (alloc) DummyFE<ET_TRIG>;
+          case ET_QUAD:  return *new (alloc) DummyFE<ET_QUAD>;
             
           default:
             stringstream str;
@@ -640,7 +638,7 @@ namespace ngcomp
                              {
                                static_cast<const BaseScalarFiniteElement&> (fel).Evaluate (ir, melx.Col(comp), pntvals);
                                for (int i = 0; i < ir.Size(); i++)
-                                 pntvals(i) *= (ir[i].Weight() / mir[i].GetMeasure()).Data();
+                                 pntvals(i) *= ir[i].Weight() / mir[i].GetMeasure();
                                melx.Col(comp) = 0.0;
                                static_cast<const BaseScalarFiniteElement&> (fel).AddTrans (ir, pntvals, melx.Col(comp));
                              }
@@ -812,18 +810,8 @@ namespace ngcomp
 
   FiniteElement & L2SurfaceHighOrderFESpace :: GetFE (ElementId ei, Allocator & lh) const
   {
-    switch(ei.VB())
+    if (ei.VB() == BND)
       {
-      case VOL:
-        // throw Exception ("Volume elements not available for L2SurfaceHighOrderFESpace");
-        return * SwitchET (ma->GetElement(ei).GetType(),
-                           [&lh] (auto et) -> FiniteElement*
-                           {
-                             return new (lh) ScalarDummyFE<et.ElementType()>();
-                           });
-                  
-      case BND:
-
         if (ma->GetDimension() == 2)
           {
             DGFiniteElement<1> * fe1d = 0;
@@ -861,10 +849,16 @@ namespace ngcomp
             fe2d -> ComputeNDof(); 
             return *fe2d;
           }
-
-      case BBND:
-        throw Exception ("BBND elements not available for L2SurfaceHighOrderFESpace");
       }
+    
+    else
+
+      return * SwitchET (ma->GetElement(ei).GetType(),
+                         [&lh] (auto et) -> FiniteElement*
+                         {
+                           return new (lh) ScalarDummyFE<et.ElementType()>();
+                         });
+    
   }
   // const FiniteElement & L2SurfaceHighOrderFESpace :: GetFE (int elnr, LocalHeap & lh) const
   // {
@@ -927,6 +921,38 @@ namespace ngcomp
     
 
 
+
+
+
+  class VectorL2FESpace : public CompoundFESpace
+  {
+  public:
+    VectorL2FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, 
+                     bool checkflags = false)
+      : CompoundFESpace(ama, flags)
+    {
+      for (int i = 0; i <  ma->GetDimension(); i++)
+        AddSpace (make_shared<L2HighOrderFESpace> (ama, flags));
+
+      switch (ma->GetDimension())
+        {
+        case 2:
+          evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdVectorH1<2>>>();
+          flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradVectorH1<2>>>();
+          additional_evaluators.Set ("div", make_shared<T_DifferentialOperator<DiffOpDivVectorH1<2>>> ());
+          break;
+        case 3:
+          evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdVectorH1<3>>>();
+          flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradVectorH1<3>>>();
+          additional_evaluators.Set ("div", make_shared<T_DifferentialOperator<DiffOpDivVectorH1<3>>> ());
+          break;
+        }
+    }
+  };
+    
+
+  static RegisterFESpace<VectorL2FESpace> initvecl2 ("VectorL2");
+  
 
 
   // register FESpaces

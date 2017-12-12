@@ -11,7 +11,6 @@ namespace pybind11 { class module; };
 
 namespace ngfem
 {
-
   /** 
       coefficient functions
   */
@@ -839,7 +838,6 @@ namespace ngfem
 
 
   // *************************** CoefficientFunction Algebra ********************************
-#ifndef __AVX512F__
   template <typename OP> // , typename OPC> 
   class cl_UnaryOpCF : public T_CoefficientFunction<cl_UnaryOpCF<OP /* ,OPC */>>
 {
@@ -1088,7 +1086,6 @@ shared_ptr<CoefficientFunction> UnaryOpCF(shared_ptr<CoefficientFunction> c1,
 {
   return shared_ptr<CoefficientFunction> (new cl_UnaryOpCF<OP /* ,OPC */> (c1, lam/* , lamc */, name));
 }
-
 
 
 
@@ -1676,7 +1673,6 @@ void ExportBinaryFunction (class pybind11::module & m, string name)
   FUNC func;
   ExportBinaryFunction2 (m, name, creator, func, func);
 }
-#endif
 
 
   NGS_DLL_HEADER shared_ptr<CoefficientFunction>
@@ -1736,6 +1732,11 @@ void ExportBinaryFunction (class pybind11::module & m, string name)
   shared_ptr<CoefficientFunction> IfPos (shared_ptr<CoefficientFunction> cf_if,
                                          shared_ptr<CoefficientFunction> cf_then,
                                          shared_ptr<CoefficientFunction> cf_else);
+
+  NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> Real(shared_ptr<CoefficientFunction> cf);
+  NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> Imag(shared_ptr<CoefficientFunction> cf);
   
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> Compile (shared_ptr<CoefficientFunction> c, bool realcompile=false, int maxderiv=2, bool wait=false);

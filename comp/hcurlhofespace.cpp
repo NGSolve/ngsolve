@@ -1298,6 +1298,8 @@ namespace ngcomp
           hofe -> ComputeNDof();
           return *hofe;    
         }
+      case BBBND:
+        return * new (lh) DummyFE<ET_POINT>; 
       }
   }
   
@@ -2514,7 +2516,7 @@ namespace ngcomp
 
     
 
-  Array<int> *   HCurlHighOrderFESpace :: CreateDirectSolverClusters (const Flags & precflags) const
+  shared_ptr<Array<int>> HCurlHighOrderFESpace :: CreateDirectSolverClusters (const Flags & precflags) const
   {
     // int nv = ma->GetNV();
     int ne = ma->GetNE();
@@ -2530,7 +2532,8 @@ namespace ngcomp
       {
 	int ds_order = int (precflags.GetNumFlag ("ds_order", 1));
 
-	Array<int> & clusters = *new Array<int> (GetNDof());
+        auto spclusters = make_shared<Array<int>> (GetNDof());
+	Array<int> & clusters = *spclusters;
 	clusters = 0;
 	
 	int ned = ma->GetNEdges();
@@ -2571,7 +2574,7 @@ namespace ngcomp
 	      clusters[first+ii] = 1;
 	  }
 
-	return &clusters;
+	return spclusters;
       }
 
 
@@ -2594,8 +2597,8 @@ namespace ngcomp
 
     if (precflags.GetDefineFlag("subassembled"))
       {
-
-	Array<int> & clusters = *new Array<int> (GetNDof());
+        auto spclusters = make_shared<Array<int>> (GetNDof());
+	Array<int> & clusters = *spclusters;
 	clusters = 0;
 
 
@@ -2603,7 +2606,7 @@ namespace ngcomp
 	  if (!IsDirichletEdge(i) && fine_edge[i])
 	    clusters[i] = 1;
 
-	return &clusters;
+	return spclusters;
       }
 
 
@@ -2619,8 +2622,9 @@ namespace ngcomp
     if (!hasprism && adddirectsolverdofs.Size() == 0 &&
 	directedgeclusters.Size() == 0 && directfaceclusters.Size() == 0 && directelementclusters.Size() == 0) 
       return NULL;
-        
-    Array<int> & clusters = *new Array<int> (GetNDof());
+
+    auto spclusters = make_shared<Array<int>> (GetNDof());
+    Array<int> & clusters = *spclusters;
     clusters = 0;
 
 
@@ -3082,7 +3086,7 @@ namespace ngcomp
     
 
     //(*testout) << "clusters = " << clusters << endl;
-    return &clusters;
+    return spclusters;
     
   }
   

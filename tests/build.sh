@@ -42,6 +42,8 @@ cd ngsolve
 
 export UPLOAD_DIR=deploy/builds/$CI_PIPELINE_ID/ubuntu/${UBUNTU_VERSION_NAME}_amd64
 
+apt-get install -y rsync
+
 if [ "zesty" = "$UBUNTU_VERSION_NAME" ]
 then
   echo "build docu"

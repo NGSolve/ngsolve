@@ -54,9 +54,9 @@ namespace ngla
 	    {
 	      if (block_inv[block[i]] != -1)
 		{
-		  cout << "block has double elements " << endl;
-		  cout << block_inv[block[i]] << " and " << i << endl;
-		  cout << block << endl;
+		  cout << IM(1) << "block has double elements " << endl;
+		  cout << IM(1) << block_inv[block[i]] << " and " << i << endl;
+		  cout << IM(1) << block << endl;
 		}
 	      block_inv[block[i]] = i;
 	    }
@@ -240,7 +240,7 @@ namespace ngla
 	    if (maxval > n)
 	      {
 		cerr << "Blockjacobi, reorder: separated block" << endl;
-		cout << "block: " << block << endl;
+		cout << IM(1) << "block: " << block << endl;
 
 		(*testout) << "Blockjacobi, reorder: separated block" << endl;
 		(*testout) << "block: " << block << endl;
@@ -321,10 +321,10 @@ namespace ngla
     static Timer tget("BlockJacobiPrecond ctor get");
     static Timer tprep("BlockJacobiPrecond ctor prep");
     static Timer tpar("BlockJacobiPrecond ctor par");
-    cout << "BlockJacobi Preconditioner, constructor called, #blocks = " << blocktable->Size() << endl;
+    cout << IM(3) << "BlockJacobi Preconditioner, constructor called, #blocks = " << blocktable->Size() << endl;
 
 
-    double prevtime = WallTime();
+    // double prevtime = WallTime();
 
     
     // find nze element in all blocks together 
@@ -478,7 +478,7 @@ namespace ngla
           creator.Add (coloring[i], i);
     block_coloring = creator.MoveTable();
 
-    cout << " using " << maxcolor+1 << " colors" << endl;
+    cout << IM(4) << " using " << maxcolor+1 << " colors" << endl;
 
     // calc balancing:
 
@@ -499,7 +499,7 @@ namespace ngla
 
       }
 
-    cout << "\rBlockJacobi Preconditioner built" << endl;
+    cout << IM(3) << "\rBlockJacobi Preconditioner built" << endl;
   }
 
   ///
@@ -700,7 +700,7 @@ namespace ngla
     : BaseBlockJacobiPrecond(ablocktable), mat(amat)
   {
     static Timer t("BlockJacobiPrecondSymmetric ctor"); RegionTimer reg(t);    
-    cout << "symmetric BlockJacobi Preconditioner 2, constructor called, #blocks = " << blocktable->Size() << endl;
+    cout << IM(3) << "symmetric BlockJacobi Preconditioner 2, constructor called, #blocks = " << blocktable->Size() << endl;
 
     lowmem = false;
     // lowmem = true;
@@ -778,7 +778,7 @@ namespace ngla
                           }
                         catch (Exception & e)
                           {
-                            cout << "block singular !" << endl;
+                            cout << IM(1)<<  "block singular !" << endl;
                             (*testout) << "block nr = " << i << endl;
                             (*testout) << "caught: " << e.What() << endl;
                             (*testout) << "entries = " << (*blocktable)[i] << endl;
@@ -839,7 +839,7 @@ namespace ngla
           creator.Add(coloring[i],i);
     block_coloring = creator.MoveTable();
 
-    cout << " using " << current_color << " colors" << endl;
+    cout << IM(3) <<  " using " << current_color << " colors" << endl;
     
     /*
     *testout << "matrix.h = " << mat.Height() << endl;
@@ -870,7 +870,7 @@ namespace ngla
 
   
 
-    cout << "\rBlockJacobi Preconditioner built" << endl;
+    cout << IM(3) << "\rBlockJacobi Preconditioner built" << endl;
   }
 
 

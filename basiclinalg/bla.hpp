@@ -66,6 +66,7 @@ namespace ngstd
 #include "vector.hpp"
 #include "matrix.hpp"
 #include "avector.hpp"
+#include "ngblas.hpp"
 #include "cholesky.hpp"
 #include "symmetricmatrix.hpp"
 #include "bandmatrix.hpp"

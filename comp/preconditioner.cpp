@@ -208,70 +208,6 @@ namespace ngcomp
 
 
 
-  /**
-     Multigrid preconditioner.
-     High level objects, contains a \Ref{MultigridPreconditioner} 
-  */
-  class NGS_DLL_HEADER MGPreconditioner : public Preconditioner
-  {
-    ///
-    ngmg::MultigridPreconditioner * mgp;
-    ///
-    ngmg::TwoLevelMatrix * tlp;
-    ///
-    shared_ptr<BilinearForm> bfa;
-    ///
-    // MGPreconditioner * low_order_preconditioner;
-    ///
-    shared_ptr<Preconditioner> coarse_pre;
-    ///
-    int finesmoothingsteps;
-    ///
-    string smoothertype;
-    /// 
-    bool mgtest; 
-    string mgfile; 
-    int mgnumber; 
-  
-    string inversetype;
-
-  public:
-    ///
-    MGPreconditioner (const PDE & pde, const Flags & aflags,
-		      const string aname = "mgprecond");
-    MGPreconditioner (shared_ptr<BilinearForm> bfa, const Flags & aflags,
-		      const string aname = "mgprecond");
-    ///
-    virtual ~MGPreconditioner();
-
-    void FreeSmootherMem(void);
-
-    virtual void FinalizeLevel (const BaseMatrix * mat) 
-    {
-      Update();
-    }
-
-    ///
-    virtual void Update ();
-    ///
-    virtual void CleanUpLevel ();
-    ///
-    virtual const BaseMatrix & GetMatrix() const;
-    ///
-    virtual const BaseMatrix & GetAMatrix() const
-    {
-      return bfa->GetMatrix(); 
-    }
-    ///
-    virtual const char * ClassName() const
-    { return "Multigrid Preconditioner"; }
-
-    virtual void PrintReport (ostream & ost) const;
-
-    virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
-
-    void MgTest () const;
-  };
 
 
 
@@ -310,24 +246,24 @@ namespace ngcomp
       }
     */
 
-    Smoother * sm = NULL;
+    shared_ptr<Smoother> sm = nullptr;
     //    const char * smoother = flags.GetStringFlag ("smoother", "point");
     smoothertype = flags.GetStringFlag ("smoother", "point");
 
     if (smoothertype == "point")
       {
-	sm = new GSSmoother (*ma, *lo_bfa);
+	sm = make_shared<GSSmoother> (*ma, *lo_bfa);
       }
     else if (smoothertype == "line")
       {
-	sm = new AnisotropicSmoother (*ma, *lo_bfa);
+	sm = make_shared<AnisotropicSmoother> (*ma, *lo_bfa);
       }
     else if (smoothertype == "block") 
       {
 	if (!lfconstraint)
-	  sm = new BlockSmoother (*ma, *lo_bfa, flags);
+	  sm = make_shared<BlockSmoother> (*ma, *lo_bfa, flags);
 	else
-	  sm = new BlockSmoother (*ma, *lo_bfa, *lfconstraint, flags);
+	  sm = make_shared<BlockSmoother> (*ma, *lo_bfa, *lfconstraint, flags);
       }
     /*
     else if (smoothertype == "potential")
@@ -343,8 +279,7 @@ namespace ngcomp
 
     auto prol = lo_fes->GetProlongation();
 
-    mgp = new MultigridPreconditioner (*ma, *lo_fes, *lo_bfa, sm, prol);
-    mgp->SetOwnProlongation (0);
+    mgp = make_shared<MultigridPreconditioner> (*ma, *lo_fes, *lo_bfa, sm, prol);
     mgp->SetSmoothingSteps (int(flags.GetNumFlag ("smoothingsteps", 1)));
     mgp->SetCycle (int(flags.GetNumFlag ("cycle", 1)));
     mgp->SetIncreaseSmoothingSteps (int(flags.GetNumFlag ("increasesmoothingsteps", 1)));
@@ -368,7 +303,7 @@ namespace ngcomp
 
     finesmoothingsteps = int (flags.GetNumFlag ("finesmoothingsteps", 1));
 
-    tlp = 0;
+    tlp = nullptr;
     inversetype = flags.GetStringFlag("inverse", GetInverseName (default_inversetype));
   }
 
@@ -408,22 +343,22 @@ namespace ngcomp
       }
     */
 
-    Smoother * sm = NULL;
+    shared_ptr<Smoother> sm = nullptr;
     //    const char * smoother = flags.GetStringFlag ("smoother", "point");
     smoothertype = flags.GetStringFlag ("smoother", "point");
 
     if (smoothertype == "point")
       {
-	sm = new GSSmoother (*ma, *lo_bfa);
+	sm = make_shared<GSSmoother> (*ma, *lo_bfa);
       }
     else if (smoothertype == "line")
       {
-	sm = new AnisotropicSmoother (*ma, *lo_bfa);
+	sm = make_shared<AnisotropicSmoother> (*ma, *lo_bfa);
       }
     else if (smoothertype == "block") 
       {
 	// if (!lfconstraint)
-	  sm = new BlockSmoother (*ma, *lo_bfa, flags);
+        sm = make_shared<BlockSmoother> (*ma, *lo_bfa, flags);
           /*
             else
             sm = new BlockSmoother (*ma, *lo_bfa, *lfconstraint, flags);
@@ -443,8 +378,7 @@ namespace ngcomp
 
     auto prol = lo_fes->GetProlongation();
 
-    mgp = new MultigridPreconditioner (*ma, *lo_fes, *lo_bfa, sm, prol);
-    mgp->SetOwnProlongation (0);
+    mgp = make_shared<MultigridPreconditioner> (*ma, *lo_fes, *lo_bfa, sm, prol);
     mgp->SetSmoothingSteps (int(flags.GetNumFlag ("smoothingsteps", 1)));
     mgp->SetCycle (int(flags.GetNumFlag ("cycle", 1)));
     mgp->SetIncreaseSmoothingSteps (int(flags.GetNumFlag ("increasesmoothingsteps", 1)));
@@ -470,23 +404,6 @@ namespace ngcomp
   }
 
 
-
-
-
- 
-  MGPreconditioner :: ~MGPreconditioner()
-  {
-    delete mgp;
-    delete tlp;
-  }
-
-  void MGPreconditioner :: FreeSmootherMem ()
-  {
-    if(mgp) mgp->FreeMem();
-    if(tlp) tlp->FreeMem();
-  }
-  
-
   void MGPreconditioner :: Update ()
   {
     static Timer t("MGPreconditioner::Update"); RegionTimer reg(t);
@@ -504,28 +421,21 @@ namespace ngcomp
     if (coarse_pre)
       {
 	mgp->SetCoarseGridPreconditioner (shared_ptr<BaseMatrix> (const_cast<BaseMatrix*>(&coarse_pre->GetMatrix()), NOOP_Deleter));
-	mgp->SetOwnCoarseGridPreconditioner(false);
       }
 
     if (bfa->GetLowOrderBilinearForm()) //  || ntasks > 1) not supported anymore
       {
         static Timer t("MGPreconditioner::Update - fine precond"); RegionTimer reg(t);
-	delete tlp;
-
-	Smoother * fine_smoother = NULL;
-
-	fine_smoother = new BlockSmoother (*bfa->GetMeshAccess(), *bfa, flags);
-
-	tlp = new TwoLevelMatrix (&bfa->GetMatrix(),
-				  mgp,
-				  fine_smoother,
-				  bfa->GetMeshAccess()->GetNLevels()-1);
-	
-	tlp -> SetSmoothingSteps (finesmoothingsteps);
+        auto fine_smoother = make_shared<BlockSmoother> (*bfa->GetMeshAccess(), *bfa, flags);
+        tlp = make_shared<TwoLevelMatrix> (&bfa->GetMatrix(),
+                                           &*mgp,
+                                           fine_smoother,
+                                           bfa->GetMeshAccess()->GetNLevels()-1);
+        tlp -> SetSmoothingSteps (finesmoothingsteps);
 	tlp -> Update();
       }
     else
-      tlp = 0;
+      tlp = nullptr;
 
     if (timing) Timing();
     if (test) Test();
@@ -541,8 +451,7 @@ namespace ngcomp
   { 
     if (bfa->GetLowOrderBilinearForm())
       {
-	delete tlp;
-	tlp = 0;
+	tlp = nullptr;
       }    
   }
 

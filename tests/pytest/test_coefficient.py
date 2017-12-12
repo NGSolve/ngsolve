@@ -5,6 +5,11 @@ from ngsolve import *
 from netgen.geom2d import SplineGeometry
 
 
+def CompareCfs2D(c1, c2):
+    mesh = Mesh(unit_square.GenerateMesh(maxh=0.2))
+    c_err = c1-c2
+    error = Integrate(c_err*c_err, mesh)
+    return abs(error) < 1e-14
 
 def test_ParameterCF():
     p = Parameter(23)
@@ -29,6 +34,21 @@ def test_mesh_size_cf():
         for val in v:
             assert abs(val) < 1e-14
 
+def test_real():
+    mesh = Mesh(unit_square.GenerateMesh(maxh=0.2))
+    cf = CoefficientFunction(1+2j)
+    assert cf.real(mesh(0.4,0.4)) == 1
+    assert cf.imag(mesh(0.2,0.6)) == 2
+
+def test_pow():
+    base = (x+0.1)
+    for p in range(10):
+        c = CoefficientFunction(1.0)
+        for i in range(p):
+            c = c*base
+        assert CompareCfs2D(base**p,c)
+        assert CompareCfs2D(base**(-p),1.0/c)
+
 def test_domainwise_cf():
     geo = SplineGeometry()
     geo.AddCircle ( (0, 0), r=1, leftdomain=1, rightdomain=2)
@@ -46,6 +66,8 @@ def test_domainwise_cf():
     assert abs(error_true) < 1e-14
 
 if __name__ == "__main__":
+    test_pow()
     test_ParameterCF()
     test_mesh_size_cf()
+    test_real()
     test_domainwise_cf()

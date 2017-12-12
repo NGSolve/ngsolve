@@ -1237,12 +1237,9 @@ namespace ngbla
     b = Trans(a);
   }
 
-  template <typename TA, typename TB, typename TC>
-  void MultMatMat(SliceMatrix<TA> a, SliceMatrix<TB> b, SliceMatrix<TC> c)
-  {
-    c = a * b;
-  }
-
+  /*
+  */
+  
   // c = a * Diag (diag)
   template <typename TA, typename TB, typename TC>
   void MultMatDiagMat(TA a, TB diag, TC c)
@@ -1252,12 +1249,10 @@ namespace ngbla
   }
 
 
-#if defined(__AVX__)
+#if defined(__AVX__) && not defined(__AVX512F__)
 
   void TransposeMatrix(SliceMatrix<> a, SliceMatrix<> b);
-  extern void MultMatMat(SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c);
 
-  extern void AddABt (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c);
   extern void AddABt (SliceMatrix<double> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c);
   extern void AddABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c);
 
@@ -1266,7 +1261,6 @@ namespace ngbla
   extern void AddABtSym (SliceMatrix<double> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c);
   extern void AddABtSym (SliceMatrix<Complex> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c);
 
-  extern void SubABt (SliceMatrix<double> a, SliceMatrix<double> b, SliceMatrix<double> c);
   extern void SubAtB (SliceMatrix<double> a, SliceMatrix<double> b, SliceMatrix<double> c);
   inline void SubABt (SliceMatrix<double,ColMajor> a, SliceMatrix<double,ColMajor> b, SliceMatrix<double,ColMajor> c)
   {
@@ -1278,9 +1272,9 @@ namespace ngbla
 
 #else // __AVX__
 
-
-  INLINE void AddABt (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
-  { c.AddSize(a.Height(), b.Height()) += a * Trans(b) | Lapack; }
+  
+  // INLINE void AddABt (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
+  // { c.AddSize(a.Height(), b.Height()) += a * Trans(b) | Lapack; }
   
   INLINE void AddABtSym (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
   { c.AddSize(a.Height(), b.Height()) += a * Trans(b) | Lapack; }

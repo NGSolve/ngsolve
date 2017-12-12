@@ -7,10 +7,6 @@
 #include <ngstd.hpp>
 #include "paje_interface.hpp"
 
-#ifdef HAVE_CXA_DEMANGLE
-#include <cxxabi.h>
-#endif
-
 static constexpr int MAX_TRACE_LINE_SIZE = 50;
 extern const char *header;
 
@@ -24,6 +20,20 @@ namespace ngstd
   bool PajeTrace::trace_thread_counter = true;
   bool PajeTrace::trace_threads = true;
 
+  string Demangle(string mangled_name)
+  {
+      string result = mangled_name;
+#ifdef HAVE_CXA_DEMANGLE
+      int status;
+      char * realname = abi::__cxa_demangle(mangled_name.c_str(), 0, 0, &status);
+      if (status == 0)
+          result = realname;
+      else
+          realname = nullptr;
+      free(realname);
+#endif
+      return result;
+  }
 
   PajeTrace :: PajeTrace(int anthreads, std::string aname)
   {
@@ -414,25 +424,9 @@ namespace ngstd
       for(Job & j : jobs)
         if(job_map.find(j.type) == job_map.end())
           {
-#ifdef HAVE_CXA_DEMANGLE
-            int status;
-            char * realname = abi::__cxa_demangle(j.type->name(), 0, 0, &status);
-            string name;
-            if (status == 0)
-              name = realname;
-            else
-              {
-                name = j.type->name();
-                realname = nullptr;
-              }
-#else
-            string name = j.type->name();
-#endif
+            string name = Demangle(j.type->name());
             job_map[j.type] = paje.DefineEntityValue( state_type_job, name, -1 );
             job_task_map[j.type] = paje.DefineEntityValue( state_type_task, name, -1 );
-#ifdef HAVE_CXA_DEMANGLE
-            free(realname);
-#endif
           }
 
       for(Job & j : jobs)

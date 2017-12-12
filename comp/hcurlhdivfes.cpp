@@ -2488,7 +2488,7 @@ namespace ngcomp
   }
 
 
-  Array<int> * 
+  shared_ptr<Array<int>>
   NedelecFESpace2 :: CreateDirectSolverClusters (const Flags & flags) const
   {
     (*testout) << "CreateDirectSolverClusters" << endl;
@@ -2498,7 +2498,8 @@ namespace ngcomp
     int ne = ma->GetNE();
 
 
-    Array<int> & clusters = *new Array<int> (nd);
+    auto spclusters = make_shared<Array<int>> (nd);
+    Array<int> & clusters = *spclusters;
     clusters = 0;
 
 
@@ -2624,7 +2625,7 @@ namespace ngcomp
     //     }
 	  
 	 
-    return &clusters;
+    return spclusters;
     
 
   }

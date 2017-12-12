@@ -740,6 +740,7 @@ namespace ngcomp
         case ET_SEGM: return * new (alloc) DummyFE<ET_SEGM>();
         default:
           __assume(false);
+          throw Exception("HDiv - impossible element");
         }
   }
   
@@ -1333,9 +1334,10 @@ namespace ngcomp
   // 1) low order dofs  --  default
 
 
-  Array<int> * HDivHighOrderFESpace :: CreateDirectSolverClusters (const Flags & precflags) const
+  shared_ptr<Array<int>> HDivHighOrderFESpace :: CreateDirectSolverClusters (const Flags & precflags) const
   {
-    Array<int> & clusters = *new Array<int> (ndof);
+    auto spclusters = make_shared<Array<int>> (ndof);
+    Array<int> & clusters = *spclusters;
 
     int clustertype = int(precflags.GetNumFlag("ds_cluster",1)); 
     cout << " DirectSolverCluster Clustertype " << clustertype << endl; 
@@ -1365,7 +1367,7 @@ namespace ngcomp
         break;
 
       }
-    return &clusters;
+    return spclusters;
 
   }
 
@@ -1627,15 +1629,15 @@ namespace ngcomp
       auto & ir = mir.IR();
       const ElementTransformation & trafo = mir.GetTransformation();
       auto & fel_u = static_cast<const FEL&>(fel);
-      AFlatMatrix<double> hxl(D, mir.IR().GetNIP(), lh);
-      AFlatMatrix<double> hxr(D, mir.IR().GetNIP(), lh);
-      AFlatMatrix<double> hxll(D, mir.IR().GetNIP(), lh);
-      AFlatMatrix<double> hxrr(D, mir.IR().GetNIP(), lh);
-      AFlatMatrix<double> hx(D, mir.IR().GetNIP(), lh);
+      FlatMatrix<SIMD<double>> hxl(D, mir.IR().Size(), lh);
+      FlatMatrix<SIMD<double>> hxr(D, mir.IR().Size(), lh);
+      FlatMatrix<SIMD<double>> hxll(D, mir.IR().Size(), lh);
+      FlatMatrix<SIMD<double>> hxrr(D, mir.IR().Size(), lh);
+      FlatMatrix<SIMD<double>> hx(D, mir.IR().Size(), lh);
 
       for (int k = 0; k < mir.Size(); k++)
         for (int m = 0; m < D*D; m++)
-          y(m, k) = SIMD<double> (0.0).Data();
+          y(m, k) = SIMD<double> (0.0);
       
       for (int j = 0; j < D; j++)
         {
@@ -1693,7 +1695,7 @@ namespace ngcomp
               for (int l = 0; l < D; l++)
                 {
                   for (int m = 0; m < D; m++)
-                    y(m*D+l, k) += (jacinv(j,m) * hx.Get(l, k)).Data();
+                    y(m*D+l, k) += jacinv(j,m) * hx(l, k);
                 }
             }
         }
@@ -1703,7 +1705,7 @@ namespace ngcomp
     static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
                                 BareSliceMatrix<SIMD<double>> x, BareSliceVector<double> y)
     {
-      int size = (bmir.Size()+1)*2000;
+      size_t size = (bmir.Size()+1)*2000;
       STACK_ARRAY(char, data, size);
       LocalHeap lh(data, size);
 
@@ -1711,12 +1713,14 @@ namespace ngcomp
       auto & ir = mir.IR();
       const ElementTransformation & trafo = mir.GetTransformation();
       auto & fel_u = static_cast<const FEL&>(fel);
-      AFlatMatrix<double> hx(D, mir.IR().GetNIP(), lh);
-      
-      for (int j = 0; j < D; j++)
+      // AFlatMatrix<double> hx(D, mir.IR().GetNIP(), lh);
+      FlatMatrix<SIMD<double>> hx1(D, mir.Size(), lh);
+      FlatMatrix<SIMD<double>> hx2(D, mir.Size(), lh);
+
+      for (size_t j = 0; j < D; j++)
         {
           // hx = (F^-1 * x).Row(j)
-          for (int k = 0; k < mir.Size(); k++)
+          for (size_t k = 0; k < mir.Size(); k++)
             {
               auto jacinv = mir[k].GetJacobianInverse();
               for (int l = 0; l < D; l++)
@@ -1724,10 +1728,13 @@ namespace ngcomp
                   SIMD<double> sum = 0;
                   for (int m = 0; m < D; m++)
                     sum += jacinv(j,m) * x(m*D+l, k);
-                  hx.Get(l,k) = (-(0.5/eps()) * sum).Data();
+                  // hx.Get(l,k) = (-(0.5/eps()) * sum).Data();
+                  hx1(l,k) = (-(8/(12*eps())) * sum).Data();
+                  hx2(l,k) = ( (1/(12*eps())) * sum).Data();
                 }
             }
-
+          
+          /*
           {
             HeapReset hr(lh);
             SIMD_IntegrationRule irl(mir.IR().GetNIP(), lh);
@@ -1750,6 +1757,54 @@ namespace ngcomp
               }
             SIMD_MappedIntegrationRule<D,D> mirr(irr, trafo, lh);
             fel_u.AddTrans (mirr, hx, y);
+          }
+          */
+          {
+            HeapReset hr(lh);
+            SIMD_IntegrationRule irl(mir.IR().GetNIP(), lh);
+            for (size_t k = 0; k < irl.Size(); k++)
+              {
+                irl[k] = ir[k];
+                irl[k](j) -= eps();
+              }
+            SIMD_MappedIntegrationRule<D,D> mirl(irl, trafo, lh);
+            fel_u.AddTrans (mirl, hx1, y);
+            irl.NothingToDelete();
+          }
+          {
+            HeapReset hr(lh);
+            hx1 *= -1;
+            SIMD_IntegrationRule irr(mir.IR().GetNIP(), lh);
+            for (int k = 0; k < irr.Size(); k++)
+              {
+                irr[k] = ir[k];              
+                irr[k](j) += eps();
+              }
+            SIMD_MappedIntegrationRule<D,D> mirr(irr, trafo, lh);
+            fel_u.AddTrans (mirr, hx1, y);
+          }
+          {
+            HeapReset hr(lh);
+            SIMD_IntegrationRule irl(mir.IR().GetNIP(), lh);
+            for (int k = 0; k < irl.Size(); k++)
+              {
+                irl[k] = ir[k];
+                irl[k](j) -= 2*eps();
+              }
+            SIMD_MappedIntegrationRule<D,D> mirl(irl, trafo, lh);
+            fel_u.AddTrans (mirl, hx2, y);
+          }
+          {
+            HeapReset hr(lh);
+            hx2 *= -1;
+            SIMD_IntegrationRule irr(mir.IR().GetNIP(), lh);
+            for (int k = 0; k < irr.Size(); k++)
+              {
+                irr[k] = ir[k];              
+                irr[k](j) += 2*eps();
+              }
+            SIMD_MappedIntegrationRule<D,D> mirr(irr, trafo, lh);
+            fel_u.AddTrans (mirr, hx2, y);
           }
         }
     }
