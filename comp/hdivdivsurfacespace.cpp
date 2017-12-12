@@ -143,15 +143,11 @@ namespace ngcomp
       Mat<3,2> jac = sip.GetJacobian();
       double det = fabs (sip.GetJacobiDet());
       Mat<3,2> sjac = (1.0/(det*det)) * jac;
-      Mat<2,3> inv_jac = sip.GetJacobianInverse();
-
+      
       mat = (sjac) * Trans (div_shape);
    
       //for non-curved elements, divergence transformation is finished, otherwise derivatives of Jacobian have to be computed...
-      if (!sip.GetTransformation().IsCurvedElement())
-        {
-          return;
-        }
+      if (!sip.GetTransformation().IsCurvedElement()) return;
 
 
       Mat<2,2> hesse[3];
@@ -168,45 +164,39 @@ namespace ngcomp
         }
 
       Vec<3, AutoDiff<2>> n = Cross(Vec<3,AutoDiff<2>>(fad.Col(0)),Vec<3,AutoDiff<2>>(fad.Col(1)));
-      AutoDiff<2> ad_det = sqrt(n(0)*n(0)+n(1)*n(1)+n(2)*n(2));//L2Norm2(n);
-      if (ad_det.Value() < 0.0)
-        {
-          // 	cout << "neg det" << endl;
-          ad_det *= -1;
-        }    
-
-      AutoDiff<2> iad_det = 1.0 / ad_det;
+      AutoDiff<2> iad_det = 1.0/sqrt(n(0)*n(0)+n(1)*n(1)+n(2)*n(2));
+      
       fad *= iad_det;
 
+      Vec<3> hv2;
+      Mat<2> sigma_ref;
+		
       for (int i = 0; i < nd; i++)
         {
-          Mat<2> sigma_ref;
-
           sigma_ref(0,0) = shape(i, 0);
           sigma_ref(1,1) = shape(i, 1);
           sigma_ref(0,1) = sigma_ref(1,0) = shape(i, 2);
 	 
-	
-          Vec<3> hv2 = 0.0;
+	  hv2 = 0.0;
           for (int j = 0; j < 2; j++)
             for (int k = 0; k < 3; k++)
               for (int l = 0; l < 2; l++)
                 hv2(k) += fad(k,l).DValue(j) * sigma_ref(l,j);
-
+	  
           hv2 *= iad_det.Value();
 
-          /*
-            // this term is zero !!!
+	  /*
+	  //Mat<D> inv_jac = sip.GetJacobianInverse();
+          // this term is zero !!!
           Vec<3> hv2b = 0.0;
           for ( int j = 0; j < 2; j++ )
-            for ( int k = 0; k < 3; k++ )    // fix index
+            for ( int k = 0; k < 3; k++ )
               for ( int l = 0; l < 2; l++ )
                 for ( int m = 0; m < 2; m++ )
                   for ( int n = 0; n < 3; n++ )
                     hv2b(n) += inv_jac(m,k) *fad(n,j).Value() * sigma_ref(j,l) * fad(k,l).DValue(m);
-          cout << "hv2b = " << hv2b << endl;
           */
-          
+	  
           for ( int j = 0; j < 3; j++)
             mat(j,i) += hv2(j);
         }
