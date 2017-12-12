@@ -44,7 +44,7 @@ namespace ngfem
     // Vec<DIM, AutoDiff<DIM> > adp = ip;
     TIP<DIM,AutoDiff<DIM>> tip = ip;
     T_CalcShape (tip, // TIP<DIM,AutoDiff<DIM>> (ip),
-                 SBLambda ([&] (int i, AutoDiff<DIM> shape)
+                 SBLambda ([dshape] (auto i, AutoDiff<DIM> shape)
                            { shape.StoreGradient (&dshape(i,0)) ; }));
   }
 
@@ -550,7 +550,7 @@ namespace ngfem
                          SBLambda ( [&](int j, SIMD<double> shape)
                                     {
                                       auto val = HSum(shape*val1, shape*val2, shape*val3, shape*val4);
-                                      val += SIMD<double> (pcoefs);
+                                      val += SIMD<double,4> (pcoefs);
                                       _mm256_storeu_pd (pcoefs, val.Data());
                                       pcoefs += dist;
                                     } ));
@@ -574,7 +574,7 @@ namespace ngfem
                            SBLambda ( [&](int j, SIMD<double> shape)
                                       {
                                         auto val = HSum(shape*val1, shape*val2, shape*val2, shape*val2);
-                                        val += SIMD<double> (_mm256_maskload_pd (pcoefs, mask));
+                                        val += SIMD<double,4> (_mm256_maskload_pd (pcoefs, mask));
                                         _mm256_maskstore_pd (pcoefs, mask, val.Data());
                                         pcoefs += dist;
                                       } ));
@@ -596,7 +596,7 @@ namespace ngfem
                            SBLambda ( [&](int j, SIMD<double> shape)
                                       {
                                         auto val = HSum(shape*val1, shape*val2, shape*val3, shape*val3);
-                                        val += SIMD<double> (_mm256_maskload_pd (pcoefs, mask));
+                                        val += SIMD<double,4> (_mm256_maskload_pd (pcoefs, mask));
                                         _mm256_maskstore_pd (pcoefs, mask, val.Data());
                                         pcoefs += dist;
                                       } ));

@@ -68,6 +68,11 @@ namespace ngfem
   INLINE Class_uDvDw_Cyclic<DIM,SCAL> 
   uDvDw_Cyclic (AutoDiff<DIM,SCAL> u, AutoDiff<DIM,SCAL> v, AutoDiff<DIM,SCAL> w)
   { return Class_uDvDw_Cyclic<DIM,SCAL> (u,v,w); }
+  
+  template <int DIM, typename SCAL>
+  INLINE Class_uDvDw_Cyclic<DIM,SCAL> 
+  uDvDw_Cyclic (AutoDiffRec<DIM,SCAL> u, AutoDiffRec<DIM,SCAL> v, AutoDiffRec<DIM,SCAL> w)
+  { return Class_uDvDw_Cyclic<DIM,SCAL> (u,v,w); }
 
 
   template <int DIM, typename SCAL>
@@ -83,6 +88,11 @@ namespace ngfem
   template <int DIM, typename SCAL>
   INLINE Class_Du_Cross_Dv<DIM,SCAL> 
   Du_Cross_Dv (AutoDiff<DIM,SCAL> u, AutoDiff<DIM,SCAL> v)
+  { return Class_Du_Cross_Dv<DIM,SCAL> (u,v); }
+
+  template <int DIM, typename SCAL>
+  INLINE Class_Du_Cross_Dv<DIM,SCAL> 
+  Du_Cross_Dv (AutoDiffRec<DIM,SCAL> u, AutoDiffRec<DIM,SCAL> v)
   { return Class_Du_Cross_Dv<DIM,SCAL> (u,v); }
 
 
@@ -102,7 +112,13 @@ namespace ngfem
   wDu_Cross_Dv(AutoDiff<DIM,SCAL> u, AutoDiff<DIM,SCAL> v, AutoDiff<DIM,SCAL> w)
   { return Class_wDu_Cross_Dv<DIM,SCAL> (u,v,w); }
 
+  template <int DIM, typename SCAL>
+  INLINE Class_wDu_Cross_Dv<DIM,SCAL> 
+  wDu_Cross_Dv(AutoDiffRec<DIM,SCAL> u, AutoDiffRec<DIM,SCAL> v, AutoDiffRec<DIM,SCAL> w)
+  { return Class_wDu_Cross_Dv<DIM,SCAL> (u,v,w); }
 
+
+  
   template <int DIM, typename SCAL>
   class Class_uDvDw_minus_DuvDw
   {
@@ -119,6 +135,10 @@ namespace ngfem
   uDvDw_minus_DuvDw (AutoDiff<DIM,SCAL> u, AutoDiff<DIM,SCAL> v, AutoDiff<DIM,SCAL> w)
   { return Class_uDvDw_minus_DuvDw<DIM,SCAL> (u,v,w); }
 
+  template <int DIM, typename SCAL>
+  INLINE Class_uDvDw_minus_DuvDw<DIM,SCAL> 
+  uDvDw_minus_DuvDw (AutoDiffRec<DIM,SCAL> u, AutoDiffRec<DIM,SCAL> v, AutoDiffRec<DIM,SCAL> w)
+  { return Class_uDvDw_minus_DuvDw<DIM,SCAL> (u,v,w); }
 
 
   template <int DIM, typename SCAL>
@@ -135,6 +155,11 @@ namespace ngfem
   template <int DIM, typename SCAL>
   INLINE Class_curl_uDvw_minus_Duvw<DIM,SCAL> 
   curl_uDvw_minus_Duvw (AutoDiff<DIM,SCAL> u, AutoDiff<DIM,SCAL> v, AutoDiff<DIM,SCAL> w)
+  { return Class_curl_uDvw_minus_Duvw<DIM,SCAL> (u,v,w); }
+
+  template <int DIM, typename SCAL>
+  INLINE Class_curl_uDvw_minus_Duvw<DIM,SCAL> 
+  curl_uDvw_minus_Duvw (AutoDiffRec<DIM,SCAL> u, AutoDiffRec<DIM,SCAL> v, AutoDiffRec<DIM,SCAL> w)
   { return Class_curl_uDvw_minus_Duvw<DIM,SCAL> (u,v,w); }
 
 

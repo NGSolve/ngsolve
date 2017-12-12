@@ -19,13 +19,13 @@ namespace ngla
   protected:
     weak_ptr<BaseSparseMatrix> matrix;
     shared_ptr<BitArray> inner;
-    const Array<int> * cluster;
+    shared_ptr<const Array<int>> cluster;
     bool smooth_is_projection;
 
   public:
     SparseFactorization (const BaseSparseMatrix & amatrix,
 			 shared_ptr<BitArray> ainner,
-			 const Array<int> * acluster);
+			 shared_ptr<const Array<int>> acluster);
 
     virtual bool IsComplex() const { return matrix.lock()->IsComplex(); }
 
@@ -205,8 +205,8 @@ public:
 
     ///
     SparseCholeskyTM (const SparseMatrixTM<TM> & a, 
-                      shared_ptr<BitArray> ainner = NULL,
-                      const Array<int> * acluster = NULL,
+                      shared_ptr<BitArray> ainner = nullptr,
+                      shared_ptr<const Array<int>> acluster = nullptr,
                       bool allow_refactor = 0);
     ///
     virtual ~SparseCholeskyTM ();
@@ -308,8 +308,8 @@ public:
 
     
     SparseCholesky (const SparseMatrixTM<TM> & a, 
-		    shared_ptr<BitArray> ainner = NULL,
-		    const Array<int> * acluster = NULL,
+		    shared_ptr<BitArray> ainner = nullptr,
+		    shared_ptr<const Array<int>> acluster = nullptr,
 		    bool allow_refactor = 0)
       : SparseCholeskyTM<TM> (a, ainner, acluster, allow_refactor) { ; }
 

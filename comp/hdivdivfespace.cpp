@@ -100,6 +100,8 @@ namespace ngcomp
     enum { DIFFORDER = 1 };
     enum { DIM_STRESS = (D*(D+1))/2 };
 
+    static string Name() { return "div"; }
+
     template <typename FEL,typename SIP>
     static void GenerateMatrix(const FEL & bfel,const SIP & sip,
       SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
@@ -129,6 +131,43 @@ namespace ngcomp
 
   };
 
+
+  template<int D>
+  class DiffOpIdBoundaryHDivDiv: public DiffOp<DiffOpIdBoundaryHDivDiv<D> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D+1 };
+    enum { DIM_ELEMENT = D };
+    enum { DIM_DMAT = (D+1)*(D+1) };
+    enum { DIFFORDER = 0 };
+
+    static Array<int> GetDimensions() { return Array<int> ({D+1,D+1}); }
+
+    template <typename FEL,typename SIP>
+    static void GenerateMatrix(const FEL & bfel,const SIP & mip,
+      SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
+    {
+      const HDivDivSurfaceFiniteElement<D> & fel =
+        dynamic_cast<const HDivDivSurfaceFiniteElement<D>&> (bfel);
+      fel.CalcMappedShape_Matrix (mip,Trans(mat));
+    }
+
+    template <typename FEL,typename SIP,typename MAT>
+    static void GenerateMatrix(const FEL & bfel,const SIP & sip,
+      MAT & mat,LocalHeap & lh)
+    {
+      const HDivDivSurfaceFiniteElement<D> & fel =
+        dynamic_cast<const HDivDivSurfaceFiniteElement<D>&> (bfel);
+      int nd = fel.GetNDof();
+      FlatMatrix<> shape(nd,DIM_DMAT,lh);
+      fel.CalcMappedShape_Matrix(sip,shape);
+      for(int i=0; i<nd; i++)
+        for(int j = 0; j <DIM_DMAT; j++)
+          mat(j,i) = shape(i,j);
+
+    }
+  };
 
   template<int D>
   class DiffOpIdHDivDiv_old : public DiffOp<DiffOpIdHDivDiv_old<D> >
@@ -403,12 +442,14 @@ namespace ngcomp
     // evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpBoundIdHDivSym<2>>>();
     if(ma->GetDimension() == 2)
     {
+      evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundaryHDivDiv<1>>>();
       evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHDivDiv<2>>>();
       integrator[VOL] = make_shared<HDivDivMassIntegrator<2>> (one);
       flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpDivHDivDiv<2>>>();
     }
     else
     {
+      evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundaryHDivDiv<2>>>();
       evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHDivDiv<3>>>();
       integrator[VOL] = make_shared<HDivDivMassIntegrator<3>> (one);
       flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpDivHDivDiv<3>>>();
@@ -486,19 +527,39 @@ namespace ngcomp
             ndof += first_facet_dof[f+1] - first_facet_dof[f];            
         }
         break;
+      case ET_QUAD:
+        //ndof += 2*(oi[0]+2)*(oi[0]+1) +1;
+        ndof += (oi[0]+1+HDivDivFE<ET_QUAD>::incsg)*(oi [0]+1+HDivDivFE<ET_QUAD>::incsg)
+          + (oi[0]+2)*(oi[0])*2
+          + 2*(oi[0]+1+HDivDivFE<ET_QUAD>::incsugv) +1;
+        if(discontinuous)
+        {
+          for (auto f : ma->GetElFacets(ei))
+            ndof += first_facet_dof[f+1] - first_facet_dof[f];            
+        }
+        break;
       case ET_PRISM:
         ndof += 3*(oi[0]+1+incrorder_xx1)*(oi[0]+incrorder_xx1)*(oi[2]+1+incrorder_xx2)/2 + 
           (oi[0]+1+incrorder_zz1)*(oi[0]+2+incrorder_zz1)*(oi[2]-1+incrorder_zz2)/2 + 
           (oi[0]+1)*(oi[0]+2)*(oi[2]+1)/2*2;
         if(discontinuous)
         {
-          /*
-          auto fnums = ma->GetElFacets(ei);
-          for(int ii=0; ii<fnums.Size(); ii++)
-          {
-            ndof += first_facet_dof[fnums[ii]+1] - first_facet_dof[fnums[ii]];
-          }
-          */
+          for (auto f : ma->GetElFacets(ei))
+            ndof += first_facet_dof[f+1] - first_facet_dof[f];            
+        }
+        break;
+      case ET_HEX:
+        ndof += 3*(oi[0]+2)*(oi[0])*(oi[0]+2) + 3*(oi[0]+1)*(oi[0]+2)*(oi[0]+1);
+        if(discontinuous)
+        {
+          for (auto f : ma->GetElFacets(ei))
+            ndof += first_facet_dof[f+1] - first_facet_dof[f];            
+        }
+        break;
+      case ET_TET:
+        ndof += (oi[0]+1)*(oi[0]+2)*(oi[0]+1);
+        if(discontinuous)
+        {
           for (auto f : ma->GetElFacets(ei))
             ndof += first_facet_dof[f+1] - first_facet_dof[f];            
         }
@@ -550,7 +611,38 @@ namespace ngcomp
     if (!ei.IsVolume())
     {
       if(!discontinuous)
-        throw Exception(string("HDivDivFESpace::GetFE: not supported for boundary elements "));
+      {
+        auto feseg = new (alloc) HDivDivSurfaceFE<ET_SEGM> (order);
+        auto fetr = new (alloc) HDivDivSurfaceFE<ET_TRIG> (order);
+        auto fequ = new (alloc) HDivDivSurfaceFE<ET_QUAD> (order);
+      switch(ma->GetElType(ei))
+      {
+      case ET_SEGM:  
+        feseg->SetVertexNumbers (ngel.Vertices());
+        feseg->SetOrderInner(order_facet[ei.Nr()][0]);
+        feseg->ComputeNDof();
+        return *feseg;
+
+      case ET_TRIG:          
+        fetr->SetVertexNumbers (ngel.Vertices());
+        fetr->SetOrderInner(order_facet[ei.Nr()]);
+        fetr->ComputeNDof();
+        return *fetr;
+
+      case ET_QUAD:          
+        fequ->SetVertexNumbers (ngel.Vertices());
+        fequ->SetOrderInner(order_facet[ei.Nr()]);
+        fequ->ComputeNDof();
+        return *fequ;
+
+      default:
+        stringstream str;
+        str << "FESpace " << GetClassName()
+          << ", undefined surface eltype " << ma->GetElType(ei)
+          << ", order = " << order << endl;
+        throw Exception (str.str());
+      }
+      }
       switch(ma->GetElType(ei))
       {
       case ET_POINT: return *new (alloc) DummyFE<ET_POINT>;
@@ -580,9 +672,42 @@ namespace ngcomp
       fe->ComputeNDof();
       return *fe;
     }
+    case ET_QUAD:
+    {
+      auto fe = new (alloc) HDivDivFE<ET_QUAD> (order,plus);
+      fe->SetVertexNumbers (ngel.Vertices());
+      int ii = 0;
+      for(auto f : ngel.Facets())
+        fe->SetOrderFacet(ii++,order_facet[f]);
+      fe->SetOrderInner(order_inner[ei.Nr()]);
+      fe->ComputeNDof();
+      return *fe;
+    }
     case ET_PRISM:
     {
       auto fe = new (alloc) HDivDivFE<ET_PRISM> (order,plus);
+      fe->SetVertexNumbers (ngel.vertices);
+      int ii = 0;
+      for(auto f : ngel.Facets())
+        fe->SetOrderFacet(ii++,order_facet[f]);
+      fe->SetOrderInner(order_inner[ei.Nr()]);
+      fe->ComputeNDof();
+      return *fe;
+    }
+    case ET_HEX:
+    {
+      auto fe = new (alloc) HDivDivFE<ET_HEX> (order,plus);
+      fe->SetVertexNumbers (ngel.vertices);
+      int ii = 0;
+      for(auto f : ngel.Facets())
+        fe->SetOrderFacet(ii++,order_facet[f]);
+      fe->SetOrderInner(order_inner[ei.Nr()]);
+      fe->ComputeNDof();
+      return *fe;
+    }
+    case ET_TET:
+    {
+      auto fe = new (alloc) HDivDivFE<ET_TET> (order,plus);
       fe->SetVertexNumbers (ngel.vertices);
       int ii = 0;
       for(auto f : ngel.Facets())
@@ -624,12 +749,15 @@ namespace ngcomp
     Ngs_Element ngel = ma->GetElement(ei);
     
     dnums.SetSize0();
+
     for(auto f : ngel.Facets())
       dnums += IntRange (first_facet_dof[f],
                          first_facet_dof[f+1]);
     if(ei.VB() == VOL)
       dnums += IntRange (first_element_dof[ei.Nr()],
                          first_element_dof[ei.Nr()+1]);
+
+
   }
 
 

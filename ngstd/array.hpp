@@ -722,7 +722,17 @@ namespace ngstd
       return size;
     }
 
-
+    /// Add element at end of array. reallocation if necessary.
+    INLINE void Insert (size_t pos, const T & el)
+    {
+      if (size == allocsize) 
+        ReSize (size+1);
+      for (size_t i = size; i > pos; i--)
+        data[i] = data[i-1];
+      data[pos] = el;
+      size++;
+    }
+    
     INLINE Array<T> & operator += (const T & el)
     {
       Append (el);
@@ -1290,6 +1300,8 @@ namespace ngstd
 
     const T * Ptr () const { return tail.Ptr(); }
     const T & operator[] (size_t i) const { return Ptr()[i]; }
+    template <int NR>
+    T & Elem() { return (NR==S-1) ? head : tail.template Elem<NR>(); }
   };
 
   template <typename T>
@@ -1306,6 +1318,12 @@ namespace ngstd
 
     const T * Ptr () const { return &head; }
     const T & operator[] (size_t i) const { return Ptr()[i]; }
+    template <int NR>    
+    T & Elem()
+    {
+      // assert(NR==0, "HTArray index error");
+      return head;
+    }
   };
 
   template <typename T>
@@ -1322,6 +1340,13 @@ namespace ngstd
 
     const T * Ptr () const { return &head; }
     const T & operator[] (size_t i) const { return Ptr()[i]; }
+    template <int NR>        
+    T & Elem()
+    {
+      // assert(false, "HTArray index error");
+      return head;
+    }
+
   };
 
   template<size_t S, typename T>

@@ -350,6 +350,89 @@ namespace ngfem
 
 
 
+  template<int D>
+  list<tuple<string,double>> HDivFiniteElement<D> :: Timing () const
+  {
+    list<tuple<string,double>>timings;
+    IntegrationRule ir(ElementType(), Order());
+    SIMD_IntegrationRule simdir(ElementType(), Order());
+    Matrix<> shape(GetNDof(), D);
+    Vector<> coefs(GetNDof());
+    Matrix<> values(ir.Size(), D);
+    Vector<> divvalues(ir.Size());
+    Vector<SIMD<double>> adivvalues(simdir.Size());
+    Matrix<SIMD<double>> avalues(D, simdir.Size());
+    FE_ElementTransformation<D,D> trafo(ElementType());
+    static LocalHeap lh (100000, "FE - Timing");
+    auto & mir = trafo(ir, lh);
+    auto & simdmir = trafo(simdir, lh);
+    
+    coefs = 1;
+    
+    double maxtime = 0.5;
+    double time;
+
+    constexpr size_t steps = 1000;
+    time = RunTiming([&]() {
+                     for (size_t i = 0; i < steps; i++)
+                       this -> CalcShape(ir[0], shape);
+                     });
+    timings.push_back(make_tuple("CalcShape", time/steps*1e9/(D*GetNDof())));
+
+    time = RunTiming([&]() {
+                     for (size_t i = 0; i < steps; i++)
+                       this -> Evaluate(ir, coefs, values);
+                     }, maxtime);
+    timings.push_back(make_tuple("Evaluate",time/steps*1e9/(D*GetNDof()*ir.GetNIP())));
+
+    time = RunTiming([&]() {
+                     for (size_t i = 0; i < steps; i++)
+                       this -> Evaluate(simdmir, coefs, avalues);
+                     }, maxtime);
+    timings.push_back(make_tuple("Evaluate(SIMD)", time/steps*1e9/(D*GetNDof()*ir.GetNIP())));
+
+    /*
+    time = RunTiming([&]() {
+                     for (size_t i = 0; i < steps; i++)
+                       this -> EvaluateDiv(mir, coefs, divvalues);
+                     }, maxtime);
+    timings.push_back(make_tuple("Evaluate Grad", time/steps*1e9/(D*GetNDof()*ir.GetNIP())));
+    */
+    time = RunTiming([&]() {
+                     for (size_t i = 0; i < steps; i++)
+                       this -> EvaluateDiv(simdmir, coefs, adivvalues);
+                     }, maxtime);
+    timings.push_back(make_tuple("Evaluate Grad(SIMD)", time/steps*1e9/(GetNDof()*ir.GetNIP())));
+
+    time = RunTiming([&]() {
+                     for (size_t i = 0; i < steps; i++)
+                       this -> EvaluateTrans(ir, values, coefs);
+                     }, maxtime);
+    timings.push_back(make_tuple("Evaluate Trans", time/steps*1e9/(D*GetNDof()*ir.GetNIP())));
+
+    time = RunTiming([&]() {
+                     for (size_t i = 0; i < steps; i++)
+                       this -> AddTrans(simdmir, avalues, coefs);
+                     }, maxtime);
+    timings.push_back(make_tuple("Evaluate Trans (SIMD)", time/steps*1e9/(D*GetNDof()*ir.GetNIP())));
+
+    /*
+    time = RunTiming([&]() {
+                     for (size_t i = 0; i < steps; i++)
+                       this -> EvaluateDivTrans(mir, divvalues, coefs);
+                     }, maxtime);
+    timings.push_back(make_tuple("Evaluate Trans Grad", time/steps*1e9/(D*GetNDof()*ir.GetNIP())));
+    */
+    
+    time = RunTiming([&]() {
+                     for (size_t i = 0; i < steps; i++)
+                       this -> AddDivTrans(simdmir, adivvalues, coefs);
+                     }, maxtime);
+    timings.push_back(make_tuple("Evaluate Trans Grad(SIMD)", time/steps*1e9/(GetNDof()*ir.GetNIP())));
+
+    return timings;
+  }
+
 
 
 

@@ -7,15 +7,18 @@
 /* Date:   August 2015                                               */
 /*********************************************************************/
 
+namespace ngcomp
+{
+  class FESpace;
+}
 
 
 namespace ngfem
 {
 
-  
-
 class ProxyFunction : public CoefficientFunction
 {
+  shared_ptr<ngcomp::FESpace> fes;
   bool testfunction; // true .. test, false .. trial
   // bool is_complex;
   bool is_other;    // neighbour element (DG)
@@ -32,13 +35,14 @@ class ProxyFunction : public CoefficientFunction
   SymbolTable<shared_ptr<DifferentialOperator>> additional_diffops;
   // int dim;
 public:
-  NGS_DLL_HEADER ProxyFunction (bool atestfunction, bool ais_complex,
-                 shared_ptr<DifferentialOperator> aevaluator, 
-                 shared_ptr<DifferentialOperator> aderiv_evaluator,
-                 shared_ptr<DifferentialOperator> atrace_evaluator,
-                 shared_ptr<DifferentialOperator> atrace_deriv_evaluator,
-		 shared_ptr<DifferentialOperator> attrace_evaluator,
-		 shared_ptr<DifferentialOperator> attrace_deriv_evaluator);
+  NGS_DLL_HEADER ProxyFunction (shared_ptr<ngcomp::FESpace> afes,
+                                bool atestfunction, bool ais_complex,
+                                shared_ptr<DifferentialOperator> aevaluator, 
+                                shared_ptr<DifferentialOperator> aderiv_evaluator,
+                                shared_ptr<DifferentialOperator> atrace_evaluator,
+                                shared_ptr<DifferentialOperator> atrace_deriv_evaluator,
+                                shared_ptr<DifferentialOperator> attrace_evaluator,
+                                shared_ptr<DifferentialOperator> attrace_deriv_evaluator);
 
   bool IsTestFunction () const { return testfunction; }
   bool IsOther() const { return is_other; }
@@ -61,7 +65,7 @@ public:
 
   shared_ptr<ProxyFunction> Other(shared_ptr<CoefficientFunction> _boundary_values) const
   {
-    auto other = make_shared<ProxyFunction> (testfunction, is_complex, evaluator, deriv_evaluator, trace_evaluator, trace_deriv_evaluator,ttrace_evaluator, ttrace_deriv_evaluator);
+    auto other = make_shared<ProxyFunction> (fes, testfunction, is_complex, evaluator, deriv_evaluator, trace_evaluator, trace_deriv_evaluator,ttrace_evaluator, ttrace_deriv_evaluator);
     other->is_other = true;
     if (other->deriv_proxy)
       other->deriv_proxy->is_other = true;
@@ -95,7 +99,7 @@ public:
   {
     if (additional_diffops.Used(name))
     {
-      auto adddiffop = make_shared<ProxyFunction> (testfunction, is_complex, additional_diffops[name], nullptr, nullptr, nullptr, nullptr, nullptr);
+      auto adddiffop = make_shared<ProxyFunction> (fes, testfunction, is_complex, additional_diffops[name], nullptr, nullptr, nullptr, nullptr, nullptr);
       if (is_other)
         adddiffop->is_other = true;
       return adddiffop;
@@ -103,6 +107,7 @@ public:
     return shared_ptr<ProxyFunction>();
   }
 
+  const shared_ptr<ngcomp::FESpace> & GetFESpace() const { return fes; }
   
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
   {
@@ -458,29 +463,26 @@ public:
     VorB vb;
     bool element_boundary;
     mutable bool simd_evaluate = true;
-    IntegrationRule ir;   // if non-empty use this integration-rule
-    SIMD_IntegrationRule simd_ir;   // if non-empty use this integration-rule
 
   public:
     NGS_DLL_HEADER SymbolicLinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb,
                                   bool aelement_boundary);
 
-    virtual VorB VB() const { return vb; }
-    virtual string Name () const { return string ("Symbolic LFI"); }
-
-    void SetIntegrationRule (const IntegrationRule & _ir);
+    virtual VorB VB() const override { return vb; }
+    virtual string Name () const override { return string ("Symbolic LFI"); }
+    virtual int GetDimension() const override { return proxies[0]->Evaluator()->BlockDim(); }
 
     virtual void 
     CalcElementVector (const FiniteElement & fel,
 		       const ElementTransformation & trafo, 
 		       FlatVector<double> elvec,
-		       LocalHeap & lh) const;
+		       LocalHeap & lh) const override;
       
     virtual void 
     CalcElementVector (const FiniteElement & fel,
 		       const ElementTransformation & trafo, 
 		       FlatVector<Complex> elvec,
-		       LocalHeap & lh) const;
+		       LocalHeap & lh) const override;
 
     template <typename SCAL> 
     void T_CalcElementVector (const FiniteElement & fel,
@@ -506,47 +508,47 @@ public:
     Matrix<bool> same_diffops; // are diffops the same ? 
     bool elementwise_constant;
     mutable bool simd_evaluate;
-    IntegrationRule ir;   // if non-empty use this integration-rule
-    SIMD_IntegrationRule simd_ir;   // if non-empty use this integration-rule
     int trial_difforder, test_difforder;
+    bool is_symmetric;
   public:
     NGS_DLL_HEADER SymbolicBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb,
                                     bool aelement_boundary);
 
-    virtual VorB VB() const { return vb; }
-    virtual bool IsSymmetric() const { return true; }  // correct would be: don't know
-    virtual string Name () const { return string ("Symbolic BFI"); }
+    virtual VorB VB() const override { return vb; }
+    virtual xbool IsSymmetric() const override { return is_symmetric ? xbool(true) : xbool(maybe); } 
+    virtual string Name () const override { return string ("Symbolic BFI"); }
 
-    NGS_DLL_HEADER virtual IntegrationRule GetIntegrationRule (const FiniteElement & fel, LocalHeap & lh) const;
-    NGS_DLL_HEADER virtual SIMD_IntegrationRule Get_SIMD_IntegrationRule (const FiniteElement & fel, LocalHeap & lh) const;
+    using Integrator::GetIntegrationRule;
+    NGS_DLL_HEADER virtual const IntegrationRule& GetIntegrationRule (const FiniteElement & fel, LocalHeap & lh) const;
+    NGS_DLL_HEADER virtual const SIMD_IntegrationRule& Get_SIMD_IntegrationRule (const FiniteElement & fel, LocalHeap & lh) const;
     // virtual IntegrationRule GetIntegrationRuleEB (const FiniteElement & fel, int facetnr, LocalHeap & lh) const;
     // virtual SIMD_IntegrationRule Get_SIMD_IntegrationRuleEB (const FiniteElement & fel, int facetnr, LocalHeap & lh) const;
     
-    void SetIntegrationRule (const IntegrationRule & _ir);
-    
+    virtual int GetDimension() const override { return trial_proxies[0]->Evaluator()->BlockDim(); }
+
     virtual void 
     CalcElementMatrix (const FiniteElement & fel,
 		       const ElementTransformation & trafo, 
 		       FlatMatrix<double> elmat,
-		       LocalHeap & lh) const;
+		       LocalHeap & lh) const override;
 
     virtual void 
     CalcElementMatrix (const FiniteElement & fel,
 		       const ElementTransformation & trafo, 
 		       FlatMatrix<Complex> elmat,
-		       LocalHeap & lh) const;    
+		       LocalHeap & lh) const override;    
 
     virtual void 
     CalcElementMatrixAdd (const FiniteElement & fel,
                           const ElementTransformation & trafo, 
                           FlatMatrix<double> elmat,
-                          LocalHeap & lh) const;
+                          LocalHeap & lh) const override;
     
     virtual void 
     CalcElementMatrixAdd (const FiniteElement & fel,
                           const ElementTransformation & trafo, 
                           FlatMatrix<Complex> elmat,
-                          LocalHeap & lh) const;    
+                          LocalHeap & lh) const override;    
 
     
     template <typename SCAL, typename SCAL_SHAPES, typename SCAL_RES>
@@ -566,7 +568,7 @@ public:
                                  const ElementTransformation & trafo, 
 				 FlatVector<double> elveclin,
                                  FlatMatrix<double> elmat,
-                                 LocalHeap & lh) const;
+                                 LocalHeap & lh) const override;
 
     template <typename SCAL, typename SCAL_SHAPES>
     void T_CalcLinearizedElementMatrixEB (const FiniteElement & fel,
@@ -581,7 +583,7 @@ public:
 			const FlatVector<double> elx, 
 			FlatVector<double> ely,
 			void * precomputed,
-			LocalHeap & lh) const;
+			LocalHeap & lh) const override;
 
     template <typename SCAL, typename SCAL_SHAPES>
     void T_ApplyElementMatrixEB (const FiniteElement & fel, 
@@ -639,7 +641,7 @@ public:
 
     virtual VorB VB() const { return vb; }
     virtual bool BoundaryForm() const { return vb == BND; }
-    virtual bool IsSymmetric() const { return true; }  // correct would be: don't know
+    virtual xbool IsSymmetric() const { return maybe; } 
     
     virtual DGFormulation GetDGFormulation() const { return DGFormulation(neighbor_testfunction,
                                                                           element_boundary); }
@@ -701,15 +703,16 @@ public:
     shared_ptr<CoefficientFunction> cf;
     VorB vb;
     Array<ProxyFunction*> trial_proxies;
+    bool element_boundary;    
     mutable bool simd_evaluate;
     
   public:
-    SymbolicEnergy (shared_ptr<CoefficientFunction> acf, VorB avb);
+    SymbolicEnergy (shared_ptr<CoefficientFunction> acf, VorB avb, bool aelement_boundary);
 
     virtual VorB VB() const { return vb; }
-    virtual bool IsSymmetric() const { return true; } 
+    virtual xbool IsSymmetric() const { return maybe; } 
     virtual string Name () const { return string ("Symbolic Energy"); }
-    
+
     virtual void 
     CalcElementMatrix (const FiniteElement & fel,
 		       const ElementTransformation & trafo, 
@@ -726,6 +729,14 @@ public:
                                  FlatMatrix<double> elmat,
                                  LocalHeap & lh) const;
 
+    void 
+    AddLinearizedElementMatrix (const FiniteElement & fel,
+                                ProxyUserData & trafo, 
+                                const BaseMappedIntegrationRule & mir, 
+                                FlatVector<double> elveclin,
+                                FlatMatrix<double> elmat,
+                                LocalHeap & lh) const;
+
 
     virtual double Energy (const FiniteElement & fel, 
 			   const ElementTransformation & trafo, 
@@ -739,8 +750,6 @@ public:
 			FlatVector<double> ely,
 			void * precomputed,
 			LocalHeap & lh) const;
-    
-
   };
   
 

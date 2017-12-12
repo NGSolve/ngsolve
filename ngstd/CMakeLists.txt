@@ -34,7 +34,7 @@ install( FILES
         parthreads.hpp statushandler.hpp ngsstream.hpp mpiwrapper.hpp	      
         polorder.hpp archive.hpp archive_base.hpp sockets.hpp cuda_ngstd.hpp  
         mycomplex.hpp tuple.hpp paje_interface.hpp python_ngstd.hpp ngs_utils.hpp
-        taskmanager.hpp bspline.hpp simd.hpp simd_complex.hpp
+        taskmanager.hpp bspline.hpp xbool.hpp simd.hpp simd_complex.hpp
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
         COMPONENT ngsolve_devel
        )

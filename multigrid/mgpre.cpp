@@ -17,7 +17,7 @@ namespace ngmg
   MultigridPreconditioner (const MeshAccess & ama,
 			   const FESpace & afespace,
 			   const BilinearForm & abiform,
-			   Smoother * asmoother,
+			   shared_ptr<Smoother> asmoother,
 			   shared_ptr<Prolongation> aprolongation)
     : BaseMatrix (), ma(ama), fespace(afespace), biform(abiform), 
       smoother(asmoother), prolongation(aprolongation)
@@ -30,9 +30,6 @@ namespace ngmg
     SetCoarseType (EXACT_COARSE);
     SetCoarseSmoothingSteps (1);
 
-    SetOwnSmoother (1);
-    SetOwnProlongation (1);
-    SetOwnCoarseGridPreconditioner (1);
     SetUpdateAll (biform.UseGalerkin());
     SetUpdateAlways (0);
     checksumcgpre = -17;
@@ -41,21 +38,7 @@ namespace ngmg
 
   
   MultigridPreconditioner :: ~MultigridPreconditioner ()
-  {
-    if (ownsmoother)
-      delete smoother;
-    // if (ownprolongation) delete prolongation;
-    // if (owncoarsegridpre) delete coarsegridpre;
-  }
-
-
-  void MultigridPreconditioner :: FreeMem(void)
-  {
-    delete smoother; smoother = NULL;
-    //delete prolongation; prolongation = NULL;
-    // delete coarsegridpre; coarsegridpre = NULL;
-  }
-
+  { ; }
 
   void MultigridPreconditioner :: SetSmoothingSteps (int sstep)
   {
@@ -89,29 +72,12 @@ namespace ngmg
     coarsesmoothingsteps = cstep;
   }
 
-  void MultigridPreconditioner :: SetOwnSmoother (int os)
-  { 
-    ownsmoother = os;
-  }
-
   void MultigridPreconditioner :: SetUpdateAll (int ua)
   {
     updateall = ua;
     if ( smoother )
       smoother->SetUpdateAll (ua);
   }
-
-  void MultigridPreconditioner :: SetOwnProlongation (int op)
-  {
-    ownprolongation = op;
-  }
-
-  void MultigridPreconditioner :: SetOwnCoarseGridPreconditioner (int oc)
-  {
-    owncoarsegridpre = oc;
-  }
-
-
 
   void MultigridPreconditioner :: Update ()
   {
@@ -141,7 +107,6 @@ namespace ngmg
 	      cout << "factor coarse" << endl;
 	      checksumcgpre = checksum;
 	    */
-	    // delete coarsegridpre;
 
 	    shared_ptr<BitArray> freedofs = fespace.GetFreeDofs(); // change to const BitArray * 
 	    if (!freedofs)
@@ -319,46 +284,24 @@ namespace ngmg
     if (smoother) smoother->MemoryUsage (mu);
   }
 
-
-
-
-
-
-
-
   TwoLevelMatrix :: 
   TwoLevelMatrix (const BaseMatrix * amat, 
 		  const BaseMatrix * acpre, 
-		  Smoother * asmoother, 
+		  shared_ptr<Smoother> asmoother,
 		  int alevel)
     : mat(amat), cpre (acpre), smoother(asmoother), level(alevel)
   {
-    own_smoother = true;
     SetSmoothingSteps (1);
     Update();
   }
   
   TwoLevelMatrix :: ~TwoLevelMatrix ()
   {
-    if (own_smoother)
-      delete smoother;
-  }
-
-  void TwoLevelMatrix :: FreeMem(void)
-  {
-    if ( smoother )
-      {
-	delete smoother; 
-	smoother = NULL;
-      }
   }
 
   void TwoLevelMatrix :: Update()
   {
-    //  const_cast<BaseMatrix*> (cpre) -> Update();
-    if ( smoother )
-    smoother -> Update();
-    //    cout << "update 2level smoother" << endl;
+    if ( smoother ) smoother -> Update();
   }
 
   void TwoLevelMatrix :: Mult (const BaseVector & f, BaseVector & u) const

@@ -125,7 +125,7 @@ namespace ngla
     const ParallelDofs * GetParallelDofs () const { return paralleldofs; }
 
     virtual shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<BitArray> subset = nullptr) const;
-    virtual shared_ptr<BaseMatrix> InverseMatrix (const Array<int> * clusters) const;
+    virtual shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<const Array<int>> clusters) const;
     virtual INVERSETYPE SetInverseType ( INVERSETYPE ainversetype ) const;
     virtual INVERSETYPE SetInverseType ( string ainversetype ) const;
     virtual INVERSETYPE  GetInverseType () const;

@@ -53,7 +53,8 @@ namespace ngfem
 
     /// define only on some sub-domains
     shared_ptr<BitArray> definedon_element = nullptr;
-    
+    std::array<unique_ptr<IntegrationRule>,25> userdefined_intrules;
+    std::array<unique_ptr<SIMD_IntegrationRule>,25> userdefined_simd_intrules;
   
   protected:
     void DeleteCurveIPs ( void );
@@ -101,6 +102,30 @@ namespace ngfem
     void SetDefinedOnElements (shared_ptr<BitArray> adefinedonelem)
     {
       definedon_element = adefinedonelem;
+    }
+
+    void SetIntegrationRule(ELEMENT_TYPE et, const IntegrationRule& ir)
+    {
+      userdefined_intrules[int(et)] = make_unique<IntegrationRule>(ir.Copy());
+      userdefined_simd_intrules[int(et)] = make_unique<SIMD_IntegrationRule>(*userdefined_intrules[int(et)]);
+    }
+
+    void SetIntegrationRule(const IntegrationRule& ir)
+    {
+      for(auto i : Range(25))
+        {
+          userdefined_intrules[i] = make_unique<IntegrationRule>(ir.Copy());
+          userdefined_simd_intrules[i] = make_unique<SIMD_IntegrationRule>(*userdefined_intrules[i]);
+        }
+    }
+
+    inline const IntegrationRule& GetIntegrationRule(ELEMENT_TYPE et, int order) const
+    {
+      return userdefined_intrules[et] ? *userdefined_intrules[et] : SelectIntegrationRule(et,order);
+    }
+    inline const SIMD_IntegrationRule& GetSIMDIntegrationRule(ELEMENT_TYPE et, int order) const
+    {
+      return userdefined_simd_intrules[et] ? *userdefined_simd_intrules[et] : SIMD_SelectIntegrationRule(et,order);
     }
 
     /// defined only on some elements/facets/boundary elements
@@ -244,7 +269,7 @@ namespace ngfem
     virtual ~BilinearFormIntegrator ();
 
     /// generates symmetric matrix ? 
-    virtual bool IsSymmetric () const = 0;
+    virtual xbool IsSymmetric () const = 0;
 
     /// components of flux
     virtual int DimFlux () const { return -1; }
@@ -828,7 +853,7 @@ namespace ngfem
 
     virtual VorB VB () const
     { return bfi->VB(); }
-    virtual bool IsSymmetric () const { return bfi->IsSymmetric(); }
+    virtual xbool IsSymmetric () const { return bfi->IsSymmetric(); }
     virtual int DimFlux () const 
     { return (comp == -1) ? dim * bfi->DimFlux() : bfi->DimFlux(); }
     int GetDim() const { return dim; }
@@ -977,7 +1002,7 @@ namespace ngfem
     { return bfi->DimElement(); }
     virtual int DimSpace () const
     { return bfi->DimSpace(); }
-    virtual bool IsSymmetric () const
+    virtual xbool IsSymmetric () const
     { return bfi->IsSymmetric(); }
 
 
@@ -1106,7 +1131,7 @@ namespace ngfem
     { return bfi->DimElement(); }
     virtual int DimSpace () const
     { return bfi->DimSpace(); }
-    virtual bool IsSymmetric () const
+    virtual xbool IsSymmetric () const
     { return bfi->IsSymmetric(); }
 
     virtual void CheckElement (const FiniteElement & el) const
@@ -1154,7 +1179,7 @@ namespace ngfem
     { throw Exception("BFI AnyDim - DimElement not available"); }
     virtual int DimSpace () const
     { throw Exception("BFI AnyDim - DimSpace not available"); }
-    virtual bool IsSymmetric () const
+    virtual xbool IsSymmetric () const
     { return any_dim->IsSymmetric(); }
 
     virtual void CheckElement (const FiniteElement & el) const;
@@ -1193,7 +1218,7 @@ namespace ngfem
     { return bfi->DimElement(); }
     virtual int DimSpace () const
     { return bfi->DimSpace(); }
-    virtual bool IsSymmetric () const
+    virtual xbool IsSymmetric () const
     { return bfi->IsSymmetric(); }
     virtual bool SkeletonForm () const
     { return bfi->SkeletonForm(); }

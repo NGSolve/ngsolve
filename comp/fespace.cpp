@@ -357,26 +357,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
   }
 
-  class MyMutex
-  {
-    atomic<bool> m;
-  public:
-    MyMutex() { m.store(false, memory_order_relaxed); }
-    void lock()
-    {
-      bool should = false;
-      while (!m.compare_exchange_weak(should, true))
-        {
-          should = false;
-          _mm_pause();
-        }
-    }
-    void unlock()
-    {
-      m = false;
-    }
-  };
-  
+
   void FESpace :: FinalizeUpdate(LocalHeap & lh)
   {
     static Timer timer ("FESpace::FinalizeUpdate");
@@ -702,8 +683,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
     int basecol = 0;
     Array<unsigned int> mask(GetNDof());
 
-    int cnt = nf, found = 0;
-    Array<int> dofs, dofs1, elnums; 
+    size_t cnt = nf, found = 0;
+    Array<DofId> dofs, dofs1;
+    Array<int> elnums, elnums_per;
+    
     do
       {
         mask = 0;
@@ -713,7 +696,18 @@ lot of new non-zero entries in the matrix!\n" << endl;
             
             ma->GetFacetElements(f,elnums);
             dofs.SetSize0();
-            for (int el : elnums)
+
+            if (elnums.Size() == 1)
+              {
+                size_t f2 = ma->GetPeriodicFacet(f);
+                // if (f2 < f) continue;
+                if (f2 != f) // color both, left and right facet
+                  {
+                    ma->GetFacetElements (f2, elnums_per);
+                    elnums.Append(elnums_per[0]);
+                  }
+              }
+            for (auto el : elnums)
               {
                 GetDofNrs(ElementId(VOL, el), dofs1);
                 dofs += dofs1;
@@ -1040,9 +1034,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
         block_dim = block_evaluator->BlockDim();
         evaluator = block_evaluator->BaseDiffOp();
       }
-    auto trial = make_shared<ProxyFunction>(false, false, evaluator,
+    auto trial = make_shared<ProxyFunction>(dynamic_pointer_cast<FESpace>(const_cast<FESpace*>(this)->shared_from_this()),
+                                            false, false, evaluator,
                                             nullptr, nullptr, nullptr, nullptr, nullptr);
-    auto test  = make_shared<ProxyFunction>(true, false, evaluator,
+    auto test  = make_shared<ProxyFunction>(dynamic_pointer_cast<FESpace>(const_cast<FESpace*>(this)->shared_from_this()),
+                                            true, false, evaluator,
                                             nullptr, nullptr, nullptr, nullptr, nullptr);
     shared_ptr<BilinearFormIntegrator> bli =
       make_shared<SymbolicBilinearFormIntegrator> (InnerProduct(trial,test), vb, false);
@@ -1806,10 +1802,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
 
   
-  Array<int> * 
+  shared_ptr<Array<int>>
   NodalFESpace :: CreateDirectSolverClusters (const Flags & flags) const
   {
-    Array<int> & clusters = *new Array<int> (GetNDof());
+    auto spclusters = make_shared<Array<int>> (GetNDof());
+    Array<int> & clusters = *spclusters;
     clusters = 0;
 
     const int stdoffset = 1;
@@ -1833,11 +1830,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
       if (clusters[i]) nonzero = true;
     if (!nonzero)
       {
-	delete &clusters;
-	return 0;
+	return nullptr;
       }
 
-    return &clusters;
+    return spclusters;
   }
 
 

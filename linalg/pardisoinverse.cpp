@@ -7,7 +7,6 @@
 #include <la.hpp>
 #include "pardisoinverse.hpp"
 
-#ifdef USE_PARDISO
 
 // #include "/opt/intel/mkl/include/mkl_service.h"
 
@@ -19,7 +18,10 @@ extern "C"
 {
   /* PARDISO prototype. */
 
+#ifdef USE_PARDISO
+
 #ifdef USE_MKL
+#define MKL_PARDISO
 
   void mkl_free_buffers (void);
   void F77_FUNC(pardiso)
@@ -27,21 +29,34 @@ extern "C"
      double * a, integer * ia, integer * ja, integer * perm, integer * nrhs, integer * iparam, 
      integer * msglvl, double * b, double * x, integer * error);
 
-#else
+#else // USE_MKL
 
 #ifdef USE_PARDISO400
 extern  integer F77_FUNC(pardisoinit)
     (void *, integer *, integer *, integer *, double *, integer *);
-#else
+#else // USE_PARDISO400
 extern  integer F77_FUNC(pardisoinit)
     (void *, integer *, integer *);
-#endif
+#endif // USE_PARDISO400
   integer F77_FUNC(pardiso)
     (void * pt, integer * maxfct, integer * mnum, integer * mtype, integer * phase, integer * n, 
      double * a, integer * ia, integer * ja, integer * perm, integer * nrhs, integer * iparam, 
      integer * msglvl, double * b, double * x, integer * error);
 
 #endif
+
+#else // USE_PARDISO
+  // Neither MKL nor PARDISO linked at compile-time
+  // check for MKL at run-time and set function pointers if available
+#define MKL_PARDISO
+
+  void (*mkl_free_buffers) (void) = nullptr;
+  void (*F77_FUNC(pardiso))
+    (void * pt, integer * maxfct, integer * mnum, integer * mtype, integer * phase, integer * n,
+     double * a, integer * ia, integer * ja, integer * perm, integer * nrhs, integer * iparam,
+     integer * msglvl, double * b, double * x, integer * error) = nullptr;
+
+#endif // USE_PARDISO
 }
 
 
@@ -51,6 +66,31 @@ extern  integer F77_FUNC(pardisoinit)
 
 namespace ngla
 {
+#ifdef USE_PARDISO
+  bool is_pardiso_available = true;
+#else
+  static SharedLibrary libmkl;
+  static bool LoadMKL()
+  {
+      try
+      {
+#ifdef WIN32
+          libmkl.Load("mkl_rt.dll");
+#else
+          libmkl.Load("libmkl_rt.so");
+#endif
+          mkl_free_buffers = libmkl.GetFunction<decltype(mkl_free_buffers)>("mkl_free_buffers");
+          F77_FUNC(pardiso) = libmkl.GetFunction<decltype(pardiso_)>("pardiso_");
+          return mkl_free_buffers && F77_FUNC(pardiso);
+      }
+      catch(const std::runtime_error &)
+      {
+          return false;
+      }
+  };
+  bool is_pardiso_available = LoadMKL();
+#endif
+
   int pardiso_msg = 0;
 
 
@@ -84,7 +124,7 @@ namespace ngla
   PardisoInverseTM<TM> :: 
   PardisoInverseTM (const SparseMatrixTM<TM> & a, 
 		    shared_ptr<BitArray> ainner,
-		    const Array<int> * acluster,
+		    shared_ptr<const Array<int>> acluster,
 		    int asymmetric)
     : SparseFactorization (a, ainner, acluster)
   { 
@@ -162,7 +202,7 @@ namespace ngla
 
     for (int i = 0; i < 128; i++) pt[i] = 0;
 
-#ifdef USE_MKL
+#ifdef MKL_PARDISO
     //    no init in MKL PARDISO
 #else
 
@@ -555,9 +595,9 @@ namespace ngla
     F77_FUNC(pardiso) ( pt, &maxfct, &mnum, &matrixtype, &phase, &compressed_height, NULL,
 			&rowstart[0], &indices[0], NULL, &nrhs, params, &msglevel,
 			NULL, NULL, &error );
-#ifdef USE_MKL
+#ifdef MKL_PARDISO
     mkl_free_buffers();
-#endif // USE_MKL
+#endif // MKL_PARDISO
     if (task_manager) task_manager -> StartWorkers();
     if (error != 0)
       cout << "Clean Up: PARDISO returned error " << error << "!" << endl;
@@ -721,6 +761,3 @@ namespace ngla
 
 }
 
-
-
-#endif

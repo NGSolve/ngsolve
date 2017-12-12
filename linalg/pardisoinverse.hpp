@@ -19,6 +19,7 @@
 namespace ngla
 {
   using ngbla::integer;
+  extern bool is_pardiso_available;
 
 
   /*
@@ -120,8 +121,8 @@ namespace ngla
 
     ///
     PardisoInverseTM (const SparseMatrixTM<TM> & a, 
-		      shared_ptr<BitArray> ainner = NULL,
-		      const Array<int> * acluster = NULL,
+		      shared_ptr<BitArray> ainner = nullptr,
+		      shared_ptr<const Array<int>> acluster = nullptr,
 		      int symmetric = 0);
     ///
 
@@ -167,8 +168,8 @@ namespace ngla
 
     ///
     PardisoInverse (const SparseMatrix<TM,TV_ROW,TV_COL> & a, 
-		    shared_ptr<BitArray> ainner = NULL,
-		    const Array<int> * acluster = NULL,
+		    shared_ptr<BitArray> ainner = nullptr,
+		    shared_ptr<const Array<int>> acluster = nullptr,
 		    int symmetric = 0)
       : PardisoInverseTM<TM> (a, ainner, acluster, symmetric) { ; }
 

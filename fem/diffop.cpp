@@ -84,8 +84,13 @@ namespace ngfem
          FlatVector<double> flux,
          LocalHeap & lh) const
   {
-#ifndef FASTCOMPILE
-    cout << "called base class apply, type = " << typeid(*this).name() << endl;
+#ifndef FASTCOMPILE    
+    static int cnt = 0;
+    if (cnt < 3)
+      {
+        cnt++;
+        cout << "called base class apply, type = " << typeid(*this).name() << endl;
+      }
 #endif
     HeapReset hr(lh);
     FlatMatrix<double,ColMajor> mat(Dim(), x.Size(), lh);
@@ -101,7 +106,12 @@ namespace ngfem
          LocalHeap & lh) const
   {
 #ifndef FASTCOMPILE
-    cout << "called base class apply, complex" << endl;
+    static int cnt = 0;
+    if (cnt < 3)
+      {
+        cnt++;
+        cout << "called base class apply, complex" << endl;
+      }
 #endif
     HeapReset hr(lh);
     FlatMatrix<double,ColMajor> mat(Dim(), x.Size(), lh);
@@ -160,7 +170,12 @@ namespace ngfem
               LocalHeap & lh) const 
   {
 #ifndef FASTCOMPILE
-    cout << "called base class apply trans, type = " << typeid(*this).name() << endl;
+    static int cnt = 0;
+    if (cnt < 3)
+      {
+        cnt++;    
+        cout << "called base class apply trans, type = " << typeid(*this).name() << endl;
+      }
 #endif
     HeapReset hr(lh);
     FlatMatrix<double,ColMajor> mat(Dim(), x.Size(), lh);
@@ -177,7 +192,12 @@ namespace ngfem
               LocalHeap & lh) const 
   {
 #ifndef FASTCOMPILE
-    cout << "called base class apply trans complex, type = " << typeid(*this).name() << endl;
+    static int cnt = 0;
+    if (cnt < 3)
+      {
+        cnt++;    
+        cout << "called base class apply trans complex, type = " << typeid(*this).name() << endl;
+      }
 #endif
     HeapReset hr(lh);
     FlatMatrix<double,ColMajor> mat(Dim(), x.Size(), lh);

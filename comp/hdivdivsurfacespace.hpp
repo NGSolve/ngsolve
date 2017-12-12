@@ -46,34 +46,9 @@ namespace ngcomp
     int GetFirstFaceDof (const int f) const { return first_face_dof[f]; }
     int GetFirstCellDof (const int c) const { return first_element_dof[c]; }
 
+    virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const;
+    virtual void GetDofNrs(ElementId id, Array<int> & dnums) const;
 
-    // new style
-    virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const
-    {
-      if (ei.IsVolume())
-        return GetFE_old(ei.Nr(), dynamic_cast<LocalHeap&> (lh));
-      else if (ei.VB() == BND)
-        return GetSFE_old(ei.Nr(), dynamic_cast<LocalHeap&> (lh));
-      else if (ei.VB() == BBND)
-        return * new (lh) DummyFE<ET_SEGM>();
-      else
-        return * new (lh) DummyFE<ET_POINT>();
-    }
-  
-    virtual FiniteElement & GetFE_old (int elnr, LocalHeap & lh) const;
-    virtual FiniteElement & GetSFE_old (int elnr, LocalHeap & lh) const;
-
-    virtual void GetDofNrs(ElementId id, Array<int> & dnums) const
-    {
-      if (id.IsVolume()) GetDofNrs(id.Nr(), dnums);
-      else if (id.IsBoundary()) GetSDofNrs(id.Nr(), dnums);
-      else if (id.VB() == BBND) GetEdgeDofNrs(ma->GetElEdges(id)[0], dnums);
-      else dnums.SetSize0();
-    }
-  
-    virtual void GetDofNrs(int elnr, Array<int> & dnums) const;
-    virtual void GetSDofNrs (int elnr, Array<int> & dnums) const;
- 
     virtual void GetWireBasketDofNrs (int elnr, Array<int> & dnums) const
     { dnums.SetSize(0); }
     virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const

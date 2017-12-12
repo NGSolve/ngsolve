@@ -75,6 +75,7 @@
 #include <atomic>
 #include <mutex>
 #include <list>
+#include <array>
 
 
 
@@ -123,6 +124,8 @@
 #endif
 #endif
 
+
+#include <immintrin.h>
 
 
 #ifndef __assume

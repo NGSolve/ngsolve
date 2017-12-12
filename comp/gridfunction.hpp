@@ -46,7 +46,6 @@ namespace ngcomp
     virtual bool DefinedOn (const ElementTransformation & trafo);
     void SelectComponent (int acomp) { comp = acomp; }
     const GridFunction & GetGridFunction() const { return *gf; }
-    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const;
     virtual Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const;
 
@@ -380,10 +379,10 @@ namespace ngcomp
 
 #ifdef __AVX__
     virtual bool GetMultiSurfValue (size_t selnr, size_t facetnr, size_t npts,
-                                    const __m256d * xref, 
-                                    const __m256d * x, 
-                                    const __m256d * dxdxref, 
-                                    __m256d * values);
+                                    const tAVXd * xref, 
+                                    const tAVXd * x, 
+                                    const tAVXd * dxdxref, 
+                                    tAVXd * values);
 #endif
 
     virtual bool GetSegmentValue (int segnr, double xref, double * values);
@@ -453,10 +452,10 @@ namespace ngcomp
 
 #ifdef __AVX__
     virtual bool GetMultiSurfValue (size_t selnr, size_t facetnr, size_t npts,
-                                    const __m256d * xref, 
-                                    const __m256d * x, 
-                                    const __m256d * dxdxref, 
-                                    __m256d * values);
+                                    const tAVXd * xref, 
+                                    const tAVXd * x, 
+                                    const tAVXd * dxdxref, 
+                                    tAVXd * values);
 #endif
 
     virtual bool GetSegmentValue (int segnr, double xref, double * values);

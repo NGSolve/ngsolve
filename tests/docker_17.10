@@ -1,4 +1,4 @@
-FROM ubuntu:15.10
+FROM ubuntu:17.10
 MAINTAINER Matthias Hochsteger <matthias.hochsteger@tuwien.ac.at>
 RUN apt-get update && apt-get -y upgrade
 RUN apt-get update && apt-get -y install libxmu-dev tk-dev tcl-dev cmake git g++ libglu1-mesa-dev ccache openssh-client 

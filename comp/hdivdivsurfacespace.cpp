@@ -123,6 +123,8 @@ namespace ngcomp
     enum { DIFFORDER = 1 };
     enum { DIM_STRESS = (D*(D+1))/2 };
 
+    static string Name() { return "div"; }
+
     template <typename AFEL, typename MIP, typename MAT>
     static void GenerateMatrix (const AFEL & bfel, const MIP & sip,
                                 MAT & mat, LocalHeap & lh)
@@ -278,11 +280,11 @@ namespace ngcomp
     first_face_dof[nfa] = ndof;
 
     first_element_dof.SetSize(nel + 1);
-    for (int i = 0; i < nel; i++)
+    for (size_t i = 0; i < nel; i++)
       {
         first_element_dof[i] = ndof;
 
-        switch (ma->GetSElType(i))
+        switch (ma->GetElType({BND,i}))
           {
           case ET_TRIG:
             ndof += 3 * order*(order + 1) / 2;
@@ -300,24 +302,24 @@ namespace ngcomp
     isDirEdge.SetSize(nfa);
     isDirEdge = 0;        
 
-    for (int i = 0; i < nel; i++)
+    for (size_t i = 0; i < nel; i++)
       {
-        Ngs_Element ngel = ma->GetSElement (i);
-
-        for(int j=0; j < ngel.edges.Size(); j++)
-          isDirEdge[ngel.edges[j]]++;
+        Ngs_Element ngel = ma->GetElement ({ BND, i});
+        for (auto e : ngel.Edges())
+          isDirEdge[e]++;
       }
 
     if (noncontinuous)
       {
         cout << "Update before discont" << endl;
         ndof = 0;
-        Array<int> facets, pnums;
+        Array<int> pnums;
 			
-        for (int i = 0; i < nel; i++)
+        for (size_t i = 0; i < nel; i++)
           {
+            ElementId ei = { BND, i };
             first_element_dof[i] = ndof;
-            ma->GetSElEdges(i, facets);
+            auto facets = ma->GetElEdges(ei);
 
             // add facet dofs
             for (int fa = 0; fa < facets.Size(); fa++)
@@ -326,7 +328,7 @@ namespace ngcomp
               }
 
             // add inner dofs
-            switch (ma->GetSElType(i))
+            switch (ma->GetElType(ei))
               {
               case ET_TRIG:
                 ndof += 3 * order*(order + 1) / 2;
@@ -360,84 +362,88 @@ namespace ngcomp
   }
 
 
-
-  FiniteElement & HDivDivSurfaceSpace::GetFE_old(int elnr, LocalHeap & lh) const
+  FiniteElement & HDivDivSurfaceSpace::GetFE (ElementId ei, Allocator & lh) const
   {
-    throw Exception("Volume elements not available for HDivDivSurfaceSpace");
+    switch (ei.VB())
+      {
+      case VOL:
+        throw Exception("Volume elements not available for HDivDivSurfaceSpace");
+        break;
+
+      case BND:
+        {
+          HDivDivFiniteElement<2> * fe = nullptr;
+
+          auto vnums = ma->GetElVertices(ei);
+          switch (ma->GetElType(ei))
+            {
+            case ET_TRIG:
+              {
+                auto * trigfe = new (lh) HDivDivFE<ET_TRIG> (order, false /* plus */);
+                trigfe->SetVertexNumbers(vnums);
+                trigfe->ComputeNDof();
+                fe = trigfe;
+                break;
+              }
+              // case ET_QUAD:
+              // fe = new (lh.Alloc(sizeof(HDivSymQuad))) HDivSymQuad();
+              // break;
+            default:
+              cerr << "element type " << int(ma->GetElType(ei)) << " not there in hdivsymsurf" << endl;
+            }
+          
+          ArrayMem<INT<2>,4> order_ed;
+          
+          // fe->Noncontinuous() = noncontinuous;
+          
+          auto ednums = ma->GetElEdges(ei);
+          
+          order_ed.SetSize(ednums.Size());
+          for (int j = 0; j < ednums.Size(); j++)
+            order_ed[j] = order;
+          
+          // fe->SetOrderFacet(order_ed);
+          // fe->SetOrderInner(order);
+          return *fe;
+          // return GetSFE_old(ei.Nr(), dynamic_cast<LocalHeap&> (lh));
+        }
+
+      case BBND:
+        return * new (lh) DummyFE<ET_SEGM>();
+
+      case BBBND:
+        return * new (lh) DummyFE<ET_POINT>();
+      }
   }
 
-  FiniteElement & HDivDivSurfaceSpace::GetSFE_old(int elnr, LocalHeap & lh) const
+  void HDivDivSurfaceSpace::GetDofNrs(ElementId ei, Array<int> & dnums) const
   {
-    HDivDivFiniteElement<2> * fe = nullptr;
-
-    ArrayMem<int, 4> vnums;
-    ma->GetSElVertices(elnr, vnums);
-
-
-    switch (ma->GetSElType(elnr))
+    dnums.SetSize0();
+    
+    switch (ei.VB())
       {
-      case ET_TRIG:
+      case VOL:
+        break;
+
+      case BND:
         {
-          auto * trigfe = new (lh) HDivDivFE<ET_TRIG> (order, false /* plus */);
-          trigfe->SetVertexNumbers(vnums);
-          trigfe->ComputeNDof();
-          fe = trigfe;
+          for (auto e : ma->GetElEdges(ei))
+            dnums += Range (first_face_dof[e], first_face_dof[e+1]);
+          dnums += Range (first_element_dof[ei.Nr()], first_element_dof[ei.Nr()+1]);
           break;
         }
-        // case ET_QUAD:
-        // fe = new (lh.Alloc(sizeof(HDivSymQuad))) HDivSymQuad();
-        // break;
-      default:
-        cerr << "element type " << int(ma->GetSElType(elnr)) << " not there in hdivsymsurf" << endl;
+          
+      case BBND:
+        {
+          GetEdgeDofNrs(ma->GetElEdges(ei)[0], dnums);
+          break;
+        }
+
+      case BBBND:
+        break;
       }
-
-    ArrayMem<int, 4> ednums;
-    Array<INT<2> > order_ed;
-
-    // fe->Noncontinuous() = noncontinuous;
-
-    ma->GetSElEdges(elnr, ednums);
-
-    order_ed.SetSize(ednums.Size());
-    for (int j = 0; j < ednums.Size(); j++)
-      order_ed[j] = order;
-
-    // fe->SetOrderFacet(order_ed);
-    // fe->SetOrderInner(order);
-    return *fe;
   }
 
-
-
-  void HDivDivSurfaceSpace::GetDofNrs(int elnr, Array<int> & dnums) const
-  {
-    dnums.SetSize(0);
-  }
-
-
-  void HDivDivSurfaceSpace::GetSDofNrs(int elnr, Array<int> & dnums) const
-  {
-    dnums.SetSize(0);
-
-    ArrayMem<int, 12> vnums, ednums, fanums;
-    int i, j;
-    int first, next;
-
-    ma->GetSElEdges(elnr, ednums);
-
-    for (i = 0; i < ednums.Size(); i++)
-      {
-        first = first_face_dof[ednums[i]];
-        next = first_face_dof[ednums[i] + 1];
-        for (j = first; j < next; j++)
-          dnums.Append(j);
-      }
-
-    first = first_element_dof[elnr];
-    next = first_element_dof[elnr + 1];
-    for (int j = first; j < next; j++)
-      dnums.Append(j);
-  }
-
+  
   static RegisterFESpace<HDivDivSurfaceSpace> init("hdivdivsurf");
 }

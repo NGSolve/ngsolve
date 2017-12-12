@@ -5,8 +5,16 @@
 #include <vector>
 #include "array.hpp"
 // #include <x86intrin.h>   // for __rdtsc()  CPU time step counter
+
+#ifdef HAVE_CXA_DEMANGLE
+#include <cxxabi.h>
+#endif
+
 namespace ngstd
 {
+
+  string Demangle(string mangled_name);
+
   extern NGS_DLL_HEADER class PajeTrace *trace;
   class PajeTrace
     {

@@ -401,8 +401,16 @@ namespace ngfem
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
     {
-      HeapReset hr(lh);
-      mat.Row(0) = static_cast<const FEL&>(fel).GetShape(mip.IP(), lh);
+      // HeapReset hr(lh);
+      // mat.Row(0) = static_cast<const FEL&>(fel).GetShape(mip.IP(), lh);
+      Cast(fel).CalcShape (mip.IP(), mat.Row(0));
+    }
+
+    static void GenerateMatrixSIMDIR (const FiniteElement & fel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      Cast(fel).CalcShape (mir.IR(), mat);      
     }
 
     template <typename AFEL, typename MIP, class TVX, class TVY>
@@ -1460,9 +1468,240 @@ namespace ngfem
 
 
 
+  /* ********************* Vectorial Diffops ******************************** */
+
+
+  template <int DIM_SPC, VorB VB = VOL>
+  class DiffOpIdVectorH1 : public DiffOp<DiffOpIdVectorH1<DIM_SPC> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = DIM_SPC };
+    enum { DIM_ELEMENT = DIM_SPC-VB };
+    enum { DIM_DMAT = DIM_SPC };
+    enum { DIFFORDER = 0 };
+
+    template <typename FEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const FEL & bfel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      mat = 0.0;
+      for (int i = 0; i < DIM_SPC; i++)
+        {
+          auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
+          feli.CalcShape (mip.IP(), mat.Row(i).Range(fel.GetRange(i)));
+        }
+    }
+
+    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      mat.AddSize(DIM_SPC*bfel.GetNDof(), mir.Size()) = 0.0;
+      for (int i = 0; i < DIM_SPC; i++)
+        {
+          auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
+          feli.CalcShape (mir.IR(), mat.Rows(DIM_SPC*fel.GetRange(i)).RowSlice(i, DIM_SPC));
+        }
+    }
+
+    using DiffOp<DiffOpIdVectorH1<DIM_SPC>>::ApplySIMDIR;    
+    static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      for (int i = 0; i < DIM_SPC; i++)
+        {
+          auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
+          feli.Evaluate (mir.IR(), x.Range(fel.GetRange(i)), y.Row(i));
+        }
+    }
+
+    using DiffOp<DiffOpIdVectorH1<DIM_SPC>>::AddTransSIMDIR;        
+    static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      for (int i = 0; i < DIM_SPC; i++)
+        {
+          auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
+          feli.AddTrans (mir.IR(), y.Row(i), x.Range(fel.GetRange(i)));
+        }
+    }    
+    
+  };
 
 
 
+  
+  template <int DIM_SPC>
+  class DiffOpGradVectorH1 : public DiffOp<DiffOpGradVectorH1<DIM_SPC> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = DIM_SPC };
+    enum { DIM_ELEMENT = DIM_SPC };
+    enum { DIM_DMAT = DIM_SPC*DIM_SPC };
+    enum { DIFFORDER = 1 };
+
+    static Array<int> GetDimensions() { return Array<int> ( { DIM_SPC, DIM_SPC } ); }
+      
+    static string Name() { return "grad"; }
+    
+    template <typename FEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const FEL & bfel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & feli = static_cast<const ScalarFiniteElement<DIM_SPC>&> (fel[0]);
+
+      HeapReset hr(lh);
+      FlatMatrix<> hmat(feli.GetNDof(), DIM_SPC, lh);
+      feli.CalcMappedDShape (mip, hmat);
+      mat = 0.0;
+      for (int i = 0; i < DIM_SPC; i++)
+        mat.Rows(DIM_SPC*i, DIM_SPC*(i+1)).Cols(fel.GetRange(i)) = Trans(hmat);
+    }
+
+    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> bmat)
+    {
+      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      /*
+      mat.AddSize(DIM_SPC*DIM_SPC*bfel.GetNDof(), mir.Size()) = 0.0;
+      for (int i = 0; i < DIM_SPC; i++)
+        {
+          auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
+          feli.CalcMappedDShape (mir, mat.Rows(DIM_SPC*DIM_SPC*fel.GetRange(i)).RowSlice(i,DIM_SPC));
+          // cout << "grad-mat, i = " << i << ":" << endl <<  mat.AddSize(DIM_SPC*DIM_SPC*bfel.GetNDof(), mir.Size()) << endl;
+        }
+      */
+      auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
+      auto mat = bmat.AddSize(DIM_SPC*DIM_SPC*bfel.GetNDof(), mir.Size());
+      mat = 0.0;      
+      feli.CalcMappedDShape (mir, mat);
+      for (int i = 1; i < DIM_SPC; i++)
+        {
+          auto mati = mat.Rows(DIM_SPC*DIM_SPC*fel.GetRange(i));
+          for (int j = 0; j < feli.GetNDof(); j++)
+            mati.Rows(j*DIM_SPC*DIM_SPC+i*DIM_SPC, j*DIM_SPC*DIM_SPC+(i+1)*DIM_SPC)
+              = mat.Rows(j*DIM_SPC, (j+1)*DIM_SPC);
+        }
+      for (int j = feli.GetNDof()-1; j >= 0; j--)
+        mat.Rows(j*DIM_SPC*DIM_SPC, j*DIM_SPC*DIM_SPC+DIM_SPC) = mat.Rows(j*DIM_SPC, (j+1)*DIM_SPC);
+      for (int j = feli.GetNDof()-1; j >= 0; j--)
+        mat.Rows(j*DIM_SPC*DIM_SPC+DIM_SPC, (j+1)*DIM_SPC*DIM_SPC) = 0.0;
+      // cout << "mat = " << endl << mat << endl;
+    }
+
+    using DiffOp<DiffOpGradVectorH1<DIM_SPC>>::ApplySIMDIR;    
+    static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      for (int i = 0; i < DIM_SPC; i++)
+        {
+          auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
+          feli.EvaluateGrad (mir, x.Range(fel.GetRange(i)), y.Rows(i*DIM_SPC, (i+1)*DIM_SPC));
+        }
+    }
+
+    using DiffOp<DiffOpGradVectorH1<DIM_SPC>>::AddTransSIMDIR;        
+    static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      for (int i = 0; i < DIM_SPC; i++)
+        {
+          auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
+          feli.AddGradTrans (mir, y.Rows(i*DIM_SPC, (i+1)*DIM_SPC), x.Range(fel.GetRange(i)));
+        }
+    }    
+  };
+
+
+  template <int DIM_SPC>
+  class DiffOpGradBoundaryVectorH1 : public DiffOp<DiffOpGradBoundaryVectorH1<DIM_SPC> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = DIM_SPC };
+    enum { DIM_ELEMENT = DIM_SPC-1 };
+    enum { DIM_DMAT = DIM_SPC*DIM_SPC };
+    enum { DIFFORDER = 1 };
+
+    static Array<int> GetDimensions() { return Array<int> ( { DIM_SPC, DIM_SPC } ); }
+      
+    static string Name() { return "gradbnd"; }
+    
+    template <typename FEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const FEL & bfel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & feli = static_cast<const ScalarFiniteElement<DIM_ELEMENT>&> (fel[0]);
+
+      HeapReset hr(lh);
+      FlatMatrix<> hmat(feli.GetNDof(), DIM_ELEMENT, lh);
+      FlatMatrix<> mapped_hmat(feli.GetNDof(), DIM_SPACE, lh);
+      feli.CalcDShape (mip.IP(), hmat);
+      mapped_hmat = hmat * mip.GetJacobianInverse();
+      mat = 0.0;
+      for (int i = 0; i < DIM_SPC; i++)
+        mat.Rows(DIM_SPC*i, DIM_SPC*(i+1)).Cols(fel.GetRange(i)) = Trans(mapped_hmat);
+    }
+  };
+
+  
+
+  template <int DIM_SPC>  
+  class DiffOpDivVectorH1 : public DiffOp<DiffOpDivVectorH1<DIM_SPC> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = DIM_SPC };
+    enum { DIM_ELEMENT = DIM_SPC };
+    enum { DIM_DMAT = 1 };
+    enum { DIFFORDER = 0 };
+
+    static string Name() { return "div"; }
+    
+    template <typename FEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const FEL & bfel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & feli = static_cast<const ScalarFiniteElement<DIM_SPC>&> (fel[0]);
+      
+      mat = 0.0;
+      size_t n1 = feli.GetNDof();
+      HeapReset hr(lh);
+      FlatMatrix<> tmp(n1, DIM_SPC, lh);
+      feli.CalcMappedDShape (mip, tmp);
+      
+      for (int i = 0; i < DIM_SPC; i++)
+        mat.Row(0).Range(i*n1, (i+1)*n1) = tmp.Col(i);
+    }
+
+    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> bmat)
+    {
+      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
+      
+      auto mat = bmat.AddSize(DIM_SPC*bfel.GetNDof(), mir.Size());
+      ArrayMem<SIMD<double>,100> mem(DIM_SPC*bfel.GetNDof()*mir.Size());
+      FlatMatrix<SIMD<double>> hmat(DIM_SPC*bfel.GetNDof(), mir.Size(), &mem[0]);
+      feli.CalcMappedDShape (mir, hmat);
+      for (size_t i = 0; i < DIM_SPC; i++)
+        for (size_t j = 0; j < feli.GetNDof(); j++)
+          mat.Row(i*feli.GetNDof()+j) = hmat.Row(i+j*DIM_SPC);
+    }
+  };
 
 
 

@@ -557,6 +557,13 @@ INLINE AutoDiff<D,SCAL> atan (AutoDiff<D,SCAL> x)
     auto Last() const { return last; }
     auto & Rec() { return rec; }
     auto & Last() { return last; }
+    operator AutoDiff<D,SCAL> ()
+    {
+      AutoDiff<D,SCAL> res(Value());
+      for (int i = 0; i < D; i++)
+        res.DValue(i) = DValue(i);
+      return res;
+    }
   };
 
   
@@ -643,6 +650,13 @@ INLINE AutoDiff<D,SCAL> atan (AutoDiff<D,SCAL> x)
   AutoDiffRec<D,SCAL> operator- (AutoDiffRec<D,SCAL> a, AutoDiffRec<D,SCAL> b)
   {
     return AutoDiffRec<D,SCAL> (a.Rec()-b.Rec(), a.Last()-b.Last());
+  }
+
+  /// minus AutoDiff
+  template<int D, typename SCAL>
+  INLINE AutoDiffRec<D,SCAL> operator- (AutoDiffRec<D,SCAL> a)
+  {
+    return AutoDiffRec<D,SCAL> (-a.Rec(), -a.Last());
   }
 
   template <int D, typename SCAL>  

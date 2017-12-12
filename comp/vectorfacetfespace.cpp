@@ -387,8 +387,8 @@ namespace ngcomp
               return fe;
             });
         }
-      case BBND:
-        throw Exception ("VectorFacetFESpace::GetFE does not support BBND");
+      case BBND: case BBBND:
+        throw Exception ("VectorFacetFESpace::GetFE does not support BBND or BBBND");
       }
   }
 
@@ -567,9 +567,9 @@ namespace ngcomp
     return nullptr;
   }
 
-  Array<int> * VectorFacetFESpace :: CreateDirectSolverClusters (const Flags & precflags) const
+  shared_ptr<Array<int>> VectorFacetFESpace :: CreateDirectSolverClusters (const Flags & precflags) const
   {
-    return NULL;
+    return nullptr;
   }
   
   void VectorFacetFESpace :: GetFacetDofNrs ( int felnr, Array<int> & dnums ) const

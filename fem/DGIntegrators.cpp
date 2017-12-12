@@ -46,7 +46,7 @@ namespace ngfem
 
     virtual VorB VB() const
     { return VOL; }
-    virtual bool IsSymmetric () const { return true; }
+    virtual xbool IsSymmetric () const { return true; }
     
     static Integrator * Create (const Array<shared_ptr<CoefficientFunction>> & coeffs)
     {
@@ -217,7 +217,7 @@ namespace ngfem
 
     virtual VorB VB() const
     { return VOL; }
-    virtual bool IsSymmetric () const { return false; }
+    virtual xbool IsSymmetric () const { return false; }
 
     virtual void CalcElementMatrix (const FiniteElement & fel,
                                         const ElementTransformation & eltrans, 
@@ -292,7 +292,7 @@ namespace ngfem
     
     virtual VorB VB() const
     { return VOL; }
-    virtual bool IsSymmetric () const { return false; }
+    virtual xbool IsSymmetric () const { return false; }
     
     static Integrator * Create (const Array<shared_ptr<CoefficientFunction>> & coeffs)
     {
@@ -430,7 +430,7 @@ namespace ngfem
 
     virtual VorB VB() const
     { return BND; }
-    virtual bool IsSymmetric () const { return false; }
+    virtual xbool IsSymmetric () const { return false; }
   
     static Integrator * Create (const Array<shared_ptr<CoefficientFunction>> & coeffs)
     {
@@ -529,7 +529,7 @@ namespace ngfem
 
     virtual VorB VB() const
     { return BND; }
-    virtual bool IsSymmetric () const { return true; }
+    virtual xbool IsSymmetric () const { return true; }
 
     virtual ~DGBoundaryFacet_LaplaceIntegrator () { ; }
 
