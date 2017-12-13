@@ -58,7 +58,7 @@ then
 
   apt-get install -y rsync
 
-  if [ "zesty" = "$UBUNTU_VERSION_NAME" ]
+  if [ "artful" = "$UBUNTU_VERSION_NAME" ]
   then
     echo "build docu"
     make docs

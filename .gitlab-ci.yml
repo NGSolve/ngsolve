@@ -201,6 +201,7 @@ mac_build:
   stage: build
   script:
     - source tests/gitlab-ci/mac/build.sh
+    - source tests/gitlab-ci/mac/upload.sh
 
 mac_test:
   <<: *mac
