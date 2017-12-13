@@ -6,7 +6,7 @@ if (NETGEN_USE_PYTHON)
     if(NOT WIN32)
       ExternalProject_Add(
         mylittlengs
-        GIT_REPOSITORY git@data.asc.tuwien.ac.at:jschoeberl/mylittlengsolve.git
+        GIT_REPOSITORY https://github.com/NGSolve/mylittlengsolve.git
         TIMEOUT 10
         UPDATE_COMMAND ${GIT_EXECUTABLE} pull
         CONFIGURE_COMMAND ""
@@ -15,7 +15,6 @@ if (NETGEN_USE_PYTHON)
         )
       ExternalProject_Get_Property(mylittlengs source_dir)
 
-      message("link from ${source_dir} to ${CMAKE_CURRENT_SOURCE_DIR}/mylittlengs")
       add_custom_target(link_mylittlengs
         COMMAND ${CMAKE_COMMAND} -E create_symlink "${source_dir}" "${CMAKE_CURRENT_SOURCE_DIR}/mylittlengs"
         )
