@@ -332,7 +332,7 @@ namespace ngfem
 	ArrayMem<Tx,20> pol_trig(nf);
 
 	DubinerBasis3::EvalMult (p[0]-3, x, y, x*y*(1-x-y),pol_trig);
-	EdgeOrthoPol::EvalMult (p[2]-2, 2*z-1, z*(1-z), polz);
+	LegendrePolynomial::EvalMult (p[2]-2, 2*z-1, z*(1-z), polz);
 
 	for (int i = 0; i < nf; i++)
 	  for (int k = 0; k < p[2]-1; k++)
