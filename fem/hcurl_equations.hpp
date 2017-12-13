@@ -583,6 +583,14 @@ public:
     mat = scaled_nv * Trans(Cast(fel).GetCurlShape (mip.IP(), lh));
   }
 
+  static void GenerateMatrixSIMDIR (const FiniteElement & fel,
+                                    const SIMD_BaseMappedIntegrationRule & mir,
+                                    BareSliceMatrix<SIMD<double>> mat)
+  {
+    static_cast<const FEL&>(fel).CalcMappedCurlShape (mir, mat);
+  }
+
+
   template <typename AFEL, typename MIP, class TVX, class TVY> 
   static void Apply (const AFEL & fel, const MIP & mip,
 		     const TVX & x, TVY & y,

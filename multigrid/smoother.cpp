@@ -786,8 +786,6 @@ namespace ngmg
 
     if (direct)
       {
-        if(updateall)
-          throw Exception("Update all doesn't work with direct inverse yet...");
 	if (biform.UsesEliminateInternal())
 	  {
 	    const FESpace & fes = *biform.GetFESpace();

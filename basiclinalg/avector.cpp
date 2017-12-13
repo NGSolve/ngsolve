@@ -1565,26 +1565,13 @@ namespace ngbla
   }
   */
 
+
+  /*
+    // now in ngblas, new version
   template <int R>
   void AddABtSymR (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> bc)
   {
     auto c = bc.AddSize(a.Height(), b.Height());
-
-    // clear overhead
-    /*
-    if (a.Width() != 4*a.VWidth())
-      {
-        int r = 4*a.VWidth()-a.Width();
-        __m256i mask = my_mm256_cmpgt_epi64(_mm256_set1_epi64x(r),
-                                            _mm256_set_epi64x(0,1,2,3));
-
-        __m256d zero = _mm256_setzero_pd();
-        for (int i = 0; i < a.Height(); i++)
-          _mm256_maskstore_pd((double*)&a.Get(i, a.VWidth()-1), mask, zero);
-        for (int i = 0; i < b.Height(); i++)
-          _mm256_maskstore_pd((double*)&b.Get(i, b.VWidth()-1), mask, zero);
-      }
-    */
     if (a.Width() == 0) return;
   
     size_t j = 0;
@@ -1684,7 +1671,7 @@ namespace ngbla
       default: __assume(false);
       }
   }
-
+  */
 
 
 
@@ -3580,7 +3567,7 @@ namespace ngbla
 #endif
 
   
-  
+  /*
   void MySubAtDB_PM (SliceMatrix<double> a,
                      SliceVector<double> diag,
                      SliceMatrix<double> b, SliceMatrix<double> c)
@@ -3593,7 +3580,7 @@ namespace ngbla
     if (i < k)
       MySubAtDB_BP (a.Rows(i,k), diag.Range(i,k), b.Rows(i,k), c);      
   }
-  
+
   void SubAtDB (SliceMatrix<double> a,
                 SliceVector<double> diag,
                 SliceMatrix<double> b, SliceMatrix<double> c)
@@ -3606,7 +3593,7 @@ namespace ngbla
     if (i < na)
       MySubAtDB_PM (a.Cols(i,na), diag, b, c.Rows(i,na));
   }
-
+  */
   
 
 
@@ -3968,7 +3955,7 @@ namespace ngbla
 
   
 
-#ifdef defined (__AVX__) && not defined(__AVX512F__)
+#if defined (__AVX__) && not defined(__AVX512F__)
   
   void KernelScal4x4Trans (Complex * pa, size_t da,
                            Complex * pb, size_t db,

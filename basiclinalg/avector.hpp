@@ -1257,7 +1257,7 @@ namespace ngbla
   extern void AddABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c);
 
   //extern void AddABtSym (AFlatMatrix<double> a, AFlatMatrix<double> b, BareSliceMatrix<double> c);
-  extern void AddABtSym (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c);
+  // extern void AddABtSym (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c);
   extern void AddABtSym (SliceMatrix<double> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c);
   extern void AddABtSym (SliceMatrix<Complex> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c);
 
@@ -1276,8 +1276,8 @@ namespace ngbla
   // INLINE void AddABt (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
   // { c.AddSize(a.Height(), b.Height()) += a * Trans(b) | Lapack; }
   
-  INLINE void AddABtSym (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
-  { c.AddSize(a.Height(), b.Height()) += a * Trans(b) | Lapack; }
+  // INLINE void AddABtSym (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
+  // { c.AddSize(a.Height(), b.Height()) += a * Trans(b) | Lapack; }
 
   INLINE void AddABt (SliceMatrix<double> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> c)
   { c.AddSize(a.Height(), b.Height()) += a * Trans(b) | Lapack; }
@@ -1302,12 +1302,15 @@ namespace ngbla
     // LapackMultAdd (a, Trans(b), 1.0, c, 1.0);
   }
 
-
+  /*
+    --> ngblas
   extern 
   void SubAtDB (SliceMatrix<double> a,
                 SliceVector<double> diag,
                 SliceMatrix<double> b, SliceMatrix<double> c);
+  */
 
+  
   extern 
   void SubAtDB (SliceMatrix<Complex> a,
                 SliceVector<Complex> diag,

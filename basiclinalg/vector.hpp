@@ -1230,7 +1230,7 @@ namespace ngbla
       return CMCPMatExpr<SliceVector>::operator= (v);
     }
 
-    /// assignes constant value
+    /// assigns constant value
     INLINE const SliceVector & operator= (TSCAL scal) const
     {
       for (size_t i = 0; i < s; i++)
@@ -1326,7 +1326,7 @@ namespace ngbla
     /// vector size
     INLINE size_t Size () const { return s; }
     INLINE size_t Dist () const { return dist; }
-    /// vector is a matrix of hight size
+    /// vector is a matrix of height size
     INLINE size_t Height () const { return s; }
     /// vector is a matrix of width 1
     INLINE size_t Width () const { return 1; }
@@ -1514,7 +1514,7 @@ namespace ngbla
       return MatExpr<FixSliceVector>::operator= (v);
     }
 
-    /// assignes constant value
+    /// assigns constant value
     const FixSliceVector & operator= (TSCAL scal) const
     {
       for (int i = 0; i < s; i++)
@@ -1621,7 +1621,7 @@ namespace ngbla
     /// vector size
     int Size () const { return s; }
 
-    /// vector is a matrix of hight size
+    /// vector is a matrix of height size
     int Height () const { return s; }
     /// vector is a matrix of width 1
     int Width () const { return 1; }

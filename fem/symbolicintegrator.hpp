@@ -313,8 +313,9 @@ public:
   virtual IntRange UsedDofs(const FiniteElement & bfel) const
   {
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
-    IntRange r = BlockDim() * fel.GetRange(comp);
-    return r;
+    size_t base = BlockDim() * fel.GetRange(comp).First();
+    IntRange r1 = diffop->UsedDofs(fel[comp]);
+    return r1+base;
   }
   
   NGS_DLL_HEADER virtual void
