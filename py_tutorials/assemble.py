@@ -1,24 +1,24 @@
 from ngsolve import *
+from netgen.geom2d import unit_square
 
-pde = PDE("d1_square.pde")
-mesh = pde.Mesh()
+mesh = Mesh(unit_square.GenerateMesh(maxh=0.2))
 
-v = pde.spaces["v"]
-v.Update (heapsize=10000)
+fes = H1(mesh, order=2)
+u = fes.TrialFunction()
+v = fes.TestFunction()
+lap = SymbolicBFI(grad(u)*grad(v))
 
-lap = BFI ("laplace", coef=4.8)
-
-for el in v.Elements():
+for el in fes.Elements():
     print ("el: ", el)
     mat = lap.CalcElementMatrix(el.GetFE(), el.GetTrafo())
     print ("Element matrix of element", ElementId(el), ":\n", mat)
     print ("dofs: ", el.dofs, "\n")
 
 
-
-v2 = H1(mesh, order=1, dirichlet=[1])
-v2.Update()
-
-for el1,el2 in zip (v.Elements(), v2.Elements()):
+fes2 = L2(mesh, order=1)
+for el1,el2 in zip (fes.Elements(), fes2.Elements()):
     print ("el1 dofs:", el1.dofs, "el2 dofs ", el2.dofs)
 
+
+def Func():
+    return 2,3
