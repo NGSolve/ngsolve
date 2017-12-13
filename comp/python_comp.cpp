@@ -1722,7 +1722,7 @@ kwargs : For a description of the possible kwargs have a look a bit further down
     .def("TnT",
          [] (const shared_ptr<FESpace> self)
          {
-           return make_tuple(MakeProxyFunction (self, false), MakeProxyFunction (self, true));
+           return std::make_tuple(MakeProxyFunction (self, false), MakeProxyFunction (self, true));
          },
          docu_string("Gives a tuple of trial and testfunction"))
 
