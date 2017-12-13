@@ -545,7 +545,7 @@ namespace ngfem
             HeapReset hr(lh);
             ngfem::ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype, k);
             
-            const IntegrationRule& ir_facet = GetIntegrationRule(etfacet, 2*fel.Order());
+            const IntegrationRule& ir_facet = GetIntegrationRule(etfacet, 2*fel.Order()+bonus_intorder);
             IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
             BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
             
@@ -589,7 +589,7 @@ namespace ngfem
             
             HeapReset hr(lh);
             // NgProfiler::StartThreadTimer(telvec_mapping, tid);
-            const SIMD_IntegrationRule& ir = GetSIMDIntegrationRule(trafo.GetElementType(), 2*fel.Order());
+            const SIMD_IntegrationRule& ir = GetSIMDIntegrationRule(trafo.GetElementType(), 2*fel.Order()+bonus_intorder);
             auto & mir = trafo(ir, lh);
             // NgProfiler::StopThreadTimer(telvec_mapping, tid);
             
@@ -633,7 +633,7 @@ namespace ngfem
         // static Timer t("symbolicLFI - CalcElementVector", 2); RegionTimer reg(t);
         HeapReset hr(lh);
         // IntegrationRule ir(trafo.GetElementType(), 2*fel.Order());
-        const IntegrationRule& ir = fel.GetIR(2*fel.Order());
+        const IntegrationRule& ir = fel.GetIR(2*fel.Order()+bonus_intorder);
         BaseMappedIntegrationRule & mir = trafo(ir, lh);
         
         FlatVector<SCAL> elvec1(elvec.Size(), lh);
@@ -819,7 +819,7 @@ namespace ngfem
     if (trial_proxies.Size() == 0) trial_difforder = 0;
     */
     
-    int intorder = fel_trial.Order()+fel_test.Order();
+    int intorder = fel_trial.Order()+fel_test.Order()+bonus_intorder;
     auto et = fel.ElementType();
     if (et == ET_TRIG || et == ET_TET)
       intorder -= test_difforder+trial_difforder;
@@ -845,7 +845,7 @@ namespace ngfem
     if (trial_proxies.Size() == 0) trial_difforder = 0;
     */
     
-    int intorder = fel_trial.Order()+fel_test.Order();
+    int intorder = fel_trial.Order()+fel_test.Order()+bonus_intorder;
     auto et = fel.ElementType();
     if (et == ET_TRIG || et == ET_TET)
       intorder -= test_difforder+trial_difforder;
@@ -1071,375 +1071,6 @@ namespace ngfem
 #define SIMD_CALCMATRIX
 #ifdef SIMD_CALCMATRIX
 
-
-  void AddABtSym (FlatMatrix<SIMD<double>> a,
-                  FlatMatrix<SIMD<double>> b,
-                  BareSliceMatrix<double> c)
-  {
-    AddABtSym (SliceMatrix<double> (AFlatMatrix<double>(a)),
-               SliceMatrix<double> (AFlatMatrix<double>(b)), c);
-  }
-  
-  void AddABt (FlatMatrix<SIMD<double>> a,
-               FlatMatrix<SIMD<double>> b,
-               BareSliceMatrix<double> c)
-  {
-    AddABt (SliceMatrix<double> (AFlatMatrix<double>(a)),
-            SliceMatrix<double> (AFlatMatrix<double>(b)), c);
-  }
-
-  void AddABt (FlatMatrix<SIMD<Complex>> a,
-               FlatMatrix<SIMD<Complex>> b,
-               SliceMatrix<Complex> c)
-  {
-    for (size_t i = 0; i < c.Height(); i++)
-      for (size_t j = 0; j < c.Width(); j++)
-        {
-          SIMD<Complex> sum(0.0);
-          for (size_t k = 0; k < a.Width(); k++)
-            sum += a(i,k) * b(j,k);
-          c(i,j) += HSum(sum);
-        }
-  }
-  
-  void AddABtSym (FlatMatrix<SIMD<Complex>> a,
-                  FlatMatrix<SIMD<Complex>> b,
-                  SliceMatrix<Complex> c)
-  {
-    AddABt (a, b, c);
-  }
-  /*
-  void AddABt (FlatMatrix<SIMD<double>> a,
-               FlatMatrix<SIMD<Complex>> b,
-               SliceMatrix<Complex> c)
-  {
-    size_t i = 0;
-    for ( ; i < c.Height()-1; i+=2)
-      for (size_t j = 0; j < c.Width(); j++)
-        {
-          SIMD<Complex> sum1(0.0);
-          SIMD<Complex> sum2(0.0);
-          for (size_t k = 0; k < a.Width(); k++)
-            {
-              sum1 += a(i,k) * b(j,k);
-              sum2 += a(i+1,k) * b(j,k);
-            }
-          c(i,j) += HSum(sum1);
-          c(i+1,j) += HSum(sum2);
-        }
-    
-    if (i < c.Height())
-      for (size_t j = 0; j < c.Width(); j++)
-        {
-          SIMD<Complex> sum(0.0);
-          for (size_t k = 0; k < a.Width(); k++)
-            sum += a(i,k) * b(j,k);
-          c(i,j) += HSum(sum);
-        }
-  }
-  */
-
-
-      
-  void AddABt1 (SliceMatrix<SIMD<double>> a,
-                SliceMatrix<SIMD<Complex>> b,
-                SliceMatrix<Complex> c)
-  {
-    size_t i = 0;
-    size_t wa = a.Width();
-    size_t da = a.Dist();
-    size_t db = b.Dist();
-    if (wa == 0) return;
-    
-    for ( ; i+1 < c.Height(); i+=2)
-      {
-        auto pa1 = &a(i,0);
-        auto pa2 = pa1 + da;
-        auto pb1 = &b(0,0);
-        size_t j = 0;
-        for ( ; j+1 < c.Width(); j+=2, pb1 += 2*db)
-          // for ( ; j+1 < c.Width(); j+=1, pb1 += db)
-          {
-            auto pb2 = pb1 + db;
-            
-            SIMD<Complex> sum11(0.0);
-            SIMD<Complex> sum21(0.0);
-            SIMD<Complex> sum12(0.0);
-            SIMD<Complex> sum22(0.0);
-            __assume (wa > 0);
-            for (size_t k = 0; k < wa; k++)
-              {
-                sum11 += pa1[k] * pb1[k];
-                sum21 += pa2[k] * pb1[k];
-                sum12 += pa1[k] * pb2[k];
-                sum22 += pa2[k] * pb2[k];
-              }
-
-            Complex s11, s21, s12, s22;
-            std::tie(s11,s21) = HSum(sum11, sum21);
-            std::tie(s12,s22) = HSum(sum12, sum22);
-            c(i,j) += s11;
-            c(i,j+1) += s12;
-            c(i+1,j) += s21;
-            c(i+1,j+1) += s22;
-          }
-        if (j < c.Width())
-          {
-            SIMD<Complex> sum1(0.0);
-            SIMD<Complex> sum2(0.0);
-            __assume (wa > 0);
-            for (size_t k = 0; k < wa; k++)
-              {
-                sum1 += pa1[k] * pb1[k];
-                sum2 += pa2[k] * pb1[k];
-              }
-
-            Complex s1, s2;
-            std::tie(s1,s2) = HSum(sum1, sum2);
-            c(i,j) += s1;
-            c(i+1,j) += s2;
-          }
-      }
-    
-    if (i < c.Height())
-      for (size_t j = 0; j < c.Width(); j++)
-        {
-          SIMD<Complex> sum(0.0);
-          for (size_t k = 0; k < wa; k++)
-            sum += a(i,k) * b(j,k);
-          c(i,j) += HSum(sum);
-        }
-  }
-
-  Timer timer_addabtdc ("AddABt-double-complex");
-  Timer timer_addabtdcsym ("AddABt-double-complex, sym");
-
-  // block and pack B
-  template <size_t K>
-  void AddABt2 (SliceMatrix<SIMD<double>> a,
-                SliceMatrix<SIMD<Complex>> b,
-                SliceMatrix<Complex> c)
-  {
-    constexpr size_t bs = 32;
-    SIMD<Complex> memb[bs*K];
-    // M * K * sizeof(SIMD<Complex>) = 32 * 64 * 64 = 128 KB
-    for (size_t k = 0; k < b.Height(); k+= bs)
-      {
-        size_t k2 = min2(k+bs, b.Height());
-        FlatMatrix<SIMD<Complex>> tempb(k2-k, b.Width(), &memb[0]);
-        tempb = b.Rows(k,k2);
-        AddABt1 (a, tempb, c.Cols(k,k2));
-      }
-  }
-  
-  void AddABt (SliceMatrix<SIMD<double>> a,
-               SliceMatrix<SIMD<Complex>> b,
-               SliceMatrix<Complex> c)
-  {
-    ThreadRegionTimer reg(timer_addabtdc, TaskManager::GetThreadId());
-    NgProfiler::AddThreadFlops(timer_addabtdc, TaskManager::GetThreadId(),
-                               a.Height()*b.Height()*a.Width()*8);
-    constexpr size_t bs = 64;
-    for (size_t k = 0; k < a.Width(); k+=bs)
-      {
-        size_t k2 = min2(k+bs, a.Width());
-        AddABt2<bs> (a.Cols(k,k2), b.Cols(k,k2), c);
-      }
-  }
-
-  
-  
-  void AddABtSym (FlatMatrix<SIMD<double>> a,
-                  FlatMatrix<SIMD<Complex>> b,
-                  SliceMatrix<Complex> c)
-  {
-    size_t ha = a.Height();
-    size_t bs = 192;
-    if (ha > bs)
-      {
-        AddABtSym(a.Rows(0,bs), b.Rows(0,bs), c.Rows(0,bs).Cols(0,bs));
-        AddABt(a.Rows(bs,ha), b.Rows(0,bs), c.Rows(bs,ha).Cols(0,bs));
-        AddABtSym(a.Rows(bs,ha), b.Rows(bs,ha), c.Rows(bs,ha).Cols(bs,ha));
-        return;
-      }
-    
-    bs = 96;
-    if (ha > bs)
-      {
-        AddABtSym(a.Rows(0,bs), b.Rows(0,bs), c.Rows(0,bs).Cols(0,bs));
-        AddABt(a.Rows(bs,ha), b.Rows(0,bs), c.Rows(bs,ha).Cols(0,bs));
-        AddABtSym(a.Rows(bs,ha), b.Rows(bs,ha), c.Rows(bs,ha).Cols(bs,ha));
-        return;
-      }
-
-    bs = 48;
-    if (ha > bs)
-      {
-        AddABtSym(a.Rows(0,bs), b.Rows(0,bs), c.Rows(0,bs).Cols(0,bs));
-        AddABt(a.Rows(bs,ha), b.Rows(0,bs), c.Rows(bs,ha).Cols(0,bs));
-        AddABtSym(a.Rows(bs,ha), b.Rows(bs,ha), c.Rows(bs,ha).Cols(bs,ha));
-        return;
-      }
-    bs = 24;
-    if (ha > bs)
-      {
-        AddABtSym(a.Rows(0,bs), b.Rows(0,bs), c.Rows(0,bs).Cols(0,bs));
-        AddABt(a.Rows(bs,ha), b.Rows(0,bs), c.Rows(bs,ha).Cols(0,bs));
-        AddABtSym(a.Rows(bs,ha), b.Rows(bs,ha), c.Rows(bs,ha).Cols(bs,ha));
-        return;
-      }
-    
-    ThreadRegionTimer reg(timer_addabtdcsym, TaskManager::GetThreadId());
-    NgProfiler::AddThreadFlops(timer_addabtdcsym, TaskManager::GetThreadId(),
-                               a.Height()*b.Height()*a.Width()*8);
-    
-    // AddABt (a, b, c);
-    size_t da = a.Width();
-    size_t db = b.Width();
-    size_t wa = a.Width();
-    // size_t ha = a.Height();
-    size_t hb = b.Height();
-    size_t dc = c.Dist();
-    if (wa == 0) return;
-    
-    size_t i = 0;
-    for ( ; i+1 < ha; i+=2)
-      {
-        auto pa1 = &a(i,0);
-        auto pa2 = pa1 + da;
-        auto pb1 = &b(0,0);
-        auto pc = &c(i,0);
-
-        for (size_t j = 0; j <= i; j+=2, pb1 += 2*db)
-          {
-            auto pb2 = pb1 + db;
-            
-            SIMD<Complex> sum11(0.0);
-            SIMD<Complex> sum21(0.0);
-            SIMD<Complex> sum12(0.0);
-            SIMD<Complex> sum22(0.0);
-
-            __assume (wa > 0);
-            for (size_t k = 0; k < wa; k++)
-              {
-                sum11 += pa1[k] * pb1[k];
-                sum21 += pa2[k] * pb1[k];
-                sum12 += pa1[k] * pb2[k];
-                sum22 += pa2[k] * pb2[k];
-              }
-
-            Complex s11, s21, s12, s22;
-            std::tie(s11,s12) = HSum(sum11, sum12);
-            std::tie(s21,s22) = HSum(sum21, sum22);
-
-            pc[j] += s11;
-            pc[j+1] += s12;            
-            pc[j+dc] += s21;
-            pc[j+dc+1] += s22;            
-          }
-      }
-    
-    if (i < ha)
-      for (size_t j = 0; j < hb; j++)
-        {
-          SIMD<Complex> sum(0.0);
-          for (size_t k = 0; k < wa; k++)
-            sum += a(i,k) * b(j,k);
-          c(i,j) += HSum(sum);
-        }
-  }
-  
-  void AddABt (FlatMatrix<SIMD<double>> a,
-               FlatMatrix<SIMD<double>> b,
-               SliceMatrix<Complex> c)
-  {
-    constexpr size_t M = 92;
-    constexpr size_t N = 64;
-    double mem[M*N];
-    for (size_t i = 0; i < a.Height(); i += M)
-      {
-        size_t i2 = min2(a.Height(), i+M);
-        for (size_t j = 0; j < b.Height(); j += N)
-          {
-            size_t j2 = min2(b.Height(), j+N);
-            FlatMatrix<double> tempc(i2-i, j2-j, &mem[0]);
-            tempc = 0.0;
-            AddABt (a.Rows(i,i2), b.Rows(j,j2), tempc);
-            c.Rows(i,i2).Cols(j,j2) += tempc;
-          }
-      }
-  }
-  
-  void AddABtSym (FlatMatrix<SIMD<double>> a,
-                  FlatMatrix<SIMD<double>> b,
-                  SliceMatrix<Complex> c)
-  {
-    constexpr size_t N = 92;
-    double mem[N*N];
-    for (size_t i = 0; i < a.Height(); i += N)
-      {
-        size_t i2 = min2(a.Height(), i+N);
-        for (size_t j = 0; j < i; j += N)
-          {
-            size_t j2 = min2(b.Height(), j+N);
-            FlatMatrix<double> tempc(i2-i, j2-j, &mem[0]);
-            tempc = 0.0;
-            AddABt (a.Rows(i,i2), b.Rows(j,j2), tempc);
-            c.Rows(i,i2).Cols(j,j2) += tempc;
-          }
-        // j == i
-        FlatMatrix<double> tempc(i2-i, i2-i, &mem[0]);
-        tempc = 0.0;
-        AddABtSym (a.Rows(i,i2), b.Rows(i,i2), tempc);
-        c.Rows(i,i2).Cols(i,i2) += tempc;
-      }
-  }
-  
-  void AddABt (SliceMatrix<double> a,
-               SliceMatrix<double> b,
-               SliceMatrix<Complex> c)
-  {
-    constexpr size_t M = 92;
-    constexpr size_t N = 64;
-    double mem[M*N];
-    for (size_t i = 0; i < a.Height(); i += M)
-      {
-        size_t i2 = min2(a.Height(), i+M);
-        for (size_t j = 0; j < b.Height(); j += N)
-          {
-            size_t j2 = min2(b.Height(), j+N);
-            FlatMatrix<double> tempc(i2-i, j2-j, &mem[0]);
-            tempc = 0.0;
-            AddABt (a.Rows(i,i2), b.Rows(j,j2), tempc);
-            c.Rows(i,i2).Cols(j,j2) += tempc;
-          }
-      }
-  }
-  
-  void AddABtSym (SliceMatrix<double> a,
-                  SliceMatrix<double> b,
-                  SliceMatrix<Complex> c)
-  {
-    constexpr size_t N = 92;
-    double mem[N*N];
-    for (size_t i = 0; i < a.Height(); i += N)
-      {
-        size_t i2 = min2(a.Height(), i+N);
-        for (size_t j = 0; j < i; j += N)
-          {
-            size_t j2 = min2(b.Height(), j+N);
-            FlatMatrix<double> tempc(i2-i, j2-j, &mem[0]);
-            tempc = 0.0;
-            AddABt (a.Rows(i,i2), b.Rows(j,j2), tempc);
-            c.Rows(i,i2).Cols(j,j2) += tempc;
-          }
-        // j == i
-        FlatMatrix<double> tempc(i2-i, i2-i, &mem[0]);
-        tempc = 0.0;
-        AddABtSym (a.Rows(i,i2), b.Rows(i,i2), tempc);
-        c.Rows(i,i2).Cols(i,i2) += tempc;
-      }
-  }
 
 
   template <typename SCAL>

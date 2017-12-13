@@ -10,7 +10,7 @@ Prerequisites
 
 Make sure that you have the following packages installed:
 
-- You need a recent compiler, we advise gcc in version 4.9 or higher. 
+- You need a recent compiler, we advise gcc in version 6 or higher. 
 - We advise to have Python installed, in version 3.4 or higher (you can compile
   netgen/ngsolve also without python support). Make sure to install
   according packages in their "dev"-version to have the suitable header
@@ -19,7 +19,7 @@ Make sure that you have the following packages installed:
   install according packages in their "dev"-version to have the suitable
   header files installed.
 - git (to get the sources)
-- cmake (>=2.8.12) for the build system
+- cmake (>=3.3) for the build system
 - libxmu-dev (you might also need the xorg-dev package)
 - libglu (again, the "dev"-version)
 - liblapacke-dev
@@ -28,7 +28,7 @@ The following line should update/install all prerequisites (you need root privil
 
 .. code:: bash
 	    
-   sudo apt-get update && sudo apt-get -y install python3 libpython3-dev libxmu-dev tk-dev tcl-dev cmake git g++ libglu1-mesa-dev liblapacke-dev
+   sudo apt-get update && sudo apt-get -y install python3 python3-tk libpython3-dev libxmu-dev tk-dev tcl-dev cmake git g++ libglu1-mesa-dev liblapacke-dev
 
 Getting the source
 ******************

@@ -348,7 +348,6 @@ namespace ngcomp
       FlatMatrix<> shape(nd, DIM_STRESS, lh);
       fel.CalcShape (sip.IP(), shape);
       
-      Mat<D> inv_jac = sip.GetJacobianInverse();
 
       Mat<D> hesse[3];
       sip.CalcHesse (hesse[0], hesse[1], hesse[2]);
@@ -374,11 +373,11 @@ namespace ngcomp
       
       AutoDiff<D> iad_det = 1.0 / ad_det;
       fad *= iad_det;
-      
+
+      Vec<D> hv2;
+      Mat<D> sigma_ref;
       for (int i = 0; i < nd; i++)
         {
-          Mat<D> sigma_ref;
-          
           if ( D == 2 )
             {
               sigma_ref(0,0) = shape(i, 0);
@@ -395,7 +394,6 @@ namespace ngcomp
               sigma_ref(0,1) = sigma_ref(1,0) = shape(i, 5);
             }
           
-          Vec<D> hv2;
           hv2 = 0.0;
           for (int j = 0; j < D; j++)
             for (int k = 0; k < D; k++)
@@ -403,15 +401,17 @@ namespace ngcomp
                 hv2(k) += fad(k,l).DValue(j) * sigma_ref(l,j);
           
           hv2 *= iad_det.Value();
-          
-          // this term is zero, check why
-          //for ( int j = 0; j < D; j++ )
-          //  for ( int k = 0; k < D; k++ )
-          //    for ( int l = 0; l < D; l++ )
-          //      for ( int m = 0; m < D; m++ )
-          //        for ( int n = 0; n < D; n++ )
-          //          hv2(n) += inv_jac(m,k) *fad(n,j).Value() * sigma_ref(j,l) * fad(k,l).DValue(m);
-          
+
+	  /*
+	  //Mat<D> inv_jac = sip.GetJacobianInverse();
+          //this term is zero!!!
+          for ( int j = 0; j < D; j++ )
+            for ( int k = 0; k < D; k++ )
+              for ( int l = 0; l < D; l++ )
+                for ( int m = 0; m < D; m++ )
+                  for ( int n = 0; n < D; n++ )
+                    hv2(n) += inv_jac(m,k) *fad(n,j).Value() * sigma_ref(j,l) * fad(k,l).DValue(m);
+	  */
           for ( int j = 0; j < D; j++)
             mat(j,i) += hv2(j);
         }
