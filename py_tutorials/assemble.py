@@ -19,6 +19,4 @@ fes2 = L2(mesh, order=1)
 for el1,el2 in zip (fes.Elements(), fes2.Elements()):
     print ("el1 dofs:", el1.dofs, "el2 dofs ", el2.dofs)
 
-
-def Func():
-    return 2,3
+    
