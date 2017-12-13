@@ -1775,7 +1775,7 @@ kwargs : For a description of the possible kwargs have a look a bit further down
     .def("CreateGradient", [](shared_ptr<HCurlHighOrderFESpace> self) {
 	  auto fesh1 = self->CreateGradientSpace();
 	  shared_ptr<BaseMatrix> grad = self->CreateGradient(*fesh1);
-	  return py::make_tuple(grad, fesh1);
+	  return py::make_tuple(grad, shared_ptr<FESpace>(fesh1));
 	})
     ;
 
