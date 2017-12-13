@@ -1719,6 +1719,13 @@ kwargs : For a description of the possible kwargs have a look a bit further down
            },
          docu_string("Gives a proxy to be used as a testfunction for :any:`Symbolic Integrators<symbolic-integrators>`"))
 
+    .def("TnT",
+         [] (const shared_ptr<FESpace> self)
+         {
+           return make_tuple(MakeProxyFunction (self, false), MakeProxyFunction (self, true));
+         },
+         docu_string("Gives a tuple of trial and testfunction"))
+
     .def("SolveM",
          [] (const shared_ptr<FESpace> self,
              spCF rho, BaseVector& vec, int heapsize)
