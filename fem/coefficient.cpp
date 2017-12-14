@@ -3608,7 +3608,7 @@ public:
     for (auto & cf : ci)
       if (cf && cf->IsComplex()) is_complex = true;
     for (auto & cf : ci)
-      if (cf) SetDimension(cf->Dimension());
+      if (cf) SetDimensions(cf->Dimensions());
   }
 
   /*
