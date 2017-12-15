@@ -168,6 +168,8 @@ namespace ngfem
     
   };
 
+  
+
 
 
 
@@ -535,7 +537,54 @@ namespace ngfem
   };
 
 
+  template <int D, typename FEL = ScalarFiniteElement<D-1> >
+  class DiffOpHesseBoundary : public DiffOp<DiffOpHesseBoundary<D, FEL> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D-1 };
+    enum { DIM_DMAT = D*D };
+    enum { DIFFORDER = 2 };
 
+    ///
+    template <typename AFEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+				MAT & mat, LocalHeap & lh)
+    {
+      HeapReset hr(lh);
+      cout << "In hesse boundary, generate matrix!" << endl;
+      mat = Trans(static_cast<const FEL&>(fel).GetDDShape(mip.IP(),lh));//CalcMappedDDShape(mip, Trans(mat));
+    }
+
+  };
+
+
+
+  /*template <int D>
+  class DiffOpSurfaceHesse : public DiffOp<DiffOpSurfaceHesse<D>>
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D-1 };
+    enum { DIM_DMAT = D*D };
+    enum { DIFFORDER = 2 };
+    
+    static string Name() { return "hesse"; }
+    
+    static auto & Cast (const FiniteElement & fel) 
+    { return static_cast<const ScalarFiniteElement<D-1>&> (fel); }
+    
+    template <typename MIP, typename MAT>
+    static void GenerateMatrix (const FiniteElement & fel, const MIP & mip,
+                                MAT && mat, LocalHeap & lh)
+    {
+      cout << "surface hesse, generate matrix!" << endl;
+      HeapReset hr(lh);
+      Cast(fel).CalcMappedDDShape(mip, Trans(mat));
+    }
+    };*/
 
 
 
