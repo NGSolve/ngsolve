@@ -88,6 +88,29 @@ namespace ngcomp
     virtual string Name () const { return "FacetSurface-Mass"; }
   };
 
+    /// Identity on boundary
+  template <int D, typename FEL = ScalarFiniteElement<D-2> >
+  class DiffOpIdFacetSurfaceBoundary : public DiffOp<DiffOpIdFacetSurfaceBoundary<D, FEL> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D-2 };
+    enum { DIM_DMAT = 1 };
+    enum { DIFFORDER = 0 };
+
+    static const FEL & Cast (const FiniteElement & fel) 
+    { return static_cast<const FEL&> (fel); }
+
+    template <typename AFEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+				MAT & mat, LocalHeap & lh)
+    {
+      Cast(fel).CalcShape (mip.IP(), mat.Row(0));
+    }
+
+  };
+
 
 
 
@@ -164,6 +187,8 @@ namespace ngcomp
       {
         evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdFacet<3>>>();
 	evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdFacetSurface<3>>>();
+	evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpIdFacetSurfaceBoundary<3>>>();
+	
         integrator[BND] = make_shared<RobinIntegrator<3>> (one);
       }
 
@@ -222,6 +247,8 @@ namespace ngcomp
   // ------------------------------------------------------------------------
   FiniteElement & FacetSurfaceFESpace :: GetFE (ElementId ei, Allocator  & lh) const
   {
+    auto vnums = ma->GetElVertices(ei);
+	  
     switch(ei.VB())
       {
       case VOL:
@@ -233,33 +260,47 @@ namespace ngcomp
         {
 	  FacetFE<ET_TRIG>* fe = 0;
 
-        switch (ma->GetElType(ei))
-          {
-          case ET_TRIG: fe = new (lh) FacetFE<ET_TRIG> (); break;
-          default:
-            throw Exception (string("FacetSurfaceFESpace::GetFE: unsupported element ")+
-                             ElementTopology::GetElementName(ma->GetElType(ei)));
-          }
-     
-    
-        auto vnums = ma->GetElVertices(ei);
-        switch (ma->GetElType(ei))
-          {
-          case ET_TRIG:
-            {
-              fe -> SetVertexNumbers (vnums);
-              fe -> SetOrder (order); 
-              fe -> ComputeNDof();
-              return *fe;
-              break;
-            }
-          default:
-            break;
-          }
-        return *fe;
+	  switch (ma->GetElType(ei))
+	    {
+	    case ET_TRIG: fe = new (lh) FacetFE<ET_TRIG> (); break;
+	    default:
+	      throw Exception (string("FacetSurfaceFESpace::GetFE: unsupported element ")+
+			       ElementTopology::GetElementName(ma->GetElType(ei)));
+	    }
+	  
+	  switch (ma->GetElType(ei))
+	    {
+	    case ET_TRIG:
+	      {
+		fe -> SetVertexNumbers (vnums);
+		fe -> SetOrder (order); 
+		fe -> ComputeNDof();
+		return *fe;
+		break;
+	      }
+	    default:
+	      break;
+	    }
+	  return *fe;
         }
       case BBND:
-        throw Exception("No BBND GetFE implemented for FacetSurfaceFESpace");
+	{
+	  DGFiniteElement<1> * fe1d = 0;
+	  
+	  switch (ma->GetElType(ei))
+	    {
+	    case ET_SEGM: fe1d = new (lh) L2HighOrderFE<ET_SEGM> (); break;
+	    default:
+	      throw Exception (string("FacetSurfaceFESpace::GetFE: unsupported element ")+
+			       ElementTopology::GetElementName(ma->GetElType(ei)));
+	    }
+	  
+	  fe1d -> SetVertexNumbers (vnums);
+	  fe1d -> SetOrder (order); 
+	  fe1d -> ComputeNDof();
+	  return *fe1d;
+	  break;
+	}
       case BBBND:
         throw Exception("No BBBND GetFE implemented for FacetSurfaceFESpace");
       }

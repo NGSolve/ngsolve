@@ -2128,18 +2128,30 @@ used_idnrs : list of int = None
           })
 
     .def("Operator",
-         [](shared_ptr<GF> self, string name) -> py::object // shared_ptr<CoefficientFunction>
+         [](shared_ptr<GF> self, string name, VorB vb) -> py::object // shared_ptr<CoefficientFunction>
           {
             if (self->GetFESpace()->GetAdditionalEvaluators().Used(name))
               {
                 auto diffop = self->GetFESpace()->GetAdditionalEvaluators()[name];
                 // cout << "diffop is " << typeid(*diffop).name() << endl;
-                auto coef = make_shared<GridFunctionCoefficientFunction> (self, diffop);
+                shared_ptr<GridFunctionCoefficientFunction> coef;
+                switch(vb)
+                  {
+                  case VOL:
+                    coef = make_shared<GridFunctionCoefficientFunction> (self, diffop);
+                    break;
+                  case BND:
+                    coef = make_shared<GridFunctionCoefficientFunction> (self, nullptr,diffop);
+                    break;
+                  case BBND:
+                    coef = make_shared<GridFunctionCoefficientFunction> (self, nullptr,nullptr,diffop);
+                    break;
+                  }
                 coef->SetDimensions(diffop->Dimensions());
                 return py::cast(shared_ptr<CoefficientFunction>(coef));
               }
             return py::none(); //  shared_ptr<CoefficientFunction>();
-          })
+          }, py::arg("name"), py::arg("VB")=VOL)
 
     
     .def_property_readonly("derivname", 
