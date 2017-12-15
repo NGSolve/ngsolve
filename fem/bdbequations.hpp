@@ -553,7 +553,7 @@ namespace ngfem
 				MAT & mat, LocalHeap & lh)
     {
       HeapReset hr(lh);
-      cout << "In hesse boundary, generate matrix!" << endl;
+
       mat = Trans(static_cast<const FEL&>(fel).GetDDShape(mip.IP(),lh));//CalcMappedDDShape(mip, Trans(mat));
     }
 
