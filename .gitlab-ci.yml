@@ -341,7 +341,7 @@ deploy_nightly:
   script:
     - source tests/gitlab-ci/deploy/nightly.sh
   only:
-    - triggers
+    - schedules
   except:
     - tags
   environment: deploy_nigthly
