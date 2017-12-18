@@ -547,14 +547,79 @@ namespace ngfem
     enum { DIM_DMAT = D*D };
     enum { DIFFORDER = 2 };
 
+    static string Name() { return "hesseboundary"; }
+    
+    static auto & Cast (const FiniteElement & fel) 
+    { return static_cast<const FEL&> (fel); }
+    
     ///
     template <typename AFEL, typename MIP, typename MAT>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
     {
       HeapReset hr(lh);
+      int nd = Cast(fel).GetNDof();
+      
+      auto ddshape = Cast(fel).GetDDShape(mip.IP(), lh);
+      auto jinv = mip.GetJacobianInverse();
+      auto dshape = Cast(fel).GetDShape (mip.IP(), lh);
+      
 
-      mat = Trans(static_cast<const FEL&>(fel).GetDDShape(mip.IP(),lh));//CalcMappedDDShape(mip, Trans(mat));
+      for( int n = 0; n < nd; n++)
+	{
+	  for( int i = 0; i < D; i++)
+	    {
+	      for( int j = 0; j < D; j++)
+		{
+		  mat(i*D+j,n) = 0.0;
+		  for( int k = 0; k < D-1; k++)
+		    {
+		      for( int l = 0; l < D-1; l++)
+			{
+			  mat(i*D+j,n) += jinv(k,i)*ddshape(n,k*(D-1)+l)*jinv(l,j);
+			}
+		    }
+		}		  
+	    }
+	}
+      
+      //for non-curved elements, we are finished, otherwise derivatives of Jacobian have to be computed...
+      if (!mip.GetTransformation().IsCurvedElement()) return;
+
+      
+      Mat<2,2> hesse[3];
+      mip.CalcHesse (hesse[0], hesse[1], hesse[2]);
+
+      FlatMatrix<> tmp(D, (D-1)*(D-1), lh);
+
+      for (int i = 0; i < D; i++)
+        {
+          for (int j = 0; j < D-1; j++)
+            {
+              for (int k = 0; k < D-1; k++)
+                tmp(i,j*(D-1)+k) = hesse[i](j,k);
+            }
+        }
+
+      FlatMatrix<> tmpmat(nd, (D-1)*(D-1), lh);
+      tmpmat = dshape*jinv*tmp;
+
+      for( int n = 0; n < nd; n++)
+	{
+	  for( int i = 0; i < D; i++)
+	    {
+	      for( int j = 0; j < D; j++)
+		{
+		  for( int k = 0; k < D-1; k++)
+		    {
+		      for( int l = 0; l < D-1; l++)
+			{
+			  mat(i*D+j,n) += jinv(k,i)*tmpmat(n,k*(D-1)+l)*jinv(l,j);
+			}
+		    }
+		}		  
+	    }
+	}
     }
 
   };
