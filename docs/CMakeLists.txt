@@ -1,3 +1,4 @@
+include (ExternalProject)
 if (NETGEN_USE_PYTHON)
   find_package(Sphinx)
   if(SPHINX_FOUND)
@@ -13,6 +14,7 @@ if (NETGEN_USE_PYTHON)
         BUILD_COMMAND ""
         INSTALL_COMMAND ""
         )
+      set_target_properties(mylittlengs PROPERTIES EXCLUDE_FROM_ALL TRUE)
       ExternalProject_Get_Property(mylittlengs source_dir)
 
       add_custom_target(link_mylittlengs
