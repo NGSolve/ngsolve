@@ -614,7 +614,7 @@ namespace ngfem
 		    {
 		      for( int l = 0; l < D-1; l++)
 			{
-			  mat(i*D+j,n) += jinv(k,i)*tmpmat(n,k*(D-1)+l)*jinv(l,j);
+			  mat(i*D+j,n) -= jinv(k,i)*tmpmat(n,k*(D-1)+l)*jinv(l,j);
 			}
 		    }
 		}		  
@@ -623,41 +623,6 @@ namespace ngfem
     }
 
   };
-
-
-
-  /*template <int D>
-  class DiffOpSurfaceHesse : public DiffOp<DiffOpSurfaceHesse<D>>
-  {
-  public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D-1 };
-    enum { DIM_DMAT = D*D };
-    enum { DIFFORDER = 2 };
-    
-    static string Name() { return "hesse"; }
-    
-    static auto & Cast (const FiniteElement & fel) 
-    { return static_cast<const ScalarFiniteElement<D-1>&> (fel); }
-    
-    template <typename MIP, typename MAT>
-    static void GenerateMatrix (const FiniteElement & fel, const MIP & mip,
-                                MAT && mat, LocalHeap & lh)
-    {
-      cout << "surface hesse, generate matrix!" << endl;
-      HeapReset hr(lh);
-      Cast(fel).CalcMappedDDShape(mip, Trans(mat));
-    }
-    };*/
-
-
-
-
-
-
-
-
 
 
 
