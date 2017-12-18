@@ -1,5 +1,5 @@
 Spaces and forms on sub-domains
-======================
+=================================
 
 We can define finite element spaces and forms on sub-domains. This is in particular useful for multi-physics.
 
