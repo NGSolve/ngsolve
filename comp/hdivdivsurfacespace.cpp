@@ -351,7 +351,23 @@ namespace ngcomp
         //                dirichlet_edge[i] = true;
       }
     //cout << "dirichlet_edge after" << endl << dirichlet_edge << endl;
-    
+
+
+    // detect used/unused dofs
+
+    ctofdof.SetSize(this->GetNDof());
+    ctofdof = UNUSED_DOF;
+    Array<DofId> dofs;
+    for (size_t i = 0; i < nel; i++)
+      {
+        ElementId ei(BND,i);
+        if (DefinedOn (ei))
+          {
+            GetDofNrs(ei, dofs);
+            for (auto d : dofs)
+              ctofdof[d] = WIREBASKET_DOF;
+          }
+      }
   }
 
 
