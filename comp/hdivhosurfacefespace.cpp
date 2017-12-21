@@ -274,7 +274,8 @@ public:
     name="HDivHighOrderSurfaceFESpace(hdivhosurf)";
        
     DefineDefineFlag("discontinuous");   
-    DefineDefineFlag("hodivfree"); 
+    DefineDefineFlag("hodivfree");
+    DefineNumFlag("orderinner");
     
     if(parseflags) CheckFlags(flags);
 
@@ -290,7 +291,10 @@ public:
       {       
 	order = 0;  
       }
-    
+
+    uniform_order_inner = int (flags.GetNumFlag ("orderinner", -1));
+
+    cout << "uniform_order_inner = " << uniform_order_inner << endl;
     ho_div_free = flags.GetDefineFlag("hodivfree"); 
            
     auto one = make_shared<ConstantCoefficientFunction> (1);
@@ -333,7 +337,8 @@ public:
     first_inner_dof.SetSize(nel+1);
 
     //order_facet.SetSize(nfa);
-    //order_inner.SetSize(nel);    
+    order_inner.SetSize(nel);
+    order_inner = INT<3> (0,0,0); 
     //order_facet = order;
     //order_inner = order;
     
@@ -397,6 +402,15 @@ public:
 	*testout << " order_inner (hdivho) " << order_inner << endl; 	
       }
     */
+
+    for (int i = 0; i < nel; i++)
+      {
+	order_inner[i] = INT<3> (order,order,order);
+      }
+
+    if(uniform_order_inner>-1) 
+      order_inner = INT<3> (uniform_order_inner,uniform_order_inner,uniform_order_inner);
+
     UpdateDofTables(); 
     //UpdateCouplingDofArray();
   }
@@ -427,16 +441,16 @@ public:
           {
             ElementId ei(BND, i);
             //INT<3> pc = order_inner_curl[i];
-            //INT<3> p = order_inner[i];
+            INT<3> p = order_inner[i];
             int inci = 0;
             switch(ma->GetElType(ei))
               {
               case ET_TRIG:
                 if (!ho_div_free)
-		  inci = order*(order-1)/2+order*(order-1)/2+order-1;
+		  inci = p[0]*(p[0]-1)/2+p[0]*(p[0]-1)/2+p[0]-1;
 		//inci = pc[0]*(pc[0]-1)/2 + p[0]*(p[0]-1)/2 + p[0]-1;
                 else
-		  inci = order*(order-1)/2;
+		  inci = p[0]*(p[0]-1)/2;
 		    //inci = pc[0]*(pc[0]-1)/2;
                 break;
               case ET_QUAD:
@@ -571,7 +585,7 @@ public:
   {
     Ngs_Element ngel = ma->GetElement(ei);
     HDivHighOrderFE<ET>* hofe = new (lh)HDivHighOrderFE<ET>();
-    hofe->SetOrderInner(order);
+    hofe->SetOrderInner(order_inner[ei.Nr()][0]);
     hofe->SetVertexNumbers(ngel.Vertices());
 
     Array<int> facet_order(ngel.Edges());
