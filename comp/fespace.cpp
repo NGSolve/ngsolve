@@ -2303,7 +2303,14 @@ lot of new non-zero entries in the matrix!\n" << endl;
   {
     ;
   }
-
+  
+  void CompoundFESpace :: SetDefinedOn (VorB vb, const BitArray & defon)
+  {
+    for (auto & space : spaces)
+      space -> SetDefinedOn (vb, defon);
+    FESpace::SetDefinedOn (vb, defon);
+  }
+    
   void CompoundFESpace :: Update(LocalHeap & lh)
   {
     FESpace :: Update (lh);
