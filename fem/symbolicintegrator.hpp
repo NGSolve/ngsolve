@@ -7,15 +7,18 @@
 /* Date:   August 2015                                               */
 /*********************************************************************/
 
+namespace ngcomp
+{
+  class FESpace;
+}
 
 
 namespace ngfem
 {
 
-  
-
 class ProxyFunction : public CoefficientFunction
 {
+  shared_ptr<ngcomp::FESpace> fes;
   bool testfunction; // true .. test, false .. trial
   // bool is_complex;
   bool is_other;    // neighbour element (DG)
@@ -32,13 +35,14 @@ class ProxyFunction : public CoefficientFunction
   SymbolTable<shared_ptr<DifferentialOperator>> additional_diffops;
   // int dim;
 public:
-  NGS_DLL_HEADER ProxyFunction (bool atestfunction, bool ais_complex,
-                 shared_ptr<DifferentialOperator> aevaluator, 
-                 shared_ptr<DifferentialOperator> aderiv_evaluator,
-                 shared_ptr<DifferentialOperator> atrace_evaluator,
-                 shared_ptr<DifferentialOperator> atrace_deriv_evaluator,
-		 shared_ptr<DifferentialOperator> attrace_evaluator,
-		 shared_ptr<DifferentialOperator> attrace_deriv_evaluator);
+  NGS_DLL_HEADER ProxyFunction (shared_ptr<ngcomp::FESpace> afes,
+                                bool atestfunction, bool ais_complex,
+                                shared_ptr<DifferentialOperator> aevaluator, 
+                                shared_ptr<DifferentialOperator> aderiv_evaluator,
+                                shared_ptr<DifferentialOperator> atrace_evaluator,
+                                shared_ptr<DifferentialOperator> atrace_deriv_evaluator,
+                                shared_ptr<DifferentialOperator> attrace_evaluator,
+                                shared_ptr<DifferentialOperator> attrace_deriv_evaluator);
 
   bool IsTestFunction () const { return testfunction; }
   bool IsOther() const { return is_other; }
@@ -61,7 +65,7 @@ public:
 
   shared_ptr<ProxyFunction> Other(shared_ptr<CoefficientFunction> _boundary_values) const
   {
-    auto other = make_shared<ProxyFunction> (testfunction, is_complex, evaluator, deriv_evaluator, trace_evaluator, trace_deriv_evaluator,ttrace_evaluator, ttrace_deriv_evaluator);
+    auto other = make_shared<ProxyFunction> (fes, testfunction, is_complex, evaluator, deriv_evaluator, trace_evaluator, trace_deriv_evaluator,ttrace_evaluator, ttrace_deriv_evaluator);
     other->is_other = true;
     if (other->deriv_proxy)
       other->deriv_proxy->is_other = true;
@@ -95,7 +99,7 @@ public:
   {
     if (additional_diffops.Used(name))
     {
-      auto adddiffop = make_shared<ProxyFunction> (testfunction, is_complex, additional_diffops[name], nullptr, nullptr, nullptr, nullptr, nullptr);
+      auto adddiffop = make_shared<ProxyFunction> (fes, testfunction, is_complex, additional_diffops[name], nullptr, nullptr, nullptr, nullptr, nullptr);
       if (is_other)
         adddiffop->is_other = true;
       return adddiffop;
@@ -103,6 +107,7 @@ public:
     return shared_ptr<ProxyFunction>();
   }
 
+  const shared_ptr<ngcomp::FESpace> & GetFESpace() const { return fes; }
   
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
   {
@@ -308,8 +313,9 @@ public:
   virtual IntRange UsedDofs(const FiniteElement & bfel) const
   {
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
-    IntRange r = BlockDim() * fel.GetRange(comp);
-    return r;
+    size_t base = BlockDim() * fel.GetRange(comp).First();
+    IntRange r1 = diffop->UsedDofs(fel[comp]);
+    return r1+base;
   }
   
   NGS_DLL_HEADER virtual void
@@ -504,12 +510,13 @@ public:
     bool elementwise_constant;
     mutable bool simd_evaluate;
     int trial_difforder, test_difforder;
+    bool is_symmetric;
   public:
     NGS_DLL_HEADER SymbolicBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb,
                                     bool aelement_boundary);
 
     virtual VorB VB() const override { return vb; }
-    virtual bool IsSymmetric() const override { return true; }  // correct would be: don't know
+    virtual xbool IsSymmetric() const override { return is_symmetric ? xbool(true) : xbool(maybe); } 
     virtual string Name () const override { return string ("Symbolic BFI"); }
 
     using Integrator::GetIntegrationRule;
@@ -635,7 +642,7 @@ public:
 
     virtual VorB VB() const { return vb; }
     virtual bool BoundaryForm() const { return vb == BND; }
-    virtual bool IsSymmetric() const { return true; }  // correct would be: don't know
+    virtual xbool IsSymmetric() const { return maybe; } 
     
     virtual DGFormulation GetDGFormulation() const { return DGFormulation(neighbor_testfunction,
                                                                           element_boundary); }
@@ -697,13 +704,14 @@ public:
     shared_ptr<CoefficientFunction> cf;
     VorB vb;
     Array<ProxyFunction*> trial_proxies;
+    bool element_boundary;    
     mutable bool simd_evaluate;
     
   public:
-    SymbolicEnergy (shared_ptr<CoefficientFunction> acf, VorB avb);
+    SymbolicEnergy (shared_ptr<CoefficientFunction> acf, VorB avb, bool aelement_boundary);
 
     virtual VorB VB() const { return vb; }
-    virtual bool IsSymmetric() const { return true; } 
+    virtual xbool IsSymmetric() const { return maybe; } 
     virtual string Name () const { return string ("Symbolic Energy"); }
 
     virtual void 
@@ -722,6 +730,14 @@ public:
                                  FlatMatrix<double> elmat,
                                  LocalHeap & lh) const;
 
+    void 
+    AddLinearizedElementMatrix (const FiniteElement & fel,
+                                ProxyUserData & trafo, 
+                                const BaseMappedIntegrationRule & mir, 
+                                FlatVector<double> elveclin,
+                                FlatMatrix<double> elmat,
+                                LocalHeap & lh) const;
+
 
     virtual double Energy (const FiniteElement & fel, 
 			   const ElementTransformation & trafo, 
@@ -735,8 +751,6 @@ public:
 			FlatVector<double> ely,
 			void * precomputed,
 			LocalHeap & lh) const;
-    
-
   };
   
 

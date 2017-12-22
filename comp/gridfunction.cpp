@@ -796,7 +796,7 @@ namespace ngcomp
   S_ComponentGridFunction<SCAL> :: 
   ~S_ComponentGridFunction ()
   {
-    this -> vec = NULL;  // base-class desctructor must not delete the vector
+    this -> vec = NULL;  // base-class destructor must not delete the vector
   }
 
 
@@ -1240,7 +1240,7 @@ namespace ngcomp
     ElementId ei(vb, elnr);
 
     // const FESpace & fes = *gf->GetFESpace();
-    shared_ptr<MeshAccess>  ma = fes->GetMeshAccess();
+    const shared_ptr<MeshAccess> & ma = fes->GetMeshAccess();
     
     if (!ip.GetTransformation().BelongsToMesh (ma.get()))
       {
@@ -2129,10 +2129,10 @@ namespace ngcomp
   template <class SCAL>
   bool VisualizeGridFunction<SCAL> ::
   GetMultiSurfValue (size_t selnr, size_t facetnr, size_t npts,
-                     const __m256d * xref, 
-                     const __m256d * x, 
-                     const __m256d * dxdxref, 
-                     __m256d * values)
+                     const tAVXd * xref, 
+                     const tAVXd * x, 
+                     const tAVXd * dxdxref, 
+                     tAVXd * values)
   {
     cout << "GetMultiSurf - gf not implemented" << endl;
     return false;
@@ -2768,10 +2768,10 @@ namespace ngcomp
 #ifdef __AVX__  
   bool VisualizeCoefficientFunction ::    
   GetMultiSurfValue (size_t selnr, size_t facetnr, size_t npts,
-                     const __m256d * xref, 
-                     const __m256d * x, 
-                     const __m256d * dxdxref, 
-                     __m256d * values)
+                     const tAVXd * xref, 
+                     const tAVXd * x, 
+                     const tAVXd * dxdxref, 
+                     tAVXd * values)
   {
     try
       {
@@ -2879,6 +2879,12 @@ namespace ngcomp
         // static Timer t("VisualizeCoefficientFunction::GetMultiSurfValue", 2); RegionTimer reg(t);
         // static Timer t2("VisualizeCoefficientFunction::GetMultiSurfValue evaluate", 2);
 
+    VorB vb = (ma->GetDimension() == 3) ? BND : VOL;
+    ElementId ei(vb, selnr);
+    LocalHeapMem<100000> lh("viscf::getmultisurfvalue");
+    ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
+    if (!cf->DefinedOn(eltrans)) return false;
+
     if (cf -> IsComplex())
       {
         for (int i = 0; i < npts; i++)
@@ -2886,12 +2892,6 @@ namespace ngcomp
         return true;
       }
     
-    VorB vb = (ma->GetDimension() == 3) ? BND : VOL;
-    ElementId ei(vb, selnr);
-    
-    LocalHeapMem<100000> lh("viscf::getmultisurfvalue");
-    ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
-    if (!cf->DefinedOn(eltrans)) return false;
 
     FlatMatrix<> mvalues1(npts, GetComponents(), lh);
 

@@ -55,33 +55,51 @@ def test_matrix_numpy():
     assert d[0,1] == c[0,1]
 
 def test_sparsematrix_access():
-    mesh = Mesh(unit_square.GenerateMesh(maxh=0.2))
+    reference_values = [
+            0.004820065534967336,
+            0.3333333333332501+0j,
+            0.0002480226944690391,
+            0.016666666666666604+0j]
+
+#     mesh = unit_square.GenerateMesh(maxh=0.2)
+#     mesh.Save("square.vol.gz")
+#     mesh = Mesh(mesh)
+    mesh = Mesh("square.vol.gz")
     fes = H1(mesh,dim=2)
     u,v = fes.TrialFunction(), fes.TestFunction()
     a = BilinearForm(fes)
     a += SymbolicBFI(InnerProduct(u,v))
     a.Assemble()
-    assert np.linalg.norm(np.array(a.mat[1,1]) - np.array([[0.00550458,0],[0,0.00550458]])) < 1e-8
+    x = reference_values[0]
+    assert np.linalg.norm(np.array(a.mat[1,1]) - np.array([[x,0],[0,x]])) < 1e-8
 
     fes = HCurl(mesh,dim=2,complex=True)
     u,v = fes.TrialFunction(), fes.TestFunction()
     a = BilinearForm(fes)
     a += SymbolicBFI(InnerProduct(u,v))
     a.Assemble()
-    assert abs(a.mat[1,1][0,0] - (0.33333333333325+0j)) < 1e-8
+    assert abs(a.mat[1,1][0,0] - reference_values[1]) < 1e-8
 
-    mesh = Mesh(unit_cube.GenerateMesh(maxh=0.2))
+#     mesh = unit_cube.GenerateMesh(maxh=0.2)
+#     mesh.Save("cube.vol.gz")
+#     mesh = Mesh(mesh)
+    mesh = Mesh("cube.vol.gz")
     fes = H1(mesh,dim=3)
     u,v = fes.TrialFunction(), fes.TestFunction()
     a = BilinearForm(fes)
     a += SymbolicBFI(InnerProduct(u,v))
     a.Assemble()
-    assert np.linalg.norm(np.array(a.mat[1,1]) - np.array([[0.0002156,0.,0.],[0.,0.0002156,0.],[0.,0.,0.0002156]])) < 1e-8
+    x = reference_values[2]
+    assert np.linalg.norm(np.array(a.mat[1,1]) - np.array([[x,0.,0.],[0.,x,0.],[0.,0.,x]])) < 1e-8
 
     fes = HCurl(mesh,dim=3,complex=True)
     u,v = fes.TrialFunction(), fes.TestFunction()
     a = BilinearForm(fes)
     a += SymbolicBFI(InnerProduct(u,v))
     a.Assemble()
-    assert abs(a.mat[1,1][0,0] - (0.016666666666666604+0j)) < 1e-8
+    assert abs(a.mat[1,1][0,0] - (reference_values[3])) < 1e-8
 
+if __name__ == "__main__":
+    test_matrix()
+    test_matrix_numpy()
+    test_sparsematrix_access()

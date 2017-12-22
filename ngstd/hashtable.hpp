@@ -190,6 +190,10 @@ namespace ngstd
   }
 
 
+
+
+
+  
   template <int N, typename TI>
   INLINE size_t HashValue (const INT<N,TI> & ind, size_t size)
   {
@@ -233,6 +237,57 @@ namespace ngstd
   }
   
 
+
+
+
+
+  
+  template <int N, typename TI>
+  INLINE size_t HashValue2 (const INT<N,TI> & ind, size_t mask)
+  {
+    INT<N,size_t> lind = ind;    
+    size_t sum = 0;
+    for (int i = 0; i < N; i++)
+      sum += lind[i];
+    return sum & mask;
+  }
+
+  /// hash value of 1 int
+  template <typename TI>
+  INLINE size_t HashValue2 (const INT<1,TI> & ind, size_t mask) 
+  {
+    return ind[0] & mask;
+  }
+
+  /// hash value of 2 int
+  template <typename TI>  
+  INLINE size_t HashValue2 (const INT<2,TI> & ind, size_t mask) 
+  {
+    INT<2,size_t> lind = ind;
+    return (113*lind[0]+lind[1]) & mask;
+  }
+
+  /// hash value of 3 int
+  template <typename TI>    
+  INLINE size_t HashValue2 (const INT<3,TI> & ind, size_t mask) 
+  {
+    INT<3,size_t> lind = ind;
+    return (113*lind[0]+59*lind[1]+lind[2]) & mask;
+  }
+
+  INLINE size_t HashValue2 (size_t ind, size_t mask)
+  {
+    return ind & mask;
+  }
+  INLINE size_t HashValue2 (int ind, size_t mask)
+  {
+    return size_t(ind) & mask;
+  }
+  
+
+
+
+  
   // using ngstd::max;
 
   template <int D, typename T>
@@ -472,6 +527,12 @@ namespace ngstd
 
 
 
+  inline size_t RoundUp2 (size_t i)
+  {
+    size_t res = 1;
+    while (res < i) res *= 2; // hope it will never be too large 
+    return res; 
+  }
 
 
 
@@ -486,6 +547,9 @@ namespace ngstd
   protected:
     ///
     size_t size;
+    size_t mask;
+    ///
+    size_t used;
     ///
     Array<T_HASH> hash;
     ///
@@ -494,15 +558,19 @@ namespace ngstd
     T_HASH invalid;
   public:
     ///
-    ClosedHashTable (size_t asize)
-      : size(asize), hash(asize), cont(asize)
+    ClosedHashTable (size_t asize = 128)
+      : size(RoundUp2(asize)), used(0), hash(size), cont(size)
     {
+      mask = size-1;
       invalid = -1; 
       hash = T_HASH(invalid);
     }
 
+    ClosedHashTable (ClosedHashTable && ht2) = default;
+
+      // who needs that ? 
     ClosedHashTable (FlatArray<T_HASH> _hash, FlatArray<T> _cont)
-      : size(_hash.Size()), hash(_hash.Size(), _hash.Addr(0)), cont(_cont.Size(), _cont.Addr(0))
+      : size(_hash.Size()), used(0), hash(_hash.Size(), _hash.Addr(0)), cont(_cont.Size(), _cont.Addr(0))
     {
       invalid = -1; 
       hash = T_HASH(invalid);
@@ -515,6 +583,8 @@ namespace ngstd
       invalid = -1; 
       hash = T_HASH(invalid);
     }
+
+    ClosedHashTable & operator= (ClosedHashTable && ht2) = default;
 
     /// 
     size_t Size() const
@@ -531,16 +601,19 @@ namespace ngstd
     /// number of used elements
     size_t UsedElements () const
     {
+      return used;
+      /*
       size_t cnt = 0;
       for (size_t i = 0; i < size; i++)
 	if (hash[i] != invalid)
 	  cnt++;
       return cnt;
+      */
     }
 
     size_t Position (const T_HASH ind) const
     {
-      size_t i = HashValue(ind, size);
+      size_t i = HashValue2(ind, mask);
       while (1)
 	{
 	  if (hash[i] == ind) return i;
@@ -549,17 +622,29 @@ namespace ngstd
 	  if (i >= size) i = 0;
 	}
     }
-    // returns 1, if new position is created
+
+    void DoubleSize()
+    {
+      ClosedHashTable tmp(2*Size());
+      for (auto both : *this)
+        tmp[both.first] = both.second;
+      *this = move(tmp);
+    }
+    
+    // returns true if new position is created
     bool PositionCreate (const T_HASH ind, size_t & apos)
     {
-      size_t i = HashValue (ind, size);
+      if (UsedElements()*2 > Size()) DoubleSize();
+      
+      size_t i = HashValue2 (ind, mask);
 
       while (1)
 	{
 	  if (hash[i] == invalid)
 	    { 
 	      hash[i] = ind; 
-	      apos = i; 
+	      apos = i;
+              used++;
 	      return true;
 	    }
 	  if (hash[i] == ind) 
@@ -619,7 +704,7 @@ namespace ngstd
       acont = cont[pos];
     }
 
-    pair<T_HASH,T> GetBoth (int pos) const
+    pair<T_HASH,T> GetBoth (size_t pos) const
     {
       return pair<T_HASH,T> (hash[pos], cont[pos]);
     }
@@ -643,6 +728,27 @@ namespace ngstd
       hash = T_HASH(invalid);
     }
 
+    void Delete (T_HASH key)
+    {
+      size_t pos = Position(key);
+      if (pos == size_t(-1)) return;
+      hash[pos] = invalid; used--;
+      
+      while (1)
+        {
+          size_t nextpos = pos+1;
+          if (nextpos == size) nextpos = 0;
+          if (hash[nextpos] == invalid) break;
+          
+          auto key = hash[nextpos];
+          auto val = cont[nextpos];
+          hash[pos] = invalid; used--;
+          
+          Set (key, val);
+          pos = nextpos;
+        }
+    }
+    
     class Iterator
     {
       const ClosedHashTable & tab;
@@ -687,13 +793,211 @@ namespace ngstd
         }
     return ost;
   }
-    
 
   
+  template <typename TI>  
+  INLINE size_t HashValue (const INT<2,TI> ind)
+  {
+    INT<2,size_t> lind = ind;
+    return 113*lind[0]+lind[1];
+  }
 
 
+  template <typename TKEY, typename T>
+  class ParallelHashTable
+  {
+    class ClosedHT
+    {
+      Array<TKEY> keys;
+      Array<T> values;
+      size_t used;
+      
+    public:
+      ClosedHT(size_t asize = 256) : keys(asize), values(asize), used(0)
+      {
+        keys = TKEY(-1);
+      }
+
+      size_t Size () const { return keys.Size(); }
+      size_t Used () const { return used; }
+
+      ClosedHT & operator= (ClosedHT&&) = default;
+
+      void Resize()
+      {
+        ClosedHT tmp(keys.Size()*2);
+        for (size_t i = 0; i < keys.Size(); i++)
+          if (keys[i] != TKEY(-1))
+            {
+              TKEY hkey = keys[i];
+              T hval = values[i];
+              size_t hhash = HashValue(hkey);
+              size_t hhash2 = hhash / 256;
+              tmp.DoSave(hkey, [hval] (T & v) { v = hval; }, hhash2);
+            }
+        (*this) = move(tmp);
+      }
+      
+      template <typename TFUNC>
+      auto Do (TKEY key, TFUNC func, size_t hash)
+      {
+        if (used > keys.Size()/2)
+          Resize();
+        return DoSave (key, func, hash);
+      }
+      
+      template <typename TFUNC>
+      auto DoSave (TKEY key, TFUNC func, size_t hash)
+      {
+        size_t pos = hash & (keys.Size()-1);
+        while (1)
+          {
+            if (keys[pos] == key)
+              break;
+            if (keys[pos] == TKEY(-1))
+              {
+                keys[pos] = key;
+                values[pos] = T(0);
+                used++;
+                break;
+              }
+            pos++;
+            if (pos == keys.Size()) pos = 0;
+          }
+        return func(values[pos]);
+      }
+      
+      T Get (TKEY key, size_t hash)
+      {
+        size_t pos = hash & (keys.Size()-1);
+        while (1)
+          {
+            if (keys[pos] == key)
+              return values[pos];
+            if (keys[pos] == TKEY(-1))
+              throw Exception ("ParallelHashTable::Get of unused key");
+            pos++;
+            if (pos == keys.Size()) pos = 0;
+          }
+      }
+
+      size_t GetCosts (TKEY key, size_t hash)
+      {
+        size_t pos = hash & (keys.Size()-1);
+        size_t costs = 1;
+        while (1)
+          {
+            if (keys[pos] == key)
+              return costs;
+            if (keys[pos] == TKEY(-1))
+              throw Exception ("ParallelHashTable::Get of unused key");
+            costs++;
+            pos++;
+            if (pos == keys.Size()) pos = 0;
+          }
+      }
 
 
+      template <typename TFUNC>
+      void Iterate (TFUNC func) const
+      {
+        for (size_t i = 0; i < keys.Size(); i++)
+          if (keys[i] != TKEY(-1))
+            func(keys[i], values[i]);
+      }
+        
+      void Print (ostream & ost) const
+      {
+        for (size_t i = 0; i < keys.Size(); i++)
+          if (keys[i] != TKEY(-1))
+            ost << keys[i] << ": " << values[i] << ", ";
+      }
+    };
+
+    Array<ClosedHT> hts;
+    class alignas(64) MyMutex64 : public MyMutex { };
+    
+    Array<MyMutex64> locks;
+
+  public:
+    ParallelHashTable() : hts(256), locks(256) { ; }
+    size_t NumBuckets() const { return hts.Size(); }
+    size_t BucketSize(size_t nr) const { return hts[nr].Size(); }
+    size_t Used (size_t nr) const { return hts[nr].Used(); } 
+    size_t Used() const
+    {
+      size_t used = 0;
+      for (auto & ht : hts)
+        used += ht.Used();
+      return used;
+    }  
+    template <typename TFUNC>
+    auto Do (TKEY key, TFUNC func)
+    {
+      size_t hash = HashValue(key);
+      size_t hash1 = hash % 256;
+      size_t hash2 = hash / 256;
+      
+      // locks[hash1].lock();
+      // hts[hash1].Do (key, func, hash2);
+      // locks[hash1].unlock();
+      MyLock lock(locks[hash1]);
+      return hts[hash1].Do (key, func, hash2);
+    }
+    
+    T Get (TKEY key)
+    {
+      size_t hash = HashValue(key);
+      size_t hash1 = hash % 256;
+      size_t hash2 = hash / 256;
+      
+      return hts[hash1].Get (key, hash2);
+    }
+
+    auto GetCosts (TKEY key)
+    {
+      size_t hash = HashValue(key);
+      size_t hash1 = hash % 256;
+      size_t hash2 = hash / 256;
+      
+      return hts[hash1].GetCosts (key, hash2);
+    }
+
+    
+    template <typename TFUNC>
+    void Iterate(TFUNC func) const
+    {
+      for (auto & bucket : hts)
+        bucket.Iterate(func);
+    }
+
+    template <typename TFUNC>
+    void Iterate(size_t nr, TFUNC func) const
+    {
+      hts[nr].Iterate(func);
+    }
+    
+
+    void Print (ostream & ost) const
+    {
+      for (size_t i : Range(hts))
+        if (hts[i].Used() > 0)
+          {
+            ost << i << ": ";
+            hts[i].Print(ost);
+          }
+    }
+  };
+
+  template <typename TKEY, typename T>
+  inline ostream & operator<< (ostream & ost, const ParallelHashTable<TKEY,T> & ht)
+  {
+    ht.Print(ost);
+    return ost;
+  }
+
+
+    
   template <int N, typename T>
   Archive & operator & (Archive & archive, INT<N,T> & mi)
   {

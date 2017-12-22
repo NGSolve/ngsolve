@@ -102,7 +102,7 @@ namespace ngcomp
     virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & precflags) const override; 
     // virtual void CreateSmoothingBlocks2 (SmoothingBlocksCreator & sbc, const Flags & precflags) const; 
     ///
-    virtual Array<int> * CreateDirectSolverClusters (const Flags & flags) const override;
+    virtual shared_ptr<Array<int>> CreateDirectSolverClusters (const Flags & flags) const override;
 
     void UpdateDofTables ();
     ///

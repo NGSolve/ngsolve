@@ -780,6 +780,7 @@ public:
 
 
 
+
   
 
   //  some suggar for working with arrays 
@@ -833,13 +834,15 @@ inline Tasks operator "" _tasks_per_thread (unsigned long long n)
   return Tasks(n * TaskManager::GetNumThreads());
 }
 
+/*
+  thought to be used as:   array = 1 | tasks
 class DefaultTasks
 {
 public:
   operator Tasks () const { return TaskManager::GetNumThreads(); }
 };
 static DefaultTasks tasks;
-
+*/
 
 
 }

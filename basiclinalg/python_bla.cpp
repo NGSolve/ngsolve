@@ -421,6 +421,7 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
         class_FMD.def("Inverse", [](FMD & self, FMD & inv) {
 	    CalcInverse(self,inv); return;
 	  });
+        class_FMD.def_property_readonly("I", py::cpp_function([](FMD &self) { return Inv(self); } ) );        
         PyDefMatBuffer<FMD>(class_FMD);
 
 
@@ -512,7 +513,7 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
              [] (py::object x) -> py::object
                               { return py::object(x.attr("Norm")) (); });
 
-
+    m.def("__timing__", &ngbla::Timing);
     m.def("CheckPerformance",
              [] (size_t n, size_t m, size_t k)
                               {
@@ -530,6 +531,47 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
                                   cout << "Lapack GFlops = " << 1e-9 * n*k*m*its / t.GetTime() << endl;
                                 }
 
+
+                                {
+                                  Timer t("own AddABt");
+                                  t.Start();
+                                  c = 0.0;
+                                  for (int j = 0; j < its; j++)
+                                    // c = a * Trans(b) | Lapack;
+                                    AddABt (a, b, c);
+                                  t.Stop();
+                                  cout << "own AddABt GFlops = " << 1e-9 * n*k*m*its / t.GetTime() << endl;
+                                }
+
+
+                                {
+                                  Timer t("own MultMatMat");
+                                  t.Start();
+                                  c = 0.0;
+                                  Matrix<> bt = Trans(b);
+                                  for (int j = 0; j < its; j++)
+                                    // c = a * Trans(b) | Lapack;
+                                    MultMatMat (a, bt, c);
+                                  t.Stop();
+                                  cout << "own MultMatMat GFlops = " << 1e-9 * n*k*m*its / t.GetTime() << endl;
+                                }
+
+                                {
+                                  Timer t("own AlignedMultMatMat");
+                                  t.Start();
+                                  Matrix<SIMD<double>> bt(k,m);
+                                  Matrix<SIMD<double>> c(n,m);
+                                  c = SIMD<double>(0.0);
+                                  for (int j = 0; j < its; j++)
+                                    // c = a * Trans(b) | Lapack;
+                                    MultMatMat (a, bt, c);
+                                  t.Stop();
+                                  cout << "own AlignedMultMatMat GFlops = " << SIMD<double>::Size()*1e-9 * n*k*m*its / t.GetTime() << endl;
+                                }
+
+
+
+                                
                                 /*
                                 {
                                   Timer t("matmat2");

@@ -92,9 +92,18 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("__repr__", [](BaseVector &self) { return "basevector"; } )
     .def_property_readonly("size", py::cpp_function( [] (BaseVector &self) { return self.Size(); } ) )
     .def("__len__", [] (BaseVector &self) { return self.Size(); })
-    .def("CreateVector", [] ( BaseVector & self)
-        { return shared_ptr<BaseVector>(self.CreateVector()); } )
-
+    .def("CreateVector", [] (BaseVector & self)
+         { return shared_ptr<BaseVector>(self.CreateVector()); },
+         "creates a new vector of same type, contents is undefined")
+    
+    .def("Copy", [] (BaseVector & self)
+         {
+           auto hv = shared_ptr<BaseVector>(self.CreateVector());
+           *hv = self;
+           return hv;
+         },
+         "creates a new vector of same type, copy contents")
+    
     .def("Assign",[](BaseVector & self, BaseVector & v2, py::object s)->void
                                    { 
                                      if ( py::extract<double>(s).check() )
@@ -212,6 +221,8 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("__isub__", [](BaseVector & self,  BaseVector & other) -> BaseVector& { self -= other; return self;})
     .def("__imul__", [](BaseVector & self,  double scal) -> BaseVector& { self *= scal; return self;})
     .def("__imul__", [](BaseVector & self,  Complex scal) -> BaseVector& { self *= scal; return self;})
+    .def("__itruediv__", [](BaseVector & self,  double scal) -> BaseVector& { self /= scal; return self;})
+    .def("__itruediv__", [](BaseVector & self,  Complex scal) -> BaseVector& { self /= scal; return self;})
     .def("InnerProduct", [](BaseVector & self, BaseVector & other, bool conjugate)
                                           {
                                             if (self.IsComplex())
@@ -406,8 +417,21 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                        if (inverse != "") m.SetInverseType(inverse);
                                        return m.InverseMatrix(freedofs);
                                      }
-         ,"Inverse", py::arg("freedofs")=nullptr, py::arg("inverse")=py::str("")
-         )
+         ,"Inverse", py::arg("freedofs")=nullptr, py::arg("inverse")=py::str(""), 
+         docu_string(R"raw_string(Calculate inverse of sparse matrix"
+Parameters
+
+freedofs : BitArray
+  If set, invert only the rows/columns the matrix defined by the bit array, otherwise invert the whole matrix
+
+inverse : string
+  Solver to use, allowed values are:
+    sparsecholesky - internal solver of NGSolve for symmetric matrices
+    umfpack        - solver by Suitesparse/UMFPACK (if NGSolve was configured with USE_UMFPACK=ON)
+    pardiso        - PARDISO, either provided by libpardiso (USE_PARDISO=ON) or Intel MKL (USE_MKL=ON).
+                     If neither Pardiso nor Intel MKL was linked at compile-time, NGSolve will look
+                     for libmkl_rt in LD_LIBRARY_PATH (Unix) or PATH (Windows) at run-time.
+)raw_string"))
     // .def("Inverse", [](BM &m)  { return m.InverseMatrix(); })
     .def("Update", [](BM &m) { m.Update(); })
     ;

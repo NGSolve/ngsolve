@@ -355,7 +355,7 @@ if { [catch { NGS_GetData } ] == 0 } {
     }
     
 
-    # the ini file is saved  on demand :
+    # the ini file is saved on demand :
     global ngsinifilename
 
     set ngsinifilename [file join $nguserdir ngs.ini]

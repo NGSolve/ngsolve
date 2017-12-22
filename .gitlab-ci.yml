@@ -6,236 +6,158 @@ stages:
   - deploy
 
 ############################################
-# System templates
+# Windows
 ############################################
 
-# Windows
-.template_windows_32: &win32
-  tags:
-    - windows
-    - x86
-  before_script:
-    - "echo off"
-    - 'call "%VS140COMNTOOLS%\..\..\VC\bin\vcvars32.bat"'
-    - set CMAKE_GENERATOR=Visual Studio 14 2015
-    - set CI_DIR=C:\ci\%CI_PIPELINE_ID%_32
-    - set NETGEN_BUILD_DIR=%CI_DIR%\build
-    - set CMAKE_INSTALL_PREFIX=%CI_DIR%\install
-    - set NETGENDIR=%CMAKE_INSTALL_PREFIX%\bin
-    - set PYTHONPATH=%CMAKE_INSTALL_PREFIX%\lib\site-packages
-    - set CMAKE_CONFIG=-DUSE_MKL=OFF -DUSE_OCC=ON
-
-.template_windows_64: &win64
+.template_win: &win
   tags:
     - windows
     - x64
   before_script:
-    - "echo off"
-    - 'call "%VS140COMNTOOLS%\..\..\VC\vcvarsall" x64'
-    - set CMAKE_GENERATOR=Ninja
-    - set CI_DIR=C:\ci\%CI_PIPELINE_ID%_64
-    - set NETGEN_BUILD_DIR=%CI_DIR%\build
-    - set CMAKE_INSTALL_PREFIX=%CI_DIR%\install
-    - set NETGENDIR=%CMAKE_INSTALL_PREFIX%\bin
-    - set PATH=%NETGENDIR%;%PATH%
-    - set PYTHONPATH=%CMAKE_INSTALL_PREFIX%\lib\site-packages
-    - set UPLOAD_DIR=/home/tester/deploy/win64/%CI_BUILD_TAG%%CI_BUILD_REF%/
-    - set CLCACHE_BASEDIR=%CI_DIR%
-    - set CMAKE_CONFIG=-DUSE_OCC=ON -DUSE_CCACHE=ON -DUSE_MKL=ON -DMKL_STATIC=ON -DMKL_ROOT="C:/Intel/compilers_and_libraries/windows/mkl"
+    - set CI_DIR=C:\ci\%CI_PIPELINE_ID%
+    - call tests\gitlab-ci\win\set_vars.bat
 
+win_build:
+  <<: *win
+  stage: build
+  script:
+    - call tests\gitlab-ci\win\build.bat
+    - cd %CI_PROJECT_DIR%
+    - call tests\gitlab-ci\win\upload.bat
+
+win_test:
+  <<: *win
+  stage: test
+  script:
+    - call tests\gitlab-ci\win\test.bat
+
+win_cleanup:
+  <<: *win
+  stage: cleanup
+  script:
+    - call tests\gitlab-ci\win\cleanup.bat
+  when: always
+  allow_failure: true
+
+.template_win_avx: &win_avx
+  tags:
+    - windows
+    - x64
+  before_script:
+    - set CI_DIR=C:\ci\%CI_PIPELINE_ID%_avx
+    - set CMAKE_CONFIG=-DCMAKE_CXX_FLAGS="/W0 /EHsc /arch:AVX -DWIN32=1"
+    - call tests\gitlab-ci\win\set_vars.bat
+
+win_avx_build:
+  <<: *win_avx
+  stage: build
+  script:
+    - call tests\gitlab-ci\win\build.bat
+
+win_avx_test:
+  <<: *win_avx
+  stage: test
+  script:
+    - call tests\gitlab-ci\win\test.bat
+
+win_avx_cleanup:
+  <<: *win_avx
+  stage: cleanup
+  script:
+    - call tests\gitlab-ci\win\cleanup.bat
+  when: always
+  allow_failure: true
+
+############################################
 # Linux
+############################################
 .template_ubuntu: &ubuntu
   tags:
     - linux
     - docker
-  before_script:
-    - pwd
-    - ls
-    - docker info
+    - avx
 
 .template_ubuntu_1604: &ubuntu_1604
   <<: *ubuntu
   variables:
+    IMAGE_VERSION: "16.04"
     UBUNTU_VERSION: "16.04"
     UBUNTU_VERSION_NAME: "xenial"
 
-.template_ubuntu_1610: &ubuntu_1610
+.template_ubuntu_1710: &ubuntu_1710
   <<: *ubuntu
   variables:
-    UBUNTU_VERSION: "16.10"
-    UBUNTU_VERSION_NAME: "yakkety"
+    IMAGE_VERSION: "17.10"
+    UBUNTU_VERSION: "17.10"
+    UBUNTU_VERSION_NAME: "artful"
 
-.template_ubuntu_1704: &ubuntu_1704
+.template_ubuntu_avx: &ubuntu_avx
   <<: *ubuntu
   variables:
-    UBUNTU_VERSION: "17.04"
-    UBUNTU_VERSION_NAME: "zesty"
+    IMAGE_VERSION: "avx"
+    UBUNTU_VERSION: "17.10"
+    UBUNTU_VERSION_NAME: "artful"
+
+.template_ubuntu_avx512: &ubuntu_avx512
+  tags:
+    - docker
+    - avx512
+  variables:
+    IMAGE_VERSION: "avx512"
+    UBUNTU_VERSION: "17.10"
+    UBUNTU_VERSION_NAME: "artful"
 
 .template_ubuntu_debug: &ubuntu_debug
   <<: *ubuntu
   variables:
-    UBUNTU_VERSION: "debug"
-    UBUNTU_VERSION_NAME: "debug"
+    IMAGE_VERSION: "debug"
+    UBUNTU_VERSION: "17.10"
+    UBUNTU_VERSION_NAME: "artful"
 
-# MacOSX
-.template_mac: &mac
-  tags:
-    - mac
-  before_script:
-    - export BUILD_DIR=/tmp/$CI_PIPELINE_ID
-    - export CMAKE_INSTALL_PREFIX=/tmp/$CI_PIPELINE_ID/install/Netgen.app
-    - export MACOSX_DEPLOYMENT_TARGET=10.9
-    - export PYTHONPATH=$CMAKE_INSTALL_PREFIX/Contents/Resources/lib/python3.6/site-packages:.
-    - export PATH=$CMAKE_INSTALL_PREFIX/Contents/MacOS:$PATH
-
-############################################
-# Build stage
-############################################
-
-# Windows
-.template_build_win: &build_win
-  stage: build
-  script:
-    - git submodule update --init --recursive
-    - rd /s /q %NETGEN_BUILD_DIR%
-    - mkdir %NETGEN_BUILD_DIR%
-    - cd %NETGEN_BUILD_DIR%
-    - >-
-        cmake %CI_PROJECT_DIR%
-        -G"%CMAKE_GENERATOR%"
-        -DCMAKE_INSTALL_PREFIX=%CMAKE_INSTALL_PREFIX%
-        %CMAKE_CONFIG%
-        -DUSE_UMFPACK=ON
-        -DENABLE_UNIT_TESTS=ON
-        -DCPACK_PACKAGE_NAME=NGSolve${PACKAGE_NAME_SUFFIX}
-        -DCMAKE_BUILD_TYPE=Release
-    - cmake --build . --target install --config Release
-    - cmake --build . --target package --config Release
-    - >-
-      rsync -ztrl --del -e ssh
-      --rsync-path="mkdir -p deploy/builds/%CI_PIPELINE_ID%/windows && rsync"
-      *.msi
-      gitlab-runner@vector.asc.tuwien.ac.at:deploy/builds/%CI_PIPELINE_ID%/windows/
-
-.win32_build:
-  <<: *win32
-  <<: *build_win
-
-win64_build:
-  <<: *win64
-  <<: *build_win
-
-# Linux
 .template_build_linux: &build_linux
   stage: build
   script:
-    - docker build -t ngsolve_${CI_PIPELINE_ID}:$UBUNTU_VERSION -f tests/docker_$UBUNTU_VERSION .
-    - rm -f ngsolve_${CI_PIPELINE_ID}_$UBUNTU_VERSION.id
-    - >-
-      docker run
-      --cidfile ngsolve_${CI_PIPELINE_ID}_$UBUNTU_VERSION.id
-      -e MKLROOT=/opt/intel/mkl
-      -e UBUNTU_VERSION_NAME=$UBUNTU_VERSION_NAME
-      -e CI_BUILD_REF=$CI_BUILD_REF
-      -e CI_PIPELINE_ID=$CI_PIPELINE_ID
-      -e CMAKE_ARGS="-DCPACK_DEBIAN_PACKAGE_NAME=ngsolve${PACKAGE_NAME_SUFFIX}"
-      -e CCACHE_DIR=/ccache
-      -e SSH_PRIVATE_KEY="$SSH_PRIVATE_KEY"
-      -v /opt/intel:/opt/intel
-      -v /mnt/ccache:/ccache ngsolve_${CI_PIPELINE_ID}:$UBUNTU_VERSION
-      bash /root/src/ngsolve/tests/build.sh
-    - docker commit `cat ngsolve_${CI_PIPELINE_ID}_$UBUNTU_VERSION.id` ngsolve_${CI_PIPELINE_ID}_installed:$UBUNTU_VERSION
+    - source tests/gitlab-ci/ubuntu/build.sh
 
 ubuntu_1604_build:
   <<: *ubuntu_1604
   <<: *build_linux
 
-ubuntu_1610_build:
-  <<: *ubuntu_1610
+ubuntu_1710_build:
+  <<: *ubuntu_1710
   <<: *build_linux
 
-ubuntu_1704_build:
-  <<: *ubuntu_1704
+ubuntu_avx_build:
+  <<: *ubuntu_avx
   <<: *build_linux
 
-debug_build:
+ubuntu_avx512_build:
+  <<: *ubuntu_avx512
+  <<: *build_linux
+
+ubuntu_debug_build:
   <<: *ubuntu_debug
   <<: *build_linux
 
-mac_build:
-  <<: *mac
-  stage: build
-  script:
-    - git submodule update --init --recursive
-    - rm -rf $BUILD_DIR
-    - mkdir $BUILD_DIR
-    - cd $BUILD_DIR
-    - >-
-      cmake $CI_PROJECT_DIR
-      -DCMAKE_INSTALL_PREFIX=$CMAKE_INSTALL_PREFIX
-      -DCMAKE_BUILD_TYPE=Release
-      -DUSE_NATIVE_ARCH=OFF
-      -DUSE_CCACHE=ON
-      -DUSE_UMFPACK=ON
-      -DENABLE_UNIT_TESTS=ON
-      -DCPACK_PACKAGE_NAME=NGSolve${PACKAGE_NAME_SUFFIX}
-    - make -j10 install
-    - osascript -e 'tell application "Finder" to eject (every disk whose ejectable is true)'
-    - make bundle
-    - >-
-      rsync -ztrl --del -e ssh
-      --rsync-path="mkdir -p deploy/builds/$CI_PIPELINE_ID/macos && rsync"
-      *.dmg
-      gitlab-runner@vector.asc.tuwien.ac.at:deploy/builds/$CI_PIPELINE_ID/macos/
-
-############################################
-# Test stage
-############################################
-
-# Windows
-.template_test_win: &test_win
-  stage: test
-  script:
-    - cd %NETGEN_BUILD_DIR%/ngsolve
-    - ctest -C Release --output-on-failure
-    - cd ..
-
-# skip since we have no machine with 32 bits
-.test_win32:
-  <<: *win32
-  <<: *test_win
-
-win64_test:
-  <<: *win64
-  <<: *test_win
-
-# Linux
 .template_test_linux: &test_linux
   stage: test
   script:
-    - >-
-      docker run
-      -e NETGENDIR=/opt/netgen/bin
-      -e NGS_NUM_THREADS=6
-      -e PYTHONPATH=/opt/netgen/lib/python3/dist-packages
-      -e MKLROOT=/opt/intel/mkl
-      -e MKL_NUM_THREADS=1
-      -e MKL_DOMAIN_THREADS="MKL_DOMAIN_PARDISO=6"
-      -e LD_LIBRARY_PATH=/opt/intel/mkl/lib/intel64
-      -v /opt/intel:/opt/intel
-      ngsolve_${CI_PIPELINE_ID}_installed:$UBUNTU_VERSION
-      bash -c 'cd /root/build/ngsolve && make test_ngsolve ARGS="--output-on-failure"'
+    - source tests/gitlab-ci/ubuntu/test.sh
 
 ubuntu_1604_test:
   <<: *ubuntu_1604
   <<: *test_linux
 
-ubuntu_1610_test:
-  <<: *ubuntu_1610
+ubuntu_1710_test:
+  <<: *ubuntu_1710
   <<: *test_linux
 
-ubuntu_1704_test:
-  <<: *ubuntu_1704
+ubuntu_avx_test:
+  <<: *ubuntu_avx
+  <<: *test_linux
+
+ubuntu_avx512_test:
+  <<: *ubuntu_avx512
   <<: *test_linux
 
 debug_test:
@@ -243,12 +165,58 @@ debug_test:
   <<: *test_linux
   allow_failure: true
 
+linux_cleanup:
+  stage: cleanup
+  tags:
+    - linux
+    - docker
+    - avx
+  script:
+    - source tests/gitlab-ci/ubuntu/cleanup.sh
+  when: always
+  allow_failure: true
+
+linux_cleanup_avx512:
+  stage: cleanup
+  tags:
+    - docker
+    - avx512
+  script:
+    - source tests/gitlab-ci/ubuntu/cleanup.sh
+  when: always
+  allow_failure: true
+
+############################################
+# MacOSX
+############################################
+
+.template_mac: &mac
+  tags:
+    - mac
+  before_script:
+    - source tests/gitlab-ci/mac/set_vars.sh
+
+mac_build:
+  <<: *mac
+  stage: build
+  script:
+    - source $CI_PROJECT_DIR/tests/gitlab-ci/mac/build.sh
+    - source $CI_PROJECT_DIR/tests/gitlab-ci/mac/upload.sh
+
 mac_test:
   <<: *mac
   stage: test
   script:
-    - cd $BUILD_DIR/ngsolve
-    - ctest . --output-on-failure
+    - source tests/gitlab-ci/mac/test.sh
+
+mac_cleanup:
+  <<: *mac
+  stage: cleanup
+  script:
+    - source tests/gitlab-ci/mac/cleanup.sh
+  when: always
+  allow_failure: true
+
 
 ############################################
 # Timings stage
@@ -336,61 +304,6 @@ clang_no_fp_timings:
   <<: *t_timings
 
 ############################################
-# Cleanup stage
-############################################
-
-linux_cleanup:
-  stage: cleanup
-  tags:
-    - linux
-    - docker
-  script:
-    # remove built docker images
-    - docker ps -a | awk '{ print $1,$2 }' | grep ngsolve_${CI_PIPELINE_ID} | awk '{print $1 }' | xargs -I {} docker rm {}
-    - docker rmi -f ngsolve_${CI_PIPELINE_ID}:16.04
-    - docker rmi -f ngsolve_${CI_PIPELINE_ID}_installed:16.04
-    - docker rmi -f ngsolve_${CI_PIPELINE_ID}:16.10
-    - docker rmi -f ngsolve_${CI_PIPELINE_ID}_installed:16.10
-    - docker rmi -f ngsolve_${CI_PIPELINE_ID}:17.04
-    - docker rmi -f ngsolve_${CI_PIPELINE_ID}_installed:17.04
-    - docker rmi -f ngsolve_${CI_PIPELINE_ID}:debug
-    - docker rmi -f ngsolve_${CI_PIPELINE_ID}_installed:debug
-  when: always
-  allow_failure: true
-
-win64_cleanup:
-  <<: *win64
-  stage: cleanup
-  tags:
-    - windows
-    - x64
-  script:
-    - cd %CI_PROJECT_DIR%
-    - rd /s /q %CI_DIR%
-  when: always
-  allow_failure: true
-
-.win32_cleanup:
-  <<: *win32
-  stage: cleanup
-  tags:
-    - windows
-    - x86
-  script:
-    - cd %CI_PROJECT_DIR%
-    - rd /s /q %CI_DIR%
-  when: always
-  allow_failure: true
-
-cleanup_mac:
-  <<: *mac
-  stage: cleanup
-  script:
-    - rm -rf $BUILD_DIR
-  when: always
-  allow_failure: true
-
-############################################
 # Deploy stage
 ############################################
 
@@ -415,6 +328,7 @@ deploy_release:
     - docker
   script:
     - /home/gitlab-runner/deploy/deploy_release.sh $CI_PIPELINE_ID $CI_BUILD_TAG
+    - source tests/gitlab-ci/deploy/release.sh
   only:
     - tags
   environment: deploy_release
@@ -425,9 +339,9 @@ deploy_nightly:
     - linux
     - docker
   script:
-    - if [ -n "${RUN_DEPLOY}" ]; then /home/gitlab-runner/deploy/deploy_nightly.sh $CI_PIPELINE_ID; fi
+    - source tests/gitlab-ci/deploy/nightly.sh
   only:
-    - triggers
+    - schedules
   except:
     - tags
   environment: deploy_nigthly

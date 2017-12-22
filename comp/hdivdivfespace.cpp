@@ -100,6 +100,8 @@ namespace ngcomp
     enum { DIFFORDER = 1 };
     enum { DIM_STRESS = (D*(D+1))/2 };
 
+    static string Name() { return "div"; }
+
     template <typename FEL,typename SIP>
     static void GenerateMatrix(const FEL & bfel,const SIP & sip,
       SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
@@ -346,7 +348,6 @@ namespace ngcomp
       FlatMatrix<> shape(nd, DIM_STRESS, lh);
       fel.CalcShape (sip.IP(), shape);
       
-      Mat<D> inv_jac = sip.GetJacobianInverse();
 
       Mat<D> hesse[3];
       sip.CalcHesse (hesse[0], hesse[1], hesse[2]);
@@ -372,11 +373,11 @@ namespace ngcomp
       
       AutoDiff<D> iad_det = 1.0 / ad_det;
       fad *= iad_det;
-      
+
+      Vec<D> hv2;
+      Mat<D> sigma_ref;
       for (int i = 0; i < nd; i++)
         {
-          Mat<D> sigma_ref;
-          
           if ( D == 2 )
             {
               sigma_ref(0,0) = shape(i, 0);
@@ -393,7 +394,6 @@ namespace ngcomp
               sigma_ref(0,1) = sigma_ref(1,0) = shape(i, 5);
             }
           
-          Vec<D> hv2;
           hv2 = 0.0;
           for (int j = 0; j < D; j++)
             for (int k = 0; k < D; k++)
@@ -401,15 +401,17 @@ namespace ngcomp
                 hv2(k) += fad(k,l).DValue(j) * sigma_ref(l,j);
           
           hv2 *= iad_det.Value();
-          
-          // this term is zero, check why
-          //for ( int j = 0; j < D; j++ )
-          //  for ( int k = 0; k < D; k++ )
-          //    for ( int l = 0; l < D; l++ )
-          //      for ( int m = 0; m < D; m++ )
-          //        for ( int n = 0; n < D; n++ )
-          //          hv2(n) += inv_jac(m,k) *fad(n,j).Value() * sigma_ref(j,l) * fad(k,l).DValue(m);
-          
+
+	  /*
+	  //Mat<D> inv_jac = sip.GetJacobianInverse();
+          //this term is zero!!!
+          for ( int j = 0; j < D; j++ )
+            for ( int k = 0; k < D; k++ )
+              for ( int l = 0; l < D; l++ )
+                for ( int m = 0; m < D; m++ )
+                  for ( int n = 0; n < D; n++ )
+                    hv2(n) += inv_jac(m,k) *fad(n,j).Value() * sigma_ref(j,l) * fad(k,l).DValue(m);
+	  */
           for ( int j = 0; j < D; j++)
             mat(j,i) += hv2(j);
         }
@@ -525,19 +527,39 @@ namespace ngcomp
             ndof += first_facet_dof[f+1] - first_facet_dof[f];            
         }
         break;
+      case ET_QUAD:
+        //ndof += 2*(oi[0]+2)*(oi[0]+1) +1;
+        ndof += (oi[0]+1+HDivDivFE<ET_QUAD>::incsg)*(oi [0]+1+HDivDivFE<ET_QUAD>::incsg)
+          + (oi[0]+2)*(oi[0])*2
+          + 2*(oi[0]+1+HDivDivFE<ET_QUAD>::incsugv) +1;
+        if(discontinuous)
+        {
+          for (auto f : ma->GetElFacets(ei))
+            ndof += first_facet_dof[f+1] - first_facet_dof[f];            
+        }
+        break;
       case ET_PRISM:
         ndof += 3*(oi[0]+1+incrorder_xx1)*(oi[0]+incrorder_xx1)*(oi[2]+1+incrorder_xx2)/2 + 
           (oi[0]+1+incrorder_zz1)*(oi[0]+2+incrorder_zz1)*(oi[2]-1+incrorder_zz2)/2 + 
           (oi[0]+1)*(oi[0]+2)*(oi[2]+1)/2*2;
         if(discontinuous)
         {
-          /*
-          auto fnums = ma->GetElFacets(ei);
-          for(int ii=0; ii<fnums.Size(); ii++)
-          {
-            ndof += first_facet_dof[fnums[ii]+1] - first_facet_dof[fnums[ii]];
-          }
-          */
+          for (auto f : ma->GetElFacets(ei))
+            ndof += first_facet_dof[f+1] - first_facet_dof[f];            
+        }
+        break;
+      case ET_HEX:
+        ndof += 3*(oi[0]+2)*(oi[0])*(oi[0]+2) + 3*(oi[0]+1)*(oi[0]+2)*(oi[0]+1);
+        if(discontinuous)
+        {
+          for (auto f : ma->GetElFacets(ei))
+            ndof += first_facet_dof[f+1] - first_facet_dof[f];            
+        }
+        break;
+      case ET_TET:
+        ndof += (oi[0]+1)*(oi[0]+2)*(oi[0]+1);
+        if(discontinuous)
+        {
           for (auto f : ma->GetElFacets(ei))
             ndof += first_facet_dof[f+1] - first_facet_dof[f];            
         }
@@ -650,9 +672,42 @@ namespace ngcomp
       fe->ComputeNDof();
       return *fe;
     }
+    case ET_QUAD:
+    {
+      auto fe = new (alloc) HDivDivFE<ET_QUAD> (order,plus);
+      fe->SetVertexNumbers (ngel.Vertices());
+      int ii = 0;
+      for(auto f : ngel.Facets())
+        fe->SetOrderFacet(ii++,order_facet[f]);
+      fe->SetOrderInner(order_inner[ei.Nr()]);
+      fe->ComputeNDof();
+      return *fe;
+    }
     case ET_PRISM:
     {
       auto fe = new (alloc) HDivDivFE<ET_PRISM> (order,plus);
+      fe->SetVertexNumbers (ngel.vertices);
+      int ii = 0;
+      for(auto f : ngel.Facets())
+        fe->SetOrderFacet(ii++,order_facet[f]);
+      fe->SetOrderInner(order_inner[ei.Nr()]);
+      fe->ComputeNDof();
+      return *fe;
+    }
+    case ET_HEX:
+    {
+      auto fe = new (alloc) HDivDivFE<ET_HEX> (order,plus);
+      fe->SetVertexNumbers (ngel.vertices);
+      int ii = 0;
+      for(auto f : ngel.Facets())
+        fe->SetOrderFacet(ii++,order_facet[f]);
+      fe->SetOrderInner(order_inner[ei.Nr()]);
+      fe->ComputeNDof();
+      return *fe;
+    }
+    case ET_TET:
+    {
+      auto fe = new (alloc) HDivDivFE<ET_TET> (order,plus);
       fe->SetVertexNumbers (ngel.vertices);
       int ii = 0;
       for(auto f : ngel.Facets())

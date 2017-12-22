@@ -318,10 +318,10 @@ namespace ngfem
         Vec<2,Tx> xi = ET_trait<ET_QUAD>::XiFace(0, hx, vnums);
 	Tx bub = 1.0/16 * (1-xi(0)*xi(0))*(1-xi(1)*xi(1));
         
-        LegendrePolynomial::EvalMult1Assign(p[0]-1, xi(0), bub,
+        QuadOrthoPol::EvalMult1Assign(p[0]-1, xi(0), bub,
               SBLambda ([&](int i, Tx val) LAMBDA_INLINE 
                     {  
-                      LegendrePolynomial::EvalMult (p[1]-1, xi(1), val, 
+                      QuadOrthoPol::EvalMult (p[1]-1, xi(1), val, 
                                                     SBLambda([&](int i2, Tx v2)
                                                              {
                                                                shape[ii++] = Du (v2);
@@ -618,8 +618,8 @@ namespace ngfem
             scaleeta = lam[f[0]]+lam[f[3]];
           
           Tx bub = (1.0/16)*(scaleeta*scaleeta-eta*eta)*(scalexi*scalexi-xi*xi);
-          LegendrePolynomial::EvalScaled     (p[0]-1, xi, scalexi, adpolxy1);
-          LegendrePolynomial::EvalScaledMult (p[1]-1, eta, scaleeta, bub, adpolz);
+          QuadOrthoPol::EvalScaled     (p[0]-1, xi, scalexi, adpolxy1);
+          QuadOrthoPol::EvalScaledMult (p[1]-1, eta, scaleeta, bub, adpolz);
 
           
           if(usegrad_face[i])
@@ -806,8 +806,8 @@ namespace ngfem
           Tx eta = sigma[f[0]] - sigma[f[3]];
         
           Tx bub = lam_f*(1.0/16)*(1.0-eta*eta)*(1.0-xi*xi);
-          LegendrePolynomial::Eval     (p[0]-1, xi, pol_xi);
-          LegendrePolynomial::EvalMult (p[1]-1, eta, bub, pol_eta);
+          QuadOrthoPol::Eval     (p[0]-1, xi, pol_xi);
+          QuadOrthoPol::EvalMult (p[1]-1, eta, bub, pol_eta);
           
           if(usegrad_face[i])
             {
@@ -869,9 +869,9 @@ namespace ngfem
     if(usegrad_cell)
       if (p[0] >= 1 && p[1] >= 1 && p[2] >= 1)
         {
-          LegendrePolynomial::EvalMult (p[0]-1, 2*x-1, x*(1-x), pol_xi);
-          LegendrePolynomial::EvalMult (p[1]-1, 2*y-1, y*(1-y), pol_eta);
-          LegendrePolynomial::EvalMult (p[2]-1, 2*z-1, z*(1-z), pol_zeta);
+          QuadOrthoPol::EvalMult (p[0]-1, 2*x-1, x*(1-x), pol_xi);
+          QuadOrthoPol::EvalMult (p[1]-1, 2*y-1, y*(1-y), pol_eta);
+          QuadOrthoPol::EvalMult (p[2]-1, 2*z-1, z*(1-z), pol_zeta);
           
           for (int i = 0; i < p[0]; i++)
             for (int j = 0; j < p[1]; j++)
@@ -1072,9 +1072,9 @@ namespace ngfem
           {
             // Type 1: Gradient-fields 
             
-            LegendrePolynomial::
+            QuadOrthoPol::
               EvalMult (px-1, xi, fac*0.25*(1-xi*xi), pol_xi);
-            LegendrePolynomial::
+            QuadOrthoPol::
               EvalMult (py-1, eta, 0.25*(1-eta*eta), pol_eta);
 
             for (int k = 0; k <= px-1; k++) 

@@ -73,18 +73,18 @@ public:
 };
 
 
-py::object MakeProxyFunction2 (const FESpace & fes,
-                              bool testfunction,
-                              const function<shared_ptr<ProxyFunction>(shared_ptr<ProxyFunction>)> & addblock)
+py::object MakeProxyFunction2 (shared_ptr<FESpace> fes,
+                               bool testfunction,
+                               const function<shared_ptr<ProxyFunction>(shared_ptr<ProxyFunction>)> & addblock)
 {
-  auto compspace = dynamic_cast<const CompoundFESpace*> (&fes);
-  if (compspace && !fes.GetEvaluator())
+  auto compspace = dynamic_pointer_cast<CompoundFESpace> (fes);
+  if (compspace && !fes->GetEvaluator())
     {
       py::list l;
       int nspace = compspace->GetNSpaces();
       for (int i = 0; i < nspace; i++)
         {
-          l.append (MakeProxyFunction2 ( *(*compspace)[i], testfunction,
+          l.append (MakeProxyFunction2 ((*compspace)[i], testfunction,
                                          [&] (shared_ptr<ProxyFunction> proxy)
                                          {
                                            auto block_eval = make_shared<CompoundDifferentialOperator> (proxy->Evaluator(), i);
@@ -103,7 +103,7 @@ py::object MakeProxyFunction2 (const FESpace & fes,
 					   shared_ptr <CompoundDifferentialOperator> block_ttrace_deriv_eval = nullptr;
 					   if (proxy->TTraceDerivEvaluator() != nullptr)
 					     block_ttrace_deriv_eval = make_shared<CompoundDifferentialOperator> (proxy->TTraceDerivEvaluator(),i);
-                                           auto block_proxy = make_shared<ProxyFunction> (/* &fes, */ testfunction, fes.IsComplex(),                                                                                          block_eval, block_deriv_eval, block_trace_eval, block_trace_deriv_eval,
+                                           auto block_proxy = make_shared<ProxyFunction> (fes, testfunction, fes->IsComplex(),                                                                                          block_eval, block_deriv_eval, block_trace_eval, block_trace_deriv_eval,
 					  block_ttrace_eval, block_ttrace_deriv_eval);
 
                                            SymbolTable<shared_ptr<DifferentialOperator>> add = proxy->GetAdditionalEvaluators();
@@ -118,14 +118,14 @@ py::object MakeProxyFunction2 (const FESpace & fes,
       return l;
     }
 
-  auto proxy = make_shared<ProxyFunction>  (testfunction, fes.IsComplex(),
-                                            fes.GetEvaluator(),
-                                            fes.GetFluxEvaluator(),
-                                            fes.GetEvaluator(BND),
-                                            fes.GetFluxEvaluator(BND),
-					    fes.GetEvaluator(BBND),
-					    fes.GetFluxEvaluator(BBND));
-  auto add_diffops = fes.GetAdditionalEvaluators();
+  auto proxy = make_shared<ProxyFunction>  (fes, testfunction, fes->IsComplex(),
+                                            fes->GetEvaluator(),
+                                            fes->GetFluxEvaluator(),
+                                            fes->GetEvaluator(BND),
+                                            fes->GetFluxEvaluator(BND),
+					    fes->GetEvaluator(BBND),
+					    fes->GetFluxEvaluator(BBND));
+  auto add_diffops = fes->GetAdditionalEvaluators();
   for (int i = 0; i < add_diffops.Size(); i++)
     proxy->SetAdditionalEvaluator (add_diffops.GetName(i), add_diffops[i]);
 
@@ -133,7 +133,7 @@ py::object MakeProxyFunction2 (const FESpace & fes,
   return py::cast(proxy);
 }
 
-py::object MakeProxyFunction (const FESpace & fes,
+py::object MakeProxyFunction (shared_ptr<FESpace> fes,
                               bool testfunction) 
 {
   return 
@@ -1565,7 +1565,12 @@ kwargs : For a description of the possible kwargs have a look a bit further down
     .def_property_readonly("globalorder", [] (shared_ptr<FESpace> self) { return self->GetOrder(); },
                   "query global order of space")    
     .def_property_readonly("type", [] (shared_ptr<FESpace> self) { return self->type; },
-                  "type of finite element space")    
+                  "type of finite element space")
+
+    .def("SetDefinedOn", [] (FESpace& self, Region& reg)
+         {
+           self.SetDefinedOn(reg.VB(),reg.Mask());
+         }, py::arg("Region"))
 
     .def("SetOrder",
          [](shared_ptr<FESpace> self, ELEMENT_TYPE et, py::object order, py::object order_left, py::object order_right)
@@ -1703,16 +1708,23 @@ kwargs : For a description of the possible kwargs have a look a bit further down
     .def("TrialFunction",
          [] (const shared_ptr<FESpace> self)
          {
-           return MakeProxyFunction (*self, false);
+           return MakeProxyFunction (self, false);
          },
          docu_string("Gives a proxy to be used as a trialfunction in :any:`Symbolic Integrators<symbolic-integrators>`"))
     
     .def("TestFunction",
          [] (const shared_ptr<FESpace> self)
            {
-             return MakeProxyFunction (*self, true);
+             return MakeProxyFunction (self, true);
            },
          docu_string("Gives a proxy to be used as a testfunction for :any:`Symbolic Integrators<symbolic-integrators>`"))
+
+    .def("TnT",
+         [] (const shared_ptr<FESpace> self)
+         {
+           return std::make_tuple(MakeProxyFunction (self, false), MakeProxyFunction (self, true));
+         },
+         docu_string("Gives a tuple of trial and testfunction"))
 
     .def("SolveM",
          [] (const shared_ptr<FESpace> self,
@@ -1763,7 +1775,7 @@ kwargs : For a description of the possible kwargs have a look a bit further down
     .def("CreateGradient", [](shared_ptr<HCurlHighOrderFESpace> self) {
 	  auto fesh1 = self->CreateGradientSpace();
 	  shared_ptr<BaseMatrix> grad = self->CreateGradient(*fesh1);
-	  return py::make_tuple(grad, fesh1);
+	  return py::make_tuple(grad, shared_ptr<FESpace>(fesh1));
 	})
     ;
 
@@ -1783,17 +1795,13 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                     [] (py::tuple state)
                     {
                       Array<shared_ptr<FESpace>> spaces;
-                      cout << "load spaces" << endl << flush;
                       for (auto pyfes : state[0].cast<py::list>())
                         spaces.Append(pyfes.cast<shared_ptr<FESpace>>());
-                      cout << "done, create compound space" << endl << flush;
                       auto fes = make_shared<CompoundFESpace>
                         (spaces[0]->GetMeshAccess(), spaces, state[1].cast<Flags>());
-                      cout << "done, update" << endl << flush;
                       LocalHeap lh (1000000, "FESpace::Update-heap");
                       fes->Update(lh);
                       fes->FinalizeUpdate(lh);
-                      cout << "finished" << endl << flush;
                       py::cast(fes).attr("__dict__") = state[2];
                       return fes;
                     }))
@@ -2127,7 +2135,7 @@ used_idnrs : list of int = None
                      return vecs;
                    },
                   "list of gridfunctions for compound gridfunction")
-    
+
     .def_property_readonly("vec",
                            [](shared_ptr<GF> self)
                            { return self->GetVectorPtr(); },
@@ -2166,18 +2174,30 @@ used_idnrs : list of int = None
           })
 
     .def("Operator",
-         [](shared_ptr<GF> self, string name) -> py::object // shared_ptr<CoefficientFunction>
+         [](shared_ptr<GF> self, string name, VorB vb) -> py::object // shared_ptr<CoefficientFunction>
           {
             if (self->GetFESpace()->GetAdditionalEvaluators().Used(name))
               {
                 auto diffop = self->GetFESpace()->GetAdditionalEvaluators()[name];
                 // cout << "diffop is " << typeid(*diffop).name() << endl;
-                auto coef = make_shared<GridFunctionCoefficientFunction> (self, diffop, diffop, diffop);
+                shared_ptr<GridFunctionCoefficientFunction> coef;
+                switch(vb)
+                  {
+                  case VOL:
+                    coef = make_shared<GridFunctionCoefficientFunction> (self, diffop);
+                    break;
+                  case BND:
+                    coef = make_shared<GridFunctionCoefficientFunction> (self, nullptr,diffop);
+                    break;
+                  case BBND:
+                    coef = make_shared<GridFunctionCoefficientFunction> (self, nullptr,nullptr,diffop);
+                    break;
+                  }
                 coef->SetDimensions(diffop->Dimensions());
                 return py::cast(shared_ptr<CoefficientFunction>(coef));
               }
             return py::none(); //  shared_ptr<CoefficientFunction>();
-          })
+          }, py::arg("name"), py::arg("VB")=VOL)
 
     
     .def_property_readonly("derivname", 
@@ -2411,7 +2431,12 @@ check_unused : bool
                      py::arg("nonassemble") = "bool = False\n"
                      "  BilinearForm will not allocate memory for assembling.\n"
                      "  optimization feature for (nonlinear) problems where the\n"
-                     "  form is only applied but never assembled."
+                     "  form is only applied but never assembled.",
+                     py::arg("project") = "bool = False\n"
+                     "  When calling bf.Assemble, all saved coarse matrices from\n"
+                     "  mesh refinements are updated as well using a Galerkin projection\n"
+                     "  of the matrix on the finest grid. This is needed to use the multigrid\n"
+                     "  preconditioner with a changing bilinearform."
                      );
                 })
 
@@ -2704,6 +2729,28 @@ flags : dict
                    {
                      return self.GetMatrixPtr();
                    })
+    ;
+
+  auto prec_multigrid = py::class_<MGPreconditioner, shared_ptr<MGPreconditioner>, Preconditioner>
+    (m,"MultiGridPreconditioner");
+  prec_multigrid
+    .def(py::init([prec_multigrid](shared_ptr<BilinearForm> bfa, py::kwargs kwargs)
+                  {
+                    auto flags = CreateFlagsFromKwArgs(prec_multigrid, kwargs);
+                    return make_shared<MGPreconditioner>(bfa,flags);
+                  }), py::arg("bf"))
+    .def_static("__flags_doc__", [prec_class] ()
+                {
+                  auto mg_flags = py::cast<py::dict>(prec_class.attr("__flags_doc__")());
+                  mg_flags["updateall"] = "bool = False\n"
+                    "  Update all smoothing levels when calling Update";
+                  mg_flags["smoother"] = "string = 'point'\n"
+                    "  Smoother between multigrid levels, available options are:\n"
+                    "    'point': Gauss-Seidel-Smoother\n"
+                    "    'line':  Anisotropic smoother\n"
+                    "    'block': Block smoother";
+                  return mg_flags;
+                })
     ;
 
   //////////////////////////////////////////////////////////////////////////////////////////
@@ -3137,8 +3184,8 @@ flags : dict
 
   m.def("SymbolicLFI",
           [](spCF cf, VorB vb, bool element_boundary,
-              bool skeleton, py::object definedon,
-	      IntegrationRule ir, py::object definedonelem) 
+             bool skeleton, py::object definedon,
+             IntegrationRule ir, int bonus_intorder, py::object definedonelem) 
            {
              py::extract<Region> defon_region(definedon);
              if (defon_region.check())
@@ -3161,7 +3208,7 @@ flags : dict
 
              if (defon_region.check())
                lfi->SetDefinedOn(defon_region().Mask());
-
+             lfi -> SetBonusIntegrationOrder(bonus_intorder);
 	     if (ir.Size())
                {
                  cout << IM(1) << "WARNING: Setting the integration rule for all element types is deprecated, use LFI.SetIntegrationRule(ELEMENT_TYPE, IntegrationRule) instead!" << endl;
@@ -3180,13 +3227,14 @@ flags : dict
            py::arg("skeleton")=false,           
            py::arg("definedon")=DummyArgument(),
 	   py::arg("intrule")=IntegrationRule(),
+           py::arg("bonus_intorder")=0,
            py::arg("definedonelements")=DummyArgument()
           );
 
   m.def("SymbolicBFI",
           [](spCF cf, VorB vb, bool element_boundary,
              bool skeleton, py::object definedon,
-             IntegrationRule ir, py::object definedonelem)
+             IntegrationRule ir, int bonus_intorder, py::object definedonelem)
            {
              py::extract<Region> defon_region(definedon);
              if (defon_region.check())
@@ -3216,7 +3264,7 @@ flags : dict
                  bfi -> SetDefinedOn (defon); 
                }
              // bfi -> SetDefinedOn (makeCArray<int> (definedon));
-
+             bfi -> SetBonusIntegrationOrder(bonus_intorder);
              if (defon_region.check())
                bfi->SetDefinedOn(defon_region().Mask());
 
@@ -3236,6 +3284,7 @@ flags : dict
         py::arg("skeleton")=false,
         py::arg("definedon")=DummyArgument(),
         py::arg("intrule")=IntegrationRule(),
+        py::arg("bonus_intorder")=0,
         py::arg("definedonelements")=DummyArgument()
         );
           
@@ -3282,15 +3331,16 @@ flags : dict
           );
           
   m.def("SymbolicEnergy",
-        [](spCF cf, VorB vb, py::object definedon, py::object definedonelem)
+        [](spCF cf, VorB vb, py::object definedon, bool element_boundary,
+           int bonus_intorder, py::object definedonelem)
         -> shared_ptr<BilinearFormIntegrator>
            {
              py::extract<Region> defon_region(definedon);
              if (defon_region.check())
                vb = VorB(defon_region());
 
-             auto bfi = make_shared<SymbolicEnergy> (cf, vb);
-             
+             auto bfi = make_shared<SymbolicEnergy> (cf, vb, element_boundary);
+             bfi -> SetBonusIntegrationOrder(bonus_intorder);
              if (defon_region.check())
                {
                  cout << IM(3) << "defineon = " << defon_region().Mask() << endl;
@@ -3300,7 +3350,9 @@ flags : dict
                bfi -> SetDefinedOnElements (py::extract<shared_ptr<BitArray>>(definedonelem)());
              return bfi;
            },
-           py::arg("coefficient"), py::arg("VOL_or_BND")=VOL, py::arg("definedon")=DummyArgument(),
+        py::arg("coefficient"), py::arg("VOL_or_BND")=VOL, 
+        py::arg("definedon")=DummyArgument(), py::arg("element_boundary")=false,
+        py::arg("bonus_intorder")=0,
         py::arg("definedonelements")=DummyArgument()
           );
 

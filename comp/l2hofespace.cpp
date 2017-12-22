@@ -290,7 +290,6 @@ namespace ngcomp
 
   FiniteElement & L2HighOrderFESpace :: GetFE (ElementId ei, Allocator & alloc) const
   {
-    if (ei.VB()==BBND) throw Exception ("BBND not available in L2HighOrderFESpace");
     if (ei.IsVolume())
       {
         int elnr = ei.Nr();
@@ -346,13 +345,12 @@ namespace ngcomp
       }
     else
       {
-        int elnr = ei.Nr();
         switch (ma->GetElType(ei))
           {
           case ET_POINT: return *new (alloc) DummyFE<ET_POINT>; 
-          case ET_SEGM:  return *new (alloc) DummyFE<ET_SEGM>; break;
-          case ET_TRIG:  return *new (alloc) DummyFE<ET_TRIG>; break;
-          case ET_QUAD:  return *new (alloc) DummyFE<ET_QUAD>; break;
+          case ET_SEGM:  return *new (alloc) DummyFE<ET_SEGM>;
+          case ET_TRIG:  return *new (alloc) DummyFE<ET_TRIG>;
+          case ET_QUAD:  return *new (alloc) DummyFE<ET_QUAD>;
             
           default:
             stringstream str;
@@ -640,7 +638,7 @@ namespace ngcomp
                              {
                                static_cast<const BaseScalarFiniteElement&> (fel).Evaluate (ir, melx.Col(comp), pntvals);
                                for (int i = 0; i < ir.Size(); i++)
-                                 pntvals(i) *= (ir[i].Weight() / mir[i].GetMeasure()).Data();
+                                 pntvals(i) *= ir[i].Weight() / mir[i].GetMeasure();
                                melx.Col(comp) = 0.0;
                                static_cast<const BaseScalarFiniteElement&> (fel).AddTrans (ir, pntvals, melx.Col(comp));
                              }
@@ -656,8 +654,32 @@ namespace ngcomp
 
 
 
+  template <int D, typename FEL = ScalarFiniteElement<D-1> >
+  class DiffOpSurfaceGradient : public DiffOp<DiffOpSurfaceGradient<D, FEL> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D-1 };
+    enum { DIM_DMAT = D };
+    enum { DIFFORDER = 1 };
 
+    ///
+    template <typename AFEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+				MAT & mat, LocalHeap & lh)
+    {
+      mat = Trans (mip.GetJacobianInverse ()) * 
+	Trans (static_cast<const FEL&>(fel).GetDShape(mip.IP(),lh));
+    }
 
+    static void GenerateMatrixSIMDIR (const FiniteElement & fel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      static_cast<const FEL&>(fel).CalcMappedDShape (mir, mat);      
+    }
+  };
 
 
   L2SurfaceHighOrderFESpace ::  
@@ -690,7 +712,9 @@ namespace ngcomp
 	integrator[BND] = 
           make_shared<RobinIntegrator<3>> (make_shared<ConstantCoefficientFunction>(1));
         evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
-        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<3>>>(); // for dimension      
+        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<3>>>(); // for dimension
+	flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpSurfaceGradient<3>>>();
+          
       }
 
     if (dimension > 1)
@@ -923,6 +947,38 @@ namespace ngcomp
     
 
 
+
+
+
+  class VectorL2FESpace : public CompoundFESpace
+  {
+  public:
+    VectorL2FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, 
+                     bool checkflags = false)
+      : CompoundFESpace(ama, flags)
+    {
+      for (int i = 0; i <  ma->GetDimension(); i++)
+        AddSpace (make_shared<L2HighOrderFESpace> (ama, flags));
+
+      switch (ma->GetDimension())
+        {
+        case 2:
+          evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdVectorH1<2>>>();
+          flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradVectorH1<2>>>();
+          additional_evaluators.Set ("div", make_shared<T_DifferentialOperator<DiffOpDivVectorH1<2>>> ());
+          break;
+        case 3:
+          evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdVectorH1<3>>>();
+          flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradVectorH1<3>>>();
+          additional_evaluators.Set ("div", make_shared<T_DifferentialOperator<DiffOpDivVectorH1<3>>> ());
+          break;
+        }
+    }
+  };
+    
+
+  static RegisterFESpace<VectorL2FESpace> initvecl2 ("VectorL2");
+  
 
 
   // register FESpaces

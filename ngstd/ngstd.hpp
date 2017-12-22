@@ -151,6 +151,7 @@ namespace ngstd
 #include "autoptr.hpp"
 #include "memusage.hpp"
 #include "flags.hpp"
+#include "xbool.hpp"
 
 #include "evalfunc.hpp"
 // namespace ngstd { class EvalFunction; }
