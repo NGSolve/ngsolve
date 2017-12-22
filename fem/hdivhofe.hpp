@@ -208,7 +208,7 @@ namespace ngfem
       int fav[3];
       for(int i=0;i<3;i++) fav[i] = i;
       
-      //Sort vertices  first edge op minimal vertex
+      //Sort vertices first edge op minimal vertex
       double fswap = 1;
       if(vnums[fav[0]] > vnums[fav[1]]) { swap(fav[0],fav[1]); fswap *= -1; }
       if(vnums[fav[1]] > vnums[fav[2]]) { swap(fav[1],fav[2]); fswap *= -1; }

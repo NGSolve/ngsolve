@@ -855,12 +855,13 @@ namespace ngcomp
 
 
   
-  Array<int> * FacetFESpace :: CreateDirectSolverClusters (const Flags & precflags) const
+  shared_ptr<Array<int>> FacetFESpace :: CreateDirectSolverClusters (const Flags & precflags) const
   {
-		if (all_dofs_together)
-			throw Exception("FacetFESpace ::CreateDirectSolverClusters not implemented for case all_dofs_together!");
+    if (all_dofs_together)
+      throw Exception("FacetFESpace ::CreateDirectSolverClusters not implemented for case all_dofs_together!");
 
-		Array<int> & clusters = *new Array<int> (GetNDof());
+    auto spclusters = make_shared<Array<int>>(GetNDof());
+    Array<int> & clusters = *spclusters;
 
     clusters.SetSize(ndof);
     clusters = 0;
@@ -868,7 +869,7 @@ namespace ngcomp
     for (int i = 0; i < nfa; i++)
       clusters[i] = 1;
     
-    return &clusters;
+    return spclusters;
     
     //
   
@@ -876,7 +877,7 @@ namespace ngcomp
       clusters[i]  = 1;
   
     // cout << "direct solver cluster = " << clusters << endl;
-    return & clusters;
+    return spclusters;
   }
 
 
@@ -982,12 +983,13 @@ namespace ngcomp
   HybridDGFESpace :: ~HybridDGFESpace () { ; }
 
 
-  Array<int> * HybridDGFESpace :: CreateDirectSolverClusters (const Flags & flags) const
+  shared_ptr<Array<int>> HybridDGFESpace :: CreateDirectSolverClusters (const Flags & flags) const
   {
     if (flags.GetDefineFlag("subassembled"))
       {
-	cout << "creating bddc-coarse grid(vertices)" << endl;
-	Array<int> & clusters = *new Array<int> (GetNDof());
+	cout << IM(3) << "creating bddc-coarse grid(vertices)" << endl;
+        auto spclusters = make_shared<Array<int>> (GetNDof());
+	Array<int> & clusters = *spclusters;
 	clusters = 0;
 	/*
           int nv = ma->GetNV();
@@ -1037,11 +1039,12 @@ namespace ngcomp
         }
 	*/
 
-	return &clusters;	
+	return spclusters;
       }
     else
       {
-	Array<int> & clusters = *new Array<int> (GetNDof());
+        auto spclusters = make_shared<Array<int>> (GetNDof());
+	Array<int> & clusters = *spclusters;
 	clusters = 0;
 
 	Array<DofId> dnums;
@@ -1061,7 +1064,7 @@ namespace ngcomp
 	for (int i = 0; i < freedofs.Size(); i++)
 	  if (!freedofs.Test(i)) clusters[i] = 0;
 	*testout << "Hybrid-FESpace, dsc = " << endl << clusters << endl;
-	return &clusters;
+	return spclusters;
       }
   }
 

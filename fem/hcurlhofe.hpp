@@ -60,9 +60,11 @@ namespace ngfem
 
     typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
 
+    // Typedefs should match with h1hofe, otherwise HCurlHighOrderFESpace::CreateGradient() fails
     // typedef LegendrePolynomial EdgeOrthoPol;
     typedef IntLegNoBubble EdgeOrthoPol;  // Integrated Legendre divided by bubble
     // typedef ChebyPolynomial EdgeOrthoPol; 
+    typedef ChebyPolynomial QuadOrthoPol;
 
   public:
     using VertexOrientedFE<ET>::SetVertexNumbers;

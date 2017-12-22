@@ -73,6 +73,11 @@ namespace ngcomp
       is_atomic_dof = true;
     }
 
+    virtual void Update(LocalHeap & lh) override
+    {
+      SetNDof(1);
+    }
+
     virtual size_t GetNDof() const { return 1; }
 
     virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const

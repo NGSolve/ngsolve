@@ -70,7 +70,7 @@ namespace ngla
   {
     SparseMatrixTM<double> * grad;
 
-    BaseSparseMatrix * h1mat;
+    shared_ptr<BaseSparseMatrix> h1mat;
     AMG_H1 * h1AMG;
 
   public:

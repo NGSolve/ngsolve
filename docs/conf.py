@@ -33,7 +33,7 @@ import sphinx_rtd_theme
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 # extensions = ["sphinx.ext.autodoc","numpydoc","sphinx.ext.autosummary","sphinx.ext.napoleon","sphinx.ext.intersphinx"]
-extensions = ["sphinx.ext.autodoc","sphinx.ext.mathjax"]
+extensions = ["sphinx.ext.autodoc","sphinx.ext.mathjax","sphinx.ext.todo"]
 
 
 # autosummary_generate = True
@@ -180,6 +180,8 @@ rst_epilog = """
 .. |python_version| replace:: 3.6
 
 """
+
+todo_include_todos = True
 
 def setup(app):
     app.add_stylesheet("custom.css")

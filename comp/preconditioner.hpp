@@ -23,7 +23,7 @@ namespace ngcomp
     bool timing;
     bool print;
 
-    /// if true, the update in SolveBVP() is ignored, Update() has to be called explicitely.
+    /// if true, the update in SolveBVP() is ignored, Update() has to be called explicitly.
     bool laterupdate;
 
     double * testresult_ok;
@@ -226,6 +226,70 @@ namespace ngcomp
 
 
 
+  /**
+     Multigrid preconditioner.
+     High level objects, contains a \Ref{MultigridPreconditioner}
+  */
+  class NGS_DLL_HEADER MGPreconditioner : public Preconditioner
+  {
+    ///
+    shared_ptr<ngmg::MultigridPreconditioner> mgp;
+    ///
+    shared_ptr<ngmg::TwoLevelMatrix> tlp;
+    ///
+    shared_ptr<BilinearForm> bfa;
+    ///
+    // MGPreconditioner * low_order_preconditioner;
+    ///
+    shared_ptr<Preconditioner> coarse_pre;
+    ///
+    int finesmoothingsteps;
+    ///
+    string smoothertype;
+    ///
+    bool mgtest;
+    string mgfile;
+    int mgnumber;
+
+    string inversetype;
+
+  public:
+    ///
+    MGPreconditioner (const PDE & pde, const Flags & aflags,
+		      const string aname = "mgprecond");
+    MGPreconditioner (shared_ptr<BilinearForm> bfa, const Flags & aflags,
+		      const string aname = "mgprecond");
+    ///
+    virtual ~MGPreconditioner() { ; }
+
+    void FreeSmootherMem(void);
+
+    virtual void FinalizeLevel (const BaseMatrix * mat)
+    {
+      Update();
+    }
+
+    ///
+    virtual void Update ();
+    ///
+    virtual void CleanUpLevel ();
+    ///
+    virtual const BaseMatrix & GetMatrix() const;
+    ///
+    virtual const BaseMatrix & GetAMatrix() const
+    {
+      return bfa->GetMatrix();
+    }
+    ///
+    virtual const char * ClassName() const
+    { return "Multigrid Preconditioner"; }
+
+    virtual void PrintReport (ostream & ost) const;
+
+    virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
+
+    void MgTest () const;
+  };
 
   class CommutingAMGPreconditioner : public Preconditioner
   {

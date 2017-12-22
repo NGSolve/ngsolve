@@ -567,9 +567,9 @@ namespace ngcomp
     return nullptr;
   }
 
-  Array<int> * VectorFacetFESpace :: CreateDirectSolverClusters (const Flags & precflags) const
+  shared_ptr<Array<int>> VectorFacetFESpace :: CreateDirectSolverClusters (const Flags & precflags) const
   {
-    return NULL;
+    return nullptr;
   }
   
   void VectorFacetFESpace :: GetFacetDofNrs ( int felnr, Array<int> & dnums ) const

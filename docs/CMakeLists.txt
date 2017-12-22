@@ -1,6 +1,28 @@
+include (ExternalProject)
 if (NETGEN_USE_PYTHON)
   find_package(Sphinx)
   if(SPHINX_FOUND)
+
+    # windows cannot handle symlinks and therefore not build c++ docu
+    if(NOT WIN32)
+      ExternalProject_Add(
+        mylittlengs
+        GIT_REPOSITORY https://github.com/NGSolve/mylittlengsolve.git
+        TIMEOUT 10
+        UPDATE_COMMAND ${GIT_EXECUTABLE} pull
+        CONFIGURE_COMMAND ""
+        BUILD_COMMAND ""
+        INSTALL_COMMAND ""
+        )
+      set_target_properties(mylittlengs PROPERTIES EXCLUDE_FROM_ALL TRUE)
+      ExternalProject_Get_Property(mylittlengs source_dir)
+
+      add_custom_target(link_mylittlengs
+        COMMAND ${CMAKE_COMMAND} -E create_symlink "${source_dir}" "${CMAKE_CURRENT_SOURCE_DIR}/mylittlengs"
+        )
+      add_dependencies(link_mylittlengs mylittlengs)
+    endif(NOT WIN32)
+
     # configured documentation tools and intermediate build results
     set(BINARY_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/_build")
 
@@ -36,6 +58,10 @@ if (NETGEN_USE_PYTHON)
     	"${SPHINX_OUTPUT_DIR}/latex"
     	COMMENT "Building Latex documentation with Sphinx")
 
+      if(NOT WIN32)
+        add_dependencies(docs link_mylittlengs)
+        add_dependencies(docs_latex link_mylittlengs)
+      endif(NOT WIN32)
 
     message("Sphinx found, you can build the documentation with make docu")
   else(SPHINX_FOUND)

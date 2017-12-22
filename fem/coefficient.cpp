@@ -3608,7 +3608,7 @@ public:
     for (auto & cf : ci)
       if (cf && cf->IsComplex()) is_complex = true;
     for (auto & cf : ci)
-      if (cf) SetDimension(cf->Dimension());
+      if (cf) SetDimensions(cf->Dimensions());
   }
 
   /*
@@ -4686,7 +4686,7 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
     int totdim;
     Array<bool> is_complex;
     // Array<Timer*> timers;
-    Library library;
+    unique_ptr<SharedLibrary> library;
     lib_function compiled_function = nullptr;
     lib_function_simd compiled_function_simd = nullptr;
     lib_function_deriv compiled_function_deriv = nullptr;
@@ -4843,25 +4843,25 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
         }
 
         auto compile_func = [this, codes, link_flags, maxderiv] () {
-              library.Compile( codes, link_flags );
+              library = CompileCode( codes, link_flags );
               if(cf->IsComplex())
               {
-                  compiled_function_simd_complex = library.GetFunction<lib_function_simd_complex>("CompiledEvaluateSIMD");
-                  compiled_function_complex = library.GetFunction<lib_function_complex>("CompiledEvaluate");
+                  compiled_function_simd_complex = library->GetFunction<lib_function_simd_complex>("CompiledEvaluateSIMD");
+                  compiled_function_complex = library->GetFunction<lib_function_complex>("CompiledEvaluate");
               }
               else
               {
-                  compiled_function_simd = library.GetFunction<lib_function_simd>("CompiledEvaluateSIMD");
-                  compiled_function = library.GetFunction<lib_function>("CompiledEvaluate");
+                  compiled_function_simd = library->GetFunction<lib_function_simd>("CompiledEvaluateSIMD");
+                  compiled_function = library->GetFunction<lib_function>("CompiledEvaluate");
                   if(maxderiv>0)
                   {
-                      compiled_function_simd_deriv = library.GetFunction<lib_function_simd_deriv>("CompiledEvaluateDerivSIMD");
-                      compiled_function_deriv = library.GetFunction<lib_function_deriv>("CompiledEvaluateDeriv");
+                      compiled_function_simd_deriv = library->GetFunction<lib_function_simd_deriv>("CompiledEvaluateDerivSIMD");
+                      compiled_function_deriv = library->GetFunction<lib_function_deriv>("CompiledEvaluateDeriv");
                   }
                   if(maxderiv>1)
                   {
-                      compiled_function_simd_dderiv = library.GetFunction<lib_function_simd_dderiv>("CompiledEvaluateDDerivSIMD");
-                      compiled_function_dderiv = library.GetFunction<lib_function_dderiv>("CompiledEvaluateDDeriv");
+                      compiled_function_simd_dderiv = library->GetFunction<lib_function_simd_dderiv>("CompiledEvaluateDDerivSIMD");
+                      compiled_function_dderiv = library->GetFunction<lib_function_dderiv>("CompiledEvaluateDDeriv");
                   }
               }
               cout << IM(7) << "Compilation done" << endl;
@@ -5289,8 +5289,5 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
     return make_shared<CompiledCoefficientFunction> (c, realcompile, maxderiv, wait);
   }
   
-
-  int Library::counter = 0;
- 
 }
 

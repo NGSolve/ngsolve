@@ -176,8 +176,10 @@ namespace ngmg
     ///
     Array<shared_ptr<BaseMatrix>> inv;
     ///
-    Array<int> * direct;
-  
+    shared_ptr<Array<int>> direct;
+
+    Array<shared_ptr<Table<int>>> smoothing_blocks;
+
   public:
     ///
     BlockSmoother (const MeshAccess & ama,

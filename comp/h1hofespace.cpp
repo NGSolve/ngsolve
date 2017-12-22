@@ -171,26 +171,15 @@ namespace ngcomp
       }
     if (dimension > 1)
       {
-        for (auto vb : { VOL,BND })
+        for (auto vb : { VOL,BND, BBND, BBBND })
           {
-            evaluator[vb] = make_shared<BlockDifferentialOperator> (evaluator[vb], dimension);
-            flux_evaluator[vb] = make_shared<BlockDifferentialOperator> (flux_evaluator[vb], dimension);            
+            if (evaluator[vb])
+              evaluator[vb] = make_shared<BlockDifferentialOperator> (evaluator[vb], dimension);
+            if (flux_evaluator[vb])
+              flux_evaluator[vb] = make_shared<BlockDifferentialOperator> (flux_evaluator[vb], dimension);            
           }
-        /*
-	evaluator[VOL] = make_shared<BlockDifferentialOperator> (evaluator[VOL], dimension);
-	flux_evaluator[VOL] = make_shared<BlockDifferentialOperator> (flux_evaluator[VOL], dimension);
-	evaluator[BND] = 
-	  make_shared<BlockDifferentialOperator> (evaluator[BND], dimension);
-	flux_evaluator[BND] = 
-	  make_shared<BlockDifferentialOperator> (flux_evaluator[BND], dimension);
-        */
       }
 
-    /*
-    auto one = make_shared<ConstantCoefficientFunction> (1);
-    integrator[VOL] = CreateBFI("mass", ma->GetDimension(), one);
-    integrator[BND] = CreateBFI("robin", ma->GetDimension(), one);
-    */
     switch (ma->GetDimension())
       {
       case 1:
@@ -198,18 +187,12 @@ namespace ngcomp
       case 2:
         additional_evaluators.Set ("hesse", make_shared<T_DifferentialOperator<DiffOpHesse<2>>> ()); break;
       case 3:
-        additional_evaluators.Set ("hesse", make_shared<T_DifferentialOperator<DiffOpHesse<3>>> ()); break;
+        additional_evaluators.Set ("hesse", make_shared<T_DifferentialOperator<DiffOpHesse<3>>> ());
+	additional_evaluators.Set ("hesseboundary", make_shared<T_DifferentialOperator<DiffOpHesseBoundary<3>>> ());break;
       default:
         ;
       }
 
-    /*
-    if (dimension > 1)
-      {
-	integrator[VOL] = make_shared<BlockBilinearFormIntegrator> (integrator[VOL], dimension);
-        integrator[BND] = make_shared<BlockBilinearFormIntegrator> (integrator[BND], dimension);
-      }
-    */
     prol = make_shared<LinearProlongation> (*this);
   }
 
@@ -1004,7 +987,7 @@ namespace ngcomp
     size_t nfa = (ma->GetDimension() == 2) ? 0 : ma->GetNFaces();
     size_t ni = (eliminate_internal) ? 0 : ma->GetNE(); 
    
-    cout << " blocktype " << smoothing_type << endl; 
+    cout << IM(4) << " blocktype " << smoothing_type << endl;
     // cout << " Use H1-Block Smoother:  "; 
 
     FilteredTableCreator creator(GetFreeDofs().get());
@@ -1083,7 +1066,7 @@ namespace ngcomp
 		
             if (creator.GetMode() == 1)
               {
-                cout << " VE + F + I " << endl;
+                cout << IM(4) << " VE + F + I " << endl;
                 creator.SetSize(nv+nfa+ni);
                 break;
               }
@@ -1428,26 +1411,28 @@ namespace ngcomp
     
 
 
-  Array<int> * 
+  shared_ptr<Array<int>>
   H1HighOrderFESpace :: CreateDirectSolverClusters (const Flags & flags) const
   {
     if (flags.GetDefineFlag("subassembled"))
     {
 	cout << "creating bddc-coarse grid(vertices)" << endl;
-	Array<int> & clusters = *new Array<int> (GetNDof());
+        auto spclusters = make_shared<Array<int>> (GetNDof());
+	Array<int> & clusters = *spclusters;
 	clusters = 0;
 	int nv = ma->GetNV();
 	for (int i = 0; i < nv; i++)
 	  if (!IsDirichletVertex(i))
 	    clusters[i] = 1;		
-	return &clusters;	
+	return spclusters;
     }
     
     if (flags.NumFlagDefined ("ds_order"))
       {
 	int ds_order = int (flags.GetNumFlag ("ds_order", 1));
 
-	Array<int> & clusters = *new Array<int> (GetNDof());
+        auto spclusters = make_shared<Array<int>> (GetNDof());
+	Array<int> & clusters = *spclusters;
 	clusters = 0;
 	
 	int ned = ma->GetNEdges();
@@ -1493,7 +1478,7 @@ namespace ngcomp
 	  }
 	*/
 
-	return &clusters;
+	return spclusters;
       }
 
 
@@ -1504,7 +1489,8 @@ namespace ngcomp
     // int nv = ma->GetNV();
     // int nd = GetNDof();
     int ne = ma->GetNE();
-    Array<int> & clusters = *new Array<int> (GetNDof());
+    auto spclusters = make_shared<Array<int>> (GetNDof());
+    Array<int> & clusters = *spclusters;
     clusters = 0;
 
     // all vertices in global space
@@ -1624,11 +1610,10 @@ namespace ngcomp
       if (clusters[i]) nonzero = true;
     if (!nonzero)
       {
-	delete &clusters;
-	return 0;
+	return nullptr;
       }
 
-    return &clusters;
+    return spclusters;
   }
 
   template<>
@@ -1641,69 +1626,6 @@ namespace ngcomp
 
 
 
-
-
-  template <int DIM_SPC, VorB VB = VOL>
-  class DiffOpIdVectorH1 : public DiffOp<DiffOpIdVectorH1<DIM_SPC> >
-  {
-  public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = DIM_SPC };
-    enum { DIM_ELEMENT = DIM_SPC-VB };
-    enum { DIM_DMAT = DIM_SPC };
-    enum { DIFFORDER = 0 };
-
-    template <typename FEL, typename MIP, typename MAT>
-    static void GenerateMatrix (const FEL & bfel, const MIP & mip,
-                                MAT & mat, LocalHeap & lh)
-    {
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
-      mat = 0.0;
-      for (int i = 0; i < DIM_SPC; i++)
-        {
-          auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
-          feli.CalcShape (mip.IP(), mat.Row(i).Range(fel.GetRange(i)));
-        }
-    }
-
-    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
-                                      const SIMD_BaseMappedIntegrationRule & mir,
-                                      BareSliceMatrix<SIMD<double>> mat)
-    {
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
-      mat.AddSize(DIM_SPC*bfel.GetNDof(), mir.Size()) = 0.0;
-      for (int i = 0; i < DIM_SPC; i++)
-        {
-          auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
-          feli.CalcShape (mir.IR(), mat.Rows(DIM_SPC*fel.GetRange(i)).RowSlice(i, DIM_SPC));
-        }
-    }
-
-    using DiffOp<DiffOpIdVectorH1<DIM_SPC>>::ApplySIMDIR;    
-    static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
-                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
-    {
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
-      for (int i = 0; i < DIM_SPC; i++)
-        {
-          auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
-          feli.Evaluate (mir.IR(), x.Range(fel.GetRange(i)), y.Row(i));
-        }
-    }
-
-    using DiffOp<DiffOpIdVectorH1<DIM_SPC>>::AddTransSIMDIR;        
-    static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
-                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
-    {
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
-      for (int i = 0; i < DIM_SPC; i++)
-        {
-          auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
-          feli.AddTrans (mir.IR(), y.Row(i), x.Range(fel.GetRange(i)));
-        }
-    }    
-    
-  };
 
 
 
@@ -1843,172 +1765,6 @@ namespace ngcomp
 
 
   
-  template <int DIM_SPC>
-  class DiffOpGradVectorH1 : public DiffOp<DiffOpGradVectorH1<DIM_SPC> >
-  {
-  public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = DIM_SPC };
-    enum { DIM_ELEMENT = DIM_SPC };
-    enum { DIM_DMAT = DIM_SPC*DIM_SPC };
-    enum { DIFFORDER = 1 };
-
-    static Array<int> GetDimensions() { return Array<int> ( { DIM_SPC, DIM_SPC } ); }
-      
-    static string Name() { return "grad"; }
-    
-    template <typename FEL, typename MIP, typename MAT>
-    static void GenerateMatrix (const FEL & bfel, const MIP & mip,
-                                MAT & mat, LocalHeap & lh)
-    {
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
-      auto & feli = static_cast<const ScalarFiniteElement<DIM_SPC>&> (fel[0]);
-
-      HeapReset hr(lh);
-      FlatMatrix<> hmat(feli.GetNDof(), DIM_SPC, lh);
-      feli.CalcMappedDShape (mip, hmat);
-      mat = 0.0;
-      for (int i = 0; i < DIM_SPC; i++)
-        mat.Rows(DIM_SPC*i, DIM_SPC*(i+1)).Cols(fel.GetRange(i)) = Trans(hmat);
-    }
-
-    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
-                                      const SIMD_BaseMappedIntegrationRule & mir,
-                                      BareSliceMatrix<SIMD<double>> bmat)
-    {
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
-      /*
-      mat.AddSize(DIM_SPC*DIM_SPC*bfel.GetNDof(), mir.Size()) = 0.0;
-      for (int i = 0; i < DIM_SPC; i++)
-        {
-          auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
-          feli.CalcMappedDShape (mir, mat.Rows(DIM_SPC*DIM_SPC*fel.GetRange(i)).RowSlice(i,DIM_SPC));
-          // cout << "grad-mat, i = " << i << ":" << endl <<  mat.AddSize(DIM_SPC*DIM_SPC*bfel.GetNDof(), mir.Size()) << endl;
-        }
-      */
-      auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
-      auto mat = bmat.AddSize(DIM_SPC*DIM_SPC*bfel.GetNDof(), mir.Size());
-      mat = 0.0;      
-      feli.CalcMappedDShape (mir, mat);
-      for (int i = 1; i < DIM_SPC; i++)
-        {
-          auto mati = mat.Rows(DIM_SPC*DIM_SPC*fel.GetRange(i));
-          for (int j = 0; j < feli.GetNDof(); j++)
-            mati.Rows(j*DIM_SPC*DIM_SPC+i*DIM_SPC, j*DIM_SPC*DIM_SPC+(i+1)*DIM_SPC)
-              = mat.Rows(j*DIM_SPC, (j+1)*DIM_SPC);
-        }
-      for (int j = feli.GetNDof()-1; j >= 0; j--)
-        mat.Rows(j*DIM_SPC*DIM_SPC, j*DIM_SPC*DIM_SPC+DIM_SPC) = mat.Rows(j*DIM_SPC, (j+1)*DIM_SPC);
-      for (int j = feli.GetNDof()-1; j >= 0; j--)
-        mat.Rows(j*DIM_SPC*DIM_SPC+DIM_SPC, (j+1)*DIM_SPC*DIM_SPC) = 0.0;
-      // cout << "mat = " << endl << mat << endl;
-    }
-
-    using DiffOp<DiffOpGradVectorH1<DIM_SPC>>::ApplySIMDIR;    
-    static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
-                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
-    {
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
-      for (int i = 0; i < DIM_SPC; i++)
-        {
-          auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
-          feli.EvaluateGrad (mir, x.Range(fel.GetRange(i)), y.Rows(i*DIM_SPC, (i+1)*DIM_SPC));
-        }
-    }
-
-    using DiffOp<DiffOpGradVectorH1<DIM_SPC>>::AddTransSIMDIR;        
-    static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
-                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
-    {
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
-      for (int i = 0; i < DIM_SPC; i++)
-        {
-          auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
-          feli.AddGradTrans (mir, y.Rows(i*DIM_SPC, (i+1)*DIM_SPC), x.Range(fel.GetRange(i)));
-        }
-    }    
-  };
-
-
-  template <int DIM_SPC>
-  class DiffOpGradBoundaryVectorH1 : public DiffOp<DiffOpGradBoundaryVectorH1<DIM_SPC> >
-  {
-  public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = DIM_SPC };
-    enum { DIM_ELEMENT = DIM_SPC-1 };
-    enum { DIM_DMAT = DIM_SPC*DIM_SPC };
-    enum { DIFFORDER = 1 };
-
-    static Array<int> GetDimensions() { return Array<int> ( { DIM_SPC, DIM_SPC } ); }
-      
-    static string Name() { return "gradbnd"; }
-    
-    template <typename FEL, typename MIP, typename MAT>
-    static void GenerateMatrix (const FEL & bfel, const MIP & mip,
-                                MAT & mat, LocalHeap & lh)
-    {
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
-      auto & feli = static_cast<const ScalarFiniteElement<DIM_ELEMENT>&> (fel[0]);
-
-      HeapReset hr(lh);
-      FlatMatrix<> hmat(feli.GetNDof(), DIM_ELEMENT, lh);
-      FlatMatrix<> mapped_hmat(feli.GetNDof(), DIM_SPACE, lh);
-      feli.CalcDShape (mip.IP(), hmat);
-      mapped_hmat = hmat * mip.GetJacobianInverse();
-      mat = 0.0;
-      for (int i = 0; i < DIM_SPC; i++)
-        mat.Rows(DIM_SPC*i, DIM_SPC*(i+1)).Cols(fel.GetRange(i)) = Trans(mapped_hmat);
-    }
-  };
-
-  
-  template <int DIM_SPC>  
-  class DiffOpDivVectorH1 : public DiffOp<DiffOpDivVectorH1<DIM_SPC> >
-  {
-  public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = DIM_SPC };
-    enum { DIM_ELEMENT = DIM_SPC };
-    enum { DIM_DMAT = 1 };
-    enum { DIFFORDER = 0 };
-
-    static string Name() { return "div"; }
-    
-    template <typename FEL, typename MIP, typename MAT>
-    static void GenerateMatrix (const FEL & bfel, const MIP & mip,
-                                MAT & mat, LocalHeap & lh)
-    {
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
-      auto & feli = static_cast<const ScalarFiniteElement<DIM_SPC>&> (fel[0]);
-      
-      mat = 0.0;
-      size_t n1 = feli.GetNDof();
-      HeapReset hr(lh);
-      FlatMatrix<> tmp(n1, DIM_SPC, lh);
-      feli.CalcMappedDShape (mip, tmp);
-      
-      for (int i = 0; i < DIM_SPC; i++)
-        mat.Row(0).Range(i*n1, (i+1)*n1) = tmp.Col(i);
-    }
-
-    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
-                                      const SIMD_BaseMappedIntegrationRule & mir,
-                                      BareSliceMatrix<SIMD<double>> bmat)
-    {
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
-      auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
-      
-      auto mat = bmat.AddSize(DIM_SPC*bfel.GetNDof(), mir.Size());
-      ArrayMem<SIMD<double>,100> mem(DIM_SPC*bfel.GetNDof()*mir.Size());
-      FlatMatrix<SIMD<double>> hmat(DIM_SPC*bfel.GetNDof(), mir.Size(), &mem[0]);
-      feli.CalcMappedDShape (mir, hmat);
-      for (size_t i = 0; i < DIM_SPC; i++)
-        for (size_t j = 0; j < feli.GetNDof(); j++)
-          mat.Row(i*feli.GetNDof()+j) = hmat.Row(i+j*DIM_SPC);
-    }
-  };
-
   
   template <int D>
   class NGS_DLL_HEADER VectorH1MassIntegrator 
@@ -2050,25 +1806,15 @@ namespace ngcomp
           // integrator[VOL] = make_shared<VectorH1MassIntegrator<2>>(one);
         }
     }
-
-    /*
-    virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const
-    {
-      SymbolTable<shared_ptr<DifferentialOperator>> additional;
-      
-      additional.Set ("div", make_shared<T_DifferentialOperator<DiffOpDivVectorH1<2>>> ()); 
-      additional.Set ("divfree_reconstruction", make_shared<T_DifferentialOperator<DiffOpDivFreeReconstructVectorH1<2>>> ());
-      
-      return additional;
-    }
-    */
-    
   };
     
 
+
+
+  
     
   
-    static RegisterFESpace<H1HighOrderFESpace> init ("h1ho");
+  static RegisterFESpace<H1HighOrderFESpace> init ("h1ho");
   static RegisterFESpace<VectorH1FESpace> initvec ("VectorH1");
 }
  

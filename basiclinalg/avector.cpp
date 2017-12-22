@@ -32,10 +32,13 @@ namespace ngbla
 {
 
 
-#if defined (__AVX__)
+#if defined (__AVX__) && not defined(__AVX512F__)
 
 
+  inline SIMD<double,4> operator+= (SIMD<double,4> & a, __m256d b) { return a += SIMD<double,4>(b); }
+  inline SIMD<double,4> operator-= (SIMD<double,4> & a, __m256d b) { return a -= SIMD<double,4>(b); }  
 
+  
   INLINE __m256d HAdd (__m256d v1, __m256d v2, __m256d v3, __m256d v4)
   {
     __m256d hsum1 = _mm256_hadd_pd (v1, v2);
@@ -45,6 +48,9 @@ namespace ngbla
     return hsum;
   }
 
+
+  
+#include "matkernel.hpp"
 
   INLINE auto Transpose (__m256d a, __m256d b, __m256d c, __m256d d)
   {
@@ -209,10 +215,10 @@ namespace ngbla
 #pragma nounroll      
     for ( ; i < 4*n; i+=4)
       {
-        sum11 += _mm256_loadu_pd(a1+i) * _mm256_loadu_pd(b1+i);
-        sum12 += _mm256_loadu_pd(a1+i) * _mm256_loadu_pd(b2+i);
-        sum13 += _mm256_loadu_pd(a1+i) * _mm256_loadu_pd(b3+i);
-        sum14 += _mm256_loadu_pd(a1+i) * _mm256_loadu_pd(b4+i);
+        sum11 += SIMD<double> (_mm256_loadu_pd(a1+i) * _mm256_loadu_pd(b1+i));
+        sum12 += SIMD<double> (_mm256_loadu_pd(a1+i) * _mm256_loadu_pd(b2+i));
+        sum13 += SIMD<double> (_mm256_loadu_pd(a1+i) * _mm256_loadu_pd(b3+i));
+        sum14 += SIMD<double> (_mm256_loadu_pd(a1+i) * _mm256_loadu_pd(b4+i));
       }
 
     if (R > 0)
@@ -225,10 +231,10 @@ namespace ngbla
           case 3: mask = _mm256_set_epi64x(0,-1,-1,-1); break;
           default: ;
           }
-        sum11 += _mm256_maskload_pd (a1+i, mask) * _mm256_maskload_pd (b1+i, mask);
-        sum12 += _mm256_maskload_pd (a1+i, mask) * _mm256_maskload_pd (b2+i, mask);      
-        sum13 += _mm256_maskload_pd (a1+i, mask) * _mm256_maskload_pd (b3+i, mask);
-        sum14 += _mm256_maskload_pd (a1+i, mask) * _mm256_maskload_pd (b4+i, mask);
+        sum11 += SIMD<double> (_mm256_maskload_pd (a1+i, mask) * _mm256_maskload_pd (b1+i, mask));
+        sum12 += SIMD<double> (_mm256_maskload_pd (a1+i, mask) * _mm256_maskload_pd (b2+i, mask));      
+        sum13 += SIMD<double> (_mm256_maskload_pd (a1+i, mask) * _mm256_maskload_pd (b3+i, mask));
+        sum14 += SIMD<double> (_mm256_maskload_pd (a1+i, mask) * _mm256_maskload_pd (b4+i, mask));
       }
     return SIMD<double> (HAdd (sum11.Data(), sum12.Data(), sum13.Data(), sum14.Data()));
   }
@@ -478,12 +484,16 @@ namespace ngbla
   template <int R = 0>
   INLINE auto MyScal3x4 (size_t n, double * pa, size_t da, double * pb, size_t db)
   {
+    return MatKernelScalAB<3,4> (SIMD<double>::Size()*n+R, pa, da, pb, db);    
     return MyScal3x4<R> (n, pa, pa+da, pa+2*da, pb, pb+db, pb+2*db, pb+3*db);
   }
 #else
   template <int R = 0>
   INLINE auto MyScal3x4 (size_t n, double * pa, size_t da, double * pb, size_t db)
   {
+    return MatKernelScalAB<3,4> (SIMD<double>::Size()*n+R, pa, da, pb, db);
+
+    
     SIMD<double> sum11(0.0), sum12(0.0), sum13(0.0), sum14(0.0);
     SIMD<double> sum21(0.0), sum22(0.0), sum23(0.0), sum24(0.0);
     SIMD<double> sum31(0.0), sum32(0.0), sum33(0.0), sum34(0.0);
@@ -1327,14 +1337,14 @@ namespace ngbla
       }
   }
   
-  void AddABt (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
+  void XXAddABt (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
   {
     // c += a * Trans(b);
     // return;
     AddABt2 (a, b, c.AddSize(a.Height(),b.Height()), [] (auto c, auto ab) { return c+ab; });
   }
 
-  void SubABt (SliceMatrix<double> a, SliceMatrix<double> b, SliceMatrix<double> c)
+  void XXSubABt (SliceMatrix<double> a, SliceMatrix<double> b, SliceMatrix<double> c)
   {
     // c -= a * Trans(b);
     // return;
@@ -1555,26 +1565,13 @@ namespace ngbla
   }
   */
 
+
+  /*
+    // now in ngblas, new version
   template <int R>
   void AddABtSymR (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> bc)
   {
     auto c = bc.AddSize(a.Height(), b.Height());
-
-    // clear overhead
-    /*
-    if (a.Width() != 4*a.VWidth())
-      {
-        int r = 4*a.VWidth()-a.Width();
-        __m256i mask = my_mm256_cmpgt_epi64(_mm256_set1_epi64x(r),
-                                            _mm256_set_epi64x(0,1,2,3));
-
-        __m256d zero = _mm256_setzero_pd();
-        for (int i = 0; i < a.Height(); i++)
-          _mm256_maskstore_pd((double*)&a.Get(i, a.VWidth()-1), mask, zero);
-        for (int i = 0; i < b.Height(); i++)
-          _mm256_maskstore_pd((double*)&b.Get(i, b.VWidth()-1), mask, zero);
-      }
-    */
     if (a.Width() == 0) return;
   
     size_t j = 0;
@@ -1674,7 +1671,7 @@ namespace ngbla
       default: __assume(false);
       }
   }
-
+  */
 
 
 
@@ -2532,7 +2529,7 @@ namespace ngbla
   constexpr size_t NB = 96;
   constexpr size_t NK = 128;
   
-#if defined (__AVX__)
+#if defined (__AVX__) && not defined(__AVX512F__)
 
   // prefetch a row-major matrix
   void PreFetchMatrix (size_t h, size_t w, double * p, size_t dist)
@@ -3570,7 +3567,7 @@ namespace ngbla
 #endif
 
   
-  
+  /*
   void MySubAtDB_PM (SliceMatrix<double> a,
                      SliceVector<double> diag,
                      SliceMatrix<double> b, SliceMatrix<double> c)
@@ -3583,7 +3580,7 @@ namespace ngbla
     if (i < k)
       MySubAtDB_BP (a.Rows(i,k), diag.Range(i,k), b.Rows(i,k), c);      
   }
-  
+
   void SubAtDB (SliceMatrix<double> a,
                 SliceVector<double> diag,
                 SliceMatrix<double> b, SliceMatrix<double> c)
@@ -3596,7 +3593,7 @@ namespace ngbla
     if (i < na)
       MySubAtDB_PM (a.Cols(i,na), diag, b, c.Rows(i,na));
   }
-
+  */
   
 
 
@@ -3610,7 +3607,7 @@ namespace ngbla
   
   
   // mat-mat product
-
+  /*
   // b.Width <= 4
   INLINE
   void MultMatMat4(SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
@@ -3618,20 +3615,6 @@ namespace ngbla
     __m256i mask = my_mm256_cmpgt_epi64(_mm256_set1_epi64x(b.Width()),
                                         _mm256_set_epi64x(3, 2, 1, 0));
 
-    /*
-      __m256i mask;
-      switch (b.Width())
-      {
-      case 1:
-      mask = _mm256_set_epi64x(0,0,0,-1); break;
-      case 2:
-      mask = _mm256_set_epi64x(0,0,-1,-1); break;
-      case 3:
-      mask = _mm256_set_epi64x(0,-1,-1,-1); break;
-      case 4:
-      mask = _mm256_set_epi64x(-1,-1,-1,-1); break;
-      }
-    */
     unsigned int da = a.Dist();
     int wa = a.Width();
     int r = 0;
@@ -3746,8 +3729,9 @@ namespace ngbla
         _mm256_maskstore_pd(bpc + 0*dc, mask, sum);
       }
   }
+  */
 
-  // b.Width() = 8
+    /*
   INLINE
   void MultMatMat8(SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
   {
@@ -3860,23 +3844,8 @@ namespace ngbla
         ar += da;
       }
   }
+    */
 
-
-
-
-
-  // c = a * b
-  void MultMatMat(SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
-  {
-    size_t k = 0;
-    for ( ; k+7 < b.Width(); k += 8)
-      MultMatMat8(a, b.Cols(k,k+8), c.Cols(k,k+8));
-    for ( ; k < b.Width(); k += 4)
-      {
-        size_t end = min2(b.Width(), k+4);
-        MultMatMat4(a, b.Cols(k,end), c.Cols(k,end));
-      }
-  }
 
 
 
@@ -3951,23 +3920,24 @@ namespace ngbla
       {
         SIMD<Complex> scale (*pscale);
         size_t j = 0;
-        for ( ; j+16 <= w; j+=16)
+        size_t WS = SIMD<double>::Size();
+        for ( ; j+4*WS <= w; j+=4*WS)
           {
             SIMD<Complex> val1, val2, val3, val4;
             val1.Load(ps+j);
-            val2.Load(ps+j+4);
-            val3.Load(ps+j+8);
-            val4.Load(ps+j+12);
+            val2.Load(ps+j+WS);
+            val3.Load(ps+j+2*WS);
+            val4.Load(ps+j+3*WS);
             val1 = val1 * scale;
             val2 = val2 * scale;
             val3 = val3 * scale;
             val4 = val4 * scale;
             val1.Store(pd+j);
-            val2.Store(pd+j+4);
-            val3.Store(pd+j+8);
-            val4.Store(pd+j+12);
+            val2.Store(pd+j+WS);
+            val3.Store(pd+j+2*WS);
+            val4.Store(pd+j+3*WS);
           }
-        for ( ; j+4 <= w; j+=4)
+        for ( ; j+WS <= w; j+=WS)
           {
             SIMD<Complex> val;
             val.Load(ps+j);
@@ -3985,7 +3955,7 @@ namespace ngbla
 
   
 
-#ifdef __AVX__
+#if defined (__AVX__) && not defined(__AVX512F__)
   
   void KernelScal4x4Trans (Complex * pa, size_t da,
                            Complex * pb, size_t db,
@@ -4077,7 +4047,7 @@ namespace ngbla
       }
   }
 
-#else
+#else // AVX
 
   void MySubAtDB_BB (
                      Complex * pa, size_t da,
@@ -4102,6 +4072,14 @@ namespace ngbla
           pc[i*dc+j] = sum;
         }
   }
+
+  /*
+  void MultMatMat (SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
+  {
+    c = a * b;    
+  }
+  */
+  
 #endif
 
   constexpr size_t CNA = 32;
