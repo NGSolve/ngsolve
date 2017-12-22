@@ -55,6 +55,11 @@ def HDivDiv(mesh, **args):
     """ Create H(div-div) finite element space. """
     return FESpace("hdivdiv", mesh, **args)
 
+def HDivCurl(mesh, **args):
+    """ Create H(div-curl) finite element space. """
+    return FESpace("hdivcurl", mesh, **args)
+
+
 def NumberSpace(mesh, **args):
     """ Create space of real or complex numbers. """
     return FESpace("number", mesh, **args)
@@ -133,6 +138,6 @@ def Cof(m):
 
 
 
-__all__ = ['x', 'y', 'z', 'Laplace', 'Mass', 'Source', 'Neumann', 'H1', 'VectorH1', 'FacetFESpace', 'L2', 'VectorL2', 'SurfaceL2', 'HDivDiv', 'NumberSpace', 'grad', 'curl', 'div','Mesh', 'ConstantCF', 'DomainConstantCF', 'Id', 'Trace', 'Det', 'Cross', 'Cof']
+__all__ = ['x', 'y', 'z', 'Laplace', 'Mass', 'Source', 'Neumann', 'H1', 'VectorH1', 'FacetFESpace', 'L2', 'VectorL2', 'SurfaceL2', 'HDivDiv','HDivCurl', 'NumberSpace', 'grad', 'curl', 'div','Mesh', 'ConstantCF', 'DomainConstantCF', 'Id', 'Trace', 'Det', 'Cross', 'Cof']
 
 
