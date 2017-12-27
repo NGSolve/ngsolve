@@ -78,9 +78,9 @@ namespace ngcomp
       SetNDof(1);
     }
 
-    virtual size_t GetNDof() const { return 1; }
+    // virtual size_t GetNDof() const { return 1; }
 
-    virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const
+    virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override
     {
       if (DefinedOn(ei))
         return *new (lh) NumberFiniteElement(ma->GetElType(ei));
@@ -88,7 +88,7 @@ namespace ngcomp
         return *new (lh) DummyFE<ET_POINT>();
     }
 
-    virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const
+    virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const override
     {
       if (DefinedOn(ei))
         {
