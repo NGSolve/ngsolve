@@ -243,7 +243,13 @@ namespace ngfem
     }
 
     virtual bool ElementwiseConstant () const { return false; }
-    virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const;
+    // virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const;
+    virtual void NonZeroPattern (const class ProxyUserData & ud,
+                                 FlatVector<bool> nonzero,
+                                 FlatVector<bool> nonzero_deriv,
+                                 FlatVector<bool> nonzero_dderiv) const;
+
+    
     virtual void PrintReport (ostream & ost) const;
     virtual void PrintReportRec (ostream & ost, int level) const;
     virtual string GetDescription () const;
@@ -432,6 +438,24 @@ namespace ngfem
     
     virtual void PrintReport (ostream & ost) const;
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
+
+    /*
+    virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
+    {
+      nonzero(0) = (val != 0.0);
+    }
+    */
+    virtual void NonZeroPattern (const class ProxyUserData & ud,
+                                 FlatVector<bool> nonzero,
+                                 FlatVector<bool> nonzero_deriv,
+                                 FlatVector<bool> nonzero_dderiv) const
+    {
+      nonzero(0) = (val != 0.0);
+      nonzero_deriv = 0.0;
+      nonzero_dderiv = 0.0;
+    }
+    
+    
   };
 
 
@@ -1604,6 +1628,7 @@ public:
 
 
   
+    /*
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
   {
     size_t dim = Dimension();    
@@ -1613,6 +1638,34 @@ public:
     for (int i = 0; i < nonzero.Size(); i++)
       nonzero(i) = lam_nonzero(v1(i), v2(i));
   }
+    */
+
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatVector<bool> nonzero,
+                               FlatVector<bool> nonzero_deriv,
+                               FlatVector<bool> nonzero_dderiv) const
+  {
+    size_t dim = Dimension();    
+    Vector<bool> v1(dim), v2(dim), d1(dim), d2(dim), dd1(dim), dd2(dim);
+    c1->NonZeroPattern(ud, v1, d1, dd1);
+    c2->NonZeroPattern(ud, v2, d2, dd2);
+    for (int i = 0; i < nonzero.Size(); i++)
+      {
+        if (opname == '+' || opname == '-')
+          {
+            nonzero(i) = v1(i) || v2(i);
+            nonzero_deriv(i) = d1(i) || d2(i);
+            nonzero_dderiv(i) = dd1(i) || dd2(i);
+          }
+        else
+          {
+            nonzero(i) = v1(i) || v2(i);
+            nonzero_deriv(i) = (v1(i) && d2(i)) || (d1(i) && v2(i));
+            nonzero_dderiv(i) = (v1(i) && dd2(i)) || (d1(i) && d2(i)) || (dd1(i) && v2(i));
+          }
+      }
+  }
+  
 
 };
 

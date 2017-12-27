@@ -439,15 +439,24 @@ namespace ngfem
   }
   
   void ProxyFunction ::  
-  NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
+  NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
+                  FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const
   {
-    if (!testfunction && ud.fel)
+    nonzero = false;
+    nonzero_deriv = false;
+    nonzero_dderiv = false;
+
+    if (ud.fel)
       {
-        nonzero = true;
+        if (!testfunction)
+          nonzero = true;
+        if (ud.testfunction == this)
+          nonzero_deriv(ud.test_comp) = true;
+        if (ud.trialfunction == this)
+          nonzero_deriv(ud.trial_comp) = true;
         return;
       }
 
-    nonzero = false;
     if (ud.testfunction == this)
       nonzero(ud.test_comp) = true;
     if (ud.trialfunction == this)
@@ -741,7 +750,7 @@ namespace ngfem
     nonzeros = Matrix<bool>(cnttest, cnttrial);
 
     ProxyUserData ud;
-    Vector<bool> nzvec(1);
+    Vector<bool> nzvec(1), nzdvec(1), nzddvec(1);
     int k = 0;
     for (int k1 : test_proxies.Range())
       for (int k2 : Range(0,test_proxies[k1]->Dimension()))
@@ -754,7 +763,7 @@ namespace ngfem
                 ud.trial_comp = l2;
                 ud.testfunction = test_proxies[k1];
                 ud.test_comp = k2;
-                cf -> NonZeroPattern (ud, nzvec);
+                cf -> NonZeroPattern (ud, nzvec, nzdvec, nzddvec);
                 nonzeros(k,l) = nzvec(0);
                 l++;
               }
@@ -3650,7 +3659,7 @@ namespace ngfem
     if (cf->Dimension() != 1)
       throw Exception ("SymblicEnergy needs scalar-valued CoefficientFunction");
     
-    
+    trial_cum.Append(0);
     cf->TraverseTree
       ( [&] (CoefficientFunction & nodecf)
         {
@@ -3660,10 +3669,43 @@ namespace ngfem
               if (!proxy->IsTestFunction())
                 {                                         
                   if (!trial_proxies.Contains(proxy))
-                    trial_proxies.Append (proxy);
+                    {
+                      trial_proxies.Append (proxy);
+                      trial_cum.Append(trial_cum.Last()+proxy->Dimension());
+                    }             
                 }
             }
         });
+
+    nonzeros = Matrix<bool>(trial_cum.Last(), trial_cum.Last());
+
+    ProxyUserData ud;
+    DummyFE<ET_TRIG> dummyfe;
+    ud.fel = &dummyfe;
+    Vector<bool> nzvec(1), nzdvec(1), nzddvec(1);
+    int k = 0;
+    for (int k1 : trial_proxies.Range())
+      for (int k2 : Range(0,trial_proxies[k1]->Dimension()))
+        {
+          int l = 0;
+          for (int l1 : trial_proxies.Range())
+            for (int l2 : Range(0,trial_proxies[l1]->Dimension()))
+              {
+                ud.trialfunction = trial_proxies[l1];
+                ud.trial_comp = l2;
+                ud.testfunction = trial_proxies[k1];
+                ud.test_comp = k2;
+                cf -> NonZeroPattern (ud, nzvec, nzdvec, nzddvec);
+                nonzeros(k,l) = nzddvec(0);
+                l++;
+              }
+          k++;
+        }
+    int cnt = 0;
+    for (auto i : Range(nonzeros.Height()))
+      for (auto j : Range(nonzeros.Width()))
+        if (nonzeros(i,j)) cnt++;
+    cout << IM(3) << "nonzero: " << cnt << "/" << sqr(nonzeros.Height()) << endl;
   }
   
 
@@ -3858,6 +3900,14 @@ namespace ngfem
                               FlatMatrix<double> elmat,
                               LocalHeap & lh) const
   {
+    static Timer t("SymbolicEnergy::AddLinearizedElementMatrix", 2);
+    // static Timer tdmat("SymbolicEnergy::CalcDMat", 2);
+    Timer & tdmat = const_cast<Timer&> (timer);
+    static Timer tbmat("SymbolicEnergy::CalcBMat", 2);
+    static Timer tmult("SymbolicEnergy::mult", 2);
+    size_t tid = TaskManager::GetThreadId();
+    ThreadRegionTimer reg(t, tid);
+    
     HeapReset hr(lh);
     
     FlatMatrix<> val(mir.Size(), 1,lh), deriv(mir.Size(), 1,lh), dderiv(mir.Size(), 1,lh);
@@ -3876,7 +3926,7 @@ namespace ngfem
             diags[k1].Col(k) = dderiv.Col(0);
           }
       }
-    
+
     for (int k1 : Range(trial_proxies))
       for (int l1 : Range(trial_proxies))
         {
@@ -3885,7 +3935,6 @@ namespace ngfem
           auto proxy2 = trial_proxies[l1];
 
           FlatTensor<3> proxyvalues(lh, mir.Size(), proxy2->Dimension(), proxy1->Dimension());
-          
           for (int k = 0; k < proxy1->Dimension(); k++)
             for (int l = 0; l < proxy2->Dimension(); l++)
               {
@@ -3894,9 +3943,40 @@ namespace ngfem
                 ud.testfunction = proxy2;
                 ud.test_comp = l;
 
-                cf -> EvaluateDDeriv (mir, val, deriv, dderiv);
+                {
+                  ThreadRegionTimer reg(tdmat, tid);
+                  NgProfiler::AddThreadFlops (tdmat, tid, 1);
+                  if (nonzeros(trial_cum[k1]+k, trial_cum[l1]+l))
+                    cf -> EvaluateDDeriv (mir, val, deriv, dderiv);
+                  else
+                    dderiv = 0.0;
+                }
                 proxyvalues(STAR,l,k) = dderiv.Col(0);
-                
+
+                /*
+                cout << L2Norm(dderiv.Col(0)) << " ";
+                Vector<bool> nzvec(1), nzdvec(1), nzddvec(1);
+                cf -> NonZeroPattern (ud, nzvec, nzdvec, nzddvec);
+                cout << nzddvec(0) << ";";
+                if (nzddvec(0) == false && L2Norm(dderiv.Col(0)) != 0)
+                  {
+                    cout << "wrong" << endl;
+                    cout << "type1 = " << proxy1->Evaluator()->Name() << endl;
+                    cout << "type2 = " << proxy2->Evaluator()->Name() << endl;
+                    cout << "cf = " << *cf << endl;
+
+                    cf->TraverseTree
+                      ( [&](CoefficientFunction & nodecf)
+                        {
+                          int dim = nodecf.Dimension();
+                          Vector<bool> nzvec(dim), nzdvec(dim), nzddvec(dim);
+                          nodecf.NonZeroPattern (ud, nzvec, nzdvec, nzddvec);
+                          cout << nodecf.GetDescription() << "nzvec = " << nzvec << ", nzdvec = " << nzdvec << ", nzddvec = " << nzddvec << endl;
+                        } );
+                    
+                    exit(1);
+                  }
+                */
                 if (proxy1 != proxy2 || k != l)  // computed mixed second derivatives
                   {
                     proxyvalues(STAR,l,k) -= diags[k1].Col(k);
@@ -3904,7 +3984,7 @@ namespace ngfem
                     proxyvalues(STAR,l,k) *= 0.5;
                   }
               }
-          
+
           for (int i = 0; i < mir.Size(); i++)
             proxyvalues(i,STAR,STAR) *= mir[i].GetWeight();
 
@@ -3929,14 +4009,18 @@ namespace ngfem
                   size_t ii = i+j;
                   IntRange r3 = proxy2->Dimension() * IntRange(j,j+1);
 
-                  proxy1->Evaluator()->CalcMatrix(fel, mir[ii], bmat1, lh);
-                  proxy2->Evaluator()->CalcMatrix(fel, mir[ii], bmat2, lh);
+                  {
+                    ThreadRegionTimer reg(tbmat, tid);                  
+                    proxy1->Evaluator()->CalcMatrix(fel, mir[ii], bmat1, lh);
+                    proxy2->Evaluator()->CalcMatrix(fel, mir[ii], bmat2, lh);
+                  }
                   bdbmat1.Rows(r3).Cols(r1) = proxyvalues(ii,STAR,STAR) * bmat1.Cols(r1);
                   bbmat2.Rows(r3).Cols(r2) = bmat2.Cols(r2);
                 }
               
               // elmat += Trans (bbmat2) * bdbmat1 | Lapack;
               // AddABt (Trans(bbmat2), Trans(bdbmat1), elmat);
+              ThreadRegionTimer reg(tmult, tid);                                
               AddABt (Trans(bbmat2).Rows(r2), Trans(bdbmat1).Rows(r1), part_elmat);
             }
         }

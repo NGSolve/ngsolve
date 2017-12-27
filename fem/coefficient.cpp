@@ -156,9 +156,12 @@ namespace ngfem
   */
 
   void CoefficientFunction :: 
-  NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
+  NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
+                  FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const
   {
     nonzero = true;
+    nonzero_deriv = false;
+    nonzero_dderiv = false;
   }
   
 
@@ -1099,9 +1102,10 @@ public:
     dderiv = scal * (*ddinput[0]);
   }
   
-  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
+  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
+                               FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const
   {
-    c1->NonZeroPattern (ud, nonzero);
+    c1->NonZeroPattern (ud, nonzero, nonzero_deriv, nonzero_dderiv);
   }  
 };
 
@@ -1167,9 +1171,10 @@ public:
   }
   
   
-  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
+  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
+                               FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const
   {
-    c1->NonZeroPattern (ud, nonzero);
+    c1->NonZeroPattern (ud, nonzero, nonzero_deriv, nonzero_dderiv);
   }  
     
 };
@@ -1409,14 +1414,20 @@ public:
 
   
   
-  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
+  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
+                               FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const
   {
-    Vec<1,bool> v1;
-    c1->NonZeroPattern (ud, v1);
-    if (v1(0))
-      c2->NonZeroPattern (ud, nonzero);
-    else
-      nonzero = false;
+    int dim = Dimension();
+    Vector<bool> v1(1), d1(1), dd1(1);
+    Vector<bool> v2(dim), d2(dim), dd2(dim);
+    c1->NonZeroPattern (ud, v1, d1, dd1);
+    c2->NonZeroPattern (ud, v2, d2, dd2);
+    for (auto i : Range(dim))
+      {
+        nonzero(i) = v1(0) && v2(i);
+        nonzero_deriv(i) = (v1(0) && d2(i)) || (d1(0) && v2(i));
+        nonzero_dderiv(i) = (v1(0) && dd2(i)) || (d1(0) && d2(i)) || (dd1(0) && v2(i));
+      }
   }
 };
 
@@ -1603,15 +1614,22 @@ public:
   virtual bool ElementwiseConstant () const
   { return c1->ElementwiseConstant() && c2->ElementwiseConstant(); }
   
-  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
+  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
+                               FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const
   {
-    Vector<bool> v1(dim1), v2(dim1);
-    c1->NonZeroPattern (ud, v1);
-    c2->NonZeroPattern (ud, v2);
-    bool nz = false;
+    Vector<bool> v1(dim1), v2(dim1), d1(dim1), d2(dim1), dd1(dim1), dd2(dim1);
+    c1->NonZeroPattern (ud, v1, d1, dd1);
+    c2->NonZeroPattern (ud, v2, d2, dd2);
+    bool nz = false, nzd = false, nzdd = false;
     for (int i = 0; i < dim1; i++)
-      if (v1(i) && v2(i)) nz = true;
+      {
+        if (v1(i) && v2(i)) nz = true;
+        if ((v1(i) && d2(i)) || (d1(i) && v2(i))) nzd = true;
+        if ((v1(i) && d2(i)) || (d1(i) && v2(i)) || (d1(i) && v2(i))) nzd = true;
+      }
     nonzero = nz;
+    nonzero_deriv = nzd;
+    nonzero_dderiv = nzdd;
   }
 
 };
@@ -1859,6 +1877,11 @@ public:
     c1->EvaluateDDeriv (mir, v1, dv1, ddv1);
     c2->EvaluateDDeriv (mir, v2, dv2, ddv2);
 
+    /*
+    cout << "eval dderiv:" << endl
+         << "v1 = " << v1 << ", dv1 = " << dv1 << "; ddv1 = " << ddv1 << endl
+         << "v2 = " << v2 << ", dv2 = " << dv2 << "; ddv2 = " << ddv2 << endl;
+    */
     for (int k = 0; k < mir.Size(); k++)
       {
         result(k,0) = InnerProduct (v1.Row(k), v2.Row(k));
@@ -1866,7 +1889,7 @@ public:
         dderiv(k,0) = InnerProduct (v1.Row(k), ddv2.Row(k))+
           2*InnerProduct(dv1.Row(k),dv2.Row(k))+InnerProduct(ddv1.Row(k),v2.Row(k));
       }
-
+    // cout << "res = " << result << ", deriv = " << deriv << ", dderiv = " << dderiv << endl;
   }
 
 
@@ -1994,15 +2017,25 @@ public:
   virtual bool ElementwiseConstant () const
   { return c1->ElementwiseConstant() && c2->ElementwiseConstant(); }
   
-  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
+  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
+                               FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const
   {
-    Vector<bool> v1(DIM), v2(DIM);
-    c1->NonZeroPattern (ud, v1);
-    c2->NonZeroPattern (ud, v2);
-    bool nz = false;
+    Vector<bool> v1(DIM), v2(DIM), d1(DIM), dd1(DIM), d2(DIM), dd2(DIM);
+    c1->NonZeroPattern (ud, v1, d1, dd1);
+    c2->NonZeroPattern (ud, v2, d2, dd2);
+    // cout << "nonzero, v1 = " << v1 << ", d1 = " << d1 << ", dd1 = " << dd1 << endl;
+    // cout << "nonzero, v2 = " << v2 << ", d2 = " << d2 << ", dd2 = " << dd2 << endl;
+    bool nz = false, nzd = false, nzdd = false;
     for (int i = 0; i < DIM; i++)
-      if (v1(i) && v2(i)) nz = true;
+      {
+        if (v1(i) && v2(i)) nz = true;
+        if ((v1(i) && d2(i)) || (d1(i) && v2(i))) nzd = true;
+        if ((v1(i) && dd2(i)) || (d1(i) && d2(i)) || (dd1(i) && v2(i))) nzdd = true;
+      }
+    // cout << "nz = " << nz << ", nzd = " << nzd << ", nzdd = " << nzdd << endl;
     nonzero = nz;
+    nonzero_deriv = nzd;
+    nonzero_dderiv = nzdd;
   }
 
 };
@@ -2089,14 +2122,21 @@ public:
 
 
   
-  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
+  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
+                               FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const
   {
-    Vector<bool> v1(dim1);
-    c1->NonZeroPattern (ud, v1);
-    bool nz = false;
+    Vector<bool> v1(dim1), d1(dim1), dd1(dim1);
+    c1->NonZeroPattern (ud, v1, d1, dd1);
+    bool nz = false, nzd = false, nzdd = false;
     for (int i = 0; i < dim1; i++)
-      if (v1(i)) nz = true;
+      {
+        if (v1(i)) nz = true;
+        if (d1(i)) nzd = true;
+        if (dd1(i)) nzdd = true;
+      }
     nonzero = nz;
+    nonzero_deriv = nzd;
+    nonzero_dderiv = nzd || nzdd;
   }
 
 };
@@ -2155,20 +2195,33 @@ public:
   { return Array<CoefficientFunction*>({ c1.get(), c2.get() }); }  
 
 
-  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
+  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
+                               FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const
   {
     FlatArray<int> hdims = Dimensions();
     Vector<bool> v1(hdims[0]*inner_dim), v2(hdims[1]*inner_dim);
-    c1->NonZeroPattern (ud, v1);
-    c2->NonZeroPattern (ud, v2);
+    Vector<bool> d1(hdims[0]*inner_dim), d2(hdims[1]*inner_dim);
+    Vector<bool> dd1(hdims[0]*inner_dim), dd2(hdims[1]*inner_dim);
+    c1->NonZeroPattern (ud, v1, d1, dd1);
+    c2->NonZeroPattern (ud, v2, d2, dd2);
     nonzero = false;
+    nonzero_deriv = false;
+    nonzero_dderiv = false;
     FlatMatrix<bool> m1(hdims[0], inner_dim, &v1(0));
     FlatMatrix<bool> m2(inner_dim, hdims[1], &v2(0));
-    FlatMatrix<bool> m3(hdims[0], hdims[1], &nonzero(0));
+    FlatMatrix<bool> md1(hdims[0], inner_dim, &d1(0));
+    FlatMatrix<bool> md2(inner_dim, hdims[1], &d2(0));
+    FlatMatrix<bool> mdd1(hdims[0], inner_dim, &dd1(0));
+    FlatMatrix<bool> mdd2(inner_dim, hdims[1], &dd2(0));
+
     for (int i = 0; i < hdims[0]; i++)
       for (int j = 0; j < hdims[1]; j++)
         for (int k = 0; k < inner_dim; k++)
-          nonzero(i,j) |= m1(i,k) && m2(k,j);
+          {
+            nonzero(i,j) |= m1(i,k) && m2(k,j);
+            nonzero_deriv(i,j) |= (m1(i,k) && md2(k,j)) || (md1(i,k) && m2(k,j));
+            nonzero_dderiv(i,j) |= (m1(i,k) && mdd2(k,j)) || (md1(i,k) && md2(k,j)) || (mdd1(i,k) && m2(k,j));
+          }
   }
 
   
@@ -2556,17 +2609,28 @@ public:
       }
   }
 
-  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
+  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
+                               FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const
   {
     FlatArray<int> hdims = Dimensions();
     Vector<bool> v1(hdims[0]*inner_dim), v2(inner_dim);
-    c1->NonZeroPattern (ud, v1);
-    c2->NonZeroPattern (ud, v2);
+    Vector<bool> d1(hdims[0]*inner_dim), d2(inner_dim);
+    Vector<bool> dd1(hdims[0]*inner_dim), dd2(inner_dim);
+    c1->NonZeroPattern (ud, v1, d1, dd1);
+    c2->NonZeroPattern (ud, v2, d2, dd2);
     nonzero = false;
+    nonzero_deriv = false;
+    nonzero_dderiv = false;
     FlatMatrix<bool> m1(hdims[0], inner_dim, &v1(0));
+    FlatMatrix<bool> md1(hdims[0], inner_dim, &d1(0));
+    FlatMatrix<bool> mdd1(hdims[0], inner_dim, &dd1(0));
     for (int i = 0; i < hdims[0]; i++)
       for (int j = 0; j < inner_dim; j++)
-        nonzero(i) |= m1(i,j) && v2(j);
+        {
+          nonzero(i) |= (m1(i,j) && v2(j));
+          nonzero_deriv(i) |= ((m1(i,j) && d2(j)) || (md1(i,j) && v2(j)));
+          nonzero_dderiv(i) |= ((m1(i,j) && dd2(j)) || (md1(i,j) && d2(j)) || (mdd1(i,j) && v2(j)));
+        }
   }
 
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
@@ -2872,14 +2936,27 @@ public:
   virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
   { return Array<CoefficientFunction*>({ c1.get() } ); }  
 
-  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
+  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
+                               FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const
   {
     FlatArray<int> hdims = Dimensions();    
-    Vector<bool> v1(hdims[0]*hdims[1]);
-    c1->NonZeroPattern (ud, v1);
-    FlatMatrix<bool> m1(hdims[1], hdims[0], &v1(0));
-    FlatMatrix<bool> m2(hdims[0], hdims[1], &nonzero(0));
-    m2 = Trans(m1);
+    Vector<bool> v1(hdims[0]*hdims[1]), d1(hdims[0]*hdims[1]), dd1(hdims[0]*hdims[1]);
+    c1->NonZeroPattern (ud, v1, d1, dd1);
+    {
+      FlatMatrix<bool> m1(hdims[1], hdims[0], &v1(0));
+      FlatMatrix<bool> m2(hdims[0], hdims[1], &nonzero(0));
+      m2 = Trans(m1);
+    }
+    {
+      FlatMatrix<bool> m1(hdims[1], hdims[0], &d1(0));
+      FlatMatrix<bool> m2(hdims[0], hdims[1], &nonzero_deriv(0));
+      m2 = Trans(m1);
+    }
+    {
+      FlatMatrix<bool> m1(hdims[1], hdims[0], &dd1(0));
+      FlatMatrix<bool> m2(hdims[0], hdims[1], &nonzero_dderiv(0));
+      m2 = Trans(m1);
+    }
   }
 
   
@@ -3577,11 +3654,14 @@ public:
     dderiv.Row(0) = ddinput[0] -> Row(comp);
   }
   
-  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
+  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
+                               FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const
   {
-    Vector<bool> v1(c1->Dimension());
-    c1->NonZeroPattern (ud, v1);
+    Vector<bool> v1(c1->Dimension()), d1(c1->Dimension()), dd1(c1->Dimension());
+    c1->NonZeroPattern (ud, v1, d1, dd1);
     nonzero(0) = v1(comp);
+    nonzero_deriv(0) = d1(comp);
+    nonzero_dderiv(0) = dd1(comp);
   }  
 };
 
@@ -4289,13 +4369,17 @@ public:
   } 
 
 
-  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
+  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
+                               FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const
   {
     int base = 0;
     for (auto cf : ci)
       {
         int dimi = cf->Dimension();
-        cf->NonZeroPattern(ud, nonzero.Range(base,base+dimi));
+        cf->NonZeroPattern(ud,
+                           nonzero.Range(base,base+dimi),
+                           nonzero_deriv.Range(base,base+dimi),
+                           nonzero_dderiv.Range(base,base+dimi));
         base += dimi;
       }
   }
@@ -4891,8 +4975,9 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
     
     
     virtual bool ElementwiseConstant () const { return false; }
-    virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
-    { cf->NonZeroPattern (ud, nonzero); }
+    virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
+                                 FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const
+    { cf->NonZeroPattern (ud, nonzero, nonzero_deriv, nonzero_dderiv); }
 
     
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
