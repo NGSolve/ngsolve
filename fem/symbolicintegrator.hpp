@@ -181,7 +181,10 @@ public:
   
   virtual bool ElementwiseConstant () const { return true; }
 
-  NGS_DLL_HEADER virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const;
+  NGS_DLL_HEADER virtual void NonZeroPattern (const class ProxyUserData & ud,
+                                              FlatVector<bool> nonzero,
+                                              FlatVector<bool> nonzero_deriv,
+                                              FlatVector<bool> nonzero_dderiv) const;
 };
 
 class ProxyUserData
@@ -706,6 +709,9 @@ public:
     Array<ProxyFunction*> trial_proxies;
     bool element_boundary;    
     mutable bool simd_evaluate;
+    Timer timer{"SymbolicEnergy",2};
+    Array<int> trial_cum;     // cumulated dimension of proxies
+    Matrix<bool> nonzeros;    // do components interact ? 
     
   public:
     SymbolicEnergy (shared_ptr<CoefficientFunction> acf, VorB avb, bool aelement_boundary);
