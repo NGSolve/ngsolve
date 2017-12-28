@@ -255,7 +255,55 @@ namespace ngfem
       }
     }
 
+    template <int DIMSPACE>
+    void CalcMappedShape_Matrix2 (const SIMD_MappedIntegrationRule<DIM,DIMSPACE> & mir, 
+                                 BareSliceMatrix<SIMD<double>> shapes) const
+    {
+      for (size_t i = 0; i < mir.Size(); i++)
+        {
+          auto jac = mir[i].GetJacobian();
+          auto d2 = sqr(mir[i].GetJacobiDet());
+          
+          Vec<DIM_STRESS,SIMD<double>> hv;
+          Mat<DIM,DIM,SIMD<double>> mat;
+          // Mat<DIMSPACE*DIMSPACE, DIM_STRESS,SIMD<double>> trans;
+          SIMD<double> mem[DIMSPACE*DIMSPACE*DIM_STRESS];
+          FlatMatrix<SIMD<double>> trans(DIMSPACE*DIMSPACE,DIM_STRESS,&mem[0]);
+          for (int i = 0; i < DIM_STRESS; i++)
+            {
+              hv = SIMD<double>(0.0);
+              hv(i) = SIMD<double>(1.0);
+              VecToSymMat<DIM> (hv, mat);
+              Mat<DIMSPACE,DIMSPACE,SIMD<double>> physmat =
+                1/d2 * (jac * mat * Trans(jac));
+              for (int j = 0; j < DIMSPACE*DIMSPACE; j++)
+                trans(j,i) = physmat(j);
+            }
+          
+          
+          Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = mir.IR()[i];
+          TIP<DIM,AutoDiffDiff<DIM,SIMD<double>>> addp(adp);
+          
+          this->Cast() -> T_CalcShape (addp,
+                                       SBLambda ([i,shapes,trans] (size_t j, auto val) 
+                                                 {
+                                                   /*
+                                                     Mat<DIM,DIM,SIMD<double>> mat;
+                                                     VecToSymMat<DIM> (val.Shape(), mat);
+                                                     Mat<DIMSPACE,DIMSPACE,SIMD<double>> physmat =
+                                                     1/d2 * (jac * mat * Trans(jac));
+                                                     for (size_t k = 0; k < sqr(DIMSPACE); k++)
+                                                     shapes(j*sqr(DIMSPACE)+k,i) = physmat(k);
+                                                   */
+                                                   Vec<DIMSPACE*DIMSPACE,SIMD<double>> transvec;
+                                                   transvec = trans * val.Shape();
+                                                   for (size_t k = 0; k < sqr(DIMSPACE); k++)
+                                                     shapes(j*sqr(DIMSPACE)+k,i) = transvec(k);
+                                                 }));
+        }
+    }
 
+      
     virtual void CalcMappedShape_Matrix (const SIMD_BaseMappedIntegrationRule & bmir, 
                                          BareSliceMatrix<SIMD<double>> shapes) const override
     {
@@ -267,6 +315,9 @@ namespace ngfem
            if (bmir.DimSpace() == DIMSPACE)
              {
                auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
+               CalcMappedShape_Matrix2 (mir, shapes);
+
+#ifdef XXX
                
                for (size_t i = 0; i < mir.Size(); i++)
                  {
@@ -310,6 +361,7 @@ namespace ngfem
                                                         shapes(j*sqr(DIMSPACE)+k,i) = transvec(k);
                                                     }));
                  }
+#endif
              }
          });
     }
