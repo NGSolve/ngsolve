@@ -275,7 +275,9 @@ namespace ngfem
 
                    Vec<DIM_STRESS,SIMD<double>> hv;
                    Mat<DIM,DIM,SIMD<double>> mat;
-                   Mat<DIMSPACE*DIMSPACE, DIM_STRESS,SIMD<double>> trans;
+                   // Mat<DIMSPACE*DIMSPACE, DIM_STRESS,SIMD<double>> trans;
+                   SIMD<double> mem[DIMSPACE*DIMSPACE*DIM_STRESS];
+                   FlatMatrix<SIMD<double>> trans(DIMSPACE*DIMSPACE,DIM_STRESS,&mem[0]);
                    for (int i = 0; i < DIM_STRESS; i++)
                      {
                        hv = SIMD<double>(0.0);
