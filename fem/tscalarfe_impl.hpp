@@ -657,7 +657,7 @@ namespace ngfem
     Iterate<4-DIM>
       ([this,&bmir,coefs,values](auto CODIM)
        {
-         constexpr auto DIMSPACE = DIM+CODIM.value;
+         constexpr int DIMSPACE = DIM+CODIM.value;
          if (bmir.DimSpace() == DIMSPACE)
            {
              auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
@@ -670,13 +670,13 @@ namespace ngfem
                  TIP<DIM,AutoDiffRec<DIMSPACE,SIMD<double>>>adp = GetTIP(mir[i]);
                  // GetTIP(mir[i], adp);
                  this->T_CalcShape (adp,
-                              SBLambda ([&] (size_t j, AutoDiffRec<DIMSPACE,SIMD<double>> shape)
-                                        { 
-                                          Iterate<DIMSPACE> ( [&] (auto ii) {
-                                              sum(ii.value) += *pcoefs * shape.DValue(ii.value); 
-                                            });
-                                          pcoefs += dist;
-                                        }));
+                                    SBLambda ([DIMSPACE,&pcoefs,dist,&sum]
+                                              (size_t j, AutoDiffRec<DIMSPACE,SIMD<double>> shape)
+                                              { 
+                                                for (auto k = 0; k < DIMSPACE; k++)
+                                                  sum(k) += *pcoefs * shape.DValue(k); 
+                                                pcoefs += dist;
+                                              }));
                  for (size_t k = 0; k < DIMSPACE; k++)
                    values(k,i) = sum(k).Data();
                }
