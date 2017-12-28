@@ -278,7 +278,7 @@ namespace ngfem
                    TIP<DIM,AutoDiffDiff<DIM,SIMD<double>>> addp(adp);
                    
                    this->Cast() -> T_CalcShape (addp,
-                                          SBLambda ([&] (size_t j, auto val)
+                                                SBLambda ([i,shapes,jac,d2] (size_t j, auto val)
                                                     {
                                                       Mat<DIM,DIM,SIMD<double>> mat;
                                                       VecToSymMat<DIM> (val.Shape(), mat);
