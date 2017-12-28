@@ -263,7 +263,7 @@ namespace ngfem
         ([&](auto CODIM)
          {
            constexpr int CD = CODIM.value;
-           constexpr int DIMSPACE = DIM+CODIM.value;
+           constexpr int DIMSPACE = DIM+CD;
            if (bmir.DimSpace() == DIMSPACE)
              {
                auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
