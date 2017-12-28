@@ -260,7 +260,7 @@ namespace ngfem
                                          BareSliceMatrix<SIMD<double>> shapes) const override
     {
       Iterate<4-DIM>
-        ([&](auto CODIM)
+        ([&bmir, shapes](auto CODIM)
          {
            constexpr int CD = CODIM.value;
            constexpr int DIMSPACE = DIM+CD;

@@ -816,7 +816,7 @@ namespace ngfem
                  GetTIP(mir[i], adp);
                  double * pcoef = &coefs(0);
                  size_t dist = coefs.Dist();            
-                 T_CalcShape (adp,
+                 this->T_CalcShape (adp,
                               SBLambda ([&] (size_t j, AutoDiffRec<DIMSPACE,SIMD<double>> shape)
                                         {
                                           SIMD<double> sum = 0.0;
