@@ -4128,7 +4128,7 @@ namespace ngfem
               ud.AssignMemory (proxy, ir.GetNIP(), proxy->Dimension(), lh);
             for (ProxyFunction * proxy : trial_proxies)
               proxy->Evaluator()->Apply(fel, mir, elx, ud.GetAMemory(proxy));
-            
+
             ely = 0;
             FlatMatrix<SIMD<double>> val(1, ir.Size(), lh);
             for (auto proxy : trial_proxies)

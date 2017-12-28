@@ -313,10 +313,10 @@ struct GenericPow {
 
 
   template <int D>
-  class NormalVectorCF : public CoefficientFunction
+  class NormalVectorCF : public CoefficientFunctionNoDerivative
   {
   public:
-    NormalVectorCF () : CoefficientFunction(D,false) { ; }
+    NormalVectorCF () : CoefficientFunctionNoDerivative(D,false) { ; }
     // virtual int Dimension() const { return D; }
 
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
