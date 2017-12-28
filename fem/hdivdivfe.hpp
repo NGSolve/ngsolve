@@ -141,6 +141,7 @@ namespace ngfem
                                BareSliceMatrix<double> shape) const override
     {
       Vec<DIM, AutoDiff<DIM> > adp = ip;
+      TIP<DIM,AutoDiffDiff<DIM>> addp(adp);      
       /*
       Vec<DIM, AutoDiffDiff<DIM>> adp;
       for ( int i=0; i<DIM; i++)
@@ -148,10 +149,10 @@ namespace ngfem
         adp[i] = AutoDiffDiff<DIM>(ip(i),i);
       }
       */
-      Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM>> (adp), SBLambda([&] (int nr, auto val)
-                                          {
-                                            shape.Row(nr).AddSize(DIM) = val.DivShape();
-                                          }));
+      Cast() -> T_CalcShape (addp, SBLambda([shape] (int nr, auto val)
+                                            {
+                                              shape.Row(nr).AddSize(DIM) = val.DivShape();
+                                            }));
     }
 
     // new style
