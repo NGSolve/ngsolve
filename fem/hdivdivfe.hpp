@@ -315,7 +315,7 @@ namespace ngfem
            if (bmir.DimSpace() == DIMSPACE)
              {
                auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
-               CalcMappedShape_Matrix2 (mir, shapes);
+               this->CalcMappedShape_Matrix2 (mir, shapes);
 
 #ifdef XXX
                
