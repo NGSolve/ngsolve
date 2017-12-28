@@ -399,6 +399,7 @@ namespace ngfem
         TIP<DIM,double> tip(ir[i]);
         // values.Row(i) = 0.0;
         auto hrow = values.Row(i).AddSize(coefs.Width());
+        hrow = 0.0;
         T_CalcShape (tip,
                      SBLambda ( [&](int j, double shape) 
                                 { 
