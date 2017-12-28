@@ -276,7 +276,7 @@ namespace ngfem
           
                    Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = bmir.IR()[i];
                    TIP<DIM,AutoDiffDiff<DIM,SIMD<double>>> addp(adp);
-                   
+                   /*
                    this->Cast() -> T_CalcShape (addp,
                                                 SBLambda ([i,shapes,jac,d2] (size_t j, auto val)
                                                     {
@@ -288,6 +288,7 @@ namespace ngfem
                                                       for (size_t k = 0; k < sqr(DIMSPACE); k++)
                                                         shapes(j*sqr(DIMSPACE)+k,i) = physmat(k);
                                                     }));
+                   */
                  }
              }
          });
