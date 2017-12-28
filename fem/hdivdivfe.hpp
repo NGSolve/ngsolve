@@ -277,7 +277,7 @@ namespace ngfem
                    Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = bmir.IR()[i];
                    TIP<DIM,AutoDiffDiff<DIM,SIMD<double>>> addp(adp);
                    
-                   Cast() -> T_CalcShape (addp,
+                   this->Cast() -> T_CalcShape (addp,
                                           SBLambda ([&] (size_t j, auto val)
                                                     {
                                                       Mat<DIM,DIM,SIMD<double>> mat;
