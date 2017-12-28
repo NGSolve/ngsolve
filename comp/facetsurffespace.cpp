@@ -342,7 +342,13 @@ namespace ngcomp
 	    }
 	}
 	break;
-      case BBND: case BBBND:
+      case BBND:
+	{
+	  dnums += GetEdgeDofs(ma->GetElEdges(ei)[0]);
+	}
+	break;
+
+      case BBBND:
 	break;
       }
   }
