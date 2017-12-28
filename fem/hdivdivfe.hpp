@@ -123,14 +123,10 @@ namespace ngfem
     virtual void CalcShape (const IntegrationPoint & ip, 
                             BareSliceMatrix<double> shape) const override
     {
-      Vec<DIM, AutoDiff<DIM> > adp = ip;
-      /*
+      // Vec<DIM, AutoDiff<DIM> > adp = ip;
       Vec<DIM, AutoDiffDiff<DIM>> adp;
       for ( int i=0; i<DIM; i++)
-      {
-        adp(i) = AutoDiffDiff<DIM>(ip(i),i);
-      }
-      */
+        adp(i) = AutoDiff<DIM>(ip(i),i);
       Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM>> (adp), SBLambda([&] (int nr, auto val)
                                           {
                                             shape.Row(nr).AddSize(DIM_STRESS) = val.Shape();
