@@ -37,15 +37,15 @@ namespace ngfem
       BareSliceMatrix<double> shape) const = 0;
 
     virtual void CalcMappedShape_Matrix (const SIMD_BaseMappedIntegrationRule & mir, 
-                                         BareSliceMatrix<SIMD<double>> shapes) const;
+                                         BareSliceMatrix<SIMD<double>> shapes) const = 0;
     
     virtual void Evaluate_Matrix (const SIMD_BaseMappedIntegrationRule & ir,
                                   BareSliceVector<> coefs,
-                                  BareSliceMatrix<SIMD<double>> values) const;
+                                  BareSliceMatrix<SIMD<double>> values) const = 0;
 
     virtual void AddTrans_Matrix (const SIMD_BaseMappedIntegrationRule & ir,
                                   BareSliceMatrix<SIMD<double>> values,
-                                  BareSliceVector<> coefs) const;
+                                  BareSliceVector<> coefs) const = 0;
   };
 
   template <int D,typename VEC,typename MAT>
