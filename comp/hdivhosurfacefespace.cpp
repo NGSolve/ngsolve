@@ -1,7 +1,7 @@
 #include <comp.hpp>
-#include <hdivlofe.hpp>  
-#include <hdivhofe.hpp>  
-#include <hdivhofefo.hpp>  
+#include <../fem/hdivlofe.hpp>  
+#include <../fem/hdivhofe.hpp>  
+#include <../fem/hdivhofefo.hpp>  
 
 namespace ngcomp
 {
