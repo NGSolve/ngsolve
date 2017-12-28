@@ -260,7 +260,7 @@ namespace ngfem
                                          BareSliceMatrix<SIMD<double>> shapes) const override
     {
       Iterate<4-DIM>
-        ([this, &bmir, shapes](auto CODIM)
+        ([this, &bmir, shapes](auto CODIM) LAMBDA_INLINE
          {
            constexpr int CD = CODIM.value;
            constexpr int DIMSPACE = DIM+CD;
@@ -292,7 +292,7 @@ namespace ngfem
                    TIP<DIM,AutoDiffDiff<DIM,SIMD<double>>> addp(adp);
 
                    this->Cast() -> T_CalcShape (addp,
-                                                SBLambda ([i,shapes,trans] (size_t j, auto val)
+                                                SBLambda ([i,shapes,trans] (size_t j, auto val) LAMBDA_INLINE
                                                     {
                                                       /*
                                                       Mat<DIM,DIM,SIMD<double>> mat;
