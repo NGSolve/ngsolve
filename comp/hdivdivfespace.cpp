@@ -9,6 +9,11 @@
 #include "../fem/hdivdivfe.hpp"
 #include "hdivdivfespace.hpp"
 
+namespace ngfem
+{
+  template class HDivDivFiniteElement<2>;
+  template class HDivDivFiniteElement<3>;
+}
 
 namespace ngcomp
 {
