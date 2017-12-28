@@ -17,7 +17,7 @@ add_library(ngfem ${NGS_LIB_TYPE}
         scalarfe.cpp generic_recpol.cpp hdivfe.cpp recursive_pol.cpp
         hybridDG.cpp diffop.cpp l2hofefo.cpp h1hofefo.cpp
         facethofe.cpp python_fem.cpp DGIntegrators.cpp pml.cpp
-        h1hofe_segm.cpp h1hofe_trig.cpp symbolicintegrator.cpp tpdiffop.cpp
+        h1hofe_segm.cpp h1hofe_trig.cpp hdivdivfe.cpp symbolicintegrator.cpp tpdiffop.cpp
         tensorproductintegrator.cpp code_generation.cpp
         )
 
