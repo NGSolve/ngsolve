@@ -455,6 +455,17 @@ namespace ngfem
   };
 
 
+
+  
+#ifdef FILE_HDIVDIVFE_CPP
+#define HDIVDIVFE_EXTERN
+#else
+#define HDIVDIVFE_EXTERN extern
+#endif
+  
+  HDIVDIVFE_EXTERN template class HDivDivFiniteElement<2>;
+  HDIVDIVFE_EXTERN template class HDivDivFiniteElement<3>;
+  
   
   // ***************** SigmaGrad ****************************** */
   // sigma (nabla u)
@@ -1953,7 +1964,14 @@ namespace ngfem
   };
 
 
-
+  HDIVDIVFE_EXTERN template class T_HDivDivFE<ET_TRIG>;
+  HDIVDIVFE_EXTERN template class T_HDivDivFE<ET_QUAD>;
+  HDIVDIVFE_EXTERN template class T_HDivDivFE<ET_TET>;
+  HDIVDIVFE_EXTERN template class T_HDivDivFE<ET_PRISM>;
+  HDIVDIVFE_EXTERN template class T_HDivDivFE<ET_HEX>;
+  HDIVDIVFE_EXTERN template class T_HDivDivSurfaceFE<ET_SEGM>;
+  HDIVDIVFE_EXTERN template class T_HDivDivSurfaceFE<ET_QUAD>;
+  HDIVDIVFE_EXTERN template class T_HDivDivSurfaceFE<ET_TRIG>;
 
 }
 
