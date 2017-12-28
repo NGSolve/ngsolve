@@ -655,7 +655,7 @@ namespace ngfem
                 BareSliceMatrix<SIMD<double>> values) const
   {
     Iterate<4-DIM>
-      ([&](auto CODIM)
+      ([this,&bmir,coefs,values](auto CODIM)
        {
          constexpr auto DIMSPACE = DIM+CODIM.value;
          if (bmir.DimSpace() == DIMSPACE)
@@ -669,7 +669,7 @@ namespace ngfem
                  Vec<DIMSPACE,SIMD<double>> sum(0.0);
                  TIP<DIM,AutoDiffRec<DIMSPACE,SIMD<double>>>adp = GetTIP(mir[i]);
                  // GetTIP(mir[i], adp);
-                 T_CalcShape (adp,
+                 this->T_CalcShape (adp,
                               SBLambda ([&] (size_t j, AutoDiffRec<DIMSPACE,SIMD<double>> shape)
                                         { 
                                           Iterate<DIMSPACE> ( [&] (auto ii) {
