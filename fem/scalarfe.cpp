@@ -129,7 +129,7 @@ namespace ngfem
   
   void BaseScalarFiniteElement :: 
   CalcShape (const IntegrationRule & ir, 
-	     SliceMatrix<> shape) const
+	     BareSliceMatrix<> shape) const
   {
     for (int i = 0; i < ir.Size(); i++)
       CalcShape (ir[i], shape.Col(i));
@@ -146,7 +146,7 @@ namespace ngfem
   template<int D>
   void ScalarFiniteElement<D> :: 
   CalcMappedDShape (const MappedIntegrationPoint<D,D> & mip, 
-                    SliceMatrix<> dshape) const
+                    BareSliceMatrix<> dshape) const
   {
     CalcDShape (mip.IP(), dshape);
     for (int i = 0; i < dshape.Height(); i++)
@@ -161,7 +161,7 @@ namespace ngfem
   template<int D>
   void ScalarFiniteElement<D> :: 
   CalcMappedDShape (const MappedIntegrationRule<D,D> & mir, 
-                    SliceMatrix<> dshapes) const
+                    BareSliceMatrix<> dshapes) const
   {
     for (int i = 0; i < mir.Size(); i++)
       CalcMappedDShape (mir[i], dshapes.Cols(i*D,(i+1)*D));
@@ -225,13 +225,13 @@ namespace ngfem
 
   
   void BaseScalarFiniteElement :: 
-  Evaluate (const IntegrationRule & ir, SliceMatrix<> coefs, SliceMatrix<> values) const
+  Evaluate (const IntegrationRule & ir, SliceMatrix<> coefs, BareSliceMatrix<> values) const
   {
     VectorMem<100> shapes(coefs.Height());
     for (size_t i = 0; i < ir.Size(); i++)
       {
         CalcShape (ir[i], shapes);
-        values.Row(i) = Trans(coefs) * shapes;
+        values.Row(i).AddSize(coefs.Width()) = Trans(coefs) * shapes;
       }
   }
 
@@ -408,11 +408,33 @@ namespace ngfem
 
   template<int D>
   void ScalarFiniteElement<D> :: CalcDDShape (const IntegrationPoint & ip, 
-                                              FlatMatrix<> ddshape) const
+                                              BareSliceMatrix<> ddshape) const
   {
     int nd = GetNDof();
     double eps = 1e-3;
 
+    double pos[4] = { -2, -1, 1, 2 };
+    double weight[4] = { 1.0/12, -2.0/3, 2.0/3, -1.0/12 };
+
+    STACK_ARRAY(double, mem, nd*D);
+    FlatMatrixFixWidth<D> dshape(nd, &mem[0]);  
+
+    ddshape.AddSize(nd, D*D) = 0.0;
+    
+    for (int p = 0; p < 4; p++)
+      for (int i = 0; i < D; i++)
+        {
+          IntegrationPoint ip1 = ip;
+          ip1(i) += eps * pos[p];
+
+          CalcDShape (ip1, dshape);
+
+          for (int j = 0; j < nd; j++)
+            for (int k = 0; k < D; k++)
+              ddshape(j,D*i+k) += weight[p]/eps * dshape(j,k);
+        }
+
+    /*
     STACK_ARRAY(double, mem1, nd*D);
     STACK_ARRAY(double, mem2, nd*D);    
     FlatMatrixFixWidth<D> dshape1(nd, &mem1[0]);  
@@ -450,15 +472,16 @@ namespace ngfem
 	  for (int k = 0; k < D; k++)
 	    ddshape(j,D*i+k) -= (1.0/(12*eps)) * (dshape2(j,k) - dshape1(j,k));
       }  
+    */
   }
 
 
   template<int D>
   void ScalarFiniteElement<D> :: CalcMappedDDShape (const MappedIntegrationPoint<D,D> & mip, 
-                                                    SliceMatrix<> ddshape) const
+                                                    BareSliceMatrix<> hddshape) const
   {
     int nd = GetNDof();
-
+    auto ddshape = hddshape.AddSize(nd, D*D);
     double eps = 1e-7;
     MatrixFixWidth<D> dshape1(nd), dshape2(nd);
     const ElementTransformation & eltrans = mip.GetTransformation();

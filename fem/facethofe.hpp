@@ -34,7 +34,7 @@ namespace ngfem
   public:
     FacetFE () { ; }
 
-    virtual ELEMENT_TYPE ElementType() const { return ET; }
+    virtual ELEMENT_TYPE ElementType() const override { return ET; }
     
     using FacetVolumeFiniteElement<ET_trait<ET>::DIM>::SetOrder;
     template <typename TA>
@@ -48,7 +48,7 @@ namespace ngfem
     }
 
     
-    virtual void ComputeNDof() 
+    virtual void ComputeNDof() override
     {
       ndof = 0;
       for (int i = 0; i < N_FACET; i++)
@@ -70,15 +70,15 @@ namespace ngfem
     }
     
 
-	virtual void CalcFacetShapeVolIP(int fnr, const IntegrationPoint & ip,
-		BareSliceVector<> shape) const;
-
-	virtual void EvaluateFacetVolIp(int fnr, const SIMD_IntegrationRule & ir,
-		BareSliceVector<> coefs, ABareVector<double> values) const;
-
-	virtual void AddTransFacetVolIp(int fnr, const SIMD_IntegrationRule & ir,
-		ABareVector<double> values, BareSliceVector<> coefs) const;
-
+    virtual void CalcFacetShapeVolIP (int fnr, const IntegrationPoint & ip,
+                                      BareSliceVector<> shape) const override;
+    
+    virtual void EvaluateFacetVolIp (int fnr, const SIMD_IntegrationRule & ir,
+                                     BareSliceVector<> coefs, ABareVector<double> values) const override;
+    
+    virtual void AddTransFacetVolIp (int fnr, const SIMD_IntegrationRule & ir,
+                                     ABareVector<double> values, BareSliceVector<> coefs) const override;
+    
 
   private:
     template<typename Tx, typename TFA>  

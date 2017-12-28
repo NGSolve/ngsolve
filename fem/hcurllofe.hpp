@@ -754,15 +754,15 @@ static Matrix<> trans3;
     FE_Trig3Pot();
     ///
     virtual ~FE_Trig3Pot();
-    virtual ELEMENT_TYPE ElementType() const { return ET_TRIG; }
+    virtual ELEMENT_TYPE ElementType() const override { return ET_TRIG; }
 
     ///
     using ScalarFiniteElement<2>::CalcShape;
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    BareSliceVector<> shape) const;
+			    BareSliceVector<> shape) const override;
 			  
     virtual void CalcDShape (const IntegrationPoint & ip, 
-			     SliceMatrix<> dshape) const;
+			     BareSliceMatrix<> dshape) const override;
   }; 
 
 
@@ -1018,7 +1018,7 @@ static Matrix<> trans_trig;
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    BareSliceVector<> shape) const override;
     virtual void CalcDShape (const IntegrationPoint & ip, 
-			     SliceMatrix<> dshape) const override;
+			     BareSliceMatrix<> dshape) const override;
   }; 
 
 
@@ -1054,7 +1054,7 @@ static Matrix<> trans_trig;
     ///
     virtual ~FE_NedelecPyramid3();
 
-    virtual ELEMENT_TYPE ElementType() const { return ET_PYRAMID; }
+    virtual ELEMENT_TYPE ElementType() const override { return ET_PYRAMID; }
 
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 

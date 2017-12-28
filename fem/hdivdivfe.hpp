@@ -36,6 +36,16 @@ namespace ngfem
     virtual void CalcMappedDivShape (const MappedIntegrationPoint<DIM,DIM> & mip,
       BareSliceMatrix<double> shape) const = 0;
 
+    virtual void CalcMappedShape_Matrix (const SIMD_BaseMappedIntegrationRule & mir, 
+                                         BareSliceMatrix<SIMD<double>> shapes) const;
+    
+    virtual void Evaluate_Matrix (const SIMD_BaseMappedIntegrationRule & ir,
+                                  BareSliceVector<> coefs,
+                                  BareSliceMatrix<SIMD<double>> values) const;
+
+    virtual void AddTrans_Matrix (const SIMD_BaseMappedIntegrationRule & ir,
+                                  BareSliceMatrix<SIMD<double>> values,
+                                  BareSliceVector<> coefs) const;
   };
 
   template <int D,typename VEC,typename MAT>
@@ -98,7 +108,7 @@ namespace ngfem
 
     }
     
-    virtual ELEMENT_TYPE ElementType() const { return ET; }
+    virtual ELEMENT_TYPE ElementType() const override { return ET; }
     const HDivDivFE<ET> * Cast() const { return static_cast<const HDivDivFE<ET>*> (this); } 
     
     INLINE void SetOrderFacet (int nr, INT<DIM-1,int> order) { order_facet[nr] = order; }
@@ -111,14 +121,16 @@ namespace ngfem
 
     // old style
     virtual void CalcShape (const IntegrationPoint & ip, 
-                            BareSliceMatrix<double> shape) const
+                            BareSliceMatrix<double> shape) const override
     {
+      Vec<DIM, AutoDiff<DIM> > adp = ip;
+      /*
       Vec<DIM, AutoDiffDiff<DIM>> adp;
       for ( int i=0; i<DIM; i++)
       {
         adp(i) = AutoDiffDiff<DIM>(ip(i),i);
       }
-
+      */
       Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM>> (adp), SBLambda([&] (int nr, auto val)
                                           {
                                             shape.Row(nr).AddSize(DIM_STRESS) = val.Shape();
@@ -126,14 +138,16 @@ namespace ngfem
     }
 
     virtual void CalcDivShape (const IntegrationPoint & ip,
-                               BareSliceMatrix<double> shape) const
+                               BareSliceMatrix<double> shape) const override
     {
+      Vec<DIM, AutoDiff<DIM> > adp = ip;
+      /*
       Vec<DIM, AutoDiffDiff<DIM>> adp;
       for ( int i=0; i<DIM; i++)
       {
         adp[i] = AutoDiffDiff<DIM>(ip(i),i);
       }
-      
+      */
       Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM>> (adp), SBLambda([&] (int nr, auto val)
                                           {
                                             shape.Row(nr).AddSize(DIM) = val.DivShape();
@@ -142,16 +156,18 @@ namespace ngfem
 
     // new style
     virtual void CalcMappedShape_Vector (const MappedIntegrationPoint<DIM,DIM> & mip,
-                            BareSliceMatrix<double> shape) const
+                            BareSliceMatrix<double> shape) const override
     {
       Vec<DIM, AutoDiff<DIM>> adp = mip;
+      /*
       Vec<DIM, AutoDiffDiff<DIM>> addp;
       for (int i=0; i<DIM; i++)
       {
         addp[i] = adp[i].Value();
         addp[i].LoadGradient(&adp[i].DValue(0));
       }
-      Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM>> (addp), SBLambda([&] (int nr, auto val)
+      */
+      Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM>> (adp), SBLambda([&] (int nr, auto val)
                                           {
                                             shape.Row(nr).AddSize(DIM_STRESS) = val.Shape();
                                           }));
@@ -159,26 +175,18 @@ namespace ngfem
 
 
     virtual void CalcMappedShape_Matrix (const MappedIntegrationPoint<DIM,DIM> & mip,
-                            BareSliceMatrix<double> shape) const
+                            BareSliceMatrix<double> shape) const override
     {
       Vec<DIM, AutoDiff<DIM>> adp = mip;
-      Vec<DIM, AutoDiffDiff<DIM>> addp;
-      for (int i=0; i<DIM; i++)
+      Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM>> (adp),SBLambda([&](int nr,auto val)
       {
-        addp[i] = adp[i].Value();
-        addp[i].LoadGradient(&adp[i].DValue(0));
-      }
-      Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM>> (addp),SBLambda([&](int nr,auto val)
-      {
-        Vec<DIM_STRESS> vecshape = val.Shape();
-        BareVector<double> matshape = shape.Row(nr);
-        VecToSymMat<DIM> (vecshape, matshape);
+        VecToSymMat<DIM> (val.Shape(), shape.Row(nr));
       }));
     }
 
 
     virtual void CalcMappedDivShape (const MappedIntegrationPoint<DIM,DIM> & mip,
-                            BareSliceMatrix<double> shape) const
+                                     BareSliceMatrix<double> shape) const override
     {
       Vec<DIM, AutoDiff<DIM>> adp = mip;
       Vec<DIM, AutoDiffDiff<DIM>> addp;
@@ -247,6 +255,214 @@ namespace ngfem
       }
     }
 
+
+    virtual void CalcMappedShape_Matrix (const SIMD_BaseMappedIntegrationRule & bmir, 
+                                         BareSliceMatrix<SIMD<double>> shapes) const override
+    {
+      Iterate<4-DIM>
+        ([&](auto CODIM)
+         {
+           constexpr auto DIMSPACE = DIM+CODIM.value;
+           if (bmir.DimSpace() == DIMSPACE)
+             {
+               auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
+               
+               for (size_t i = 0; i < mir.Size(); i++)
+                 {
+                   auto jac = mir[i].GetJacobian();
+                   auto d2 = sqr(mir[i].GetJacobiDet());
+                   
+          
+                   Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = bmir.IR()[i];
+                   TIP<DIM,AutoDiffDiff<DIM,SIMD<double>>> addp(adp);
+                   
+                   Cast() -> T_CalcShape (addp,
+                                          SBLambda ([&] (size_t j, auto val)
+                                                    {
+                                                      Mat<DIM,DIM,SIMD<double>> mat;
+                                                      VecToSymMat<DIM> (val.Shape(), mat);
+                                                      Mat<DIMSPACE,DIMSPACE,SIMD<double>> physmat =
+                                                        1/d2 * (jac * mat * Trans(jac));
+
+                                                      for (size_t k = 0; k < sqr(DIMSPACE); k++)
+                                                        shapes(j*sqr(DIMSPACE)+k,i) = physmat(k);
+                                                    }));
+                 }
+             }
+         });
+    }
+
+    virtual void Evaluate_Matrix (const SIMD_BaseMappedIntegrationRule & bmir,
+                                  BareSliceVector<> coefs,
+                                  BareSliceMatrix<SIMD<double>> values) const override
+    {
+      for (size_t i = 0; i < bmir.Size(); i++)
+        {
+          double *pcoefs = &coefs(0);
+          const size_t dist = coefs.Dist();
+          
+          Vec<DIM_STRESS,SIMD<double>> sum(0.0);
+          Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = bmir.IR()[i];
+          TIP<DIM,AutoDiffDiff<DIM,SIMD<double>>> addp(adp);
+          
+          Cast() -> T_CalcShape (addp,
+                                 SBLambda ([&] (size_t j, auto val)
+                                           {
+                                             sum += (*pcoefs)*val.Shape();
+                                             pcoefs += dist;
+                                           }));
+
+          Mat<DIM,DIM,SIMD<double>> summat;
+          VecToSymMat<DIM> (sum, summat);
+          
+          Iterate<4-DIM>
+            ([&](auto CODIM)
+             {
+               constexpr auto DIMSPACE = DIM+CODIM.value;
+               if (bmir.DimSpace() == DIMSPACE)
+                 {
+                   auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
+                   auto jac = mir[i].GetJacobian();
+                   auto d2 = sqr(mir[i].GetJacobiDet());
+                   Mat<DIMSPACE,DIMSPACE,SIMD<double>> physmat = 1/d2 * (jac * summat * Trans(jac));
+                   for (size_t k = 0; k < sqr(DIMSPACE); k++)
+                     values(k,i) = physmat(k);
+                 }
+             });
+        }
+    }
+
+    virtual void AddTrans_Matrix (const SIMD_BaseMappedIntegrationRule & bmir,
+                                  BareSliceMatrix<SIMD<double>> values,
+                                  BareSliceVector<> coefs) const override
+    {
+      /*
+      Iterate<4-DIM>
+        ([&](auto CODIM)
+         {
+           constexpr auto DIMSPACE = DIM+CODIM.value;
+           if (bmir.DimSpace() == DIMSPACE)
+             {
+               auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
+               
+               for (size_t i = 0; i < mir.Size(); i++)
+                 {
+                   auto jac = mir[i].GetJacobian();
+                   auto d2 = sqr(mir[i].GetJacobiDet());
+                   
+                   double *pcoefs = &coefs(0);
+                   const size_t dist = coefs.Dist();
+          
+                   Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = bmir.IR()[i];
+                   TIP<DIM,AutoDiffDiff<DIM,SIMD<double>>> addp(adp);
+                   
+                   Cast() -> T_CalcShape (addp,
+                                          SBLambda ([&] (size_t j, auto val)
+                                                    {
+                                                      Mat<DIM,DIM,SIMD<double>> mat;
+                                                      VecToSymMat<DIM> (val.Shape(), mat);
+                                                      Mat<DIMSPACE,DIMSPACE,SIMD<double>> physmat =
+                                                        1/d2 * (jac * mat * Trans(jac));
+
+                                                      SIMD<double> sum = 0.0;
+                                                      for (size_t k = 0; k < sqr(DIMSPACE); k++)
+                                                        sum += values(k,i) * physmat(k);
+
+                                                      *pcoefs += HSum(sum);
+                                                      pcoefs += dist;
+                                                    }));
+                 }
+             }
+         });
+    }
+      */
+
+      /*
+      Iterate<4-DIM>
+        ([&](auto CODIM)
+         {
+           constexpr auto DIMSPACE = DIM+CODIM.value;
+           if (bmir.DimSpace() == DIMSPACE)
+             {
+               auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
+               
+               for (size_t i = 0; i < mir.Size(); i++)
+                 {
+                   auto jac = mir[i].GetJacobian();
+                   auto d2 = sqr(mir[i].GetJacobiDet());
+                   
+                   double *pcoefs = &coefs(0);
+                   const size_t dist = coefs.Dist();
+
+                   Mat<DIMSPACE,DIMSPACE,SIMD<double>> physmat;
+                   for (size_t k = 0; k < sqr(DIMSPACE); k++)
+                     physmat(k) = values(k,i);
+                   Mat<DIM,DIM,SIMD<double>> mat;
+                   mat = 1/d2 * Trans(jac) * physmat * jac;
+                   
+                   Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = bmir.IR()[i];
+                   TIP<DIM,AutoDiffDiff<DIM,SIMD<double>>> addp(adp);
+                   
+                   Cast() -> T_CalcShape (addp,
+                                          SBLambda ([&] (size_t j, auto val)
+                                                    {
+                                                      Mat<DIM,DIM,SIMD<double>> mat2;
+                                                      VecToSymMat<DIM> (val.Shape(), mat2);
+
+                                                      SIMD<double> sum = 0.0;
+                                                      for (size_t k = 0; k < DIM*DIM; k++)
+                                                        sum += mat(k) * mat2(k);
+                                                      
+                                                      *pcoefs += HSum(sum);
+                                                      pcoefs += dist;
+                                                    }));
+                 }
+             }
+         });
+      */
+
+      for (size_t i = 0; i < bmir.Size(); i++)
+        {
+          Mat<DIM,DIM,SIMD<double>> mat;
+          
+          Iterate<4-DIM>
+            ([&](auto CODIM)
+             {
+               constexpr auto DIMSPACE = DIM+CODIM.value;
+               if (bmir.DimSpace() == DIMSPACE)
+                 {
+                   auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
+
+                   auto jac = mir[i].GetJacobian();
+                   auto d2 = sqr(mir[i].GetJacobiDet());
+
+                   Mat<DIMSPACE,DIMSPACE,SIMD<double>> physmat;
+                   for (size_t k = 0; k < sqr(DIMSPACE); k++)
+                     physmat(k) = values(k,i);
+                   mat = 1/d2 * Trans(jac) * physmat * jac;
+                 }
+             });
+          
+          Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = bmir.IR()[i];
+          TIP<DIM,AutoDiffDiff<DIM,SIMD<double>>> addp(adp);
+          double *pcoefs = &coefs(0);
+          const size_t dist = coefs.Dist();
+
+          Cast() -> T_CalcShape (addp,
+                                 SBLambda ([&] (size_t j, auto val)
+                                           {
+                                             Mat<DIM,DIM,SIMD<double>> mat2;
+                                             VecToSymMat<DIM> (val.Shape(), mat2);
+                                             
+                                             SIMD<double> sum = 0.0;
+                                             for (size_t k = 0; k < DIM*DIM; k++)
+                                               sum += mat(k) * mat2(k);
+                                             
+                                             *pcoefs += HSum(sum);
+                                             pcoefs += dist;
+                                           }));
+        }
+    }
   };
 
 
@@ -254,148 +470,148 @@ namespace ngfem
   // ***************** SigmaGrad ****************************** */
   // sigma (nabla u)
   
-  template <int D> class T_SigmaGrad;
-  template <> class T_SigmaGrad<2>
+  template <int D, typename T> class T_SigmaGrad;
+  template <typename T> class T_SigmaGrad<2,T>
   {
-    AutoDiffDiff<2> u;
+    AutoDiffDiff<2,T> u;
   public:
-    T_SigmaGrad  (AutoDiffDiff<2> au) : u(au) { ; }
-    Vec<3> Shape() { return Vec<3> (u.DDValue(1,1), u.DDValue(0,0), -u.DDValue(1,0)); }
-    Vec<2> DivShape() { return Vec<2> (0.0, 0.0); }
+    T_SigmaGrad  (AutoDiffDiff<2,T> au) : u(au) { ; }
+    Vec<3,T> Shape() { return Vec<3,T> (u.DDValue(1,1), u.DDValue(0,0), -u.DDValue(1,0)); }
+    Vec<2,T> DivShape() { return Vec<2,T> (0.0, 0.0); }
   };
   
-  template <int D>
-  auto SigmaGrad (AutoDiffDiff<D> au) { return T_SigmaGrad<D>(au); }
+  template <int D, typename T>
+  auto SigmaGrad (AutoDiffDiff<D,T> au) { return T_SigmaGrad<D,T>(au); }
   
   
   // ***************** Sigma_u_Gradv ****************************** */
   // sigma (u nabla v)
   
-  template <int D> class T_Sigma_u_Gradv;
-  template <> class T_Sigma_u_Gradv<2>
+  template <int D, typename T> class T_Sigma_u_Gradv;
+  template <typename T> class T_Sigma_u_Gradv<2,T>
   {
-    AutoDiffDiff<2> u, v;
+    AutoDiffDiff<2,T> u, v;
   public:
-    T_Sigma_u_Gradv  (AutoDiffDiff<2> au, AutoDiffDiff<2> av) : u(au), v(av) { ; }
-    Vec<3> Shape() { return Vec<3> ((u.Value()*v.DDValue(1,1) + u.DValue(1)*v.DValue(1)),
-                                    (u.Value()*v.DDValue(0,0) + u.DValue(0)*v.DValue(0)),
-                                    -u.Value()*v.DDValue(1,0) - 0.5 * (u.DValue(0)*v.DValue(1)+u.DValue(1)*v.DValue(0))); }
-    Vec<2> DivShape()
+    T_Sigma_u_Gradv  (AutoDiffDiff<2,T> au, AutoDiffDiff<2,T> av) : u(au), v(av) { ; }
+    Vec<3,T> Shape() { return Vec<3,T> ((u.Value()*v.DDValue(1,1) + u.DValue(1)*v.DValue(1)),
+                                        (u.Value()*v.DDValue(0,0) + u.DValue(0)*v.DValue(0)),
+                                        -u.Value()*v.DDValue(1,0) - 0.5 * (u.DValue(0)*v.DValue(1)+u.DValue(1)*v.DValue(0))); }
+    Vec<2,T> DivShape()
     {
-      double uxx = u.DDValue(0,0), uyy = u.DDValue(1,1), uxy = u.DDValue(0,1);
-      double ux = u.DValue(0), uy = u.DValue(1);
-      double vxx = v.DDValue(0,0), vyy = v.DDValue(1,1), vxy = v.DDValue(0,1);
-      double vx = v.DValue(0), vy = v.DValue(1);
+      T uxx = u.DDValue(0,0), uyy = u.DDValue(1,1), uxy = u.DDValue(0,1);
+      T ux = u.DValue(0), uy = u.DValue(1);
+      T vxx = v.DDValue(0,0), vyy = v.DDValue(1,1), vxy = v.DDValue(0,1);
+      T vx = v.DValue(0), vy = v.DValue(1);
       
-      return -0.5 * Vec<2> (uyy*vx - uxy*vy + uy*vxy - ux*vyy,
+      return -0.5 * Vec<2,T> (uyy*vx - uxy*vy + uy*vxy - ux*vyy,
                             -uxy*vx + uxx*vy - uy*vxx + ux*vxy);
     }
   };
   
-  template <int D>
-  auto Sigma_u_Gradv (AutoDiffDiff<D> au, AutoDiffDiff<D> av) { return T_Sigma_u_Gradv<D>(au, av); }
+  template <int D, typename T>
+  auto Sigma_u_Gradv (AutoDiffDiff<D,T> au, AutoDiffDiff<D,T> av) { return T_Sigma_u_Gradv<D,T>(au, av); }
   
   // ***************** Type2 ****************************** */
   // ????
   
-  template <int D> class T_Type2;
-  template <> class T_Type2<2>
+  template <int D, typename T> class T_Type2;
+  template <typename T> class T_Type2<2,T>
   {
-    AutoDiffDiff<2> u,v;
+    AutoDiffDiff<2,T> u,v;
   public:
-    T_Type2  (AutoDiffDiff<2> au, AutoDiffDiff<2> av) : u(au), v(av) { ; }
-    Vec<3> Shape() { return Vec<3> (u.DDValue(1,1)*v.Value() - 2*u.DValue(1)*v.DValue(1) + u.Value()*v.DDValue(1,1),
-                                    u.DDValue(0,0)*v.Value() - 2*u.DValue(0)*v.DValue(0) + u.Value()*v.DDValue(0,0),
-                                    -(u.DDValue(0,1)*v.Value() - u.DValue(0)*v.DValue(1) -
-                                      u.DValue(1)*v.DValue(0) + u.Value()*v.DDValue(1,0))); }
+    T_Type2  (AutoDiffDiff<2,T> au, AutoDiffDiff<2,T> av) : u(au), v(av) { ; }
+    Vec<3,T> Shape() { return Vec<3,T> (u.DDValue(1,1)*v.Value() - 2*u.DValue(1)*v.DValue(1) + u.Value()*v.DDValue(1,1),
+                                        u.DDValue(0,0)*v.Value() - 2*u.DValue(0)*v.DValue(0) + u.Value()*v.DDValue(0,0),
+                                        -(u.DDValue(0,1)*v.Value() - u.DValue(0)*v.DValue(1) -
+                                          u.DValue(1)*v.DValue(0) + u.Value()*v.DDValue(1,0))); }
 
-    Vec<2> DivShape()
+    Vec<2,T> DivShape()
     {
-      double uxx = u.DDValue(0,0), uyy = u.DDValue(1,1), uxy = u.DDValue(0,1);
-      double ux = u.DValue(0), uy = u.DValue(1);
-      double vxx = v.DDValue(0,0), vyy = v.DDValue(1,1), vxy = v.DDValue(0,1);
-      double vx = v.DValue(0), vy = v.DValue(1);
+      T uxx = u.DDValue(0,0), uyy = u.DDValue(1,1), uxy = u.DDValue(0,1);
+      T ux = u.DValue(0), uy = u.DValue(1);
+      T vxx = v.DDValue(0,0), vyy = v.DDValue(1,1), vxy = v.DDValue(0,1);
+      T vx = v.DValue(0), vy = v.DValue(1);
       
-      return Vec<2> (2*uyy*vx + 2*ux*vyy - 2*uxy*vy - 2*uy*vxy, 2*uxx*vy + 2*uy*vxx - 2*uxy*vx - 2*ux*vxy);
+      return Vec<2,T> (2*uyy*vx + 2*ux*vyy - 2*uxy*vy - 2*uy*vxy, 2*uxx*vy + 2*uy*vxx - 2*uxy*vx - 2*ux*vxy);
     }
   };
   
-  template <int D>
-  auto Type2 (AutoDiffDiff<D> au, AutoDiffDiff<D> av) { return T_Type2<D>(au, av); }
+  template <int D, typename T>
+  auto Type2 (AutoDiffDiff<D,T> au, AutoDiffDiff<D,T> av) { return T_Type2<D,T>(au, av); }
   
   // ***************** Type3 ****************************** */
   // ????
   
-  template <int D> class T_Type3;
-  template <> class T_Type3<2>
+  template <int D, typename T> class T_Type3;
+  template <typename T> class T_Type3<2,T>
   {
-    AutoDiffDiff<2> u,v;
+    AutoDiffDiff<2,T> u,v;
   public:
-    T_Type3  (AutoDiffDiff<2> au, AutoDiffDiff<2> av) : u(au), v(av) { ; }
-    Vec<3> Shape() { return Vec<3> (u.DDValue(1,1)*v.Value() - u.Value()*v.DDValue(1,1),
+    T_Type3  (AutoDiffDiff<2,T> au, AutoDiffDiff<2,T> av) : u(au), v(av) { ; }
+    Vec<3,T> Shape() { return Vec<3,T> (u.DDValue(1,1)*v.Value() - u.Value()*v.DDValue(1,1),
                                     u.DDValue(0,0)*v.Value() - u.Value()*v.DDValue(0,0),
                                     -(u.DDValue(0,1)*v.Value() - u.Value()*v.DDValue(1,0))); }
-    Vec<2> DivShape()
+    Vec<2,T> DivShape()
     {
-      double uxx = u.DDValue(0,0), uyy = u.DDValue(1,1), uxy = u.DDValue(0,1);
-      double ux = u.DValue(0), uy = u.DValue(1);
-      double vxx = v.DDValue(0,0), vyy = v.DDValue(1,1), vxy = v.DDValue(0,1);
-      double vx = v.DValue(0), vy = v.DValue(1);
+      T uxx = u.DDValue(0,0), uyy = u.DDValue(1,1), uxy = u.DDValue(0,1);
+      T ux = u.DValue(0), uy = u.DValue(1);
+      T vxx = v.DDValue(0,0), vyy = v.DDValue(1,1), vxy = v.DDValue(0,1);
+      T vx = v.DValue(0), vy = v.DValue(1);
 
-      return Vec<2> (uyy*vx - uxy*vy - ux*vyy + uy*vxy, uxx*vy - uxy*vx - uy*vxx + ux*vxy);
+      return Vec<2,T> (uyy*vx - uxy*vy - ux*vyy + uy*vxy, uxx*vy - uxy*vx - uy*vxx + ux*vxy);
     }
   };
   
-  template <int D>
-  auto Type3 (AutoDiffDiff<D> au, AutoDiffDiff<D> av) { return T_Type3<D>(au, av); }
+  template <int D, typename T>
+  auto Type3 (AutoDiffDiff<D,T> au, AutoDiffDiff<D,T> av) { return T_Type3<D,T>(au, av); }
 
  
-  template <int D> class T_vSigmaGradu;
-  template <> class T_vSigmaGradu<2>
+  template <int D, typename T> class T_vSigmaGradu;
+  template <typename T> class T_vSigmaGradu<2,T>
   {
-    AutoDiffDiff<2> u,v;
+    AutoDiffDiff<2,T> u,v;
   public:
-    T_vSigmaGradu  (AutoDiffDiff<2> au, AutoDiffDiff<2> av) : u(au), v(av) { ; }
-    Vec<3> Shape() { return Vec<3> (u.DDValue(1,1)*v.Value(),
-                                    u.DDValue(0,0)*v.Value(),  -(u.DDValue(0,1)*v.Value()));}
-    Vec<2> DivShape()
+    T_vSigmaGradu  (AutoDiffDiff<2,T> au, AutoDiffDiff<2,T> av) : u(au), v(av) { ; }
+    Vec<3,T> Shape() { return Vec<3,T> (u.DDValue(1,1)*v.Value(),
+                                      u.DDValue(0,0)*v.Value(),  -(u.DDValue(0,1)*v.Value()));}
+    Vec<2,T> DivShape()
     {
-      double uxx = u.DDValue(0,0), uyy = u.DDValue(1,1), uxy = u.DDValue(0,1);
-      double ux = u.DValue(0), uy = u.DValue(1);
-      double vxx = v.DDValue(0,0), vyy = v.DDValue(1,1), vxy = v.DDValue(0,1);
-      double vx = v.DValue(0), vy = v.DValue(1);
+      T uxx = u.DDValue(0,0), uyy = u.DDValue(1,1), uxy = u.DDValue(0,1);
+      T ux = u.DValue(0), uy = u.DValue(1);
+      T vxx = v.DDValue(0,0), vyy = v.DDValue(1,1), vxy = v.DDValue(0,1);
+      T vx = v.DValue(0), vy = v.DValue(1);
 
-      return Vec<2> (uyy*vx- uxy*vy, uxx*vy- uxy*vx);
+      return Vec<2,T> (uyy*vx- uxy*vy, uxx*vy- uxy*vx);
     }
   };
   
-  template <int D>
-  auto vSigmaGradu (AutoDiffDiff<D> au, AutoDiffDiff<D> av) { return T_vSigmaGradu<D>(au, av); }
+  template <int D, typename T>
+  auto vSigmaGradu (AutoDiffDiff<D,T> au, AutoDiffDiff<D,T> av) { return T_vSigmaGradu<D,T>(au, av); }
 
   // ***************** Sigma ((vDu - uDv) w) ****************************** */
   // where u, v are NOW POSSIBLY NON-linear hat basis functions (i.e. vDu - uDv is Nedelec0 edge basis function)
-  template <int D> class T_Sigma_Duv_minus_uDv_w;
-  template <> class T_Sigma_Duv_minus_uDv_w<2>
+  template <int D, typename T> class T_Sigma_Duv_minus_uDv_w;
+  template <typename T> class T_Sigma_Duv_minus_uDv_w<2,T>
   {
-    AutoDiffDiff<2> u,v,w;
+    AutoDiffDiff<2,T> u,v,w;
   public:
-    T_Sigma_Duv_minus_uDv_w  (AutoDiffDiff<2> au, AutoDiffDiff<2> av, AutoDiffDiff<2> aw) : u(au), v(av), w(aw) { ; }
-    Vec<3> Shape() { return Vec<3> (w.DValue(1)*(v.DValue(1)*u.Value()-u.DValue(1)*v.Value()), 
+    T_Sigma_Duv_minus_uDv_w  (AutoDiffDiff<2,T> au, AutoDiffDiff<2,T> av, AutoDiffDiff<2,T> aw) : u(au), v(av), w(aw) { ; }
+    Vec<3,T> Shape() { return Vec<3,T> (w.DValue(1)*(v.DValue(1)*u.Value()-u.DValue(1)*v.Value()), 
       w.DValue(0)*(v.DValue(0)*u.Value()-u.DValue(0)*v.Value()),
       -0.5*( w.DValue(0)*(v.DValue(1)*u.Value()-u.DValue(1)*v.Value()) +
         w.DValue(1)*(v.DValue(0)*u.Value()-u.DValue(0)*v.Value()) )
       ); }
 
-    Vec<2> DivShape()
+    Vec<2,T> DivShape()
     {
-      double uxx = u.DDValue(0,0), uyy = u.DDValue(1,1), uxy = u.DDValue(0,1);
-      double ux = u.DValue(0), uy = u.DValue(1);
-      double vxx = v.DDValue(0,0), vyy = v.DDValue(1,1), vxy = v.DDValue(0,1);
-      double vx = v.DValue(0), vy = v.DValue(1);
-      double wxx = w.DDValue(0,0), wyy = w.DDValue(1,1), wxy = w.DDValue(0,1);
-      double wx = w.DValue(0), wy = w.DValue(1);
+      T uxx = u.DDValue(0,0), uyy = u.DDValue(1,1), uxy = u.DDValue(0,1);
+      T ux = u.DValue(0), uy = u.DValue(1);
+      T vxx = v.DDValue(0,0), vyy = v.DDValue(1,1), vxy = v.DDValue(0,1);
+      T vx = v.DValue(0), vy = v.DValue(1);
+      T wxx = w.DDValue(0,0), wyy = w.DDValue(1,1), wxy = w.DDValue(0,1);
+      T wx = w.DValue(0), wy = w.DValue(1);
 
-      return Vec<2> (0.5*wxy*(vy*u.Value() - uy*v.Value()) 
+      return Vec<2,T> (0.5*wxy*(vy*u.Value() - uy*v.Value()) 
         -0.5*wyy*(vx*u.Value() - ux*v.Value())
         +1.5*wy*(vy*ux - uy*vx) + 0.5*wy*(vxy*u.Value()-uxy*v.Value()) 
         -0.5*wx*(vyy*u.Value()-uyy*v.Value()),
@@ -438,9 +654,9 @@ namespace ngfem
 
   };
 
-  template <int D>
-  auto Sigma_Duv_minus_uDv_w (AutoDiffDiff<D> au, AutoDiffDiff<D> av, AutoDiffDiff<D> aw)
-  { return T_Sigma_Duv_minus_uDv_w<D>(au, av, aw); }
+  template <int D, typename T>
+  auto Sigma_Duv_minus_uDv_w (AutoDiffDiff<D,T> au, AutoDiffDiff<D,T> av, AutoDiffDiff<D,T> aw)
+  { return T_Sigma_Duv_minus_uDv_w<D,T>(au, av, aw); }
   
   
   template <ELEMENT_TYPE ET> class HDivDivFE : public T_HDivDivFE<ET> 
@@ -483,10 +699,10 @@ namespace ngfem
 
     }
    template <typename Tx, typename TFA> 
-    void T_CalcShape (TIP<2,Tx> ip/*AutoDiffDiff<2> hx[2]*/, TFA & shape) const
+    void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
     {
       auto x = ip.x, y = ip.y;
-      AutoDiffDiff<2> ddlami[3] ={ x, y, 1-x-y };
+      Tx ddlami[3] ={ x, y, 1-x-y };
       
       int ii = 0;
       
@@ -495,15 +711,15 @@ namespace ngfem
 
       const EDGE * edges = ElementTopology::GetEdges(ET_TRIG);
 
-      ArrayMem<AutoDiffDiff<2>,20> ha(maxorder_facet+1);
-      ArrayMem<AutoDiffDiff<2>,20> u(order_inner[0]+2), v(order_inner[0]+2);
+      ArrayMem<Tx,20> ha(maxorder_facet+1);
+      ArrayMem<Tx,20> u(order_inner[0]+2), v(order_inner[0]+2);
       
       for (int i = 0; i < 3; i++)
         {
           int es = edges[i][0], ee = edges[i][1];
           if (vnums[es] > vnums[ee]) swap (es,ee);
           
-          AutoDiffDiff<2> ls = ddlami[es], le = ddlami[ee];
+          Tx ls = ddlami[es], le = ddlami[ee];
           
           // edge functions are all div-free!
           IntegratedLegendreMonomialExt::CalcTrigExt(maxorder_facet+2,
@@ -518,9 +734,9 @@ namespace ngfem
         }
       
       int es = 0; int ee = 1; int et = 2;
-      AutoDiffDiff<2> ls = ddlami[es];
-      AutoDiffDiff<2> le = ddlami[ee];
-      AutoDiffDiff<2> lt = ddlami[et];
+      Tx ls = ddlami[es];
+      Tx le = ddlami[ee];
+      Tx lt = ddlami[et];
       
       int oi=order_inner[0];
       int oi_plus = oi; //plus ? oi+1 : oi;
@@ -554,7 +770,7 @@ namespace ngfem
       if (plus)
         for (int i = 0; i <= oi-1; i++)
           {
-            AutoDiffDiff<2> bubble = u[i]*v[oi-1-i];
+            Tx bubble = u[i]*v[oi-1-i];
             shape[ii++] = Sigma_u_Gradv(bubble, x);
             shape[ii++] = Sigma_u_Gradv(bubble, y);
           }
@@ -591,23 +807,22 @@ namespace ngfem
     void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
     {
       auto x = ip.x, y = ip.y;
-      AutoDiffDiff<2> lx[4] ={1-x, x, x, 1-x};
-      AutoDiffDiff<2> ly[4] = {1-y, 1-y, y, y};
+      Tx lx[4] ={1-x, x, x, 1-x};
+      Tx ly[4] = {1-y, 1-y, y, y};
       
       int ii = 0;
-      
 
       const EDGE * edges = ElementTopology::GetEdges(ET_QUAD);
 
-      ArrayMem<AutoDiffDiff<2>,20> u(order+2), v(order+2);
+      ArrayMem<Tx,20> u(order+2), v(order+2);
       
       for (int i = 0; i < 4; i++)
         {
           int es = edges[i][0], ee = edges[i][1];
           if (vnums[es] > vnums[ee]) swap (es,ee);
           
-          AutoDiffDiff<2> xi = lx[ee]+ly[ee]-lx[es]-ly[es];
-          AutoDiffDiff<2> eta = lx[es]*ly[es]+lx[ee]*ly[ee];
+          Tx xi = lx[ee]+ly[ee]-lx[es]-ly[es];
+          Tx eta = lx[es]*ly[es]+lx[ee]*ly[ee];
 
 	  IntegratedLegendreMonomialExt::Calc(order_facet[i][0]+2,xi,u);
 
@@ -678,18 +893,18 @@ namespace ngfem
   { return T_S_zz<D+1>(au, av, aw); }
     
   // ***************** S_xz ****************************** */
-  template <int D> class T_S_xz;
-  template <> class T_S_xz<3>
+  template <int D, typename T> class T_S_xz;
+  template <typename T> class T_S_xz<3,T>
   {
-    AutoDiff<2> uv;
-    AutoDiff<1> w;
+    AutoDiff<2,T> uv;
+    AutoDiff<1,T> w;
 
     int comp;
   public:
-    T_S_xz ( int acomp, AutoDiff<2> auv, AutoDiff<1> aw) : comp(acomp), uv(auv), w(aw) { ; }
-    Vec<6> Shape() 
+    T_S_xz ( int acomp, AutoDiff<2,T> auv, AutoDiff<1,T> aw) : comp(acomp), uv(auv), w(aw) { ; }
+    Vec<6,T> Shape() 
     { 
-      Vec<6> sigma;
+      Vec<6,T> sigma;
       sigma = 0.;
       if (comp==0)
         sigma[4] = uv.Value()*w.Value();
@@ -698,118 +913,140 @@ namespace ngfem
       return sigma;
     }
 
-    Vec<3> DivShape()
+    Vec<3,T> DivShape()
     {
       if (comp == 0)
-        return Vec<3> (uv.Value()*w.DValue(0), 0, uv.DValue(0)*w.Value() );
+        return Vec<3,T> (uv.Value()*w.DValue(0), 0, uv.DValue(0)*w.Value() );
       else
-        return Vec<3> (0, uv.Value()*w.DValue(0), uv.DValue(1)*w.Value() );
+        return Vec<3,T> (0, uv.Value()*w.DValue(0), uv.DValue(1)*w.Value() );
     }
 
   };
   
-  template <int D>
-  auto S_xz (int comp, AutoDiff<D> auv, AutoDiff<1> aw)
-  { return T_S_xz<D+1>(comp,auv, aw); }
+  template <int D, typename T>
+  auto S_xz (int comp, AutoDiff<D,T> auv, AutoDiff<1,T> aw)
+  { return T_S_xz<D+1,T>(comp,auv, aw); }
 
 
 
-
-
-  class Prism_wSigmaGradu
+  template <typename T>
+  class T_Prism_wSigmaGradu
   {
-    AutoDiffDiff<2> u;
-    AutoDiff<1> w;
+    AutoDiffDiff<2,T> u;
+    AutoDiff<1,T> w;
   public:
-    Prism_wSigmaGradu ( AutoDiffDiff<2> au, AutoDiff<1> aw) : u(au), w(aw) { ; }
-    Vec<6> Shape() 
+    T_Prism_wSigmaGradu ( AutoDiffDiff<2,T> au, AutoDiff<1,T> aw) : u(au), w(aw) { ; }
+    Vec<6,T> Shape() 
     { 
-      Vec<3> sigma2d = T_SigmaGrad<2>(u).Shape();
-      Vec<6> sigma(0.);
+      Vec<3,T> sigma2d = T_SigmaGrad<2,T>(u).Shape();
+      Vec<6,T> sigma(0.);
       sigma[0] = w.Value()*sigma2d[0];
       sigma[1] = w.Value()*sigma2d[1];
       sigma[5] = w.Value()*sigma2d[2];
       return sigma;
     }
 
-    Vec<3> DivShape()
+    Vec<3,T> DivShape()
     {
-      return Vec<3> (0., 0., 0);
+      return Vec<3,T> (0., 0., 0);
     }
 
   };
 
-  class Prism_wType2
+  template <typename T>
+  auto Prism_wSigmaGradu ( AutoDiffDiff<2,T> au, AutoDiff<1,T> aw)
+  { return T_Prism_wSigmaGradu<T>(au, aw); }
+
+
+  template <typename T>
+  class T_Prism_wType2
   {
-    AutoDiffDiff<2> u, v;
-    AutoDiff<1> w;
+    AutoDiffDiff<2,T> u, v;
+    AutoDiff<1,T> w;
   public:
-    Prism_wType2 ( AutoDiffDiff<2> au, AutoDiffDiff<2> av, AutoDiff<1> aw) : u(au), v(av),  w(aw) { ; }
-    Vec<6> Shape() 
+    T_Prism_wType2 ( AutoDiffDiff<2,T> au, AutoDiffDiff<2,T> av, AutoDiff<1,T> aw) : u(au), v(av),  w(aw) { ; }
+    Vec<6,T> Shape() 
     { 
-      Vec<3> sigma2d = T_Type2<2>(u,v).Shape();
-      Vec<6> sigma(0.);
+      Vec<3,T> sigma2d = T_Type2<2,T>(u,v).Shape();
+      Vec<6,T> sigma(0.);
       sigma[0] = w.Value()*sigma2d[0];
       sigma[1] = w.Value()*sigma2d[1];
       sigma[5] = w.Value()*sigma2d[2];
       return sigma;
     }
 
-    Vec<3> DivShape()
+    Vec<3,T> DivShape()
     {
-      Vec<2> divsigma2d = w.Value()*T_Type2<2>(u,v).DivShape();
-      return Vec<3> (divsigma2d[0], divsigma2d[1], 0);
+      Vec<2> divsigma2d = w.Value()*T_Type2<2,T>(u,v).DivShape();
+      return Vec<3,T> (divsigma2d[0], divsigma2d[1], 0);
     }
 
   };
-  
-  class Prism_wType3
+
+  template <typename T>
+  auto Prism_wType2 (AutoDiffDiff<2,T> au, AutoDiffDiff<2,T> av, AutoDiff<1,T> aw)
+  { return T_Prism_wType2<T>(au, av, aw); }
+
+
+  template <typename T>
+  class T_Prism_wType3
   {
-    AutoDiffDiff<2> u, v;
-    AutoDiff<1> w;
+    AutoDiffDiff<2,T> u, v;
+    AutoDiff<1,T> w;
   public:
-    Prism_wType3 ( AutoDiffDiff<2> au, AutoDiffDiff<2> av, AutoDiff<1> aw) : u(au), v(av),  w(aw) { ; }
+    T_Prism_wType3 ( AutoDiffDiff<2,T> au, AutoDiffDiff<2,T> av, AutoDiff<1,T> aw) : u(au), v(av),  w(aw) { ; }
     Vec<6> Shape() 
     { 
-      Vec<3> sigma2d = T_Type3<2>(u,v).Shape();
-      Vec<6> sigma(0.);
+      Vec<3,T> sigma2d = T_Type3<2,T>(u,v).Shape();
+      Vec<6,T> sigma(0.);
       sigma[0] = w.Value()*sigma2d[0];
       sigma[1] = w.Value()*sigma2d[1];
       sigma[5] = w.Value()*sigma2d[2];
       return sigma;
     }
 
-    Vec<3> DivShape()
+    Vec<3,T> DivShape()
     {
-      Vec<2> divsigma2d = w.Value()*T_Type3<2>(u,v).DivShape();
-      return Vec<3> (divsigma2d[0], divsigma2d[1], 0);
+      Vec<2,T> divsigma2d = w.Value()*T_Type3<2,T>(u,v).DivShape();
+      return Vec<3,T> (divsigma2d[0], divsigma2d[1], 0);
     }
-
   };
 
-  class Prism_wType4
+  template <typename T>
+  auto Prism_wType3 (AutoDiffDiff<2,T> au, AutoDiffDiff<2,T> av, AutoDiff<1,T> aw)
+  { return T_Prism_wType3<T>(au, av, aw); }
+
+
+  template <typename T>
+  class T_Prism_wType4
   {
-    AutoDiffDiff<2> u, v, w;
-    AutoDiff<1> wz;
+    AutoDiffDiff<2,T> u, v, w;
+    AutoDiff<1,T> wz;
   public:
-    Prism_wType4 ( AutoDiffDiff<2> au, AutoDiffDiff<2> av, AutoDiffDiff<2> aw, AutoDiff<1> awz) : u(au), v(av),  w(aw), wz(awz) { ; }
-    Vec<6> Shape() 
+    T_Prism_wType4 ( AutoDiffDiff<2,T> au, AutoDiffDiff<2,T> av, AutoDiffDiff<2,T> aw, AutoDiff<1,T> awz) : u(au), v(av),  w(aw), wz(awz) { ; }
+    Vec<6,T> Shape() 
     { 
-      Vec<3> sigma2d = wz.Value()*T_Sigma_Duv_minus_uDv_w<2>(u,v,w).Shape();
-      Vec<6> sigma(0.);
+      Vec<3,T> sigma2d = wz.Value()*T_Sigma_Duv_minus_uDv_w<2,T>(u,v,w).Shape();
+      Vec<6,T> sigma(0.);
       sigma[0] = sigma2d[0];
       sigma[1] = sigma2d[1];
       sigma[5] = sigma2d[2];
       return sigma;
     }
 
-    Vec<3> DivShape()
+    Vec<3,T> DivShape()
     {
-      Vec<2> divsigma2d = wz.Value()*T_Sigma_Duv_minus_uDv_w<2>(u,v,w).DivShape();
-      return Vec<3> (divsigma2d[0], divsigma2d[1], 0);
+      Vec<2,T> divsigma2d = wz.Value()*T_Sigma_Duv_minus_uDv_w<2,T>(u,v,w).DivShape();
+      return Vec<3,T> (divsigma2d[0], divsigma2d[1], 0);
     }
 
   };
+
+  template <typename T>
+  auto Prism_wType4 (AutoDiffDiff<2,T> au, AutoDiffDiff<2,T> av, AutoDiffDiff<2,T> aw, AutoDiff<1,T> awz)
+  { return T_Prism_wType4<T>(au, av, aw, awz); }
+
+  
 
   class Prism_SymRotRot_Dl2xDl1_vw
   {
@@ -835,19 +1072,20 @@ namespace ngfem
 
   };
 
+  template <typename T>
   class Prism_Dl1xDl3_symtensor_Dl2xDl4_u
   {
-    AutoDiff<3> l1,l2,l3, l4;
-    AutoDiff<3> u;
+    AutoDiff<3,T> l1,l2,l3, l4;
+    AutoDiff<3,T> u;
   public:
-    Prism_Dl1xDl3_symtensor_Dl2xDl4_u ( AutoDiff<3> lam1, AutoDiff<3> lam2, AutoDiff<3> alz1, AutoDiff<3> alz2, AutoDiff<3> av) 
+    Prism_Dl1xDl3_symtensor_Dl2xDl4_u ( AutoDiff<3,T> lam1, AutoDiff<3,T> lam2, AutoDiff<3,T> alz1, AutoDiff<3,T> alz2, AutoDiff<3,T> av) 
       : l1(lam1), l2(lam2), l3(alz1), l4(alz2), u(av) { ; }
-    Vec<6> Shape() 
+    Vec<6,T> Shape() 
     { 
       auto rotlam1 = Cross(l1, l3);
       auto rotlam2 = Cross(l2, l4);
 
-      Vec<6> sigma(0.);
+      Vec<6,T> sigma(0.);
       sigma[0] = u.Value()*rotlam1.DValue(0)*rotlam2.DValue(0);
       sigma[1] = u.Value()*rotlam1.DValue(1)*rotlam2.DValue(1);
       sigma[2] = u.Value()*rotlam1.DValue(2)*rotlam2.DValue(2);
@@ -857,20 +1095,20 @@ namespace ngfem
       return sigma;
     }
 
-    INLINE AutoDiff<3> Cross (const AutoDiff<3> & x,
-      const AutoDiff<3> & y)
+    INLINE AutoDiff<3,T> Cross (const AutoDiff<3,T> & x,
+                                const AutoDiff<3,T> & y)
     {
-      double hv[3];
+      T hv[3];
       hv[0] = x.DValue(1)*y.DValue(2)-x.DValue(2)*y.DValue(1);
       hv[1] = x.DValue(2)*y.DValue(0)-x.DValue(0)*y.DValue(2);
       hv[2] = x.DValue(0)*y.DValue(1)-x.DValue(1)*y.DValue(0);
-      return AutoDiff<3> (0,hv);
+      return AutoDiff<3,T> (0,hv);
     }
-    Vec<3> DivShape()
+    Vec<3,T> DivShape()
     {
       auto lam1 = Cross(l1, l3);
       auto lam2 = Cross(l2, l4);
-      return Vec<3> (u.DValue(0)*lam1.DValue(0)*lam2.DValue(0) + 
+      return Vec<3,T> (u.DValue(0)*lam1.DValue(0)*lam2.DValue(0) + 
         0.5*(u.DValue(1)*(lam1.DValue(0)*lam2.DValue(1)+lam2.DValue(0)*lam1.DValue(1)) + u.DValue(2)*(lam1.DValue(0)*lam2.DValue(2)+lam2.DValue(0)*lam1.DValue(2))),
         u.DValue(1)*lam1.DValue(1)*lam2.DValue(1) + 
         0.5*(u.DValue(0)*(lam1.DValue(0)*lam2.DValue(1)+lam2.DValue(0)*lam1.DValue(1)) + u.DValue(2)*(lam1.DValue(1)*lam2.DValue(2)+lam2.DValue(1)*lam1.DValue(2))),
@@ -1100,12 +1338,13 @@ namespace ngfem
     template <typename Tx, typename TFA> 
     void T_CalcShape/*_nocomplex*/ (TIP<3,Tx> ip, TFA & shape) const
     {
-      AutoDiffDiff<3> x = ip.x, y = ip.y, z = ip.z;
-      AutoDiff<3> xx(x.Value(), &x.DValue(0));
-      AutoDiff<3> yy(y.Value(), &y.DValue(0));
-      AutoDiff<3> zz(z.Value(), &z.DValue(0));
-      AutoDiff<3> lx[6] ={ xx, yy, 1-xx-yy, xx, yy, 1-xx-yy };
-      AutoDiff<3> lz[6] ={ 1-zz,1-zz,1-zz,zz,zz,zz };
+      Tx x = ip.x, y = ip.y, z = ip.z;
+      typedef decltype(x.Value()+x.Value()) T;
+      AutoDiff<3,T> xx(x.Value(), &x.DValue(0));
+      AutoDiff<3,T> yy(y.Value(), &y.DValue(0));
+      AutoDiff<3,T> zz(z.Value(), &z.DValue(0));
+      AutoDiff<3,T> lx[6] ={ xx, yy, 1-xx-yy, xx, yy, 1-xx-yy };
+      AutoDiff<3,T> lz[6] ={ 1-zz,1-zz,1-zz,zz,zz,zz };
       int ii = 0;
       
       int maxorder_facet =
@@ -1113,8 +1352,8 @@ namespace ngfem
 
       const FACE * faces = ElementTopology::GetFaces(ET_PRISM);
 
-      ArrayMem<AutoDiff<3>,20> leg_u(order+2), leg_v(order+3);
-      ArrayMem<AutoDiff<3>,20> leg_w(order+2);
+      ArrayMem<AutoDiff<3,T>,20> leg_u(order+2), leg_v(order+3);
+      ArrayMem<AutoDiff<3,T>,20> leg_w(order+2);
 
       
       // Trig faces, (p+1)(p+2)/2
@@ -1134,7 +1373,7 @@ namespace ngfem
 
         for(int j = 0; j <= order_facet[fa][0]+incrorder_zz1_bd; j++)
           for(int k = 0; k <= order_facet[fa][0]+incrorder_zz1_bd-j; k++)
-            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u(lx[fav[0]], lx[fav[1]], lx[fav[2]], lx[fav[2]], leg_u[j]*leg_v[k]*lz[fav[0]]);
+            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(lx[fav[0]], lx[fav[1]], lx[fav[2]], lx[fav[2]], leg_u[j]*leg_v[k]*lz[fav[0]]);
       }
       // quad faces -- use face bubbles of trig multiplied by leg_w
       // (px+1)(pz+1)
@@ -1168,14 +1407,14 @@ namespace ngfem
           for(int k = 0; k <= order_facet[fa][1]+incrorder_xx2_bd; k++)
             for(int l = 0; l <= order_facet[fa][0]+incrorder_xx1_bd; l++)
             {
-              shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u(lz[fmax], lz[fz], lx[fmax], lx[ftrig], leg_u[l]* leg_w[k]);
+              shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(lz[fmax], lz[fz], lx[fmax], lx[ftrig], leg_u[l]* leg_w[k]);
             }
 
         else
           for(int l = 0; l <= order_facet[fa][0]+incrorder_xx1_bd; l++)
             for(int k = 0; k <= order_facet[fa][1]+incrorder_xx2_bd; k++)
             {
-              shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u(lx[fmax], lx[ftrig], lz[fmax], lz[fz], leg_u[l]* leg_w[k]);
+              shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(lx[fmax], lx[ftrig], lz[fmax], lz[fz], leg_u[l]* leg_w[k]);
             }
 
 
@@ -1198,9 +1437,9 @@ namespace ngfem
         {
           for(int j = 0; j+i <= oi-1+incrorder_xx1; j++)
           {
-            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u(lx[0], lx[1], lz[0], lz[0], lx[2]*leg_u[i]*leg_v[j]* leg_w[k]);
-            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u(lx[2], lx[0], lz[0], lz[0], lx[1]*leg_u[i]*leg_v[j]* leg_w[k]);
-            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u(lx[1], lx[2], lz[0], lz[0], lx[0]*leg_u[i]*leg_v[j]* leg_w[k]);
+            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(lx[0], lx[1], lz[0], lz[0], lx[2]*leg_u[i]*leg_v[j]* leg_w[k]);
+            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(lx[2], lx[0], lz[0], lz[0], lx[1]*leg_u[i]*leg_v[j]* leg_w[k]);
+            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(lx[1], lx[2], lz[0], lz[0], lx[0]*leg_u[i]*leg_v[j]* leg_w[k]);
           }
         }
       }
@@ -1213,8 +1452,8 @@ namespace ngfem
         {
           for (int k=0; k<=oi; k++)
           {
-            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u(lz[0], lx[1], lx[0], lx[0], leg_u[i]*leg_v[j]*leg_w[k]);
-            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u(lz[0], lx[0], lx[1], lx[1], leg_u[i]*leg_v[j]*leg_w[k]);
+            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(lz[0], lx[1], lx[0], lx[0], leg_u[i]*leg_v[j]*leg_w[k]);
+            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(lz[0], lx[0], lx[1], lx[1], leg_u[i]*leg_v[j]*leg_w[k]);
           }
         }
       }
@@ -1222,12 +1461,12 @@ namespace ngfem
       // S_zz
       for(int k=0; k<=oi-2+incrorder_zz2; k++)
       {
-        AutoDiff<3> bubw = leg_w[k]*lz[0]*(1-lz[0]);
+        AutoDiff<3,T> bubw = leg_w[k]*lz[0]*(1-lz[0]);
         for(int i=0; i<=oi+incrorder_zz1; i++)
         {
           for(int j=0; j<=oi+incrorder_zz1-i; j++)
           {
-            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u(lx[0], lx[2], lx[1], lx[1], leg_u[i]*leg_v[j]*bubw);
+            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(lx[0], lx[2], lx[1], lx[1], leg_u[i]*leg_v[j]*bubw);
           }
         }
       }
@@ -1264,17 +1503,18 @@ namespace ngfem
     template <typename Tx, typename TFA> 
     void T_CalcShape (TIP<3,Tx> ip, TFA & shape) const
     {
-      AutoDiffDiff<3> x = ip.x, y = ip.y, z = ip.z;
-      AutoDiff<3> xx(x.Value(), &x.DValue(0));
-      AutoDiff<3> yy(y.Value(), &y.DValue(0));
-      AutoDiff<3> zz(z.Value(), &z.DValue(0));
-      AutoDiff<3> lam[4] = {xx, yy, zz, 1-xx-yy-zz};
+      Tx x = ip.x, y = ip.y, z = ip.z;
+      typedef decltype(x.Value()+x.Value()) T;      
+      AutoDiff<3,T> xx(x.Value(), &x.DValue(0));
+      AutoDiff<3,T> yy(y.Value(), &y.DValue(0));
+      AutoDiff<3,T> zz(z.Value(), &z.DValue(0));
+      AutoDiff<3,T> lam[4] = {xx, yy, zz, 1-xx-yy-zz};
       int ii = 0;
       
       const FACE * faces = ElementTopology::GetFaces(ET_TET);
 
-      ArrayMem<AutoDiff<3>,20> leg_u(order+2), leg_v(order+3);
-      ArrayMem<AutoDiff<3>,20> leg_w(order+2);
+      ArrayMem<AutoDiff<3,T>,20> leg_u(order+2), leg_v(order+3);
+      ArrayMem<AutoDiff<3,T>,20> leg_w(order+2);
       
       for(int fa = 0; fa < 4; fa++)
       {
@@ -1292,7 +1532,7 @@ namespace ngfem
         for(int j = 0; j <= p; j++)
           for(int k = 0; k+j <= p; k++)
           {
-            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u(lam[fav[0]], lam[fav[1]],
+            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(lam[fav[0]], lam[fav[1]],
               lam[fav[2]], lam[fav[2]],leg_u[j]* leg_v[k]);
           }
 
@@ -1317,8 +1557,8 @@ namespace ngfem
         {
           for(int j = 0; j+i+k <= oi; j++)
           {
-            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u(lam[0], lam[1], lam[2], lam[3], leg_u[i]*leg_v[k]* leg_w[j]);
-            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u(lam[0], lam[2], lam[1], lam[3], leg_u[i]*leg_v[j]* leg_w[k]);
+            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(lam[0], lam[1], lam[2], lam[3], leg_u[i]*leg_v[k]* leg_w[j]);
+            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(lam[0], lam[2], lam[1], lam[3], leg_u[i]*leg_v[j]* leg_w[k]);
           }
         }
       }
@@ -1333,7 +1573,7 @@ namespace ngfem
           {
             for(int j = 0; j+i+k <= oi-1; j++)
             {
-              shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u(lam[fav[0]],lam[fav[0]],lam[fav[1]],lam[fav[2]],
+              shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(lam[fav[0]],lam[fav[0]],lam[fav[1]],lam[fav[2]],
                 (1-lam[fav[0]]-lam[fav[1]]-lam[fav[2]])*leg_u[i]*leg_v[k]* leg_w[j]);
             }
           }
@@ -1373,14 +1613,15 @@ namespace ngfem
     template <typename Tx, typename TFA> 
     void T_CalcShape (TIP<3,Tx> ip, TFA & shape) const
     {
-      AutoDiffDiff<3> x = ip.x, y = ip.y, z = ip.z;
-      AutoDiff<3> xx(x.Value(), &x.DValue(0));
-      AutoDiff<3> yy(y.Value(), &y.DValue(0));
-      AutoDiff<3> zz(z.Value(), &z.DValue(0));
-      AutoDiff<3> lx[2] ={ 1-xx, xx};
-      AutoDiff<3> ly[2] ={ 1-yy, yy};
-      AutoDiff<3> lz[2] ={ 1-zz, zz};
-      AutoDiff<3> sigma[8] = {1-xx + 1-yy + 1-zz,
+      Tx x = ip.x, y = ip.y, z = ip.z;
+      typedef decltype(x.Value()+x.Value()) T;            
+      AutoDiff<3,T> xx(x.Value(), &x.DValue(0));
+      AutoDiff<3,T> yy(y.Value(), &y.DValue(0));
+      AutoDiff<3,T> zz(z.Value(), &z.DValue(0));
+      AutoDiff<3,T> lx[2] ={ 1-xx, xx};
+      AutoDiff<3,T> ly[2] ={ 1-yy, yy};
+      AutoDiff<3,T> lz[2] ={ 1-zz, zz};
+      AutoDiff<3,T> sigma[8] = {1-xx + 1-yy + 1-zz,
         xx + 1-yy + 1-zz,
         xx + yy + 1-zz,
         1-xx + yy + 1-zz,
@@ -1395,9 +1636,9 @@ namespace ngfem
 
       const FACE * faces = ElementTopology::GetFaces(ET_HEX);
 
-      ArrayMem<AutoDiff<3>,20> leg_u(order+2), leg_v(order+3);
-      ArrayMem<AutoDiff<3>,20> leg_w(order+2);
-      AutoDiff<3> lam_face;
+      ArrayMem<AutoDiff<3,T>,20> leg_u(order+2), leg_v(order+3);
+      ArrayMem<AutoDiff<3,T>,20> leg_w(order+2);
+      AutoDiff<3,T> lam_face;
       
       for(int fa = 0; fa < 6; fa++)
       {
@@ -1429,7 +1670,7 @@ namespace ngfem
         for(int k = 0; k <= p; k++)
           for(int l = 0; l <= p; l++)
           {
-            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u(0.5*(sigma[fmax] - sigma[fz]),-0.5*(sigma[fmax] - sigma[fz]),
+            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(0.5*(sigma[fmax] - sigma[fz]),-0.5*(sigma[fmax] - sigma[fz]),
               0.5*(sigma[fmax] - sigma[ftrig]),-0.5*(sigma[fmax] - sigma[ftrig]),leg_u[l]* leg_v[k]*lam_face);
           }
 
@@ -1454,9 +1695,9 @@ namespace ngfem
         {
           for(int j = 0; j <= oi+1; j++)
           {
-            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u(lx[0], lx[1], lz[0], lz[1], ly[0]*ly[1]*leg_u[i]*leg_v[k]* leg_w[j]);
-            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u(lx[0], lx[1], ly[0], ly[1], lz[0]*lz[1]*leg_u[i]*leg_v[j]* leg_w[k]);
-            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u(ly[0], ly[1], lz[0], lz[1], lx[0]*lx[1]*leg_u[k]*leg_v[j]* leg_w[i]);
+            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(lx[0], lx[1], lz[0], lz[1], ly[0]*ly[1]*leg_u[i]*leg_v[k]* leg_w[j]);
+            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(lx[0], lx[1], ly[0], ly[1], lz[0]*lz[1]*leg_u[i]*leg_v[j]* leg_w[k]);
+            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(ly[0], ly[1], lz[0], lz[1], lx[0]*lx[1]*leg_u[k]*leg_v[j]* leg_w[i]);
           }
         }
       }
@@ -1469,9 +1710,9 @@ namespace ngfem
         {
           for (int k=0; k<=oi+1; k++)
           {
-            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u(lx[0], lx[0], ly[0], lz[0], leg_u[k]*leg_v[j]*leg_w[i]);
-            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u(ly[0], ly[0], lx[0], lz[0], leg_u[i]*leg_v[k]*leg_w[j]);
-            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u(lz[0], lz[0], lx[0], ly[0], leg_u[i]*leg_v[j]*leg_w[k]);
+            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(lx[0], lx[0], ly[0], lz[0], leg_u[k]*leg_v[j]*leg_w[i]);
+            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(ly[0], ly[0], lx[0], lz[0], leg_u[i]*leg_v[k]*leg_w[j]);
+            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(lz[0], lz[0], lx[0], ly[0], leg_u[i]*leg_v[j]*leg_w[k]);
           }
         }
       }
@@ -1634,13 +1875,14 @@ namespace ngfem
     template <typename Tx, typename TFA> 
     void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
     {
-      AutoDiffDiff<3> x = ip.x, y = ip.y;
-      AutoDiff<3> xx(x.Value(), &x.DValue(0));
-      AutoDiff<3> yy(y.Value(), &y.DValue(0));
-      AutoDiff<3> lx[6] ={ xx, yy, 1-xx-yy};
+      Tx x = ip.x, y = ip.y;
+      typedef decltype(x.Value()+x.Value()) T;                  
+      AutoDiff<3,T> xx(x.Value(), &x.DValue(0));
+      AutoDiff<3,T> yy(y.Value(), &y.DValue(0));
+      AutoDiff<3,T> lx[6] ={ xx, yy, 1-xx-yy};
       int ii = 0;
 
-      ArrayMem<AutoDiff<3>,20> leg_u(order_inner[0]+2), leg_v(order_inner[0]+3);
+      ArrayMem<AutoDiff<3,T>,20> leg_u(order_inner[0]+2), leg_v(order_inner[0]+3);
 
       
         int fav[3] ={0,1,2};
@@ -1657,7 +1899,7 @@ namespace ngfem
 
         for(int j = 0; j <= order_inner[0]+HDivDivFE<ET_PRISM>::incrorder_zz1_bd; j++)
           for(int k = 0; k <= order_inner[0]+HDivDivFE<ET_PRISM>::incrorder_zz1_bd-j; k++)
-            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u(lx[fav[0]], lx[fav[1]], lx[fav[2]], lx[fav[2]], leg_u[j]*leg_v[k]);
+            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(lx[fav[0]], lx[fav[1]], lx[fav[2]], lx[fav[2]], leg_u[j]*leg_v[k]);
       }
   };
 
@@ -1682,6 +1924,7 @@ namespace ngfem
     void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
     {
       AutoDiffDiff<3> x = ip.x, z = ip.y;
+      typedef decltype(x.Value()+x.Value()) T;                  
       AutoDiff<3> xx(x.Value(), &x.DValue(0));
       AutoDiff<3> zz(z.Value(), &z.DValue(0));
       AutoDiff<3> sigma[4] = {1-xx+1-zz, xx+1-zz, xx+zz, 1-xx+zz};
@@ -1712,7 +1955,7 @@ namespace ngfem
       for(int k = 0; k <= order_inner[0]+HDivDivFE<ET_PRISM>::incrorder_xx2_bd; k++)
         for(int l = 0; l <= order_inner[0]+HDivDivFE<ET_PRISM>::incrorder_xx1_bd; l++)
         {
-          shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u(0.5*(sigma[fmax]-sigma[f2]),-0.5*(sigma[fmax]-sigma[f2]),
+          shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(0.5*(sigma[fmax]-sigma[f2]),-0.5*(sigma[fmax]-sigma[f2]),
             0.5*(sigma[fmax]-sigma[f1]),-0.5*(sigma[fmax]-sigma[f1]),leg_u[l]* leg_w[k]);
         }
                 
