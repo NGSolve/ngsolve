@@ -140,16 +140,14 @@ namespace ngfem
     virtual void CalcDivShape (const IntegrationPoint & ip,
                                BareSliceMatrix<double> shape) const override
     {
-      Vec<DIM, AutoDiff<DIM> > adp = ip;
-      TIP<DIM,AutoDiffDiff<DIM>> addp(adp);      
-      /*
+      // MSVC internal compiler error
+      // Vec<DIM, AutoDiff<DIM> > adp = ip;
+      // TIP<DIM,AutoDiffDiff<DIM>> addp(adp);      
       Vec<DIM, AutoDiffDiff<DIM>> adp;
-      for ( int i=0; i<DIM; i++)
-      {
-        adp[i] = AutoDiffDiff<DIM>(ip(i),i);
-      }
-      */
-      Cast() -> T_CalcShape (addp, SBLambda([shape] (int nr, auto val)
+      for (int i = 0; i < DIM; i++)
+        adp[i] = AutoDiff<DIM>(ip(i),i);
+
+      Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM>> (adp), SBLambda([shape] (int nr, auto val)
                                             {
                                               shape.Row(nr).AddSize(DIM) = val.DivShape();
                                             }));
