@@ -308,7 +308,7 @@ namespace ngfem
           TIP<DIM,AutoDiffDiff<DIM,SIMD<double>>> addp(adp);
           
           Cast() -> T_CalcShape (addp,
-                                 SBLambda ([&] (size_t j, auto val)
+                                 SBLambda ([&sum,&pcoefs,dist] (size_t j, auto val)
                                            {
                                              sum += (*pcoefs)*val.Shape();
                                              pcoefs += dist;
@@ -318,7 +318,7 @@ namespace ngfem
           VecToSymMat<DIM> (sum, summat);
           
           Iterate<4-DIM>
-            ([&](auto CODIM)
+            ([values,&bmir,i,summat](auto CODIM)
              {
                constexpr auto DIMSPACE = DIM+CODIM.value;
                if (bmir.DimSpace() == DIMSPACE)
