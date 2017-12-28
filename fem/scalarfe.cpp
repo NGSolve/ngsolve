@@ -433,46 +433,6 @@ namespace ngfem
             for (int k = 0; k < D; k++)
               ddshape(j,D*i+k) += weight[p]/eps * dshape(j,k);
         }
-
-    /*
-    STACK_ARRAY(double, mem1, nd*D);
-    STACK_ARRAY(double, mem2, nd*D);    
-    FlatMatrixFixWidth<D> dshape1(nd, &mem1[0]);  
-    FlatMatrixFixWidth<D> dshape2(nd, &mem2[0]);
-
-    for (int i = 0; i < D; i++)
-      {
-	IntegrationPoint ip1 = ip;
-	IntegrationPoint ip2 = ip;
-        
-        ip1(i) -= eps;
-        ip2(i) += eps;
-
-	CalcDShape (ip1, dshape1);
-	CalcDShape (ip2, dshape2);
-
-	for (int j = 0; j < nd; j++)
-	  for (int k = 0; k < D; k++)
-	    // ddshape(j,D*i+k) = (0.5/eps) * (dshape2(j,k) - dshape1(j,k));
-            ddshape(j,D*i+k) = (2.0/(3.0*eps)) * (dshape2(j,k) - dshape1(j,k));
-      }
-    
-    for (int i = 0; i < D; i++)
-      {
-	IntegrationPoint ip1 = ip;
-	IntegrationPoint ip2 = ip;
-        
-        ip1(i) -= 2*eps;
-        ip2(i) += 2*eps;
-
-	CalcDShape (ip1, dshape1);
-	CalcDShape (ip2, dshape2);
-
-	for (int j = 0; j < nd; j++)
-	  for (int k = 0; k < D; k++)
-	    ddshape(j,D*i+k) -= (1.0/(12*eps)) * (dshape2(j,k) - dshape1(j,k));
-      }  
-    */
   }
 
 

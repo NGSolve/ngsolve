@@ -262,7 +262,8 @@ namespace ngfem
       Iterate<4-DIM>
         ([&](auto CODIM)
          {
-           constexpr auto DIMSPACE = DIM+CODIM.value;
+           constexpr int CD = CODIM.value;
+           constexpr int DIMSPACE = DIM+CODIM.value;
            if (bmir.DimSpace() == DIMSPACE)
              {
                auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
@@ -336,92 +337,7 @@ namespace ngfem
                                   BareSliceMatrix<SIMD<double>> values,
                                   BareSliceVector<> coefs) const override
     {
-      /*
-      Iterate<4-DIM>
-        ([&](auto CODIM)
-         {
-           constexpr auto DIMSPACE = DIM+CODIM.value;
-           if (bmir.DimSpace() == DIMSPACE)
-             {
-               auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
-               
-               for (size_t i = 0; i < mir.Size(); i++)
-                 {
-                   auto jac = mir[i].GetJacobian();
-                   auto d2 = sqr(mir[i].GetJacobiDet());
-                   
-                   double *pcoefs = &coefs(0);
-                   const size_t dist = coefs.Dist();
-          
-                   Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = bmir.IR()[i];
-                   TIP<DIM,AutoDiffDiff<DIM,SIMD<double>>> addp(adp);
-                   
-                   Cast() -> T_CalcShape (addp,
-                                          SBLambda ([&] (size_t j, auto val)
-                                                    {
-                                                      Mat<DIM,DIM,SIMD<double>> mat;
-                                                      VecToSymMat<DIM> (val.Shape(), mat);
-                                                      Mat<DIMSPACE,DIMSPACE,SIMD<double>> physmat =
-                                                        1/d2 * (jac * mat * Trans(jac));
-
-                                                      SIMD<double> sum = 0.0;
-                                                      for (size_t k = 0; k < sqr(DIMSPACE); k++)
-                                                        sum += values(k,i) * physmat(k);
-
-                                                      *pcoefs += HSum(sum);
-                                                      pcoefs += dist;
-                                                    }));
-                 }
-             }
-         });
-    }
-      */
-
-      /*
-      Iterate<4-DIM>
-        ([&](auto CODIM)
-         {
-           constexpr auto DIMSPACE = DIM+CODIM.value;
-           if (bmir.DimSpace() == DIMSPACE)
-             {
-               auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
-               
-               for (size_t i = 0; i < mir.Size(); i++)
-                 {
-                   auto jac = mir[i].GetJacobian();
-                   auto d2 = sqr(mir[i].GetJacobiDet());
-                   
-                   double *pcoefs = &coefs(0);
-                   const size_t dist = coefs.Dist();
-
-                   Mat<DIMSPACE,DIMSPACE,SIMD<double>> physmat;
-                   for (size_t k = 0; k < sqr(DIMSPACE); k++)
-                     physmat(k) = values(k,i);
-                   Mat<DIM,DIM,SIMD<double>> mat;
-                   mat = 1/d2 * Trans(jac) * physmat * jac;
-                   
-                   Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = bmir.IR()[i];
-                   TIP<DIM,AutoDiffDiff<DIM,SIMD<double>>> addp(adp);
-                   
-                   Cast() -> T_CalcShape (addp,
-                                          SBLambda ([&] (size_t j, auto val)
-                                                    {
-                                                      Mat<DIM,DIM,SIMD<double>> mat2;
-                                                      VecToSymMat<DIM> (val.Shape(), mat2);
-
-                                                      SIMD<double> sum = 0.0;
-                                                      for (size_t k = 0; k < DIM*DIM; k++)
-                                                        sum += mat(k) * mat2(k);
-                                                      
-                                                      *pcoefs += HSum(sum);
-                                                      pcoefs += dist;
-                                                    }));
-                 }
-             }
-         });
-      */
-
-      for (size_t i = 0; i < bmir.Size(); i++)
+       for (size_t i = 0; i < bmir.Size(); i++)
         {
           Mat<DIM,DIM,SIMD<double>> mat;
           
