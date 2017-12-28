@@ -343,7 +343,7 @@ namespace ngfem
           Mat<DIM,DIM,SIMD<double>> mat;
           
           Iterate<4-DIM>
-            ([&](auto CODIM)
+            ([this,&bmir,i,&mat,values](auto CODIM)
              {
                constexpr auto DIMSPACE = DIM+CODIM.value;
                if (bmir.DimSpace() == DIMSPACE)
@@ -366,7 +366,7 @@ namespace ngfem
           const size_t dist = coefs.Dist();
 
           Cast() -> T_CalcShape (addp,
-                                 SBLambda ([&] (size_t j, auto val)
+                                 SBLambda ([mat,&pcoefs,dist] (size_t j, auto val)
                                            {
                                              Mat<DIM,DIM,SIMD<double>> mat2;
                                              VecToSymMat<DIM> (val.Shape(), mat2);
