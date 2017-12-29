@@ -712,6 +712,7 @@ public:
     Timer timer{"SymbolicEnergy",2};
     Array<int> trial_cum;     // cumulated dimension of proxies
     Matrix<bool> nonzeros;    // do components interact ? 
+    Matrix<bool> nonzeros_proxies; // do proxies interact ?
     
   public:
     SymbolicEnergy (shared_ptr<CoefficientFunction> acf, VorB avb, bool aelement_boundary);
