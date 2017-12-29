@@ -639,6 +639,18 @@ namespace ngfem
 	}
     }
 
+    static constexpr double eps() { return 1e-4; }     
+    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+                                      const SIMD_BaseMappedIntegrationRule & bmir,
+                                      BareSliceMatrix<SIMD<double>> mat);
+
+    using DiffOp<DiffOpHesseBoundary<D,FEL>>::ApplySIMDIR;
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y);
+
+    using DiffOp<DiffOpHesseBoundary<D,FEL>>::AddTransSIMDIR;    
+    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
+                                BareSliceMatrix<SIMD<double>> x, BareSliceVector<double> y);
   };
 
 
