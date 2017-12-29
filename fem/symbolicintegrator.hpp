@@ -157,6 +157,10 @@ public:
   NGS_DLL_HEADER virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & ir,
                                AFlatMatrix<double> values, AFlatMatrix<double> deriv,
                                AFlatMatrix<double> dderiv) const;
+
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, 
+                         BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>> values) const;
+
   
   virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
                               FlatArray<AFlatMatrix<>*> input,

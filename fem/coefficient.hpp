@@ -83,6 +83,12 @@ namespace ngfem
       throw ExceptionNOSIMD (string("cf::EvaluateDDeriv(simd) not overloaded for ")+typeid(*this).name());
     }
 
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, 
+                           BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>> values) const
+    {
+      throw ExceptionNOSIMD (string("cf::Evaluate(AutoDiffDiff<simd>) not overloaded for ")+typeid(*this).name());      
+    }
+
     virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
                                 FlatArray<AFlatMatrix<>*> input,
                                 FlatArray<AFlatMatrix<>*> dinput,
@@ -303,6 +309,7 @@ namespace ngfem
   {
   public:
     using CoefficientFunction::CoefficientFunction;
+    using CoefficientFunction::Evaluate;
     
     virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir, 
                                 AFlatMatrix<double> values, AFlatMatrix<double> deriv) const
@@ -318,6 +325,16 @@ namespace ngfem
       Evaluate (ir, values);
       deriv = 0.0;
       dderiv = 0.0;
+    }
+
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, 
+                           BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>> values) const
+    {
+      BareSliceMatrix<SIMD<double>> hvalues(3*values.Dist(), &values(0).Value(), DummySize(Dimension(), ir.Size()));
+      Evaluate (ir, hvalues);
+      for (size_t i = 0; i < Dimension(); i++)
+        for (size_t j = ir.Size(); j-- > 0; )
+          values(i,j) = hvalues(i,j);
     }
 
     virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
@@ -342,6 +359,17 @@ namespace ngfem
       deriv = 0.0;
       dderiv = 0.0;
     }
+
+    virtual void NonZeroPattern (const class ProxyUserData & ud,
+                                 FlatVector<bool> nonzero,
+                                 FlatVector<bool> nonzero_deriv,
+                                 FlatVector<bool> nonzero_dderiv) const
+    {
+      nonzero = true;
+      nonzero_deriv = false;
+      nonzero_dderiv = false;
+    }
+    
   };
 
 
@@ -357,11 +385,11 @@ namespace ngfem
     using BASE::BASE;
       
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const
-    { static_cast<const TCF*>(this) -> template T_Evaluate<double> (ir, values); }
+    { static_cast<const TCF*>(this) -> template T_Evaluate<SIMD<double>> (ir, values); }
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values) const
     {
       if (IsComplex())
-        static_cast<const TCF*>(this) -> template T_Evaluate<Complex> (ir, values);
+        static_cast<const TCF*>(this) -> template T_Evaluate<SIMD<Complex>> (ir, values);
       else
         {
           size_t nv = ir.Size();
@@ -372,6 +400,10 @@ namespace ngfem
               values(i,j) = overlay(i,j);
         }
     }
+
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, 
+                           BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>> values) const
+    { static_cast<const TCF*>(this) -> template T_Evaluate<AutoDiffDiff<1,SIMD<double>>> (ir, values); }      
   };
 
 
@@ -403,7 +435,7 @@ namespace ngfem
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const;
 
     template <typename T>
-      void T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<T>> values) const;
+      void T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<T> values) const;
     
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
                            AFlatMatrix<double> values) const
@@ -536,7 +568,7 @@ namespace ngfem
     // virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const;
 
     template <typename T>
-      void T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<T>> values) const;
+      void T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<T> values) const;
     
     virtual double EvaluateConst () const { return val[0]; }
     double operator[] (int i) const { return val[i]; }
@@ -958,7 +990,7 @@ public:
   }
 
   template <typename T>
-  void T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<T>> values) const
+  void T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<T> values) const
   {
     c1->Evaluate (ir, values);
     size_t vw = ir.Size();
@@ -1101,7 +1133,33 @@ public:
         dderiv(j) = out.DDValue(0,0);
       }
   }
-  
+
+
+
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatVector<bool> nonzero,
+                               FlatVector<bool> nonzero_deriv,
+                               FlatVector<bool> nonzero_dderiv) const
+  {
+    size_t dim = this->Dimension();    
+    Vector<bool> v1(dim), d1(dim), dd1(dim);
+    c1->NonZeroPattern(ud, v1, d1, dd1);
+    for (int i = 0; i < nonzero.Size(); i++)
+      {
+        if (name == "-") // actually not used that way
+          {
+            nonzero(i) = v1(i);
+            nonzero_deriv(i) = d1(i);
+            nonzero_dderiv(i) = dd1(i);
+          }
+        else
+          {
+            nonzero(i) = v1(i);
+            nonzero_deriv(i) = d1(i);
+            nonzero_dderiv(i) = d1(i) || dd1(i);
+          }
+      }
+  }  
 };
 
   template <typename OP /* , typename OPC */> 
@@ -1293,14 +1351,14 @@ public:
   */
 
   template <typename T>
-  void T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<T>> values) const
+  void T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<T> values) const
   {
     try
       {
         size_t nv = ir.Size();
         size_t mydim = Dimension();
-        STACK_ARRAY(SIMD<T>, hmem, nv*mydim);
-        FlatMatrix<SIMD<T>> temp(mydim, nv, &hmem[0]);
+        STACK_ARRAY(T, hmem, nv*mydim);
+        FlatMatrix<T> temp(mydim, nv, &hmem[0]);
         c1->Evaluate (ir, values);
         c2->Evaluate (ir, temp);
         for (size_t i = 0; i < mydim; i++)
@@ -1657,11 +1715,17 @@ public:
             nonzero_deriv(i) = d1(i) || d2(i);
             nonzero_dderiv(i) = dd1(i) || dd2(i);
           }
-        else
+        else if (opname == '*')
           {
             nonzero(i) = v1(i) || v2(i);
             nonzero_deriv(i) = (v1(i) && d2(i)) || (d1(i) && v2(i));
             nonzero_dderiv(i) = (v1(i) && dd2(i)) || (d1(i) && d2(i)) || (dd1(i) && v2(i));
+          }
+        else
+          {
+            nonzero(i) = v1(i) || v2(i);
+            nonzero_deriv(i) = d1(i) || d2(i);
+            nonzero_dderiv(i) = d1(i) || dd1(i) || d2(i) || dd2(i);
           }
       }
   }

@@ -377,6 +377,43 @@ namespace ngfem
     if (ud->trialfunction == this)
       deriv.Col(ud->trial_comp) = 1;
   }
+
+
+  void ProxyFunction ::
+  Evaluate (const SIMD_BaseMappedIntegrationRule & mir,
+            BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>> values) const
+  {
+    ProxyUserData * ud = (ProxyUserData*)mir.GetTransformation().userdata;
+    if (!ud) 
+      throw Exception ("cannot evaluate ProxyFunction");
+
+    values.AddSize(Dimension(), mir.Size()) = AutoDiffDiff<1,SIMD<double>> (0.0);
+
+    if (!testfunction && ud->fel)
+      {
+        if (ud->HasMemory (this))
+          {
+            auto val = ud->GetMemory(this);
+            for (size_t i = 0; i < Dimension(); i++)
+              for (size_t j = 0; j < mir.Size(); j++)
+                values(i,j).Value() = val(i,j);
+          }
+          // result = ud->GetMemory (this);
+        else
+          {
+            static bool first = true;
+            if (first) cerr << "ProxyFunction::EvaluateDDeriv(new) ... should not be here" << endl;
+            first = false;
+            // evaluator->Apply (*ud->fel, mir, *ud->elx, result, *ud->lh);
+          }
+      }
+    AutoDiffDiff<1,SIMD<double>> d1(0.0, 0);
+    if (ud->testfunction == this)
+      values.Col(ud->test_comp).AddSize(Dimension()) = d1;
+    if (ud->trialfunction == this)
+      values.Col(ud->trial_comp).AddSize(Dimension()) = d1;
+  }
+
   
   void ProxyFunction ::
   EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & mir, 
@@ -3698,6 +3735,7 @@ namespace ngfem
                 ud.testfunction = trial_proxies[k1];
                 ud.test_comp = k2;
                 cf -> NonZeroPattern (ud, nzvec, nzdvec, nzddvec);
+                // nzddvec(0) = true;
                 nonzeros(k,l) = nzddvec(0);
                 if (nzddvec(0))
                   nonzeros_proxies(k1,l1) = true;
@@ -3807,7 +3845,7 @@ namespace ngfem
                             proxyrow *= 0.5;
                           }
                       }
-                  
+
                   for (size_t i = 0; i < ir.Size(); i++)
                     proxyvalues2.Col(i) *= mir[i].GetWeight();
                   }

@@ -235,6 +235,7 @@ struct GenericBSpline {
   { return SIMD<double>([&](int i)->double { return (*sp)(x[i]); } );}
   SIMD<Complex> operator() (SIMD<Complex> x) const
   { return SIMD<double>([&](int i)->double { return (*sp)(x.real()[i]); } );}
+  AutoDiffDiff<1,SIMD<double>> operator() (AutoDiffDiff<1,SIMD<double>> x) const { throw ExceptionNOSIMD ("AutoDiffDiff for bspline not supported"); }
 };
 struct GenericSin {
   template <typename T> T operator() (T x) const { return sin(x); }
@@ -288,7 +289,8 @@ struct GenericConj {
   static string Name() { return "conj"; }
   SIMD<double> operator() (SIMD<double> x) const { return x; }
   AutoDiff<1> operator() (AutoDiff<1> x) const { throw Exception ("Conj(..) is not complex differentiable"); }
-  AutoDiffDiff<1> operator() (AutoDiffDiff<1> x) const { throw Exception ("Conj(..) is not complex differentiable"); }
+  template<typename T>
+  AutoDiffDiff<1,T> operator() (AutoDiffDiff<1,T> x) const { throw Exception ("Conj(..) is not complex differentiable"); }
 };
 
 struct GenericATan2 {

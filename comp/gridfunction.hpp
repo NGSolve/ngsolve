@@ -73,7 +73,16 @@ namespace ngcomp
                                 AFlatMatrix<> result,
                                 AFlatMatrix<> deriv) const
     { Evaluate (ir, result); deriv = 0.0; }
-    virtual bool StoreUserData() const { return true; }    
+    virtual bool StoreUserData() const { return true; }
+
+    virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
+                                 FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const
+    {
+      nonzero = true;
+      nonzero_deriv = false;
+      nonzero_dderiv = false;
+    }
+    
   };
 
 
