@@ -415,6 +415,8 @@ namespace ngcomp
         ref_vertices.Assign(ref_vertices_prism);
         ref_elems.Assign(ref_prisms);
         break;
+      default:
+        throw Exception("VTK outout for element-type"+ToString(eltype)+"not supported");
       }
 
       int offset = points.Size();

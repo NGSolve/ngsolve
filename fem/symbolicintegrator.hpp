@@ -158,9 +158,33 @@ public:
                                AFlatMatrix<double> values, AFlatMatrix<double> deriv,
                                AFlatMatrix<double> dderiv) const;
 
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
+                         FlatArray<BareSliceMatrix<SIMD<double>>> input,
+                         BareSliceMatrix<SIMD<double>> values) const
+  {
+    ProxyFunction::Evaluate (ir, values);
+  }
+  
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, 
+                         BareSliceMatrix<AutoDiff<1,SIMD<double>>> values) const;
+
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
+                         FlatArray<BareSliceMatrix<AutoDiff<1,SIMD<double>>>> input,
+                         BareSliceMatrix<AutoDiff<1,SIMD<double>>> values) const
+  {
+    ProxyFunction::Evaluate (ir, values);
+  }
+  
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, 
                          BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>> values) const;
 
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
+                         FlatArray<BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>>> input,
+                         BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>> values) const
+  {
+    ProxyFunction::Evaluate (ir, values);
+  }
+  
   
   virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
                               FlatArray<AFlatMatrix<>*> input,

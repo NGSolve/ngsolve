@@ -1599,14 +1599,10 @@ namespace ngbla
 
 
 
-  template <typename T, ORDERING ORD> //  = RowMajor>
+  template <typename T, ORDERING ORD> 
   class BareSliceMatrix : public CMCPMatExpr<BareSliceMatrix<T,ORD>>, DummySize
   {
   protected:
-    /// the height
-    // size_t h;
-    /// the width
-    // size_t w;
     /// the distance
     size_t dist;
     /// the data
@@ -1620,7 +1616,7 @@ namespace ngbla
     enum { IS_LINEAR = 0 };
 
     // 
-    BareSliceMatrix() = delete;
+    BareSliceMatrix() : DummySize(0,0) { ; } // initialize with placement new later
     INLINE BareSliceMatrix(const BareSliceMatrix &) = default;
 
     BareSliceMatrix (const FlatMatrix<T> & mat)
