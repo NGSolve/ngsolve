@@ -984,7 +984,7 @@ namespace ngcomp
 
   GridFunctionCoefficientFunction :: 
   GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, int acomp)
-    : CoefficientFunction(1, agf->GetFESpace()->IsComplex()), gf(agf.get()), gf_shared_ptr(agf) /*, diffop (NULL)*/ , comp (acomp) 
+    : CoefficientFunctionNoDerivative(1, agf->GetFESpace()->IsComplex()), gf(agf.get()), gf_shared_ptr(agf) /*, diffop (NULL)*/ , comp (acomp) 
   {
     fes = gf->GetFESpace();
     SetDimensions (gf->Dimensions());
@@ -1002,7 +1002,7 @@ namespace ngcomp
                                    shared_ptr<DifferentialOperator> atrace_diffop,
 				   shared_ptr<DifferentialOperator> attrace_diffop,
                                    int acomp)
-    : CoefficientFunction(1, false),
+    : CoefficientFunctionNoDerivative(1, false),
       // diffop (adiffop), trace_diffop(atrace_diffop), ttrace_diffop(attrace_diffop),
       diffop{adiffop,atrace_diffop, attrace_diffop},
       comp (acomp) 
@@ -1031,7 +1031,7 @@ namespace ngcomp
                                    shared_ptr<DifferentialOperator> atrace_diffop,
 				   shared_ptr<DifferentialOperator> attrace_diffop,
                                    int acomp)
-    : CoefficientFunction(1,agf->IsComplex()),
+    : CoefficientFunctionNoDerivative(1,agf->IsComplex()),
       gf(agf.get()),
       gf_shared_ptr(agf),
       // diffop (adiffop), trace_diffop(atrace_diffop), ttrace_diffop(attrace_diffop),
@@ -1058,7 +1058,7 @@ namespace ngcomp
   GridFunctionCoefficientFunction :: 
   GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, 
 				   shared_ptr<BilinearFormIntegrator> abfi, int acomp)
-    : CoefficientFunction(1, agf->IsComplex()),
+    : CoefficientFunctionNoDerivative(1, agf->IsComplex()),
       gf(agf.get()), gf_shared_ptr(agf), /* bfi (abfi), */ comp (acomp) 
   {
     fes = gf->GetFESpace();

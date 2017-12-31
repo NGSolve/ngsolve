@@ -13,7 +13,7 @@ namespace ngcomp
 
   class GridFunction;
 
-  class NGS_DLL_HEADER GridFunctionCoefficientFunction : public CoefficientFunction
+  class NGS_DLL_HEADER GridFunctionCoefficientFunction : public CoefficientFunctionNoDerivative
   {
   protected:
     shared_ptr<GridFunction> gf_shared_ptr;

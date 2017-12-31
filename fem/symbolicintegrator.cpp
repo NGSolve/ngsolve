@@ -3733,7 +3733,7 @@ namespace ngfem
     : cf(acf), vb(avb), element_boundary(aelement_boundary)
   {
     simd_evaluate = true;
-    if (element_boundary) simd_evaluate = false;
+    // if (element_boundary) simd_evaluate = false;
     
     if (cf->Dimension() != 1)
       throw Exception ("SymblicEnergy needs scalar-valued CoefficientFunction");
@@ -3807,137 +3807,61 @@ namespace ngfem
 
     if (simd_evaluate)
       {
-        static Timer tdmat("SymbolicEnergy::CalcDMat - simd", 2);
-        static Timer tdmat2("SymbolicEnergy::CalcDMat2 - simd", 2);
-        static Timer tbmat("SymbolicEnergy::CalcBMat - simd", 2);
-        static Timer tmult("SymbolicEnergy::mult - simd", 2);
-        
         try
           {
-            // const IntegrationRule& std_ir = GetIntegrationRule(trafo.GetElementType(),2*fel.Order());
-            const SIMD_IntegrationRule& ir = GetSIMDIntegrationRule(trafo.GetElementType(), 2*fel.Order());
-            auto & mir = trafo(ir, lh);
-
-            ProxyUserData ud(trial_proxies.Size(), lh);
-            const_cast<ElementTransformation&>(trafo).userdata = &ud;
-            ud.fel = &fel;
-            ud.elx = &elveclin;
-            ud.lh = &lh;
-            for (ProxyFunction * proxy : trial_proxies)
+            if (!element_boundary)
               {
-                ud.AssignMemory (proxy, ir.GetNIP(), proxy->Dimension(), lh);
-                proxy->Evaluator()->Apply(fel, mir, elveclin, ud.GetAMemory(proxy));
-              }
-    
-            // FlatMatrix<SIMD<double>> val(1, ir.Size(), lh), deriv(1, ir.Size(), lh), dderiv(1, ir.Size(), lh);
-            FlatMatrix<AutoDiffDiff<1,SIMD<double>>> ddval(1, ir.Size(), lh);
-            elmat = 0;
-
-            FlatArray<FlatMatrix<SIMD<double>>> diags(trial_proxies.Size(), lh);
-            for (int k1 : Range(trial_proxies))
-              {
-                auto proxy = trial_proxies[k1];
-                new(&diags[k1]) FlatMatrix<SIMD<double>>(proxy->Dimension(), ir.Size(), lh);
-                if (nonzeros_proxies(k1,k1))
-                  for (int k = 0; k < proxy->Dimension(); k++)
-                    {
-                      ud.trialfunction = proxy;
-                      ud.trial_comp = k;
-                      ud.testfunction = proxy;
-                      ud.test_comp = k;
-                      // cf -> EvaluateDDeriv (mir, AFlatMatrix<>(val), AFlatMatrix<>(deriv), AFlatMatrix<> (diags[k1].Rows(k,k+1)));
-                      auto diagrow = diags[k1].Row(k);
-                      cf -> Evaluate (mir, ddval);
-                      for (auto i : Range(diagrow))
-                        diagrow(i) = ddval(i).DDValue(0);
-                    }
-                else
-                  diags[k1] = 0.0;
-              }
-
-            for (int k1 : Range(trial_proxies))
-              for (int l1 : Range(trial_proxies))
-                {
-                  HeapReset hr(lh);
-                  if (!nonzeros_proxies(k1,l1)) continue;
-                  auto proxy1 = trial_proxies[k1];
-                  auto proxy2 = trial_proxies[l1];
-
-                  size_t dim_proxy1 = proxy1->Dimension();
-                  size_t dim_proxy2 = proxy2->Dimension();
-
-                  FlatMatrix<SIMD<double>> proxyvalues2(dim_proxy1*dim_proxy2, ir.Size(), lh);
-
+                const SIMD_IntegrationRule& ir = GetSIMDIntegrationRule(trafo.GetElementType(), 2*fel.Order());
+                auto & mir = trafo(ir, lh);
+                
+                ProxyUserData ud(trial_proxies.Size(), lh);
+                const_cast<ElementTransformation&>(trafo).userdata = &ud;
+                ud.fel = &fel;
+                ud.elx = &elveclin;
+                ud.lh = &lh;
+                for (ProxyFunction * proxy : trial_proxies)
                   {
-                  ThreadRegionTimer reg(tdmat, tid);
-                  for (int k = 0; k < dim_proxy1; k++)
-                    for (int l = 0; l < dim_proxy2; l++)
+                    ud.AssignMemory (proxy, ir.GetNIP(), proxy->Dimension(), lh);
+                    proxy->Evaluator()->Apply(fel, mir, elveclin, ud.GetAMemory(proxy));
+                  }
+                
+                elmat = 0;
+                
+                AddLinearizedElementMatrix (fel, ud, mir, elveclin, elmat, lh);
+              }
+            else
+              {
+                elmat = 0;
+                auto eltype = trafo.GetElementType();
+                int nfacet = ElementTopology::GetNFacets(eltype);
+        
+                Facet2ElementTrafo transform(eltype); 
+                
+                for (int k = 0; k < nfacet; k++)
+                  {
+                    HeapReset hr(lh);
+                    ngfem::ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype, k);
+                    
+                    auto & ir_facet = GetSIMDIntegrationRule(etfacet, 2*fel.Order());
+                    auto & ir_facet_vol = transform(k, ir_facet, lh);
+                    auto & mir = trafo(ir_facet_vol, lh);
+                    mir.ComputeNormalsAndMeasure (eltype, k);
+            
+                    ProxyUserData ud(trial_proxies.Size(), lh);    
+                    const_cast<ElementTransformation&>(trafo).userdata = &ud;
+                    ud.fel = &fel;
+                    ud.elx = &elveclin;
+                    ud.lh = &lh;
+                    
+                    for (ProxyFunction * proxy : trial_proxies)
                       {
-                        ud.trialfunction = proxy1;
-                        ud.trial_comp = k;
-                        ud.testfunction = proxy2;
-                        ud.test_comp = l;
-                        auto proxyrow = proxyvalues2.Row(k*dim_proxy2+l);
-
-                        if (nonzeros(trial_cum[k1]+k, trial_cum[l1]+l))
-                          {
-                            // cf -> EvaluateDDeriv (mir, AFlatMatrix<>(val), AFlatMatrix<>(deriv), AFlatMatrix<> (dderiv));
-                            // proxyrow = dderiv.Row(0);
-                            cf -> Evaluate (mir, ddval);
-                            for (auto i : Range(proxyrow))
-                              proxyrow(i) = ddval(i).DDValue(0);
-                          }
-                        else
-                          {
-                            // dderiv = 0.0;
-                            proxyrow = 0.0;
-                          }
-                        if (proxy1 != proxy2 || k != l)  // computed mixed second derivatives
-                          {
-                            proxyrow -= diags[k1].Row(k);
-                            proxyrow -= diags[l1].Row(l);
-                            proxyrow *= 0.5;
-                          }
+                        ud.AssignMemory (proxy, ir_facet.GetNIP(), proxy->Dimension(), lh);
+                        proxy->Evaluator()->Apply(fel, mir, elveclin, ud.GetAMemory(proxy));
                       }
-
-                  for (size_t i = 0; i < ir.Size(); i++)
-                    proxyvalues2.Col(i) *= mir[i].GetWeight();
+                    
+                    AddLinearizedElementMatrix (fel, ud, mir, elveclin, elmat, lh);            
                   }
-                  
-
-                  IntRange r1 = proxy1->Evaluator()->UsedDofs(fel);
-                  IntRange r2 = proxy2->Evaluator()->UsedDofs(fel);
-                  SliceMatrix<> part_elmat = elmat.Rows(r2).Cols(r1);
-
-                  FlatMatrix<SIMD<double>> bmat1(elmat.Width()*dim_proxy1, ir.Size(), lh);
-                  FlatMatrix<SIMD<double>> dbmat1(elmat.Width()*dim_proxy2, ir.Size(), lh);
-                  FlatMatrix<SIMD<double>> bmat2(elmat.Height()*dim_proxy2, ir.Size(), lh);
-
-                  FlatMatrix<SIMD<double>> hdbmat1(elmat.Width(), dim_proxy2*ir.Size(), &dbmat1(0,0));
-                  FlatMatrix<SIMD<double>> hbmat2(elmat.Height(), dim_proxy2*ir.Size(), &bmat2(0,0));
-
-                  {
-                    ThreadRegionTimer reg(tbmat, tid);
-                    proxy1->Evaluator()->CalcMatrix(fel, mir, bmat1);
-                    proxy2->Evaluator()->CalcMatrix(fel, mir, bmat2);
-                  }
-
-                  hdbmat1.Rows(r1) = 0.0; 
-                  for (auto i : r1)
-                    for (size_t j = 0; j < dim_proxy2; j++)
-                      for (size_t k = 0; k < dim_proxy1; k++)
-                        {
-                          auto res = dbmat1.Row(i*dim_proxy2+j);
-                          auto a = bmat1.Row(i*dim_proxy1+k);
-                          auto b = proxyvalues2.Row(k*dim_proxy2+j);
-                          res += pw_mult(a,b);
-                        }
-
-                  {
-                  ThreadRegionTimer reg(tmult, tid);                  
-                  AddABt (hbmat2.Rows(r2), hdbmat1.Rows(r1), part_elmat);
-                  }
-                }
+              }
           }
 
         catch (ExceptionNOSIMD e)
@@ -4144,7 +4068,129 @@ namespace ngfem
         }
   }
   
-  
+  void SymbolicEnergy :: AddLinearizedElementMatrix (const FiniteElement & fel,
+                                                     ProxyUserData & ud, 
+                                                     const SIMD_BaseMappedIntegrationRule & mir, 
+                                                     FlatVector<double> elveclin,
+                                                     FlatMatrix<double> elmat,
+                                                     LocalHeap & lh) const
+  {
+        size_t tid = TaskManager::GetThreadId();        
+        static Timer tdmat("SymbolicEnergy::CalcDMat - simd", 2);
+        static Timer tdmat2("SymbolicEnergy::CalcDMat2 - simd", 2);
+        static Timer tbmat("SymbolicEnergy::CalcBMat - simd", 2);
+        static Timer tmult("SymbolicEnergy::mult - simd", 2);
+        
+
+    
+            FlatMatrix<AutoDiffDiff<1,SIMD<double>>> ddval(1, mir.Size(), lh);
+            FlatArray<FlatMatrix<SIMD<double>>> diags(trial_proxies.Size(), lh);
+            for (int k1 : Range(trial_proxies))
+              {
+                auto proxy = trial_proxies[k1];
+                new(&diags[k1]) FlatMatrix<SIMD<double>>(proxy->Dimension(), mir.Size(), lh);
+                if (nonzeros_proxies(k1,k1))
+                  for (int k = 0; k < proxy->Dimension(); k++)
+                    {
+                      ud.trialfunction = proxy;
+                      ud.trial_comp = k;
+                      ud.testfunction = proxy;
+                      ud.test_comp = k;
+                      // cf -> EvaluateDDeriv (mir, AFlatMatrix<>(val), AFlatMatrix<>(deriv), AFlatMatrix<> (diags[k1].Rows(k,k+1)));
+                      auto diagrow = diags[k1].Row(k);
+                      cf -> Evaluate (mir, ddval);
+                      for (auto i : Range(diagrow))
+                        diagrow(i) = ddval(i).DDValue(0);
+                    }
+                else
+                  diags[k1] = 0.0;
+              }
+
+            for (int k1 : Range(trial_proxies))
+              for (int l1 : Range(trial_proxies))
+                {
+                  HeapReset hr(lh);
+                  if (!nonzeros_proxies(k1,l1)) continue;
+                  auto proxy1 = trial_proxies[k1];
+                  auto proxy2 = trial_proxies[l1];
+
+                  size_t dim_proxy1 = proxy1->Dimension();
+                  size_t dim_proxy2 = proxy2->Dimension();
+
+                  FlatMatrix<SIMD<double>> proxyvalues2(dim_proxy1*dim_proxy2, mir.Size(), lh);
+
+                  {
+                  ThreadRegionTimer reg(tdmat, tid);
+                  for (int k = 0; k < dim_proxy1; k++)
+                    for (int l = 0; l < dim_proxy2; l++)
+                      {
+                        ud.trialfunction = proxy1;
+                        ud.trial_comp = k;
+                        ud.testfunction = proxy2;
+                        ud.test_comp = l;
+                        auto proxyrow = proxyvalues2.Row(k*dim_proxy2+l);
+
+                        if (nonzeros(trial_cum[k1]+k, trial_cum[l1]+l))
+                          {
+                            // cf -> EvaluateDDeriv (mir, AFlatMatrix<>(val), AFlatMatrix<>(deriv), AFlatMatrix<> (dderiv));
+                            // proxyrow = dderiv.Row(0);
+                            cf -> Evaluate (mir, ddval);
+                            for (auto i : Range(proxyrow))
+                              proxyrow(i) = ddval(i).DDValue(0);
+                          }
+                        else
+                          {
+                            // dderiv = 0.0;
+                            proxyrow = 0.0;
+                          }
+                        if (proxy1 != proxy2 || k != l)  // computed mixed second derivatives
+                          {
+                            proxyrow -= diags[k1].Row(k);
+                            proxyrow -= diags[l1].Row(l);
+                            proxyrow *= 0.5;
+                          }
+                      }
+
+                  for (size_t i = 0; i < mir.Size(); i++)
+                    proxyvalues2.Col(i) *= mir[i].GetWeight();
+                  }
+                  
+
+                  IntRange r1 = proxy1->Evaluator()->UsedDofs(fel);
+                  IntRange r2 = proxy2->Evaluator()->UsedDofs(fel);
+                  SliceMatrix<> part_elmat = elmat.Rows(r2).Cols(r1);
+
+                  FlatMatrix<SIMD<double>> bmat1(elmat.Width()*dim_proxy1, mir.Size(), lh);
+                  FlatMatrix<SIMD<double>> dbmat1(elmat.Width()*dim_proxy2, mir.Size(), lh);
+                  FlatMatrix<SIMD<double>> bmat2(elmat.Height()*dim_proxy2, mir.Size(), lh);
+
+                  FlatMatrix<SIMD<double>> hdbmat1(elmat.Width(), dim_proxy2*mir.Size(), &dbmat1(0,0));
+                  FlatMatrix<SIMD<double>> hbmat2(elmat.Height(), dim_proxy2*mir.Size(), &bmat2(0,0));
+
+                  {
+                    ThreadRegionTimer reg(tbmat, tid);
+                    proxy1->Evaluator()->CalcMatrix(fel, mir, bmat1);
+                    proxy2->Evaluator()->CalcMatrix(fel, mir, bmat2);
+                  }
+
+                  hdbmat1.Rows(r1) = 0.0; 
+                  for (auto i : r1)
+                    for (size_t j = 0; j < dim_proxy2; j++)
+                      for (size_t k = 0; k < dim_proxy1; k++)
+                        {
+                          auto res = dbmat1.Row(i*dim_proxy2+j);
+                          auto a = bmat1.Row(i*dim_proxy1+k);
+                          auto b = proxyvalues2.Row(k*dim_proxy2+j);
+                          res += pw_mult(a,b);
+                        }
+
+                  {
+                  ThreadRegionTimer reg(tmult, tid);                  
+                  AddABt (hbmat2.Rows(r2), hdbmat1.Rows(r1), part_elmat);
+                  }
+                }
+  }
+
   
   double SymbolicEnergy :: Energy (const FiniteElement & fel, 
                                    const ElementTransformation & trafo, 
@@ -4232,7 +4278,7 @@ namespace ngfem
     ud.elx = &elx;
     ud.lh = &lh;
 
-    if (simd_evaluate)
+    if (simd_evaluate && !element_boundary)
       {
         try
           {
