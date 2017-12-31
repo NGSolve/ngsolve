@@ -381,6 +381,44 @@ namespace ngfem
 
   void ProxyFunction ::
   Evaluate (const SIMD_BaseMappedIntegrationRule & mir,
+            BareSliceMatrix<AutoDiff<1,SIMD<double>>> values) const
+  {
+    ProxyUserData * ud = (ProxyUserData*)mir.GetTransformation().userdata;
+    if (!ud) 
+      throw Exception ("cannot evaluate ProxyFunction");
+
+    values.AddSize(Dimension(), mir.Size()) = AutoDiff<1,SIMD<double>> (0.0);
+
+    if (!testfunction && ud->fel)
+      {
+        if (ud->HasMemory (this))
+          {
+            auto val = ud->GetAMemory(this);
+            for (size_t i = 0; i < Dimension(); i++)
+              for (size_t j = 0; j < mir.Size(); j++)
+                values(i,j).Value() = val(i,j);
+          }
+        else
+          {
+            static bool first = true;
+            if (first) cerr << "ProxyFunction::EvaluateDeriv(new) ... should not be here" << endl;
+            first = false;
+            // evaluator->Apply (*ud->fel, mir, *ud->elx, result, *ud->lh);
+          }
+      }
+
+    if (ud->testfunction == this)
+      for (size_t i = 0; i < mir.Size(); i++)
+        values(ud->test_comp, i).Value() = 1;
+    if (ud->trialfunction == this)
+      for (size_t i = 0; i < mir.Size(); i++)
+        values(ud->trial_comp, i).DValue(0) = 1;
+  }
+
+  
+
+  void ProxyFunction ::
+  Evaluate (const SIMD_BaseMappedIntegrationRule & mir,
             BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>> values) const
   {
     ProxyUserData * ud = (ProxyUserData*)mir.GetTransformation().userdata;
@@ -393,7 +431,7 @@ namespace ngfem
       {
         if (ud->HasMemory (this))
           {
-            auto val = ud->GetMemory(this);
+            auto val = ud->GetAMemory(this);
             for (size_t i = 0; i < Dimension(); i++)
               for (size_t j = 0; j < mir.Size(); j++)
                 values(i,j).Value() = val(i,j);
@@ -407,13 +445,16 @@ namespace ngfem
             // evaluator->Apply (*ud->fel, mir, *ud->elx, result, *ud->lh);
           }
       }
-    AutoDiffDiff<1,SIMD<double>> d1(0.0, 0);
+
     if (ud->testfunction == this)
-      values.Col(ud->test_comp).AddSize(Dimension()) = d1;
+      for (size_t i = 0; i < mir.Size(); i++)
+        values(ud->test_comp, i).DValue(0) = 1;
     if (ud->trialfunction == this)
-      values.Col(ud->trial_comp).AddSize(Dimension()) = d1;
+      for (size_t i = 0; i < mir.Size(); i++)
+        values(ud->trial_comp, i).DValue(0) = 1;
   }
 
+  
   
   void ProxyFunction ::
   EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & mir, 
@@ -1857,16 +1898,17 @@ namespace ngfem
           for (CoefficientFunction * cf : gridfunction_cfs)
             ud.AssignMemory (cf, ir.GetNIP(), cf->Dimension(), lh);
     
-          AFlatMatrix<> val(1, mir.IR().GetNIP(), lh);
+          // AFlatMatrix<> val(1, mir.IR().GetNIP(), lh);
+          FlatMatrix<AutoDiff<1,SIMD<double>>> val(1, mir.Size(), lh);
           elmat = 0;
     
           for (int l1 : Range(test_proxies))
             {
               HeapReset hr(lh);              
               auto proxy2 = test_proxies[l1];
-              AFlatMatrix<> bdbmat1(elmat.Width()*proxy2->Dimension(), ir.GetNIP(), lh);
-              AFlatMatrix<> hbdbmat1(elmat.Width(), proxy2->Dimension()*SIMD<double>::Size()*ir.Size(),
-                                     &bdbmat1.Get(0,0));
+              FlatMatrix<SIMD<double>> bdbmat1(elmat.Width()*proxy2->Dimension(), ir.Size(), lh);
+              FlatMatrix<SIMD<double>> hbdbmat1(elmat.Width(), proxy2->Dimension()*ir.Size(),
+                                                &bdbmat1(0,0));
               bdbmat1 = 0.0;
               
               for (int k1 : Range(trial_proxies))
@@ -1874,7 +1916,7 @@ namespace ngfem
                   HeapReset hr(lh);
                   auto proxy1 = trial_proxies[k1];
                   
-                  AFlatMatrix<> proxyvalues(proxy1->Dimension()*proxy2->Dimension(), ir.GetNIP(), lh);
+                  FlatMatrix<SIMD<double>> proxyvalues(proxy1->Dimension()*proxy2->Dimension(), ir.Size(), lh);
                   
                   for (size_t k = 0, kk = 0; k < proxy1->Dimension(); k++)
                     for (size_t l = 0; l < proxy2->Dimension(); l++, kk++)
@@ -1883,20 +1925,19 @@ namespace ngfem
                         ud.trial_comp = k;
                         ud.testfunction = proxy2;
                         ud.test_comp = l;
-                        
-                        cf -> EvaluateDeriv (mir, val, proxyvalues.Rows(kk,kk+1));
+                        // cf -> EvaluateDeriv (mir, val, proxyvalues.Rows(kk,kk+1));
+                        cf -> Evaluate (mir, val);
+                        auto row = proxyvalues.Row(kk);
+                        for (auto j : Range(mir.Size()))
+                          row(j) = val(j).DValue(0);
                       }
                   
                   for (size_t i = 0; i < mir.Size(); i++)
-                    {
-                      auto fac = mir[i].GetWeight();
-                      for (size_t j = 0; j < proxyvalues.Height(); j++)
-                        proxyvalues.Get(j,i) *= fac;
-                    }
-                  
+                    proxyvalues.Col(i) *= mir[i].GetWeight();
+
                   IntRange r1 = proxy1->Evaluator()->UsedDofs(fel_trial);
                   
-                  AFlatMatrix<> bbmat1(elmat.Width()*proxy1->Dimension(), ir.GetNIP(), lh);
+                  FlatMatrix<SIMD<double>> bbmat1(elmat.Width()*proxy1->Dimension(), ir.Size(), lh);
                   
                   // bbmat1 = 0.0;
                   proxy1->Evaluator()->CalcMatrix(fel_trial, mir, bbmat1);
@@ -1913,13 +1954,14 @@ namespace ngfem
 
               IntRange r2 = proxy2->Evaluator()->UsedDofs(fel_test);
               
-              AFlatMatrix<> bbmat2(elmat.Height()*proxy2->Dimension(), ir.GetNIP(), lh);
-              AFlatMatrix<> hbbmat2(elmat.Height(), proxy2->Dimension()*SIMD<double>::Size()*ir.Size(),
-                                    &bbmat2.Get(0,0));
+              FlatMatrix<SIMD<double>> bbmat2(elmat.Height()*proxy2->Dimension(), ir.Size(), lh);
+              FlatMatrix<SIMD<double>> hbbmat2(elmat.Height(), proxy2->Dimension()*ir.Size(),
+                                              &bbmat2(0,0));
               // bbmat2 = 0.0;
               proxy2->Evaluator()->CalcMatrix(fel_test, mir, bbmat2);
               
-              AddABt (hbbmat2.Rows(r2), hbdbmat1 /* .Rows(r1)*/, SliceMatrix<> (elmat.Rows(r2)) /* .Cols(r1) */);
+              AddABt (hbbmat2.Rows(r2), hbdbmat1, elmat.Rows(r2));
+              // AddABt (hbbmat2.Rows(r2), hbdbmat1.Rows(r1), elmat.Rows(r2).Cols(r1));
             }
           /*
           Matrix<> helmat = elmat;
@@ -3787,7 +3829,8 @@ namespace ngfem
                 proxy->Evaluator()->Apply(fel, mir, elveclin, ud.GetAMemory(proxy));
               }
     
-            FlatMatrix<SIMD<double>> val(1, ir.Size(), lh), deriv(1, ir.Size(), lh), dderiv(1, ir.Size(), lh);
+            // FlatMatrix<SIMD<double>> val(1, ir.Size(), lh), deriv(1, ir.Size(), lh), dderiv(1, ir.Size(), lh);
+            FlatMatrix<AutoDiffDiff<1,SIMD<double>>> ddval(1, ir.Size(), lh);
             elmat = 0;
 
             FlatArray<FlatMatrix<SIMD<double>>> diags(trial_proxies.Size(), lh);
@@ -3802,7 +3845,11 @@ namespace ngfem
                       ud.trial_comp = k;
                       ud.testfunction = proxy;
                       ud.test_comp = k;
-                      cf -> EvaluateDDeriv (mir, AFlatMatrix<>(val), AFlatMatrix<>(deriv), AFlatMatrix<> (diags[k1].Rows(k,k+1)));
+                      // cf -> EvaluateDDeriv (mir, AFlatMatrix<>(val), AFlatMatrix<>(deriv), AFlatMatrix<> (diags[k1].Rows(k,k+1)));
+                      auto diagrow = diags[k1].Row(k);
+                      cf -> Evaluate (mir, ddval);
+                      for (auto i : Range(diagrow))
+                        diagrow(i) = ddval(i).DDValue(0);
                     }
                 else
                   diags[k1] = 0.0;
@@ -3830,14 +3877,21 @@ namespace ngfem
                         ud.trial_comp = k;
                         ud.testfunction = proxy2;
                         ud.test_comp = l;
+                        auto proxyrow = proxyvalues2.Row(k*dim_proxy2+l);
 
                         if (nonzeros(trial_cum[k1]+k, trial_cum[l1]+l))
-                          cf -> EvaluateDDeriv (mir, AFlatMatrix<>(val), AFlatMatrix<>(deriv), AFlatMatrix<> (dderiv));
+                          {
+                            // cf -> EvaluateDDeriv (mir, AFlatMatrix<>(val), AFlatMatrix<>(deriv), AFlatMatrix<> (dderiv));
+                            // proxyrow = dderiv.Row(0);
+                            cf -> Evaluate (mir, ddval);
+                            for (auto i : Range(proxyrow))
+                              proxyrow(i) = ddval(i).DDValue(0);
+                          }
                         else
-                          dderiv = 0.0;
-                        
-                        auto proxyrow = proxyvalues2.Row(k*dim_proxy2+l);
-                        proxyrow = dderiv.Row(0);
+                          {
+                            // dderiv = 0.0;
+                            proxyrow = 0.0;
+                          }
                         if (proxy1 != proxy2 || k != l)  // computed mixed second derivatives
                           {
                             proxyrow -= diags[k1].Row(k);
@@ -4199,11 +4253,15 @@ namespace ngfem
               {
                 HeapReset hr(lh);
                 FlatMatrix<SIMD<double>> proxyvalues(proxy->Dimension(), ir.Size(), lh);
+                FlatMatrix<AutoDiff<1,SIMD<double>>> vals(1, ir.Size(), lh);
                 for (int k = 0; k < proxy->Dimension(); k++)
                   {
                     ud.trialfunction = proxy;
                     ud.trial_comp = k;
-                    cf -> EvaluateDeriv (mir, AFlatMatrix<>(val), AFlatMatrix<>(proxyvalues.Rows(k,k+1)));
+                    // cf -> EvaluateDeriv (mir, AFlatMatrix<>(val), AFlatMatrix<>(proxyvalues.Rows(k,k+1)));
+                    cf -> Evaluate(mir, vals);
+                    for (size_t j = 0; j < ir.Size(); j++)
+                      proxyvalues(k,j) = vals(0,j).DValue(0);
                   }
 
                 for (int i = 0; i < proxyvalues.Height(); i++)

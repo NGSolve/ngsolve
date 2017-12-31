@@ -2133,7 +2133,6 @@ used_idnrs : list of int = None
             if (self->GetFESpace()->GetAdditionalEvaluators().Used(name))
               {
                 auto diffop = self->GetFESpace()->GetAdditionalEvaluators()[name];
-                // cout << "diffop is " << typeid(*diffop).name() << endl;
                 shared_ptr<GridFunctionCoefficientFunction> coef;
                 switch(vb)
                   {
@@ -2146,6 +2145,8 @@ used_idnrs : list of int = None
                   case BBND:
                     coef = make_shared<GridFunctionCoefficientFunction> (self, nullptr,nullptr,diffop);
                     break;
+                  case BBBND:
+                    throw Exception ("there are no Operators with BBBND");
                   }
                 coef->SetDimensions(diffop->Dimensions());
                 return py::cast(shared_ptr<CoefficientFunction>(coef));

@@ -497,8 +497,8 @@ using std::atan;
 template <int D, typename SCAL>
 INLINE AutoDiff<D,SCAL> atan (AutoDiff<D,SCAL> x)
 {
-  AutoDiff<D> res;
-  double a = atan(x.Value());
+  AutoDiff<D,SCAL> res;
+  SCAL a = atan(x.Value());
   res.Value() = a;
   for (int k = 0; k < D; k++)
     res.DValue(k) = x.DValue(k)/(1+x.Value()*x.Value()) ;
