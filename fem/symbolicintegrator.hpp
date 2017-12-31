@@ -765,13 +765,19 @@ public:
                                  FlatMatrix<double> elmat,
                                  LocalHeap & lh) const;
 
-    void 
-    AddLinearizedElementMatrix (const FiniteElement & fel,
-                                ProxyUserData & trafo, 
-                                const BaseMappedIntegrationRule & mir, 
-                                FlatVector<double> elveclin,
-                                FlatMatrix<double> elmat,
-                                LocalHeap & lh) const;
+    void AddLinearizedElementMatrix (const FiniteElement & fel,
+                                     ProxyUserData & ud, 
+                                     const BaseMappedIntegrationRule & mir, 
+                                     FlatVector<double> elveclin,
+                                     FlatMatrix<double> elmat,
+                                     LocalHeap & lh) const;
+
+    void AddLinearizedElementMatrix (const FiniteElement & fel,
+                                     ProxyUserData & ud, 
+                                     const SIMD_BaseMappedIntegrationRule & mir, 
+                                     FlatVector<double> elveclin,
+                                     FlatMatrix<double> elmat,
+                                     LocalHeap & lh) const;
 
 
     virtual double Energy (const FiniteElement & fel, 

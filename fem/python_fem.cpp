@@ -438,10 +438,10 @@ struct GenericPow {
   };
 
   template <int D>
-  class TangentialVectorCF : public CoefficientFunction
+  class TangentialVectorCF : public CoefficientFunctionNoDerivative
   {
   public:
-    TangentialVectorCF () : CoefficientFunction(D,false) { ; }
+    TangentialVectorCF () : CoefficientFunctionNoDerivative(D,false) { ; }
     // virtual int Dimension() const { return D; }
 
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
@@ -466,7 +466,13 @@ struct GenericPow {
         for( int i : Range(D))
           code.body += Var(index,i).Assign(tv(i));
     }
-    
+
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const
+    {
+      for (size_t i = 0; i < ir.Size(); i++)
+        for (size_t j = 0; j < D; j++)
+          values(j,i) = static_cast<const SIMD<DimMappedIntegrationPoint<D>>&>(ir[i]).GetTV()(j).Data();
+    }
   };
 
 
