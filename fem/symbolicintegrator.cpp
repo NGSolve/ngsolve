@@ -75,14 +75,14 @@ namespace ngfem
     {flatmatrix} {values};\n\
     ProxyUserData * {ud} = (ProxyUserData*)mir.GetTransformation().userdata;\n\
     {\n\
-      if (!{ud})\n\
-        throw Exception (\"cannot evaluate ProxyFunction without userdata\");\n\
+      // if (!{ud})\n                                                      \
+      // throw Exception (\"cannot evaluate ProxyFunction without userdata\");\n \
           ";
 
     if(!testfunction) {
       header+=
 "      if ({ud}->fel) {\n\
-          if ({ud}->HasMemory ({this})) {\n";
+     //     if ({ud}->HasMemory ({this})) {\n";
       if(code.is_simd) {
         header += "auto x = {ud}->GetAMemory ({this});\n";
         header += "{values}.AssignMemory(x.Height(), x.Width(), &x(0,0));\n";
@@ -91,9 +91,9 @@ namespace ngfem
         header += "{values}.AssignMemory(x.Height(), x.Width(), &x(0,0));\n";
       }
       header+=
-"          }\n\
-          else\n\
-            throw Exception(\"userdata has no memory!\");\n\
+"      //    }\n\
+       //   else\n\
+       //     throw Exception(\"userdata has no memory!\");\n\
       }\n";
     }
     header += "}\n";
@@ -244,20 +244,11 @@ namespace ngfem
             BareSliceMatrix<SIMD<double>> result) const
   {
     ProxyUserData * ud = (ProxyUserData*)mir.GetTransformation().userdata;
-    if (!ud) 
-      throw Exception ("cannot evaluate ProxyFunction without userdata");
+    assert (ud);
     
     if (!testfunction && ud->fel)
       {
-        if (ud->HasMemory (this))
-          result.AddSize(Dimension(), mir.Size()) = BareSliceMatrix<SIMD<double>> (ud->GetAMemory (this));
-        else
-          {
-            static bool first = true;
-            if (first) cerr << "ProxyFunction::Evaluate(simd_mir) ... should not be here" << endl;
-            first = false;
-            evaluator->Apply (*ud->fel, mir, *ud->elx, result); // , *ud->lh);
-          }
+        result.AddSize(Dimension(), mir.Size()) = BareSliceMatrix<SIMD<double>> (ud->GetAMemory (this));
         return;
       }
 
@@ -384,35 +375,34 @@ namespace ngfem
             BareSliceMatrix<AutoDiff<1,SIMD<double>>> values) const
   {
     ProxyUserData * ud = (ProxyUserData*)mir.GetTransformation().userdata;
-    if (!ud) 
-      throw Exception ("cannot evaluate ProxyFunction");
+    assert (ud);
+    // assert (ud->fel);
 
-    values.AddSize(Dimension(), mir.Size()) = AutoDiff<1,SIMD<double>> (0.0);
+    size_t np = mir.Size();
+    size_t dim = Dimension();
+    
+    values.AddSize(dim, np) = AutoDiff<1,SIMD<double>> (0.0);
 
-    if (!testfunction && ud->fel)
+    if (IsTrialFunction())
       {
-        if (ud->HasMemory (this))
-          {
-            auto val = ud->GetAMemory(this);
-            for (size_t i = 0; i < Dimension(); i++)
-              for (size_t j = 0; j < mir.Size(); j++)
-                values(i,j).Value() = val(i,j);
-          }
-        else
-          {
-            static bool first = true;
-            if (first) cerr << "ProxyFunction::EvaluateDeriv(new) ... should not be here" << endl;
-            first = false;
-            // evaluator->Apply (*ud->fel, mir, *ud->elx, result, *ud->lh);
-          }
+        auto val = ud->GetAMemory(this);
+        for (size_t i = 0; i < dim; i++)
+          for (size_t j = 0; j < np; j++)
+            values(i,j).Value() = val(i,j);
       }
 
     if (ud->testfunction == this)
-      for (size_t i = 0; i < mir.Size(); i++)
-        values(ud->test_comp, i).Value() = 1;
+      {
+        auto row = values.Row(ud->test_comp);        
+        for (size_t i = 0; i < np; i++)
+          row(i).Value() = 1;
+      }
     if (ud->trialfunction == this)
-      for (size_t i = 0; i < mir.Size(); i++)
-        values(ud->trial_comp, i).DValue(0) = 1;
+      {
+        auto row = values.Row(ud->trial_comp);
+        for (size_t i = 0; i < np; i++)
+          row(i).DValue(0) = 1;
+      }
   }
 
   
@@ -422,35 +412,28 @@ namespace ngfem
             BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>> values) const
   {
     ProxyUserData * ud = (ProxyUserData*)mir.GetTransformation().userdata;
-    if (!ud) 
-      throw Exception ("cannot evaluate ProxyFunction");
 
-    values.AddSize(Dimension(), mir.Size()) = AutoDiffDiff<1,SIMD<double>> (0.0);
+    assert (ud);
+    assert (ud->fel);
 
-    if (!testfunction && ud->fel)
+    size_t np = mir.Size();
+    size_t dim = Dimension();
+
+    values.AddSize(dim, np) = AutoDiffDiff<1,SIMD<double>> (0.0);
+
+    if (!testfunction) //  && ud->fel)
       {
-        if (ud->HasMemory (this))
-          {
-            auto val = ud->GetAMemory(this);
-            for (size_t i = 0; i < Dimension(); i++)
-              for (size_t j = 0; j < mir.Size(); j++)
-                values(i,j).Value() = val(i,j);
-          }
-          // result = ud->GetMemory (this);
-        else
-          {
-            static bool first = true;
-            if (first) cerr << "ProxyFunction::EvaluateDDeriv(new) ... should not be here" << endl;
-            first = false;
-            // evaluator->Apply (*ud->fel, mir, *ud->elx, result, *ud->lh);
-          }
+        auto val = ud->GetAMemory(this);
+        for (size_t i = 0; i < dim; i++)
+          for (size_t j = 0; j < np; j++)
+            values(i,j).Value() = val(i,j);
       }
 
     if (ud->testfunction == this)
-      for (size_t i = 0; i < mir.Size(); i++)
+      for (size_t i = 0; i < np; i++)
         values(ud->test_comp, i).DValue(0) = 1;
     if (ud->trialfunction == this)
-      for (size_t i = 0; i < mir.Size(); i++)
+      for (size_t i = 0; i < np; i++)
         values(ud->trial_comp, i).DValue(0) = 1;
   }
 
@@ -4197,6 +4180,42 @@ namespace ngfem
                                    FlatVector<double> elx, 
                                    LocalHeap & lh) const
   {
+    if (simd_evaluate && !element_boundary)
+      {
+        try
+          {
+            auto & ir = GetSIMDIntegrationRule(trafo.GetElementType(), 2*fel.Order());
+            auto & mir = trafo(ir, lh);
+        
+            ProxyUserData ud(trial_proxies.Size(), lh);
+            const_cast<ElementTransformation&>(trafo).userdata = &ud;
+            ud.fel = &fel;
+            ud.elx = &elx;
+            ud.lh = &lh;
+            
+            for (ProxyFunction * proxy : trial_proxies)
+              {
+                ud.AssignMemory (proxy, ir.GetNIP(), proxy->Dimension(), lh);
+                proxy->Evaluator()->Apply(fel, mir, elx, ud.GetAMemory(proxy));
+              }
+            
+            FlatMatrix<SIMD<double>> values(1, mir.Size(), lh);
+            cf -> Evaluate(mir, values);
+
+            SIMD<double> sum = 0;
+            for (int i = 0; i < mir.Size(); i++)
+              sum += mir[i].GetWeight() * values(0, i);
+            return HSum(sum);
+          }
+        catch (ExceptionNOSIMD e)
+          {
+            cout << IM(4) << e.What() << endl
+                 << "switching back to standard evaluation (in SymbolicEnergy::Energy)" << endl;
+            simd_evaluate = false;
+            return Energy (fel, trafo, elx, lh);
+          }
+      }
+
     if (!element_boundary)
       {
         const IntegrationRule& ir = GetIntegrationRule(trafo.GetElementType(), 2*fel.Order());
@@ -4213,7 +4232,6 @@ namespace ngfem
             ud.AssignMemory (proxy, ir.Size(), proxy->Dimension(), lh);
             proxy->Evaluator()->Apply(fel, mir, elx, ud.GetMemory(proxy), lh);
           }
-        
         FlatMatrix<> values(mir.Size(), 1, lh);
         cf -> Evaluate(mir, values);
         
