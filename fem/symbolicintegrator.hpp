@@ -232,8 +232,8 @@ public:
   int trial_comp;
   
   const FiniteElement * fel = nullptr;
-  const FlatVector<double> * elx;
-  LocalHeap * lh;
+  // const FlatVector<double> * elx;
+  // LocalHeap * lh;
 
   ProxyUserData ()
     : remember_first(0,nullptr), remember_second(0,nullptr), remember_asecond(0,nullptr),

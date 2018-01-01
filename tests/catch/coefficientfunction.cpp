@@ -46,8 +46,8 @@ void TestCoefficientFunction(shared_ptr<CoefficientFunction> cf,
   ScalarDummyFE<ET_TET> dummy_fe;
   Vector<> dummy_elvec;
   ud.fel = &dummy_fe;
-  ud.elx = &dummy_elvec;
-  ud.lh = &lh;
+  // ud.elx = &dummy_elvec;
+  // ud.lh = &lh;
   // we give some value to the proxy functions
   for (ProxyFunction * proxy : proxies)
     {

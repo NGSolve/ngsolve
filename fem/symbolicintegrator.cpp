@@ -193,7 +193,7 @@ namespace ngfem
         // if (ud->HasMemory (this))
         // result = ud->GetMemory (this);
         // else
-        evaluator->Apply (*ud->fel, mip, *ud->elx, result, *ud->lh);
+        // evaluator->Apply (*ud->fel, mip, *ud->elx, result, *ud->lh);
         return;
       }
 
@@ -216,7 +216,8 @@ namespace ngfem
         if (ud->HasMemory (this))
           result = ud->GetMemory (this);
         else
-          evaluator->Apply (*ud->fel, mir, *ud->elx, result, *ud->lh);
+          cerr << "Proxy evaluate, but no userdata" << endl;
+          // evaluator->Apply (*ud->fel, mir, *ud->elx, result, *ud->lh);
         return;
       }
 
@@ -326,7 +327,7 @@ namespace ngfem
             static bool first = true;
             if (first) cerr << "ProxyFunction::EvaluateDeriv ... should not be here" << endl;
             first = false;
-            evaluator->Apply (*ud->fel, mir, *ud->elx, result, *ud->lh);
+            // evaluator->Apply (*ud->fel, mir, *ud->elx, result, *ud->lh);
           }
       }
     
@@ -360,7 +361,7 @@ namespace ngfem
             static bool first = true;
             if (first) cerr << "ProxyFunction::EvaluateDDeriv ... should not be here" << endl;
             first = false;
-            evaluator->Apply (*ud->fel, mir, *ud->elx, result, *ud->lh);
+            // evaluator->Apply (*ud->fel, mir, *ud->elx, result, *ud->lh);
           }
       }
     if (ud->testfunction == this)
@@ -459,7 +460,7 @@ namespace ngfem
             static bool first = true;
             if (first) cerr << "ProxyFunction::EvaluateDDeriv ... should not be here" << endl;
             first = false;
-            evaluator->Apply (*ud->fel, mir, *ud->elx, result);
+            // evaluator->Apply (*ud->fel, mir, *ud->elx, result);
           }
       }
     if (ud->testfunction == this)
@@ -490,7 +491,7 @@ namespace ngfem
             static bool first = true;
             if (first) cerr << "ProxyFunction::EvaluateDDeriv ... should not be here" << endl;
             first = false;
-            evaluator->Apply (*ud->fel, mir, *ud->elx, result);
+            // evaluator->Apply (*ud->fel, mir, *ud->elx, result);
           }
       }
     if (ud->testfunction == this)
@@ -1871,8 +1872,8 @@ namespace ngfem
           ProxyUserData ud(trial_proxies.Size(), gridfunction_cfs.Size(), lh);
           const_cast<ElementTransformation&>(trafo).userdata = &ud;
           ud.fel = &fel;
-          ud.elx = &elveclin;
-          ud.lh = &lh;
+          // ud.elx = &elveclin;
+          // ud.lh = &lh;
           for (ProxyFunction * proxy : trial_proxies)
             {
               ud.AssignMemory (proxy, ir.GetNIP(), proxy->Dimension(), lh);
@@ -1975,8 +1976,8 @@ namespace ngfem
     ProxyUserData ud(trial_proxies.Size(), lh);
     const_cast<ElementTransformation&>(trafo).userdata = &ud;
     ud.fel = &fel;
-    ud.elx = &elveclin;
-    ud.lh = &lh;
+    // ud.elx = &elveclin;
+    // ud.lh = &lh;
     for (ProxyFunction * proxy : trial_proxies)
       {
         ud.AssignMemory (proxy, ir.Size(), proxy->Dimension(), lh);
@@ -2081,8 +2082,8 @@ namespace ngfem
               ProxyUserData ud(trial_proxies.Size(), gridfunction_cfs.Size(), lh);
               const_cast<ElementTransformation&>(trafo).userdata = &ud;
               ud.fel = &fel;
-              ud.elx = &elveclin;
-              ud.lh = &lh;
+              // ud.elx = &elveclin;
+              // ud.lh = &lh;
               for (ProxyFunction * proxy : trial_proxies)
                 {
                   ud.AssignMemory (proxy, ir_facet.GetNIP(), proxy->Dimension(), lh);
@@ -2188,8 +2189,8 @@ namespace ngfem
           ProxyUserData ud(trial_proxies.Size(), lh);          
           const_cast<ElementTransformation&>(trafo).userdata = &ud;
           ud.fel = &fel;
-          ud.elx = &elveclin;
-          ud.lh = &lh;
+          // ud.elx = &elveclin;
+          // ud.lh = &lh;
 
           for (ProxyFunction * proxy : trial_proxies)
             {
@@ -2321,8 +2322,8 @@ namespace ngfem
           ProxyUserData ud(trial_proxies.Size(), gridfunction_cfs.Size(), lh);
           const_cast<ElementTransformation&>(trafo).userdata = &ud;
           ud.fel = &fel;
-          ud.elx = &elx;
-          ud.lh = &lh;
+          // ud.elx = &elx;
+          // ud.lh = &lh;
           for (ProxyFunction * proxy : trial_proxies)
             ud.AssignMemory (proxy, simd_ir.GetNIP(), proxy->Dimension(), lh);
           for (CoefficientFunction * cf : gridfunction_cfs)
@@ -2393,8 +2394,8 @@ namespace ngfem
     ProxyUserData ud(trial_proxies.Size(), lh);    
     const_cast<ElementTransformation&>(trafo).userdata = &ud;
     ud.fel = &fel;
-    ud.elx = &elx;
-    ud.lh = &lh;
+    // ud.elx = &elx;
+    // ud.lh = &lh;
 
     // IntegrationRule ir(trafo.GetElementType(), fel_trial.Order()+fel_test.Order());
     IntegrationRule ir = GetIntegrationRule (fel, lh);
@@ -2465,8 +2466,8 @@ namespace ngfem
         ProxyUserData ud(trial_proxies.Size(), lh);    
         const_cast<ElementTransformation&>(trafo).userdata = &ud;
         ud.fel = &fel;
-        ud.elx = &elx;
-        ud.lh = &lh;
+        // ud.elx = &elx;
+        // ud.lh = &lh;
     
         for (ProxyFunction * proxy : trial_proxies)
           ud.AssignMemory (proxy, ir_facet.GetNIP(), proxy->Dimension(), lh);
@@ -2852,8 +2853,8 @@ namespace ngfem
     ProxyUserData ud(trial_proxies.Size(), lh);
     const_cast<ElementTransformation&>(trafo1).userdata = &ud;
     ud.fel = &fel1;
-    ud.elx = &elveclin;
-    ud.lh = &lh;
+    // ud.elx = &elveclin;
+    // ud.lh = &lh;
     for (ProxyFunction * proxy : trial_proxies)
       {
         ud.AssignMemory (proxy, ir_facet_vol1.Size(), proxy->Dimension(), lh);
@@ -2998,7 +2999,7 @@ namespace ngfem
             const_cast<ElementTransformation&>(trafo1).userdata = &ud;
             ud.fel = &fel1;   // necessary to check remember-map
             // ud.elx = &elx;
-            ud.lh = &lh;
+            // ud.lh = &lh;
             for (ProxyFunction * proxy : trial_proxies)
               ud.AssignMemory (proxy, simd_ir_facet.GetNIP(), proxy->Dimension(), lh);
             for (CoefficientFunction * cf : gridfunction_cfs)
@@ -3117,7 +3118,7 @@ namespace ngfem
     const_cast<ElementTransformation&>(trafo1).userdata = &ud;
     ud.fel = &fel1;   // necessary to check remember-map
     // ud.elx = &elx;
-    ud.lh = &lh;
+    // ud.lh = &lh;
     for (ProxyFunction * proxy : trial_proxies)
       ud.AssignMemory (proxy, ir_facet.Size(), proxy->Dimension(), lh);
 
@@ -3246,7 +3247,7 @@ namespace ngfem
             ProxyUserData ud(trial_proxies.Size(), lh);
             const_cast<ElementTransformation&>(eltrans).userdata = &ud;
             ud.fel = &volumefel;   // necessary to check remember-map
-            ud.lh = &lh;
+            // ud.lh = &lh;
             for (ProxyFunction * proxy : trial_proxies)
 	      if(proxy->IsOther())
 		{
@@ -3298,7 +3299,7 @@ namespace ngfem
     ProxyUserData ud(trial_proxies.Size(), lh);
     const_cast<ElementTransformation&>(eltrans).userdata = &ud;
     ud.fel = &volumefel;   // necessary to check remember-map
-    ud.lh = &lh;
+    // ud.lh = &lh;
 
     for (ProxyFunction * proxy : trial_proxies)
       if(proxy->IsOther())
@@ -3353,7 +3354,7 @@ namespace ngfem
             const_cast<ElementTransformation&>(eltrans).userdata = &ud;
             ud.fel = &volumefel;   // necessary to check remember-map
             // ud.elx = &elx;
-            ud.lh = &lh;
+            // ud.lh = &lh;
 	    
 	    size_t ctrace = 0;	    
 	    for (ProxyFunction * proxy : trial_proxies)
@@ -3431,7 +3432,7 @@ namespace ngfem
     ProxyUserData ud(trial_proxies.Size(), lh);
     const_cast<ElementTransformation&>(eltrans).userdata = &ud;
     ud.fel = &volumefel;   // necessary to check remember-map
-    ud.lh = &lh;
+    // ud.lh = &lh;
 
     size_t ctrace = 0;
     //copy traces to user memory
@@ -3532,7 +3533,7 @@ namespace ngfem
             const_cast<ElementTransformation&>(strafo).userdata = &ud;
             ud.fel = &fel1;   // necessary to check remember-map
             // ud.elx = &elx;
-            ud.lh = &lh;
+            // ud.lh = &lh;
             
             
             for (ProxyFunction * proxy : trial_proxies)
@@ -3627,7 +3628,7 @@ namespace ngfem
     const_cast<ElementTransformation&>(strafo).userdata = &ud;
     ud.fel = &fel1;   // necessary to check remember-map
     // ud.elx = &elx;
-    ud.lh = &lh;
+    // ud.lh = &lh;
     for (ProxyFunction * proxy : trial_proxies)
       ud.AssignMemory (proxy, ir_facet.Size(), proxy->Dimension(), lh);
     
@@ -3800,8 +3801,8 @@ namespace ngfem
                 ProxyUserData ud(trial_proxies.Size(), lh);
                 const_cast<ElementTransformation&>(trafo).userdata = &ud;
                 ud.fel = &fel;
-                ud.elx = &elveclin;
-                ud.lh = &lh;
+                // ud.elx = &elveclin;
+                // ud.lh = &lh;
                 for (ProxyFunction * proxy : trial_proxies)
                   {
                     ud.AssignMemory (proxy, ir.GetNIP(), proxy->Dimension(), lh);
@@ -3833,8 +3834,8 @@ namespace ngfem
                     ProxyUserData ud(trial_proxies.Size(), lh);    
                     const_cast<ElementTransformation&>(trafo).userdata = &ud;
                     ud.fel = &fel;
-                    ud.elx = &elveclin;
-                    ud.lh = &lh;
+                    // ud.elx = &elveclin;
+                    // ud.lh = &lh;
                     
                     for (ProxyFunction * proxy : trial_proxies)
                       {
@@ -3867,8 +3868,8 @@ namespace ngfem
         ProxyUserData ud(trial_proxies.Size(), lh);
         const_cast<ElementTransformation&>(trafo).userdata = &ud;
         ud.fel = &fel;
-        ud.elx = &elveclin;
-        ud.lh = &lh;
+        // ud.elx = &elveclin;
+        // ud.lh = &lh;
         for (ProxyFunction * proxy : trial_proxies)
           {
             ud.AssignMemory (proxy, ir.Size(), proxy->Dimension(), lh);
@@ -3901,8 +3902,8 @@ namespace ngfem
             ProxyUserData ud(trial_proxies.Size(), lh);    
             const_cast<ElementTransformation&>(trafo).userdata = &ud;
             ud.fel = &fel;
-            ud.elx = &elveclin;
-            ud.lh = &lh;
+            // ud.elx = &elveclin;
+            // ud.lh = &lh;
             
             for (ProxyFunction * proxy : trial_proxies)
               {
@@ -4190,8 +4191,8 @@ namespace ngfem
             ProxyUserData ud(trial_proxies.Size(), lh);
             const_cast<ElementTransformation&>(trafo).userdata = &ud;
             ud.fel = &fel;
-            ud.elx = &elx;
-            ud.lh = &lh;
+            // ud.elx = &elx;
+            // ud.lh = &lh;
             
             for (ProxyFunction * proxy : trial_proxies)
               {
@@ -4224,8 +4225,8 @@ namespace ngfem
         ProxyUserData ud(trial_proxies.Size(), lh);
         const_cast<ElementTransformation&>(trafo).userdata = &ud;
         ud.fel = &fel;
-        ud.elx = &elx;
-        ud.lh = &lh;
+        // ud.elx = &elx;
+        // ud.lh = &lh;
         
         for (ProxyFunction * proxy : trial_proxies)
           {
@@ -4261,8 +4262,8 @@ namespace ngfem
             ProxyUserData ud(trial_proxies.Size(), lh);    
             const_cast<ElementTransformation&>(trafo).userdata = &ud;
             ud.fel = &fel;
-            ud.elx = &elx;
-            ud.lh = &lh;
+            // ud.elx = &elx;
+            // ud.lh = &lh;
             
             for (ProxyFunction * proxy : trial_proxies)
               {
@@ -4293,8 +4294,8 @@ namespace ngfem
     ProxyUserData ud(trial_proxies.Size(), lh);        
     const_cast<ElementTransformation&>(trafo).userdata = &ud;
     ud.fel = &fel;
-    ud.elx = &elx;
-    ud.lh = &lh;
+    // ud.elx = &elx;
+    // ud.lh = &lh;
 
     if (simd_evaluate && !element_boundary)
       {
@@ -4407,8 +4408,8 @@ namespace ngfem
             ProxyUserData ud(trial_proxies.Size(), lh);    
             const_cast<ElementTransformation&>(trafo).userdata = &ud;
             ud.fel = &fel;
-            ud.elx = &elx;
-            ud.lh = &lh;
+            // ud.elx = &elx;
+            // ud.lh = &lh;
             
             for (ProxyFunction * proxy : trial_proxies)
               {
