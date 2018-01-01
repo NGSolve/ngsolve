@@ -44,6 +44,7 @@ public:
                                 shared_ptr<DifferentialOperator> attrace_evaluator,
                                 shared_ptr<DifferentialOperator> attrace_deriv_evaluator);
 
+  bool IsTrialFunction () const { return !testfunction; }
   bool IsTestFunction () const { return testfunction; }
   bool IsOther() const { return is_other; }
 
