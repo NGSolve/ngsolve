@@ -664,11 +664,8 @@ namespace ngstd
   INLINE SIMD<double,8> fabs (SIMD<double,8> a) { return _mm512_max_pd(a.Data(), -a.Data()); }
   INLINE SIMD<double,8> IfPos (SIMD<double,8> a, SIMD<double> b, SIMD<double> c)
   {
-    /*
-    auto cp = _mm512_cmp_pd (a.Data(), _mm512_setzero_pd(), _CMP_GT_OS);
-    return _mm512_blendv_pd(c.Data(), b.Data(), cp);
-    */
-    throw Exception ("IfPos missing for AVX512");
+    auto k = _mm512_cmp_pd_mask(a.Data(),_mm512_setzero_pd(), _CMP_GT_OS);
+    return _mm512_mask_blend_pd(k,c.Data(),b.Data());
   }
 
 
