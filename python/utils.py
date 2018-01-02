@@ -55,9 +55,9 @@ def HDivDiv(mesh, **args):
     """ Create H(div-div) finite element space. """
     return FESpace("hdivdiv", mesh, **args)
 
-def HDivCurl(mesh, **args):
-    """ Create H(div-curl) finite element space. """
-    return FESpace("hdivcurl", mesh, **args)
+def HCurlDiv(mesh, **args):
+    """ Create H(curl-div) finite element space. """
+    return FESpace("hcurldiv", mesh, **args)
 
 
 def NumberSpace(mesh, **args):
