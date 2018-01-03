@@ -3801,8 +3801,6 @@ namespace ngfem
                 ProxyUserData ud(trial_proxies.Size(), lh);
                 const_cast<ElementTransformation&>(trafo).userdata = &ud;
                 ud.fel = &fel;
-                // ud.elx = &elveclin;
-                // ud.lh = &lh;
                 for (ProxyFunction * proxy : trial_proxies)
                   {
                     ud.AssignMemory (proxy, ir.GetNIP(), proxy->Dimension(), lh);
@@ -3834,9 +3832,6 @@ namespace ngfem
                     ProxyUserData ud(trial_proxies.Size(), lh);    
                     const_cast<ElementTransformation&>(trafo).userdata = &ud;
                     ud.fel = &fel;
-                    // ud.elx = &elveclin;
-                    // ud.lh = &lh;
-                    
                     for (ProxyFunction * proxy : trial_proxies)
                       {
                         ud.AssignMemory (proxy, ir_facet.GetNIP(), proxy->Dimension(), lh);
@@ -4095,6 +4090,7 @@ namespace ngfem
                 {
                   HeapReset hr(lh);
                   if (!nonzeros_proxies(k1,l1)) continue;
+                  if (k1 < l1) continue;
                   auto proxy1 = trial_proxies[k1];
                   auto proxy2 = trial_proxies[l1];
 
@@ -4118,9 +4114,15 @@ namespace ngfem
                           {
                             // cf -> EvaluateDDeriv (mir, AFlatMatrix<>(val), AFlatMatrix<>(deriv), AFlatMatrix<> (dderiv));
                             // proxyrow = dderiv.Row(0);
-                            cf -> Evaluate (mir, ddval);
-                            for (auto i : Range(proxyrow))
-                              proxyrow(i) = ddval(i).DDValue(0);
+
+                            if (k1 != l1 || k <= l)
+                              {
+                                cf -> Evaluate (mir, ddval);
+                                for (auto i : Range(proxyrow))
+                                  proxyrow(i) = ddval(i).DDValue(0);
+                              }
+                            if (k1 == l1 && k < l) // symmetric
+                              proxyvalues2.Row(l*dim_proxy2+k) = proxyrow;
                           }
                         else
                           {
@@ -4171,6 +4173,8 @@ namespace ngfem
                   {
                   ThreadRegionTimer reg(tmult, tid);                  
                   AddABt (hbmat2.Rows(r2), hdbmat1.Rows(r1), part_elmat);
+                  if (k1 > l1)
+                    elmat.Rows(r1).Cols(r2) = Trans(part_elmat);
                   }
                 }
   }
