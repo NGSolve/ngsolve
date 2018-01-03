@@ -747,7 +747,7 @@ public:
     SymbolicEnergy (shared_ptr<CoefficientFunction> acf, VorB avb, bool aelement_boundary);
 
     virtual VorB VB() const { return vb; }
-    virtual xbool IsSymmetric() const { return maybe; } 
+    virtual xbool IsSymmetric() const { return true; } 
     virtual string Name () const { return string ("Symbolic Energy"); }
 
     virtual void 

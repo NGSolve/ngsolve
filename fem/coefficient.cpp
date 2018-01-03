@@ -5331,34 +5331,33 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
                            BareSliceMatrix<AutoDiff<1,SIMD<double>>> values) const
     {
       if(compiled_function_simd_deriv)
-      {
-        compiled_function_simd_deriv(ir, values);
-        return;
-      }
+        {
+          compiled_function_simd_deriv(ir, values);
+          return;
+        }
       
       typedef AutoDiff<1,SIMD<double>> T;
       STACK_ARRAY(T, hmem, ir.Size()*totdim);      
-      int mem_ptr = 0;
+      size_t mem_ptr = 0;
+
       ArrayMem<BareSliceMatrix<T>,100> temp(steps.Size());
       ArrayMem<BareSliceMatrix<T>,100> in(max_inputsize);
 
-      for (int i = 0; i < steps.Size(); i++)
+      for (size_t i = 0; i < steps.Size()-1; i++)
         {
           new (&temp[i]) BareSliceMatrix<T> (ir.Size(), &hmem[mem_ptr], DummySize(dim[i], ir.Size()));
           mem_ptr += ir.Size()*dim[i];
         }
-
-      for (int i = 0; i < steps.Size(); i++)
+      // the final step goes to result matrix
+      new (&temp.Last()) BareSliceMatrix<T>(values);
+      
+      for (size_t i = 0; i < steps.Size(); i++)
         {
           auto inputi = inputs[i];
-          for (int nr : Range(inputi))
+          for (size_t nr : Range(inputi))
             new (&in[nr]) BareSliceMatrix<T> (temp[inputi[nr]]);
-          // in[nr] = &temp[inputi[nr]];
-
           steps[i] -> Evaluate (ir, in.Range(0, inputi.Size()), temp[i]);
         }
-
-      values.AddSize(Dimension(), ir.Size()) = temp.Last();
     }
 
 
