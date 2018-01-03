@@ -302,7 +302,9 @@ namespace ngcomp
 	  break;
 	}
       case BBBND:
-        throw Exception("No BBBND GetFE implemented for FacetSurfaceFESpace");
+        //throw Exception("No BBBND GetFE implemented for FacetSurfaceFESpace");
+	return * new (lh) DummyFE<ET_POINT>();
+	break;
       }
   }
 
