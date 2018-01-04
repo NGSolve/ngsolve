@@ -960,6 +960,11 @@ namespace ngbla
     {
       return SliceMatrix<T> (h, W, DIST, data);
     }
+
+    INLINE operator BareSliceMatrix<T> () const
+    {
+      return BareSliceMatrix<T> (DIST, data, DummySize(h,W) );
+    }
   };
 
 
@@ -1594,14 +1599,10 @@ namespace ngbla
 
 
 
-  template <typename T, ORDERING ORD> //  = RowMajor>
+  template <typename T, ORDERING ORD> 
   class BareSliceMatrix : public CMCPMatExpr<BareSliceMatrix<T,ORD>>, DummySize
   {
   protected:
-    /// the height
-    // size_t h;
-    /// the width
-    // size_t w;
     /// the distance
     size_t dist;
     /// the data
@@ -1615,7 +1616,7 @@ namespace ngbla
     enum { IS_LINEAR = 0 };
 
     // 
-    BareSliceMatrix() = delete;
+    BareSliceMatrix() : DummySize(0,0) { ; } // initialize with placement new later
     INLINE BareSliceMatrix(const BareSliceMatrix &) = default;
 
     BareSliceMatrix (const FlatMatrix<T> & mat)
@@ -1626,6 +1627,12 @@ namespace ngbla
       : DummySize(mat.Height(), mat.Width()), dist(mat.Dist()), data(&mat(0,0))
     { ; }
 
+    template<int H, int W>
+    BareSliceMatrix (Mat<H,W,T> & mat)
+      : DummySize(mat.Height(), mat.Width()), dist(mat.Width()), data(&mat(0,0))
+    { ; }
+
+    
     BareSliceMatrix (size_t adist, T * adata, DummySize ds) : DummySize(ds), dist(adist), data(adata) { ; } 
     
     BareSliceMatrix & operator= (const BareSliceMatrix & m) = delete;
@@ -1662,12 +1669,12 @@ namespace ngbla
       return BareSliceMatrix ( /* next-first, w, */ dist, data+first*dist, DummySize(next-first, Width()));
     }
 
-    INLINE BareSliceVector<T> Col (size_t col)
+    INLINE const BareSliceVector<T> Col (size_t col)
     {
       return SliceVector<T> (Height(), dist, data+col);
     }
     
-    INLINE BareVector<T> Row (size_t i) const
+    INLINE const BareVector<T> Row (size_t i) const
     {
       return BareVector<T> (data+i*dist);
     }

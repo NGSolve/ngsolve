@@ -44,6 +44,7 @@ public:
                                 shared_ptr<DifferentialOperator> attrace_evaluator,
                                 shared_ptr<DifferentialOperator> attrace_deriv_evaluator);
 
+  bool IsTrialFunction () const { return !testfunction; }
   bool IsTestFunction () const { return testfunction; }
   bool IsOther() const { return is_other; }
 
@@ -157,6 +158,34 @@ public:
   NGS_DLL_HEADER virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & ir,
                                AFlatMatrix<double> values, AFlatMatrix<double> deriv,
                                AFlatMatrix<double> dderiv) const;
+
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
+                         FlatArray<BareSliceMatrix<SIMD<double>>> input,
+                         BareSliceMatrix<SIMD<double>> values) const
+  {
+    ProxyFunction::Evaluate (ir, values);
+  }
+  
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, 
+                         BareSliceMatrix<AutoDiff<1,SIMD<double>>> values) const;
+
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
+                         FlatArray<BareSliceMatrix<AutoDiff<1,SIMD<double>>>> input,
+                         BareSliceMatrix<AutoDiff<1,SIMD<double>>> values) const
+  {
+    ProxyFunction::Evaluate (ir, values);
+  }
+  
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, 
+                         BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>> values) const;
+
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
+                         FlatArray<BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>>> input,
+                         BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>> values) const
+  {
+    ProxyFunction::Evaluate (ir, values);
+  }
+  
   
   virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
                               FlatArray<AFlatMatrix<>*> input,
@@ -181,7 +210,10 @@ public:
   
   virtual bool ElementwiseConstant () const { return true; }
 
-  NGS_DLL_HEADER virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const;
+  NGS_DLL_HEADER virtual void NonZeroPattern (const class ProxyUserData & ud,
+                                              FlatVector<bool> nonzero,
+                                              FlatVector<bool> nonzero_deriv,
+                                              FlatVector<bool> nonzero_dderiv) const;
 };
 
 class ProxyUserData
@@ -200,8 +232,8 @@ public:
   int trial_comp;
   
   const FiniteElement * fel = nullptr;
-  const FlatVector<double> * elx;
-  LocalHeap * lh;
+  // const FlatVector<double> * elx;
+  // LocalHeap * lh;
 
   ProxyUserData ()
     : remember_first(0,nullptr), remember_second(0,nullptr), remember_asecond(0,nullptr),
@@ -706,12 +738,16 @@ public:
     Array<ProxyFunction*> trial_proxies;
     bool element_boundary;    
     mutable bool simd_evaluate;
+    Timer timer{"SymbolicEnergy",2};
+    Array<int> trial_cum;     // cumulated dimension of proxies
+    Matrix<bool> nonzeros;    // do components interact ? 
+    Matrix<bool> nonzeros_proxies; // do proxies interact ?
     
   public:
     SymbolicEnergy (shared_ptr<CoefficientFunction> acf, VorB avb, bool aelement_boundary);
 
     virtual VorB VB() const { return vb; }
-    virtual xbool IsSymmetric() const { return maybe; } 
+    virtual xbool IsSymmetric() const { return true; } 
     virtual string Name () const { return string ("Symbolic Energy"); }
 
     virtual void 
@@ -730,13 +766,19 @@ public:
                                  FlatMatrix<double> elmat,
                                  LocalHeap & lh) const;
 
-    void 
-    AddLinearizedElementMatrix (const FiniteElement & fel,
-                                ProxyUserData & trafo, 
-                                const BaseMappedIntegrationRule & mir, 
-                                FlatVector<double> elveclin,
-                                FlatMatrix<double> elmat,
-                                LocalHeap & lh) const;
+    void AddLinearizedElementMatrix (const FiniteElement & fel,
+                                     ProxyUserData & ud, 
+                                     const BaseMappedIntegrationRule & mir, 
+                                     FlatVector<double> elveclin,
+                                     FlatMatrix<double> elmat,
+                                     LocalHeap & lh) const;
+
+    void AddLinearizedElementMatrix (const FiniteElement & fel,
+                                     ProxyUserData & ud, 
+                                     const SIMD_BaseMappedIntegrationRule & mir, 
+                                     FlatVector<double> elveclin,
+                                     FlatMatrix<double> elmat,
+                                     LocalHeap & lh) const;
 
 
     virtual double Energy (const FiniteElement & fel, 

@@ -109,6 +109,29 @@ namespace ngcomp
         }
       mat = Trans(trans) * Trans (shape);
     }
+
+    static void GenerateMatrixSIMDIR (const FiniteElement & fel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      Cast(fel).CalcMappedShape_Matrix (mir, mat);      
+    }
+
+    using DiffOp<DiffOpIdHDivDivSurface<D, FEL> >::ApplySIMDIR;    
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      Cast(fel).Evaluate_Matrix (mir, x, y);
+    }
+
+    using DiffOp<DiffOpIdHDivDivSurface<D, FEL> >::AddTransSIMDIR;        
+    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      Cast(fel).AddTrans_Matrix (mir, y, x);
+    }    
+    
+    
   };
 
   template <int D, typename FEL = HDivDivFiniteElement<D-1> >

@@ -211,8 +211,10 @@ namespace ngstd
 
     // collect timings
     for (size_t i = 0; i < num_threads; i++)
-      for (size_t j = 0; j < NgProfiler::SIZE; j++)
+      // for (size_t j = 0; j < NgProfiler::SIZE; j++)
+      for (size_t j = NgProfiler::SIZE; j-- > 0; )
         {
+          if (!NgProfiler::usedcounter[j]) break;
           NgProfiler::tottimes[j] += 1.0/3.1e9 * NgProfiler::thread_times[i*NgProfiler::SIZE+j];
           NgProfiler::flops[j] += NgProfiler::thread_flops[i*NgProfiler::SIZE+j];
         }
