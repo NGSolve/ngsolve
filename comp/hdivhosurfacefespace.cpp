@@ -125,6 +125,8 @@ public:
 	Trans (static_cast<const FEL&>(fel).GetDivShape(mip.IP(),lh));
     }
 
+  static string Name() { return "div"; }
+
 };
 
   
