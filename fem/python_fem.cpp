@@ -650,6 +650,14 @@ val : can be one of the following:
                                [](bool a, bool b) { return a||b; }, 'X' /* FUNC::Name() */);
            } )
 
+    .def ("__pow__", [] (shared_ptr<CF> c1, double val)
+           {
+             GenericPow func;
+	     auto c2 = make_shared<ConstantCoefficientFunction>(val);
+             return BinaryOpCF(c1, c2, func,
+                               [](bool a, bool b) { return a||b; }, 'X' /* FUNC::Name() */);
+           } )  
+
     .def ("InnerProduct", [] (shared_ptr<CF> c1, shared_ptr<CF> c2)
            { 
              return InnerProduct (c1, c2);

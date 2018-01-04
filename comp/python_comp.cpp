@@ -1854,6 +1854,52 @@ kwargs : For a description of the possible kwargs have a look a bit further down
          },
          py::arg("vector"))
     ;
+
+  py::class_<HDivHighOrderSurfaceFESpace, shared_ptr<HDivHighOrderSurfaceFESpace>,FESpace>
+    (m, "HDivSurface")
+    .def("__init__", [] (py::object self, shared_ptr<MeshAccess> ma, py::kwargs kwargs)
+         {
+           auto myclass = self.attr("__class__");
+           py::list info;
+           info.append(ma);
+           auto flags = CreateFlagsFromKwArgs(myclass, kwargs, info);
+           auto instance = py::cast<HDivHighOrderSurfaceFESpace*>(self);
+           new (instance) HDivHighOrderSurfaceFESpace(ma, flags);
+           self.attr("__initialize__")(**kwargs);
+         })
+    .def(py::pickle(fesPickle,(shared_ptr<HDivHighOrderSurfaceFESpace>(*)(py::tuple))
+                    fesUnpickle<HDivHighOrderSurfaceFESpace>))
+    .def_static("__flags_doc__", [] ()
+                {
+                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
+                                                  attr("FESpace").
+                                                  attr("__flags_doc__")());
+                  flags_doc["discontinuous"] = "bool = False\n"
+                    "  Create discontinuous HDivSurface space";
+                  return flags_doc;
+                })
+    .def("Average",
+         [] (shared_ptr<HDivHighOrderSurfaceFESpace> hdivsurffes, BaseVector & bv)
+         {
+           auto & pairs = hdivsurffes->GetDCPairs();
+           auto fu = bv.FV<double>();
+           for (auto pair : pairs)
+             {
+               auto f1 = pair[0];
+               auto f2 = pair[1];
+               if (f2 != -1)
+                 {
+                   double mean = 0.5 * (fu(f1) + fu(f2));
+                   fu(f1) = fu(f2) = mean;
+                 }
+               else if (f1 != -1)
+                 fu(f1) = 0.0;
+             }
+         },
+         py::arg("vector"))
+    ;
+
+  
   
   // py::class_<CompoundFESpace, shared_ptr<CompoundFESpace>, FESpace>
   //   (m, "CompoundFESpace")
@@ -1977,7 +2023,10 @@ used_idnrs : list of int = None
                 {
                   return py::dict
                     (
-                     py::arg("multidim") = "Multidimensional GridFunction"
+                     py::arg("multidim") = "Multidimensional GridFunction",
+                     py::arg("nested") = "bool = False\n"
+		     " Generates prolongation matrices for each mesh level and prolongates\n"
+		     " the solution onto the finer grid after a refinement."
                      );
                 })
     .def(py::pickle([] (const GridFunction& gf)
@@ -2391,7 +2440,9 @@ check_unused : bool
                      "  When calling bf.Assemble, all saved coarse matrices from\n"
                      "  mesh refinements are updated as well using a Galerkin projection\n"
                      "  of the matrix on the finest grid. This is needed to use the multigrid\n"
-                     "  preconditioner with a changing bilinearform."
+                     "  preconditioner with a changing bilinearform.",
+		     py::arg("nonsym_storage") = "bool = False\n"
+		     " The full matrix is stored, even if the symmetric flag is set."
                      );
                 })
 
