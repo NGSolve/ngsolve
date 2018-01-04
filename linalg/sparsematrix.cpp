@@ -187,9 +187,6 @@ namespace ngla
   }  
 
 
-
-
-
   template <typename FUNC>
   INLINE void MergeArrays (FlatArray<int*> ptrs,
                            FlatArray<int> sizes,
@@ -424,49 +421,38 @@ namespace ngla
       {
         if (!symmetric)
           {
-            /*
-            SharedLoop sl(Range(ndof));
-            task_manager->CreateJob 
-              ([&](const TaskInfo & ti)
-            */
-
             ParallelForRange 
               (Range(ndof), [&](IntRange myr) 
                {
                  ArrayMem<int, 50> sizes;
                  ArrayMem<int*, 50> ptrs;
-                 ArrayMem<int,50> tmp;
-                 
-                 // auto myr = Range(ndof).Split (ti.task_nr,ti.ntasks);
+
                  for (int i : myr)
                    {
-                     // prof[i].tstart = WallTime();
-                     // prof[i].size = dof2element[i].Size();
-
                      sizes.SetSize(dof2element[i].Size());
                      ptrs.SetSize(dof2element[i].Size());
-                     tmp.SetSize(dof2element[i].Size());
+
                      for (int j : dof2element[i].Range())
                        {
                          sizes[j] = colelements[dof2element[i][j]].Size();
-                         // ptrs[j] = &colelements[dof2element[i][j]][0];
                          ptrs[j] = colelements[dof2element[i][j]].Addr(0);
                        }
                      
-                     int cnti = 0;
                      if (loop == 1)
                        {
-                         MergeArrays(ptrs, sizes /* , tmp */, [&] (int col) { cnti++; } );
+                         int cnti = 0;
+                         MergeArrays(ptrs, sizes, [&cnti] (int col) { cnti++; } );
                          cnt[i] = cnti;
                        }
                      else
-                       MergeArrays(ptrs, sizes /* , tmp */, [&] (int col) 
-                                   {
-                                     colnr[firsti[i]+cnti] = col;
-                                     cnti++; 
-                                   } );
-
-                     // prof[i].tend = WallTime();
+                       {
+                         auto ptr = &colnr[firsti[i]];
+                         MergeArrays(ptrs, sizes, [&ptr] (int col) 
+                                     {
+                                       *ptr = col;
+                                       ptr++;
+                                     } );
+                       }
                    }
                },
                TasksPerThread(20));
@@ -474,11 +460,6 @@ namespace ngla
           }
         else
           {
-            /*
-            SharedLoop sl(Range(ndof));
-            task_manager->CreateJob 
-              ([&](const TaskInfo & ti)
-            */
             ParallelForRange 
               (Range(ndof),[&](IntRange myr)
                {
@@ -2015,7 +1996,7 @@ namespace ngla
                  sizes[j] = matb.GetRowIndices(mata_ci[j]).Size();
                }
              int cnti = 0;
-             MergeArrays(ptrs, sizes, [&] (int col) { cnti++; } );
+             MergeArrays(ptrs, sizes, [&cnti] (int col) { cnti++; } );
              cnt[i] = cnti;
            }
        },
@@ -2043,11 +2024,11 @@ namespace ngla
                  ptrs[j] = matb.GetRowIndices(mata_ci[j]).Addr(0);
                  sizes[j] = matb.GetRowIndices(mata_ci[j]).Size();
                }
-             int cnti = 0;
-             MergeArrays(ptrs, sizes, [&] (int col)
+             int * ptr = prod->GetRowIndices(i).Addr(0);
+             MergeArrays(ptrs, sizes, [&ptr] (int col)
                          {
-                           prod->GetRowIndices(i)[cnti] = col;
-                           cnti++;
+                           *ptr = col;
+                           ptr++;
                          } );
            }
        },

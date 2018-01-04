@@ -71,7 +71,7 @@ namespace ngcomp
        
     virtual void GetFacetDofNrs(int fanr, Array<DofId> & dnums) const;
     
-    virtual void GetInnerDofNrs(int elnr, Array<DofId> & dnums) const;
+    virtual void GetInnerDofNrs(int elnr, Array<DofId> & dnums) const override;
    
     auto GetFacetDofs (size_t nr) const
     {
