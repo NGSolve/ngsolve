@@ -610,6 +610,7 @@ namespace ngla
     for (int k = 0; k < steps; k++)
       for (int c : Range(block_coloring))              
         {
+          /*
           ParallelForRange
             (color_balance[c], [&] (IntRange r)
              {
@@ -636,6 +637,37 @@ namespace ngla
                  }
                
              });
+          */
+          auto col = block_coloring[c];
+          SharedLoop2 sl(col.Range());
+          
+          task_manager -> CreateJob
+              ( [&] (const TaskInfo & ti) 
+                {
+                  VectorMem<100,TVX> hxmax(maxbs);
+                  VectorMem<100,TVX> hymax(maxbs);
+
+                  for (auto mynr : sl)
+                    {
+                      size_t i = col[mynr];
+                      FlatArray<int> block = (*blocktable)[i];
+                      size_t bs = block.Size();
+                      if (!bs) continue;
+                      
+                      FlatVector<TVX> hx = hxmax.Range(0,bs);
+                      FlatVector<TVX> hy = hymax.Range(0,bs);
+                      
+                      for (size_t j = 0; j < bs; j++)
+                        {
+                          auto jj = block[j];
+                          hx(j) = fb(jj) - mat.RowTimesVector (jj, fx);
+                        }
+                      
+                      hy = (invdiag[i]) * hx;
+                      fx(block) += hy;
+                    }
+                });
+            
         }
   }
   
