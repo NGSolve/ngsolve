@@ -2023,7 +2023,10 @@ used_idnrs : list of int = None
                 {
                   return py::dict
                     (
-                     py::arg("multidim") = "Multidimensional GridFunction"
+                     py::arg("multidim") = "Multidimensional GridFunction",
+                     py::arg("nested") = "bool = False\n"
+		     " Generates prolongation matrices for each mesh level and prolongates\n"
+		     " the solution onto the finer grid after a refinement."
                      );
                 })
     .def(py::pickle([] (const GridFunction& gf)
@@ -2437,7 +2440,9 @@ check_unused : bool
                      "  When calling bf.Assemble, all saved coarse matrices from\n"
                      "  mesh refinements are updated as well using a Galerkin projection\n"
                      "  of the matrix on the finest grid. This is needed to use the multigrid\n"
-                     "  preconditioner with a changing bilinearform."
+                     "  preconditioner with a changing bilinearform.",
+		     py::arg("nonsym_storage") = "bool = False\n"
+		     " The full matrix is stored, even if the symmetric flag is set."
                      );
                 })
 
