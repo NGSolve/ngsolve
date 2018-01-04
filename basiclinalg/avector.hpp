@@ -1302,28 +1302,6 @@ namespace ngbla
     // LapackMultAdd (a, Trans(b), 1.0, c, 1.0);
   }
 
-  /*
-    --> ngblas
-  extern 
-  void SubAtDB (SliceMatrix<double> a,
-                SliceVector<double> diag,
-                SliceMatrix<double> b, SliceMatrix<double> c);
-  */
-
-  
-  extern 
-  void SubAtDB (SliceMatrix<Complex> a,
-                SliceVector<Complex> diag,
-                SliceMatrix<Complex> b, SliceMatrix<Complex> c);
-
-  template <typename T>
-  void SubADBt (SliceMatrix<T,ColMajor> a,
-                SliceVector<T> diag,
-                SliceMatrix<T,ColMajor> b, SliceMatrix<T,ColMajor> c)
-  {
-    SubAtDB (Trans(b), diag, Trans(a), Trans(c));
-  }  
-
   
 }
 #endif // FILE_AVECTOR
