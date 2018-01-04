@@ -3137,8 +3137,19 @@ namespace ngfem
         SIMD<double> len = L2Norm (normal);       // that's the surface measure
         normal *= SIMD<double>(1.0)/len;                           // normal vector on physical element
         // SIMD<double> len = 1.0;
-        mip.SetNV(normal);
+        // mip.SetNV(normal);
         mip.SetMeasure (len);
+
+        if (DIM_ELEMENT == DIM_SPACE)
+          {
+            mip.SetNV(normal);
+          }
+        else
+          {
+            Vec<3,SIMD<double>> tang = Cross(Vec<3,SIMD<double>> (normal), Vec<3,SIMD<double>> (mip.GetNV()));
+            mip.SetTV(tang);
+          }
+        
       }
   }
 

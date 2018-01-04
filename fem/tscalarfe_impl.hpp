@@ -39,7 +39,7 @@ namespace ngfem
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   CalcDShape (const IntegrationPoint & ip, 
-              SliceMatrix<> dshape) const
+              BareSliceMatrix<> dshape) const
   {
     // Vec<DIM, AutoDiff<DIM> > adp = ip;
     TIP<DIM,AutoDiff<DIM>> tip = ip;
@@ -52,7 +52,7 @@ namespace ngfem
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
-  CalcShape (const IntegrationRule & ir, SliceMatrix<> shape) const
+  CalcShape (const IntegrationRule & ir, BareSliceMatrix<> shape) const
   {
     for (int i = 0; i < ir.Size(); i++)
       T_CalcShape (TIP<DIM,double> (ir[i]), shape.Col(i));        
@@ -391,18 +391,21 @@ namespace ngfem
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
-  Evaluate (const IntegrationRule & ir, SliceMatrix<> coefs, SliceMatrix<> values) const
+  Evaluate (const IntegrationRule & ir, SliceMatrix<> coefs, BareSliceMatrix<> values) const
   {
     for (int i = 0; i < ir.GetNIP(); i++)
       {
         // Vec<DIM> pt = ir[i].Point();
         TIP<DIM,double> tip(ir[i]);
-        values.Row(i) = 0.0;
+        // values.Row(i) = 0.0;
+        auto hrow = values.Row(i).AddSize(coefs.Width());
+        hrow = 0.0;
         T_CalcShape (tip,
                      SBLambda ( [&](int j, double shape) 
                                 { 
                                   // sum += coefs(i)*shape; 
-                                  values.Row(i) += shape * coefs.Row(j); 
+                                  // values.Row(i) += shape * coefs.Row(j);
+                                  hrow += shape * coefs.Row(j); 
                                 } 
                                 ));
       }
@@ -652,6 +655,37 @@ namespace ngfem
                 BareSliceVector<> coefs,
                 BareSliceMatrix<SIMD<double>> values) const
   {
+    Iterate<4-DIM>
+      ([this,&bmir,coefs,values](auto CODIM)
+       {
+         constexpr int DIMSPACE = DIM+CODIM.value;
+         if (bmir.DimSpace() == DIMSPACE)
+           {
+             auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
+             for (size_t i = 0; i < mir.Size(); i++)
+               {
+                 double *pcoefs = &coefs(0);
+                 const size_t dist = coefs.Dist();
+                 
+                 Vec<DIMSPACE,SIMD<double>> sum(0.0);
+                 TIP<DIM,AutoDiffRec<DIMSPACE,SIMD<double>>>adp = GetTIP(mir[i]);
+                 // GetTIP(mir[i], adp);
+                 this->T_CalcShape (adp,
+                                    SBLambda ([DIMSPACE,&pcoefs,dist,&sum]
+                                              (size_t j, AutoDiffRec<DIMSPACE,SIMD<double>> shape)
+                                              { 
+                                                for (auto k = 0; k < DIMSPACE; k++)
+                                                  sum(k) += *pcoefs * shape.DValue(k); 
+                                                pcoefs += dist;
+                                              }));
+                 for (size_t k = 0; k < DIMSPACE; k++)
+                   values(k,i) = sum(k).Data();
+               }
+           }
+       });
+
+       
+    /*
     if ((DIM == 3) || (bmir.DimSpace() == DIM))
       {
         auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
@@ -679,6 +713,7 @@ namespace ngfem
       {
         cout << "EvaluateGrad(simd) called for boudnary (not implemented)" << endl;        
       }
+    */
   }
 
   
@@ -741,6 +776,7 @@ namespace ngfem
                 BareSliceMatrix<SIMD<double>> values,
                 BareSliceVector<> coefs) const
   {
+    /*
     if ((DIM == 3) || (bmir.DimSpace() == DIM))
       {
         auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
@@ -766,6 +802,34 @@ namespace ngfem
       {
         cout << "AddGradTrans called for boudnary (not implemented)" << endl;
       }
+    */
+    Iterate<4-DIM>
+      ([&](auto CODIM)
+       {
+         constexpr auto DIMSPACE = DIM+CODIM.value;
+         if (bmir.DimSpace() == DIMSPACE)
+           {
+             auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
+             for (size_t i = 0; i < mir.Size(); i++)
+               
+               {
+                 TIP<DIM,AutoDiffRec<DIMSPACE,SIMD<double>>>adp;
+                 GetTIP(mir[i], adp);
+                 double * pcoef = &coefs(0);
+                 size_t dist = coefs.Dist();            
+                 this->T_CalcShape (adp,
+                              SBLambda ([&] (size_t j, AutoDiffRec<DIMSPACE,SIMD<double>> shape)
+                                        {
+                                          SIMD<double> sum = 0.0;
+                                          for (size_t k = 0; k < DIMSPACE; k++)
+                                            sum += shape.DValue(k) * values(k,i);
+                                          // coefs(j) += HSum(sum);
+                                          *pcoef += HSum(sum);
+                                          pcoef += dist;
+                                        }));
+               }
+           }
+       });
   }
   
   /*
@@ -816,7 +880,7 @@ namespace ngfem
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   CalcMappedDShape (const MappedIntegrationPoint<DIM,DIM> & mip, 
-		    SliceMatrix<> dshape) const
+		    BareSliceMatrix<> dshape) const
   {
     Vec<DIM, AutoDiff<DIM>> adp = mip;
 
@@ -829,7 +893,7 @@ namespace ngfem
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   CalcMappedDShape (const MappedIntegrationRule<DIM,DIM> & mir, 
-		    SliceMatrix<> dshape) const
+		    BareSliceMatrix<> dshape) const
   {
     for (int i = 0; i < mir.Size(); i++)
       T_ScalarFiniteElement::CalcMappedDShape (mir[i], dshape.Cols(i*DIM,(i+1)*DIM));

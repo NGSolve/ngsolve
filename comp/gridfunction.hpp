@@ -13,7 +13,7 @@ namespace ngcomp
 
   class GridFunction;
 
-  class NGS_DLL_HEADER GridFunctionCoefficientFunction : public CoefficientFunction
+  class NGS_DLL_HEADER GridFunctionCoefficientFunction : public CoefficientFunctionNoDerivative
   {
   protected:
     shared_ptr<GridFunction> gf_shared_ptr;
@@ -73,7 +73,16 @@ namespace ngcomp
                                 AFlatMatrix<> result,
                                 AFlatMatrix<> deriv) const
     { Evaluate (ir, result); deriv = 0.0; }
-    virtual bool StoreUserData() const { return true; }    
+    virtual bool StoreUserData() const { return true; }
+
+    virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
+                                 FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const
+    {
+      nonzero = true;
+      nonzero_deriv = false;
+      nonzero_dderiv = false;
+    }
+    
   };
 
 
