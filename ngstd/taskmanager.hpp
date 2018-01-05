@@ -550,6 +550,10 @@ public:
     
     
   public:
+    SharedLoop2 ()
+      : ranges(TaskManager::GetNumThreads())
+    { ; }
+    
     SharedLoop2 (IntRange r)
       : ranges(TaskManager::GetNumThreads())
     {
