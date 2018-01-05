@@ -607,6 +607,7 @@ namespace ngla
     FlatVector<TVX> fb = b.FV<TVX> (); 
     FlatVector<TVX> fx = x.FV<TVX> ();
 
+#ifdef OLD
     for (int k = 0; k < steps; k++)
       for (int c : Range(block_coloring))              
         {
@@ -638,6 +639,7 @@ namespace ngla
                
              });
           */
+
           auto col = block_coloring[c];
           SharedLoop2 sl(col.Range());
           
@@ -669,6 +671,48 @@ namespace ngla
                 });
             
         }
+#endif
+
+    Array<SharedLoop2> loops(block_coloring.Size());
+    
+    for (int k = 0; k < steps; k++)
+      {
+        for (int c : Range(block_coloring))
+          loops[c].Reset (block_coloring[c].Range());
+
+        task_manager -> CreateJob
+          ( [&] (const TaskInfo & ti) 
+            {
+              VectorMem<100,TVX> hxmax(maxbs);
+              VectorMem<100,TVX> hymax(maxbs);
+              
+              for (int c : Range(block_coloring))              
+                {
+                  auto col = block_coloring[c];
+                  // SharedLoop2 sl(col.Range());
+
+                  for (auto mynr : loops[c])
+                    {
+                      size_t i = col[mynr];
+                      FlatArray<int> block = (*blocktable)[i];
+                      size_t bs = block.Size();
+                      if (!bs) continue;
+                      
+                      FlatVector<TVX> hx = hxmax.Range(0,bs);
+                      FlatVector<TVX> hy = hymax.Range(0,bs);
+                      
+                      for (size_t j = 0; j < bs; j++)
+                        {
+                          auto jj = block[j];
+                          hx(j) = fb(jj) - mat.RowTimesVector (jj, fx);
+                        }
+                      
+                      hy = (invdiag[i]) * hx;
+                      fx(block) += hy;
+                    }
+                }
+            });
+      }
   }
   
 
