@@ -377,23 +377,28 @@ namespace ngstd
     /// Fill array with value val
     INLINE const FlatArray & operator= (const T & val) const
     {
-      for (size_t i = 0; i < size; i++)
-        data[i] = val;
+      size_t hsize = size;
+      T * hdata = data;
+      for (size_t i = 0; i < hsize; i++)
+        hdata[i] = val;
       return *this;
     }
 
     /// copies array
     INLINE const FlatArray & operator= (const FlatArray & a2) const
     {
-      for (size_t i = 0; i < size; i++) data[i] = a2[i];
+      size_t hsize = size;
+      T * hdata = data;
+      for (size_t i = 0; i < hsize; i++) hdata[i] = a2[i];
       return *this;
     }
 
     template <typename T2>
     INLINE const FlatArray & operator= (const BaseArrayObject<T2> & a2) const
     {
+      size_t hsize = size;
       T * hdata = data;
-      for (size_t i = 0; i < size; i++) hdata[i] = a2[i];
+      for (size_t i = 0; i < hsize; i++) hdata[i] = a2[i];
       return *this;
     }
 
