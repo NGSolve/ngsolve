@@ -1116,63 +1116,6 @@ namespace ngla
   }
   
 
-  /*
-  template <>
-  void SparseMatrixTM<double> :: SetZero ()
-  {
-    static Timer t("SparseMatrixTM<double>::SetZero (taskhandler)");
-    t.AddFlops (this->NZE());
-    RegionTimer reg(t);
-
-    
-    int ntasks = task_manager->GetNumThreads();
-    task_manager -> CreateJob 
-      ([&] (TaskInfo & ti) 
-       {
-         numa_run_on_node (ti.node_nr);
-
-         int tasks_per_part = ti.ntasks / balance.Size();
-         int mypart = ti.task_nr / tasks_per_part;
-         int num_in_part = ti.task_nr % tasks_per_part;
-         
-         auto myrange = balance[mypart].Split (num_in_part, tasks_per_part);
-         
-         // data.Range(firsti[row], firsti[row+1]) = 0.0;
-
-         double * startp = &data[firsti[myrange.begin()]];
-         double * endp = &data[firsti[myrange.end()]];
-         
-         long int start_li = (long int)startp;
-         long int roundup_li = (start_li & (-32)) + 32;
-         double * roundup = (double*)roundup_li;
-         
-         if (endp < roundup) 
-           {
-             data.Range(firsti[myrange.begin()], firsti[myrange.end()]) = 0.0;
-             return;
-           }
-
-         for (double * hp = startp; hp < roundup; hp++)
-           *hp = 0.0;
-         
-         double * hp;
-         for (hp = roundup; hp < endp-4; hp+=4)
-           {
-             _mm256_stream_pd (hp, _mm256_setzero_pd());
-             // _mm256_store_pd (hp, _mm256_setzero_pd());
-             // *hp = 0.0;
-             // *(hp+1) = 0.0;
-             // *(hp+2) = 0.0;
-             // *(hp+3) = 0.0;
-             
-           }
-         for ( ; hp < endp; hp++)
-           *hp = 0.0;
-       });
-  }
-  */
-
-
 
   template <class TM, class TV_ROW, class TV_COL>
   SparseMatrix<TM,TV_ROW,TV_COL> :: SparseMatrix (const MatrixGraph & agraph, bool stealgraph)
@@ -1236,70 +1179,6 @@ namespace ngla
 
     timer.AddFlops (this->NZE());
   }
-
-
-#ifdef NONE
-  template<>
-  void SparseMatrix<double,double,double> ::
-  MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
-  {
-    static Timer timer ("SparseMatrix::MultTransAdd<double>");
-
-    FlatVector<TVX> fx = x.FV<TVX>(); 
-    FlatVector<TVX> fy = y.FV<TVY>(); 
-
-    /*
-    for (int i = 0; i < this->Height(); i++)
-      AddRowTransToVector (i, s*fx(i), fy);
-    */
-
-    /*
-    ParallelFor (balance, [fx,fy,s,this](int row) 
-                 {
-                   AddRowTransToVector (row, s*fx(row), fy);
-                 });
-    */
-
-
-    // copy local vectors
-    static Timer tc("SparseMatrix::MultTransAdd - copy source vector (taskhandler)");
-    tc.Start();
-
-    Array<Vector<TVX>> locvecs(task_manager->GetNumNodes());
-    task_manager ->CreateJob 
-      ([&] (const TaskInfo & ti)
-       {
-         locvecs[ti.node_nr].SetSize(fx.Size());
-         locvecs[ti.node_nr] = 0.0;
-       }, task_manager->GetNumNodes());
-    tc.Stop();
-    
-    timer.Start();
-    int ntasks = task_manager->GetNumThreads();
-    task_manager -> CreateJob 
-      ([&] (TaskInfo & ti) 
-       {
-         int tasks_per_part = ti.ntasks / balance.Size();
-         int mypart = ti.task_nr / tasks_per_part;
-         int num_in_part = ti.task_nr % tasks_per_part;
-         
-         auto myrange = balance[mypart].Split (num_in_part, tasks_per_part);
-         
-         FlatVector<TVX> myfy = locvecs[ti.node_nr];
-
-         for (auto row : myrange) 
-           AddRowTransToVector (row, s*fx(row), myfy);
-         // fy(row) += s * RowTimesVector (row, myfx);
-       }, ntasks);
-    timer.Stop();
-    
-    fy += locvecs[0] + locvecs[1];
-
-
-    timer.AddFlops (this->NZE());
-  }
-#endif
-
 
 
   template <class TM, class TV_ROW, class TV_COL>

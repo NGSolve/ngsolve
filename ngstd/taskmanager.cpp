@@ -35,7 +35,6 @@ namespace ngstd
   const function<void()> * TaskManager::cleanup_function = nullptr;
 
   atomic<int> TaskManager::ntasks;
-  atomic<int> TaskManager::completed_tasks;
   Exception * TaskManager::ex;
   
   atomic<int> TaskManager::jobnr;
@@ -135,17 +134,12 @@ namespace ngstd
           nodedata[j] = new (mem) NodeData;
 	  complete[j] = -1;
           workers_on_node[j] = 0;          
-          // nodedata[j]->participate = -1;
         }
 #else
-
-
-
       num_nodes = 1;
       nodedata[0] = new NodeData;
       complete[0] = -1;
       workers_on_node[0] = 0;
-      // nodedata[0]->participate = -1;
 #endif
 
       jobnr = 0;
@@ -182,10 +176,7 @@ namespace ngstd
   void TaskManager :: StartWorkers()
   {
     done = false;
-    // sync.SetSize(num_threads);
-    // sync[0] = new atomic<int>(0);
-    completed_tasks = 0;
-    nodedata[0]->completed_tasks = 0;
+
     for (int i = 1; i < num_threads; i++)
       {
         std::thread([this,i]() { this->Loop(i); }).detach();
@@ -211,7 +202,6 @@ namespace ngstd
 
     // collect timings
     for (size_t i = 0; i < num_threads; i++)
-      // for (size_t j = 0; j < NgProfiler::SIZE; j++)
       for (size_t j = NgProfiler::SIZE; j-- > 0; )
         {
           if (!NgProfiler::usedcounter[j]) break;
@@ -221,11 +211,10 @@ namespace ngstd
     delete [] NgProfiler::thread_times;
     NgProfiler::thread_times = dummy_thread_times;
     delete [] NgProfiler::thread_flops;
-    NgProfiler::thread_flops = dummy_thread_flops;    
+    NgProfiler::thread_flops = dummy_thread_flops;
+    
     while (active_workers)
       ;
-    // delete sync[0];
-    // cout << "workers all stopped !!!!!!!!!!!!!!!!!!!" << endl;
   }
 
 
@@ -240,7 +229,7 @@ namespace ngstd
         TaskInfo ti;
         ti.ntasks = antasks;
         ti.thread_nr = 0; ti.nthreads = 1;
-        ti.node_nr = 0; ti.nnodes = 1;
+        // ti.node_nr = 0; ti.nnodes = 1;
         for (ti.task_nr = 0; ti.task_nr < antasks; ti.task_nr++)
           afunc(ti);
 
@@ -250,67 +239,34 @@ namespace ngstd
 
     
     trace->StartJob(jobnr, afunc.target_type());
-    /*
-    for (int j = 0; j < num_nodes; j++)
-      {
-        while (nodedata[j]->participate > 0);
-        int oldval = 0;
-        while (!nodedata[j]->participate.compare_exchange_weak (oldval, -1))
-          oldval = 0;
-      }
-    */
+
     func = &afunc;
-    // sync[0]->store(1); // , memory_order_release);
 
     ntasks.store (antasks); // , memory_order_relaxed);
     ex = nullptr;
 
-    // atomic_thread_fence (memory_order_release);
-
-    /*
-    for (int j = 0; j < num_nodes; j++)
-      {
-        // nodedata[j]->start_cnt.store (0, memory_order_relaxed);
-        // nodedata[j]->complete_cnt.store (0, memory_order_relaxed);
-
-        // complete[j].store (0, memory_order_relaxed);
-      }
-    */
 
     nodedata[0]->start_cnt.store (0, memory_order_relaxed);
 
-    // complete_cnt = 0;
     jobnr++;
     
     for (int j = 0; j < num_nodes; j++)
-      {
-        // nodedata[j]->participate.store (0, memory_order_release);
-        // nodedata[j]->start_cnt = 0;
-        nodedata[j]->participate |= 1;
-        // nodedata[j]->participate.store (1, memory_order_release);
-      }
+      nodedata[j]->participate |= 1;
+
     if (startup_function) (*startup_function)();
     
     int thd = 0;
-
     int thds = GetNumThreads();
-
-    // int tasks_per_node = thds / num_nodes;
     int mynode = num_nodes * thd/thds;
 
     IntRange mytasks = Range(int(ntasks)).Split (mynode, num_nodes);
-      
-    // #ifdef USE_NUMA
-    // numa_run_on_node (mynode);
-    // #endif
-
     NodeData & mynode_data = *(nodedata[mynode]);
 
     TaskInfo ti;
     ti.nthreads = thds;
     ti.thread_nr = thd;
-    ti.nnodes = num_nodes;
-    ti.node_nr = mynode;
+    // ti.nnodes = num_nodes;
+    // ti.node_nr = mynode;
 
     try
       {
@@ -322,26 +278,20 @@ namespace ngstd
             ti.task_nr = mytasks.First()+mytask;
             ti.ntasks = ntasks;
 
-              {
-		RegionTracer t(ti.thread_nr, jobnr, RegionTracer::ID_JOB, ti.task_nr);
-                (*func)(ti); 
-                // mynode_data.completed_tasks++;
-              }
-
-	      // if (++mynode_data.complete_cnt == mytasks.Size())
-              // complete[mynode] = true;
+            {
+              RegionTracer t(ti.thread_nr, jobnr, RegionTracer::ID_JOB, ti.task_nr);
+              (*func)(ti); 
+            }
           }
 
       }
     catch (Exception e)
       {
         {
-          // cout << "got exception in TM:" << ex->What() << endl;
           lock_guard<mutex> guard(copyex_mutex);
           delete ex;
           ex = new Exception (e);
           mynode_data.start_cnt = mytasks.Size();
-          // complete[mynode] = true;
         }
       }
 
@@ -352,27 +302,12 @@ namespace ngstd
         {
           while (complete[j] != jobnr)
             _mm_pause();
-          /*
-          while (completed_tasks+ntasks/num_nodes != nodedata[j]->completed_tasks)
-            cout << "master, check node " << j << " node complete = " << nodedata[j]->completed_tasks << " should be " << completed_tasks+ntasks/num_nodes << endl;
-            ;
-          */
         }
-
-
-    //    completed_tasks += ntasks / num_nodes;
-//     for (int j = 0; j < num_nodes; j++)
-//       if (completed_tasks != nodedata[j]->completed_tasks)
-//         cout << "tasks missing: node = " << j 
-//              << "global tasks = " << completed_tasks
-//              << "node tasks = " << nodedata[j]->completed_tasks << endl;
 
     if (ex)
       throw Exception (*ex);
 
     trace->StopJob();
-    // for (auto ap : sync)
-    // ap->load(); // memory_order_acquire);
   }
     
   void TaskManager :: Loop(int thd)
@@ -388,8 +323,6 @@ namespace ngstd
     */
     thread_id = thd;
 
-    // sync[thread_id] = new atomic<int>(0);
-
     int thds = GetNumThreads();
 
     int mynode = num_nodes * thd/thds;
@@ -401,8 +334,8 @@ namespace ngstd
     TaskInfo ti;
     ti.nthreads = thds;
     ti.thread_nr = thd;
-    ti.nnodes = num_nodes;
-    ti.node_nr = mynode;
+    // ti.nnodes = num_nodes;
+    // ti.node_nr = mynode;
 
       
 #ifdef USE_NUMA
@@ -454,17 +387,6 @@ namespace ngstd
             }
         }
 
-        // for (auto ap : sync)
-        // ap->load(); // memory_order_acquire);
-
-        /*
-          // checking too much ????
-        for (int j = 0; j < num_nodes; j++)
-          while (completed_tasks > nodedata[j]->completed_tasks)
-            ;
-        */
-
-        // atomic_thread_fence (memory_order_acquire);
         if (startup_function) (*startup_function)();
         
         IntRange mytasks = Range(int(ntasks)).Split (mynode, num_nodes);
@@ -474,7 +396,6 @@ namespace ngstd
             
             while (1)
               {
-                // int mytask = mynode_data.start_cnt++;
                 if (mynode_data.start_cnt >= mytasks.Size()) break;
 		int mytask = mynode_data.start_cnt.fetch_add(1, memory_order_relaxed);
                 if (mytask >= mytasks.Size()) break;
@@ -482,13 +403,10 @@ namespace ngstd
                 ti.task_nr = mytasks.First()+mytask;
                 ti.ntasks = ntasks;
                 
-                  {
-                    RegionTracer t(ti.thread_nr, jobnr, RegionTracer::ID_JOB, ti.task_nr);
-                    (*func)(ti);
-                    // mynode_data.completed_tasks++;
-                  }
-		  // if (++mynode_data.complete_cnt == mytasks.Size())
-                  // complete[mynode] = true;
+                {
+                  RegionTracer t(ti.thread_nr, jobnr, RegionTracer::ID_JOB, ti.task_nr);
+                  (*func)(ti);
+                }
               }
 
           }
@@ -500,7 +418,6 @@ namespace ngstd
               delete ex;
               ex = new Exception (e);
               mynode_data.start_cnt = mytasks.Size();
-              // complete[mynode] = true;
             }
           }
 
@@ -509,7 +426,6 @@ namespace ngstd
 #endif // __MIC__
 
         if (cleanup_function) (*cleanup_function)();
-        // sync[thread_id]->store(1); // , memory_order_release);
 
         jobdone = jobnr;
 
@@ -538,7 +454,6 @@ namespace ngstd
     mkl_set_num_threads_local(mkl_max);
 #endif
 
-    // delete sync[thread_id];
     workers_on_node[mynode]--;
     active_workers--;
   }
