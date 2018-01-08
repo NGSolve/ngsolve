@@ -14,17 +14,17 @@ namespace ngcomp
 {
   
   template<int D>
-  class DiffOpVecIdHCurlDiv: public DiffOp<DiffOpVecIdHCurlDiv<D> >
+  class DiffOpVecIdHCurlDiv_new: public DiffOp<DiffOpVecIdHCurlDiv_new<D> >
   {
   public:
     enum { DIM = 1 };
     enum { DIM_SPACE = D };
     enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = D*(D+1)/2 };
+    enum { DIM_DMAT = D*D };
     enum { DIFFORDER = 0 };
-    enum { DIM_STRESS = D*(D+1)/2 };
+    enum { DIM_STRESS = D*D };
 
-    static Array<int> GetDimensions() { return Array<int> ({D*(D+1)/2,1}); }
+    static Array<int> GetDimensions() { return Array<int> ({D*D,1}); }
 
     template <typename FEL,typename SIP>
     static void GenerateMatrix(const FEL & bfel,const SIP & mip,
@@ -52,7 +52,7 @@ namespace ngcomp
   };
 
   template<int D>
-  class DiffOpIdHCurlDiv: public DiffOp<DiffOpIdHCurlDiv<D> >
+  class DiffOpIdHCurlDiv_new: public DiffOp<DiffOpIdHCurlDiv_new<D> >
   {
   public:
     enum { DIM = 1 };
@@ -90,7 +90,7 @@ namespace ngcomp
   };
 
   template<int D>
-  class DiffOpDivHCurlDiv: public DiffOp<DiffOpDivHCurlDiv<D> >
+  class DiffOpDivHCurlDiv_new: public DiffOp<DiffOpDivHCurlDiv_new<D> >
   {
   public:
     enum { DIM = 1 };
@@ -98,7 +98,7 @@ namespace ngcomp
     enum { DIM_ELEMENT = D };
     enum { DIM_DMAT = D };
     enum { DIFFORDER = 1 };
-    enum { DIM_STRESS = (D*(D+1))/2 };
+    enum { DIM_STRESS = D*D };
 
     static string Name() { return "div"; }
 
@@ -133,7 +133,7 @@ namespace ngcomp
 
 
   template<int D>
-  class DiffOpIdBoundaryHCurlDiv: public DiffOp<DiffOpIdBoundaryHCurlDiv<D> >
+  class DiffOpIdBoundaryHCurlDiv_new: public DiffOp<DiffOpIdBoundaryHCurlDiv_new<D> >
   {
   public:
     enum { DIM = 1 };
@@ -169,8 +169,82 @@ namespace ngcomp
     }
   };
 
+  
   template<int D>
-  class DiffOpIdHCurlDiv_old : public DiffOp<DiffOpIdHCurlDiv_old<D> >
+  class DiffOpIdBoundaryHCurlDiv: public DiffOp<DiffOpIdBoundaryHCurlDiv<D> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D+1 };
+    enum { DIM_ELEMENT = D };
+    enum { DIM_DMAT = (D+1)*(D+1) };
+    enum { DIFFORDER = 0 };
+
+    static Array<int> GetDimensions() { return Array<int> ({D+1,D+1}); }
+
+    /*
+    template <typename FEL,typename SIP>
+    static void GenerateMatrix(const FEL & bfel,const SIP & mip,
+      SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
+    {
+      const HCurlDivSurfaceFiniteElement<D> & fel =
+        dynamic_cast<const HCurlDivSurfaceFiniteElement<D>&> (bfel);
+      fel.CalcMappedShape_Matrix (mip,Trans(mat));
+      }*/
+
+    template <typename FEL,typename SIP,typename MAT>
+    static void GenerateMatrix(const FEL & bfel,const SIP & sip,
+      MAT & mat,LocalHeap & lh)
+    {
+      throw Exception ("not needed ??");
+      const HCurlDivSurfaceFiniteElement<D> & fel =
+        dynamic_cast<const HCurlDivSurfaceFiniteElement<D>&> (bfel);
+      int nd = fel.GetNDof();
+      FlatMatrix<> shape(nd,DIM_DMAT,lh);
+
+      Mat<D> jac = sip.GetJacobian();
+      Mat<D> jacinv = sip.GetJacobianInverse();
+      double det = fabs(sip.GetJacobiDet());
+      
+      fel.CalcShape(sip.IP(), shape);
+
+      for (int i = 0; i < fel.GetNDof(); i++)
+        {
+          Mat<D> sigma_ref;
+          // 2D case
+          if(D==2)
+          {
+            sigma_ref(0,0) = shape(i,0);
+            sigma_ref(0,1) = shape(i,1);
+	    sigma_ref(1,1) = shape(i,2);
+	    sigma_ref(1,0) = shape(i,3);
+          }
+          else // 3D case
+          {
+            sigma_ref(0,0) = shape(i,0);
+            sigma_ref(0,1) = shape(i,1);
+            sigma_ref(0,2) = shape(i,2);
+	    sigma_ref(1,0) = shape(i,3);
+            sigma_ref(1,1) = shape(i,4);
+            sigma_ref(1,2) = shape(i,5);
+	    sigma_ref(2,0) = shape(i,6);
+            sigma_ref(3,1) = shape(i,7);
+            sigma_ref(4,2) = shape(i,8);
+          }
+
+          Mat<D> hm = Trans(jacinv) * sigma_ref;
+          Mat<D> sigma = hm * Trans(jac);
+          sigma *= (1.0 / det);
+          
+          for (int j = 0; j < DIM_DMAT; j++)
+            mat(j, i) = sigma(j);
+        }
+
+    }
+  };  
+
+  template<int D>
+  class DiffOpIdHCurlDiv : public DiffOp<DiffOpIdHCurlDiv<D> >
   { 
   public:
     enum { DIM = 1 };
@@ -178,7 +252,7 @@ namespace ngcomp
     enum { DIM_ELEMENT = D };
     enum { DIM_DMAT = D*D };
     enum { DIFFORDER = 0 };
-    enum { DIM_STRESS = D*(D+1)/2 };
+    enum { DIM_STRESS = D*D };
 
     static Array<int> GetDimensions() { return Array<int> ( { D,D } ); }
     
@@ -190,13 +264,20 @@ namespace ngcomp
         dynamic_cast<const HCurlDivFiniteElement<D>&> (bfel);
       
       int nd = fel.GetNDof();
+
+      //cout <<"ndof = "<<nd<<endl;
       
       Mat<D> jac = sip.GetJacobian();
+      Mat<D> jacinv = sip.GetJacobianInverse();
       double det = fabs(sip.GetJacobiDet());
+
+      //cout<<"jac = "<<jac<<endl;
+      //cout<<"jacinv = "<<jacinv<<endl;
       
-      FlatMatrix<> shape(nd, D*(D+1)/2, lh);
+      FlatMatrix<> shape(nd, D*D, lh);
       fel.CalcShape(sip.IP(), shape);
 
+      //cout<<"shape = "<<shape<<endl;
       for (int i = 0; i < fel.GetNDof(); i++)
         {
           Mat<D> sigma_ref;
@@ -204,101 +285,120 @@ namespace ngcomp
           if(D==2)
           {
             sigma_ref(0,0) = shape(i,0);
-            sigma_ref(1,1) = shape(i,1);
-            sigma_ref(0,1) = sigma_ref(1,0) = shape(i,2);
+            sigma_ref(0,1) = shape(i,1);
+	    sigma_ref(1,0) = shape(i,2);
+	    sigma_ref(1,1) = shape(i,3);
           }
           else // 3D case
           {
             sigma_ref(0,0) = shape(i,0);
-            sigma_ref(1,1) = shape(i,1);
-            sigma_ref(2,2) = shape(i,2);
-            sigma_ref(1,2) = sigma_ref(2,1) = shape(i,3);
-            sigma_ref(0,2) = sigma_ref(2,0) = shape(i,4);
-            sigma_ref(0,1) = sigma_ref(1,0) = shape(i,5);
+            sigma_ref(0,1) = shape(i,1);
+            sigma_ref(0,2) = shape(i,2);
+	    sigma_ref(1,0) = shape(i,3);
+            sigma_ref(1,1) = shape(i,4);
+            sigma_ref(1,2) = shape(i,5);
+	    sigma_ref(2,0) = shape(i,6);
+            sigma_ref(3,1) = shape(i,7);
+            sigma_ref(4,2) = shape(i,8);
           }
 
-          Mat<D> hm = jac * sigma_ref;
+          Mat<D> hm = Trans(jacinv) * sigma_ref;
           Mat<D> sigma = hm * Trans(jac);
-          sigma *= (1.0 / sqr(det));
-          
+          sigma *= (1.0 / det);
+	  //cout<<"sigma = "<<sigma<<endl;
           for (int j = 0; j < D*D; j++)
             mat(j, i) = sigma(j);
-        }
 
+	  //cout<<"mat = "<<mat<<endl;
+        }
+      //getchar();
 
     }
   };
 
 
   template<int D>
-  class DiffOpVecIdHCurlDiv_old : public DiffOp<DiffOpVecIdHCurlDiv_old<D> >
+  class DiffOpVecIdHCurlDiv : public DiffOp<DiffOpVecIdHCurlDiv<D> >
   { 
   public:
     enum { DIM = 1 };
     enum { DIM_SPACE = D };
     enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT =  D*(D+1)/2 };
+    enum { DIM_DMAT =  D*D };
     enum { DIFFORDER = 0 };
-    enum { DIM_STRESS = D*(D+1)/2 };
+    enum { DIM_STRESS = D*D };
 
-    static Array<int> GetDimensions() { return Array<int> ( {  D*(D+1)/2, 1 } ); }
+    static Array<int> GetDimensions() { return Array<int> ( {  D*D, 1 } ); }
     
     template <typename FEL, typename SIP, typename MAT>
     static void GenerateMatrix(const FEL & bfel, const SIP & sip,
                                MAT & mat, LocalHeap & lh)
     {
+      throw Exception ("should not be here!!!'");
       const HCurlDivFiniteElement<D> & fel =
         dynamic_cast<const HCurlDivFiniteElement<D>&> (bfel);
       
       int nd = fel.GetNDof();
       
       Mat<D> jac = sip.GetJacobian();
+      Mat<D> jacinv = sip.GetJacobianInverse();
       double det = fabs(sip.GetJacobiDet());
       
-      FlatMatrix<> shape(nd, D*(D+1)/2, lh);
+      FlatMatrix<> shape(nd, D*D, lh);
       fel.CalcShape(sip.IP(), shape);
 
       for (int i = 0; i < fel.GetNDof(); i++)
         {
-          Mat<D> sigma_ref;
+	  Mat<D> sigma_ref;
           // 2D case
           if(D==2)
           {
             sigma_ref(0,0) = shape(i,0);
-            sigma_ref(1,1) = shape(i,1);
-            sigma_ref(0,1) = sigma_ref(1,0) = shape(i,2);
+            sigma_ref(0,1) = shape(i,1);
+	    sigma_ref(1,0) = shape(i,2);
+	    sigma_ref(1,1) = shape(i,3);
           }
           else // 3D case
           {
             sigma_ref(0,0) = shape(i,0);
-            sigma_ref(1,1) = shape(i,1);
-            sigma_ref(2,2) = shape(i,2);
-            sigma_ref(1,2) = sigma_ref(2,1) = shape(i,3);
-            sigma_ref(0,2) = sigma_ref(2,0) = shape(i,4);
-            sigma_ref(0,1) = sigma_ref(1,0) = shape(i,5);
+            sigma_ref(0,1) = shape(i,1);
+            sigma_ref(0,2) = shape(i,2);
+	    sigma_ref(1,0) = shape(i,3);
+            sigma_ref(1,1) = shape(i,4);
+            sigma_ref(1,2) = shape(i,5);
+	    sigma_ref(2,0) = shape(i,6);
+            sigma_ref(3,1) = shape(i,7);
+            sigma_ref(4,2) = shape(i,8);
           }
 
-          Mat<D> hm = jac * sigma_ref;
+          Mat<D> hm = Trans(jacinv) * sigma_ref;
           Mat<D> sigma = hm * Trans(jac);
-          sigma *= (1.0 / sqr(det));
+          sigma *= (1.0 / det);
           
+          for (int j = 0; j < D*D; j++)
+            mat(j, i) = sigma(j);
+                  
           //for (int j = 0; j < D*D; j++)
           //  mat(j, i) = sigma(j);
           // 2D case
           if(D==2)
           {
             mat(0,i) = sigma(0,0);
-            mat(1,i) = sigma(1,1);
+            mat(1,i) = sigma(0,1);
             mat(2,i) = sigma(1,0);
+	    mat(3,i) = sigma(1,1);
           }
           else // 3D case
           {
-            mat(0,i) = sigma(0,0);
-            mat(1,i) = sigma(1,1);
-            mat(2,i) = sigma(2,2);
-            mat(3,i) = sigma(1,2);
-            mat(4,i) = sigma(0,2);
-            mat(5,i) = sigma(0,1);
+	    mat(0,i) = sigma(0,0);
+            mat(1,i) = sigma(0,1);
+            mat(2,i) = sigma(0,2);
+	    mat(3,i) = sigma(1,0);
+	    mat(4,i) = sigma(1,1);
+            mat(5,i) = sigma(1,2);
+            mat(6,i) = sigma(2,0);
+	    mat(7,i) = sigma(2,1);
+	    mat(8,i) = sigma(2,2);	    
           }
         }
 
@@ -308,7 +408,7 @@ namespace ngcomp
 
 
 
-  template <int D> class DiffOpDivHCurlDiv_old : public DiffOp<DiffOpDivHCurlDiv_old<D> >
+  template <int D> class DiffOpDivHCurlDiv : public DiffOp<DiffOpDivHCurlDiv<D> >
   {
     
   public:
@@ -317,7 +417,7 @@ namespace ngcomp
     enum { DIM_ELEMENT = D };
     enum { DIM_DMAT = D };
     enum { DIFFORDER = 1 };
-    enum { DIM_STRESS = (D*(D+1))/2 };
+    enum { DIM_STRESS = D*D};
     
     static string Name() { return "div"; }
 
@@ -337,14 +437,17 @@ namespace ngcomp
       fel.CalcDivShape (sip.IP(), div_shape);
       
       Mat<D> jac = sip.GetJacobian();
+      Mat<D> jacinv = sip.GetJacobianInverse();
       double det = fabs (sip.GetJacobiDet());
-      Mat<D> sjac = (1.0/sqr(det)) * jac;
+      Mat<D> sjac = (1.0/det) * Trans(jacinv);
       
       mat = sjac * Trans (div_shape);
       
       //for non-curved elements, divergence transformation is finished, otherwise derivatives of Jacobian have to be computed...
       if (!sip.GetTransformation().IsCurvedElement()) return;
 
+      throw Exception("not implemented yet!");
+      
       FlatMatrix<> shape(nd, DIM_STRESS, lh);
       fel.CalcShape (sip.IP(), shape);
       
@@ -512,7 +615,8 @@ namespace ngcomp
       switch(ma->GetElType(ei))
       {
       case ET_TRIG:
-        ndof += 3*(oi[0]+1)*(oi[0]+2)/2 - 3*(oi[0]+1);
+        //ndof += 3*(oi[0]+1)*(oi[0]+2)/2 - 3*(oi[0]+1);
+	ndof += oi[0]+  1;
         if(plus) ndof += 2*oi[0];
         if(discontinuous)
         {
@@ -768,16 +872,16 @@ namespace ngcomp
     switch(ma->GetDimension())
     {
     case 2:
-      additional.Set ("vec",make_shared<T_DifferentialOperator<DiffOpVecIdHCurlDiv<2>>> ());
-      additional.Set ("id_old",make_shared<T_DifferentialOperator<DiffOpIdHCurlDiv_old<2>>> ());
-      additional.Set ("vec_old",make_shared<T_DifferentialOperator<DiffOpVecIdHCurlDiv_old<2>>> ());
-      additional.Set ("div_old",make_shared<T_DifferentialOperator<DiffOpDivHCurlDiv_old<2>>> ());
+      //additional.Set ("vec",make_shared<T_DifferentialOperator<DiffOpVecIdHCurlDiv<2>>> ());
+      //additional.Set ("id_old",make_shared<T_DifferentialOperator<DiffOpIdHCurlDiv_old<2>>> ());
+      //additional.Set ("vec_old",make_shared<T_DifferentialOperator<DiffOpVecIdHCurlDiv_old<2>>> ());
+      //additional.Set ("div_old",make_shared<T_DifferentialOperator<DiffOpDivHCurlDiv_old<2>>> ());
       break;
     case 3:
-      additional.Set ("vec",make_shared<T_DifferentialOperator<DiffOpVecIdHCurlDiv<3>>> ());
-      additional.Set ("id_old",make_shared<T_DifferentialOperator<DiffOpIdHCurlDiv_old<3>>> ());
-      additional.Set ("vec_old",make_shared<T_DifferentialOperator<DiffOpVecIdHCurlDiv_old<3>>> ());
-      additional.Set ("div_old",make_shared<T_DifferentialOperator<DiffOpDivHCurlDiv_old<3>>> ());
+      //additional.Set ("vec",make_shared<T_DifferentialOperator<DiffOpVecIdHCurlDiv<3>>> ());
+      //additional.Set ("id_old",make_shared<T_DifferentialOperator<DiffOpIdHCurlDiv_old<3>>> ());
+      //additional.Set ("vec_old",make_shared<T_DifferentialOperator<DiffOpVecIdHCurlDiv_old<3>>> ());
+      //additional.Set ("div_old",make_shared<T_DifferentialOperator<DiffOpDivHCurlDiv_old<3>>> ());
       break;
     default:
       ;
