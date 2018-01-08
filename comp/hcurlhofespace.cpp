@@ -702,7 +702,7 @@ namespace ngcomp
           order_face[i] = uniform_order_face+1;
       }
     */
-    // order of FINE FACES and EDGES for savety reasons set to 0 
+    // order of FINE FACES and EDGES for safety reasons set to 0 
     for(int i=0;i<order_edge.Size();i++) 
       if(!fine_edge[i]) order_edge[i] = 0;  
     

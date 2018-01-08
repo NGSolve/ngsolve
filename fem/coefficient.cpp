@@ -611,7 +611,7 @@ Evaluate (const BaseMappedIntegrationRule & ir,
   
 void DomainVariableCoefficientFunction :: PrintReport (ostream & ost) const
 {
-  *testout << "DomainVariableCoefficientFunction, functios are: " << endl;
+  *testout << "DomainVariableCoefficientFunction, functions are: " << endl;
   for (int i = 0; i < fun.Size(); i++)
     fun[i] -> Print(ost);
 }

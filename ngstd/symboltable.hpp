@@ -35,7 +35,7 @@ public:
   /// append new name (copy)
   NGS_DLL_HEADER void AppendName (const string & name);
 
-  /// Index of symbol name, throws exception if unsued
+  /// Index of symbol name, throws exception if unused
   NGS_DLL_HEADER int Index (const string & name) const;
 
   /// Index of symbol name, returns -1 if unused
