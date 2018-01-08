@@ -19,7 +19,7 @@ namespace ngcomp
     Array<INT<2,int> > order_facet;
     Array<INT<3,int> > order_inner;
     
-    // add divdiv-free inner bubbles
+    // add curldiv-free inner bubbles
     bool plus;
     bool discontinuous;
     int uniform_order_facet;
