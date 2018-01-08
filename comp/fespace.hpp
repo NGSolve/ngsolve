@@ -168,7 +168,7 @@ namespace ngcomp
     ORDER_POLICY order_policy = OLDSTYLE_ORDER;
     
     /*
-      the function space H(curl) has high order basis funcitons which 
+      the function space H(curl) has high order basis functions which 
       are gradients, and additional ones which span the domain of the curl.
       In general, for function spaces of the de Rham sequence we refer to 
       functions in the range of the differential operator from the left to 

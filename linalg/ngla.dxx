@@ -1,7 +1,7 @@
 /** @name Linear Algebra
 \begin{verbatim}                           (directory ngsolve/linalg)\end{verbatim}
 
-The linear algebra library is based on the abstact base classes
+The linear algebra library is based on the abstract base classes
 \Ref{BaseVector} and \Ref{BaseMatrix}. Derived objects are
 vector classes (\Ref{VVector},...) or specific matrix classes
 (\Ref{SparseMatrix}, ...). Linear operations (\Ref{KrylovSpaceSolver})
@@ -17,6 +17,6 @@ implementing
 y = y + s * Mat * x
 \]
 
-Expression templates enable a convinient notation. But, in contrast to
+Expression templates enable a convenient notation. But, in contrast to
 the basic linear algebra, the expression tree is expanded to
 vector-vector and matrix-vector operations.  */

@@ -2977,7 +2977,7 @@ namespace ngcomp
           Array<int> elnums_x(2, lh), elnums_per_x(2,lh), fnums1_x(6, lh), fnums2_x(6, lh), vnums1(8, lh), vnums2(8, lh);
           int facet_x = colfacets[i];
           int facet2_x = colfacets[i];
-          // Horzontal edge - get facet elements w.r.t. first direction
+          // Horizontal edge - get facet elements w.r.t. first direction
           meshx->GetFacetElements (facet_x, elnums_x);
           int el1_x = elnums_x[0];
           auto & felx1 = spaces[0]->GetFE(ElementId(el1_x),lh);
@@ -3096,7 +3096,7 @@ namespace ngcomp
           Array<int> elnums_y(2, lh), elnums_per_y(2,lh), fnums1_y(6, lh), fnums2_y(6, lh), vnums1(8, lh), vnums2(8, lh);
           int facet_y = colfacets[i];
           int facet2_y = colfacets[i];
-          // Horzontal edge - get facet elements w.r.t. second direction
+          // Horizontal edge - get facet elements w.r.t. second direction
           meshy->GetFacetElements (facet_y, elnums_y);
           int el1_y = elnums_y[0];
           auto & fely1 = spaces[1]->GetFE(ElementId(el1_y),lh);
