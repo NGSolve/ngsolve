@@ -2217,18 +2217,16 @@ used_idnrs : list of int = None
           {
             auto space = self->GetFESpace();
             auto evaluator = space->GetEvaluator();
-            LocalHeap lh(10000, "ngcomp::GridFunction::Eval");
-
             IntegrationPoint ip;
             int elnr = space->GetMeshAccess()->FindElementOfPoint(Vec<3>(x, y, z), ip, true);
             if (elnr < 0) throw Exception ("point out of domain");
             ElementId ei(VOL, elnr);
             
-            const FiniteElement & fel = space->GetFE(ei, lh);
+            const FiniteElement & fel = space->GetFE(ei, glh);
 
-            Array<int> dnums(fel.GetNDof(), lh);
+            Array<int> dnums(fel.GetNDof(), glh);
             space->GetDofNrs(ei, dnums);
-            auto & trafo = space->GetMeshAccess()->GetTrafo(ei, lh);
+            auto & trafo = space->GetMeshAccess()->GetTrafo(ei, glh);
 
             if (space->IsComplex())
               {
@@ -2236,7 +2234,7 @@ used_idnrs : list of int = None
                 Vector<Complex> values(evaluator->Dim());
                 self->GetElementVector(dnums, elvec);
 
-                evaluator->Apply(fel, trafo(ip, lh), elvec, values, lh);
+                evaluator->Apply(fel, trafo(ip, glh), elvec, values, glh);
                 return (values.Size() > 1) ? py::cast(values) : py::cast(values(0));
               }
             else
@@ -2245,7 +2243,7 @@ used_idnrs : list of int = None
                 Vector<> values(evaluator->Dim());
                 self->GetElementVector(dnums, elvec);
 
-                evaluator->Apply(fel, trafo(ip, lh), elvec, values, lh);
+                evaluator->Apply(fel, trafo(ip, glh), elvec, values, glh);
                 return (values.Size() > 1) ? py::cast(values) : py::cast(values(0));
               }
           },
@@ -2260,10 +2258,9 @@ used_idnrs : list of int = None
             ElementId ei = mip.GetTransformation().GetElementId();
             // auto evaluator = space->GetEvaluator(ei.IsBoundary());
             auto evaluator = space->GetEvaluator(VorB(ei));
-            LocalHeap lh(10000, "ngcomp::GridFunction::Eval");
 
             // int elnr = mip.GetTransformation().GetElementNr();
-            const FiniteElement & fel = space->GetFE(ei, lh);
+            const FiniteElement & fel = space->GetFE(ei, glh);
 
             Array<int> dnums(fel.GetNDof());
             space->GetDofNrs(ei, dnums);
@@ -2274,7 +2271,7 @@ used_idnrs : list of int = None
                 Vector<Complex> values(evaluator->Dim());
                 self->GetElementVector(dnums, elvec);
 
-                evaluator->Apply(fel, mip, elvec, values, lh);
+                evaluator->Apply(fel, mip, elvec, values, glh);
                 return (values.Size() > 1) ? py::cast(values) : py::cast(values(0));
               }
             else
@@ -2282,7 +2279,7 @@ used_idnrs : list of int = None
                 Vector<> elvec(fel.GetNDof()*space->GetDimension());
                 Vector<> values(evaluator->Dim());
                 self->GetElementVector(dnums, elvec);
-                evaluator->Apply(fel, mip, elvec, values, lh);
+                evaluator->Apply(fel, mip, elvec, values, glh);
                 return (values.Size() > 1) ? py::cast(values) : py::cast(values(0));
               }
           }, 
@@ -2298,12 +2295,11 @@ used_idnrs : list of int = None
             auto evaluator = space.GetFluxEvaluator();
             cout << evaluator->Name() << endl;
             int dim = evaluator->Dim();
-            LocalHeap lh(10000, "ngcomp::GridFunction::Eval");
             int elnr = space.GetMeshAccess()->FindElementOfPoint(Vec<3>(x, y, z), ip, true);
             ElementId ei(VOL, elnr);
             Array<int> dnums;
             space.GetDofNrs(ei, dnums);
-            const FiniteElement & fel = space.GetFE(ei, lh);
+            const FiniteElement & fel = space.GetFE(ei, glh);
             if (space.IsComplex())
               {
                 Vector<Complex> elvec;
@@ -2312,13 +2308,13 @@ used_idnrs : list of int = None
                 self->GetElementVector(dnums, elvec);
                 if (dim_mesh == 2)
                   {
-                    MappedIntegrationPoint<2, 2> mip(ip, space.GetMeshAccess()->GetTrafo(ei, lh));
-                    evaluator->Apply(fel, mip, elvec, values, lh);
+                    MappedIntegrationPoint<2, 2> mip(ip, space.GetMeshAccess()->GetTrafo(ei, glh));
+                    evaluator->Apply(fel, mip, elvec, values, glh);
                   }
                 else if (dim_mesh == 3)
                   {
-                    MappedIntegrationPoint<3, 3> mip(ip, space.GetMeshAccess()->GetTrafo(ei, lh));
-                    evaluator->Apply(fel, mip, elvec, values, lh);
+                    MappedIntegrationPoint<3, 3> mip(ip, space.GetMeshAccess()->GetTrafo(ei, glh));
+                    evaluator->Apply(fel, mip, elvec, values, glh);
                   }
                 if (dim > 1)
                   return py::cast(values);
@@ -2334,13 +2330,13 @@ used_idnrs : list of int = None
                 ElementId ei(VOL, elnr);
                 if (dim_mesh == 2)
                   {
-                    MappedIntegrationPoint<2, 2> mip(ip, space.GetMeshAccess()->GetTrafo(ei, lh));
-                    evaluator->Apply(fel, mip, elvec, values, lh);
+                    MappedIntegrationPoint<2, 2> mip(ip, space.GetMeshAccess()->GetTrafo(ei, glh));
+                    evaluator->Apply(fel, mip, elvec, values, glh);
                   }
                 else if (dim_mesh == 3)
                   {
-                    MappedIntegrationPoint<3, 3> mip(ip, space.GetMeshAccess()->GetTrafo(ei, lh));
-                    evaluator->Apply(fel, mip, elvec, values, lh);
+                    MappedIntegrationPoint<3, 3> mip(ip, space.GetMeshAccess()->GetTrafo(ei, glh));
+                    evaluator->Apply(fel, mip, elvec, values, glh);
                   }
                 if (dim > 1)
                   return py::cast(values);
