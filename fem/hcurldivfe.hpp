@@ -475,7 +475,8 @@ namespace ngfem
 
       Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM+1>> (adp), SBLambda([&] (int nr, auto val)
                                           {
-                                            shape.Row(nr).AddSize(DIM_STRESS) = val.Shape();
+                                            //shape.Row(nr).AddSize(DIM_STRESS) = val.Shape();
+					    shape.Row(nr).AddSize(DIM_STRESS) = val;
                                           }));
     }
     
@@ -491,7 +492,8 @@ namespace ngfem
       }
       Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM+1>> (addp),SBLambda([&](int nr,auto val)
       {
-        Vec<DIM_STRESS> vecshape = val.Shape();
+        //Vec<DIM_STRESS> vecshape = val.Shape();
+	Vec<DIM_STRESS> vecshape = val;
         BareVector<double> matshape = shape.Row(nr);
         VecToMat<DIM+1> (vecshape, matshape);
       }));
@@ -500,22 +502,6 @@ namespace ngfem
 
   };
 
-class dummy_legendre
-  {
-    AutoDiffDiff<2> leg;
-  public:
-    dummy_legendre  (AutoDiffDiff<2> aleg) : leg(aleg){ ; }
-
-    Vec<1> Shape() {
-      return Vec<1> (-leg.Value());    //I think there should be a minus
-    }
-
-    Vec<1> DivShape()
-    {
-      throw Exception("not available for surface elements!");
-    }
-};
-  
   template <> class HCurlDivSurfaceFE<ET_SEGM> : public T_HCurlDivSurfaceFE<ET_SEGM> 
   {
     
@@ -548,8 +534,7 @@ class dummy_legendre
       LegendrePolynomial::Eval(order_inner[0],le-ls,ha);      
       
       for(int l = 0; l <= order_inner[0]; l++)
-      	shape[ii++] =  dummy_legendre(ha[l]);
-      //ha[l].Value(); //T_Dl2xRotDl1_v(le, ls, ha[l]);      
+	shape[ii++] =  -1* ha[l].Value(); //I think there should be a minus
     };
   };
 
