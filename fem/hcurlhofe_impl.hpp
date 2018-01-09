@@ -1221,8 +1221,14 @@ namespace ngfem
           ii += order_edge[i];
 
         // now come the inner ...
+        Vec<2,AutoDiff<2>> adp(mip);
+        /*
         AutoDiff<2> adx(x,0);
         AutoDiff<2> ady(y,1);
+        */
+        AutoDiff<2> adx = adp(0);
+        AutoDiff<2> ady = adp(1);
+        
         AutoDiff<2> l2 = 1-adx-ady;
 
         ArrayMem<AutoDiff<2>, 20> adpol1(order+1), adpol2(order+1);
