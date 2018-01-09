@@ -25,19 +25,15 @@ namespace ngfem
 
     virtual void CalcDivShape (const IntegrationPoint & ip, 
                                BareSliceMatrix<double> divshape) const = 0;
-
-    // new implementation
-    virtual void CalcMappedShape_Matrix (const MappedIntegrationPoint<DIM,DIM> & mip,
-      BareSliceMatrix<double> shape) const = 0;
-
-    virtual void CalcMappedShape_Vector (const MappedIntegrationPoint<DIM,DIM> & mip,
-      BareSliceMatrix<double> shape) const = 0;
+    
+    virtual void CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
+      BareSliceMatrix<double> shape) const = 0;    
 
     virtual void CalcMappedDivShape (const MappedIntegrationPoint<DIM,DIM> & mip,
       BareSliceMatrix<double> shape) const = 0;
 
   };
-
+  
   template <int D,typename VEC,typename MAT>
   void VecToMat(const VEC & vec,MAT & mat)
   {
@@ -64,6 +60,7 @@ namespace ngfem
 
   }
 
+  
   template <ELEMENT_TYPE ET> class HCurlDivFE;
 
   
@@ -107,7 +104,6 @@ namespace ngfem
       cout << "Error, T_HCurlDivFE<ET>:: ComputeNDof not available, only for ET == TRIG" << endl;
     }
 
-    // old style
     virtual void CalcShape (const IntegrationPoint & ip, 
                             BareSliceMatrix<double> shape) const
     {
@@ -138,25 +134,8 @@ namespace ngfem
                                           }));
     }
 
-    // new style
-    virtual void CalcMappedShape_Vector (const MappedIntegrationPoint<DIM,DIM> & mip,
-                            BareSliceMatrix<double> shape) const
-    {
-      Vec<DIM, AutoDiff<DIM>> adp = mip;
-      Vec<DIM, AutoDiffDiff<DIM>> addp;
-      for (int i=0; i<DIM; i++)
-      {
-        addp[i] = adp[i].Value();
-        addp[i].LoadGradient(&adp[i].DValue(0));
-      }
-      Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM>> (addp), SBLambda([&] (int nr, auto val)
-                                          {
-                                            shape.Row(nr).AddSize(DIM_STRESS) = val.Shape();
-                                          }));
-    }
 
-
-    virtual void CalcMappedShape_Matrix (const MappedIntegrationPoint<DIM,DIM> & mip,
+    virtual void CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
                             BareSliceMatrix<double> shape) const
     {
       Vec<DIM, AutoDiff<DIM>> adp = mip;
@@ -248,8 +227,10 @@ namespace ngfem
     }
 
   };
-  
+
+  /* Edge basis functions which are normal-tangential continuous */
   /* calculates [(grad l1) o-times (rot-grad l2) ] * intlegendre */
+  /* DivShape assumes that phi_12 = [(grad l1) o-times (rot-grad l2) ] is constant!!! */
   class T_Dl2xRotDl1_v
   {
     AutoDiffDiff<2> l1,l2,v;
@@ -271,28 +252,33 @@ namespace ngfem
 
       double lam1x = l1.DValue(0);
       double lam1y = l1.DValue(1);
-      double lam1xx = l1.DDValue(0,0);
-      double lam1xy = l1.DDValue(0,1);
-      double lam1yx = l1.DDValue(1,0);
-      double lam1yy = l1.DDValue(1,1);
+      //double lam1xx = l1.DDValue(0,0);
+      //double lam1xy = l1.DDValue(0,1);
+      //double lam1yx = l1.DDValue(1,0);
+      //double lam1yy = l1.DDValue(1,1);
       
       double lam2x = l2.DValue(0);
       double lam2y = l2.DValue(1);
-      double lam2xx = l2.DDValue(0,0);
-      double lam2xy = l2.DDValue(0,1);
-      double lam2yx = l2.DDValue(1,0);
-      double lam2yy = l2.DDValue(1,1);
-      
-      return Vec<2> (
-		     v.Value() * ( - (lam1xx*lam2y + lam1x*lam2yx) + (lam1yx*lam2x + lam1x*lam2xy)) - vx *lam1x*lam2y + vy*lam1x*lam2x, 
-		     v.Value() * ( - (lam1xy*lam2y + lam1y*lam2yx) + (lam1yy*lam2x + lam1y*lam2xy)) - vx *lam1y*lam2y + vy*lam1y*lam2x
-        ); 
+      //double lam2xx = l2.DDValue(0,0);
+      //double lam2xy = l2.DDValue(0,1);
+      //double lam2yx = l2.DDValue(1,0);
+      //double lam2yy = l2.DDValue(1,1);
+
+      return Vec<2> (  - vx *lam1x*lam2y + vy*lam1x*lam2x, -vx *lam1y*lam2y + vy*lam1y*lam2x) ;
+
+      //Use this if phi_12 is NOT constant!
+      //return Vec<2> (v.Value() * ( - (lam1xx*lam2y + lam1x*lam2yx) + (lam1xx*lam2x + lam1x*lam2xy)) - vx *lam1x*lam2y + vy*lam1x*lam2x, 
+      //v.Value() * ( - (lam1xy*lam2y + lam1y*lam2yx) + (lam1yy*lam2x + lam1y*lam2xy)) - vx *lam1y*lam2y + vy*lam1y*lam2x);		      
     }
 
   };
 
+
+  /* Type 1 inner bubble functions */
+  /* (phi_12 - phi_21) * P^k(lam_2) 
+  /* calculates [(grad l1) o-times (rot-grad l2) - (grad l2) o-times (rot-grad l1)  ] * legendre */
+  /* DivShape assumes that (phi_12 - phi_21) is constant!!! */
   
-  /* calculates [(grad l1) o-times (rot-grad l2) - (grad l2) o-times (rot-grad l1)  ] * intlegendre */
   class T_Dl2xRotDl1_minus_Dl1xRotDl2_v
   {
     AutoDiffDiff<2> l1,l2,v;
@@ -314,29 +300,28 @@ namespace ngfem
 
       double lam1x = l1.DValue(0);
       double lam1y = l1.DValue(1);
-      double lam1xx = l1.DDValue(0,0);
-      double lam1xy = l1.DDValue(0,1);
-      double lam1yx = l1.DDValue(1,0);
-      double lam1yy = l1.DDValue(1,1);
+      //double lam1xx = l1.DDValue(0,0);
+      //double lam1xy = l1.DDValue(0,1);
+      //double lam1yx = l1.DDValue(1,0);
+      //double lam1yy = l1.DDValue(1,1);
       
       double lam2x = l2.DValue(0);
       double lam2y = l2.DValue(1);
-      double lam2xx = l2.DDValue(0,0);
-      double lam2xy = l2.DDValue(0,1);
-      double lam2yx = l2.DDValue(1,0);
-      double lam2yy = l2.DDValue(1,1);
-      
-      return Vec<2> (
-	v.Value() * ( - (lam1xx*lam2y + lam1x*lam2yx - lam2xx*lam1y - lam2x*lam1yx)
-		      + (lam1yx*lam2x + lam1x*lam2xy - lam2yx*lam1x - lam2x*lam1xy)) - vx * (lam1x*lam2y - lam2x*lam1y) + vy*(lam1x*lam2x - lam2x*lam1x), 
-      	     v.Value() * ( - (lam1xy*lam2y + lam1y*lam2yx - lam2xy*lam1y - lam2y*lam1yx)
-			   + (lam1yy*lam2x + lam1y*lam2xy - lam2yy*lam1x - lam2y*lam1xy)) - vx *(lam1y*lam2y - lam2y*lam1y) + vy*(lam1y*lam2x - lam2y*lam1x)
-       ); 
+      //double lam2xx = l2.DDValue(0,0);
+      //double lam2xy = l2.DDValue(0,1);
+      //double lam2yx = l2.DDValue(1,0);
+      //double lam2yy = l2.DDValue(1,1);
+
+      return Vec<2> (  - vx *(lam1x*lam2y - lam2x*lam1y) + vy*(lam1x*lam2x - lam2x*lam1x), -vx *(lam1y*lam2y-lam2y*lam1y) + vy*(lam1y*lam2x - lam2y*lam1x)) ;
+
+      //Use this if phi_12 is NOT constant!
+      //return Vec<2> (v.Value() * ( - (lam1xx*lam2y + lam1x*lam2yx - lam2xx*lam1y - lam2x*lam1yx)
+      //				   + (lam1xx*lam2x + lam1x*lam2xy - lam2xx*lam1x - lam2x*lam1xy)) - vx * (lam1x*lam2y - lam2x*lam1y) + vy*(lam1x*lam2x - lam2x*lam1x), 
+      //		     v.Value() * ( - (lam1xy*lam2y + lam1y*lam2yx - lam2xy*lam1y - lam2y*lam1yx)
+      //				   + (lam1yy*lam2x + lam1y*lam2xy - lam2yy*lam1x - lam2y*lam1xy)) - vx *(lam1y*lam2y - lam2y*lam1y) + vy*(lam1y*lam2x - lam2y*lam1x)); 		     
     }
 
-  };
-
-  
+  };  
 
   template <> class HCurlDivFE<ET_TRIG> : public T_HCurlDivFE<ET_TRIG> 
   {
@@ -353,16 +338,18 @@ namespace ngfem
         ndof += order_facet[i][0]+1;
         order = max2(order, order_facet[i][0]);
       }
-      int ninner = 3*order_inner[0]*(order_inner[0]+1)/2 ;
+      //first type + second type
+      // in 2d:   (p + 1) + 4*(p*(p+1)/2)
+      int ninner = order_inner[0] +1 + 2 * ((order_inner[0] +1) * (order_inner[0])); 
       order = max2(order, order_inner[0]);
-      if (plus)
-      { 
-        order ++;
-        ninner += 2*order_inner[0]; 
-      }
-      ndof += ninner+1;
-
+      //if (plus)
+      //{	
+      //  order ++;
+      //  ninner += 2*order_inner[0]; 
+      //}
+      ndof += ninner;      
     }
+    
    template <typename Tx, typename TFA> 
     void T_CalcShape (TIP<2,Tx> ip/*AutoDiffDiff<2> hx[2]*/, TFA & shape) const
     {
@@ -377,30 +364,21 @@ namespace ngfem
       const EDGE * edges = ElementTopology::GetEdges(ET_TRIG);
 
       ArrayMem<AutoDiffDiff<2>,20> ha(maxorder_facet+1);
-      ArrayMem<AutoDiffDiff<2>,20> u(order_inner[0]+2), v(order_inner[0]+2);
-      
+      ArrayMem<AutoDiffDiff<2>,20> v(order_inner[0]+1), dubb(order_inner[0]*(order_inner[0]+1)/2);
+
+      /* Edge based basis functions for tangential-normal continuity */
       for (int i = 0; i < 3; i++)
         {
           int es = edges[i][0], ee = edges[i][1];
-	  //cout<<"Edge i = "<<i<<endl;
-	  
+	  	  
           if (vnums[es] > vnums[ee]) swap (es,ee);
-
-	  //cout<<"es = "<< es<<endl;
-	  //cout<<"ee = "<< ee<<endl;
-	  
+	  	  
           AutoDiffDiff<2> ls = ddlami[es], le = ddlami[ee];
-
-	  // Ask joachim about this magic !!!
-          // edge functions are all div-free!
-          //IntegratedLegendreMonomialExt::CalcTrigExt(maxorder_facet,le-ls, 1-le-ls, ha);
 	  
-          ScaledLegendrePolynomial(maxorder_facet,le-ls, 1-le-ls,ha);
-
+	  ScaledLegendrePolynomial(maxorder_facet,le-ls, le+ls,ha);
           
           for (int l = 0; l <= order_facet[i][0]; l++)
-	    shape[ii++] =  T_Dl2xRotDl1_v(le, ls, ha[l]);
-            
+	    shape[ii++] =  T_Dl2xRotDl1_v(le, ls, ha[l]);            
         }
       
       int es = 0; int ee = 1; int et = 2;
@@ -408,17 +386,25 @@ namespace ngfem
       AutoDiffDiff<2> le = ddlami[ee];
       AutoDiffDiff<2> lt = ddlami[et];
       
-      //int oi=order_inner[0];
-      //int oi_plus = oi; //plus ? oi+1 : oi;
-
-      ScaledLegendrePolynomial(0,le-ls, 1-le-ls,ha);
-      //IntegratedLegendreMonomialExt::CalcTrigExt(maxorder_facet,le-ls, 1-le-ls, ha);
+      int oi=order_inner[0];
+      //int oi_plus = oi;
+                
+      LegendrePolynomial::Eval(oi, 2*lt-1, v);
+      DubinerBasis3::Eval (oi-1, ls, lt, dubb);
       
-      shape[ii++] =  T_Dl2xRotDl1_minus_Dl1xRotDl2_v(le, ls, ha[0]);
-      
-      
-      //IntegratedLegendreMonomialExt::CalcTrigExt(oi_plus+3,le-ls,1-le-ls,u);
-      //LegendrePolynomial::EvalMult(oi_plus+1, 2*lt-1, lt, v);
+      //Type one
+      for (int i = 0; i < oi+1; i++)
+	shape[ii++] =T_Dl2xRotDl1_minus_Dl1xRotDl2_v(le, ls, v[i]);
+                  
+      /* Type 2 inner bubble functions */
+      /* phi_12 * lam_3 * P^{k-1} */ 
+      for(int i = 0; i < (oi+1)*oi/2; i++)
+      {	
+	shape[ii++] = T_Dl2xRotDl1_v(ls,lt,le*dubb[i]);
+	shape[ii++] = T_Dl2xRotDl1_v(lt,ls,le*dubb[i]);
+	shape[ii++] = T_Dl2xRotDl1_v(le,lt,ls*dubb[i]);
+	shape[ii++] = T_Dl2xRotDl1_v(ls,le,lt*dubb[i]);	  
+      }
 
     };
   };
@@ -432,10 +418,7 @@ namespace ngfem
     using FiniteElement::ndof;
     using FiniteElement::order;
 
-    virtual void CalcMappedShape_Matrix (const MappedIntegrationPoint<DIM,DIM+1> & mip,
-      BareSliceMatrix<double> shape) const = 0;
-
-    virtual void CalcMappedShape_Vector (const MappedIntegrationPoint<DIM,DIM+1> & mip,
+    virtual void CalcMappedShape (const MappedIntegrationPoint<DIM,DIM+1> & mip,
       BareSliceMatrix<double> shape) const = 0;
 
     virtual void CalcShape (const IntegrationPoint & ip, 
@@ -453,7 +436,7 @@ namespace ngfem
   {
   protected:
     enum { DIM = ET_trait<ET>::DIM };
-    enum { DIM_STRESS = (DIM+1)*(DIM+1) }; //check this!!!
+    enum { DIM_STRESS = DIM }; //check this!!!
     
     using VertexOrientedFE<ET>::vnums;
     using HCurlDivSurfaceFiniteElement<ET_trait<ET>::DIM>::ndof;
@@ -496,24 +479,7 @@ namespace ngfem
                                           }));
     }
     
-    virtual void CalcMappedShape_Vector (const MappedIntegrationPoint<DIM,DIM+1> & mip,
-                            BareSliceMatrix<double> shape) const
-    {
-      Vec<DIM, AutoDiff<DIM+1>> adp = mip;
-      Vec<DIM, AutoDiffDiff<DIM+1>> addp;
-      for (int i=0; i<DIM+1; i++)
-      {
-        addp[i] = adp[i].Value();
-        addp[i].LoadGradient(&adp[i].DValue(0));
-      }
-      Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM+1>> (addp), SBLambda([&] (int nr, auto val)
-                                          {
-                                            shape.Row(nr).AddSize(DIM_STRESS) = val.Shape();
-                                          }));
-    }
-
-
-    virtual void CalcMappedShape_Matrix (const MappedIntegrationPoint<DIM,DIM+1> & mip,
+    virtual void CalcMappedShape (const MappedIntegrationPoint<DIM,DIM+1> & mip,
                             BareSliceMatrix<double> shape) const
     {
       Vec<DIM, AutoDiff<DIM+1>> adp = mip;
@@ -534,6 +500,22 @@ namespace ngfem
 
   };
 
+class dummy_legendre
+  {
+    AutoDiffDiff<2> leg;
+  public:
+    dummy_legendre  (AutoDiffDiff<2> aleg) : leg(aleg){ ; }
+
+    Vec<1> Shape() {
+      return Vec<1> (-leg.Value());    //I think there should be a minus
+    }
+
+    Vec<1> DivShape()
+    {
+      throw Exception("not available for surface elements!");
+    }
+};
+  
   template <> class HCurlDivSurfaceFE<ET_SEGM> : public T_HCurlDivSurfaceFE<ET_SEGM> 
   {
     
@@ -556,18 +538,18 @@ namespace ngfem
       
       int ii = 0;
       
-      ArrayMem<AutoDiffDiff<2>,20> ha(order_inner[0]+2);
+      ArrayMem<AutoDiffDiff<2>,20> ha(order_inner[0]+1);
       
       int es = 0,ee = 1;
       if(vnums[es] > vnums[ee]) swap (es,ee);
 
       AutoDiffDiff<2> ls = ddlami[es],le = ddlami[ee];
-
-      //IntegratedLegendreMonomialExt::Calc(order_inner[0]+2, le-ls, ha);
-      ScaledLegendrePolynomial(order_inner[0],le-ls,1,ha);
-
+      
+      LegendrePolynomial::Eval(order_inner[0],le-ls,ha);      
+      
       for(int l = 0; l <= order_inner[0]; l++)
-	shape[ii++] =  T_Dl2xRotDl1_v(le, ls, ha[l]);      
+      	shape[ii++] =  dummy_legendre(ha[l]);
+      //ha[l].Value(); //T_Dl2xRotDl1_v(le, ls, ha[l]);      
     };
   };
 

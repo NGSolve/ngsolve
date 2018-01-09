@@ -11,165 +11,7 @@
 
 
 namespace ngcomp
-{
-  
-  template<int D>
-  class DiffOpVecIdHCurlDiv_new: public DiffOp<DiffOpVecIdHCurlDiv_new<D> >
-  {
-  public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = D*D };
-    enum { DIFFORDER = 0 };
-    enum { DIM_STRESS = D*D };
-
-    static Array<int> GetDimensions() { return Array<int> ({D*D,1}); }
-
-    template <typename FEL,typename SIP>
-    static void GenerateMatrix(const FEL & bfel,const SIP & mip,
-      SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
-    {
-      const HCurlDivFiniteElement<D> & fel =
-        dynamic_cast<const HCurlDivFiniteElement<D>&> (bfel);
-      fel.CalcMappedShape_Vector (mip,Trans(mat));
-    }
-
-    template <typename FEL,typename SIP,typename MAT>
-    static void GenerateMatrix(const FEL & bfel,const SIP & sip,
-      MAT & mat,LocalHeap & lh)
-    {
-      const HCurlDivFiniteElement<D> & fel =
-        dynamic_cast<const HCurlDivFiniteElement<D>&> (bfel);
-      int nd = fel.GetNDof();
-      FlatMatrix<> shape(nd,DIM_DMAT,lh);
-      fel.CalcMappedShape_Vector(sip,shape);
-      for(int i=0; i<nd; i++)
-        for(int j = 0; j <DIM_DMAT; j++)
-          mat(j,i) = shape(i,j);
-
-    }
-  };
-
-  template<int D>
-  class DiffOpIdHCurlDiv_new: public DiffOp<DiffOpIdHCurlDiv_new<D> >
-  {
-  public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = D*D };
-    enum { DIFFORDER = 0 };
-    enum { DIM_STRESS = D*D };
-
-    static Array<int> GetDimensions() { return Array<int> ({D,D}); }
-
-    template <typename FEL,typename SIP>
-    static void GenerateMatrix(const FEL & bfel,const SIP & mip,
-      SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
-    {
-      const HCurlDivFiniteElement<D> & fel =
-        dynamic_cast<const HCurlDivFiniteElement<D>&> (bfel);
-      fel.CalcMappedShape_Matrix (mip,Trans(mat));
-    }
-
-    template <typename FEL,typename SIP,typename MAT>
-    static void GenerateMatrix(const FEL & bfel,const SIP & sip,
-      MAT & mat,LocalHeap & lh)
-    {
-      const HCurlDivFiniteElement<D> & fel =
-        dynamic_cast<const HCurlDivFiniteElement<D>&> (bfel);
-      int nd = fel.GetNDof();
-      FlatMatrix<> shape(nd,DIM_DMAT,lh);
-      fel.CalcMappedShape_Matrix(sip,shape);
-      for(int i=0; i<nd; i++)
-        for(int j = 0; j <DIM_DMAT; j++)
-          mat(j,i) = shape(i,j);
-
-    }
-  };
-
-  template<int D>
-  class DiffOpDivHCurlDiv_new: public DiffOp<DiffOpDivHCurlDiv_new<D> >
-  {
-  public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = D };
-    enum { DIFFORDER = 1 };
-    enum { DIM_STRESS = D*D };
-
-    static string Name() { return "div"; }
-
-    template <typename FEL,typename SIP>
-    static void GenerateMatrix(const FEL & bfel,const SIP & sip,
-      SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
-    {
-      const HCurlDivFiniteElement<D> & fel =
-        dynamic_cast<const HCurlDivFiniteElement<D>&> (bfel);
-
-      fel.CalcMappedDivShape (sip, Trans(mat));
-    }
-
-    template <typename FEL,typename SIP,typename MAT>
-    static void GenerateMatrix(const FEL & bfel,const SIP & sip,
-      MAT & mat,LocalHeap & lh)
-    {
-      HeapReset hr(lh);
-      const HCurlDivFiniteElement<D> & fel =
-        dynamic_cast<const HCurlDivFiniteElement<D>&> (bfel);
-
-      int nd = fel.GetNDof();
-      FlatMatrix<> divshape(nd, D, lh);
-      fel.CalcMappedDivShape (sip, divshape);
-      for (int i=0; i<nd; i++)
-        for (int j=0; j<D; j++)
-          mat(j,i) = divshape(i,j);
-
-    }
-
-  };
-
-
-  template<int D>
-  class DiffOpIdBoundaryHCurlDiv_new: public DiffOp<DiffOpIdBoundaryHCurlDiv_new<D> >
-  {
-  public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D+1 };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = (D+1)*(D+1) };
-    enum { DIFFORDER = 0 };
-
-    static Array<int> GetDimensions() { return Array<int> ({D+1,D+1}); }
-
-    template <typename FEL,typename SIP>
-    static void GenerateMatrix(const FEL & bfel,const SIP & mip,
-      SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
-    {
-      const HCurlDivSurfaceFiniteElement<D> & fel =
-        dynamic_cast<const HCurlDivSurfaceFiniteElement<D>&> (bfel);
-      fel.CalcMappedShape_Matrix (mip,Trans(mat));
-    }
-
-    template <typename FEL,typename SIP,typename MAT>
-    static void GenerateMatrix(const FEL & bfel,const SIP & sip,
-      MAT & mat,LocalHeap & lh)
-    {
-      const HCurlDivSurfaceFiniteElement<D> & fel =
-        dynamic_cast<const HCurlDivSurfaceFiniteElement<D>&> (bfel);
-      int nd = fel.GetNDof();
-      FlatMatrix<> shape(nd,DIM_DMAT,lh);
-      fel.CalcMappedShape_Matrix(sip,shape);
-      for(int i=0; i<nd; i++)
-        for(int j = 0; j <DIM_DMAT; j++)
-          mat(j,i) = shape(i,j);
-
-    }
-  };
-
-  
+{  
   template<int D>
   class DiffOpIdBoundaryHCurlDiv: public DiffOp<DiffOpIdBoundaryHCurlDiv<D> >
   {
@@ -196,50 +38,40 @@ namespace ngcomp
     static void GenerateMatrix(const FEL & bfel,const SIP & sip,
       MAT & mat,LocalHeap & lh)
     {
-      throw Exception ("not needed ??");
       const HCurlDivSurfaceFiniteElement<D> & fel =
         dynamic_cast<const HCurlDivSurfaceFiniteElement<D>&> (bfel);
       int nd = fel.GetNDof();
-      FlatMatrix<> shape(nd,DIM_DMAT,lh);
-
-      Mat<D> jac = sip.GetJacobian();
-      Mat<D> jacinv = sip.GetJacobianInverse();
+      FlatMatrix<> shape(nd,D,lh);
+      
+      Mat<D+1,D> jac = sip.GetJacobian();
+      Mat<D,D+1> jacinv = sip.GetJacobianInverse();
       double det = fabs(sip.GetJacobiDet());
       
       fel.CalcShape(sip.IP(), shape);
-
+           
       for (int i = 0; i < fel.GetNDof(); i++)
         {
           Mat<D> sigma_ref;
           // 2D case
-          if(D==2)
+          if(D==1)
           {
-            sigma_ref(0,0) = shape(i,0);
-            sigma_ref(0,1) = shape(i,1);
-	    sigma_ref(1,1) = shape(i,2);
-	    sigma_ref(1,0) = shape(i,3);
-          }
+            sigma_ref(0) = shape(i,0);
+	  }
           else // 3D case
           {
             sigma_ref(0,0) = shape(i,0);
             sigma_ref(0,1) = shape(i,1);
-            sigma_ref(0,2) = shape(i,2);
-	    sigma_ref(1,0) = shape(i,3);
-            sigma_ref(1,1) = shape(i,4);
-            sigma_ref(1,2) = shape(i,5);
-	    sigma_ref(2,0) = shape(i,6);
-            sigma_ref(3,1) = shape(i,7);
-            sigma_ref(4,2) = shape(i,8);
+            sigma_ref(1,0) = shape(i,2);
+	    sigma_ref(1,1) = shape(i,3);
           }
-
-          Mat<D> hm = Trans(jacinv) * sigma_ref;
-          Mat<D> sigma = hm * Trans(jac);
-          sigma *= (1.0 / det);
-          
+	  Mat<D+1,D> hm = Trans(jacinv) * sigma_ref;
+	  //Mat<D+1> sigma = hm * Trans(jac);
+	  Mat<D+1> sigma = hm * Trans(sip.GetNV());
+	  sigma *= (1.0 / det);
+	  	  
           for (int j = 0; j < DIM_DMAT; j++)
             mat(j, i) = sigma(j);
         }
-
     }
   };  
 
@@ -264,20 +96,13 @@ namespace ngcomp
         dynamic_cast<const HCurlDivFiniteElement<D>&> (bfel);
       
       int nd = fel.GetNDof();
-
-      //cout <<"ndof = "<<nd<<endl;
-      
       Mat<D> jac = sip.GetJacobian();
       Mat<D> jacinv = sip.GetJacobianInverse();
       double det = fabs(sip.GetJacobiDet());
 
-      //cout<<"jac = "<<jac<<endl;
-      //cout<<"jacinv = "<<jacinv<<endl;
-      
       FlatMatrix<> shape(nd, D*D, lh);
       fel.CalcShape(sip.IP(), shape);
-
-      //cout<<"shape = "<<shape<<endl;
+      
       for (int i = 0; i < fel.GetNDof(); i++)
         {
           Mat<D> sigma_ref;
@@ -305,14 +130,10 @@ namespace ngcomp
           Mat<D> hm = Trans(jacinv) * sigma_ref;
           Mat<D> sigma = hm * Trans(jac);
           sigma *= (1.0 / det);
-	  //cout<<"sigma = "<<sigma<<endl;
+
           for (int j = 0; j < D*D; j++)
             mat(j, i) = sigma(j);
-
-	  //cout<<"mat = "<<mat<<endl;
         }
-      //getchar();
-
     }
   };
 
@@ -440,6 +261,7 @@ namespace ngcomp
       Mat<D> jacinv = sip.GetJacobianInverse();
       double det = fabs (sip.GetJacobiDet());
       Mat<D> sjac = (1.0/det) * Trans(jacinv);
+      //Mat<D> sjac = (1.0/det) * jacinv;
       
       mat = sjac * Trans (div_shape);
       
@@ -470,7 +292,6 @@ namespace ngcomp
       
       if (ad_det.Value() < 0.0)
         {
-            // 	cout << "neg det" << endl;
           ad_det *= -1;
         }    
       
@@ -542,7 +363,6 @@ namespace ngcomp
     uniform_order_inner = int(flags.GetNumFlag("orderinner",order));
 
     auto one = make_shared<ConstantCoefficientFunction>(1);
-    // evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpBoundIdHDivSym<2>>>();
     if(ma->GetDimension() == 2)
     {
       evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundaryHCurlDiv<1>>>();
@@ -561,16 +381,6 @@ namespace ngcomp
 
   void HCurlDivFESpace :: Update(LocalHeap & lh)
   {
-    // use order k+1 for certain inner or boundary shapes
-    // see hdivdivfe.hpp
-    //int incrorder_xx1 = HCurlDivFE<ET_PRISM>::incrorder_xx1;
-    //int incrorder_xx2 = HCurlDivFE<ET_PRISM>::incrorder_xx2;
-    //int incrorder_zz1 = HCurlDivFE<ET_PRISM>::incrorder_zz1;
-    //int incrorder_zz2 = HCurlDivFE<ET_PRISM>::incrorder_zz2;
-    //int incrorder_xx1_bd = HCurlDivFE<ET_PRISM>::incrorder_xx1_bd;
-    //int incrorder_xx2_bd = HCurlDivFE<ET_PRISM>::incrorder_xx2_bd;
-    //int incrorder_zz1_bd = HCurlDivFE<ET_PRISM>::incrorder_zz1_bd;
-    //int incrorder_zz2_bd = HCurlDivFE<ET_PRISM>::incrorder_zz2_bd;
     first_facet_dof.SetSize (ma->GetNFacets()+1);
     first_element_dof.SetSize (ma->GetNE()+1);
 
@@ -595,11 +405,7 @@ namespace ngcomp
       switch(ma->GetFacetType(i))
       {
       case ET_SEGM:
-        ndof += of[0] + 1; break;
-      //case ET_TRIG:
-      //  ndof += (of[0] + 1+incrorder_zz1_bd)*(of[0] + 2+incrorder_zz1_bd) / 2; break;
-      //case ET_QUAD:
-      //  ndof += (of[0] + 1+incrorder_xx1_bd)*(of[1] + 1+incrorder_xx2_bd); break;
+        ndof += of[0] + 1; break;      
       default:
         throw Exception("illegal facet type");
       }
@@ -612,11 +418,11 @@ namespace ngcomp
       ElementId ei(VOL, i);
       first_element_dof[i] = ndof;
       INT<3> oi = order_inner[i];
+
       switch(ma->GetElType(ei))
       {
       case ET_TRIG:
-        //ndof += 3*(oi[0]+1)*(oi[0]+2)/2 - 3*(oi[0]+1);
-	ndof += oi[0]+  1;
+        ndof += 2* (oi[0] * (oi[0] +1)) + oi[0] +1; 
         if(plus) ndof += 2*oi[0];
         if(discontinuous)
         {
@@ -625,50 +431,13 @@ namespace ngcomp
           for(int ii=0; ii<fnums.Size(); ii++)
           {
             ndof += first_facet_dof[fnums[ii]+1] - first_facet_dof[fnums[ii]];
-          }
+	    }
           */
           for (auto f : ma->GetElFacets(ei))
             ndof += first_facet_dof[f+1] - first_facet_dof[f];            
         }
         break;
-      //case ET_QUAD:
-      //  //ndof += 2*(oi[0]+2)*(oi[0]+1) +1;
-      //  ndof += (oi[0]+1+HCurlDivFE<ET_QUAD>::incsg)*(oi [0]+1+HCurlDivFE<ET_QUAD>::incsg)
-      //    + (oi[0]+2)*(oi[0])*2
-      //    + 2*(oi[0]+1+HCurlDivFE<ET_QUAD>::incsugv) +1;
-      //  if(discontinuous)
-      //  {
-      //    for (auto f : ma->GetElFacets(ei))
-      //      ndof += first_facet_dof[f+1] - first_facet_dof[f];            
-      //  }
-      //  break;
-      //case ET_PRISM:
-      //  ndof += 3*(oi[0]+1+incrorder_xx1)*(oi[0]+incrorder_xx1)*(oi[2]+1+incrorder_xx2)/2 + 
-      //    (oi[0]+1+incrorder_zz1)*(oi[0]+2+incrorder_zz1)*(oi[2]-1+incrorder_zz2)/2 + 
-      //    (oi[0]+1)*(oi[0]+2)*(oi[2]+1)/2*2;
-      //  if(discontinuous)
-      //  {
-      //    for (auto f : ma->GetElFacets(ei))
-      //      ndof += first_facet_dof[f+1] - first_facet_dof[f];            
-      //  }
-      //  break;
-      //case ET_HEX:
-      //  ndof += 3*(oi[0]+2)*(oi[0])*(oi[0]+2) + 3*(oi[0]+1)*(oi[0]+2)*(oi[0]+1);
-      //  if(discontinuous)
-      //  {
-      //    for (auto f : ma->GetElFacets(ei))
-      //      ndof += first_facet_dof[f+1] - first_facet_dof[f];            
-      //  }
-      //  break;
-      //case ET_TET:
-      //  ndof += (oi[0]+1)*(oi[0]+2)*(oi[0]+1);
-      //  if(discontinuous)
-      //  {
-      //    for (auto f : ma->GetElFacets(ei))
-      //      ndof += first_facet_dof[f+1] - first_facet_dof[f];            
-      //  }
-      //  break;
-      default:
+       default:
         throw Exception(string("illegal element type") + ToString(ma->GetElType(ei)));
       }
     }
@@ -716,9 +485,7 @@ namespace ngcomp
     {
       if(!discontinuous)
       {
-        auto feseg = new (alloc) HCurlDivSurfaceFE<ET_SEGM> (order);
-        //auto fetr = new (alloc) HCurlDivSurfaceFE<ET_TRIG> (order);
-        //auto fequ = new (alloc) HCurlDivSurfaceFE<ET_QUAD> (order);
+        auto feseg = new (alloc) HCurlDivSurfaceFE<ET_SEGM> (order);      
       switch(ma->GetElType(ei))
       {
       case ET_SEGM:  
@@ -726,18 +493,6 @@ namespace ngcomp
         feseg->SetOrderInner(order_facet[ei.Nr()][0]);
         feseg->ComputeNDof();
         return *feseg;
-
-      //case ET_TRIG:          
-      //  fetr->SetVertexNumbers (ngel.Vertices());
-      //  fetr->SetOrderInner(order_facet[ei.Nr()]);
-      //  fetr->ComputeNDof();
-      //  return *fetr;
-      //
-      //case ET_QUAD:          
-      //  fequ->SetVertexNumbers (ngel.Vertices());
-      //  fequ->SetOrderInner(order_facet[ei.Nr()]);
-      //  fequ->ComputeNDof();
-      //  return *fequ;
 
       default:
         stringstream str;
@@ -751,8 +506,6 @@ namespace ngcomp
       {
       case ET_POINT: return *new (alloc) DummyFE<ET_POINT>;
       case ET_SEGM:  return *new (alloc) DummyFE<ET_SEGM>; break;
-	//case ET_TRIG:  return *new (alloc) DummyFE<ET_TRIG>; break;
-	//case ET_QUAD:  return *new (alloc) DummyFE<ET_QUAD>; break;
 
       default:
         stringstream str;
@@ -776,51 +529,7 @@ namespace ngcomp
       fe->ComputeNDof();
       return *fe;
     }
-    //case ET_QUAD:
-    //{
-    //  auto fe = new (alloc) HCurlDivFE<ET_QUAD> (order,plus);
-    //  fe->SetVertexNumbers (ngel.Vertices());
-    //  int ii = 0;
-    //  for(auto f : ngel.Facets())
-    //    fe->SetOrderFacet(ii++,order_facet[f]);
-    //  fe->SetOrderInner(order_inner[ei.Nr()]);
-    //  fe->ComputeNDof();
-    //  return *fe;
-    //}
-    //case ET_PRISM:
-    //{
-    //  auto fe = new (alloc) HCurlDivFE<ET_PRISM> (order,plus);
-    //  fe->SetVertexNumbers (ngel.vertices);
-    //  int ii = 0;
-    //  for(auto f : ngel.Facets())
-    //    fe->SetOrderFacet(ii++,order_facet[f]);
-    //  fe->SetOrderInner(order_inner[ei.Nr()]);
-    //  fe->ComputeNDof();
-    //  return *fe;
-    //}
-    //case ET_HEX:
-    //{
-    //  auto fe = new (alloc) HCurlDivFE<ET_HEX> (order,plus);
-    //  fe->SetVertexNumbers (ngel.vertices);
-    //  int ii = 0;
-    //  for(auto f : ngel.Facets())
-    //    fe->SetOrderFacet(ii++,order_facet[f]);
-    //  fe->SetOrderInner(order_inner[ei.Nr()]);
-    //  fe->ComputeNDof();
-    //  return *fe;
-    //}
-    //case ET_TET:
-    //{
-    //  auto fe = new (alloc) HCurlDivFE<ET_TET> (order,plus);
-    //  fe->SetVertexNumbers (ngel.vertices);
-    //  int ii = 0;
-    //  for(auto f : ngel.Facets())
-    //    fe->SetOrderFacet(ii++,order_facet[f]);
-    //  fe->SetOrderInner(order_inner[ei.Nr()]);
-    //  fe->ComputeNDof();
-    //  return *fe;
-    //}
-    default:
+      default:
       throw Exception(string("HCurlDivFESpace::GetFE: element-type ") +
         ToString(ngel.GetType()) + " not supported");
     }
