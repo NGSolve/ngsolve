@@ -495,7 +495,6 @@ public:
     Array<ProxyFunction*> proxies;
     VorB vb;
     bool element_boundary;
-    mutable bool simd_evaluate = true;
 
   public:
     NGS_DLL_HEADER SymbolicLinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb,
@@ -540,7 +539,7 @@ public:
     Matrix<bool> diagonal_proxies; // do proxies interact diagonally ?
     Matrix<bool> same_diffops; // are diffops the same ? 
     bool elementwise_constant;
-    mutable bool simd_evaluate;
+
     int trial_difforder, test_difforder;
     bool is_symmetric;
   public:
@@ -668,7 +667,6 @@ public:
     VorB vb;
     bool element_boundary;
     bool neighbor_testfunction;
-    mutable bool simd_evaluate;
   public:
     NGS_DLL_HEADER SymbolicFacetBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb, bool aelement_boundary);
 
@@ -737,7 +735,7 @@ public:
     VorB vb;
     Array<ProxyFunction*> trial_proxies;
     bool element_boundary;    
-    mutable bool simd_evaluate;
+
     Timer timer{"SymbolicEnergy",2};
     Array<int> trial_cum;     // cumulated dimension of proxies
     Matrix<bool> nonzeros;    // do components interact ? 

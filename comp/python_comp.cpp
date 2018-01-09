@@ -3191,7 +3191,8 @@ flags : dict
   m.def("SymbolicLFI",
           [](spCF cf, VorB vb, bool element_boundary,
              bool skeleton, py::object definedon,
-             IntegrationRule ir, int bonus_intorder, py::object definedonelem) 
+             IntegrationRule ir, int bonus_intorder, py::object definedonelem,
+             bool simd_evaluate) 
            {
              py::extract<Region> defon_region(definedon);
              if (defon_region.check())
@@ -3209,7 +3210,8 @@ flags : dict
                  for (int & d : defon) d--;
                  lfi -> SetDefinedOn (defon); 
                }
-               
+
+             lfi->SetSimdEvaluate (simd_evaluate);
              // lfi -> SetDefinedOn (makeCArray<int> (definedon));
 
              if (defon_region.check())
@@ -3234,13 +3236,15 @@ flags : dict
            py::arg("definedon")=DummyArgument(),
 	   py::arg("intrule")=IntegrationRule(),
            py::arg("bonus_intorder")=0,
-           py::arg("definedonelements")=DummyArgument()
+           py::arg("definedonelements")=DummyArgument(),
+           py::arg("simd_evaluate")=true
           );
 
   m.def("SymbolicBFI",
           [](spCF cf, VorB vb, bool element_boundary,
              bool skeleton, py::object definedon,
-             IntegrationRule ir, int bonus_intorder, py::object definedonelem)
+             IntegrationRule ir, int bonus_intorder, py::object definedonelem,
+             bool simd_evaluate)
            {
              py::extract<Region> defon_region(definedon);
              if (defon_region.check())
@@ -3281,6 +3285,8 @@ flags : dict
                    ->SetIntegrationRule(ir);
                }
 
+             bfi->SetSimdEvaluate (simd_evaluate);
+             
              if (! py::extract<DummyArgument> (definedonelem).check())
                bfi -> SetDefinedOnElements (py::extract<shared_ptr<BitArray>>(definedonelem)());
              return shared_ptr<BilinearFormIntegrator>(bfi);
@@ -3291,7 +3297,8 @@ flags : dict
         py::arg("definedon")=DummyArgument(),
         py::arg("intrule")=IntegrationRule(),
         py::arg("bonus_intorder")=0,
-        py::arg("definedonelements")=DummyArgument()
+        py::arg("definedonelements")=DummyArgument(),
+        py::arg("simd_evaluate")=true
         );
           
   m.def("SymbolicTPBFI",
@@ -3338,7 +3345,7 @@ flags : dict
           
   m.def("SymbolicEnergy",
         [](spCF cf, VorB vb, py::object definedon, bool element_boundary,
-           int bonus_intorder, py::object definedonelem)
+           int bonus_intorder, py::object definedonelem, bool simd_evaluate)
         -> shared_ptr<BilinearFormIntegrator>
            {
              py::extract<Region> defon_region(definedon);
@@ -3354,12 +3361,14 @@ flags : dict
                }
              if (! py::extract<DummyArgument> (definedonelem).check())
                bfi -> SetDefinedOnElements (py::extract<shared_ptr<BitArray>>(definedonelem)());
+             bfi->SetSimdEvaluate (simd_evaluate);
              return bfi;
            },
         py::arg("coefficient"), py::arg("VOL_or_BND")=VOL, 
         py::arg("definedon")=DummyArgument(), py::arg("element_boundary")=false,
         py::arg("bonus_intorder")=0,
-        py::arg("definedonelements")=DummyArgument()
+        py::arg("definedonelements")=DummyArgument(),
+        py::arg("simd_evaluate")=true
           );
 
 
