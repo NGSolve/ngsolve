@@ -48,7 +48,7 @@ namespace ngcomp
       double det = fabs(sip.GetJacobiDet());
       
       fel.CalcShape(sip.IP(), shape);
-           
+
       for (int i = 0; i < fel.GetNDof(); i++)
         {
           Mat<D> sigma_ref;
@@ -65,10 +65,14 @@ namespace ngcomp
 	    sigma_ref(1,1) = shape(i,3);
           }
 	  Mat<D+1,D> hm = Trans(jacinv) * sigma_ref;
-	  //Mat<D+1> sigma = hm * Trans(jac);
-	  Mat<D+1> sigma = hm * Trans(sip.GetNV());
+	  Mat<D+1> sigma;
+
+	  if(D==1)
+	    sigma = hm * Trans(sip.GetNV());
+	  else
+	    sigma = hm * Trans(jac);
+	  
 	  sigma *= (1.0 / det);
-	  	  
           for (int j = 0; j < DIM_DMAT; j++)
             mat(j, i) = sigma(j);
         }
@@ -95,13 +99,14 @@ namespace ngcomp
       const HCurlDivFiniteElement<D> & fel =
         dynamic_cast<const HCurlDivFiniteElement<D>&> (bfel);
       
-      int nd = fel.GetNDof();
+      int nd = fel.GetNDof();     
       Mat<D> jac = sip.GetJacobian();
       Mat<D> jacinv = sip.GetJacobianInverse();
       double det = fabs(sip.GetJacobiDet());
 
       FlatMatrix<> shape(nd, D*D, lh);
       fel.CalcShape(sip.IP(), shape);
+
       
       for (int i = 0; i < fel.GetNDof(); i++)
         {
@@ -123,8 +128,8 @@ namespace ngcomp
             sigma_ref(1,1) = shape(i,4);
             sigma_ref(1,2) = shape(i,5);
 	    sigma_ref(2,0) = shape(i,6);
-            sigma_ref(3,1) = shape(i,7);
-            sigma_ref(4,2) = shape(i,8);
+            sigma_ref(2,1) = shape(i,7);
+            sigma_ref(2,2) = shape(i,8);
           }
 
           Mat<D> hm = Trans(jacinv) * sigma_ref;
@@ -134,99 +139,9 @@ namespace ngcomp
           for (int j = 0; j < D*D; j++)
             mat(j, i) = sigma(j);
         }
-    }
-  };
-
-
-  template<int D>
-  class DiffOpVecIdHCurlDiv : public DiffOp<DiffOpVecIdHCurlDiv<D> >
-  { 
-  public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT =  D*D };
-    enum { DIFFORDER = 0 };
-    enum { DIM_STRESS = D*D };
-
-    static Array<int> GetDimensions() { return Array<int> ( {  D*D, 1 } ); }
-    
-    template <typename FEL, typename SIP, typename MAT>
-    static void GenerateMatrix(const FEL & bfel, const SIP & sip,
-                               MAT & mat, LocalHeap & lh)
-    {
-      throw Exception ("should not be here!!!'");
-      const HCurlDivFiniteElement<D> & fel =
-        dynamic_cast<const HCurlDivFiniteElement<D>&> (bfel);
-      
-      int nd = fel.GetNDof();
-      
-      Mat<D> jac = sip.GetJacobian();
-      Mat<D> jacinv = sip.GetJacobianInverse();
-      double det = fabs(sip.GetJacobiDet());
-      
-      FlatMatrix<> shape(nd, D*D, lh);
-      fel.CalcShape(sip.IP(), shape);
-
-      for (int i = 0; i < fel.GetNDof(); i++)
-        {
-	  Mat<D> sigma_ref;
-          // 2D case
-          if(D==2)
-          {
-            sigma_ref(0,0) = shape(i,0);
-            sigma_ref(0,1) = shape(i,1);
-	    sigma_ref(1,0) = shape(i,2);
-	    sigma_ref(1,1) = shape(i,3);
-          }
-          else // 3D case
-          {
-            sigma_ref(0,0) = shape(i,0);
-            sigma_ref(0,1) = shape(i,1);
-            sigma_ref(0,2) = shape(i,2);
-	    sigma_ref(1,0) = shape(i,3);
-            sigma_ref(1,1) = shape(i,4);
-            sigma_ref(1,2) = shape(i,5);
-	    sigma_ref(2,0) = shape(i,6);
-            sigma_ref(3,1) = shape(i,7);
-            sigma_ref(4,2) = shape(i,8);
-          }
-
-          Mat<D> hm = Trans(jacinv) * sigma_ref;
-          Mat<D> sigma = hm * Trans(jac);
-          sigma *= (1.0 / det);
-          
-          for (int j = 0; j < D*D; j++)
-            mat(j, i) = sigma(j);
-                  
-          //for (int j = 0; j < D*D; j++)
-          //  mat(j, i) = sigma(j);
-          // 2D case
-          if(D==2)
-          {
-            mat(0,i) = sigma(0,0);
-            mat(1,i) = sigma(0,1);
-            mat(2,i) = sigma(1,0);
-	    mat(3,i) = sigma(1,1);
-          }
-          else // 3D case
-          {
-	    mat(0,i) = sigma(0,0);
-            mat(1,i) = sigma(0,1);
-            mat(2,i) = sigma(0,2);
-	    mat(3,i) = sigma(1,0);
-	    mat(4,i) = sigma(1,1);
-            mat(5,i) = sigma(1,2);
-            mat(6,i) = sigma(2,0);
-	    mat(7,i) = sigma(2,1);
-	    mat(8,i) = sigma(2,2);	    
-          }
-        }
-
 
     }
   };
-
 
 
   template <int D> class DiffOpDivHCurlDiv : public DiffOp<DiffOpDivHCurlDiv<D> >
@@ -330,7 +245,7 @@ namespace ngcomp
       {
       case ET_SEGM:
         ndof += of[0] + 1; break;
-      case ET_TET:
+      case ET_TRIG:
 	ndof += (of[0] + 1)*(of[0] + 2); break;
       default:
         throw Exception("illegal facet type");
@@ -365,11 +280,17 @@ namespace ngcomp
         break;
       case ET_TET:
 	ndof += (oi[0] + 1)*(oi[0]+2)*(oi[0]+3)/6 + 8 * oi[0] * (oi[0]+1)*(oi[0]+2)/6;
+	if(discontinuous)
+        {
+          for (auto f : ma->GetElFacets(ei))
+            ndof += first_facet_dof[f+1] - first_facet_dof[f];            
+        }
+	break;
        default:
-        throw Exception(string("illegal element type") + ToString(ma->GetElType(ei)));
+        throw Exception(string("illegal element type = ") + ToString(ma->GetElType(ei)));
       }
     }
-    first_element_dof.Last() = ndof;
+    first_element_dof.Last() = ndof;    
     if(discontinuous)
       first_facet_dof = 0;
 

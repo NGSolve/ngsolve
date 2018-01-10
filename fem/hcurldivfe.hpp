@@ -272,7 +272,53 @@ namespace ngfem
     }
 
   };
-     /* Identity = Inner bubble function (normatl-tangential component is zero) */
+
+  
+  /* Face basis functions which are normal-tangential continuous */
+  /* calculates [(grad l1) o-times (grad l2 x grad l3)] * legendre */
+  /* DivShape assumes that phi_12 =  [(grad l1) o-times (grad l2 x grad l3)] is constant!!! */
+  class T_Dl1_o_Dl2xDl3_v
+  {
+    AutoDiffDiff<3> l1,l2,l3,v;
+  public:
+    T_Dl1_o_Dl2xDl3_v  (AutoDiffDiff<3> lam1, AutoDiffDiff<3> lam2, AutoDiffDiff<3> lam3, AutoDiffDiff<3> av) : l1(lam1), l2(lam2), l3(lam3), v(av) { ; }
+    
+    Vec<9> Shape() {
+
+      double cross1 = l2.DValue(1)*l3.DValue(2) - l2.DValue(2)*l3.DValue(1);
+      double cross2 = -(l2.DValue(0)*l3.DValue(2) - l2.DValue(2)*l3.DValue(0));
+      double cross3 = l2.DValue(0)*l3.DValue(1) - l2.DValue(1)*l3.DValue(0);
+
+      Vec<9> sigmaref;
+      
+      for (int i=0; i<3; i++)
+	{
+	  sigmaref(i*3)= v.Value() * l1.DValue(i) * cross1;
+	  sigmaref(i*3+1)= v.Value() * l1.DValue(i) * cross2;
+	  sigmaref(i*3+2)= v.Value() * l1.DValue(i) * cross3;
+	}
+      return sigmaref;  
+
+    }
+
+    Vec<3> DivShape()
+    {
+      double vx = v.DValue(0), vy = v.DValue(1), vz = v.DValue(2);
+
+      double cross1 = l2.DValue(1)*l3.DValue(2) - l2.DValue(2)*l3.DValue(1);
+      double cross2 = -(l2.DValue(0)*l3.DValue(2) - l2.DValue(2)*l3.DValue(0));
+      double cross3 = l2.DValue(0)*l3.DValue(1) - l2.DValue(1)*l3.DValue(0);
+
+      return Vec<3> (vx * l1.DValue(0) * cross1 + vy * l1.DValue(0) * cross2 + vz * l1.DValue(0) * cross3,
+		     vx * l1.DValue(1) * cross1 + vy * l1.DValue(1) * cross2 + vz * l1.DValue(1) * cross3,
+		     vx * l1.DValue(2) * cross1 + vy * l1.DValue(2) * cross2 + vz * l1.DValue(2) * cross3
+		     );
+    }
+
+  };
+
+  
+  /* Identity = Inner bubble function (normatl-tangential component is zero) */
   /* calculates I * legendre */
   template <int D>
   class T_Id_v
@@ -286,7 +332,7 @@ namespace ngfem
 
       for (int i=0; i<D; i++)
 	Id_v(i*(D+1))= v.Value();      
-	
+      //cout<<"Id_v = "<<Id_v<<endl;
       return Id_v;
     }
 
@@ -299,56 +345,8 @@ namespace ngfem
     }
 
   };
-
-
-  /* Type 1 inner bubble functions */
-  /* (phi_12 - phi_21) * P^k(lam_2) 
-  /* calculates [(grad l1) o-times (rot-grad l2) - (grad l2) o-times (rot-grad l1)  ] * legendre */
-  /* DivShape assumes that (phi_12 - phi_21) is constant!!! */
   
-  class T_Dl2xRotDl1_minus_Dl1xRotDl2_v
-  {
-    AutoDiffDiff<2> l1,l2,v;
-  public:
-    T_Dl2xRotDl1_minus_Dl1xRotDl2_v  (AutoDiffDiff<2> lam1, AutoDiffDiff<2> lam2, AutoDiffDiff<2> av) : l1(lam1), l2(lam2), v(av) { ; }
 
-    //Shape returns (sig_xx, sig_xy, sig_yx, sig_yy)
-    Vec<4> Shape() {
-      return Vec<4> (-v.Value()*(l1.DValue(0)*l2.DValue(1) - l2.DValue(0)*l1.DValue(1) ) ,
-		     v.Value()*(l1.DValue(0)*l2.DValue(0) - l2.DValue(0)*l1.DValue(0)),
-		     -v.Value()*(l1.DValue(1)*l2.DValue(1) -  l2.DValue(1)*l1.DValue(1)),
-		     v.Value()*(l1.DValue(1)*l2.DValue(0) - l2.DValue(1)*l1.DValue(0))
-		     );
-    }
-
-    Vec<2> DivShape()
-    {
-      double vx = v.DValue(0), vy = v.DValue(1);
-
-      double lam1x = l1.DValue(0);
-      double lam1y = l1.DValue(1);
-      //double lam1xx = l1.DDValue(0,0);
-      //double lam1xy = l1.DDValue(0,1);
-      //double lam1yx = l1.DDValue(1,0);
-      //double lam1yy = l1.DDValue(1,1);
-      
-      double lam2x = l2.DValue(0);
-      double lam2y = l2.DValue(1);
-      //double lam2xx = l2.DDValue(0,0);
-      //double lam2xy = l2.DDValue(0,1);
-      //double lam2yx = l2.DDValue(1,0);
-      //double lam2yy = l2.DDValue(1,1);
-
-      return Vec<2> (  - vx *(lam1x*lam2y - lam2x*lam1y) + vy*(lam1x*lam2x - lam2x*lam1x), -vx *(lam1y*lam2y-lam2y*lam1y) + vy*(lam1y*lam2x - lam2y*lam1x)) ;
-
-      //Use this if phi_12 is NOT constant!
-      //return Vec<2> (v.Value() * ( - (lam1xx*lam2y + lam1x*lam2yx - lam2xx*lam1y - lam2x*lam1yx)
-      //				   + (lam1xx*lam2x + lam1x*lam2xy - lam2xx*lam1x - lam2x*lam1xy)) - vx * (lam1x*lam2y - lam2x*lam1y) + vy*(lam1x*lam2x - lam2x*lam1x), 
-      //		     v.Value() * ( - (lam1xy*lam2y + lam1y*lam2yx - lam2xy*lam1y - lam2y*lam1yx)
-      //				   + (lam1yy*lam2x + lam1y*lam2xy - lam2yy*lam1x - lam2y*lam1xy)) - vx *(lam1y*lam2y - lam2y*lam1y) + vy*(lam1y*lam2x - lam2y*lam1x)); 		     
-    }
-
-  };  
 
   template <> class HCurlDivFE<ET_TRIG> : public T_HCurlDivFE<ET_TRIG> 
   {
@@ -417,84 +415,27 @@ namespace ngfem
       //int oi_plus = oi;
                 
       LegendrePolynomial::Eval(oi, 2*lt-1, v);
-      DubinerBasis3::Eval (oi-1, ls, lt, dubb);
+      DubinerBasis3::Eval (oi-1, ls, le, dubb);
       
       //Type one
       for (int i = 0; i < oi+1; i++)
 	{
 	//shape[ii++] = T_Dl2xRotDl1_minus_Dl1xRotDl2_v(le, ls, v[i]);
 	shape[ii++] = T_Id_v<2>(v[i]);
-	}
-                        
-      /* Type 2 inner bubble functions */
-      /* phi_12 * lam_3 * P^{k-1} */ 
+	}      
+      
       for(int i = 0; i < (oi+1)*oi/2; i++)
       {	
-	shape[ii++] = T_Dl2xRotDl1_v(ls,lt,le*dubb[i]);
-	shape[ii++] = T_Dl2xRotDl1_v(lt,ls,le*dubb[i]);
-	shape[ii++] = T_Dl2xRotDl1_v(le,lt,ls*dubb[i]);
-	shape[ii++] = T_Dl2xRotDl1_v(ls,le,lt*dubb[i]);	  
+      	shape[ii++] = T_Dl2xRotDl1_v(ls,lt,le*dubb[i]);
+      	shape[ii++] = T_Dl2xRotDl1_v(lt,ls,le*dubb[i]);
+      	shape[ii++] = T_Dl2xRotDl1_v(le,lt,ls*dubb[i]);
+      	shape[ii++] = T_Dl2xRotDl1_v(ls,le,lt*dubb[i]);	  
       }
 
     };
   };
-
-  /* Face basis functions which are normal-tangential continuous */
-  /* calculates [(grad l1) o-times (grad l2 x grad l3)] * legendre */
-  /* DivShape assumes that phi_12 =  [(grad l1) o-times (grad l2 x grad l3)] is constant!!! */
-  class T_Dl1_o_Dl2xDl3_v
-  {
-    AutoDiffDiff<3> l1,l2,l3,v;
-  public:
-    T_Dl1_o_Dl2xDl3_v  (AutoDiffDiff<3> lam1, AutoDiffDiff<3> lam2, AutoDiffDiff<3> lam3, AutoDiffDiff<3> av) : l1(lam1), l2(lam2), l3(lam3), v(av) { ; }
-    
-    Vec<9> Shape() {
-
-      double cross1 = l2.DValue(1)*l3.DValue(2) - l2.DValue(2)*l3.DValue(1);
-      double cross2 = -(l2.DValue(0)*l3.DValue(2) - l2.DValue(2)*l3.DValue(0));
-      double cross3 = l2.DValue(0)*l3.DValue(1) - l2.DValue(1)*l3.DValue(0);
-
-      Vec<9> sigmaref;
-
-      for (int i=0; i<3; i++)
-	{
-	  sigmaref(i,0)= v.Value() * l1.DValue(i) * cross1;
-	  sigmaref(i,1)= v.Value() * l1.DValue(i) * cross2;
-	  sigmaref(i,2)= v.Value() * l1.DValue(i) * cross3;
-	}
-
-      return sigmaref;
-      //return Vec<9> {v.Value() * l1.DValue(0) * cross1, v.Value() * l1.DValue(0) * cross2, v.Value() * l1.DValue(0) * cross3,
-      //	  v.Value() * l1.DValue(1) * cross1, v.Value() * l1.DValue(1) * cross2, v.Value() * l1.DValue(1) * cross3,
-      //	  v.Value() * l1.DValue(2) * cross1, v.Value() * l1.DValue(2) * cross2, v.Value() * l1.DValue(2) * cross3};
-	  
-
-    }
-
-    Vec<3> DivShape()
-    {
-      double vx = v.DValue(0), vy = v.DValue(1), vz = v.DValue(2);
-
-      double cross1 = l2.DValue(1)*l3.DValue(2) - l2.DValue(2)*l3.DValue(1);
-      double cross2 = -(l2.DValue(0)*l3.DValue(2) - l2.DValue(2)*l3.DValue(0));
-      double cross3 = l2.DValue(0)*l3.DValue(1) - l2.DValue(1)*l3.DValue(0);
-
-      return Vec<3> (vx * l1.DValue(0) * cross1 + vy * l1.DValue(0) * cross2 + vz * l1.DValue(0) * cross3,
-		     vx * l1.DValue(1) * cross1 + vy * l1.DValue(1) * cross2 + vz * l1.DValue(1) * cross3,
-		     vx * l1.DValue(2) * cross1 + vy * l1.DValue(2) * cross2 + vz * l1.DValue(2) * cross3
-		     );
-    }
-
-  };
-
  
-  
-
-  
-  
-
-
-    template <> class HCurlDivFE<ET_TET> : public T_HCurlDivFE<ET_TET> 
+     template <> class HCurlDivFE<ET_TET> : public T_HCurlDivFE<ET_TET> 
   {
     
   public:
@@ -510,21 +451,22 @@ namespace ngfem
         order = max2(order, order_facet[i][0]);
       }
       //first type + second type
-      int ninner = (order_inner[0] + 1)*(order_inner[0] + 2)*(order_inner[0] + 3)/6 + 8* ((order_inner[0] +2) * (order_inner[0] +1) * (order_inner[0])); 
+      int ninner = (order_inner[0] + 1)*(order_inner[0] + 2)*(order_inner[0] + 3)/6.0 + 8.0/6.0* ((order_inner[0] +2) * (order_inner[0] +1) * (order_inner[0]));
+      
       order = max2(order, order_inner[0]);
       //if (plus)
       //{	
       //  order ++;
       //  ninner += 2*order_inner[0]; 
       //}
-      ndof += ninner;      
+      ndof += ninner;     
     }
     
    template <typename Tx, typename TFA> 
     void T_CalcShape (TIP<3,Tx> ip/*AutoDiffDiff<2> hx[2]*/, TFA & shape) const
     {
       auto x = ip.x, y = ip.y, z = ip.z ;
-      AutoDiffDiff<3> ddlami[4] ={ x, y, z, 1-x-y };
+      AutoDiffDiff<3> ddlami[4] ={ x, y, z, 1-x-y-z };
       
       int ii = 0;
       
@@ -534,57 +476,96 @@ namespace ngfem
 
        const FACE * faces = ElementTopology::GetFaces(ET_TET);
 
-      ArrayMem<AutoDiffDiff<3>,20> ha(maxorder_facet+1);
-      //ArrayMem<AutoDiffDiff<3>,20> v(order_inner[0]+1), dubb(order_inner[0]*(order_inner[0]+1)/2);
-
+       
+       ArrayMem<AutoDiffDiff<3>,20> ha((maxorder_facet+1)*(maxorder_facet+2)/2.0); 
+       ArrayMem<AutoDiffDiff<3>,20> v((order_inner[0] + 1)*(order_inner[0] + 2)*(order_inner[0] + 3)/6.0);
+       ArrayMem<AutoDiffDiff<3>,20> dubb(order_inner[0]*(order_inner[0]+1)*(order_inner[0]+2)/6.0);
+       
       /* Edge based basis functions for tangential-normal continuity */
       for(int fa = 0; fa < 4; fa++)
         {
 	  int fav[3] = {faces[fa][0], faces[fa][1], faces[fa][2]};
-
+	  
 	  int p = order_facet[fa][0];
 	  //Sort vertices  first edge op minimal vertex
 	  if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0], fav[1]);
 	  if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1], fav[2]);
 	  if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0], fav[1]);
-	         	  	             	  
-          AutoDiffDiff<3> ls = ddlami[fav[0]], le = ddlami[fav[2]], lt = ddlami[fav[2]];
+
+
+          AutoDiffDiff<3> ls = ddlami[fav[0]], le = ddlami[fav[1]], lt = ddlami[fav[2]];
 	  
-	  ScaledLegendrePolynomial(maxorder_facet,le-ls, le+ls,ha);
-          
-          for (int l = 0; l <= order_facet[fa][0]; l++)
-	    shape[ii++] =  T_Dl1_o_Dl2xDl3_v(le,ls,lt,ha[l]); 
+	  DubinerBasis3::Eval (maxorder_facet, ls, le, ha);
+
+          for (int l = 0; l < (order_facet[fa][0]+1)*(order_facet[fa][0]+2)/2.0; l++)
+	    {	      
+	      shape[ii++] =  T_Dl1_o_Dl2xDl3_v(le,ls,lt,ha[l]);	      
+	      shape[ii++] =  T_Dl1_o_Dl2xDl3_v(ls,lt,le,ha[l]);
+	    }
         }
 
+      int oi=order_inner[0];
       
-      shape[ii++] = T_Id_v<3>(ha[0]);
+      int es = 0; int ee = 1; int et = 2; int eo = 3 ;
+      AutoDiffDiff<3> ls = ddlami[es]; 
+      AutoDiffDiff<3> le = ddlami[ee];
+      AutoDiffDiff<3> lt = ddlami[et];
+      AutoDiffDiff<3> lo = ddlami[eo];
+
+      LegendrePolynomial leg;
+      JacobiPolynomialAlpha jac1(1);
+
+      //############ type 1 ############
       
-      //int es = 0; int ee = 1; int et = 2;
-      //AutoDiffDiff<2> ls = ddlami[es];
-      //AutoDiffDiff<2> le = ddlami[ee];
-      //AutoDiffDiff<2> lt = ddlami[et];
-      //
-      //int oi=order_inner[0];
-      ////int oi_plus = oi;
-      //          
-      //LegendrePolynomial::Eval(oi, 2*lt-1, v);
-      //DubinerBasis3::Eval (oi-1, ls, lt, dubb);
-      //
-      ////Type one
-      //for (int i = 0; i < oi+1; i++)
-      //	shape[ii++] =T_Dl2xRotDl1_minus_Dl1xRotDl2_v(le, ls, v[i]);
-      //            
-      ///* Type 2 inner bubble functions */
-      ///* phi_12 * lam_3 * P^{k-1} */ 
-      //for(int i = 0; i < (oi+1)*oi/2; i++)
-      //	{	
-      //	  shape[ii++] = T_Dl2xRotDl1_v(ls,lt,le*dubb[i]);
-      //	  shape[ii++] = T_Dl2xRotDl1_v(lt,ls,le*dubb[i]);
-      //	  shape[ii++] = T_Dl2xRotDl1_v(le,lt,ls*dubb[i]);
-      //	  shape[ii++] = T_Dl2xRotDl1_v(ls,le,lt*dubb[i]);	  
-      //}
+      leg.EvalScaled1Assign 
+	(oi, lt-lo, lt+lo,
+	 SBLambda ([&](size_t k, Tx polz) LAMBDA_INLINE
+		   {
+		     JacobiPolynomialAlpha jac2(2*k+2);
+ 
+		     jac1.EvalScaledMult1Assign
+		       (oi-k, le-lt-lo, 1-ls, polz, 
+			SBLambda ([&] (size_t j, Tx polsy) LAMBDA_INLINE
+				  {				    
+				    jac2.EvalMult(oi - k - j, 2 * ls - 1, polsy, 
+						  SBLambda([&](size_t j, Tx val) LAMBDA_INLINE
+							   {
+							     shape[ii++] =  T_Id_v<3>(val);	      							     					     							   }));
+				    jac2.IncAlpha2();
+				  }));
+		     jac1.IncAlpha2();
+		   }));
+
       
-    };
+      //############ type 2 ############
+            
+      leg.EvalScaled1Assign 
+	(oi-1, lt-lo, lt+lo,
+	 SBLambda ([&](size_t k, Tx polz) LAMBDA_INLINE
+		   {
+		     JacobiPolynomialAlpha jac2(2*k+2);
+ 
+		     jac1.EvalScaledMult1Assign
+		       (oi-1-k, le-lt-lo, 1-ls, polz, 
+			SBLambda ([&] (size_t j, Tx polsy) LAMBDA_INLINE
+				  {				    
+				    jac2.EvalMult(oi-1 - k - j, 2 * ls - 1, polsy, 
+						  SBLambda([&](size_t j, Tx val) LAMBDA_INLINE
+							   {
+							     shape[ii++] =  T_Dl1_o_Dl2xDl3_v(le,ls,lt,lo*val);	      
+							     shape[ii++] =  T_Dl1_o_Dl2xDl3_v(ls,lt,le,lo*val);	  
+							     shape[ii++] =  T_Dl1_o_Dl2xDl3_v(le,ls,lo,lt*val);	      
+							     shape[ii++] =  T_Dl1_o_Dl2xDl3_v(ls,lo,le,lt*val);	  
+							     shape[ii++] =  T_Dl1_o_Dl2xDl3_v(le,lo,lt,ls*val);	      
+							     shape[ii++] =  T_Dl1_o_Dl2xDl3_v(lo,lt,le,ls*val);	  
+							     shape[ii++] =  T_Dl1_o_Dl2xDl3_v(lo,ls,lt,le*val);	      
+							     shape[ii++] =  T_Dl1_o_Dl2xDl3_v(lt,ls,lo,le*val);							     
+							   }));
+				    jac2.IncAlpha2();
+				  }));
+		     jac1.IncAlpha2();
+		   }));
+     };
   };
   
   ////////////////////// SURFACE ////////////////////////////
@@ -651,7 +632,7 @@ namespace ngfem
         adp(i) = AutoDiffDiff<DIM+1>(ip(i),i);
       }
 
-      Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM+1>> (adp), SBLambda([&] (int nr, double val)
+      Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM+1>> (adp), SBLambda([&] (int nr, auto val)
                                           {
                                             //shape.Row(nr).AddSize(DIM_STRESS) = val.Shape();
 					    shape.Row(nr).AddSize(DIM_STRESS) = val;
@@ -723,7 +704,6 @@ namespace ngfem
     };
   };
 
-
   template <> class HCurlDivSurfaceFE<ET_TRIG> : public T_HCurlDivSurfaceFE<ET_TRIG> 
   {
     
@@ -741,24 +721,40 @@ namespace ngfem
    template <typename Tx, typename TFA> 
     void T_CalcShape (TIP<2,Tx> ip/*AutoDiffDiff<2> hx[2]*/, TFA & shape) const
     {
-      throw Exception("not implemented");
-      //
-      //auto x = ip.x;
-      //AutoDiffDiff<2> ddlami[2] ={ x, 1-x };
-      //
-      //int ii = 0;
-      //
-      //ArrayMem<AutoDiffDiff<2>,20> ha(order_inner[0]+1);
-      //
-      //int es = 0,ee = 1;
-      //if(vnums[es] > vnums[ee]) swap (es,ee);
-      //
-      //AutoDiffDiff<2> ls = ddlami[es],le = ddlami[ee];
-      //
-      //LegendrePolynomial::Eval(order_inner[0],le-ls,ha);      
-      //
-      //for(int l = 0; l <= order_inner[0]; l++)
-      //	shape[ii++] =  -1* ha[l].Value(); //I think there should be a minus
+     
+      auto x = ip.x, y= ip.y;
+      AutoDiffDiff<3> ddlami[3] ={ x, y, 1-x-y };
+      
+      int ii = 0;
+
+      ArrayMem<AutoDiffDiff<3>,20> ha((order_inner[0]+1)*(order_inner[0]+2)/2.0); //face basis
+      
+      int es = 0, ee = 1, et = 2;
+      if(vnums[es] > vnums[ee]) swap(es, ee);
+      if(vnums[ee] > vnums[et]) swap(ee, et);
+      if(vnums[es] > vnums[et]) swap(es,et);
+            
+      AutoDiffDiff<3> ls = ddlami[es],le = ddlami[ee], lt = ddlami[et];
+      
+      DubinerBasis3::Eval (order_inner[0], ls, le, ha);
+
+      for (int l = 0; l < (order_inner[0]+1)*(order_inner[0]+2)/2.0; l++)
+	    {
+	      double valdb;
+	      valdb = -ha[l].Value();
+	      
+	      shape[ii++] =  Vec<2>(valdb,valdb);	      
+	      shape[ii++] =  Vec<2>(0.0,ha[l].Value());
+	      
+	      shape[ii++] =  Vec<2>(valdb,valdb);	      
+	      shape[ii++] =  Vec<2>(0,-valdb);
+	      
+	      shape[ii++] =  Vec<2>(0,-valdb);
+	      shape[ii++] =  Vec<2>(valdb,valdb);
+	      
+	      shape[ii++] =  Vec<2>(valdb,0);
+	      shape[ii++] =  Vec<2>(0,valdb);	      
+	    }     
     };
   };
 
