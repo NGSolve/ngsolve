@@ -229,7 +229,7 @@ namespace ngfem
   };
 
   /* Edge basis functions which are normal-tangential continuous */
-  /* calculates [(grad l1) o-times (rot-grad l2) ] * intlegendre */
+  /* calculates [(grad l1) o-times (rot-grad l2) ] * scaledlegendre */
   /* DivShape assumes that phi_12 = [(grad l1) o-times (rot-grad l2) ] is constant!!! */
   class T_Dl2xRotDl1_v
   {
@@ -269,6 +269,33 @@ namespace ngfem
       //Use this if phi_12 is NOT constant!
       //return Vec<2> (v.Value() * ( - (lam1xx*lam2y + lam1x*lam2yx) + (lam1xx*lam2x + lam1x*lam2xy)) - vx *lam1x*lam2y + vy*lam1x*lam2x, 
       //v.Value() * ( - (lam1xy*lam2y + lam1y*lam2yx) + (lam1yy*lam2x + lam1y*lam2xy)) - vx *lam1y*lam2y + vy*lam1y*lam2x);		      
+    }
+
+  };
+     /* Identity = Inner bubble function (normatl-tangential component is zero) */
+  /* calculates I * legendre */
+  template <int D>
+  class T_Id_v
+  {
+    AutoDiffDiff<D> v;
+  public:
+    T_Id_v  (AutoDiffDiff<D> av) : v(av) { ; }
+    
+    Vec<D*D> Shape() {
+      Vec<D*D> Id_v=0;
+
+      for (int i=0; i<D; i++)
+	Id_v(i*(D+1))= v.Value();      
+	
+      return Id_v;
+    }
+
+    Vec<D> DivShape()
+    {
+      Vec<D> div_Id_v=0;
+      for (int i=0; i<D; i++)
+	div_Id_v(i) = v.DValue(i);
+      return div_Id_v;
     }
 
   };
@@ -394,8 +421,11 @@ namespace ngfem
       
       //Type one
       for (int i = 0; i < oi+1; i++)
-	shape[ii++] =T_Dl2xRotDl1_minus_Dl1xRotDl2_v(le, ls, v[i]);
-                  
+	{
+	//shape[ii++] = T_Dl2xRotDl1_minus_Dl1xRotDl2_v(le, ls, v[i]);
+	shape[ii++] = T_Id_v<2>(v[i]);
+	}
+                        
       /* Type 2 inner bubble functions */
       /* phi_12 * lam_3 * P^{k-1} */ 
       for(int i = 0; i < (oi+1)*oi/2; i++)
@@ -406,6 +436,154 @@ namespace ngfem
 	shape[ii++] = T_Dl2xRotDl1_v(ls,le,lt*dubb[i]);	  
       }
 
+    };
+  };
+
+  /* Face basis functions which are normal-tangential continuous */
+  /* calculates [(grad l1) o-times (grad l2 x grad l3)] * legendre */
+  /* DivShape assumes that phi_12 =  [(grad l1) o-times (grad l2 x grad l3)] is constant!!! */
+  class T_Dl1_o_Dl2xDl3_v
+  {
+    AutoDiffDiff<3> l1,l2,l3,v;
+  public:
+    T_Dl1_o_Dl2xDl3_v  (AutoDiffDiff<3> lam1, AutoDiffDiff<3> lam2, AutoDiffDiff<3> lam3, AutoDiffDiff<3> av) : l1(lam1), l2(lam2), l3(lam3), v(av) { ; }
+    
+    Vec<9> Shape() {
+
+      double cross1 = l2.DValue(1)*l3.DValue(2) - l2.DValue(2)*l3.DValue(1);
+      double cross2 = -(l2.DValue(0)*l3.DValue(2) - l2.DValue(2)*l3.DValue(0));
+      double cross3 = l2.DValue(0)*l3.DValue(1) - l2.DValue(1)*l3.DValue(0);
+
+      Vec<9> sigmaref;
+
+      for (int i=0; i<3; i++)
+	{
+	  sigmaref(i,0)= v.Value() * l1.DValue(i) * cross1;
+	  sigmaref(i,1)= v.Value() * l1.DValue(i) * cross2;
+	  sigmaref(i,2)= v.Value() * l1.DValue(i) * cross3;
+	}
+
+      return sigmaref;
+      //return Vec<9> {v.Value() * l1.DValue(0) * cross1, v.Value() * l1.DValue(0) * cross2, v.Value() * l1.DValue(0) * cross3,
+      //	  v.Value() * l1.DValue(1) * cross1, v.Value() * l1.DValue(1) * cross2, v.Value() * l1.DValue(1) * cross3,
+      //	  v.Value() * l1.DValue(2) * cross1, v.Value() * l1.DValue(2) * cross2, v.Value() * l1.DValue(2) * cross3};
+	  
+
+    }
+
+    Vec<3> DivShape()
+    {
+      double vx = v.DValue(0), vy = v.DValue(1), vz = v.DValue(2);
+
+      double cross1 = l2.DValue(1)*l3.DValue(2) - l2.DValue(2)*l3.DValue(1);
+      double cross2 = -(l2.DValue(0)*l3.DValue(2) - l2.DValue(2)*l3.DValue(0));
+      double cross3 = l2.DValue(0)*l3.DValue(1) - l2.DValue(1)*l3.DValue(0);
+
+      return Vec<3> (vx * l1.DValue(0) * cross1 + vy * l1.DValue(0) * cross2 + vz * l1.DValue(0) * cross3,
+		     vx * l1.DValue(1) * cross1 + vy * l1.DValue(1) * cross2 + vz * l1.DValue(1) * cross3,
+		     vx * l1.DValue(2) * cross1 + vy * l1.DValue(2) * cross2 + vz * l1.DValue(2) * cross3
+		     );
+    }
+
+  };
+
+ 
+  
+
+  
+  
+
+
+    template <> class HCurlDivFE<ET_TET> : public T_HCurlDivFE<ET_TET> 
+  {
+    
+  public:
+    using T_HCurlDivFE<ET_TET> :: T_HCurlDivFE;
+
+    virtual void ComputeNDof()
+    {     
+      order = 0;
+      ndof = 0;
+      for (int i=0; i<4; i++)
+      {
+        ndof += (order_facet[i][0]+1)*(order_facet[i][0]+2);
+        order = max2(order, order_facet[i][0]);
+      }
+      //first type + second type
+      int ninner = (order_inner[0] + 1)*(order_inner[0] + 2)*(order_inner[0] + 3)/6 + 8* ((order_inner[0] +2) * (order_inner[0] +1) * (order_inner[0])); 
+      order = max2(order, order_inner[0]);
+      //if (plus)
+      //{	
+      //  order ++;
+      //  ninner += 2*order_inner[0]; 
+      //}
+      ndof += ninner;      
+    }
+    
+   template <typename Tx, typename TFA> 
+    void T_CalcShape (TIP<3,Tx> ip/*AutoDiffDiff<2> hx[2]*/, TFA & shape) const
+    {
+      auto x = ip.x, y = ip.y, z = ip.z ;
+      AutoDiffDiff<3> ddlami[4] ={ x, y, z, 1-x-y };
+      
+      int ii = 0;
+      
+      int maxorder_facet =
+        max2(order_facet[0][0],max2(order_facet[1][0],order_facet[2][0]));
+
+
+       const FACE * faces = ElementTopology::GetFaces(ET_TET);
+
+      ArrayMem<AutoDiffDiff<3>,20> ha(maxorder_facet+1);
+      //ArrayMem<AutoDiffDiff<3>,20> v(order_inner[0]+1), dubb(order_inner[0]*(order_inner[0]+1)/2);
+
+      /* Edge based basis functions for tangential-normal continuity */
+      for(int fa = 0; fa < 4; fa++)
+        {
+	  int fav[3] = {faces[fa][0], faces[fa][1], faces[fa][2]};
+
+	  int p = order_facet[fa][0];
+	  //Sort vertices  first edge op minimal vertex
+	  if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0], fav[1]);
+	  if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1], fav[2]);
+	  if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0], fav[1]);
+	         	  	             	  
+          AutoDiffDiff<3> ls = ddlami[fav[0]], le = ddlami[fav[2]], lt = ddlami[fav[2]];
+	  
+	  ScaledLegendrePolynomial(maxorder_facet,le-ls, le+ls,ha);
+          
+          for (int l = 0; l <= order_facet[fa][0]; l++)
+	    shape[ii++] =  T_Dl1_o_Dl2xDl3_v(le,ls,lt,ha[l]); 
+        }
+
+      
+      shape[ii++] = T_Id_v<3>(ha[0]);
+      
+      //int es = 0; int ee = 1; int et = 2;
+      //AutoDiffDiff<2> ls = ddlami[es];
+      //AutoDiffDiff<2> le = ddlami[ee];
+      //AutoDiffDiff<2> lt = ddlami[et];
+      //
+      //int oi=order_inner[0];
+      ////int oi_plus = oi;
+      //          
+      //LegendrePolynomial::Eval(oi, 2*lt-1, v);
+      //DubinerBasis3::Eval (oi-1, ls, lt, dubb);
+      //
+      ////Type one
+      //for (int i = 0; i < oi+1; i++)
+      //	shape[ii++] =T_Dl2xRotDl1_minus_Dl1xRotDl2_v(le, ls, v[i]);
+      //            
+      ///* Type 2 inner bubble functions */
+      ///* phi_12 * lam_3 * P^{k-1} */ 
+      //for(int i = 0; i < (oi+1)*oi/2; i++)
+      //	{	
+      //	  shape[ii++] = T_Dl2xRotDl1_v(ls,lt,le*dubb[i]);
+      //	  shape[ii++] = T_Dl2xRotDl1_v(lt,ls,le*dubb[i]);
+      //	  shape[ii++] = T_Dl2xRotDl1_v(le,lt,ls*dubb[i]);
+      //	  shape[ii++] = T_Dl2xRotDl1_v(ls,le,lt*dubb[i]);	  
+      //}
+      
     };
   };
   
@@ -473,30 +651,37 @@ namespace ngfem
         adp(i) = AutoDiffDiff<DIM+1>(ip(i),i);
       }
 
-      Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM+1>> (adp), SBLambda([&] (int nr, auto val)
+      Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM+1>> (adp), SBLambda([&] (int nr, double val)
                                           {
                                             //shape.Row(nr).AddSize(DIM_STRESS) = val.Shape();
 					    shape.Row(nr).AddSize(DIM_STRESS) = val;
                                           }));
     }
+
     
     virtual void CalcMappedShape (const MappedIntegrationPoint<DIM,DIM+1> & mip,
                             BareSliceMatrix<double> shape) const
     {
-      Vec<DIM, AutoDiff<DIM+1>> adp = mip;
-      Vec<DIM, AutoDiffDiff<DIM+1>> addp;
-      for (int i=0; i<DIM+1; i++)
-      {
-        addp[i] = adp[i].Value();
-        addp[i].LoadGradient(&adp[i].DValue(0));
-      }
-      Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM+1>> (addp),SBLambda([&](int nr,auto val)
-      {
-        //Vec<DIM_STRESS> vecshape = val.Shape();
-	Vec<DIM_STRESS> vecshape = val;
-        BareVector<double> matshape = shape.Row(nr);
-        VecToMat<DIM+1> (vecshape, matshape);
-      }));
+      //Vec<DIM, AutoDiff<DIM+1>> adp = mip;
+      //Vec<DIM, AutoDiffDiff<DIM+1>> addp;
+      //for (int i=0; i<DIM+1; i++)
+      //{
+      //  addp[i] = adp[i].Value();
+      //  addp[i].LoadGradient(&adp[i].DValue(0));
+      //}
+      throw Exception("not implemented");
+      //Vec<DIM, AutoDiffDiff<DIM+1>> adp;
+      //for ( int i=0; i<DIM+1; i++)
+      //{
+      //  adp(i) = AutoDiffDiff<DIM+1>(mip.IP()(i),i);
+      //}
+      //Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM+1>> (adp),SBLambda([&](int nr,auto val)
+      //{
+      //  Vec<DIM_STRESS> vecshape = val.Shape();
+      //	//Vec<DIM_STRESS> vecshape = val;
+      //  BareVector<double> matshape = shape.Row(nr);
+      //  VecToMat<DIM+1> (vecshape, matshape);
+      //}));
     }
 
 
@@ -535,6 +720,45 @@ namespace ngfem
       
       for(int l = 0; l <= order_inner[0]; l++)
 	shape[ii++] =  -1* ha[l].Value(); //I think there should be a minus
+    };
+  };
+
+
+  template <> class HCurlDivSurfaceFE<ET_TRIG> : public T_HCurlDivSurfaceFE<ET_TRIG> 
+  {
+    
+  public:
+    using T_HCurlDivSurfaceFE<ET_TRIG> :: T_HCurlDivSurfaceFE;
+
+    virtual void ComputeNDof()
+    {
+      order = 0;
+      ndof = 0;
+      ndof += (order_inner[0]+1) * (order_inner[0]+2);
+      order = max2(order,order_inner[0]);
+    }
+    
+   template <typename Tx, typename TFA> 
+    void T_CalcShape (TIP<2,Tx> ip/*AutoDiffDiff<2> hx[2]*/, TFA & shape) const
+    {
+      throw Exception("not implemented");
+      //
+      //auto x = ip.x;
+      //AutoDiffDiff<2> ddlami[2] ={ x, 1-x };
+      //
+      //int ii = 0;
+      //
+      //ArrayMem<AutoDiffDiff<2>,20> ha(order_inner[0]+1);
+      //
+      //int es = 0,ee = 1;
+      //if(vnums[es] > vnums[ee]) swap (es,ee);
+      //
+      //AutoDiffDiff<2> ls = ddlami[es],le = ddlami[ee];
+      //
+      //LegendrePolynomial::Eval(order_inner[0],le-ls,ha);      
+      //
+      //for(int l = 0; l <= order_inner[0]; l++)
+      //	shape[ii++] =  -1* ha[l].Value(); //I think there should be a minus
     };
   };
 

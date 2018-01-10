@@ -263,84 +263,8 @@ namespace ngcomp
       Mat<D> sjac = (1.0/det) * Trans(jacinv);
       //Mat<D> sjac = (1.0/det) * jacinv;
       
-      mat = sjac * Trans (div_shape);
-      
-      //for non-curved elements, divergence transformation is finished, otherwise derivatives of Jacobian have to be computed...
-      if (!sip.GetTransformation().IsCurvedElement()) return;
-
-      throw Exception("not implemented yet!");
-      
-      FlatMatrix<> shape(nd, DIM_STRESS, lh);
-      fel.CalcShape (sip.IP(), shape);
-      
-
-      Mat<D> hesse[3];
-      sip.CalcHesse (hesse[0], hesse[1], hesse[2]);
-      
-      Mat<D,D,AutoDiff<D> > fad;
-      for (int i = 0; i < D; i++)
-	{
-          for (int j = 0; j < D; j++)
-            {
-              fad(i,j).Value() = jac(i,j);
-              for (int k = 0; k < D; k++)
-                fad(i,j).DValue(k) = hesse[i](j,k);
-            }
-	}
-      
-      AutoDiff<D> ad_det = Det (fad);
-      
-      if (ad_det.Value() < 0.0)
-        {
-          ad_det *= -1;
-        }    
-      
-      AutoDiff<D> iad_det = 1.0 / ad_det;
-      fad *= iad_det;
-
-      Vec<D> hv2;
-      Mat<D> sigma_ref;
-      for (int i = 0; i < nd; i++)
-        {
-          if ( D == 2 )
-            {
-              sigma_ref(0,0) = shape(i, 0);
-              sigma_ref(1,1) = shape(i, 1);
-              sigma_ref(0,1) = sigma_ref(1,0) = shape(i, 2);
-            }
-          else
-            {
-              sigma_ref(0,0) = shape(i, 0);
-              sigma_ref(1,1) = shape(i, 1);
-              sigma_ref(2,2) = shape(i, 2);
-              sigma_ref(2,1) = sigma_ref(1,2) = shape(i, 3);
-              sigma_ref(0,2) = sigma_ref(2,0) = shape(i, 4);
-              sigma_ref(0,1) = sigma_ref(1,0) = shape(i, 5);
-            }
-          
-          hv2 = 0.0;
-          for (int j = 0; j < D; j++)
-            for (int k = 0; k < D; k++)
-              for (int l = 0; l < D; l++)
-                hv2(k) += fad(k,l).DValue(j) * sigma_ref(l,j);
-          
-          hv2 *= iad_det.Value();
-
-	  /*
-	  //Mat<D> inv_jac = sip.GetJacobianInverse();
-          //this term is zero!!!
-          for ( int j = 0; j < D; j++ )
-            for ( int k = 0; k < D; k++ )
-              for ( int l = 0; l < D; l++ )
-                for ( int m = 0; m < D; m++ )
-                  for ( int n = 0; n < D; n++ )
-                    hv2(n) += inv_jac(m,k) *fad(n,j).Value() * sigma_ref(j,l) * fad(k,l).DValue(m);
-	  */
-          for ( int j = 0; j < D; j++)
-            mat(j,i) += hv2(j);
-        }
-      
-    }
+      mat = sjac * Trans (div_shape);      
+    }        
   };
 
 
@@ -405,7 +329,9 @@ namespace ngcomp
       switch(ma->GetFacetType(i))
       {
       case ET_SEGM:
-        ndof += of[0] + 1; break;      
+        ndof += of[0] + 1; break;
+      case ET_TET:
+	ndof += (of[0] + 1)*(of[0] + 2); break;
       default:
         throw Exception("illegal facet type");
       }
@@ -437,6 +363,8 @@ namespace ngcomp
             ndof += first_facet_dof[f+1] - first_facet_dof[f];            
         }
         break;
+      case ET_TET:
+	ndof += (oi[0] + 1)*(oi[0]+2)*(oi[0]+3)/6 + 8 * oi[0] * (oi[0]+1)*(oi[0]+2)/6;
        default:
         throw Exception(string("illegal element type") + ToString(ma->GetElType(ei)));
       }
@@ -485,7 +413,8 @@ namespace ngcomp
     {
       if(!discontinuous)
       {
-        auto feseg = new (alloc) HCurlDivSurfaceFE<ET_SEGM> (order);      
+        auto feseg = new (alloc) HCurlDivSurfaceFE<ET_SEGM> (order);
+	auto fetr = new (alloc) HCurlDivSurfaceFE<ET_TRIG> (order);
       switch(ma->GetElType(ei))
       {
       case ET_SEGM:  
@@ -493,7 +422,12 @@ namespace ngcomp
         feseg->SetOrderInner(order_facet[ei.Nr()][0]);
         feseg->ComputeNDof();
         return *feseg;
-
+      case ET_TRIG:          
+        fetr->SetVertexNumbers (ngel.Vertices());
+        fetr->SetOrderInner(order_facet[ei.Nr()]);
+        fetr->ComputeNDof();
+        return *fetr;
+      
       default:
         stringstream str;
         str << "FESpace " << GetClassName()
@@ -506,6 +440,7 @@ namespace ngcomp
       {
       case ET_POINT: return *new (alloc) DummyFE<ET_POINT>;
       case ET_SEGM:  return *new (alloc) DummyFE<ET_SEGM>; break;
+      case ET_TRIG:  return *new (alloc) DummyFE<ET_TRIG>; break;
 
       default:
         stringstream str;
@@ -522,6 +457,17 @@ namespace ngcomp
     {
       auto fe = new (alloc) HCurlDivFE<ET_TRIG> (order,plus);
       fe->SetVertexNumbers (ngel.Vertices());
+      int ii = 0;
+      for(auto f : ngel.Facets())
+        fe->SetOrderFacet(ii++,order_facet[f]);
+      fe->SetOrderInner(order_inner[ei.Nr()]);
+      fe->ComputeNDof();
+      return *fe;
+    }
+     case ET_TET:
+    {
+      auto fe = new (alloc) HCurlDivFE<ET_TET> (order,plus);
+      fe->SetVertexNumbers (ngel.vertices);
       int ii = 0;
       for(auto f : ngel.Facets())
         fe->SetOrderFacet(ii++,order_facet[f]);
