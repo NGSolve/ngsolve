@@ -433,7 +433,7 @@ namespace ngfem
       }
 
     };
-  };
+  }; 
  
      template <> class HCurlDivFE<ET_TET> : public T_HCurlDivFE<ET_TET> 
   {
@@ -626,13 +626,13 @@ namespace ngfem
     virtual void CalcShape (const IntegrationPoint & ip, 
                             BareSliceMatrix<double> shape) const
     {
-      Vec<DIM, AutoDiffDiff<DIM+1>> adp;
-      for ( int i=0; i<DIM+1; i++)
+      Vec<DIM, AutoDiffDiff<DIM>> adp;
+      for ( int i=0; i<DIM; i++)
       {
-        adp(i) = AutoDiffDiff<DIM+1>(ip(i),i);
+        adp(i) = AutoDiffDiff<DIM>(ip(i),i);
       }
 
-      Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM+1>> (adp), SBLambda([&] (int nr, auto val)
+      Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM>> (adp), SBLambda([&] (int nr, auto val)
                                           {
                                             //shape.Row(nr).AddSize(DIM_STRESS) = val.Shape();
 					    shape.Row(nr).AddSize(DIM_STRESS) = val;
@@ -686,16 +686,16 @@ namespace ngfem
     void T_CalcShape (TIP<1,Tx> ip/*AutoDiffDiff<2> hx[2]*/, TFA & shape) const
     {
       auto x = ip.x;
-      AutoDiffDiff<2> ddlami[2] ={ x, 1-x };
+      AutoDiffDiff<1> ddlami[2] ={ x, 1-x };
       
       int ii = 0;
       
-      ArrayMem<AutoDiffDiff<2>,20> ha(order_inner[0]+1);
+      ArrayMem<AutoDiffDiff<1>,20> ha(order_inner[0]+1);
       
       int es = 0,ee = 1;
       if(vnums[es] > vnums[ee]) swap (es,ee);
 
-      AutoDiffDiff<2> ls = ddlami[es],le = ddlami[ee];
+      AutoDiffDiff<1> ls = ddlami[es],le = ddlami[ee];
       
       LegendrePolynomial::Eval(order_inner[0],le-ls,ha);      
       
@@ -704,6 +704,30 @@ namespace ngfem
     };
   };
 
+
+  
+  /* Face basis functions which are normal-tangential continuous */
+  /* calculates [(grad l1) o-times (grad l2 x grad l3)] * legendre */
+  /* (grad l2 x grad l3) is a scalar!! (cross product on surface */
+  
+  class T_Dl1_o_Dl2xDl3_v_surf
+  {
+    AutoDiffDiff<2> l1,l2,l3,v;
+  public:
+    T_Dl1_o_Dl2xDl3_v_surf  (AutoDiffDiff<2> lam1, AutoDiffDiff<2> lam2, AutoDiffDiff<2> lam3, AutoDiffDiff<2> av) : l1(lam1), l2(lam2), l3(lam3), v(av) { ; }
+    
+    Vec<2> Shape() {
+      double cross = l2.DValue(0)*l3.DValue(1) - l2.DValue(1)*l3.DValue(0);      
+      return Vec<2> (v.Value()*l1.DValue(0) * cross,  v.Value()*l1.DValue(1) * cross);
+    }
+
+    Vec<2> DivShape()
+    {
+      throw Exception("not available on surface");
+    }
+
+  };
+  
   template <> class HCurlDivSurfaceFE<ET_TRIG> : public T_HCurlDivSurfaceFE<ET_TRIG> 
   {
     
@@ -723,37 +747,25 @@ namespace ngfem
     {
      
       auto x = ip.x, y= ip.y;
-      AutoDiffDiff<3> ddlami[3] ={ x, y, 1-x-y };
+      AutoDiffDiff<2> ddlami[3] ={ x, y, 1-x-y };
       
       int ii = 0;
 
-      ArrayMem<AutoDiffDiff<3>,20> ha((order_inner[0]+1)*(order_inner[0]+2)/2.0); //face basis
+      ArrayMem<AutoDiffDiff<2>,20> ha((order_inner[0]+1)*(order_inner[0]+2)/2.0); //face basis
       
       int es = 0, ee = 1, et = 2;
       if(vnums[es] > vnums[ee]) swap(es, ee);
       if(vnums[ee] > vnums[et]) swap(ee, et);
       if(vnums[es] > vnums[et]) swap(es,et);
             
-      AutoDiffDiff<3> ls = ddlami[es],le = ddlami[ee], lt = ddlami[et];
+      AutoDiffDiff<2> ls = ddlami[es],le = ddlami[ee], lt = ddlami[et];
       
       DubinerBasis3::Eval (order_inner[0], ls, le, ha);
 
       for (int l = 0; l < (order_inner[0]+1)*(order_inner[0]+2)/2.0; l++)
 	    {
-	      double valdb;
-	      valdb = -ha[l].Value();
-	      
-	      shape[ii++] =  Vec<2>(valdb,valdb);	      
-	      shape[ii++] =  Vec<2>(0.0,ha[l].Value());
-	      
-	      shape[ii++] =  Vec<2>(valdb,valdb);	      
-	      shape[ii++] =  Vec<2>(0,-valdb);
-	      
-	      shape[ii++] =  Vec<2>(0,-valdb);
-	      shape[ii++] =  Vec<2>(valdb,valdb);
-	      
-	      shape[ii++] =  Vec<2>(valdb,0);
-	      shape[ii++] =  Vec<2>(0,valdb);	      
+	      shape[ii++] = T_Dl1_o_Dl2xDl3_v_surf(le,ls,lt,ha[l]).Shape();
+	      shape[ii++] = T_Dl1_o_Dl2xDl3_v_surf(ls,lt,le,ha[l]).Shape();
 	    }     
     };
   };

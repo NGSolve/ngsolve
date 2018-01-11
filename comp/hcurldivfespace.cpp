@@ -48,10 +48,9 @@ namespace ngcomp
       double det = fabs(sip.GetJacobiDet());
       
       fel.CalcShape(sip.IP(), shape);
-
       for (int i = 0; i < fel.GetNDof(); i++)
         {
-          Mat<D> sigma_ref;
+          Vec<D> sigma_ref;
           // 2D case
           if(D==1)
           {
@@ -59,18 +58,11 @@ namespace ngcomp
 	  }
           else // 3D case
           {
-            sigma_ref(0,0) = shape(i,0);
-            sigma_ref(0,1) = shape(i,1);
-            sigma_ref(1,0) = shape(i,2);
-	    sigma_ref(1,1) = shape(i,3);
+            sigma_ref(0) = shape(i,0);
+            sigma_ref(1) = shape(i,1);            
           }
-	  Mat<D+1,D> hm = Trans(jacinv) * sigma_ref;
-	  Mat<D+1> sigma;
-
-	  if(D==1)
-	    sigma = hm * Trans(sip.GetNV());
-	  else
-	    sigma = hm * Trans(jac);
+	  Vec<D+1> hm = Trans(jacinv) * sigma_ref;
+	  Mat<D+1> sigma = hm * Trans(sip.GetNV());	  
 	  
 	  sigma *= (1.0 / det);
           for (int j = 0; j < DIM_DMAT; j++)
