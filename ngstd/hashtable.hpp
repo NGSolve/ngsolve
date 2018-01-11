@@ -922,6 +922,7 @@ namespace ngstd
   public:
     ParallelHashTable() : hts(256), locks(256) { ; }
     size_t NumBuckets() const { return hts.Size(); }
+    auto & Bucket(size_t nr) { return hts[nr]; }
     size_t BucketSize(size_t nr) const { return hts[nr].Size(); }
     size_t Used (size_t nr) const { return hts[nr].Used(); } 
     size_t Used() const

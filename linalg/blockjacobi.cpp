@@ -382,20 +382,7 @@ namespace ngla
          for (int i : sl)
        {
          NgProfiler::StartThreadTimer (tprep, TaskManager::GetThreadId());
-         /*
-#ifndef __MIC__
-	cnt++;
-        double time = WallTime();
-	if (time > prevtime+0.05)
-	  {
-	    {
-              lock_guard<mutex> guard(buildingblockupdate_mutex);
-	      cout << IM(3) << "\rBuilding block " << cnt << "/" << blocktable->Size() << flush;
-	      prevtime = time;
-	    }
-	  }
-#endif // __MIC__
-         */
+
         auto blocki = (*blocktable)[i];
         QuickSort (blocki);
 	if (!blocki.Size()) 
