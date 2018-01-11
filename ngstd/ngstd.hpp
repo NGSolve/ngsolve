@@ -142,6 +142,8 @@ namespace ngstd
 #include "tuple.hpp"
 
 #include "array.hpp"
+#include "taskmanager.hpp"
+
 #include "table.hpp"
 #include "symboltable.hpp"
 #include "hashtable.hpp"
@@ -154,7 +156,7 @@ namespace ngstd
 #include "xbool.hpp"
 
 #include "evalfunc.hpp"
-// namespace ngstd { class EvalFunction; }
+#include "sample_sort.hpp"
 
 #include "autodiff.hpp"
 #include "autodiffdiff.hpp"
@@ -162,7 +164,6 @@ namespace ngstd
 #include "stringops.hpp"
 #include "statushandler.hpp"
 
-#include "taskmanager.hpp"
 #include "mpiwrapper.hpp"
 #ifndef WIN32
 #include "sockets.hpp"
