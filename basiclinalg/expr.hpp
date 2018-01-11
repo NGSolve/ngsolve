@@ -1117,7 +1117,59 @@ namespace ngbla
     return TransExpr<TA> (a.Spec());
   }
 
+  /* ************************* Real/Imag ************************ */
+  
+  inline double Real(double a) { return a; }
+  inline double Imag(double a) { return 0; }
 
+  inline double Real(Complex a) { return a.real(); }
+  inline double Imag(Complex a) { return a.imag(); }
+  
+  template <class TA>
+  class RealExpr : public Expr<RealExpr<TA> >
+  {
+    const TA & a;
+  public:
+    RealExpr (const TA & aa) : a(aa) { ; }
+
+    auto operator() (size_t i) const { return Real(a(i)); }
+    auto operator() (size_t i, size_t j) const { return Real(a(i,j)); }
+    size_t Height() const { return a.Height(); }
+    size_t Width() const { return a.Width(); }
+
+    enum { IS_LINEAR = TA::IS_LINEAR };
+  };
+
+  template <typename TA>
+  inline RealExpr<TA> Real(const Expr<TA> & a)
+  {
+    return RealExpr<TA> (a.Spec());
+  }
+
+
+  template <class TA>
+  class ImagExpr : public Expr<ImagExpr<TA> >
+  {
+    const TA & a;
+  public:
+    ImagExpr (const TA & aa) : a(aa) { ; }
+
+    auto operator() (size_t i) const { return Imag(a(i)); }
+    auto operator() (size_t i, size_t j) const { return Imag(a(i,j)); }
+    size_t Height() const { return a.Height(); }
+    size_t Width() const { return a.Width(); }
+
+    enum { IS_LINEAR = TA::IS_LINEAR };
+  };
+
+  template <typename TA>
+  inline ImagExpr<TA> Imag(const Expr<TA> & a)
+  {
+    return ImagExpr<TA> (a.Spec());
+  }
+
+
+  
   /* ************************* SubMatrix ************************ */
 
   template <class TA> 
