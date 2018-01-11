@@ -976,6 +976,32 @@ namespace ngstd
     {
       hts[nr].Iterate(func);
     }
+
+
+    template <typename FUNC>
+    void IterateParallel (FUNC func)
+    {
+      Array<size_t> base(NumBuckets());
+      size_t sum = 0;
+      for (size_t i = 0; i < NumBuckets(); i++)
+        {
+          base[i] = sum;
+          sum += Used(i); 
+        }
+      ParallelFor(NumBuckets(),
+                  [&] (size_t nr)
+                  {
+                    size_t cnt = base[nr];
+                    Iterate(nr,
+                            [&cnt, func] (TKEY key, T val)
+                            {
+                              func(cnt, key, val);
+                              cnt++;
+                            });
+                  });
+    }
+    
+
     
 
     void Print (ostream & ost) const
