@@ -228,6 +228,60 @@ namespace ngfem
 
   };
 
+  /* ############### Type 1 ############### */
+  /* sigma(grad v) = grad(gradu v ) * ((0,1,-1,0), dim = (2,2)) */  
+  /*  calculates nabla nabla v and rotates the rows counterclockwise */
+  /* results in normal tangential continuous edge functions */  
+  class T_sigma_grad_v
+  {
+    AutoDiffDiff<2> v;
+  public:
+    T_sigma_grad_v  (AutoDiffDiff<2> av) : v(av){ ; }
+
+    //Shape returns (sig_xx, sig_xy, sig_yx, sig_yy)
+    Vec<4> Shape() {
+      return Vec<4> (-v.DDValue(0,1),
+		     v.DDValue(0,0),
+		     -v.DDValue(1,1),
+		     v.DDValue(0,1)
+		     );
+    }
+
+    Vec<2> DivShape()
+    {      
+      return Vec<2> (0,0);     
+    }
+
+  };
+  
+  /* ############### Type 2 ############### */
+  /* sigma(u * grad v) */  
+  /*  calculates nabla (u * nabla v) and rotates the rows counterclockwise */
+  /* results in normal tangential continuous edge functions */
+  
+  class T_sigma_u_grad_v
+  {
+    AutoDiffDiff<2> u,v;
+  public:
+    T_sigma_u_grad_v  (AutoDiffDiff<2> au, AutoDiffDiff<2> av) : u(au), v(av){ ; }
+
+    //Shape returns (sig_xx, sig_xy, sig_yx, sig_yy)
+    Vec<4> Shape() {
+      return Vec<4> (-u.DValue(1)*v.DValue(0) - u.Value()*v.DDValue(1,0),
+		     u.DValue(0)*v.DValue(0) + u.Value()*v.DDValue(0,0),
+		     -u.DValue(1)*v.DValue(1) - u.Value()*v.DDValue(1,1),
+		     u.DValue(0)*v.DValue(1) + u.Value()*v.DDValue(0,1)
+		     );
+    }
+
+    Vec<2> DivShape()
+    {      
+      return Vec<2> (0,0);     
+    }
+
+  };
+
+
   /* Edge basis functions which are normal-tangential continuous */
   /* calculates [(grad l1) o-times (rot-grad l2) ] * scaledlegendre */
   /* DivShape assumes that phi_12 = [(grad l1) o-times (rot-grad l2) ] is constant!!! */
@@ -367,11 +421,12 @@ namespace ngfem
       // in 2d:   (p + 1) + 4*(p*(p+1)/2)
       int ninner = order_inner[0] +1 + 2 * ((order_inner[0] +1) * (order_inner[0])); 
       order = max2(order, order_inner[0]);
-      //if (plus)
-      //{	
-      //  order ++;
-      //  ninner += 2*order_inner[0]; 
-      //}
+      if (plus)
+      {
+	throw Exception(" please update this first - ComputeNdof in HCurlDiv<ET_TRIG>");
+        order ++;
+        ninner += 2*(order_inner[0]+1); 
+      }
       ndof += ninner;      
     }
     
@@ -403,7 +458,10 @@ namespace ngfem
 	  ScaledLegendrePolynomial(maxorder_facet,le-ls, le+ls,ha);
           
           for (int l = 0; l <= order_facet[i][0]; l++)
-	    shape[ii++] =  T_Dl2xRotDl1_v(le, ls, ha[l]);            
+	    shape[ii++] = T_sigma_u_grad_v(ha[l],le*ls);
+	    //shape[ii++] = T_sigma_grad_v(le*ls);
+	    //shape[ii++] = T_sigma_u_grad_v(ha[l],le*ls);
+	    //shape[ii++] =  T_Dl2xRotDl1_v(le, ls, ha[l]);            
         }
       
       int es = 0; int ee = 1; int et = 2;
@@ -414,7 +472,7 @@ namespace ngfem
       int oi=order_inner[0];
       //int oi_plus = oi;
                 
-      LegendrePolynomial::Eval(oi, 2*lt-1, v);
+      LegendrePolynomial::Eval(oi, 2*lt-1, v); 
       DubinerBasis3::Eval (oi-1, ls, le, dubb);
       
       //Type one
@@ -432,6 +490,15 @@ namespace ngfem
       	shape[ii++] = T_Dl2xRotDl1_v(ls,le,lt*dubb[i]);	  
       }
 
+      if (plus)
+        for (int i = 0; i <= oi; i++)
+          {
+	    throw Exception("not working yet!");
+            //AutoDiffDiff<2> bubble = dubb[i+1]*v[oi-i-1];
+	    
+            shape[ii++] = T_sigma_u_grad_v(le*ls*lt, x);
+            shape[ii++] = T_sigma_u_grad_v(le*ls*lt, y);
+          }      
     };
   }; 
  

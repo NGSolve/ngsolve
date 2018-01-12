@@ -256,7 +256,11 @@ namespace ngcomp
       {
       case ET_TRIG:
         ndof += 2* (oi[0] * (oi[0] +1)) + oi[0] +1; 
-        if(plus) ndof += 2*oi[0];
+        if(plus)
+	  {
+	    throw Exception(" please update this first - Update in hcurldivfespace");
+	    ndof += 2*(oi[0]+1);
+	  }
         if(discontinuous)
         {
           /*
