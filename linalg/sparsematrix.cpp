@@ -41,17 +41,18 @@ namespace ngla
     // colnr.SetSize (nze+1);
     colnr = NumaDistributedArray<int> (nze+1);
 
+    /*
     for (size_t i = 0; i < nze; i++)
       colnr[i] = -1;
-
-    /*
+    */
+    
     FlatArray<int> hcolnr = colnr;
     ParallelForRange (nze,
 		      [hcolnr] (auto myrange)
 		      {
 			hcolnr.Range(myrange) = -1;
 		      });
-    */
+
     colnr[nze] = 0;
 
     CalcBalancing ();
