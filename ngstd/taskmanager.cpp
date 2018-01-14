@@ -222,7 +222,7 @@ namespace ngstd
   void TaskManager :: CreateJob (const function<void(TaskInfo&)> & afunc,
                                  int antasks)
   {
-    if (num_threads == 1 || !task_manager)
+    if (num_threads == 1 || !task_manager || func)
       {
         if (startup_function) (*startup_function)();
         
@@ -304,6 +304,7 @@ namespace ngstd
             _mm_pause();
         }
 
+    func = nullptr;
     if (ex)
       throw Exception (*ex);
 
