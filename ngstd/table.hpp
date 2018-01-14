@@ -69,8 +69,8 @@ public:
 
 #define PARALLEL_TABLE
 #ifdef PARALLEL_TABLE
-  extern size_t * TablePrefixSum32 (FlatArray<unsigned int> entrysize);
-  extern size_t * TablePrefixSum64 (FlatArray<size_t> entrysize);
+  DLL_HEADER extern size_t * TablePrefixSum32 (FlatArray<unsigned int> entrysize);
+  DLL_HEADER extern size_t * TablePrefixSum64 (FlatArray<size_t> entrysize);
 
   
   INLINE size_t * TablePrefixSum (FlatArray<unsigned int> entrysize)
