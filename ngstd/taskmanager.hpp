@@ -825,6 +825,128 @@ static DefaultTasks tasks;
 */
 
 
+
+
+
+
+
+#ifdef USE_NUMA
+
+template <typename T>
+class NumaInterleavedArray : public Array<T>
+{
+  T * numa_ptr;
+  size_t numa_size;
+public:
+  NumaInterleavedArray () { numa_size = 0; numa_ptr = nullptr; }
+  NumaInterleavedArray (size_t s)
+    : Array<T> (s, (T*)numa_alloc_interleaved(s*sizeof(T)))
+  {
+    numa_ptr = this->data;
+    numa_size = s;
+  }
+
+  ~NumaInterleavedArray ()
+  {
+    numa_free (numa_ptr, numa_size*sizeof(T));
+  }
+
+  NumaInterleavedArray & operator= (T val)
+  {
+    Array<T>::operator= (val);      
+    return *this;
+  }
+
+  NumaInterleavedArray & operator= (NumaInterleavedArray && a2)
+  {
+    Array<T>::operator= ((Array<T>&&)a2);  
+    ngstd::Swap (numa_ptr, a2.numa_ptr);
+    ngstd::Swap (numa_size, a2.numa_size);
+    return *this;
+  }
+
+  void Swap (NumaInterleavedArray & b)
+  {
+    Array<T>::Swap(b);    
+    ngstd::Swap (numa_ptr, b.numa_ptr);
+    ngstd::Swap (numa_size, b.numa_size);
+  }
+
+  void SetSize (size_t size)
+  {
+    cerr << "************************* NumaDistArray::SetSize not overloaded" << endl;
+    Array<T>::SetSize(size);
+  }
+};
+
+template <typename T>
+class NumaDistributedArray : public Array<T>
+{
+  T * numa_ptr;
+  size_t numa_size;
+public:
+  NumaDistributedArray () { numa_size = 0; numa_ptr = nullptr; }
+  NumaDistributedArray (size_t s)
+    : Array<T> (s, (T*)numa_alloc_local(s*sizeof(T)))
+  {
+    numa_ptr = this->data;
+    numa_size = s;
+
+    /* int avail = */ numa_available();   // initialize libnuma
+    int num_nodes = numa_num_configured_nodes();
+    size_t pagesize = numa_pagesize();
+    
+    int npages = ceil ( double(s)*sizeof(T) / pagesize );
+
+    // cout << "size = " << numa_size << endl;
+    // cout << "npages = " << npages << endl;
+
+    for (int i = 0; i < num_nodes; i++)
+      {
+        int beg = (i * npages) / num_nodes;
+        int end = ( (i+1) * npages) / num_nodes;
+        // cout << "node " << i << " : [" << beg << "-" << end << ")" << endl;
+        numa_tonode_memory(numa_ptr+beg*pagesize/sizeof(T), (end-beg)*pagesize, i);
+      }
+  }
+
+  ~NumaDistributedArray ()
+  {
+    numa_free (numa_ptr, numa_size*sizeof(T));
+  }
+
+  NumaDistributedArray & operator= (NumaDistributedArray && a2)
+  {
+    Array<T>::operator= ((Array<T>&&)a2);  
+    ngstd::Swap (numa_ptr, a2.numa_ptr);
+    ngstd::Swap (numa_size, a2.numa_size);
+    return *this;
+  }
+
+  void Swap (NumaDistributedArray & b)
+  {
+    Array<T>::Swap(b);    
+    ngstd::Swap (numa_ptr, b.numa_ptr);
+    ngstd::Swap (numa_size, b.numa_size);
+  }
+
+  void SetSize (size_t size)
+  {
+    cerr << "************************* NumaDistArray::SetSize not overloaded" << endl;
+    Array<T>::SetSize(size);
+  }
+};
+#else
+
+  template <typename T>
+  using NumaDistributedArray = Array<T>;
+
+  template <typename T> 
+  using NumaInterleavedArray = Array<T>;
+  
+  
+#endif
+
 }
 
 
