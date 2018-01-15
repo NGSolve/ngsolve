@@ -21,7 +21,7 @@ namespace ngfem
       ss << " /* (" << std::setprecision(16) << std::scientific;
       ss << val << ") */";
 #else
-      ss << std::setprecision(16);
+      ss << std::setprecision(16) << std::scientific;
       ss << val;
 #endif
       return ss.str();
