@@ -5029,7 +5029,7 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
   // ///////////////////////////// Compiled CF /////////////////////////
 // int myglobalvar;
 // int myglobalvar_eval;
-  class CompiledCoefficientFunction : public CoefficientFunction
+  class CompiledCoefficientFunction : public CoefficientFunction, public std::enable_shared_from_this<CompiledCoefficientFunction>
   {
     typedef void (*lib_function)(const ngfem::BaseMappedIntegrationRule &, ngbla::FlatMatrix<double>);
     typedef void (*lib_function_simd)(const ngfem::SIMD_BaseMappedIntegrationRule &, BareSliceMatrix<SIMD<double>>);
@@ -5061,7 +5061,7 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
     lib_function_simd_complex compiled_function_simd_complex = nullptr;
 
   public:
-    CompiledCoefficientFunction (shared_ptr<CoefficientFunction> acf, bool realcompile, int maxderiv, bool wait )
+    CompiledCoefficientFunction (shared_ptr<CoefficientFunction> acf)
       : CoefficientFunction(acf->Dimension(), acf->IsComplex()), cf(acf) // , compiled_function(nullptr), compiled_function_simd(nullptr)
     {
       SetDimensions (cf->Dimensions());
@@ -5101,8 +5101,10 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
          });
       cout << IM(3) << "inputs = " << endl << inputs << endl;
 
-      if(realcompile)
-      {
+    }
+
+    void RealCompile(int maxderiv, bool wait)
+    {
         std::vector<string> link_flags;
         if(cf->IsComplex())
             maxderiv = 0;
@@ -5212,26 +5214,27 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
           codes.push_back(pointer_code);
         }
 
-        auto compile_func = [this, codes, link_flags, maxderiv] () {
-              library = CompileCode( codes, link_flags );
-              if(cf->IsComplex())
+        auto self = shared_from_this();
+        auto compile_func = [self, codes, link_flags, maxderiv] () {
+              self->library = CompileCode( codes, link_flags );
+              if(self->cf->IsComplex())
               {
-                  compiled_function_simd_complex = library->GetFunction<lib_function_simd_complex>("CompiledEvaluateSIMD");
-                  compiled_function_complex = library->GetFunction<lib_function_complex>("CompiledEvaluate");
+                  self->compiled_function_simd_complex = self->library->GetFunction<lib_function_simd_complex>("CompiledEvaluateSIMD");
+                  self->compiled_function_complex = self->library->GetFunction<lib_function_complex>("CompiledEvaluate");
               }
               else
               {
-                  compiled_function_simd = library->GetFunction<lib_function_simd>("CompiledEvaluateSIMD");
-                  compiled_function = library->GetFunction<lib_function>("CompiledEvaluate");
+                  self->compiled_function_simd = self->library->GetFunction<lib_function_simd>("CompiledEvaluateSIMD");
+                  self->compiled_function = self->library->GetFunction<lib_function>("CompiledEvaluate");
                   if(maxderiv>0)
                   {
-                      compiled_function_simd_deriv = library->GetFunction<lib_function_simd_deriv>("CompiledEvaluateDerivSIMD");
-                      compiled_function_deriv = library->GetFunction<lib_function_deriv>("CompiledEvaluateDeriv");
+                      self->compiled_function_simd_deriv = self->library->GetFunction<lib_function_simd_deriv>("CompiledEvaluateDerivSIMD");
+                      self->compiled_function_deriv = self->library->GetFunction<lib_function_deriv>("CompiledEvaluateDeriv");
                   }
                   if(maxderiv>1)
                   {
-                      compiled_function_simd_dderiv = library->GetFunction<lib_function_simd_dderiv>("CompiledEvaluateDDerivSIMD");
-                      compiled_function_dderiv = library->GetFunction<lib_function_dderiv>("CompiledEvaluateDDeriv");
+                      self->compiled_function_simd_dderiv = self->library->GetFunction<lib_function_simd_dderiv>("CompiledEvaluateDDerivSIMD");
+                      self->compiled_function_dderiv = self->library->GetFunction<lib_function_dderiv>("CompiledEvaluateDDeriv");
                   }
               }
               cout << IM(7) << "Compilation done" << endl;
@@ -5246,7 +5249,6 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
               cerr << IM(3) << "Compilation of CoefficientFunction failed: " << e.what() << endl;
           }
         }
-      }
     }
 
     virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
@@ -5731,7 +5733,10 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
 
   shared_ptr<CoefficientFunction> Compile (shared_ptr<CoefficientFunction> c, bool realcompile, int maxderiv, bool wait)
   {
-    return make_shared<CompiledCoefficientFunction> (c, realcompile, maxderiv, wait);
+    auto cf = make_shared<CompiledCoefficientFunction> (c);
+    if(realcompile)
+      cf->RealCompile(maxderiv, wait);
+    return cf;
   }
   
 }
