@@ -331,15 +331,15 @@ protected:
   streampos lastpos;
 
   typedef double(*TFUNP) (double);
-  /// registerd functions
+  /// registered functions
   static SymbolTable<TFUNP> functions;
 
-  /// registerd constants
+  /// registered constants
   SymbolTable<double> constants;
 
-  /// registerd variables
+  /// registered variables
   SymbolTable<double*> globvariables;
-  /// registerd variables
+  /// registered variables
   SymbolTable<GenericVariable*> genericvariables;
   
 public:

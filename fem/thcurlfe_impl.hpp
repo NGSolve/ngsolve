@@ -327,7 +327,7 @@ namespace ngfem
   void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
   EvaluateCurl (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const
   {
-    // throw ExceptionNOSIMD ("thcurlfe - simd - evaluate curl not implemeted");
+    // throw ExceptionNOSIMD ("thcurlfe - simd - evaluate curl not implemented");
 
     if ((DIM == 3) || (bmir.DimSpace() == DIM))
       {
@@ -393,7 +393,7 @@ namespace ngfem
   void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
   EvaluateCurl (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<Complex> coefs, BareSliceMatrix<SIMD<Complex>> values) const
   {
-    // throw ExceptionNOSIMD ("thcurlfe - simd - evaluate curl not implemeted");
+    // throw ExceptionNOSIMD ("thcurlfe - simd - evaluate curl not implemented");
 
     if ((DIM == 3) || (bmir.DimSpace() == DIM))
       {
@@ -572,7 +572,7 @@ namespace ngfem
   AddCurlTrans (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> values,
                 BareSliceVector<> coefs) const
   {
-    // throw ExceptionNOSIMD ("thcurlfe - simd - add curl trans not implemeted");        
+    // throw ExceptionNOSIMD ("thcurlfe - simd - add curl trans not implemented");        
     if ((DIM == 3) || (bmir.DimSpace() == DIM))
       {
         constexpr int DIM_CURL = DIM_CURL_(DIM);                        
@@ -632,7 +632,7 @@ namespace ngfem
   AddCurlTrans (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<Complex>> values,
                 BareSliceVector<Complex> coefs) const
   {
-    // throw ExceptionNOSIMD ("thcurlfe - simd - add curl trans not implemeted");        
+    // throw ExceptionNOSIMD ("thcurlfe - simd - add curl trans not implemented");        
     if ((DIM == 3) || (bmir.DimSpace() == DIM))
       {
         constexpr int DIM_CURL = DIM_CURL_(DIM);                        

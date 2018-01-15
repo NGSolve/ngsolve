@@ -154,7 +154,7 @@ namespace ngstd
     {
       char * oldp = p;
     
-      // 16 byte allignment
+      // 16 byte alignment
       size += (ALIGN - size % ALIGN);
       p += size;
 
@@ -173,7 +173,7 @@ namespace ngstd
       char * oldp = p;
       size *= sizeof (T);
 
-      // 16 byte allignment
+      // 16 byte alignment
       size += (ALIGN - size % ALIGN);
       p += size;
 

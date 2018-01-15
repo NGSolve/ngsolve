@@ -2383,7 +2383,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     if (print)
       {
 	(*testout) << "Update compound fespace" << endl;
-	(*testout) << "cummulative dofs start at " << cummulative_nd << endl;
+	(*testout) << "cumulative dofs start at " << cummulative_nd << endl;
       }
   }
 
