@@ -3,7 +3,7 @@ Spaces and forms on sub-domains
 
 We can define finite element spaces and forms on sub-domains. This is in particular useful for multi-physics.
 
-For that, we define a geometry and assign domain lables to the different regions. In the example below we have an "outer" and an "inner" sub-domain.
+For that, we define a geometry and assign domain labels to the different regions. In the example below we have an "outer" and an "inner" sub-domain.
 
 
 We define the first H1-finite element space fes1 only on the inner sub-domain by writing 

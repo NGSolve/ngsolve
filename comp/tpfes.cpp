@@ -557,7 +557,7 @@ namespace ngcomp
       const ElementTransformation & trafo = fes->GetMeshAccess()->GetTrafo(ElementId(VOL,elnrstd),lh);
       BaseMappedIntegrationRule & mirstd = trafo(irstd,lh);
       int niptp = ir(0).Size()*ir(1).Size();
-      // Evalute \int u_tp * v_std :
+      // Evaluate \int u_tp * v_std :
       FlatMatrix<double> flux(niptp,tpfes->GetDimension(),lh);
       gfutp->Evaluate(tpmir, flux);
       FlatMatrix<> elmat(fel.GetNDof(),lh);

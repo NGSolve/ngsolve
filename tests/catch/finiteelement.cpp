@@ -69,7 +69,7 @@ void TestFiniteElement(T fel)
 {
           IntegrationRule ir(fel.ElementType(),fel.Order());
 
-          SECTION ("Evalutate", "[evaluate]")
+          SECTION ("Evaluate", "[evaluate]")
             {
               Vector<> coefs(fel.GetNDof()), values(ir.Size());
               for (auto i : Range(coefs.Size()))

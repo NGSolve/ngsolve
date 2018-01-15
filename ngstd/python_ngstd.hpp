@@ -224,7 +224,7 @@ void PyDefBracketOperator( py::module &m, TCLASS &c )
 
 
 //////////////////////////////////////////////////////////////////////
-// Export len, bracket operator and iterator protocoll at once
+// Export len, bracket operator and iterator protocol at once
 template <typename T, typename TELEM = double, typename TCLASS = py::class_<T> >
 void PyDefVector( py::module &m, TCLASS &c )
 {
