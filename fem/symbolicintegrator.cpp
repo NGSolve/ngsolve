@@ -3777,6 +3777,47 @@ namespace ngfem
     cout << IM(3) << "nonzero: " << cnt << "/" << sqr(nonzeros.Height()) << endl;
     cout << IM(3) << "nonzero-proxies: " << endl << nonzeros_proxies << endl;
   }
+
+
+  const IntegrationRule& SymbolicEnergy ::
+  GetIntegrationRule (const FiniteElement & fel, LocalHeap & /* lh */) const
+  {
+    if (userdefined_intrules[fel.ElementType()]) return *userdefined_intrules[fel.ElementType()];
+
+    int trial_difforder = 99, test_difforder = 99;
+    for (auto proxy : trial_proxies)
+      trial_difforder = min2(trial_difforder, proxy->Evaluator()->DiffOrder());
+    if (trial_proxies.Size() == 0) trial_difforder = 0;
+    
+    int intorder = 2*fel.Order()+bonus_intorder;
+    auto et = fel.ElementType();
+    if (et == ET_TRIG || et == ET_TET)
+      intorder -= 2*trial_difforder;
+    return SelectIntegrationRule (et, intorder);
+  }
+
+  const SIMD_IntegrationRule& SymbolicEnergy ::
+  Get_SIMD_IntegrationRule (const FiniteElement & fel, LocalHeap & lh) const
+  {
+    if (userdefined_simd_intrules[fel.ElementType()] ) return *userdefined_simd_intrules[fel.ElementType()];
+
+    bool is_mixed = typeid(fel) == typeid(const MixedFiniteElement&);
+    const MixedFiniteElement * mixedfe = static_cast<const MixedFiniteElement*> (&fel);    
+    const FiniteElement & fel_trial = is_mixed ? mixedfe->FETrial() : fel;
+    const FiniteElement & fel_test = is_mixed ? mixedfe->FETest() : fel;
+
+    int trial_difforder = 99, test_difforder = 99;
+    for (auto proxy : trial_proxies)
+      trial_difforder = min2(trial_difforder, proxy->Evaluator()->DiffOrder());
+    if (trial_proxies.Size() == 0) trial_difforder = 0;
+    
+    int intorder = 2*fel.Order()+bonus_intorder;
+    auto et = fel.ElementType();
+    if (et == ET_TRIG || et == ET_TET)
+      intorder -= 2*trial_difforder;
+    return SIMD_SelectIntegrationRule (et, intorder);
+  }
+
   
 
   void 
@@ -3795,7 +3836,8 @@ namespace ngfem
           {
             if (!element_boundary)
               {
-                const SIMD_IntegrationRule& ir = GetSIMDIntegrationRule(trafo.GetElementType(), 2*fel.Order());
+                // const SIMD_IntegrationRule& ir = GetSIMDIntegrationRule(trafo.GetElementType(), 2*fel.Order());
+                const SIMD_IntegrationRule& ir = Get_SIMD_IntegrationRule(fel, lh);
                 auto & mir = trafo(ir, lh);
                 
                 ProxyUserData ud(trial_proxies.Size(), lh);
@@ -3857,7 +3899,8 @@ namespace ngfem
 
     if (!element_boundary)
       {
-        const IntegrationRule& ir = GetIntegrationRule(trafo.GetElementType(), 2*fel.Order());
+        // const IntegrationRule& ir = GetIntegrationRule(trafo.GetElementType(), 2*fel.Order());
+        const IntegrationRule& ir = GetIntegrationRule(fel, lh);
         BaseMappedIntegrationRule & mir = trafo(ir, lh);
         
         ProxyUserData ud(trial_proxies.Size(), lh);
@@ -4189,7 +4232,8 @@ namespace ngfem
       {
         try
           {
-            auto & ir = GetSIMDIntegrationRule(trafo.GetElementType(), 2*fel.Order());
+            // auto & ir = GetSIMDIntegrationRule(trafo.GetElementType(), 2*fel.Order());
+            const SIMD_IntegrationRule& ir = Get_SIMD_IntegrationRule(fel, lh);            
             auto & mir = trafo(ir, lh);
         
             ProxyUserData ud(trial_proxies.Size(), lh);
@@ -4223,7 +4267,8 @@ namespace ngfem
 
     if (!element_boundary)
       {
-        const IntegrationRule& ir = GetIntegrationRule(trafo.GetElementType(), 2*fel.Order());
+        // const IntegrationRule& ir = GetIntegrationRule(trafo.GetElementType(), 2*fel.Order());
+        const IntegrationRule& ir = GetIntegrationRule(fel, lh);
         BaseMappedIntegrationRule & mir = trafo(ir, lh);
         
         ProxyUserData ud(trial_proxies.Size(), lh);
@@ -4308,7 +4353,8 @@ namespace ngfem
             // RegionTimer reg(t);            
 
             HeapReset hr(lh);
-            const SIMD_IntegrationRule& ir = GetSIMDIntegrationRule(trafo.GetElementType(), 2*fel.Order());
+            // const SIMD_IntegrationRule& ir = GetSIMDIntegrationRule(trafo.GetElementType(), 2*fel.Order());
+            const SIMD_IntegrationRule& ir = Get_SIMD_IntegrationRule(fel, lh);
             auto & mir = trafo(ir, lh);
             
             for (ProxyFunction * proxy : trial_proxies)
@@ -4357,7 +4403,8 @@ namespace ngfem
     if (!element_boundary)
       {
         HeapReset hr(lh);
-        const IntegrationRule& ir = GetIntegrationRule(trafo.GetElementType(), 2*fel.Order());
+        // const IntegrationRule& ir = GetIntegrationRule(trafo.GetElementType(), 2*fel.Order());
+        const IntegrationRule& ir = GetIntegrationRule(fel, lh);
         BaseMappedIntegrationRule & mir = trafo(ir, lh);
         
         for (ProxyFunction * proxy : trial_proxies)

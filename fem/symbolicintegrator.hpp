@@ -748,6 +748,11 @@ public:
     virtual xbool IsSymmetric() const { return true; } 
     virtual string Name () const { return string ("Symbolic Energy"); }
 
+
+    using Integrator::GetIntegrationRule;
+    NGS_DLL_HEADER virtual const IntegrationRule& GetIntegrationRule (const FiniteElement & fel, LocalHeap & lh) const;
+    NGS_DLL_HEADER virtual const SIMD_IntegrationRule& Get_SIMD_IntegrationRule (const FiniteElement & fel, LocalHeap & lh) const;
+    
     virtual void 
     CalcElementMatrix (const FiniteElement & fel,
 		       const ElementTransformation & trafo, 
