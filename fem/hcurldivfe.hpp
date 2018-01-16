@@ -229,9 +229,10 @@ namespace ngfem
   };
 
   /* ############### Type 1 ############### */
-  /* sigma(grad v) = grad(gradu v ) * ((0,1,-1,0), dim = (2,2)) */  
+  /* sigma(grad v) = grad(grad v ) * ((0,1,-1,0), dim = (2,2)) */  
   /*  calculates nabla nabla v and rotates the rows counterclockwise */
-  /* results in normal tangential continuous edge functions */  
+  /* results in normal tangential continuous edge functions */
+  
   class T_sigma_grad_v
   {
     AutoDiffDiff<2> v;
@@ -423,7 +424,7 @@ namespace ngfem
       order = max2(order, order_inner[0]);
       if (plus)
       {
-	throw Exception(" please update this first - ComputeNdof in HCurlDiv<ET_TRIG>");
+	//throw Exception(" please update this first - ComputeNdof in HCurlDiv<ET_TRIG>");
         order ++;
         ninner += 2*(order_inner[0]+1); 
       }
@@ -444,7 +445,7 @@ namespace ngfem
       const EDGE * edges = ElementTopology::GetEdges(ET_TRIG);
 
       ArrayMem<AutoDiffDiff<2>,20> ha(maxorder_facet+1);
-      ArrayMem<AutoDiffDiff<2>,20> v(order_inner[0]+1), dubb(order_inner[0]*(order_inner[0]+1)/2);
+      ArrayMem<AutoDiffDiff<2>,20> v(order_inner[0]+1), dubb(order_inner[0]*(order_inner[0]+1)/2), u(order_inner[0] + 3);
 
       /* Edge based basis functions for tangential-normal continuity */
       for (int i = 0; i < 3; i++)
@@ -458,8 +459,8 @@ namespace ngfem
 	  ScaledLegendrePolynomial(maxorder_facet,le-ls, le+ls,ha);
           
           for (int l = 0; l <= order_facet[i][0]; l++)
-	    shape[ii++] = T_sigma_u_grad_v(ha[l],le*ls);
-	    //shape[ii++] = T_sigma_grad_v(le*ls);
+	    //sape[ii++] = T_sigma_u_grad_v(ha[l],le*ls);
+	    shape[ii++] = T_sigma_grad_v(le*ls*ha[l]);
 	    //shape[ii++] = T_sigma_u_grad_v(ha[l],le*ls);
 	    //shape[ii++] =  T_Dl2xRotDl1_v(le, ls, ha[l]);            
         }
@@ -490,14 +491,22 @@ namespace ngfem
       	shape[ii++] = T_Dl2xRotDl1_v(ls,le,lt*dubb[i]);	  
       }
 
+      IntegratedLegendreMonomialExt::CalcTrigExt(oi+3,le-ls,1-le-ls,u);
+      LegendrePolynomial::EvalMult(oi+1, 2*lt-1, lt, v);
+      
       if (plus)
         for (int i = 0; i <= oi; i++)
           {
-	    throw Exception("not working yet!");
+	    AutoDiffDiff<2> bubble = u[i]*v[oi-1-i];
+	    //AutoDiffDiff<2> bubble = ls*lt*le;
+	    shape[ii++] = T_sigma_u_grad_v(bubble,x);
+	    shape[ii++] = T_sigma_u_grad_v(bubble,y);
+	    //throw Exception("not working yet!");
             //AutoDiffDiff<2> bubble = dubb[i+1]*v[oi-i-1];
 	    
-            shape[ii++] = T_sigma_u_grad_v(le*ls*lt, x);
-            shape[ii++] = T_sigma_u_grad_v(le*ls*lt, y);
+            //shape[ii++] = T_sigma_grad_v(le*ls*lt*x);
+	    //shape[ii++] = T_sigma_grad_v(le*ls*lt*y);
+            //shape[ii++] = T_sigma_u_grad_v(le*ls*lt, y);
           }      
     };
   }; 

@@ -96,9 +96,10 @@ namespace ngcomp
       Mat<D> jacinv = sip.GetJacobianInverse();
       double det = fabs(sip.GetJacobiDet());
 
+      //cout<<"nd = "<<nd<<endl;
       FlatMatrix<> shape(nd, D*D, lh);
       fel.CalcShape(sip.IP(), shape);
-
+      //cout<<"shape = "<<shape<<endl;
       
       for (int i = 0; i < fel.GetNDof(); i++)
         {
@@ -255,10 +256,9 @@ namespace ngcomp
       switch(ma->GetElType(ei))
       {
       case ET_TRIG:
-        ndof += 2* (oi[0] * (oi[0] +1)) + oi[0] +1; 
+        ndof += 2* (oi[0] * (oi[0] +1)) + oi[0] +1;
         if(plus)
 	  {
-	    throw Exception(" please update this first - Update in hcurldivfespace");
 	    ndof += 2*(oi[0]+1);
 	  }
         if(discontinuous)
