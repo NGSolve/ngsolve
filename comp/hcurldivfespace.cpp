@@ -100,7 +100,7 @@ namespace ngcomp
       FlatMatrix<> shape(nd, D*D, lh);
       fel.CalcShape(sip.IP(), shape);
       //cout<<"shape = "<<shape<<endl;
-      
+      //getchar();
       for (int i = 0; i < fel.GetNDof(); i++)
         {
           Mat<D> sigma_ref;
@@ -217,10 +217,10 @@ namespace ngcomp
     first_element_dof.SetSize (ma->GetNE()+1);
 
     order_facet.SetSize(ma->GetNFacets());
-    order_facet = INT<2>(uniform_order_facet,uniform_order_facet);
+    order_facet = uniform_order_facet;
 
     order_inner.SetSize(ma->GetNE());
-    order_inner = INT<3>(uniform_order_inner,uniform_order_inner,uniform_order_inner);
+    order_inner = uniform_order_inner;
 
     Array<bool> fine_facet(ma->GetNFacets());
     fine_facet = false;
@@ -233,13 +233,13 @@ namespace ngcomp
       first_facet_dof[i] = ndof;
       if(!fine_facet[i]) continue;
 
-      INT<2> of = order_facet[i];
+      int of = order_facet[i];
       switch(ma->GetFacetType(i))
       {
       case ET_SEGM:
-        ndof += of[0] + 1; break;
+        ndof += of + 1; break;
       case ET_TRIG:
-	ndof += (of[0] + 1)*(of[0] + 2); break;
+	ndof += (of + 1)*(of + 2); break;
       default:
         throw Exception("illegal facet type");
       }
@@ -251,15 +251,15 @@ namespace ngcomp
     {
       ElementId ei(VOL, i);
       first_element_dof[i] = ndof;
-      INT<3> oi = order_inner[i];
+      int oi = order_inner[i];
 
       switch(ma->GetElType(ei))
       {
       case ET_TRIG:
-        ndof += 2* (oi[0] * (oi[0] +1)) + oi[0] +1;
+        ndof += 2* (oi * (oi +1)) + oi +1;
         if(plus)
 	  {
-	    ndof += 2*(oi[0]+1);
+	    ndof += 2*(oi);
 	  }
         if(discontinuous)
         {
@@ -275,7 +275,7 @@ namespace ngcomp
         }
         break;
       case ET_TET:
-	ndof += (oi[0] + 1)*(oi[0]+2)*(oi[0]+3)/6 + 8 * oi[0] * (oi[0]+1)*(oi[0]+2)/6;
+	ndof += (oi + 1)*(oi+2)*(oi+3)/6 + 8 * oi * (oi+1)*(oi+2)/6;
 	if(discontinuous)
         {
           for (auto f : ma->GetElFacets(ei))
@@ -336,7 +336,7 @@ namespace ngcomp
       {
       case ET_SEGM:  
         feseg->SetVertexNumbers (ngel.Vertices());
-        feseg->SetOrderInner(order_facet[ei.Nr()][0]);
+        feseg->SetOrderInner(order_facet[ei.Nr()]);
         feseg->ComputeNDof();
         return *feseg;
       case ET_TRIG:          
@@ -441,23 +441,6 @@ namespace ngcomp
     HCurlDivFESpace :: GetAdditionalEvaluators () const
   {
     SymbolTable<shared_ptr<DifferentialOperator>> additional;
-    switch(ma->GetDimension())
-    {
-    case 2:
-      //additional.Set ("vec",make_shared<T_DifferentialOperator<DiffOpVecIdHCurlDiv<2>>> ());
-      //additional.Set ("id_old",make_shared<T_DifferentialOperator<DiffOpIdHCurlDiv_old<2>>> ());
-      //additional.Set ("vec_old",make_shared<T_DifferentialOperator<DiffOpVecIdHCurlDiv_old<2>>> ());
-      //additional.Set ("div_old",make_shared<T_DifferentialOperator<DiffOpDivHCurlDiv_old<2>>> ());
-      break;
-    case 3:
-      //additional.Set ("vec",make_shared<T_DifferentialOperator<DiffOpVecIdHCurlDiv<3>>> ());
-      //additional.Set ("id_old",make_shared<T_DifferentialOperator<DiffOpIdHCurlDiv_old<3>>> ());
-      //additional.Set ("vec_old",make_shared<T_DifferentialOperator<DiffOpVecIdHCurlDiv_old<3>>> ());
-      //additional.Set ("div_old",make_shared<T_DifferentialOperator<DiffOpDivHCurlDiv_old<3>>> ());
-      break;
-    default:
-      ;
-    }
     return additional;
   }
   
