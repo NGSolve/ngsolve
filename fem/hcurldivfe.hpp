@@ -76,8 +76,8 @@ namespace ngfem
     using HCurlDivFiniteElement<ET_trait<ET>::DIM>::ndof;
     using HCurlDivFiniteElement<ET_trait<ET>::DIM>::order;
 
-    INT<DIM-1> order_facet[ET_trait<ET>::N_FACET];
-    INT<DIM> order_inner;
+    int order_facet[ET_trait<ET>::N_FACET];
+    int order_inner;
 
     // additional curl-div free bubbles
     bool plus;
@@ -96,8 +96,8 @@ namespace ngfem
     virtual ELEMENT_TYPE ElementType() const { return ET; }
     const HCurlDivFE<ET> * Cast() const { return static_cast<const HCurlDivFE<ET>*> (this); } 
     
-    INLINE void SetOrderFacet (int nr, INT<DIM-1,int> order) { order_facet[nr] = order; }
-    INLINE void SetOrderInner (INT<DIM,int> order) { order_inner = order; }
+    INLINE void SetOrderFacet (int nr, int order) { order_facet[nr] = order; }
+    INLINE void SetOrderInner (int order) { order_inner = order; }
 
     virtual void ComputeNDof()
     {
@@ -268,16 +268,25 @@ namespace ngfem
 
     //Shape returns (sig_xx, sig_xy, sig_yx, sig_yy)
     Vec<4> Shape() {
-      return Vec<4> (-u.DValue(1)*v.DValue(0) - u.Value()*v.DDValue(1,0),
+      return Vec<4> (- u.Value()*v.DDValue(0,1) - 0.5*(u.DValue(1)*v.DValue(0) + u.DValue(0)*v.DValue(1)),
 		     u.DValue(0)*v.DValue(0) + u.Value()*v.DDValue(0,0),
 		     -u.DValue(1)*v.DValue(1) - u.Value()*v.DDValue(1,1),
-		     u.DValue(0)*v.DValue(1) + u.Value()*v.DDValue(0,1)
+		     u.Value()*v.DDValue(1,0) + 0.5*(u.DValue(1)*v.DValue(0) + u.DValue(0)*v.DValue(1))
 		     );
     }
 
     Vec<2> DivShape()
-    {      
-      return Vec<2> (0,0);     
+    {
+      double uxx = u.DDValue(0,0), uyy = u.DDValue(1,1), uxy = u.DDValue(0,1);
+      double ux = u.DValue(0), uy = u.DValue(1);
+      double vxx = v.DDValue(0,0), vyy = v.DDValue(1,1), vxy = v.DDValue(0,1);
+      double vx = v.DValue(0), vy = v.DValue(1);
+      
+      return -0.5 * Vec<2> (-vx*uxy-uy*vxx+vxy*ux+vy*uxx,
+                            vyy*ux+vy*uxy-vxy*uy-vx*uyy);
+
+      
+      //return Vec<2> (0,0);     
     }
 
   };
@@ -415,18 +424,18 @@ namespace ngfem
       ndof = 0;
       for (int i=0; i<3; i++)
       {
-        ndof += order_facet[i][0]+1;
-        order = max2(order, order_facet[i][0]);
+        ndof += order_facet[i]+1;
+        order = max2(order, order_facet[i]);
       }
       //first type + second type
       // in 2d:   (p + 1) + 4*(p*(p+1)/2)
-      int ninner = order_inner[0] +1 + 2 * ((order_inner[0] +1) * (order_inner[0])); 
-      order = max2(order, order_inner[0]);
+      int ninner = order_inner +1 + 2 * ((order_inner +1) * (order_inner)); 
+      order = max2(order, order_inner);
       if (plus)
       {
 	//throw Exception(" please update this first - ComputeNdof in HCurlDiv<ET_TRIG>");
         order ++;
-        ninner += 2*(order_inner[0]+1); 
+        ninner += 2*(order_inner); 
       }
       ndof += ninner;      
     }
@@ -440,12 +449,12 @@ namespace ngfem
       int ii = 0;
       
       int maxorder_facet =
-        max2(order_facet[0][0],max2(order_facet[1][0],order_facet[2][0]));
+        max2(order_facet[0],max2(order_facet[1],order_facet[2]));
 
       const EDGE * edges = ElementTopology::GetEdges(ET_TRIG);
 
       ArrayMem<AutoDiffDiff<2>,20> ha(maxorder_facet+1);
-      ArrayMem<AutoDiffDiff<2>,20> v(order_inner[0]+1), dubb(order_inner[0]*(order_inner[0]+1)/2), u(order_inner[0] + 3);
+      ArrayMem<AutoDiffDiff<2>,20> v(order_inner+1), dubb(order_inner*(order_inner+1)/2), u(order_inner + 3);
 
       /* Edge based basis functions for tangential-normal continuity */
       for (int i = 0; i < 3; i++)
@@ -458,10 +467,9 @@ namespace ngfem
 	  
 	  ScaledLegendrePolynomial(maxorder_facet,le-ls, le+ls,ha);
           
-          for (int l = 0; l <= order_facet[i][0]; l++)
-	    //sape[ii++] = T_sigma_u_grad_v(ha[l],le*ls);
-	    shape[ii++] = T_sigma_grad_v(le*ls*ha[l]);
-	    //shape[ii++] = T_sigma_u_grad_v(ha[l],le*ls);
+          for (int l = 0; l <= order_facet[i]; l++)	    
+	    //shape[ii++] = T_sigma_grad_v(le*ls*ha[l]);
+	    shape[ii++] = T_sigma_u_grad_v(ha[l],le*ls);
 	    //shape[ii++] =  T_Dl2xRotDl1_v(le, ls, ha[l]);            
         }
       
@@ -470,7 +478,7 @@ namespace ngfem
       AutoDiffDiff<2> le = ddlami[ee];
       AutoDiffDiff<2> lt = ddlami[et];
       
-      int oi=order_inner[0];
+      int oi=order_inner;
       //int oi_plus = oi;
                 
       LegendrePolynomial::Eval(oi, 2*lt-1, v); 
@@ -491,22 +499,17 @@ namespace ngfem
       	shape[ii++] = T_Dl2xRotDl1_v(ls,le,lt*dubb[i]);	  
       }
 
+      //ScaledIntegratedLegendrePolynomial(oi+3,le-ls,le+ls,u);
       IntegratedLegendreMonomialExt::CalcTrigExt(oi+3,le-ls,1-le-ls,u);
       LegendrePolynomial::EvalMult(oi+1, 2*lt-1, lt, v);
       
       if (plus)
-        for (int i = 0; i <= oi; i++)
+        for (int i = 0; i <= oi-1; i++)
           {
-	    AutoDiffDiff<2> bubble = u[i]*v[oi-1-i];
-	    //AutoDiffDiff<2> bubble = ls*lt*le;
+	    throw Exception("not working yet!");
+	    AutoDiffDiff<2> bubble = u[i]*v[oi-1-i];	    
 	    shape[ii++] = T_sigma_u_grad_v(bubble,x);
 	    shape[ii++] = T_sigma_u_grad_v(bubble,y);
-	    //throw Exception("not working yet!");
-            //AutoDiffDiff<2> bubble = dubb[i+1]*v[oi-i-1];
-	    
-            //shape[ii++] = T_sigma_grad_v(le*ls*lt*x);
-	    //shape[ii++] = T_sigma_grad_v(le*ls*lt*y);
-            //shape[ii++] = T_sigma_u_grad_v(le*ls*lt, y);
           }      
     };
   }; 
@@ -523,17 +526,17 @@ namespace ngfem
       ndof = 0;
       for (int i=0; i<4; i++)
       {
-        ndof += (order_facet[i][0]+1)*(order_facet[i][0]+2);
-        order = max2(order, order_facet[i][0]);
+        ndof += (order_facet[i]+1)*(order_facet[i]+2);
+        order = max2(order, order_facet[i]);
       }
       //first type + second type
-      int ninner = (order_inner[0] + 1)*(order_inner[0] + 2)*(order_inner[0] + 3)/6.0 + 8.0/6.0* ((order_inner[0] +2) * (order_inner[0] +1) * (order_inner[0]));
+      int ninner = (order_inner + 1)*(order_inner + 2)*(order_inner + 3)/6.0 + 8.0/6.0* ((order_inner +2) * (order_inner +1) * (order_inner));
       
-      order = max2(order, order_inner[0]);
+      order = max2(order, order_inner);
       //if (plus)
       //{	
       //  order ++;
-      //  ninner += 2*order_inner[0]; 
+      //  ninner += 2*order_inner; 
       //}
       ndof += ninner;     
     }
@@ -547,22 +550,22 @@ namespace ngfem
       int ii = 0;
       
       int maxorder_facet =
-        max2(order_facet[0][0],max2(order_facet[1][0],order_facet[2][0]));
+        max2(order_facet[0],max2(order_facet[1],order_facet[2]));
 
 
        const FACE * faces = ElementTopology::GetFaces(ET_TET);
 
        
        ArrayMem<AutoDiffDiff<3>,20> ha((maxorder_facet+1)*(maxorder_facet+2)/2.0); 
-       ArrayMem<AutoDiffDiff<3>,20> v((order_inner[0] + 1)*(order_inner[0] + 2)*(order_inner[0] + 3)/6.0);
-       ArrayMem<AutoDiffDiff<3>,20> dubb(order_inner[0]*(order_inner[0]+1)*(order_inner[0]+2)/6.0);
+       ArrayMem<AutoDiffDiff<3>,20> v((order_inner + 1)*(order_inner + 2)*(order_inner + 3)/6.0);
+       ArrayMem<AutoDiffDiff<3>,20> dubb(order_inner*(order_inner+1)*(order_inner+2)/6.0);
        
       /* Edge based basis functions for tangential-normal continuity */
       for(int fa = 0; fa < 4; fa++)
         {
 	  int fav[3] = {faces[fa][0], faces[fa][1], faces[fa][2]};
 	  
-	  int p = order_facet[fa][0];
+	  int p = order_facet[fa];
 	  //Sort vertices  first edge op minimal vertex
 	  if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0], fav[1]);
 	  if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1], fav[2]);
@@ -573,14 +576,14 @@ namespace ngfem
 	  
 	  DubinerBasis3::Eval (maxorder_facet, ls, le, ha);
 
-          for (int l = 0; l < (order_facet[fa][0]+1)*(order_facet[fa][0]+2)/2.0; l++)
+          for (int l = 0; l < (order_facet[fa]+1)*(order_facet[fa]+2)/2.0; l++)
 	    {	      
 	      shape[ii++] =  T_Dl1_o_Dl2xDl3_v(le,ls,lt,ha[l]);	      
 	      shape[ii++] =  T_Dl1_o_Dl2xDl3_v(ls,lt,le,ha[l]);
 	    }
         }
 
-      int oi=order_inner[0];
+      int oi=order_inner;
       
       int es = 0; int ee = 1; int et = 2; int eo = 3 ;
       AutoDiffDiff<3> ls = ddlami[es]; 
@@ -677,7 +680,7 @@ namespace ngfem
     using HCurlDivSurfaceFiniteElement<ET_trait<ET>::DIM>::ndof;
     using HCurlDivSurfaceFiniteElement<ET_trait<ET>::DIM>::order;
 
-    INT<DIM> order_inner;
+    int order_inner;
 
 
   public:
@@ -692,7 +695,7 @@ namespace ngfem
     virtual ELEMENT_TYPE ElementType() const { return ET; }
     const HCurlDivSurfaceFE<ET> * Cast() const { return static_cast<const HCurlDivSurfaceFE<ET>*> (this); } 
     
-    INLINE void SetOrderInner (INT<DIM,int> order) { order_inner = order; }
+    INLINE void SetOrderInner (int order) { order_inner = order; }
 
     virtual void ComputeNDof()
     {
@@ -754,8 +757,8 @@ namespace ngfem
     {
       order = 0;
       ndof = 0;
-      ndof += order_inner[0]+1;
-      order = max2(order,order_inner[0]);
+      ndof += order_inner+1;
+      order = max2(order,order_inner);
 
     }
    template <typename Tx, typename TFA> 
@@ -766,16 +769,16 @@ namespace ngfem
       
       int ii = 0;
       
-      ArrayMem<AutoDiffDiff<1>,20> ha(order_inner[0]+1);
+      ArrayMem<AutoDiffDiff<1>,20> ha(order_inner+1);
       
       int es = 0,ee = 1;
       if(vnums[es] > vnums[ee]) swap (es,ee);
 
       AutoDiffDiff<1> ls = ddlami[es],le = ddlami[ee];
       
-      LegendrePolynomial::Eval(order_inner[0],le-ls,ha);      
+      LegendrePolynomial::Eval(order_inner,le-ls,ha);      
       
-      for(int l = 0; l <= order_inner[0]; l++)
+      for(int l = 0; l <= order_inner; l++)
 	shape[ii++] =  -1* ha[l].Value(); //I think there should be a minus
     };
   };
@@ -814,8 +817,8 @@ namespace ngfem
     {
       order = 0;
       ndof = 0;
-      ndof += (order_inner[0]+1) * (order_inner[0]+2);
-      order = max2(order,order_inner[0]);
+      ndof += (order_inner+1) * (order_inner+2);
+      order = max2(order,order_inner);
     }
     
    template <typename Tx, typename TFA> 
@@ -827,7 +830,7 @@ namespace ngfem
       
       int ii = 0;
 
-      ArrayMem<AutoDiffDiff<2>,20> ha((order_inner[0]+1)*(order_inner[0]+2)/2.0); //face basis
+      ArrayMem<AutoDiffDiff<2>,20> ha((order_inner+1)*(order_inner+2)/2.0); //face basis
       
       int es = 0, ee = 1, et = 2;
       if(vnums[es] > vnums[ee]) swap(es, ee);
@@ -836,9 +839,9 @@ namespace ngfem
             
       AutoDiffDiff<2> ls = ddlami[es],le = ddlami[ee], lt = ddlami[et];
       
-      DubinerBasis3::Eval (order_inner[0], ls, le, ha);
+      DubinerBasis3::Eval (order_inner, ls, le, ha);
 
-      for (int l = 0; l < (order_inner[0]+1)*(order_inner[0]+2)/2.0; l++)
+      for (int l = 0; l < (order_inner+1)*(order_inner+2)/2.0; l++)
 	    {
 	      shape[ii++] = T_Dl1_o_Dl2xDl3_v_surf(le,ls,lt,ha[l]).Shape();
 	      shape[ii++] = T_Dl1_o_Dl2xDl3_v_surf(ls,lt,le,ha[l]).Shape();
