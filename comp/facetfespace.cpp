@@ -123,7 +123,7 @@ namespace ngcomp
     if(checkflags) CheckFlags(flags);
     
     
-    ndlevel.SetSize(0);
+    // ndlevel.SetSize(0);
     Flags loflags;
     loflags.SetFlag("order",0.0);
     if ( this->IsComplex() )
@@ -318,7 +318,7 @@ namespace ngcomp
     // distribute dofs
     ncfa = 0; 
     //ndof = nfa; // low_order space
-    ndof = all_dofs_together ? 0 : nfa;
+    size_t ndof = all_dofs_together ? 0 : nfa;
     
     first_facet_dof.SetSize(nfa+1); 
     first_facet_dof = nfa;
@@ -329,7 +329,7 @@ namespace ngcomp
         for (int i = 0; i < nfa; i++)
           {
             first_facet_dof[i] = ndof;
-            ndof ++;
+            if (all_dofs_together) ndof ++;
           }
         first_facet_dof[nfa] = ndof;
       }
@@ -407,11 +407,13 @@ namespace ngcomp
 	  }
       } // 3D
     
-
+    /*
     while (ma->GetNLevels() > ndlevel.Size())
       ndlevel.Append (ndof);
     ndlevel.Last() = ndof;
-      
+    */
+    SetNDof (ndof);
+    
     if(print)
       {
 	*testout << "*** Update FAcetFESpace: General Information" << endl;
@@ -427,6 +429,7 @@ namespace ngcomp
 
   void FacetFESpace :: UpdateCouplingDofArray()
   {
+    size_t ndof = GetNDof();
     ctofdof.SetSize(ndof);
     ctofdof = INTERFACE_DOF;
     
@@ -680,69 +683,12 @@ namespace ngcomp
 
 
   // ------------------------------------------------------------------------
-  size_t FacetFESpace :: GetNDof () const throw()
-  {
-    return ndof;
-  }
-
-  // ------------------------------------------------------------------------
-  size_t FacetFESpace :: GetNDofLevel (int level) const
-  {
-    return ndlevel[level];
-  }
-
-
-  void FacetFESpace :: GetDofRanges (ElementId ei, Array<IntRange> & dranges) const
-  {
-    if (highest_order_dc)
-      {
-        // not optimal, needs reordering of dofs ...
-        Array<int> dnums;
-        GetDofNrs (ei, dnums);
-        dranges.SetSize (0);
-        for (int j = 0; j < dnums.Size(); j++)
-          dranges.Append (IntRange (dnums[j], dnums[j+1]));
-        return;
-      }
-
-
-    dranges.SetSize(0);
-
-    if (!DefinedOn (ei)) return;
-    Ngs_Element ngel = ma->GetElement(ei);
-    
-    
-    if (ma->GetDimension() == 2)
-      for (int e : ngel.Edges())
-        {
-          if (!all_dofs_together)  
-            {
-              dranges.Append (IntRange (e,e+1));
-            }
-          dranges.Append (GetFacetDofs(e));
-        }
-    else
-      for (int f : ngel.Faces())
-        {
-           if (!all_dofs_together)  
-             {
-               dranges.Append (IntRange (f,f+1));
-             }
-          dranges.Append (GetFacetDofs(f));
-        }
-
-  }
-
-  // ------------------------------------------------------------------------
   void FacetFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
-    // TODO: remove switch...
     switch (ei.VB())
       {
       case VOL:
 	{
-	  // ArrayMem<int,6> fanums;
-	  // ma->GetElFacets (ei.Nr(),fanums);
 	  auto fanums = ma->GetElFacets(ei);
 	  dnums.SetSize0();
 	  
@@ -798,18 +744,10 @@ namespace ngcomp
       case BND:
 	{
 	  dnums.SetSize0();
-	  
-	  int fnum = 0;
-	  if (ma->GetDimension() == 2)
-	    {
-	      // ArrayMem<int, 4> fanums;
-	      auto fanums = ma->GetElEdges (ei);
-	      fnum = fanums[0];
-	    }
-	  else
-	    fnum = ma->GetSElFace(ei.Nr());
-	  
-	  if (!all_dofs_together) dnums.Append (fnum);
+
+          auto fnum = ma->GetElFacets(ei)[0];
+          if (!all_dofs_together)
+            dnums.Append (fnum);
 	  dnums += GetFacetDofs(fnum);
 	}
 	break;
@@ -850,7 +788,7 @@ namespace ngcomp
       }
       
     // cout << "smoothingblocks = " << endl << table << endl;
-    return make_shared<Table<int>> (table);
+    return make_shared<Table<int>> (move(table));
   }
 
 
@@ -863,7 +801,7 @@ namespace ngcomp
     auto spclusters = make_shared<Array<int>>(GetNDof());
     Array<int> & clusters = *spclusters;
 
-    clusters.SetSize(ndof);
+    clusters.SetSize(GetNDof());
     clusters = 0;
     
     for (int i = 0; i < nfa; i++)
