@@ -57,6 +57,7 @@ namespace ngfem
 	  int fo = facet_order[i];
 	  switch (ElementTopology::GetFacetType (ET, i))
 	    {
+	    case ET_POINT: ndof += 1; break;
 	    case ET_SEGM: ndof += fo+1; break;
 	    case ET_TRIG: ndof += ( (fo+1) * (fo+2) ) / 2; break;
 	    case ET_QUAD: ndof += sqr (fo+1); break;
