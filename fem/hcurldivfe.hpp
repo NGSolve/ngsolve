@@ -231,11 +231,11 @@ namespace ngfem
   /* ############### edge basis functions - div-free ############### */
   /* sigma(grad v) = Curl(grad v), where Curl is the 1D to 2D curl operator */
   
-  class T_sigma_gradv
+  class Sigma_gradv
   {
     AutoDiffDiff<2> v;
   public:
-    T_sigma_gradv  (AutoDiffDiff<2> av) : v(av){ ; }
+    Sigma_gradv  (AutoDiffDiff<2> av) : v(av){ ; }
     
     Vec<4> Shape() {
       return Vec<4> (-v.DDValue(0,1), v.DDValue(0,0),
@@ -251,13 +251,13 @@ namespace ngfem
 
   
   /* ############### Type 1 - inner basis functions - div-free ############### */
-  /* sigma(grad(u*v)) = Curl(grad(u * v)) = Curl(grad u)) * v + grad(v) * Curl(u) + grad(u) * Curl(v) + Curl(grad v)) * u  */  
+  /* sigma(grad(u)*v) = Curl(grad(u)) * v + grad(u) * Curl(v) */  
 
-  class T_sigma_graduv
+  class Sigma_gradu_v
   {
     AutoDiffDiff<2> u,v;
   public:
-    T_sigma_graduv  (AutoDiffDiff<2> au, AutoDiffDiff<2> av) : u(au), v(av){ ; }
+    Sigma_gradu_v  (AutoDiffDiff<2> au, AutoDiffDiff<2> av) : u(au), v(av){ ; }
 
     Vec<4> Shape() {
       return Vec<4> (-u.DDValue(1,0) * v.Value()  -  v.DValue(1)*u.DValue(0),
@@ -273,12 +273,13 @@ namespace ngfem
     }
   }; 
 
-
-    class T_sigma_graduv_2
+  /* ############### Type 2 - inner basis functions - NOT div-free ############### */
+  /* sigma(grad(u)*v) = Curl(grad(u)) * v - grad(u) * Curl(v) */ 
+  class Curlgraduv_graducurlv
   {
     AutoDiffDiff<2> u,v;
   public:
-    T_sigma_graduv_2  (AutoDiffDiff<2> au, AutoDiffDiff<2> av) : u(au), v(av){ ; }
+    Curlgraduv_graducurlv  (AutoDiffDiff<2> au, AutoDiffDiff<2> av) : u(au), v(av){ ; }
 
     Vec<4> Shape() {
       return Vec<4> (-u.DDValue(1,0) * v.Value()  +  v.DValue(1)*u.DValue(0),
@@ -295,96 +296,10 @@ namespace ngfem
       
       return -2.0 * Vec<2> (- uxx * vy + uxy * vx, - uxy * vy + uyy * vx);
     }
-  }; 
-
-  
-  /* ############### Type 2 - inner basis functions - div-free ############### */
-  /*  Curl(grad u)) * v - grad(v) * Curl(u) - grad(u) * Curl(v) + Curl(grad v)) * u  */  
-
-  class T_type2
-  {
-    AutoDiffDiff<2> u,v;
-  public:
-    T_type2  (AutoDiffDiff<2> au, AutoDiffDiff<2> av) : u(au), v(av){ ; }
-
-    Vec<4> Shape() {
-      return Vec<4> (-u.DDValue(1,0) * v.Value() + v.DValue(0)*u.DValue(1) +  v.DValue(1)*u.DValue(0) - v.DDValue(1,0) * u.Value(),
-		     u.DDValue(0,0) * v.Value() - 2 * v.DValue(0)*u.DValue(0) + v.DDValue(0,0) * u.Value(),
-		     -u.DDValue(1,1) * v.Value() + 2* v.DValue(1)*u.DValue(1) - v.DDValue(1,1) * u.Value(),
-		     u.DDValue(0,1) * v.Value() - v.DValue(1)*u.DValue(0) -  v.DValue(0)*u.DValue(1) + v.DDValue(0,1) * u.Value()
-		     );
-    }
-
-    Vec<2> DivShape()
-    {     
-      return Vec<2> (0,0);
-    }
-  };
+  };   
 
   /* ############### Type 3 - inner basis functions - div-free ############### */
-  /*  Curl(grad u)) * v - Curl(grad v)) * u  */  
-
-  class T_type3
-  {
-    AutoDiffDiff<2> u,v;
-  public:
-    T_type3  (AutoDiffDiff<2> au, AutoDiffDiff<2> av) : u(au), v(av){ ; }
-
-    /*
-     Vec<4> Shape() {
-     return Vec<4> (-u.DDValue(1,0) * v.Value() + v.DDValue(1,0) * u.Value(),
-    		     u.DDValue(0,0) * v.Value() - v.DDValue(0,0) * u.Value(),
-    		     -u.DDValue(1,1) * v.Value() + v.DDValue(1,1) * u.Value(),
-    		     u.DDValue(0,1) * v.Value() - v.DDValue(0,1) * u.Value()
-		     );*/
-
-     Vec<4> Shape() {
-       return Vec<4> ( v.DValue(0)*u.DValue(1) -  v.DValue(1)*u.DValue(0),
-		       0.0,
-		       0.0,
-		       - v.DValue(1)*u.DValue(0) +  v.DValue(0)*u.DValue(1)
-		       );
-    }
-
-    Vec<2> DivShape()
-    {     
-      return Vec<2> (0,0);
-    }
-  };
-
-
-   class T_type3_2
-  {
-    AutoDiffDiff<2> u,v;
-  public:
-    T_type3_2  (AutoDiffDiff<2> au, AutoDiffDiff<2> av) : u(au), v(av){ ; }
-
-
-     Vec<4> Shape() {
-     return Vec<4> (-u.DDValue(1,0) * v.Value() - v.DDValue(1,0) * u.Value(),
-    		     u.DDValue(0,0) * v.Value() + v.DDValue(0,0) * u.Value(),
-    		     -u.DDValue(1,1) * v.Value() - v.DDValue(1,1) * u.Value(),
-    		     u.DDValue(0,1) * v.Value() + v.DDValue(0,1) * u.Value()
-		     );
-
-     /*
-     Vec<4> Shape() {
-       return Vec<4> ( v.DValue(0)*u.DValue(1) -  v.DValue(1)*u.DValue(0),
-		       0.0,
-		       0.0,
-		       - v.DValue(1)*u.DValue(0) +  v.DValue(0)*u.DValue(1)
-		       );*/
-    }
-
-    Vec<2> DivShape()
-    {     
-      return Vec<2> (0,0);
-    }
-  };
-  
-
-  /* ############### Type 4 - inner basis functions - div-free ############### */
-  /*  Curl( [grad(l1) l2 - l1 grad(l2)] * v ) - tr(Curl( [grad(l1) l2 - l1 grad(l2)] * v )) * I */  
+  /*  Curl( [grad(l1) l2 - l1 grad(l2)] * v ) */  
 
   class T_type4
   {
@@ -392,51 +307,18 @@ namespace ngfem
   public:
     T_type4  (AutoDiffDiff<2> lam1, AutoDiffDiff<2> lam2, AutoDiffDiff<2> av) : l1(lam1), l2(lam2), v(av){ ; }
 
-
     Vec<4> Shape() {
       double lam1x = l1.DValue(0), lam1y = l1.DValue(1), lam1xx = l1.DDValue(0,0), lam1xy = l1.DDValue(1,0), lam1yx = l1.DDValue(0,1), lam1yy = l1.DDValue(1,1);
       double lam2x = l2.DValue(0), lam2y = l2.DValue(1), lam2xx = l2.DDValue(0,0), lam2xy = l2.DDValue(1,0), lam2yx = l2.DDValue(0,1), lam2yy = l2.DDValue(1,1);
 
       double vx = v.DValue(0), vy = v.DValue(1);
                  
-      Vec<4> Curl_gradl1l2_gradl2l1 (- lam1yx * l2.Value() - lam1x * lam2y + lam2yx * l1.Value() + lam2x * lam1y,
-				       lam1xx * l2.Value() + lam1x * lam2x - lam2xx * l1.Value() - lam2x * lam1x,
-				     - lam1yy * l2.Value() - lam1y * lam2y + lam2yy * l1.Value() + lam2y * lam1y,
-				       lam1xy * l2.Value() + lam1y * lam2x - lam2xy * l1.Value() - lam2y * lam1x
-				     );
-
-      Vec<4> gradl1l2_gradl2l1_Curlv ( -(lam1x*l2.Value() - lam2x*l1.Value()) * vy,
-				       (lam1x*l2.Value() - lam2x*l1.Value()) * vx,
-				       -(lam1y*l2.Value() - lam2y*l1.Value()) * vy,
-				       (lam1y*l2.Value() - lam2y*l1.Value()) * vx
-				     );      
-
-      return ( v.Value() * Curl_gradl1l2_gradl2l1 + gradl1l2_gradl2l1_Curlv);
+      return Vec<4> (v.Value() * (-lam1yx * l2.Value() - lam1x * lam2y + lam2yx * l1.Value() + lam2x * lam1y) - (lam1x*l2.Value() - lam2x*l1.Value()) * vy,
+		     v.Value() * ( lam1xx * l2.Value() + lam1x * lam2x - lam2xx * l1.Value() - lam2x * lam1x) + (lam1x*l2.Value() - lam2x*l1.Value()) * vx,
+		     v.Value() * (-lam1yy * l2.Value() - lam1y * lam2y + lam2yy * l1.Value() + lam2y * lam1y) - (lam1y*l2.Value() - lam2y*l1.Value()) * vy,
+		     v.Value() * ( lam1xy * l2.Value() + lam1y * lam2x - lam2xy * l1.Value() - lam2y * lam1x) + (lam1y*l2.Value() - lam2y*l1.Value()) * vx
+		     );     
     }
-
-    
-//    Vec<4> Shape() {
-//      return Vec<4> (//- l1.DDValue(1,0) * l2.Value() * v.Value()
-//		     - 0.5 * l1.DValue(0) * (l2.DValue(1) * v.Value() + v.DValue(1)*l2.Value()) + 0.5 * l1.DValue(1) * (l2.DValue(0) * v.Value() + v.DValue(0)*l2.Value())		     
-//		     //+ l2.DDValue(1,0) * l1.Value() * v.Value()
-//		     + 0.5* l2.DValue(0) * (l1.DValue(1) * v.Value() + v.DValue(1)*l1.Value()) - 0.5 * l2.DValue(1) * (l1.DValue(0) * v.Value() + v.DValue(0)*l1.Value()),
-//		     
-//		     //l1.DDValue(0,0) * l2.Value() * v.Value()
-//		     + l1.DValue(0) * (l2.DValue(0) * v.Value() + v.DValue(0)*l2.Value())
-//		     //-l2.DDValue(0,0) * l1.Value() * v.Value()
-//		     - l2.DValue(0) * (l1.DValue(0) * v.Value() + v.DValue(0)*l1.Value()),
-//		     
-//		     //-l1.DDValue(1,1) * l2.Value() * v.Value()
-//		     - l1.DValue(1) * (l2.DValue(1) * v.Value() + v.DValue(1)*l2.Value())
-//		     //+ l2.DDValue(1,1) * l1.Value() * v.Value()
-//		     + l2.DValue(1) * (l1.DValue(1) * v.Value() + v.DValue(1)*l1.Value()),
-//		     
-//		     //l1.DDValue(0,1) * l2.Value() * v.Value()
-//		     + 0.5* l1.DValue(1) * (l2.DValue(0) * v.Value() + v.DValue(0)*l2.Value()) + 0.5 * l1.DValue(0) * (l2.DValue(1) * v.Value() + v.DValue(1)*l2.Value()) 
-//		     //-l2.DDValue(0,1) * l1.Value() * v.Value()
-//		     - 0.5 * l2.DValue(1) * (l1.DValue(0) * v.Value() + v.DValue(0)*l1.Value()) - 0.5* l2.DValue(0) * (l1.DValue(1) * v.Value() + v.DValue(1)*l1.Value())
-//		     );
-//    }
 
     Vec<2> DivShape()
     {     
@@ -486,7 +368,6 @@ namespace ngfem
   public:
     T_Dl2xRotDl1_v  (AutoDiffDiff<2> lam1, AutoDiffDiff<2> lam2, AutoDiffDiff<2> av) : l1(lam1), l2(lam2), v(av) { ; }
 
-    //Shape returns (sig_xx, sig_xy, sig_yx, sig_yy)
     Vec<4> Shape() {
       return Vec<4> (-v.Value()*(l1.DValue(0)*l2.DValue(1)),
 		     v.Value()*(l1.DValue(0)*l2.DValue(0)),
@@ -569,7 +450,6 @@ namespace ngfem
 
       for (int i=0; i<D; i++)
 	Id_v(i*(D+1))= v.Value();      
-      //cout<<"Id_v = "<<Id_v<<endl;
       return Id_v;
     }
 
@@ -583,8 +463,6 @@ namespace ngfem
 
   };
   
-
-
   template <> class HCurlDivFE<ET_TRIG> : public T_HCurlDivFE<ET_TRIG> 
   {
     
@@ -599,9 +477,7 @@ namespace ngfem
       {
         ndof += order_facet[i]+1;
         order = max2(order, order_facet[i]);
-      }
-      //first type + second type
-      // in 2d:   (p + 1) + 4*(p*(p+1)/2)
+      }      
       int ninner = order_inner +1 + 2 * ((order_inner +1) * (order_inner)); 
       order = max2(order, order_inner);
       if (plus)
@@ -641,9 +517,7 @@ namespace ngfem
 	  ScaledLegendrePolynomial(maxorder_facet,le-ls, le+ls,ha);
           
           for (int l = 0; l <= order_facet[i]; l++)	    
-	    shape[ii++] = T_sigma_gradv(le*ls*ha[l]);
-	    //shape[ii++] = T_sigma_u_grad_v(ha[l],le*ls);
-	    //shape[ii++] =  T_Dl2xRotDl1_v(le, ls, ha[l]);            
+	    shape[ii++] = Sigma_gradv(le*ls*ha[l]);            
         }
       
       int es = 0; int ee = 1; int et = 2;
@@ -653,6 +527,7 @@ namespace ngfem
       
       int oi=order_inner;
 
+      //ScaledIntegratedLegendrePolynomial(oi+3,le-lt,le+lt,u);
       IntegratedLegendreMonomialExt::CalcTrigExt(oi+3,le-lt,1-le-lt,u);
       LegendrePolynomial::EvalMult(oi+1, 2*ls-1, ls, v);
       
@@ -660,16 +535,12 @@ namespace ngfem
       {
         for(int j = 0; j+i <= oi-1; j++)
         {
-	  //take this
-	  shape[ii++] = T_sigma_graduv(u[i],v[j]);
-	  shape[ii++] = T_sigma_graduv_2(u[i],v[j]);
-	  //shape[ii++] = T_type3_2(u[i],v[j]);
-	  
-	  //this works as well instead of type3_2
-          //shape[ii++] = T_type2(u[i],v[j]);	 	  
+	  shape[ii++] = Sigma_gradu_v(u[i+1],v[j]);
+	  shape[ii++] = Curlgraduv_graducurlv(u[i+1],v[j]);	  	  
         }	
       }
 
+      //ScaledIntegratedLegendrePolynomial(oi+3,le-ls,le+ls,u);
       IntegratedLegendreMonomialExt::CalcTrigExt(oi+3,le-ls,1-le-ls,u);
       LegendrePolynomial::EvalMult(oi+1, 2*lt-1, lt, v);
       
@@ -677,32 +548,18 @@ namespace ngfem
       {
         for(int j = 0; j+i <= oi-1; j++)
         {
-          //shape[ii++] = T_sigma_gradv(u[i]*v[j]);
-	  //shape[ii++] = T_type2(u[i],v[j]);
-
-	  //take this
-	  shape[ii++] = T_sigma_graduv(u[i],v[j]);
-	  shape[ii++] = T_sigma_graduv_2(u[i],v[j]);
-	  //shape[ii++] = T_type3(u[i],v[j]);	  
+	  shape[ii++] = Sigma_gradu_v(u[i],v[j]);
+	  shape[ii++] = Curlgraduv_graducurlv(u[i],v[j]);	 
         }	
       }
-      
-      //for(int i = 0; i <= oi-1; i++)
-      //{
-      //  for(int j = 0; j+i <= oi-1; j++)
-      //  {
-      //    //if(j > 0)
-      //	  shape[ii++] = T_type3(u[i],v[j]);
-      //	  shape[ii++] = T_type3(u[i],v[j]);
-      //	  //shape[ii++] = T_type2_1(AutoDiffDiff<2>(1.0),v[j+1]);      	  
-      //  }
-      //}
       
       LegendrePolynomial::Eval(oi, 2*lt-1, v);
       for (int i = 0; i <= oi; i++)
         shape[ii++] = T_type4(le, ls, v[i]);
-
-      /*  old basis   
+      
+      
+      /*
+      //old basis   
       LegendrePolynomial::Eval(oi, 2*lt-1, v); 
       DubinerBasis3::Eval (oi-1, ls, le, dubb); 
       //Type one
@@ -719,16 +576,17 @@ namespace ngfem
       	shape[ii++] = T_Dl2xRotDl1_v(ls,le,lt*dubb[i]);	  
       }
       */
-
       
       IntegratedLegendreMonomialExt::CalcTrigExt(oi+3,le-ls,1-le-ls,u);
+      //ScaledIntegratedLegendrePolynomial(oi+3,le-ls,le+ls,u);
       LegendrePolynomial::EvalMult(oi+1, 2*lt-1, lt, v);
       
       if (plus)
         for (int i = 0; i <= oi-1; i++)
           {
 	    throw Exception("not working yet!");
-	    AutoDiffDiff<2> bubble = u[i]*v[oi-1-i];	    
+	    AutoDiffDiff<2> bubble = u[i]*v[oi-1-i];
+	    
 	    shape[ii++] = T_sigma_u_grad_v(bubble,x);
 	    shape[ii++] = T_sigma_u_grad_v(bubble,y);
           }      
