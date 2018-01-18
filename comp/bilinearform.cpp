@@ -2023,7 +2023,7 @@ namespace ngcomp
           {
             // mixed spaces
 
-            cout << "assemble mixed bilinearform" << endl;
+            cout << IM(3) << "assemble mixed bilinearform" << endl;
       
             BaseMatrix & mat = GetMatrix();
             mat = 0.0;
@@ -2316,6 +2316,51 @@ namespace ngcomp
 
     try
       {
+        if(MixedSpaces())
+          {
+            cout << IM(3) << "assemble linearization mixed bilinearform" << endl;
+            auto& mat = GetMatrix();
+            mat = 0.0;
+            if(VB_parts[VOL].Size())
+              IterateElements
+                (*fespace, VOL, clh,          // coloring for 1 space is enough
+                 [&] (FESpace::Element ei, LocalHeap & lh)
+                 {
+                   const FiniteElement & fel1 = fespace->GetFE (ei, lh);
+                   const FiniteElement & fel2 = fespace2->GetFE (ei, lh);
+
+                   Array<int> dnums1(fel1.GetNDof(), lh);
+                   Array<int> dnums2(fel2.GetNDof(), lh);
+                   const ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
+                   fespace->GetDofNrs (ei, dnums1);
+                   fespace2->GetDofNrs (ei, dnums2);
+                   FlatVector<SCAL> elveclin(dnums1.Size() * fespace->GetDimension(),lh);
+                   lin.GetIndirect(dnums1,elveclin);
+                   fespace->TransformVec(ei,elveclin,TRANSFORM_SOL);
+                   FlatMatrix<SCAL> elmat(dnums2.Size(), dnums1.Size(), lh);
+                   for (auto & bfi : VB_parts[VOL])
+                     {
+                       if (!bfi->DefinedOn(fespace->GetMeshAccess()->GetElIndex(ei))) continue;
+                       if (!bfi->DefinedOnElement(ei.Nr())) continue;
+                       MixedFiniteElement fel(fel1, fel2);
+                       bfi->CalcLinearizedElementMatrix (fel, eltrans, elveclin, elmat, lh);
+                       /*
+                        fespace->Transform (i, true, elmat, TRANSFORM_MAT_RIGHT);
+                        fespace2->Transform (i, true, elmat, TRANFORM_MAT_LEFT);
+                       */
+                       AddElementMatrix (dnums2, dnums1, elmat, ei, lh);
+                     }
+                 });
+            if(VB_parts[BND].Size())
+              throw Exception("Mixed AssembleLinearization not implemented for BND!");
+
+            if(VB_parts[BBND].Size())
+              throw Exception("Mixed AssembleLinearization not implemented for BBND!");
+
+            if(VB_parts[BBBND].Size())
+              throw Exception("Mixed AssembleLinearization not implemented for BBBND!");
+            return;
+          }
         int ndof = fespace->GetNDof();
         Array<bool> useddof(ndof);
         useddof = false;
