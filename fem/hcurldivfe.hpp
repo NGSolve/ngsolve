@@ -253,26 +253,51 @@ namespace ngfem
   /* ############### Type 1 - inner basis functions - div-free ############### */
   /* sigma(grad(u*v)) = Curl(grad(u * v)) = Curl(grad u)) * v + grad(v) * Curl(u) + grad(u) * Curl(v) + Curl(grad v)) * u  */  
 
-//  class T_sigma_graduv
-//  {
-//    AutoDiffDiff<2> u,v;
-//  public:
-//    T_sigma_graduv  (AutoDiffDiff<2> au, AutoDiffDiff<2> av) : u(au), v(av){ ; }
-//
-//    Vec<4> Shape() {
-//      return Vec<4> (-u.DDValue(1,0) * v.Value() - v.DValue(0)*u.DValue(1) -  v.DValue(1)*u.DValue(0) - v.DDValue(1,0) * u.Value(),
-//		     u.DDValue(0,0) * v.Value() + 2 * v.DValue(0)*u.DValue(0) + v.DDValue(0,0) * u.Value(),
-//		     -u.DDValue(1,1) * v.Value() - 2 * v.DValue(1)*u.DValue(1) - v.DDValue(1,1) * u.Value(),
-//		     u.DDValue(0,1) * v.Value() + v.DValue(1)*u.DValue(0) +  v.DValue(0)*u.DValue(1) + v.DDValue(0,1) * u.Value()
-//		     );
-//    }
-//
-//    Vec<2> DivShape()
-//    {     
-//      return Vec<2> (0,0);
-//    }
-//  }; 
+  class T_sigma_graduv
+  {
+    AutoDiffDiff<2> u,v;
+  public:
+    T_sigma_graduv  (AutoDiffDiff<2> au, AutoDiffDiff<2> av) : u(au), v(av){ ; }
 
+    Vec<4> Shape() {
+      return Vec<4> (-u.DDValue(1,0) * v.Value()  -  v.DValue(1)*u.DValue(0),
+		     u.DDValue(0,0) * v.Value() + v.DValue(0)*u.DValue(0),
+		     -u.DDValue(1,1) * v.Value() - v.DValue(1)*u.DValue(1),
+		     u.DDValue(0,1) * v.Value() +  v.DValue(0)*u.DValue(1)
+		     );
+    }
+
+    Vec<2> DivShape()
+    {     
+      return Vec<2> (0,0);
+    }
+  }; 
+
+
+    class T_sigma_graduv_2
+  {
+    AutoDiffDiff<2> u,v;
+  public:
+    T_sigma_graduv_2  (AutoDiffDiff<2> au, AutoDiffDiff<2> av) : u(au), v(av){ ; }
+
+    Vec<4> Shape() {
+      return Vec<4> (-u.DDValue(1,0) * v.Value()  +  v.DValue(1)*u.DValue(0),
+		     u.DDValue(0,0) * v.Value() - v.DValue(0)*u.DValue(0),
+		     -u.DDValue(1,1) * v.Value() + v.DValue(1)*u.DValue(1),
+		     u.DDValue(0,1) * v.Value() -  v.DValue(0)*u.DValue(1)
+		     );
+    }
+
+    Vec<2> DivShape()
+    {
+      double uxx = u.DDValue(0,0), uxy = u.DDValue(0,1), uyy = u.DDValue(1,1);
+      double vx = v.DValue(0), vy = v.DValue(1);
+      
+      return -2.0 * Vec<2> (- uxx * vy + uxy * vx, - uxy * vy + uyy * vx);
+    }
+  }; 
+
+  
   /* ############### Type 2 - inner basis functions - div-free ############### */
   /*  Curl(grad u)) * v - grad(v) * Curl(u) - grad(u) * Curl(v) + Curl(grad v)) * u  */  
 
@@ -327,6 +352,36 @@ namespace ngfem
     }
   };
 
+
+   class T_type3_2
+  {
+    AutoDiffDiff<2> u,v;
+  public:
+    T_type3_2  (AutoDiffDiff<2> au, AutoDiffDiff<2> av) : u(au), v(av){ ; }
+
+
+     Vec<4> Shape() {
+     return Vec<4> (-u.DDValue(1,0) * v.Value() - v.DDValue(1,0) * u.Value(),
+    		     u.DDValue(0,0) * v.Value() + v.DDValue(0,0) * u.Value(),
+    		     -u.DDValue(1,1) * v.Value() - v.DDValue(1,1) * u.Value(),
+    		     u.DDValue(0,1) * v.Value() + v.DDValue(0,1) * u.Value()
+		     );
+
+     /*
+     Vec<4> Shape() {
+       return Vec<4> ( v.DValue(0)*u.DValue(1) -  v.DValue(1)*u.DValue(0),
+		       0.0,
+		       0.0,
+		       - v.DValue(1)*u.DValue(0) +  v.DValue(0)*u.DValue(1)
+		       );*/
+    }
+
+    Vec<2> DivShape()
+    {     
+      return Vec<2> (0,0);
+    }
+  };
+  
 
   /* ############### Type 4 - inner basis functions - div-free ############### */
   /*  Curl( [grad(l1) l2 - l1 grad(l2)] * v ) - tr(Curl( [grad(l1) l2 - l1 grad(l2)] * v )) * I */  
@@ -605,10 +660,13 @@ namespace ngfem
       {
         for(int j = 0; j+i <= oi-1; j++)
         {
-	  //shape[ii++] = T_sigma_gradv(u[i]*v[j]);
+	  //take this
+	  shape[ii++] = T_sigma_graduv(u[i],v[j]);
+	  shape[ii++] = T_sigma_graduv_2(u[i],v[j]);
+	  //shape[ii++] = T_type3_2(u[i],v[j]);
 	  
-	  shape[ii++] = T_type3(u[i],v[j]);
-          shape[ii++] = T_type2(u[i],v[j]);
+	  //this works as well instead of type3_2
+          //shape[ii++] = T_type2(u[i],v[j]);	 	  
         }	
       }
 
@@ -619,10 +677,13 @@ namespace ngfem
       {
         for(int j = 0; j+i <= oi-1; j++)
         {
-          shape[ii++] = T_sigma_gradv(u[i]*v[j]);
-	  shape[ii++] = T_type2(u[i],v[j]);
-	  
-	  //shape[ii++] = T_type3(u[i],v[j]);          
+          //shape[ii++] = T_sigma_gradv(u[i]*v[j]);
+	  //shape[ii++] = T_type2(u[i],v[j]);
+
+	  //take this
+	  shape[ii++] = T_sigma_graduv(u[i],v[j]);
+	  shape[ii++] = T_sigma_graduv_2(u[i],v[j]);
+	  //shape[ii++] = T_type3(u[i],v[j]);	  
         }	
       }
       
