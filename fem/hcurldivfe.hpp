@@ -535,8 +535,8 @@ namespace ngfem
       {
         for(int j = 0; j+i <= oi-1; j++)
         {
-	  shape[ii++] = Sigma_gradu_v(u[i+1],v[j]);
-	  shape[ii++] = Curlgraduv_graducurlv(u[i+1],v[j]);	  	  
+	  shape[ii++] = Sigma_gradu_v(u[i],v[j]);
+	  shape[ii++] = Curlgraduv_graducurlv(u[i],v[j]);	  	  
         }	
       }
 
