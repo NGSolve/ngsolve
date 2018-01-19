@@ -150,6 +150,9 @@ namespace ngfem
     enum { DIM_DMAT = D };
     enum { DIFFORDER = 1 };
 
+    static const FEL & Cast (const FiniteElement & fel) 
+    { return static_cast<const FEL&> (fel); }
+
     ///
     template <typename AFEL, typename MIP, typename MAT>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
@@ -163,8 +166,22 @@ namespace ngfem
                                       const SIMD_BaseMappedIntegrationRule & mir,
                                       BareSliceMatrix<SIMD<double>> mat)
     {
-      static_cast<const FEL&>(fel).CalcMappedDShape (mir, mat);      
+      Cast(fel).CalcMappedDShape (mir, mat);      
     }
+    
+    using DiffOp<DiffOpGradientBoundary<D, FEL> >::ApplySIMDIR;    
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      Cast(fel).EvaluateGrad (mir, x, y);
+    }
+
+    using DiffOp<DiffOpGradientBoundary<D, FEL> >::AddTransSIMDIR;        
+    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      Cast(fel).AddGradTrans (mir, y, x);
+    }    
     
   };
 
@@ -622,6 +639,18 @@ namespace ngfem
 	}
     }
 
+    static constexpr double eps() { return 1e-4; }     
+    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+                                      const SIMD_BaseMappedIntegrationRule & bmir,
+                                      BareSliceMatrix<SIMD<double>> mat);
+
+    using DiffOp<DiffOpHesseBoundary<D,FEL>>::ApplySIMDIR;
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y);
+
+    using DiffOp<DiffOpHesseBoundary<D,FEL>>::AddTransSIMDIR;    
+    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
+                                BareSliceMatrix<SIMD<double>> x, BareSliceVector<double> y);
   };
 
 

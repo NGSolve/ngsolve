@@ -382,20 +382,7 @@ namespace ngla
          for (int i : sl)
        {
          NgProfiler::StartThreadTimer (tprep, TaskManager::GetThreadId());
-         /*
-#ifndef __MIC__
-	cnt++;
-        double time = WallTime();
-	if (time > prevtime+0.05)
-	  {
-	    {
-              lock_guard<mutex> guard(buildingblockupdate_mutex);
-	      cout << IM(3) << "\rBuilding block " << cnt << "/" << blocktable->Size() << flush;
-	      prevtime = time;
-	    }
-	  }
-#endif // __MIC__
-         */
+
         auto blocki = (*blocktable)[i];
         QuickSort (blocki);
 	if (!blocki.Size()) 
@@ -607,9 +594,11 @@ namespace ngla
     FlatVector<TVX> fb = b.FV<TVX> (); 
     FlatVector<TVX> fx = x.FV<TVX> ();
 
+#ifdef OLD
     for (int k = 0; k < steps; k++)
       for (int c : Range(block_coloring))              
         {
+          /*
           ParallelForRange
             (color_balance[c], [&] (IntRange r)
              {
@@ -636,7 +625,81 @@ namespace ngla
                  }
                
              });
+          */
+
+          auto col = block_coloring[c];
+          SharedLoop2 sl(col.Range());
+          
+          task_manager -> CreateJob
+              ( [&] (const TaskInfo & ti) 
+                {
+                  VectorMem<100,TVX> hxmax(maxbs);
+                  VectorMem<100,TVX> hymax(maxbs);
+
+                  for (auto mynr : sl)
+                    {
+                      size_t i = col[mynr];
+                      FlatArray<int> block = (*blocktable)[i];
+                      size_t bs = block.Size();
+                      if (!bs) continue;
+                      
+                      FlatVector<TVX> hx = hxmax.Range(0,bs);
+                      FlatVector<TVX> hy = hymax.Range(0,bs);
+                      
+                      for (size_t j = 0; j < bs; j++)
+                        {
+                          auto jj = block[j];
+                          hx(j) = fb(jj) - mat.RowTimesVector (jj, fx);
+                        }
+                      
+                      hy = (invdiag[i]) * hx;
+                      fx(block) += hy;
+                    }
+                });
+            
         }
+#endif
+
+    Array<SharedLoop2> loops(block_coloring.Size());
+    
+    for (int k = 0; k < steps; k++)
+      {
+        for (int c : Range(block_coloring))
+          loops[c].Reset (block_coloring[c].Range());
+
+        task_manager -> CreateJob
+          ( [&] (const TaskInfo & ti) 
+            {
+              VectorMem<100,TVX> hxmax(maxbs);
+              VectorMem<100,TVX> hymax(maxbs);
+              
+              for (int c : Range(block_coloring))              
+                {
+                  auto col = block_coloring[c];
+                  // SharedLoop2 sl(col.Range());
+
+                  for (auto mynr : loops[c])
+                    {
+                      size_t i = col[mynr];
+                      FlatArray<int> block = (*blocktable)[i];
+                      size_t bs = block.Size();
+                      if (!bs) continue;
+                      
+                      FlatVector<TVX> hx = hxmax.Range(0,bs);
+                      FlatVector<TVX> hy = hymax.Range(0,bs);
+                      
+                      for (size_t j = 0; j < bs; j++)
+                        {
+                          auto jj = block[j];
+                          hx(j) = fb(jj) - mat.RowTimesVector (jj, fx);
+                        }
+                      
+                      hy = (invdiag[i]) * hx;
+                      fx(block) += hy;
+                    }
+                }
+            });
+      }
   }
   
 

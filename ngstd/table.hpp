@@ -67,14 +67,20 @@ public:
   Iterator end() const { return Iterator(*this, size); }
 };
 
-  // #define PARALLEL_TABLE
+#define PARALLEL_TABLE
 #ifdef PARALLEL_TABLE
-  template <typename TI> 
-  DLL_HEADER size_t * TablePrefixSum (FlatArray<TI> entysize);
-  extern DLL_HEADER template size_t * TablePrefixSum<int> (FlatArray<int> entrysize);
-  extern DLL_HEADER template size_t * TablePrefixSum<unsigned int> (FlatArray<unsigned int> entrysize);
-  extern DLL_HEADER template size_t * TablePrefixSum<size_t> (FlatArray<size_t> entrysize);
-  extern DLL_HEADER template size_t * TablePrefixSum<atomic<int>> (FlatArray<atomic<int>> entrysize);
+  NGS_DLL_HEADER extern size_t * TablePrefixSum32 (FlatArray<unsigned int> entrysize);
+  NGS_DLL_HEADER extern size_t * TablePrefixSum64 (FlatArray<size_t> entrysize);
+
+  
+  INLINE size_t * TablePrefixSum (FlatArray<unsigned int> entrysize)
+  { return TablePrefixSum32 (entrysize); }
+  INLINE size_t * TablePrefixSum (FlatArray<int> entrysize)
+  { return TablePrefixSum32 (FlatArray<unsigned> (entrysize.Size(), (unsigned int*)(int*)(entrysize.Addr(0)))); }
+  INLINE size_t * TablePrefixSum (FlatArray<atomic<int>> entrysize)
+  { return TablePrefixSum32 (FlatArray<unsigned> (entrysize.Size(), (unsigned int*)(atomic<int>*)entrysize.Addr(0))); }
+  INLINE size_t * TablePrefixSum (FlatArray<size_t> entrysize)
+  { return TablePrefixSum64 (entrysize); }
 #endif
   
   
@@ -208,32 +214,14 @@ template <class T>
     Table<T> table;
   public:
     TableCreator()
-    { nd = 0; mode = 1; /* table = NULL; */ }
+    { nd = 0; mode = 1; }
     TableCreator (size_t acnt)
-    { nd = acnt; /* table = NULL; */ SetMode(2); }
+    { nd = acnt; SetMode(2); }
     
-    // Table<T> * GetTable() { return &table; }
-
-    /*
-    operator Table<T> () 
-    {
-      Table<T> tmp (std::move(*table));
-      delete table;
-      table = NULL;
-      return std::move(tmp);
-    }
-    */
     Table<T> MoveTable() 
     {
-      /*
-      Table<T> tmp (std::move(*table));
-      delete table;
-      table = NULL;
-      return std::move(tmp);
-      */
       return move(table);
     }
-
 
     bool Done () { return mode > 3; }
     void operator++(int) { SetMode (mode+1); }
@@ -250,7 +238,6 @@ template <class T>
 	}
       if (mode == 3)
 	{
-	  //table = new Table<T> (cnt);
           table = Table<T> (cnt);
           // for (auto & ci : cnt) ci = 0;
           for (auto & ci : cnt) ci.store (0, memory_order_relaxed);
@@ -287,7 +274,6 @@ template <class T>
 	  break;
 	case 3:
           int ci = cnt[blocknr]++;
-          // (*table)[blocknr][ci] = data;
           table[blocknr][ci] = data;
 	  break;
 	}
@@ -313,7 +299,6 @@ template <class T>
 	case 3:
           size_t ci = ( cnt[blocknr] += range.Size() ) - range.Size();
 	  for (size_t j = 0; j < range.Size(); j++)
-	    // (*table)[blocknr][ci+j] = range.First()+j;
             table[blocknr][ci+j] = range.First()+j;
 	  break;
 	}
@@ -338,7 +323,6 @@ template <class T>
 	case 3:
           size_t ci = ( cnt[blocknr] += dofs.Size() ) - dofs.Size();
 	  for (size_t j = 0; j < dofs.Size(); j++)
-	    // (*table)[blocknr][ci+j] = dofs[j];
             table[blocknr][ci+j] = dofs[j];
 	  break;
 	}

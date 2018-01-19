@@ -45,9 +45,9 @@ namespace ngstd
   }
   */
 
-#ifdef PARALLEL_TABLE    
+#ifdef PARALLEL_TABLE
   template <typename TI> 
-  size_t * TablePrefixSum (FlatArray<TI> entrysize)
+  size_t * TablePrefixSum2 (FlatArray<TI> entrysize)
   {
     /*
     size_t size  = entrysize.Size();
@@ -97,11 +97,16 @@ namespace ngstd
     return index;
   }
 
-
+  NGS_DLL_HEADER size_t * TablePrefixSum32 (FlatArray<unsigned int> entrysize)
+  { return TablePrefixSum2 (entrysize); }
+  NGS_DLL_HEADER size_t * TablePrefixSum64 (FlatArray<size_t> entrysize)
+  { return TablePrefixSum2 (entrysize); }
+  /*
   DLL_HEADER template size_t * TablePrefixSum<int> (FlatArray<int> entrysize);
   DLL_HEADER template size_t * TablePrefixSum<unsigned int> (FlatArray<unsigned int> entrysize);
   DLL_HEADER template size_t * TablePrefixSum<size_t> (FlatArray<size_t> entrysize);
   DLL_HEADER template size_t * TablePrefixSum<atomic<int>> (FlatArray<atomic<int>> entrysize);
+  */
 #endif
   
   BaseDynamicTable :: BaseDynamicTable (int size)

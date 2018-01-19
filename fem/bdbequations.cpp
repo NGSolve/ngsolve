@@ -20,20 +20,254 @@
 namespace ngfem
 { 
 
-  /*
-  template <int D, typename FEL> LaplaceBoundaryIntegrator<D,FEL> ::
-  LaplaceBoundaryIntegrator (CoefficientFunction * coeff)
-    : T_BDBIntegrator<DiffOpGradientBoundary<D>, DiagDMat<D>, FEL> (DiagDMat<D> (coeff))
-  { ; }
-  */
 
-  /*
-  template <int D, typename FEL> RotSymLaplaceIntegrator<D,FEL> ::
-  RotSymLaplaceIntegrator (CoefficientFunction * coeff)
-    : T_BDBIntegrator<DiffOpGradient<D>, RotSymLaplaceDMat<D>, FEL> (RotSymLaplaceDMat<D> (coeff))
-  { ; }
-  */
 
+
+
+  template <int D, typename FEL>
+  void DiffOpHesseBoundary<D,FEL> ::
+  GenerateMatrixSIMDIR (const FiniteElement & bfel,
+                        const SIMD_BaseMappedIntegrationRule & bmir,
+                        BareSliceMatrix<SIMD<double>> mat)
+  {
+    auto & fel = static_cast<const FEL&>(bfel);
+    auto & mir = static_cast<const SIMD_MappedIntegrationRule<D-1,D>&> (bmir);
+      
+    size_t nd_u = fel.GetNDof();
+    
+    STACK_ARRAY(SIMD<double>, mem1, 6*D*nd_u);
+    FlatMatrix<SIMD<double>> shape_u(nd_u*D, 4, &mem1[0]);
+
+    auto shape_ul = shape_u.Col(0);
+    auto shape_ur = shape_u.Col(1);
+    auto shape_ull = shape_u.Col(2);
+    auto shape_urr = shape_u.Col(3);
+    
+    FlatMatrix<SIMD<double>> dshape_u_ref(nd_u*(D-1), 1, &mem1[4*D*nd_u]);
+    FlatMatrix<SIMD<double>> dshape_u(nd_u*D, 1, &mem1[5*D*nd_u]);
+
+    LocalHeapMem<10000> lh("diffophesse-lh");
+
+    auto & ir = mir.IR();
+    for (size_t i = 0; i < mir.Size(); i++)
+      {
+        const SIMD<IntegrationPoint> & ip = ir[i];
+        const ElementTransformation & eltrans = mir[i].GetTransformation();
+
+        for (int j = 0; j < D-1; j++)   // d / dxj
+          {
+            HeapReset hr(lh);
+            SIMD<IntegrationPoint> ipts[4];
+            ipts[0] = ip;
+            ipts[0](j) -= eps();
+            ipts[1] = ip;
+            ipts[1](j) += eps();              
+            ipts[2] = ip;
+            ipts[2](j) -= 2*eps();
+            ipts[3] = ip;
+            ipts[3](j) += 2*eps();
+
+            SIMD_IntegrationRule ir(4, ipts);
+            SIMD_MappedIntegrationRule<D-1,D> mirl(ir, eltrans, lh);
+
+            fel.CalcMappedDShape (mirl, shape_u);
+            
+            dshape_u = (1.0/(12.0*eps())) * (8.0*shape_ur-8.0*shape_ul-shape_urr+shape_ull);
+            for (size_t l = 0; l < D; l++)
+              for (size_t k = 0; k < nd_u; k++)
+                mat(k*D*D+j*D+l, i) = dshape_u(k*D+l, 0);
+          }
+          
+          for (size_t j = 0; j < D; j++)
+            for (size_t k = 0; k < nd_u; k++)
+              {
+                Vec<D-1,SIMD<double>> dshape_u_ref;
+                Vec<D,SIMD<double>> dshape_u;
+                
+                for (size_t l = 0; l < D-1; l++)
+                  dshape_u_ref(l) = mat(k*D*D+l*D+j, i);
+                
+                dshape_u = Trans(mir[i].GetJacobianInverse()) * dshape_u_ref;
+                
+                for (size_t l = 0; l < D; l++)
+                  mat(k*D*D+l*D+j, i) = dshape_u(l);
+              }
+        }
+  }
+
+  
+  template <int D, typename FEL>
+  void DiffOpHesseBoundary<D,FEL> ::
+  ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
+               BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+  {
+      int size = (bmir.Size()+1)*2000;
+      STACK_ARRAY(char, data, size);
+      LocalHeap lh(data, size);
+
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<D-1,D>&> (bmir);
+      auto & ir = mir.IR();
+      const ElementTransformation & trafo = mir.GetTransformation();
+      auto & fel_u = static_cast<const FEL&>(fel);
+      FlatMatrix<SIMD<double>> hxl(D, mir.IR().Size(), lh);
+      FlatMatrix<SIMD<double>> hxr(D, mir.IR().Size(), lh);
+      FlatMatrix<SIMD<double>> hxll(D, mir.IR().Size(), lh);
+      FlatMatrix<SIMD<double>> hxrr(D, mir.IR().Size(), lh);
+      FlatMatrix<SIMD<double>> hx(D, mir.IR().Size(), lh);
+
+      for (int k = 0; k < mir.Size(); k++)
+        for (int m = 0; m < D*D; m++)
+          y(m, k) = SIMD<double> (0.0);
+      
+      for (int j = 0; j < D-1; j++)
+        {
+          // hx = (F^-1 * x).Row(j)
+          {
+            HeapReset hr(lh);
+            SIMD_IntegrationRule irl(mir.IR().GetNIP(), lh);
+            for (int k = 0; k < irl.Size(); k++)
+              {
+                irl[k] = ir[k];
+                irl[k](j) -= eps();
+              }
+            SIMD_MappedIntegrationRule<D-1,D> mirl(irl, trafo, lh);
+            fel_u.EvaluateGrad (mirl, x, hxl);
+          }
+          {
+            HeapReset hr(lh);
+            SIMD_IntegrationRule irr(mir.IR().GetNIP(), lh);
+            for (int k = 0; k < irr.Size(); k++)
+              {
+                irr[k] = ir[k];              
+                irr[k](j) += eps();
+              }
+            SIMD_MappedIntegrationRule<D-1,D> mirr(irr, trafo, lh);
+            fel_u.EvaluateGrad (mirr, x, hxr);
+          }
+          {
+            HeapReset hr(lh);
+            SIMD_IntegrationRule irll(mir.IR().GetNIP(), lh);
+            for (int k = 0; k < irll.Size(); k++)
+              {
+                irll[k] = ir[k];
+                irll[k](j) -= 2*eps();
+              }
+            SIMD_MappedIntegrationRule<D-1,D> mirll(irll, trafo, lh);
+            fel_u.EvaluateGrad (mirll, x, hxll);
+          }
+          {
+            HeapReset hr(lh);
+            SIMD_IntegrationRule irrr(mir.IR().GetNIP(), lh);
+            for (int k = 0; k < irrr.Size(); k++)
+              {
+                irrr[k] = ir[k];              
+                irrr[k](j) += 2*eps();
+              }
+            SIMD_MappedIntegrationRule<D-1,D> mirrr(irrr, trafo, lh);
+            fel_u.EvaluateGrad (mirrr, x, hxrr);
+          }
+          // hx = 1.0/(2*eps()) * (hxr-hxl);
+          // dshape_u_ref = (1.0/(12.0*eps)) * (8.0*shape_ur-8.0*shape_ul-shape_urr+shape_ull);
+          hx = 1.0/(12*eps()) * (8*hxr-8*hxl-hxrr+hxll);
+          for (int k = 0; k < mir.Size(); k++)
+            {
+              auto jacinv = mir[k].GetJacobianInverse();
+              for (int l = 0; l < D; l++)
+                {
+                  for (int m = 0; m < D; m++)
+                    y(m*D+l, k) += jacinv(j,m) * hx(l, k);
+                }
+            }
+        }
+  }
+
+
+  template <int D, typename FEL>
+  void DiffOpHesseBoundary<D,FEL> ::
+  AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
+                  BareSliceMatrix<SIMD<double>> x, BareSliceVector<double> y)
+  {
+      size_t size = (bmir.Size()+1)*2000;
+      STACK_ARRAY(char, data, size);
+      LocalHeap lh(data, size);
+
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<D-1,D>&> (bmir);
+      auto & ir = mir.IR();
+      const ElementTransformation & trafo = mir.GetTransformation();
+      auto & fel_u = static_cast<const FEL&>(fel);
+
+      FlatMatrix<SIMD<double>> hx1(D, mir.Size(), lh);
+      FlatMatrix<SIMD<double>> hx2(D, mir.Size(), lh);
+
+      for (size_t j = 0; j < D-1; j++)
+        {
+          // hx = (F^-1 * x).Row(j)
+          for (size_t k = 0; k < mir.Size(); k++)
+            {
+              auto jacinv = mir[k].GetJacobianInverse();
+              for (int l = 0; l < D; l++)
+                {
+                  SIMD<double> sum = 0;
+                  for (int m = 0; m < D; m++)
+                    sum += jacinv(j,m) * x(m*D+l, k);
+                  // hx.Get(l,k) = (-(0.5/eps()) * sum).Data();
+                  hx1(l,k) = (-(8/(12*eps())) * sum).Data();
+                  hx2(l,k) = ( (1/(12*eps())) * sum).Data();
+                }
+            }
+          {
+            HeapReset hr(lh);
+            SIMD_IntegrationRule irl(mir.IR().GetNIP(), lh);
+            for (size_t k = 0; k < irl.Size(); k++)
+              {
+                irl[k] = ir[k];
+                irl[k](j) -= eps();
+              }
+            SIMD_MappedIntegrationRule<D-1,D> mirl(irl, trafo, lh);
+            fel_u.AddGradTrans (mirl, hx1, y);
+            irl.NothingToDelete();
+          }
+          {
+            HeapReset hr(lh);
+            hx1 *= -1;
+            SIMD_IntegrationRule irr(mir.IR().GetNIP(), lh);
+            for (int k = 0; k < irr.Size(); k++)
+              {
+                irr[k] = ir[k];              
+                irr[k](j) += eps();
+              }
+            SIMD_MappedIntegrationRule<D-1,D> mirr(irr, trafo, lh);
+            fel_u.AddGradTrans (mirr, hx1, y);
+          }
+          {
+            HeapReset hr(lh);
+            SIMD_IntegrationRule irl(mir.IR().GetNIP(), lh);
+            for (int k = 0; k < irl.Size(); k++)
+              {
+                irl[k] = ir[k];
+                irl[k](j) -= 2*eps();
+              }
+            SIMD_MappedIntegrationRule<D-1,D> mirl(irl, trafo, lh);
+            fel_u.AddGradTrans (mirl, hx2, y);
+          }
+          {
+            HeapReset hr(lh);
+            hx2 *= -1;
+            SIMD_IntegrationRule irr(mir.IR().GetNIP(), lh);
+            for (int k = 0; k < irr.Size(); k++)
+              {
+                irr[k] = ir[k];              
+                irr[k](j) += 2*eps();
+              }
+            SIMD_MappedIntegrationRule<D-1,D> mirr(irr, trafo, lh);
+            fel_u.AddGradTrans (mirr, hx2, y);
+          }
+        }
+  }
+
+  template class DiffOpHesseBoundary<3,ScalarFiniteElement<2>>;
+
+  
   // standard integratos:
   
   static RegisterBilinearFormIntegrator<LaplaceIntegrator<1> > initlap1 ("laplace", 1, 1);

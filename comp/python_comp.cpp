@@ -1854,6 +1854,52 @@ kwargs : For a description of the possible kwargs have a look a bit further down
          },
          py::arg("vector"))
     ;
+
+  py::class_<HDivHighOrderSurfaceFESpace, shared_ptr<HDivHighOrderSurfaceFESpace>,FESpace>
+    (m, "HDivSurface")
+    .def("__init__", [] (py::object self, shared_ptr<MeshAccess> ma, py::kwargs kwargs)
+         {
+           auto myclass = self.attr("__class__");
+           py::list info;
+           info.append(ma);
+           auto flags = CreateFlagsFromKwArgs(myclass, kwargs, info);
+           auto instance = py::cast<HDivHighOrderSurfaceFESpace*>(self);
+           new (instance) HDivHighOrderSurfaceFESpace(ma, flags);
+           self.attr("__initialize__")(**kwargs);
+         })
+    .def(py::pickle(fesPickle,(shared_ptr<HDivHighOrderSurfaceFESpace>(*)(py::tuple))
+                    fesUnpickle<HDivHighOrderSurfaceFESpace>))
+    .def_static("__flags_doc__", [] ()
+                {
+                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
+                                                  attr("FESpace").
+                                                  attr("__flags_doc__")());
+                  flags_doc["discontinuous"] = "bool = False\n"
+                    "  Create discontinuous HDivSurface space";
+                  return flags_doc;
+                })
+    .def("Average",
+         [] (shared_ptr<HDivHighOrderSurfaceFESpace> hdivsurffes, BaseVector & bv)
+         {
+           auto & pairs = hdivsurffes->GetDCPairs();
+           auto fu = bv.FV<double>();
+           for (auto pair : pairs)
+             {
+               auto f1 = pair[0];
+               auto f2 = pair[1];
+               if (f2 != -1)
+                 {
+                   double mean = 0.5 * (fu(f1) + fu(f2));
+                   fu(f1) = fu(f2) = mean;
+                 }
+               else if (f1 != -1)
+                 fu(f1) = 0.0;
+             }
+         },
+         py::arg("vector"))
+    ;
+
+  
   
   // py::class_<CompoundFESpace, shared_ptr<CompoundFESpace>, FESpace>
   //   (m, "CompoundFESpace")
@@ -1977,7 +2023,10 @@ used_idnrs : list of int = None
                 {
                   return py::dict
                     (
-                     py::arg("multidim") = "Multidimensional GridFunction"
+                     py::arg("multidim") = "Multidimensional GridFunction",
+                     py::arg("nested") = "bool = False\n"
+		     " Generates prolongation matrices for each mesh level and prolongates\n"
+		     " the solution onto the finer grid after a refinement."
                      );
                 })
     .def(py::pickle([] (const GridFunction& gf)
@@ -2133,7 +2182,6 @@ used_idnrs : list of int = None
             if (self->GetFESpace()->GetAdditionalEvaluators().Used(name))
               {
                 auto diffop = self->GetFESpace()->GetAdditionalEvaluators()[name];
-                // cout << "diffop is " << typeid(*diffop).name() << endl;
                 shared_ptr<GridFunctionCoefficientFunction> coef;
                 switch(vb)
                   {
@@ -2146,6 +2194,8 @@ used_idnrs : list of int = None
                   case BBND:
                     coef = make_shared<GridFunctionCoefficientFunction> (self, nullptr,nullptr,diffop);
                     break;
+                  case BBBND:
+                    throw Exception ("there are no Operators with BBBND");
                   }
                 coef->SetDimensions(diffop->Dimensions());
                 return py::cast(shared_ptr<CoefficientFunction>(coef));
@@ -2167,18 +2217,16 @@ used_idnrs : list of int = None
           {
             auto space = self->GetFESpace();
             auto evaluator = space->GetEvaluator();
-            LocalHeap lh(10000, "ngcomp::GridFunction::Eval");
-
             IntegrationPoint ip;
             int elnr = space->GetMeshAccess()->FindElementOfPoint(Vec<3>(x, y, z), ip, true);
             if (elnr < 0) throw Exception ("point out of domain");
             ElementId ei(VOL, elnr);
             
-            const FiniteElement & fel = space->GetFE(ei, lh);
+            const FiniteElement & fel = space->GetFE(ei, glh);
 
-            Array<int> dnums(fel.GetNDof(), lh);
+            Array<int> dnums(fel.GetNDof(), glh);
             space->GetDofNrs(ei, dnums);
-            auto & trafo = space->GetMeshAccess()->GetTrafo(ei, lh);
+            auto & trafo = space->GetMeshAccess()->GetTrafo(ei, glh);
 
             if (space->IsComplex())
               {
@@ -2186,7 +2234,7 @@ used_idnrs : list of int = None
                 Vector<Complex> values(evaluator->Dim());
                 self->GetElementVector(dnums, elvec);
 
-                evaluator->Apply(fel, trafo(ip, lh), elvec, values, lh);
+                evaluator->Apply(fel, trafo(ip, glh), elvec, values, glh);
                 return (values.Size() > 1) ? py::cast(values) : py::cast(values(0));
               }
             else
@@ -2195,7 +2243,7 @@ used_idnrs : list of int = None
                 Vector<> values(evaluator->Dim());
                 self->GetElementVector(dnums, elvec);
 
-                evaluator->Apply(fel, trafo(ip, lh), elvec, values, lh);
+                evaluator->Apply(fel, trafo(ip, glh), elvec, values, glh);
                 return (values.Size() > 1) ? py::cast(values) : py::cast(values(0));
               }
           },
@@ -2210,10 +2258,9 @@ used_idnrs : list of int = None
             ElementId ei = mip.GetTransformation().GetElementId();
             // auto evaluator = space->GetEvaluator(ei.IsBoundary());
             auto evaluator = space->GetEvaluator(VorB(ei));
-            LocalHeap lh(10000, "ngcomp::GridFunction::Eval");
 
             // int elnr = mip.GetTransformation().GetElementNr();
-            const FiniteElement & fel = space->GetFE(ei, lh);
+            const FiniteElement & fel = space->GetFE(ei, glh);
 
             Array<int> dnums(fel.GetNDof());
             space->GetDofNrs(ei, dnums);
@@ -2224,7 +2271,7 @@ used_idnrs : list of int = None
                 Vector<Complex> values(evaluator->Dim());
                 self->GetElementVector(dnums, elvec);
 
-                evaluator->Apply(fel, mip, elvec, values, lh);
+                evaluator->Apply(fel, mip, elvec, values, glh);
                 return (values.Size() > 1) ? py::cast(values) : py::cast(values(0));
               }
             else
@@ -2232,7 +2279,7 @@ used_idnrs : list of int = None
                 Vector<> elvec(fel.GetNDof()*space->GetDimension());
                 Vector<> values(evaluator->Dim());
                 self->GetElementVector(dnums, elvec);
-                evaluator->Apply(fel, mip, elvec, values, lh);
+                evaluator->Apply(fel, mip, elvec, values, glh);
                 return (values.Size() > 1) ? py::cast(values) : py::cast(values(0));
               }
           }, 
@@ -2248,12 +2295,11 @@ used_idnrs : list of int = None
             auto evaluator = space.GetFluxEvaluator();
             cout << evaluator->Name() << endl;
             int dim = evaluator->Dim();
-            LocalHeap lh(10000, "ngcomp::GridFunction::Eval");
             int elnr = space.GetMeshAccess()->FindElementOfPoint(Vec<3>(x, y, z), ip, true);
             ElementId ei(VOL, elnr);
             Array<int> dnums;
             space.GetDofNrs(ei, dnums);
-            const FiniteElement & fel = space.GetFE(ei, lh);
+            const FiniteElement & fel = space.GetFE(ei, glh);
             if (space.IsComplex())
               {
                 Vector<Complex> elvec;
@@ -2262,13 +2308,13 @@ used_idnrs : list of int = None
                 self->GetElementVector(dnums, elvec);
                 if (dim_mesh == 2)
                   {
-                    MappedIntegrationPoint<2, 2> mip(ip, space.GetMeshAccess()->GetTrafo(ei, lh));
-                    evaluator->Apply(fel, mip, elvec, values, lh);
+                    MappedIntegrationPoint<2, 2> mip(ip, space.GetMeshAccess()->GetTrafo(ei, glh));
+                    evaluator->Apply(fel, mip, elvec, values, glh);
                   }
                 else if (dim_mesh == 3)
                   {
-                    MappedIntegrationPoint<3, 3> mip(ip, space.GetMeshAccess()->GetTrafo(ei, lh));
-                    evaluator->Apply(fel, mip, elvec, values, lh);
+                    MappedIntegrationPoint<3, 3> mip(ip, space.GetMeshAccess()->GetTrafo(ei, glh));
+                    evaluator->Apply(fel, mip, elvec, values, glh);
                   }
                 if (dim > 1)
                   return py::cast(values);
@@ -2284,13 +2330,13 @@ used_idnrs : list of int = None
                 ElementId ei(VOL, elnr);
                 if (dim_mesh == 2)
                   {
-                    MappedIntegrationPoint<2, 2> mip(ip, space.GetMeshAccess()->GetTrafo(ei, lh));
-                    evaluator->Apply(fel, mip, elvec, values, lh);
+                    MappedIntegrationPoint<2, 2> mip(ip, space.GetMeshAccess()->GetTrafo(ei, glh));
+                    evaluator->Apply(fel, mip, elvec, values, glh);
                   }
                 else if (dim_mesh == 3)
                   {
-                    MappedIntegrationPoint<3, 3> mip(ip, space.GetMeshAccess()->GetTrafo(ei, lh));
-                    evaluator->Apply(fel, mip, elvec, values, lh);
+                    MappedIntegrationPoint<3, 3> mip(ip, space.GetMeshAccess()->GetTrafo(ei, glh));
+                    evaluator->Apply(fel, mip, elvec, values, glh);
                   }
                 if (dim > 1)
                   return py::cast(values);
@@ -2390,7 +2436,9 @@ check_unused : bool
                      "  When calling bf.Assemble, all saved coarse matrices from\n"
                      "  mesh refinements are updated as well using a Galerkin projection\n"
                      "  of the matrix on the finest grid. This is needed to use the multigrid\n"
-                     "  preconditioner with a changing bilinearform."
+                     "  preconditioner with a changing bilinearform.",
+		     py::arg("nonsym_storage") = "bool = False\n"
+		     " The full matrix is stored, even if the symmetric flag is set."
                      );
                 })
 
@@ -3139,7 +3187,8 @@ flags : dict
   m.def("SymbolicLFI",
           [](spCF cf, VorB vb, bool element_boundary,
              bool skeleton, py::object definedon,
-             IntegrationRule ir, int bonus_intorder, py::object definedonelem) 
+             IntegrationRule ir, int bonus_intorder, py::object definedonelem,
+             bool simd_evaluate) 
            {
              py::extract<Region> defon_region(definedon);
              if (defon_region.check())
@@ -3157,7 +3206,8 @@ flags : dict
                  for (int & d : defon) d--;
                  lfi -> SetDefinedOn (defon); 
                }
-               
+
+             lfi->SetSimdEvaluate (simd_evaluate);
              // lfi -> SetDefinedOn (makeCArray<int> (definedon));
 
              if (defon_region.check())
@@ -3182,13 +3232,15 @@ flags : dict
            py::arg("definedon")=DummyArgument(),
 	   py::arg("intrule")=IntegrationRule(),
            py::arg("bonus_intorder")=0,
-           py::arg("definedonelements")=DummyArgument()
+           py::arg("definedonelements")=DummyArgument(),
+           py::arg("simd_evaluate")=true
           );
 
   m.def("SymbolicBFI",
           [](spCF cf, VorB vb, bool element_boundary,
              bool skeleton, py::object definedon,
-             IntegrationRule ir, int bonus_intorder, py::object definedonelem)
+             IntegrationRule ir, int bonus_intorder, py::object definedonelem,
+             bool simd_evaluate)
            {
              py::extract<Region> defon_region(definedon);
              if (defon_region.check())
@@ -3229,6 +3281,8 @@ flags : dict
                    ->SetIntegrationRule(ir);
                }
 
+             bfi->SetSimdEvaluate (simd_evaluate);
+             
              if (! py::extract<DummyArgument> (definedonelem).check())
                bfi -> SetDefinedOnElements (py::extract<shared_ptr<BitArray>>(definedonelem)());
              return shared_ptr<BilinearFormIntegrator>(bfi);
@@ -3239,7 +3293,8 @@ flags : dict
         py::arg("definedon")=DummyArgument(),
         py::arg("intrule")=IntegrationRule(),
         py::arg("bonus_intorder")=0,
-        py::arg("definedonelements")=DummyArgument()
+        py::arg("definedonelements")=DummyArgument(),
+        py::arg("simd_evaluate")=true
         );
           
   m.def("SymbolicTPBFI",
@@ -3286,7 +3341,7 @@ flags : dict
           
   m.def("SymbolicEnergy",
         [](spCF cf, VorB vb, py::object definedon, bool element_boundary,
-           int bonus_intorder, py::object definedonelem)
+           int bonus_intorder, py::object definedonelem, bool simd_evaluate)
         -> shared_ptr<BilinearFormIntegrator>
            {
              py::extract<Region> defon_region(definedon);
@@ -3302,12 +3357,14 @@ flags : dict
                }
              if (! py::extract<DummyArgument> (definedonelem).check())
                bfi -> SetDefinedOnElements (py::extract<shared_ptr<BitArray>>(definedonelem)());
+             bfi->SetSimdEvaluate (simd_evaluate);
              return bfi;
            },
         py::arg("coefficient"), py::arg("VOL_or_BND")=VOL, 
         py::arg("definedon")=DummyArgument(), py::arg("element_boundary")=false,
         py::arg("bonus_intorder")=0,
-        py::arg("definedonelements")=DummyArgument()
+        py::arg("definedonelements")=DummyArgument(),
+        py::arg("simd_evaluate")=true
           );
 
 

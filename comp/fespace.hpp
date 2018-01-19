@@ -540,7 +540,7 @@ namespace ngcomp
       return definedon[el.VB()][el.GetIndex()];
     }
 
-    void SetDefinedOn (VorB vb, const BitArray& defon);
+    virtual void SetDefinedOn (VorB vb, const BitArray& defon);
     ///
     //[[deprecated("Use SetDefinedOn(VorB, const Bitarray&)")]]
      void SetDefinedOn (const BitArray & defon)
@@ -1134,7 +1134,8 @@ namespace ngcomp
 
     /// copies dofcoupling from components
     virtual void UpdateCouplingDofArray();
-
+    
+    virtual void SetDefinedOn (VorB vb, const BitArray& defon);
     /// 
     // virtual size_t GetNDof () const throw() { return cummulative_nd.Last(); } 
     ///

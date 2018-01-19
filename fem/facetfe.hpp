@@ -32,17 +32,17 @@ namespace ngfem
       ; // cout << "created facetfefacet" << endl;
     }
 
-    HD virtual ELEMENT_TYPE ElementType() const { return fe.ElementType(); }
+    HD virtual ELEMENT_TYPE ElementType() const override { return fe.ElementType(); }
 
     using ScalarFiniteElement<D>::CalcShape;
     HD virtual void CalcShape (const IntegrationPoint & ip, 
-                               BareSliceVector<> shape) const
+                               BareSliceVector<> shape) const override
     {
       fe.CalcFacetShapeVolIP(fnr, ip, shape);
     }
     
     HD virtual void CalcDShape (const IntegrationPoint & ip, 
-                                SliceMatrix<> dshape) const
+                                BareSliceMatrix<> dshape) const override
     {
       throw Exception ("facetfe - calcdshape not olverloaded");
     }

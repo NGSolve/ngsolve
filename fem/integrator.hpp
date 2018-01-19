@@ -56,7 +56,9 @@ namespace ngfem
     shared_ptr<BitArray> definedon_element = nullptr;
     std::array<unique_ptr<IntegrationRule>,25> userdefined_intrules;
     std::array<unique_ptr<SIMD_IntegrationRule>,25> userdefined_simd_intrules;
-  
+
+    mutable bool simd_evaluate = true;
+    
   protected:
     void DeleteCurveIPs ( void );
 
@@ -249,6 +251,9 @@ namespace ngfem
     virtual void SetFileName(const string & filename);
 
     virtual void SetFlags (const Flags & flags) { ; }
+
+    bool SimdEvaluate () const { return simd_evaluate; }
+    void SetSimdEvaluate (bool b = true) { simd_evaluate = b; }
   };
 
 

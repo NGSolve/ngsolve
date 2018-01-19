@@ -67,7 +67,7 @@ namespace ngstd
   {
   public:
     /// maximal number of timers
-    enum { SIZE = 1024*1024 };
+    enum { SIZE = 8*1024 };
     //  static long int tottimes[SIZE];
     // static long int starttimes[SIZE];
 

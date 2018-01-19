@@ -12,7 +12,7 @@ add_library( ngcomp ${NGS_LIB_TYPE}
         ${ngcomp_object_libs}
         bilinearform.cpp facetfespace.cpp fespace.cpp 
         gridfunction.cpp h1hofespace.cpp hcurlhdivfes.cpp hcurlhofespace.cpp 
-        hdivfes.cpp hdivhofespace.cpp hierarchicalee.cpp l2hofespace.cpp     
+        hdivfes.cpp hdivhofespace.cpp hdivhosurfacefespace.cpp hierarchicalee.cpp l2hofespace.cpp     
         linearform.cpp meshaccess.cpp ngsobject.cpp postproc.cpp	     
         preconditioner.cpp vectorfacetfespace.cpp numberfespace.cpp bddc.cpp 
         hypre_precond.cpp hdivdivfespace.cpp hcurldivfespace.cpp hdivdivsurfacespace.cpp tpfes.cpp 
@@ -34,7 +34,7 @@ endif(NOT WIN32)
 install( FILES
         bilinearform.hpp comp.hpp facetfespace.hpp	   
         fespace.hpp gridfunction.hpp h1hofespace.hpp hcurlhdivfes.hpp	   
-        hcurlhofespace.hpp hdivfes.hpp hdivhofespace.hpp		   
+        hcurlhofespace.hpp hdivfes.hpp hdivhofespace.hpp hdivhosurfacefespace.hpp		   	   
         l2hofespace.hpp hdivdivsurfacespace.hpp tpfes.hpp linearform.hpp meshaccess.hpp ngsobject.hpp	   
         postproc.hpp preconditioner.hpp vectorfacetfespace.hpp hypre_precond.hpp 
         pde.hpp numproc.hpp vtkoutput.hpp pmltrafo.hpp periodic.hpp  hypre_ams_precond.hpp facetsurffespace.hpp
