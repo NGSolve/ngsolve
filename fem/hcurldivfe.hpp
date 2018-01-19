@@ -328,17 +328,17 @@ namespace ngfem
   /* ############### Special functions for curld-div bubbles ############### */
   /* sigma(u * grad v) = Curl(u * grad v) - tr(Curl(u * grad v)) * I  */  
   
-  class T_sigma_u_grad_v
+  class curldivfreebubbles
   {
     AutoDiffDiff<2> u,v;
   public:
-    T_sigma_u_grad_v  (AutoDiffDiff<2> au, AutoDiffDiff<2> av) : u(au), v(av){ ; }
+    curldivfreebubbles  (AutoDiffDiff<2> au, AutoDiffDiff<2> av) : u(au), v(av){ ; }
 
     Vec<4> Shape() {
-      return Vec<4> (- u.Value()*v.DDValue(0,1) - 0.5*(u.DValue(1)*v.DValue(0) + u.DValue(0)*v.DValue(1)),
-		     u.DValue(0)*v.DValue(0) + u.Value()*v.DDValue(0,0),
-		     -u.DValue(1)*v.DValue(1) - u.Value()*v.DDValue(1,1),
-		     u.Value()*v.DDValue(1,0) + 0.5*(u.DValue(1)*v.DValue(0) + u.DValue(0)*v.DValue(1))
+      return Vec<4> (-u.DDValue(0,1) * v.Value() -  v.DValue(0)*u.DValue(1),
+		     u.DDValue(0,0) * v.Value() + v.DValue(0)*u.DValue(0),
+		     -u.DDValue(1,1) * v.Value() - v.DValue(1)*u.DValue(1),
+		     u.DDValue(1,0) * v.Value() + v.DValue(1)*u.DValue(0)
 		     );
     }
 
@@ -349,8 +349,8 @@ namespace ngfem
       double vxx = v.DDValue(0,0), vyy = v.DDValue(1,1), vxy = v.DDValue(0,1);
       double vx = v.DValue(0), vy = v.DValue(1);
       
-      return -0.5 * Vec<2> (-vx*uxy-uy*vxx+vxy*ux+vy*uxx,
-                            vyy*ux+vy*uxy-vxy*uy-vx*uyy);
+      return Vec<2> (-vxx*uy - vx*uxy + uxx*vy + ux*vxy,
+		     -uyy*vx - vxy*uy + uxy*vy + vyy*ux);
 
     }
   };
@@ -578,11 +578,11 @@ namespace ngfem
       if (plus)
         for (int i = 0; i <= oi-1; i++)
           {
-	    throw Exception("not working yet!");
+	    //throw Exception("not working yet!");
 	    AutoDiffDiff<2> bubble = u[i]*v[oi-1-i];
 	    
-	    shape[ii++] = T_sigma_u_grad_v(bubble,x);
-	    shape[ii++] = T_sigma_u_grad_v(bubble,y);
+	    shape[ii++] = curldivfreebubbles(bubble,x);
+	    shape[ii++] = curldivfreebubbles(bubble,y);
           }      
     };
   }; 
