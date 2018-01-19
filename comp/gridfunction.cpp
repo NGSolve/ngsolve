@@ -363,9 +363,9 @@ namespace ngcomp
 		switch (nt)
 		  {
 		  case NT_VERTEX: pnums.SetSize(1); pnums[0] = i; break;
-		  case NT_EDGE: ma->GetEdgePNums (i, pnums); break;
-		  case NT_FACE: ma->GetFacePNums (i, pnums); break;
-		  case NT_CELL: ma->GetElPNums (i, pnums); break;
+		  case NT_EDGE: pnums = ma->GetEdgePNums (i); break;
+		  case NT_FACE: pnums = ma->GetFacePNums (i); break;
+		  case NT_CELL: pnums = ma->GetElVertices (i); break;
                   default:
                     __assume(false);
 		  }
@@ -444,7 +444,7 @@ namespace ngcomp
 	      case NT_VERTEX: pnums.SetSize(1); pnums[0] = i; break;
 	      case NT_EDGE: ma->GetEdgePNums (i, pnums); break;
 	      case NT_FACE: ma->GetFacePNums (i, pnums); break;
-	      case NT_CELL: ma->GetElPNums (i, pnums); break;
+	      case NT_CELL: ma->GetElVertices (i, pnums); break;
 	      }
 
 	    Vec<N+1, int> key;
@@ -557,11 +557,11 @@ namespace ngcomp
 	// for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
         for (NODE_TYPE nt : { NT_VERTEX, NT_EDGE, NT_FACE, NT_CELL })
 	  {
-	    int nnodes = ma->GetNNodes (nt);
+	    size_t nnodes = ma->GetNNodes (nt);
 
 	    Array<Vec<8, int> > nodekeys;
 	    Array<int> pnums, compress;
-	    for(int i = 0; i < nnodes; i++)
+	    for(size_t i = 0; i < nnodes; i++)
 	      {
 		fes.GetDofNrs (NodeId(nt, i),  dnums);
 		if (dnums.Size() == 0) continue;
@@ -569,9 +569,9 @@ namespace ngcomp
 		switch (nt)
 		  {
 		  case NT_VERTEX: pnums.SetSize(1); pnums[0] = i; break;
-		  case NT_EDGE: ma->GetEdgePNums (i, pnums); break;
-		  case NT_FACE: ma->GetFacePNums (i, pnums); break;
-		  case NT_CELL: ma->GetElPNums (i, pnums); break;
+		  case NT_EDGE: pnums = ma->GetEdgePNums (i); break;
+		  case NT_FACE: pnums = ma->GetFacePNums (i); break;
+		  case NT_CELL: pnums = ma->GetElVertices (ElementId(VOL,i)); break;
                   default:
                     __assume(false);
                     break;
@@ -675,7 +675,7 @@ namespace ngcomp
 	      case NT_VERTEX: pnums.SetSize(1); pnums[0] = i; break;
 	      case NT_EDGE: ma->GetEdgePNums (i, pnums); break;
 	      case NT_FACE: ma->GetFacePNums (i, pnums); break;
-	      case NT_CELL: ma->GetElPNums (i, pnums); break;
+	      case NT_CELL: ma->GetElVertices (i, pnums); break;
 	      }
 
 	    Vec<N+1, int> points;

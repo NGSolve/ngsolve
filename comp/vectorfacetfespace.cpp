@@ -114,8 +114,8 @@ namespace ngcomp
     if ( low_order_space ) 
       low_order_space -> Update(lh);
 
-    int nel = ma->GetNE();
-    int nfacets = ma->GetNFacets();
+    size_t nel = ma->GetNE();
+    size_t nfacets = ma->GetNFacets();
  
     int p = 0; 
     if (!var_order) p = order; 
@@ -128,7 +128,7 @@ namespace ngcomp
     
     //     Array<int> fanums;
         
-    for (int i = 0; i < nel; i++)
+    for (size_t i = 0; i < nel; i++)
       {
         ElementId ei(VOL,i);
 	INT<3> el_orders = ma->GetElOrders(i); 
@@ -216,7 +216,7 @@ namespace ngcomp
 
     if ( ma->GetDimension() == 2 )
       {
-	for ( int i = 0; i < nfacets; i++ )
+	for (size_t i = 0; i < nfacets; i++ )
 	  {
 	    first_facet_dof[i] = ndof;
             int inc = order_facet[i][0];
@@ -227,7 +227,7 @@ namespace ngcomp
 	
 	if (highest_order_dc)
 	  {
-	    int ne = ma->GetNE();
+	    size_t ne = ma->GetNE();
 	    first_inner_dof.SetSize(ne+1);
 	    for (int i = 0; i < ne; i++)
 	      {
@@ -244,15 +244,13 @@ namespace ngcomp
     else // 3D
       {
 	int inci = 0;
-	Array<int> pnums;
-
-	for (int i = 0; i < nfacets; i++)
+	for (size_t i = 0; i < nfacets; i++)
 	  {
 	    INT<2> p = order_facet[i];
 	    if (highest_order_dc)
 	      { p[0]--; p[1]--; }
 
-	    ma->GetFacePNums(i, pnums);
+	    auto pnums = ma->GetFacePNums(i);
 
 	    inci = ( pnums.Size() == 3 ) ?
 	      ( ((p[0]+1)*(p[0]+2)) - 2) :  ( 2 * (p[0]+1) * (p[1]+1) - 2 );
@@ -266,9 +264,9 @@ namespace ngcomp
 
 	if (highest_order_dc)
 	  {
-	    int ne = ma->GetNE();
+	    size_t ne = ma->GetNE();
 	    first_inner_dof.SetSize(ne+1);
-	    for (int i = 0; i < ne; i++)
+	    for (size_t i = 0; i < ne; i++)
 	      {
 		first_inner_dof[i] = ndof;
 		switch (ma->GetElType(ElementId(VOL,i)))
