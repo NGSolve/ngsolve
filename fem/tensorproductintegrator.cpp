@@ -23,7 +23,7 @@ namespace ngfem
     LocalHeap & xheap = *(static_cast<LocalHeap *>(axheap));
     ProxyUserData * xevaluations = new (xheap) ProxyUserData(trial_proxies.Size()+test_proxies.Size(), xheap);
     const_cast<ElementTransformation&>(trafo).userdata = xevaluations;
-    xevaluations->lh = &xheap;
+    // xevaluations->lh = &xheap;
     int dimx;
     for (ProxyFunction * proxy : trial_proxies)
     {
@@ -81,7 +81,7 @@ namespace ngfem
     BaseMappedIntegrationRule & miry = trafo(ir, lh);
     ProxyUserData ud(trial_proxies.Size(), lh);
     const_cast<ElementTransformation&>(tptrafo).userdata = &ud;
-    ud.lh = &lh;
+    // ud.lh = &lh;
     ud.fel = &fel;
     int nipx = mirx->Size();
     int nipy = miry.Size();
@@ -191,7 +191,7 @@ namespace ngfem
     const_cast<ElementTransformation&>(eltrans).userdata = &ud;
     const_cast<ElementTransformation&>(seltrans).userdata = &ud;
     ud.fel = &volumefel;   // necessary to check remember-map
-    ud.lh = &lh;
+    // ud.lh = &lh;
     for (ProxyFunction * proxy : trial_proxies)
       ud.AssignMemory (proxy, tpmir.Size(), proxy->Dimension(), lh);
     for (ProxyFunction * proxy : trial_proxies)
@@ -242,7 +242,7 @@ namespace ngfem
     LocalHeap & xheap = *(static_cast<LocalHeap *>(axheap));
     ProxyUserData * xevaluations = new (xheap) ProxyUserData(trial_proxies.Size()+test_proxies.Size(), xheap);
     const_cast<ElementTransformation&>(trafox1).userdata = xevaluations;
-    xevaluations->lh = &xheap;
+    // xevaluations->lh = &xheap;
     int dimx;
     for (ProxyFunction * proxy : trial_proxies)
     {
@@ -317,7 +317,7 @@ namespace ngfem
     BaseMappedIntegrationRule & miry = trafo(ir, lh);
     ProxyUserData ud(trial_proxies.Size(), lh);
     const_cast<ElementTransformation&>(tptrafo).userdata = &ud;
-    ud.lh = &lh;
+    // ud.lh = &lh;
     ud.fel = &fel;
     int nipx = mirx->Size();
     int nipy = miry.Size();
@@ -412,7 +412,7 @@ namespace ngfem
     LocalHeap & yheap = *(static_cast<LocalHeap *>(ayheap));
     ProxyUserData * yevaluations = new (yheap) ProxyUserData(trial_proxies.Size()+test_proxies.Size(), yheap);
     const_cast<ElementTransformation&>(trafoy1).userdata = yevaluations;
-    yevaluations->lh = &yheap;
+    // yevaluations->lh = &yheap;
     int dimy;
     for (ProxyFunction * proxy : trial_proxies)
     {
@@ -467,7 +467,7 @@ namespace ngfem
     BaseMappedIntegrationRule & mirx = trafo(ir, lh);
     ProxyUserData ud(trial_proxies.Size(), lh);
     const_cast<ElementTransformation&>(tptrafo).userdata = &ud;
-    ud.lh = &lh;
+    // ud.lh = &lh;
     ud.fel = &fel;
     int nipx = mirx.Size();
     int nipy = miry->Size();

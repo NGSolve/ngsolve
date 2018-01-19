@@ -1725,14 +1725,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     // if (ma->GetNLevels() > ndlevel.Size())
       {
-	int ndof = ma->GetNV();
-
-        for (auto el : Elements(VOL))
-          for (DofId d : el.GetDofs()) ndof = max2(ndof, d+1);              
-
-        for (auto el : Elements(BND))
-          for (DofId d : el.GetDofs()) ndof = max2(ndof, d+1);           
-
+	size_t ndof = ma->GetNV();
+        if (order > 1)
+          {
+            for (auto el : Elements(VOL))
+              for (DofId d : el.GetDofs()) ndof = max2(ndof, size_t(d+1));              
+            
+            for (auto el : Elements(BND))
+              for (DofId d : el.GetDofs()) ndof = max2(ndof, size_t(d+1));           
+          }
 	// ndlevel.Append (ndof);
         SetNDof(ndof);
       }
@@ -1773,8 +1774,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
  
   void NodalFESpace :: GetDofNrs (ElementId ei, Array<DofId> & dnums) const
   {
-    dnums = ma->GetElement(ei).Vertices();
-
+    if (order == 1)
+      dnums = ma->GetElement(ei).Vertices();
+    else
+      dnums = ma->GetElement(ei).Points();
+      
     if (!DefinedOn (ei)) dnums = -1;
   }
 
@@ -2303,7 +2307,14 @@ lot of new non-zero entries in the matrix!\n" << endl;
   {
     ;
   }
-
+  
+  void CompoundFESpace :: SetDefinedOn (VorB vb, const BitArray & defon)
+  {
+    for (auto & space : spaces)
+      space -> SetDefinedOn (vb, defon);
+    FESpace::SetDefinedOn (vb, defon);
+  }
+    
   void CompoundFESpace :: Update(LocalHeap & lh)
   {
     FESpace :: Update (lh);

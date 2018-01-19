@@ -235,6 +235,8 @@ struct GenericBSpline {
   { return SIMD<double>([&](int i)->double { return (*sp)(x[i]); } );}
   SIMD<Complex> operator() (SIMD<Complex> x) const
   { return SIMD<double>([&](int i)->double { return (*sp)(x.real()[i]); } );}
+  AutoDiff<1,SIMD<double>> operator() (AutoDiff<1,SIMD<double>> x) const { throw ExceptionNOSIMD ("AutoDiff for bspline not supported"); }
+  AutoDiffDiff<1,SIMD<double>> operator() (AutoDiffDiff<1,SIMD<double>> x) const { throw ExceptionNOSIMD ("AutoDiffDiff for bspline not supported"); }  
 };
 struct GenericSin {
   template <typename T> T operator() (T x) const { return sin(x); }
@@ -287,8 +289,10 @@ struct GenericConj {
   template <typename T> T operator() (T x) const { return Conj(x); } // from bla
   static string Name() { return "conj"; }
   SIMD<double> operator() (SIMD<double> x) const { return x; }
-  AutoDiff<1> operator() (AutoDiff<1> x) const { throw Exception ("Conj(..) is not complex differentiable"); }
-  AutoDiffDiff<1> operator() (AutoDiffDiff<1> x) const { throw Exception ("Conj(..) is not complex differentiable"); }
+  template<typename T>
+  AutoDiff<1,T> operator() (AutoDiff<1,T> x) const { throw Exception ("Conj(..) is not complex differentiable"); }
+  template<typename T>
+  AutoDiffDiff<1,T> operator() (AutoDiffDiff<1,T> x) const { throw Exception ("Conj(..) is not complex differentiable"); }
 };
 
 struct GenericATan2 {
@@ -313,10 +317,10 @@ struct GenericPow {
 
 
   template <int D>
-  class NormalVectorCF : public CoefficientFunction
+  class NormalVectorCF : public CoefficientFunctionNoDerivative
   {
   public:
-    NormalVectorCF () : CoefficientFunction(D,false) { ; }
+    NormalVectorCF () : CoefficientFunctionNoDerivative(D,false) { ; }
     // virtual int Dimension() const { return D; }
 
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
@@ -434,10 +438,10 @@ struct GenericPow {
   };
 
   template <int D>
-  class TangentialVectorCF : public CoefficientFunction
+  class TangentialVectorCF : public CoefficientFunctionNoDerivative
   {
   public:
-    TangentialVectorCF () : CoefficientFunction(D,false) { ; }
+    TangentialVectorCF () : CoefficientFunctionNoDerivative(D,false) { ; }
     // virtual int Dimension() const { return D; }
 
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
@@ -462,7 +466,13 @@ struct GenericPow {
         for( int i : Range(D))
           code.body += Var(index,i).Assign(tv(i));
     }
-    
+
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const
+    {
+      for (size_t i = 0; i < ir.Size(); i++)
+        for (size_t j = 0; j < D; j++)
+          values(j,i) = static_cast<const SIMD<DimMappedIntegrationPoint<D>>&>(ir[i]).GetTV()(j).Data();
+    }
   };
 
 
@@ -639,6 +649,14 @@ val : can be one of the following:
              return BinaryOpCF(c1, c2, func,
                                [](bool a, bool b) { return a||b; }, 'X' /* FUNC::Name() */);
            } )
+
+    .def ("__pow__", [] (shared_ptr<CF> c1, double val)
+           {
+             GenericPow func;
+	     auto c2 = make_shared<ConstantCoefficientFunction>(val);
+             return BinaryOpCF(c1, c2, func,
+                               [](bool a, bool b) { return a||b; }, 'X' /* FUNC::Name() */);
+           } )  
 
     .def ("InnerProduct", [] (shared_ptr<CF> c1, shared_ptr<CF> c2)
            { 

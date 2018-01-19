@@ -73,7 +73,20 @@ namespace ngbla
                 SliceVector<double> diag,
                 SliceMatrix<double> b, SliceMatrix<double> c);
 
+  extern 
+  void SubAtDB (SliceMatrix<Complex> a,
+                SliceVector<Complex> diag,
+                SliceMatrix<Complex> b, SliceMatrix<Complex> c);
 
+  template <typename T>
+  void SubADBt (SliceMatrix<T,ColMajor> a,
+                SliceVector<T> diag,
+                SliceMatrix<T,ColMajor> b, SliceMatrix<T,ColMajor> c)
+  {
+    SubAtDB (Trans(b), diag, Trans(a), Trans(c));
+  }  
+
+  
   
   extern list<tuple<string,double>> Timing (int what, size_t n, size_t m, size_t k);
 

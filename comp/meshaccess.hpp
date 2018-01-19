@@ -34,6 +34,7 @@ namespace ngcomp
     Ngs_Element (const netgen::Ng_Element & el, ElementId id) 
       : netgen::Ng_Element(el), ei(id) { ; }
     AOWrapper<decltype(vertices)> Vertices() const { return vertices; }
+    AOWrapper<decltype(points)> Points() const { return points; }
     AOWrapper<decltype(edges)> Edges() const { return edges; }
     AOWrapper<decltype(faces)> Faces() const { return faces; }
     AOWrapper<decltype(facets)> Facets() const { return facets; }

@@ -542,12 +542,12 @@ namespace ngfem
     FE_Trig3EdgeBubble()
       : ScalarFiniteElement<2> (6, 3) { ; } 
 
-    virtual ELEMENT_TYPE ElementType() const { return ET_TRIG; }
+    virtual ELEMENT_TYPE ElementType() const override { return ET_TRIG; }
 
     ///
     using ScalarFiniteElement<2>::CalcShape;
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    BareSliceVector<> shape) const
+			    BareSliceVector<> shape) const override
     {
       double x = ip(0);
       double y = ip(1);
@@ -564,7 +564,7 @@ namespace ngfem
     }
 
     virtual void CalcDShape (const IntegrationPoint & ip, 
-			     SliceMatrix<> dshape) const
+			     BareSliceMatrix<> dshape) const override
     {
       double x = ip(0);
       double y = ip(1);
@@ -1535,7 +1535,7 @@ namespace ngfem
 
     using ScalarFiniteElement<3>::CalcDShape;
     virtual void CalcDShape (const IntegrationPoint & ip, 
-			     SliceMatrix<> dshape) const override
+			     BareSliceMatrix<> dshape) const override
     {
       double x = ip(0);
       double y = ip(1);
@@ -2774,7 +2774,7 @@ namespace ngfem
   }
 
   void FE_Trig3Pot :: CalcDShape (const IntegrationPoint & ip, 
-				  SliceMatrix<> dshape) const
+				  BareSliceMatrix<> dshape) const
   {
     cerr << "calcdshape not implemnted" << endl;
   }
@@ -4273,14 +4273,14 @@ namespace ngfem
 
 
     virtual void CalcDShape (const IntegrationPoint & ip, 
-			     SliceMatrix<> dshape) const override
+			     BareSliceMatrix<> dshape) const override
     {
       double x = ip(0);
       double y = ip(1);
       double z = ip(2);
     
       int ii = 0;
-      dshape = 0;
+      dshape.AddSize(GetNDof(), 3) = 0;
       double fac = z * (1-z);
       double dfac = 1 - 2*z;
       /*
@@ -4436,7 +4436,7 @@ namespace ngfem
     }
 
     virtual void CalcDShape (const IntegrationPoint & ip, 
-			     SliceMatrix<> dshape) const override
+			     BareSliceMatrix<> dshape) const override
     {
       cerr << "shape not implemented" << endl;
     }
@@ -4483,7 +4483,7 @@ namespace ngfem
 
 
   void FE_Quad3 :: CalcDShape (const IntegrationPoint & ip, 
-			       SliceMatrix<> dshape) const
+			       BareSliceMatrix<> dshape) const
     
   {
     double x = ip(0);

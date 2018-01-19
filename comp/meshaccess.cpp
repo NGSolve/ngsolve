@@ -1734,12 +1734,26 @@ namespace ngcomp
          }, TasksPerThread(4));
   }
 
+  map<string, unique_ptr<Timer>> ngtimers;
+  void NGSolveTracer (string name, bool stop)
+  {
+    // cout << "************* tracer: " << name << ", stop = " << stop << endl;
+    int count = ngtimers.count(name);
+    if (count == 0)
+      ngtimers[name] = make_unique<Timer> (name);
+    Timer * timer = ngtimers[name].get();
+    if (!stop)
+      timer->Start();
+    else
+      timer->Stop();
+  }
+  
   
   void MeshAccess :: Refine ()
   {
     static Timer t("MeshAccess::Refine"); RegionTimer reg(t);
     nlevels = std::numeric_limits<int>::max();
-    mesh.Refine(NG_REFINE_H, &NGSolveTaskManager);
+    mesh.Refine(NG_REFINE_H, &NGSolveTaskManager, &NGSolveTracer);
     UpdateBuffers();
   }
 

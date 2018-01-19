@@ -922,6 +922,7 @@ namespace ngstd
   public:
     ParallelHashTable() : hts(256), locks(256) { ; }
     size_t NumBuckets() const { return hts.Size(); }
+    auto & Bucket(size_t nr) { return hts[nr]; }
     size_t BucketSize(size_t nr) const { return hts[nr].Size(); }
     size_t Used (size_t nr) const { return hts[nr].Used(); } 
     size_t Used() const
@@ -976,6 +977,32 @@ namespace ngstd
     {
       hts[nr].Iterate(func);
     }
+
+
+    template <typename FUNC>
+    void IterateParallel (FUNC func)
+    {
+      Array<size_t> base(NumBuckets());
+      size_t sum = 0;
+      for (size_t i = 0; i < NumBuckets(); i++)
+        {
+          base[i] = sum;
+          sum += Used(i); 
+        }
+      ParallelFor(NumBuckets(),
+                  [&] (size_t nr)
+                  {
+                    size_t cnt = base[nr];
+                    Iterate(nr,
+                            [&cnt, func] (TKEY key, T val)
+                            {
+                              func(cnt, key, val);
+                              cnt++;
+                            });
+                  });
+    }
+    
+
     
 
     void Print (ostream & ost) const

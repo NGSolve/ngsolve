@@ -25,8 +25,8 @@ namespace ngstd
     int thread_nr;
     int nthreads;
 
-    int node_nr;
-    int nnodes;
+    // int node_nr;
+    // int nnodes;
   };
 
   NGS_DLL_HEADER extern class TaskManager * task_manager;
@@ -35,23 +35,17 @@ namespace ngstd
   {
 //     PajeTrace *trace;
 
-    class NodeData
+    class alignas(64) NodeData
     {
     public:
       atomic<int> start_cnt{0};
-      // atomic<int> complete_cnt;
       atomic<int> participate{0};
-      atomic<int> completed_tasks{0};
-      // atomic<int> participate_exit;
-
-      // NodeData() : start_cnt(0), participate(0), participate_exit(0) { ; }
     };
     
     static const function<void(TaskInfo&)> * func;
     static const function<void()> * startup_function;
     static const function<void()> * cleanup_function;
     static atomic<int> ntasks;
-    static atomic<int> completed_tasks;
     static Exception * ex;
 
     static atomic<int> jobnr;
@@ -149,7 +143,6 @@ namespace ngstd
 
   template <typename TR, typename TFUNC>
   INLINE void ParallelFor (T_Range<TR> r, TFUNC f, 
-                           // int antasks = task_manager ? task_manager->GetNumThreads() : 0,
                            int antasks = TaskManager::GetNumThreads(),
                            TotalCosts costs = 1000)
   {
@@ -185,7 +178,6 @@ namespace ngstd
   
   template <typename TR, typename TFUNC>
   INLINE void ParallelForRange (T_Range<TR> r, TFUNC f, 
-                                // int antasks = task_manager ? task_manager->GetNumThreads() : 0,
                                 int antasks = TaskManager::GetNumThreads(),
                                 TotalCosts costs = 1000)
   {
@@ -220,30 +212,11 @@ namespace ngstd
   
   template <typename TFUNC>
   INLINE void ParallelJob (TFUNC f,
-                           // int antasks = task_manager ? task_manager->GetNumThreads() : 1)
                            int antasks = TaskManager::GetNumThreads())
   {
     TaskManager::CreateJob (f, antasks);
-    /*
-    if (task_manager)
-
-      task_manager -> CreateJob (f, antasks);
-
-    else
-      
-      {
-        TaskInfo ti;
-        // ti.task_nr = 0; ti.ntasks = 1;
-        ti.ntasks = antasks;
-        ti.thread_nr = 0; ti.nthreads = 1;
-        ti.node_nr = 0; ti.nnodes = 1;
-        for (ti.task_nr = 0; ti.task_nr < antasks; ti.task_nr++)
-          f(ti);
-      }
-    */
   }
 
-  
   
   /*
     Usage example:
@@ -414,7 +387,6 @@ public:
    
    class alignas(4096) AtomicRange : public AlignedAlloc<AtomicRange>
   {
-    // mutex lock;
     atomic<size_t> begin;
     atomic<size_t> end;
   public:
@@ -440,6 +412,9 @@ public:
     
     bool PopFirst (size_t & first)
     {
+      first = begin++;
+      return first < end;
+      /*
       // int oldbegin = begin;
       size_t oldbegin = begin.load(std::memory_order_acquire);
       if (oldbegin >= end) return false;
@@ -449,6 +424,7 @@ public:
       
       first = oldbegin;
       return true;
+      */
     }
     
     bool PopHalf (IntRange & r)
@@ -550,6 +526,10 @@ public:
     
     
   public:
+    SharedLoop2 ()
+      : ranges(TaskManager::GetNumThreads())
+    { ; }
+    
     SharedLoop2 (IntRange r)
       : ranges(TaskManager::GetNumThreads())
     {
@@ -844,6 +824,128 @@ public:
 static DefaultTasks tasks;
 */
 
+
+
+
+
+
+
+#ifdef USE_NUMA
+
+template <typename T>
+class NumaInterleavedArray : public Array<T>
+{
+  T * numa_ptr;
+  size_t numa_size;
+public:
+  NumaInterleavedArray () { numa_size = 0; numa_ptr = nullptr; }
+  NumaInterleavedArray (size_t s)
+    : Array<T> (s, (T*)numa_alloc_interleaved(s*sizeof(T)))
+  {
+    numa_ptr = this->data;
+    numa_size = s;
+  }
+
+  ~NumaInterleavedArray ()
+  {
+    numa_free (numa_ptr, numa_size*sizeof(T));
+  }
+
+  NumaInterleavedArray & operator= (T val)
+  {
+    Array<T>::operator= (val);      
+    return *this;
+  }
+
+  NumaInterleavedArray & operator= (NumaInterleavedArray && a2)
+  {
+    Array<T>::operator= ((Array<T>&&)a2);  
+    ngstd::Swap (numa_ptr, a2.numa_ptr);
+    ngstd::Swap (numa_size, a2.numa_size);
+    return *this;
+  }
+
+  void Swap (NumaInterleavedArray & b)
+  {
+    Array<T>::Swap(b);    
+    ngstd::Swap (numa_ptr, b.numa_ptr);
+    ngstd::Swap (numa_size, b.numa_size);
+  }
+
+  void SetSize (size_t size)
+  {
+    cerr << "************************* NumaDistArray::SetSize not overloaded" << endl;
+    Array<T>::SetSize(size);
+  }
+};
+
+template <typename T>
+class NumaDistributedArray : public Array<T>
+{
+  T * numa_ptr;
+  size_t numa_size;
+public:
+  NumaDistributedArray () { numa_size = 0; numa_ptr = nullptr; }
+  NumaDistributedArray (size_t s)
+    : Array<T> (s, (T*)numa_alloc_local(s*sizeof(T)))
+  {
+    numa_ptr = this->data;
+    numa_size = s;
+
+    /* int avail = */ numa_available();   // initialize libnuma
+    int num_nodes = numa_num_configured_nodes();
+    size_t pagesize = numa_pagesize();
+    
+    int npages = ceil ( double(s)*sizeof(T) / pagesize );
+
+    // cout << "size = " << numa_size << endl;
+    // cout << "npages = " << npages << endl;
+
+    for (int i = 0; i < num_nodes; i++)
+      {
+        int beg = (i * npages) / num_nodes;
+        int end = ( (i+1) * npages) / num_nodes;
+        // cout << "node " << i << " : [" << beg << "-" << end << ")" << endl;
+        numa_tonode_memory(numa_ptr+beg*pagesize/sizeof(T), (end-beg)*pagesize, i);
+      }
+  }
+
+  ~NumaDistributedArray ()
+  {
+    numa_free (numa_ptr, numa_size*sizeof(T));
+  }
+
+  NumaDistributedArray & operator= (NumaDistributedArray && a2)
+  {
+    Array<T>::operator= ((Array<T>&&)a2);  
+    ngstd::Swap (numa_ptr, a2.numa_ptr);
+    ngstd::Swap (numa_size, a2.numa_size);
+    return *this;
+  }
+
+  void Swap (NumaDistributedArray & b)
+  {
+    Array<T>::Swap(b);    
+    ngstd::Swap (numa_ptr, b.numa_ptr);
+    ngstd::Swap (numa_size, b.numa_size);
+  }
+
+  void SetSize (size_t size)
+  {
+    cerr << "************************* NumaDistArray::SetSize not overloaded" << endl;
+    Array<T>::SetSize(size);
+  }
+};
+#else
+
+  template <typename T>
+  using NumaDistributedArray = Array<T>;
+
+  template <typename T> 
+  using NumaInterleavedArray = Array<T>;
+  
+  
+#endif
 
 }
 
