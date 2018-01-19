@@ -7,7 +7,6 @@
 /* Date:   2017/2018                                                 */
 /*********************************************************************/
 
-
 namespace ngfem
 {
 
@@ -505,14 +504,10 @@ namespace ngfem
       ArrayMem<AutoDiffDiff<2>,20> ha(maxorder_facet+1);
       ArrayMem<AutoDiffDiff<2>,20> v(order_inner+1), dubb(order_inner*(order_inner+1)/2), u(order_inner + 3);
 
-      /* Edge based basis functions for tangential-normal continuity */
       for (int i = 0; i < 3; i++)
         {
-          int es = edges[i][0], ee = edges[i][1];
-	  	  
-          if (vnums[es] > vnums[ee]) swap (es,ee);
-	  	  
-          AutoDiffDiff<2> ls = ddlami[es], le = ddlami[ee];
+	  INT<2> e = ET_trait<ET_TRIG>::GetEdgeSort (i, vnums);	  	  
+          AutoDiffDiff<2> ls = ddlami[e[0]], le = ddlami[e[1]];
 	  
 	  ScaledLegendrePolynomial(maxorder_facet,le-ls, le+ls,ha);
           
@@ -520,10 +515,9 @@ namespace ngfem
 	    shape[ii++] = Sigma_gradv(le*ls*ha[l]);            
         }
       
-      int es = 0; int ee = 1; int et = 2;
-      AutoDiffDiff<2> ls = ddlami[es];
-      AutoDiffDiff<2> le = ddlami[ee];
-      AutoDiffDiff<2> lt = ddlami[et];
+      AutoDiffDiff<2> ls = ddlami[0];
+      AutoDiffDiff<2> le = ddlami[1];
+      AutoDiffDiff<2> lt = ddlami[2];
       
       int oi=order_inner;
 
