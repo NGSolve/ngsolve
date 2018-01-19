@@ -1599,52 +1599,21 @@ kwargs : For a description of the possible kwargs have a look a bit further down
          py::arg("nodeid"),
          py::arg("order")
          )
-
     
     .def("Elements", 
-         [](shared_ptr<FESpace> self, VorB vb, int heapsize)
-         { return FESpace::ElementRange(self->Elements(vb, heapsize)); },
-         py::arg("VOL_or_BND")=VOL,py::arg("heapsize")=10000)
-
-    .def("Elements", 
-         [](shared_ptr<FESpace> self, VorB vb, LocalHeap & lh)
-         {
-           return make_shared<FESpace::ElementRange> (self->Elements(vb, lh));
-         },
-         py::arg("VOL_or_BND")=VOL, py::arg("heap"))
-
-    /*
-    .def("Elements", 
-         [](FESpace & self, VorB vb, LocalHeap & lh, int heapsize)
-                         {
-                           cout << "lh.avail = " << lh.Available() << endl;
-                           return make_shared<FESpace::ElementRange> (self.Elements(vb, heapsize));
-                         },
-         py::arg("VOL_or_BND")=VOL, 
-          py::arg("heap")=LocalHeap(0), py::arg("heapsize")=10000)
-    */
+         [](shared_ptr<FESpace> self, VorB vb)
+         { return FESpace::ElementRange(self->Elements(vb, glh)); },
+         py::arg("VOL_or_BND")=VOL)
 
     .def("GetDofNrs", [](shared_ptr<FESpace> self, ElementId ei)
          {
            Array<int> tmp; self->GetDofNrs(ei,tmp);
            return MakePyTuple(tmp);           
-           /*
-           py::tuple tuple(tmp.Size());
-           for (auto i : Range(tmp))
-             tuple[i] = py::int_(tmp[i]);
-           return tuple;
-           */
          })
 
     .def("GetDofNrs", [](shared_ptr<FESpace> self, NodeId ni)
          {
            Array<int> tmp; self->GetDofNrs(ni,tmp);
-           /*
-           py::tuple tuple(tmp.Size());
-           for (auto i : Range(tmp))
-             tuple[i] = py::int_(tmp[i]);
-           return tuple;
-           */
            return MakePyTuple(tmp);
          })
 
@@ -1663,7 +1632,7 @@ kwargs : For a description of the possible kwargs have a look a bit further down
           {
             Allocator alloc;
             
-            auto fe = shared_ptr<FiniteElement> (&self->GetFE(ei, alloc)); // , NOOP_Deleter);
+            auto fe = shared_ptr<FiniteElement> (&self->GetFE(ei, alloc)); 
             
             auto scalfe = dynamic_pointer_cast<BaseScalarFiniteElement> (fe);
             if (scalfe) return py::cast(scalfe);

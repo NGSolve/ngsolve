@@ -798,8 +798,6 @@ namespace ngcomp
     int nfa = (ma->GetDimension() == 2) ? 0 : ma->GetNFaces();
 
 
-    Array<int> pnums; 
-    
     nedfine = 0; 
     for(int i = 0; i < ned; i++) 
       if (fine_edge[i] == 1) nedfine++; 
@@ -821,7 +819,7 @@ namespace ngcomp
     for (int i = 0; i < nfa; i++) 
       { 
 	first_face_dof[i] = ndof; 
-	ma->GetFacePNums (i, pnums);  
+	auto pnums = ma->GetFacePNums (i);  
 	INT<2> p = order_face[i]; 
 	switch(pnums.Size())
 	  {
@@ -1701,12 +1699,12 @@ namespace ngcomp
   shared_ptr<Table<int>> HCurlHighOrderFESpace :: 
   CreateSmoothingBlocks (const Flags & precflags) const
   {
-    int nv = ma->GetNV();
-    int ne = ma->GetNE();
+    size_t nv = ma->GetNV();
+    size_t ne = ma->GetNE();
     // int nse = ma->GetNSE();
 
-    int ned = ma->GetNEdges();
-    int nfa = (ma->GetDimension() == 2) ? 0 : ma->GetNFaces();
+    size_t ned = ma->GetNEdges();
+    size_t nfa = (ma->GetDimension() == 2) ? 0 : ma->GetNFaces();
 
 
     bool eliminate_internal = precflags.GetDefineFlag("eliminate_internal");
@@ -1826,10 +1824,9 @@ namespace ngcomp
 	  for (i = 0; i < ned; i++)
 	    if(fine_edge[i])
 	      {		
-		int pn1, pn2;
-		ma->GetEdgePNums (i,pn1,pn2);
-		cnt[pn1]++;
-		cnt[pn2]++;
+		auto pts = ma->GetEdgePNums (i);
+		cnt[pts[0]]++;
+		cnt[pts[1]]++;
 	      }
 	  int nnv = nv; 
 	  if(augmented==1 && !excl_grads)
@@ -1849,13 +1846,12 @@ namespace ngcomp
 	}
       case 5: // AFW(hoE) + E + F + I (noCluster)
 	{
-	  for (i = 0; i < ned; i++)
+	  for (size_t i = 0; i < ned; i++)
 	    if(fine_edge[i])
 	      {
-		int pn1, pn2;
-		ma->GetEdgePNums (i,pn1,pn2);
-		cnt[pn1]+= 1 + (first_edge_dof[i+1]-first_edge_dof[i])*(1-excl_grads);
-		cnt[pn2]+= 1 + (first_edge_dof[i+1]-first_edge_dof[i])*(1-excl_grads);
+		auto pts = ma->GetEdgePNums (i);
+		cnt[pts[0]]+= 1 + (first_edge_dof[i+1]-first_edge_dof[i])*(1-excl_grads);
+		cnt[pts[1]]+= 1 + (first_edge_dof[i+1]-first_edge_dof[i])*(1-excl_grads);
 	      }
 	  int nnv = nv; 
 	  /* 
@@ -1866,9 +1862,9 @@ namespace ngcomp
 	     cnt[nv+i] = 1; 
 	     } */ 
 	  
-	  for (i = 0; i < nfa; i++)
+	  for (size_t i = 0; i < nfa; i++)
 	    cnt[nnv+ned+i] = first_face_dof[i+1] - first_face_dof[i] - excl_grads*face_ngrad[i];
-	  for (i = 0; i < ni; i++)
+	  for (size_t i = 0; i < ni; i++)
 	    cnt[nnv+ned+nfa+i] = first_inner_dof[i+1] - first_inner_dof[i] - excl_grads*cell_ngrad[i];
 	  break;
 	}
@@ -1879,9 +1875,8 @@ namespace ngcomp
 	  for (i = 0; i < ned; i++)
 	    if(fine_edge[i])
 	      {
-		int pn1, pn2;
-	 
-		ma->GetEdgePNums (i,pn1,pn2);
+		auto pts = ma->GetEdgePNums (i);
+                int pn1 = pts[0], pn2 = pts[1];
 		pn1 = ma->GetClusterRepVertex(pn1);
 	  
 		pn2 = ma->GetClusterRepVertex(pn2);
@@ -1910,8 +1905,8 @@ namespace ngcomp
 	  for(i=0;i<ned;i++) 
 	    if(fine_edge[i] && !IsDirichletEdge(i))
 	      {
-		int pn1, pn2;
-		ma->GetEdgePNums (i,pn1,pn2);
+		auto pts = ma->GetEdgePNums (i);
+                int pn1 = pts[0], pn2 = pts[1];
 		pn1 = ma->GetClusterRepVertex(pn1);
 		pn2 = ma->GetClusterRepVertex(pn2); 
 		int nde = 1+ (1-excl_grads)*(first_edge_dof[i+1] - first_edge_dof[i]); 
@@ -1944,8 +1939,9 @@ namespace ngcomp
 	  for(i=0;i<ned;i++) 
 	    if(fine_edge[i])
 	      {
-		int pn1, pn2;
-		ma->GetEdgePNums (i,pn1,pn2);
+		auto pts = ma->GetEdgePNums (i);
+                int pn1 = pts[0], pn2 = pts[1];
+
 		pn1 = ma->GetClusterRepVertex(pn1);
 		pn2 = ma->GetClusterRepVertex(pn2); 
 		int nde = 1+ (1-excl_grads)*(first_edge_dof[i+1] - first_edge_dof[i]); 
@@ -1989,7 +1985,7 @@ namespace ngcomp
 	  for(i=0;i<nfa;i++) // Trig-Faces to horiz-edge stack 
 	    if(fine_face[i]) 
 	      { 
-		ma->GetFacePNums(i,vnums); 
+		auto vnums = ma->GetFacePNums(i); 
 		if(vnums.Size()==4) continue; 
 		int fcl = ma->GetClusterRepFace(i); 
 		auto ednums = ma->GetFaceEdges(i); 
@@ -2035,8 +2031,8 @@ namespace ngcomp
 	  for(i=0;i<ned;i++) 
 	    if(fine_edge[i])
 	      {
-		int pn1, pn2;
-		ma->GetEdgePNums (i,pn1,pn2);
+		INT<2> vts = ma->GetEdgePNums (i);
+                int pn1 = vts[0], pn2 = vts[1];
 		pn1 = ma->GetClusterRepVertex(pn1);
 		pn2 = ma->GetClusterRepVertex(pn2); 
 		int nde = 1+ (1-excl_grads)*(first_edge_dof[i+1] - first_edge_dof[i]); 
@@ -2121,8 +2117,8 @@ namespace ngcomp
 	  for (i = 0; i < ned; i++)
 	    if(fine_edge[i])
 	      {
-		int pn1, pn2;
-		ma->GetEdgePNums (i,pn1,pn2);	      
+		INT<2> vts = ma->GetEdgePNums (i);
+                int pn1 = vts[0], pn2 = vts[1];
 		table[pn1][cnt[pn1]++] = i;
 		table[pn2][cnt[pn2]++] = i;
 	      }
@@ -2163,8 +2159,9 @@ namespace ngcomp
 	  for (i = 0; i < ned; i++)
 	    if(fine_edge[i])
 	      {
-		int pn1, pn2;
-		ma->GetEdgePNums (i,pn1,pn2);
+		INT<2> vts = ma->GetEdgePNums (i);
+                int pn1 = vts[0], pn2 = vts[1];
+                
 		table[pn1][cnt[pn1]++]  = i; 
 		table[pn2][cnt[pn2]++]  = i; 
 		if(!excl_grads)
@@ -2204,8 +2201,9 @@ namespace ngcomp
 	  for (i = 0; i < ned; i++)
 	    if(fine_edge[i])
 	      {
-		int pn1, pn2;
-		ma->GetEdgePNums (i,pn1,pn2);
+		INT<2> vts = ma->GetEdgePNums (i);
+                int pn1 = vts[0], pn2 = vts[1];
+                
 		pn1 = ma->GetClusterRepVertex(pn1);
 		pn2 = ma->GetClusterRepVertex(pn2);
 		table[pn1][cnt[pn1]++] = i;
@@ -2240,8 +2238,9 @@ namespace ngcomp
 	  for(i=0;i<ned;i++) 
 	    if(fine_edge[i] && !IsDirichletEdge(i))
 	      {
-		int pn1, pn2;
-		ma->GetEdgePNums (i,pn1,pn2);
+		INT<2> vts = ma->GetEdgePNums (i);
+                int pn1 = vts[0], pn2 = vts[1];
+                
 		pn1 = ma->GetClusterRepVertex(pn1);
 		pn2 = ma->GetClusterRepVertex(pn2);
 		int ecl = ma->GetClusterRepEdge(i);
@@ -2291,8 +2290,9 @@ namespace ngcomp
 	  for(i=0;i<ned;i++) 
 	    if(fine_edge[i])
 	      {
-		int pn1, pn2;
-		ma->GetEdgePNums (i,pn1,pn2);
+		INT<2> vts = ma->GetEdgePNums (i);
+                int pn1 = vts[0], pn2 = vts[1];
+                
 		pn1 = ma->GetClusterRepVertex(pn1);
 		pn2 = ma->GetClusterRepVertex(pn2);
 		int ecl = ma->GetClusterRepEdge(i);
@@ -2352,7 +2352,7 @@ namespace ngcomp
 	  for(i=0;i<nfa;i++) 
 	    if(fine_face[i]) 
 	      { 
-		ma->GetFacePNums(i,vnums); 
+		vnums = ma->GetFacePNums(i); 
 		if(vnums.Size()==4) continue; 
 		int fcl = ma->GetClusterRepFace(i); 
 		auto ednums = ma->GetFaceEdges(i); 
@@ -2407,8 +2407,11 @@ namespace ngcomp
 	  for(i=0;i<ned;i++) 
 	    if(fine_edge[i])
 	      {
-		int pn1, pn2;
-		ma->GetEdgePNums (i,pn1,pn2);
+		// int pn1, pn2;
+		// ma->GetEdgePNums (i,pn1,pn2);
+		INT<2> vts = ma->GetEdgePNums (i);
+                int pn1 = vts[0], pn2 = vts[1];
+                
 		pn1 = ma->GetClusterRepVertex(pn1);
 		pn2 = ma->GetClusterRepVertex(pn2);
 		//	int ecl = ma->GetClusterRepEdge(i);
@@ -2846,7 +2849,7 @@ namespace ngcomp
 	    for (i = 0; i < ne; i++)
 	      {
                 ElementId ei(VOL, i);
-		ma->GetElPNums(i,pnums); 
+		auto pnums = ma->GetElPNums(ei); 
 		if (ma->GetElType(ei) == ET_PRISM)
 		  {
 		    auto ednums = ma->GetElEdges (ei);
@@ -2977,8 +2980,11 @@ namespace ngcomp
 	    //clusters = 0; 
 	    for(i=0;i<ned;i++) 
 	      { 
-		int pi1,pi2; 
-		ma->GetEdgePNums(i,pi1,pi2); 
+		// int pi1,pi2; 
+		// ma->GetEdgePNums(i,pi1,pi2);
+		INT<2> vts = ma->GetEdgePNums (i);
+                int pi1 = vts[0], pi2 = vts[1];
+                
 		pi1 = ma->GetClusterRepVertex (pi1); 
 		pi2 = ma->GetClusterRepVertex (pi2);
 		if(pi1 == pi2) 
@@ -2992,7 +2998,7 @@ namespace ngcomp
 	      {
 		// Attenzione das is zuviel !!! 
 
-		ma->GetFacePNums(i,pnums); 
+		auto pnums = ma->GetFacePNums(i); 
 		if(pnums.Size() == 4) // quad face 
 		  { 
 		    //INT<2> p = order_face[i];         
@@ -3011,9 +3017,11 @@ namespace ngcomp
 	    //clusters = 0; 
 	    for(i=0;i<ned;i++) 
 	      { 
-	    
-		int pi1,pi2; 
-		ma->GetEdgePNums(i,pi1,pi2); 
+		// int pi1,pi2; 
+		// ma->GetEdgePNums(i,pi1,pi2);
+		INT<2> vts = ma->GetEdgePNums (i);
+                int pi1 = vts[0], pi2 = vts[1];
+                
 		pi1 = ma->GetClusterRepVertex (pi1); 
 		pi2 = ma->GetClusterRepVertex (pi2);
 		if(pi1 == pi2) 
@@ -3030,7 +3038,7 @@ namespace ngcomp
 	      {
 		// Attenzione das is zuviel !!! 
 
-		ma->GetFacePNums(i,pnums); 
+		auto pnums = ma->GetFacePNums(i); 
 		if(pnums.Size() == 4) // quad face 
 		  { 
 		    INT<2> p = order_face[i];        
@@ -3282,8 +3290,8 @@ namespace ngcomp
       {
 	if(fine_edge[i])
 	  { 
-	    int p1,p2; 
-	    ma->GetEdgePNums(i,p1,p2); 
+            INT<2> vts = ma->GetEdgePNums (i);
+            int p1 = vts[0], p2 = vts[1];
 
 	    grad->CreatePosition(i,p1); 
 	    grad->CreatePosition(i,p2); 

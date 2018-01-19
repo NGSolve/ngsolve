@@ -366,14 +366,15 @@ namespace ngcomp
     else  // 3D
       {
         int inci = 0;
-        Array<int> pnums;
+        // Array<int> pnums;
         for(int i=0; i< nfa; i++)
           {
             first_facet_dof[i] = ndof;
             if (!fine_facet[i]) continue;
             int p = order_facet[i][0];
             if(highest_order_dc  && order_facet[i][0] > 0) p--;
-            ma->GetFacePNums(i,pnums);
+            // ma->GetFacePNums(i,pnums);
+            auto pnums = ma->GetFacePNums(i);
             
             int n_lowest_order_dofs = all_dofs_together ? 0 : 1;
             switch(pnums.Size())

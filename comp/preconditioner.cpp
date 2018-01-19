@@ -1061,9 +1061,9 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
 
     shared_ptr<MeshAccess> ma = pde->GetMeshAccess();
 
-    int nedge = ma->GetNEdges(); 
-    int nface = ma->GetNFaces(); 
-    int nel = ma->GetNE();
+    size_t nedge = ma->GetNEdges(); 
+    size_t nface = ma->GetNFaces(); 
+    size_t nel = ma->GetNE();
 
     if (coarsegrid && ma->GetNLevels() > 1)
       return;
@@ -1075,19 +1075,18 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
 
     Array<INT<2> > e2v (nedge);
     e2v = INT<2> (-1, -1);
-    for (int i = 0; i < nedge; i++)
+    for (size_t i = 0; i < nedge; i++)
       if (ma->GetClusterRepEdge (i) >= 0)
-	ma->GetEdgePNums (i, e2v[i][0], e2v[i][1]);
+	e2v[i] = ma->GetEdgePNums (i);
 
     // cout << "get faces" << endl;
 
     Array<INT<4> > f2v (nface);
-    Array<int> fpnums;
     for (int i = 0; i < nface; i++)
       {
 	if (ma->GetClusterRepFace (i) >= 0)
 	  {
-	    ma->GetFacePNums (i, fpnums);
+	    auto fpnums = ma->GetFacePNums (i);
 	    
 	    f2v[i][3] = -1;
 	    for (int j = 0; j < fpnums.Size(); j++)
