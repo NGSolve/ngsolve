@@ -326,7 +326,8 @@ namespace ngfem
   };  
   
   /* ############### Special functions for curld-div bubbles ############### */
-  /* sigma(u * grad v) = Curl(u * grad v) - tr(Curl(u * grad v)) * I  */  
+  /* is equal to type 1 - tr(type 1)  */
+  /* this produces a divergence, but curldiv is equal to zero */
   
   class curldivfreebubbles
   {
@@ -353,9 +354,7 @@ namespace ngfem
 		     -uyy*vx - vxy*uy + uxy*vy + vyy*ux);
 
     }
-  };
-
-  
+  };  
 
   /* Edge basis functions which are normal-tangential continuous */
   /* calculates [(grad l1) o-times (rot-grad l2) ] * scaledlegendre */
@@ -482,8 +481,8 @@ namespace ngfem
       if (plus)
       {
 	//throw Exception(" please update this first - ComputeNdof in HCurlDiv<ET_TRIG>");
-        order ++;
-        ninner += 2*(order_inner); 
+        order ++;	
+        ninner += 2 *(order_inner+1); 
       }
       ndof += ninner;      
     }
@@ -534,6 +533,20 @@ namespace ngfem
         }	
       }
 
+      if(plus)
+	{
+	  //does not work
+	  //shape[ii++] = curldivfreebubbles(u[0]*v[0],y);
+	  for(int i = 0; i <= oi; i++)
+	    {
+	      //does not work
+	      //shape[ii++] = curldivfreebubbles(u[oi-i],v[i]);
+
+	      //works but functions are not curl-div free, still less than order_inner+1
+	      shape[ii++] = Curlgraduv_graducurlv(u[oi-i],v[i]);	
+	    }	  
+	}
+      
       //ScaledIntegratedLegendrePolynomial(oi+3,le-ls,le+ls,u);
       IntegratedLegendreMonomialExt::CalcTrigExt(oi+3,le-ls,1-le-ls,u);
       LegendrePolynomial::EvalMult(oi+1, 2*lt-1, lt, v);
@@ -546,6 +559,20 @@ namespace ngfem
 	  shape[ii++] = Curlgraduv_graducurlv(u[i],v[j]);	 
         }	
       }
+
+      if(plus)
+	{
+	  //does not work
+	  //shape[ii++] = curldivfreebubbles(u[0]*v[0],y);
+	  for(int i = 0; i <= oi; i++)
+	    {
+	      //does not work
+	      //shape[ii++] = curldivfreebubbles(u[oi-i],v[i]);
+
+	      //works but functions are not curl-div free, still less than order_inner+1
+	      shape[ii++] = Curlgraduv_graducurlv(u[oi-i],v[i]);	
+	    }	  
+	}
       
       LegendrePolynomial::Eval(oi, 2*lt-1, v);
       for (int i = 0; i <= oi; i++)
@@ -571,19 +598,6 @@ namespace ngfem
       }
       */
       
-      IntegratedLegendreMonomialExt::CalcTrigExt(oi+3,le-ls,1-le-ls,u);
-      //ScaledIntegratedLegendrePolynomial(oi+3,le-ls,le+ls,u);
-      LegendrePolynomial::EvalMult(oi+1, 2*lt-1, lt, v);
-      
-      if (plus)
-        for (int i = 0; i <= oi-1; i++)
-          {
-	    //throw Exception("not working yet!");
-	    AutoDiffDiff<2> bubble = u[i]*v[oi-1-i];
-	    
-	    shape[ii++] = curldivfreebubbles(bubble,x);
-	    shape[ii++] = curldivfreebubbles(bubble,y);
-          }      
     };
   }; 
  

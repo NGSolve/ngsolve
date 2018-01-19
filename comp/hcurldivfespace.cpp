@@ -259,7 +259,8 @@ namespace ngcomp
         ndof += 2* (oi * (oi +1)) + oi +1;
         if(plus)
 	  {
-	    ndof += 2*(oi);
+	    //ndof += 2*(oi);
+	    ndof += 2*(oi+1);
 	  }
         if(discontinuous)
         {
