@@ -172,9 +172,8 @@ namespace ngfem
         }));
       }
       else // curved element
-      {
-	throw Exception ("not implemented yet!");
-        /*Mat<DIM> jac = mip.GetJacobian();
+      {	
+        Mat<DIM> jac = mip.GetJacobian();
         Mat<DIM> inv_jac = mip.GetJacobianInverse();
         Mat<DIM> hesse[3],finvT_h_tilde_finv[3];
         mip.CalcHesse (hesse[0],hesse[1],hesse[2]);
@@ -208,9 +207,10 @@ namespace ngfem
                                   {
                                     shape.Row(nr).AddSize(DIM) = val.DivShape();
                                     BareVector<double> divshape = shape.Row(nr);
-                                    Vec<DIM_STRESS> vecshape = val.Shape();
-                                    Vec<DIM*DIM> matshape;
-                                    VecToSymMat<DIM> (vecshape, matshape);
+
+				    //Vec<DIM_STRESS> vecshape = val.Shape();
+                                    Vec<DIM*DIM> matshape = val.Shape();
+                                    //VecToSymMat<DIM> (vecshape, matshape);
 
                                     for(int k=0; k<DIM; k++)
                                     {
@@ -221,7 +221,7 @@ namespace ngfem
                                     }
                                     
                                   }));
-	*/
+	
       }
     }
 
@@ -750,7 +750,7 @@ namespace ngfem
                             BareSliceMatrix<double> shape) const = 0;
 
   };
-
+  
 
   template <ELEMENT_TYPE ET> class HCurlDivSurfaceFE;
 
@@ -792,13 +792,13 @@ namespace ngfem
     virtual void CalcShape (const IntegrationPoint & ip, 
                             BareSliceMatrix<double> shape) const
     {
-      Vec<DIM, AutoDiffDiff<DIM>> adp;
+      Vec<DIM, AutoDiffDiff<DIM+1>> adp;
       for ( int i=0; i<DIM; i++)
       {
-        adp(i) = AutoDiffDiff<DIM>(ip(i),i);
+        adp(i) = AutoDiffDiff<DIM+1>(ip(i),i);
       }
 
-      Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM>> (adp), SBLambda([&] (int nr, auto val)
+      Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM+1>> (adp), SBLambda([&] (int nr, auto val)
                                           {
                                             //shape.Row(nr).AddSize(DIM_STRESS) = val.Shape();
 					    shape.Row(nr).AddSize(DIM_STRESS) = val;
@@ -808,27 +808,21 @@ namespace ngfem
     
     virtual void CalcMappedShape (const MappedIntegrationPoint<DIM,DIM+1> & mip,
                             BareSliceMatrix<double> shape) const
-    {
-      //Vec<DIM, AutoDiff<DIM+1>> adp = mip;
-      //Vec<DIM, AutoDiffDiff<DIM+1>> addp;
-      //for (int i=0; i<DIM+1; i++)
-      //{
-      //  addp[i] = adp[i].Value();
-      //  addp[i].LoadGradient(&adp[i].DValue(0));
-      //}
-      throw Exception("not implemented");
-      //Vec<DIM, AutoDiffDiff<DIM+1>> adp;
-      //for ( int i=0; i<DIM+1; i++)
-      //{
-      //  adp(i) = AutoDiffDiff<DIM+1>(mip.IP()(i),i);
-      //}
-      //Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM+1>> (adp),SBLambda([&](int nr,auto val)
-      //{
-      //  Vec<DIM_STRESS> vecshape = val.Shape();
-      //	//Vec<DIM_STRESS> vecshape = val;
-      //  BareVector<double> matshape = shape.Row(nr);
-      //  VecToMat<DIM+1> (vecshape, matshape);
-      //}));
+    {      
+      Vec<DIM, AutoDiff<DIM+1>> adp = mip;
+      Vec<DIM, AutoDiffDiff<DIM+1>> addp;
+      for (int i=0; i<DIM+1; i++)
+      {
+        addp[i] = adp[i].Value();
+        addp[i].LoadGradient(&adp[i].DValue(0));
+      }
+      Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM+1>> (addp),SBLambda([&](int nr,auto val)
+      {
+	shape.Row(nr).AddSize(DIM_STRESS) = val;
+        //Vec<DIM_STRESS> vecshape = val.Shape();
+        //BareVector<double> matshape = shape.Row(nr);
+        //VecToMat<DIM+1> (vecshape, matshape);
+      }));      
     }
 
 
@@ -852,21 +846,25 @@ namespace ngfem
     void T_CalcShape (TIP<1,Tx> ip/*AutoDiffDiff<2> hx[2]*/, TFA & shape) const
     {
       auto x = ip.x;
-      AutoDiffDiff<1> ddlami[2] ={ x, 1-x };
+      AutoDiffDiff<2> ddlami[2] ={ x, 1-x };
       
       int ii = 0;
       
-      ArrayMem<AutoDiffDiff<1>,20> ha(order_inner+1);
+      ArrayMem<AutoDiffDiff<2>,20> ha(order_inner+1);
       
       int es = 0,ee = 1;
       if(vnums[es] > vnums[ee]) swap (es,ee);
 
-      AutoDiffDiff<1> ls = ddlami[es],le = ddlami[ee];
+      AutoDiffDiff<2> ls = ddlami[es],le = ddlami[ee];
       
-      LegendrePolynomial::Eval(order_inner,le-ls,ha);      
+      //LegendrePolynomial::Eval(order_inner,le-ls,ha);
+      IntegratedLegendreMonomialExt::Calc(order_inner+1, le-ls,ha);
       
-      for(int l = 0; l <= order_inner; l++)
-	shape[ii++] =  -1* ha[l].Value(); //I think there should be a minus
+      for(int l = 0; l <= order_inner; l++)	
+	shape[ii++] = Sigma_gradv(le*ls*ha[l]).Shape();
+	//shape[ii++] =  -ha[l].DDValue(0,0) * 0.5;
+	
+      
     };
   };
 
@@ -878,9 +876,9 @@ namespace ngfem
   
   class T_Dl1_o_Dl2xDl3_v_surf
   {
-    AutoDiffDiff<2> l1,l2,l3,v;
+    AutoDiffDiff<3> l1,l2,l3,v;
   public:
-    T_Dl1_o_Dl2xDl3_v_surf  (AutoDiffDiff<2> lam1, AutoDiffDiff<2> lam2, AutoDiffDiff<2> lam3, AutoDiffDiff<2> av) : l1(lam1), l2(lam2), l3(lam3), v(av) { ; }
+    T_Dl1_o_Dl2xDl3_v_surf  (AutoDiffDiff<3> lam1, AutoDiffDiff<3> lam2, AutoDiffDiff<3> lam3, AutoDiffDiff<3> av) : l1(lam1), l2(lam2), l3(lam3), v(av) { ; }
     
     Vec<2> Shape() {
       double cross = l2.DValue(0)*l3.DValue(1) - l2.DValue(1)*l3.DValue(0);      
@@ -910,21 +908,20 @@ namespace ngfem
     
    template <typename Tx, typename TFA> 
     void T_CalcShape (TIP<2,Tx> ip/*AutoDiffDiff<2> hx[2]*/, TFA & shape) const
-    {
-     
+    {            
       auto x = ip.x, y= ip.y;
-      AutoDiffDiff<2> ddlami[3] ={ x, y, 1-x-y };
+      AutoDiffDiff<3> ddlami[3] ={ x, y, 1-x-y };
       
       int ii = 0;
 
-      ArrayMem<AutoDiffDiff<2>,20> ha((order_inner+1)*(order_inner+2)/2.0); //face basis
+      ArrayMem<AutoDiffDiff<3>,20> ha((order_inner+1)*(order_inner+2)/2.0);
       
       int es = 0, ee = 1, et = 2;
       if(vnums[es] > vnums[ee]) swap(es, ee);
       if(vnums[ee] > vnums[et]) swap(ee, et);
       if(vnums[es] > vnums[et]) swap(es,et);
             
-      AutoDiffDiff<2> ls = ddlami[es],le = ddlami[ee], lt = ddlami[et];
+      AutoDiffDiff<3> ls = ddlami[es],le = ddlami[ee], lt = ddlami[et];
       
       DubinerBasis3::Eval (order_inner, ls, le, ha);
 
@@ -934,6 +931,7 @@ namespace ngfem
 	      shape[ii++] = T_Dl1_o_Dl2xDl3_v_surf(ls,lt,le,ha[l]).Shape();
 	    }     
     };
+      
   };
 
 }

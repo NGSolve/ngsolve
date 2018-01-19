@@ -24,16 +24,18 @@ namespace ngcomp
 
     static Array<int> GetDimensions() { return Array<int> ({D+1,D+1}); }
 
-    /*
+    
     template <typename FEL,typename SIP>
     static void GenerateMatrix(const FEL & bfel,const SIP & mip,
       SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
     {
       const HCurlDivSurfaceFiniteElement<D> & fel =
         dynamic_cast<const HCurlDivSurfaceFiniteElement<D>&> (bfel);
-      fel.CalcMappedShape_Matrix (mip,Trans(mat));
-      }*/
+      fel.CalcMappedShape (mip,Trans(mat));
+      }
 
+    
+    /*
     template <typename FEL,typename SIP,typename MAT>
     static void GenerateMatrix(const FEL & bfel,const SIP & sip,
       MAT & mat,LocalHeap & lh)
@@ -42,12 +44,15 @@ namespace ngcomp
         dynamic_cast<const HCurlDivSurfaceFiniteElement<D>&> (bfel);
       int nd = fel.GetNDof();
       FlatMatrix<> shape(nd,D,lh);
+
+      
       
       Mat<D+1,D> jac = sip.GetJacobian();
       Mat<D,D+1> jacinv = sip.GetJacobianInverse();
       double det = fabs(sip.GetJacobiDet());
       
       fel.CalcShape(sip.IP(), shape);
+      //cout<<"shape = "<<shape<<endl;
       for (int i = 0; i < fel.GetNDof(); i++)
         {
           Vec<D> sigma_ref;
@@ -61,14 +66,18 @@ namespace ngcomp
             sigma_ref(0) = shape(i,0);
             sigma_ref(1) = shape(i,1);            
           }
+	  //cout<<"sigmaref="<<sigma_ref<<endl;
 	  Vec<D+1> hm = Trans(jacinv) * sigma_ref;
+	  //cout<<"hm="<<hm<<endl;
 	  Mat<D+1> sigma = hm * Trans(sip.GetNV());	  
-	  
+	  //cout<<"sigma="<<sigma<<endl;
 	  sigma *= (1.0 / det);
           for (int j = 0; j < DIM_DMAT; j++)
             mat(j, i) = sigma(j);
         }
-    }
+      //cout<<"mat ="<<mat<<endl;
+      //getchar(); 
+    }*/
   };  
 
   template<int D>
@@ -84,6 +93,16 @@ namespace ngcomp
 
     static Array<int> GetDimensions() { return Array<int> ( { D,D } ); }
     
+    template <typename FEL,typename SIP>
+    static void GenerateMatrix(const FEL & bfel,const SIP & mip,
+      SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
+    {
+      const HCurlDivFiniteElement<D> & fel =
+        dynamic_cast<const HCurlDivFiniteElement<D>&> (bfel);
+      fel.CalcMappedShape (mip,Trans(mat));
+      }
+
+    /*    
     template <typename FEL, typename SIP, typename MAT>
     static void GenerateMatrix(const FEL & bfel, const SIP & sip,
                                MAT & mat, LocalHeap & lh)
@@ -96,11 +115,9 @@ namespace ngcomp
       Mat<D> jacinv = sip.GetJacobianInverse();
       double det = fabs(sip.GetJacobiDet());
 
-      //cout<<"nd = "<<nd<<endl;
       FlatMatrix<> shape(nd, D*D, lh);
       fel.CalcShape(sip.IP(), shape);
-      //cout<<"shape = "<<shape<<endl;
-      //getchar();
+
       for (int i = 0; i < fel.GetNDof(); i++)
         {
           Mat<D> sigma_ref;
@@ -133,7 +150,8 @@ namespace ngcomp
             mat(j, i) = sigma(j);
         }
 
-    }
+	}
+    */
   };
 
 
@@ -150,6 +168,19 @@ namespace ngcomp
     
     static string Name() { return "div"; }
 
+
+    template <typename FEL,typename SIP>
+    static void GenerateMatrix(const FEL & bfel,const SIP & sip,
+      SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
+    {
+      const HCurlDivFiniteElement<D> & fel =
+        dynamic_cast<const HCurlDivFiniteElement<D>&> (bfel);
+
+      fel.CalcMappedDivShape (sip, Trans(mat));
+    }
+
+    /*
+    
     template <typename FEL, typename SIP, typename MAT>
     static void GenerateMatrix (const FEL & bfel, const SIP & sip,
                                 MAT & mat, LocalHeap & lh)
@@ -172,7 +203,7 @@ namespace ngcomp
       //Mat<D> sjac = (1.0/det) * jacinv;
       
       mat = sjac * Trans (div_shape);      
-    }        
+      }        */
   };
 
 
