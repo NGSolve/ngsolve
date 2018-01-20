@@ -1554,7 +1554,7 @@ public:
     size_t w = ir.Size();
     __assume (w > 0);
 
-    size_t dim = Dimension();
+    size_t dim = dim1; // Dimension();
     STACK_ARRAY(T, hmem, 2*dim*w);
     FlatMatrix<T> temp1(dim, w, &hmem[0]);
     FlatMatrix<T> temp2(dim, w, &hmem[dim*w]);
