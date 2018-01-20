@@ -464,7 +464,7 @@ namespace ngcomp
     /// get dof-nrs of domain or boundary element elnr
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const = 0;
     virtual void GetDofNrs (NodeId ni, Array<DofId> & dnums) const;
-    
+    BitArray GetDofs (Region reg) const;
     Table<int> CreateDofTable (VorB vorb) const;
 
     // FlatArray<int> GetDofNrs (ElementId ei, LocalHeap & lh) const;
