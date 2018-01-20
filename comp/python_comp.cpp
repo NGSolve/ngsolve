@@ -1051,16 +1051,26 @@ mesh (netgen.Mesh): a mesh generated from Netgen
          py::arg("pattern"),
 	 "Returns mesh-region matching the given regex pattern"
          )
+    .def("Materials",
+	 [](shared_ptr<MeshAccess> ma, vector<int> domains)
+	  {
+            BitArray mask(ma->GetNDomains());
+            mask.Clear();
+            for (auto i : domains)
+              if (i >= 0 && i < mask.Size())
+                mask.Set(i);
+              else
+                throw Exception ("index "+ToString(i)+" out of range [0,"+ToString(mask.Size())+")");
+            return Region (ma, VOL, mask);
+	  },
+         py::arg("domains"),
+	 "Generate mesh-region by domain numbers"
+         )
+    
     
     .def("GetBoundaries",
 	 [](const MeshAccess & ma)
 	  {
-            /*
-            py::list materials(ma.GetNBoundaries());
-	    for (int i : Range(ma.GetNBoundaries()))
-	      materials[i] = py::cast(ma.GetMaterial(BND,i));
-	    return materials;
-            */
             return MakePyTuple(ma.GetMaterials(BND));
 	  },
 	 "Returns list of boundary conditions"
@@ -1074,15 +1084,25 @@ mesh (netgen.Mesh): a mesh generated from Netgen
          py::arg("pattern"),
 	 "Returns boundary mesh-region matching the given regex pattern"
          )
+    .def("Boundaries",
+	 [](shared_ptr<MeshAccess> ma, vector<int> bnds)
+	  {
+            BitArray mask(ma->GetNBoundaries());
+            mask.Clear();
+            for (auto i : bnds)
+              if (i >= 0 && i < mask.Size())
+                mask.Set(i);
+              else
+                throw Exception ("boundary index "+ToString(i)+" out of range [0,"+ToString(mask.Size())+")");
+            return Region (ma, BND, mask);
+	  },
+         py::arg("bnds"),
+	 "Generate boundary mesh-region by boundary condition numbers"
+         )
+
     .def("GetBBoundaries",
 	 [](const MeshAccess & ma)
 	  {
-            /*
-	    py::list bboundaries(ma.GetNBBoundaries());
-	    for (int i : Range(ma.GetNBBoundaries()))
-	      bboundaries[i] = py::cast(ma.GetMaterial(BBND,i));
-	    return bboundaries;
-            */
             return MakePyTuple(ma.GetMaterials(BBND));
 	  },
 	 "Returns list of boundary conditions for co dimension 2"
@@ -1531,20 +1551,16 @@ kwargs : For a description of the possible kwargs have a look a bit further down
            self.FinalizeUpdate(lh);
          })
     .def(py::pickle(fesPickle, (shared_ptr<FESpace>(*)(py::tuple)) fesUnpickle<FESpace>))
-    .def("Update", [](shared_ptr<FESpace> self, int heapsize)
+    .def("Update", [](shared_ptr<FESpace> self)
          { 
-           LocalHeap lh (heapsize, "FESpace::Update-heap");
-           self->Update(lh);
-           self->FinalizeUpdate(lh);
+           self->Update(glh);
+           self->FinalizeUpdate(glh);
          },
-         py::arg("heapsize")=1000000,
          "update space after mesh-refinement")
-     .def("FinalizeUpdate", [](shared_ptr<FESpace> self, int heapsize)
+     .def("FinalizeUpdate", [](shared_ptr<FESpace> self)
          { 
-           LocalHeap lh (heapsize, "FESpace::FinalizeUpdate-heap");
-           self->FinalizeUpdate(lh);
+           self->FinalizeUpdate(glh);
          },
-         py::arg("heapsize")=1000000,
          "finalize update")
     .def_property_readonly ("ndof", [](shared_ptr<FESpace> self) { return self->GetNDof(); },
                             "number of degrees of freedom")
@@ -1617,6 +1633,11 @@ kwargs : For a description of the possible kwargs have a look a bit further down
            return MakePyTuple(tmp);
          })
 
+    .def ("GetDofs", [](shared_ptr<FESpace> self, Region reg)
+          {
+            return self->GetDofs(reg);
+          })
+    
     .def("CouplingType", [](shared_ptr<FESpace> self, DofId dofnr) -> COUPLING_TYPE
          { return self->GetDofCouplingType(dofnr); },
          py::arg("dofnr"),
