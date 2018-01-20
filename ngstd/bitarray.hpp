@@ -28,14 +28,21 @@ protected:
   bool owns_data = true;
 public:
   /// empty array
-  NGS_DLL_HEADER BitArray ();
+  BitArray ()
+    : size(0), data(nullptr) { ; }
   /// array of asize bits
   NGS_DLL_HEADER BitArray (size_t asize);
   /// array of asize bits
   NGS_DLL_HEADER BitArray (size_t asize, LocalHeap & lh);
   ///
   NGS_DLL_HEADER BitArray (const BitArray & ba2);
-
+  BitArray (BitArray && ba2)
+    : size(ba2.size), data(ba2.data), owns_data(ba2.owns_data)
+  {
+    ba2.owns_data = false;
+    ba2.data = nullptr;
+  }
+  
   template <typename T>
   INLINE BitArray (std::initializer_list<T> list) 
     : BitArray (list.size())
@@ -47,7 +54,11 @@ public:
   }
 
   /// delete data
-  NGS_DLL_HEADER ~BitArray ();
+  ~BitArray ()
+  {
+    if (owns_data)
+      delete [] data;
+  }
 
   /// Set size, loose values
   NGS_DLL_HEADER void SetSize (size_t asize);
