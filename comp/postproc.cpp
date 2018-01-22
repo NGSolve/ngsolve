@@ -13,6 +13,46 @@
 namespace ngcomp
 { 
 
+  inline void LapackInverseSPD (ngbla::SliceMatrix<Complex> a)
+  {
+    LapackInverse (a);
+  }
+
+  /*
+  inline void LapackSolveSPD (FlatMatrix<> a, FlatVector<> rhs, FlatVector<> sol)
+  {
+    integer n = a.Width();
+    if (n == 0) return;
+    integer lda = a.Width();
+
+    integer info;
+    char uplo = 'U';
+
+    dpotrf_ (&uplo, &n, &a(0,0), &lda, &info);
+    if (info != 0)
+      {
+        cout << "plan b" << endl;
+        CholeskyFactors<double> invelmat(a);
+        invelmat.Mult (rhs, sol);
+        return;
+        // cout << "info1 = " << info << endl;
+      }
+    sol = rhs;
+    integer nrhs = 1;
+    integer ldb = n;
+    dpotrs_ (&uplo, &n, &nrhs, &a(0,0), &lda, &sol(0), &ldb, &info);
+    if (info != 0) cout << "info2 = " << info << endl;
+  }
+
+  inline void LapackSolveSPD (SliceMatrix<Complex> mat, FlatVector<Complex> rhs, FlatVector<Complex> sol)
+  {
+    LapackInverseSPD (mat);
+    sol = mat * rhs;
+  }
+  */
+
+  
+  
   template <class SCAL>
   void CalcFluxProject (const S_GridFunction<SCAL> & u,
 			S_GridFunction<SCAL> & flux,
@@ -453,14 +493,19 @@ namespace ngcomp
                       
                       fes->TransformMat (ei, elmat, TRANSFORM_MAT_LEFT_RIGHT);
                       fes->TransformVec (ei, elflux, TRANSFORM_RHS);
-                      if (fel.GetNDof() < 50)
+                      // if (fel.GetNDof() < 50)
+                      if (true)
                         {
-                          FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
-                          invelmat.Mult (elflux, elfluxi);
+                          // FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
+                          // invelmat.Mult (elflux, elfluxi);
+
+                          CalcLDL<SCAL,ColMajor> (Trans(elmat));
+                          elfluxi = elflux;
+                          SolveLDL<SCAL,ColMajor> (Trans(elmat), elfluxi);
                         }
                       else
                         {
-                          LapackInverse (elmat);
+                          LapackInverseSPD (elmat);
                           elfluxi = elmat * elflux;
                         }
                     }
@@ -517,10 +562,15 @@ namespace ngcomp
 
 	      fes->TransformMat (ei, elmat, TRANSFORM_MAT_LEFT_RIGHT);
 	      fes->TransformVec (ei, elflux, TRANSFORM_RHS);
-              if (fel.GetNDof() < 50)
+              // if (fel.GetNDof() < 50)
+              if (true)
                 {
-                  FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
-                  invelmat.Mult (elflux, elfluxi);
+                  // FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
+                  // invelmat.Mult (elflux, elfluxi);
+
+                  CalcLDL<SCAL,ColMajor> (Trans(elmat));
+                  elfluxi = elflux;
+                  SolveLDL<SCAL,ColMajor> (Trans(elmat), elfluxi);
                 }
               else
                 {
