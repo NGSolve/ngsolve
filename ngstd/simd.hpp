@@ -84,7 +84,6 @@ namespace ngstd
 
   
 
-#ifdef __AVX__
 
   template <typename T>
   class AlignedAlloc
@@ -93,18 +92,22 @@ namespace ngstd
       static void * aligned_malloc(size_t s)
       {
         // Assume 16 byte alignment of standard library
-        if(alignof(T)<=16)
-            return malloc(s);
-        else
+#ifdef __SSE__        
+        if(alignof(T)>16)
             return  _mm_malloc(s, alignof(T));
+        else
+#endif          
+            return malloc(s);
       }
 
       static void aligned_free(void *p)
       {
-        if(alignof(T)<=16)
-            free(p);
-        else
+#ifdef __SSE__        
+        if(alignof(T)>16)
             _mm_free(p);
+        else
+#endif
+            free(p);
       }
 
   public:
@@ -114,7 +117,8 @@ namespace ngstd
     void operator delete (void * p) { aligned_free(p); }
     void operator delete[] (void * p) { aligned_free(p); }
   };
-    
+
+  /*
 #else
   
   // it's only a dummy without AVX
@@ -122,8 +126,9 @@ namespace ngstd
   class AlignedAlloc { ; };
 
 #endif
+  */
 
-
+  
 #ifdef __AVX__
 #if defined(__AVX2__)
   INLINE __m256i my_mm256_cmpgt_epi64 (__m256i a, __m256i b)
