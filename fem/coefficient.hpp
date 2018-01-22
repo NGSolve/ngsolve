@@ -1059,7 +1059,8 @@ public:
         values(i,j) = lam (in0(i,j));
   }
   
-  
+
+  /*
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
                          AFlatMatrix<double> values) const
   {
@@ -1068,7 +1069,7 @@ public:
       for (size_t j = 0; j < values.Width(); j++)
         values(i,j) = lam (in0(i,j));
   }
-  
+  */
   
   virtual void EvaluateDeriv (const BaseMappedIntegrationRule & ir,
                               FlatMatrix<> result,
@@ -1153,7 +1154,8 @@ public:
         dderiv(j) = out.DDValue(0,0);
       }
   }
-  
+
+  /*
   virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
                               FlatArray<AFlatMatrix<>*> ainput,
                               FlatArray<AFlatMatrix<>*> adinput,
@@ -1194,6 +1196,7 @@ public:
         dderiv(j) = out.DDValue(0,0);
       }
   }
+  */
 
 
 
