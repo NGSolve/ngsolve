@@ -3801,12 +3801,12 @@ namespace ngfem
   {
     if (userdefined_simd_intrules[fel.ElementType()] ) return *userdefined_simd_intrules[fel.ElementType()];
 
-    bool is_mixed = typeid(fel) == typeid(const MixedFiniteElement&);
-    const MixedFiniteElement * mixedfe = static_cast<const MixedFiniteElement*> (&fel);    
-    const FiniteElement & fel_trial = is_mixed ? mixedfe->FETrial() : fel;
-    const FiniteElement & fel_test = is_mixed ? mixedfe->FETest() : fel;
+    // bool is_mixed = typeid(fel) == typeid(const MixedFiniteElement&);
+    // const MixedFiniteElement * mixedfe = static_cast<const MixedFiniteElement*> (&fel);    
+    // const FiniteElement & fel_trial = is_mixed ? mixedfe->FETrial() : fel;
+    // const FiniteElement & fel_test = is_mixed ? mixedfe->FETest() : fel;
 
-    int trial_difforder = 99, test_difforder = 99;
+    int trial_difforder = 99; 
     for (auto proxy : trial_proxies)
       trial_difforder = min2(trial_difforder, proxy->Evaluator()->DiffOrder());
     if (trial_proxies.Size() == 0) trial_difforder = 0;
