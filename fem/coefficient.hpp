@@ -1437,7 +1437,7 @@ public:
         values(i,j) = lam (in0(i,j), in1(i,j));
   }
   
-  
+  /*
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
                          FlatArray<AFlatMatrix<double>*> input,
                          AFlatMatrix<double> values) const
@@ -1447,6 +1447,7 @@ public:
     for (size_t i = 0; i < values.Height()*values.VWidth(); i++)
       values.Get(i) = lam (in0.Get(i), in1.Get(i));
   }
+  */
 
   
   virtual void Evaluate (const BaseMappedIntegrationRule & mir, FlatArray<FlatMatrix<>*> input,
@@ -1623,7 +1624,8 @@ public:
           */
         }
   }
-  
+
+  /*
   virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & mir, 
                               AFlatMatrix<double> values, AFlatMatrix<double> deriv) const
   {
@@ -1653,7 +1655,9 @@ public:
           deriv.Get(i,k) = res.DValue(0);
         }
   }
-  
+  */
+
+  /*
   virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & mir, 
                                AFlatMatrix<double> values, AFlatMatrix<double> deriv,
                                AFlatMatrix<double> dderiv) const
@@ -1692,8 +1696,9 @@ public:
           dderiv.Get(i,k) = res.DDValue(0);
         } 
   }
+  */
 
-
+  /*
   virtual void EvaluateDeriv(const SIMD_BaseMappedIntegrationRule & mir,
                              FlatArray<AFlatMatrix<>*> input,
                              FlatArray<AFlatMatrix<>*> dinput,
@@ -1717,8 +1722,9 @@ public:
         }
 
   }
+  */
 
-
+  /*
   virtual void EvaluateDDeriv(const SIMD_BaseMappedIntegrationRule & mir,
                               FlatArray<AFlatMatrix<>*> input,
                               FlatArray<AFlatMatrix<>*> dinput,
@@ -1748,8 +1754,8 @@ public:
           dderiv.Get(i,k) = res.DDValue(0);
         }
   }
-
-
+  */
+  
   
     /*
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
