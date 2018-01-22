@@ -15,7 +15,6 @@ template <> INLINE void MatKernelMultAB<1, 1, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum00(0);
 for (size_t i = 0; i < n; i++, pa++, pb += db) {
 SIMD<double> b0(pb+0*SW);
@@ -70,7 +69,6 @@ template <> INLINE void MatKernelMultAB<1, 1, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum00(0);
 for (size_t i = 0; i < n; i++, pa++, pb += db) {
 SIMD<double> b0 = pb[0];
@@ -125,7 +123,6 @@ template <> INLINE void MatKernelMultAB<2, 1, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum10(0);
 for (size_t i = 0; i < n; i++, pa++, pb += db) {
@@ -197,7 +194,6 @@ template <> INLINE void MatKernelMultAB<2, 1, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum10(0);
 for (size_t i = 0; i < n; i++, pa++, pb += db) {
@@ -269,7 +265,6 @@ template <> INLINE void MatKernelMultAB<3, 1, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum10(0);
 SIMD<double> sum20(0);
@@ -358,7 +353,6 @@ template <> INLINE void MatKernelMultAB<3, 1, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum10(0);
 SIMD<double> sum20(0);
@@ -447,7 +441,6 @@ template <> INLINE void MatKernelMultAB<4, 1, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum10(0);
 SIMD<double> sum20(0);
@@ -553,7 +546,6 @@ template <> INLINE void MatKernelMultAB<4, 1, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum10(0);
 SIMD<double> sum20(0);
@@ -659,7 +651,6 @@ template <> INLINE void MatKernelMultAB<5, 1, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum10(0);
 SIMD<double> sum20(0);
@@ -782,7 +773,6 @@ template <> INLINE void MatKernelMultAB<5, 1, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum10(0);
 SIMD<double> sum20(0);
@@ -905,7 +895,6 @@ template <> INLINE void MatKernelMultAB<6, 1, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum10(0);
 SIMD<double> sum20(0);
@@ -1045,7 +1034,6 @@ template <> INLINE void MatKernelMultAB<6, 1, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum10(0);
 SIMD<double> sum20(0);
@@ -1184,7 +1172,6 @@ template <> void MatKernelAlignedMultAB<1, 1>
      SIMD<double> * pb, size_t db,
      SIMD<double> * pc, size_t dc)
 {
-SIMD<double> * hpc = pc;
 SIMD<double> sum00(0);
 for (size_t i = 0; i < n; i++, pa++, pb += db) {
 SIMD<double> b0(pb[0]);
@@ -1200,7 +1187,6 @@ template <> void MatKernelAlignedMultAB<2, 1>
      SIMD<double> * pb, size_t db,
      SIMD<double> * pc, size_t dc)
 {
-SIMD<double> * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum10(0);
 for (size_t i = 0; i < n; i++, pa++, pb += db) {
@@ -1221,7 +1207,6 @@ template <> void MatKernelAlignedMultAB<3, 1>
      SIMD<double> * pb, size_t db,
      SIMD<double> * pc, size_t dc)
 {
-SIMD<double> * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum10(0);
 SIMD<double> sum20(0);
@@ -1247,7 +1232,6 @@ template <> void MatKernelAlignedMultAB<4, 1>
      SIMD<double> * pb, size_t db,
      SIMD<double> * pc, size_t dc)
 {
-SIMD<double> * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum10(0);
 SIMD<double> sum20(0);
@@ -1278,7 +1262,6 @@ template <> void MatKernelAlignedMultAB<5, 1>
      SIMD<double> * pb, size_t db,
      SIMD<double> * pc, size_t dc)
 {
-SIMD<double> * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum10(0);
 SIMD<double> sum20(0);
@@ -1314,7 +1297,6 @@ template <> void MatKernelAlignedMultAB<6, 1>
      SIMD<double> * pb, size_t db,
      SIMD<double> * pc, size_t dc)
 {
-SIMD<double> * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum10(0);
 SIMD<double> sum20(0);
@@ -1356,7 +1338,6 @@ template <> INLINE void MatKernelMultAB<1, 2, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum01(0);
 for (size_t i = 0; i < n; i++, pa++, pb += db) {
@@ -1423,7 +1404,6 @@ template <> INLINE void MatKernelMultAB<1, 2, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum01(0);
 for (size_t i = 0; i < n; i++, pa++, pb += db) {
@@ -1490,7 +1470,6 @@ template <> INLINE void MatKernelMultAB<2, 2, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum01(0);
 SIMD<double> sum10(0);
@@ -1583,7 +1562,6 @@ template <> INLINE void MatKernelMultAB<2, 2, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum01(0);
 SIMD<double> sum10(0);
@@ -1676,7 +1654,6 @@ template <> INLINE void MatKernelMultAB<3, 2, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum01(0);
 SIMD<double> sum10(0);
@@ -1795,7 +1772,6 @@ template <> INLINE void MatKernelMultAB<3, 2, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum01(0);
 SIMD<double> sum10(0);
@@ -1914,7 +1890,6 @@ template <> INLINE void MatKernelMultAB<4, 2, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum01(0);
 SIMD<double> sum10(0);
@@ -2059,7 +2034,6 @@ template <> INLINE void MatKernelMultAB<4, 2, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum01(0);
 SIMD<double> sum10(0);
@@ -2204,7 +2178,6 @@ template <> INLINE void MatKernelMultAB<5, 2, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum01(0);
 SIMD<double> sum10(0);
@@ -2375,7 +2348,6 @@ template <> INLINE void MatKernelMultAB<5, 2, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum01(0);
 SIMD<double> sum10(0);
@@ -2546,7 +2518,6 @@ template <> INLINE void MatKernelMultAB<6, 2, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum01(0);
 SIMD<double> sum10(0);
@@ -2743,7 +2714,6 @@ template <> INLINE void MatKernelMultAB<6, 2, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum01(0);
 SIMD<double> sum10(0);
@@ -2939,7 +2909,6 @@ template <> void MatKernelAlignedMultAB<1, 2>
      SIMD<double> * pb, size_t db,
      SIMD<double> * pc, size_t dc)
 {
-SIMD<double> * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum01(0);
 for (size_t i = 0; i < n; i++, pa++, pb += db) {
@@ -2959,7 +2928,6 @@ template <> void MatKernelAlignedMultAB<2, 2>
      SIMD<double> * pb, size_t db,
      SIMD<double> * pc, size_t dc)
 {
-SIMD<double> * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum01(0);
 SIMD<double> sum10(0);
@@ -2987,7 +2955,6 @@ template <> void MatKernelAlignedMultAB<3, 2>
      SIMD<double> * pb, size_t db,
      SIMD<double> * pc, size_t dc)
 {
-SIMD<double> * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum01(0);
 SIMD<double> sum10(0);
@@ -3023,7 +2990,6 @@ template <> void MatKernelAlignedMultAB<4, 2>
      SIMD<double> * pb, size_t db,
      SIMD<double> * pc, size_t dc)
 {
-SIMD<double> * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum01(0);
 SIMD<double> sum10(0);
@@ -3067,7 +3033,6 @@ template <> void MatKernelAlignedMultAB<5, 2>
      SIMD<double> * pb, size_t db,
      SIMD<double> * pc, size_t dc)
 {
-SIMD<double> * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum01(0);
 SIMD<double> sum10(0);
@@ -3119,7 +3084,6 @@ template <> void MatKernelAlignedMultAB<6, 2>
      SIMD<double> * pb, size_t db,
      SIMD<double> * pc, size_t dc)
 {
-SIMD<double> * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum01(0);
 SIMD<double> sum10(0);
@@ -3180,7 +3144,6 @@ template <> INLINE void MatKernelMultAB<1, 3, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum01(0);
 SIMD<double> sum02(0);
@@ -3259,7 +3222,6 @@ template <> INLINE void MatKernelMultAB<1, 3, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum01(0);
 SIMD<double> sum02(0);
@@ -3338,7 +3300,6 @@ template <> INLINE void MatKernelMultAB<2, 3, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum01(0);
 SIMD<double> sum02(0);
@@ -3452,7 +3413,6 @@ template <> INLINE void MatKernelMultAB<2, 3, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum01(0);
 SIMD<double> sum02(0);
@@ -3566,7 +3526,6 @@ template <> INLINE void MatKernelMultAB<3, 3, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum01(0);
 SIMD<double> sum02(0);
@@ -3715,7 +3674,6 @@ template <> INLINE void MatKernelMultAB<3, 3, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum01(0);
 SIMD<double> sum02(0);
@@ -3864,7 +3822,6 @@ template <> INLINE void MatKernelMultAB<4, 3, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum01(0);
 SIMD<double> sum02(0);
@@ -4048,7 +4005,6 @@ template <> INLINE void MatKernelMultAB<4, 3, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum01(0);
 SIMD<double> sum02(0);
@@ -4232,7 +4188,6 @@ template <> INLINE void MatKernelMultAB<5, 3, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum01(0);
 SIMD<double> sum02(0);
@@ -4451,7 +4406,6 @@ template <> INLINE void MatKernelMultAB<5, 3, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum01(0);
 SIMD<double> sum02(0);
@@ -4670,7 +4624,6 @@ template <> INLINE void MatKernelMultAB<6, 3, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum01(0);
 SIMD<double> sum02(0);
@@ -4924,7 +4877,6 @@ template <> INLINE void MatKernelMultAB<6, 3, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum01(0);
 SIMD<double> sum02(0);
@@ -5177,7 +5129,6 @@ template <> void MatKernelAlignedMultAB<1, 3>
      SIMD<double> * pb, size_t db,
      SIMD<double> * pc, size_t dc)
 {
-SIMD<double> * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum01(0);
 SIMD<double> sum02(0);
@@ -5201,7 +5152,6 @@ template <> void MatKernelAlignedMultAB<2, 3>
      SIMD<double> * pb, size_t db,
      SIMD<double> * pc, size_t dc)
 {
-SIMD<double> * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum01(0);
 SIMD<double> sum02(0);
@@ -5236,7 +5186,6 @@ template <> void MatKernelAlignedMultAB<3, 3>
      SIMD<double> * pb, size_t db,
      SIMD<double> * pc, size_t dc)
 {
-SIMD<double> * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum01(0);
 SIMD<double> sum02(0);
@@ -5282,7 +5231,6 @@ template <> void MatKernelAlignedMultAB<4, 3>
      SIMD<double> * pb, size_t db,
      SIMD<double> * pc, size_t dc)
 {
-SIMD<double> * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum01(0);
 SIMD<double> sum02(0);
@@ -5339,7 +5287,6 @@ template <> void MatKernelAlignedMultAB<5, 3>
      SIMD<double> * pb, size_t db,
      SIMD<double> * pc, size_t dc)
 {
-SIMD<double> * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum01(0);
 SIMD<double> sum02(0);
@@ -5407,7 +5354,6 @@ template <> void MatKernelAlignedMultAB<6, 3>
      SIMD<double> * pb, size_t db,
      SIMD<double> * pc, size_t dc)
 {
-SIMD<double> * hpc = pc;
 SIMD<double> sum00(0);
 SIMD<double> sum01(0);
 SIMD<double> sum02(0);
@@ -5493,7 +5439,6 @@ template <> void MatKernelMultABMask<1, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum0(0);
 for (size_t i = 0; i < n; i++, pa++, pb += db) {
 SIMD<double> b((double*)pb,mask);
@@ -5548,7 +5493,6 @@ template <> void MatKernelMultABMask<1, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum0(0);
 for (size_t i = 0; i < n; i++, pa++, pb += db) {
 SIMD<double> b((double*)pb,mask);
@@ -5603,7 +5547,6 @@ template <> void MatKernelMultABMask<2, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum0(0);
 SIMD<double> sum1(0);
 for (size_t i = 0; i < n; i++, pa++, pb += db) {
@@ -5675,7 +5618,6 @@ template <> void MatKernelMultABMask<2, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum0(0);
 SIMD<double> sum1(0);
 for (size_t i = 0; i < n; i++, pa++, pb += db) {
@@ -5747,7 +5689,6 @@ template <> void MatKernelMultABMask<3, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum0(0);
 SIMD<double> sum1(0);
 SIMD<double> sum2(0);
@@ -5836,7 +5777,6 @@ template <> void MatKernelMultABMask<3, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum0(0);
 SIMD<double> sum1(0);
 SIMD<double> sum2(0);
@@ -5925,7 +5865,6 @@ template <> void MatKernelMultABMask<4, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum0(0);
 SIMD<double> sum1(0);
 SIMD<double> sum2(0);
@@ -6031,7 +5970,6 @@ template <> void MatKernelMultABMask<4, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum0(0);
 SIMD<double> sum1(0);
 SIMD<double> sum2(0);
@@ -6137,7 +6075,6 @@ template <> void MatKernelMultABMask<5, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum0(0);
 SIMD<double> sum1(0);
 SIMD<double> sum2(0);
@@ -6260,7 +6197,6 @@ template <> void MatKernelMultABMask<5, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum0(0);
 SIMD<double> sum1(0);
 SIMD<double> sum2(0);
@@ -6383,7 +6319,6 @@ template <> void MatKernelMultABMask<6, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum0(0);
 SIMD<double> sum1(0);
 SIMD<double> sum2(0);
@@ -6523,7 +6458,6 @@ template <> void MatKernelMultABMask<6, SET>
      double * pc, size_t dc)
 {
 constexpr int SW = SIMD<double>::Size();
-double * hpc = pc;
 SIMD<double> sum0(0);
 SIMD<double> sum1(0);
 SIMD<double> sum2(0);
