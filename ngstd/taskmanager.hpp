@@ -479,6 +479,11 @@ public:
             GetNext();
           }
       }
+      ~SharedIterator()
+      {
+        if (processed_by_me)
+          processed += processed_by_me;
+      }
       
       SharedIterator & operator++ () { GetNext(); return *this;}
 
