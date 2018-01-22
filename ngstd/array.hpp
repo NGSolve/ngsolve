@@ -1340,6 +1340,7 @@ namespace ngstd
     HTArray (const HTArray &) = default;
     HTArray & operator= (const HTArray &) = default;
 
+    /*
     T * Ptr () { return &head; }
     T & operator[] (size_t i) { return Ptr()[i]; }
 
@@ -1351,7 +1352,11 @@ namespace ngstd
       // assert(false, "HTArray index error");
       return head;
     }
-
+    */
+    T * Ptr () { return (T*)(void*)&head; }
+    T & operator[] (size_t i) { return Ptr()[i]; }
+    const T * Ptr () const { return (const T*)(const void*)&head; }
+    const T & operator[] (size_t i) const { return Ptr()[i]; }
   };
 
   template<size_t S, typename T>
