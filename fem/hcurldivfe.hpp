@@ -761,7 +761,7 @@ namespace ngfem
   {
   protected:
     enum { DIM = ET_trait<ET>::DIM };
-    enum { DIM_STRESS = DIM }; //check this!!!
+    enum { DIM_STRESS = (DIM+1)*(DIM+1) }; //check this!!!
     
     using VertexOrientedFE<ET>::vnums;
     using HCurlDivSurfaceFiniteElement<ET_trait<ET>::DIM>::ndof;
@@ -808,7 +808,7 @@ namespace ngfem
     
     virtual void CalcMappedShape (const MappedIntegrationPoint<DIM,DIM+1> & mip,
                             BareSliceMatrix<double> shape) const
-    {      
+    {
       Vec<DIM, AutoDiff<DIM+1>> adp = mip;
       Vec<DIM, AutoDiffDiff<DIM+1>> addp;
       for (int i=0; i<DIM+1; i++)
@@ -818,10 +818,10 @@ namespace ngfem
       }
       Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM+1>> (addp),SBLambda([&](int nr,auto val)
       {
-	shape.Row(nr).AddSize(DIM_STRESS) = val;
-        //Vec<DIM_STRESS> vecshape = val.Shape();
-        //BareVector<double> matshape = shape.Row(nr);
-        //VecToMat<DIM+1> (vecshape, matshape);
+	if (DIM==1)
+	  shape.Row(nr).AddSize(DIM_STRESS) = val;
+	else
+	  shape.Row(nr).AddSize(1) = val;
       }));      
     }
 
@@ -844,7 +844,7 @@ namespace ngfem
     }
    template <typename Tx, typename TFA> 
     void T_CalcShape (TIP<1,Tx> ip/*AutoDiffDiff<2> hx[2]*/, TFA & shape) const
-    {
+    {      
       auto x = ip.x;
       AutoDiffDiff<2> ddlami[2] ={ x, 1-x };
       
@@ -857,14 +857,9 @@ namespace ngfem
 
       AutoDiffDiff<2> ls = ddlami[es],le = ddlami[ee];
       
-      //LegendrePolynomial::Eval(order_inner,le-ls,ha);
-      IntegratedLegendreMonomialExt::Calc(order_inner+1, le-ls,ha);
-      
+      LegendrePolynomial::Eval(order_inner,le-ls,ha);    
       for(int l = 0; l <= order_inner; l++)	
 	shape[ii++] = Sigma_gradv(le*ls*ha[l]).Shape();
-	//shape[ii++] =  -ha[l].DDValue(0,0) * 0.5;
-	
-      
     };
   };
 
