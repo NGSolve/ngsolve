@@ -4074,30 +4074,31 @@ namespace ngcomp
         LocalHeap lh (2000000, "biform-energy", true);
 
         for (auto vb : { VOL, BND, BBND, BBBND })
-          IterateElements 
-            (*fespace, vb, lh, 
-             [&] (FESpace::Element ei, LocalHeap & lh)
-             {
-               const FiniteElement & fel = fespace->GetFE (ei, lh);
-               ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
-
-               FlatArray<int> dnums = ei.GetDofs();
-               FlatVector<SCAL> elvecx (dnums.Size()*GetFESpace()->GetDimension(), lh);
-               
-               x.GetIndirect (dnums, elvecx);
-               fespace->TransformVec (ei, elvecx, TRANSFORM_SOL);
-               
-               double energy_T = 0;
-
-               for (auto & bfi : VB_parts[vb])
-                 {
-		   if (!bfi->DefinedOn (ei.GetIndex())) continue;
-                   energy_T += bfi->Energy (fel, eltrans, elvecx, lh);
-                 }
-
-               energy += energy_T;
-             });
-
+          if (VB_parts[vb].Size())
+            IterateElements 
+              (*fespace, vb, lh, 
+               [&] (FESpace::Element ei, LocalHeap & lh)
+               {
+                 const FiniteElement & fel = fespace->GetFE (ei, lh);
+                 ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
+                 
+                 FlatArray<int> dnums = ei.GetDofs();
+                 FlatVector<SCAL> elvecx (dnums.Size()*GetFESpace()->GetDimension(), lh);
+                 
+                 x.GetIndirect (dnums, elvecx);
+                 fespace->TransformVec (ei, elvecx, TRANSFORM_SOL);
+                 
+                 double energy_T = 0;
+                 
+                 for (auto & bfi : VB_parts[vb])
+                   {
+                     if (!bfi->DefinedOn (ei.GetIndex())) continue;
+                     energy_T += bfi->Energy (fel, eltrans, elvecx, lh);
+                   }
+                 
+                 energy += energy_T;
+               });
+        
         
         /*
         bool hasbound = false;
