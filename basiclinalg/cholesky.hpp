@@ -372,8 +372,30 @@ namespace ngbla
   }
 
   
+  template <typename T, ORDERING ORD>
+  void SolveLDL (SliceMatrix<T,ORD> mat, FlatVector<T> sol)
+  {
+    size_t n = mat.Height();
+    
+    for (size_t i = 0; i < n; i++)
+      {
+        T tmp = mat(i,i)*sol(i);
+        for (size_t j = i+1; j < n; j++)
+          sol(j) -= mat(j,i) * tmp;
+      }
+    
+    for (size_t i = 0; i < n; i++)
+      sol(i) *= mat(i,i);
+    
+    for (size_t i = n; i--> 0; )
+      {
+        T hsum{0};
+        for (size_t j = i+1; j < n; j++)
+          hsum += mat(j,i)*sol(j);
+        sol(i) -= mat(i,i) * hsum;
+      }
+  }
 
-  
   
 
   
