@@ -580,6 +580,8 @@ public:
 	 else
 	   throw Exception("illegal element in HDivHighOrderSurfaceFESpace :: GetFE BBND");
        }
+     else // BBBND
+       return * new (alloc) DummyFE<ET_POINT>();
   }
 
   template<ELEMENT_TYPE ET>

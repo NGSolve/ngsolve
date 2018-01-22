@@ -779,7 +779,7 @@ namespace ngcomp
       pn2 = edge.vertices[1];
     }
     /// returns vertex numbers of edge
-    [[deprecated("Use GetEdgeNums(enr) instead!")]]                                
+    [[deprecated("Use GetEdgePNums(enr) instead!")]]                                
     void GetEdgePNums (int enr, Array<int> & pnums) const;
     /// returns vertex numbers of edge
     /*
