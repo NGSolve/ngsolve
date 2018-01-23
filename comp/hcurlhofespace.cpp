@@ -741,7 +741,7 @@ namespace ngcomp
       {
         size_t nedge = ma->GetNEdges();
         size_t nface = ma->GetNFaces();
-        size_t ncell = ma->GetNNodes(NT_CELL);
+        // size_t ncell = ma->GetNNodes(NT_CELL);
 
         ndof = nedge;
         

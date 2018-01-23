@@ -19,7 +19,7 @@ namespace ngstd
    operations are overloaded by using product-rule etc. etc. 
 **/
 template <int D, typename SCAL = double>
-class AutoDiff
+class AutoDiff : public AlignedAlloc<AutoDiff<D,SCAL>>
 {
   SCAL val;
   SCAL dval[D?D:1];

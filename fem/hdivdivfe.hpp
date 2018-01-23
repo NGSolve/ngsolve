@@ -896,7 +896,7 @@ namespace ngfem
 
     int comp;
   public:
-    T_S_xz ( int acomp, AutoDiff<2,T> auv, AutoDiff<1,T> aw) : comp(acomp), uv(auv), w(aw) { ; }
+    T_S_xz ( int acomp, AutoDiff<2,T> auv, AutoDiff<1,T> aw) : uv(auv), w(aw), comp(acomp) { ; }
     Vec<6,T> Shape() 
     { 
       Vec<6,T> sigma;
@@ -1626,8 +1626,8 @@ namespace ngfem
         1-xx + yy + zz};
       int ii = 0;
       
-      int maxorder_facet =
-        max2(order_facet[0][0],max2(order_facet[1][0],order_facet[2][0]));
+      // int maxorder_facet =
+      //     max2(order_facet[0][0],max2(order_facet[1][0],order_facet[2][0]));
 
       const FACE * faces = ElementTopology::GetFaces(ET_HEX);
 

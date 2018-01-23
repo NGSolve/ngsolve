@@ -364,7 +364,7 @@ namespace ngfem
     Matrix<SIMD<double>> avalues(D, simdir.Size());
     FE_ElementTransformation<D,D> trafo(ElementType());
     static LocalHeap lh (100000, "FE - Timing");
-    auto & mir = trafo(ir, lh);
+    // auto & mir = trafo(ir, lh);
     auto & simdmir = trafo(simdir, lh);
     
     coefs = 1;
