@@ -495,34 +495,32 @@ namespace ngfem
       
       int ii = 0;
       
+      int oi=order_inner;      
       int maxorder_facet =
         max2(order_facet[0],max2(order_facet[1],order_facet[2]));
 
       const EDGE * edges = ElementTopology::GetEdges(ET_TRIG);
 
-      ArrayMem<AutoDiffDiff<2>,20> ha(maxorder_facet+1);
-      ArrayMem<AutoDiffDiff<2>,20> v(order_inner+1), dubb(order_inner*(order_inner+1)/2), u(order_inner + 3);
+      ArrayMem<AutoDiffDiff<2>,20> ha(maxorder_facet);
+      ArrayMem<AutoDiffDiff<2>,20> v(oi), u(oi-1);
 
       for (int i = 0; i < 3; i++)
         {
 	  INT<2> e = ET_trait<ET_TRIG>::GetEdgeSort (i, vnums);	  	  
           AutoDiffDiff<2> ls = ddlami[e[0]], le = ddlami[e[1]];
+	  	 
+	  IntLegNoBubble::EvalMult (maxorder_facet, le-ls, 0.25*le*ls, ha);
 	  
-	  ScaledLegendrePolynomial(maxorder_facet,le-ls, le+ls,ha);
-          
           for (int l = 0; l <= order_facet[i]; l++)	    
-	    shape[ii++] = Sigma_gradv(le*ls*ha[l]);            
+	    shape[ii++] = Sigma_gradv(ha[l]);	 
         }
       
       AutoDiffDiff<2> ls = ddlami[0];
       AutoDiffDiff<2> le = ddlami[1];
       AutoDiffDiff<2> lt = ddlami[2];
       
-      int oi=order_inner;
-
-      //ScaledIntegratedLegendrePolynomial(oi+3,le-lt,le+lt,u);
-      IntegratedLegendreMonomialExt::CalcTrigExt(oi+3,le-lt,1-le-lt,u);
-      LegendrePolynomial::EvalMult(oi+1, 2*ls-1, ls, v);
+      IntLegNoBubble::EvalMult (oi-1, le-lt, 0.25*le*lt, u);
+      LegendrePolynomial::EvalMult(oi-1, 2*ls-1, ls, v);
       
       for(int i = 0; i <= oi-1; i++)
       {
@@ -547,9 +545,8 @@ namespace ngfem
 	    }	  
 	}
       
-      //ScaledIntegratedLegendrePolynomial(oi+3,le-ls,le+ls,u);
-      IntegratedLegendreMonomialExt::CalcTrigExt(oi+3,le-ls,1-le-ls,u);
-      LegendrePolynomial::EvalMult(oi+1, 2*lt-1, lt, v);
+      IntLegNoBubble::EvalMult (oi-1, le-ls, 0.25*le*ls, u);
+      LegendrePolynomial::EvalMult(oi-1, 2*lt-1, lt, v);
       
       for(int i = 0; i <= oi-1; i++)
       {
@@ -577,26 +574,6 @@ namespace ngfem
       LegendrePolynomial::Eval(oi, 2*lt-1, v);
       for (int i = 0; i <= oi; i++)
         shape[ii++] = T_type4(le, ls, v[i]);
-      
-      
-      /*
-      //old basis   
-      LegendrePolynomial::Eval(oi, 2*lt-1, v); 
-      DubinerBasis3::Eval (oi-1, ls, le, dubb); 
-      //Type one
-      for (int i = 0; i < oi+1; i++)
-	{	  
-	shape[ii++] = T_Id_v<2>(v[i]);
-	}      
-      
-      for(int i = 0; i < (oi+1)*oi/2; i++)
-      {	
-      	shape[ii++] = T_Dl2xRotDl1_v(ls,lt,le*dubb[i]);
-      	shape[ii++] = T_Dl2xRotDl1_v(lt,ls,le*dubb[i]);
-      	shape[ii++] = T_Dl2xRotDl1_v(le,lt,ls*dubb[i]);
-      	shape[ii++] = T_Dl2xRotDl1_v(ls,le,lt*dubb[i]);	  
-      }
-      */
       
     };
   }; 
