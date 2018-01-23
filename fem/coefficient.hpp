@@ -64,6 +64,7 @@ namespace ngfem
       Evaluate (ir, values);
     }
 
+    [[deprecated("Use Evaluate (SIMD) instead")]]        
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
                            AFlatMatrix<double> values) const
     {
@@ -85,7 +86,6 @@ namespace ngfem
       throw ExceptionNOSIMD (string("cf::EvaluateDDeriv(simd) not overloaded for ")+typeid(*this).name());
     }
 
-    [[deprecated("Use Evaluate (SIMD) instead")]]    
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
                            FlatArray<BareSliceMatrix<SIMD<double>>> input,
                            BareSliceMatrix<SIMD<double>> values) const
@@ -360,6 +360,7 @@ namespace ngfem
                            BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>> values) const
     { Evaluate (ir, values); }
 
+    /*
     virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
                                 FlatArray<AFlatMatrix<>*> input,
                                 FlatArray<AFlatMatrix<>*> dinput,
@@ -382,7 +383,8 @@ namespace ngfem
       deriv = 0.0;
       dderiv = 0.0;
     }
-
+    */
+    
     virtual void NonZeroPattern (const class ProxyUserData & ud,
                                  FlatVector<bool> nonzero,
                                  FlatVector<bool> nonzero_deriv,

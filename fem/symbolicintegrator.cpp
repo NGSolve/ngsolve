@@ -2092,15 +2092,16 @@ namespace ngfem
               for (CoefficientFunction * cf : gridfunction_cfs)
                 ud.AssignMemory (cf, ir_facet.GetNIP(), cf->Dimension(), lh);
 
-              AFlatMatrix<> val(1, mir.IR().GetNIP(), lh);
-    
+              // AFlatMatrix<> val(1, mir.IR().GetNIP(), lh);
+              FlatMatrix<AutoDiff<1,SIMD<double>>> val(1, mir.Size(), lh);
+              
               for (int l1 : Range(test_proxies))
                 {
                   HeapReset hr(lh);              
                   auto proxy2 = test_proxies[l1];
-                  AFlatMatrix<> bdbmat1(elmat.Width()*proxy2->Dimension(), ir_facet.GetNIP(), lh);
-                  AFlatMatrix<> hbdbmat1(elmat.Width(), proxy2->Dimension()*SIMD<double>::Size()*ir_facet.Size(),
-                                         &bdbmat1.Get(0,0));
+                  FlatMatrix<SIMD<double>> bdbmat1(elmat.Width()*proxy2->Dimension(), ir_facet.Size(), lh);
+                  FlatMatrix<SIMD<double>> hbdbmat1(elmat.Width(), proxy2->Dimension()*ir_facet.Size(),
+                                                    &bdbmat1(0,0));
                   bdbmat1 = 0.0;
                   
                   for (int k1 : Range(trial_proxies))
@@ -2108,7 +2109,7 @@ namespace ngfem
                       HeapReset hr(lh);
                       auto proxy1 = trial_proxies[k1];
                       
-                      AFlatMatrix<> proxyvalues(proxy1->Dimension()*proxy2->Dimension(), ir_facet.GetNIP(), lh);
+                      FlatMatrix<SIMD<double>> proxyvalues(proxy1->Dimension()*proxy2->Dimension(), ir_facet.Size(), lh);
                       
                       for (size_t k = 0, kk = 0; k < proxy1->Dimension(); k++)
                         for (size_t l = 0; l < proxy2->Dimension(); l++, kk++)
@@ -2118,18 +2119,18 @@ namespace ngfem
                             ud.testfunction = proxy2;
                             ud.test_comp = l;
                             
-                            cf -> EvaluateDeriv (mir, val, proxyvalues.Rows(kk,kk+1));
+                            // cf -> EvaluateDeriv (mir, val, proxyvalues.Rows(kk,kk+1));
+                            cf -> Evaluate (mir, val);
+                            auto row = proxyvalues.Row(kk);
+                            for (auto j : Range(mir.Size()))
+                              row(j) = val(j).DValue(0);
                           }
                       
                       for (size_t i = 0; i < mir.Size(); i++)
-                        {
-                          auto fac = mir[i].GetWeight();
-                          for (size_t j = 0; j < proxyvalues.Height(); j++)
-                            proxyvalues.Get(j,i) *= fac;
-                        }
+                        proxyvalues.Col(i) *= mir[i].GetWeight();                        
                       
                       IntRange r1 = proxy1->Evaluator()->UsedDofs(fel);
-                      AFlatMatrix<> bbmat1(elmat.Width()*proxy1->Dimension(), ir_facet.GetNIP(), lh);
+                      FlatMatrix<SIMD<double>> bbmat1(elmat.Width()*proxy1->Dimension(), ir_facet.Size(), lh);
                       proxy1->Evaluator()->CalcMatrix(fel, mir, bbmat1);
                       
                       for (auto i : r1)
@@ -2145,12 +2146,12 @@ namespace ngfem
                   
                   IntRange r2 = proxy2->Evaluator()->UsedDofs(fel);
                   
-                  AFlatMatrix<> bbmat2(elmat.Height()*proxy2->Dimension(), ir_facet.GetNIP(), lh);
-                  AFlatMatrix<> hbbmat2(elmat.Height(), proxy2->Dimension()*SIMD<double>::Size()*ir_facet.Size(),
-                                        &bbmat2.Get(0,0));
+                  FlatMatrix<SIMD<double>> bbmat2(elmat.Height()*proxy2->Dimension(), ir_facet.Size(), lh);
+                  FlatMatrix<SIMD<double>> hbbmat2(elmat.Height(), proxy2->Dimension()*ir_facet.Size(),
+                                                   &bbmat2(0,0));
 
                   proxy2->Evaluator()->CalcMatrix(fel, mir, bbmat2);
-                  AddABt (hbbmat2.Rows(r2), hbdbmat1, SliceMatrix<> (elmat.Rows(r2)));
+                  AddABt (hbbmat2.Rows(r2), hbdbmat1, elmat.Rows(r2));
                 }
             }
           /*
