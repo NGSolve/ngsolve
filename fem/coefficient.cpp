@@ -2022,7 +2022,7 @@ public:
   }
 
 
-
+  /*
   virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & mir,
                               AFlatMatrix<> result,
                               AFlatMatrix<> deriv) const
@@ -2100,7 +2100,7 @@ public:
         dderiv.Get(0,k) = ddsum;
       }
   }
-
+  */
 
   
   virtual bool ElementwiseConstant () const
@@ -3397,6 +3397,7 @@ public:
     
   }
 
+  /*
     virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & mir,
                                 AFlatMatrix<> result,
                                 AFlatMatrix<> deriv) const
@@ -3476,7 +3477,7 @@ public:
               dderiv.Get(j*dims[1]+k, i) = ddin0.Get(k*dims[0]+j, i);
         }
     }
-  
+  */
   
   };  
 
@@ -3826,6 +3827,7 @@ public:
    }  
 
 
+  /*
   virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & mir, 
                               AFlatMatrix<double> values, AFlatMatrix<double> deriv) const
   {
@@ -3880,6 +3882,8 @@ public:
     deriv.Row(0) = dinput[0] -> Row(comp);
     dderiv.Row(0) = ddinput[0] -> Row(comp);
   }
+  */
+
   
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
                                FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const
@@ -4483,7 +4487,7 @@ MakeOtherCoefficientFunction (shared_ptr<CoefficientFunction> me)
     virtual string GetName () const;
     */
 
-
+    /*
     virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
                                 AFlatMatrix<> values,
                                 AFlatMatrix<> deriv) const
@@ -4510,16 +4514,6 @@ MakeOtherCoefficientFunction (shared_ptr<CoefficientFunction> me)
             values.Get(j,i) = IfPos(if_values.Get(0,i), then_values.Get(j,i), else_values.Get(j,i));
             deriv.Get(j,i) = IfPos(if_values.Get(0,i), then_deriv.Get(j,i), else_deriv.Get(j,i));
           }
-      /*
-      *testout << "IfPos::simd" << endl
-               << "ifval = " << endl << if_values
-               << "then-val = " << endl << then_values
-               << "then-dval = " << endl << then_deriv
-               << "else-val = " << endl << else_values
-               << "else-dval = " << endl << else_deriv
-               << "val = " << endl << values
-               << "deriv = " << endl << deriv;
-      */
     }
 
     virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
@@ -4546,6 +4540,7 @@ MakeOtherCoefficientFunction (shared_ptr<CoefficientFunction> me)
                                            else_deriv.Get(k,i));
           }
     }
+    */
     
     virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
     {
@@ -4718,6 +4713,7 @@ public:
   }
   */
 
+  
   template <typename T>
   void T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<T> values) const
   {
@@ -4751,6 +4747,7 @@ public:
       }
   }
 
+  /*
   virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
                               AFlatMatrix<> result,
                               AFlatMatrix<> deriv) const
@@ -4796,7 +4793,8 @@ public:
         dderiv.Rows(base,base+dimi[i]) = *ddinput[i];
         base += dimi[i];
       }
-  }
+      }
+  */
   
   virtual void Evaluate(const BaseMappedIntegrationRule & ir,
                         FlatMatrix<Complex> result) const
@@ -5583,7 +5581,7 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
       dderiv = ddtemp.Last();
     }
 
-    
+#ifdef OLD
     virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir, 
                                 AFlatMatrix<double> values, AFlatMatrix<double> deriv) const
     {
@@ -5679,7 +5677,8 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
       deriv = dtemp.Last();
       dderiv = ddtemp.Last();
     }
-
+#endif
+    
 
 
     
