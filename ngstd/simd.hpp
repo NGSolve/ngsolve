@@ -88,26 +88,28 @@ namespace ngstd
   template <typename T>
   class AlignedAlloc
   {
-    protected:
-      static void * aligned_malloc(size_t s)
-      {
-        // Assume 16 byte alignment of standard library
+  protected:
+    static void * aligned_malloc(size_t s)
+    {
+      // Assume 16 byte alignment of standard library
 #ifdef __SSE__        
-        if(alignof(T)>16)
-            return  _mm_malloc(s, alignof(T));
-        else
+      if(alignof(T)>16)
+        return  _mm_malloc(s, alignof(T));
+      else
 #endif          
-            return malloc(s);
-      }
-
+        // return malloc(s);
+        return new char[s];
+    }
+    
       static void aligned_free(void *p)
       {
 #ifdef __SSE__        
         if(alignof(T)>16)
-            _mm_free(p);
+          _mm_free(p);
         else
 #endif
-            free(p);
+          // free(p);
+          delete (char*)p;
       }
 
   public:

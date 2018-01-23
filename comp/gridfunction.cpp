@@ -984,16 +984,13 @@ namespace ngcomp
 
   GridFunctionCoefficientFunction :: 
   GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, int acomp)
-    : CoefficientFunctionNoDerivative(1, agf->GetFESpace()->IsComplex()), gf(agf.get()), gf_shared_ptr(agf) /*, diffop (NULL)*/ , comp (acomp) 
+    : CoefficientFunctionNoDerivative(1, agf->GetFESpace()->IsComplex()),
+      gf_shared_ptr(agf), gf(agf.get()), comp (acomp) 
   {
     fes = gf->GetFESpace();
     SetDimensions (gf->Dimensions());
-    /*
-    diffop = gf->GetFESpace()->GetEvaluator(VOL);
-    trace_diffop = gf->GetFESpace()->GetEvaluator(BND);
-    ttrace_diffop = gf->GetFESpace()->GetEvaluator(BBND);
-    */
-    for (auto vb : { VOL, BND, BBND })
+
+    for (auto vb : { VOL, BND, BBND, BBBND })
       diffop[vb] = gf->GetFESpace()->GetEvaluator(vb);
   }
 
@@ -1003,26 +1000,17 @@ namespace ngcomp
 				   shared_ptr<DifferentialOperator> attrace_diffop,
                                    int acomp)
     : CoefficientFunctionNoDerivative(1, false),
-      // diffop (adiffop), trace_diffop(atrace_diffop), ttrace_diffop(attrace_diffop),
       diffop{adiffop,atrace_diffop, attrace_diffop},
       comp (acomp) 
   {
     ; // SetDimensions (gf->Dimensions());
 
-    for (auto vb : { VOL, BND, BBND } )
+    for (auto vb : { VOL, BND, BBND, BBBND } )
       if (diffop[vb])
         {
           SetDimensions (diffop[vb]->Dimensions());
           break;
         }
-    /*
-    if (diffop)
-      SetDimensions (diffop->Dimensions());
-    else if (trace_diffop)
-      SetDimensions (trace_diffop->Dimensions());
-    else if (ttrace_diffop)
-      SetDimensions (ttrace_diffop->Dimensions());
-    */
   }
 
   GridFunctionCoefficientFunction :: 
@@ -1032,9 +1020,8 @@ namespace ngcomp
 				   shared_ptr<DifferentialOperator> attrace_diffop,
                                    int acomp)
     : CoefficientFunctionNoDerivative(1,agf->IsComplex()),
-      gf(agf.get()),
       gf_shared_ptr(agf),
-      // diffop (adiffop), trace_diffop(atrace_diffop), ttrace_diffop(attrace_diffop),
+      gf(agf.get()),
       diffop{adiffop,atrace_diffop,attrace_diffop},
       comp (acomp) 
   {
@@ -1045,21 +1032,13 @@ namespace ngcomp
           SetDimensions (diffop[vb]->Dimensions());
           break;
         }
-    /*
-    if (diffop)
-      SetDimensions (diffop->Dimensions());
-    else if (trace_diffop)
-      SetDimensions (trace_diffop->Dimensions());
-    else if (ttrace_diffop)
-      SetDimensions (ttrace_diffop->Dimensions());
-    */
   }
   
   GridFunctionCoefficientFunction :: 
   GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, 
 				   shared_ptr<BilinearFormIntegrator> abfi, int acomp)
     : CoefficientFunctionNoDerivative(1, agf->IsComplex()),
-      gf(agf.get()), gf_shared_ptr(agf), /* bfi (abfi), */ comp (acomp) 
+      gf_shared_ptr(agf), gf(agf.get()), comp (acomp) 
   {
     fes = gf->GetFESpace();
     SetDimensions (gf->Dimensions());
@@ -1160,13 +1139,8 @@ namespace ngcomp
     RegionTimer reg (timer);
 
     const ElementTransformation & trafo = ip.GetTransformation();
-    
-    // int elnr = trafo.GetElementNr();
-    // VorB vb  = trafo.VB();
-    // ElementId ei(vb, elnr);
     ElementId ei = trafo.GetElementId();
 
-    // auto fes = gf->GetFESpace();
     const shared_ptr<MeshAccess> & ma = fes->GetMeshAccess();
 
     if (gf->GetLevelUpdated() != ma->GetNLevels())
@@ -1239,7 +1213,6 @@ namespace ngcomp
     VorB vb = ip.GetTransformation().VB();
     ElementId ei(vb, elnr);
 
-    // const FESpace & fes = *gf->GetFESpace();
     const shared_ptr<MeshAccess> & ma = fes->GetMeshAccess();
     
     if (!ip.GetTransformation().BelongsToMesh (ma.get()))
@@ -1308,8 +1281,6 @@ namespace ngcomp
     VorB vb = trafo.VB();
     ElementId ei(vb, elnr);
 
-    // const FESpace & fes = *gf->GetFESpace();
-
     if (!trafo.BelongsToMesh ((void*)(fes->GetMeshAccess().get())))
       {
         for (int i = 0; i < ir.Size(); i++)
@@ -1371,8 +1342,6 @@ namespace ngcomp
     int elnr = trafo.GetElementNr();
     VorB vb = trafo.VB();
     ElementId ei(vb, elnr);
-
-    // const FESpace & fes = *gf->GetFESpace();
 
     if (!trafo.BelongsToMesh ((void*)(fes->GetMeshAccess().get())))
       {
@@ -1447,8 +1416,6 @@ namespace ngcomp
     int elnr = trafo.GetElementNr();
     VorB vb = trafo.VB();
     ElementId ei(vb, elnr);
-
-    // const FESpace & fes = *gf->GetFESpace();
 
     if (!trafo.BelongsToMesh ((void*)(fes->GetMeshAccess().get())))
       {

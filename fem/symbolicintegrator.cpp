@@ -1347,7 +1347,7 @@ namespace ngfem
                               bdbmat1.Row(ii) = pw_mult(bbmat1.Row(ii), diagproxyvalues.Row(j));
                           */
                           
-                          size_t sr1 = r1.Size();
+                          // size_t sr1 = r1.Size();
                           for (size_t j = 0; j < dim_proxy1; j++)
                             {
                               auto hbbmat1 = bbmat1.RowSlice(j,dim_proxy1).Rows(r1);
@@ -3785,7 +3785,7 @@ namespace ngfem
   {
     if (userdefined_intrules[fel.ElementType()]) return *userdefined_intrules[fel.ElementType()];
 
-    int trial_difforder = 99, test_difforder = 99;
+    int trial_difforder = 99; 
     for (auto proxy : trial_proxies)
       trial_difforder = min2(trial_difforder, proxy->Evaluator()->DiffOrder());
     if (trial_proxies.Size() == 0) trial_difforder = 0;

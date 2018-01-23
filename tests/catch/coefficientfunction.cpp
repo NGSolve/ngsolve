@@ -68,9 +68,9 @@ void TestCoefficientFunction(shared_ptr<CoefficientFunction> cf,
   AMatrix<> simd_vals (cf->Dimension(), simd_ir.GetNIP());
 
   // AutoDiff<SIMD> alignment not working !!!!
-  // Matrix<AutoDiff<1,SIMD<double>>> simd_ad(cf->Dimension(), simd_ir.Size());
-  Array<SIMD<double>> mem(2*cf->Dimension()*simd_ir.Size());
-  FlatMatrix<AutoDiff<1,SIMD<double>>> simd_ad(cf->Dimension(), simd_ir.Size(), (AutoDiff<1,SIMD<double>>*)(void*)mem.Addr(0));
+  Matrix<AutoDiff<1,SIMD<double>>> simd_ad(cf->Dimension(), simd_ir.Size());
+  // Array<SIMD<double>> mem(2*cf->Dimension()*simd_ir.Size());
+  // FlatMatrix<AutoDiff<1,SIMD<double>>> simd_ad(cf->Dimension(), simd_ir.Size(), (AutoDiff<1,SIMD<double>>*)(void*)mem.Addr(0));
   Matrix<> c_vals(ir.Size(), cf->Dimension());
   Matrix<> derivs(ir.Size(), cf->Dimension());
   cf->EvaluateDeriv(mir,vals,derivs);
