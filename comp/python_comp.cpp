@@ -2205,6 +2205,7 @@ used_idnrs : list of int = None
     .def("__call__", 
          [](shared_ptr<GF> self, double x, double y, double z)
           {
+            HeapReset hr(glh);
             auto space = self->GetFESpace();
             auto evaluator = space->GetEvaluator();
             IntegrationPoint ip;
@@ -2243,6 +2244,7 @@ used_idnrs : list of int = None
    .def("__call__", 
         [](shared_ptr<GF> self, const BaseMappedIntegrationPoint & mip)
           {
+            HeapReset hr(glh);
             auto space = self->GetFESpace();
 
             ElementId ei = mip.GetTransformation().GetElementId();
@@ -2279,6 +2281,7 @@ used_idnrs : list of int = None
     .def("D", 
          [](shared_ptr<GF> self, const double &x, const double &y, const double &z)
           {
+            HeapReset hr(glh);
             const FESpace & space = *self->GetFESpace();
             IntegrationPoint ip;
             int dim_mesh = space.GetMeshAccess()->GetDimension();
