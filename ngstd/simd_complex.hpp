@@ -33,7 +33,7 @@ namespace ngstd
 
   
   template <>
-  class SIMD<Complex>
+  class SIMD<Complex> : public AlignedAlloc<SIMD<Complex>>
   {
     SIMD<double> re, im;
   public:
