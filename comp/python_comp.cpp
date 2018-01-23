@@ -3353,7 +3353,7 @@ flags : dict
              bfi->SetSimdEvaluate (simd_evaluate);
              return bfi;
            },
-        py::arg("coefficient"), py::arg("VOL_or_BND")=VOL, 
+        py::arg("form"), py::arg("VOL_or_BND")=VOL,
         py::arg("definedon")=DummyArgument(), py::arg("element_boundary")=false,
         py::arg("bonus_intorder")=0,
         py::arg("definedonelements")=DummyArgument(),
