@@ -834,9 +834,10 @@ namespace ngfem
 
       AutoDiffDiff<2> ls = ddlami[es],le = ddlami[ee];
       
-      LegendrePolynomial::Eval(order_inner,le-ls,ha);    
+      IntLegNoBubble::EvalMult (order_inner, le-ls, 0.25*le*ls, ha);
+      
       for(int l = 0; l <= order_inner; l++)	
-	shape[ii++] = Sigma_gradv(le*ls*ha[l]).Shape();
+	shape[ii++] = Sigma_gradv(ha[l]).Shape();
     };
   };
 
