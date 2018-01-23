@@ -1072,6 +1072,7 @@ public:
     dderiv = scal * ddv1;
   }
 
+  /*
   virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & mir, 
                               AFlatMatrix<double> values, AFlatMatrix<double> deriv) const
   {
@@ -1111,6 +1112,7 @@ public:
     deriv = scal * (*dinput[0]);
     dderiv = scal * (*ddinput[0]);
   }
+  */
   
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
                                FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const
@@ -1400,6 +1402,7 @@ public:
       }
   }
 
+  /*
   virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & mir,
                               AFlatMatrix<> result,
                               AFlatMatrix<> deriv) const
@@ -1435,7 +1438,7 @@ public:
           deriv.Get(i,k) = v1.Get(0,k)*dv2.Get(i,k)+dv1.Get(0,k)*v2.Get(i,k);
         }
   }
-  
+  */
 
   
   
@@ -2986,6 +2989,7 @@ public:
       }
   }
 
+  /*
   virtual void EvaluateDeriv(const SIMD_BaseMappedIntegrationRule & mir,
                              AFlatMatrix<> result,
                              AFlatMatrix<> deriv) const
@@ -3043,7 +3047,7 @@ public:
             deriv.Get(j,i) += dva.Get(row,i)*vb.Get(k,i) + va.Get(row,i)*dvb.Get(k,i);
         }
   }
-
+  */
 
   
   virtual void EvaluateDDeriv(const BaseMappedIntegrationRule & mir,
@@ -5409,12 +5413,12 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
 
       STACK_ARRAY(SIMD<double>, hmem, ir.Size()*totdim);      
       int mem_ptr = 0;
-      ArrayMem<AFlatMatrix<double>,100> temp(steps.Size());
-      ArrayMem<AFlatMatrix<double>*,100> in(max_inputsize);
+      ArrayMem<BareSliceMatrix<SIMD<double>>,100> temp(steps.Size());
+      ArrayMem<BareSliceMatrix<SIMD<double>>,100> in(max_inputsize);
 
       for (int i = 0; i < steps.Size(); i++)
         {
-          new (&temp[i]) AFlatMatrix<double> (dim[i], ir.IR().GetNIP(), &hmem[mem_ptr]);
+          new (&temp[i]) BareSliceMatrix<SIMD<double>> (ir.Size(), &hmem[mem_ptr], DummySize(dim[i], ir.Size()));
           mem_ptr += ir.Size()*dim[i];
         }
 
@@ -5423,7 +5427,8 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
           // timers[i]->Start();          
           auto inputi = inputs[i];
           for (int nr : Range(inputi))
-            in[nr] = &temp[inputi[nr]];
+            new (&in[nr]) BareSliceMatrix<SIMD<double>> (temp[inputi[nr]]);            
+          // in[nr] = &temp[inputi[nr]];
 
           steps[i] -> Evaluate (ir, in.Range(0, inputi.Size()), temp[i]);
           // timers[i]->Stop();                    
