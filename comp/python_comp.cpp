@@ -3096,7 +3096,7 @@ flags : dict
                                    {
 				     if(!mask.Test(el.GetIndex())) return;
                                      auto & trafo = ma->GetTrafo (el, lh);
-                                     Vector<Complex> hsum(dim);
+                                     FlatVector<Complex> hsum(dim, lh);
 				     hsum = 0.0;
                                      
                                      bool this_simd = use_simd;
