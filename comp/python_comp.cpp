@@ -1583,7 +1583,7 @@ kwargs : For a description of the possible kwargs have a look a bit further down
     .def_property_readonly("type", [] (shared_ptr<FESpace> self) { return self->type; },
                   "type of finite element space")
 
-    .def("IsComplex", &FESpace::IsComplex)
+    .def_property_readonly("is_complex", &FESpace::IsComplex)
 
     .def("SetDefinedOn", [] (FESpace& self, Region& reg)
          {
