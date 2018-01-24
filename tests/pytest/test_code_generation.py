@@ -47,6 +47,10 @@ def test_code_generation_volume_terms_complex():
         cfs = [ cf.Compile(), cf.Compile(True, wait=True), gfu, gfu.Compile(), gfu.Compile(True, wait=True) ]
 
         for f in cfs:
+            print (Integrate(f, mesh))
+            print (Integrate(cf, mesh))
+            print (Integrate(cf-f, mesh))
+            print (Integrate(Conj(cf-f), mesh))
             error = (cf-f)*Conj(cf-f)
             assert (abs(Integrate ( error, mesh))<1e-13)
 
