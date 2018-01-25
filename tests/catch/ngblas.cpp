@@ -49,7 +49,7 @@ TEST_CASE ("SubAtDB", "[ngblas]") {
 }
 
 TEST_CASE ("SIMD<double>", "[simd]") {
-    constexpr int N = SIMD<double>::Size();
+    constexpr size_t N = SIMD<double>::Size();
     double src[N];
     double dst[N];
     for (auto i : Range(N)) {
@@ -78,7 +78,7 @@ TEST_CASE ("SIMD<double>", "[simd]") {
 }
 
 TEST_CASE ("SIMD<Complex>", "[simd]") {
-    constexpr int N = SIMD<Complex>::Size();
+    constexpr size_t N = SIMD<Complex>::Size();
     Complex src[N];
     Complex dst[N];
     for (auto i : Range(N)) {
