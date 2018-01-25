@@ -502,7 +502,7 @@ namespace ngfem
       const EDGE * edges = ElementTopology::GetEdges(ET_TRIG);
 
       ArrayMem<AutoDiffDiff<2>,20> ha(maxorder_facet);
-      ArrayMem<AutoDiffDiff<2>,20> v(oi), u(oi-1);
+      ArrayMem<AutoDiffDiff<2>,20> v(oi), u(oi);
 
       for (int i = 0; i < 3; i++)
         {
@@ -519,8 +519,8 @@ namespace ngfem
       AutoDiffDiff<2> le = ddlami[1];
       AutoDiffDiff<2> lt = ddlami[2];
       
-      IntLegNoBubble::EvalMult (oi-1, le-lt, 0.25*le*lt, u);
-      LegendrePolynomial::EvalMult(oi-1, 2*ls-1, ls, v);
+      IntLegNoBubble::EvalMult (oi, le-lt, 0.25*le*lt, u);
+      LegendrePolynomial::EvalMult(oi, 2*ls-1, ls, v);
       
       for(int i = 0; i <= oi-1; i++)
       {
@@ -545,8 +545,8 @@ namespace ngfem
 	    }	  
 	}
       
-      IntLegNoBubble::EvalMult (oi-1, le-ls, 0.25*le*ls, u);
-      LegendrePolynomial::EvalMult(oi-1, 2*lt-1, lt, v);
+      IntLegNoBubble::EvalMult (oi, le-ls, 0.25*le*ls, u);
+      LegendrePolynomial::EvalMult(oi, 2*lt-1, lt, v);
       
       for(int i = 0; i <= oi-1; i++)
       {
