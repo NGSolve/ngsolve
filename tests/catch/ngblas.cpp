@@ -87,6 +87,7 @@ TEST_CASE ("SIMD<Complex>", "[simd]") {
         dst[i] = 0.0;
     }
 
+    /*
     SECTION ("Mask load") {
         for (auto k : Range(N+1)) {
             SIMD<Complex> simd;
@@ -108,4 +109,5 @@ TEST_CASE ("SIMD<Complex>", "[simd]") {
             }
         }
     }
+    */
 }
