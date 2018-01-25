@@ -24,7 +24,8 @@ namespace ngstd
                                 _mm256_set_epi64x(1, 1, 0, 0));
 
 #elif defined(__SSE__)
-    return int(nr) > 0;
+    return _mm_cmpgt_epi32(_mm_set1_epi32(nr),
+                           _mm_set_epi32(0, 0, 0, 0));
 #else
     return false;
 #endif
