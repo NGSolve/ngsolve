@@ -1523,7 +1523,7 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
            py::arg("rad")=1,py::arg("alpha")=1);
     
                            
-                           
+  m.def("GenerateL2ElementCode", &GenerateL2ElementCode);
 
 }
 
