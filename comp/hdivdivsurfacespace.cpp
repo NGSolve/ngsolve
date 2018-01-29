@@ -417,10 +417,15 @@ namespace ngcomp
                 fe = trigfe;
                 break;
               }
-              // case ET_QUAD:
-              // fe = new (lh.Alloc(sizeof(HDivSymQuad))) HDivSymQuad();
-              // break;
-            default:
+            case ET_QUAD:
+	      {
+		auto * quadfe = new (lh) HDivDivFE<ET_QUAD> (order, false /* plus */);
+                quadfe->SetVertexNumbers(vnums);
+                quadfe->ComputeNDof();
+                fe = quadfe;
+		break;
+	      }
+	    default:
               cerr << "element type " << int(ma->GetElType(ei)) << " not there in hdivsymsurf" << endl;
             }
           
