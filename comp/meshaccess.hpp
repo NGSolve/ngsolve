@@ -771,7 +771,7 @@ namespace ngcomp
       return ArrayObject (mesh.GetNode<2> (fnr).vertices);
     }
     /// returns vertex numbers of edge
-    [[deprecated("Use GetEdgeNums(enr) instead!")]]                            
+    [[deprecated("Use GetEdgePNums(enr) instead!")]]                            
     void GetEdgePNums (int enr, int & pn1, int & pn2) const
     {
       auto edge = mesh.GetNode<1>(enr);
