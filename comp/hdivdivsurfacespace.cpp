@@ -281,7 +281,7 @@ namespace ngcomp
       {
         first_face_dof[i] = ndof;
 
-        ma->GetEdgePNums(i, pnums);
+        pnums = ma->GetEdgePNums(i);
 
         switch (pnums.Size())
           {
