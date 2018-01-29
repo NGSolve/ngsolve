@@ -1369,6 +1369,8 @@ namespace ngcomp
   void PDE :: SetLineIntegratorCurvePointInfo(const string & filename,
 					      Integrator * integrator)
   {
+    // mark integrator as curve-integrator, but don't allocate points yet
+    integrator->SetIntegrationAlongCurve (0);
     CurvePointIntegrators.Append(integrator);
     CurvePointIntegratorFilenames.Append(new string(filename));
   }

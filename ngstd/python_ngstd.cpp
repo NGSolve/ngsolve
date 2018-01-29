@@ -1,9 +1,5 @@
 #ifdef NGS_PYTHON
 
-// #include <string>
-// #include <ostream>
-// #include <type_traits>
-
 #include "python_ngstd.hpp"
 
 #ifdef PARALLEL
@@ -322,37 +318,6 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
     .def(py::self |= py::self)
     .def(py::self &= py::self)
     .def(~py::self)
-
-    /*
-    .def("__ior__", [] (BitArray & self, BitArray & other) -> BitArray&
-                                 {
-                                   self.Or(other); 
-                                   return self;
-                                 })
-    .def("__iand__", [] (BitArray & self, BitArray & other) -> BitArray&
-                                 {
-                                   self.And(other); 
-                                   return self;
-                                 })
-    .def("__or__", [] (BitArray & self, BitArray & other)
-                                 {
-                                   BitArray res = self;
-                                   res.Or(other); 
-                                   return res;
-                                 })
-    .def("__and__", [] (BitArray & self, BitArray & other)
-                                 {
-                                   BitArray res = self;                                   
-                                   res.And(other); 
-                                   return res;
-                                 })
-    .def("__invert__", [] (BitArray & self)
-         {
-           BitArray hba = self;
-           hba.Invert();
-           return hba;
-         })
-    */
     ;
 
   
@@ -364,7 +329,6 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
          py::dict d(obj);
          new (&f) Flags();
          SetFlag(f, "", d);
-         // cout << f << endl;
      })
     .def("__getstate__", [] (py::object self_object) {
         auto self = self_object.cast<Flags>();

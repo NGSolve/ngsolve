@@ -119,7 +119,9 @@ namespace ngfem
 
   inline ostream & operator<< (ostream & ost, ElementId id)
   {
-    return ost << (id.VB()==VOL ? "VEl " : (id.VB()==BND ? "BEl " : "CD2El ")) << ' ' << id.Nr();
+    const char * name[4] = { "VEl", "BEl", "CD2El", "CD3El" };
+    return ost << name[id.VB()] << ' ' << id.Nr();
+    // return ost << (id.VB()==VOL ? "VEl " : (id.VB()==BND ? "BEl " : "CD2El ")) << ' ' << id.Nr();
   }
 
   template <VorB VB,int DIM>

@@ -45,6 +45,7 @@ namespace ngfem
     string name;
 
     /// integration only along curve
+    bool is_curve_integrator = false;
     Array < FlatVector < double > * > curve_ips;
     Array < FlatVector < double > * > curve_ip_tangents;
     Array <int> continuous_curveparts;
@@ -211,7 +212,7 @@ namespace ngfem
 
     // special hacks by Markus
     bool IntegrationAlongCurve (void) const
-    { return curve_ips.Size() > 0; }
+    { return is_curve_integrator; }
 
     void SetIntegrationAlongCurve ( const int npoints );
 

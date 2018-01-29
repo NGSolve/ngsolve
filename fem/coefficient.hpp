@@ -64,25 +64,27 @@ namespace ngfem
       Evaluate (ir, values);
     }
 
+    [[deprecated("Use Evaluate (SIMD) instead")]]        
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
                            AFlatMatrix<double> values) const
     {
       throw ExceptionNOSIMD (string("cf::Evaluate(simd, input->output) not overloaded for ")+typeid(*this).name());
     }
-    
+
+    [[deprecated("Use Evaluate (AutoDiff) instead")]]
     virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir, 
-                                AFlatMatrix<double> values, AFlatMatrix<double> deriv) const
+                                AFlatMatrix<double> values, AFlatMatrix<double> deriv) const 
     {
       throw ExceptionNOSIMD (string("cf::EvaluateDeriv(simd) not overloaded for ")+typeid(*this).name());
     }
 
+    [[deprecated("Use Evaluate (AutoDiffDiff) instead")]]    
     virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & ir, 
                                  AFlatMatrix<double> values, AFlatMatrix<double> deriv,
-                                 AFlatMatrix<double> dderiv) const
+                                 AFlatMatrix<double> dderiv) const 
     {
       throw ExceptionNOSIMD (string("cf::EvaluateDDeriv(simd) not overloaded for ")+typeid(*this).name());
     }
-
 
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
                            FlatArray<BareSliceMatrix<SIMD<double>>> input,
@@ -97,7 +99,7 @@ namespace ngfem
     {
       throw ExceptionNOSIMD (string("cf::Evaluate(AutoDiff<simd>) not overloaded for ")+typeid(*this).name());      
     }
-    
+
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
                            FlatArray<BareSliceMatrix<AutoDiff<1,SIMD<double>>>> input,
                            BareSliceMatrix<AutoDiff<1,SIMD<double>>> values) const
@@ -118,6 +120,7 @@ namespace ngfem
       Evaluate (ir, values);
     }
 
+    [[deprecated("Use Evaluate (AutoDiff) instead")]]    
     virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
                                 FlatArray<AFlatMatrix<>*> input,
                                 FlatArray<AFlatMatrix<>*> dinput,
@@ -127,6 +130,7 @@ namespace ngfem
       throw ExceptionNOSIMD (string("cf::EvaluateDeriv(simd,in-out) not overloaded for ")+typeid(*this).name());
     }
 
+    [[deprecated("Use Evaluate (AutoDiffDiff) instead")]]        
     virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & ir,
                                  FlatArray<AFlatMatrix<>*> input,
                                  FlatArray<AFlatMatrix<>*> dinput,
@@ -150,27 +154,6 @@ namespace ngfem
       return SCAL (Evaluate (ip));    // used by PML : AutoDiff<complex>
     }
 
-    /*
-    virtual double Evaluate (const BaseMappedIntegrationPoint & ip, const double & t) const
-    {
-      return Evaluate(ip);
-    }
-    virtual double EvaluateDeri (const BaseMappedIntegrationPoint & ip, const double & t) const
-    {
-      return 0;
-    }
-
-    // to be changed
-    virtual double Evaluate (const BaseMappedIntegrationPoint & ip,
-			     const complex<double> & t) const
-    { return Evaluate(ip,t.real()); }
-    // to be changed
-    virtual double EvaluateDeri (const BaseMappedIntegrationPoint & ip,
-				 const complex<double> & t) const
-    { return EvaluateDeri(ip,t.real()); }
-    */
-
-
     virtual double EvaluateConst () const
     {
       throw Exception (string ("EvaluateConst called for non-const coefficient function ")+
@@ -187,20 +170,6 @@ namespace ngfem
       dimension = 1;
       for (int d : dims) dimension *= d;
     }
-
-    /*
-    virtual bool IsComplex() const { return false; }
-    virtual int Dimension() const { return 1; }
-
-    virtual Array<int> Dimensions() const
-    {
-      int d = Dimension();
-      if (Dimension() == 1)
-        return Array<int> (0);
-      else
-        return Array<int> ( { d } );
-    }
-    */
     
     virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
 			  FlatVector<> result) const
@@ -391,6 +360,7 @@ namespace ngfem
                            BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>> values) const
     { Evaluate (ir, values); }
 
+    /*
     virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
                                 FlatArray<AFlatMatrix<>*> input,
                                 FlatArray<AFlatMatrix<>*> dinput,
@@ -413,7 +383,8 @@ namespace ngfem
       deriv = 0.0;
       dderiv = 0.0;
     }
-
+    */
+    
     virtual void NonZeroPattern (const class ProxyUserData & ud,
                                  FlatVector<bool> nonzero,
                                  FlatVector<bool> nonzero_deriv,
@@ -981,34 +952,29 @@ namespace ngfem
 
 
   // *************************** CoefficientFunction Algebra ********************************
-  template <typename OP> // , typename OPC> 
-  class cl_UnaryOpCF : public T_CoefficientFunction<cl_UnaryOpCF<OP /* ,OPC */>>
+  template <typename OP>
+  class cl_UnaryOpCF : public T_CoefficientFunction<cl_UnaryOpCF<OP>>
 {
   shared_ptr<CoefficientFunction> c1;
   OP lam;
-  // OPC lamc;
   string name;
-  typedef  T_CoefficientFunction<cl_UnaryOpCF<OP /* ,OPC */>> BASE;
+  typedef  T_CoefficientFunction<cl_UnaryOpCF<OP>> BASE;
 public:
   cl_UnaryOpCF (shared_ptr<CoefficientFunction> ac1, 
-                OP alam, /* OPC alamc, */ string aname="undefined")
+                OP alam, string aname="undefined")
     : BASE(ac1->Dimension(), ac1->IsComplex()),
-      c1(ac1), lam(alam), /* lamc(alamc), */ name(aname)
+      c1(ac1), lam(alam), name(aname)
   {
     this->SetDimensions (c1->Dimensions());
   }
   
-  // virtual bool IsComplex() const { return c1->IsComplex(); }
   virtual bool IsComplex() const
   {
     if (c1->IsComplex())
-      // return typeid (lamc(Complex(0.0))) == typeid(Complex);
       return typeid (lam(Complex(0.0))) == typeid(Complex);
     return false;
   }
   
-  // virtual int Dimension() const { return c1->Dimension(); }
-
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
     TraverseDimensions( this->Dimensions(), [&](int ind, int i, int j) {
@@ -1033,7 +999,6 @@ public:
 
   virtual Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const 
   {
-    // return lamc (c1->EvaluateComplex(ip));
     return lam (c1->EvaluateComplex(ip));
   }
 
@@ -1041,7 +1006,6 @@ public:
   {
     return lam (c1->EvaluateConst());
   }
-
 
   virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
                         FlatVector<> result) const
@@ -1063,7 +1027,6 @@ public:
   {
     c1->Evaluate (ip, result);
     for (int j = 0; j < result.Size(); j++)
-      // result(j) = lamc(result(j));
       result(j) = lam(result(j));
   }
   
@@ -1072,7 +1035,6 @@ public:
   {
     c1->Evaluate (ir, result);
     for (int i = 0; i < result.Height()*result.Width(); i++)
-      // result(i) = lamc(result(i));
       result(i) = lam(result(i));
   }
 
@@ -1099,7 +1061,8 @@ public:
         values(i,j) = lam (in0(i,j));
   }
   
-  
+
+  /*
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
                          AFlatMatrix<double> values) const
   {
@@ -1108,7 +1071,7 @@ public:
       for (size_t j = 0; j < values.Width(); j++)
         values(i,j) = lam (in0(i,j));
   }
-  
+  */
   
   virtual void EvaluateDeriv (const BaseMappedIntegrationRule & ir,
                               FlatMatrix<> result,
@@ -1193,7 +1156,8 @@ public:
         dderiv(j) = out.DDValue(0,0);
       }
   }
-  
+
+  /*
   virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
                               FlatArray<AFlatMatrix<>*> ainput,
                               FlatArray<AFlatMatrix<>*> adinput,
@@ -1234,6 +1198,7 @@ public:
         dderiv(j) = out.DDValue(0,0);
       }
   }
+  */
 
 
 
@@ -1272,8 +1237,6 @@ shared_ptr<CoefficientFunction> UnaryOpCF(shared_ptr<CoefficientFunction> c1,
 
 
 
-
-  // extern int myglobalvar_eval;
   
   template <typename OP, typename NONZERO> 
   class cl_BinaryOpCF : public T_CoefficientFunction<cl_BinaryOpCF<OP,NONZERO>>
@@ -1282,7 +1245,6 @@ shared_ptr<CoefficientFunction> UnaryOpCF(shared_ptr<CoefficientFunction> c1,
   shared_ptr<CoefficientFunction> c1, c2;
   OP lam;
   NONZERO lam_nonzero;
-  // int dim;
   char opname;
   bool is_complex;
   using BASE::Dimension;
@@ -1480,7 +1442,7 @@ public:
         values(i,j) = lam (in0(i,j), in1(i,j));
   }
   
-  
+  /*
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
                          FlatArray<AFlatMatrix<double>*> input,
                          AFlatMatrix<double> values) const
@@ -1490,6 +1452,7 @@ public:
     for (size_t i = 0; i < values.Height()*values.VWidth(); i++)
       values.Get(i) = lam (in0.Get(i), in1.Get(i));
   }
+  */
 
   
   virtual void Evaluate (const BaseMappedIntegrationRule & mir, FlatArray<FlatMatrix<>*> input,
@@ -1666,7 +1629,8 @@ public:
           */
         }
   }
-  
+
+  /*
   virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & mir, 
                               AFlatMatrix<double> values, AFlatMatrix<double> deriv) const
   {
@@ -1696,7 +1660,9 @@ public:
           deriv.Get(i,k) = res.DValue(0);
         }
   }
-  
+  */
+
+  /*
   virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & mir, 
                                AFlatMatrix<double> values, AFlatMatrix<double> deriv,
                                AFlatMatrix<double> dderiv) const
@@ -1735,8 +1701,9 @@ public:
           dderiv.Get(i,k) = res.DDValue(0);
         } 
   }
+  */
 
-
+  /*
   virtual void EvaluateDeriv(const SIMD_BaseMappedIntegrationRule & mir,
                              FlatArray<AFlatMatrix<>*> input,
                              FlatArray<AFlatMatrix<>*> dinput,
@@ -1760,8 +1727,9 @@ public:
         }
 
   }
+  */
 
-
+  /*
   virtual void EvaluateDDeriv(const SIMD_BaseMappedIntegrationRule & mir,
                               FlatArray<AFlatMatrix<>*> input,
                               FlatArray<AFlatMatrix<>*> dinput,
@@ -1791,8 +1759,8 @@ public:
           dderiv.Get(i,k) = res.DDValue(0);
         }
   }
-
-
+  */
+  
   
     /*
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const

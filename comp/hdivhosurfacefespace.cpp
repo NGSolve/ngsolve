@@ -89,7 +89,7 @@ public:
       throw Exception("Does not work yet!!!! eltrans 1D -> 3D, no normal vector available");
       auto normal = Vec<3>(mip.GetNV());      
       auto tangential = mip.GetTV();      
-      Vec<3> normalel = Cross(normal, tangential);
+      // Vec<3> normalel = Cross(normal, tangential);
       getchar();
 	
       auto scaled_nv = (1.0/mip.GetJacobiDet()) * mip.GetNV();
@@ -333,7 +333,7 @@ public:
 
     size_t nel = ma->GetNSE();
     size_t nfa = ma->GetNEdges();
-    size_t dim = ma->GetDimension();
+    // size_t dim = ma->GetDimension();
        
     first_facet_dof.SetSize(nfa+1);
     first_inner_dof.SetSize(nel+1);
@@ -580,6 +580,8 @@ public:
 	 else
 	   throw Exception("illegal element in HDivHighOrderSurfaceFESpace :: GetFE BBND");
        }
+     else // BBBND
+       return * new (alloc) DummyFE<ET_POINT>();
   }
 
   template<ELEMENT_TYPE ET>

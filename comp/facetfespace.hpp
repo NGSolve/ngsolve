@@ -40,8 +40,8 @@ namespace ngcomp
     Array<INT<2> > order_facet;
     Array<bool> fine_facet;
   
-    int ndof;
-    Array<int> ndlevel;
+    // int ndof;
+    // Array<int> ndlevel;
     bool var_order; 
     bool highest_order_dc;
     bool nowirebasket;
@@ -63,9 +63,8 @@ namespace ngcomp
     //  virtual void UpdateDofTables();
     virtual void UpdateCouplingDofArray();    
     ///
-    virtual size_t GetNDof () const throw() override;
-    ///
-    virtual size_t GetNDofLevel (int level) const override;
+    // virtual size_t GetNDof () const throw() override;
+    // virtual size_t GetNDofLevel (int level) const override;
 
     virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
 
@@ -74,8 +73,6 @@ namespace ngcomp
 
     using FESpace::GetDofNrs;
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
-    ///
-    virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
 
     IntRange GetFacetDofs (int nr) const
     { 
