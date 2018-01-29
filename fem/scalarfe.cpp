@@ -297,7 +297,7 @@ namespace ngfem
     FE_ElementTransformation<D,D> trafo(ElementType());
     static LocalHeap lh (10000000, "FE - Timing");
     HeapReset hr(lh);
-    auto & mir = trafo(ir, lh);
+    // auto & mir = trafo(ir, lh);
     auto & simdmir = trafo(simdir, lh);
     
     coefs = 1;

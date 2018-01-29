@@ -363,9 +363,9 @@ namespace ngcomp
 		switch (nt)
 		  {
 		  case NT_VERTEX: pnums.SetSize(1); pnums[0] = i; break;
-		  case NT_EDGE: ma->GetEdgePNums (i, pnums); break;
-		  case NT_FACE: ma->GetFacePNums (i, pnums); break;
-		  case NT_CELL: ma->GetElPNums (i, pnums); break;
+		  case NT_EDGE: pnums = ma->GetEdgePNums (i); break;
+		  case NT_FACE: pnums = ma->GetFacePNums (i); break;
+		  case NT_CELL: pnums = ma->GetElVertices (i); break;
                   default:
                     __assume(false);
 		  }
@@ -444,7 +444,7 @@ namespace ngcomp
 	      case NT_VERTEX: pnums.SetSize(1); pnums[0] = i; break;
 	      case NT_EDGE: ma->GetEdgePNums (i, pnums); break;
 	      case NT_FACE: ma->GetFacePNums (i, pnums); break;
-	      case NT_CELL: ma->GetElPNums (i, pnums); break;
+	      case NT_CELL: ma->GetElVertices (i, pnums); break;
 	      }
 
 	    Vec<N+1, int> key;
@@ -557,11 +557,11 @@ namespace ngcomp
 	// for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
         for (NODE_TYPE nt : { NT_VERTEX, NT_EDGE, NT_FACE, NT_CELL })
 	  {
-	    int nnodes = ma->GetNNodes (nt);
+	    size_t nnodes = ma->GetNNodes (nt);
 
 	    Array<Vec<8, int> > nodekeys;
 	    Array<int> pnums, compress;
-	    for(int i = 0; i < nnodes; i++)
+	    for(size_t i = 0; i < nnodes; i++)
 	      {
 		fes.GetDofNrs (NodeId(nt, i),  dnums);
 		if (dnums.Size() == 0) continue;
@@ -569,9 +569,9 @@ namespace ngcomp
 		switch (nt)
 		  {
 		  case NT_VERTEX: pnums.SetSize(1); pnums[0] = i; break;
-		  case NT_EDGE: ma->GetEdgePNums (i, pnums); break;
-		  case NT_FACE: ma->GetFacePNums (i, pnums); break;
-		  case NT_CELL: ma->GetElPNums (i, pnums); break;
+		  case NT_EDGE: pnums = ma->GetEdgePNums (i); break;
+		  case NT_FACE: pnums = ma->GetFacePNums (i); break;
+		  case NT_CELL: pnums = ma->GetElVertices (ElementId(VOL,i)); break;
                   default:
                     __assume(false);
                     break;
@@ -675,7 +675,7 @@ namespace ngcomp
 	      case NT_VERTEX: pnums.SetSize(1); pnums[0] = i; break;
 	      case NT_EDGE: ma->GetEdgePNums (i, pnums); break;
 	      case NT_FACE: ma->GetFacePNums (i, pnums); break;
-	      case NT_CELL: ma->GetElPNums (i, pnums); break;
+	      case NT_CELL: ma->GetElVertices (i, pnums); break;
 	      }
 
 	    Vec<N+1, int> points;
@@ -984,16 +984,13 @@ namespace ngcomp
 
   GridFunctionCoefficientFunction :: 
   GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, int acomp)
-    : CoefficientFunctionNoDerivative(1, agf->GetFESpace()->IsComplex()), gf(agf.get()), gf_shared_ptr(agf) /*, diffop (NULL)*/ , comp (acomp) 
+    : CoefficientFunctionNoDerivative(1, agf->GetFESpace()->IsComplex()),
+      gf_shared_ptr(agf), gf(agf.get()), comp (acomp) 
   {
     fes = gf->GetFESpace();
     SetDimensions (gf->Dimensions());
-    /*
-    diffop = gf->GetFESpace()->GetEvaluator(VOL);
-    trace_diffop = gf->GetFESpace()->GetEvaluator(BND);
-    ttrace_diffop = gf->GetFESpace()->GetEvaluator(BBND);
-    */
-    for (auto vb : { VOL, BND, BBND })
+
+    for (auto vb : { VOL, BND, BBND, BBBND })
       diffop[vb] = gf->GetFESpace()->GetEvaluator(vb);
   }
 
@@ -1003,26 +1000,17 @@ namespace ngcomp
 				   shared_ptr<DifferentialOperator> attrace_diffop,
                                    int acomp)
     : CoefficientFunctionNoDerivative(1, false),
-      // diffop (adiffop), trace_diffop(atrace_diffop), ttrace_diffop(attrace_diffop),
       diffop{adiffop,atrace_diffop, attrace_diffop},
       comp (acomp) 
   {
     ; // SetDimensions (gf->Dimensions());
 
-    for (auto vb : { VOL, BND, BBND } )
+    for (auto vb : { VOL, BND, BBND, BBBND } )
       if (diffop[vb])
         {
           SetDimensions (diffop[vb]->Dimensions());
           break;
         }
-    /*
-    if (diffop)
-      SetDimensions (diffop->Dimensions());
-    else if (trace_diffop)
-      SetDimensions (trace_diffop->Dimensions());
-    else if (ttrace_diffop)
-      SetDimensions (ttrace_diffop->Dimensions());
-    */
   }
 
   GridFunctionCoefficientFunction :: 
@@ -1032,9 +1020,8 @@ namespace ngcomp
 				   shared_ptr<DifferentialOperator> attrace_diffop,
                                    int acomp)
     : CoefficientFunctionNoDerivative(1,agf->IsComplex()),
-      gf(agf.get()),
       gf_shared_ptr(agf),
-      // diffop (adiffop), trace_diffop(atrace_diffop), ttrace_diffop(attrace_diffop),
+      gf(agf.get()),
       diffop{adiffop,atrace_diffop,attrace_diffop},
       comp (acomp) 
   {
@@ -1045,21 +1032,13 @@ namespace ngcomp
           SetDimensions (diffop[vb]->Dimensions());
           break;
         }
-    /*
-    if (diffop)
-      SetDimensions (diffop->Dimensions());
-    else if (trace_diffop)
-      SetDimensions (trace_diffop->Dimensions());
-    else if (ttrace_diffop)
-      SetDimensions (ttrace_diffop->Dimensions());
-    */
   }
   
   GridFunctionCoefficientFunction :: 
   GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, 
 				   shared_ptr<BilinearFormIntegrator> abfi, int acomp)
     : CoefficientFunctionNoDerivative(1, agf->IsComplex()),
-      gf(agf.get()), gf_shared_ptr(agf), /* bfi (abfi), */ comp (acomp) 
+      gf_shared_ptr(agf), gf(agf.get()), comp (acomp) 
   {
     fes = gf->GetFESpace();
     SetDimensions (gf->Dimensions());
@@ -1160,13 +1139,8 @@ namespace ngcomp
     RegionTimer reg (timer);
 
     const ElementTransformation & trafo = ip.GetTransformation();
-    
-    // int elnr = trafo.GetElementNr();
-    // VorB vb  = trafo.VB();
-    // ElementId ei(vb, elnr);
     ElementId ei = trafo.GetElementId();
 
-    // auto fes = gf->GetFESpace();
     const shared_ptr<MeshAccess> & ma = fes->GetMeshAccess();
 
     if (gf->GetLevelUpdated() != ma->GetNLevels())
@@ -1239,7 +1213,6 @@ namespace ngcomp
     VorB vb = ip.GetTransformation().VB();
     ElementId ei(vb, elnr);
 
-    // const FESpace & fes = *gf->GetFESpace();
     const shared_ptr<MeshAccess> & ma = fes->GetMeshAccess();
     
     if (!ip.GetTransformation().BelongsToMesh (ma.get()))
@@ -1299,7 +1272,7 @@ namespace ngcomp
         return;
       }
     
-    LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evalute 3");
+    LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evaluate 3");
     // static Timer timer ("GFCoeffFunc::Eval-vec", 2);
     // RegionTimer reg (timer);
     const ElementTransformation & trafo = ir.GetTransformation();
@@ -1307,8 +1280,6 @@ namespace ngcomp
     int elnr = trafo.GetElementNr();
     VorB vb = trafo.VB();
     ElementId ei(vb, elnr);
-
-    // const FESpace & fes = *gf->GetFESpace();
 
     if (!trafo.BelongsToMesh ((void*)(fes->GetMeshAccess().get())))
       {
@@ -1362,7 +1333,7 @@ namespace ngcomp
       }
 
     
-    LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evalute 3");
+    LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evaluate 3");
     // static Timer timer ("GFCoeffFunc::Eval-vec", 2);
     // RegionTimer reg (timer);
 
@@ -1371,8 +1342,6 @@ namespace ngcomp
     int elnr = trafo.GetElementNr();
     VorB vb = trafo.VB();
     ElementId ei(vb, elnr);
-
-    // const FESpace & fes = *gf->GetFESpace();
 
     if (!trafo.BelongsToMesh ((void*)(fes->GetMeshAccess().get())))
       {
@@ -1438,7 +1407,7 @@ namespace ngcomp
     
 
     
-    LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evalute 3");
+    LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evaluate 3");
     // static Timer timer ("GFCoeffFunc::Eval-vec", 2);
     // RegionTimer reg (timer);
     auto values = bvalues.AddSize(Dimension(), ir.Size());
@@ -1447,8 +1416,6 @@ namespace ngcomp
     int elnr = trafo.GetElementNr();
     VorB vb = trafo.VB();
     ElementId ei(vb, elnr);
-
-    // const FESpace & fes = *gf->GetFESpace();
 
     if (!trafo.BelongsToMesh ((void*)(fes->GetMeshAccess().get())))
       {
@@ -1508,7 +1475,7 @@ namespace ngcomp
   Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
             BareSliceMatrix<SIMD<Complex>> bvalues) const
   {
-    LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evalute 3");
+    LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evaluate 3");
 
     auto values = bvalues.AddSize(Dimension(), ir.Size());
 

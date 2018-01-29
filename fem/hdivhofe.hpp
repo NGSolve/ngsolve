@@ -44,6 +44,7 @@ namespace ngfem
   protected:
     enum { DIM = ET_trait<ET>::DIM };
     using VertexOrientedFE<ET>::vnums;
+    using VertexOrientedFE<ET>::GetVertexOrientedFace;
   public:
     T_HDivHighOrderNormalFiniteElement ()
     {
@@ -138,6 +139,7 @@ namespace ngfem
     using BASE::order;
     using BASE::ndof;
     using BASE::vnums;
+    using BASE::GetVertexOrientedFace;    
   public:
     HDivHighOrderNormalSegm (int aorder);
     virtual void ComputeNDof();
@@ -268,68 +270,44 @@ namespace ngfem
     using BASE::order_inner;
     using BASE::order;
     using BASE::ndof;
-    using BASE::vnums;
+    using BASE::GetVertexOrientedFace;    
+
   public:
     HDivHighOrderNormalQuad (int aorder);
     virtual void ComputeNDof();
-    /*
-    virtual void CalcShape (const IntegrationPoint & ip,
-                            FlatVector<> shape) const;
-    */
+
     template<typename Tx, typename TFA>  
     INLINE void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
     {
-      AutoDiff<2, Tx> x (ip.x, 0);
-      AutoDiff<2, Tx> y (ip.y, 1);
+      AutoDiff<2, Tx> x(ip.x, 0), y(ip.y, 1);
       
       AutoDiff<2, Tx> sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};
-      
-      // shape = 0.0;
-      
-      int ii = 1;
-      
+            
       INT<2> p = order_inner;
-      // int pp = max2(p[0],p[1]); 
       
       ArrayMem<AutoDiff<2, Tx>,20> pol_xi(p[0]+1), pol_eta(p[1]+1);
+
+      INT<4> f = GetVertexOrientedFace (0);
+
+      AutoDiff<2, Tx> xi  = sigma[f[0]]-sigma[f[1]];
+      AutoDiff<2, Tx> eta = sigma[f[0]]-sigma[f[3]];
+
+      shape[0] = -0.25 * Cross(eta, xi).DValue(0);
+      size_t ii = 1;
       
-      int fmax = 0;
-      for (int j = 1; j < 4; j++)
-        if (vnums[j] < vnums[fmax])
-          fmax = j;
-      
-      int f1 = (fmax+3)%4;
-      int f2 = (fmax+1)%4;
-      
-      int fac = 1;
-      if(vnums[f2] < vnums[f1])
-        {
-          swap(f1,f2); // fmax > f1 > f2;
-          fac *= -1;
-        }
-      
-      AutoDiff<2, Tx> xi  = sigma[fmax]-sigma[f1];
-      AutoDiff<2, Tx> eta = sigma[fmax]-sigma[f2];
-      
-      shape[0] = fac;
-      
-      /*
-        T_ORTHOPOL::Calc(p[0]+1, xi,pol_xi);
-        T_ORTHOPOL::Calc(p[1]+1,eta,pol_eta);
-      */
       IntLegNoBubble::EvalMult (p[0]-1, xi, 1-xi*xi, pol_xi);
       IntLegNoBubble::EvalMult (p[1]-1, eta, 1-eta*eta, pol_eta);
       
       // Typ 1
       for (int k = 0; k < p[0]; k++)
         for (int l = 0; l < p[1]; l++, ii++)
-          shape[ii] = 2.*(pol_eta[l].DValue(0)*pol_xi[k].DValue(1)-pol_eta[l].DValue(1)*pol_xi[k].DValue(0));
+          shape[ii] = 2.*Cross(pol_eta[l], pol_xi[k]).DValue(0);
       
       //Typ 2
       for (int k = 0; k < p[0]; k++)
-        shape[ii++] = -eta.DValue(0)*pol_xi[k].DValue(1) + eta.DValue(1)*pol_xi[k].DValue(0); 
+        shape[ii++] = -Cross(eta, pol_xi[k]).DValue(0);
       for (int k = 0; k < p[1]; k++)
-        shape[ii++]   = -xi.DValue(0)*pol_eta[k].DValue(1) + xi.DValue(1)*pol_eta[k].DValue(0);
+        shape[ii++] = -Cross(xi, pol_eta[k]).DValue(0);
     }
   };
 

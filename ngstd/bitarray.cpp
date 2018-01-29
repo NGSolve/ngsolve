@@ -12,12 +12,13 @@
 
 namespace ngstd
 {
+  /*
   BitArray :: BitArray ()
   {
     size = 0;
     data = NULL;
   }
-
+  */
   BitArray :: BitArray (size_t asize)
   {
     size = 0;
@@ -39,12 +40,14 @@ namespace ngstd
     (*this) = ba2;
   }
 
+  /*
   BitArray :: ~BitArray ()
   {
     if (owns_data)
       delete [] data;
   }
-
+  */
+  
   void BitArray :: SetSize (size_t asize)
   {
     if (size == asize) return;

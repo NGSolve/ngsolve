@@ -1676,7 +1676,7 @@ namespace ngbla
     
     INLINE const BareVector<T> Row (size_t i) const
     {
-      return BareVector<T> (data+i*dist);
+      return FlatVector<T> (Width(), data+i*dist);
     }
 
     /*

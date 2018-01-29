@@ -962,7 +962,7 @@ namespace ngla
           }
         
         j--;
-        cout << "gmres - Triangular matrix" << endl << h.Rows(0,j+2).Cols(0,j+2) << endl;
+        cout << IM(5) << "gmres - Triangular matrix" << endl << h.Rows(0,j+2).Cols(0,j+2) << endl;
         Vector<SCAL> y(maxsteps);
         for (int i = j; i >= 0; i--)
           {

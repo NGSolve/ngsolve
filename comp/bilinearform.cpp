@@ -2023,7 +2023,7 @@ namespace ngcomp
           {
             // mixed spaces
 
-            cout << "assemble mixed bilinearform" << endl;
+            cout << IM(3) << "assemble mixed bilinearform" << endl;
       
             BaseMatrix & mat = GetMatrix();
             mat = 0.0;
@@ -2316,6 +2316,44 @@ namespace ngcomp
 
     try
       {
+        if(MixedSpaces())
+          {
+            cout << IM(3) << "assemble linearization mixed bilinearform" << endl;
+            auto& mat = GetMatrix();
+            mat = 0.0;
+            for(auto vb : {VOL,BND,BBND,BBBND})
+              if(VB_parts[vb].Size())
+                IterateElements
+                  (*fespace, vb, clh,          // coloring for 1 space is enough
+                   [&] (FESpace::Element ei, LocalHeap & lh)
+                   {
+                     const FiniteElement & fel1 = fespace->GetFE (ei, lh);
+                     const FiniteElement & fel2 = fespace2->GetFE (ei, lh);
+
+                     Array<int> dnums1(fel1.GetNDof(), lh);
+                     Array<int> dnums2(fel2.GetNDof(), lh);
+                     const ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
+                     fespace->GetDofNrs (ei, dnums1);
+                     fespace2->GetDofNrs (ei, dnums2);
+                     FlatVector<SCAL> elveclin(dnums1.Size() * fespace->GetDimension(),lh);
+                     lin.GetIndirect(dnums1,elveclin);
+                     fespace->TransformVec(ei,elveclin,TRANSFORM_SOL);
+                     FlatMatrix<SCAL> elmat(dnums2.Size(), dnums1.Size(), lh);
+                     for (auto & bfi : VB_parts[vb])
+                       {
+                         if (!bfi->DefinedOn(fespace->GetMeshAccess()->GetElIndex(ei))) continue;
+                         if (!bfi->DefinedOnElement(ei.Nr())) continue;
+                         MixedFiniteElement fel(fel1, fel2);
+                         bfi->CalcLinearizedElementMatrix (fel, eltrans, elveclin, elmat, lh);
+                         /*
+                           fespace->Transform (i, true, elmat, TRANSFORM_MAT_RIGHT);
+                           fespace2->Transform (i, true, elmat, TRANFORM_MAT_LEFT);
+                         */
+                         AddElementMatrix (dnums2, dnums1, elmat, ei, lh);
+                       }
+                   });
+            return;
+          }
         int ndof = fespace->GetNDof();
         Array<bool> useddof(ndof);
         useddof = false;
@@ -2977,7 +3015,7 @@ namespace ngcomp
           Array<int> elnums_x(2, lh), elnums_per_x(2,lh), fnums1_x(6, lh), fnums2_x(6, lh), vnums1(8, lh), vnums2(8, lh);
           int facet_x = colfacets[i];
           int facet2_x = colfacets[i];
-          // Horzontal edge - get facet elements w.r.t. first direction
+          // Horizontal edge - get facet elements w.r.t. first direction
           meshx->GetFacetElements (facet_x, elnums_x);
           int el1_x = elnums_x[0];
           auto & felx1 = spaces[0]->GetFE(ElementId(el1_x),lh);
@@ -3096,7 +3134,7 @@ namespace ngcomp
           Array<int> elnums_y(2, lh), elnums_per_y(2,lh), fnums1_y(6, lh), fnums2_y(6, lh), vnums1(8, lh), vnums2(8, lh);
           int facet_y = colfacets[i];
           int facet2_y = colfacets[i];
-          // Horzontal edge - get facet elements w.r.t. second direction
+          // Horizontal edge - get facet elements w.r.t. second direction
           meshy->GetFacetElements (facet_y, elnums_y);
           int el1_y = elnums_y[0];
           auto & fely1 = spaces[1]->GetFE(ElementId(el1_y),lh);
@@ -4036,30 +4074,31 @@ namespace ngcomp
         LocalHeap lh (2000000, "biform-energy", true);
 
         for (auto vb : { VOL, BND, BBND, BBBND })
-          IterateElements 
-            (*fespace, vb, lh, 
-             [&] (FESpace::Element ei, LocalHeap & lh)
-             {
-               const FiniteElement & fel = fespace->GetFE (ei, lh);
-               ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
-
-               FlatArray<int> dnums = ei.GetDofs();
-               FlatVector<SCAL> elvecx (dnums.Size()*GetFESpace()->GetDimension(), lh);
-               
-               x.GetIndirect (dnums, elvecx);
-               fespace->TransformVec (ei, elvecx, TRANSFORM_SOL);
-               
-               double energy_T = 0;
-
-               for (auto & bfi : VB_parts[vb])
-                 {
-		   if (!bfi->DefinedOn (ei.GetIndex())) continue;
-                   energy_T += bfi->Energy (fel, eltrans, elvecx, lh);
-                 }
-
-               energy += energy_T;
-             });
-
+          if (VB_parts[vb].Size())
+            IterateElements 
+              (*fespace, vb, lh, 
+               [&] (FESpace::Element ei, LocalHeap & lh)
+               {
+                 const FiniteElement & fel = fespace->GetFE (ei, lh);
+                 ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
+                 
+                 FlatArray<int> dnums = ei.GetDofs();
+                 FlatVector<SCAL> elvecx (dnums.Size()*GetFESpace()->GetDimension(), lh);
+                 
+                 x.GetIndirect (dnums, elvecx);
+                 fespace->TransformVec (ei, elvecx, TRANSFORM_SOL);
+                 
+                 double energy_T = 0;
+                 
+                 for (auto & bfi : VB_parts[vb])
+                   {
+                     if (!bfi->DefinedOn (ei.GetIndex())) continue;
+                     energy_T += bfi->Energy (fel, eltrans, elvecx, lh);
+                   }
+                 
+                 energy += energy_T;
+               });
+        
         
         /*
         bool hasbound = false;

@@ -845,13 +845,13 @@ namespace ngbla
   */
 
 
-  inline void LapackInverse (ngbla::FlatMatrix<ngbla::Complex> a)
+  inline void LapackInverse (ngbla::SliceMatrix<ngbla::Complex> a)
   {
     integer m = a.Height();
     if (m == 0) return;
 
     integer n = a.Width();
-    integer lda = a.Width();
+    integer lda = a.Dist();
     integer * ipiv = new integer[n];
     integer lwork = 100*n;
     Complex * work = new Complex[lwork];

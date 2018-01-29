@@ -951,32 +951,29 @@ namespace ngcomp
         // build vertex-pair to edge hashtable:
         HashTable<INT<2>, int> vp2e(GetNEdges());
         
-        for (int enr = 0; enr < GetNEdges(); enr++)
+        for (size_t enr = 0; enr < GetNEdges(); enr++)
           {
-            int v1, v2;
-            GetEdgePNums (enr, v1, v2);
-            if (v1 > v2) Swap (v1, v2);
-            vp2e[INT<2>(v1,v2)] = enr;
+            INT<2> vts = GetEdgePNums (enr);
+            vts.Sort();
+            vp2e[vts] = enr;
           }
-        int count = 0;
-        for (int enr = 0; enr < GetNEdges(); enr++)
+        size_t count = 0;
+        for (size_t enr = 0; enr < GetNEdges(); enr++)
           {
-            int v1,v2;
-            GetEdgePNums(enr,v1,v2);
-            int mv1 = vertex_map[v1];
-            int mv2 = vertex_map[v2];
-            if(mv1 != v1 && mv2 != v2)
+            INT<2> vts = GetEdgePNums(enr);
+            size_t mv1 = vertex_map[vts[0]];
+            size_t mv2 = vertex_map[vts[1]];
+            if(mv1 != vts[0] && mv2 != vts[1])
               count++;
           }
         (*periodic_node_pairs[NT_EDGE])[idnr-1].SetSize(count);
         count = 0;
-        for (int enr = 0; enr < GetNEdges(); enr++)
+        for (size_t enr = 0; enr < GetNEdges(); enr++)
           {
-            int v1, v2;
-            GetEdgePNums (enr, v1, v2);
-            int mv1 = vertex_map[v1];
-            int mv2 = vertex_map[v2];
-            if(mv1 != v1 && mv2 != v2)
+            INT<2> vts = GetEdgePNums (enr);
+            int mv1 = vertex_map[vts[0]];
+            int mv2 = vertex_map[vts[1]];
+            if(mv1 != vts[0] && mv2 != vts[1])
               {               
                 if (mv1 > mv2) Swap(mv1,mv2);
                 int menr = vp2e.Get(INT<2>(mv1,mv2));
@@ -986,10 +983,9 @@ namespace ngcomp
           }
         // build vertex-triple to face hashtable
         HashTable<INT<3>, int> v2f(GetNFaces());
-        Array<int> pnums;
         for (auto fnr : Range(GetNFaces()))
           {
-            GetFacePNums (fnr, pnums);
+            auto pnums = GetFacePNums (fnr);
             INT<3> i3(pnums[0], pnums[1], pnums[2]);
             i3.Sort();
             v2f[i3] = fnr;
@@ -998,7 +994,7 @@ namespace ngcomp
         count = 0;
         for (auto fnr : Range(GetNFaces()))
           {
-            GetFacePNums(fnr,pnums);
+            auto pnums = GetFacePNums(fnr);
             if(vertex_map[pnums[0]] != pnums[0] && vertex_map[pnums[1]] != pnums[1] &&
                vertex_map[pnums[2]] != pnums[2])
               {
@@ -1009,7 +1005,7 @@ namespace ngcomp
         count = 0;
         for (auto fnr : Range(GetNFaces()))
           {
-            GetFacePNums(fnr,pnums);
+            auto pnums = GetFacePNums(fnr);
             INT<3> mv(vertex_map[pnums[0]],vertex_map[pnums[1]],vertex_map[pnums[2]]);
             if(mv[0] != pnums[0] && mv[1] != pnums[1] && mv[2] != pnums[2])
               {
@@ -1084,11 +1080,10 @@ namespace ngcomp
     // static Timer t("getedgesurfelements"); RegionTimer reg(t);
     elnums.SetSize0();
 
-    int p0, p1;
-    GetEdgePNums(enr, p0, p1);
+    INT<2> pts = GetEdgePNums(enr);
 
-    auto velems0 = GetVertexSurfaceElements(p0);
-    auto velems1 = GetVertexSurfaceElements(p1);
+    auto velems0 = GetVertexSurfaceElements(pts[0]);
+    auto velems1 = GetVertexSurfaceElements(pts[1]);
     // now compare
     for (int i=0; i<velems0.Size(); i++) 
       for (int j=0; j<velems1.Size(); j++) 
@@ -1161,8 +1156,8 @@ namespace ngcomp
       }
 
     // 2D case: as it was before: one volume element, is it still needed ???
-    ArrayMem<int, 9> vnums;
-    GetFacePNums(fnr, vnums);
+    // ArrayMem<int, 9> vnums;
+    auto vnums = GetFacePNums(fnr);
 
     ArrayMem<int, 50> vels;
     GetVertexElements (vnums[0], vels);
@@ -1221,8 +1216,8 @@ namespace ngcomp
     switch (dim)
       {
       case 1: pnums.SetSize(1); pnums[0] = fnr; break;
-      case 2: GetEdgePNums(fnr, pnums); break;
-      case 3: GetFacePNums(fnr, pnums); break;
+      case 2: pnums = GetEdgePNums(fnr); break;
+      case 3: pnums = GetFacePNums(fnr); break;
       }
   }
 

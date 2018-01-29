@@ -31,8 +31,7 @@ void GenerateMultAB (ostream & out, int h, int w, OP op, bool aligned_b)
       << "     " << (aligned_b ? "SIMD<double>" : "double") << " * pb, size_t db," << endl
       << "     double * pc, size_t dc)" << endl
       << "{" << endl;
-  out << "constexpr int SW = SIMD<double>::Size();" << endl
-      << "double * hpc = pc;" << endl;
+  out << "constexpr int SW = SIMD<double>::Size();" << endl;
 
   if (op == SET)
     {
@@ -42,6 +41,7 @@ void GenerateMultAB (ostream & out, int h, int w, OP op, bool aligned_b)
     }
   else
     {
+      out << "double * hpc = pc;" << endl;
       for (int i = 0; i < h; i++)
         {
           for (int j = 0; j < w; j++)
@@ -113,8 +113,6 @@ void AlignedGenerateMultAB (ostream & out, int h, int w, OP op)
       << "     SIMD<double> * pc, size_t dc)" << endl
       << "{" << endl;
 
-  out << "SIMD<double> * hpc = pc;" << endl;
-
   if (op == SET)
     {
       for (int i = 0; i < h; i++)
@@ -123,6 +121,7 @@ void AlignedGenerateMultAB (ostream & out, int h, int w, OP op)
     }
   else
     {
+      out << "SIMD<double> * hpc = pc;" << endl;
       for (int i = 0; i < h; i++)
         {
           for (int j = 0; j < w; j++)
@@ -168,8 +167,7 @@ void GenerateMultABMask (ostream & out, int h, OP op, bool aligned_b)
       << "     " << (aligned_b ? "SIMD<double>" : "double") << " * pb, size_t db," << endl    
       << "     double * pc, size_t dc)" << endl
       << "{" << endl;
-  out << "constexpr int SW = SIMD<double>::Size();" << endl
-      << "double * hpc = pc;" << endl;
+  out << "constexpr int SW = SIMD<double>::Size();" << endl;
 
   if (op == SET)
     {
@@ -178,6 +176,7 @@ void GenerateMultABMask (ostream & out, int h, OP op, bool aligned_b)
     }
   else
     {
+      out << "double * hpc = pc;" << endl;
       for (int i = 0; i < h; i++)
         {
           out << "SIMD<double> sum" << i << "(pc, mask);" << endl;

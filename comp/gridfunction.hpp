@@ -19,10 +19,7 @@ namespace ngcomp
     shared_ptr<GridFunction> gf_shared_ptr;
     GridFunction* gf;
     shared_ptr<FESpace> fes;
-    shared_ptr<DifferentialOperator> diffop[3];
-    // shared_ptr<DifferentialOperator> trace_diffop;
-    // shared_ptr<DifferentialOperator> ttrace_diffop;
-    // shared_ptr<BilinearFormIntegrator> bfi;
+    shared_ptr<DifferentialOperator> diffop[4];
     int comp;
     GridFunctionCoefficientFunction (shared_ptr<DifferentialOperator> adiffop,
                                      shared_ptr<DifferentialOperator> atrace_diffop = nullptr,

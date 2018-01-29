@@ -896,7 +896,7 @@ namespace ngfem
 
     int comp;
   public:
-    T_S_xz ( int acomp, AutoDiff<2,T> auv, AutoDiff<1,T> aw) : comp(acomp), uv(auv), w(aw) { ; }
+    T_S_xz ( int acomp, AutoDiff<2,T> auv, AutoDiff<1,T> aw) : uv(auv), w(aw), comp(acomp) { ; }
     Vec<6,T> Shape() 
     { 
       Vec<6,T> sigma;
@@ -1220,7 +1220,7 @@ namespace ngfem
         ftrig = faces[fa][ftrig];
 
 
-        int orderz = order_facet[fa][1];
+        // int orderz = order_facet[fa][1];
 
         bool rotate = false;
         if(vnums[fz] > vnums[ftrig]) rotate = true;
@@ -1342,8 +1342,8 @@ namespace ngfem
       AutoDiff<3,T> lz[6] ={ 1-zz,1-zz,1-zz,zz,zz,zz };
       int ii = 0;
       
-      int maxorder_facet =
-        max2(order_facet[0][0],max2(order_facet[1][0],order_facet[2][0]));
+      // int maxorder_facet =
+      // max2(order_facet[0][0],max2(order_facet[1][0],order_facet[2][0]));
 
       const FACE * faces = ElementTopology::GetFaces(ET_PRISM);
 
@@ -1388,7 +1388,7 @@ namespace ngfem
         ftrig = faces[fa][ftrig];
 
 
-        int orderz = order_facet[fa][1];
+        // int orderz = order_facet[fa][1];
 
         bool rotate = false;
         if(vnums[fz] > vnums[ftrig]) rotate = true;
@@ -1626,8 +1626,8 @@ namespace ngfem
         1-xx + yy + zz};
       int ii = 0;
       
-      int maxorder_facet =
-        max2(order_facet[0][0],max2(order_facet[1][0],order_facet[2][0]));
+      // int maxorder_facet =
+      //     max2(order_facet[0][0],max2(order_facet[1][0],order_facet[2][0]));
 
       const FACE * faces = ElementTopology::GetFaces(ET_HEX);
 
@@ -1655,7 +1655,7 @@ namespace ngfem
         ftrig = faces[fa][ftrig];
 
 
-        int orderz = order_facet[fa][1];
+        // int orderz = order_facet[fa][1];
 
         if(vnums[fz] < vnums[ftrig]) swap(fz, ftrig);
         int p = order_facet[fa][0];

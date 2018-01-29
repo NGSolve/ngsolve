@@ -168,7 +168,7 @@ namespace ngcomp
     ORDER_POLICY order_policy = OLDSTYLE_ORDER;
     
     /*
-      the function space H(curl) has high order basis funcitons which 
+      the function space H(curl) has high order basis functions which 
       are gradients, and additional ones which span the domain of the curl.
       In general, for function spaces of the de Rham sequence we refer to 
       functions in the range of the differential operator from the left to 
@@ -464,7 +464,7 @@ namespace ngcomp
     /// get dof-nrs of domain or boundary element elnr
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const = 0;
     virtual void GetDofNrs (NodeId ni, Array<DofId> & dnums) const;
-    
+    BitArray GetDofs (Region reg) const;
     Table<int> CreateDofTable (VorB vorb) const;
 
     // FlatArray<int> GetDofNrs (ElementId ei, LocalHeap & lh) const;

@@ -355,12 +355,7 @@ namespace ngcomp
     auto Edges() const { return Nodes<NT_EDGE>(); }
     auto Faces() const { return Nodes<NT_FACE>(); }
     auto Cells() const { return Nodes<NT_CELL>(); }
-    /*
-    auto Vertices () const
-    {
-      return T_Range<T_NodeId<NT_VERTEX>> (0, GetNNodes(NT_VERTEX));
-    }
-    */
+
     template <typename TFUNC>
     void IterateElements (VorB vb, 
                           LocalHeap & clh, 
@@ -688,18 +683,23 @@ namespace ngcomp
 
     /// returns the points of an element.
     /// vertices and possibly edge-midpoints
+    [[deprecated("Use GetElPNums(ElementId) instead!")]]                        
     void GetElPNums (int elnr, Array<int> & pnums) const
     { pnums = ArrayObject (GetElement(ElementId(VOL,elnr)).points); }
 
     /// returns the points of a boundary element.
     /// vertex and possibly edge-midpoints
+    [[deprecated("Use GetElPNums(ElementId) instead!")]]                        
     void GetSElPNums (int selnr, Array<int> & pnums) const
     { pnums = ArrayObject (GetElement(ElementId(BND,selnr)).points); }
 
+    [[deprecated("Use GetElPNums(ElementId) instead!")]]                    
     void GetElPNums (ElementId ei, Array<int> & pnums) const
     { pnums = ArrayObject (GetElement(ei).points); }
 
-
+    auto GetElPNums (ElementId ei) const
+    { return ArrayObject(GetElement(ei).points); }
+    
     /// returns the vertices of an element
     [[deprecated("Use GetElVertices(ElementId) instead!")]]                
     void GetElVertices (int elnr, Array<int> & vnums) const
@@ -762,13 +762,16 @@ namespace ngcomp
     void GetSElFace (int selnr, int & fnum, int & orient) const;
 
     /// returns vertex numbers of face
+    [[deprecated("Use GetFacePNums(fnr) instead!")]]                        
     void GetFacePNums (int fnr, Array<int> & pnums) const;
     
+    /// returns vertex numbers of face
     auto GetFacePNums (size_t fnr) const
     {
       return ArrayObject (mesh.GetNode<2> (fnr).vertices);
     }
     /// returns vertex numbers of edge
+    [[deprecated("Use GetEdgeNums(enr) instead!")]]                            
     void GetEdgePNums (int enr, int & pn1, int & pn2) const
     {
       auto edge = mesh.GetNode<1>(enr);
@@ -776,6 +779,7 @@ namespace ngcomp
       pn2 = edge.vertices[1];
     }
     /// returns vertex numbers of edge
+    [[deprecated("Use GetEdgePNums(enr) instead!")]]                                
     void GetEdgePNums (int enr, Array<int> & pnums) const;
     /// returns vertex numbers of edge
     /*

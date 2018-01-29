@@ -88,6 +88,7 @@ namespace ngfem
 
   void Integrator :: SetIntegrationAlongCurve ( const int npoints )
   {
+    is_curve_integrator = true;
     curve_ips.SetSize(npoints); 
     curve_ip_tangents.SetSize(npoints);
     for(int i=0; i<npoints; i++)

@@ -693,7 +693,7 @@ namespace ngbla
   /**
      The base class for matrices.
      Constant-Means-Constat-Pointer
-     matrix-values may be chaneged by const methods
+     matrix-values may be changed by const methods
   */
   template <class T>
   class CMCPMatExpr : public MatExpr<T>

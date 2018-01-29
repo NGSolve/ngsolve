@@ -611,7 +611,7 @@ Evaluate (const BaseMappedIntegrationRule & ir,
   
 void DomainVariableCoefficientFunction :: PrintReport (ostream & ost) const
 {
-  *testout << "DomainVariableCoefficientFunction, functios are: " << endl;
+  *testout << "DomainVariableCoefficientFunction, functions are: " << endl;
   for (int i = 0; i < fun.Size(); i++)
     fun[i] -> Print(ost);
 }
@@ -1072,6 +1072,7 @@ public:
     dderiv = scal * ddv1;
   }
 
+  /*
   virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & mir, 
                               AFlatMatrix<double> values, AFlatMatrix<double> deriv) const
   {
@@ -1111,6 +1112,7 @@ public:
     deriv = scal * (*dinput[0]);
     dderiv = scal * (*ddinput[0]);
   }
+  */
   
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
                                FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const
@@ -1400,6 +1402,7 @@ public:
       }
   }
 
+  /*
   virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & mir,
                               AFlatMatrix<> result,
                               AFlatMatrix<> deriv) const
@@ -1435,7 +1438,7 @@ public:
           deriv.Get(i,k) = v1.Get(0,k)*dv2.Get(i,k)+dv1.Get(0,k)*v2.Get(i,k);
         }
   }
-  
+  */
 
   
   
@@ -1554,7 +1557,7 @@ public:
     size_t w = ir.Size();
     __assume (w > 0);
 
-    size_t dim = Dimension();
+    size_t dim = dim1; // Dimension();
     STACK_ARRAY(T, hmem, 2*dim*w);
     FlatMatrix<T> temp1(dim, w, &hmem[0]);
     FlatMatrix<T> temp2(dim, w, &hmem[dim*w]);
@@ -2019,7 +2022,7 @@ public:
   }
 
 
-
+  /*
   virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & mir,
                               AFlatMatrix<> result,
                               AFlatMatrix<> deriv) const
@@ -2097,7 +2100,7 @@ public:
         dderiv.Get(0,k) = ddsum;
       }
   }
-
+  */
 
   
   virtual bool ElementwiseConstant () const
@@ -2986,6 +2989,7 @@ public:
       }
   }
 
+  /*
   virtual void EvaluateDeriv(const SIMD_BaseMappedIntegrationRule & mir,
                              AFlatMatrix<> result,
                              AFlatMatrix<> deriv) const
@@ -3043,7 +3047,7 @@ public:
             deriv.Get(j,i) += dva.Get(row,i)*vb.Get(k,i) + va.Get(row,i)*dvb.Get(k,i);
         }
   }
-
+  */
 
   
   virtual void EvaluateDDeriv(const BaseMappedIntegrationRule & mir,
@@ -3393,6 +3397,7 @@ public:
     
   }
 
+  /*
     virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & mir,
                                 AFlatMatrix<> result,
                                 AFlatMatrix<> deriv) const
@@ -3472,7 +3477,7 @@ public:
               dderiv.Get(j*dims[1]+k, i) = ddin0.Get(k*dims[0]+j, i);
         }
     }
-  
+  */
   
   };  
 
@@ -3822,6 +3827,7 @@ public:
    }  
 
 
+  /*
   virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & mir, 
                               AFlatMatrix<double> values, AFlatMatrix<double> deriv) const
   {
@@ -3876,6 +3882,8 @@ public:
     deriv.Row(0) = dinput[0] -> Row(comp);
     dderiv.Row(0) = ddinput[0] -> Row(comp);
   }
+  */
+
   
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
                                FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const
@@ -4479,7 +4487,7 @@ MakeOtherCoefficientFunction (shared_ptr<CoefficientFunction> me)
     virtual string GetName () const;
     */
 
-
+    /*
     virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
                                 AFlatMatrix<> values,
                                 AFlatMatrix<> deriv) const
@@ -4506,16 +4514,6 @@ MakeOtherCoefficientFunction (shared_ptr<CoefficientFunction> me)
             values.Get(j,i) = IfPos(if_values.Get(0,i), then_values.Get(j,i), else_values.Get(j,i));
             deriv.Get(j,i) = IfPos(if_values.Get(0,i), then_deriv.Get(j,i), else_deriv.Get(j,i));
           }
-      /*
-      *testout << "IfPos::simd" << endl
-               << "ifval = " << endl << if_values
-               << "then-val = " << endl << then_values
-               << "then-dval = " << endl << then_deriv
-               << "else-val = " << endl << else_values
-               << "else-dval = " << endl << else_deriv
-               << "val = " << endl << values
-               << "deriv = " << endl << deriv;
-      */
     }
 
     virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
@@ -4542,6 +4540,7 @@ MakeOtherCoefficientFunction (shared_ptr<CoefficientFunction> me)
                                            else_deriv.Get(k,i));
           }
     }
+    */
     
     virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
     {
@@ -4714,6 +4713,7 @@ public:
   }
   */
 
+  
   template <typename T>
   void T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<T> values) const
   {
@@ -4747,6 +4747,7 @@ public:
       }
   }
 
+  /*
   virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
                               AFlatMatrix<> result,
                               AFlatMatrix<> deriv) const
@@ -4792,7 +4793,8 @@ public:
         dderiv.Rows(base,base+dimi[i]) = *ddinput[i];
         base += dimi[i];
       }
-  }
+      }
+  */
   
   virtual void Evaluate(const BaseMappedIntegrationRule & ir,
                         FlatMatrix<Complex> result) const
@@ -5029,7 +5031,7 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
   // ///////////////////////////// Compiled CF /////////////////////////
 // int myglobalvar;
 // int myglobalvar_eval;
-  class CompiledCoefficientFunction : public CoefficientFunction
+  class CompiledCoefficientFunction : public CoefficientFunction, public std::enable_shared_from_this<CompiledCoefficientFunction>
   {
     typedef void (*lib_function)(const ngfem::BaseMappedIntegrationRule &, ngbla::FlatMatrix<double>);
     typedef void (*lib_function_simd)(const ngfem::SIMD_BaseMappedIntegrationRule &, BareSliceMatrix<SIMD<double>>);
@@ -5061,7 +5063,7 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
     lib_function_simd_complex compiled_function_simd_complex = nullptr;
 
   public:
-    CompiledCoefficientFunction (shared_ptr<CoefficientFunction> acf, bool realcompile, int maxderiv, bool wait )
+    CompiledCoefficientFunction (shared_ptr<CoefficientFunction> acf)
       : CoefficientFunction(acf->Dimension(), acf->IsComplex()), cf(acf) // , compiled_function(nullptr), compiled_function_simd(nullptr)
     {
       SetDimensions (cf->Dimensions());
@@ -5101,8 +5103,10 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
          });
       cout << IM(3) << "inputs = " << endl << inputs << endl;
 
-      if(realcompile)
-      {
+    }
+
+    void RealCompile(int maxderiv, bool wait)
+    {
         std::vector<string> link_flags;
         if(cf->IsComplex())
             maxderiv = 0;
@@ -5212,26 +5216,27 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
           codes.push_back(pointer_code);
         }
 
-        auto compile_func = [this, codes, link_flags, maxderiv] () {
-              library = CompileCode( codes, link_flags );
-              if(cf->IsComplex())
+        auto self = shared_from_this();
+        auto compile_func = [self, codes, link_flags, maxderiv] () {
+              self->library = CompileCode( codes, link_flags );
+              if(self->cf->IsComplex())
               {
-                  compiled_function_simd_complex = library->GetFunction<lib_function_simd_complex>("CompiledEvaluateSIMD");
-                  compiled_function_complex = library->GetFunction<lib_function_complex>("CompiledEvaluate");
+                  self->compiled_function_simd_complex = self->library->GetFunction<lib_function_simd_complex>("CompiledEvaluateSIMD");
+                  self->compiled_function_complex = self->library->GetFunction<lib_function_complex>("CompiledEvaluate");
               }
               else
               {
-                  compiled_function_simd = library->GetFunction<lib_function_simd>("CompiledEvaluateSIMD");
-                  compiled_function = library->GetFunction<lib_function>("CompiledEvaluate");
+                  self->compiled_function_simd = self->library->GetFunction<lib_function_simd>("CompiledEvaluateSIMD");
+                  self->compiled_function = self->library->GetFunction<lib_function>("CompiledEvaluate");
                   if(maxderiv>0)
                   {
-                      compiled_function_simd_deriv = library->GetFunction<lib_function_simd_deriv>("CompiledEvaluateDerivSIMD");
-                      compiled_function_deriv = library->GetFunction<lib_function_deriv>("CompiledEvaluateDeriv");
+                      self->compiled_function_simd_deriv = self->library->GetFunction<lib_function_simd_deriv>("CompiledEvaluateDerivSIMD");
+                      self->compiled_function_deriv = self->library->GetFunction<lib_function_deriv>("CompiledEvaluateDeriv");
                   }
                   if(maxderiv>1)
                   {
-                      compiled_function_simd_dderiv = library->GetFunction<lib_function_simd_dderiv>("CompiledEvaluateDDerivSIMD");
-                      compiled_function_dderiv = library->GetFunction<lib_function_dderiv>("CompiledEvaluateDDeriv");
+                      self->compiled_function_simd_dderiv = self->library->GetFunction<lib_function_simd_dderiv>("CompiledEvaluateDDerivSIMD");
+                      self->compiled_function_dderiv = self->library->GetFunction<lib_function_dderiv>("CompiledEvaluateDDeriv");
                   }
               }
               cout << IM(7) << "Compilation done" << endl;
@@ -5246,7 +5251,6 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
               cerr << IM(3) << "Compilation of CoefficientFunction failed: " << e.what() << endl;
           }
         }
-      }
     }
 
     virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
@@ -5407,12 +5411,12 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
 
       STACK_ARRAY(SIMD<double>, hmem, ir.Size()*totdim);      
       int mem_ptr = 0;
-      ArrayMem<AFlatMatrix<double>,100> temp(steps.Size());
-      ArrayMem<AFlatMatrix<double>*,100> in(max_inputsize);
+      ArrayMem<BareSliceMatrix<SIMD<double>>,100> temp(steps.Size());
+      ArrayMem<BareSliceMatrix<SIMD<double>>,100> in(max_inputsize);
 
       for (int i = 0; i < steps.Size(); i++)
         {
-          new (&temp[i]) AFlatMatrix<double> (dim[i], ir.IR().GetNIP(), &hmem[mem_ptr]);
+          new (&temp[i]) BareSliceMatrix<SIMD<double>> (ir.Size(), &hmem[mem_ptr], DummySize(dim[i], ir.Size()));
           mem_ptr += ir.Size()*dim[i];
         }
 
@@ -5421,7 +5425,8 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
           // timers[i]->Start();          
           auto inputi = inputs[i];
           for (int nr : Range(inputi))
-            in[nr] = &temp[inputi[nr]];
+            new (&in[nr]) BareSliceMatrix<SIMD<double>> (temp[inputi[nr]]);            
+          // in[nr] = &temp[inputi[nr]];
 
           steps[i] -> Evaluate (ir, in.Range(0, inputi.Size()), temp[i]);
           // timers[i]->Stop();                    
@@ -5576,7 +5581,7 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
       dderiv = ddtemp.Last();
     }
 
-    
+#ifdef OLD
     virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir, 
                                 AFlatMatrix<double> values, AFlatMatrix<double> deriv) const
     {
@@ -5672,7 +5677,8 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
       deriv = dtemp.Last();
       dderiv = ddtemp.Last();
     }
-
+#endif
+    
 
 
     
@@ -5731,7 +5737,10 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
 
   shared_ptr<CoefficientFunction> Compile (shared_ptr<CoefficientFunction> c, bool realcompile, int maxderiv, bool wait)
   {
-    return make_shared<CompiledCoefficientFunction> (c, realcompile, maxderiv, wait);
+    auto cf = make_shared<CompiledCoefficientFunction> (c);
+    if(realcompile)
+      cf->RealCompile(maxderiv, wait);
+    return cf;
   }
   
 }

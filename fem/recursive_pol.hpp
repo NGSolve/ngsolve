@@ -1120,7 +1120,7 @@ namespace ngfem
     INLINE void EvalMult1Assign (TI n, S x, Sc c, T && values) const
     {
       /*
-      S p1(0.0), p2(0.0); // initialize for surpressing warning
+      S p1(0.0), p2(0.0); // initialize for suppressing warning
       for (int i = 0; i <= n; i++)
         values[i] = EvalNextMult (i, x, c, p1, p2);
       */

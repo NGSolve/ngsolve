@@ -118,8 +118,7 @@ namespace ngcomp
     
     for (size_t i = 0; i < ned; i++)
       {
-	INT<2> edge;
-        ma->GetEdgePNums (i, edge[0], edge[1]);
+	INT<2> edge = ma->GetEdgePNums (i);
 	int edgedir = (edge[0] > edge[1]);
 	if (edgedir) Swap (edge[0], edge[1]);
 	node2edge.Set (edge, i);
@@ -923,8 +922,6 @@ namespace ngcomp
     if (ma->GetDimension() == 2)
       nfa = nel;
 
-    Array<int> pnums;
-
     if (gradientedge.Size() == ned)
       return;
 
@@ -953,7 +950,7 @@ namespace ngcomp
     first_face_dof[0] = n_edge_dofs * ned;
     for (i = 0; i < nfa; i++)
       {
-	ma->GetFacePNums (i, pnums);
+	auto pnums = ma->GetFacePNums (i);
 	if (pnums.Size() == 3)
 	  first_face_dof[i+1] = first_face_dof[i] + n_trig_face_dofs;
 	else
@@ -2085,10 +2082,10 @@ namespace ngcomp
 		  int ecl = ma->GetClusterRepEdge (i);
 		  if (ecl < 0) continue;
 
-		  int pi1, pi2;
-		  ma->GetEdgePNums (i, pi1, pi2);
-		  pi1 = ma->GetClusterRepVertex (pi1);
-		  pi2 = ma->GetClusterRepVertex (pi2);
+		  // int pi1, pi2;
+		  auto pnts = ma->GetEdgePNums (i);
+		  int pi1 = ma->GetClusterRepVertex (pnts[0]);
+		  int pi2 = ma->GetClusterRepVertex (pnts[1]);
 
 		  int nd = (pi1 == pi2) 
 		    ? n_z_edge_dofs
@@ -2412,11 +2409,10 @@ namespace ngcomp
     int i;
     for (i = 0; i < ned; i++)
       {
-	int pi1, pi2;
-	ma->GetEdgePNums (i, pi1, pi2);
+	auto pnts = ma->GetEdgePNums (i);
 	  
-	if (ma->GetClusterRepVertex (pi1) ==
-	    ma->GetClusterRepVertex (pi2))
+	if (ma->GetClusterRepVertex (pnts[0]) ==
+	    ma->GetClusterRepVertex (pnts[1]))
 	  {
 	    for (int l = 1; l < n_z_edge_dofs; l++)
 	      ba.Set (i + l * ned);
@@ -2503,20 +2499,17 @@ namespace ngcomp
     clusters = 0;
 
 
-    int i,k;
-  
     //lo 
     //for(i=0;i<ma->GetNEdges();i++)
     //  clusters[i]=1; 
 
     //
-    for (i = 0; i < ned; i++)
+    for (size_t i = 0; i < ned; i++)
       {
-	int pi1, pi2;
-	ma->GetEdgePNums (i, pi1, pi2);
+	auto pts = ma->GetEdgePNums (i);
 	  
-	if (ma->GetClusterRepVertex (pi1) ==
-	    ma->GetClusterRepVertex (pi2))
+	if (ma->GetClusterRepVertex (pts[0]) ==
+	    ma->GetClusterRepVertex (pts[1]))
 	  {
 	    for (int l = 1; l < n_z_edge_dofs; l++)
 	      clusters[i + l * ned] = 1;
@@ -2524,7 +2517,7 @@ namespace ngcomp
       }
 
   
-    for (i = 0; i < nfa; i++)
+    for (size_t i = 0; i < nfa; i++)
       {
 	int first = first_face_dof[i];
 	int nd = first_face_dof[i+1] - first;
@@ -2587,7 +2580,7 @@ namespace ngcomp
     Array<int> dnums;
   
 
-    for(i=0; i<ne && (directsolverclustered.Size() > 0 || directsolvermaterials.Size() > 0); i++)
+    for(size_t i=0; i<ne && (directsolverclustered.Size() > 0 || directsolvermaterials.Size() > 0); i++)
       {
         ElementId ei(VOL,i);
 	if((directsolverclustered.Size() > 0 && directsolverclustered[ma->GetElIndex(ei)]) || 
@@ -2597,13 +2590,13 @@ namespace ngcomp
 	    if(eltype != ET_PRISM) continue;
 
 	    GetDofNrs(i,dnums);
-	    for(k=0; k<dnums.Size(); k++)
+	    for(size_t k=0; k<dnums.Size(); k++)
 	      if(dnums[k] >= 0) clusters[dnums[k]] = 2;
 
 	  }
       }
     
-    for(i=0; i< adddirectsolverdofs.Size(); i++)
+    for(size_t i=0; i< adddirectsolverdofs.Size(); i++)
       {
 	clusters[adddirectsolverdofs[i]] = 2;
       }
@@ -2636,15 +2629,15 @@ namespace ngcomp
   NedelecFESpace2 :: CreateGradient() const
   {
     cout << "update gradient, N2" << endl;
-    int i, j;
-    int nv = ma->GetNV();
+    int j;
+    size_t nv = ma->GetNV();
     int level = ma->GetNLevels()-1;
     const NedelecFESpace & fe1 = 
       dynamic_cast<const NedelecFESpace&> (*low_order_space);
 
     Array<int> cnts(GetNDof());
     cnts = 0;
-    for (i = 0; i < ned; i++)
+    for (size_t i = 0; i < ned; i++)
       {
 	if (fe1.FineLevelOfEdge(i) == level)
 	  {
@@ -2657,26 +2650,24 @@ namespace ngcomp
 
     SparseMatrix<double> & grad = *new SparseMatrix<double>(cnts);
 
-    for (i = 0; i < ned; i++)
+    for (size_t i = 0; i < ned; i++)
       {
 	if (fe1.FineLevelOfEdge(i) < level) continue;
-	int pi1, pi2;
-	ma->GetEdgePNums (i, pi1, pi2);
-	grad.CreatePosition (i, pi1);
-	grad.CreatePosition (i, pi2);
+	auto pts = ma->GetEdgePNums (i);
+	grad.CreatePosition (i, pts[0]);
+	grad.CreatePosition (i, pts[1]);
       }
 
-    for (i = 0; i < ned; i++)
+    for (size_t i = 0; i < ned; i++)
       {
 	if (fe1.FineLevelOfEdge(i) < level) continue;
-	int pi1, pi2;
-	ma->GetEdgePNums (i, pi1, pi2);
-	grad(i, pi1) = 1;
-	grad(i, pi2) = -1;
+	auto pts = ma->GetEdgePNums (i);
+	grad(i, pts[0]) = 1;
+	grad(i, pts[1]) = -1;
       }
 
 
-    for (i = 0; i < ned; i++)
+    for (size_t i = 0; i < ned; i++)
       {
 	if (fe1.FineLevelOfEdge(i) == level)
 	  {
@@ -2684,7 +2675,7 @@ namespace ngcomp
 	      grad.CreatePosition(i+j*ned, i+(j-1)*ned+nv);
 	  }
       }
-    for (i = 0; i < ned; i++)
+    for (size_t i = 0; i < ned; i++)
       {
 	if (fe1.FineLevelOfEdge(i) == level)
 	  {

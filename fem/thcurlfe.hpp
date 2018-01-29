@@ -14,7 +14,7 @@ namespace ngfem
   
   /**
      HCurlHighOrderFE of shape ET.
-     provides access functions, shape funcitons are provided by CalcShape template
+     provides access functions, shape functions are provided by CalcShape template
   */
   template <ELEMENT_TYPE ET, typename SHAPES,
             typename BASE = HCurlFiniteElement<ET_trait<ET>::DIM>>

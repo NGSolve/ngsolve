@@ -710,7 +710,7 @@ namespace ngfem
         if (p[1] >= 1)
           IntLegNoBubble::EvalMult(p[1]-1,eta, 1-eta*eta, pol_eta);
         
-	shape[i] = wDu_Cross_Dv<3> (eta, xi, 0.25*lam_f);
+	shape[i] = wDu_Cross_Dv<3> (eta, xi, -0.25*lam_f);
 
         for (int k = 0; k < p[0]; k++)
           for (int l = 0; l < p[1]; l++, ii++)

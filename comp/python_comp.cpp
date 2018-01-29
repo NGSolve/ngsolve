@@ -1051,16 +1051,26 @@ mesh (netgen.Mesh): a mesh generated from Netgen
          py::arg("pattern"),
 	 "Returns mesh-region matching the given regex pattern"
          )
+    .def("Materials",
+	 [](shared_ptr<MeshAccess> ma, vector<int> domains)
+	  {
+            BitArray mask(ma->GetNDomains());
+            mask.Clear();
+            for (auto i : domains)
+              if (i >= 0 && i < mask.Size())
+                mask.Set(i);
+              else
+                throw Exception ("index "+ToString(i)+" out of range [0,"+ToString(mask.Size())+")");
+            return Region (ma, VOL, mask);
+	  },
+         py::arg("domains"),
+	 "Generate mesh-region by domain numbers"
+         )
+    
     
     .def("GetBoundaries",
 	 [](const MeshAccess & ma)
 	  {
-            /*
-            py::list materials(ma.GetNBoundaries());
-	    for (int i : Range(ma.GetNBoundaries()))
-	      materials[i] = py::cast(ma.GetMaterial(BND,i));
-	    return materials;
-            */
             return MakePyTuple(ma.GetMaterials(BND));
 	  },
 	 "Returns list of boundary conditions"
@@ -1074,15 +1084,25 @@ mesh (netgen.Mesh): a mesh generated from Netgen
          py::arg("pattern"),
 	 "Returns boundary mesh-region matching the given regex pattern"
          )
+    .def("Boundaries",
+	 [](shared_ptr<MeshAccess> ma, vector<int> bnds)
+	  {
+            BitArray mask(ma->GetNBoundaries());
+            mask.Clear();
+            for (auto i : bnds)
+              if (i >= 0 && i < mask.Size())
+                mask.Set(i);
+              else
+                throw Exception ("boundary index "+ToString(i)+" out of range [0,"+ToString(mask.Size())+")");
+            return Region (ma, BND, mask);
+	  },
+         py::arg("bnds"),
+	 "Generate boundary mesh-region by boundary condition numbers"
+         )
+
     .def("GetBBoundaries",
 	 [](const MeshAccess & ma)
 	  {
-            /*
-	    py::list bboundaries(ma.GetNBBoundaries());
-	    for (int i : Range(ma.GetNBBoundaries()))
-	      bboundaries[i] = py::cast(ma.GetMaterial(BBND,i));
-	    return bboundaries;
-            */
             return MakePyTuple(ma.GetMaterials(BBND));
 	  },
 	 "Returns list of boundary conditions for co dimension 2"
@@ -1531,20 +1551,16 @@ kwargs : For a description of the possible kwargs have a look a bit further down
            self.FinalizeUpdate(lh);
          })
     .def(py::pickle(fesPickle, (shared_ptr<FESpace>(*)(py::tuple)) fesUnpickle<FESpace>))
-    .def("Update", [](shared_ptr<FESpace> self, int heapsize)
+    .def("Update", [](shared_ptr<FESpace> self)
          { 
-           LocalHeap lh (heapsize, "FESpace::Update-heap");
-           self->Update(lh);
-           self->FinalizeUpdate(lh);
+           self->Update(glh);
+           self->FinalizeUpdate(glh);
          },
-         py::arg("heapsize")=1000000,
          "update space after mesh-refinement")
-     .def("FinalizeUpdate", [](shared_ptr<FESpace> self, int heapsize)
+     .def("FinalizeUpdate", [](shared_ptr<FESpace> self)
          { 
-           LocalHeap lh (heapsize, "FESpace::FinalizeUpdate-heap");
-           self->FinalizeUpdate(lh);
+           self->FinalizeUpdate(glh);
          },
-         py::arg("heapsize")=1000000,
          "finalize update")
     .def_property_readonly ("ndof", [](shared_ptr<FESpace> self) { return self->GetNDof(); },
                             "number of degrees of freedom")
@@ -1566,6 +1582,8 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                   "query global order of space")    
     .def_property_readonly("type", [] (shared_ptr<FESpace> self) { return self->type; },
                   "type of finite element space")
+
+    .def_property_readonly("is_complex", &FESpace::IsComplex)
 
     .def("SetDefinedOn", [] (FESpace& self, Region& reg)
          {
@@ -1599,55 +1617,29 @@ kwargs : For a description of the possible kwargs have a look a bit further down
          py::arg("nodeid"),
          py::arg("order")
          )
-
     
     .def("Elements", 
-         [](shared_ptr<FESpace> self, VorB vb, int heapsize)
-         { return FESpace::ElementRange(self->Elements(vb, heapsize)); },
-         py::arg("VOL_or_BND")=VOL,py::arg("heapsize")=10000)
-
-    .def("Elements", 
-         [](shared_ptr<FESpace> self, VorB vb, LocalHeap & lh)
-         {
-           return make_shared<FESpace::ElementRange> (self->Elements(vb, lh));
-         },
-         py::arg("VOL_or_BND")=VOL, py::arg("heap"))
-
-    /*
-    .def("Elements", 
-         [](FESpace & self, VorB vb, LocalHeap & lh, int heapsize)
-                         {
-                           cout << "lh.avail = " << lh.Available() << endl;
-                           return make_shared<FESpace::ElementRange> (self.Elements(vb, heapsize));
-                         },
-         py::arg("VOL_or_BND")=VOL, 
-          py::arg("heap")=LocalHeap(0), py::arg("heapsize")=10000)
-    */
+         [](shared_ptr<FESpace> self, VorB vb)
+         { return FESpace::ElementRange(self->Elements(vb, glh)); },
+         py::arg("VOL_or_BND")=VOL)
 
     .def("GetDofNrs", [](shared_ptr<FESpace> self, ElementId ei)
          {
            Array<int> tmp; self->GetDofNrs(ei,tmp);
            return MakePyTuple(tmp);           
-           /*
-           py::tuple tuple(tmp.Size());
-           for (auto i : Range(tmp))
-             tuple[i] = py::int_(tmp[i]);
-           return tuple;
-           */
          })
 
     .def("GetDofNrs", [](shared_ptr<FESpace> self, NodeId ni)
          {
            Array<int> tmp; self->GetDofNrs(ni,tmp);
-           /*
-           py::tuple tuple(tmp.Size());
-           for (auto i : Range(tmp))
-             tuple[i] = py::int_(tmp[i]);
-           return tuple;
-           */
            return MakePyTuple(tmp);
          })
 
+    .def ("GetDofs", [](shared_ptr<FESpace> self, Region reg)
+          {
+            return self->GetDofs(reg);
+          })
+    
     .def("CouplingType", [](shared_ptr<FESpace> self, DofId dofnr) -> COUPLING_TYPE
          { return self->GetDofCouplingType(dofnr); },
          py::arg("dofnr"),
@@ -1663,7 +1655,7 @@ kwargs : For a description of the possible kwargs have a look a bit further down
           {
             Allocator alloc;
             
-            auto fe = shared_ptr<FiniteElement> (&self->GetFE(ei, alloc)); // , NOOP_Deleter);
+            auto fe = shared_ptr<FiniteElement> (&self->GetFE(ei, alloc)); 
             
             auto scalfe = dynamic_pointer_cast<BaseScalarFiniteElement> (fe);
             if (scalfe) return py::cast(scalfe);
@@ -2215,6 +2207,7 @@ used_idnrs : list of int = None
     .def("__call__", 
          [](shared_ptr<GF> self, double x, double y, double z)
           {
+            HeapReset hr(glh);
             auto space = self->GetFESpace();
             auto evaluator = space->GetEvaluator();
             IntegrationPoint ip;
@@ -2253,6 +2246,7 @@ used_idnrs : list of int = None
    .def("__call__", 
         [](shared_ptr<GF> self, const BaseMappedIntegrationPoint & mip)
           {
+            HeapReset hr(glh);
             auto space = self->GetFESpace();
 
             ElementId ei = mip.GetTransformation().GetElementId();
@@ -2289,6 +2283,7 @@ used_idnrs : list of int = None
     .def("D", 
          [](shared_ptr<GF> self, const double &x, const double &y, const double &z)
           {
+            HeapReset hr(glh);
             const FESpace & space = *self->GetFESpace();
             IntegrationPoint ip;
             int dim_mesh = space.GetMeshAccess()->GetDimension();
@@ -3103,7 +3098,7 @@ flags : dict
                                    {
 				     if(!mask.Test(el.GetIndex())) return;
                                      auto & trafo = ma->GetTrafo (el, lh);
-                                     Vector<Complex> hsum(dim);
+                                     FlatVector<Complex> hsum(dim, lh);
 				     hsum = 0.0;
                                      
                                      bool this_simd = use_simd;
@@ -3360,7 +3355,7 @@ flags : dict
              bfi->SetSimdEvaluate (simd_evaluate);
              return bfi;
            },
-        py::arg("coefficient"), py::arg("VOL_or_BND")=VOL, 
+        py::arg("form"), py::arg("VOL_or_BND")=VOL,
         py::arg("definedon")=DummyArgument(), py::arg("element_boundary")=false,
         py::arg("bonus_intorder")=0,
         py::arg("definedonelements")=DummyArgument(),

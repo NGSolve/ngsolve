@@ -1210,9 +1210,8 @@ namespace ngcomp
 	  {
 	    for (int i = 0; i < ned; i++)
 	      {
-		int pn1, pn2;
-		ma->GetEdgePNums (i,pn1,pn2);	      
-		
+		auto pts = ma->GetEdgePNums (i);
+		int pn1 = pts[0], pn2 = pts[1];
 		if( fine_facet[i] )
 		  {
 		    table[offset + pn1][cnt[offset + pn1]++] = i;

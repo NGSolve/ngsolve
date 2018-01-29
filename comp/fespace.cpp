@@ -1572,7 +1572,18 @@ lot of new non-zero entries in the matrix!\n" << endl;
       paralleldofs -> GetNDofGlobal() : GetNDof(); 
   }
 
-
+  BitArray FESpace :: GetDofs (Region reg) const
+  {
+    BitArray ba(GetNDof());
+    ba.Clear();
+    for (auto el : Elements(reg.VB()))
+      if (reg.Mask().Test(el.GetIndex()))
+        for (auto d : el.GetDofs())
+          if (d != -1)
+            ba.Set(d);
+    return move(ba);
+  }
+  
 
 
 
@@ -2383,7 +2394,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     if (print)
       {
 	(*testout) << "Update compound fespace" << endl;
-	(*testout) << "cummulative dofs start at " << cummulative_nd << endl;
+	(*testout) << "cumulative dofs start at " << cummulative_nd << endl;
       }
   }
 
