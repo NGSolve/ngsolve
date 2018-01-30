@@ -20,13 +20,13 @@ def Neumann (coef):
 
 
 
-def H1(mesh, **args):
-    """
-    Create H1 finite element space.
-    documentation of arguments is available in FESpace.
-    """
-    fes = FESpace("h1ho", mesh, **args)
-    return fes
+#def H1(mesh, **args):
+#    """
+#    Create H1 finite element space.
+#    documentation of arguments is available in FESpace.
+#    """
+#    fes = FESpace("h1ho", mesh, **args)
+#    return fes
 
 
 def VectorH1(mesh, **args):
@@ -133,6 +133,6 @@ def Cof(m):
 
 
 
-__all__ = ['x', 'y', 'z', 'Laplace', 'Mass', 'Source', 'Neumann', 'H1', 'VectorH1', 'FacetFESpace', 'L2', 'VectorL2', 'SurfaceL2', 'HDivDiv', 'NumberSpace', 'grad', 'curl', 'div','Mesh', 'ConstantCF', 'DomainConstantCF', 'Id', 'Trace', 'Det', 'Cross', 'Cof']
+__all__ = ['x', 'y', 'z', 'Laplace', 'Mass', 'Source', 'Neumann', 'VectorH1', 'FacetFESpace', 'L2', 'VectorL2', 'SurfaceL2', 'HDivDiv', 'NumberSpace', 'grad', 'curl', 'div','Mesh', 'ConstantCF', 'DomainConstantCF', 'Id', 'Trace', 'Det', 'Cross', 'Cof']
 
 
