@@ -1783,13 +1783,12 @@ namespace ngcomp
   };
   
 
-  class VectorH1FESpace : public CompoundFESpace
-  {
-  public:
-    VectorH1FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, 
-                     bool checkflags = false)
+
+  VectorH1FESpace::VectorH1FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, 
+                     bool checkflags)
       : CompoundFESpace(ama, flags)
     {
+      type = "VectorH1";
       for (int i = 0; i <  ma->GetDimension(); i++)
         AddSpace (make_shared<H1HighOrderFESpace> (ama, flags));
 
@@ -1814,7 +1813,6 @@ namespace ngcomp
           // integrator[VOL] = make_shared<VectorH1MassIntegrator<2>>(one);
         }
     }
-  };
     
 
 
