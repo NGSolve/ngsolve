@@ -46,6 +46,9 @@ namespace ngcomp
     ///
     virtual size_t GetNDofLevel (int level) const override;
 
+    template <ELEMENT_TYPE ET>
+    FiniteElement & T_GetFE (int elnr, Allocator & alloc) const;
+    
     virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
 
     using FESpace::GetDofNrs;

@@ -131,8 +131,18 @@ def Cof(m):
                      -m[0,0]*m[1,2]+m[1,0]*m[0,2], 
                       m[0,0]*m[1,1]-m[1,0]*m[0,1] ), dims=(3,3) )
 
+def Inv(m):
+    return 1/Det(m)*Cof(m).trans
 
+def Sym(m):
+    return 0.5*(m+m.trans)
 
-__all__ = ['x', 'y', 'z', 'Laplace', 'Mass', 'Source', 'Neumann', 'H1', 'VectorH1', 'FacetFESpace', 'L2', 'VectorL2', 'SurfaceL2', 'HDivDiv', 'NumberSpace', 'grad', 'curl', 'div','Mesh', 'ConstantCF', 'DomainConstantCF', 'Id', 'Trace', 'Det', 'Cross', 'Cof']
+def Skew(m):
+    return 0.5*(m-m.trans)
+
+def OuterProduct(a, b):
+    return CoefficientFunction( tuple([a[i]*b[j] for i in range(a.dim) for j in range(b.dim)]), dims=(a.dim,b.dim) )
+
+__all__ = ['x', 'y', 'z', 'Laplace', 'Mass', 'Source', 'Neumann', 'H1', 'VectorH1', 'FacetFESpace', 'L2', 'VectorL2', 'SurfaceL2', 'HDivDiv', 'NumberSpace', 'grad', 'curl', 'div','Mesh', 'ConstantCF', 'DomainConstantCF', 'Id', 'Trace', 'Det', 'Cross', 'Cof', 'Inv', 'Sym', 'Skew', 'OuterProduct']
 
 
