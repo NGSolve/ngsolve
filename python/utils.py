@@ -132,7 +132,7 @@ def Cof(m):
                       m[0,0]*m[1,1]-m[1,0]*m[0,1] ), dims=(3,3) )
 
 
-## 'L2','H1'
-__all__ = ['x', 'y', 'z', 'Laplace', 'Mass', 'Source', 'Neumann', 'VectorH1', 'FacetFESpace', 'VectorL2', 'SurfaceL2', 'HDivDiv', 'NumberSpace', 'grad', 'curl', 'div','Mesh', 'ConstantCF', 'DomainConstantCF', 'Id', 'Trace', 'Det', 'Cross', 'Cof']
+## 'L2','H1', 'HDivDiv'
+__all__ = ['x', 'y', 'z', 'Laplace', 'Mass', 'Source', 'Neumann', 'VectorH1', 'FacetFESpace', 'VectorL2', 'SurfaceL2', 'NumberSpace', 'grad', 'curl', 'div','Mesh', 'ConstantCF', 'DomainConstantCF', 'Id', 'Trace', 'Det', 'Cross', 'Cof']
 
 
