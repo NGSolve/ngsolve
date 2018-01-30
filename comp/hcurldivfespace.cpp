@@ -277,6 +277,8 @@ namespace ngcomp
         ndof += 2* (oi * (oi +1)) + oi +1;
         if(plus)
 	  {
+	    if (oi == 0)
+	      throw Exception("plus space only works with order > 0");
 	    //ndof += 2*(oi);
 	    ndof += 2*(oi+1);
 	  }
