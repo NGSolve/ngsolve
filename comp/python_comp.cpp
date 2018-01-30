@@ -1896,6 +1896,52 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                 })
     ;
 
+  py::class_<HDivDivFESpace, shared_ptr<HDivDivFESpace>,FESpace>
+    (m, "HDivDiv")
+    .def("__init__", [] (py::object self, shared_ptr<MeshAccess> ma, py::kwargs kwargs)
+         {
+           auto myclass = self.attr("__class__");
+           py::list info;
+           info.append(ma);
+           auto flags = CreateFlagsFromKwArgs(myclass, kwargs, info);
+           auto instance = py::cast<HDivDivFESpace*>(self);
+           new (instance) HDivDivFESpace(ma, flags);
+           self.attr("__initialize__")(**kwargs);
+         })
+    .def(py::pickle(fesPickle,(shared_ptr<HDivDivFESpace>(*)(py::tuple))
+                    fesUnpickle<HDivDivFESpace>))
+    .def_static("__flags_doc__", [] ()
+                {
+                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
+                                                  attr("FESpace").
+                                                  attr("__flags_doc__")());
+                  return flags_doc;
+                })
+    ;
+
+
+  py::class_<HDivDivSurfaceSpace, shared_ptr<HDivDivSurfaceSpace>,FESpace>
+    (m, "HDivDivSurface")
+    .def("__init__", [] (py::object self, shared_ptr<MeshAccess> ma, py::kwargs kwargs)
+         {
+           auto myclass = self.attr("__class__");
+           py::list info;
+           info.append(ma);
+           auto flags = CreateFlagsFromKwArgs(myclass, kwargs, info);
+           auto instance = py::cast<HDivDivSurfaceSpace*>(self);
+           new (instance) HDivDivSurfaceSpace(ma, flags);
+           self.attr("__initialize__")(**kwargs);
+         })
+    .def(py::pickle(fesPickle,(shared_ptr<HDivDivSurfaceSpace>(*)(py::tuple))
+                    fesUnpickle<HDivDivSurfaceSpace>))
+    .def_static("__flags_doc__", [] ()
+                {
+                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
+                                                  attr("FESpace").
+                                                  attr("__flags_doc__")());
+                  return flags_doc;
+                })
+    ;
   
   py::class_<HDivHighOrderSurfaceFESpace, shared_ptr<HDivHighOrderSurfaceFESpace>,FESpace>
     (m, "HDivSurface")
