@@ -73,8 +73,7 @@ namespace ngcomp
 #include "facetfespace.hpp" 
 #include "vectorfacetfespace.hpp"
 #include "periodic.hpp"
-#include "hdivdivfespace.hpp"
-#include "hdivdivsurfacespace.hpp"
+
 
 #include "facetsurffespace.hpp"
 

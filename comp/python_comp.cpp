@@ -5,6 +5,9 @@
 #include "../ngstd/python_ngstd.hpp"
 #include <comp.hpp>
 
+#include "hdivdivfespace.hpp"
+#include "hdivdivsurfacespace.hpp"
+
 using namespace ngcomp;
 
 using ngfem::ELEMENT_TYPE;
