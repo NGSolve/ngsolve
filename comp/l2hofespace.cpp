@@ -687,6 +687,7 @@ namespace ngcomp
   L2SurfaceHighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags)
     : FESpace (ama, flags)
   {
+    type = "l2surf";
     name="L2SurfaceHighOrderFESpace(l2surf)";
     // defined flags 
     DefineDefineFlag("l2surf");
@@ -951,13 +952,12 @@ namespace ngcomp
 
 
 
-  class VectorL2FESpace : public CompoundFESpace
-  {
-  public:
-    VectorL2FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, 
-                     bool checkflags = false)
+
+  VectorL2FESpace::VectorL2FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, 
+                     bool checkflags)
       : CompoundFESpace(ama, flags)
     {
+      type = "VectorL2";
       for (int i = 0; i <  ma->GetDimension(); i++)
         AddSpace (make_shared<L2HighOrderFESpace> (ama, flags));
 
@@ -975,8 +975,6 @@ namespace ngcomp
           break;
         }
     }
-  };
-    
 
   static RegisterFESpace<VectorL2FESpace> initvecl2 ("VectorL2");
   

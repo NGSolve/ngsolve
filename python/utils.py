@@ -38,10 +38,10 @@ def VectorH1(mesh, **args):
 #    """ Create L2 finite element space. """
 #    return FESpace("l2ho", mesh, **args)
 
-def VectorL2(mesh, **args):
-    """ Create vector-valued L2 finite element space. """
-    fes = FESpace("VectorL2", mesh, **args)
-    return fes
+#def VectorL2(mesh, **args):
+#    """ Create vector-valued L2 finite element space. """
+#    fes = FESpace("VectorL2", mesh, **args)
+#    return fes
 
 def SurfaceL2(mesh, **args):
     """ Create L2(boundary) finite element space. """
@@ -132,7 +132,7 @@ def Cof(m):
                       m[0,0]*m[1,1]-m[1,0]*m[0,1] ), dims=(3,3) )
 
 
-## 'L2','H1', 'HDivDiv', 'FacetFESpace'
-__all__ = ['x', 'y', 'z', 'Laplace', 'Mass', 'Source', 'Neumann', 'VectorH1', 'VectorL2', 'SurfaceL2', 'NumberSpace', 'grad', 'curl', 'div','Mesh', 'ConstantCF', 'DomainConstantCF', 'Id', 'Trace', 'Det', 'Cross', 'Cof']
+## 'L2','H1', 'HDivDiv', 'FacetFESpace', 'VectorL2'
+__all__ = ['x', 'y', 'z', 'Laplace', 'Mass', 'Source', 'Neumann', 'VectorH1', 'SurfaceL2', 'NumberSpace', 'grad', 'curl', 'div','Mesh', 'ConstantCF', 'DomainConstantCF', 'Id', 'Trace', 'Det', 'Cross', 'Cof']
 
 
