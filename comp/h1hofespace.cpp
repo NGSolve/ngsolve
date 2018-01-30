@@ -1613,6 +1613,13 @@ namespace ngcomp
 	return nullptr;
       }
 
+
+    // filter with freedofs
+    BitArray & free = *GetFreeDofs(flags.GetDefineFlag("eliminate_internal"));
+    for (size_t i = 0; i < clusters.Size(); i++)
+      if (!free.Test(i))
+        clusters[i] = 0;
+    
     return spclusters;
   }
 
