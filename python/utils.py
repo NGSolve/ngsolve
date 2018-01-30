@@ -43,9 +43,9 @@ def VectorH1(mesh, **args):
 #    fes = FESpace("VectorL2", mesh, **args)
 #    return fes
 
-def SurfaceL2(mesh, **args):
-    """ Create L2(boundary) finite element space. """
-    return FESpace("l2surf", mesh, **args)
+#def SurfaceL2(mesh, **args):
+#    """ Create L2(boundary) finite element space. """
+#    return FESpace("l2surf", mesh, **args)
 
 #def FacetFESpace(mesh, **args):
 #    """ Create Facet finite element space. """
@@ -132,7 +132,7 @@ def Cof(m):
                       m[0,0]*m[1,1]-m[1,0]*m[0,1] ), dims=(3,3) )
 
 
-## 'L2','H1', 'HDivDiv', 'FacetFESpace', 'VectorL2'
-__all__ = ['x', 'y', 'z', 'Laplace', 'Mass', 'Source', 'Neumann', 'VectorH1', 'SurfaceL2', 'NumberSpace', 'grad', 'curl', 'div','Mesh', 'ConstantCF', 'DomainConstantCF', 'Id', 'Trace', 'Det', 'Cross', 'Cof']
+## 'L2','H1', 'HDivDiv', 'FacetFESpace', 'VectorL2', 'SurfaceL2'
+__all__ = ['x', 'y', 'z', 'Laplace', 'Mass', 'Source', 'Neumann', 'VectorH1', 'NumberSpace', 'grad', 'curl', 'div','Mesh', 'ConstantCF', 'DomainConstantCF', 'Id', 'Trace', 'Det', 'Cross', 'Cof']
 
 
