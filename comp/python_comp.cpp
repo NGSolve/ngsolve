@@ -7,7 +7,7 @@
 
 #include "hdivdivfespace.hpp"
 #include "hdivdivsurfacespace.hpp"
-
+#include "numberfespace.hpp"
 using namespace ngcomp;
 
 using ngfem::ELEMENT_TYPE;
@@ -1945,7 +1945,28 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                 })
     ;
 
-
+  py::class_<NumberFESpace, shared_ptr<NumberFESpace>,FESpace>
+    (m, "NumberSpace")
+    .def("__init__", [] (py::object self, shared_ptr<MeshAccess> ma, py::kwargs kwargs)
+         {
+           auto myclass = self.attr("__class__");
+           py::list info;
+           info.append(ma);
+           auto flags = CreateFlagsFromKwArgs(myclass, kwargs, info);
+           auto instance = py::cast<NumberFESpace*>(self);
+           new (instance) NumberFESpace(ma, flags);
+           self.attr("__initialize__")(**kwargs);
+         })
+    .def(py::pickle(fesPickle,(shared_ptr<NumberFESpace>(*)(py::tuple))
+                    fesUnpickle<NumberFESpace>))
+    .def_static("__flags_doc__", [] ()
+                {
+                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
+                                                  attr("FESpace").
+                                                  attr("__flags_doc__")());
+                  return flags_doc;
+                })
+    ;
 
   py::class_<HDivDivFESpace, shared_ptr<HDivDivFESpace>,FESpace>
     (m, "HDivDiv")
