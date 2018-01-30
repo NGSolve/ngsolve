@@ -64,7 +64,8 @@ namespace ngcomp
   public:
     NumberFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags=false)
       : FESpace (ama, flags)
-    { 
+    {
+      type = "number";
       evaluator[VOL] = make_shared<T_DifferentialOperator<NumberDiffOp>>();
       evaluator[BND] = make_shared<T_DifferentialOperator<NumberDiffOp>>();
       evaluator[BBND] = make_shared<T_DifferentialOperator<NumberDiffOp>>();

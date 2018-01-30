@@ -115,6 +115,7 @@ namespace ngcomp
     : FESpace(ama, flags)
   {
     name="FacetFESpace(facet)";
+    type = "facet";
     // defined flags
     DefineNumFlag("relorder");
     DefineDefineFlag("variableorder"); 

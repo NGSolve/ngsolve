@@ -72,6 +72,7 @@ namespace ngcomp
     : FESpace (ama, flags)
   {
     name = "H1HighOrderFESpace(h1ho)";
+    type = "h1ho";
     // define h1ho flags
     DefineDefineFlag("h1ho");
     DefineNumFlag("relorder");

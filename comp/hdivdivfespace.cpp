@@ -432,6 +432,7 @@ namespace ngcomp
   HDivDivFESpace :: HDivDivFESpace (shared_ptr<MeshAccess> ama,const Flags & flags,bool checkflags)
     : FESpace(ama,flags)
   {
+    type = "hdivdiv";
     order = int (flags.GetNumFlag ("order",1));
     plus = flags.GetDefineFlag ("plus");
     discontinuous = flags.GetDefineFlag("discontinuous");
