@@ -169,6 +169,7 @@ static GlobalDummyVariables globvar;
 template<typename FESPACE>
 shared_ptr<FESPACE> fesUnpickle(py::tuple state)
 {
+  cout << "In fesUnpickle type = " << state[0].cast<string>() << endl;
   auto fes = CreateFESpace(state[0].cast<string>(),
                            state[1].cast<shared_ptr<MeshAccess>>(),
                            state[2].cast<Flags>());
@@ -1351,6 +1352,7 @@ when building the system matrices.
       auto flags = fes.GetFlags();
       auto mesh = fes.GetMeshAccess();
       auto type = fes.type;
+      cout << "In fesPickle type = " << type << endl;
       // TODO: pickle order policies
       return py::make_tuple(type,mesh,flags);
     };
@@ -1845,6 +1847,30 @@ kwargs : For a description of the possible kwargs have a look a bit further down
              }
          },
          py::arg("vector"))
+    ;
+
+
+  py::class_<H1HighOrderFESpace, shared_ptr<H1HighOrderFESpace>,FESpace>
+    (m, "H1")
+    .def("__init__", [] (py::object self, shared_ptr<MeshAccess> ma, py::kwargs kwargs)
+         {
+           auto myclass = self.attr("__class__");
+           py::list info;
+           info.append(ma);
+           auto flags = CreateFlagsFromKwArgs(myclass, kwargs, info);
+           auto instance = py::cast<H1HighOrderFESpace*>(self);
+           new (instance) H1HighOrderFESpace(ma, flags);
+           self.attr("__initialize__")(**kwargs);
+         })
+    .def(py::pickle(fesPickle,(shared_ptr<H1HighOrderFESpace>(*)(py::tuple))
+                    fesUnpickle<H1HighOrderFESpace>))
+    .def_static("__flags_doc__", [] ()
+                {
+                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
+                                                  attr("FESpace").
+                                                  attr("__flags_doc__")());
+                  return flags_doc;
+                })
     ;
 
   py::class_<HDivHighOrderSurfaceFESpace, shared_ptr<HDivHighOrderSurfaceFESpace>,FESpace>
