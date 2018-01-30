@@ -875,7 +875,8 @@ namespace ngcomp
   HybridDGFESpace :: HybridDGFESpace (shared_ptr<MeshAccess> ama, 
                                       const Flags & flags)
     : CompoundFESpace (ama, flags)
-  { 
+  {
+    type = "HDG";
     Flags l2flags(flags), facetflags(flags);
 
     int order = int (flags.GetNumFlag ("order", 1));
