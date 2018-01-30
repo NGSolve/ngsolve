@@ -946,6 +946,11 @@ namespace ngcomp
                          FlatMatrix<SCAL> sum_elmat(elmat_size, lh);
                          sum_elmat = 0;
 			 bool elem_has_integrator = false;
+
+                         {
+                         static Timer elmattimer("calc elmats", 2);
+                         ThreadRegionTimer reg (elmattimer, TaskManager::GetThreadId());
+                         
                          for (auto & bfip : VB_parts[vb])
                            {
                              const BilinearFormIntegrator & bfi = *bfip;
@@ -1006,7 +1011,7 @@ namespace ngcomp
                                    }
                                }
                            }
-                         
+                         } 
                          
                          if (!elem_has_integrator) return;
                          
@@ -1020,8 +1025,8 @@ namespace ngcomp
                          
                          if (vb == VOL && eliminate_internal)
                            {
-                             // static Timer statcondtimer("static condensation", 1);
-                             // RegionTimer regstat (statcondtimer);
+                             static Timer statcondtimer("static condensation", 2);
+                             ThreadRegionTimer regstat (statcondtimer, TaskManager::GetThreadId());
                              
                              Array<int> idofs1(dnums.Size(), lh);
                              
