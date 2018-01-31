@@ -3,10 +3,9 @@ from ngsolve import *
 import pickle
 import io
 
-#HDivDivSurface, FacetSurface, HDivSurface
 def test_pickle_volume_fespaces():
     mesh = Mesh(unit_square.GenerateMesh(maxh=0.3))
-    spaces = [H1(mesh,order=3,dirichlet=[1,2,3,4]),VectorH1(mesh,order=3,dirichlet=[1,2,3,4]),L2(mesh,order=3),VectorL2(mesh,order=3),SurfaceL2(mesh,order=3), HDivDiv(mesh,order=3,dirichlet=[1,2,3,4]),VectorFacet(mesh,order=3,dirichlet=[1,2,3,4]),FacetFESpace(mesh,order=3,dirichlet=[1,2,3,4]),HybridDGSpace(mesh,order=3,dirichlet=[1,2,3,4]),NumberSpace(mesh),HDiv(mesh,order=3,dirichlet=[1,2,3,4]),HCurl(mesh,order=3,dirichlet=[1,2,3,4])]
+    spaces = [H1(mesh,order=3,dirichlet=[1,2,3,4]), VectorH1(mesh,order=3,dirichlet=[1,2,3,4]), L2(mesh,order=3), VectorL2(mesh,order=3), SurfaceL2(mesh,order=3), HDivDiv(mesh,order=3,dirichlet=[1,2,3,4]), VectorFacet(mesh,order=3,dirichlet=[1,2,3,4]), FacetFESpace(mesh,order=3,dirichlet=[1,2,3,4]), HybridDGSpace(mesh,order=3,dirichlet=[1,2,3,4]), NumberSpace(mesh), HDiv(mesh,order=3,dirichlet=[1,2,3,4]), HCurl(mesh,order=3,dirichlet=[1,2,3,4])]
     
     for space in spaces:
         with io.BytesIO() as f:
@@ -34,7 +33,7 @@ def test_pickle_surface_fespaces():
     geo.AddSplineSurface(surface)
     mesh = Mesh(geo.GenerateMesh(maxh=0.3, perfstepsend=meshing.MeshingStep.MESHSURFACE))
 
-    spaces = [HDivDivSurface(mesh,order=3,dirichlet=[1,2,3,4]),FacetSurface(mesh,order=3,dirichlet=[1,2,3,4]),HDivSurface(mesh,order=3,dirichlet=[1,2,3,4])]
+    spaces = [HDivDivSurface(mesh,order=3,dirichlet=[1,2,3,4]), FacetSurface(mesh,order=3,dirichlet=[1,2,3,4]), HDivSurface(mesh,order=3,dirichlet=[1,2,3,4])]
 
     for space in spaces:
         with io.BytesIO() as f:
