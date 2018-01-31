@@ -1769,6 +1769,11 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                                                   attr("__flags_doc__")());
                   flags_doc["nograds"] = "bool = False\n"
                     "  Remove higher order gradients of H1 basis functions from HCurl FESpace";
+		  flags_doc["type1"] = "bool = False\n"
+                    "  Use type 1 Nedelec elements";
+		  flags_doc["discontinuous"] = "bool = False\n"
+                    "  Create discontinuous HCurl space";
+
                   return flags_doc;
                 })
     .def("CreateGradient", [](shared_ptr<HCurlHighOrderFESpace> self) {
@@ -2012,6 +2017,11 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                   auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
                                                   attr("FESpace").
                                                   attr("__flags_doc__")());
+		  flags_doc["discontinuous"] = "bool = False\n"
+                    "  Create discontinuous HDivDiv space";
+		  flags_doc["plus"] = "bool = False\n"
+                    "  Add additional internal element bubble";
+
                   return flags_doc;
                 })
     ;
@@ -2036,6 +2046,8 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                   auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
                                                   attr("FESpace").
                                                   attr("__flags_doc__")());
+		  flags_doc["discontinuous"] = "bool = False\n"
+                    "  Create discontinuous HDivDivSurface space";
                   return flags_doc;
                 })
     ;
