@@ -244,6 +244,18 @@ namespace ngcomp
       } 
   }
 
+    template <ELEMENT_TYPE ET>
+  FiniteElement & FacetSurfaceFESpace :: T_GetFE (int elnr, Allocator & alloc) const
+  {
+    Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,VOL> (elnr);
+
+    FacetFE<ET> * fe =  new (alloc) FacetFE<ET> ();
+    fe -> SetVertexNumbers (ngel.Vertices());
+    fe -> SetOrder (order);
+    fe -> ComputeNDof();
+    
+    return *fe;
+  }
   
   // ------------------------------------------------------------------------
   FiniteElement & FacetSurfaceFESpace :: GetFE (ElementId ei, Allocator  & lh) const
@@ -259,19 +271,22 @@ namespace ngcomp
         }            
       case BND:
         {
-	  FacetFE<ET_TRIG>* fe = 0;
+	  //FacetFE<ET_TRIG>* fet = 0;
+	  //FacetFE<ET_QUAD>* feq = 0;
 
 	  switch (ma->GetElType(ei))
 	    {
-	    case ET_TRIG: fe = new (lh) FacetFE<ET_TRIG> (); break;
+	    case ET_TRIG: return T_GetFE<ET_TRIG>(ei.Nr(), lh);//fe = new (lh) FacetFE<ET_TRIG> (); break;
+	    case ET_QUAD: return T_GetFE<ET_QUAD>(ei.Nr(), lh);//fe = new (lh) FacetFE<ET_QUAD> (); break;
 	    default:
 	      throw Exception (string("FacetSurfaceFESpace::GetFE: unsupported element ")+
 			       ElementTopology::GetElementName(ma->GetElType(ei)));
 	    }
 	  
-	  switch (ma->GetElType(ei))
+	  /*switch (ma->GetElType(ei))
 	    {
 	    case ET_TRIG:
+	    case ET_QUAD:
 	      {
 		fe -> SetVertexNumbers (vnums);
 		fe -> SetOrder (order); 
@@ -282,7 +297,7 @@ namespace ngcomp
 	    default:
 	      break;
 	    }
-	  return *fe;
+	    return *fe;*/
         }
       case BBND:
 	{
