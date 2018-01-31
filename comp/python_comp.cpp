@@ -1402,8 +1402,10 @@ kwargs : For a description of the possible kwargs have a look a bit further down
 
 )raw_string"), py::dynamic_attr());
   fes_class
-    .def(py::init([] (py::list lspaces, Flags& flags)
+    .def(py::init([fes_class] (py::list lspaces, py::kwargs kwargs)
                   {
+		    py::list info;
+		    auto flags = CreateFlagsFromKwArgs(fes_class, kwargs, info);
                     Array<shared_ptr<FESpace>> spaces;
                     for (auto fes : lspaces )
                       spaces.Append(py::extract<shared_ptr<FESpace>>(fes)());
@@ -1427,7 +1429,7 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                     return fes;
                     //                              py::cast(*instance).attr("flags") = bpflags;
                   }),
-                  py::arg("spaces"), py::arg("flags") = py::dict(),
+                  py::arg("spaces"),
                   "construct compound-FESpace from list of component spaces"
                   )
     .def(py::init([fes_class] (const string & type, shared_ptr<MeshAccess> ma,
