@@ -334,7 +334,11 @@ namespace ngcomp
     for(auto e: ma->Elements())
     {
       GetInnerDofNrs(e.Nr(), innerdofs);
-      for (int dof: innerdofs)
+
+      //lowest order constant bubble
+      ctofdof[innerdofs[0]] = INTERFACE_DOF;
+      
+      for (int dof = 1; dof < innerdofs.Size(); dof++)
       {
         ctofdof[dof] = LOCAL_DOF;
       }

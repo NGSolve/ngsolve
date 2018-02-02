@@ -518,7 +518,11 @@ namespace ngfem
       AutoDiffDiff<2> ls = ddlami[0];
       AutoDiffDiff<2> le = ddlami[1];
       AutoDiffDiff<2> lt = ddlami[2];
-      
+
+      LegendrePolynomial::Eval(oi, 2*lt-1, v);
+      for (int i = 0; i <= oi; i++)
+        shape[ii++] = T_type4(le, ls, v[i]);
+            
       IntLegNoBubble::EvalMult (oi, le-lt, 0.25*le*lt, u);
       LegendrePolynomial::EvalMult(oi, 2*ls-1, ls, v);
       
@@ -571,9 +575,7 @@ namespace ngfem
 	    }	  
 	}
       
-      LegendrePolynomial::Eval(oi, 2*lt-1, v);
-      for (int i = 0; i <= oi; i++)
-        shape[ii++] = T_type4(le, ls, v[i]);
+      
       
     };
   }; 
