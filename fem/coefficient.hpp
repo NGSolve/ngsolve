@@ -106,6 +106,11 @@ namespace ngfem
     {
       Evaluate (ir, values);
     }
+
+    /*
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, 
+                           BareSliceMatrix<AutoDiffDiff<1,double>> values) const = 0;
+    */
     
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, 
                            BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>> values) const 
@@ -345,6 +350,17 @@ namespace ngfem
                            BareSliceMatrix<AutoDiff<1,SIMD<double>>> values) const
     { Evaluate (ir, values); }
 
+
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, 
+                           BareSliceMatrix<AutoDiffDiff<1,double>> values) const
+    {
+      FlatMatrix<double> hvalues(ir.Size(), 3*values.Dist(), &values(0).Value());
+      Evaluate (ir, hvalues);
+      for (size_t i = 0; i < ir.Size(); i++)
+        for (size_t j = Dimension(); j-- > 0; )
+          values(i,j) = hvalues(i,j);
+    }
+    
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, 
                            BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>> values) const
     {
@@ -410,11 +426,11 @@ namespace ngfem
     using BASE::BASE;
       
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const
-    { static_cast<const TCF*>(this) -> template T_Evaluate<SIMD<double>> (ir, values); }
+    { static_cast<const TCF*>(this) -> template T_Evaluate /* <SIMD<double>> */ (ir, values); }
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values) const
     {
       if (IsComplex())
-        static_cast<const TCF*>(this) -> template T_Evaluate<SIMD<Complex>> (ir, values);
+        static_cast<const TCF*>(this) -> template T_Evaluate /* <SIMD<Complex>> */ (ir, values);
       else
         {
           size_t nv = ir.Size();
@@ -429,26 +445,34 @@ namespace ngfem
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
                            FlatArray<BareSliceMatrix<SIMD<double>>> input,
                            BareSliceMatrix<SIMD<double>> values) const
-    {  static_cast<const TCF*>(this) -> template T_Evaluate<SIMD<double>> (ir, input, values); }
+    {  static_cast<const TCF*>(this) -> template T_Evaluate /* <SIMD<double>> */ (ir, input, values); }
     
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, 
                            BareSliceMatrix<AutoDiff<1,SIMD<double>>> values) const
-    { static_cast<const TCF*>(this) -> template T_Evaluate<AutoDiff<1,SIMD<double>>> (ir, values); }
+    { static_cast<const TCF*>(this) -> template T_Evaluate /* <AutoDiff<1,SIMD<double>>> */ (ir, values); }
 
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
                            FlatArray<BareSliceMatrix<AutoDiff<1,SIMD<double>>>> input,
                            BareSliceMatrix<AutoDiff<1,SIMD<double>>> values) const
-    {  static_cast<const TCF*>(this) -> template T_Evaluate<AutoDiff<1,SIMD<double>>> (ir, input, values); }
+    {  static_cast<const TCF*>(this) -> template T_Evaluate /* <AutoDiff<1,SIMD<double>>> */ (ir, input, values); }
 
+
+    /*
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, 
+                           BareSliceMatrix<AutoDiffDiff<1,double>> values) const
+    {
+      static_cast<const TCF*>(this) -> template T_Evaluate (ir, Trans(values)); 
+    }
+    */
     
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, 
                            BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>> values) const
-    { static_cast<const TCF*>(this) -> template T_Evaluate<AutoDiffDiff<1,SIMD<double>>> (ir, values); }
+    { static_cast<const TCF*>(this) -> template T_Evaluate /* <AutoDiffDiff<1,SIMD<double>>> */ (ir, values); }
 
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
                            FlatArray<BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>>> input,
                            BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>> values) const
-    {  static_cast<const TCF*>(this) -> template T_Evaluate<AutoDiffDiff<1,SIMD<double>>> (ir, input, values); }
+    {  static_cast<const TCF*>(this) -> template T_Evaluate /* <AutoDiffDiff<1,SIMD<double>>> */ (ir, input, values); }
     
   };
 
@@ -1038,8 +1062,8 @@ public:
       result(i) = lam(result(i));
   }
 
-  template <typename T>
-  void T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<T> values) const
+  template <typename MIR, typename T, ORDERING ORD>
+  void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
   {
     c1->Evaluate (ir, values);
     size_t vw = ir.Size();
@@ -1385,36 +1409,9 @@ public:
       result(i) = lam(result(i), temp(i));
   }
 
-  /*
-  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
-  {
-    STACK_ARRAY(SIMD<double>, hmem, values.Height()*values.VWidth());
-    AFlatMatrix<double> temp(values.Height(), values.Width(), &hmem[0]);
 
-    c1->Evaluate (ir, values);
-    c2->Evaluate (ir, temp);
-    for (int i = 0; i < values.Height()*values.VWidth(); i++)
-      values.Get(i) = lam (values.Get(i), temp.Get(i));
-  }
-  */
-
-  /*
-  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<double> values) const
-  {
-    size_t nv = ir.Size();
-    size_t mydim = Dimension();
-    STACK_ARRAY(SIMD<double>, hmem, nv*mydim);
-    ABareMatrix<double> temp(&hmem[0], nv, mydim, SIMD<double>::Size()*nv);
-    c1->Evaluate (ir, values);
-    c2->Evaluate (ir, temp);
-    for (size_t i = 0; i < mydim; i++)
-      for (size_t j = 0; j < nv; j++)
-        values.Get(i,j) = lam (values.Get(i,j), temp.Get(i,j));
-  }
-  */
-
-  template <typename T>
-  void T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<T> values) const
+  template <typename MIR, typename T, ORDERING ORD>
+  void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
   {
     size_t nv = ir.Size();
     size_t mydim = Dimension();
