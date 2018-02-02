@@ -426,11 +426,11 @@ namespace ngfem
     using BASE::BASE;
       
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const
-    { static_cast<const TCF*>(this) -> template T_Evaluate /* <SIMD<double>> */ (ir, values); }
+    { static_cast<const TCF*>(this) -> /* template */ T_Evaluate /* <SIMD<double>> */ (ir, values); }
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values) const
     {
       if (IsComplex())
-        static_cast<const TCF*>(this) -> template T_Evaluate /* <SIMD<Complex>> */ (ir, values);
+        static_cast<const TCF*>(this) -> /* template */ T_Evaluate /* <SIMD<Complex>> */ (ir, values);
       else
         {
           size_t nv = ir.Size();
@@ -445,16 +445,16 @@ namespace ngfem
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
                            FlatArray<BareSliceMatrix<SIMD<double>>> input,
                            BareSliceMatrix<SIMD<double>> values) const
-    {  static_cast<const TCF*>(this) -> template T_Evaluate /* <SIMD<double>> */ (ir, input, values); }
+    {  static_cast<const TCF*>(this) -> /* template */ T_Evaluate /* <SIMD<double>> */ (ir, input, values); }
     
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, 
                            BareSliceMatrix<AutoDiff<1,SIMD<double>>> values) const
-    { static_cast<const TCF*>(this) -> template T_Evaluate /* <AutoDiff<1,SIMD<double>>> */ (ir, values); }
+    { static_cast<const TCF*>(this) -> /* template */ T_Evaluate /* <AutoDiff<1,SIMD<double>>> */ (ir, values); }
 
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
                            FlatArray<BareSliceMatrix<AutoDiff<1,SIMD<double>>>> input,
                            BareSliceMatrix<AutoDiff<1,SIMD<double>>> values) const
-    {  static_cast<const TCF*>(this) -> template T_Evaluate /* <AutoDiff<1,SIMD<double>>> */ (ir, input, values); }
+    {  static_cast<const TCF*>(this) -> /* template */ T_Evaluate /* <AutoDiff<1,SIMD<double>>> */ (ir, input, values); }
 
 
     /*
@@ -467,12 +467,12 @@ namespace ngfem
     
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, 
                            BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>> values) const
-    { static_cast<const TCF*>(this) -> template T_Evaluate /* <AutoDiffDiff<1,SIMD<double>>> */ (ir, values); }
+    { static_cast<const TCF*>(this) -> /* template */ T_Evaluate /* <AutoDiffDiff<1,SIMD<double>>> */ (ir, values); }
 
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
                            FlatArray<BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>>> input,
                            BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>> values) const
-    {  static_cast<const TCF*>(this) -> template T_Evaluate /* <AutoDiffDiff<1,SIMD<double>>> */ (ir, input, values); }
+    {  static_cast<const TCF*>(this) -> /* template */ T_Evaluate /* <AutoDiffDiff<1,SIMD<double>>> */ (ir, input, values); }
     
   };
 
