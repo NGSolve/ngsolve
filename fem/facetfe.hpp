@@ -101,7 +101,7 @@ namespace ngfem
 	facet_order[i] = ao;
     }
 
-    void SetOrder (int nr, int o) { facet_order[nr] = o; }
+    void SetOrder (int nr, int o) { facet_order[nr] = o; order = max2(order,o); }
     
     void SetOrder (FlatArray<int> & ao)
     {
