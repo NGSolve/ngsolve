@@ -1214,6 +1214,7 @@ integrators will replace it with the basis functions of the finite element space
 when building the system matrices.
 
 )raw_string"))
+    .def(py::init([](spProxy self) { return self; }))
     .def("Deriv", 
          [](const spProxy self)
          { return self->Deriv(); },
