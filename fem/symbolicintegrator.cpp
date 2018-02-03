@@ -372,6 +372,42 @@ namespace ngfem
 
 
   void ProxyFunction ::
+  Evaluate (const BaseMappedIntegrationRule & mir,
+            BareSliceMatrix<AutoDiff<1,double>> values) const
+  {
+    ProxyUserData * ud = (ProxyUserData*)mir.GetTransformation().userdata;
+    assert (ud);
+    // assert (ud->fel);
+
+    size_t np = mir.Size();
+    size_t dim = Dimension();
+    
+    values.AddSize(np, dim) = AutoDiff<1,double> (0.0);
+
+    if (IsTrialFunction())
+      {
+        auto val = ud->GetMemory(this);
+        for (size_t i = 0; i < dim; i++)
+          for (size_t j = 0; j < np; j++)
+            values(j,i).Value() = val(j,i);
+      }
+
+    if (ud->testfunction == this)
+      {
+        auto col = values.Col(ud->test_comp);        
+        for (size_t i = 0; i < np; i++)
+          col(i).Value() = 1;
+      }
+    if (ud->trialfunction == this)
+      {
+        auto col = values.Col(ud->trial_comp);
+        for (size_t i = 0; i < np; i++)
+          col(i).DValue(0) = 1;
+      }
+  }
+  
+
+  void ProxyFunction ::
   Evaluate (const SIMD_BaseMappedIntegrationRule & mir,
             BareSliceMatrix<AutoDiff<1,SIMD<double>>> values) const
   {
@@ -406,7 +442,36 @@ namespace ngfem
       }
   }
 
-  
+  void ProxyFunction ::
+  Evaluate (const BaseMappedIntegrationRule & mir, 
+            BareSliceMatrix<AutoDiffDiff<1,double>> values) const
+  {
+    ProxyUserData * ud = (ProxyUserData*)mir.GetTransformation().userdata;
+
+    assert (ud);
+    assert (ud->fel);
+
+    size_t np = mir.Size();
+    size_t dim = Dimension();
+
+    values.AddSize(np, dim) = AutoDiffDiff<1,double> (0.0);
+
+    if (!testfunction) 
+      {
+        auto val = ud->GetMemory(this);
+        for (size_t i = 0; i < dim; i++)
+          for (size_t j = 0; j < np; j++)
+            values(j,i).Value() = val(j,i);
+      }
+
+    if (ud->testfunction == this)
+      for (size_t i = 0; i < np; i++)
+        values(i, ud->test_comp).DValue(0) = 1;
+    if (ud->trialfunction == this)
+      for (size_t i = 0; i < np; i++)
+        values(i, ud->trial_comp).DValue(0) = 1;
+  }
+
 
   void ProxyFunction ::
   Evaluate (const SIMD_BaseMappedIntegrationRule & mir,
@@ -3974,6 +4039,8 @@ namespace ngfem
     HeapReset hr(lh);
     
     FlatMatrix<> val(mir.Size(), 1,lh), deriv(mir.Size(), 1,lh), dderiv(mir.Size(), 1,lh);
+    FlatMatrix<AutoDiffDiff<1,double>> addval(mir.Size(), 1, lh);
+    
     FlatArray<FlatMatrix<>> diags(trial_proxies.Size(), lh);
     for (int k1 : Range(trial_proxies))
       {
@@ -3985,8 +4052,11 @@ namespace ngfem
             ud.trial_comp = k;
             ud.testfunction = proxy;
             ud.test_comp = k;
-            cf -> EvaluateDDeriv (mir, val, deriv, dderiv);
-            diags[k1].Col(k) = dderiv.Col(0);
+            // cf -> EvaluateDDeriv (mir, val, deriv, dderiv);
+            // diags[k1].Col(k) = dderiv.Col(0);
+            cf -> Evaluate (mir, addval);
+            for (size_t i = 0; i < mir.Size(); i++)
+              diags[k1](i,k) = addval(i,0).DDValue(0);
           }
       }
 
@@ -4464,6 +4534,7 @@ namespace ngfem
         FlatVector<> ely1(ely.Size(), lh);
         
         FlatMatrix<> val(mir.Size(), 1,lh), deriv(mir.Size(), 1,lh);
+        FlatMatrix<AutoDiff<1>> dval(mir.Size(), 1, lh);
         
         for (auto proxy : trial_proxies)
           {
@@ -4473,8 +4544,11 @@ namespace ngfem
               {
                 ud.trialfunction = proxy;
                 ud.trial_comp = k;
-                cf -> EvaluateDeriv (mir, val, deriv);
-                proxyvalues.Col(k) = deriv.Col(0);
+                // cf -> EvaluateDeriv (mir, val, deriv);
+                // proxyvalues.Col(k) = deriv.Col(0);
+                cf -> Evaluate (mir, dval);
+                for (size_t i = 0; i < mir.Size(); i++)
+                  proxyvalues(i,k) = dval(i,0).DValue(0);
               }
             
             for (int i = 0; i < mir.Size(); i++)
