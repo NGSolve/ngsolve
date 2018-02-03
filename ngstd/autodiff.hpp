@@ -509,13 +509,13 @@ INLINE AutoDiff<D,SCAL> atan (AutoDiff<D,SCAL> x)
 
 
   template <int D, typename SCAL, typename TB, typename TC>
-  auto IfPos (AutoDiff<D,SCAL> a, TB b, TC c) -> decltype(IfPos (a.Value(), b, c))
+  auto IfPos (AutoDiff<D,SCAL> a, TB b, TC c) // -> decltype(IfPos (a.Value(), b, c))
   {
     return IfPos (a.Value(), b, c);
   }
 
   template <int D, typename SCAL>
-  INLINE AutoDiff<D,SCAL> IfPos (SIMD<double> a, AutoDiff<D,SCAL> b, AutoDiff<D,SCAL> c)
+  INLINE AutoDiff<D,SCAL> IfPos (SCAL /* SIMD<double> */ a, AutoDiff<D,SCAL> b, AutoDiff<D,SCAL> c)
   {
     AutoDiff<D,SCAL> res;
     res.Value() = IfPos (a, b.Value(), c.Value());
@@ -525,7 +525,7 @@ INLINE AutoDiff<D,SCAL> atan (AutoDiff<D,SCAL> x)
   }
 
   template <int D, typename SCAL, typename TC>
-  INLINE AutoDiff<D,SCAL> IfPos (SIMD<double> a, AutoDiff<D,SCAL> b, TC c)
+  INLINE AutoDiff<D,SCAL> IfPos (SCAL /* SIMD<double> */ a, AutoDiff<D,SCAL> b, TC c)
   {
     return IfPos (a, b, AutoDiff<D,SCAL> (c));
   }

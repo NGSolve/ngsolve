@@ -126,7 +126,7 @@ public:
                          FlatVector<Complex> result) const;
 
   NGS_DLL_HEADER virtual void Evaluate (const BaseMappedIntegrationRule & ir,
-                         FlatMatrix<> result) const;
+                                        BareSliceMatrix<> result) const;
 
   NGS_DLL_HEADER virtual void Evaluate (const BaseMappedIntegrationRule & ir,
                          FlatMatrix<Complex> result) const;
