@@ -165,6 +165,12 @@ public:
   {
     ProxyFunction::Evaluate (ir, values);
   }
+
+  virtual void Evaluate (const BaseMappedIntegrationRule & ir, 
+                         BareSliceMatrix<AutoDiff<1,double>> values) const;
+  
+  virtual void Evaluate (const BaseMappedIntegrationRule & ir, 
+                         BareSliceMatrix<AutoDiffDiff<1,double>> values) const;
   
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, 
                          BareSliceMatrix<AutoDiff<1,SIMD<double>>> values) const;

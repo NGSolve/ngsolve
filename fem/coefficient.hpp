@@ -94,6 +94,27 @@ namespace ngfem
     }
     
 
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, 
+                           BareSliceMatrix<AutoDiff<1,double>> values) const
+    {
+      throw Exception (string("Evaluate AutoDiff<double> not overloaded, type = ")+typeid(*this).name());
+    }
+
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir,
+                           FlatArray<BareSliceMatrix<AutoDiff<1,double>,ColMajor>> input,
+                           BareSliceMatrix<AutoDiff<1,double>,ColMajor> values) const
+    {
+      Evaluate (ir, Trans(values));
+    }
+
+    void Evaluate (const BaseMappedIntegrationRule & ir, 
+                   BareSliceMatrix<AutoDiff<1,double>, ColMajor> values) const
+    {
+      Evaluate (ir, Trans(values));
+    }
+    
+
+    
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, 
                            BareSliceMatrix<AutoDiff<1,SIMD<double>>> values) const 
     {
@@ -107,10 +128,24 @@ namespace ngfem
       Evaluate (ir, values);
     }
 
-    /*
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, 
-                           BareSliceMatrix<AutoDiffDiff<1,double>> values) const = 0;
-    */
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, 
+                           BareSliceMatrix<AutoDiffDiff<1,double>> values) const
+    {
+      throw Exception (string("Evaluate AutoDiffDiff<double> not overloaded, type = ")+typeid(*this).name());
+    }
+
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir,
+                           FlatArray<BareSliceMatrix<AutoDiffDiff<1,double>,ColMajor>> input,
+                           BareSliceMatrix<AutoDiffDiff<1,double>,ColMajor> values) const
+    {
+      Evaluate (ir, Trans(values));
+    }
+
+    void Evaluate (const BaseMappedIntegrationRule & ir, 
+                   BareSliceMatrix<AutoDiffDiff<1,double>, ColMajor> values) const
+    {
+      Evaluate (ir, Trans(values));
+    }
     
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, 
                            BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>> values) const 
@@ -195,7 +230,7 @@ namespace ngfem
       */
     }
 
-
+    [[deprecated("Use Evaluate (AutoDiff) instead")]]
     virtual void EvaluateDeriv (const BaseMappedIntegrationRule & ir,
                                 FlatMatrix<> result,
                                 FlatMatrix<> deriv) const
@@ -212,6 +247,7 @@ namespace ngfem
       deriv = 0;
     }
 
+    [[deprecated("Use Evaluate (AutoDiffDiff) instead")]]
     virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & ir,
                                  FlatMatrix<> result,
                                  FlatMatrix<> deriv,
@@ -231,6 +267,7 @@ namespace ngfem
     }
 
     
+    [[deprecated("Use Evaluate (AutoDiff) instead")]]
     virtual void EvaluateDeriv (const BaseMappedIntegrationRule & ir,
                                  FlatArray<FlatMatrix<>*> input,
                                  FlatArray<FlatMatrix<>*> dinput,
@@ -240,6 +277,7 @@ namespace ngfem
       EvaluateDeriv (ir, result, deriv);
     }
 
+    [[deprecated("Use Evaluate (AutoDiffDiff) instead")]]    
     virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & ir,
                                  FlatArray<FlatMatrix<>*> input,
                                  FlatArray<FlatMatrix<>*> dinput,
@@ -334,6 +372,17 @@ namespace ngfem
                            FlatArray<BareSliceMatrix<SIMD<double>>> input,
                            BareSliceMatrix<SIMD<double>> values) const
     { Evaluate (ir, values); }
+
+
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, 
+                           BareSliceMatrix<AutoDiff<1,double>> values) const
+    {
+      FlatMatrix<double> hvalues(ir.Size(), 2*values.Dist(), &values(0).Value());
+      Evaluate (ir, hvalues);
+      for (size_t i = 0; i < ir.Size(); i++)
+        for (size_t j = Dimension(); j-- > 0; )
+          values(i,j) = hvalues(i,j);
+    }
     
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, 
                            BareSliceMatrix<AutoDiff<1,SIMD<double>>> values) const
@@ -446,7 +495,16 @@ namespace ngfem
                            FlatArray<BareSliceMatrix<SIMD<double>>> input,
                            BareSliceMatrix<SIMD<double>> values) const
     {  static_cast<const TCF*>(this) -> /* template */ T_Evaluate /* <SIMD<double>> */ (ir, input, values); }
-    
+
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, 
+                           BareSliceMatrix<AutoDiff<1,double>> values) const
+    { static_cast<const TCF*>(this) -> template T_Evaluate (ir, Trans(values)); }
+
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir,
+                           FlatArray<BareSliceMatrix<AutoDiff<1,double>,ColMajor>> input,
+                           BareSliceMatrix<AutoDiff<1,double>,ColMajor> values) const
+    { static_cast<const TCF*>(this) -> T_Evaluate (ir, input, values); }
+        
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, 
                            BareSliceMatrix<AutoDiff<1,SIMD<double>>> values) const
     { static_cast<const TCF*>(this) -> /* template */ T_Evaluate /* <AutoDiff<1,SIMD<double>>> */ (ir, values); }
@@ -457,13 +515,14 @@ namespace ngfem
     {  static_cast<const TCF*>(this) -> /* template */ T_Evaluate /* <AutoDiff<1,SIMD<double>>> */ (ir, input, values); }
 
 
-    /*
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, 
                            BareSliceMatrix<AutoDiffDiff<1,double>> values) const
-    {
-      static_cast<const TCF*>(this) -> template T_Evaluate (ir, Trans(values)); 
-    }
-    */
+    { static_cast<const TCF*>(this) -> template T_Evaluate (ir, Trans(values)); }
+
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir,
+                           FlatArray<BareSliceMatrix<AutoDiffDiff<1,double>,ColMajor>> input,
+                           BareSliceMatrix<AutoDiffDiff<1,double>,ColMajor> values) const
+    { static_cast<const TCF*>(this) -> T_Evaluate (ir, input, values); }
     
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, 
                            BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>> values) const
@@ -504,12 +563,12 @@ namespace ngfem
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const;
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const;
 
-    template <typename T>
-      void T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<T> values) const;
-    template <typename T>
-      void T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
-                       FlatArray<BareSliceMatrix<T>> input,                       
-                       BareSliceMatrix<T> values) const
+    template <typename MIR, typename T, ORDERING ORD>
+      void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const;
+    template <typename MIR, typename T, ORDERING ORD>
+      void T_Evaluate (const MIR & ir,
+                       FlatArray<BareSliceMatrix<T,ORD>> input,                       
+                       BareSliceMatrix<T,ORD> values) const
     { T_Evaluate (ir, values); }
     
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
@@ -642,12 +701,12 @@ namespace ngfem
     // virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const;
     // virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const;
 
-    template <typename T>
-      void T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<T> values) const;
-    template <typename T>
-      void T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
-                       FlatArray<BareSliceMatrix<T>> input,                       
-                       BareSliceMatrix<T> values) const
+    template <typename MIR, typename T, ORDERING ORD>
+      void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const;
+    template <typename MIR, typename T, ORDERING ORD>
+      void T_Evaluate (const MIR & ir,
+                       FlatArray<BareSliceMatrix<T,ORD>> input,                       
+                       BareSliceMatrix<T,ORD> values) const
     { T_Evaluate (ir, values); }
     
 
@@ -1066,16 +1125,17 @@ public:
   void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
   {
     c1->Evaluate (ir, values);
-    size_t vw = ir.Size();
-    for (size_t i = 0; i < this->Dimension(); i++)
-      for (size_t j = 0; j < vw; j++)
+    size_t dim = this->Dimension();
+    size_t np = ir.Size();
+    for (size_t i = 0; i < dim; i++)
+      for (size_t j = 0; j < np; j++)
         values(i,j) = lam (values(i,j));
   }
 
-  template <typename T>
-  void T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
-                   FlatArray<BareSliceMatrix<T>> input,                       
-                   BareSliceMatrix<T> values) const
+  template <typename MIR, typename T, ORDERING ORD>
+  void T_Evaluate (const MIR & ir,
+                   FlatArray<BareSliceMatrix<T,ORD>> input,                       
+                   BareSliceMatrix<T,ORD> values) const
   {
     auto in0 = input[0];
     size_t dim = this->Dimension();
@@ -1413,21 +1473,21 @@ public:
   template <typename MIR, typename T, ORDERING ORD>
   void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
   {
-    size_t nv = ir.Size();
+    size_t np = ir.Size();
     size_t mydim = Dimension();
-    STACK_ARRAY(T, hmem, nv*mydim);
-    FlatMatrix<T> temp(mydim, nv, &hmem[0]);
+    STACK_ARRAY(T, hmem, np*mydim);
+    FlatMatrix<T,ORD> temp(mydim, np, &hmem[0]);
     c1->Evaluate (ir, values);
     c2->Evaluate (ir, temp);
     for (size_t i = 0; i < mydim; i++)
-      for (size_t j = 0; j < nv; j++)
+      for (size_t j = 0; j < np; j++)
         values(i,j) = lam (values(i,j), temp(i,j));
   }
 
-  template <typename T>
-  void T_Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
-                   FlatArray<BareSliceMatrix<T>> input,                       
-                   BareSliceMatrix<T> values) const
+  template <typename MIR, typename T, ORDERING ORD>
+  void T_Evaluate (const MIR & ir,
+                   FlatArray<BareSliceMatrix<T,ORD>> input,                       
+                   BareSliceMatrix<T,ORD> values) const
   {
     size_t np = ir.Size();
     size_t dim = Dimension();
