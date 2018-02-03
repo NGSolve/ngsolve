@@ -170,6 +170,8 @@ namespace ngbla
     INLINE auto Height () const { return h; }
     /// the width
     INLINE auto Width () const { return w; }
+    /// 
+    INLINE auto Dist () const { return w; }
 
     INLINE const FlatVector<T> Row (TIND i) const
     {
@@ -349,6 +351,7 @@ namespace ngbla
     /// the width
     INLINE size_t Width () const { return w; }
 
+    INLINE size_t Dist () const { return h; }
 
     INLINE const FlatVector<T> Col (size_t i) const
     {
@@ -1620,7 +1623,7 @@ namespace ngbla
     INLINE BareSliceMatrix(const BareSliceMatrix &) = default;
 
     BareSliceMatrix (const FlatMatrix<T> & mat)
-      : DummySize(mat.Height(), mat.Width()), dist(mat.Width()), data(&mat(0,0))
+      : DummySize(mat.Height(), mat.Width()), dist(mat.Dist()), data(&mat(0,0))
     { ; }
 
     BareSliceMatrix (const SliceMatrix<T> & mat)
@@ -1741,7 +1744,7 @@ namespace ngbla
     INLINE BareSliceMatrix(const BareSliceMatrix &) = default;
 
     BareSliceMatrix (const FlatMatrix<T,ColMajor> & mat)
-      : DummySize(mat.Height(), mat.Width()), dist(mat.Width()), data(&mat(0,0))
+      : DummySize(mat.Height(), mat.Width()), dist(mat.Dist()), data(&mat(0,0))
     { ; }
 
     BareSliceMatrix (const SliceMatrix<T,ColMajor> & mat)
@@ -1965,11 +1968,19 @@ namespace ngbla
     return SliceMatrix<Complex,ColMajor> (mat.Width(), mat.Height(), mat.Dist(), &mat(0,0));
   }
 
-
-  INLINE 
-  const BareSliceMatrix<double,ColMajor> Trans (BareSliceMatrix<double,RowMajor> mat)
+  
+  // only for scalar types
+  // no Mat - entries which would also transposition of the small blocks
+  template <typename T>
+  INLINE const BareSliceMatrix<T,ColMajor> Trans (BareSliceMatrix<T,RowMajor> mat)
   {
-    return SliceMatrix<double,ColMajor> (mat.Width(), mat.Height(), mat.Dist(), &mat(0,0));
+    return SliceMatrix<T,ColMajor> (mat.Width(), mat.Height(), mat.Dist(), &mat(0,0));
+  }
+
+  template <typename T>
+  INLINE const BareSliceMatrix<T,RowMajor> Trans (BareSliceMatrix<T,ColMajor> mat)
+  {
+    return SliceMatrix<T,RowMajor> (mat.Width(), mat.Height(), mat.Dist(), &mat(0,0));
   }
 
 
