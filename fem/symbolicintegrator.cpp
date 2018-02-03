@@ -206,8 +206,10 @@ namespace ngfem
 
   void ProxyFunction ::
   Evaluate (const BaseMappedIntegrationRule & mir,
-            FlatMatrix<> result) const
+            BareSliceMatrix<> hresult) const
   {
+    auto result = hresult.AddSize(mir.Size(), Dimension());
+    
     ProxyUserData * ud = (ProxyUserData*)mir.GetTransformation().userdata;
     if (!ud) 
       throw Exception ("cannot evaluate ProxyFunction without userdata");
@@ -2050,6 +2052,7 @@ namespace ngfem
       }
     
     FlatMatrix<> val(mir.Size(), 1, lh), deriv(mir.Size(), 1, lh);
+    FlatMatrix<AutoDiff<1>> dval(mir.Size(), 1, lh);
     elmat = 0;
     
     for (int k1 : Range(trial_proxies))
@@ -2071,8 +2074,11 @@ namespace ngfem
                   ud.testfunction = proxy2;
                   ud.test_comp = l;
                   
-                  cf -> EvaluateDeriv (mir, val, deriv);
-                  proxyvalues(STAR,l,k) = deriv.Col(0);
+                  // cf -> EvaluateDeriv (mir, val, deriv);
+                  // proxyvalues(STAR,l,k) = deriv.Col(0);
+                  cf -> Evaluate (mir, dval);
+                  for (size_t i = 0; i < mir.Size(); i++)
+                    proxyvalues(i,l,k) = dval(i,0).DValue(0);
                 }
               else
                 proxyvalues(STAR,l,k) = 0;
@@ -2266,6 +2272,8 @@ namespace ngfem
     
     
           FlatMatrix<> val(mir.Size(), 1,lh), deriv(mir.Size(), 1,lh);
+          FlatMatrix<AutoDiff<1>> dval(mir.Size(), 1,lh);
+          
           for (int k1 : Range(trial_proxies))
             for (int l1 : Range(test_proxies))
               {
@@ -2286,8 +2294,12 @@ namespace ngfem
                         ud.testfunction = proxy2;
                         ud.test_comp = l;
                         
-                        cf -> EvaluateDeriv (mir, val, deriv);
-                        proxyvalues(STAR,l,k) = deriv.Col(0);
+                        // cf -> EvaluateDeriv (mir, val, deriv);
+                        // proxyvalues(STAR,l,k) = deriv.Col(0);
+
+                        cf -> Evaluate (mir, dval);
+                        for (size_t i = 0; i < mir.Size(); i++)
+                          proxyvalues(i,l,k) = dval(i,0).DValue(0);
                       }
                     else
                       proxyvalues(STAR,l,k) = 0.0;
@@ -2927,7 +2939,8 @@ namespace ngfem
         proxy->Evaluator()->Apply(fel1, mir1, elveclin, ud.GetMemory(proxy), lh);
       }
     
-    FlatMatrix<> val(mir1.Size(), 1, lh), deriv(mir1.Size(), 1, lh);
+    // FlatMatrix<> val(mir1.Size(), 1, lh), deriv(mir1.Size(), 1, lh);
+    FlatMatrix<AutoDiff<1>> dval(mir1.Size(), 1, lh);
     elmat = 0;
     // endnew
 
@@ -2953,8 +2966,12 @@ namespace ngfem
                 ud.testfunction = proxy2;
                 ud.test_comp = l;
                 
-                cf -> EvaluateDeriv (mir1, val, deriv);
-                proxyvalues(STAR,l,k) = deriv.Col(0);
+                // cf -> EvaluateDeriv (mir1, val, deriv);
+                // proxyvalues(STAR,l,k) = deriv.Col(0);
+
+                cf -> Evaluate (mir1, dval);
+                for (size_t i = 0; i < mir1.Size(); i++)
+                  proxyvalues(i,l,k) = dval(i,0).DValue(0);
               }
 
           for (int i = 0; i < mir1.Size(); i++)
@@ -4038,8 +4055,8 @@ namespace ngfem
     
     HeapReset hr(lh);
     
-    FlatMatrix<> val(mir.Size(), 1,lh), deriv(mir.Size(), 1,lh), dderiv(mir.Size(), 1,lh);
-    FlatMatrix<AutoDiffDiff<1,double>> addval(mir.Size(), 1, lh);
+    FlatMatrix<> /* val(mir.Size(), 1,lh), deriv(mir.Size(), 1,lh), */ dderiv(mir.Size(), 1,lh);
+    FlatMatrix<AutoDiffDiff<1,double>> ddval(mir.Size(), 1, lh);
     
     FlatArray<FlatMatrix<>> diags(trial_proxies.Size(), lh);
     for (int k1 : Range(trial_proxies))
@@ -4054,9 +4071,9 @@ namespace ngfem
             ud.test_comp = k;
             // cf -> EvaluateDDeriv (mir, val, deriv, dderiv);
             // diags[k1].Col(k) = dderiv.Col(0);
-            cf -> Evaluate (mir, addval);
+            cf -> Evaluate (mir, ddval);
             for (size_t i = 0; i < mir.Size(); i++)
-              diags[k1](i,k) = addval(i,0).DDValue(0);
+              diags[k1](i,k) = ddval(i,0).DDValue(0);
           }
       }
 
@@ -4082,7 +4099,12 @@ namespace ngfem
                   ThreadRegionTimer reg(tdmat, tid);
                   NgProfiler::AddThreadFlops (tdmat, tid, 1);
                   if (nonzeros(trial_cum[k1]+k, trial_cum[l1]+l))
-                    cf -> EvaluateDDeriv (mir, val, deriv, dderiv);
+                    {
+                      //cf -> EvaluateDDeriv (mir, val, deriv, dderiv);
+                      cf -> Evaluate (mir, ddval);
+                      for (size_t i = 0; i < mir.Size(); i++)
+                        dderiv(i,0) = ddval(i,0).DDValue(0);
+                    }
                   else
                     dderiv = 0.0;
                 }
@@ -4533,7 +4555,7 @@ namespace ngfem
         ely = 0;
         FlatVector<> ely1(ely.Size(), lh);
         
-        FlatMatrix<> val(mir.Size(), 1,lh), deriv(mir.Size(), 1,lh);
+        // FlatMatrix<> val(mir.Size(), 1,lh), deriv(mir.Size(), 1,lh);
         FlatMatrix<AutoDiff<1>> dval(mir.Size(), 1, lh);
         
         for (auto proxy : trial_proxies)
@@ -4588,7 +4610,8 @@ namespace ngfem
               }
         
             FlatVector<> ely1(ely.Size(), lh);
-            FlatMatrix<> val(mir.Size(), 1,lh), deriv(mir.Size(), 1,lh);
+            // FlatMatrix<> val(mir.Size(), 1,lh), deriv(mir.Size(), 1,lh);
+            FlatMatrix<AutoDiff<1>> dval(mir.Size(), 1, lh);
             
             for (auto proxy : trial_proxies)
               {
@@ -4598,8 +4621,11 @@ namespace ngfem
                   {
                     ud.trialfunction = proxy;
                     ud.trial_comp = k;
-                    cf -> EvaluateDeriv (mir, val, deriv);
-                    proxyvalues.Col(k) = deriv.Col(0);
+                    // cf -> EvaluateDeriv (mir, val, deriv);
+                    // proxyvalues.Col(k) = deriv.Col(0);
+                    cf -> Evaluate (mir, dval);
+                    for (size_t i = 0; i < mir.Size(); i++)
+                      proxyvalues(i,k) = dval(i,0).DValue(0);
                   }
                 
                 for (int i = 0; i < mir.Size(); i++)

@@ -1,2 +1,6 @@
 *~
 /docs/mylittlengs
+*.o
+*.so
+tests/pytest/code*.cpp
+py_tutorials/code*.cpp
