@@ -14,11 +14,18 @@
 
 namespace ngstd
 {
-  template <typename T>
-  INLINE T IfPos (Complex a, T b, T c) { return IfPos (a.real(), b, c); }
 
-  template <typename T>
-  INLINE T IfPos (SIMD<Complex> a, T b, T c) { return IfPos (a.real(), b, c); }
+  INLINE Complex IfPos (Complex a, Complex b, Complex c)
+  {
+    return Complex (IfPos (a.real(), b.real(), c.real()),
+                    IfPos (a.real(), b.imag(), c.imag()));
+  }
+  
+  INLINE SIMD<Complex> IfPos (SIMD<Complex> a, SIMD<Complex> b, SIMD<Complex> c)
+  {
+    return SIMD<Complex> (IfPos (a.real(), b.real(), c.real()),
+                          IfPos (a.real(), b.imag(), c.imag()));
+  }
 }
 
 
