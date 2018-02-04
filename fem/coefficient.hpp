@@ -250,6 +250,7 @@ namespace ngfem
       deriv = 0;
     }
 
+    /*
     [[deprecated("Use Evaluate (AutoDiffDiff) instead")]]
     virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & ir,
                                  FlatMatrix<> result,
@@ -291,6 +292,7 @@ namespace ngfem
     {
       EvaluateDDeriv (ir, result, deriv, dderiv);
     }
+    */
 
     virtual bool ElementwiseConstant () const { return false; }
     // virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const;
