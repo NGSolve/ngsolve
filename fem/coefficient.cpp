@@ -1027,6 +1027,7 @@ public:
     values *= scal;
   }
 
+  /*
   [[deprecated]]
   virtual void EvaluateDeriv (const BaseMappedIntegrationRule & ir,
                               FlatMatrix<> result, FlatMatrix<> deriv) const override
@@ -1087,7 +1088,7 @@ public:
     deriv = scal * dv1;
     dderiv = scal * ddv1;
   }
-
+  */
   /*
   virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & mir, 
                               AFlatMatrix<double> values, AFlatMatrix<double> deriv) const
@@ -5804,7 +5805,7 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
       }
     }
 
-
+#ifdef OLD
     [[deprecated]]
     virtual void EvaluateDeriv (const BaseMappedIntegrationRule & ir,
                                 FlatMatrix<double> values, FlatMatrix<double> deriv) const
@@ -5928,7 +5929,9 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
       deriv = dtemp.Last();
       dderiv = ddtemp.Last();
     }
+#endif
 
+    
 #ifdef OLD
     virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir, 
                                 AFlatMatrix<double> values, AFlatMatrix<double> deriv) const
