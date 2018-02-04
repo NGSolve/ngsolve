@@ -1541,6 +1541,7 @@ public:
   }
   */
 
+#ifdef OLD
   [[deprecated]]    
   virtual void Evaluate (const BaseMappedIntegrationRule & mir, FlatArray<FlatMatrix<>*> input,
                          FlatMatrix<double> result) const 
@@ -1715,7 +1716,8 @@ public:
           */
         }
   }
-
+#endif
+  
   /*
   virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & mir, 
                               AFlatMatrix<double> values, AFlatMatrix<double> deriv) const
