@@ -502,11 +502,11 @@ namespace ngfem
     {  static_cast<const TCF*>(this) -> /* template */ T_Evaluate /* <SIMD<double>> */ (ir, input, values); }
 
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<double> values) const
-    { static_cast<const TCF*>(this) -> template T_Evaluate (ir, Trans(values)); }
+    { static_cast<const TCF*>(this) -> /* template */ T_Evaluate (ir, Trans(values)); }
     
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, 
                            BareSliceMatrix<AutoDiff<1,double>> values) const
-    { static_cast<const TCF*>(this) -> template T_Evaluate (ir, Trans(values)); }
+    { static_cast<const TCF*>(this) -> /* template */ T_Evaluate (ir, Trans(values)); }
 
     virtual void Evaluate (const BaseMappedIntegrationRule & ir,
                            FlatArray<BareSliceMatrix<AutoDiff<1,double>,ColMajor>> input,
