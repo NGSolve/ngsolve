@@ -4450,7 +4450,7 @@ MakeOtherCoefficientFunction (shared_ptr<CoefficientFunction> me)
     ( [&] (CoefficientFunction & nodecf)
       {
         if (dynamic_cast<const ProxyFunction*> (&nodecf))
-          throw Exception ("You cannot create an other - CoefficientFunction from a tree involving a ProxyFunction\n  ---> use the Other()-operator on sub-trees");
+          throw Exception ("Other() can be applied either to a proxy, or to an expression without any proxy\n  ---> use the Other()-operator on sub-trees");
       }
       );
   return make_shared<OtherCoefficientFunction> (me);
