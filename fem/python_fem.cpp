@@ -666,7 +666,15 @@ val : can be one of the following:
     .def("Norm",  [](shared_ptr<CF> x) { return NormCF(x); })
     
     .def ("Other",
-          [](shared_ptr<CF> x) { return MakeOtherCoefficientFunction(x); },
+          [](shared_ptr<CF> x)
+          {
+            x -> TraverseTree ([&] (CoefficientFunction & cf)
+                                {
+                                  if (dynamic_cast<ProxyFunction*>(&cf))
+                                    throw Exception("Other() can be applied either to a proxy, or to an expression without any proxy");
+                                });
+            return MakeOtherCoefficientFunction(x);
+          },
           "evaluate on other element, as needed for DG jumps")
     
     // it's using the complex functions anyway ...
