@@ -24,11 +24,17 @@ namespace ngfem
 
     virtual void CalcDivShape (const IntegrationPoint & ip, 
                                BareSliceMatrix<double> divshape) const = 0;
+
+    virtual void CalcCurlShape (const IntegrationPoint & ip, 
+                               BareSliceMatrix<double> divshape) const = 0;
     
     virtual void CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
       BareSliceMatrix<double> shape) const = 0;    
 
     virtual void CalcMappedDivShape (const MappedIntegrationPoint<DIM,DIM> & mip,
+      BareSliceMatrix<double> shape) const = 0;
+
+    virtual void CalcMappedCurlShape (const MappedIntegrationPoint<DIM,DIM> & mip,
       BareSliceMatrix<double> shape) const = 0;
 
   };
@@ -133,6 +139,22 @@ namespace ngfem
                                           }));
     }
 
+    virtual void CalcCurlShape (const IntegrationPoint & ip,
+                               BareSliceMatrix<double> shape) const
+    {
+      Vec<DIM, AutoDiffDiff<DIM>> adp;
+      for ( int i=0; i<DIM; i++)
+      {
+        adp[i] = AutoDiffDiff<DIM>(ip(i),i);
+      }
+      
+      Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM>> (adp), SBLambda([&] (int nr, auto val)
+                                          {
+                                            shape.Row(nr).AddSize(DIM) = val.CurlShape();
+                                          }));
+    }
+    
+
 
     virtual void CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
                             BareSliceMatrix<double> shape) const
@@ -225,6 +247,30 @@ namespace ngfem
       }
     }
 
+     virtual void CalcMappedCurlShape (const MappedIntegrationPoint<DIM,DIM> & mip,
+                            BareSliceMatrix<double> shape) const
+    {
+      Vec<DIM, AutoDiff<DIM>> adp = mip;
+      Vec<DIM, AutoDiffDiff<DIM>> addp;
+      for (int i=0; i<DIM; i++)
+      {
+        addp[i] = adp[i].Value();
+        addp[i].LoadGradient(&adp[i].DValue(0));
+      }
+
+      if(!mip.GetTransformation().IsCurvedElement()) // non-curved element
+      {
+        Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM>> (addp),SBLambda([&](int nr,auto val)
+        {
+          shape.Row(nr).AddSize(DIM) = val.CurlShape();
+        }));	
+      }
+      else
+	{
+	  throw Exception("not implemented on curved elements");
+	}
+    }
+
   };
 
   /* ############### edge basis functions - div-free ############### */
@@ -243,6 +289,11 @@ namespace ngfem
     }
 
     Vec<2> DivShape()
+    {      
+      return Vec<2> (0,0);     
+    }
+
+    Vec<2> CurlShape()
     {      
       return Vec<2> (0,0);     
     }
@@ -270,6 +321,17 @@ namespace ngfem
     {     
       return Vec<2> (0,0);
     }
+
+    Vec<2> CurlShape()
+    {
+      double vxx = v.DDValue(0,0), vxy = v.DDValue(0,1), vyy = v.DDValue(1,1);
+      double ux = u.DValue(0), uy = u.DValue(1);
+
+      double uxx = u.DDValue(0,0), uxy = u.DDValue(0,1), uyy = u.DDValue(1,1);
+      double vx = v.DValue(0), vy = v.DValue(1);
+
+      return Vec<2> ( (vy*uxy - vx*uyy) +  (ux * vyy - uy * vxy), (-vy*uxx + vx*uxy) + (-ux*vxy + uy*vxx));     
+    }    
   }; 
 
   /* ############### Type 2 - inner basis functions - NOT div-free ############### */
@@ -295,6 +357,18 @@ namespace ngfem
       
       return -2.0 * Vec<2> (- uxx * vy + uxy * vx, - uxy * vy + uyy * vx);
     }
+
+    Vec<2> CurlShape()
+    {
+      double vxx = v.DDValue(0,0), vxy = v.DDValue(0,1), vyy = v.DDValue(1,1);
+      double ux = u.DValue(0), uy = u.DValue(1);
+
+      double uxx = u.DDValue(0,0), uxy = u.DDValue(0,1), uyy = u.DDValue(1,1);
+      double vx = v.DValue(0), vy = v.DValue(1);
+      
+      return Vec<2> ( (vy*uxy - vx*uyy) - (ux * vyy - uy * vxy), (-vy*uxx + vx*uxy) - (-ux*vxy + uy*vxx));     
+    }
+    
   };   
 
   /* ############### Type 3 - inner basis functions - div-free ############### */
@@ -307,22 +381,35 @@ namespace ngfem
     T_type4  (AutoDiffDiff<2> lam1, AutoDiffDiff<2> lam2, AutoDiffDiff<2> av) : l1(lam1), l2(lam2), v(av){ ; }
 
     Vec<4> Shape() {
-      double lam1x = l1.DValue(0), lam1y = l1.DValue(1), lam1xx = l1.DDValue(0,0), lam1xy = l1.DDValue(1,0), lam1yx = l1.DDValue(0,1), lam1yy = l1.DDValue(1,1);
-      double lam2x = l2.DValue(0), lam2y = l2.DValue(1), lam2xx = l2.DDValue(0,0), lam2xy = l2.DDValue(1,0), lam2yx = l2.DDValue(0,1), lam2yy = l2.DDValue(1,1);
+      double lam1x = l1.DValue(0), lam1y = l1.DValue(1);
+      double lam2x = l2.DValue(0), lam2y = l2.DValue(1);
 
-      double vx = v.DValue(0), vy = v.DValue(1);
-                 
-      return Vec<4> (v.Value() * (-lam1yx * l2.Value() - lam1x * lam2y + lam2yx * l1.Value() + lam2x * lam1y) - (lam1x*l2.Value() - lam2x*l1.Value()) * vy,
-		     v.Value() * ( lam1xx * l2.Value() + lam1x * lam2x - lam2xx * l1.Value() - lam2x * lam1x) + (lam1x*l2.Value() - lam2x*l1.Value()) * vx,
-		     v.Value() * (-lam1yy * l2.Value() - lam1y * lam2y + lam2yy * l1.Value() + lam2y * lam1y) - (lam1y*l2.Value() - lam2y*l1.Value()) * vy,
-		     v.Value() * ( lam1xy * l2.Value() + lam1y * lam2x - lam2xy * l1.Value() - lam2y * lam1x) + (lam1y*l2.Value() - lam2y*l1.Value()) * vx
-		     );     
+      double vx = v.DValue(0), vy = v.DValue(1);                      
+      
+      return Vec<4> (v.Value() * ( - lam1x * lam2y + lam2x * lam1y) - (lam1x*l2.Value() - lam2x*l1.Value()) * vy,
+		      (lam1x*l2.Value() - lam2x*l1.Value()) * vx,
+		     -(lam1y*l2.Value() - lam2y*l1.Value()) * vy,
+		     v.Value() * ( lam1y * lam2x - lam2y * lam1x) + (lam1y*l2.Value() - lam2y*l1.Value()) * vx
+		     ); 
     }
 
     Vec<2> DivShape()
     {     
-      return Vec<2> (0,0);
+      return Vec<2> (0,0);     
     }
+
+    Vec<2> CurlShape()
+    {
+      double lam1x = l1.DValue(0), lam1y = l1.DValue(1); 
+      double lam2x = l2.DValue(0), lam2y = l2.DValue(1); 
+      double vx = v.DValue(0), vy = v.DValue(1), vxx = v.DDValue(0,0), vxy = v.DDValue(0,1), vyy = v.DDValue(1,1);
+
+      return Vec<2> ( vyy*(lam1x*l2.Value() - lam2x*l1.Value()) - vxy * (lam1y*l2.Value() - lam2y*l1.Value()) - 3* vy*(-lam1x*lam2y+lam2x*lam1y),
+      		      vxx*(lam1y*l2.Value() - lam2y*l1.Value()) - vxy * (lam1x*l2.Value() - lam2x*l1.Value()) + 3* vx*(-lam1x*lam2y+lam2x*lam1y)
+      				);
+    }
+
+    
   };  
   
   /* ############### Special functions for curld-div bubbles ############### */
@@ -354,6 +441,12 @@ namespace ngfem
 		     -uyy*vx - vxy*uy + uxy*vy + vyy*ux);
 
     }
+
+    Vec<2> CurlShape()
+    {     
+      throw Exception("not implemented for curldivfreebubbles");
+    }
+    
   };  
 
   /* Edge basis functions which are normal-tangential continuous */
@@ -385,6 +478,11 @@ namespace ngfem
       double lam2y = l2.DValue(1);
       
       return Vec<2> (  - vx *lam1x*lam2y + vy*lam1x*lam2x, -vx *lam1y*lam2y + vy*lam1y*lam2x) ;      
+    }
+
+    Vec<2> CurlShape()
+    {     
+      throw Exception("not implemented for T_Dl2xRotDl1_v");
     }
 
   };
@@ -431,6 +529,11 @@ namespace ngfem
 		     );
     }
 
+    Vec<2> CurlShape()
+    {     
+      throw Exception("not implemented for T_Dl1_o_Dl2xDl3_v");
+    }
+
   };
 
   
@@ -457,6 +560,24 @@ namespace ngfem
       for (int i=0; i<D; i++)
 	div_Id_v(i) = v.DValue(i);
       return div_Id_v;
+    }
+
+    Vec<2> CurlShape()
+    {     
+      Vec<D> curl_Id_v=0;
+      if (D==2)
+	{
+	  curl_Id_v(0) = -v.DValue(1);
+	  curl_Id_v(1) = v.DValue(0);
+	}
+      if (D==3)
+	{
+	  curl_Id_v(0) = v.DValue(2) -v.DValue(1);
+	  curl_Id_v(1) = v.DValue(0) -v.DValue(2);
+	  curl_Id_v(2) = v.DValue(1) -v.DValue(0); 
+	}
+      
+      return curl_Id_v;
     }
 
   };
