@@ -129,12 +129,13 @@ namespace ngfem
   Apply (const FiniteElement & bfel,
          const BaseMappedIntegrationRule & bmir,
          FlatVector<double> x, 
-         FlatMatrix<double> flux,
+         BareSliceMatrix<double> flux,
          LocalHeap & lh) const
   {
     const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
       static_cast<const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
-    DIFFOP::ApplyIR (bfel, mir, x, flux, lh);
+    auto fluxsize = flux.AddSize(mir.Size(), DIFFOP::DIM_DMAT);
+    DIFFOP::ApplyIR (bfel, mir, x, fluxsize, lh);
   }
 
   template <typename DIFFOP>

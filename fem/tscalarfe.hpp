@@ -53,7 +53,7 @@ namespace ngfem
     
     HD NGS_DLL_HEADER virtual void Evaluate (const IntegrationRule & ir, 
 					     BareSliceVector<double> coefs, 
-					     FlatVector<double> vals) const override;
+					     BareSliceVector<double> vals) const override;
 
     HD NGS_DLL_HEADER virtual void Evaluate (const SIMD_IntegrationRule & ir,
                                              BareSliceVector<> coefs,
@@ -82,7 +82,7 @@ namespace ngfem
 
     HD NGS_DLL_HEADER virtual void EvaluateGrad (const IntegrationRule & ir, 
                                                  BareSliceVector<double> coefs, 
-                                                 FlatMatrixFixWidth<DIM> vals) const override;
+                                                 BareSliceMatrix<> vals) const override;
 
     HD NGS_DLL_HEADER virtual void EvaluateGrad (const SIMD_BaseMappedIntegrationRule & ir,
                                                  BareSliceVector<> coefs,
