@@ -2290,7 +2290,7 @@ public:
     size_t np = ir.Size();
     size_t dim1 = c1->Dimension();
     STACK_ARRAY(T,mem, np*dim1);
-    FlatMatrix<T,ORD> m1(np, dim1, &mem[0]);
+    FlatMatrix<T,ORD> m1(dim1, np, &mem[0]);
     c1->Evaluate (ir, m1);
     
     for (size_t i = 0; i < np; i++)

@@ -123,11 +123,11 @@ namespace ngfem
   Apply (const FiniteElement & fel,
          const BaseMappedIntegrationRule & mir,
          FlatVector<double> x, 
-         FlatMatrix<double> flux,
+         BareSliceMatrix<double> flux,
          LocalHeap & lh) const
   {
     for (int i = 0; i < mir.Size(); i++)
-      Apply (fel, mir[i], x, flux.Row(i), lh);
+      Apply (fel, mir[i], x, flux.Row(i).AddSize(dim), lh);
   }
   
   void DifferentialOperator ::
