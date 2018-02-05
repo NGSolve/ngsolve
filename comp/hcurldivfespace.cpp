@@ -193,6 +193,58 @@ namespace ngcomp
       }        */
   };
 
+  template <int D> class DiffOpCurlHCurlDiv : public DiffOp<DiffOpCurlHCurlDiv<D> >
+  {
+    
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D };
+    enum { DIM_DMAT = D };
+    enum { DIFFORDER = 1 };
+    enum { DIM_STRESS = D*D};
+    
+    static string Name() { return "curl"; }
+
+    
+    template <typename FEL,typename SIP>
+    static void GenerateMatrix(const FEL & bfel,const SIP & sip,
+      SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
+    {
+      const HCurlDivFiniteElement<D> & fel =
+        dynamic_cast<const HCurlDivFiniteElement<D>&> (bfel);
+
+      fel.CalcMappedCurlShape (sip, Trans(mat));
+    }
+    
+    /*    
+    template <typename FEL, typename SIP, typename MAT>
+    static void GenerateMatrix (const FEL & bfel, const SIP & sip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      static int timer = NgProfiler::CreateTimer ("old div");
+      NgProfiler::RegionTimer reg (timer);
+
+      const HCurlDivFiniteElement<D> & fel = 
+        dynamic_cast<const HCurlDivFiniteElement<D>&> (bfel);
+      
+      int nd = fel.GetNDof();
+      
+      FlatMatrix<> curl_shape(nd, D, lh);      
+      fel.CalcCurlShape (sip.IP(), curl_shape);
+      
+      Mat<D> jac = sip.GetJacobian();
+      Mat<D> jacinv = sip.GetJacobianInverse();
+      double det = fabs (sip.GetJacobiDet());
+      
+      Mat<D> sjac = (1.0/(det*det)) * jac;          
+      mat = sjac * Trans (curl_shape);
+      }
+    */
+    
+  };
+
+
 
   template <int D>
   class NGS_DLL_HEADER HCurlDivMassIntegrator 
@@ -466,6 +518,14 @@ namespace ngcomp
     HCurlDivFESpace :: GetAdditionalEvaluators () const
   {
     SymbolTable<shared_ptr<DifferentialOperator>> additional;
+    switch(ma->GetDimension())
+    {
+    case 2:
+      additional.Set ("curl",make_shared<T_DifferentialOperator<DiffOpCurlHCurlDiv<2>>> ());
+      break;
+    default:
+      ;
+    }
     return additional;
   }
   
