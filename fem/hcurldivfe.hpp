@@ -196,49 +196,47 @@ namespace ngfem
       else // curved element
       {	
         Mat<DIM> jac = mip.GetJacobian();
-        Mat<DIM> inv_jac = mip.GetJacobianInverse();
-        Mat<DIM> hesse[3],finvT_h_tilde_finv[3];
-        mip.CalcHesse (hesse[0],hesse[1],hesse[2]);
+        Mat<DIM> inv_jac = mip.GetJacobianInverse();        
+	Mat<DIM> hesse_FinvT[3], F_HFinvT_Finv[3];
+		
+	double eps = 1e-6;
+		
+	Mat<DIM> jacrinv, jaclinv;
+	for (int dir = 0; dir < DIM; dir++)
+	  {
+	    IntegrationPoint ipr = mip.IP();
+	    IntegrationPoint ipl = mip.IP();
+	    ipr(dir) += eps;
+	    ipl(dir) -= eps;
+	    
+	    MappedIntegrationPoint<DIM,DIM> mipr(ipr, mip.GetTransformation());
+	    MappedIntegrationPoint<DIM,DIM> mipl(ipl, mip.GetTransformation());
+	    jacrinv = Trans(mipr.GetJacobianInverse());    
+	    jaclinv = Trans(mipl.GetJacobianInverse());
+	    
+	    for (int j = 0; j < DIM; j++)
+	      {
+		hesse_FinvT[0](j,dir) = (jacrinv(0,j) - jaclinv(0,j) ) / (2*eps);
+		hesse_FinvT[1](j,dir) = (jacrinv(1,j) - jaclinv(1,j) ) / (2*eps);
+		hesse_FinvT[2](j,dir) = (jacrinv(2,j) - jaclinv(2,j) ) / (2*eps);
 
-        Mat<DIM,DIM,AutoDiff<DIM> > f_tilde;
-        for(int i = 0; i < DIM; i++)
-        {
-          for(int j = 0; j < DIM; j++)
-          {
-            f_tilde(i,j).Value() = jac(i,j);
-            for(int k = 0; k < DIM; k++)
-              f_tilde(i,j).DValue(k) = hesse[i](j,k);
-          }
-        }
-
-        AutoDiff<DIM> ad_det = Det (f_tilde);
-        AutoDiff<DIM> iad_det = 1.0 / ad_det;
-        f_tilde *= iad_det;
-
-        for(int i=0; i<DIM; i++)
-        {
-          finvT_h_tilde_finv[i] = 0;
-          for(int alpha=0; alpha<DIM; alpha++)
-            for(int beta=0; beta<DIM; beta++)
-              for(int gamma=0; gamma<DIM; gamma++)
-                for(int delta=0; delta<DIM; delta++)
-                  finvT_h_tilde_finv[i](alpha,beta) += inv_jac(gamma,alpha)*f_tilde(i,gamma).DValue(delta)*inv_jac(delta,beta);
-        }
+	      }
+	  }
+	
+	for(int i=0; i<DIM; i++)
+	  F_HFinvT_Finv[i] = jac * hesse_FinvT[i] * inv_jac;
 
         Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM>> (addp),SBLambda([&](int nr,auto val)
                                   {
                                     shape.Row(nr).AddSize(DIM) = val.DivShape();
-                                    BareVector<double> divshape = shape.Row(nr);
-
-				    //Vec<DIM_STRESS> vecshape = val.Shape();
-                                    Vec<DIM*DIM> matshape = val.Shape();
-                                    //VecToSymMat<DIM> (vecshape, matshape);
-
+                                    BareVector<double> divshape = shape.Row(nr);				    
+                                    Vec<DIM*DIM> matshape = val.Shape();				    
+				    
                                     for(int k=0; k<DIM; k++)
                                     {
                                       for(int j=0; j<DIM*DIM; j++)
                                       {
-                                        divshape(k) += mip.GetJacobiDet() * finvT_h_tilde_finv[k](j) * matshape(j);
+					divshape(k) += F_HFinvT_Finv[k](j) * matshape(j);
                                       }
                                     }
                                     
