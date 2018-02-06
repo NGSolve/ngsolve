@@ -244,6 +244,7 @@ namespace ngcomp
                                            const Flags & aflags, bool parseflags)
     : FESpace(ama, aflags)
   {
+    type = "hdivdivsurf";
     order = aflags.GetNumFlag("order", 0);
     DefineNumFlag("discontinuous");
 		

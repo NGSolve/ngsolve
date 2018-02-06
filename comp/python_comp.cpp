@@ -5,6 +5,9 @@
 #include "../ngstd/python_ngstd.hpp"
 #include <comp.hpp>
 
+#include "hdivdivfespace.hpp"
+#include "hdivdivsurfacespace.hpp"
+#include "numberfespace.hpp"
 using namespace ngcomp;
 
 using ngfem::ELEMENT_TYPE;
@@ -169,6 +172,7 @@ static GlobalDummyVariables globvar;
 template<typename FESPACE>
 shared_ptr<FESPACE> fesUnpickle(py::tuple state)
 {
+  cout << "In fesUnpickle type = " << state[0].cast<string>() << endl;
   auto fes = CreateFESpace(state[0].cast<string>(),
                            state[1].cast<shared_ptr<MeshAccess>>(),
                            state[2].cast<Flags>());
@@ -1352,6 +1356,7 @@ when building the system matrices.
       auto flags = fes.GetFlags();
       auto mesh = fes.GetMeshAccess();
       auto type = fes.type;
+      cout << "In fesPickle type = " << type << endl;
       // TODO: pickle order policies
       return py::make_tuple(type,mesh,flags);
     };
@@ -1398,8 +1403,10 @@ kwargs : For a description of the possible kwargs have a look a bit further down
 
 )raw_string"), py::dynamic_attr());
   fes_class
-    .def(py::init([] (py::list lspaces, Flags& flags)
+    .def(py::init([fes_class] (py::list lspaces, py::kwargs kwargs)
                   {
+		    py::list info;
+		    auto flags = CreateFlagsFromKwArgs(fes_class, kwargs, info);
                     Array<shared_ptr<FESpace>> spaces;
                     for (auto fes : lspaces )
                       spaces.Append(py::extract<shared_ptr<FESpace>>(fes)());
@@ -1422,7 +1429,7 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                     return fes;
                     //                              py::cast(*instance).attr("flags") = bpflags;
                   }),
-                  py::arg("spaces"), py::arg("flags") = py::dict(),
+                  py::arg("spaces"),
                   "construct compound-FESpace from list of component spaces"
                   )
     .def(py::init([fes_class] (const string & type, shared_ptr<MeshAccess> ma,
@@ -1743,6 +1750,11 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                                                   attr("__flags_doc__")());
                   flags_doc["nograds"] = "bool = False\n"
                     "  Remove higher order gradients of H1 basis functions from HCurl FESpace";
+		  flags_doc["type1"] = "bool = False\n"
+                    "  Use type 1 Nedelec elements";
+		  flags_doc["discontinuous"] = "bool = False\n"
+                    "  Create discontinuous HCurl space";
+
                   return flags_doc;
                 })
     .def("CreateGradient", [](shared_ptr<HCurlHighOrderFESpace> self) {
@@ -1829,6 +1841,279 @@ kwargs : For a description of the possible kwargs have a look a bit further down
          py::arg("vector"))
     ;
 
+
+  auto h1 = py::class_<H1HighOrderFESpace, shared_ptr<H1HighOrderFESpace>,FESpace>
+    (m, "H1");
+  h1
+    .def(py::init([h1](shared_ptr<MeshAccess> ma, py::kwargs kwargs)
+                  {
+                    py::list info;
+                    info.append(ma);
+                    auto flags = CreateFlagsFromKwArgs(h1, kwargs, info);
+                    auto fes = make_shared<H1HighOrderFESpace>(ma,flags);
+                    fes->Update(glh);
+                    fes->FinalizeUpdate(glh);
+                    return fes;
+                  }),py::arg("mesh"))
+    .def(py::pickle(fesPickle,(shared_ptr<H1HighOrderFESpace>(*)(py::tuple))
+                    fesUnpickle<H1HighOrderFESpace>))
+    .def_static("__flags_doc__", [] ()
+                {
+                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
+                                                  attr("FESpace").
+                                                  attr("__flags_doc__")());
+                  return flags_doc;
+                })
+    ;
+
+  auto vectorh1 = py::class_<VectorH1FESpace, shared_ptr<VectorH1FESpace>,FESpace>
+    (m, "VectorH1");
+  vectorh1
+    .def(py::init([vectorh1](shared_ptr<MeshAccess> ma, py::kwargs kwargs)
+                  {
+                    py::list info;
+                    info.append(ma);
+                    auto flags = CreateFlagsFromKwArgs(vectorh1, kwargs, info);
+                    auto fes = make_shared<VectorH1FESpace>(ma,flags);
+                    fes->Update(glh);
+                    fes->FinalizeUpdate(glh);
+                    return fes;
+                  }),py::arg("mesh"))
+    .def(py::pickle(fesPickle,(shared_ptr<VectorH1FESpace>(*)(py::tuple))
+                    fesUnpickle<VectorH1FESpace>))
+    .def_static("__flags_doc__", [] ()
+                {
+                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
+                                                  attr("FESpace").
+                                                  attr("__flags_doc__")());
+                  return flags_doc;
+                })
+    ;
+
+  auto l2 = py::class_<L2HighOrderFESpace, shared_ptr<L2HighOrderFESpace>,FESpace>
+    (m, "L2");
+  l2
+    .def(py::init([l2](shared_ptr<MeshAccess> ma, py::kwargs kwargs)
+                  {
+                    py::list info;
+                    info.append(ma);
+                    auto flags = CreateFlagsFromKwArgs(l2, kwargs, info);
+                    auto fes = make_shared<L2HighOrderFESpace>(ma,flags);
+                    fes->Update(glh);
+                    fes->FinalizeUpdate(glh);
+                    return fes;
+                  }),py::arg("mesh"))
+    .def(py::pickle(fesPickle,(shared_ptr<L2HighOrderFESpace>(*)(py::tuple))
+                    fesUnpickle<L2HighOrderFESpace>))
+    .def_static("__flags_doc__", [] ()
+                {
+                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
+                                                  attr("FESpace").
+                                                  attr("__flags_doc__")());
+                  return flags_doc;
+                })
+    ;
+
+  auto vectorl2 = py::class_<VectorL2FESpace, shared_ptr<VectorL2FESpace>,FESpace>
+    (m, "VectorL2");
+  vectorl2
+    .def(py::init([vectorl2](shared_ptr<MeshAccess> ma, py::kwargs kwargs)
+                  {
+                    py::list info;
+                    info.append(ma);
+                    auto flags = CreateFlagsFromKwArgs(vectorl2, kwargs, info);
+                    auto fes = make_shared<VectorL2FESpace>(ma,flags);
+                    fes->Update(glh);
+                    fes->FinalizeUpdate(glh);
+                    return fes;
+                  }),py::arg("mesh"))
+    .def(py::pickle(fesPickle,(shared_ptr<VectorL2FESpace>(*)(py::tuple))
+                    fesUnpickle<VectorL2FESpace>))
+    .def_static("__flags_doc__", [] ()
+                {
+                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
+                                                  attr("FESpace").
+                                                  attr("__flags_doc__")());
+                  return flags_doc;
+                })
+    ;
+
+  auto l2surface = py::class_<L2SurfaceHighOrderFESpace, shared_ptr<L2SurfaceHighOrderFESpace>,FESpace>
+    (m, "SurfaceL2");
+  l2surface
+    .def(py::init([l2surface](shared_ptr<MeshAccess> ma, py::kwargs kwargs)
+                  {
+                    py::list info;
+                    info.append(ma);
+                    auto flags = CreateFlagsFromKwArgs(l2surface, kwargs, info);
+                    auto fes = make_shared<L2SurfaceHighOrderFESpace>(ma,flags);
+                    fes->Update(glh);
+                    fes->FinalizeUpdate(glh);
+                    return fes;
+                  }),py::arg("mesh"))
+    .def(py::pickle(fesPickle,(shared_ptr<L2SurfaceHighOrderFESpace>(*)(py::tuple))
+                    fesUnpickle<L2SurfaceHighOrderFESpace>))
+    .def_static("__flags_doc__", [] ()
+                {
+                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
+                                                  attr("FESpace").
+                                                  attr("__flags_doc__")());
+                  return flags_doc;
+                })
+    ;
+
+  auto numberfes = py::class_<NumberFESpace, shared_ptr<NumberFESpace>,FESpace>
+    (m, "NumberSpace");
+  numberfes
+    .def(py::init([numberfes](shared_ptr<MeshAccess> ma, py::kwargs kwargs)
+                  {
+                    py::list info;
+                    info.append(ma);
+                    auto flags = CreateFlagsFromKwArgs(numberfes, kwargs, info);
+                    auto fes = make_shared<NumberFESpace>(ma,flags);
+                    fes->Update(glh);
+                    fes->FinalizeUpdate(glh);
+                    return fes;
+                  }),py::arg("mesh"))
+    .def(py::pickle(fesPickle,(shared_ptr<NumberFESpace>(*)(py::tuple))
+                    fesUnpickle<NumberFESpace>))
+    .def_static("__flags_doc__", [] ()
+                {
+                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
+                                                  attr("FESpace").
+                                                  attr("__flags_doc__")());
+                  return flags_doc;
+                })
+    ;
+
+  auto hdivdiv = py::class_<HDivDivFESpace, shared_ptr<HDivDivFESpace>,FESpace>
+    (m, "HDivDiv");
+  hdivdiv
+    .def(py::init([hdivdiv](shared_ptr<MeshAccess> ma, py::kwargs kwargs)
+                  {
+                    py::list info;
+                    info.append(ma);
+                    auto flags = CreateFlagsFromKwArgs(hdivdiv, kwargs, info);
+                    auto fes = make_shared<HDivDivFESpace>(ma,flags);
+                    fes->Update(glh);
+                    fes->FinalizeUpdate(glh);
+                    return fes;
+                  }),py::arg("mesh"))
+    .def(py::pickle(fesPickle,(shared_ptr<HDivDivFESpace>(*)(py::tuple))
+                    fesUnpickle<HDivDivFESpace>))
+    .def_static("__flags_doc__", [] ()
+                {
+                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
+                                                  attr("FESpace").
+                                                  attr("__flags_doc__")());
+		  flags_doc["discontinuous"] = "bool = False\n"
+                    "  Create discontinuous HDivDiv space";
+		  flags_doc["plus"] = "bool = False\n"
+                    "  Add additional internal element bubble";
+
+                  return flags_doc;
+                })
+    ;
+
+
+  auto hdivdivsurf = py::class_<HDivDivSurfaceSpace, shared_ptr<HDivDivSurfaceSpace>,FESpace>
+    (m, "HDivDivSurface");
+  hdivdivsurf
+    .def(py::init([hdivdivsurf](shared_ptr<MeshAccess> ma, py::kwargs kwargs)
+                  {
+                    py::list info;
+                    info.append(ma);
+                    auto flags = CreateFlagsFromKwArgs(hdivdivsurf, kwargs, info);
+                    auto fes = make_shared<HDivDivSurfaceSpace>(ma,flags);
+                    fes->Update(glh);
+                    fes->FinalizeUpdate(glh);
+                    return fes;
+                  }),py::arg("mesh"))
+    .def(py::pickle(fesPickle,(shared_ptr<HDivDivSurfaceSpace>(*)(py::tuple))
+                    fesUnpickle<HDivDivSurfaceSpace>))
+    .def_static("__flags_doc__", [] ()
+                {
+                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
+                                                  attr("FESpace").
+                                                  attr("__flags_doc__")());
+		  flags_doc["discontinuous"] = "bool = False\n"
+                    "  Create discontinuous HDivDivSurface space";
+                  return flags_doc;
+                })
+    ;
+
+  auto vectorfacet = py::class_<VectorFacetFESpace, shared_ptr<VectorFacetFESpace>,FESpace>
+    (m, "VectorFacet");
+  vectorfacet
+    .def(py::init([vectorfacet](shared_ptr<MeshAccess> ma, py::kwargs kwargs)
+                  {
+                    py::list info;
+                    info.append(ma);
+                    auto flags = CreateFlagsFromKwArgs(vectorfacet, kwargs, info);
+                    auto fes = make_shared<VectorFacetFESpace>(ma,flags);
+                    fes->Update(glh);
+                    fes->FinalizeUpdate(glh);
+                    return fes;
+                  }),py::arg("mesh"))
+    .def(py::pickle(fesPickle,(shared_ptr<VectorFacetFESpace>(*)(py::tuple))
+                    fesUnpickle<VectorFacetFESpace>))
+    .def_static("__flags_doc__", [] ()
+                {
+                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
+                                                  attr("FESpace").
+                                                  attr("__flags_doc__")());
+                  return flags_doc;
+                })
+    ;
+
+  auto facetfes = py::class_<FacetFESpace, shared_ptr<FacetFESpace>,FESpace>
+    (m, "FacetFESpace");
+  facetfes
+    .def(py::init([facetfes](shared_ptr<MeshAccess> ma, py::kwargs kwargs)
+                  {
+                    py::list info;
+                    info.append(ma);
+                    auto flags = CreateFlagsFromKwArgs(facetfes, kwargs, info);
+                    auto fes = make_shared<FacetFESpace>(ma,flags);
+                    fes->Update(glh);
+                    fes->FinalizeUpdate(glh);
+                    return fes;
+                  }),py::arg("mesh"))
+    .def(py::pickle(fesPickle,(shared_ptr<FacetFESpace>(*)(py::tuple))
+                    fesUnpickle<FacetFESpace>))
+    .def_static("__flags_doc__", [] ()
+                {
+                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
+                                                  attr("FESpace").
+                                                  attr("__flags_doc__")());
+                  return flags_doc;
+                })
+    ;
+
+  auto facetsurface = py::class_<FacetSurfaceFESpace, shared_ptr<FacetSurfaceFESpace>,FESpace>
+    (m, "FacetSurface");
+  facetsurface
+    .def(py::init([facetsurface](shared_ptr<MeshAccess> ma, py::kwargs kwargs)
+                  {
+                    py::list info;
+                    info.append(ma);
+                    auto flags = CreateFlagsFromKwArgs(facetsurface, kwargs, info);
+                    auto fes = make_shared<FacetSurfaceFESpace>(ma,flags);
+                    fes->Update(glh);
+                    fes->FinalizeUpdate(glh);
+                    return fes;
+                  }),py::arg("mesh"))
+    .def(py::pickle(fesPickle,(shared_ptr<FacetSurfaceFESpace>(*)(py::tuple))
+                    fesUnpickle<FacetSurfaceFESpace>))
+    .def_static("__flags_doc__", [] ()
+                {
+                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
+                                                  attr("FESpace").
+                                                  attr("__flags_doc__")());
+                  return flags_doc;
+                })
+    ;
+   
   auto hdivsurf = py::class_<HDivHighOrderSurfaceFESpace, shared_ptr<HDivHighOrderSurfaceFESpace>,FESpace>
     (m, "HDivSurface");
   hdivsurf

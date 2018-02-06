@@ -115,6 +115,7 @@ namespace ngcomp
     : FESpace(ama, flags)
   {
     name="FacetFESpace(facet)";
+    type = "facet";
     // defined flags
     DefineNumFlag("relorder");
     DefineDefineFlag("variableorder"); 
@@ -875,7 +876,8 @@ namespace ngcomp
   HybridDGFESpace :: HybridDGFESpace (shared_ptr<MeshAccess> ama, 
                                       const Flags & flags)
     : CompoundFESpace (ama, flags)
-  { 
+  {
+    type = "HDG";
     Flags l2flags(flags), facetflags(flags);
 
     int order = int (flags.GetNumFlag ("order", 1));

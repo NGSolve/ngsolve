@@ -171,6 +171,13 @@ namespace ngcomp
 
   };
 
+
+  class VectorL2FESpace : public CompoundFESpace
+  {
+  public:
+    VectorL2FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags = false);
+  };
+
 }
 
 #endif

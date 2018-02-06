@@ -1,4 +1,5 @@
 #include <comp.hpp>
+#include "numberfespace.hpp"
 
 namespace ngcomp
 {
@@ -59,12 +60,10 @@ namespace ngcomp
 
 
 
-  class NumberFESpace : public FESpace
-  {
-  public:
-    NumberFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags=false)
+  NumberFESpace::NumberFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags)
       : FESpace (ama, flags)
-    { 
+    {
+      type = "number";
       evaluator[VOL] = make_shared<T_DifferentialOperator<NumberDiffOp>>();
       evaluator[BND] = make_shared<T_DifferentialOperator<NumberDiffOp>>();
       evaluator[BBND] = make_shared<T_DifferentialOperator<NumberDiffOp>>();
@@ -73,14 +72,13 @@ namespace ngcomp
       is_atomic_dof = true;
     }
 
-    virtual void Update(LocalHeap & lh) override
+  void NumberFESpace::Update(LocalHeap & lh)
     {
       SetNDof(1);
     }
 
-    // virtual size_t GetNDof() const { return 1; }
-
-    virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override
+  
+  FiniteElement & NumberFESpace::GetFE (ElementId ei, Allocator & lh) const
     {
       if (DefinedOn(ei))
         return *new (lh) NumberFiniteElement(ma->GetElType(ei));
@@ -88,7 +86,7 @@ namespace ngcomp
         return *new (lh) DummyFE<ET_POINT>();
     }
 
-    virtual void GetDofNrs (ElementId ei, Array<int> & dnums) const override
+  void NumberFESpace::GetDofNrs (ElementId ei, Array<int> & dnums) const
     {
       if (DefinedOn(ei))
         {
@@ -99,7 +97,6 @@ namespace ngcomp
         dnums.SetSize(0);
     }
 
-  };
 
 
   static RegisterFESpace<NumberFESpace> init ("number");
