@@ -561,7 +561,7 @@ auto IfPos (AutoDiffDiff<D,SCAL> a, TB b, TC c) -> decltype(IfPos (a.Value(), b,
 }
 
 template <int D, typename SCAL>
-INLINE AutoDiffDiff<D,SCAL> IfPos (SIMD<double> a, AutoDiffDiff<D,SCAL> b, AutoDiffDiff<D,SCAL> c)
+INLINE AutoDiffDiff<D,SCAL> IfPos (SCAL /* SIMD<double> */ a, AutoDiffDiff<D,SCAL> b, AutoDiffDiff<D,SCAL> c)
 {
   AutoDiffDiff<D,SCAL> res;
   res.Value() = IfPos (a, b.Value(), c.Value());
@@ -574,7 +574,7 @@ INLINE AutoDiffDiff<D,SCAL> IfPos (SIMD<double> a, AutoDiffDiff<D,SCAL> b, AutoD
 }
 
 template <int D, typename SCAL, typename TC>
-INLINE AutoDiffDiff<D,SCAL> IfPos (SIMD<double> a, AutoDiffDiff<D,SCAL> b, TC c)
+INLINE AutoDiffDiff<D,SCAL> IfPos (SCAL /* SIMD<double> */ a, AutoDiffDiff<D,SCAL> b, TC c)
 {
   return IfPos (a, b, AutoDiffDiff<D,SCAL> (c));
 }

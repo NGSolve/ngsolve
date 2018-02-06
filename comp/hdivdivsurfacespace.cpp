@@ -281,7 +281,7 @@ namespace ngcomp
       {
         first_face_dof[i] = ndof;
 
-        ma->GetEdgePNums(i, pnums);
+        pnums = ma->GetEdgePNums(i);
 
         switch (pnums.Size())
           {
@@ -327,7 +327,7 @@ namespace ngcomp
 
     if (noncontinuous)
       {
-        cout << "Update before discont" << endl;
+        //cout << "Update before discont" << endl;
         ndof = 0;
         Array<int> pnums;
 			
@@ -359,8 +359,8 @@ namespace ngcomp
           }
         first_element_dof[nel] = ndof;
         first_face_dof = 0;
-        cout << "fed" << first_element_dof << endl;
-        cout << "ffd" << first_face_dof << endl;
+        //cout << "fed" << first_element_dof << endl;
+        //cout << "ffd" << first_face_dof << endl;
 
       }
 
@@ -417,11 +417,16 @@ namespace ngcomp
                 fe = trigfe;
                 break;
               }
-              // case ET_QUAD:
-              // fe = new (lh.Alloc(sizeof(HDivSymQuad))) HDivSymQuad();
-              // break;
-            default:
-              cerr << "element type " << int(ma->GetElType(ei)) << " not there in hdivsymsurf" << endl;
+            case ET_QUAD:
+	      {
+		auto * quadfe = new (lh) HDivDivFE<ET_QUAD> (order, false /* plus */);
+                quadfe->SetVertexNumbers(vnums);
+                quadfe->ComputeNDof();
+                fe = quadfe;
+		break;
+	      }
+	    default:
+              cerr << "element type " << int(ma->GetElType(ei)) << " not there in hdivdivsurf" << endl;
             }
           
           ArrayMem<INT<2>,4> order_ed;

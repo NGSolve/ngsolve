@@ -481,6 +481,7 @@ namespace ngcomp
 
     FacetFE<ET> * fe =  new (alloc) FacetFE<ET> ();
     fe -> SetVertexNumbers (ngel.Vertices());
+    fe -> SetOrder(0);
     if (ET_trait<ET>::DIM >= 2)
       for (int i = 0; i < ET_trait<ET>::N_FACET; i++)
         fe -> SetOrder (i, order_facet[ngel.Facets()[i]][0]);
