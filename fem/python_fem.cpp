@@ -566,7 +566,11 @@ val : can be one of the following:
     .def_property("dims",
                   [] (shared_ptr<CF> self) { return Array<int>(self->Dimensions()); } ,
                   [] (shared_ptr<CF> self, py::tuple tup) { self->SetDimensions(makeCArray<int>(tup)); } ,
-                  "shape of CF:  (dim) for vector, (h,w) for matrix")    
+                  "shape of CF:  (dim) for vector, (h,w) for matrix")
+    
+    .def_property_readonly("is_complex",
+                           [] (CF &  self) { return self.IsComplex(); },
+                           "is CoefficientFunction complex-valued ?")
     
     .def("__getitem__",  [](shared_ptr<CF> self, int comp)
                                          {
