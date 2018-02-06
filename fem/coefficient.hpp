@@ -1060,6 +1060,11 @@ public:
     this->SetDimensions (c1->Dimensions());
   }
 
+  virtual string GetDescription () const override
+  {
+    return string("unary operation '")+name+"'";
+  }
+  
   /*
   virtual bool IsComplex() const override
   {
