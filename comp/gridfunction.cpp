@@ -1264,8 +1264,9 @@ namespace ngcomp
 
 
   void GridFunctionCoefficientFunction :: 
-  Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
+  Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<double> hvalues) const
   {
+    auto values = hvalues.AddSize(ir.Size(), Dimension());
     if (gf -> GetLevelUpdated() < gf->GetMeshAccess()->GetNLevels())
       {
         values = 0.0;

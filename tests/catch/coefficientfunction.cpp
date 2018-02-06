@@ -73,9 +73,18 @@ void TestCoefficientFunction(shared_ptr<CoefficientFunction> cf,
   // FlatMatrix<AutoDiff<1,SIMD<double>>> simd_ad(cf->Dimension(), simd_ir.Size(), (AutoDiff<1,SIMD<double>>*)(void*)mem.Addr(0));
   Matrix<> c_vals(ir.Size(), cf->Dimension());
   Matrix<> derivs(ir.Size(), cf->Dimension());
-  cf->EvaluateDeriv(mir,vals,derivs);
+  Matrix<AutoDiff<1>> dvals(ir.Size(), cf->Dimension());
+  // cf->EvaluateDeriv(mir,vals,derivs);
+  cf->Evaluate(mir, dvals);
+  for (size_t i = 0; i < dvals.Height(); i++)
+    for (size_t j = 0; j < dvals.Width(); j++)
+      {
+        vals(i,j) = dvals(i,j).Value();
+        derivs(i,j) = dvals(i,j).DValue(0);
+      }
+  
   AMatrix<> simd_derivs(cf->Dimension(),simd_ir.GetNIP());
-  Matrix<> c_derivs(ir.Size(), cf->Dimension());
+  Matrix<> c_derivs(ir.Size(), cf->Dimension());  
 
   SECTION ("Evaluate")
     {
@@ -130,7 +139,15 @@ void TestCoefficientFunction(shared_ptr<CoefficientFunction> cf,
         {
           c_vals = 0;
           c_derivs = 0;
-          c_cf_f->EvaluateDeriv(mir,c_vals, c_derivs);
+          // c_cf_f->EvaluateDeriv(mir,c_vals, c_derivs);
+          c_cf_f->Evaluate(mir, dvals);
+          for (size_t i = 0; i < dvals.Height(); i++)
+            for (size_t j = 0; j < dvals.Width(); j++)
+              {
+                c_vals(i,j) = dvals(i,j).Value();
+                c_derivs(i,j) = dvals(i,j).DValue(0);
+              }
+          
           CHECK(L2Norm(vals-c_vals) < tolerance);
           CHECK(L2Norm(derivs-c_derivs) < tolerance);
         }
@@ -139,7 +156,15 @@ void TestCoefficientFunction(shared_ptr<CoefficientFunction> cf,
         {
           c_vals = 0;
           c_derivs = 0;
-          c_cf_t->EvaluateDeriv(mir,c_vals, c_derivs);
+          // c_cf_t->EvaluateDeriv(mir,c_vals, c_derivs);
+          c_cf_t->Evaluate(mir, dvals);
+          for (size_t i = 0; i < dvals.Height(); i++)
+            for (size_t j = 0; j < dvals.Width(); j++)
+              {
+                c_vals(i,j) = dvals(i,j).Value();
+                c_derivs(i,j) = dvals(i,j).DValue(0);
+              }
+          
           CHECK(L2Norm(vals-c_vals) < tolerance);
           CHECK(L2Norm(derivs-c_derivs) < tolerance);
         }

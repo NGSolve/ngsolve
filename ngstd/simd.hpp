@@ -581,6 +581,7 @@ namespace ngstd
   INLINE SIMD<double,N> Trans (SIMD<double,N> a) { return a; }
 
 
+  INLINE double IfPos (double a, double b, double c) { return a>0 ? b : c; }
   
 #ifdef __SSE__
 
