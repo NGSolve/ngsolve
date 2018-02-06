@@ -4518,11 +4518,11 @@ class IfPosCoefficientFunction : public T_CoefficientFunction<IfPosCoefficientFu
       size_t dim = Dimension();
       
       STACK_ARRAY(T, hmem1, np);
-      FlatMatrix<T,ORD> if_values(np, 1, hmem1);
+      FlatMatrix<T,ORD> if_values(1, np, hmem1);
       STACK_ARRAY(T, hmem2, np*dim);
-      FlatMatrix<T,ORD> then_values(np, dim, hmem2);
+      FlatMatrix<T,ORD> then_values(dim, np, hmem2);
       STACK_ARRAY(T, hmem3, np*dim);
-      FlatMatrix<T,ORD> else_values(np, dim, hmem3);
+      FlatMatrix<T,ORD> else_values(dim, np, hmem3);
       
       cf_if->Evaluate (ir, if_values);
       cf_then->Evaluate (ir, then_values);
