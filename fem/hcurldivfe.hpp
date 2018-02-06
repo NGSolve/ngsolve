@@ -199,26 +199,37 @@ namespace ngfem
         Mat<DIM> inv_jac = mip.GetJacobianInverse();        
 	Mat<DIM> hesse_FinvT[3], F_HFinvT_Finv[3];
 		
-	double eps = 1e-6;
+	double eps = 1e-4;
 		
-	Mat<DIM> jacrinv, jaclinv;
+	Mat<DIM> jacrinv, jaclinv,jacrrinv, jacllinv;
 	for (int dir = 0; dir < DIM; dir++)
 	  {
 	    IntegrationPoint ipr = mip.IP();
 	    IntegrationPoint ipl = mip.IP();
+	    IntegrationPoint iprr = mip.IP();
+	    IntegrationPoint ipll = mip.IP();
+	    
 	    ipr(dir) += eps;
 	    ipl(dir) -= eps;
+	    iprr(dir) += 2*eps;
+	    ipll(dir) -= 2*eps;
 	    
 	    MappedIntegrationPoint<DIM,DIM> mipr(ipr, mip.GetTransformation());
 	    MappedIntegrationPoint<DIM,DIM> mipl(ipl, mip.GetTransformation());
+	    MappedIntegrationPoint<DIM,DIM> miprr(iprr, mip.GetTransformation());
+	    MappedIntegrationPoint<DIM,DIM> mipll(ipll, mip.GetTransformation());
+	    
 	    jacrinv = Trans(mipr.GetJacobianInverse());    
 	    jaclinv = Trans(mipl.GetJacobianInverse());
+
+	    jacrrinv = Trans(miprr.GetJacobianInverse());    
+	    jacllinv = Trans(mipll.GetJacobianInverse());
 	    
 	    for (int j = 0; j < DIM; j++)
 	      {
-		hesse_FinvT[0](j,dir) = (jacrinv(0,j) - jaclinv(0,j) ) / (2*eps);
-		hesse_FinvT[1](j,dir) = (jacrinv(1,j) - jaclinv(1,j) ) / (2*eps);
-		hesse_FinvT[2](j,dir) = (jacrinv(2,j) - jaclinv(2,j) ) / (2*eps);
+		hesse_FinvT[0](j,dir) = (8.0*jacrinv(0,j) - 8.0*jaclinv(0,j) - jacrrinv(0,j) + jacllinv(0,j) ) / (12.0*eps);
+		hesse_FinvT[1](j,dir) = (8.0*jacrinv(1,j) - 8.0*jaclinv(1,j) - jacrrinv(1,j) + jacllinv(1,j) ) / (12.0*eps);
+		hesse_FinvT[2](j,dir) = (8.0*jacrinv(2,j) - 8.0*jaclinv(2,j) - jacrrinv(2,j) + jacllinv(2,j) ) / (12.0*eps);
 
 	      }
 	  }
