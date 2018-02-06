@@ -20,44 +20,44 @@ def Neumann (coef):
 
 
 
-def H1(mesh, **args):
-    """
-    Create H1 finite element space.
-    documentation of arguments is available in FESpace.
-    """
-    fes = FESpace("h1ho", mesh, **args)
-    return fes
+#def H1(mesh, **args):
+#    """
+#    Create H1 finite element space.
+#    documentation of arguments is available in FESpace.
+#    """
+#    fes = FESpace("h1ho", mesh, **args)
+#    return fes
 
 
-def VectorH1(mesh, **args):
-    """ Create vector-valued H1 finite element space. """
-    fes = FESpace("VectorH1", mesh, **args)
-    return fes
+#def VectorH1(mesh, **args):
+#    """ Create vector-valued H1 finite element space. """
+#    fes = FESpace("VectorH1", mesh, **args)
+#    return fes
 
-def L2(mesh, **args):
-    """ Create L2 finite element space. """
-    return FESpace("l2ho", mesh, **args)
+#def L2(mesh, **args):
+#    """ Create L2 finite element space. """
+#    return FESpace("l2ho", mesh, **args)
 
-def VectorL2(mesh, **args):
-    """ Create vector-valued L2 finite element space. """
-    fes = FESpace("VectorL2", mesh, **args)
-    return fes
+#def VectorL2(mesh, **args):
+#    """ Create vector-valued L2 finite element space. """
+#    fes = FESpace("VectorL2", mesh, **args)
+#    return fes
 
-def SurfaceL2(mesh, **args):
-    """ Create L2(boundary) finite element space. """
-    return FESpace("l2surf", mesh, **args)
+#def SurfaceL2(mesh, **args):
+#    """ Create L2(boundary) finite element space. """
+#    return FESpace("l2surf", mesh, **args)
 
-def FacetFESpace(mesh, **args):
-    """ Create Facet finite element space. """
-    return FESpace("facet", mesh, **args)
+#def FacetFESpace(mesh, **args):
+#    """ Create Facet finite element space. """
+#    return FESpace("facet", mesh, **args)
 
-def HDivDiv(mesh, **args):
-    """ Create H(div-div) finite element space. """
-    return FESpace("hdivdiv", mesh, **args)
+#def HDivDiv(mesh, **args):
+#    """ Create H(div-div) finite element space. """
+#    return FESpace("hdivdiv", mesh, **args)
 
-def NumberSpace(mesh, **args):
-    """ Create space of real or complex numbers. """
-    return FESpace("number", mesh, **args)
+#def NumberSpace(mesh, **args):
+#    """ Create space of real or complex numbers. """
+#    return FESpace("number", mesh, **args)
 
 
 def grad(func):
@@ -142,7 +142,7 @@ def Skew(m):
 
 def OuterProduct(a, b):
     return CoefficientFunction( tuple([a[i]*b[j] for i in range(a.dim) for j in range(b.dim)]), dims=(a.dim,b.dim) )
-
-__all__ = ['x', 'y', 'z', 'Laplace', 'Mass', 'Source', 'Neumann', 'H1', 'VectorH1', 'FacetFESpace', 'L2', 'VectorL2', 'SurfaceL2', 'HDivDiv', 'NumberSpace', 'grad', 'curl', 'div','Mesh', 'ConstantCF', 'DomainConstantCF', 'Id', 'Trace', 'Det', 'Cross', 'Cof', 'Inv', 'Sym', 'Skew', 'OuterProduct']
+## 'L2','H1', 'HDivDiv', 'FacetFESpace', 'VectorL2', 'SurfaceL2', 'NumberSpace', 'VectorH1'
+__all__ = ['x', 'y', 'z', 'Laplace', 'Mass', 'Source', 'Neumann', 'grad', 'curl', 'div','Mesh', 'ConstantCF', 'DomainConstantCF', 'Id', 'Trace', 'Det', 'Cross', 'Cof', 'Inv', 'Sym', 'Skew', 'OuterProduct']
 
 

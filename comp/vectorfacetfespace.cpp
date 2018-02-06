@@ -17,6 +17,7 @@ namespace ngcomp
 					    bool parseflags )
     : FESpace(ama, flags )
   {
+    type = "vectorfacet";
     name = "VectorFESpace";
     DefineNumFlag("relorder");
     DefineDefineFlag("variableorder");
