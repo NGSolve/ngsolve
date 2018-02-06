@@ -170,6 +170,8 @@ namespace ngbla
     INLINE auto Height () const { return h; }
     /// the width
     INLINE auto Width () const { return w; }
+    /// 
+    INLINE auto Dist () const { return w; }
 
     INLINE const FlatVector<T> Row (TIND i) const
     {
@@ -349,6 +351,7 @@ namespace ngbla
     /// the width
     INLINE size_t Width () const { return w; }
 
+    INLINE size_t Dist () const { return h; }
 
     INLINE const FlatVector<T> Col (size_t i) const
     {
@@ -1620,7 +1623,7 @@ namespace ngbla
     INLINE BareSliceMatrix(const BareSliceMatrix &) = default;
 
     BareSliceMatrix (const FlatMatrix<T> & mat)
-      : DummySize(mat.Height(), mat.Width()), dist(mat.Width()), data(&mat(0,0))
+      : DummySize(mat.Height(), mat.Width()), dist(mat.Dist()), data(&mat(0,0))
     { ; }
 
     BareSliceMatrix (const SliceMatrix<T> & mat)
@@ -1715,6 +1718,106 @@ namespace ngbla
       return BareSliceMatrix<T> (dist*adist, data+first*dist, DummySize( (Height()-first)/adist, Width()));
     }
     
+  };
+
+
+
+
+  template <typename T> 
+  class BareSliceMatrix<T,ColMajor> : public CMCPMatExpr<BareSliceMatrix<T,ColMajor>>, DummySize
+  {
+  protected:
+    /// the distance
+    size_t dist;
+    /// the data
+    T * __restrict data;
+  public:
+
+    /// element type
+    typedef T TELEM;
+    /// scalar type of elements (double or Complex)
+    typedef typename mat_traits<T>::TSCAL TSCAL;
+    enum { IS_LINEAR = 0 };
+
+    // 
+    BareSliceMatrix() : DummySize(0,0) { ; } // initialize with placement new later
+    INLINE BareSliceMatrix(const BareSliceMatrix &) = default;
+
+    BareSliceMatrix (const FlatMatrix<T,ColMajor> & mat)
+      : DummySize(mat.Height(), mat.Width()), dist(mat.Dist()), data(&mat(0,0))
+    { ; }
+
+    BareSliceMatrix (const SliceMatrix<T,ColMajor> & mat)
+      : DummySize(mat.Height(), mat.Width()), dist(mat.Dist()), data(&mat(0,0))
+    { ; }
+
+    
+    BareSliceMatrix (size_t adist, T * adata, DummySize ds) : DummySize(ds), dist(adist), data(adata) { ; } 
+    
+    BareSliceMatrix & operator= (const BareSliceMatrix & m) = delete;
+
+    /// access operator
+    INLINE TELEM & operator() (size_t i, size_t j) const
+    {
+      return data[j*dist+i]; 
+    }
+    /// access operator
+    INLINE TELEM & operator() (size_t i) const
+    {
+      return data[i]; 
+    }
+
+    using DummySize::Height;
+    using DummySize::Width;
+    
+    /// 
+    INLINE size_t Dist () const throw() { return dist; }
+
+    SliceMatrix<T,ColMajor> AddSize (size_t h, size_t w) const
+    { return SliceMatrix<T,ColMajor> (h, w, dist, data); } 
+    
+    INLINE const BareSliceMatrix Rows (size_t first, size_t next) const
+    {
+      return BareSliceMatrix (dist, data+first, DummySize(next-first, Width()));
+    }
+
+    INLINE const BareVector<T> Col (size_t i)
+    {
+      return FlatVector<T> (Height(), data+i*dist);
+    }
+    
+    INLINE const BareSliceVector<T> Row (size_t i) const
+    {
+      return SliceVector<T> (Width(), dist, data+i);
+    }
+
+    INLINE const BareSliceMatrix Cols (size_t first, size_t next) const
+    {
+      return BareSliceMatrix (dist, data+dist*first, DummySize(Height(), next-first));
+    }
+
+    INLINE const BareSliceMatrix Rows (IntRange range) const
+    {
+      return Rows (range.First(), range.Next());
+    }
+
+    INLINE const BareSliceMatrix<T> Cols (IntRange range) const
+    {
+      return Cols (range.First(), range.Next());
+    }
+    /*
+    INLINE const SliceVector<T> Diag () const
+    {
+      return SliceVector<T> (h, dist+1, &data[0]);
+    }
+    */
+    /*
+      // a double-slice matrix ???
+    BareSliceMatrix<T> RowSlice(size_t first, size_t adist) const
+    {
+      return BareSliceMatrix<T> (dist*adist, data+first*dist, DummySize( (Height()-first)/adist, Width()));
+    }
+    */
   };
 
 
@@ -1865,7 +1968,20 @@ namespace ngbla
     return SliceMatrix<Complex,ColMajor> (mat.Width(), mat.Height(), mat.Dist(), &mat(0,0));
   }
 
+  
+  // only for scalar types
+  // no Mat - entries which would also transposition of the small blocks
+  template <typename T>
+  INLINE const BareSliceMatrix<T,ColMajor> Trans (BareSliceMatrix<T,RowMajor> mat)
+  {
+    return SliceMatrix<T,ColMajor> (mat.Width(), mat.Height(), mat.Dist(), &mat(0,0));
+  }
 
+  template <typename T>
+  INLINE const BareSliceMatrix<T,RowMajor> Trans (BareSliceMatrix<T,ColMajor> mat)
+  {
+    return SliceMatrix<T,RowMajor> (mat.Width(), mat.Height(), mat.Dist(), &mat(0,0));
+  }
 
 
   

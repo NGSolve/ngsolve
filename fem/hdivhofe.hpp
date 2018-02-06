@@ -75,28 +75,17 @@ namespace ngfem
       for (size_t i = 0; i < mir.Size(); i++)
         {
           auto & mip = mir[i];
-          auto nv = mip.GetNV();
-          /*
-          SIMD<double> sum = 0.0;
-          for (size_t j = 0; j < DIM+1; j++)
-            sum += nv[j] * values(j,i);
-          SIMD<double> val = sum / mip.GetJacobiDet();
 
-          TIP<DIM,SIMD<double>> tip = mip.IP().template TIp<DIM>();
-          static_cast<const FEL*> (this) ->
-            T_CalcShape (tip, SBLambda([&] (int nr, SIMD<double> shape)
-                                       {
-                                         coefs(nr) += HSum(shape*val);
-                                       }));
-          */
           SIMD<double> sum(0.0);
           TIP<DIM,SIMD<double>> tip = mip.IP().template TIp<DIM>();
           static_cast<const FEL*> (this) ->
-            T_CalcShape (tip, SBLambda([&] (int nr, SIMD<double> shape)
+            T_CalcShape (tip, SBLambda([&sum, coefs] (size_t nr, SIMD<double> shape)
                                        {
                                          sum += coefs(nr) * shape;
                                        }));
+
           sum /= mip.GetJacobiDet();
+          auto nv = mip.GetNV();
           for (size_t j = 0; j < DIM+1; j++)
             values(j,i) = nv[j] * sum;
         }
@@ -120,7 +109,7 @@ namespace ngfem
 
           TIP<DIM,SIMD<double>> tip = mip.IP().template TIp<DIM>();
           static_cast<const FEL*> (this) ->
-            T_CalcShape (tip, SBLambda([&] (int nr, SIMD<double> shape)
+            T_CalcShape (tip, SBLambda([val,coefs] (size_t nr, SIMD<double> shape)
                                        {
                                          coefs(nr) += HSum(shape*val);
                                        }));
@@ -392,42 +381,6 @@ namespace ngfem
                                   SliceVector<> nshape) const;
 
   };
-
-
-  
-  // still to be changed ....
-
-#ifdef HDIVHEX
-  template<> 
-  class HDivHighOrderFE<ET_HEX> : 
-    public HDivHighOrderFiniteElement<3>
-  {
-  public:
-    HDivHighOrderFE () { ; }
-    HDivHighOrderFE (int aorder);
-
-
-
-    virtual void ComputeNDof();
-    virtual ELEMENT_TYPE ElementType() const { return ET_HEX; }
-
-    // virtual void GetInternalDofs (Array<int> & idofs) const;
-  
-
-    /// compute shape
-    virtual void CalcShape (const IntegrationPoint & ip,
-                            SliceMatrix<> shape) const;
-
-    /// compute Div of shape
-    virtual void CalcDivShape (const IntegrationPoint & ip,
-                               SliceVector<> shape) const;
-    /// compute Div numerical diff
-    //void CalcNumDivShape( const IntegrationPoint & ip,
-    //			FlatVector<> divshape) const;
-    virtual void GetFacetDofs(int i, Array<int> & dnums) const; 
-
-  };
-#endif
 
 }
 

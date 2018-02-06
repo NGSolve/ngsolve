@@ -24,7 +24,8 @@ namespace ngstd
                                 _mm256_set_epi64x(1, 1, 0, 0));
 
 #elif defined(__SSE__)
-    return int(nr) > 0;
+    return _mm_cmpgt_epi32(_mm_set1_epi32(nr),
+                           _mm_set_epi32(0, 0, 0, 0));
 #else
     return false;
 #endif
@@ -49,14 +50,17 @@ namespace ngstd
     SIMD<double> & imag() { return im; }
 
 
-    void Load (Complex * p)
+    // Numbers in SIMD structure are not necessarily in same order as in memory
+    // for instance:
+    // [x0,y0,x1,y1,x2,y2,x3,y3] -> [x0,x2,x1,x3,y0,y2,y1,y3]
+    void LoadFast (Complex * p)
     {
       SIMD<double> c1((double*)p);
       SIMD<double> c2((double*)(p+SIMD<double>::Size()/2));
       tie(re,im) = Unpack(c1,c2);
     }
 
-    void Store (Complex * p)
+    void StoreFast (Complex * p)
     {
       SIMD<double> h1, h2;
       tie(h1,h2) = Unpack(re,im);
@@ -64,14 +68,14 @@ namespace ngstd
       h2.Store((double*)(p+SIMD<double>::Size()/2));
     }
 
-    void Load (Complex * p, int nr)
+    void LoadFast (Complex * p, int nr)
     {
       SIMD<double> c1((double*)p, Mask128(nr));
       SIMD<double> c2((double*)(p+SIMD<double>::Size()/2), Mask128(nr-SIMD<double>::Size()/2));
       tie(re,im) = Unpack(c1,c2);
     }
 
-    void Store (Complex * p, int nr)
+    void StoreFast (Complex * p, int nr)
     {
       SIMD<double> h1, h2;
       tie(h1,h2) = Unpack(re,im);
@@ -139,9 +143,9 @@ namespace ngstd
   SIMD<Complex> SIMDComplexWrapper (SIMD<Complex> x, FUNC f)
   {
     Complex hx[SIMD<double>::Size()];
-    x.Store(hx);
+    x.StoreFast(hx);
     for (auto & hxi : hx) hxi = f(hxi);
-    x.Load(hx);
+    x.LoadFast(hx);
     return x;
   }
 

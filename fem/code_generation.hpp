@@ -175,6 +175,9 @@ namespace ngfem
   }
 
   unique_ptr<SharedLibrary> CompileCode(const std::vector<string> &codes, const std::vector<string> &libraries );
-
+  namespace detail {
+      string GenerateL2ElementCode(int order);
+  }
+  using detail::GenerateL2ElementCode;
 }
 #endif // FILE_NGS_CODE_GENERATION___

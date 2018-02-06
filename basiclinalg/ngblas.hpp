@@ -68,12 +68,12 @@ namespace ngbla
 
 
   // for Cholesky and SparseCholesky
-  extern 
+  extern NGS_DLL_HEADER
   void SubAtDB (SliceMatrix<double> a,
                 SliceVector<double> diag,
                 SliceMatrix<double> b, SliceMatrix<double> c);
 
-  extern 
+  extern NGS_DLL_HEADER
   void SubAtDB (SliceMatrix<Complex> a,
                 SliceVector<Complex> diag,
                 SliceMatrix<Complex> b, SliceMatrix<Complex> c);

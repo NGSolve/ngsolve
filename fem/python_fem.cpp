@@ -566,7 +566,11 @@ val : can be one of the following:
     .def_property("dims",
                   [] (shared_ptr<CF> self) { return Array<int>(self->Dimensions()); } ,
                   [] (shared_ptr<CF> self, py::tuple tup) { self->SetDimensions(makeCArray<int>(tup)); } ,
-                  "shape of CF:  (dim) for vector, (h,w) for matrix")    
+                  "shape of CF:  (dim) for vector, (h,w) for matrix")
+    
+    .def_property_readonly("is_complex",
+                           [] (CF &  self) { return self.IsComplex(); },
+                           "is CoefficientFunction complex-valued ?")
     
     .def("__getitem__",  [](shared_ptr<CF> self, int comp)
                                          {
@@ -666,7 +670,8 @@ val : can be one of the following:
     .def("Norm",  [](shared_ptr<CF> x) { return NormCF(x); })
     
     .def ("Other",
-          [](shared_ptr<CF> x) { return MakeOtherCoefficientFunction(x); },
+          [](shared_ptr<CF> x)
+          { return MakeOtherCoefficientFunction(x); },
           "evaluate on other element, as needed for DG jumps")
     
     // it's using the complex functions anyway ...
@@ -1523,7 +1528,7 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
            py::arg("rad")=1,py::arg("alpha")=1);
     
                            
-                           
+  m.def("GenerateL2ElementCode", &GenerateL2ElementCode);
 
 }
 

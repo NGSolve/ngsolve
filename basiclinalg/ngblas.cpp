@@ -1111,30 +1111,30 @@ namespace ngbla
         for ( ; j+4*WS <= w; j+=4*WS)
           {
             SIMD<Complex> val1, val2, val3, val4;
-            val1.Load(ps+j);
-            val2.Load(ps+j+WS);
-            val3.Load(ps+j+2*WS);
-            val4.Load(ps+j+3*WS);
+            val1.LoadFast(ps+j);
+            val2.LoadFast(ps+j+WS);
+            val3.LoadFast(ps+j+2*WS);
+            val4.LoadFast(ps+j+3*WS);
             val1 = val1 * scale;
             val2 = val2 * scale;
             val3 = val3 * scale;
             val4 = val4 * scale;
-            val1.Store(pd+j);
-            val2.Store(pd+j+WS);
-            val3.Store(pd+j+2*WS);
-            val4.Store(pd+j+3*WS);
+            val1.StoreFast(pd+j);
+            val2.StoreFast(pd+j+WS);
+            val3.StoreFast(pd+j+2*WS);
+            val4.StoreFast(pd+j+3*WS);
           }
         for ( ; j+WS <= w; j+=WS)
           {
             SIMD<Complex> val;
-            val.Load(ps+j);
+            val.LoadFast(ps+j);
             val = val * scale;
-            val.Store(pd+j);
+            val.StoreFast(pd+j);
           }
         SIMD<Complex> val;
-        val.Load(ps+j, w-j);
+        val.LoadFast(ps+j, w-j);
         val = val * scale;
-        val.Store(pd+j, w-j);
+        val.StoreFast(pd+j, w-j);
       }
   }  
 
@@ -1149,23 +1149,23 @@ namespace ngbla
                            size_t ninner)
   {
     SIMD<Complex> sum1, sum2, sum3, sum4;
-    sum1.Load (pc);
-    sum2.Load (pc+dc);
-    sum3.Load (pc+2*dc);
-    sum4.Load (pc+3*dc);
+    sum1.LoadFast (pc);
+    sum2.LoadFast (pc+dc);
+    sum3.LoadFast (pc+2*dc);
+    sum4.LoadFast (pc+3*dc);
     for (size_t i = 0; i < ninner; i++, pa += da, pb += db)
       {
         SIMD<Complex> b1;
-        b1.Load(pb);
+        b1.LoadFast(pb);
         sum1 = sum1 - SIMD<Complex> (pa[0]) * b1;
         sum2 = sum2 - SIMD<Complex> (pa[1]) * b1;
         sum3 = sum3 - SIMD<Complex> (pa[2]) * b1;
         sum4 = sum4 - SIMD<Complex> (pa[3]) * b1;
       }
-    sum1.Store(pc);
-    sum2.Store(pc+dc);
-    sum3.Store(pc+2*dc);
-    sum4.Store(pc+3*dc);
+    sum1.StoreFast(pc);
+    sum2.StoreFast(pc+dc);
+    sum3.StoreFast(pc+2*dc);
+    sum4.StoreFast(pc+3*dc);
   }
 
   void KernelScal4x4Trans (Complex * pa, size_t da,
@@ -1174,23 +1174,23 @@ namespace ngbla
                            size_t ninner, int mask)
   {
     SIMD<Complex> sum1, sum2, sum3, sum4;
-    sum1.Load (pc, mask);
-    sum2.Load (pc+dc, mask);
-    sum3.Load (pc+2*dc, mask);
-    sum4.Load (pc+3*dc, mask);
+    sum1.LoadFast (pc, mask);
+    sum2.LoadFast (pc+dc, mask);
+    sum3.LoadFast (pc+2*dc, mask);
+    sum4.LoadFast (pc+3*dc, mask);
     for (size_t i = 0; i < ninner; i++, pa += da, pb += db)
       {
         SIMD<Complex> b1;
-        b1.Load(pb, mask);
+        b1.LoadFast(pb, mask);
         sum1 = sum1 - SIMD<Complex> (pa[0]) * b1;
         sum2 = sum2 - SIMD<Complex> (pa[1]) * b1;
         sum3 = sum3 - SIMD<Complex> (pa[2]) * b1;
         sum4 = sum4 - SIMD<Complex> (pa[3]) * b1;
       }
-    sum1.Store(pc, mask);
-    sum2.Store(pc+dc, mask);
-    sum3.Store(pc+2*dc, mask);
-    sum4.Store(pc+3*dc, mask);
+    sum1.StoreFast(pc, mask);
+    sum2.StoreFast(pc+dc, mask);
+    sum3.StoreFast(pc+2*dc, mask);
+    sum4.StoreFast(pc+3*dc, mask);
   }
   
 
@@ -1201,14 +1201,14 @@ namespace ngbla
                            size_t ninner)
   {
     SIMD<Complex> sum1;
-    sum1.Load (pc);
+    sum1.LoadFast (pc);
     for (size_t i = 0; i < ninner; i++, pa += da, pb += db)
       {
         SIMD<Complex> b1;
-        b1.Load(pb);
+        b1.LoadFast(pb);
         sum1 = sum1 - SIMD<Complex> (*pa) * b1;
       }
-    sum1.Store(pc);
+    sum1.StoreFast(pc);
   }
   
   void KernelScal1x4Trans (Complex * pa, size_t da,
@@ -1217,14 +1217,14 @@ namespace ngbla
                            size_t ninner, int mask)
   {
     SIMD<Complex> sum1;
-    sum1.Load (pc, mask);
+    sum1.LoadFast (pc, mask);
     for (size_t i = 0; i < ninner; i++, pa += da, pb += db)
       {
         SIMD<Complex> b1;
-        b1.Load(pb, mask);
+        b1.LoadFast(pb, mask);
         sum1 = sum1 - SIMD<Complex> (*pa) * b1;
       }
-    sum1.Store(pc, mask);
+    sum1.StoreFast(pc, mask);
   }
   
   void MySubAtDB_BB (
