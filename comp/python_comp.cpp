@@ -1533,6 +1533,11 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                                 defonlist.Append(i+1);
                             flags->SetFlag("definedonbound", defonlist);
                           }
+                      }),
+                     py::arg("order_policy") = py::cpp_function
+                     ([] (ORDER_POLICY op, Flags* flags, py::list info)
+                      {
+                        flags->SetFlag("order_policy", int(op));
                       })
                      );
                      return special;
