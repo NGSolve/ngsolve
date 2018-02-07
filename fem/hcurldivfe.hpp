@@ -275,9 +275,82 @@ namespace ngfem
         }));	
       }
       else
-	{
-	  throw Exception("not implemented on curved elements");
-	}
+	{	
+        Mat<DIM> jac = mip.GetJacobian();
+        Mat<DIM> inv_jac = mip.GetJacobianInverse();        
+	Mat<DIM> curl_FT[2], F_curlFT_Finv[2];
+	Vec<DIM> curl_Jinv;
+		
+	double eps = 1e-6;
+	
+	Mat<DIM> jacr, jacl;
+	for (int dir = 0; dir < DIM; dir++)
+	  {
+	    IntegrationPoint ipr = mip.IP();
+	    IntegrationPoint ipl = mip.IP();
+    
+	    ipr(dir) += eps;
+	    ipl(dir) -= eps;    	    
+
+	    mip.GetTransformation().CalcJacobian(ipr, jacr);
+	    mip.GetTransformation().CalcJacobian(ipl, jacl);
+	    
+	    jacr = Trans(jacr);
+	    jacl = Trans(jacl);
+
+	    for (int j = 0; j < DIM; j++)
+	     {	       
+	       curl_FT[0](DIM-1-dir,j) = pow(-1.0,dir) * (jacr(j,0) - jacl(j,0)) / (2.0*eps);
+	       curl_FT[1](DIM-1-dir,j) = pow(-1.0,dir)  * (jacr(j,1) - jacl(j,1)) / (2.0*eps);	      
+	     }
+	  }
+
+	F_curlFT_Finv[0] = jac * curl_FT[0] * inv_jac;
+	F_curlFT_Finv[1] = jac * curl_FT[1] * inv_jac;
+	
+	Mat<DIM> hesse[3];
+        mip.CalcHesse (hesse[0],hesse[1],hesse[2]);
+	
+	Mat<DIM,DIM,AutoDiff<DIM> > f_tilde;
+	for(int i = 0; i < DIM; i++)
+        {
+          for(int j = 0; j < DIM; j++)
+          {
+            f_tilde(i,j).Value() = jac(i,j);
+            for(int k = 0; k < DIM; k++)
+              f_tilde(i,j).DValue(k) = hesse[i](j,k);
+          }
+        }
+	
+	AutoDiff<DIM> ad_det = Det (f_tilde);
+        AutoDiff<DIM> iad_det = 1.0 / ad_det;	
+	curl_Jinv(0) = -iad_det.DValue(1);
+	curl_Jinv(1) = iad_det.DValue(0);
+	
+	Vec<DIM> curl_Jinv_FT;
+	curl_Jinv_FT(0) = curl_Jinv(0) * Trans(jac)(0,0) + curl_Jinv(1) * Trans(jac)(1,0);
+	curl_Jinv_FT(1) = curl_Jinv(0) * Trans(jac)(0,1) + curl_Jinv(1) * Trans(jac)(1,1);
+
+        Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM>> (addp),SBLambda([&](int nr,auto val)
+                                  {
+                                    shape.Row(nr).AddSize(DIM) = val.CurlShape();
+                                    BareVector<double> curlshape = shape.Row(nr);				    
+                                    Vec<DIM*DIM> matshape = val.Shape();				    				    
+                                    for(int k=0; k<DIM; k++)
+                                    {
+                                      for(int j=0; j<DIM*DIM; j++)
+				      {
+					curlshape(k) += 1.0/mip.GetJacobiDet() * F_curlFT_Finv[k](j) * matshape(j);
+                                      }
+				      for(int j=0; j<DIM; j++)
+				      {
+					curlshape(k) += curl_Jinv_FT(j) * matshape(k+j*DIM);
+				      }
+                                    }
+                                    
+                                  }));
+	
+      }
     }
 
   };
