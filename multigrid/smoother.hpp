@@ -17,7 +17,7 @@ namespace ngmg
   class NGS_DLL_HEADER Smoother
   {
   protected:
-    /// additive or multiplicative smooting
+    /// additive or multiplicative smoothing
     int additive; 
     /// should coarse levels be updated, too ?
     int updateall;
@@ -80,7 +80,7 @@ namespace ngmg
 
   /**
      Gauss-Seidel smoother.
-     Common relaxation of unknwons in node.
+     Common relaxation of unknowns in node.
   */
   class GSSmoother : public Smoother
   {
