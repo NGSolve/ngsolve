@@ -2057,7 +2057,7 @@ namespace ngcomp
                        bfi->CalcElementMatrix (fel, eltrans, elmat, lh);
                        /*
                         fespace->Transform (i, true, elmat, TRANSFORM_MAT_RIGHT);
-                        fespace2->Transform (i, true, elmat, TRANFORM_MAT_LEFT);
+                        fespace2->Transform (i, true, elmat, TRANSFORM_MAT_LEFT);
                        */
                        AddElementMatrix (dnums2, dnums1, elmat, ei, lh);
                      }
@@ -2094,7 +2094,7 @@ namespace ngcomp
 
                        /*
                         fespace->Transform (i, true, elmat, TRANSFORM_MAT_RIGHT);
-                        fespace2->Transform (i, true, elmat, TRANFORM_MAT_LEFT);
+                        fespace2->Transform (i, true, elmat, TRANSFORM_MAT_LEFT);
                        */
 
                        AddElementMatrix (dnums2, dnums1, elmat, ei, lh);
@@ -2352,7 +2352,7 @@ namespace ngcomp
                          bfi->CalcLinearizedElementMatrix (fel, eltrans, elveclin, elmat, lh);
                          /*
                            fespace->Transform (i, true, elmat, TRANSFORM_MAT_RIGHT);
-                           fespace2->Transform (i, true, elmat, TRANFORM_MAT_LEFT);
+                           fespace2->Transform (i, true, elmat, TRANSFORM_MAT_LEFT);
                          */
                          AddElementMatrix (dnums2, dnums1, elmat, ei, lh);
                        }
