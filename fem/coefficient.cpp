@@ -6046,12 +6046,17 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
     }
   };
 
-  class RealCF : public CoefficientFunction
+class RealCF : public CoefficientFunctionNoDerivative
   {
     shared_ptr<CoefficientFunction> cf;
   public:
-    RealCF(shared_ptr<CoefficientFunction> _cf) : cf(_cf), CoefficientFunction(1,false)
+    RealCF(shared_ptr<CoefficientFunction> _cf) : cf(_cf), CoefficientFunctionNoDerivative(1,false)
     { ; }
+
+    virtual string GetDescription() const override
+    {
+      return "RealCF";
+    }
 
     virtual double Evaluate(const BaseMappedIntegrationPoint& ip) const override
     {
@@ -6065,12 +6070,16 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
     }
   };
 
-  class ImagCF : public CoefficientFunction
+  class ImagCF : public CoefficientFunctionNoDerivative
   {
     shared_ptr<CoefficientFunction> cf;
   public:
-    ImagCF(shared_ptr<CoefficientFunction> _cf) : cf(_cf), CoefficientFunction(1,false)
+    ImagCF(shared_ptr<CoefficientFunction> _cf) : cf(_cf), CoefficientFunctionNoDerivative(1,false)
     { ; }
+    virtual string GetDescription() const override
+    {
+      return "ImagCF";
+    }
 
     virtual double Evaluate(const BaseMappedIntegrationPoint& ip) const override
     {
