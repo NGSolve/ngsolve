@@ -2863,6 +2863,11 @@ heapsize : int
                      return self.GetInnerSolve();
                    }
                   )
+    .def_property_readonly("inner_matrix", [](BF & self)
+                   {
+                     return self.GetInnerMatrix();
+                   }
+                  )
     ;
 
   //////////////////////////////////////////////////////////////////////////////////////////
