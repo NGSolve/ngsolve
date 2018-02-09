@@ -798,7 +798,7 @@ class Tasks
 {
   size_t num;
 public:
-  Tasks (size_t _num = TaskManager::GetNumThreads()) : num(_num) { ; }
+  explicit Tasks (size_t _num = TaskManager::GetNumThreads()) : num(_num) { ; }
   auto GetNum() const { return num; } 
 };
 
