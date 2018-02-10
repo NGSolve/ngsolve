@@ -506,6 +506,34 @@ INLINE AutoDiff<D,SCAL> atan (AutoDiff<D,SCAL> x)
 }
 
 
+using std::acos;
+template <int D, typename SCAL>
+INLINE AutoDiff<D,SCAL> acos (AutoDiff<D,SCAL> x)
+{
+  AutoDiff<D,SCAL> res;
+  SCAL a = acos(x.Value());
+  res.Value() = a;
+  SCAL da = -1 / sqrt(1-x.Value()*x.Value());
+  for (int k = 0; k < D; k++)
+    res.DValue(k) = x.DValue(k)*da;
+  return res;
+}
+
+
+using std::asin;
+template <int D, typename SCAL>
+INLINE AutoDiff<D,SCAL> asin (AutoDiff<D,SCAL> x)
+{
+  AutoDiff<D,SCAL> res;
+  SCAL a = asin(x.Value());
+  res.Value() = a;
+  SCAL da = 1 / sqrt(1-x.Value()*x.Value());
+  for (int k = 0; k < D; k++)
+    res.DValue(k) = x.DValue(k)*da;
+  return res;
+}
+
+
 
 
   template <int D, typename SCAL, typename TB, typename TC>

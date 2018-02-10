@@ -831,6 +831,18 @@ namespace ngstd
     return ngstd::SIMD<double,N>([&](int i)->double { return atan(a[i]); } );
   }
 
+  using std::acos;
+  template <int N>          
+  INLINE ngstd::SIMD<double,N> acos (ngstd::SIMD<double,N> a) {
+    return ngstd::SIMD<double,N>([&](int i)->double { return acos(a[i]); } );
+  }
+
+  using std::asin;
+  template <int N>          
+  INLINE ngstd::SIMD<double,N> asin (ngstd::SIMD<double,N> a) {
+    return ngstd::SIMD<double,N>([&](int i)->double { return asin(a[i]); } );
+  }
+  
 
   template <int D, typename T>
   class MultiSIMD : public AlignedAlloc<MultiSIMD<D,T>>
