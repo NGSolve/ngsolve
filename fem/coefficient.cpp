@@ -1019,124 +1019,12 @@ public:
     values.AddSize(Dimension(), ir.Size()) = scal * in0;
   }
 
-  [[deprecated]]
-  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
-                         AFlatMatrix<double> values) const override
-  {
-    auto in0 = *input[0];
-    values = scal * in0;
-  }
-  
   virtual void Evaluate (const BaseMappedIntegrationRule & ir,
                          FlatMatrix<Complex> values) const override
   {
     c1->Evaluate (ir, values);
     values *= scal;
   }
-
-  /*
-  [[deprecated]]
-  virtual void EvaluateDeriv (const BaseMappedIntegrationRule & ir,
-                              FlatMatrix<> result, FlatMatrix<> deriv) const override
-  {
-    c1->EvaluateDeriv (ir, result, deriv);
-    result *= scal;
-    deriv *= scal;
-  }
-
-  [[deprecated]]  
-  virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & ir,
-                               FlatMatrix<> result, FlatMatrix<> deriv,
-                               FlatMatrix<> dderiv) const override
-  {
-    c1->EvaluateDDeriv (ir, result, deriv, dderiv);
-    result *= scal;
-    deriv *= scal;
-    dderiv *= scal;
-  }
-
-  [[deprecated]]  
-  virtual void Evaluate (const BaseMappedIntegrationRule & mir,
-                         FlatArray<FlatMatrix<>*> input,
-                         FlatMatrix<> result) const 
-  {
-    FlatMatrix<> v1 = *input[0];
-    result = scal * v1;
-  }
-
-  [[deprecated]]  
-  virtual void EvaluateDeriv (const BaseMappedIntegrationRule & mir,
-                              FlatArray<FlatMatrix<>*> input,
-                              FlatArray<FlatMatrix<>*> dinput,
-                              FlatMatrix<> result,
-                              FlatMatrix<> deriv) const override
-  {
-    FlatMatrix<> v1 = *input[0];
-    FlatMatrix<> dv1 = *dinput[0];
-
-    result = scal * v1;
-    deriv = scal * dv1;
-  }
-
-  [[deprecated]]  
-  virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & mir,
-                               FlatArray<FlatMatrix<>*> input,
-                               FlatArray<FlatMatrix<>*> dinput,
-                               FlatArray<FlatMatrix<>*> ddinput,
-                               FlatMatrix<> result,
-                               FlatMatrix<> deriv,
-                               FlatMatrix<> dderiv) const override
-  {
-    FlatMatrix<> v1 = *input[0];
-    FlatMatrix<> dv1 = *dinput[0];
-    FlatMatrix<> ddv1 = *ddinput[0];
-
-    result = scal * v1;
-    deriv = scal * dv1;
-    dderiv = scal * ddv1;
-  }
-  */
-  /*
-  virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & mir, 
-                              AFlatMatrix<double> values, AFlatMatrix<double> deriv) const
-  {
-    c1 -> EvaluateDeriv (mir, values, deriv);
-    values *= scal;
-    deriv *= scal;
-  }  
-  virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & mir, 
-                               AFlatMatrix<double> values, AFlatMatrix<double> deriv,
-                               AFlatMatrix<double> dderiv) const
-  {
-    c1 -> EvaluateDDeriv (mir, values, deriv, dderiv);
-    values *= scal;
-    deriv *= scal;
-    dderiv *= scal;
-  }
-  
-  virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
-                              FlatArray<AFlatMatrix<>*> input,
-                              FlatArray<AFlatMatrix<>*> dinput,
-                              AFlatMatrix<> result,
-                              AFlatMatrix<> deriv) const
-  {
-    result = scal * (*input[0]);
-    deriv = scal * (*dinput[0]);
-  }
-  
-  virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & ir,
-                               FlatArray<AFlatMatrix<>*> input,
-                               FlatArray<AFlatMatrix<>*> dinput,
-                               FlatArray<AFlatMatrix<>*> ddinput,
-                               AFlatMatrix<> result,
-                               AFlatMatrix<> deriv,
-                               AFlatMatrix<> dderiv) const
-  {
-    result = scal * (*input[0]);
-    deriv = scal * (*dinput[0]);
-    dderiv = scal * (*ddinput[0]);
-  }
-  */
   
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
                                FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
@@ -1237,10 +1125,6 @@ public:
     SetDimensions (c2->Dimensions());
   }
   
-  // virtual bool IsComplex() const { return c1->IsComplex() || c2->IsComplex(); }
-  // virtual int Dimension() const { return c2->Dimension(); }
-  // virtual Array<int> Dimensions() const { return c2->Dimensions(); }
-
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
   {
     c1->TraverseTree (func);
@@ -1282,20 +1166,6 @@ public:
     result *= v1(0);
   }
 
-  /*
-  virtual void Evaluate(const BaseMappedIntegrationRule & ir,
-                        FlatMatrix<> result) const
-  {
-    STACK_ARRAY(double, hmem1, ir.Size());
-    FlatMatrix<> temp1(ir.Size(), 1, hmem1);
-    
-    c1->Evaluate(ir, temp1);
-    c2->Evaluate(ir, result);
-    for (int i = 0; i < ir.Size(); i++)
-      result.Row(i) *= temp1(i,0);
-  }
-  */
-
   virtual void Evaluate(const BaseMappedIntegrationRule & ir,
                         FlatMatrix<Complex> result) const
   {
@@ -1308,20 +1178,6 @@ public:
       result.Row(i) *= temp1(i,0);
   }
 
-  /*
-  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
-  {
-    STACK_ARRAY(SIMD<double>, hmem1, values.Width());
-    AFlatMatrix<double> temp1(1, values.Width(), &hmem1[0]);
-    
-    c1->Evaluate (ir, temp1);
-    c2->Evaluate (ir, values);
-
-    for (size_t j = 0; j < values.Height(); j++)
-      for (size_t i = 0; i < values.VWidth(); i++)
-        values.Get(j,i) *= temp1.Get(0,i);
-  }
-  */
   template <typename MIR, typename T, ORDERING ORD>
   void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
   {
@@ -1353,129 +1209,6 @@ public:
         values(j,i) = in0(0,i) * in1(j,i);
   }
 
-
-  /*
-  [[deprecated]]
-  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
-                         AFlatMatrix<double> values) const
-  {
-    auto in0 = *input[0];
-    auto in1 = *input[1];
-
-    for (size_t j = 0; j < values.Height(); j++)
-      for (size_t i = 0; i < values.VWidth(); i++)
-        values.Get(j,i) = in0.Get(0,i) * in1.Get(j,i);
-  }
-
-  [[deprecated]]
-  virtual void EvaluateDeriv (const BaseMappedIntegrationRule & ir,
-                              FlatMatrix<> result, FlatMatrix<> deriv) const
-  {
-    STACK_ARRAY(double, hmem1, ir.Size());
-    FlatMatrix<> temp1(ir.Size(), 1, hmem1);
-    STACK_ARRAY(double, hmem2, ir.Size());
-    FlatMatrix<> deriv1(ir.Size(), 1, hmem2);
-    c1->EvaluateDeriv(ir, temp1, deriv1);
-    c2->EvaluateDeriv(ir, result, deriv);
-    for (int i = 0; i < ir.Size(); i++)
-      {
-        deriv.Row(i) *= temp1(i,0);
-        deriv.Row(i) += deriv1(i,0) * result.Row(i);
-        result.Row(i) *= temp1(i,0);
-      }
-  }
-
-
-  virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & ir,
-                               FlatMatrix<> result, FlatMatrix<> deriv, FlatMatrix<> dderiv) const
-  {
-    STACK_ARRAY(double, hmem1, ir.Size());
-    FlatMatrix<> temp1(ir.Size(), 1, hmem1);
-    STACK_ARRAY(double, hmem2, ir.Size());
-    FlatMatrix<> deriv1(ir.Size(), 1, hmem2);
-    STACK_ARRAY(double, hmem3, ir.Size());
-    FlatMatrix<> dderiv1(ir.Size(), 1, hmem3);
-
-    c1->EvaluateDDeriv(ir, temp1, deriv1, dderiv1);
-    c2->EvaluateDDeriv(ir, result, deriv, dderiv);
-    for (int i = 0; i < ir.Size(); i++)
-      {
-        dderiv.Row(i) *= temp1(i,0);
-        dderiv.Row(i) += 2*deriv1(i,0) * deriv.Row(i);
-        dderiv.Row(i) += dderiv1(i,0) * result.Row(i);
-        deriv.Row(i) *= temp1(i,0);
-        deriv.Row(i) += deriv1(i,0) * result.Row(i);
-        result.Row(i) *= temp1(i,0);
-      }
-  }
-
-
-  virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatArray<FlatMatrix<>*> input,
-                         FlatMatrix<double> result) const
-  {
-    FlatMatrix<> temp1 = *input[0];
-    FlatMatrix<> temp2 = *input[1];
-    for (int i = 0; i < ir.Size(); i++)
-      result.Row(i) = temp1(i,0) * temp2.Row(i);
-  }
-
-  virtual void EvaluateDeriv (const BaseMappedIntegrationRule & mir,
-                              FlatArray<FlatMatrix<>*> input,
-                              FlatArray<FlatMatrix<>*> dinput,
-                              FlatMatrix<> result,
-                              FlatMatrix<> deriv) const
-  {
-    FlatMatrix<> v1 = *input[0], v2 = *input[1];
-    FlatMatrix<> dv1 = *dinput[0], dv2 = *dinput[1];
-    
-    for (int k = 0; k < mir.Size(); k++)
-      {
-        result.Row(k) = v1(k,0)*v2.Row(k);
-        deriv.Row(k) = v1(k,0)*dv2.Row(k)+dv1(k,0)*v2.Row(k);
-      }
-  }
-  */
-
-  /*
-  virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & mir,
-                              AFlatMatrix<> result,
-                              AFlatMatrix<> deriv) const
-  {
-    STACK_ARRAY(SIMD<double>, hmem1, mir.Size());
-    AFlatMatrix<> temp1(1, mir.IR().GetNIP(), hmem1);
-    STACK_ARRAY(SIMD<double>, hmem2, mir.Size());
-    AFlatMatrix<> deriv1(1, mir.IR().GetNIP(), hmem2);
-    c1->EvaluateDeriv(mir, temp1, deriv1);
-    c2->EvaluateDeriv(mir, result, deriv);
-
-    for (int i = 0; i < result.Height(); i++)
-      for (int k = 0; k < mir.Size(); k++)
-        {
-          deriv.Get(i,k) = deriv.Get(i,k)*temp1.Get(0,k) + result.Get(i,k) * deriv1.Get(0,k);
-          result.Get(i,k) *= temp1.Get(0,k);
-        }
-  }
-  
-  virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & mir,
-                              FlatArray<AFlatMatrix<>*> input,
-                              FlatArray<AFlatMatrix<>*> dinput,
-                              AFlatMatrix<> result,
-                              AFlatMatrix<> deriv) const
-  {
-    AFlatMatrix<> v1 = *input[0], v2 = *input[1];
-    AFlatMatrix<> dv1 = *dinput[0], dv2 = *dinput[1];
-
-    for (int i = 0; i < result.Height(); i++)
-      for (int k = 0; k < mir.Size(); k++)
-        {
-          result.Get(i,k) = v1.Get(0,k)*v2.Get(i,k);
-          deriv.Get(i,k) = v1.Get(0,k)*dv2.Get(i,k)+dv1.Get(0,k)*v2.Get(i,k);
-        }
-  }
-  */
-
-  
-  
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
                                FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const
   {
@@ -1509,8 +1242,6 @@ public:
       throw Exception("MultVecVec : dimensions don't fit");
   }
   
-  // virtual bool IsComplex() const { return c1->IsComplex() || c2->IsComplex(); }
-  // virtual int Dimension() const { return 1; }
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
     CodeExpr result;
@@ -1561,33 +1292,6 @@ public:
     result(0) = InnerProduct (v1, v2);
   }
 
-  /*
-  virtual void Evaluate(const BaseMappedIntegrationRule & ir,
-                        BareSliceMatrix<> result) const override
-  {
-    STACK_ARRAY(double, hmem1, ir.Size()*dim1);
-    FlatMatrix<> temp1(ir.Size(), dim1, hmem1);
-    STACK_ARRAY(double, hmem2, ir.Size()*dim1);
-    FlatMatrix<> temp2(ir.Size(), dim1, hmem2);
-
-    c1->Evaluate(ir, temp1);
-    c2->Evaluate(ir, temp2);
-    for (int i = 0; i < ir.Size(); i++)
-      result(i,0) = InnerProduct(temp1.Row(i), temp2.Row(i));
-  }
-  */
-
-  /*
-  virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatArray<FlatMatrix<>*> input,
-                         FlatMatrix<double> result) const
-  {
-    FlatMatrix<> temp1 = *input[0];
-    FlatMatrix<> temp2 = *input[1];
-    for (int i = 0; i < ir.Size(); i++)
-      result(i,0) = InnerProduct(temp1.Row(i), temp2.Row(i));
-  }
-  */
-
   template <typename MIR, typename T, ORDERING ORD>
   void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
   {
@@ -1631,97 +1335,6 @@ public:
       }    
   }  
 
-  /*
-  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
-                         AFlatMatrix<double> values) const
-  {
-    auto in0 = *input[0];
-    auto in1 = *input[1];
-    
-    for (size_t i = 0; i < values.VWidth(); i++)
-      {
-        SIMD<double> sum = 0.0;
-        for (size_t j = 0; j < dim1; j++)
-          sum += in0.Get(j,i) * in1.Get(j,i);
-        values.Get(i) = sum;
-      }
-  }
-
-  virtual void EvaluateDeriv(const BaseMappedIntegrationRule & mir,
-                             FlatMatrix<> result,
-                             FlatMatrix<> deriv) const
-  {
-    Matrix<> v1(mir.Size(), dim1), v2(mir.Size(),dim1);
-    Matrix<> dv1(mir.Size(), dim1), dv2(mir.Size(), dim1);
-    c1->EvaluateDeriv (mir, v1, dv1);
-    c2->EvaluateDeriv (mir, v2, dv2);
-    for (int k = 0; k < mir.Size(); k++)
-      {
-        result(k,0) = InnerProduct (v1.Row(k), v2.Row(k));
-        deriv(k,0) = InnerProduct (v1.Row(k), dv2.Row(k))+InnerProduct(v2.Row(k),dv1.Row(k));
-      }
-  }
-
-  virtual void EvaluateDDeriv(const BaseMappedIntegrationRule & mir,
-                              FlatMatrix<> result,
-                              FlatMatrix<> deriv,
-                              FlatMatrix<> dderiv) const
-  {
-    Matrix<> v1(mir.Size(), dim1), v2(mir.Size(), dim1);
-    Matrix<> dv1(mir.Size(), dim1), dv2(mir.Size(), dim1);
-    Matrix<> ddv1(mir.Size(), dim1), ddv2(mir.Size(), dim1);
-    c1->EvaluateDDeriv (mir, v1, dv1, ddv1);
-    c2->EvaluateDDeriv (mir, v2, dv2, ddv2);
-
-    for (int k = 0; k < mir.Size(); k++)
-      {
-        result(k,0) = InnerProduct (v1.Row(k), v2.Row(k));
-        deriv(k,0) = InnerProduct (v1.Row(k), dv2.Row(k))+InnerProduct(v2.Row(k),dv1.Row(k));
-        dderiv(k,0) = InnerProduct (v1.Row(k), ddv2.Row(k))+
-          2*InnerProduct(dv1.Row(k),dv2.Row(k))+InnerProduct(ddv1.Row(k),v2.Row(k));
-      }
-
-  }
-
-
-  virtual void EvaluateDeriv (const BaseMappedIntegrationRule & mir,
-                              FlatArray<FlatMatrix<>*> input,
-                              FlatArray<FlatMatrix<>*> dinput,
-                              FlatMatrix<> result,
-                              FlatMatrix<> deriv) const
-  {
-    FlatMatrix<> v1 = *input[0], v2 = *input[1];
-    FlatMatrix<> dv1 = *dinput[0], dv2 = *dinput[1];
-    
-    for (int k = 0; k < mir.Size(); k++)
-      {
-        result(k,0) = InnerProduct (v1.Row(k), v2.Row(k));
-        deriv(k,0) = InnerProduct (v1.Row(k), dv2.Row(k))+InnerProduct(v2.Row(k),dv1.Row(k));
-      }
-  }
-
-  virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & mir,
-                               FlatArray<FlatMatrix<>*> input,
-                               FlatArray<FlatMatrix<>*> dinput,
-                               FlatArray<FlatMatrix<>*> ddinput,
-                               FlatMatrix<> result,
-                               FlatMatrix<> deriv,
-                               FlatMatrix<> dderiv) const
-  {
-    FlatMatrix<> v1 = *input[0], v2 = *input[1];
-    FlatMatrix<> dv1 = *dinput[0], dv2 = *dinput[1];
-    FlatMatrix<> ddv1 = *ddinput[0], ddv2 = *ddinput[1];
-    
-    for (int k = 0; k < mir.Size(); k++)
-      {
-        result(k,0) = InnerProduct (v1.Row(k), v2.Row(k));
-        deriv(k,0) = InnerProduct (v1.Row(k), dv2.Row(k))+InnerProduct(v2.Row(k),dv1.Row(k));
-        dderiv(k,0) = InnerProduct (v1.Row(k), ddv2.Row(k))+
-          2*InnerProduct(dv1.Row(k),dv2.Row(k))+InnerProduct(ddv1.Row(k),v2.Row(k));
-      }
-  }
-  */
-
   virtual bool ElementwiseConstant () const override
   { return c1->ElementwiseConstant() && c2->ElementwiseConstant(); }
   
@@ -1758,9 +1371,7 @@ public:
     if (DIM != c1->Dimension() || DIM != c2->Dimension())
       throw Exception("T_MultVecVec : dimensions don't fit");
   }
-  
-  // virtual bool IsComplex() const { return c1->IsComplex() || c2->IsComplex(); }
-  // virtual int Dimension() const { return 1; }
+
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
     CodeExpr result;
@@ -1808,90 +1419,6 @@ public:
     result(0) = InnerProduct (v1, v2);
   }
 
-  /*
-  virtual void Evaluate(const BaseMappedIntegrationRule & ir,
-                        BareSliceMatrix<> result) const override
-  {
-    STACK_ARRAY(double, hmem1, ir.Size()*DIM);
-    FlatMatrixFixWidth<DIM> temp1(ir.Size(), hmem1);
-    STACK_ARRAY(double, hmem2, ir.Size()*DIM);
-    FlatMatrixFixWidth<DIM> temp2(ir.Size(), hmem2);
-
-    c1->Evaluate(ir, temp1);
-    c2->Evaluate(ir, temp2);
-
-    for (size_t i = 0; i < ir.Size(); i++)
-      result(i,0) = InnerProduct(temp1.Row(i), temp2.Row(i));
-  }
-  */
-  
-  /*
-  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
-  {
-    STACK_ARRAY(SIMD<double>, hmem1, DIM*values.Width());
-    STACK_ARRAY(SIMD<double>, hmem2, DIM*values.Width());
-    AFlatMatrix<double> temp1(DIM, values.Width(), &hmem1[0]);
-    AFlatMatrix<double> temp2(DIM, values.Width(), &hmem2[0]);
-    
-    c1->Evaluate (ir, temp1);
-    c2->Evaluate (ir, temp2);
-
-    for (size_t i = 0; i < values.VWidth(); i++)
-      {
-        SIMD<double> sum = 0.0;
-        for (size_t j = 0; j < DIM; j++)
-          sum += temp1.Get(j,i) * temp2.Get(j,i);
-        values.Get(i) = sum; 
-      }
-  }
-  */
-
-
-
-  /*
-  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<> values) const
-  {
-    size_t w = ir.Size();
-    __assume (w > 0);
-    
-    STACK_ARRAY(SIMD<double>, hmem, 2*DIM*w);
-    AFlatMatrix<double> temp1(DIM, w*SIMD<double>::Size(), &hmem[0]);
-    AFlatMatrix<double> temp2(DIM, w*SIMD<double>::Size(), &hmem[DIM*w]);
-    
-    c1->Evaluate (ir, temp1);
-    c2->Evaluate (ir, temp2);
-
-    for (size_t i = 0; i < w; i++)
-      {
-        SIMD<double> sum = 0.0;
-        for (size_t j = 0; j < DIM; j++)
-          sum += temp1.Get(j,i) * temp2.Get(j,i);
-        values.Get(0,i) = sum; 
-      }
-  }
-
-  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, ABareSliceMatrix<Complex> values) const
-  {
-    size_t w = ir.Size();
-    __assume (w > 0);
-    
-    STACK_ARRAY(SIMD<Complex>, hmem, 2*DIM*w);
-    AFlatMatrix<Complex> temp1(DIM, w*SIMD<double>::Size(), &hmem[0]);
-    AFlatMatrix<Complex> temp2(DIM, w*SIMD<double>::Size(), &hmem[DIM*w]);
-    
-    c1->Evaluate (ir, temp1);
-    c2->Evaluate (ir, temp2);
-
-    for (size_t i = 0; i < w; i++)
-      {
-        SIMD<Complex> sum = Complex(0.0);
-        for (size_t j = 0; j < DIM; j++)
-          sum += temp1.Get(j,i) * temp2.Get(j,i);
-        values.Get(0,i) = sum; 
-      }
-  }
-  */
-
   template <typename MIR, typename T, ORDERING ORD>
   void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
   {
@@ -1932,23 +1459,6 @@ public:
       }    
   }  
   
-  /*
-  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
-                         AFlatMatrix<double> values) const override
-  {
-    auto in0 = *input[0];
-    auto in1 = *input[1];
-    
-    for (size_t i = 0; i < values.VWidth(); i++)
-      {
-        SIMD<double> sum = 0.0;
-        for (size_t j = 0; j < DIM; j++)
-          sum += in0.Get(j,i) * in1.Get(j,i);
-        values.Get(i) = sum; 
-      }
-  }
-  */
-  
   virtual void Evaluate(const BaseMappedIntegrationRule & ir,
                         FlatMatrix<Complex> result) const override
   {
@@ -1962,181 +1472,6 @@ public:
     for (int i = 0; i < ir.Size(); i++)
       result(i,0) = InnerProduct(temp1.Row(i), temp2.Row(i));
   }
-
-
-  /*
-  virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatArray<FlatMatrix<>*> input,
-                         FlatMatrix<double> result) const
-  {
-    FlatMatrix<> temp1 = *input[0];
-    FlatMatrix<> temp2 = *input[1];
-    for (int i = 0; i < ir.Size(); i++)
-      result(i,0) = InnerProduct(temp1.Row(i), temp2.Row(i));
-  }
-  */
-  
-  /*
-  virtual void EvaluateDeriv(const BaseMappedIntegrationRule & mir,
-                             FlatMatrix<> result,
-                             FlatMatrix<> deriv) const
-  {
-    size_t si = DIM*mir.Size();
-    STACK_ARRAY(double, hmem, 4*si);
-    FlatMatrix<> v1(mir.Size(), DIM, &hmem[0]), v2(mir.Size(),DIM, &hmem[si]);
-    FlatMatrix<> dv1(mir.Size(), DIM, &hmem[2*si]), dv2(mir.Size(), DIM, &hmem[3*si]);
-    
-    c1->EvaluateDeriv (mir, v1, dv1);
-    c2->EvaluateDeriv (mir, v2, dv2);
-    for (int k = 0; k < mir.Size(); k++)
-      {
-        result(k,0) = InnerProduct (v1.Row(k), v2.Row(k));
-        deriv(k,0) = InnerProduct (v1.Row(k), dv2.Row(k))+InnerProduct(v2.Row(k),dv1.Row(k));
-      }
-  }
-
-  virtual void EvaluateDDeriv(const BaseMappedIntegrationRule & mir,
-                              FlatMatrix<> result,
-                              FlatMatrix<> deriv,
-                              FlatMatrix<> dderiv) const
-  {
-    size_t si = DIM*mir.Size();
-    STACK_ARRAY(double, hmem, 6*si);
-    FlatMatrix<> v1(mir.Size(), DIM, &hmem[0]), v2(mir.Size(),DIM, &hmem[si]);
-    FlatMatrix<> dv1(mir.Size(), DIM, &hmem[2*si]), dv2(mir.Size(), DIM, &hmem[3*si]);
-    FlatMatrix<> ddv1(mir.Size(), DIM, &hmem[4*si]), ddv2(mir.Size(), DIM, &hmem[5*si]);
-
-    c1->EvaluateDDeriv (mir, v1, dv1, ddv1);
-    c2->EvaluateDDeriv (mir, v2, dv2, ddv2);
-
-    for (int k = 0; k < mir.Size(); k++)
-      {
-        result(k,0) = InnerProduct (v1.Row(k), v2.Row(k));
-        deriv(k,0) = InnerProduct (v1.Row(k), dv2.Row(k))+InnerProduct(v2.Row(k),dv1.Row(k));
-        dderiv(k,0) = InnerProduct (v1.Row(k), ddv2.Row(k))+
-          2*InnerProduct(dv1.Row(k),dv2.Row(k))+InnerProduct(ddv1.Row(k),v2.Row(k));
-      }
-    // cout << "res = " << result << ", deriv = " << deriv << ", dderiv = " << dderiv << endl;
-  }
-
-
-  virtual void EvaluateDeriv (const BaseMappedIntegrationRule & mir,
-                              FlatArray<FlatMatrix<>*> input,
-                              FlatArray<FlatMatrix<>*> dinput,
-                              FlatMatrix<> result,
-                              FlatMatrix<> deriv) const
-  {
-    FlatMatrix<> v1 = *input[0], v2 = *input[1];
-    FlatMatrix<> dv1 = *dinput[0], dv2 = *dinput[1];
-    
-    for (int k = 0; k < mir.Size(); k++)
-      {
-        result(k,0) = InnerProduct (v1.Row(k), v2.Row(k));
-        deriv(k,0) = InnerProduct (v1.Row(k), dv2.Row(k))+InnerProduct(v2.Row(k),dv1.Row(k));
-      }
-  }
-
-  
-  virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & mir,
-                               FlatArray<FlatMatrix<>*> input,
-                               FlatArray<FlatMatrix<>*> dinput,
-                               FlatArray<FlatMatrix<>*> ddinput,
-                               FlatMatrix<> result,
-                               FlatMatrix<> deriv,
-                               FlatMatrix<> dderiv) const
-  {
-    FlatMatrix<> v1 = *input[0], v2 = *input[1];
-    FlatMatrix<> dv1 = *dinput[0], dv2 = *dinput[1];
-    FlatMatrix<> ddv1 = *ddinput[0], ddv2 = *ddinput[1];
-    
-    for (int k = 0; k < mir.Size(); k++)
-      {
-        result(k,0) = InnerProduct (v1.Row(k), v2.Row(k));
-        deriv(k,0) = InnerProduct (v1.Row(k), dv2.Row(k))+InnerProduct(v2.Row(k),dv1.Row(k));
-        dderiv(k,0) = InnerProduct (v1.Row(k), ddv2.Row(k))+
-          2*InnerProduct(dv1.Row(k),dv2.Row(k))+InnerProduct(ddv1.Row(k),v2.Row(k));
-      }
-  }
-  */
-
-  /*
-  virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & mir,
-                              AFlatMatrix<> result,
-                              AFlatMatrix<> deriv) const
-  {
-    size_t si = DIM*mir.Size();
-    STACK_ARRAY(SIMD<double>, hmem, 4*si);
-    AFlatMatrix<> v1(DIM, mir.IR().GetNIP(), &hmem[0]), v2(DIM, mir.IR().GetNIP(), &hmem[si]);
-    AFlatMatrix<> dv1(DIM, mir.IR().GetNIP(), &hmem[2*si]), dv2(DIM, mir.IR().GetNIP(), &hmem[3*si]);
-    
-    c1->EvaluateDeriv (mir, v1, dv1);
-    c2->EvaluateDeriv (mir, v2, dv2);
-    
-    for (size_t k = 0; k < mir.Size(); k++)
-      {
-        SIMD<double> sum = 0.0, dsum = 0.0;
-        for (size_t i = 0; i < DIM; i++)
-          {
-            sum += v1.Get(i,k) * v2.Get(i,k);
-            dsum += v1.Get(i,k) * dv2.Get(i,k) + dv1.Get(i,k) * v2.Get(i,k);
-          }
-        result.Get(0,k) = sum;
-        deriv.Get(0,k) = dsum;
-      }
-  }
-  
-
-
-
-  virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & mir,
-                              FlatArray<AFlatMatrix<>*> input,
-                              FlatArray<AFlatMatrix<>*> dinput,
-                              AFlatMatrix<> result,
-                              AFlatMatrix<> deriv) const
-  {
-    AFlatMatrix<> v1 = *input[0], v2 = *input[1];
-    AFlatMatrix<> dv1 = *dinput[0], dv2 = *dinput[1];
-    
-    for (size_t k = 0; k < mir.Size(); k++)
-      {
-        SIMD<double> sum = 0.0, dsum = 0.0;
-        for (size_t i = 0; i < DIM; i++)
-          {
-            sum += v1.Get(i,k) * v2.Get(i,k);
-            dsum += v1.Get(i,k) * dv2.Get(i,k) + dv1.Get(i,k) * v2.Get(i,k);
-          }
-        result.Get(0,k) = sum;
-        deriv.Get(0,k) = dsum;
-      }
-  }
-  
-  virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & mir,
-                               FlatArray<AFlatMatrix<>*> input,
-                               FlatArray<AFlatMatrix<>*> dinput,
-                               FlatArray<AFlatMatrix<>*> ddinput,
-                               AFlatMatrix<> result,
-                               AFlatMatrix<> deriv,
-                               AFlatMatrix<> dderiv) const
-  {
-    AFlatMatrix<> v1 = *input[0], v2 = *input[1];
-    AFlatMatrix<> dv1 = *dinput[0], dv2 = *dinput[1];
-    AFlatMatrix<> ddv1 = *ddinput[0], ddv2 = *ddinput[1];
-    
-    for (size_t k = 0; k < mir.Size(); k++)
-      {
-        SIMD<double> sum = 0.0, dsum = 0.0, ddsum = 0.0;
-        for (size_t i = 0; i < DIM; i++)
-          {
-            sum += v1.Get(i,k) * v2.Get(i,k);
-            dsum += v1.Get(i,k) * dv2.Get(i,k) + dv1.Get(i,k) * v2.Get(i,k);
-            ddsum += v1.Get(i,k) * ddv2.Get(i,k) + 2*dv1.Get(i,k) * dv2.Get(i,k)
-              + ddv1.Get(i,k) * v2.Get(i,k);
-          }
-        result.Get(0,k) = sum;
-        deriv.Get(0,k) = dsum;
-        dderiv.Get(0,k) = ddsum;
-      }
-  }
-  */
 
   
   virtual bool ElementwiseConstant () const override
@@ -2218,71 +1553,6 @@ public:
   virtual bool ElementwiseConstant () const override
   { return c1->ElementwiseConstant(); }
 
-  /*
-  virtual void Evaluate(const BaseMappedIntegrationRule & ir,
-                        BareSliceMatrix <> result) const override
-  {
-    STACK_ARRAY(double,hmem,ir.Size()*dim1*sizeof(TIN)/sizeof(double));
-    FlatMatrix<TIN> inval(ir.IR().GetNIP(), dim1, reinterpret_cast<TIN*>(&hmem[0]));
-    c1->Evaluate (ir, inval);
-    for (size_t i = 0; i < result.Height(); i++)
-      result(i,0) = L2Norm(inval.Row(i));
-  }
-  */
-
-  /*
-  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const
-  {
-    if (typeid(TIN)==typeid(Complex)) throw ExceptionNOSIMD("CF Norm of complex cannot use simds");
-    STACK_ARRAY(SIMD<double>,hmem,ir.Size()*dim1);
-    AFlatMatrix<> inval(dim1, ir.IR().GetNIP(), &hmem[0]);
-    c1->Evaluate (ir, inval);
-    for (size_t i = 0; i < ir.Size(); i++)
-      {
-        SIMD<double> sum = 0;
-        for (size_t j = 0; j < dim1; j++)
-          sum += inval.Get(j,i)*inval.Get(j,i);
-        values(0,i) = sqrt(sum);
-      }
-  }
-  */
-
-  /*
-  virtual void EvaluateDeriv(const BaseMappedIntegrationRule & mir,
-                             FlatMatrix<> result,
-                             FlatMatrix<> deriv) const override
-  {
-    cout << "norm-EvaluateDeriv not implemented" << endl;
-  }
-
-  virtual void EvaluateDDeriv(const BaseMappedIntegrationRule & mir,
-                              FlatMatrix<> result,
-                              FlatMatrix<> deriv,
-                              FlatMatrix<> dderiv) const override
-  {
-    cout << "norm-EvaluateDDeriv not implemented" << endl;
-  }
-
-  virtual void EvaluateDeriv(const BaseMappedIntegrationRule & mir,
-                             FlatArray<FlatMatrix<>*> input,
-                             FlatArray<FlatMatrix<>*> dinput,
-                             FlatMatrix<> result,
-                             FlatMatrix<> deriv) const override
-  {
-    cout << "norm-EvaluateDeriv inout not implemented" << endl;
-  }  
-
-  virtual void EvaluateDDeriv(const BaseMappedIntegrationRule & mir,
-                              FlatArray<FlatMatrix<>*> input,
-                              FlatArray<FlatMatrix<>*> dinput,
-                              FlatArray<FlatMatrix<>*> ddinput,
-                              FlatMatrix<> result,
-                              FlatMatrix<> deriv,
-                              FlatMatrix<> dderiv) const override
-  {
-    cout << "norm-EvaluateDDeriv inout not implemented" << endl;
-  }  
-  */
 
   template <typename MIR, typename T, ORDERING ORD>
   void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
@@ -2444,7 +1714,6 @@ class MultMatMatCoefficientFunction : public T_CoefficientFunction<MultMatMatCoe
 {
   shared_ptr<CoefficientFunction> c1;
   shared_ptr<CoefficientFunction> c2;
-  // Array<int> dims;
   int inner_dim;
 public:
   MultMatMatCoefficientFunction (shared_ptr<CoefficientFunction> ac1,
@@ -2459,15 +1728,10 @@ public:
       throw Exception(string("Matrix dimensions don't fit: m1 is ") +
                       ToLiteral(dims_c1[0]) + " x " + ToLiteral(dims_c1[1]) +
                       ", m2 is " + ToLiteral(dims_c2[0]) + " x " + ToLiteral(dims_c2[1]) );
-    // dims = { dims_c1[0], dims_c2[1] };
     SetDimensions( Array<int> ({ dims_c1[0], dims_c2[1] }));
     inner_dim = dims_c1[1];
   }
   
-  // virtual bool IsComplex() const { return c1->IsComplex() || c2->IsComplex(); }
-  // virtual int Dimension() const { return dims[0]*dims[1]; }
-  // virtual Array<int> Dimensions() const { return Array<int> (dims); } 
-
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
   {
     c1->TraverseTree (func);
@@ -2561,57 +1825,6 @@ public:
     //cout << "MultMatMat: complex not implemented" << endl;
   }  
 
-  /*
-  virtual void Evaluate (const BaseMappedIntegrationRule & mir,
-                         FlatMatrix<> result) const
-  {
-    // Matrix<> va(mir.Size(), dims[0]*inner_dim);
-    // Matrix<> vb(mir.Size(), dims[1]*inner_dim);
-    FlatArray<int> hdims = Dimensions();
-    STACK_ARRAY(double, mema, mir.Size()*hdims[0]*inner_dim);
-    STACK_ARRAY(double, memb, mir.Size()*hdims[1]*inner_dim);
-    FlatMatrix<> va(mir.Size(), hdims[0]*inner_dim, mema);
-    FlatMatrix<> vb(mir.Size(), hdims[1]*inner_dim, memb);
-
-    c1->Evaluate (mir, va);
-    c2->Evaluate (mir, vb);
-
-    for (int i = 0; i < mir.Size(); i++)
-      {
-        FlatMatrix<> a(hdims[0], inner_dim, &va(i,0));
-        FlatMatrix<> b(inner_dim, hdims[1], &vb(i,0));
-        FlatMatrix<> c(hdims[0], hdims[1], &result(i,0));
-        c = a*b;
-      }
-  }
-
-  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & mir, BareSliceMatrix<SIMD<double>> values) const
-  {
-    FlatArray<int> hdims = Dimensions();    
-    STACK_ARRAY(SIMD<double>, hmem1, mir.IR().Size()*hdims[0]*inner_dim);
-    STACK_ARRAY(SIMD<double>, hmem2, mir.IR().Size()*hdims[1]*inner_dim);
-    AFlatMatrix<double> va(hdims[0]*inner_dim, mir.IR().GetNIP(), &hmem1[0]);
-    AFlatMatrix<double> vb(hdims[1]*inner_dim, mir.IR().GetNIP(), &hmem2[0]);
-    c1->Evaluate (mir, va);
-    c2->Evaluate (mir, vb);
-    values.AddSize(Dimension(),mir.Size()) = 0.0;
-
-    size_t d1 = hdims[1];
-    size_t mir_size = mir.Size();
-    for (size_t j = 0; j < hdims[0]; j++)
-      for (size_t k = 0; k < hdims[1]; k++)
-        for (size_t l = 0; l < inner_dim; l++)
-          {
-            auto row_a = va.Row(j*inner_dim+l);
-            auto row_b = vb.Row(l*d1+k);
-            auto row_c = values.Row(j*d1+k);
-            for (size_t i = 0; i < mir_size; i++)
-              row_c(i) += row_a.Get(i) * row_b.Get(i);
-            // row_c = pw_mult (row_a, row_b);
-          }
-  }
-  */
-
   template <typename MIR, typename T, ORDERING ORD>
   void T_Evaluate (const MIR & mir, BareSliceMatrix<T,ORD> values) const
   {
@@ -2667,246 +1880,7 @@ public:
             // row_c = pw_mult (row_a, row_b);
           }
   }
-
-  /*
-  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & mir, FlatArray<AFlatMatrix<double>*> input,
-                         AFlatMatrix<double> values) const
-  {
-    FlatArray<int> hdims = Dimensions();    
-    auto va = *input[0];
-    auto vb = *input[1];
-    values = 0.0;
-
-    size_t dims0 = hdims[0];
-    size_t dims1 = hdims[1];
-    size_t idim = inner_dim;
-    for (size_t j = 0; j < dims0; j++)
-      for (size_t k = 0; k < dims1; k++)
-        for (size_t l = 0; l < idim; l++)
-          {
-            auto row_a = va.Row(j*inner_dim+l);
-            auto row_b = vb.Row(l*dims1+k);
-            auto row_c = values.Row(j*dims1+k);
-            for (size_t i = 0; i < mir.Size(); i++)
-              row_c.Get(i) += row_a.Get(i) * row_b.Get(i);
-          }    
-  }
-  
-  virtual void EvaluateDeriv(const BaseMappedIntegrationRule & mir,
-                             FlatMatrix<> result,
-                             FlatMatrix<> deriv) const
-  {
-    FlatArray<int> hdims = Dimensions();    
-    Matrix<> va(mir.Size(), hdims[0]*inner_dim);
-    Matrix<> vb(mir.Size(), hdims[1]*inner_dim);
-    Matrix<> vda(mir.Size(), hdims[0]*inner_dim);
-    Matrix<> vdb(mir.Size(), hdims[1]*inner_dim);
-    c1->EvaluateDeriv (mir, va, vda);
-    c2->EvaluateDeriv (mir, vb, vdb);
-
-    for (int i = 0; i < mir.Size(); i++)
-      {
-        FlatMatrix<> a(hdims[0], inner_dim, &va(i,0));
-        FlatMatrix<> b(inner_dim, hdims[1], &vb(i,0));
-        FlatMatrix<> da(hdims[0], inner_dim, &vda(i,0));
-        FlatMatrix<> db(inner_dim, hdims[1], &vdb(i,0));
-        FlatMatrix<> c(hdims[0], hdims[1], &result(i,0));
-        FlatMatrix<> dc(hdims[0], hdims[1], &deriv(i,0));
-        c = a*b;
-        dc = a*db+da*b;
-      }
-  }
-  
-  virtual void EvaluateDDeriv(const BaseMappedIntegrationRule & mir,
-                              FlatMatrix<> result,
-                              FlatMatrix<> deriv,
-                              FlatMatrix<> dderiv) const
-  {
-    FlatArray<int> hdims = Dimensions();        
-    Matrix<> va(mir.Size(), hdims[0]*inner_dim);
-    Matrix<> vb(mir.Size(), hdims[1]*inner_dim);
-    Matrix<> vda(mir.Size(), hdims[0]*inner_dim);
-    Matrix<> vdb(mir.Size(), hdims[1]*inner_dim);
-    Matrix<> vdda(mir.Size(), hdims[0]*inner_dim);
-    Matrix<> vddb(mir.Size(), hdims[1]*inner_dim);
-    c1->EvaluateDDeriv (mir, va, vda, vdda);
-    c2->EvaluateDDeriv (mir, vb, vdb, vddb);
-
-    for (int i = 0; i < mir.Size(); i++)
-      {
-        FlatMatrix<> a(hdims[0], inner_dim, &va(i,0));
-        FlatMatrix<> b(inner_dim, hdims[1], &vb(i,0));
-        FlatMatrix<> da(hdims[0], inner_dim, &vda(i,0));
-        FlatMatrix<> db(inner_dim, hdims[1], &vdb(i,0));
-        FlatMatrix<> dda(hdims[0], inner_dim, &vdda(i,0));
-        FlatMatrix<> ddb(inner_dim, hdims[1], &vddb(i,0));
-        FlatMatrix<> c(hdims[0], hdims[1], &result(i,0));
-        FlatMatrix<> dc(hdims[0], hdims[1], &deriv(i,0));
-        FlatMatrix<> ddc(hdims[0], hdims[1], &dderiv(i,0));
-        c = a*b;
-        dc = a*db+da*b;
-        ddc = a*ddb+2*da*db+dda*b;
-      }
-  }
-
-
-  
-
-
-
-  virtual void Evaluate(const BaseMappedIntegrationRule & mir,
-                        FlatArray<FlatMatrix<>*> input,
-                        FlatMatrix<> result) const
-  {
-    FlatArray<int> hdims = Dimensions();        
-    FlatMatrix<> va = *input[0], vb = *input[1];
-
-    for (int i = 0; i < mir.Size(); i++)
-      {
-        FlatMatrix<> a(hdims[0], inner_dim, &va(i,0));
-        FlatMatrix<> b(inner_dim, hdims[1], &vb(i,0));
-        FlatMatrix<> c(hdims[0], hdims[1], &result(i,0));
-        c = a*b;
-      }
-  }
-  
-
-
-  virtual void EvaluateDeriv(const BaseMappedIntegrationRule & mir,
-                             FlatArray<FlatMatrix<>*> input,
-                             FlatArray<FlatMatrix<>*> dinput,
-                             FlatMatrix<> result,
-                             FlatMatrix<> deriv) const
-  {
-    FlatArray<int> hdims = Dimensions();        
-    FlatMatrix<> va = *input[0], vb = *input[1];
-    FlatMatrix<> vda = *dinput[0], vdb = *dinput[1];
-
-    for (int i = 0; i < mir.Size(); i++)
-      {
-        FlatMatrix<> a(hdims[0], inner_dim, &va(i,0));
-        FlatMatrix<> b(inner_dim, hdims[1], &vb(i,0));
-        FlatMatrix<> da(hdims[0], inner_dim, &vda(i,0));
-        FlatMatrix<> db(inner_dim, hdims[1], &vdb(i,0));
-        FlatMatrix<> c(hdims[0], hdims[1], &result(i,0));
-        FlatMatrix<> dc(hdims[0], hdims[1], &deriv(i,0));
-        c = a*b;
-        dc = a*db+da*b;
-      }
-  }
-
-
-  
-  virtual void EvaluateDDeriv(const BaseMappedIntegrationRule & mir,
-                              FlatArray<FlatMatrix<>*> input,
-                              FlatArray<FlatMatrix<>*> dinput,
-                              FlatArray<FlatMatrix<>*> ddinput,
-                              FlatMatrix<> result,
-                              FlatMatrix<> deriv,
-                              FlatMatrix<> dderiv) const
-  {
-    FlatArray<int> hdims = Dimensions();        
-    FlatMatrix<> va = *input[0], vb = *input[1];
-    FlatMatrix<> vda = *dinput[0], vdb = *dinput[1];
-    FlatMatrix<> vdda = *ddinput[0], vddb = *ddinput[1];
-
-    for (int i = 0; i < mir.Size(); i++)
-      {
-        FlatMatrix<> a(hdims[0], inner_dim, &va(i,0));
-        FlatMatrix<> b(inner_dim, hdims[1], &vb(i,0));
-        FlatMatrix<> da(hdims[0], inner_dim, &vda(i,0));
-        FlatMatrix<> db(inner_dim, hdims[1], &vdb(i,0));
-        FlatMatrix<> dda(hdims[0], inner_dim, &vdda(i,0));
-        FlatMatrix<> ddb(inner_dim, hdims[1], &vddb(i,0));
-        FlatMatrix<> c(hdims[0], hdims[1], &result(i,0));
-        FlatMatrix<> dc(hdims[0], hdims[1], &deriv(i,0));
-        FlatMatrix<> ddc(hdims[0], hdims[1], &dderiv(i,0));
-        c = a*b;
-        dc = a*db+da*b;
-        ddc = a*ddb+2*da*db+dda*b;
-      }
-  }
-
-
-  virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & mir,
-                              FlatArray<AFlatMatrix<double>*> input,
-                              FlatArray<AFlatMatrix<double>*> dinput,
-                              AFlatMatrix<double> values,
-                              AFlatMatrix<double> deriv) const
-  {
-    FlatArray<int> hdims = Dimensions();        
-    auto va = *input[0];
-    auto dva = *dinput[0];
-    auto vb = *input[1];
-    auto dvb = *dinput[1];
-    values = 0.0;
-    deriv = 0.0;
-    
-    for (int j = 0; j < hdims[0]; j++)
-      for (int k = 0; k < hdims[1]; k++)
-        for (int l = 0; l < inner_dim; l++)
-          {
-            auto row_a = va.Row(j*inner_dim+l);
-            auto row_da = dva.Row(j*inner_dim+l);
-            auto row_b = vb.Row(l*hdims[1]+k);
-            auto row_db = dvb.Row(l*hdims[1]+k);
-            auto row_c = values.Row(j*hdims[1]+k);
-            auto row_dc = deriv.Row(j*hdims[1]+k);
-
-            for (int i = 0; i < mir.Size(); i++)
-              {
-                row_c.Get(i) += row_a.Get(i) * row_b.Get(i);
-                row_dc.Get(i) += row_a.Get(i) * row_db.Get(i) + row_da.Get(i) * row_b.Get(i);
-              }    
-          }
-  }
-
-
-  virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & mir,
-                               FlatArray<AFlatMatrix<double>*> input,
-                               FlatArray<AFlatMatrix<double>*> dinput,
-                               FlatArray<AFlatMatrix<double>*> ddinput,
-                               AFlatMatrix<double> values,
-                               AFlatMatrix<double> deriv,
-                               AFlatMatrix<double> dderiv) const
-  {
-    FlatArray<int> hdims = Dimensions();        
-    auto va = *input[0];
-    auto dva = *dinput[0];
-    auto ddva = *ddinput[0];
-    auto vb = *input[1];
-    auto dvb = *dinput[1];
-    auto ddvb = *ddinput[1];
-    values = 0.0;
-    deriv = 0.0;
-    dderiv = 0.0;
-    
-    for (int j = 0; j < hdims[0]; j++)
-      for (int k = 0; k < hdims[1]; k++)
-        for (int l = 0; l < inner_dim; l++)
-          {
-            auto row_a = va.Row(j*inner_dim+l);
-            auto row_da = dva.Row(j*inner_dim+l);
-            auto row_dda = ddva.Row(j*inner_dim+l);
-            auto row_b = vb.Row(l*hdims[1]+k);
-            auto row_db = dvb.Row(l*hdims[1]+k);
-            auto row_ddb = ddvb.Row(l*hdims[1]+k);
-            auto row_c = values.Row(j*hdims[1]+k);
-            auto row_dc = deriv.Row(j*hdims[1]+k);
-            auto row_ddc = dderiv.Row(j*hdims[1]+k);
-            
-            for (int i = 0; i < mir.Size(); i++)
-              {
-                row_c.Get(i) += row_a.Get(i) * row_b.Get(i);
-                row_dc.Get(i) += row_a.Get(i) * row_db.Get(i) + row_da.Get(i) * row_b.Get(i);
-                row_ddc.Get(i) += row_a.Get(i) * row_ddb.Get(i) +
-                  2 * row_da.Get(i) * row_db.Get(i) +
-                  row_dda.Get(i) * row_b.Get(i);
-              }
-          }
-  }
-  */
-  
+ 
 };
 
 
@@ -3022,23 +1996,6 @@ public:
     //cout << "MultMatMat: complex not implemented" << endl;
   }  
 
-  /*
-  virtual void Evaluate (const BaseMappedIntegrationRule & mir,
-                         FlatMatrix<> result) const
-  {
-    FlatArray<int> hdims = Dimensions();    
-    Matrix<> va(mir.Size(), hdims[0]*inner_dim);
-    Matrix<> vb(mir.Size(), inner_dim);
-    c1->Evaluate (mir, va);
-    c2->Evaluate (mir, vb);
-
-    for (int i = 0; i < mir.Size(); i++)
-      {
-        FlatMatrix<> a(hdims[0], inner_dim, &va(i,0));
-        result.Row(i) = a * vb.Row(i);
-      }
-  }
-  */
 
   template <typename MIR, typename T, ORDERING ORD>
   void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
@@ -3074,220 +2031,6 @@ public:
           values(i,k) += va(i*inner_dim+j, k) * vb(j,k);
   }
 
-  /*
-  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const
-  {
-    FlatArray<int> hdims = Dimensions();    
-    STACK_ARRAY(SIMD<double>, hmem1, (ir.IR().GetNIP()+8)*hdims[0]*inner_dim);
-    STACK_ARRAY(SIMD<double>, hmem2, (ir.IR().GetNIP()+8)*inner_dim);
-    AFlatMatrix<double> temp1(hdims[0]*inner_dim, ir.IR().GetNIP(), &hmem1[0]);
-    AFlatMatrix<double> temp2(inner_dim, ir.IR().GetNIP(), &hmem2[0]);
-    c1->Evaluate (ir, temp1);
-    c2->Evaluate (ir, temp2);
-    values.AddSize(Dimension(),ir.Size()) = 0.0;
-    for (size_t i = 0; i < hdims[0]; i++)
-      for (size_t j = 0; j < inner_dim; j++)
-        for (size_t k = 0; k < ir.Size(); k++)
-          values(i,k) += temp1.Get(i*inner_dim+j, k) * temp2.Get(j,k);
-  }
-  
-  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & mir, FlatArray<AFlatMatrix<double>*> input,
-                         AFlatMatrix<double> values) const
-  {
-    FlatArray<int> hdims = Dimensions();    
-    auto in0 = *input[0];
-    auto in1 = *input[1];
-    values = 0.0;
-    auto _inner_dim = inner_dim;
-    if (_inner_dim <= 0) return;
-    int ii = 0;
-    for (auto i : Range(hdims[0]))
-      for (auto j : Range(_inner_dim))
-        // values.Row(i) += pw_mult (in0.Row(i*_inner_dim+j), in1.Row(j));
-        values.Row(i) += pw_mult (in0.Row(ii++), in1.Row(j));
-  }
-
-  
-  virtual void EvaluateDeriv(const BaseMappedIntegrationRule & mir,
-                             FlatMatrix<> result,
-                             FlatMatrix<> deriv) const
-  {
-    FlatArray<int> hdims = Dimensions();
-    Matrix<> va(mir.Size(), hdims[0]*inner_dim);
-    Matrix<> vb(mir.Size(), inner_dim);
-    Matrix<> vda(mir.Size(), hdims[0]*inner_dim);
-    Matrix<> vdb(mir.Size(), inner_dim);
-    c1->EvaluateDeriv (mir, va, vda);
-    c2->EvaluateDeriv (mir, vb, vdb);
-
-    for (int i = 0; i < mir.Size(); i++)
-      {
-        FlatMatrix<> a(hdims[0], inner_dim, &va(i,0));
-        FlatMatrix<> da(hdims[0], inner_dim, &vda(i,0));
-
-        result.Row(i) = a*vb.Row(i);
-        deriv.Row(i) = a*vdb.Row(i) + da*vb.Row(i);
-      }
-  }
-  
-  virtual void EvaluateDDeriv(const BaseMappedIntegrationRule & mir,
-                              FlatMatrix<> result,
-                              FlatMatrix<> deriv,
-                              FlatMatrix<> dderiv) const
-  {
-    FlatArray<int> hdims = Dimensions();    
-    Matrix<> va(mir.Size(), hdims[0]*inner_dim);
-    Matrix<> vb(mir.Size(), inner_dim);
-    Matrix<> vda(mir.Size(), hdims[0]*inner_dim);
-    Matrix<> vdb(mir.Size(), inner_dim);
-    Matrix<> vdda(mir.Size(), hdims[0]*inner_dim);
-    Matrix<> vddb(mir.Size(), inner_dim);
-    c1->EvaluateDDeriv (mir, va, vda, vdda);
-    c2->EvaluateDDeriv (mir, vb, vdb, vddb);
-
-    for (int i = 0; i < mir.Size(); i++)
-      {
-        FlatMatrix<> a(hdims[0], inner_dim, &va(i,0));
-        FlatMatrix<> da(hdims[0], inner_dim, &vda(i,0));
-        FlatMatrix<> dda(hdims[0], inner_dim, &vdda(i,0));
-
-        result.Row(i) = a*vb.Row(i);
-        deriv.Row(i) = a*vdb.Row(i) + da*vb.Row(i);
-        dderiv.Row(i) = a*vddb.Row(i) + 2*da*vdb.Row(i) + dda*vb.Row(i);
-      }
-  }
-
-
-  
-
-
-
-  virtual void Evaluate(const BaseMappedIntegrationRule & mir,
-                        FlatArray<FlatMatrix<>*> input,
-                        FlatMatrix<> result) const
-  {
-    FlatArray<int> hdims = Dimensions();    
-    FlatMatrix<> va = *input[0], vb = *input[1];
-    for (int i = 0; i < mir.Size(); i++)
-      {
-        FlatMatrix<> a(hdims[0], inner_dim, &va(i,0));
-        result.Row(i) = a * vb.Row(i);
-      }
-  }
-
-  virtual void EvaluateDeriv(const BaseMappedIntegrationRule & mir,
-                             FlatArray<FlatMatrix<>*> input,
-                             FlatArray<FlatMatrix<>*> dinput,
-                             FlatMatrix<> result,
-                             FlatMatrix<> deriv) const
-  {
-    FlatArray<int> hdims = Dimensions();    
-    FlatMatrix<> va = *input[0], vb = *input[1];
-    FlatMatrix<> vda = *dinput[0], vdb = *dinput[1];
-
-    for (int i = 0; i < mir.Size(); i++)
-      {
-        FlatMatrix<> a(hdims[0], inner_dim, &va(i,0));
-        FlatMatrix<> da(hdims[0], inner_dim, &vda(i,0));
-
-        // FlatMatrix<> c(dims[0], dims[1], &result(i,0));
-        // FlatMatrix<> dc(dims[0], dims[1], &deriv(i,0));
-        // c = a*b;
-        // dc = a*db+da*b;
-        result.Row(i) = a * vb.Row(i);
-        deriv.Row(i) = da * vb.Row(i) + a*vdb.Row(i);        
-      }
-  }
-  */
-  
-  /*
-  virtual void EvaluateDeriv(const SIMD_BaseMappedIntegrationRule & mir,
-                             AFlatMatrix<> result,
-                             AFlatMatrix<> deriv) const
-  {
-    FlatArray<int> hdims = Dimensions();
-
-    STACK_ARRAY(SIMD<double>, hmema, mir.Size()*hdims[0]*inner_dim);
-    STACK_ARRAY(SIMD<double>, hmemb, mir.Size()*inner_dim);
-    AFlatMatrix<double> va(hdims[0]*inner_dim, mir.IR().GetNIP(), &hmema[0]);
-    AFlatMatrix<double> vb(inner_dim, mir.IR().GetNIP(), &hmemb[0]);
-    STACK_ARRAY(SIMD<double>, hmemda, mir.Size()*hdims[0]*inner_dim);
-    STACK_ARRAY(SIMD<double>, hmemdb, mir.Size()*inner_dim);
-    AFlatMatrix<double> dva(hdims[0]*inner_dim, mir.IR().GetNIP(), &hmemda[0]);
-    AFlatMatrix<double> dvb(inner_dim, mir.IR().GetNIP(), &hmemdb[0]);
-    c1->EvaluateDeriv (mir, va, dva);
-    c2->EvaluateDeriv (mir, vb, dvb);
-    
-    // AFlatMatrix<> va = *input[0], vb = *input[1];
-    // AFlatMatrix<> dva = *dinput[0], dvb = *dinput[1];
-
-    result = 0.0;
-    deriv = 0.0;
-    for (size_t j = 0; j < hdims[0]; j++)
-      for (size_t k = 0; k < inner_dim; k++)
-        {
-          size_t row = j*inner_dim+k;
-          for (size_t i = 0; i < mir.Size(); i++)
-            result.Get(j,i) += va.Get(row,i)*vb.Get(k,i);
-          for (size_t i = 0; i < mir.Size(); i++)
-            deriv.Get(j,i) += dva.Get(row,i)*vb.Get(k,i) + va.Get(row,i)*dvb.Get(k,i);
-        }
-  }
-
-  
-
-  virtual void EvaluateDeriv(const SIMD_BaseMappedIntegrationRule & mir,
-                             FlatArray<AFlatMatrix<>*> input,
-                             FlatArray<AFlatMatrix<>*> dinput,
-                             AFlatMatrix<> result,
-                             AFlatMatrix<> deriv) const
-  {
-    FlatArray<int> hdims = Dimensions();    
-    AFlatMatrix<> va = *input[0], vb = *input[1];
-    AFlatMatrix<> dva = *dinput[0], dvb = *dinput[1];
-
-    result = 0.0;
-    deriv = 0.0;
-    for (size_t j = 0; j < hdims[0]; j++)
-      for (size_t k = 0; k < inner_dim; k++)
-        {
-          size_t row = j*inner_dim+k;
-          for (size_t i = 0; i < mir.Size(); i++)
-            result.Get(j,i) += va.Get(row,i)*vb.Get(k,i);
-          for (size_t i = 0; i < mir.Size(); i++)
-            deriv.Get(j,i) += dva.Get(row,i)*vb.Get(k,i) + va.Get(row,i)*dvb.Get(k,i);
-        }
-  }
-  */
-  
-  /*
-  virtual void EvaluateDDeriv(const BaseMappedIntegrationRule & mir,
-                              FlatArray<FlatMatrix<>*> input,
-                              FlatArray<FlatMatrix<>*> dinput,
-                              FlatArray<FlatMatrix<>*> ddinput,
-                              FlatMatrix<> result,
-                              FlatMatrix<> deriv,
-                              FlatMatrix<> dderiv) const
-  {
-    FlatArray<int> hdims = Dimensions();    
-    FlatMatrix<> va = *input[0], vb = *input[1];
-    FlatMatrix<> vda = *dinput[0], vdb = *dinput[1];
-    FlatMatrix<> vdda = *ddinput[0], vddb = *ddinput[1];
-
-    for (int i = 0; i < mir.Size(); i++)
-      {
-        FlatMatrix<> a(hdims[0], inner_dim, &va(i,0));
-        FlatMatrix<> da(hdims[0], inner_dim, &vda(i,0));
-        FlatMatrix<> dda(hdims[0], inner_dim, &vdda(i,0));
-
-        result.Row(i) = a*vb.Row(i);
-        deriv.Row(i) = a*vdb.Row(i) + da*vb.Row(i);
-        dderiv.Row(i) = a*vddb.Row(i) + 2*da*vdb.Row(i) + dda*vb.Row(i);
-      }
-  }
-  */
-
-  
 };
 
 
@@ -3296,7 +2039,6 @@ public:
 class TransposeCoefficientFunction : public T_CoefficientFunction<TransposeCoefficientFunction>
 {
   shared_ptr<CoefficientFunction> c1;
-  // Array<int> dims;
 public:
   TransposeCoefficientFunction (shared_ptr<CoefficientFunction> ac1)
     : T_CoefficientFunction<TransposeCoefficientFunction>(1, ac1->IsComplex()), c1(ac1)
@@ -3304,14 +2046,10 @@ public:
     auto dims_c1 = c1 -> Dimensions();
     if (dims_c1.Size() != 2)
       throw Exception("Transpose of non-matrix called");
-    // dims = { dims_c1[1], dims_c1[0] };
+
     SetDimensions (Array<int> ({ dims_c1[1], dims_c1[0] }));
   }
   
-  // virtual bool IsComplex() const { return c1->IsComplex(); }
-  // virtual int Dimension() const { return c1->Dimension(); }
-  // virtual Array<int> Dimensions() const { return Array<int> (dims); } 
-
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
   {
     c1->TraverseTree (func);
@@ -3391,44 +2129,6 @@ public:
     //cout << "Transpose: complex not implemented" << endl;
   }  
 
-  /*
-  virtual void Evaluate (const BaseMappedIntegrationRule & mir,
-                         FlatMatrix<> result) const
-  {
-    FlatArray<int> hdims = Dimensions();        
-    c1->Evaluate (mir, result);
-    STACK_ARRAY(double, hmem, hdims[0]*hdims[1]);
-    FlatMatrix<> tmp (hdims[0], hdims[1], hmem);
-
-    for (int i = 0; i < mir.Size(); i++)
-      {
-        FlatMatrix<> reshape(hdims[1], hdims[0], &result(i,0));  // source matrix format
-        tmp = Trans(reshape);
-        FlatMatrix<> reshape2(hdims[0], hdims[1], &result(i,0));  // range matrix format
-        reshape2 = tmp;
-      }
-  }  
-
-  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & mir,
-                         BareSliceMatrix<SIMD<double>> result) const
-  {
-    FlatArray<int> hdims = Dimensions();    
-    c1->Evaluate (mir, result);
-    STACK_ARRAY(SIMD<double>, hmem, hdims[0]*hdims[1]);
-    AFlatMatrix<double> tmp (hdims[0], hdims[1]*SIMD<double>::Size(), &hmem[0]);
-
-    for (int i = 0; i < mir.Size(); i++)
-      {
-        for (int j = 0; j < hdims[0]; j++)
-          for (int k = 0; k < hdims[1]; k++)
-            tmp.Get(j,k) = result(k*hdims[0]+j, i);
-        for (int j = 0; j < hdims[0]; j++)
-          for (int k = 0; k < hdims[1]; k++)
-            result(j*hdims[1]+k, i) = tmp.Get(j,k);
-      }
-  }  
-  */
-
   template <typename MIR, typename T, ORDERING ORD>
   void T_Evaluate (const MIR & mir,
                    BareSliceMatrix<T,ORD> result) const
@@ -3463,235 +2163,6 @@ public:
         for (size_t i = 0; i < np; i++)
           values(j*hdims[1]+k, i) = in0(k*hdims[0]+j, i);
   }
-  
-  /*
-  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & mir, FlatArray<AFlatMatrix<double>*> input,
-                         AFlatMatrix<double> values) const
-  {
-    FlatArray<int> hdims = Dimensions();        
-    auto in0 = *input[0];
-    for (int i = 0; i < mir.Size(); i++)
-      {
-        for (int j = 0; j < hdims[0]; j++)
-          for (int k = 0; k < hdims[1]; k++)
-            values.Get(j*hdims[1]+k, i) = in0.Get(k*hdims[0]+j, i);
-      }
-  }
-
-  
-  virtual void EvaluateDeriv(const BaseMappedIntegrationRule & mir,
-                             FlatMatrix<> result,
-                             FlatMatrix<> deriv) const
-  {
-    FlatArray<int> dims = Dimensions();        
-    c1->EvaluateDeriv (mir, result, deriv);
-    Matrix<> tmp (dims[0], dims[1]);
-
-    for (int i = 0; i < mir.Size(); i++)
-      {
-        FlatMatrix<> reshape(dims[1], dims[0], &result(i,0));  // source matrix format
-        tmp = Trans(reshape);
-        FlatMatrix<> reshape2(dims[0], dims[1], &result(i,0));  // range matrix format
-        reshape2 = tmp;
-      }
-    for (int i = 0; i < mir.Size(); i++)
-      {
-        FlatMatrix<> reshape(dims[1], dims[0], &deriv(i,0));  // source matrix format
-        tmp = Trans(reshape);
-        FlatMatrix<> reshape2(dims[0], dims[1], &deriv(i,0));  // range matrix format
-        reshape2 = tmp;
-      }
-  }
-  
-  virtual void EvaluateDDeriv(const BaseMappedIntegrationRule & mir,
-                              FlatMatrix<> result,
-                              FlatMatrix<> deriv,
-                              FlatMatrix<> dderiv) const
-  {
-    FlatArray<int> dims = Dimensions();            
-    c1->EvaluateDDeriv (mir, result, deriv, dderiv);
-    Matrix<> tmp (dims[0], dims[1]);
-
-    for (int i = 0; i < mir.Size(); i++)
-      {
-        FlatMatrix<> reshape(dims[1], dims[0], &result(i,0));  // source matrix format
-        tmp = Trans(reshape);
-        FlatMatrix<> reshape2(dims[0], dims[1], &result(i,0));  // range matrix format
-        reshape2 = tmp;
-      }
-    for (int i = 0; i < mir.Size(); i++)
-      {
-        FlatMatrix<> reshape(dims[1], dims[0], &deriv(i,0));  // source matrix format
-        tmp = Trans(reshape);
-        FlatMatrix<> reshape2(dims[0], dims[1], &deriv(i,0));  // range matrix format
-        reshape2 = tmp;
-      }
-    for (int i = 0; i < mir.Size(); i++)
-      {
-        FlatMatrix<> reshape(dims[1], dims[0], &dderiv(i,0));  // source matrix format
-        tmp = Trans(reshape);
-        FlatMatrix<> reshape2(dims[0], dims[1], &dderiv(i,0));  // range matrix format
-        reshape2 = tmp;
-      }
-  }
-
-
-  virtual void Evaluate (const BaseMappedIntegrationRule & mir,
-                         FlatArray<FlatMatrix<>*> input,
-                         FlatMatrix<> result) const
-  {
-    FlatArray<int> dims = Dimensions();
-    FlatMatrix<> v1 = *input[0];
-    for (int i = 0; i < mir.Size(); i++)
-      {
-        FlatMatrix<> reshape(dims[1], dims[0], &v1(i,0));  // source matrix format
-        FlatMatrix<> reshape2(dims[0], dims[1], &result(i,0));  // range matrix format
-        reshape2 = Trans (reshape);
-      }
-  }  
-  
-  virtual void EvaluateDeriv (const BaseMappedIntegrationRule & mir,
-                              FlatArray<FlatMatrix<>*> input,
-                              FlatArray<FlatMatrix<>*> dinput,
-                              FlatMatrix<> result,
-                              FlatMatrix<> deriv) const
-  {
-    FlatArray<int> dims = Dimensions();            
-    FlatMatrix<> v1 = *input[0];
-    FlatMatrix<> dv1 = *dinput[0];
-
-    for (int i = 0; i < mir.Size(); i++)
-      {
-        FlatMatrix<> reshape(dims[1], dims[0], &v1(i,0));  // source matrix format
-        FlatMatrix<> reshape2(dims[0], dims[1], &result(i,0));  // range matrix format
-        reshape2 = Trans (reshape);
-      }
-    for (int i = 0; i < mir.Size(); i++)
-      {
-        FlatMatrix<> reshape(dims[1], dims[0], &dv1(i,0));  // source matrix format
-        FlatMatrix<> reshape2(dims[0], dims[1], &deriv(i,0));  // range matrix format
-        reshape2 = Trans (reshape);
-      }
-  }  
-
-
-  
-  virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & mir,
-                               FlatArray<FlatMatrix<>*> input,
-                               FlatArray<FlatMatrix<>*> dinput,
-                               FlatArray<FlatMatrix<>*> ddinput,
-                               FlatMatrix<> result,
-                               FlatMatrix<> deriv,
-                               FlatMatrix<> dderiv) const
-  {
-    FlatArray<int> dims = Dimensions();        
-    FlatMatrix<> v1 = *input[0];
-    FlatMatrix<> dv1 = *dinput[0];
-    FlatMatrix<> ddv1 = *ddinput[0];
-
-    for (int i = 0; i < mir.Size(); i++)
-      {
-        FlatMatrix<> reshape(dims[1], dims[0], &v1(i,0));  // source matrix format
-        FlatMatrix<> reshape2(dims[0], dims[1], &result(i,0));  // range matrix format
-        reshape2 = Trans (reshape);
-      }
-    for (int i = 0; i < mir.Size(); i++)
-      {
-        FlatMatrix<> reshape(dims[1], dims[0], &dv1(i,0));  // source matrix format
-        FlatMatrix<> reshape2(dims[0], dims[1], &deriv(i,0));  // range matrix format
-        reshape2 = Trans (reshape);
-      }
-    for (int i = 0; i < mir.Size(); i++)
-      {
-        FlatMatrix<> reshape(dims[1], dims[0], &ddv1(i,0));  // source matrix format
-        FlatMatrix<> reshape2(dims[0], dims[1], &dderiv(i,0));  // range matrix format
-        reshape2 = Trans (reshape);
-      }
-    
-  }
-  */
-
-  /*
-    virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & mir,
-                                AFlatMatrix<> result,
-                                AFlatMatrix<> deriv) const
-    {
-      FlatArray<int> dims = Dimensions();
-      size_t dim0 = dims[0], dim1 = dims[1];
-      STACK_ARRAY(SIMD<double>, hmem, dims[0]*dims[1]*mir.Size());
-      AFlatMatrix<double> in0 (dims[0]*dims[1], mir.IR().GetNIP(), &hmem[0]);
-      STACK_ARRAY(SIMD<double>, hdmem, dims[0]*dims[1]*mir.Size());
-      AFlatMatrix<double> din0 (dims[0]*dims[1], mir.IR().GetNIP(), &hdmem[0]);
-
-      c1->EvaluateDeriv (mir, in0, din0);
-      size_t s = mir.Size();
-
-      for (size_t j = 0; j < dim0; j++)
-        for (size_t k = 0; k < dim1; k++)
-          for (size_t i = 0; i < s; i++)
-            result.Get(j*dim1+k, i) = in0.Get(k*dim0+j, i);
-
-      for (int j = 0; j < dim0; j++)
-        for (int k = 0; k < dim1; k++)
-          for (size_t i = 0; i < s; i++)
-            deriv.Get(j*dim1+k, i) = din0.Get(k*dim0+j, i);
-    }
-
-    virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & mir,
-                                FlatArray<AFlatMatrix<>*> input,
-                                FlatArray<AFlatMatrix<>*> dinput,
-                                AFlatMatrix<> result,
-                                AFlatMatrix<> deriv) const
-    {
-      FlatArray<int> dims = Dimensions();
-      size_t dim0 = dims[0], dim1 = dims[1];
-      auto in0 = *input[0];
-      auto din0 = *dinput[0];
-      size_t s = mir.Size();
-
-      for (size_t j = 0; j < dim0; j++)
-        for (size_t k = 0; k < dim1; k++)
-          for (size_t i = 0; i < s; i++)
-            result.Get(j*dim1+k, i) = in0.Get(k*dim0+j, i);
-
-      for (int j = 0; j < dim0; j++)
-        for (int k = 0; k < dim1; k++)
-          for (size_t i = 0; i < s; i++)
-            deriv.Get(j*dim1+k, i) = din0.Get(k*dim0+j, i);
-    }
-
-    virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & mir,
-                                 FlatArray<AFlatMatrix<>*> input,
-                                 FlatArray<AFlatMatrix<>*> dinput,
-                                 FlatArray<AFlatMatrix<>*> ddinput,
-                                 AFlatMatrix<> result,
-                                 AFlatMatrix<> deriv,
-                                 AFlatMatrix<> dderiv) const
-    {
-      FlatArray<int> dims = Dimensions();              
-      auto in0 = *input[0];
-      auto din0 = *dinput[0];
-      auto ddin0 = *ddinput[0];
-      for (size_t i = 0; i < mir.Size(); i++)
-        {
-          for (int j = 0; j < dims[0]; j++)
-            for (int k = 0; k < dims[1]; k++)
-              result.Get(j*dims[1]+k, i) = in0.Get(k*dims[0]+j, i);
-        }
-      for (size_t i = 0; i < mir.Size(); i++)
-        {
-          for (int j = 0; j < dims[0]; j++)
-            for (int k = 0; k < dims[1]; k++)
-              deriv.Get(j*dims[1]+k, i) = din0.Get(k*dims[0]+j, i);
-        }
-      for (size_t i = 0; i < mir.Size(); i++)
-        {
-          for (int j = 0; j < dims[0]; j++)
-            for (int k = 0; k < dims[1]; k++)
-              dderiv.Get(j*dims[1]+k, i) = ddin0.Get(k*dims[0]+j, i);
-        }
-    }
-  */
   
   };  
 
@@ -3871,8 +2342,6 @@ public:
     dim1 = c1->Dimension();
   }
   
-  // virtual bool IsComplex() const { return c1->IsComplex(); }
-  // virtual int Dimension() const { return 1; }
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
     auto dims = c1->Dimensions();
@@ -3914,20 +2383,6 @@ public:
     result(0) = v1(comp);
   }
 
-  /*
-  virtual void Evaluate (const BaseMappedIntegrationRule & ir,
-                         FlatMatrix<> result) const
-  {
-    // int dim1 = c1->Dimension();
-    STACK_ARRAY(double, hmem, ir.Size()*dim1);
-    FlatMatrix<> temp(ir.Size(), dim1, hmem);
-    // Matrix<> m1(ir.Size(), c1->Dimension());
-    
-    c1->Evaluate (ir, temp);
-    result.Col(0) = temp.Col(comp);
-  }  
-  */
-  
   virtual void Evaluate (const BaseMappedIntegrationRule & ir,
                          FlatMatrix<Complex> result) const override
   {
@@ -3960,148 +2415,6 @@ public:
     values.Row(0).AddSize(ir.Size()) = in0.Row(comp);
   }
 
-  /*
-  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
-                         AFlatMatrix<double> values) const
-  {
-    auto in0 = *input[0];    
-    values.Row(0) = in0.Row(comp);
-  }
-
-  
-  virtual void EvaluateDeriv(const BaseMappedIntegrationRule & mir,
-                             FlatMatrix<> result,
-                             FlatMatrix<> deriv) const
-  {
-    STACK_ARRAY(double, hmem, mir.Size()*dim1);
-    FlatMatrix<> v1(mir.Size(), dim1, hmem);
-    STACK_ARRAY(double, hdmem, mir.Size()*dim1);
-    FlatMatrix<> dv1(mir.Size(), dim1, hdmem);
-
-    c1->EvaluateDeriv (mir, v1, dv1);
-    result.Col(0) = v1.Col(comp);
-    deriv.Col(0) = dv1.Col(comp);
-  }
-
-  virtual void EvaluateDDeriv(const BaseMappedIntegrationRule & mir,
-                              FlatMatrix<> result,
-                              FlatMatrix<> deriv,
-                              FlatMatrix<> dderiv) const
-  {
-    STACK_ARRAY(double, hmem, mir.Size()*dim1);
-    FlatMatrix<> v1(mir.Size(), dim1, hmem);
-    STACK_ARRAY(double, hdmem, mir.Size()*dim1);
-    FlatMatrix<> dv1(mir.Size(), dim1, hdmem);
-    STACK_ARRAY(double, hddmem, mir.Size()*dim1);
-    FlatMatrix<> ddv1(mir.Size(), dim1, hddmem);
-
-    c1->EvaluateDDeriv (mir, v1, dv1, ddv1);
-    result.Col(0) = v1.Col(comp);
-    deriv.Col(0) = dv1.Col(comp);
-    dderiv.Col(0) = ddv1.Col(comp);
-  }
-
-
-
-
-  
-  virtual void Evaluate (const BaseMappedIntegrationRule & mir,
-                         FlatArray<FlatMatrix<>*> input,
-                         FlatMatrix<> result) const
-  {
-    FlatMatrix<> v1 = *input[0];
-    result.Col(0) = v1.Col(comp);
-  }  
-  
-  virtual void EvaluateDeriv (const BaseMappedIntegrationRule & mir,
-                              FlatArray<FlatMatrix<>*> input,
-                              FlatArray<FlatMatrix<>*> dinput,
-                              FlatMatrix<> result,
-                              FlatMatrix<> deriv) const
-  {
-    FlatMatrix<> v1 = *input[0];
-    FlatMatrix<> dv1 = *dinput[0];
-    
-    result.Col(0) = v1.Col(comp);
-    deriv.Col(0) = dv1.Col(comp);
-   }  
-
-  virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & mir,
-                               FlatArray<FlatMatrix<>*> input,
-                               FlatArray<FlatMatrix<>*> dinput,
-                               FlatArray<FlatMatrix<>*> ddinput,
-                               FlatMatrix<> result,
-                               FlatMatrix<> deriv,
-                               FlatMatrix<> dderiv) const
-  {
-    FlatMatrix<> v1 = *input[0];
-    FlatMatrix<> dv1 = *dinput[0];
-    FlatMatrix<> ddv1 = *ddinput[0];
-    
-    result.Col(0) = v1.Col(comp);
-    deriv.Col(0) = dv1.Col(comp);
-    dderiv.Col(0) = ddv1.Col(comp);
-   }  
-  */
-
-  /*
-  virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & mir, 
-                              AFlatMatrix<double> values, AFlatMatrix<double> deriv) const
-  {
-    STACK_ARRAY(SIMD<double>, hmem, mir.Size()*dim1);
-    AFlatMatrix<> v1(dim1, mir.IR().GetNIP(), hmem);
-    STACK_ARRAY(SIMD<double>, hdmem, mir.Size()*dim1);
-    AFlatMatrix<> dv1(dim1, mir.IR().GetNIP(), hdmem);
-    
-    c1->EvaluateDeriv (mir, v1, dv1);
-    values.Row(0) = v1.Row(comp);
-    deriv.Row(0) = dv1.Row(comp);
-  }
-  
-
-  
-  virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & mir, 
-                               AFlatMatrix<double> values, AFlatMatrix<double> deriv,
-                               AFlatMatrix<double> dderiv) const
-  {
-    STACK_ARRAY(SIMD<double>, hmem, mir.Size()*dim1);
-    AFlatMatrix<> v1(dim1, mir.Size(), hmem);
-    STACK_ARRAY(SIMD<double>, hdmem, mir.Size()*dim1);
-    AFlatMatrix<> dv1(dim1, mir.Size(), hdmem);
-    STACK_ARRAY(SIMD<double>, hddmem, mir.Size()*dim1);
-    AFlatMatrix<> ddv1(dim1, mir.Size(), hddmem);
-    
-    c1->EvaluateDDeriv (mir, v1, dv1, ddv1);
-    values.Row(0) = v1.Row(comp);
-    deriv.Row(0) = dv1.Row(comp);
-    dderiv.Row(0) = ddv1.Row(comp);
-  }
-  
-  virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
-                              FlatArray<AFlatMatrix<>*> input,
-                              FlatArray<AFlatMatrix<>*> dinput,
-                              AFlatMatrix<> result,
-                              AFlatMatrix<> deriv) const
-  {
-    result.Row(0) = input[0] -> Row(comp);
-    deriv.Row(0) = dinput[0] -> Row(comp);
-  }
-  
-  virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & ir,
-                               FlatArray<AFlatMatrix<>*> input,
-                               FlatArray<AFlatMatrix<>*> dinput,
-                               FlatArray<AFlatMatrix<>*> ddinput,
-                               AFlatMatrix<> result,
-                               AFlatMatrix<> deriv,
-                               AFlatMatrix<> dderiv) const
-  {
-    result.Row(0) = input[0] -> Row(comp);
-    deriv.Row(0) = dinput[0] -> Row(comp);
-    dderiv.Row(0) = ddinput[0] -> Row(comp);
-  }
-  */
-
-  
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
                                FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
   {
@@ -4139,22 +2452,6 @@ public:
       if (cf) SetDimensions(cf->Dimensions());
   }
 
-  /*
-  virtual bool IsComplex() const 
-  { 
-    for (auto cf : ci)
-      if (cf && cf->IsComplex()) return true;
-    return false;
-  }
-
-  virtual int Dimension() const
-  {
-    for (auto cf : ci)
-      if (cf) return cf->Dimension();
-    return 0;
-  }
-  */
-  
   virtual bool DefinedOn (const ElementTransformation & trafo) override
   {
     int matindex = trafo.GetElementIndex();
@@ -4221,17 +2518,6 @@ public:
       ci[matindex] -> Evaluate (ip, result);
   }
 
-  /*
-  virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
-  {
-    int matindex = ir.GetTransformation().GetElementIndex();
-    if (matindex < ci.Size() && ci[matindex])
-      ci[matindex] -> Evaluate (ir, values);
-    else
-      values = 0.0;
-  }
-  */
-  
   virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const override
   {
     int matindex = ir.GetTransformation().GetElementIndex();
@@ -4263,17 +2549,6 @@ public:
       values.AddSize(Dimension(), ir.Size()) = T(0.0);
   }  
 
-  /*
-  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
-                         AFlatMatrix<double> values) const
-  {
-    int matindex = ir.GetTransformation().GetElementIndex();
-    if (matindex < ci.Size() && ci[matindex])
-      values = *input[matindex];
-    else
-      values = 0.0;
-  }
-  */
   
   virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
                         FlatVector<Complex> result) const override
@@ -4283,40 +2558,13 @@ public:
     if (matindex < ci.Size() && ci[matindex])
       ci[matindex] -> Evaluate (ip, result);
   }
+  
   virtual Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const override
   {
     Vec<1,Complex> res;
     Evaluate (ip, res);
     return res(0);
   }
-
-  /*
-  virtual void EvaluateDeriv(const BaseMappedIntegrationRule & mir,
-                             FlatMatrix<> result,
-                             FlatMatrix<> deriv) const
-  {
-    result = 0;
-    deriv = 0;
-
-    int matindex = mir.GetTransformation().GetElementIndex();
-    if (matindex < ci.Size() && ci[matindex])
-      ci[matindex] -> EvaluateDeriv (mir, result, deriv);
-  }
-
-  virtual void EvaluateDDeriv(const BaseMappedIntegrationRule & mir,
-                              FlatMatrix<> result,
-                              FlatMatrix<> deriv,
-                              FlatMatrix<> dderiv) const
-  {
-    result = 0;
-    deriv = 0;
-    dderiv = 0;
-
-    int matindex = mir.GetTransformation().GetElementIndex();
-    if (matindex < ci.Size() && ci[matindex])
-      ci[matindex] -> EvaluateDDeriv (mir, result, deriv, dderiv);
-  }
-  */
 };
 
   shared_ptr<CoefficientFunction>
@@ -4502,15 +2750,6 @@ class IfPosCoefficientFunction : public T_CoefficientFunction<IfPosCoefficientFu
         cf_else->Evaluate(ip,values);
     }
 
-    /*
-    auto GetValue (double x) const { return x; }
-    auto GetValue (SIMD<double> x) const { return x; }
-    template <int DIM, typename T>
-    auto GetValue (AutoDiff<DIM,T> x) const { return x.Value(); }
-    template <int DIM, typename T>
-    auto GetValue (AutoDiffDiff<DIM,T> x) const { return x.Value(); }
-    */
-    
     template <typename MIR, typename T, ORDERING ORD>    
     void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
     {
@@ -4959,36 +3198,6 @@ public:
     // ci[i]->Evaluate(ip, result.Range(i,i+1));
   }
 
-  /*
-  virtual void Evaluate(const BaseMappedIntegrationRule & ir,
-                        FlatMatrix<> result) const
-  {
-    int base = 0;
-    for (auto & cf : ci)
-      {
-        int dimi = cf->Dimension();
-        STACK_ARRAY(double, hmem, ir.Size()*dimi);
-        FlatMatrix<> temp(ir.Size(), dimi, hmem);
-        cf->Evaluate(ir, temp);
-        result.Cols(base,base+dimi) = temp;
-        base += dimi;
-      }
-  }
-  */
-  
-  /*
-  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
-  {
-    int base = 0;
-    for (int i : Range(ci))
-      {
-        ci[i]->Evaluate(ir, values.Rows(base,base+dimi[i]));
-        base += dimi[i];
-      }
-  }
-  */
-
-  
   template <typename MIR, typename T, ORDERING ORD>
   void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
   {
@@ -5011,68 +3220,6 @@ public:
       }
   }
 
-  /*
-  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
-                         AFlatMatrix<double> values) const
-  {
-    size_t base = 0;
-    for (size_t i : Range(ci))
-      {
-        values.Rows(base,base+dimi[i]) = *input[i];
-        base += dimi[i];
-      }
-  }
-  */
-
-  /*
-  virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
-                              AFlatMatrix<> result,
-                              AFlatMatrix<> deriv) const
-  {
-    size_t base = 0;
-    for (size_t i : Range(ci))
-      {
-        ci[i]->EvaluateDeriv (ir, result.Rows(base,base+dimi[i]), deriv.Rows(base,base+dimi[i]));
-        base += dimi[i];
-      }
-  }
-
-
-  
-  virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
-                              FlatArray<AFlatMatrix<>*> input,
-                              FlatArray<AFlatMatrix<>*> dinput,
-                              AFlatMatrix<> result,
-                              AFlatMatrix<> deriv) const
-  {
-    size_t base = 0;
-    for (size_t i : Range(ci))
-      {
-        result.Rows(base,base+dimi[i]) = *input[i];
-        deriv.Rows(base,base+dimi[i]) = *dinput[i];
-        base += dimi[i];
-      }
-  }
-
-  virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & ir,
-                               FlatArray<AFlatMatrix<>*> input,
-                               FlatArray<AFlatMatrix<>*> dinput,
-                               FlatArray<AFlatMatrix<>*> ddinput,
-                               AFlatMatrix<> result,
-                               AFlatMatrix<> deriv,
-                               AFlatMatrix<> dderiv) const
-  {
-    size_t base = 0;
-    for (size_t i : Range(ci))
-      {
-        result.Rows(base,base+dimi[i]) = *input[i];
-        deriv.Rows(base,base+dimi[i]) = *dinput[i];
-        dderiv.Rows(base,base+dimi[i]) = *ddinput[i];
-        base += dimi[i];
-      }
-      }
-  */
-  
   virtual void Evaluate(const BaseMappedIntegrationRule & ir,
                         FlatMatrix<Complex> result) const override
   {
@@ -5088,99 +3235,6 @@ public:
       }
   }
 
-
-  /*
-  virtual void EvaluateDeriv(const BaseMappedIntegrationRule & mir,
-                             FlatMatrix<> result,
-                             FlatMatrix<> deriv) const
-  {
-    int base = 0;
-    for (auto cf : ci)
-      {
-        int dimi = cf->Dimension();
-        Matrix<> hval(mir.Size(), dimi);
-        Matrix<> hderiv(mir.Size(), dimi);
-        cf->EvaluateDeriv(mir, hval, hderiv);
-        result.Cols(base, base+dimi) = hval;
-        deriv.Cols(base, base+dimi) = hderiv;
-        base += dimi;
-      }
-      // ci[i]->EvaluateDeriv(ip, result.Range(i,i+1), deriv.Range(i,i+1));
-  }
-
-  virtual void EvaluateDDeriv(const BaseMappedIntegrationRule & mir,
-                              FlatMatrix<> result,
-                              FlatMatrix<> deriv,
-                              FlatMatrix<> dderiv) const
-  {
-    int base = 0;
-    for (auto cf : ci)
-      {
-        int dimi = cf->Dimension();
-        Matrix<> hval(mir.Size(), dimi);
-        Matrix<> hderiv(mir.Size(), dimi);
-        Matrix<> hdderiv(mir.Size(), dimi);
-        cf->EvaluateDDeriv(mir, hval, hderiv, hdderiv);
-        result.Cols(base, base+dimi) = hval;
-        deriv.Cols(base, base+dimi) = hderiv;
-        dderiv.Cols(base, base+dimi) = hdderiv;
-        base += dimi;
-      }
-  }
-
-
-
-
-  virtual void Evaluate (const BaseMappedIntegrationRule & mir,
-                         FlatArray<FlatMatrix<>*> input,
-                         FlatMatrix<> result) const
-  {
-    int base = 0;
-    for (int i : Range(ci))
-      {
-        int d = dimi[i];
-        result.Cols(base, base+d) = *input[i];
-        base += d;
-      }
-  }
-  
-  virtual void EvaluateDeriv (const BaseMappedIntegrationRule & mir,
-                              FlatArray<FlatMatrix<>*> input,
-                              FlatArray<FlatMatrix<>*> dinput,
-                              FlatMatrix<> result,
-                              FlatMatrix<> deriv) const
-  {
-    int base = 0;
-    for (int i : Range(ci))
-      {
-        int d = dimi[i];        
-        result.Cols(base,base+d) = *input[i];
-        deriv.Cols(base, base+d) = *dinput[i];        
-        base += d;
-      }
-  }
-
-  
-  virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & mir,
-                               FlatArray<FlatMatrix<>*> input,
-                               FlatArray<FlatMatrix<>*> dinput,
-                               FlatArray<FlatMatrix<>*> ddinput,
-                               FlatMatrix<> result,
-                               FlatMatrix<> deriv,
-                               FlatMatrix<> dderiv) const
-  {
-    int base = 0;
-    for (int i : Range(ci))
-      {
-        int dimi = ci[i]->Dimension();
-        result.Cols(base, base+dimi) = *input[i];
-        deriv.Cols(base, base+dimi) = *dinput[i];
-        dderiv.Cols(base, base+dimi) = *ddinput[i];
-        base += dimi;
-      }
-  }
-  */
-  
 };
 
   void VectorialCoefficientFunction::GenerateCode(Code &code, FlatArray<int> inputs, int index) const
@@ -5299,8 +3353,6 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
 
 
   // ///////////////////////////// Compiled CF /////////////////////////
-// int myglobalvar;
-// int myglobalvar_eval;
   class CompiledCoefficientFunction : public CoefficientFunction, public std::enable_shared_from_this<CompiledCoefficientFunction>
   {
     typedef void (*lib_function)(const ngfem::BaseMappedIntegrationRule &, ngbla::BareSliceMatrix<double>);
@@ -5563,6 +3615,32 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
       cf->Evaluate (ip, result);
     }
 
+    template <typename MIR, typename T, ORDERING ORD>
+    void T_Evaluate (const MIR & ir,
+                     BareSliceMatrix<T,ORD> values) const
+    {
+      ArrayMem<T, 1000> hmem(ir.Size()*totdim);
+      size_t mem_ptr = 0;
+      ArrayMem<BareSliceMatrix<T,ORD>,100> temp(steps.Size());
+      ArrayMem<BareSliceMatrix<T,ORD>, 100> in(max_inputsize);
+      for (size_t i = 0; i < steps.Size()-1; i++)
+        {
+          new (&temp[i]) BareSliceMatrix<T,ORD> (FlatMatrix<T,ORD> (dim[i], ir.Size(), &hmem[mem_ptr]));
+          mem_ptr += ir.Size()*dim[i];
+        }
+      
+      new (&temp.Last()) BareSliceMatrix<T,ORD>(values);
+
+      for (size_t i = 0; i < steps.Size(); i++)
+        {
+          auto inputi = inputs[i];
+          for (int nr : Range(inputi))
+            new (&in[nr]) BareSliceMatrix<T,ORD> (temp[inputi[nr]]);
+          steps[i] -> Evaluate (ir, in.Range(0, inputi.Size()), temp[i]);
+        }
+    }
+    
+
     
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<double> values) const
     {
@@ -5572,6 +3650,10 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
         return;
       }
 
+      T_Evaluate (ir, Trans(values));
+      return;
+
+      /*
       // static Timer t1("CompiledCF::Evaluate 1");
       // static Timer t2("CompiledCF::Evaluate 2");
       // static Timer t3("CompiledCF::Evaluate 3");
@@ -5606,6 +3688,7 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
       // values = temp.Last();
       values.AddSize(ir.Size(), Dimension()) = Trans(temp.Last());
       // t2.Stop();
+      */
     }
 
 
@@ -5618,7 +3701,11 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
           compiled_function_deriv(ir, values);
           return;
         }
+
+      T_Evaluate (ir, Trans(values));
+      return;
       
+      /*
       typedef AutoDiff<1,double> T;
       ArrayMem<T,500> hmem(ir.Size()*totdim);      
       int mem_ptr = 0;
@@ -5640,6 +3727,7 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
         }
       
       values.AddSize(ir.Size(), Dimension()) = Trans(temp.Last());
+      */
     }
 
 
@@ -5652,7 +3740,11 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
         compiled_function_dderiv(ir, values);
         return;
       }
-      
+
+      T_Evaluate (ir, Trans(values));
+      return;
+
+      /*
       typedef AutoDiffDiff<1,double> T;
       ArrayMem<T,500> hmem(ir.Size()*totdim);      
       int mem_ptr = 0;
@@ -5674,6 +3766,7 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
         }
       
       values.AddSize(ir.Size(), Dimension()) = Trans(temp.Last());
+      */
     }
 
 
@@ -5686,7 +3779,11 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
           compiled_function_simd_deriv(ir, values);
           return;
         }
-      
+
+      T_Evaluate (ir, values);
+      return;
+
+      /*
       typedef AutoDiff<1,SIMD<double>> T;
       // STACK_ARRAY(T, hmem, ir.Size()*totdim);
       ArrayMem<T,500> hmem(ir.Size()*totdim);
@@ -5710,6 +3807,7 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
             new (&in[nr]) BareSliceMatrix<T> (temp[inputi[nr]]);
           steps[i] -> Evaluate (ir, in.Range(0, inputi.Size()), temp[i]);
         }
+      */
     }
 
 
@@ -5723,6 +3821,10 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
         return;
       }
       
+      T_Evaluate (ir, values);
+      return;
+
+      /*
       typedef AutoDiffDiff<1,SIMD<double>> T;
       // STACK_ARRAY(T, hmem, ir.Size()*totdim);
       ArrayMem<T,500> hmem(ir.Size()*totdim);      
@@ -5747,6 +3849,7 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
         }
 
       values.AddSize(Dimension(), ir.Size()) = temp.Last();
+      */
     }
 
     
@@ -5758,6 +3861,10 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
         return;
       }
 
+      T_Evaluate (ir, values);
+      return;
+
+      /*
       // STACK_ARRAY(SIMD<double>, hmem, ir.Size()*totdim);
       ArrayMem<SIMD<double>,500> hmem(ir.Size()*totdim);            
       int mem_ptr = 0;
@@ -5784,6 +3891,7 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
 
       BareSliceMatrix<SIMD<double>> temp_last = temp.Last();
       values.AddSize(Dimension(), ir.Size()) = temp_last;
+      */
     }
 
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const
