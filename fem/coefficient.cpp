@@ -40,31 +40,32 @@ namespace ngfem
   {
     string mycode =
       string("// GenerateCode() not overloaded for: ") + Demangle(typeid(*this).name()) + "\n"
-      + R"CODE_(    STACK_ARRAY({stack_type}, {hmem}, {stack_size});
-    {values_type} {values}({rows}, {cols}, reinterpret_cast<{vscal_type}*>(&{hmem}[0]));
+      + R"CODE_(    typedef {scal_type} TStack{index};
+    STACK_ARRAY(TStack{index}, hmem{index}, mir.Size()*{dim});
+    {values_type} {values}({rows}, {cols}, reinterpret_cast<{scal_type}*>(&hmem{index}[0]));
     {
       const CoefficientFunction & cf = *reinterpret_cast<CoefficientFunction*>({this});
-      {values} = 0.0;
+      {values} = {scal_type}(0.0);
       cf.Evaluate(mir, {values});
     }
     )CODE_";
     auto values = Var("values", index);
     string scal_type = IsComplex() ? "Complex" : "double";
-    string vscal_type = code.is_simd ? "SIMD<"+scal_type+">" : scal_type;
+    scal_type = code.is_simd ? "SIMD<"+scal_type+">" : scal_type;
+    if(code.deriv==1) scal_type = "AutoDiff<1,"+scal_type+">";
+    if(code.deriv==2) scal_type = "AutoDiffDiff<1,"+scal_type+">";
     string rows = ToString(Dimension());
     string cols = "mir.IR().Size()";
 
     std::map<string,string> variables;
     variables["scal_type"] = scal_type;
-    variables["vscal_type"] = vscal_type;
-    variables["values_type"] = "FlatMatrix<"+vscal_type+">";
+    variables["values_type"] = "FlatMatrix<"+scal_type+">";
     variables["values"] = values.S();
     variables["this"] =  code.AddPointer(this);
-    variables["stack_type"] = code.is_simd ? "SIMD<double>" : "double";
-    variables["stack_size"] = "mir.Size()*sizeof("+scal_type+")/sizeof(double)*"+ToString(Dimension());
+    variables["dim"] = ToString(Dimension());
+    variables["index"] = ToString(index);
     variables["rows"] = code.is_simd ? rows : cols;
     variables["cols"] = code.is_simd ? cols : rows;
-    variables["hmem"] = Var("hmem", index).S();
     code.header += Code::Map(mycode, variables);
     if(code.is_simd)
       {
