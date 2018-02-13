@@ -330,23 +330,28 @@ namespace ngcomp
         if(plus)
 	  {
 	    if (oi == 0)
-	      throw Exception("plus space only works with order > 0");
-	    //ndof += 2*(oi);
+	      throw Exception("plus space only works with order > 0");	 
 	    ndof += 2*(oi+1);
 	  }
         if(discontinuous)
         {
-          /*
-          auto fnums = ma->GetElFacets(ei);
-          for(int ii=0; ii<fnums.Size(); ii++)
-          {
-            ndof += first_facet_dof[fnums[ii]+1] - first_facet_dof[fnums[ii]];
-	    }
-          */
           for (auto f : ma->GetElFacets(ei))
             ndof += first_facet_dof[f+1] - first_facet_dof[f];            
         }
         break;
+      case ET_QUAD:
+	ndof += 2*(oi+1)*(oi+1) + (oi + 2) * oi * 2;
+        if(plus)
+	  {
+	    throw Exception("plus space not implemented on QUADS");	 
+	  }
+        if(discontinuous)
+        {
+          for (auto f : ma->GetElFacets(ei))
+            ndof += first_facet_dof[f+1] - first_facet_dof[f];            
+        }
+        break;
+		
       case ET_TET:
 	ndof += (oi + 1)*(oi+2)*(oi+3)/6 + 8 * oi * (oi+1)*(oi+2)/6;
 	if(discontinuous)
@@ -366,8 +371,8 @@ namespace ngcomp
     UpdateCouplingDofArray();
     if (print)
     {
-      *testout << "Hdivdiv firstfacetdof = " << first_facet_dof << endl;
-      *testout << "Hdivdiv firsteldof = " << first_element_dof << endl;
+      *testout << "Hcurldiv firstfacetdof = " << first_facet_dof << endl;
+      *testout << "Hcurldiv firsteldof = " << first_element_dof << endl;
     }
   }
 
@@ -380,19 +385,30 @@ namespace ngcomp
     {
       ctofdof[i] = discontinuous ? LOCAL_DOF : INTERFACE_DOF;
     }
-    if (discontinuous) return;
-
+    if (discontinuous) return;    
     Array<int> innerdofs;
     for(auto e: ma->Elements())
-    {
+    {            
       GetInnerDofNrs(e.Nr(), innerdofs);
-
       //lowest order constant bubble
-      ctofdof[innerdofs[0]] = INTERFACE_DOF;
+      int offset = 0;
+      switch(ma->GetElType(e.Nr()))
+	{
+	case ET_TRIG:
+	  ctofdof[innerdofs[0]] = INTERFACE_DOF;
+	  offset = 1;
+	case ET_QUAD:
+	  ctofdof[innerdofs[0]] = INTERFACE_DOF;
+	  ctofdof[innerdofs[1]] = INTERFACE_DOF;
+	  offset = 2;
+	case ET_TET:
+	  ctofdof[innerdofs[0]] = INTERFACE_DOF; 
+	  offset = 1;
+	}
       
-      for (int dof = 1; dof < innerdofs.Size(); dof++)
+      for (int dof = offset; dof < innerdofs.Size(); dof++)
       {
-        ctofdof[dof] = LOCAL_DOF;
+        ctofdof[innerdofs[dof]] = LOCAL_DOF;
       }
     }
 
@@ -458,7 +474,18 @@ namespace ngcomp
       fe->ComputeNDof();
       return *fe;
     }
-     case ET_TET:
+    case ET_QUAD:
+    {
+      auto fe = new (alloc) HCurlDivFE<ET_QUAD> (order,plus);
+      fe->SetVertexNumbers (ngel.Vertices());
+      int ii = 0;
+      for(auto f : ngel.Facets())
+        fe->SetOrderFacet(ii++,order_facet[f]);
+      fe->SetOrderInner(order_inner[ei.Nr()]);
+      fe->ComputeNDof();
+      return *fe;
+    }
+    case ET_TET:
     {
       auto fe = new (alloc) HCurlDivFE<ET_TET> (order,plus);
       fe->SetVertexNumbers (ngel.vertices);
