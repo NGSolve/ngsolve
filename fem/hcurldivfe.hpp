@@ -39,31 +39,6 @@ namespace ngfem
 
   };
   
-  template <int D,typename VEC,typename MAT>
-  void VecToMat(const VEC & vec,MAT & mat)
-  {
-    switch(D)
-    {
-    case 2:
-      mat(0) = vec(0);
-      mat(1) = vec(1);
-      mat(2) = vec(2);
-      mat(3) = vec(3);
-      break;
-    case 3:
-      mat(0) = vec(0);
-      mat(1) = vec(1);
-      mat(2) = vec(2);
-      mat(3) = vec(3);
-      mat(4) = vec(4);
-      mat(5) = vec(5);
-      mat(6) = vec(6);
-      mat(7) = vec(7);
-      mat(8) = vec(8);
-      break;
-    }
-
-  }
 
   
   template <ELEMENT_TYPE ET> class HCurlDivFE;
@@ -168,9 +143,7 @@ namespace ngfem
       }
       Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM>> (addp),SBLambda([&](int nr,auto val)
       {
-        Vec<DIM_STRESS> vecshape = val.Shape();
-        BareVector<double> matshape = shape.Row(nr);
-        VecToMat<DIM> (vecshape, matshape);
+	shape.Row(nr).AddSize(DIM_STRESS) = val.Shape();
       }));
     }
 
@@ -380,7 +353,6 @@ namespace ngfem
       return Vec<2> (0,0);     
     }
   };
-
   
   /* ############### Type 1 - inner basis functions - div-free ############### */
   /* sigma(grad(u)*v) = Curl(grad(u)) * v + grad(u) * Curl(v) */  
@@ -414,10 +386,75 @@ namespace ngfem
 
       return Vec<2> ( (vy*uxy - vx*uyy) +  (ux * vyy - uy * vxy), (-vy*uxx + vx*uxy) + (-ux*vxy + uy*vxx));     
     }    
-  }; 
+  };
+
+/* ############### Type 1.1 (for QUAD) - inner basis functions - not div-free ############### */
+  /* grad(u) * Curl(v) */
+  
+  class Gradu_Curlv
+  {
+    AutoDiffDiff<2> u,v;
+  public:
+    Gradu_Curlv  (AutoDiffDiff<2> au, AutoDiffDiff<2> av) : u(au), v(av){ ; }
+
+    Vec<4> Shape() {
+      return Vec<4> (-  v.DValue(1)*u.DValue(0),
+		      v.DValue(0)*u.DValue(0),
+		     - v.DValue(1)*u.DValue(1),
+		     v.DValue(0)*u.DValue(1)
+		     );
+    }
+
+    Vec<2> DivShape()
+    {
+      double vxx = v.DDValue(0,0), vxy = v.DDValue(0,1), vyy = v.DDValue(1,1);
+      double uxx = u.DDValue(0,0), uxy = u.DDValue(0,1), uyy = u.DDValue(1,1);
+      
+      double ux = u.DValue(0), uy = u.DValue(1);
+      double vx = v.DValue(0), vy = v.DValue(1);
+      return Vec<2> (-vy*uxx + vx*uxy,-vy*uxy + vx * uyy);
+    }
+
+    Vec<2> CurlShape()
+    {
+      double vxx = v.DDValue(0,0), vxy = v.DDValue(0,1), vyy = v.DDValue(1,1);
+      double ux = u.DValue(0), uy = u.DValue(1);
+
+      double uxx = u.DDValue(0,0), uxy = u.DDValue(0,1), uyy = u.DDValue(1,1);
+      double vx = v.DValue(0), vy = v.DValue(1);
+
+      return Vec<2> (vyy*ux - vxy*uy,-vxy*ux+vxx*uy);     
+    }    
+  };
+  
+  /* ############### Type 2 (QUAD) - inner basis functions - div-free ############### */
+  /* u * sigma(grad v) = Curl(grad v), where Curl is the 1D to 2D curl operator */
+   class u_Sigma_gradv
+  {
+    AutoDiffDiff<2> v,u;
+  public:
+    u_Sigma_gradv  (AutoDiffDiff<2> au,AutoDiffDiff<2> av) : u(au),v(av){ ; }
+    
+    Vec<4> Shape() {
+      return Vec<4> (-u.Value() * v.DDValue(0,1), u.Value() *  v.DDValue(0,0),
+		     -u.Value() * v.DDValue(1,1), u.Value() * v.DDValue(0,1)
+		     );
+    }
+
+    Vec<2> DivShape()
+    {      
+      return Vec<2> (-u.DValue(0) *v.DDValue(0,1) + u.DValue(1) * v.DDValue(0,0) , -u.DValue(0) *v.DDValue(1,1) + u.DValue(1) * v.DDValue(0,1));     
+    }
+
+    Vec<2> CurlShape()
+    {      
+      return Vec<2> (u.DValue(1) *v.DDValue(0,1) - u.DValue(0) * v.DDValue(1,1) ,-u.DValue(1) *v.DDValue(0,0) + u.DValue(0) * v.DDValue(0,1) );     
+    }
+  };
+
 
   /* ############### Type 2 - inner basis functions - NOT div-free ############### */
-  /* sigma(grad(u)*v) = Curl(grad(u)) * v - grad(u) * Curl(v) */ 
+  /* Curl(grad(u)) * v - grad(u) * Curl(v) */ 
   class Curlgraduv_graducurlv
   {
     AutoDiffDiff<2> u,v;
@@ -489,10 +526,8 @@ namespace ngfem
       return Vec<2> ( vyy*(lam1x*l2.Value() - lam2x*l1.Value()) - vxy * (lam1y*l2.Value() - lam2y*l1.Value()) - 3* vy*(-lam1x*lam2y+lam2x*lam1y),
       		      vxx*(lam1y*l2.Value() - lam2y*l1.Value()) - vxy * (lam1x*l2.Value() - lam2x*l1.Value()) + 3* vx*(-lam1x*lam2y+lam2x*lam1y)
       				);
-    }
-
-    
-  };  
+    }    
+  };
   
   /* ############### Special functions for curld-div bubbles ############### */
   /* is equal to type 1 - tr(type 1)  */
@@ -700,9 +735,7 @@ namespace ngfem
       
       int oi=order_inner;      
       int maxorder_facet =
-        max2(order_facet[0],max2(order_facet[1],order_facet[2]));
-
-      const EDGE * edges = ElementTopology::GetEdges(ET_TRIG);
+        max2(order_facet[0],max2(order_facet[1],order_facet[2]));      
 
       ArrayMem<AutoDiffDiff<2>,20> ha(maxorder_facet);
       ArrayMem<AutoDiffDiff<2>,20> v(oi), u(oi);
@@ -776,12 +809,109 @@ namespace ngfem
 	      //works but functions are not curl-div free, still less than order_inner+1
 	      shape[ii++] = Curlgraduv_graducurlv(u[oi-i],v[i]);	
 	    }	  
+	}      
+    };
+  };
+
+
+    template <> class HCurlDivFE<ET_QUAD> : public T_HCurlDivFE<ET_QUAD> 
+  {
+    
+  public:
+    using T_HCurlDivFE<ET_QUAD> :: T_HCurlDivFE;
+
+    virtual void ComputeNDof()
+    {     
+      order = 0;
+      ndof = 0;
+      for (int i=0; i<4; i++)
+	{
+	  ndof += order_facet[i]+1;
+	  order = max2(order, order_facet[i]);
 	}
       
+      int ninner = 2*(order_inner+1)*(order_inner+1) + (order_inner+2)*(order_inner) *2;
       
+      order = max2(order, order_inner);
+      order += 4;
+      ndof += ninner;     
+     
+    }
+    
+   template <typename Tx, typename TFA> 
+    void T_CalcShape (TIP<2,Tx> ip/*AutoDiffDiff<2> hx[2]*/, TFA & shape) const
+    {
+      auto x = ip.x, y = ip.y;
+      AutoDiffDiff<2> lx[4] ={1-x, x, x, 1-x};
+      AutoDiffDiff<2> ly[4] = {1-y, 1-y, y, y};
+      Tx lam[4] = {(1-x)*(1-y),x*(1-y),x*y,(1-x)*y};
+      Tx edgebubbles[4] = {(1-x)*x, x*(1-x), y*(1-y), (1-y)*y}; 
+      
+      int ii = 0;
+      
+      int oi=order_inner;
+      
+      int maxorder_facet =
+        max2(order_facet[3],max2(order_facet[0],max2(order_facet[1],order_facet[2])));
+
+      const EDGE * edges = ElementTopology::GetEdges(ET_QUAD);
+
+      ArrayMem<AutoDiffDiff<2>,20> ha(maxorder_facet);
+      ArrayMem<AutoDiffDiff<2>,20> v(oi), u(oi);
+      for (int i = 0; i < 4; i++)
+        {
+	  INT<2> e = ET_trait<ET_QUAD>::GetEdgeSort (i, vnums);
+	  
+          AutoDiffDiff<2> xi = lx[e[1]]+ly[e[1]]-lx[e[0]]-ly[e[0]];
+          AutoDiffDiff<2> eta = lx[e[0]]*ly[e[0]]+lx[e[1]]*ly[e[1]];
+	  	 
+	  IntLegNoBubble::EvalMult (maxorder_facet , xi, 0.25*edgebubbles[i], ha);	  
+	  
+          for (int l = 0; l <= order_facet[i]; l++)	    
+	    shape[ii++] = Sigma_gradv(eta*ha[l]);	 
+        }
+           
+      IntLegNoBubble::EvalMult (oi+2, lx[0]-lx[1], 0.25*lx[0]*lx[1], u);
+      IntLegNoBubble::EvalMult (oi+2, ly[0]-ly[2], 0.25*ly[0]*ly[2], v);
+
+      // constants in diagonal
+      // off-diagonal constant functions are provided by edge functions
+      shape[ii++] = Sigma_gradu_v(lx[0],ly[0]);      
+      shape[ii++] = Sigma_gradu_v(ly[0],lx[0]);
+
+      //provide mixed functions in the diagonal
+      for(int i = 0; i <= oi-1; i++)
+      {
+        for(int j = 0; j <= oi-1; j++)
+        {
+          shape[ii++] = Sigma_gradv(u[i]*v[j]);
+	  shape[ii++] = Sigma_gradu_v(u[i],v[j]);
+	}
+      }
+
+      //are needed to compensate the terms in the off diagonal from the block before
+      for(int i = 0; i <= oi+1; i++)
+      {
+        for(int j = 0; j <= oi-1; j++)
+        {
+          shape[ii++] = u_Sigma_gradv(u[j],v[i]);
+          shape[ii++] = u_Sigma_gradv(v[j],u[i]);	  	  
+        }
+      }
+       
+      // lienar (and high order) parts in the diagonal
+      for(int i = 0; i <= oi-1; i++)
+       {
+	 shape[ii++] = Sigma_gradu_v(ly[0],u[i]);
+	 shape[ii++] = Sigma_gradu_v(lx[0],v[i]);
+
+	 shape[ii++] = Gradu_Curlv(u[i],ly[0]);
+	 shape[ii++] = Gradu_Curlv(v[i],lx[0]);	 
+       }
       
     };
-  }; 
+  };
+  
  
      template <> class HCurlDivFE<ET_TET> : public T_HCurlDivFE<ET_TET> 
   {
