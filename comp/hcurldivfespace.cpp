@@ -33,8 +33,8 @@ namespace ngcomp
 	    dynamic_cast<const HCurlDivSurfaceFiniteElement<D>&> (bfel);
 	   if(D==1)	     	     
 	     fel.CalcMappedShape (sip,Trans(mat));	   
-	   else
-	     {
+	   else //this is for 3d elements as they are not implemented with sigma operators!
+	     {	       
 	       int nd = fel.GetNDof();
 	       FlatMatrix<> shape(nd,D,lh);
       
@@ -46,16 +46,10 @@ namespace ngcomp
 	       for (int i = 0; i < fel.GetNDof(); i++)
 		 {
 		   Vec<D> sigma_ref;
-		   // 2D case
-		   if(D==1)
-		     {
-		       sigma_ref(0) = shape(i,0);
-		     }
-		   else // 3D case
-		     {
-		       sigma_ref(0) = shape(i,0);
-		       sigma_ref(1) = shape(i,1);            
-		     }
+		  
+		   sigma_ref(0) = shape(i,0);
+		   sigma_ref(1) = shape(i,1);            
+		  
 		   Vec<D+1> hm = Trans(jacinv) * sigma_ref;
 		   Mat<D+1> sigma = hm * Trans(sip.GetNV());	  
 		   sigma *= (1.0 / det);
