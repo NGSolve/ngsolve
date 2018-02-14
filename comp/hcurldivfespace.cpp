@@ -83,6 +83,14 @@ namespace ngcomp
       fel.CalcMappedShape (mip,Trans(mat));
       }
 
+    
+    static void GenerateMatrixSIMDIR (const FiniteElement & fel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      dynamic_cast<const HCurlDivFiniteElement<D>&>(fel).CalcMappedShape (mir, mat);      
+      }
+
     /*    
     template <typename FEL, typename SIP, typename MAT>
     static void GenerateMatrix(const FEL & bfel, const SIP & sip,
