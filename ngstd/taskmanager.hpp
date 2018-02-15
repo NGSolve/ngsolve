@@ -802,6 +802,7 @@ public:
   auto GetNum() const { return num; } 
 };
 
+/* currently not used, plus causing problems on MSVC 2017
 template <typename T, typename std::enable_if<ngstd::has_call_operator<T>::value, int>::type = 0>                                  
 inline ParallelFunction<T> operator| (const T & func, Tasks tasks)
 {
@@ -818,6 +819,7 @@ inline Tasks operator "" _tasks_per_thread (unsigned long long n)
 {
   return Tasks(n * TaskManager::GetNumThreads());
 }
+*/
 
 /*
   thought to be used as:   array = 1 | tasks
