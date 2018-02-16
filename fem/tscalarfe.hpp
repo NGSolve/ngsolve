@@ -122,6 +122,11 @@ namespace ngfem
 #endif
 
     // NGS_DLL_HEADER virtual void GetPolOrders (FlatArray<PolOrder<DIM> > orders) const;
+
+    virtual void CalcDualShape (const IntegrationPoint & ip, SliceVector<> shape) const override
+    {
+      static_cast<const FEL*>(this) -> CalcDualShape2 (ip, shape);
+    }
     
   protected:
     /*
@@ -136,7 +141,13 @@ namespace ngfem
     INLINE void T_CalcShape (const TIP<DIM,Tx> & ip, TFA & shape) const
     {
       static_cast<const FEL*> (this) -> T_CalcShape (ip, shape);
-    }    
+    }
+
+    void CalcDualShape2 (const IntegrationPoint & ip, SliceVector<> shape) const
+    {
+      throw Exception ("dual shape not implemented"); 
+    }
+    
   };
 
 
