@@ -1955,7 +1955,7 @@ namespace ngcomp
 	if (!fes.DefinedOn(vb, eltrans.GetElementIndex())) return false;
 
 	IntegrationPoint ip(lam1, lam2, 0, 0);
-	ip.FacetNr() = facetnr;
+	ip.SetFacetNr(facetnr);
 
 	BaseMappedIntegrationPoint & mip = eltrans(ip, lh);
 	for(int j = 0; j < bfi2d.Size(); j++)
@@ -2035,7 +2035,7 @@ namespace ngcomp
         if (!fes.DefinedOn(vb, eltrans.GetElementIndex())) return false;
 
         IntegrationPoint ip(xref[0], xref[1], 0, 0);
-	ip.FacetNr() = facetnr;
+	ip.SetFacetNr(facetnr);
         if (vb==BND)
           {
             // Vec<3> vx;
@@ -2180,7 +2180,7 @@ namespace ngcomp
 	for (int i = 0; i < npts; i++)
 	  {
 	    ir[i] = IntegrationPoint (xref[i*sxref], xref[i*sxref+1]);
-	    ir[i].FacetNr() = facetnr;
+	    ir[i].SetFacetNr(facetnr);
 	  }
         
         if (vb==BND)
@@ -2668,7 +2668,7 @@ namespace ngcomp
     // cout << "viscoef, getsurfval1" << endl;
     LocalHeapMem<100000> lh("viscf::GetSurfValue");
     IntegrationPoint ip(lam1, lam2);
-    ip.FacetNr() = facetnr;
+    ip.SetFacetNr(facetnr);
     VorB vb = ma->GetDimension() == 3 ? BND : VOL;
     ElementId ei(vb, elnr);
     ElementTransformation & trafo = ma->GetTrafo (ei, lh);
@@ -2867,7 +2867,7 @@ namespace ngcomp
     for (int i = 0; i < npts; i++)
       {
         ir[i] = IntegrationPoint (xref[i*sxref], xref[i*sxref+1]);
-        ir[i].FacetNr() = facetnr;
+        ir[i].SetFacetNr(facetnr);
       }
         
     if (vb==BND)

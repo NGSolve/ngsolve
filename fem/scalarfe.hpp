@@ -97,7 +97,8 @@ namespace ngfem
     HD NGS_DLL_HEADER virtual void AddGradTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
                                                  BareSliceVector<> coefs) const;
 
-    
+
+    NGS_DLL_HEADER virtual void CalcDualShape (const IntegrationPoint & ip, SliceVector<> shape) const;
   };
 
   /**

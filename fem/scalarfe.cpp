@@ -283,6 +283,13 @@ namespace ngfem
   }
 
 
+  void BaseScalarFiniteElement ::
+  CalcDualShape (const IntegrationPoint & ip, SliceVector<> shape) const
+  {
+    throw Exception (string("CalcDualShape not overloaded for element ") + typeid(*this).name());
+  }
+
+  
   template<int D>
   list<tuple<string,double>> ScalarFiniteElement<D> :: Timing () const
   {

@@ -3513,12 +3513,13 @@ flags : dict
           [](spCF cf, VorB vb, bool element_boundary,
              bool skeleton, py::object definedon,
              IntegrationRule ir, int bonus_intorder, py::object definedonelem,
-             bool simd_evaluate)
+             bool simd_evaluate, VorB element_vb)
            {
              py::extract<Region> defon_region(definedon);
              if (defon_region.check())
                vb = VorB(defon_region());
 
+             if (element_boundary) element_vb = BND;
              // check for DG terms
              bool has_other = false;
              cf->TraverseTree ([&has_other] (CoefficientFunction & cf)
@@ -3527,12 +3528,13 @@ flags : dict
                                    if (dynamic_cast<ProxyFunction&> (cf).IsOther())
                                      has_other = true;
                                });
-             if (has_other && !element_boundary && !skeleton)
+             // if (has_other && !element_boundary && !skeleton)
+             if (has_other && (element_vb != BND) && !skeleton)
                throw Exception("DG-facet terms need either skeleton=True or element_boundary=True");
              
              shared_ptr<BilinearFormIntegrator> bfi;
              if (!has_other && !skeleton)
-               bfi = make_shared<SymbolicBilinearFormIntegrator> (cf, vb, element_boundary);
+               bfi = make_shared<SymbolicBilinearFormIntegrator> (cf, vb, element_vb);
              else
                bfi = make_shared<SymbolicFacetBilinearFormIntegrator> (cf, vb, element_boundary);
              
@@ -3567,7 +3569,8 @@ flags : dict
         py::arg("intrule")=IntegrationRule(),
         py::arg("bonus_intorder")=0,
         py::arg("definedonelements")=DummyArgument(),
-        py::arg("simd_evaluate")=true
+        py::arg("simd_evaluate")=true,
+        py::arg("element_vb")=VOL
         );
           
   m.def("SymbolicTPBFI",

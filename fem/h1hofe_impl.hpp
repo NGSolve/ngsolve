@@ -15,14 +15,10 @@ namespace ngfem
   template <ELEMENT_TYPE ET> 
   class H1HighOrderFE_Shape : public H1HighOrderFE<ET, H1HighOrderFE_Shape<ET>>
   {
-    // using H1HighOrderFE<ET>::vnums;
     using H1HighOrderFE<ET>::order;
     using H1HighOrderFE<ET>::order_edge;
     using H1HighOrderFE<ET>::order_face;
     using H1HighOrderFE<ET>::order_cell;
-    // using H1HighOrderFE<ET>::GetFaceSort;
-    // using H1HighOrderFE<ET>::GetEdgeSort;
-    // using H1HighOrderFE<ET>::EdgeOrthoPol;
 
     using H1HighOrderFE<ET>::N_VERTEX;
     using H1HighOrderFE<ET>::N_EDGE;
@@ -38,6 +34,10 @@ namespace ngfem
   public:
     template<typename Tx, typename TFA>  
       INLINE void T_CalcShape (TIP<DIM,Tx> ip, TFA & shape) const;
+    
+    void CalcDualShape2 (const IntegrationPoint & ip, SliceVector<> shape) const
+    { throw Exception ("dual shape not implemented, H1Ho"); }
+    
   };
   
 
@@ -103,6 +103,56 @@ namespace ngfem
 	DubinerBasis3::EvalMult (order_face[0][0]-3, 
 				 lam[f[0]], lam[f[1]], 
 				 lam[f[0]]*lam[f[1]]*lam[f[2]], shape+ii);
+      }
+  }
+
+
+  template<> inline void H1HighOrderFE_Shape<ET_TRIG> ::
+  CalcDualShape2 (const IntegrationPoint & ip, SliceVector<> shape) const
+  {
+    double lam[3] = { ip(0), ip(1), 1-ip(0)-ip(1) };
+
+    if (ip.VB() == BBND)
+      for (size_t i = 0; i < 3; i++)
+        shape[i] = (i == ip.FacetNr()) ? 1 : 0;
+    else
+      for (size_t i = 0; i < 3; i++)
+        shape[i] = 0;
+    size_t ii = 3;
+
+    // edge-based shapes
+    for (int i = 0; i < N_EDGE; i++)
+      if (order_edge[i] >= 2)
+	{
+          if (ip.VB() == BND && ip.FacetNr() == i)
+            {
+              INT<2> e = GetVertexOrientedEdge(i);
+              EdgeOrthoPol::
+                EvalScaledMult (order_edge[i]-2, 
+                                lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
+                                lam[e[0]]*lam[e[1]], shape+ii);
+            }
+          else
+            {
+              for (size_t j = 0; j < order_edge[i]-1; j++)
+                shape[ii+j] = 0;
+            }
+          ii += order_edge[i]-1;
+	}
+
+
+    // inner shapes
+    if (order_face[0][0] >= 3)
+      {
+        if (ip.VB() == VOL)
+          {
+            INT<4> f = GetVertexOrientedFace (0);
+            DubinerBasis3::Eval (order_face[0][0]-3, 
+                                 lam[f[0]], lam[f[1]], shape+ii);
+          }
+        else
+          for ( ; ii < ndof; ii++)
+            shape[ii] = 0;
       }
   }
 
