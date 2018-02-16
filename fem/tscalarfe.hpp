@@ -123,6 +123,7 @@ namespace ngfem
 
     // NGS_DLL_HEADER virtual void GetPolOrders (FlatArray<PolOrder<DIM> > orders) const;
 
+    HD NGS_DLL_HEADER 
     virtual void CalcDualShape (const IntegrationPoint & ip, SliceVector<> shape) const override;
     
   protected:
