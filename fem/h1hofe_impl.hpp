@@ -42,14 +42,6 @@ namespace ngfem
 
 
 
-  template <ELEMENT_TYPE ET, class SHAPES, class BASE>
-  void H1HighOrderFE<ET,SHAPES,BASE> ::
-  CalcDualShape (const IntegrationPoint & ip, SliceVector<> shape) const
-  {
-    static_cast<const SHAPES*>(this) -> CalcDualShape2 (ip, shape);
-  }
-
-
   /* *********************** Point  **********************/
 
   template<> template<typename Tx, typename TFA>  
