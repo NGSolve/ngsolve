@@ -956,6 +956,14 @@ namespace ngfem
        cout << "EvaluateGrad(simd) called for bboundary (not implemented)" << endl;        
      }
   }
+
+  template <class FEL, ELEMENT_TYPE ET, class BASE>
+  void T_ScalarFiniteElement<FEL,ET,BASE> :: 
+  CalcDualShape (const IntegrationPoint & ip, SliceVector<> shape) const override
+  {
+    static_cast<const FEL*>(this) -> CalcDualShape2 (ip, shape);
+  }
+  
   
 
   /*
