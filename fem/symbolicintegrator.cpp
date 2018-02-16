@@ -826,8 +826,8 @@ namespace ngfem
 
   SymbolicBilinearFormIntegrator ::
   SymbolicBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb,
-                                  bool aelement_boundary)
-    : cf(acf), vb(avb), element_boundary(aelement_boundary)
+                                  VorB aelement_vb)
+    : cf(acf), vb(avb), element_vb(aelement_vb)
   {
     simd_evaluate = true;
     
@@ -1283,8 +1283,8 @@ namespace ngfem
   {
     // static Timer t("SymbolicBFI::CalcElementMatrixAdd", 2);
     // ThreadRegionTimer reg(t, TaskManager::GetThreadId());
-    
-    if (element_boundary)
+    cout << "element_vb = " << element_vb << endl;
+    if (element_vb != VOL)
       {
         T_CalcElementMatrixEBAdd<SCAL, SCAL_SHAPES, SCAL_RES> (fel, trafo, elmat, lh);
         return;
@@ -1785,14 +1785,12 @@ namespace ngfem
       auto eltype = trafo.GetElementType();
       int nfacet = ElementTopology::GetNFacets(eltype);
 
-      Facet2ElementTrafo transform(eltype); 
-
+      Facet2ElementTrafo transform(eltype, element_vb); 
       for (int k = 0; k < nfacet; k++)
         {
           // tir.Start();
           HeapReset hr(lh);
-          ngfem::ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype, k);
-        
+          ngfem::ELEMENT_TYPE etfacet = transform.FacetType (k);
           const IntegrationRule& ir_facet = GetIntegrationRule(etfacet, fel_trial.Order()+fel_test.Order());
           IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
           BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
@@ -1911,7 +1909,7 @@ namespace ngfem
     */
 
       
-    if (element_boundary)
+    if (element_vb != VOL)
       {
         T_CalcLinearizedElementMatrixEB<double,double> (fel, trafo, elveclin, elmat, lh);
         return;
@@ -2371,7 +2369,7 @@ namespace ngfem
       }
     */
 
-    if (element_boundary)
+    if (element_vb != VOL)
       {
         T_ApplyElementMatrixEB<double,double> (fel, trafo, elx, ely, precomputed, lh);
         return;

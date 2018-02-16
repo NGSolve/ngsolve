@@ -331,8 +331,22 @@ namespace ngfem
   void MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE,SCAL> :: 
   ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr)
   {
-    Vec<DIM_ELEMENT> normal_ref = ElementTopology::GetNormals<DIM_ELEMENT>(et)[facetnr];
     auto hmips = mips;
+    if (hmips.Size() == 0) return;
+
+    if (Dim(et)-int(hmips[0].IP().VB()) == 0)
+      {
+        for (size_t i = 0; i < hmips.Size(); i++)
+          hmips[i].SetMeasure(1);
+        return;
+      }
+    if (hmips[0].IP().VB() == BBND)
+      {
+        throw Exception ("ComputeNormalsAndMeasure not yet available for volume-edges");
+      }
+      
+    
+    Vec<DIM_ELEMENT> normal_ref = ElementTopology::GetNormals<DIM_ELEMENT>(et)[facetnr];
     for (int i = 0; i < hmips.Size(); i++)
       {
         auto & mip = hmips[i];
@@ -717,7 +731,7 @@ namespace ngfem
 		ip.SetNr(ii);
 		// ip.FacetNr() = (k == 0) ? 0 : -1;
 		AddIntegrationPoint(ip);
-		(*this)[ii].FacetNr() = (k == 0) ? 0 : -1;
+		(*this)[ii].SetFacetNr((k == 0) ? 0 : -1);
 		ii++;
 	      }
     
@@ -727,9 +741,9 @@ namespace ngfem
                 if (fabs (axi[k]-1) < 1e-10) continue;
 		IntegrationPoint ip(axi[k], axib[j]*(1-axi[k]), 0, wib[j]*wi[k]*(1-axi[k])/3);
 		ip.SetNr(ii);
-		ip.FacetNr() = (k == 0) ? 1 : -1;			
+		ip.SetFacetNr((k == 0) ? 1 : -1);			
 		AddIntegrationPoint(ip);
-		(*this)[ii].FacetNr() =  (k == 0) ? 1 : -1;			
+		(*this)[ii].SetFacetNr((k == 0) ? 1 : -1);
 		ii++;
 	      }
 
@@ -739,9 +753,9 @@ namespace ngfem
                 if (fabs (axi[k]-1) < 1e-10) continue;
 		IntegrationPoint ip( axib[j]*(1-axi[k]),(1-axib[j])*(1-axi[k]), 0, wib[j]*wi[k]*(1-axi[k])/3);
 		ip.SetNr(ii);
-		ip.FacetNr() = (k == 0) ? 2 : -1;			
+		ip.SetFacetNr((k == 0) ? 2 : -1);
 		AddIntegrationPoint(ip);
-		(*this)[ii].FacetNr() = (k == 0) ? 2 : -1;
+		(*this)[ii].SetFacetNr((k == 0) ? 2 : -1);
 		ii++;
 	      }
 	  break;
@@ -834,8 +848,8 @@ namespace ngfem
                           IntegrationPoint ip (p, weight);
                           ip.SetNr(ii);
                           ii++;
-                          ip.FacetNr() = -1;
-                          if (axi[l] > 1-1e-10) ip.FacetNr() = j;
+                          ip.SetFacetNr(-1);
+                          if (axi[l] > 1-1e-10) ip.SetFacetNr(j);
                           AddIntegrationPoint (ip);
                         }
                       

@@ -94,7 +94,7 @@ namespace ngcomp
                                                 nullptr, nullptr, nullptr, nullptr, nullptr);
         auto test  = make_shared<ProxyFunction>(fesflux, true, false, single_evaluator,
                                                 nullptr, nullptr, nullptr, nullptr, nullptr);
-        fluxbli = make_shared<SymbolicBilinearFormIntegrator> (InnerProduct(trial,test), vb, false);
+        fluxbli = make_shared<SymbolicBilinearFormIntegrator> (InnerProduct(trial,test), vb, VOL);
         single_fluxbli = fluxbli;
         // throw Exception ("no integrator available");
       }
@@ -413,7 +413,7 @@ namespace ngcomp
                                                 nullptr, nullptr, nullptr, nullptr, nullptr);
         auto test  = make_shared<ProxyFunction>(fes, true, false, single_evaluator,
                                                 nullptr, nullptr, nullptr, nullptr, nullptr);
-        bli = make_shared<SymbolicBilinearFormIntegrator> (InnerProduct(trial,test), vb, false);
+        bli = make_shared<SymbolicBilinearFormIntegrator> (InnerProduct(trial,test), vb, VOL);
         single_bli = bli;
         // throw Exception ("no integrator available");
       }

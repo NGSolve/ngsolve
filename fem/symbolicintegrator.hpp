@@ -538,8 +538,9 @@ public:
     Array<ProxyFunction*> trial_proxies, test_proxies;
     Array<CoefficientFunction*> gridfunction_cfs;
     Array<int> trial_cum, test_cum;   // cumulated dimension of proxies
-    VorB vb;
-    bool element_boundary;
+    VorB vb;           // on the boundary of the domain ? 
+    // bool element_boundary;
+    VorB element_vb;   // on the boundary of the element ? 
     Matrix<bool> nonzeros;    // do components interact ? 
     Matrix<bool> nonzeros_proxies; // do proxies interact ?
     Matrix<bool> diagonal_proxies; // do proxies interact diagonally ?
@@ -550,7 +551,7 @@ public:
     bool is_symmetric;
   public:
     NGS_DLL_HEADER SymbolicBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb,
-                                    bool aelement_boundary);
+                                                   VorB aelement_boundary);
 
     virtual VorB VB() const override { return vb; }
     virtual xbool IsSymmetric() const override { return is_symmetric ? xbool(true) : xbool(maybe); } 

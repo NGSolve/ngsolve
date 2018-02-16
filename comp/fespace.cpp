@@ -1044,7 +1044,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
                                             true, false, evaluator,
                                             nullptr, nullptr, nullptr, nullptr, nullptr);
     shared_ptr<BilinearFormIntegrator> bli =
-      make_shared<SymbolicBilinearFormIntegrator> (InnerProduct(trial,test), vb, false);
+      make_shared<SymbolicBilinearFormIntegrator> (InnerProduct(trial,test), vb, VOL);
     
     if (is_block)
       bli = make_shared<BlockBilinearFormIntegrator> (bli, block_dim);

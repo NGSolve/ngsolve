@@ -132,6 +132,10 @@ namespace ngfem
     }
 
 
+    virtual void CalcDualShape (const IntegrationPoint & ip, SliceVector<> shape) const
+    {
+      static_cast<const SHAPES*>(this) -> CalcDualShape2 (ip, shape);
+    }
   };
 
 }  
