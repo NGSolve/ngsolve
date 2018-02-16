@@ -39,7 +39,15 @@ namespace ngfem
     { throw Exception ("dual shape not implemented, H1Ho"); }
     
   };
-  
+
+
+
+  template <ELEMENT_TYPE ET, class SHAPES, class BASE>
+  void H1HighOrderFE<ET,SHAPES,BASE> ::
+  CalcDualShape (const IntegrationPoint & ip, SliceVector<> shape) const
+  {
+    static_cast<const SHAPES*>(this) -> CalcDualShape2 (ip, shape);
+  }
 
 
   /* *********************** Point  **********************/
