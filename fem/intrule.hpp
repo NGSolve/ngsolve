@@ -894,6 +894,19 @@ namespace ngfem
             return ET_POINT;
         }
     }
+
+    size_t GetNFacets (int fnr) const
+    {
+      if (vb == BND)
+        return ElementTopology::GetNFacets(eltype);
+      else
+        {
+          if (Dim(eltype)-int(vb) == 1)
+            return ElementTopology::GetNEdges(eltype);
+          else
+            return 1; // point
+        }
+    }
     
     void operator()(int fnr, const IntegrationPoint &ipfac, IntegrationPoint & ipvol) const 
     {

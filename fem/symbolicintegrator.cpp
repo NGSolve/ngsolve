@@ -1783,9 +1783,10 @@ namespace ngfem
       const FiniteElement & fel_test = mixedfe ? mixedfe->FETest() : fel;
       
       auto eltype = trafo.GetElementType();
-      int nfacet = ElementTopology::GetNFacets(eltype);
 
       Facet2ElementTrafo transform(eltype, element_vb); 
+      int nfacet = transform.GetNFacets(eltype);
+      
       for (int k = 0; k < nfacet; k++)
         {
           // tir.Start();
