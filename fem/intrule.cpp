@@ -340,9 +340,19 @@ namespace ngfem
           hmips[i].SetMeasure(1);
         return;
       }
-    if (hmips[0].IP().VB() == BBND)
+    if (hmips[0].IP().VB() == BBND && Dim(et) == 3)
       {
-        throw Exception ("ComputeNormalsAndMeasure not yet available for volume-edges");
+        // throw Exception ("ComputeNormalsAndMeasure not yet available for volume-edges");
+	FlatVector<Vec<3>> points(99,(double*)ElementTopology::GetVertices (et));
+        auto edges = ElementTopology::GetEdges (et);
+        Vec<3> tau_ref = points(edges[facetnr][1]) - points(edges[facetnr][0]);
+        for (int i = 0; i < hmips.Size(); i++)
+          {
+            auto & mip = hmips[i];        
+            Vec<3> tau = mip.GetJacobian() * tau_ref;
+            mip.SetMeasure(L2Norm(tau));
+          }
+        return;
       }
       
     
