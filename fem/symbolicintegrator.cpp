@@ -2131,10 +2131,9 @@ namespace ngfem
     elmat = 0;
 
     auto eltype = trafo.GetElementType();
-    int nfacet = ElementTopology::GetNFacets(eltype);
     
-    Facet2ElementTrafo transform(eltype); 
-    
+    Facet2ElementTrafo transform(eltype, element_vb); 
+    int nfacet = transform.GetNFacets(eltype);
     
     if (simd_evaluate)
       try
@@ -2250,7 +2249,7 @@ namespace ngfem
     for (int k = 0; k < nfacet; k++)
       {
           HeapReset hr(lh);
-          ngfem::ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype, k);
+          ngfem::ELEMENT_TYPE etfacet = transform.FacetType (k);
         
           const IntegrationRule & ir_facet = GetIntegrationRule(etfacet, 2*fel.Order());
           IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
