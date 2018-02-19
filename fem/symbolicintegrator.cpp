@@ -1283,7 +1283,7 @@ namespace ngfem
   {
     // static Timer t("SymbolicBFI::CalcElementMatrixAdd", 2);
     // ThreadRegionTimer reg(t, TaskManager::GetThreadId());
-    cout << "element_vb = " << element_vb << endl;
+
     if (element_vb != VOL)
       {
         T_CalcElementMatrixEBAdd<SCAL, SCAL_SHAPES, SCAL_RES> (fel, trafo, elmat, lh);

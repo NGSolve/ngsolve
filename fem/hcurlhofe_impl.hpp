@@ -1186,7 +1186,7 @@ namespace ngfem
     Vec<2> pnts[3] = { { 1, 0 }, { 0, 1 } , { 0, 0 } };
     int facetnr = ip.FacetNr();
 
-    if (facetnr >= 0)
+    if (ip.VB() == BND)
       { // facet shapes
         int ii = 3;
         for (int i = 0; i < 3; i++)
@@ -1214,7 +1214,7 @@ namespace ngfem
             ii += p;
           }
       }
-    else
+    if (ip.VB() == VOL)
       { // inner shapes
         int ii = 3;
         for (int i = 0; i < 3; i++)
@@ -1242,6 +1242,77 @@ namespace ngfem
         for (int i = 1; i <= p; i++)
           for (int j = 1; j <= p-i; j++)
             shape.Row(ii++) = Vec<2> (THDiv2Shape<2> (uDv_minus_vDu (adpol1[i], adpol2[j])));
+      }
+  }
+
+
+  template<> 
+  inline void HCurlHighOrderFE_Shape<ET_TET> ::
+  CalcDualShape2 (const MappedIntegrationPoint<DIM,DIM> & mip, SliceMatrix<> shape) const
+  {
+    shape = 0;
+    auto & ip = mip.IP();
+    double x = ip(0), y = ip(1), z = ip(2);
+    double lam[4] = { x, y, z, 1-x-y-z };
+    Vec<3> pnts[4] = { { 1, 0, 0 }, { 0, 1, 0 } , { 0, 0, 1 }, { 0, 0, 0 } };
+    int facetnr = ip.FacetNr();
+    int ii = 6;
+
+    if (ip.VB() == BBND)
+      { // edge shapes
+        for (int i = 0; i < 6; i++)
+          {
+            int p = order_edge[i];
+            if (i == facetnr)
+              {
+                INT<2> e = GetEdgeSort (i, vnums);
+                double xi = lam[e[1]]-lam[e[0]];
+                Vec<3> tauref = pnts[e[1]] - pnts[e[0]];
+                Vec<3> tau = mip.GetJacobian()*tauref;
+                tau /= mip.GetMeasure();
+                LegendrePolynomial::Eval
+                  (p, xi,
+                   SBLambda([&] (size_t nr, double val)
+                            {
+                              Vec<3> vshape = val * tau;
+                              if (nr==0)
+                                shape.Row(i) = vshape;
+                              else
+                                shape.Row(ii+nr-1) = vshape;
+                            }));
+              }
+            ii += p;
+          }
+      }
+    else
+      {
+        for (int i = 0; i < 6; i++)
+          ii += order_edge[i];
+      }
+    if (ip.VB() == BND)
+      { // inner shapes
+        // now come the inner ...
+        Vec<3,AutoDiff<3>> adp(mip);
+
+        AutoDiff<3> adx = adp(0);
+        AutoDiff<3> ady = adp(1);
+        AutoDiff<3> adz = adp(1);
+        
+        AutoDiff<3> l3 = 1-adx-ady-adz;
+
+        ArrayMem<AutoDiff<3>, 20> adpol1(order+1), adpol2(order+1);
+        LegendrePolynomial::EvalScaled(order, adx-l3, adx+l3, adpol1);
+        LegendrePolynomial::Eval(order, 2*ady-1, adpol2);
+        int p = order_face[0][0];
+        /*
+        for (int i = 0; i < p; i++)
+          for (int j = 0; j < p-i; j++)
+            if (i > 0 || j > 0)
+              shape.Row(ii++) = Vec<3> (THDiv2Shape<3> (Du (adpol1[i]*adpol2[j])));
+        for (int i = 1; i <= p; i++)
+          for (int j = 1; j <= p-i; j++)
+            shape.Row(ii++) = Vec<3> (THDiv2Shape<3> (uDv_minus_vDu (adpol1[i], adpol2[j])));
+        */
       }
   }
 

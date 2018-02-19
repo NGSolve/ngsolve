@@ -1689,7 +1689,9 @@ namespace ngcomp
         additional.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHCurlDual<2>>> ());
         break;
       case 3:
-        additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHCurl<3>>> ()); break;
+        additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHCurl<3>>> ());
+        additional.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHCurlDual<3>>> ());
+        break;
       default:
         ;
       }
