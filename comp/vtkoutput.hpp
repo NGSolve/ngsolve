@@ -29,6 +29,7 @@ namespace ngcomp
   class BaseVTKOutput
   {
   public:
+    virtual ~BaseVTKOutput() { ; }
     virtual void Do (LocalHeap & lh, const BitArray * drawelems = 0) = 0;
   };
   
@@ -59,6 +60,7 @@ namespace ngcomp
 
     VTKOutput (shared_ptr<MeshAccess>, const Array<shared_ptr<CoefficientFunction>> &,
                const Array<string> &, string, int, int);
+    virtual ~VTKOutput() { ; }
     
     void ResetArrays();
     
