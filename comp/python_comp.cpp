@@ -172,7 +172,6 @@ static GlobalDummyVariables globvar;
 template<typename FESPACE>
 shared_ptr<FESPACE> fesUnpickle(py::tuple state)
 {
-  cout << "In fesUnpickle type = " << state[0].cast<string>() << endl;
   auto fes = CreateFESpace(state[0].cast<string>(),
                            state[1].cast<shared_ptr<MeshAccess>>(),
                            state[2].cast<Flags>());
@@ -1356,7 +1355,6 @@ when building the system matrices.
       auto flags = fes.GetFlags();
       auto mesh = fes.GetMeshAccess();
       auto type = fes.type;
-      cout << "In fesPickle type = " << type << endl;
       // TODO: pickle order policies
       return py::make_tuple(type,mesh,flags);
     };
