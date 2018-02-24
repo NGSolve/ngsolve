@@ -125,13 +125,12 @@ namespace ngfem
     void ComputeNDof();
 
     virtual void CalcDualShape (const MappedIntegrationPoint<DIM,DIM> & mip, SliceMatrix<> shape) const;
-    /*
-    {
-      static_cast<const HCurlHighOrderFE_Shape<ET>*> (this) -> CalcDualShape2 (mip, shape);
-    }
-    */
+    virtual void CalcDualShape (const SIMD_MappedIntegrationRule<DIM,DIM> & mir, BareSliceMatrix<SIMD<double>> shape) const;
+    virtual void EvaluateDual (const SIMD_MappedIntegrationRule<DIM,DIM> & mir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const;
+    virtual void AddDualTrans (const SIMD_MappedIntegrationRule<DIM,DIM> & mir, BareSliceMatrix<SIMD<double>> values,
+                               BareSliceVector<double> coefs) const;
   };
-
+  
 }  
 
 

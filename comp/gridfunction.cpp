@@ -2771,7 +2771,7 @@ namespace ngcomp
               {
                 ir[i](0) = xref[2*(base+i)];
                 ir[i](1) = xref[2*(base+i)+1];
-                ir[i].FacetNr() = facetnr;
+                ir[i].SetFacetNr(facetnr);
               }
 
             if (bound)
