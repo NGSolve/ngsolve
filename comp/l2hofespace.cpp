@@ -96,7 +96,7 @@ namespace ngcomp
       integrator[VOL] = make_shared<BlockBilinearFormIntegrator> (integrator[VOL], dimension);
     */
 
-    
+    SetDefinedOn(BND, BitArray(ma->GetNRegions(BND)).Clear());
 
     switch (ma->GetDimension())
       {
