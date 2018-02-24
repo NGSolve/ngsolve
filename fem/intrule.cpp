@@ -3150,8 +3150,31 @@ namespace ngfem
   void SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> :: 
   ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr)
   {   // 
-    Vec<DIM_ELEMENT> normal_ref = ElementTopology::GetNormals<DIM_ELEMENT>(et)[facetnr];
     auto hmips = mips;
+    if (hmips.Size() == 0) return;
+
+    if (Dim(et)-int(hmips[0].IP().VB()) == 0)
+      {
+        for (size_t i = 0; i < hmips.Size(); i++)
+          hmips[i].SetMeasure(1);
+        return;
+      }
+    if (hmips[0].IP().VB() == BBND && Dim(et) == 3)
+      {
+        // throw Exception ("ComputeNormalsAndMeasure not yet available for volume-edges");
+	FlatVector<Vec<3>> points(99,(double*)ElementTopology::GetVertices (et));
+        auto edges = ElementTopology::GetEdges (et);
+        Vec<3> tau_ref = points(edges[facetnr][1]) - points(edges[facetnr][0]);
+        for (int i = 0; i < hmips.Size(); i++)
+          {
+            auto & mip = hmips[i];        
+            Vec<3,SIMD<double>> tau = mip.GetJacobian() * tau_ref;
+            mip.SetMeasure(L2Norm(tau));
+          }
+        return;
+      }
+    
+    Vec<DIM_ELEMENT> normal_ref = ElementTopology::GetNormals<DIM_ELEMENT>(et)[facetnr];
     for (int i = 0; i < hmips.Size(); i++)
       {
         auto & mip = hmips[i];
@@ -3247,27 +3270,27 @@ namespace ngfem
     FlatArray<SIMD<IntegrationPoint>> hirfacet = irfacet;
     FlatArray<SIMD<IntegrationPoint>> hirvol = irvol;
     
-    switch (ElementTopology::GetFacetType(eltype, fnr))
+    // switch (ElementTopology::GetFacetType(eltype, fnr))
+    switch (FacetType(fnr))
       {
       case ET_POINT:
         {
           irvol[0](0) = points (fnr)[0];
-          irvol[0](1) = 0.0;
-          irvol[0](2) = 0.0;
+          irvol[0](1) = points (fnr)[1];
+          irvol[0](2) = points (fnr)[2];
           break;
         }
       case ET_SEGM:
         {
-          Vec<2> p1 = points (edges[fnr][0]);
-          Vec<2> p2 = points (edges[fnr][1]);
-          Vec<2> delta = p1-p2;
+          Vec<3> p1 = points (edges[fnr][0]);
+          Vec<3> p2 = points (edges[fnr][1]);
+          Vec<3> delta = p1-p2;
           for (int i = 0; i < hirfacet.Size(); i++)
             {
               auto ip = hirfacet[i];
               auto & ipvol = hirvol[i];              
-              for (int k = 0; k < 2; k++)
+              for (int k = 0; k < 3; k++)
                 ipvol(k) = p2(k) + delta(k) * ip(0);
-              ipvol(2) = 0.0;
             }
           break;
         }
@@ -3320,7 +3343,7 @@ namespace ngfem
     
     for (int i = 0; i < irfacet.Size(); i++)
       {
-        irvol[i].FacetNr() = fnr;
+        irvol[i].SetFacetNr(fnr, vb);
         irvol[i].Weight() = irfacet[i].Weight();
       }
 
@@ -3514,7 +3537,7 @@ namespace ngfem
     
     for (int i = 0; i < irfacet.Size(); i++)
       {
-        irvol[i].FacetNr() = fnr;
+        irvol[i].SetFacetNr(fnr);
         irvol[i].Weight() = irfacet[i].Weight();
       }
 

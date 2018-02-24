@@ -108,7 +108,8 @@ namespace ngfem
     template<typename Tx, typename TFA>  
     void T_CalcShape (Tx hx[DIM], TFA & shape) const;
 
-    inline void CalcDualShape2 (const MappedIntegrationPoint<DIM,DIM> & mip, SliceMatrix<> shape) const
+    template <typename MIP, typename TFA>
+    inline void CalcDualShape2 (const MIP & mip, TFA & shape) const
     {
       throw Exception(string("CalcDualShape missing for HighOrderHCurl element ")+ElementTopology::GetElementName(ET));
     }
@@ -1175,15 +1176,16 @@ namespace ngfem
 
   // dual shapes
 
-  template<> 
+  template<> template <typename MIP, typename TFA>
   inline void HCurlHighOrderFE_Shape<ET_TRIG> ::
-  CalcDualShape2 (const MappedIntegrationPoint<DIM,DIM> & mip, SliceMatrix<> shape) const
+  CalcDualShape2 (const MIP & mip, TFA & shape) const
   {
-    shape = 0;
+    // shape = 0;
     auto & ip = mip.IP();
-    double x = ip(0), y = ip(1);
-    double lam[3] = { x, y, 1-x-y };
-    Vec<2> pnts[3] = { { 1, 0 }, { 0, 1 } , { 0, 0 } };
+    typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T;    
+    T x = ip(0), y = ip(1);
+    T lam[3] = { x, y, 1-x-y };
+    Vec<2,T> pnts[3] = { { 1, 0 }, { 0, 1 } , { 0, 0 } };
     int facetnr = ip.FacetNr();
 
     if (ip.VB() == BND)
@@ -1195,20 +1197,20 @@ namespace ngfem
             if (i == facetnr)
               {
                 INT<2> e = GetEdgeSort (i, vnums);
-                double xi = lam[e[1]]-lam[e[0]];
-                Vec<2> tauref = pnts[e[1]] - pnts[e[0]];
-                Vec<2> tau = mip.GetJacobian()*tauref;
+                T xi = lam[e[1]]-lam[e[0]];
+                Vec<2,T> tauref = pnts[e[1]] - pnts[e[0]];
+                Vec<2,T> tau = mip.GetJacobian()*tauref;
                 tau /= mip.GetMeasure();
 
                 LegendrePolynomial::Eval
                   (p, xi,
-                   SBLambda([&] (size_t nr, double val)
+                   SBLambda([&] (size_t nr, T val)
                             {
-                              Vec<2> vshape = val * tau;
+                              Vec<2,T> vshape = val * tau;
                               if (nr==0)
-                                shape.Row(i) = vshape;
+                                shape[i] = vshape;
                               else
-                                shape.Row(ii+nr-1) = vshape;
+                                shape[ii+nr-1] = vshape;
                             }));
               }
             ii += p;
@@ -1221,39 +1223,40 @@ namespace ngfem
           ii += order_edge[i];
 
         // now come the inner ...
-        Vec<2,AutoDiff<2>> adp(mip);
+        Vec<2,AutoDiff<2,T>> adp(mip);
         /*
         AutoDiff<2> adx(x,0);
         AutoDiff<2> ady(y,1);
         */
-        AutoDiff<2> adx = adp(0);
-        AutoDiff<2> ady = adp(1);
+        AutoDiff<2,T> adx = adp(0);
+        AutoDiff<2,T> ady = adp(1);
         
-        AutoDiff<2> l2 = 1-adx-ady;
+        AutoDiff<2,T> l2 = 1-adx-ady;
 
-        ArrayMem<AutoDiff<2>, 20> adpol1(order+1), adpol2(order+1);
+        ArrayMem<AutoDiff<2,T>, 20> adpol1(order+1), adpol2(order+1);
         LegendrePolynomial::EvalScaled(order, adx-l2, adx+l2, adpol1);
         LegendrePolynomial::Eval(order, 2*ady-1, adpol2);
         int p = order_face[0][0];
         for (int i = 0; i < p; i++)
           for (int j = 0; j < p-i; j++)
             if (i > 0 || j > 0)
-              shape.Row(ii++) = Vec<2> (THDiv2Shape<2> (Du (adpol1[i]*adpol2[j])));
+              shape[ii++] = Vec<2,T> (THDiv2Shape<2,T> (Du (adpol1[i]*adpol2[j])));
         for (int i = 1; i <= p; i++)
           for (int j = 1; j <= p-i; j++)
-            shape.Row(ii++) = Vec<2> (THDiv2Shape<2> (uDv_minus_vDu (adpol1[i], adpol2[j])));
+            shape[ii++] = Vec<2,T> (THDiv2Shape<2,T> (uDv_minus_vDu (adpol1[i], adpol2[j])));
       }
   }
 
 
-  template<> 
+  template<> template <typename MIP, typename TFA>
   inline void HCurlHighOrderFE_Shape<ET_TET> ::
-  CalcDualShape2 (const MappedIntegrationPoint<DIM,DIM> & mip, SliceMatrix<> shape) const
+  CalcDualShape2 (const MIP & mip, TFA & shape) const
   {
-    shape = 0;
+    // shape = 0;
+    typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T;        
     auto & ip = mip.IP();
-    double x = ip(0), y = ip(1), z = ip(2);
-    double lam[4] = { x, y, z, 1-x-y-z };
+    T x = ip(0), y = ip(1), z = ip(2);
+    T lam[4] = { x, y, z, 1-x-y-z };
     Vec<3> pnts[4] = { { 1, 0, 0 }, { 0, 1, 0 } , { 0, 0, 1 }, { 0, 0, 0 } };
     int facetnr = ip.FacetNr();
     int ii = 6;
@@ -1266,19 +1269,19 @@ namespace ngfem
             if (i == facetnr)
               {
                 INT<2> e = GetEdgeSort (i, vnums);
-                double xi = lam[e[1]]-lam[e[0]];
+                T xi = lam[e[1]]-lam[e[0]];
                 Vec<3> tauref = pnts[e[1]] - pnts[e[0]];
-                Vec<3> tau = mip.GetJacobian()*tauref;
+                Vec<3,T> tau = mip.GetJacobian()*tauref;
                 tau /= mip.GetMeasure();
                 LegendrePolynomial::Eval
                   (p, xi,
-                   SBLambda([&] (size_t nr, double val)
+                   SBLambda([&] (size_t nr, T val)
                             {
-                              Vec<3> vshape = val * tau;
+                              Vec<3,T> vshape = val * tau;
                               if (nr==0)
-                                shape.Row(i) = vshape;
+                                shape[i] = vshape;
                               else
-                                shape.Row(ii+nr-1) = vshape;
+                                shape[ii+nr-1] = vshape;
                             }));
               }
             ii += p;
@@ -1292,15 +1295,15 @@ namespace ngfem
     if (ip.VB() == BND)
       { // inner shapes
         // now come the inner ...
-        Vec<3,AutoDiff<3>> adp(mip);
+        Vec<3,AutoDiff<3,T>> adp(mip);
 
-        AutoDiff<3> adx = adp(0);
-        AutoDiff<3> ady = adp(1);
-        AutoDiff<3> adz = adp(1);
+        AutoDiff<3,T> adx = adp(0);
+        AutoDiff<3,T> ady = adp(1);
+        AutoDiff<3,T> adz = adp(1);
         
-        AutoDiff<3> l3 = 1-adx-ady-adz;
+        AutoDiff<3,T> l3 = 1-adx-ady-adz;
 
-        ArrayMem<AutoDiff<3>, 20> adpol1(order+1), adpol2(order+1);
+        ArrayMem<AutoDiff<3,T>, 20> adpol1(order+1), adpol2(order+1);
         LegendrePolynomial::EvalScaled(order, adx-l3, adx+l3, adpol1);
         LegendrePolynomial::Eval(order, 2*ady-1, adpol2);
         int p = order_face[0][0];
@@ -1316,19 +1319,76 @@ namespace ngfem
       }
   }
 
-
   template <ELEMENT_TYPE ET, 
             template <ELEMENT_TYPE ET2> class TSHAPES, 
             typename BASE>
   void HCurlHighOrderFE<ET,TSHAPES,BASE> ::
   CalcDualShape (const MappedIntegrationPoint<DIM,DIM> & mip, SliceMatrix<> shape) const
   {
-    static_cast<const HCurlHighOrderFE_Shape<ET>*> (this) -> CalcDualShape2 (mip, shape);
+    shape = 0.0;
+    static_cast<const HCurlHighOrderFE_Shape<ET>*> (this)
+      -> CalcDualShape2 (mip, SBLambda([shape] (size_t i, Vec<DIM> val) { shape.Row(i) = val; }));
   }
   
 
-  
-}
+  template <ELEMENT_TYPE ET, 
+            template <ELEMENT_TYPE ET2> class TSHAPES, 
+            typename BASE>
+  void HCurlHighOrderFE<ET,TSHAPES,BASE> ::
+  CalcDualShape (const SIMD_MappedIntegrationRule<DIM,DIM> & mir, BareSliceMatrix<SIMD<double>> shapes) const
+  {
+    shapes.AddSize(ndof*DIM, mir.Size()) = 0.0;
+    for (size_t i = 0; i < mir.Size(); i++)
+      static_cast<const HCurlHighOrderFE_Shape<ET>*> (this)
+        -> CalcDualShape2 (mir[i], SBLambda([shapes,i] (size_t j, Vec<DIM,SIMD<double>> val)
+                                            {
+                                              for (size_t k = 0; k < DIM; k++)
+                                                shapes(j*DIM+k, i) = val(k);
+                                            }));
+  }
 
+  template <ELEMENT_TYPE ET, 
+            template <ELEMENT_TYPE ET2> class TSHAPES, 
+            typename BASE>
+  void HCurlHighOrderFE<ET,TSHAPES,BASE> ::
+  EvaluateDual (const SIMD_MappedIntegrationRule<DIM,DIM> & mir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const
+  {
+    for (size_t i = 0; i < mir.Size(); i++)
+      {
+        Vec<DIM,SIMD<double>> sum (SIMD<double>(0.0));
+        static_cast<const HCurlHighOrderFE_Shape<ET>*> (this)
+          -> CalcDualShape2 (mir[i], SBLambda([&sum, coefs] (size_t j, Vec<DIM,SIMD<double>> val)
+                                            {
+                                              sum += coefs(j) * val;
+                                            }));
+        for (size_t k = 0; k < DIM; k++)
+          values(k, i) = sum(k);
+      }
+  }
+
+  template <ELEMENT_TYPE ET, 
+            template <ELEMENT_TYPE ET2> class TSHAPES, 
+            typename BASE>
+  void HCurlHighOrderFE<ET,TSHAPES,BASE> ::
+  AddDualTrans (const SIMD_MappedIntegrationRule<DIM,DIM> & mir, BareSliceMatrix<SIMD<double>> values,
+                BareSliceVector<double> coefs) const
+  {
+    for (size_t i = 0; i < mir.Size(); i++)
+      {
+        Vec<DIM,SIMD<double>> value;
+        for (size_t k = 0; k < DIM; k++)
+          value(k) = values(k, i);
+        
+        static_cast<const HCurlHighOrderFE_Shape<ET>*> (this)
+          -> CalcDualShape2 (mir[i], SBLambda([value, coefs] (size_t j, Vec<DIM,SIMD<double>> val)
+                                              {
+                                                SIMD<double> sum = 0.0;
+                                                for (int k = 0; k < DIM; k++)
+                                                  sum += val(k) * value(k);
+                                                coefs(j) += HSum(sum);
+                                              }));
+      }
+  }
+}
 
 #endif

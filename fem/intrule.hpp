@@ -1468,6 +1468,7 @@ namespace ngstd
   {
     SIMD<double> x[3], weight;
     int facetnr = -1;
+    ngfem::VorB vb = ngfem::VOL;
   public:
     static constexpr size_t Size() { return SIMD<double>::Size(); }
 
@@ -1502,7 +1503,10 @@ namespace ngstd
     { return ngfem::IntegrationPoint(x[0][i], x[1][i], x[2][i], weight[i]); }
 
     int FacetNr() const { return facetnr; }
-    int & FacetNr() { return facetnr; }
+    // int & FacetNr() { return facetnr; }
+    void SetFacetNr (int afacetnr, ngfem::VorB avb = ngfem::BND)
+    { facetnr = afacetnr; vb = avb; }      
+    INLINE ngfem::VorB VB() const { return vb; } 
 
     template <int DIM> 
     INLINE operator Vec<DIM, AutoDiff<DIM,SIMD<double>>> () const
