@@ -1793,7 +1793,7 @@ namespace ngcomp
                           HeapReset hr(lh);
                           ElementId sei(BND, i);
                               
-                          if (!fespace->DefinedOn (BND,ma->GetElIndex (sei))) continue;
+                          // if (!fespace->DefinedOn (BND,ma->GetElIndex (sei))) continue;
                           fnums = ma->GetElFacets(sei);
                           int fac = fnums[0];
                           ma->GetFacetElements(fac,elnums);
