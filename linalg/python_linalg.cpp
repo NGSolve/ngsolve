@@ -70,6 +70,9 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
   py::class_<BaseVector, shared_ptr<BaseVector>>(m, "BaseVector",
         py::dynamic_attr() // add dynamic attributes
       )
+    .def(py::init([] (size_t s, bool is_complex, int es) -> shared_ptr<BaseVector>
+                  { return CreateBaseVector(s,is_complex, es); }),
+                  "size"_a, "complex"_a=false, "entrysize"_a=1)
     .def(py::pickle([] (const BaseVector& bv)
                     {
                       py::list lst;
@@ -418,7 +421,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                        return m.InverseMatrix(freedofs);
                                      }
          ,"Inverse", py::arg("freedofs")=nullptr, py::arg("inverse")=py::str(""), 
-         docu_string(R"raw_string(Calculate inverse of sparse matrix"
+         docu_string(R"raw_string(Calculate inverse of sparse matrix
 Parameters
 
 freedofs : BitArray
@@ -438,6 +441,11 @@ inverse : string
 
   py::class_<BaseSparseMatrix, shared_ptr<BaseSparseMatrix>, BaseMatrix>
     (m, "BaseSparseMatrix", "sparse matrix of any type")
+    
+    .def("CreateSmoother", [](BaseSparseMatrix & m, shared_ptr<BitArray> ba) 
+         { return m.CreateJacobiPrecond(ba); },
+         py::arg("freedofs") = shared_ptr<BitArray>())
+    
     .def("CreateBlockSmoother", [](BaseSparseMatrix & m, py::object blocks)
          {
            size_t size = py::len(blocks);
@@ -460,61 +468,7 @@ inverse : string
            auto pre = m.CreateBlockJacobiPrecond (make_shared<Table<int>> (move(blocktable)));
            return pre;
          })
-    /*
-    .def("COO", [] (BM & m) -> py::object
-         {
-           SparseMatrix<double> * sp = dynamic_cast<SparseMatrix<double>*> (&m);
-           if (sp)
-             {
-               size_t nze = sp->NZE();
-               Array<int> ri(nze), ci(nze);
-               Vector<double> vals(nze);
-               for (size_t i = 0, ii = 0; i < sp->Height(); i++)
-                 {
-                   FlatArray<int> ind = sp->GetRowIndices(i);
-                   FlatVector<double> rv = sp->GetRowValues(i);
-                   for (int j = 0; j < ind.Size(); j++, ii++)
-                     {
-                       ri[ii] = i;
-                       ci[ii] = ind[j];
-                       vals[ii] = rv[j];
-                     }
-                 }
-               
-               py::object pyri = py::cast(std::move(ri));
-               py::object pyci = py::cast(std::move(ci));
-               py::object pyvals = py::cast(std::move(vals));
-               return py::make_tuple (pyri, pyci, pyvals);
-             }
-           
-           SparseMatrix<Complex> * spc
-             = dynamic_cast<SparseMatrix<Complex>*> (&m);
-           if (spc)
-             {
-               size_t nze = spc->NZE();
-               Array<int> ri(nze), ci(nze);
-               Vector<Complex> vals(nze);
-               for (size_t i = 0, ii = 0; i < spc->Height(); i++)
-                 {
-                   FlatArray<int> ind = spc->GetRowIndices(i);
-                   FlatVector<Complex> rv = spc->GetRowValues(i);
-                   for (int j = 0; j < ind.Size(); j++, ii++)
-                     {
-                       ri[ii] = i;
-                       ci[ii] = ind[j];
-                       vals[ii] = rv[j];
-                     }
-                 }
-               py::object pyri = py::cast(std::move(ri));
-               py::object pyci = py::cast(std::move(ci));
-               py::object pyvals = py::cast(std::move(vals));
-               return py::make_tuple (pyri, pyci, pyvals);
-             }
-           
-           throw Exception ("COO needs real or complex-valued sparse matrix");
-         })
-    */
-    ;
+     ;
 
   py::class_<S_BaseMatrix<double>, shared_ptr<S_BaseMatrix<double>>, BaseMatrix>
     (m, "S_BaseMatrixD", "base sparse matrix");
@@ -539,6 +493,19 @@ inverse : string
          "performs steps block-Gauss-Seidel iterations for the linear system A x = b in reverse order")
     ;
 
+  py::class_<BaseJacobiPrecond, shared_ptr<BaseJacobiPrecond>, BaseMatrix>
+    (m, "Smoother",
+     "Jacobi and Gauss-Seidel smoothing")
+    .def("Smooth", [&](BaseJacobiPrecond & jac, BaseVector & x, BaseVector & b)
+         { jac.GSSmooth (x, b); },
+         py::arg("x"), py::arg("b"),
+         "performs steps Gauss-Seidel iterations for the linear system A x = b")
+    .def("SmoothBack", &BaseJacobiPrecond::GSSmoothBack,
+         py::arg("x"), py::arg("b"),
+         "performs steps Gauss-Seidel iterations for the linear system A x = b in reverse order")
+    ;
+
+  
   py::class_<Projector, shared_ptr<Projector>, BaseMatrix> (m, "Projector")
   .def("__init__", []( Projector *instance, const BitArray &array, bool b ) {
       new (instance) Projector(array, b);
