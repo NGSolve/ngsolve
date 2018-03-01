@@ -75,20 +75,27 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                   "size"_a, "complex"_a=false, "entrysize"_a=1)
     .def(py::pickle([] (const BaseVector& bv)
                     {
-                      py::list lst;
-                      for(auto val : bv.FVDouble())
-                        lst.append(val);
-                      return py::make_tuple(bv.Size(),bv.IsComplex(),bv.EntrySize(),lst);
+                      MemoryView mv((void*) &bv.FVDouble()[0], sizeof(double) * bv.FVDouble().Size());
+                      return py::make_tuple(bv.Size(),bv.IsComplex(),bv.EntrySize(),mv);
                     },
                     [] (py::tuple state) -> shared_ptr<BaseVector>
                     {
-                      auto bv = CreateBaseVector(state[0].cast<size_t>(),
-                                                 state[1].cast<bool>(),
-                                                 state[2].cast<size_t>());
-                      auto lst = state[3].cast<py::list>();
-                      for(auto i : Range(py::len(lst)))
-                        bv.FVDouble()[i] = lst[i].cast<double>();
-                      return bv;
+                      auto mv = state[3].cast<MemoryView>();
+                      shared_ptr<BaseVector> bv;
+                      if (state[1].cast<bool>())
+                        {
+                          // create basevector with owning pointer and afterwards assign it to mem
+                          auto bptr = make_shared<S_BaseVectorPtr<Complex>>(0, state[2].cast<size_t>());
+                          bptr->AssignMemory(state[0].cast<size_t>(), mv.Ptr());
+                          return bptr;
+                        }
+                      else
+                        {
+                          // create basevector with owning pointer and afterwards assign it to mem
+                          auto bptr = make_shared<S_BaseVectorPtr<double>>(0, state[2].cast<size_t>());
+                          bptr->AssignMemory(state[0].cast<size_t>(), mv.Ptr());
+                          return bptr;
+                        }
                     }
                     ))
     .def("__str__", [](BaseVector &self) { return ToString<BaseVector>(self); } )

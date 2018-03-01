@@ -1,6 +1,7 @@
 #ifdef NGS_PYTHON
 
 #include "python_ngstd.hpp"
+#include <Python.h>
 
 #ifdef PARALLEL
 bool MPIManager::initialized_by_me = false;
@@ -457,6 +458,32 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
     .def("__exit__", &ParallelContextManager::Exit)
     .def("__timing__", &TaskManager::Timing)
     ;
+
+  m.def("_PickleMemory", [](py::object pickler, MemoryView& view)
+        {
+          py::buffer_info bi((char*) view.Ptr(), view.Size());
+          pickler.attr("write")(py::bytes("\xf0"));
+          size_t size = view.Size();
+          pickler.attr("write")(py::bytes((char*) & size, sizeof(size_t)));
+          pickler.attr("write")(py::memoryview(bi));
+        });
+  m.def("_UnpickleMemory", [](py::object unpickler)
+        {
+          auto size = *(size_t*) PyBytes_AsString(unpickler.attr("read")(sizeof(size_t)).ptr());
+          char* mem = new char[size];
+          constexpr int BUFFER_SIZE = 8 * 1024 * 1024; // read 8 MB
+          size_t n = 0;
+          while (n + BUFFER_SIZE < size)
+            {
+              auto buffer = unpickler.attr("read")(BUFFER_SIZE);
+              memcpy(&mem[n], PyBytes_AsString(buffer.ptr()), BUFFER_SIZE);
+              n += BUFFER_SIZE;
+            }
+          auto buffer = unpickler.attr("read")(size-n);
+          memcpy(&mem[n], PyBytes_AsString(buffer.ptr()), size-n);
+          unpickler.attr("append")(MemoryView(mem,size));
+        });
+  py::class_<MemoryView>(m, "_MemoryView");
 }
 
 
