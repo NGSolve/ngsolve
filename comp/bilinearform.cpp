@@ -2797,6 +2797,7 @@ namespace ngcomp
       
       
         // add eps to avoid empty lines
+	HeapReset hr(clh);
         FlatMatrix<SCAL> elmat (fespace->GetDimension(), clh);
         elmat = 0;
         dnums.SetSize(1);
