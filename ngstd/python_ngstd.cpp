@@ -195,14 +195,15 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
   PyDefToString<FlatArray<double>>(m, class_flatarrayd);
   
   py::class_<Array<double>, FlatArray<double> >(m, "ArrayD")
-    .def(py::init( [] (int n) { return new Array<double>(n); }))
-    .def("__init__", [](Array<double> &a, std::vector<double> const & x)
-                           {
-                             int s = x.size();
-                             new (&a) Array<double>(s);
-                             for (int i = 0; i < s; i++)
-                               a[i] = x[i]; 
-                           })
+    .def(py::init([] (int n) { return new Array<double>(n); }))
+    .def(py::init([] (std::vector<double> const & x)
+                  {
+                    int s = x.size();
+                    Array<double> a(s);
+                    for (int i = 0; i < s; i++)
+                      a[i] = x[i];
+                    return a;
+                  }))
     .def("__rand__" ,  []( Array<double> & a, shared_ptr<Archive> & arch )
                                          { cout << "output d array" << endl;
                                            *arch & a; return arch; })
@@ -215,15 +216,15 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
   class_flatarrayi.def(py::init<size_t, int *>());
 
   py::class_<Array<int>, FlatArray<int> >(m, "ArrayI")
-    .def(py::init( [] (int n) { return new Array<int>(n); }))
-    .def("__init__", [](std::vector<int> const & x)
-                           {
-                             int s = x.size();
-                             shared_ptr<Array<int>> tmp (new Array<int>(s));
-                             for (int i = 0; i < s; i++)
-                               (*tmp)[i] = x[i]; 
-                             return tmp;
-                           })
+    .def(py::init([] (int n) { return new Array<int>(n); }))
+    .def(py::init([] (std::vector<int> const & x)
+                  {
+                    int s = x.size();
+                    Array<int> tmp(s);
+                    for (int i = 0; i < s; i++)
+                      tmp[i] = x[i]; 
+                    return tmp;
+                  }))
     ;
 
   py::class_<ngstd::LocalHeap> (m, "LocalHeap", "A heap for fast memory allocation")
@@ -236,9 +237,10 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
     ;
   
   py::class_<ngstd::BitArray, shared_ptr<BitArray>> (m, "BitArray")
-    .def(py::init( [] (int n) { return new BitArray(n); }))
-    .def(py::init([](const BitArray& a) { return make_shared<BitArray>(a); } ))
-    .def(py::init([](const vector<bool> & a)
+    // .def(py::init<size_t>()) // not doing the right thing ????? JS
+    .def(py::init([] (size_t n) { return make_shared<BitArray>(n); }))
+    .def(py::init([] (const BitArray& a) { return make_shared<BitArray>(a); } ))
+    .def(py::init([] (const vector<bool> & a)
                   {
                     auto ba = make_shared<BitArray>(a.size());
                     ba->Clear();
