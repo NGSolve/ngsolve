@@ -103,6 +103,7 @@ namespace ngcomp
     finelevelofedge.SetSize(ned);
     finelevelofedge.Range (oldned, ned) = -1;
 
+    /*
     for (Ngs_Element el : ma->Elements(VOL))
       if (DefinedOn (el)) 
         finelevelofedge[el.Edges()] = level-1;
@@ -110,6 +111,15 @@ namespace ngcomp
     for (Ngs_Element el : ma->Elements(BND))
       if (DefinedOn (el)) 
 	finelevelofedge[el.Edges()] = level-1;
+    */
+    for (VorB vb : { VOL, BND })
+      ma -> IterateElements
+        (vb, lh,
+         [&] (auto el, LocalHeap & lh)
+         {
+           if (DefinedOn (el)) 
+             finelevelofedge[el.Edges()] = level-1;         
+         });
 
     // generate edge points, and temporary hash table
     ClosedHashTable<INT<2>, int> node2edge(5*ned+10);

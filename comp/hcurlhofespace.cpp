@@ -594,6 +594,7 @@ namespace ngcomp
 	} 
     */
 
+    /*
     for (Ngs_Element el : ma->Elements(VOL))
       if (gradientdomains[el.GetIndex()]) 
         {
@@ -602,7 +603,20 @@ namespace ngcomp
             usegrad_face[el.Faces()] = true;
           usegrad_cell[el.Nr()] = true;
         }
-
+    */
+    ma -> IterateElements
+      (VOL, lh,
+       [&](auto el, LocalHeap & lh)
+       {
+         if (gradientdomains[el.GetIndex()]) 
+           {
+             usegrad_edge[el.Edges()] = true;
+             if (ma->GetDimension() == 3)
+               usegrad_face[el.Faces()] = true;
+             usegrad_cell[el.Nr()] = true;
+           }
+       });
+    
     if (gradientboundaries.Size())
       // for (int i = 0; i < nse; i++)
       for (ElementId ei : ma->Elements(BND))
