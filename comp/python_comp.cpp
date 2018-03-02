@@ -884,13 +884,17 @@ mesh (netgen.Mesh): a mesh generated from Netgen
     .def(py::init<shared_ptr<netgen::Mesh>>())
     
 #ifndef PARALLEL
+    /*
     .def("__init__",
          [](MeshAccess *instance, const string & filename)
                            { 
                              new (instance) MeshAccess(filename);
                            },
           py::arg("filename"))
-
+    */
+    .def(py::init([](const string & filename)
+                  { return make_shared<MeshAccess>(filename); }),
+          py::arg("filename"))
 #else
 
     .def("__init__",

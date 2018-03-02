@@ -514,9 +514,11 @@ inverse : string
 
   
   py::class_<Projector, shared_ptr<Projector>, BaseMatrix> (m, "Projector")
-  .def("__init__", []( Projector *instance, const BitArray &array, bool b ) {
-      new (instance) Projector(array, b);
-      })
+    /*
+    .def(py::init([](const BitArray & array, bool b) 
+                  { return make_shared<Projector>(array, b); }))
+    */
+    .def(py::init<BitArray,bool>());
     ;
 
   py::class_<KrylovSpaceSolver, shared_ptr<KrylovSpaceSolver>, BaseMatrix> (m, "KrylovSpaceSolver")
