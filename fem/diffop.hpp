@@ -46,7 +46,7 @@ namespace ngfem
     static void GenerateMatrixIR (const FEL & fel, const MIR & mir,
                                   MAT & mat, LocalHeap & lh)
     {
-      for (int i = 0; i < mir.Size(); i++)
+      for (size_t i = 0; i < mir.Size(); i++)
         DOP::GenerateMatrix (fel, mir[i], mat.Rows(i*DOP::DIM_DMAT, (i+1)*DOP::DIM_DMAT), lh);
     }
 
@@ -79,7 +79,7 @@ namespace ngfem
 			 const TVX & x, TVY & y,
 			 LocalHeap & lh)
     {
-      for (int i = 0; i < mir.Size(); i++)
+      for (size_t i = 0; i < mir.Size(); i++)
         DOP::Apply (fel, mir[i], x, y.Row(i), lh);
     }
 
@@ -132,7 +132,7 @@ namespace ngfem
 			      LocalHeap & lh) 
     {
       y = 0.0;
-      for (int i = 0; i < mir.Size(); i++)
+      for (size_t i = 0; i < mir.Size(); i++)
         ApplyTransAdd (fel, mir[i], x.Row(i), y, lh);
     }
 
