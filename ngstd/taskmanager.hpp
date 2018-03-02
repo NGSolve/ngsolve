@@ -742,13 +742,15 @@ public:
 
 
   template <typename FUNC, typename OP, typename T>
-  auto ParallelReduce (size_t n, FUNC f, OP op, T initial)
+  auto ParallelReduce (size_t n, FUNC f, OP op, T initial1)
   {
+    typedef decltype (op(initial1,initial1)) TRES;
+    TRES initial(initial1);
     /*
     for (size_t i = 0; i < n; i++)
       initial = op(initial, f(i));
     */
-    Array<T> part_reduce(TaskManager::GetNumThreads());
+    Array<TRES> part_reduce(TaskManager::GetNumThreads());
     ParallelJob ([&] (TaskInfo ti)
                  {
                    auto r = Range(n).Split(ti.task_nr, ti.ntasks);
