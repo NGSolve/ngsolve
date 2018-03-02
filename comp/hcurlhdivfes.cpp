@@ -117,7 +117,7 @@ namespace ngcomp
         (vb, lh,
          [&] (auto el, LocalHeap & lh)
          {
-           if (DefinedOn (el)) 
+           if (this->DefinedOn (el)) 
              finelevelofedge[el.Edges()] = level-1;         
          });
 
