@@ -1295,7 +1295,30 @@ namespace ngfem
     if (ip.VB() == BND)
       { // inner shapes
         // now come the inner ...
-        Vec<3,AutoDiff<3,T>> adp(mip);
+
+	cout << "facet = " << facetnr << endl << "(" << x << "|" << y << "|" << z << ")" << endl;
+	T x2, y2;
+	switch(facetnr)
+	  {
+	  case 0:
+	    x2 = z;
+	    y2 = y;
+	    break;
+	  case 1:
+	    x2 = x;
+	    y2 = z;
+	    break;
+	  case 2:
+	    x2 = x;
+	    y2 = y;
+	    break;
+	  case 3:
+	    x2 = x;
+	    y2 = y;
+	  default:
+	    break;
+	  }
+        /*Vec<3,AutoDiff<3,T>> adp(mip);
 
         AutoDiff<3,T> adx = adp(0);
         AutoDiff<3,T> ady = adp(1);
@@ -1307,7 +1330,7 @@ namespace ngfem
         LegendrePolynomial::EvalScaled(order, adx-l3, adx+l3, adpol1);
         LegendrePolynomial::Eval(order, 2*ady-1, adpol2);
         int p = order_face[0][0];
-        /*
+        
         for (int i = 0; i < p; i++)
           for (int j = 0; j < p-i; j++)
             if (i > 0 || j > 0)
@@ -1316,6 +1339,61 @@ namespace ngfem
           for (int j = 1; j <= p-i; j++)
             shape.Row(ii++) = Vec<3> (THDiv2Shape<3> (uDv_minus_vDu (adpol1[i], adpol2[j])));
         */
+	Vec<2,AutoDiff<2,T>> adp(mip);//???
+        AutoDiff<2,T> adx = adp(0);
+        AutoDiff<2,T> ady = adp(1);
+        
+        AutoDiff<2,T> l2 = 1-adx-ady;
+
+        ArrayMem<AutoDiff<2,T>, 20> adpol1(order+1), adpol2(order+1);
+        LegendrePolynomial::EvalScaled(order, adx-l2, adx+l2, adpol1);
+        LegendrePolynomial::Eval(order, 2*ady-1, adpol2);
+        int p = order_face[0][0];
+        for (int i = 0; i < p; i++)
+          for (int j = 0; j < p-i; j++)
+            if (i > 0 || j > 0)
+	      {
+              auto vec1 = Vec<2,T> (THDiv2Shape<2,T> (Du (adpol1[i]*adpol2[j])));
+	      switch(facetnr)
+		{
+		case 0:
+		  shape[i++] = Vec<3,T>(0.0,vec1(1),vec1(0));
+		  break;
+		case 1:
+		  shape[i++] = Vec<3,T>(vec1(0),0.0,vec1(1));
+		  break;
+		case 2:
+		  shape[i++] = Vec<3,T>(vec1(0),vec1(1),0.0);
+		  break;
+		case 3:
+		  shape[i++] = 1/sqrt(3.0)*Vec<3,T>(vec1(0),vec1(1),-vec1(0)-vec1(1));
+		  break;
+		default:
+		  break;
+		}
+	      }
+        for (int i = 1; i <= p; i++)
+          for (int j = 1; j <= p-i; j++)
+	    {
+            auto vec2 = Vec<2,T> (THDiv2Shape<2,T> (uDv_minus_vDu (adpol1[i], adpol2[j])));
+	    switch(facetnr)
+		{
+		case 0:
+		  shape[i++] = Vec<3,T>(0.0,vec2(1),vec2(0));
+		  break;
+		case 1:
+		  shape[i++] = Vec<3,T>(vec2(0),0.0,vec2(1));
+		  break;
+		case 2:
+		  shape[i++] = Vec<3,T>(vec2(0),vec2(1),0.0);
+		  break;
+		case 3:
+		  shape[i++] = 1/sqrt(3.0)*Vec<3,T>(vec2(0),vec2(1),-vec2(0)-vec2(1));
+		  break;
+		default:
+		  break;
+		}
+	    }
       }
   }
 
