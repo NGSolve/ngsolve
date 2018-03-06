@@ -511,6 +511,7 @@ namespace ngstd
     }
     
     INLINE double operator[] (int i) const { return ((double*)(&data))[i]; }
+    INLINE double & operator[] (int i) { return ((double*)(&data))[i]; }
     INLINE __m512d Data() const { return data; }
     INLINE __m512d & Data() { return data; }
   };
