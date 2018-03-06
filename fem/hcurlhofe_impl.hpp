@@ -1320,14 +1320,14 @@ namespace ngfem
 		  default:
 		    break;
 		  }
-		Vec<2,AutoDiff<2,T>> adp;//(mip);//???
+		Vec<2,AutoDiff<2,T>> adp;
 		adp[0] = AutoDiff<2,T>(x2,0);
 		adp[1] = AutoDiff<2,T>(y2,1);
 		AutoDiff<2,T> adx = adp(0);
 		AutoDiff<2,T> ady = adp(1);
 		
 		AutoDiff<2,T> l2 = 1-adx-ady;
-		cout << "ii1 = " << ii << endl;
+
 		ArrayMem<AutoDiff<2,T>, 20> adpol1(order+1), adpol2(order+1);
 		LegendrePolynomial::EvalScaled(order, adx-l2, adx+l2, adpol1);
 		LegendrePolynomial::Eval(order, 2*ady-1, adpol2);
@@ -1352,7 +1352,6 @@ namespace ngfem
 			    shape[ii++] = 1/sqrt(3.0)*Vec<3,T>(vec1(0),vec1(1),-vec1(0)-vec1(1));
 			    break;
 			  default:
-			    cout << "ups" << endl;
 			    break;
 			  }
 		      }
@@ -1375,7 +1374,6 @@ namespace ngfem
 			  shape[ii++] = 1/sqrt(3.0)*Vec<3,T>(vec2(0),vec2(1),-vec2(0)-vec2(1));
 			  break;
 			default:
-			  cout << "ups" << endl;
 			  break;
 			}
 		    }
@@ -1388,7 +1386,6 @@ namespace ngfem
       {
 	cout << "Error: Volume dual shapes not implemented yet!" << endl;
       }
-    cout << "ii2 = " << ii << endl;
   }
 
   template <ELEMENT_TYPE ET, 
