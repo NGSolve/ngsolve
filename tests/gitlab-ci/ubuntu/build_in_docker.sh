@@ -25,8 +25,8 @@ fi
 
 if [ "$IMAGE_VERSION" == "mpi" ]
 then
-  apt-get install openmpi-dev openmpi gfortran
-  export CMAKE_ARGS="$CMAKE_ARGS -DUSE_MPI=ON -DMKL_STATIC=OFF -DMKL_SDL=OFF -DUSE_HYPRE=ON -DUSE_MUMPS=ON -DMKL_MULTI_THREADED=OFF -DSCALAPACK_LIBRARY=/opt/intel/mkl/lib/intel64/libmkl_scalapack_lp64.so"
+  apt-get -y install libopenmpi-dev openmpi-bin gfortran
+  export CMAKE_ARGS="$CMAKE_ARGS -DUSE_MPI=ON -DMKL_STATIC=OFF -DMKL_SDL=OFF -DUSE_HYPRE=OFF -DUSE_MUMPS=OFF -DMKL_MULTI_THREADED=OFF"
 fi
 
 cd 
