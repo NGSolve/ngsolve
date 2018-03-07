@@ -1379,7 +1379,7 @@ namespace ngfem
 		    }
 	      }
 	    else
-	      ii += p+1;
+	      ii += (p+1)*(p-1);
 	  }
       }
     if (ip.VB() == VOL)
