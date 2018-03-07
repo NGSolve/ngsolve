@@ -91,13 +91,8 @@ Flags NGS_DLL_HEADER CreateFlagsFromKwArgs(py::object pyclass, const py::kwargs&
              << std::string(py::str(pyclass)) << ", maybe there is a typo?" << endl;
 
   py::dict special;
-  try
-    {
+  if(py::hasattr(pyclass,"__special_treated_flags__"))
       special = pyclass.attr("__special_treated_flags__")();
-    }
-  catch(std::exception e)
-    {  }
-
   for (auto item : kwargs)
     {
       auto name = item.first.cast<string>();
