@@ -1252,13 +1252,13 @@ namespace ngfem
         DubinerBasis3::Eval(order-2, x, y,
                             SBLambda([&] (size_t nr, auto val)
                                      {
-				       shape[ii++] = Vec<2,T> (val, 0);
-                                       shape[ii++] = Vec<2,T> (val*xphys, val*yphys);
+				       shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<2,T> (val, 0);
+                                       shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<2,T> (val*x, val*y);
                                      }));
 	LegendrePolynomial::Eval(order-2,x,
 				 SBLambda([&] (size_t nr, auto val)
 					  {
-					    shape[ii++] = Vec<2,T>(0,val);
+					    shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<2,T>(0,val);
 					  }));
 	
       }
@@ -1314,30 +1314,31 @@ namespace ngfem
 	T x2, y2;
 	for (int f = 0; f < 4; f++)
 	  {
-	    int p = order_face[0][0];
+	    int p = order_face[f][0];
 	    if (f == facetnr)
 	      {
+		//INT<4> fav = ET_T::GetFaceSort (f, vnums);
 		switch(facetnr)
 		  {
 		  case 0:
-		    x2 = z;
-		    y2 = y;
+		    x2 = z;//lam[fav[2]];
+		    y2 = y;//lam[fav[1]];
 		    break;
 		  case 1:
-		    x2 = x;
-		    y2 = z;
+		    x2 = x;//lam[fav[0]];
+		    y2 = z;//lam[fav[2]];
 		    break;
 		  case 2:
-		    x2 = x;
-		    y2 = y;
+		    x2 = x;//lam[fav[0]];
+		    y2 = y;//lam[fav[1]];
 		    break;
 		  case 3:
-		    x2 = x;
-		    y2 = y;
+		    x2 = x;//lam[fav[0]];
+		    y2 = y;//lam[fav[1]];
 		  default:
 		    break;
 		  }
-		/*Vec<2,AutoDiff<2,T>> adp;
+		Vec<2,AutoDiff<2,T>> adp;
 		adp[0] = AutoDiff<2,T>(x2,0);
 		adp[1] = AutoDiff<2,T>(y2,1);
 		AutoDiff<2,T> adx = adp(0);
@@ -1357,16 +1358,16 @@ namespace ngfem
 			switch(facetnr)
 			  {
 			  case 0:
-			    shape[ii++] = Vec<3,T>(0.0,vec1(1),vec1(0));
+			    shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<3,T>(0.0,vec1(1),vec1(0));
 			    break;
 			  case 1:
-			    shape[ii++] = Vec<3,T>(vec1(0),0.0,vec1(1));
+			    shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<3,T>(vec1(0),0.0,vec1(1));
 			    break;
 			  case 2:
-			    shape[ii++] = Vec<3,T>(vec1(0),vec1(1),0.0);
+			    shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<3,T>(vec1(0),vec1(1),0.0);
 			    break;
 			  case 3:
-			    shape[ii++] = 1/sqrt(3.0)*Vec<3,T>(vec1(0),vec1(1),-vec1(0)-vec1(1));
+			    shape[ii++] = 1/sqrt(3.0)*1/mip.GetMeasure()*mip.GetJacobian()*Vec<3,T>(vec1(0),vec1(1),-vec1(0)-vec1(1));
 			    break;
 			  default:
 			    break;
@@ -1379,22 +1380,22 @@ namespace ngfem
 		      switch(facetnr)
 			{
 			case 0:
-			  shape[ii++] = Vec<3,T>(0.0,vec2(1),vec2(0));
+			  shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<3,T>(0.0,vec2(1),vec2(0));
 			  break;
 			case 1:
-			  shape[ii++] = Vec<3,T>(vec2(0),0.0,vec2(1));
+			  shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<3,T>(vec2(0),0.0,vec2(1));
 			  break;
 			case 2:
-			  shape[ii++] = Vec<3,T>(vec2(0),vec2(1),0.0);
+			  shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<3,T>(vec2(0),vec2(1),0.0);
 			  break;
 			case 3:
-			  shape[ii++] = 1/sqrt(3.0)*Vec<3,T>(vec2(0),vec2(1),-vec2(0)-vec2(1));
+			  shape[ii++] = 1/sqrt(3.0)*1/mip.GetMeasure()*mip.GetJacobian()*Vec<3,T>(vec2(0),vec2(1),-vec2(0)-vec2(1));
 			  break;
 			default:
 			  break;
 			}
 		    }
-		*/
+		/*
 		DubinerBasis3::Eval(order-2, x2, y2,
 				    SBLambda([&] (size_t nr, auto val)
 					     {
@@ -1438,6 +1439,7 @@ namespace ngfem
 							break;
 						      }
 						  }));
+		*/
 	      }
 	    else
 	      ii += (p+1)*(p-1);
@@ -1447,7 +1449,7 @@ namespace ngfem
       {
         for (int i = 0; i < 4; i++)
 	  {
-	    int p = order_face[0][0];
+	    int p = order_face[i][0];
 	    ii += (p+1)*(p-1);
 	  }
       }
@@ -1474,9 +1476,9 @@ namespace ngfem
 				      jac2.EvalMult(order-3 - k - j, 2 * lam[0] - 1, polsy, 
 						    SBLambda([&](size_t j, T val) LAMBDA_INLINE
 							     {
-							       shape[ii++] = Vec<3,T>(val*xphys, val*yphys, val*zphys);
-							       shape[ii++] = Vec<3,T>(val, 0, 0);
-							       shape[ii++] = Vec<3,T>(0, val, 0);
+							       shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<3,T>(val*x, val*y, val*zphys);
+							       shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<3,T>(val, 0, 0);
+							       shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<3,T>(0, val, 0);
 							     }));
 				      jac2.IncAlpha2();
 				    }));
@@ -1487,7 +1489,7 @@ namespace ngfem
         DubinerBasis3::Eval(order-3, x, y,
                             SBLambda([&] (size_t nr, auto val)
                                      {
-				       shape[ii++] = Vec<3,T> (0, 0, val);
+				       shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<3,T> (0, 0, val);
                                      }));
       }
   }
