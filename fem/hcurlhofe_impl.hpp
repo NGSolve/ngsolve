@@ -1222,12 +1222,12 @@ namespace ngfem
         for (int i = 0; i < 3; i++)
           ii += order_edge[i];
 
-        // now come the inner ...
+        /*// now come the inner ...
         Vec<2,AutoDiff<2,T>> adp(mip);
-        /*
-        AutoDiff<2> adx(x,0);
-        AutoDiff<2> ady(y,1);
-        */
+        
+        //AutoDiff<2> adx(x,0);
+        //AutoDiff<2> ady(y,1);
+        
         AutoDiff<2,T> adx = adp(0);
         AutoDiff<2,T> ady = adp(1);
         
@@ -1244,6 +1244,23 @@ namespace ngfem
         for (int i = 1; i <= p; i++)
           for (int j = 1; j <= p-i; j++)
             shape[ii++] = Vec<2,T> (THDiv2Shape<2,T> (uDv_minus_vDu (adpol1[i], adpol2[j])));
+	
+	*/
+	
+	auto xphys = mip.GetPoint()(0);
+        auto yphys = mip.GetPoint()(1);
+        DubinerBasis3::Eval(order-2, x, y,
+                            SBLambda([&] (size_t nr, auto val)
+                                     {
+				       shape[ii++] = Vec<2,T> (val, 0);
+                                       shape[ii++] = Vec<2,T> (val*xphys, val*yphys);
+                                     }));
+	LegendrePolynomial::Eval(order-2,x,
+				 SBLambda([&] (size_t nr, auto val)
+					  {
+					    shape[ii++] = Vec<2,T>(0,val);
+					  }));
+	
       }
   }
 
@@ -1320,7 +1337,7 @@ namespace ngfem
 		  default:
 		    break;
 		  }
-		Vec<2,AutoDiff<2,T>> adp;
+		/*Vec<2,AutoDiff<2,T>> adp;
 		adp[0] = AutoDiff<2,T>(x2,0);
 		adp[1] = AutoDiff<2,T>(y2,1);
 		AutoDiff<2,T> adx = adp(0);
@@ -1377,14 +1394,101 @@ namespace ngfem
 			  break;
 			}
 		    }
+		*/
+		DubinerBasis3::Eval(order-2, x2, y2,
+				    SBLambda([&] (size_t nr, auto val)
+					     {
+					       switch(facetnr)
+						 {
+						 case 0:
+						   shape[ii++] = Vec<3,T> (0, 0, val);
+						   shape[ii++] = Vec<3,T> (0, val*y2, val*x2);
+						   break;
+						 case 1:
+						   shape[ii++] = Vec<3,T> (val, 0, 0);
+						   shape[ii++] = Vec<3,T> (val*x2, 0, val*y2);
+						   break;
+						 case 2:
+						   shape[ii++] = Vec<3,T> (val, 0, 0);
+						   shape[ii++] = Vec<3,T> (val*x2, val*y2, 0);
+						   break;
+						 case 3:
+						   shape[ii++] = 1/sqrt(3)*Vec<3,T> (val, 0, -val);
+						   shape[ii++] = 1/sqrt(3)*Vec<3,T> (val*x2, val*y2, -val*x2-val*y2);
+						   
+						   break;
+						 }
+					     }));
+		LegendrePolynomial::Eval(order-2,x2,
+					 SBLambda([&] (size_t nr, auto val)
+						  {
+						    switch(facetnr)
+						      {
+						      case 0:
+							shape[ii++] = Vec<3,T>(0, val, 0);
+							break;
+						      case 1:
+							shape[ii++] = Vec<3,T>(0, 0, val);
+							break;
+						      case 2:
+							shape[ii++] = Vec<3,T>(0, val, 0);
+							break;
+						      case 3:
+							shape[ii++] = 1/sqrt(3)*Vec<3,T>(0, val, -val);
+							break;
+						      }
+						  }));
 	      }
 	    else
 	      ii += (p+1)*(p-1);
 	  }
       }
+    else
+      {
+        for (int i = 0; i < 4; i++)
+	  {
+	    int p = order_face[0][0];
+	    ii += (p+1)*(p-1);
+	  }
+      }
     if (ip.VB() == VOL)
       {
-	cout << "Error: Volume dual shapes not implemented yet!" << endl;
+	auto xphys = mip.GetPoint()(0);
+        auto yphys = mip.GetPoint()(1);
+	auto zphys = mip.GetPoint()(2);
+	
+	LegendrePolynomial leg;
+	JacobiPolynomialAlpha jac1(1);    
+	leg.EvalScaled1Assign 
+	  (order-3, lam[2]-lam[3], lam[2]+lam[3],
+	   SBLambda ([&](size_t k, T polz) LAMBDA_INLINE
+		     {
+		       // JacobiPolynomialAlpha jac(2*k+1);
+		       JacobiPolynomialAlpha jac2(2*k+2);
+		       
+		       jac1.EvalScaledMult1Assign
+			 (order-3-k, lam[1]-lam[2]-lam[3], 1-lam[0], polz, 
+			  SBLambda ([&] (size_t j, T polsy) LAMBDA_INLINE
+				    {
+				      // JacobiPolynomialAlpha jac(2*(j+k)+2);
+				      jac2.EvalMult(order-3 - k - j, 2 * lam[0] - 1, polsy, 
+						    SBLambda([&](size_t j, T val) LAMBDA_INLINE
+							     {
+							       shape[ii++] = Vec<3,T>(val*xphys, val*yphys, val*zphys);
+							       shape[ii++] = Vec<3,T>(val, 0, 0);
+							       shape[ii++] = Vec<3,T>(0, val, 0);
+							     }));
+				      jac2.IncAlpha2();
+				    }));
+		       jac1.IncAlpha2();
+		     }));
+
+
+        DubinerBasis3::Eval(order-3, x, y,
+                            SBLambda([&] (size_t nr, auto val)
+                                     {
+				       shape[ii++] = Vec<3,T> (0, 0, val);
+                                     }));
       }
   }
 
