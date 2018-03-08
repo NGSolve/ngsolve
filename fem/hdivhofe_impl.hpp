@@ -174,7 +174,7 @@ namespace ngfem
     
     if (!only_ho_div){
       // edges
-      const EDGE * edges = ElementTopology::GetEdges (ET_QUAD);
+      // const EDGE * edges = ElementTopology::GetEdges (ET_QUAD);
       for (int i = 0; i < 4; i++)
         {
           int p = order_facet[i][0]; 

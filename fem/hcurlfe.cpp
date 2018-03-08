@@ -455,7 +455,7 @@ namespace ngfem
     Q = Q_0 ... Q_{W-2}
     Q_i = I - u_i u_i^T / c_i       u_ij = 0 for j < i
   */
-  static void Householder (FlatMatrix<> & a, FlatMatrix<> inv)
+  inline void Householder (FlatMatrix<> & a, FlatMatrix<> inv)
   {
 
     (*testout) << "a = " << a << endl;
