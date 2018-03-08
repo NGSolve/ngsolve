@@ -21,7 +21,7 @@ namespace ngbla
     constexpr int SW = SIMD<double>::Size();
     SIMD<mask64> mask(w % SW);
     // bool rest = (w % SW) != 0;
-    auto pd0 = pd;
+    // auto pd0 = pd;
     for (size_t i = 0; i < h; i++, pd += distd, ps += dists)
       {
         // memcpy (pd, ps, sizeof(double)*w);

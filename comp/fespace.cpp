@@ -2099,6 +2099,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
           case ET_POINT:   return * new (lh) FE_Point;            
           }
       }
+    throw Exception ("Illegal element type in ElementFESpace::GetFE");
   }
   
   void ElementFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const

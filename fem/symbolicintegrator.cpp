@@ -722,7 +722,7 @@ namespace ngfem
         try
           {
             // static Timer t("symbolicLFI - CalcElementVector (SIMD)", 2); RegionTimer reg(t);
-            size_t tid = TaskManager::GetThreadId();
+            // size_t tid = TaskManager::GetThreadId();
             // NgProfiler::StartThreadTimer(telvec, tid);
             
             HeapReset hr(lh);

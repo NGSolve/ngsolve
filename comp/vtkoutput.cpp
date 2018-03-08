@@ -114,7 +114,7 @@ namespace ngcomp
     else
     {
       const int r = 1<<subdivision;
-      const int s = r + 1;
+      // const int s = r + 1;
 
       const double h = 1.0/r;
 

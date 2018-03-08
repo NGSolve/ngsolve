@@ -1493,7 +1493,7 @@ namespace ngcomp
 	    throw Exception ("MeshAccess::GetCD2Trafo, illegal dimension");
 	  }
 
-      case BBBND:
+      case BBBND: default:
         {
           ElementTransformation * eltrans;
           Ngs_Element el(mesh.GetElement<0>(elnr), ElementId(BBBND,elnr));
