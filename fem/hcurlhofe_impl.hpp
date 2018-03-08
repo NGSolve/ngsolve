@@ -1247,8 +1247,8 @@ namespace ngfem
 	
 	*/
 	
-	auto xphys = mip.GetPoint()(0);
-        auto yphys = mip.GetPoint()(1);
+	// auto xphys = mip.GetPoint()(0);
+        // auto yphys = mip.GetPoint()(1);
         DubinerBasis3::Eval(order-2, x, y,
                             SBLambda([&] (size_t nr, auto val)
                                      {
@@ -1455,9 +1455,9 @@ namespace ngfem
       }
     if (ip.VB() == VOL)
       {
-	auto xphys = mip.GetPoint()(0);
-        auto yphys = mip.GetPoint()(1);
-	auto zphys = mip.GetPoint()(2);
+	// auto xphys = mip.GetPoint()(0);
+        // auto yphys = mip.GetPoint()(1);
+	// auto zphys = mip.GetPoint()(2);
 	
 	LegendrePolynomial leg;
 	JacobiPolynomialAlpha jac1(1);    
@@ -1476,7 +1476,7 @@ namespace ngfem
 				      jac2.EvalMult(order-3 - k - j, 2 * lam[0] - 1, polsy, 
 						    SBLambda([&](size_t j, T val) LAMBDA_INLINE
 							     {
-							       shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<3,T>(val*x, val*y, val*zphys);
+							       shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<3,T>(val*x, val*y, val*z);
 							       shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<3,T>(val, 0, 0);
 							       shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<3,T>(0, val, 0);
 							     }));

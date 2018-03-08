@@ -1345,7 +1345,7 @@ namespace ngcomp
           hofe -> ComputeNDof();
           return *hofe;    
         }
-      case BBBND:
+      case BBBND: default:
         return * new (lh) DummyFE<ET_POINT>; 
       }
   }
@@ -3242,9 +3242,9 @@ namespace ngcomp
 
     int ne = ma -> GetNE();
     // int ned = ma->GetNEdges();
-    int nfa = 0;
+    // int nfa = 0;
     int nse = ma->GetNSE();
-    if(ma->GetDimension()==3) nfa = ma->GetNFaces();
+    // if(ma->GetDimension()==3) nfa = ma->GetNFaces();
 
     LocalHeap lh(100008, "HCurlHOFeSpace::CreateGradient");
     fesh1->Update(lh);

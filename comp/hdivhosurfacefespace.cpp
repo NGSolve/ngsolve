@@ -87,8 +87,8 @@ public:
     {
 
       throw Exception("Does not work yet!!!! eltrans 1D -> 3D, no normal vector available");
-      auto normal = Vec<3>(mip.GetNV());      
-      auto tangential = mip.GetTV();      
+      // auto normal = Vec<3>(mip.GetNV());      
+      // auto tangential = mip.GetTV();      
       // Vec<3> normalel = Cross(normal, tangential);
       getchar();
 	

@@ -197,10 +197,12 @@ namespace ngbla
                 case 3: MatKernel2AddAB<3,SET> (hbi, wbi, pa, a.Dist(), (double*)&bb[0], BBW, pc, c.Dist()); break;
                 case 4:
                   if (HA > 4)
-                    MatKernel2AddAB<4,SET> (hbi, wbi, pa, a.Dist(), (double*)&bb[0], BBW, pc, c.Dist()); break;
+                    MatKernel2AddAB<4,SET> (hbi, wbi, pa, a.Dist(), (double*)&bb[0], BBW, pc, c.Dist());
+                  break;
                 case 5:
                   if (HA > 5)
-                    MatKernel2AddAB<5,SET> (hbi, wbi, pa, a.Dist(), (double*)&bb[0], BBW, pc, c.Dist()); break;
+                    MatKernel2AddAB<5,SET> (hbi, wbi, pa, a.Dist(), (double*)&bb[0], BBW, pc, c.Dist());
+                  break;
                 default: ; 
                 }
               
@@ -218,10 +220,12 @@ namespace ngbla
                 case 3: MatKernel2AddAB<3,ADD> (hbi, wbi, pa, a.Dist(), (double*)&bb[0], BBW, pc, c.Dist()); break;
                 case 4:
                   if (HA > 4)
-                    MatKernel2AddAB<4,ADD> (hbi, wbi, pa, a.Dist(), (double*)&bb[0], BBW, pc, c.Dist()); break;
+                    MatKernel2AddAB<4,ADD> (hbi, wbi, pa, a.Dist(), (double*)&bb[0], BBW, pc, c.Dist());
+                  break;
                 case 5:
                   if (HA > 5)
-                    MatKernel2AddAB<5,ADD> (hbi, wbi, pa, a.Dist(), (double*)&bb[0], BBW, pc, c.Dist()); break;
+                    MatKernel2AddAB<5,ADD> (hbi, wbi, pa, a.Dist(), (double*)&bb[0], BBW, pc, c.Dist());
+                  break;
                 default: ;
                 }
             }
@@ -975,7 +979,7 @@ namespace ngbla
 #endif
 
     size_t da = NA;
-    size_t db = b.Dist();
+    // size_t db = b.Dist();
     double * pc = &c(0);
 
     SliceMatrix<> loca(a.Width(), a.Height(), NA, &mema[0]);
@@ -1004,10 +1008,12 @@ namespace ngbla
           case 3: MatKernelMultAB<3,3,ADD> (ha, pa, da, &memb[0], 3, pc, c.Dist()); break;
           case 4:
             if (HA > 4)
-              MatKernelMultAB<4,3,ADD> (ha, pa, da, &memb[0], 3, pc, c.Dist()); break;
+              MatKernelMultAB<4,3,ADD> (ha, pa, da, &memb[0], 3, pc, c.Dist());
+            break;
           case 5:
             if (HA > 5)
-              MatKernelMultAB<5,3,ADD> (ha, pa, da, &memb[0], 3, pc, c.Dist()); break;
+              MatKernelMultAB<5,3,ADD> (ha, pa, da, &memb[0], 3, pc, c.Dist());
+            break;
           default: ;
           }
       }
@@ -1028,10 +1034,12 @@ namespace ngbla
       case 3: MatKernel2AddAB<3,ADD> (ha, nb-j, pa, da, &locb(0), 3*SW, pc, c.Dist()); break;
       case 4:
         if (HA > 4)
-          MatKernel2AddAB<4,ADD> (ha, nb-j, pa, da, &locb(0), 3*SW, pc, c.Dist()); break;
+          MatKernel2AddAB<4,ADD> (ha, nb-j, pa, da, &locb(0), 3*SW, pc, c.Dist());
+        break;
       case 5:
         if (HA > 5)
-          MatKernel2AddAB<5,ADD> (ha, nb-j, pa, da, &locb(0), 3*SW, pc, c.Dist()); break;
+          MatKernel2AddAB<5,ADD> (ha, nb-j, pa, da, &locb(0), 3*SW, pc, c.Dist());
+        break;
       default: ;
       }
 

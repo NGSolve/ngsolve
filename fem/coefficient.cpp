@@ -4159,7 +4159,7 @@ class RealCF : public CoefficientFunctionNoDerivative
   {
     shared_ptr<CoefficientFunction> cf;
   public:
-    RealCF(shared_ptr<CoefficientFunction> _cf) : cf(_cf), CoefficientFunctionNoDerivative(1,false)
+    RealCF(shared_ptr<CoefficientFunction> _cf) : CoefficientFunctionNoDerivative(1,false), cf(_cf)
     { ; }
 
     virtual string GetDescription() const override
@@ -4183,7 +4183,7 @@ class RealCF : public CoefficientFunctionNoDerivative
   {
     shared_ptr<CoefficientFunction> cf;
   public:
-    ImagCF(shared_ptr<CoefficientFunction> _cf) : cf(_cf), CoefficientFunctionNoDerivative(1,false)
+    ImagCF(shared_ptr<CoefficientFunction> _cf) : CoefficientFunctionNoDerivative(1,false), cf(_cf)
     { ; }
     virtual string GetDescription() const override
     {

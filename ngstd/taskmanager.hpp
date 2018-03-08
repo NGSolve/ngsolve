@@ -35,7 +35,7 @@ namespace ngstd
   {
 //     PajeTrace *trace;
 
-    class alignas(64) NodeData
+    class alignas(64) NodeData : public AlignedAlloc<NodeData>
     {
     public:
       atomic<int> start_cnt{0};
