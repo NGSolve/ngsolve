@@ -349,7 +349,7 @@ namespace ngcomp
      
       case BND:
 	{
-	  int fnum = 0;
+	  // int fnum = 0;
 	  if (ma->GetDimension() == 3)
 	    {
 	      auto ednums = ma->GetElEdges (ei);

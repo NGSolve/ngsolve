@@ -572,8 +572,8 @@ namespace ngfem
     Vec<2,T> DivShape()
     {
       T uxx = u.DDValue(0,0), uyy = u.DDValue(1,1), uxy = u.DDValue(0,1);
-      T ux = u.DValue(0), uy = u.DValue(1);
-      T vxx = v.DDValue(0,0), vyy = v.DDValue(1,1), vxy = v.DDValue(0,1);
+      // T ux = u.DValue(0), uy = u.DValue(1);
+      // T vxx = v.DDValue(0,0), vyy = v.DDValue(1,1), vxy = v.DDValue(0,1);
       T vx = v.DValue(0), vy = v.DValue(1);
 
       return Vec<2,T> (uyy*vx- uxy*vy, uxx*vy- uxy*vx);
@@ -635,10 +635,10 @@ namespace ngfem
     Vec<2> DivShape()
     {
       // todo
-      double lam1 = l1.Value();
+      // double lam1 = l1.Value();
       double lam1x = l1.DValue(0);
       double lam1y = l1.DValue(1);
-      double lam2 = l2.Value();
+      // double lam2 = l2.Value();
       double lam2x = l2.DValue(0);
       double lam2y = l2.DValue(1);
       return Vec<2> (

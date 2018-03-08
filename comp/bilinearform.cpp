@@ -3002,8 +3002,8 @@ namespace ngcomp
       
     if(facetvolumeintegrals == -1 && facetboundaryintegrals == -1)
       return;
-    auto & nels = tpfes->GetNels();
-    auto & nfacets = tpfes->GetNFacets();
+    // auto & nels = tpfes->GetNels();
+    // auto & nfacets = tpfes->GetNFacets();
     timerfac1.Start();
     for (FlatArray<int> colfacets : spaces[0]->FacetColoring())
     {
