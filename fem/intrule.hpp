@@ -895,7 +895,7 @@ namespace ngfem
         }
     }
 
-    size_t GetNFacets (int fnr) const
+    size_t GetNFacets () const
     {
       if (vb == BND)
         return ElementTopology::GetNFacets(eltype);
@@ -904,7 +904,7 @@ namespace ngfem
           if (Dim(eltype)-int(vb) == 1)
             return ElementTopology::GetNEdges(eltype);
           else
-            return 1; // point
+            return ElementTopology::GetNVertices(eltype); // points
         }
     }
     

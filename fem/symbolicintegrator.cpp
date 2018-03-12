@@ -1785,7 +1785,7 @@ namespace ngfem
       auto eltype = trafo.GetElementType();
 
       Facet2ElementTrafo transform(eltype, element_vb); 
-      int nfacet = transform.GetNFacets(eltype);
+      int nfacet = transform.GetNFacets();
       
       for (int k = 0; k < nfacet; k++)
         {
@@ -1794,6 +1794,7 @@ namespace ngfem
           ngfem::ELEMENT_TYPE etfacet = transform.FacetType (k);
           const IntegrationRule& ir_facet = GetIntegrationRule(etfacet, fel_trial.Order()+fel_test.Order());
           IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
+          cout << "ir_facet_vol = " << ir_facet_vol << ", facetnr = " << ir_facet_vol[0].FacetNr() << endl;
           BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
           
           ProxyUserData ud;
@@ -2133,7 +2134,7 @@ namespace ngfem
     auto eltype = trafo.GetElementType();
     
     Facet2ElementTrafo transform(eltype, element_vb); 
-    int nfacet = transform.GetNFacets(eltype);
+    int nfacet = transform.GetNFacets();
     
     if (simd_evaluate)
       try
@@ -2558,7 +2559,7 @@ namespace ngfem
     auto eltype = trafo.GetElementType();
 
     Facet2ElementTrafo transform(eltype, element_vb); 
-    int nfacet = transform.GetNFacets(eltype);
+    int nfacet = transform.GetNFacets();
     
     for (int k = 0; k < nfacet; k++)
       {

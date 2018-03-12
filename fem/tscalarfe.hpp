@@ -143,7 +143,7 @@ namespace ngfem
 
     void CalcDualShape2 (const IntegrationPoint & ip, SliceVector<> shape) const
     {
-      throw Exception ("dual shape not implemented"); 
+      throw Exception (string("dual shape not implemented for element ")+typeid(*this).name()); 
     }
     
   };
