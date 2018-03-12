@@ -393,29 +393,29 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                         return shared_ptr<BaseVector> (&m.AsVector(), NOOP_Deleter);
                                       })
 
-    .def("Mult",         [](BaseMatrix &m, BaseVector &x, BaseVector &y) { m.Mult(x, y); })
-    .def("MultAdd",      [](BaseMatrix &m, double s, BaseVector &x, BaseVector &y) { m.MultAdd (s, x, y); })
-    .def("MultTrans",    [](BaseMatrix &m, double s, BaseVector &x, BaseVector &y) { y=0; m.MultTransAdd (1.0, x, y); })
-    .def("MultTransAdd",  [](BaseMatrix &m, double s, BaseVector &x, BaseVector &y) { m.MultTransAdd (s, x, y); })
+    .def("Mult",         [](BaseMatrix &m, BaseVector &x, BaseVector &y) { m.Mult(x, y); }, py::call_guard<py::gil_scoped_release>())
+    .def("MultAdd",      [](BaseMatrix &m, double s, BaseVector &x, BaseVector &y) { m.MultAdd (s, x, y); }, py::call_guard<py::gil_scoped_release>())
+    .def("MultTrans",    [](BaseMatrix &m, double s, BaseVector &x, BaseVector &y) { y=0; m.MultTransAdd (1.0, x, y); }, py::call_guard<py::gil_scoped_release>())
+    .def("MultTransAdd",  [](BaseMatrix &m, double s, BaseVector &x, BaseVector &y) { m.MultTransAdd (s, x, y); }, py::call_guard<py::gil_scoped_release>())
     .def("MultScale",    [](BaseMatrix &m, double s, BaseVector &x, BaseVector &y)
           {
               m.Mult (x,y);
               if(s!=1.0)
                   y *= s;
-          } )
-    .def("MultAdd",      [](BaseMatrix &m, Complex s, BaseVector &x, BaseVector &y) { m.MultAdd (s, x, y); })
-    .def("MultTrans",    [](BaseMatrix &m, Complex s, BaseVector &x, BaseVector &y) { y=0; m.MultTransAdd (1.0, x, y); })
-    .def("MultTransAdd",  [](BaseMatrix &m, Complex s, BaseVector &x, BaseVector &y) { m.MultTransAdd (s, x, y); })
+          } , py::call_guard<py::gil_scoped_release>())
+    .def("MultAdd",      [](BaseMatrix &m, Complex s, BaseVector &x, BaseVector &y) { m.MultAdd (s, x, y); }, py::call_guard<py::gil_scoped_release>())
+    .def("MultTrans",    [](BaseMatrix &m, Complex s, BaseVector &x, BaseVector &y) { y=0; m.MultTransAdd (1.0, x, y); }, py::call_guard<py::gil_scoped_release>())
+    .def("MultTransAdd",  [](BaseMatrix &m, Complex s, BaseVector &x, BaseVector &y) { m.MultTransAdd (s, x, y); }, py::call_guard<py::gil_scoped_release>())
     .def("MultScale",    [](BaseMatrix &m, Complex s, BaseVector &x, BaseVector &y)
           {
               m.Mult (x,y);
               if(s!=1.0)
                   y *= s;
-          } )
+          }, py::call_guard<py::gil_scoped_release>() )
 
     .def("__iadd__", [] (BM &m, BM &m2) { 
         m.AsVector()+=m2.AsVector();
-    })
+    }, py::call_guard<py::gil_scoped_release>())
 
     .def("GetInverseType", [](BM & m)
                                             {
@@ -441,9 +441,9 @@ inverse : string
     pardiso        - PARDISO, either provided by libpardiso (USE_PARDISO=ON) or Intel MKL (USE_MKL=ON).
                      If neither Pardiso nor Intel MKL was linked at compile-time, NGSolve will look
                      for libmkl_rt in LD_LIBRARY_PATH (Unix) or PATH (Windows) at run-time.
-)raw_string"))
+)raw_string"), py::call_guard<py::gil_scoped_release>())
     // .def("Inverse", [](BM &m)  { return m.InverseMatrix(); })
-    .def("Update", [](BM &m) { m.Update(); })
+    .def("Update", [](BM &m) { m.Update(); }, py::call_guard<py::gil_scoped_release>())
     ;
 
   py::class_<BaseSparseMatrix, shared_ptr<BaseSparseMatrix>, BaseMatrix>
