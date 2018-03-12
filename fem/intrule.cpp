@@ -334,8 +334,8 @@ namespace ngfem
     auto hmips = mips;
     if (hmips.Size() == 0) return;
 
-    if (Dim(et)-int(hmips[0].IP().VB()) == 0)
-      {
+    if ((Dim(et) >= 2) && (Dim(et)-int(hmips[0].IP().VB()) == 0))
+      { // pnts in dim >= 2
         for (size_t i = 0; i < hmips.Size(); i++)
           hmips[i].SetMeasure(1);
         return;
@@ -3153,7 +3153,7 @@ namespace ngfem
     auto hmips = mips;
     if (hmips.Size() == 0) return;
 
-    if (Dim(et)-int(hmips[0].IP().VB()) == 0)
+    if ((Dim(et) >= 2) && (Dim(et)-int(hmips[0].IP().VB()) == 0))
       {
         for (size_t i = 0; i < hmips.Size(); i++)
           hmips[i].SetMeasure(1);
