@@ -35,7 +35,7 @@ namespace ngfem
     template<typename Tx, typename TFA>  
       INLINE void T_CalcShape (TIP<DIM,Tx> ip, TFA & shape) const;
     
-    void CalcDualShape2 (const IntegrationPoint & ip, SliceVector<> shape) const
+    void CalcDualShape2 (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const
     { throw Exception ("dual shape not implemented, H1Ho"); }
     
   };
@@ -108,8 +108,9 @@ namespace ngfem
 
 
   template<>
-  inline void H1HighOrderFE_Shape<ET_TRIG> ::CalcDualShape2 (const IntegrationPoint & ip, SliceVector<> shape) const
+  inline void H1HighOrderFE_Shape<ET_TRIG> ::CalcDualShape2 (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const
   {
+    auto & ip = mip.IP();
     shape = 0.0;
     double lam[3] = { ip(0), ip(1), 1-ip(0)-ip(1) };
     size_t ii = 3;
@@ -270,8 +271,9 @@ namespace ngfem
 
   template<>
   inline void H1HighOrderFE_Shape<ET_TET> ::
-  CalcDualShape2 (const IntegrationPoint & ip, SliceVector<> shape) const
+  CalcDualShape2 (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const
   {
+    auto & ip = mip.IP();
     shape = 0.0;
     double lam[4] = { ip(0), ip(1), ip(2), 1-ip(0)-ip(1)-ip(2) };
     size_t ii = 4;

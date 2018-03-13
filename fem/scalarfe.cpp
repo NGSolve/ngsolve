@@ -284,7 +284,7 @@ namespace ngfem
 
 
   void BaseScalarFiniteElement ::
-  CalcDualShape (const IntegrationPoint & ip, SliceVector<> shape) const
+  CalcDualShape (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const
   {
     throw Exception (string("CalcDualShape not overloaded for element ") + typeid(*this).name());
   }
