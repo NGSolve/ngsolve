@@ -132,7 +132,7 @@ namespace ngfem
               EdgeOrthoPol::
                 EvalScaledMult (order_edge[i]-2, 
                                 lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
-                                lam[e[0]]*lam[e[1]], shape+ii);
+                                1.0/mip.GetMeasure()*lam[e[0]]*lam[e[1]], shape+ii);
             }
           ii += order_edge[i]-1;
 	}
@@ -141,8 +141,8 @@ namespace ngfem
     if (ip.VB() == VOL && order_face[0][0] >= 3)
       {
 	INT<4> f = GetVertexOrientedFace (0);
-	DubinerBasis3::Eval(order_face[0][0]-3, 
-				 lam[f[0]], lam[f[1]], shape+ii);
+	DubinerBasis3::EvalMult(order_face[0][0]-3, 
+				lam[f[0]], lam[f[1]],1.0/mip.GetMeasure(), shape+ii);
       }
   }
 
@@ -292,7 +292,7 @@ namespace ngfem
 	    EdgeOrthoPol::
 	      EvalScaledMult (order_edge[i]-2, 
 			      lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
-			      lam[e[0]]*lam[e[1]], shape+ii);
+			      1.0/mip.GetMeasure()*lam[e[0]]*lam[e[1]], shape+ii);
 	  }
 	
 	ii += order_edge[i]-1;
@@ -303,8 +303,8 @@ namespace ngfem
 	if (order_face[i][0] >= 3 && ip.FacetNr() == i && ip.VB() == BND)
 	  {
 	    INT<4> f = GetVertexOrientedFace (0);
-	    DubinerBasis3::Eval (order_face[0][0]-3, 
-				 lam[f[0]], lam[f[1]], shape+ii);
+	    DubinerBasis3::EvalMult (order_face[0][0]-3, 
+				     lam[f[0]], lam[f[1]], 1.0/mip.GetMeasure(), shape+ii);
 	  }
 	ii += order_face[i][0]-2;
       }
@@ -327,8 +327,8 @@ namespace ngfem
 				      jac2.EvalMult(order_cell[0][0] - k - j, 2 * lam[0] - 1, polsy, 
 						    SBLambda([&](size_t j, double val) LAMBDA_INLINE
 							     {
-                                                           shape[ii] = val; 
-                                                           ii++;
+							       shape[ii] = 1.0/mip.GetMeasure()*val; 
+							       ii++;
 							     }));
 				      jac2.IncAlpha2();
 				    }));
