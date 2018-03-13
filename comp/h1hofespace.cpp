@@ -85,7 +85,7 @@ namespace ngcomp
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
                                 MAT & mat, LocalHeap & lh)
     {
-      static_cast<const ScalarFiniteElement<D>&>(fel).CalcDualShape (mip.IP(), mat.Row(0));
+      static_cast<const ScalarFiniteElement<D>&>(fel).CalcDualShape (mip, mat.Row(0));
     }
     template <typename AFEL, typename MIP, typename MAT,
               typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
