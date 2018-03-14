@@ -62,6 +62,17 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .export_values()
     ;
     
+  py::class_<ParallelDofs, shared_ptr<ParallelDofs>> (m, "ParallelDofs")
+    .def_property_readonly ("ndoflocal", [](const ParallelDofs & self) 
+			    { return self.GetNDofLocal(); },
+                            "number of degrees of freedom")
+
+    .def_property_readonly ("ndofglobal",
+                            [](const ParallelDofs & self) 
+			    { return self.GetNDofGlobal(); },    
+                            "number of global degrees of freedom")
+    ;
+
     m.def("CreateVVector",
           [] (size_t s, bool is_complex, int es) -> shared_ptr<BaseVector>
           { return CreateBaseVector(s,is_complex, es); },

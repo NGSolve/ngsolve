@@ -290,7 +290,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     delete dummy_segm;
     delete dummy_point;
 
-    delete paralleldofs;
+    // delete paralleldofs;
   }
   
   void FESpace :: SetNDof (size_t _ndof)
@@ -1562,7 +1562,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    dofnodes[d] = NodeId (nt, nr);
 	} 
 
-    paralleldofs = new ParallelMeshDofs (ma, dofnodes, dimension, iscomplex);
+    paralleldofs = make_shared<ParallelMeshDofs> (ma, dofnodes, dimension, iscomplex);
 
     if (MyMPI_AllReduce (ctofdof.Size(), MPI_SUM))
       AllReduceDofData (ctofdof, MPI_MAX, GetParallelDofs());

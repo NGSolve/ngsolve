@@ -22,10 +22,10 @@ namespace ngla
     DynamicTable<int> loc2glob;
     Array<int> select;
     string invtype;
-    const ParallelDofs * pardofs;
+    shared_ptr<ParallelDofs> pardofs;
   public:
     MasterInverse (const SparseMatrixTM<TM> & mat, shared_ptr<BitArray> asubset, 
-		   const ParallelDofs * apardofs);
+		   shared_ptr<ParallelDofs> apardofs);
     virtual ~MasterInverse ();
     virtual bool IsComplex() const { return inv->IsComplex(); } 
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
@@ -40,7 +40,7 @@ namespace ngla
     shared_ptr<BaseMatrix> mat;
     // const ParallelDofs & pardofs;
   public:
-    ParallelMatrix (shared_ptr<BaseMatrix> amat, const ParallelDofs * apardofs);
+    ParallelMatrix (shared_ptr<BaseMatrix> amat, shared_ptr<ParallelDofs> apardofs);
     // : mat(*amat), pardofs(*apardofs) 
     // {const_cast<BaseMatrix&>(mat).SetParallelDofs (apardofs);}
 

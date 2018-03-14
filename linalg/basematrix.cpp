@@ -18,7 +18,7 @@ namespace ngla
     ;
   }
 
-  BaseMatrix :: BaseMatrix (const ParallelDofs * aparalleldofs)
+  BaseMatrix :: BaseMatrix (shared_ptr<ParallelDofs> aparalleldofs)
     : paralleldofs ( aparalleldofs )
   {     
     ;

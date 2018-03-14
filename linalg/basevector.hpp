@@ -84,10 +84,10 @@ namespace ngla
     /// number of doubles per entry
     int entrysize;
     ///
-    const ParallelDofs * paralleldofs;
+    shared_ptr<ParallelDofs> paralleldofs;
 
     ///
-    BaseVector () : paralleldofs (NULL) { ; }
+    BaseVector () { ; }
 
   public:
     ///

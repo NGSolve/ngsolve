@@ -45,7 +45,7 @@ namespace ngla
 
 
 
-    virtual const ParallelDofs * GetParallelDofs () const
+    virtual shared_ptr<ParallelDofs> GetParallelDofs () const
     {
       return paralleldofs; 
     }
@@ -84,7 +84,7 @@ namespace ngla
     virtual void AddRecvValues( int sender ) = 0;
     // { cerr << "ERROR -- AddRecvValues called for BaseVector, is not parallel" << endl; }
 
-    virtual void SetParallelDofs (const ParallelDofs * aparalleldofs, 
+    virtual void SetParallelDofs (shared_ptr<ParallelDofs> aparalleldofs, 
 				  const Array<int> * procs = 0) = 0;
     /*
     { 
@@ -166,10 +166,10 @@ namespace ngla
 
   public:
     // S_ParallelBaseVectorPtr (int as, int aes, void * adata) throw();
-    S_ParallelBaseVectorPtr (int as, int aes, const ParallelDofs * apd, PARALLEL_STATUS stat) throw();
+    S_ParallelBaseVectorPtr (int as, int aes, shared_ptr<ParallelDofs> apd, PARALLEL_STATUS stat) throw();
 
     virtual ~S_ParallelBaseVectorPtr ();
-    virtual void SetParallelDofs (const ParallelDofs * aparalleldofs, const Array<int> * procs=0 );
+    virtual void SetParallelDofs (shared_ptr<ParallelDofs> aparalleldofs, const Array<int> * procs=0 );
 
     virtual void Distribute() const;
     virtual ostream & Print (ostream & ost) const;
@@ -193,13 +193,13 @@ namespace ngla
     enum { ES = sizeof(T) / sizeof(TSCAL) };
 
   public:
-    explicit ParallelVVector (int as, const ParallelDofs * aparalleldofs,
+    explicit ParallelVVector (int as, shared_ptr<ParallelDofs> aparalleldofs,
 			      PARALLEL_STATUS astatus = CUMULATED)
       : S_BaseVectorPtr<TSCAL> (as, ES), VVector<T> (as), 
 	S_ParallelBaseVectorPtr<TSCAL> (as, ES, aparalleldofs, astatus)
     { ; }
 
-    explicit ParallelVVector (const ParallelDofs * aparalleldofs,
+    explicit ParallelVVector (shared_ptr<ParallelDofs> aparalleldofs,
 			      PARALLEL_STATUS astatus = CUMULATED)
       : S_BaseVectorPtr<TSCAL> (aparalleldofs->GetNDofLocal(), ES), 
 	VVector<T> (aparalleldofs->GetNDofLocal()), 

@@ -17,8 +17,8 @@ namespace ngla
   template <typename TM>
   MasterInverse<TM> :: MasterInverse (const SparseMatrixTM<TM> & mat, 
 				      shared_ptr<BitArray> subset, 
-				      const ParallelDofs * hpardofs)
-
+				      shared_ptr<ParallelDofs> hpardofs)
+    
     : loc2glob(MyMPI_GetNTasks (hpardofs -> GetCommunicator())),
       pardofs(hpardofs)
   {
@@ -340,7 +340,7 @@ namespace ngla
 
   }
 
-  ParallelMatrix :: ParallelMatrix (shared_ptr<BaseMatrix> amat, const ParallelDofs * apardofs)
+  ParallelMatrix :: ParallelMatrix (shared_ptr<BaseMatrix> amat, shared_ptr<ParallelDofs> apardofs)
     : BaseMatrix(apardofs), mat(amat)
   { 
     mat->SetParallelDofs (apardofs);

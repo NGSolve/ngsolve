@@ -22,7 +22,7 @@ namespace ngla
   class NGS_DLL_HEADER BaseMatrix : public enable_shared_from_this_virtual<BaseMatrix>
   {
   protected:
-    const ParallelDofs * paralleldofs;
+    shared_ptr<ParallelDofs> paralleldofs;
 
   protected:
     /// 
@@ -30,7 +30,7 @@ namespace ngla
     /// 
     // BaseMatrix (const BaseMatrix & amat);
     //
-    BaseMatrix (const ParallelDofs * aparalleldofs); 
+    BaseMatrix (shared_ptr<ParallelDofs> aparalleldofs); 
 
   public:
     /// 
@@ -121,8 +121,8 @@ namespace ngla
 			   const Array<int> * acluster = NULL) const;
 
 
-    void SetParallelDofs (const ParallelDofs * pardofs) { paralleldofs = pardofs; }
-    const ParallelDofs * GetParallelDofs () const { return paralleldofs; }
+    void SetParallelDofs (shared_ptr<ParallelDofs> pardofs) { paralleldofs = pardofs; }
+    shared_ptr<ParallelDofs> GetParallelDofs () const { return paralleldofs; }
 
     virtual shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<BitArray> subset = nullptr) const;
     virtual shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<const Array<int>> clusters) const;

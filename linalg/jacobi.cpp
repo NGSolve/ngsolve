@@ -30,7 +30,7 @@ namespace ngla
 		 });
     
     if(paralleldofs!=nullptr && use_par)
-	AllReduceDofData (invdiag, MPI_SUM, *paralleldofs);  
+	AllReduceDofData (invdiag, MPI_SUM, paralleldofs);  
     
     // for (int i = 0; i < height; i++)
     ParallelFor (height, [&](size_t i)
