@@ -151,7 +151,13 @@ namespace ngstd
       static int cnt = 0;
       char buf[100];
       if (use_paje_trace)
-	sprintf(buf, "ng%d.trace", cnt++);
+        {
+#ifdef PARALLEL
+          sprintf(buf, "ng%d_rank%d.trace", cnt++, MyMPI_GetId());
+#else
+          sprintf(buf, "ng%d.trace", cnt++);
+#endif
+        }
       else
         buf[0] = 0;
       //sprintf(buf, "");
