@@ -102,7 +102,7 @@ namespace ngcomp
       if (global_nums[i] != -1)
 	global_nums[i] += first_master_dof[id];
     
-    ScatterDofData (global_nums, *pardofs);
+    ScatterDofData (global_nums, pardofs);
     cout << IM(3) << "num glob dofs = " << num_glob_dofs << endl;
 	
     VT_OFF();
