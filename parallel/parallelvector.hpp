@@ -222,7 +222,7 @@ namespace ngla
 
   public:
     explicit ParallelVFlatVector (int as, T * adata, 
-				  ParallelDofs * aparalleldofs, 
+				  shared_ptr<ParallelDofs> aparalleldofs, 
 				  PARALLEL_STATUS astatus)
     : S_BaseVectorPtr<TSCAL> (as, ES, adata),
       VFlatVector<T> (as, adata),
