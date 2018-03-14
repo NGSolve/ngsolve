@@ -297,7 +297,7 @@ namespace ngfem
 	
 	ii += order_edge[i]-1;
       }
-    // inner shapes
+    // face shapes
     for (int i = 0; i < N_FACE; i++)
       {
 	if (order_face[i][0] >= 3 && ip.FacetNr() == i && ip.VB() == BND)
@@ -306,35 +306,36 @@ namespace ngfem
 	    DubinerBasis3::EvalMult (order_face[0][0]-3, 
 				     lam[f[0]], lam[f[1]], 1.0/mip.GetMeasure(), shape+ii);
 	  }
-	ii += order_face[i][0]-2;
+	ii += (order_face[i][0]-2)*(order_face[i][0]-1)/2;
       }
+    //inner shapes
     if (ip.VB() == VOL && order_cell[0][0] >= 4)
       {
+	int p = order_cell[0][0] - 4;
 	LegendrePolynomial leg;
 	JacobiPolynomialAlpha jac1(1);    
 	leg.EvalScaled1Assign 
-	  (order_cell[0][0]-4, lam[2]-lam[3], lam[2]+lam[3],
+	  (p, lam[2]-lam[3], lam[2]+lam[3],
 	   SBLambda ([&](size_t k, double polz) LAMBDA_INLINE
 		     {
 		       // JacobiPolynomialAlpha jac(2*k+1);
 		       JacobiPolynomialAlpha jac2(2*k+2);
 		       
 		       jac1.EvalScaledMult1Assign
-			 (order_cell[0][0]-k, lam[1]-lam[2]-lam[3], 1-lam[0], polz, 
+			 (p-k, lam[1]-lam[2]-lam[3], 1-lam[0], polz, 
 			  SBLambda ([&] (size_t j, double polsy) LAMBDA_INLINE
 				    {
 				      // JacobiPolynomialAlpha jac(2*(j+k)+2);
-				      jac2.EvalMult(order_cell[0][0] - k - j, 2 * lam[0] - 1, polsy, 
+				      jac2.EvalMult(p - k - j, 2 * lam[0] - 1, polsy, 
 						    SBLambda([&](size_t j, double val) LAMBDA_INLINE
 							     {
-							       shape[ii] = 1.0/mip.GetMeasure()*val; 
-							       ii++;
+							       shape[ii++] = 1.0/mip.GetMeasure()*val;
 							     }));
 				      jac2.IncAlpha2();
 				    }));
 		       jac1.IncAlpha2();
 		     }));
-	}
+      }
   }
 
 
