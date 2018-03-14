@@ -236,7 +236,7 @@ public:
   int test_comp;
   class ProxyFunction * trialfunction = nullptr;
   int trial_comp;
-  
+  int eval_deriv = 0; // 0 .. evaluate bfi, 1 .. deriv, 2 .. second order deriv
   const FiniteElement * fel = nullptr;
   // const FlatVector<double> * elx;
   // LocalHeap * lh;
@@ -541,7 +541,8 @@ public:
     VorB vb;           // on the boundary of the domain ? 
     // bool element_boundary;
     VorB element_vb;   // on the boundary of the element ? 
-    Matrix<bool> nonzeros;    // do components interact ? 
+    Matrix<bool> nonzeros;    // do components interact ?
+    Matrix<bool> nonzeros_deriv;   // do components interact ? 
     Matrix<bool> nonzeros_proxies; // do proxies interact ?
     Matrix<bool> diagonal_proxies; // do proxies interact diagonally ?
     Matrix<bool> same_diffops; // are diffops the same ? 
