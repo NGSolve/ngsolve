@@ -575,6 +575,17 @@ namespace ngfem
     nonzero_deriv = false;
     nonzero_dderiv = false;
 
+    if (ud.eval_deriv == 1)
+      {
+        if (!testfunction)
+          nonzero = true;
+        if (ud.testfunction == this)
+          nonzero(ud.test_comp) = true;
+        if (ud.trialfunction == this)
+          nonzero_deriv(ud.trial_comp) = true;
+        return;
+      }
+    
     if (ud.fel)
       {
         if (!testfunction)
@@ -877,6 +888,7 @@ namespace ngfem
     for (auto proxy : test_proxies)
       cnttest += proxy->Dimension();
     nonzeros = Matrix<bool>(cnttest, cnttrial);
+    nonzeros_deriv = Matrix<bool>(cnttest, cnttrial);
 
     ProxyUserData ud;
     Vector<bool> nzvec(1), nzdvec(1), nzddvec(1);
@@ -898,6 +910,31 @@ namespace ngfem
               }
           k++;
         }
+
+    // derivative ...
+    DummyFE<ET_TRIG> dummyfe;
+    ud.fel = &dummyfe;
+    ud.eval_deriv = 1;
+    k = 0;
+    for (int k1 : test_proxies.Range())
+      for (int k2 : Range(0,test_proxies[k1]->Dimension()))
+        {
+          int l = 0;
+          for (int l1 : trial_proxies.Range())
+            for (int l2 : Range(0,trial_proxies[l1]->Dimension()))
+              {
+                ud.trialfunction = trial_proxies[l1];
+                ud.trial_comp = l2;
+                ud.testfunction = test_proxies[k1];
+                ud.test_comp = k2;
+                cf -> NonZeroPattern (ud, nzvec, nzdvec, nzddvec);
+                nonzeros_deriv(k,l) = nzdvec(0);
+                l++;
+              }
+          k++;
+        }
+
+
     
     nonzeros_proxies = Matrix<bool>(test_proxies.Size(), trial_proxies.Size());
     diagonal_proxies = Matrix<bool>(test_proxies.Size(), trial_proxies.Size());
@@ -928,6 +965,7 @@ namespace ngfem
         }
     
     cout << IM(5) << "nonzeros: " << endl << nonzeros << endl;
+    cout << IM(5) << "nonzeros_deriv: " << endl << nonzeros_deriv << endl;
     cout << IM(5) << "nonzeros_proxies: " << endl << nonzeros_proxies << endl;
     cout << IM(5) << "symmetric: " << endl << is_symmetric << endl;
     
@@ -1953,7 +1991,8 @@ namespace ngfem
           // AFlatMatrix<> val(1, mir.IR().GetNIP(), lh);
           FlatMatrix<AutoDiff<1,SIMD<double>>> val(1, mir.Size(), lh);
           elmat = 0;
-    
+
+          IntRange unified_r1(0, 0);
           for (int l1 : Range(test_proxies))
             {
               HeapReset hr(lh);              
@@ -1982,6 +2021,13 @@ namespace ngfem
                         auto row = proxyvalues.Row(kk);
                         for (auto j : Range(mir.Size()))
                           row(j) = val(j).DValue(0);
+                        /*
+                        if (HSum(L2Norm2(row)) > 0 && !nonzeros_deriv(test_cum[l1]+l, trial_cum[k1]+k))
+                          {
+                            cout << "wrong nonzero deriv" << endl;
+                            cout << "nonzeros_deriv = " << endl << nonzeros_deriv << endl;
+                          }
+                        */
                       }
                   
                   for (size_t i = 0; i < mir.Size(); i++)
@@ -2001,7 +2047,12 @@ namespace ngfem
                             pw_mult (bbmat1.Row(i*proxy1->Dimension()+k),
                                      proxyvalues.Row(k*proxy2->Dimension()+j));
                         }
-                  
+
+                  if (unified_r1.Next() == 0)
+                    unified_r1 = r1;
+                  else
+                    unified_r1 = IntRange (min2(r1.First(), unified_r1.First()),
+                                           max2(r1.Next(), unified_r1.Next()));
                 }
 
               IntRange r2 = proxy2->Evaluator()->UsedDofs(fel_test);
@@ -2012,8 +2063,8 @@ namespace ngfem
               // bbmat2 = 0.0;
               proxy2->Evaluator()->CalcMatrix(fel_test, mir, bbmat2);
               
-              AddABt (hbbmat2.Rows(r2), hbdbmat1, elmat.Rows(r2));
-              // AddABt (hbbmat2.Rows(r2), hbdbmat1.Rows(r1), elmat.Rows(r2).Cols(r1));
+              AddABt (hbbmat2.Rows(r2), hbdbmat1.Rows(unified_r1), elmat.Rows(r2).Cols(unified_r1));
+              // AddABt (hbbmat2.Rows(r2), hbdbmat1, elmat.Rows(r2));
             }
           /*
           Matrix<> helmat = elmat;
@@ -2128,6 +2179,7 @@ namespace ngfem
     size_t tid = TaskManager::GetThreadId();    
     static Timer t("symbolicbfi - calclinearized EB", 2);
     static Timer td("symbolicbfi - calclinearized EB dmats", 2);
+    static Timer tir("symbolicbfi - calclinearized EB intrule", 2);
     ThreadRegionTimer reg(t, tid);
     
     elmat = 0;
@@ -2144,12 +2196,12 @@ namespace ngfem
             {
               HeapReset hr(lh);
               ngfem::ELEMENT_TYPE etfacet = transform.FacetType (k);
-              
+              NgProfiler::StartThreadTimer(tir, tid);
               const SIMD_IntegrationRule& ir_facet = GetSIMDIntegrationRule(etfacet, 2*fel.Order());
               SIMD_IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
               SIMD_BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
               mir.ComputeNormalsAndMeasure(eltype, k);
-
+              NgProfiler::StopThreadTimer(tir, tid);
               /*
               const IntegrationRule& std_ir_facet = GetIntegrationRule(etfacet, 2*fel.Order());
               IntegrationRule & std_ir_facet_vol = transform(k, std_ir_facet, lh);
@@ -2191,6 +2243,7 @@ namespace ngfem
                       for (size_t k = 0, kk = 0; k < proxy1->Dimension(); k++)
                         for (size_t l = 0; l < proxy2->Dimension(); l++, kk++)
                           {
+                            ThreadRegionTimer reg(td, tid);                            
                             ud.trialfunction = proxy1;
                             ud.trial_comp = k;
                             ud.testfunction = proxy2;
