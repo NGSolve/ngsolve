@@ -163,32 +163,74 @@ namespace ngla
   {
     if (this == NULL) return;
     int ntasks = GetNTasks ();
+    int rank = MyMPI_GetId(comm);
     if (ntasks <= 1) return;
 
-    DynamicTable<T> dist_data(ntasks);
+    static Timer t0("ParallelDofs :: ReduceDofData");
+    RegionTimer rt(t0);
 
-    for (int i = 0; i < GetNDofLocal(); i++)
-      if (!IsMasterDof(i))
-	{
-	  FlatArray<int> distprocs = GetDistantProcs (i);
-	  int master = ntasks;
-	  for (int j = 0; j < distprocs.Size(); j++)
-	    master = min (master, distprocs[j]);
-	  dist_data.Add (master, data[i]);
-	}
-    
     Array<int> nsend(ntasks), nrecv(ntasks);
-    for (int i = 0; i < ntasks; i++)
-      nsend[i] = dist_data[i].Size();
+    nsend = 0;
+    nrecv = 0;
 
-    MyMPI_AllToAll (nsend, nrecv, comm);
+    /** Count send/recv size **/
+    for (int i = 0; i < GetNDofLocal(); i++) {
+      auto dps = GetDistantProcs(i);
+      if(!dps.Size()) continue;
+      int master = min2(rank, dps[0]);
+      if(rank==master)
+	for(auto p:dps)
+	  nrecv[p]++;
+      else
+	nsend[master]++;
+    }
+
+    Table<T> send_data(nsend);
     Table<T> recv_data(nrecv);
+
+    /** Fill send_data **/
+    nsend = 0;
+    for (int i = 0; i < GetNDofLocal(); i++) {
+      auto dps = GetDistantProcs(i);
+      if(!dps.Size()) continue;
+      int master = min2(rank, dps[0]);
+      if(master!=rank)
+	send_data[master][nsend[master]++] = data[i];
+    }
+
+    // if (!IsMasterDof(i))
+    //   {
+    // 	FlatArray<int> distprocs = GetDistantProcs (i);
+    // 	int master = ntasks;
+    // 	for (int j = 0; j < distprocs.Size(); j++)
+    // 	  master = min (master, distprocs[j]);
+    // 	dist_data.Add (master, data[i]);
+    //   }
+    
+    // DynamicTable<T> dist_data(ntasks);
+
+    // for (int i = 0; i < GetNDofLocal(); i++)
+    //   if (!IsMasterDof(i))
+    // 	{
+    // 	  FlatArray<int> distprocs = GetDistantProcs (i);
+    // 	  int master = ntasks;
+    // 	  for (int j = 0; j < distprocs.Size(); j++)
+    // 	    master = min (master, distprocs[j]);
+    // 	  dist_data.Add (master, data[i]);
+    // 	}
+    
+    // Array<int> nsend(ntasks), nrecv(ntasks);
+    // for (int i = 0; i < ntasks; i++)
+    //   nsend[i] = dist_data[i].Size();
+
+    // MyMPI_AllToAll (nsend, nrecv, comm);
+    // Table<T> recv_data(nrecv);
 
     Array<MPI_Request> requests; 
     for (int i = 0; i < ntasks; i++)
       {
 	if (nsend[i])
-	  requests.Append (MyMPI_ISend (dist_data[i], i, MPI_TAG_SOLVE, comm));
+	  requests.Append (MyMPI_ISend (send_data[i], i, MPI_TAG_SOLVE, comm));
 	if (nrecv[i])
 	  requests.Append (MyMPI_IRecv (recv_data[i], i, MPI_TAG_SOLVE, comm));
       }
@@ -217,33 +259,68 @@ namespace ngla
   void ParallelDofs :: ScatterDofData (FlatArray<T> data) const
   {
     if (this == NULL) return;
+
     MPI_Comm comm = GetCommunicator();
 
     int ntasks = MyMPI_GetNTasks (comm);
+    int rank = MyMPI_GetId(comm);
     if (ntasks <= 1) return;
 
-    DynamicTable<T> dist_data(ntasks);
-    for (int i = 0; i < GetNDofLocal(); i++)
-      if (IsMasterDof(i))
-	{
-	  FlatArray<int> distprocs = GetDistantProcs (i);
-	  for (int j = 0; j < distprocs.Size(); j++)
-	    dist_data.Add (distprocs[j], data[i]);
-	}
+    static Timer t0("ParallelDofs :: ScatterDofData");
+    RegionTimer rt(t0);
 
     Array<int> nsend(ntasks), nrecv(ntasks);
-    for (int i = 0; i < ntasks; i++)
-      nsend[i] = dist_data[i].Size();
+    nsend = 0;
+    nrecv = 0;
 
-    MyMPI_AllToAll (nsend, nrecv, comm);
+    /** Count send/recv size **/
+    for (int i = 0; i < GetNDofLocal(); i++) {
+      auto dps = GetDistantProcs(i);
+      if(!dps.Size()) continue;
+      int master = min2(rank, dps[0]);
+      if(rank==master)
+	for(auto p:dps)
+	  nsend[p]++;
+      else
+	nrecv[master]++;
+    }
 
+    Table<T> send_data(nsend);
     Table<T> recv_data(nrecv);
+
+    /** Fill send_data **/
+    nsend = 0;
+    for (int i = 0; i < GetNDofLocal(); i++) {
+      auto dps = GetDistantProcs(i);
+      if(!dps.Size()) continue;
+      int master = min2(rank, dps[0]);
+      if(rank==master)
+	for(auto p:dps)
+	  send_data[p][nsend[p]++] = data[i];
+    }
+
+    // DynamicTable<T> dist_data(ntasks);
+    // for (int i = 0; i < GetNDofLocal(); i++)
+    //   if (IsMasterDof(i))
+    // 	{
+    // 	  FlatArray<int> distprocs = GetDistantProcs (i);
+    // 	  for (int j = 0; j < distprocs.Size(); j++)
+    // 	    dist_data.Add (distprocs[j], data[i]);
+    // 	}
+
+    // Array<int> nsend(ntasks), nrecv(ntasks);
+    // for (int i = 0; i < ntasks; i++)
+    //   nsend[i] = dist_data[i].Size();
+
+    // MyMPI_AllToAll (nsend, nrecv, comm);
+
+    // Table<T> recv_data(nrecv);
 
     Array<MPI_Request> requests;
     for (int i = 0; i < ntasks; i++)
       {
 	if (nsend[i])
-	  requests.Append (MyMPI_ISend (dist_data[i], i, MPI_TAG_SOLVE, comm));
+	  requests.Append (MyMPI_ISend (send_data[i], i, MPI_TAG_SOLVE, comm));
 	if (nrecv[i])
 	  requests.Append (MyMPI_IRecv (recv_data[i], i, MPI_TAG_SOLVE, comm));
       }
@@ -264,7 +341,6 @@ namespace ngla
 	  data[i] = recv_data[master][cnt[master]++];
 	}
   }    
-
 
 #endif //PARALLEL
 
