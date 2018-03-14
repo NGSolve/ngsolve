@@ -114,7 +114,6 @@ namespace ngstd
           return;
         }
       max_threads = amax_threads;
-      cout << "set numthreads to" << max_threads << endl;
     }
 
 
