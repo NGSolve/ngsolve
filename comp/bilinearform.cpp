@@ -4261,7 +4261,7 @@ namespace ngcomp
 
 #ifdef PARALLEL
     if ( this->GetFESpace()->IsParallel() )
-      mat = make_shared<ParallelMatrix> (mat, &this->GetFESpace()->GetParallelDofs());
+      mat = make_shared<ParallelMatrix> (mat, this->GetFESpace()->GetParallelDofs());
 #endif
     this->mats.Append (mat);
 
@@ -4297,7 +4297,7 @@ namespace ngcomp
     auto afespace = this->fespace;
 #ifdef PARALLEL
     if ( afespace->IsParallel() )
-      return make_shared<ParallelVVector<TV>> (afespace->GetNDof(), &afespace->GetParallelDofs());
+      return make_shared<ParallelVVector<TV>> (afespace->GetNDof(), afespace->GetParallelDofs());
     else
 #endif
       return make_shared<VVector<TV>> (afespace->GetNDof());
@@ -4459,7 +4459,7 @@ namespace ngcomp
 
 #ifdef PARALLEL
     if ( this->GetFESpace()->IsParallel() )
-      mat = make_shared<ParallelMatrix> (mat, &this->GetFESpace()->GetParallelDofs());
+      mat = make_shared<ParallelMatrix> (mat, this->GetFESpace()->GetParallelDofs());
 #endif
     this->mats.Append (mat);
 
@@ -4494,7 +4494,7 @@ namespace ngcomp
     auto afespace = this->fespace;
 #ifdef PARALLEL
     if ( afespace->IsParallel() )
-      return make_shared<ParallelVVector<TV>> (afespace->GetNDof(), &afespace->GetParallelDofs());
+      return make_shared<ParallelVVector<TV>> (afespace->GetNDof(), afespace->GetParallelDofs());
     else
 #endif
       // return new VVector<TV> (afespace->GetNDof());
@@ -4603,7 +4603,7 @@ namespace ngcomp
     auto afespace = this->fespace;
 #ifdef PARALLEL
     if ( afespace->IsParallel() )
-      return make_shared<ParallelVVector<TV_COL>> (afespace->GetNDof(), &afespace->GetParallelDofs());
+      return make_shared<ParallelVVector<TV_COL>> (afespace->GetNDof(), afespace->GetParallelDofs());
     else
 #endif
       // return new VVector<TV_COL> (afespace->GetNDof());

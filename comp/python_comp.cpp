@@ -1668,6 +1668,10 @@ kwargs : For a description of the possible kwargs have a look a bit further down
          { return self->GetFreeDofs(coupling); },
          py::arg("coupling")=false)
 
+    .def("ParallelDofs",
+         [] (const shared_ptr<FESpace>self)
+         { return self->GetParallelDofs(); })
+
     .def("Range",
          [] (const shared_ptr<FESpace> self, int comp) -> py::slice
          {

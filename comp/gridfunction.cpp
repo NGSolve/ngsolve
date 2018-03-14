@@ -420,7 +420,7 @@ namespace ngcomp
     int ntasks = MyMPI_GetNTasks();
     
     const FESpace & fes = *GetFESpace();
-    ParallelDofs & par = fes.GetParallelDofs ();
+    shared_ptr<ParallelDofs> par = fes.GetParallelDofs ();
     
     if(id > 0)
       {
@@ -435,7 +435,7 @@ namespace ngcomp
 	    fes.GetNodeDofNrs (NTYPE, i,  dnums);
 	    
 	    if (dnums.Size() == 0) continue;
-	    if (!par.IsMasterDof (dnums[0])) continue;
+	    if (!par->IsMasterDof (dnums[0])) continue;
 	    
 	    master_nodes.Append(i);
 
@@ -651,7 +651,7 @@ namespace ngcomp
     int ntasks = MyMPI_GetNTasks();
     
     const FESpace & fes = *GetFESpace();
-    ParallelDofs & par = fes.GetParallelDofs ();
+    shared_ptr<ParallelDofs> par = fes.GetParallelDofs ();
     
     if(id > 0)
       { 
@@ -668,7 +668,7 @@ namespace ngcomp
 	    fes.GetNodeDofNrs (NTYPE, i,  dnums);
 	    
 	    if (dnums.Size() == 0) continue;
-	    if (!par.IsMasterDof (dnums[0])) continue;      
+	    if (!par->IsMasterDof (dnums[0])) continue;      
 
 	    switch (NTYPE)
 	      {
@@ -904,8 +904,8 @@ namespace ngcomp
 	    shared_ptr<BaseVector> ovec = vec[i];
 	
 #ifdef PARALLEL
-	    if ( & this->GetFESpace()->GetParallelDofs() )
-	      vec[i] = make_shared<ParallelVVector<TV>> (ndof, &this->GetFESpace()->GetParallelDofs(), CUMULATED);
+	    if ( this->GetFESpace()->GetParallelDofs() )
+	      vec[i] = make_shared<ParallelVVector<TV>> (ndof, this->GetFESpace()->GetParallelDofs(), CUMULATED);
 	    else
 #endif
  	      vec[i] = make_shared<VVector<TV>> (ndof);

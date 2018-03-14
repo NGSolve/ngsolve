@@ -326,7 +326,7 @@ namespace ngstd
       return;
     
     for (int dest = 1; dest < ntasks; dest++)
-      MPI_Send( cmd, (strlen(cmd)+1), MPI_CHAR, dest, MPI_TAG_CMD, MPI_COMM_WORLD);
+      MPI_Send( (void*)cmd, (strlen(cmd)+1), MPI_CHAR, dest, MPI_TAG_CMD, MPI_COMM_WORLD);
   }
 
 

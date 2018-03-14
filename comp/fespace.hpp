@@ -157,7 +157,7 @@ namespace ngcomp
     Table<int> facet_coloring;  // elements on facet in own colors (DG)
     Array<COUPLING_TYPE> ctofdof;
 
-    ParallelDofs * paralleldofs; // = NULL;
+    shared_ptr<ParallelDofs> paralleldofs;
 
     bool no_low_order_space;
 
@@ -788,7 +788,7 @@ namespace ngcomp
     virtual void SolveM(CoefficientFunction & rho, BaseVector & vec,
                         LocalHeap & lh) const;
       
-    ParallelDofs & GetParallelDofs () const { return *paralleldofs; }
+    shared_ptr<ParallelDofs> GetParallelDofs () const { return paralleldofs; }
     virtual void UpdateParallelDofs ();
 
     //// is FESpace mpi-distributed ?
