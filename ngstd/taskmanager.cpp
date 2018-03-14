@@ -114,14 +114,14 @@ namespace ngstd
           return;
         }
       max_threads = amax_threads;
+      cout << "set numthreads to" << max_threads << endl;
     }
 
 
   TaskManager :: TaskManager()
     {
       num_threads = GetMaxThreads();
-  
-      if (MyMPI_GetNTasks() > 1) num_threads = 1;
+      // if (MyMPI_GetNTasks() > 1) num_threads = 1;
 
 #ifdef USE_NUMA
       numa_available();
