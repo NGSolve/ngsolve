@@ -19,24 +19,23 @@ namespace ngla
 				      shared_ptr<BitArray> subset, 
 				      shared_ptr<ParallelDofs> hpardofs)
     
-    : loc2glob(MyMPI_GetNTasks (hpardofs -> GetCommunicator())),
-      pardofs(hpardofs)
+    : BaseMatrix(hpardofs), loc2glob(MyMPI_GetNTasks (hpardofs -> GetCommunicator()))
   {
     inv = nullptr;
     
-    MPI_Comm comm = pardofs->GetCommunicator();
+    MPI_Comm comm = paralleldofs->GetCommunicator();
     int id = MyMPI_GetId (comm);
     int ntasks = MyMPI_GetNTasks(comm);
 
     // consistent enumeration
     
-    int ndof = pardofs->GetNDofLocal();
+    int ndof = paralleldofs->GetNDofLocal();
 
     Array<int> global_nums(ndof);
     global_nums = -1;
     int num_master_dofs = 0;
     for (int i = 0; i < ndof; i++)
-      if (pardofs -> IsMasterDof (i) && (!subset || (subset && subset->Test(i))))
+      if (paralleldofs -> IsMasterDof (i) && (!subset || (subset && subset->Test(i))))
 	global_nums[i] = num_master_dofs++;
     
 
@@ -58,7 +57,7 @@ namespace ngla
       if (global_nums[i] != -1)
 	global_nums[i] += first_master_dof[id];
 
-    pardofs -> ScatterDofData (global_nums);
+    paralleldofs -> ScatterDofData (global_nums);
 
 
     /*
@@ -120,7 +119,7 @@ namespace ngla
       {
 	// const MeshAccess & ma = nodaldofs -> GetMeshAccess();
 
-	int ndof = pardofs->GetNDofLocal();
+	int ndof = paralleldofs->GetNDofLocal();
 
 	Array<int> rows, cols;
 	Array<TM> vals;
@@ -267,7 +266,7 @@ namespace ngla
   {
     typedef typename mat_traits<TM>::TV_ROW TV;
     
-    MPI_Comm comm = pardofs->GetCommunicator();
+    MPI_Comm comm = paralleldofs->GetCommunicator();
     int id = MyMPI_GetId(comm);
     int ntasks = MyMPI_GetNTasks(comm);
 
