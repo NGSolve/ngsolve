@@ -1639,8 +1639,9 @@ namespace ngfem
 
                     // tb.Start();
                     BaseMappedIntegrationRule & bmir = mir.Range(i, i+bs, lh);
+
                     proxy1->Evaluator()->CalcMatrix(fel_trial, bmir, Trans(bbmat1), lh);
-                    
+
                     if (!samediffop)
                       proxy2->Evaluator()->CalcMatrix(fel_test, bmir, Trans(bbmat2), lh);
                     // tb.Stop();
@@ -1794,7 +1795,7 @@ namespace ngfem
           ngfem::ELEMENT_TYPE etfacet = transform.FacetType (k);
           const IntegrationRule& ir_facet = GetIntegrationRule(etfacet, fel_trial.Order()+fel_test.Order());
           IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
-          cout << "ir_facet_vol = " << ir_facet_vol << ", facetnr = " << ir_facet_vol[0].FacetNr() << endl;
+          
           BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
           
           ProxyUserData ud;
