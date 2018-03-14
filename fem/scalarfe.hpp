@@ -98,7 +98,7 @@ namespace ngfem
                                                  BareSliceVector<> coefs) const;
 
 
-    NGS_DLL_HEADER virtual void CalcDualShape (const IntegrationPoint & ip, SliceVector<> shape) const;
+    NGS_DLL_HEADER virtual void CalcDualShape (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const;
   };
 
   /**

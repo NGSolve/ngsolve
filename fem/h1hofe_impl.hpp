@@ -35,7 +35,7 @@ namespace ngfem
     template<typename Tx, typename TFA>  
       INLINE void T_CalcShape (TIP<DIM,Tx> ip, TFA & shape) const;
     
-    void CalcDualShape2 (const IntegrationPoint & ip, SliceVector<> shape) const
+    void CalcDualShape2 (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const
     { throw Exception ("dual shape not implemented, H1Ho"); }
     
   };
@@ -107,18 +107,20 @@ namespace ngfem
   }
 
 
-  template<> inline void H1HighOrderFE_Shape<ET_TRIG> ::
-  CalcDualShape2 (const IntegrationPoint & ip, SliceVector<> shape) const
+  template<>
+  inline void H1HighOrderFE_Shape<ET_TRIG> ::CalcDualShape2 (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const
   {
+    auto & ip = mip.IP();
+    shape = 0.0;
     double lam[3] = { ip(0), ip(1), 1-ip(0)-ip(1) };
+    size_t ii = 3;
 
     if (ip.VB() == BBND)
-      for (size_t i = 0; i < 3; i++)
-        shape[i] = (i == ip.FacetNr()) ? 1 : 0;
-    else
-      for (size_t i = 0; i < 3; i++)
-        shape[i] = 0;
-    size_t ii = 3;
+      {
+	for (size_t i = 0; i < 3; i++)
+	  shape[i] = (i == ip.FacetNr()) ? 1 : 0;
+      }
+    
 
     // edge-based shapes
     for (int i = 0; i < N_EDGE; i++)
@@ -130,29 +132,17 @@ namespace ngfem
               EdgeOrthoPol::
                 EvalScaledMult (order_edge[i]-2, 
                                 lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
-                                lam[e[0]]*lam[e[1]], shape+ii);
-            }
-          else
-            {
-              for (size_t j = 0; j < order_edge[i]-1; j++)
-                shape[ii+j] = 0;
+                                1.0/mip.GetMeasure()*lam[e[0]]*lam[e[1]], shape+ii);
             }
           ii += order_edge[i]-1;
 	}
 
-
     // inner shapes
-    if (order_face[0][0] >= 3)
+    if (ip.VB() == VOL && order_face[0][0] >= 3)
       {
-        if (ip.VB() == VOL)
-          {
-            INT<4> f = GetVertexOrientedFace (0);
-            DubinerBasis3::Eval (order_face[0][0]-3, 
-                                 lam[f[0]], lam[f[1]], shape+ii);
-          }
-        else
-          for ( ; ii < ndof; ii++)
-            shape[ii] = 0;
+	INT<4> f = GetVertexOrientedFace (0);
+	DubinerBasis3::EvalMult(order_face[0][0]-3, 
+				lam[f[0]], lam[f[1]],1.0/mip.GetMeasure(), shape+ii);
       }
   }
 
@@ -279,6 +269,74 @@ namespace ngfem
   }
 
 
+  template<>
+  inline void H1HighOrderFE_Shape<ET_TET> ::
+  CalcDualShape2 (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const
+  {
+    auto & ip = mip.IP();
+    shape = 0.0;
+    double lam[4] = { ip(0), ip(1), ip(2), 1-ip(0)-ip(1)-ip(2) };
+    size_t ii = 4;
+
+    if (ip.VB() == BBBND)
+      {
+	for (size_t i = 0; i < 4; i++)
+	  shape[i] = (i == ip.FacetNr()) ? 1 : 0;
+      }
+    // edge-based shapes
+    for (int i = 0; i < N_EDGE; i++)
+      {
+	if (order_edge[i] >= 2 && ip.FacetNr() == i && ip.VB() == BBND)
+	  {
+	    INT<2> e = GetVertexOrientedEdge(i);
+	    EdgeOrthoPol::
+	      EvalScaledMult (order_edge[i]-2, 
+			      lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
+			      1.0/mip.GetMeasure()*lam[e[0]]*lam[e[1]], shape+ii);
+	  }
+	
+	ii += order_edge[i]-1;
+      }
+    // face shapes
+    for (int i = 0; i < N_FACE; i++)
+      {
+	if (order_face[i][0] >= 3 && ip.FacetNr() == i && ip.VB() == BND)
+	  {
+	    INT<4> f = GetVertexOrientedFace (0);
+	    DubinerBasis3::EvalMult (order_face[0][0]-3, 
+				     lam[f[0]], lam[f[1]], 1.0/mip.GetMeasure(), shape+ii);
+	  }
+	ii += (order_face[i][0]-2)*(order_face[i][0]-1)/2;
+      }
+    //inner shapes
+    if (ip.VB() == VOL && order_cell[0][0] >= 4)
+      {
+	int p = order_cell[0][0] - 4;
+	LegendrePolynomial leg;
+	JacobiPolynomialAlpha jac1(1);    
+	leg.EvalScaled1Assign 
+	  (p, lam[2]-lam[3], lam[2]+lam[3],
+	   SBLambda ([&](size_t k, double polz) LAMBDA_INLINE
+		     {
+		       // JacobiPolynomialAlpha jac(2*k+1);
+		       JacobiPolynomialAlpha jac2(2*k+2);
+		       
+		       jac1.EvalScaledMult1Assign
+			 (p-k, lam[1]-lam[2]-lam[3], 1-lam[0], polz, 
+			  SBLambda ([&] (size_t j, double polsy) LAMBDA_INLINE
+				    {
+				      // JacobiPolynomialAlpha jac(2*(j+k)+2);
+				      jac2.EvalMult(p - k - j, 2 * lam[0] - 1, polsy, 
+						    SBLambda([&](size_t j, double val) LAMBDA_INLINE
+							     {
+							       shape[ii++] = 1.0/mip.GetMeasure()*val;
+							     }));
+				      jac2.IncAlpha2();
+				    }));
+		       jac1.IncAlpha2();
+		     }));
+      }
+  }
 
 
   /* *********************** Prism  **********************/
