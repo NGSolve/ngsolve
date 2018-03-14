@@ -64,8 +64,8 @@ for classname in all_classes:
     except AttributeError:
         pass
 
-from ngsolve.ngstd import MPIManager
-MPIManager.InitMPI()
+# from ngsolve.ngstd import MPIManager
+# MPIManager.InitMPI()
 
 from . import __expr
 BaseVector.expr = property(__expr.VecExpr)
