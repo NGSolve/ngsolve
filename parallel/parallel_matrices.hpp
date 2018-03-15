@@ -1,4 +1,3 @@
-
 #ifndef FILE_NGS_PARALLEL_MATRICES
 #define FILE_NGS_PARALLEL_MATRICES
 
@@ -80,6 +79,7 @@ namespace ngla
     FETI_Jump_Matrix (shared_ptr<ParallelDofs> pardofs)
       : BaseMatrix(pardofs) { ; }
 
+    virtual bool IsComplex() const { return false; }
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const;
   };

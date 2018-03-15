@@ -1,5 +1,6 @@
 #ifdef NGS_PYTHON
 #include <la.hpp>
+#include <parallelngs.hpp>
 #include "../ngstd/python_ngstd.hpp"
 using namespace ngla;
 
@@ -497,11 +498,12 @@ inverse : string
 #ifdef PARALLEL
   py::class_<ParallelMatrix, shared_ptr<ParallelMatrix>, BaseMatrix>
     (m, "ParallelMatrix", "MPI-distributed matrix")
-    .def_property_readonly("local_mat", [](ParallelMatrix & mat) { return mat.GetMatrix(); }
+    .def_property_readonly("local_mat", [](ParallelMatrix & mat) { return mat.GetMatrix(); })
     ;
 
   py::class_<FETI_Jump_Matrix, shared_ptr<FETI_Jump_Matrix>, BaseMatrix>
     (m, "FETI_Jump", "B-matrix of the FETI-system")
+    .def(py::init<shared_ptr<ParallelDofs>>())
     ;
 #endif
   

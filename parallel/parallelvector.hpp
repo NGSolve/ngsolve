@@ -21,7 +21,8 @@ namespace ngla
   {
   protected:
     mutable PARALLEL_STATUS status;
-    
+    shared_ptr<ParallelDofs> paralleldofs;    
+
   public:
     ParallelBaseVector ()
     { ; }
