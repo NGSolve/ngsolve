@@ -493,6 +493,20 @@ inverse : string
   py::class_<S_BaseMatrix<Complex>, shared_ptr<S_BaseMatrix<Complex>>, BaseMatrix>
     (m, "S_BaseMatrixC", "base sparse matrix");
 
+
+#ifdef PARALLEL
+  py::class_<ParallelMatrix, shared_ptr<ParallelMatrix>, BaseMatrix>
+    (m, "ParallelMatrix", "MPI-distributed matrix")
+    .def_property_readonly("local_mat", [](ParallelMatrix & mat) { return mat.GetMatrix(); }
+    ;
+
+  py::class_<FETI_Jump_Matrix, shared_ptr<FETI_Jump_Matrix>, BaseMatrix>
+    (m, "FETI_Jump", "B-matrix of the FETI-system")
+    ;
+#endif
+  
+
+  
   ExportSparseMatrix<double>(m);
   ExportSparseMatrix<Complex>(m);
   ExportSparseMatrix<Mat<2,2,double>>(m);

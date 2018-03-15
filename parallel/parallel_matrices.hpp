@@ -52,7 +52,7 @@ namespace ngla
     virtual BaseVector & AsVector() { return mat->AsVector(); }
     virtual const BaseVector & AsVector() const { return mat->AsVector(); }
 
-    BaseMatrix & GetMatrix() const { return const_cast<BaseMatrix&> (*mat); }
+    shared_ptr<BaseMatrix> GetMatrix() const { return mat; }
     virtual shared_ptr<BaseMatrix> CreateMatrix () const;
     virtual AutoVector CreateVector () const;
 
@@ -74,7 +74,15 @@ namespace ngla
     virtual INVERSETYPE  GetInverseType () const;
   };
 
-  
+  class FETI_Jump_Matrix : public BaseMatrix
+  {
+  public:
+    FETI_Jump_Matrix (shared_ptr<ParallelDofs> pardofs)
+      : BaseMatrix(pardofs) { ; }
+
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
+    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const;
+  };
 
 #endif
 }
