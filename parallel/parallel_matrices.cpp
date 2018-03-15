@@ -482,6 +482,18 @@ namespace ngla
 
 
 
+
+
+
+
+
+
+  void FETI_Jump_Matrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  { ; }
+
+  void FETI_Jump_Matrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+  { ; }
+
 }
 
 #endif

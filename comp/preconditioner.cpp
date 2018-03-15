@@ -699,13 +699,13 @@ namespace ngcomp
         }
       else
         {
-          const BaseMatrix * mat = &bfa->GetMatrix();
+          shared_ptr<BaseMatrix> mat = bfa->GetMatrixPtr();
 #ifdef PARALLEL
-          if (dynamic_cast<const ParallelMatrix*> (mat))
-            mat = &(dynamic_cast<const ParallelMatrix*> (mat)->GetMatrix());
+          if (dynamic_pointer_cast<ParallelMatrix> (mat))
+            mat = dynamic_pointer_cast<ParallelMatrix> (mat)->GetMatrix();
 #endif
-          jacobi = dynamic_cast<const BaseSparseMatrix&> (*mat)
-            .CreateJacobiPrecond(bfa->GetFESpace()->GetFreeDofs(bfa->UsesEliminateInternal()));
+          jacobi = dynamic_pointer_cast<BaseSparseMatrix> (mat)
+            -> CreateJacobiPrecond(bfa->GetFESpace()->GetFreeDofs(bfa->UsesEliminateInternal()));
         }
     }
 
