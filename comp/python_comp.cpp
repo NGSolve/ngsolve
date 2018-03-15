@@ -3263,15 +3263,18 @@ flags : dict
                                 if (first_time)
                                   { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }                                                
 			      }
-                           py::extract<Region> defon_region(definedon);
-                           if (defon_region.check())
-                             vb = VorB(defon_region());
                            BitArray mask(ma->GetNRegions(vb));
                            mask.Set();
-                           if(defon_region.check())
-                             for(auto i : Range(ma->GetNRegions(vb)))
-                               if(!defon_region().Mask().Test(i))
-                                 mask.Clear(i);
+                            {
+                              py::gil_scoped_acquire aquire;
+                              py::extract<Region> defon_region(definedon);
+                              if (defon_region.check())
+                                vb = VorB(defon_region());
+                              if(defon_region.check())
+                                for(auto i : Range(ma->GetNRegions(vb)))
+                                  if(!defon_region().Mask().Test(i))
+                                    mask.Clear(i);
+                            }
 			   int dim = cf->Dimension();
 			   if((region_wise || element_wise) && dim != 1)
 			     throw Exception("region_wise and element_wise only implemented for 1 dimensional coefficientfunctions");
