@@ -332,10 +332,20 @@ namespace ngstd
 
 class MyMPI
 {
+  bool initialized_by_me;
 public:
   MyMPI(int argc, char ** argv) 
-  { 
-    MPI_Init (&argc, &argv);
+  {
+    int is_init = -1;
+    MPI_Initialized(&is_init);
+    if (!is_init)
+      {
+        MPI_Init (&argc, &argv);
+        initialized_by_me = true;
+      }
+    else
+      initialized_by_me = false;
+      
     ngs_comm = MPI_COMM_WORLD;
     NGSOStream::SetGlobalActive (MyMPI_GetId() == 0);
     
@@ -345,7 +355,8 @@ public:
 
   ~MyMPI()
   {
-    MPI_Finalize ();
+    if (initialized_by_me)
+      MPI_Finalize ();
   }
 };
 
