@@ -11,6 +11,8 @@ namespace ngstd
     bool is_output;
   public:
     Archive (bool ais_output) : is_output(ais_output) { ; }
+    virtual ~Archive() { ; }
+
     bool Output () { return is_output; }
     bool Input () { return !is_output; }
 
