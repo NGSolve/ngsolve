@@ -857,11 +857,11 @@ namespace ngcomp
 
   template <int D>
   class NGS_DLL_HEADER HDG_MassIntegrator 
-    : public T_BDBIntegrator<DiffOpIdHDG<D>, DiagDMat<1> >
+    : public T_BDBIntegrator<DiffOpIdHDG<D>, DiagDMat<1>, CompoundFiniteElement>
   {
-    typedef  T_BDBIntegrator<DiffOpIdHDG<D>, DiagDMat<1> > BASE;
+    typedef  T_BDBIntegrator<DiffOpIdHDG<D>, DiagDMat<1>, CompoundFiniteElement> BASE;
   public:
-    using  T_BDBIntegrator<DiffOpIdHDG<D>, DiagDMat<1> >::T_BDBIntegrator;
+    using  T_BDBIntegrator<DiffOpIdHDG<D>, DiagDMat<1>, CompoundFiniteElement >::T_BDBIntegrator;
     virtual string Name () const { return "Mass-HDG"; }
   };
 
