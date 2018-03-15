@@ -2745,7 +2745,7 @@ check_unused : bool
                                              { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }                                           
                                          }
                                        self.ReAssemble(glh,reallocate);
-                                     },
+                                     }, py::call_guard<py::gil_scoped_release>(),
          py::arg("heapsize")=1000000,py::arg("reallocate")=false)
 
     .def_property_readonly("mat", [](BF & self)
@@ -2789,7 +2789,7 @@ check_unused : bool
     .def("Energy",[](BF & self, shared_ptr<BaseVector> x)
           {
             return self.Energy(*x);
-          })
+          }, py::call_guard<py::gil_scoped_release>())
     
     .def("Apply", [](BF & self, BaseVector& x, BaseVector & y, int heapsize)
 	  {
@@ -2802,7 +2802,7 @@ check_unused : bool
                   { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }                
               }
 	    self.ApplyMatrix (x, y, glh);
-	  },
+	  }, py::call_guard<py::gil_scoped_release>(),
          py::arg("x"),py::arg("y"),py::arg("heapsize")=1000000,docu_string(R"raw_string(
 Applies a (non-)linear variational formulation to x and stores the result in y.
 
@@ -2832,7 +2832,7 @@ heapsize : int
                 
               }
 	    self.ComputeInternal (u, f, glh );
-	  },
+	  }, py::call_guard<py::gil_scoped_release>(),
          py::arg("u"),py::arg("f"),py::arg("heapsize")=1000000)
 
     .def("AssembleLinearization", [](BF & self, BaseVector & ulin, int heapsize)
@@ -2846,7 +2846,7 @@ heapsize : int
                   { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }
               }
 	    self.AssembleLinearization (ulin, glh);
-	  },
+	  }, py::call_guard<py::gil_scoped_release>(),
          py::arg("ulin"),py::arg("heapsize")=1000000)
 
     .def("Flux", [](BF & self, shared_ptr<GridFunction> gf) -> spCF
@@ -2958,7 +2958,7 @@ flags : dict
                  { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }                
              }
            self->Assemble(glh);
-         }, py::arg("heapsize")=1000000)
+         }, py::call_guard<py::gil_scoped_release>(), py::arg("heapsize")=1000000)
 
     .def_property_readonly("components", [](shared_ptr<LF> self)
                    { 
@@ -3004,8 +3004,8 @@ flags : dict
                      "  is set, prints eigenvalues to file."
                      );
                 })
-    .def ("Test", [](Preconditioner &pre) { pre.Test();} )
-    .def ("Update", [](Preconditioner &pre) { pre.Update();} )
+    .def ("Test", [](Preconditioner &pre) { pre.Test();}, py::call_guard<py::gil_scoped_release>())
+    .def ("Update", [](Preconditioner &pre) { pre.Update();}, py::call_guard<py::gil_scoped_release>())
     .def_property_readonly("mat", [](Preconditioner &self)
                    {
                      return self.GetMatrixPtr();
@@ -3041,7 +3041,7 @@ flags : dict
                                {
                                  LocalHeap lh (heapsize, "NumProc::Do-heap");
                                  self.Do(lh);
-                               },
+                               }, py::call_guard<py::gil_scoped_release>(),
          py::arg("heapsize")=1000000)
     ;
 
@@ -3055,7 +3055,7 @@ flags : dict
     .def("Do", [](NumProc & self, LocalHeap & lh)
                                {
                                  self.Do(lh);
-                               })
+                               }, py::call_guard<py::gil_scoped_release>())
     ;
 
   //////////////////////////////////////////////////////////////////////////////////////////
@@ -3267,15 +3267,18 @@ flags : dict
                                 if (first_time)
                                   { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }                                                
 			      }
-                           py::extract<Region> defon_region(definedon);
-                           if (defon_region.check())
-                             vb = VorB(defon_region());
                            BitArray mask(ma->GetNRegions(vb));
                            mask.Set();
-                           if(defon_region.check())
-                             for(auto i : Range(ma->GetNRegions(vb)))
-                               if(!defon_region().Mask().Test(i))
-                                 mask.Clear(i);
+                            {
+                              py::gil_scoped_acquire aquire;
+                              py::extract<Region> defon_region(definedon);
+                              if (defon_region.check())
+                                vb = VorB(defon_region());
+                              if(defon_region.check())
+                                for(auto i : Range(ma->GetNRegions(vb)))
+                                  if(!defon_region().Mask().Test(i))
+                                    mask.Clear(i);
+                            }
 			   int dim = cf->Dimension();
 			   if((region_wise || element_wise) && dim != 1)
 			     throw Exception("region_wise and element_wise only implemented for 1 dimensional coefficientfunctions");
@@ -3460,7 +3463,8 @@ flags : dict
 	py::arg("definedon")=DummyArgument(),
            py::arg("region_wise")=false,
 	py::arg("element_wise")=false,
-	py::arg("heapsize") = 1000000)
+	py::arg("heapsize") = 1000000,
+        py::call_guard<py::gil_scoped_release>())
     ;
 
   m.def("SymbolicLFI",
@@ -3716,7 +3720,8 @@ flags : dict
              for(int j: Range(tpfes->GetDimension()))
                return_val+=val(j);
              return return_val;
-           });
+           },
+        py::call_guard<py::gil_scoped_release>());
    m.def("TensorProductIntegrate",[](shared_ptr<GF> gf_tp, shared_ptr<GF> gf_x, spCF coef)
            {
              static Timer tall("comp.TensorProductIntegrate - total domain integral"); RegionTimer rall(tall);
@@ -3825,7 +3830,8 @@ flags : dict
    },
    py::arg("gftp"),
    py::arg("gfx"),
-   py::arg("weight")=nullptr
+   py::arg("weight")=nullptr,
+        py::call_guard<py::gil_scoped_release>()
    );
 
    m.def("ProlongateCoefficientFunction", [](spCF cf_x, int prolongateto, shared_ptr<FESpace> tpfes) -> shared_ptr<CoefficientFunction>
@@ -3835,7 +3841,8 @@ flags : dict
              auto pcf = make_shared<ProlongateCoefficientFunction>(cf_x,prolongateto,cf_x->Dimension(),dimx,dimy,false);
              pcf->SetDimension(pcf->Dimension());
              return pcf;
-           });
+           },
+        py::call_guard<py::gil_scoped_release>());
    m.def("Prolongate", [](shared_ptr<GF> gf_x, shared_ptr<GF> gf_tp )
             {
               static Timer tall("comp.Prolongate"); RegionTimer rall(tall);
@@ -3845,7 +3852,8 @@ flags : dict
                 tpfes->ProlongateFromXSpace(gf_x,gf_tp,lh);
               else
                 cout << "GridFunction gf_x is not defined on first space"<<endl;
-              });
+              },
+        py::call_guard<py::gil_scoped_release>());
    m.def("Transfer2StdMesh", [](const shared_ptr<GF> gfutp,
                                 shared_ptr<GF> gfustd, int heapsize )
             {
@@ -3860,7 +3868,8 @@ flags : dict
              },
              py::arg("gftp"),
              py::arg("gfstd"),
-             py::arg() = 1000000
+             py::arg() = 1000000,
+        py::call_guard<py::gil_scoped_release>()
         );
    
    m.def("Transfer2StdMesh", [](const spCF cftp, shared_ptr<GF> gfustd )
@@ -3891,20 +3900,23 @@ flags : dict
          py::arg("names") = py::list(),
          py::arg("filename") = "vtkout",
          py::arg("subdivision") = 0,
-         py::arg("only_element") = -1
+         py::arg("only_element") = -1,
+        py::call_guard<py::gil_scoped_release>()
          )
     .def("Do", [](shared_ptr<BaseVTKOutput> self, int heapsize)
                                { 
                                  LocalHeap lh (heapsize, "VTKOutput-heap");
                                  self->Do(lh);
                                },
-         py::arg("heapsize")=1000000)
+         py::arg("heapsize")=1000000,
+        py::call_guard<py::gil_scoped_release>())
     .def("Do", [](shared_ptr<BaseVTKOutput> self, const BitArray * drawelems, int heapsize)
                                { 
                                  LocalHeap lh (heapsize, "VTKOutput-heap");
                                  self->Do(lh, drawelems);
                                },
-         py::arg("drawelems"),py::arg("heapsize")=1000000)
+         py::arg("drawelems"),py::arg("heapsize")=1000000,
+        py::call_guard<py::gil_scoped_release>())
     
     ;
 

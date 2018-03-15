@@ -513,7 +513,7 @@ val : can be one of the following:
   list of scalars or CoefficientFunctions:
     Creates a domain-wise CF, use with generator expressions and mesh.GetMaterials()
     and mesh.GetBoundaries()
-)raw")
+)raw", py::dynamic_attr())
     .def(py::init([] (py::object val, py::object dims)
         {
           shared_ptr<CoefficientFunction> coef;
