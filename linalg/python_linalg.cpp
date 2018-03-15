@@ -455,6 +455,8 @@ inverse : string
                      for libmkl_rt in LD_LIBRARY_PATH (Unix) or PATH (Windows) at run-time.
 )raw_string"), py::call_guard<py::gil_scoped_release>())
     // .def("Inverse", [](BM &m)  { return m.InverseMatrix(); })
+
+    .def_property_readonly("trans", [](shared_ptr<BaseMatrix> m) { return Transpose(m); })
     .def("Update", [](BM &m) { m.Update(); }, py::call_guard<py::gil_scoped_release>())
     ;
 
