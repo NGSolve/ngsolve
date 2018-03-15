@@ -492,17 +492,27 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
     .def_property_readonly ("rank", [](PyMPI c) { return MyMPI_GetId(c.comm); })
     .def_property_readonly ("size", [](PyMPI c) { return MyMPI_GetNTasks(c.comm); })
     ;
+
+
   
-  m.def("MPI_Init", []()
+  m.def("MPI_Init", [&]()
         {
-          // how should we get progname ? 
-          const char * progname = "ngslib";
-          typedef const char * pchar;
-          pchar ptrs[2] = { progname, nullptr };
-          pchar * pptr = &ptrs[0];
-          int argc2 = 1;
+#ifdef PARALLEL
+          int is_init = -1;
+          MPI_Initialized(&is_init);
+          if (!is_init )
+            {
+              const char * progname = "ngslib";
+              typedef const char * pchar;
+              pchar ptrs[2] = { progname, nullptr };
+              pchar * pptr = &ptrs[0];
+              int argc2 = 1;
+              static MyMPI mympi(1, (char**)pptr);
+            }
+          else
+            ngs_comm = MPI_COMM_WORLD;
+#endif
           
-          static MyMPI mympi(1, (char**)pptr);
           return PyMPI(ngs_comm);
         });
 
