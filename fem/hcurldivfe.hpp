@@ -70,15 +70,10 @@ namespace ngfem
     int order_inner;
     int order_trace;
 
-    // additional curl-div free bubbles
-    bool plus;
-    //bool withtrace;
-
   public:
     using VertexOrientedFE<ET>::SetVertexNumbers;
     
-    T_HCurlDivFE (int aorder, bool _plus = false)
-      : plus(_plus) //, withtrace(_withtrace)
+    T_HCurlDivFE (int aorder)
     {
       order = aorder;
       for (auto & of : order_facet) of = aorder;
@@ -838,12 +833,6 @@ namespace ngfem
       int ninner = 3 * ((order_inner +1) * (order_inner))/2; 
       order = max2(order, order_inner);
       
-      if (plus)
-      {
-	//throw Exception(" please update this first - ComputeNdof in HCurlDiv<ET_TRIG>");
-        order ++;	
-        ninner += 2 *(order_inner+1); 
-      }
       ndof += ninner;
       if (order_trace > -1)
 	ndof += (order_trace +1) * (order_trace+2)/2.0;
@@ -879,6 +868,20 @@ namespace ngfem
       Tx ls = ddlami[0];
       Tx le = ddlami[1];
       Tx lt = ddlami[2];
+      
+      //if trace order is not equal -1
+      if (ot>-1)
+	{
+	  LegendrePolynomial::Eval(ot, 2*lt-1, v);
+	  for (int i = 0; i <= ot; i++)
+	    shape[ii++] = type4(le, ls, v[i]);
+
+	  IntLegNoBubble::EvalMult (ot, le-lt, 0.25*le*lt, u);
+	  LegendrePolynomial::EvalMult(ot, 2*ls-1, ls, v);
+	  for(int i = 0; i <= ot-1; i++)
+	      for(int j = 0; j+i <= ot-1; j++)       
+		    shape[ii++] = Sigma_gradu_v(u[i],v[j]);	  		  	    
+	}
                   
       IntLegNoBubble::EvalMult (oi, le-lt, 0.25*le*lt, u);
       LegendrePolynomial::EvalMult(oi, 2*ls-1, ls, v);
@@ -902,19 +905,7 @@ namespace ngfem
 	  shape[ii++] = Curlgraduv_graducurlv(u[i],v[j]); 	 
         }	
       }
-      
-      if (ot>-1)
-	{
-	  LegendrePolynomial::Eval(ot, 2*lt-1, v);
-	  for (int i = 0; i <= ot; i++)
-	    shape[ii++] = type4(le, ls, v[i]);
-
-	  IntLegNoBubble::EvalMult (ot, le-lt, 0.25*le*lt, u);
-	  LegendrePolynomial::EvalMult(ot, 2*ls-1, ls, v);
-	  for(int i = 0; i <= ot-1; i++)
-	      for(int j = 0; j+i <= ot-1; j++)       
-		    shape[ii++] = Sigma_gradu_v(u[i],v[j]);	  		  	    
-	}
+            
     };
   };
 
@@ -1037,11 +1028,6 @@ namespace ngfem
       int ninner = (order_inner + 1)*(order_inner + 2)*(order_inner + 3)/6.0 + 8.0/6.0* ((order_inner +2) * (order_inner +1) * (order_inner));
       
       order = max2(order, order_inner);
-      //if (plus)
-      //{	
-      //  order ++;
-      //  ninner += 2*order_inner; 
-      //}
       ndof += ninner;     
     }
     

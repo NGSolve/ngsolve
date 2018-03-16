@@ -275,7 +275,7 @@ namespace ngcomp
     : FESpace(ama,flags)
   {
     order = int (flags.GetNumFlag ("order",1));
-    plus = flags.GetDefineFlag ("plus");
+    //plus = flags.GetDefineFlag ("plus");
     //withtrace = flags.GetDefineFlag ("withtrace");
     
     discontinuous = flags.GetDefineFlag("discontinuous");
@@ -353,12 +353,6 @@ namespace ngcomp
 	if (ot>-1)
 	  ndof += (ot + 1) * (ot + 2) / 2;
 	
-        if(plus)
-	  {
-	    if (oi == 0)
-	      throw Exception("plus space only works with order > 0");	 
-	    ndof += 2*(oi+1);
-	  }
         if(discontinuous)
         {
           for (auto f : ma->GetElFacets(ei))
@@ -367,10 +361,7 @@ namespace ngcomp
         break;
       case ET_QUAD:
 	ndof += 2*(oi+1)*(oi+1) + (oi + 2) * oi * 2;
-        if(plus)
-	  {
-	    throw Exception("plus space not implemented on QUADS");	 
-	  }
+
         if(discontinuous)
         {
           for (auto f : ma->GetElFacets(ei))
@@ -417,7 +408,7 @@ namespace ngcomp
     {            
       GetInnerDofNrs(e.Nr(), innerdofs);
       int offset = 0;
-      /*
+      
       switch(ma->GetElType(e.Nr()))
 	{
 	case ET_TRIG:
@@ -434,7 +425,7 @@ namespace ngcomp
 	  offset = 1;
 	  break;
 	}
-      */
+      
       
       for (int dof = offset; dof < innerdofs.Size(); dof++)
       {
@@ -495,7 +486,7 @@ namespace ngcomp
     {
     case ET_TRIG:
     {
-      auto fe = new (alloc) HCurlDivFE<ET_TRIG> (order,plus);
+      auto fe = new (alloc) HCurlDivFE<ET_TRIG> (order);
       fe->SetVertexNumbers (ngel.Vertices());
       int ii = 0;
       for(auto f : ngel.Facets())
@@ -507,7 +498,7 @@ namespace ngcomp
     }
     case ET_QUAD:
     {
-      auto fe = new (alloc) HCurlDivFE<ET_QUAD> (order,plus);
+      auto fe = new (alloc) HCurlDivFE<ET_QUAD> (order);
       fe->SetVertexNumbers (ngel.Vertices());
       int ii = 0;
       for(auto f : ngel.Facets())
@@ -518,7 +509,7 @@ namespace ngcomp
     }
     case ET_TET:
     {
-      auto fe = new (alloc) HCurlDivFE<ET_TET> (order,plus);
+      auto fe = new (alloc) HCurlDivFE<ET_TET> (order);
       fe->SetVertexNumbers (ngel.vertices);
       int ii = 0;
       for(auto f : ngel.Facets())
