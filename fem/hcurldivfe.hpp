@@ -71,12 +71,13 @@ namespace ngfem
 
     // additional curl-div free bubbles
     bool plus;
+    bool withtrace;
 
   public:
     using VertexOrientedFE<ET>::SetVertexNumbers;
     
-    T_HCurlDivFE (int aorder, bool _plus = false)
-      : plus(_plus)
+    T_HCurlDivFE (int aorder, bool _plus = false, bool _withtrace = false)
+      : plus(_plus), withtrace(_withtrace)
     {
       order = aorder;
       for (auto & of : order_facet) of = aorder;
@@ -456,6 +457,47 @@ namespace ngfem
     T_Sigma_gradu_v  (AutoDiffDiff<2,T> au, AutoDiffDiff<2,T> av) : u(au), v(av){ ; }
 
     Vec<4,T> Shape() {
+      auto trace = (-  v.DValue(1)*u.DValue(0) + v.DValue(0)*u.DValue(1))/2.0;
+      
+      return Vec<4,T> (-u.DDValue(1,0) * v.Value()  -  v.DValue(1)*u.DValue(0) - trace,
+		     u.DDValue(0,0) * v.Value() + v.DValue(0)*u.DValue(0),
+		     -u.DDValue(1,1) * v.Value() - v.DValue(1)*u.DValue(1),
+		     u.DDValue(0,1) * v.Value() +  v.DValue(0)*u.DValue(1)- trace
+		     );
+    }
+
+    Vec<2,T> DivShape()
+    {
+      T vxx = v.DDValue(0,0), vxy = v.DDValue(0,1), vyy = v.DDValue(1,1);
+      T ux = u.DValue(0), uy = u.DValue(1);
+      T uxx = u.DDValue(0,0), uxy = u.DDValue(0,1), uyy = u.DDValue(1,1);
+      T vx = v.DValue(0), vy = v.DValue(1);
+      
+      return 0.5* Vec<2,T> (uxx*vy+vxy*ux-vxx*uy-vx*uxy, vyy*ux+vy*uxy - vxy*uy - vx * uyy);
+    }
+
+    Vec<2,T> CurlShape()
+    {
+      T vxx = v.DDValue(0,0), vxy = v.DDValue(0,1), vyy = v.DDValue(1,1);
+      T ux = u.DValue(0), uy = u.DValue(1);
+      T uxx = u.DDValue(0,0), uxy = u.DDValue(0,1), uyy = u.DDValue(1,1);
+      T vx = v.DValue(0), vy = v.DValue(1);
+
+      return -0.5 * Vec<2,T> ( (vy*uxy - vx*uyy) +  (ux * vyy - uy * vxy), (-vy*uxx + vx*uxy) + (-ux*vxy + uy*vxx));     
+    }    
+  };
+
+  template <int D, typename T>
+  auto Sigma_gradu_v (AutoDiffDiff<D,T> au, AutoDiffDiff<D,T> av ) { return T_Sigma_gradu_v<D,T>(au,av); }
+
+  template <int D, typename T> class T_Sigma_gradu_v_withtrace;
+  template <typename T> class T_Sigma_gradu_v_withtrace<2,T>
+  {
+    AutoDiffDiff<2,T> u,v;
+  public:
+    T_Sigma_gradu_v_withtrace  (AutoDiffDiff<2,T> au, AutoDiffDiff<2,T> av) : u(au), v(av){ ; }
+
+    Vec<4,T> Shape() {      
       return Vec<4,T> (-u.DDValue(1,0) * v.Value()  -  v.DValue(1)*u.DValue(0),
 		     u.DDValue(0,0) * v.Value() + v.DValue(0)*u.DValue(0),
 		     -u.DDValue(1,1) * v.Value() - v.DValue(1)*u.DValue(1),
@@ -480,7 +522,7 @@ namespace ngfem
   };
 
   template <int D, typename T>
-  auto Sigma_gradu_v (AutoDiffDiff<D,T> au, AutoDiffDiff<D,T> av ) { return T_Sigma_gradu_v<D,T>(au,av); }
+  auto Sigma_gradu_v_withtrace (AutoDiffDiff<D,T> au, AutoDiffDiff<D,T> av ) { return T_Sigma_gradu_v_withtrace<D,T>(au,av); }
 
   /* ############### Type 1.1 (for QUAD) - inner basis functions - not div-free ############### */
   /* grad(u) * Curl(v) */
@@ -564,19 +606,25 @@ namespace ngfem
     T_Curlgraduv_graducurlv  (AutoDiffDiff<2,T> au, AutoDiffDiff<2,T> av) : u(au), v(av){ ; }
 
     Vec<4,T> Shape() {
-      return Vec<4,T> (-u.DDValue(1,0) * v.Value()  +  v.DValue(1)*u.DValue(0),
+
+      auto trace = (v.DValue(1)*u.DValue(0) -  v.DValue(0)*u.DValue(1)  )/2.0;
+      
+      return Vec<4,T> (-u.DDValue(1,0) * v.Value()  +  v.DValue(1)*u.DValue(0) - trace,
 		     u.DDValue(0,0) * v.Value() - v.DValue(0)*u.DValue(0),
 		     -u.DDValue(1,1) * v.Value() + v.DValue(1)*u.DValue(1),
-		     u.DDValue(0,1) * v.Value() -  v.DValue(0)*u.DValue(1)
+		     u.DDValue(0,1) * v.Value() -  v.DValue(0)*u.DValue(1) - trace
 		     );
     }
 
     Vec<2,T> DivShape()
     {
+      T vxx = v.DDValue(0,0), vxy = v.DDValue(0,1), vyy = v.DDValue(1,1);
+      T ux = u.DValue(0), uy = u.DValue(1);
       T uxx = u.DDValue(0,0), uxy = u.DDValue(0,1), uyy = u.DDValue(1,1);
       T vx = v.DValue(0), vy = v.DValue(1);
-      
-      return -2.0 * Vec<2,T> (- uxx * vy + uxy * vx, - uxy * vy + uyy * vx);
+            
+      return 0.5 * Vec<2,T> (3 * uxx * vy - 3 * uxy * vx - vxy*ux + vxx*uy, 3* uxy * vy - 3 * uyy * vx - vyy*ux + vxy*uy);
+
     }
 
     Vec<2,T> CurlShape()
@@ -607,6 +655,9 @@ namespace ngfem
       T lam1x = l1.DValue(0), lam1y = l1.DValue(1);
       T lam2x = l2.DValue(0), lam2y = l2.DValue(1);
       T vx = v.DValue(0), vy = v.DValue(1);                      
+
+      //auto trace = ( (v.Value() * ( - lam1x * lam2y + lam2x * lam1y) - (lam1x*l2.Value() - lam2x*l1.Value()) * vy)
+      //		     + ( v.Value() * ( lam1y * lam2x - lam2y * lam1x) + (lam1y*l2.Value() - lam2y*l1.Value()) * vx))/2.0;
       
       return Vec<4,T> (v.Value() * ( - lam1x * lam2y + lam2x * lam1y) - (lam1x*l2.Value() - lam2x*l1.Value()) * vy,
 		      (lam1x*l2.Value() - lam2x*l1.Value()) * vx,
@@ -821,7 +872,7 @@ namespace ngfem
         ndof += order_facet[i]+1;
         order = max2(order, order_facet[i]);
       }      
-      int ninner = order_inner +1 + 2 * ((order_inner +1) * (order_inner)); 
+      int ninner = 3 * ((order_inner +1) * (order_inner))/2; 
       order = max2(order, order_inner);
       if (plus)
       {
@@ -829,7 +880,9 @@ namespace ngfem
         order ++;	
         ninner += 2 *(order_inner+1); 
       }
-      ndof += ninner;      
+      ndof += ninner;
+      if (withtrace)
+	ndof += (order_inner +1) * (order_inner+2)/2.0;
     }
     
    template <typename Tx, typename TFA> 
@@ -861,11 +914,7 @@ namespace ngfem
       Tx ls = ddlami[0];
       Tx le = ddlami[1];
       Tx lt = ddlami[2];
-
-      LegendrePolynomial::Eval(oi, 2*lt-1, v);
-      for (int i = 0; i <= oi; i++)
-        shape[ii++] = type4(le, ls, v[i]);
-            
+                  
       IntLegNoBubble::EvalMult (oi, le-lt, 0.25*le*lt, u);
       LegendrePolynomial::EvalMult(oi, 2*ls-1, ls, v);
       
@@ -873,7 +922,10 @@ namespace ngfem
       {
         for(int j = 0; j+i <= oi-1; j++)
         {
-	  shape[ii++] = Sigma_gradu_v(u[i],v[j]);
+	  if (withtrace)
+	    shape[ii++] = Sigma_gradu_v_withtrace(u[i],v[j]);
+	  
+	  //shape[ii++] = Sigma_gradu_v(u[i],v[j]);
 	  shape[ii++] = Curlgraduv_graducurlv(u[i],v[j]);	  	  
         }	
       }
@@ -899,7 +951,8 @@ namespace ngfem
       {
         for(int j = 0; j+i <= oi-1; j++)
         {
-	  shape[ii++] = Sigma_gradu_v(u[i],v[j]);
+	  //shape[ii++] = Sigma_gradu_v(u[i],v[j]);
+	  shape[ii++] = Sigma_gradv(u[i]*v[j]);
 	  shape[ii++] = Curlgraduv_graducurlv(u[i],v[j]);	 
         }	
       }
@@ -916,7 +969,15 @@ namespace ngfem
 	      //works but functions are not curl-div free, still less than order_inner+1
 	      shape[ii++] = Curlgraduv_graducurlv(u[oi-i],v[i]);	
 	    }	  
-	}      
+	}
+      
+      if (withtrace)
+	{
+	  LegendrePolynomial::Eval(oi, 2*lt-1, v);
+	  for (int i = 0; i <= oi; i++)
+	    shape[ii++] = type4(le, ls, v[i]);
+	}
+
     };
   };
 

@@ -22,6 +22,8 @@ namespace ngcomp
     // add curldiv-free inner bubbles
     bool plus;
     bool discontinuous;
+    bool withtrace;
+    
     int uniform_order_facet;
     int uniform_order_inner;
 

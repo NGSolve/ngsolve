@@ -276,6 +276,8 @@ namespace ngcomp
   {
     order = int (flags.GetNumFlag ("order",1));
     plus = flags.GetDefineFlag ("plus");
+    withtrace = flags.GetDefineFlag ("withtrace");
+    
     discontinuous = flags.GetDefineFlag("discontinuous");
     uniform_order_facet = int(flags.GetNumFlag("orderfacet",order));
     uniform_order_inner = int(flags.GetNumFlag("orderinner",order));
@@ -342,7 +344,10 @@ namespace ngcomp
       switch(ma->GetElType(ei))
       {
       case ET_TRIG:
-        ndof += 2* (oi * (oi +1)) + oi +1;
+        ndof += 3*(oi * (oi +1))/2;
+	if (withtrace)
+	  ndof += (oi + 1) * (oi + 2) / 2;
+	
         if(plus)
 	  {
 	    if (oi == 0)
@@ -407,6 +412,7 @@ namespace ngcomp
     {            
       GetInnerDofNrs(e.Nr(), innerdofs);
       int offset = 0;
+      /*
       switch(ma->GetElType(e.Nr()))
 	{
 	case ET_TRIG:
@@ -423,6 +429,7 @@ namespace ngcomp
 	  offset = 1;
 	  break;
 	}
+      */
       
       for (int dof = offset; dof < innerdofs.Size(); dof++)
       {
@@ -483,7 +490,7 @@ namespace ngcomp
     {
     case ET_TRIG:
     {
-      auto fe = new (alloc) HCurlDivFE<ET_TRIG> (order,plus);
+      auto fe = new (alloc) HCurlDivFE<ET_TRIG> (order,plus, withtrace);
       fe->SetVertexNumbers (ngel.Vertices());
       int ii = 0;
       for(auto f : ngel.Facets())
