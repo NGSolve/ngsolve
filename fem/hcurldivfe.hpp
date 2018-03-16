@@ -594,7 +594,7 @@ namespace ngfem
       T uxx = u.DDValue(0,0), uxy = u.DDValue(0,1), uyy = u.DDValue(1,1);
       T vx = v.DValue(0), vy = v.DValue(1);
       
-      return Vec<2,T> ( (vy*uxy - vx*uyy) - (ux * vyy - uy * vxy), (-vy*uxx + vx*uxy) - (-ux*vxy + uy*vxx));     
+      return 0.5 *  Vec<2,T> ( (3*vy*uxy - 3*vx*uyy) - (ux * vyy - uy * vxy), (-3*vy*uxx + 3*vx*uxy) - (-ux*vxy + uy*vxx));     
     }
     
   };
