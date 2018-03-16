@@ -406,20 +406,22 @@ namespace ngcomp
     for(auto e: ma->Elements())
     {            
       GetInnerDofNrs(e.Nr(), innerdofs);
-      //lowest order constant bubble
       int offset = 0;
       switch(ma->GetElType(e.Nr()))
 	{
 	case ET_TRIG:
 	  ctofdof[innerdofs[0]] = INTERFACE_DOF;
 	  offset = 1;
+	  break;
 	case ET_QUAD:
 	  ctofdof[innerdofs[0]] = INTERFACE_DOF;
 	  ctofdof[innerdofs[1]] = INTERFACE_DOF;
 	  offset = 2;
+	  break;
 	case ET_TET:
 	  ctofdof[innerdofs[0]] = INTERFACE_DOF; 
 	  offset = 1;
+	  break;
 	}
       
       for (int dof = offset; dof < innerdofs.Size(); dof++)
