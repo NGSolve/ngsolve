@@ -68,20 +68,22 @@ namespace ngfem
 
     int order_facet[ET_trait<ET>::N_FACET];
     int order_inner;
+    int order_trace;
 
     // additional curl-div free bubbles
     bool plus;
-    bool withtrace;
+    //bool withtrace;
 
   public:
     using VertexOrientedFE<ET>::SetVertexNumbers;
     
-    T_HCurlDivFE (int aorder, bool _plus = false, bool _withtrace = false)
-      : plus(_plus), withtrace(_withtrace)
+    T_HCurlDivFE (int aorder, bool _plus = false)
+      : plus(_plus) //, withtrace(_withtrace)
     {
       order = aorder;
       for (auto & of : order_facet) of = aorder;
       order_inner = aorder;
+      order_trace = -1;
     }
     
     virtual ELEMENT_TYPE ElementType() const { return ET; }
@@ -89,6 +91,7 @@ namespace ngfem
     
     INLINE void SetOrderFacet (int nr, int order) { order_facet[nr] = order; }
     INLINE void SetOrderInner (int order) { order_inner = order; }
+    INLINE void SetOrderTrace (int order) { order_trace = order; }
 
     virtual void ComputeNDof()
     {
@@ -834,6 +837,7 @@ namespace ngfem
       }      
       int ninner = 3 * ((order_inner +1) * (order_inner))/2; 
       order = max2(order, order_inner);
+      
       if (plus)
       {
 	//throw Exception(" please update this first - ComputeNdof in HCurlDiv<ET_TRIG>");
@@ -841,8 +845,8 @@ namespace ngfem
         ninner += 2 *(order_inner+1); 
       }
       ndof += ninner;
-      if (withtrace)
-	ndof += (order_inner +1) * (order_inner+2)/2.0;
+      if (order_trace > -1)
+	ndof += (order_trace +1) * (order_trace+2)/2.0;
     }
     
    template <typename Tx, typename TFA> 
@@ -853,7 +857,8 @@ namespace ngfem
       
       int ii = 0;
       
-      int oi=order_inner;      
+      int oi=order_inner;
+      int ot=order_trace; 
       int maxorder_facet =
         max2(order_facet[0],max2(order_facet[1],order_facet[2]));      
 
@@ -898,16 +903,16 @@ namespace ngfem
         }	
       }
       
-      if (withtrace)
+      if (ot>-1)
 	{
-	  LegendrePolynomial::Eval(oi, 2*lt-1, v);
-	  for (int i = 0; i <= oi; i++)
+	  LegendrePolynomial::Eval(ot, 2*lt-1, v);
+	  for (int i = 0; i <= ot; i++)
 	    shape[ii++] = type4(le, ls, v[i]);
 
-	  IntLegNoBubble::EvalMult (oi, le-lt, 0.25*le*lt, u);
-	  LegendrePolynomial::EvalMult(oi, 2*ls-1, ls, v);
-	  for(int i = 0; i <= oi-1; i++)
-	      for(int j = 0; j+i <= oi-1; j++)       
+	  IntLegNoBubble::EvalMult (ot, le-lt, 0.25*le*lt, u);
+	  LegendrePolynomial::EvalMult(ot, 2*ls-1, ls, v);
+	  for(int i = 0; i <= ot-1; i++)
+	      for(int j = 0; j+i <= ot-1; j++)       
 		    shape[ii++] = Sigma_gradu_v(u[i],v[j]);	  		  	    
 	}
     };
