@@ -446,56 +446,16 @@ namespace ngfem
 
   template <int D, typename T>
   auto Sigma_gradv (AutoDiffDiff<D,T> av) { return T_Sigma_gradv<D,T>(av); }
+
+  /* ############### div-free basis function WITH trace ############### */
+  /* For basis functions including the trace */
   
-  /* ############### Type 1 - inner basis functions - div-free ############### */
-  /* sigma(grad(u)*v) = Curl(grad(u)) * v + grad(u) * Curl(v) */  
   template <int D, typename T> class T_Sigma_gradu_v;
   template <typename T> class T_Sigma_gradu_v<2,T>
   {
     AutoDiffDiff<2,T> u,v;
   public:
     T_Sigma_gradu_v  (AutoDiffDiff<2,T> au, AutoDiffDiff<2,T> av) : u(au), v(av){ ; }
-
-    Vec<4,T> Shape() {
-      auto trace = (-  v.DValue(1)*u.DValue(0) + v.DValue(0)*u.DValue(1))/2.0;
-      
-      return Vec<4,T> (-u.DDValue(1,0) * v.Value()  -  v.DValue(1)*u.DValue(0) - trace,
-		     u.DDValue(0,0) * v.Value() + v.DValue(0)*u.DValue(0),
-		     -u.DDValue(1,1) * v.Value() - v.DValue(1)*u.DValue(1),
-		     u.DDValue(0,1) * v.Value() +  v.DValue(0)*u.DValue(1)- trace
-		     );
-    }
-
-    Vec<2,T> DivShape()
-    {
-      T vxx = v.DDValue(0,0), vxy = v.DDValue(0,1), vyy = v.DDValue(1,1);
-      T ux = u.DValue(0), uy = u.DValue(1);
-      T uxx = u.DDValue(0,0), uxy = u.DDValue(0,1), uyy = u.DDValue(1,1);
-      T vx = v.DValue(0), vy = v.DValue(1);
-      
-      return 0.5* Vec<2,T> (uxx*vy+vxy*ux-vxx*uy-vx*uxy, vyy*ux+vy*uxy - vxy*uy - vx * uyy);
-    }
-
-    Vec<2,T> CurlShape()
-    {
-      T vxx = v.DDValue(0,0), vxy = v.DDValue(0,1), vyy = v.DDValue(1,1);
-      T ux = u.DValue(0), uy = u.DValue(1);
-      T uxx = u.DDValue(0,0), uxy = u.DDValue(0,1), uyy = u.DDValue(1,1);
-      T vx = v.DValue(0), vy = v.DValue(1);
-
-      return -0.5 * Vec<2,T> ( (vy*uxy - vx*uyy) +  (ux * vyy - uy * vxy), (-vy*uxx + vx*uxy) + (-ux*vxy + uy*vxx));     
-    }    
-  };
-
-  template <int D, typename T>
-  auto Sigma_gradu_v (AutoDiffDiff<D,T> au, AutoDiffDiff<D,T> av ) { return T_Sigma_gradu_v<D,T>(au,av); }
-
-  template <int D, typename T> class T_Sigma_gradu_v_withtrace;
-  template <typename T> class T_Sigma_gradu_v_withtrace<2,T>
-  {
-    AutoDiffDiff<2,T> u,v;
-  public:
-    T_Sigma_gradu_v_withtrace  (AutoDiffDiff<2,T> au, AutoDiffDiff<2,T> av) : u(au), v(av){ ; }
 
     Vec<4,T> Shape() {      
       return Vec<4,T> (-u.DDValue(1,0) * v.Value()  -  v.DValue(1)*u.DValue(0),
@@ -522,7 +482,7 @@ namespace ngfem
   };
 
   template <int D, typename T>
-  auto Sigma_gradu_v_withtrace (AutoDiffDiff<D,T> au, AutoDiffDiff<D,T> av ) { return T_Sigma_gradu_v_withtrace<D,T>(au,av); }
+  auto Sigma_gradu_v (AutoDiffDiff<D,T> au, AutoDiffDiff<D,T> av ) { return T_Sigma_gradu_v<D,T>(au,av); }
 
   /* ############### Type 1.1 (for QUAD) - inner basis functions - not div-free ############### */
   /* grad(u) * Curl(v) */
@@ -921,29 +881,11 @@ namespace ngfem
       for(int i = 0; i <= oi-1; i++)
       {
         for(int j = 0; j+i <= oi-1; j++)
-        {
-	  if (withtrace)
-	    shape[ii++] = Sigma_gradu_v_withtrace(u[i],v[j]);
-	  
-	  //shape[ii++] = Sigma_gradu_v(u[i],v[j]);
+        {	  
 	  shape[ii++] = Curlgraduv_graducurlv(u[i],v[j]);	  	  
         }	
       }
-
-      if(plus)
-	{
-	  //does not work
-	  //shape[ii++] = curldivfreebubbles(u[0]*v[0],y);
-	  for(int i = 0; i <= oi; i++)
-	    {
-	      //does not work
-	      //shape[ii++] = curldivfreebubbles(u[oi-i],v[i]);
-
-	      //works but functions are not curl-div free, still less than order_inner+1
-	      shape[ii++] = Curlgraduv_graducurlv(u[oi-i],v[i]);	
-	    }	  
-	}
-      
+     
       IntLegNoBubble::EvalMult (oi, le-ls, 0.25*le*ls, u);
       LegendrePolynomial::EvalMult(oi, 2*lt-1, lt, v);
       
@@ -951,33 +893,23 @@ namespace ngfem
       {
         for(int j = 0; j+i <= oi-1; j++)
         {
-	  //shape[ii++] = Sigma_gradu_v(u[i],v[j]);
-	  shape[ii++] = Sigma_gradv(u[i]*v[j]);
-	  shape[ii++] = Curlgraduv_graducurlv(u[i],v[j]);	 
+	  shape[ii++] = Sigma_gradv(u[i]*v[j]); //divfree!
+	  shape[ii++] = Curlgraduv_graducurlv(u[i],v[j]); 	 
         }	
       }
-
-      if(plus)
-	{
-	  //does not work
-	  //shape[ii++] = curldivfreebubbles(u[0]*v[0],y);
-	  for(int i = 0; i <= oi; i++)
-	    {
-	      //does not work
-	      //shape[ii++] = curldivfreebubbles(u[oi-i],v[i]);
-
-	      //works but functions are not curl-div free, still less than order_inner+1
-	      shape[ii++] = Curlgraduv_graducurlv(u[oi-i],v[i]);	
-	    }	  
-	}
       
       if (withtrace)
 	{
 	  LegendrePolynomial::Eval(oi, 2*lt-1, v);
 	  for (int i = 0; i <= oi; i++)
 	    shape[ii++] = type4(le, ls, v[i]);
-	}
 
+	  IntLegNoBubble::EvalMult (oi, le-lt, 0.25*le*lt, u);
+	  LegendrePolynomial::EvalMult(oi, 2*ls-1, ls, v);
+	  for(int i = 0; i <= oi-1; i++)
+	      for(int j = 0; j+i <= oi-1; j++)       
+		    shape[ii++] = Sigma_gradu_v(u[i],v[j]);	  		  	    
+	}
     };
   };
 
