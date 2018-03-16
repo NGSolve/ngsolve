@@ -21,7 +21,6 @@ namespace ngcomp
     Array<int> order_trace;
     
     // add curldiv-free inner bubbles
-    bool plus;
     bool discontinuous;
     //bool withtrace;
     
