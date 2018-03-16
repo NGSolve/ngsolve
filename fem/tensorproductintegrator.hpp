@@ -14,7 +14,7 @@ namespace ngfem
   {
   public:
     TensorProductBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb,
-                                    bool aelement_boundary) : SymbolicBilinearFormIntegrator(acf, avb, aelement_boundary)
+                                         bool aelement_boundary) : SymbolicBilinearFormIntegrator(acf, avb, aelement_boundary ? BND : VOL)
     { ; }
     virtual string Name () const { return string ("Symbolic BFI"); }
 

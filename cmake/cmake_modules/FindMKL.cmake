@@ -127,8 +127,8 @@ else()
 #     ############################ RTL layer ##########################
     if(WIN32)
         set(MKL_RTL_LIBNAME libiomp5md)
-        find_library(MKL_RTL_LIBRARY ${MKL_RTL_LIBNAME}
-            PATHS ${MKL_ROOT}/../compiler/lib/${MKL_ARCH})
+        find_library(MKL_RTL_LIBRARY ${MKL_RTL_LIBNAME} PATHS ${MKL_ROOT}/../compiler/lib/${MKL_ARCH})
+        find_file(MKL_RTL_LIBRARY_BIN ${MKL_RTL_LIBNAME}.dll PATHS ${MKL_ROOT}/../redist/${MKL_ARCH}/compiler)
     endif()
 #         set(MKL_RTL_LIBNAME libiomp5)
 #     endif()

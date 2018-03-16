@@ -59,7 +59,8 @@ namespace ngcomp
     : FESpace (ama, flags)
   {
     name="L2HighOrderFESpace(l2ho)";
-    
+    type = "l2ho";
+   
     // defined flags
     DefineNumFlag("relorder");
     DefineDefineFlag("l2ho");
@@ -95,7 +96,7 @@ namespace ngcomp
       integrator[VOL] = make_shared<BlockBilinearFormIntegrator> (integrator[VOL], dimension);
     */
 
-    
+    SetDefinedOn(BND, BitArray(ma->GetNRegions(BND)).Clear());
 
     switch (ma->GetDimension())
       {
@@ -686,6 +687,7 @@ namespace ngcomp
   L2SurfaceHighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags)
     : FESpace (ama, flags)
   {
+    type = "l2surf";
     name="L2SurfaceHighOrderFESpace(l2surf)";
     // defined flags 
     DefineDefineFlag("l2surf");
@@ -950,13 +952,12 @@ namespace ngcomp
 
 
 
-  class VectorL2FESpace : public CompoundFESpace
-  {
-  public:
-    VectorL2FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, 
-                     bool checkflags = false)
+
+  VectorL2FESpace::VectorL2FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, 
+                     bool checkflags)
       : CompoundFESpace(ama, flags)
     {
+      type = "VectorL2";
       for (int i = 0; i <  ma->GetDimension(); i++)
         AddSpace (make_shared<L2HighOrderFESpace> (ama, flags));
 
@@ -974,8 +975,6 @@ namespace ngcomp
           break;
         }
     }
-  };
-    
 
   static RegisterFESpace<VectorL2FESpace> initvecl2 ("VectorL2");
   

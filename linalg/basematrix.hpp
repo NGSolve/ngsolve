@@ -22,7 +22,7 @@ namespace ngla
   class NGS_DLL_HEADER BaseMatrix : public enable_shared_from_this_virtual<BaseMatrix>
   {
   protected:
-    const ParallelDofs * paralleldofs;
+    shared_ptr<ParallelDofs> paralleldofs;
 
   protected:
     /// 
@@ -30,7 +30,7 @@ namespace ngla
     /// 
     // BaseMatrix (const BaseMatrix & amat);
     //
-    BaseMatrix (const ParallelDofs * aparalleldofs); 
+    BaseMatrix (shared_ptr<ParallelDofs> aparalleldofs); 
 
   public:
     /// 
@@ -121,8 +121,8 @@ namespace ngla
 			   const Array<int> * acluster = NULL) const;
 
 
-    void SetParallelDofs (const ParallelDofs * pardofs) { paralleldofs = pardofs; }
-    const ParallelDofs * GetParallelDofs () const { return paralleldofs; }
+    void SetParallelDofs (shared_ptr<ParallelDofs> pardofs) { paralleldofs = pardofs; }
+    shared_ptr<ParallelDofs> GetParallelDofs () const { return paralleldofs; }
 
     virtual shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<BitArray> subset = nullptr) const;
     virtual shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<const Array<int>> clusters) const;
@@ -240,43 +240,43 @@ namespace ngla
   */
   class Transpose : public BaseMatrix
   {
-    const BaseMatrix & bm;
+    shared_ptr<BaseMatrix> bm;
   public:
     ///
-    Transpose (const BaseMatrix & abm) : bm(abm) { ; }
-
+    Transpose (shared_ptr<BaseMatrix> abm) : bm(abm) { ; }
+    Transpose (const BaseMatrix & abm) : bm(const_cast<BaseMatrix&>(abm).shared_from_this()) { ; }
     ///
-    virtual bool IsComplex() const { return bm.IsComplex(); }
+    virtual bool IsComplex() const { return bm->IsComplex(); }
 
     ///
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const
     {
-      bm.MultTransAdd (s, x, y);
+      bm->MultTransAdd (s, x, y);
     }
     ///
     virtual void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const 
     {
-      bm.MultTransAdd (s, x, y);
+      bm->MultTransAdd (s, x, y);
     }
     ///
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
     {
-      bm.MultAdd (s, x, y);
+      bm->MultAdd (s, x, y);
     }
     ///
     virtual void MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const
     {
-      bm.MultAdd (s, x, y);
+      bm->MultAdd (s, x, y);
     }  
 
-    virtual int VHeight() const { return bm.VWidth(); }
-    virtual int VWidth() const { return bm.VHeight(); }
+    virtual int VHeight() const { return bm->VWidth(); }
+    virtual int VWidth() const { return bm->VHeight(); }
 
 
     virtual ostream & Print (ostream & ost) const
     {
       ost << "Transpose of " << endl;
-      bm.Print(ost);
+      bm->Print(ost);
       return ost;
     }
   };

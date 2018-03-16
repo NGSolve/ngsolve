@@ -83,9 +83,9 @@ namespace ngfem
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
-  Evaluate (const IntegrationRule & ir, BareSliceVector<double> coefs, FlatVector<double> vals) const
+  Evaluate (const IntegrationRule & ir, BareSliceVector<double> coefs, BareSliceVector<double> vals) const
   {
-    for (int i = 0; i < ir.GetNIP(); i++)
+    for (size_t i = 0; i < ir.GetNIP(); i++)
       {
         // Vec<DIM> pt = ir[i].Point();
         TIP<DIM,double> ip = ir[i];
@@ -634,7 +634,7 @@ namespace ngfem
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   EvaluateGrad (const IntegrationRule & ir, BareSliceVector<double> coefs, 
-                FlatMatrixFixWidth<DIM> vals) const
+                BareSliceMatrix<> vals) const
   {
     for (int i = 0; i < ir.GetNIP(); i++)
       {
@@ -644,7 +644,7 @@ namespace ngfem
         T_CalcShape (tip, // TIP<DIM, AutoDiff<DIM>> (adp),
                      SBLambda ([&] (int j, AD2Vec<DIM> shape)
                                { sum += coefs(j) * shape; }));
-        vals.Row(i) = sum;
+        vals.Row(i).AddSize(DIM) = sum;
       }
   }
 
@@ -956,6 +956,14 @@ namespace ngfem
        cout << "EvaluateGrad(simd) called for bboundary (not implemented)" << endl;        
      }
   }
+
+  template <class FEL, ELEMENT_TYPE ET, class BASE>
+  void T_ScalarFiniteElement<FEL,ET,BASE> :: 
+  CalcDualShape (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const
+  {
+    static_cast<const FEL*>(this) -> CalcDualShape2 (mip, shape);
+  }
+  
   
 
   /*

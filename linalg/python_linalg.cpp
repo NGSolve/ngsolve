@@ -1,5 +1,6 @@
 #ifdef NGS_PYTHON
 #include <la.hpp>
+#include <parallelngs.hpp>
 #include "../ngstd/python_ngstd.hpp"
 using namespace ngla;
 
@@ -62,6 +63,17 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .export_values()
     ;
     
+  py::class_<ParallelDofs, shared_ptr<ParallelDofs>> (m, "ParallelDofs")
+    .def_property_readonly ("ndoflocal", [](const ParallelDofs & self) 
+			    { return self.GetNDofLocal(); },
+                            "number of degrees of freedom")
+
+    .def_property_readonly ("ndofglobal",
+                            [](const ParallelDofs & self) 
+			    { return self.GetNDofGlobal(); },    
+                            "number of global degrees of freedom")
+    ;
+
     m.def("CreateVVector",
           [] (size_t s, bool is_complex, int es) -> shared_ptr<BaseVector>
           { return CreateBaseVector(s,is_complex, es); },
@@ -70,22 +82,32 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
   py::class_<BaseVector, shared_ptr<BaseVector>>(m, "BaseVector",
         py::dynamic_attr() // add dynamic attributes
       )
+    .def(py::init([] (size_t s, bool is_complex, int es) -> shared_ptr<BaseVector>
+                  { return CreateBaseVector(s,is_complex, es); }),
+                  "size"_a, "complex"_a=false, "entrysize"_a=1)
     .def(py::pickle([] (const BaseVector& bv)
                     {
-                      py::list lst;
-                      for(auto val : bv.FVDouble())
-                        lst.append(val);
-                      return py::make_tuple(bv.Size(),bv.IsComplex(),bv.EntrySize(),lst);
+                      MemoryView mv((void*) &bv.FVDouble()[0], sizeof(double) * bv.FVDouble().Size());
+                      return py::make_tuple(bv.Size(),bv.IsComplex(),bv.EntrySize(),mv);
                     },
                     [] (py::tuple state) -> shared_ptr<BaseVector>
                     {
-                      auto bv = CreateBaseVector(state[0].cast<size_t>(),
-                                                 state[1].cast<bool>(),
-                                                 state[2].cast<size_t>());
-                      auto lst = state[3].cast<py::list>();
-                      for(auto i : Range(py::len(lst)))
-                        bv.FVDouble()[i] = lst[i].cast<double>();
-                      return bv;
+                      auto mv = state[3].cast<MemoryView>();
+                      shared_ptr<BaseVector> bv;
+                      if (state[1].cast<bool>())
+                        {
+                          // create basevector with owning pointer and afterwards assign it to mem
+                          auto bptr = make_shared<S_BaseVectorPtr<Complex>>(0, state[2].cast<size_t>());
+                          bptr->AssignMemory(state[0].cast<size_t>(), mv.Ptr());
+                          return bptr;
+                        }
+                      else
+                        {
+                          // create basevector with owning pointer and afterwards assign it to mem
+                          auto bptr = make_shared<S_BaseVectorPtr<double>>(0, state[2].cast<size_t>());
+                          bptr->AssignMemory(state[0].cast<size_t>(), mv.Ptr());
+                          return bptr;
+                        }
                     }
                     ))
     .def("__str__", [](BaseVector &self) { return ToString<BaseVector>(self); } )
@@ -383,29 +405,29 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                         return shared_ptr<BaseVector> (&m.AsVector(), NOOP_Deleter);
                                       })
 
-    .def("Mult",         [](BaseMatrix &m, BaseVector &x, BaseVector &y) { m.Mult(x, y); })
-    .def("MultAdd",      [](BaseMatrix &m, double s, BaseVector &x, BaseVector &y) { m.MultAdd (s, x, y); })
-    .def("MultTrans",    [](BaseMatrix &m, double s, BaseVector &x, BaseVector &y) { y=0; m.MultTransAdd (1.0, x, y); })
-    .def("MultTransAdd",  [](BaseMatrix &m, double s, BaseVector &x, BaseVector &y) { m.MultTransAdd (s, x, y); })
+    .def("Mult",         [](BaseMatrix &m, BaseVector &x, BaseVector &y) { m.Mult(x, y); }, py::call_guard<py::gil_scoped_release>())
+    .def("MultAdd",      [](BaseMatrix &m, double s, BaseVector &x, BaseVector &y) { m.MultAdd (s, x, y); }, py::call_guard<py::gil_scoped_release>())
+    .def("MultTrans",    [](BaseMatrix &m, double s, BaseVector &x, BaseVector &y) { y=0; m.MultTransAdd (1.0, x, y); }, py::call_guard<py::gil_scoped_release>())
+    .def("MultTransAdd",  [](BaseMatrix &m, double s, BaseVector &x, BaseVector &y) { m.MultTransAdd (s, x, y); }, py::call_guard<py::gil_scoped_release>())
     .def("MultScale",    [](BaseMatrix &m, double s, BaseVector &x, BaseVector &y)
           {
               m.Mult (x,y);
               if(s!=1.0)
                   y *= s;
-          } )
-    .def("MultAdd",      [](BaseMatrix &m, Complex s, BaseVector &x, BaseVector &y) { m.MultAdd (s, x, y); })
-    .def("MultTrans",    [](BaseMatrix &m, Complex s, BaseVector &x, BaseVector &y) { y=0; m.MultTransAdd (1.0, x, y); })
-    .def("MultTransAdd",  [](BaseMatrix &m, Complex s, BaseVector &x, BaseVector &y) { m.MultTransAdd (s, x, y); })
+          } , py::call_guard<py::gil_scoped_release>())
+    .def("MultAdd",      [](BaseMatrix &m, Complex s, BaseVector &x, BaseVector &y) { m.MultAdd (s, x, y); }, py::call_guard<py::gil_scoped_release>())
+    .def("MultTrans",    [](BaseMatrix &m, Complex s, BaseVector &x, BaseVector &y) { y=0; m.MultTransAdd (1.0, x, y); }, py::call_guard<py::gil_scoped_release>())
+    .def("MultTransAdd",  [](BaseMatrix &m, Complex s, BaseVector &x, BaseVector &y) { m.MultTransAdd (s, x, y); }, py::call_guard<py::gil_scoped_release>())
     .def("MultScale",    [](BaseMatrix &m, Complex s, BaseVector &x, BaseVector &y)
           {
               m.Mult (x,y);
               if(s!=1.0)
                   y *= s;
-          } )
+          }, py::call_guard<py::gil_scoped_release>() )
 
     .def("__iadd__", [] (BM &m, BM &m2) { 
         m.AsVector()+=m2.AsVector();
-    })
+    }, py::call_guard<py::gil_scoped_release>())
 
     .def("GetInverseType", [](BM & m)
                                             {
@@ -418,7 +440,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                        return m.InverseMatrix(freedofs);
                                      }
          ,"Inverse", py::arg("freedofs")=nullptr, py::arg("inverse")=py::str(""), 
-         docu_string(R"raw_string(Calculate inverse of sparse matrix"
+         docu_string(R"raw_string(Calculate inverse of sparse matrix
 Parameters
 
 freedofs : BitArray
@@ -431,13 +453,20 @@ inverse : string
     pardiso        - PARDISO, either provided by libpardiso (USE_PARDISO=ON) or Intel MKL (USE_MKL=ON).
                      If neither Pardiso nor Intel MKL was linked at compile-time, NGSolve will look
                      for libmkl_rt in LD_LIBRARY_PATH (Unix) or PATH (Windows) at run-time.
-)raw_string"))
+)raw_string"), py::call_guard<py::gil_scoped_release>())
     // .def("Inverse", [](BM &m)  { return m.InverseMatrix(); })
-    .def("Update", [](BM &m) { m.Update(); })
+
+    .def_property_readonly("trans", [](shared_ptr<BaseMatrix> m) { return Transpose(m); })
+    .def("Update", [](BM &m) { m.Update(); }, py::call_guard<py::gil_scoped_release>())
     ;
 
   py::class_<BaseSparseMatrix, shared_ptr<BaseSparseMatrix>, BaseMatrix>
     (m, "BaseSparseMatrix", "sparse matrix of any type")
+    
+    .def("CreateSmoother", [](BaseSparseMatrix & m, shared_ptr<BitArray> ba) 
+         { return m.CreateJacobiPrecond(ba); },
+         py::arg("freedofs") = shared_ptr<BitArray>())
+    
     .def("CreateBlockSmoother", [](BaseSparseMatrix & m, py::object blocks)
          {
            size_t size = py::len(blocks);
@@ -460,67 +489,28 @@ inverse : string
            auto pre = m.CreateBlockJacobiPrecond (make_shared<Table<int>> (move(blocktable)));
            return pre;
          })
-    /*
-    .def("COO", [] (BM & m) -> py::object
-         {
-           SparseMatrix<double> * sp = dynamic_cast<SparseMatrix<double>*> (&m);
-           if (sp)
-             {
-               size_t nze = sp->NZE();
-               Array<int> ri(nze), ci(nze);
-               Vector<double> vals(nze);
-               for (size_t i = 0, ii = 0; i < sp->Height(); i++)
-                 {
-                   FlatArray<int> ind = sp->GetRowIndices(i);
-                   FlatVector<double> rv = sp->GetRowValues(i);
-                   for (int j = 0; j < ind.Size(); j++, ii++)
-                     {
-                       ri[ii] = i;
-                       ci[ii] = ind[j];
-                       vals[ii] = rv[j];
-                     }
-                 }
-               
-               py::object pyri = py::cast(std::move(ri));
-               py::object pyci = py::cast(std::move(ci));
-               py::object pyvals = py::cast(std::move(vals));
-               return py::make_tuple (pyri, pyci, pyvals);
-             }
-           
-           SparseMatrix<Complex> * spc
-             = dynamic_cast<SparseMatrix<Complex>*> (&m);
-           if (spc)
-             {
-               size_t nze = spc->NZE();
-               Array<int> ri(nze), ci(nze);
-               Vector<Complex> vals(nze);
-               for (size_t i = 0, ii = 0; i < spc->Height(); i++)
-                 {
-                   FlatArray<int> ind = spc->GetRowIndices(i);
-                   FlatVector<Complex> rv = spc->GetRowValues(i);
-                   for (int j = 0; j < ind.Size(); j++, ii++)
-                     {
-                       ri[ii] = i;
-                       ci[ii] = ind[j];
-                       vals[ii] = rv[j];
-                     }
-                 }
-               py::object pyri = py::cast(std::move(ri));
-               py::object pyci = py::cast(std::move(ci));
-               py::object pyvals = py::cast(std::move(vals));
-               return py::make_tuple (pyri, pyci, pyvals);
-             }
-           
-           throw Exception ("COO needs real or complex-valued sparse matrix");
-         })
-    */
-    ;
+     ;
 
   py::class_<S_BaseMatrix<double>, shared_ptr<S_BaseMatrix<double>>, BaseMatrix>
     (m, "S_BaseMatrixD", "base sparse matrix");
   py::class_<S_BaseMatrix<Complex>, shared_ptr<S_BaseMatrix<Complex>>, BaseMatrix>
     (m, "S_BaseMatrixC", "base sparse matrix");
 
+
+#ifdef PARALLEL
+  py::class_<ParallelMatrix, shared_ptr<ParallelMatrix>, BaseMatrix>
+    (m, "ParallelMatrix", "MPI-distributed matrix")
+    .def_property_readonly("local_mat", [](ParallelMatrix & mat) { return mat.GetMatrix(); })
+    ;
+
+  py::class_<FETI_Jump_Matrix, shared_ptr<FETI_Jump_Matrix>, BaseMatrix>
+    (m, "FETI_Jump", "B-matrix of the FETI-system")
+    .def(py::init<shared_ptr<ParallelDofs>>())
+    ;
+#endif
+  
+
+  
   ExportSparseMatrix<double>(m);
   ExportSparseMatrix<Complex>(m);
   ExportSparseMatrix<Mat<2,2,double>>(m);
@@ -539,10 +529,25 @@ inverse : string
          "performs steps block-Gauss-Seidel iterations for the linear system A x = b in reverse order")
     ;
 
+  py::class_<BaseJacobiPrecond, shared_ptr<BaseJacobiPrecond>, BaseMatrix>
+    (m, "Smoother",
+     "Jacobi and Gauss-Seidel smoothing")
+    .def("Smooth", [&](BaseJacobiPrecond & jac, BaseVector & x, BaseVector & b)
+         { jac.GSSmooth (x, b); },
+         py::arg("x"), py::arg("b"),
+         "performs steps Gauss-Seidel iterations for the linear system A x = b")
+    .def("SmoothBack", &BaseJacobiPrecond::GSSmoothBack,
+         py::arg("x"), py::arg("b"),
+         "performs steps Gauss-Seidel iterations for the linear system A x = b in reverse order")
+    ;
+
+  
   py::class_<Projector, shared_ptr<Projector>, BaseMatrix> (m, "Projector")
-  .def("__init__", []( Projector *instance, const BitArray &array, bool b ) {
-      new (instance) Projector(array, b);
-      })
+    /*
+    .def(py::init([](const BitArray & array, bool b) 
+                  { return make_shared<Projector>(array, b); }))
+    */
+    .def(py::init<BitArray,bool>());
     ;
 
   py::class_<KrylovSpaceSolver, shared_ptr<KrylovSpaceSolver>, BaseMatrix> (m, "KrylovSpaceSolver")

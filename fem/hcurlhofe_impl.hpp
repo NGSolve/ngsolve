@@ -108,7 +108,8 @@ namespace ngfem
     template<typename Tx, typename TFA>  
     void T_CalcShape (Tx hx[DIM], TFA & shape) const;
 
-    inline void CalcDualShape2 (const MappedIntegrationPoint<DIM,DIM> & mip, SliceMatrix<> shape) const
+    template <typename MIP, typename TFA>
+    inline void CalcDualShape2 (const MIP & mip, TFA & shape) const
     {
       throw Exception(string("CalcDualShape missing for HighOrderHCurl element ")+ElementTopology::GetElementName(ET));
     }
@@ -1175,18 +1176,19 @@ namespace ngfem
 
   // dual shapes
 
-  template<> 
+  template<> template <typename MIP, typename TFA>
   inline void HCurlHighOrderFE_Shape<ET_TRIG> ::
-  CalcDualShape2 (const MappedIntegrationPoint<DIM,DIM> & mip, SliceMatrix<> shape) const
+  CalcDualShape2 (const MIP & mip, TFA & shape) const
   {
-    shape = 0;
+    // shape = 0;
     auto & ip = mip.IP();
-    double x = ip(0), y = ip(1);
-    double lam[3] = { x, y, 1-x-y };
-    Vec<2> pnts[3] = { { 1, 0 }, { 0, 1 } , { 0, 0 } };
+    typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T;    
+    T x = ip(0), y = ip(1);
+    T lam[3] = { x, y, 1-x-y };
+    Vec<2,T> pnts[3] = { { 1, 0 }, { 0, 1 } , { 0, 0 } };
     int facetnr = ip.FacetNr();
 
-    if (facetnr >= 0)
+    if (ip.VB() == BND)
       { // facet shapes
         int ii = 3;
         for (int i = 0; i < 3; i++)
@@ -1195,56 +1197,302 @@ namespace ngfem
             if (i == facetnr)
               {
                 INT<2> e = GetEdgeSort (i, vnums);
-                double xi = lam[e[1]]-lam[e[0]];
-                Vec<2> tauref = pnts[e[1]] - pnts[e[0]];
-                Vec<2> tau = mip.GetJacobian()*tauref;
+                T xi = lam[e[1]]-lam[e[0]];
+                Vec<2,T> tauref = pnts[e[1]] - pnts[e[0]];
+                Vec<2,T> tau = mip.GetJacobian()*tauref;
                 tau /= mip.GetMeasure();
 
                 LegendrePolynomial::Eval
                   (p, xi,
-                   SBLambda([&] (size_t nr, double val)
+                   SBLambda([&] (size_t nr, T val)
                             {
-                              Vec<2> vshape = val * tau;
+                              Vec<2,T> vshape = val * tau;
                               if (nr==0)
-                                shape.Row(i) = vshape;
+                                shape[i] = vshape;
                               else
-                                shape.Row(ii+nr-1) = vshape;
+                                shape[ii+nr-1] = vshape;
                             }));
               }
             ii += p;
           }
       }
-    else
+    if (ip.VB() == VOL)
       { // inner shapes
         int ii = 3;
         for (int i = 0; i < 3; i++)
           ii += order_edge[i];
 
-        // now come the inner ...
-        Vec<2,AutoDiff<2>> adp(mip);
-        /*
-        AutoDiff<2> adx(x,0);
-        AutoDiff<2> ady(y,1);
-        */
-        AutoDiff<2> adx = adp(0);
-        AutoDiff<2> ady = adp(1);
+        /*// now come the inner ...
+        Vec<2,AutoDiff<2,T>> adp(mip);
         
-        AutoDiff<2> l2 = 1-adx-ady;
+        //AutoDiff<2> adx(x,0);
+        //AutoDiff<2> ady(y,1);
+        
+        AutoDiff<2,T> adx = adp(0);
+        AutoDiff<2,T> ady = adp(1);
+        
+        AutoDiff<2,T> l2 = 1-adx-ady;
 
-        ArrayMem<AutoDiff<2>, 20> adpol1(order+1), adpol2(order+1);
+        ArrayMem<AutoDiff<2,T>, 20> adpol1(order+1), adpol2(order+1);
         LegendrePolynomial::EvalScaled(order, adx-l2, adx+l2, adpol1);
         LegendrePolynomial::Eval(order, 2*ady-1, adpol2);
         int p = order_face[0][0];
         for (int i = 0; i < p; i++)
           for (int j = 0; j < p-i; j++)
             if (i > 0 || j > 0)
-              shape.Row(ii++) = Vec<2> (THDiv2Shape<2> (Du (adpol1[i]*adpol2[j])));
+              shape[ii++] = Vec<2,T> (THDiv2Shape<2,T> (Du (adpol1[i]*adpol2[j])));
         for (int i = 1; i <= p; i++)
           for (int j = 1; j <= p-i; j++)
-            shape.Row(ii++) = Vec<2> (THDiv2Shape<2> (uDv_minus_vDu (adpol1[i], adpol2[j])));
+            shape[ii++] = Vec<2,T> (THDiv2Shape<2,T> (uDv_minus_vDu (adpol1[i], adpol2[j])));
+	
+	*/
+	
+	// auto xphys = mip.GetPoint()(0);
+        // auto yphys = mip.GetPoint()(1);
+        DubinerBasis3::Eval(order-2, x, y,
+                            SBLambda([&] (size_t nr, auto val)
+                                     {
+				       shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<2,T> (val, 0);
+                                       shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<2,T> (val*x, val*y);
+                                     }));
+	LegendrePolynomial::Eval(order-2,x,
+				 SBLambda([&] (size_t nr, auto val)
+					  {
+					    shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<2,T>(0,val);
+					  }));
+	
       }
   }
 
+
+  template<> template <typename MIP, typename TFA>
+  inline void HCurlHighOrderFE_Shape<ET_TET> ::
+  CalcDualShape2 (const MIP & mip, TFA & shape) const
+  {
+    // shape = 0;
+    typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T;        
+    auto & ip = mip.IP();
+    T x = ip(0), y = ip(1), z = ip(2);
+    T lam[4] = { x, y, z, 1-x-y-z };
+    Vec<3> pnts[4] = { { 1, 0, 0 }, { 0, 1, 0 } , { 0, 0, 1 }, { 0, 0, 0 } };
+    int facetnr = ip.FacetNr();
+    int ii = 6;
+
+    if (ip.VB() == BBND)
+      { // edge shapes
+        for (int i = 0; i < 6; i++)
+          {
+            int p = order_edge[i];
+            if (i == facetnr)
+              {
+                INT<2> e = GetEdgeSort (i, vnums);
+                T xi = lam[e[1]]-lam[e[0]];
+                Vec<3> tauref = pnts[e[1]] - pnts[e[0]];
+                Vec<3,T> tau = mip.GetJacobian()*tauref;
+                tau /= mip.GetMeasure();
+                LegendrePolynomial::Eval
+                  (p, xi,
+                   SBLambda([&] (size_t nr, T val)
+                            {
+                              Vec<3,T> vshape = val * tau;
+                              if (nr==0)
+                                shape[i] = vshape;
+                              else
+                                shape[ii+nr-1] = vshape;
+                            }));
+              }
+            ii += p;
+          }
+      }
+    else
+      {
+        for (int i = 0; i < 6; i++)
+          ii += order_edge[i];
+      }
+    if (ip.VB() == BND)
+      {
+	T x2, y2;
+	for (int f = 0; f < 4; f++)
+	  {
+	    int p = order_face[f][0];
+	    if (f == facetnr)
+	      {
+		//INT<4> fav = ET_T::GetFaceSort (f, vnums);
+		switch(facetnr)
+		  {
+		  case 0:
+		    x2 = z;//lam[fav[2]];
+		    y2 = y;//lam[fav[1]];
+		    break;
+		  case 1:
+		    x2 = x;//lam[fav[0]];
+		    y2 = z;//lam[fav[2]];
+		    break;
+		  case 2:
+		    x2 = x;//lam[fav[0]];
+		    y2 = y;//lam[fav[1]];
+		    break;
+		  case 3:
+		    x2 = x;//lam[fav[0]];
+		    y2 = y;//lam[fav[1]];
+		  default:
+		    break;
+		  }
+		Vec<2,AutoDiff<2,T>> adp;
+		adp[0] = AutoDiff<2,T>(x2,0);
+		adp[1] = AutoDiff<2,T>(y2,1);
+		AutoDiff<2,T> adx = adp(0);
+		AutoDiff<2,T> ady = adp(1);
+		
+		AutoDiff<2,T> l2 = 1-adx-ady;
+
+		ArrayMem<AutoDiff<2,T>, 20> adpol1(order+1), adpol2(order+1);
+		LegendrePolynomial::EvalScaled(order, adx-l2, adx+l2, adpol1);
+		LegendrePolynomial::Eval(order, 2*ady-1, adpol2);
+		
+		for (int i = 0; i < p; i++)
+		  for (int j = 0; j < p-i; j++)
+		    if (i > 0 || j > 0)
+		      {
+			auto vec1 = Vec<2,T> (THDiv2Shape<2,T> (Du (adpol1[i]*adpol2[j])));
+			switch(facetnr)
+			  {
+			  case 0:
+			    shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<3,T>(0.0,vec1(1),vec1(0));
+			    break;
+			  case 1:
+			    shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<3,T>(vec1(0),0.0,vec1(1));
+			    break;
+			  case 2:
+			    shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<3,T>(vec1(0),vec1(1),0.0);
+			    break;
+			  case 3:
+			    shape[ii++] = 1/sqrt(3.0)*1/mip.GetMeasure()*mip.GetJacobian()*Vec<3,T>(vec1(0),vec1(1),-vec1(0)-vec1(1));
+			    break;
+			  default:
+			    break;
+			  }
+		      }
+		for (int i = 1; i <= p; i++)
+		  for (int j = 1; j <= p-i; j++)
+		    {
+		      auto vec2 = Vec<2,T> (THDiv2Shape<2,T> (uDv_minus_vDu (adpol1[i], adpol2[j])));
+		      switch(facetnr)
+			{
+			case 0:
+			  shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<3,T>(0.0,vec2(1),vec2(0));
+			  break;
+			case 1:
+			  shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<3,T>(vec2(0),0.0,vec2(1));
+			  break;
+			case 2:
+			  shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<3,T>(vec2(0),vec2(1),0.0);
+			  break;
+			case 3:
+			  shape[ii++] = 1/sqrt(3.0)*1/mip.GetMeasure()*mip.GetJacobian()*Vec<3,T>(vec2(0),vec2(1),-vec2(0)-vec2(1));
+			  break;
+			default:
+			  break;
+			}
+		    }
+		/*
+		DubinerBasis3::Eval(order-2, x2, y2,
+				    SBLambda([&] (size_t nr, auto val)
+					     {
+					       switch(facetnr)
+						 {
+						 case 0:
+						   shape[ii++] = Vec<3,T> (0, 0, val);
+						   shape[ii++] = Vec<3,T> (0, val*y2, val*x2);
+						   break;
+						 case 1:
+						   shape[ii++] = Vec<3,T> (val, 0, 0);
+						   shape[ii++] = Vec<3,T> (val*x2, 0, val*y2);
+						   break;
+						 case 2:
+						   shape[ii++] = Vec<3,T> (val, 0, 0);
+						   shape[ii++] = Vec<3,T> (val*x2, val*y2, 0);
+						   break;
+						 case 3:
+						   shape[ii++] = 1/sqrt(3)*Vec<3,T> (val, 0, -val);
+						   shape[ii++] = 1/sqrt(3)*Vec<3,T> (val*x2, val*y2, -val*x2-val*y2);
+						   
+						   break;
+						 }
+					     }));
+		LegendrePolynomial::Eval(order-2,x2,
+					 SBLambda([&] (size_t nr, auto val)
+						  {
+						    switch(facetnr)
+						      {
+						      case 0:
+							shape[ii++] = Vec<3,T>(0, val, 0);
+							break;
+						      case 1:
+							shape[ii++] = Vec<3,T>(0, 0, val);
+							break;
+						      case 2:
+							shape[ii++] = Vec<3,T>(0, val, 0);
+							break;
+						      case 3:
+							shape[ii++] = 1/sqrt(3)*Vec<3,T>(0, val, -val);
+							break;
+						      }
+						  }));
+		*/
+	      }
+	    else
+	      ii += (p+1)*(p-1);
+	  }
+      }
+    else
+      {
+        for (int i = 0; i < 4; i++)
+	  {
+	    int p = order_face[i][0];
+	    ii += (p+1)*(p-1);
+	  }
+      }
+    if (ip.VB() == VOL)
+      {
+	// auto xphys = mip.GetPoint()(0);
+        // auto yphys = mip.GetPoint()(1);
+	// auto zphys = mip.GetPoint()(2);
+	
+	LegendrePolynomial leg;
+	JacobiPolynomialAlpha jac1(1);    
+	leg.EvalScaled1Assign 
+	  (order-3, lam[2]-lam[3], lam[2]+lam[3],
+	   SBLambda ([&](size_t k, T polz) LAMBDA_INLINE
+		     {
+		       // JacobiPolynomialAlpha jac(2*k+1);
+		       JacobiPolynomialAlpha jac2(2*k+2);
+		       
+		       jac1.EvalScaledMult1Assign
+			 (order-3-k, lam[1]-lam[2]-lam[3], 1-lam[0], polz, 
+			  SBLambda ([&] (size_t j, T polsy) LAMBDA_INLINE
+				    {
+				      // JacobiPolynomialAlpha jac(2*(j+k)+2);
+				      jac2.EvalMult(order-3 - k - j, 2 * lam[0] - 1, polsy, 
+						    SBLambda([&](size_t j, T val) LAMBDA_INLINE
+							     {
+							       shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<3,T>(val*x, val*y, val*z);
+							       shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<3,T>(val, 0, 0);
+							       shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<3,T>(0, val, 0);
+							     }));
+				      jac2.IncAlpha2();
+				    }));
+		       jac1.IncAlpha2();
+		     }));
+
+
+        DubinerBasis3::Eval(order-3, x, y,
+                            SBLambda([&] (size_t nr, auto val)
+                                     {
+				       shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<3,T> (0, 0, val);
+                                     }));
+      }
+  }
 
   template <ELEMENT_TYPE ET, 
             template <ELEMENT_TYPE ET2> class TSHAPES, 
@@ -1252,12 +1500,70 @@ namespace ngfem
   void HCurlHighOrderFE<ET,TSHAPES,BASE> ::
   CalcDualShape (const MappedIntegrationPoint<DIM,DIM> & mip, SliceMatrix<> shape) const
   {
-    static_cast<const HCurlHighOrderFE_Shape<ET>*> (this) -> CalcDualShape2 (mip, shape);
+    shape = 0.0;
+    static_cast<const HCurlHighOrderFE_Shape<ET>*> (this)
+      -> CalcDualShape2 (mip, SBLambda([shape] (size_t i, Vec<DIM> val) { shape.Row(i) = val; }));
   }
   
 
-  
-}
+  template <ELEMENT_TYPE ET, 
+            template <ELEMENT_TYPE ET2> class TSHAPES, 
+            typename BASE>
+  void HCurlHighOrderFE<ET,TSHAPES,BASE> ::
+  CalcDualShape (const SIMD_MappedIntegrationRule<DIM,DIM> & mir, BareSliceMatrix<SIMD<double>> shapes) const
+  {
+    shapes.AddSize(ndof*DIM, mir.Size()) = 0.0;
+    for (size_t i = 0; i < mir.Size(); i++)
+      static_cast<const HCurlHighOrderFE_Shape<ET>*> (this)
+        -> CalcDualShape2 (mir[i], SBLambda([shapes,i] (size_t j, Vec<DIM,SIMD<double>> val)
+                                            {
+                                              for (size_t k = 0; k < DIM; k++)
+                                                shapes(j*DIM+k, i) = val(k);
+                                            }));
+  }
 
+  template <ELEMENT_TYPE ET, 
+            template <ELEMENT_TYPE ET2> class TSHAPES, 
+            typename BASE>
+  void HCurlHighOrderFE<ET,TSHAPES,BASE> ::
+  EvaluateDual (const SIMD_MappedIntegrationRule<DIM,DIM> & mir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const
+  {
+    for (size_t i = 0; i < mir.Size(); i++)
+      {
+        Vec<DIM,SIMD<double>> sum (SIMD<double>(0.0));
+        static_cast<const HCurlHighOrderFE_Shape<ET>*> (this)
+          -> CalcDualShape2 (mir[i], SBLambda([&sum, coefs] (size_t j, Vec<DIM,SIMD<double>> val)
+                                            {
+                                              sum += coefs(j) * val;
+                                            }));
+        for (size_t k = 0; k < DIM; k++)
+          values(k, i) = sum(k);
+      }
+  }
+
+  template <ELEMENT_TYPE ET, 
+            template <ELEMENT_TYPE ET2> class TSHAPES, 
+            typename BASE>
+  void HCurlHighOrderFE<ET,TSHAPES,BASE> ::
+  AddDualTrans (const SIMD_MappedIntegrationRule<DIM,DIM> & mir, BareSliceMatrix<SIMD<double>> values,
+                BareSliceVector<double> coefs) const
+  {
+    for (size_t i = 0; i < mir.Size(); i++)
+      {
+        Vec<DIM,SIMD<double>> value;
+        for (size_t k = 0; k < DIM; k++)
+          value(k) = values(k, i);
+        
+        static_cast<const HCurlHighOrderFE_Shape<ET>*> (this)
+          -> CalcDualShape2 (mir[i], SBLambda([value, coefs] (size_t j, Vec<DIM,SIMD<double>> val)
+                                              {
+                                                SIMD<double> sum = 0.0;
+                                                for (int k = 0; k < DIM; k++)
+                                                  sum += val(k) * value(k);
+                                                coefs(j) += HSum(sum);
+                                              }));
+      }
+  }
+}
 
 #endif

@@ -204,7 +204,7 @@ namespace ngfem
 
 
   void BaseScalarFiniteElement :: 
-  Evaluate (const IntegrationRule & ir, BareSliceVector<double> coefs, FlatVector<double> vals) const
+  Evaluate (const IntegrationRule & ir, BareSliceVector<double> coefs, BareSliceVector<double> vals) const
   {
     for (size_t i = 0; i < ir.GetNIP(); i++)
       vals(i) = Evaluate (ir[i], coefs);
@@ -238,10 +238,10 @@ namespace ngfem
 
   template<int D>
   void ScalarFiniteElement<D> :: 
-  EvaluateGrad (const IntegrationRule & ir, BareSliceVector<double> coefs, FlatMatrixFixWidth<D,double> vals) const
+  EvaluateGrad (const IntegrationRule & ir, BareSliceVector<double> coefs, BareSliceMatrix<> vals) const
   {
     for (size_t i = 0; i < ir.GetNIP(); i++)
-      vals.Row(i) = EvaluateGrad (ir[i], coefs);
+      vals.Row(i).AddSize(D) = EvaluateGrad (ir[i], coefs);
   }
 
   void BaseScalarFiniteElement :: 
@@ -283,6 +283,13 @@ namespace ngfem
   }
 
 
+  void BaseScalarFiniteElement ::
+  CalcDualShape (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const
+  {
+    throw Exception (string("CalcDualShape not overloaded for element ") + typeid(*this).name());
+  }
+
+  
   template<int D>
   list<tuple<string,double>> ScalarFiniteElement<D> :: Timing () const
   {

@@ -522,7 +522,8 @@ namespace ngstd
     { return ArrayIterator<T,size_t> (*this, size); }
   };
 
-
+  template <typename T>
+  FlatArray<T> View (FlatArray<T> fa) { return fa; }
 
   /// print array
   template <class T>

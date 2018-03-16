@@ -29,15 +29,15 @@ del TmpRedraw
 
 
 
-ngstd.__all__ = ['ArrayD', 'ArrayI', 'BitArray', 'Flags', 'HeapReset', 'IntRange', 'LocalHeap', 'Timers', 'RunWithTaskManager', 'TaskManager', 'SetNumThreads']
+ngstd.__all__ = ['ArrayD', 'ArrayI', 'BitArray', 'Flags', 'HeapReset', 'IntRange', 'LocalHeap', 'Timers', 'RunWithTaskManager', 'TaskManager', 'SetNumThreads', 'MPI_Init']
 bla.__all__ = ['Matrix', 'Vector', 'InnerProduct', 'Norm']
 la.__all__ = ['BaseMatrix', 'BaseVector', 'CreateVVector', 'InnerProduct', 'CGSolver', 'QMRSolver', 'GMRESSolver', 'ArnoldiSolver', 'Projector']
-fem.__all__ =  ['BFI', 'CoefficientFunction', 'Parameter', 'CoordCF', 'ET', 'ElementTransformation', 'ElementTopology', 'FiniteElement', 'ScalarFE', 'H1FE', 'HEX', 'L2FE', 'LFI', 'POINT', 'PRISM', 'PYRAMID', 'QUAD', 'SEGM', 'TET', 'TRIG', 'VERTEX', 'EDGE', 'FACE', 'CELL', 'ELEMENT', 'FACET', 'SetPMLParameters', 'sin', 'cos', 'tan', 'atan', 'exp', 'log', 'sqrt', 'floor', 'ceil', 'Conj', 'atan2', 'pow', 'specialcf', \
+fem.__all__ =  ['BFI', 'CoefficientFunction', 'Parameter', 'CoordCF', 'ET', 'ElementTransformation', 'ElementTopology', 'FiniteElement', 'ScalarFE', 'H1FE', 'HEX', 'L2FE', 'LFI', 'POINT', 'PRISM', 'PYRAMID', 'QUAD', 'SEGM', 'TET', 'TRIG', 'VERTEX', 'EDGE', 'FACE', 'CELL', 'ELEMENT', 'FACET', 'SetPMLParameters', 'sin', 'cos', 'tan', 'atan', 'acos', 'asin', 'exp', 'log', 'sqrt', 'floor', 'ceil', 'Conj', 'atan2', 'pow', 'specialcf', \
            'BlockBFI', 'BlockLFI', 'CompoundBFI', 'CompoundLFI', 'BSpline', \
            'IntegrationRule', 'IfPos' \
            ]
 # TODO: fem:'PythonCF' comp:'PyNumProc'
-comp.__all__ =  ['BBBND', 'BBND','BND', 'BilinearForm', 'COUPLING_TYPE', 'ElementId', 'BndElementId', 'FESpace','HCurl' , 'GridFunction', 'LinearForm', 'Mesh', 'NodeId', 'ORDER_POLICY', 'Preconditioner', 'MultiGridPreconditioner', 'VOL', 'NumProc', 'PDE', 'Integrate', 'SymbolicLFI', 'SymbolicBFI', 'SymbolicEnergy', 'VTKOutput', 'SetHeapSize', 'SetTestoutFile', 'ngsglobals','pml','Periodic','HDiv','HDivSurface','HCurl']           
+comp.__all__ =  ['BBBND', 'BBND','BND', 'BilinearForm', 'COUPLING_TYPE', 'ElementId', 'BndElementId', 'FESpace','HCurl' , 'GridFunction', 'LinearForm', 'Mesh', 'NodeId', 'ORDER_POLICY', 'Preconditioner', 'MultiGridPreconditioner', 'VOL', 'NumProc', 'PDE', 'Integrate', 'SymbolicLFI', 'SymbolicBFI', 'SymbolicEnergy', 'VTKOutput', 'SetHeapSize', 'SetTestoutFile', 'ngsglobals','pml','Periodic','H1','VectorH1','L2','VectorL2','SurfaceL2','HDivDiv','HDivDivSurface','VectorFacet','FacetFESpace','FacetSurface','HDiv','NumberSpace','HDivSurface','HCurl']           
 solve.__all__ =  ['Redraw', 'BVP', 'CalcFlux', 'Draw', 'DrawFlux', 'SetVisualization']
 
 from ngsolve.ngstd import *
@@ -64,8 +64,8 @@ for classname in all_classes:
     except AttributeError:
         pass
 
-from ngsolve.ngstd import MPIManager
-MPIManager.InitMPI()
+# from ngsolve.ngstd import MPIManager
+# MPIManager.InitMPI()
 
 from . import __expr
 BaseVector.expr = property(__expr.VecExpr)
@@ -90,6 +90,15 @@ fem.__doc__ = \
 
 finite element shape functions, and element-matrix/vector integrators
 """
+
+# register our own memory pickler
+import pickle
+import ngsolve
+pickle._Pickler.dispatch[ngsolve.ngstd._MemoryView] = ngsolve.ngstd._PickleMemory
+pickle._Unpickler.dispatch[b"\xf0"[0]] = ngsolve.ngstd._UnpickleMemory
+# use the python pickler and not cPickle one (cause we can't patch it)
+pickle.Pickler, pickle.Unpickler = pickle._Pickler, pickle._Unpickler
+pickle.dump, pickle.dumps, pickle.load, pickle.loads = pickle._dump, pickle._dumps, pickle._load, pickle._loads
 
 
 __all__ = ngstd.__all__ + bla.__all__ +la.__all__ + fem.__all__ + comp.__all__ + solve.__all__ + utils.__all__ + ["Timing"]

@@ -126,24 +126,34 @@ namespace ngfem
                         FlatVector<> coefs, FlatMatrixFixWidth<DIM_CURL_TRAIT<D>::DIM> curl) const;
 
 
-    HD NGS_DLL_HEADER virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const
+    NGS_DLL_HEADER virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const
     { throw ExceptionNOSIMD("HCurlFE - simd eval not overloaded"); }
-    HD NGS_DLL_HEADER virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<Complex> coefs, BareSliceMatrix<SIMD<Complex>> values) const
+    NGS_DLL_HEADER virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<Complex> coefs, BareSliceMatrix<SIMD<Complex>> values) const
     { throw ExceptionNOSIMD("HCurlFE - simd<complex> eval not overloaded"); }
-    HD NGS_DLL_HEADER virtual void EvaluateCurl (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const
+    NGS_DLL_HEADER virtual void EvaluateCurl (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const
     { throw ExceptionNOSIMD("HCurlFE - simd evalcurl not overloaded"); }      
 
-    HD NGS_DLL_HEADER virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
+    NGS_DLL_HEADER virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
                                              BareSliceVector<> coefs) const
     { throw ExceptionNOSIMD("HCurlFE - simd addtrans not overloaded"); }
-    HD NGS_DLL_HEADER virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values,
+    NGS_DLL_HEADER virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values,
                                              BareSliceVector<Complex> coefs) const
     { throw ExceptionNOSIMD("HCurlFE - simd addtrans complex not overloaded"); }
-    HD NGS_DLL_HEADER virtual void AddCurlTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
+    NGS_DLL_HEADER virtual void AddCurlTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
                                                  BareSliceVector<> coefs) const
     { throw ExceptionNOSIMD("HCurlFE - simd addcurltrans not overloaded"); }
 
     NGS_DLL_HEADER virtual void CalcDualShape (const MappedIntegrationPoint<DIM,DIM> & mip, SliceMatrix<> shape) const;
+
+    NGS_DLL_HEADER virtual void CalcDualShape (const SIMD_MappedIntegrationRule<DIM,DIM> & mir, BareSliceMatrix<SIMD<double>> shape) const;
+
+    NGS_DLL_HEADER virtual void EvaluateDual (const SIMD_MappedIntegrationRule<DIM,DIM> & mir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const
+    { throw ExceptionNOSIMD("HCurlFE - simd evaldual not overloaded"); }      
+
+    NGS_DLL_HEADER virtual void AddDualTrans (const SIMD_MappedIntegrationRule<DIM,DIM> & mir, BareSliceMatrix<SIMD<double>> values,
+                                              BareSliceVector<double> coefs) const
+    { throw ExceptionNOSIMD("HCurlFE - simd adddualtrans not overloaded"); }
+    
   protected:
     ///
     virtual void CalcShape1 (const IntegrationPoint & ip, 

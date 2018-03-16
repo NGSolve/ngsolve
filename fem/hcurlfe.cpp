@@ -431,6 +431,12 @@ namespace ngfem
     first = false;
   }
 
+  template <int D>
+  void HCurlFiniteElement<D> ::
+  CalcDualShape (const SIMD_MappedIntegrationRule<DIM,DIM> & ir, BareSliceMatrix<SIMD<double>> shape) const
+  {
+    throw ExceptionNOSIMD (string("CalcDualShape SIMD not implemented for H(curl) element ") +typeid(*this).name());
+  }
 
   
   template class HCurlFiniteElement<1>;
@@ -449,7 +455,7 @@ namespace ngfem
     Q = Q_0 ... Q_{W-2}
     Q_i = I - u_i u_i^T / c_i       u_ij = 0 for j < i
   */
-  static void Householder (FlatMatrix<> & a, FlatMatrix<> inv)
+  inline void Householder (FlatMatrix<> & a, FlatMatrix<> inv)
   {
 
     (*testout) << "a = " << a << endl;

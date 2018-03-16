@@ -57,18 +57,20 @@ namespace ngstd
     data = new unsigned char [Addr (size)+1];
   }
 
-  void BitArray :: Set () throw()
+  BitArray & BitArray :: Set () throw()
   {
-    if (!size) return;
+    if (!size) return *this;
     for (size_t i = 0; i <= Addr (size); i++)
       data[i] = UCHAR_MAX;
+    return *this;
   }
 
-  void BitArray :: Clear () throw()
+  BitArray & BitArray :: Clear () throw()
   {
-    if (!size) return;
+    if (!size) return *this;
     for (size_t i = 0; i <= Addr (size); i++)
       data[i] = 0;
+    return *this;
   }
 
 

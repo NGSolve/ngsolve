@@ -49,7 +49,7 @@ TEST_CASE ("SubAtDB", "[ngblas]") {
 }
 
 TEST_CASE ("SIMD<double>", "[simd]") {
-    constexpr int N = SIMD<double>::Size();
+    constexpr size_t N = SIMD<double>::Size();
     double src[N];
     double dst[N];
     for (auto i : Range(N)) {
@@ -78,7 +78,7 @@ TEST_CASE ("SIMD<double>", "[simd]") {
 }
 
 TEST_CASE ("SIMD<Complex>", "[simd]") {
-    constexpr int N = SIMD<Complex>::Size();
+    constexpr size_t N = SIMD<Complex>::Size();
     Complex src[N];
     Complex dst[N];
     for (auto i : Range(N)) {
@@ -87,21 +87,11 @@ TEST_CASE ("SIMD<Complex>", "[simd]") {
         dst[i] = 0.0;
     }
 
-    SECTION ("Mask load") {
+    SECTION ("Mask load/store") {
         for (auto k : Range(N+1)) {
             SIMD<Complex> simd;
-            simd.Load(src,k);
-            for (auto i : Range(N)) {
-                CHECK(simd.real()[i] == ( i<k? src[i].real() : 0.0 ));
-                CHECK(simd.imag()[i] == ( i<k? src[i].imag() : 0.0 ));
-            }
-        }
-    }
-
-    SECTION ("Mask store") {
-        for (auto k : Range(N+1)) {
-            SIMD<Complex> simd;
-            simd.Store(dst, k);
+            simd.LoadFast(src,k);
+            simd.StoreFast(dst,k);
             for (auto i : Range(N)) {
                 CHECK(dst[i].real() == ( i<k? src[i].real() : 0.0 ));
                 CHECK(dst[i].imag() == ( i<k? src[i].imag() : 0.0 ));

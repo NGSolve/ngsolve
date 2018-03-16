@@ -230,7 +230,7 @@ namespace ngla
   template <class SCAL>
   S_ParallelBaseVectorPtr<SCAL> :: 
   S_ParallelBaseVectorPtr (int as, int aes, 
-			   const ParallelDofs * apd, PARALLEL_STATUS stat) throw()
+			   shared_ptr<ParallelDofs> apd, PARALLEL_STATUS stat) throw()
     : S_BaseVectorPtr<SCAL> (as, aes)
   { 
     recvvalues = NULL;
@@ -255,7 +255,7 @@ namespace ngla
 
   template <typename SCAL>
   void S_ParallelBaseVectorPtr<SCAL> :: 
-  SetParallelDofs (const ParallelDofs * aparalleldofs, const Array<int> * procs )
+  SetParallelDofs (shared_ptr<ParallelDofs> aparalleldofs, const Array<int> * procs )
   {
     if (this->paralleldofs == aparalleldofs) return;
 

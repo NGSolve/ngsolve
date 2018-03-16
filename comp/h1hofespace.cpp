@@ -67,11 +67,45 @@ auto NodalData (MeshAccess & ma, Array<TELEM> & a) -> Array<TELEM> & { return a;
 namespace ngcomp
 {
 
+
+
+  /// dual operator for H1
+  template <int D>
+  class DiffOpDual : public DiffOp<DiffOpDual<D> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D };
+    enum { DIM_DMAT = 1 };
+    enum { DIFFORDER = 0 };
+
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      static_cast<const ScalarFiniteElement<D>&>(fel).CalcDualShape (mip, mat.Row(0));
+    }
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      // fel.CalcDualShape (mip, mat);
+      throw Exception(string("DiffOpDual not available for mat ")+typeid(mat).name());
+    }
+  };
+
+
+
+
   H1HighOrderFESpace ::  
   H1HighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags)
     : FESpace (ama, flags)
   {
     name = "H1HighOrderFESpace(h1ho)";
+    type = "h1ho";
     // define h1ho flags
     DefineDefineFlag("h1ho");
     DefineNumFlag("relorder");
@@ -185,10 +219,14 @@ namespace ngcomp
       case 1:
         additional_evaluators.Set ("hesse", make_shared<T_DifferentialOperator<DiffOpHesse<1>>> ()); break;
       case 2:
-        additional_evaluators.Set ("hesse", make_shared<T_DifferentialOperator<DiffOpHesse<2>>> ()); break;
+        additional_evaluators.Set ("hesse", make_shared<T_DifferentialOperator<DiffOpHesse<2>>> ()); 
+        additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpDual<2>>> ());
+        break;
       case 3:
         additional_evaluators.Set ("hesse", make_shared<T_DifferentialOperator<DiffOpHesse<3>>> ());
-	additional_evaluators.Set ("hesseboundary", make_shared<T_DifferentialOperator<DiffOpHesseBoundary<3>>> ());break;
+	additional_evaluators.Set ("hesseboundary", make_shared<T_DifferentialOperator<DiffOpHesseBoundary<3>>> ());
+	additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpDual<3>>> ());
+	break;
       default:
         ;
       }
@@ -647,12 +685,6 @@ namespace ngcomp
     if (!DefinedOn (ei))
       {
         return
-          /*
-          * SwitchET (eltype, [&] (auto et) -> FiniteElement*
-                      {
-                        return new (alloc) ScalarDummyFE<et.ElementType()> ();
-                      });
-          */
           SwitchET (eltype, [&] (auto et) -> FiniteElement&
                       {
                         return *new (alloc) ScalarDummyFE<et.ElementType()> ();
@@ -1613,6 +1645,13 @@ namespace ngcomp
 	return nullptr;
       }
 
+
+    // filter with freedofs
+    BitArray & free = *GetFreeDofs(flags.GetDefineFlag("eliminate_internal"));
+    for (size_t i = 0; i < clusters.Size(); i++)
+      if (!free.Test(i))
+        clusters[i] = 0;
+    
     return spclusters;
   }
 
@@ -1775,13 +1814,12 @@ namespace ngcomp
   };
   
 
-  class VectorH1FESpace : public CompoundFESpace
-  {
-  public:
-    VectorH1FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, 
-                     bool checkflags = false)
+
+  VectorH1FESpace::VectorH1FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, 
+                     bool checkflags)
       : CompoundFESpace(ama, flags)
     {
+      type = "VectorH1";
       for (int i = 0; i <  ma->GetDimension(); i++)
         AddSpace (make_shared<H1HighOrderFESpace> (ama, flags));
 
@@ -1806,7 +1844,6 @@ namespace ngcomp
           // integrator[VOL] = make_shared<VectorH1MassIntegrator<2>>(one);
         }
     }
-  };
     
 
 

@@ -106,7 +106,7 @@ void GenerateMultAB (ostream & out, int h, int w)
 void AlignedGenerateMultAB (ostream & out, int h, int w, OP op)
 {
   
-  out << "template <> void MatKernelAlignedMultAB<" << h << ", " << w << ">" << endl
+  out << "template <> inline void MatKernelAlignedMultAB<" << h << ", " << w << ">" << endl
       << "    (size_t n," << endl
       << "     double * pa, size_t da," << endl
       << "     SIMD<double> * pb, size_t db," << endl
@@ -160,14 +160,14 @@ void AlignedGenerateMultAB (ostream & out, int h, int w, OP op)
 
 void GenerateMultABMask (ostream & out, int h, OP op, bool aligned_b)
 {
-  out << "template <> void MatKernelMultABMask<" << h << ", " << ToString(op) << ">" << endl;
+  out << "template <> inline void MatKernelMultABMask<" << h << ", " << ToString(op) << ">" << endl;
     
   out << "    (size_t n, SIMD<mask64> mask," << endl
       << "     double * pa, size_t da," << endl
       << "     " << (aligned_b ? "SIMD<double>" : "double") << " * pb, size_t db," << endl    
       << "     double * pc, size_t dc)" << endl
       << "{" << endl;
-  out << "constexpr int SW = SIMD<double>::Size();" << endl;
+  // out << "constexpr int SW = SIMD<double>::Size();" << endl;
 
   if (op == SET)
     {
@@ -230,7 +230,8 @@ void GenerateScalAB (ostream & out, int h, int w, bool simded)
       << "     " << (simded ? "SIMD<double>" : "double") << " * pa, size_t da," << endl
       << "     " << (simded ? "SIMD<double>" : "double") << " * pb, size_t db)" << endl
       << "{" << endl;
-  out << "constexpr int SW = SIMD<double>::Size();" << endl;
+  if (!simded)
+    out << "constexpr int SW = SIMD<double>::Size();" << endl;
 
   for (int i = 0; i < h; i++)
     for (int j = 0; j < w; j++)
@@ -310,7 +311,7 @@ void GenerateScalAB (ostream & out, int h, int w)
 
 void GenKernel (ofstream & out, int h, int w)
 {
-  out << "template <> void MyScalTrans<" << h << ", " << w << ">" << endl
+  out << "template <> inline void MyScalTrans<" << h << ", " << w << ">" << endl
       << "    (size_t n," << endl
       << "     double * pa, size_t da," << endl
       << "     double * pb, size_t db," << endl
@@ -357,13 +358,13 @@ int main ()
   out << "enum OPERATION { ADD, SUB, SET };" << endl;
 
   out << "template <size_t H, size_t W, OPERATION OP>" << endl
-      << "static void MatKernelMultAB" << endl
+      << "inline void MatKernelMultAB" << endl
       << "(size_t n, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc);" << endl;
   out << "template <size_t H, size_t W, OPERATION OP>" << endl
-      << "static void MatKernelMultAB" << endl
+      << "inline void MatKernelMultAB" << endl
       << "(size_t n, double * pa, size_t da, SIMD<double> * pb, size_t db, double * pc, size_t dc);" << endl;
   out << "template <size_t H, size_t W>" << endl
-      << "static void MatKernelAlignedMultAB" << endl
+      << "inline void MatKernelAlignedMultAB" << endl
       << "(size_t n, double * pa, size_t da, SIMD<double> * pb, size_t db, SIMD<double> * pc, size_t dc);" << endl;
 
   for (int i = 1; i <= 3; i++)
@@ -385,10 +386,10 @@ int main ()
 
 
   out << "template <size_t H, OPERATION OP>" << endl
-      << "static void MatKernelMultABMask" << endl
+      << "inline void MatKernelMultABMask" << endl
       << "(size_t n, SIMD<mask64> mask, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc);" << endl;
   out << "template <size_t H, OPERATION OP>" << endl
-      << "static void MatKernelMultABMask" << endl
+      << "inline void MatKernelMultABMask" << endl
       << "(size_t n, SIMD<mask64> mask, double * pa, size_t da, SIMD<double> * pb, size_t db, double * pc, size_t dc);" << endl;
 
   GenerateMultABMask (out, 1);  
@@ -401,11 +402,11 @@ int main ()
   
   // Scal AB
   
-  out << "template <size_t H, size_t W> static auto MatKernelScalAB" << endl
+  out << "template <size_t H, size_t W> inline auto MatKernelScalAB" << endl
       << "    (size_t n," << endl
       << "     double * pa, size_t da," << endl
       << "     double * pb, size_t db);" << endl;
-  out << "template <size_t H, size_t W> static auto MatKernelScalAB" << endl
+  out << "template <size_t H, size_t W> inline auto MatKernelScalAB" << endl
       << "    (size_t n," << endl
       << "     SIMD<double> * pa, size_t da," << endl
       << "     SIMD<double> * pb, size_t db);" << endl;
@@ -420,7 +421,7 @@ int main ()
 
   
   out << "template <size_t H, size_t W>" << endl
-      << "static void MyScalTrans" << endl
+      << "inline void MyScalTrans" << endl
       << "(size_t n, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc);" << endl;
   
   GenKernel (out, 1, 4);

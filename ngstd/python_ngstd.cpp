@@ -1,6 +1,7 @@
 #ifdef NGS_PYTHON
 
 #include "python_ngstd.hpp"
+#include <Python.h>
 
 #ifdef PARALLEL
 bool MPIManager::initialized_by_me = false;
@@ -90,13 +91,8 @@ Flags NGS_DLL_HEADER CreateFlagsFromKwArgs(py::object pyclass, const py::kwargs&
              << std::string(py::str(pyclass)) << ", maybe there is a typo?" << endl;
 
   py::dict special;
-  try
-    {
+  if(py::hasattr(pyclass,"__special_treated_flags__"))
       special = pyclass.attr("__special_treated_flags__")();
-    }
-  catch(std::exception e)
-    {  }
-
   for (auto item : kwargs)
     {
       auto name = item.first.cast<string>();
@@ -149,6 +145,11 @@ const char* docu_string(const char* str)
   return newchar;
 }
 
+struct PyMPI {
+  MPI_Comm comm;
+  PyMPI (MPI_Comm _comm) : comm(_comm) { ; } 
+};
+
 void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
 
   py::class_<MPIManager>(m, "MPIManager")
@@ -194,14 +195,15 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
   PyDefToString<FlatArray<double>>(m, class_flatarrayd);
   
   py::class_<Array<double>, FlatArray<double> >(m, "ArrayD")
-    .def(py::init( [] (int n) { return new Array<double>(n); }))
-    .def("__init__", [](Array<double> &a, std::vector<double> const & x)
-                           {
-                             int s = x.size();
-                             new (&a) Array<double>(s);
-                             for (int i = 0; i < s; i++)
-                               a[i] = x[i]; 
-                           })
+    .def(py::init([] (int n) { return new Array<double>(n); }))
+    .def(py::init([] (std::vector<double> const & x)
+                  {
+                    int s = x.size();
+                    Array<double> a(s);
+                    for (int i = 0; i < s; i++)
+                      a[i] = x[i];
+                    return a;
+                  }))
     .def("__rand__" ,  []( Array<double> & a, shared_ptr<Archive> & arch )
                                          { cout << "output d array" << endl;
                                            *arch & a; return arch; })
@@ -214,15 +216,15 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
   class_flatarrayi.def(py::init<size_t, int *>());
 
   py::class_<Array<int>, FlatArray<int> >(m, "ArrayI")
-    .def(py::init( [] (int n) { return new Array<int>(n); }))
-    .def("__init__", [](std::vector<int> const & x)
-                           {
-                             int s = x.size();
-                             shared_ptr<Array<int>> tmp (new Array<int>(s));
-                             for (int i = 0; i < s; i++)
-                               (*tmp)[i] = x[i]; 
-                             return tmp;
-                           })
+    .def(py::init([] (int n) { return new Array<int>(n); }))
+    .def(py::init([] (std::vector<int> const & x)
+                  {
+                    int s = x.size();
+                    Array<int> tmp(s);
+                    for (int i = 0; i < s; i++)
+                      tmp[i] = x[i]; 
+                    return tmp;
+                  }))
     ;
 
   py::class_<ngstd::LocalHeap> (m, "LocalHeap", "A heap for fast memory allocation")
@@ -235,9 +237,10 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
     ;
   
   py::class_<ngstd::BitArray, shared_ptr<BitArray>> (m, "BitArray")
-    .def(py::init( [] (int n) { return new BitArray(n); }))
-    .def(py::init([](const BitArray& a) { return make_shared<BitArray>(a); } ))
-    .def(py::init([](const vector<bool> & a)
+    // .def(py::init<size_t>()) // not doing the right thing ????? JS
+    .def(py::init([] (size_t n) { return make_shared<BitArray>(n); }))
+    .def(py::init([] (const BitArray& a) { return make_shared<BitArray>(a); } ))
+    .def(py::init([] (const vector<bool> & a)
                   {
                     auto ba = make_shared<BitArray>(a.size());
                     ba->Clear();
@@ -457,6 +460,53 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
     .def("__exit__", &ParallelContextManager::Exit)
     .def("__timing__", &TaskManager::Timing)
     ;
+
+  m.def("_PickleMemory", [](py::object pickler, MemoryView& view)
+        {
+          py::buffer_info bi((char*) view.Ptr(), view.Size());
+          pickler.attr("write")(py::bytes("\xf0"));
+          size_t size = view.Size();
+          pickler.attr("write")(py::bytes((char*) & size, sizeof(size_t)));
+          pickler.attr("write")(py::memoryview(bi));
+        });
+  m.def("_UnpickleMemory", [](py::object unpickler)
+        {
+          auto size = *(size_t*) PyBytes_AsString(unpickler.attr("read")(sizeof(size_t)).ptr());
+          char* mem = new char[size];
+          constexpr int BUFFER_SIZE = 8 * 1024 * 1024; // read 8 MB
+          size_t n = 0;
+          while (n + BUFFER_SIZE < size)
+            {
+              auto buffer = unpickler.attr("read")(BUFFER_SIZE);
+              memcpy(&mem[n], PyBytes_AsString(buffer.ptr()), BUFFER_SIZE);
+              n += BUFFER_SIZE;
+            }
+          auto buffer = unpickler.attr("read")(size-n);
+          memcpy(&mem[n], PyBytes_AsString(buffer.ptr()), size-n);
+          unpickler.attr("append")(MemoryView(mem,size));
+        });
+  py::class_<MemoryView>(m, "_MemoryView");
+
+  
+  py::class_<PyMPI> (m, "MPI_Comm")
+    .def_property_readonly ("rank", [](PyMPI c) { return MyMPI_GetId(c.comm); })
+    .def_property_readonly ("size", [](PyMPI c) { return MyMPI_GetNTasks(c.comm); })
+    ;
+
+  
+  
+  m.def("MPI_Init", [&]()
+        {
+          const char * progname = "ngslib";
+          typedef const char * pchar;
+          pchar ptrs[2] = { progname, nullptr };
+          pchar * pptr = &ptrs[0];
+          int argc2 = 1;
+          
+          static MyMPI mympi(1, (char**)pptr);
+          return PyMPI(ngs_comm);
+        });
+
 }
 
 

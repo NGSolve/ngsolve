@@ -9,7 +9,7 @@ def test_code_generation_volume_terms():
     fes = L2(mesh, order=5)
     gfu = GridFunction(fes)
 
-    functions = [x,y,x*y, sin(x)*y, exp(x)+y*y*y, specialcf.mesh_size]
+    functions = [x,y,x*y, sin(x)*y, exp(x)+y*y*y, specialcf.mesh_size, CoefficientFunction(x,y).Norm()]
 
     for cf in functions:
         gfu.Set(cf)
@@ -55,8 +55,31 @@ def test_code_generation_volume_terms_complex():
             error = (cf-f)*Conj(cf-f)
             assert (abs(Integrate ( error, mesh))<1e-13)
 
+def test_code_generation_derivatives():
+    mesh = Mesh(unit_square.GenerateMesh(maxh=0.2))
+    fes = H1(mesh, order=4, dim=2)
+    gfu = GridFunction(fes)
+    u,v = fes.TnT()
+
+    gfu.Set(CoefficientFunction((x*x+y*y*3, x*y)))
+    cf = Norm(u[0]*u) + Norm(u[0]*grad(u))
+    cfs = [cf.Compile(), cf.Compile(True, wait=True)]
+
+    aref = BilinearForm(fes, symmetric=False)
+    aref += SymbolicEnergy( cf )
+    aref.AssembleLinearization(gfu.vec)
+    vals_ref = aref.mat.AsVector()
+
+    for f in cfs:
+        a = BilinearForm(fes)
+        a += SymbolicEnergy( f )
+        a.AssembleLinearization(gfu.vec)
+        vals = a.mat.AsVector()
+        vals -= vals_ref
+        assert Norm(vals) < 1e-13
 
 if __name__ == "__main__":
+    test_code_generation_derivatives()
     test_code_generation_volume_terms()
     test_code_generation_volume_terms_complex()
     test_code_generation_boundary_terms()

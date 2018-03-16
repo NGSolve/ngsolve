@@ -53,7 +53,7 @@ namespace ngfem
     
     HD NGS_DLL_HEADER virtual void Evaluate (const IntegrationRule & ir, 
 					     BareSliceVector<double> coefs, 
-					     FlatVector<double> vals) const override;
+					     BareSliceVector<double> vals) const override;
 
     HD NGS_DLL_HEADER virtual void Evaluate (const SIMD_IntegrationRule & ir,
                                              BareSliceVector<> coefs,
@@ -82,7 +82,7 @@ namespace ngfem
 
     HD NGS_DLL_HEADER virtual void EvaluateGrad (const IntegrationRule & ir, 
                                                  BareSliceVector<double> coefs, 
-                                                 FlatMatrixFixWidth<DIM> vals) const override;
+                                                 BareSliceMatrix<> vals) const override;
 
     HD NGS_DLL_HEADER virtual void EvaluateGrad (const SIMD_BaseMappedIntegrationRule & ir,
                                                  BareSliceVector<> coefs,
@@ -122,6 +122,9 @@ namespace ngfem
 #endif
 
     // NGS_DLL_HEADER virtual void GetPolOrders (FlatArray<PolOrder<DIM> > orders) const;
+
+    HD NGS_DLL_HEADER 
+    virtual void CalcDualShape (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const override;
     
   protected:
     /*
@@ -136,7 +139,13 @@ namespace ngfem
     INLINE void T_CalcShape (const TIP<DIM,Tx> & ip, TFA & shape) const
     {
       static_cast<const FEL*> (this) -> T_CalcShape (ip, shape);
-    }    
+    }
+
+    void CalcDualShape2 (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const
+    {
+      throw Exception (string("dual shape not implemented for element ")+typeid(*this).name()); 
+    }
+    
   };
 
 

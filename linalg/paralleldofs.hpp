@@ -120,6 +120,7 @@ namespace ngla
     
   public:
     
+    int GetNDofLocal () const { return ndof; }
     int GetNDofGlobal () const { return ndof; }
 
     template <typename T>
@@ -137,22 +138,22 @@ namespace ngla
 
 
   template <typename T>
-  void ReduceDofData (FlatArray<T> data, MPI_Op op, const ParallelDofs & pardofs)
+  void ReduceDofData (FlatArray<T> data, MPI_Op op, const shared_ptr<ParallelDofs> & pardofs)
   {
-    pardofs.ReduceDofData(data, op);
+    pardofs->ReduceDofData(data, op);
   }
 
   template <typename T>
-  void ScatterDofData (FlatArray<T> data, const ParallelDofs & pardofs)
+  void ScatterDofData (FlatArray<T> data, const shared_ptr<ParallelDofs> & pardofs)
   {
-    pardofs.ScatterDofData (data);
+    pardofs->ScatterDofData (data);
   }
 
   template <typename T>
   void AllReduceDofData (FlatArray<T> data, MPI_Op op, 
-			 const ParallelDofs & pardofs)
+			 const shared_ptr<ParallelDofs> & pardofs)
   { 
-    pardofs.AllReduceDofData (data, op);
+    pardofs->AllReduceDofData (data, op);
   }
 
 

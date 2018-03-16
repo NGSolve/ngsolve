@@ -7,6 +7,7 @@
 // #pragma clang diagnostic ignored "-W#pragma-messages"
 #pragma clang diagnostic ignored "-Wunused-local-typedefs"
 #pragma clang diagnostic ignored "-Wparentheses-equality"
+#pragma clang diagnostic ignored "-Wunused-value"
 #endif
 
 #include <pybind11/pybind11.h>
@@ -373,6 +374,24 @@ Flags NGS_DLL_HEADER CreateFlagsFromKwArgs(py::object pyclass, const py::kwargs&
 const char* docu_string(const char* str);
 
 PYBIND11_DECLARE_HOLDER_TYPE(T, std::shared_ptr<T>);
+
+namespace ngstd
+{
+  // MemoryView for pickling without copying
+  // doesn't provide memory management, it has to be done from the outside!
+  class MemoryView
+  {
+  private:
+    void* ptr;
+    size_t size;
+
+  public:
+    MemoryView(void* aptr, size_t asize) : ptr(aptr), size(asize) { ; }
+
+    size_t Size() const { return size; }
+    void* Ptr() const { return ptr; }
+  };
+}
 
 #endif // NGS_PYTHON
 #endif // PYTHON_NGSTD_HPP___

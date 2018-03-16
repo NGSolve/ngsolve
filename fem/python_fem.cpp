@@ -262,6 +262,20 @@ struct GenericATan {
   template <typename T> T operator() (T x) const { return atan(x); }
   static string Name() { return "atan"; }
 };
+struct GenericACos {
+  template <typename T> T operator() (T x) const { return acos(x); }
+  // double operator() (double x) const { return acos(x); }
+  // template <typename T> T operator() (T x) const { throw Exception("acos not available"); }
+  SIMD<Complex> operator() (SIMD<Complex> x) const { throw Exception("acos not available for SIMD<complex>"); }
+  static string Name() { return "acos"; }
+};
+struct GenericASin {
+  template <typename T> T operator() (T x) const { return asin(x); }
+  // double operator() (double x) const { return acos(x); }
+  // template <typename T> T operator() (T x) const { throw Exception("acos not available"); }
+  SIMD<Complex> operator() (SIMD<Complex> x) const { throw Exception("asin not available for SIMD<complex>"); }
+  static string Name() { return "asin"; }
+};
 struct GenericSqrt {
   template <typename T> T operator() (T x) const { return sqrt(x); }
   static string Name() { return "sqrt"; }
@@ -499,7 +513,7 @@ val : can be one of the following:
   list of scalars or CoefficientFunctions:
     Creates a domain-wise CF, use with generator expressions and mesh.GetMaterials()
     and mesh.GetBoundaries()
-)raw")
+)raw", py::dynamic_attr())
     .def(py::init([] (py::object val, py::object dims)
         {
           shared_ptr<CoefficientFunction> coef;
@@ -566,7 +580,11 @@ val : can be one of the following:
     .def_property("dims",
                   [] (shared_ptr<CF> self) { return Array<int>(self->Dimensions()); } ,
                   [] (shared_ptr<CF> self, py::tuple tup) { self->SetDimensions(makeCArray<int>(tup)); } ,
-                  "shape of CF:  (dim) for vector, (h,w) for matrix")    
+                  "shape of CF:  (dim) for vector, (h,w) for matrix")
+    
+    .def_property_readonly("is_complex",
+                           [] (CF &  self) { return self.IsComplex(); },
+                           "is CoefficientFunction complex-valued ?")
     
     .def("__getitem__",  [](shared_ptr<CF> self, int comp)
                                          {
@@ -666,7 +684,8 @@ val : can be one of the following:
     .def("Norm",  [](shared_ptr<CF> x) { return NormCF(x); })
     
     .def ("Other",
-          [](shared_ptr<CF> x) { return MakeOtherCoefficientFunction(x); },
+          [](shared_ptr<CF> x)
+          { return MakeOtherCoefficientFunction(x); },
           "evaluate on other element, as needed for DG jumps")
     
     // it's using the complex functions anyway ...
@@ -735,6 +754,8 @@ val : can be one of the following:
   ExportStdMathFunction<GenericExp>(m, "exp");
   ExportStdMathFunction<GenericLog>(m, "log");
   ExportStdMathFunction<GenericATan>(m, "atan");
+  ExportStdMathFunction<GenericACos>(m, "acos");
+  ExportStdMathFunction<GenericASin>(m, "asin");
   ExportStdMathFunction<GenericSqrt>(m, "sqrt");
   ExportStdMathFunction<GenericFloor>(m, "floor");
   ExportStdMathFunction<GenericCeil>(m, "ceil");
@@ -765,8 +786,8 @@ else_obj : object
 )raw_string"))
     ;
   
-         typedef shared_ptr<ParameterCoefficientFunction> spParameterCF;
-         py::class_<ParameterCoefficientFunction, spParameterCF, CF>
+  typedef shared_ptr<ParameterCoefficientFunction> spParameterCF;
+  py::class_<ParameterCoefficientFunction, spParameterCF, CF>
     (m, "Parameter", docu_string(R"raw_string(CoefficientFunction with a modifiable value
 
 Parameters:
@@ -774,12 +795,9 @@ Parameters:
 val : float
   Parameter value
 )raw_string"))
-    .def ("__init__",
-          [] (ParameterCoefficientFunction *instance, double val)
-                            {
-                              new (instance) ParameterCoefficientFunction(val);
-                            })
-         .def ("Set", [] (spParameterCF cf, double val)  { cf->SetValue (val); },
+    .def (py::init ([] (double val)
+                    { return make_shared<ParameterCoefficientFunction>(val); }))
+    .def ("Set", [] (spParameterCF cf, double val)  { cf->SetValue (val); },
           "modify parameter value")
     .def ("Get", [] (spParameterCF cf)  { return cf->GetValue(); },
           "return parameter value")
@@ -949,13 +967,13 @@ knots : list of float
 vals : list of float
 
 )raw")
-   .def("__init__",
-        [](BSpline *instance, int order, py::list knots, py::list vals)
-                           {
-                             new (instance) BSpline (order,
-                                                 makeCArray<double> (knots),
-                                                 makeCArray<double> (vals));
-                           },
+    .def(py::init
+         ([](int order, py::list knots, py::list vals)
+          {
+            return make_shared<BSpline> (order,
+                                         makeCArray<double> (knots),
+                                         makeCArray<double> (vals));
+          }),
         "B-Spline of a certain order, provide knot and value vectors")
     .def("__str__", &ToString<BSpline>)
     .def("__call__", &BSpline::Evaluate)
@@ -1112,27 +1130,27 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
   py::class_<IntegrationPoint>(m, "IntegrationPoint");
 
   py::class_<IntegrationRule>(m, "IntegrationRule")
-    .def("__init__",
-         [](IntegrationRule *instance, ELEMENT_TYPE et, int order)
-                           {
-                             new (instance) IntegrationRule (et, order);
-                           },
-          py::arg("element type"), py::arg("order"))
+    .def(py::init
+         ([](ELEMENT_TYPE et, int order)
+          { return new IntegrationRule (et, order); }),
+         py::arg("element type"), py::arg("order"))
     
-    .def("__init__",
-         [](IntegrationRule *instance, py::list points, py::list weights)
-         {
-           IntegrationRule * ir = new (instance) IntegrationRule ();
-           for (size_t i = 0; i < len(points); i++)
-             {
-               py::object pnt = points[i];
-               IntegrationPoint ip;
-               for (int j = 0; j < len(pnt); j++)
-                 ip(j) = py::extract<double> (py::tuple(pnt)[j])();
-               ip.SetWeight(py::extract<double> (weights[i])());
-               ir -> Append (ip);
-             }
-         },
+    .def(py::init
+         ([](py::list points, py::list weights)
+          {
+            IntegrationRule * ir = new IntegrationRule ();
+            for (size_t i = 0; i < len(points); i++)
+              {
+                py::object pnt = points[i];
+                IntegrationPoint ip;
+                ip.SetNr(i);
+                for (int j = 0; j < len(pnt); j++)
+                  ip(j) = py::extract<double> (py::tuple(pnt)[j])();
+                ip.SetWeight(py::extract<double> (weights[i])());
+                ir -> Append (ip);
+              }
+            return ir;
+          }),
          py::arg("points"), py::arg("weights"))
     .def("__str__", &ToString<IntegrationRule>)
     .def("__getitem__", [](IntegrationRule & ir, int nr)
@@ -1523,7 +1541,7 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
            py::arg("rad")=1,py::arg("alpha")=1);
     
                            
-                           
+  m.def("GenerateL2ElementCode", &GenerateL2ElementCode);
 
 }
 

@@ -46,7 +46,7 @@ namespace ngfem
     static void GenerateMatrixIR (const FEL & fel, const MIR & mir,
                                   MAT & mat, LocalHeap & lh)
     {
-      for (int i = 0; i < mir.Size(); i++)
+      for (size_t i = 0; i < mir.Size(); i++)
         DOP::GenerateMatrix (fel, mir[i], mat.Rows(i*DOP::DIM_DMAT, (i+1)*DOP::DIM_DMAT), lh);
     }
 
@@ -79,7 +79,7 @@ namespace ngfem
 			 const TVX & x, TVY & y,
 			 LocalHeap & lh)
     {
-      for (int i = 0; i < mir.Size(); i++)
+      for (size_t i = 0; i < mir.Size(); i++)
         DOP::Apply (fel, mir[i], x, y.Row(i), lh);
     }
 
@@ -132,7 +132,7 @@ namespace ngfem
 			      LocalHeap & lh) 
     {
       y = 0.0;
-      for (int i = 0; i < mir.Size(); i++)
+      for (size_t i = 0; i < mir.Size(); i++)
         ApplyTransAdd (fel, mir[i], x.Row(i), y, lh);
     }
 
@@ -262,7 +262,7 @@ namespace ngfem
     Apply (const FiniteElement & fel,
 	   const BaseMappedIntegrationRule & mir,
 	   FlatVector<double> x, 
-	   FlatMatrix<double> flux,
+	   BareSliceMatrix<double> flux,
 	   LocalHeap & lh) const;
 
     NGS_DLL_HEADER virtual void
@@ -344,7 +344,7 @@ namespace ngfem
 
     virtual ~BlockDifferentialOperator ();
     
-    virtual string Name() const { return diffop->Name(); }
+    virtual string Name() const override { return diffop->Name(); }
     /// dimension of range
     /*
     virtual int Dim() const { return dim*diffop->Dim(); }
@@ -353,57 +353,57 @@ namespace ngfem
     virtual int DiffOrder() const { return diffop->DiffOrder(); }
     */
     shared_ptr<DifferentialOperator> BaseDiffOp() const { return diffop; } 
-    virtual IntRange UsedDofs(const FiniteElement & fel) const { return dim*diffop->UsedDofs(fel); }
+    virtual IntRange UsedDofs(const FiniteElement & fel) const override { return dim*diffop->UsedDofs(fel); }
 
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
 		const BaseMappedIntegrationPoint & mip,
 		SliceMatrix<double,ColMajor> mat, 
-		LocalHeap & lh) const;    
+		LocalHeap & lh) const override;    
 
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
 		const SIMD_BaseMappedIntegrationRule & mir,
-		BareSliceMatrix<SIMD<double>> mat) const;
+		BareSliceMatrix<SIMD<double>> mat) const override;
     
     NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & fel,
 	   const BaseMappedIntegrationPoint & mip,
 	   FlatVector<double> x, 
 	   FlatVector<double> flux,
-	   LocalHeap & lh) const;
+	   LocalHeap & lh) const override;
 
     virtual void
     Apply (const FiniteElement & bfel,
 	   const SIMD_BaseMappedIntegrationRule & bmir,
 	   BareSliceVector<double> x, 
-	   BareSliceMatrix<SIMD<double>> flux) const;
+	   BareSliceMatrix<SIMD<double>> flux) const override;
     
     NGS_DLL_HEADER virtual void
     ApplyTrans (const FiniteElement & fel,
                 const BaseMappedIntegrationPoint & mip,
                 FlatVector<double> flux,
                 FlatVector<double> x, 
-                LocalHeap & lh) const;
+                LocalHeap & lh) const override;
     
     NGS_DLL_HEADER virtual void
     ApplyTrans (const FiniteElement & fel,
                 const BaseMappedIntegrationPoint & mip,
                 FlatVector<Complex> flux,
                 FlatVector<Complex> x, 
-                LocalHeap & lh) const;
+                LocalHeap & lh) const override;
 
     virtual void
     AddTrans (const FiniteElement & bfel,
               const SIMD_BaseMappedIntegrationRule & bmir,
               BareSliceMatrix<SIMD<double>> flux,
-              BareSliceVector<double> x) const;
+              BareSliceVector<double> x) const override;
 
     virtual void
     AddTrans (const FiniteElement & bfel,
               const SIMD_BaseMappedIntegrationRule & bmir,
               BareSliceMatrix<SIMD<Complex>> flux,
-              BareSliceVector<Complex> x) const;
+              BareSliceVector<Complex> x) const override;
   };
 
 
@@ -432,9 +432,9 @@ namespace ngfem
     virtual bool Boundary() const { return int(DIM_SPACE) > int(DIM_ELEMENT); }
     virtual int DiffOrder() const { return DIFFOP::DIFFORDER; }
     */
-    virtual string Name() const { return DIFFOP::Name(); }
+    virtual string Name() const override { return DIFFOP::Name(); }
     
-    virtual bool operator== (const DifferentialOperator & diffop2) const
+    virtual bool operator== (const DifferentialOperator & diffop2) const override
     { return typeid(*this) == typeid(diffop2); }
 
     
@@ -442,24 +442,24 @@ namespace ngfem
     CalcMatrix (const FiniteElement & bfel,
 		const BaseMappedIntegrationPoint & bmip,
 		SliceMatrix<double,ColMajor> mat, 
-		LocalHeap & lh) const;
+		LocalHeap & lh) const override;
 
     virtual void
     CalcMatrix (const FiniteElement & bfel,
 		const BaseMappedIntegrationPoint & bmip,
 		SliceMatrix<Complex,ColMajor> mat, 
-		LocalHeap & lh) const;
+		LocalHeap & lh) const override;
 
     virtual void
     CalcMatrix (const FiniteElement & bfel,
 		const BaseMappedIntegrationRule & bmir,
 		SliceMatrix<double,ColMajor> mat, 
-		LocalHeap & lh) const;
+		LocalHeap & lh) const override;
 
     virtual void
     CalcMatrix (const FiniteElement & fel,
 		const SIMD_BaseMappedIntegrationRule & mir,
-		BareSliceMatrix<SIMD<double>> mat) const;
+		BareSliceMatrix<SIMD<double>> mat) const override;
     
 #ifndef FASTCOMPILE
     virtual void
@@ -467,40 +467,40 @@ namespace ngfem
 	   const BaseMappedIntegrationPoint & bmip,
 	   FlatVector<double> x, 
 	   FlatVector<double> flux,
-	   LocalHeap & lh) const;
+	   LocalHeap & lh) const override;
 
     virtual void
     Apply (const FiniteElement & bfel,
 	   const BaseMappedIntegrationRule & bmir,
 	   FlatVector<double> x, 
-	   FlatMatrix<double> flux,
-	   LocalHeap & lh) const;
+	   BareSliceMatrix<double> flux,
+	   LocalHeap & lh) const override;
 
     virtual void
     Apply (const FiniteElement & bfel,
 	   const BaseMappedIntegrationPoint & bmip,
 	   FlatVector<Complex> x, 
 	   FlatVector<Complex> flux,
-	   LocalHeap & lh) const;
+	   LocalHeap & lh) const override;
 
     virtual void
     Apply (const FiniteElement & bfel,
 	   const BaseMappedIntegrationRule & bmir,
 	   FlatVector<Complex> x, 
 	   FlatMatrix<Complex> flux,
-	   LocalHeap & lh) const;
+	   LocalHeap & lh) const override;
 
     virtual void
     Apply (const FiniteElement & bfel,
 	   const SIMD_BaseMappedIntegrationRule & bmir,
 	   BareSliceVector<double> x, 
-	   BareSliceMatrix<SIMD<double>> flux) const;
+	   BareSliceMatrix<SIMD<double>> flux) const override;
 
     virtual void
     Apply (const FiniteElement & bfel,
 	   const SIMD_BaseMappedIntegrationRule & bmir,
 	   BareSliceVector<Complex> x, 
-	   BareSliceMatrix<SIMD<Complex>> flux) const;
+	   BareSliceMatrix<SIMD<Complex>> flux) const override;
 
 
     virtual void
@@ -508,40 +508,40 @@ namespace ngfem
 		const BaseMappedIntegrationPoint & bmip,
 		FlatVector<double> flux,
 		FlatVector<double> x, 
-		LocalHeap & lh) const;
+		LocalHeap & lh) const override;
 
     virtual void
     ApplyTrans (const FiniteElement & bfel,
 		const BaseMappedIntegrationPoint & bmip,
 		FlatVector<Complex> flux,
 		FlatVector<Complex> x, 
-		LocalHeap & lh) const;
+		LocalHeap & lh) const override;
 
     virtual void
     ApplyTrans (const FiniteElement & bfel,
 		const BaseMappedIntegrationRule & bmir,
 		FlatMatrix<double> flux,
 		FlatVector<double> x, 
-		LocalHeap & lh) const;
+		LocalHeap & lh) const override;
 
     virtual void
     ApplyTrans (const FiniteElement & bfel,
 		const BaseMappedIntegrationRule & bmir,
 		FlatMatrix<Complex> flux,
 		FlatVector<Complex> x, 
-		LocalHeap & lh) const;
+		LocalHeap & lh) const override;
 
     virtual void
     AddTrans (const FiniteElement & bfel,
               const SIMD_BaseMappedIntegrationRule & bmir,
               BareSliceMatrix<SIMD<double>> flux,
-              BareSliceVector<double> x) const;
+              BareSliceVector<double> x) const override;
 
     virtual void
     AddTrans (const FiniteElement & bfel,
               const SIMD_BaseMappedIntegrationRule & bmir,
               BareSliceMatrix<SIMD<Complex>> flux,
-              BareSliceVector<Complex> x) const;
+              BareSliceVector<Complex> x) const override;
 
 #endif
   };

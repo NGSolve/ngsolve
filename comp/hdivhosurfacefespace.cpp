@@ -87,8 +87,8 @@ public:
     {
 
       throw Exception("Does not work yet!!!! eltrans 1D -> 3D, no normal vector available");
-      auto normal = Vec<3>(mip.GetNV());      
-      auto tangential = mip.GetTV();      
+      // auto normal = Vec<3>(mip.GetNV());      
+      // auto tangential = mip.GetTV();      
       // Vec<3> normalel = Cross(normal, tangential);
       getchar();
 	
@@ -456,12 +456,11 @@ public:
 		    //inci = pc[0]*(pc[0]-1)/2;
                 break;
               case ET_QUAD:
-		throw Exception("not implemented yet");
-                //if (!ho_div_free)
-                //  inci = pc[0]*pc[1] + p[0]*p[1]+p[0]+p[1];
-                //else
-                //  inci = pc[0]*pc[1];
-                //break;
+		if (!ho_div_free)
+                  inci = p[0]*p[1] + p[0]*p[1]+p[0]+p[1];
+                else
+                  inci = p[0]*p[1];
+                break;
               default: // for the compiler
                 break;  
               }

@@ -452,7 +452,7 @@ namespace ngcomp
         case VOL: return mesh.GetMaterialCD<0> (region_nr);
         case BND: return mesh.GetMaterialCD<1> (region_nr);
         case BBND: return mesh.GetMaterialCD<2> (region_nr);
-        case BBBND: return mesh.GetMaterialCD<3> (region_nr);
+        case BBBND: default: return mesh.GetMaterialCD<3> (region_nr);
         }
     }
 
@@ -771,7 +771,7 @@ namespace ngcomp
       return ArrayObject (mesh.GetNode<2> (fnr).vertices);
     }
     /// returns vertex numbers of edge
-    [[deprecated("Use GetEdgeNums(enr) instead!")]]                            
+    [[deprecated("Use GetEdgePNums(enr) instead!")]]                            
     void GetEdgePNums (int enr, int & pn1, int & pn2) const
     {
       auto edge = mesh.GetNode<1>(enr);
