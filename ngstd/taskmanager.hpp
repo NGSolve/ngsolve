@@ -35,7 +35,7 @@ namespace ngstd
   {
 //     PajeTrace *trace;
 
-    class alignas(64) NodeData
+    class alignas(64) NodeData : public AlignedAlloc<NodeData>
     {
     public:
       atomic<int> start_cnt{0};
@@ -742,13 +742,15 @@ public:
 
 
   template <typename FUNC, typename OP, typename T>
-  auto ParallelReduce (size_t n, FUNC f, OP op, T initial)
+  auto ParallelReduce (size_t n, FUNC f, OP op, T initial1)
   {
+    typedef decltype (op(initial1,initial1)) TRES;
+    TRES initial(initial1);
     /*
     for (size_t i = 0; i < n; i++)
       initial = op(initial, f(i));
     */
-    Array<T> part_reduce(TaskManager::GetNumThreads());
+    Array<TRES> part_reduce(TaskManager::GetNumThreads());
     ParallelJob ([&] (TaskInfo ti)
                  {
                    auto r = Range(n).Split(ti.task_nr, ti.ntasks);
@@ -798,10 +800,11 @@ class Tasks
 {
   size_t num;
 public:
-  Tasks (size_t _num = TaskManager::GetNumThreads()) : num(_num) { ; }
+  explicit Tasks (size_t _num = TaskManager::GetNumThreads()) : num(_num) { ; }
   auto GetNum() const { return num; } 
 };
 
+/* currently not used, plus causing problems on MSVC 2017
 template <typename T, typename std::enable_if<ngstd::has_call_operator<T>::value, int>::type = 0>                                  
 inline ParallelFunction<T> operator| (const T & func, Tasks tasks)
 {
@@ -818,6 +821,7 @@ inline Tasks operator "" _tasks_per_thread (unsigned long long n)
 {
   return Tasks(n * TaskManager::GetNumThreads());
 }
+*/
 
 /*
   thought to be used as:   array = 1 | tasks

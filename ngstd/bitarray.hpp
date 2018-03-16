@@ -67,10 +67,10 @@ public:
   size_t Size () const { return size; }
 
   /// set all bits
-  NGS_DLL_HEADER void Set () throw();
+  NGS_DLL_HEADER BitArray & Set () throw();
 
   /// clear all bits
-  NGS_DLL_HEADER void Clear () throw();
+  NGS_DLL_HEADER BitArray & Clear () throw();
 
   /// set bit i
   void Set (size_t i)

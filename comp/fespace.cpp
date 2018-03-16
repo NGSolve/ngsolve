@@ -45,6 +45,9 @@ namespace ngcomp
 
     order = int (flags.GetNumFlag ("order", 1));
 
+    if (flags.NumFlagDefined("order_policy"))
+      SetOrderPolicy(ORDER_POLICY(int(flags.GetNumFlag("order_policy",1))));
+
     if (flags.NumFlagDefined("order_left"))
       {
         auto order_left = int(flags.GetNumFlag("order_left", 1));
@@ -287,7 +290,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     delete dummy_segm;
     delete dummy_point;
 
-    delete paralleldofs;
+    // delete paralleldofs;
   }
   
   void FESpace :: SetNDof (size_t _ndof)
@@ -361,6 +364,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
   void FESpace :: FinalizeUpdate(LocalHeap & lh)
   {
     static Timer timer ("FESpace::FinalizeUpdate");
+    static Timer timer1 ("FESpace::FinalizeUpdate 1");
+    static Timer timer2 ("FESpace::FinalizeUpdate 2");
+    static Timer timer3 ("FESpace::FinalizeUpdate 3");
     static Timer tcol ("FESpace::FinalizeUpdate - coloring");
     static Timer tcolbits ("FESpace::FinalizeUpdate - bitarrays");
     static Timer tcolmutex ("FESpace::FinalizeUpdate - coloring, init mutex");
@@ -368,7 +374,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     if (low_order_space) low_order_space -> FinalizeUpdate(lh);
 
     RegionTimer reg (timer);
-
+    timer1.Start();
     dirichlet_dofs.SetSize (GetNDof());
     dirichlet_dofs.Clear();
 
@@ -399,6 +405,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    if (d != -1) dirichlet_dofs.Set (d);
 	}
     */
+    timer1.Stop();
+    timer2.Start();
     ParallelForRange
       (dirichlet_vertex.Size(),
        [&] (IntRange r)
@@ -412,7 +420,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
                  if (d != -1) dirichlet_dofs.Set (d);
              }
        });
-
+    timer2.Stop();
     /*
     for (auto i : Range(dirichlet_edge))
       if (dirichlet_edge[i])
@@ -1041,7 +1049,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
                                             true, false, evaluator,
                                             nullptr, nullptr, nullptr, nullptr, nullptr);
     shared_ptr<BilinearFormIntegrator> bli =
-      make_shared<SymbolicBilinearFormIntegrator> (InnerProduct(trial,test), vb, false);
+      make_shared<SymbolicBilinearFormIntegrator> (InnerProduct(trial,test), vb, VOL);
     
     if (is_block)
       bli = make_shared<BlockBilinearFormIntegrator> (bli, block_dim);
@@ -1554,7 +1562,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    dofnodes[d] = NodeId (nt, nr);
 	} 
 
-    paralleldofs = new ParallelMeshDofs (ma, dofnodes, dimension, iscomplex);
+    paralleldofs = make_shared<ParallelMeshDofs> (ma, dofnodes, dimension, iscomplex);
 
     if (MyMPI_AllReduce (ctofdof.Size(), MPI_SUM))
       AllReduceDofData (ctofdof, MPI_MAX, GetParallelDofs());
@@ -2091,6 +2099,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
           case ET_POINT:   return * new (lh) FE_Point;            
           }
       }
+    throw Exception ("Illegal element type in ElementFESpace::GetFE");
   }
   
   void ElementFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const

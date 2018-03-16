@@ -1,12 +1,12 @@
 enum OPERATION { ADD, SUB, SET };
 template <size_t H, size_t W, OPERATION OP>
-static void MatKernelMultAB
+inline void MatKernelMultAB
 (size_t n, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc);
 template <size_t H, size_t W, OPERATION OP>
-static void MatKernelMultAB
+inline void MatKernelMultAB
 (size_t n, double * pa, size_t da, SIMD<double> * pb, size_t db, double * pc, size_t dc);
 template <size_t H, size_t W>
-static void MatKernelAlignedMultAB
+inline void MatKernelAlignedMultAB
 (size_t n, double * pa, size_t da, SIMD<double> * pb, size_t db, SIMD<double> * pc, size_t dc);
 template <> INLINE void MatKernelMultAB<1, 1, SET>
     (size_t n,
@@ -1166,7 +1166,7 @@ pc += dc;
 sum50.Store(pc+SW*0);
 pc += dc;
 }
-template <> void MatKernelAlignedMultAB<1, 1>
+template <> inline void MatKernelAlignedMultAB<1, 1>
     (size_t n,
      double * pa, size_t da,
      SIMD<double> * pb, size_t db,
@@ -1181,7 +1181,7 @@ FMAasm(a0,b0,sum00);
 pc[0]= sum00;
 pc += dc;
 }
-template <> void MatKernelAlignedMultAB<2, 1>
+template <> inline void MatKernelAlignedMultAB<2, 1>
     (size_t n,
      double * pa, size_t da,
      SIMD<double> * pb, size_t db,
@@ -1201,7 +1201,7 @@ pc += dc;
 pc[0]= sum10;
 pc += dc;
 }
-template <> void MatKernelAlignedMultAB<3, 1>
+template <> inline void MatKernelAlignedMultAB<3, 1>
     (size_t n,
      double * pa, size_t da,
      SIMD<double> * pb, size_t db,
@@ -1226,7 +1226,7 @@ pc += dc;
 pc[0]= sum20;
 pc += dc;
 }
-template <> void MatKernelAlignedMultAB<4, 1>
+template <> inline void MatKernelAlignedMultAB<4, 1>
     (size_t n,
      double * pa, size_t da,
      SIMD<double> * pb, size_t db,
@@ -1256,7 +1256,7 @@ pc += dc;
 pc[0]= sum30;
 pc += dc;
 }
-template <> void MatKernelAlignedMultAB<5, 1>
+template <> inline void MatKernelAlignedMultAB<5, 1>
     (size_t n,
      double * pa, size_t da,
      SIMD<double> * pb, size_t db,
@@ -1291,7 +1291,7 @@ pc += dc;
 pc[0]= sum40;
 pc += dc;
 }
-template <> void MatKernelAlignedMultAB<6, 1>
+template <> inline void MatKernelAlignedMultAB<6, 1>
     (size_t n,
      double * pa, size_t da,
      SIMD<double> * pb, size_t db,
@@ -2903,7 +2903,7 @@ sum50.Store(pc+SW*0);
 sum51.Store(pc+SW*1);
 pc += dc;
 }
-template <> void MatKernelAlignedMultAB<1, 2>
+template <> inline void MatKernelAlignedMultAB<1, 2>
     (size_t n,
      double * pa, size_t da,
      SIMD<double> * pb, size_t db,
@@ -2922,7 +2922,7 @@ pc[0]= sum00;
 pc[1]= sum01;
 pc += dc;
 }
-template <> void MatKernelAlignedMultAB<2, 2>
+template <> inline void MatKernelAlignedMultAB<2, 2>
     (size_t n,
      double * pa, size_t da,
      SIMD<double> * pb, size_t db,
@@ -2949,7 +2949,7 @@ pc[0]= sum10;
 pc[1]= sum11;
 pc += dc;
 }
-template <> void MatKernelAlignedMultAB<3, 2>
+template <> inline void MatKernelAlignedMultAB<3, 2>
     (size_t n,
      double * pa, size_t da,
      SIMD<double> * pb, size_t db,
@@ -2984,7 +2984,7 @@ pc[0]= sum20;
 pc[1]= sum21;
 pc += dc;
 }
-template <> void MatKernelAlignedMultAB<4, 2>
+template <> inline void MatKernelAlignedMultAB<4, 2>
     (size_t n,
      double * pa, size_t da,
      SIMD<double> * pb, size_t db,
@@ -3027,7 +3027,7 @@ pc[0]= sum30;
 pc[1]= sum31;
 pc += dc;
 }
-template <> void MatKernelAlignedMultAB<5, 2>
+template <> inline void MatKernelAlignedMultAB<5, 2>
     (size_t n,
      double * pa, size_t da,
      SIMD<double> * pb, size_t db,
@@ -3078,7 +3078,7 @@ pc[0]= sum40;
 pc[1]= sum41;
 pc += dc;
 }
-template <> void MatKernelAlignedMultAB<6, 2>
+template <> inline void MatKernelAlignedMultAB<6, 2>
     (size_t n,
      double * pa, size_t da,
      SIMD<double> * pb, size_t db,
@@ -5123,7 +5123,7 @@ sum51.Store(pc+SW*1);
 sum52.Store(pc+SW*2);
 pc += dc;
 }
-template <> void MatKernelAlignedMultAB<1, 3>
+template <> inline void MatKernelAlignedMultAB<1, 3>
     (size_t n,
      double * pa, size_t da,
      SIMD<double> * pb, size_t db,
@@ -5146,7 +5146,7 @@ pc[1]= sum01;
 pc[2]= sum02;
 pc += dc;
 }
-template <> void MatKernelAlignedMultAB<2, 3>
+template <> inline void MatKernelAlignedMultAB<2, 3>
     (size_t n,
      double * pa, size_t da,
      SIMD<double> * pb, size_t db,
@@ -5180,7 +5180,7 @@ pc[1]= sum11;
 pc[2]= sum12;
 pc += dc;
 }
-template <> void MatKernelAlignedMultAB<3, 3>
+template <> inline void MatKernelAlignedMultAB<3, 3>
     (size_t n,
      double * pa, size_t da,
      SIMD<double> * pb, size_t db,
@@ -5225,7 +5225,7 @@ pc[1]= sum21;
 pc[2]= sum22;
 pc += dc;
 }
-template <> void MatKernelAlignedMultAB<4, 3>
+template <> inline void MatKernelAlignedMultAB<4, 3>
     (size_t n,
      double * pa, size_t da,
      SIMD<double> * pb, size_t db,
@@ -5281,7 +5281,7 @@ pc[1]= sum31;
 pc[2]= sum32;
 pc += dc;
 }
-template <> void MatKernelAlignedMultAB<5, 3>
+template <> inline void MatKernelAlignedMultAB<5, 3>
     (size_t n,
      double * pa, size_t da,
      SIMD<double> * pb, size_t db,
@@ -5348,7 +5348,7 @@ pc[1]= sum41;
 pc[2]= sum42;
 pc += dc;
 }
-template <> void MatKernelAlignedMultAB<6, 3>
+template <> inline void MatKernelAlignedMultAB<6, 3>
     (size_t n,
      double * pa, size_t da,
      SIMD<double> * pb, size_t db,
@@ -5427,18 +5427,17 @@ pc[2]= sum52;
 pc += dc;
 }
 template <size_t H, OPERATION OP>
-static void MatKernelMultABMask
+inline void MatKernelMultABMask
 (size_t n, SIMD<mask64> mask, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc);
 template <size_t H, OPERATION OP>
-static void MatKernelMultABMask
+inline void MatKernelMultABMask
 (size_t n, SIMD<mask64> mask, double * pa, size_t da, SIMD<double> * pb, size_t db, double * pc, size_t dc);
-template <> void MatKernelMultABMask<1, SET>
+template <> inline void MatKernelMultABMask<1, SET>
     (size_t n, SIMD<mask64> mask,
      double * pa, size_t da,
      double * pb, size_t db,
      double * pc, size_t dc)
 {
-constexpr int SW = SIMD<double>::Size();
 SIMD<double> sum0(0);
 for (size_t i = 0; i < n; i++, pa++, pb += db) {
 SIMD<double> b((double*)pb,mask);
@@ -5448,13 +5447,12 @@ FMAasm(a0,b,sum0);
 sum0.Store(pc,mask);
 pc += dc;
 }
-template <> void MatKernelMultABMask<1, ADD>
+template <> inline void MatKernelMultABMask<1, ADD>
     (size_t n, SIMD<mask64> mask,
      double * pa, size_t da,
      double * pb, size_t db,
      double * pc, size_t dc)
 {
-constexpr int SW = SIMD<double>::Size();
 double * hpc = pc;
 SIMD<double> sum0(pc, mask);
 pc += dc;
@@ -5467,13 +5465,12 @@ FMAasm(a0,b,sum0);
 sum0.Store(pc,mask);
 pc += dc;
 }
-template <> void MatKernelMultABMask<1, SUB>
+template <> inline void MatKernelMultABMask<1, SUB>
     (size_t n, SIMD<mask64> mask,
      double * pa, size_t da,
      double * pb, size_t db,
      double * pc, size_t dc)
 {
-constexpr int SW = SIMD<double>::Size();
 double * hpc = pc;
 SIMD<double> sum0(pc, mask);
 pc += dc;
@@ -5486,13 +5483,12 @@ sum0 -= a0*b;
 sum0.Store(pc,mask);
 pc += dc;
 }
-template <> void MatKernelMultABMask<1, SET>
+template <> inline void MatKernelMultABMask<1, SET>
     (size_t n, SIMD<mask64> mask,
      double * pa, size_t da,
      SIMD<double> * pb, size_t db,
      double * pc, size_t dc)
 {
-constexpr int SW = SIMD<double>::Size();
 SIMD<double> sum0(0);
 for (size_t i = 0; i < n; i++, pa++, pb += db) {
 SIMD<double> b((double*)pb,mask);
@@ -5502,13 +5498,12 @@ FMAasm(a0,b,sum0);
 sum0.Store(pc,mask);
 pc += dc;
 }
-template <> void MatKernelMultABMask<1, ADD>
+template <> inline void MatKernelMultABMask<1, ADD>
     (size_t n, SIMD<mask64> mask,
      double * pa, size_t da,
      SIMD<double> * pb, size_t db,
      double * pc, size_t dc)
 {
-constexpr int SW = SIMD<double>::Size();
 double * hpc = pc;
 SIMD<double> sum0(pc, mask);
 pc += dc;
@@ -5521,13 +5516,12 @@ FMAasm(a0,b,sum0);
 sum0.Store(pc,mask);
 pc += dc;
 }
-template <> void MatKernelMultABMask<1, SUB>
+template <> inline void MatKernelMultABMask<1, SUB>
     (size_t n, SIMD<mask64> mask,
      double * pa, size_t da,
      SIMD<double> * pb, size_t db,
      double * pc, size_t dc)
 {
-constexpr int SW = SIMD<double>::Size();
 double * hpc = pc;
 SIMD<double> sum0(pc, mask);
 pc += dc;
@@ -5540,13 +5534,12 @@ sum0 -= a0*b;
 sum0.Store(pc,mask);
 pc += dc;
 }
-template <> void MatKernelMultABMask<2, SET>
+template <> inline void MatKernelMultABMask<2, SET>
     (size_t n, SIMD<mask64> mask,
      double * pa, size_t da,
      double * pb, size_t db,
      double * pc, size_t dc)
 {
-constexpr int SW = SIMD<double>::Size();
 SIMD<double> sum0(0);
 SIMD<double> sum1(0);
 for (size_t i = 0; i < n; i++, pa++, pb += db) {
@@ -5561,13 +5554,12 @@ pc += dc;
 sum1.Store(pc,mask);
 pc += dc;
 }
-template <> void MatKernelMultABMask<2, ADD>
+template <> inline void MatKernelMultABMask<2, ADD>
     (size_t n, SIMD<mask64> mask,
      double * pa, size_t da,
      double * pb, size_t db,
      double * pc, size_t dc)
 {
-constexpr int SW = SIMD<double>::Size();
 double * hpc = pc;
 SIMD<double> sum0(pc, mask);
 pc += dc;
@@ -5586,13 +5578,12 @@ pc += dc;
 sum1.Store(pc,mask);
 pc += dc;
 }
-template <> void MatKernelMultABMask<2, SUB>
+template <> inline void MatKernelMultABMask<2, SUB>
     (size_t n, SIMD<mask64> mask,
      double * pa, size_t da,
      double * pb, size_t db,
      double * pc, size_t dc)
 {
-constexpr int SW = SIMD<double>::Size();
 double * hpc = pc;
 SIMD<double> sum0(pc, mask);
 pc += dc;
@@ -5611,13 +5602,12 @@ pc += dc;
 sum1.Store(pc,mask);
 pc += dc;
 }
-template <> void MatKernelMultABMask<2, SET>
+template <> inline void MatKernelMultABMask<2, SET>
     (size_t n, SIMD<mask64> mask,
      double * pa, size_t da,
      SIMD<double> * pb, size_t db,
      double * pc, size_t dc)
 {
-constexpr int SW = SIMD<double>::Size();
 SIMD<double> sum0(0);
 SIMD<double> sum1(0);
 for (size_t i = 0; i < n; i++, pa++, pb += db) {
@@ -5632,13 +5622,12 @@ pc += dc;
 sum1.Store(pc,mask);
 pc += dc;
 }
-template <> void MatKernelMultABMask<2, ADD>
+template <> inline void MatKernelMultABMask<2, ADD>
     (size_t n, SIMD<mask64> mask,
      double * pa, size_t da,
      SIMD<double> * pb, size_t db,
      double * pc, size_t dc)
 {
-constexpr int SW = SIMD<double>::Size();
 double * hpc = pc;
 SIMD<double> sum0(pc, mask);
 pc += dc;
@@ -5657,13 +5646,12 @@ pc += dc;
 sum1.Store(pc,mask);
 pc += dc;
 }
-template <> void MatKernelMultABMask<2, SUB>
+template <> inline void MatKernelMultABMask<2, SUB>
     (size_t n, SIMD<mask64> mask,
      double * pa, size_t da,
      SIMD<double> * pb, size_t db,
      double * pc, size_t dc)
 {
-constexpr int SW = SIMD<double>::Size();
 double * hpc = pc;
 SIMD<double> sum0(pc, mask);
 pc += dc;
@@ -5682,13 +5670,12 @@ pc += dc;
 sum1.Store(pc,mask);
 pc += dc;
 }
-template <> void MatKernelMultABMask<3, SET>
+template <> inline void MatKernelMultABMask<3, SET>
     (size_t n, SIMD<mask64> mask,
      double * pa, size_t da,
      double * pb, size_t db,
      double * pc, size_t dc)
 {
-constexpr int SW = SIMD<double>::Size();
 SIMD<double> sum0(0);
 SIMD<double> sum1(0);
 SIMD<double> sum2(0);
@@ -5708,13 +5695,12 @@ pc += dc;
 sum2.Store(pc,mask);
 pc += dc;
 }
-template <> void MatKernelMultABMask<3, ADD>
+template <> inline void MatKernelMultABMask<3, ADD>
     (size_t n, SIMD<mask64> mask,
      double * pa, size_t da,
      double * pb, size_t db,
      double * pc, size_t dc)
 {
-constexpr int SW = SIMD<double>::Size();
 double * hpc = pc;
 SIMD<double> sum0(pc, mask);
 pc += dc;
@@ -5739,13 +5725,12 @@ pc += dc;
 sum2.Store(pc,mask);
 pc += dc;
 }
-template <> void MatKernelMultABMask<3, SUB>
+template <> inline void MatKernelMultABMask<3, SUB>
     (size_t n, SIMD<mask64> mask,
      double * pa, size_t da,
      double * pb, size_t db,
      double * pc, size_t dc)
 {
-constexpr int SW = SIMD<double>::Size();
 double * hpc = pc;
 SIMD<double> sum0(pc, mask);
 pc += dc;
@@ -5770,13 +5755,12 @@ pc += dc;
 sum2.Store(pc,mask);
 pc += dc;
 }
-template <> void MatKernelMultABMask<3, SET>
+template <> inline void MatKernelMultABMask<3, SET>
     (size_t n, SIMD<mask64> mask,
      double * pa, size_t da,
      SIMD<double> * pb, size_t db,
      double * pc, size_t dc)
 {
-constexpr int SW = SIMD<double>::Size();
 SIMD<double> sum0(0);
 SIMD<double> sum1(0);
 SIMD<double> sum2(0);
@@ -5796,13 +5780,12 @@ pc += dc;
 sum2.Store(pc,mask);
 pc += dc;
 }
-template <> void MatKernelMultABMask<3, ADD>
+template <> inline void MatKernelMultABMask<3, ADD>
     (size_t n, SIMD<mask64> mask,
      double * pa, size_t da,
      SIMD<double> * pb, size_t db,
      double * pc, size_t dc)
 {
-constexpr int SW = SIMD<double>::Size();
 double * hpc = pc;
 SIMD<double> sum0(pc, mask);
 pc += dc;
@@ -5827,13 +5810,12 @@ pc += dc;
 sum2.Store(pc,mask);
 pc += dc;
 }
-template <> void MatKernelMultABMask<3, SUB>
+template <> inline void MatKernelMultABMask<3, SUB>
     (size_t n, SIMD<mask64> mask,
      double * pa, size_t da,
      SIMD<double> * pb, size_t db,
      double * pc, size_t dc)
 {
-constexpr int SW = SIMD<double>::Size();
 double * hpc = pc;
 SIMD<double> sum0(pc, mask);
 pc += dc;
@@ -5858,13 +5840,12 @@ pc += dc;
 sum2.Store(pc,mask);
 pc += dc;
 }
-template <> void MatKernelMultABMask<4, SET>
+template <> inline void MatKernelMultABMask<4, SET>
     (size_t n, SIMD<mask64> mask,
      double * pa, size_t da,
      double * pb, size_t db,
      double * pc, size_t dc)
 {
-constexpr int SW = SIMD<double>::Size();
 SIMD<double> sum0(0);
 SIMD<double> sum1(0);
 SIMD<double> sum2(0);
@@ -5889,13 +5870,12 @@ pc += dc;
 sum3.Store(pc,mask);
 pc += dc;
 }
-template <> void MatKernelMultABMask<4, ADD>
+template <> inline void MatKernelMultABMask<4, ADD>
     (size_t n, SIMD<mask64> mask,
      double * pa, size_t da,
      double * pb, size_t db,
      double * pc, size_t dc)
 {
-constexpr int SW = SIMD<double>::Size();
 double * hpc = pc;
 SIMD<double> sum0(pc, mask);
 pc += dc;
@@ -5926,13 +5906,12 @@ pc += dc;
 sum3.Store(pc,mask);
 pc += dc;
 }
-template <> void MatKernelMultABMask<4, SUB>
+template <> inline void MatKernelMultABMask<4, SUB>
     (size_t n, SIMD<mask64> mask,
      double * pa, size_t da,
      double * pb, size_t db,
      double * pc, size_t dc)
 {
-constexpr int SW = SIMD<double>::Size();
 double * hpc = pc;
 SIMD<double> sum0(pc, mask);
 pc += dc;
@@ -5963,13 +5942,12 @@ pc += dc;
 sum3.Store(pc,mask);
 pc += dc;
 }
-template <> void MatKernelMultABMask<4, SET>
+template <> inline void MatKernelMultABMask<4, SET>
     (size_t n, SIMD<mask64> mask,
      double * pa, size_t da,
      SIMD<double> * pb, size_t db,
      double * pc, size_t dc)
 {
-constexpr int SW = SIMD<double>::Size();
 SIMD<double> sum0(0);
 SIMD<double> sum1(0);
 SIMD<double> sum2(0);
@@ -5994,13 +5972,12 @@ pc += dc;
 sum3.Store(pc,mask);
 pc += dc;
 }
-template <> void MatKernelMultABMask<4, ADD>
+template <> inline void MatKernelMultABMask<4, ADD>
     (size_t n, SIMD<mask64> mask,
      double * pa, size_t da,
      SIMD<double> * pb, size_t db,
      double * pc, size_t dc)
 {
-constexpr int SW = SIMD<double>::Size();
 double * hpc = pc;
 SIMD<double> sum0(pc, mask);
 pc += dc;
@@ -6031,13 +6008,12 @@ pc += dc;
 sum3.Store(pc,mask);
 pc += dc;
 }
-template <> void MatKernelMultABMask<4, SUB>
+template <> inline void MatKernelMultABMask<4, SUB>
     (size_t n, SIMD<mask64> mask,
      double * pa, size_t da,
      SIMD<double> * pb, size_t db,
      double * pc, size_t dc)
 {
-constexpr int SW = SIMD<double>::Size();
 double * hpc = pc;
 SIMD<double> sum0(pc, mask);
 pc += dc;
@@ -6068,13 +6044,12 @@ pc += dc;
 sum3.Store(pc,mask);
 pc += dc;
 }
-template <> void MatKernelMultABMask<5, SET>
+template <> inline void MatKernelMultABMask<5, SET>
     (size_t n, SIMD<mask64> mask,
      double * pa, size_t da,
      double * pb, size_t db,
      double * pc, size_t dc)
 {
-constexpr int SW = SIMD<double>::Size();
 SIMD<double> sum0(0);
 SIMD<double> sum1(0);
 SIMD<double> sum2(0);
@@ -6104,13 +6079,12 @@ pc += dc;
 sum4.Store(pc,mask);
 pc += dc;
 }
-template <> void MatKernelMultABMask<5, ADD>
+template <> inline void MatKernelMultABMask<5, ADD>
     (size_t n, SIMD<mask64> mask,
      double * pa, size_t da,
      double * pb, size_t db,
      double * pc, size_t dc)
 {
-constexpr int SW = SIMD<double>::Size();
 double * hpc = pc;
 SIMD<double> sum0(pc, mask);
 pc += dc;
@@ -6147,13 +6121,12 @@ pc += dc;
 sum4.Store(pc,mask);
 pc += dc;
 }
-template <> void MatKernelMultABMask<5, SUB>
+template <> inline void MatKernelMultABMask<5, SUB>
     (size_t n, SIMD<mask64> mask,
      double * pa, size_t da,
      double * pb, size_t db,
      double * pc, size_t dc)
 {
-constexpr int SW = SIMD<double>::Size();
 double * hpc = pc;
 SIMD<double> sum0(pc, mask);
 pc += dc;
@@ -6190,13 +6163,12 @@ pc += dc;
 sum4.Store(pc,mask);
 pc += dc;
 }
-template <> void MatKernelMultABMask<5, SET>
+template <> inline void MatKernelMultABMask<5, SET>
     (size_t n, SIMD<mask64> mask,
      double * pa, size_t da,
      SIMD<double> * pb, size_t db,
      double * pc, size_t dc)
 {
-constexpr int SW = SIMD<double>::Size();
 SIMD<double> sum0(0);
 SIMD<double> sum1(0);
 SIMD<double> sum2(0);
@@ -6226,13 +6198,12 @@ pc += dc;
 sum4.Store(pc,mask);
 pc += dc;
 }
-template <> void MatKernelMultABMask<5, ADD>
+template <> inline void MatKernelMultABMask<5, ADD>
     (size_t n, SIMD<mask64> mask,
      double * pa, size_t da,
      SIMD<double> * pb, size_t db,
      double * pc, size_t dc)
 {
-constexpr int SW = SIMD<double>::Size();
 double * hpc = pc;
 SIMD<double> sum0(pc, mask);
 pc += dc;
@@ -6269,13 +6240,12 @@ pc += dc;
 sum4.Store(pc,mask);
 pc += dc;
 }
-template <> void MatKernelMultABMask<5, SUB>
+template <> inline void MatKernelMultABMask<5, SUB>
     (size_t n, SIMD<mask64> mask,
      double * pa, size_t da,
      SIMD<double> * pb, size_t db,
      double * pc, size_t dc)
 {
-constexpr int SW = SIMD<double>::Size();
 double * hpc = pc;
 SIMD<double> sum0(pc, mask);
 pc += dc;
@@ -6312,13 +6282,12 @@ pc += dc;
 sum4.Store(pc,mask);
 pc += dc;
 }
-template <> void MatKernelMultABMask<6, SET>
+template <> inline void MatKernelMultABMask<6, SET>
     (size_t n, SIMD<mask64> mask,
      double * pa, size_t da,
      double * pb, size_t db,
      double * pc, size_t dc)
 {
-constexpr int SW = SIMD<double>::Size();
 SIMD<double> sum0(0);
 SIMD<double> sum1(0);
 SIMD<double> sum2(0);
@@ -6353,13 +6322,12 @@ pc += dc;
 sum5.Store(pc,mask);
 pc += dc;
 }
-template <> void MatKernelMultABMask<6, ADD>
+template <> inline void MatKernelMultABMask<6, ADD>
     (size_t n, SIMD<mask64> mask,
      double * pa, size_t da,
      double * pb, size_t db,
      double * pc, size_t dc)
 {
-constexpr int SW = SIMD<double>::Size();
 double * hpc = pc;
 SIMD<double> sum0(pc, mask);
 pc += dc;
@@ -6402,13 +6370,12 @@ pc += dc;
 sum5.Store(pc,mask);
 pc += dc;
 }
-template <> void MatKernelMultABMask<6, SUB>
+template <> inline void MatKernelMultABMask<6, SUB>
     (size_t n, SIMD<mask64> mask,
      double * pa, size_t da,
      double * pb, size_t db,
      double * pc, size_t dc)
 {
-constexpr int SW = SIMD<double>::Size();
 double * hpc = pc;
 SIMD<double> sum0(pc, mask);
 pc += dc;
@@ -6451,13 +6418,12 @@ pc += dc;
 sum5.Store(pc,mask);
 pc += dc;
 }
-template <> void MatKernelMultABMask<6, SET>
+template <> inline void MatKernelMultABMask<6, SET>
     (size_t n, SIMD<mask64> mask,
      double * pa, size_t da,
      SIMD<double> * pb, size_t db,
      double * pc, size_t dc)
 {
-constexpr int SW = SIMD<double>::Size();
 SIMD<double> sum0(0);
 SIMD<double> sum1(0);
 SIMD<double> sum2(0);
@@ -6492,13 +6458,12 @@ pc += dc;
 sum5.Store(pc,mask);
 pc += dc;
 }
-template <> void MatKernelMultABMask<6, ADD>
+template <> inline void MatKernelMultABMask<6, ADD>
     (size_t n, SIMD<mask64> mask,
      double * pa, size_t da,
      SIMD<double> * pb, size_t db,
      double * pc, size_t dc)
 {
-constexpr int SW = SIMD<double>::Size();
 double * hpc = pc;
 SIMD<double> sum0(pc, mask);
 pc += dc;
@@ -6541,13 +6506,12 @@ pc += dc;
 sum5.Store(pc,mask);
 pc += dc;
 }
-template <> void MatKernelMultABMask<6, SUB>
+template <> inline void MatKernelMultABMask<6, SUB>
     (size_t n, SIMD<mask64> mask,
      double * pa, size_t da,
      SIMD<double> * pb, size_t db,
      double * pc, size_t dc)
 {
-constexpr int SW = SIMD<double>::Size();
 double * hpc = pc;
 SIMD<double> sum0(pc, mask);
 pc += dc;
@@ -6590,11 +6554,11 @@ pc += dc;
 sum5.Store(pc,mask);
 pc += dc;
 }
-template <size_t H, size_t W> static auto MatKernelScalAB
+template <size_t H, size_t W> inline auto MatKernelScalAB
     (size_t n,
      double * pa, size_t da,
      double * pb, size_t db);
-template <size_t H, size_t W> static auto MatKernelScalAB
+template <size_t H, size_t W> inline auto MatKernelScalAB
     (size_t n,
      SIMD<double> * pa, size_t da,
      SIMD<double> * pb, size_t db);
@@ -6710,7 +6674,6 @@ template <> INLINE auto MatKernelScalAB<6, 4>
      SIMD<double> * pa, size_t da,
      SIMD<double> * pb, size_t db)
 {
-constexpr int SW = SIMD<double>::Size();
 SIMD<double> sum00(0);
 SIMD<double> sum01(0);
 SIMD<double> sum02(0);
@@ -6844,7 +6807,6 @@ template <> INLINE auto MatKernelScalAB<3, 4>
      SIMD<double> * pa, size_t da,
      SIMD<double> * pb, size_t db)
 {
-constexpr int SW = SIMD<double>::Size();
 SIMD<double> sum00(0);
 SIMD<double> sum01(0);
 SIMD<double> sum02(0);
@@ -6923,7 +6885,6 @@ template <> INLINE auto MatKernelScalAB<1, 4>
      SIMD<double> * pa, size_t da,
      SIMD<double> * pb, size_t db)
 {
-constexpr int SW = SIMD<double>::Size();
 SIMD<double> sum00(0);
 SIMD<double> sum01(0);
 SIMD<double> sum02(0);
@@ -6994,7 +6955,6 @@ template <> INLINE auto MatKernelScalAB<6, 1>
      SIMD<double> * pa, size_t da,
      SIMD<double> * pb, size_t db)
 {
-constexpr int SW = SIMD<double>::Size();
 SIMD<double> sum00(0);
 SIMD<double> sum10(0);
 SIMD<double> sum20(0);
@@ -7056,7 +7016,6 @@ template <> INLINE auto MatKernelScalAB<3, 1>
      SIMD<double> * pa, size_t da,
      SIMD<double> * pb, size_t db)
 {
-constexpr int SW = SIMD<double>::Size();
 SIMD<double> sum00(0);
 SIMD<double> sum10(0);
 SIMD<double> sum20(0);
@@ -7099,7 +7058,6 @@ template <> INLINE auto MatKernelScalAB<1, 1>
      SIMD<double> * pa, size_t da,
      SIMD<double> * pb, size_t db)
 {
-constexpr int SW = SIMD<double>::Size();
 SIMD<double> sum00(0);
 size_t i = 0;
 for ( ; i < n; i++) {
@@ -7110,9 +7068,9 @@ FMAasm(a0,b0,sum00);
 return make_tuple(HSum(sum00));
 }
 template <size_t H, size_t W>
-static void MyScalTrans
+inline void MyScalTrans
 (size_t n, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc);
-template <> void MyScalTrans<1, 4>
+template <> inline void MyScalTrans<1, 4>
     (size_t n,
      double * pa, size_t da,
      double * pb, size_t db,
@@ -7143,7 +7101,7 @@ sum02.Store(pc+SW*2);
 sum03.Store(pc+SW*3);
 pc += dc;
 }
-template <> void MyScalTrans<2, 4>
+template <> inline void MyScalTrans<2, 4>
     (size_t n,
      double * pa, size_t da,
      double * pb, size_t db,
@@ -7189,7 +7147,7 @@ sum12.Store(pc+SW*2);
 sum13.Store(pc+SW*3);
 pc += dc;
 }
-template <> void MyScalTrans<3, 4>
+template <> inline void MyScalTrans<3, 4>
     (size_t n,
      double * pa, size_t da,
      double * pb, size_t db,
@@ -7250,7 +7208,7 @@ sum22.Store(pc+SW*2);
 sum23.Store(pc+SW*3);
 pc += dc;
 }
-template <> void MyScalTrans<4, 4>
+template <> inline void MyScalTrans<4, 4>
     (size_t n,
      double * pa, size_t da,
      double * pb, size_t db,
@@ -7326,7 +7284,7 @@ sum32.Store(pc+SW*2);
 sum33.Store(pc+SW*3);
 pc += dc;
 }
-template <> void MyScalTrans<5, 4>
+template <> inline void MyScalTrans<5, 4>
     (size_t n,
      double * pa, size_t da,
      double * pb, size_t db,
@@ -7417,7 +7375,7 @@ sum42.Store(pc+SW*2);
 sum43.Store(pc+SW*3);
 pc += dc;
 }
-template <> void MyScalTrans<6, 4>
+template <> inline void MyScalTrans<6, 4>
     (size_t n,
      double * pa, size_t da,
      double * pb, size_t db,

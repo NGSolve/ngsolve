@@ -1587,6 +1587,8 @@ namespace ngcomp
       const ElementTransformation & eltrans = mip.GetTransformation();
       FlatMatrixFixWidth<D> shape_ul(nd_u, lh);
       FlatMatrixFixWidth<D> shape_ur(nd_u, lh);
+      FlatMatrixFixWidth<D> shape_ull(nd_u, lh);
+      FlatMatrixFixWidth<D> shape_urr(nd_u, lh);
       FlatMatrixFixWidth<D> dshape_u_ref(nd_u, lh);
       FlatMatrixFixWidth<D> dshape_u(nd_u, lh);
       
@@ -1596,17 +1598,26 @@ namespace ngcomp
       y = 0;
       for (int j = 0; j < D; j++)   // d / dxj
 	{
-	  IntegrationPoint ipl(ip);
-	  ipl(j) -= eps();
-	  MappedIntegrationPoint<D,D> sipl(ipl, eltrans);
+          IntegrationPoint ipts[4];
 
-	  IntegrationPoint ipr(ip);
-	  ipr(j) += eps();
-	  MappedIntegrationPoint<D,D> sipr(ipr, eltrans);
+          ipts[0] = ip;
+          ipts[0](j) -= eps();
+          ipts[1] = ip;
+          ipts[1](j) += eps();              
+          ipts[2] = ip;
+          ipts[2](j) -= 2*eps();
+          ipts[3] = ip;
+          ipts[3](j) += 2*eps();
+          
+          IntegrationRule ir(4, ipts);
+          MappedIntegrationRule<D,D> mirl(ir, eltrans, lh);
 
-	  fel_u.CalcMappedShape (sipl, shape_ul);
-	  fel_u.CalcMappedShape (sipr, shape_ur);
-	  dshape_u_ref = (1.0/(2*eps())) * (shape_ur-shape_ul);
+          fel_u.CalcMappedShape (mirl[0], shape_ul);
+          fel_u.CalcMappedShape (mirl[1], shape_ur);
+          fel_u.CalcMappedShape (mirl[2], shape_ull);
+          fel_u.CalcMappedShape (mirl[3], shape_urr);
+          
+          dshape_u_ref = (1.0/(12.0*eps())) * (8.0*shape_ur-8.0*shape_ul-shape_urr+shape_ull);
           y += dshape_u_ref * tx.Row(j);
 	}
     }

@@ -511,6 +511,7 @@ namespace ngstd
     }
     
     INLINE double operator[] (int i) const { return ((double*)(&data))[i]; }
+    INLINE double & operator[] (int i) { return ((double*)(&data))[i]; }
     INLINE __m512d Data() const { return data; }
     INLINE __m512d & Data() { return data; }
   };
@@ -581,6 +582,7 @@ namespace ngstd
   INLINE SIMD<double,N> Trans (SIMD<double,N> a) { return a; }
 
 
+  INLINE double IfPos (double a, double b, double c) { return a>0 ? b : c; }
   
 #ifdef __SSE__
 
@@ -830,6 +832,18 @@ namespace ngstd
     return ngstd::SIMD<double,N>([&](int i)->double { return atan(a[i]); } );
   }
 
+  using std::acos;
+  template <int N>          
+  INLINE ngstd::SIMD<double,N> acos (ngstd::SIMD<double,N> a) {
+    return ngstd::SIMD<double,N>([&](int i)->double { return acos(a[i]); } );
+  }
+
+  using std::asin;
+  template <int N>          
+  INLINE ngstd::SIMD<double,N> asin (ngstd::SIMD<double,N> a) {
+    return ngstd::SIMD<double,N>([&](int i)->double { return asin(a[i]); } );
+  }
+  
 
   template <int D, typename T>
   class MultiSIMD : public AlignedAlloc<MultiSIMD<D,T>>

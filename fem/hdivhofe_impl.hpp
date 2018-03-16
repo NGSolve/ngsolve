@@ -106,42 +106,7 @@ namespace ngfem
       {
         INT<4> fav = ET_trait<ET_TRIG>::GetFaceSort (0, vnums);
 
-        /*
-#ifdef VLA
-        Tx mem[2*order];
-        Tx * adpol1 = &mem[0];
-        Tx * adpol2 = &mem[order];
-#else
-        ArrayMem<Tx,10> adpol1(order),adpol2(order);	
-#endif
-
-	Tx xi  = lam[fav[2]]-lam[fav[1]];
-	Tx eta = lam[fav[0]]; 
-
-        TrigShapesInnerLegendre::CalcSplitted(p+1, xi, eta, adpol1, adpol2);
-	
-        if (!only_ho_div){
-        // rotated gradients:
-          for (int j = 0; j < p-1; j++)
-            for (int k = 0; k < p-1-j; k++, ii++)
-              shape[ii] = Du (adpol1[j] * adpol2[k]);
-        }
-        
-        if (!ho_div_free)
-          {
-            // other combination
-            for (int j = 0; j < p-1; j++)
-              for (int k = 0; k < p-1-j; k++, ii++)
-                shape[ii] = uDv_minus_vDu (adpol2[k], adpol1[j]);
-            
-            // rec_pol * Nedelec0 
-            for (int j = 0; j < p-1; j++, ii++)
-              shape[ii] = wuDv_minus_wvDu (lami[fav[1]], lami[fav[2]], adpol2[j]);
-          }
-        */
-
-
-	// rotated gradients:
+ 	// rotated gradients:
 	if(!only_ho_div)
           {
             DubinerBasis3::EvalMult (p-2, lam[fav[0]], lam[fav[1]], 
@@ -172,10 +137,6 @@ namespace ngfem
                          }));
             
             // rec_pol * Nedelec0 
-            /*
-              for (int j = 0; j < p-1; j++, ii++)
-              shape[ii] = wuDv_minus_wvDu<2> (lam[fav[1]], lam[fav[2]], adpol2[j]);
-            */
             leg.EvalMult 
               (p-2, 2*x-1, x, 
                SBLambda([&] (int j, Tx val)
@@ -207,49 +168,41 @@ namespace ngfem
     Tx sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};  
 
     size_t ii = 4;
-    // ArrayMem<Tx, 10> pol_xi(order+2), pol_eta(order+2);
     STACK_ARRAY(Tx, mem, 2*order+4);
     Tx * pol_xi = &mem[0];
     Tx * pol_eta = &mem[order+2];
     
     if (!only_ho_div){
       // edges
-      const EDGE * edges = ElementTopology::GetEdges (ET_QUAD);
+      // const EDGE * edges = ElementTopology::GetEdges (ET_QUAD);
       for (int i = 0; i < 4; i++)
         {
           int p = order_facet[i][0]; 
-          int es = edges[i][0], ee = edges[i][1];
-        if (vnums[es] > vnums[ee]) swap (es, ee);
+          // int es = edges[i][0], ee = edges[i][1];
+          // if (vnums[es] > vnums[ee]) swap (es, ee);
+          INT<2> e = GetVertexOrientedEdge (i);	  
 
-        Tx xi  = sigma[ee]-sigma[es];
-        Tx lam_e = lami[ee]+lami[es];  // attention in [0,1]
+          Tx xi  = sigma[e[1]]-sigma[e[0]];
+          Tx lam_e = lami[e[1]]+lami[e[0]]; 
 
-        // Nedelec0-shapes
-        shape[i] = uDv<2> (0.5 * lam_e, xi); 
-        
-        // High Order edges ... Gradient fields 
-        // if(usegrad_edge[i])
-        {
-          // T_ORTHOPOL::Calc (p+1, xi, pol_xi);  
-          // LegendrePolynomial::
-          /*
-          IntLegNoBubble::
-            EvalMult (p-1, xi, 0.25*(1-xi*xi), pol_xi);
-          for (int j = 0; j < p; j++)
-            shape[ii++] = Du<2> (pol_xi[j] * lam_e);
-          */
-          IntLegNoBubble::
-            EvalMult (p-1, xi, 0.25*(1-xi*xi)*lam_e,
-                      SBLambda([&] (size_t j, Tx val)
-                               {
-                                 shape[ii++] = Du<2> (val);
+          // Nedelec0-shapes
+          shape[i] = uDv<2> (0.5 * lam_e, xi); 
+          
+          // High Order edges ... Gradient fields 
+          // if(usegrad_edge[i])
+          {
+            IntLegNoBubble::
+              EvalMult (p-1, xi, 0.25*(1-xi*xi)*lam_e,
+                        SBLambda([&] (size_t j, Tx val)
+                                 {
+                                   shape[ii++] = Du<2> (val);
                                }));
-        }
+          }
         }
     }
     else
       ii = 0;
-
+    
     // INT<2> p = order_face[0]; // (order_cell[0],order_cell[1]);
     INT<2> p (order_inner[0], order_inner[1]); // (order_cell[0],order_cell[1]);
     int fmax = 0; 
@@ -289,8 +242,6 @@ namespace ngfem
           for (int j= 0; j < p[1]; j++)
             shape[ii++] = uDv_minus_vDu<2> (pol_eta[j], pol_xi[k]);
 
-        // extern int myvar;
-        // myvar++;
         //Missing ones 
         for(int j = 0; j< p[0]; j++)
           shape[ii++] = uDv<2> (0.5*pol_xi[j], eta);
@@ -298,8 +249,6 @@ namespace ngfem
         for(int j = 0; j < p[1]; j++)
           shape[ii++] = uDv<2> (0.5*pol_eta[j], xi); 
       }
-
-    // if (ii != ndof) cout << "ndof = " << ndof << ", but ii = " << ii << endl;
   }
 
 
@@ -350,39 +299,6 @@ namespace ngfem
           Tx bub = lami[fav[1]]*lami[fav[0]];
           Tx eta = lami[fav[2]];
           Tx zeta = lami[fop];  
-        
-          /*
-          T_FACESHAPES::CalcSplitted (p+2, xi, eta, zeta, adpol1, adpol2); 
-
-          // Compatibility WITH TRIG!! 
-          for (int k = 0; k < adpol1.Size(); k++)
-            adpol1[k] *= 0.5; 
-            
-          // Curl (Type 2) 2*grad v x grad u
-          for (int j = 0; j <= p-1; j++) 
-            for (int k = 0; k <= p-1-j; k++)
-              shape[ii++] = Du_Cross_Dv<3> (adpol2[k], adpol1[j]);
-
-          // Curl (Type 3) //curl( * v) = nabla v x ned + curl(ned)*v
-          for (int j = 0; j <= p-1; j++)
-            shape[ii++] = curl_uDvw_minus_Duvw<3> (lami[fav[0]], lami[fav[1]], adpol2[j]);
-          */
-
-
-          /*
-          IntLegNoBubble::EvalScaledMult (p-1, xi, sum, bub, adpol1); 
-          for (int k = 0; k <= p-1; k++)
-            {
-              IntegratedJacobiPolynomialAlpha jac(2*k+3);
-              Tx polk = adpol1[k];
-              jac.EvalScaledMult(p-k-1, eta-sum, 1-zeta, eta, 
-                                 SBLambda ([&](int i, Tx val)
-                                           {
-                                             shape[ii++] = 
-                                               Du_Cross_Dv (val, polk);
-                                           }));
-            }
-          */
 
           // Typ 1
           IntLegNoBubble::

@@ -71,3 +71,27 @@ Distributed memory
 
 The distributed memory paradigm requires to build Netgen as well as NGSolve with MPI - support, which must be enabled during the cmake configuration step. 
 
+Many ngsolve features can be used in the MPI-parallel version, some
+features are work in progress, some others may take for longer. The
+following list shows what is available:
+
+.. csv-table:: Distributed parallel features
+               :header: feature , y/n , comment
+               :widths:  20,10,50
+
+               TaskManager, yes, allows for hybrid parallelization
+               mesh generation, no,
+               mesh distribution, yes, using metis
+               uniform refinement, yes,  refine the netgen-mesh
+               adaptive refinement, no,
+               finite element spaces, yes, all spaces should work
+               "Forms, Gridfunction", yes
+               periodic boundaries, no
+               discontinuous Galerkin, yes, apply operator
+               diagonal preconditioner, yes
+               multigrid preconditioner, no
+               BDDC preconditioner, yes
+               direct solvers, yes, "MUMPs, Masterinverse"
+               pickling, in progress
+               
+

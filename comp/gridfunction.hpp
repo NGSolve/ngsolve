@@ -40,26 +40,27 @@ namespace ngcomp
     virtual bool IsComplex() const;
     virtual int Dimension() const;
     virtual Array<int> Dimensions() const;
-    virtual bool DefinedOn (const ElementTransformation & trafo);
+    virtual bool DefinedOn (const ElementTransformation & trafo) override;
     void SelectComponent (int acomp) { comp = acomp; }
     const GridFunction & GetGridFunction() const { return *gf; }
-    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const;
-    virtual Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const;
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override;
+    virtual Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const override; 
 
     virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
-			  FlatVector<> result) const;
+			  FlatVector<> result) const override;
     virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
-			  FlatVector<Complex> result) const;
+			  FlatVector<Complex> result) const override;
     
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, 
-			   FlatMatrix<double> values) const;
+			   BareSliceMatrix<double> values) const override;
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, 
-			   FlatMatrix<Complex> values) const;
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const;
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values) const;
+			   FlatMatrix<Complex> values) const override;
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const override;
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values) const override;
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
-                           AFlatMatrix<double> values) const
+                           AFlatMatrix<double> values) const override
     { Evaluate (ir, values); }
+    /*
     virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
                                 AFlatMatrix<> result,
                                 AFlatMatrix<> deriv) const
@@ -70,10 +71,11 @@ namespace ngcomp
                                 AFlatMatrix<> result,
                                 AFlatMatrix<> deriv) const
     { Evaluate (ir, result); deriv = 0.0; }
-    virtual bool StoreUserData() const { return true; }
+    */
+    virtual bool StoreUserData() const override { return true; }
 
     virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
-                                 FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const
+                                 FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
     {
       nonzero = true;
       nonzero_deriv = false;

@@ -106,8 +106,9 @@ namespace ngfem
     /// weight of integration point
     double weight;
     /// point is on facetnr, -1 for volume
-    int facetnr;
-
+    int facetnr = -1;
+    /// co-dimension of point (0..vol, 1..bnd, 2..bbnd, 3..bbbnd=vertex)
+    VorB vb = VOL;
   public:
     ///
     bool precomputed_geometry;
@@ -122,6 +123,7 @@ namespace ngfem
       weight = aip.Weight();
       precomputed_geometry = aip.precomputed_geometry;
       facetnr = aip.facetnr;
+      vb = aip.vb;
       return *this;
     }
 
@@ -201,10 +203,12 @@ namespace ngfem
     INLINE FlatVec<3, double> Point() { return &pi[0]; }
     INLINE FlatVec<3, const double> Point() const { return &pi[0]; }
 
-    INLINE int & FacetNr() { return facetnr; }
+    // INLINE int & FacetNr() { return facetnr; }
+    void SetFacetNr (int afacetnr, VorB avb = BND)
+    { facetnr = afacetnr; vb = avb; }
     INLINE int FacetNr() const { return facetnr; }
-
-
+    INLINE VorB VB() const { return vb; } 
+    
     template <int DIM> 
     INLINE operator Vec<DIM, AutoDiff<DIM>> () const
     {
@@ -768,10 +772,12 @@ namespace ngfem
     EDGE hedges[4];
     FACE hfaces[6];
     bool swapped = false; // new orientation with 2 tet-classes
+    VorB vb = BND;        // facet codimension
   public:
-    Facet2ElementTrafo(ELEMENT_TYPE aeltype) 
+    Facet2ElementTrafo(ELEMENT_TYPE aeltype, VorB _vb = BND) 
       : eltype(aeltype),
-	points(99,(double*)ElementTopology::GetVertices (aeltype))
+	points(99,(double*)ElementTopology::GetVertices (aeltype)),
+        vb(_vb)
     {
       // points = ElementTopology::GetVertices (eltype);
       edges = ElementTopology::GetEdges (eltype);
@@ -876,12 +882,35 @@ namespace ngfem
         }
     }
 
+    ELEMENT_TYPE FacetType (int fnr) const
+    {
+      if (vb == BND)
+        return ElementTopology::GetFacetType(eltype, fnr);
+      else
+        {
+          if (Dim(eltype)-int(vb) == 1)
+            return ET_SEGM;
+          else
+            return ET_POINT;
+        }
+    }
 
+    size_t GetNFacets () const
+    {
+      if (vb == BND)
+        return ElementTopology::GetNFacets(eltype);
+      else
+        {
+          if (Dim(eltype)-int(vb) == 1)
+            return ElementTopology::GetNEdges(eltype);
+          else
+            return ElementTopology::GetNVertices(eltype); // points
+        }
+    }
+    
     void operator()(int fnr, const IntegrationPoint &ipfac, IntegrationPoint & ipvol) const 
     {
-      ELEMENT_TYPE facettype = ElementTopology::GetFacetType(eltype, fnr);
-
-      switch (facettype)
+      switch (FacetType(fnr))
 	{
 	case ET_POINT:
 	  {
@@ -919,13 +948,15 @@ namespace ngfem
 	  throw Exception ("undefined facet type in Facet2ElementTrafo()\n");
 	}
       ipvol.SetWeight(ipfac.Weight());
-      ipvol.FacetNr() = fnr;
+      // ipvol.FacetNr() = fnr;
+      ipvol.SetFacetNr(fnr, vb);
     }
 
     FlatMatrix<> GetJacobian(int fnr, LocalHeap & lh) const
     {
-      ELEMENT_TYPE facettype = ElementTopology::GetFacetType(eltype, fnr);
-      switch (facettype)
+      // ELEMENT_TYPE facettype = ElementTopology::GetFacetType(eltype, fnr);
+      // switch (facettype)
+      switch (FacetType(fnr))
 	{
 	case ET_SEGM:
 	  {
@@ -975,7 +1006,8 @@ namespace ngfem
     {
       IntegrationRule & irvol = *new (lh) IntegrationRule (irfacet.GetNIP(), lh);
 
-      switch (ElementTopology::GetFacetType(eltype, fnr))
+      // switch (ElementTopology::GetFacetType(eltype, fnr))
+      switch (FacetType(fnr))        
 	{
 	case ET_POINT:
 	  {
@@ -1017,7 +1049,7 @@ namespace ngfem
 
       for (int i = 0; i < irfacet.GetNIP(); i++)
         {
-          irvol[i].FacetNr() = fnr;
+          irvol[i].SetFacetNr(fnr, vb);
           irvol[i].SetWeight(irfacet[i].Weight());
         }
 
@@ -1217,7 +1249,7 @@ namespace ngfem
       
       for (int i = 0; i < irfacet.GetNIP(); i++)
         {
-          irvol[i].FacetNr() = fnr;
+          irvol[i].SetFacetNr(fnr);
           irvol[i].SetWeight(irfacet[i].Weight());
         }
       
@@ -1436,6 +1468,7 @@ namespace ngstd
   {
     SIMD<double> x[3], weight;
     int facetnr = -1;
+    ngfem::VorB vb = ngfem::VOL;
   public:
     static constexpr size_t Size() { return SIMD<double>::Size(); }
 
@@ -1470,7 +1503,10 @@ namespace ngstd
     { return ngfem::IntegrationPoint(x[0][i], x[1][i], x[2][i], weight[i]); }
 
     int FacetNr() const { return facetnr; }
-    int & FacetNr() { return facetnr; }
+    // int & FacetNr() { return facetnr; }
+    void SetFacetNr (int afacetnr, ngfem::VorB avb = ngfem::BND)
+    { facetnr = afacetnr; vb = avb; }      
+    INLINE ngfem::VorB VB() const { return vb; } 
 
     template <int DIM> 
     INLINE operator Vec<DIM, AutoDiff<DIM,SIMD<double>>> () const

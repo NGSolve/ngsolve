@@ -422,16 +422,17 @@ namespace ngcomp
 
   template <int D>
   class NGS_DLL_HEADER HDivDivMassIntegrator 
-    : public T_BDBIntegrator<DiffOpIdHDivDiv<D>, DiagDMat<D*D> >
+    : public T_BDBIntegrator<DiffOpIdHDivDiv<D>, DiagDMat<D*D>, HDivDivFiniteElement<D> >
   {
   public:
-    using T_BDBIntegrator<DiffOpIdHDivDiv<D>, DiagDMat<D*D>>::T_BDBIntegrator;
+    using T_BDBIntegrator<DiffOpIdHDivDiv<D>, DiagDMat<D*D>, HDivDivFiniteElement<D>>::T_BDBIntegrator;
   };
   
   
   HDivDivFESpace :: HDivDivFESpace (shared_ptr<MeshAccess> ama,const Flags & flags,bool checkflags)
     : FESpace(ama,flags)
   {
+    type = "hdivdiv";
     order = int (flags.GetNumFlag ("order",1));
     plus = flags.GetDefineFlag ("plus");
     discontinuous = flags.GetDefineFlag("discontinuous");

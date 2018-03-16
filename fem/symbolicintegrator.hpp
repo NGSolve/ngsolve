@@ -126,7 +126,7 @@ public:
                          FlatVector<Complex> result) const;
 
   NGS_DLL_HEADER virtual void Evaluate (const BaseMappedIntegrationRule & ir,
-                         FlatMatrix<> result) const;
+                                        BareSliceMatrix<> result) const;
 
   NGS_DLL_HEADER virtual void Evaluate (const BaseMappedIntegrationRule & ir,
                          FlatMatrix<Complex> result) const;
@@ -165,6 +165,12 @@ public:
   {
     ProxyFunction::Evaluate (ir, values);
   }
+
+  virtual void Evaluate (const BaseMappedIntegrationRule & ir, 
+                         BareSliceMatrix<AutoDiff<1,double>> values) const;
+  
+  virtual void Evaluate (const BaseMappedIntegrationRule & ir, 
+                         BareSliceMatrix<AutoDiffDiff<1,double>> values) const;
   
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, 
                          BareSliceMatrix<AutoDiff<1,SIMD<double>>> values) const;
@@ -230,7 +236,7 @@ public:
   int test_comp;
   class ProxyFunction * trialfunction = nullptr;
   int trial_comp;
-  
+  int eval_deriv = 0; // 0 .. evaluate bfi, 1 .. deriv, 2 .. second order deriv
   const FiniteElement * fel = nullptr;
   // const FlatVector<double> * elx;
   // LocalHeap * lh;
@@ -532,9 +538,11 @@ public:
     Array<ProxyFunction*> trial_proxies, test_proxies;
     Array<CoefficientFunction*> gridfunction_cfs;
     Array<int> trial_cum, test_cum;   // cumulated dimension of proxies
-    VorB vb;
-    bool element_boundary;
-    Matrix<bool> nonzeros;    // do components interact ? 
+    VorB vb;           // on the boundary of the domain ? 
+    // bool element_boundary;
+    VorB element_vb;   // on the boundary of the element ? 
+    Matrix<bool> nonzeros;    // do components interact ?
+    Matrix<bool> nonzeros_deriv;   // do components interact ? 
     Matrix<bool> nonzeros_proxies; // do proxies interact ?
     Matrix<bool> diagonal_proxies; // do proxies interact diagonally ?
     Matrix<bool> same_diffops; // are diffops the same ? 
@@ -544,7 +552,7 @@ public:
     bool is_symmetric;
   public:
     NGS_DLL_HEADER SymbolicBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb,
-                                    bool aelement_boundary);
+                                                   VorB aelement_boundary);
 
     virtual VorB VB() const override { return vb; }
     virtual xbool IsSymmetric() const override { return is_symmetric ? xbool(true) : xbool(maybe); } 

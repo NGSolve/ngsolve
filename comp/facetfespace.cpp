@@ -115,6 +115,7 @@ namespace ngcomp
     : FESpace(ama, flags)
   {
     name="FacetFESpace(facet)";
+    type = "facet";
     // defined flags
     DefineNumFlag("relorder");
     DefineDefineFlag("variableorder"); 
@@ -481,6 +482,7 @@ namespace ngcomp
 
     FacetFE<ET> * fe =  new (alloc) FacetFE<ET> ();
     fe -> SetVertexNumbers (ngel.Vertices());
+    fe -> SetOrder(0);
     if (ET_trait<ET>::DIM >= 2)
       for (int i = 0; i < ET_trait<ET>::N_FACET; i++)
         fe -> SetOrder (i, order_facet[ngel.Facets()[i]][0]);
@@ -855,11 +857,11 @@ namespace ngcomp
 
   template <int D>
   class NGS_DLL_HEADER HDG_MassIntegrator 
-    : public T_BDBIntegrator<DiffOpIdHDG<D>, DiagDMat<1> >
+    : public T_BDBIntegrator<DiffOpIdHDG<D>, DiagDMat<1>, CompoundFiniteElement>
   {
-    typedef  T_BDBIntegrator<DiffOpIdHDG<D>, DiagDMat<1> > BASE;
+    typedef  T_BDBIntegrator<DiffOpIdHDG<D>, DiagDMat<1>, CompoundFiniteElement> BASE;
   public:
-    using  T_BDBIntegrator<DiffOpIdHDG<D>, DiagDMat<1> >::T_BDBIntegrator;
+    using  T_BDBIntegrator<DiffOpIdHDG<D>, DiagDMat<1>, CompoundFiniteElement >::T_BDBIntegrator;
     virtual string Name () const { return "Mass-HDG"; }
   };
 
@@ -874,7 +876,8 @@ namespace ngcomp
   HybridDGFESpace :: HybridDGFESpace (shared_ptr<MeshAccess> ama, 
                                       const Flags & flags)
     : CompoundFESpace (ama, flags)
-  { 
+  {
+    type = "HDG";
     Flags l2flags(flags), facetflags(flags);
 
     int order = int (flags.GetNumFlag ("order", 1));

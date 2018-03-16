@@ -1,20 +1,13 @@
 Setting inhomogeneous Dirichlet boundary conditions
 =========================================================
 
-A mesh stores boundary elements, which know the *bc* index given in the geometry. 
-The Dirichlet boundaries are given as a list of boundary condition indices to the finite element space:
+A mesh stores boundary elements, which know the *bc* name given in the geometry.
+The Dirichlet boundaries are given as a regular expression of these names to the finite element space:
 
 .. code-block:: python
 
-                V = FESpace(mesh,order=3,dirichlet=[2,5])
+                V = FESpace(mesh,order=3,dirichlet="top|back")
                 u = GridFunction(V)
-
-
-If bc-labels are used instead of numbers, the list of Dirichlet bc numbers can be generated as follows. Note that bc-nums are 1-based:
-
-.. code-block:: python
-
-                bcnums = [ i+1 for i,bcname in enumerate(mesh.GetBoundaries()) if bcname in ["dir1", "dir2"] ]
 
 
 The BitArray of free (i.e. unconstrained) dof numbers can be obtained via
@@ -29,7 +22,7 @@ Inhomogeneous Dirichlet values are set via
 
 .. code-block:: python
 
-                u.Set(x*y, BND)
+                u.Set(x*y, definedon=mesh.Boundaries("top|back"))
 
 This function performs an element-wise L2 projection combined with arithmetic averaging of coupling dofs.
 

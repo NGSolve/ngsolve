@@ -95,15 +95,15 @@ namespace ngfem
   
     template <class MIR>
     static void ApplyIR (const FiniteElement & fel, const MIR & mir,
-			 const FlatVector<double> x, FlatMatrixFixWidth<D,double> y,
+			 const FlatVector<double> x, SliceMatrix<double> y,
 			 LocalHeap & lh)
     {
-      FlatMatrixFixWidth<D> grad(mir.Size(), &y(0));
-      Cast(fel).EvaluateGrad (mir.IR(), x, grad);
+      // FlatMatrixFixWidth<D> grad(mir.Size(), &y(0));
+      Cast(fel).EvaluateGrad (mir.IR(), x, y);
       for (int i = 0; i < mir.Size(); i++)
 	{
-	  Vec<D> hv = grad.Row(i);
-	  grad.Row(i) = Trans (mir[i].GetJacobianInverse()) * hv;
+	  Vec<D> hv = y.Row(i);
+	  y.Row(i) = Trans (mir[i].GetJacobianInverse()) * hv;
 	}
     }
 
@@ -309,7 +309,7 @@ namespace ngfem
                          FlatVector<double> x, TMY y,
 			 LocalHeap & lh)
     {
-      Cast(fel).Evaluate (mir.IR(), x, FlatVector<> (mir.Size(), &y(0,0)));
+      Cast(fel).Evaluate (mir.IR(), x, y.Col(0)); // FlatVector<> (mir.Size(), &y(0,0)));
     }
 
     template <class MIR>

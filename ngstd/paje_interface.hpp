@@ -20,8 +20,8 @@ namespace ngstd
     {
     public:
       typedef std::chrono::system_clock TClock;
-      typedef TClock::time_point TTimePoint;
-      // typedef size_t TTimePoint;
+      // typedef TClock::time_point TTimePoint;
+      typedef size_t TTimePoint;
 
     private:
       friend class TraceDisabler;
@@ -109,8 +109,8 @@ namespace ngstd
 
       TTimePoint GetTime()
         {
-          return TClock::now();
-          // return TTimePoint(__rdtsc());
+          // return TClock::now();
+          return TTimePoint(__rdtsc());
         }
 
     public:

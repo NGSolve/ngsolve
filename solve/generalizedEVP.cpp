@@ -96,7 +96,7 @@ namespace ngsolve
   {
     cout << "solve  evp" << endl;
 
-    // simulataneous iteration withour coarse grid
+    // simultaneous iteration without coarse grid
 
     const BaseMatrix & mata = bfa->GetMatrix();
     const BaseMatrix & matm = bfm->GetMatrix();

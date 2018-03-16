@@ -946,6 +946,11 @@ namespace ngcomp
                          FlatMatrix<SCAL> sum_elmat(elmat_size, lh);
                          sum_elmat = 0;
 			 bool elem_has_integrator = false;
+
+                         {
+                         static Timer elmattimer("calc elmats", 2);
+                         ThreadRegionTimer reg (elmattimer, TaskManager::GetThreadId());
+                         
                          for (auto & bfip : VB_parts[vb])
                            {
                              const BilinearFormIntegrator & bfi = *bfip;
@@ -1006,7 +1011,7 @@ namespace ngcomp
                                    }
                                }
                            }
-                         
+                         } 
                          
                          if (!elem_has_integrator) return;
                          
@@ -1020,8 +1025,8 @@ namespace ngcomp
                          
                          if (vb == VOL && eliminate_internal)
                            {
-                             // static Timer statcondtimer("static condensation", 1);
-                             // RegionTimer regstat (statcondtimer);
+                             static Timer statcondtimer("static condensation", 2);
+                             ThreadRegionTimer regstat (statcondtimer, TaskManager::GetThreadId());
                              
                              Array<int> idofs1(dnums.Size(), lh);
                              
@@ -1788,7 +1793,7 @@ namespace ngcomp
                           HeapReset hr(lh);
                           ElementId sei(BND, i);
                               
-                          if (!fespace->DefinedOn (BND,ma->GetElIndex (sei))) continue;
+                          // if (!fespace->DefinedOn (BND,ma->GetElIndex (sei))) continue;
                           fnums = ma->GetElFacets(sei);
                           int fac = fnums[0];
                           ma->GetFacetElements(fac,elnums);
@@ -2052,7 +2057,7 @@ namespace ngcomp
                        bfi->CalcElementMatrix (fel, eltrans, elmat, lh);
                        /*
                         fespace->Transform (i, true, elmat, TRANSFORM_MAT_RIGHT);
-                        fespace2->Transform (i, true, elmat, TRANFORM_MAT_LEFT);
+                        fespace2->Transform (i, true, elmat, TRANSFORM_MAT_LEFT);
                        */
                        AddElementMatrix (dnums2, dnums1, elmat, ei, lh);
                      }
@@ -2089,7 +2094,7 @@ namespace ngcomp
 
                        /*
                         fespace->Transform (i, true, elmat, TRANSFORM_MAT_RIGHT);
-                        fespace2->Transform (i, true, elmat, TRANFORM_MAT_LEFT);
+                        fespace2->Transform (i, true, elmat, TRANSFORM_MAT_LEFT);
                        */
 
                        AddElementMatrix (dnums2, dnums1, elmat, ei, lh);
@@ -2347,7 +2352,7 @@ namespace ngcomp
                          bfi->CalcLinearizedElementMatrix (fel, eltrans, elveclin, elmat, lh);
                          /*
                            fespace->Transform (i, true, elmat, TRANSFORM_MAT_RIGHT);
-                           fespace2->Transform (i, true, elmat, TRANFORM_MAT_LEFT);
+                           fespace2->Transform (i, true, elmat, TRANSFORM_MAT_LEFT);
                          */
                          AddElementMatrix (dnums2, dnums1, elmat, ei, lh);
                        }
@@ -2792,6 +2797,7 @@ namespace ngcomp
       
       
         // add eps to avoid empty lines
+	HeapReset hr(clh);
         FlatMatrix<SCAL> elmat (fespace->GetDimension(), clh);
         elmat = 0;
         dnums.SetSize(1);
@@ -2996,8 +3002,8 @@ namespace ngcomp
       
     if(facetvolumeintegrals == -1 && facetboundaryintegrals == -1)
       return;
-    auto & nels = tpfes->GetNels();
-    auto & nfacets = tpfes->GetNFacets();
+    // auto & nels = tpfes->GetNels();
+    // auto & nfacets = tpfes->GetNFacets();
     timerfac1.Start();
     for (FlatArray<int> colfacets : spaces[0]->FacetColoring())
     {
@@ -4255,7 +4261,7 @@ namespace ngcomp
 
 #ifdef PARALLEL
     if ( this->GetFESpace()->IsParallel() )
-      mat = make_shared<ParallelMatrix> (mat, &this->GetFESpace()->GetParallelDofs());
+      mat = make_shared<ParallelMatrix> (mat, this->GetFESpace()->GetParallelDofs());
 #endif
     this->mats.Append (mat);
 
@@ -4291,7 +4297,7 @@ namespace ngcomp
     auto afespace = this->fespace;
 #ifdef PARALLEL
     if ( afespace->IsParallel() )
-      return make_shared<ParallelVVector<TV>> (afespace->GetNDof(), &afespace->GetParallelDofs());
+      return make_shared<ParallelVVector<TV>> (afespace->GetNDof(), afespace->GetParallelDofs());
     else
 #endif
       return make_shared<VVector<TV>> (afespace->GetNDof());
@@ -4453,7 +4459,7 @@ namespace ngcomp
 
 #ifdef PARALLEL
     if ( this->GetFESpace()->IsParallel() )
-      mat = make_shared<ParallelMatrix> (mat, &this->GetFESpace()->GetParallelDofs());
+      mat = make_shared<ParallelMatrix> (mat, this->GetFESpace()->GetParallelDofs());
 #endif
     this->mats.Append (mat);
 
@@ -4488,7 +4494,7 @@ namespace ngcomp
     auto afespace = this->fespace;
 #ifdef PARALLEL
     if ( afespace->IsParallel() )
-      return make_shared<ParallelVVector<TV>> (afespace->GetNDof(), &afespace->GetParallelDofs());
+      return make_shared<ParallelVVector<TV>> (afespace->GetNDof(), afespace->GetParallelDofs());
     else
 #endif
       // return new VVector<TV> (afespace->GetNDof());
@@ -4597,7 +4603,7 @@ namespace ngcomp
     auto afespace = this->fespace;
 #ifdef PARALLEL
     if ( afespace->IsParallel() )
-      return make_shared<ParallelVVector<TV_COL>> (afespace->GetNDof(), &afespace->GetParallelDofs());
+      return make_shared<ParallelVVector<TV_COL>> (afespace->GetNDof(), afespace->GetParallelDofs());
     else
 #endif
       // return new VVector<TV_COL> (afespace->GetNDof());

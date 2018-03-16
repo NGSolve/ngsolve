@@ -379,7 +379,7 @@ namespace ngcomp
 #ifdef PARALLEL
 	  if (bfa->GetFESpace()->IsParallel())
 	    {
-	      ParallelDofs * pardofs = &bfa->GetFESpace()->GetParallelDofs();
+	      shared_ptr<ParallelDofs> pardofs = bfa->GetFESpace()->GetParallelDofs();
 
 	      pwbmat = make_shared<ParallelMatrix> (pwbmat, pardofs);
 	      pwbmat -> SetInverseType (inversetype);

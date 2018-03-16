@@ -344,7 +344,7 @@ namespace ngla
                         return nze;
                       },
                       [] (size_t a, size_t b) { return a+b; },
-                      0);
+                      size_t(0));
 
     /*
     size_t totmem = 0;
@@ -355,7 +355,7 @@ namespace ngla
       ParallelReduce (blocktable->Size(),
                       [&] (size_t i) { return sqr ((*blocktable)[i].Size()); },
                       [] (size_t a, size_t b) { return a+b; },
-                      0);
+                      size_t(0));
 
     bigmem.SetSize(totmem);
     

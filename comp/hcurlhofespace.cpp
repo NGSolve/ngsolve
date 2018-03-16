@@ -93,6 +93,9 @@ namespace ngcomp
     enum { DIM_ELEMENT = D };
     enum { DIM_DMAT = D*D };
     enum { DIFFORDER = 1 };
+
+    static Array<int> GetDimensions() { return Array<int> ( { DIM_SPACE, DIM_SPACE } ); }
+    
     static constexpr double eps() { return 1e-6; } 
     ///
     template <typename AFEL, typename SIP, typename MAT,
@@ -304,18 +307,23 @@ namespace ngcomp
   class DiffOpHCurlDual : public DiffOp<DiffOpHCurlDual<D> >
   {
   public:
+    typedef DiffOp<DiffOpHCurlDual<D>> BASE;
     enum { DIM = 1 };
     enum { DIM_SPACE = D };
     enum { DIM_ELEMENT = D };
     enum { DIM_DMAT = D };
     enum { DIFFORDER = 0 };
 
+    static auto & Cast (const FiniteElement & fel) 
+    { return static_cast<const HCurlFiniteElement<D>&> (fel); }
+
+    
     template <typename AFEL, typename MIP, typename MAT,
               typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
                                 MAT & mat, LocalHeap & lh)
     {
-      static_cast<const HCurlFiniteElement<D>&>(fel).CalcDualShape (mip, Trans(mat));
+      Cast(fel).CalcDualShape (mip, Trans(mat));
     }
     template <typename AFEL, typename MIP, typename MAT,
               typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
@@ -325,6 +333,28 @@ namespace ngcomp
       // fel.CalcDualShape (mip, mat);
       throw Exception(string("DiffOpHCurlDual not available for mat ")+typeid(mat).name());
     }
+
+    static void GenerateMatrixSIMDIR (const FiniteElement & fel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      Cast(fel).CalcDualShape (static_cast<const SIMD_MappedIntegrationRule<D,D>&>(mir), mat);      
+    }
+
+    using BASE::ApplySIMDIR;    
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      Cast(fel).EvaluateDual (static_cast<const SIMD_MappedIntegrationRule<D,D>&> (mir), x, y);
+    }
+
+    using BASE::AddTransSIMDIR;        
+    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      Cast(fel).AddDualTrans (static_cast<const SIMD_MappedIntegrationRule<D,D>&> (mir), y, x);
+    }    
+        
   };
 
 
@@ -418,6 +448,10 @@ namespace ngcomp
        
     fast_pfem = flags.GetDefineFlag ("fast");
     discontinuous = flags.GetDefineFlag ("discontinuous");
+    if (discontinuous)
+      SetDefinedOn(BND, BitArray(ma->GetNRegions(BND)).Clear());      
+
+    
     if (flags.GetDefineFlag ("no_couplingtype_upgrade"))
       ctupgrade = false;
     Flags loflags = flags;
@@ -560,6 +594,7 @@ namespace ngcomp
 	} 
     */
 
+    /*
     for (Ngs_Element el : ma->Elements(VOL))
       if (gradientdomains[el.GetIndex()]) 
         {
@@ -568,7 +603,20 @@ namespace ngcomp
             usegrad_face[el.Faces()] = true;
           usegrad_cell[el.Nr()] = true;
         }
-
+    */
+    ma -> IterateElements
+      (VOL, lh,
+       [&](auto el, LocalHeap & lh)
+       {
+         if (gradientdomains[el.GetIndex()]) 
+           {
+             usegrad_edge[el.Edges()] = true;
+             if (ma->GetDimension() == 3)
+               usegrad_face[el.Faces()] = true;
+             usegrad_cell[el.Nr()] = true;
+           }
+       });
+    
     if (gradientboundaries.Size())
       // for (int i = 0; i < nse; i++)
       for (ElementId ei : ma->Elements(BND))
@@ -1297,7 +1345,7 @@ namespace ngcomp
           hofe -> ComputeNDof();
           return *hofe;    
         }
-      case BBBND:
+      case BBBND: default:
         return * new (lh) DummyFE<ET_POINT>; 
       }
   }
@@ -1686,7 +1734,9 @@ namespace ngcomp
         additional.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHCurlDual<2>>> ());
         break;
       case 3:
-        additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHCurl<3>>> ()); break;
+        additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHCurl<3>>> ());
+        additional.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHCurlDual<3>>> ());
+        break;
       default:
         ;
       }
@@ -3192,9 +3242,9 @@ namespace ngcomp
 
     int ne = ma -> GetNE();
     // int ned = ma->GetNEdges();
-    int nfa = 0;
+    // int nfa = 0;
     int nse = ma->GetNSE();
-    if(ma->GetDimension()==3) nfa = ma->GetNFaces();
+    // if(ma->GetDimension()==3) nfa = ma->GetNFaces();
 
     LocalHeap lh(100008, "HCurlHOFeSpace::CreateGradient");
     fesh1->Update(lh);
