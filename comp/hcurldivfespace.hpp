@@ -18,14 +18,16 @@ namespace ngcomp
     Array<int> first_element_dof;
     Array<int> order_facet;
     Array<int> order_inner;
+    Array<int> order_trace;
     
     // add curldiv-free inner bubbles
     bool plus;
     bool discontinuous;
-    bool withtrace;
+    //bool withtrace;
     
     int uniform_order_facet;
     int uniform_order_inner;
+    int uniform_order_trace;
 
   public:
     HCurlDivFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags=false);

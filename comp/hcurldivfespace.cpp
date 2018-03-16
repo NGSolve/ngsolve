@@ -276,11 +276,12 @@ namespace ngcomp
   {
     order = int (flags.GetNumFlag ("order",1));
     plus = flags.GetDefineFlag ("plus");
-    withtrace = flags.GetDefineFlag ("withtrace");
+    //withtrace = flags.GetDefineFlag ("withtrace");
     
     discontinuous = flags.GetDefineFlag("discontinuous");
     uniform_order_facet = int(flags.GetNumFlag("orderfacet",order));
     uniform_order_inner = int(flags.GetNumFlag("orderinner",order));
+    uniform_order_trace = int(flags.GetNumFlag("ordertrace",-1));
 
     auto one = make_shared<ConstantCoefficientFunction>(1);
     if(ma->GetDimension() == 2)
@@ -309,6 +310,9 @@ namespace ngcomp
 
     order_inner.SetSize(ma->GetNE());
     order_inner = uniform_order_inner;
+
+    order_trace.SetSize(ma->GetNE());
+    order_trace = uniform_order_trace;
 
     Array<bool> fine_facet(ma->GetNFacets());
     fine_facet = false;
@@ -340,13 +344,14 @@ namespace ngcomp
       ElementId ei(VOL, i);
       first_element_dof[i] = ndof;
       int oi = order_inner[i];
-
+      int ot = order_trace[i];
+      
       switch(ma->GetElType(ei))
       {
       case ET_TRIG:
         ndof += 3*(oi * (oi +1))/2;
-	if (withtrace)
-	  ndof += (oi + 1) * (oi + 2) / 2;
+	if (ot>-1)
+	  ndof += (ot + 1) * (ot + 2) / 2;
 	
         if(plus)
 	  {
@@ -490,12 +495,13 @@ namespace ngcomp
     {
     case ET_TRIG:
     {
-      auto fe = new (alloc) HCurlDivFE<ET_TRIG> (order,plus, withtrace);
+      auto fe = new (alloc) HCurlDivFE<ET_TRIG> (order,plus);
       fe->SetVertexNumbers (ngel.Vertices());
       int ii = 0;
       for(auto f : ngel.Facets())
         fe->SetOrderFacet(ii++,order_facet[f]);
       fe->SetOrderInner(order_inner[ei.Nr()]);
+      fe->SetOrderTrace(order_trace[ei.Nr()]);
       fe->ComputeNDof();
       return *fe;
     }
