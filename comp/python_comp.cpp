@@ -6,6 +6,7 @@
 #include <comp.hpp>
 
 #include "hdivdivfespace.hpp"
+#include "hcurldivfespace.hpp"
 #include "hdivdivsurfacespace.hpp"
 #include "numberfespace.hpp"
 using namespace ngcomp;
@@ -2021,6 +2022,35 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                     "  Create discontinuous HDivDiv space";
 		  flags_doc["plus"] = "bool = False\n"
                     "  Add additional internal element bubble";
+
+                  return flags_doc;
+                })
+    ;
+
+  auto hcurldiv = py::class_<HCurlDivFESpace, shared_ptr<HCurlDivFESpace>,FESpace>
+    (m, "HCurlDiv");
+  hcurldiv
+    .def(py::init([hcurldiv](shared_ptr<MeshAccess> ma, py::kwargs kwargs)
+                  {
+                    py::list info;
+                    info.append(ma);
+                    auto flags = CreateFlagsFromKwArgs(hcurldiv, kwargs, info);
+                    auto fes = make_shared<HCurlDivFESpace>(ma,flags);
+                    fes->Update(glh);
+                    fes->FinalizeUpdate(glh);
+                    return fes;
+                  }),py::arg("mesh"))
+    .def(py::pickle(fesPickle,(shared_ptr<HCurlDivFESpace>(*)(py::tuple))
+                    fesUnpickle<HCurlDivFESpace>))
+    .def_static("__flags_doc__", [] ()
+                {
+                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
+                                                  attr("FESpace").
+                                                  attr("__flags_doc__")());
+		  flags_doc["discontinuous"] = "bool = False\n"
+                    "  Create discontinuous HCurlDiv space";
+		  flags_doc["ordertrace"] = "bool = False\n"
+                    "  Set polynomial order of trace, default is -1";
 
                   return flags_doc;
                 })
