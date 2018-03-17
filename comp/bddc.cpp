@@ -12,13 +12,13 @@ namespace ngcomp
     shared_ptr<BilinearForm> bfa;
     shared_ptr<FESpace> fes;
 
-    BaseMatrix *harmonicext, *harmonicexttrans, 
-      *innersolve;
+    shared_ptr<BaseMatrix> harmonicext, harmonicexttrans, 
+      innersolve;
 
     shared_ptr<BaseMatrix> pwbmat;    
 
-    SparseMatrix<SCAL,TV,TV> *sparse_innersolve, 
-      *sparse_harmonicext, *sparse_harmonicexttrans;
+    shared_ptr<SparseMatrix<SCAL,TV,TV>> sparse_innersolve, 
+      sparse_harmonicext, sparse_harmonicexttrans;
 
 
     Array<double> weight;
@@ -145,20 +145,20 @@ namespace ngcomp
       if (!bfa->SymmetricStorage()) 
 	{
 	  harmonicexttrans = sparse_harmonicexttrans =
-	    new SparseMatrix<SCAL,TV,TV>(ndof, el2wbdofs, el2ifdofs, false);
+	    make_shared<SparseMatrix<SCAL,TV,TV>>(ndof, el2wbdofs, el2ifdofs, false);
 	  harmonicexttrans -> AsVector() = 0.0;
 	}
       else
-	harmonicexttrans = sparse_harmonicexttrans = NULL;
+	harmonicexttrans = sparse_harmonicexttrans = nullptr;
 
 
       innersolve = sparse_innersolve = bfa->SymmetricStorage() 
-	? new SparseMatrixSymmetric<SCAL,TV>(ndof, el2ifdofs)
-	: new SparseMatrix<SCAL,TV,TV>(ndof, el2ifdofs, el2ifdofs, false); // bfa.IsSymmetric());
+	? make_shared<SparseMatrixSymmetric<SCAL,TV>>(ndof, el2ifdofs)
+	: make_shared<SparseMatrix<SCAL,TV,TV>>(ndof, el2ifdofs, el2ifdofs, false); // bfa.IsSymmetric());
       innersolve->AsVector() = 0.0;
 
       harmonicext = sparse_harmonicext =
-	new SparseMatrix<SCAL,TV,TV>(ndof, el2ifdofs, el2wbdofs, false);
+	make_shared<SparseMatrix<SCAL,TV,TV>>(ndof, el2ifdofs, el2wbdofs, false);
       harmonicext->AsVector() = 0.0;
       if (bfa->SymmetricStorage() && !hypre)
         pwbmat = make_shared<SparseMatrixSymmetric<SCAL,TV>>(ndof, el2wbdofs);
@@ -397,10 +397,10 @@ namespace ngcomp
                   inv = pwbmat -> InverseMatrix (wb_free_dofs);
 
 	      tmp = new ParallelVVector<TV>(ndof, pardofs);
-	      innersolve = new ParallelMatrix (shared_ptr<BaseMatrix> (innersolve, NOOP_Deleter), pardofs);
-	      harmonicext = new ParallelMatrix (shared_ptr<BaseMatrix> (harmonicext, NOOP_Deleter), pardofs);
+	      innersolve = make_shared<ParallelMatrix> (shared_ptr<BaseMatrix> (innersolve, NOOP_Deleter), pardofs);
+	      harmonicext = make_shared<ParallelMatrix> (shared_ptr<BaseMatrix> (harmonicext, NOOP_Deleter), pardofs);
 	      if (harmonicexttrans)
-		harmonicexttrans = new ParallelMatrix (shared_ptr<BaseMatrix> (harmonicexttrans, NOOP_Deleter), pardofs);
+		harmonicexttrans = make_shared<ParallelMatrix> (shared_ptr<BaseMatrix> (harmonicexttrans, NOOP_Deleter), pardofs);
 	    }
 	  else
 #endif
@@ -434,9 +434,9 @@ namespace ngcomp
       // delete inv;
       // delete pwbmat;
       // delete inv_coarse;
-      delete harmonicext;
-      delete harmonicexttrans;
-      delete innersolve;
+      // delete harmonicext;
+      // delete harmonicexttrans;
+      // delete innersolve;
       // delete wb_free_dofs;
 
       delete tmp;
@@ -469,7 +469,7 @@ namespace ngcomp
       timerharmonicexttrans.Start();
 
       if (bfa->SymmetricStorage())
-	y += Transpose(*harmonicext) * x; 
+	y += Transpose(harmonicext) * x; 
       else
 	y += *harmonicexttrans * x;
 
