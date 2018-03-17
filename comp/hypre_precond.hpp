@@ -33,7 +33,7 @@ class HyprePreconditioner : public Preconditioner
   Array<int> global_nums;
   int ilower, iupper;
   shared_ptr<BitArray> freedofs;
-  const ParallelDofs * pardofs;
+  shared_ptr<ParallelDofs> pardofs;
 
 public:
     
