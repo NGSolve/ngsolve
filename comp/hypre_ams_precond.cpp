@@ -210,7 +210,7 @@ namespace ngcomp
 	for (int i = 0; i < ndof; i++)
 	  if (global_nums[i] != -1)
 	    global_nums[i] += first_master_dof[this->rank];    
-	ScatterDofData (global_nums, *pardofs);
+	ScatterDofData (global_nums, pardofs);
 	ilower = first_master_dof[this->rank];
 	iupper = first_master_dof[this->rank+1]-1;
       };    
@@ -219,9 +219,9 @@ namespace ngcomp
     this->h1_freedofs = this->h1fes->GetFreeDofs();
     this->h1_ndof = this->h1_freedofs->Size();
     if(parallel) {
-      this->hc_pardofs = shared_ptr<ParallelDofs>(const_cast<ParallelDofs*>(&this->hcurlfes->GetParallelDofs()), NOOP_Deleter);
+      this->hc_pardofs = this->hcurlfes->GetParallelDofs();
       (void) compute_global_nums(this->hc_ndof, this->hcurlfes, this->hc_pardofs, this->hc_global_nums, this->hc_ilower, this->hc_iupper);
-      this->h1_pardofs = shared_ptr<ParallelDofs>(const_cast<ParallelDofs*>(&this->h1fes->GetParallelDofs()), NOOP_Deleter);
+      this->h1_pardofs = this->h1fes->GetParallelDofs();
       (void) compute_global_nums(this->h1_ndof, this->h1fes, this->h1_pardofs, this->h1_global_nums, this->h1_ilower, this->h1_iupper);
       this->hc_masterdofs.SetSize(this->hc_iupper-this->hc_ilower+1);
       int s = 0;
@@ -234,7 +234,7 @@ namespace ngcomp
       this->hc_intrange.SetSize(this->hc_iupper-this->hc_ilower+1);
       for(auto k:Range(this->hc_intrange.Size()))
 	this->hc_intrange[k] = this->hc_ilower+k;
-      ParallelVVector<double> v1(this->hc_pardofs.get());
+      ParallelVVector<double> v1(this->hc_pardofs);
       BaseVector & bv1(v1);
       v1.FVDouble() = 0.0;
       for(auto k:Range(this->hc_ndof))
@@ -242,7 +242,7 @@ namespace ngcomp
 	  v1.FVDouble()[k] = 1;
       bv1.SetParallelStatus(CUMULATED);
       int fdhc = (int) InnerProduct(bv1,bv1);
-      ParallelVVector<double> v2(this->h1_pardofs.get());
+      ParallelVVector<double> v2(this->h1_pardofs);
       BaseVector & bv2(v2);
       v2.FVDouble() = 0.0;
       for(auto k:Range(this->h1_ndof))
