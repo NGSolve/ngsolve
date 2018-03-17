@@ -43,34 +43,34 @@ namespace ngla
     // : mat(*amat), pardofs(*apardofs) 
     // {const_cast<BaseMatrix&>(mat).SetParallelDofs (apardofs);}
 
-    virtual ~ParallelMatrix ();
-    virtual bool IsComplex() const { return mat->IsComplex(); } 
-    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
-    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const;
+    virtual ~ParallelMatrix () override;
+    virtual bool IsComplex() const override { return mat->IsComplex(); } 
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
 
-    virtual BaseVector & AsVector() { return mat->AsVector(); }
-    virtual const BaseVector & AsVector() const { return mat->AsVector(); }
+    virtual BaseVector & AsVector() override { return mat->AsVector(); }
+    virtual const BaseVector & AsVector() const override { return mat->AsVector(); }
 
     shared_ptr<BaseMatrix> GetMatrix() const { return mat; }
-    virtual shared_ptr<BaseMatrix> CreateMatrix () const;
-    virtual AutoVector CreateVector () const;
+    virtual shared_ptr<BaseMatrix> CreateMatrix () const override;
+    virtual AutoVector CreateVector () const override;
 
-    virtual ostream & Print (ostream & ost) const;
+    virtual ostream & Print (ostream & ost) const override;
 
-    virtual int VHeight() const;
-    virtual int VWidth() const;
+    virtual int VHeight() const override;
+    virtual int VWidth() const override;
 
     // virtual const ParallelDofs * GetParallelDofs () const {return &pardofs;}
 
 
-    virtual shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<BitArray> subset = 0) const;
+    virtual shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<BitArray> subset = 0) const override;
     template <typename TM>
     shared_ptr<BaseMatrix> InverseMatrixTM (shared_ptr<BitArray> subset = 0) const;
 
     virtual shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<const Array<int>> clusters) const override;
-    virtual INVERSETYPE SetInverseType ( INVERSETYPE ainversetype ) const;
-    virtual INVERSETYPE SetInverseType ( string ainversetype ) const;
-    virtual INVERSETYPE  GetInverseType () const;
+    virtual INVERSETYPE SetInverseType ( INVERSETYPE ainversetype ) const override;
+    virtual INVERSETYPE SetInverseType ( string ainversetype ) const override;
+    virtual INVERSETYPE  GetInverseType () const override;
   };
 
   class FETI_Jump_Matrix : public BaseMatrix
