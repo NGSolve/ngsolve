@@ -397,10 +397,10 @@ namespace ngcomp
                   inv = pwbmat -> InverseMatrix (wb_free_dofs);
 
 	      tmp = new ParallelVVector<TV>(ndof, pardofs);
-	      innersolve = make_shared<ParallelMatrix> (shared_ptr<BaseMatrix> (innersolve, NOOP_Deleter), pardofs);
-	      harmonicext = make_shared<ParallelMatrix> (shared_ptr<BaseMatrix> (harmonicext, NOOP_Deleter), pardofs);
+	      innersolve = make_shared<ParallelMatrix> (innersolve, pardofs);
+	      harmonicext = make_shared<ParallelMatrix> (harmonicext, pardofs);
 	      if (harmonicexttrans)
-		harmonicexttrans = make_shared<ParallelMatrix> (shared_ptr<BaseMatrix> (harmonicexttrans, NOOP_Deleter), pardofs);
+		harmonicexttrans = make_shared<ParallelMatrix> (harmonicexttrans, pardofs);
 	    }
 	  else
 #endif
