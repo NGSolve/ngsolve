@@ -469,7 +469,7 @@ namespace ngcomp
       timerharmonicexttrans.Start();
 
       if (bfa->SymmetricStorage())
-	y += Transpose(harmonicext) * x; 
+	y += Transpose(*harmonicext) * x; 
       else
 	y += *harmonicexttrans * x;
 
