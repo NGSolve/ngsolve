@@ -1550,14 +1550,15 @@ namespace ngla
     timer0.Stop();    
     */
     timer1.Start();
-    
+
     RunParallelDependency (micro_dependency, micro_dependency_trans,
                            [&,hy] (int nr) 
                            {
                              auto task = microtasks[nr];
                              size_t blocknr = task.blocknr;
                              auto range = BlockDofs (blocknr);
-                            
+                             if (range.Size()==0) return;
+                             
                              // if (task.solveL)
                              if (task.type == MicroTask::LB_BLOCK)
                                { // first L, then B
@@ -1668,6 +1669,7 @@ namespace ngla
                              auto task = microtasks[nr];
                              int blocknr = task.blocknr;
                              auto range = BlockDofs (blocknr);
+                             if (range.Size()==0) return;
                              
                              if (task.type == MicroTask::LB_BLOCK)
                                { // first B then L
