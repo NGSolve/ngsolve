@@ -30,10 +30,10 @@ namespace ngla
     size_t global_ndof;
 
     /// proc 2 dofs
-    Table<int> * exchangedofs;
+    Table<int> exchangedofs;
     
     /// dof 2 procs
-    Table<int> * dist_procs;
+    Table<int> dist_procs;
 
     /// all procs with connected dofs
     Array<int> all_dist_procs;
@@ -50,22 +50,19 @@ namespace ngla
        Table adist_procs must provide the distant processes for each dof.
        table 
      */
-    ParallelDofs (MPI_Comm acomm, Table<int> * adist_procs, 
+    ParallelDofs (MPI_Comm acomm, Table<int> && adist_procs, 
 		  int dim = 1, bool iscomplex = false);
 
     
-    virtual ~ParallelDofs()  
-    { 
-      delete exchangedofs;
-    }
+    virtual ~ParallelDofs()  { ; }
 
-    int GetNTasks() const { return exchangedofs->Size(); }
+    int GetNTasks() const { return exchangedofs.Size(); }
 
     FlatArray<int> GetExchangeDofs (int proc) const
-    { return (*exchangedofs)[proc]; }
+    { return exchangedofs[proc]; }
 
     FlatArray<int> GetDistantProcs (int dof) const
-    { return (*dist_procs)[dof]; }
+    { return dist_procs[dof]; }
 
     FlatArray<int> GetDistantProcs () const
     { return all_dist_procs; }
@@ -78,7 +75,7 @@ namespace ngla
     size_t GetNDofGlobal () const { return global_ndof; }
 
     bool IsExchangeProc (int proc) const
-    { return (*exchangedofs)[proc].Size() != 0; }
+    { return exchangedofs[proc].Size() != 0; }
 
     MPI_Datatype MyGetMPI_Type (int dest) const
     { return mpi_t[dest]; }

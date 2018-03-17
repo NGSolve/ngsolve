@@ -2676,8 +2676,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
 
-  Table<int> * Nodes2Table (const MeshAccess & ma,
-			    const Array<NodeId> & dofnodes)
+  Table<int> Nodes2Table (const MeshAccess & ma,
+                          const Array<NodeId> & dofnodes)
   {
     int ndof = dofnodes.Size();
 
@@ -2690,14 +2690,14 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	ma.GetDistantProcs (dofnodes[i], distprocs);
 	ndistprocs[i] = distprocs.Size();
       }
-
-    Table<int> * dist_procs = new Table<int> (ndistprocs);
+    
+    Table<int> dist_procs(ndistprocs);
 
     for (int i = 0; i < ndof; i++)
       {
 	if (dofnodes[i].GetNr() == -1) continue;
 	ma.GetDistantProcs (dofnodes[i], distprocs);
-	(*dist_procs)[i] = distprocs;
+	dist_procs[i] = distprocs;
       }
 
     return dist_procs;
