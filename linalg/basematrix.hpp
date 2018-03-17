@@ -240,43 +240,42 @@ namespace ngla
   */
   class Transpose : public BaseMatrix
   {
-    shared_ptr<BaseMatrix> bm;
+    const BaseMatrix & bm;
   public:
     ///
-    Transpose (shared_ptr<BaseMatrix> abm) : bm(abm) { ; }
-    Transpose (const BaseMatrix & abm) : bm(const_cast<BaseMatrix&>(abm).shared_from_this()) { ; }
+    Transpose (const BaseMatrix & abm) : bm(abm) { ; }
     ///
-    virtual bool IsComplex() const { return bm->IsComplex(); }
+    virtual bool IsComplex() const { return bm.IsComplex(); }
 
     ///
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const
     {
-      bm->MultTransAdd (s, x, y);
+      bm.MultTransAdd (s, x, y);
     }
     ///
     virtual void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const 
     {
-      bm->MultTransAdd (s, x, y);
+      bm.MultTransAdd (s, x, y);
     }
     ///
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
     {
-      bm->MultAdd (s, x, y);
+      bm.MultAdd (s, x, y);
     }
     ///
     virtual void MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const
     {
-      bm->MultAdd (s, x, y);
+      bm.MultAdd (s, x, y);
     }  
 
-    virtual int VHeight() const { return bm->VWidth(); }
-    virtual int VWidth() const { return bm->VHeight(); }
+    virtual int VHeight() const { return bm.VWidth(); }
+    virtual int VWidth() const { return bm.VHeight(); }
 
 
     virtual ostream & Print (ostream & ost) const
     {
       ost << "Transpose of " << endl;
-      bm->Print(ost);
+      bm.Print(ost);
       return ost;
     }
   };
