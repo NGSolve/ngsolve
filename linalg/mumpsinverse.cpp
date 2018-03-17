@@ -422,7 +422,7 @@ namespace ngla
   ParallelMumpsInverse (const BaseSparseMatrix & ba, 
 			shared_ptr<BitArray> inner,
 			shared_ptr<const Array<int>> cluster,
-			const ParallelDofs * pardofs,
+			shared_ptr<ParallelDofs> pardofs,
 			bool asymmetric)
   { 
     static Timer timer ("Mumps Inverse");

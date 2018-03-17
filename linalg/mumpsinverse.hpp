@@ -123,7 +123,7 @@ namespace ngla
     ParallelMumpsInverse (const BaseSparseMatrix & a, 
 			  shared_ptr<BitArray> ainner,
 			  shared_ptr<const Array<int>> acluster,
-			  const ParallelDofs * pardofs,
+			  shared_ptr<ParallelDofs> pardofs,
 			  bool symmetric = 0);
 
     ///
