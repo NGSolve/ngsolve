@@ -884,28 +884,17 @@ mesh (netgen.Mesh): a mesh generated from Netgen
     .def(py::init<shared_ptr<netgen::Mesh>>())
     
 #ifndef PARALLEL
-    /*
-    .def("__init__",
-         [](MeshAccess *instance, const string & filename)
-                           { 
-                             new (instance) MeshAccess(filename);
-                           },
-          py::arg("filename"))
-    */
     .def(py::init([](const string & filename)
                   { return make_shared<MeshAccess>(filename); }),
           py::arg("filename"))
 #else
-
-    .def("__init__",
-         [](MeshAccess *instance, const string & filename)
-                           { 
-                             ngs_comm = MPI_COMM_WORLD;
-
-                             NGSOStream::SetGlobalActive (MyMPI_GetId()==0);
-                             new (instance) MeshAccess (filename, ngs_comm);
-                           },
-          py::arg("filename"))
+    .def(py::init([](const string & filename, PyMPI_Comm c)
+                  {
+                    ngs_comm = c.comm;
+                    NGSOStream::SetGlobalActive (MyMPI_GetId(c.comm)==0);                      
+                    return make_shared<MeshAccess>(filename, c.comm);
+                  }),
+         py::arg("filename"), py::arg("comm")=PyMPI_Comm(MPI_COMM_WORLD))
 #endif
 
     
