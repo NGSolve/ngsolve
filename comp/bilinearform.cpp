@@ -4279,13 +4279,7 @@ namespace ngcomp
   {
     if (!this->multilevel || this->low_order_bilinear_form)
       for (int i = 0; i < this->mats.Size(); i++)
-        {
-          /*
-          delete this->mats[i];
-          this->mats[i] = 0;
-          */
-          this->mats[i].reset();
-        }
+        this->mats[i].reset();
   }
 
 
@@ -4363,60 +4357,6 @@ namespace ngcomp
   }
 
 
-  /*
-  template <class SCAL>
-  void S_BilinearForm<SCAL> :: ApplyElementMatrix(const BaseVector & x,
-                                                  BaseVector & y,
-                                                  const SCAL & val,
-                                                  const Array<int> & dnums,
-                                                  const ElementTransformation & eltrans,
-                                                  const int elnum,
-                                                  const int type,
-                                                  int & cnt,
-                                                  LocalHeap & lh,
-                                                  const FiniteElement * fel,
-                                                  const SpecialElement * sel) const
-  {
-    FlatVector<SCAL> elvecx (dnums.Size() * this->fespace->GetDimension(), lh);
-    FlatVector<SCAL> elvecy (dnums.Size() * this->fespace->GetDimension(), lh);
-
-    x.GetIndirect (dnums, elvecx);
-
-    if(type == 0 || type == 1)
-      {
-        this->fespace->TransformVec (ElementId(VorB(type), elnum), elvecx, TRANSFORM_SOL);
-
-        for (int j = 0; j < this->NumIntegrators(); j++)
-          {
-            BilinearFormIntegrator & bfi = *this->parts[j];
-            if (bfi.SkeletonForm()) continue;
-            if (type == 0 && bfi.BoundaryForm()) continue;
-            if (type == 0 && !bfi.DefinedOn (this->ma->GetElIndex (elnum))) continue;
-            if (type == 1 && !bfi.BoundaryForm()) continue;
-            if (type == 1 && !bfi.DefinedOn (this->ma->GetSElIndex (elnum))) continue;
-            
-            if (this->precompute)
-              bfi.ApplyElementMatrix (*fel, eltrans, elvecx, elvecy, 
-                                      this->precomputed_data[elnum*this->NumIntegrators()+j], lh);
-            else
-              bfi.ApplyElementMatrix (*fel, eltrans, elvecx, elvecy, 0, lh);
-
-            this->fespace->TransformVec (ElementId(VorB(type), elnum), elvecy, TRANSFORM_RHS);
-
-            elvecy *= val;
-            y.AddIndirect (dnums, elvecy, fespace->HasAtomicDofs());  // coloring	    
-          }
-      }
-    else if (type == 2)
-      {
-        sel->Apply (elvecx, elvecy, lh);
-        elvecy *= val;
-        y.AddIndirect (dnums, elvecy);
-      }
-                      
-  }
-  */
-
   template <class TM, class TV>
   T_BilinearFormSymmetric<TM,TV> :: 
   T_BilinearFormSymmetric (shared_ptr<FESpace> afespace, const string & aname,
@@ -4434,14 +4374,9 @@ namespace ngcomp
   template <class TM, class TV>
   T_BilinearFormSymmetric<TM,TV> :: 
   ~T_BilinearFormSymmetric ()
-  {
-    /*
-    for (int i = 0; i < this->mats.Size(); i++)
-      delete this->mats[i];
-    */
-  }
+  { ; }
 
-
+  
   template <class TM, class TV>
   void T_BilinearFormSymmetric<TM,TV> :: 
   AllocateMatrix ()

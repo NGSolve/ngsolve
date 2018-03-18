@@ -962,76 +962,9 @@ namespace ngla
   }
 
 
-#ifdef NONE
-  template <class TM>
-  SparseMatrixTM<TM> ::
-  SparseMatrixTM (int as, int max_elsperrow)
-    : // BaseMatrix(),
-      BaseSparseMatrix (as, max_elsperrow),
-      //      S_BaseMatrix<typename mat_traits<TM>::TSCAL> (),
-      nul(TSCAL(0))
-  {
-    /*
-    data.Alloc (nze);
-    data.SetName ("sparse matrix");
-    */
-    data.SetSize (nze);
-  }
-
-
-  template <class TM>
-  SparseMatrixTM<TM> ::
-  SparseMatrixTM (const Array<int> & elsperrow, int awidth)
-    : // BaseMatrix(),
-    BaseSparseMatrix (elsperrow, awidth), 
-      // S_BaseMatrix<typename mat_traits<TM>::TSCAL> (),
-      nul(TSCAL(0))
-  { 
-    /*
-    data.Alloc (nze);
-    data.SetName ("sparse matrix");
-    */
-    data.SetSize (nze);
-  }
-
-  template <class TM>
-  SparseMatrixTM<TM> ::
-  SparseMatrixTM (int size, const Table<int> & rowelements, 
-		  const Table<int> & colelements, bool symmetric)
-    : BaseSparseMatrix (size, rowelements, colelements, symmetric), 
-      nul(TSCAL(0))
-  { 
-    data.SetSize (nze);
-  }
-
-  template <class TM>
-  SparseMatrixTM<TM> ::
-  SparseMatrixTM (const MatrixGraph & agraph, bool stealgraph)
-    : BaseSparseMatrix (agraph, stealgraph), 
-      nul(TSCAL(0))
-  { 
-    data.SetSize (nze);
-    FindSameNZE();
-  }
-
-  template <class TM>
-  SparseMatrixTM<TM> ::
-  SparseMatrixTM (const SparseMatrixTM & amat)
-    : BaseSparseMatrix (amat), 
-      nul(TSCAL(0)) 
-  { 
-    data.SetSize(nze);
-    AsVector() = amat.AsVector(); 
-  }
-#endif
-
-
   template <class TM>
   SparseMatrixTM<TM> :: ~SparseMatrixTM ()
-  { 
-    // delete data; 
-    // (this->data).Free();
-  }
+  { ; }
 
 
   template <class TM>
@@ -1369,16 +1302,6 @@ namespace ngla
   {
     return make_shared<SparseMatrix> (*this);
   }
-
-  /*
-  template <class TM, class TV_ROW, class TV_COL>
-  BaseMatrix *  SparseMatrix<TM,TV_ROW,TV_COL> ::
-  CreateMatrix (const Array<int> & elsperrow) const
-  {
-    SparseMatrix * newmat = new SparseMatrix(elsperrow);
-    return newmat;
-  }
-  */
 
   template <class TM, class TV_ROW, class TV_COL>
   AutoVector SparseMatrix<TM,TV_ROW,TV_COL> ::
@@ -1746,17 +1669,7 @@ namespace ngla
     t1.Stop();
     t2.Start();
     auto trans = make_shared<SparseMatrix<double>>(cnt, mat.Height());
-    /*
-    cnt = 0;
-    for (int i = 0; i < mat.Height(); i++)
-      for (int ci : Range(mat.GetRowIndices(i)))
-        {
-          int c = mat.GetRowIndices(i)[ci];
-          int pos = cnt[c]++;
-          trans -> GetRowIndices(c)[pos] = i;
-          trans -> GetRowValues(c)[pos] = mat.GetRowValues(i)[ci];
-        }
-    */
+
     cnt = 0;
     ParallelFor (mat.Height(), [&] (int i)
                  {
@@ -1795,7 +1708,6 @@ namespace ngla
     auto full = make_shared<SparseMatrix<double>>(cnt);
     cnt = 0;
 
-    //for (int i = 0; i < mat.Height(); i++)
     ParallelFor (mat.Height(), [&] (int i)
                  {
                    for (int ci : Range(mat.GetRowIndices(i)))
@@ -2333,20 +2245,6 @@ namespace ngla
   template <class TM, class TV>
   shared_ptr<BaseMatrix> SparseMatrixSymmetric<TM,TV> :: InverseMatrix (shared_ptr<BitArray> subset) const
   {
-    // #ifndef ASTRID
-    // #ifdef USE_SUPERLU
-    //     return new SuperLUInverse<TM> (*this, subset, 0, 1);
-    // #else
-    // #ifdef USE_PARDISO
-    //     return new PardisoInverse<TM,TV,TV> (*this, subset, 0, 1);
-    // #else
-    //     return new SparseCholesky<TM,TV,TV> (*this, subset);
-    // #endif
-    // #endif
-    // #endif
-
-    // #ifdef ASTRID
-
     if ( this->GetInverseType() == SUPERLU_DIST )
       throw Exception ("SparseMatrix::InverseMatrix:  SuperLU_DIST_Inverse not available");
 
@@ -2383,27 +2281,11 @@ namespace ngla
       }
     else
       return make_shared<SparseCholesky<TM,TV_ROW,TV_COL>> (*this, subset);
-    // #endif
   }
 
   template <class TM, class TV>
   shared_ptr<BaseMatrix> SparseMatrixSymmetric<TM,TV> :: InverseMatrix (shared_ptr<const Array<int>> clusters) const
   {
-    // #ifndef ASTRID
-    // #ifdef USE_SUPERLU
-    //     return new SuperLUInverse<TM> (*this, 0, clusters, 1);
-    // #else
-    // #ifdef USE_PARDISO
-    //     return new PardisoInverse<TM,TV,TV> (*this, 0, clusters, 1);
-    // #else
-    //     return new SparseCholesky<TM,TV,TV> (*this, 0, clusters);
-    // #endif
-    // #endif
-    // #endif
-
-    
-    // #ifdef ASTRID
-
     if ( this->GetInverseType() == SUPERLU_DIST )
       throw Exception ("SparseMatrix::InverseMatrix:  SuperLU_DIST_Inverse not available");
 
@@ -2440,7 +2322,6 @@ namespace ngla
       }
     else
       return make_shared<SparseCholesky<TM,TV_ROW,TV_COL>> (*this, nullptr, clusters);
-    // #endif
   }
 
 
