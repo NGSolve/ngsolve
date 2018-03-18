@@ -11,6 +11,7 @@ add_library(ngla ${NGS_LIB_TYPE}
         sparsematrix.cpp special_matrix.cpp superluinverse.cpp		     
         mumpsinverse.cpp elementbyelement.cpp arnoldi.cpp paralleldofs.cpp   
         python_linalg.cpp umfpackinverse.cpp
+        ../parallel/parallelvvector.cpp ../parallel/parallel_matrices.cpp 
         )
 
 target_compile_definitions(ngla PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
