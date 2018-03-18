@@ -473,7 +473,11 @@ public:
 
 #endif
 
-  
+  // for Python wrapping ...
+  struct PyMPI_Comm {
+    MPI_Comm comm;
+    PyMPI_Comm (MPI_Comm _comm) : comm(_comm) { ; } 
+  };
 
 }
 
