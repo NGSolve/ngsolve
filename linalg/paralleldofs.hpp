@@ -24,7 +24,7 @@ namespace ngla
     MPI_Comm comm;
     
     /// local ndof
-    int ndof;
+    size_t ndof;
 
     /// global ndof
     size_t global_ndof;
@@ -67,10 +67,10 @@ namespace ngla
     FlatArray<int> GetDistantProcs () const
     { return all_dist_procs; }
 
-    bool IsMasterDof ( int localdof ) const
+    bool IsMasterDof (size_t localdof) const
     { return ismasterdof.Test(localdof); }
 
-    int GetNDofLocal () const { return ndof; }
+    size_t GetNDofLocal () const { return ndof; }
 
     size_t GetNDofGlobal () const { return global_ndof; }
 
@@ -102,7 +102,8 @@ namespace ngla
     template <typename T>
     void AllReduceDofData (FlatArray<T> data, MPI_Op op) const
     {
-      if (this == NULL) return;
+      if (this == NULL)  // illformed C++, shall get rid of this
+        throw Exception("AllReduceDofData for null-object");
       ReduceDofData (data, op);
       ScatterDofData (data);
     }
@@ -137,20 +138,23 @@ namespace ngla
   template <typename T>
   void ReduceDofData (FlatArray<T> data, MPI_Op op, const shared_ptr<ParallelDofs> & pardofs)
   {
-    pardofs->ReduceDofData(data, op);
+    if (pardofs)
+      pardofs->ReduceDofData(data, op);
   }
 
   template <typename T>
   void ScatterDofData (FlatArray<T> data, const shared_ptr<ParallelDofs> & pardofs)
   {
-    pardofs->ScatterDofData (data);
+    if (pardofs)
+      pardofs->ScatterDofData (data);
   }
 
   template <typename T>
   void AllReduceDofData (FlatArray<T> data, MPI_Op op, 
 			 const shared_ptr<ParallelDofs> & pardofs)
-  { 
-    pardofs->AllReduceDofData (data, op);
+  {
+    if (pardofs)
+      pardofs->AllReduceDofData (data, op);
   }
 
 
@@ -161,7 +165,10 @@ namespace ngla
   template <typename T>
   void ParallelDofs::ReduceDofData (FlatArray<T> data, MPI_Op op) const
   {
-    if (this == NULL) return;
+    if (this == NULL)  // illformed C++, shall get rid of this
+      throw Exception("ReduceDofData for null-object");
+    static Timer t("ParallelDofs::ReduceDofData"); RegionTimer reg(t);
+
     int ntasks = GetNTasks ();
     int rank = MyMPI_GetId(comm);
     if (ntasks <= 1) return;
@@ -258,7 +265,8 @@ namespace ngla
   template <typename T>
   void ParallelDofs :: ScatterDofData (FlatArray<T> data) const
   {
-    if (this == NULL) return;
+    if (this == NULL)   // illformed C++, shall get rid of this
+      throw Exception("ScatterDofData for null-object");
 
     MPI_Comm comm = GetCommunicator();
 
