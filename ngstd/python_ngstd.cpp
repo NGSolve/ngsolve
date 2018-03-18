@@ -145,10 +145,6 @@ const char* docu_string(const char* str)
   return newchar;
 }
 
-struct PyMPI {
-  MPI_Comm comm;
-  PyMPI (MPI_Comm _comm) : comm(_comm) { ; } 
-};
 
 void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
 
@@ -488,9 +484,9 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
   py::class_<MemoryView>(m, "_MemoryView");
 
   
-  py::class_<PyMPI> (m, "MPI_Comm")
-    .def_property_readonly ("rank", [](PyMPI c) { return MyMPI_GetId(c.comm); })
-    .def_property_readonly ("size", [](PyMPI c) { return MyMPI_GetNTasks(c.comm); })
+  py::class_<PyMPI_Comm> (m, "MPI_Comm")
+    .def_property_readonly ("rank", [](PyMPI_Comm c) { return MyMPI_GetId(c.comm); })
+    .def_property_readonly ("size", [](PyMPI_Comm c) { return MyMPI_GetNTasks(c.comm); })
     ;
 
   
@@ -504,7 +500,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
           int argc2 = 1;
           
           static MyMPI mympi(1, (char**)pptr);
-          return PyMPI(ngs_comm);
+          return PyMPI_Comm(ngs_comm);
         });
 
 }
