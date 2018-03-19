@@ -484,15 +484,82 @@ namespace ngla
 
 
 
+  FETI_Jump_Matrix :: FETI_Jump_Matrix (shared_ptr<ParallelDofs> apardofs)
+      : BaseMatrix(apardofs)
+  {
+    
+    size_t njs = 0;
+    for(auto p:paralleldofs->GetDistantProcs())
+      njs += paralleldofs->GetExchangeDofs(p).Size();
 
+    Array<size_t> ones(njs);
+    ones = 1;
+    Table<int>* dps = new Table<int>(ones);
+    njs = 0;
+    for(auto p:paralleldofs->GetDistantProcs()) {
+      for(auto d:paralleldofs->GetExchangeDofs(p)) {
+	(*dps)[njs++][0] = p;
+      }
+    }    
+
+    this->jump_paralleldofs = make_shared<ParallelDofs>(paralleldofs->GetCommunicator(), dps);
+
+    return;
+  }
 
 
   void FETI_Jump_Matrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
-  { ; }
+  {
+    y.Distribute();
+    size_t count = 0;
+    for(auto p:paralleldofs->GetDistantProcs()) {
+      auto exdofs = paralleldofs->GetExchangeDofs(p);
+      if(p<MyMPI_GetId(paralleldofs->GetCommunicator())) {
+	for(auto k:Range(exdofs.Size())) {
+	  y.FVDouble()[count++] -= s*x.FVDouble()[exdofs[k]];
+	}
+      }
+      else {
+	for(auto k:Range(exdofs.Size())) {
+	  y.FVDouble()[count++] += s*x.FVDouble()[exdofs[k]];
+	}
+      }
+    }
+    return;
+  }
 
   void FETI_Jump_Matrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
-  { ; }
+  {
+    x.Cumulate();
+    size_t count = 0;
+    for(auto p:paralleldofs->GetDistantProcs()) {
+      auto exdofs = paralleldofs->GetExchangeDofs(p);
+      if(p<MyMPI_GetId(paralleldofs->GetCommunicator())) {
+	for(auto k:Range(exdofs.Size())) {
+	  y.FVDouble()[exdofs[k]] -= s*x.FVDouble()[count++];
+	}
+      }
+      else {
+	for(auto k:Range(exdofs.Size())) {
+	  y.FVDouble()[exdofs[k]] += s*x.FVDouble()[count++];
+	}
+      }
+    }
+    return;
+  }
 
+  AutoVector FETI_Jump_Matrix :: CreateRowVector () const
+  {
+    return make_shared<VVector<double>> (paralleldofs->GetNDofLocal());
+  }
+  
+  AutoVector FETI_Jump_Matrix :: CreateColVector () const
+  {
+    return make_shared<ParallelVVector<double>> (jump_paralleldofs->GetNDofLocal(),
+						 jump_paralleldofs);
+  }
+
+  
 }
 
 #endif
