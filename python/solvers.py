@@ -43,6 +43,7 @@ def CG(mat, rhs, pre=None, sol=None, precision=1e-12, maxsteps = 100, printrates
 
 
 
+
 def QMR(matrix, rhs, fdofs, pre1=None, pre2=None, sol=None, maxsteps = 100, printrates = True, initialize = True, ep = 1.0, tol = 1e-7):
 	
 	u = sol if sol else rhs.CreateVector()
@@ -167,8 +168,7 @@ def QMR(matrix, rhs, fdofs, pre1=None, pre2=None, sol=None, maxsteps = 100, prin
 		u.data += d
 		r.data -= s
 
-		#Projeziertes Residuum notwendig
-		#langsam, falsch?
+		#Projected residuum: Better terminating condition necessary?
 		ResNorm = sqrt( np.dot(r.FV().NumPy()[fdofs],r.FV().NumPy()[fdofs]))
 		#ResNorm = sqrt(InnerProduct(r,r))
 		
@@ -181,8 +181,7 @@ def QMR(matrix, rhs, fdofs, pre1=None, pre2=None, sol=None, maxsteps = 100, prin
 
 
 
-
-#Quelle: Compare https://www.cambridge.org/core/services/aop-cambridge-core/content/view/7F3C249348A14FA44CF4A6A1B6107FAD/9780511615115c6_p65-94_CBO.pdf/gmres_and_minres.pdf
+#Compare: Iterative Krylov methods for large linear systems - Henk A. van der Vorst
 def MinRes(matrix, rhs, pre=None, sol=None, maxsteps = 100, printrates = True, initialize = True, tol = 1e-7):
 
 	u = sol if sol else rhs.CreateVector()
@@ -246,7 +245,7 @@ def MinRes(matrix, rhs, pre=None, sol=None, maxsteps = 100, printrates = True, i
 		tmp = -sigma_new * eta
 		eta = tmp
 
-		#Residuenupdate
+		#update of residuum
 		ResNorm = abs(sigma_new) * ResNorm_old
 		
 		print("it = ", j, " Residuennorm = ", ResNorm)		
