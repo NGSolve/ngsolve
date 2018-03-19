@@ -494,15 +494,15 @@ namespace ngla
 
     Array<size_t> ones(njs);
     ones = 1;
-    Table<int>* dps = new Table<int>(ones);
+    Table<int> dps(ones);
     njs = 0;
     for(auto p:paralleldofs->GetDistantProcs()) {
       for(auto d:paralleldofs->GetExchangeDofs(p)) {
-	(*dps)[njs++][0] = p;
+	dps[njs++][0] = p;
       }
     }    
 
-    this->jump_paralleldofs = make_shared<ParallelDofs>(paralleldofs->GetCommunicator(), dps);
+    this->jump_paralleldofs = make_shared<ParallelDofs>(paralleldofs->GetCommunicator(), move(dps));
 
     return;
   }
