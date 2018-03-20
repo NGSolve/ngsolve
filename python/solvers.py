@@ -181,7 +181,7 @@ def QMR(matrix, rhs, fdofs, pre1=None, pre2=None, sol=None, maxsteps = 100, prin
 
 
 
-#Compare: Iterative Krylov methods for large linear systems - Henk A. van der Vorst
+#Source: Michael Kolmbauer https://www.numa.uni-linz.ac.at/Teaching/PhD/Finished/kolmbauer-diss.pdf
 def MinRes(matrix, rhs, pre=None, sol=None, maxsteps = 100, printrates = True, initialize = True, tol = 1e-7):
 
 	u = sol if sol else rhs.CreateVector()
@@ -189,81 +189,90 @@ def MinRes(matrix, rhs, pre=None, sol=None, maxsteps = 100, printrates = True, i
 	v_new = rhs.CreateVector()
 	v = rhs.CreateVector()	
 	v_old = rhs.CreateVector()
+	w_new = rhs.CreateVector()
 	w = rhs.CreateVector()
 	w_old = rhs.CreateVector()
-	w_2old = rhs.CreateVector()
-	hv = rhs.CreateVector()
-	
+	z_new = rhs.CreateVector()
+	z = rhs.CreateVector()
+
 	if (initialize):
 		u[:] = 0.0
-		hv.data = rhs
+		v.data = rhs
 	else:
-		hv.data = rhs - matrix * u
+		v.data = rhs - matrix * u
 		
-	v.data = pre * hv if pre else hv
+	z.data = pre * v if pre else v
 	
 	#First Step
-	beta = sqrt(InnerProduct(v,v))
-	ResNorm = beta
-	ResNorm_old = beta
+	gamma = sqrt(InnerProduct(z,v))
+	gamma_new = 0
+	z.data = 1/gamma * z 
+	v.data = 1/gamma * v	
+	
+		
+	ResNorm = gamma     
+	ResNorm_old = gamma  
 	
 	if (printrates):
 		print("it = ", 0, " Residuennorm = ", ResNorm)		
 		
-	eta = beta
-	gamma = 1
-	gamma_old = 1
-	sigma = 0
-	sigma_old = 0
+	eta_old = gamma
+	c_old = 1
+	c = 1
+	s_new = 0
+	s = 0
+	s_old = 0
 	
-	j = 1
-	while (j < maxsteps+1 and ResNorm > tol):
+	k = 1
+	while (k < maxsteps+1 and ResNorm > tol):
 
-		hv.data = 1.0 / beta * v
-		v.data = hv
+		delta = InnerProduct(z,z)
+		v_new.data = matrix*z - delta*v - gamma * v_old
 
-		v_new.data = matrix * v
-		hv.data = pre * v_new if pre else v_new
+		z_new.data = pre * v_new if pre else v_new
+
+		gamma_new = sqrt(InnerProduct(z_new, v_new))
+		z_new.data = 1/gamma_new * z_new
+		v_new.data = 1/gamma_new * v_new
+
+		alpha0 = c*delta - c_old*s*gamma	
+		alpha1 = sqrt(alpha0*alpha0 + gamma_new*gamma_new) #**
+		alpha2 = s*delta + c_old*c*gamma
+		alpha3 = s_old * gamma
+
+		c_new = alpha0/alpha1
+		s_new = gamma_new/alpha1
+
+		w_new.data = z - alpha3*w_old - alpha2*w
+		w_new.data = 1/alpha1 * w_new	
+
+		u.data += c_new*eta_old * w_new
+		eta = -s_new * eta_old
+
 		
-		alpha = InnerProduct(v,hv)
-			
-		v_new.data = hv - alpha * v - beta * v_old	
-		
-		beta_new = sqrt(InnerProduct(v_new, v_new))
-
-		delta = gamma * alpha - gamma_old * sigma * beta
-		rho1 = sqrt(delta * delta + beta_new * beta_new)
-		rho2 = sigma * alpha + gamma_old * gamma * beta
-		rho3 = sigma_old * beta
-	
-		gamma_new = delta / rho1
-		sigma_new = beta_new / rho1
-
-		w.data = 1.0 / rho1 * (v - rho3 * w_2old - rho2 * w_old)
-		u.data += gamma_new * eta * w
-
-		tmp = -sigma_new * eta
-		eta = tmp
-
 		#update of residuum
-		ResNorm = abs(sigma_new) * ResNorm_old
-		
-		print("it = ", j, " Residuennorm = ", ResNorm)		
-	
-		j += 1
+		ResNorm = abs(s_new) * ResNorm_old
+		print("it = ", k, " Residuennorm = ", ResNorm)	
+
+		k += 1
 
 		#updates
-		beta = beta_new
-		gamma_old = gamma
-		gamma = gamma_new
-		sigma_old = sigma
-		sigma = sigma_new
-		ResNorm_old = ResNorm
-		
 		v_old.data = v
 		v.data = v_new
 
-		w_2old.data = w_old
 		w_old.data = w
+		w.data = w_new
 
+		z.data = z_new
+
+		eta_old = eta
+		
+		s_old = s
+		s = s_new
+
+		c_old = c
+		c = c_new
+
+		gamma = gamma_new
+		ResNorm_old = ResNorm
 
