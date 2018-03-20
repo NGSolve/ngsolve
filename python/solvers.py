@@ -2,7 +2,7 @@ from ngsolve.la import InnerProduct
 from math import sqrt
 
 
-def CG(mat, rhs, pre=None, sol=None, precision=1e-12, maxsteps = 100, printrates = True, initialize = True):
+def CG(mat, rhs, pre=None, sol=None, tol=1e-12, maxsteps = 100, printrates = True, initialize = True):
     """preconditioned conjugate gradient method"""
 
     u = sol if sol else rhs.CreateVector()
@@ -34,7 +34,7 @@ def CG(mat, rhs, pre=None, sol=None, precision=1e-12, maxsteps = 100, printrates
         s.data += w
 
         err = sqrt(wd)
-        if err < precision*err0: break
+        if err < tol*err0: break
             
         if printrates:
             print ("it = ", it, " err = ", err)
