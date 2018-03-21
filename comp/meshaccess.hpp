@@ -926,22 +926,20 @@ namespace ngcomp
     /// the two parent vertices of a vertex. -1 for coarse-grid vertices
     void GetParentNodes (int pi, int * parents) const
     { 
-      Ng_GetParentNodes (pi+1, parents);
-      parents[0]--; parents[1]--; 
+      mesh.GetParentNodes (pi, parents);
     }
     INT<2> GetParentNodes (int pi) const
     {
       INT<2,int> parents;
-      Ng_GetParentNodes (pi+1, &parents[0]);
-      parents[0]--; parents[1]--;
+      mesh.GetParentNodes (pi, &parents[0]);
       return parents;
     }
     /// number of parent element on next coarser mesh
     int GetParentElement (int ei) const
-    { return Ng_GetParentElement (ei+1)-1; }
+    { return mesh.GetParentElement (ei); }
     /// number of parent boundary element on next coarser mesh
     int GetParentSElement (int ei) const
-    { return Ng_GetParentSElement (ei+1)-1; }
+    { return mesh.GetParentSElement (ei); }
   
     /// representant of vertex for anisotropic meshes
     int GetClusterRepVertex (int pi) const
