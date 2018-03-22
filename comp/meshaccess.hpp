@@ -31,6 +31,7 @@ namespace ngcomp
   {
     ElementId ei;
   public:
+    static string defaultstring;
     Ngs_Element (const netgen::Ng_Element & el, ElementId id) 
       : netgen::Ng_Element(el), ei(id) { ; }
     AOWrapper<decltype(vertices)> Vertices() const { return vertices; }
@@ -38,7 +39,7 @@ namespace ngcomp
     AOWrapper<decltype(edges)> Edges() const { return edges; }
     AOWrapper<decltype(faces)> Faces() const { return faces; }
     AOWrapper<decltype(facets)> Facets() const { return facets; }
-    const string & GetMaterial() const { return *mat; }
+    const string & GetMaterial() const { return mat ? *mat : defaultstring; }
     operator ElementId() const { return ei; }
     auto VB() const { return ei.VB(); }
     auto Nr() const { return ei.Nr(); }
