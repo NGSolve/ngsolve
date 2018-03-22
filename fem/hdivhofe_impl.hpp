@@ -519,7 +519,7 @@ template <typename MIP, typename TFA>
     if (ip.VB() == VOL && order > 1)
       {
 	//cout << "ord_inner =" << (int)(order_inner[0]) << ", order = " << order << endl;
-	/*LegendrePolynomial leg;
+	LegendrePolynomial leg;
 	JacobiPolynomialAlpha jac1(1);    
 	leg.EvalScaled1Assign 
 	  (order-2, lam[2]-lam[3], lam[2]+lam[3],
@@ -536,31 +536,43 @@ template <typename MIP, typename TFA>
 				      jac2.EvalMult(order-2 - k - j, 2 * lam[0] - 1, polsy, 
 						    SBLambda([&](size_t j, T val) LAMBDA_INLINE
 							     {
-							       shape[ii++] = Trans(mip.GetJacobianInverse())*Cross(Vec<3,T>(val,val,val),Vec<3,T>(x,y,z));
-							       //shape[ii++] = Trans(mip.GetJacobianInverse())*Cross(Vec<3,T>(0,val,0),Vec<3,T>(x,y,z));
+							       shape[ii++] = Trans(mip.GetJacobianInverse())*Cross(Vec<3,T>(val,0,0),Vec<3,T>(x,y,z));
+							       shape[ii++] = Trans(mip.GetJacobianInverse())*Cross(Vec<3,T>(0,val,0),Vec<3,T>(x,y,z));
 							       //shape[ii++] = Trans(mip.GetJacobianInverse())*Cross(Vec<3,T>(0,0,val),Vec<3,T>(x,y,z));
 							       shape[ii++] = Trans(mip.GetJacobianInverse())*Vec<3,T>(val, 0, 0);
 							       //shape[ii++] = Trans(mip.GetJacobianInverse())*Vec<3,T>(0, val, 0);
+							       
 							     }));
 				      jac2.IncAlpha2();
 				    }));
 		       jac1.IncAlpha2();
 		     }));
+	cout << "ii = " << ii << endl;
 
+	DubinerBasis3::Eval(order-2, x, y,
+                            SBLambda([&] (size_t nr, auto val)
+                                     {
+				       shape[ii++] = Trans(mip.GetJacobianInverse())*Cross(Vec<3,T>(0,0,val),Vec<3,T>(x,y,z));
+				     }));
+	cout << "ii = " << ii << endl;
 
 	DubinerBasis3::Eval(order-2, y, z,
                             SBLambda([&] (size_t nr, auto val)
                                      {
-				       shape[ii++] = Trans(mip.GetJacobianInverse())*Vec<3,T> (0, val,0);
-				       }));
+				       shape[ii++] = Trans(mip.GetJacobianInverse())*Vec<3,T>(0,val,0);
+				     }));
+
+	cout << "ii = " << ii << endl;
+
 	LegendrePolynomial::Eval(order-2,z,
 				 SBLambda([&] (size_t nr, auto val)
 					  {
 					    shape[ii++] = Trans(mip.GetJacobianInverse())*Vec<3,T>(0,0,val);
-					    }));*/
+					  }));
+	cout << "ii = " << ii << endl;
 
 
-	Vec<3,AutoDiff<3,T>> adp(mip);
+	/*Vec<3,AutoDiff<3,T>> adp(mip);
 	AutoDiff<3> lamt[4] = {adp[0],adp[1],adp[2],1-adp[0]-adp[1]-adp[2]};
        
 	for (int i = 0; i < 6; i++)
@@ -597,33 +609,38 @@ template <typename MIP, typename TFA>
 		AutoDiff<3> zeta = lamt[vop];   // lz 
 		
 		TetShapesFaceLegendre::CalcSplitted (order, xi, eta, zeta, adpol1, adpol2); 
-		
-		DubinerBasis3::EvalScaledMult (order-3, lamt[fav[0]], lamt[fav[1]], 1-lamt[vop], 
-					       lamt[fav[0]]*lamt[fav[1]]*lamt[fav[2]], 
-					       SBLambda ([&](int nr, AutoDiff<3> val)
-							 {
-							   shape[ii++] = Trans(mip.GetJacobianInverse())*Du (val).Value();
-							 }));
-		
+
+		if (order > 3)
+		  {
+		    DubinerBasis3::EvalScaledMult (order-4, lamt[fav[0]], lamt[fav[1]], 1-lamt[vop], 
+						   lamt[fav[0]]*lamt[fav[1]]*lamt[fav[2]], 
+						   SBLambda ([&](int nr, AutoDiff<3> val)
+							     {
+							       shape[ii++] = Trans(mip.GetJacobianInverse())*Du (val).Value();
+							     }));
+		  }
 		
 		for (int j = 0; j <= order-3; j++)
 		  for (int k = 0; k <= order-3-j; k++, ii++)
 		    shape[ii] = Trans(mip.GetJacobianInverse())*uDv_minus_vDu (adpol2[k], adpol1[j]).Value();
 		
 		// type 3
-		//for (int j = 0; j <= order-3; j++, ii++)
-		//  shape[ii] = wuDv_minus_wvDu (lamt[fav[1]], lamt[fav[2]], adpol2[j]).Value();
+		for (int j = 0; j <= order-3; j++, ii++)
+		  shape[ii] = wuDv_minus_wvDu (lamt[fav[1]], lamt[fav[2]], adpol2[j]).Value();
 	      }
 	  }
 
 	if (order > 3)
 	  {
 	    TetShapesInnerLegendre::CalcSplitted(order, x-(1-x-y-z), y, z,adpol1, adpol2, adpol3 );
-        
-	    for (int i = 0; i <= order-4; i++)
-	      for (int j = 0; j <= order-4-i; j++)
-		for (int k = 0; k <= order-4-i-j; k++)
-		  shape[ii++] = Trans(mip.GetJacobianInverse())*Du(adpol1[i] * adpol2[j] * adpol3[k]).Value();
+
+	    if (order > 4)
+	      {
+		for (int i = 0; i <= order-5; i++)
+		  for (int j = 0; j <= order-5-i; j++)
+		    for (int k = 0; k <= order-5-i-j; k++)
+		      shape[ii++] = Trans(mip.GetJacobianInverse())*Du(adpol1[i] * adpol2[j] * adpol3[k]).Value();
+	      }
         
 	    for (int i = 0; i <= order-4; i++)
 	      for (int j = 0; j <= order-4-i; j++)
@@ -633,10 +650,10 @@ template <typename MIP, typename TFA>
 		    shape[ii++] = Trans(mip.GetJacobianInverse())*uDv_minus_vDu (adpol1[i] * adpol3[k], adpol2[j]).Value();
 		  }
         
-	    /*for (int j= 0; j <= order-4; j++)
+	    for (int j= 0; j <= order-4; j++)
 	      for (int k = 0; k <= order-4-j; k++)
-	      shape[ii++] = Trans(mip.GetJacobianInverse())*wuDv_minus_wvDu (lamt[0], lamt[3], adpol2[j] * adpol3[k]).Value();*/
-	  }
+		shape[ii++] = Trans(mip.GetJacobianInverse())*wuDv_minus_wvDu (lamt[0], lamt[3], adpol2[j] * adpol3[k]).Value();
+		}*/
       }
     cout << "ii end = " << ii << ", ndof = " << ndof << endl;
   }
