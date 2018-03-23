@@ -9,7 +9,6 @@
 
 #include "recursive_pol_tet.hpp"
 
-
 namespace ngfem
 {
 
@@ -20,7 +19,10 @@ namespace ngfem
   public:
     template<typename Tx, typename TFA>  
     // void T_CalcShape (Tx hx[2], TFA & shape) const;
-    INLINE void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const; 
+    INLINE void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const;
+
+    template <typename MIP, typename TFA>
+    inline void CalcDualShape2 (const MIP & mip, TFA & shape) const;
   };
 
   template <>
@@ -28,7 +30,13 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    INLINE void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const; 
+    INLINE void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const;
+
+    template <typename MIP, typename TFA>
+    inline void CalcDualShape2 (const MIP & mip, TFA & shape) const
+    {
+      throw Exception(string("CalcDualShape missing for HighOrderHDiv element ")+ElementTopology::GetElementName(ET_QUAD));
+    }
   };
 
   template<> 
@@ -39,6 +47,8 @@ namespace ngfem
   public:
     template<typename Tx, typename TFA>  
     inline void T_CalcShape (TIP<3,Tx> ip, TFA & shape) const;
+    template <typename MIP, typename TFA>
+    inline void CalcDualShape2 (const MIP & mip, TFA & shape) const;
   };
 
   template<>
@@ -48,6 +58,12 @@ namespace ngfem
   public:
     template<typename Tx, typename TFA>  
     void T_CalcShape (TIP<3,Tx> ip, TFA & shape) const;
+
+    template <typename MIP, typename TFA>
+    inline void CalcDualShape2 (const MIP & mip, TFA & shape) const
+    {
+      throw Exception(string("CalcDualShape missing for HighOrderHDiv element ")+ElementTopology::GetElementName(ET_PRISM));
+    }
   };
 
   template<>
@@ -56,6 +72,12 @@ namespace ngfem
   public:
     template<typename Tx, typename TFA>  
     void T_CalcShape (TIP<3,Tx> ip, TFA & shape) const;
+
+    template <typename MIP, typename TFA>
+    inline void CalcDualShape2 (const MIP & mip, TFA & shape) const
+    {
+      throw Exception(string("CalcDualShape missing for HighOrderHDiv element ")+ElementTopology::GetElementName(ET_HEX));
+    }
   };
 
 
@@ -151,7 +173,66 @@ namespace ngfem
 
 
 
+template <typename MIP, typename TFA>
+  inline void HDivHighOrderFE_Shape<ET_TRIG>::CalcDualShape2 (const MIP & mip, TFA & shape) const
+  {
+    auto & ip = mip.IP();
+    typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T;    
+    T x = ip(0), y = ip(1);
+    T lam[3] = { x, y, 1-x-y };
+    Vec<2,T> pnts[3] = { { 1, 0 }, { 0, 1 } , { 0, 0 } };
+    int facetnr = ip.FacetNr();
 
+    int ii = 3;
+
+    if (ip.VB() == BND)
+      { // facet shapes
+        for (int i = 0; i < 3; i++)
+          {
+            int p = order_facet[i][0];
+            if (i == facetnr)
+              {
+
+                INT<2> e = GetEdgeSort (i, vnums);
+                T xi = lam[e[1]]-lam[e[0]];
+                Vec<2,T> tauref = pnts[e[1]] - pnts[e[0]];
+
+		Vec<2,T> nvref =Vec<2,T>(tauref[1],-tauref[0]);
+		Vec<2,T> nv = Trans(mip.GetJacobianInverse())*nvref;
+                LegendrePolynomial::Eval
+                  (p, xi,
+                   SBLambda([&] (size_t nr, T val)
+                            {
+                              Vec<2,T> vshape = val * nv;
+                              if (nr==0)
+                                shape[i] = vshape;
+                              else
+                                shape[ii+nr-1] = vshape;
+				}));
+              }
+            ii += p;
+          }
+      }
+    else
+      {
+	for (int i = 0; i < 3; i++)
+          ii += order_facet[i][0];
+      }
+    if (ip.VB() == VOL)
+      {
+	DubinerBasis3::Eval(order_inner[0]-2, x, y,
+                            SBLambda([&] (size_t nr, auto val)
+                                     {
+				       shape[ii++] = Trans(mip.GetJacobianInverse())*Vec<2,T> (val, 0);
+                                       shape[ii++] = Trans(mip.GetJacobianInverse())*Vec<2,T> (val*y, -val*x);
+                                     }));
+	LegendrePolynomial::Eval(order_inner[0]-2,y,
+				 SBLambda([&] (size_t nr, auto val)
+					  {
+					    shape[ii++] = Trans(mip.GetJacobianInverse())*Vec<2,T>(0,val);
+					  }));
+      }
+  }
 
 
 
@@ -385,7 +466,102 @@ namespace ngfem
 
 
 
+template <typename MIP, typename TFA>
+  inline void HDivHighOrderFE_Shape<ET_TET> ::
+  CalcDualShape2 (const MIP & mip, TFA & shape) const
+  {
+    typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T;        
+    auto & ip = mip.IP();
+    T x = ip(0), y = ip(1), z = ip(2);
+    T lam[4] = { x, y, z, 1-x-y-z };
+    Vec<3> pnts[4] = { { 1, 0, 0 }, { 0, 1, 0 } , { 0, 0, 1 }, { 0, 0, 0 } };
+    int facetnr = ip.FacetNr();
+    int ii = 4;
 
+    if (ip.VB() == BND)
+      { // facet shapes
+        for (int i = 0; i < 4; i++)
+          {
+            int p = order_facet[i][0];
+	    if (i == facetnr)
+              {
+		INT<4> fav = GetFaceSort (i, vnums);
+                T xi = lam[fav[0]]-lam[fav[2]];
+                T eta = lam[fav[1]]-lam[fav[2]];
+                Vec<3,T> tauref1 = pnts[fav[1]] - pnts[fav[0]];
+		Vec<3,T> tauref2 = pnts[fav[2]] - pnts[fav[0]];
+
+		
+		Vec<3,T> nvref = Cross(tauref1,tauref2);
+		Vec<3,T> nv = Trans(mip.GetJacobianInverse())*nvref;
+
+		DubinerBasis3::Eval(order_facet[i][0], xi, eta,
+				    SBLambda([&] (size_t nr, auto val)
+					     {
+					       Vec<3,T> vshape = val * nv;
+					       if (nr==0)
+						 shape[i] = vshape;
+					       else
+						 shape[ii+nr-1] = vshape;
+					     }));
+              }
+            ii += (p+1)*(p+2)/2-1;
+          }
+      }
+    else
+      {
+	for (int i = 0; i < 4; i++)
+          ii += (order_facet[i][0]+1)*(order_facet[i][0]+2)/2-1;
+      }
+
+    if (ip.VB() == VOL && order > 1)
+      {
+	LegendrePolynomial leg;
+	JacobiPolynomialAlpha jac1(1);    
+	leg.EvalScaled1Assign 
+	  (order-2, lam[2]-lam[3], lam[2]+lam[3],
+	   SBLambda ([&](size_t k, T polz) LAMBDA_INLINE
+		     {
+		       // JacobiPolynomialAlpha jac(2*k+1);
+		       JacobiPolynomialAlpha jac2(2*k+2);
+		       
+		       jac1.EvalScaledMult1Assign
+			 (order-2-k, lam[1]-lam[2]-lam[3], 1-lam[0], polz, 
+			  SBLambda ([&] (size_t j, T polsy) LAMBDA_INLINE
+				    {
+				      // JacobiPolynomialAlpha jac(2*(j+k)+2);
+				      jac2.EvalMult(order-2 - k - j, 2 * lam[0] - 1, polsy, 
+						    SBLambda([&](size_t j, T val) LAMBDA_INLINE
+							     {
+							       shape[ii++] = Trans(mip.GetJacobianInverse())*Cross(Vec<3,T>(val,0,0),Vec<3,T>(x,y,z));
+							       shape[ii++] = Trans(mip.GetJacobianInverse())*Cross(Vec<3,T>(0,val,0),Vec<3,T>(x,y,z));
+							       shape[ii++] = Trans(mip.GetJacobianInverse())*Vec<3,T>(val, 0, 0);
+							       
+							     }));
+				      jac2.IncAlpha2();
+				    }));
+		       jac1.IncAlpha2();
+		     }));
+
+	DubinerBasis3::Eval(order-2, x, y,
+                            SBLambda([&] (size_t nr, auto val)
+                                     {
+				       shape[ii++] = Trans(mip.GetJacobianInverse())*Cross(Vec<3,T>(0,0,val),Vec<3,T>(x,y,z));
+				     }));
+
+	DubinerBasis3::Eval(order-2, y, z,
+                            SBLambda([&] (size_t nr, auto val)
+                                     {
+				       shape[ii++] = Trans(mip.GetJacobianInverse())*Vec<3,T>(0,val,0);
+				     }));
+
+	LegendrePolynomial::Eval(order-2,z,
+				 SBLambda([&] (size_t nr, auto val)
+					  {
+					    shape[ii++] = Trans(mip.GetJacobianInverse())*Vec<3,T>(0,0,val);
+					  }));
+      }
+  }
 
 
 
@@ -768,6 +944,14 @@ namespace ngfem
   }
   
 
+  template <ELEMENT_TYPE ET>
+  void HDivHighOrderFE<ET> ::
+  CalcDualShape (const MappedIntegrationPoint<DIM,DIM> & mip, SliceMatrix<> shape) const
+  {
+    shape = 0.0;
+    static_cast<const HDivHighOrderFE_Shape<ET>*> (this)
+      -> CalcDualShape2 (mip, SBLambda([shape] (size_t i, Vec<DIM> val) { shape.Row(i) = val; }));
+  }
 
 
 
