@@ -14,7 +14,7 @@
 
 namespace ngcomp
 {
-  
+  string Ngs_Element::defaultstring = "default";
   template <int DIMS, int DIMR>
   class Ng_ElementTransformation : public ElementTransformation
   {

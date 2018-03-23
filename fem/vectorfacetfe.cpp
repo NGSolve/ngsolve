@@ -580,9 +580,54 @@ namespace ngfem
 
   template<>
   void VectorFacetVolumeFE<ET_HEX> ::
-  CalcShape ( const IntegrationPoint & ip, int facet, SliceMatrix<> shape ) const
+  CalcShape ( const IntegrationPoint & ip, int fanr, SliceMatrix<> shape ) const
   {
-    throw Exception("VectorFacetVolumeHex::CalcShape not implemented!");
+    AutoDiff<3> x(ip(0), 0), y(ip(1),1), z(ip(2),2);
+
+    // vertex numbering on HEX:
+    // { 0, 0, 0 },
+    // { 1, 0, 0 },
+    // { 1, 1, 0 },
+    // { 0, 1, 0 },
+    // { 0, 0, 1 },
+    // { 1, 0, 1 },
+    // { 1, 1, 1 },
+    // { 0, 1, 1 }
+
+    AutoDiff<3> mux[8]  = { 1-x,   x,   x, 1-x, 1-x,   x,   x, 1-x };  
+    AutoDiff<3> muy[8]  = { 1-y, 1-y,   y,   y, 1-y, 1-y,   y,   y }; 
+    AutoDiff<3> muz[8]  = { 1-z, 1-z, 1-z, 1-z,   z,   z,   z,   z };    
+
+    AutoDiff<3> sigma[8];
+    for (int i = 0; i < 8; i++) sigma[i] = mux[i] + muy[i] + muz[i];
+    
+    shape = 0.0;
+    {
+      int p = facet_order[fanr][0];
+       
+      INT<4> f = ET_trait<ET_HEX>::GetFaceSort (fanr, vnums);     
+      AutoDiff<3> xi  = sigma[f[0]] - sigma[f[1]]; 
+      AutoDiff<3> zeta = sigma[f[0]] - sigma[f[3]];   
+
+      ArrayMem< double, 10> polx(p+1), poly(p+1);
+      LegendrePolynomial (p, xi.Value(), polx);
+      LegendrePolynomial (p, zeta.Value(), poly);   
+
+      int ii = first_facet_dof[fanr];
+      for (int i = 0; i <= p; i++)
+        for (int j = 0; j <= p; j++)
+        {
+          double val = polx[i] * poly[j];
+          shape(ii,0) = val * xi.DValue(0);
+          shape(ii,1) = val * xi.DValue(1);
+          shape(ii,2) = val * xi.DValue(2);
+          ii++;
+          shape(ii,0) = val * zeta.DValue(0);
+          shape(ii,1) = val * zeta.DValue(1);
+          shape(ii,2) = val * zeta.DValue(2);
+          ii++;
+        } 
+    }
   }
 
   template<>
