@@ -72,6 +72,12 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                             [](const ParallelDofs & self) 
 			    { return self.GetNDofGlobal(); },    
                             "number of global degrees of freedom")
+    .def("ExchangeProcs", [] (const ParallelDofs & self)
+         { return self.GetDistantProcs(); } )
+    .def("Dof2Proc", [] (const ParallelDofs & self, int dof)
+         { return self.GetDistantProcs(dof); })
+    .def("Proc2Dof", [] (const ParallelDofs & self, int proc)
+         { return self.GetExchangeDofs(proc); })
     ;
 
     m.def("CreateVVector",
