@@ -121,6 +121,15 @@ namespace ngla
     int GetNDofLocal () const { return ndof; }
     int GetNDofGlobal () const { return ndof; }
 
+    FlatArray<int> GetExchangeDofs (int proc) const
+    { return FlatArray<int> (0, nullptr); }
+
+    FlatArray<int> GetDistantProcs (int dof) const
+    { return FlatArray<int> (0, nullptr); }
+
+    FlatArray<int> GetDistantProcs () const
+    { return FlatArray<int> (0, nullptr); }      
+    
     template <typename T>
     void ReduceDofData (FlatArray<T> data, MPI_Op op) const { ; }
 
