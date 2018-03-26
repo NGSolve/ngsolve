@@ -6,10 +6,102 @@
 
 
 #include <fem.hpp>
+#include <thcurlfe_impl.hpp>
 #include <cassert>
 
 namespace ngfem
 {
+
+  template <ELEMENT_TYPE ET> template<typename Tx, typename TFA>  
+  void VectorFacetVolumeFE<ET>::
+  T_CalcShape (Tx hx[DIM], int fnr, TFA & shape) const
+  {
+    throw ExceptionNOSIMD("VectorFacet::T_CalcShape missing"+ToString(ET));
+  }
+
+  template <> template<typename Tx, typename TFA>  
+  void VectorFacetVolumeFE<ET_TRIG>::
+  T_CalcShape (Tx hx[DIM], int fanr, TFA & shape) const
+  {
+    Tx lami[3] = { hx[0], hx[1], 1-hx[0]-hx[1] };  
+
+    int first = first_facet_dof[fanr];
+    int p = facet_order[fanr][0];
+
+    INT<2> e = GetVertexOrientedEdge(fanr);
+    Tx xi = lami[e[0]] - lami[e[1]];
+    
+    LegendrePolynomial (p, xi, 
+                        SBLambda([&](int nr, auto val)
+                                 {
+                                   shape[first+nr] = uDv (val, xi);
+                                 }));
+  }
+  
+
+  template <ELEMENT_TYPE ET>
+  void VectorFacetVolumeFE<ET>::
+  CalcMappedShape (const SIMD_BaseMappedIntegrationRule & bmir, 
+                   BareSliceMatrix<SIMD<double>> shapes) const
+  {
+    auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
+    shapes.AddSize(DIM*this->GetNDof(), mir.Size()) = 0.0;
+    for (size_t i = 0; i < mir.Size(); i++)
+      {
+        Vec<DIM, AutoDiff<DIM,SIMD<double>>> adp = mir[i];
+        T_CalcShape (&adp(0), mir[i].IP().FacetNr(),
+                     SBLambda ([&] (size_t j, HCurl_Shape<DIM,SIMD<double>> shape)
+                               {
+                                 for (size_t k = 0; k < DIM; k++)
+                                   shapes(j*DIM+k, i) = shape(k);
+                               }));
+      }
+  }
+
+  template <ELEMENT_TYPE ET>
+  void VectorFacetVolumeFE<ET>::
+  Evaluate (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<> coefs,
+            BareSliceMatrix<SIMD<double>> values) const
+  {
+    auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
+    for (size_t i = 0; i < mir.Size(); i++)
+      {
+        Vec<DIM, AutoDiff<DIM,SIMD<double>>> adp = mir[i];
+        Vec<DIM,SIMD<double>> sum(0.0);
+        T_CalcShape (&adp(0), mir[i].IP().FacetNr(),
+                     SBLambda ([&] (int j, HCurl_Shape<DIM,SIMD<double>> shape)
+                               {
+                                 double coef = coefs(j);
+                                 Iterate<DIM> ( [&] (auto ii) {
+                                     sum(ii.value) += coef * shape(ii.value);
+                                   });
+                               }));
+        for (size_t k = 0; k < DIM; k++)
+          values(k,i) = sum(k).Data();
+      }
+  }
+  
+  template <ELEMENT_TYPE ET>
+  void VectorFacetVolumeFE<ET>::
+  AddTrans (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> values,
+            BareSliceVector<> coefs) const
+  {
+    auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
+    for (size_t i = 0; i < mir.Size(); i++)
+      {
+        Vec<DIM, AutoDiff<DIM,SIMD<double>>> adp = mir[i];
+        T_CalcShape (&adp(0), mir[i].IP().FacetNr(),
+                     SBLambda ([&] (size_t j, HCurl_Shape<DIM,SIMD<double>> shape)
+                               {
+                                 SIMD<double> sum = 0.0;
+                                 for (int k = 0; k < DIM; k++)
+                                   sum += shape(k) * values(k,i);
+                                 coefs(j) += HSum(sum);
+                               }));
+      }
+  }
+
+  
   /* **************************** Facet Segm ********************************* */
 
 
@@ -708,7 +800,13 @@ namespace ngfem
     first_facet_dof[4] = ndof;
   }
 
-
+  // template class VectorFacetVolumeFE<ET_SEGM>;
+  template class VectorFacetVolumeFE<ET_TRIG>;
+  template class VectorFacetVolumeFE<ET_QUAD>;
+  template class VectorFacetVolumeFE<ET_TET>;
+  template class VectorFacetVolumeFE<ET_PRISM>;
+  template class VectorFacetVolumeFE<ET_PYRAMID>;
+  template class VectorFacetVolumeFE<ET_HEX>;
 
   static RegisterBilinearFormIntegrator<RobinEdgeIntegrator<3 /* , VectorFacetFacetFiniteElement<2> */ >  > initrvf3 ("robinvectorfacet", 3, 1);
   static RegisterBilinearFormIntegrator<RobinEdgeIntegrator<2 /* , VectorFacetFacetFiniteElement<1> */ >  > initrvf2 ("robinvectorfacet", 2, 1);
