@@ -1335,7 +1335,7 @@ namespace ngstd
   template <typename T>
   class HTArray<0,T>
   {
-    T head; // dummy variable
+    // T head; // dummy variable
   public:
     HTArray () = default;
     HTArray (const HTArray &) = default;
@@ -1354,9 +1354,11 @@ namespace ngstd
       return head;
     }
     */
-    T * Ptr () { return (T*)(void*)&head; }
+    // T * Ptr () { return (T*)(void*)&head; }
+    T * Ptr () { return (T*)(void*)this; }
     T & operator[] (size_t i) { return Ptr()[i]; }
-    const T * Ptr () const { return (const T*)(const void*)&head; }
+    // const T * Ptr () const { return (const T*)(const void*)&head; }
+    const T * Ptr () const { return (const T*)(const void*)this; }
     const T & operator[] (size_t i) const { return Ptr()[i]; }
   };
 

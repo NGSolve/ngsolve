@@ -568,7 +568,7 @@ namespace ngstd
             ParallelJob ( [&sl] (TaskInfo ti)
                           {
                             for (auto i : sl)
-                              ; 
+                              (void)i;  // silence warning
                           } );
           }
         steps += 1000;
