@@ -2178,6 +2178,7 @@ namespace ngfem
   {
     size_t tid = TaskManager::GetThreadId();    
     static Timer t("symbolicbfi - calclinearized EB", 2);
+    static Timer tnosimd("symbolicbfi - calclinearized EB nosimd", 2);
     static Timer td("symbolicbfi - calclinearized EB dmats", 2);
     static Timer tir("symbolicbfi - calclinearized EB intrule", 2);
     ThreadRegionTimer reg(t, tid);
@@ -2330,7 +2331,7 @@ namespace ngfem
         }
 
 
-
+    ThreadRegionTimer regnosimd(tnosimd, tid);
 
       
     for (int k = 0; k < nfacet; k++)
@@ -2608,12 +2609,92 @@ namespace ngfem
                           void * precomputed,
                           LocalHeap & lh) const
   {
-    ely = 0;
+    static Timer t("symbolicbfi - Apply EB", 2);
+    static Timer tir("symbolicbfi - Apply EB, intrule", 2);
+    static Timer teval("symbolicbfi - Apply EB, evaluate", 2);
+    static Timer td("symbolicbfi - Apply EB, evaluate D", 2);
+    static Timer ttrans("symbolicbfi - Apply EB, trans", 2);
     
+    size_t tid = TaskManager::GetThreadId();    
+    ThreadRegionTimer reg(t, tid);
+    
+    ely = 0;
+
     auto eltype = trafo.GetElementType();
 
     Facet2ElementTrafo transform(eltype, element_vb); 
     int nfacet = transform.GetNFacets();
+
+
+    if (simd_evaluate)
+      try
+        {
+          
+          for (int k = 0; k < nfacet; k++)
+            {
+              HeapReset hr(lh);
+              NgProfiler::StartThreadTimer(tir, tid);                              
+              ngfem::ELEMENT_TYPE etfacet = transform.FacetType (k);
+              const SIMD_IntegrationRule & ir_facet = GetSIMDIntegrationRule(etfacet, 2*fel.Order());
+              auto & ir_facet_vol = transform(k, ir_facet, lh);
+              auto & mir = trafo(ir_facet_vol, lh);
+              mir.ComputeNormalsAndMeasure (eltype, k);
+              NgProfiler::StopThreadTimer(tir, tid);
+
+              NgProfiler::StartThreadTimer(teval, tid);                                            
+              ProxyUserData ud(trial_proxies.Size(), gridfunction_cfs.Size(), lh);              
+              const_cast<ElementTransformation&>(trafo).userdata = &ud;
+              ud.fel = &fel;
+          
+              for (ProxyFunction * proxy : trial_proxies)
+                ud.AssignMemory (proxy, ir_facet.GetNIP(), proxy->Dimension(), lh);
+              for (CoefficientFunction * cf : gridfunction_cfs)
+                ud.AssignMemory (cf, ir_facet.GetNIP(), cf->Dimension(), lh);
+          
+              for (ProxyFunction * proxy : trial_proxies)
+                proxy->Evaluator()->Apply(fel, mir, elx, ud.GetAMemory(proxy)); 
+          
+              NgProfiler::StopThreadTimer(teval, tid);
+              for (auto proxy : test_proxies)
+                {
+                  HeapReset hr(lh);
+                  NgProfiler::StartThreadTimer(td, tid);
+                  FlatMatrix<SIMD<double>> simd_proxyvalues(proxy->Dimension(), ir_facet.Size(), lh);
+                  for (int k = 0; k < proxy->Dimension(); k++)
+                    {
+                      ud.testfunction = proxy;
+                      ud.test_comp = k;
+                      cf -> Evaluate (mir, simd_proxyvalues.Rows(k,k+1));
+                    }
+                  
+                  for (size_t i = 0; i < simd_proxyvalues.Height(); i++)
+                    {
+                      auto row = simd_proxyvalues.Row(i);
+                      for (size_t j = 0; j < row.Size(); j++)
+                        row(j) *= mir[j].GetWeight(); //  * simd_ir[j].Weight();
+                    }
+                  NgProfiler::StopThreadTimer(td, tid);
+                  
+                  NgProfiler::StartThreadTimer(ttrans, tid);                                                                    proxy->Evaluator()->AddTrans(fel, mir, simd_proxyvalues, ely);
+                  NgProfiler::StopThreadTimer(ttrans, tid);                                                  
+                }
+            }
+          return;
+        }
+      catch (ExceptionNOSIMD e)
+        {
+          cout << IM(4) << e.What() << endl
+               << "switching to scalar evaluation" << endl;
+          simd_evaluate = false;
+          T_ApplyElementMatrixEB<SCAL,SCAL_SHAPES> (fel, trafo, elx, ely, precomputed, lh);
+          return;
+        }
+    
+
+
+
+
+    
     
     for (int k = 0; k < nfacet; k++)
       {
@@ -2628,8 +2709,6 @@ namespace ngfem
         ProxyUserData ud(trial_proxies.Size(), lh);    
         const_cast<ElementTransformation&>(trafo).userdata = &ud;
         ud.fel = &fel;
-        // ud.elx = &elx;
-        // ud.lh = &lh;
     
         for (ProxyFunction * proxy : trial_proxies)
           ud.AssignMemory (proxy, ir_facet.GetNIP(), proxy->Dimension(), lh);
