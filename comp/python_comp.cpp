@@ -665,37 +665,42 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
   py::class_<MeshNode, NodeId> (m, "MeshNode", "a node within a mesh")
     .def_property_readonly("vertices", [](MeshNode & node) -> py::tuple
                            {
-                             const MeshAccess & mesh = node.Mesh();
-                             if (node.GetType() == NT_EDGE)
+                             auto& mesh = node.Mesh();
+                             switch (node.GetType())
                                {
-                                 /*
-                                 auto verts = node.Mesh().GetEdgePNums(node.GetNr());
-                                 py::tuple tup(2);
-                                 for (size_t i = 0; i < 2; i++)
-                                   tup[i] = py::cast(NodeId(NT_VERTEX, verts[i]));
-                                 return tup;
-                                 */
-                                 
-                                 auto Nr2MeshVert = [&mesh] (size_t nr)
-                                   { return MeshNode(NodeId(NT_VERTEX,nr), mesh); };
-                                 auto verts = node.Mesh().GetEdgePNums(node.GetNr());
-                                 return MakePyTuple (Substitute(ArrayObject(verts), Nr2MeshVert));
+                               case NT_EDGE:
+                                 return MakePyTuple(Substitute(ArrayObject(mesh.GetEdgePNums(node.GetNr())), Nr2Vert));
+                               case NT_FACE:
+                                 return MakePyTuple(Substitute(mesh.GetFacePNums(node.GetNr()), Nr2Vert));
+                               case NT_CELL:
+                                 return MakePyTuple(Substitute(mesh.GetElPNums(ElementId(VOL, node.GetNr())),
+                                                               Nr2Vert));
+                               default:
+                                 throw py::type_error("vertices only available for edge, face and cell nodes\n");
                                }
-                             if (node.GetType() == NT_FACE)
+                           }, "tuple of global vertex numbers")
+    .def_property_readonly("edges",[](MeshNode & node) -> py::tuple
+                           {
+                             auto& mesh = node.Mesh();
+                             switch(node.GetType())
                                {
-                                 /*
-                                 auto verts = node.Mesh().GetFacePNums(node.GetNr());
-                                 py::tuple tup(verts.Size());
-                                 for (size_t i = 0; i < verts.Size(); i++)
-                                   tup[i] = py::cast(NodeId(NT_VERTEX, verts[i]));
-                                 return tup;
-                                 */
-                                 auto verts = node.Mesh().GetFacePNums(node.GetNr());
-                                 return MakePyTuple (Substitute(verts, Nr2Vert));
+                               case NT_FACE:
+                                 return MakePyTuple(Substitute(mesh.GetFaceEdges(node.GetNr()), Nr2Edge));
+                               case NT_CELL:
+                                 return MakePyTuple(Substitute(mesh.GetElEdges(ElementId(VOL,node.GetNr())),
+                                                               Nr2Edge));
+                               default:
+                                 throw py::type_error("edges only available for face and cell nodes\n");
                                }
-                             throw py::type_error("vertices only available for edge and face nodes\n");
-                           },
-                           "tuple of global vertex numbers")
+                           }, "tuple of global edge numbers")
+    .def_property_readonly("faces", [](MeshNode & node) -> py::tuple
+                           {
+                             auto & mesh = node.Mesh();
+                             if (node.GetType() == NT_CELL)
+                               return MakePyTuple(Substitute(mesh.GetElFacets(ElementId(VOL, node.GetNr())),
+                                                             Nr2Face));
+                             throw py::type_error("faces only available for cell nodes\n");
+                           }, "tuple of global face numbers")
     
     ;
 
@@ -929,7 +934,8 @@ mesh (netgen.Mesh): a mesh generated from Netgen
     .def_property_readonly ("nv", &MeshAccess::GetNV, "Number of vertices")
     .def_property_readonly ("ne",  static_cast<size_t(MeshAccess::*)()const> (&MeshAccess::GetNE), "Number of volume elements")
     .def_property_readonly ("nedge", &MeshAccess::GetNEdges, "Number of edges")
-    .def_property_readonly ("nface", &MeshAccess::GetNFaces, "Number of faces")    
+    .def_property_readonly ("nface", &MeshAccess::GetNFaces, "Number of faces")
+    .def ("nnodes", &MeshAccess::GetNNodes, "Number of nodes given type")
     .def_property_readonly ("dim", &MeshAccess::GetDimension, "Mesh dimension")
     .def_property_readonly ("ngmesh", &MeshAccess::GetNetgenMesh, "Get the Netgen mesh")
 
@@ -955,6 +961,11 @@ mesh (netgen.Mesh): a mesh generated from Netgen
             return T_Range<MeshNode> (MeshNode(NodeId(NT_FACE, 0), *mesh),
                                       MeshNode(NodeId(NT_FACE, mesh->GetNNodes(NT_FACE)), *mesh));
           }, "iterable of mesh faces")
+
+    .def("nodes", [] (shared_ptr<MeshAccess> mesh, NODE_TYPE type)
+         {
+           return T_Range<MeshNode> (MeshNode(NodeId(type, 0), *mesh),
+                                     MeshNode(NodeId(type, mesh->GetNNodes(type)),*mesh));                                     }, py::arg("node_type"), "iterable of mesh nodes of type type")
     
     .def ("GetTrafo", 
           static_cast<ElementTransformation&(MeshAccess::*)(ElementId,Allocator&)const>
@@ -1179,6 +1190,11 @@ mesh (netgen.Mesh): a mesh generated from Netgen
          py::arg("x") = 0.0, py::arg("y") = 0.0, py::arg("z") = 0.0,
          py::arg("VOL_or_BND") = VOL,
 	 docu_string("Get a MappedIntegrationPoint in the point (x,y,z) on the matching volume (VorB=VOL, default) or surface (VorB=BND) element. BBND elements aren't supported"))
+
+    .def("__call__", [](MeshAccess& ma, NodeId id)
+         {
+           return MeshNode(id,ma);
+         }, "Get MeshNode from NodeId")
 
     .def("Contains",
          [](MeshAccess & ma, double x, double y, double z) 
