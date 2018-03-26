@@ -37,9 +37,12 @@ namespace ngfem
     virtual void CalcMappedCurlShape (const MappedIntegrationPoint<DIM,DIM> & mip,
       BareSliceMatrix<double> shape) const = 0;
 
-    virtual void CalcMappedShape (const SIMD_BaseMappedIntegrationRule & ir,
+    virtual void CalcMappedShape (const SIMD<MappedIntegrationPoint<DIM,DIM>> & mip,
                                          BareSliceMatrix<SIMD<double>> shapes) const = 0;
 
+    virtual void CalcMappedShape (const SIMD_BaseMappedIntegrationRule & ir,
+				      BareSliceMatrix<SIMD<double>> shapes) const = 0;
+    
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
                                   BareSliceVector<> coefs,
                                   BareSliceMatrix<SIMD<double>> values) const = 0;
@@ -174,6 +177,22 @@ namespace ngfem
                                                      shapes(j*(DIM*DIM)+k,i) = vecshape(k);
                                                  }));
         }
+    }
+
+     virtual void CalcMappedShape (const SIMD<MappedIntegrationPoint<DIM,DIM>> & mip, 
+                                         BareSliceMatrix<SIMD<double>> shapes) const override
+    {
+      Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = mip;
+      TIP<DIM,AutoDiffDiff<DIM,SIMD<double>>> addp(adp);
+          
+      this->Cast() -> T_CalcShape (addp,
+				   SBLambda ([shapes] (size_t j, auto val) 
+					     {
+
+					       Vec<DIM*DIM,SIMD<double>> vecshape = val.Shape();
+					       for (size_t k = 0; k < DIM*DIM; k++)
+						 shapes(j*(DIM*DIM)+k,0) = vecshape(k);
+					     }));
     }
 
 

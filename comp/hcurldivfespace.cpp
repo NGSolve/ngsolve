@@ -108,10 +108,81 @@ namespace ngcomp
               typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
                                                   static void GenerateMatrix (const AFEL & fel, const MIP & mip,
                                                                               MAT mat, LocalHeap & lh)
-    {      
+    {
       CalcDShapeOfHCurlDivFE<D,D*D*D>(static_cast<const FEL&>(fel), mip, Trans(mat), lh);
     }
-    
+
+    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+                                      const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> mat)
+    {
+      auto & fel = static_cast<const FEL&>(bfel);
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<D,D>&> (bmir);
+      
+      size_t nd_u = fel.GetNDof();
+
+      STACK_ARRAY(SIMD<double>, mem1, 5*D*D*nd_u); // + 2 * D*nd_u );
+      
+      FlatMatrix<SIMD<double>> shape_ul(nd_u*D*D, 1, &mem1[0]);
+      FlatMatrix<SIMD<double>> shape_ur(nd_u*D*D, 1, &mem1[D*D*nd_u]);
+      FlatMatrix<SIMD<double>> shape_ull(nd_u*D*D, 1, &mem1[2*D*D*nd_u]);
+      FlatMatrix<SIMD<double>> shape_urr(nd_u*D*D, 1, &mem1[3*D*D*nd_u]);
+
+      FlatMatrix<SIMD<double>> dshape_u_ref(nd_u*D*D, 1, &mem1[4*D*D*nd_u]);
+
+      //FlatMatrix<SIMD<double>> dshape_u_ref_comp(nd_u*D, 1, &mem1[5*D*D*nd_u]);
+      //FlatMatrix<SIMD<double>> dshape_u(nd_u*D, 1, &mem1[5*D*D*nd_u + D*nd_u]);
+
+      LocalHeapMem<10000> lh("diffopgrad-lh");
+
+      auto & ir = mir.IR();
+      for (size_t i = 0; i < mir.Size(); i++)
+        {
+          const SIMD<IntegrationPoint> & ip = ir[i];
+          const ElementTransformation & eltrans = mir[i].GetTransformation();
+
+          // double eps = 1e-4;
+          for (int j = 0; j < D; j++)   // d / dxj
+            {
+              HeapReset hr(lh);
+              SIMD<IntegrationPoint> ipts[4];
+              ipts[0] = ip;
+              ipts[0](j) -= eps();
+              ipts[1] = ip;
+              ipts[1](j) += eps();              
+              ipts[2] = ip;
+              ipts[2](j) -= 2*eps();
+              ipts[3] = ip;
+              ipts[3](j) += 2*eps();
+
+              SIMD_IntegrationRule ir(4, ipts);
+              SIMD_MappedIntegrationRule<D,D> mirl(ir, eltrans, lh);
+
+              fel.CalcMappedShape (mirl[0], shape_ul);
+              fel.CalcMappedShape (mirl[1], shape_ur);
+              fel.CalcMappedShape (mirl[2], shape_ull);
+              fel.CalcMappedShape (mirl[3], shape_urr);
+
+              dshape_u_ref = (1.0/(12.0*eps())) * (8.0*shape_ur-8.0*shape_ul-shape_urr+shape_ull);
+              for (size_t l = 0; l < D*D; l++)
+                for (size_t k = 0; k < nd_u; k++)
+                  mat(k*D*D*D+j*D*D+l, i) = dshape_u_ref(k*D*D+l, 0);
+            }
+          
+          for (size_t j = 0; j < D*D; j++)
+            for (size_t k = 0; k < nd_u; k++)
+              {
+                Vec<D,SIMD<double>> dshape_u_ref, dshape_u;
+                for (size_t l = 0; l < D; l++)
+                  dshape_u_ref(l) = mat(k*D*D*D+l*D*D+j, i);
+                
+                dshape_u = Trans(mir[i].GetJacobianInverse()) * dshape_u_ref;
+                
+                for (size_t l = 0; l < D; l++)
+                  mat(k*D*D*D+l*D*D+j, i) = dshape_u(l);
+              }
+        }
+    }
+        
   };
   
   template<int D>
