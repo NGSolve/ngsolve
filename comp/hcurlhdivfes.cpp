@@ -82,8 +82,8 @@ namespace ngcomp
   
   void NedelecFESpace :: Update(LocalHeap & lh)
   {
-    size_t ne = ma->GetNE();
-    size_t nse = ma->GetNSE();
+    // size_t ne = ma->GetNE();
+    // size_t nse = ma->GetNSE();
     size_t ned = ma->GetNEdges();
     
     int level = ma->GetNLevels();
