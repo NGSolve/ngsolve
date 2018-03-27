@@ -2,10 +2,9 @@
 from netgen.csg import *
 from ngsolve import *
 
-mesh = Mesh(unit_cube.GenerateMesh(maxh=0.2))
 
 def test_node_access():
-
+    mesh = Mesh(unit_cube.GenerateMesh(maxh=0.2))
     cell_done = [False] * mesh.ne
     face_done = [False] * mesh.nface
     edge_done = [False] * mesh.nedge
@@ -38,6 +37,7 @@ def test_node_access():
     assert all(vert_done)
 
 def test_dofs():
+    mesh = Mesh(unit_cube.GenerateMesh(maxh=0.2))
     for order in range(1,6):
         fes = H1(mesh,order=order)
 
