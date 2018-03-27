@@ -357,7 +357,7 @@ public:
   }
 };
 
-
+#undef NGSMPI_ENABLE_FOR_STD
 #else
   enum { MPI_COMM_WORLD = 12345 };
   enum { ngs_comm = 12345 };
