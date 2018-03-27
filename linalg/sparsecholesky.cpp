@@ -396,7 +396,12 @@ namespace ngla
         first_microtask.Append (microtasks.Size());
 
         // int nb = extdofs.Size() / 256 + 1;
-        int nb = (extdofs.Size()+255) / 256;
+        // int nb = (extdofs.Size()+255) / 256;
+	int nb = 0;
+	if(BlockDofs(i).Size()) {
+	  auto extdofs = BlockExtDofs (i);
+	  nb = (extdofs.Size()+255) / 256;
+	}
 
         if (nb == 1)
           // if (false)
