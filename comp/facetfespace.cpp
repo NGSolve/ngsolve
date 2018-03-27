@@ -594,7 +594,7 @@ namespace ngcomp
                              ElementTopology::GetElementName(ma->GetElType(ei)));
           }
      
-        ArrayMem<int,4> ednums;
+        // ArrayMem<int,4> ednums;
     
         auto vnums = ma->GetElVertices(ei);
         switch (ma->GetElType(ei))
@@ -602,7 +602,7 @@ namespace ngcomp
           case ET_SEGM:
             {
               fe1d -> SetVertexNumbers (vnums);
-              ednums = ma->GetElEdges(ei);
+              auto ednums = ma->GetElEdges(ei);
               int p = order_facet[ednums[0]][0];
               if (highest_order_dc) p--;
               fe1d -> SetOrder (p); 
@@ -628,7 +628,7 @@ namespace ngcomp
         }
       case BBND:
         throw Exception("No BBND GetFE implemented for FacetFESpace");
-      case BBBND:
+      case BBBND: default:
         throw Exception("No BBBND GetFE implemented for FacetFESpace");
       }
   }

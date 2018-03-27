@@ -512,6 +512,7 @@ namespace ngla
   {
     y.Distribute();
     size_t count = 0;
+    /*
     for(auto p:paralleldofs->GetDistantProcs()) {
       auto exdofs = paralleldofs->GetExchangeDofs(p);
       if(p<MyMPI_GetId(paralleldofs->GetCommunicator())) {
@@ -525,7 +526,16 @@ namespace ngla
 	}
       }
     }
-    return;
+    */
+    auto me = MyMPI_GetId(paralleldofs->GetCommunicator());
+    auto fx = x.FVDouble();
+    auto fy = y.FVDouble();
+    for (auto p : paralleldofs->GetDistantProcs())
+      {
+        double signed_s = (p < me) ? -s : s;
+        for (auto exdof : paralleldofs->GetExchangeDofs(p))
+          fy[count++] += signed_s * fx[exdof];
+      }
   }
 
   void FETI_Jump_Matrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
@@ -545,9 +555,9 @@ namespace ngla
 	}
       }
     }
-    return;
   }
 
+  
   AutoVector FETI_Jump_Matrix :: CreateRowVector () const
   {
     return make_shared<VVector<double>> (paralleldofs->GetNDofLocal());

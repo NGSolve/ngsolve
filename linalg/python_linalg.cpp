@@ -72,6 +72,12 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                             [](const ParallelDofs & self) 
 			    { return self.GetNDofGlobal(); },    
                             "number of global degrees of freedom")
+    .def("ExchangeProcs", [] (const ParallelDofs & self)
+         { return self.GetDistantProcs(); } )
+    .def("Dof2Proc", [] (const ParallelDofs & self, int dof)
+         { return self.GetDistantProcs(dof); })
+    .def("Proc2Dof", [] (const ParallelDofs & self, int proc)
+         { return self.GetExchangeDofs(proc); })
     ;
 
     m.def("CreateVVector",
@@ -542,11 +548,7 @@ inverse : string
 
   
   py::class_<Projector, shared_ptr<Projector>, BaseMatrix> (m, "Projector")
-    /*
-    .def(py::init([](const BitArray & array, bool b) 
-                  { return make_shared<Projector>(array, b); }))
-    */
-    .def(py::init<BitArray,bool>());
+    .def(py::init<shared_ptr<BitArray>,bool>());
     ;
 
   py::class_<KrylovSpaceSolver, shared_ptr<KrylovSpaceSolver>, BaseMatrix> (m, "KrylovSpaceSolver")

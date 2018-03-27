@@ -1633,6 +1633,7 @@ namespace ngstd
                                      Vec<3,SIMD<double>> (dxdxi.Col(1)));
                   det = L2Norm (normalvec);
                   normalvec /= det;
+                  tangentialvec = SIMD<double>(0.0);
                 }
               else if (DIMS == 1)
                 {
@@ -1652,13 +1653,14 @@ namespace ngstd
 
 	      normalvec(0) = -dxdxi(1,0) / det;
 	      normalvec(1) = dxdxi(0,0) / det;
+              tangentialvec = SIMD<double>(0.0);
 	    }
 	  else
 	    {
 	      det = 1.0;
 	      normalvec = 1.0;
+              tangentialvec = SIMD<double>(0.0);
 	    }
-	  tangentialvec = SIMD<double>(0.0);
 	}
       measure = fabs (det);
     }

@@ -127,21 +127,21 @@ namespace ngfem
 
 
     NGS_DLL_HEADER virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const
-    { throw ExceptionNOSIMD("HCurlFE - simd eval not overloaded"); }
+    { throw ExceptionNOSIMD(string("HCurlFE - simd eval not overloaded, eltype = ")+typeid(*this).name()); }
     NGS_DLL_HEADER virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<Complex> coefs, BareSliceMatrix<SIMD<Complex>> values) const
-    { throw ExceptionNOSIMD("HCurlFE - simd<complex> eval not overloaded"); }
+    { throw ExceptionNOSIMD(string("HCurlFE - simd<complex> eval not overloaded")+typeid(*this).name()); }
     NGS_DLL_HEADER virtual void EvaluateCurl (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const
-    { throw ExceptionNOSIMD("HCurlFE - simd evalcurl not overloaded"); }      
+    { throw ExceptionNOSIMD(string("HCurlFE - simd evalcurl not overloaded")+typeid(*this).name()); }      
 
     NGS_DLL_HEADER virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
                                              BareSliceVector<> coefs) const
-    { throw ExceptionNOSIMD("HCurlFE - simd addtrans not overloaded"); }
+    { throw ExceptionNOSIMD(string("HCurlFE - simd addtrans not overloaded")+typeid(*this).name()); }
     NGS_DLL_HEADER virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values,
                                              BareSliceVector<Complex> coefs) const
-    { throw ExceptionNOSIMD("HCurlFE - simd addtrans complex not overloaded"); }
+    { throw ExceptionNOSIMD(string("HCurlFE - simd addtrans complex not overloaded")+typeid(*this).name()); }
     NGS_DLL_HEADER virtual void AddCurlTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
                                                  BareSliceVector<> coefs) const
-    { throw ExceptionNOSIMD("HCurlFE - simd addcurltrans not overloaded"); }
+    { throw ExceptionNOSIMD(string("HCurlFE - simd addcurltrans not overloaded")+typeid(*this).name()); }
 
     NGS_DLL_HEADER virtual void CalcDualShape (const MappedIntegrationPoint<DIM,DIM> & mip, SliceMatrix<> shape) const;
 
