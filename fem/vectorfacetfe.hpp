@@ -73,7 +73,8 @@ namespace ngfem
     bool highest_order_dc;
     using HCurlFiniteElement<ET_trait<ET>::DIM>::order;
     using VertexOrientedFE<ET>::vnums;
-
+    enum { DIM = ET_trait<ET>::DIM };
+    
   public:
     using VertexOrientedFE<ET>::SetVertexNumbers;
     
@@ -128,6 +129,19 @@ namespace ngfem
         }
       throw Exception("VectorFacetVolumeFiniteElement<D>::CalcShape in global coordinates disabled");
     }
+
+    virtual void CalcMappedShape (const SIMD_BaseMappedIntegrationRule & mir, 
+                                  BareSliceMatrix<SIMD<double>> shapes) const;
+    
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs,
+                           BareSliceMatrix<SIMD<double>> values) const;
+    
+    virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
+                           BareSliceVector<> coefs) const;
+
+    template<typename Tx, typename TFA>  
+    void T_CalcShape (Tx hx[DIM], int fnr, TFA & shape) const;
+    
     virtual void CalcShape (const IntegrationPoint & ip, int facet, SliceMatrix<> shape) const;
 
     virtual int GetNExtraShapes( int facet) const {return 0;}

@@ -82,8 +82,8 @@ namespace ngcomp
   
   void NedelecFESpace :: Update(LocalHeap & lh)
   {
-    size_t ne = ma->GetNE();
-    size_t nse = ma->GetNSE();
+    // size_t ne = ma->GetNE();
+    // size_t nse = ma->GetNSE();
     size_t ned = ma->GetNEdges();
     
     int level = ma->GetNLevels();
@@ -321,6 +321,21 @@ namespace ngcomp
 
   FiniteElement & NedelecFESpace :: GetFE (ElementId ei, Allocator & lh) const
   {
+    if(!DefinedOn(ei))
+      {
+        switch(ma->GetElType(ei))
+          {
+          case ET_TET:     return * new (lh) HCurlDummyFE<ET_TET>();
+          case ET_PRISM:   return * new (lh) HCurlDummyFE<ET_PRISM>();
+          case ET_PYRAMID: return * new (lh) HCurlDummyFE<ET_PYRAMID>();
+          case ET_TRIG:    return * new (lh) HCurlDummyFE<ET_TRIG>();
+          case ET_QUAD:    return * new (lh) HCurlDummyFE<ET_QUAD>();
+          case ET_SEGM:    return * new (lh) HCurlDummyFE<ET_SEGM>();
+          case ET_HEX:     return * new (lh) HCurlDummyFE<ET_HEX>();
+          default:
+            throw Exception ("Inconsistent element type in NedelecFESpace::GetFE");
+          }
+      }
     switch (ma->GetElType(ei))
       {
       case ET_TET:     return * new (lh) FE_NedelecTet1;

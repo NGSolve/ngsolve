@@ -380,6 +380,8 @@ namespace ngfem
     virtual void CalcNormalShape (const IntegrationPoint & ip, 
                                   SliceVector<> nshape) const;
 
+    virtual void CalcDualShape (const MappedIntegrationPoint<DIM,DIM> & mip, SliceMatrix<> shape) const;
+
   };
 
 }
