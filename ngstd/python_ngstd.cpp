@@ -3,10 +3,6 @@
 #include "python_ngstd.hpp"
 #include <Python.h>
 
-#ifdef PARALLEL
-bool MPIManager::initialized_by_me = false;
-static MPIManager mpiman;
-#endif
 
 PythonEnvironment pyenv;
 
@@ -148,13 +144,6 @@ const char* docu_string(const char* str)
 
 void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
 
-  py::class_<MPIManager>(m, "MPIManager")
-    .def("InitMPI", &MPIManager::InitMPIB)
-    .def("Barrier", &MPIManager::Barrier)
-    .def("GetWT", &MPIManager::GetWT)
-    .def("GetRank", &MPIManager::GetRank)
-    .def("GetNP", &MPIManager::GetNP)
-    ;
   
   m.def("GlobalSum", [] (double x) { return MyMPI_AllReduce(x); });
   /** Complex + complex mpi_traits is in bla.hpp;  mympi_allreduce doesn't find it **/
