@@ -3905,8 +3905,7 @@ flags : dict
          py::arg("names") = py::list(),
          py::arg("filename") = "vtkout",
          py::arg("subdivision") = 0,
-         py::arg("only_element") = -1,
-        py::call_guard<py::gil_scoped_release>()
+         py::arg("only_element") = -1
          )
     .def("Do", [](shared_ptr<BaseVTKOutput> self, int heapsize)
                                { 
