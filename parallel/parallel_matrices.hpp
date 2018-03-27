@@ -86,6 +86,9 @@ namespace ngla
     virtual AutoVector CreateRowVector () const override;
     virtual AutoVector CreateColVector () const override;
 
+    virtual int VWidth() const { return paralleldofs->GetNDofLocal(); }
+    virtual int VHeight() const { return jump_paralleldofs->GetNDofLocal(); }
+
   protected:
 
     shared_ptr<ParallelDofs> jump_paralleldofs;

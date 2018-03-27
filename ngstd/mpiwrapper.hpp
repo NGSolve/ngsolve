@@ -34,8 +34,9 @@ namespace ngstd
   enum { MPI_TAG_CMD = 110 };
   enum { MPI_TAG_SOLVE = 1110 };
 
+  struct no_base_impl {};
   template <class T>
-  class MPI_Traits
+  class MPI_Traits : public no_base_impl
   {
   public:
     static MPI_Datatype MPIType () 
@@ -108,12 +109,12 @@ namespace ngstd
 
 
   template <class T>
-  inline MPI_Datatype MyGetMPIType ()
+  INLINE MPI_Datatype MyGetMPIType ()
   {
     return MPI_Traits<T>::MPIType();
   }
 
-  inline int MyMPI_GetNTasks (MPI_Comm comm = ngs_comm)
+  INLINE int MyMPI_GetNTasks (MPI_Comm comm = ngs_comm)
   {
     static Timer t("dummy - size");
     RegionTimer r(t);
@@ -123,7 +124,7 @@ namespace ngstd
     return ntasks;
   }
   
-  inline int MyMPI_GetId (MPI_Comm comm = ngs_comm)
+  INLINE int MyMPI_GetId (MPI_Comm comm = ngs_comm)
   {
     static Timer t("dummy - rank");
     RegionTimer r(t);
@@ -133,7 +134,7 @@ namespace ngstd
     return id;
   }
 
-  inline void MyMPI_Barrier (MPI_Comm comm = ngs_comm)
+  INLINE void MyMPI_Barrier (MPI_Comm comm = ngs_comm)
   {
     static Timer t("dummy - barrier");
     RegionTimer r(t);
@@ -141,33 +142,49 @@ namespace ngstd
     MPI_Barrier (comm);
   }
 
-  inline void MyMPI_Send (int i, int dest, int tag = MPI_TAG_SOLVE, MPI_Comm comm = ngs_comm)
+  /**
+  template<typename T, typename enable_if<!is_base_of<no_base_impl, MPI_Traits<T> >::value, int>::type = 0 >
+  INLINE void MyMPI_Send( T & s, int dest, int tag = MPI_TAG_SOLVE, MPI_Comm comm = ngs_comm)
+  { MPI_Send (&val, 1, MyGetMPIType<T>(), dest, tag, comm); }
+  **/
+
+#define NGSMPI_ENABLE_FOR_STD typename enable_if<!is_base_of<no_base_impl, MPI_Traits<T> >::value, int>::type = 0
+
+  /** --- blocking P2P --- **/
+
+  template<typename T, NGSMPI_ENABLE_FOR_STD>
+  INLINE void MyMPI_Send( T & val, int dest, int tag = MPI_TAG_SOLVE, MPI_Comm comm = ngs_comm)
+  { MPI_Send (&val, 1, MyGetMPIType<T>(), dest, tag, comm); }
+  template<typename T, NGSMPI_ENABLE_FOR_STD>
+  INLINE void MyMPI_Recv (T & val, int src, int tag = MPI_TAG_SOLVE, MPI_Comm comm = ngs_comm)
+  { MPI_Recv (&val, 1, MyGetMPIType<T>(), src, tag, comm, MPI_STATUS_IGNORE); }
+
+  template<typename T, NGSMPI_ENABLE_FOR_STD>
+  INLINE void MyMPI_Send(FlatArray<T> s, int dest, int tag = MPI_TAG_SOLVE, MPI_Comm comm = ngs_comm)
+  { MPI_Send( &s[0], s.Size(), MyGetMPIType<T>(), dest, tag, comm); }
+  template <typename T, NGSMPI_ENABLE_FOR_STD>
+  INLINE void MyMPI_Recv (FlatArray <T> s, int src, int tag = MPI_TAG_SOLVE, MPI_Comm comm = ngs_comm)
+  { MPI_Recv (&s[0], s.Size(), MyGetMPIType<T> (), src, tag, comm, MPI_STATUS_IGNORE); }
+  template <typename T, NGSMPI_ENABLE_FOR_STD>
+  INLINE void MyMPI_Recv (Array <T> &s, int src, int tag = MPI_TAG_SOLVE, MPI_Comm comm = ngs_comm)
   {
-    int hi = i;
-    MPI_Send (&hi, 1, MPI_INT, dest, tag, comm);
+    MPI_Status status;
+    int len;
+    const MPI_Datatype MPI_T  = MyGetMPIType<T> ();
+    MPI_Probe (src, tag, comm, &status);
+    MPI_Get_count (&status, MPI_T, &len);
+    s.SetSize (len);
+    MPI_Recv (&s[0], len, MPI_T, src, tag, comm, MPI_STATUS_IGNORE);
   }
 
-  inline void MyMPI_Recv (int & i, int src, int tag = MPI_TAG_SOLVE, MPI_Comm comm = ngs_comm)
+  INLINE void MyMPI_SendCmd (const char * cmd)
   {
-    MPI_Recv (&i, 1, MPI_INT, src, tag, comm, MPI_STATUS_IGNORE);
+    int ntasks = MyMPI_GetNTasks();
+    if(ntasks==1) return;
+    for (int dest = 1; dest < ntasks; dest++)
+      MPI_Send( (void*)cmd, (strlen(cmd)+1), MPI_CHAR, dest, MPI_TAG_CMD, MPI_COMM_WORLD);
   }
-
-  inline void MyMPI_Send (double i, int dest, int tag = MPI_TAG_SOLVE, MPI_Comm comm = ngs_comm)
-  {
-    MPI_Send (&i, 1, MPI_DOUBLE, dest, tag, comm);
-  }
-
-  inline void MyMPI_Recv (double & i, int src, int tag = MPI_TAG_SOLVE, MPI_Comm comm = ngs_comm)
-  {
-    MPI_Recv (&i, 1, MPI_DOUBLE, src, tag, comm, MPI_STATUS_IGNORE);
-  }
-
-  inline void MyMPI_Send (const string & s, int dest, int tag = MPI_TAG_SOLVE, MPI_Comm comm = ngs_comm)
-  {
-    MPI_Send( const_cast<char*> (s.c_str()), s.length(), MPI_CHAR, dest, tag, comm);
-  }
-
-  inline void MyMPI_Recv (string & s, int src, int tag = MPI_TAG_SOLVE, MPI_Comm comm = ngs_comm)
+  INLINE void MyMPI_Recv (string & s, int src, int tag = MPI_TAG_SOLVE, MPI_Comm comm = ngs_comm)
   {
     MPI_Status status;
     int len;
@@ -177,82 +194,28 @@ namespace ngstd
     MPI_Recv(&s[0], len, MPI_CHAR, src, tag, comm, MPI_STATUS_IGNORE);
   }
 
-  template <typename T>
-  inline T MyMPI_Reduce (T d, const MPI_Op & op = MPI_SUM, MPI_Comm comm = ngs_comm)
-  {
-    static Timer t("dummy - AllReduce");
-    RegionTimer r(t);
+  
+  /** --- non-blocking P2P --- **/
 
-    T global_d;
-    MPI_Reduce (&d, &global_d, 1, MyGetMPIType<T>(), op, 0, comm);
-    return global_d;
+  template<typename T, NGSMPI_ENABLE_FOR_STD>
+  INLINE MPI_Request MyMPI_ISend (T & val, int dest, int tag = MPI_TAG_SOLVE, MPI_Comm comm = ngs_comm)
+  {
+    MPI_Request request;
+    MPI_Isend (&val, 1, MyGetMPIType<T>(), dest, tag, comm, &request);
+    return request;
+  }
+  template<typename T, NGSMPI_ENABLE_FOR_STD>
+  INLINE MPI_Request MyMPI_IRecv (T & val, int dest, int tag = MPI_TAG_SOLVE, MPI_Comm comm = ngs_comm)
+  {
+    MPI_Request request;
+    MPI_Irecv (&val, 1, MyGetMPIType<T>(), dest, tag, comm, &request);
+    return request;
   }
 
-  template <typename T>
-  inline T MyMPI_AllReduce (T d, const MPI_Op & op = MPI_SUM, MPI_Comm comm = ngs_comm)
-  {
-    static Timer t("dummy - AllReduce");
-    RegionTimer r(t);
-
-    T global_d;
-    MPI_Allreduce ( &d, &global_d, 1, MyGetMPIType<T>(), op, comm);
-    return global_d;
-  }
-
-  template <typename T>
-  inline void MyMPI_AllGather (T d, FlatArray<T> recv, MPI_Comm comm = ngs_comm)
-  {
-    static Timer t("dummy - AllGather");
-    RegionTimer r(t);
-
-    MPI_Allgather (&d, 1, MyGetMPIType<T>(), 
-		   &recv[0], 1, MyGetMPIType<T>(), comm);
-  }
-
-
-  template <typename T>
-  inline void MyMPI_AllToAll (FlatArray<T> send, FlatArray<T> recv, MPI_Comm comm = ngs_comm)
-  {
-    static Timer t("dummy - AlltoAll");
-    RegionTimer r(t);
-
-    MPI_Alltoall (&send[0], 1, MyGetMPIType<T>(), 
-		  &recv[0], 1, MyGetMPIType<T>(), comm);
-  }
-
-
-  template <class T>
-  inline void MyMPI_Send (FlatArray<T> s, int dest, int tag = MPI_TAG_SOLVE, MPI_Comm comm = ngs_comm)
-  {
-    MPI_Datatype MPI_T  = MyGetMPIType<T> ();
-    MPI_Send( &s[0], s.Size(), MPI_T, dest, tag, comm);
-  }
-
-  template <class T>
-  inline void MyMPI_Recv (FlatArray <T> s, int src, int tag = MPI_TAG_SOLVE, MPI_Comm comm = ngs_comm)
-  {
-    const MPI_Datatype MPI_T  = MyGetMPIType<T> ();
-    MPI_Recv (&s[0], s.Size(), MPI_T, src, tag, comm, MPI_STATUS_IGNORE);
-  }
-
-
-  template <class T>
-  inline void MyMPI_Recv (Array <T> & s, int src, int tag = MPI_TAG_SOLVE, MPI_Comm comm = ngs_comm)
-  {
-    MPI_Status status;
-    int len;
-    const MPI_Datatype MPI_T  = MyGetMPIType<T> ();
-    MPI_Probe (src, tag, comm, &status);
-    MPI_Get_count (&status, MPI_T, &len);
-
-    s.SetSize (len);
-    MPI_Recv (&s[0], len, MPI_T, src, tag, comm, MPI_STATUS_IGNORE);
-  }
-
-  template <class T>
-  MPI_Request MyMPI_ISend (const FlatArray<T> & s, int dest, int tag = MPI_TAG_SOLVE, MPI_Comm comm = ngs_comm)
+  template <typename T, NGSMPI_ENABLE_FOR_STD>
+  INLINE MPI_Request MyMPI_ISend (const FlatArray<T> & s, int dest, int tag = MPI_TAG_SOLVE, MPI_Comm comm = ngs_comm)
   { 
-    static Timer t("dummy - irecv");
+    static Timer t("dummy - isend");
     RegionTimer r(t);
 
     MPI_Request request;
@@ -260,9 +223,8 @@ namespace ngstd
     MPI_Isend (&s[0], s.Size(), MPI_T, dest, tag, comm, &request);
     return request;
   }
-
-  template <class T>
-  MPI_Request  MyMPI_IRecv (const FlatArray<T> & s, int src, int tag = MPI_TAG_SOLVE, MPI_Comm comm = ngs_comm)
+  template <typename T, NGSMPI_ENABLE_FOR_STD>
+  INLINE MPI_Request  MyMPI_IRecv (const FlatArray<T> & s, int src, int tag = MPI_TAG_SOLVE, MPI_Comm comm = ngs_comm)
   { 
     static Timer t("dummy - irecv");
     RegionTimer r(t);
@@ -273,31 +235,7 @@ namespace ngstd
     return request;
   }
 
-
-  template <class T>
-  inline void MyMPI_Bcast (T & s, MPI_Comm comm = ngs_comm)
-  {
-    MPI_Bcast (&s, 1, MyGetMPIType<T>(), 0, comm);
-  }
-
-  template <class T>
-  inline void MyMPI_Bcast (Array<T> & s, MPI_Comm comm = ngs_comm)
-  {
-    int size = s.Size();
-    MyMPI_Bcast (size, comm);
-    if (MyMPI_GetId() != 0) s.SetSize(size);
-    MPI_Bcast (&s[0], size, MyGetMPIType<T>(), 0, comm);
-  }
-
-  inline void MyMPI_Bcast (string & s, MPI_Comm comm = ngs_comm)
-  {
-    int len = s.length();
-    MyMPI_Bcast (len, comm);
-    if (MyMPI_GetId() != 0) s.resize (len);
-    MPI_Bcast (&s[0], len, MPI_CHAR, 0, comm);
-  }
-
-  inline void MyMPI_WaitAll (const Array<MPI_Request> & requests)
+  INLINE void MyMPI_WaitAll (const Array<MPI_Request> & requests)
   {
     static Timer t("dummy - waitall");
     RegionTimer r(t);
@@ -305,7 +243,7 @@ namespace ngstd
     MPI_Waitall (requests.Size(), &requests[0], MPI_STATUSES_IGNORE);
   }
   
-  inline int MyMPI_WaitAny (const Array<MPI_Request> & requests)
+  INLINE int MyMPI_WaitAny (const Array<MPI_Request> & requests)
   {
     static Timer t("dummy - waitany");
     RegionTimer r(t);
@@ -314,20 +252,77 @@ namespace ngstd
     MPI_Waitany (requests.Size(), &requests[0], &nr, MPI_STATUS_IGNORE);
     return nr;
   }
-  
-  
 
-  inline void MyMPI_SendCmd (const char * cmd)
+  
+  /** --- collectives --- **/
+
+  template <typename T, NGSMPI_ENABLE_FOR_STD>
+  INLINE T MyMPI_Reduce (T d, const MPI_Op & op = MPI_SUM, MPI_Comm comm = ngs_comm, int root = 0)
   {
-    int ntasks;
-    MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
+    static Timer t("dummy - AllReduce");
+    RegionTimer r(t);
 
-    if(ntasks==1)
-      return;
-    
-    for (int dest = 1; dest < ntasks; dest++)
-      MPI_Send( (void*)cmd, (strlen(cmd)+1), MPI_CHAR, dest, MPI_TAG_CMD, MPI_COMM_WORLD);
+    T global_d;
+    MPI_Reduce (&d, &global_d, 1, MyGetMPIType<T>(), op, root, comm);
+    return global_d;
   }
+
+  template <typename T, NGSMPI_ENABLE_FOR_STD>
+  INLINE T MyMPI_AllReduce (T d, const MPI_Op & op = MPI_SUM, MPI_Comm comm = ngs_comm)
+  {
+    static Timer t("dummy - AllReduce");
+    RegionTimer r(t);
+
+    T global_d;
+    MPI_Allreduce ( &d, &global_d, 1, MyGetMPIType<T>(), op, comm);
+    return global_d;
+  }
+  
+  template <typename T, NGSMPI_ENABLE_FOR_STD>
+  INLINE void MyMPI_Gather (T d, FlatArray<T> recv = FlatArray<T>(0, NULL),
+			    MPI_Comm comm = ngs_comm, int root = 0)
+  {
+    static Timer t ("dummy - Gather");
+    RegionTimer r(t);
+
+    MPI_Gather( &d, 1, MyGetMPIType<T>(),
+		recv.Size()?&recv[0]:NULL, 1, MyGetMPIType<T>(), root, comm);
+  }
+
+  template <typename T, NGSMPI_ENABLE_FOR_STD>
+  INLINE void MyMPI_AllGather (T d, FlatArray<T> recv, MPI_Comm comm = ngs_comm)
+  {
+    static Timer t("dummy - AllGather");
+    RegionTimer r(t);
+
+    MPI_Allgather (&d, 1, MyGetMPIType<T>(), 
+		   &recv[0], 1, MyGetMPIType<T>(), comm);
+  }
+  
+  template <typename T, NGSMPI_ENABLE_FOR_STD>
+  INLINE void MyMPI_AllToAll (FlatArray<T> send, FlatArray<T> recv, MPI_Comm comm = ngs_comm)
+  {
+    static Timer t("dummy - AlltoAll");
+    RegionTimer r(t);
+
+    MPI_Alltoall (&send[0], 1, MyGetMPIType<T>(), 
+		  &recv[0], 1, MyGetMPIType<T>(), comm);
+  }
+
+  
+  template <typename T, NGSMPI_ENABLE_FOR_STD>
+  INLINE void MyMPI_Bcast (T & s, MPI_Comm comm = ngs_comm, int root = 0)
+  { MPI_Bcast (&s, 1, MyGetMPIType<T>(), root, comm); }
+
+  INLINE void MyMPI_Bcast (string & s, MPI_Comm comm = ngs_comm, int root = 0)
+  {
+    int len = s.length();
+    MyMPI_Bcast (len, comm);
+    if (MyMPI_GetId() != 0) s.resize (len);
+    MPI_Bcast (&s[0], len, MPI_CHAR, root, comm);
+  }
+  
+  
 
 
 class MyMPI
@@ -346,75 +341,21 @@ public:
     else
       initialized_by_me = false;
       
+    // MPI_Comm_dup ( MPI_COMM_WORLD, &ngs_comm);      
     ngs_comm = MPI_COMM_WORLD;
     NGSOStream::SetGlobalActive (MyMPI_GetId() == 0);
     
-    if (MyMPI_GetNTasks (MPI_COMM_WORLD) > 1)
+    if (MyMPI_GetNTasks (ngs_comm) > 1)
       TaskManager::SetNumThreads (1);
   }
 
   ~MyMPI()
   {
+    // MPI_Comm_free(& ngs_comm);
     if (initialized_by_me)
       MPI_Finalize ();
   }
 };
-
-  class MPIManager
-  {
-  public:
-    static bool initialized_by_me;
-    MPIManager(){ }
-    static void InitMPI(int argc = 0, char*** argv = NULL)
-    {
-      int is_init = -1;
-      MPI_Initialized(&is_init);
-      if(!is_init)
-	{
-	  if(argc==0)
-	    {
-	      const char * progname = "ngslib";
-	      typedef const char * pchar;
-	      pchar ptrs[2] = { progname, nullptr };
-	      pchar * pptr = &ptrs[0];
-	      int argc2 = 1;
-	      MPI_Init (&argc2, (char***)&pptr);
-	    }
-	  else
-	    {
-	      int argc2 = argc;
-	      MPI_Init(&argc2, argv);
-	    }
-	  ngs_comm = MPI_COMM_WORLD;
-	  initialized_by_me = true;
-	}
-      else
-	{
-	  MPI_Comm_dup ( MPI_COMM_WORLD, &ngs_comm);
-	}
-      
-      if(ngs_comm == MPI_COMM_NULL)
-	{
-	  MPI_Comm_dup ( MPI_COMM_WORLD, &ngs_comm);      
-  	}
-      
-      NGSOStream::SetGlobalActive (MyMPI_GetId() == 0);
-      if (MyMPI_GetNTasks () > 1)
-	TaskManager::SetNumThreads (1);
-    }
-
-    ~MPIManager()
-    {
-      if(initialized_by_me)
-	MPI_Finalize();
-    }
-
-    static void InitMPIB(){ InitMPI(); }
-    static void Barrier() { MPI_Barrier(ngs_comm); }
-    static double GetWT() { return MPI_Wtime(); }
-    static int GetRank() { return MyMPI_GetId(); }
-    static int GetNP() { return MyMPI_GetNTasks(); }
-  };
 
 
 #else
@@ -422,32 +363,32 @@ public:
   enum { ngs_comm = 12345 };
   typedef int MPI_Comm;
   typedef int MPI_Op;
-  inline int MyMPI_GetNTasks (MPI_Comm comm = MPI_COMM_WORLD) { return 1; }
-  inline int MyMPI_GetId (MPI_Comm comm = MPI_COMM_WORLD) { return 0; }
+  INLINE int MyMPI_GetNTasks (MPI_Comm comm = MPI_COMM_WORLD) { return 1; }
+  INLINE int MyMPI_GetId (MPI_Comm comm = MPI_COMM_WORLD) { return 0; }
 
-  inline void MyMPI_Barrier (MPI_Comm comm = 0 ) { ; }
-  inline void MyMPI_SendCmd (const char * cmd) { ; }
+  INLINE void MyMPI_Barrier (MPI_Comm comm = 0 ) { ; }
+  INLINE void MyMPI_SendCmd (const char * cmd) { ; }
 
   template <typename T>
-  inline void MyMPI_Send (const T & data, int dest, int tag = 0)
+  INLINE void MyMPI_Send (const T & data, int dest, int tag = 0)
   { ; }
   
   template <typename T>
-  inline void MyMPI_Recv (const T & data, int dest, int tag = 0)
+  INLINE void MyMPI_Recv (const T & data, int dest, int tag = 0)
   { ; }
 
   template <typename T>
-  inline T MyMPI_AllReduce (T d, int op = 0, MPI_Comm comm = 0)  { return d; }
+  INLINE T MyMPI_AllReduce (T d, int op = 0, MPI_Comm comm = 0)  { return d; }
 
   template <typename T>
-  inline T MyMPI_Reduce (T d, int op = 0, MPI_Comm comm = ngs_comm) { return d; }
+  INLINE T MyMPI_Reduce (T d, int op = 0, MPI_Comm comm = ngs_comm) { return d; }
 
 
   template <class T>
-  inline void MyMPI_Bcast (T & s, MPI_Comm comm = 0) { ; }
+  INLINE void MyMPI_Bcast (T & s, MPI_Comm comm = 0) { ; }
   template <class T>
-  inline void MyMPI_Bcast (Array<T> & s, MPI_Comm comm = 0) { ; }
-  inline void MyMPI_Bcast (string & s, MPI_Comm comm = 0) { ; }
+  INLINE void MyMPI_Bcast (Array<T> & s, MPI_Comm comm = 0) { ; }
+  INLINE void MyMPI_Bcast (string & s, MPI_Comm comm = 0) { ; }
   
   class MyMPI
   {
@@ -458,18 +399,6 @@ public:
   enum { MPI_LOR = 4711 };
   enum { MPI_SUM = 4711 };
   enum { MPI_MAX = 4711 };
-
- class MPIManager
- {
- public:
-   MPIManager(){};
-   ~MPIManager(){};
-   static void InitMPIB(){};
-   static void Barrier(){};
-   static double GetWT(){ return -1.0; }
-   static int GetRank() { return 0; }
-   static int GetNP() { return 1; }
- };
 
 #endif
 
