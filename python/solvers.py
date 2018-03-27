@@ -222,6 +222,9 @@ def MinRes(matrix, rhs, pre=None, sol=None, maxsteps = 100, printrates = True, i
 	s_new = 0
 	s = 0
 	s_old = 0
+
+	v_old.data = 0.0
+	w_old.data = 0.0
 	
 	k = 1
 	while (k < maxsteps+1 and ResNorm > tol):
