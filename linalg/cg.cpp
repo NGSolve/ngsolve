@@ -571,26 +571,40 @@ namespace ngla
         auto w = f.CreateVector();
         auto s = f.CreateVector();
 
+	cout << "have vecs" << endl;
+	
 	int n = 0;
 	SCAL al, be, wd, wdn, kss;
 	double err;
 	if (initialize)
 	  {
+	cout << "piep1" << endl;
 	    u = 0.0;
+	cout << "piep1" << endl;
 	    d = f;
+	cout << "piep1" << endl;
 	  }
 	else
 	  {
+	cout << "piep2" << endl;
 	    d = f - (*a) * u;
+	cout << "piep2" << endl;
 	  }
 
+	cout << "piep" << endl;
+	
 	if (c)
 	  w = (*c) * d;
 	else
 	  w = d;
 
+	cout << "piep" << endl;
+
+	
 	s = w;
+	cout << "piep" << endl;
 	wdn = S_InnerProduct<IPTYPE> (w,d);
+	cout << "piep" << endl;
 
 	if (printrates) cout << IM(1) << "0 " << sqrt(Abs(wdn)) << endl;
 	if (wdn == 0.0) wdn = 1;	

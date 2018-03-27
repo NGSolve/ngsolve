@@ -3,10 +3,6 @@
 #include "python_ngstd.hpp"
 #include <Python.h>
 
-#ifdef PARALLEL
-bool MPIManager::initialized_by_me = false;
-static MPIManager mpiman;
-#endif
 
 PythonEnvironment pyenv;
 
@@ -148,13 +144,6 @@ const char* docu_string(const char* str)
 
 void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
 
-  py::class_<MPIManager>(m, "MPIManager")
-    .def("InitMPI", &MPIManager::InitMPIB)
-    .def("Barrier", &MPIManager::Barrier)
-    .def("GetWT", &MPIManager::GetWT)
-    .def("GetRank", &MPIManager::GetRank)
-    .def("GetNP", &MPIManager::GetNP)
-    ;
   
   m.def("GlobalSum", [] (double x) { return MyMPI_AllReduce(x); });
   /** Complex + complex mpi_traits is in bla.hpp;  mympi_allreduce doesn't find it **/
@@ -450,6 +439,14 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
       }
     };
 
+  m.def("SetGlobalActive", [](bool active) { 
+      cout << "SET ACTIVE TO " << active << endl;
+      NGSOStream::SetGlobalActive (active);
+      cout << "am i active??" ;
+      cout << IM(1) << " am active!!";
+      cout << endl;
+    });
+  
   py::class_<ParallelContextManager>(m, "TaskManager")
     .def(py::init<>())
     .def("__enter__", &ParallelContextManager::Enter)
@@ -487,6 +484,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
   py::class_<PyMPI_Comm> (m, "MPI_Comm")
     .def_property_readonly ("rank", [](PyMPI_Comm c) { return MyMPI_GetId(c.comm); })
     .def_property_readonly ("size", [](PyMPI_Comm c) { return MyMPI_GetNTasks(c.comm); })
+    .def ("Barrier", [](PyMPI_Comm c) { MyMPI_Barrier(c.comm); })
     ;
 
   
@@ -503,6 +501,8 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
           return PyMPI_Comm(ngs_comm);
         });
 
+  m.def("GlobalSum", [](double val) { return MyMPI_AllReduce(val); });
+  
 }
 
 
