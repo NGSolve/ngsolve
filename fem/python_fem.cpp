@@ -1204,11 +1204,22 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
                            {
                              py::list points;
                              for(auto ip : self)
-                               points.append(py::make_tuple(ip.Point()[0],
-                                                            ip.Point()[1],
-                                                            ip.Point()[2]));
+                               switch(self.Dim())
+                                 {
+                                 case 1:
+                                   points.append(py::make_tuple(ip.Point()[0]));
+                                   break;
+                                 case 2:
+                                   points.append(py::make_tuple(ip.Point()[0],
+                                                                ip.Point()[1]));
+                                   break;
+                                 default:
+                                   points.append(py::make_tuple(ip.Point()[0],
+                                                                ip.Point()[1],
+                                                                ip.Point()[2]));
+                                 }
                              return points;
-                           }, "Points of IntegrationRule as tuple, always 3 dimensional points, the last entries are meaningless in 2 or 1 dimensions")
+                           }, "Points of IntegrationRule as tuple")
     ;
 
 
@@ -1266,23 +1277,6 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
                                                })
     ;
 
-  py::class_<BaseMappedIntegrationRule>(m, "BaseMappedIntegrationRule")
-             .def("Integrate",[](BaseMappedIntegrationRule & mir, py::object func) -> py::object
-          {
-            py::object sum = py::cast(0.0);
-            for (const BaseMappedIntegrationPoint & mip : mir)
-              {
-                py::object val = func(mip);
-                cout << "mip = " << mip << endl;
-                cout << "val = " << py::cast<double>(val) << endl;
-                val = val.attr("__mul__")(py::cast((double)mip.IP().Weight()));
-                cout << "val after = " << py::cast<double>(val) << endl;
-                sum = sum.attr("__add__")(val);
-                cout << "sum = " << py::cast<double>(sum) << endl;
-              }
-            return sum;
-          })
-    ;
   py::class_<ElementTransformation, shared_ptr<ElementTransformation>>(m, "ElementTransformation")
     .def(py::init([] (ELEMENT_TYPE et, py::list vertices)
         -> shared_ptr<ElementTransformation>
@@ -1322,10 +1316,6 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
            },
           py::arg("ip"),
           py::return_value_policy::reference)
-    .def("__call__", [] (shared_ptr<ElementTransformation> self, IntegrationRule& ir)
-         {
-           return &(*self)(ir, global_alloc);
-         },py::return_value_policy::reference)
     ;
 
 
