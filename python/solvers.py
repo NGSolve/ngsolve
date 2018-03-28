@@ -194,6 +194,8 @@ def MinRes(matrix, rhs, pre=None, sol=None, maxsteps = 100, printrates = True, i
 	w_old = rhs.CreateVector()
 	z_new = rhs.CreateVector()
 	z = rhs.CreateVector()
+	mz = rhs.CreateVector()
+
 
 	if (initialize):
 		u[:] = 0.0
@@ -209,8 +211,7 @@ def MinRes(matrix, rhs, pre=None, sol=None, maxsteps = 100, printrates = True, i
 	z.data = 1/gamma * z 
 	v.data = 1/gamma * v	
 	
-		
-	ResNorm = gamma     
+	ResNorm = gamma      
 	ResNorm_old = gamma  
 	
 	if (printrates):
@@ -223,15 +224,16 @@ def MinRes(matrix, rhs, pre=None, sol=None, maxsteps = 100, printrates = True, i
 	s = 0
 	s_old = 0
 
-	v_old.data = 0.0
-	w_old.data = 0.0
+	v_old[:] = 0.0
+	w_old[:] = 0.0
 	
 	k = 1
 	while (k < maxsteps+1 and ResNorm > tol):
-
-		delta = InnerProduct(z,z)
-		v_new.data = matrix*z - delta*v - gamma * v_old
-
+		
+		mz.data = matrix*z
+		delta = InnerProduct(mz,z)
+		v_new.data = mz - delta*v - gamma * v_old
+		
 		z_new.data = pre * v_new if pre else v_new
 
 		gamma_new = sqrt(InnerProduct(z_new, v_new))
