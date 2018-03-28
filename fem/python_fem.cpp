@@ -1127,7 +1127,13 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
           );
 
 
-  py::class_<IntegrationPoint>(m, "IntegrationPoint");
+  py::class_<IntegrationPoint>(m, "IntegrationPoint")
+    .def_property_readonly("point", [](IntegrationPoint& self)
+                           {
+                             return py::make_tuple(self.Point()[0], self.Point()[1], self.Point()[2]);
+                           }, "Integration point coordinates as tuple, has always x,y and z component, which do not have meaning in lesser dimensions")
+    .def_property_readonly("weight", &IntegrationPoint::Weight)
+    ;
 
   py::class_<IntegrationRule>(m, "IntegrationRule")
     .def(py::init
@@ -1187,7 +1193,24 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
               }
             return sum;
           })
+    .def_property_readonly("weights", [] (IntegrationRule& self)
+                           {
+                             py::list weights;
+                             for (auto ip : self)
+                               weights.append(ip.Weight());
+                             return weights;
+                           }, "Weights of IntegrationRule")
+    .def_property_readonly("points", [] (IntegrationRule& self)
+                           {
+                             py::list points;
+                             for(auto ip : self)
+                               points.append(py::make_tuple(ip.Point()[0],
+                                                            ip.Point()[1],
+                                                            ip.Point()[2]));
+                             return points;
+                           }, "Points of IntegrationRule as tuple, always 3 dimensional points, the last entries are meaningless in 2 or 1 dimensions")
     ;
+
 
   py::class_<BaseMappedIntegrationPoint>(m, "BaseMappedIntegrationPoint")
     .def("__str__",
@@ -1243,6 +1266,23 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
                                                })
     ;
 
+  py::class_<BaseMappedIntegrationRule>(m, "BaseMappedIntegrationRule")
+             .def("Integrate",[](BaseMappedIntegrationRule & mir, py::object func) -> py::object
+          {
+            py::object sum = py::cast(0.0);
+            for (const BaseMappedIntegrationPoint & mip : mir)
+              {
+                py::object val = func(mip);
+                cout << "mip = " << mip << endl;
+                cout << "val = " << py::cast<double>(val) << endl;
+                val = val.attr("__mul__")(py::cast((double)mip.IP().Weight()));
+                cout << "val after = " << py::cast<double>(val) << endl;
+                sum = sum.attr("__add__")(val);
+                cout << "sum = " << py::cast<double>(sum) << endl;
+              }
+            return sum;
+          })
+    ;
   py::class_<ElementTransformation, shared_ptr<ElementTransformation>>(m, "ElementTransformation")
     .def(py::init([] (ELEMENT_TYPE et, py::list vertices)
         -> shared_ptr<ElementTransformation>
@@ -1282,6 +1322,10 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
            },
           py::arg("ip"),
           py::return_value_policy::reference)
+    .def("__call__", [] (shared_ptr<ElementTransformation> self, IntegrationRule& ir)
+         {
+           return &(*self)(ir, global_alloc);
+         },py::return_value_policy::reference)
     ;
 
 
