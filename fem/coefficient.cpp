@@ -1673,15 +1673,14 @@ public:
 
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const
   {
-    if (typeid(TIN)==typeid(Complex)) throw ExceptionNOSIMD("CF Norm of complex cannot use simds");
-    STACK_ARRAY(SIMD<double>,hmem,ir.Size()*dim1);
-    AFlatMatrix<> inval(dim1, ir.IR().GetNIP(), &hmem[0]);
+    STACK_ARRAY(SIMD<Complex>,hmem,ir.Size()*dim1);
+    FlatMatrix<SIMD<Complex>> inval(dim1, ir.Size(), &hmem[0]);
     c1->Evaluate (ir, inval);
     for (size_t i = 0; i < ir.Size(); i++)
       {
         SIMD<double> sum = 0;
         for (size_t j = 0; j < dim1; j++)
-          sum += inval.Get(j,i)*inval.Get(j,i);
+          sum += sqr(inval(j,i).real())+sqr(inval(j,i).imag());
         values(0,i) = sqrt(sum);
       }
   }
@@ -4158,9 +4157,13 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
 class RealCF : public CoefficientFunctionNoDerivative
   {
     shared_ptr<CoefficientFunction> cf;
+    bool cf_is_complex;
   public:
-    RealCF(shared_ptr<CoefficientFunction> _cf) : CoefficientFunctionNoDerivative(1,false), cf(_cf)
-    { ; }
+    RealCF(shared_ptr<CoefficientFunction> _cf)
+      : CoefficientFunctionNoDerivative(_cf->Dimension(),false), cf(_cf)
+    {
+      cf_is_complex = cf->IsComplex();
+    }
 
     virtual string GetDescription() const override
     {
@@ -4176,6 +4179,35 @@ class RealCF : public CoefficientFunctionNoDerivative
           return val(0).real();
         }
       return cf->Evaluate(ip);
+    }
+
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<double> values) const override
+    {
+      if (!cf_is_complex)
+        {
+          cf->Evaluate(ir, values);
+          return;
+        }
+
+      STACK_ARRAY(Complex, mem, ir.Size()*Dimension());
+      FlatMatrix<Complex> cvalues(ir.Size(), Dimension(), &mem[0]);
+      cf->Evaluate (ir, cvalues);
+      values.AddSize(ir.Size(), Dimension()) = Real(cvalues);
+    }
+
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
+                           BareSliceMatrix<SIMD<double>> values) const override
+    {
+      if (!cf_is_complex)
+        {
+          cf->Evaluate(ir, values);
+          return;
+        }
+
+      STACK_ARRAY(SIMD<Complex>, mem, ir.Size()*Dimension());
+      FlatMatrix<SIMD<Complex>> cvalues(Dimension(), ir.Size(), &mem[0]);
+      cf->Evaluate (ir, cvalues);
+      values.AddSize(Dimension(), ir.Size()) = Real(cvalues);
     }
   };
 
