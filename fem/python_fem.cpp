@@ -1127,7 +1127,13 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
           );
 
 
-  py::class_<IntegrationPoint>(m, "IntegrationPoint");
+  py::class_<IntegrationPoint>(m, "IntegrationPoint")
+    .def_property_readonly("point", [](IntegrationPoint& self)
+                           {
+                             return py::make_tuple(self.Point()[0], self.Point()[1], self.Point()[2]);
+                           }, "Integration point coordinates as tuple, has always x,y and z component, which do not have meaning in lesser dimensions")
+    .def_property_readonly("weight", &IntegrationPoint::Weight)
+    ;
 
   py::class_<IntegrationRule>(m, "IntegrationRule")
     .def(py::init
@@ -1187,7 +1193,35 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
               }
             return sum;
           })
+    .def_property_readonly("weights", [] (IntegrationRule& self)
+                           {
+                             py::list weights;
+                             for (auto ip : self)
+                               weights.append(ip.Weight());
+                             return weights;
+                           }, "Weights of IntegrationRule")
+    .def_property_readonly("points", [] (IntegrationRule& self)
+                           {
+                             py::list points;
+                             for(auto ip : self)
+                               switch(self.Dim())
+                                 {
+                                 case 1:
+                                   points.append(py::make_tuple(ip.Point()[0]));
+                                   break;
+                                 case 2:
+                                   points.append(py::make_tuple(ip.Point()[0],
+                                                                ip.Point()[1]));
+                                   break;
+                                 default:
+                                   points.append(py::make_tuple(ip.Point()[0],
+                                                                ip.Point()[1],
+                                                                ip.Point()[2]));
+                                 }
+                             return points;
+                           }, "Points of IntegrationRule as tuple")
     ;
+
 
   py::class_<BaseMappedIntegrationPoint>(m, "BaseMappedIntegrationPoint")
     .def("__str__",
