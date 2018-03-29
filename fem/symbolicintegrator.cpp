@@ -782,7 +782,7 @@ namespace ngfem
         // static Timer t("symbolicLFI - CalcElementVector", 2); RegionTimer reg(t);
         HeapReset hr(lh);
         // IntegrationRule ir(trafo.GetElementType(), 2*fel.Order());
-        const IntegrationRule& ir = fel.GetIR(2*fel.Order()+bonus_intorder);
+        const IntegrationRule& ir = GetIntegrationRule(trafo.GetElementType(),2*fel.Order()+bonus_intorder);
         BaseMappedIntegrationRule & mir = trafo(ir, lh);
         
         FlatVector<SCAL> elvec1(elvec.Size(), lh);
