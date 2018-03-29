@@ -110,7 +110,7 @@ namespace ngfem
     if (cnt < 3)
       {
         cnt++;
-        cout << "called base class apply, complex" << endl;
+        cout << "called base class apply, complex, type = " << typeid(*this).name() << endl;
       }
 #endif
     HeapReset hr(lh);
