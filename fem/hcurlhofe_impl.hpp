@@ -1311,13 +1311,50 @@ namespace ngfem
       }
     if (ip.VB() == BND)
       {
-	T x2, y2;
+	AutoDiff<3,T> xa(ip(0), 0), ya(ip(1),1), za(ip(2),2);
+	AutoDiff<3,T> lami[4] = { xa, ya, za, (T)(1.0) };
+
+	for (int f = 0; f < 4; f++)
+	  {
+	    int p = order_face[f][0];
+	     if (f == facetnr)
+	       {
+		 INT<4> fav = GetFaceSort (facetnr, vnums);
+		 AutoDiff<3,T> adxi = lami[fav[0]]-lami[fav[2]];
+		 AutoDiff<3,T> adeta = lami[fav[1]]-lami[fav[2]];
+		 T xi = lami[fav[0]].Value();
+		 T eta = lami[fav[1]].Value();
+		 
+		 Matrix<T> F(3,2);
+		 F.Cols(0,1) = Vec<3,T>(adxi.DValue(0),adxi.DValue(1),adxi.DValue(2));
+		 F.Cols(1,2) = Vec<3,T>(adeta.DValue(0),adeta.DValue(1),adeta.DValue(2));		 
+		 Matrix<T> Ftmp(2,2);
+		 Ftmp = Trans(F)*F;
+		 T det = Ftmp(0,0)*Ftmp(1,1)-Ftmp(1,0)*Ftmp(0,1);
+		 
+		 DubinerBasis3::Eval(order-2, xi, eta,
+				     SBLambda([&] (size_t nr, auto val)
+					      {
+						shape[ii++] = 1/(det*mip.GetMeasure())*mip.GetJacobian()*(F*Vec<2,T> (val, 0));
+						shape[ii++] = 1/(det*mip.GetMeasure())*mip.GetJacobian()*(F*Vec<2,T> (val*xi, val*eta));		
+					      }));
+		 LegendrePolynomial::Eval(order-2,xi,
+					  SBLambda([&] (size_t nr, auto val)
+						   {
+						     shape[ii++] = 1/(det*mip.GetMeasure())*mip.GetJacobian()*(F*Vec<2,T>(0, val));
+						   }));
+	       }
+	     else
+	      ii += (p+1)*(p-1);
+	  }
+	/*T x2, y2;
 	for (int f = 0; f < 4; f++)
 	  {
 	    int p = order_face[f][0];
 	    if (f == facetnr)
 	      {
-		//INT<4> fav = ET_T::GetFaceSort (f, vnums);
+		cout << "facetnr = " << facetnr << endl;
+		//INT<4> fav = GetFaceSort (f, vnums);
 		switch(facetnr)
 		  {
 		  case 0:
@@ -1439,11 +1476,11 @@ namespace ngfem
 							break;
 						      }
 						  }));
-		*/
+	*//*
 	      }
 	    else
 	      ii += (p+1)*(p-1);
-	  }
+	      }*/
       }
     else
       {
