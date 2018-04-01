@@ -2991,6 +2991,7 @@ namespace ngcomp
         }
       }
       // do we need locks for neighbor - testfunctions ?
+      /*
       for (int j = 0; j < NumIntegrators(); j++)
         if (parts[j] -> SkeletonForm())
         {
@@ -2998,6 +2999,7 @@ namespace ngcomp
           // if (dgform.neighbor_testfunction)
           // neighbor_testfunction = true;
         }
+      */
     }
     else
       return;
