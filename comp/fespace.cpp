@@ -1127,7 +1127,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
   
   std::list<std::tuple<std::string,double>> FESpace :: Timing () const
   {
-    double starttime;
     double time;
     std::list<std::tuple<std::string,double>> results;
     LocalHeap lh (100000, "FESpace - Timing");
@@ -1212,8 +1211,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     
 #ifdef TIMINGSEQUENTIAL
 
-
-    starttime = WallTime();
+    double starttime = WallTime();
     int steps = 0;
     do
       {
