@@ -451,6 +451,9 @@ namespace ngcomp
 
       case BBBND:
         return * new (lh) DummyFE<ET_POINT>();
+
+      default:
+        __assume(false); // not possible
       }
   }
 

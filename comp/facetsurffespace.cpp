@@ -321,6 +321,9 @@ namespace ngcomp
         //throw Exception("No BBBND GetFE implemented for FacetSurfaceFESpace");
 	return * new (lh) DummyFE<ET_POINT>();
 	break;
+
+      default:
+        __assume(false);
       }
   }
 
