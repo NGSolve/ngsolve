@@ -392,7 +392,7 @@ namespace ngla
     Array<int> first_microtask;
     for (int i = 0; i < blocks.Size()-1; i++)
       {
-        auto extdofs = BlockExtDofs (i);
+        // auto extdofs = BlockExtDofs (i);
         first_microtask.Append (microtasks.Size());
 
         // int nb = extdofs.Size() / 256 + 1;

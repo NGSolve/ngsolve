@@ -388,9 +388,13 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 
 
   py::class_<BaseMatrix, shared_ptr<BaseMatrix>, BaseMatrixTrampoline>(m, "BaseMatrix")
+    /*
     .def("__init__", [](BaseMatrix *instance) { 
         new (instance) BaseMatrixTrampoline(); }
         )
+    */
+    .def(py::init<>
+         ([]() { return new BaseMatrixTrampoline(); }))
     .def("__str__", [](BaseMatrix &self) { return ToString<BaseMatrix>(self); } )
     .def_property_readonly("height", [] ( BaseMatrix & self)
         { return self.Height(); } )
