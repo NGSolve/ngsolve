@@ -393,8 +393,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         new (instance) BaseMatrixTrampoline(); }
         )
     */
-    .def(py::init<>
-         ([]() { return new BaseMatrixTrampoline(); }))
+    .def(py::init<> ([]() { return new BaseMatrixTrampoline(); }))
     .def("__str__", [](BaseMatrix &self) { return ToString<BaseMatrix>(self); } )
     .def_property_readonly("height", [] ( BaseMatrix & self)
         { return self.Height(); } )

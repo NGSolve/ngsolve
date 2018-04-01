@@ -511,7 +511,6 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
           typedef const char * pchar;
           pchar ptrs[2] = { progname, nullptr };
           pchar * pptr = &ptrs[0];
-          int argc2 = 1;
           
           static MyMPI mympi(1, (char**)pptr);
           return PyMPI_Comm(ngs_comm);
