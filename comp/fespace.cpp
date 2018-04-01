@@ -1691,6 +1691,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
           case ET_PYRAMID: return *(new (lh) FE_Pyramid1);
           case ET_HEX:     return *(new (lh) FE_Hex1);
           case ET_POINT:   return *(new (lh) FE_Point);
+          default:
             throw Exception ("Inconsistent element type in NodalFESpace::GetFE");
           }
       }

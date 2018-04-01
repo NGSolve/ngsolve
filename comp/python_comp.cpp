@@ -3051,11 +3051,15 @@ flags : dict
     ;
 
   py::class_<PyNumProc, NumProc, shared_ptr<PyNumProc>> (m, "PyNumProc")
+    /*
     .def("__init__",
          [](NumProc *instance, shared_ptr<PDE> pde, Flags & flags)
                            {
                              new (instance) PyNumProc(pde, flags);
                            })
+    */
+    .def(py::init<> ([](shared_ptr<PDE> pde, Flags & flags)
+                     { return new PyNumProc(pde, flags); }))
     .def_property_readonly("pde", [](NumProc &self) { return self.GetPDE(); })
     .def("Do", [](NumProc & self, LocalHeap & lh)
                                {

@@ -2962,7 +2962,7 @@ namespace ngcomp
       timervol.Stop();
     }
     // bool needs_facet_loop = false;
-    bool needs_element_boundary_loop = false;
+    // bool needs_element_boundary_loop = false;
     // bool neighbor_testfunction = false;
     int facetvolumeintegrals = -1;
     int facetboundaryintegrals = -1;
@@ -2986,7 +2986,7 @@ namespace ngcomp
           if (dgform.element_boundary)
           {
             throw Exception("Element boundary formulation is not implemented for tensor product spaces, please reformulate as skeleton integrals");
-            needs_element_boundary_loop = true;
+            // needs_element_boundary_loop = true;
           }
         }
       }
