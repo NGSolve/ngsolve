@@ -289,6 +289,17 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
   ;
   
 
+  py::class_<BlockVector, BaseVector, shared_ptr<BlockVector>> (m, "BlockVector")
+    .def(py::init<> ([] (vector<shared_ptr<BaseVector>> vecs)
+                     {
+                       Array<shared_ptr<BaseVector>> v2;
+                       for (auto v : vecs) v2 += v;
+                       return make_shared<BlockVector> (v2);
+                     }))
+    
+    .def("__getitem__", [](BlockVector & self, int ind) { return self[ind]; })
+    ;
+  
   typedef BaseMatrix BM;
   // typedef BaseVector BV;
 

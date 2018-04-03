@@ -54,7 +54,7 @@ namespace ngla
     }
 
     /// is matrix complex ?
-    virtual bool IsComplex() const = 0;
+    virtual bool IsComplex() const { return false; }
     
     /// scalar assignment
     BaseMatrix & operator= (double s)
