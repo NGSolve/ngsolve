@@ -1311,8 +1311,8 @@ namespace ngfem
       }
     if (ip.VB() == BND)
       {
-	AutoDiff<3,T> xa(ip(0), 0), ya(ip(1),1), za(ip(2),2);
-	AutoDiff<3,T> lami[4] = { xa, ya, za, (T)(1.0) };
+	//AutoDiff<3,T> xa(ip(0), 0), ya(ip(1),1), za(ip(2),2);
+	//AutoDiff<3,T> lami[4] = { xa, ya, za, (T)(1.0) };
 
 	for (int f = 0; f < 4; f++)
 	  {
@@ -1320,17 +1320,20 @@ namespace ngfem
 	     if (f == facetnr)
 	       {
 		 INT<4> fav = GetFaceSort (facetnr, vnums);
-		 AutoDiff<3,T> adxi = lami[fav[0]]-lami[fav[2]];
-		 AutoDiff<3,T> adeta = lami[fav[1]]-lami[fav[2]];
-		 T xi = lami[fav[0]].Value();
-		 T eta = lami[fav[1]].Value();
+		 //AutoDiff<3,T> adxi = lami[fav[0]]-lami[fav[2]];
+		 //AutoDiff<3,T> adeta = lami[fav[1]]-lami[fav[2]];
+		 Vec<3> adxi = pnts[fav[0]] - pnts[fav[2]];
+		 Vec<3> adeta = pnts[fav[1]] - pnts[fav[2]];
+		 T xi = lam[fav[0]];
+		 T eta = lam[fav[1]];
 		 
-		 Matrix<T> F(3,2);
-		 F.Cols(0,1) = Vec<3,T>(adxi.DValue(0),adxi.DValue(1),adxi.DValue(2));
-		 F.Cols(1,2) = Vec<3,T>(adeta.DValue(0),adeta.DValue(1),adeta.DValue(2));		 
-		 Matrix<T> Ftmp(2,2);
+		 Matrix<> F(3,2);
+		 F.Cols(0,1) = adxi;//Vec<3,T>(adxi.DValue(0),adxi.DValue(1),adxi.DValue(2));
+		 F.Cols(1,2) = adeta;//Vec<3,T>(adeta.DValue(0),adeta.DValue(1),adeta.DValue(2));
+		 
+		 Matrix<> Ftmp(2,2);
 		 Ftmp = Trans(F)*F;
-		 T det = Ftmp(0,0)*Ftmp(1,1)-Ftmp(1,0)*Ftmp(0,1);
+		 auto det = sqrt(Ftmp(0,0)*Ftmp(1,1)-Ftmp(1,0)*Ftmp(0,1));
 		 
 		 DubinerBasis3::Eval(order-2, xi, eta,
 				     SBLambda([&] (size_t nr, auto val)
