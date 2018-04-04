@@ -54,7 +54,6 @@ void ExportSparseMatrix(py::module m)
     (m, (string("SparseMatrixSymmetric") + typeid(T).name()).c_str());
 }
 
-
 void NGS_DLL_HEADER ExportNgla(py::module &m) {
 
   py::enum_<PARALLEL_STATUS>(m, "PARALLEL_STATUS", "enum of possible parallel ")
@@ -85,17 +84,14 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
           [] (size_t s, bool is_complex, int es) -> shared_ptr<BaseVector>
           { return CreateBaseVector(s,is_complex, es); },
           "size"_a, "complex"_a=false, "entrysize"_a=1);
-
     
-    
-    py::class_<BaseVector, shared_ptr<BaseVector>>(m, "BaseVector",
-						   py::dynamic_attr() // add dynamic attributes
-									 )
-      .def("Set", (BaseVector& (BaseVector::*)(double, const BaseVector&)) (&BaseVector::Set))
-      .def(py::init([] (size_t s, bool is_complex, int es) -> shared_ptr<BaseVector>
-		    { return CreateBaseVector(s,is_complex, es); }),
-	   "size"_a, "complex"_a=false, "entrysize"_a=1)
-      .def(py::pickle([] (const BaseVector& bv)
+  py::class_<BaseVector, shared_ptr<BaseVector>>(m, "BaseVector",
+        py::dynamic_attr() // add dynamic attributes
+      )
+    .def(py::init([] (size_t s, bool is_complex, int es) -> shared_ptr<BaseVector>
+                  { return CreateBaseVector(s,is_complex, es); }),
+                  "size"_a, "complex"_a=false, "entrysize"_a=1)
+    .def(py::pickle([] (const BaseVector& bv)
                     {
                       MemoryView mv((void*) &bv.FVDouble()[0], sizeof(double) * bv.FVDouble().Size());
                       return py::make_tuple(bv.Size(),bv.IsComplex(),bv.EntrySize(),mv);
@@ -127,6 +123,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("CreateVector", [] (BaseVector & self)
          { return shared_ptr<BaseVector>(self.CreateVector()); },
          "creates a new vector of same type, contents is undefined")
+    
     .def("Copy", [] (BaseVector & self)
          {
            auto hv = shared_ptr<BaseVector>(self.CreateVector());
@@ -458,8 +455,8 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("MultTransAdd",  [](BaseMatrix &m, double s, BaseVector &x, BaseVector &y) { m.MultTransAdd (s, x, y); }, py::call_guard<py::gil_scoped_release>())
     .def("MultScale",    [](BaseMatrix &m, double s, BaseVector &x, BaseVector &y)
           {
-	    m.Mult (x,y);
-	    if(s!=1.0)
+              m.Mult (x,y);
+              if(s!=1.0)
                   y *= s;
           } , py::call_guard<py::gil_scoped_release>())
     .def("MultAdd",      [](BaseMatrix &m, Complex s, BaseVector &x, BaseVector &y) { m.MultAdd (s, x, y); }, py::call_guard<py::gil_scoped_release>())
