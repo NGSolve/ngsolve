@@ -383,8 +383,6 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
       {
           size_t start, step, n;
           InitSlice( inds, self.Size(), start, step, n );
-	  cout << "__setitem__ slice; start " << start << " n " << n << " size " <<
-	    self.Size() << " !!" << endl;
           if (step != 1)
             throw Exception ("slices with non-unit distance not allowed");          
 	  if(n==self.Size()) {
