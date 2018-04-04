@@ -26,7 +26,8 @@ namespace ngcomp
     bool block;
     bool hypre;
     bool coarse;
-
+    bool local; // act as bddc for the local matrix
+    
     shared_ptr<BaseMatrix> inv;
     shared_ptr<BaseMatrix> inv_coarse;
     string inversetype;   //sparsecholesky or pardiso or ....
@@ -59,6 +60,8 @@ namespace ngcomp
 
       hypre = ahypre;
 
+      local = flags.GetDefineFlag("local");
+      
       // pwbmat = NULL;
       inv = NULL;
 
@@ -304,7 +307,8 @@ namespace ngcomp
 
 
 #ifdef PARALLEL
-      AllReduceDofData (weight, MPI_SUM, fes->GetParallelDofs());
+      if(!local)
+	AllReduceDofData (weight, MPI_SUM, fes->GetParallelDofs());
 #endif
       ParallelFor (weight.Size(),
                    [&] (size_t i)
@@ -377,7 +381,7 @@ namespace ngcomp
       else
 	{
 #ifdef PARALLEL
-	  if (bfa->GetFESpace()->IsParallel())
+	  if (bfa->GetFESpace()->IsParallel() && !local)
 	    {
 	      shared_ptr<ParallelDofs> pardofs = bfa->GetFESpace()->GetParallelDofs();
 
