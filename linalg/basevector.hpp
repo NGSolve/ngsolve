@@ -671,9 +671,25 @@ namespace ngla
   class BlockVector : public BaseVector
   {
     Array<shared_ptr<BaseVector>> vecs;
+    BitArray ispar;
   public:
     BlockVector (const Array<shared_ptr<BaseVector>> & avecs)
-      : vecs(avecs) { ; }
+      : vecs(avecs), ispar(vecs.Size())
+    {
+      ispar.Clear();
+
+      size = 0;
+      for(auto & vec:vecs)
+	size += vec->Size();
+
+      for(size_t k = 0; k<vecs.Size(); k++) {
+	auto stat = vecs[k]->GetParallelStatus();
+	if( (stat==CUMULATED) || (stat==DISTRIBUTED) )
+	  ispar.Set(k);
+      }
+      
+    }
+
     shared_ptr<BaseVector> & operator[] (size_t i) const { return vecs[i]; }
 
     virtual void * Memory () const
@@ -689,6 +705,9 @@ namespace ngla
                               FlatVector<Complex> v) const 
     { throw Exception("BlockVector::GetIndirect is not useful"); }      
 
+    // not yet implemented properly for complex components!!
+    virtual bool IsComplex() const
+    { return false; }
 
     virtual AutoVector CreateVector () const
     {
@@ -697,12 +716,31 @@ namespace ngla
         v2 += v->CreateVector();
       return make_shared<BlockVector> (v2);
     }
-    
+
+    virtual double InnerProductD (const BaseVector & v2) const
+    {
+      double pp = 0;
+      double ps = 0;
+      const auto & v2b = dynamic_cast_BlockVector(v2);
+      for(size_t k = 0; k<vecs.Size(); k++) {
+	auto p = vecs[k]->InnerProductD(*v2b[k]);
+	if(ispar.Test(k)) pp += p;
+	else ps += p;
+      }
+      return pp+MyMPI_AllReduce(ps);
+    }
 
     virtual BaseVector & Scale (double scal)
     {
       for (auto i : ::Range(vecs))
         *vecs[i] *= scal;
+      return *this;
+    }
+
+    virtual BaseVector & SetScalar (double scal)
+    {
+      for (auto i : ::Range(vecs))
+        vecs[i]->SetScalar(scal);
       return *this;
     }
 

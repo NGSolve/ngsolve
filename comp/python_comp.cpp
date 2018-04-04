@@ -1570,7 +1570,8 @@ kwargs : For a description of the possible kwargs have a look a bit further down
     // .def("__str__", &ToString<FESpace>)
     .def("__str__", [] (shared_ptr<FESpace> self) { return ToString(*self); } )
     .def("__timing__", [] (shared_ptr<FESpace> self) { return py::cast(self->Timing()); })
-
+    .def_property_readonly("lospace", [](shared_ptr<FESpace> self) -> shared_ptr<FESpace>
+			   { return self->LowOrderFESpacePtr(); })
     .def_property_readonly("mesh",
                            [](shared_ptr<FESpace> self) -> shared_ptr<MeshAccess>
                            { return self->GetMeshAccess(); })

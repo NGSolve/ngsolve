@@ -176,14 +176,15 @@ namespace ngla
   {
     if (this == NULL)  // illformed C++, shall get rid of this
       throw Exception("ReduceDofData for null-object");
-    static Timer t("ParallelDofs::ReduceDofData"); RegionTimer reg(t);
-
-    int ntasks = GetNTasks ();
-    int rank = MyMPI_GetId(comm);
-    if (ntasks <= 1) return;
 
     static Timer t0("ParallelDofs :: ReduceDofData");
     RegionTimer rt(t0);
+
+    MPI_Comm comm = GetCommunicator();
+    int ntasks = GetNTasks();
+    int rank = MyMPI_GetId(comm);
+    if (ntasks <= 1) return;
+
 
     Array<int> nsend(ntasks), nrecv(ntasks);
     nsend = 0;
@@ -213,34 +214,6 @@ namespace ngla
       if(master!=rank)
 	send_data[master][nsend[master]++] = data[i];
     }
-
-    // if (!IsMasterDof(i))
-    //   {
-    // 	FlatArray<int> distprocs = GetDistantProcs (i);
-    // 	int master = ntasks;
-    // 	for (int j = 0; j < distprocs.Size(); j++)
-    // 	  master = min (master, distprocs[j]);
-    // 	dist_data.Add (master, data[i]);
-    //   }
-    
-    // DynamicTable<T> dist_data(ntasks);
-
-    // for (int i = 0; i < GetNDofLocal(); i++)
-    //   if (!IsMasterDof(i))
-    // 	{
-    // 	  FlatArray<int> distprocs = GetDistantProcs (i);
-    // 	  int master = ntasks;
-    // 	  for (int j = 0; j < distprocs.Size(); j++)
-    // 	    master = min (master, distprocs[j]);
-    // 	  dist_data.Add (master, data[i]);
-    // 	}
-    
-    // Array<int> nsend(ntasks), nrecv(ntasks);
-    // for (int i = 0; i < ntasks; i++)
-    //   nsend[i] = dist_data[i].Size();
-
-    // MyMPI_AllToAll (nsend, nrecv, comm);
-    // Table<T> recv_data(nrecv);
 
     Array<MPI_Request> requests; 
     for (int i = 0; i < ntasks; i++)
@@ -277,14 +250,14 @@ namespace ngla
     if (this == NULL)   // illformed C++, shall get rid of this
       throw Exception("ScatterDofData for null-object");
 
-    MPI_Comm comm = GetCommunicator();
+    static Timer t0("ParallelDofs :: ScatterDofData");
+    RegionTimer rt(t0);
 
-    int ntasks = MyMPI_GetNTasks (comm);
+    MPI_Comm comm = GetCommunicator();
+    int ntasks = GetNTasks();
     int rank = MyMPI_GetId(comm);
     if (ntasks <= 1) return;
 
-    static Timer t0("ParallelDofs :: ScatterDofData");
-    RegionTimer rt(t0);
 
     Array<int> nsend(ntasks), nrecv(ntasks);
     nsend = 0;
@@ -315,23 +288,6 @@ namespace ngla
 	for(auto p:dps)
 	  send_data[p][nsend[p]++] = data[i];
     }
-
-    // DynamicTable<T> dist_data(ntasks);
-    // for (int i = 0; i < GetNDofLocal(); i++)
-    //   if (IsMasterDof(i))
-    // 	{
-    // 	  FlatArray<int> distprocs = GetDistantProcs (i);
-    // 	  for (int j = 0; j < distprocs.Size(); j++)
-    // 	    dist_data.Add (distprocs[j], data[i]);
-    // 	}
-
-    // Array<int> nsend(ntasks), nrecv(ntasks);
-    // for (int i = 0; i < ntasks; i++)
-    //   nsend[i] = dist_data[i].Size();
-
-    // MyMPI_AllToAll (nsend, nrecv, comm);
-
-    // Table<T> recv_data(nrecv);
 
     Array<MPI_Request> requests;
     for (int i = 0; i < ntasks; i++)
