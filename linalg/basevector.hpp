@@ -687,14 +687,6 @@ namespace ngla
 	if( (stat==CUMULATED) || (stat==DISTRIBUTED) )
 	  ispar.Set(k);
       }
-
-      // for(auto k:Range(vecs.Size())) {
-      // 	auto pv = dynamic_cast_ParallelBaseVector(&vecs[k]);
-      // 	if(pv!=nullptr) {
-      // 	  if(pv->IsParallelVector())
-      // 	    ispar.Set(k);
-      // 	}
-      // }
       
     }
 
