@@ -95,11 +95,6 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
       .def(py::init([] (size_t s, bool is_complex, int es) -> shared_ptr<BaseVector>
 		    { return CreateBaseVector(s,is_complex, es); }),
 	   "size"_a, "complex"_a=false, "entrysize"_a=1)
-      .def("somefunc", [](BaseVector & vec)
-       	   {
-	     shared_ptr<BaseVector>ret(new AutoVector(vec.CreateVector()));
-	     return ret;
-	   } )  
       .def(py::pickle([] (const BaseVector& bv)
                     {
                       MemoryView mv((void*) &bv.FVDouble()[0], sizeof(double) * bv.FVDouble().Size());
@@ -349,34 +344,6 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 
       virtual AutoVector CreateVector () const
       { return CreateRowVector(); }
-      
-      virtual AutoVector CreateRowVector () const
-      {
-        pybind11::gil_scoped_acquire gil;
-        pybind11::function overload = pybind11::get_overload(this, "CreateRowVector");
-	if(overload) {
-	  py::object pyret = overload();
-	  shared_ptr<BaseVector> vec = pyret.cast<shared_ptr<BaseVector>>();
-	  return vec;
-	}
-	else {
-	  return BaseMatrix :: CreateRowVector();
-	}
-      }
-      
-      virtual AutoVector CreateColVector () const
-      {
-        pybind11::gil_scoped_acquire gil;
-        pybind11::function overload = pybind11::get_overload(this, "CreateRowVector");
-	if(overload) {
-	  py::object pyret = overload();
-	  shared_ptr<BaseVector> vec = pyret.cast<shared_ptr<BaseVector>>();
-	  return vec;
-	}
-	else {
-	  return BaseMatrix :: CreateColVector();
-	}
-      }
       
       void Mult (const BaseVector & x, BaseVector & y) const override {
         pybind11::gil_scoped_acquire gil;
@@ -778,4 +745,3 @@ PYBIND11_MODULE(libngla, m) {
 
 
 #endif // NGS_PYTHON
-
