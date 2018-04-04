@@ -799,8 +799,6 @@ inverse : string
     ;
 
   m.def("TestPC", [](const BaseMatrix & mat, const BaseMatrix & pre) {
-      cout << "mat type: " << typeid(mat).name() << endl;
-      cout << "pre type: " << typeid(pre).name() << endl;
       EigenSystem eigen(mat, pre);
       eigen.Calc();
       cout << IM(1) << " Min Eigenvalue : "  << eigen.EigenValue(1) << endl; 
