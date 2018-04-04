@@ -116,8 +116,8 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 
     class BaseVectorTrampoline : public BaseVector
     {
-      py::object pyme;
     public:
+      py::object pyme;
       using BaseVector::BaseVector;
       BaseVectorTrampoline(size_t as) {
 	//not true anymore..
@@ -501,6 +501,39 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
             Width,          /* Name of function */
             );
       }
+
+      virtual AutoVector CreateVector () const
+      { return CreateRowVector(); }
+      
+      virtual AutoVector CreateRowVector () const
+      {
+        pybind11::gil_scoped_acquire gil;
+        pybind11::function overload = pybind11::get_overload(this, "CreateRowVector");
+	if(overload) {
+	  py::object pyret = overload();
+	  shared_ptr<BaseVectorTrampoline> vec = pyret.cast<shared_ptr<BaseVectorTrampoline>>();
+	  vec->pyme = pyret;
+	  return vec;
+	}
+	else {
+	  return BaseMatrix :: CreateRowVector();
+	}
+      }
+      
+      virtual AutoVector CreateColVector () const
+      {
+        pybind11::gil_scoped_acquire gil;
+        pybind11::function overload = pybind11::get_overload(this, "CreateRowVector");
+	if(overload) {
+	  py::object pyret = overload();
+	  shared_ptr<BaseVectorTrampoline> vec = pyret.cast<shared_ptr<BaseVectorTrampoline>>();
+	  vec->pyme = pyret;
+	  return vec;
+	}
+	else {
+	  return BaseMatrix :: CreateColVector();
+	}
+      }
       
       void Mult (const BaseVector & x, BaseVector & y) const override {
         pybind11::gil_scoped_acquire gil;
@@ -792,6 +825,18 @@ inverse : string
            py::arg("precision")=1e-8, py::arg("maxsteps")=200
           )
     ;
+
+  m.def("TestPC", [](const BaseMatrix & mat, const BaseMatrix & pre) {
+      cout << "mat type: " << typeid(mat).name() << endl;
+      cout << "pre type: " << typeid(pre).name() << endl;
+      EigenSystem eigen(mat, pre);
+      eigen.Calc();
+      cout << IM(1) << " Min Eigenvalue : "  << eigen.EigenValue(1) << endl; 
+      cout << IM(1) << " Max Eigenvalue : " << eigen.MaxEigenValue() << endl; 
+      cout << IM(1) << " Condition   " << eigen.MaxEigenValue()/eigen.EigenValue(1) << endl; 
+      return;
+    },
+    py::arg("mat"), py::arg("pre"));
   
   py::class_<QMRSolver<double>, shared_ptr<QMRSolver<double>>, BaseMatrix> (m, "QMRSolverD")
     ;
