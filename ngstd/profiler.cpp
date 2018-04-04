@@ -145,21 +145,13 @@ namespace ngstd
     {
       lock_guard<mutex> guard(createtimer_mutex);
       for (int i = SIZE-1; i > 0; i--)
-	if( usedcounter[i] && (names[i]==name) ) {
-	  usedcounter[i] ++;
-	  nr = i;
-	  break;
-	}
-      if(nr==-1) {
-	for (int i = SIZE-1; i > 0; i--)
-	  if (!usedcounter[i])
-	    {
-	      usedcounter[i] = 1;
-	      names[i] = name;
-	      nr = i;
-	      break;
-	    }
-      }
+	if (!usedcounter[i])
+	  {
+	    usedcounter[i] = 1;
+	    names[i] = name;
+	    nr = i;
+	    break;
+	  }
     }
     if (nr > -1) return nr;
     static bool first_overflow = true;
