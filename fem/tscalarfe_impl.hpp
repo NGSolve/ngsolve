@@ -644,7 +644,8 @@ namespace ngfem
         T_CalcShape (tip, // TIP<DIM, AutoDiff<DIM>> (adp),
                      SBLambda ([&] (int j, AD2Vec<DIM> shape)
                                { sum += coefs(j) * shape; }));
-        vals.Row(i).AddSize(DIM) = sum;
+        // vals.Row(i).AddSize(DIM) = sum;
+        FlatVec<DIM>(vals.Addr(i,0)) = sum;
       }
   }
 

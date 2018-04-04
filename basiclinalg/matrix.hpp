@@ -1651,6 +1651,10 @@ namespace ngbla
       return data[i]; 
     }
 
+    INLINE TELEM * Addr(size_t i, size_t j) const
+    {
+      return data+i*dist+j;
+    }
     using DummySize::Height;
     using DummySize::Width;
     /*
