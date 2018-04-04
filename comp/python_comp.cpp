@@ -3174,17 +3174,19 @@ flags : dict
                           {
                             static Timer t("Integrate CF"); RegionTimer reg(t);
                             // static mutex addcomplex_mutex;
-                           BitArray mask(ma->GetNRegions(vb));
-                           mask.Set();
+                            BitArray mask;
                             {
                               py::gil_scoped_acquire aquire;
                               py::extract<Region> defon_region(definedon);
                               if (defon_region.check())
-                                vb = VorB(defon_region());
-                              if(defon_region.check())
-                                for(auto i : Range(ma->GetNRegions(vb)))
-                                  if(!defon_region().Mask().Test(i))
-                                    mask.Clear(i);
+                                {
+                                  vb = VorB(defon_region());
+                                  mask = BitArray(defon_region().Mask());
+                                }
+                            }
+                            if(!mask.Size()){
+                              mask = BitArray(ma->GetNRegions(vb));
+                              mask.Set();
                             }
 			   int dim = cf->Dimension();
 			   if((region_wise || element_wise) && dim != 1)
