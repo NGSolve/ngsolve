@@ -32,6 +32,8 @@ namespace ngfem
     // virtual ~T_ScalarFiniteElement() { ; }
 
     HD virtual ELEMENT_TYPE ElementType() const override { return ET; }
+    HD NGS_DLL_HEADER virtual int Dim () const override { return DIM; } 
+
     
     HD NGS_DLL_HEADER virtual void CalcShape (const IntegrationPoint & ip, 
 					      BareSliceVector<> shape) const override;
@@ -109,10 +111,10 @@ namespace ngfem
 			     const std::function<void(int,Vec<DIM>)> & callback) const;
                        */
 
-    HD NGS_DLL_HEADER virtual void CalcMappedDShape (const MappedIntegrationPoint<DIM,DIM> & mip, 
+    HD NGS_DLL_HEADER virtual void CalcMappedDShape (const BaseMappedIntegrationPoint & mip, 
                                                      BareSliceMatrix<> dshape) const override;
 
-    HD NGS_DLL_HEADER virtual void CalcMappedDShape (const MappedIntegrationRule<DIM,DIM> & mip, 
+    HD NGS_DLL_HEADER virtual void CalcMappedDShape (const BaseMappedIntegrationRule & mip, 
                                                      BareSliceMatrix<> dshape) const override;
 
     HD NGS_DLL_HEADER 
