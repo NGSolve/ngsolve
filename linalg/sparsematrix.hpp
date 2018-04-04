@@ -298,6 +298,9 @@ namespace ngla
     { 
       AsVector() = amat.AsVector(); 
     }
+
+    static shared_ptr<SparseMatrixTM> CreateFromCOO (FlatArray<int> i, FlatArray<int> j,
+                                                     FlatArray<TSCAL> val, size_t h, size_t w);
       
     virtual ~SparseMatrixTM ();
 

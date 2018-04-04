@@ -990,6 +990,26 @@ namespace ngla
     ;
   }
 
+
+  template <class TM>
+  shared_ptr<SparseMatrixTM<TM>> SparseMatrixTM<TM> ::
+  CreateFromCOO (FlatArray<int> indi, FlatArray<int> indj,
+                 FlatArray<TSCAL> val, size_t h, size_t w)
+  {
+    Array<int> cnt(h);
+    cnt = 0;
+    for (auto i : indi) cnt[i]++;
+
+    auto matrix = make_shared<SparseMatrix<TM>> (cnt);
+    for (auto k : ::Range(indi))
+      (*matrix)(indi[k], indj[k]) = val[k];
+    return matrix;
+  }
+  
+
+
+
+  
   Timer timer_addelmat_nonsym("SparseMatrix::AddElementMatrix");
   
   template <class TM>
