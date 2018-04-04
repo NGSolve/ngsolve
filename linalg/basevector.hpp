@@ -723,7 +723,6 @@ namespace ngla
       double ps = 0;
       const auto & v2b = dynamic_cast_BlockVector(v2);
       for(size_t k = 0; k<vecs.Size(); k++) {
-	// auto p = InnerProduct(*vecs[k], *v2b[k]);
 	auto p = vecs[k]->InnerProductD(*v2b[k]);
 	if(ispar.Test(k)) pp += p;
 	else ps += p;
@@ -774,25 +773,13 @@ namespace ngla
   {
     AutoVector * ax = dynamic_cast<AutoVector*> (&x);
     if (ax) return dynamic_cast<BlockVector&> (**ax);
-    try {
-      return dynamic_cast<BlockVector&> (x);
-    }
-    catch(std::bad_cast& bc) {
-      cout << "Incorrectly tried to cast to BlockVector!" << endl;
-      throw;
-    }
+    return dynamic_cast<BlockVector&> (x);
   }
   inline const BlockVector & dynamic_cast_BlockVector (const BaseVector & x)
   {
     const AutoVector * ax = dynamic_cast<const AutoVector*> (&x);
     if (ax) return dynamic_cast<const BlockVector&> (**ax);
-    try {
-      return dynamic_cast<const BlockVector&> (x);
-    }
-    catch(std::bad_cast& bc) {
-      cout << "Incorrectly tried to cast to BlockVector!" << endl;
-      throw;
-    }
+    return dynamic_cast<const BlockVector&> (x);
   }
 
   
