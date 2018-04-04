@@ -1723,19 +1723,9 @@ kwargs : For a description of the possible kwargs have a look a bit further down
 
     .def("SolveM",
          [] (const shared_ptr<FESpace> self,
-             spCF rho, BaseVector& vec, int heapsize)
-          {
-            if (heapsize > global_heapsize)
-              {
-                global_heapsize = heapsize;
-                glh = LocalHeap(heapsize, "python-comp lh", true);
-                bool first_time = true;
-                if (first_time)
-                  { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }
-              }
-            self->SolveM(*rho, vec, glh);
-          },
-         py::arg("rho"), py::arg("vec"), py::arg("heapsize")=1000000)
+             spCF rho, BaseVector& vec)
+          { self->SolveM(*rho, vec, glh); },
+         py::arg("rho"), py::arg("vec"))
         
     .def("__eq__",
          [] (shared_ptr<FESpace> self, shared_ptr<FESpace> other)
@@ -2356,37 +2346,13 @@ used_idnrs : list of int = None
          
     .def("Set", 
          [](shared_ptr<GF> self, spCF cf,
-            VorB boundary, py::object definedon, int heapsize, py::object heap)
+            VorB boundary, py::object definedon)
          {
            shared_ptr<TPHighOrderFESpace> tpspace = dynamic_pointer_cast<TPHighOrderFESpace>(self->GetFESpace());          
             Region * reg = nullptr;
             if (py::extract<Region&> (definedon).check())
               reg = &py::extract<Region&>(definedon)();
             
-            if (py::extract<LocalHeap&> (heap).check())
-              {
-                LocalHeap & lh = py::extract<LocalHeap&> (heap)();
-                if(tpspace)
-                {
-                  Transfer2TPMesh(cf.get(),self.get(),lh);
-                  return;
-                }
-                if (reg)
-                  SetValues (cf, *self, *reg, NULL, lh);
-                else
-                  SetValues (cf, *self, boundary, NULL, lh);
-                return;
-              }
-
-            if (heapsize > global_heapsize)
-              {
-                global_heapsize = heapsize;
-                glh = LocalHeap(heapsize, "python-comp lh", true);
-                bool first_time = true;
-                if (first_time)
-                  { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }
-              }
-            // LocalHeap lh(heapsize, "GridFunction::Set-lh", true);
             if(tpspace)
             {
               Transfer2TPMesh(cf.get(),self.get(),glh);
@@ -2400,7 +2366,6 @@ used_idnrs : list of int = None
           py::arg("coefficient"),
           py::arg("VOL_or_BND")=VOL,
           py::arg("definedon")=DummyArgument(),
-          py::arg("heapsize")=1000000, py::arg("heap")=DummyArgument(),
          "Set values"
       )
 
@@ -2732,26 +2697,13 @@ check_unused : bool
     .def_property_readonly("space", [](BF& self) { return self.GetFESpace(); })
 
     .def_property_readonly("integrators", [](BF & self)
-                   {
-                     py::list igts;
-                     for (auto igt : self.Integrators())
-                       igts.append(igt);
-                     return igts;
-                   } )
+                           { return MakePyTuple (self.Integrators()); })
     
-    .def("Assemble", [](BF & self, int heapsize, bool reallocate)
-                                     {
-                                       if (heapsize > global_heapsize)
-                                         {
-                                           global_heapsize = heapsize;
-                                           glh = LocalHeap(heapsize, "python-comp lh", true);
-                                           bool first_time = true;
-                                           if (first_time)
-                                             { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }                                           
-                                         }
-                                       self.ReAssemble(glh,reallocate);
-                                     }, py::call_guard<py::gil_scoped_release>(),
-         py::arg("heapsize")=1000000,py::arg("reallocate")=false)
+    .def("Assemble", [](BF & self, bool reallocate)
+         {
+           self.ReAssemble(glh,reallocate);
+         }, py::call_guard<py::gil_scoped_release>(),
+         py::arg("reallocate")=false)
 
     .def_property_readonly("mat", [](BF & self)
                                          {
@@ -2796,19 +2748,11 @@ check_unused : bool
             return self.Energy(*x);
           }, py::call_guard<py::gil_scoped_release>())
     
-    .def("Apply", [](BF & self, BaseVector& x, BaseVector & y, int heapsize)
+    .def("Apply", [](BF & self, BaseVector& x, BaseVector & y)
 	  {
-            if (heapsize > global_heapsize)
-              {
-                global_heapsize = heapsize;
-                glh = LocalHeap(heapsize, "python-comp lh", true);
-                bool first_time = true;
-                if (first_time)
-                  { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }                
-              }
 	    self.ApplyMatrix (x, y, glh);
 	  }, py::call_guard<py::gil_scoped_release>(),
-         py::arg("x"),py::arg("y"),py::arg("heapsize")=1000000,docu_string(R"raw_string(
+         py::arg("x"),py::arg("y"), docu_string(R"raw_string(
 Applies a (non-)linear variational formulation to x and stores the result in y.
 
 Parameters
@@ -2819,40 +2763,19 @@ x : ngsolve.BaseVector
 y : ngsolve.BaseVector
   output vector
 
-heapsize : int
-  Size of the LocalHeap for that operation. If you get an error about not
-  enough heapsize increase this value.
-
 )raw_string"))
 
-    .def("ComputeInternal", [](BF & self, BaseVector & u, BaseVector & f, int heapsize)
+    .def("ComputeInternal", [](BF & self, BaseVector & u, BaseVector & f)
 	  {
-            if (heapsize > global_heapsize)
-              {
-                global_heapsize = heapsize;
-                glh = LocalHeap(heapsize, "python-comp lh", true);
-                bool first_time = true;
-                if (first_time)
-                  { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }
-                
-              }
 	    self.ComputeInternal (u, f, glh );
 	  }, py::call_guard<py::gil_scoped_release>(),
-         py::arg("u"),py::arg("f"),py::arg("heapsize")=1000000)
+         py::arg("u"),py::arg("f"))
 
-    .def("AssembleLinearization", [](BF & self, BaseVector & ulin, int heapsize)
+    .def("AssembleLinearization", [](BF & self, BaseVector & ulin)
 	  {
-            if (heapsize > global_heapsize)
-              {
-                global_heapsize = heapsize;
-                glh = LocalHeap(heapsize, "python-comp lh", true);
-                bool first_time = true;
-                if (first_time)
-                  { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }
-              }
 	    self.AssembleLinearization (ulin, glh);
 	  }, py::call_guard<py::gil_scoped_release>(),
-         py::arg("ulin"),py::arg("heapsize")=1000000)
+         py::arg("ulin"))
 
     .def("Flux", [](BF & self, shared_ptr<GridFunction> gf) -> spCF
           {
@@ -2941,29 +2864,14 @@ flags : dict
             return self; 
           },
          py::arg("integrator"))
-
+    
     .def("__iadd__",[](shared_ptr<LF> self, shared_ptr<LinearFormIntegrator> other) { (*self)+=other; return self; })
 
-    .def_property_readonly("integrators",  [](shared_ptr<LF> self)
-                   {
-                     py::list igts;
-                     for (auto igt : self->Integrators())
-                       igts.append (igt);
-                     return igts;
-                   })
+    .def_property_readonly("integrators", [](shared_ptr<LF> self)
+                           { return MakePyTuple (self->Integrators()); })
 
-    .def("Assemble",  [](shared_ptr<LF> self, int heapsize)
-         {
-           if (heapsize > global_heapsize)
-             {
-               global_heapsize = heapsize;
-               glh = LocalHeap(heapsize, "python-comp lh", true);
-               bool first_time = true;
-               if (first_time)
-                 { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }                
-             }
-           self->Assemble(glh);
-         }, py::call_guard<py::gil_scoped_release>(), py::arg("heapsize")=1000000)
+    .def("Assemble", [](shared_ptr<LF> self)
+         { self->Assemble(glh); }, py::call_guard<py::gil_scoped_release>())
 
     .def_property_readonly("components", [](shared_ptr<LF> self)
                    { 
@@ -3042,20 +2950,22 @@ flags : dict
   //////////////////////////////////////////////////////////////////////////////////////////
 
   py::class_<NumProc, NGS_Object, shared_ptr<NumProc>> (m, "NumProc")
-    .def("Do", [](NumProc & self, int heapsize)
-                               {
-                                 LocalHeap lh (heapsize, "NumProc::Do-heap");
-                                 self.Do(lh);
-                               }, py::call_guard<py::gil_scoped_release>(),
-         py::arg("heapsize")=1000000)
+    .def("Do", [](NumProc & self)
+         {
+           self.Do(glh);
+         }, py::call_guard<py::gil_scoped_release>())
     ;
 
   py::class_<PyNumProc, NumProc, shared_ptr<PyNumProc>> (m, "PyNumProc")
+    /*
     .def("__init__",
          [](NumProc *instance, shared_ptr<PDE> pde, Flags & flags)
                            {
                              new (instance) PyNumProc(pde, flags);
                            })
+    */
+    .def(py::init<> ([](shared_ptr<PDE> pde, Flags & flags)
+                     { return new PyNumProc(pde, flags); }))
     .def_property_readonly("pde", [](NumProc &self) { return self.GetPDE(); })
     .def("Do", [](NumProc & self, LocalHeap & lh)
                                {
@@ -3260,18 +3170,10 @@ flags : dict
         [](spCF cf,
              shared_ptr<MeshAccess> ma, 
 	     VorB vb, int order, py::object definedon,
-	   bool region_wise, bool element_wise, int heapsize)
+	   bool region_wise, bool element_wise)
                           {
                             static Timer t("Integrate CF"); RegionTimer reg(t);
                             // static mutex addcomplex_mutex;
-			    if (heapsize > global_heapsize)
-			      {
-				global_heapsize = heapsize;
-				glh = LocalHeap(heapsize, "python-comp lh", true);
-                                bool first_time = true;
-                                if (first_time)
-                                  { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }                                                
-			      }
                            BitArray mask(ma->GetNRegions(vb));
                            mask.Set();
                             {
@@ -3468,7 +3370,6 @@ flags : dict
 	py::arg("definedon")=DummyArgument(),
            py::arg("region_wise")=false,
 	py::arg("element_wise")=false,
-	py::arg("heapsize") = 1000000,
         py::call_guard<py::gil_scoped_release>())
     ;
 
@@ -3857,24 +3758,18 @@ flags : dict
                 tpfes->ProlongateFromXSpace(gf_x,gf_tp,lh);
               else
                 cout << "GridFunction gf_x is not defined on first space"<<endl;
-              },
-        py::call_guard<py::gil_scoped_release>());
+            },
+         py::call_guard<py::gil_scoped_release>());
    m.def("Transfer2StdMesh", [](const shared_ptr<GF> gfutp,
-                                shared_ptr<GF> gfustd, int heapsize )
+                                shared_ptr<GF> gfustd)
             {
-              if (heapsize > global_heapsize)
-              {
-                global_heapsize = heapsize;
-                glh = LocalHeap(heapsize, "python-comp lh", true);
-              }
               static Timer tall("comp.Transfer2StdMesh"); RegionTimer rall(tall);
               Transfer2StdMesh(gfutp.get(),gfustd.get(),glh);
               return;
              },
              py::arg("gftp"),
              py::arg("gfstd"),
-             py::arg() = 1000000,
-        py::call_guard<py::gil_scoped_release>()
+         py::call_guard<py::gil_scoped_release>()
         );
    
    m.def("Transfer2StdMesh", [](const spCF cftp, shared_ptr<GF> gfustd )
@@ -3907,22 +3802,18 @@ flags : dict
          py::arg("subdivision") = 0,
          py::arg("only_element") = -1
          )
-    .def("Do", [](shared_ptr<BaseVTKOutput> self, int heapsize)
-                               { 
-                                 LocalHeap lh (heapsize, "VTKOutput-heap");
-                                 self->Do(lh);
-                               },
-         py::arg("heapsize")=1000000,
-        py::call_guard<py::gil_scoped_release>())
-    .def("Do", [](shared_ptr<BaseVTKOutput> self, const BitArray * drawelems, int heapsize)
-                               { 
-                                 LocalHeap lh (heapsize, "VTKOutput-heap");
-                                 self->Do(lh, drawelems);
-                               },
-         py::arg("drawelems"),py::arg("heapsize")=1000000,
-        py::call_guard<py::gil_scoped_release>())
-    
-    ;
+     .def("Do", [](shared_ptr<BaseVTKOutput> self)
+          { 
+            self->Do(glh);
+          },
+          py::call_guard<py::gil_scoped_release>())
+     .def("Do", [](shared_ptr<BaseVTKOutput> self, const BitArray * drawelems)
+          { 
+            self->Do(glh, drawelems);
+          },
+          py::arg("drawelems"),
+          py::call_guard<py::gil_scoped_release>())
+     ;
 
   /////////////////////////////////////////////////////////////////////////////////////
 }

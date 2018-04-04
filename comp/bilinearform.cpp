@@ -2872,7 +2872,7 @@ namespace ngcomp
     static Timer timerfac1 ("Apply Matrix1 (TP) - facets 1");
     static Timer timerfac2 ("Apply Matrix1 (TP) - facets 2");
     RegionTimer rall(timerall);
-    bool hasbound = false;
+    // bool hasbound = false;
     bool hasinner = false;
     bool hasskeletonbound = false;
     bool hasskeletoninner = false;
@@ -2881,10 +2881,12 @@ namespace ngcomp
     {
       const BilinearFormIntegrator & bfi = *GetIntegrator(j);
       if (bfi.BoundaryForm())
-        if (bfi.SkeletonForm())
-          hasskeletonbound = true;
-        else
-          hasbound = true;
+        {
+          if (bfi.SkeletonForm())
+            hasskeletonbound = true;
+          // else
+          // hasbound = true;
+        }
       else
         if (bfi.SkeletonForm())
           hasskeletoninner = true; 
@@ -2959,9 +2961,9 @@ namespace ngcomp
       // }
       timervol.Stop();
     }
-    bool needs_facet_loop = false;
-    bool needs_element_boundary_loop = false;
-    bool neighbor_testfunction = false;
+    // bool needs_facet_loop = false;
+    // bool needs_element_boundary_loop = false;
+    // bool neighbor_testfunction = false;
     int facetvolumeintegrals = -1;
     int facetboundaryintegrals = -1;
     if (hasskeletonbound||hasskeletoninner)
@@ -2973,29 +2975,31 @@ namespace ngcomp
           auto dgform = parts[j] -> GetDGFormulation();
           if (!dgform.element_boundary && !parts[j]->BoundaryForm())
           {
-            needs_facet_loop = true;
+            // needs_facet_loop = true;
             facetvolumeintegrals = j;
           }
           if (!dgform.element_boundary && parts[j]->BoundaryForm())
           {
-            needs_facet_loop = true;
+            // needs_facet_loop = true;
             facetboundaryintegrals = j;
           }
           if (dgform.element_boundary)
           {
             throw Exception("Element boundary formulation is not implemented for tensor product spaces, please reformulate as skeleton integrals");
-            needs_element_boundary_loop = true;
+            // needs_element_boundary_loop = true;
           }
         }
       }
       // do we need locks for neighbor - testfunctions ?
+      /*
       for (int j = 0; j < NumIntegrators(); j++)
         if (parts[j] -> SkeletonForm())
         {
           auto dgform = parts[j] -> GetDGFormulation();
-          if (dgform.neighbor_testfunction)
-            neighbor_testfunction = true;
+          // if (dgform.neighbor_testfunction)
+          // neighbor_testfunction = true;
         }
+      */
     }
     else
       return;

@@ -80,6 +80,33 @@ namespace ngla
   };
 
 
+
+  class BlockMatrix : public BaseMatrix
+  {
+    Array<Array<shared_ptr<BaseMatrix>>> mats;
+    size_t h, w;
+  public:
+    BlockMatrix (const Array<Array<shared_ptr<BaseMatrix>>> & amats)
+      : mats(amats)
+    {
+      h = mats.Size();
+      w = (h > 0) ? mats[0].Size() : 0;
+    }
+
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override
+    {
+      auto & bvx = dynamic_cast<const BlockVector&> (x);
+      auto & bvy = dynamic_cast<BlockVector&> (y);
+      
+      for (size_t i = 0; i < h; i++)
+        for (size_t j = 0; j < w; j++)
+          {
+            auto & spmat = mats[i][j];
+            if (spmat)
+              spmat->MultAdd(s, *bvx[j], *bvy[j]);
+          }
+    }
+  };
 }
 
 

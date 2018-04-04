@@ -54,7 +54,7 @@ namespace ngla
     }
 
     /// is matrix complex ?
-    virtual bool IsComplex() const = 0;
+    virtual bool IsComplex() const { return false; }
     
     /// scalar assignment
     BaseMatrix & operator= (double s)
@@ -241,9 +241,11 @@ namespace ngla
   class Transpose : public BaseMatrix
   {
     const BaseMatrix & bm;
+    shared_ptr<BaseMatrix> spbm;
   public:
     ///
     Transpose (const BaseMatrix & abm) : bm(abm) { ; }
+    Transpose (shared_ptr<BaseMatrix> aspbm) : bm(*aspbm), spbm(aspbm) { ; }
     ///
     virtual bool IsComplex() const { return bm.IsComplex(); }
 
