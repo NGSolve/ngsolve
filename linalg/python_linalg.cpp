@@ -86,136 +86,12 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
           { return CreateBaseVector(s,is_complex, es); },
           "size"_a, "complex"_a=false, "entrysize"_a=1);
 
-
-
-    class BaseVectorTrampoline : public BaseVector
-    {
-    public:
-      py::object pyme;
-      using BaseVector::BaseVector;
-      BaseVectorTrampoline(size_t as) {
-	this->size = as;
-      }
-      
-      ~BaseVectorTrampoline() { }
-      virtual bool IsComplex() const { return false; }
-      virtual FlatVector<double> FVDouble () const
-      { throw Exception( "BaseVectorTrampoline :: FVDouble"); }
-      virtual FlatVector<Complex> FVComplex () const
-      { throw Exception( "BaseVectorTrampoline :: FVComplex"); }
-      virtual void * Memory () const throw () { return (void*)NULL; }
-      virtual void GetIndirect (FlatArray<int> ind, 
-				FlatVector<double> v) const
-      { throw Exception( "BaseVectorTrampoline :: GetIndirect (double version)"); }
-      virtual void GetIndirect (FlatArray<int> ind, 
-				FlatVector<Complex> v) const
-      { throw Exception( "BaseVectorTrampoline :: GetIndirect (Complex version)"); }
-      
-      virtual double InnerProductD (const BaseVector & v) const override
-      {
-	pybind11::gil_scoped_acquire gil;
-        pybind11::function overload = pybind11::get_overload(this, "InnerProductD");
-	const AutoVector * avecv = dynamic_cast<const AutoVector*>(&v);
-	auto sv = shared_ptr<BaseVector>(const_cast<BaseVector*>((avecv!=NULL)?&(**avecv):&v),
-					 NOOP_Deleter);
-      	if(overload) {
-	  py::object pyret = overload(sv);
-	  return py::extract<double>(pyret)();
-	}
-	else {
-	  return BaseVector :: InnerProductD(v);
-	}
-      }
-
-      virtual AutoVector CreateVector () const override
-      {
-	pybind11::gil_scoped_acquire gil;
-        pybind11::function overload = pybind11::get_overload(this, "CreateVector");
-	if(overload) {
-	  py::object pyret = overload();
-	  shared_ptr<BaseVectorTrampoline> vec = pyret.cast<shared_ptr<BaseVectorTrampoline>>();
-
-	  // circular reference; leaks memory!!
-	  vec->pyme = pyret;
-	  return vec;
-	}
-	else {
-	  return CreateBaseVector(size, false, 1);
-	}
-      }
-
-      virtual BaseVector & SetScalar (double scal) override
-      {
-	pybind11::gil_scoped_acquire gil;
-	py::object pyobj = py::cast(this);
-        pybind11::function overload = pybind11::get_overload(this, "SetScalar");
-	if(overload) {
-	  py::object pyret = overload(scal);
-	  return *this;
-	}
-	else {
-	  return BaseVector :: SetScalar(scal);
-	}
-      }
-
-      virtual BaseVector & Scale (double scal) override
-      {
-	pybind11::gil_scoped_acquire gil;
-	py::object pyobj = py::cast(this);
-        pybind11::function overload = pybind11::get_overload(this, "Scale");
-	if(overload) {
-	  py::object pyret = overload(scal);
-	  return *this;
-	}
-	else {
-	  return BaseVector :: Scale(scal);
-	}
-      }
-
-      virtual BaseVector & Set (double scal, const BaseVector & v) override
-      {
-	pybind11::gil_scoped_acquire gil;
-	py::object pyobj = py::cast(this);
-        pybind11::function overload = pybind11::get_overload(this, "Set");
-	if(overload) {
-	  const AutoVector * avecv = dynamic_cast<const AutoVector*>(&v);
-          auto sv = shared_ptr<BaseVector>(const_cast<BaseVector*>((avecv!=NULL)?&(**avecv):&v),
-					   NOOP_Deleter);
-	  py::object pyret = overload(scal, sv);
-	  return *this;
-	}
-	else {
-	  return BaseVector :: Set(scal, v);
-	}
-      }
-
-      virtual BaseVector & Add (double scal, const BaseVector & v) override
-      {
-	pybind11::gil_scoped_acquire gil;
-	py::object pyobj = py::cast(this);
-	const AutoVector * avecv = dynamic_cast<const AutoVector*>(&v);
-	auto sv = shared_ptr<BaseVector>(const_cast<BaseVector*>((avecv!=NULL)?&(**avecv):&v),
-					 NOOP_Deleter);
-        pybind11::function overload = pybind11::get_overload(this, "Add");
-	if(overload) {
-	  py::object pyret = overload(sv, scal); // reversed order (!!)
-	  return *this;
-	}
-	else {
-	  return BaseVector :: SetScalar(scal);
-	}
-	
-      }
-      
-    };
-
     
     
-    py::class_<BaseVector, shared_ptr<BaseVector>, BaseVectorTrampoline>(m, "BaseVector",
-									 py::dynamic_attr() // add dynamic attributes
+    py::class_<BaseVector, shared_ptr<BaseVector>>(m, "BaseVector",
+						   py::dynamic_attr() // add dynamic attributes
 									 )
       .def("Set", (BaseVector& (BaseVector::*)(double, const BaseVector&)) (&BaseVector::Set))
-      .def(py::init([](size_t s){ return make_shared<BaseVectorTrampoline>(s); }))
       .def(py::init([] (size_t s, bool is_complex, int es) -> shared_ptr<BaseVector>
 		    { return CreateBaseVector(s,is_complex, es); }),
 	   "size"_a, "complex"_a=false, "entrysize"_a=1)
@@ -480,8 +356,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         pybind11::function overload = pybind11::get_overload(this, "CreateRowVector");
 	if(overload) {
 	  py::object pyret = overload();
-	  shared_ptr<BaseVectorTrampoline> vec = pyret.cast<shared_ptr<BaseVectorTrampoline>>();
-	  vec->pyme = pyret;
+	  shared_ptr<BaseVector> vec = pyret.cast<shared_ptr<BaseVector>>();
 	  return vec;
 	}
 	else {
@@ -495,8 +370,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         pybind11::function overload = pybind11::get_overload(this, "CreateRowVector");
 	if(overload) {
 	  py::object pyret = overload();
-	  shared_ptr<BaseVectorTrampoline> vec = pyret.cast<shared_ptr<BaseVectorTrampoline>>();
-	  vec->pyme = pyret;
+	  shared_ptr<BaseVector> vec = pyret.cast<shared_ptr<BaseVector>>();
 	  return vec;
 	}
 	else {
