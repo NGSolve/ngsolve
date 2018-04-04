@@ -55,19 +55,6 @@ void ExportSparseMatrix(py::module m)
 }
 
 
-void refcnt(py::object & o)
-{
-  auto id = py::module::import("builtins").attr("id");
-  cout << "id: " << id(o) << endl;
-  auto type = py::module::import("builtins").attr("type");
-  cout << "type: " << type(o) << endl;
-  auto rc = py::module::import("sys").attr("getrefcount");
-  cout << "refcount: " << rc(o) << endl;
-  // cout << "print object: " << endl;
-  // py::print(o);
-  return; 
-} 
-
 void NGS_DLL_HEADER ExportNgla(py::module &m) {
 
   py::enum_<PARALLEL_STATUS>(m, "PARALLEL_STATUS", "enum of possible parallel ")
@@ -100,19 +87,6 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
           "size"_a, "complex"_a=false, "entrysize"_a=1);
 
 
-    // class BVTHolder : public AutoVector
-    // {
-    //   py::object pyvec;
-    // public:
-    //   BVTHolder (shared_ptr<BaseVector> avec, py::object apyvec)
-    // 	: AutoVector(avec)
-    //   { pyvec = apyvec; }
-    //   BVTHolder (const BVTHolder & av2) : AutoVector(av2)
-    //   { cout << "BVTH copy constructor!!" << endl; pyvec = av2.pyvec; }
-    //   ~BVTHolder() {
-    // 	cout << "BVT-HOLDER DIED!!" << endl;
-    //   }
-    // };
 
     class BaseVectorTrampoline : public BaseVector
     {
@@ -120,8 +94,6 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
       py::object pyme;
       using BaseVector::BaseVector;
       BaseVectorTrampoline(size_t as) {
-	//not true anymore..
-	// static_assert( sizeof(BaseVector)==sizeof(BaseVectorTrampoline), "slkdf");
 	this->size = as;
       }
       
@@ -139,12 +111,8 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 				FlatVector<Complex> v) const
       { throw Exception( "BaseVectorTrampoline :: GetIndirect (Complex version)"); }
       
-      // virtual size_t InitSize() const
-      // { PYBIND11_OVERLOAD_PURE(size_t, BaseVectorTrampoline, InitSize, ); }
-
       virtual double InnerProductD (const BaseVector & v) const override
       {
-	// PYBIND11_OVERLOAD( double, BaseVector, InnerProductD, v2);
 	pybind11::gil_scoped_acquire gil;
         pybind11::function overload = pybind11::get_overload(this, "InnerProductD");
 	const AutoVector * avecv = dynamic_cast<const AutoVector*>(&v);
@@ -167,23 +135,17 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 	  py::object pyret = overload();
 	  shared_ptr<BaseVectorTrampoline> vec = pyret.cast<shared_ptr<BaseVectorTrampoline>>();
 
-	  // version 1 - circular reference
+	  // circular reference; leaks memory!!
 	  vec->pyme = pyret;
 	  return vec;
-
-	  // version 2 - python cannot unpack BVT from holder!!  (Set(scal, v2) with wrapped v2!)
-	  // shared_ptr<BaseVector> holder = make_shared<BVTHolder>(vec, pyret);
-	  // return AutoVector(holder);
 	}
 	else {
 	  return CreateBaseVector(size, false, 1);
 	}
-	// PYBIND11_OVERLOAD_PURE( shared_ptr<BaseVector>, BaseVector, CreateVector, );
       }
 
       virtual BaseVector & SetScalar (double scal) override
       {
-	// PYBIND11_OVERLOAD(BaseVector&, BaseVector, SetScalar, scal);
 	pybind11::gil_scoped_acquire gil;
 	py::object pyobj = py::cast(this);
         pybind11::function overload = pybind11::get_overload(this, "SetScalar");
@@ -198,7 +160,6 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 
       virtual BaseVector & Scale (double scal) override
       {
-	// PYBIND11_OVERLOAD(BaseVector&, BaseVector, Scale, scal);
 	pybind11::gil_scoped_acquire gil;
 	py::object pyobj = py::cast(this);
         pybind11::function overload = pybind11::get_overload(this, "Scale");
@@ -230,7 +191,6 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 
       virtual BaseVector & Add (double scal, const BaseVector & v) override
       {
-	// PYBIND11_OVERLOAD_PURE(BaseVector&, BaseVector, Add, v, scal);
 	pybind11::gil_scoped_acquire gil;
 	py::object pyobj = py::cast(this);
 	const AutoVector * avecv = dynamic_cast<const AutoVector*>(&v);
