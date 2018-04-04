@@ -213,6 +213,10 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
           InitSlice( inds, self.Size(), start, step, n );
           if (step != 1)
             throw Exception ("slices with non-unit distance not allowed");          
+	  if(n==self.Size()) {
+	    self.SetScalar(d);
+	    return;
+	  }
           self.Range(start,start+n) = d;
       } )
     .def("__setitem__", [](BaseVector & self,  py::slice inds, Complex z )
@@ -339,8 +343,12 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         pybind11::gil_scoped_acquire gil;
         pybind11::function overload = pybind11::get_overload(this, "Mult");
         if (overload) {
-          auto sx = shared_ptr<BaseVector>(const_cast<BaseVector*>(&x), NOOP_Deleter);
-          auto sy = shared_ptr<BaseVector>(const_cast<BaseVector*>(&y), NOOP_Deleter);
+	  const AutoVector * avecx = dynamic_cast<const AutoVector*>(&x);
+          auto sx = shared_ptr<BaseVector>(const_cast<BaseVector*>((avecx!=NULL)?&(**avecx):&x),
+					   NOOP_Deleter);
+	  const AutoVector * avecy = dynamic_cast<const AutoVector*>(&y);
+          auto sy = shared_ptr<BaseVector>(const_cast<BaseVector*>((avecy!=NULL)?&(**avecy):&y),
+					   NOOP_Deleter);
           overload(sx,sy);
         }
         else
@@ -350,8 +358,12 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         pybind11::gil_scoped_acquire gil;
         pybind11::function overload = pybind11::get_overload(this, "MultAdd");
         if (overload) {
-          auto sx = shared_ptr<BaseVector>(const_cast<BaseVector*>(&x), NOOP_Deleter);
-          auto sy = shared_ptr<BaseVector>(const_cast<BaseVector*>(&y), NOOP_Deleter);
+	  const AutoVector * avecx = dynamic_cast<const AutoVector*>(&x);
+          auto sx = shared_ptr<BaseVector>(const_cast<BaseVector*>((avecx!=NULL)?&(**avecx):&x),
+					   NOOP_Deleter);
+	  const AutoVector * avecy = dynamic_cast<const AutoVector*>(&y);
+          auto sy = shared_ptr<BaseVector>(const_cast<BaseVector*>((avecy!=NULL)?&(**avecy):&y),
+					   NOOP_Deleter);
           overload(s, sx,sy);
         }
         else
@@ -361,8 +373,12 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         pybind11::gil_scoped_acquire gil;
         pybind11::function overload = pybind11::get_overload(this, "MultTransAdd");
         if (overload) {
-          auto sx = shared_ptr<BaseVector>(const_cast<BaseVector*>(&x), NOOP_Deleter);
-          auto sy = shared_ptr<BaseVector>(const_cast<BaseVector*>(&y), NOOP_Deleter);
+	  const AutoVector * avecx = dynamic_cast<const AutoVector*>(&x);
+          auto sx = shared_ptr<BaseVector>(const_cast<BaseVector*>((avecx!=NULL)?&(**avecx):&x),
+					   NOOP_Deleter);
+	  const AutoVector * avecy = dynamic_cast<const AutoVector*>(&y);
+          auto sy = shared_ptr<BaseVector>(const_cast<BaseVector*>((avecy!=NULL)?&(**avecy):&y),
+					   NOOP_Deleter);
           overload(s, sx,sy);
         }
         else
@@ -374,8 +390,12 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         pybind11::gil_scoped_acquire gil;
         pybind11::function overload = pybind11::get_overload(this, "MultAdd");
         if (overload) {
-          auto sx = shared_ptr<BaseVector>(const_cast<BaseVector*>(&x), NOOP_Deleter);
-          auto sy = shared_ptr<BaseVector>(const_cast<BaseVector*>(&y), NOOP_Deleter);
+	  const AutoVector * avecx = dynamic_cast<const AutoVector*>(&x);
+          auto sx = shared_ptr<BaseVector>(const_cast<BaseVector*>((avecx!=NULL)?&(**avecx):&x),
+					   NOOP_Deleter);
+	  const AutoVector * avecy = dynamic_cast<const AutoVector*>(&y);
+          auto sy = shared_ptr<BaseVector>(const_cast<BaseVector*>((avecy!=NULL)?&(**avecy):&y),
+					   NOOP_Deleter);
           overload(s, sx,sy);
         }
         else
@@ -385,8 +405,12 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         pybind11::gil_scoped_acquire gil;
         pybind11::function overload = pybind11::get_overload(this, "MultTransAdd");
         if (overload) {
-          auto sx = shared_ptr<BaseVector>(const_cast<BaseVector*>(&x), NOOP_Deleter);
-          auto sy = shared_ptr<BaseVector>(const_cast<BaseVector*>(&y), NOOP_Deleter);
+	  const AutoVector * avecx = dynamic_cast<const AutoVector*>(&x);
+          auto sx = shared_ptr<BaseVector>(const_cast<BaseVector*>((avecx!=NULL)?&(**avecx):&x),
+					   NOOP_Deleter);
+	  const AutoVector * avecy = dynamic_cast<const AutoVector*>(&y);
+          auto sy = shared_ptr<BaseVector>(const_cast<BaseVector*>((avecy!=NULL)?&(**avecy):&y),
+					   NOOP_Deleter);
           overload(s, sx,sy);
         }
         else
@@ -608,6 +632,16 @@ inverse : string
            py::arg("precision")=1e-8, py::arg("maxsteps")=200
           )
     ;
+
+  m.def("TestPC", [](const BaseMatrix & mat, const BaseMatrix & pre) {
+      EigenSystem eigen(mat, pre);
+      eigen.Calc();
+      cout << IM(1) << " Min Eigenvalue : "  << eigen.EigenValue(1) << endl; 
+      cout << IM(1) << " Max Eigenvalue : " << eigen.MaxEigenValue() << endl; 
+      cout << IM(1) << " Condition   " << eigen.MaxEigenValue()/eigen.EigenValue(1) << endl; 
+      return;
+    },
+    py::arg("mat"), py::arg("pre"));
   
   py::class_<QMRSolver<double>, shared_ptr<QMRSolver<double>>, BaseMatrix> (m, "QMRSolverD")
     ;
