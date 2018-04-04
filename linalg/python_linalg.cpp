@@ -341,9 +341,6 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
             Width,          /* Name of function */
             );
       }
-
-      virtual AutoVector CreateVector () const
-      { return CreateRowVector(); }
       
       void Mult (const BaseVector & x, BaseVector & y) const override {
         pybind11::gil_scoped_acquire gil;
