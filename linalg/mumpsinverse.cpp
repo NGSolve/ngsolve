@@ -895,7 +895,6 @@ namespace ngla
 	
 	for (int src = 1; src < ntasks; src++)
 	  {
-	    cout << "get from " << src << " of " << ntasks << endl;
 	    Array<int> loc2glob;
 	    Array<TV> hx;
 	    MyMPI_Recv (loc2glob, src);
@@ -910,14 +909,11 @@ namespace ngla
 	ncid.rhs = (typename mumps_trait<TSCAL>::MUMPS_TSCAL*) rhs.Data();
 	ncid.job = JOB_SOLVE;
 
-	cout << "ok solve mumps" << endl;
 	mumps_trait<TSCAL>::MumpsFunction (&ncid);
 
 	for (int src = 1; src < ntasks; src++)
 	  {
-	    cout << "get from " << src << " of " << ntasks << endl;
 	    Array<int> loc2glob;
-	    
 	    MyMPI_Recv (loc2glob, src);
 	    Array<TV> hx(loc2glob.Size());
 
