@@ -257,7 +257,8 @@ def MinRes(matrix, rhs, pre=None, sol=None, maxsteps = 100, printrates = True, i
 		
 		#update of residuum
 		ResNorm = abs(s_new) * ResNorm_old
-		print("it = ", k, " Residuennorm = ", ResNorm)	
+		if (printrates):		
+			print("it = ", k, " Residuennorm = ", ResNorm)	
 
 		k += 1
 
