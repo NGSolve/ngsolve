@@ -145,6 +145,20 @@ const char* docu_string(const char* str)
 void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
 
   
+  m.def("GlobalSum", [] (double x) { return MyMPI_AllReduce(x); });
+  /** Complex + complex mpi_traits is in bla.hpp;  mympi_allreduce doesn't find it **/
+  m.def("GlobalSum", [] (Complex x) { 
+#ifdef PARALLEL
+      Complex global_d;
+      MPI_Allreduce (&x, &global_d, 1, MPI_DOUBLE_COMPLEX, MPI_SUM, ngs_comm);
+      return global_d;
+#else
+      return x;
+#endif
+    });
+  m.def("GlobalSum", [] (int x) { return MyMPI_AllReduce(x); });
+  m.def("GlobalSum", [] (size_t x) { return MyMPI_AllReduce(x); });
+
   std::string nested_name = "ngstd";
 
   m.def("TestFlags", [] (py::dict const &d) { cout << py::extract<Flags>(d)() << endl; } );
@@ -450,10 +464,6 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
       }
     };
 
-  m.def("SetGlobalActive", [](bool active) { 
-      NGSOStream::SetGlobalActive (active);
-    });
-  
   py::class_<ParallelContextManager>(m, "TaskManager")
     .def(py::init<>())
     .def("__enter__", &ParallelContextManager::Enter)
@@ -491,16 +501,6 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
   py::class_<PyMPI_Comm> (m, "MPI_Comm")
     .def_property_readonly ("rank", [](PyMPI_Comm c) { return MyMPI_GetId(c.comm); })
     .def_property_readonly ("size", [](PyMPI_Comm c) { return MyMPI_GetNTasks(c.comm); })
-    .def("Barrier", [](PyMPI_Comm c) { MyMPI_Barrier(c.comm); })
-    .def("Sum", [](PyMPI_Comm c, double x) { return MyMPI_AllReduce(x, MPI_SUM, c.comm); })
-    .def("Min", [](PyMPI_Comm c, double x) { return MyMPI_AllReduce(x, MPI_MIN, c.comm); })
-    .def("Max", [](PyMPI_Comm c, double x) { return MyMPI_AllReduce(x, MPI_MAX, c.comm); })
-    .def("Sum", [](PyMPI_Comm c, int x) { return MyMPI_AllReduce(x, MPI_SUM, c.comm); })
-    .def("Min", [](PyMPI_Comm c, int x) { return MyMPI_AllReduce(x, MPI_MIN, c.comm); })
-    .def("Max", [](PyMPI_Comm c, int x) { return MyMPI_AllReduce(x, MPI_MAX, c.comm); })
-    .def("Sum", [](PyMPI_Comm c, size_t x) { return MyMPI_AllReduce(x, MPI_SUM, c.comm); })
-    .def("Min", [](PyMPI_Comm c, size_t x) { return MyMPI_AllReduce(x, MPI_MIN, c.comm); })
-    .def("Max", [](PyMPI_Comm c, size_t x) { return MyMPI_AllReduce(x, MPI_MAX, c.comm); })
     ;
 
   
@@ -516,8 +516,6 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
           return PyMPI_Comm(ngs_comm);
         });
 
-  m.def("GlobalSum", [](double val) { return MyMPI_AllReduce(val); });
-  
 }
 
 
