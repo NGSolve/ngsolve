@@ -427,12 +427,35 @@ public:
     diffop->Apply (fel[comp], mip, x.Range(r), flux, lh);
   }
 
+  NGS_DLL_HEADER virtual void
+  Apply (const FiniteElement & bfel,
+         const BaseMappedIntegrationPoint & mip,
+         FlatVector<Complex> x, 
+         FlatVector<Complex> flux,
+         LocalHeap & lh) const
+  {
+    const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
+    IntRange r = BlockDim() * fel.GetRange(comp);
+    diffop->Apply (fel[comp], mip, x.Range(r), flux, lh);
+  }
+
 
   virtual void
   Apply (const FiniteElement & bfel,
          const SIMD_BaseMappedIntegrationRule & bmir,
          BareSliceVector<double> x, 
          BareSliceMatrix<SIMD<double>> flux) const
+  {
+    const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
+    IntRange r = BlockDim() * fel.GetRange(comp);
+    diffop->Apply (fel[comp], bmir, x.Range(r), flux);
+  }
+
+  virtual void
+  Apply (const FiniteElement & bfel,
+         const SIMD_BaseMappedIntegrationRule & bmir,
+         BareSliceVector<Complex> x, 
+         BareSliceMatrix<SIMD<Complex>> flux) const
   {
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
     IntRange r = BlockDim() * fel.GetRange(comp);

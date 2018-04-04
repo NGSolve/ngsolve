@@ -193,8 +193,7 @@ namespace ngla
     size_t Size() const throw () { return size; }
     T_Range<size_t> Range() const { return T_Range<size_t> (0, size); }
     int EntrySize() const throw () { return entrysize; }
-    virtual void * Memory () const throw () = 0;
-
+    virtual void * Memory () const = 0;
     virtual FlatVector<double> FVDouble () const = 0;
     virtual FlatVector<Complex> FVComplex () const = 0;
 
@@ -220,7 +219,7 @@ namespace ngla
     virtual Complex InnerProductC (const BaseVector & v2) const;
 
     virtual double L2Norm () const;
-    virtual bool IsComplex() const = 0;
+    virtual bool IsComplex() const { return false; }
 
     virtual BaseVector & Scale (double scal);
     virtual BaseVector & Scale (Complex scal);
@@ -660,6 +659,100 @@ namespace ngla
 
 
 
+
+
+
+
+
+  class BlockVector;
+  inline BlockVector & dynamic_cast_BlockVector (BaseVector & x);
+  inline const BlockVector & dynamic_cast_BlockVector (const BaseVector & x);
+
+  class BlockVector : public BaseVector
+  {
+    Array<shared_ptr<BaseVector>> vecs;
+  public:
+    BlockVector (const Array<shared_ptr<BaseVector>> & avecs)
+      : vecs(avecs) { ; }
+    shared_ptr<BaseVector> & operator[] (size_t i) const { return vecs[i]; }
+
+    virtual void * Memory () const
+    { throw Exception("BlockVector::Memory is not useful"); }
+    virtual FlatVector<double> FVDouble () const 
+    { throw Exception("BlockVector::FVDouble is not useful"); }
+    virtual FlatVector<Complex> FVComplex () const
+    { throw Exception("BlockVector::FVComplex is not useful"); }
+    virtual void GetIndirect (FlatArray<int> ind, 
+                              FlatVector<double> v) const
+    { throw Exception("BlockVector::GetIndirect is not useful"); }      
+    virtual void GetIndirect (FlatArray<int> ind, 
+                              FlatVector<Complex> v) const 
+    { throw Exception("BlockVector::GetIndirect is not useful"); }      
+
+
+    virtual AutoVector CreateVector () const
+    {
+      Array<shared_ptr<BaseVector>> v2;
+      for (auto & v : vecs)
+        v2 += v->CreateVector();
+      return make_shared<BlockVector> (v2);
+    }
+    
+
+    virtual BaseVector & Scale (double scal)
+    {
+      for (auto i : ::Range(vecs))
+        *vecs[i] *= scal;
+      return *this;
+    }
+
+    virtual ostream & Print (ostream & ost) const
+    {
+      for (auto i : ::Range(vecs))
+        vecs[i] -> Print(ost);
+      return ost;
+    }
+
+    virtual BaseVector & Set (double scal, const BaseVector & v)
+    {
+      auto & bv = dynamic_cast_BlockVector(v);
+      for (size_t i : ::Range(vecs))
+        vecs[i] -> Set(scal, *bv[i]);
+      return *this;
+    }
+
+    virtual BaseVector & Add (double scal, const BaseVector & v)
+    {
+      auto & bv = dynamic_cast_BlockVector(v);
+      for (size_t i : ::Range(vecs))
+        vecs[i] -> Add(scal, *bv[i]);
+      return *this;
+    }
+
+  };
+
+  inline BlockVector & dynamic_cast_BlockVector (BaseVector & x)
+  {
+    AutoVector * ax = dynamic_cast<AutoVector*> (&x);
+    if (ax) return dynamic_cast<BlockVector&> (**ax);
+    return dynamic_cast<BlockVector&> (x);
+  }
+  inline const BlockVector & dynamic_cast_BlockVector (const BaseVector & x)
+  {
+    const AutoVector * ax = dynamic_cast<const AutoVector*> (&x);
+    if (ax) return dynamic_cast<const BlockVector&> (**ax);
+    return dynamic_cast<const BlockVector&> (x);
+  }
+
+  
+
+
+
+
+
+
+
+  
 
   /* ********************* Expression templates ***************** */
 

@@ -1225,7 +1225,7 @@ namespace ngsolve
     const FESpace & fes = *gfu->GetFESpace();
 
     const int components = fes.GetIntegrator(VOL)->DimFlux();
-    int ndomains;
+    int ndomains = 0;
     
     string typestring;
 

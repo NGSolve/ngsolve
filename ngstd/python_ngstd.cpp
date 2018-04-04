@@ -313,11 +313,19 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
   py::class_<Flags>(m, "Flags")
     .def(py::init<>())
     .def("__str__", &ToString<Flags>)
+    .def(py::init([](py::object & obj) {
+          Flags flags;
+          py::dict d(obj);          
+          SetFlag (flags, "", d);
+          return move(flags);
+        }))
+    /*
     .def("__init__", [] (Flags &f, py::object & obj) {
          py::dict d(obj);
          new (&f) Flags();
          SetFlag(f, "", d);
      })
+    */
     .def("__getstate__", [] (py::object self_object) {
         auto self = self_object.cast<Flags>();
         stringstream str;
@@ -396,6 +404,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
 	   );
 
   py::class_<Archive, shared_ptr<Archive>> (m, "Archive")
+      /*
     .def("__init__", [](const string & filename, bool write,
                               bool binary) -> shared_ptr<Archive>
                            {
@@ -412,7 +421,23 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
                                   return make_shared<TextInArchive> (filename);
                               }
                            })
-
+      */
+      .def(py::init<> ([](const string & filename, bool write,
+                          bool binary) -> shared_ptr<Archive>
+                       {
+                         if(binary) {
+                           if (write)
+                             return make_shared<BinaryOutArchive> (filename);
+                           else
+                             return make_shared<BinaryInArchive> (filename);
+                         }
+                         else {
+                           if (write)
+                             return make_shared<TextOutArchive> (filename);
+                           else
+                             return make_shared<TextInArchive> (filename);
+                         }
+                       }))
     .def("__and__" , [](shared_ptr<Archive> & self, Array<int> & a) 
                                          { cout << "output array" << endl;
                                            *self & a; return self; })
@@ -495,7 +520,6 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
           typedef const char * pchar;
           pchar ptrs[2] = { progname, nullptr };
           pchar * pptr = &ptrs[0];
-          int argc2 = 1;
           
           static MyMPI mympi(1, (char**)pptr);
           return PyMPI_Comm(ngs_comm);
