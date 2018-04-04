@@ -516,8 +516,6 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
       void Mult (const BaseVector & x, BaseVector & y) const override {
         pybind11::gil_scoped_acquire gil;
         pybind11::function overload = pybind11::get_overload(this, "Mult");
-	cout << "type x: " << typeid(x).name() << endl;
-	cout << "type y: " << typeid(y).name() << endl;
         if (overload) {
 	  const AutoVector * avecx = dynamic_cast<const AutoVector*>(&x);
           auto sx = shared_ptr<BaseVector>(const_cast<BaseVector*>((avecx!=NULL)?&(**avecx):&x),
