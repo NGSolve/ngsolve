@@ -53,7 +53,10 @@ namespace ngfem
                                 MAT && mat, LocalHeap & lh)
     {
       HeapReset hr(lh);
-      mat = Trans (Cast(fel).GetDShape(mip.IP(),lh) * mip.GetJacobianInverse ());
+      FlatMatrixFixWidth<D> dshape(fel.GetNDof(), lh);
+      Cast(fel).CalcDShape (mip.IP(), dshape);
+      mat = Trans (dshape * mip.GetJacobianInverse ());      
+      // mat = Trans (Cast(fel).GetDShape(mip.IP(),lh) * mip.GetJacobianInverse ());
     }
 
     static void GenerateMatrixIR (const FiniteElement & fel, 
@@ -78,7 +81,10 @@ namespace ngfem
     {
       HeapReset hr(lh);
       typedef typename TVX::TSCAL TSCAL;
-      Vec<D,TSCAL> hv = Trans (Cast(fel).GetDShape(mip.IP(), lh)) * x;
+      FlatMatrixFixWidth<D> dshape(fel.GetNDof(), lh);
+      Cast(fel).CalcDShape (mip.IP(), dshape);
+      Vec<D,TSCAL> hv = Trans (dshape) * x;
+      // Vec<D,TSCAL> hv = Trans (Cast(fel).GetDShape(mip.IP(), lh)) * x;
       y = Trans (mip.GetJacobianInverse()) * hv;
     }
 
@@ -121,10 +127,14 @@ namespace ngfem
 			    const TVX & x, TVY & y,
 			    LocalHeap & lh) 
     {
+      HeapReset hr(lh);
       typedef typename TVX::TSCAL TSCAL;
       Vec<D,TSCAL> vx = x;
       auto hv = mip.GetJacobianInverse() * vx;
-      y = Cast(fel).GetDShape(mip.IP(),lh) * hv;
+      // y = Cast(fel).GetDShape(mip.IP(),lh) * hv;
+      FlatMatrixFixWidth<D> dshape(fel.GetNDof(), lh);
+      Cast(fel).CalcDShape (mip.IP(), dshape);
+      y = dshape * hv;      
     }
 
     using DiffOp<DiffOpGradient<D, FEL> >::AddTransSIMDIR;        
@@ -158,8 +168,12 @@ namespace ngfem
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
     {
-      mat = Trans (mip.GetJacobianInverse ()) * 
-	Trans (static_cast<const FEL&>(fel).GetDShape(mip.IP(),lh));
+      // mat = Trans (mip.GetJacobianInverse ()) * 
+      // Trans (static_cast<const FEL&>(fel).GetDShape(mip.IP(),lh));
+      HeapReset hr(lh);
+      FlatMatrixFixWidth<DIM_ELEMENT> dshape(fel.GetNDof(), lh);
+      Cast(fel).CalcDShape (mip.IP(), dshape);
+      mat = Trans (dshape * mip.GetJacobianInverse ());      
     }
 
     static void GenerateMatrixSIMDIR (const FiniteElement & fel,
