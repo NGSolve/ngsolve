@@ -677,6 +677,11 @@ namespace ngla
       : vecs(avecs), ispar(vecs.Size())
     {
       ispar.Clear();
+
+      size = 0;
+      for(auto & vec:vecs)
+	size += vec->Size();
+
       for(size_t k = 0; k<vecs.Size(); k++) {
 	auto stat = vecs[k]->GetParallelStatus();
 	if( (stat==CUMULATED) || (stat==DISTRIBUTED) )
@@ -738,6 +743,13 @@ namespace ngla
     {
       for (auto i : ::Range(vecs))
         *vecs[i] *= scal;
+      return *this;
+    }
+
+    virtual BaseVector & SetScalar (double scal)
+    {
+      for (auto i : ::Range(vecs))
+        vecs[i]->SetScalar(scal);
       return *this;
     }
 
