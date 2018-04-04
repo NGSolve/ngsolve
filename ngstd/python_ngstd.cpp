@@ -450,10 +450,6 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
       }
     };
 
-  m.def("SetGlobalActive", [](bool active) { 
-      NGSOStream::SetGlobalActive (active);
-    });
-  
   py::class_<ParallelContextManager>(m, "TaskManager")
     .def(py::init<>())
     .def("__enter__", &ParallelContextManager::Enter)
