@@ -2593,6 +2593,17 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
   
 
+  void CompoundFESpace :: SolveM(CoefficientFunction & rho, BaseVector & vec,
+                                 LocalHeap & lh) const
+  {
+    for (size_t i = 0; i < spaces.Size(); i++)
+      {
+        auto veci = vec.Range (GetRange(i));
+        spaces[i] -> SolveM (rho, veci, lh);
+      }
+  }
+    
+
 
 
 

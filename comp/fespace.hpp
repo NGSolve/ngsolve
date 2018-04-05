@@ -1162,6 +1162,8 @@ namespace ngcomp
     virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const;
     virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const;
 
+    virtual void SolveM(CoefficientFunction & rho, BaseVector & vec,
+                        LocalHeap & lh) const;
     
     template <class T> NGS_DLL_HEADER
       void T_TransformMat (ElementId ei, 
