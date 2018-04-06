@@ -785,7 +785,7 @@ namespace ngcomp
 
     const Array<SpecialElement*> & GetSpecialElements() const {return specialelements;}
 
-    virtual void SolveM(CoefficientFunction & rho, BaseVector & vec,
+    virtual void SolveM(CoefficientFunction * rho, BaseVector & vec,
                         LocalHeap & lh) const;
       
     shared_ptr<ParallelDofs> GetParallelDofs () const { return paralleldofs; }
@@ -1162,7 +1162,7 @@ namespace ngcomp
     virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const;
     virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const;
 
-    virtual void SolveM(CoefficientFunction & rho, BaseVector & vec,
+    virtual void SolveM(CoefficientFunction * rho, BaseVector & vec,
                         LocalHeap & lh) const;
     
     template <class T> NGS_DLL_HEADER

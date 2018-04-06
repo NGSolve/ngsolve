@@ -49,16 +49,14 @@ void ExportSparseMatrix(py::module m)
            return py::make_tuple (pyri, pyci, pyvals);
          })
 
-    .def_static("CreateFromCOO", [] (
-                                     // const Array<int> & i, const Array<int> & j, Array<double> & values,
-                                     py::list indi, py::list indj, py::list values,
-                                     size_t h, size_t w)
-         {
-           auto cindi = makeCArray<int>(indi);
-           auto cindj = makeCArray<int>(indj);
-           auto cvalues = makeCArray<double>(values);
-           return SparseMatrix<double>::CreateFromCOO (cindi,cindj,cvalues, h,w);
-         })
+    .def_static("CreateFromCOO",
+                [] (py::list indi, py::list indj, py::list values, size_t h, size_t w)
+                {
+                  auto cindi = makeCArray<int>(indi);
+                  auto cindj = makeCArray<int>(indj);
+                  auto cvalues = makeCArray<double>(values);
+                  return SparseMatrix<double>::CreateFromCOO (cindi,cindj,cvalues, h,w);
+                })
     
     .def("CreateTranspose", [] (const SparseMatrix<double> & sp)
          { return TransposeMatrix (sp); })

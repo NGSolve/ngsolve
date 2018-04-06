@@ -89,7 +89,7 @@ namespace ngcomp
       return Range (first_element_dof[nr], first_element_dof[nr+1]);
     }
 
-    virtual void SolveM (CoefficientFunction & rho, BaseVector & vec,
+    virtual void SolveM (CoefficientFunction * rho, BaseVector & vec,
                          LocalHeap & lh) const override;
 
 
