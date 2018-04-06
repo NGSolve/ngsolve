@@ -445,6 +445,10 @@ namespace ngfem
 
 
 
+  void BaseScalarFiniteElement :: GetDiagMassMatrix (FlatVector<> mass) const
+  {
+    throw Exception (string("mass matrix certainly not diagonal for element ")+typeid(*this).name());
+  }
 
 
 

@@ -102,6 +102,7 @@ namespace ngfem
 
 
     NGS_DLL_HEADER virtual void CalcDualShape (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const;
+    HD NGS_DLL_HEADER virtual void GetDiagMassMatrix (FlatVector<> mass) const;
   };
 
   /**

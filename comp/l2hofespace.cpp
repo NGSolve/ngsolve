@@ -573,7 +573,7 @@ namespace ngcomp
     GetDofNrs (elnr, dnums); 
   }
 
-  void L2HighOrderFESpace :: SolveM (CoefficientFunction & rho, BaseVector & vec,
+  void L2HighOrderFESpace :: SolveM (CoefficientFunction * rho, BaseVector & vec,
                                      LocalHeap & lh) const
   {
     static Timer t("SolveM"); RegionTimer reg(t);
@@ -581,7 +581,7 @@ namespace ngcomp
     IterateElements (*this, VOL, lh,
                      [&rho, &vec,this] (FESpace::Element el, LocalHeap & lh)
                      {
-                       const FiniteElement & fel = el.GetFE();
+                       auto & fel = static_cast<const BaseScalarFiniteElement&>(el.GetFE());
                        const ElementTransformation & trafo = el.GetTrafo();
                        
                        Array<int> dnums(fel.GetNDof(), lh);
@@ -592,56 +592,43 @@ namespace ngcomp
 		       auto melx = elx.AsMatrix(fel.GetNDof(),dimension);
 
                        FlatVector<double> diag_mass(fel.GetNDof(), lh);
-                       switch (ma->GetDimension())
-                         {
-                         case 1:
-                           static_cast<const DGFiniteElement<1>&> (fel).GetDiagMassMatrix (diag_mass);
-                         case 2:
-                           static_cast<const DGFiniteElement<2>&> (fel).GetDiagMassMatrix (diag_mass);
-                         case 3:
-                           static_cast<const DGFiniteElement<3>&> (fel).GetDiagMassMatrix (diag_mass);
-                         }
+                       fel.GetDiagMassMatrix (diag_mass);
+
+                       bool curved = trafo.IsCurvedElement();
+                       if (rho && !rho->ElementwiseConstant()) curved = true;
                        
-                       if (!trafo.IsCurvedElement())
+                       if (!curved)
                          {
                            IntegrationRule ir(fel.ElementType(), 0);
                            BaseMappedIntegrationRule & mir = trafo(ir, lh);
-                           diag_mass *= mir[0].GetMeasure();
+                           double jac = mir[0].GetMeasure();
+                           if (rho) jac *= rho->Evaluate(mir[0]);
+                           diag_mass *= jac;
                            for (int i = 0; i < melx.Height(); i++)
                              melx.Row(i) /= diag_mass(i);
                          }
                        else
                          {
-                           /*
-                           IntegrationRule ir(fel.ElementType(), 2*fel.Order());
-                           BaseMappedIntegrationRule & mir = trafo(ir, lh);
-                           FlatVector<> pntvals(ir.GetNIP(), lh);
-                           
-                           for (int i = 0; i < melx.Height(); i++)
-                             melx.Row(i) /= diag_mass(i);
-                           for (int comp = 0; comp < dimension; comp++)
-                             {
-                               static_cast<const BaseScalarFiniteElement&> (fel).Evaluate (ir, melx.Col(comp), pntvals);
-                               for (int i = 0; i < pntvals.Size(); i++)
-                                 pntvals(i) *= ir[i].Weight() / mir[i].GetMeasure();
-                               static_cast<const BaseScalarFiniteElement&> (fel).EvaluateTrans (ir, pntvals, melx.Col(comp));
-                             }
-                           for (int i = 0; i < melx.Height(); i++)
-                             melx.Row(i) /= diag_mass(i);
-                           */
                            SIMD_IntegrationRule ir(fel.ElementType(), 2*fel.Order());
                            auto & mir = trafo(ir, lh);
                            FlatVector<SIMD<double>> pntvals(ir.Size(), lh);
+                           FlatMatrix<SIMD<double>> rhovals(1, ir.Size(), lh);
+                           if (rho) rho->Evaluate (mir, rhovals);
                            
                            for (int i = 0; i < melx.Height(); i++)
                              melx.Row(i) /= diag_mass(i);
                            for (int comp = 0; comp < dimension; comp++)
                              {
-                               static_cast<const BaseScalarFiniteElement&> (fel).Evaluate (ir, melx.Col(comp), pntvals);
-                               for (int i = 0; i < ir.Size(); i++)
-                                 pntvals(i) *= ir[i].Weight() / mir[i].GetMeasure();
+                               fel.Evaluate (ir, melx.Col(comp), pntvals);
+                               if (rho)
+                                 for (size_t i = 0; i < ir.Size(); i++)
+                                   pntvals(i) *= ir[i].Weight() / (mir[i].GetMeasure() * rhovals(0,i));
+                               else
+                                 for (size_t i = 0; i < ir.Size(); i++)
+                                   pntvals(i) *= ir[i].Weight() / mir[i].GetMeasure();
+                               
                                melx.Col(comp) = 0.0;
-                               static_cast<const BaseScalarFiniteElement&> (fel).AddTrans (ir, pntvals, melx.Col(comp));
+                               fel.AddTrans (ir, pntvals, melx.Col(comp));
                              }
                            for (int i = 0; i < melx.Height(); i++)
                              melx.Row(i) /= diag_mass(i);

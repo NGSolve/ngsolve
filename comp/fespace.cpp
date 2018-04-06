@@ -1537,7 +1537,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     return ost;
   }
 
-  void FESpace :: SolveM (CoefficientFunction & rho, BaseVector & vec,
+  void FESpace :: SolveM (CoefficientFunction * rho, BaseVector & vec,
                           LocalHeap & lh) const
   {
     cout << "SolveM is only available for L2-space, not for " << typeid(*this).name() << endl;
@@ -2593,7 +2593,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
   
 
-  void CompoundFESpace :: SolveM(CoefficientFunction & rho, BaseVector & vec,
+  void CompoundFESpace :: SolveM(CoefficientFunction * rho, BaseVector & vec,
                                  LocalHeap & lh) const
   {
     for (size_t i = 0; i < spaces.Size(); i++)

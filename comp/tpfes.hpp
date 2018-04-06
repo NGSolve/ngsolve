@@ -111,7 +111,7 @@ namespace ngcomp
     void ReduceToXSpace(shared_ptr<GridFunction> gf_in, shared_ptr<GridFunction> gf_out,LocalHeap & lh,const function<void(shared_ptr<FESpace>,const FiniteElement &, const ElementTransformation & ,FlatVector<>,FlatVector<>,LocalHeap&)> & func);
     void ProlongateFromXSpace(shared_ptr<GridFunction> gf_in, shared_ptr<GridFunction> gf_out, LocalHeap & lh);
 
-    virtual void SolveM (CoefficientFunction & rho, BaseVector & vec,
+    virtual void SolveM (CoefficientFunction * rho, BaseVector & vec,
                          LocalHeap & lh) const override;
   };
 
