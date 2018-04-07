@@ -68,7 +68,7 @@ namespace ngcomp
     Array<shared_ptr<FacetBilinearFormIntegrator>> facetwise_skeleton_parts[2];
 
     // loop over elements
-    Array<shared_ptr<BilinearFormIntegrator>> elementwise_skeleton_parts;
+    Array<shared_ptr<FacetBilinearFormIntegrator>> elementwise_skeleton_parts;
 
 #ifdef PARALLEL
     Array<shared_ptr<FacetBilinearFormIntegrator> > mpi_facet_parts;

@@ -190,10 +190,10 @@ namespace ngcomp
       {
         auto dgform = bfi -> GetDGFormulation();
         if (dgform.element_boundary) {
-          elementwise_skeleton_parts.Append(bfi);
-#ifdef PARALLEL
 	  auto fbfi = dynamic_pointer_cast<FacetBilinearFormIntegrator> (bfi);
 	  if (!fbfi)  throw Exception ("not a FacetBFI");
+          elementwise_skeleton_parts.Append(fbfi);
+#ifdef PARALLEL
 	  mpi_facet_parts.Append(fbfi);
 #endif
 	}
@@ -1363,14 +1363,16 @@ namespace ngcomp
                               int elmat_size = (dnums1.Size()+dnums2.Size())*fespace->GetDimension();
                               FlatMatrix<SCAL> elmat(elmat_size, lh);
                               
-                              shared_ptr<FacetBilinearFormIntegrator> fbfi = 
-                                dynamic_pointer_cast<FacetBilinearFormIntegrator>(bfi);
+                              // shared_ptr<FacetBilinearFormIntegrator> fbfi = 
+                              // dynamic_pointer_cast<FacetBilinearFormIntegrator>(bfi);
                               
-                              if (fbfi)
+                              // if (fbfi)
                                 {
-                                  fbfi->CalcFacetMatrix (fel1,facnr1,eltrans1,vnums1,
-                                                         fel2,facnr2,eltrans2,vnums2, elmat, lh);
+                                  bfi->CalcFacetMatrix (fel1,facnr1,eltrans1,vnums1,
+                                                        fel2,facnr2,eltrans2,vnums2, elmat, lh);
                                 }
+                                /*
+                                  do we need it ? 
                               else
                                 {
                                   shared_ptr<CompoundBilinearFormIntegrator> cbfi = 
@@ -1406,7 +1408,7 @@ namespace ngcomp
                                   elmat.Rows (range2).Cols(range1) = mat1.Rows(nd1,nd2).Cols(0,nd1);
                                   elmat.Rows (range2).Cols(range2) = mat1.Rows(nd1,nd2).Cols(nd1,nd2);
                                 }
-                              
+                                */
                               // *testout << "elmat : \n" << elmat << endl;
                               
                               fespace->TransformMat (ei1, elmat.Rows(0,dnums1.Size()), TRANSFORM_MAT_LEFT);
@@ -1571,8 +1573,8 @@ namespace ngcomp
                                      int elmat_size = dnums.Size()*fespace->GetDimension();
                                      FlatMatrix<SCAL> elmat(elmat_size, lh);
                                      
-                                     dynamic_cast<const FacetBilinearFormIntegrator&>(*bfi).  
-                                       CalcFacetMatrix (fel,facnr1,eltrans,vnums1, seltrans, vnums2, elmat, lh);
+                                     // dynamic_cast<const FacetBilinearFormIntegrator&>(*bfi).  
+                                     bfi->CalcFacetMatrix (fel,facnr1,eltrans,vnums1, seltrans, vnums2, elmat, lh);
                                      
                                      fespace->TransformMat (ei1, elmat, TRANSFORM_MAT_LEFT_RIGHT);
                                      
@@ -1653,14 +1655,16 @@ namespace ngcomp
                                  int elmat_size = (dnums1.Size()+dnums2.Size())*fespace->GetDimension();
                                  FlatMatrix<SCAL> elmat(elmat_size, lh);
                                  
-                                 shared_ptr<FacetBilinearFormIntegrator> fbfi = 
-                                   dynamic_pointer_cast<FacetBilinearFormIntegrator>(bfi);
+                                 // shared_ptr<FacetBilinearFormIntegrator> fbfi = 
+                                 // dynamic_pointer_cast<FacetBilinearFormIntegrator>(bfi);
                                  
-                                 if (fbfi)
+                                 // if (fbfi)
                                    {
-                                     fbfi->CalcFacetMatrix (fel1,facnr1,eltrans1,vnums1,
-                                                            fel2,facnr2,eltrans2,vnums2, elmat, lh);
+                                     bfi->CalcFacetMatrix (fel1,facnr1,eltrans1,vnums1,
+                                                           fel2,facnr2,eltrans2,vnums2, elmat, lh);
                                    }
+                                   /*
+                                     // currently CompoundBFI(FactBFI) not possible .... do we need it ? 
                                  else
                                    {
                                      shared_ptr<CompoundBilinearFormIntegrator> cbfi = 
@@ -1697,7 +1701,7 @@ namespace ngcomp
                                      elmat.Rows (range2).Cols(range1) = mat1.Rows(nd1,nd2).Cols(0,nd1);
                                      elmat.Rows (range2).Cols(range2) = mat1.Rows(nd1,nd2).Cols(nd1,nd2);
                                    }
-                                 
+                                   */
                                  // *testout << "elmat : \n" << elmat << endl;
                                  
                                  fespace->TransformMat (ei1, elmat.Rows(0,dnums1.Size()), TRANSFORM_MAT_LEFT);
@@ -3612,30 +3616,14 @@ namespace ngcomp
                              }
                            
                            
-                           // for (int j = 0; j < NumIntegrators(); j++)
                            for (auto & bfi : elementwise_skeleton_parts)
                              {
-                               // const BilinearFormIntegrator & bfi = *parts[j];
-                               
-                               // if (bfi.BoundaryForm()) continue;
-                               // if (!bfi.SkeletonForm()) continue;
-                               // if (!bfi.GetDGFormulation().element_boundary) continue;
-                               /*
-                                 int elmat_size = dnums.Size()*fespace->GetDimension();
-                                 FlatMatrix<SCAL> elmat(elmat_size, lh);
-                                 
-                                 dynamic_cast<const FacetBilinearFormIntegrator&>(bfi).  
-                                 CalcFacetMatrix (fel,facnr1,eltrans,vnums1, seltrans, elmat, lh);
-                                 
-                                 fespace->TransformMat (el1, false, elmat, TRANSFORM_MAT_LEFT_RIGHT);
-                               */
-                               
                                FlatVector<SCAL> elx(dnums.Size()*fespace->GetDimension(), lh),
                                  ely(dnums.Size()*fespace->GetDimension(), lh);
                                x.GetIndirect(dnums, elx);
                                
-                               dynamic_cast<const FacetBilinearFormIntegrator&>(*bfi).
-                                 ApplyFacetMatrix (fel,facnr1,eltrans,vnums1, seltrans, vnums2, elx, ely, lh);
+                               // dynamic_cast<const FacetBilinearFormIntegrator&>(*bfi).
+                               bfi->ApplyFacetMatrix (fel,facnr1,eltrans,vnums1, seltrans, vnums2, elx, ely, lh);
                                
                                y.AddIndirect(dnums, ely);
                                
@@ -3690,23 +3678,16 @@ namespace ngcomp
                        x.GetIndirect(dnums, elx);
                        
                        
-                       //  for (int j = 0; j < NumIntegrators(); j++)
                        for (auto & bfi : elementwise_skeleton_parts)
                          {
-                           // shared_ptr<BilinearFormIntegrator> bfi = parts[j];
-                           // BilinearFormIntegrator * bfi = parts[j].get();
-                           
-                           // if (!bfi->SkeletonForm()) continue;
-                           // if (bfi->BoundaryForm()) continue;
-                           // if (!bfi->GetDGFormulation().element_boundary) continue;                                     
                            if (!bfi->DefinedOn (ma->GetElIndex (ei1))) continue; //TODO: treat as surface element
                            if (!bfi->DefinedOn (ma->GetElIndex (ei2))) continue; //TODO    
                            
-                           FacetBilinearFormIntegrator * fbfi = 
-                             dynamic_cast<FacetBilinearFormIntegrator*>(bfi.get());
+                           // FacetBilinearFormIntegrator * fbfi = 
+                           // dynamic_cast<FacetBilinearFormIntegrator*>(bfi.get());
                            
-                           fbfi->ApplyFacetMatrix (fel1, facnr1, eltrans1, vnums1,
-                                                   fel2, facnr2, eltrans2, vnums2, elx, ely, lh);
+                           bfi->ApplyFacetMatrix (fel1, facnr1, eltrans1, vnums1,
+                                                  fel2, facnr2, eltrans2, vnums2, elx, ely, lh);
                            
                            /*
                              if (neighbor_testfunction)
@@ -3721,14 +3702,14 @@ namespace ngcomp
                            */
                            y.AddIndirect(dnums1, ely.Range(0,dnums1.Size()));
                            
-                           if (fbfi->GetDGFormulation().neighbor_testfunction)
+                           if (bfi->GetDGFormulation().neighbor_testfunction)
                              {
                                int dim = this->fespace->GetDimension();
                                FlatVector<SCAL> swap_elx(elx.Size(), lh);
                                swap_elx.Range(0, dim*dnums2.Size()) = elx.Range(dim*dnums1.Size(), dim*dnums.Size());
                                swap_elx.Range(dim*dnums2.Size(), dim*dnums.Size()) = elx.Range(0, dim*dnums1.Size());
-                               fbfi->ApplyFacetMatrix (fel2, facnr2, eltrans2, vnums2,
-                                                       fel1, facnr1, eltrans1, vnums1, swap_elx, ely, lh);
+                               bfi->ApplyFacetMatrix (fel2, facnr2, eltrans2, vnums2,
+                                                      fel1, facnr1, eltrans1, vnums1, swap_elx, ely, lh);
                                y.AddIndirect(dnums1, ely.Range(dim*dnums1.Size(), dim*dnums.Size()));
                              }
                          }
@@ -3918,12 +3899,8 @@ namespace ngcomp
                    x.GetIndirect (dnums1, elvecx);
                    this->fespace->TransformVec (ei, elvecx, TRANSFORM_SOL);
 
-                   //for (int j = 0; j < this->NumIntegrators(); j++)
                    for (auto & bfi : VB_parts[vb])
                      {
-                       // BilinearFormIntegrator & bfi = *this->parts[j];
-                       // if (bfi.SkeletonForm()) continue;
-                       // if (bfi.BoundaryForm()) continue;
                        if (!bfi->DefinedOn (this->ma->GetElIndex (ei))) continue;
 
                        MixedFiniteElement fel(fel1, fel2);
