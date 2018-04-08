@@ -501,6 +501,16 @@ namespace ngcomp
   // ------------------------------------------------------------------------
   FiniteElement & FacetFESpace :: GetFE (ElementId ei, Allocator  & lh) const
   {
+    if (!DefinedOn (ei))
+      {
+        return
+          SwitchET (ma->GetElType(ei), [&] (auto et) -> FiniteElement&
+                      {
+                        return *new (lh) ScalarDummyFE<et.ElementType()> ();
+                      });
+      }
+    
+    
     switch(ei.VB())
       {
       case VOL:
@@ -694,12 +704,14 @@ namespace ngcomp
   // ------------------------------------------------------------------------
   void FacetFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
+    dnums.SetSize0();
+    if (!DefinedOn (ei)) return;
+    
     switch (ei.VB())
       {
       case VOL:
 	{
 	  auto fanums = ma->GetElFacets(ei);
-	  dnums.SetSize0();
 	  
 	  if(!highest_order_dc)
 	    {
