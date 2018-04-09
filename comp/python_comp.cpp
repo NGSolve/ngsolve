@@ -2413,7 +2413,8 @@ used_idnrs : list of int = None
           {
             auto sp = make_shared<GridFunctionCoefficientFunction> (self,
                                                                     self->GetFESpace()->GetFluxEvaluator(),
-                                                                    self->GetFESpace()->GetFluxEvaluator(BND));
+                                                                    self->GetFESpace()->GetFluxEvaluator(BND),
+								    self->GetFESpace()->GetFluxEvaluator(BBND));
             // sp->SetDimensions(sp->Dimensions());
             return sp;
           })
