@@ -201,6 +201,33 @@ namespace ngfem
 
   
 
+  /// Boundary Gradient operator of dimension D
+  template <int D, typename FEL = ScalarFiniteElement<D-2> >
+  class DiffOpGradientBBoundary : public DiffOp<DiffOpGradientBBoundary<D, FEL> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D-2 };
+    enum { DIM_DMAT = D };
+    enum { DIFFORDER = 1 };
+
+    static const FEL & Cast (const FiniteElement & fel) 
+    { return static_cast<const FEL&> (fel); }
+
+    ///
+    template <typename AFEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+				MAT & mat, LocalHeap & lh)
+    {
+      // mat = Trans (mip.GetJacobianInverse ()) * 
+      // Trans (static_cast<const FEL&>(fel).GetDShape(mip.IP(),lh));
+      HeapReset hr(lh);
+      FlatMatrixFixWidth<DIM_ELEMENT> dshape(fel.GetNDof(), lh);
+      Cast(fel).CalcDShape (mip.IP(), dshape);
+      mat = Trans (dshape * mip.GetJacobianInverse ());      
+    }
+  };
 
 
 
