@@ -4232,6 +4232,18 @@ class RealCF : public CoefficientFunctionNoDerivative
         }
       throw Exception("real cf has no imag part!");
     }
+
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
+                           BareSliceMatrix<SIMD<double>> values) const override
+    {
+      if (!cf->IsComplex())
+          throw Exception("real cf has no imag part!");
+
+      STACK_ARRAY(SIMD<Complex>, mem, ir.Size()*Dimension());
+      FlatMatrix<SIMD<Complex>> cvalues(Dimension(), ir.Size(), &mem[0]);
+      cf->Evaluate (ir, cvalues);
+      values.AddSize(Dimension(), ir.Size()) = Imag(cvalues);
+    }
   };
 
   shared_ptr<CoefficientFunction> Real(shared_ptr<CoefficientFunction> cf)
