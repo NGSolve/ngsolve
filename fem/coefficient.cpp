@@ -4226,7 +4226,7 @@ class RealCF : public CoefficientFunctionNoDerivative
     {
       if(cf->IsComplex())
         {
-          Vec<1,Complex> val;
+          VectorMem<10,Complex> val(cf->Dimension());
           cf->Evaluate(ip,val);
           return val(0).imag();
         }
