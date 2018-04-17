@@ -4224,13 +4224,20 @@ class RealCF : public CoefficientFunctionNoDerivative
 
     virtual double Evaluate(const BaseMappedIntegrationPoint& ip) const override
     {
-      if(cf->IsComplex())
-        {
-          VectorMem<10,Complex> val(cf->Dimension());
-          cf->Evaluate(ip,val);
-          return val(0).imag();
-        }
-      throw Exception("real cf has no imag part!");
+      if(!cf->IsComplex())
+          throw Exception("real cf has no imag part!");
+
+      VectorMem<10,Complex> val(cf->Dimension());
+      cf->Evaluate(ip,val);
+      return val(0).imag();
+    }
+
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<double> values) const override
+    {
+      STACK_ARRAY(Complex, mem, ir.Size()*Dimension());
+      FlatMatrix<Complex> cvalues(ir.Size(), Dimension(), &mem[0]);
+      cf->Evaluate (ir, cvalues);
+      values.AddSize(ir.Size(), Dimension()) = Imag(cvalues);
     }
 
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
