@@ -3926,7 +3926,7 @@ namespace ngcomp
   void S_BilinearForm<SCAL> :: ApplyLinearizedMatrixAdd1 (SCAL val,
                                                           const BaseVector & lin,
                                                           const BaseVector & x,
-                                                          BaseVector & y) const
+                                                          BaseVector & y, LocalHeap & lh) const
   {
     if (!MixedSpaces())
       
@@ -3935,7 +3935,7 @@ namespace ngcomp
       
         int ne = ma->GetNE();
         int dim = GetFESpace()->GetDimension(); 
-        LocalHeap lh (2000000, "biform-ApplyLinearized");
+        //LocalHeap lh (2000000, "biform-ApplyLinearized");
 
         bool hasbound = false;
         bool hasinner = false;
@@ -4050,7 +4050,7 @@ namespace ngcomp
 
 
   template <class SCAL>
-  double S_BilinearForm<SCAL> :: Energy (const BaseVector & x) const
+  double S_BilinearForm<SCAL> :: Energy (const BaseVector & x, LocalHeap & lh) const
   {
     static Timer t("BilinearForm::Energy"); RegionTimer reg(t);
     
@@ -4058,7 +4058,7 @@ namespace ngcomp
 
     if (!MixedSpaces())
       {
-        LocalHeap lh (2000000, "biform-energy", true);
+        //LocalHeap lh (2000000, "biform-energy", true);
 
         for (auto vb : { VOL, BND, BBND, BBBND })
           if (VB_parts[vb].Size())
@@ -5002,7 +5002,7 @@ namespace ngcomp
   }
 
   void BilinearFormApplication :: 
-  Mult (const BaseVector & v, BaseVector & prod) const
+  Mult (const BaseVector & v, BaseVector & prod, LocalHeap & lh) const
   {
     v.Cumulate();
 
@@ -5030,7 +5030,7 @@ namespace ngcomp
   }
 
   void BilinearFormApplication :: 
-  MultAdd (double val, const BaseVector & v, BaseVector & prod) const
+  MultAdd (double val, const BaseVector & v, BaseVector & prod, LocalHeap & lh) const
   {
     v.Cumulate();
     prod.Distribute();
@@ -5058,7 +5058,7 @@ namespace ngcomp
   }
 
   void BilinearFormApplication :: 
-  MultAdd (Complex val, const BaseVector & v, BaseVector & prod) const
+  MultAdd (Complex val, const BaseVector & v, BaseVector & prod, LocalHeap & lh) const
   {
     v.Cumulate();
     prod.Distribute();
@@ -5132,22 +5132,22 @@ namespace ngcomp
   }
 
   void  LinearizedBilinearFormApplication :: 
-  Mult (const BaseVector & v, BaseVector & prod) const
+  Mult (const BaseVector & v, BaseVector & prod, LocalHeap & lh) const
   {
     prod = 0;
-    bf->ApplyLinearizedMatrixAdd (1, *veclin, v, prod);
+    bf->ApplyLinearizedMatrixAdd (1, *veclin, v, prod, lh);
   }
 
   void LinearizedBilinearFormApplication :: 
-  MultAdd (double val, const BaseVector & v, BaseVector & prod) const
+  MultAdd (double val, const BaseVector & v, BaseVector & prod, LocalHeap & lh) const
   {
-    bf->ApplyLinearizedMatrixAdd (val, *veclin, v, prod);
+    bf->ApplyLinearizedMatrixAdd (val, *veclin, v, prod, lh);
   }
 
   void LinearizedBilinearFormApplication :: 
-  MultAdd (Complex val, const BaseVector & v, BaseVector & prod) const
+  MultAdd (Complex val, const BaseVector & v, BaseVector & prod, LocalHeap & lh) const
   {
-    bf->ApplyLinearizedMatrixAdd (val, *veclin, v, prod);
+    bf->ApplyLinearizedMatrixAdd (val, *veclin, v, prod, lh);
   }
 
   template <class SCAL>
