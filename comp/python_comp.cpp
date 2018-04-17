@@ -2747,7 +2747,7 @@ check_unused : bool
 
     .def("Energy",[](BF & self, shared_ptr<BaseVector> x)
           {
-            return self.Energy(*x);
+            return self.Energy(*x, glh);
           }, py::call_guard<py::gil_scoped_release>())
     
     .def("Apply", [](BF & self, BaseVector& x, BaseVector & y)
