@@ -1,3 +1,4 @@
+
 #ifdef HYPRE
 /*********************************************************************/
 /* File:   hypre_ams_precond.cpp                                     */
@@ -344,7 +345,7 @@ namespace ngcomp
     /** main system matrix **/
     const auto & matrix = this->bfa->GetMatrix();
     const ParallelMatrix* pma = dynamic_cast<const ParallelMatrix*>(&matrix);
-    const SparseMatrix<double>* spma = dynamic_cast<const SparseMatrix<double>*>( (pma==nullptr) ? (&matrix) : (&pma->GetMatrix()) );
+    const SparseMatrix<double>* spma = dynamic_cast<const SparseMatrix<double>*>( (pma==nullptr) ? (&matrix) : (pma->GetMatrix().get()) );
     if (dynamic_cast< const SparseMatrixSymmetric<double> *> (spma))
       throw Exception ("Please use fully stored sparse matrix for hypre (bf -nonsymmetric)");
     (void) Create_IJMat_from_SPMat(&this->A, &this->parcsr_A, *spma,
