@@ -126,15 +126,15 @@ namespace ngfem
           {
             HeapReset hr(lh);
             SIMD_IntegrationRule irl(mir.IR().GetNIP(), lh);
-	    for (int k = 0; k < irl.Size(); k++)
+            for (int k = 0; k < irl.Size(); k++)
               {
                 irl[k] = ir[k];
                 irl[k](j) -= eps();
               }
             SIMD_MappedIntegrationRule<D-1,D> mirl(irl, trafo, lh);
-	    fel_u.EvaluateGrad (mirl, x, hxl);
+            fel_u.EvaluateGrad (mirl, x, hxl);
           }
-	  {
+          {
             HeapReset hr(lh);
             SIMD_IntegrationRule irr(mir.IR().GetNIP(), lh);
             for (int k = 0; k < irr.Size(); k++)
@@ -145,7 +145,7 @@ namespace ngfem
             SIMD_MappedIntegrationRule<D-1,D> mirr(irr, trafo, lh);
             fel_u.EvaluateGrad (mirr, x, hxr);
           }
-	  {
+          {
             HeapReset hr(lh);
             SIMD_IntegrationRule irll(mir.IR().GetNIP(), lh);
             for (int k = 0; k < irll.Size(); k++)
@@ -156,7 +156,7 @@ namespace ngfem
             SIMD_MappedIntegrationRule<D-1,D> mirll(irll, trafo, lh);
             fel_u.EvaluateGrad (mirll, x, hxll);
           }
-	  {
+          {
             HeapReset hr(lh);
             SIMD_IntegrationRule irrr(mir.IR().GetNIP(), lh);
             for (int k = 0; k < irrr.Size(); k++)
@@ -167,7 +167,7 @@ namespace ngfem
             SIMD_MappedIntegrationRule<D-1,D> mirrr(irrr, trafo, lh);
             fel_u.EvaluateGrad (mirrr, x, hxrr);
           }
-	  // hx = 1.0/(2*eps()) * (hxr-hxl);
+          // hx = 1.0/(2*eps()) * (hxr-hxl);
           // dshape_u_ref = (1.0/(12.0*eps)) * (8.0*shape_ur-8.0*shape_ul-shape_urr+shape_ull);
           hx = 1.0/(12*eps()) * (8*hxr-8*hxl-hxrr+hxll);
           for (int k = 0; k < mir.Size(); k++)
