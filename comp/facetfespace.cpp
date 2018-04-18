@@ -445,11 +445,17 @@ namespace ngcomp
           if (DefinedOn(ei))
             fine_facet[(*ma)[ei].Faces()] = true;
       }
-    else
+    else if(ma->GetDimension() == 2)
       {
         for(ElementId ei : ma->Elements<VOL>())
           if (DefinedOn(ei))
             fine_facet[(*ma)[ei].Edges()] = true;
+      }
+    else
+      {
+        for(ElementId ei : ma->Elements<VOL>())
+          if (DefinedOn(ei))
+            fine_facet[(*ma)[ei].Vertices()] = true;
       }
     if (!AllDofsTogether())
       {
