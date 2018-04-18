@@ -174,8 +174,12 @@ namespace ngcomp
 
   class VectorL2FESpace : public CompoundFESpace
   {
+    bool piola = false;
+    bool covariant = false;
   public:
     VectorL2FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags = false);
+    virtual void SolveM (CoefficientFunction * rho, BaseVector & vec,
+                         LocalHeap & lh) const override;
   };
 
 }
