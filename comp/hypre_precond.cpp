@@ -64,7 +64,7 @@ namespace ngcomp
     RegionTimer reg(t);
 
     const ParallelMatrix & pmat = (dynamic_cast<const ParallelMatrix&> (matrix));
-    const SparseMatrix<double> & mat = dynamic_cast< const SparseMatrix<double> &>(pmat.GetMatrix());
+    const SparseMatrix<double> & mat = dynamic_cast< const SparseMatrix<double> &>(*pmat.GetMatrix());
     if (dynamic_cast< const SparseMatrixSymmetric<double> *> (&mat))
       throw Exception ("Please use fully stored sparse matrix for hypre (bf -nonsymmetric)");
 
