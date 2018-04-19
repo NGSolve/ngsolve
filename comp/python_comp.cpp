@@ -2369,7 +2369,7 @@ used_idnrs : list of int = None
           py::arg("definedon")=DummyArgument(),
          "Set values"
       )
-
+    .def_property_readonly("name", &GridFunction::GetName)
 
     .def_property_readonly("components",
                            [](shared_ptr<GF> self)-> py::tuple
