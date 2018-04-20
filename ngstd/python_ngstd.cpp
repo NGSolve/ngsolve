@@ -444,6 +444,10 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
       int num_threads;
     public:
       ParallelContextManager() : num_threads(0) {};
+      ParallelContextManager(size_t pajesize) : num_threads(0) {
+        TaskManager::SetPajeTrace(pajesize > 0);
+        PajeTrace::SetMaxTracefileSize(pajesize);
+      }
       void Enter() {num_threads = EnterTaskManager(); }
       void Exit(py::object exc_type, py::object exc_value, py::object traceback) {
           ExitTaskManager(num_threads);
@@ -452,6 +456,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
 
   py::class_<ParallelContextManager>(m, "TaskManager")
     .def(py::init<>())
+    .def(py::init<size_t>(), "pajetrace"_a, "Run paje-tracer, specify buffersize in bytes")
     .def("__enter__", &ParallelContextManager::Enter)
     .def("__exit__", &ParallelContextManager::Exit)
     .def("__timing__", &TaskManager::Timing)
