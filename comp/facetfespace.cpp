@@ -438,7 +438,8 @@ namespace ngcomp
     
     Array<bool> fine_facet(ma->GetNFacets());
     fine_facet = false;
-    
+
+    /*
     if(ma->GetDimension() == 3)
       {
         for(ElementId ei : ma->Elements<VOL>())
@@ -457,6 +458,11 @@ namespace ngcomp
           if (DefinedOn(ei))
             fine_facet[(*ma)[ei].Vertices()] = true;
       }
+    */
+    for (Ngs_Element el : ma->Elements<VOL>())
+      if (DefinedOn(el))
+        fine_facet[el.Facets()] = true;
+      
     if (!AllDofsTogether())
       {
         for(int facet = 0; facet < ma->GetNFacets(); facet++)
