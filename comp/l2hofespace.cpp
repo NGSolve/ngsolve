@@ -325,7 +325,7 @@ namespace ngcomp
           return *CreateL2HighOrderFE<ET_TET> (order, INT<4>(ngel.Vertices()), alloc);
         
         return SwitchET(eltype,
-                        [this,ngel,&alloc] (auto et) -> FiniteElement&
+                        [this,elnr,&alloc] (auto et) -> FiniteElement&
                         {
                           return T_GetFE<et.ElementType()>(elnr, alloc);
                           /*
