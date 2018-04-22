@@ -2418,7 +2418,7 @@ used_idnrs : list of int = None
          },
           py::arg("coefficient"),
           py::arg("VOL_or_BND")=VOL,
-         py::arg("definedon")=py::none(), // DummyArgument(),
+         py::arg("definedon")=DummyArgument(),
          "Set values"
       )
     .def_property_readonly("name", &GridFunction::GetName)
