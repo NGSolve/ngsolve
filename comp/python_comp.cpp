@@ -14,8 +14,10 @@ using ngfem::ELEMENT_TYPE;
 
 typedef GridFunction GF;
 
+/*
 static size_t global_heapsize = 1000000;
 static LocalHeap glh(global_heapsize, "python-comp lh", true);
+*/
 
 /*
 template <> class cl_NonElement<ElementId>
@@ -191,6 +193,7 @@ shared_ptr<FESPACE> fesUnpickle(py::tuple state)
                            state[1].cast<shared_ptr<MeshAccess>>(),
                            state[2].cast<Flags>());
 
+  LocalHeap glh(10000000, "Unpickl-lh");
   fes->Update(glh);
   fes->FinalizeUpdate(glh);
   return dynamic_pointer_cast<FESPACE>(fes);
@@ -207,6 +210,7 @@ auto ExportFESpace (py::module & m, string pyname)
                     info.append(ma);
                     auto flags = CreateFlagsFromKwArgs(pyspace, kwargs, info);
                     auto fes = make_shared<FES>(ma,flags);
+                    LocalHeap glh(10000000, "init-fes-lh");                    
                     fes->Update(glh);
                     fes->FinalizeUpdate(glh);
                     return fes;
@@ -600,6 +604,10 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
   ExportPml(pml);
   //////////////////////////////////////////////////////////////////////////////////////////
 
+  static size_t global_heapsize = 1000000;
+  static LocalHeap glh(global_heapsize, "python-comp lh", true);
+
+  
   py::enum_<VorB>(m, "VorB", "Enum specifying the codimension. VOL is volume, BND is boundary and BBND is codimension 2 (edges in 3D, points in 2D)")
     .value("VOL", VOL)
     .value("BND", BND)
