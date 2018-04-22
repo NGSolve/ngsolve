@@ -291,15 +291,16 @@ namespace ngcomp
 
   FiniteElement & L2HighOrderFESpace :: GetFE (ElementId ei, Allocator & alloc) const
   {
+    Ngs_Element ngel = ma->GetElement(ei);
+    ELEMENT_TYPE eltype = ngel.GetType();
+
     if (ei.IsVolume())
       {
-        int elnr = ei.Nr();
-        Ngs_Element ngel = ma->GetElement(ei);
-        ELEMENT_TYPE eltype = ngel.GetType();
+        // int elnr = ei.Nr();
         
-        // if (!DefinedOn (ma->GetElIndex (elnr)))
         if (!DefinedOn (ngel))
           {
+            /*
             switch (eltype)
               {
               case ET_POINT:   return * new (alloc) ScalarDummyFE<ET_POINT> (); break;
@@ -311,23 +312,30 @@ namespace ngcomp
               case ET_PRISM:   return * new (alloc) ScalarDummyFE<ET_PRISM> (); break;
               case ET_HEX:     return * new (alloc) ScalarDummyFE<ET_HEX> (); break;
               }
+            */
+            return SwitchET(eltype,
+                            [&alloc] (auto et) -> FiniteElement&
+                            { return *new(alloc) ScalarDummyFE<et.ElementType()>(); });
           }
 
 	if (eltype == ET_TRIG) 
-	  {
-            /*
-            int ia[3];
-            FlatArray<int> vnums(3, &ia[0]);
-            vnums = ngel.Vertices();
-            */
-            // INT<3> vnums = ngel.Vertices();
-	    // return *CreateL2HighOrderFE<ET_TRIG> (order, vnums, alloc);
-            return *CreateL2HighOrderFE<ET_TRIG> (order, INT<3>(ngel.Vertices()), alloc);
-	  }
+          return *CreateL2HighOrderFE<ET_TRIG> (order, INT<3>(ngel.Vertices()), alloc);
 
         if (eltype == ET_TET)         
           return *CreateL2HighOrderFE<ET_TET> (order, INT<4>(ngel.Vertices()), alloc);
-            
+        
+        return SwitchET(eltype,
+                        [this,ngel,&alloc] (auto et) -> FiniteElement&
+                        {
+                          // return T_GetFE<et.ElementType()>(elnr, alloc);
+                          // Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,VOL>(elnr);
+                          auto * hofe =  new (alloc) L2HighOrderFE<et.ElementType()> ();
+                          hofe -> SetVertexNumbers (ngel.vertices);
+                          hofe -> L2HighOrderFE<et.ElementType()>::SetOrder (order_inner[ngel.Nr()]);
+                          hofe -> L2HighOrderFE<et.ElementType()>::ComputeNDof();
+                          return *hofe;
+                        });
+        /*
         switch (eltype)
           {
           case ET_SEGM:    return T_GetFE<ET_SEGM> (elnr, alloc);
@@ -343,10 +351,23 @@ namespace ngcomp
           default:
             throw Exception ("illegal element in L2HoFeSpace::GetFE");
           }
+        */
       }
     else
       {
-        switch (ma->GetElType(ei))
+        try
+          {
+            return SwitchET<ET_POINT,ET_SEGM,ET_TRIG,ET_QUAD>
+              (eltype,
+               [&alloc] (auto et) -> FiniteElement&
+               { return * new (alloc) DummyFE<et.ElementType()>; });
+          }
+        catch (Exception e)
+          {
+            throw Exception("illegal element type in L2::GetSurfaceFE");
+          }
+        /*
+        switch (eltype)
           {
           case ET_POINT: return *new (alloc) DummyFE<ET_POINT>; 
           case ET_SEGM:  return *new (alloc) DummyFE<ET_SEGM>;
@@ -360,6 +381,7 @@ namespace ngcomp
                 << ", order = " << order << endl;
             throw Exception (str.str());
           }
+        */
       }
   }
 
