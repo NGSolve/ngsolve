@@ -323,21 +323,21 @@ namespace ngcomp
 
         if (eltype == ET_TET)         
           return *CreateL2HighOrderFE<ET_TET> (order, INT<4>(ngel.Vertices()), alloc);
-        
+
+        /*
         return SwitchET(eltype,
                         [this,elnr,&alloc] (auto et) -> FiniteElement&
                         {
-                          return T_GetFE<et.ElementType()>(elnr, alloc);
-                          /*
+                        // return T_GetFE<et.ElementType()>(elnr, alloc);
                           // Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,VOL>(elnr);
                           auto * hofe =  new (alloc) L2HighOrderFE<et.ElementType()> ();
                           hofe -> SetVertexNumbers (ngel.vertices);
                           hofe -> L2HighOrderFE<et.ElementType()>::SetOrder (order_inner[ngel.Nr()]);
                           hofe -> L2HighOrderFE<et.ElementType()>::ComputeNDof();
                           return *hofe;
-                          */
                         });
-        /*
+        */
+
         switch (eltype)
           {
           case ET_SEGM:    return T_GetFE<ET_SEGM> (elnr, alloc);
@@ -353,7 +353,6 @@ namespace ngcomp
           default:
             throw Exception ("illegal element in L2HoFeSpace::GetFE");
           }
-        */
       }
     else
       {
