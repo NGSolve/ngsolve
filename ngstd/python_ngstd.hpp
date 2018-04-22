@@ -182,6 +182,7 @@ void PyDefToString( py::module &m, TCLASS &c )
     c.def("__repr__", &ToString<T>);
 }
 
+/*
 template <typename T>
 class cl_NonElement 
 {
@@ -191,7 +192,7 @@ public:
 
 template <typename T>
 inline T NonElement() { return cl_NonElement<T>::Val(); }
-
+*/
 
 //////////////////////////////////////////////////////////////////////
 // read-only bracket operator

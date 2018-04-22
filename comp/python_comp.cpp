@@ -14,12 +14,16 @@ using ngfem::ELEMENT_TYPE;
 
 typedef GridFunction GF;
 
+static size_t global_heapsize = 1000000;
+static LocalHeap glh(global_heapsize, "python-comp lh", true);
+
+/*
 template <> class cl_NonElement<ElementId>
 {
 public:
   static ElementId Val() { return ElementId(VOL,-1); }
 };
-
+*/
 
 template <typename T>
 py::tuple MakePyTuple (const BaseArrayObject<T> & ao)
@@ -169,6 +173,17 @@ public:
 };
 static GlobalDummyVariables globvar;
 
+
+auto fesPickle = [](const FESpace& fes)
+{
+  auto flags = fes.GetFlags();
+  auto mesh = fes.GetMeshAccess();
+  auto type = fes.type;
+  // TODO: pickle order policies
+  return py::make_tuple(type,mesh,flags);
+};
+
+
 template<typename FESPACE>
 shared_ptr<FESPACE> fesUnpickle(py::tuple state)
 {
@@ -180,6 +195,38 @@ shared_ptr<FESPACE> fesUnpickle(py::tuple state)
   fes->FinalizeUpdate(lh);
   return dynamic_pointer_cast<FESPACE>(fes);
 };
+
+template <typename FES>
+auto ExportFESpace (py::module & m, string pyname)
+{
+  auto pyspace = py::class_<FES, shared_ptr<FES>,FESpace> (m, pyname.c_str());
+  pyspace
+    .def(py::init([pyspace](shared_ptr<MeshAccess> ma, py::kwargs kwargs)
+                  {
+                    py::list info;
+                    info.append(ma);
+                    auto flags = CreateFlagsFromKwArgs(pyspace, kwargs, info);
+                    auto fes = make_shared<FES>(ma,flags);
+                    fes->Update(glh);
+                    fes->FinalizeUpdate(glh);
+                    return fes;
+                  }),py::arg("mesh"))
+    
+    .def(py::pickle(fesPickle,
+                    (shared_ptr<FES>(*)(py::tuple)) fesUnpickle<FES>))
+    
+    .def_static("__flags_doc__", [] ()
+                {
+                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
+                                                      attr("FESpace").
+                                                      attr("__flags_doc__")());
+                  return flags_doc;
+                })
+    ;
+  
+  return pyspace;
+}
+
 
 void ExportPml(py::module &m)
 {
@@ -1338,8 +1385,6 @@ when building the system matrices.
     ;
 
 
-  static size_t global_heapsize = 1000000;
-  static LocalHeap glh(global_heapsize, "python-comp lh", true);
   m.def("SetHeapSize",
         [](size_t heapsize)
         {
@@ -1359,14 +1404,6 @@ when building the system matrices.
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
-  auto fesPickle = [](const FESpace& fes)
-    {
-      auto flags = fes.GetFlags();
-      auto mesh = fes.GetMeshAccess();
-      auto type = fes.type;
-      // TODO: pickle order policies
-      return py::make_tuple(type,mesh,flags);
-    };
 
   auto fes_class = py::class_<FESpace, shared_ptr<FESpace>>(m, "FESpace",
 		    docu_string(R"raw_string(Finite Element Space
@@ -1798,7 +1835,10 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                       return fes;
                     }))
     ;
-  
+
+  auto hdiv = ExportFESpace<HDivHighOrderFESpace> (m, "HDiv");
+
+  /*
   auto hdiv = py::class_<HDivHighOrderFESpace, shared_ptr<HDivHighOrderFESpace>,FESpace>
     (m, "HDiv");
   hdiv
@@ -1814,6 +1854,9 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                   }),py::arg("mesh"))
     .def(py::pickle(fesPickle,(shared_ptr<HDivHighOrderFESpace>(*)(py::tuple))
                     fesUnpickle<HDivHighOrderFESpace>))
+  */
+
+  hdiv
     .def_static("__flags_doc__", [] ()
                 {
                   auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
@@ -1848,7 +1891,9 @@ kwargs : For a description of the possible kwargs have a look a bit further down
          py::arg("vector"))
     ;
 
+  auto h1 = ExportFESpace<H1HighOrderFESpace> (m, "H1");
 
+  /*
   auto h1 = py::class_<H1HighOrderFESpace, shared_ptr<H1HighOrderFESpace>,FESpace>
     (m, "H1");
   h1
@@ -1872,7 +1917,10 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                   return flags_doc;
                 })
     ;
+    */
 
+  auto vectorh1 = ExportFESpace<VectorH1FESpace> (m, "VectorH1");
+  /*
   auto vectorh1 = py::class_<VectorH1FESpace, shared_ptr<VectorH1FESpace>,FESpace>
     (m, "VectorH1");
   vectorh1
@@ -1896,7 +1944,10 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                   return flags_doc;
                 })
     ;
+  */
+  auto l2 = ExportFESpace<L2HighOrderFESpace> (m, "L2");
 
+  /*
   auto l2 = py::class_<L2HighOrderFESpace, shared_ptr<L2HighOrderFESpace>,FESpace>
     (m, "L2");
   l2
@@ -1920,7 +1971,8 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                   return flags_doc;
                 })
     ;
-
+  */
+  
   auto vectorl2 = py::class_<VectorL2FESpace, shared_ptr<VectorL2FESpace>,FESpace>
     (m, "VectorL2");
   vectorl2
@@ -2347,7 +2399,7 @@ used_idnrs : list of int = None
          
     .def("Set", 
          [](shared_ptr<GF> self, spCF cf,
-            VorB boundary, py::object definedon)
+            VorB vb, py::object definedon)
          {
            shared_ptr<TPHighOrderFESpace> tpspace = dynamic_pointer_cast<TPHighOrderFESpace>(self->GetFESpace());          
             Region * reg = nullptr;
@@ -2362,11 +2414,11 @@ used_idnrs : list of int = None
             if (reg)
               SetValues (cf, *self, *reg, NULL, glh);
             else
-              SetValues (cf, *self, boundary, NULL, glh);
+              SetValues (cf, *self, vb, NULL, glh);
          },
           py::arg("coefficient"),
           py::arg("VOL_or_BND")=VOL,
-          py::arg("definedon")=DummyArgument(),
+         py::arg("definedon")=py::none(), // DummyArgument(),
          "Set values"
       )
     .def_property_readonly("name", &GridFunction::GetName)
@@ -2443,8 +2495,8 @@ used_idnrs : list of int = None
                 coef->SetDimensions(diffop->Dimensions());
                 return py::cast(shared_ptr<CoefficientFunction>(coef));
               }
-            return py::none(); //  shared_ptr<CoefficientFunction>();
-          }, py::arg("name"), py::arg("VB")=VOL)
+            return py::none(); 
+          }, py::arg("name"), py::arg("VOL_or_BND")=VOL)
 
     
     .def_property_readonly("derivname", 
@@ -2501,10 +2553,7 @@ used_idnrs : list of int = None
             auto space = self->GetFESpace();
 
             ElementId ei = mip.GetTransformation().GetElementId();
-            // auto evaluator = space->GetEvaluator(ei.IsBoundary());
             auto evaluator = space->GetEvaluator(VorB(ei));
-
-            // int elnr = mip.GetTransformation().GetElementNr();
             const FiniteElement & fel = space->GetFE(ei, glh);
 
             Array<int> dnums(fel.GetNDof());
