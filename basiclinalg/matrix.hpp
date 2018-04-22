@@ -1672,7 +1672,9 @@ namespace ngbla
     {
 #ifdef DEBUG
       if(Height() != h  || Width() != w)
-        throw Exception("BareSliceMatrix::AddSize dimensions do not fit");
+        throw Exception(string("BareSliceMatrix::AddSize dimensions do not fit, mysize = ")
+                        +ToString(Height()) + "x" + ToString(Width()) +
+                        " new size = " << ToString(h) << " x " << ToString(w));
 #endif
       return SliceMatrix<T> (h, w, dist, data);
     }
