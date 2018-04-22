@@ -296,7 +296,7 @@ namespace ngcomp
 
     if (ei.IsVolume())
       {
-        // int elnr = ei.Nr();
+        int elnr = ei.Nr();
         
         if (!DefinedOn (ngel))
           {
