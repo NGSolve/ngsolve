@@ -190,9 +190,9 @@ shared_ptr<FESPACE> fesUnpickle(py::tuple state)
   auto fes = CreateFESpace(state[0].cast<string>(),
                            state[1].cast<shared_ptr<MeshAccess>>(),
                            state[2].cast<Flags>());
-  LocalHeap lh (1000000, "FESpace::Update-heap");
-  fes->Update(lh);
-  fes->FinalizeUpdate(lh);
+
+  fes->Update(glh);
+  fes->FinalizeUpdate(glh);
   return dynamic_pointer_cast<FESPACE>(fes);
 };
 
