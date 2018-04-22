@@ -327,13 +327,15 @@ namespace ngcomp
         return SwitchET(eltype,
                         [this,ngel,&alloc] (auto et) -> FiniteElement&
                         {
-                          // return T_GetFE<et.ElementType()>(elnr, alloc);
+                          return T_GetFE<et.ElementType()>(elnr, alloc);
+                          /*
                           // Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,VOL>(elnr);
                           auto * hofe =  new (alloc) L2HighOrderFE<et.ElementType()> ();
                           hofe -> SetVertexNumbers (ngel.vertices);
                           hofe -> L2HighOrderFE<et.ElementType()>::SetOrder (order_inner[ngel.Nr()]);
                           hofe -> L2HighOrderFE<et.ElementType()>::ComputeNDof();
                           return *hofe;
+                          */
                         });
         /*
         switch (eltype)
