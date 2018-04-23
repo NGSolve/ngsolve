@@ -563,7 +563,7 @@ INLINE AutoDiff<D,SCAL> asin (AutoDiff<D,SCAL> x)
 
   
   template <int D, typename SCAL = double>
-  class AutoDiffRec
+  class AutoDiffRec : public AlignedAlloc<AutoDiffRec<D,SCAL>>
   {
     AutoDiffRec<D-1, SCAL> rec;
     SCAL last;
@@ -596,7 +596,7 @@ INLINE AutoDiff<D,SCAL> asin (AutoDiff<D,SCAL> x)
 
   
   template <typename SCAL>
-  class AutoDiffRec<0,SCAL>
+  class AutoDiffRec<0,SCAL> : public AlignedAlloc<AutoDiffRec<0,SCAL>>
   {
     SCAL val;
   public:
@@ -620,7 +620,7 @@ INLINE AutoDiff<D,SCAL> asin (AutoDiff<D,SCAL> x)
 
 
   template <typename SCAL>
-  class AutoDiffRec<1,SCAL>
+  class AutoDiffRec<1,SCAL> : public AlignedAlloc<AutoDiffRec<1,SCAL>>
   {
     SCAL val;
     SCAL last;
