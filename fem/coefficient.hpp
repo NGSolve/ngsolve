@@ -382,7 +382,7 @@ namespace ngfem
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, 
                            BareSliceMatrix<AutoDiff<1,double>> values) const
     {
-      FlatMatrix<double> hvalues(ir.Size(), 2*values.Dist(), &values(0).Value());
+      SliceMatrix<double> hvalues(ir.Size(), Dimension(), 2*values.Dist(), &values(0).Value());
       Evaluate (ir, hvalues);
       for (size_t i = 0; i < ir.Size(); i++)
         for (size_t j = Dimension(); j-- > 0; )
