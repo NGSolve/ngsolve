@@ -746,6 +746,47 @@ val : can be one of the following:
            py::arg("maxderiv")=2,
            py::arg("wait")=false,
           "compile list of individual steps, experimental improvement for deep trees")
+
+
+    .def (py::pickle([] (CoefficientFunction & cf)
+                     {
+                       cout << "in pickle cf" << endl;
+                       PyOutArchive ar;
+                       cf.DoArchive(ar);
+                       Array<CoefficientFunction*> childs = cf.InputCoefficientFunctions();
+                       py::list pychilds;
+                       for (auto child : childs)
+                         pychilds.append (py::cast(child));
+                       return py::make_tuple(int(cf.GetType()), pychilds, ar.GetList());
+                     },
+                     [] (py::tuple state)
+                     {
+                       CF_Type type = CF_Type(py::cast<int>(state[0]));
+                       cout << "unpickle, type = " << type << endl;
+                       auto childs = makeCArraySharedPtr<shared_ptr<CoefficientFunction>> (py::cast<py::list>(state[1]));
+                       PyInArchive ar(py::cast<py::list>(state[2]));
+                       shared_ptr<CoefficientFunction> cf;
+                       switch (type)
+                         {
+                         case CF_Type_undefined:
+                           cout << "undefined CF" << endl;
+                           break;
+                         case CF_Type_constant:
+                           cf = make_shared<ConstantCoefficientFunction>(1);
+                           break;
+                         case CF_Type_vectorial:
+                           cf = MakeVectorialCoefficientFunction(move(childs));
+                           break;
+                         case CF_Type_coordinate:
+                           cf = MakeCoordinateCoefficientFunction(-1);
+                           break;
+                         default:
+                           cout << "undefined cftype" << endl;
+                         }
+                       if (cf)
+                         cf->DoArchive(ar);
+                       return cf;
+                     }))
     ;
 
   ExportStdMathFunction<GenericSin>(m, "sin");
