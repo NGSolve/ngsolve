@@ -14,6 +14,20 @@ namespace ngfem
   /** 
       coefficient functions
   */
+
+  typedef enum {
+    CF_Type_undefined,
+    CF_Type_constant,
+    CF_Type_vectorial,
+    CF_Type_coordinate,
+    CF_Type_add,    
+    CF_Type_sub,    
+    CF_Type_mult,    
+    CF_Type_div,    
+    CF_Type_domainconst,    
+    CF_Type_domainwise,    
+    CF_Type_usertype
+  } CF_Type;
   
   class NGS_DLL_HEADER CoefficientFunction
   {
@@ -310,6 +324,12 @@ namespace ngfem
     virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
     { return Array<CoefficientFunction*>(); }
     virtual bool StoreUserData() const { return false; }
+
+    virtual CF_Type GetType() const { return CF_Type_undefined; } 
+    virtual void DoArchive (Archive & archive)
+    {
+      archive & dimension & dims & is_complex;
+    } 
   };
 
   inline ostream & operator<< (ostream & ost, const CoefficientFunction & cf)
@@ -629,7 +649,12 @@ namespace ngfem
       nonzero_dderiv = 0.0;
     }
     
-    
+    virtual CF_Type GetType() const { return CF_Type_constant; } 
+    virtual void DoArchive (Archive & archive)
+    {
+      CoefficientFunction::DoArchive(archive);
+      archive & val;
+    } 
   };
 
 

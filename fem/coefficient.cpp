@@ -3235,6 +3235,12 @@ public:
       }
   }
 
+  virtual CF_Type GetType() const override { return CF_Type_vectorial; } 
+  virtual void DoArchive (Archive & archive) override
+  {
+    CoefficientFunction::DoArchive(archive);
+    archive & dimi;
+  } 
 };
 
   void VectorialCoefficientFunction::GenerateCode(Code &code, FlatArray<int> inputs, int index) const
@@ -3254,6 +3260,7 @@ public:
             input_index = 0;
         }
     });
+
   }
 
 
@@ -3343,6 +3350,13 @@ public:
       Evaluate (ir, values);
     }
     */
+
+    virtual CF_Type GetType() const override { return CF_Type_coordinate; } 
+    virtual void DoArchive (Archive & archive) override
+    {
+      CoefficientFunction::DoArchive(archive);
+      archive & dir;
+    } 
   };
 
 

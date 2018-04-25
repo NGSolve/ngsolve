@@ -1815,6 +1815,7 @@ kwargs : For a description of the possible kwargs have a look a bit further down
 	  return py::make_tuple(grad, shared_ptr<FESpace>(fesh1));
 	})
     ;
+  // hcurl.attr("__flags_doc__")["nograds"] = " ...";
 
   py::class_<CompoundFESpace, shared_ptr<CompoundFESpace>, FESpace>
     (m,"CompoundFESpace")
