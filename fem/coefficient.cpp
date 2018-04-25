@@ -2199,7 +2199,7 @@ public:
                        // [](double a, double b, double & dda, double & ddb) { dda = 1; ddb = 1; },
                        // [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
                        // { ddada = 0; ddadb = 0; ddbdb = 0; },
-                       [](bool a, bool b) { return a||b; }, '+'
+                       [](bool a, bool b) { return a||b; }, "+"
                        );
   }
   
@@ -2213,7 +2213,7 @@ public:
                        [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
                        { ddada = 0; ddadb = 0; ddbdb = 0; },
                        */
-                       [](bool a, bool b) { return a||b; }, '-'
+                       [](bool a, bool b) { return a||b; }, "-"
                        );
   }
   shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
@@ -2251,7 +2251,7 @@ public:
                        [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
                        { ddada = 0; ddadb = 1; ddbdb = 0; },
                        */
-                       [](bool a, bool b) { return a&&b; }, '*'
+                       [](bool a, bool b) { return a&&b; }, "*"
                        );
   }
 
@@ -2317,7 +2317,7 @@ public:
                        [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
                        { ddada = 0; ddadb = -1.0/(b*b); ddbdb = 2*a/(b*b*b); },
                        */
-                       [](bool a, bool b) { return a; }, '/'
+                       [](bool a, bool b) { return a; }, "/"
                        );
   }
 

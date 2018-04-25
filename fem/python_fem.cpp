@@ -118,19 +118,27 @@ Array<shared_ptr<CoefficientFunction>> MakeCoefficients (py::object py_coef)
   return tmp;
 }
 
-
+std::map<string, std::function<shared_ptr<CF>(shared_ptr<CF>)>> unary_math_functions;
+std::map<string, std::function<shared_ptr<CF>(shared_ptr<CF>, shared_ptr<CF>)>> binary_math_functions;
 
 template <typename FUNC>
 void ExportStdMathFunction(py::module &m, string name)
 {
-  m.def (name.c_str(), 
-           [] (py::object x) -> py::object
+  auto f = [name] (shared_ptr<CF> coef) -> shared_ptr<CF>
+            {
+                FUNC func;
+                return UnaryOpCF(coef, func, FUNC::Name());
+            };
+
+  unary_math_functions[name] = f;
+
+  m.def (name.c_str(), [name] (py::object x) -> py::object
             {
               FUNC func;
               if (py::extract<shared_ptr<CF>>(x).check())
                 {
                   auto coef = py::extract<shared_ptr<CF>>(x)();
-                  return py::cast(UnaryOpCF(coef, func, /* func, */ FUNC::Name()));
+                  return py::cast(unary_math_functions[name](coef));
                 }
               py::extract<double> ed(x);
               if (ed.check()) return py::cast(func(ed()));
@@ -142,76 +150,27 @@ void ExportStdMathFunction(py::module &m, string name)
 }
 
 
-namespace ngfem
-{
-  void ExportUnaryFunction2 (py::module & m, string name,
-                             std::function<shared_ptr<CoefficientFunction>(shared_ptr<CoefficientFunction>)> creator,
-                             std::function<double(double)> func_real,
-                             std::function<Complex(Complex)> func_complex)
-  {
-    m.def (name.c_str(),
-           [creator, func_real, func_complex] (py::object x) -> py::object
-           {
-             if (py::extract<shared_ptr<CF>>(x).check())
-               {
-                 auto coef = py::extract<shared_ptr<CF>>(x)();
-                 return py::cast(creator(coef));
-             }
-             
-             py::extract<double> ed(x);
-             if (ed.check()) return py::cast(func_real(ed()));
-             if (py::extract<Complex> (x).check())
-               return py::cast(func_complex(py::extract<Complex> (x)()));
-             
-             throw py::type_error ("can't compute unary math-function");
-           });         
-  }
-
-
-  void ExportBinaryFunction2 (py::module & m, string name,
-                              std::function<shared_ptr<CoefficientFunction>(shared_ptr<CoefficientFunction>,
-                                                                            shared_ptr<CoefficientFunction>)> creator,
-                              std::function<double(double,double)> func_real,
-                              std::function<Complex(Complex,Complex)> func_complex)
-  {
-    m.def (name.c_str(),
-           [creator, func_real, func_complex] (py::object x, py::object y) -> py::object
-           {
-             if (py::extract<shared_ptr<CF>>(x).check() && py::extract<shared_ptr<CF>>(y).check())
-               {
-                 auto coefx = py::extract<shared_ptr<CF>>(x)();
-                 auto coefy = py::extract<shared_ptr<CF>>(y)();
-                 return py::cast(creator(coefx, coefy));
-             }
-             
-             py::extract<double> edx(x);
-             py::extract<double> edy(y);
-             if (edx.check() && edy.check()) return py::cast(func_real(edx(), edy()));
-             if (py::extract<Complex> (x).check() && py::extract<Complex> (y).check())
-               return py::cast(func_complex(py::extract<Complex> (x)(), py::extract<Complex> (y)()));
-             
-             throw py::type_error ("can't compute binary math-function");
-           });         
-  }
-
-
-}
-                          
-
-
 template <typename FUNC>
 void ExportStdMathFunction2(py::module &m, string name)
 {
+  auto f = [name] (shared_ptr<CF> cx, shared_ptr<CF> cy) -> shared_ptr<CF>
+            {
+                FUNC func;
+                return BinaryOpCF(cx, cy, func,
+                                          [](bool a, bool b) { return a||b; }, FUNC::Name());
+            };
+
+  binary_math_functions[name] = f;
+
   m.def (name.c_str(), 
-         [] (py::object x, py::object y) -> py::object
+         [name] (py::object x, py::object y) -> py::object
          {
            FUNC func;
            if (py::extract<shared_ptr<CF>>(x).check() || py::extract<shared_ptr<CF>>(y).check())
              {
-               shared_ptr<CoefficientFunction> cx = MakeCoefficient(x);
-               shared_ptr<CoefficientFunction> cy = MakeCoefficient(y);
-               return py::cast(BinaryOpCF(cx, cy, func,
-                                          [](bool a, bool b) { return a||b; }, 'X' /* FUNC::Name() */));
+               shared_ptr<CoefficientFunction> cx = py::cast<shared_ptr<CF>>(x);
+               shared_ptr<CoefficientFunction> cy = py::cast<shared_ptr<CF>>(y);
+               return py::cast(binary_math_functions[name](cx,cy));
              }
            py::extract<double> dx(x), dy(y);
            if (dx.check() && dy.check()) return py::cast(func(dx(), dy()));
@@ -661,19 +620,13 @@ val : can be one of the following:
                return res;
            } )
 
-    .def ("__pow__", [] (shared_ptr<CF> c1, shared_ptr<CF> c2)
-           {
-             GenericPow func;
-             return BinaryOpCF(c1, c2, func,
-                               [](bool a, bool b) { return a||b; }, 'X' /* FUNC::Name() */);
-           } )
+    .def ("__pow__", binary_math_functions["pow"])
 
     .def ("__pow__", [] (shared_ptr<CF> c1, double val)
            {
              GenericPow func;
 	     auto c2 = make_shared<ConstantCoefficientFunction>(val);
-             return BinaryOpCF(c1, c2, func,
-                               [](bool a, bool b) { return a||b; }, 'X' /* FUNC::Name() */);
+             return binary_math_functions["pow"](c1, c2);
            } )  
 
     .def ("InnerProduct", [] (shared_ptr<CF> c1, shared_ptr<CF> c2)
@@ -764,8 +717,10 @@ val : can be one of the following:
                        CF_Type type = CF_Type(py::cast<int>(state[0]));
                        cout << "unpickle, type = " << type << endl;
                        auto childs = makeCArraySharedPtr<shared_ptr<CoefficientFunction>> (py::cast<py::list>(state[1]));
-                       PyInArchive ar(py::cast<py::list>(state[2]));
+                       py::list pylist = py::cast<py::list>(state[2]);;
+                       PyInArchive ar(pylist);
                        shared_ptr<CoefficientFunction> cf;
+                       string name;
                        switch (type)
                          {
                          case CF_Type_undefined:
@@ -780,6 +735,32 @@ val : can be one of the following:
                          case CF_Type_coordinate:
                            cf = MakeCoordinateCoefficientFunction(-1);
                            break;
+                           /*
+                         case CF_Type_add:
+                           break;
+                         case CF_Type_sub:
+                           break;
+                         case CF_Type_mult:
+                           break;
+                         case CF_Type_div:
+                           break;
+                         case CF_Type_domainconst:
+                           break;
+                         case CF_Type_domainwise:
+                           break;
+                           */
+                         case CF_Type_unary_op:
+                           name = py::cast<string>(pylist[0]);
+                           cf = unary_math_functions[name](childs[0]);
+                           break;
+                         case CF_Type_binary_op:
+                           name = py::cast<string>(pylist[0]);
+                           cf = binary_math_functions[name](childs[0], childs[1]);
+                           break;
+                           /*
+                         case CF_Type_usertype:
+                           break;
+                           */
                          default:
                            cout << "undefined cftype" << endl;
                          }
