@@ -407,6 +407,14 @@ struct GenericPow {
       Evaluate (ir, result);
       deriv = 0.0;
     }
+
+    virtual CF_Type GetType() const { return CF_Type_normal_vector; }
+    virtual void DoArchive (Archive & archive)
+    {
+      int dim = D;
+      archive & dim;
+      CoefficientFunction::DoArchive(archive);
+    }
     
   };
 
@@ -446,6 +454,14 @@ struct GenericPow {
         for (size_t j = 0; j < D; j++)
           values(j,i) = static_cast<const SIMD<DimMappedIntegrationPoint<D>>&>(ir[i]).GetTV()(j).Data();
     }
+
+    virtual CF_Type GetType() const { return CF_Type_tangential_vector; }
+    virtual void DoArchive (Archive & archive)
+    {
+      int dim = D;
+      archive & dim;
+      CoefficientFunction::DoArchive(archive);
+    }
   };
 
 
@@ -453,6 +469,182 @@ struct GenericPow {
 
 void ExportCoefficientFunction(py::module &m)
 {
+  m.def ("IfPos", [] (shared_ptr<CF> c1, py::object then_obj, py::object else_obj)
+            {
+              return IfPos(c1,
+                           MakeCoefficient(then_obj),
+                           MakeCoefficient(else_obj));
+            } ,docu_string(R"raw_string(Returns new CoefficientFunction with values then_obj if c1 is positive and else_obj else.
+
+Parameters:
+
+c1 : ngsolve.CoefficientFunction
+  Indicator function
++
+then_obj : object
+  Values of new CF if c1 is positive, object must be implicitly convertible to
+  ngsolve.CoefficientFunction. See help(:any:`CoefficientFunction` ) for information.
+
+else_obj : object
+  Values of new CF if c1 is not positive, object must be implicitly convertible to
+  ngsolve.CoefficientFunction. See help(:any:`CoefficientFunction` ) for information.
+)raw_string"))
+    ;
+  
+  m.def("CoordCF", 
+        [] (int direction)
+        { return MakeCoordinateCoefficientFunction(direction); },
+        "CoefficientFunction for x, y, z"
+        );
+  
+  class MeshSizeCF : public CoefficientFunctionNoDerivative
+  {
+  public:
+    MeshSizeCF () : CoefficientFunctionNoDerivative(1, false) { ; }
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
+    {
+      if (ip.IP().FacetNr() != -1) // on a boundary facet of the element
+        {
+          double det = 1;
+          switch (ip.Dim())
+            {
+            case 1: det = fabs (static_cast<const MappedIntegrationPoint<1,1>&> (ip).GetJacobiDet()); break;
+            case 2: det = fabs (static_cast<const MappedIntegrationPoint<2,2>&> (ip).GetJacobiDet()); break;
+            case 3: det = fabs (static_cast<const MappedIntegrationPoint<3,3>&> (ip).GetJacobiDet()); break;
+            default:
+              throw Exception("Illegal dimension in MeshSizeCF");
+            }
+          return det/ip.GetMeasure();
+        }
+      
+      switch (ip.Dim() - int(ip.VB()))
+        {
+        case 0: throw Exception ("don't have mesh-size on 0-D boundary");
+        case 1: return fabs (static_cast<const ScalMappedIntegrationPoint<>&> (ip).GetJacobiDet());
+        case 2: return pow (fabs (static_cast<const ScalMappedIntegrationPoint<>&> (ip).GetJacobiDet()), 1.0/2);
+        case 3: default:
+          return pow (fabs (static_cast<const ScalMappedIntegrationPoint<>&> (ip).GetJacobiDet()), 1.0/3);
+        }
+      // return pow(ip.GetMeasure(), 1.0/(ip.Dim());
+    }
+
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const
+    {
+      if (ir[0].IP().FacetNr() != -1)
+        for(size_t i : Range(ir))
+          values(i) =  fabs (ir[i].GetJacobiDet()) / ir[i].GetMeasure();
+      else
+        for(size_t i : Range(ir))
+          values(i) =  pow(fabs (ir[i].GetJacobiDet()), 1.0/ir.DimElement()).Data();
+    }
+
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
+                           AFlatMatrix<double> values) const
+    {
+      Evaluate (ir, values);
+    }    
+
+    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {
+      if(code.is_simd)
+      {
+        string type = "SIMD<double>";
+        code.body += Var(index).Declare(type);
+        code.body += "if (mir[0].IP().FacetNr() != -1)\n{";
+        code.body +=  Var(index).Assign( CodeExpr("fabs (ip.GetJacobiDet()) / ip.GetMeasure()"), false );
+        code.body += "}else\n";
+        code.body += Var(index).Assign( CodeExpr("pow(fabs(ip.GetJacobiDet()), 1.0/mir.DimElement())"), false);
+      }
+      else
+      {
+        code.body += Var(index).Declare( "double" );
+        code.body += R"CODE_(
+        {
+          double tmp_res = 0.0;
+          if (ip.IP().FacetNr() != -1)
+          {
+          double det = 1;
+          switch (ip.Dim())
+            {
+            case 1: det = fabs (static_cast<const MappedIntegrationPoint<1,1>&> (ip).GetJacobiDet()); break;
+            case 2: det = fabs (static_cast<const MappedIntegrationPoint<2,2>&> (ip).GetJacobiDet()); break;
+            case 3: det = fabs (static_cast<const MappedIntegrationPoint<3,3>&> (ip).GetJacobiDet()); break;
+            default:
+              throw Exception("Illegal dimension in MeshSizeCF");
+            }
+          tmp_res = det/ip.GetMeasure();
+          }
+          else
+          {
+          switch (ip.Dim()) {
+            case 1:  tmp_res =      fabs (static_cast<const MappedIntegrationPoint<1,1>&> (ip).GetJacobiDet()); break;
+            case 2:  tmp_res = pow (fabs (static_cast<const MappedIntegrationPoint<2,2>&> (ip).GetJacobiDet()), 1.0/2); break;
+            default: tmp_res = pow (fabs (static_cast<const MappedIntegrationPoint<3,3>&> (ip).GetJacobiDet()), 1.0/3);
+            }
+          }
+        )CODE_" + Var(index).S() + " = tmp_res;\n}\n;";
+      }
+    }
+
+    virtual CF_Type GetType() const { return CF_Type_mesh_size; }
+  };
+
+
+  class SpecialCoefficientFunctions
+  {
+  public:
+    shared_ptr<CF> GetMeshSizeCF ()
+    { return make_shared<MeshSizeCF>(); }
+
+    shared_ptr<CF> GetNormalVectorCF (int dim)
+    { 
+      switch(dim)
+	{ 
+	case 1:
+	  return make_shared<NormalVectorCF<1>>();
+	case 2:
+	  return make_shared<NormalVectorCF<2>>();
+	case 3:
+	  return make_shared<NormalVectorCF<3>>();
+	case 4:
+	  return make_shared<NormalVectorCF<4>>();
+	case 5:
+	  return make_shared<NormalVectorCF<5>>();
+	case 6:
+	  return make_shared<NormalVectorCF<6>>();
+        default:
+          throw Exception (string("Normal-vector not implemented for dimension")
+                           +ToString(dim));
+	}
+    }
+
+    shared_ptr<CF> GetTangentialVectorCF (int dim)
+    { 
+      switch(dim)
+	{
+	case 1:
+	  return make_shared<TangentialVectorCF<1>>();
+	case 2:
+	  return make_shared<TangentialVectorCF<2>>();
+	default:
+	  return make_shared<TangentialVectorCF<3>>();
+	}
+    }
+  };
+
+  py::class_<SpecialCoefficientFunctions> (m, "SpecialCFCreator")
+    .def_property_readonly("mesh_size", 
+                  &SpecialCoefficientFunctions::GetMeshSizeCF, "local mesh-size (approximate element diameter) as CF")
+    .def("normal", &SpecialCoefficientFunctions::GetNormalVectorCF,
+         "depending on contents: normal-vector to geometry or element\n"
+         "space-dimension must be provided")
+    .def("tangential", &SpecialCoefficientFunctions::GetTangentialVectorCF,
+         "depending on contents: tangential-vector to element\n"
+         "space-dimension must be provided")
+    ;
+  static SpecialCoefficientFunctions specialcf;
+  
+  m.attr("specialcf") = py::cast(&specialcf);
+
 
   py::class_<CoefficientFunction, shared_ptr<CoefficientFunction>>
     (m, "CoefficientFunction",
@@ -634,11 +826,9 @@ val : can be one of the following:
              return InnerProduct (c1, c2);
            })
     
-    .def("Norm",  [](shared_ptr<CF> x) { return NormCF(x); })
+    .def("Norm",  NormCF)
     
-    .def ("Other",
-          [](shared_ptr<CF> x)
-          { return MakeOtherCoefficientFunction(x); },
+    .def ("Other", MakeOtherCoefficientFunction,
           "evaluate on other element, as needed for DG jumps")
     
     // it's using the complex functions anyway ...
@@ -721,6 +911,7 @@ val : can be one of the following:
                        PyInArchive ar(pylist);
                        shared_ptr<CoefficientFunction> cf;
                        string name;
+                       int dim;
                        switch (type)
                          {
                          case CF_Type_undefined:
@@ -735,25 +926,65 @@ val : can be one of the following:
                          case CF_Type_coordinate:
                            cf = MakeCoordinateCoefficientFunction(-1);
                            break;
-                           /*
+                         case CF_Type_norm:
+                           cf = NormCF(childs[0]);
+                           break;
+                         case CF_Type_trans:
+                           cf = TransposeCF(childs[0]);
+                           break;
+                         case CF_Type_component:
+                           cf = MakeComponentCoefficientFunction (childs[0], 0);
+                           break;
+                         case CF_Type_real:
+                           cf = Real(childs[0]);
+                           break;
+                         case CF_Type_imag:
+                           cf = Imag(childs[0]);
+                           break;
+                         case CF_Type_ifpos:
+                           cf = IfPos(childs[0], childs[1], childs[2]);
+                           break;
+                         case CF_Type_normal_vector:
+                           dim = py::cast<int>(pylist[0]);
+                           cf = specialcf.GetNormalVectorCF(dim);
+                           break;
+                         case CF_Type_tangential_vector:
+                           dim = py::cast<int>(pylist[0]);
+                           cf = specialcf.GetTangentialVectorCF(dim);
+                           break;
+                         case CF_Type_mesh_size:
+                           cf = specialcf.GetMeshSizeCF();
+                           break;
+                         case CF_Type_scale:
+                           cf = 1.0 * childs[0];
+                           break;
+                         case CF_Type_scale_complex:
+                           cf = Complex(1.0) * childs[0];
+                           break;
                          case CF_Type_add:
+                           cf = childs[0] + childs[1];
                            break;
                          case CF_Type_sub:
+                           cf = childs[0] - childs[1];
                            break;
                          case CF_Type_mult:
+                           cf = childs[0] * childs[1];
                            break;
                          case CF_Type_div:
+                           cf = childs[0] / childs[1];
                            break;
                          case CF_Type_domainconst:
+                           DomainConstantCoefficientFunction(Array<double>{});
                            break;
                          case CF_Type_domainwise:
+                           MakeDomainWiseCoefficientFunction(move(childs));
                            break;
-                           */
                          case CF_Type_unary_op:
                            name = py::cast<string>(pylist[0]);
                            cf = unary_math_functions[name](childs[0]);
                            break;
                          case CF_Type_binary_op:
+                           cout << py::str(pylist) << endl;
                            name = py::cast<string>(pylist[0]);
                            cf = binary_math_functions[name](childs[0], childs[1]);
                            break;
@@ -770,44 +1001,6 @@ val : can be one of the following:
                      }))
     ;
 
-  ExportStdMathFunction<GenericSin>(m, "sin");
-  ExportStdMathFunction<GenericCos>(m, "cos");
-  ExportStdMathFunction<GenericTan>(m, "tan");
-  ExportStdMathFunction<GenericExp>(m, "exp");
-  ExportStdMathFunction<GenericLog>(m, "log");
-  ExportStdMathFunction<GenericATan>(m, "atan");
-  ExportStdMathFunction<GenericACos>(m, "acos");
-  ExportStdMathFunction<GenericASin>(m, "asin");
-  ExportStdMathFunction<GenericSqrt>(m, "sqrt");
-  ExportStdMathFunction<GenericFloor>(m, "floor");
-  ExportStdMathFunction<GenericCeil>(m, "ceil");
-  ExportStdMathFunction<GenericConj>(m, "Conj");
-
-  ExportStdMathFunction2<GenericATan2>(m, "atan2");
-  ExportStdMathFunction2<GenericPow>(m, "pow");
-
-  m.def ("IfPos", [] (shared_ptr<CF> c1, py::object then_obj, py::object else_obj)
-            {
-              return IfPos(c1,
-                           MakeCoefficient(then_obj),
-                           MakeCoefficient(else_obj));
-            } ,docu_string(R"raw_string(Returns new CoefficientFunction with values then_obj if c1 is positive and else_obj else.
-
-Parameters:
-
-c1 : ngsolve.CoefficientFunction
-  Indicator function
-+
-then_obj : object
-  Values of new CF if c1 is positive, object must be implicitly convertible to
-  ngsolve.CoefficientFunction. See help(:any:`CoefficientFunction` ) for information.
-
-else_obj : object
-  Values of new CF if c1 is not positive, object must be implicitly convertible to
-  ngsolve.CoefficientFunction. See help(:any:`CoefficientFunction` ) for information.
-)raw_string"))
-    ;
-  
   typedef shared_ptr<ParameterCoefficientFunction> spParameterCF;
   py::class_<ParameterCoefficientFunction, spParameterCF, CF>
     (m, "Parameter", docu_string(R"raw_string(CoefficientFunction with a modifiable value
@@ -823,159 +1016,33 @@ val : float
           "modify parameter value")
     .def ("Get", [] (spParameterCF cf)  { return cf->GetValue(); },
           "return parameter value")
+    .def (py::pickle([] (shared_ptr<ParameterCoefficientFunction> self)
+                     {
+                       return py::make_tuple(self->GetValue());
+                     },
+                     [] (py::tuple state)
+                     {
+                       double val = py::cast<double>(state[0]);
+                       return make_shared<ParameterCoefficientFunction>(val);
+                     }))
     ;
 
-  m.def("CoordCF", 
-        [] (int direction)
-        { return MakeCoordinateCoefficientFunction(direction); },
-        "CoefficientFunction for x, y, z"
-        );
-  
-  class MeshSizeCF : public CoefficientFunctionNoDerivative
-  {
-  public:
-    MeshSizeCF () : CoefficientFunctionNoDerivative(1, false) { ; }
-    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
-    {
-      if (ip.IP().FacetNr() != -1) // on a boundary facet of the element
-        {
-          double det = 1;
-          switch (ip.Dim())
-            {
-            case 1: det = fabs (static_cast<const MappedIntegrationPoint<1,1>&> (ip).GetJacobiDet()); break;
-            case 2: det = fabs (static_cast<const MappedIntegrationPoint<2,2>&> (ip).GetJacobiDet()); break;
-            case 3: det = fabs (static_cast<const MappedIntegrationPoint<3,3>&> (ip).GetJacobiDet()); break;
-            default:
-              throw Exception("Illegal dimension in MeshSizeCF");
-            }
-          return det/ip.GetMeasure();
-        }
-      
-      switch (ip.Dim() - int(ip.VB()))
-        {
-        case 0: throw Exception ("don't have mesh-size on 0-D boundary");
-        case 1: return fabs (static_cast<const ScalMappedIntegrationPoint<>&> (ip).GetJacobiDet());
-        case 2: return pow (fabs (static_cast<const ScalMappedIntegrationPoint<>&> (ip).GetJacobiDet()), 1.0/2);
-        case 3: default:
-          return pow (fabs (static_cast<const ScalMappedIntegrationPoint<>&> (ip).GetJacobiDet()), 1.0/3);
-        }
-      // return pow(ip.GetMeasure(), 1.0/(ip.Dim());
-    }
 
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const
-    {
-      if (ir[0].IP().FacetNr() != -1)
-        for(size_t i : Range(ir))
-          values(i) =  fabs (ir[i].GetJacobiDet()) / ir[i].GetMeasure();
-      else
-        for(size_t i : Range(ir))
-          values(i) =  pow(fabs (ir[i].GetJacobiDet()), 1.0/ir.DimElement()).Data();
-    }
+  ExportStdMathFunction<GenericSin>(m, "sin");
+  ExportStdMathFunction<GenericCos>(m, "cos");
+  ExportStdMathFunction<GenericTan>(m, "tan");
+  ExportStdMathFunction<GenericExp>(m, "exp");
+  ExportStdMathFunction<GenericLog>(m, "log");
+  ExportStdMathFunction<GenericATan>(m, "atan");
+  ExportStdMathFunction<GenericACos>(m, "acos");
+  ExportStdMathFunction<GenericASin>(m, "asin");
+  ExportStdMathFunction<GenericSqrt>(m, "sqrt");
+  ExportStdMathFunction<GenericFloor>(m, "floor");
+  ExportStdMathFunction<GenericCeil>(m, "ceil");
+  ExportStdMathFunction<GenericConj>(m, "Conj");
 
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
-                           AFlatMatrix<double> values) const
-    {
-      Evaluate (ir, values);
-    }    
-
-    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {
-      if(code.is_simd)
-      {
-        string type = "SIMD<double>";
-        code.body += Var(index).Declare(type);
-        code.body += "if (mir[0].IP().FacetNr() != -1)\n{";
-        code.body +=  Var(index).Assign( CodeExpr("fabs (ip.GetJacobiDet()) / ip.GetMeasure()"), false );
-        code.body += "}else\n";
-        code.body += Var(index).Assign( CodeExpr("pow(fabs(ip.GetJacobiDet()), 1.0/mir.DimElement())"), false);
-      }
-      else
-      {
-        code.body += Var(index).Declare( "double" );
-        code.body += R"CODE_(
-        {
-          double tmp_res = 0.0;
-          if (ip.IP().FacetNr() != -1)
-          {
-          double det = 1;
-          switch (ip.Dim())
-            {
-            case 1: det = fabs (static_cast<const MappedIntegrationPoint<1,1>&> (ip).GetJacobiDet()); break;
-            case 2: det = fabs (static_cast<const MappedIntegrationPoint<2,2>&> (ip).GetJacobiDet()); break;
-            case 3: det = fabs (static_cast<const MappedIntegrationPoint<3,3>&> (ip).GetJacobiDet()); break;
-            default:
-              throw Exception("Illegal dimension in MeshSizeCF");
-            }
-          tmp_res = det/ip.GetMeasure();
-          }
-          else
-          {
-          switch (ip.Dim()) {
-            case 1:  tmp_res =      fabs (static_cast<const MappedIntegrationPoint<1,1>&> (ip).GetJacobiDet()); break;
-            case 2:  tmp_res = pow (fabs (static_cast<const MappedIntegrationPoint<2,2>&> (ip).GetJacobiDet()), 1.0/2); break;
-            default: tmp_res = pow (fabs (static_cast<const MappedIntegrationPoint<3,3>&> (ip).GetJacobiDet()), 1.0/3);
-            }
-          }
-        )CODE_" + Var(index).S() + " = tmp_res;\n}\n;";
-      }
-    }
-  };
-
-
-  class SpecialCoefficientFunctions
-  {
-  public:
-    shared_ptr<CF> GetMeshSizeCF ()
-    { return make_shared<MeshSizeCF>(); }
-
-    shared_ptr<CF> GetNormalVectorCF (int dim)
-    { 
-      switch(dim)
-	{ 
-	case 1:
-	  return make_shared<NormalVectorCF<1>>();
-	case 2:
-	  return make_shared<NormalVectorCF<2>>();
-	case 3:
-	  return make_shared<NormalVectorCF<3>>();
-	case 4:
-	  return make_shared<NormalVectorCF<4>>();
-	case 5:
-	  return make_shared<NormalVectorCF<5>>();
-	case 6:
-	  return make_shared<NormalVectorCF<6>>();
-        default:
-          throw Exception (string("Normal-vector not implemented for dimension")
-                           +ToString(dim));
-	}
-    }
-
-    shared_ptr<CF> GetTangentialVectorCF (int dim)
-    { 
-      switch(dim)
-	{
-	case 1:
-	  return make_shared<TangentialVectorCF<1>>();
-	case 2:
-	  return make_shared<TangentialVectorCF<2>>();
-	default:
-	  return make_shared<TangentialVectorCF<3>>();
-	}
-    }
-  };
-
-  py::class_<SpecialCoefficientFunctions> (m, "SpecialCFCreator")
-    .def_property_readonly("mesh_size", 
-                  &SpecialCoefficientFunctions::GetMeshSizeCF, "local mesh-size (approximate element diameter) as CF")
-    .def("normal", &SpecialCoefficientFunctions::GetNormalVectorCF,
-         "depending on contents: normal-vector to geometry or element\n"
-         "space-dimension must be provided")
-    .def("tangential", &SpecialCoefficientFunctions::GetTangentialVectorCF,
-         "depending on contents: tangential-vector to element\n"
-         "space-dimension must be provided")
-    ;
-  static SpecialCoefficientFunctions specialcf;
-  
-  m.attr("specialcf") = py::cast(&specialcf);
+  ExportStdMathFunction2<GenericATan2>(m, "atan2");
+  ExportStdMathFunction2<GenericPow>(m, "pow");
 
   py::class_<BSpline, shared_ptr<BSpline> > (m, "BSpline",R"raw(BSpline of arbitrary order
 

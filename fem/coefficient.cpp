@@ -1032,6 +1032,12 @@ public:
   {
     c1->NonZeroPattern (ud, nonzero, nonzero_deriv, nonzero_dderiv);
   }  
+  virtual CF_Type GetType() const override { return CF_Type_scale; }
+  virtual void DoArchive (Archive & archive) override
+  {
+    CoefficientFunction::DoArchive(archive);
+    archive & scal;
+  }
 };
 
 
@@ -1108,6 +1114,12 @@ public:
     c1->NonZeroPattern (ud, nonzero, nonzero_deriv, nonzero_dderiv);
   }  
     
+  virtual CF_Type GetType() const override { return CF_Type_scale_complex; }
+  virtual void DoArchive (Archive & archive) override
+  {
+    CoefficientFunction::DoArchive(archive);
+    archive & scal;
+  }
 };
 
 // ***********************************************************************************
@@ -1225,6 +1237,8 @@ public:
         nonzero_dderiv(i) = (v1(0) && dd2(i)) || (d1(0) && d2(i)) || (dd1(0) && v2(i));
       }
   }
+
+  virtual CF_Type GetType() const override { return CF_Type_mult; }
 };
 
 
@@ -1357,6 +1371,7 @@ public:
     nonzero_dderiv = nzdd;
   }
 
+  virtual CF_Type GetType() const override { return CF_Type_mult; }
 };
 
 template <int DIM>
@@ -1499,6 +1514,7 @@ public:
     nonzero_dderiv = nzdd;
   }
 
+  virtual CF_Type GetType() const override { return CF_Type_mult; }
 };
 
 
@@ -1606,6 +1622,7 @@ public:
     nonzero_dderiv = nzd || nzdd;
   }
 
+  virtual CF_Type GetType() const override { return CF_Type_norm; }
 };
 
 
@@ -1704,6 +1721,7 @@ public:
     nonzero_dderiv = nzd || nzdd;
   }
 
+  virtual CF_Type GetType() const override { return CF_Type_norm; }
 };
 
 
@@ -1881,6 +1899,7 @@ public:
           }
   }
  
+  virtual CF_Type GetType() const override { return CF_Type_mult; }
 };
 
 
@@ -2031,6 +2050,7 @@ public:
           values(i,k) += va(i*inner_dim+j, k) * vb(j,k);
   }
 
+  virtual CF_Type GetType() const override { return CF_Type_mult; }
 };
 
 
@@ -2164,6 +2184,7 @@ public:
           values(j*hdims[1]+k, i) = in0(k*hdims[0]+j, i);
   }
   
+  virtual CF_Type GetType() const override { return CF_Type_trans; }
   };  
 
 
@@ -2424,6 +2445,13 @@ public:
     nonzero_deriv(0) = d1(comp);
     nonzero_dderiv(0) = dd1(comp);
   }  
+
+  virtual CF_Type GetType() const { return CF_Type_component; }
+  virtual void DoArchive (Archive & archive)
+  {
+      CoefficientFunction::DoArchive(archive);
+      archive & comp;
+  }
 };
 
   shared_ptr<CoefficientFunction>
@@ -2565,6 +2593,7 @@ public:
     Evaluate (ip, res);
     return res(0);
   }
+  virtual CF_Type GetType() const { return CF_Type_domainwise; }
 };
 
   shared_ptr<CoefficientFunction>
@@ -3082,6 +3111,8 @@ class IfPosCoefficientFunction : public T_CoefficientFunction<IfPosCoefficientFu
           nonzero_dderiv(i) = dd1(i) || dd2(i);
         }
     }  
+
+  virtual CF_Type GetType() const { return CF_Type_ifpos; }
   };
   
   extern
@@ -4223,6 +4254,8 @@ class RealCF : public CoefficientFunctionNoDerivative
       cf->Evaluate (ir, cvalues);
       values.AddSize(Dimension(), ir.Size()) = Real(cvalues);
     }
+
+    virtual CF_Type GetType() const { return CF_Type_real; }
   };
 
   class ImagCF : public CoefficientFunctionNoDerivative
@@ -4265,6 +4298,8 @@ class RealCF : public CoefficientFunctionNoDerivative
       cf->Evaluate (ir, cvalues);
       values.AddSize(Dimension(), ir.Size()) = Imag(cvalues);
     }
+
+    virtual CF_Type GetType() const { return CF_Type_imag; }
   };
 
   shared_ptr<CoefficientFunction> Real(shared_ptr<CoefficientFunction> cf)
@@ -4283,6 +4318,7 @@ class RealCF : public CoefficientFunctionNoDerivative
       cf->RealCompile(maxderiv, wait);
     return cf;
   }
+
   
 }
 
