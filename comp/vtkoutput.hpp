@@ -67,6 +67,7 @@ namespace ngcomp
     void FillReferenceTrig(Array<IntegrationPoint> & ref_coords,Array<INT<ELEMENT_MAXPOINTS+1>> & ref_elems);    
     void FillReferenceQuad(Array<IntegrationPoint> & ref_coords,Array<INT<ELEMENT_MAXPOINTS+1>> & ref_elems);    
     void FillReferenceTet(Array<IntegrationPoint> & ref_coords,Array<INT<ELEMENT_MAXPOINTS+1>> & ref_elems);    
+    void FillReferenceHex(Array<IntegrationPoint> & ref_coords,Array<INT<ELEMENT_MAXPOINTS+1>> & ref_elems); 
     void FillReferencePrism(Array<IntegrationPoint> & ref_coords,Array<INT<ELEMENT_MAXPOINTS+1>> & ref_elems);    
     // void FillReferenceData3D(Array<IntegrationPoint> & ref_coords, Array<INT<D+1>> & ref_tets);
     void PrintPoints();
