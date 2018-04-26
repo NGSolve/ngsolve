@@ -730,7 +730,16 @@ namespace ngcomp
       }
 
     if (dimension > 1)
+    {
       integrator[BND] = make_shared<BlockBilinearFormIntegrator> (integrator[BND], dimension);
+      for (auto vb : { VOL,BND, BBND, BBBND })
+      {
+        if (evaluator[vb])
+          evaluator[vb] = make_shared<BlockDifferentialOperator> (evaluator[vb], dimension);
+        if (flux_evaluator[vb])
+          flux_evaluator[vb] = make_shared<BlockDifferentialOperator> (flux_evaluator[vb], dimension);            
+      }
+    }
   }
 
   L2SurfaceHighOrderFESpace :: ~L2SurfaceHighOrderFESpace ()
