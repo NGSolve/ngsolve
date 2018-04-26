@@ -334,8 +334,8 @@ namespace ngfem
     virtual string GetDescription () const;
     
     virtual void TraverseTree (const function<void(CoefficientFunction&)> & func);
-    virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
-    { return Array<CoefficientFunction*>(); }
+    virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const
+    { return Array<shared_ptr<CoefficientFunction>>(); }
     virtual bool StoreUserData() const { return false; }
 
     virtual CF_Type GetType() const { return CF_Type_undefined; } 
@@ -1122,8 +1122,8 @@ public:
     func(*this);
   }
 
-  virtual Array<CoefficientFunction*> InputCoefficientFunctions() const override
-  { return Array<CoefficientFunction*>({ c1.get() }); }
+  virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+  { return Array<shared_ptr<CoefficientFunction>>({ c1 }); }
 
   using BASE::Evaluate;
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
@@ -1301,8 +1301,8 @@ public:
   virtual bool DefinedOn (const ElementTransformation & trafo) override
   { return c1->DefinedOn(trafo) && c2->DefinedOn(trafo); }
 
-  virtual Array<CoefficientFunction*> InputCoefficientFunctions() const override
-  { return Array<CoefficientFunction*>({ c1.get(), c2.get() }); }
+  virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+  { return Array<shared_ptr<CoefficientFunction>>({ c1, c2 }); }
 
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
   {

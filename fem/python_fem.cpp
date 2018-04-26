@@ -2,6 +2,7 @@
 #include "../ngstd/python_ngstd.hpp"
 #include "../ngstd/bspline.hpp"
 #include <fem.hpp>
+#include <comp.hpp>
 #include <mutex>
 using namespace ngfem;
 using ngfem::ELEMENT_TYPE;
@@ -896,10 +897,16 @@ val : can be one of the following:
                        cout << "in pickle cf" << endl;
                        PyOutArchive ar;
                        cf.DoArchive(ar);
-                       Array<CoefficientFunction*> childs = cf.InputCoefficientFunctions();
+                       Array<shared_ptr<CoefficientFunction>> childs = cf.InputCoefficientFunctions();
                        py::list pychilds;
                        for (auto child : childs)
-                         pychilds.append (py::cast(child));
+                         {
+                           auto gfchild = dynamic_pointer_cast<ngcomp::GridFunction> (child);
+                           if (gfchild)
+                             pychilds.append (py::cast(gfchild));
+                           else
+                             pychilds.append (py::cast(child));
+                         }
                        return py::make_tuple(int(cf.GetType()), pychilds, ar.GetList());
                      },
                      [] (py::tuple state)

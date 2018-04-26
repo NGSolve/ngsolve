@@ -99,7 +99,7 @@ namespace ngfem
       ost << ", dims = " << Dimensions()[0] << " x " << Dimensions()[1];
     ost << endl;
 
-    Array<CoefficientFunction*> input = InputCoefficientFunctions();
+    Array<shared_ptr<CoefficientFunction>> input = InputCoefficientFunctions();
     for (int i = 0; i < input.Size(); i++)
       input[i] -> PrintReportRec (ost, level+1);
   }
@@ -963,8 +963,8 @@ public:
     func(*this);
   }
 
-  virtual Array<CoefficientFunction*> InputCoefficientFunctions() const override
-  { return Array<CoefficientFunction*>({ c1.get() }); }
+  virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+  { return Array<shared_ptr<CoefficientFunction>>({ c1 }); }
 
   virtual bool DefinedOn (const ElementTransformation & trafo) override
   { return c1->DefinedOn(trafo); }
@@ -1062,8 +1062,8 @@ public:
     func(*this);
   }
 
-  virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
-  { return Array<CoefficientFunction*>({ c1.get() }); }
+  virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const
+  { return Array<shared_ptr<CoefficientFunction>>({ c1 }); }
   
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
@@ -1145,8 +1145,8 @@ public:
     func(*this);
   }
 
-  virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
-  { return Array<CoefficientFunction*>({ c1.get(), c2.get() }); }
+  virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const
+  { return Array<shared_ptr<CoefficientFunction>>({ c1, c2 }); }
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
@@ -1275,8 +1275,8 @@ public:
     func(*this);
   }
 
-  virtual Array<CoefficientFunction*> InputCoefficientFunctions() const override
-  { return Array<CoefficientFunction*>({ c1.get(), c2.get() }); }  
+  virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+  { return Array<shared_ptr<CoefficientFunction>>({ c1, c2 }); }  
   
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
   {
@@ -1406,8 +1406,8 @@ public:
     func(*this);
   }
 
-  virtual Array<CoefficientFunction*> InputCoefficientFunctions() const override
-  { return Array<CoefficientFunction*>({ c1.get(), c2.get() }); }  
+  virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+  { return Array<shared_ptr<CoefficientFunction>>({ c1, c2 }); }  
 
   using T_CoefficientFunction<T_MultVecVecCoefficientFunction<DIM>>::Evaluate;
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
@@ -1540,8 +1540,8 @@ public:
     func(*this);
   }
 
-  virtual Array<CoefficientFunction*> InputCoefficientFunctions() const override
-  { return Array<CoefficientFunction*>({ c1.get() }); }  
+  virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+  { return Array<shared_ptr<CoefficientFunction>>({ c1 }); }  
   
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
   {
@@ -1646,8 +1646,8 @@ public:
     func(*this);
   }
 
-  virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
-  { return Array<CoefficientFunction*>({ c1.get() }); }  
+  virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const
+  { return Array<shared_ptr<CoefficientFunction>>({ c1 }); }  
   
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
   {
@@ -1768,8 +1768,8 @@ public:
         }
   }
 
-  virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
-  { return Array<CoefficientFunction*>({ c1.get(), c2.get() }); }  
+  virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const
+  { return Array<shared_ptr<CoefficientFunction>>({ c1, c2 }); }  
 
 
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
@@ -1942,8 +1942,8 @@ public:
     func(*this);
   }
 
-  virtual Array<CoefficientFunction*> InputCoefficientFunctions() const override
-  { return Array<CoefficientFunction*>({ c1.get(), c2.get() }); }
+  virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+  { return Array<shared_ptr<CoefficientFunction>>({ c1, c2 }); }
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
       auto dims = c1->Dimensions();
@@ -2083,8 +2083,8 @@ public:
           code.body += Var(index,i,j).Assign( Var(inputs[0],j,i) );
   }
 
-  virtual Array<CoefficientFunction*> InputCoefficientFunctions() const override
-  { return Array<CoefficientFunction*>({ c1.get() } ); }  
+  virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+  { return Array<shared_ptr<CoefficientFunction>>({ c1 } ); }  
 
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
                                FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
@@ -2377,8 +2377,8 @@ public:
     func(*this);
   }
 
-  virtual Array<CoefficientFunction*> InputCoefficientFunctions() const override
-  { return Array<CoefficientFunction*>({ c1.get() }); }
+  virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+  { return Array<shared_ptr<CoefficientFunction>>({ c1 }); }
 
   using BASE::Evaluate;
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
@@ -2521,12 +2521,12 @@ public:
     func(*this);
   }
 
-  virtual Array<CoefficientFunction*> InputCoefficientFunctions() const override
+  virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
   {
-    Array<CoefficientFunction*> cfa;
+    Array<shared_ptr<CoefficientFunction>> cfa;
     for (auto cf : ci)
-      cfa.Append (cf.get());
-    return Array<CoefficientFunction*>(cfa);
+      cfa.Append (cf);
+    return Array<shared_ptr<CoefficientFunction>>(cfa);
   } 
   
   
@@ -2630,11 +2630,11 @@ public:
     func(*this);
   }
 
-  virtual Array<CoefficientFunction*> InputCoefficientFunctions() const override
+  virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
   {
-    Array<CoefficientFunction*> cfa;
-    cfa.Append (c1.get());
-    return Array<CoefficientFunction*>(cfa);
+    Array<shared_ptr<CoefficientFunction>> cfa;
+    cfa.Append (c1);
+    return Array<shared_ptr<CoefficientFunction>>(cfa);
   } 
   
   
@@ -3091,9 +3091,9 @@ class IfPosCoefficientFunction : public T_CoefficientFunction<IfPosCoefficientFu
       func(*this);
     }
     
-    virtual Array<CoefficientFunction*> InputCoefficientFunctions() const override
+    virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
     {
-      return Array<CoefficientFunction*>( { cf_if.get(), cf_then.get(), cf_else.get() } );
+      return Array<shared_ptr<CoefficientFunction>>( { cf_if, cf_then, cf_else } );
     }
     
     virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
@@ -3162,12 +3162,12 @@ public:
     func(*this);
   }
 
-  virtual Array<CoefficientFunction*> InputCoefficientFunctions() const override
+  virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
   {
-    Array<CoefficientFunction*> cfa;
+    Array<shared_ptr<CoefficientFunction>> cfa;
     for (auto cf : ci)
-      cfa.Append (cf.get());
-    return Array<CoefficientFunction*>(cfa);
+      cfa.Append (cf);
+    return Array<shared_ptr<CoefficientFunction>>(cfa);
   } 
 
 
@@ -3462,10 +3462,10 @@ shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
            int mypos = steps.Pos (&stepcf);
            if (!inputs[mypos].Size())
              {
-               Array<CoefficientFunction*> in = stepcf.InputCoefficientFunctions();
+               Array<shared_ptr<CoefficientFunction>> in = stepcf.InputCoefficientFunctions();
                max_inputsize = max2(in.Size(), max_inputsize);
                for (auto incf : in)
-                 inputs.Add (mypos, steps.Pos(incf));
+                 inputs.Add (mypos, steps.Pos(incf.get()));
              }
          });
       cout << IM(3) << "inputs = " << endl << inputs << endl;
