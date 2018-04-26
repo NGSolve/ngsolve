@@ -20,6 +20,17 @@ namespace ngfem
     CF_Type_constant,
     CF_Type_vectorial,
     CF_Type_coordinate,
+    CF_Type_norm,
+    CF_Type_trans,
+    CF_Type_component,
+    CF_Type_real,
+    CF_Type_imag,
+    CF_Type_ifpos,
+    CF_Type_normal_vector,
+    CF_Type_tangential_vector,
+    CF_Type_mesh_size,
+    CF_Type_scale,
+    CF_Type_scale_complex,
     CF_Type_add,    
     CF_Type_sub,    
     CF_Type_mult,    
@@ -750,6 +761,12 @@ namespace ngfem
     double operator[] (int i) const { return val[i]; }
 
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override;
+    virtual CF_Type GetType() const override { return CF_Type_domainconst; }
+    virtual void DoArchive (Archive & archive)
+    {
+        CoefficientFunction::DoArchive(archive);
+        archive & val;
+    }
     
   protected:
     void CheckRange (int elind) const
@@ -1445,7 +1462,13 @@ public:
       }
   }
   
-  virtual CF_Type GetType() const { return CF_Type_binary_op; }
+  virtual CF_Type GetType() const {
+      if(opname =="+") return CF_Type_add;
+      if(opname =="-") return CF_Type_sub;
+      if(opname =="*") return CF_Type_mult;
+      if(opname =="/") return CF_Type_div;
+      return CF_Type_binary_op;
+  }
   virtual void DoArchive (Archive & archive)
   {
       archive & opname;
