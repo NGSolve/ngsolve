@@ -985,21 +985,22 @@ mesh (netgen.Mesh): a mesh generated from Netgen
            })
     .def(py::pickle([](const MeshAccess& ma)
                     {
-                      /*
                       Timer tsave("save mesh");
                       tsave.Start();
                       stringstream ss;
                       ma.SaveMesh(ss);
                       tsave.Stop();
                       return py::make_tuple(ss.str());
-                      */
 
+                      /*
                       Timer tdummy("dummy archive");
                       tdummy.Start();
                       DummyOutArchive dummy;
                       const_cast<MeshAccess&>(ma).ArchiveMesh(dummy);
                       tdummy.Stop();
-                      
+                      */
+
+                      /*
                       Timer tbin("binary archive");
                       tbin.Start();
                       auto str = make_shared<stringstream>();
@@ -1011,23 +1012,25 @@ mesh (netgen.Mesh): a mesh generated from Netgen
                       tbin.Stop();
                       cout << "mesh binary archive: " << str->str().length() << endl;
                       return py::make_tuple(int(1), py::bytes(str->str()));
+                      */
 
+                      /*
                       Timer tpy("python archive");
                       tpy.Start();
                       PyOutArchive ar;
                       const_cast<MeshAccess&>(ma).ArchiveMesh(ar);
                       tpy.Stop();
                       return py::make_tuple(int(0), ar.GetList());
+                      */
                     },
                     [] (py::tuple state)
                     {
-                      /*
                       auto ma = make_shared<MeshAccess>();
                       stringstream ss(state[0].cast<string>());
                       ma->LoadMesh(ss);
                       return ma;
-                      */
 
+                      /*
                       int binary = py::cast<int> (state[0]);
 
                       if (!binary)
@@ -1046,6 +1049,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
                           ma->ArchiveMesh(ar);
                           return ma;
                         }
+                      */
                     }))
     .def("LoadMesh", static_cast<void(MeshAccess::*)(const string &)>(&MeshAccess::LoadMesh),
          "Load mesh from file")
