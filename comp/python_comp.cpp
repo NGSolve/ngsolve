@@ -3311,7 +3311,7 @@ flags : dict
                             // static mutex addcomplex_mutex;
                             BitArray mask;
                             {
-                              py::gil_scoped_acquire aquire;
+                              py::gil_scoped_acquire acquire;
                               py::extract<Region> defon_region(definedon);
                               if (defon_region.check())
                                 {
