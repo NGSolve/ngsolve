@@ -762,7 +762,7 @@ namespace ngfem
 
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override;
     virtual CF_Type GetType() const override { return CF_Type_domainconst; }
-    virtual void DoArchive (Archive & archive)
+    virtual void DoArchive (Archive & archive) override
     {
         CoefficientFunction::DoArchive(archive);
         archive & val;
@@ -1229,8 +1229,8 @@ public:
       }
   }  
 
-  virtual CF_Type GetType() const { return CF_Type_unary_op; }
-  virtual void DoArchive (Archive & archive)
+  virtual CF_Type GetType() const override { return CF_Type_unary_op; }
+  virtual void DoArchive (Archive & archive) override
   {
       archive & name;
       CoefficientFunction::DoArchive(archive);
@@ -1462,14 +1462,14 @@ public:
       }
   }
   
-  virtual CF_Type GetType() const {
+  virtual CF_Type GetType() const override {
       if(opname =="+") return CF_Type_add;
       if(opname =="-") return CF_Type_sub;
       if(opname =="*") return CF_Type_mult;
       if(opname =="/") return CF_Type_div;
       return CF_Type_binary_op;
   }
-  virtual void DoArchive (Archive & archive)
+  virtual void DoArchive (Archive & archive) override 
   {
       archive & opname;
       CoefficientFunction::DoArchive(archive);
