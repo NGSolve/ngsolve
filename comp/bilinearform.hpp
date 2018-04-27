@@ -222,7 +222,7 @@ namespace ngcomp
 					   const BaseVector & x,
 					   BaseVector & y, LocalHeap & lh) const = 0;
 
-    /// evaulates internal energy (usually  1/2 x^T A x)
+    /// evaluates internal energy (usually  1/2 x^T A x)
     virtual double Energy (const BaseVector & x, LocalHeap & lh) const = 0;
 
     /// returns the assembled matrix

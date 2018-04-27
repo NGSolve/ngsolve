@@ -46,7 +46,7 @@ public:
     
   /*
     In the constructor, the solver class gets the flags from the pde - input file.
-    the PDE class apde constains all bilinear-forms, etc...
+    the PDE class apde contains all bilinear-forms, etc...
   */
   NumProcHyperbolic (shared_ptr<PDE> apde, const Flags & flags)
     : NumProc (apde)
@@ -153,7 +153,7 @@ public:
     ost << 
       "\n\nNumproc Hyperbolic:\n" \
       "------------------\n" \
-      "Solves a hyperbolic partial differential equation by an implicite Euler method\n\n" \
+      "Solves a hyperbolic partial differential equation by an implicit Euler method\n\n" \
       "Required flags:\n" 
       "-bilinearforma=<bfname>\n" 
       "    bilinear-form providing the stiffness matrix\n" \

@@ -30,7 +30,7 @@ class BlockAllocator
 public:
   /// Create BlockAllocator for elements of size asize
   NGS_DLL_HEADER BlockAllocator (unsigned int asize, unsigned int ablocks = 100);
-  /// Delete all memeory
+  /// Delete all memory
   NGS_DLL_HEADER ~BlockAllocator ();
 
   /// Return pointer to new element

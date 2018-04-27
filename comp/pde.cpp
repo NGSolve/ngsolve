@@ -523,7 +523,7 @@ namespace ngcomp
     if (pc == 0 || pc == todo.Size())
       {
         pc = 0;
-        static Timer meshtimer("Mesh adaption");
+        static Timer meshtimer("Mesh adaptation");
         meshtimer.Start();
     
         if (levelsolved >= 0)

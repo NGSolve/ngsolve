@@ -2782,7 +2782,7 @@ namespace ngfem
   void FE_Trig3Pot :: CalcDShape (const IntegrationPoint & ip, 
 				  BareSliceMatrix<> dshape) const
   {
-    cerr << "calcdshape not implemnted" << endl;
+    cerr << "calcdshape not implemented" << endl;
   }
 
   void FE_Trig3Pot :: CalcShape (const IntegrationPoint & ip, 

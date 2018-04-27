@@ -68,11 +68,11 @@ namespace ngbla
     /// matrix width
     int BandWidth() const { return bw; }
   
-    /// access operator. Assumes that $i \geq j$ referes to an element in the band
+    /// access operator. Assumes that $i \geq j$ refers to an element in the band
     const T & operator() (int i, int j) const
     { return data[i * bw + j - i + bw-1]; }
 
-    /// access operator. Assumes that $i \geq j$ referes to an element in the band
+    /// access operator. Assumes that $i \geq j$ refers to an element in the band
     T & operator() (int i, int j) 
     { return data[i * bw + j - i + bw-1]; }
 
