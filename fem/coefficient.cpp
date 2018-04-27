@@ -1726,6 +1726,85 @@ public:
 };
 
 
+class EigCoefficientFunction : public CoefficientFunction
+{
+  shared_ptr<CoefficientFunction> mat;
+  Array<int> dims;
+  int dimension;
+public:
+  EigCoefficientFunction (shared_ptr<CoefficientFunction> ac1)
+    : CoefficientFunction (ac1->Dimension(), false), mat(ac1)
+  {
+    dims = mat->Dimensions();
+    dimension = mat->Dimension();
+  }
+  
+  /*virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
+  {
+    c1->TraverseTree (func);
+    func(*this);
+  }
+
+  virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+  { return Array<shared_ptr<CoefficientFunction>>({ c1 }); }*/ 
+  
+  virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
+  {
+    Vec<12> res;
+    Evaluate (ip, res);
+    return res(0);
+  }
+
+  virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
+                        FlatVector<> result) const override
+  {
+    VectorMem<10,double> v1(dimension);
+    //mat->Evaluate (ip, v1);
+    //result(0) = L2Norm(v1);
+  }
+
+  virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
+                        FlatVector<Complex> result) const override
+  {
+    //Vec<1> res;
+    //Evaluate (ip, res);
+    //result(0) = res(0);
+  }
+
+  
+  virtual bool ElementwiseConstant () const override
+  { return mat->ElementwiseConstant(); }
+
+  
+  virtual void Evaluate(const BaseMappedIntegrationRule & ir,
+                        BareSliceMatrix<> result) const override
+  {
+    //STACK_ARRAY(double,hmem,ir.Size()*dim1*sizeof(TIN)/sizeof(double));
+    //FlatMatrix<TIN> inval(ir.IR().GetNIP(), dim1, reinterpret_cast<TIN*>(&hmem[0]));
+    //mat->Evaluate (ir, inval);
+    //for (size_t i = 0; i < ir.Size(); i++)
+    //  result(i,0) = L2Norm(inval.Row(i));
+  }
+
+
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const override
+  {
+    //STACK_ARRAY(SIMD<Complex>,hmem,ir.Size()*dim1);
+    //FlatMatrix<SIMD<Complex>> inval(dim1, ir.Size(), &hmem[0]);
+    //mat->Evaluate (ir, inval);
+    //for (size_t i = 0; i < ir.Size(); i++)
+    //  {
+    //    SIMD<double> sum = 0;
+    //    for (size_t j = 0; j < dim1; j++)
+    //      sum += sqr(inval(j,i).real())+sqr(inval(j,i).imag());
+    //    values(0,i) = sqrt(sum);
+    //  }
+  }
+
+  virtual CF_Type GetType() const override { return CF_Type_eig; }
+};
+
+
 
   
 
@@ -2327,7 +2406,11 @@ public:
     else
       return make_shared<NormCoefficientFunction> (coef);
   }
-  
+
+  shared_ptr<CoefficientFunction> EigCF (shared_ptr<CoefficientFunction> coef)
+  {
+    return make_shared<EigCoefficientFunction> (coef);
+  }
   
   shared_ptr<CoefficientFunction> operator/ (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
   {
