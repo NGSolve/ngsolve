@@ -16,7 +16,7 @@ add_library( ngcomp ${NGS_LIB_TYPE}
         linearform.cpp meshaccess.cpp ngsobject.cpp postproc.cpp	     
         preconditioner.cpp vectorfacetfespace.cpp numberfespace.cpp bddc.cpp 
         hypre_precond.cpp hdivdivfespace.cpp hdivdivsurfacespace.cpp tpfes.cpp 
-        python_comp.cpp basenumproc.cpp pde.cpp pdeparser.cpp vtkoutput.cpp
+        python_comp.cpp ../fem/python_fem.cpp basenumproc.cpp pde.cpp pdeparser.cpp vtkoutput.cpp
         periodic.cpp hypre_ams_precond.cpp facetsurffespace.cpp
         )
 
