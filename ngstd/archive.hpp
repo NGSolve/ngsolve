@@ -54,10 +54,13 @@ namespace ngstd
   class BinaryOutArchive : public Archive
   {
     shared_ptr<ostream> fout;
+    size_t ptr = 0;
+    enum { BUFFERSIZE = 1024 };
+    char buffer[BUFFERSIZE];
   public:
     BinaryOutArchive (string filename);
     BinaryOutArchive (shared_ptr<ostream> afout) : Archive(true), fout(afout) { ; }
-
+    virtual ~BinaryOutArchive () { FlushBuffer(); }
     // virtual bool Output ();
     // virtual bool Input ();
 
@@ -70,6 +73,10 @@ namespace ngstd
     virtual Archive & operator & (bool & b);
     virtual Archive & operator & (string & str);
     virtual Archive & operator & (char *& str);
+
+    template <typename T>
+    Archive & Write (T x);
+    void FlushBuffer();
   };
 
 
