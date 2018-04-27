@@ -14,6 +14,26 @@ using ngfem::ELEMENT_TYPE;
 
 typedef GridFunction GF;
 
+
+class DummyOutArchive : public Archive
+{
+public:
+  DummyOutArchive () : Archive(true) { ; } 
+
+  virtual Archive & operator & (double & d) { return *this; } 
+  virtual Archive & operator & (int & i) { return *this; } 
+  virtual Archive & operator & (short & i)  { return *this; } 
+  virtual Archive & operator & (long & i)  { return *this; } 
+  virtual Archive & operator & (size_t & i)  { return *this; } 
+  virtual Archive & operator & (unsigned char & i)  { return *this; } 
+  virtual Archive & operator & (bool & b)  { return *this; } 
+  virtual Archive & operator & (string & str) { return *this; } 
+  virtual Archive & operator & (char *& str) { return *this; } 
+};
+
+
+
+
 /*
 static size_t global_heapsize = 1000000;
 static LocalHeap glh(global_heapsize, "python-comp lh", true);
@@ -965,41 +985,49 @@ mesh (netgen.Mesh): a mesh generated from Netgen
            })
     .def(py::pickle([](const MeshAccess& ma)
                     {
+                      /*
                       Timer tsave("save mesh");
                       tsave.Start();
                       stringstream ss;
                       ma.SaveMesh(ss);
                       tsave.Stop();
                       return py::make_tuple(ss.str());
+                      */
 
-                      /*
+                      Timer tdummy("dummy archive");
+                      tdummy.Start();
+                      DummyOutArchive dummy;
+                      const_cast<MeshAccess&>(ma).ArchiveMesh(dummy);
+                      tdummy.Stop();
+                      
                       Timer tbin("binary archive");
                       tbin.Start();
                       auto str = make_shared<stringstream>();
-                      BinaryOutArchive binar(str);
-                      const_cast<MeshAccess&>(ma).ArchiveMesh(binar);
+                      {
+                        BinaryOutArchive binar(str);
+                        const_cast<MeshAccess&>(ma).ArchiveMesh(binar);
+                        // binar.FlushBuffer();
+                      }
                       tbin.Stop();
                       cout << "mesh binary archive: " << str->str().length() << endl;
                       return py::make_tuple(int(1), py::bytes(str->str()));
-                      */
-                      
-                      /*
+
                       Timer tpy("python archive");
                       tpy.Start();
                       PyOutArchive ar;
                       const_cast<MeshAccess&>(ma).ArchiveMesh(ar);
                       tpy.Stop();
                       return py::make_tuple(int(0), ar.GetList());
-                      */
                     },
                     [] (py::tuple state)
                     {
+                      /*
                       auto ma = make_shared<MeshAccess>();
                       stringstream ss(state[0].cast<string>());
                       ma->LoadMesh(ss);
                       return ma;
-                      
-                      /*
+                      */
+
                       int binary = py::cast<int> (state[0]);
 
                       if (!binary)
@@ -1018,7 +1046,6 @@ mesh (netgen.Mesh): a mesh generated from Netgen
                           ma->ArchiveMesh(ar);
                           return ma;
                         }
-                      */
                     }))
     .def("LoadMesh", static_cast<void(MeshAccess::*)(const string &)>(&MeshAccess::LoadMesh),
          "Load mesh from file")
