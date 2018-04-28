@@ -146,7 +146,7 @@ namespace ngstd
   }
 
 
-
+  /*
   // cannot archive type T
   template <typename T>
   Archive & operator& (Archive & ar, T & t)
@@ -164,6 +164,7 @@ namespace ngstd
       }
     return ar;
   }
+  */
 }
 
 
