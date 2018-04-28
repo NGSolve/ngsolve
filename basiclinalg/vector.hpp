@@ -1785,7 +1785,16 @@ namespace ngbla
   
 }
 
-
+namespace ngstd
+{
+  template <int S, typename T>
+  inline Archive & operator& (Archive & ar, ngbla::Vec<S,T> & v)
+  {
+    for (int i = 0; i < S; i++)
+      ar & v(i);
+    return ar;
+  }
+}
 
 
 #ifdef PARALLEL
