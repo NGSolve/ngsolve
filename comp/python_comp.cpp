@@ -991,7 +991,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
                       ma.SaveMesh(ss);
                       tsave.Stop();
                       return py::make_tuple(ss.str());
-
+                      
                       /*
                       Timer tdummy("dummy archive");
                       tdummy.Start();
@@ -1000,7 +1000,6 @@ mesh (netgen.Mesh): a mesh generated from Netgen
                       tdummy.Stop();
                       */
 
-                      /*
                       Timer tbin("binary archive");
                       tbin.Start();
                       auto str = make_shared<stringstream>();
@@ -1012,7 +1011,6 @@ mesh (netgen.Mesh): a mesh generated from Netgen
                       tbin.Stop();
                       cout << "mesh binary archive: " << str->str().length() << endl;
                       return py::make_tuple(int(1), py::bytes(str->str()));
-                      */
 
                       /*
                       Timer tpy("python archive");
@@ -1029,8 +1027,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
                       stringstream ss(state[0].cast<string>());
                       ma->LoadMesh(ss);
                       return ma;
-
-                      /*
+                      
                       int binary = py::cast<int> (state[0]);
 
                       if (!binary)
@@ -1049,7 +1046,6 @@ mesh (netgen.Mesh): a mesh generated from Netgen
                           ma->ArchiveMesh(ar);
                           return ma;
                         }
-                      */
                     }))
     .def("LoadMesh", static_cast<void(MeshAccess::*)(const string &)>(&MeshAccess::LoadMesh),
          "Load mesh from file")
