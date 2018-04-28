@@ -985,12 +985,14 @@ mesh (netgen.Mesh): a mesh generated from Netgen
            })
     .def(py::pickle([](const MeshAccess& ma)
                     {
+                      /*
                       Timer tsave("save mesh");
                       tsave.Start();
                       stringstream ss;
                       ma.SaveMesh(ss);
                       tsave.Stop();
                       return py::make_tuple(ss.str());
+                      */
                       
                       /*
                       Timer tdummy("dummy archive");
@@ -1023,11 +1025,12 @@ mesh (netgen.Mesh): a mesh generated from Netgen
                     },
                     [] (py::tuple state)
                     {
+                      /*
                       auto ma = make_shared<MeshAccess>();
                       stringstream ss(state[0].cast<string>());
                       ma->LoadMesh(ss);
                       return ma;
-                      
+                      */
                       int binary = py::cast<int> (state[0]);
 
                       if (!binary)
