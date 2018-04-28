@@ -16,7 +16,7 @@ namespace ngstd
 
     // virtual bool Output ();
     // virtual bool Input ();
-
+    using Archive::operator&;
     virtual Archive & operator & (double & d);
     virtual Archive & operator & (int & i);
     virtual Archive & operator & (short & i);
@@ -38,7 +38,7 @@ namespace ngstd
 
     // virtual bool Output ();
     // virtual bool Input ();
-
+    using Archive::operator&;
     virtual Archive & operator & (double & d);
     virtual Archive & operator & (int & i);
     virtual Archive & operator & (short & i);
@@ -113,8 +113,8 @@ namespace ngstd
 
 
 
-
-
+  
+  /*
   // archive a pointer ...
   template <typename T>
   Archive & operator& (Archive & ar, T *& p)
@@ -128,7 +128,9 @@ namespace ngstd
       }
     return ar;
   }
+  */
 
+  
   // archive a shared pointer ...
   template <typename T>
   Archive & operator& (Archive & ar, shared_ptr<T> & p)
