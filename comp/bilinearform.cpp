@@ -178,7 +178,7 @@ namespace ngcomp
     auto anydim = dynamic_pointer_cast<BilinearFormIntegratorAnyDim> (bfi);
     if (anydim) bfi = anydim->GetBFI (ma->GetDimension());
     */
-    bfi = FixDimension(bfi, fespace->GetSpacialDimension());
+    bfi = FixDimension(bfi, fespace->GetSpatialDimension());
     
     if (symmetric && bfi->IsSymmetric().IsFalse())
       throw Exception (string ("Adding non-symmetric integrator to symmetric bilinear-form\n")+

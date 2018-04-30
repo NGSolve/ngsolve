@@ -204,7 +204,6 @@ namespace ngcomp
     void SetNDof (size_t _ndof);
     
   public:
-    virtual int GetSpacialDimension() const { return ma->GetDimension();}
     string type;
 
     /**
@@ -299,6 +298,7 @@ namespace ngcomp
     /// complex space ?
     bool IsComplex () const { return iscomplex; }
 
+    virtual int GetSpatialDimension() const { return ma->GetDimension();}
 
     /// number of (process-local) dofs
     virtual size_t GetNDof () const { return ndof; } 

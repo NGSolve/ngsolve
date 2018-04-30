@@ -100,7 +100,7 @@ namespace ngcomp
 
     void GetSliceDofNrs(ngfem::ElementId ei, int direction, ngstd::Array<int>& dnums ,LocalHeap & lh) const;
     ///
-    virtual int GetSpacialDimension() const override { return space_x->GetSpacialDimension() + spaces_y[0]->GetSpacialDimension();}
+    virtual int GetSpatialDimension() const override { return space_x->GetSpatialDimension() + spaces_y[0]->GetSpatialDimension();}
     ///
     virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
     
