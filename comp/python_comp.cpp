@@ -1254,7 +1254,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
     // TODO: Docu
     .def("GetParentVertices", [](MeshAccess & ma, int vnum)
           {
-            INT<2> parents = ma.GetParentNodes (vnum);
+            auto parents = ma.GetParentNodes (vnum);
             return py::make_tuple(parents[0], parents[1]);
           })
 
