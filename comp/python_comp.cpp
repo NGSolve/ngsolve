@@ -3725,7 +3725,7 @@ flags : dict
              LocalHeap lh(10000000,"TensorProductIntegrate");
              shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp->GetFESpace());
              const Array<shared_ptr<FESpace> > & spaces = tpfes->Spaces(0);
-             FlatVector<> x0(spaces[0]->GetSpacialDimension(),&x0_help[0]);
+             FlatVector<> x0(spaces[0]->GetSpatialDimension(),&x0_help[0]);
              IntegrationPoint ip;
              int elnr = spaces[0]->GetMeshAccess()->FindElementOfPoint(x0,ip,true);
              auto & felx = spaces[0]->GetFE(ElementId(elnr),lh);
