@@ -309,6 +309,30 @@ Array<decltype(std::declval<T>().Get())> makeCArrayUnpackWrapper(const py::list 
     C_vdL[i] = py::extract<T>(obj[i])().Get();
   return std::move(C_vdL);
 }
+
+template <typename T>
+py::tuple MakePyTuple (const BaseArrayObject<T> & ao)
+{
+  size_t s = ao.Size();
+  py::tuple tup(s);
+  for (size_t i = 0; i < s; i++)
+    tup[i] = ao[i];
+  return tup;
+}
+
+template <typename T>
+py::list MakePyList (const BaseArrayObject<T> & ao)
+{
+  size_t s = ao.Size();
+  py::list l;
+  for (size_t i = 0; i < s; i++)
+    l.append (ao[i]);
+  return l;
+}
+
+
+
+
 template<typename T>
 struct PyNameTraits<SymbolTable<T>> {
   static string GetName() { return string("SymbolTable_") + GetPyName<T>(); }
