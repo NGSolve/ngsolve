@@ -1531,7 +1531,6 @@ public:
   {
     vecdim = cfmat->Dimensions()[0];
     dim1 = cfmat->Dimension();
-    //cout << "vecdim = " << vecdim << ", dim1 = " << dim1 << endl; 
   }
   
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
@@ -1550,8 +1549,6 @@ public:
     FlatMatrix<double> eigenvecs(vecdim,vecdim,&res[0]);
     
     CalcEigenSystem(mat,lami,eigenvecs);
-    //cout << "ew = " << lami << endl;
-    //cout << "ev = " << eigenvecs << endl;
   }
 
   virtual CF_Type GetType() const { return CF_Type_eig; }
