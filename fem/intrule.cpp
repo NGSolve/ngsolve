@@ -373,8 +373,24 @@ namespace ngfem
           }
         else
           {
-            Vec<3> tang = Cross(Vec<3> (normal), Vec<3> (mip.GetNV()));
-            mip.SetTV(tang);
+            if(DIM_SPACE == 3 && DIM_ELEMENT == 1)
+              {
+                mip.SetTV(Vec<3>(normal));
+              }
+            else if( DIM_SPACE == 3 && DIM_ELEMENT == 2)
+              {
+                Vec<3> tang = Cross(Vec<3> (normal), Vec<3> (mip.GetNV()));
+                mip.SetTV(tang);
+              }
+            else if( DIM_SPACE == 2 && DIM_ELEMENT == 1)
+              {
+                mip.SetTV(Vec<2>(normal));
+              }
+            else
+              {
+                throw Exception("In ComputeNormalsAndMeasure: not implemented yet!");
+              }
+            
           }
       }
   }
@@ -3193,8 +3209,23 @@ namespace ngfem
           }
         else
           {
-            Vec<3,SIMD<double>> tang = Cross(Vec<3,SIMD<double>> (normal), Vec<3,SIMD<double>> (mip.GetNV()));
-            mip.SetTV(tang);
+            if(DIM_SPACE == 3 && DIM_ELEMENT == 1)
+              {
+                mip.SetTV(Vec<3,SIMD<double>>(normal));
+              }
+            else if( DIM_SPACE == 3 && DIM_ELEMENT == 2)
+              {
+                Vec<3,SIMD<double>> tang = Cross(Vec<3,SIMD<double>> (normal), Vec<3,SIMD<double>> (mip.GetNV()));
+                mip.SetTV(tang);
+              }
+            else if( DIM_SPACE == 2 && DIM_ELEMENT == 1)
+              {
+                mip.SetTV(Vec<2,SIMD<double>>(normal));
+              }
+            else
+              {
+                throw Exception("In ComputeNormalsAndMeasure SIMD: not implemented yet!");
+              }
           }
         
       }
