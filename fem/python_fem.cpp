@@ -828,6 +828,8 @@ val : can be one of the following:
            })
     
     .def("Norm",  NormCF)
+
+    .def("Eig", EigCF)
     
     .def ("Other", MakeOtherCoefficientFunction,
           "evaluate on other element, as needed for DG jumps")

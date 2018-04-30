@@ -1520,6 +1520,40 @@ public:
 
 
 
+class EigCoefficientFunction : public CoefficientFunctionNoDerivative
+{
+  shared_ptr<CoefficientFunction> cfmat;
+  int dim1;
+  int vecdim;
+  
+public:
+  EigCoefficientFunction (shared_ptr<CoefficientFunction> ac1) : CoefficientFunctionNoDerivative(ac1->Dimension() + ac1->Dimensions()[0],false), cfmat(ac1)
+  {
+    vecdim = cfmat->Dimensions()[0];
+    dim1 = cfmat->Dimension();
+  }
+  
+  virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
+  {
+    return 0;
+  }
+  virtual void Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<> res) const 
+  {
+    STACK_ARRAY(double,mem, dim1);
+    FlatVector<double> vec(dim1, &mem[0]);
+    
+    cfmat->Evaluate (ip, vec);
+
+    FlatMatrix<double> mat(vecdim,vecdim, &mem[0]);
+    FlatVector<double> lami(vecdim, &res[dim1]);
+    FlatMatrix<double> eigenvecs(vecdim,vecdim,&res[0]);
+    
+    CalcEigenSystem(mat,lami,eigenvecs);
+  }
+
+  virtual CF_Type GetType() const { return CF_Type_eig; }
+    
+};
 
 
 
@@ -1724,8 +1758,6 @@ public:
 
   virtual CF_Type GetType() const override { return CF_Type_norm; }
 };
-
-
 
   
 
@@ -2327,7 +2359,11 @@ public:
     else
       return make_shared<NormCoefficientFunction> (coef);
   }
-  
+
+  shared_ptr<CoefficientFunction> EigCF (shared_ptr<CoefficientFunction> coef)
+  {
+    return make_shared<EigCoefficientFunction> (coef);
+  }
   
   shared_ptr<CoefficientFunction> operator/ (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
   {
