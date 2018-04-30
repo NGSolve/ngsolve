@@ -39,7 +39,8 @@ namespace ngfem
     CF_Type_domainwise,    
     CF_Type_unary_op,
     CF_Type_binary_op,
-    CF_Type_usertype
+    CF_Type_usertype,
+    CF_Type_eig,
   } CF_Type;
   
   class NGS_DLL_HEADER CoefficientFunction
@@ -1541,6 +1542,9 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
 
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> NormCF (shared_ptr<CoefficientFunction> coef);
+
+  NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> EigCF (shared_ptr<CoefficientFunction> coef);
 
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> IfPos (shared_ptr<CoefficientFunction> cf_if,
