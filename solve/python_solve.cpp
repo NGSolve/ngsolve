@@ -14,8 +14,18 @@ void NGS_DLL_HEADER ExportNgsolve(py::module &m ) {
     m.def ("Tcl_Eval", &Ng_TclCmd);
 
     m.def ("_Redraw",
-            ([](bool blocking) {Ng_Redraw(blocking);}),
-             py::arg("blocking")=false
+           ([](bool blocking, double fr)
+             {
+               static auto last_time = std::chrono::system_clock::now()-std::chrono::seconds(10);
+               auto now = std::chrono::system_clock::now();
+               double elapsed = std::chrono::duration<double>(now-last_time).count();
+               if (elapsed * fr > 1)
+                 {
+                   Ng_Redraw(blocking);
+                   last_time = std::chrono::system_clock::now();
+                 }
+             }),
+           py::arg("blocking")=false, py::arg("fr") = 25
              );
 
 
