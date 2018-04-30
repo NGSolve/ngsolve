@@ -2265,6 +2265,18 @@ namespace ngbla
 }
 
 
+namespace ngstd
+{
+  template <int N, int M, typename T>
+  inline Archive & operator& (Archive & ar, ngbla::Mat<N,M,T> & m)
+  {
+    for (int i = 0; i < N*M; i++)
+      ar & m(i);
+    return ar;
+  }
+}
+
+
 #ifdef PARALLEL
 namespace ngstd
 {
