@@ -191,28 +191,25 @@ mesh (netgen.Mesh): a mesh generated from Netgen
 
 
 )raw_string") , py::dynamic_attr())
-    .def(py::init<shared_ptr<netgen::Mesh>>())
     
-#ifndef PARALLEL
-    .def(py::init([](const string & filename)
-                  { return make_shared<MeshAccess>(filename); }),
-          py::arg("filename"))
-#else
+    .def(py::init<shared_ptr<netgen::Mesh>>(),
+         py::arg("ngmesh"),
+         "Make an NGSolve-mesh from a Netgen-mesh")
+
     .def(py::init([](const string & filename, PyMPI_Comm c)
                   {
                     ngs_comm = c.comm;
-                    NGSOStream::SetGlobalActive (MyMPI_GetId(c.comm)==0);                      
+                    NGSOStream::SetGlobalActive (c.Rank()==0);
                     return make_shared<MeshAccess>(filename, c.comm);
                   }),
-         py::arg("filename"), py::arg("comm")=PyMPI_Comm(MPI_COMM_WORLD))
-#endif
-
+         py::arg("filename"), py::arg("comm")=PyMPI_Comm(MPI_COMM_WORLD),
+         "Load a mesh from file.\n"
+         "In MPI-parallel mode the mesh is distributed over the MPI-group given by the communicator (WIP!)")
     
     .def("__eq__",
          [] (shared_ptr<MeshAccess> self, shared_ptr<MeshAccess> other)
-           {
-             return self == other;
-           })
+         { return self == other; })
+    
     .def(py::pickle([](const MeshAccess& ma)
                     {
                       /*
@@ -227,13 +224,13 @@ mesh (netgen.Mesh): a mesh generated from Netgen
                       Timer tbin("binary archive");
                       tbin.Start();
                       auto str = make_shared<stringstream>();
-                      {
-                        BinaryOutArchive binar(str);
-                        const_cast<MeshAccess&>(ma).ArchiveMesh(binar);
-                        // binar.FlushBuffer();
-                      }
+
+                      BinaryOutArchive binar(str);
+                      const_cast<MeshAccess&>(ma).ArchiveMesh(binar);
+                      binar.FlushBuffer();
+
                       tbin.Stop();
-                      cout << "mesh binary archive size: " << str->str().length() << endl;
+                      cout << IM(3) << "mesh binary archive size: " << str->str().length() << endl;
                       return py::make_tuple(int(1), py::bytes(str->str()));
 
                       /*
@@ -272,23 +269,31 @@ mesh (netgen.Mesh): a mesh generated from Netgen
                           return ma;
                         }
                     }))
+    /*
     .def("LoadMesh", static_cast<void(MeshAccess::*)(const string &)>(&MeshAccess::LoadMesh),
          "Load mesh from file")
+    */
     
     .def("Elements", static_cast<ElementRange(MeshAccess::*)(VorB)const> (&MeshAccess::Elements),
-	 (py::arg("VOL_or_BND")=VOL), docu_string("Returns an iterator over ElementIds on VorB"))
+	 (py::arg("VOL_or_BND")=VOL),
+         docu_string("Return an iterator over elements on VOL/BND"))
 
-    .def("__getitem__", static_cast<Ngs_Element(MeshAccess::*)(ElementId)const> (&MeshAccess::operator[]))
-    .def("__getitem__", [](MeshAccess & self, NodeId ni) { return MeshNode(ni, self); })
+    .def("__getitem__", static_cast<Ngs_Element(MeshAccess::*)(ElementId)const> (&MeshAccess::operator[]),
+         "Return Ngs_Element from given ElementId")
+    
+    .def("__getitem__", [](MeshAccess & self, NodeId ni) { return MeshNode(ni, self); },
+         "Return MeshNode from given NodeId")
 
-    .def ("GetNE", static_cast<size_t(MeshAccess::*)(VorB)const> (&MeshAccess::GetNE), docu_string("Number of elements of codimension VorB."))
-    .def_property_readonly ("nv", &MeshAccess::GetNV, "Number of vertices")
-    .def_property_readonly ("ne",  static_cast<size_t(MeshAccess::*)()const> (&MeshAccess::GetNE), "Number of volume elements")
-    .def_property_readonly ("nedge", &MeshAccess::GetNEdges, "Number of edges")
-    .def_property_readonly ("nface", &MeshAccess::GetNFaces, "Number of faces")
-    .def ("nnodes", &MeshAccess::GetNNodes, "Number of nodes given type")
-    .def_property_readonly ("dim", &MeshAccess::GetDimension, "Mesh dimension")
-    .def_property_readonly ("ngmesh", &MeshAccess::GetNetgenMesh, "Get the Netgen mesh")
+    .def ("GetNE", static_cast<size_t(MeshAccess::*)(VorB)const> (&MeshAccess::GetNE),
+          docu_string("Return number of elements of codimension VorB."))
+    
+    .def_property_readonly ("nv", &MeshAccess::GetNV, "number of vertices")
+    .def_property_readonly ("ne",  static_cast<size_t(MeshAccess::*)()const> (&MeshAccess::GetNE), "number of volume elements")
+    .def_property_readonly ("nedge", &MeshAccess::GetNEdges, "number of edges")
+    .def_property_readonly ("nface", &MeshAccess::GetNFaces, "number of faces")
+    .def ("nnodes", &MeshAccess::GetNNodes, "number of nodes given type")
+    .def_property_readonly ("dim", &MeshAccess::GetDimension, "mesh dimension")
+    .def_property_readonly ("ngmesh", &MeshAccess::GetNetgenMesh, "the Netgen mesh")
 
     
     .def_property_readonly ("vertices", [] (shared_ptr<MeshAccess> mesh)
@@ -296,11 +301,13 @@ mesh (netgen.Mesh): a mesh generated from Netgen
             return T_Range<MeshNode> (MeshNode(NodeId(NT_VERTEX, 0), *mesh),
                                       MeshNode(NodeId(NT_VERTEX, mesh->GetNNodes(NT_VERTEX)), *mesh));
           }, "iterable of mesh vertices")
+    
     .def_property_readonly ("edges", [] (shared_ptr<MeshAccess> mesh)
           {
             return T_Range<MeshNode> (MeshNode(NodeId(NT_EDGE, 0), *mesh),
                                       MeshNode(NodeId(NT_EDGE, mesh->GetNNodes(NT_EDGE)), *mesh));
           }, "iterable of mesh edges")
+    
     .def_property_readonly ("faces", [] (shared_ptr<MeshAccess> mesh)
           {
             return T_Range<MeshNode> (MeshNode(NodeId(NT_FACE, 0), *mesh),
@@ -311,7 +318,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
          {
            return T_Range<MeshNode> (MeshNode(NodeId(type, 0), *mesh),
                                      MeshNode(NodeId(type, mesh->GetNNodes(type)),*mesh));
-         }, py::arg("node_type"), "iterable of mesh nodes of type type")
+         }, py::arg("node_type"), "iterable of mesh nodes of type node_type")
 
     /*
     .def ("GetTrafo", 
@@ -330,6 +337,8 @@ mesh (netgen.Mesh): a mesh generated from Netgen
          { ma.SetDeformation(gf); },
          docu_string("Deform the mesh with the given GridFunction"))
 
+    .def("UnsetDeformation", [](MeshAccess & ma){ ma.SetDeformation(nullptr);})
+
     .def("SetPML", 
 	 [](MeshAccess & ma,  shared_ptr<PML> apml, py::object definedon)
           {
@@ -347,8 +356,9 @@ mesh (netgen.Mesh): a mesh generated from Netgen
               }
           },
          py::arg("pmltrafo"),py::arg("definedon"),
-         "set PML transformation on domain"
+         "Set PML transformation on domain"
          )
+    
     .def("UnSetPML", [](MeshAccess & ma, py::object definedon)
           {
             if (py::extract<int>(definedon).check())
@@ -375,7 +385,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
         }
         return pml_trafos;
       },
-        "returns list of pml transformations"
+        "Return list of pml transformations"
     )
     .def("GetPMLTrafo", [](MeshAccess & ma, int domnr) {
         if (ma.GetPMLTrafos()[domnr])
@@ -384,18 +394,15 @@ mesh (netgen.Mesh): a mesh generated from Netgen
           throw Exception("No PML Trafo set"); 
         },
         py::arg("dom")=1,
-        "returns pml transformation on domain dom"
+        "Return pml transformation on domain dom"
         )
-
-    .def("UnsetDeformation", [](MeshAccess & ma){ ma.SetDeformation(nullptr);})
 
     .def("GetMaterials",
 	 [](const MeshAccess & ma)
          {
            return MakePyTuple(ma.GetMaterials(VOL));
          },
-	 "Returns list of materials"
-         )
+         "Return list of material names")
 
     .def("Materials",
 	 [](const shared_ptr<MeshAccess> & ma, string pattern) 
@@ -403,8 +410,8 @@ mesh (netgen.Mesh): a mesh generated from Netgen
             return Region (ma, VOL, pattern);
 	  },
          py::arg("pattern"),
-	 "Returns mesh-region matching the given regex pattern"
-         )
+	 docu_string("Return mesh-region matching the given regex pattern"))
+    
     .def("Materials",
 	 [](const shared_ptr<MeshAccess> & ma, vector<int> domains)
 	  {
@@ -422,14 +429,12 @@ mesh (netgen.Mesh): a mesh generated from Netgen
 	 "Generate mesh-region by domain numbers"
          )
     
-    
     .def("GetBoundaries",
 	 [](const MeshAccess & ma)
 	  {
             return MakePyTuple(ma.GetMaterials(BND));
 	  },
-	 "Returns list of boundary conditions"
-         )
+	 "Return list of boundary condition names")
 
     .def("Boundaries",
 	 [](const shared_ptr<MeshAccess> & ma, string pattern)
@@ -437,8 +442,8 @@ mesh (netgen.Mesh): a mesh generated from Netgen
             return Region (ma, BND, pattern);
 	  },
          py::arg("pattern"),
-	 "Returns boundary mesh-region matching the given regex pattern"
-         )
+	 "Return boundary mesh-region matching the given regex pattern")
+
     .def("Boundaries",
 	 [](const shared_ptr<MeshAccess> & ma, vector<int> bnds)
 	  {
@@ -453,23 +458,21 @@ mesh (netgen.Mesh): a mesh generated from Netgen
             return Region (ma, BND, mask);
 	  },
          py::arg("bnds"),
-	 "Generate boundary mesh-region by boundary condition numbers"
-         )
+	 "Generate boundary mesh-region by boundary condition numbers")
 
     .def("GetBBoundaries",
 	 [](const MeshAccess & ma)
 	  {
             return MakePyTuple(ma.GetMaterials(BBND));
 	  },
-	 "Returns list of boundary conditions for co dimension 2"
-	 )
+	 "Return list of boundary conditions for co dimension 2")
+    
     .def("BBoundaries", [](const shared_ptr<MeshAccess> & ma, string pattern)
 	  {
 	    return Region (ma, BBND, pattern);
 	  },
 	 (py::arg("self"), py::arg("pattern")),
-	 "Returns co dim 2 boundary mesh-region matching the given regex pattern"
-	 )
+	 "Return co dim 2 boundary mesh-region matching the given regex pattern")
 
     // TODO: explain how to mark elements
     .def("Refine",
@@ -479,7 +482,6 @@ mesh (netgen.Mesh): a mesh generated from Netgen
           },
 	 "Local mesh refinement based on marked elements, uses element-bisection algorithm")
 
-    // TODO: explain how to mark vertices and edges, explain how factor is used
     .def("RefineHP",
          [](MeshAccess & ma, int levels, double factor)
           {
@@ -487,35 +489,33 @@ mesh (netgen.Mesh): a mesh generated from Netgen
             ma.UpdateBuffers();
           },
          py::arg("levels"), py::arg("factor")=0.125,
-	 "Geometric mesh refinement towards marked vertices and edges, uses factor for placement of new points"
-         )
+	 "Geometric mesh refinement towards marked vertices and edges, uses factor for placement of new points")
 
-    // TODO: Docu string says nothing... what does refinement flag do?
     .def("SetRefinementFlag", &MeshAccess::SetRefinementFlag,
+         py::arg("ei"), py::arg("refine"),
 	 "Set refinementflag for mesh-refinement")
 
-    // TODO: Docu
-    .def("GetParentElement", &MeshAccess::GetParentElement)
-    // TODO: Docu
+    .def("GetParentElement", &MeshAccess::GetParentElement,
+         py::arg("elnum"),
+         "Return parent element numbers on refined mesh")
+
     .def("GetParentVertices", [](MeshAccess & ma, int vnum)
           {
             auto parents = ma.GetParentNodes (vnum);
             return py::make_tuple(parents[0], parents[1]);
-          })
+          },
+         py::arg("vnum"),
+         "Return parent vertex numbers on refined mesh")
 
     .def("SetElementOrder",
          [](MeshAccess & ma, ElementId id, int order)
          {
            ma.SetElOrder(id.Nr(), order);
-         })
+         }, "For backward compatibility, not recommended to use")
     
-    // TODO: Docu
-    .def("Curve",
-         [](MeshAccess & ma, int order)
-          {
-            Ng_HighOrder(order);
-          },
-         py::arg("order"))
+    .def("Curve", &MeshAccess::Curve,
+         py::arg("order"),
+         "Curve the mesh elements for geometry approximation of given order")
 
     .def("__call__",
          [](MeshAccess & ma, double x, double y, double z, VorB vb) 
@@ -539,11 +539,6 @@ mesh (netgen.Mesh): a mesh generated from Netgen
          py::arg("VOL_or_BND") = VOL,
 	 docu_string("Get a MappedIntegrationPoint in the point (x,y,z) on the matching volume (VorB=VOL, default) or surface (VorB=BND) element. BBND elements aren't supported"))
 
-    .def("__call__", [](MeshAccess& ma, NodeId id)
-         {
-           return MeshNode(id,ma);
-         }, "Get MeshNode from NodeId")
-
     .def("Contains",
          [](MeshAccess & ma, double x, double y, double z) 
           {
@@ -552,7 +547,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
             return (elnr >= 0);
           }, 
          py::arg("x") = 0.0, py::arg("y") = 0.0, py::arg("z") = 0.0
-	 ,"Checks if the point (x,y,z) is in the meshed domain (is inside a volume element)")
+	 ,"Check if the point (x,y,z) is in the meshed domain (is inside a volume element)")
 
     ;
   

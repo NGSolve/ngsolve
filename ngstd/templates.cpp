@@ -15,11 +15,7 @@ namespace ngstd
   bool NGSOStream :: glob_active = true;
   const string ngsolve_version = NGSOLVE_VERSION;
 
-#ifdef PARALLEL
   MPI_Comm ngs_comm;
-#endif
-
-
 
   template class Array<int>;
 

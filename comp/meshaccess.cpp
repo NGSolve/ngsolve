@@ -1780,6 +1780,11 @@ namespace ngcomp
     UpdateBuffers();
   }
 
+  void MeshAccess :: Curve (int order)
+  {
+    mesh.Curve(order);
+  } 
+  
   int MeshAccess :: GetNPairsPeriodicVertices () const 
   {
     return Ng_GetNPeriodicVertices(0);
