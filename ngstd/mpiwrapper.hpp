@@ -361,7 +361,7 @@ public:
 #else
   enum { MPI_COMM_WORLD = 12345 };
   typedef int MPI_Comm;
-  extern MPI_Comm ngs_comm;
+  NGS_DLL_HEADER extern MPI_Comm ngs_comm;
   
   typedef int MPI_Op;
   enum { MPI_SUM = 0, MPI_MIN = 1, MPI_MAX = 2 };
