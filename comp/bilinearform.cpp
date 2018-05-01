@@ -91,6 +91,7 @@ namespace ngcomp
     checksum = flags.GetDefineFlag ("checksum");
     spd = flags.GetDefineFlag ("spd");
     if (spd) symmetric = true;
+    SetCheckUnused (!flags.GetDefineFlagX("check_unused").IsFalse());
   }
 
 
@@ -140,6 +141,7 @@ namespace ngcomp
 
     precompute = flags.GetDefineFlag ("precompute");
     checksum = flags.GetDefineFlag ("checksum");
+    SetCheckUnused (!flags.GetDefineFlagX("check_unused").IsFalse());    
   }
 
 
