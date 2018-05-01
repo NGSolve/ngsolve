@@ -946,44 +946,7 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                     }))
     ;
 
-  /*
-  auto hcurl = py::class_<HCurlHighOrderFESpace, shared_ptr<HCurlHighOrderFESpace>,FESpace>
-    (m, "HCurl");
-  hcurl
-    .def(py::init([hcurl](shared_ptr<MeshAccess> ma, py::kwargs kwargs)
-                  {
-                    py::list info;
-                    info.append(ma);
-                    auto flags = CreateFlagsFromKwArgs(hcurl, kwargs, info);
-                    auto fes = make_shared<HCurlHighOrderFESpace>(ma,flags);
-                    fes->Update(glh);
-                    fes->FinalizeUpdate(glh);
-                    return fes;
-                  }),py::arg("mesh"))
-    .def(py::pickle(fesPickle, (shared_ptr<HCurlHighOrderFESpace>(*)(py::tuple))
-                    fesUnpickle<HCurlHighOrderFESpace>))
-    .def_static("__flags_doc__", [] ()
-                {
-                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
-                                                  attr("FESpace").
-                                                  attr("__flags_doc__")());
-                  flags_doc["nograds"] = "bool = False\n"
-                    "  Remove higher order gradients of H1 basis functions from HCurl FESpace";
-		  flags_doc["type1"] = "bool = False\n"
-                    "  Use type 1 Nedelec elements";
-		  flags_doc["discontinuous"] = "bool = False\n"
-                    "  Create discontinuous HCurl space";
-
-                  return flags_doc;
-                })
-    .def("CreateGradient", [](shared_ptr<HCurlHighOrderFESpace> self) {
-	  auto fesh1 = self->CreateGradientSpace();
-	  shared_ptr<BaseMatrix> grad = self->CreateGradient(*fesh1);
-	  return py::make_tuple(grad, shared_ptr<FESpace>(fesh1));
-	})
-    ;
-  */
-
+  
   ExportFESpace<HCurlHighOrderFESpace> (m, "HCurl")
     .def_static("__flags_doc__", [] ()
                 {
@@ -1019,24 +982,7 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                   "  Activates relaxed H(div)-conformity. Allows normal discontinuity of highest order facet basis functions";
                 return flags_doc;
               })
-     .def("Average",
-          [] (shared_ptr<HDivHighOrderFESpace> hdivfes, BaseVector & bv)
-          {
-            auto & pairs = hdivfes->GetDCPairs();
-            auto fu = bv.FV<double>();
-            for (auto pair : pairs)
-              {
-                auto f1 = pair[0];
-                auto f2 = pair[1];
-                if (f2 != -1)
-                  {
-                    double mean = 0.5 * (fu(f1) + fu(f2));
-                    fu(f1) = fu(f2) = mean;
-                  }
-                else if (f1 != -1)
-                  fu(f1) = 0.0;
-              }
-          },
+    .def("Average", &HDivHighOrderFESpace::Average,
           py::arg("vector"))
      ;
   
@@ -1048,104 +994,10 @@ kwargs : For a description of the possible kwargs have a look a bit further down
 
   auto vectorl2 = ExportFESpace<VectorL2FESpace, CompoundFESpace> (m, "VectorL2");
 
-  /*
-  auto vectorl2 = py::class_<VectorL2FESpace, shared_ptr<VectorL2FESpace>,CompoundFESpace>
-    (m, "VectorL2");
-  vectorl2
-    .def(py::init([vectorl2](shared_ptr<MeshAccess> ma, py::kwargs kwargs)
-                  {
-                    py::list info;
-                    info.append(ma);
-                    auto flags = CreateFlagsFromKwArgs(vectorl2, kwargs, info);
-                    auto fes = make_shared<VectorL2FESpace>(ma,flags);
-                    fes->Update(glh);
-                    fes->FinalizeUpdate(glh);
-                    return fes;
-                  }),py::arg("mesh"))
-    .def(py::pickle(fesPickle,(shared_ptr<VectorL2FESpace>(*)(py::tuple))
-                    fesUnpickle<VectorL2FESpace>))
-    .def_static("__flags_doc__", [] ()
-                {
-                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
-                                                  attr("FESpace").
-                                                  attr("__flags_doc__")());
-                  return flags_doc;
-                })
-    ;
-  */
-
   auto l2surface = ExportFESpace<L2SurfaceHighOrderFESpace> (m, "SurfaceL2");
-  /*
-  auto l2surface = py::class_<L2SurfaceHighOrderFESpace, shared_ptr<L2SurfaceHighOrderFESpace>,FESpace>
-    (m, "SurfaceL2");
-  l2surface
-    .def(py::init([l2surface](shared_ptr<MeshAccess> ma, py::kwargs kwargs)
-                  {
-                    py::list info;
-                    info.append(ma);
-                    auto flags = CreateFlagsFromKwArgs(l2surface, kwargs, info);
-                    auto fes = make_shared<L2SurfaceHighOrderFESpace>(ma,flags);
-                    fes->Update(glh);
-                    fes->FinalizeUpdate(glh);
-                    return fes;
-                  }),py::arg("mesh"))
-    .def(py::pickle(fesPickle,(shared_ptr<L2SurfaceHighOrderFESpace>(*)(py::tuple))
-                    fesUnpickle<L2SurfaceHighOrderFESpace>))
-    .def_static("__flags_doc__", [] ()
-                {
-                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
-                                                  attr("FESpace").
-                                                  attr("__flags_doc__")());
-                  return flags_doc;
-                })
-    ;
-  */
 
   auto numberfes = ExportFESpace<NumberFESpace> (m, "NumberSpace");
-  /*
-  auto numberfes = py::class_<NumberFESpace, shared_ptr<NumberFESpace>,FESpace>
-    (m, "NumberSpace");
-  numberfes
-    .def(py::init([numberfes](shared_ptr<MeshAccess> ma, py::kwargs kwargs)
-                  {
-                    py::list info;
-                    info.append(ma);
-                    auto flags = CreateFlagsFromKwArgs(numberfes, kwargs, info);
-                    auto fes = make_shared<NumberFESpace>(ma,flags);
-                    fes->Update(glh);
-                    fes->FinalizeUpdate(glh);
-                    return fes;
-                  }),py::arg("mesh"))
-    .def(py::pickle(fesPickle,(shared_ptr<NumberFESpace>(*)(py::tuple))
-                    fesUnpickle<NumberFESpace>))
-    .def_static("__flags_doc__", [] ()
-                {
-                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
-                                                  attr("FESpace").
-                                                  attr("__flags_doc__")());
-                  return flags_doc;
-                })
-    ;
-  */
 
-
-  /*
-  auto hdivdiv = py::class_<HDivDivFESpace, shared_ptr<HDivDivFESpace>,FESpace>
-    (m, "HDivDiv");
-  hdivdiv
-    .def(py::init([hdivdiv](shared_ptr<MeshAccess> ma, py::kwargs kwargs)
-                  {
-                    py::list info;
-                    info.append(ma);
-                    auto flags = CreateFlagsFromKwArgs(hdivdiv, kwargs, info);
-                    auto fes = make_shared<HDivDivFESpace>(ma,flags);
-                    fes->Update(glh);
-                    fes->FinalizeUpdate(glh);
-                    return fes;
-                  }),py::arg("mesh"))
-    .def(py::pickle(fesPickle,(shared_ptr<HDivDivFESpace>(*)(py::tuple))
-                    fesUnpickle<HDivDivFESpace>))
-  */
   ExportFESpace<HDivDivFESpace> (m, "HDivDiv")
     .def_static("__flags_doc__", [] ()
                 {
@@ -1161,23 +1013,6 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                 })
     ;
 
-  /*
-  auto hdivdivsurf = py::class_<HDivDivSurfaceSpace, shared_ptr<HDivDivSurfaceSpace>,FESpace>
-    (m, "HDivDivSurface");
-  hdivdivsurf
-    .def(py::init([hdivdivsurf](shared_ptr<MeshAccess> ma, py::kwargs kwargs)
-                  {
-                    py::list info;
-                    info.append(ma);
-                    auto flags = CreateFlagsFromKwArgs(hdivdivsurf, kwargs, info);
-                    auto fes = make_shared<HDivDivSurfaceSpace>(ma,flags);
-                    fes->Update(glh);
-                    fes->FinalizeUpdate(glh);
-                    return fes;
-                  }),py::arg("mesh"))
-    .def(py::pickle(fesPickle,(shared_ptr<HDivDivSurfaceSpace>(*)(py::tuple))
-                    fesUnpickle<HDivDivSurfaceSpace>))
-  */
   ExportFESpace<HDivDivSurfaceSpace> (m, "HDivDivSurface")    
     .def_static("__flags_doc__", [] ()
                 {
@@ -1191,103 +1026,12 @@ kwargs : For a description of the possible kwargs have a look a bit further down
     ;
 
   ExportFESpace<VectorFacetFESpace> (m, "VectorFacet");
-  /*
-  auto vectorfacet = py::class_<VectorFacetFESpace, shared_ptr<VectorFacetFESpace>,FESpace>
-    (m, "VectorFacet");
-  vectorfacet
-    .def(py::init([vectorfacet](shared_ptr<MeshAccess> ma, py::kwargs kwargs)
-                  {
-                    py::list info;
-                    info.append(ma);
-                    auto flags = CreateFlagsFromKwArgs(vectorfacet, kwargs, info);
-                    auto fes = make_shared<VectorFacetFESpace>(ma,flags);
-                    fes->Update(glh);
-                    fes->FinalizeUpdate(glh);
-                    return fes;
-                  }),py::arg("mesh"))
-    .def(py::pickle(fesPickle,(shared_ptr<VectorFacetFESpace>(*)(py::tuple))
-                    fesUnpickle<VectorFacetFESpace>))
-    .def_static("__flags_doc__", [] ()
-                {
-                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
-                                                  attr("FESpace").
-                                                  attr("__flags_doc__")());
-                  return flags_doc;
-                })
-    ;
-  */
 
   ExportFESpace<FacetFESpace> (m, "FacetFESpace");
-  /*
-  auto facetfes = py::class_<FacetFESpace, shared_ptr<FacetFESpace>,FESpace>
-    (m, "FacetFESpace");
-  facetfes
-    .def(py::init([facetfes](shared_ptr<MeshAccess> ma, py::kwargs kwargs)
-                  {
-                    py::list info;
-                    info.append(ma);
-                    auto flags = CreateFlagsFromKwArgs(facetfes, kwargs, info);
-                    auto fes = make_shared<FacetFESpace>(ma,flags);
-                    fes->Update(glh);
-                    fes->FinalizeUpdate(glh);
-                    return fes;
-                  }),py::arg("mesh"))
-    .def(py::pickle(fesPickle,(shared_ptr<FacetFESpace>(*)(py::tuple))
-                    fesUnpickle<FacetFESpace>))
-    .def_static("__flags_doc__", [] ()
-                {
-                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
-                                                  attr("FESpace").
-                                                  attr("__flags_doc__")());
-                  return flags_doc;
-                })
-    ;
-  */
+
   ExportFESpace<FacetSurfaceFESpace> (m, "FacetSurface");
-  /*
-  auto facetsurface = py::class_<FacetSurfaceFESpace, shared_ptr<FacetSurfaceFESpace>,FESpace>
-    (m, "FacetSurface");
-  facetsurface
-    .def(py::init([facetsurface](shared_ptr<MeshAccess> ma, py::kwargs kwargs)
-                  {
-                    py::list info;
-                    info.append(ma);
-                    auto flags = CreateFlagsFromKwArgs(facetsurface, kwargs, info);
-                    auto fes = make_shared<FacetSurfaceFESpace>(ma,flags);
-                    fes->Update(glh);
-                    fes->FinalizeUpdate(glh);
-                    return fes;
-                  }),py::arg("mesh"))
-    .def(py::pickle(fesPickle,(shared_ptr<FacetSurfaceFESpace>(*)(py::tuple))
-                    fesUnpickle<FacetSurfaceFESpace>))
-    .def_static("__flags_doc__", [] ()
-                {
-                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
-                                                  attr("FESpace").
-                                                  attr("__flags_doc__")());
-                  return flags_doc;
-                })
-    ;
-  */
 
   ExportFESpace<HDivHighOrderSurfaceFESpace> (m, "HDivSurface")
-    /*
-  auto hdivsurf = py::class_<HDivHighOrderSurfaceFESpace, shared_ptr<HDivHighOrderSurfaceFESpace>,FESpace>
-    (m, "HDivSurface");
-  hdivsurf
-    .def(py::init([hdivsurf](shared_ptr<MeshAccess> ma, py::kwargs kwargs)
-                  {
-                    py::list info;
-                    info.append(ma);
-                    auto flags = CreateFlagsFromKwArgs(hdivsurf, kwargs, info);
-                    auto fes = make_shared<HDivHighOrderSurfaceFESpace>(ma,flags);
-                    fes->Update(glh);
-                    fes->FinalizeUpdate(glh);
-                    return fes;
-                  }),py::arg("mesh"))
-    .def(py::pickle(fesPickle,(shared_ptr<HDivHighOrderSurfaceFESpace>(*)(py::tuple))
-                    fesUnpickle<HDivHighOrderSurfaceFESpace>))
-    */
     .def_static("__flags_doc__", [] ()
                 {
                   auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
@@ -1297,24 +1041,7 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                     "  Create discontinuous HDivSurface space";
                   return flags_doc;
                 })
-    .def("Average",
-         [] (shared_ptr<HDivHighOrderSurfaceFESpace> hdivsurffes, BaseVector & bv)
-         {
-           auto & pairs = hdivsurffes->GetDCPairs();
-           auto fu = bv.FV<double>();
-           for (auto pair : pairs)
-             {
-               auto f1 = pair[0];
-               auto f2 = pair[1];
-               if (f2 != -1)
-                 {
-                   double mean = 0.5 * (fu(f1) + fu(f2));
-                   fu(f1) = fu(f2) = mean;
-                 }
-               else if (f1 != -1)
-                 fu(f1) = 0.0;
-             }
-         },
+    .def("Average", &HDivHighOrderSurfaceFESpace::Average,
          py::arg("vector"))
     ;
 
@@ -1424,6 +1151,9 @@ used_idnrs : list of int = None
                       return fes;
                     }))
     ;
+
+
+  ////////////////////////////////////// GridFunction //////////////////////////
   
   auto gf_class = py::class_<GF,shared_ptr<GF>, CoefficientFunction, NGS_Object>
     (m, "GridFunction",  "a field approximated in some finite element space", py::dynamic_attr());
@@ -1742,9 +1472,8 @@ used_idnrs : list of int = None
 
 
 
-  //////////////////////////////////////////////////////////////////////////////////////////
+  ///////////////////////////// BilinearForm   ////////////////////////////////////////
 
-//   PyExportArray<shared_ptr<BilinearFormIntegrator>> ();
 
   typedef BilinearForm BF;
   auto bf_class = py::class_<BF, shared_ptr<BilinearForm>>(m, "BilinearForm",
@@ -1929,10 +1658,7 @@ y : ngsolve.BaseVector
                   )
     ;
 
-  //////////////////////////////////////////////////////////////////////////////////////////
-
-//   PyExportArray<shared_ptr<LinearFormIntegrator>> ();
-//
+  ///////////////////////////////// LinearForm //////////////////////////////////////////
 
   typedef LinearForm LF;
   auto lf_class = py::class_<LF, shared_ptr<LF>, NGS_Object>(m, "LinearForm", docu_string(R"raw_string(
@@ -1987,7 +1713,8 @@ flags : dict
           },
          py::arg("integrator"))
     
-    .def("__iadd__",[](shared_ptr<LF> self, shared_ptr<LinearFormIntegrator> lfi) { (*self)+=lfi; return self; })
+    .def("__iadd__",[](shared_ptr<LF> self, shared_ptr<LinearFormIntegrator> lfi)
+         { (*self)+=lfi; return self; })
 
     .def_property_readonly("integrators", [](shared_ptr<LF> self)
                            { return MakePyTuple (self->Integrators()); })
@@ -2015,7 +1742,7 @@ flags : dict
 
     ;
 
-  //////////////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////// Preconditioner /////////////////////////////////////////////
 
   auto prec_class = py::class_<Preconditioner, shared_ptr<Preconditioner>, BaseMatrix>(m, "Preconditioner");
   prec_class
