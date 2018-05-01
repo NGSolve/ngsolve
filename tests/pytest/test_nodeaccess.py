@@ -19,16 +19,16 @@ def test_node_access():
             vert_done[vert.nr] = True
         for edge in cell.edges:
             edge_done[edge.nr] = True
-            assert len(mesh(edge).vertices) == 2
-            for v in mesh(edge).vertices:
+            assert len(mesh[edge].vertices) == 2
+            for v in mesh[edge].vertices:
                 assert v in cell.vertices
         for face in cell.faces:
             face_done[face.nr] = True
-            assert len(mesh(face).vertices) == 3
-            for v in mesh(face).vertices:
+            assert len(mesh[face].vertices) == 3
+            for v in mesh[face].vertices:
                 assert v in cell.vertices
-            assert len(mesh(face).edges) == 3
-            for e in mesh(face).edges:
+            assert len(mesh[face].edges) == 3
+            for e in mesh[face].edges:
                 assert e in cell.edges
 
     assert all(cell_done)

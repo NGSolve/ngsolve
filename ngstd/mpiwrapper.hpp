@@ -360,8 +360,9 @@ public:
 #undef NGSMPI_ENABLE_FOR_STD
 #else
   enum { MPI_COMM_WORLD = 12345 };
-  enum { ngs_comm = 12345 };
   typedef int MPI_Comm;
+  extern MPI_Comm ngs_comm;
+  
   typedef int MPI_Op;
   enum { MPI_SUM = 0, MPI_MIN = 1, MPI_MAX = 2 };
   INLINE int MyMPI_GetNTasks (MPI_Comm comm = MPI_COMM_WORLD) { return 1; }
@@ -407,7 +408,9 @@ public:
   // for Python wrapping ...
   struct PyMPI_Comm {
     MPI_Comm comm;
-    PyMPI_Comm (MPI_Comm _comm) : comm(_comm) { ; } 
+    PyMPI_Comm (MPI_Comm _comm) : comm(_comm) { ; }
+    auto Rank() const { return MyMPI_GetId(comm); }
+    auto Size() const { return MyMPI_GetNTasks(comm); }
   };
 
 }

@@ -632,6 +632,7 @@ namespace ngcomp
     }
 
     void Refine ();
+    void Curve (int order);
     void SetDeformation (shared_ptr<GridFunction> def = nullptr)
     {
       deformation = def;

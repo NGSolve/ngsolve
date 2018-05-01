@@ -490,8 +490,8 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
 
   
   py::class_<PyMPI_Comm> (m, "MPI_Comm")
-    .def_property_readonly ("rank", [](PyMPI_Comm c) { return MyMPI_GetId(c.comm); })
-    .def_property_readonly ("size", [](PyMPI_Comm c) { return MyMPI_GetNTasks(c.comm); })
+    .def_property_readonly ("rank", &PyMPI_Comm::Rank)
+    .def_property_readonly ("size", &PyMPI_Comm::Size)
     .def("Barrier", [](PyMPI_Comm c) { MyMPI_Barrier(c.comm); })
     .def("Sum", [](PyMPI_Comm c, double x) { return MyMPI_AllReduce(x, MPI_SUM, c.comm); })
     .def("Min", [](PyMPI_Comm c, double x) { return MyMPI_AllReduce(x, MPI_MIN, c.comm); })
