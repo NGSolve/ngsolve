@@ -51,10 +51,6 @@ void ExportNgcompMesh (py::module &m)
     .def(py::init<NODE_TYPE,size_t>())
     .def("__str__", &ToString<NodeId>)
     .def("__repr__", &ToString<NodeId>)
-    /*
-    .def("__repr__", [](NodeId & self)
-         { return string("NodeId(")+ToString(self.GetType())+","+ToString(self.GetNr())+")"; })
-    */
     .def(py::self!=py::self)
     .def(py::self==py::self)
     .def("__hash__" , &NodeId::GetNr)    
@@ -314,13 +310,16 @@ mesh (netgen.Mesh): a mesh generated from Netgen
     .def("nodes", [] (shared_ptr<MeshAccess> mesh, NODE_TYPE type)
          {
            return T_Range<MeshNode> (MeshNode(NodeId(type, 0), *mesh),
-                                     MeshNode(NodeId(type, mesh->GetNNodes(type)),*mesh));                                     }, py::arg("node_type"), "iterable of mesh nodes of type type")
+                                     MeshNode(NodeId(type, mesh->GetNNodes(type)),*mesh));
+         }, py::arg("node_type"), "iterable of mesh nodes of type type")
 
+    /*
     .def ("GetTrafo", 
           static_cast<ElementTransformation&(MeshAccess::*)(ElementId,Allocator&)const>
           (&MeshAccess::GetTrafo), 
           py::return_value_policy::reference)
-
+    */
+    
     .def ("GetTrafo",
           [](MeshAccess & ma, ElementId id)
           { return &ma.GetTrafo(id, global_alloc); },
