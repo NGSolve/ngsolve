@@ -23,14 +23,14 @@ void SetFlag(Flags &flags, string s, py::object value)
       return;
     }
 
-  if (py::isinstance<py::bool_>(value) && value.cast<bool>())
-    flags.SetFlag(s);
+  if (py::isinstance<py::bool_>(value))
+    flags.SetFlag(s, value.cast<bool>());
 
   if (py::isinstance<py::float_>(value))
     flags.SetFlag(s, value.cast<double>());
 
   if (py::isinstance<py::int_>(value))
-    flags.SetFlag(s, value.cast<int>());
+    flags.SetFlag(s, double(value.cast<int>()));
 
   if (py::isinstance<py::str>(value))
     flags.SetFlag(s, value.cast<string>());
