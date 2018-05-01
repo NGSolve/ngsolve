@@ -395,7 +395,8 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
   //////////////////////////////////////////////////////////////////////////////////////////
   
   py::class_<NGS_Object, shared_ptr<NGS_Object>>(m, "NGS_Object")
-    .def_property_readonly("name", [](const NGS_Object & self)->string { return self.GetName();})
+    // .def_property_readonly("name", [](const NGS_Object & self)->string { return self.GetName();})
+    .def_property("name", &NGS_Object::GetName, &NGS_Object::SetName)
     ;
 
   //////////////////////////////////////////////////////////////////////////////////////////
@@ -1723,37 +1724,32 @@ space : ngsolve.FESpace
   The finite element space the bilinearform is defined on. This
   can be a compound FESpace for a mixed formulation.
 
-name : string
-  Give a name to the BilinearForm - not really a use case in Python
-
 check_unused : bool
   If set prints warnings if not UNUSED_DOFS are not used
 
 )raw_string"));
   bf_class
-    .def(py::init([bf_class] (shared_ptr<FESpace> fespace, bool check_unused,
-                      string name, py::kwargs kwargs)
+    .def(py::init([bf_class] (shared_ptr<FESpace> fespace, /* bool check_unused, */
+                              py::kwargs kwargs)
                   {
                     auto flags = CreateFlagsFromKwArgs(bf_class,kwargs);
-                    auto biform = CreateBilinearForm (fespace, name, flags);
-                    biform -> SetCheckUnused (check_unused);
+                    auto biform = CreateBilinearForm (fespace, "biform_from_py", flags);
+                    // biform -> SetCheckUnused (check_unused);
                     return biform;
                   }),
-         py::arg("space"),
-         py::arg("check_unused")=true,
-         py::arg("name")="bfa")
+         py::arg("space"))
     .def(py::init([bf_class](shared_ptr<FESpace> trial_space,
-                     shared_ptr<FESpace> test_space, string name,
-                     bool check_unused, py::kwargs kwargs)
+                             shared_ptr<FESpace> test_space, 
+                             /* bool check_unused, */ py::kwargs kwargs)
                   {
                     auto flags = CreateFlagsFromKwArgs(bf_class,kwargs);
-                    auto biform = CreateBilinearForm (trial_space, test_space, name, flags);
-                    biform -> SetCheckUnused (check_unused);
+                    auto biform = CreateBilinearForm (trial_space, test_space, "biform_from_py", flags);
+                    // biform -> SetCheckUnused (check_unused);
                     return biform;
                   }),
          py::arg("trialspace"),
-         py::arg("testspace"),
-         py::arg("name")="bfa", py::arg("check_unused")=true)
+         py::arg("testspace"))
+    // py::arg("check_unused")=true
 
     .def_static("__flags_doc__", [] ()
                 {
@@ -1912,9 +1908,6 @@ space : ngsolve.FESpace
   The space the linearform is defined on. Can be a compound
   FESpace for a mixed formulation.
 
-name : string
-  The name of the linearform (in python not really in use...)
-
 flags : dict
   Additional options for the linearform, for example:
 
@@ -1925,14 +1918,14 @@ flags : dict
 
 )raw_string"));
   lf_class
-    .def(py::init([lf_class] (shared_ptr<FESpace> fespace, string name, py::kwargs kwargs)
+    .def(py::init([lf_class] (shared_ptr<FESpace> fespace, py::kwargs kwargs)
                   {
                     auto flags = CreateFlagsFromKwArgs(lf_class,kwargs);
-                    auto f = CreateLinearForm (fespace, name, flags);
+                    auto f = CreateLinearForm (fespace, "lff_from_py", flags);
                     f->AllocateVector();
                     return f;
                   }),
-         py::arg("space"), py::arg("name")="lff")
+         py::arg("space"))
     .def_static("__flags_doc__", [] ()
                 {
                   return py::dict
