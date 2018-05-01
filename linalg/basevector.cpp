@@ -101,6 +101,8 @@ namespace ngla
     auto me = FVDouble();
     auto you = v.FVDouble();
 
+    if (&me(0) == &you(0) && scal==1.0) return *this;
+    
     t.AddFlops (me.Size());
 
     ParallelFor ( me.Range(),
