@@ -850,7 +850,7 @@ kwargs : For a description of the possible kwargs have a look a bit further down
          [] (const shared_ptr<FESpace>self, bool coupling)
          { return self->GetFreeDofs(coupling); },
          py::arg("coupling")=false,
-         "returns BitArray of free (non-Dirichlet) dofs\n"
+         "Return BitArray of free (non-Dirichlet) dofs\n"
          "coupling=False ... all free dofs including local dofs\n"
          "coupling=True .... only element-boundary free dofs"
          )
@@ -858,7 +858,7 @@ kwargs : For a description of the possible kwargs have a look a bit further down
     .def("ParallelDofs",
          [] (const shared_ptr<FESpace>self)
          { return self->GetParallelDofs(); },
-         "returns dof-identification for MPI-distributed meshes")
+         "Return dof-identification for MPI-distributed meshes")
 
     .def("Range",
          [] (const shared_ptr<FESpace> self, int comp) -> py::slice
@@ -870,7 +870,7 @@ kwargs : For a description of the possible kwargs have a look a bit further down
            return py::slice(py::int_(r.First()), py::int_(r.Next()),1);
          },
          "component"_a,
-         "returns interval of dofs of a component of a product space")
+         "Return interval of dofs of a component of a product space")
     
     .def_property_readonly("components", 
                   [](shared_ptr<FESpace> self)-> py::tuple
@@ -883,28 +883,28 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                        vecs[i]= py::cast((*compspace)[i]);
                      return vecs;
                    },
-                  "returns a list of the components of a product space")
+                  "Return a list of the components of a product space")
 
     .def("TrialFunction",
          [] (const shared_ptr<FESpace> self)
          {
            return MakeProxyFunction (self, false);
          },
-         docu_string("Gives a proxy to be used as a trialfunction in :any:`Symbolic Integrators<symbolic-integrators>`"))
+         docu_string("Return a proxy to be used as a trialfunction in :any:`Symbolic Integrators<symbolic-integrators>`"))
     
     .def("TestFunction",
          [] (const shared_ptr<FESpace> self)
            {
              return MakeProxyFunction (self, true);
            },
-         docu_string("Gives a proxy to be used as a testfunction for :any:`Symbolic Integrators<symbolic-integrators>`"))
+         docu_string("Return a proxy to be used as a testfunction for :any:`Symbolic Integrators<symbolic-integrators>`"))
 
     .def("TnT",
          [] (const shared_ptr<FESpace> self)
          {
            return std::make_tuple(MakeProxyFunction (self, false), MakeProxyFunction (self, true));
          },
-         docu_string("Returns a tuple of trial and testfunction"))
+         docu_string("Return a tuple of trial and testfunction"))
 
     .def("SolveM",
          [] (const shared_ptr<FESpace> self,
@@ -920,6 +920,33 @@ kwargs : For a description of the possible kwargs have a look a bit further down
          })
     ;
 
+  py::class_<CompoundFESpace, shared_ptr<CompoundFESpace>, FESpace>
+    (m,"CompoundFESpace")
+    .def(py::pickle([] (py::object pyfes)
+                    {
+                      auto fes = py::cast<shared_ptr<CompoundFESpace>>(pyfes);
+                      auto flags = fes->GetFlags();
+                      py::list lst;
+                      for(auto i : Range(fes->GetNSpaces()))
+                        lst.append((*fes)[i]);
+                      return py::make_tuple(lst,flags,pyfes.attr("__dict__"));
+                    },
+                    [] (py::tuple state)
+                    {
+                      Array<shared_ptr<FESpace>> spaces;
+                      for (auto pyfes : state[0].cast<py::list>())
+                        spaces.Append(pyfes.cast<shared_ptr<FESpace>>());
+                      auto fes = make_shared<CompoundFESpace>
+                        (spaces[0]->GetMeshAccess(), spaces, state[1].cast<Flags>());
+                      LocalHeap lh (1000000, "FESpace::Update-heap");
+                      fes->Update(lh);
+                      fes->FinalizeUpdate(lh);
+                      py::cast(fes).attr("__dict__") = state[2];
+                      return fes;
+                    }))
+    ;
+
+  /*
   auto hcurl = py::class_<HCurlHighOrderFESpace, shared_ptr<HCurlHighOrderFESpace>,FESpace>
     (m, "HCurl");
   hcurl
@@ -955,70 +982,64 @@ kwargs : For a description of the possible kwargs have a look a bit further down
 	  return py::make_tuple(grad, shared_ptr<FESpace>(fesh1));
 	})
     ;
-  // hcurl.attr("__flags_doc__")["nograds"] = " ...";
+  */
 
-  py::class_<CompoundFESpace, shared_ptr<CompoundFESpace>, FESpace>
-    (m,"CompoundFESpace")
-    .def(py::pickle([] (py::object pyfes)
-                    {
-                      auto fes = py::cast<shared_ptr<CompoundFESpace>>(pyfes);
-                      auto flags = fes->GetFlags();
-                      py::list lst;
-                      for(auto i : Range(fes->GetNSpaces()))
-                        lst.append((*fes)[i]);
-                      return py::make_tuple(lst,flags,pyfes.attr("__dict__"));
-                    },
-                    [] (py::tuple state)
-                    {
-                      Array<shared_ptr<FESpace>> spaces;
-                      for (auto pyfes : state[0].cast<py::list>())
-                        spaces.Append(pyfes.cast<shared_ptr<FESpace>>());
-                      auto fes = make_shared<CompoundFESpace>
-                        (spaces[0]->GetMeshAccess(), spaces, state[1].cast<Flags>());
-                      LocalHeap lh (1000000, "FESpace::Update-heap");
-                      fes->Update(lh);
-                      fes->FinalizeUpdate(lh);
-                      py::cast(fes).attr("__dict__") = state[2];
-                      return fes;
-                    }))
-    ;
-
-  auto hdiv = ExportFESpace<HDivHighOrderFESpace> (m, "HDiv");
-  hdiv
+  ExportFESpace<HCurlHighOrderFESpace> (m, "HCurl")
     .def_static("__flags_doc__", [] ()
                 {
                   auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
-                                                  attr("FESpace").
-                                                  attr("__flags_doc__")());
+                                                      attr("FESpace").
+                                                      attr("__flags_doc__")());
+                  flags_doc["nograds"] = "bool = False\n"
+                    "  Remove higher order gradients of H1 basis functions from HCurl FESpace";
+                  flags_doc["type1"] = "bool = False\n"
+                    "  Use type 1 Nedelec elements";
                   flags_doc["discontinuous"] = "bool = False\n"
-                    "  Create discontinuous HDiv space";
-		  flags_doc["hodivfree"] = "bool = False\n"
-		    "  Remove high order element bubbles with non zero divergence";
-		  flags_doc["highest_order_dc"] = "bool = False\n"
-                    "  Activates relaxed H(div)-conformity. Allows normal discontinuity of highest order facet basis functions";
+                    "  Create discontinuous HCurl space";
                   return flags_doc;
                 })
-    .def("Average",
-         [] (shared_ptr<HDivHighOrderFESpace> hdivfes, BaseVector & bv)
-         {
-           auto & pairs = hdivfes->GetDCPairs();
-           auto fu = bv.FV<double>();
-           for (auto pair : pairs)
-             {
-               auto f1 = pair[0];
-               auto f2 = pair[1];
-               if (f2 != -1)
-                 {
-                   double mean = 0.5 * (fu(f1) + fu(f2));
-                   fu(f1) = fu(f2) = mean;
-                 }
-               else if (f1 != -1)
-                 fu(f1) = 0.0;
-             }
-         },
-         py::arg("vector"))
+    .def("CreateGradient", [](shared_ptr<HCurlHighOrderFESpace> self) {
+        auto fesh1 = self->CreateGradientSpace();
+        shared_ptr<BaseMatrix> grad = self->CreateGradient(*fesh1);
+        return py::make_tuple(grad, shared_ptr<FESpace>(fesh1));
+      })
     ;
-
+  
+  ExportFESpace<HDivHighOrderFESpace> (m, "HDiv")
+    .def_static("__flags_doc__", [] ()
+              {
+                auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
+                                                    attr("FESpace").
+                                                    attr("__flags_doc__")());
+                flags_doc["discontinuous"] = "bool = False\n"
+                  "  Create discontinuous HDiv space";
+                flags_doc["hodivfree"] = "bool = False\n"
+                  "  Remove high order element bubbles with non zero divergence";
+                flags_doc["highest_order_dc"] = "bool = False\n"
+                  "  Activates relaxed H(div)-conformity. Allows normal discontinuity of highest order facet basis functions";
+                return flags_doc;
+              })
+     .def("Average",
+          [] (shared_ptr<HDivHighOrderFESpace> hdivfes, BaseVector & bv)
+          {
+            auto & pairs = hdivfes->GetDCPairs();
+            auto fu = bv.FV<double>();
+            for (auto pair : pairs)
+              {
+                auto f1 = pair[0];
+                auto f2 = pair[1];
+                if (f2 != -1)
+                  {
+                    double mean = 0.5 * (fu(f1) + fu(f2));
+                    fu(f1) = fu(f2) = mean;
+                  }
+                else if (f1 != -1)
+                  fu(f1) = 0.0;
+              }
+          },
+          py::arg("vector"))
+     ;
+  
   auto h1 = ExportFESpace<H1HighOrderFESpace> (m, "H1");
 
   auto vectorh1 = ExportFESpace<VectorH1FESpace, CompoundFESpace> (m, "VectorH1");
@@ -1107,7 +1128,8 @@ kwargs : For a description of the possible kwargs have a look a bit further down
     ;
   */
 
-  
+
+  /*
   auto hdivdiv = py::class_<HDivDivFESpace, shared_ptr<HDivDivFESpace>,FESpace>
     (m, "HDivDiv");
   hdivdiv
@@ -1123,6 +1145,8 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                   }),py::arg("mesh"))
     .def(py::pickle(fesPickle,(shared_ptr<HDivDivFESpace>(*)(py::tuple))
                     fesUnpickle<HDivDivFESpace>))
+  */
+  ExportFESpace<HDivDivFESpace> (m, "HDivDiv")
     .def_static("__flags_doc__", [] ()
                 {
                   auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
@@ -1137,7 +1161,7 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                 })
     ;
 
-
+  /*
   auto hdivdivsurf = py::class_<HDivDivSurfaceSpace, shared_ptr<HDivDivSurfaceSpace>,FESpace>
     (m, "HDivDivSurface");
   hdivdivsurf
@@ -1153,6 +1177,8 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                   }),py::arg("mesh"))
     .def(py::pickle(fesPickle,(shared_ptr<HDivDivSurfaceSpace>(*)(py::tuple))
                     fesUnpickle<HDivDivSurfaceSpace>))
+  */
+  ExportFESpace<HDivDivSurfaceSpace> (m, "HDivDivSurface")    
     .def_static("__flags_doc__", [] ()
                 {
                   auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
@@ -1164,6 +1190,8 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                 })
     ;
 
+  ExportFESpace<VectorFacetFESpace> (m, "VectorFacet");
+  /*
   auto vectorfacet = py::class_<VectorFacetFESpace, shared_ptr<VectorFacetFESpace>,FESpace>
     (m, "VectorFacet");
   vectorfacet
@@ -1187,7 +1215,10 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                   return flags_doc;
                 })
     ;
+  */
 
+  ExportFESpace<FacetFESpace> (m, "FacetFESpace");
+  /*
   auto facetfes = py::class_<FacetFESpace, shared_ptr<FacetFESpace>,FESpace>
     (m, "FacetFESpace");
   facetfes
@@ -1211,7 +1242,9 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                   return flags_doc;
                 })
     ;
-
+  */
+  ExportFESpace<FacetSurfaceFESpace> (m, "FacetSurface");
+  /*
   auto facetsurface = py::class_<FacetSurfaceFESpace, shared_ptr<FacetSurfaceFESpace>,FESpace>
     (m, "FacetSurface");
   facetsurface
@@ -1235,7 +1268,10 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                   return flags_doc;
                 })
     ;
-   
+  */
+
+  ExportFESpace<HDivHighOrderSurfaceFESpace> (m, "HDivSurface")
+    /*
   auto hdivsurf = py::class_<HDivHighOrderSurfaceFESpace, shared_ptr<HDivHighOrderSurfaceFESpace>,FESpace>
     (m, "HDivSurface");
   hdivsurf
@@ -1251,6 +1287,7 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                   }),py::arg("mesh"))
     .def(py::pickle(fesPickle,(shared_ptr<HDivHighOrderSurfaceFESpace>(*)(py::tuple))
                     fesUnpickle<HDivHighOrderSurfaceFESpace>))
+    */
     .def_static("__flags_doc__", [] ()
                 {
                   auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
@@ -2253,213 +2290,208 @@ flags : dict
   
   m.def("Integrate", 
         [](spCF cf,
-             shared_ptr<MeshAccess> ma, 
-	     VorB vb, int order, py::object definedon,
+           shared_ptr<MeshAccess> ma, 
+           VorB vb, int order, py::object definedon,
 	   bool region_wise, bool element_wise)
-                          {
-                            static Timer t("Integrate CF"); RegionTimer reg(t);
-                            // static mutex addcomplex_mutex;
-                            BitArray mask;
-                            {
-                              py::gil_scoped_acquire aquire;
-                              py::extract<Region> defon_region(definedon);
-                              if (defon_region.check())
-                                {
-                                  vb = VorB(defon_region());
-                                  mask = BitArray(defon_region().Mask());
-                                }
-                            }
-                            if(!mask.Size()){
-                              mask = BitArray(ma->GetNRegions(vb));
-                              mask.Set();
-                            }
-			   int dim = cf->Dimension();
-			   if((region_wise || element_wise) && dim != 1)
-			     throw Exception("region_wise and element_wise only implemented for 1 dimensional coefficientfunctions");
-
-                            if (!cf->IsComplex())
-                              {
-                                Vector<> sum(dim);
-				sum = 0.0;
-			        Vector<> region_sum(region_wise ? ma->GetNRegions(vb) : 0);
-                                Vector<> element_sum(element_wise ? ma->GetNE(vb) : 0);
-                                region_sum = 0;
-                                element_sum = 0;
-				bool use_simd = true;
-				
-                                
-                                ma->IterateElements
-                                  (vb, glh, [&] (Ngs_Element el, LocalHeap & lh)
-                                   {
-				     if(!mask.Test(el.GetIndex())) return;
-                                     auto & trafo = ma->GetTrafo (el, lh);
-                                     FlatVector<> hsum(dim, lh);
-				     hsum = 0.0;
-                                     bool this_simd = use_simd;
-                                     
-                                     if (this_simd)
-                                       {
-                                         try
-                                           {
-                                             SIMD_IntegrationRule ir(trafo.GetElementType(), order);
-                                             auto & mir = trafo(ir, lh);
-                                             FlatMatrix<SIMD<double>> values(dim,ir.Size(), lh);
-                                             cf -> Evaluate (mir, values);
-                                             FlatVector<SIMD<double>> vsum(dim, lh);
-					     vsum = 0;
-                                             for (size_t j = 0; j < dim; j++)
-                                               for (size_t i = 0; i < values.Width(); i++)
-                                                 vsum(j) += mir[i].GetWeight() * values(j,i);
-					     for(int i = 0; i< dim; i++)
-					       hsum[i] = HSum(vsum[i]);
-                                           }
-                                         catch (ExceptionNOSIMD e)
-                                           {
-                                             this_simd = false;
-                                             use_simd = false;
-                                             hsum = 0.0;
-                                           }
-                                       }
-                                     if (!this_simd)
-                                       {
-                                         IntegrationRule ir(trafo.GetElementType(), order);
-                                         BaseMappedIntegrationRule & mir = trafo(ir, lh);
-                                         FlatMatrix<> values(ir.Size(), dim, lh);
-                                         cf -> Evaluate (mir, values);
-                                         for (int i = 0; i < values.Height(); i++)
-                                           hsum += mir[i].GetWeight() * values.Row(i);
-                                       }
-				     for(size_t i = 0; i<dim;i++)
-				       AsAtomic(sum(i)) += hsum(i);
-				     if(region_wise)
-				       AsAtomic(region_sum(el.GetIndex())) += hsum(0);
-                                     if (element_wise)
-                                       element_sum(el.Nr()) = hsum(0);
-                                   });
-                                py::object result;
-                                if (region_wise) {
+        {
+          static Timer t("Integrate CF"); RegionTimer reg(t);
+          // static mutex addcomplex_mutex;
+          BitArray mask;
+          {
+            py::gil_scoped_acquire aquire;
+            py::extract<Region> defon_region(definedon);
+            if (defon_region.check())
+              {
+                vb = VorB(defon_region());
+                mask = BitArray(defon_region().Mask());
+              }
+          }
+          if(!mask.Size()){
+            mask = BitArray(ma->GetNRegions(vb));
+            mask.Set();
+          }
+          int dim = cf->Dimension();
+          if((region_wise || element_wise) && dim != 1)
+            throw Exception("region_wise and element_wise only implemented for 1 dimensional coefficientfunctions");
+          
+          if (!cf->IsComplex())
+            {
+              Vector<> sum(dim);
+              sum = 0.0;
+              Vector<> region_sum(region_wise ? ma->GetNRegions(vb) : 0);
+              Vector<> element_sum(element_wise ? ma->GetNE(vb) : 0);
+              region_sum = 0;
+              element_sum = 0;
+              bool use_simd = true;
+              
+              ma->IterateElements
+                (vb, glh, [&] (Ngs_Element el, LocalHeap & lh)
+                 {
+                   if(!mask.Test(el.GetIndex())) return;
+                   auto & trafo = ma->GetTrafo (el, lh);
+                   FlatVector<> hsum(dim, lh);
+                   hsum = 0.0;
+                   bool this_simd = use_simd;
+                   
+                   if (this_simd)
+                     {
+                       try
+                         {
+                           SIMD_IntegrationRule ir(trafo.GetElementType(), order);
+                           auto & mir = trafo(ir, lh);
+                           FlatMatrix<SIMD<double>> values(dim,ir.Size(), lh);
+                           cf -> Evaluate (mir, values);
+                           FlatVector<SIMD<double>> vsum(dim, lh);
+                           vsum = 0;
+                           for (size_t j = 0; j < dim; j++)
+                             for (size_t i = 0; i < values.Width(); i++)
+                               vsum(j) += mir[i].GetWeight() * values(j,i);
+                           for(int i = 0; i< dim; i++)
+                             hsum[i] = HSum(vsum[i]);
+                         }
+                       catch (ExceptionNOSIMD e)
+                         {
+                           this_simd = false;
+                           use_simd = false;
+                           hsum = 0.0;
+                         }
+                     }
+                   if (!this_simd)
+                     {
+                       IntegrationRule ir(trafo.GetElementType(), order);
+                       BaseMappedIntegrationRule & mir = trafo(ir, lh);
+                       FlatMatrix<> values(ir.Size(), dim, lh);
+                       cf -> Evaluate (mir, values);
+                       for (int i = 0; i < values.Height(); i++)
+                         hsum += mir[i].GetWeight() * values.Row(i);
+                     }
+                   for(size_t i = 0; i<dim;i++)
+                     AsAtomic(sum(i)) += hsum(i);
+                   if(region_wise)
+                     AsAtomic(region_sum(el.GetIndex())) += hsum(0);
+                   if (element_wise)
+                     element_sum(el.Nr()) = hsum(0);
+                 });
+              py::object result;
+              if (region_wise) {
 #ifdef PARALLEL
-				  Vector<> rs2(ma->GetNRegions(vb));
-				  MPI_Allreduce(&region_sum(0), &rs2(0), ma->GetNRegions(vb), MPI_DOUBLE, MPI_SUM, ngs_comm);
-				  region_sum = rs2;
+                Vector<> rs2(ma->GetNRegions(vb));
+                MPI_Allreduce(&region_sum(0), &rs2(0), ma->GetNRegions(vb), MPI_DOUBLE, MPI_SUM, ngs_comm);
+                region_sum = rs2;
 #endif
-                                  result = py::list(py::cast(region_sum));
-				}
-                                else if (element_wise)
-				  result = py::cast(element_sum);
-                                else if(dim==1) {
+                result = py::list(py::cast(region_sum));
+              }
+              else if (element_wise)
+                result = py::cast(element_sum);
+              else if(dim==1) {
+                sum(0) = MyMPI_AllReduce(sum(0));
+                result = py::cast(sum(0));
+              }
+              else {
 #ifdef PARALLEL
-				  sum(0) = MyMPI_AllReduce(sum(0));
+                Vector<> gsum(dim);
+                MPI_Allreduce(&sum(0), &gsum(0), dim, MPI_DOUBLE, MPI_SUM, ngs_comm);
+                sum = gsum;
 #endif
-				  result = py::cast(sum(0));
-                                }
-				else {
+                result = py::cast(sum);
+              }
+              return result;
+            }
+          else
+            {
+              Vector<Complex> sum(dim);
+              sum = 0.0;
+              Vector<Complex> region_sum(region_wise ? ma->GetNRegions(vb) : 0);
+              Vector<Complex> element_sum(element_wise ? ma->GetNE(vb) : 0);
+              region_sum = 0;
+              element_sum = 0;
+              
+              bool use_simd = true;
+              
+              ma->IterateElements
+                (vb, glh, [&] (Ngs_Element el, LocalHeap & lh)
+                 {
+                   if(!mask.Test(el.GetIndex())) return;
+                   auto & trafo = ma->GetTrafo (el, lh);
+                   FlatVector<Complex> hsum(dim, lh);
+                   hsum = 0.0;
+                   
+                   bool this_simd = use_simd;
+                   
+                   if (this_simd)
+                     {
+                       try
+                         {
+                           SIMD_IntegrationRule ir(trafo.GetElementType(), order);
+                           auto & mir = trafo(ir, lh);
+                           FlatMatrix<SIMD<Complex>> values(dim, ir.Size(), lh);
+                           cf -> Evaluate (mir, values);
+                           FlatVector<SIMD<Complex>> vsum(dim,lh);
+                           vsum = Complex(0.0);
+                           for (size_t j = 0; j < dim; j++)
+                             for (size_t i = 0; i < values.Width(); i++)
+                               vsum(j) += mir[i].GetWeight() * values(j,i);
+                           for(size_t i = 0; i < dim; i++)
+                             hsum[i] = HSum(vsum[i]);
+                         }
+                       catch (ExceptionNOSIMD e)
+                         {
+                           this_simd = false;
+                           use_simd = false;
+                           hsum = 0.0;
+                         }
+                     }
+                   if (!this_simd)
+                     {
+                       IntegrationRule ir(trafo.GetElementType(), order);
+                       BaseMappedIntegrationRule & mir = trafo(ir, lh);
+                       FlatMatrix<Complex> values(ir.Size(), dim, lh);
+                       cf -> Evaluate (mir, values);
+                       for (int i = 0; i < values.Height(); i++)
+                         hsum += mir[i].GetWeight() * values.Row(i);
+                     }
+                   for(size_t i = 0; i<dim; i++)
+                     MyAtomicAdd (sum(i), hsum(i));
+                   if(region_wise)
+                     MyAtomicAdd (region_sum(el.GetIndex()), hsum(0));
+                   if (element_wise)
+                     element_sum(el.Nr()) = hsum(0);
+                 });
+              
+              py::object result;
+              if (region_wise) {
 #ifdef PARALLEL
-				  Vector<> gsum(dim);
-				  MPI_Allreduce(&sum(0), &gsum(0), dim, MPI_DOUBLE, MPI_SUM, ngs_comm);
-				  sum = gsum;
+                Vector<Complex> rs2(ma->GetNRegions(vb));
+                MPI_Allreduce(&region_sum(0), &rs2(0), ma->GetNRegions(vb), MPI_Traits<Complex>::MPIType(), MPI_SUM, ngs_comm);
+                region_sum = rs2;
 #endif
-				  result = py::cast(sum);
-				}
-                                return result;
-                              }
-                            else
-                              {
-                                Vector<Complex> sum(dim);
-				sum = 0.0;
-                                Vector<Complex> region_sum(region_wise ? ma->GetNRegions(vb) : 0);
-                                Vector<Complex> element_sum(element_wise ? ma->GetNE(vb) : 0);
-                                region_sum = 0;
-                                element_sum = 0;
-
-                                bool use_simd = true;
-                                
-                                ma->IterateElements
-                                  (vb, glh, [&] (Ngs_Element el, LocalHeap & lh)
-                                   {
-				     if(!mask.Test(el.GetIndex())) return;
-                                     auto & trafo = ma->GetTrafo (el, lh);
-                                     FlatVector<Complex> hsum(dim, lh);
-				     hsum = 0.0;
-                                     
-                                     bool this_simd = use_simd;
-
-                                     if (this_simd)
-                                       {
-                                         try
-                                           {
-                                             SIMD_IntegrationRule ir(trafo.GetElementType(), order);
-                                             auto & mir = trafo(ir, lh);
-                                             FlatMatrix<SIMD<Complex>> values(dim, ir.Size(), lh);
-                                             cf -> Evaluate (mir, values);
-                                             FlatVector<SIMD<Complex>> vsum(dim,lh);
-					     vsum = Complex(0.0);
-                                             for (size_t j = 0; j < dim; j++)
-                                               for (size_t i = 0; i < values.Width(); i++)
-                                                 vsum(j) += mir[i].GetWeight() * values(j,i);
-					     for(size_t i = 0; i < dim; i++)
-					       hsum[i] = HSum(vsum[i]);
-                                           }
-                                         catch (ExceptionNOSIMD e)
-                                           {
-                                             this_simd = false;
-                                             use_simd = false;
-                                             hsum = 0.0;
-                                           }
-                                       }
-                                     if (!this_simd)
-                                       {
-                                         IntegrationRule ir(trafo.GetElementType(), order);
-                                         BaseMappedIntegrationRule & mir = trafo(ir, lh);
-                                         FlatMatrix<Complex> values(ir.Size(), dim, lh);
-                                         cf -> Evaluate (mir, values);
-                                         for (int i = 0; i < values.Height(); i++)
-                                           hsum += mir[i].GetWeight() * values.Row(i);
-                                       }
-                                     for(size_t i = 0; i<dim; i++)
-				       MyAtomicAdd (sum(i), hsum(i));
-				     if(region_wise)
-				       MyAtomicAdd (region_sum(el.GetIndex()), hsum(0));
-                                     if (element_wise)
-                                       element_sum(el.Nr()) = hsum(0);
-                                   });
-                                
-                                py::object result;
-                                if (region_wise) {
+                result = py::list(py::cast(region_sum));
+              }
+              else if (element_wise)
+                result = py::cast(element_sum);
+              else if(dim==1) {
+                sum(0) = MyMPI_AllReduce(sum(0));
+                result = py::cast(sum(0));
+              }
+              else {
 #ifdef PARALLEL
-				  Vector<Complex> rs2(ma->GetNRegions(vb));
-				  MPI_Allreduce(&region_sum(0), &rs2(0), ma->GetNRegions(vb), MPI_Traits<Complex>::MPIType(), MPI_SUM, ngs_comm);
-				  region_sum = rs2;
+                Vector<Complex> gsum(dim);
+                MPI_Allreduce(&sum(0), &gsum(0), dim, MPI_Traits<Complex>::MPIType(), MPI_SUM, ngs_comm);
+                sum = gsum;
 #endif
-                                  result = py::list(py::cast(region_sum));
-				}
-                                else if (element_wise)
-                                  result = py::cast(element_sum);
-                                else if(dim==1) {
-#ifdef PARALLEL
-				  sum(0) = MyMPI_AllReduce(sum(0));
-#endif
-				  result = py::cast(sum(0));
-				}
-				else {
-#ifdef PARALLEL
-				  Vector<Complex> gsum(dim);
-				  MPI_Allreduce(&sum(0), &gsum(0), dim, MPI_Traits<Complex>::MPIType(), MPI_SUM, ngs_comm);
-				  sum = gsum;
-#endif
-				  result = py::cast(sum);
-				}
-                                return result;
-                              }
-                          },
+                result = py::cast(sum);
+              }
+              return result;
+            }
+        },
 	py::arg("cf"), py::arg("mesh"), py::arg("VOL_or_BND")=VOL, 
 	py::arg("order")=5,
 	py::arg("definedon")=DummyArgument(),
-           py::arg("region_wise")=false,
+        py::arg("region_wise")=false,
 	py::arg("element_wise")=false,
         py::call_guard<py::gil_scoped_release>())
     ;
-
+  
   m.def("SymbolicLFI",
           [](spCF cf, VorB vb, bool element_boundary,
              bool skeleton, py::object definedon,
