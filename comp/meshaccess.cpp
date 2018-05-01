@@ -1305,7 +1305,32 @@ namespace ngcomp
   }
 
 
+  
+    void MeshAccess :: SetPML (const shared_ptr<PML_Transformation> & pml_trafo, int _domnr)
+    {
+      if (_domnr>=nregions[VOL])
+        throw Exception("MeshAccess::SetPML: was not able to set PML, domain index too high!");
+      if (pml_trafo->GetDimension()!=dim)
+        throw Exception("MeshAccess::SetPML: dimension of PML = "+ToString(pml_trafo->GetDimension())+" does not fit mesh dimension!");
+      pml_trafos[_domnr] = pml_trafo; 
+    }
+    
+    void MeshAccess :: UnSetPML (int _domnr)
+    {
+      if (_domnr>=nregions[VOL])
+        throw Exception("MeshAccess::UnSetPML: was not able to unset PML, domain index too high!");
+      pml_trafos[_domnr] = nullptr; 
+    }
+    Array<shared_ptr<PML_Transformation>> & MeshAccess :: GetPMLTrafos()
+    { return pml_trafos; }
 
+    shared_ptr<PML_Transformation> MeshAccess :: GetPML(int _domnr)
+    {
+      if (_domnr>=nregions[VOL])
+        throw Exception("MeshAccess::GetPML: was not able to get PML, domain index too high!");
+      return pml_trafos[_domnr];
+    }
+    
 
 
 
@@ -1514,7 +1539,7 @@ namespace ngcomp
   }
 
 
-  Region :: Region (shared_ptr<MeshAccess> amesh,
+  Region :: Region (const shared_ptr<MeshAccess> & amesh,
                     VorB avb, string pattern)
     : mesh(amesh), vb(avb)
   {
@@ -1527,6 +1552,9 @@ namespace ngcomp
         mask.Set(i);
   }      
 
+  Region :: Region (const shared_ptr<MeshAccess> & amesh, VorB avb, const BitArray & amask)
+    : mesh(amesh), vb(avb), mask(amask)
+  { ; }
 
   
 

@@ -642,7 +642,8 @@ namespace ngcomp
       return deformation;
     }
 
-    void SetPML (shared_ptr<PML_Transformation> pml_trafo, int _domnr)
+    void SetPML (const shared_ptr<PML_Transformation> & pml_trafo, int _domnr);
+    /*
     {
       if (_domnr>=nregions[VOL])
         throw Exception("MeshAccess::SetPML: was not able to set PML, domain index too high!");
@@ -650,23 +651,26 @@ namespace ngcomp
         throw Exception("MeshAccess::SetPML: dimension of PML = "+ToString(pml_trafo->GetDimension())+" does not fit mesh dimension!");
       pml_trafos[_domnr] = pml_trafo; 
     }
-    
-    void UnSetPML (int _domnr)
+    */
+    void UnSetPML (int _domnr);
+    /*
     {
       if (_domnr>=nregions[VOL])
         throw Exception("MeshAccess::UnSetPML: was not able to unset PML, domain index too high!");
       pml_trafos[_domnr] = nullptr; 
     }
-    Array<shared_ptr<PML_Transformation>> & GetPMLTrafos()
-    { return pml_trafos; }
+    */
+    Array<shared_ptr<PML_Transformation>> & GetPMLTrafos();
+    // { return pml_trafos; }
 
-    shared_ptr<PML_Transformation> GetPML(int _domnr)
+    shared_ptr<PML_Transformation> GetPML(int _domnr);
+    /*
     {
       if (_domnr>=nregions[VOL])
         throw Exception("MeshAccess::GetPML: was not able to get PML, domain index too high!");
       return pml_trafos[_domnr];
     }
-    
+    */
     shared_ptr<netgen::Mesh> GetNetgenMesh () const
     { return mesh.GetMesh(); }
       
@@ -1124,9 +1128,8 @@ namespace ngcomp
     VorB vb;
     BitArray mask;
   public:
-    NGS_DLL_HEADER Region (shared_ptr<MeshAccess> amesh, VorB avb, string pattern);
-    Region (shared_ptr<MeshAccess> amesh, VorB avb, const BitArray & amask)
-      : mesh(amesh), vb(avb), mask(amask) { ; }
+    NGS_DLL_HEADER Region (const shared_ptr<MeshAccess> & amesh, VorB avb, string pattern);
+    NGS_DLL_HEADER Region (const shared_ptr<MeshAccess> & amesh, VorB avb, const BitArray & amask);
     Region (const Region &) = default;
     explicit operator VorB () const { return vb; }
     VorB VB() const { return vb; }
