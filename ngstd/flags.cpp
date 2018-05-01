@@ -32,8 +32,8 @@ namespace ngstd
       }
     for (int i = 0; i < flags.GetNDefineFlags(); i++)
       {
-	flags.GetDefineFlag (i, name);
-	SetFlag (name);
+	bool val = flags.GetDefineFlag (i, name);
+	SetFlag (name, val);
       }
     for (int i = 0; i < flags.GetNNumListFlags(); i++)
       {
@@ -88,9 +88,9 @@ namespace ngstd
   }
 
 
-  Flags Flags :: SetFlag (const char * name) &&
+  Flags Flags :: SetFlag (const char * name, bool b) &&
   {
-    this -> SetFlag (name);
+    this -> SetFlag (name, b);
     return std::move(*this);
   }
 
@@ -114,9 +114,9 @@ namespace ngstd
     return *this;
   }
   
-  Flags & Flags :: SetFlag (const char * name) &
+  Flags & Flags :: SetFlag (const char * name, bool b) &
   {
-    defflags.Set (name, 1);
+    defflags.Set (name, b);
     return *this;
   }
 
@@ -142,9 +142,9 @@ namespace ngstd
     return *this;
   }
   
-  Flags & Flags :: SetFlag (const string & name)
+  Flags & Flags :: SetFlag (const string & name, bool b)
   {
-    defflags.Set (name, 1);
+    defflags.Set (name, b);
     return *this;
   }
 
@@ -231,7 +231,14 @@ namespace ngstd
   */
   bool Flags :: GetDefineFlag (const string & name) const throw()
   {
-    return defflags.Used (name);
+    if (!defflags.Used (name)) return false;
+    return defflags[name];
+  }
+
+  xbool Flags :: GetDefineFlagX (const string & name) const throw()
+  {
+    if (!defflags.Used (name)) return maybe;
+    return defflags[name];
   }
 
 
