@@ -70,6 +70,9 @@ namespace ngcomp
       return "HDivHighOrderFESpace";
     }
 
+    /// averaging over high-order dc dofs
+    void Average (BaseVector & vec) const;
+    
     ///
     virtual void Update(LocalHeap & lh) override;
     ///

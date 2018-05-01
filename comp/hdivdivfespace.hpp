@@ -1,17 +1,15 @@
-#pragma once
 /*********************************************************************/
-/* File:   hdivdivfespace.h                                           */
-/* Author: Joachim (cpp), Astrid                                                  */
-/* Date:   2017                                             */
+/* File:   hdivdivfespace.h                                          */
+/* Author: Joachim (cpp), Astrid                                     */
+/* Date:   2017                                                      */
 /*********************************************************************/
 
 namespace ngcomp
 {
 
-
   typedef size_t index_edge;
 
-    class HDivDivFESpace : public FESpace
+  class HDivDivFESpace : public FESpace
   {
     size_t ndof;
     Array<int> first_facet_dof;
@@ -54,8 +52,6 @@ namespace ngcomp
     virtual void UpdateCouplingDofArray();
 
     virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const override;
-
-    
   };
 
 }

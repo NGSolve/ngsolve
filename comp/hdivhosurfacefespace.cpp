@@ -327,6 +327,23 @@ public:
   }
 
 
+void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
+{
+  // auto & pairs = GetDCPairs();
+  auto fu = vec.FV<double>();
+  for (auto pair : dc_pairs)
+      {
+        auto f1 = pair[0];
+        auto f2 = pair[1];
+        if (f2 != -1)
+          {
+            double mean = 0.5 * (fu(f1) + fu(f2));
+            fu(f1) = fu(f2) = mean;
+          }
+        else if (f1 != -1)
+          fu(f1) = 0.0;
+      }
+  }
   void HDivHighOrderSurfaceFESpace :: Update(LocalHeap & lh)
   {
     FESpace::Update(lh);

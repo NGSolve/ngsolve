@@ -46,6 +46,8 @@ namespace ngcomp
       return "HDivHighOrderSurfaceFESpace";
     }
     
+    void Average (BaseVector & vec) const;
+    
     virtual void Update(LocalHeap & lh) override;
 
     void UpdateDofTables(); 
