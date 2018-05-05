@@ -220,6 +220,21 @@ namespace ngfem
     static_cast<const FacetFE<ET>*>(this)->T_CalcShapeFNr(fnr, pt, shape);
   }
   
+  template<ELEMENT_TYPE ET>
+  void FacetFE<ET>::CalcFacetShapeVolIR (int fnr, const SIMD_IntegrationRule & ir, 
+                                         BareSliceMatrix<SIMD<double>> shape) const 
+  {
+    for (size_t i = 0; i < ir.Size(); i++)
+      {
+        SIMD<double> pt[DIM];
+        for (int j = 0; j < DIM; j++) pt[j] = ir[i](j);
+        static_cast<const FacetFE<ET>*>(this)->T_CalcShapeFNr(fnr, pt, shape.Col(i));
+      }
+  }
+  
+
+
+
   template class FacetFE<ET_SEGM>;
   template class FacetFE<ET_TRIG>;
   template class FacetFE<ET_QUAD>;
