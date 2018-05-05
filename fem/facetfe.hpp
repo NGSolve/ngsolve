@@ -41,6 +41,12 @@ namespace ngfem
       fe.CalcFacetShapeVolIP(fnr, ip, shape);
     }
     
+    HD virtual void CalcShape (const SIMD_IntegrationRule & ir, 
+                               BareSliceMatrix<SIMD<double>> shape) const override
+    {
+      fe.CalcFacetShapeVolIR(fnr, ir, shape);
+    }
+    
     HD virtual void CalcDShape (const IntegrationPoint & ip, 
                                 BareSliceMatrix<> dshape) const override
     {
@@ -122,6 +128,8 @@ namespace ngfem
 
     virtual void CalcFacetShapeVolIP (int fnr, const IntegrationPoint & ip, 
 				      BareSliceVector<> shape) const = 0;
+    virtual void CalcFacetShapeVolIR (int fnr, const SIMD_IntegrationRule & ir, 
+                                      BareSliceMatrix<SIMD<double>> shape) const = 0;
 
     virtual void EvaluateFacetVolIp (int fnr, const SIMD_IntegrationRule & ir, BareSliceVector<> coefs, ABareVector<double> values) const = 0;
     virtual void AddTransFacetVolIp (int fnr, const SIMD_IntegrationRule & ir, ABareVector<double> values, BareSliceVector<> coefs) const = 0;
