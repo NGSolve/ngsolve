@@ -1,14 +1,14 @@
 import netgen.meshing as netgen
 from netgen.geom2d import SplineGeometry
 
+
 from ngsolve import *
-from ngsolve.ngstd import MPIManager
 from ngsolve.la import DISTRIBUTED
 from ngsolve.la import CUMULATED
-from ngsolve.ngstd import GlobalSum
 
-rank = MPIManager.GetRank()
-np = MPIManager.GetNP()
+comm = MPI_Init()
+rank = comm.rank
+np = comm.size
 
 # viscosity
 nu = 0.001
@@ -25,7 +25,7 @@ if rank==0:
     ngmesh = geo.GenerateMesh(maxh=0.08)
     ngmesh.Save("some_mesh.vol")
 
-MPIManager.Barrier()
+comm.Barrier()
 ngmesh = netgen.Mesh(dim=2)
 ngmesh.Load("some_mesh.vol")
 mesh = Mesh(ngmesh)
@@ -65,6 +65,7 @@ velocity = CoefficientFunction(gfu.components[0:2])
 
 # solve Stokes problem for initial conditions:
 inv_stokes = a.mat.Inverse(X.FreeDofs(), inverse="mumps")
+# inv_stokes = a.mat.Inverse(X.FreeDofs(), inverse="masterinverse")
 res = f.vec.CreateVector()
 res.data = f.vec - a.mat*gfu.vec
 gfu.vec.data += inv_stokes * res
@@ -74,6 +75,7 @@ mstar = BilinearForm(X)
 mstar += SymbolicBFI(ux*vx+uy*vy + tau*stokes)
 mstar.Assemble()
 
+# inv = mstar.mat.Inverse(X.FreeDofs(), inverse="masterinverse")
 inv = mstar.mat.Inverse(X.FreeDofs(), inverse="mumps")
 
 # the non-linear term 
@@ -88,7 +90,7 @@ import os
 output_path = os.path.dirname(os.path.realpath(__file__)) + "/navierstokes_output"
 if rank==0 and not os.path.exists(output_path):
     os.mkdir(output_path)
-MPIManager.Barrier() #wait until master has created the directory!!
+comm.Barrier() #wait until master has created the directory!!
 
 vtk = VTKOutput(ma=mesh,coefs=[velocity],names=["u"],filename=output_path+"/vtkout_p"+str(rank)+"_n0",subdivision=1)
 vtk.Do()
@@ -111,4 +113,4 @@ with TaskManager():
         count = count+1;
 
         t = t + tau
-        MPIManager.Barrier()
+        comm.Barrier()
