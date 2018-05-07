@@ -896,7 +896,6 @@ val : can be one of the following:
 
     .def (py::pickle([] (CoefficientFunction & cf)
                      {
-                       cout << "in pickle cf" << endl;
                        PyOutArchive ar;
                        cf.DoArchive(ar);
                        Array<shared_ptr<CoefficientFunction>> childs = cf.InputCoefficientFunctions();
@@ -914,7 +913,6 @@ val : can be one of the following:
                      [] (py::tuple state)
                      {
                        CF_Type type = CF_Type(py::cast<int>(state[0]));
-                       cout << "unpickle, type = " << type << endl;
                        auto childs = makeCArraySharedPtr<shared_ptr<CoefficientFunction>> (py::cast<py::list>(state[1]));
                        py::list pylist = py::cast<py::list>(state[2]);;
                        PyInArchive ar(pylist);
@@ -993,7 +991,6 @@ val : can be one of the following:
                            cf = unary_math_functions[name](childs[0]);
                            break;
                          case CF_Type_binary_op:
-                           cout << py::str(pylist) << endl;
                            name = py::cast<string>(pylist[0]);
                            cf = binary_math_functions[name](childs[0], childs[1]);
                            break;
