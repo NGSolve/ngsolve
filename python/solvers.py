@@ -2,7 +2,7 @@ from ngsolve.la import InnerProduct
 from math import sqrt
 
 
-def CG(mat, rhs, pre=None, sol=None, tol=1e-12, maxsteps = 100, printrates = True, initialize = True):
+def CG(mat, rhs, pre=None, sol=None, tol=1e-12, maxsteps = 100, printrates = True, initialize = True, conjugate=False):
     """preconditioned conjugate gradient method"""
 
     u = sol if sol else rhs.CreateVector()
@@ -13,27 +13,30 @@ def CG(mat, rhs, pre=None, sol=None, tol=1e-12, maxsteps = 100, printrates = Tru
     if initialize: u[:] = 0.0
     d.data = rhs - mat * u
     w.data = pre * d if pre else d
-    err0 = sqrt(InnerProduct(d,w))
+    err0 = sqrt(abs(InnerProduct(d,w)))
     s.data = w
-    wdn = InnerProduct (w,d)
+    # wdn = InnerProduct (w,d)
+    wdn = w.InnerProduct(d, conjugate=conjugate)
     
     for it in range(maxsteps):
         w.data = mat * s
         wd = wdn
-        as_s = InnerProduct (s, w)
+        # as_s = InnerProduct (s, w)
+        as_s = s.InnerProduct(w, conjugate=conjugate)        
         alpha = wd / as_s
         u.data += alpha * s
         d.data += (-alpha) * w
 
         w.data = pre*d if pre else d
         
-        wdn = InnerProduct (w, d)
+        # wdn = InnerProduct (w, d)
+        wdn = w.InnerProduct(d, conjugate=conjugate)
         beta = wdn / wd
 
         s *= beta
         s.data += w
 
-        err = sqrt(wd)
+        err = sqrt(abs(wd))
         if err < tol*err0: break
             
         if printrates:
