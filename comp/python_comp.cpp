@@ -208,14 +208,6 @@ auto ExportFESpace (py::module & m, string pyname)
     
     .def(py::pickle(fesPickle,
                     (shared_ptr<FES>(*)(py::tuple)) fesUnpickle<FES>))
-    
-    .def_static("__flags_doc__", [] ()
-                {
-                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
-                                                      attr("FESpace").
-                                                      attr("__flags_doc__")());
-                  return flags_doc;
-                })
     ;
   
   return pyspace;
