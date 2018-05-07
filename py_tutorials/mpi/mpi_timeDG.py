@@ -10,14 +10,14 @@
 from netgen.geom2d import unit_square
 import netgen.meshing as netgen
 
+
 from ngsolve import *
-from ngsolve.ngstd import MPIManager
 from ngsolve.la import DISTRIBUTED
 from ngsolve.la import CUMULATED
-from ngsolve.ngstd import GlobalSum
 
-rank = MPIManager.GetRank()
-np = MPIManager.GetNP()
+comm = MPI_Init()
+rank = comm.rank
+np = comm.size
 
 if rank==0:
     # master-proc generates mesh
@@ -26,7 +26,7 @@ if rank==0:
     mesh.Save("some_mesh.vol")
 
 # wait for master to be done meshing
-MPIManager.Barrier()
+comm.Barrier()
 
 # now load mesh from file
 ngmesh = netgen.Mesh(dim=2)
@@ -66,7 +66,7 @@ import os
 output_path = os.path.dirname(os.path.realpath(__file__)) + "/timeDG_output"
 if rank==0 and not os.path.exists(output_path):
     os.mkdir(output_path)
-MPIManager.Barrier() #wait until master has created the directory!!
+comm.Barrier() #wait until master has created the directory!!
 
 with TaskManager():
     while t < tend:
@@ -82,4 +82,4 @@ with TaskManager():
             vtk.Do()
         count = count+1;
 
-        MPIManager.Barrier()
+        comm.Barrier()
