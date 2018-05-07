@@ -1450,7 +1450,7 @@ public:
           }
         else if (opname == "*")
           {
-            nonzero(i) = v1(i) || v2(i);
+            nonzero(i) = v1(i) && v2(i);
             nonzero_deriv(i) = (v1(i) && d2(i)) || (d1(i) && v2(i));
             nonzero_dderiv(i) = (v1(i) && dd2(i)) || (d1(i) && d2(i)) || (dd1(i) && v2(i));
           }
