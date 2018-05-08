@@ -2,12 +2,12 @@ from netgen.csg import *
 import netgen.meshing as netgen
 
 from ngsolve import *
-from ngsolve.ngstd import MPIManager
 from ngsolve.la import DISTRIBUTED
 from ngsolve.la import CUMULATED
 
-rank = MPIManager.GetRank()
-np = MPIManager.GetNP()
+comm = MPI_Init()
+rank = comm.rank
+np = comm.size
 
 
 def MakeGeometry():
@@ -31,7 +31,7 @@ if rank==0:
     ngmesh = MakeGeometry().GenerateMesh(maxh=0.5)
     ngmesh.Save("some_mesh.vol")
 
-MPIManager.Barrier()
+comm.Barrier()
 
 ngmesh = netgen.Mesh(dim=3)
 ngmesh.Load("some_mesh.vol")
@@ -74,7 +74,7 @@ import os
 output_path = os.path.dirname(os.path.realpath(__file__)) + "/cmagnet_output"
 if rank==0 and not os.path.exists(output_path):
     os.mkdir(output_path)
-MPIManager.Barrier() #wait until master has created the directory!!
+comm.Barrier() #wait until master has created the directory!!
 vtk = VTKOutput(ma=mesh, coefs=[u.Deriv()], names=["sol"], filename=output_path+"/vtkout_p"+str(rank), subdivision=2)
 vtk.Do()
 
