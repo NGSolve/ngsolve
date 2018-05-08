@@ -154,6 +154,23 @@ namespace ngcomp
         low_order_space = make_shared<ElementFESpace> (ma, loflags);
         prol = make_shared<ElementProlongation> (*static_cast<ElementFESpace*> (low_order_space.get()));
       }
+
+
+
+    switch (ma->GetDimension())
+      {
+      case 1:
+        additional_evaluators.Set ("hesse", make_shared<T_DifferentialOperator<DiffOpHesse<1>>> ());
+        break;
+      case 2:
+        additional_evaluators.Set ("hesse", make_shared<T_DifferentialOperator<DiffOpHesse<2>>> ()); 
+        break;
+      case 3:
+        additional_evaluators.Set ("hesse", make_shared<T_DifferentialOperator<DiffOpHesse<3>>> ());
+	break;
+      default:
+        ;
+      }
   }
 
   L2HighOrderFESpace :: ~L2HighOrderFESpace ()
