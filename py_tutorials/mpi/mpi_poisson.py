@@ -9,16 +9,17 @@ from netgen.csg import unit_cube
 import netgen.meshing as netgen
 
 # ngsolve-imports
-#  - MPIManager provides some basic MPI functionality
-#  - DISTRIBUTED/CUMULATED describes the parallel status of a
-#    parallel vector
 from ngsolve import *
-from ngsolve.ngstd import MPIManager
+
+# initialize MPI
+comm = MPI_Init()
+rank = comm.rank
+np = comm.size
+
+# DISTRIBUTED/CUMULATED describes the parallel status of a
+# parallel vector
 from ngsolve.la import DISTRIBUTED
 from ngsolve.la import CUMULATED
-
-rank = MPIManager.GetRank()
-np = MPIManager.GetNP()
 
 print("Hello from rank "+str(rank)+" of "+str(np))
 
@@ -29,7 +30,7 @@ if rank==0:
     mesh.Save("some_mesh.vol")
 
 # wait for master to be done meshing
-MPIManager.Barrier()
+comm.Barrier()
 
 # now load mesh from file
 ngmesh = netgen.Mesh(dim=3)
@@ -85,7 +86,7 @@ import os
 output_path = os.path.dirname(os.path.realpath(__file__)) + "/poisson_output"
 if rank==0 and not os.path.exists(output_path):
     os.mkdir(output_path)
-MPIManager.Barrier() #wait until master has created the directory!!
+comm.Barrier() #wait until master has created the directory!!
 
 vtk = VTKOutput(ma=mesh, coefs=[u], names=["sol"], filename=output_path+"/vtkout_p"+str(rank), subdivision=2)
 vtk.Do()
