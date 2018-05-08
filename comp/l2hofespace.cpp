@@ -1185,6 +1185,42 @@ namespace ngcomp
   };
 
   ///Still working on this
+  class DiffOpCurlVectorL2Covariant : public DiffOp<DiffOpCurlVectorL2Covariant>
+  {
+  public:
+    enum { DIM = 3 };
+    enum { DIM_SPACE = 3 };
+    enum { DIM_ELEMENT = 3 };
+    enum { DIM_DMAT = 3 };
+    enum { DIFFORDER = 1 };
+
+    template <typename FEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const FEL & fel, const MIP & mip,
+				MAT & mat, LocalHeap & lh)
+    {
+		auto & bfel = static_cast<const CompoundFiniteElement&> (fel);
+		auto & feli = static_cast<const BaseScalarFiniteElement&> (bfel[0]);
+		mat = 0;
+
+		//~ for (int j = 0; j < 3; j++)
+		//~ {
+		int nd = feli.GetNDof();
+		FlatMatrix<> grad (3, nd, lh);
+		feli.CalcDShape(mip.IP(), grad);
+		grad = Trans (mip.GetJacobianInverse ()) * Trans (grad);
+
+		for (int i = 0; i < nd; i++)
+		{
+			mat(0, DIM*i+2) =  grad(1, i);
+			mat(0, DIM*i+1) = -grad(2, i);
+			mat(1, DIM*i+0) =  grad(2, i);
+			mat(1, DIM*i+2) = -grad(0, i);
+			mat(2, DIM*i+1) =  grad(0, i);
+			mat(2, DIM*i+0) = -grad(1, i);
+		}
+	 }
+
+  };
   /*class DiffOpCurlVectorL2Covariant : public DiffOp<DiffOpCurlVectorL2Covariant>
   {
   public:
@@ -1248,11 +1284,11 @@ namespace ngcomp
             {
             case 2:
               evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdVectorL2Covariant<2>>>();
-              additional_evaluators.Set ("curl", make_shared<T_DifferentialOperator<DiffOpDivVectorL2Covariant<2>>> ());
+              //~ additional_evaluators.Set ("curl", make_shared<T_DifferentialOperator<DiffOpDivVectorL2Covariant<2>>> ());
               break;
             case 3:
               evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdVectorL2Covariant<3>>>();
-              additional_evaluators.Set ("curl", make_shared<T_DifferentialOperator<DiffOpDivVectorL2Covariant<3>>> ());
+              additional_evaluators.Set ("curl", make_shared<T_DifferentialOperator<DiffOpCurlVectorL2Covariant>> ());
               break;
             }
 	    }
