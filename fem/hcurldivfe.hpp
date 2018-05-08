@@ -767,6 +767,14 @@ namespace ngfem
 	  sigmaref(i*3+1)= v.Value() * l1.DValue(i) * cross2;
 	  sigmaref(i*3+2)= v.Value() * l1.DValue(i) * cross3;
 	}
+
+      //T trace_sigma = 1.0/3 * (sigmaref(0) + sigmaref(4) + sigmaref(8));
+      T trace_sigma = v.Value()/3 * (l1.DValue(0) * cross1 + l1.DValue(1) * cross2 + l1.DValue(2) * cross3);
+      
+      sigmaref(0) = sigmaref(0) - trace_sigma;
+      sigmaref(4) = sigmaref(4) - trace_sigma;
+      sigmaref(8) = sigmaref(8) - trace_sigma;
+      
       return sigmaref;  
 
     }
@@ -779,9 +787,11 @@ namespace ngfem
       T cross2 = -(l2.DValue(0)*l3.DValue(2) - l2.DValue(2)*l3.DValue(0));
       T cross3 = l2.DValue(0)*l3.DValue(1) - l2.DValue(1)*l3.DValue(0);
 
-      return Vec<3,T> (vx * l1.DValue(0) * cross1 + vy * l1.DValue(0) * cross2 + vz * l1.DValue(0) * cross3,
-		     vx * l1.DValue(1) * cross1 + vy * l1.DValue(1) * cross2 + vz * l1.DValue(1) * cross3,
-		     vx * l1.DValue(2) * cross1 + vy * l1.DValue(2) * cross2 + vz * l1.DValue(2) * cross3
+      T trace_sigma = 1.0/3 * (l1.DValue(0) * cross1 + l1.DValue(1) * cross2 + l1.DValue(2) * cross3);
+
+      return Vec<3,T> (vx * l1.DValue(0) * cross1 + vy * l1.DValue(0) * cross2 + vz * l1.DValue(0) * cross3 - vx * trace_sigma  ,
+		     vx * l1.DValue(1) * cross1 + vy * l1.DValue(1) * cross2 + vz * l1.DValue(1) * cross3 - vy * trace_sigma,
+		     vx * l1.DValue(2) * cross1 + vy * l1.DValue(2) * cross2 + vz * l1.DValue(2) * cross3 - vz * trace_sigma
 		     );
     }
 
@@ -854,7 +864,10 @@ namespace ngfem
       
       ndof += ninner;
       if (order_trace > -1)
-	ndof += (order_trace +1) * (order_trace+2)/2.0;
+	{
+	  ndof += (order_trace +1) * (order_trace+2)/2.0;
+	  order = max2(order, order_trace);
+	}
     }
     
    template <typename Tx, typename TFA> 
@@ -1044,10 +1057,18 @@ namespace ngfem
         order = max2(order, order_facet[i]);
       }
       //first type + second type
-      int ninner = (order_inner + 1)*(order_inner + 2)*(order_inner + 3)/6.0 + 8.0/6.0* ((order_inner +2) * (order_inner +1) * (order_inner));
+      //int ninner = (order_inner + 1)*(order_inner + 2)*(order_inner + 3)/6.0 + 8.0/6.0* ((order_inner +2) * (order_inner +1) * (order_inner));
+      int ninner = 8.0/6.0* ((order_inner +2) * (order_inner +1) * (order_inner));
       
       order = max2(order, order_inner);
-      ndof += ninner;     
+      ndof += ninner;
+      
+      if (order_trace > -1)
+	{
+	  ndof += (order_trace +1) * (order_trace+2)* (order_trace+3)/6.0;
+	  order = max2(order, order_trace);
+	}
+      
     }
     
    template <typename Tx, typename TFA> 
@@ -1100,6 +1121,7 @@ namespace ngfem
         }
 
       int oi=order_inner;
+      int ot=order_trace; 
       
       int es = 0; int ee = 1; int et = 2; int eo = 3 ;
       AutoDiff<3,T> ls = ddlami[es]; 
@@ -1109,28 +1131,6 @@ namespace ngfem
 
       LegendrePolynomial leg;
       JacobiPolynomialAlpha jac1(1);
-
-      //############ type 1 ############
-      
-      leg.EvalScaled1Assign 
-	(oi, lt-lo, lt+lo,
-	 SBLambda ([&](size_t k, AutoDiff<3,T> polz) LAMBDA_INLINE
-		   {
-		     JacobiPolynomialAlpha jac2(2*k+2);
- 
-		     jac1.EvalScaledMult1Assign
-		       (oi-k, le-lt-lo, 1-ls, polz, 
-			SBLambda ([&] (size_t j, AutoDiff<3,T> polsy) LAMBDA_INLINE
-				  {				    
-				    jac2.EvalMult(oi - k - j, 2 * ls - 1, polsy, 
-						  SBLambda([&](size_t j, AutoDiff<3,T> val) LAMBDA_INLINE
-							   {
-							     shape[ii++] =  Id_v(val);	      							     					     							   }));
-				    jac2.IncAlpha2();
-				  }));
-		     jac1.IncAlpha2();
-		   }));
-
       
       //############ type 2 ############
             
@@ -1160,6 +1160,30 @@ namespace ngfem
 				  }));
 		     jac1.IncAlpha2();
 		   }));
+
+      //############ type 1 ############
+      if (ot>-1)
+	{
+	  leg.EvalScaled1Assign 
+	    (ot, lt-lo, lt+lo,
+	     SBLambda ([&](size_t k, AutoDiff<3,T> polz) LAMBDA_INLINE
+		       {
+			 JacobiPolynomialAlpha jac2(2*k+2);
+ 
+			 jac1.EvalScaledMult1Assign
+			   (ot-k, le-lt-lo, 1-ls, polz, 
+			    SBLambda ([&] (size_t j, AutoDiff<3,T> polsy) LAMBDA_INLINE
+				      {				    
+					jac2.EvalMult(ot - k - j, 2 * ls - 1, polsy, 
+						      SBLambda([&](size_t j, AutoDiff<3,T> val) LAMBDA_INLINE
+							       {
+								 shape[ii++] =  Id_v(val);	      							     					     							   }));
+					jac2.IncAlpha2();
+				      }));
+			 jac1.IncAlpha2();
+		       }));
+	}
+            
      };
   };
   
