@@ -542,8 +542,11 @@ namespace ngcomp
         }
         break;
 		
-      case ET_TET:
-	ndof += (oi + 1)*(oi+2)*(oi+3)/6 + 8 * oi * (oi+1)*(oi+2)/6;
+      case ET_TET:	
+	ndof += 8 * oi * (oi+1)*(oi+2)/6;
+	if(ot>-1)
+	  ndof += (ot + 1)*(ot+2)*(ot+3)/6;
+	
 	if(discontinuous)
         {
           for (auto f : ma->GetElFacets(ei))
@@ -677,6 +680,7 @@ namespace ngcomp
       for(auto f : ngel.Facets())
         fe->SetOrderFacet(ii++,order_facet[f]);
       fe->SetOrderInner(order_inner[ei.Nr()]);
+      fe->SetOrderTrace(order_trace[ei.Nr()]);
       fe->ComputeNDof();
       return *fe;
     }
@@ -688,6 +692,7 @@ namespace ngcomp
       for(auto f : ngel.Facets())
         fe->SetOrderFacet(ii++,order_facet[f]);
       fe->SetOrderInner(order_inner[ei.Nr()]);
+      fe->SetOrderTrace(order_trace[ei.Nr()]);
       fe->ComputeNDof();
       return *fe;
     }
