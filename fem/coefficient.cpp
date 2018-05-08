@@ -4263,6 +4263,18 @@ class RealCF : public CoefficientFunctionNoDerivative
       return cf->Evaluate(ip);
     }
 
+    virtual void Evaluate(const BaseMappedIntegrationPoint& ip, FlatVector<> vec) const override
+    {
+      if(cf->IsComplex())
+        {
+          VectorMem<10,Complex> complex_vec(vec.Size());
+          cf->Evaluate(ip,complex_vec);
+          vec = Real(complex_vec);
+        }
+      else
+          cf->Evaluate(ip,vec);
+    }
+
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<double> values) const override
     {
       if (!cf_is_complex)
@@ -4299,7 +4311,7 @@ class RealCF : public CoefficientFunctionNoDerivative
   {
     shared_ptr<CoefficientFunction> cf;
   public:
-    ImagCF(shared_ptr<CoefficientFunction> _cf) : CoefficientFunctionNoDerivative(1,false), cf(_cf)
+    ImagCF(shared_ptr<CoefficientFunction> _cf) : CoefficientFunctionNoDerivative(_cf->Dimension(),false), cf(_cf)
     { ; }
     virtual string GetDescription() const override
     {
@@ -4316,12 +4328,29 @@ class RealCF : public CoefficientFunctionNoDerivative
       return val(0).imag();
     }
 
+    virtual void Evaluate(const BaseMappedIntegrationPoint& ip, FlatVector<> vec) const override
+    {
+      if(cf->IsComplex())
+        {
+          VectorMem<10,Complex> complex_vec(vec.Size());
+          cf->Evaluate(ip,complex_vec);
+          vec = Imag(complex_vec);
+        }
+      else
+          cf->Evaluate(ip,vec);
+    }
+
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<double> values) const override
     {
-      STACK_ARRAY(Complex, mem, ir.Size()*Dimension());
-      FlatMatrix<Complex> cvalues(ir.Size(), Dimension(), &mem[0]);
-      cf->Evaluate (ir, cvalues);
-      values.AddSize(ir.Size(), Dimension()) = Imag(cvalues);
+      if (cf->IsComplex())
+        {
+          STACK_ARRAY(Complex, mem, ir.Size()*Dimension());
+          FlatMatrix<Complex> cvalues(ir.Size(), Dimension(), &mem[0]);
+          cf->Evaluate (ir, cvalues);
+          values.AddSize(ir.Size(),Dimension()) = Imag(cvalues);
+        }
+      else
+        values.AddSize(ir.Size(),Dimension()) = 0.;
     }
 
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
