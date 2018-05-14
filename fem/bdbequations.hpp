@@ -645,9 +645,19 @@ namespace ngfem
       if (!mip.GetTransformation().IsCurvedElement()) return;
 
       
-      Mat<2,2> hesse[3];
-      mip.CalcHesse (hesse[0], hesse[1], hesse[2]);
-
+      Mat<D-1,D-1> hesse[D];
+      switch(D)
+        {
+        case 3:
+          mip.CalcHesse (hesse[0], hesse[1], hesse[2]);
+          break;
+        case 2:
+          mip.CalcHesse (hesse[0], hesse[1]);
+          break;
+        default:
+          throw Exception("Not implemented in DiffOpHesseBoundary!");
+          break;
+        }
       FlatMatrix<> tmp(D, (D-1)*(D-1), lh);
 
       for (int i = 0; i < D; i++)
