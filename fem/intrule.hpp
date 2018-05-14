@@ -490,7 +490,9 @@ namespace ngfem
     //INLINE int IsBoundary () const { return DIMS != DIMR; }
 
     ///
+    void CalcHesse (Mat<1> & ddx1, Mat<1> & ddx2) const;
     void CalcHesse (Mat<2> & ddx1, Mat<2> & ddx2) const;
+    void CalcHesse (Mat<1> & ddx1, Mat<1> & ddx2, Mat<1> & ddx3) const;
     void CalcHesse (Mat<2> & ddx1, Mat<2> & ddx2, Mat<2> & ddx3) const; 
     void CalcHesse (Mat<3> & ddx1, Mat<3> & ddx2, Mat<3> & ddx3) const;
   };

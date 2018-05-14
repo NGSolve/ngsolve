@@ -220,7 +220,8 @@ namespace ngcomp
       case 1:
         additional_evaluators.Set ("hesse", make_shared<T_DifferentialOperator<DiffOpHesse<1>>> ()); break;
       case 2:
-        additional_evaluators.Set ("hesse", make_shared<T_DifferentialOperator<DiffOpHesse<2>>> ()); 
+        additional_evaluators.Set ("hesse", make_shared<T_DifferentialOperator<DiffOpHesse<2>>> ());
+        additional_evaluators.Set ("hesseboundary", make_shared<T_DifferentialOperator<DiffOpHesseBoundary<2>>> ());
         additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpDual<2>>> ());
         break;
       case 3:
