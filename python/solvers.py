@@ -1,7 +1,7 @@
 from ngsolve.la import InnerProduct
 from math import sqrt
 
-
+__all__ = ["CG", "MinRes"]
 def CG(mat, rhs, pre=None, sol=None, tol=1e-12, maxsteps = 100, printrates = True, initialize = True, conjugate=False):
     """preconditioned conjugate gradient method"""
 
@@ -47,7 +47,7 @@ def CG(mat, rhs, pre=None, sol=None, tol=1e-12, maxsteps = 100, printrates = Tru
 
 
 
-def QMR(matrix, rhs, fdofs, pre1=None, pre2=None, sol=None, maxsteps = 100, printrates = True, initialize = True, ep = 1.0, tol = 1e-7):
+def QMR(mat, rhs, fdofs, pre1=None, pre2=None, sol=None, maxsteps = 100, printrates = True, initialize = True, ep = 1.0, tol = 1e-7):
 	
 	u = sol if sol else rhs.CreateVector()
 	
@@ -68,7 +68,7 @@ def QMR(matrix, rhs, fdofs, pre1=None, pre2=None, sol=None, maxsteps = 100, prin
 
 	if (initialize): u[:] = 0.0
 
-	r.data = rhs - matrix * u
+	r.data = rhs - mat * u
 	v_tld.data = r
 	y.data = pre1 * v_tld if pre1 else v_tld
 	
@@ -117,7 +117,7 @@ def QMR(matrix, rhs, fdofs, pre1=None, pre2=None, sol=None, maxsteps = 100, prin
 			p.data = y_tld
 			q.data = z_tld
 		
-		p_tld.data = matrix * p
+		p_tld.data = mat * p
 		ep = InnerProduct(q, p_tld)
 		if (ep == 0.0):
 			print('Breakdown in epsilon')
@@ -137,7 +137,7 @@ def QMR(matrix, rhs, fdofs, pre1=None, pre2=None, sol=None, maxsteps = 100, prin
 		rho = sqrt(rho)		
 		
 		
-		w_tld.data = matrix.T * q
+		w_tld.data = mat.T * q
 		w_tld.data -= beta * w
 		
 		z.data = pre2.T * w_tld if pre2 else w_tld		
@@ -179,13 +179,13 @@ def QMR(matrix, rhs, fdofs, pre1=None, pre2=None, sol=None, maxsteps = 100, prin
 			break
 				
 		if (printrates):
-			print ("it = ", i, " Residuennorm = ", ResNorm)
+			print ("it = ", i, " err = ", ResNorm)
 
 
 
 
 #Source: Michael Kolmbauer https://www.numa.uni-linz.ac.at/Teaching/PhD/Finished/kolmbauer-diss.pdf
-def MinRes(matrix, rhs, pre=None, sol=None, maxsteps = 100, printrates = True, initialize = True, tol = 1e-7):
+def MinRes(mat, rhs, pre=None, sol=None, maxsteps = 100, printrates = True, initialize = True, tol = 1e-7):
 
 	u = sol if sol else rhs.CreateVector()
 
@@ -204,7 +204,7 @@ def MinRes(matrix, rhs, pre=None, sol=None, maxsteps = 100, printrates = True, i
 		u[:] = 0.0
 		v.data = rhs
 	else:
-		v.data = rhs - matrix * u
+		v.data = rhs - mat * u
 		
 	z.data = pre * v if pre else v
 	
@@ -218,7 +218,7 @@ def MinRes(matrix, rhs, pre=None, sol=None, maxsteps = 100, printrates = True, i
 	ResNorm_old = gamma  
 	
 	if (printrates):
-		print("it = ", 0, " Residuennorm = ", ResNorm)		
+		print("it = ", 0, " err = ", ResNorm)		
 		
 	eta_old = gamma
 	c_old = 1
@@ -229,11 +229,11 @@ def MinRes(matrix, rhs, pre=None, sol=None, maxsteps = 100, printrates = True, i
 
 	v_old[:] = 0.0
 	w_old[:] = 0.0
+	w[:] = 0.0
 	
 	k = 1
 	while (k < maxsteps+1 and ResNorm > tol):
-		
-		mz.data = matrix*z
+		mz.data = mat*z
 		delta = InnerProduct(mz,z)
 		v_new.data = mz - delta*v - gamma * v_old
 		
@@ -261,7 +261,7 @@ def MinRes(matrix, rhs, pre=None, sol=None, maxsteps = 100, printrates = True, i
 		#update of residuum
 		ResNorm = abs(s_new) * ResNorm_old
 		if (printrates):		
-			print("it = ", k, " Residuennorm = ", ResNorm)	
+			print("it = ", k, " err = ", ResNorm)	
 
 		k += 1
 
