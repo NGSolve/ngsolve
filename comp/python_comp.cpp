@@ -1150,7 +1150,7 @@ used_idnrs : list of int = None
     (m, "CoefficientFunction")
     .def(py::pickle([] (const GridFunctionCoefficientFunction & gfcf)
                     {
-                      return py::make_tuple(gfcf.GetGridFunction(),
+                      return py::make_tuple(gfcf.GetGridFunctionPtr(),
                                             gfcf.generated_from_deriv,
                                             gfcf.generated_from_operator);
                     },

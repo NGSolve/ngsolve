@@ -85,6 +85,7 @@ namespace ngcomp
     // generation information for pickling:
     bool generated_from_deriv = false;
     string generated_from_operator;
+    shared_ptr<GridFunction> GetGridFunctionPtr() const { return gf_shared_ptr; }
   };
 
 
