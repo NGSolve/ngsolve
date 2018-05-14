@@ -342,12 +342,35 @@ namespace ngla
   }
 
 
-
-
-
   template class Small2BigNonSymMatrix<double, Vec<2,double> >;
   template class Small2BigNonSymMatrix<Vec<2,double>, Vec<4,double> >;
   template class Small2BigNonSymMatrix<Vec<3,double>, Vec<6,double> >;
   template class Small2BigNonSymMatrix<Vec<4,double>, Vec<8,double> >;
 
+
+
+  
+  BlockMatrix :: BlockMatrix (const Array<Array<shared_ptr<BaseMatrix>>> & amats)
+    : mats(amats)
+  {
+    h = mats.Size();
+    w = (h > 0) ? mats[0].Size() : 0;
+  }
+  
+  void BlockMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    auto & bvx = dynamic_cast_BlockVector(x);
+    auto & bvy = dynamic_cast_BlockVector(y);
+    
+    for (size_t i = 0; i < h; i++)
+      for (size_t j = 0; j < w; j++)
+        {
+          auto & spmat = mats[i][j];
+          if (spmat)
+              spmat->MultAdd(s, *bvx[j], *bvy[i]);
+        }
+  }
+  
+
+  
 }
