@@ -318,6 +318,10 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     
     .def("__getitem__", [](BlockVector & self, int ind) { return self[ind]; })
     ;
+
+
+
+
   
   typedef BaseMatrix BM;
   // typedef BaseVector BV;
@@ -515,6 +519,7 @@ inverse : string
 )raw_string"), py::call_guard<py::gil_scoped_release>())
     // .def("Inverse", [](BM &m)  { return m.InverseMatrix(); })
 
+    .def_property_readonly("T", [](shared_ptr<BM> m)->shared_ptr<BaseMatrix> { return make_shared<Transpose> (m); })
     .def("Update", [](BM &m) { m.Update(); }, py::call_guard<py::gil_scoped_release>())
     ;
 
@@ -555,6 +560,24 @@ inverse : string
     (m, "S_BaseMatrixC", "base sparse matrix");
 
 
+  py::class_<BlockMatrix, BaseMatrix, shared_ptr<BlockMatrix>> (m, "BlockMatrix")
+    .def(py::init<> ([] (vector<vector<shared_ptr<BaseMatrix>>> mats)
+                     {
+                       Array<Array<shared_ptr<BaseMatrix>>> m2;
+                       for (auto mrow : mats)
+                         {
+                           Array<shared_ptr<BaseMatrix>> mrow2;
+                           for (auto m : mrow) mrow2 += m;
+                           m2 += mrow2;
+                         }
+                       return make_shared<BlockMatrix> (m2);
+                     }))
+    
+    // .def("__getitem__", [](BlockMatrix & self, int row, int col) { return self(row,rol); })
+    ;
+
+
+  
 #ifdef PARALLEL
   py::class_<ParallelMatrix, shared_ptr<ParallelMatrix>, BaseMatrix>
     (m, "ParallelMatrix", "MPI-distributed matrix")
