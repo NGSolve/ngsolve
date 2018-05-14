@@ -491,6 +491,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
          py::arg("levels"), py::arg("factor")=0.125,
 	 "Geometric mesh refinement towards marked vertices and edges, uses factor for placement of new points")
 
+    .def("_updateBuffers", &MeshAccess::UpdateBuffers, "Update NGSolve mesh information, needs to be called if Netgen mesh changes")
     .def("SetRefinementFlag", &MeshAccess::SetRefinementFlag,
          py::arg("ei"), py::arg("refine"),
 	 "Set refinementflag for mesh-refinement")
