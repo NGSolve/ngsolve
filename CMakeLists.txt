@@ -157,7 +157,10 @@ if(NETGEN_USE_GUI)
   install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ngsolve.tcl DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve)
 endif(NETGEN_USE_GUI)
 
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -Wall")
+string(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_LOWER)
+if(CMAKE_BUILD_TYPE_LOWER STREQUAL "debug")
+    list(APPEND NGSOLVE_COMPILE_DEFINITIONS DDEBUG Wall)
+endif()
 
 #######################################################################
 # platform specific definitions and flags
