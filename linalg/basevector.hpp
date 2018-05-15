@@ -558,6 +558,7 @@ namespace ngla
     virtual ~S_BaseVector() { ; }
 
     S_BaseVector & operator= (double s);
+    virtual BaseVector & SetScalar (double scal);
 
     virtual bool IsComplex() const 
     { return typeid(SCAL) == typeid(Complex); }

@@ -616,7 +616,13 @@ namespace ngla
     return *this;
   }
 
-
+  template <class SCAL>  
+  BaseVector & S_BaseVector<SCAL> :: SetScalar (double scal)
+  {
+    FVScal() = scal;
+    return *this;
+  }
+  
   template <class SCAL>
   SCAL S_BaseVector<SCAL> :: InnerProduct (const BaseVector & v2) const
   {
