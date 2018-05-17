@@ -31,6 +31,8 @@ namespace ngla
 
     virtual int VHeight() const override { return paralleldofs->GetNDofLocal(); }
     virtual int VWidth() const override { return paralleldofs->GetNDofLocal(); }
+
+    virtual AutoVector CreateVector () const override;
   };
 
 
