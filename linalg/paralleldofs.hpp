@@ -108,6 +108,9 @@ namespace ngla
       ReduceDofData (data, op);
       ScatterDofData (data);
     }
+
+  private:
+    Table<int> constrict_dptable(shared_ptr<ParallelDofs> pardofs, shared_ptr<BitArray> take_dofs);
     
   };
 
