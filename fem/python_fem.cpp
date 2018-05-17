@@ -123,7 +123,7 @@ std::map<string, std::function<shared_ptr<CF>(shared_ptr<CF>)>> unary_math_funct
 std::map<string, std::function<shared_ptr<CF>(shared_ptr<CF>, shared_ptr<CF>)>> binary_math_functions;
 
 template <typename FUNC>
-void ExportStdMathFunction(py::module &m, string name)
+void ExportStdMathFunction(py::module &m, string name, string description)
 {
   auto f = [name] (shared_ptr<CF> coef) -> shared_ptr<CF>
             {
@@ -147,12 +147,12 @@ void ExportStdMathFunction(py::module &m, string name)
                 return py::cast(func(py::extract<Complex> (x)()));
               throw py::type_error (string("can't compute math-function, type = ")
                                     + typeid(FUNC).name());
-            });
+            }, py::arg("x"), description.c_str());
 }
 
 
 template <typename FUNC>
-void ExportStdMathFunction2(py::module &m, string name)
+void ExportStdMathFunction2(py::module &m, string name, string description)
 {
   auto f = [name] (shared_ptr<CF> cx, shared_ptr<CF> cy) -> shared_ptr<CF>
             {
@@ -178,7 +178,7 @@ void ExportStdMathFunction2(py::module &m, string name)
            py::extract<Complex> cx(x), cy(y);
            if (cx.check() && cy.check()) return py::cast(func(cx(), cy()));
            throw py::type_error (string("can't compute binary math-function")+typeid(FUNC).name());
-         });
+         }, py::arg("x"), py::arg("y"), description.c_str());
 }
 
 
@@ -475,7 +475,7 @@ void ExportCoefficientFunction(py::module &m)
               return IfPos(c1,
                            MakeCoefficient(then_obj),
                            MakeCoefficient(else_obj));
-            } ,docu_string(R"raw_string(Returns new CoefficientFunction with values then_obj if c1 is positive and else_obj else.
+            }, py::arg("c1"), py::arg("then_obj"), py::arg("else_obj") ,docu_string(R"raw_string(Returns new CoefficientFunction with values then_obj if c1 is positive and else_obj else.
 
 Parameters:
 
@@ -494,9 +494,15 @@ else_obj : object
   
   m.def("CoordCF", 
         [] (int direction)
-        { return MakeCoordinateCoefficientFunction(direction); },
-        "CoefficientFunction for x, y, z"
-        );
+        { return MakeCoordinateCoefficientFunction(direction); }, py::arg("direction"),
+        docu_string(R"raw_string(CoefficientFunction for x, y, z.
+
+Parameters:
+
+direction : int
+  input direction
+
+)raw_string"));
   
   class MeshSizeCF : public CoefficientFunctionNoDerivative
   {
@@ -825,14 +831,22 @@ val : can be one of the following:
     .def ("InnerProduct", [] (shared_ptr<CF> c1, shared_ptr<CF> c2)
            { 
              return InnerProduct (c1, c2);
-           })
-    
-    .def("Norm",  NormCF)
+           }, py::arg("cf"), docu_string(R"raw_string( 
+Returns InnerProduct with another CoefficientFunction.
 
-    .def("Eig", EigCF)
+Parameters
+
+cf : ngsolve.CoefficientFunction
+   input CoefficientFunction
+
+ )raw_string"))
+    
+    .def("Norm",  NormCF, "Returns Norm of the CF")
+
+    .def("Eig", EigCF, "Returns eigenvectors and eigenvalues of matrix-valued CF")
     
     .def ("Other", MakeOtherCoefficientFunction,
-          "evaluate on other element, as needed for DG jumps")
+          "Evaluate on other element, as needed for DG jumps")
     
     // it's using the complex functions anyway ...
     // it seems to take the double-version now
@@ -1013,13 +1027,20 @@ val : can be one of the following:
 
 Parameters:
 
-val : float
-  Parameter value
+value : float
+    Parameter value
 )raw_string"))
     .def (py::init ([] (double val)
-                    { return make_shared<ParameterCoefficientFunction>(val); }))
-    .def ("Set", [] (spParameterCF cf, double val)  { cf->SetValue (val); },
-          "modify parameter value")
+                    { return make_shared<ParameterCoefficientFunction>(val); }), py::arg("value"), "Construct a ParameterCF from a scalar")
+    .def ("Set", [] (spParameterCF cf, double val)  { cf->SetValue (val); }, py::arg("value"),
+          docu_string(R"raw_string(modify parameter value.
+
+Parameters:
+
+value : double
+    input scalar  
+
+)raw_string"))
     .def ("Get", [] (spParameterCF cf)  { return cf->GetValue(); },
           "return parameter value")
     .def (py::pickle([] (shared_ptr<ParameterCoefficientFunction> self)
@@ -1034,21 +1055,21 @@ val : float
     ;
 
 
-  ExportStdMathFunction<GenericSin>(m, "sin");
-  ExportStdMathFunction<GenericCos>(m, "cos");
-  ExportStdMathFunction<GenericTan>(m, "tan");
-  ExportStdMathFunction<GenericExp>(m, "exp");
-  ExportStdMathFunction<GenericLog>(m, "log");
-  ExportStdMathFunction<GenericATan>(m, "atan");
-  ExportStdMathFunction<GenericACos>(m, "acos");
-  ExportStdMathFunction<GenericASin>(m, "asin");
-  ExportStdMathFunction<GenericSqrt>(m, "sqrt");
-  ExportStdMathFunction<GenericFloor>(m, "floor");
-  ExportStdMathFunction<GenericCeil>(m, "ceil");
-  ExportStdMathFunction<GenericConj>(m, "Conj");
+  ExportStdMathFunction<GenericSin>(m, "sin", "Sine of argument in radians");
+  ExportStdMathFunction<GenericCos>(m, "cos", "Cosine of argument in radians");
+  ExportStdMathFunction<GenericTan>(m, "tan", "Tangent of argument in radians");
+  ExportStdMathFunction<GenericExp>(m, "exp", "Exponential");
+  ExportStdMathFunction<GenericLog>(m, "log", "Logarithm");
+  ExportStdMathFunction<GenericATan>(m, "atan", "Inverse tangent in radians");
+  ExportStdMathFunction<GenericACos>(m, "acos", "Inverse cosine in radians");
+  ExportStdMathFunction<GenericASin>(m, "asin", "Inverse sine in radians");
+  ExportStdMathFunction<GenericSqrt>(m, "sqrt", "Square root");
+  ExportStdMathFunction<GenericFloor>(m, "floor", "Round to next lower integer");
+  ExportStdMathFunction<GenericCeil>(m, "ceil", "Round to next greater integer");
+  ExportStdMathFunction<GenericConj>(m, "Conj", "Conjugate imaginary part of complex number");
 
-  ExportStdMathFunction2<GenericATan2>(m, "atan2");
-  ExportStdMathFunction2<GenericPow>(m, "pow");
+  ExportStdMathFunction2<GenericATan2>(m, "atan2", "Four quadrant invere tangent in radians");
+  ExportStdMathFunction2<GenericPow>(m, "pow", "Power");
 
   py::class_<BSpline, shared_ptr<BSpline> > (m, "BSpline",R"raw(BSpline of arbitrary order
 
@@ -1077,9 +1098,9 @@ vals : list of float
             return UnaryOpCF (coef, GenericBSpline(sp) /* , GenericBSpline(sp) */);
           })
     .def("Integrate", 
-         [](const BSpline & sp) { return make_shared<BSpline>(sp.Integrate()); })
+         [](const BSpline & sp) { return make_shared<BSpline>(sp.Integrate()); }, "Integrate the BSpline")
     .def("Differentiate", 
-         [](const BSpline & sp) { return make_shared<BSpline>(sp.Differentiate()); })
+         [](const BSpline & sp) { return make_shared<BSpline>(sp.Differentiate()); }, "Differentiate the BSpline")
     ;
 }
 
@@ -1091,7 +1112,7 @@ vals : list of float
 
 void NGS_DLL_HEADER ExportNgfem(py::module &m) {
 
-  py::enum_<ELEMENT_TYPE>(m, "ET")
+  py::enum_<ELEMENT_TYPE>(m, "ET", "Enumeration of all supported element types.")
     .value("POINT", ET_POINT)     .value("SEGM", ET_SEGM)
     .value("TRIG", ET_TRIG)       .value("QUAD", ET_QUAD)
     .value("TET", ET_TET)         .value("PRISM", ET_PRISM)
@@ -1099,7 +1120,7 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
     .export_values()
     ;
 
-  py::enum_<NODE_TYPE>(m, "NODE_TYPE")
+  py::enum_<NODE_TYPE>(m, "NODE_TYPE", "Enumeration of all supported node types.")
     .value("VERTEX", NT_VERTEX)
     .value("EDGE", NT_EDGE)
     .value("FACE", NT_FACE)
@@ -1153,7 +1174,19 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
             fe.CalcShape (ip, v);
             return v;
           },
-         py::arg("x"),py::arg("y")=0.0,py::arg("z")=0.0)
+         py::arg("x"),py::arg("y")=0.0,py::arg("z")=0.0,docu_string(R"raw_string(
+Parameters
+
+x : double
+  input x value
+
+y : double
+  input y value
+
+z : double
+  input z value
+
+)raw_string"))
     .def("CalcShape",
          [] (const BaseScalarFiniteElement & fe, const BaseMappedIntegrationPoint & mip)
           {
@@ -1161,7 +1194,13 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
             fe.CalcShape (mip.IP(), v);
             return v;
           },
-         py::arg("mip"))
+         py::arg("mip"),docu_string(R"raw_string(
+Parameters
+
+mip : ngsolve.BaseMappedIntegrationPoint
+    input mapped integration point
+
+)raw_string"))
     .def("CalcDShape",
          [] (const BaseScalarFiniteElement & fe, const BaseMappedIntegrationPoint & mip)
           {
@@ -1182,7 +1221,15 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
               }
             return mat;
           },
-         py::arg("mip"))
+         py::arg("mip"),docu_string(R"raw_string(
+Computes derivative of the shape in an integration point.
+
+Parameters
+
+mip : ngsolve.BaseMappedIntegrationPoint
+    input mapped integration point
+
+)raw_string"))
     ;
 
 
@@ -1203,8 +1250,18 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
                default: cerr << "cannot make fe " << et << endl;
                }
              return shared_ptr<BaseScalarFiniteElement>(fe);
-           },
-          "creates an H1 finite element of given geometric shape and polynomial order"
+           }, py::arg("et"), py::arg("order"),
+          docu_string(R"raw_string(Creates an H1 finite element of given geometric shape and polynomial order.
+
+Parameters
+
+et : ngsolve.fem.ET
+   input element topology
+
+order : int
+      input polynomial order
+
+)raw_string")
           );
 
   m.def("L2FE", [](ELEMENT_TYPE et, int order)
@@ -1218,7 +1275,18 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
                default: cerr << "cannot make fe " << et << endl;
                }
              return shared_ptr<BaseScalarFiniteElement>(fe);
-           }
+           }, py::arg("et"), py::arg("order"),
+          docu_string(R"raw_string(Creates an L2 finite element of given geometric shape and polynomial order.
+
+Parameters
+
+et : ngsolve.fem.ET
+   input element topology
+
+order : int
+      input polynomial order
+
+)raw_string")
           );
 
 
@@ -1287,7 +1355,7 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
                 first = false;
               }
             return sum;
-          })
+          }, py::arg("func"))
     .def_property_readonly("weights", [] (IntegrationRule& self)
                            {
                              py::list weights;
@@ -1667,7 +1735,16 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
                              pmlpar.Set("pml_alpha", alpha);
                              SetPMLParameters();
                            },
-           py::arg("rad")=1,py::arg("alpha")=1);
+         py::arg("rad")=1,py::arg("alpha")=1, docu_string(R"raw_string(
+Parameters
+
+rad : double
+    input radius of PML
+
+alpha : double
+      input damping factor of PML
+
+)raw_string"));
     
                            
   m.def("GenerateL2ElementCode", &GenerateL2ElementCode);
