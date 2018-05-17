@@ -79,8 +79,10 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     ;
     
   py::class_<ParallelDofs, shared_ptr<ParallelDofs>> (m, "ParallelDofs")
+#ifdef PARALLEL
     .def("__init__", []( ParallelDofs *instance, shared_ptr<ParallelDofs> base_pds, shared_ptr<BitArray> take_dofs) { 
         new (instance) ParallelDofs(base_pds, take_dofs); })
+#endif
     .def_property_readonly ("ndoflocal", [](const ParallelDofs & self) 
 			    { return self.GetNDofLocal(); },
                             "number of degrees of freedom")
