@@ -256,9 +256,6 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
                                              }
                                          })
     .def("NumSet", [] (BitArray & self) { return self.NumSet(); })
-    .def("Invert", [] (BitArray & self) { self.Invert(); })
-    .def("And", [] (BitArray & self, BitArray & other) { self.And(other); })
-    .def("Or", [] (BitArray & self, BitArray & other) { self.Or(other); })
     .def("Set", [] (BitArray & self, py::object in)
                                    {
                                      if (py::isinstance<DummyArgument>(in))
