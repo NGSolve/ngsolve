@@ -53,7 +53,8 @@ namespace ngla
     ParallelDofs (MPI_Comm acomm, Table<int> && adist_procs, 
 		  int dim = 1, bool iscomplex = false);
 
-    
+    ParallelDofs (shared_ptr<ParallelDofs> pardofs, shared_ptr<BitArray> take_dofs);
+      
     virtual ~ParallelDofs()  { ; }
 
     int GetNTasks() const { return exchangedofs.Size(); }

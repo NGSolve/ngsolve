@@ -109,7 +109,21 @@ namespace ngla
     global_ndof = MyMPI_AllReduce (nlocal, MPI_SUM, comm);
   }
 
+  ParallelDofs :: ParallelDofs (shared_ptr<ParallelDofs> pardofs, shared_ptr<BitArray> take_dofs)
+    : ParallelDofs(pardofs->GetCommunicator(), this->constrict_dptable(pardofs, take_dofs), 1, false) { }
 
+  Table<int> ParallelDofs :: constrict_dptable(shared_ptr<ParallelDofs> pardofs, shared_ptr<BitArray> take_dofs)
+  {
+    auto ndloc = pardofs->GetNDofLocal();
+    Array<size_t> s(ndloc);
+    for(auto k:Range(ndloc))
+      if(take_dofs->Test(k)) s[k] = pardofs->GetDistantProcs(k).Size();
+      else s[k] = 0;
+    Table<int> tab(s);
+    for(auto k:Range(ndloc))
+      if(take_dofs->Test(k)) tab[k] = pardofs->GetDistantProcs(k);
+    return std::move(tab);
+  }
   
   void ParallelDofs :: EnumerateGlobally (shared_ptr<BitArray> freedofs, 
 					  Array<int> & global_nums,
