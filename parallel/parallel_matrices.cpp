@@ -25,7 +25,7 @@ namespace ngla
     : BaseMatrix(hpardofs), loc2glob(MyMPI_GetNTasks (hpardofs -> GetCommunicator()))
   {
     inv = nullptr;
-    
+
     MPI_Comm comm = paralleldofs->GetCommunicator();
     int id = MyMPI_GetId (comm);
     int ntasks = MyMPI_GetNTasks(comm);
@@ -276,7 +276,7 @@ namespace ngla
     bool is_x_cum = (dynamic_cast_ParallelBaseVector(x) . Status() == CUMULATED);
     x.Distribute();
     y.Cumulate();
-
+    
     if (id > 0)
       {
 	FlatVector<TV> fx = x.FV<TV> ();
@@ -320,8 +320,14 @@ namespace ngla
 	    Array<TV> lx(selecti.Size());
 	    MyMPI_Recv (lx, src, MPI_TAG_SOLVE, comm);
 
-	    for (int i = 0; i < selecti.Size(); i++)
-	      hx(selecti[i]) += lx[i];
+	    if(is_x_cum) {
+	      for (int i = 0; i < selecti.Size(); i++)
+		hx(selecti[i]) = lx[i];
+	    }
+	    else {
+	      for (int i = 0; i < selecti.Size(); i++)
+		hx(selecti[i]) += lx[i];
+	    }
 	  }
 
 	hy = (*inv) * hx;
@@ -337,8 +343,8 @@ namespace ngla
 	MyMPI_WaitAll (requ);
       }
 
-    if (is_x_cum)
-      dynamic_cast_ParallelBaseVector(x) . Cumulate(); // AllReduce(&hoprocs);
+    // if (is_x_cum)
+    // dynamic_cast_ParallelBaseVector(x) . Cumulate(); // AllReduce(&hoprocs);
 
   }
 
@@ -562,9 +568,7 @@ namespace ngla
 
   
   AutoVector FETI_Jump_Matrix :: CreateRowVector () const
-  {
-    return make_shared<VVector<double>> (paralleldofs->GetNDofLocal());
-  }
+  { throw Exception("Called FETI_Jump_Matrix :: CreateRowVector, this is not well defined"); }
   
   AutoVector FETI_Jump_Matrix :: CreateColVector () const
   {
@@ -589,8 +593,6 @@ namespace ngla
       for(auto p:row)
 	mu_dps[n_mu++][0] = p;
 
-    cout << "mu dps:" << endl << mu_dps << endl;
-    
     this->mu_paralleldofs = make_shared<ParallelDofs>(pardofs->GetCommunicator(), move(mu_dps));
     /** build constraint matrix **/
     Array<int> nzepr(n_mu);

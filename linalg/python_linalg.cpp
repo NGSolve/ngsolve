@@ -592,43 +592,49 @@ inverse : string
   py::class_<FETI_Jump_Matrix, shared_ptr<FETI_Jump_Matrix>, BaseMatrix>
     (m, "FETI_Jump", "B-matrix of the FETI-system")
     .def(py::init<shared_ptr<ParallelDofs>>())
+    .def("GetRowParallelDofs", [](FETI_Jump_Matrix & self) {
+	return self.GetRowParallelDofs();
+      })
+    .def("GetColParallelDofs", [](FETI_Jump_Matrix & self) {
+	return self.GetColParallelDofs();
+      })
     ;
 
   py::class_<FETIDP_Constraint_Matrix, shared_ptr<FETIDP_Constraint_Matrix>, BaseMatrix>
     (m, "FETIDP_Constraints", "B-matrix (for primal constraints) of the FETI-DP-system")
-       .def("__init__", [](FETIDP_Constraint_Matrix* instance, py::object pydofs,
-			   py::object pydps, py::object pyvals,
-			   shared_ptr<ParallelDofs> pardofs) {
-	      auto n_mu = py::len(pyvals);
-	      TableCreator<size_t> cdofs(n_mu);
-	      TableCreator<int> cdps(n_mu);
-	      TableCreator<double> cvals(n_mu);
-	      auto it_pytable = [](auto & t, auto lam) {
-		size_t rownr = 0;
-		for(auto row:t) {
-		  for(auto v:row)
-		    lam(rownr, v);
-		  rownr++;
-		}
-	      };
-	      while(!cdofs.Done()) {
-		it_pytable(pydofs, [&cdofs](auto rownr, py::handle v) { cdofs.Add(rownr, v.cast<size_t>()); });
-		it_pytable(pydps,  [&cdps ](auto rownr, py::handle v) { cdps.Add (rownr, v.cast<int>()); });
-		it_pytable(pyvals, [&cvals](auto rownr, py::handle v) { cvals.Add(rownr, v.cast<double>()); });
-		cdofs++; cdps++; cvals++;
-	      }
-	      auto dofs = cdofs.MoveTable();
-	      auto dps = cdps.MoveTable();
-	      auto vals = cvals.MoveTable();
+    .def("__init__", [](FETIDP_Constraint_Matrix* instance, py::object pydofs,
+			py::object pydps, py::object pyvals,
+			shared_ptr<ParallelDofs> pardofs) {
+	   auto n_mu = py::len(pyvals);
+	   TableCreator<size_t> cdofs(n_mu);
+	   TableCreator<int> cdps(n_mu);
+	   TableCreator<double> cvals(n_mu);
+	   auto it_pytable = [](auto & t, auto lam) {
+	     size_t rownr = 0;
+	     for(auto row:t) {
+	       for(auto v:row)
+		 lam(rownr, v);
+	       rownr++;
+	     }
+	   };
+	   while(!cdofs.Done()) {
+	     it_pytable(pydofs, [&cdofs](auto rownr, py::handle v) { cdofs.Add(rownr, v.cast<size_t>()); });
+	     it_pytable(pydps,  [&cdps ](auto rownr, py::handle v) { cdps.Add (rownr, v.cast<int>()); });
+	     it_pytable(pyvals, [&cvals](auto rownr, py::handle v) { cvals.Add(rownr, v.cast<double>()); });
+	     cdofs++; cdps++; cvals++;
+	   }
+	   auto dofs = cdofs.MoveTable();
+	   auto dps = cdps.MoveTable();
+	   auto vals = cvals.MoveTable();
 
-	      cout << "have tables:" << endl;
-	      cout << "dofs: " << endl << dofs << endl;
-	      cout << "dps: "  << endl << dps  << endl;
-	      cout << "vals: " << endl << vals << endl;
-	      cout << endl;
-	      
-	      new (instance) FETIDP_Constraint_Matrix(dofs, dps, vals, pardofs);
-	    })
+	   new (instance) FETIDP_Constraint_Matrix(dofs, dps, vals, pardofs);
+	 })
+    .def("GetRowParallelDofs", [](FETIDP_Constraint_Matrix & self) {
+	return self.GetRowParallelDofs();
+      })
+    .def("GetColParallelDofs", [](FETIDP_Constraint_Matrix & self) {
+	return self.GetColParallelDofs();
+      })
     ;
 
 #endif

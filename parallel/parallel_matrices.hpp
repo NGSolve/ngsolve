@@ -88,6 +88,9 @@ namespace ngla
     virtual AutoVector CreateRowVector () const override;
     virtual AutoVector CreateColVector () const override;
 
+    shared_ptr<ParallelDofs> GetRowParallelDofs () const { return GetParallelDofs(); }
+    shared_ptr<ParallelDofs> GetColParallelDofs () const { return jump_paralleldofs; }
+    
   protected:
 
     shared_ptr<ParallelDofs> jump_paralleldofs;
@@ -106,6 +109,9 @@ namespace ngla
     
     virtual AutoVector CreateRowVector () const override;
     virtual AutoVector CreateColVector () const override;
+
+    shared_ptr<ParallelDofs> GetRowParallelDofs () const { return GetParallelDofs(); }
+    shared_ptr<ParallelDofs> GetColParallelDofs () const { return mu_paralleldofs; }
 
   protected:
     shared_ptr<SparseMatrix<double> > mat;
