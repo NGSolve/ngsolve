@@ -1556,14 +1556,11 @@ namespace ngcomp
       
       size_t nd_u = fel.GetNDof();
 
-      STACK_ARRAY(SIMD<double>, mem1, 6*D*nd_u);
-      FlatMatrix<SIMD<double>> shape_ul(nd_u*D, 1, &mem1[0]);
-      FlatMatrix<SIMD<double>> shape_ur(nd_u*D, 1, &mem1[D*nd_u]);
-      FlatMatrix<SIMD<double>> shape_ull(nd_u*D, 1, &mem1[2*D*nd_u]);
-      FlatMatrix<SIMD<double>> shape_urr(nd_u*D, 1, &mem1[3*D*nd_u]);
+      STACK_ARRAY(SIMD<double>, mem1, 2*D*nd_u);
+      FlatMatrix<SIMD<double>> shape_u_tmp(nd_u*D, 1, &mem1[0]);
 
-      FlatMatrix<SIMD<double>> dshape_u_ref(nd_u*D, 1, &mem1[4*D*nd_u]);
-      FlatMatrix<SIMD<double>> dshape_u(nd_u*D, 1, &mem1[5*D*nd_u]);
+      FlatMatrix<SIMD<double>> dshape_u_ref(nd_u*D, 1, &mem1[D*nd_u]);
+      // FlatMatrix<SIMD<double>> dshape_u(nd_u*D, 1, &mem1[0]);
 
       LocalHeapMem<10000> lh("diffopgrad-lh");
 
@@ -1590,12 +1587,16 @@ namespace ngcomp
               SIMD_IntegrationRule ir(4, ipts);
               SIMD_MappedIntegrationRule<D,D> mirl(ir, eltrans, lh);
 
-              fel.CalcMappedShape (mirl[0], shape_ul);
-              fel.CalcMappedShape (mirl[1], shape_ur);
-              fel.CalcMappedShape (mirl[2], shape_ull);
-              fel.CalcMappedShape (mirl[3], shape_urr);
+              fel.CalcMappedShape (mirl[2], shape_u_tmp);
+              dshape_u_ref = 1.0/(12.0*eps()) * shape_u_tmp;
+              fel.CalcMappedShape (mirl[3], shape_u_tmp);
+              dshape_u_ref -= 1.0/(12.0*eps()) * shape_u_tmp;
+              fel.CalcMappedShape (mirl[0], shape_u_tmp);
+              dshape_u_ref -= 8.0/(12.0*eps()) * shape_u_tmp;
+              fel.CalcMappedShape (mirl[1], shape_u_tmp);
+              dshape_u_ref += 8.0/(12.0*eps()) * shape_u_tmp;
 
-              dshape_u_ref = (1.0/(12.0*eps())) * (8.0*shape_ur-8.0*shape_ul-shape_urr+shape_ull);
+              // dshape_u_ref =  (8.0*shape_ur-8.0*shape_ul-shape_urr+shape_ull);
               for (size_t l = 0; l < D; l++)
                 for (size_t k = 0; k < nd_u; k++)
                   mat(k*D*D+j*D+l, i) = dshape_u_ref(k*D+l, 0);
