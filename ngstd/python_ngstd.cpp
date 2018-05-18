@@ -255,8 +255,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
                                                    self.Clear(start);
                                              }
                                          })
-
-
+    .def("NumSet", [] (BitArray & self) { return self.NumSet(); })
     .def("Set", [] (BitArray & self, py::object in)
                                    {
                                      if (py::isinstance<DummyArgument>(in))
@@ -493,6 +492,9 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
     .def_property_readonly ("rank", &PyMPI_Comm::Rank)
     .def_property_readonly ("size", &PyMPI_Comm::Size)
     .def("Barrier", [](PyMPI_Comm c) { MyMPI_Barrier(c.comm); })
+#ifdef PARALLEL
+    .def("WTime", [](PyMPI_Comm c) { return MPI_Wtime(); })
+#endif
     .def("Sum", [](PyMPI_Comm c, double x) { return MyMPI_AllReduce(x, MPI_SUM, c.comm); })
     .def("Min", [](PyMPI_Comm c, double x) { return MyMPI_AllReduce(x, MPI_MIN, c.comm); })
     .def("Max", [](PyMPI_Comm c, double x) { return MyMPI_AllReduce(x, MPI_MAX, c.comm); })
