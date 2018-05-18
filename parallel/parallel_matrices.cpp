@@ -13,7 +13,10 @@
 
 namespace ngla
 {
-
+  
+  template <typename TM> AutoVector MasterInverse<TM> :: CreateVector () const
+  { return make_shared<ParallelVVector<double>> (paralleldofs->GetNDofLocal(), paralleldofs); }
+  
   template <typename TM>
   MasterInverse<TM> :: MasterInverse (const SparseMatrixTM<TM> & mat, 
 				      shared_ptr<BitArray> subset, 

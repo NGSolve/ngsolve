@@ -1507,7 +1507,7 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
     .def("CalcElementMatrix",
          [] (shared_ptr<BFI> self,
              const FiniteElement & fe, const ElementTransformation &trafo,
-             int heapsize, bool complex)
+             size_t heapsize, bool complex)
                          {
                            while (true)
                              {
@@ -1610,7 +1610,7 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
         static_cast<void(LinearFormIntegrator::*)(const FiniteElement&, const ElementTransformation&, FlatVector<double>, LocalHeap&)const>(&LinearFormIntegrator::CalcElementVector))
     .def("CalcElementVector",
          [] (shared_ptr<LFI>  self, const FiniteElement & fe, const ElementTransformation& trafo,
-             int heapsize, bool complex)
+             size_t heapsize, bool complex)
          {
            while (true)
              {
