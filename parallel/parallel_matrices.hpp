@@ -94,6 +94,24 @@ namespace ngla
     
   };
 
+
+  class FETIDP_Constraint_Matrix : public BaseMatrix
+  {
+  public:
+    FETIDP_Constraint_Matrix (const Table<size_t> & dofs, const Table<int> & dps,
+			      const Table<double> & vals, shared_ptr<ParallelDofs> pardofs);
+    virtual bool IsComplex() const override { return false; }
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    
+    virtual AutoVector CreateRowVector () const override;
+    virtual AutoVector CreateColVector () const override;
+
+  protected:
+    shared_ptr<SparseMatrix<double> > mat;
+    shared_ptr<ParallelDofs> mu_paralleldofs;
+  };
+  
 #endif
 }
 
