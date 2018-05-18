@@ -53,7 +53,8 @@ namespace ngla
     ParallelDofs (MPI_Comm acomm, Table<int> && adist_procs, 
 		  int dim = 1, bool iscomplex = false);
 
-    
+    shared_ptr<ParallelDofs> SubSet (shared_ptr<BitArray> take_dofs) const;
+      
     virtual ~ParallelDofs()  { ; }
 
     int GetNTasks() const { return exchangedofs.Size(); }
@@ -107,7 +108,7 @@ namespace ngla
       ReduceDofData (data, op);
       ScatterDofData (data);
     }
-    
+
   };
 
 #else

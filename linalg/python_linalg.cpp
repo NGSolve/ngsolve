@@ -79,6 +79,10 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     ;
     
   py::class_<ParallelDofs, shared_ptr<ParallelDofs>> (m, "ParallelDofs")
+#ifdef PARALLEL
+    .def("SubSet", [](const ParallelDofs & self, shared_ptr<BitArray> take_dofs) { 
+        return self.SubSet(take_dofs); })
+#endif
     .def_property_readonly ("ndoflocal", [](const ParallelDofs & self) 
 			    { return self.GetNDofLocal(); },
                             "number of degrees of freedom")
@@ -581,6 +585,7 @@ inverse : string
 #ifdef PARALLEL
   py::class_<ParallelMatrix, shared_ptr<ParallelMatrix>, BaseMatrix>
     (m, "ParallelMatrix", "MPI-distributed matrix")
+    .def(py::init<shared_ptr<BaseMatrix>, shared_ptr<ParallelDofs>>())
     .def_property_readonly("local_mat", [](ParallelMatrix & mat) { return mat.GetMatrix(); })
     ;
 
