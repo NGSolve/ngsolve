@@ -53,7 +53,7 @@ namespace ngla
     ParallelDofs (MPI_Comm acomm, Table<int> && adist_procs, 
 		  int dim = 1, bool iscomplex = false);
 
-    ParallelDofs (shared_ptr<ParallelDofs> pardofs, shared_ptr<BitArray> take_dofs);
+    shared_ptr<ParallelDofs> SubSet (shared_ptr<BitArray> take_dofs) const;
       
     virtual ~ParallelDofs()  { ; }
 
@@ -109,9 +109,6 @@ namespace ngla
       ScatterDofData (data);
     }
 
-  private:
-    Table<int> constrict_dptable(shared_ptr<ParallelDofs> pardofs, shared_ptr<BitArray> take_dofs);
-    
   };
 
 #else
