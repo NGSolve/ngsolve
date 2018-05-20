@@ -457,6 +457,8 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         { return self.Height(); } )
     .def_property_readonly("width", [] ( BaseMatrix & self)
         { return self.Width(); } )
+    .def_property_readonly("nze", [] ( BaseMatrix & self)
+                           { return self.NZE(); }, "number of non-zero elements")
     // .def("CreateMatrix", &BaseMatrix::CreateMatrix)
     .def("CreateMatrix", [] ( BaseMatrix & self)
         { return self.CreateMatrix(); } )
@@ -627,6 +629,16 @@ inverse : string
          "performs steps Gauss-Seidel iterations for the linear system A x = b in reverse order")
     ;
 
+  py::class_<SparseFactorization, shared_ptr<SparseFactorization>, BaseMatrix>
+    (m, "SparseFactorization")
+    .def("Smooth", [] (SparseFactorization & self, BaseVector & u, BaseVector & y)
+         {
+           self.Smooth (u, y /* this is not needed */, y);
+         }, "perform smoothing step (needs non-symmetric storage so symmetric sparse matrix)")
+    ;
+
+  py::class_<SparseCholesky<double>, shared_ptr<SparseCholesky<double>>, SparseFactorization> (m, "SparseCholesky_d");
+  py::class_<SparseCholesky<Complex>, shared_ptr<SparseCholesky<Complex>>, SparseFactorization> (m, "SparseCholesky_c");
   
   py::class_<Projector, shared_ptr<Projector>, BaseMatrix> (m, "Projector")
     .def(py::init<shared_ptr<BitArray>,bool>());
