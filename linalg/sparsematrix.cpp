@@ -1116,6 +1116,32 @@ namespace ngla
       fy(i) += s * RowTimesVector (i, fx);
 
   }
+
+  template <class TM, class TV_ROW, class TV_COL>
+  void SparseMatrix<TM,TV_ROW,TV_COL> ::
+  MultAdd1 (double s, const BaseVector & x, BaseVector & y,
+            const BitArray * ainner,
+            const Array<int> * acluster) const
+  {
+    if (!ainner || acluster)
+      {
+        MultAdd (s, x, y);
+        return;
+      }
+
+    FlatVector<TVX> fx = x.FV<TVX>(); 
+    FlatVector<TVY> fy = y.FV<TVY>(); 
+
+    SharedLoop2 sl(ainner->Size());
+    ParallelJob
+      ( [&] (const TaskInfo & ti)
+        {
+          for (size_t row : sl)
+            if ( (*ainner).Test(row))
+              fy(row) += s * RowTimesVector (row, fx);
+        });
+  }
+  
   
 
   template <class TM, class TV_ROW, class TV_COL>

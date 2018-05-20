@@ -72,7 +72,7 @@ namespace ngla
 
     virtual ostream & Print (ostream & ost) const;
     virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
-
+    virtual size_t NZE () const;
     // virtual const void * Data() const;
     // virtual void * Data();
     
