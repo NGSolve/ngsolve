@@ -585,11 +585,14 @@ namespace ngstd
 
 
     /// Generate array in user data
-    INLINE Array(size_t asize, T* adata)
+    INLINE Array(size_t asize, T* adata, bool ownMemory = false)
       : FlatArray<T> (asize, adata)
     {
-      allocsize = asize; 
-      mem_to_delete = nullptr;
+      allocsize = asize;
+      if(ownMemory)
+        mem_to_delete = adata;
+      else
+        mem_to_delete = nullptr;
     }
 
     /// Generate array in user data
