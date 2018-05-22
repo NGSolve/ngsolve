@@ -42,7 +42,7 @@ namespace ngcomp
 
     void SetHypre (bool ah = true) { hypre = ah; }
     void SetCoarseGridPreconditioner (bool ah = true) { coarse = ah; }
-    
+
     BDDCMatrix (shared_ptr<BilinearForm> abfa, 
                 Flags flags,
 		const string & ainversetype, 
@@ -446,11 +446,9 @@ namespace ngcomp
       delete tmp;
       delete tmp2;
     }
-    
+  
     virtual AutoVector CreateVector () const
-    {
-      return bfa->GetMatrix().CreateVector();
-    }
+    { return pwbmat->CreateVector(); }
 
     virtual int VHeight() const { return bfa->GetMatrix().VHeight(); }
     virtual int VWidth() const { return bfa->GetMatrix().VHeight(); }
@@ -575,6 +573,8 @@ namespace ngcomp
     }
     */
 
+    virtual AutoVector CreateVector () const
+    { return pre->CreateVector(); }
 
     virtual ~BDDCPreconditioner()
     {
@@ -639,7 +639,6 @@ namespace ngcomp
     {
       pre -> MultAdd (s, x, y);
     }
-
 
     virtual const char * ClassName() const
     { return "BDDC Preconditioner"; }
