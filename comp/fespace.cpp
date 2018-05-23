@@ -313,7 +313,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       delete specialelements[i]; 
     specialelements.SetSize(0);
 
-
+    ma->UpdateBuffers();  // is free if netgen-mesh did not change
     int dim = ma->GetDimension();
     
     dirichlet_vertex.SetSize (ma->GetNV());

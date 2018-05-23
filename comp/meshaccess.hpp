@@ -226,6 +226,7 @@ namespace ngcomp
     /// max boundary index for co dim 2
     // int & nbboundaries = nregions[2];
 
+    int mesh_timestamp = -1; // timestamp of Netgen-mesh
     size_t timestamp = 0;
     
     /// for ALE

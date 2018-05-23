@@ -267,7 +267,7 @@ namespace ngfem
   }
 
   template class DiffOpHesseBoundary<3,ScalarFiniteElement<2>>;
-
+  template class DiffOpHesseBoundary<2,ScalarFiniteElement<1>>;
   
   // standard integratos:
   

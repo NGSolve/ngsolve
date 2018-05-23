@@ -1141,8 +1141,6 @@ namespace ngfem
                   size_t dim_proxy1 = proxy1->Dimension();
                   size_t dim_proxy2 = proxy2->Dimension();
                   
-                  // bool is_nonzero = nonzeros_proxies(l1nr,k1nr);
-                  // bool is_diagonal = diagonal_proxies(l1nr,k1nr);
                   size_t tt_pair = l1nr*trial_proxies.Size()+k1nr;
                   first_std_eval = k1nr*test_proxies.Size()+l1nr;  // in case of SIMDException
                   bool is_nonzero = nonzeros_proxies(tt_pair);
@@ -1216,10 +1214,9 @@ namespace ngfem
                       // bbmat2 = 0.0;
                       {
                         // ThreadRegionTimer regbmat(timer_SymbBFIbmat, TaskManager::GetThreadId());
-                      proxy1->Evaluator()->CalcMatrix(fel_trial, mir, bbmat1);
-                      
-                      if (!samediffop)
-                        proxy2->Evaluator()->CalcMatrix(fel_test, mir, bbmat2);
+                        proxy1->Evaluator()->CalcMatrix(fel_trial, mir, bbmat1);
+                        if (!samediffop)
+                          proxy2->Evaluator()->CalcMatrix(fel_test, mir, bbmat2);
                       }
 
                       if (is_diagonal)
@@ -1240,29 +1237,12 @@ namespace ngfem
                               auto hbdbmat1 = bdbmat1.RowSlice(j,dim_proxy1).Rows(r1);
                               
                               for (size_t k = 0; k < bdbmat1.Width(); k++)
-                                {
-                                  /*
-                                  auto col_bdbmat = hbdbmat1.Col(k);
-                                  auto col_bbmat = hbbmat1.Col(k);
-                                  auto proxy = diagproxyvalues(j,k);
-                                  for (size_t i1 = 0; i1 < sr1; i1++)
-                                    col_bdbmat(i1) = proxy * col_bbmat(i1);
-                                  */
-                                  hbdbmat1.Col(k).AddSize(r1.Size()) = diagproxyvalues(j,k) * hbbmat1.Col(k);
-                                }
+                                hbdbmat1.Col(k).AddSize(r1.Size()) = diagproxyvalues(j,k) * hbbmat1.Col(k);
                             }
-                          
-                          // AFlatVector<SCAL> diagd(bs*proxy1->Dimension(), lh);
-                          // diagd = diagproxyvalues.Range(i*proxy1->Dimension(),
-                          // (i+bs)*proxy1->Dimension());
-                          // MultMatDiagMat(bbmat1, diagd, bdbmat1);
-                          // NgProfiler::StopThreadTimer (timer_SymbBFIbd, TaskManager::GetThreadId());                                            
-                          
                         }
                       else
                         {
                           bdbmat1 = 0.0; 
-                          // for (size_t i = 0; i < elmat.Width(); i++)
                           for (auto i : r1)
                             for (size_t j = 0; j < dim_proxy2; j++)
                               for (size_t k = 0; k < dim_proxy1; k++)

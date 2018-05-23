@@ -31,30 +31,22 @@ namespace ngla
 
   int BaseMatrix :: VHeight() const
   {
-    stringstream str;
-    str << "Height not available, type = " << typeid(*this).name() << endl;    
-    throw Exception (str.str());
+    throw Exception (string("BaseMatrix::VHeight not overloaded, type = ")+typeid(*this).name());
   }
   
   int BaseMatrix :: VWidth() const
   {
-    stringstream str;
-    str << "Width not available, type = " << typeid(*this).name() << endl;    
-    throw Exception (str.str());
+    throw Exception (string("BaseMatrix::VWidth not overloaded, type = ")+typeid(*this).name());
   }
 
   BaseVector & BaseMatrix :: AsVector()
   {
-    Exception e("AsVector called for basematrix, type = ");
-    e.Append (typeid(*this).name());
-    throw e;
+    throw Exception (string("BaseMatrix::AsVector not overloaded, type = ")+typeid(*this).name());
   }
 
   const BaseVector & BaseMatrix :: AsVector() const
   {
-    Exception e("AsVector called for basematrix, type = ");
-    e.Append (typeid(*this).name());
-    throw e;
+    throw Exception (string("BaseMatrix::AsVector const not overloaded, type = ")+typeid(*this).name());    
   }
   
   void BaseMatrix :: SetZero()
@@ -70,34 +62,20 @@ namespace ngla
   void BaseMatrix :: MemoryUsage (Array<MemoryUsageStruct*> & mu) const
   { ; }
 
-  /*
-  const void * BaseMatrix :: Data() const
+  size_t BaseMatrix :: NZE () const
   {
-    cout << "Data not available, type = " << typeid(*this).name() << endl;
-    return 0;
+    throw Exception(string("NZE not overloaded for matrix-type")
+                    +typeid(*this).name());
   }
-
-  void * BaseMatrix :: Data() 
-  {
-    cout << "Data not available, type = " << typeid(*this).name() << endl;
-    return 0;
-  }
-  */
-
+  
   shared_ptr<BaseMatrix> BaseMatrix :: CreateMatrix () const
   {
-    throw Exception ("BaseMatrix::CraeteMatrix called");
+    throw Exception (string("BaseMatrix::CreateMatrix not overloaded, type = ")+typeid(*this).name());        
   }
-  /*
-  BaseMatrix * BaseMatrix :: CreateMatrix (const Array<int> & elsperrow) const
-  {
-    throw Exception ("BaseMatrix::CraeteMatrix called");
-  }
-  */
+
   AutoVector BaseMatrix :: CreateVector () const
   {
-    cout << "BaseMatrix::CreateVector called" << endl;
-    return shared_ptr<BaseVector>();
+    throw Exception (string("BaseMatrix::CreateVector not overloaded, type = ")+typeid(*this).name());            
   }
 
   AutoVector BaseMatrix :: CreateRowVector () const

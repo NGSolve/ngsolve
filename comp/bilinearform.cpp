@@ -5004,7 +5004,7 @@ namespace ngcomp
   }
 
   void BilinearFormApplication :: 
-  Mult (const BaseVector & v, BaseVector & prod, LocalHeap & lh) const
+  Mult (const BaseVector & v, BaseVector & prod) const
   {
     v.Cumulate();
 
@@ -5032,7 +5032,7 @@ namespace ngcomp
   }
 
   void BilinearFormApplication :: 
-  MultAdd (double val, const BaseVector & v, BaseVector & prod, LocalHeap & lh) const
+  MultAdd (double val, const BaseVector & v, BaseVector & prod) const
   {
     v.Cumulate();
     prod.Distribute();
@@ -5060,7 +5060,7 @@ namespace ngcomp
   }
 
   void BilinearFormApplication :: 
-  MultAdd (Complex val, const BaseVector & v, BaseVector & prod, LocalHeap & lh) const
+  MultAdd (Complex val, const BaseVector & v, BaseVector & prod) const
   {
     v.Cumulate();
     prod.Distribute();

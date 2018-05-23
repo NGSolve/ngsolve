@@ -32,4 +32,7 @@ def test_derive_basematrix():
     assert list(y) == [0.0, 20.0, 60.0, 120.0, 200.0]
 
     y.data = 2.0*m.T*x
-    assert list(y) == [150.0, 140.0, 120.0, 90.0, 50.0]
+    assert list(y) == [300.0, 280.0, 240.0, 180.0, 100.0]
+
+
+

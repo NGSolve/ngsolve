@@ -150,6 +150,8 @@ namespace ngla
   {
   protected:
     virtual SCAL InnerProduct (const BaseVector & v2) const;
+    virtual BaseVector & SetScalar (double scal)
+    { return ParallelBaseVector::SetScalar(scal); }
   };
 
 
