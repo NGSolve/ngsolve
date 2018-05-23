@@ -1144,6 +1144,50 @@ used_idnrs : list of int = None
                     }))
     ;
 
+  /////////////////////////////// GridFunctionCoefficientFunction /////////////
+
+  py::class_<GridFunctionCoefficientFunction, shared_ptr<GridFunctionCoefficientFunction>, CoefficientFunction>
+    (m, "CoefficientFunction")
+    .def(py::pickle([] (const GridFunctionCoefficientFunction & gfcf)
+                    {
+                      return py::make_tuple(gfcf.GetGridFunctionPtr(),
+                                            gfcf.generated_from_deriv,
+                                            gfcf.generated_from_operator);
+                    },
+                    [] (py::tuple state) -> shared_ptr<GridFunctionCoefficientFunction>
+                    {
+                      auto gf = state[0].cast<shared_ptr<GridFunction>>();
+                      auto fes = gf->GetFESpace();
+                      bool generated_from_deriv = state[1].cast<bool>();
+                      string generated_from_operator = state[2].cast<string>();
+                      if (generated_from_deriv)
+                        return make_shared<GridFunctionCoefficientFunction> (gf,
+                                                                             fes->GetFluxEvaluator(),
+                                                                             fes->GetFluxEvaluator(BND),
+                                                                             fes->GetFluxEvaluator(BBND));
+                      
+                      if (fes->GetAdditionalEvaluators().Used(generated_from_operator))
+                        {
+                          auto diffop = fes->GetAdditionalEvaluators()[generated_from_operator];
+                          shared_ptr<GridFunctionCoefficientFunction> coef;
+                          switch(diffop->VB())
+                            {
+                            case VOL:
+                              return make_shared<GridFunctionCoefficientFunction> (gf, diffop);
+                            case BND:
+                              return make_shared<GridFunctionCoefficientFunction> (gf, nullptr,diffop);
+                            case BBND:
+                              return make_shared<GridFunctionCoefficientFunction> (gf, nullptr,nullptr,diffop);
+                              break;
+                            case BBBND:
+                              throw Exception ("there are no Operators with BBBND");
+                            }
+                        }
+
+                      throw Exception("cannot unpickle GridFunctionCoefficientFunction");
+                    }))
+    ;
+    
 
   ////////////////////////////////////// GridFunction //////////////////////////
   
@@ -1272,6 +1316,7 @@ used_idnrs : list of int = None
                                                                     self->GetFESpace()->GetFluxEvaluator(),
                                                                     self->GetFESpace()->GetFluxEvaluator(BND),
 								    self->GetFESpace()->GetFluxEvaluator(BBND));
+            sp->generated_from_deriv = true;
             // sp->SetDimensions(sp->Dimensions());
             return sp;
           })
@@ -1298,6 +1343,7 @@ used_idnrs : list of int = None
                     throw Exception ("there are no Operators with BBBND");
                   }
                 coef->SetDimensions(diffop->Dimensions());
+                coef->generated_from_operator = name;
                 return py::cast(shared_ptr<CoefficientFunction>(coef));
               }
             return py::none(); 

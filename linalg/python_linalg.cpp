@@ -79,6 +79,10 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     ;
     
   py::class_<ParallelDofs, shared_ptr<ParallelDofs>> (m, "ParallelDofs")
+#ifdef PARALLEL
+    .def("SubSet", [](const ParallelDofs & self, shared_ptr<BitArray> take_dofs) { 
+        return self.SubSet(take_dofs); })
+#endif
     .def_property_readonly ("ndoflocal", [](const ParallelDofs & self) 
 			    { return self.GetNDofLocal(); },
                             "number of degrees of freedom")
@@ -318,6 +322,10 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     
     .def("__getitem__", [](BlockVector & self, int ind) { return self[ind]; })
     ;
+
+
+
+
   
   typedef BaseMatrix BM;
   // typedef BaseVector BV;
@@ -449,6 +457,8 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         { return self.Height(); } )
     .def_property_readonly("width", [] ( BaseMatrix & self)
         { return self.Width(); } )
+    .def_property_readonly("nze", [] ( BaseMatrix & self)
+                           { return self.NZE(); }, "number of non-zero elements")
     // .def("CreateMatrix", &BaseMatrix::CreateMatrix)
     .def("CreateMatrix", [] ( BaseMatrix & self)
         { return self.CreateMatrix(); } )
@@ -515,6 +525,7 @@ inverse : string
 )raw_string"), py::call_guard<py::gil_scoped_release>())
     // .def("Inverse", [](BM &m)  { return m.InverseMatrix(); })
 
+    .def_property_readonly("T", [](shared_ptr<BM> m)->shared_ptr<BaseMatrix> { return make_shared<Transpose> (m); })
     .def("Update", [](BM &m) { m.Update(); }, py::call_guard<py::gil_scoped_release>())
     ;
 
@@ -555,9 +566,28 @@ inverse : string
     (m, "S_BaseMatrixC", "base sparse matrix");
 
 
+  py::class_<BlockMatrix, BaseMatrix, shared_ptr<BlockMatrix>> (m, "BlockMatrix")
+    .def(py::init<> ([] (vector<vector<shared_ptr<BaseMatrix>>> mats)
+                     {
+                       Array<Array<shared_ptr<BaseMatrix>>> m2;
+                       for (auto mrow : mats)
+                         {
+                           Array<shared_ptr<BaseMatrix>> mrow2;
+                           for (auto m : mrow) mrow2 += m;
+                           m2 += mrow2;
+                         }
+                       return make_shared<BlockMatrix> (m2);
+                     }))
+    
+    // .def("__getitem__", [](BlockMatrix & self, int row, int col) { return self(row,rol); })
+    ;
+
+
+  
 #ifdef PARALLEL
   py::class_<ParallelMatrix, shared_ptr<ParallelMatrix>, BaseMatrix>
     (m, "ParallelMatrix", "MPI-distributed matrix")
+    .def(py::init<shared_ptr<BaseMatrix>, shared_ptr<ParallelDofs>>())
     .def_property_readonly("local_mat", [](ParallelMatrix & mat) { return mat.GetMatrix(); })
     ;
 
@@ -599,6 +629,16 @@ inverse : string
          "performs steps Gauss-Seidel iterations for the linear system A x = b in reverse order")
     ;
 
+  py::class_<SparseFactorization, shared_ptr<SparseFactorization>, BaseMatrix>
+    (m, "SparseFactorization")
+    .def("Smooth", [] (SparseFactorization & self, BaseVector & u, BaseVector & y)
+         {
+           self.Smooth (u, y /* this is not needed */, y);
+         }, "perform smoothing step (needs non-symmetric storage so symmetric sparse matrix)")
+    ;
+
+  py::class_<SparseCholesky<double>, shared_ptr<SparseCholesky<double>>, SparseFactorization> (m, "SparseCholesky_d");
+  py::class_<SparseCholesky<Complex>, shared_ptr<SparseCholesky<Complex>>, SparseFactorization> (m, "SparseCholesky_c");
   
   py::class_<Projector, shared_ptr<Projector>, BaseMatrix> (m, "Projector")
     .def(py::init<shared_ptr<BitArray>,bool>());

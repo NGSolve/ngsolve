@@ -71,6 +71,7 @@ namespace ngla
 
     // the reordering (original dofnr i -> order[i])
     Array<int> order;
+    Array<int> inv_order;
     
     // L-factor in compressed storage
     // Array<TM, size_t> lfact;
@@ -104,7 +105,7 @@ namespace ngla
     public:
       int blocknr;
       enum BT { L_BLOCK, B_BLOCK, LB_BLOCK };
-      BT type; // bool solveL;
+      BT type;
       int bblock;
       int nbblocks;
     };
@@ -174,7 +175,7 @@ namespace ngla
       mu.Append (new MemoryUsageStruct ("SparseChol", nze*sizeof(TM), 1));
     }
 
-
+    virtual size_t NZE () const { return nze; }
     ///
     void Set (int i, int j, const TM & val);
     ///
@@ -215,6 +216,7 @@ namespace ngla
     using BASE::lfact;
     using BASE::diag;
     using BASE::order;
+    using BASE::inv_order;
     using BASE::firstinrow;
 
     using BASE::blocks;
@@ -249,9 +251,12 @@ namespace ngla
       return make_shared<VVector<TV>> (height);
     }
 
+    virtual void Smooth (BaseVector & u, const BaseVector & f, BaseVector & y) const;
 
     void SolveBlock (int i, FlatVector<TV> hy) const;
     void SolveBlockT (int i, FlatVector<TV> hy) const;
+  private:
+    void SolveReordered(FlatVector<TVX> hy) const;
   };
 
 
