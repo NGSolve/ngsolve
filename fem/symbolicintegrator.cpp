@@ -4094,7 +4094,8 @@ namespace ngfem
                   ThreadRegionTimer reg(tmult, tid);                  
                   AddABt (hbmat2.Rows(r2), hdbmat1.Rows(r1), part_elmat);
                   if (k1 > l1)
-                    elmat.Rows(r1).Cols(r2) = Trans(part_elmat);
+                    AddABt (hdbmat1.Rows(r1), hbmat2.Rows(r2), elmat.Rows(r1).Cols(r2));
+                    // elmat.Rows(r1).Cols(r2) = Trans(part_elmat); // buggy if both evaluators act on same element
                   }
                 }
   }
