@@ -54,7 +54,7 @@ if(NETGEN_USE_MPI)
         endif()
     endif()
 
-    set(test_driver "mpirun" -np ${PROCESSOR_COUNT} ${test_driver})
+    set(test_driver "mpirun" -np ${PROCESSOR_COUNT} --allow-run-as-root ${test_driver})
 
     foreach(pde_test ${pde_tests})
         file(READ ${pde_dir}/${pde_test} pdefile)
