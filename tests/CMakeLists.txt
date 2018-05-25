@@ -3,7 +3,7 @@ if(NETGEN_USE_PYTHON OR NOT WIN32)
 
 include(CTest)
 
-if(NETGEN_USE_PYTHON)
+if(NETGEN_USE_PYTHON AND NOT NETGEN_USE_MPI)
   set(test_driver ${NETGEN_PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/pde_tester.py)
 else()
   set(test_driver "${CMAKE_CURRENT_BINARY_DIR}/pde_tester")
