@@ -475,13 +475,14 @@ void ExportCoefficientFunction(py::module &m)
               return IfPos(c1,
                            MakeCoefficient(then_obj),
                            MakeCoefficient(else_obj));
-            }, py::arg("c1"), py::arg("then_obj"), py::arg("else_obj") ,docu_string(R"raw_string(Returns new CoefficientFunction with values then_obj if c1 is positive and else_obj else.
+            }, py::arg("c1"), py::arg("then_obj"), py::arg("else_obj") ,docu_string(R"raw_string(
+Returns new CoefficientFunction with values then_obj if c1 is positive and else_obj else.
 
 Parameters:
 
 c1 : ngsolve.CoefficientFunction
   Indicator function
-+
+
 then_obj : object
   Values of new CF if c1 is positive, object must be implicitly convertible to
   ngsolve.CoefficientFunction. See help(:any:`CoefficientFunction` ) for information.
@@ -489,6 +490,7 @@ then_obj : object
 else_obj : object
   Values of new CF if c1 is not positive, object must be implicitly convertible to
   ngsolve.CoefficientFunction. See help(:any:`CoefficientFunction` ) for information.
+
 )raw_string"))
     ;
   
@@ -1560,18 +1562,45 @@ order : int
          })
     .def("__str__",  [](shared_ptr<BFI> self) { return ToString<BilinearFormIntegrator>(*self); } )
 
-    .def("Evaluator",  [](shared_ptr<BFI> self, string name ) { return self->GetEvaluator(name); } )
+    .def("Evaluator",  [](shared_ptr<BFI> self, string name ) { return self->GetEvaluator(name); }, py::arg("name"), docu_string(R"raw_string(
+Returns requested evaluator
+
+Parameters
+
+name : string
+     input name of requested evaluator
+
+)raw_string") )
     // .def("DefinedOn", &Integrator::DefinedOn)
     .def("GetDefinedOn",  [] (shared_ptr<BFI> self) -> const BitArray &{ return self->GetDefinedOn(); } ,
-         py::return_value_policy::reference)
+         py::return_value_policy::reference, "Returns a BitArray where the bilinear form is defined on")
 
     .def("SetDefinedOnElements",  [](shared_ptr<BFI> self, shared_ptr<BitArray> ba )
-                                                  { self->SetDefinedOnElements (ba); } )
+         { self->SetDefinedOnElements (ba); }, py::arg("bitarray"), docu_string(R"raw_string( 
+Set the elements on which the bilinear form is defined on.
+
+Parameters
+
+bitarray : ngsolve.ngstd.BitArray
+         input bitarray
+
+)raw_string") )
     .def("SetIntegrationRule", [] (shared_ptr<BFI> self, ELEMENT_TYPE et, IntegrationRule ir)
          {
            self -> SetIntegrationRule(et,ir);
            return self;
-         })
+         }, py::arg("et"), py::arg("intrule"), docu_string(R"raw_string( 
+Set integration rule of the bilinear form.
+
+Parameters
+
+et : ngsolve.fem.Element_Type
+         input element type
+
+intrule : ngsolve.fem.Integrationrule
+        input integration rule
+
+)raw_string"))
     .def("CalcElementMatrix",
          [] (shared_ptr<BFI> self,
              const FiniteElement & fe, const ElementTransformation &trafo,
@@ -1601,7 +1630,24 @@ order : int
                                  }
                              }
                          },
-         py::arg("fel"),py::arg("trafo"),py::arg("heapsize")=10000, py::arg("complex") = false)
+         py::arg("fel"),py::arg("trafo"),py::arg("heapsize")=10000, py::arg("complex") = false, docu_string(R"raw_string( 
+Calculate element matrix of a specific element.
+
+Parameters
+
+fel : ngsolve.fem.FiniteElement
+         input finite element
+
+trafo : ngsolve.fem.ElementTransformation
+        input element transformation
+
+heapsize : int
+         input heapsize
+
+complex : bool
+        input complex
+
+)raw_string"))
     ;
 
 

@@ -85,8 +85,8 @@ void PyVecAccess( py::module &m, TCLASS &c )
         c.def("__sub__" , [](T &self, T &v) { return TNEW(self-v); } );
         c.def("__mul__" , [](T &self, TSCAL s) { return TNEW(s*self); } );
         c.def("__rmul__" , [](T &self, TSCAL s) { return TNEW(s*self); } );
-        c.def("InnerProduct",  [](T & x, T & y) { return InnerProduct (x, y); });
-        c.def("Norm",  [](T & x) { return L2Norm(x); });
+        c.def("InnerProduct",  [](T & x, T & y) { return InnerProduct (x, y); }, py::arg("y"), "Returns InnerProduct with other object");
+        c.def("Norm",  [](T & x) { return L2Norm(x); }, "Returns L2-norm");
 }
 
 
@@ -370,7 +370,15 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
                 else return py::cast(Vector<double>(n));
                 },
             py::arg("length"),
-            py::arg("complex")=false
+          py::arg("complex")=false, docu_string(R"raw_string(
+Parameters
+
+length : int
+       input length
+
+complex : bool
+        input complex values
+)raw_string")
            );
     m.def("Vector",
             [] (py::list values) {
@@ -379,7 +387,12 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
                                  v(i) = values[i].cast<double>();
                                return v;
                              },
-            py::arg("vals")
+            py::arg("vals"), docu_string(R"raw_string(
+Parameters
+
+vals : list
+       input list of values
+)raw_string")
            );
     m.def("Vector",
             [] (py::tuple values) ->py::object {
@@ -405,7 +418,12 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
                                  }
                                throw Exception("cannot make a vector from tuple");
               },
-            py::arg("vals")
+            py::arg("vals"), docu_string(R"raw_string(
+Parameters
+
+vals : tuple
+       input tuple of values
+)raw_string")
            );
 
 
@@ -502,7 +520,21 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
                 },
             py::arg("height"), 
             py::arg("width"), 
-            py::arg("complex")=false
+          py::arg("complex")=false, docu_string(R"raw_string(
+Creates a matrix of given height and width.
+
+Parameters
+
+height : int
+       input height
+
+width : int
+      input width
+
+complex : bool
+        input complex values
+
+)raw_string")
            );
 
     m.def("InnerProduct",
@@ -511,7 +543,7 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
 
     m.def("Norm",
              [] (py::object x) -> py::object
-                              { return py::object(x.attr("Norm")) (); });
+          { return py::object(x.attr("Norm")) (); }, py::arg("x"),"Compute Norm");
 
     m.def("__timing__", &ngbla::Timing);
     m.def("CheckPerformance",

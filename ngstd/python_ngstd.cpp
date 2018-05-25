@@ -386,7 +386,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
                  timers.append(timer);
                }
 	     return timers;
-	   }
+	   }, "Returns list of timers"
 	   );
 
   py::class_<Archive, shared_ptr<Archive>> (m, "Archive")
@@ -434,10 +434,24 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
                            {
                              cout << IM(3) << "running Python function with task-manager:" << endl;
                              RunWithTaskManager ([&] () { lam(); });
-                           })
+                           }, py::arg("lam"), docu_string(R"raw_string(
+Parameters:
+
+lam : object
+    input function
+
+)raw_string"))
           ;
 
-  m.def("SetNumThreads", &TaskManager::SetNumThreads );
+  m.def("SetNumThreads", &TaskManager::SetNumThreads, py::arg("threads"), docu_string(R"raw_string(
+Set number of threads
+
+Parameters
+
+threads : int
+        input number of threads
+
+)raw_string") );
 
   // local TaskManager class to be used as context manager in Python
   class ParallelContextManager {
