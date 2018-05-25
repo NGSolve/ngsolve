@@ -25,7 +25,18 @@ void NGS_DLL_HEADER ExportNgsolve(py::module &m ) {
                    last_time = std::chrono::system_clock::now();
                  }
              }),
-           py::arg("blocking")=false, py::arg("fr") = 25
+           py::arg("blocking")=false, py::arg("fr") = 25, docu_string(R"raw_string(
+Redraw all
+
+Parameters
+
+blocking : bool
+         input blocking
+
+fr : double
+   input framerate
+
+)raw_string")
              );
 
 
@@ -93,7 +104,27 @@ void NGS_DLL_HEADER ExportNgsolve(py::module &m ) {
              py::arg("max")=DummyArgument(),
              // py::arg("clippnt")=DummyArgument(),
              py::arg("clipnormal")=DummyArgument(),
-             py::arg("clipping")=DummyArgument()
+          py::arg("clipping")=DummyArgument(), docu_string(R"raw_string(
+Set visualization options
+
+Parameters
+
+deformation : object
+            input deformation
+
+min : object
+    input min
+
+max : object
+    input max
+
+clipnormal : object
+           input clipnormal
+
+clipping : object
+         input clipping
+
+)raw_string")
             )
       ;
     
@@ -145,7 +176,25 @@ void NGS_DLL_HEADER ExportNgsolve(py::module &m ) {
                 Ng_TclCmd ("set ::selectvisual solution;\n");
               },
              py::arg("gf"),py::arg("sd")=2,py::arg("autoscale")=true,
-	      py::arg("min")=0.0,py::arg("max")=1.0
+           py::arg("min")=0.0,py::arg("max")=1.0, docu_string(R"raw_string(
+Parameters
+
+gf : ngsolve.comp.GridFunction
+   input GridFunction to draw
+
+sd : int
+   input subdivisions
+
+autoscale : bool
+          input autscale
+
+min : float
+    input minimum value. Need autscale = false
+
+max : float
+    input maximum value. Need autscale = false
+
+)raw_string")
              );
 
     
@@ -203,7 +252,37 @@ void NGS_DLL_HEADER ExportNgsolve(py::module &m ) {
               py::arg("cf"),py::arg("mesh"),py::arg("name"),
               py::arg("sd")=2,py::arg("autoscale")=true,
 	      py::arg("min")=0.0,py::arg("max")=1.0,
-              py::arg("draw_vol")=true,py::arg("draw_surf")=true
+              py::arg("draw_vol")=true,py::arg("draw_surf")=true, docu_string(R"raw_string(
+Parameters
+
+cf : ngsolve.comp.CoefficientFunction
+   input CoefficientFunction to draw
+
+mesh : ngsolve.comp.Mesh
+     input mesh
+
+name : string
+     input name
+
+sd : int
+   input subdivisions
+
+autoscale : bool
+          input autscale
+
+min : float
+    input minimum value. Need autscale = false
+
+max : float
+    input maximum value. Need autscale = false
+
+draw_vol : bool
+         input draw volume
+
+draw_surf : bool
+         input draw surface
+
+)raw_string")
              );
 
 

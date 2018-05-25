@@ -284,7 +284,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                           },
          "InnerProduct", py::arg("other"), py::arg("conjugate")=py::cast(true)         
          )
-    .def("Norm",  [](BaseVector & self) { return self.L2Norm(); })
+    .def("Norm",  [](BaseVector & self) { return self.L2Norm(); }, "Calculate Norm")
     .def("Range", [](BaseVector & self, int from, int to) -> shared_ptr<BaseVector>
                                    {
                                      return shared_ptr<BaseVector>(self.Range(from,to));
@@ -304,7 +304,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
   // m.def("InnerProduct",[](BaseVector & v1, BaseVector & v2)->double { return InnerProduct(v1,v2); })
   m.def ("InnerProduct",
            [] (py::object x, py::object y) -> py::object
-                            { return py::handle(x.attr("InnerProduct")) (y); });
+         { return py::handle(x.attr("InnerProduct")) (y); }, py::arg("x"), py::arg("y"), "Computes InnerProduct of given objects");
   ;
   
 
@@ -647,9 +647,31 @@ inverse : string
                                          solver->SetPrintRates (printrates);
                                          return shared_ptr<KrylovSpaceSolver>(solver);
                                        },
-          "CG Solver", py::arg("mat"), py::arg("pre"), py::arg("complex") = false, py::arg("printrates")=true,
-           py::arg("precision")=1e-8, py::arg("maxsteps")=200
-          )
+           py::arg("mat"), py::arg("pre"), py::arg("complex") = false, py::arg("printrates")=true,
+        py::arg("precision")=1e-8, py::arg("maxsteps")=200, docu_string(R"raw_string(
+A CG Solver.
+
+Parameters
+
+mat : ngsolve.la.BaseMatrix
+    input matrix 
+
+pre : ngsolve.la.BaseMatrix
+    input preconditioner matrix
+
+complex : bool
+        input complex
+
+printrates : bool
+           input printrates
+
+precision : float
+          input requested precision. CGSolver stops if precision is reached.
+
+maxsteps : int
+         input maximal steps. CGSolver stops after this steps.
+
+)raw_string"))
     ;
 
   m.def("GMRESSolver", [](const BaseMatrix & mat, const BaseMatrix & pre,
@@ -666,9 +688,28 @@ inverse : string
                                           solver->SetPrintRates (printrates);
                                           return shared_ptr<KrylovSpaceSolver>(solver);
                                         },
-          "GMRES Solver", py::arg("mat"), py::arg("pre"), py::arg("printrates")=true,
-           py::arg("precision")=1e-8, py::arg("maxsteps")=200
-          )
+           py::arg("mat"), py::arg("pre"), py::arg("printrates")=true,
+           py::arg("precision")=1e-8, py::arg("maxsteps")=200, docu_string(R"raw_string(
+A General Minimal Residuum (GMRES) Solver.
+
+Parameters
+
+mat : ngsolve.la.BaseMatrix
+    input matrix 
+
+pre : ngsolve.la.BaseMatrix
+    input preconditioner matrix
+
+printrates : bool
+           input printrates
+
+precision : float
+          input requested precision. GMRESSolver stops if precision is reached.
+
+maxsteps : int
+         input maximal steps. GMRESSolver stops after this steps.
+
+)raw_string"))
     ;
 
   m.def("TestPC", [](const BaseMatrix & mat, const BaseMatrix & pre) {
@@ -700,9 +741,28 @@ inverse : string
                                           solver->SetPrintRates (printrates);
                                           return shared_ptr<KrylovSpaceSolver>(solver);
                                         },
-          "QMR Solver", py::arg("mat"), py::arg("pre"), py::arg("printrates")=true,
-           py::arg("precision")=1e-8, py::arg("maxsteps")=200
-          )
+           py::arg("mat"), py::arg("pre"), py::arg("printrates")=true,
+           py::arg("precision")=1e-8, py::arg("maxsteps")=200, docu_string(R"raw_string(
+A Quasi Minimal Residuum (QMR) Solver.
+
+Parameters
+
+mat : ngsolve.la.BaseMatrix
+    input matrix 
+
+pre : ngsolve.la.BaseMatrix
+    input preconditioner matrix
+
+printrates : bool
+           input printrates
+
+precision : float
+          input requested precision. QMRSolver stops if precision is reached.
+
+maxsteps : int
+         input maximal steps. QMRSolver stops after this steps.
+
+)raw_string"))
     ;
   
   m.def("ArnoldiSolver", [](BaseMatrix & mata, BaseMatrix & matm, shared_ptr<BitArray> freedofs,
@@ -754,8 +814,27 @@ inverse : string
                                                   return vlam;
                                                 }
                                             },
-          "Arnoldi Solver", py::arg("mata"), py::arg("matm"), py::arg("freedofs"), py::arg("vecs"), py::arg("shift")=DummyArgument()
-          )
+          py::arg("mata"), py::arg("matm"), py::arg("freedofs"), py::arg("vecs"), py::arg("shift")=DummyArgument(), docu_string(R"raw_string(
+An Arnoldi eigenvalue solver.
+
+Parameters
+
+mata : ngsolve.la.BaseMatrix
+     input matrix 
+
+matm : ngsolve.la.BaseMatrix
+     input preconditioner matrix
+
+freedofs : nsolve.ngstd.BitArray
+         input correct degrees of freedom
+
+vecs : list
+     input list of vectors
+
+shift : object
+          input shift parameter
+
+)raw_string"))
     ;
 
   

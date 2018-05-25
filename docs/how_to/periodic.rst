@@ -67,3 +67,5 @@ Function Documentation
 .. autofunction:: ngsolve.Periodic
 		
    
+.. automodule:: ngsolve
+                :members:
