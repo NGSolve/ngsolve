@@ -801,7 +801,7 @@ namespace ngcomp
   void L2SurfaceHighOrderFESpace :: UpdateCouplingDofArray()
   {
     ctofdof.SetSize(ndof);
-    ctofdof = LOCAL_DOF;
+    ctofdof = WIREBASKET_DOF;
 
     for (int i=0; i<ma->GetNSE(); i++)
       {
