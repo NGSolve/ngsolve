@@ -581,6 +581,7 @@ namespace ngfem
     enum { DIFFORDER = 2 };
     
     static string Name() { return "hesse"; }
+    static Array<int> GetDimensions() { return Array<int> ( { D,D } ); }
     
     static auto & Cast (const FiniteElement & fel) 
     { return static_cast<const ScalarFiniteElement<D>&> (fel); }
@@ -606,6 +607,7 @@ namespace ngfem
     enum { DIFFORDER = 2 };
 
     static string Name() { return "hesseboundary"; }
+    static Array<int> GetDimensions() { return Array<int> ( { D,D } ); }
     
     static auto & Cast (const FiniteElement & fel) 
     { return static_cast<const FEL&> (fel); }

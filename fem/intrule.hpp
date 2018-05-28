@@ -432,12 +432,19 @@ namespace ngfem
 	    }
 	  else if (DIMR == 2)
 	    {
-	      det = sqrt ( sqr (dxdxi(0,0)) + sqr (dxdxi(1,0)));
-
-	      normalvec(0) = -dxdxi(1,0) / det;
-	      normalvec(1) = dxdxi(0,0) / det;
-              tangentialvec = TSCAL(0.0);
-	    }
+              if (DIMS == 1)
+                {
+                  det = sqrt ( sqr (dxdxi(0,0)) + sqr (dxdxi(1,0)));
+                  
+                  normalvec(0) = -dxdxi(1,0) / det;
+                  normalvec(1) = dxdxi(0,0) / det;
+                  tangentialvec = TSCAL(0.0);
+                }
+              else
+                {
+                  det = 1;
+                }
+            }
 	  else
 	    {
 	      det = 1.0;
@@ -1651,11 +1658,18 @@ namespace ngstd
             }
 	  else if (DIMR == 2)
 	    {
-	      det = sqrt ( sqr (dxdxi(0,0)) + sqr (dxdxi(1,0)));
-
-	      normalvec(0) = -dxdxi(1,0) / det;
-	      normalvec(1) = dxdxi(0,0) / det;
-              tangentialvec = SIMD<double>(0.0);
+              if (DIMS == 1)
+                {
+                  det = sqrt ( sqr (dxdxi(0,0)) + sqr (dxdxi(1,0)));
+                  
+                  normalvec(0) = -dxdxi(1,0) / det;
+                  normalvec(1) = dxdxi(0,0) / det;
+                  tangentialvec = SIMD<double>(0.0);
+                }
+              else
+                {
+                  det = 1;
+                }
 	    }
 	  else
 	    {
