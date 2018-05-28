@@ -329,6 +329,20 @@ namespace ngfem
                                  FlatVector<bool> nonzero_deriv,
                                  FlatVector<bool> nonzero_dderiv) const;
 
+    virtual void NonZeroPattern (const class ProxyUserData & ud,
+                                 FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
+                                 FlatVector<AutoDiffDiff<1,bool>> values) const
+    {
+      cout << string("nonzero in-out not overloaded for type")+typeid(*this).name() << endl;
+      Vector<bool> nz(values.Size()), nzd(values.Size()), nzdd(values.Size());
+      NonZeroPattern (ud, nz, nzd, nzdd);
+      for (size_t i = 0; i < values.Size(); i++)
+        {
+          values(i).Value() = nz(i);
+          values(i).DValue(0) = nzd(i);
+          values(i).DDValue(0) = nzdd(i);
+        }
+    }
     
     virtual void PrintReport (ostream & ost) const;
     virtual void PrintReportRec (ostream & ost, int level) const;
@@ -392,7 +406,7 @@ namespace ngfem
     using CoefficientFunction::Evaluate;
     
     virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir, 
-                                AFlatMatrix<double> values, AFlatMatrix<double> deriv) const
+                                AFlatMatrix<double> values, AFlatMatrix<double> deriv) const override
     {
       Evaluate(ir, values);
       deriv = 0.0;
@@ -400,7 +414,7 @@ namespace ngfem
 
     virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & ir, 
                                  AFlatMatrix<double> values, AFlatMatrix<double> deriv,
-                                 AFlatMatrix<double> dderiv) const
+                                 AFlatMatrix<double> dderiv) const override
     {
       Evaluate (ir, values);
       deriv = 0.0;
@@ -409,12 +423,12 @@ namespace ngfem
 
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
                            FlatArray<BareSliceMatrix<SIMD<double>>> input,
-                           BareSliceMatrix<SIMD<double>> values) const
+                           BareSliceMatrix<SIMD<double>> values) const override
     { Evaluate (ir, values); }
 
 
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, 
-                           BareSliceMatrix<AutoDiff<1,double>> values) const
+                           BareSliceMatrix<AutoDiff<1,double>> values) const override
     {
       SliceMatrix<double> hvalues(ir.Size(), Dimension(), 2*values.Dist(), &values(0).Value());
       Evaluate (ir, hvalues);
@@ -424,7 +438,7 @@ namespace ngfem
     }
     
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, 
-                           BareSliceMatrix<AutoDiff<1,SIMD<double>>> values) const
+                           BareSliceMatrix<AutoDiff<1,SIMD<double>>> values) const override
     {
       BareSliceMatrix<SIMD<double>> hvalues(2*values.Dist(), &values(0).Value(), DummySize(Dimension(), ir.Size()));
       Evaluate (ir, hvalues);
@@ -435,12 +449,12 @@ namespace ngfem
 
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
                            FlatArray<BareSliceMatrix<AutoDiff<1,SIMD<double>>>> input,
-                           BareSliceMatrix<AutoDiff<1,SIMD<double>>> values) const
+                           BareSliceMatrix<AutoDiff<1,SIMD<double>>> values) const override
     { Evaluate (ir, values); }
 
 
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, 
-                           BareSliceMatrix<AutoDiffDiff<1,double>> values) const
+                           BareSliceMatrix<AutoDiffDiff<1,double>> values) const override
     {
       FlatMatrix<double> hvalues(ir.Size(), 3*values.Dist(), &values(0).Value());
       Evaluate (ir, hvalues);
@@ -450,7 +464,7 @@ namespace ngfem
     }
     
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, 
-                           BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>> values) const
+                           BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>> values) const override
     {
       BareSliceMatrix<SIMD<double>> hvalues(3*values.Dist(), &values(0).Value(), DummySize(Dimension(), ir.Size()));
       Evaluate (ir, hvalues);
@@ -461,7 +475,7 @@ namespace ngfem
 
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
                            FlatArray<BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>>> input,
-                           BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>> values) const
+                           BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>> values) const override
     { Evaluate (ir, values); }
 
     /*
@@ -492,11 +506,18 @@ namespace ngfem
     virtual void NonZeroPattern (const class ProxyUserData & ud,
                                  FlatVector<bool> nonzero,
                                  FlatVector<bool> nonzero_deriv,
-                                 FlatVector<bool> nonzero_dderiv) const
+                                 FlatVector<bool> nonzero_dderiv) const override
     {
       nonzero = true;
       nonzero_deriv = false;
       nonzero_dderiv = false;
+    }
+
+    virtual void NonZeroPattern (const class ProxyUserData & ud,
+                                 FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
+                                 FlatVector<AutoDiffDiff<1,bool>> values) const override
+    {
+      values = AutoDiffDiff<1,bool> (true);
     }
     
   };
@@ -574,7 +595,6 @@ namespace ngfem
                            FlatArray<BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>>> input,
                            BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>> values) const
     {  static_cast<const TCF*>(this) -> /* template */ T_Evaluate /* <AutoDiffDiff<1,SIMD<double>>> */ (ir, input, values); }
-    
   };
 
 
@@ -592,18 +612,18 @@ namespace ngfem
     virtual ~ConstantCoefficientFunction ();
     ///
     using BASE::Evaluate;
-    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
     {
       return val;
     }
 
-    virtual double EvaluateConst () const
+    virtual double EvaluateConst () const override
     {
       return val;
     }
     
-    virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<double> values) const;
-    virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const;
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<double> values) const override;
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const override;
 
     template <typename MIR, typename T, ORDERING ORD>
       void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const;
@@ -614,11 +634,11 @@ namespace ngfem
     { T_Evaluate (ir, values); }
     
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
-                           AFlatMatrix<double> values) const
+                           AFlatMatrix<double> values) const override
     { values = val; }
 
     virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
-                                AFlatMatrix<> result, AFlatMatrix<> deriv) const
+                                AFlatMatrix<> result, AFlatMatrix<> deriv) const override
     {
       result = val;
       deriv = 0.0;
@@ -626,7 +646,7 @@ namespace ngfem
     
     virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
                                 FlatArray<AFlatMatrix<>*> input, FlatArray<AFlatMatrix<>*> dinput,
-                                AFlatMatrix<> result, AFlatMatrix<> deriv) const
+                                AFlatMatrix<> result, AFlatMatrix<> deriv) const override
     {
       result = val;
       deriv = 0.0;
@@ -636,7 +656,7 @@ namespace ngfem
                                  FlatArray<AFlatMatrix<>*> input, FlatArray<AFlatMatrix<>*> dinput,
                                  FlatArray<AFlatMatrix<>*> ddinput,
                                  AFlatMatrix<> result, AFlatMatrix<> deriv,
-                                 AFlatMatrix<> dderiv) const
+                                 AFlatMatrix<> dderiv) const override
     {
       result = val;
       deriv = 0.0;
@@ -644,8 +664,8 @@ namespace ngfem
     }
 
     
-    virtual void PrintReport (ostream & ost) const;
-    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
+    virtual void PrintReport (ostream & ost) const override;
+    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override; 
 
     /*
     virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
@@ -656,15 +676,25 @@ namespace ngfem
     virtual void NonZeroPattern (const class ProxyUserData & ud,
                                  FlatVector<bool> nonzero,
                                  FlatVector<bool> nonzero_deriv,
-                                 FlatVector<bool> nonzero_dderiv) const
+                                 FlatVector<bool> nonzero_dderiv) const override
     {
       nonzero(0) = (val != 0.0);
       nonzero_deriv = 0.0;
       nonzero_dderiv = 0.0;
     }
+
+    virtual void NonZeroPattern (const class ProxyUserData & ud,
+                                 FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
+                                 FlatVector<AutoDiffDiff<1,bool>> values) const override
+    {
+      values = AutoDiffDiff<1,bool> (val != 0.0);
+    }
     
-    virtual CF_Type GetType() const { return CF_Type_constant; } 
-    virtual void DoArchive (Archive & archive)
+
+
+    
+    virtual CF_Type GetType() const override { return CF_Type_constant; } 
+    virtual void DoArchive (Archive & archive) override
     {
       CoefficientFunction::DoArchive(archive);
       archive & val;
@@ -1228,7 +1258,31 @@ public:
             nonzero_dderiv(i) = d1(i) || dd1(i);
           }
       }
-  }  
+  }
+
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    auto v1 = input[0];
+    if (name == "-") // actually not used that way
+      {
+        values = v1;
+      }
+    else
+      {
+        for (size_t i = 0; i < values.Size(); i++)
+          {
+            values[i].Value() = v1[i].Value();
+            values[i].DValue(0) = v1[i].DValue(0);
+            values[i].DDValue(0) = v1[i].DValue(0) || v1[i].DDValue(0);
+          }
+      }
+  }
+    
+
+
+  
 
   virtual CF_Type GetType() const override { return CF_Type_unary_op; }
   virtual void DoArchive (Archive & archive) override
@@ -1462,6 +1516,28 @@ public:
           }
       }
   }
+
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    auto v1 = input[0];
+    auto v2 = input[1];
+    for (int i = 0; i < values.Size(); i++)
+      {
+        if (opname == "+" || opname == "-")
+          values(i) = v1(i) + v2(i);
+        else if (opname == "*")
+          values(i) = v1(i) * v2(i);
+        else
+          {
+            values(i).Value() = v1(i).Value() || v2(i).Value();
+            values(i).DValue(0) = v1(i).DValue(0) || v2(i).DValue(0);
+            values(i).DDValue(0) = v1(i).DValue(0) || v2(i).DValue(0) || v1(i).DDValue(0) || v2(i).DDValue(0);
+          }
+      }
+  }
+
   
   virtual CF_Type GetType() const override {
       if(opname =="+") return CF_Type_add;

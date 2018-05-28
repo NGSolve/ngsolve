@@ -220,6 +220,21 @@ public:
                                               FlatVector<bool> nonzero,
                                               FlatVector<bool> nonzero_deriv,
                                               FlatVector<bool> nonzero_dderiv) const;
+
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const
+  {
+    Vector<bool> nz(values.Size()), nzd(values.Size()), nzdd(values.Size());
+    NonZeroPattern (ud, nz, nzd, nzdd);
+    for (size_t i = 0; i < values.Size(); i++)
+      {
+        values(i).Value() = nz(i);
+        values(i).DValue(0) = nzd(i);
+        values(i).DDValue(0) = nzdd(i);
+      }
+  }
+  
 };
 
 class ProxyUserData
