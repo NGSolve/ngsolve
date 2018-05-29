@@ -2,6 +2,8 @@
 
 #include "python_ngstd.hpp"
 #include <Python.h>
+#include <pybind11/numpy.h>
+
 
 
 PythonEnvironment pyenv;
@@ -142,6 +144,24 @@ const char* docu_string(const char* str)
 }
 
 
+template<typename T, typename TSCAL, typename TCLASS>
+void PyDefVecBuffer( TCLASS & c )
+{
+  c.def_buffer([](T &self) -> py::buffer_info {
+      return py::buffer_info
+        (
+         &self[0],                                     /* Pointer to buffer */
+         sizeof(TSCAL),                                /* Size of one scalar */
+         py::format_descriptor<TSCAL>::format(),       /* Python struct-style format descriptor */
+         1,                                            /* Number of dimensions */
+         { self.Size() },                              /* Buffer dimensions */
+         { sizeof(TSCAL)*(self.Addr(1)-self.Addr(0)) } /* Strides (in bytes) for each index */
+         );
+    });
+}
+
+
+
 void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
 
   
@@ -160,9 +180,14 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
     .def("SetMaxTracefileSize", &PajeTrace::SetMaxTracefileSize)
     ;
 
-  py::class_<FlatArray<double> > class_flatarrayd (m, "FlatArrayD");
+
+
+
+  
+  py::class_<FlatArray<double> > class_flatarrayd (m, "FlatArrayD", py::buffer_protocol());
   class_flatarrayd.def(py::init<size_t, double *>());
   PyDefVector<FlatArray<double>, double>(m, class_flatarrayd);
+  PyDefVecBuffer<FlatArray<double>,double>(class_flatarrayd);  
   PyDefToString<FlatArray<double>>(m, class_flatarrayd);
   
   py::class_<Array<double>, FlatArray<double> >(m, "ArrayD")
@@ -181,9 +206,10 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
     .def("print", [](Array<double> &a) { cout << a << endl; } )
     ;
 
-  py::class_<FlatArray<int> > class_flatarrayi (m, "FlatArrayI");
+  py::class_<FlatArray<int> > class_flatarrayi (m, "FlatArrayI", py::buffer_protocol());
   PyDefVector<FlatArray<int>, int>(m, class_flatarrayi);
   PyDefToString<FlatArray<int> >(m, class_flatarrayi);
+  PyDefVecBuffer<FlatArray<int>,int>(class_flatarrayi);
   class_flatarrayi.def(py::init<size_t, int *>());
 
   py::class_<Array<int>, FlatArray<int> >(m, "ArrayI")

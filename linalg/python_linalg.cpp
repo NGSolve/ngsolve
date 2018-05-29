@@ -42,11 +42,17 @@ void ExportSparseMatrix(py::module m)
                    vals[ii] = rv[j];
                  }
              }
-
+           /*
+           t2.Start();
+           // still copies, we don't understand why
            py::object pyri = py::cast(std::move(ri));
            py::object pyci = py::cast(std::move(ci));
            py::object pyvals = py::cast(std::move(vals));
+           t2.Stop();
            return py::make_tuple (pyri, pyci, pyvals);
+           */
+           // moves the arrays
+           return py::make_tuple (move(ri), move(ci), move(vals));
          })
 
     .def_static("CreateFromCOO",
