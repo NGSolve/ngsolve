@@ -83,6 +83,20 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("SubSet", [](const ParallelDofs & self, shared_ptr<BitArray> take_dofs) { 
         return self.SubSet(take_dofs); })
 #endif
+    .def(py::init([](py::object procs, PyMPI_Comm comm) {
+	  size_t n = py::len(procs);
+	  TableCreator<int> ct(n);
+	  while(!ct.Done()) {
+	    size_t rn = 0;
+	    for(auto row:procs) {
+	      for(auto v:row)
+		ct.Add(rn,v.cast<int>()); 
+	      rn++;
+	    }
+	    ct++;
+	  }
+	  return new ParallelDofs(comm.comm, ct.MoveTable());
+	}), "dist_procs"_a, "comm"_a)
     .def_property_readonly ("ndoflocal", [](const ParallelDofs & self) 
 			    { return self.GetNDofLocal(); },
                             "number of degrees of freedom")
@@ -586,7 +600,18 @@ inverse : string
   py::class_<ParallelMatrix, shared_ptr<ParallelMatrix>, BaseMatrix>
     (m, "ParallelMatrix", "MPI-distributed matrix")
     .def(py::init<shared_ptr<BaseMatrix>, shared_ptr<ParallelDofs>>())
+    .def(py::init<shared_ptr<BaseMatrix>, shared_ptr<ParallelDofs>, shared_ptr<ParallelDofs>>(),
+	 "mat","row_pardofs","col_pardofs")
     .def_property_readonly("local_mat", [](ParallelMatrix & mat) { return mat.GetMatrix(); })
+    .def("GetParallelDofs", [](ParallelMatrix & self) {
+	return self.GetParallelDofs();
+      })
+    .def("GetRowParallelDofs", [](ParallelMatrix & self) {
+	return self.GetRowParallelDofs();
+      })
+    .def("GetColParallelDofs", [](ParallelMatrix & self) {
+	return self.GetColParallelDofs();
+      })
     ;
 
   py::class_<FETI_Jump_Matrix, shared_ptr<FETI_Jump_Matrix>, BaseMatrix>

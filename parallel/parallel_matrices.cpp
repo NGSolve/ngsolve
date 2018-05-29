@@ -349,7 +349,8 @@ namespace ngla
   }
 
   ParallelMatrix :: ParallelMatrix (shared_ptr<BaseMatrix> amat, shared_ptr<ParallelDofs> apardofs)
-    : BaseMatrix(apardofs), mat(amat)
+    : BaseMatrix(apardofs), mat(amat),
+      row_paralleldofs(apardofs), col_paralleldofs(apardofs)
   { 
     mat->SetParallelDofs (apardofs);
 #ifdef USE_MUMPS
@@ -359,7 +360,18 @@ namespace ngla
 #endif
   }
 
+  
+  ParallelMatrix :: ParallelMatrix (shared_ptr<BaseMatrix> amat,
+				    shared_ptr<ParallelDofs> arpardofs,
+				    shared_ptr<ParallelDofs> acpardofs)
+    : BaseMatrix(nullptr), mat(amat),
+      row_paralleldofs(arpardofs), col_paralleldofs(acpardofs)
+  {
+    
+    
+  }
 
+  
   ParallelMatrix :: ~ParallelMatrix ()
   {
     ; // delete &mat;
@@ -384,17 +396,38 @@ namespace ngla
     return make_shared<ParallelMatrix> (mat->CreateMatrix(), paralleldofs);
   }
 
+  AutoVector ParallelMatrix :: CreateRowVector () const
+  {
+    if (!dynamic_cast<const SparseMatrix<double>*> (mat.get()))
+      throw Exception("ParallelMatrix::CreateRowVector only implemented for sparse matrices!");
+    if (row_paralleldofs==nullptr)
+      return make_shared<VVector<double>> (mat->Width());
+    return make_shared<ParallelVVector<double>> (mat->Width(), row_paralleldofs);
+    return shared_ptr<BaseVector>();
+  }
+  
+  AutoVector ParallelMatrix :: CreateColVector () const
+  {
+    if (!dynamic_cast<const SparseMatrix<double>*> (mat.get()))
+      throw Exception("ParallelMatrix::CreateColVector only implemented for sparse matrices!");
+    if (col_paralleldofs==nullptr)
+      return make_shared<VVector<double>> (mat->Height());
+    return make_shared<ParallelVVector<double>> (mat->Height(), col_paralleldofs);
+    return shared_ptr<BaseVector>();
+  }
+  
   AutoVector ParallelMatrix :: CreateVector () const
   {
+    if(row_paralleldofs != col_paralleldofs) {
+      throw Exception("ParallelMatrix::CreateVector called for nonsymmetric case (use CreateRowVector of CreateColVector)!");
+    }
     if (dynamic_cast<const SparseMatrix<double>*> (mat.get()))
       return make_shared<ParallelVVector<double>> (mat->Height(), paralleldofs);
-
-    cerr << "ParallelMatrix::CreateVector not implemented for matrix type " 
-	 << typeid(mat).name()
-	 << endl;
+    throw Exception("ParallelMatrix::CreateColVector only implemented for sparse matrices!");
     return shared_ptr<BaseVector>();
   }
 
+    
   ostream & ParallelMatrix :: Print (ostream & ost) const
   {
     ost << *mat;
