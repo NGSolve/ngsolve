@@ -395,6 +395,12 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
       py::keep_alive<0,1>()
     );
 
+  py::class_<Timer> (m, "Timer")
+    .def(py::init<const string&>())
+    .def("Start", &Timer::Start)
+    .def("Stop", &Timer::Stop)
+    ;
+  
   m.def("Timers",
 	  []() 
 	   {
