@@ -247,34 +247,37 @@ namespace ngla
     Transpose (const BaseMatrix & abm) : bm(abm) { ; }
     Transpose (shared_ptr<BaseMatrix> aspbm) : bm(*aspbm), spbm(aspbm) { ; }
     ///
-    virtual bool IsComplex() const { return bm.IsComplex(); }
+    virtual bool IsComplex() const override { return bm.IsComplex(); }
 
+    virtual AutoVector CreateRowVector () const override { return bm.CreateColVector(); }
+    virtual AutoVector CreateColVector () const override { return bm.CreateRowVector(); }
+    
     ///
-    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override
     {
       bm.MultTransAdd (s, x, y);
     }
     ///
-    virtual void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const 
+    virtual void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const override
     {
       bm.MultTransAdd (s, x, y);
     }
     ///
-    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override
     {
       bm.MultAdd (s, x, y);
     }
     ///
-    virtual void MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const
+    virtual void MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const override
     {
       bm.MultAdd (s, x, y);
     }  
 
-    virtual int VHeight() const { return bm.VWidth(); }
-    virtual int VWidth() const { return bm.VHeight(); }
+    virtual int VHeight() const override { return bm.VWidth(); }
+    virtual int VWidth() const override { return bm.VHeight(); }
 
 
-    virtual ostream & Print (ostream & ost) const
+    virtual ostream & Print (ostream & ost) const override
     {
       ost << "Transpose of " << endl;
       bm.Print(ost);
@@ -284,6 +287,74 @@ namespace ngla
 
 
 
+  /* ************************** Product ************************* */
+
+  /// action of product of two matrices 
+  class ProductMatrix : public BaseMatrix
+  {
+    const BaseMatrix & bma;
+    const BaseMatrix & bmb;
+    shared_ptr<BaseMatrix> spbma;
+    shared_ptr<BaseMatrix> spbmb;
+    mutable AutoVector tempvec;
+  public:
+    ///
+    ProductMatrix (const BaseMatrix & abma, const BaseMatrix & abmb)
+      : bma(abma), bmb(abmb), tempvec(abmb.CreateColVector())
+    { ; }
+    ProductMatrix (shared_ptr<BaseMatrix> aspbma, shared_ptr<BaseMatrix> aspbmb)
+      : bma(*aspbma), bmb(*aspbmb), spbma(aspbma), spbmb(aspbmb),
+        tempvec(aspbmb->CreateColVector())
+    { ; }
+    ///
+    virtual bool IsComplex() const override { return bma.IsComplex() || bmb.IsComplex(); }
+
+    virtual AutoVector CreateRowVector () const override { return bmb.CreateRowVector(); }
+    virtual AutoVector CreateColVector () const override { return bma.CreateColVector(); }
+    
+    ///
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override
+    {
+      bmb.Mult (x, tempvec);
+      bma.MultAdd (s, tempvec, y);
+    }
+    ///
+    virtual void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const override
+    {
+      bmb.Mult (x, tempvec);
+      bma.MultAdd (s, tempvec, y);
+    }
+    ///
+    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override
+    {
+      tempvec = 0.0;
+      bma.MultTransAdd (1, x, tempvec);
+      bmb.MultTransAdd (s, tempvec, y);
+    }
+    ///
+    virtual void MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const override
+    {
+      tempvec = 0.0;      
+      bma.MultTransAdd (1, x, tempvec);
+      bmb.MultTransAdd (s, tempvec, y);
+    }  
+
+    virtual int VHeight() const override { return bma.VHeight(); }
+    virtual int VWidth() const override { return bmb.VWidth(); }
+
+    virtual ostream & Print (ostream & ost) const override
+    {
+      ost << "Product of" << endl;
+      bma.Print(ost);
+      bmb.Print(ost);
+      return ost;
+    }
+  };
+
+
+
+
+  
   class VScaleMatrix : public BaseMatrix
   {
     const BaseMatrix & bm;
