@@ -375,8 +375,28 @@ namespace ngla
     ///
     virtual bool IsComplex() const override { return bma.IsComplex() || bmb.IsComplex(); }
 
-    virtual AutoVector CreateRowVector () const override { return bma.CreateRowVector(); }
-    virtual AutoVector CreateColVector () const override { return bma.CreateColVector(); }
+    virtual AutoVector CreateRowVector () const override
+    {
+      try
+        {
+          return bma.CreateRowVector();
+        }
+      catch (Exception e)
+        {
+          return bmb.CreateRowVector();          
+        }
+    }
+    virtual AutoVector CreateColVector () const override
+    {
+      try
+        {
+          return bma.CreateColVector();
+        }
+      catch (Exception e)
+        {
+          return bmb.CreateColVector();          
+        }
+    }
     
     ///
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override
@@ -475,31 +495,31 @@ namespace ngla
 
   /* ************************** Identity ************************* */
   
-  class Identity : public BaseMatrix
+  class IdentityMatrix : public BaseMatrix
   {
   public:
     ///
-    Identity () { ; }
+    IdentityMatrix () { ; }
     virtual bool IsComplex() const override { return false; }
     ///
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override
     {
-      y = s*x;
+      y += s*x;
     }
     ///
     virtual void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const override
     {
-      y = s*x;
+      y += s*x;
     }
     ///
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override
     {
-      y = s*x;
+      y += s*x;
     }
     ///
     virtual void MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const override
     {
-      y = s*x;      
+      y += s*x;      
     }  
 
     virtual int VHeight() const override { throw Exception("Identity: no Height"); }
