@@ -538,6 +538,10 @@ inverse : string
          { return make_shared<SumMatrix> (ma, mb, 1, 1); })
     .def("__sub__", [](shared_ptr<BM> ma, shared_ptr<BM> mb)->shared_ptr<BaseMatrix>
          { return make_shared<SumMatrix> (ma, mb, 1, -1); })
+    .def("__rmul__", [](shared_ptr<BM> ma, double a)->shared_ptr<BaseMatrix>
+         { return make_shared<VScaleMatrix<double>> (ma, a); })
+    .def("__rmul__", [](shared_ptr<BM> ma, Complex a)->shared_ptr<BaseMatrix>
+         { return make_shared<VScaleMatrix<Complex>> (ma, a); })
     .def("Update", [](BM &m) { m.Update(); }, py::call_guard<py::gil_scoped_release>())
     ;
 
