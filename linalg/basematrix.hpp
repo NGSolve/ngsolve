@@ -352,6 +352,72 @@ namespace ngla
   };
 
 
+  /* ************************** Sum ************************* */
+
+  /// action of product of two matrices 
+  class SumMatrix : public BaseMatrix
+  {
+    const BaseMatrix & bma;
+    const BaseMatrix & bmb;
+    shared_ptr<BaseMatrix> spbma;
+    shared_ptr<BaseMatrix> spbmb;
+    double a, b;
+  public:
+    ///
+    SumMatrix (const BaseMatrix & abma, const BaseMatrix & abmb,
+               double aa = 1, double ab = 1)
+      : bma(abma), bmb(abmb), a(aa), b(ab)
+    { ; }
+    SumMatrix (shared_ptr<BaseMatrix> aspbma, shared_ptr<BaseMatrix> aspbmb,
+                   double aa = 1, double ab = 1)
+      : bma(*aspbma), bmb(*aspbmb), spbma(aspbma), spbmb(aspbmb), a(aa), b(ab)
+    { ; }
+    ///
+    virtual bool IsComplex() const override { return bma.IsComplex() || bmb.IsComplex(); }
+
+    virtual AutoVector CreateRowVector () const override { return bma.CreateRowVector(); }
+    virtual AutoVector CreateColVector () const override { return bma.CreateColVector(); }
+    
+    ///
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override
+    {
+      bma.MultAdd (a*s, x, y);
+      bmb.MultAdd (b*s, x, y);
+    }
+    ///
+    virtual void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const override
+    {
+      bma.MultAdd (a*s, x, y);
+      bmb.MultAdd (b*s, x, y);
+    }
+    ///
+    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override
+    {
+      bma.MultTransAdd (a*s, x, y);
+      bmb.MultTransAdd (b*s, x, y);
+    }
+    ///
+    virtual void MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const override
+    {
+      bma.MultTransAdd (a*s, x, y);
+      bmb.MultTransAdd (b*s, x, y);
+    }  
+
+    virtual int VHeight() const override { return bma.VHeight(); }
+    virtual int VWidth() const override { return bma.VWidth(); }
+
+    virtual ostream & Print (ostream & ost) const override
+    {
+      ost << "Sum of" << endl;
+      ost << "Scale a = " << a << endl;
+      bma.Print(ost);
+      ost << "Scale b = " << b << endl;
+      bmb.Print(ost);
+      return ost;
+    }
+  };
+
+
 
 
   

@@ -534,6 +534,10 @@ inverse : string
     .def_property_readonly("T", [](shared_ptr<BM> m)->shared_ptr<BaseMatrix> { return make_shared<Transpose> (m); })
     .def("__matmul__", [](shared_ptr<BM> ma, shared_ptr<BM> mb)->shared_ptr<BaseMatrix>
          { return make_shared<ProductMatrix> (ma, mb); })
+    .def("__add__", [](shared_ptr<BM> ma, shared_ptr<BM> mb)->shared_ptr<BaseMatrix>
+         { return make_shared<SumMatrix> (ma, mb, 1, 1); })
+    .def("__sub__", [](shared_ptr<BM> ma, shared_ptr<BM> mb)->shared_ptr<BaseMatrix>
+         { return make_shared<SumMatrix> (ma, mb, 1, -1); })
     .def("Update", [](BM &m) { m.Update(); }, py::call_guard<py::gil_scoped_release>())
     ;
 
