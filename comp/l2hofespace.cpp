@@ -786,19 +786,11 @@ namespace ngcomp
   void L2SurfaceHighOrderFESpace :: UpdateCouplingDofArray()
   {
     ctofdof.SetSize(ndof);
-    ctofdof = WIREBASKET_DOF;
-
-    for (int i=0; i<ma->GetNSE(); i++)
+    for (auto i : Range(ma->GetNSE()))
       {
-        ElementId ei(BND, i);
-        if (!DefinedOn (BND, ma->GetElIndex (ei)))
-          {
-            ctofdof[i] = UNUSED_DOF;
-            int first = first_element_dof[i];
-            int next = first_element_dof[i+1];
-            for (int j = first; j < next; j++)
-              ctofdof[j] = UNUSED_DOF; //higher order
-          }
+        bool definedon = DefinedOn(ElementId(BND,i));
+        auto r = GetElementDofs(i);
+        ctofdof[r] = definedon ? WIREBASKET_DOF : UNUSED_DOF;
       }
   }
   // const FiniteElement & L2SurfaceHighOrderFESpace :: GetSFE (int elnr, LocalHeap & lh) const

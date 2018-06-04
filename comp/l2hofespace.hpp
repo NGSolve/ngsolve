@@ -170,6 +170,10 @@ namespace ngcomp
 
     virtual bool VarOrder() const override { return var_order; } 
     virtual int GetRelOrder() const override { return rel_order; }   
+    auto GetElementDofs (size_t nr) const
+    {
+      return Range (first_element_dof[nr], first_element_dof[nr+1]);
+    }
 
   };
 
