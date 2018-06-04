@@ -3760,7 +3760,7 @@ namespace ngfem
                     HeapReset hr(lh);
                     ngfem::ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype, k);
                     
-                    auto & ir_facet = GetSIMDIntegrationRule(etfacet, 2*fel.Order());
+                    auto & ir_facet = GetSIMDIntegrationRule(etfacet, 2*fel.Order()+bonus_intorder);
                     auto & ir_facet_vol = transform(k, ir_facet, lh);
                     auto & mir = trafo(ir_facet_vol, lh);
                     mir.ComputeNormalsAndMeasure (eltype, k);
@@ -3825,7 +3825,7 @@ namespace ngfem
             HeapReset hr(lh);
             ngfem::ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype, k);
             
-            const IntegrationRule & ir_facet = GetIntegrationRule(etfacet, 2*fel.Order());
+            const IntegrationRule & ir_facet = GetIntegrationRule(etfacet, 2*fel.Order()+bonus_intorder);
             IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
             BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
             mir.ComputeNormalsAndMeasure (eltype, k);
@@ -3856,10 +3856,10 @@ namespace ngfem
                               FlatMatrix<double> elmat,
                               LocalHeap & lh) const
   {
-    static Timer t("SymbolicEnergy::AddLinearizedElementMatrix", 2);
-    static Timer tdmat("SymbolicEnergy::CalcDMat", 2);
+    static Timer t("SymbolicEnergy::AddLinearizedElementMatrix (nosimd)", 2);
+    static Timer tdmat("SymbolicEnergy::CalcDMat (nosimd)", 2);
     // Timer & tdmat = const_cast<Timer&> (timer);
-    static Timer tbmat("SymbolicEnergy::CalcBMat", 2);
+    static Timer tbmat("SymbolicEnergy::CalcBMat (nosimd)", 2);
     static Timer tmult("SymbolicEnergy::mult", 2);
     size_t tid = TaskManager::GetThreadId();
     ThreadRegionTimer reg(t, tid);
@@ -3974,13 +3974,14 @@ namespace ngfem
                                                      FlatMatrix<double> elmat,
                                                      LocalHeap & lh) const
   {
-        size_t tid = TaskManager::GetThreadId();        
-        static Timer tdmat("SymbolicEnergy::CalcDMat - simd", 2);
-        static Timer tdmat2("SymbolicEnergy::CalcDMat2 - simd", 2);
-        static Timer tbmat("SymbolicEnergy::CalcBMat - simd", 2);
-        static Timer tmult("SymbolicEnergy::mult - simd", 2);
-        
-
+    static Timer t("SymbolicEnergy::AddLinearizedElementMatrix - simd", 2);
+    size_t tid = TaskManager::GetThreadId();        
+    static Timer tdmat("SymbolicEnergy::CalcDMat - simd", 2);
+    static Timer tdmat2("SymbolicEnergy::CalcDMat2 - simd", 2);
+    static Timer tbmat("SymbolicEnergy::CalcBMat - simd", 2);
+    static Timer tmult("SymbolicEnergy::mult - simd", 2);
+    
+    ThreadRegionTimer reg(t, tid);
     
             FlatMatrix<AutoDiffDiff<1,SIMD<double>>> ddval(1, mir.Size(), lh);
             FlatArray<FlatMatrix<SIMD<double>>> diags(trial_proxies.Size(), lh);
@@ -4175,7 +4176,7 @@ namespace ngfem
             HeapReset hr(lh);
             ngfem::ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype, k);
             
-            const IntegrationRule & ir_facet = GetIntegrationRule(etfacet, 2*fel.Order());
+            const IntegrationRule & ir_facet = GetIntegrationRule(etfacet, 2*fel.Order()+bonus_intorder);
             IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
             BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
             mir.ComputeNormalsAndMeasure (eltype, k);
@@ -4264,8 +4265,8 @@ namespace ngfem
                   {
                     HeapReset hr(lh);
                     ngfem::ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype, k);
-                    
-                    auto & ir_facet = GetSIMDIntegrationRule(etfacet, 2*fel.Order());
+
+                    auto & ir_facet = GetSIMDIntegrationRule(etfacet, 2*fel.Order()+bonus_intorder);
                     auto & ir_facet_vol = transform(k, ir_facet, lh);
                     auto & mir = trafo(ir_facet_vol, lh);
                     mir.ComputeNormalsAndMeasure (eltype, k);
@@ -4366,7 +4367,7 @@ namespace ngfem
             HeapReset hr(lh);
             ngfem::ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype, k);
             
-            const IntegrationRule & ir_facet = GetIntegrationRule(etfacet, 2*fel.Order());
+            const IntegrationRule & ir_facet = GetIntegrationRule(etfacet, 2*fel.Order()+bonus_intorder);
             IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
             BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
             mir.ComputeNormalsAndMeasure (eltype, k);

@@ -32,6 +32,7 @@ namespace ngcomp
     // table of first element dofnumber 
     Array<DofId> first_element_dof;
     bool all_dofs_together;
+    COUPLING_TYPE lowest_order_ct;
   public:
 
     L2HighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags=false);
