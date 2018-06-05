@@ -31,7 +31,7 @@ del TmpRedraw
 
 ngstd.__all__ = ['ArrayD', 'ArrayI', 'BitArray', 'Flags', 'HeapReset', 'IntRange', 'LocalHeap', 'Timers', 'RunWithTaskManager', 'TaskManager', 'SetNumThreads', 'MPI_Init']
 bla.__all__ = ['Matrix', 'Vector', 'InnerProduct', 'Norm']
-la.__all__ = ['BaseMatrix', 'BaseVector', 'BlockVector', 'BlockMatrix', 'CreateVVector', 'InnerProduct', 'CGSolver', 'QMRSolver', 'GMRESSolver', 'ArnoldiSolver', 'Projector']
+la.__all__ = ['BaseMatrix', 'BaseVector', 'BlockVector', 'BlockMatrix', 'CreateVVector', 'InnerProduct', 'CGSolver', 'QMRSolver', 'GMRESSolver', 'ArnoldiSolver', 'Projector', 'IdentityMatrix']
 fem.__all__ =  ['BFI', 'CoefficientFunction', 'Parameter', 'CoordCF', 'ET', 'ElementTransformation', 'ElementTopology', 'FiniteElement', 'ScalarFE', 'H1FE', 'HEX', 'L2FE', 'LFI', 'POINT', 'PRISM', 'PYRAMID', 'QUAD', 'SEGM', 'TET', 'TRIG', 'VERTEX', 'EDGE', 'FACE', 'CELL', 'ELEMENT', 'FACET', 'SetPMLParameters', 'sin', 'cos', 'tan', 'atan', 'acos', 'asin', 'exp', 'log', 'sqrt', 'floor', 'ceil', 'Conj', 'atan2', 'pow', 'specialcf', \
            'BlockBFI', 'BlockLFI', 'CompoundBFI', 'CompoundLFI', 'BSpline', \
            'IntegrationRule', 'IfPos' \
@@ -79,7 +79,7 @@ BaseMatrix.expr = property(__expr.MatExpr)
 BaseMatrix.data = property(__expr.Expr, __expr.expr_data)
 # BaseMatrix.T = property(__expr.TransExpr)
 BaseMatrix.__mul__ = __expr.expr_mul
-BaseMatrix.__rmul__ = __expr.expr_rmul
+# BaseMatrix.__rmul__ = __expr.expr_rmul
 BaseMatrix.__neg__ = __expr.expr_neg
 
 Timing = timing.Timing

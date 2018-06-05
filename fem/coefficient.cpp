@@ -1692,6 +1692,19 @@ public:
     nonzero_dderiv = nzd || nzdd;
   }
 
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    auto v1 = input[0];
+    AutoDiffDiff<1,bool> sum(false);
+    for (int i = 0; i < dim1; i++)
+      sum += v1(i);
+    values(0).Value() = sum.Value();
+    values(0).DValue(0) = sum.DValue(0);
+    values(0).DDValue(0) = sum.DValue(0) || sum.DDValue(0);
+  }
+  
   virtual CF_Type GetType() const override { return CF_Type_norm; }
 };
 
@@ -3506,11 +3519,21 @@ public:
     template <typename MIR, typename T, ORDERING ORD>
     void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
     {
-      auto points = ir.GetPoints();
-      size_t nv = ir.Size();
-      __assume (nv > 0);
-      for (size_t i = 0; i < nv; i++)
-        values(0,i) = points(i, dir);
+      if(!ir.IsComplex())
+        {
+          auto points = ir.GetPoints();
+          size_t nv = ir.Size();
+          __assume (nv > 0);
+          for (size_t i = 0; i < nv; i++)
+            values(0,i) = points(i, dir);
+        }
+      else
+        {
+          auto cpoints = ir.GetPointsComplex();
+          __assume(ir.Size() > 0);
+          for(auto i : Range(ir.Size()))
+            values(0,i) = cpoints(i,dir).real();
+        }
     }
 
     template <typename MIR, typename T, ORDERING ORD>
