@@ -274,9 +274,9 @@ namespace ngla
       }
   }
 
-  int AMG_H1 :: NZE() const
+  size_t AMG_H1 :: NZE() const
   {
-    int nze = pmat->NZE();
+    size_t nze = pmat->NZE();
     if (recAMG)
       nze += recAMG->NZE();
     return nze;
@@ -1128,9 +1128,9 @@ namespace ngla
 
 
 
-  int AMG_HCurl :: NZE() const
+  size_t AMG_HCurl :: NZE() const
   {
-    int nze = pmat->NZE() + h1mat->NZE();
+    size_t nze = pmat->NZE() + h1mat->NZE();
     if (recAMG) 
       nze += recAMG->NZE() + h1AMG->NZE();
 
