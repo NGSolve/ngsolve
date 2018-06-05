@@ -801,7 +801,6 @@ namespace ngcomp
     static Timer t("MeshAccess::UpdateBuffers");
     RegionTimer reg(t);
 
-    timestamp = NGS_Object::GetNextTimeStamp();
     
     if (!mesh.Valid())
       {
@@ -817,6 +816,14 @@ namespace ngcomp
         dim = -1;
         return;
       }
+
+    auto netgen_mesh_timestamp = mesh.GetTimeStamp();
+    // cout << "netgen_mesh_timestamp = " << netgen_mesh_timestamp << ", mytime = " << mesh_timestamp << endl;
+    if (netgen_mesh_timestamp == mesh_timestamp) return;
+    mesh_timestamp = netgen_mesh_timestamp;
+    
+    timestamp = NGS_Object::GetNextTimeStamp();
+    
 
     dim = mesh.GetDimension();
     nlevels = mesh.GetNLevels(); 

@@ -155,7 +155,8 @@ namespace ngcomp
         prol = make_shared<ElementProlongation> (*static_cast<ElementFESpace*> (low_order_space.get()));
       }
 
-
+    lowest_order_ct =
+      flags.GetDefineFlagX ("lowest_order_wb").IsTrue() ? WIREBASKET_DOF : LOCAL_DOF;
 
     switch (ma->GetDimension())
       {
@@ -225,34 +226,18 @@ namespace ngcomp
   void L2HighOrderFESpace :: UpdateCouplingDofArray()
   {
     ctofdof.SetSize(ndof);
-    ctofdof = WIREBASKET_DOF;
-
-    if (!all_dofs_together)
-      for (int i=0; i<ma->GetNE(); i++)
-	{
-          ElementId ei(VOL, i);
-          if (!DefinedOn (VOL, ma->GetElIndex (ei)))
-            {
-              ctofdof[i] = UNUSED_DOF;
-              continue;
-            }
-
-	  ctofdof[i] = LOCAL_DOF; //lowest order (constants)
-	  int first = first_element_dof[i];
-	  int next = first_element_dof[i+1];
-	  for (int j = first; j < next; j++)
-	    ctofdof[j] = LOCAL_DOF; //higher order
-	}
-    else
-      for (int i=0; i<ma->GetNE(); i++)
-	{
-	  int first = first_element_dof[i];
-	  int next = first_element_dof[i+1];
-	  if (next > first)
-	    ctofdof[first] = LOCAL_DOF;  //lowest order (constants)
-	  for (int j = first+1; j < next; j++)
-	    ctofdof[j] = LOCAL_DOF;
-	}
+    for (auto i : Range(ma->GetNE()))
+      {
+        bool definedon = DefinedOn(ElementId(VOL,i));
+        auto r = GetElementDofs(i);
+        ctofdof[r] = definedon ? LOCAL_DOF : UNUSED_DOF;
+        
+        if (!all_dofs_together)
+	  ctofdof[i] = definedon ? lowest_order_ct : UNUSED_DOF;
+        else
+          if (r.Size() != 0)
+            ctofdof[r.First()] = definedon ? lowest_order_ct : UNUSED_DOF;            
+      }
   }
 
   void L2HighOrderFESpace :: UpdateDofTables()
@@ -721,7 +706,6 @@ namespace ngcomp
 
     if(parseflags) CheckFlags(flags);
     
-    
     if(flags.NumFlagDefined("relorder"))
       throw Exception("Variable order not implemented for L2SurfaceHighOrderFESpace"); 
     
@@ -796,8 +780,19 @@ namespace ngcomp
 	  }
       }
     first_element_dof[nel] = ndof;
+    UpdateCouplingDofArray();
   }
 
+  void L2SurfaceHighOrderFESpace :: UpdateCouplingDofArray()
+  {
+    ctofdof.SetSize(ndof);
+    for (auto i : Range(ma->GetNSE()))
+      {
+        bool definedon = DefinedOn(ElementId(BND,i));
+        auto r = GetElementDofs(i);
+        ctofdof[r] = definedon ? WIREBASKET_DOF : UNUSED_DOF;
+      }
+  }
   // const FiniteElement & L2SurfaceHighOrderFESpace :: GetSFE (int elnr, LocalHeap & lh) const
   // {
   //   if (ma->GetDimension() == 2)
@@ -874,7 +869,7 @@ namespace ngcomp
 
   FiniteElement & L2SurfaceHighOrderFESpace :: GetFE (ElementId ei, Allocator & lh) const
   {
-    if (ei.VB() == BND)
+    if (ei.VB() == BND && DefinedOn(ma->GetElement(ei)))
       {
         if (ma->GetDimension() == 2)
           {
@@ -938,7 +933,7 @@ namespace ngcomp
   GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
     dnums.SetSize (0);
-    if(ei.VB()!=BND) return;
+    if(ei.VB()!=BND || !DefinedOn(ei)) return;
     int first = first_element_dof[ei.Nr()];
     int neldofs = first_element_dof[ei.Nr()+1] - first;
     for (int j = 0; j < neldofs; j++)
