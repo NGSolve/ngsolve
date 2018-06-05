@@ -1949,6 +1949,8 @@ namespace ngfem
     // virtual BareSliceMatrix<SIMD<double>> GetPoints() const = 0;
     BareSliceMatrix<SIMD<double>> GetPoints() const { return points; }
     virtual void Print (ostream & ost) const = 0;
+    bool IsComplex() const { return false; }
+    BareSliceMatrix<SIMD<Complex>> GetPointsComplex() const { throw ExceptionNOSIMD("Not implemented"); }
 
     // for DG jump terms
     void SetOtherMIR (const SIMD_BaseMappedIntegrationRule * other) { other_mir = other; }

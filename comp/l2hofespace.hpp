@@ -32,6 +32,7 @@ namespace ngcomp
     // table of first element dofnumber 
     Array<DofId> first_element_dof;
     bool all_dofs_together;
+    COUPLING_TYPE lowest_order_ct;
   public:
 
     L2HighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags=false);
@@ -147,6 +148,7 @@ namespace ngcomp
     ///
     virtual void Update(LocalHeap & lh) override;
     /// 
+    virtual void UpdateCouplingDofArray();    
     //virtual void UpdateDofTables();
     ///
     virtual size_t GetNDof () const throw() override;
@@ -168,6 +170,10 @@ namespace ngcomp
 
     virtual bool VarOrder() const override { return var_order; } 
     virtual int GetRelOrder() const override { return rel_order; }   
+    auto GetElementDofs (size_t nr) const
+    {
+      return Range (first_element_dof[nr], first_element_dof[nr+1]);
+    }
 
   };
 

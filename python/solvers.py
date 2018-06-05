@@ -17,6 +17,9 @@ def CG(mat, rhs, pre=None, sol=None, tol=1e-12, maxsteps = 100, printrates = Tru
     s.data = w
     # wdn = InnerProduct (w,d)
     wdn = w.InnerProduct(d, conjugate=conjugate)
+
+    if wdn==0:
+        return u
     
     for it in range(maxsteps):
         w.data = mat * s

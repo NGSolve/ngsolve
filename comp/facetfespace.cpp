@@ -58,25 +58,14 @@ namespace ngcomp
       else
         {
           throw ExceptionNOSIMD("facet-simd-bnd not ready");
-            /*
-          if (mip.BaseMappedIntegrationPoint::VB() == BND) 
-            {
-              const BaseScalarFiniteElement & fel = static_cast<const BaseScalarFiniteElement&> (bfel);
-              fel.CalcShape (mip.IP(), mat.Row(0));
-            }
-          else
-            throw Exception("cannot evaluate facet-fe inside element");
-            */
         }
     }
 
     
     using DiffOp<DiffOpIdFacet<D>>::ApplySIMDIR;          
     static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
-                             BareSliceVector<double> x, ABareSliceMatrix<double> y)
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
-      // Cast(fel).Evaluate (mir.IR(), x, y.Row(0));
-
       const FacetVolumeFiniteElement<D> & fel_facet = static_cast<const FacetVolumeFiniteElement<D>&> (bfel);
 
       int facetnr = mir.IR()[0].FacetNr();
@@ -90,9 +79,8 @@ namespace ngcomp
 
     using DiffOp<DiffOpIdFacet<D>>::AddTransSIMDIR;          
     static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
-                                ABareSliceMatrix<double> y, BareSliceVector<double> x)
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
-      // Cast(fel).AddTrans (mir.IR(), y.Row(0), x);
       const FacetVolumeFiniteElement<D> & fel_facet = static_cast<const FacetVolumeFiniteElement<D>&> (bfel);
 
       int facetnr = mir.IR()[0].FacetNr();
@@ -103,8 +91,6 @@ namespace ngcomp
                                           y.Row(0),
                                           x.Range(fel_facet.GetFacetDofs(facetnr)));
     }
-    
-    
   }; 
 
 
