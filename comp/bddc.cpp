@@ -36,6 +36,8 @@ namespace ngcomp
     BaseVector * tmp;
     BaseVector * tmp2;
 
+    shared_ptr<BitArray> free_dofs = nullptr;
+    
     shared_ptr<BitArray> wb_free_dofs;
 
   public:
@@ -44,13 +46,14 @@ namespace ngcomp
     void SetCoarseGridPreconditioner (bool ah = true) { coarse = ah; }
 
     BDDCMatrix (shared_ptr<BilinearForm> abfa, 
+		shared_ptr<BitArray> afree_dofs,
                 Flags flags,
 		const string & ainversetype, 
 		const string & acoarsetype, 
                 bool ablock, 
                 bool ahypre
       )
-      : bfa(abfa), block(ablock), inversetype(ainversetype), coarsetype(acoarsetype)
+      : bfa(abfa), block(ablock), inversetype(ainversetype), coarsetype(acoarsetype), free_dofs(afree_dofs)
     {
       static Timer timer ("BDDC Constructor");
 
@@ -77,7 +80,8 @@ namespace ngcomp
       Array<int> ifcnt(ma->GetNE()+ma->GetNSE()+ma->GetNCD2E());
       wbdcnt = 0;
       ifcnt = 0;
-      const BitArray & freedofs = *fes->GetFreeDofs();
+
+      const BitArray & freedofs = *free_dofs;
       
 
       LocalHeap lh(10000, "BDDC-constr, dummy heap");
@@ -141,9 +145,8 @@ namespace ngcomp
 	if (fes->GetDofCouplingType(i) == WIREBASKET_DOF)
 	  wb_free_dofs -> Set(i);
 
+      wb_free_dofs -> And (*free_dofs);
 
-      if (fes->GetFreeDofs())
-	wb_free_dofs -> And (*fes->GetFreeDofs());
       
       if (!bfa->SymmetricStorage()) 
 	{
@@ -343,7 +346,6 @@ namespace ngcomp
         }
       
       // now generate wire-basked solver
-
       if (block)
 	{
           if (coarse)
@@ -387,7 +389,6 @@ namespace ngcomp
 
 	      pwbmat = make_shared<ParallelMatrix> (pwbmat, pardofs);
 	      pwbmat -> SetInverseType (inversetype);
-
 #ifdef HYPRE
 	      if (hypre)
 		inv = make_shared<HyprePreconditioner> (*pwbmat, wb_free_dofs);
@@ -465,6 +466,7 @@ namespace ngcomp
 
       RegionTimer reg (timer);
 
+
       x.Cumulate();
       y = x;
 
@@ -515,6 +517,7 @@ namespace ngcomp
       timerharmonicext.Stop();
 
       y.Cumulate();
+
     }
   };
 
@@ -533,6 +536,7 @@ namespace ngcomp
     shared_ptr<FESpace> fes;
     shared_ptr<BDDCMatrix<SCAL,TV>> pre;
     shared_ptr<BitArray> freedofs;
+    bool use_own_freedofs = false;
     string inversetype;
     string coarsetype;
     bool block, hypre;
@@ -580,11 +584,17 @@ namespace ngcomp
     {
       ; // delete pre;
     }
-    
+
+    virtual void SetFreeDofs (shared_ptr<BitArray> afreedofs)
+    {
+      use_own_freedofs = true;
+      freedofs = afreedofs;
+    }
+
     virtual void InitLevel (shared_ptr<BitArray> _freedofs) 
     {
-      freedofs = _freedofs;
-      pre = make_shared<BDDCMatrix<SCAL,TV>>(bfa, flags, inversetype, coarsetype, block, hypre);
+      if(!use_own_freedofs) freedofs = _freedofs;
+      pre = make_shared<BDDCMatrix<SCAL,TV>>(bfa, freedofs, flags, inversetype, coarsetype, block, hypre);
       pre -> SetHypre (hypre);
     }
 
@@ -670,7 +680,7 @@ namespace ngcomp
     FlatMatrix<SCAL> helmat(used,used, lh);
     hdnums = dnums[compress];
     helmat = elmat.Rows(compress).Cols(compress);
-    
+
     if (L2Norm (helmat) != 0)
       pre -> AddMatrix(helmat, hdnums, id, lh);
   }

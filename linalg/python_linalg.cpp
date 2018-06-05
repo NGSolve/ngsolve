@@ -599,7 +599,8 @@ inverse : string
 #ifdef PARALLEL
   py::class_<ParallelMatrix, shared_ptr<ParallelMatrix>, BaseMatrix>
     (m, "ParallelMatrix", "MPI-distributed matrix")
-    .def(py::init<shared_ptr<BaseMatrix>, shared_ptr<ParallelDofs>>())
+    .def(py::init<shared_ptr<BaseMatrix>, shared_ptr<ParallelDofs>>(),
+	 "mat", "pardofs")
     .def(py::init<shared_ptr<BaseMatrix>, shared_ptr<ParallelDofs>, shared_ptr<ParallelDofs>>(),
 	 "mat","row_pardofs","col_pardofs")
     .def_property_readonly("local_mat", [](ParallelMatrix & mat) { return mat.GetMatrix(); })
