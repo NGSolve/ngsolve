@@ -637,7 +637,10 @@ inverse : string
 
   py::class_<FETI_Jump_Matrix, shared_ptr<FETI_Jump_Matrix>, BaseMatrix>
     (m, "FETI_Jump", "B-matrix of the FETI-system")
-    .def(py::init<shared_ptr<ParallelDofs>>())
+    .def(py::init<shared_ptr<ParallelDofs>>(),
+	 py::arg("pardofs"))
+    .def(py::init<shared_ptr<ParallelDofs>, shared_ptr<ParallelDofs>>(),
+	 py::arg("pardofs"), py::arg("u_pardofs"))
     .def("GetRowParallelDofs", [](FETI_Jump_Matrix & self) {
 	return self.GetRowParallelDofs();
       })
