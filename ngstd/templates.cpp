@@ -11,6 +11,7 @@
 namespace ngstd
 {
   MPI_Comm ngs_comm;
+  MPI_Comm onlyme_comm;
 
   ostream * testout = &cout;
   int printmessage_importance = 5;

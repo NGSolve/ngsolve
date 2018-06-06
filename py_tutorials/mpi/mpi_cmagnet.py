@@ -9,6 +9,7 @@ comm = MPI_Init()
 rank = comm.rank
 np = comm.size
 
+do_vtk = False
 
 def MakeGeometry():
     geometry = CSGeometry()
@@ -69,13 +70,13 @@ f.Assemble()
 solver = CGSolver(mat=a.mat, pre=c.mat)
 u.vec.data = solver * f.vec
 
-
-import os
-output_path = os.path.dirname(os.path.realpath(__file__)) + "/cmagnet_output"
-if rank==0 and not os.path.exists(output_path):
-    os.mkdir(output_path)
-comm.Barrier() #wait until master has created the directory!!
-vtk = VTKOutput(ma=mesh, coefs=[u.Deriv()], names=["sol"], filename=output_path+"/vtkout_p"+str(rank), subdivision=2)
-vtk.Do()
+if do_vtk:
+    import os
+    output_path = os.path.dirname(os.path.realpath(__file__)) + "/cmagnet_output"
+    if rank==0 and not os.path.exists(output_path):
+        os.mkdir(output_path)
+    comm.Barrier() #wait until master has created the directory!!
+    vtk = VTKOutput(ma=mesh, coefs=[u.Deriv()], names=["sol"], filename=output_path+"/vtkout_p"+str(rank), subdivision=2)
+    vtk.Do()
 
 #Draw (u.Deriv(), mesh, "B-field", draw_surf=False)
