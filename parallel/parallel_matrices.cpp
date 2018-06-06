@@ -526,8 +526,8 @@ namespace ngla
 
 
 
-  FETI_Jump_Matrix :: FETI_Jump_Matrix (shared_ptr<ParallelDofs> apardofs)
-      : BaseMatrix(apardofs)
+  FETI_Jump_Matrix :: FETI_Jump_Matrix (shared_ptr<ParallelDofs> apardofs, shared_ptr<ParallelDofs> au_paralleldofs)
+    : BaseMatrix(apardofs), u_paralleldofs(au_paralleldofs)
   {
     
     size_t njs = 0;
@@ -601,7 +601,14 @@ namespace ngla
 
   
   AutoVector FETI_Jump_Matrix :: CreateRowVector () const
-  { throw Exception("Called FETI_Jump_Matrix :: CreateRowVector, this is not well defined"); }
+  {
+    // throw Exception("Called FETI_Jump_Matrix :: CreateRowVector, this is not well defined");
+    if(u_paralleldofs==nullptr) {
+      return make_shared<VVector<double>>(VHeight());
+    }
+    return make_shared<ParallelVVector<double>> (u_paralleldofs->GetNDofLocal(),
+						 u_paralleldofs);
+  }
   
   AutoVector FETI_Jump_Matrix :: CreateColVector () const
   {
