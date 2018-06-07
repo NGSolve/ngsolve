@@ -255,6 +255,7 @@ namespace ngfem
       ([this,&bmir,coefs,values](auto CODIM)
        {
          constexpr int DIMSPACE = DIM+CODIM.value;
+         IC<DIM+CODIM.value> IC_DIMSPACE;
          if (bmir.DimSpace() == DIMSPACE)
            {
              auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
@@ -263,7 +264,7 @@ namespace ngfem
                  TIP<DIM,AutoDiffRec<DIMSPACE,SIMD<double>>> adp = GetTIPHDiv(mir[i]);
                  Vec<DIMSPACE,SIMD<double>> sum(0.0);
                  static_cast<const FEL*> (this) ->         
-                   T_CalcShape (adp, SBLambda ([coefs,&sum] (size_t j, THDiv2ShapeNew<DIMSPACE,SIMD<double>> shape)
+                   T_CalcShape (adp, SBLambda ([coefs,&sum,IC_DIMSPACE] (size_t j, THDiv2ShapeNew<IC_DIMSPACE.value,SIMD<double>> shape)
                                                {
                                                  sum += coefs(j) * shape.Data();
                                                }));
