@@ -286,6 +286,7 @@ namespace ngfem
   {
   public:
     INLINE operator Vec<DIM,SCAL> () { return 0.0; }
+    INLINE Vec<DIM,SCAL> Data() const { return 0.0; }    
   };
 
 
@@ -319,6 +320,7 @@ namespace ngfem
     }
     
     INLINE operator Vec<2,SCAL> () const { return data; }
+    INLINE Vec<2,SCAL> Data() const { return data; }
   };
 
 
@@ -421,6 +423,7 @@ namespace ngfem
     }
 
     INLINE operator Vec<3,SCAL> () const { return data; }
+    INLINE Vec<3,SCAL> Data() const { return data; }    
   };
 
 
