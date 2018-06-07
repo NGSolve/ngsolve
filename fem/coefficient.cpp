@@ -3530,8 +3530,9 @@ public:
       else
         {
           auto cpoints = ir.GetPointsComplex();
-          __assume(ir.Size() > 0);
-          for(auto i : Range(ir.Size()))
+          size_t nv = ir.Size();
+          __assume (nv > 0);
+          for(auto i : Range(nv))
             values(0,i) = cpoints(i,dir).real();
         }
     }

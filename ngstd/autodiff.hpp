@@ -594,7 +594,12 @@ INLINE AutoDiff<D,SCAL> asin (AutoDiff<D,SCAL> x)
     }
   };
 
-  
+  template<int D, typename SCAL>
+  ostream & operator<< (ostream & ost, AutoDiffRec<D,SCAL> ad)
+  {
+    return ost << AutoDiff<D,SCAL> (ad);
+  }
+
   template <typename SCAL>
   class AutoDiffRec<0,SCAL> : public AlignedAlloc<AutoDiffRec<0,SCAL>>
   {
