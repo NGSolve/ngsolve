@@ -151,9 +151,9 @@ namespace ngfem
                  static_cast<const FEL*> (this) ->                 
                    T_CalcShape (adp, SBLambda ([shapes,i,DIMSPACE] (size_t j, THDiv2ShapeNew<DIMSPACE,SIMD<double>> shape)
                                                {
-                                                 Vec<DIMSPACE,SIMD<double>> vshape = shape;                                          
-                                                 for (size_t k = 0; k < DIMSPACE; k++)
-                                                   shapes(j*DIMSPACE+k, i) = vshape(k);
+                                                 auto vshape = shape.Data(); 
+                                                 for (size_t k = 0; k < vshape.Size(); k++)
+                                                   shapes(j*vshape.Size()+k, i) = vshape(k);
                                                }));
                }
            }
@@ -265,8 +265,7 @@ namespace ngfem
                  static_cast<const FEL*> (this) ->         
                    T_CalcShape (adp, SBLambda ([coefs,&sum] (size_t j, THDiv2ShapeNew<DIMSPACE,SIMD<double>> shape)
                                                {
-                                                 Vec<DIMSPACE,SIMD<double>> vshape = shape;
-                                                 sum += coefs(j) * vshape;
+                                                 sum += coefs(j) * shape.Data();
                                                }));
                  for (size_t k = 0; k < DIMSPACE; k++)
                    values(k,i) = sum(k);
@@ -321,9 +320,9 @@ namespace ngfem
                  static_cast<const FEL*> (this) -> 
                    T_CalcShape (adp, SBLambda ([vali,coefs] (size_t j, THDiv2ShapeNew<DIMSPACE,SIMD<double>> shape)
                                                {
-                                                 Vec<DIMSPACE,SIMD<double>> vshape = shape;                                            
+                                                 auto vshape = shape.Data(); 
                                                  SIMD<double> sum = 0.0;
-                                                 for (size_t k = 0; k < DIMSPACE; k++)
+                                                 for (size_t k = 0; k < vshape.Size(); k++)
                                                    sum += vali(k) * vshape(k);
                                                  coefs(j) += HSum(sum);
                                                }));
