@@ -398,13 +398,25 @@ namespace ngla
   {
     auto & bvx = dynamic_cast_BlockVector(x);
     auto & bvy = dynamic_cast_BlockVector(y);
-    
     for (size_t i = 0; i < h; i++)
       for (size_t j = 0; j < w; j++)
         {
           auto & spmat = mats[i][j];
           if (spmat)
               spmat->MultAdd(s, *bvx[j], *bvy[i]);
+        }
+  }
+
+  void BlockMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    auto & bvx = dynamic_cast_BlockVector(x);
+    auto & bvy = dynamic_cast_BlockVector(y);
+    for (size_t i = 0; i < h; i++)
+      for (size_t j = 0; j < w; j++)
+        {
+          auto & spmat = mats[i][j];
+          if (spmat)
+              spmat->MultTransAdd(s, *bvx[i], *bvy[j]);
         }
   }
 

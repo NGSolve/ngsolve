@@ -92,6 +92,7 @@ namespace ngla
   public:
     BlockMatrix (const Array<Array<shared_ptr<BaseMatrix>>> & amats);
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
 
     const shared_ptr<BaseMatrix> & operator()(size_t i, size_t j)
     {
