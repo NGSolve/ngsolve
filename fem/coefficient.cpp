@@ -1674,6 +1674,15 @@ public:
         values(0,i) = sqrt(sum);
       }
   }
+
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
+  {
+    auto res = CodeExpr();
+    TraverseDimensions( c1->Dimensions(), [&](int ind, int i, int j) {
+        res += Var(inputs[0],i,j).Func("L2Norm2");
+    });
+    code.body += Var(index,0,0).Assign( res.Func("sqrt"));
+  }
   
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
                                FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
@@ -1785,6 +1794,14 @@ public:
       }
   }
 
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
+  {
+    auto res = CodeExpr();
+    TraverseDimensions( c1->Dimensions(), [&](int ind, int i, int j) {
+        res += Var(inputs[0],i,j).Func("L2Norm2");
+    });
+    code.body += Var(index,0,0).Assign( res.Func("sqrt"));
+  }
 
   
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
