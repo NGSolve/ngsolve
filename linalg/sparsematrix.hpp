@@ -413,7 +413,9 @@ namespace ngla
     // virtual BaseMatrix * CreateMatrix (const Array<int> & elsperrow) const;
     ///
     virtual AutoVector CreateVector () const override;
-
+    virtual AutoVector CreateRowVector () const override;
+    virtual AutoVector CreateColVector () const override;
+    
     virtual shared_ptr<BaseJacobiPrecond>
       CreateJacobiPrecond (shared_ptr<BitArray> inner) const override
     { 
