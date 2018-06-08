@@ -1353,6 +1353,23 @@ namespace ngla
   AutoVector SparseMatrix<TM,TV_ROW,TV_COL> ::
   CreateVector () const
   {
+    if(this->size==this->width)
+      return make_shared<VVector<TVY>> (this->size);
+    else
+      throw Exception("Non-Symmetric Sparse Matrix cannot CreateVector. Use Create-Row/Col-Vector");
+  }
+
+  template <class TM, class TV_ROW, class TV_COL>
+  AutoVector SparseMatrix<TM,TV_ROW,TV_COL> ::
+  CreateRowVector () const
+  {
+    return make_shared<VVector<TVY>> (this->width);
+  }
+
+  template <class TM, class TV_ROW, class TV_COL>
+  AutoVector SparseMatrix<TM,TV_ROW,TV_COL> ::
+  CreateColVector () const
+  {
     return make_shared<VVector<TVY>> (this->size);
   }
 
