@@ -22,7 +22,8 @@ namespace ngla
   protected:
     mutable PARALLEL_STATUS status;
     shared_ptr<ParallelDofs> paralleldofs;    
-
+    shared_ptr<BaseVector> local_vec;
+    
   public:
     ParallelBaseVector ()
     { ; }
@@ -67,7 +68,9 @@ namespace ngla
 
     void PrintStatus ( ostream & ost ) const;
 
-
+    virtual shared_ptr<BaseVector> GetLocalVector () const
+    { return local_vec; }
+    
     virtual void Cumulate () const; 
     
     virtual void Distribute() const = 0;
@@ -167,6 +170,9 @@ namespace ngla
 
     Table<SCAL> * recvvalues;
 
+    using S_BaseVectorPtr<TSCAL> :: pdata;
+    using ParallelBaseVector :: local_vec;
+
   public:
     // S_ParallelBaseVectorPtr (int as, int aes, void * adata) throw();
     S_ParallelBaseVectorPtr (int as, int aes, shared_ptr<ParallelDofs> apd, PARALLEL_STATUS stat) throw();
@@ -195,19 +201,22 @@ namespace ngla
     typedef typename mat_traits<T>::TSCAL TSCAL;
     enum { ES = sizeof(T) / sizeof(TSCAL) };
 
+    using S_BaseVectorPtr<TSCAL> :: pdata;
+    using ParallelBaseVector :: local_vec;
+
   public:
     explicit ParallelVVector (int as, shared_ptr<ParallelDofs> aparalleldofs,
 			      PARALLEL_STATUS astatus = CUMULATED)
       : S_BaseVectorPtr<TSCAL> (as, ES), VVector<T> (as), 
 	S_ParallelBaseVectorPtr<TSCAL> (as, ES, aparalleldofs, astatus)
-    { ; }
+    { local_vec = make_shared<VFlatVector<T>>(as, (T*)pdata); }
 
     explicit ParallelVVector (shared_ptr<ParallelDofs> aparalleldofs,
 			      PARALLEL_STATUS astatus = CUMULATED)
       : S_BaseVectorPtr<TSCAL> (aparalleldofs->GetNDofLocal(), ES), 
 	VVector<T> (aparalleldofs->GetNDofLocal()), 
 	S_ParallelBaseVectorPtr<TSCAL> (aparalleldofs->GetNDofLocal(), ES, aparalleldofs, astatus)
-    { ; }
+    { local_vec = make_shared<VFlatVector<T>>(aparalleldofs->GetNDofLocal(), (T*)pdata); }
 
 
     virtual ~ParallelVVector() throw()
@@ -222,6 +231,9 @@ namespace ngla
     typedef typename mat_traits<T>::TSCAL TSCAL;
     enum { ES = sizeof(T) / sizeof(TSCAL) };
 
+    using S_BaseVectorPtr<TSCAL> :: pdata;
+    using ParallelBaseVector :: local_vec;
+
   public:
     explicit ParallelVFlatVector (int as, T * adata, 
 				  shared_ptr<ParallelDofs> aparalleldofs, 
@@ -229,12 +241,12 @@ namespace ngla
     : S_BaseVectorPtr<TSCAL> (as, ES, adata),
       VFlatVector<T> (as, adata),
       S_ParallelBaseVectorPtr<TSCAL> (as, ES, aparalleldofs, astatus)
-    { ; }
+    { local_vec = make_shared<VFlatVector<T>>(aparalleldofs->GetNDofLocal(), (T*)pdata); }
 
     explicit ParallelVFlatVector ()
     : S_BaseVectorPtr<TSCAL> (0, ES, NULL),
       S_ParallelBaseVectorPtr<TSCAL> (0, ES, NULL)
-    { ; }
+    { local_vec = make_shared<VFlatVector<T>>(0, NULL); }
       
     virtual ~ParallelVFlatVector() throw()
     { ; }
