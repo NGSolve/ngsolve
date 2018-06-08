@@ -471,7 +471,6 @@ if (NETGEN_USE_MPI)
     if(USE_MKL AND NOT MKL_STATIC)
       find_library(GOMP_LIBRARY NAMES libgomp.so.1 REQUIRED HINTS "/usr/lib/x86_64-linux-gnu/")
       set(ngspy_preload_libs "${ngspy_preload_libs}:${MKL_CORE_LIBRARY}:${MKL_THREADING_LIBRARY}:${MKL_INTERFACE_LIBRARY}:${MKL_BLACS_LIBRARY}:${GOMP_LIBRARY}")
-      message("\npreload libs: ${ngspy_preload_libs}\n")
     endif()
     find_program(BASH bash)
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngspy
