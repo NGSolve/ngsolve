@@ -273,8 +273,8 @@ namespace ngla
     int id = MyMPI_GetId(comm);
     int ntasks = MyMPI_GetNTasks(comm);
 
-    bool is_x_cum = (dynamic_cast_ParallelBaseVector(x) . Status() == CUMULATED);
-    x.Distribute();
+    bool is_x_cum = (dynamic_cast_ParallelBaseVector(x).Status() == CUMULATED);
+    // x.Distribute();
     y.Cumulate();
     
     if (id > 0)
