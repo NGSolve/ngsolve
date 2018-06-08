@@ -80,14 +80,34 @@ namespace ngla
   };
 
 
-
   class BlockMatrix : public BaseMatrix
   {
     Array<Array<shared_ptr<BaseMatrix>>> mats;
     size_t h, w;
+
+    // one matrix per row/col that can be used to create vectors etc.
+    Array<shared_ptr<BaseMatrix>> row_reps;
+    Array<shared_ptr<BaseMatrix>> col_reps;
+
   public:
     BlockMatrix (const Array<Array<shared_ptr<BaseMatrix>>> & amats);
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
+
+    const shared_ptr<BaseMatrix> & operator()(size_t i, size_t j)
+    {
+      if(i >= h) throw Exception("Tried to access BlockMatrix row that is out of range");
+      if(j >= w) throw Exception("Tried to access BlockMatrix col that is out of range");
+      return mats[i][j];
+    }
+
+    size_t BlockRows() const { return h; }
+    size_t BlockCols() const { return w; }
+
+    virtual int VHeight() const { throw Exception("VHeight does not make sense for BlockMatrix");}
+    virtual int VWidth() const { throw Exception("VWidth does not make sense for BlockMatrix");}
+
+    virtual AutoVector CreateRowVector () const;
+    virtual AutoVector CreateColVector () const;
   };
 }
 
