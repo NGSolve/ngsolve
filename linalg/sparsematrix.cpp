@@ -1355,8 +1355,6 @@ namespace ngla
   {
     if(this->size==this->width)
       return make_shared<VVector<TVY>> (this->size);
-    else
-      throw Exception("Non-Symmetric Sparse Matrix cannot CreateVector. Use Create-Row/Col-Vector");
   }
 
   template <class TM, class TV_ROW, class TV_COL>
@@ -1370,7 +1368,7 @@ namespace ngla
   AutoVector SparseMatrix<TM,TV_ROW,TV_COL> ::
   CreateColVector () const
   {
-    return make_shared<VVector<TVY>> (this->size);
+    return make_shared<VVector<TVX>> (this->size);
   }
 
 
