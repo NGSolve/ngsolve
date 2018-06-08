@@ -374,7 +374,7 @@ public:
 
 #undef NGSMPI_ENABLE_FOR_STD
 #else
-  enum { MPI_COMM_WORLD = 12345 };
+  enum { MPI_COMM_WORLD = 12345, MPI_COMM_NULL = 0};
   typedef int MPI_Comm;
   NGS_DLL_HEADER extern MPI_Comm ngs_comm;
   NGS_DLL_HEADER extern MPI_Comm onlyme_comm;
