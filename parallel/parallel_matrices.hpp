@@ -102,6 +102,7 @@ namespace ngla
 
     virtual int VHeight() const override { return paralleldofs->GetNDofLocal(); }
     virtual int VWidth()  const override { return jump_paralleldofs->GetNDofLocal(); }
+
     
   protected:
 
@@ -126,6 +127,13 @@ namespace ngla
 
     shared_ptr<ParallelDofs> GetRowParallelDofs () const { return GetParallelDofs(); }
     shared_ptr<ParallelDofs> GetColParallelDofs () const { return mu_paralleldofs; }
+
+    virtual ostream & Print (ostream & ost) const override
+    {
+      ost << "FETI-DP constraints; matrix: " << endl;
+      ost << *mat << endl;
+      return ost;
+    }
 
   protected:
     shared_ptr<SparseMatrix<double> > mat;
