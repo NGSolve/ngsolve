@@ -125,6 +125,17 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
           [] (size_t s, bool is_complex, int es) -> shared_ptr<BaseVector>
           { return CreateBaseVector(s,is_complex, es); },
           "size"_a, "complex"_a=false, "entrysize"_a=1);
+
+    m.def("CreateParallelVector",
+          [] (shared_ptr<ParallelDofs> pardofs, bool is_complex, int es) -> shared_ptr<BaseVector>
+          {
+	    if(es!=1) throw Exception("Not sure if ParallelVector with entrysize!=1 actually works...");
+	    if(is_complex)
+	      return make_shared<ParallelVVector<Complex>>(pardofs->GetNDofLocal(), pardofs, CUMULATED);
+	    else
+	      return make_shared<ParallelVVector<double>>(pardofs->GetNDofLocal(), pardofs, CUMULATED);
+	  },
+          py::arg("pardofs"), "complex"_a=false, "entrysize"_a=1);
     
   py::class_<BaseVector, shared_ptr<BaseVector>>(m, "BaseVector",
         py::dynamic_attr() // add dynamic attributes
@@ -132,6 +143,18 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def(py::init([] (size_t s, bool is_complex, int es) -> shared_ptr<BaseVector>
                   { return CreateBaseVector(s,is_complex, es); }),
                   "size"_a, "complex"_a=false, "entrysize"_a=1)
+#ifdef PARALLEL
+    .def_property_readonly("local_vec", [](BaseVector & self) -> shared_ptr<BaseVector> {
+	auto * pv = dynamic_cast_ParallelBaseVector (&self);
+	if(pv==NULL) throw Exception("Only ParallelVectors have a local Vector!");
+	auto rv = pv->GetLocalVector();
+	return rv;
+      } )
+#else
+    .def_property_readonly("local_vec", [](BaseVector & self) -> shared_ptr<BaseVector> {
+	return self;
+      } )
+#endif
     .def(py::pickle([] (const BaseVector& bv)
                     {
                       MemoryView mv((void*) &bv.FVDouble()[0], sizeof(double) * bv.FVDouble().Size());
@@ -383,6 +406,30 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
             Width,          /* Name of function */
             );
       }
+
+      AutoVector CreateRowVector () const override {
+        PYBIND11_OVERLOAD_PURE(
+	    shared_ptr<BaseVector>, /* Return type */
+            BaseMatrix,             /* Parent class */
+            CreateRowVector,        /* Name of function */
+            );
+      }
+
+      AutoVector CreateColVector () const override {
+        PYBIND11_OVERLOAD_PURE(
+	    shared_ptr<BaseVector>, /* Return type */
+            BaseMatrix,             /* Parent class */
+            CreateColVector,        /* Name of function */
+            );
+      }
+
+      AutoVector CreateVector () const override {
+        PYBIND11_OVERLOAD_PURE(
+	    shared_ptr<BaseVector>, /* Return type */
+            BaseMatrix,             /* Parent class */
+            CreateVector,           /* Name of function */
+            );
+      }
       
       void Mult (const BaseVector & x, BaseVector & y) const override {
         pybind11::gil_scoped_acquire gil;
@@ -610,8 +657,9 @@ inverse : string
                          }
                        return make_shared<BlockMatrix> (m2);
                      }))
-    
-    // .def("__getitem__", [](BlockMatrix & self, int row, int col) { return self(row,rol); })
+    .def("__getitem__", [](BlockMatrix & self, int row, int col) { return self(row,col); })
+    .def("BlockRows", [](BlockMatrix & self) { return self.BlockCols(); })
+    .def("BlockCols", [](BlockMatrix & self) { return self.BlockCols(); })
     ;
 
 
@@ -620,9 +668,9 @@ inverse : string
   py::class_<ParallelMatrix, shared_ptr<ParallelMatrix>, BaseMatrix>
     (m, "ParallelMatrix", "MPI-distributed matrix")
     .def(py::init<shared_ptr<BaseMatrix>, shared_ptr<ParallelDofs>>(),
-	 "mat", "pardofs")
+	 py::arg("mat"),py::arg("pardofs"))
     .def(py::init<shared_ptr<BaseMatrix>, shared_ptr<ParallelDofs>, shared_ptr<ParallelDofs>>(),
-	 "mat","row_pardofs","col_pardofs")
+	 py::arg("mat"),py::arg("row_pardofs"),py::arg("col_pardofs"))
     .def_property_readonly("local_mat", [](ParallelMatrix & mat) { return mat.GetMatrix(); })
     .def("GetParallelDofs", [](ParallelMatrix & self) {
 	return self.GetParallelDofs();
