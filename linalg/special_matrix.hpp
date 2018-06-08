@@ -107,8 +107,8 @@ namespace ngla
     virtual int VHeight() const { throw Exception("VHeight does not make sense for BlockMatrix");}
     virtual int VWidth() const { throw Exception("VWidth does not make sense for BlockMatrix");}
 
-    virtual AutoVector CreateRowVector () const;
-    virtual AutoVector CreateColVector () const;
+    virtual AutoVector CreateRowVector () const override;
+    virtual AutoVector CreateColVector () const override;
   };
 }
 
