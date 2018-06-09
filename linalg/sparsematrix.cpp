@@ -1000,7 +1000,7 @@ namespace ngla
     cnt = 0;
     for (auto i : indi) cnt[i]++;
 
-    auto matrix = make_shared<SparseMatrix<TM>> (cnt);
+    auto matrix = make_shared<SparseMatrix<TM>> (cnt, w);
     for (auto k : ::Range(indi))
       (*matrix)(indi[k], indj[k]) = val[k];
     return matrix;
