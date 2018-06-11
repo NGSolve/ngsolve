@@ -244,6 +244,10 @@ LOCAL_DOF: Inner degree of freedom, will be eliminated by static
 
 HIDDEN_DOF: Inner degree of freedom, that will be eliminated by static
     condensation and *not* reconstruced afterwards(spares some entries).
+    Note: 
+     * without static condensation a HIDDEN_DOF is treated as any other
+       DOF, e.g. as a LOCAL_DOF
+     * To a HIDDEN_DOF the r.h.s. vector must have zero entries.
 
 CONDENSATABLE_DOF: Inner degree of freedom, that will be eliminated by static
     condensation (LOCAL_DOF or HIDDEN_DOF)
