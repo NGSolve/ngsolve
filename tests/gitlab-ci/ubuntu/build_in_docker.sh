@@ -26,7 +26,7 @@ fi
 if [ "$IMAGE_VERSION" == "mpi" ]
 then
   apt-get -y install libopenmpi-dev openmpi-bin gfortran
-  export CMAKE_ARGS="$CMAKE_ARGS -DUSE_MPI=ON -DMKL_STATIC=OFF -DMKL_SDL=OFF -DUSE_HYPRE=OFF -DUSE_MUMPS=OFF -DMKL_MULTI_THREADED=OFF"
+  export CMAKE_ARGS="$CMAKE_ARGS -DUSE_MPI=ON -DMKL_STATIC=OFF -DMKL_SDL=OFF -DUSE_HYPRE=OFF -DUSE_MUMPS=OFF -DMKL_MULTI_THREADED=OFF -DUSE_GUI=OFF"
 fi
 
 cd 
@@ -57,7 +57,7 @@ make install
 make package
 cd ngsolve
 
-if [ "$IMAGE_NAME" != "debug" ] && [ "$IMAGE_NAME" != "avx" ]
+if [ "$IMAGE_NAME" != "debug" ] && [ "$IMAGE_NAME" != "avx" ] && [ "$IMAGE_NAME" != "mpi" ]
 then
   ## upload built packages to server
   export UPLOAD_DIR=deploy/builds/$CI_PIPELINE_ID/ubuntu/${UBUNTU_VERSION_NAME}_amd64
