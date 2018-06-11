@@ -471,7 +471,7 @@ namespace ngcomp
       }
     
     if(highest_order_dc)
-      ctofdof.Range(first_inner_dof[0],ndof) = LOCAL_DOF;
+      ctofdof.Range(first_inner_dof[0],ndof) = HIDDEN_DOF;
     
     if(print)
       *testout << "FacetFESpace, ctofdof = " << endl << ctofdof << endl;
