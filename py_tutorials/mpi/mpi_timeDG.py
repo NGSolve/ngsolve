@@ -19,6 +19,8 @@ comm = MPI_Init()
 rank = comm.rank
 np = comm.size
 
+do_vtk = False
+
 if rank==0:
     # master-proc generates mesh
     mesh = unit_square.GenerateMesh(maxh=0.05)
@@ -62,11 +64,12 @@ count = 0
 
 vtk_interval = int(0.02/tau);
 
-import os
-output_path = os.path.dirname(os.path.realpath(__file__)) + "/timeDG_output"
-if rank==0 and not os.path.exists(output_path):
-    os.mkdir(output_path)
-comm.Barrier() #wait until master has created the directory!!
+if do_vtk:
+    import os
+    output_path = os.path.dirname(os.path.realpath(__file__)) + "/timeDG_output"
+    if rank==0 and not os.path.exists(output_path):
+        os.mkdir(output_path)
+    comm.Barrier() #wait until master has created the directory!!
 
 with TaskManager():
     while t < tend:
@@ -77,7 +80,7 @@ with TaskManager():
         u.vec.data -= tau * w
         t += tau
 
-        if count%vtk_interval==0:
+        if count%vtk_interval==0 and do_vtk:
             vtk = VTKOutput(ma=mesh,coefs=[u],names=["sol"],filename=output_path+"/vtkout_p"+str(rank)+"_n"+str(int(count/vtk_interval)),subdivision=2)
             vtk.Do()
         count = count+1;
