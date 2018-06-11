@@ -66,8 +66,8 @@ velocity = CoefficientFunction(gfu.components[0:2])
 
 
 # solve Stokes problem for initial conditions:
-inv_stokes = a.mat.Inverse(X.FreeDofs(), inverse="mumps")
-# inv_stokes = a.mat.Inverse(X.FreeDofs(), inverse="masterinverse")
+#inv_stokes = a.mat.Inverse(X.FreeDofs(), inverse="mumps")
+ inv_stokes = a.mat.Inverse(X.FreeDofs(), inverse="masterinverse")
 res = f.vec.CreateVector()
 res.data = f.vec - a.mat*gfu.vec
 gfu.vec.data += inv_stokes * res
