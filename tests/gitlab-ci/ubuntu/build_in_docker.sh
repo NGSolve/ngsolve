@@ -57,7 +57,7 @@ make install
 make package
 cd ngsolve
 
-if [ "$IMAGE_NAME" != "debug" ] && [ "$IMAGE_NAME" != "avx" ] && [ "$IMAGE_NAME" != "mpi" ]
+if [ "$IMAGE_NAME" != "debug" ] && [ "$IMAGE_NAME" != "avx" ] && [ "$IMAGE_VERSION" != "mpi" ]
 then
   ## upload built packages to server
   export UPLOAD_DIR=deploy/builds/$CI_PIPELINE_ID/ubuntu/${UBUNTU_VERSION_NAME}_amd64
