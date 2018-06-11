@@ -10,12 +10,14 @@ comm = MPI_Init()
 rank = comm.rank
 np = comm.size
 
+do_vtk = False
+
 # viscosity
 nu = 0.001
 
 # timestepping parameters
 tau = 0.001
-tend = 10
+tend = 3
 
 # mesh = Mesh("cylinder.vol")
 if rank==0:
@@ -92,8 +94,10 @@ if rank==0 and not os.path.exists(output_path):
     os.mkdir(output_path)
 comm.Barrier() #wait until master has created the directory!!
 
-vtk = VTKOutput(ma=mesh,coefs=[velocity],names=["u"],filename=output_path+"/vtkout_p"+str(rank)+"_n0",subdivision=1)
-vtk.Do()
+if do_vtk:
+    vtk = VTKOutput(ma=mesh,coefs=[velocity],names=["u"],filename=output_path+"/vtkout_p"+str(rank)+"_n0",subdivision=1)
+    vtk.Do()
+
 count = 1;
 # implicit Euler/explicit Euler splitting method:
 with TaskManager():
@@ -105,7 +109,7 @@ with TaskManager():
         res.data += a.mat*gfu.vec
         gfu.vec.data -= tau * inv * res
 
-        if count%vtk_interval==0:
+        if count%vtk_interval==0 and do_vtk:
             file_name = output_path+"/vtkout_p"+str(rank)+"_n"+str(int(count/vtk_interval));
             print("rank "+str(rank)+", output to "+file_name)
             vtk = VTKOutput(ma=mesh,coefs=[velocity],names=["u"],filename=file_name,subdivision=1)
