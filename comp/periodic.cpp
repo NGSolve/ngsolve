@@ -41,23 +41,20 @@ namespace ngcomp {
       for (int i : Range(vertex_map.Size()))
         vertex_map[i] = i;
 
-      int nid = ma->GetNetgenMesh()->GetIdentifications().GetMaxNr();
-
-      // identifications are 1 based
-      for (int idnr = 1; idnr<nid+1; idnr++)
+      for (auto idnr : Range(ma->GetNPeriodicIdentifications()))
         {
 	  if (used_idnrs->Size() && !used_idnrs->Contains(idnr)) continue;
           Array<int> slave_dofnrs;
           Array<int> master_dofnrs;
           for (auto node_type : {NT_VERTEX, NT_EDGE, NT_FACE})
             {
-              auto & periodic_nodes = ma->GetPeriodicNodes(node_type, idnr);
+              const auto & periodic_nodes = ma->GetPeriodicNodes(node_type, idnr);
               if(node_type==NT_VERTEX)
                 {
-                  for (auto per_verts : periodic_nodes)
+                  for (const auto& per_verts : periodic_nodes)
                     vertex_map[per_verts[1]] = vertex_map[per_verts[0]];
                 }
-              for(auto node_pair : periodic_nodes)
+              for(const auto& node_pair : periodic_nodes)
                 {
                   space->GetDofNrs(NodeId(node_type,node_pair[0]),master_dofnrs);
                   space->GetDofNrs(NodeId(node_type,node_pair[1]),slave_dofnrs);
