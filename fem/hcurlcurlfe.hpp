@@ -115,14 +115,13 @@ namespace ngfem
     virtual void CalcShape (const IntegrationPoint & ip, 
                             BareSliceMatrix<double> shape) const override
     {
-      cout << "In A " << endl;
       // Vec<DIM, AutoDiff<DIM> > adp = ip;
       Vec<DIM, AutoDiffDiff<DIM>> adp;
       for ( int i=0; i<DIM; i++)
         adp(i) = AutoDiff<DIM>(ip(i),i);
       Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM>> (adp), SBLambda([&] (int nr, auto val)
                                           {
-                                            //shape.Row(nr).AddSize(DIM_STRESS) = val.Shape();
+                                            shape.Row(nr).AddSize(DIM_STRESS) = val;
                                           }));
     }
 
@@ -131,12 +130,11 @@ namespace ngfem
     virtual void CalcMappedShape_Vector (const MappedIntegrationPoint<DIM,DIM> & mip,
                             BareSliceMatrix<double> shape) const override
     {
-      cout << "In B " << endl;
       Vec<DIM, AutoDiff<DIM>> adp = mip;
    
       Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM>> (adp), SBLambda([&] (int nr, auto val)
                                           {
-                                            //shape.Row(nr).AddSize(DIM_STRESS) = val.Shape();
+                                            shape.Row(nr).AddSize(DIM_STRESS) = val;
                                           }));
     }
 
@@ -144,11 +142,9 @@ namespace ngfem
     virtual void CalcMappedShape_Matrix (const MappedIntegrationPoint<DIM,DIM> & mip,
                             BareSliceMatrix<double> shape) const override
     {
-      cout << "In C " << endl;
       Vec<DIM, AutoDiff<DIM>> adp = mip;
       Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM>> (adp),SBLambda([&](int nr,auto val)
       {
-        cout << "val = " << val << endl;
         VecToSymMat<DIM> (val, shape.Row(nr));
       }));
     }
@@ -188,28 +184,17 @@ namespace ngfem
       
       ndof += ninner;
 
-      cout << "ndof trig hcurlcurl = " << ndof << endl;
 
     }
    template <typename Tx, typename TFA> 
     void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
     {
       auto x = ip.x, y = ip.y;
-      cout << "x = " << x << ", y = " << y << endl;
-      //typedef typename std::remove_const<typename std::remove_reference<decltype(ip.x)>::type>::type T;
       Tx ddlami[3] ={ x, y, 1-x-y };
-      Vec<2> pnts[3] = { { 1, 0 }, { 0, 1 } , { 0, 0 } };
       
       int ii = 0;
-      
-      int maxorder_facet =
-        max2(order_facet[0][0],max2(order_facet[1][0],order_facet[2][0]));
-
       const EDGE * edges = ElementTopology::GetEdges(ET_TRIG);
 
-      ArrayMem<Tx,20> ha(maxorder_facet+1);
-      ArrayMem<Tx,20> u(order_inner[0]+2), v(order_inner[0]+2);
-      
       for (int i = 0; i < 3; i++)
         {
           int es = edges[i][0], ee = edges[i][1];
@@ -217,19 +202,7 @@ namespace ngfem
 
  
           Tx ls = ddlami[es], le = ddlami[ee], lt = ddlami[3-ee-es];
-          //Vec<2> tauref = Vec<2>(ls.DValue(0),ls.DValue(1))-Vec<2>(le.DValue(0),le.DValue(1));//pnts[es] - pnts[ee];
-         
-          /*Mat<2,2> symdyadic;
-          symdyadic(0,0) = ls.DValue(0)*le.DValue(0);
-          symdyadic(1,0) = ls.DValue(1)*le.DValue(0);
-          symdyadic(0,1) = ls.DValue(0)*le.DValue(1);
-          symdyadic(1,1) = ls.DValue(1)*le.DValue(1);
-          symdyadic += Trans(symdyadic);
-          */
           Vec<3> symdyadic = Vec<3>(2*ls.DValue(0)*le.DValue(0),2*ls.DValue(1)*le.DValue(1), ls.DValue(1)*le.DValue(0)+ls.DValue(0)*le.DValue(1));
-
-          //auto prod = Vec<2>(symdyadic*tauref);
-          //auto result = InnerProduct(tauref, prod);
 
           LegendrePolynomial::EvalScaled(order, ls-le,ls+le, SBLambda([&] (size_t nr, Tx val)
                             {
