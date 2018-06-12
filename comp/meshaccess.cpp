@@ -938,15 +938,8 @@ namespace ngcomp
       {
         // only if it is periodic
         if (mesh.GetMesh()->GetIdentifications().GetType(idnr)!=2) continue;
-        size_t nverts = Ng_GetNPeriodicVertices(idnr); 
-        (*periodic_node_pairs[NT_VERTEX])[idnr-1].SetSize(nverts);
-        Ng_GetPeriodicVertices(idnr,&(*periodic_node_pairs[NT_VERTEX])[idnr-1][0][0]);
-        for (auto i : Range(nverts))
-          {
-            (*periodic_node_pairs[NT_VERTEX])[idnr-1][i][0]--;
-            (*periodic_node_pairs[NT_VERTEX])[idnr-1][i][1]--;
-          }
-      
+        auto pv_buffer = mesh.GetPeriodicVertices(idnr);
+        (*periodic_node_pairs[NT_VERTEX])[idnr-1] = Array<INT<2>>(pv_buffer.Size(), (INT<2>*) pv_buffer.Release(), true);
 
         // build vertex map for idnr
         Array<int> vertex_map(GetNV());
