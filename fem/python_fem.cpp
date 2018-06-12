@@ -1166,6 +1166,8 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
          [] (const BaseScalarFiniteElement & fe, const BaseMappedIntegrationPoint & mip)
           {
             Matrix<> mat(fe.GetNDof(), fe.Dim());
+            fe.CalcMappedDShape(mip, mat);
+            /*
             switch (fe.Dim())
               {
               case 1:
@@ -1180,12 +1182,48 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
               default:
                 ;
               }
+            */
             return mat;
           },
          py::arg("mip"))
     ;
 
 
+  py::class_<BaseHCurlFiniteElement, shared_ptr<BaseHCurlFiniteElement>, 
+             FiniteElement>
+    (m, "HCurlFE", "an H(curl) finite element")
+    .def("CalcShape",
+         [] (const BaseHCurlFiniteElement & fe, double x, double y, double z)
+         {
+           IntegrationPoint ip(x,y,z);
+           Matrix<> mat(fe.GetNDof(), fe.Dim());
+           fe.CalcShape (ip, mat);
+           return mat;
+         },
+         py::arg("x"),py::arg("y")=0.0,py::arg("z")=0.0)
+    .def("CalcShape",
+         [] (const BaseHCurlFiniteElement & fe, const BaseMappedIntegrationPoint & mip)
+          {
+            Matrix<> mat(fe.GetNDof(), fe.Dim());
+            fe.CalcMappedShape (mip, mat);
+            return mat;
+          },
+         py::arg("mip"))
+    .def("CalcCurlShape",
+         [] (const BaseHCurlFiniteElement & fe, const BaseMappedIntegrationPoint & mip)
+          {
+            Matrix<> mat(fe.GetNDof(), fe.Dim());
+            fe.CalcMappedCurlShape(mip, mat);
+            return mat;
+          },
+         py::arg("mip"))
+    ;
+
+
+
+
+
+  
 
   py::implicitly_convertible 
     <BaseScalarFiniteElement, 
