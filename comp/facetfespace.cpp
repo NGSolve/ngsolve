@@ -216,7 +216,26 @@ namespace ngcomp
     fine_facet = false; 
     
     Array<int> fanums;
-        
+
+    if (ma->GetDimension() == 2)
+      {
+	auto nsel = ma->GetNSE();
+	Array<int> ens;
+	for(auto selnr:Range(nsel)) {
+	  ma->GetSElEdges(selnr,ens);
+	  for (auto f : ens)
+	    fine_facet[f] = true;
+	}
+      }
+    else
+      {
+	auto nsel = ma->GetNSE();
+	Array<int> fns;
+	for(auto selnr:Range(nsel)) {
+	  fine_facet[ma->GetSElFace(selnr)] = true;
+	}
+      }
+    
     for (int i = 0; i < nel; i++)
       {
         ElementId ei(VOL, i);
