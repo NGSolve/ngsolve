@@ -1,5 +1,5 @@
-#ifndef FILE_HDIVDIVFE
-#define FILE_HDIVDIVFE
+#ifndef FILE_HCURLCURLFE
+#define FILE_HCURLCURLFE
 
 /*********************************************************************/
 /* File:   hcurlcurlfe.hpp                                           */
@@ -23,8 +23,6 @@ namespace ngfem
     virtual void CalcShape (const IntegrationPoint & ip, 
                             BareSliceMatrix<double> shape) const = 0;
 
-    virtual void CalcDivShape (const IntegrationPoint & ip, 
-                               BareSliceMatrix<double> divshape) const = 0;
 
     // new implementation
     virtual void CalcMappedShape_Matrix (const MappedIntegrationPoint<DIM,DIM> & mip,
@@ -117,13 +115,14 @@ namespace ngfem
     virtual void CalcShape (const IntegrationPoint & ip, 
                             BareSliceMatrix<double> shape) const override
     {
+      cout << "In A " << endl;
       // Vec<DIM, AutoDiff<DIM> > adp = ip;
       Vec<DIM, AutoDiffDiff<DIM>> adp;
       for ( int i=0; i<DIM; i++)
         adp(i) = AutoDiff<DIM>(ip(i),i);
       Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM>> (adp), SBLambda([&] (int nr, auto val)
                                           {
-                                            shape.Row(nr).AddSize(DIM_STRESS) = val.Shape();
+                                            //shape.Row(nr).AddSize(DIM_STRESS) = val.Shape();
                                           }));
     }
 
@@ -132,11 +131,12 @@ namespace ngfem
     virtual void CalcMappedShape_Vector (const MappedIntegrationPoint<DIM,DIM> & mip,
                             BareSliceMatrix<double> shape) const override
     {
+      cout << "In B " << endl;
       Vec<DIM, AutoDiff<DIM>> adp = mip;
    
       Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM>> (adp), SBLambda([&] (int nr, auto val)
                                           {
-                                            shape.Row(nr).AddSize(DIM_STRESS) = val.Shape();
+                                            //shape.Row(nr).AddSize(DIM_STRESS) = val.Shape();
                                           }));
     }
 
@@ -144,10 +144,12 @@ namespace ngfem
     virtual void CalcMappedShape_Matrix (const MappedIntegrationPoint<DIM,DIM> & mip,
                             BareSliceMatrix<double> shape) const override
     {
+      cout << "In C " << endl;
       Vec<DIM, AutoDiff<DIM>> adp = mip;
       Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM>> (adp),SBLambda([&](int nr,auto val)
       {
-        VecToSymMat<DIM> (val.Shape(), shape.Row(nr));
+        cout << "val = " << val << endl;
+        VecToSymMat<DIM> (val, shape.Row(nr));
       }));
     }
    
@@ -186,12 +188,17 @@ namespace ngfem
       
       ndof += ninner;
 
+      cout << "ndof trig hcurlcurl = " << ndof << endl;
+
     }
    template <typename Tx, typename TFA> 
     void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
     {
       auto x = ip.x, y = ip.y;
+      cout << "x = " << x << ", y = " << y << endl;
+      //typedef typename std::remove_const<typename std::remove_reference<decltype(ip.x)>::type>::type T;
       Tx ddlami[3] ={ x, y, 1-x-y };
+      Vec<2> pnts[3] = { { 1, 0 }, { 0, 1 } , { 0, 0 } };
       
       int ii = 0;
       
@@ -207,22 +214,30 @@ namespace ngfem
         {
           int es = edges[i][0], ee = edges[i][1];
           if (vnums[es] > vnums[ee]) swap (es,ee);
-          
-          Tx ls = ddlami[es], le = ddlami[ee];
-          
-          // edge functions are all div-free!
-          IntegratedLegendreMonomialExt::CalcTrigExt(maxorder_facet+2,
-                                                     le-ls, 1-le-ls, ha);
 
-          //ScaledLegendrePolynomial(maxorder_facet,le-ls, 1-le-ls,ha);
+ 
+          Tx ls = ddlami[es], le = ddlami[ee], lt = ddlami[3-ee-es];
+          //Vec<2> tauref = Vec<2>(ls.DValue(0),ls.DValue(1))-Vec<2>(le.DValue(0),le.DValue(1));//pnts[es] - pnts[ee];
+         
+          /*Mat<2,2> symdyadic;
+          symdyadic(0,0) = ls.DValue(0)*le.DValue(0);
+          symdyadic(1,0) = ls.DValue(1)*le.DValue(0);
+          symdyadic(0,1) = ls.DValue(0)*le.DValue(1);
+          symdyadic(1,1) = ls.DValue(1)*le.DValue(1);
+          symdyadic += Trans(symdyadic);
+          */
+          Vec<3> symdyadic = Vec<3>(2*ls.DValue(0)*le.DValue(0),2*ls.DValue(1)*le.DValue(1), ls.DValue(1)*le.DValue(0)+ls.DValue(0)*le.DValue(1));
 
-          
-          for (int l = 0; l <= order_facet[i][0]; l++)
-            shape[ii++] = SigmaGrad (ha[l]);
-            //shape[ii++] = SymRotRot_Dl2xDl1_v_diffdiff(le, ls, ha[l]);
+          //auto prod = Vec<2>(symdyadic*tauref);
+          //auto result = InnerProduct(tauref, prod);
+
+          LegendrePolynomial::EvalScaled(order, ls-le,ls+le, SBLambda([&] (size_t nr, Tx val)
+                            {
+                              shape[ii++] = val.Value()*symdyadic;
+                            }));
         }
       
-      int es = 0; int ee = 1; int et = 2;
+      /*int es = 0; int ee = 1; int et = 2;
       Tx ls = ddlami[es];
       Tx le = ddlami[ee];
       Tx lt = ddlami[et];
@@ -263,6 +278,7 @@ namespace ngfem
             shape[ii++] = Sigma_u_Gradv(bubble, x);
             shape[ii++] = Sigma_u_Gradv(bubble, y);
           }
+      */
     };
   };
   
@@ -1328,7 +1344,7 @@ namespace ngfem
    template <typename Tx, typename TFA> 
     void T_CalcShape (TIP<1,Tx> ip/*AutoDiffDiff<2> hx[2]*/, TFA & shape) const
     {
-      auto x = ip.x;
+      /*auto x = ip.x;
       AutoDiffDiff<2> ddlami[2] ={ x, 1-x };
       
       int ii = 0;
@@ -1344,7 +1360,7 @@ namespace ngfem
 
       for(int l = 0; l <= order_inner[0]; l++)
         shape[ii++] = SigmaGrad (u[l]);
-
+      */
       
     };
   };

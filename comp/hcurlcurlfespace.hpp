@@ -1,6 +1,6 @@
 /*********************************************************************/
-/* File:   hcurlcurlfespace.h                                          */
-/* Author: Michael Neunteufel                                       */
+/* File:   hcurlcurlfespace.h                                        */
+/* Author: Michael Neunteufel                                        */
 /* Date:   2018                                                      */
 /*********************************************************************/
 
