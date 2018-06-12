@@ -79,11 +79,12 @@ namespace ngfem
     using VertexOrientedFE<ET>::vnums;
     using HCurlCurlFiniteElement<ET_trait<ET>::DIM>::ndof;
     using HCurlCurlFiniteElement<ET_trait<ET>::DIM>::order;
-
+    
     //enum { N_VERTEX = ET_trait<ET>::N_VERTEX };
     //enum { N_FACET   = ET_trait<ET>::N_FACET };    
     //
     //size_t vnums[N_VERTEX];
+    INT<1> order_edge[ET_trait<ET>::N_EDGE];
     INT<DIM-1> order_facet[ET_trait<ET>::N_FACET];
     INT<DIM> order_inner;
 
@@ -104,6 +105,7 @@ namespace ngfem
     const HCurlCurlFE<ET> * Cast() const { return static_cast<const HCurlCurlFE<ET>*> (this); } 
     
     INLINE void SetOrderFacet (int nr, INT<DIM-1,int> order) { order_facet[nr] = order; }
+    INLINE void SetOrderEdge (int nr, INT<1,int> order) { order_edge[nr] = order; }
     INLINE void SetOrderInner (INT<DIM,int> order) { order_inner = order; }
 
     virtual void ComputeNDof()
@@ -929,7 +931,7 @@ namespace ngfem
 
   */
 
-  /*
+  
   template <> class HCurlCurlFE<ET_TET> : public T_HCurlCurlFE<ET_TET> 
   {
   public:
@@ -939,16 +941,27 @@ namespace ngfem
     {
       order = 0;
       ndof = 0;
+
+      for (int i=0; i<6; i++)
+      {
+        ndof += order_edge[i][0]+1;
+        order = max2(order, order_edge[i][0]);
+      }
+      cout << "ndof edges = " << ndof << endl;
+      
       for (int i=0; i<4; i++)
       {
-        ndof += (order_facet[i][0]+1)*(order_facet[i][0]+2)/2;
+        ndof += 3*(order_facet[i][0])*(order_facet[i][0]+1)/2;
         order = max2(order, order_facet[i][0]);
       }
+      cout << "ndof edges+faces = " << ndof << endl;
       int p = order_inner[0];
-      int ninner = (p+1)*(p+2)*(p+1);
+      int ninner = p > 1 ? 3*(p+1)*(p)*(p-1)/6 : 0;
       ndof += ninner; 
 
       order = max2(order, p);
+
+      cout << "ndof tet = " << ndof << endl;
 
     }
 
@@ -966,10 +979,26 @@ namespace ngfem
       
       const FACE * faces = ElementTopology::GetFaces(ET_TET);
 
-      ArrayMem<AutoDiff<3,T>,20> leg_u(order+2), leg_v(order+3);
-      ArrayMem<AutoDiff<3,T>,20> leg_w(order+2);
+      const EDGE * edges = ElementTopology::GetEdges(ET_TET);
+
+      for (int i = 0; i < 6; i++)
+        {
+          int es = edges[i][0], ee = edges[i][1];
+          if (vnums[es] > vnums[ee]) swap (es,ee);
+
+ 
+          Tx ls = lam[es], le = lam[ee];
+          double tmp = 2*ls.DValue(0)*le.DValue(0);
+
+          Vec<6> symdyadic = Vec<6>(2*ls.DValue(0)*le.DValue(0),2*ls.DValue(1)*le.DValue(1),2*ls.DValue(2)*le.DValue(2), ls.DValue(1)*le.DValue(2)+ls.DValue(2)*le.DValue(1), ls.DValue(0)*le.DValue(2)+ls.DValue(2)*le.DValue(0),ls.DValue(1)*le.DValue(0)+ls.DValue(0)*le.DValue(1));
+
+          LegendrePolynomial::EvalScaled(order, ls-le,ls+le, SBLambda([&] (size_t nr, Tx val)
+                            {
+                              shape[ii++] = val.Value()*symdyadic;
+                            }));
+        }
       
-      for(int fa = 0; fa < 4; fa++)
+      /*for(int fa = 0; fa < 4; fa++)
       {
         int fav[3] = {faces[fa][0], faces[fa][1], faces[fa][2]};
 
@@ -991,11 +1020,11 @@ namespace ngfem
 
 
 
-      }
+          }*/
 
 
 
-      int oi = order_inner[0];
+      /*int oi = order_inner[0];
       leg_u.SetSize(oi+1);
       leg_v.SetSize(oi+1);
       leg_w.SetSize(oi+1);
@@ -1030,14 +1059,14 @@ namespace ngfem
                 (1-lam[fav[0]]-lam[fav[1]]-lam[fav[2]])*leg_u[i]*leg_v[k]* leg_w[j]);
             }
           }
-        }
+          }
 
-      }
+          }*/
 
     };
 
   };
-  */
+  
 
   /*
 
@@ -1312,7 +1341,7 @@ namespace ngfem
   };
 
 
-  /*template <> class HCurlCurlSurfaceFE<ET_TRIG> : public T_HCurlCurlSurfaceFE<ET_TRIG> 
+  template <> class HCurlCurlSurfaceFE<ET_TRIG> : public T_HCurlCurlSurfaceFE<ET_TRIG> 
   {
     
   public:
@@ -1322,15 +1351,15 @@ namespace ngfem
     {
       order = 0;
       ndof = 0;
-      ndof += (order_inner[0]+1+HCurlCurlFE<ET_PRISM>::incrorder_zz1_bd)*(order_inner[0]+2+HCurlCurlFE<ET_PRISM>::incrorder_zz1_bd)/2;
-      order = max2(order, order_inner[0]+HCurlCurlFE<ET_PRISM>::incrorder_zz1_bd);
+      ndof += 3*(order_inner[0]+1)*(order_inner[0]+2)/2-3*(order_inner[0]+1);
+      order = max2(order, order_inner[0]);
     }
 
 
     template <typename Tx, typename TFA> 
     void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
     {
-      Tx x = ip.x, y = ip.y;
+      /*Tx x = ip.x, y = ip.y;
       typedef decltype(x.Value()+x.Value()) T;                  
       AutoDiff<3,T> xx(x.Value(), &x.DValue(0));
       AutoDiff<3,T> yy(y.Value(), &y.DValue(0));
@@ -1354,12 +1383,12 @@ namespace ngfem
 
         for(int j = 0; j <= order_inner[0]+HCurlCurlFE<ET_PRISM>::incrorder_zz1_bd; j++)
           for(int k = 0; k <= order_inner[0]+HCurlCurlFE<ET_PRISM>::incrorder_zz1_bd-j; k++)
-            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(lx[fav[0]], lx[fav[1]], lx[fav[2]], lx[fav[2]], leg_u[j]*leg_v[k]);
-      }
+          shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(lx[fav[0]], lx[fav[1]], lx[fav[2]], lx[fav[2]], leg_u[j]*leg_v[k]);*/
+    }
   };
 
 
-    template <> class HCurlCurlSurfaceFE<ET_QUAD> : public T_HCurlCurlSurfaceFE<ET_QUAD> 
+  /*template <> class HCurlCurlSurfaceFE<ET_QUAD> : public T_HCurlCurlSurfaceFE<ET_QUAD> 
   {
     
   public:
@@ -1421,12 +1450,12 @@ namespace ngfem
 
   HCURLCURLFE_EXTERN template class T_HCurlCurlFE<ET_TRIG>;
   //HCURLCURLFE_EXTERN template class T_HCurlCurlFE<ET_QUAD>;
-  //HCURLCURLFE_EXTERN template class T_HCurlCurlFE<ET_TET>;
+  HCURLCURLFE_EXTERN template class T_HCurlCurlFE<ET_TET>;
   //HCURLCURLFE_EXTERN template class T_HCurlCurlFE<ET_PRISM>;
   //HCURLCURLFE_EXTERN template class T_HCurlCurlFE<ET_HEX>;
   HCURLCURLFE_EXTERN template class T_HCurlCurlSurfaceFE<ET_SEGM>;
   //HCURLCURLFE_EXTERN template class T_HCurlCurlSurfaceFE<ET_QUAD>;
-  //HCURLCURLFE_EXTERN template class T_HCurlCurlSurfaceFE<ET_TRIG>;
+  HCURLCURLFE_EXTERN template class T_HCurlCurlSurfaceFE<ET_TRIG>;
 
 }
 

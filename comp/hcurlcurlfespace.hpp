@@ -14,6 +14,8 @@ namespace ngcomp
     size_t ndof;
     Array<int> first_facet_dof;
     Array<int> first_element_dof;
+    Array<int> first_edge_dof;
+    Array<INT<1,int> > order_edge;
     Array<INT<2,int> > order_facet;
     Array<INT<3,int> > order_inner;
     
@@ -21,6 +23,7 @@ namespace ngcomp
     bool discontinuous;
     int uniform_order_facet;
     int uniform_order_inner;
+    int uniform_order_edge;
 
   public:
     HCurlCurlFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags=false);

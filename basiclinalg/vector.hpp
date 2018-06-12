@@ -851,6 +851,17 @@ namespace ngbla
       data[3] = s4;
     }
 
+    INLINE Vec (const T & s1, const T & s2, const T & s3, const T & s4, const T & s5, const T & s6)
+    {
+      static_assert (S==6, "Init Vec<S> with 6 elements, but S != 6");
+      data[0] = s1;
+      data[1] = s2;
+      data[2] = s3;
+      data[3] = s4;
+      data[4] = s5;
+      data[5] = s6;
+    }
+
 
   
     /// copy vector
