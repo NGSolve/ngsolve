@@ -201,7 +201,7 @@ namespace ngfem
           if (vnums[es] > vnums[ee]) swap (es,ee);
 
  
-          Tx ls = ddlami[es], le = ddlami[ee], lt = ddlami[3-ee-es];
+          Tx ls = ddlami[es], le = ddlami[ee];
           Vec<3> symdyadic = Vec<3>(2*ls.DValue(0)*le.DValue(0),2*ls.DValue(1)*le.DValue(1), ls.DValue(1)*le.DValue(0)+ls.DValue(0)*le.DValue(1));
 
           LegendrePolynomial::EvalScaled(order, ls-le,ls+le, SBLambda([&] (size_t nr, Tx val)
@@ -209,49 +209,22 @@ namespace ngfem
                               shape[ii++] = val.Value()*symdyadic;
                             }));
         }
-      
-      /*int es = 0; int ee = 1; int et = 2;
-      Tx ls = ddlami[es];
-      Tx le = ddlami[ee];
-      Tx lt = ddlami[et];
-      
-      int oi=order_inner[0];
-      int oi_plus = oi; //plus ? oi+1 : oi;
 
 
-      IntegratedLegendreMonomialExt::CalcTrigExt(oi_plus+3,le-ls,1-le-ls,u);
-      LegendrePolynomial::EvalMult(oi_plus+1, 2*lt-1, lt, v);
-      
-      
-      for(int i = 0; i <= oi-1; i++)
-      {
-        for(int j = 0; j+i <= oi-1; j++)
+
+      for (int i = 0; i < 3; i++)
         {
-          shape[ii++] = SigmaGrad(u[i]*v[j]);
-          shape[ii++] = Type2(u[i],v[j]);
+          int es = edges[i][0], ee = edges[i][1];
+ 
+          Tx ls = ddlami[es], le = ddlami[ee], lt = ddlami[3-ee-es];
+          Vec<3> symdyadic = lt.Value()*Vec<3>(2*ls.DValue(0)*le.DValue(0),2*ls.DValue(1)*le.DValue(1), ls.DValue(1)*le.DValue(0)+ls.DValue(0)*le.DValue(1));
+
+          DubinerBasis3::Eval(order-1, ls,le, SBLambda([&] (size_t nr, Tx val)
+                            {
+                              shape[ii++] = val.Value()*symdyadic;
+                            }));
         }
-      }
-      for(int i = 0; i <= oi_plus-1; i++)
-      {
-        for(int j = 0; j+i <= oi_plus-1; j++)
-        {
-          if(j > 0)
-            shape[ii++] = Type3(u[i],v[j]);
-        }
-      }
       
-      for (int i = 0; i < oi_plus; i++)
-        shape[ii++] = Sigma_Duv_minus_uDv_w (le, -ls, v[i]);
-      
-      //// element bubbles for Sigma+ space
-      if (plus)
-        for (int i = 0; i <= oi-1; i++)
-          {
-            Tx bubble = u[i]*v[oi-1-i];
-            shape[ii++] = Sigma_u_Gradv(bubble, x);
-            shape[ii++] = Sigma_u_Gradv(bubble, y);
-          }
-      */
     };
   };
   
