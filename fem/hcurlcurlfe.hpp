@@ -217,6 +217,7 @@ namespace ngfem
       for (int i = 0; i < 3; i++)
         {
           int es = edges[i][0], ee = edges[i][1];
+          if (vnums[es] > vnums[ee]) swap (es,ee);
  
           Tx ls = ddlami[es], le = ddlami[ee], lt = ddlami[3-ee-es];
           Vec<3> symdyadic = lt.Value()*Vec<3>(2*ls.DValue(0)*le.DValue(0),2*ls.DValue(1)*le.DValue(1), ls.DValue(1)*le.DValue(0)+ls.DValue(0)*le.DValue(1));
@@ -984,11 +985,24 @@ namespace ngfem
 
  
           Tx ls = lam[es], le = lam[ee];
-          double tmp = 2*ls.DValue(0)*le.DValue(0);
 
           Vec<6> symdyadic = Vec<6>(2*ls.DValue(0)*le.DValue(0),2*ls.DValue(1)*le.DValue(1),2*ls.DValue(2)*le.DValue(2), ls.DValue(1)*le.DValue(2)+ls.DValue(2)*le.DValue(1), ls.DValue(0)*le.DValue(2)+ls.DValue(2)*le.DValue(0),ls.DValue(1)*le.DValue(0)+ls.DValue(0)*le.DValue(1));
 
           LegendrePolynomial::EvalScaled(order, ls-le,ls+le, SBLambda([&] (size_t nr, Tx val)
+                            {
+                              shape[ii++] = val.Value()*symdyadic;
+                            }));
+        }
+
+      for (int i = 0; i < 6; i++)
+        {
+          int es = edges[i][0], ee = edges[i][1], et = edges[i][2];
+          if (vnums[es] > vnums[ee]) swap (es,ee);
+ 
+          Tx ls = lam[es], le = lam[ee], lt = lam[et];
+          Vec<6> symdyadic = lt.Value()*Vec<6>(2*ls.DValue(0)*le.DValue(0),2*ls.DValue(1)*le.DValue(1),2*ls.DValue(2)*le.DValue(2), ls.DValue(1)*le.DValue(2)+ls.DValue(2)*le.DValue(1), ls.DValue(0)*le.DValue(2)+ls.DValue(2)*le.DValue(0),ls.DValue(1)*le.DValue(0)+ls.DValue(0)*le.DValue(1));
+
+          DubinerBasis3::Eval(order-1, ls,le, SBLambda([&] (size_t nr, Tx val)
                             {
                               shape[ii++] = val.Value()*symdyadic;
                             }));
@@ -1362,25 +1376,41 @@ namespace ngfem
       AutoDiff<3,T> lx[6] ={ xx, yy, 1-xx-yy};
       int ii = 0;
 
-      ArrayMem<AutoDiff<3,T>,20> leg_u(order_inner[0]+2), leg_v(order_inner[0]+3);
-
       
-        int fav[3] ={0,1,2};
+      const EDGE * edges = ElementTopology::GetEdges(ET_TRIG);
+      
+      for (int i = 0; i < 3; i++)
+        {
+          int es = edges[i][0], ee = edges[i][1];
+          if (vnums[es] > vnums[ee]) swap (es,ee);
+          
+          Tx ls = ddlami[es], le = ddlami[ee];
+          Vec<3> symdyadic = Vec<3>(2*ls.DValue(0)*le.DValue(0),2*ls.DValue(1)*le.DValue(1), ls.DValue(1)*le.DValue(0)+ls.DValue(0)*le.DValue(1));
+          
+          LegendrePolynomial::EvalScaled(order, ls-le,ls+le,
+                                         SBLambda([&] (size_t nr, Tx val)
+                                                  {
+                                                    shape[ii++] = val.Value()*symdyadic;
+                                                  }));
+        }
+      
 
-        //Sort vertices  first edge op minimal vertex
-        if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]);
-        if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
-        if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]);
-        
-        leg_u.SetSize(order_inner[0]+HCurlCurlFE<ET_PRISM>::incrorder_zz1_bd+1);
-        leg_v.SetSize(order_inner[0]+HCurlCurlFE<ET_PRISM>::incrorder_zz1_bd+1);
-        ScaledLegendrePolynomial(order_inner[0]+HCurlCurlFE<ET_PRISM>::incrorder_zz1_bd,lx[fav[0]]-lx[fav[1]],lx[fav[0]]+lx[fav[1]],leg_u);
-        LegendrePolynomial::Eval(order_inner[0]+HCurlCurlFE<ET_PRISM>::incrorder_zz1_bd,2 * lx[fav[2]] - 1,leg_v);
 
-        for(int j = 0; j <= order_inner[0]+HCurlCurlFE<ET_PRISM>::incrorder_zz1_bd; j++)
-          for(int k = 0; k <= order_inner[0]+HCurlCurlFE<ET_PRISM>::incrorder_zz1_bd-j; k++)
-          shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(lx[fav[0]], lx[fav[1]], lx[fav[2]], lx[fav[2]], leg_u[j]*leg_v[k]);*/
-    }
+      for (int i = 0; i < 3; i++)
+        {
+          int es = edges[i][0], ee = edges[i][1];
+          if (vnums[es] > vnums[ee]) swap (es,ee);
+ 
+          Tx ls = ddlami[es], le = ddlami[ee], lt = ddlami[3-ee-es];
+          Vec<3> symdyadic = lt.Value()*Vec<3>(2*ls.DValue(0)*le.DValue(0),2*ls.DValue(1)*le.DValue(1), ls.DValue(1)*le.DValue(0)+ls.DValue(0)*le.DValue(1));
+
+          DubinerBasis3::Eval(order-1, ls,le, SBLambda([&] (size_t nr, Tx val)
+                            {
+                              shape[ii++] = val.Value()*symdyadic;
+                            }));
+        }
+       
+        }*/
   };
 
 
