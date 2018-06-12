@@ -947,22 +947,18 @@ namespace ngfem
         ndof += order_edge[i][0]+1;
         order = max2(order, order_edge[i][0]);
       }
-      cout << "ndof edges = " << ndof << endl;
       
       for (int i=0; i<4; i++)
       {
         ndof += 3*(order_facet[i][0])*(order_facet[i][0]+1)/2;
         order = max2(order, order_facet[i][0]);
       }
-      cout << "ndof edges+faces = " << ndof << endl;
+     
       int p = order_inner[0];
       int ninner = p > 1 ? 3*(p+1)*(p)*(p-1)/6 : 0;
       ndof += ninner; 
 
       order = max2(order, p);
-
-      cout << "ndof tet = " << ndof << endl;
-
     }
 
 
