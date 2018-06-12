@@ -7,6 +7,7 @@
 
 #include "hdivdivfespace.hpp"
 #include "hdivdivsurfacespace.hpp"
+#include "hcurlcurlfespace.hpp"
 #include "numberfespace.hpp"
 using namespace ngcomp;
 
@@ -1016,6 +1017,8 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                   return flags_doc;
                 })
     ;
+
+  ExportFESpace<HCurlCurlFESpace> (m, "HCurlCurl");
 
   ExportFESpace<VectorFacetFESpace> (m, "VectorFacet");
 

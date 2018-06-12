@@ -30,6 +30,9 @@ namespace ngcomp
     static void GenerateMatrix(const FEL & bfel,const SIP & mip,
       SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
     {
+      //Necessary?
+      mat = 0;
+
       const HCurlCurlFiniteElement<D> & fel =
         dynamic_cast<const HCurlCurlFiniteElement<D>&> (bfel);
       fel.CalcMappedShape_Matrix (mip,Trans(mat));
@@ -39,6 +42,9 @@ namespace ngcomp
     static void GenerateMatrix(const FEL & bfel,const SIP & sip,
       MAT & mat,LocalHeap & lh)
     {
+      //Necessary?
+      mat = 0;
+
       const HCurlCurlFiniteElement<D> & fel =
         dynamic_cast<const HCurlCurlFiniteElement<D>&> (bfel);
       int nd = fel.GetNDof();
@@ -47,6 +53,7 @@ namespace ngcomp
       for(int i=0; i<nd; i++)
         for(int j = 0; j <DIM_DMAT; j++)
           mat(j,i) = shape(i,j);
+
 
     }
   };
@@ -178,7 +185,6 @@ namespace ngcomp
       {
       case ET_TRIG:
         ndof += 3*(oi[0]+1)*(oi[0]+2)/2 - 3*(oi[0]+1);
-        if(plus) ndof += 2*oi[0];
         if(discontinuous)
         {
           throw Exception("Hcurlcurl disontinuous just copy paste...");
@@ -187,16 +193,7 @@ namespace ngcomp
         }
         break;
       case ET_QUAD:
-        //ndof += 2*(oi[0]+2)*(oi[0]+1) +1;
-        ndof += (oi[0]+1+HCurlCurlFE<ET_QUAD>::incsg)*(oi [0]+1+HCurlCurlFE<ET_QUAD>::incsg)
-          + (oi[0]+2)*(oi[0])*2
-          + 2*(oi[0]+1+HCurlCurlFE<ET_QUAD>::incsugv) +1;
-        if(discontinuous)
-        {
-          throw Exception("Hcurlcurl disontinuous just copy paste...");
-          for (auto f : ma->GetElFacets(ei))
-            ndof += first_facet_dof[f+1] - first_facet_dof[f];            
-        }
+        throw Exception("Hcurlcurl Quad not implemented yet");
         break;
       case ET_PRISM:
         throw Exception("Hcurlcurl Prism not implemented yet");
@@ -205,13 +202,14 @@ namespace ngcomp
         throw Exception("Hcurlcurl Hex not implemented yet");
         break;
       case ET_TET:
-        ndof += (oi[0]+1)*(oi[0]+2)*(oi[0]+1);
+        /*ndof += (oi[0]+1)*(oi[0]+2)*(oi[0]+1);
         if(discontinuous)
         {
           throw Exception("Hcurlcurl disontinuous just copy paste...");
           for (auto f : ma->GetElFacets(ei))
             ndof += first_facet_dof[f+1] - first_facet_dof[f];            
-        }
+            }*/
+        throw Exception("Hcurlcurl Tet not implemented yet");
         break;
       default:
         throw Exception(string("illegal element type") + ToString(ma->GetElType(ei)));
@@ -265,8 +263,8 @@ namespace ngcomp
       if(!discontinuous)
       {
         auto feseg = new (alloc) HCurlCurlSurfaceFE<ET_SEGM> (order);
-        auto fetr = new (alloc) HCurlCurlSurfaceFE<ET_TRIG> (order);
-        auto fequ = new (alloc) HCurlCurlSurfaceFE<ET_QUAD> (order);
+        //auto fetr = new (alloc) HCurlCurlSurfaceFE<ET_TRIG> (order);
+        //auto fequ = new (alloc) HCurlCurlSurfaceFE<ET_QUAD> (order);
       switch(ma->GetElType(ei))
       {
       case ET_SEGM:  
@@ -275,7 +273,7 @@ namespace ngcomp
         feseg->ComputeNDof();
         return *feseg;
 
-      case ET_TRIG:          
+        /*case ET_TRIG:          
         fetr->SetVertexNumbers (ngel.Vertices());
         fetr->SetOrderInner(order_facet[ei.Nr()]);
         fetr->ComputeNDof();
@@ -285,7 +283,7 @@ namespace ngcomp
         fequ->SetVertexNumbers (ngel.Vertices());
         fequ->SetOrderInner(order_facet[ei.Nr()]);
         fequ->ComputeNDof();
-        return *fequ;
+        return *fequ;*/
 
       default:
         stringstream str;
@@ -315,7 +313,7 @@ namespace ngcomp
     {
     case ET_TRIG:
     {
-      auto fe = new (alloc) HCurlCurlFE<ET_TRIG> (order,plus);
+      auto fe = new (alloc) HCurlCurlFE<ET_TRIG> (order);
       fe->SetVertexNumbers (ngel.Vertices());
       int ii = 0;
       for(auto f : ngel.Facets())
@@ -324,9 +322,9 @@ namespace ngcomp
       fe->ComputeNDof();
       return *fe;
     }
-    case ET_QUAD:
+    /*case ET_QUAD:
     {
-      auto fe = new (alloc) HCurlCurlFE<ET_QUAD> (order,plus);
+      auto fe = new (alloc) HCurlCurlFE<ET_QUAD> (order);
       fe->SetVertexNumbers (ngel.Vertices());
       int ii = 0;
       for(auto f : ngel.Facets())
@@ -337,7 +335,7 @@ namespace ngcomp
     }
     case ET_PRISM:
     {
-      auto fe = new (alloc) HCurlCurlFE<ET_PRISM> (order,plus);
+      auto fe = new (alloc) HCurlCurlFE<ET_PRISM> (order);
       fe->SetVertexNumbers (ngel.vertices);
       int ii = 0;
       for(auto f : ngel.Facets())
@@ -348,7 +346,7 @@ namespace ngcomp
     }
     case ET_HEX:
     {
-      auto fe = new (alloc) HCurlCurlFE<ET_HEX> (order,plus);
+      auto fe = new (alloc) HCurlCurlFE<ET_HEX> (order);
       fe->SetVertexNumbers (ngel.vertices);
       int ii = 0;
       for(auto f : ngel.Facets())
@@ -359,7 +357,7 @@ namespace ngcomp
     }
     case ET_TET:
     {
-      auto fe = new (alloc) HCurlCurlFE<ET_TET> (order,plus);
+      auto fe = new (alloc) HCurlCurlFE<ET_TET> (order);
       fe->SetVertexNumbers (ngel.vertices);
       int ii = 0;
       for(auto f : ngel.Facets())
@@ -367,7 +365,7 @@ namespace ngcomp
       fe->SetOrderInner(order_inner[ei.Nr()]);
       fe->ComputeNDof();
       return *fe;
-    }
+      }*/
     default:
       throw Exception(string("HCurlCurlFESpace::GetFE: element-type ") +
         ToString(ngel.GetType()) + " not supported");
