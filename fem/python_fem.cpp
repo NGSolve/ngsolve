@@ -281,7 +281,7 @@ struct GenericPow {
   Complex operator() (Complex x, Complex y) const { return pow(x,y); }
   template <typename T1, typename T2> T1 operator() (T1 x, T2 y) const
   {
-    throw Exception (string("pow not available for type ")+typeid(T1).name());
+      return exp (log(x)*y);
   }    
   static string Name() { return "pow"; }
 };
@@ -631,6 +631,22 @@ else_obj : object
 	}
     }
   };
+
+  ExportStdMathFunction<GenericSin>(m, "sin");
+  ExportStdMathFunction<GenericCos>(m, "cos");
+  ExportStdMathFunction<GenericTan>(m, "tan");
+  ExportStdMathFunction<GenericExp>(m, "exp");
+  ExportStdMathFunction<GenericLog>(m, "log");
+  ExportStdMathFunction<GenericATan>(m, "atan");
+  ExportStdMathFunction<GenericACos>(m, "acos");
+  ExportStdMathFunction<GenericASin>(m, "asin");
+  ExportStdMathFunction<GenericSqrt>(m, "sqrt");
+  ExportStdMathFunction<GenericFloor>(m, "floor");
+  ExportStdMathFunction<GenericCeil>(m, "ceil");
+  ExportStdMathFunction<GenericConj>(m, "Conj");
+
+  ExportStdMathFunction2<GenericATan2>(m, "atan2");
+  ExportStdMathFunction2<GenericPow>(m, "pow");
 
   py::class_<SpecialCoefficientFunctions> (m, "SpecialCFCreator")
     .def_property_readonly("mesh_size", 
@@ -1034,21 +1050,6 @@ val : float
     ;
 
 
-  ExportStdMathFunction<GenericSin>(m, "sin");
-  ExportStdMathFunction<GenericCos>(m, "cos");
-  ExportStdMathFunction<GenericTan>(m, "tan");
-  ExportStdMathFunction<GenericExp>(m, "exp");
-  ExportStdMathFunction<GenericLog>(m, "log");
-  ExportStdMathFunction<GenericATan>(m, "atan");
-  ExportStdMathFunction<GenericACos>(m, "acos");
-  ExportStdMathFunction<GenericASin>(m, "asin");
-  ExportStdMathFunction<GenericSqrt>(m, "sqrt");
-  ExportStdMathFunction<GenericFloor>(m, "floor");
-  ExportStdMathFunction<GenericCeil>(m, "ceil");
-  ExportStdMathFunction<GenericConj>(m, "Conj");
-
-  ExportStdMathFunction2<GenericATan2>(m, "atan2");
-  ExportStdMathFunction2<GenericPow>(m, "pow");
 
   py::class_<BSpline, shared_ptr<BSpline> > (m, "BSpline",R"raw(BSpline of arbitrary order
 
