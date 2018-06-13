@@ -1327,13 +1327,7 @@ used_idnrs : list of int = None
     .def("Deriv",
          [](shared_ptr<GF> self) -> spCF
           {
-            auto sp = make_shared<GridFunctionCoefficientFunction> (self,
-                                                                    self->GetFESpace()->GetFluxEvaluator(),
-                                                                    self->GetFESpace()->GetFluxEvaluator(BND),
-								    self->GetFESpace()->GetFluxEvaluator(BBND));
-            sp->generated_from_deriv = true;
-            // sp->SetDimensions(sp->Dimensions());
-            return sp;
+            return self->GetDeriv();
           })
 
     .def("Operator",
