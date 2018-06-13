@@ -220,17 +220,14 @@ namespace ngcomp
     if (ma->GetDimension() == 2)
       {
 	auto nsel = ma->GetNSE();
-	Array<int> ens;
 	for(auto selnr:Range(nsel)) {
-	  ma->GetSElEdges(selnr,ens);
-	  for (auto f : ens)
+	  for (auto f : ma->GetElEdges(ElementId(BND,selnr)))
 	    fine_facet[f] = true;
 	}
       }
     else
       {
 	auto nsel = ma->GetNSE();
-	Array<int> fns;
 	for(auto selnr:Range(nsel)) {
 	  fine_facet[ma->GetSElFace(selnr)] = true;
 	}
@@ -442,27 +439,7 @@ namespace ngcomp
     
     Array<bool> fine_facet(ma->GetNFacets());
     fine_facet = false;
-
-    /*
-    if(ma->GetDimension() == 3)
-      {
-        for(ElementId ei : ma->Elements<VOL>())
-          if (DefinedOn(ei))
-            fine_facet[(*ma)[ei].Faces()] = true;
-      }
-    else if(ma->GetDimension() == 2)
-      {
-        for(ElementId ei : ma->Elements<VOL>())
-          if (DefinedOn(ei))
-            fine_facet[(*ma)[ei].Edges()] = true;
-      }
-    else
-      {
-        for(ElementId ei : ma->Elements<VOL>())
-          if (DefinedOn(ei))
-            fine_facet[(*ma)[ei].Vertices()] = true;
-      }
-    */
+    
     for (Ngs_Element el : ma->Elements<VOL>())
       if (DefinedOn(el))
         fine_facet[el.Facets()] = true;
