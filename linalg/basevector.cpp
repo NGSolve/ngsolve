@@ -711,18 +711,24 @@ namespace ngla
   BlockVector :: BlockVector (const Array<shared_ptr<BaseVector>> & avecs)
     : vecs(avecs), ispar(vecs.Size())
   {
-    ispar.Clear();
     
     size = 0;
     for(auto & vec:vecs)
       size += vec->Size();
-    
+
+#ifdef PARALLEL
+    ispar.Clear();
     for(size_t k = 0; k<vecs.Size(); k++) {
       auto stat = vecs[k]->GetParallelStatus();
-      if( (stat==CUMULATED) || (stat==DISTRIBUTED) )
-        ispar.Set(k);
+      if( stat==NOT_PARALLEL ) continue;
+      auto * pv = dynamic_cast_ParallelBaseVector(vecs[k].get());
+      auto vcomm = pv->GetParallelDofs()->GetCommunicator();
+      if(comm==MPI_COMM_NULL)
+	comm = vcomm;
+      else if(comm != vcomm)
+	throw Exception("Tried to construct a BlockVector with components in different MPI-Communicators!!");
     }
-    
+#endif
   }
 
   void * BlockVector :: Memory () const
@@ -760,7 +766,9 @@ namespace ngla
       if(ispar.Test(k)) pp += p;
       else ps += p;
     }
-    return pp+MyMPI_AllReduce(ps);
+    // if all vectors are sequential, do not reduce reduce
+    if(comm == MPI_COMM_NULL) return ps;
+    return pp + MyMPI_AllReduce(ps, MPI_SUM, comm);
   }
   
   BaseVector & BlockVector :: Scale (double scal)
