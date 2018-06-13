@@ -423,7 +423,7 @@ namespace ngla
   AutoVector BlockMatrix :: CreateRowVector () const {
     Array<shared_ptr<BaseVector>> vecs(w);
     for (auto col:Range(w)) {
-      vecs[w] = col_reps[col]->CreateRowVector();
+      vecs[col] = col_reps[col]->CreateRowVector();
     }
     return make_shared<BlockVector>(vecs);
   }
