@@ -961,7 +961,7 @@ namespace ngfem
       }
      
       int p = order_inner[0];
-      int ninner = p > 1 ? 3*(p+1)*(p)*(p-1)/6 : 0;
+      int ninner = p > 1 ? 6*(p+1)*(p)*(p-1)/6 : 0;
       ndof += ninner; 
 
       order = max2(order, p);
@@ -993,22 +993,8 @@ namespace ngfem
  
           auto ls = lam[es], le = lam[ee];
 
-          Vec<6> symdyadic = SymDyadProd(ls,le);// Vec<6>(2*ls.DValue(0)*le.DValue(0),2*ls.DValue(1)*le.DValue(1),2*ls.DValue(2)*le.DValue(2), ls.DValue(1)*le.DValue(2)+ls.DValue(2)*le.DValue(1), ls.DValue(0)*le.DValue(2)+ls.DValue(2)*le.DValue(0),ls.DValue(1)*le.DValue(0)+ls.DValue(0)*le.DValue(1));
+          Vec<6> symdyadic = SymDyadProd(ls,le);
 
-          /*Mat<3,3> tmpmat;
-          tmpmat(0,0) = 2*ls.DValue(0)*le.DValue(0);
-          tmpmat(0,1) = ls.DValue(0)*le.DValue(1)+ls.DValue(1)*le.DValue(0);
-          tmpmat(0,2) = ls.DValue(0)*le.DValue(2)+ls.DValue(2)*le.DValue(0);
-          tmpmat(1,0) = ls.DValue(1)*le.DValue(0)+ls.DValue(0)*le.DValue(1);
-          tmpmat(1,1) = 2*ls.DValue(1)*le.DValue(1);
-          tmpmat(1,2) = ls.DValue(1)*le.DValue(2)+ls.DValue(2)*le.DValue(1);
-          tmpmat(2,0) = ls.DValue(2)*le.DValue(0)+ls.DValue(0)*le.DValue(2);
-          tmpmat(2,1) = ls.DValue(2)*le.DValue(1)+ls.DValue(1)*le.DValue(2);
-          tmpmat(2,2) = 2*ls.DValue(2)*le.DValue(2);
-
-          cout << "tmpmat = " << tmpmat << endl << "symdyadic = " << symdyadic << endl;*/
-
-          
           LegendrePolynomial::EvalScaled(order, ls-le,ls+le, SBLambda([&] (size_t nr, auto val)
                             {
                               shape[ii++] = val.Value()*symdyadic;
@@ -1027,9 +1013,9 @@ namespace ngfem
               if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0], fav[1]);
               
               auto ls = lam[fav[0]], le = lam[fav[1]], lt = lam[fav[2]];
-              Vec<6> symdyadic1 = lt.Value()*SymDyadProd(ls,le);//Vec<6>(2*ls.DValue(0)*le.DValue(0),2*ls.DValue(1)*le.DValue(1),2*ls.DValue(2)*le.DValue(2), ls.DValue(1)*le.DValue(2)+ls.DValue(2)*le.DValue(1), ls.DValue(0)*le.DValue(2)+ls.DValue(2)*le.DValue(0),ls.DValue(1)*le.DValue(0)+ls.DValue(0)*le.DValue(1));
-              Vec<6> symdyadic2 = ls.Value()*SymDyadProd(lt,le);//*Vec<6>(2*lt.DValue(0)*le.DValue(0),2*lt.DValue(1)*le.DValue(1),2*lt.DValue(2)*le.DValue(2), lt.DValue(1)*le.DValue(2)+lt.DValue(2)*le.DValue(1), lt.DValue(0)*le.DValue(2)+lt.DValue(2)*le.DValue(0),lt.DValue(1)*le.DValue(0)+lt.DValue(0)*le.DValue(1));
-              Vec<6> symdyadic3 = le.Value()*SymDyadProd(ls,lt);//*Vec<6>(2*ls.DValue(0)*lt.DValue(0),2*ls.DValue(1)*lt.DValue(1),2*ls.DValue(2)*lt.DValue(2), ls.DValue(1)*lt.DValue(2)+ls.DValue(2)*lt.DValue(1), ls.DValue(0)*lt.DValue(2)+ls.DValue(2)*lt.DValue(0),ls.DValue(1)*lt.DValue(0)+ls.DValue(0)*lt.DValue(1));
+              Vec<6> symdyadic1 = lt.Value()*SymDyadProd(ls,le);
+              Vec<6> symdyadic2 = ls.Value()*SymDyadProd(lt,le);
+              Vec<6> symdyadic3 = le.Value()*SymDyadProd(ls,lt);
               
               DubinerBasis3::Eval(order-1, ls,le,
                                   SBLambda([&] (size_t nr, auto val)
@@ -1041,79 +1027,48 @@ namespace ngfem
             }
         }
 
-      if (order > 2)
+      if (order > 1)
         {
-          /*auto li = lam[0], lj = lam[1], lk = lam[2], ll = lam[3];
+          auto li = lam[0], lj = lam[1], lk = lam[2], ll = lam[3];
 
-            Vec<6> symdyadic1 = li.Value()*lj.Value()*Vec<6>(2*lk.DValue(0)*ll.DValue(0),2*lk.DValue(1)*ll.DValue(1),2*lk.DValue(2)*ll.DValue(2), lk.DValue(1)*ll.DValue(2)+lk.DValue(2)*ll.DValue(1), lk.DValue(0)*ll.DValue(2)+lk.DValue(2)*ll.DValue(0),lk.DValue(1)*ll.DValue(0)+lk.DValue(0)*ll.DValue(1));*/
+          Vec<6> symdyadic1 = li.Value()*lj.Value()*SymDyadProd(lk,ll);
+          Vec<6> symdyadic2 = lj.Value()*lk.Value()*SymDyadProd(ll,li);
+          Vec<6> symdyadic3 = lk.Value()*ll.Value()*SymDyadProd(li,ll);
+          Vec<6> symdyadic4 = ll.Value()*li.Value()*SymDyadProd(lj,lk);
+          Vec<6> symdyadic5 = li.Value()*lk.Value()*SymDyadProd(lj,ll);
+          Vec<6> symdyadic6 = lj.Value()*ll.Value()*SymDyadProd(li,lk);
+
+
+          LegendrePolynomial leg;
+          JacobiPolynomialAlpha jac1(1);    
+          leg.EvalScaled1Assign 
+            (order-2, lam[2].Value()-lam[3].Value(), lam[2].Value()+lam[3].Value(),
+             SBLambda ([&](size_t k, auto polz) LAMBDA_INLINE
+                       {
+                         // JacobiPolynomialAlpha jac(2*k+1);
+                         JacobiPolynomialAlpha jac2(2*k+2);
+                         
+                         jac1.EvalScaledMult1Assign
+                           (order-2-k, lam[1].Value()-lam[2].Value()-lam[3].Value(), 1-lam[0].Value(), polz, 
+                            SBLambda ([&] (size_t j, double polsy) LAMBDA_INLINE
+                                      {
+                                        // JacobiPolynomialAlpha jac(2*(j+k)+2);
+                                        jac2.EvalMult(order-2 - k - j, 2 * lam[0].Value() - 1, polsy, 
+                                                      SBLambda([&](size_t j, auto val) LAMBDA_INLINE
+                                                               {
+                                                                 shape[ii++] = val*symdyadic1;
+                                                                 shape[ii++] = val*symdyadic2;
+                                                                 shape[ii++] = val*symdyadic3;
+                                                                 shape[ii++] = val*symdyadic4;
+                                                                 shape[ii++] = val*symdyadic5;
+                                                                 shape[ii++] = val*symdyadic6;
+                                                               }));
+                                        jac2.IncAlpha2();
+                                      }));
+                         jac1.IncAlpha2();
+                       }));
         }
       
-      cout << "ndof = " << ndof << ", ii = " << ii << endl;
-      
-      /*for(int fa = 0; fa < 4; fa++)
-      {
-        int fav[3] = {faces[fa][0], faces[fa][1], faces[fa][2]};
-
-        int p = order_facet[fa][0];
-        //Sort vertices  first edge op minimal vertex
-        if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0], fav[1]);
-        if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1], fav[2]);
-        if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0], fav[1]);
-
-        ScaledLegendrePolynomial(p+1, lam[fav[0]]-lam[fav[1]],lam[fav[0]]+lam[fav[1]],leg_u);
-        LegendrePolynomial::Eval(p+1, 2 * lam[fav[2]] - 1,leg_v);
-
-        for(int j = 0; j <= p; j++)
-          for(int k = 0; k+j <= p; k++)
-          {
-            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(lam[fav[0]], lam[fav[1]],
-              lam[fav[2]], lam[fav[2]],leg_u[j]* leg_v[k]);
-          }
-
-
-
-          }*/
-
-
-
-      /*int oi = order_inner[0];
-      leg_u.SetSize(oi+1);
-      leg_v.SetSize(oi+1);
-      leg_w.SetSize(oi+1);
-
-      ScaledLegendrePolynomial(oi+1,lam[0]-lam[1],lam[0]+lam[1],leg_u);
-      ScaledLegendrePolynomial(oi+1,lam[2]-lam[0]-lam[1],lam[0]+lam[1]+lam[2],leg_v);
-      LegendrePolynomial::Eval(oi+1,2 * lam[3] - 1,leg_w);
-
-      for(int k=0; k<=oi; k++)
-      {
-        for(int i = 0; i+k <= oi; i++)
-        {
-          for(int j = 0; j+i+k <= oi; j++)
-          {
-            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(lam[0], lam[1], lam[2], lam[3], leg_u[i]*leg_v[k]* leg_w[j]);
-            shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(lam[0], lam[2], lam[1], lam[3], leg_u[i]*leg_v[j]* leg_w[k]);
-          }
-        }
-      }
-
-
-      for(int fa = 0; fa < 4; fa++)
-      {
-        int fav[3] = {faces[fa][0], faces[fa][1], faces[fa][2]};
-        for(int k=0; k<=oi-1; k++)
-        {
-          for(int i = 0; i+k <= oi-1; i++)
-          {
-            for(int j = 0; j+i+k <= oi-1; j++)
-            {
-              shape[ii++] = Prism_Dl1xDl3_symtensor_Dl2xDl4_u<T>(lam[fav[0]],lam[fav[0]],lam[fav[1]],lam[fav[2]],
-                (1-lam[fav[0]]-lam[fav[1]]-lam[fav[2]])*leg_u[i]*leg_v[k]* leg_w[j]);
-            }
-          }
-          }
-
-          }*/
 
     };
 
