@@ -33,8 +33,12 @@ set(acc_dir "${CMAKE_CURRENT_BINARY_DIR}/acc_tests")
 set(shm_pde_tests "d1_square.pde;d2_chip.pde;d3_helmholtz.pde;d4_cube.pde;d5_beam.pde;d6_shaft.pde;d7_coil.pde;d8_coilshield.pde;d9_hybridDG.pde;d10_DGdoubleglazing.pde;d11_chip_nitsche.pde")
 
 if(USE_UMFPACK)
+  if(NETGEN_USE_MPI)
+    add_test(NAME umfpack.py COMMAND ngspy umfpack.py WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+  else()
     add_test(NAME umfpack.py COMMAND ${NETGEN_PYTHON_EXECUTABLE} umfpack.py WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-    set_tests_properties ( ${py_test} PROPERTIES TIMEOUT ${NGS_TEST_TIMEOUT} )
+  endif()
+  set_tests_properties ( ${py_test} PROPERTIES TIMEOUT ${NGS_TEST_TIMEOUT} )
 endif(USE_UMFPACK)
 
 foreach(pde_test ${shm_pde_tests})
