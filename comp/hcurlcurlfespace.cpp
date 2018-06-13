@@ -225,7 +225,7 @@ namespace ngcomp
         break;
       case ET_TET:
        if(oi[0] > 1)
-          ndof += 3*(oi[0]+1)*(oi[0])*(oi[0]-1)/6;
+          ndof += 6*(oi[0]+1)*(oi[0])*(oi[0]-1)/6;
         break;
       default:
         throw Exception(string("illegal element type") + ToString(ma->GetElType(ei)));
