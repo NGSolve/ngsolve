@@ -111,6 +111,19 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
           [] (size_t s, bool is_complex, int es) -> shared_ptr<BaseVector>
           { return CreateBaseVector(s,is_complex, es); },
           "size"_a, "complex"_a=false, "entrysize"_a=1);
+
+    m.def("CreateParallelVector",
+          [] (shared_ptr<ParallelDofs> pardofs, bool is_complex, int es) -> shared_ptr<BaseVector>
+          {
+#ifdef PARALLEL
+	    if(is_complex)
+	      return make_shared<ParallelVVector<Complex>>(pardofs->GetNDofLocal(), pardofs, CUMULATED);
+	    else
+	      return make_shared<ParallelVVector<double>>(pardofs->GetNDofLocal(), pardofs, CUMULATED);
+#else
+	      return make_shared<VVector<double>>(pardofs->GetNDofLocal());
+	  },
+          py::arg("pardofs"), "complex"_a=false, "entrysize"_a=1);
     
   py::class_<BaseVector, shared_ptr<BaseVector>>(m, "BaseVector",
         py::dynamic_attr() // add dynamic attributes
