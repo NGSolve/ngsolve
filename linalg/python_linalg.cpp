@@ -121,7 +121,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 #ifdef PARALLEL
     .def_property_readonly("local_vec", [](BaseVector & self) -> shared_ptr<BaseVector> {
 	auto * pv = dynamic_cast_ParallelBaseVector (&self);
-	if(pv==NULL) throw Exception("Only ParallelVectors have a local Vector!");
+	if (pv==NULL) throw Exception("Only ParallelVectors have a local Vector!");
 	auto rv = pv->GetLocalVector();
 	return rv;
       } )
