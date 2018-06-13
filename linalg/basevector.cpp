@@ -711,21 +711,19 @@ namespace ngla
   BlockVector :: BlockVector (const Array<shared_ptr<BaseVector>> & avecs)
     : vecs(avecs), ispar(vecs.Size())
   {
-    
     size = 0;
-    for(auto & vec:vecs)
+    for (auto & vec:vecs)
       size += vec->Size();
-
 #ifdef PARALLEL
     ispar.Clear();
-    for(size_t k = 0; k<vecs.Size(); k++) {
+    for (size_t k = 0; k<vecs.Size(); k++) {
       auto stat = vecs[k]->GetParallelStatus();
-      if( stat==NOT_PARALLEL ) continue;
+      if ( stat==NOT_PARALLEL ) continue;
       auto * pv = dynamic_cast_ParallelBaseVector(vecs[k].get());
       auto vcomm = pv->GetParallelDofs()->GetCommunicator();
-      if(comm==MPI_COMM_NULL)
+      if (comm==MPI_COMM_NULL)
 	comm = vcomm;
-      else if(comm != vcomm)
+      else if (comm != vcomm)
 	throw Exception("Tried to construct a BlockVector with components in different MPI-Communicators!!");
     }
 #endif
@@ -761,13 +759,13 @@ namespace ngla
     double pp = 0;
     double ps = 0;
     const auto & v2b = dynamic_cast_BlockVector(v2);
-    for(size_t k = 0; k<vecs.Size(); k++) {
+    for (size_t k = 0; k<vecs.Size(); k++) {
       auto p = vecs[k]->InnerProductD(*v2b[k]);
-      if(ispar.Test(k)) pp += p;
+      if (ispar.Test(k)) pp += p;
       else ps += p;
     }
     // if all vectors are sequential, do not reduce reduce
-    if(comm == MPI_COMM_NULL) return ps;
+    if (comm == MPI_COMM_NULL) return ps;
     return pp + MyMPI_AllReduce(ps, MPI_SUM, comm);
   }
   
