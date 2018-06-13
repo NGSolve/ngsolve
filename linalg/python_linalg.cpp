@@ -370,6 +370,30 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
             );
       }
       
+      AutoVector CreateRowVector () const override {
+        PYBIND11_OVERLOAD_PURE(
+           shared_ptr<BaseVector>, /* Return type */
+           BaseMatrix,             /* Parent class */
+           CreateRowVector,        /* Name of function */
+           );
+      }
+
+      AutoVector CreateColVector () const override {
+        PYBIND11_OVERLOAD_PURE(
+           shared_ptr<BaseVector>, /* Return type */
+           BaseMatrix,             /* Parent class */
+           CreateColVector,        /* Name of function */
+           );
+      }
+
+      AutoVector CreateVector () const override {
+        PYBIND11_OVERLOAD_PURE(
+           shared_ptr<BaseVector>, /* Return type */
+           BaseMatrix,             /* Parent class */
+           CreateVector,           /* Name of function */
+           );
+      }
+
       void Mult (const BaseVector & x, BaseVector & y) const override {
         pybind11::gil_scoped_acquire gil;
         pybind11::function overload = pybind11::get_overload(this, "Mult");
@@ -605,9 +629,15 @@ inverse : string
 #ifdef PARALLEL
   py::class_<ParallelMatrix, shared_ptr<ParallelMatrix>, BaseMatrix>
     (m, "ParallelMatrix", "MPI-distributed matrix")
-    .def(py::init<shared_ptr<BaseMatrix>, shared_ptr<ParallelDofs>>())
+    .def(py::init<shared_ptr<BaseMatrix>, shared_ptr<ParallelDofs>>(),
+	 py::arg("mat"),py::arg("pardofs"))
+    .def(py::init<shared_ptr<BaseMatrix>, shared_ptr<ParallelDofs>, shared_ptr<ParallelDofs>>(),
+	 py::arg("mat"),py::arg("row_pardofs"),py::arg("col_pardofs"))
+    .def_property_readonly("row_pardofs", [](ParallelMatrix & mat) { return mat.GetRowParallelDofs(); })
+    .def_property_readonly("col_pardofs", [](ParallelMatrix & mat) { return mat.GetColParalleDofs()(); })
     .def_property_readonly("local_mat", [](ParallelMatrix & mat) { return mat.GetMatrix(); })
     ;
+
 
   py::class_<FETI_Jump_Matrix, shared_ptr<FETI_Jump_Matrix>, BaseMatrix>
     (m, "FETI_Jump", "B-matrix of the FETI-system")
