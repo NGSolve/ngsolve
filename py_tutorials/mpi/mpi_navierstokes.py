@@ -78,7 +78,7 @@ mstar += SymbolicBFI(ux*vx+uy*vy + tau*stokes)
 mstar.Assemble()
 
 # inv = mstar.mat.Inverse(X.FreeDofs(), inverse="masterinverse")
-inv = mstar.mat.Inverse(X.FreeDofs(), inverse="mumps")
+inv = mstar.mat.Inverse(X.FreeDofs(), inverse="masterinverse")
 
 # the non-linear term 
 conv = BilinearForm(X, nonassemble = True)
