@@ -487,20 +487,20 @@ namespace ngla
 
 
 
-  FETI_Jump_Matrix :: FETI_Jump_Matrix (shared_ptr<ParallelDofs> apardofs)
-      : BaseMatrix(apardofs)
+  FETI_Jump_Matrix :: FETI_Jump_Matrix (shared_ptr<ParallelDofs> apardofs, shared_ptr<ParallelDofs> au_paralleldofs)
+    : BaseMatrix(apardofs), u_paralleldofs(au_paralleldofs)
   {
     
     size_t njs = 0;
-    for(auto p:paralleldofs->GetDistantProcs())
+    for (auto p:paralleldofs->GetDistantProcs())
       njs += paralleldofs->GetExchangeDofs(p).Size();
 
     Array<size_t> ones(njs);
     ones = 1;
     Table<int> dps(ones);
     njs = 0;
-    for(auto p:paralleldofs->GetDistantProcs()) {
-      for(auto d:paralleldofs->GetExchangeDofs(p)) {
+    for (auto p:paralleldofs->GetDistantProcs()) {
+      for (auto d:paralleldofs->GetExchangeDofs(p)) {
 	dps[njs++][0] = p;
       }
     }    
@@ -516,19 +516,19 @@ namespace ngla
     y.Distribute();
     size_t count = 0;
     /*
-    for(auto p:paralleldofs->GetDistantProcs()) {
+      for (auto p:paralleldofs->GetDistantProcs()) {
       auto exdofs = paralleldofs->GetExchangeDofs(p);
-      if(p<MyMPI_GetId(paralleldofs->GetCommunicator())) {
-	for(auto k:Range(exdofs.Size())) {
-	  y.FVDouble()[count++] -= s*x.FVDouble()[exdofs[k]];
-	}
+      if (p<MyMPI_GetId(paralleldofs->GetCommunicator())) {
+      for (auto k:Range(exdofs.Size())) {
+      y.FVDouble()[count++] -= s*x.FVDouble()[exdofs[k]];
+      }
       }
       else {
-	for(auto k:Range(exdofs.Size())) {
-	  y.FVDouble()[count++] += s*x.FVDouble()[exdofs[k]];
-	}
+      for (auto k:Range(exdofs.Size())) {
+      y.FVDouble()[count++] += s*x.FVDouble()[exdofs[k]];
       }
-    }
+      }
+      }
     */
     auto me = MyMPI_GetId(paralleldofs->GetCommunicator());
     auto fx = x.FVDouble();
@@ -545,15 +545,15 @@ namespace ngla
   {
     x.Cumulate();
     size_t count = 0;
-    for(auto p:paralleldofs->GetDistantProcs()) {
+    for (auto p:paralleldofs->GetDistantProcs()) {
       auto exdofs = paralleldofs->GetExchangeDofs(p);
-      if(p<MyMPI_GetId(paralleldofs->GetCommunicator())) {
-	for(auto k:Range(exdofs.Size())) {
+      if (p<MyMPI_GetId(paralleldofs->GetCommunicator())) {
+	for (auto k:Range(exdofs.Size())) {
 	  y.FVDouble()[exdofs[k]] -= s*x.FVDouble()[count++];
 	}
       }
       else {
-	for(auto k:Range(exdofs.Size())) {
+	for (auto k:Range(exdofs.Size())) {
 	  y.FVDouble()[exdofs[k]] += s*x.FVDouble()[count++];
 	}
       }
@@ -563,14 +563,18 @@ namespace ngla
   
   AutoVector FETI_Jump_Matrix :: CreateRowVector () const
   {
-    return make_shared<VVector<double>> (paralleldofs->GetNDofLocal());
-  }
+    // throw Exception("Called FETI_Jump_Matrix :: CreateRowVector, this is not well defined");
+    if (u_paralleldofs==nullptr) {
+      return make_shared<VVector<double>>(VHeight());
+    }
+    return make_shared<ParallelVVector<double>> (u_paralleldofs->GetNDofLocal(),
+						 }
   
-  AutoVector FETI_Jump_Matrix :: CreateColVector () const
-  {
-    return make_shared<ParallelVVector<double>> (jump_paralleldofs->GetNDofLocal(),
-						 jump_paralleldofs);
-  }
+      AutoVector FETI_Jump_Matrix :: CreateColVector () const
+      {
+	return make_shared<ParallelVVector<double>> (jump_paralleldofs->GetNDofLocal(),
+						     jump_paralleldofs);
+      }
 
   
 }
