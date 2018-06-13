@@ -838,6 +838,9 @@ kwargs : For a description of the possible kwargs have a look a bit further down
             
             auto scalfe = dynamic_pointer_cast<BaseScalarFiniteElement> (fe);
             if (scalfe) return py::cast(scalfe);
+
+            auto hcurlfe = dynamic_pointer_cast<BaseHCurlFiniteElement> (fe);
+            if (hcurlfe) return py::cast(hcurlfe);
             
             return py::cast(fe);
           })
