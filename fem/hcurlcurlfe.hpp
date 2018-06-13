@@ -62,7 +62,12 @@ namespace ngfem
       mat(5) = mat(7) = vec(3);
       break;
     }
+  }
 
+  template <typename T>
+  Vec<6> SymDyadProd(AutoDiff<3,T> a, AutoDiff<3,T> b)
+  {
+    return Vec<6>(2*a.DValue(0)*b.DValue(0),2*a.DValue(1)*b.DValue(1),2*a.DValue(2)*b.DValue(2), a.DValue(1)*b.DValue(2)+a.DValue(2)*b.DValue(1), a.DValue(0)*b.DValue(2)+a.DValue(2)*b.DValue(0),a.DValue(1)*b.DValue(0)+a.DValue(0)*b.DValue(1));
   }
 
   template <ELEMENT_TYPE ET> class HCurlCurlFE;
@@ -973,6 +978,8 @@ namespace ngfem
       AutoDiff<3,T> zz(z.Value(), &z.DValue(0));
       AutoDiff<3,T> lam[4] = {xx, yy, zz, 1-xx-yy-zz};
       int ii = 0;
+
+      
       
       const FACE * faces = ElementTopology::GetFaces(ET_TET);
 
@@ -984,29 +991,64 @@ namespace ngfem
           if (vnums[es] > vnums[ee]) swap (es,ee);
 
  
-          Tx ls = lam[es], le = lam[ee];
+          auto ls = lam[es], le = lam[ee];
 
-          Vec<6> symdyadic = Vec<6>(2*ls.DValue(0)*le.DValue(0),2*ls.DValue(1)*le.DValue(1),2*ls.DValue(2)*le.DValue(2), ls.DValue(1)*le.DValue(2)+ls.DValue(2)*le.DValue(1), ls.DValue(0)*le.DValue(2)+ls.DValue(2)*le.DValue(0),ls.DValue(1)*le.DValue(0)+ls.DValue(0)*le.DValue(1));
+          Vec<6> symdyadic = SymDyadProd(ls,le);// Vec<6>(2*ls.DValue(0)*le.DValue(0),2*ls.DValue(1)*le.DValue(1),2*ls.DValue(2)*le.DValue(2), ls.DValue(1)*le.DValue(2)+ls.DValue(2)*le.DValue(1), ls.DValue(0)*le.DValue(2)+ls.DValue(2)*le.DValue(0),ls.DValue(1)*le.DValue(0)+ls.DValue(0)*le.DValue(1));
 
-          LegendrePolynomial::EvalScaled(order, ls-le,ls+le, SBLambda([&] (size_t nr, Tx val)
+          /*Mat<3,3> tmpmat;
+          tmpmat(0,0) = 2*ls.DValue(0)*le.DValue(0);
+          tmpmat(0,1) = ls.DValue(0)*le.DValue(1)+ls.DValue(1)*le.DValue(0);
+          tmpmat(0,2) = ls.DValue(0)*le.DValue(2)+ls.DValue(2)*le.DValue(0);
+          tmpmat(1,0) = ls.DValue(1)*le.DValue(0)+ls.DValue(0)*le.DValue(1);
+          tmpmat(1,1) = 2*ls.DValue(1)*le.DValue(1);
+          tmpmat(1,2) = ls.DValue(1)*le.DValue(2)+ls.DValue(2)*le.DValue(1);
+          tmpmat(2,0) = ls.DValue(2)*le.DValue(0)+ls.DValue(0)*le.DValue(2);
+          tmpmat(2,1) = ls.DValue(2)*le.DValue(1)+ls.DValue(1)*le.DValue(2);
+          tmpmat(2,2) = 2*ls.DValue(2)*le.DValue(2);
+
+          cout << "tmpmat = " << tmpmat << endl << "symdyadic = " << symdyadic << endl;*/
+
+          
+          LegendrePolynomial::EvalScaled(order, ls-le,ls+le, SBLambda([&] (size_t nr, auto val)
                             {
                               shape[ii++] = val.Value()*symdyadic;
                             }));
         }
 
-      for (int i = 0; i < 6; i++)
+      if (order > 0)
         {
-          int es = edges[i][0], ee = edges[i][1], et = edges[i][2];
-          if (vnums[es] > vnums[ee]) swap (es,ee);
- 
-          Tx ls = lam[es], le = lam[ee], lt = lam[et];
-          Vec<6> symdyadic = lt.Value()*Vec<6>(2*ls.DValue(0)*le.DValue(0),2*ls.DValue(1)*le.DValue(1),2*ls.DValue(2)*le.DValue(2), ls.DValue(1)*le.DValue(2)+ls.DValue(2)*le.DValue(1), ls.DValue(0)*le.DValue(2)+ls.DValue(2)*le.DValue(0),ls.DValue(1)*le.DValue(0)+ls.DValue(0)*le.DValue(1));
-
-          DubinerBasis3::Eval(order-1, ls,le, SBLambda([&] (size_t nr, Tx val)
-                            {
-                              shape[ii++] = val.Value()*symdyadic;
-                            }));
+          for(int fa = 0; fa < 4; fa++)
+            {
+              int fav[3] = {faces[fa][0], faces[fa][1], faces[fa][2]};
+          
+              //Sort vertices  first edge op minimal vertex
+              if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0], fav[1]);
+              if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1], fav[2]);
+              if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0], fav[1]);
+              
+              auto ls = lam[fav[0]], le = lam[fav[1]], lt = lam[fav[2]];
+              Vec<6> symdyadic1 = lt.Value()*SymDyadProd(ls,le);//Vec<6>(2*ls.DValue(0)*le.DValue(0),2*ls.DValue(1)*le.DValue(1),2*ls.DValue(2)*le.DValue(2), ls.DValue(1)*le.DValue(2)+ls.DValue(2)*le.DValue(1), ls.DValue(0)*le.DValue(2)+ls.DValue(2)*le.DValue(0),ls.DValue(1)*le.DValue(0)+ls.DValue(0)*le.DValue(1));
+              Vec<6> symdyadic2 = ls.Value()*SymDyadProd(lt,le);//*Vec<6>(2*lt.DValue(0)*le.DValue(0),2*lt.DValue(1)*le.DValue(1),2*lt.DValue(2)*le.DValue(2), lt.DValue(1)*le.DValue(2)+lt.DValue(2)*le.DValue(1), lt.DValue(0)*le.DValue(2)+lt.DValue(2)*le.DValue(0),lt.DValue(1)*le.DValue(0)+lt.DValue(0)*le.DValue(1));
+              Vec<6> symdyadic3 = le.Value()*SymDyadProd(ls,lt);//*Vec<6>(2*ls.DValue(0)*lt.DValue(0),2*ls.DValue(1)*lt.DValue(1),2*ls.DValue(2)*lt.DValue(2), ls.DValue(1)*lt.DValue(2)+ls.DValue(2)*lt.DValue(1), ls.DValue(0)*lt.DValue(2)+ls.DValue(2)*lt.DValue(0),ls.DValue(1)*lt.DValue(0)+ls.DValue(0)*lt.DValue(1));
+              
+              DubinerBasis3::Eval(order-1, ls,le,
+                                  SBLambda([&] (size_t nr, auto val)
+                                           {
+                                             shape[ii++] = val.Value()*symdyadic1;
+                                             shape[ii++] = val.Value()*symdyadic2;
+                                             shape[ii++] = val.Value()*symdyadic3;
+                                           }));
+            }
         }
+
+      if (order > 2)
+        {
+          /*auto li = lam[0], lj = lam[1], lk = lam[2], ll = lam[3];
+
+            Vec<6> symdyadic1 = li.Value()*lj.Value()*Vec<6>(2*lk.DValue(0)*ll.DValue(0),2*lk.DValue(1)*ll.DValue(1),2*lk.DValue(2)*ll.DValue(2), lk.DValue(1)*ll.DValue(2)+lk.DValue(2)*ll.DValue(1), lk.DValue(0)*ll.DValue(2)+lk.DValue(2)*ll.DValue(0),lk.DValue(1)*ll.DValue(0)+lk.DValue(0)*ll.DValue(1));*/
+        }
+      
+      cout << "ndof = " << ndof << ", ii = " << ii << endl;
       
       /*for(int fa = 0; fa < 4; fa++)
       {
@@ -1277,6 +1319,7 @@ namespace ngfem
     virtual void CalcMappedShape_Vector (const MappedIntegrationPoint<DIM,DIM+1> & mip,
                             BareSliceMatrix<double> shape) const
     {
+      cout << "A" << endl;
       Vec<DIM, AutoDiff<DIM+1>> adp = mip;
       Vec<DIM, AutoDiffDiff<DIM+1>> addp;
       for (int i=0; i<DIM+1; i++)
@@ -1286,7 +1329,7 @@ namespace ngfem
       }
       Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM+1>> (addp), SBLambda([&] (int nr, auto val)
                                           {
-                                            shape.Row(nr).AddSize(DIM_STRESS) = val.Shape();
+                                            shape.Row(nr).AddSize(DIM_STRESS) = val;
                                           }));
     }
 
@@ -1301,9 +1344,9 @@ namespace ngfem
         addp[i] = adp[i].Value();
         addp[i].LoadGradient(&adp[i].DValue(0));
       }
-      Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM+1>> (addp),SBLambda([&](int nr,auto val)
+      Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM+1>> (addp),SBLambda([&](int nr, auto val)
       {
-        Vec<DIM_STRESS> vecshape = val.Shape();
+        Vec<DIM_STRESS> vecshape = val;
         BareVector<double> matshape = shape.Row(nr);
         VecToSymMat<DIM+1> (vecshape, matshape);
       }));
@@ -1361,22 +1404,24 @@ namespace ngfem
     {
       order = 0;
       ndof = 0;
-      ndof += 3*(order_inner[0]+1)*(order_inner[0]+2)/2-3*(order_inner[0]+1);
+      ndof += 3*(order_inner[0]+1)*(order_inner[0]+2)/2;
       order = max2(order, order_inner[0]);
+
+      cout << "ndof trig surf = " << ndof << endl;
     }
 
 
     template <typename Tx, typename TFA> 
     void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
     {
-      /*Tx x = ip.x, y = ip.y;
+      Tx x = ip.x, y = ip.y;
       typedef decltype(x.Value()+x.Value()) T;                  
       AutoDiff<3,T> xx(x.Value(), &x.DValue(0));
       AutoDiff<3,T> yy(y.Value(), &y.DValue(0));
       AutoDiff<3,T> lx[6] ={ xx, yy, 1-xx-yy};
       int ii = 0;
 
-      
+      cout << "x = " << x << ", y = " << y << endl << "xx = " << xx << endl;
       const EDGE * edges = ElementTopology::GetEdges(ET_TRIG);
       
       for (int i = 0; i < 3; i++)
@@ -1384,18 +1429,18 @@ namespace ngfem
           int es = edges[i][0], ee = edges[i][1];
           if (vnums[es] > vnums[ee]) swap (es,ee);
           
-          Tx ls = ddlami[es], le = ddlami[ee];
-          Vec<3> symdyadic = Vec<3>(2*ls.DValue(0)*le.DValue(0),2*ls.DValue(1)*le.DValue(1), ls.DValue(1)*le.DValue(0)+ls.DValue(0)*le.DValue(1));
+          auto ls = lx[es], le = lx[ee];
+          Vec<6> symdyadic = Vec<6>(2*ls.DValue(0)*le.DValue(0),2*ls.DValue(1)*le.DValue(1),2*ls.DValue(2)*le.DValue(2), ls.DValue(1)*le.DValue(2)+ls.DValue(2)*le.DValue(1), ls.DValue(0)*le.DValue(2)+ls.DValue(2)*le.DValue(0),ls.DValue(1)*le.DValue(0)+ls.DValue(0)*le.DValue(1));
           
           LegendrePolynomial::EvalScaled(order, ls-le,ls+le,
-                                         SBLambda([&] (size_t nr, Tx val)
+                                         SBLambda([&] (size_t nr, auto val)
                                                   {
                                                     shape[ii++] = val.Value()*symdyadic;
                                                   }));
         }
       
 
-
+                                                                       /*
       for (int i = 0; i < 3; i++)
         {
           int es = edges[i][0], ee = edges[i][1];
@@ -1409,8 +1454,8 @@ namespace ngfem
                               shape[ii++] = val.Value()*symdyadic;
                             }));
         }
-       
-        }*/
+      */
+    }
   };
 
 
