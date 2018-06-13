@@ -302,21 +302,11 @@ namespace ngcomp
   {
     ctofdof.SetSize(ndof);
     ctofdof = UNUSED_DOF;
-    for (auto i : Range(ma->GetNSE()))
-      {
-        auto ei = ElementId(BND,i);
-        bool definedon = DefinedOn(ei);
 
-        if( definedon )
-          {
-            auto ednums = ma->GetElEdges (ei);
-            for( auto ed : ednums)
-              {
-                auto r = GetEdgeDofs(ed);
-                ctofdof[r] = WIREBASKET_DOF;
-              }
-          }
-      }
+    for (ElementId ei : ma->Elements(BND))
+      if (DefinedOn(ei))
+        for (auto ed : ma->GetElEdges (ei))
+          ctofdof[GetEdgeDofs(ed)] = WIREBASKET_DOF;
   }
 
     template <ELEMENT_TYPE ET>
