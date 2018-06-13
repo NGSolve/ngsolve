@@ -96,8 +96,8 @@ namespace ngla
 
     const shared_ptr<BaseMatrix> & operator()(size_t i, size_t j)
     {
-      if(i >= h) throw Exception("Tried to access BlockMatrix row that is out of range");
-      if(j >= w) throw Exception("Tried to access BlockMatrix col that is out of range");
+      if (i >= h) throw Exception("Tried to access BlockMatrix row that is out of range");
+      if (j >= w) throw Exception("Tried to access BlockMatrix col that is out of range");
       return mats[i][j];
     }
 

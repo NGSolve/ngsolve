@@ -356,38 +356,38 @@ namespace ngla
     h = mats.Size();
     w = (h > 0) ? mats[0].Size() : 0;
     // check if nr of blocks per row is consistent
-    for(auto k:Range(h))
-      if(mats[k].Size()!=h)
+    for (auto k:Range(h))
+      if (mats[k].Size()!=h)
 	throw Exception("Tried to construct a BlockMatrix with unequal nr. of blocks per row");
     // check if there is at least one block per row/col
     BitArray rowhas(h);
     rowhas.Clear();
     BitArray colhas(w);
     colhas.Clear();
-    for(auto k:Range(h))
-      for(auto j:Range(w))
-	if(mats[k][j]!=nullptr) {
+    for (auto k:Range(h))
+      for (auto j:Range(w))
+	if (mats[k][j]!=nullptr) {
 	  rowhas.Set(k);
 	  colhas.Set(j);
 	}
-    if(rowhas.NumSet()!=h)
+    if (rowhas.NumSet()!=h)
       throw Exception("BlockMatrix needs at least one block per row");
-    if(colhas.NumSet()!=w)
+    if (colhas.NumSet()!=w)
       throw Exception("BlockMatrix needs at least one block per col");
     row_reps.SetSize(h);
-    for(auto k:Range(h)) {
+    for (auto k:Range(h)) {
       size_t col = 0;
       while(row_reps[k]==nullptr) {
-	if(mats[k][col++]!=nullptr) {
+	if (mats[k][col++]!=nullptr) {
 	  row_reps[k] = mats[k][col-1];
 	}
       }
     }
     col_reps.SetSize(w);
-    for(auto k:Range(w)) {
+    for (auto k:Range(w)) {
       size_t row = 0;
       while(row_reps[k]==nullptr) {
-	if(mats[row++][k]!=nullptr) {
+	if (mats[row++][k]!=nullptr) {
 	  row_reps[k] = mats[row-1][k];
 	}
       }
@@ -422,7 +422,7 @@ namespace ngla
 
   AutoVector BlockMatrix :: CreateRowVector () const {
     Array<shared_ptr<BaseVector>> vecs(w);
-    for(auto col:Range(w)) {
+    for (auto col:Range(w)) {
       vecs[w] = col_reps[col]->CreateRowVector();
     }
     return make_shared<BlockVector>(vecs);
@@ -430,7 +430,7 @@ namespace ngla
   
   AutoVector BlockMatrix :: CreateColVector () const {
     Array<shared_ptr<BaseVector>> vecs(h);
-    for(auto row:Range(h)) {
+    for (auto row:Range(h)) {
       vecs[row] = row_reps[row]->CreateColVector();
     }
     return make_shared<BlockVector>(vecs);
