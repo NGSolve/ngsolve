@@ -9,7 +9,7 @@ def test_code_generation_volume_terms():
     fes = L2(mesh, order=5)
     gfu = GridFunction(fes)
 
-    functions = [x,y,x*y, sin(x)*y, exp(x)+y*y*y, specialcf.mesh_size, CoefficientFunction(x,y).Norm()]
+    functions = [x,y,x*y, sin(x)*y, exp(x)+y*y*y, specialcf.mesh_size, CoefficientFunction((x,y)).Norm()**2]
 
     for cf in functions:
         gfu.Set(cf)
