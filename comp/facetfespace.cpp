@@ -427,27 +427,7 @@ namespace ngcomp
     
     Array<bool> fine_facet(ma->GetNFacets());
     fine_facet = false;
-
-    /*
-    if(ma->GetDimension() == 3)
-      {
-        for(ElementId ei : ma->Elements<VOL>())
-          if (DefinedOn(ei))
-            fine_facet[(*ma)[ei].Faces()] = true;
-      }
-    else if(ma->GetDimension() == 2)
-      {
-        for(ElementId ei : ma->Elements<VOL>())
-          if (DefinedOn(ei))
-            fine_facet[(*ma)[ei].Edges()] = true;
-      }
-    else
-      {
-        for(ElementId ei : ma->Elements<VOL>())
-          if (DefinedOn(ei))
-            fine_facet[(*ma)[ei].Vertices()] = true;
-      }
-    */
+    
     for (Ngs_Element el : ma->Elements<VOL>())
       if (DefinedOn(el))
         fine_facet[el.Facets()] = true;
@@ -475,7 +455,7 @@ namespace ngcomp
       }
     
     if(highest_order_dc)
-      ctofdof.Range(first_inner_dof[0],ndof) = LOCAL_DOF;
+      ctofdof.Range(first_inner_dof[0],ndof) = HIDDEN_DOF;
     
     if(print)
       *testout << "FacetFESpace, ctofdof = " << endl << ctofdof << endl;

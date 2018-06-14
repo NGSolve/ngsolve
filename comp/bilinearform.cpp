@@ -1032,7 +1032,7 @@ namespace ngcomp
                              
                              Array<int> idofs1(dnums.Size(), lh);
                              
-                             fespace->GetDofNrs (el.Nr(), idofs1, LOCAL_DOF);
+                             fespace->GetDofNrs (el.Nr(), idofs1, CONDENSATABLE_DOF);
                              for (int j = 0; j < idofs1.Size(); j++)
                                idofs1[j] = dnums.Pos(idofs1[j]);
                              
@@ -1094,16 +1094,29 @@ namespace ngcomp
                                  else
                                    {
                                      Array<int> idnums1(dnums.Size(), lh), 
-                                       ednums1(dnums.Size(), lh);
-                                     fespace->GetDofNrs(el.Nr(),idnums1,LOCAL_DOF);
+                                       ednums1(dnums.Size(), lh),
+                                       hdnums1(dnums.Size(), lh);
+                                     fespace->GetDofNrs(el.Nr(),idnums1,CONDENSATABLE_DOF);
                                      fespace->GetDofNrs(el.Nr(),ednums1,EXTERNAL_DOF);
+                                     fespace->GetDofNrs(el.Nr(),hdnums1,HIDDEN_DOF);
+                                     int count = 0;
+                                     for (auto dof : hdnums1)
+                                     {
+                                       while (idnums1[count] != dof)
+                                         count++;
+                                       idnums1[count] = -1;
+                                     }
                                      
                                      Array<int> idnums(dim*idnums1.Size(), lh);
                                      Array<int> ednums(dim*ednums1.Size(), lh);
                                      idnums.SetSize0(); 
                                      ednums.SetSize0();
                                      for (size_t j = 0; j < idnums1.Size(); j++)
-                                       idnums += dim*IntRange(idnums1[j], idnums1[j]+1);
+                                       if (idnums1[j] != -1)
+                                         idnums += dim*IntRange(idnums1[j], idnums1[j]+1);
+                                       else
+                                         for (size_t k = 0; k < dim; k++)
+                                           idnums += -1;
                                      for (size_t j = 0; j < ednums1.Size(); j++)
                                        ednums += dim * IntRange(ednums1[j], ednums1[j]+1);
                                      
@@ -2475,7 +2488,7 @@ namespace ngcomp
                      ArrayMem<int,100> idofs, idofs1, odofs;
                      int i = el.Nr();
 
-                     fespace->GetDofNrs (i, idofs1, LOCAL_DOF);
+                     fespace->GetDofNrs (i, idofs1, CONDENSATABLE_DOF);
                      for (int j = 0; j < idofs1.Size(); j++)
                        idofs1[j] = dnums.Pos(idofs1[j]);
                           
@@ -2533,10 +2546,19 @@ namespace ngcomp
                          else
                            {
                              ArrayMem<int,50> idnums1, idnums;
+                             ArrayMem<int,50> hdnums1;
                              ArrayMem<int,50> ednums1, ednums;
                              
-                             fespace->GetDofNrs(i,idnums1,LOCAL_DOF);
+                             fespace->GetDofNrs(i,idnums1,CONDENSATABLE_DOF);
                              fespace->GetDofNrs(i,ednums1,EXTERNAL_DOF);
+                             fespace->GetDofNrs(i,hdnums1,HIDDEN_DOF);
+                             int count = 0;
+                             for (auto dof : hdnums1)
+                             {
+                               while (idnums1[count] != dof)
+                                 count++;
+                               idnums1[count] = -1;
+                             }
                              
                              for (int j = 0; j < idnums1.Size(); j++)
                                idnums += dim*IntRange(idnums1[j], idnums1[j]+1);

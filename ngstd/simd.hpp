@@ -808,6 +808,11 @@ namespace ngstd
     return ngstd::SIMD<double,N>([&](int i)->double { return pow(a[i],x); } );
   }
 
+  template <int N>
+  INLINE ngstd::SIMD<double,N> pow (ngstd::SIMD<double,N> a, ngstd::SIMD<double,N> b) {
+    return ngstd::SIMD<double,N>([&](int i)->double { return pow(a[i],b[i]); } );
+  }
+
   using std::sin;
   template <int N>      
   INLINE ngstd::SIMD<double,N> sin (ngstd::SIMD<double,N> a) {
