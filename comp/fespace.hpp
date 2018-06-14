@@ -32,14 +32,27 @@ namespace ngcomp
      - a wirebasket degree of freedom
   */
   enum COUPLING_TYPE {  UNUSED_DOF = 0,
-			LOCAL_DOF = 1,
-			INTERFACE_DOF = 2,
-			NONWIREBASKET_DOF = 3,
-			WIREBASKET_DOF = 4,
-			EXTERNAL_DOF = 6,
-			ANY_DOF = 7
+			HIDDEN_DOF = 1,
+			LOCAL_DOF = 2,
+			CONDENSATABLE_DOF = 3,
+			INTERFACE_DOF = 4,
+			NONWIREBASKET_DOF = 6,
+			WIREBASKET_DOF = 8,
+			EXTERNAL_DOF = 12,
+			ANY_DOF = 15
 		      };
-		     
+/*
+Bit encoding:          
+UNUSED                     0 |  0
+HIDDEN                     1 |  1
+LOCAL                    1 0 |  2
+CONDENSATABLE            1 1 |  3
+INTERFACE              1 0 0 |  4
+NONWIREBASKET          1 1 0 |  6
+WIREBASKET           1 0 0 0 |  8
+EXTERNAL             1 1 0 0 | 12
+ANY                  1 1 1 1 | 15
+*/
 
   /**
      constant_order .... one order for everything
