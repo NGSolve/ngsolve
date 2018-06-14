@@ -129,7 +129,8 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 	    else
 	      return make_shared<ParallelVVector<double>>(pardofs->GetNDofLocal(), pardofs, CUMULATED);
 #else
-	      return make_shared<VVector<double>>(pardofs->GetNDofLocal());
+	    return make_shared<VVector<double>>(pardofs->GetNDofLocal());
+#endif
 	  },
           py::arg("pardofs"), "complex"_a=false, "entrysize"_a=1);
     
