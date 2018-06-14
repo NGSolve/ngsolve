@@ -362,6 +362,9 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                      }))
     
     .def("__getitem__", [](BlockVector & self, int ind) { return self[ind]; })
+    .def_property_readonly ("nblocks", [](const BlockVector & self) 
+			    { return self.NBlocks(); },
+                            "number of blocks in BlockVector")
     ;
 
 
@@ -433,6 +436,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         else
           BaseMatrix::MultAdd(s, x, y);
       }
+
       void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override {
         pybind11::gil_scoped_acquire gil;
         pybind11::function overload = pybind11::get_overload(this, "MultTransAdd");

@@ -9,9 +9,12 @@
 
 
 
-
 namespace ngla
 {
+
+#ifdef PARALLEL
+  class ParallelBaseVector;
+#endif
 
   class BaseVector;
   class AutoVector;
@@ -673,9 +676,12 @@ namespace ngla
   {
     Array<shared_ptr<BaseVector>> vecs;
     BitArray ispar;
+    MPI_Comm comm = MPI_COMM_NULL;
   public:
     BlockVector (const Array<shared_ptr<BaseVector>> & avecs);
 
+    size_t NBlocks() const throw () { return vecs.Size(); }
+    
     shared_ptr<BaseVector> & operator[] (size_t i) const { return vecs[i]; }
 
     virtual void * Memory () const;
