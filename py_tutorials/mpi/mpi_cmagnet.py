@@ -9,6 +9,7 @@ comm = MPI_Init()
 rank = comm.rank
 np = comm.size
 
+do_vtk = False
 
 def MakeGeometry():
     geometry = CSGeometry()
@@ -55,8 +56,8 @@ nu = CoefficientFunction(nu_coef)
 a = BilinearForm(fes, symmetric=True)
 a += SymbolicBFI(nu*curl(u)*curl(v) + 1e-6*nu*u*v)
 
-#c = Preconditioner(a, type="bddc", flags={"inverse":"masterinverse"})
-c = Preconditioner(a, type="bddc", inverse = "mumps")
+c = Preconditioner(a, type="bddc", flags={"inverse":"masterinverse"})
+#c = Preconditioner(a, type="bddc", inverse = "mumps")
 
 f = LinearForm(fes)
 f += SymbolicLFI(CoefficientFunction((y,0.05-x,0)) * v, definedon=mesh.Materials("coil"))
@@ -69,13 +70,13 @@ f.Assemble()
 solver = CGSolver(mat=a.mat, pre=c.mat)
 u.vec.data = solver * f.vec
 
-
-import os
-output_path = os.path.dirname(os.path.realpath(__file__)) + "/cmagnet_output"
-if rank==0 and not os.path.exists(output_path):
-    os.mkdir(output_path)
-comm.Barrier() #wait until master has created the directory!!
-vtk = VTKOutput(ma=mesh, coefs=[u.Deriv()], names=["sol"], filename=output_path+"/vtkout_p"+str(rank), subdivision=2)
-vtk.Do()
+if do_vtk:
+    import os
+    output_path = os.path.dirname(os.path.realpath(__file__)) + "/cmagnet_output"
+    if rank==0 and not os.path.exists(output_path):
+        os.mkdir(output_path)
+    comm.Barrier() #wait until master has created the directory!!
+    vtk = VTKOutput(ma=mesh, coefs=[u.Deriv()], names=["sol"], filename=output_path+"/vtkout_p"+str(rank), subdivision=2)
+    vtk.Do()
 
 #Draw (u.Deriv(), mesh, "B-field", draw_surf=False)

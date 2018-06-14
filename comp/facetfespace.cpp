@@ -217,21 +217,9 @@ namespace ngcomp
     
     Array<int> fanums;
 
-    if (ma->GetDimension() == 2)
-      {
-	auto nsel = ma->GetNSE();
-	for(auto selnr:Range(nsel)) {
-	  for (auto f : ma->GetElEdges(ElementId(BND,selnr)))
-	    fine_facet[f] = true;
-	}
-      }
-    else
-      {
-	auto nsel = ma->GetNSE();
-	for(auto selnr:Range(nsel)) {
-	  fine_facet[ma->GetSElFace(selnr)] = true;
-	}
-      }
+    for (Ngs_Element el : ma->Elements<BND>())
+      if (DefinedOn(el))
+	fine_facet[el.Facets()] = true;
     
     for (int i = 0; i < nel; i++)
       {
