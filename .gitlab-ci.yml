@@ -114,6 +114,13 @@ win_avx_cleanup:
     UBUNTU_VERSION: "17.10"
     UBUNTU_VERSION_NAME: "artful"
 
+.template_ubuntu_mpi: &ubuntu_mpi
+  <<: *ubuntu
+  variables:
+    IMAGE_VERSION: "mpi"
+    UBUNTU_VERSION: "17.10"
+    UBUNTU_VERSION_NAME: "artful"
+
 .template_build_linux: &build_linux
   stage: build
   script:
@@ -139,6 +146,10 @@ ubuntu_debug_build:
   <<: *ubuntu_debug
   <<: *build_linux
 
+mpi_build:
+  <<: *ubuntu_mpi
+  <<: *build_linux
+
 .template_test_linux: &test_linux
   stage: test
   script:
@@ -162,6 +173,11 @@ ubuntu_avx512_test:
 
 debug_test:
   <<: *ubuntu_debug
+  <<: *test_linux
+  allow_failure: true
+
+mpi_test:
+  <<: *ubuntu_mpi
   <<: *test_linux
   allow_failure: true
 

@@ -287,6 +287,8 @@ namespace ngcomp
     while (ma->GetNLevels() > ndlevel.Size())
       ndlevel.Append (ndof);
     ndlevel.Last() = ndof;
+
+    UpdateCouplingDofArray();
     
     if(print)
       {
@@ -294,6 +296,17 @@ namespace ngcomp
 	*testout << " order edge (edge) " << order << endl; 
 	*testout << " first_edge_dof (edge)  " << first_edge_dof << endl; 
       } 
+  }
+
+   void FacetSurfaceFESpace :: UpdateCouplingDofArray()
+  {
+    ctofdof.SetSize(ndof);
+    ctofdof = UNUSED_DOF;
+
+    for (ElementId ei : ma->Elements(BND))
+      if (DefinedOn(ei))
+        for (auto ed : ma->GetElEdges (ei))
+          ctofdof[GetEdgeDofs(ed)] = WIREBASKET_DOF;
   }
 
     template <ELEMENT_TYPE ET>
@@ -397,6 +410,10 @@ namespace ngcomp
   void FacetSurfaceFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
     dnums.SetSize0();
+
+    if (!DefinedOn (ei))
+      return;
+
     switch (ei.VB())
       {
       case VOL:
