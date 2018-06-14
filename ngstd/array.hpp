@@ -731,6 +731,16 @@ namespace ngstd
       return size;
     }
 
+    // Add elements of initializer list to end of array. Reallocation if necessary.
+    INLINE size_t Append(std::initializer_list<T> lst)
+    {
+      if(allocsize < size + lst.size())
+        ReSize(size+lst.size());
+      for(auto val : lst)
+        data[size++] = val;
+      return size;
+    }
+
     /// Add element at end of array. reallocation if necessary.
     INLINE void Insert (size_t pos, const T & el)
     {

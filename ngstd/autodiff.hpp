@@ -441,6 +441,13 @@ INLINE AutoDiff<D,SCAL> exp (AutoDiff<D,SCAL> x)
   return res;
 }
 
+using std::pow;
+template <int D, typename SCAL>
+INLINE AutoDiff<D,SCAL> pow (AutoDiff<D,SCAL> x, AutoDiff<D,SCAL> y )
+{
+  return exp(log(x)*y);
+}
+
 using std::sin;
 template <int D, typename SCAL>
 INLINE AutoDiff<D,SCAL> sin (AutoDiff<D,SCAL> x)
