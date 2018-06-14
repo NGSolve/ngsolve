@@ -55,13 +55,14 @@ void ExportSparseMatrix(py::module m)
            return py::make_tuple (move(ri), move(ci), move(vals));
          })
     
-    .def("CRS", [] (SparseMatrix<T> * sp) -> py::object
+    .def("CSR", [] (shared_ptr<SparseMatrix<T>> sp) -> py::object
          {
            FlatArray<int> colind(sp->NZE(), sp->GetRowIndices(0).Addr(0));
            FlatVector<T> values(sp->NZE(), sp->GetRowValues(0).Addr(0));
            FlatArray<size_t> first = sp->GetFirstArray();
-           return py::make_tuple (colind, values, first); 
-         })
+           return py::make_tuple (values, colind, first); 
+         },
+         py::return_value_policy::reference_internal)
     
     .def_static("CreateFromCOO",
                 [] (py::list indi, py::list indj, py::list values, size_t h, size_t w)

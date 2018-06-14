@@ -1119,33 +1119,26 @@ namespace ngcomp
                                       BareSliceMatrix<SIMD<double>> mat)
     {
       auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
-      auto fmat = mat.AddSize(DIM_SPC*bfel.GetNDof(), mir.Size());
-      // fmat = 0.0;
       auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
       size_t ndofi = feli.GetNDof();
       
       STACK_ARRAY(SIMD<double>, mem, ndofi*mir.Size());
       FlatMatrix<SIMD<double>> shapes(ndofi, mir.Size(), &mem[0]);
       feli.CalcShape (mir.IR(), shapes);
-      
+
       for (auto i_ip : Range(mir))
         {
+          auto col = mat.Col(i_ip);
           auto & mip = static_cast<const SIMD<ngfem::MappedIntegrationPoint<DIM_SPC,DIM_SPC>>&>(mir[i_ip]);
           auto trafo = mip.GetJacobianInverse();
           
           for (int k = 0; k < DIM_SPACE; k++)
             {
               size_t offset = DIM_SPACE*k*ndofi;
-              Vec<DIM_SPACE,SIMD<double>> hv = SIMD<double>(0.0);
-              
-              for (size_t i = 0; i < feli.GetNDof(); i++)
-                {
-                  hv[k] = shapes(i,i_ip);
-                  fmat.Rows(offset,offset+DIM_SPACE).Col(i_ip) = Trans(trafo) * hv;
-                  offset += DIM_SPACE;
-                }
+              for (size_t i = 0; i < feli.GetNDof(); i++, offset += DIM_SPACE)
+                col.Range(offset,offset+DIM_SPACE) = shapes(i,i_ip) * trafo.Row(k);
 	    }
-	  }
+        }
     }
 
 
@@ -1240,6 +1233,72 @@ namespace ngcomp
             mat.Col(k*ndofi+i) = trafo * hv;
           }
     }
+
+    using DiffOp<DiffOpCurlVectorL2Covariant>::ApplySIMDIR;        
+    static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & bmir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<3,3>&> (bmir);
+      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
+      size_t ndofi = feli.GetNDof();
+      y.AddSize(3,mir.Size()) = SIMD<double>(0.0);
+
+      STACK_ARRAY(SIMD<double>, mem, 3*mir.Size());
+      FlatMatrix<SIMD<double>> grad(3, mir.Size(), &mem[0]);
+      for (size_t k = 0; k < 3; k++)
+        {
+          feli.EvaluateGrad (mir, x.Range(k*ndofi, (k+1)*ndofi), grad);
+          for (size_t i = 0; i < mir.Size(); i++)
+            {
+              auto trafo = Trans(mir[i].GetJacobianInverse());
+              Vec<3,SIMD<double>> gi = grad.Col(i);
+              Vec<3,SIMD<double>> tek = trafo.Col(k);
+              Vec<3,SIMD<double>> hv = Cross(gi, tek);
+              y.Col(i).AddSize(3) += hv;
+            }
+        }             
+    }    
+      
+    using DiffOp<DiffOpCurlVectorL2Covariant>::AddTransSIMDIR;        
+    static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & bmir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<3,3>&> (bmir);
+      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
+      size_t ndofi = feli.GetNDof();
+
+      STACK_ARRAY(SIMD<double>, mem, 3*mir.Size());
+      FlatMatrix<SIMD<double>> grad(3, mir.Size(), &mem[0]);
+      for (size_t k = 0; k < 3; k++)
+        {
+          /*
+          for (size_t i = 0; i < mir.Size(); i++)
+            {
+              auto trafo = Trans(mir[i].GetJacobianInverse());
+              Vec<3,SIMD<double>> gi = grad.Col(i);
+              Vec<3,SIMD<double>> tek = trafo.Col(k);
+              Vec<3,SIMD<double>> hv = Cross(gi, tek);
+              y.Col(i).AddSize(3) += hv;
+            }
+          */
+          for (size_t i = 0; i < mir.Size(); i++)
+            {
+              auto trafo = Trans(mir[i].GetJacobianInverse());
+              Vec<3,SIMD<double>> cy = y.Col(i);
+              Vec<3,SIMD<double>> tek = trafo.Col(k);
+              Vec<3,SIMD<double>> hv = Cross(cy, tek);
+              grad.Col(i) = -hv;
+            }
+          
+          feli.AddGradTrans (mir, grad, x.Range(k*ndofi, (k+1)*ndofi));
+        }             
+    }    
+      
+
+    
+    
   };
   
   /*class DiffOpCurlVectorL2Covariant : public DiffOp<DiffOpCurlVectorL2Covariant>
@@ -1368,6 +1427,18 @@ namespace ngcomp
           }
         return;
       }
+
+    if (covariant)
+      {
+        switch (ma->GetDimension())
+          {
+          case 1: SolveMCovariant<1>(rho, vec, lh); break;
+          case 2: SolveMCovariant<2>(rho, vec, lh); break;
+          case 3: SolveMCovariant<3>(rho, vec, lh); break;
+          default: throw Exception("VectorL2FESpace::SolveM: illegal dimension");
+          }
+        return;
+      }
     
     for (size_t i = 0; i < spaces.Size(); i++)
       {
@@ -1459,6 +1530,88 @@ namespace ngcomp
        });
   }
 
+
+  template <int DIM>
+  void VectorL2FESpace ::
+  SolveMCovariant (CoefficientFunction * rho, BaseVector & vec,
+                   LocalHeap & lh) const
+  {
+    static Timer t("SolveM - Covariant"); RegionTimer reg(t);
+    IterateElements
+      (*this, VOL, lh,
+       [&rho, &vec,this] (FESpace::Element el, LocalHeap & lh)
+       {
+         auto & fel = static_cast<const CompoundFiniteElement&>(el.GetFE());
+         auto & feli = static_cast<const BaseScalarFiniteElement&>(fel[0]);
+         const ElementTransformation & trafo = el.GetTrafo();
+         
+         Array<int> dnums(fel.GetNDof(), lh);
+         GetDofNrs (el.Nr(), dnums);
+         
+         FlatVector<double> elx(feli.GetNDof()*DIM, lh);
+         vec.GetIndirect(dnums, elx);
+         auto melx = elx.AsMatrix(DIM, feli.GetNDof());
+         
+         FlatVector<double> diag_mass(feli.GetNDof(), lh);
+         feli.GetDiagMassMatrix (diag_mass);
+         
+         bool curved = trafo.IsCurvedElement();
+         if (rho && !rho->ElementwiseConstant()) curved = true;
+         curved = false;  // curved not implemented
+         
+         if (!curved)
+           {
+             IntegrationRule ir(fel.ElementType(), 0);
+             MappedIntegrationRule<DIM,DIM> mir(ir, trafo, lh);
+             // Mat<DIM> trans = (1/mir[0].GetMeasure()) * Trans(mir[0].GetJacobian()) * mir[0].GetJacobian();
+             Mat<DIM> trans = mir[0].GetMeasure() * mir[0].GetJacobianInverse() * Trans(mir[0].GetJacobianInverse());
+             Mat<DIM> invtrans = Inv(trans);
+             
+             // double jac = mir[0].GetMeasure();
+             // if (rho) jac *= rho->Evaluate(mir[0]);
+             // diag_mass *= jac;
+             
+             for (int i = 0; i < melx.Width(); i++)
+               {
+                 Vec<DIM> hv = melx.Col(i);
+                 hv /=  diag_mass(i);
+                 melx.Col(i) = invtrans * hv;
+               }
+           }
+         /*
+           else
+           {
+           SIMD_IntegrationRule ir(fel.ElementType(), 2*fel.Order());
+           auto & mir = trafo(ir, lh);
+           FlatVector<SIMD<double>> pntvals(ir.Size(), lh);
+           FlatMatrix<SIMD<double>> rhovals(1, ir.Size(), lh);
+           if (rho) rho->Evaluate (mir, rhovals);
+                 
+           for (int i = 0; i < melx.Height(); i++)
+           melx.Row(i) /= diag_mass(i);
+           for (int comp = 0; comp < dimension; comp++)
+           {
+           fel.Evaluate (ir, melx.Col(comp), pntvals);
+           if (rho)
+           for (size_t i = 0; i < ir.Size(); i++)
+           pntvals(i) *= ir[i].Weight() / (mir[i].GetMeasure() * rhovals(0,i));
+           else
+           for (size_t i = 0; i < ir.Size(); i++)
+           pntvals(i) *= ir[i].Weight() / mir[i].GetMeasure();
+           
+           melx.Col(comp) = 0.0;
+           fel.AddTrans (ir, pntvals, melx.Col(comp));
+           }
+           for (int i = 0; i < melx.Height(); i++)
+           melx.Row(i) /= diag_mass(i);
+           }
+         */
+         vec.SetIndirect(dnums, elx);
+       });
+  }
+
+
+  
 
   
   static RegisterFESpace<VectorL2FESpace> initvecl2 ("VectorL2");
