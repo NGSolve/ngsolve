@@ -680,6 +680,8 @@ namespace ngla
   public:
     BlockVector (const Array<shared_ptr<BaseVector>> & avecs);
 
+    size_t NBlocks() const throw () { return vecs.Size(); }
+    
     shared_ptr<BaseVector> & operator[] (size_t i) const { return vecs[i]; }
 
     virtual void * Memory () const;
