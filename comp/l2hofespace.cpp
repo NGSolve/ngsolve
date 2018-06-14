@@ -1110,93 +1110,103 @@ namespace ngcomp
       for (int i = 0; i < DIM_SPACE*feli.GetNDof(); i++)
         {
           Vec<DIM_SPACE> hv = mat.Col(i);
-          mat.Col(i) = trafo * hv;
+          mat.Col(i) = Trans(trafo) * hv;
         } 
     }
     
-    //~ template <typename FEL>
     static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
                                       const SIMD_BaseMappedIntegrationRule & mir, 
                                       BareSliceMatrix<SIMD<double>> mat)
     {
       auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
       auto fmat = mat.AddSize(DIM_SPC*bfel.GetNDof(), mir.Size());
-      fmat = 0.0;
+      // fmat = 0.0;
       auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
+      size_t ndofi = feli.GetNDof();
       
-      //~ for (int i = 0; i < DIM_SPC; i++)
-        //~ feli.CalcShape (mir.IR(), mat.Rows(DIM_SPC*fel.GetRange(i)).RowSlice(i, DIM_SPC));
-        
-      Matrix<SIMD<double>> shapes(feli.GetNDof(), mir.Size());
+      STACK_ARRAY(SIMD<double>, mem, ndofi*mir.Size());
+      FlatMatrix<SIMD<double>> shapes(ndofi, mir.Size(), &mem[0]);
       feli.CalcShape (mir.IR(), shapes);
-      //~ feli.CalcShape (mir.IR(), mat);
-      
-      auto& mip = static_cast<const SIMD<ngfem::MappedIntegrationPoint<DIM_SPC,DIM_SPC>>&>(mir[0]);
-      Mat<DIM_SPACE,DIM_SPACE,SIMD<double>> trafo = mip.GetJacobianInverse();
       
       for (auto i_ip : Range(mir))
-      {
-		for (int k = 0; k < DIM_SPACE; k++)
-		{
-		  int offset = DIM_SPACE*k*feli.GetNDof();
-		  Vec<DIM_SPACE,SIMD<double>> hv = SIMD<double>(0.0);
-		  
-		  for (int i = 0; i < feli.GetNDof(); i++)
-          {
-             hv[k] = shapes(i,i_ip);
-             
-             
-             //~ fmat.Rows(i,i+DIM_SPACE).Col(i_ip);
-             
-             fmat.Rows(offset,offset+DIM_SPACE).Col(i_ip) = trafo * hv;
-             offset += DIM_SPACE;
-          }
+        {
+          auto & mip = static_cast<const SIMD<ngfem::MappedIntegrationPoint<DIM_SPC,DIM_SPC>>&>(mir[i_ip]);
+          auto trafo = mip.GetJacobianInverse();
           
+          for (int k = 0; k < DIM_SPACE; k++)
+            {
+              size_t offset = DIM_SPACE*k*ndofi;
+              Vec<DIM_SPACE,SIMD<double>> hv = SIMD<double>(0.0);
+              
+              for (size_t i = 0; i < feli.GetNDof(); i++)
+                {
+                  hv[k] = shapes(i,i_ip);
+                  fmat.Rows(offset,offset+DIM_SPACE).Col(i_ip) = Trans(trafo) * hv;
+                  offset += DIM_SPACE;
+                }
 	    }
 	  }
     }
-    
-  
-/*      static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
-                                      const SIMD_BaseMappedIntegrationRule & mir,
-                                      BareSliceMatrix<SIMD<double>> mat)
-    {
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
-      mat.AddSize(DIM_SPC*bfel.GetNDof(), mir.Size()) = 0.0;
-      for (int i = 0; i < DIM_SPC; i++)
-        {
-          auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
-          feli.CalcShape (mir.IR(), mat.Rows(DIM_SPC*fel.GetRange(i)).RowSlice(i, DIM_SPC));
-        }
-    }
 
-  using DiffOp<DiffOpIdVectorH1<DIM_SPC>>::ApplySIMDIR;    
-    static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+
+    using DiffOp<DiffOpIdVectorL2Covariant<DIM_SPC>>::ApplySIMDIR;        
+    static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & bmir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<3,3>&> (bmir);
       auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
-      for (int i = 0; i < DIM_SPC; i++)
-        {
-          auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
-          feli.Evaluate (mir.IR(), x.Range(fel.GetRange(i)), y.Row(i));
-        }
-    }
+      auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
+      size_t ndofi = feli.GetNDof();
 
-    using DiffOp<DiffOpIdVectorH1<DIM_SPC>>::AddTransSIMDIR;        
-    static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
-                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
-    {
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
-      for (int i = 0; i < DIM_SPC; i++)
+      STACK_ARRAY(double, memx, DIM_SPACE*ndofi);
+      FlatMatrix<double> matx(ndofi, DIM_SPACE, &memx[0]);
+      for (size_t k = 0; k < DIM_SPACE; k++)
+        matx.Col(k) = x.Range(k*ndofi, (k+1)*ndofi);
+      
+      feli.Evaluate(mir.IR(), matx, y);
+
+      for (size_t i = 0; i < mir.Size(); i++)
         {
-          auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
-          feli.AddTrans (mir.IR(), y.Row(i), x.Range(fel.GetRange(i)));
+          auto jacinv = mir[i].GetJacobianInverse();
+          Vec<DIM_SPACE,SIMD<double>> val = y.Col(i);
+          y.Col(i).AddSize(DIM_SPACE) = Trans(jacinv) * val;
         }
     }    
-    */
+    
+
+    using DiffOp<DiffOpIdVectorL2Covariant<DIM_SPC>>::AddTransSIMDIR;        
+    static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & bmir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<3,3>&> (bmir);
+      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
+      size_t ndofi = feli.GetNDof();
+      
+      STACK_ARRAY(SIMD<double>, mempt, mir.Size()*DIM_SPACE);
+      FlatMatrix<SIMD<double>> hy(DIM_SPACE, mir.Size(), &mempt[0]);
+
+      for (size_t i = 0; i < mir.Size(); i++)
+        {
+          auto jacinv = mir[i].GetJacobianInverse();
+          Vec<DIM_SPACE,SIMD<double>> val = y.Col(i);
+          hy.Col(i) = jacinv * val;
+        }
+      
+      STACK_ARRAY(double, memx, DIM_SPACE*ndofi);
+      FlatMatrix<double> matx(ndofi, DIM_SPACE, &memx[0]);
+
+      for (size_t k = 0; k < DIM_SPACE; k++)
+        matx.Col(k) = x.Range(k*ndofi, (k+1)*ndofi);
+
+      feli.AddTrans(mir.IR(), hy, matx);
+
+      for (size_t k = 0; k < DIM_SPACE; k++)
+        x.Range(k*ndofi, (k+1)*ndofi) = matx.Col(k);
+    }    
   };
 
-  ///Still working on this
+
   class DiffOpCurlVectorL2Covariant : public DiffOp<DiffOpCurlVectorL2Covariant>
   {
   public:
@@ -1206,33 +1216,32 @@ namespace ngcomp
     enum { DIM_DMAT = 3 };
     enum { DIFFORDER = 1 };
 
+    static string Name() { return "curl"; }
+    
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
     {
-		auto & bfel = static_cast<const CompoundFiniteElement&> (fel);
-		auto & feli = static_cast<const BaseScalarFiniteElement&> (bfel[0]);
-		mat = 0;
+      auto & bfel = static_cast<const CompoundFiniteElement&> (fel);
+      auto & feli = static_cast<const BaseScalarFiniteElement&> (bfel[0]);
+      mat = 0;
+      
+      int ndofi = feli.GetNDof();
+      FlatMatrix<> grad (ndofi, 3, lh);
+      feli.CalcDShape(mip.IP(), grad);
+      Mat<DIM_SPACE> trafo = (1.0/mip.GetJacobiDet()) * mip.GetJacobian();
 
-		//~ for (int j = 0; j < 3; j++)
-		//~ {
-		int nd = feli.GetNDof();
-		FlatMatrix<> grad (3, nd, lh);
-		feli.CalcDShape(mip.IP(), grad);
-		grad = Trans (mip.GetJacobianInverse ()) * Trans (grad);
-
-		for (int i = 0; i < nd; i++)
-		{
-			mat(0, DIM*i+2) =  grad(1, i);
-			mat(0, DIM*i+1) = -grad(2, i);
-			mat(1, DIM*i+0) =  grad(2, i);
-			mat(1, DIM*i+2) = -grad(0, i);
-			mat(2, DIM*i+1) =  grad(0, i);
-			mat(2, DIM*i+0) = -grad(1, i);
-		}
-	 }
-
+      for (int k = 0; k < 3; k++)
+        for (int i = 0; i < ndofi; i++)
+          {
+            Vec<3> gi = grad.Row(i);
+            Vec<3> ek = 0.0; ek(k) = 1;
+            Vec<3> hv = Cross(gi, ek);
+            mat.Col(k*ndofi+i) = trafo * hv;
+          }
+    }
   };
+  
   /*class DiffOpCurlVectorL2Covariant : public DiffOp<DiffOpCurlVectorL2Covariant>
   {
   public:
@@ -1300,10 +1309,10 @@ namespace ngcomp
               break;
             case 3:
               evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdVectorL2Covariant<3>>>();
-              additional_evaluators.Set ("curl", make_shared<T_DifferentialOperator<DiffOpCurlVectorL2Covariant>> ());
+              flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpCurlVectorL2Covariant>>();
               break;
             }
-	    }
+        }
       else
         switch (ma->GetDimension())
           {

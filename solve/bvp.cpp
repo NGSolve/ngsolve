@@ -248,7 +248,8 @@ namespace ngsolve
             }
           case DIRECT:
             cout << IM(1) << "direct solve for real system" << endl;
-            invmat2 = dynamic_cast<const BaseSparseMatrix&> (mat) . InverseMatrix(bfa->GetFESpace()->GetFreeDofs(eliminate_internal)); 
+            invmat2 = mat.InverseMatrix(bfa->GetFESpace()->GetFreeDofs(eliminate_internal)); 
+            // invmat2 = dynamic_cast<const BaseSparseMatrix&> (mat) . InverseMatrix(bfa->GetFESpace()->GetFreeDofs(eliminate_internal)); 
             break;
 	  }
       }
@@ -282,9 +283,10 @@ namespace ngsolve
             }
           case DIRECT:
             cout << IM(1) << "direct solve for complex system" << endl;
-            invmat2 = dynamic_cast<const BaseSparseMatrix&> (mat) 
-              . InverseMatrix(bfa->GetFESpace()->GetFreeDofs(eliminate_internal)); 
-            break;
+            // invmat2 = dynamic_cast<const BaseSparseMatrix&> (mat) 
+            //   . InverseMatrix(bfa->GetFESpace()->GetFreeDofs(eliminate_internal)); 
+	    invmat2 = mat.InverseMatrix(bfa->GetFESpace()->GetFreeDofs(eliminate_internal)); 
+	    break;
           }
       }
     else if ( ip_type == HERMITEAN )
@@ -317,7 +319,8 @@ namespace ngsolve
             }
           case DIRECT:
             cout << IM(1) << "direct solve for complex system" << endl;
-            invmat2 = dynamic_cast<const BaseSparseMatrix&> (mat) . InverseMatrix(bfa->GetFESpace()->GetFreeDofs(eliminate_internal)); 
+	    invmat2 = mat.InverseMatrix(bfa->GetFESpace()->GetFreeDofs(eliminate_internal)); 
+	    // invmat2 = dynamic_cast<const BaseSparseMatrix&> (mat) . InverseMatrix(bfa->GetFESpace()->GetFreeDofs(eliminate_internal)); 
             break;
           }
       }
