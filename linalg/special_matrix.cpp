@@ -386,9 +386,9 @@ namespace ngla
     col_reps.SetSize(w);
     for(auto k:Range(w)) {
       size_t row = 0;
-      while(row_reps[k]==nullptr) {
+      while(col_reps[k]==nullptr) {
 	if(mats[row++][k]!=nullptr) {
-	  row_reps[k] = mats[row-1][k];
+	  col_reps[k] = mats[row-1][k];
 	}
       }
     }
@@ -423,7 +423,7 @@ namespace ngla
   AutoVector BlockMatrix :: CreateRowVector () const {
     Array<shared_ptr<BaseVector>> vecs(w);
     for(auto col:Range(w)) {
-      vecs[w] = col_reps[col]->CreateRowVector();
+      vecs[col] = col_reps[col]->CreateRowVector();
     }
     return make_shared<BlockVector>(vecs);
   }
