@@ -629,8 +629,7 @@ inverse : string
                          }
                        return make_shared<BlockMatrix> (m2);
                      }))
-    
-    // .def("__getitem__", [](BlockMatrix & self, int row, int col) { return self(row,rol); })
+    .def("__getitem__", [](BlockMatrix & self, int row, int col) { return self(row,row); })
     ;
 
 
