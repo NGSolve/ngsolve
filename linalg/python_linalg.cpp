@@ -140,6 +140,17 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def(py::init([] (size_t s, bool is_complex, int es) -> shared_ptr<BaseVector>
                   { return CreateBaseVector(s,is_complex, es); }),
                   "size"_a, "complex"_a=false, "entrysize"_a=1)
+#ifdef PARALLEL
+    .def_property_readonly("local_vec", [](BaseVector & self) -> shared_ptr<BaseVector> {
+	auto * pv = dynamic_cast_ParallelBaseVector (&self);
+	if (pv==NULL) throw Exception("Only ParallelVectors have a local Vector!");
+	return pv->GetLocalVector();
+      } )
+#else
+    .def_property_readonly("local_vec", [](BaseVector & self) -> shared_ptr<BaseVector> {
+	throw Exception("Only ParallelVectors have a local Vector!");
+      } )
+#endif
     .def(py::pickle([] (const BaseVector& bv)
                     {
                       MemoryView mv((void*) &bv.FVDouble()[0], sizeof(double) * bv.FVDouble().Size());
