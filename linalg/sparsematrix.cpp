@@ -1000,7 +1000,7 @@ namespace ngla
     cnt = 0;
     for (auto i : indi) cnt[i]++;
 
-    auto matrix = make_shared<SparseMatrix<TM>> (cnt);
+    auto matrix = make_shared<SparseMatrix<TM>> (cnt, w);
     for (auto k : ::Range(indi))
       (*matrix)(indi[k], indj[k]) = val[k];
     return matrix;
@@ -1353,7 +1353,23 @@ namespace ngla
   AutoVector SparseMatrix<TM,TV_ROW,TV_COL> ::
   CreateVector () const
   {
-    return make_shared<VVector<TVY>> (this->size);
+    if (this->size==this->width)
+      return make_shared<VVector<TVY>> (this->size);
+    throw Exception ("SparseMatrix::CreateVector for rectangular does not make sense, use either CreateColVector or CreateRowVector");
+  }
+
+  template <class TM, class TV_ROW, class TV_COL>
+  AutoVector SparseMatrix<TM,TV_ROW,TV_COL> ::
+  CreateRowVector () const
+  {
+    return make_shared<VVector<TVY>> (this->width);
+  }
+
+  template <class TM, class TV_ROW, class TV_COL>
+  AutoVector SparseMatrix<TM,TV_ROW,TV_COL> ::
+  CreateColVector () const
+  {
+    return make_shared<VVector<TVX>> (this->size);
   }
 
 

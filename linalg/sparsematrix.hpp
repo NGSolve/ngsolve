@@ -137,6 +137,7 @@ namespace ngla
     { return FlatArray<int> (int(firsti[i+1]-firsti[i]), colnr+firsti[i]); }
 
     size_t First (int i) const { return firsti[i]; }
+    FlatArray<size_t> GetFirstArray () const  { return firsti; } 
 
     void FindSameNZE();
     void CalcBalancing ();
@@ -413,7 +414,9 @@ namespace ngla
     // virtual BaseMatrix * CreateMatrix (const Array<int> & elsperrow) const;
     ///
     virtual AutoVector CreateVector () const override;
-
+    virtual AutoVector CreateRowVector () const override;
+    virtual AutoVector CreateColVector () const override;
+    
     virtual shared_ptr<BaseJacobiPrecond>
       CreateJacobiPrecond (shared_ptr<BitArray> inner) const override
     { 

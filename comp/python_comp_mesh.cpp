@@ -109,6 +109,30 @@ void ExportNgcompMesh (py::module &m)
                              throw py::type_error("faces only available for cell nodes\n");
                            }, "tuple of global face numbers")
     
+    .def_property_readonly("point", [](MeshNode & node) -> py::tuple
+                           {
+                             auto & mesh = node.Mesh();
+                             if (node.GetType() == NT_VERTEX)
+                               switch (mesh.GetDimension())
+                                 {
+                                 case 1:
+                                   {
+                                     auto p = mesh.GetPoint<1>(node.GetNr());
+                                     return py::make_tuple(p(0));
+                                   }
+                                 case 2:
+                                   {
+                                     auto p = mesh.GetPoint<2>(node.GetNr());
+                                     return py::make_tuple(p(0), p(1));
+                                   }
+                                 case 3:
+                                   {
+                                     auto p = mesh.GetPoint<3>(node.GetNr());
+                                     return py::make_tuple(p(0), p(1), p(2));
+                                   }
+                                 }
+                             throw py::type_error("point only available for vertex nodes\n");
+                           }, "vertex coordinates")
     ;
 
   py::class_<ngstd::T_Range<NodeId>> (m, "NodeRange")

@@ -44,7 +44,7 @@ namespace ngfem
     virtual void CalcCurlShape (const IntegrationPoint & ip, 
                                 SliceMatrix<> curlshape) const;
 #ifndef FASTCOMPILE
-    virtual void CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
+    virtual void CalcMappedShape (const BaseMappedIntegrationPoint & mip,
                                   SliceMatrix<> shape) const;
 
     virtual void CalcMappedShape (const MappedIntegrationRule<DIM,DIM> & mir, 
@@ -53,7 +53,7 @@ namespace ngfem
     virtual void CalcMappedShape (const SIMD_BaseMappedIntegrationRule & mir, 
                                   BareSliceMatrix<SIMD<double>> shapes) const;
 
-    virtual void CalcMappedCurlShape (const MappedIntegrationPoint<DIM,DIM> & mip,
+    virtual void CalcMappedCurlShape (const BaseMappedIntegrationPoint & mip,
                                       SliceMatrix<> curlshape) const;
 
     virtual void CalcMappedCurlShape (const MappedIntegrationRule<DIM,DIM> & mir, 

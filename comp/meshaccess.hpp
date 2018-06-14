@@ -1025,18 +1025,34 @@ namespace ngcomp
     bool IsElementCurved (int elnr) const
     { return GetElement(ElementId(VOL,elnr)).is_curved; }
       // { return bool (Ng_IsElementCurved (elnr+1)); }
-    
-    
+
+    [[deprecated("Use GetPeriodicNodes(NT_VERTEX, pairs) instead!")]]
     void GetPeriodicVertices ( Array<ngstd::INT<2> > & pairs) const;
+    [[deprecated("Use GetNPeriodicNodes(NT_VERTEX) instead!")]]
     int GetNPairsPeriodicVertices () const;
+    [[deprecated("Use GetPeriodicNodes(NT_VERTEX, idnr) instead")]]
     void GetPeriodicVertices (int idnr, Array<ngstd::INT<2> > & pairs) const;
+    [[deprecated("Use GetPeriodicNodes(NT_VERTEX, idnr).Size() instead")]]
     int GetNPairsPeriodicVertices (int idnr) const;  
 
+    [[deprecated("Use GetPeriodicNodes(NT_EDGE, pairs) instead!")]]
     void GetPeriodicEdges ( Array<ngstd::INT<2> > & pairs) const;
+    [[deprecated("Use GetNPeriodicNodes(NT_EDGE) instead!")]]
     int GetNPairsPeriodicEdges () const;
+    [[deprecated("Use GetPeriodicNodes(NT_EDGE, idnr) instead")]]
     void GetPeriodicEdges (int idnr, Array<ngstd::INT<2> > & pairs) const;
+    [[deprecated("Use GetPeriodicNodes(NT_EDGE, idnr).Size() instead")]]
     int GetNPairsPeriodicEdges (int idnr) const;
 
+    int GetNPeriodicIdentifications() const
+    {
+      return periodic_node_pairs[NT_VERTEX]->Size();
+    }
+    // get number of all periodic nodes of nodetype nt
+    size_t GetNPeriodicNodes(NODE_TYPE nt) const;
+    // write all the node pairs of type nt into array pairs
+    void GetPeriodicNodes(NODE_TYPE nt, Array<INT<2>>& pairs) const;
+    // Uses 0 based identification numbers! Returns periodic node pairs of given identifcation number
     const Array<INT<2>>& GetPeriodicNodes(NODE_TYPE nt, int idnr) const;
 
 

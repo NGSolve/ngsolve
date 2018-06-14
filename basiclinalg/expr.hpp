@@ -1431,12 +1431,26 @@ namespace ngbla
     return v.real()*v.real()+v.imag()*v.imag();
   }
 
+  /*
   template<int D, typename SCAL>
   inline double L2Norm2 (const AutoDiff<D,SCAL> & x) 
   {
     return L2Norm2(x.Value());
   }
-
+  */
+  // not meaningful for AutoDiff<D,Complex>, since this is
+  // not (complex) differentiable anyway
+  template<int D, typename SCAL>
+  inline auto L2Norm2 (const AutoDiff<D,SCAL> & x) 
+  {
+    return x*x;
+  }
+  
+  template<int D, typename SCAL>
+  inline auto L2Norm2 (const AutoDiffDiff<D,SCAL> & x) 
+  {
+    return x*x;
+  }
 
   template <class TA>
   inline auto L2Norm2 (const Expr<TA> & v) -> decltype(L2Norm2(v.Spec()(0)))

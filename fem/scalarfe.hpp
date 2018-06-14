@@ -59,6 +59,15 @@ namespace ngfem
     virtual void CalcShape (const SIMD_IntegrationRule & ir, 
                             BareSliceMatrix<SIMD<double>> shape) const;
 
+    HD NGS_DLL_HEADER 
+    virtual void CalcMappedDShape (const BaseMappedIntegrationPoint & mip, 
+                                   BareSliceMatrix<> dshape) const = 0;
+
+
+    HD NGS_DLL_HEADER 
+    virtual void CalcMappedDShape (const BaseMappedIntegrationRule & mir, 
+                                   BareSliceMatrix<> dshapes) const = 0;
+    
     // rows dim*ndof, cols .. nip
     // rows:  phi0/dx, phi0/dy, phi0/dz, phi1/dx ... 
     HD NGS_DLL_HEADER 
@@ -131,12 +140,12 @@ namespace ngfem
     /// compute dshape, matrix: ndof x spacedim
     HD NGS_DLL_HEADER 
     virtual void CalcMappedDShape (const BaseMappedIntegrationPoint & mip, 
-                                   BareSliceMatrix<> dshape) const;
+                                   BareSliceMatrix<> dshape) const override;
 
 
     HD NGS_DLL_HEADER 
     virtual void CalcMappedDShape (const BaseMappedIntegrationRule & mir, 
-                                   BareSliceMatrix<> dshapes) const;
+                                   BareSliceMatrix<> dshapes) const override;
 
 
     /**
