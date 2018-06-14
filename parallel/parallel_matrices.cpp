@@ -568,14 +568,15 @@ namespace ngla
       return make_shared<VVector<double>>(VHeight());
     }
     return make_shared<ParallelVVector<double>> (u_paralleldofs->GetNDofLocal(),
-						 }
+						 u_paralleldofs);
+  }
   
-      AutoVector FETI_Jump_Matrix :: CreateColVector () const
-      {
-	return make_shared<ParallelVVector<double>> (jump_paralleldofs->GetNDofLocal(),
-						     jump_paralleldofs);
-      }
-
+  AutoVector FETI_Jump_Matrix :: CreateColVector () const
+  {
+    return make_shared<ParallelVVector<double>> (jump_paralleldofs->GetNDofLocal(),
+						 jump_paralleldofs);
+  }
+  
   
 }
 
