@@ -22,7 +22,6 @@ namespace ngla
     Array<int> select;
     string invtype;
     //shared_ptr<ParallelDofs> pardofs;
-    shared_ptr<ParallelDofs> row_paralleldofs, col_paralleldofs;
   public:
     MasterInverse (const SparseMatrixTM<TM> & mat, shared_ptr<BitArray> asubset, 
 		   shared_ptr<ParallelDofs> apardofs);
@@ -41,10 +40,14 @@ namespace ngla
   {
     shared_ptr<BaseMatrix> mat;
     // const ParallelDofs & pardofs;
+
+    shared_ptr<ParallelDofs> row_paralleldofs, col_paralleldofs;
+
   public:
     ParallelMatrix (shared_ptr<BaseMatrix> amat, shared_ptr<ParallelDofs> apardofs);
     // : mat(*amat), pardofs(*apardofs) 
     // {const_cast<BaseMatrix&>(mat).SetParallelDofs (apardofs);}
+
     ParallelMatrix (shared_ptr<BaseMatrix> amat, shared_ptr<ParallelDofs> arpardofs,
 		    shared_ptr<ParallelDofs> acpardofs);
 
