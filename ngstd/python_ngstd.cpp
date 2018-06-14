@@ -224,6 +224,12 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
                   }))
     ;
 
+  py::class_<FlatArray<size_t> > class_flatarrayst (m, "FlatArray_sizet", py::buffer_protocol());
+  PyDefVector<FlatArray<size_t>, size_t>(m, class_flatarrayst);
+  PyDefToString<FlatArray<size_t> >(m, class_flatarrayst);
+  PyDefVecBuffer<FlatArray<size_t>, size_t>(class_flatarrayst);
+  class_flatarrayst.def(py::init<size_t, size_t *>());
+  
   py::class_<ngstd::LocalHeap> (m, "LocalHeap", "A heap for fast memory allocation")
      .def(py::init<size_t,const char*>(), "size"_a=1000000, "name"_a="PyLocalHeap")
     ;
