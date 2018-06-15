@@ -45,23 +45,26 @@ public:
   }
   */
 
-  /*
+  using DiffOp<DiffOpIdHDivSurface<D,FEL>>::ApplySIMDIR;        
+  static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                           BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+  {
+    Cast(fel).Evaluate (mir, x, y);
+  }    
+  
   using DiffOp<DiffOpIdHDivSurface<D,FEL>>::AddTransSIMDIR;          
   static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
                               BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
   {
     Cast(fel).AddTrans (mir, y, x);
   }
-  */
 
-  /*
+
   static void GenerateMatrixSIMDIR (const FiniteElement & fel,
                                     const SIMD_BaseMappedIntegrationRule & mir, BareSliceMatrix<SIMD<double>> mat)
   {
-    
     Cast(fel).CalcMappedShape (mir, mat);
-    
-    }*/
+  }
   
 };
 

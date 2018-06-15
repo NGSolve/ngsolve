@@ -254,6 +254,9 @@ namespace ngcomp
     // timer1.Start();
     FESpace :: Update (lh);
 
+    if (order_policy == CONSTANT_ORDER)
+      fixed_order = true;
+    
     TORDER maxorder = 0;
     TORDER minorder = 99; 
 

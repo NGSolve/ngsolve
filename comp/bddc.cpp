@@ -97,7 +97,7 @@ namespace ngcomp
                  if (d == -1) continue;
                  if (!freedofs.Test(d)) continue;
                  COUPLING_TYPE ct = fes->GetDofCouplingType(d);
-                 if (ct == LOCAL_DOF && bfa -> UsesEliminateInternal()) continue;
+                 if ( ((ct & CONDENSATABLE_DOF) != 0) && bfa->UsesEliminateInternal()) continue;
 		
                  int ii = base + el.Nr();
                  if (ct == WIREBASKET_DOF)
@@ -124,7 +124,7 @@ namespace ngcomp
                  if (d == -1) continue;
                  if (!freedofs.Test(d)) continue;
                  COUPLING_TYPE ct = fes->GetDofCouplingType(d);
-                 if (ct == LOCAL_DOF && bfa->UsesEliminateInternal()) continue;
+                 if ( ((ct & CONDENSATABLE_DOF) != 0) && bfa->UsesEliminateInternal()) continue;
 		
                  int ii = base + el.Nr();
                  if (ct == WIREBASKET_DOF)

@@ -191,6 +191,9 @@ namespace ngcomp
     template <int DIM>
     void SolveMPiola (CoefficientFunction * rho, BaseVector & vec,
                       LocalHeap & lh) const;
+    template <int DIM>
+    void SolveMCovariant (CoefficientFunction * rho, BaseVector & vec,
+                          LocalHeap & lh) const;
   };
 
 }

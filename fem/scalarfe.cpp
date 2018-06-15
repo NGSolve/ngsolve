@@ -103,7 +103,8 @@ namespace ngfem
   {
     auto & mip = static_cast<const MappedIntegrationPoint<D,D> &> (bmip);
     CalcDShape (mip.IP(), dshape);
-    for (size_t i = 0; i < dshape.Height(); i++)
+    size_t ndof = GetNDof();
+    for (size_t i = 0; i < ndof; i++)
       {
         Vec<D> hv = dshape.Row(i);
         FlatVec<D> (&dshape(i,0)) = Trans (mip.GetJacobianInverse ()) * hv;

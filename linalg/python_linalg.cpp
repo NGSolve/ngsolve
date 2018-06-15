@@ -54,7 +54,16 @@ void ExportSparseMatrix(py::module m)
            // moves the arrays
            return py::make_tuple (move(ri), move(ci), move(vals));
          })
-
+    
+    .def("CSR", [] (shared_ptr<SparseMatrix<T>> sp) -> py::object
+         {
+           FlatArray<int> colind(sp->NZE(), sp->GetRowIndices(0).Addr(0));
+           FlatVector<T> values(sp->NZE(), sp->GetRowValues(0).Addr(0));
+           FlatArray<size_t> first = sp->GetFirstArray();
+           return py::make_tuple (values, colind, first); 
+         },
+         py::return_value_policy::reference_internal)
+    
     .def_static("CreateFromCOO",
                 [] (py::list indi, py::list indj, py::list values, size_t h, size_t w)
                 {
@@ -93,10 +102,10 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def(py::init([](py::object procs, PyMPI_Comm comm) {
 	  size_t n = py::len(procs);
 	  TableCreator<int> ct(n);
-	  while(!ct.Done()) {
+	  while (!ct.Done()) {
 	    size_t rn = 0;
-	    for(auto row:procs) {
-	      for(auto v:row)
+	    for (auto row:procs) {
+	      for (auto v:row)
 		ct.Add(rn,v.cast<int>()); 
 	      rn++;
 	    }
@@ -129,11 +138,14 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     m.def("CreateParallelVector",
           [] (shared_ptr<ParallelDofs> pardofs, bool is_complex, int es) -> shared_ptr<BaseVector>
           {
-	    if(es!=1) throw Exception("Not sure if ParallelVector with entrysize!=1 actually works...");
+#ifdef PARALLEL
 	    if(is_complex)
 	      return make_shared<ParallelVVector<Complex>>(pardofs->GetNDofLocal(), pardofs, CUMULATED);
 	    else
 	      return make_shared<ParallelVVector<double>>(pardofs->GetNDofLocal(), pardofs, CUMULATED);
+#else
+	    return make_shared<VVector<double>>(pardofs->GetNDofLocal());
+#endif
 	  },
           py::arg("pardofs"), "complex"_a=false, "entrysize"_a=1);
     
@@ -146,13 +158,12 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 #ifdef PARALLEL
     .def_property_readonly("local_vec", [](BaseVector & self) -> shared_ptr<BaseVector> {
 	auto * pv = dynamic_cast_ParallelBaseVector (&self);
-	if(pv==NULL) throw Exception("Only ParallelVectors have a local Vector!");
-	auto rv = pv->GetLocalVector();
-	return rv;
+	if (pv==NULL) throw Exception("Only ParallelVectors have a local Vector!");
+	return pv->GetLocalVector();
       } )
 #else
     .def_property_readonly("local_vec", [](BaseVector & self) -> shared_ptr<BaseVector> {
-	return self;
+	throw Exception("Only ParallelVectors have a local Vector!");
       } )
 #endif
     .def(py::pickle([] (const BaseVector& bv)
@@ -870,58 +881,62 @@ inverse : string
     ;
   
   m.def("ArnoldiSolver", [](BaseMatrix & mata, BaseMatrix & matm, shared_ptr<BitArray> freedofs,
-                                               py::list vecs, py::object bpshift)
-                                            {
-                                              if (mata.IsComplex())
-                                                {
-                                                  Arnoldi<Complex> arnoldi (mata, matm, freedofs);
-                                                  Complex shift = 0.0;
-                                                  shift = py::cast<Complex>(bpshift);
-                                                  cout << "shift = " << shift << endl;
-                                                  arnoldi.SetShift (shift);
+                            py::list vecs, py::object bpshift)
+        {
+          if (py::len(vecs) > mata.Height())
+            throw Exception ("number of eigenvectors to compute "+ToString(py::len(vecs))
+                             + " is greater than matrix dimension "
+                             + ToString(mata.Height()));
+          if (mata.IsComplex())
+            {
+              Arnoldi<Complex> arnoldi (mata, matm, freedofs);
+              Complex shift = 0.0;
+              shift = py::cast<Complex>(bpshift);
+              // cout << "shift = " << shift << endl;
+              arnoldi.SetShift (shift);
+              
+              int nev = py::len(vecs);
+              // cout << "num vecs: " << nev << endl;
+              Array<shared_ptr<BaseVector>> evecs(nev);
                                                   
-                                                  int nev = py::len(vecs);
-                                                  cout << "num vecs: " << nev << endl;
-                                                  Array<shared_ptr<BaseVector>> evecs(nev);
-                                                  
-                                                  Array<Complex> lam(nev);
-                                                  arnoldi.Calc (2*nev+1, lam, nev, evecs, 0);
-                                            
-                                                  for (int i = 0; i < nev; i++)
-                                                    vecs[i].cast<BaseVector&>() = *evecs[i];
-
-                                                  Vector<Complex> vlam(nev);
-                                                  for (int i = 0; i < nev; i++)
-                                                    vlam(i) = lam[i];
-                                                  return vlam;
-                                                }
-                                              else
-                                                {
-                                                  Arnoldi<double> arnoldi (mata, matm, freedofs);
-                                                  double shift = py::cast<double>(bpshift);
-                                                  cout << "shift = " << shift << endl;
-                                                  arnoldi.SetShift (shift);
-                                                  
-                                                  int nev = py::len(vecs);
-                                                  cout << "num vecs: " << nev << endl;
-                                                  Array<shared_ptr<BaseVector>> evecs(nev);
-                                                  
-                                                  Array<Complex> lam(nev);
-                                                  arnoldi.Calc (2*nev+1, lam, nev, evecs, 0);
-                                            
-                                                  for (int i = 0; i < nev; i++)
-                                                    vecs[i].cast<BaseVector&>() = *evecs[i];
-
-                                                  Vector<Complex> vlam(nev);
-                                                  for (int i = 0; i < nev; i++)
-                                                    vlam(i) = lam[i];
-                                                  return vlam;
-                                                }
-                                            },
-          "Arnoldi Solver", py::arg("mata"), py::arg("matm"), py::arg("freedofs"), py::arg("vecs"), py::arg("shift")=DummyArgument()
-          )
+              Array<Complex> lam(nev);
+              arnoldi.Calc (2*nev+1, lam, nev, evecs, 0);
+              
+              for (int i = 0; i < nev; i++)
+                vecs[i].cast<BaseVector&>() = *evecs[i];
+              
+              Vector<Complex> vlam(nev);
+              for (int i = 0; i < nev; i++)
+                vlam(i) = lam[i];
+              return vlam;
+            }
+          else
+            {
+              Arnoldi<double> arnoldi (mata, matm, freedofs);
+              double shift = py::cast<double>(bpshift);
+              // cout << "shift = " << shift << endl;
+              arnoldi.SetShift (shift);
+              
+              int nev = py::len(vecs);
+              // cout << "num vecs: " << nev << endl;
+              Array<shared_ptr<BaseVector>> evecs(nev);
+              
+              Array<Complex> lam(nev);
+              arnoldi.Calc (2*nev+1, lam, nev, evecs, 0);
+              
+              for (int i = 0; i < nev; i++)
+                vecs[i].cast<BaseVector&>() = *evecs[i];
+              
+              Vector<Complex> vlam(nev);
+              for (int i = 0; i < nev; i++)
+                vlam(i) = lam[i];
+              return vlam;
+            }
+        },
+        "Arnoldi Solver", py::arg("mata"), py::arg("matm"), py::arg("freedofs"), py::arg("vecs"), py::arg("shift")=DummyArgument()
+        )
     ;
-
+  
   
 
   m.def("DoArchive" , [](shared_ptr<Archive> & arch, BaseMatrix & mat)

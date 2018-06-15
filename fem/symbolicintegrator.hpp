@@ -311,23 +311,23 @@ public:
   }
   FlatMatrix<> GetMemory (const ProxyFunction * proxy) const
   {
-    return remember_second[remember_first.Pos(proxy)];
+    return remember_second[remember_first.PosSure(proxy)];
   }
   FlatMatrix<SIMD<double>> GetAMemory (const ProxyFunction * proxy) const
   {
-    return remember_asecond[remember_first.Pos(proxy)];
+    return remember_asecond[remember_first.PosSure(proxy)];
   }
   FlatMatrix<SIMD<double>> GetAMemory (const CoefficientFunction * cf) const
   {
-    return remember_cf_asecond[remember_cf_first.Pos(cf)];
+    return remember_cf_asecond[remember_cf_first.PosSure(cf)];
   }
   bool Computed (const CoefficientFunction * cf) const
   {
-    return remember_cf_computed[remember_cf_first.Pos(cf)];
+    return remember_cf_computed[remember_cf_first.PosSure(cf)];
   }
   void SetComputed (const CoefficientFunction * cf) const
   {
-    remember_cf_computed[remember_cf_first.Pos(cf)] = true;
+    remember_cf_computed[remember_cf_first.PosSure(cf)] = true;
   }
 };
 
