@@ -363,6 +363,12 @@ namespace ngla
 #endif
   }
 
+  ParallelMatrix :: ParallelMatrix (shared_ptr<BaseMatrix> amat,
+				    shared_ptr<ParallelDofs> apardofs)
+    : ParallelMatrix(amat, apardofs, apardofs)
+  { }
+
+  
   AutoVector ParallelMatrix :: CreateRowVector () const
   {
     if (!dynamic_cast<const SparseMatrix<double>*> (mat.get()))
