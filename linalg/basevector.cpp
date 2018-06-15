@@ -727,6 +727,7 @@ namespace ngla
     for (size_t k = 0; k<vecs.Size(); k++) {
       auto stat = vecs[k]->GetParallelStatus();
       if ( stat==NOT_PARALLEL ) continue;
+      ispar.Set(k);
       auto * pv = dynamic_cast_ParallelBaseVector(vecs[k].get());
       auto vcomm = pv->GetParallelDofs()->GetCommunicator();
       if (comm==MPI_COMM_NULL)
