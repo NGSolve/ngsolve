@@ -104,8 +104,8 @@ namespace ngla
     size_t BlockRows() const { return h; }
     size_t BlockCols() const { return w; }
 
-    virtual int VHeight() const { throw Exception("VHeight does not make sense for BlockMatrix");}
-    virtual int VWidth() const { throw Exception("VWidth does not make sense for BlockMatrix");}
+    virtual int VHeight() const override { throw Exception("VHeight does not make sense for BlockMatrix");}
+    virtual int VWidth() const override { throw Exception("VWidth does not make sense for BlockMatrix");}
 
     virtual AutoVector CreateRowVector () const override;
     virtual AutoVector CreateColVector () const override;

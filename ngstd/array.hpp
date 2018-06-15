@@ -57,6 +57,15 @@ namespace ngstd
           return i;
       return ILLEGAL_POSITION;
     }
+
+    template <typename T2>
+    INLINE size_t PosSure(const T2 & el) const
+    {
+      for (size_t i = 0; ; i++)
+        if (Spec()[i] == el)
+          return i;
+    }
+
     // INLINE auto & operator[] (size_t i) { return Spec()[i]; }
     INLINE auto operator[] (size_t i) const { return Spec()[i]; }
   };
