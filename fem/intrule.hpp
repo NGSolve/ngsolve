@@ -452,7 +452,9 @@ namespace ngfem
                   
                   normalvec(0) = -dxdxi(1,0) / det;
                   normalvec(1) = dxdxi(0,0) / det;
-                  tangentialvec = TSCAL(0.0);
+                  //tangentialvec = TSCAL(0.0);
+                  tangentialvec(0) = -normalvec(1);
+                  tangentialvec(1) = normalvec(0);
                 }
               else
                 {
@@ -1678,7 +1680,9 @@ namespace ngstd
                   
                   normalvec(0) = -dxdxi(1,0) / det;
                   normalvec(1) = dxdxi(0,0) / det;
-                  tangentialvec = SIMD<double>(0.0);
+                  //tangentialvec = SIMD<double>(0.0);
+                  tangentialvec(0) = -normalvec(1);
+                  tangentialvec(1) = normalvec(0);
                 }
               else
                 {
