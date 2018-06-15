@@ -12,9 +12,17 @@
 
 #include <la.hpp>
 
+#ifdef PARALLEL
+#include "../parallel/parallelvector.hpp"
+#endif
+
 
 namespace ngla
 {
+
+#ifdef PARALLEL
+  class ParallelBaseVector;
+#endif
 
   double BaseVector :: L2Norm () const
   {
