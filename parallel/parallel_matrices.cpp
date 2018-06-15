@@ -351,11 +351,11 @@ namespace ngla
   ParallelMatrix :: ParallelMatrix (shared_ptr<BaseMatrix> amat,
 				    shared_ptr<ParallelDofs> arpardofs,
 				    shared_ptr<ParallelDofs> acpardofs)
-    : BaseMatrix(nullptr), mat(amat),
+    : BaseMatrix((arpardofs==acpardofs) ? arpardofs : nullptr), mat(amat),
       row_paralleldofs(arpardofs), col_paralleldofs(acpardofs)
   {
     if(row_paralleldofs==col_paralleldofs)
-      mat->SetParallelDofs (apardofs);
+      mat->SetParallelDofs (arpardofs);
 #ifdef USE_MUMPS
     mat->SetInverseType(MUMPS);
 #else
