@@ -114,7 +114,7 @@ namespace ngfem
                                   lam[e[0]]*lam[e[1]], 
                                   SBLambda([&](int i, Tx v)
                                            {
-                                             shape[ii++] = Du<2>(v);
+                                             shape[ii++] = Du(v);
                                            }));
               }
           }   
@@ -135,7 +135,7 @@ namespace ngfem
                                      lam[fav[0]]*lam[fav[1]]*lam[fav[2]], 
                                      SBLambda ([&](int nr, Tx val)
                                                {
-                                                 shape[ii++] = Du<2> (val);
+                                                 shape[ii++] = Du(val);
                                                }));
           }
 
@@ -154,7 +154,7 @@ namespace ngfem
                              (p-2-i, 2*x-1, x, 
                               SBLambda([&](int j, Tx val2) 
                                        {
-                                         shape[ii++] = uDv_minus_vDu<2> (val1,val2);
+                                         shape[ii++] = uDv_minus_vDu (val1,val2);
                                        }));
                          }));
             
@@ -163,7 +163,7 @@ namespace ngfem
               (p-2, 2*x-1, x, 
                SBLambda([&] (int j, Tx val)
                         {
-                          shape[ii++] = wuDv_minus_wvDu<2> (lam[fav[1]], lam[fav[2]], val);
+                          shape[ii++] = wuDv_minus_wvDu (lam[fav[1]], lam[fav[2]], val);
                         }));
           }
 
@@ -267,7 +267,7 @@ template <typename MIP, typename TFA>
           Tx lam_e = lami[e[1]]+lami[e[0]]; 
 
           // Nedelec0-shapes
-          shape[i] = uDv<2> (0.5 * lam_e, xi); 
+          shape[i] = uDv (0.5 * lam_e, xi); 
           
           // High Order edges ... Gradient fields 
           // if(usegrad_edge[i])
@@ -276,7 +276,7 @@ template <typename MIP, typename TFA>
               EvalMult (p-1, xi, 0.25*(1-xi*xi)*lam_e,
                         SBLambda([&] (size_t j, Tx val)
                                  {
-                                   shape[ii++] = Du<2> (val);
+                                   shape[ii++] = Du(val);
                                }));
           }
         }
@@ -312,7 +312,7 @@ template <typename MIP, typename TFA>
         {
           auto val_k = pol_xi[k];
           for (size_t j= 0; j < p[1]; j++)
-            shape[ii++] = Du<2> (val_k*pol_eta[j]);
+            shape[ii++] = Du(val_k*pol_eta[j]);
         }
     }
 
@@ -321,14 +321,14 @@ template <typename MIP, typename TFA>
         //Rotation of Gradient fields 
         for (int k = 0; k < p[0]; k++)
           for (int j= 0; j < p[1]; j++)
-            shape[ii++] = uDv_minus_vDu<2> (pol_eta[j], pol_xi[k]);
+            shape[ii++] = uDv_minus_vDu (pol_eta[j], pol_xi[k]);
 
         //Missing ones 
         for(int j = 0; j< p[0]; j++)
-          shape[ii++] = uDv<2> (0.5*pol_xi[j], eta);
+          shape[ii++] = uDv (0.5*pol_xi[j], eta);
         
         for(int j = 0; j < p[1]; j++)
-          shape[ii++] = uDv<2> (0.5*pol_eta[j], xi); 
+          shape[ii++] = uDv (0.5*pol_eta[j], xi); 
       }
   }
 

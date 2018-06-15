@@ -66,8 +66,7 @@ for classname in all_classes:
 
 # from ngsolve.ngstd import MPIManager
 # MPIManager.InitMPI()
-MPI_Init(dummy_init=True)
-
+MPI_Init()
 
 from . import __expr
 BaseVector.expr = property(__expr.VecExpr)

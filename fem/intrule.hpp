@@ -91,7 +91,21 @@ namespace ngfem
       : x(ip1.x, ip2.x), y(ip1.y, ip2.y), z(ip1.z, ip2.z) { ; } 
   };
 
-
+  template <typename T>
+  inline ostream & operator<< (ostream & ost, TIP<1,T> tip)
+  {
+    return ost << "x = " << tip.x;
+  }
+  template <typename T>
+  inline ostream & operator<< (ostream & ost, TIP<2,T> tip)
+  {
+    return ost << "x = " << tip.x << ", y = " << tip.y;
+  }
+  template <typename T>
+  inline ostream & operator<< (ostream & ost, TIP<3,T> tip)
+  {
+    return ost << "x = " << tip.x << ", y = " << tip.y << ", z = " << tip.z;
+  }
 
 
   

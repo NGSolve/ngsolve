@@ -1353,8 +1353,9 @@ namespace ngla
   AutoVector SparseMatrix<TM,TV_ROW,TV_COL> ::
   CreateVector () const
   {
-    if(this->size==this->width)
+    if (this->size==this->width)
       return make_shared<VVector<TVY>> (this->size);
+    throw Exception ("SparseMatrix::CreateVector for rectangular does not make sense, use either CreateColVector or CreateRowVector");
   }
 
   template <class TM, class TV_ROW, class TV_COL>

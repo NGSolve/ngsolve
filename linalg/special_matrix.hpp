@@ -96,16 +96,16 @@ namespace ngla
 
     const shared_ptr<BaseMatrix> & operator()(size_t i, size_t j)
     {
-      if(i >= h) throw Exception("Tried to access BlockMatrix row that is out of range");
-      if(j >= w) throw Exception("Tried to access BlockMatrix col that is out of range");
+      if (i >= h) throw Exception("Tried to access BlockMatrix row that is out of range");
+      if (j >= w) throw Exception("Tried to access BlockMatrix col that is out of range");
       return mats[i][j];
     }
 
     size_t BlockRows() const { return h; }
     size_t BlockCols() const { return w; }
 
-    virtual int VHeight() const { throw Exception("VHeight does not make sense for BlockMatrix");}
-    virtual int VWidth() const { throw Exception("VWidth does not make sense for BlockMatrix");}
+    virtual int VHeight() const override { throw Exception("VHeight does not make sense for BlockMatrix");}
+    virtual int VWidth() const override { throw Exception("VWidth does not make sense for BlockMatrix");}
 
     virtual AutoVector CreateRowVector () const override;
     virtual AutoVector CreateColVector () const override;

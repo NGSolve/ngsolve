@@ -281,7 +281,7 @@ struct GenericPow {
   Complex operator() (Complex x, Complex y) const { return pow(x,y); }
   template <typename T1, typename T2> T1 operator() (T1 x, T2 y) const
   {
-    throw Exception (string("pow not available for type ")+typeid(T1).name());
+      return exp (log(x)*y);
   }    
   static string Name() { return "pow"; }
 };
@@ -631,6 +631,22 @@ else_obj : object
 	}
     }
   };
+
+  ExportStdMathFunction<GenericSin>(m, "sin");
+  ExportStdMathFunction<GenericCos>(m, "cos");
+  ExportStdMathFunction<GenericTan>(m, "tan");
+  ExportStdMathFunction<GenericExp>(m, "exp");
+  ExportStdMathFunction<GenericLog>(m, "log");
+  ExportStdMathFunction<GenericATan>(m, "atan");
+  ExportStdMathFunction<GenericACos>(m, "acos");
+  ExportStdMathFunction<GenericASin>(m, "asin");
+  ExportStdMathFunction<GenericSqrt>(m, "sqrt");
+  ExportStdMathFunction<GenericFloor>(m, "floor");
+  ExportStdMathFunction<GenericCeil>(m, "ceil");
+  ExportStdMathFunction<GenericConj>(m, "Conj");
+
+  ExportStdMathFunction2<GenericATan2>(m, "atan2");
+  ExportStdMathFunction2<GenericPow>(m, "pow");
 
   py::class_<SpecialCoefficientFunctions> (m, "SpecialCFCreator")
     .def_property_readonly("mesh_size", 
@@ -1034,21 +1050,6 @@ val : float
     ;
 
 
-  ExportStdMathFunction<GenericSin>(m, "sin");
-  ExportStdMathFunction<GenericCos>(m, "cos");
-  ExportStdMathFunction<GenericTan>(m, "tan");
-  ExportStdMathFunction<GenericExp>(m, "exp");
-  ExportStdMathFunction<GenericLog>(m, "log");
-  ExportStdMathFunction<GenericATan>(m, "atan");
-  ExportStdMathFunction<GenericACos>(m, "acos");
-  ExportStdMathFunction<GenericASin>(m, "asin");
-  ExportStdMathFunction<GenericSqrt>(m, "sqrt");
-  ExportStdMathFunction<GenericFloor>(m, "floor");
-  ExportStdMathFunction<GenericCeil>(m, "ceil");
-  ExportStdMathFunction<GenericConj>(m, "Conj");
-
-  ExportStdMathFunction2<GenericATan2>(m, "atan2");
-  ExportStdMathFunction2<GenericPow>(m, "pow");
 
   py::class_<BSpline, shared_ptr<BSpline> > (m, "BSpline",R"raw(BSpline of arbitrary order
 
@@ -1166,6 +1167,8 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
          [] (const BaseScalarFiniteElement & fe, const BaseMappedIntegrationPoint & mip)
           {
             Matrix<> mat(fe.GetNDof(), fe.Dim());
+            fe.CalcMappedDShape(mip, mat);
+            /*
             switch (fe.Dim())
               {
               case 1:
@@ -1180,12 +1183,48 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
               default:
                 ;
               }
+            */
             return mat;
           },
          py::arg("mip"))
     ;
 
 
+  py::class_<BaseHCurlFiniteElement, shared_ptr<BaseHCurlFiniteElement>, 
+             FiniteElement>
+    (m, "HCurlFE", "an H(curl) finite element")
+    .def("CalcShape",
+         [] (const BaseHCurlFiniteElement & fe, double x, double y, double z)
+         {
+           IntegrationPoint ip(x,y,z);
+           Matrix<> mat(fe.GetNDof(), fe.Dim());
+           fe.CalcShape (ip, mat);
+           return mat;
+         },
+         py::arg("x"),py::arg("y")=0.0,py::arg("z")=0.0)
+    .def("CalcShape",
+         [] (const BaseHCurlFiniteElement & fe, const BaseMappedIntegrationPoint & mip)
+          {
+            Matrix<> mat(fe.GetNDof(), fe.Dim());
+            fe.CalcMappedShape (mip, mat);
+            return mat;
+          },
+         py::arg("mip"))
+    .def("CalcCurlShape",
+         [] (const BaseHCurlFiniteElement & fe, const BaseMappedIntegrationPoint & mip)
+          {
+            Matrix<> mat(fe.GetNDof(), fe.Dim());
+            fe.CalcMappedCurlShape(mip, mat);
+            return mat;
+          },
+         py::arg("mip"))
+    ;
+
+
+
+
+
+  
 
   py::implicitly_convertible 
     <BaseScalarFiniteElement, 
