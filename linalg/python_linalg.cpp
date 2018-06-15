@@ -55,14 +55,13 @@ void ExportSparseMatrix(py::module m)
            return py::make_tuple (move(ri), move(ci), move(vals));
          })
     
-    .def("CSR", [] (shared_ptr<SparseMatrix<T>> sp) -> py::object
+    .def("CRS", [] (SparseMatrix<T> * sp) -> py::object
          {
            FlatArray<int> colind(sp->NZE(), sp->GetRowIndices(0).Addr(0));
            FlatVector<T> values(sp->NZE(), sp->GetRowValues(0).Addr(0));
            FlatArray<size_t> first = sp->GetFirstArray();
-           return py::make_tuple (values, colind, first); 
-         },
-         py::return_value_policy::reference_internal)
+           return py::make_tuple (colind, values, first); 
+         })
     
     .def_static("CreateFromCOO",
                 [] (py::list indi, py::list indj, py::list values, size_t h, size_t w)
@@ -420,31 +419,31 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
             Width,          /* Name of function */
             );
       }
-
+      
       AutoVector CreateRowVector () const override {
         PYBIND11_OVERLOAD_PURE(
-	    shared_ptr<BaseVector>, /* Return type */
-            BaseMatrix,             /* Parent class */
-            CreateRowVector,        /* Name of function */
-            );
+           shared_ptr<BaseVector>, /* Return type */
+           BaseMatrix,             /* Parent class */
+           CreateRowVector,        /* Name of function */
+           );
       }
 
       AutoVector CreateColVector () const override {
         PYBIND11_OVERLOAD_PURE(
-	    shared_ptr<BaseVector>, /* Return type */
-            BaseMatrix,             /* Parent class */
-            CreateColVector,        /* Name of function */
-            );
+           shared_ptr<BaseVector>, /* Return type */
+           BaseMatrix,             /* Parent class */
+           CreateColVector,        /* Name of function */
+           );
       }
 
       AutoVector CreateVector () const override {
         PYBIND11_OVERLOAD_PURE(
-	    shared_ptr<BaseVector>, /* Return type */
-            BaseMatrix,             /* Parent class */
-            CreateVector,           /* Name of function */
-            );
+           shared_ptr<BaseVector>, /* Return type */
+           BaseMatrix,             /* Parent class */
+           CreateVector,           /* Name of function */
+           );
       }
-      
+
       void Mult (const BaseVector & x, BaseVector & y) const override {
         pybind11::gil_scoped_acquire gil;
         pybind11::function overload = pybind11::get_overload(this, "Mult");
@@ -475,7 +474,6 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         else
           BaseMatrix::MultAdd(s, x, y);
       }
-
       void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override {
         pybind11::gil_scoped_acquire gil;
         pybind11::function overload = pybind11::get_overload(this, "MultTransAdd");
@@ -672,9 +670,8 @@ inverse : string
                          }
                        return make_shared<BlockMatrix> (m2);
                      }))
-    .def("__getitem__", [](BlockMatrix & self, int row, int col) { return self(row,col); })
-    .def("BlockRows", [](BlockMatrix & self) { return self.BlockCols(); })
-    .def("BlockCols", [](BlockMatrix & self) { return self.BlockCols(); })
+    
+    // .def("__getitem__", [](BlockMatrix & self, int row, int col) { return self(row,rol); })
     ;
 
 
@@ -686,16 +683,9 @@ inverse : string
 	 py::arg("mat"),py::arg("pardofs"))
     .def(py::init<shared_ptr<BaseMatrix>, shared_ptr<ParallelDofs>, shared_ptr<ParallelDofs>>(),
 	 py::arg("mat"),py::arg("row_pardofs"),py::arg("col_pardofs"))
+    .def_property_readonly("row_pardofs", [](ParallelMatrix & mat) { return mat.GetRowParallelDofs(); })
+    .def_property_readonly("col_pardofs", [](ParallelMatrix & mat) { return mat.GetColParallelDofs(); })
     .def_property_readonly("local_mat", [](ParallelMatrix & mat) { return mat.GetMatrix(); })
-    .def("GetParallelDofs", [](ParallelMatrix & self) {
-	return self.GetParallelDofs();
-      })
-    .def("GetRowParallelDofs", [](ParallelMatrix & self) {
-	return self.GetRowParallelDofs();
-      })
-    .def("GetColParallelDofs", [](ParallelMatrix & self) {
-	return self.GetColParallelDofs();
-      })
     ;
 
   py::class_<FETI_Jump_Matrix, shared_ptr<FETI_Jump_Matrix>, BaseMatrix>
