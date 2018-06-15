@@ -12,9 +12,17 @@
 
 #include <la.hpp>
 
+#ifdef PARALLEL
+#include "../parallel/parallelvector.hpp"
+#endif
+
 
 namespace ngla
 {
+
+#ifdef PARALLEL
+  class ParallelBaseVector;
+#endif
 
   double BaseVector :: L2Norm () const
   {
@@ -719,6 +727,7 @@ namespace ngla
     for (size_t k = 0; k<vecs.Size(); k++) {
       auto stat = vecs[k]->GetParallelStatus();
       if ( stat==NOT_PARALLEL ) continue;
+      ispar.Set(k);
       auto * pv = dynamic_cast_ParallelBaseVector(vecs[k].get());
       auto vcomm = pv->GetParallelDofs()->GetCommunicator();
       if (comm==MPI_COMM_NULL)
