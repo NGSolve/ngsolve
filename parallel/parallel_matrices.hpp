@@ -50,7 +50,7 @@ namespace ngla
 
     ParallelMatrix (shared_ptr<BaseMatrix> amat, shared_ptr<ParallelDofs> arpardofs,
 		    shared_ptr<ParallelDofs> acpardofs);
-    
+
     virtual ~ParallelMatrix () override;
     virtual bool IsComplex() const override { return mat->IsComplex(); } 
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override ;
@@ -62,7 +62,6 @@ namespace ngla
     shared_ptr<BaseMatrix> GetMatrix() const { return mat; }
     virtual shared_ptr<BaseMatrix> CreateMatrix () const override;
     virtual AutoVector CreateVector () const override;
-    
     virtual AutoVector CreateRowVector () const override;
     virtual AutoVector CreateColVector () const override;
 
@@ -71,6 +70,7 @@ namespace ngla
     virtual int VHeight() const override;
     virtual int VWidth() const override;
 
+    // virtual const ParallelDofs * GetParallelDofs () const {return &pardofs;}
     shared_ptr<ParallelDofs> GetRowParallelDofs () const { return row_paralleldofs; }
     shared_ptr<ParallelDofs> GetColParallelDofs () const { return col_paralleldofs; }
 
