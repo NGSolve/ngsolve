@@ -40,10 +40,16 @@ namespace ngla
   {
     shared_ptr<BaseMatrix> mat;
     // const ParallelDofs & pardofs;
+
+    shared_ptr<ParallelDofs> row_paralleldofs, col_paralleldofs;
+
   public:
     ParallelMatrix (shared_ptr<BaseMatrix> amat, shared_ptr<ParallelDofs> apardofs);
     // : mat(*amat), pardofs(*apardofs) 
     // {const_cast<BaseMatrix&>(mat).SetParallelDofs (apardofs);}
+
+    ParallelMatrix (shared_ptr<BaseMatrix> amat, shared_ptr<ParallelDofs> arpardofs,
+		    shared_ptr<ParallelDofs> acpardofs);
 
     virtual ~ParallelMatrix () override;
     virtual bool IsComplex() const override { return mat->IsComplex(); } 
@@ -56,6 +62,8 @@ namespace ngla
     shared_ptr<BaseMatrix> GetMatrix() const { return mat; }
     virtual shared_ptr<BaseMatrix> CreateMatrix () const override;
     virtual AutoVector CreateVector () const override;
+    virtual AutoVector CreateRowVector () const override;
+    virtual AutoVector CreateColVector () const override;
 
     virtual ostream & Print (ostream & ost) const override;
 
@@ -63,7 +71,8 @@ namespace ngla
     virtual int VWidth() const override;
 
     // virtual const ParallelDofs * GetParallelDofs () const {return &pardofs;}
-
+    shared_ptr<ParallelDofs> GetRowParallelDofs () const { return row_paralleldofs; }
+    shared_ptr<ParallelDofs> GetColParallelDofs () const { return col_paralleldofs; }
 
     virtual shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<BitArray> subset = 0) const override;
     template <typename TM>
