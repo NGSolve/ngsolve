@@ -51,9 +51,4 @@ namespace ngla
 #include "arnoldi.hpp"
 
 #include "cuda_linalg.hpp"
-
-#ifdef PARALLEL
-#include "../parallel/parallelvector.hpp"
-#endif
-
 #endif

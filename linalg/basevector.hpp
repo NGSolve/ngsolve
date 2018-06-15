@@ -12,9 +12,6 @@
 namespace ngla
 {
 
-#ifdef PARALLEL
-  class ParallelBaseVector;
-#endif
 
   class BaseVector;
   class AutoVector;
