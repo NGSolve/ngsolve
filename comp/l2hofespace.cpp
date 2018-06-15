@@ -1273,16 +1273,6 @@ namespace ngcomp
       FlatMatrix<SIMD<double>> grad(3, mir.Size(), &mem[0]);
       for (size_t k = 0; k < 3; k++)
         {
-          /*
-          for (size_t i = 0; i < mir.Size(); i++)
-            {
-              auto trafo = Trans(mir[i].GetJacobianInverse());
-              Vec<3,SIMD<double>> gi = grad.Col(i);
-              Vec<3,SIMD<double>> tek = trafo.Col(k);
-              Vec<3,SIMD<double>> hv = Cross(gi, tek);
-              y.Col(i).AddSize(3) += hv;
-            }
-          */
           for (size_t i = 0; i < mir.Size(); i++)
             {
               auto trafo = Trans(mir[i].GetJacobianInverse());
@@ -1295,10 +1285,6 @@ namespace ngcomp
           feli.AddGradTrans (mir, grad, x.Range(k*ndofi, (k+1)*ndofi));
         }             
     }    
-      
-
-    
-    
   };
   
   /*class DiffOpCurlVectorL2Covariant : public DiffOp<DiffOpCurlVectorL2Covariant>
