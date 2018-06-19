@@ -722,10 +722,10 @@ inverse : string
     .def("Smooth", [&](BaseJacobiPrecond & jac, BaseVector & x, BaseVector & b)
          { jac.GSSmooth (x, b); },
          py::arg("x"), py::arg("b"),
-         "performs steps Gauss-Seidel iterations for the linear system A x = b")
+         "performs one step Gauss-Seidel iteration for the linear system A x = b")
     .def("SmoothBack", &BaseJacobiPrecond::GSSmoothBack,
          py::arg("x"), py::arg("b"),
-         "performs steps Gauss-Seidel iterations for the linear system A x = b in reverse order")
+         "performs one step Gauss-Seidel iteration for the linear system A x = b in reverse order")
     ;
 
   py::class_<SparseFactorization, shared_ptr<SparseFactorization>, BaseMatrix>

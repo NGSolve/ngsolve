@@ -3532,6 +3532,9 @@ namespace ngcomp
                            continue;
                          } // end if boundary facet
                        
+                       if (facetwise_skeleton_parts[VOL].Size() == 0)
+                         continue;
+                       
                        // timerDG2.Start();
                        // timerDG2a.Start();
                        int el2 = elnums[1];
