@@ -16,7 +16,6 @@ typedef GridFunction GF;
 
 
 
-
 /*
 static size_t global_heapsize = 1000000;
 static LocalHeap glh(global_heapsize, "python-comp lh", true);
@@ -2703,6 +2702,18 @@ flags : dict
           py::call_guard<py::gil_scoped_release>())
      ;
 
+#ifdef HYPRE
+   m.def("BoomerPreconditioner", [](shared_ptr<BaseMatrix> mat,
+				    shared_ptr<BitArray> freedofs = nullptr)
+	 -> shared_ptr<Preconditioner>
+	 {
+	   // omg, half old and half new interface, i hate it!!
+	   return make_shared<ngcomp::HyprePreconditioner>(*mat, freedofs);
+	 },
+	 py::arg("mat"), py::arg("freedofs"))
+     ;
+#endif
+   
   /////////////////////////////////////////////////////////////////////////////////////
 }
 
