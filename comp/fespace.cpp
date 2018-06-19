@@ -1530,6 +1530,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       case UNUSED_DOF: ost << "unused"; break;
       case HIDDEN_DOF:  ost << "hidden"; break;
       case LOCAL_DOF:  ost << "local"; break;
+      case CONDENSATABLE_DOF:  ost << "condensable"; break;
       case INTERFACE_DOF: ost << "interface"; break;
       case NONWIREBASKET_DOF: ost << "non-wirebasket"; break;
       case WIREBASKET_DOF: ost << "wirebasket"; break;
