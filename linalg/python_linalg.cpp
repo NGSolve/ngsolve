@@ -694,12 +694,8 @@ inverse : string
 	 py::arg("pardofs"))
     .def(py::init<shared_ptr<ParallelDofs>, shared_ptr<ParallelDofs>>(),
 	 py::arg("pardofs"), py::arg("u_pardofs"))
-    .def("GetRowParallelDofs", [](FETI_Jump_Matrix & self) {
-	return self.GetRowParallelDofs();
-      })
-    .def("GetColParallelDofs", [](FETI_Jump_Matrix & self) {
-	return self.GetColParallelDofs();
-      })
+    .def_property_readonly("row_pardofs", [](FETI_Jump_Matrix & mat) { return mat.GetRowParallelDofs(); })
+    .def_property_readonly("col_pardofs", [](FETI_Jump_Matrix & mat) { return mat.GetColParallelDofs(); })
     ;
 
   py::class_<FETIDP_Constraint_Matrix, shared_ptr<FETIDP_Constraint_Matrix>, BaseMatrix>
