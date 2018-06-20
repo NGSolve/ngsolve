@@ -377,7 +377,7 @@ namespace ngcomp
     //cout << "dirichlet_edge after" << endl << dirichlet_edge << endl;
 
 
-    // detect used/unused dofs
+    // detect used/unused/coupling dofs
 
     ctofdof.SetSize(this->GetNDof());
     ctofdof = UNUSED_DOF;
@@ -389,7 +389,12 @@ namespace ngcomp
           {
             GetDofNrs(ei, dofs);
             for (auto d : dofs)
-              ctofdof[d] = WIREBASKET_DOF;
+              ctofdof[d] = noncontinuous ? LOCAL_DOF : INTERFACE_DOF;
+
+            dofs.SetSize0();
+            dofs += Range (first_element_dof[ei.Nr()], first_element_dof[ei.Nr()+1]);
+            for (auto d : dofs)
+              ctofdof[d] = LOCAL_DOF;
           }
       }
   }
