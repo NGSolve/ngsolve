@@ -2492,12 +2492,14 @@ namespace ngcomp
                      for (int j = 0; j < idofs1.Size(); j++)
                        idofs1[j] = dnums.Pos(idofs1[j]);
                           
-                     if (printelmat) 
+                     /*if (printelmat) 
                        {
                          *testout << "eliminate internal" << endl;
                          *testout << "idofs1 = " << idofs1 << endl;
-                       }
+                         }*/
                      
+                     //cout << "eliminate internal" << endl;
+                     //cout << "idofs1 = " << idofs1 << endl;
                      
                      if (idofs1.Size())
                        {
@@ -2519,11 +2521,14 @@ namespace ngcomp
                            if (!idofs.Contains(j))
                              odofs.Append(j);
                          
-                         if (printelmat)
+                         /*if (printelmat)
                            {
                              (*testout) << "idofs = " << endl << idofs << endl;
                              (*testout) << "odofs = " << endl << odofs << endl;
-                           }
+                             }*/
+
+                         cout << "idofs = " << endl << idofs << endl;
+                         cout << "odofs = " << endl << odofs << endl;
                          
                          FlatMatrix<SCAL> a(sizeo, sizeo, lh);
                          FlatMatrix<SCAL> b(sizeo, sizei, lh);
@@ -2552,6 +2557,8 @@ namespace ngcomp
                              fespace->GetDofNrs(i,idnums1,CONDENSATABLE_DOF);
                              fespace->GetDofNrs(i,ednums1,EXTERNAL_DOF);
                              fespace->GetDofNrs(i,hdnums1,HIDDEN_DOF);
+
+                             cout << "idnums1 = " << idnums1 << ", ednums1 = " << ednums1 << ", hdnums1 = " << hdnums1 << endl;
                              int count = 0;
                              for (auto dof : hdnums1)
                              {
@@ -2564,7 +2571,9 @@ namespace ngcomp
                                idnums += dim*IntRange(idnums1[j], idnums1[j]+1);
                              for (int j = 0; j < ednums1.Size(); j++)
                                ednums += dim * IntRange(ednums1[j], ednums1[j]+1);
-                             
+
+                             cout << "idnums = " << idnums << endl;
+                             cout << "ednums = " << ednums << endl;
                              if (store_inner)
                                static_cast<ElementByElementMatrix<SCAL>*>(innermatrix.get())
                                       ->AddElementMatrix(i,idnums,idnums,d);
@@ -2574,8 +2583,10 @@ namespace ngcomp
                              he=0.0;
                              LapackMultAddABt (d, c, -1, he);
                              // he = -1.0 * d * Trans(c);
+                             cout << "i = " << i << ", he = " << he << endl;
                              static_cast<ElementByElementMatrix<SCAL>*>(harmonicext.get())
                                ->AddElementMatrix(i,idnums,ednums,he);
+                             //cout << "harmext = " << *(harmonicext.get()) << endl; 
                                   
                              if (!symmetric)
                                {
@@ -2595,7 +2606,7 @@ namespace ngcomp
                          
                          if (printelmat)
                            *testout << "schur matrix = " << a << endl;
-                         
+                         //cout << "schur matrix = " << a << endl;
                          sum_elmat.Rows(odofs).Cols(odofs) = a;
                          
                          for (int k = 0; k < idofs1.Size(); k++)
@@ -2609,7 +2620,9 @@ namespace ngcomp
                  for (auto pre : preconditioners)
                    pre -> AddElementMatrix (dnums, sum_elmat, el, lh);
                });
-            
+
+            //if (harmonicext.get())
+            //  cout << "harmonicext = " << *(harmonicext.get()) << endl;
             progress.Done();
           }
 
@@ -2619,6 +2632,19 @@ namespace ngcomp
             RegionTimer reg(timerbound);
             ProgressOutput progress (ma, "assemble surface element", ma->GetNE(vb));
 
+            if (eliminate_internal && keep_internal)
+              {
+                size_t ndof = fespace->GetNDof();
+                size_t ne = ma->GetNSE();
+                harmonicext = make_shared<ElementByElementMatrix<SCAL>>(ndof, ne);
+                if (!symmetric)
+                  harmonicexttrans = make_shared<ElementByElementMatrix<SCAL>>(ndof, ne);
+                else
+                  harmonicexttrans = make_shared<Transpose>(*harmonicext);
+                innersolve = make_shared<ElementByElementMatrix<SCAL>>(ndof, ne);
+                if (store_inner)
+                  innermatrix = make_shared<ElementByElementMatrix<SCAL>>(ndof, ne);
+              }
             IterateElements 
               (*fespace, vb, clh,  [&] (FESpace::Element el, LocalHeap & lh)
                {
@@ -2664,12 +2690,155 @@ namespace ngcomp
                          (*testout) << "elmat = " << endl << elmat << endl;
                        }
                    }
+
+                 if (eliminate_internal)
+                   {
+                     static Timer statcondtimer("static condensation bnd", 2);
+                     RegionTimer regstat (statcondtimer);
+                     
+                     ArrayMem<int,100> idofs, idofs1, odofs;
+                     int i = el.Nr();
+
+                     fespace->GetSDofNrs (i, idofs1, CONDENSATABLE_DOF);
+                     for (int j = 0; j < idofs1.Size(); j++)
+                       idofs1[j] = dnums.Pos(idofs1[j]);
+                          
+                     /*if (printelmat) 
+                       {
+                         *testout << "eliminate internal" << endl;
+                         *testout << "idofs1 = " << idofs1 << endl;
+                         }*/
+
+                     //cout << "eliminate internal bnd" << endl;
+                     //cout << "idofs1 = " << idofs1 << endl;
+                     
+                     
+                     if (idofs1.Size())
+                       {
+                         HeapReset hr (lh);
+                         
+                         int size = sum_elmat.Height();
+                         int dim = size / dnums.Size();
+                         
+                         idofs.SetSize (0);
+                         for (int j = 0; j < idofs1.Size(); j++)
+                           for (int jj = 0; jj < dim; jj++)
+                             idofs.Append (dim*idofs1[j]+jj);
+                         
+                         int sizei = idofs.Size();
+                         int sizeo = size - sizei;
+                              
+                         odofs.SetSize (0);
+                         for (int j = 0; j < size; j++)
+                           if (!idofs.Contains(j))
+                             odofs.Append(j);
+                         
+                         /*if (printelmat)
+                           {
+                             (*testout) << "idofs = " << endl << idofs << endl;
+                             (*testout) << "odofs = " << endl << odofs << endl;
+                             }*/
+
+                         cout << "idofs = " << endl << idofs << endl;
+                         cout << "odofs = " << endl << odofs << endl;
+                         
+                         FlatMatrix<SCAL> a(sizeo, sizeo, lh);
+                         FlatMatrix<SCAL> b(sizeo, sizei, lh);
+                         FlatMatrix<SCAL> c(sizeo, sizei, lh);
+                         FlatMatrix<SCAL> d(sizei, sizei, lh);
+                         
+                         a = sum_elmat.Rows(odofs).Cols(odofs);
+                         b = sum_elmat.Rows(odofs).Cols(idofs);
+                         c = Trans(sum_elmat.Rows(idofs).Cols(odofs));
+                         d = sum_elmat.Rows(idofs).Cols(idofs);
+                         
+                              
+                         // A := A - B D^{-1} C^T
+                         // new Versions, July 07
+                         if (!keep_internal)
+                           {
+                             LapackAInvBt (d, b);
+                             LapackMultAddABt (b, c, -1, a);
+                           }
+                         else
+                           {
+                             ArrayMem<int,50> idnums1, idnums;
+                             ArrayMem<int,50> hdnums1;
+                             ArrayMem<int,50> ednums1, ednums;
+                             
+                             fespace->GetSDofNrs(i,idnums1,CONDENSATABLE_DOF);
+                             fespace->GetSDofNrs(i,ednums1,EXTERNAL_DOF);
+                             fespace->GetSDofNrs(i,hdnums1,HIDDEN_DOF);
+                             cout << "idnums1 = " << idnums1 << ", ednums1 = " << ednums1 << ", hdnums1 = " << hdnums1 << endl;
+                             int count = 0;
+                             for (auto dof : hdnums1)
+                             {
+                               while (idnums1[count] != dof)
+                                 count++;
+                               idnums1[count] = -1;
+                             }
+                             
+                             for (int j = 0; j < idnums1.Size(); j++)
+                               idnums += dim*IntRange(idnums1[j], idnums1[j]+1);
+                             for (int j = 0; j < ednums1.Size(); j++)
+                               ednums += dim * IntRange(ednums1[j], ednums1[j]+1);
+
+                             cout << "idnums = " << idnums << endl;
+                             cout << "ednums = " << ednums << endl;
+                             
+                             if (store_inner)
+                               static_cast<ElementByElementMatrix<SCAL>*>(innermatrix.get())
+                                      ->AddElementMatrix(i,idnums,idnums,d);
+                             
+                             LapackInverse (d);
+                             FlatMatrix<SCAL> he (sizei, sizeo, lh);
+                             he=0.0;
+                             
+                             LapackMultAddABt (d, c, -1, he);
+                             
+                                            
+                             // he = -1.0 * d * Trans(c);
+                             cout << "i = " << i << ", he = " << he << endl;
+                             static_cast<ElementByElementMatrix<SCAL>*>(harmonicext.get())
+                               ->AddElementMatrix(i,idnums,ednums,he);
+                                            
+                             if (!symmetric)
+                               {
+                                 FlatMatrix<SCAL> het (sizeo, sizei, lh);
+                                 het = 0.0;
+                                 LapackMultAddAB (b, d, -1, het);
+                                 //  het = -1.0 * b * d;
+                                 static_cast<ElementByElementMatrix<SCAL>*>(harmonicexttrans.get())
+                                   ->AddElementMatrix(i,ednums,idnums,het);
+                               }
+                                            //cout << "D" << endl;
+                             static_cast<ElementByElementMatrix<SCAL>*>(innersolve.get())
+                               ->AddElementMatrix(i,idnums,idnums,d);
+                             
+                               LapackMultAddAB (b, he, 1.0, a);
+                           }                                 
+                         
+                         
+                         if (printelmat)
+                           *testout << "schur matrix = " << a << endl;
+
+                             //cout << "schur matrix = " << a << endl;
+                         
+                         sum_elmat.Rows(odofs).Cols(odofs) = a;
+                         
+                         for (int k = 0; k < idofs1.Size(); k++)
+                         dnums[idofs1[k]] = -1;
+                       }
+                   }
                  
                  AddElementMatrix (dnums, dnums, sum_elmat, el, lh);
                  
                  for (auto pre : preconditioners)
                    pre -> AddElementMatrix (dnums, sum_elmat, el, lh);
                });
+            //if (harmonicext.get())
+            //  cout << "harmonicext = " << *(harmonicext.get()) << endl;
+            
             progress.Done();
           }
         

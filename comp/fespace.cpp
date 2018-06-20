@@ -941,6 +941,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     ArrayMem<int,100> alldnums; 
     GetDofNrs(ElementId(VOL,elnr), alldnums);
 
+    cout << "alldnums = " << alldnums << endl;
     dnums.SetSize(0);
     if (ctofdof.Size() == 0)
       {
@@ -955,8 +956,34 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    dnums.Append(alldnums[i]);
         */
         for (auto d : alldnums)
+          {
+            cout << "d = " << d << ", ctofdof = " << ctofdof[d] << endl;
 	  if ( (d != -1) && ((ctofdof[d] & ctype) != 0) )
             dnums.Append(d);
+          }
+      }
+  }
+
+  void FESpace :: GetSDofNrs (int elnr, Array<int> & dnums, COUPLING_TYPE ctype) const
+  {
+    ArrayMem<int,100> alldnums; 
+    GetDofNrs(ElementId(BND,elnr), alldnums);
+
+    cout << "alldnums = " << alldnums << endl;
+    dnums.SetSize(0);
+    if (ctofdof.Size() == 0)
+      {
+	if ( (INTERFACE_DOF & ctype) != 0)
+          dnums = alldnums;
+      }
+    else
+      {
+        for (auto d : alldnums)
+          {
+            cout << "d = " << d << ", ctofdof = " << ctofdof[d] << endl;
+	  if ( (d != -1) && ((ctofdof[d] & ctype) != 0) )
+            dnums.Append(d);
+          }
       }
   }
 
