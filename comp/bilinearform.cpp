@@ -2392,15 +2392,17 @@ namespace ngcomp
         for (auto pre : preconditioners)
           pre -> InitLevel(fespace->GetFreeDofs());
 
-        if (VB_parts[VOL].Size())
+        //if (VB_parts[VOL].Size())
+        for (VorB vb : { VOL, BND, BBND, BBBND })
+          if (VB_parts[vb].Size())
           {
             RegionTimer reg(timervol);
-            ProgressOutput progress (ma, "assemble element", ma->GetNE());
+            ProgressOutput progress(ma,string("assemble ") + ToString(vb) + string(" element"), ma->GetNE(vb));
 
-            if (eliminate_internal && keep_internal)
+            if( (vb == VOL || (!VB_parts[VOL].Size() && vb==BND) ) && eliminate_internal && keep_internal)
               {
                 size_t ndof = fespace->GetNDof();
-                size_t ne = ma->GetNE();
+                size_t ne = ma->GetNE(vb);
                 harmonicext = make_shared<ElementByElementMatrix<SCAL>>(ndof, ne);
                 if (!symmetric)
                   harmonicexttrans = make_shared<ElementByElementMatrix<SCAL>>(ndof, ne);
@@ -2412,7 +2414,7 @@ namespace ngcomp
               }
             
             IterateElements 
-              (*fespace, VOL, clh,  [&] (FESpace::Element el, LocalHeap & lh)
+              (*fespace, vb, clh,  [&] (FESpace::Element el, LocalHeap & lh)
                {
                  const FiniteElement & fel = fespace->GetFE (el, lh);
                  ElementTransformation & eltrans = ma->GetTrafo (el, lh);
@@ -2437,7 +2439,7 @@ namespace ngcomp
                  lin.GetIndirect (dnums, elveclin);
                  fespace->TransformVec (el, elveclin, TRANSFORM_SOL);
 
-                 for (auto & bfi : VB_parts[VOL])
+                 for (auto & bfi : VB_parts[vb])
                    {
                      if (!bfi->DefinedOn (el.GetIndex())) continue;
                      if (!bfi->DefinedOnElement (el.Nr())) continue;
@@ -2448,8 +2450,15 @@ namespace ngcomp
                          
                          if (printelmat) 
                            {
+                             lock_guard<mutex> guard(addelmatboundary1_mutex);//???
                              testout->precision(8);
-                             (*testout) << "elnum= " << el.Nr() << endl;
+                             if (vb != VOL)
+                               {
+                                 (*testout) << "surface-elnum = " << el.Nr() << endl;
+                                 (*testout) << "boundary = " << ma->GetMaterial (el) << endl;
+                               }
+                             else
+                               (*testout) << "elnum = " << el.Nr() << endl;
                              (*testout) << "eltype " << fel.ElementType() << endl;
                              (*testout) << "integrator " << bfi->Name() << endl;
                              (*testout) << "dnums = " << endl << dnums << endl;
@@ -2480,7 +2489,7 @@ namespace ngcomp
                    *testout << "summat = " << sum_elmat << endl;
                  
 
-                 if (eliminate_internal)
+                 if ((vb == VOL || (!VB_parts[VOL].Size() && vb==BND) ) && eliminate_internal)
                    {
                      static Timer statcondtimer("static condensation", 2);
                      RegionTimer regstat (statcondtimer);
@@ -2616,7 +2625,7 @@ namespace ngcomp
             progress.Done();
           }
 
-        for (auto vb : { BND, BBND, BBBND })
+    /*for (auto vb : { BND, BBND, BBBND })
         if (VB_parts[vb].Size())
           {
             RegionTimer reg(timerbound);
@@ -2625,7 +2634,7 @@ namespace ngcomp
             if (eliminate_internal && keep_internal && !VB_parts[VOL].Size() && vb==BND)
               {
                 size_t ndof = fespace->GetNDof();
-                size_t ne = ma->GetNSE();
+                size_t ne = ma->GetNE(vb);
                 harmonicext = make_shared<ElementByElementMatrix<SCAL>>(ndof, ne);
                 if (!symmetric)
                   harmonicexttrans = make_shared<ElementByElementMatrix<SCAL>>(ndof, ne);
@@ -2817,7 +2826,7 @@ namespace ngcomp
                });
             
             progress.Done();
-          }
+            }*/
         
 
         if (facetwise_skeleton_parts[VOL].Size())
