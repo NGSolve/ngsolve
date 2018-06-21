@@ -364,7 +364,7 @@ namespace ngcomp
                      if (!fespace->DefinedOn (vb, ma->GetElIndex(eid))) continue;
                      
                      if (vb == VOL && eliminate_internal)
-                       fespace->GetDofNrs (i, dnums, EXTERNAL_DOF);
+                       fespace->GetDofNrs (eid, dnums, EXTERNAL_DOF);
                      else
                        fespace->GetDofNrs (eid, dnums);
                      
@@ -448,7 +448,7 @@ namespace ngcomp
 		    if (!fespace2->DefinedOn (vb,ma->GetElIndex(eid))) continue;
 		    
 		    if (vb == VOL && eliminate_internal)
-		      fespace2->GetDofNrs (i, dnums, EXTERNAL_DOF);
+		      fespace2->GetDofNrs (eid, dnums, EXTERNAL_DOF);
 		    else
 		      fespace2->GetDofNrs (eid, dnums);
 		    
@@ -907,7 +907,7 @@ namespace ngcomp
                 else // not diagonal
                   {
                     ProgressOutput progress(ma,string("assemble ") + ToString(vb) + string(" element"), ma->GetNE(vb));
-                    if (vb == VOL && eliminate_internal && keep_internal)
+                    if ( (vb == VOL || (!VB_parts[VOL].Size() && vb==BND) ) && eliminate_internal && keep_internal)
                       {
                         harmonicext = make_shared<ElementByElementMatrix<SCAL>>(ndof, ne);
                         if (!symmetric)
@@ -1025,14 +1025,14 @@ namespace ngcomp
                              LapackEigenSystem(sum_elmat, lh);
                            }
                          
-                         if (vb == VOL && eliminate_internal)
+                         if ((vb == VOL || (!VB_parts[VOL].Size() && vb==BND) ) && eliminate_internal)
                            {
                              static Timer statcondtimer("static condensation", 2);
                              ThreadRegionTimer regstat (statcondtimer, TaskManager::GetThreadId());
                              
                              Array<int> idofs1(dnums.Size(), lh);
                              
-                             fespace->GetDofNrs (el.Nr(), idofs1, CONDENSATABLE_DOF);
+                             fespace->GetDofNrs (el, idofs1, CONDENSATABLE_DOF);
                              for (int j = 0; j < idofs1.Size(); j++)
                                idofs1[j] = dnums.Pos(idofs1[j]);
                              
@@ -1096,9 +1096,9 @@ namespace ngcomp
                                      Array<int> idnums1(dnums.Size(), lh), 
                                        ednums1(dnums.Size(), lh),
                                        hdnums1(dnums.Size(), lh);
-                                     fespace->GetDofNrs(el.Nr(),idnums1,CONDENSATABLE_DOF);
-                                     fespace->GetDofNrs(el.Nr(),ednums1,EXTERNAL_DOF);
-                                     fespace->GetDofNrs(el.Nr(),hdnums1,HIDDEN_DOF);
+                                     fespace->GetDofNrs(el,idnums1,CONDENSATABLE_DOF);
+                                     fespace->GetDofNrs(el,ednums1,EXTERNAL_DOF);
+                                     fespace->GetDofNrs(el,hdnums1,HIDDEN_DOF);
                                      int count = 0;
                                      for (auto dof : hdnums1)
                                      {
@@ -2183,7 +2183,7 @@ namespace ngcomp
                   {
                     HeapReset hr(clh);
                     Array<int> dnums;
-                    fespace->GetDofNrs (i, dnums, LOCAL_DOF);            
+                    fespace->GetDofNrs (ElementId(VOL,i), dnums, LOCAL_DOF);            
                     FlatVector<SCAL> elu (dnums.Size(), clh);
                     elu = 0.0;
                     u.SetIndirect (dnums, elu);
@@ -2214,7 +2214,7 @@ namespace ngcomp
                      fespace->GetDofNrs (ei, dnums);
 
                      Array<int> idofs(dnums.Size(), lh);
-                     fespace->GetDofNrs (ei.Nr(), idofs, LOCAL_DOF);
+                     fespace->GetDofNrs (ei, idofs, LOCAL_DOF);
                      if (!idofs.Size()) return;
                      for (int j = 0; j < idofs.Size(); j++)
                        idofs[j] = dnums.Pos(idofs[j]);
@@ -2488,19 +2488,17 @@ namespace ngcomp
                      ArrayMem<int,100> idofs, idofs1, odofs;
                      int i = el.Nr();
 
-                     fespace->GetDofNrs (i, idofs1, CONDENSATABLE_DOF);
+                     fespace->GetDofNrs (el, idofs1, CONDENSATABLE_DOF);
                      for (int j = 0; j < idofs1.Size(); j++)
                        idofs1[j] = dnums.Pos(idofs1[j]);
                           
-                     /*if (printelmat) 
+                     if (printelmat) 
                        {
                          *testout << "eliminate internal" << endl;
                          *testout << "idofs1 = " << idofs1 << endl;
-                         }*/
+                       }
                      
-                     //cout << "eliminate internal" << endl;
-                     //cout << "idofs1 = " << idofs1 << endl;
-                     
+                    
                      if (idofs1.Size())
                        {
                          HeapReset hr (lh);
@@ -2521,15 +2519,12 @@ namespace ngcomp
                            if (!idofs.Contains(j))
                              odofs.Append(j);
                          
-                         /*if (printelmat)
+                         if (printelmat)
                            {
                              (*testout) << "idofs = " << endl << idofs << endl;
                              (*testout) << "odofs = " << endl << odofs << endl;
-                             }*/
+                           }
 
-                         cout << "idofs = " << endl << idofs << endl;
-                         cout << "odofs = " << endl << odofs << endl;
-                         
                          FlatMatrix<SCAL> a(sizeo, sizeo, lh);
                          FlatMatrix<SCAL> b(sizeo, sizei, lh);
                          FlatMatrix<SCAL> c(sizeo, sizei, lh);
@@ -2554,11 +2549,11 @@ namespace ngcomp
                              ArrayMem<int,50> hdnums1;
                              ArrayMem<int,50> ednums1, ednums;
                              
-                             fespace->GetDofNrs(i,idnums1,CONDENSATABLE_DOF);
-                             fespace->GetDofNrs(i,ednums1,EXTERNAL_DOF);
-                             fespace->GetDofNrs(i,hdnums1,HIDDEN_DOF);
+                             fespace->GetDofNrs(el,idnums1,CONDENSATABLE_DOF);
+                             fespace->GetDofNrs(el,ednums1,EXTERNAL_DOF);
+                             fespace->GetDofNrs(el,hdnums1,HIDDEN_DOF);
 
-                             cout << "idnums1 = " << idnums1 << ", ednums1 = " << ednums1 << ", hdnums1 = " << hdnums1 << endl;
+                             
                              int count = 0;
                              for (auto dof : hdnums1)
                              {
@@ -2572,8 +2567,6 @@ namespace ngcomp
                              for (int j = 0; j < ednums1.Size(); j++)
                                ednums += dim * IntRange(ednums1[j], ednums1[j]+1);
 
-                             cout << "idnums = " << idnums << endl;
-                             cout << "ednums = " << ednums << endl;
                              if (store_inner)
                                static_cast<ElementByElementMatrix<SCAL>*>(innermatrix.get())
                                       ->AddElementMatrix(i,idnums,idnums,d);
@@ -2583,10 +2576,9 @@ namespace ngcomp
                              he=0.0;
                              LapackMultAddABt (d, c, -1, he);
                              // he = -1.0 * d * Trans(c);
-                             cout << "i = " << i << ", he = " << he << endl;
+                             
                              static_cast<ElementByElementMatrix<SCAL>*>(harmonicext.get())
                                ->AddElementMatrix(i,idnums,ednums,he);
-                             //cout << "harmext = " << *(harmonicext.get()) << endl; 
                                   
                              if (!symmetric)
                                {
@@ -2606,7 +2598,7 @@ namespace ngcomp
                          
                          if (printelmat)
                            *testout << "schur matrix = " << a << endl;
-                         //cout << "schur matrix = " << a << endl;
+                         
                          sum_elmat.Rows(odofs).Cols(odofs) = a;
                          
                          for (int k = 0; k < idofs1.Size(); k++)
@@ -2621,8 +2613,6 @@ namespace ngcomp
                    pre -> AddElementMatrix (dnums, sum_elmat, el, lh);
                });
 
-            //if (harmonicext.get())
-            //  cout << "harmonicext = " << *(harmonicext.get()) << endl;
             progress.Done();
           }
 
@@ -2632,7 +2622,7 @@ namespace ngcomp
             RegionTimer reg(timerbound);
             ProgressOutput progress (ma, "assemble surface element", ma->GetNE(vb));
 
-            if (eliminate_internal && keep_internal)
+            if (eliminate_internal && keep_internal && !VB_parts[VOL].Size() && vb==BND)
               {
                 size_t ndof = fespace->GetNDof();
                 size_t ne = ma->GetNSE();
@@ -2699,19 +2689,15 @@ namespace ngcomp
                      ArrayMem<int,100> idofs, idofs1, odofs;
                      int i = el.Nr();
 
-                     fespace->GetSDofNrs (i, idofs1, CONDENSATABLE_DOF);
+                     fespace->GetDofNrs (el, idofs1, CONDENSATABLE_DOF);
                      for (int j = 0; j < idofs1.Size(); j++)
                        idofs1[j] = dnums.Pos(idofs1[j]);
                           
-                     /*if (printelmat) 
+                     if (printelmat) 
                        {
                          *testout << "eliminate internal" << endl;
                          *testout << "idofs1 = " << idofs1 << endl;
-                         }*/
-
-                     //cout << "eliminate internal bnd" << endl;
-                     //cout << "idofs1 = " << idofs1 << endl;
-                     
+                       }
                      
                      if (idofs1.Size())
                        {
@@ -2733,14 +2719,12 @@ namespace ngcomp
                            if (!idofs.Contains(j))
                              odofs.Append(j);
                          
-                         /*if (printelmat)
+                         if (printelmat)
                            {
                              (*testout) << "idofs = " << endl << idofs << endl;
                              (*testout) << "odofs = " << endl << odofs << endl;
-                             }*/
-
-                         cout << "idofs = " << endl << idofs << endl;
-                         cout << "odofs = " << endl << odofs << endl;
+                           }
+                    
                          
                          FlatMatrix<SCAL> a(sizeo, sizeo, lh);
                          FlatMatrix<SCAL> b(sizeo, sizei, lh);
@@ -2766,10 +2750,10 @@ namespace ngcomp
                              ArrayMem<int,50> hdnums1;
                              ArrayMem<int,50> ednums1, ednums;
                              
-                             fespace->GetSDofNrs(i,idnums1,CONDENSATABLE_DOF);
-                             fespace->GetSDofNrs(i,ednums1,EXTERNAL_DOF);
-                             fespace->GetSDofNrs(i,hdnums1,HIDDEN_DOF);
-                             cout << "idnums1 = " << idnums1 << ", ednums1 = " << ednums1 << ", hdnums1 = " << hdnums1 << endl;
+                             fespace->GetDofNrs(el,idnums1,CONDENSATABLE_DOF);
+                             fespace->GetDofNrs(el,ednums1,EXTERNAL_DOF);
+                             fespace->GetDofNrs(el,hdnums1,HIDDEN_DOF);
+                            
                              int count = 0;
                              for (auto dof : hdnums1)
                              {
@@ -2783,8 +2767,6 @@ namespace ngcomp
                              for (int j = 0; j < ednums1.Size(); j++)
                                ednums += dim * IntRange(ednums1[j], ednums1[j]+1);
 
-                             cout << "idnums = " << idnums << endl;
-                             cout << "ednums = " << ednums << endl;
                              
                              if (store_inner)
                                static_cast<ElementByElementMatrix<SCAL>*>(innermatrix.get())
@@ -2798,7 +2780,6 @@ namespace ngcomp
                              
                                             
                              // he = -1.0 * d * Trans(c);
-                             cout << "i = " << i << ", he = " << he << endl;
                              static_cast<ElementByElementMatrix<SCAL>*>(harmonicext.get())
                                ->AddElementMatrix(i,idnums,ednums,he);
                                             
@@ -2821,8 +2802,6 @@ namespace ngcomp
                          
                          if (printelmat)
                            *testout << "schur matrix = " << a << endl;
-
-                             //cout << "schur matrix = " << a << endl;
                          
                          sum_elmat.Rows(odofs).Cols(odofs) = a;
                          
@@ -2836,8 +2815,6 @@ namespace ngcomp
                  for (auto pre : preconditioners)
                    pre -> AddElementMatrix (dnums, sum_elmat, el, lh);
                });
-            //if (harmonicext.get())
-            //  cout << "harmonicext = " << *(harmonicext.get()) << endl;
             
             progress.Done();
           }
