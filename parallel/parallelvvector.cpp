@@ -10,7 +10,10 @@ namespace ngla
 
   BaseVector & ParallelBaseVector :: SetScalar (double scal)
   {
-    FVDouble() = scal;
+    if (IsComplex())
+      FVComplex() = scal;
+    else
+      FVDouble() = scal;
     if ( IsParallelVector() )
       this->SetStatus(CUMULATED);
     else

@@ -53,7 +53,8 @@ namespace ngla
     ParallelDofs (MPI_Comm acomm, Table<int> && adist_procs, 
 		  int dim = 1, bool iscomplex = false);
 
-    
+    shared_ptr<ParallelDofs> SubSet (shared_ptr<BitArray> take_dofs) const;
+      
     virtual ~ParallelDofs()  { ; }
 
     int GetNTasks() const { return exchangedofs.Size(); }
@@ -102,12 +103,12 @@ namespace ngla
     template <typename T>
     void AllReduceDofData (FlatArray<T> data, MPI_Op op) const
     {
-      if (this == NULL)  // illformed C++, shall get rid of this
-        throw Exception("AllReduceDofData for null-object");
+      // if (this == NULL)  // illformed C++, shall get rid of this
+        // throw Exception("AllReduceDofData for null-object");
       ReduceDofData (data, op);
       ScatterDofData (data);
     }
-    
+
   };
 
 #else
@@ -174,9 +175,9 @@ namespace ngla
   template <typename T>
   void ParallelDofs::ReduceDofData (FlatArray<T> data, MPI_Op op) const
   {
-    if (this == NULL)  // illformed C++, shall get rid of this
-      throw Exception("ReduceDofData for null-object");
-
+    // if (this == NULL)  // illformed C++, shall get rid of this
+    // throw Exception("ReduceDofData for null-object");
+    
     static Timer t0("ParallelDofs :: ReduceDofData");
     RegionTimer rt(t0);
 
@@ -247,9 +248,9 @@ namespace ngla
   template <typename T>
   void ParallelDofs :: ScatterDofData (FlatArray<T> data) const
   {
-    if (this == NULL)   // illformed C++, shall get rid of this
-      throw Exception("ScatterDofData for null-object");
-
+    // if (this == NULL)   // illformed C++, shall get rid of this
+    // throw Exception("ScatterDofData for null-object");
+    
     static Timer t0("ParallelDofs :: ScatterDofData");
     RegionTimer rt(t0);
 

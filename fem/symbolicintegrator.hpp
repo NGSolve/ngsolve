@@ -220,6 +220,21 @@ public:
                                               FlatVector<bool> nonzero,
                                               FlatVector<bool> nonzero_deriv,
                                               FlatVector<bool> nonzero_dderiv) const;
+
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const
+  {
+    Vector<bool> nz(values.Size()), nzd(values.Size()), nzdd(values.Size());
+    NonZeroPattern (ud, nz, nzd, nzdd);
+    for (size_t i = 0; i < values.Size(); i++)
+      {
+        values(i).Value() = nz(i);
+        values(i).DValue(0) = nzd(i);
+        values(i).DDValue(0) = nzdd(i);
+      }
+  }
+  
 };
 
 class ProxyUserData
@@ -296,23 +311,23 @@ public:
   }
   FlatMatrix<> GetMemory (const ProxyFunction * proxy) const
   {
-    return remember_second[remember_first.Pos(proxy)];
+    return remember_second[remember_first.PosSure(proxy)];
   }
   FlatMatrix<SIMD<double>> GetAMemory (const ProxyFunction * proxy) const
   {
-    return remember_asecond[remember_first.Pos(proxy)];
+    return remember_asecond[remember_first.PosSure(proxy)];
   }
   FlatMatrix<SIMD<double>> GetAMemory (const CoefficientFunction * cf) const
   {
-    return remember_cf_asecond[remember_cf_first.Pos(cf)];
+    return remember_cf_asecond[remember_cf_first.PosSure(cf)];
   }
   bool Computed (const CoefficientFunction * cf) const
   {
-    return remember_cf_computed[remember_cf_first.Pos(cf)];
+    return remember_cf_computed[remember_cf_first.PosSure(cf)];
   }
   void SetComputed (const CoefficientFunction * cf) const
   {
-    remember_cf_computed[remember_cf_first.Pos(cf)] = true;
+    remember_cf_computed[remember_cf_first.PosSure(cf)] = true;
   }
 };
 

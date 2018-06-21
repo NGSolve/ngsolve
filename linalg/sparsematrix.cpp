@@ -1000,7 +1000,7 @@ namespace ngla
     cnt = 0;
     for (auto i : indi) cnt[i]++;
 
-    auto matrix = make_shared<SparseMatrix<TM>> (cnt);
+    auto matrix = make_shared<SparseMatrix<TM>> (cnt, w);
     for (auto k : ::Range(indi))
       (*matrix)(indi[k], indj[k]) = val[k];
     return matrix;
@@ -1116,6 +1116,32 @@ namespace ngla
       fy(i) += s * RowTimesVector (i, fx);
 
   }
+
+  template <class TM, class TV_ROW, class TV_COL>
+  void SparseMatrix<TM,TV_ROW,TV_COL> ::
+  MultAdd1 (double s, const BaseVector & x, BaseVector & y,
+            const BitArray * ainner,
+            const Array<int> * acluster) const
+  {
+    if (!ainner || acluster)
+      {
+        MultAdd (s, x, y);
+        return;
+      }
+
+    FlatVector<TVX> fx = x.FV<TVX>(); 
+    FlatVector<TVY> fy = y.FV<TVY>(); 
+
+    SharedLoop2 sl(ainner->Size());
+    ParallelJob
+      ( [&] (const TaskInfo & ti)
+        {
+          for (size_t row : sl)
+            if ( (*ainner).Test(row))
+              fy(row) += s * RowTimesVector (row, fx);
+        });
+  }
+  
   
 
   template <class TM, class TV_ROW, class TV_COL>
@@ -1327,7 +1353,23 @@ namespace ngla
   AutoVector SparseMatrix<TM,TV_ROW,TV_COL> ::
   CreateVector () const
   {
-    return make_shared<VVector<TVY>> (this->size);
+    if (this->size==this->width)
+      return make_shared<VVector<TVY>> (this->size);
+    throw Exception ("SparseMatrix::CreateVector for rectangular does not make sense, use either CreateColVector or CreateRowVector");
+  }
+
+  template <class TM, class TV_ROW, class TV_COL>
+  AutoVector SparseMatrix<TM,TV_ROW,TV_COL> ::
+  CreateRowVector () const
+  {
+    return make_shared<VVector<TVY>> (this->width);
+  }
+
+  template <class TM, class TV_ROW, class TV_COL>
+  AutoVector SparseMatrix<TM,TV_ROW,TV_COL> ::
+  CreateColVector () const
+  {
+    return make_shared<VVector<TVX>> (this->size);
   }
 
 

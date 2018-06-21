@@ -62,6 +62,12 @@ namespace ngla
   void BaseMatrix :: MemoryUsage (Array<MemoryUsageStruct*> & mu) const
   { ; }
 
+  size_t BaseMatrix :: NZE () const
+  {
+    throw Exception(string("NZE not overloaded for matrix-type")
+                    +typeid(*this).name());
+  }
+  
   shared_ptr<BaseMatrix> BaseMatrix :: CreateMatrix () const
   {
     throw Exception (string("BaseMatrix::CreateMatrix not overloaded, type = ")+typeid(*this).name());        

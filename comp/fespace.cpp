@@ -313,7 +313,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       delete specialelements[i]; 
     specialelements.SetSize(0);
 
-
+    ma->UpdateBuffers();  // is free if netgen-mesh did not change
     int dim = ma->GetDimension();
     
     dirichlet_vertex.SetSize (ma->GetNV());
@@ -465,7 +465,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     external_free_dofs = make_shared<BitArray>(GetNDof());
     *external_free_dofs = *free_dofs;
     for (auto i : Range(ctofdof))
-      if (ctofdof[i] & LOCAL_DOF)
+      if (ctofdof[i] & CONDENSATABLE_DOF)
 	external_free_dofs->Clear(i);
 
     if (print)
@@ -1102,6 +1102,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     // ntype[ctofdof[i]]++;
     for (auto ct : ctofdof) ntype[ct]++;
     if (ntype[UNUSED_DOF]) ost << "unused = " << ntype[UNUSED_DOF] << endl;
+    if (ntype[HIDDEN_DOF]) ost << "hidden = " << ntype[HIDDEN_DOF] << endl;
     if (ntype[LOCAL_DOF])  ost << "local  = " << ntype[LOCAL_DOF] << endl;
 
     int nfree = 0;
@@ -1527,7 +1528,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
     switch (ct)
       {
       case UNUSED_DOF: ost << "unused"; break;
+      case HIDDEN_DOF:  ost << "hidden"; break;
       case LOCAL_DOF:  ost << "local"; break;
+      case CONDENSATABLE_DOF:  ost << "condensable"; break;
       case INTERFACE_DOF: ost << "interface"; break;
       case NONWIREBASKET_DOF: ost << "non-wirebasket"; break;
       case WIREBASKET_DOF: ost << "wirebasket"; break;
@@ -2453,7 +2456,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
         external_free_dofs = make_shared<BitArray>(GetNDof());
         *external_free_dofs = *free_dofs;
         for (int i = 0; i < ctofdof.Size(); i++)
-          if (ctofdof[i] & LOCAL_DOF)
+          if (ctofdof[i] & CONDENSATABLE_DOF)
             external_free_dofs->Clear(i);
 
 

@@ -91,7 +91,21 @@ namespace ngfem
       : x(ip1.x, ip2.x), y(ip1.y, ip2.y), z(ip1.z, ip2.z) { ; } 
   };
 
-
+  template <typename T>
+  inline ostream & operator<< (ostream & ost, TIP<1,T> tip)
+  {
+    return ost << "x = " << tip.x;
+  }
+  template <typename T>
+  inline ostream & operator<< (ostream & ost, TIP<2,T> tip)
+  {
+    return ost << "x = " << tip.x << ", y = " << tip.y;
+  }
+  template <typename T>
+  inline ostream & operator<< (ostream & ost, TIP<3,T> tip)
+  {
+    return ost << "x = " << tip.x << ", y = " << tip.y << ", z = " << tip.z;
+  }
 
 
   
@@ -432,12 +446,21 @@ namespace ngfem
 	    }
 	  else if (DIMR == 2)
 	    {
-	      det = sqrt ( sqr (dxdxi(0,0)) + sqr (dxdxi(1,0)));
-
-	      normalvec(0) = -dxdxi(1,0) / det;
-	      normalvec(1) = dxdxi(0,0) / det;
-              tangentialvec = TSCAL(0.0);
-	    }
+              if (DIMS == 1)
+                {
+                  det = sqrt ( sqr (dxdxi(0,0)) + sqr (dxdxi(1,0)));
+                  
+                  normalvec(0) = -dxdxi(1,0) / det;
+                  normalvec(1) = dxdxi(0,0) / det;
+                  //tangentialvec = TSCAL(0.0);
+                  tangentialvec(0) = -normalvec(1);
+                  tangentialvec(1) = normalvec(0);
+                }
+              else
+                {
+                  det = 1;
+                }
+            }
 	  else
 	    {
 	      det = 1.0;
@@ -1651,11 +1674,20 @@ namespace ngstd
             }
 	  else if (DIMR == 2)
 	    {
-	      det = sqrt ( sqr (dxdxi(0,0)) + sqr (dxdxi(1,0)));
-
-	      normalvec(0) = -dxdxi(1,0) / det;
-	      normalvec(1) = dxdxi(0,0) / det;
-              tangentialvec = SIMD<double>(0.0);
+              if (DIMS == 1)
+                {
+                  det = sqrt ( sqr (dxdxi(0,0)) + sqr (dxdxi(1,0)));
+                  
+                  normalvec(0) = -dxdxi(1,0) / det;
+                  normalvec(1) = dxdxi(0,0) / det;
+                  //tangentialvec = SIMD<double>(0.0);
+                  tangentialvec(0) = -normalvec(1);
+                  tangentialvec(1) = normalvec(0);
+                }
+              else
+                {
+                  det = 1;
+                }
 	    }
 	  else
 	    {
@@ -1935,6 +1967,8 @@ namespace ngfem
     // virtual BareSliceMatrix<SIMD<double>> GetPoints() const = 0;
     BareSliceMatrix<SIMD<double>> GetPoints() const { return points; }
     virtual void Print (ostream & ost) const = 0;
+    bool IsComplex() const { return false; }
+    BareSliceMatrix<SIMD<Complex>> GetPointsComplex() const { throw ExceptionNOSIMD("Not implemented"); }
 
     // for DG jump terms
     void SetOtherMIR (const SIMD_BaseMappedIntegrationRule * other) { other_mir = other; }

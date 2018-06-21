@@ -57,6 +57,15 @@ namespace ngstd
           return i;
       return ILLEGAL_POSITION;
     }
+
+    template <typename T2>
+    INLINE size_t PosSure(const T2 & el) const
+    {
+      for (size_t i = 0; ; i++)
+        if (Spec()[i] == el)
+          return i;
+    }
+
     // INLINE auto & operator[] (size_t i) { return Spec()[i]; }
     INLINE auto operator[] (size_t i) const { return Spec()[i]; }
   };
@@ -585,11 +594,14 @@ namespace ngstd
 
 
     /// Generate array in user data
-    INLINE Array(size_t asize, T* adata)
+    INLINE Array(size_t asize, T* adata, bool ownMemory = false)
       : FlatArray<T> (asize, adata)
     {
-      allocsize = asize; 
-      mem_to_delete = nullptr;
+      allocsize = asize;
+      if(ownMemory)
+        mem_to_delete = adata;
+      else
+        mem_to_delete = nullptr;
     }
 
     /// Generate array in user data
@@ -725,6 +737,16 @@ namespace ngstd
         ReSize (size+1);
       data[size] = move(el);
       size++;
+      return size;
+    }
+
+    // Add elements of initializer list to end of array. Reallocation if necessary.
+    INLINE size_t Append(std::initializer_list<T> lst)
+    {
+      if(allocsize < size + lst.size())
+        ReSize(size+lst.size());
+      for(auto val : lst)
+        data[size++] = val;
       return size;
     }
 
