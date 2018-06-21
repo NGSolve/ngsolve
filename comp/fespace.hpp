@@ -491,11 +491,13 @@ ANY                  1 1 1 1 | 15
     
     void CheckCouplingTypes() const;
 
-    /// get dof-nrs of the element of certain coupling type
+    [[deprecated("Use GetDofNrs with element-id instead of elnr!")]]
     void GetDofNrs (int elnr, Array<DofId> & dnums, COUPLING_TYPE ctype) const;
-
+      
     /// get dof-nrs of the element of certain coupling type
-    void GetSDofNrs (int elnr, Array<DofId> & dnums, COUPLING_TYPE ctype) const;
+    void GetDofNrs (ElementId ei, Array<DofId> & dnums, COUPLING_TYPE ctype) const;
+
+
 
     /// get dofs on nr'th node of type nt.
     [[deprecated("Use GetDofNrs with NodeId instead of nt/nr")]]    
