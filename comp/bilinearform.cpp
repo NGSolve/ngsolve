@@ -2392,14 +2392,13 @@ namespace ngcomp
         for (auto pre : preconditioners)
           pre -> InitLevel(fespace->GetFreeDofs());
 
-        //if (VB_parts[VOL].Size())
         for (VorB vb : { VOL, BND, BBND, BBBND })
           if (VB_parts[vb].Size())
           {
             RegionTimer reg(timervol);
             ProgressOutput progress(ma,string("assemble ") + ToString(vb) + string(" element"), ma->GetNE(vb));
 
-            if( (vb == VOL || (!VB_parts[VOL].Size() && vb==BND) ) && eliminate_internal && keep_internal)
+            if ( (vb == VOL || (!VB_parts[VOL].Size() && vb==BND) ) && eliminate_internal && keep_internal)
               {
                 size_t ndof = fespace->GetNDof();
                 size_t ne = ma->GetNE(vb);
@@ -2481,7 +2480,7 @@ namespace ngcomp
                      
                      sum_elmat += elmat;
                    }
-
+                 
                  
                  fespace->TransformMat (el, sum_elmat, TRANSFORM_MAT_LEFT_RIGHT);
                  
