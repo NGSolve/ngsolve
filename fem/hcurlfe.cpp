@@ -124,9 +124,10 @@ namespace ngfem
   /// compute shape
   template <int D>
   void HCurlFiniteElement<D> ::
-  CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
+  CalcMappedShape (const BaseMappedIntegrationPoint & bmip,
                    SliceMatrix<> shape) const
   {
+    auto & mip = static_cast<const MappedIntegrationPoint<D,D>&> (bmip);
     CalcShape (mip.IP(), shape);
     Mat<DIM> trans = Trans (mip.GetJacobianInverse());
     for (int i = 0; i < ndof; i++)
@@ -157,9 +158,10 @@ namespace ngfem
   /// compute curl of shape
   template <int D>
   void HCurlFiniteElement<D> ::
-  CalcMappedCurlShape (const MappedIntegrationPoint<DIM,DIM> & mip,
+  CalcMappedCurlShape (const BaseMappedIntegrationPoint & bmip,
                        SliceMatrix<> curlshape) const
   {
+    auto & mip = static_cast<const MappedIntegrationPoint<D,D>&> (bmip);
     CalcCurlShape (mip.IP(), curlshape);
     if (DIM == 2)
       {

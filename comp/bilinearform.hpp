@@ -862,26 +862,26 @@ namespace ngcomp
     ///
     BilinearFormApplication (shared_ptr<BilinearForm> abf);
 
-    virtual bool IsComplex() const
+    virtual bool IsComplex() const override
     {
       return bf->GetFESpace()->IsComplex();
     }
     
     ///
-    virtual void Mult (const BaseVector & v, BaseVector & prod, LocalHeap & lh) const;
+    virtual void Mult (const BaseVector & v, BaseVector & prod) const override;
     ///
-    virtual void MultAdd (double val, const BaseVector & v, BaseVector & prod, LocalHeap & lh) const;
+    virtual void MultAdd (double val, const BaseVector & v, BaseVector & prod) const override;
     ///
-    virtual void MultAdd (Complex val, const BaseVector & v, BaseVector & prod, LocalHeap & lh) const;
+    virtual void MultAdd (Complex val, const BaseVector & v, BaseVector & prod) const override;
     ///
-    virtual AutoVector CreateVector () const;
+    virtual AutoVector CreateVector () const override;
     ///
-    virtual int VHeight() const
+    virtual int VHeight() const override
     {
       return bf->GetFESpace()->GetNDof(); 
     }
     ///
-    virtual int VWidth() const
+    virtual int VWidth() const override
     {
       return bf->GetFESpace()->GetNDof(); 
     }

@@ -1141,8 +1141,6 @@ namespace ngfem
                   size_t dim_proxy1 = proxy1->Dimension();
                   size_t dim_proxy2 = proxy2->Dimension();
                   
-                  // bool is_nonzero = nonzeros_proxies(l1nr,k1nr);
-                  // bool is_diagonal = diagonal_proxies(l1nr,k1nr);
                   size_t tt_pair = l1nr*trial_proxies.Size()+k1nr;
                   first_std_eval = k1nr*test_proxies.Size()+l1nr;  // in case of SIMDException
                   bool is_nonzero = nonzeros_proxies(tt_pair);
@@ -1216,10 +1214,9 @@ namespace ngfem
                       // bbmat2 = 0.0;
                       {
                         // ThreadRegionTimer regbmat(timer_SymbBFIbmat, TaskManager::GetThreadId());
-                      proxy1->Evaluator()->CalcMatrix(fel_trial, mir, bbmat1);
-                      
-                      if (!samediffop)
-                        proxy2->Evaluator()->CalcMatrix(fel_test, mir, bbmat2);
+                        proxy1->Evaluator()->CalcMatrix(fel_trial, mir, bbmat1);
+                        if (!samediffop)
+                          proxy2->Evaluator()->CalcMatrix(fel_test, mir, bbmat2);
                       }
 
                       if (is_diagonal)
@@ -1240,29 +1237,12 @@ namespace ngfem
                               auto hbdbmat1 = bdbmat1.RowSlice(j,dim_proxy1).Rows(r1);
                               
                               for (size_t k = 0; k < bdbmat1.Width(); k++)
-                                {
-                                  /*
-                                  auto col_bdbmat = hbdbmat1.Col(k);
-                                  auto col_bbmat = hbbmat1.Col(k);
-                                  auto proxy = diagproxyvalues(j,k);
-                                  for (size_t i1 = 0; i1 < sr1; i1++)
-                                    col_bdbmat(i1) = proxy * col_bbmat(i1);
-                                  */
-                                  hbdbmat1.Col(k).AddSize(r1.Size()) = diagproxyvalues(j,k) * hbbmat1.Col(k);
-                                }
+                                hbdbmat1.Col(k).AddSize(r1.Size()) = diagproxyvalues(j,k) * hbbmat1.Col(k);
                             }
-                          
-                          // AFlatVector<SCAL> diagd(bs*proxy1->Dimension(), lh);
-                          // diagd = diagproxyvalues.Range(i*proxy1->Dimension(),
-                          // (i+bs)*proxy1->Dimension());
-                          // MultMatDiagMat(bbmat1, diagd, bdbmat1);
-                          // NgProfiler::StopThreadTimer (timer_SymbBFIbd, TaskManager::GetThreadId());                                            
-                          
                         }
                       else
                         {
                           bdbmat1 = 0.0; 
-                          // for (size_t i = 0; i < elmat.Width(); i++)
                           for (auto i : r1)
                             for (size_t j = 0; j < dim_proxy2; j++)
                               for (size_t k = 0; k < dim_proxy1; k++)
@@ -3780,7 +3760,7 @@ namespace ngfem
                     HeapReset hr(lh);
                     ngfem::ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype, k);
                     
-                    auto & ir_facet = GetSIMDIntegrationRule(etfacet, 2*fel.Order());
+                    auto & ir_facet = GetSIMDIntegrationRule(etfacet, 2*fel.Order()+bonus_intorder);
                     auto & ir_facet_vol = transform(k, ir_facet, lh);
                     auto & mir = trafo(ir_facet_vol, lh);
                     mir.ComputeNormalsAndMeasure (eltype, k);
@@ -3845,7 +3825,7 @@ namespace ngfem
             HeapReset hr(lh);
             ngfem::ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype, k);
             
-            const IntegrationRule & ir_facet = GetIntegrationRule(etfacet, 2*fel.Order());
+            const IntegrationRule & ir_facet = GetIntegrationRule(etfacet, 2*fel.Order()+bonus_intorder);
             IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
             BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
             mir.ComputeNormalsAndMeasure (eltype, k);
@@ -3876,10 +3856,10 @@ namespace ngfem
                               FlatMatrix<double> elmat,
                               LocalHeap & lh) const
   {
-    static Timer t("SymbolicEnergy::AddLinearizedElementMatrix", 2);
-    static Timer tdmat("SymbolicEnergy::CalcDMat", 2);
+    static Timer t("SymbolicEnergy::AddLinearizedElementMatrix (nosimd)", 2);
+    static Timer tdmat("SymbolicEnergy::CalcDMat (nosimd)", 2);
     // Timer & tdmat = const_cast<Timer&> (timer);
-    static Timer tbmat("SymbolicEnergy::CalcBMat", 2);
+    static Timer tbmat("SymbolicEnergy::CalcBMat (nosimd)", 2);
     static Timer tmult("SymbolicEnergy::mult", 2);
     size_t tid = TaskManager::GetThreadId();
     ThreadRegionTimer reg(t, tid);
@@ -3994,13 +3974,14 @@ namespace ngfem
                                                      FlatMatrix<double> elmat,
                                                      LocalHeap & lh) const
   {
-        size_t tid = TaskManager::GetThreadId();        
-        static Timer tdmat("SymbolicEnergy::CalcDMat - simd", 2);
-        static Timer tdmat2("SymbolicEnergy::CalcDMat2 - simd", 2);
-        static Timer tbmat("SymbolicEnergy::CalcBMat - simd", 2);
-        static Timer tmult("SymbolicEnergy::mult - simd", 2);
-        
-
+    static Timer t("SymbolicEnergy::AddLinearizedElementMatrix - simd", 2);
+    size_t tid = TaskManager::GetThreadId();        
+    static Timer tdmat("SymbolicEnergy::CalcDMat - simd", 2);
+    static Timer tdmat2("SymbolicEnergy::CalcDMat2 - simd", 2);
+    static Timer tbmat("SymbolicEnergy::CalcBMat - simd", 2);
+    static Timer tmult("SymbolicEnergy::mult - simd", 2);
+    
+    ThreadRegionTimer reg(t, tid);
     
             FlatMatrix<AutoDiffDiff<1,SIMD<double>>> ddval(1, mir.Size(), lh);
             FlatArray<FlatMatrix<SIMD<double>>> diags(trial_proxies.Size(), lh);
@@ -4114,7 +4095,8 @@ namespace ngfem
                   ThreadRegionTimer reg(tmult, tid);                  
                   AddABt (hbmat2.Rows(r2), hdbmat1.Rows(r1), part_elmat);
                   if (k1 > l1)
-                    elmat.Rows(r1).Cols(r2) = Trans(part_elmat);
+                    AddABt (hdbmat1.Rows(r1), hbmat2.Rows(r2), elmat.Rows(r1).Cols(r2));
+                    // elmat.Rows(r1).Cols(r2) = Trans(part_elmat); // buggy if both evaluators act on same element
                   }
                 }
   }
@@ -4194,7 +4176,7 @@ namespace ngfem
             HeapReset hr(lh);
             ngfem::ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype, k);
             
-            const IntegrationRule & ir_facet = GetIntegrationRule(etfacet, 2*fel.Order());
+            const IntegrationRule & ir_facet = GetIntegrationRule(etfacet, 2*fel.Order()+bonus_intorder);
             IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
             BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
             mir.ComputeNormalsAndMeasure (eltype, k);
@@ -4283,8 +4265,8 @@ namespace ngfem
                   {
                     HeapReset hr(lh);
                     ngfem::ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype, k);
-                    
-                    auto & ir_facet = GetSIMDIntegrationRule(etfacet, 2*fel.Order());
+
+                    auto & ir_facet = GetSIMDIntegrationRule(etfacet, 2*fel.Order()+bonus_intorder);
                     auto & ir_facet_vol = transform(k, ir_facet, lh);
                     auto & mir = trafo(ir_facet_vol, lh);
                     mir.ComputeNormalsAndMeasure (eltype, k);
@@ -4385,7 +4367,7 @@ namespace ngfem
             HeapReset hr(lh);
             ngfem::ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype, k);
             
-            const IntegrationRule & ir_facet = GetIntegrationRule(etfacet, 2*fel.Order());
+            const IntegrationRule & ir_facet = GetIntegrationRule(etfacet, 2*fel.Order()+bonus_intorder);
             IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
             BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
             mir.ComputeNormalsAndMeasure (eltype, k);

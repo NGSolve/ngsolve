@@ -328,7 +328,7 @@ namespace ngcomp
       for(int el=0; el<ma->GetNE(); el++)	      
 	{
 	  for (int k = first_inner_dof[el]; k < first_inner_dof[el+1]; k++)
-	    ctofdof[k] = LOCAL_DOF;
+	    ctofdof[k] = HIDDEN_DOF;
 	}	  
     *testout << " VECTORFACETFESPACE - ctofdof = \n" << ctofdof << endl;
   }

@@ -58,25 +58,14 @@ namespace ngcomp
       else
         {
           throw ExceptionNOSIMD("facet-simd-bnd not ready");
-            /*
-          if (mip.BaseMappedIntegrationPoint::VB() == BND) 
-            {
-              const BaseScalarFiniteElement & fel = static_cast<const BaseScalarFiniteElement&> (bfel);
-              fel.CalcShape (mip.IP(), mat.Row(0));
-            }
-          else
-            throw Exception("cannot evaluate facet-fe inside element");
-            */
         }
     }
 
     
     using DiffOp<DiffOpIdFacet<D>>::ApplySIMDIR;          
     static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
-                             BareSliceVector<double> x, ABareSliceMatrix<double> y)
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
-      // Cast(fel).Evaluate (mir.IR(), x, y.Row(0));
-
       const FacetVolumeFiniteElement<D> & fel_facet = static_cast<const FacetVolumeFiniteElement<D>&> (bfel);
 
       int facetnr = mir.IR()[0].FacetNr();
@@ -90,9 +79,8 @@ namespace ngcomp
 
     using DiffOp<DiffOpIdFacet<D>>::AddTransSIMDIR;          
     static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
-                                ABareSliceMatrix<double> y, BareSliceVector<double> x)
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
-      // Cast(fel).AddTrans (mir.IR(), y.Row(0), x);
       const FacetVolumeFiniteElement<D> & fel_facet = static_cast<const FacetVolumeFiniteElement<D>&> (bfel);
 
       int facetnr = mir.IR()[0].FacetNr();
@@ -103,8 +91,6 @@ namespace ngcomp
                                           y.Row(0),
                                           x.Range(fel_facet.GetFacetDofs(facetnr)));
     }
-    
-    
   }; 
 
 
@@ -230,7 +216,11 @@ namespace ngcomp
     fine_facet = false; 
     
     Array<int> fanums;
-        
+
+    for (Ngs_Element el : ma->Elements<BND>())
+      if (DefinedOn(el))
+	fine_facet[el.Facets()] = true;
+    
     for (int i = 0; i < nel; i++)
       {
         ElementId ei(VOL, i);
@@ -437,27 +427,7 @@ namespace ngcomp
     
     Array<bool> fine_facet(ma->GetNFacets());
     fine_facet = false;
-
-    /*
-    if(ma->GetDimension() == 3)
-      {
-        for(ElementId ei : ma->Elements<VOL>())
-          if (DefinedOn(ei))
-            fine_facet[(*ma)[ei].Faces()] = true;
-      }
-    else if(ma->GetDimension() == 2)
-      {
-        for(ElementId ei : ma->Elements<VOL>())
-          if (DefinedOn(ei))
-            fine_facet[(*ma)[ei].Edges()] = true;
-      }
-    else
-      {
-        for(ElementId ei : ma->Elements<VOL>())
-          if (DefinedOn(ei))
-            fine_facet[(*ma)[ei].Vertices()] = true;
-      }
-    */
+    
     for (Ngs_Element el : ma->Elements<VOL>())
       if (DefinedOn(el))
         fine_facet[el.Facets()] = true;
@@ -485,7 +455,7 @@ namespace ngcomp
       }
     
     if(highest_order_dc)
-      ctofdof.Range(first_inner_dof[0],ndof) = LOCAL_DOF;
+      ctofdof.Range(first_inner_dof[0],ndof) = HIDDEN_DOF;
     
     if(print)
       *testout << "FacetFESpace, ctofdof = " << endl << ctofdof << endl;
