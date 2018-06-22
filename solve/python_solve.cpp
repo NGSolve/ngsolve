@@ -28,13 +28,13 @@ void NGS_DLL_HEADER ExportNgsolve(py::module &m ) {
            py::arg("blocking")=false, py::arg("fr") = 25, docu_string(R"raw_string(
 Redraw all
 
-Parameters
+Parameters:
 
 blocking : bool
-         input blocking
+  input blocking
 
 fr : double
-   input framerate
+  input framerate
 
 )raw_string")
              );
@@ -107,22 +107,22 @@ fr : double
           py::arg("clipping")=DummyArgument(), docu_string(R"raw_string(
 Set visualization options
 
-Parameters
+Parameters:
 
 deformation : object
             input deformation
 
 min : object
-    input min
+  input min
 
 max : object
-    input max
+  input max
 
 clipnormal : object
-           input clipnormal
+  input clipnormal
 
 clipping : object
-         input clipping
+  input clipping
 
 )raw_string")
             )
@@ -177,22 +177,22 @@ clipping : object
               },
              py::arg("gf"),py::arg("sd")=2,py::arg("autoscale")=true,
            py::arg("min")=0.0,py::arg("max")=1.0, docu_string(R"raw_string(
-Parameters
+Parameters:
 
 gf : ngsolve.comp.GridFunction
-   input GridFunction to draw
+  input GridFunction to draw
 
 sd : int
-   input subdivisions
+  input subdivisions
 
 autoscale : bool
-          input autscale
+  input autscale
 
 min : float
-    input minimum value. Need autscale = false
+  input minimum value. Need autscale = false
 
 max : float
-    input maximum value. Need autscale = false
+  input maximum value. Need autscale = false
 
 )raw_string")
              );
@@ -253,34 +253,34 @@ max : float
               py::arg("sd")=2,py::arg("autoscale")=true,
 	      py::arg("min")=0.0,py::arg("max")=1.0,
               py::arg("draw_vol")=true,py::arg("draw_surf")=true, docu_string(R"raw_string(
-Parameters
+Parameters:
 
 cf : ngsolve.comp.CoefficientFunction
-   input CoefficientFunction to draw
+  input CoefficientFunction to draw
 
 mesh : ngsolve.comp.Mesh
-     input mesh
+  input mesh
 
 name : string
-     input name
+  input name
 
 sd : int
-   input subdivisions
+  input subdivisions
 
 autoscale : bool
-          input autscale
+  input autscale
 
 min : float
-    input minimum value. Need autscale = false
+  input minimum value. Need autscale = false
 
 max : float
-    input maximum value. Need autscale = false
+  input maximum value. Need autscale = false
 
 draw_vol : bool
-         input draw volume
+  input draw volume
 
 draw_surf : bool
-         input draw surface
+  input draw surface
 
 )raw_string")
              );

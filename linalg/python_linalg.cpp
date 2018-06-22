@@ -594,7 +594,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                      }
          ,"Inverse", py::arg("freedofs")=nullptr, py::arg("inverse")=py::str(""), 
          docu_string(R"raw_string(Calculate inverse of sparse matrix
-Parameters
+Parameters:
 
 freedofs : BitArray
   If set, invert only the rows/columns the matrix defined by the bit array, otherwise invert the whole matrix
@@ -771,25 +771,25 @@ inverse : string
         py::arg("precision")=1e-8, py::arg("maxsteps")=200, docu_string(R"raw_string(
 A CG Solver.
 
-Parameters
+Parameters:
 
 mat : ngsolve.la.BaseMatrix
-    input matrix 
+  input matrix 
 
 pre : ngsolve.la.BaseMatrix
-    input preconditioner matrix
+  input preconditioner matrix
 
 complex : bool
-        input complex
+  input complex
 
 printrates : bool
-           input printrates
+  input printrates
 
 precision : float
-          input requested precision. CGSolver stops if precision is reached.
+  input requested precision. CGSolver stops if precision is reached.
 
 maxsteps : int
-         input maximal steps. CGSolver stops after this steps.
+  input maximal steps. CGSolver stops after this steps.
 
 )raw_string"))
     ;
@@ -812,22 +812,22 @@ maxsteps : int
            py::arg("precision")=1e-8, py::arg("maxsteps")=200, docu_string(R"raw_string(
 A General Minimal Residuum (GMRES) Solver.
 
-Parameters
+Parameters:
 
 mat : ngsolve.la.BaseMatrix
-    input matrix 
+  input matrix 
 
 pre : ngsolve.la.BaseMatrix
-    input preconditioner matrix
+  input preconditioner matrix
 
 printrates : bool
-           input printrates
+  input printrates
 
 precision : float
-          input requested precision. GMRESSolver stops if precision is reached.
+  input requested precision. GMRESSolver stops if precision is reached.
 
 maxsteps : int
-         input maximal steps. GMRESSolver stops after this steps.
+  input maximal steps. GMRESSolver stops after this steps.
 
 )raw_string"))
     ;
@@ -865,22 +865,22 @@ maxsteps : int
            py::arg("precision")=1e-8, py::arg("maxsteps")=200, docu_string(R"raw_string(
 A Quasi Minimal Residuum (QMR) Solver.
 
-Parameters
+Parameters:
 
 mat : ngsolve.la.BaseMatrix
-    input matrix 
+  input matrix 
 
 pre : ngsolve.la.BaseMatrix
-    input preconditioner matrix
+  input preconditioner matrix
 
 printrates : bool
-           input printrates
+  input printrates
 
 precision : float
-          input requested precision. QMRSolver stops if precision is reached.
+  input requested precision. QMRSolver stops if precision is reached.
 
 maxsteps : int
-         input maximal steps. QMRSolver stops after this steps.
+  input maximal steps. QMRSolver stops after this steps.
 
 )raw_string"))
     ;
@@ -904,41 +904,6 @@ maxsteps : int
               // cout << "num vecs: " << nev << endl;
               Array<shared_ptr<BaseVector>> evecs(nev);
                                                   
-<<<<<<< HEAD
-                                                  Array<Complex> lam(nev);
-                                                  arnoldi.Calc (2*nev+1, lam, nev, evecs, 0);
-                                            
-                                                  for (int i = 0; i < nev; i++)
-                                                    vecs[i].cast<BaseVector&>() = *evecs[i];
-
-                                                  Vector<Complex> vlam(nev);
-                                                  for (int i = 0; i < nev; i++)
-                                                    vlam(i) = lam[i];
-                                                  return vlam;
-                                                }
-                                            },
-          py::arg("mata"), py::arg("matm"), py::arg("freedofs"), py::arg("vecs"), py::arg("shift")=DummyArgument(), docu_string(R"raw_string(
-An Arnoldi eigenvalue solver.
-
-Parameters
-
-mata : ngsolve.la.BaseMatrix
-     input matrix 
-
-matm : ngsolve.la.BaseMatrix
-     input preconditioner matrix
-
-freedofs : nsolve.ngstd.BitArray
-         input correct degrees of freedom
-
-vecs : list
-     input list of vectors
-
-shift : object
-          input shift parameter
-
-)raw_string"))
-=======
               Array<Complex> lam(nev);
               arnoldi.Calc (2*nev+1, lam, nev, evecs, 0);
               
@@ -973,10 +938,27 @@ shift : object
               return vlam;
             }
         },
-        "Arnoldi Solver", py::arg("mata"), py::arg("matm"), py::arg("freedofs"), py::arg("vecs"), py::arg("shift")=DummyArgument()
-        )
->>>>>>> master
-    ;
+          py::arg("mata"), py::arg("matm"), py::arg("freedofs"), py::arg("vecs"), py::arg("shift")=DummyArgument(), docu_string(R"raw_string(
+An Arnoldi eigenvalue solver.
+
+Parameters:
+
+mata : ngsolve.la.BaseMatrix
+  input matrix 
+
+matm : ngsolve.la.BaseMatrix
+  input preconditioner matrix
+
+freedofs : nsolve.ngstd.BitArray
+  input correct degrees of freedom
+
+vecs : list
+  input list of vectors
+
+shift : object
+  input shift parameter
+
+)raw_string"));
   
   
 
