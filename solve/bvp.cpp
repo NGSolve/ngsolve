@@ -786,7 +786,32 @@ void ExportBVP(py::module &m)
             py::arg("pde"),
             py::arg("bf"), py::arg("lf"), py::arg("gf"), 
             py::arg("pre")=DummyArgument(), py::arg("maxsteps")=100, py::arg("prec")=1e-8
-	   );
+	   , docu_string(R"raw_string(
+
+Parameters:
+
+pde : ngsolve.comp.PDE
+  input PDE
+
+bf : ngsolve.comp.BilinearForm
+  input bilinear form as the right hand side of the equation
+
+lf : ngsolve.comp.LinearForm
+  input linear form as the left hand side of the equation
+
+gf : ngsolve.comp.GridFunction
+  input GridFunction where the solution is saved
+
+pre : ngsolve.comp.Preconditioner
+  input Preconditioner for the problem
+
+maxsteps : int
+  input maximal steps. After the maximal step is reached, the computations stop.
+
+prec : float
+  input precision of the residuum. if it is reached the computations stop.
+
+)raw_string"));
 
   m.def ("BVP", [](shared_ptr<BilinearForm> bfa,
                shared_ptr<LinearForm> lff,
@@ -800,7 +825,29 @@ void ExportBVP(py::module &m)
             },
             py::arg("bf"), py::arg("lf"), py::arg("gf"), 
             py::arg("pre"), py::arg("maxsteps")=100, py::arg("prec")=1e-8
-	   );
+	   , docu_string(R"raw_string(
+
+Parameters:
+
+bf : ngsolve.comp.BilinearForm
+  input bilinear form as the right hand side of the equation
+
+lf : ngsolve.comp.LinearForm
+  input linear form as the left hand side of the equation
+
+gf : ngsolve.comp.GridFunction
+  input GridFunction where the solution is saved
+
+pre : ngsolve.comp.Preconditioner
+  input Preconditioner for the problem
+
+maxsteps : int
+  input maximal steps. After the maximal step is reached, the computations stop.
+
+prec : float
+  input precision of the residuum. if it is reached the computations stop.
+
+)raw_string"));
 
 
 

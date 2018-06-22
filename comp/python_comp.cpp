@@ -538,10 +538,10 @@ when building the system matrices.
         }, py::arg("size"), docu_string(R"raw_string(
 Set a new heapsize.
 
-Parameters
+Parameters:
 
 size : int
-     input heap size
+  input heap size
 
 )raw_string"));
   
@@ -552,10 +552,10 @@ size : int
         }, py::arg("file"), docu_string(R"raw_string(
 Enable some logging into file with given filename
 
-Parameters
+Parameters:
 
 file : string
-     input file name
+  input file name
 
 )raw_string")
         );
@@ -579,7 +579,7 @@ H1, HCurl, HDiv, L2, FacetFESpace, HDivDiv
 
 1)
 
-Parameters
+Parameters:
 
 type : string
   Type of the finite element space. This parameter is automatically
@@ -785,10 +785,10 @@ kwargs : kwargs
          }, py::arg("region"), docu_string(R"raw_string(
 Set the regions on which the FESpace is defined.
 
-Parameters
+Parameters:
 
 region : ngsolve.comp.Region
-       input region
+  input region
 
 )raw_string"))
 
@@ -810,13 +810,13 @@ region : ngsolve.comp.Region
          py::arg("order_left")=DummyArgument(),
          py::arg("order_right")=DummyArgument(), docu_string(R"raw_string(
 
-Parameters
+Parameters:
 
 element_type : ngsolve.fem.ET
-             input element type
+  input element type
 
 order : object
-      input polynomial order
+  input polynomial order
 
 )raw_string")
          )
@@ -829,13 +829,13 @@ order : object
          py::arg("nodeid"),
          py::arg("order"), docu_string(R"raw_string(
 
-Parameters
+Parameters:
 
 nodeid : ngsolve.comp.NodeId
-       input node id
+  input node id
 
 order : int
-      input polynomial order
+  input polynomial order
 
 )raw_string")
          )
@@ -849,7 +849,7 @@ Returns an iterable range of elements.
 Parameters:
 
 VOL_or_BND : ngsolve.comp.VorB
-           input VOL, BND, BBND,...
+  input VOL, BND, BBND,...
 
 )raw_string"))
 
@@ -859,10 +859,10 @@ VOL_or_BND : ngsolve.comp.VorB
            return MakePyTuple(tmp);           
          }, py::arg("ei"), docu_string(R"raw_string(
 
-Parameters
+Parameters:
 
 ei : ngsolve.comp.ElementId
-   input element id
+  input element id
 
 )raw_string"))
 
@@ -872,10 +872,10 @@ ei : ngsolve.comp.ElementId
            return MakePyTuple(tmp);
          }, py::arg("ni"), docu_string(R"raw_string(
 
-Parameters
+Parameters:
 
 ni : ngsolve.comp.NodeId
-   input node id
+  input node id
 
 )raw_string"))
 
@@ -885,10 +885,10 @@ ni : ngsolve.comp.NodeId
           }, py::arg("region"), docu_string(R"raw_string(
 Returns all degrees of freedom in given region.
 
-Parameters
+Parameters:
 
 region : ngsolve.comp.Region
-       input region
+  input region
 
 )raw_string"))
     
@@ -900,7 +900,7 @@ region : ngsolve.comp.Region
 Parameters:
 
 dofnr : int
-      input dof number
+  input dof number
 
 )raw_string")
          )
@@ -909,13 +909,13 @@ dofnr : int
          py::arg("dofnr"), py::arg("coupling_type"), docu_string(R"raw_string(
          Set coupling type of a degree of freedom.
 
-Parameters
+Parameters:
 
 dofnr : int
-      input dof number
+  input dof number
 
 coupling_type : ngsolve.comp.COUPLING_TYPE
-              input coupling type
+  input coupling type
 
 )raw_string")
          )
@@ -936,7 +936,7 @@ coupling_type : ngsolve.comp.COUPLING_TYPE
           }, py::arg("ei"), docu_string(R"raw_string(
 Get the finite element to corresponding element id.
 
-Parameters
+Parameters:
 
 ei : ngsolve.com.ElementId
    input element id
@@ -959,10 +959,10 @@ ei : ngsolve.com.ElementId
          coupling=False ... all free dofs including local dofs\n
          coupling=True .... only element-boundary free dofs
 
-Parameters
+Parameters:
 
 coupling : bool
-         input coupling
+  input coupling
 
 )raw_string")
          )
@@ -984,10 +984,10 @@ coupling : bool
          py::arg("component"), docu_string(R"raw_string(
          Return interval of dofs of a component of a product space.
 
-Parameters
+Parameters:
 
 component : int
-          input component
+  input component
 
 )raw_string"))
     
@@ -1032,13 +1032,13 @@ component : int
          py::arg("vec"), py::arg("rho")=nullptr, docu_string(R"raw_string(
          Solve with the mass-matrix. Available only for L2-like spaces.
 
-Parameters
+Parameters:
 
 vec : ngsolve.la.BaseVector
-    input right hand side vector
+  input right hand side vector
 
 rho : ngsolve.fem.CoefficientFunction
-    input CF
+  input CF
 
 )raw_string"))
         
@@ -1387,13 +1387,13 @@ used_idnrs : list of int = None
          py::arg("filename"), py::arg("parallel")=false, docu_string(R"raw_string(
 Saves the gridfunction into a file.
 
-Parameters
+Parameters:
 
 filename : string
-         input file name
+  input file name
 
 parallel : bool
-         input parallel
+  input parallel
 
 )raw_string"))
     .def("Load", [](GF& self, string filename, bool parallel)
@@ -1408,13 +1408,13 @@ parallel : bool
          py::arg("filename"), py::arg("parallel")=false, docu_string(R"raw_string(       
 Loads a gridfunction from a file.
 
-Parameters
+Parameters:
 
 filename : string
-         input file name
+  input file name
 
 parallel : bool
-         input parallel
+  input parallel
 
 )raw_string"))
     .def("Set", 
@@ -1441,19 +1441,19 @@ parallel : bool
          py::arg("definedon")=DummyArgument(), docu_string(R"raw_string(
          Set values
 
-Parameters
+Parameters:
 
 coefficient : ngsolve.fem.CoefficientFunction
-            input CF to set
+  input CF to set
 
 VOL_or_BND : ngsolve.comp.VorB
-           input VOL, BND, BBND, ...
+  input VOL, BND, BBND, ...
 
 definedon : object
-          input definedon region
+  input definedon region
 
 )raw_string"))
-    .def_property_readonly("name", &GridFunction::GetName)
+    .def_property_readonly("name", &GridFunction::GetName, "Name of the Gridfunction")
 
     .def_property_readonly("components",
                            [](shared_ptr<GF> self)-> py::tuple
@@ -1484,7 +1484,7 @@ definedon : object
          [](shared_ptr<GF> self) -> spCF
           {
             return self->GetDeriv();
-          })
+          }, "Returns the natural derivative of the space behind the GridFunction if possible.")
 
     .def("Operator",
          [](shared_ptr<GF> self, string name, VorB vb) -> py::object // shared_ptr<CoefficientFunction>
@@ -1515,13 +1515,13 @@ definedon : object
           }, py::arg("name"), py::arg("VOL_or_BND")=VOL, docu_string(R"raw_string(
 Get access to an operator depending on the FESpace.
 
-Parameters
+Parameters:
 
 name : string
-     input name of the requested operator
+  input name of the requested operator
 
 VOL_or_BND : ngsolve.comp.VorB
-           input VOL, BND, BBND, ...
+  input VOL, BND, BBND, ...
 
 )raw_string"))
 
@@ -1532,7 +1532,7 @@ VOL_or_BND : ngsolve.comp.VorB
                      auto deriv = self->GetFESpace()->GetFluxEvaluator();
                      if (!deriv) return "";
                      return deriv->Name();
-                   })
+                   }, "Name of natural derivative of the space behind the GridFunction.")
 
     .def("__call__", 
          [](shared_ptr<GF> self, double x, double y, double z)
@@ -1678,10 +1678,10 @@ VOL_or_BND : ngsolve.comp.VorB
               return make_shared<GridFunctionCoefficientFunction> (self, nullptr, diffop);
           }, py::arg("diffop"), docu_string(R"raw_string(
 
-Parameters
+Parameters:
 
 diffop : ngsolve.fem.DifferentialOperator
-       input differential operator
+  input differential operator
 
 )raw_string"))
     ;
@@ -1700,7 +1700,7 @@ you can use BilinearForm.Assemble to assemble it after adding
 your integrators. For nonlinear usage use BilinearForm.Apply or
 BilinearForm.AssembleLinearization instead of Bilinearform.Assemble.
 
-Parameters
+Parameters:
 
 space : ngsolve.FESpace
   The finite element space the bilinearform is defined on. This
@@ -1772,10 +1772,10 @@ check_unused : bool
          py::return_value_policy::reference, py::arg("integrator"), docu_string(R"raw_string(
          Add integrator to bilinear form.
 
-Parameters
+Parameters:
 
 integrator : ngsolve.fem.BFI
-    input bilinear form integrator
+  input bilinear form integrator
 
 )raw_string"))
     
@@ -1792,10 +1792,10 @@ integrator : ngsolve.fem.BFI
          py::arg("reallocate")=false, docu_string(R"raw_string(
 Assemble the bilinear form.
 
-Parameters
+Parameters:
 
 reallocate : bool
-           input reallocate
+  input reallocate
 
 )raw_string"))
 
@@ -1834,7 +1834,7 @@ reallocate : bool
           }, py::call_guard<py::gil_scoped_release>(), py::arg("x"), docu_string(R"raw_string(
 Computes the energy of EnergyIntegrators like SymbolicEnergy for given input vector.
 
-Parameters
+Parameters:
 
 x : ngsolve.la.BaseVector
   input vector
@@ -1848,7 +1848,7 @@ x : ngsolve.la.BaseVector
          py::arg("x"),py::arg("y"), docu_string(R"raw_string(
 Applies a (non-)linear variational formulation to x and stores the result in y.
 
-Parameters
+Parameters:
 
 x : ngsolve.BaseVector
   input vector
@@ -1864,7 +1864,7 @@ y : ngsolve.BaseVector
 	  }, py::call_guard<py::gil_scoped_release>(),
          py::arg("u"),py::arg("f"), docu_string(R"raw_string(
 
-Parameters
+Parameters:
 
 u : ngsolve.la.BaseVector
   input vector
@@ -1881,10 +1881,10 @@ f : ngsolve.la.BaseVector
          py::arg("ulin"), docu_string(R"raw_string(
 Computes linearization of the bilinear form at given vecor.
 
-Parameters
+Parameters:
 
 ulin : ngsolve.la.BaseVector
-     input vector
+  input vector
 
 )raw_string"))
 
@@ -1893,10 +1893,10 @@ ulin : ngsolve.la.BaseVector
             return make_shared<GridFunctionCoefficientFunction> (gf, self.GetIntegrator(0));
           }, py::arg("gf"), docu_string(R"raw_string(
 
-Parameters
+Parameters:
 
 gf : ngsolve.comp.GridFunction
-   input GridFunction
+  input GridFunction
 
 )raw_string"))
     
@@ -1929,7 +1929,7 @@ gf : ngsolve.comp.GridFunction
 Used to store the left hand side of a PDE. Add integrators
 (ngsolve.LFI) to it to implement your PDE.
 
-Parameters
+Parameters:
 
 space : ngsolve.FESpace
   The space the linearform is defined on. Can be a compound
@@ -1978,10 +1978,10 @@ flags : dict
          py::arg("integrator"), docu_string(R"raw_string(
          Add integrator to linear form.
 
-Parameters
+Parameters:
 
 integrator : ngsolve.fem.LFI
-    input linear form integrator
+  input linear form integrator
 
 )raw_string"))
     
@@ -2151,37 +2151,37 @@ integrator : ngsolve.fem.LFI
     .def("Add", [](shared_ptr<PDE> self, shared_ptr<MeshAccess> mesh)
                                 {
                                   self->AddMeshAccess (mesh);
-                                })
+                                }, py::arg("mesh"))
 
     .def("Add", [](shared_ptr<PDE> self, const string & name, double val)
                                 {
                                   self->AddConstant (name, val);
-                                })
+                                }, py::arg("name"), py::arg("value"))
 
     .def("Add", [](shared_ptr<PDE> self, shared_ptr<FESpace> space)
                                 {
                                   self->AddFESpace (space->GetName(), space);
-                                })
+                                }, py::arg("space"))
 
     .def("Add", [](shared_ptr<PDE> self, shared_ptr<GridFunction> gf)
                                 {
                                   self->AddGridFunction (gf->GetName(), gf);
-                                })
+                                }, py::arg("gf"))
 
     .def("Add", [](shared_ptr<PDE> self, shared_ptr<BilinearForm> bf)
                                 {
                                   self->AddBilinearForm (bf->GetName(), bf);
-                                })
+                                }, py::arg("bf"))
 
     .def("Add", [](shared_ptr<PDE> self, shared_ptr<LinearForm> lf)
                                 {
                                   self->AddLinearForm (lf->GetName(), lf);
-                                })
+                                }, py::arg("lf"))
 
     .def("Add", [](shared_ptr<PDE> self, shared_ptr<Preconditioner> pre)
                                 {
                                   self->AddPreconditioner (pre->GetName(), pre);
-                                })
+                                }, py::arg("pre"))
 
 // TODO
 //     .def("Add", [](PyPDE self, shared_ptr<NumProcWrap> np)
@@ -2196,7 +2196,7 @@ integrator : ngsolve.fem.LFI
 				  cnt++;
 				  string name = "np_from_py" + ToString(cnt);
                                   self->AddNumProc (name, np);
-                                })
+                                }, py::arg("np"))
 
     .def("Add", [](shared_ptr<PDE> self, const py::list &l)
                                 {
@@ -2246,12 +2246,12 @@ integrator : ngsolve.fem.LFI
                                       
                                       cout << "warning: unknown object at position " << i << endl;
                                     }
-                                })
+                                }, py::arg("list"))
 
     .def("SetCurveIntegrator", [](shared_ptr<PDE> self, const string & filename, shared_ptr<LinearFormIntegrator> lfi)
           {
             self->SetLineIntegratorCurvePointInfo(filename, lfi.get());
-          })
+          }, py::arg("filename"), py::arg("lfi"))
 
     .def_property_readonly ("constants", [](shared_ptr<PDE> self) { return py::cast(self->GetConstantTable()); })
     .def_property_readonly ("variables", [](shared_ptr<PDE> self) { return py::cast(self->GetVariableTable()); })
@@ -2492,27 +2492,27 @@ integrator : ngsolve.fem.LFI
         py::call_guard<py::gil_scoped_release>(), docu_string(R"raw_string(
 Integrates a CoefficientFunction over a specific domain.
 
-Parameters
+Parameters:
 
 cf : ngsolve.fem.CoefficientFunction
-   input CoefficientFunction to integrate
+  input CoefficientFunction to integrate
 
 mesh : ngsolve.comp.Mesh
-     input mesh
+  input mesh
 
 VOL_or_BND : ngsolve.comp.VorB
-           input VOL, BND, BBND, ...
+  input VOL, BND, BBND, ...
 order : int
-      input integration order
+  input integration order
 
 definedon : object
-          input definedon region
+  input definedon region
 
 region_wise : bool
-            input region_wise. True -> Integration over each region seperately
+  input region_wise. True -> Integration over each region seperately
 
 element_wise : bool
-             input element_wise. True -> Integration over each element seperately
+  input element_wise. True -> Integration over each element seperately
 
 )raw_string"))
     ;
@@ -2570,34 +2570,34 @@ element_wise : bool
         docu_string(R"raw_string(
 A symbolic linear form integrator, where test and trial functions, CoefficientFunctions, etc. can be used to formulate right hand sides in a symbolic way.
 
-Parameters
+Parameters:
 
 form : ngsolve.fem.CoefficientFunction
-     input the symbolic right hand side form
+  input the symbolic right hand side form
 
 VOL_or_BND : ngsolve.comp.VorB
-           input VOL, BND, BBND, ...
+  input VOL, BND, BBND, ...
 
 element_boundary : bool
-                 input element_boundary. True -> iterates over all element boundaries, but uses volume transformations
+   input element_boundary. True -> iterates over all element boundaries, but uses volume transformations
 
 skeleton : bool
-         input skeleton. True -> iterates over all faces, but uses volume transformations
+  input skeleton. True -> iterates over all faces, but uses volume transformations
 
 definedon : object
-          input definedon region
+  input definedon region
 
 intrule : ngsolve.fem.IntegrationRule
-        input integration rule
+  input integration rule
 
 bonus_intorder : int
-               input additional integration order
+  input additional integration order
 
 definedonelements : object
-                  input definedonelements
+  input definedonelements
 
 simd_evaluate : bool
-              input simd_evaluate. True -> tries to use SIMD for faster evaluation
+  input simd_evaluate. True -> tries to use SIMD for faster evaluation
 
 )raw_string")
           );
@@ -2667,37 +2667,37 @@ simd_evaluate : bool
         docu_string(R"raw_string(
 A symbolic bilinear form integrator, where test and trial functions, CoefficientFunctions, etc. can be used to formulate PDEs in a symbolic way.
 
-Parameters
+Parameters:
 
 form : ngsolve.fem.CoefficientFunction
-     input the symbolic right hand side form
+  input the symbolic right hand side form
 
 VOL_or_BND : ngsolve.comp.VorB
-           input VOL, BND, BBND, ...
+  input VOL, BND, BBND, ...
 
 element_boundary : bool
-                 input element_boundary. True -> iterates over all element boundaries, but uses volume transformations
+  input element_boundary. True -> iterates over all element boundaries, but uses volume transformations
 
 skeleton : bool
-         input skeleton. True -> iterates over all faces, but uses volume transformations
+  input skeleton. True -> iterates over all faces, but uses volume transformations
 
 definedon : object
-          input definedon region
+  input definedon region
 
 intrule : ngsolve.fem.IntegrationRule
-        input integration rule
+  input integration rule
 
 bonus_intorder : int
-               input additional integration order
+  input additional integration order
 
 definedonelements : object
-                  input definedonelements
+  input definedonelements
 
 simd_evaluate : bool
-              input simd_evaluate. True -> tries to use SIMD for faster evaluation
+  input simd_evaluate. True -> tries to use SIMD for faster evaluation
 
 element_vb : ngsolve.comp.VorB
-           input element_vb. Used for skeleton formulation. VOL -> interior faces, BND -> boundary faces
+  input element_vb. Used for skeleton formulation. VOL -> interior faces, BND -> boundary faces
 
 )raw_string")
         );
@@ -2773,28 +2773,28 @@ element_vb : ngsolve.comp.VorB
         docu_string(R"raw_string(
 A symbolic energy form integrator, where test and trial functions, CoefficientFunctions, etc. can be used to formulate PDEs in a symbolic way.
 
-Parameters
+Parameters:
 
 form : ngsolve.fem.CoefficientFunction
-     input the symbolic right hand side form
+  input the symbolic right hand side form
 
 VOL_or_BND : ngsolve.comp.VorB
-           input VOL, BND, BBND, ...
+  input VOL, BND, BBND, ...
 
 definedon : object
-          input definedon region
+  input definedon region
 
 element_boundary : bool
-                 input element_boundary. True -> iterates over all element boundaries, but uses volume transformations
+  input element_boundary. True -> iterates over all element boundaries, but uses volume transformations
 
 bonus_intorder : int
-               input additional integration order
+  input additional integration order
 
 definedonelements : object
-                  input definedonelements
+  input definedonelements
 
 simd_evaluate : bool
-              input simd_evaluate. True -> tries to use SIMD for faster evaluation
+  input simd_evaluate. True -> tries to use SIMD for faster evaluation
 
 )raw_string")
           );

@@ -27,10 +27,41 @@ void ExportNgcompMesh (py::module &m)
     ;
   
   py::class_<ElementId> (m, "ElementId", 
-                         "an element identifier containing element number and Volume/Boundary flag")
-    .def(py::init<VorB,size_t>())
-    .def(py::init<size_t>())
-    .def(py::init<Ngs_Element>())
+                         docu_string(R"raw_string(
+An element identifier containing element number and Volume/Boundary flag
+
+3 __init__ overloads:
+
+1)
+
+Parameters:
+
+vb : ngsolve.comp.VorB
+  input Volume or Boundary (VOL, BND, BBND, BBBND)
+
+nr : int
+  input element number
+
+
+2)
+
+Parameters:
+
+nr : int
+  input element number
+
+
+3)
+
+Parameters:
+
+el : ngcomp::Ngs_Element
+  input Ngs element
+
+)raw_string"))
+    .def(py::init<VorB,size_t>(), py::arg("vb"), py::arg("nr"))
+    .def(py::init<size_t>(), py::arg("nr"))
+    .def(py::init<Ngs_Element>(), py::arg("el"))
     .def("__str__", &ToString<ElementId>)
     .def_property_readonly("nr", &ElementId::Nr, "the element number")    
     .def("VB", &ElementId::VB, "VorB of element")
@@ -40,8 +71,15 @@ void ExportNgcompMesh (py::module &m)
     ;
   
   m.def("BndElementId",[] (int nr) { return ElementId(BND,nr); },
-          py::arg("nr"),
-          "creates an element-id for a boundary element")
+          py::arg("nr"), docu_string(R"raw_string(
+Creates an element-id for a boundary element
+
+Parameters:
+
+nr : int
+  input Bnd element number
+
+)raw_string"))
     ;
 
 
