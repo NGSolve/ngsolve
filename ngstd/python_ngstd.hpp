@@ -358,12 +358,12 @@ void PyExportSymbolTable (py::module &m)
                                         {
                                           if (!self.Used(name)) throw py::index_error();
                                           return self[name]; 
-                                        })
+                                        }, py::arg("name"))
     .def("__getitem__", [](ST & self, int i) -> PY_T
                                          {
                                            if (i < 0 || i >= self.Size()) throw py::index_error();
                                            return self[i];  
-                                         })
+                                         }, py::arg("pos"))
     ;
 }  
 
@@ -378,17 +378,17 @@ template <> inline void PyExportSymbolTable<shared_ptr<double>, shared_ptr<doubl
     .def("__str__", &ToString<ST>)
     .def("__len__", &ST::Size)
     .def("__contains__", &ST::Used)
-    .def("GetName", [](ST & self, int i) { return string(self.GetName(i)); })
+    .def("GetName", [](ST & self, int i) { return string(self.GetName(i)); }, py::arg("pos"))
     .def("__getitem__", [](ST & self, string name)
                                         {
                                           if (!self.Used(name)) throw py::index_error();
                                           return *self[name]; 
-                                        })
+                                        }, py::arg("name"))
     .def("__getitem__", [](ST & self, int i)
                                          {
                                            if (i < 0 || i >= self.Size()) throw py::index_error();
                                            return *self[i];  
-                                         })
+                                         }, py::arg("pos"))
     ;
 }
 
