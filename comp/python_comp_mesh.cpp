@@ -86,7 +86,7 @@ nr : int
   
   py::class_<NodeId> (m, "NodeId",
                       "an node identifier containing node type and node nr")
-    .def(py::init<NODE_TYPE,size_t>())
+    .def(py::init<NODE_TYPE,size_t>(), py::arg("type"), py::arg("nr"))
     .def("__str__", &ToString<NodeId>)
     .def("__repr__", &ToString<NodeId>)
     .def(py::self!=py::self)
@@ -224,10 +224,10 @@ nr : int
   //////////////////////////////////////////////////////////////////////////////////////////
 
   py::class_<Region> (m, "Region", "a subset of volume or boundary elements")
-    .def(py::init<shared_ptr<MeshAccess>,VorB,string>())
-    .def(py::init<shared_ptr<MeshAccess>,VorB,BitArray>())
-    .def("Mask",[](Region & reg)->BitArray { return reg.Mask(); })
-    .def("VB", [](Region & reg) { return VorB(reg); })
+    .def(py::init<shared_ptr<MeshAccess>,VorB,string>(), py::arg("mesh"), py::arg("vb"), py::arg("name"))
+    .def(py::init<shared_ptr<MeshAccess>,VorB,BitArray>(), py::arg("mesh"), py::arg("vb"), py::arg("mask"))
+    .def("Mask",[](Region & reg)->BitArray { return reg.Mask(); }, "BitArray mask of the region")
+    .def("VB", [](Region & reg) { return VorB(reg); }, "VorB of the region")
     .def(py::self + py::self)
     .def(py::self + string())
     .def(py::self - py::self)
@@ -247,7 +247,7 @@ nr : int
 NGSolve interface to the Netgen mesh. Provides access and functionality
 to use the mesh for finite element calculations.
 
-Parameters
+Parameters:
 
 mesh (netgen.Mesh): a mesh generated from Netgen
 
@@ -391,12 +391,12 @@ mesh (netgen.Mesh): a mesh generated from Netgen
     
     .def ("GetTrafo",
           [](MeshAccess & ma, ElementId id)
-          { return &ma.GetTrafo(id, global_alloc); },
+          { return &ma.GetTrafo(id, global_alloc); }, py::arg("eid"),
           py::return_value_policy::take_ownership)
 
     .def("SetDeformation", 
 	 [](MeshAccess & ma, shared_ptr<GridFunction> gf)
-         { ma.SetDeformation(gf); },
+         { ma.SetDeformation(gf); }, py::arg("gf"),
          docu_string("Deform the mesh with the given GridFunction"))
 
     .def("UnsetDeformation", [](MeshAccess & ma){ ma.SetDeformation(nullptr);})
@@ -433,7 +433,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
                   if (std::regex_match (ma.GetMaterial(VOL,i), pattern))
                     ma.UnSetPML(i);
               }
-          })
+          }, py::arg("definedon"))
     
     .def("GetPMLTrafos", [](MeshAccess & ma) 
       {
@@ -574,7 +574,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
          [](MeshAccess & ma, ElementId id, int order)
          {
            ma.SetElOrder(id.Nr(), order);
-         }, "For backward compatibility, not recommended to use")
+         }, py::arg("eid"), py::arg("order"), "For backward compatibility, not recommended to use")
     
     .def("Curve", &MeshAccess::Curve,
          py::arg("order"),
@@ -689,7 +689,7 @@ can only be created by generator functions. Use PML(x, [y, z]) to evaluate the s
             return make_shared<SumPML<3>> (pml1,pml2);
           }
         throw Exception("No valid dimension");
-      })
+         }, py::arg("pml"))
     ;
 
   m.def("Radial", [](py::object _origin, double rad, Complex alpha) -> shared_ptr<PML>{
