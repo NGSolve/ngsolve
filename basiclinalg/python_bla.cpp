@@ -371,13 +371,14 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
                 },
             py::arg("length"),
           py::arg("complex")=false, docu_string(R"raw_string(
-Parameters
+
+Parameters:
 
 length : int
-       input length
+  input length
 
 complex : bool
-        input complex values
+  input complex values
 )raw_string")
            );
     m.def("Vector",
@@ -388,7 +389,8 @@ complex : bool
                                return v;
                              },
             py::arg("vals"), docu_string(R"raw_string(
-Parameters
+
+Parameters:
 
 vals : list
        input list of values
@@ -419,10 +421,11 @@ vals : list
                                throw Exception("cannot make a vector from tuple");
               },
             py::arg("vals"), docu_string(R"raw_string(
-Parameters
+Parameters:
 
 vals : tuple
        input tuple of values
+
 )raw_string")
            );
 
@@ -462,11 +465,11 @@ vals : tuple
         .def("__mul__" , [](FMC &self, FVD &v) { return Vector<Complex>(self*v); } )
         .def("__mul__" , [](FMC &self, double s) { return Matrix<Complex>(s*self); } )
         .def("__rmul__" , [](FMC &self, double s) { return Matrix<Complex>(s*self); } )
-        .def("Height", &FMC::Height )
-        .def("Width", &FMC::Width )
+          .def("Height", &FMC::Height, "Returns height of the matrix" )
+          .def("Width", &FMC::Width, "Returns width of the matrix" )
         .def("__len__", []( FMC& self) { return self.Height();}  )
-        .def_property_readonly("h", py::cpp_function(&FMC::Height ))
-        .def_property_readonly("w", py::cpp_function(&FMC::Width ))
+          .def_property_readonly("h", py::cpp_function(&FMC::Height ), "Height of the matrix")
+          .def_property_readonly("w", py::cpp_function(&FMC::Width ), "Width of the matrix")
         .def_property_readonly("A", py::cpp_function([](FMC &self) { return Vector<Complex>(FlatVector<Complex>( self.Width()* self.Height(), &self(0,0) )); }  ))
         .def_property_readonly("T", py::cpp_function([](FMC &self) { return Matrix<Complex>(Trans(self)); } ) )
         .def_property_readonly("C", py::cpp_function([](FMC &self) { 
@@ -487,12 +490,12 @@ vals : tuple
     PyDefMatBuffer<FMC>(class_FMC);
 
     auto class_MD = py::class_<Matrix<double>, FMD>(m, "MatrixD", py::buffer_protocol())
-        .def(py::init( [] (int n, int m) { return new Matrix<double>(n, m); }))
+      .def(py::init( [] (int n, int m) { return new Matrix<double>(n, m); }), py::arg("n"), py::arg("m"))
         ;
     PyDefMatBuffer<Matrix<>>(class_MD);
 
     auto class_MC = py::class_<Matrix<Complex>, FMC >(m, "MatrixC", py::buffer_protocol())
-        .def(py::init( [] (int n, int m) { return new Matrix<Complex>(n, m); }))
+      .def(py::init( [] (int n, int m) { return new Matrix<Complex>(n, m); }), py::arg("n"), py::arg("m"))
         ;
     PyDefMatBuffer<Matrix<Complex>>(class_MC);
 
@@ -523,23 +526,23 @@ vals : tuple
           py::arg("complex")=false, docu_string(R"raw_string(
 Creates a matrix of given height and width.
 
-Parameters
+Parameters:
 
 height : int
-       input height
+  input height
 
 width : int
-      input width
+  input width
 
 complex : bool
-        input complex values
+  input complex values
 
 )raw_string")
            );
 
     m.def("InnerProduct",
              [] (py::object x, py::object y) -> py::object
-                              { return py::object(x.attr("InnerProduct")) (y); });
+          { return py::object(x.attr("InnerProduct")) (y); }, py::arg("x"), py::arg("y"), "Compute InnerProduct");
 
     m.def("Norm",
              [] (py::object x) -> py::object
@@ -693,7 +696,7 @@ complex : bool
                                 }
 
                                 
-                              });
+                              }, py::arg("n"), py::arg("m"), py::arg("k"));
              }
 
 PYBIND11_MODULE(libngbla, m) {
