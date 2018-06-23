@@ -497,7 +497,8 @@ else_obj : object
   m.def("CoordCF", 
         [] (int direction)
         { return MakeCoordinateCoefficientFunction(direction); }, py::arg("direction"),
-        docu_string(R"raw_string(CoefficientFunction for x, y, z.
+        docu_string(R"raw_string(
+CoefficientFunction for x, y, z.
 
 Parameters:
 
@@ -739,7 +740,7 @@ val : can be one of the following:
     */
     .def_property("dims",
                   [] (shared_ptr<CF> self) { return Array<int>(self->Dimensions()); } ,
-                  [] (shared_ptr<CF> self, py::tuple tup) { self->SetDimensions(makeCArray<int>(tup)); } ,
+                  [] (shared_ptr<CF> self, py::tuple tup) { self->SetDimensions(makeCArray<int>(tup)); } , py::arg("tuple"),
                   "shape of CF:  (dim) for vector, (h,w) for matrix")
     
     .def_property_readonly("is_complex",
@@ -769,30 +770,30 @@ val : can be one of the following:
 
                                            int comp = c1 * dims[1] + c2;
                                            return MakeComponentCoefficientFunction (self, comp);
-                                         })
+                                         }, py::arg("components"))
 
     // coefficient expressions
-    .def ("__add__", [] (shared_ptr<CF> c1, shared_ptr<CF> c2) { return c1+c2; } )
+    .def ("__add__", [] (shared_ptr<CF> c1, shared_ptr<CF> c2) { return c1+c2; }, py::arg("cf") )
     .def ("__add__", [] (shared_ptr<CF> coef, double val)
            {
              return coef + make_shared<ConstantCoefficientFunction>(val);
-           })
+           }, py::arg("value"))
     .def ("__radd__", [] (shared_ptr<CF> coef, double val)
-           { return coef + make_shared<ConstantCoefficientFunction>(val); })
+          { return coef + make_shared<ConstantCoefficientFunction>(val); }, py::arg("value"))
 
     .def ("__sub__", [] (shared_ptr<CF> c1, shared_ptr<CF> c2)
-           { return c1-c2; })
+          { return c1-c2; }, py::arg("cf"))
 
     .def ("__sub__", [] (shared_ptr<CF> coef, double val)
-           { return coef - make_shared<ConstantCoefficientFunction>(val); })
+          { return coef - make_shared<ConstantCoefficientFunction>(val); }, py::arg("value"))
 
     .def ("__rsub__", [] (shared_ptr<CF> coef, double val)
-           { return make_shared<ConstantCoefficientFunction>(val) - coef; })
+          { return make_shared<ConstantCoefficientFunction>(val) - coef; }, py::arg("value"))
 
     .def ("__mul__", [] (shared_ptr<CF> c1, shared_ptr<CF> c2)
            {
              return c1*c2;
-           } )
+           }, py::arg("cf") )
 
     .def ("__pow__", [] (shared_ptr<CF> c1, int p)
            {
@@ -819,7 +820,7 @@ val : can be one of the following:
                return one/res;
              else
                return res;
-           } )
+           }, py::arg("exponent") )
 
     .def ("__pow__", binary_math_functions["pow"])
 
@@ -828,7 +829,7 @@ val : can be one of the following:
              GenericPow func;
 	     auto c2 = make_shared<ConstantCoefficientFunction>(val);
              return binary_math_functions["pow"](c1, c2);
-           } )  
+           }, py::arg("exponent") )  
 
     .def ("InnerProduct", [] (shared_ptr<CF> c1, shared_ptr<CF> c2)
            { 
@@ -855,9 +856,9 @@ cf : ngsolve.CoefficientFunction
     .def ("__mul__", [] (shared_ptr<CF> coef, double val)
            {
              return val * coef; 
-           })
+           }, py::arg("value"))
     .def ("__rmul__", [] (shared_ptr<CF> coef, double val)
-           { return val * coef; }
+          { return val * coef; }, py::arg("value")
            )
 
     .def ("__mul__", [] (shared_ptr<CF> coef, Complex val)
@@ -866,30 +867,30 @@ cf : ngsolve.CoefficientFunction
                return val.real() * coef;
              else
                return val * coef;
-           })
+           }, py::arg("value"))
     .def ("__rmul__", [] (shared_ptr<CF> coef, Complex val)
            { 
              if (val.imag() == 0)
                return val.real() * coef;
              else
                return val * coef;
-           })
+           }, py::arg("value"))
 
     .def ("__truediv__", [] (shared_ptr<CF> coef, shared_ptr<CF> coef2)
            { return coef/coef2;
-           })
+           }, py::arg("cf"))
 
     .def ("__truediv__", [] (shared_ptr<CF> coef, double val)
            // { return coef.Get() * make_shared<ConstantCoefficientFunction>(1/val); })
-           { return (1/val) * coef; })
+          { return (1/val) * coef; }, py::arg("value"))
 
     .def ("__truediv__", [] (shared_ptr<CF> coef, Complex val)
-           { return (1.0/val) * coef; })
+          { return (1.0/val) * coef; }, py::arg("value"))
 
     .def ("__rtruediv__", [] (shared_ptr<CF> coef, double val)
-           { return make_shared<ConstantCoefficientFunction>(val) / coef; })
+          { return make_shared<ConstantCoefficientFunction>(val) / coef; }, py::arg("value"))
     .def ("__rtruediv__", [] (shared_ptr<CF> coef, Complex val)
-           { return make_shared<ConstantCoefficientFunctionC>(val) / coef; })
+          { return make_shared<ConstantCoefficientFunctionC>(val) / coef; }, py::arg("value"))
 
     .def ("__neg__", [] (shared_ptr<CF> coef)
            { return -1.0 * coef; })
@@ -1038,22 +1039,25 @@ wait : bool
 
   typedef shared_ptr<ParameterCoefficientFunction> spParameterCF;
   py::class_<ParameterCoefficientFunction, spParameterCF, CF>
-    (m, "Parameter", docu_string(R"raw_string(CoefficientFunction with a modifiable value
+    (m, "Parameter", docu_string(R"raw_string(
+CoefficientFunction with a modifiable value
 
 Parameters:
 
 value : float
-    Parameter value
+  Parameter value
+
 )raw_string"))
     .def (py::init ([] (double val)
                     { return make_shared<ParameterCoefficientFunction>(val); }), py::arg("value"), "Construct a ParameterCF from a scalar")
     .def ("Set", [] (spParameterCF cf, double val)  { cf->SetValue (val); }, py::arg("value"),
-          docu_string(R"raw_string(modify parameter value.
+          docu_string(R"raw_string(
+Modify parameter value.
 
 Parameters:
 
 value : double
-    input scalar  
+  input scalar  
 
 )raw_string"))
     .def ("Get", [] (spParameterCF cf)  { return cf->GetValue(); },
@@ -1086,7 +1090,8 @@ value : double
   ExportStdMathFunction2<GenericATan2>(m, "atan2", "Four quadrant invere tangent in radians");
   ExportStdMathFunction2<GenericPow>(m, "pow", "Power");
 
-  py::class_<BSpline, shared_ptr<BSpline> > (m, "BSpline",R"raw(BSpline of arbitrary order
+  py::class_<BSpline, shared_ptr<BSpline> > (m, "BSpline",R"raw(
+BSpline of arbitrary order
 
 Parameters:
 
@@ -1106,7 +1111,7 @@ vals : list
             return make_shared<BSpline> (order,
                                          makeCArray<double> (knots),
                                          makeCArray<double> (vals));
-          }),
+          }), py::arg("order"), py::arg("knots"), py::arg("vals"),
         "B-Spline of a certain order, provide knot and value vectors")
     .def("__str__", &ToString<BSpline>)
     .def("__call__", &BSpline::Evaluate)
@@ -1223,7 +1228,7 @@ z : double
 Parameters:
 
 mip : ngsolve.BaseMappedIntegrationPoint
-    input mapped integration point
+  input mapped integration point
 
 )raw_string"))
     .def("CalcDShape",
@@ -1255,7 +1260,7 @@ Computes derivative of the shape in an integration point.
 Parameters:
 
 mip : ngsolve.BaseMappedIntegrationPoint
-    input mapped integration point
+  input mapped integration point
 
 )raw_string"))
     ;
@@ -1417,7 +1422,7 @@ weights : list
                                           if (nr < 0 || nr >= ir.Size())
                                             throw py::index_error();
                                           return ir[nr];
-                                        })
+                                        }, py::arg("nr"))
     .def("Integrate", [](IntegrationRule & ir, py::object func) -> py::object
           {
             py::object sum;
@@ -1445,7 +1450,7 @@ weights : list
                 first = false;
               }
             return sum;
-          }, py::arg("func"))
+          }, py::arg("func"), "Integrates a given function")
     .def_property_readonly("weights", [] (IntegrationRule& self)
                            {
                              py::list weights;
@@ -1577,7 +1582,8 @@ weights : list
     ;
 
   typedef BilinearFormIntegrator BFI;
-  auto bfi_class = py::class_<BFI, shared_ptr<BFI>> (m, "BFI", docu_string(R"raw_string(Bilinear Form Integrator
+  auto bfi_class = py::class_<BFI, shared_ptr<BFI>> (m, "BFI", docu_string(R"raw_string(
+Bilinear Form Integrator
 
 Parameters:
 
@@ -1678,7 +1684,7 @@ Returns requested evaluator
 Parameters:
 
 name : string
-     input name of requested evaluator
+  input name of requested evaluator
 
 )raw_string") )
     // .def("DefinedOn", &Integrator::DefinedOn)
@@ -1692,7 +1698,7 @@ Set the elements on which the bilinear form is defined on.
 Parameters:
 
 bitarray : ngsolve.ngstd.BitArray
-         input bitarray
+  input bitarray
 
 )raw_string") )
     .def("SetIntegrationRule", [] (shared_ptr<BFI> self, ELEMENT_TYPE et, IntegrationRule ir)
@@ -1891,11 +1897,16 @@ Set the integration rule for the linear form
 
 Parameters:
 
+et : ngsolve.fem.ET
+  input element type
+
+ir : ngsolve.fem.IntegrationRule
+  input integration rule
 
 )raw_string"))
 
     .def("CalcElementVector", 
-        static_cast<void(LinearFormIntegrator::*)(const FiniteElement&, const ElementTransformation&, FlatVector<double>, LocalHeap&)const>(&LinearFormIntegrator::CalcElementVector))
+         static_cast<void(LinearFormIntegrator::*)(const FiniteElement&, const ElementTransformation&, FlatVector<double>, LocalHeap&)const>(&LinearFormIntegrator::CalcElementVector), py::arg("fel"), py::arg("trafo"), py::arg("vec"), py::arg("lh"))
     .def("CalcElementVector",
          [] (shared_ptr<LFI>  self, const FiniteElement & fe, const ElementTransformation& trafo,
              size_t heapsize, bool complex)
