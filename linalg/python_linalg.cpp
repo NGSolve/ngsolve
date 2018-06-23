@@ -71,7 +71,7 @@ void ExportSparseMatrix(py::module m)
                   auto cindj = makeCArray<int>(indj);
                   auto cvalues = makeCArray<double>(values);
                   return SparseMatrix<double>::CreateFromCOO (cindi,cindj,cvalues, h,w);
-                })
+                }, py::arg("indi"), py::arg("indj"), py::arg("values"), py::arg("h"), py::arg("w"))
     
     .def("CreateTranspose", [] (const SparseMatrix<double> & sp)
          { return TransposeMatrix (sp); })
@@ -125,9 +125,9 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("ExchangeProcs", [] (const ParallelDofs & self)
          { return self.GetDistantProcs(); } )
     .def("Dof2Proc", [] (const ParallelDofs & self, int dof)
-         { return self.GetDistantProcs(dof); })
+         { return self.GetDistantProcs(dof); }, py::arg("dof"))
     .def("Proc2Dof", [] (const ParallelDofs & self, int proc)
-         { return self.GetExchangeDofs(proc); })
+         { return self.GetExchangeDofs(proc); }, py::arg("proc"))
     ;
 
     m.def("CreateVVector",
@@ -374,7 +374,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                        Array<shared_ptr<BaseVector>> v2;
                        for (auto v : vecs) v2 += v;
                        return make_shared<BlockVector> (v2);
-                     }))
+                     }), py::arg("vecs"))
     
     .def("__getitem__", [](BlockVector & self, int ind) { return self[ind]; })
     .def_property_readonly ("nblocks", [](const BlockVector & self) 
@@ -651,7 +651,7 @@ inverse : string
 
            auto pre = m.CreateBlockJacobiPrecond (make_shared<Table<int>> (move(blocktable)));
            return pre;
-         })
+         }, py::arg("blocks"))
      ;
 
   py::class_<S_BaseMatrix<double>, shared_ptr<S_BaseMatrix<double>>, BaseMatrix>
@@ -672,7 +672,7 @@ inverse : string
                          }
                        return make_shared<BlockMatrix> (m2);
                      }))
-    .def("__getitem__", [](BlockMatrix & self, int row, int col) { return self(row,row); })
+    .def("__getitem__", [](BlockMatrix & self, int row, int col) { return self(row,row); }, py::arg("row") , py::arg("col"))
     ;
 
 
@@ -692,7 +692,7 @@ inverse : string
 
   py::class_<FETI_Jump_Matrix, shared_ptr<FETI_Jump_Matrix>, BaseMatrix>
     (m, "FETI_Jump", "B-matrix of the FETI-system")
-    .def(py::init<shared_ptr<ParallelDofs>>())
+    .def(py::init<shared_ptr<ParallelDofs>>(), py::arg("parallel_dofs"))
     ;
 #endif
   
