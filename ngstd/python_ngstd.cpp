@@ -191,7 +191,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
   PyDefToString<FlatArray<double>>(m, class_flatarrayd);
   
   py::class_<Array<double>, FlatArray<double> >(m, "ArrayD")
-    .def(py::init([] (int n) { return new Array<double>(n); }))
+    .def(py::init([] (int n) { return new Array<double>(n); }), py::arg("n"))
     .def(py::init([] (std::vector<double> const & x)
                   {
                     int s = x.size();
@@ -199,7 +199,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
                     for (int i = 0; i < s; i++)
                       a[i] = x[i];
                     return a;
-                  }))
+                  }), py::arg("vec"))
     .def("__rand__" ,  []( Array<double> & a, shared_ptr<Archive> & arch )
                                          { cout << "output d array" << endl;
                                            *arch & a; return arch; })
@@ -221,7 +221,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
                     for (int i = 0; i < s; i++)
                       tmp[i] = x[i]; 
                     return tmp;
-                  }))
+                  }), py::arg("vec"))
     ;
 
   py::class_<FlatArray<size_t> > class_flatarrayst (m, "FlatArray_sizet", py::buffer_protocol());
@@ -258,13 +258,13 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
                                            if (i < 0 || i >= self.Size())
                                              throw py::index_error();
                                            return self.Test(i); 
-                                         })
+                                         }, py::arg("pos"))
     .def("__setitem__", [] (BitArray & self, int i, bool b) 
                                          {
                                            if (i < 0 || i >= self.Size())
                                              throw py::index_error();
                                            if (b) self.Set(i); else self.Clear(i); 
-                                         })
+                                         }, py::arg("pos"), py::arg("value"))
 
     .def("__setitem__", [] (BitArray & self, py::slice inds, bool b) 
                                          {
@@ -286,7 +286,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
                                                  for (size_t i=0; i<n; i++, start+=step)
                                                    self.Clear(start);
                                              }
-                                         })
+                                         }, py::arg("inds"), py::arg("value"))
     .def("NumSet", [] (BitArray & self) { return self.NumSet(); })
     .def("Set", [] (BitArray & self, py::object in)
                                    {
@@ -354,7 +354,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
         stringstream str(s);
         new (&self) Flags();
         self.LoadFlags(str);
-      })
+      }, py::arg("state"))
     .def("Set",[](Flags & self,const py::dict & aflags)->Flags&
     {      
       cout << "we call Set(dict)" << endl;
@@ -390,7 +390,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
       }, py::arg("name"))
   ;
 
-  m.def("TestFlagsConversion", []( Flags flags) { cout << flags << endl; }, py::arg("falgs") );
+  m.def("TestFlagsConversion", []( Flags flags) { cout << flags << endl; }, py::arg("flags") );
   py::implicitly_convertible<py::dict, Flags>();
 
   py::class_<ngstd::IntRange> py_intrange (m, "IntRange");
@@ -403,8 +403,8 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
 
   py::class_<Timer> (m, "Timer")
     .def(py::init<const string&>())
-    .def("Start", &Timer::Start)
-    .def("Stop", &Timer::Stop)
+    .def("Start", &Timer::Start, "start timer")
+    .def("Stop", &Timer::Stop, "stop timer")
     ;
   
   m.def("Timers",
