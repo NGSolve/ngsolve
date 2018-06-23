@@ -44,7 +44,7 @@ fr : double
                                      {
                                        mesh->SelectMesh();
                                        Ng_TclCmd ("set ::selectvisual mesh;\n");
-                                     }
+                                     }, py::arg("mesh")
              );
 
 
@@ -110,7 +110,7 @@ Set visualization options
 Parameters:
 
 deformation : object
-            input deformation
+  input deformation
 
 min : object
   input min
