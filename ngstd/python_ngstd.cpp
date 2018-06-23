@@ -213,7 +213,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
   class_flatarrayi.def(py::init<size_t, int *>());
 
   py::class_<Array<int>, FlatArray<int> >(m, "ArrayI")
-    .def(py::init([] (int n) { return new Array<int>(n); }))
+    .def(py::init([] (int n) { return new Array<int>(n); }),py::arg("n"))
     .def(py::init([] (std::vector<int> const & x)
                   {
                     int s = x.size();
@@ -241,8 +241,8 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
   
   py::class_<ngstd::BitArray, shared_ptr<BitArray>> (m, "BitArray")
     // .def(py::init<size_t>()) // not doing the right thing ????? JS
-    .def(py::init([] (size_t n) { return make_shared<BitArray>(n); }))
-    .def(py::init([] (const BitArray& a) { return make_shared<BitArray>(a); } ))
+    .def(py::init([] (size_t n) { return make_shared<BitArray>(n); }),py::arg("n"))
+    .def(py::init([] (const BitArray& a) { return make_shared<BitArray>(a); } ), py::arg("ba"))
     .def(py::init([] (const vector<bool> & a)
                   {
                     auto ba = make_shared<BitArray>(a.size());
@@ -250,7 +250,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
                     for (size_t i = 0; i < a.size(); i++)
                       if (a[i]) ba->Set(i);
                     return ba;
-                  } ))
+                  } ), py::arg("vec"))
     .def("__str__", &ToString<BitArray>)
     .def("__len__", &BitArray::Size)
     .def("__getitem__", [] (BitArray & self, int i) 
@@ -335,7 +335,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
           py::dict d(obj);          
           SetFlag (flags, "", d);
           return move(flags);
-        }))
+        }), py::arg("obj"))
     /*
     .def("__init__", [] (Flags &f, py::object & obj) {
          py::dict d(obj);
@@ -360,14 +360,14 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
       cout << "we call Set(dict)" << endl;
       SetFlag(self, "", aflags);
       return self;
-    })
+    }, py::arg("aflag"))
 
     .def("Set",[](Flags & self, const char * akey, const py::object & value)->Flags&
     {             
       cout << "we call Set(key,obj)" << endl; 
         SetFlag(self, akey, value);
         return self;
-    })
+    }, py::arg("akey"), py::arg("value"))
 
     .def("__getitem__", [](Flags & self, const string& name) -> py::object {
 
@@ -387,10 +387,10 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
 	    return py::cast(self.GetFlagsFlag(name));
 
 	  return py::cast(self.GetDefineFlag(name));
-	})
+      }, py::arg("name"))
   ;
 
-  m.def("TestFlagsConversion", []( Flags flags) { cout << flags << endl; } );
+  m.def("TestFlagsConversion", []( Flags flags) { cout << flags << endl; }, py::arg("falgs") );
   py::implicitly_convertible<py::dict, Flags>();
 
   py::class_<ngstd::IntRange> py_intrange (m, "IntRange");
@@ -460,10 +460,10 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
                            else
                              return make_shared<TextInArchive> (filename);
                          }
-                       }))
+                       }), py::arg("filename"), py::arg("write"), py::arg("binary"))
     .def("__and__" , [](shared_ptr<Archive> & self, Array<int> & a) 
                                          { cout << "output array" << endl;
-                                           *self & a; return self; })
+                                           *self & a; return self; }, py::arg("array"))
   ;
 
   m.def("RunWithTaskManager", 
@@ -475,7 +475,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
 Parameters:
 
 lam : object
-    input function
+  input function
 
 )raw_string"))
           ;
@@ -483,10 +483,10 @@ lam : object
   m.def("SetNumThreads", &TaskManager::SetNumThreads, py::arg("threads"), docu_string(R"raw_string(
 Set number of threads
 
-Parameters
+Parameters:
 
 threads : int
-        input number of threads
+  input number of threads
 
 )raw_string") );
 
@@ -520,7 +520,7 @@ threads : int
           size_t size = view.Size();
           pickler.attr("write")(py::bytes((char*) & size, sizeof(size_t)));
           pickler.attr("write")(py::memoryview(bi));
-        });
+        }, py::arg("pickler"), py::arg("view"));
   m.def("_UnpickleMemory", [](py::object unpickler)
         {
           auto size = *(size_t*) PyBytes_AsString(unpickler.attr("read")(sizeof(size_t)).ptr());
@@ -536,7 +536,7 @@ threads : int
           auto buffer = unpickler.attr("read")(size-n);
           memcpy(&mem[n], PyBytes_AsString(buffer.ptr()), size-n);
           unpickler.attr("append")(MemoryView(mem,size));
-        });
+        }, py::arg("unpickler"));
   py::class_<MemoryView>(m, "_MemoryView");
 
   
