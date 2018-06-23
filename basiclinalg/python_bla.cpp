@@ -24,7 +24,7 @@ void PyDefVecBuffer( TCLASS & c )
         auto numpy = py::module::import("numpy");
         auto frombuffer = numpy.attr("frombuffer");
         return frombuffer(self, py::detail::npy_format_descriptor<TSCAL>::dtype());
-    });
+      }, "Return NumPy object");
 }
 
 template<typename T, typename TCLASS>
@@ -46,7 +46,7 @@ void PyDefMatBuffer( TCLASS & c )
         auto numpy = py::module::import("numpy");
         auto frombuffer = numpy.attr("frombuffer");
         return frombuffer(self, py::detail::npy_format_descriptor<TSCAL>::dtype()).attr("reshape")(fv.Height(),fv.Width());
-    });
+      }, "Return NumPy object");
 }
 
 template <typename T, typename TNEW = T, typename TCLASS = py::class_<T> >
@@ -60,7 +60,7 @@ void PyVecAccess( py::module &m, TCLASS &c )
             for (int i=0; i<n; i++, start+=step)
                 res[i] = self[start];
             return res;
-            }  );
+          }, py::arg("inds"), "Return values at given positions"  );
         c.def("__getitem__", [](T &v, py::list ind )-> TNEW {
                 int n = py::len(ind);
                 TNEW res(n);
@@ -68,23 +68,23 @@ void PyVecAccess( py::module &m, TCLASS &c )
                     res[i] = v[ ind[i].cast<int>() ];
                 }
                 return res;
-            }  );
+          }, py::arg("ind"), "Return values at given positions"  );
         c.def("__setitem__", [](T &self, py::slice inds, const T & rv ) {
             size_t start, step, n;
             InitSlice( inds, self.Size(), start, step, n );
             for (int i=0; i<n; i++, start+=step)
                 self[start] = rv[i];
-            }  );
+          }, py::arg("inds"), py::arg("rv"), "Set values at given positions" );
         c.def("__setitem__", [](T &self, py::slice inds, TSCAL val ) {
             size_t start, step, n;
             InitSlice( inds, self.Size(), start, step, n );
             for (int i=0; i<n; i++, start+=step)
                 self[start] = val;
-            }  );
-        c.def("__add__" , [](T &self, T &v) { return TNEW(self+v); } );
-        c.def("__sub__" , [](T &self, T &v) { return TNEW(self-v); } );
-        c.def("__mul__" , [](T &self, TSCAL s) { return TNEW(s*self); } );
-        c.def("__rmul__" , [](T &self, TSCAL s) { return TNEW(s*self); } );
+          }, py::arg("inds"), py::arg("value"), "Set value at given positions" );
+        c.def("__add__" , [](T &self, T &v) { return TNEW(self+v); }, py::arg("vec") );
+        c.def("__sub__" , [](T &self, T &v) { return TNEW(self-v); }, py::arg("vec") );
+        c.def("__mul__" , [](T &self, TSCAL s) { return TNEW(s*self); }, py::arg("value") );
+        c.def("__rmul__" , [](T &self, TSCAL s) { return TNEW(s*self); }, py::arg("value") );
         c.def("InnerProduct",  [](T & x, T & y) { return InnerProduct (x, y); }, py::arg("y"), "Returns InnerProduct with other object");
         c.def("Norm",  [](T & x) { return L2Norm(x); }, "Returns L2-norm");
 }
@@ -297,19 +297,19 @@ void PyMatAccess( TCLASS &c )
         c.def_property("diag",
                 py::cpp_function([](TMAT &self) { return Vector<TSCAL>(self.Diag()); }),
                 py::cpp_function([](TMAT &self, const FlatVector<TSCAL> &v) { self.Diag() = v; }));
-        c.def("__add__" , [](TMAT &self, TMAT &m) { return TNEW(self+m); } );
-        c.def("__sub__" , [](TMAT &self, TMAT &m) { return TNEW(self-m); } );
-        c.def("__mul__" , [](TMAT &self, TMAT &m) { return TNEW(self*m); } );
-        c.def("__mul__" , [](TMAT &self, FlatVector<TSCAL> &v) { return Vector<TSCAL>(self*v); } );
-        c.def("__mul__" , [](TMAT &self, TSCAL s) { return TNEW(s*self); } );
-        c.def("__rmul__" , [](TMAT &self, TSCAL s) { return TNEW(s*self); } );
-        c.def("Height", &TMAT::Height );
-        c.def("Width", &TMAT::Width );
-        c.def_property_readonly("h", py::cpp_function(&TMAT::Height ));
-        c.def_property_readonly("w", py::cpp_function(&TMAT::Width ));
-        c.def_property_readonly("T", py::cpp_function([](TMAT &self) { return TNEW(Trans(self)); } ) );
-        c.def_property_readonly("A", py::cpp_function([](TMAT &self) { return Vector<TSCAL>(FlatVector<TSCAL>( self.Width()* self.Height(), &self(0,0)) ); } ) );
-        c.def("__len__", []( TMAT& self) { return self.Height();}  );
+        c.def("__add__" , [](TMAT &self, TMAT &m) { return TNEW(self+m); }, py::arg("mat") );
+        c.def("__sub__" , [](TMAT &self, TMAT &m) { return TNEW(self-m); }, py::arg("mat") );
+        c.def("__mul__" , [](TMAT &self, TMAT &m) { return TNEW(self*m); }, py::arg("mat") );
+        c.def("__mul__" , [](TMAT &self, FlatVector<TSCAL> &v) { return Vector<TSCAL>(self*v); }, py::arg("vec") );
+        c.def("__mul__" , [](TMAT &self, TSCAL s) { return TNEW(s*self); }, py::arg("values") );
+        c.def("__rmul__" , [](TMAT &self, TSCAL s) { return TNEW(s*self); }, py::arg("value") );
+        c.def("Height", &TMAT::Height, "Return height of matrix" );
+        c.def("Width", &TMAT::Width, "Return width of matrix" );
+        c.def_property_readonly("h", py::cpp_function(&TMAT::Height ), "Height of the matrix");
+        c.def_property_readonly("w", py::cpp_function(&TMAT::Width ), "Width of the matrix");
+        c.def_property_readonly("T", py::cpp_function([](TMAT &self) { return TNEW(Trans(self)); } ), "return transpose of matrix" );
+        c.def_property_readonly("A", py::cpp_function([](TMAT &self) { return Vector<TSCAL>(FlatVector<TSCAL>( self.Width()* self.Height(), &self(0,0)) ); } ), "return dimension of matrix (height*width)" );
+        c.def("__len__", []( TMAT& self) { return self.Height();}, "Return height of matrix"  );
 }
 
 
@@ -456,46 +456,46 @@ vals : tuple
         .def_property("diag",
                 py::cpp_function([](const FMC &self) { return Vector<Complex>(self.Diag()); }),
                 py::cpp_function([](FMC &self, const FVC &v) { self.Diag() = v; }))
-        .def("__add__" , [](FMC &self, FMD &m) { return Matrix<Complex>(self+m); } )
-        .def("__sub__" , [](FMC &self, FMD &m) { return Matrix<Complex>(self-m); } )
-        .def("__mul__" , [](FMC &self, FMD &m) { return Matrix<Complex>(self*m); } )
-        .def("__radd__" , [](FMC &self, FMD &m) { return Matrix<Complex>(self+m); } )
-        .def("__rsub__" , [](FMC &self, FMD &m) { return Matrix<Complex>(self-m); } )
-        .def("__rmul__" , [](FMC &self, FMD &m) { return Matrix<Complex>(m*self); } )
-        .def("__mul__" , [](FMC &self, FVD &v) { return Vector<Complex>(self*v); } )
-        .def("__mul__" , [](FMC &self, double s) { return Matrix<Complex>(s*self); } )
-        .def("__rmul__" , [](FMC &self, double s) { return Matrix<Complex>(s*self); } )
+          .def("__add__" , [](FMC &self, FMD &m) { return Matrix<Complex>(self+m); }, py::arg("mat") )
+        .def("__sub__" , [](FMC &self, FMD &m) { return Matrix<Complex>(self-m); }, py::arg("mat") )
+        .def("__mul__" , [](FMC &self, FMD &m) { return Matrix<Complex>(self*m); }, py::arg("mat") )
+        .def("__radd__" , [](FMC &self, FMD &m) { return Matrix<Complex>(self+m); }, py::arg("mat") )
+        .def("__rsub__" , [](FMC &self, FMD &m) { return Matrix<Complex>(self-m); }, py::arg("mat") )
+        .def("__rmul__" , [](FMC &self, FMD &m) { return Matrix<Complex>(m*self); }, py::arg("mat") )
+          .def("__mul__" , [](FMC &self, FVD &v) { return Vector<Complex>(self*v); }, py::arg("vec") )
+          .def("__mul__" , [](FMC &self, double s) { return Matrix<Complex>(s*self); }, py::arg("value") )
+          .def("__rmul__" , [](FMC &self, double s) { return Matrix<Complex>(s*self); }, py::arg("value") )
           .def("Height", &FMC::Height, "Returns height of the matrix" )
           .def("Width", &FMC::Width, "Returns width of the matrix" )
         .def("__len__", []( FMC& self) { return self.Height();}  )
           .def_property_readonly("h", py::cpp_function(&FMC::Height ), "Height of the matrix")
           .def_property_readonly("w", py::cpp_function(&FMC::Width ), "Width of the matrix")
-        .def_property_readonly("A", py::cpp_function([](FMC &self) { return Vector<Complex>(FlatVector<Complex>( self.Width()* self.Height(), &self(0,0) )); }  ))
-        .def_property_readonly("T", py::cpp_function([](FMC &self) { return Matrix<Complex>(Trans(self)); } ) )
+          .def_property_readonly("A", py::cpp_function([](FMC &self) { return Vector<Complex>(FlatVector<Complex>( self.Width()* self.Height(), &self(0,0) )); }  ))
+          .def_property_readonly("T", py::cpp_function([](FMC &self) { return Matrix<Complex>(Trans(self)); } ), "Return transpose of matrix" )
         .def_property_readonly("C", py::cpp_function([](FMC &self) { 
             Matrix<Complex> result( self.Height(), self.Width() );
             for (int i=0; i<self.Height(); i++)
                 for (int j=0; j<self.Width(); j++) 
                     result(i,j) = Conj(self(i,j));
             return result;
-            } ) )
+            } ), "Return conjugate matrix" )
         .def_property_readonly("H", py::cpp_function([](FMC &self) { 
             Matrix<Complex> result( self.Width(), self.Height() );
             for (int i=0; i<self.Height(); i++)
                 for (int j=0; j<self.Width(); j++) 
                     result(j,i) = Conj(self(i,j));
             return result;
-            } ) )
+            } ), "Return conjugate and transposed matrix" )
         ;
     PyDefMatBuffer<FMC>(class_FMC);
 
     auto class_MD = py::class_<Matrix<double>, FMD>(m, "MatrixD", py::buffer_protocol())
-      .def(py::init( [] (int n, int m) { return new Matrix<double>(n, m); }), py::arg("n"), py::arg("m"))
+      .def(py::init( [] (int n, int m) { return new Matrix<double>(n, m); }), py::arg("n"), py::arg("m"), "Makes matrix of dimension n x m")
         ;
     PyDefMatBuffer<Matrix<>>(class_MD);
 
     auto class_MC = py::class_<Matrix<Complex>, FMC >(m, "MatrixC", py::buffer_protocol())
-      .def(py::init( [] (int n, int m) { return new Matrix<Complex>(n, m); }), py::arg("n"), py::arg("m"))
+      .def(py::init( [] (int n, int m) { return new Matrix<Complex>(n, m); }), py::arg("n"), py::arg("m"), "Makes matrix of dimension n x m")
         ;
     PyDefMatBuffer<Matrix<Complex>>(class_MC);
 
