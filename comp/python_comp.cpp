@@ -283,7 +283,7 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
   //////////////////////////////////////////////////////////////////////////////////////////
 
   py::class_<ElementRange, IntRange> (m, "ElementRange")
-    .def(py::init<const MeshAccess&,VorB,IntRange>())
+    .def(py::init<const MeshAccess&,VorB,IntRange>(), py::arg("mesh"), py::arg("vb"), py::arg("range"))
     .def("__iter__", [] (ElementRange &er)
       { return py::make_iterator(er.begin(), er.end()); },
       py::keep_alive<0,1>()
@@ -386,7 +386,7 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
 		 [] (GlobalDummyVariables&, int numthreads)
 				  {
                                     TaskManager::SetNumThreads (numthreads);
-                                  })
+                                  }, py::arg("numthreads"))
     // &GlobalDummyVariables::SetTestoutFile)
     ;
 
@@ -1053,7 +1053,7 @@ rho : ngsolve.fem.CoefficientFunction
          [] (shared_ptr<FESpace> self, shared_ptr<FESpace> other)
          {
            return self == other;
-         })
+         }, py::arg("space"))
     ;
 
   py::class_<CompoundFESpace, shared_ptr<CompoundFESpace>, FESpace>
@@ -1787,10 +1787,10 @@ integrator : ngsolve.fem.BFI
 )raw_string"))
     
     .def("__iadd__",[](BF& self, shared_ptr<BilinearFormIntegrator> other) -> BilinearForm& { self += other; return self; }, py::arg("other") )
-    .def_property_readonly("space", [](BF& self) { return self.GetFESpace(); })
+    .def_property_readonly("space", [](BF& self) { return self.GetFESpace(); }, "fespace on which the bilinear form is defined on")
 
     .def_property_readonly("integrators", [](BF & self)
-                           { return MakePyTuple (self.Integrators()); })
+                           { return MakePyTuple (self.Integrators()); }, "integrators of the bilinear form")
     
     .def("Assemble", [](BF & self, bool reallocate)
          {
@@ -1833,7 +1833,7 @@ reallocate : bool
             auto au = self.GetMatrix().CreateVector();
             au = self.GetMatrix() * u.GetVector();
             return InnerProduct (au, v.GetVector());
-          })
+          }, py::arg("gfu"), py::arg("gfv"))
 
     .def("Energy",[](BF & self, shared_ptr<BaseVector> x)
           {
@@ -1925,7 +1925,7 @@ gf : ngsolve.comp.GridFunction
     .def_property_readonly("inner_matrix", [](BF & self)
                    {
                      return self.GetInnerMatrix();
-                   }
+                   }, "inner_matrix of the bilinear form"
                   )
     ;
 
@@ -2095,7 +2095,7 @@ integrator : ngsolve.fem.LFI
     */
     .def(py::init<> ([](shared_ptr<PDE> pde, Flags & flags)
                      { return new PyNumProc(pde, flags); }), py::arg("pde"), py::arg("flags"))
-    .def_property_readonly("pde", [](NumProc &self) { return self.GetPDE(); })
+    .def_property_readonly("pde", [](NumProc &self) { return self.GetPDE(); }, "PDE of the NumProc")
     .def("Do", [](NumProc & self, LocalHeap & lh)
                                {
                                  self.Do(lh);

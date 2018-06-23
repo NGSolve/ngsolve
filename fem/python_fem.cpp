@@ -644,10 +644,10 @@ direction : int
   py::class_<SpecialCoefficientFunctions> (m, "SpecialCFCreator")
     .def_property_readonly("mesh_size", 
                   &SpecialCoefficientFunctions::GetMeshSizeCF, "local mesh-size (approximate element diameter) as CF")
-    .def("normal", &SpecialCoefficientFunctions::GetNormalVectorCF,
+    .def("normal", &SpecialCoefficientFunctions::GetNormalVectorCF, py::arg("dim"),
          "depending on contents: normal-vector to geometry or element\n"
          "space-dimension must be provided")
-    .def("tangential", &SpecialCoefficientFunctions::GetTangentialVectorCF,
+    .def("tangential", &SpecialCoefficientFunctions::GetTangentialVectorCF, py::arg("dim"),
          "depending on contents: tangential-vector to element\n"
          "space-dimension must be provided")
     ;
@@ -1118,7 +1118,7 @@ vals : list
     .def("__call__", [](shared_ptr<BSpline> sp, shared_ptr<CF> coef)
           {
             return UnaryOpCF (coef, GenericBSpline(sp) /* , GenericBSpline(sp) */);
-          })
+          }, py::arg("cf"))
     .def("Integrate", 
          [](const BSpline & sp) { return make_shared<BSpline>(sp.Integrate()); }, "Integrate the BSpline")
     .def("Differentiate", 
@@ -1363,7 +1363,7 @@ order : int
                            {
                              return py::make_tuple(self.Point()[0], self.Point()[1], self.Point()[2]);
                            }, "Integration point coordinates as tuple, has always x,y and z component, which do not have meaning in lesser dimensions")
-    .def_property_readonly("weight", &IntegrationPoint::Weight)
+    .def_property_readonly("weight", &IntegrationPoint::Weight, "Weight of the integration point")
     ;
 
   py::class_<IntegrationRule>(m, "IntegrationRule", docu_string(R"raw_string(
@@ -1422,7 +1422,7 @@ weights : list
                                           if (nr < 0 || nr >= ir.Size())
                                             throw py::index_error();
                                           return ir[nr];
-                                        }, py::arg("nr"))
+                                        }, py::arg("nr"), "Return integration point at given position")
     .def("Integrate", [](IntegrationRule & ir, py::object func) -> py::object
           {
             py::object sum;
@@ -1524,15 +1524,15 @@ weights : list
             str << "measure = " << bmip.GetMeasure() << endl;
             return str.str();
           })
-    .def_property_readonly("measure", &BaseMappedIntegrationPoint::GetMeasure)
-    .def_property_readonly("point", &BaseMappedIntegrationPoint::GetPoint)
-    .def_property_readonly("jacobi", &BaseMappedIntegrationPoint::GetJacobian)
+    .def_property_readonly("measure", &BaseMappedIntegrationPoint::GetMeasure, "Measure of the mapped integration point ")
+    .def_property_readonly("point", &BaseMappedIntegrationPoint::GetPoint, "Point of the mapped integration point")
+    .def_property_readonly("jacobi", &BaseMappedIntegrationPoint::GetJacobian, "jacobian of the mapped integration point")
     // .def_property_readonly("trafo", &BaseMappedIntegrationPoint::GetTransformation)
-    .def_property_readonly("trafo", &BaseMappedIntegrationPoint::GetTransformation)
+    .def_property_readonly("trafo", &BaseMappedIntegrationPoint::GetTransformation, "Transformation of the mapped integration point")
     .def_property_readonly("elementid", [](BaseMappedIntegrationPoint & mip)
                                                {
                                                  return mip.GetTransformation().GetElementId();
-                                               })
+                                               }, "Element ID of the mapped integration point")
     ;
 
   py::class_<ElementTransformation, shared_ptr<ElementTransformation>>(m, "ElementTransformation")
@@ -1558,9 +1558,9 @@ weights : list
             }
         }),
         py::arg("et")=ET_TRIG,py::arg("vertices"))
-    .def_property_readonly("VB", &ElementTransformation::VB)
-    .def_property_readonly("spacedim", &ElementTransformation::SpaceDim)
-    .def_property_readonly("elementid", &ElementTransformation::GetElementId)
+    .def_property_readonly("VB", &ElementTransformation::VB, "VorB (VOL, BND, BBND, BBBND)")
+    .def_property_readonly("spacedim", &ElementTransformation::SpaceDim, "Space dimension of the element transformation")
+    .def_property_readonly("elementid", &ElementTransformation::GetElementId, "Element ID of the element transformation")
     .def ("__call__", [] (shared_ptr<ElementTransformation> self, double x, double y, double z)
            {
              
