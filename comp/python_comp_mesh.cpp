@@ -270,7 +270,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
     
     .def("__eq__",
          [] (shared_ptr<MeshAccess> self, shared_ptr<MeshAccess> other)
-         { return self == other; })
+         { return self == other; }, py::arg("mesh"))
     
     .def(py::pickle([](const MeshAccess& ma)
                     {
@@ -392,14 +392,14 @@ mesh (netgen.Mesh): a mesh generated from Netgen
     .def ("GetTrafo",
           [](MeshAccess & ma, ElementId id)
           { return &ma.GetTrafo(id, global_alloc); }, py::arg("eid"),
-          py::return_value_policy::take_ownership)
+          py::return_value_policy::take_ownership, "returns element transformation of given element id")
 
     .def("SetDeformation", 
 	 [](MeshAccess & ma, shared_ptr<GridFunction> gf)
          { ma.SetDeformation(gf); }, py::arg("gf"),
          docu_string("Deform the mesh with the given GridFunction"))
 
-    .def("UnsetDeformation", [](MeshAccess & ma){ ma.SetDeformation(nullptr);})
+    .def("UnsetDeformation", [](MeshAccess & ma){ ma.SetDeformation(nullptr);}, "Unset the deformation")
 
     .def("SetPML", 
 	 [](MeshAccess & ma,  shared_ptr<PML> apml, py::object definedon)
@@ -433,7 +433,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
                   if (std::regex_match (ma.GetMaterial(VOL,i), pattern))
                     ma.UnSetPML(i);
               }
-          }, py::arg("definedon"))
+          }, py::arg("definedon"), "Unset PML transformation on domain")
     
     .def("GetPMLTrafos", [](MeshAccess & ma) 
       {
