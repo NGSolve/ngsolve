@@ -83,14 +83,23 @@ namespace ngla
 	  }
 
     else if (inner)
-      for (int i = 0; i < n; i++)
-	for (int j = 0; j < a.GetRowIndices(i).Size(); j++)
-	  {
-	    int col = a.GetRowIndices(i)[j];
-	    if (col <= i)
-	      if ( (inner->Test(i) && inner->Test(col)) ) //  || i==col)
-		mdo->AddEdge (i, col);
-	  }
+      {
+        for (int i = 0; i < n; i++)
+          if (inner->Test(i))
+            for (auto col : a.GetRowIndices(i))
+              if (col <= i)
+                if (inner->Test(col)) //  || i==col)
+                  mdo->AddEdge (i, col);
+            /*
+            for (int j = 0; j < a.GetRowIndices(i).Size(); j++)
+              {
+                int col = a.GetRowIndices(i)[j];
+                if (col <= i)
+                if (inner->Test(col)) //  || i==col)
+                mdo->AddEdge (i, col);
+                }
+            */
+      }
 
     else 
       for (int i = 0; i < n; i++)
