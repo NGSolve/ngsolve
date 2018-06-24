@@ -1549,8 +1549,17 @@ namespace ngcomp
            {
              IntegrationRule ir(fel.ElementType(), 0);
              MappedIntegrationRule<DIM,DIM> mir(ir, trafo, lh);
+             
+             Mat<DIM,DIM> rhoi;
+             if (!rho)
+               rhoi = Identity(3);
+             else if (rho->Dimension() == 1)
+               rhoi = rho->Evaluate(mir[0]) * Identity(3);
+             else
+               rho -> Evaluate(mir[0], FlatVector<> (DIM*DIM, &rhoi(0,0)));
+             
              // Mat<DIM> trans = (1/mir[0].GetMeasure()) * Trans(mir[0].GetJacobian()) * mir[0].GetJacobian();
-             Mat<DIM> trans = mir[0].GetMeasure() * mir[0].GetJacobianInverse() * Trans(mir[0].GetJacobianInverse());
+             Mat<DIM> trans = mir[0].GetMeasure() * mir[0].GetJacobianInverse() * rhoi * Trans(mir[0].GetJacobianInverse());
              Mat<DIM> invtrans = Inv(trans);
              
              // double jac = mir[0].GetMeasure();
