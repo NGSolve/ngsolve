@@ -40,8 +40,15 @@ namespace ngla
     blocknr = 0;
     order = 0;
 
+    /*
     for (int i = 0; i < n; i++)
       vertices[i].Init(i);
+    */
+    ParallelForRange (n, [&] (IntRange r)
+                      {
+                        for (auto i : r)
+                          vertices[i].Init(i);
+                      });
   }
 
 
