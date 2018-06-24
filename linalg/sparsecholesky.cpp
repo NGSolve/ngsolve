@@ -63,9 +63,11 @@ namespace ngla
     mdo = new MinimumDegreeOrdering (n);
 
     if (inner)
-      for (int i = 0; i < n; i++)
-        if (!inner->Test(i))
-          mdo->SetUnusedVertex(i);
+      ParallelFor (n, [&] (size_t i)
+                   {
+                     if (!inner->Test(i))
+                       mdo->SetUnusedVertex(i);
+                   });
     if (cluster)
       for (int i = 0; i < n; i++)
         if (!(*cluster)[i])
@@ -281,8 +283,11 @@ namespace ngla
     order.SetSize (n);
     blocknrs.SetSize (nused);
     
-    // order: now inverse map 
-    order = -1;
+    // order: now inverse map
+    ParallelForRange (order.Size(), [&] (IntRange r)
+                      {
+                        order.Range(r) = -1;
+                      });
     for (int i = 0; i < nused; i++)
       order[aorder[i]] = i;
 
