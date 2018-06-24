@@ -728,7 +728,7 @@ namespace ngla
       first_in_class[i] = -1;
     */
     ParallelFor(size, [&](size_t i)
-                { list[i].degree = 0; });
+                { this->list[i].degree = 0; });
     ParallelFor(maxdeg, [&](size_t i)
                 { first_in_class[i] = -1; });
   }
