@@ -36,16 +36,22 @@ namespace ngla
        priqueue(an, an+1),
        ball(sizeof (CliqueEl), 1000)
   {
+    static Timer t("MinimumDegreeOrdering::ctor"); RegionTimer r(t);
+    /*
     cliques = NULL;
     blocknr = 0;
     order = 0;
-
+    */
     /*
     for (int i = 0; i < n; i++)
       vertices[i].Init(i);
     */
     ParallelForRange (n, [&] (IntRange r)
                       {
+                        cliques.Range(r) = NULL;
+                        blocknr.Range(r) = 0;
+                        order.Range(r) = 0;
+                        
                         for (auto i : r)
                           vertices[i].Init(i);
                       });
@@ -715,10 +721,16 @@ namespace ngla
   MDOPriorityQueue :: MDOPriorityQueue (int size, int maxdeg)
     : list(size), first_in_class(maxdeg)
   {
+    /*
     for (int i = 0; i < size; i++)
       list[i].degree = 0;
     for (int i = 0; i < maxdeg; i++)
       first_in_class[i] = -1;
+    */
+    ParallelFor(size, [&](size_t i)
+                { list[i].degree = 0; });
+    ParallelFor(maxdeg, [&](size_t i)
+                { first_in_class[i] = -1; });
   }
 
   MDOPriorityQueue :: ~MDOPriorityQueue ()

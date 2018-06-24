@@ -53,7 +53,7 @@ namespace ngla
     int nconnected;
 
     ///
-    MDOVertex()  { ; }
+    MDOVertex() = default;
     MDOVertex(int ma)  { Init (ma); }
     ///
     ~MDOVertex()   { ; }
