@@ -938,25 +938,28 @@ maxsteps : int
             }
         },
           py::arg("mata"), py::arg("matm"), py::arg("freedofs"), py::arg("vecs"), py::arg("shift")=DummyArgument(), docu_string(R"raw_string(
-An Arnoldi eigenvalue solver.
+Shift-and-invert Arnoldi eigenvalue solver
+
+Solves the generalized linear EVP A*u = M*lam*u using an Arnoldi iteration for the 
+shifted EVP (A-shift*M)^(-1)*M*u = lam*u with a Krylow space of dimension 2*len(vecs)+1.
+len(vecs) eigenpairs with the closest eigenvalues to the shift are returned.
 
 Parameters:
 
 mata : ngsolve.la.BaseMatrix
-  input matrix 
+  matrix A
 
 matm : ngsolve.la.BaseMatrix
-  input preconditioner matrix
+  matrix M
 
 freedofs : nsolve.ngstd.BitArray
-  input correct degrees of freedom
+  correct degrees of freedom
 
 vecs : list
-  input list of vectors
+  list of BaseVectors for writing eigenvectors
 
 shift : object
-  input shift parameter
-
+  complex or real shift
 )raw_string"));
   
   
