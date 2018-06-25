@@ -546,7 +546,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
 
   
   
-  m.def("MPI_Init", [&](py::object dummy_init)
+  m.def("MPI_Init", [&]()
         {
           const char * progname = "ngslib";
           typedef const char * pchar;
@@ -554,13 +554,9 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
           pchar * pptr = &ptrs[0];
           
           static MyMPI mympi(1, (char**)pptr);
-	  if(py::extract<bool>(dummy_init)()) cout << "init with dummy!!" << endl;
-	  else cout << "init no dummy!!" << endl;
-	  if(py::extract<bool>(dummy_init)()) return PyMPI_Comm(onlyme_comm);
           return PyMPI_Comm(ngs_comm);
-        },
-	py::arg("dummy_init") = DummyArgument());
-  
+        });
+
 }
 
 
