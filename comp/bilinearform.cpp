@@ -84,7 +84,8 @@ namespace ngcomp
     SetElmatEigenValues (flags.GetDefineFlag ("elmatev")); 
     SetTiming (flags.GetDefineFlag ("timing"));
     SetEliminateInternal (flags.GetDefineFlag ("eliminate_internal"));
-    SetKeepInternal (eliminate_internal && 
+    SetKeepInternal (eliminate_internal &&
+                     !flags.GetDefineFlagX ("keep_internal").IsFalse() &&
                      !flags.GetDefineFlag ("nokeep_internal"));
     SetStoreInner (flags.GetDefineFlag ("store_inner"));
     precompute = flags.GetDefineFlag ("precompute");
