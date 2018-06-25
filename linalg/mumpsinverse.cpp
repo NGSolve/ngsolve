@@ -424,6 +424,7 @@ namespace ngla
 			shared_ptr<const Array<int>> cluster,
 			shared_ptr<ParallelDofs> pardofs,
 			bool asymmetric)
+    : BaseMatrix(pardofs)
   { 
     static Timer timer ("Mumps Inverse");
     static Timer timer_analysis ("Mumps Inverse - analysis");
