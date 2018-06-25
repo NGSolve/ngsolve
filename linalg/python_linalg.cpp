@@ -691,6 +691,7 @@ inverse : string
     .def_property_readonly("local_mat", [](ParallelMatrix & mat) { return mat.GetMatrix(); })
     ;
 
+
   py::class_<FETI_Jump_Matrix, shared_ptr<FETI_Jump_Matrix>, BaseMatrix>
     (m, "FETI_Jump", "B-matrix of the FETI-system")
     .def(py::init<shared_ptr<ParallelDofs>>(),
@@ -728,10 +729,10 @@ inverse : string
     .def("Smooth", [&](BaseJacobiPrecond & jac, BaseVector & x, BaseVector & b)
          { jac.GSSmooth (x, b); },
          py::arg("x"), py::arg("b"),
-         "performs steps Gauss-Seidel iterations for the linear system A x = b")
+         "performs one step Gauss-Seidel iteration for the linear system A x = b")
     .def("SmoothBack", &BaseJacobiPrecond::GSSmoothBack,
          py::arg("x"), py::arg("b"),
-         "performs steps Gauss-Seidel iterations for the linear system A x = b in reverse order")
+         "performs one step Gauss-Seidel iteration for the linear system A x = b in reverse order")
     ;
 
   py::class_<SparseFactorization, shared_ptr<SparseFactorization>, BaseMatrix>
