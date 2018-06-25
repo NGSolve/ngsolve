@@ -673,6 +673,8 @@ inverse : string
                        return make_shared<BlockMatrix> (m2);
                      }))
     .def("__getitem__", [](BlockMatrix & self, int row, int col) { return self(row,row); })
+    .def_property_readonly("row_nblocks", [](BlockMatrix & mat) { return mat.BlockRows(); })
+    .def_property_readonly("col_nblocks", [](BlockMatrix & mat) { return mat.BlockCols(); })
     ;
 
 
@@ -692,7 +694,12 @@ inverse : string
 
   py::class_<FETI_Jump_Matrix, shared_ptr<FETI_Jump_Matrix>, BaseMatrix>
     (m, "FETI_Jump", "B-matrix of the FETI-system")
-    .def(py::init<shared_ptr<ParallelDofs>>())
+    .def(py::init<shared_ptr<ParallelDofs>>(),
+	 py::arg("pardofs"))
+    .def(py::init<shared_ptr<ParallelDofs>, shared_ptr<ParallelDofs>>(),
+	 py::arg("pardofs"), py::arg("u_pardofs"))
+    .def_property_readonly("row_pardofs", [](FETI_Jump_Matrix & mat) { return mat.GetRowParallelDofs(); })
+    .def_property_readonly("col_pardofs", [](FETI_Jump_Matrix & mat) { return mat.GetColParallelDofs(); })
     ;
 #endif
   
