@@ -55,13 +55,14 @@ void ExportSparseMatrix(py::module m)
            return py::make_tuple (move(ri), move(ci), move(vals));
          })
     
-    .def("CRS", [] (SparseMatrix<T> * sp) -> py::object
+    .def("CSR", [] (shared_ptr<SparseMatrix<T>> sp) -> py::object
          {
            FlatArray<int> colind(sp->NZE(), sp->GetRowIndices(0).Addr(0));
            FlatVector<T> values(sp->NZE(), sp->GetRowValues(0).Addr(0));
            FlatArray<size_t> first = sp->GetFirstArray();
-           return py::make_tuple (colind, values, first); 
-         })
+           return py::make_tuple (values, colind, first); 
+         },
+         py::return_value_policy::reference_internal)
     
     .def_static("CreateFromCOO",
                 [] (py::list indi, py::list indj, py::list values, size_t h, size_t w)
@@ -474,6 +475,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         else
           BaseMatrix::MultAdd(s, x, y);
       }
+
       void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override {
         pybind11::gil_scoped_acquire gil;
         pybind11::function overload = pybind11::get_overload(this, "MultTransAdd");
@@ -670,7 +672,7 @@ inverse : string
                          }
                        return make_shared<BlockMatrix> (m2);
                      }))
-    .def("__getitem__", [](BlockMatrix & self, int row, int col) { return self(row,col); })
+    .def("__getitem__", [](BlockMatrix & self, int row, int col) { return self(row,row); })
     .def_property_readonly("row_nblocks", [](BlockMatrix & mat) { return mat.BlockRows(); })
     .def_property_readonly("col_nblocks", [](BlockMatrix & mat) { return mat.BlockCols(); })
     ;
@@ -698,7 +700,6 @@ inverse : string
     .def_property_readonly("row_pardofs", [](FETI_Jump_Matrix & mat) { return mat.GetRowParallelDofs(); })
     .def_property_readonly("col_pardofs", [](FETI_Jump_Matrix & mat) { return mat.GetColParallelDofs(); })
     ;
-
 #endif
   
 
@@ -727,10 +728,10 @@ inverse : string
     .def("Smooth", [&](BaseJacobiPrecond & jac, BaseVector & x, BaseVector & b)
          { jac.GSSmooth (x, b); },
          py::arg("x"), py::arg("b"),
-         "performs one step Gauss-Seidel iteration for the linear system A x = b")
+         "performs steps Gauss-Seidel iterations for the linear system A x = b")
     .def("SmoothBack", &BaseJacobiPrecond::GSSmoothBack,
          py::arg("x"), py::arg("b"),
-         "performs one step Gauss-Seidel iteration for the linear system A x = b in reverse order")
+         "performs steps Gauss-Seidel iterations for the linear system A x = b in reverse order")
     ;
 
   py::class_<SparseFactorization, shared_ptr<SparseFactorization>, BaseMatrix>
