@@ -820,7 +820,7 @@ val : can be one of the following:
                return one/res;
              else
                return res;
-           }, py::arg("exponent") )
+           }, py::arg("base"), py::arg("exponent") )
 
     .def ("__pow__", binary_math_functions["pow"])
 
@@ -829,7 +829,7 @@ val : can be one of the following:
              GenericPow func;
 	     auto c2 = make_shared<ConstantCoefficientFunction>(val);
              return binary_math_functions["pow"](c1, c2);
-           }, py::arg("exponent") )  
+           }, py::arg("base"), py::arg("exponent") )  
 
     .def ("InnerProduct", [] (shared_ptr<CF> c1, shared_ptr<CF> c2)
            { 
