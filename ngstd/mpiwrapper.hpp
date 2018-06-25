@@ -30,7 +30,6 @@ namespace ngstd
 #ifdef PARALLEL
 
   extern MPI_Comm ngs_comm;
-  extern MPI_Comm onlyme_comm;
 
   enum { MPI_TAG_CMD = 110 };
   enum { MPI_TAG_SOLVE = 1110 };
@@ -329,7 +328,6 @@ namespace ngstd
 class MyMPI
 {
   bool initialized_by_me;
-  MPI_Group onlyme_group;
 public:
   MyMPI(int argc, char ** argv) 
   {
@@ -346,14 +344,6 @@ public:
     // MPI_Comm_dup ( MPI_COMM_WORLD, &ngs_comm);      
     ngs_comm = MPI_COMM_WORLD;
     NGSOStream::SetGlobalActive (MyMPI_GetId() == 0);
-
-    
-    MPI_Group ngs_group;
-    int rank = MyMPI_GetId(ngs_comm);
-    MPI_Comm_group(ngs_comm, &ngs_group);
-    MPI_Group_incl(ngs_group, 1, &rank, &onlyme_group);
-    MPI_Comm_create(ngs_comm, onlyme_group, &onlyme_comm);
-
     
     if (MyMPI_GetNTasks (ngs_comm) > 1)
       TaskManager::SetNumThreads (1);
@@ -361,14 +351,9 @@ public:
 
   ~MyMPI()
   {
-    MPI_Comm_free (&onlyme_comm);
-    MPI_Group_free (&onlyme_group);
-
-    if (!initialized_by_me) return; 
-
-    if(ngs_comm!=MPI_COMM_WORLD)
-      MPI_Comm_free(&ngs_comm);
-    MPI_Finalize ();
+    // MPI_Comm_free(& ngs_comm);
+    if (initialized_by_me)
+      MPI_Finalize ();
   }
 };
 
@@ -377,7 +362,6 @@ public:
   enum { MPI_COMM_WORLD = 12345, MPI_COMM_NULL = 0};
   typedef int MPI_Comm;
   NGS_DLL_HEADER extern MPI_Comm ngs_comm;
-  NGS_DLL_HEADER extern MPI_Comm onlyme_comm;
   
   typedef int MPI_Op;
   enum { MPI_SUM = 0, MPI_MIN = 1, MPI_MAX = 2 };
