@@ -670,8 +670,9 @@ inverse : string
                          }
                        return make_shared<BlockMatrix> (m2);
                      }))
-    
-    // .def("__getitem__", [](BlockMatrix & self, int row, int col) { return self(row,rol); })
+    .def("__getitem__", [](BlockMatrix & self, int row, int col) { return self(row,col); })
+    .def_property_readonly("row_nblocks", [](BlockMatrix & mat) { return mat.BlockRows(); })
+    .def_property_readonly("col_nblocks", [](BlockMatrix & mat) { return mat.BlockCols(); })
     ;
 
 
@@ -696,43 +697,6 @@ inverse : string
 	 py::arg("pardofs"), py::arg("u_pardofs"))
     .def_property_readonly("row_pardofs", [](FETI_Jump_Matrix & mat) { return mat.GetRowParallelDofs(); })
     .def_property_readonly("col_pardofs", [](FETI_Jump_Matrix & mat) { return mat.GetColParallelDofs(); })
-    ;
-
-  py::class_<FETIDP_Constraint_Matrix, shared_ptr<FETIDP_Constraint_Matrix>, BaseMatrix>
-    (m, "FETIDP_Constraints", "B-matrix (for primal constraints) of the FETI-DP-system")
-    .def("__init__", [](FETIDP_Constraint_Matrix* instance, py::object pydofs,
-			py::object pydps, py::object pyvals,
-			shared_ptr<ParallelDofs> pardofs) {
-	   auto n_mu = py::len(pyvals);
-	   TableCreator<size_t> cdofs(n_mu);
-	   TableCreator<int> cdps(n_mu);
-	   TableCreator<double> cvals(n_mu);
-	   auto it_pytable = [](auto & t, auto lam) {
-	     size_t rownr = 0;
-	     for(auto row:t) {
-	       for(auto v:row)
-		 lam(rownr, v);
-	       rownr++;
-	     }
-	   };
-	   while(!cdofs.Done()) {
-	     it_pytable(pydofs, [&cdofs](auto rownr, py::handle v) { cdofs.Add(rownr, v.cast<size_t>()); });
-	     it_pytable(pydps,  [&cdps ](auto rownr, py::handle v) { cdps.Add (rownr, v.cast<int>()); });
-	     it_pytable(pyvals, [&cvals](auto rownr, py::handle v) { cvals.Add(rownr, v.cast<double>()); });
-	     cdofs++; cdps++; cvals++;
-	   }
-	   auto dofs = cdofs.MoveTable();
-	   auto dps = cdps.MoveTable();
-	   auto vals = cvals.MoveTable();
-
-	   new (instance) FETIDP_Constraint_Matrix(dofs, dps, vals, pardofs);
-	 })
-    .def("GetRowParallelDofs", [](FETIDP_Constraint_Matrix & self) {
-	return self.GetRowParallelDofs();
-      })
-    .def("GetColParallelDofs", [](FETIDP_Constraint_Matrix & self) {
-	return self.GetColParallelDofs();
-      })
     ;
 
 #endif
