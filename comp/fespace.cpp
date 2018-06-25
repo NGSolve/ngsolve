@@ -960,6 +960,24 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
   }
 
+  void FESpace :: GetDofNrs (ElementId ei, Array<int> & dnums, COUPLING_TYPE ctype) const
+  {
+    ArrayMem<int,100> alldnums; 
+    GetDofNrs(ei, alldnums);
+    dnums.SetSize(0);
+    
+    if (ctofdof.Size() == 0)
+      {
+        if ( (INTERFACE_DOF & ctype) != 0)
+          dnums = alldnums;
+      }
+    else
+      for (auto d : alldnums)
+        if ( (d != -1) && ((ctofdof[d] & ctype) != 0) )
+          dnums.Append(d);
+  }
+
+
   void FESpace :: GetNodeDofNrs (NODE_TYPE nt, int nr, Array<int> & dnums) const
   {
     GetDofNrs(NodeId(nt,nr),dnums);
