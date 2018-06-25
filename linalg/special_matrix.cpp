@@ -403,7 +403,7 @@ namespace ngla
     for (size_t i = 0; i < h; i++)
       for (size_t j = 0; j < w; j++)
         {
-	  auto & spmat = mats[i][j];
+          auto & spmat = mats[i][j];
           if (spmat)
               spmat->MultAdd(s, *bvx[j], *bvy[i]);
         }
