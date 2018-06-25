@@ -63,9 +63,11 @@ namespace ngla
     mdo = new MinimumDegreeOrdering (n);
 
     if (inner)
-      for (int i = 0; i < n; i++)
-        if (!inner->Test(i))
-          mdo->SetUnusedVertex(i);
+      ParallelFor (n, [&] (size_t i)
+                   {
+                     if (!inner->Test(i))
+                       mdo->SetUnusedVertex(i);
+                   });
     if (cluster)
       for (int i = 0; i < n; i++)
         if (!(*cluster)[i])
@@ -83,14 +85,23 @@ namespace ngla
 	  }
 
     else if (inner)
-      for (int i = 0; i < n; i++)
-	for (int j = 0; j < a.GetRowIndices(i).Size(); j++)
-	  {
-	    int col = a.GetRowIndices(i)[j];
-	    if (col <= i)
-	      if ( (inner->Test(i) && inner->Test(col)) ) //  || i==col)
-		mdo->AddEdge (i, col);
-	  }
+      {
+        for (int i = 0; i < n; i++)
+          if (inner->Test(i))
+            for (auto col : a.GetRowIndices(i))
+              if (col <= i)
+                if (inner->Test(col)) //  || i==col)
+                  mdo->AddEdge (i, col);
+            /*
+            for (int j = 0; j < a.GetRowIndices(i).Size(); j++)
+              {
+                int col = a.GetRowIndices(i)[j];
+                if (col <= i)
+                if (inner->Test(col)) //  || i==col)
+                mdo->AddEdge (i, col);
+                }
+            */
+      }
 
     else 
       for (int i = 0; i < n; i++)
@@ -179,21 +190,22 @@ namespace ngla
       ParallelFor 
         (Range(n), [&](int i)
          {
-           for (int j = 0; j < a.GetRowIndices(i).Size(); j++)
-             {
-               int col = a.GetRowIndices(i)[j];
-               if (col <= i)
-                 {
-                   if ( (inner->Test(i) && inner->Test(col)) )
-                     SetOrig (i, col, a.GetRowValues(i)[j]);
-                   /*
-                   else
-                     if (i==col)
+           if (inner->Test(i))
+             for (int j = 0; j < a.GetRowIndices(i).Size(); j++)
+               {
+                 int col = a.GetRowIndices(i)[j];
+                 if (col <= i)
+                   {
+                     if (inner->Test(col))
+                       SetOrig (i, col, a.GetRowValues(i)[j]);
+                     /*
+                       else
+                       if (i==col)
                        SetOrig (i, col, id);
-                   */
-                 }
-             }
-         });
+                     */
+                   }
+               }
+         }, TasksPerThread(5));
     else
       for (int i = 0; i < n; i++)
 	{
@@ -271,8 +283,11 @@ namespace ngla
     order.SetSize (n);
     blocknrs.SetSize (nused);
     
-    // order: now inverse map 
-    order = -1;
+    // order: now inverse map
+    ParallelForRange (order.Size(), [&] (IntRange r)
+                      {
+                        order.Range(r) = -1;
+                      });
     for (int i = 0; i < nused; i++)
       order[aorder[i]] = i;
 
