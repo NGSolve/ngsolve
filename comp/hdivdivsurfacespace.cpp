@@ -377,9 +377,13 @@ namespace ngcomp
     //cout << "dirichlet_edge after" << endl << dirichlet_edge << endl;
 
 
-    // detect used/unused/coupling dofs
+    UpdateCouplingDofArray();
+  }
 
-    ctofdof.SetSize(this->GetNDof());
+
+  void  HDivDivSurfaceSpace :: UpdateCouplingDofArray ()
+  {
+    ctofdof.SetSize(ndof);
     ctofdof = UNUSED_DOF;
     Array<DofId> dofs;
     for (size_t i = 0; i < nel; i++)
