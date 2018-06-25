@@ -437,6 +437,8 @@ namespace ngfem
         if (DIM_ELEMENT == DIM_SPACE)
           {
             mip.SetNV(normal);
+            if (DIM_SPACE == 2)
+              mip.SetTV(Vec<2>(-normal(1),normal(0)));
           }
         else
           {
@@ -3273,6 +3275,8 @@ namespace ngfem
         if (DIM_ELEMENT == DIM_SPACE)
           {
             mip.SetNV(normal);
+            if (DIM_SPACE == 2)
+              mip.SetTV(Vec<2,SIMD<double>>(-normal(1),normal(0)));
           }
         else
           {

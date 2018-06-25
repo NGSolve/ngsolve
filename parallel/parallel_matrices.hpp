@@ -89,7 +89,7 @@ namespace ngla
   {
   public:
     FETI_Jump_Matrix (shared_ptr<ParallelDofs> pardofs, shared_ptr<ParallelDofs> au_paralleldofs = nullptr);
-
+    
     virtual bool IsComplex() const override { return false; }
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
@@ -99,47 +99,17 @@ namespace ngla
 
     shared_ptr<ParallelDofs> GetRowParallelDofs () const { return u_paralleldofs; }
     shared_ptr<ParallelDofs> GetColParallelDofs () const { return jump_paralleldofs; }
-
+    
     virtual int VHeight() const override { return paralleldofs->GetNDofLocal(); }
     virtual int VWidth()  const override { return jump_paralleldofs->GetNDofLocal(); }
 
-    
   protected:
 
     shared_ptr<ParallelDofs> jump_paralleldofs;
     shared_ptr<ParallelDofs> u_paralleldofs;
-    
+
   };
 
-
-  class FETIDP_Constraint_Matrix : public BaseMatrix
-  {
-  public:
-    FETIDP_Constraint_Matrix (const Table<size_t> & dofs, const Table<int> & dps,
-			      const Table<double> & vals, shared_ptr<ParallelDofs> pardofs);
-			      
-    virtual bool IsComplex() const override { return false; }
-    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
-    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
-    
-    virtual AutoVector CreateRowVector () const override;
-    virtual AutoVector CreateColVector () const override;
-
-    shared_ptr<ParallelDofs> GetRowParallelDofs () const { return GetParallelDofs(); }
-    shared_ptr<ParallelDofs> GetColParallelDofs () const { return mu_paralleldofs; }
-
-    virtual ostream & Print (ostream & ost) const override
-    {
-      ost << "FETI-DP constraints; matrix: " << endl;
-      ost << *mat << endl;
-      return ost;
-    }
-
-  protected:
-    shared_ptr<SparseMatrix<double> > mat;
-    shared_ptr<ParallelDofs> mu_paralleldofs;
-  };
-  
 #endif
 }
 

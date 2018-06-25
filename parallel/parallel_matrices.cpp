@@ -527,15 +527,15 @@ namespace ngla
   {
     
     size_t njs = 0;
-    for(auto p:paralleldofs->GetDistantProcs())
+    for (auto p:paralleldofs->GetDistantProcs())
       njs += paralleldofs->GetExchangeDofs(p).Size();
 
     Array<size_t> ones(njs);
     ones = 1;
     Table<int> dps(ones);
     njs = 0;
-    for(auto p:paralleldofs->GetDistantProcs()) {
-      for(auto d:paralleldofs->GetExchangeDofs(p)) {
+    for (auto p:paralleldofs->GetDistantProcs()) {
+      for (auto d:paralleldofs->GetExchangeDofs(p)) {
 	dps[njs++][0] = p;
       }
     }    
@@ -551,19 +551,19 @@ namespace ngla
     y.Distribute();
     size_t count = 0;
     /*
-    for(auto p:paralleldofs->GetDistantProcs()) {
+      for (auto p:paralleldofs->GetDistantProcs()) {
       auto exdofs = paralleldofs->GetExchangeDofs(p);
-      if(p<MyMPI_GetId(paralleldofs->GetCommunicator())) {
-	for(auto k:Range(exdofs.Size())) {
-	  y.FVDouble()[count++] -= s*x.FVDouble()[exdofs[k]];
-	}
+      if (p<MyMPI_GetId(paralleldofs->GetCommunicator())) {
+      for (auto k:Range(exdofs.Size())) {
+      y.FVDouble()[count++] -= s*x.FVDouble()[exdofs[k]];
+      }
       }
       else {
-	for(auto k:Range(exdofs.Size())) {
-	  y.FVDouble()[count++] += s*x.FVDouble()[exdofs[k]];
-	}
+      for (auto k:Range(exdofs.Size())) {
+      y.FVDouble()[count++] += s*x.FVDouble()[exdofs[k]];
       }
-    }
+      }
+      }
     */
     auto me = MyMPI_GetId(paralleldofs->GetCommunicator());
     auto fx = x.FVDouble();
@@ -580,15 +580,15 @@ namespace ngla
   {
     x.Cumulate();
     size_t count = 0;
-    for(auto p:paralleldofs->GetDistantProcs()) {
+    for (auto p:paralleldofs->GetDistantProcs()) {
       auto exdofs = paralleldofs->GetExchangeDofs(p);
-      if(p<MyMPI_GetId(paralleldofs->GetCommunicator())) {
-	for(auto k:Range(exdofs.Size())) {
+      if (p<MyMPI_GetId(paralleldofs->GetCommunicator())) {
+	for (auto k:Range(exdofs.Size())) {
 	  y.FVDouble()[exdofs[k]] -= s*x.FVDouble()[count++];
 	}
       }
       else {
-	for(auto k:Range(exdofs.Size())) {
+	for (auto k:Range(exdofs.Size())) {
 	  y.FVDouble()[exdofs[k]] += s*x.FVDouble()[count++];
 	}
       }
@@ -599,7 +599,7 @@ namespace ngla
   AutoVector FETI_Jump_Matrix :: CreateRowVector () const
   {
     // throw Exception("Called FETI_Jump_Matrix :: CreateRowVector, this is not well defined");
-    if(u_paralleldofs==nullptr) {
+    if (u_paralleldofs==nullptr) {
       return make_shared<VVector<double>>(VHeight());
     }
     return make_shared<ParallelVVector<double>> (u_paralleldofs->GetNDofLocal(),
@@ -611,77 +611,7 @@ namespace ngla
     return make_shared<ParallelVVector<double>> (jump_paralleldofs->GetNDofLocal(),
 						 jump_paralleldofs);
   }
-
-  FETIDP_Constraint_Matrix ::
-  FETIDP_Constraint_Matrix(const Table<size_t> & dofs, const Table<int> & dps,
-			   const Table<double> & vals, shared_ptr<ParallelDofs> pardofs)
-    : BaseMatrix(pardofs)
-  {
-    /** construct paralleldofs for constraint space **/
-    size_t n_mu = 0;
-    for(auto row:dps)
-      n_mu += row.Size();
-    Array<size_t> ndps(n_mu);
-    ndps = 1;
-    Table<int> mu_dps(ndps);
-    n_mu = 0;
-    for(auto row:dps) 
-      for(auto p:row)
-	mu_dps[n_mu++][0] = p;
-
-    this->mu_paralleldofs = make_shared<ParallelDofs>(pardofs->GetCommunicator(), move(mu_dps));
-    /** build constraint matrix **/
-    Array<int> nzepr(n_mu);
-    n_mu = 0;
-    for(auto k:Range(dps.Size())) {
-      auto rowp = dps[k];
-      auto rowd = dofs[k];
-      for(auto p:rowp) {
-	nzepr[n_mu++] = rowd.Size();
-      }
-    }
-    size_t n_u = paralleldofs->GetNDofLocal();
-    this->mat = make_shared<SparseMatrix<double>>(nzepr, n_u);
-    n_mu = 0;
-    auto rank = MyMPI_GetId(pardofs->GetCommunicator());
-    for(auto k:Range(dps.Size())) {
-      auto rowp = dps[k];
-      auto rowd = dofs[k];
-      for(auto p:rowp) {
-	auto ri = mat->GetRowIndices(n_mu);
-	ri = dofs[k];
-	auto rv = mat->GetRowValues(n_mu);
-	auto sign = (rank<p) ? 1 : -1; 
-	for(auto j:Range(rv.Size()))
-	  rv[j] = sign * vals[k][j];
-	n_mu++;
-      }
-    }
-    return;
-  }
   
-  AutoVector FETIDP_Constraint_Matrix :: CreateRowVector () const
-  { throw Exception("Called FETIDP_Constraint_Matrix :: CreateRowVector, this is not well defined"); }
-  
-  AutoVector FETIDP_Constraint_Matrix :: CreateColVector () const
-  {
-    return make_shared<ParallelVVector<double>> (mu_paralleldofs->GetNDofLocal(),
-						 mu_paralleldofs);
-  }
-  
-  void FETIDP_Constraint_Matrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
-  {
-    y.Distribute();
-    mat->MultAdd(s, x, y);
-    return;
-  }
-  
-  void FETIDP_Constraint_Matrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
-  {
-    x.Cumulate();
-    mat->MultTransAdd(s,x,y);
-    return;
-  }
   
 }
 
