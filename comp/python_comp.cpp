@@ -386,7 +386,7 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
 		 [] (GlobalDummyVariables&, int numthreads)
 				  {
                                     TaskManager::SetNumThreads (numthreads);
-                                  }, py::arg("numthreads"))
+                                  })
     // &GlobalDummyVariables::SetTestoutFile)
     ;
 
