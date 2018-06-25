@@ -641,6 +641,22 @@ direction : int
     }
   };
 
+  ExportStdMathFunction<GenericSin>(m, "sin", "Sine of argument in radians");
+  ExportStdMathFunction<GenericCos>(m, "cos", "Cosine of argument in radians");
+  ExportStdMathFunction<GenericTan>(m, "tan", "Tangent of argument in radians");
+  ExportStdMathFunction<GenericExp>(m, "exp", "Exponential function");
+  ExportStdMathFunction<GenericLog>(m, "log", "Logarithm function");
+  ExportStdMathFunction<GenericATan>(m, "atan", "Inverse tangent in radians");
+  ExportStdMathFunction<GenericACos>(m, "acos", "Inverse cosine in radians");
+  ExportStdMathFunction<GenericASin>(m, "asin", "Inverse sine in radians");
+  ExportStdMathFunction<GenericSqrt>(m, "sqrt", "Square root function");
+  ExportStdMathFunction<GenericFloor>(m, "floor", "Round to next lower integer");
+  ExportStdMathFunction<GenericCeil>(m, "ceil", "Round to next greater integer");
+  ExportStdMathFunction<GenericConj>(m, "Conj", "Conjugate imaginary part of complex number");
+
+  ExportStdMathFunction2<GenericATan2>(m, "atan2", "Four quadrant inverse tangent in radians");
+  ExportStdMathFunction2<GenericPow>(m, "pow", "Power function");
+
   py::class_<SpecialCoefficientFunctions> (m, "SpecialCFCreator")
     .def_property_readonly("mesh_size", 
                   &SpecialCoefficientFunctions::GetMeshSizeCF, "local mesh-size (approximate element diameter) as CF")
@@ -820,7 +836,7 @@ val : can be one of the following:
                return one/res;
              else
                return res;
-           }, py::arg("base"), py::arg("exponent") )
+           }, py::arg("exponent") )
 
     .def ("__pow__", binary_math_functions["pow"])
 
@@ -829,7 +845,7 @@ val : can be one of the following:
              GenericPow func;
 	     auto c2 = make_shared<ConstantCoefficientFunction>(val);
              return binary_math_functions["pow"](c1, c2);
-           }, py::arg("base"), py::arg("exponent") )  
+           }, py::arg("exponent") )  
 
     .def ("InnerProduct", [] (shared_ptr<CF> c1, shared_ptr<CF> c2)
            { 
@@ -1072,23 +1088,6 @@ value : double
                        return make_shared<ParameterCoefficientFunction>(val);
                      }))
     ;
-
-
-  ExportStdMathFunction<GenericSin>(m, "sin", "Sine of argument in radians");
-  ExportStdMathFunction<GenericCos>(m, "cos", "Cosine of argument in radians");
-  ExportStdMathFunction<GenericTan>(m, "tan", "Tangent of argument in radians");
-  ExportStdMathFunction<GenericExp>(m, "exp", "Exponential");
-  ExportStdMathFunction<GenericLog>(m, "log", "Logarithm");
-  ExportStdMathFunction<GenericATan>(m, "atan", "Inverse tangent in radians");
-  ExportStdMathFunction<GenericACos>(m, "acos", "Inverse cosine in radians");
-  ExportStdMathFunction<GenericASin>(m, "asin", "Inverse sine in radians");
-  ExportStdMathFunction<GenericSqrt>(m, "sqrt", "Square root");
-  ExportStdMathFunction<GenericFloor>(m, "floor", "Round to next lower integer");
-  ExportStdMathFunction<GenericCeil>(m, "ceil", "Round to next greater integer");
-  ExportStdMathFunction<GenericConj>(m, "Conj", "Conjugate imaginary part of complex number");
-
-  ExportStdMathFunction2<GenericATan2>(m, "atan2", "Four quadrant invere tangent in radians");
-  ExportStdMathFunction2<GenericPow>(m, "pow", "Power");
 
   py::class_<BSpline, shared_ptr<BSpline> > (m, "BSpline",R"raw(
 BSpline of arbitrary order
