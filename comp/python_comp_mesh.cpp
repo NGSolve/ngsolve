@@ -170,6 +170,21 @@ void ExportNgcompMesh (py::module &m)
                              return MakePyTuple(Substitute(el.Faces(), Nr2Face));
                            },
                            "tuple of global face numbers")
+    .def_property_readonly("facets", [](Ngs_Element &el)
+                           {
+                             switch (ElementTopology::GetSpaceDim(el.GetType()))
+                               {
+                               case 1:
+                                 return MakePyTuple(Substitute(el.Vertices(), Nr2Vert));
+                               case 2:
+                                 return MakePyTuple(Substitute(el.Edges(), Nr2Edge));
+                               case 3:
+                                 return MakePyTuple(Substitute(el.Faces(), Nr2Face));
+                               default:
+                                 throw Exception ("Illegal dimension in Ngs_Element.faces");
+                               }
+                           },
+                           "tuple of global face, edge or vertex numbers")
     .def_property_readonly("type", [](Ngs_Element &self)
         { return self.GetType(); },
         "geometric shape of element")
