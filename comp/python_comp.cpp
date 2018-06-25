@@ -16,6 +16,7 @@ typedef GridFunction GF;
 
 
 
+
 /*
 static size_t global_heapsize = 1000000;
 static LocalHeap glh(global_heapsize, "python-comp lh", true);
@@ -1796,6 +1797,7 @@ flags : dict
            return creator->creatorbf(bfa, flags, "noname-pre");
          }),
          py::arg("bf"), py::arg("type"))
+
     .def_static("__flags_doc__", [] ()
                 {
                   return py::dict
@@ -1808,7 +1810,6 @@ flags : dict
                 })
     .def ("Test", [](Preconditioner &pre) { pre.Test();}, py::call_guard<py::gil_scoped_release>())
     .def ("Update", [](Preconditioner &pre) { pre.Update();}, py::call_guard<py::gil_scoped_release>())
-    .def ("SetFreeDofs", [](Preconditioner &pre, shared_ptr<BitArray> fd) { pre.SetFreeDofs(fd); }, py::call_guard<py::gil_scoped_release>())
     .def_property_readonly("mat", [](Preconditioner &self)
                    {
                      return self.GetMatrixPtr();
@@ -2713,7 +2714,6 @@ flags : dict
 	 py::arg("mat"), py::arg("freedofs"))
      ;
 #endif
-   
   /////////////////////////////////////////////////////////////////////////////////////
 }
 
