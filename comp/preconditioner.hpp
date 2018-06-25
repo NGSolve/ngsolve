@@ -42,13 +42,6 @@ namespace ngcomp
 		    const string aname = "precond");
     Preconditioner (shared_ptr<BilinearForm> bfa, const Flags & aflags,
 		    const string aname = "precond");
-
-    virtual void SetFreeDofs (shared_ptr<BitArray> afree_dofs)
-    {
-      cerr << "Preconditioner :: SetFreeDofs is not implemented (dynamic type " << typeid(this).name() << ", name " << name << ")" << endl;
-      return;
-    }
-
     ///
     virtual ~Preconditioner ();
   
