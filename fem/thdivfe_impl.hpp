@@ -15,7 +15,7 @@ namespace ngfem
     -> TIP<2,AutoDiffRec<DIMR,SIMD<double>>>
   {
     TIP<2,AutoDiffRec<DIMR,SIMD<double>>> adp;      
-    Mat<2,DIMR,SIMD<double>> jac = mip.GetJacobian();
+    Mat<DIMR,2,SIMD<double>> jac = mip.GetJacobian();
     jac *= 1/mip.GetJacobiDet();
     const auto &ip = mip.IP();
     adp.x.Value() = ip(0);
