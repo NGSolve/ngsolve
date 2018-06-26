@@ -978,19 +978,10 @@ namespace ngfem
       AutoDiff<3,T> lam[4] = {xx, yy, zz, 1-xx-yy-zz};
       int ii = 0;
 
-      
-      
-      const FACE * faces = ElementTopology::GetFaces(ET_TET);
-
-      const EDGE * edges = ElementTopology::GetEdges(ET_TET);
-
       for (int i = 0; i < 6; i++)
         {
-          int es = edges[i][0], ee = edges[i][1];
-          if (vnums[es] > vnums[ee]) swap (es,ee);
-
- 
-          auto ls = lam[es], le = lam[ee];
+          INT<2> e = ET_trait<ET_TET>::GetEdgeSort (i, vnums);
+          auto ls = lam[e[0]], le = lam[e[1]];
 
           Vec<6> symdyadic = SymDyadProd(ls,le);
 
@@ -1004,14 +995,9 @@ namespace ngfem
         {
           for(int fa = 0; fa < 4; fa++)
             {
-              int fav[3] = {faces[fa][0], faces[fa][1], faces[fa][2]};
-          
-              //Sort vertices  first edge op minimal vertex
-              if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0], fav[1]);
-              if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1], fav[2]);
-              if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0], fav[1]);
+              INT<4> f = ET_trait<ET_TET>::GetFaceSort(fa, vnums);
+              auto ls = lam[f[0]], le = lam[f[1]], lt = lam[f[2]];
               
-              auto ls = lam[fav[0]], le = lam[fav[1]], lt = lam[fav[2]];
               Vec<6> symdyadic1 = lt.Value()*SymDyadProd(ls,le);
               Vec<6> symdyadic2 = ls.Value()*SymDyadProd(lt,le);
               Vec<6> symdyadic3 = le.Value()*SymDyadProd(ls,lt);
@@ -1371,18 +1357,34 @@ namespace ngfem
       AutoDiff<3,T> yy(y.Value(), &y.DValue(0));
       AutoDiff<3,T> lx[6] ={ xx, yy, 1-xx-yy};
       int ii = 0;
-      
 
-      const EDGE * edges = ElementTopology::GetEdges(ET_TRIG);
-
+      /*const EDGE * edges = ElementTopology::GetEdges(ET_TRIG);
       for (int i = 0; i < 3; i++)
         {
           int es = edges[i][0], ee = edges[i][1];
           if (vnums[es] > vnums[ee]) swap (es,ee);
-          
           auto ls = lx[es], le = lx[ee];
           Vec<6> symdyadic =  SymDyadProd(ls,le);
-          
+          LegendrePolynomial::EvalScaled(order, ls-le,ls+le,
+                                         SBLambda([&] (size_t nr, auto val)
+                                                  {
+                                                    shape[ii++] = val.Value()*symdyadic;
+                                                  }));
+                                                  }*/
+      //const FACE * faces = ElementTopology::GetFaces(ET_TET);
+      //int fav[3] ={0,1,2};
+      //Sort vertices  first edge op minimal vertex
+      //if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]);
+      //if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
+      //if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]);
+        
+
+      for( int i = 0; i < 3; i++)
+        {
+          INT<2> e = ET_trait<ET_TRIG>::GetEdgeSort (i, vnums);
+          auto ls = lx[e[0]], le = lx[e[1]];
+          Vec<6> symdyadic =  SymDyadProd(ls,le);
+              
           LegendrePolynomial::EvalScaled(order, ls-le,ls+le,
                                          SBLambda([&] (size_t nr, auto val)
                                                   {
@@ -1390,17 +1392,12 @@ namespace ngfem
                                                   }));
         }
 
-      const FACE * faces = ElementTopology::GetFaces(ET_TRIG);
+
       if (order > 0)
         {
-          int fav[3] = {faces[0][0], faces[0][1], faces[0][2]};
+          INT<4> f =  ET_trait<ET_TRIG>::GetFaceSort(0, vnums);
           
-          //Sort vertices  first edge op minimal vertex
-          if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0], fav[1]);
-          if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1], fav[2]);
-          if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0], fav[1]);
-          
-          auto ls = lx[fav[0]], le = lx[fav[1]], lt = lx[fav[2]];
+          auto ls = lx[f[0]], le = lx[f[1]], lt = lx[f[2]];
           Vec<6> symdyadic1 = lt.Value()*SymDyadProd(ls,le);
           Vec<6> symdyadic2 = ls.Value()*SymDyadProd(lt,le);
           Vec<6> symdyadic3 = le.Value()*SymDyadProd(ls,lt);
@@ -1413,8 +1410,6 @@ namespace ngfem
                                          shape[ii++] = val.Value()*symdyadic3;
                                        }));
         }
-
-      //cout << "ndof = " << ndof << ", ii = " << ii << endl;
      
     }
   };
