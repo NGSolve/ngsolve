@@ -4,6 +4,12 @@
 
 using namespace ngcomp;
 
+#ifdef PARALLEL
+const char * progname = "ngslib";
+const char* ptrs[2] = { progname, nullptr };
+const char** pptr = &ptrs[0];
+static MyMPI mympi(1, (char**)pptr);
+#endif
 
 TEST_CASE ("ElementVolume", "[elementvolume]")
 {

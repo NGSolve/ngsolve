@@ -1471,11 +1471,11 @@ namespace ngbla
     T & operator[] (size_t i) const { return data[i*dist];  }
     BareSliceVector<T> operator+(size_t i) const { return BareSliceVector<T> (data+i*dist, dist); }
     T * Addr (size_t i) const { return data+i*dist; }
-    BareSliceVector Range (size_t first, size_t next) const
+    SliceVector<T> Range (size_t first, size_t next) const
     {
-      return BareSliceVector (data+first*dist, dist);
+      return SliceVector<T> (next-first, dist, data+first*dist);
     }
-    BareSliceVector Range (T_Range<size_t> range) const
+    SliceVector<T> Range (T_Range<size_t> range) const
     {
       return Range(range.First(), range.Next());
     }    

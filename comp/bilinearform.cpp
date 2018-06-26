@@ -84,7 +84,8 @@ namespace ngcomp
     SetElmatEigenValues (flags.GetDefineFlag ("elmatev")); 
     SetTiming (flags.GetDefineFlag ("timing"));
     SetEliminateInternal (flags.GetDefineFlag ("eliminate_internal"));
-    SetKeepInternal (eliminate_internal && 
+    SetKeepInternal (eliminate_internal &&
+                     !flags.GetDefineFlagX ("keep_internal").IsFalse() &&
                      !flags.GetDefineFlag ("nokeep_internal"));
     SetStoreInner (flags.GetDefineFlag ("store_inner"));
     precompute = flags.GetDefineFlag ("precompute");
@@ -364,7 +365,7 @@ namespace ngcomp
                      if (!fespace->DefinedOn (vb, ma->GetElIndex(eid))) continue;
                      
                      if (vb == VOL && eliminate_internal)
-                       fespace->GetDofNrs (i, dnums, EXTERNAL_DOF);
+                       fespace->GetDofNrs (eid, dnums, EXTERNAL_DOF);
                      else
                        fespace->GetDofNrs (eid, dnums);
                      
@@ -448,7 +449,7 @@ namespace ngcomp
 		    if (!fespace2->DefinedOn (vb,ma->GetElIndex(eid))) continue;
 		    
 		    if (vb == VOL && eliminate_internal)
-		      fespace2->GetDofNrs (i, dnums, EXTERNAL_DOF);
+		      fespace2->GetDofNrs (eid, dnums, EXTERNAL_DOF);
 		    else
 		      fespace2->GetDofNrs (eid, dnums);
 		    
@@ -907,7 +908,7 @@ namespace ngcomp
                 else // not diagonal
                   {
                     ProgressOutput progress(ma,string("assemble ") + ToString(vb) + string(" element"), ma->GetNE(vb));
-                    if (vb == VOL && eliminate_internal && keep_internal)
+                    if ( (vb == VOL || (!VB_parts[VOL].Size() && vb==BND) ) && eliminate_internal && keep_internal)
                       {
                         harmonicext = make_shared<ElementByElementMatrix<SCAL>>(ndof, ne);
                         if (!symmetric)
@@ -1025,14 +1026,14 @@ namespace ngcomp
                              LapackEigenSystem(sum_elmat, lh);
                            }
                          
-                         if (vb == VOL && eliminate_internal)
+                         if ((vb == VOL || (!VB_parts[VOL].Size() && vb==BND) ) && eliminate_internal)
                            {
                              static Timer statcondtimer("static condensation", 2);
                              ThreadRegionTimer regstat (statcondtimer, TaskManager::GetThreadId());
                              
                              Array<int> idofs1(dnums.Size(), lh);
                              
-                             fespace->GetDofNrs (el.Nr(), idofs1, LOCAL_DOF);
+                             fespace->GetDofNrs (el, idofs1, CONDENSATABLE_DOF);
                              for (int j = 0; j < idofs1.Size(); j++)
                                idofs1[j] = dnums.Pos(idofs1[j]);
                              
@@ -1094,16 +1095,29 @@ namespace ngcomp
                                  else
                                    {
                                      Array<int> idnums1(dnums.Size(), lh), 
-                                       ednums1(dnums.Size(), lh);
-                                     fespace->GetDofNrs(el.Nr(),idnums1,LOCAL_DOF);
-                                     fespace->GetDofNrs(el.Nr(),ednums1,EXTERNAL_DOF);
+                                       ednums1(dnums.Size(), lh),
+                                       hdnums1(dnums.Size(), lh);
+                                     fespace->GetDofNrs(el,idnums1,CONDENSATABLE_DOF);
+                                     fespace->GetDofNrs(el,ednums1,EXTERNAL_DOF);
+                                     fespace->GetDofNrs(el,hdnums1,HIDDEN_DOF);
+                                     int count = 0;
+                                     for (auto dof : hdnums1)
+                                     {
+                                       while (idnums1[count] != dof)
+                                         count++;
+                                       idnums1[count] = -1;
+                                     }
                                      
                                      Array<int> idnums(dim*idnums1.Size(), lh);
                                      Array<int> ednums(dim*ednums1.Size(), lh);
                                      idnums.SetSize0(); 
                                      ednums.SetSize0();
                                      for (size_t j = 0; j < idnums1.Size(); j++)
-                                       idnums += dim*IntRange(idnums1[j], idnums1[j]+1);
+                                       if (idnums1[j] != -1)
+                                         idnums += dim*IntRange(idnums1[j], idnums1[j]+1);
+                                       else
+                                         for (size_t k = 0; k < dim; k++)
+                                           idnums += -1;
                                      for (size_t j = 0; j < ednums1.Size(); j++)
                                        ednums += dim * IntRange(ednums1[j], ednums1[j]+1);
                                      
@@ -2170,7 +2184,7 @@ namespace ngcomp
                   {
                     HeapReset hr(clh);
                     Array<int> dnums;
-                    fespace->GetDofNrs (i, dnums, LOCAL_DOF);            
+                    fespace->GetDofNrs (ElementId(VOL,i), dnums, LOCAL_DOF);            
                     FlatVector<SCAL> elu (dnums.Size(), clh);
                     elu = 0.0;
                     u.SetIndirect (dnums, elu);
@@ -2201,7 +2215,7 @@ namespace ngcomp
                      fespace->GetDofNrs (ei, dnums);
 
                      Array<int> idofs(dnums.Size(), lh);
-                     fespace->GetDofNrs (ei.Nr(), idofs, LOCAL_DOF);
+                     fespace->GetDofNrs (ei, idofs, LOCAL_DOF);
                      if (!idofs.Size()) return;
                      for (int j = 0; j < idofs.Size(); j++)
                        idofs[j] = dnums.Pos(idofs[j]);
@@ -2379,15 +2393,16 @@ namespace ngcomp
         for (auto pre : preconditioners)
           pre -> InitLevel(fespace->GetFreeDofs());
 
-        if (VB_parts[VOL].Size())
+        for (VorB vb : { VOL, BND, BBND, BBBND })
+          if (VB_parts[vb].Size())
           {
             RegionTimer reg(timervol);
-            ProgressOutput progress (ma, "assemble element", ma->GetNE());
+            ProgressOutput progress(ma,string("assemble ") + ToString(vb) + string(" element"), ma->GetNE(vb));
 
-            if (eliminate_internal && keep_internal)
+            if ( (vb == VOL || (!VB_parts[VOL].Size() && vb==BND) ) && eliminate_internal && keep_internal)
               {
                 size_t ndof = fespace->GetNDof();
-                size_t ne = ma->GetNE();
+                size_t ne = ma->GetNE(vb);
                 harmonicext = make_shared<ElementByElementMatrix<SCAL>>(ndof, ne);
                 if (!symmetric)
                   harmonicexttrans = make_shared<ElementByElementMatrix<SCAL>>(ndof, ne);
@@ -2399,7 +2414,7 @@ namespace ngcomp
               }
             
             IterateElements 
-              (*fespace, VOL, clh,  [&] (FESpace::Element el, LocalHeap & lh)
+              (*fespace, vb, clh,  [&] (FESpace::Element el, LocalHeap & lh)
                {
                  const FiniteElement & fel = fespace->GetFE (el, lh);
                  ElementTransformation & eltrans = ma->GetTrafo (el, lh);
@@ -2424,7 +2439,7 @@ namespace ngcomp
                  lin.GetIndirect (dnums, elveclin);
                  fespace->TransformVec (el, elveclin, TRANSFORM_SOL);
 
-                 for (auto & bfi : VB_parts[VOL])
+                 for (auto & bfi : VB_parts[vb])
                    {
                      if (!bfi->DefinedOn (el.GetIndex())) continue;
                      if (!bfi->DefinedOnElement (el.Nr())) continue;
@@ -2435,8 +2450,15 @@ namespace ngcomp
                          
                          if (printelmat) 
                            {
+                             lock_guard<mutex> guard(addelmatboundary1_mutex);
                              testout->precision(8);
-                             (*testout) << "elnum= " << el.Nr() << endl;
+                             if (vb != VOL)
+                               {
+                                 (*testout) << "surface-elnum = " << el.Nr() << endl;
+                                 (*testout) << "boundary = " << ma->GetMaterial (el) << endl;
+                               }
+                             else
+                               (*testout) << "elnum = " << el.Nr() << endl;
                              (*testout) << "eltype " << fel.ElementType() << endl;
                              (*testout) << "integrator " << bfi->Name() << endl;
                              (*testout) << "dnums = " << endl << dnums << endl;
@@ -2459,7 +2481,7 @@ namespace ngcomp
                      
                      sum_elmat += elmat;
                    }
-
+                 
                  
                  fespace->TransformMat (el, sum_elmat, TRANSFORM_MAT_LEFT_RIGHT);
                  
@@ -2467,7 +2489,7 @@ namespace ngcomp
                    *testout << "summat = " << sum_elmat << endl;
                  
 
-                 if (eliminate_internal)
+                 if ((vb == VOL || (!VB_parts[VOL].Size() && vb==BND) ) && eliminate_internal)
                    {
                      static Timer statcondtimer("static condensation", 2);
                      RegionTimer regstat (statcondtimer);
@@ -2475,7 +2497,7 @@ namespace ngcomp
                      ArrayMem<int,100> idofs, idofs1, odofs;
                      int i = el.Nr();
 
-                     fespace->GetDofNrs (i, idofs1, LOCAL_DOF);
+                     fespace->GetDofNrs (el, idofs1, CONDENSATABLE_DOF);
                      for (int j = 0; j < idofs1.Size(); j++)
                        idofs1[j] = dnums.Pos(idofs1[j]);
                           
@@ -2485,7 +2507,7 @@ namespace ngcomp
                          *testout << "idofs1 = " << idofs1 << endl;
                        }
                      
-                     
+                    
                      if (idofs1.Size())
                        {
                          HeapReset hr (lh);
@@ -2511,7 +2533,7 @@ namespace ngcomp
                              (*testout) << "idofs = " << endl << idofs << endl;
                              (*testout) << "odofs = " << endl << odofs << endl;
                            }
-                         
+
                          FlatMatrix<SCAL> a(sizeo, sizeo, lh);
                          FlatMatrix<SCAL> b(sizeo, sizei, lh);
                          FlatMatrix<SCAL> c(sizeo, sizei, lh);
@@ -2533,16 +2555,27 @@ namespace ngcomp
                          else
                            {
                              ArrayMem<int,50> idnums1, idnums;
+                             ArrayMem<int,50> hdnums1;
                              ArrayMem<int,50> ednums1, ednums;
                              
-                             fespace->GetDofNrs(i,idnums1,LOCAL_DOF);
-                             fespace->GetDofNrs(i,ednums1,EXTERNAL_DOF);
+                             fespace->GetDofNrs(el,idnums1,CONDENSATABLE_DOF);
+                             fespace->GetDofNrs(el,ednums1,EXTERNAL_DOF);
+                             fespace->GetDofNrs(el,hdnums1,HIDDEN_DOF);
+
+                             
+                             int count = 0;
+                             for (auto dof : hdnums1)
+                             {
+                               while (idnums1[count] != dof)
+                                 count++;
+                               idnums1[count] = -1;
+                             }
                              
                              for (int j = 0; j < idnums1.Size(); j++)
                                idnums += dim*IntRange(idnums1[j], idnums1[j]+1);
                              for (int j = 0; j < ednums1.Size(); j++)
                                ednums += dim * IntRange(ednums1[j], ednums1[j]+1);
-                             
+
                              if (store_inner)
                                static_cast<ElementByElementMatrix<SCAL>*>(innermatrix.get())
                                       ->AddElementMatrix(i,idnums,idnums,d);
@@ -2552,6 +2585,7 @@ namespace ngcomp
                              he=0.0;
                              LapackMultAddABt (d, c, -1, he);
                              // he = -1.0 * d * Trans(c);
+                             
                              static_cast<ElementByElementMatrix<SCAL>*>(harmonicext.get())
                                ->AddElementMatrix(i,idnums,ednums,he);
                                   
@@ -2587,70 +2621,10 @@ namespace ngcomp
                  for (auto pre : preconditioners)
                    pre -> AddElementMatrix (dnums, sum_elmat, el, lh);
                });
-            
+
             progress.Done();
           }
-
-        for (auto vb : { BND, BBND, BBBND })
-        if (VB_parts[vb].Size())
-          {
-            RegionTimer reg(timerbound);
-            ProgressOutput progress (ma, "assemble surface element", ma->GetNE(vb));
-
-            IterateElements 
-              (*fespace, vb, clh,  [&] (FESpace::Element el, LocalHeap & lh)
-               {
-                 progress.Update();
-                 
-                 const FiniteElement & fel = fespace->GetFE (el, lh);
-                 ElementTransformation & eltrans = ma->GetTrafo (el, lh);
-                 Array<int> dnums(fel.GetNDof(), lh);
-                 fespace->GetDofNrs (el, dnums);
-
-                 for (auto d : dnums)
-                   if (d != -1) useddof[d] = true;
-
-                 FlatVector<SCAL> elveclin (dnums.Size()*fespace->GetDimension(), lh);
-                 FlatMatrix<SCAL> elmat (dnums.Size()*fespace->GetDimension(), lh);
-                 FlatMatrix<SCAL> sum_elmat (dnums.Size()*fespace->GetDimension(), lh);
-                 sum_elmat = SCAL(0.0);
-                  
-                 lin.GetIndirect (dnums, elveclin);
-                 fespace->TransformVec (el, elveclin, TRANSFORM_SOL);
-
-                 for (auto & bfi : VB_parts[vb])
-                   {
-                     if (!bfi->DefinedOn (el.GetIndex())) continue;
-                     if (!bfi->DefinedOnElement (el.Nr())) continue;
-                     
-                     bfi->CalcLinearizedElementMatrix (fel, eltrans, elveclin, elmat, lh);
-                     
-                     fespace->TransformMat (el, elmat, TRANSFORM_MAT_LEFT_RIGHT);
-                     
-                     sum_elmat += elmat;
-                        
-                     if (printelmat) 
-                       {
-                         lock_guard<mutex> guard(addelmatboundary1_mutex);
-                         testout->precision(8);
-                         (*testout) << "surface-elnum= " << el.Nr() << endl;
-                         (*testout) << "eltype " << fel.ElementType() << endl;
-                         (*testout) << "boundary = " << ma->GetMaterial (el) << endl;
-                         (*testout) << "integrator " << bfi->Name() << endl;
-                         (*testout) << "dnums = " << endl << dnums << endl;
-                         (*testout) << "elveclin = " << endl << elveclin << endl;
-                         (*testout) << "elmat = " << endl << elmat << endl;
-                       }
-                   }
-                 
-                 AddElementMatrix (dnums, dnums, sum_elmat, el, lh);
-                 
-                 for (auto pre : preconditioners)
-                   pre -> AddElementMatrix (dnums, sum_elmat, el, lh);
-               });
-            progress.Done();
-          }
-        
+    
 
         if (facetwise_skeleton_parts[VOL].Size())
           throw Exception ("CalcLinearization for facet-wise skeleton-VOL not implemented");
@@ -3509,6 +3483,9 @@ namespace ngcomp
                            
                            continue;
                          } // end if boundary facet
+                       
+                       if (facetwise_skeleton_parts[VOL].Size() == 0)
+                         continue;
                        
                        // timerDG2.Start();
                        // timerDG2a.Start();

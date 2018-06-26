@@ -54,7 +54,16 @@ void ExportSparseMatrix(py::module m)
            // moves the arrays
            return py::make_tuple (move(ri), move(ci), move(vals));
          })
-
+    
+    .def("CSR", [] (shared_ptr<SparseMatrix<T>> sp) -> py::object
+         {
+           FlatArray<int> colind(sp->NZE(), sp->GetRowIndices(0).Addr(0));
+           FlatVector<T> values(sp->NZE(), sp->GetRowValues(0).Addr(0));
+           FlatArray<size_t> first = sp->GetFirstArray();
+           return py::make_tuple (values, colind, first); 
+         },
+         py::return_value_policy::reference_internal)
+    
     .def_static("CreateFromCOO",
                 [] (py::list indi, py::list indj, py::list values, size_t h, size_t w)
                 {
@@ -90,6 +99,20 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 #ifdef PARALLEL
     .def("SubSet", [](const ParallelDofs & self, shared_ptr<BitArray> take_dofs) { 
         return self.SubSet(take_dofs); })
+    .def(py::init([](py::object procs, PyMPI_Comm comm) {
+	  size_t n = py::len(procs);
+	  TableCreator<int> ct(n);
+	  while (!ct.Done()) {
+	    size_t rn = 0;
+	    for (auto row:procs) {
+	      for (auto v:row)
+		ct.Add(rn,v.cast<int>()); 
+	      rn++;
+	    }
+	    ct++;
+	  }
+	  return new ParallelDofs(comm.comm, ct.MoveTable());
+	}), "dist_procs"_a, "comm"_a)
 #endif
     .def_property_readonly ("ndoflocal", [](const ParallelDofs & self) 
 			    { return self.GetNDofLocal(); },
@@ -111,6 +134,20 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
           [] (size_t s, bool is_complex, int es) -> shared_ptr<BaseVector>
           { return CreateBaseVector(s,is_complex, es); },
           "size"_a, "complex"_a=false, "entrysize"_a=1);
+
+    m.def("CreateParallelVector",
+          [] (shared_ptr<ParallelDofs> pardofs, bool is_complex, int es) -> shared_ptr<BaseVector>
+          {
+#ifdef PARALLEL
+	    if(is_complex)
+	      return make_shared<ParallelVVector<Complex>>(pardofs->GetNDofLocal(), pardofs, CUMULATED);
+	    else
+	      return make_shared<ParallelVVector<double>>(pardofs->GetNDofLocal(), pardofs, CUMULATED);
+#else
+	    return make_shared<VVector<double>>(pardofs->GetNDofLocal());
+#endif
+	  },
+          py::arg("pardofs"), "complex"_a=false, "entrysize"_a=1);
     
   py::class_<BaseVector, shared_ptr<BaseVector>>(m, "BaseVector",
         py::dynamic_attr() // add dynamic attributes
@@ -118,6 +155,17 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def(py::init([] (size_t s, bool is_complex, int es) -> shared_ptr<BaseVector>
                   { return CreateBaseVector(s,is_complex, es); }),
                   "size"_a, "complex"_a=false, "entrysize"_a=1)
+#ifdef PARALLEL
+    .def_property_readonly("local_vec", [](BaseVector & self) -> shared_ptr<BaseVector> {
+	auto * pv = dynamic_cast_ParallelBaseVector (&self);
+	if (pv==NULL) throw Exception("Only ParallelVectors have a local Vector!");
+	return pv->GetLocalVector();
+      } )
+#else
+    .def_property_readonly("local_vec", [](BaseVector & self) -> shared_ptr<BaseVector> {
+	throw Exception("Only ParallelVectors have a local Vector!");
+      } )
+#endif
     .def(py::pickle([] (const BaseVector& bv)
                     {
                       MemoryView mv((void*) &bv.FVDouble()[0], sizeof(double) * bv.FVDouble().Size());
@@ -329,6 +377,9 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                      }))
     
     .def("__getitem__", [](BlockVector & self, int ind) { return self[ind]; })
+    .def_property_readonly ("nblocks", [](const BlockVector & self) 
+			    { return self.NBlocks(); },
+                            "number of blocks in BlockVector")
     ;
 
 
@@ -370,6 +421,30 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
             );
       }
       
+      AutoVector CreateRowVector () const override {
+        PYBIND11_OVERLOAD_PURE(
+           shared_ptr<BaseVector>, /* Return type */
+           BaseMatrix,             /* Parent class */
+           CreateRowVector,        /* Name of function */
+           );
+      }
+
+      AutoVector CreateColVector () const override {
+        PYBIND11_OVERLOAD_PURE(
+           shared_ptr<BaseVector>, /* Return type */
+           BaseMatrix,             /* Parent class */
+           CreateColVector,        /* Name of function */
+           );
+      }
+
+      AutoVector CreateVector () const override {
+        PYBIND11_OVERLOAD_PURE(
+           shared_ptr<BaseVector>, /* Return type */
+           BaseMatrix,             /* Parent class */
+           CreateVector,           /* Name of function */
+           );
+      }
+
       void Mult (const BaseVector & x, BaseVector & y) const override {
         pybind11::gil_scoped_acquire gil;
         pybind11::function overload = pybind11::get_overload(this, "Mult");
@@ -400,6 +475,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         else
           BaseMatrix::MultAdd(s, x, y);
       }
+
       void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override {
         pybind11::gil_scoped_acquire gil;
         pybind11::function overload = pybind11::get_overload(this, "MultTransAdd");
@@ -596,8 +672,9 @@ inverse : string
                          }
                        return make_shared<BlockMatrix> (m2);
                      }))
-    
-    // .def("__getitem__", [](BlockMatrix & self, int row, int col) { return self(row,rol); })
+    .def("__getitem__", [](BlockMatrix & self, int row, int col) { return self(row,row); })
+    .def_property_readonly("row_nblocks", [](BlockMatrix & mat) { return mat.BlockRows(); })
+    .def_property_readonly("col_nblocks", [](BlockMatrix & mat) { return mat.BlockCols(); })
     ;
 
 
@@ -605,13 +682,24 @@ inverse : string
 #ifdef PARALLEL
   py::class_<ParallelMatrix, shared_ptr<ParallelMatrix>, BaseMatrix>
     (m, "ParallelMatrix", "MPI-distributed matrix")
-    .def(py::init<shared_ptr<BaseMatrix>, shared_ptr<ParallelDofs>>())
+    .def(py::init<shared_ptr<BaseMatrix>, shared_ptr<ParallelDofs>>(),
+	 py::arg("mat"),py::arg("pardofs"))
+    .def(py::init<shared_ptr<BaseMatrix>, shared_ptr<ParallelDofs>, shared_ptr<ParallelDofs>>(),
+	 py::arg("mat"),py::arg("row_pardofs"),py::arg("col_pardofs"))
+    .def_property_readonly("row_pardofs", [](ParallelMatrix & mat) { return mat.GetRowParallelDofs(); })
+    .def_property_readonly("col_pardofs", [](ParallelMatrix & mat) { return mat.GetColParallelDofs(); })
     .def_property_readonly("local_mat", [](ParallelMatrix & mat) { return mat.GetMatrix(); })
     ;
 
+
   py::class_<FETI_Jump_Matrix, shared_ptr<FETI_Jump_Matrix>, BaseMatrix>
     (m, "FETI_Jump", "B-matrix of the FETI-system")
-    .def(py::init<shared_ptr<ParallelDofs>>())
+    .def(py::init<shared_ptr<ParallelDofs>>(),
+	 py::arg("pardofs"))
+    .def(py::init<shared_ptr<ParallelDofs>, shared_ptr<ParallelDofs>>(),
+	 py::arg("pardofs"), py::arg("u_pardofs"))
+    .def_property_readonly("row_pardofs", [](FETI_Jump_Matrix & mat) { return mat.GetRowParallelDofs(); })
+    .def_property_readonly("col_pardofs", [](FETI_Jump_Matrix & mat) { return mat.GetColParallelDofs(); })
     ;
 #endif
   
@@ -641,10 +729,10 @@ inverse : string
     .def("Smooth", [&](BaseJacobiPrecond & jac, BaseVector & x, BaseVector & b)
          { jac.GSSmooth (x, b); },
          py::arg("x"), py::arg("b"),
-         "performs steps Gauss-Seidel iterations for the linear system A x = b")
+         "performs one step Gauss-Seidel iteration for the linear system A x = b")
     .def("SmoothBack", &BaseJacobiPrecond::GSSmoothBack,
          py::arg("x"), py::arg("b"),
-         "performs steps Gauss-Seidel iterations for the linear system A x = b in reverse order")
+         "performs one step Gauss-Seidel iteration for the linear system A x = b in reverse order")
     ;
 
   py::class_<SparseFactorization, shared_ptr<SparseFactorization>, BaseMatrix>
@@ -745,58 +833,62 @@ inverse : string
     ;
   
   m.def("ArnoldiSolver", [](BaseMatrix & mata, BaseMatrix & matm, shared_ptr<BitArray> freedofs,
-                                               py::list vecs, py::object bpshift)
-                                            {
-                                              if (mata.IsComplex())
-                                                {
-                                                  Arnoldi<Complex> arnoldi (mata, matm, freedofs);
-                                                  Complex shift = 0.0;
-                                                  shift = py::cast<Complex>(bpshift);
-                                                  cout << "shift = " << shift << endl;
-                                                  arnoldi.SetShift (shift);
+                            py::list vecs, py::object bpshift)
+        {
+          if (py::len(vecs) > mata.Height())
+            throw Exception ("number of eigenvectors to compute "+ToString(py::len(vecs))
+                             + " is greater than matrix dimension "
+                             + ToString(mata.Height()));
+          if (mata.IsComplex())
+            {
+              Arnoldi<Complex> arnoldi (mata, matm, freedofs);
+              Complex shift = 0.0;
+              shift = py::cast<Complex>(bpshift);
+              // cout << "shift = " << shift << endl;
+              arnoldi.SetShift (shift);
+              
+              int nev = py::len(vecs);
+              // cout << "num vecs: " << nev << endl;
+              Array<shared_ptr<BaseVector>> evecs(nev);
                                                   
-                                                  int nev = py::len(vecs);
-                                                  cout << "num vecs: " << nev << endl;
-                                                  Array<shared_ptr<BaseVector>> evecs(nev);
-                                                  
-                                                  Array<Complex> lam(nev);
-                                                  arnoldi.Calc (2*nev+1, lam, nev, evecs, 0);
-                                            
-                                                  for (int i = 0; i < nev; i++)
-                                                    vecs[i].cast<BaseVector&>() = *evecs[i];
-
-                                                  Vector<Complex> vlam(nev);
-                                                  for (int i = 0; i < nev; i++)
-                                                    vlam(i) = lam[i];
-                                                  return vlam;
-                                                }
-                                              else
-                                                {
-                                                  Arnoldi<double> arnoldi (mata, matm, freedofs);
-                                                  double shift = py::cast<double>(bpshift);
-                                                  cout << "shift = " << shift << endl;
-                                                  arnoldi.SetShift (shift);
-                                                  
-                                                  int nev = py::len(vecs);
-                                                  cout << "num vecs: " << nev << endl;
-                                                  Array<shared_ptr<BaseVector>> evecs(nev);
-                                                  
-                                                  Array<Complex> lam(nev);
-                                                  arnoldi.Calc (2*nev+1, lam, nev, evecs, 0);
-                                            
-                                                  for (int i = 0; i < nev; i++)
-                                                    vecs[i].cast<BaseVector&>() = *evecs[i];
-
-                                                  Vector<Complex> vlam(nev);
-                                                  for (int i = 0; i < nev; i++)
-                                                    vlam(i) = lam[i];
-                                                  return vlam;
-                                                }
-                                            },
-          "Arnoldi Solver", py::arg("mata"), py::arg("matm"), py::arg("freedofs"), py::arg("vecs"), py::arg("shift")=DummyArgument()
-          )
+              Array<Complex> lam(nev);
+              arnoldi.Calc (2*nev+1, lam, nev, evecs, 0);
+              
+              for (int i = 0; i < nev; i++)
+                vecs[i].cast<BaseVector&>() = *evecs[i];
+              
+              Vector<Complex> vlam(nev);
+              for (int i = 0; i < nev; i++)
+                vlam(i) = lam[i];
+              return vlam;
+            }
+          else
+            {
+              Arnoldi<double> arnoldi (mata, matm, freedofs);
+              double shift = py::cast<double>(bpshift);
+              // cout << "shift = " << shift << endl;
+              arnoldi.SetShift (shift);
+              
+              int nev = py::len(vecs);
+              // cout << "num vecs: " << nev << endl;
+              Array<shared_ptr<BaseVector>> evecs(nev);
+              
+              Array<Complex> lam(nev);
+              arnoldi.Calc (2*nev+1, lam, nev, evecs, 0);
+              
+              for (int i = 0; i < nev; i++)
+                vecs[i].cast<BaseVector&>() = *evecs[i];
+              
+              Vector<Complex> vlam(nev);
+              for (int i = 0; i < nev; i++)
+                vlam(i) = lam[i];
+              return vlam;
+            }
+        },
+        "Arnoldi Solver", py::arg("mata"), py::arg("matm"), py::arg("freedofs"), py::arg("vecs"), py::arg("shift")=DummyArgument()
+        )
     ;
-
+  
   
 
   m.def("DoArchive" , [](shared_ptr<Archive> & arch, BaseMatrix & mat)
