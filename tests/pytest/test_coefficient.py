@@ -48,6 +48,8 @@ def test_pow():
             c = c*base
         assert CompareCfs2D(base**p,c)
         assert CompareCfs2D(base**(-p),1.0/c)
+        assert CompareCfs2D(base**float(p),c)
+        assert CompareCfs2D(base**CoefficientFunction(p),c)
 
 def test_domainwise_cf():
     geo = SplineGeometry()

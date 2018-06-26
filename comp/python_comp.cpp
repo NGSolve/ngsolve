@@ -241,7 +241,17 @@ UNUSED_DOF: Dof is not used, i.e the slave dofs in a :any:`Periodic` finite
     element space.
 
 LOCAL_DOF: Inner degree of freedom, will be eliminated by static
-    condensation.
+    condensation and reconstructed afterwards.
+
+HIDDEN_DOF: Inner degree of freedom, that will be eliminated by static
+    condensation and *not* reconstruced afterwards(spares some entries).
+    Note: 
+     * without static condensation a HIDDEN_DOF is treated as any other
+       DOF, e.g. as a LOCAL_DOF
+     * To a HIDDEN_DOF the r.h.s. vector must have zero entries.
+
+CONDENSATABLE_DOF: Inner degree of freedom, that will be eliminated by static
+    condensation (LOCAL_DOF or HIDDEN_DOF)
 
 INTERFACE_DOF: Degree of freedom between two elements, these will not be
     eliminated by static condensation, but not be put into the wirebasket
@@ -260,7 +270,9 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
 
 )raw_string"))
     .value("UNUSED_DOF", UNUSED_DOF)
+    .value("HIDDEN_DOF", HIDDEN_DOF)
     .value("LOCAL_DOF", LOCAL_DOF)
+    .value("CONDENSATABLE_DOF", CONDENSATABLE_DOF)
     .value("INTERFACE_DOF", INTERFACE_DOF)
     .value("NONWIREBASKET_DOF", NONWIREBASKET_DOF)
     .value("WIREBASKET_DOF", WIREBASKET_DOF)
@@ -827,6 +839,9 @@ kwargs : For a description of the possible kwargs have a look a bit further down
             
             auto scalfe = dynamic_pointer_cast<BaseScalarFiniteElement> (fe);
             if (scalfe) return py::cast(scalfe);
+
+            auto hcurlfe = dynamic_pointer_cast<BaseHCurlFiniteElement> (fe);
+            if (hcurlfe) return py::cast(hcurlfe);
             
             return py::cast(fe);
           })
@@ -1315,13 +1330,7 @@ used_idnrs : list of int = None
     .def("Deriv",
          [](shared_ptr<GF> self) -> spCF
           {
-            auto sp = make_shared<GridFunctionCoefficientFunction> (self,
-                                                                    self->GetFESpace()->GetFluxEvaluator(),
-                                                                    self->GetFESpace()->GetFluxEvaluator(BND),
-								    self->GetFESpace()->GetFluxEvaluator(BBND));
-            sp->generated_from_deriv = true;
-            // sp->SetDimensions(sp->Dimensions());
-            return sp;
+            return self->GetDeriv();
           })
 
     .def("Operator",

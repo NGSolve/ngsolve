@@ -51,9 +51,10 @@ namespace ngfem
 #ifndef FASTCOMPILE
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
   void T_HCurlHighOrderFiniteElement<ET, SHAPES, BASE> :: 
-  CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
+  CalcMappedShape (const BaseMappedIntegrationPoint & bmip,
                    SliceMatrix<> shape) const
   {
+    auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM>&> (bmip);
     Vec<DIM, AutoDiff<DIM> > adp = mip; 
     T_CalcShape (&adp(0), SBLambda ([&](int i, HCurl_Shape<DIM> s) 
 				    { 
@@ -108,9 +109,10 @@ namespace ngfem
 
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
   void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
-  CalcMappedCurlShape (const MappedIntegrationPoint<DIM,DIM> & mip,
+  CalcMappedCurlShape (const BaseMappedIntegrationPoint & bmip,
                        SliceMatrix<> curlshape) const
-  { 
+  {
+    auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM>&> (bmip);    
     if (DIM == 2)
       {
         CalcCurlShape (mip.IP(), curlshape);
