@@ -54,13 +54,13 @@ namespace ngfem
     }
 
     using ScalarFiniteElement<D>::Evaluate;
-    NGS_DLL_HEADER virtual void Evaluate (const SIMD_IntegrationRule & ir, BareSliceVector<> coefs, ABareVector<double> values) const
+    NGS_DLL_HEADER virtual void Evaluate (const SIMD_IntegrationRule & ir, BareSliceVector<> coefs, BareVector<SIMD<double>> values) const override
     {
       fe.EvaluateFacetVolIp (fnr, ir, coefs, values);
     }
     
     using ScalarFiniteElement<D>::AddTrans;    
-    NGS_DLL_HEADER virtual void AddTrans (const SIMD_IntegrationRule & ir, ABareVector<double> values, BareSliceVector<> coefs) const
+    NGS_DLL_HEADER virtual void AddTrans (const SIMD_IntegrationRule & ir, BareVector<SIMD<double>> values, BareSliceVector<> coefs) const override
     {
       fe.AddTransFacetVolIp (fnr, ir, values, coefs);
     }
@@ -120,7 +120,7 @@ namespace ngfem
     }
 
     FacetFEFacet<D> Facet (int fnr) const 
-    { 
+    {
       return FacetFEFacet<D> (fnr, *this, 
 			      GetFacetDofs(fnr).Size(), facet_order[fnr]); 
     }
@@ -131,8 +131,8 @@ namespace ngfem
     virtual void CalcFacetShapeVolIR (int fnr, const SIMD_IntegrationRule & ir, 
                                       BareSliceMatrix<SIMD<double>> shape) const = 0;
 
-    virtual void EvaluateFacetVolIp (int fnr, const SIMD_IntegrationRule & ir, BareSliceVector<> coefs, ABareVector<double> values) const = 0;
-    virtual void AddTransFacetVolIp (int fnr, const SIMD_IntegrationRule & ir, ABareVector<double> values, BareSliceVector<> coefs) const = 0;
+    virtual void EvaluateFacetVolIp (int fnr, const SIMD_IntegrationRule & ir, BareSliceVector<> coefs, BareVector<SIMD<double>> values) const = 0;
+    virtual void AddTransFacetVolIp (int fnr, const SIMD_IntegrationRule & ir, BareVector<SIMD<double>> values, BareSliceVector<> coefs) const = 0;
     
 
     IntRange GetFacetDofs(int fnr) const
