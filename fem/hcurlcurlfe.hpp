@@ -1053,22 +1053,22 @@ namespace ngfem
                                         jac2.EvalMult(order-2 - k - j, 2 * lam[0].Value() - 1, polsy, 
                                                       SBLambda([&](size_t j, auto val) LAMBDA_INLINE
                                                                {
-                                                                 auto value = val.Value()*symdyadic1;
+                                                                 auto value = val*symdyadic1;
                                                                  shape[ii] = value;
                                                                  ii++;
-                                                                 value = val.Value()*symdyadic2;
+                                                                 value = val*symdyadic2;
                                                                  shape[ii] = value;
                                                                  ii++;
-                                                                 value = val.Value()*symdyadic3;
+                                                                 value = val*symdyadic3;
                                                                  shape[ii] = value;
                                                                  ii++;
-                                                                 value = val.Value()*symdyadic4;
+                                                                 value = val*symdyadic4;
                                                                  shape[ii] = value;
                                                                  ii++;
-                                                                 value = val.Value()*symdyadic5;
+                                                                 value = val*symdyadic5;
                                                                  shape[ii] = value;
                                                                  ii++;
-                                                                 value = val.Value()*symdyadic6;
+                                                                 value = val*symdyadic6;
                                                                  shape[ii] = value;
                                                                }));
                                         jac2.IncAlpha2();
