@@ -206,7 +206,8 @@ namespace ngcomp
       }
     if (dimension > 1)
       {
-        for (auto vb : { VOL,BND, BBND, BBBND })
+        auto vbs = { VOL,BND, BBND, BBBND };
+        for (auto vb : vbs)
           {
             if (evaluator[vb])
               evaluator[vb] = make_shared<BlockDifferentialOperator> (evaluator[vb], dimension);
