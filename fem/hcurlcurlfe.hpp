@@ -1326,7 +1326,8 @@ namespace ngfem
       LegendrePolynomial::EvalScaled(order, ls-le,ls+le,
                                      SBLambda([&] (size_t nr, auto val)
                                               {
-                                                shape[ii++] = val.Value()*symdyadic;
+                                                shape[ii] = val.Value()*symdyadic;
+                                                ii++;
                                               }));
       
     };
