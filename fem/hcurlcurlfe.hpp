@@ -1347,7 +1347,7 @@ namespace ngfem
       Vec<3> symdyadic = Vec<3>(2*ls.DValue(0)*le.DValue(0),2*ls.DValue(1)*le.DValue(1), ls.DValue(1)*le.DValue(0)+ls.DValue(0)*le.DValue(1));
           
       LegendrePolynomial::EvalScaled(order, ls-le,ls+le,
-                                     SBLambda([&shape, &ii,symdyadic] (size_t nr, auto val)
+                                     SBLambda([shape, &ii,symdyadic] (size_t nr, auto val)
                                               {
                                                 auto value = val.Value()*symdyadic;
                                                 shape[ii] = value;
