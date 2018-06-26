@@ -208,7 +208,8 @@ namespace ngfem
 
           LegendrePolynomial::EvalScaled(order, ls-le,ls+le, SBLambda([&] (size_t nr, Tx val)
                             {
-                              shape[ii] = val.Value()*symdyadic;
+                              auto value = val.Value()*symdyadic;
+                              shape[ii] = value;
                               ii++;
                             }));
         }
@@ -228,7 +229,8 @@ namespace ngfem
               DubinerBasis3::Eval(order-1, ls,le,
                                   SBLambda([&] (size_t nr, Tx val)
                                            {
-                                             shape[ii] = val.Value()*symdyadic;
+                                             auto value = val.Value()*symdyadic;
+                                             shape[ii] = value;
                                              ii++;
                                            }));
             }
@@ -989,7 +991,8 @@ namespace ngfem
 
           LegendrePolynomial::EvalScaled(order, ls-le,ls+le, SBLambda([&] (size_t nr, auto val)
                             {
-                              shape[ii] = val.Value()*symdyadic;
+                              auto value = val.Value()*symdyadic;
+                              shape[ii] = value;
                               ii++;
                             }));
         }
@@ -1008,11 +1011,14 @@ namespace ngfem
               DubinerBasis3::Eval(order-1, ls,le,
                                   SBLambda([&] (size_t nr, auto val)
                                            {
-                                             shape[ii] = val.Value()*symdyadic1;
+                                             auto value = val.Value()*symdyadic1;
+                                             shape[ii] = value;
                                              ii++;
-                                             shape[ii] = val.Value()*symdyadic2;
+                                             value = val.Value()*symdyadic2;
+                                             shape[ii] = value;
                                              ii++;
-                                             shape[ii] = val.Value()*symdyadic3;
+                                             value = val.Value()*symdyadic3;
+                                             shape[ii] = value;
                                              ii++;
                                            }));
             }
@@ -1047,17 +1053,23 @@ namespace ngfem
                                         jac2.EvalMult(order-2 - k - j, 2 * lam[0].Value() - 1, polsy, 
                                                       SBLambda([&](size_t j, auto val) LAMBDA_INLINE
                                                                {
-                                                                 shape[ii] = val*symdyadic1;
+                                                                 auto value = val.Value()*symdyadic1;
+                                                                 shape[ii] = value;
                                                                  ii++;
-                                                                 shape[ii] = val*symdyadic2;
+                                                                 value = val.Value()*symdyadic2;
+                                                                 shape[ii] = value;
                                                                  ii++;
-                                                                 shape[ii] = val*symdyadic3;
+                                                                 value = val.Value()*symdyadic3;
+                                                                 shape[ii] = value;
                                                                  ii++;
-                                                                 shape[ii] = val*symdyadic4;
+                                                                 value = val.Value()*symdyadic4;
+                                                                 shape[ii] = value;
                                                                  ii++;
-                                                                 shape[ii] = val*symdyadic5;
+                                                                 value = val.Value()*symdyadic5;
+                                                                 shape[ii] = value;
                                                                  ii++;
-                                                                 shape[ii] = val*symdyadic6;
+                                                                 value = val.Value()*symdyadic6;
+                                                                 shape[ii] = value;
                                                                }));
                                         jac2.IncAlpha2();
                                       }));
@@ -1337,7 +1349,8 @@ namespace ngfem
       LegendrePolynomial::EvalScaled(order, ls-le,ls+le,
                                      SBLambda([&] (size_t nr, auto val)
                                               {
-                                                shape[ii] = val.Value()*symdyadic;
+                                                auto value = val.Value()*symdyadic;
+                                                shape[ii] = value;
                                                 ii++;
                                               }));
       
@@ -1400,7 +1413,8 @@ namespace ngfem
           LegendrePolynomial::EvalScaled(order, ls-le,ls+le,
                                          SBLambda([&] (size_t nr, auto val)
                                                   {
-                                                    shape[ii] = val.Value()*symdyadic;
+                                                    auto value = val.Value()*symdyadic;
+                                                    shape[ii] = value;
                                                     ii++;
                                                   }));
         }
@@ -1418,11 +1432,14 @@ namespace ngfem
           DubinerBasis3::Eval(order-1, ls,le,
                               SBLambda([&] (size_t nr, auto val)
                                        {
-                                         shape[ii] = val.Value()*symdyadic1;
+                                         auto value = val.Value()*symdyadic1;
+                                         shape[ii] = value;
                                          ii++;
-                                         shape[ii] = val.Value()*symdyadic2;
+                                         value = val.Value()*symdyadic2;
+                                         shape[ii] = value;
                                          ii++;
-                                         shape[ii] = val.Value()*symdyadic3;
+                                         value = val.Value()*symdyadic3;
+                                         shape[ii] = value;
                                          ii++;
                                        }));
         }
