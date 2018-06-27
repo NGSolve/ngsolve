@@ -199,12 +199,14 @@ ANY                  1 1 1 1 | 15
      */
     int et_order_left[30];  // order for range of diff-op from the left 
     int et_order_right[30]; // order for domain of diff-op to the right
-    
+
+    /*
     Array<TORDER> order_edge; 
     Array<INT<2,TORDER>> order_face_left;
     Array<INT<2,TORDER>> order_face_right; 
     Array<INT<3,TORDER>> order_cell_left;
     Array<INT<3,TORDER>> order_cell_right;
+    */
     size_t order_timestamp = 0;
     BitArray is_atomic_dof;
 
@@ -234,6 +236,9 @@ ANY                  1 1 1 1 | 15
 
     /// update dof-table
     virtual void Update(LocalHeap & lh);
+
+    virtual void UpdateDofTables() { ; } 
+    virtual void UpdateCouplingDofArray() { ; } 
 
     /// update element coloring
     virtual void FinalizeUpdate(LocalHeap & lh);
@@ -282,7 +287,9 @@ ANY                  1 1 1 1 | 15
       et_order_right[et] = order;
     }
 
-    void SetOrder (NodeId ni, TORDER order)
+    virtual void SetOrder (NodeId ni, int order) { ; }
+    virtual int GetOrder (NodeId ni) const { return 0; }
+    /*
     {
       switch (ni.GetType())
         {
@@ -305,6 +312,7 @@ ANY                  1 1 1 1 | 15
           break;
         }
     }
+    */
     /// how many components
     int GetDimension () const { return dimension; }
 
