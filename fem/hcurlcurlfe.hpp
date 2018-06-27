@@ -134,7 +134,7 @@ namespace ngfem
     {
       Vec<DIM, AutoDiff<DIM>> adp = mip;
    
-      Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM>> (adp), SBLambda([&] (int nr, auto val)
+      Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM>> (adp), SBLambda([shape] (int nr, auto val)
                                           {
                                             shape.Row(nr).AddSize(DIM_STRESS) = val;
                                           }));
@@ -145,7 +145,7 @@ namespace ngfem
                             BareSliceMatrix<double> shape) const override
     {
       Vec<DIM, AutoDiff<DIM>> adp = mip;
-      Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM>> (adp),SBLambda([&](int nr,auto val)
+      Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM>> (adp),SBLambda([shape](int nr,auto val)
       {
         VecToSymMat<DIM> (val, shape.Row(nr));
       }));
@@ -1289,7 +1289,7 @@ namespace ngfem
         addp[i] = adp[i].Value();
         addp[i].LoadGradient(&adp[i].DValue(0));
       }
-      Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM+1>> (addp), SBLambda([&] (int nr, auto val)
+      Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM+1>> (addp), SBLambda([shape] (int nr, auto val)
                                           {
                                             shape.Row(nr).AddSize(DIM_STRESS) = val;
                                           }));
@@ -1306,7 +1306,7 @@ namespace ngfem
         addp[i] = adp[i].Value();
         addp[i].LoadGradient(&adp[i].DValue(0));
       }
-      Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM+1>> (addp),SBLambda([&](int nr, auto val)
+      Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM+1>> (addp),SBLambda([shape](int nr, auto val)//Capture
       {
         Vec<DIM_STRESS> vecshape = val;
         BareVector<double> matshape = shape.Row(nr);
@@ -1346,10 +1346,10 @@ namespace ngfem
    
       Vec<3> symdyadic = Vec<3>(2*ls.DValue(0)*le.DValue(0),2*ls.DValue(1)*le.DValue(1), ls.DValue(1)*le.DValue(0)+ls.DValue(0)*le.DValue(1));
           
-      LegendrePolynomial::EvalScaled(order, ls-le,ls+le,
+      LegendrePolynomial::EvalScaled(order, ls.Value()-le.Value(),ls.Value()+le.Value(),
                                      SBLambda([shape, &ii,symdyadic] (size_t nr, auto val)
                                               {
-                                                auto value = val.Value()*symdyadic;
+                                                auto value = val*symdyadic;
                                                 shape[ii] = value;
                                                 ii++;
                                               }));
