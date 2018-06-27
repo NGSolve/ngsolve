@@ -819,6 +819,53 @@ namespace ngcomp
         throw;
       }
   }
+  
+  void H1HighOrderFESpace :: SetOrder (NodeId ni, int order) 
+  {
+    switch (ni.GetType())
+      {
+      case NT_VERTEX:
+        break;
+      case NT_EDGE:
+        if (ni.GetNr() < order_edge.Size())
+          order_edge[ni.GetNr()] = order;
+        break;
+      case NT_FACE:
+        if (ni.GetNr() < order_face.Size())
+          order_face[ni.GetNr()] = order;
+        break;
+      case NT_CELL:
+        if (ni.GetNr() < order_inner.Size())
+          order_inner[ni.GetNr()] = order;
+        break;
+      case NT_ELEMENT: case NT_FACET:
+        break;
+      }
+  }
+  
+  int H1HighOrderFESpace :: GetOrder (NodeId ni) const
+  {
+    switch (ni.GetType())
+      {
+      case NT_VERTEX:
+        return 0;
+      case NT_EDGE:
+        if (ni.GetNr() < order_edge.Size())
+          return order_edge[ni.GetNr()];
+        break;
+      case NT_FACE:
+        if (ni.GetNr() < order_face.Size())
+          return order_face[ni.GetNr()][0];
+        break;
+      case NT_CELL:
+        if (ni.GetNr() < order_inner.Size())
+          return order_inner[ni.GetNr()][0];
+        break;
+      case NT_ELEMENT: case NT_FACET:
+        break;
+      }
+    return 0;
+  }
 
 
   template <ELEMENT_TYPE ET>
@@ -1839,6 +1886,7 @@ namespace ngcomp
           additional_evaluators.Set ("divfree_reconstruction", make_shared<T_DifferentialOperator<DiffOpDivFreeReconstructVectorH1<2>>> ());
           
           break;
+          
         case 3:
           evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdVectorH1<3>>>();
           flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradVectorH1<3>>>();
@@ -1846,16 +1894,10 @@ namespace ngcomp
           flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpGradBoundaryVectorH1<3>>>();          
           additional_evaluators.Set ("div", make_shared<T_DifferentialOperator<DiffOpDivVectorH1<3>>> ()); 
           break;
-          // auto one = make_shared<ConstantCoefficientFunction>(1);
-          // integrator[VOL] = make_shared<VectorH1MassIntegrator<2>>(one);
         }
     }
     
 
-
-
-  
-    
   
   static RegisterFESpace<H1HighOrderFESpace> init ("h1ho");
   static RegisterFESpace<VectorH1FESpace> initvec ("VectorH1");

@@ -14,8 +14,6 @@ namespace ngcomp
      High Order Finite Element Space
   */
 
-  // typedef size_t index_edge;
-
   class NGS_DLL_HEADER H1HighOrderFESpace : public FESpace
   {
   protected:
@@ -40,7 +38,6 @@ namespace ngcomp
     Array<bool> used_edge; 
     Array<bool> used_face; 
 
-    // int ndof;
     int uniform_order_inner;
     int uniform_order_face;
     int uniform_order_edge;
@@ -48,10 +45,7 @@ namespace ngcomp
     int uniform_order_trig;
     Array<INT<3>> dom_order_min; 
     Array<INT<3>> dom_order_max;
-    // int smoother; 
   
-    // Array<int> ndlevel;
-
     bool level_adapted_order; 
     bool nodalp2;
   public:
@@ -71,21 +65,14 @@ namespace ngcomp
     virtual void DoArchive (Archive & archive) override;
 
     ///
-    // virtual size_t GetNDof () const throw() override { return ndof; }
-    ///
-    // virtual size_t GetNDofLevel (int alevel) const override;
-    ///
     virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override;
-    /// 
-    //virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const override;
+
     ///
     template <ELEMENT_TYPE ET>
-    FiniteElement & T_GetFE (int elnr, Allocator & alloc) const;
-    ///
-    // virtual const FiniteElement & GetSFE (int elnr, LocalHeap & lh) const override;
+      FiniteElement & T_GetFE (int elnr, Allocator & alloc) const;
     ///
     template <ELEMENT_TYPE ET>
-    FiniteElement & T_GetSFE (int elnr, Allocator & alloc) const;
+      FiniteElement & T_GetSFE (int elnr, Allocator & alloc) const;
     ///
     template <ELEMENT_TYPE ET>
       FiniteElement & T_GetCD2FE(int elnr, Allocator & alloc) const;
@@ -98,15 +85,16 @@ namespace ngcomp
     virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const override;
     virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const override;
     ///
-    // virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const override;
     virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & precflags) const override; 
     // virtual void CreateSmoothingBlocks2 (SmoothingBlocksCreator & sbc, const Flags & precflags) const; 
     ///
     virtual shared_ptr<Array<int>> CreateDirectSolverClusters (const Flags & flags) const override;
 
-    void UpdateDofTables ();
-    ///
-    virtual void UpdateCouplingDofArray();    
+    virtual void UpdateDofTables () override;
+    virtual void UpdateCouplingDofArray() override;    
+
+    virtual void SetOrder (NodeId ni, int order) override;
+    virtual int GetOrder (NodeId ni) const override;
     
     void SetEdgeOrder (int enr, int eo) { order_edge[enr] = eo; }
     void SetFaceOrder (int fnr, INT<2> fo) { order_face[fnr] = fo; }

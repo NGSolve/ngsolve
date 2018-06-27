@@ -61,9 +61,9 @@ namespace ngcomp
     ///
     virtual ~HDivHighOrderFESpace ();
 
-    void UpdateDofTables(); 
+    virtual void UpdateDofTables() override;  
 
-    void UpdateCouplingDofArray();   
+    virtual void UpdateCouplingDofArray() override;   
     
     virtual string GetClassName () const override
     {

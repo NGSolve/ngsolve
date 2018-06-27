@@ -736,6 +736,13 @@ kwargs : For a description of the possible kwargs have a look a bit further down
            self->FinalizeUpdate(glh);
          },
          "update space after mesh-refinement")
+     .def("UpdateDofTables", [](shared_ptr<FESpace> self)
+         {
+           self->UpdateDofTables();
+           self->UpdateCouplingDofArray();
+           self->FinalizeUpdate(glh);
+         },
+         "update dof-tables after changing polynomial order distribution")
      .def("FinalizeUpdate", [](shared_ptr<FESpace> self)
          { 
            self->FinalizeUpdate(glh);
