@@ -834,11 +834,11 @@ namespace ngcomp
         if (ni.GetNr() < order_face.Size())
           order_face[ni.GetNr()] = order;
         break;
-      case NT_CELL:
+      case NT_CELL: case NT_ELEMENT:
         if (ni.GetNr() < order_inner.Size())
           order_inner[ni.GetNr()] = order;
         break;
-      case NT_ELEMENT: case NT_FACET:
+      case NT_FACET:
         break;
       }
   }
@@ -857,11 +857,11 @@ namespace ngcomp
         if (ni.GetNr() < order_face.Size())
           return order_face[ni.GetNr()][0];
         break;
-      case NT_CELL:
+      case NT_CELL: case NT_ELEMENT:
         if (ni.GetNr() < order_inner.Size())
           return order_inner[ni.GetNr()][0];
         break;
-      case NT_ELEMENT: case NT_FACET:
+      case NT_FACET:
         break;
       }
     return 0;
