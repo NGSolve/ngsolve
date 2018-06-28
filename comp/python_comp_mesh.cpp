@@ -91,6 +91,16 @@ void ExportNgcompMesh (py::module &m)
                              auto& mesh = node.Mesh();
                              switch(node.GetType())
                                {
+                               case NT_VERTEX:
+                                 {
+                                   Array<int> enums;
+                                   for (auto el : mesh.GetVertexElements(node.GetNr()))
+                                     for (auto edge : mesh.GetElement(ElementId(VOL,el)).Edges())
+                                       if (!enums.Contains(edge))
+                                         enums.Append(edge);
+                                   QuickSort (enums);
+                                   return MakePyTuple(Substitute(enums, Nr2Edge));
+                                 }
                                case NT_FACE:
                                  return MakePyTuple(Substitute(mesh.GetFaceEdges(node.GetNr()), Nr2Edge));
                                case NT_CELL:
