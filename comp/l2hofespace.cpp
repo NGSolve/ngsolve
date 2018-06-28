@@ -557,6 +557,25 @@ namespace ngcomp
     dnums += GetElementDofs(elnr);
     */
   }
+
+  void L2HighOrderFESpace :: SetOrder (NodeId ni, int order)
+  {
+    if (ni.GetType() == NT_ELEMENT)
+      {
+        if (ni.GetNr() < order_inner.Size())
+          order_inner[ni.GetNr()] = order;
+      }
+  }
+  
+  int L2HighOrderFESpace :: GetOrder (NodeId ni) const
+  {
+    if (ni.GetType() == NT_ELEMENT)
+      {
+        if (ni.GetNr() < order_inner.Size())
+          return order_inner[ni.GetNr()][0];
+      }
+    return 0;
+  }
   
   shared_ptr<Table<int>> L2HighOrderFESpace :: 
   CreateSmoothingBlocks (const Flags & precflags) const
