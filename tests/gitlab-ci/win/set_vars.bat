@@ -1,4 +1,3 @@
-call "%VS140COMNTOOLS%\..\..\VC\vcvarsall" x64
 set CMAKE_GENERATOR=Ninja
 set NETGEN_BUILD_DIR=%CI_DIR%\build
 set CMAKE_INSTALL_PREFIX=%CI_DIR%\install
