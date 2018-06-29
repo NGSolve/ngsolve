@@ -682,6 +682,11 @@ namespace ngcomp
   }
   
 
+  void L2HighOrderFESpace :: ApplyM (CoefficientFunction * rho, BaseVector & vec,
+                                     LocalHeap & lh) const
+  {
+    throw Exception ("L2HighOrderFESpace::ApplyM not available");
+  }
 
 
 
@@ -1555,6 +1560,44 @@ namespace ngcomp
 
 
 
+  
+  void VectorL2FESpace :: ApplyM (CoefficientFunction * rho, BaseVector & vec,
+                                  LocalHeap & lh) const
+  {
+    if (piola)
+      {
+        switch (ma->GetDimension())
+          {
+          case 1: ApplyMPiola<1>(rho, vec, lh); break;
+          case 2: ApplyMPiola<2>(rho, vec, lh); break;
+          case 3: ApplyMPiola<3>(rho, vec, lh); break;
+          default: throw Exception("VectorL2FESpace::ApplyM: illegal dimension");
+          }
+        return;
+      }
+
+    if (covariant)
+      {
+        switch (ma->GetDimension())
+          {
+          case 1: ApplyMCovariant<1>(rho, vec, lh); break;
+          case 2: ApplyMCovariant<2>(rho, vec, lh); break;
+          case 3: ApplyMCovariant<3>(rho, vec, lh); break;
+          default: throw Exception("VectorL2FESpace::ApplyM: illegal dimension");
+          }
+        return;
+      }
+    
+    for (size_t i = 0; i < spaces.Size(); i++)
+      {
+        auto veci = vec.Range (GetRange(i));
+        spaces[i] -> ApplyM (rho, veci, lh);
+      }
+  }
+
+
+  
+
 
 
   template <int DIM>
@@ -1727,6 +1770,98 @@ namespace ngcomp
 
 
   
+
+  template <int DIM>
+  void VectorL2FESpace ::
+  ApplyMPiola (CoefficientFunction * rho, BaseVector & vec,
+               LocalHeap & lh) const
+  {
+    throw Exception ("ApplyMPiola not implemented");
+  }
+
+
+  template <int DIM>
+  void VectorL2FESpace ::
+  ApplyMCovariant (CoefficientFunction * rho, BaseVector & vec,
+                   LocalHeap & lh) const
+  {
+    static Timer t("ApplyM - Covariant"); RegionTimer reg(t);
+    IterateElements
+      (*this, VOL, lh,
+       [&rho, &vec,this] (FESpace::Element el, LocalHeap & lh)
+       {
+         auto & fel = static_cast<const CompoundFiniteElement&>(el.GetFE());
+         auto & feli = static_cast<const BaseScalarFiniteElement&>(fel[0]);
+         const ElementTransformation & trafo = el.GetTrafo();
+         
+         Array<int> dnums(fel.GetNDof(), lh);
+         GetDofNrs (el.Nr(), dnums);
+         
+         FlatVector<double> elx(feli.GetNDof()*DIM, lh);
+         vec.GetIndirect(dnums, elx);
+         auto melx = elx.AsMatrix(DIM, feli.GetNDof());
+         
+         FlatVector<double> diag_mass(feli.GetNDof(), lh);
+         feli.GetDiagMassMatrix (diag_mass);
+         
+         bool curved = trafo.IsCurvedElement();
+         if (rho && !rho->ElementwiseConstant()) curved = true;
+         curved = false;  // curved not implemented
+         
+         if (!curved)
+           {
+             IntegrationRule ir(fel.ElementType(), 0);
+             MappedIntegrationRule<DIM,DIM> mir(ir, trafo, lh);
+             
+             Mat<DIM,DIM> rhoi;
+             if (!rho)
+               rhoi = Identity(3);
+             else if (rho->Dimension() == 1)
+               rhoi = rho->Evaluate(mir[0]) * Identity(3);
+             else
+               rho -> Evaluate(mir[0], FlatVector<> (DIM*DIM, &rhoi(0,0)));
+             
+             Mat<DIM> trans = mir[0].GetMeasure() * mir[0].GetJacobianInverse() * rhoi * Trans(mir[0].GetJacobianInverse());
+             
+             for (int i = 0; i < melx.Width(); i++)
+               {
+                 Vec<DIM> hv = melx.Col(i);
+                 hv *=  diag_mass(i);
+                 melx.Col(i) = trans * hv;
+               }
+           }
+         /*
+           else
+           {
+           SIMD_IntegrationRule ir(fel.ElementType(), 2*fel.Order());
+           auto & mir = trafo(ir, lh);
+           FlatVector<SIMD<double>> pntvals(ir.Size(), lh);
+           FlatMatrix<SIMD<double>> rhovals(1, ir.Size(), lh);
+           if (rho) rho->Evaluate (mir, rhovals);
+                 
+           for (int i = 0; i < melx.Height(); i++)
+           melx.Row(i) /= diag_mass(i);
+           for (int comp = 0; comp < dimension; comp++)
+           {
+           fel.Evaluate (ir, melx.Col(comp), pntvals);
+           if (rho)
+           for (size_t i = 0; i < ir.Size(); i++)
+           pntvals(i) *= ir[i].Weight() / (mir[i].GetMeasure() * rhovals(0,i));
+           else
+           for (size_t i = 0; i < ir.Size(); i++)
+           pntvals(i) *= ir[i].Weight() / mir[i].GetMeasure();
+           
+           melx.Col(comp) = 0.0;
+           fel.AddTrans (ir, pntvals, melx.Col(comp));
+           }
+           for (int i = 0; i < melx.Height(); i++)
+           melx.Row(i) /= diag_mass(i);
+           }
+         */
+         vec.SetIndirect(dnums, elx);
+       });
+
+  }
 
   
   static RegisterFESpace<VectorL2FESpace> initvecl2 ("VectorL2");

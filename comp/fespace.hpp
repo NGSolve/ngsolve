@@ -813,6 +813,8 @@ ANY                  1 1 1 1 | 15
 
     virtual void SolveM(CoefficientFunction * rho, BaseVector & vec,
                         LocalHeap & lh) const;
+    virtual void ApplyM(CoefficientFunction * rho, BaseVector & vec,
+                        LocalHeap & lh) const;
       
     shared_ptr<ParallelDofs> GetParallelDofs () const { return paralleldofs; }
     virtual void UpdateParallelDofs ();
@@ -1189,6 +1191,8 @@ ANY                  1 1 1 1 | 15
     virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const;
 
     virtual void SolveM(CoefficientFunction * rho, BaseVector & vec,
+                        LocalHeap & lh) const;
+    virtual void ApplyM(CoefficientFunction * rho, BaseVector & vec,
                         LocalHeap & lh) const;
     
     template <class T> NGS_DLL_HEADER
