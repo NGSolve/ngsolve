@@ -1113,7 +1113,7 @@ namespace ngfem
     const MixedFiniteElement * mixedfe = static_cast<const MixedFiniteElement*> (&fel);
     const FiniteElement & fel_trial = is_mixedfe ? mixedfe->FETrial() : fel;
     const FiniteElement & fel_test = is_mixedfe ? mixedfe->FETest() : fel;
-    size_t first_std_eval = 0;
+    // size_t first_std_eval = 0;
     if (simd_evaluate)
       try
         {
@@ -1142,7 +1142,7 @@ namespace ngfem
                   size_t dim_proxy2 = proxy2->Dimension();
                   
                   size_t tt_pair = l1nr*trial_proxies.Size()+k1nr;
-                  first_std_eval = k1nr*test_proxies.Size()+l1nr;  // in case of SIMDException
+                  // first_std_eval = k1nr*test_proxies.Size()+l1nr;  // in case of SIMDException
                   bool is_nonzero = nonzeros_proxies(tt_pair);
                   bool is_diagonal = diagonal_proxies(tt_pair);
 
@@ -1314,6 +1314,7 @@ namespace ngfem
           cout << IM(4) << e.What() << endl
                << "switching to scalar evaluation" << endl;
           simd_evaluate = false;
+          throw ExceptionNOSIMD("in TCalcElementMatrixAdd");
           // T_CalcElementMatrixAdd<SCAL, SCAL_SHAPES, SCAL_RES> (fel, trafo, elmat, lh);
           // return;
         }
@@ -1348,7 +1349,7 @@ namespace ngfem
                     is_nonzero = true;
                   }
 
-            if (is_nonzero  && k1nr*test_proxies.Size()+l1nr >= first_std_eval)
+            if (is_nonzero) //   && k1nr*test_proxies.Size()+l1nr >= first_std_eval)
               {
                 HeapReset hr(lh);
                 bool samediffop = *(proxy1->Evaluator()) == *(proxy2->Evaluator());
@@ -1507,7 +1508,15 @@ namespace ngfem
                      LocalHeap & lh) const
   {
     elmat = 0.0;
-    T_CalcElementMatrixAdd<double,double,double> (fel, trafo, elmat, lh);
+    try
+      {
+        T_CalcElementMatrixAdd<double,double,double> (fel, trafo, elmat, lh);
+      }
+    catch (ExceptionNOSIMD e)
+      {
+        elmat = 0.0;        
+        T_CalcElementMatrixAdd<double,double,double> (fel, trafo, elmat, lh);        
+      }
   }
   
   void 
@@ -1517,16 +1526,32 @@ namespace ngfem
                      FlatMatrix<Complex> elmat,
                      LocalHeap & lh) const
   {
-    elmat = 0.0;
-    if (fel.ComplexShapes() || trafo.IsComplex())
-      T_CalcElementMatrixAdd<Complex,Complex,Complex> (fel, trafo, elmat, lh);
-    else
+    try
       {
-        if (cf->IsComplex())
-          T_CalcElementMatrixAdd<Complex,double,Complex> (fel, trafo, elmat, lh);
+        elmat = 0.0;
+        if (fel.ComplexShapes() || trafo.IsComplex())
+          T_CalcElementMatrixAdd<Complex,Complex,Complex> (fel, trafo, elmat, lh);
         else
-          T_CalcElementMatrixAdd<double,double,Complex> (fel, trafo, elmat, lh);
+          {
+            if (cf->IsComplex())
+              T_CalcElementMatrixAdd<Complex,double,Complex> (fel, trafo, elmat, lh);
+            else
+              T_CalcElementMatrixAdd<double,double,Complex> (fel, trafo, elmat, lh);
+          }
       }
+    catch (ExceptionNOSIMD e)  // retry with simd_evaluate is off
+      {
+        elmat = 0.0;        
+        if (fel.ComplexShapes() || trafo.IsComplex())
+          T_CalcElementMatrixAdd<Complex,Complex,Complex> (fel, trafo, elmat, lh);
+        else
+          {
+            if (cf->IsComplex())
+              T_CalcElementMatrixAdd<Complex,double,Complex> (fel, trafo, elmat, lh);
+            else
+              T_CalcElementMatrixAdd<double,double,Complex> (fel, trafo, elmat, lh);
+          }
+      }    
   }
 
   void 
@@ -1587,8 +1612,8 @@ namespace ngfem
       Facet2ElementTrafo transform(eltype, element_vb); 
       int nfacet = transform.GetNFacets();
 
-      // if (simd_evaluate)
-      if (false)  // throwing the no-simd exception after some terms already added is still a problem 
+      if (simd_evaluate)
+        // if (false)  // throwing the no-simd exception after some terms already added is still a problem 
         {
           try
             {
@@ -1678,6 +1703,7 @@ namespace ngfem
               cout << IM(4) << e.What() << endl
                    << "switching to scalar evaluation, may be a problem with Add" << endl;
               simd_evaluate = false;
+              throw ExceptionNOSIMD("disabled simd-evaluate in AddElementMatrixEB");
             }
         }
       

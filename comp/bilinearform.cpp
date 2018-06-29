@@ -947,23 +947,24 @@ namespace ngcomp
                          
                          int elmat_size = dnums.Size()*fespace->GetDimension();
                          FlatMatrix<SCAL> sum_elmat(elmat_size, lh);
-                         sum_elmat = 0;
 			 bool elem_has_integrator = false;
 
                          {
                          static Timer elmattimer("calc elmats", 2);
                          ThreadRegionTimer reg (elmattimer, TaskManager::GetThreadId());
                          
-                         for (auto & bfip : VB_parts[vb])
+                         if (printelmat || elmat_ev)
                            {
-                             const BilinearFormIntegrator & bfi = *bfip;
-                             if (!bfi.DefinedOn (el.GetIndex())) continue;                        
-                             if (!bfi.DefinedOnElement (el.Nr())) continue;                        
-
-                             elem_has_integrator = true;
-
-                             if (printelmat || elmat_ev)
+                             // need every part of the element matrix
+                             sum_elmat = 0;
+                             for (auto & bfip : VB_parts[vb])
                                {
+                                 const BilinearFormIntegrator & bfi = *bfip;
+                                 if (!bfi.DefinedOn (el.GetIndex())) continue;                        
+                                 if (!bfi.DefinedOnElement (el.Nr())) continue;                        
+                                 
+                                 elem_has_integrator = true;
+                                 
                                  HeapReset hr(lh);
                                  FlatMatrix<SCAL> elmat(elmat_size, lh);
                                  
@@ -1000,8 +1001,18 @@ namespace ngcomp
                                  
                                  sum_elmat += elmat;
                                }
-                             else
+                           }
+                         else
+                           {
+                             /*
+                             for (auto & bfip : VB_parts[vb])
                                {
+                                 const BilinearFormIntegrator & bfi = *bfip;
+                                 if (!bfi.DefinedOn (el.GetIndex())) continue;                        
+                                 if (!bfi.DefinedOnElement (el.Nr())) continue;                        
+                                 
+                                 elem_has_integrator = true;
+                                 
                                  try
                                    {
                                      bfi.CalcElementMatrixAdd (fel, eltrans, sum_elmat, lh);
@@ -1011,6 +1022,30 @@ namespace ngcomp
                                      throw (Exception (string(e.what()) +
                                                        string("in Assemble Element Matrix, bfi = ") + 
                                                        bfi.Name() + string("\n")));
+                                   }
+                               }
+                             */
+                             bool done = false;
+                             while (!done)
+                               {
+                                 done = true;
+                                 sum_elmat = 0;
+                                 for (auto & bfip : VB_parts[vb])
+                                   {
+                                     const BilinearFormIntegrator & bfi = *bfip;
+                                     if (!bfi.DefinedOn (el.GetIndex())) continue;                        
+                                     if (!bfi.DefinedOnElement (el.Nr())) continue;                        
+                                     
+                                     elem_has_integrator = true;
+                                     
+                                     try
+                                       {
+                                         bfi.CalcElementMatrixAdd (fel, eltrans, sum_elmat, lh);
+                                       }
+                                     catch (ExceptionNOSIMD & e)
+                                       {
+                                         done = false;
+                                       }
                                    }
                                }
                            }
