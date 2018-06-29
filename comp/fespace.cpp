@@ -1564,6 +1564,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
     cout << "SolveM is only available for L2-space, not for " << typeid(*this).name() << endl;
   }
 
+  void FESpace :: ApplyM (CoefficientFunction * rho, BaseVector & vec,
+                          LocalHeap & lh) const
+  {
+    cout << "ApplyM is only available for L2-space, not for " << typeid(*this).name() << endl;
+  }
+
   void FESpace :: UpdateParallelDofs ( )
   {
     if (MyMPI_GetNTasks(ma->GetCommunicator()) == 1) return;
@@ -2621,6 +2627,16 @@ lot of new non-zero entries in the matrix!\n" << endl;
       {
         auto veci = vec.Range (GetRange(i));
         spaces[i] -> SolveM (rho, veci, lh);
+      }
+  }
+    
+  void CompoundFESpace :: ApplyM(CoefficientFunction * rho, BaseVector & vec,
+                                 LocalHeap & lh) const
+  {
+    for (size_t i = 0; i < spaces.Size(); i++)
+      {
+        auto veci = vec.Range (GetRange(i));
+        spaces[i] -> ApplyM (rho, veci, lh);
       }
   }
     

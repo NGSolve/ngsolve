@@ -96,6 +96,8 @@ namespace ngcomp
 
     virtual void SolveM (CoefficientFunction * rho, BaseVector & vec,
                          LocalHeap & lh) const override;
+    virtual void ApplyM (CoefficientFunction * rho, BaseVector & vec,
+                         LocalHeap & lh) const override;
 
 
   protected:
@@ -191,6 +193,8 @@ namespace ngcomp
     void GetDofNrs (ElementId ei, Array<int> & dnums) const override;
     virtual void SolveM (CoefficientFunction * rho, BaseVector & vec,
                          LocalHeap & lh) const override;
+    virtual void ApplyM (CoefficientFunction * rho, BaseVector & vec,
+                         LocalHeap & lh) const override;
 
     template <int DIM>
     void SolveMPiola (CoefficientFunction * rho, BaseVector & vec,
@@ -198,6 +202,15 @@ namespace ngcomp
     template <int DIM>
     void SolveMCovariant (CoefficientFunction * rho, BaseVector & vec,
                           LocalHeap & lh) const;
+
+
+    template <int DIM>
+    void ApplyMPiola (CoefficientFunction * rho, BaseVector & vec,
+                      LocalHeap & lh) const;
+    template <int DIM>
+    void ApplyMCovariant (CoefficientFunction * rho, BaseVector & vec,
+                          LocalHeap & lh) const;
+
   };
 
 }

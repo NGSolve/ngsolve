@@ -926,6 +926,12 @@ kwargs : For a description of the possible kwargs have a look a bit further down
          { self->SolveM(rho.get(), vec, glh); },
          py::arg("vec"), py::arg("rho")=nullptr,
          "Solve with the mass-matrix. Available only for L2-like spaces")
+    .def("ApplyM",
+         [] (const shared_ptr<FESpace> self,
+             BaseVector& vec, spCF rho)
+         { self->ApplyM(rho.get(), vec, glh); },
+         py::arg("vec"), py::arg("rho")=nullptr,
+         "Apply mass-matrix. Available only for L2-like spaces")
         
     .def("__eq__",
          [] (shared_ptr<FESpace> self, shared_ptr<FESpace> other)
