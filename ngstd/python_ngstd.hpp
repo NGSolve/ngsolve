@@ -10,6 +10,18 @@
 #pragma clang diagnostic ignored "-Wunused-value"
 #endif
 
+// BEGIN EVIL HACK: Patch PyThread_get_key_value inside pybind11 to avoid deadlocks
+// see https://github.com/pybind/pybind11/pull/1211
+#include <Python.h>
+#include <pythread.h>
+namespace pybind11 {
+    inline void * PyThread_get_key_value(int state) {
+        PyThreadState *tstate = (PyThreadState *) ::PyThread_get_key_value(state);
+        if (!tstate) tstate = PyGILState_GetThisThreadState();
+        return tstate;
+    }
+}
+// END EVIL HACK
 #include <pybind11/pybind11.h>
 #include <pybind11/eval.h>
 #include <pybind11/operators.h>
