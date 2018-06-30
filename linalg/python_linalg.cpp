@@ -716,10 +716,10 @@ inverse : string
     (m, "BlockSmoother",
      "block Jacobi and block Gauss-Seidel smoothing")
     .def("Smooth", &BaseBlockJacobiPrecond::GSSmooth,
-         py::arg("x"), py::arg("b"), py::arg("steps"),
+         py::arg("x"), py::arg("b"), py::arg("steps")=1,
          "performs steps block-Gauss-Seidel iterations for the linear system A x = b")
     .def("SmoothBack", &BaseBlockJacobiPrecond::GSSmoothBack,
-         py::arg("x"), py::arg("b"), py::arg("steps"),
+         py::arg("x"), py::arg("b"), py::arg("steps")=1,
          "performs steps block-Gauss-Seidel iterations for the linear system A x = b in reverse order")
     ;
 
@@ -798,15 +798,19 @@ inverse : string
           )
     ;
 
-  m.def("TestPC", [](const BaseMatrix & mat, const BaseMatrix & pre) {
+  m.def("EigenValues_Preconditioner", [](const BaseMatrix & mat, const BaseMatrix & pre) {
       EigenSystem eigen(mat, pre);
       eigen.Calc();
-      cout << IM(1) << " Min Eigenvalue : "  << eigen.EigenValue(1) << endl; 
-      cout << IM(1) << " Max Eigenvalue : " << eigen.MaxEigenValue() << endl; 
-      cout << IM(1) << " Condition   " << eigen.MaxEigenValue()/eigen.EigenValue(1) << endl; 
-      return;
+      Vector<double> ev(eigen.NumEigenValues());
+      for (size_t i = 0; i < ev.Size(); i++)
+        ev[i] = eigen.EigenValue(i+1);
+      return ev;
     },
-    py::arg("mat"), py::arg("pre"));
+    py::arg("mat"), py::arg("pre"),
+    "Calculate eigenvalues of pre * mat, where pre and mat are positive definite matrices.\n"
+    "The typical usecase of this function is to calculate the condition number of a preconditioner."
+    "It uses the Lanczos algorithm and bisection for the tridiagonal matrix"
+    );
   
   py::class_<QMRSolver<double>, shared_ptr<QMRSolver<double>>, BaseMatrix> (m, "QMRSolverD")
     ;
