@@ -15,7 +15,6 @@ stages:
     - x64
   before_script:
     - set CI_DIR=C:\ci\%CI_PIPELINE_ID%
-    - call "%VS140COMNTOOLS%\..\..\VC\vcvarsall" x64
     - call tests\gitlab-ci\win\set_vars.bat
 
 win_build:
@@ -47,7 +46,6 @@ win_cleanup:
   before_script:
     - set CI_DIR=C:\ci\%CI_PIPELINE_ID%_avx
     - set CMAKE_CONFIG=-DCMAKE_CXX_FLAGS="/W0 /EHsc /arch:AVX -DWIN32=1"
-    - call "C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\VC\Auxiliary\Build\vcvarsall" x64
     - call tests\gitlab-ci\win\set_vars.bat
 
 win_avx_build:

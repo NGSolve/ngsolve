@@ -1,8 +1,16 @@
+#ifndef FILE_HCURLCURLFESPACE
+#define FILE_HCURLCURLFESPACE
+
+
 /*********************************************************************/
 /* File:   hcurlcurlfespace.h                                        */
 /* Author: Michael Neunteufel                                        */
 /* Date:   2018                                                      */
 /*********************************************************************/
+
+#if defined(WIN32) && defined(__AVX__)
+
+#else
 
 namespace ngcomp
 {
@@ -56,3 +64,6 @@ namespace ngcomp
   };
 
 }
+
+#endif
+#endif
