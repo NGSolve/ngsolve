@@ -1002,6 +1002,7 @@ namespace ngcomp
   {
     dnums.SetSize0();
 
+    /*
     if (order_policy == NODE_TYPE_ORDER)
       {
         auto et = ma->GetElType(ei);
@@ -1010,7 +1011,7 @@ namespace ngcomp
              << ", or = " << et_order_right[et]
              << endl;
       }
-
+    */
     
     if(discont) 
       {

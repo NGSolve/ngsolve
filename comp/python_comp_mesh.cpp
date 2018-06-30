@@ -9,6 +9,7 @@ using namespace ngcomp;
 inline auto Nr2Vert(size_t nr) {  return NodeId(NT_VERTEX,nr); };
 inline auto Nr2Edge(size_t nr) {  return NodeId(NT_EDGE,nr); };
 inline auto Nr2Face(size_t nr) {  return NodeId(NT_FACE,nr); };
+inline auto Nr2VolElement(size_t nr) {  return ElementId(VOL,nr); };
 
 void ExportPml(py::module &m);
 
@@ -143,6 +144,20 @@ void ExportNgcompMesh (py::module &m)
                                  }
                              throw py::type_error("point only available for vertex nodes\n");
                            }, "vertex coordinates")
+
+
+    .def_property_readonly("elements",[](MeshNode & node) -> py::tuple
+                           {
+                             auto& mesh = node.Mesh();
+                             switch(node.GetType())
+                               {
+                               case NT_VERTEX:
+                                 return MakePyTuple(Substitute(mesh.GetVertexElements(node.GetNr()), Nr2VolElement));
+                               default:
+                                 throw py::type_error("elements only available for vertex nodes\n");
+                               }
+                           }, "tuple of global element-ids")
+    
     ;
 
   py::class_<ngstd::T_Range<NodeId>> (m, "NodeRange")
