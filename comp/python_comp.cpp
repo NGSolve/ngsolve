@@ -1033,8 +1033,6 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                 })
     ;
 
-  ExportFESpace<HCurlCurlFESpace> (m, "HCurlCurl");
-
   ExportFESpace<VectorFacetFESpace> (m, "VectorFacet");
 
   ExportFESpace<FacetFESpace> (m, "FacetFESpace");
