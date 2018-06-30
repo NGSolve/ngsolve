@@ -127,6 +127,8 @@ namespace ngcomp
   public:
     VectorH1FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, 
                      bool checkflags = false);
+
+    virtual void SetOrder (ELEMENT_TYPE et, TORDER order) override;
   };
 
 }

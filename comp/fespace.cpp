@@ -48,6 +48,7 @@ namespace ngcomp
     if (flags.NumFlagDefined("order_policy"))
       SetOrderPolicy(ORDER_POLICY(int(flags.GetNumFlag("order_policy",1))));
 
+    /*
     if (flags.NumFlagDefined("order_left"))
       {
         auto order_left = int(flags.GetNumFlag("order_left", 1));
@@ -62,7 +63,7 @@ namespace ngcomp
         for (auto et : element_types)
           SetOrderRight (et, order_right);
       }
-    
+    */
     
     dimension = int (flags.GetNumFlag ("dim", 1));
 

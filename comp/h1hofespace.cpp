@@ -391,7 +391,11 @@ namespace ngcomp
         }
     
     else  // not var_order
-      
+
+      {
+        cout << "not var order, p = " << p << endl;
+        for (auto et : { ET_SEGM, ET_TRIG, ET_QUAD })
+          cout << "bonus " << et << " = " << et_bonus_order[et] << endl;
       // for (Ngs_Element el : ma->Elements<VOL>())
       ParallelFor (ma->GetNE(VOL), [&] (size_t nr)
                    {
@@ -410,7 +414,7 @@ namespace ngcomp
 
                      order_inner[el.Nr()] = p + et_bonus_order[el.GetType()];
                    });
-
+      }
     /* 
        if (ma->GetDimension() == 2 && uniform_order_trig != -1 && uniform_order_quad != -1)
        {
@@ -1897,6 +1901,12 @@ namespace ngcomp
         }
     }
     
+  void VectorH1FESpace::SetOrder (ELEMENT_TYPE et, TORDER order)
+  {
+    FESpace::SetOrder(et, order);
+    for (auto & spc : spaces)
+      spc->SetOrder (et, order);
+  }
 
   
   static RegisterFESpace<H1HighOrderFESpace> init ("h1ho");

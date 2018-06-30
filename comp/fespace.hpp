@@ -197,8 +197,8 @@ ANY                  1 1 1 1 | 15
       We can give different orders for the left and right space for different
       element-types (like trig or quad)
      */
-    int et_order_left[30];  // order for range of diff-op from the left 
-    int et_order_right[30]; // order for domain of diff-op to the right
+    // int et_order_left[30];  // order for range of diff-op from the left 
+    // int et_order_right[30]; // order for domain of diff-op to the right
 
     /*
     Array<TORDER> order_edge; 
@@ -268,12 +268,14 @@ ANY                  1 1 1 1 | 15
       order_policy = op;
     }
     
-    void SetOrder (ELEMENT_TYPE et, TORDER order)
+    virtual void SetOrder (ELEMENT_TYPE et, TORDER order)
     {
       if (order_policy == CONSTANT_ORDER || order_policy == OLDSTYLE_ORDER)
         order_policy = NODE_TYPE_ORDER;
-      et_order_left[et] = et_order_right[et] = order;
+      et_bonus_order[et] = order - this->order;
+      // et_order_left[et] = et_order_right[et] = order;
     }
+    /*
     void SetOrderLeft (ELEMENT_TYPE et, TORDER order)
     {
       if (order_policy == CONSTANT_ORDER || order_policy == OLDSTYLE_ORDER)
@@ -286,7 +288,7 @@ ANY                  1 1 1 1 | 15
         order_policy = NODE_TYPE_ORDER;
       et_order_right[et] = order;
     }
-
+    */
     virtual void SetOrder (NodeId ni, int order) { ; }
     virtual int GetOrder (NodeId ni) const { return 0; }
     /*

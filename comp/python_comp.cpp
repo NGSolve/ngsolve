@@ -777,22 +777,27 @@ kwargs : For a description of the possible kwargs have a look a bit further down
          }, py::arg("Region"))
 
     .def("SetOrder",
-         [](shared_ptr<FESpace> self, ELEMENT_TYPE et, py::object order, py::object order_left, py::object order_right)
+         [](shared_ptr<FESpace> self, ELEMENT_TYPE et, int order /*, py::object order_left, py::object order_right*/)
          {
+           self->SetOrder (et, order);
+           /*
            if (py::isinstance<py::int_> (order))
              {
                self->SetOrderLeft (et, order.cast<py::int_>());
                self->SetOrderRight (et, order.cast<py::int_>());
              }
+           */
+           /*
            if (py::isinstance<py::int_> (order_left))
              self->SetOrderLeft (et, order_left.cast<py::int_>());
            if (py::isinstance<py::int_> (order_right))
              self->SetOrderRight (et, order_right.cast<int>());
+           */
          },
          py::arg("element_type"),
-         py::arg("order")=DummyArgument(),
-         py::arg("order_left")=DummyArgument(),
-         py::arg("order_right")=DummyArgument()
+         py::arg("order")
+         // py::arg("order_left")=DummyArgument(),
+         // py::arg("order_right")=DummyArgument()
          )
 
     .def("SetOrder",
