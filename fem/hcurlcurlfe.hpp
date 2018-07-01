@@ -1041,7 +1041,7 @@ namespace ngfem
 
           Vec<6> symdyadic1 = li.Value()*lj.Value()*SymDyadProd(lk,ll);
           Vec<6> symdyadic2 = lj.Value()*lk.Value()*SymDyadProd(ll,li);
-          Vec<6> symdyadic3 = lk.Value()*ll.Value()*SymDyadProd(li,ll);
+          Vec<6> symdyadic3 = lk.Value()*ll.Value()*SymDyadProd(li,lj);
           Vec<6> symdyadic4 = ll.Value()*li.Value()*SymDyadProd(lj,lk);
           Vec<6> symdyadic5 = li.Value()*lk.Value()*SymDyadProd(lj,ll);
           Vec<6> symdyadic6 = lj.Value()*ll.Value()*SymDyadProd(li,lk);
@@ -1082,6 +1082,7 @@ namespace ngfem
                                                                  ii++;
                                                                  value = val*symdyadic6;
                                                                  shape[ii] = value;
+                                                                 ii++;
                                                                }));
                                         jac2.IncAlpha2();
                                       }));
