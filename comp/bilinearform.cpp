@@ -3069,7 +3069,6 @@ namespace ngcomp
           }
           if(elnums_x.Size() < 2)
           {
-            break;
             meshx->GetFacetSurfaceElements(facet_x, elnums_x);
             int sel = elnums_x[0];
             ElementId sei(BND,sel);
@@ -3189,7 +3188,6 @@ namespace ngcomp
           }
           if(elnums_y.Size() < 2)
           {
-			break;
             meshy->GetFacetSurfaceElements(facet_y, elnums_y);
             int sel = elnums_y[0];
             ElementId sei(BND,sel);
