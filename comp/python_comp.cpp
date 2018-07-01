@@ -7,6 +7,7 @@
 
 #include "hdivdivfespace.hpp"
 #include "hdivdivsurfacespace.hpp"
+#include "hcurlcurlfespace.hpp"
 #include "numberfespace.hpp"
 using namespace ngcomp;
 
