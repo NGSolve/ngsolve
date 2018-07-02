@@ -2927,6 +2927,7 @@ namespace ngcomp
       timervol.Start();
       // if (task_manager)
       // {
+        //HeapReset hr(chelperheap);
         for (FlatArray<int> els_of_col : element_coloring0)
         {
           SharedLoop2 sl(els_of_col.Range());
@@ -3026,6 +3027,7 @@ namespace ngcomp
     timerfac1.Start();
     for (FlatArray<int> colfacets : spaces[0]->FacetColoring())
     {
+	  //HeapReset hr(chelperheap);
       SharedLoop2 sl(colfacets.Range());
       // task_manager -> CreateJob
       ParallelJob

@@ -2,7 +2,7 @@ from ngsolve.TensorProductTools import *
 from ngsolve.comp import *
 from ngsolve import *
 from netgen.geom2d import unit_square
-
+import netgen.gui
 
 mesh1 = Mesh(unit_square.GenerateMesh(maxh=0.15))
 mesh2 = Mesh(MakeHexagonalMesh2D(maxh=0.2))
@@ -28,7 +28,7 @@ gradv = CoefficientFunction((vx,vy))
 
 a = BilinearForm(tpfes)
 
-n = specialcf.normal(mesh1.dim + mesh2.dim)
+n = CoefficientFunction((ProlongateCoefficientFunction(specialcf.normal(2)[0],1,tpfes),ProlongateCoefficientFunction(specialcf.normal(2)[1],1,tpfes),ProlongateCoefficientFunction(specialcf.normal(2)[0],0,tpfes),ProlongateCoefficientFunction(specialcf.normal(2)[1],0,tpfes)))
 bn = b*n
 
 a += SymbolicTPBFI ( -u * b*gradv )
