@@ -505,7 +505,7 @@ namespace ngla
     IdentityMatrix ()
       : has_format(false), is_complex(false) { ; }
     IdentityMatrix (size_t asize, bool ais_complex)
-      : size(asize), is_complex(ais_complex) { ; }
+      : has_format(true), size(asize), is_complex(ais_complex) { ; }
     
     virtual bool IsComplex() const override { return is_complex; }
     ///
