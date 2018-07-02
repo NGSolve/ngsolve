@@ -127,7 +127,8 @@ namespace ngcomp
 
     wb_loedge = ma->GetDimension() == 3;
     if (flags.GetDefineFlag("wb_withedges")) wb_loedge = true;
-    if (flags.GetDefineFlag("wb_withoutedges")) wb_loedge = false;
+    if (flags.GetDefineFlag("wb_withoutedges") ||
+        flags.GetDefineFlagX("wb_withedges").IsFalse()) wb_loedge = false;
     wb_edge = flags.GetDefineFlag ("wb_fulledges");
     
     // Variable order space: 
