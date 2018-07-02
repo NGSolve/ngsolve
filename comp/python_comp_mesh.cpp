@@ -153,6 +153,18 @@ void ExportNgcompMesh (py::module &m)
                                {
                                case NT_VERTEX:
                                  return MakePyTuple(Substitute(mesh.GetVertexElements(node.GetNr()), Nr2VolElement));
+                               case NT_EDGE:
+                                 {
+                                   Array<int> elnums;
+                                   mesh.GetEdgeElements(node.GetNr(), elnums);
+                                   return MakePyTuple(Substitute(elnums, Nr2VolElement));
+                                 }
+                               case NT_FACE:
+                                 {
+                                   Array<int> elnums;
+                                   mesh.GetFaceElements(node.GetNr(), elnums);
+                                   return MakePyTuple(Substitute(elnums, Nr2VolElement));
+                                 }
                                default:
                                  throw py::type_error("elements only available for vertex nodes\n");
                                }
@@ -345,7 +357,12 @@ mesh (netgen.Mesh): a mesh generated from Netgen
     .def("__getitem__", static_cast<Ngs_Element(MeshAccess::*)(ElementId)const> (&MeshAccess::operator[]),
          "Return Ngs_Element from given ElementId")
     
-    .def("__getitem__", [](MeshAccess & self, NodeId ni) { return MeshNode(ni, self); },
+    .def("__getitem__", [](MeshAccess & self, NodeId ni)
+         {
+           if (ni.GetNr() >= self.GetNNodes(ni.GetType()))
+             throw py::index_error("illegal node number");
+           return MeshNode(ni, self);
+         },
          "Return MeshNode from given NodeId")
 
     .def ("GetNE", static_cast<size_t(MeshAccess::*)(VorB)const> (&MeshAccess::GetNE),
