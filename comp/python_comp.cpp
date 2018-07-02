@@ -2466,7 +2466,26 @@ flags : dict
         py::arg("simd_evaluate")=true
           );
 
-
+   m.def("KSpaceCoeffs", [](shared_ptr<GF> gf_tp,shared_ptr<GF> gf_k, double x, double y)
+           {
+			 HeapReset hr(glh);
+             auto tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp->GetFESpace());
+             IntegrationPoint ip;
+             int elnr = tpfes->Spaces(0)[0]->GetMeshAccess()->FindElementOfPoint(Vec<2>(x,y),ip,false);
+             int ndofx = tpfes->Spaces(0)[0]->GetFE(elnr,glh).GetNDof();
+             int ndofy = tpfes->Spaces(0)[1]->GetFE(0,glh).GetNDof();
+             Array<int> indices(2);
+             Array<int> dofs(ndofx*ndofy);
+             tpfes->GetDofNrs(tpfes->GetIndex(elnr,0),dofs);
+             FlatMatrix<> elmat(ndofx,ndofy,glh);
+             gf_tp->GetVector().GetIndirect(dofs,elmat.AsVector());
+             FlatVector<> shape(ndofx,glh);
+             dynamic_cast<const BaseScalarFiniteElement& >(tpfes->Spaces(0)[0]->GetFE(elnr,glh)).CalcShape(ip,shape);
+             FlatVector<> result(ndofy,glh);
+             result = Trans(elmat)*shape;
+             gf_k->GetVector().FVDouble() = result;
+             
+           });
   
    m.def("TensorProductFESpace", [](py::list spaces_list, const Flags & flags ) -> shared_ptr<FESpace>
             {

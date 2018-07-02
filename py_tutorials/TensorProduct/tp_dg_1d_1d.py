@@ -1,6 +1,7 @@
 from ngsolve.TensorProductTools import *
 from ngsolve.comp import *
 from ngsolve import *
+import netgen.gui
 
 mesh1 = Mesh(SegMesh(20,0,1,periodic=True) )
 mesh2 = Mesh(SegMesh(20,0,1,periodic=True) )
@@ -30,7 +31,7 @@ gradv = CoefficientFunction((vx,vy))
 
 a = BilinearForm(tpfes)
 
-n = specialcf.normal(tpmesh.dim)
+n = CoefficientFunction((ProlongateCoefficientFunction(specialcf.normal(1),1,tpfes),ProlongateCoefficientFunction(specialcf.normal(1),0,tpfes)))
 bn = b*n
 
 a += SymbolicTPBFI ( (-u * b*gradv).Compile() )
