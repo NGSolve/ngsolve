@@ -497,10 +497,17 @@ namespace ngla
   
   class IdentityMatrix : public BaseMatrix
   {
+    bool has_format;
+    size_t size;
+    bool is_complex;
   public:
     ///
-    IdentityMatrix () { ; }
-    virtual bool IsComplex() const override { return false; }
+    IdentityMatrix ()
+      : has_format(false), is_complex(false) { ; }
+    IdentityMatrix (size_t asize, bool ais_complex)
+      : size(asize), is_complex(ais_complex) { ; }
+    
+    virtual bool IsComplex() const override { return is_complex; }
     ///
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override
     {
@@ -522,10 +529,28 @@ namespace ngla
       y += s*x;      
     }  
 
-    virtual int VHeight() const override { throw Exception("Identity: no Height"); }
-    virtual int VWidth() const override  { throw Exception("Identity: no Width"); }
-    virtual AutoVector CreateRowVector () const override  { throw Exception("Identity: no RowVector"); }
-    virtual AutoVector CreateColVector () const override  { throw Exception("Identity: no ColVector"); }
+    virtual int VHeight() const override
+    {
+      if (has_format) return size;
+      throw Exception("Identity: no Height");
+    }
+    virtual int VWidth() const override
+    {
+      if (has_format) return size;
+      throw Exception("Identity: no Width");
+    }
+    virtual AutoVector CreateRowVector () const override
+    {
+      if (has_format)
+        return CreateBaseVector(size, is_complex, 1);
+      throw Exception("Identity: no RowVector");
+    }
+    virtual AutoVector CreateColVector () const override
+    {
+      if (has_format)
+        return CreateBaseVector(size, is_complex, 1);
+      throw Exception("Identity: no ColVector");
+    }
 
     virtual ostream & Print (ostream & ost) const override
     {

@@ -747,12 +747,16 @@ inverse : string
   py::class_<SparseCholesky<Complex>, shared_ptr<SparseCholesky<Complex>>, SparseFactorization> (m, "SparseCholesky_c");
   
   py::class_<Projector, shared_ptr<Projector>, BaseMatrix> (m, "Projector")
-    .def(py::init<shared_ptr<BitArray>,bool>());
+    .def(py::init<shared_ptr<BitArray>,bool>(),
+         py::arg("mask"), py::arg("range"),
+         "Linear operator projecting to true/false bits of BitArray mask, depending on argument range");
     ;
 
     py::class_<ngla::IdentityMatrix, shared_ptr<ngla::IdentityMatrix>, BaseMatrix> (m, "IdentityMatrix")
-    .def(py::init<>())
-    ;
+      .def(py::init<>())
+      .def(py::init<size_t, bool>(),
+           py::arg("size"), py::arg("complex")=false)
+      ;
 
   py::class_<KrylovSpaceSolver, shared_ptr<KrylovSpaceSolver>, BaseMatrix> (m, "KrylovSpaceSolver")
     .def("GetSteps", &KrylovSpaceSolver::GetSteps)
