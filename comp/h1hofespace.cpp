@@ -393,9 +393,6 @@ namespace ngcomp
     else  // not var_order
 
       {
-        cout << "not var order, p = " << p << endl;
-        for (auto et : { ET_SEGM, ET_TRIG, ET_QUAD })
-          cout << "bonus " << et << " = " << et_bonus_order[et] << endl;
       // for (Ngs_Element el : ma->Elements<VOL>())
       ParallelFor (ma->GetNE(VOL), [&] (size_t nr)
                    {
