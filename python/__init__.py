@@ -19,8 +19,9 @@ def TmpRedraw(*args, **kwargs):
     try:
         import netgen
         import tkinter
-        while(netgen.gui.win.tk.dooneevent(tkinter._tkinter.DONT_WAIT)):
-            pass
+        cnt = 0
+        while(netgen.gui.win.tk.dooneevent(tkinter._tkinter.DONT_WAIT) and cnt < 100):
+            cnt += 1
     except:
         pass
 
