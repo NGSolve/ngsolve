@@ -13,7 +13,7 @@ option( USE_MKL          "enable MKL")
 option( USE_HYPRE        "enable HYPRE support")
 option( USE_MUMPS        "enable sparse direct solver MUMPS")
 option( USE_PARDISO      "enable pardiso sparse direct solver")
-option( USE_UMFPACK      "enable umfpack sparse direct solver")
+option( USE_UMFPACK      "enable umfpack sparse direct solver" ON)
 option( INTEL_MIC        "cross compile for intel xeon phi")
 option( USE_VTUNE        "include vtune pause/resume numproc")
 option( USE_NUMA         "compile with NUMA-aware code")
@@ -157,7 +157,10 @@ if(NETGEN_USE_GUI)
   install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ngsolve.tcl DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve)
 endif(NETGEN_USE_GUI)
 
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -Wall")
+string(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_LOWER)
+if(CMAKE_BUILD_TYPE_LOWER STREQUAL "debug")
+    list(APPEND NGSOLVE_COMPILE_DEFINITIONS DDEBUG Wall)
+endif()
 
 #######################################################################
 # platform specific definitions and flags
@@ -280,6 +283,11 @@ endif (USE_MUMPS)
 if (NETGEN_USE_PYTHON)
     list(APPEND NGSOLVE_COMPILE_DEFINITIONS NGS_PYTHON)
     list(APPEND NGSOLVE_INCLUDE_DIRS ${NETGEN_PYBIND_INCLUDE_DIR} ${NETGEN_PYTHON_INCLUDE_DIRS})
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/python/config.py.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/python/config.py"
+    IMMEDIATE @ONLY)
+  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/python/config.py DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve/ COMPONENT ngsolve)
 endif (NETGEN_USE_PYTHON)
 
 #######################################################################
@@ -466,7 +474,8 @@ if (NETGEN_USE_MPI)
     # generate python3 wrapper for mpi (to preload mkl and mpi libs)
     set(ngspy_preload_libs "${MPI_C_LIBRARIES}")
     if(USE_MKL AND NOT MKL_STATIC)
-      set(ngspy_preload_libs "${ngspy_preload_libs}:${MKL_CORE_LIBRARY}:${MKL_THREADING_LIBRARY}:${MKL_INTERFACE_LIBRARY}:${MKL_BLACS_LIBRARY}")
+      find_library(GOMP_LIBRARY NAMES libgomp.so.1 REQUIRED HINTS "/usr/lib/x86_64-linux-gnu/")
+      set(ngspy_preload_libs "${ngspy_preload_libs}:${MKL_CORE_LIBRARY}:${MKL_THREADING_LIBRARY}:${MKL_INTERFACE_LIBRARY}:${MKL_BLACS_LIBRARY}:${GOMP_LIBRARY}")
     endif()
     find_program(BASH bash)
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngspy

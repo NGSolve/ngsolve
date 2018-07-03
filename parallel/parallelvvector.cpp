@@ -10,7 +10,10 @@ namespace ngla
 
   BaseVector & ParallelBaseVector :: SetScalar (double scal)
   {
-    FVDouble() = scal;
+    if (IsComplex())
+      FVComplex() = scal;
+    else
+      FVDouble() = scal;
     if ( IsParallelVector() )
       this->SetStatus(CUMULATED);
     else
@@ -244,6 +247,7 @@ namespace ngla
 	paralleldofs = 0;
 	status = NOT_PARALLEL;
       }
+    local_vec = make_shared<VFlatVector<SCAL>>(as, (SCAL*)pdata);
   }
 
   template <class SCAL>

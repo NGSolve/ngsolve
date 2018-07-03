@@ -125,8 +125,11 @@ namespace ngstd
   template <>
   inline auto GetGlobalNodeId<NT_EDGE> (const MeshAccess & ma, int nr) -> typename key_trait<NT_EDGE>::TKEY 
   {
-    int pi1,pi2;
-    ma.GetEdgePNums (nr, pi1, pi2);
+    // int pi1,pi2;
+    // ma.GetEdgePNums (nr, pi1, pi2);
+    auto pts = ma.GetEdgePNums(nr);
+    int pi1 = pts[0], pi2 = pts[1];
+    
     return INT<2> (ma.GetGlobalNodeNum (Node(NT_VERTEX, pi1)),
 		   ma.GetGlobalNodeNum (Node(NT_VERTEX, pi2)));
   }
@@ -139,8 +142,11 @@ namespace ngstd
     ma.GetFaceEdges(nr, edges);
     for(int k=0;k<3;k++)
       {
-	int p1, p2;
-	ma.GetEdgePNums(edges[k], p1, p2);
+	// int p1, p2;
+	// ma.GetEdgePNums(edges[k], p1, p2);
+        auto pts = ma.GetEdgePNums(edges[k]);
+        int p1 = pts[0], p2 = pts[1];
+        
 	if(verts.Contains(p1)==0)
 	  verts.Append(p1);
 	if(verts.Contains(p2)==0)
@@ -153,10 +159,10 @@ namespace ngstd
   template <>
   inline auto GetGlobalNodeId<NT_CELL> (const MeshAccess & ma, int nr) -> typename key_trait<NT_CELL>::TKEY 
   {
-    Array<int> faces(4);
+    // Array<int> faces(4);
     Array<int> verts;
-    ma.GetElFacets(nr, faces);
-
+    // ma.GetElFacets(nr, faces);
+    auto faces = ma.GetElFacets(ElementId(VOL,nr));
     for(int k=0;k<4;k++)
       {
 	Array<int> edges(3);
@@ -164,8 +170,10 @@ namespace ngstd
 	//cout << "edges: " << edges << endl;
 	for(int j=0;j<3;j++)
 	  {
-	    int p1, p2;
-	    ma.GetEdgePNums(edges[j], p1, p2);
+	    // int p1, p2;
+	    // ma.GetEdgePNums(edges[j], p1, p2);
+            auto pts = ma.GetEdgePNums(edges[j]);
+            int p1 = pts[0], p2 = pts[1];
 	    if(verts.Contains(p1)==0)
 	      verts.Append(p1);
 	    if(verts.Contains(p2)==0)

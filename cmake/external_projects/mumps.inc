@@ -17,7 +17,7 @@ AR = ar vr
 RANLIB = ranlib
 SCALAP  = @SCALAPACK_LIBRARY@ @BLACS_LIBRARY@ @LAPACK_LIBRARY@
 
-INCPAR = -I/usr/include
+INCPAR = -I../include -I/usr/include
 
 LIBPAR = $(SCALAP) @MPI_C_LIBRARIES@ @MPI_Fortran_LIBRARIES@
 

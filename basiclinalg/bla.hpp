@@ -42,6 +42,21 @@ namespace ngbla
 }
 
 
+namespace ngstd
+{
+  inline Archive & operator& (Archive & ar, Complex & c)
+  {
+    double hr, hi;
+    if (ar.Output())
+      { hr = c.real(); hi = c.imag(); }
+    ar & hr & hi;
+    if (ar.Input())
+      c = Complex(hr, hi);
+    return ar;
+  }
+}
+
+
 #ifdef PARALLEL
 namespace ngstd
 {

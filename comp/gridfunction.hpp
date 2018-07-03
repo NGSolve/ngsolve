@@ -81,7 +81,11 @@ namespace ngcomp
       nonzero_deriv = false;
       nonzero_dderiv = false;
     }
-    
+
+    // generation information for pickling:
+    bool generated_from_deriv = false;
+    string generated_from_operator;
+    shared_ptr<GridFunction> GetGridFunctionPtr() const { return gf_shared_ptr; }
   };
 
 
@@ -113,6 +117,7 @@ namespace ngcomp
     Array<shared_ptr<BaseVector>> vec;
     /// component GridFunctions if fespace is a CompoundFESpace
     Array<shared_ptr<GridFunction>> compgfs;
+    shared_ptr<GridFunctionCoefficientFunction> derivcf;
   public:
     /// 
     GridFunction (shared_ptr<FESpace> afespace, 
@@ -179,6 +184,19 @@ namespace ngcomp
     int GetNComponents () const { return compgfs.Size(); }
     shared_ptr<GridFunction> GetComponent (int compound_comp) const;
 
+    shared_ptr<GridFunctionCoefficientFunction> GetDeriv()
+    {
+      if (!derivcf)
+        {
+          derivcf =
+            make_shared<GridFunctionCoefficientFunction> (dynamic_pointer_cast<GridFunction> (shared_from_this()),
+                                                          GetFESpace()->GetFluxEvaluator(),
+                                                          GetFESpace()->GetFluxEvaluator(BND),
+                                                          GetFESpace()->GetFluxEvaluator(BBND));
+          derivcf -> generated_from_deriv = true;
+        }
+      return derivcf;
+    }
 
     ///
     virtual void GetElementVector (FlatArray<int> dnums,

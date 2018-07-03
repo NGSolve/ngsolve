@@ -32,6 +32,7 @@ namespace ngcomp
     // table of first element dofnumber 
     Array<DofId> first_element_dof;
     bool all_dofs_together;
+    COUPLING_TYPE lowest_order_ct;
   public:
 
     L2HighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags=false);
@@ -54,9 +55,9 @@ namespace ngcomp
     ///
     virtual void Update(LocalHeap & lh) override;
     /// 
-    virtual void UpdateDofTables();
+    virtual void UpdateDofTables() override;
     ///
-    virtual void UpdateCouplingDofArray();    
+    virtual void UpdateCouplingDofArray() override;    
     ///
     virtual size_t GetNDof () const throw() override;
     ///
@@ -74,6 +75,11 @@ namespace ngcomp
     virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
 
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
+
+    virtual void SetOrder (NodeId ni, int order) override;
+    virtual int GetOrder (NodeId ni) const override;
+    using FESpace::GetOrder;
+    
     ///
     virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & precflags) const override;
     /// 
@@ -89,7 +95,9 @@ namespace ngcomp
       return Range (first_element_dof[nr], first_element_dof[nr+1]);
     }
 
-    virtual void SolveM (CoefficientFunction & rho, BaseVector & vec,
+    virtual void SolveM (CoefficientFunction * rho, BaseVector & vec,
+                         LocalHeap & lh) const override;
+    virtual void ApplyM (CoefficientFunction * rho, BaseVector & vec,
                          LocalHeap & lh) const override;
 
 
@@ -147,6 +155,7 @@ namespace ngcomp
     ///
     virtual void Update(LocalHeap & lh) override;
     /// 
+    virtual void UpdateCouplingDofArray() override;    
     //virtual void UpdateDofTables();
     ///
     virtual size_t GetNDof () const throw() override;
@@ -168,14 +177,41 @@ namespace ngcomp
 
     virtual bool VarOrder() const override { return var_order; } 
     virtual int GetRelOrder() const override { return rel_order; }   
+    auto GetElementDofs (size_t nr) const
+    {
+      return Range (first_element_dof[nr], first_element_dof[nr+1]);
+    }
 
   };
 
 
   class VectorL2FESpace : public CompoundFESpace
   {
+    bool piola = false;
+    bool covariant = false;
   public:
     VectorL2FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags = false);
+    void GetDofNrs (ElementId ei, Array<int> & dnums) const override;
+    virtual void SolveM (CoefficientFunction * rho, BaseVector & vec,
+                         LocalHeap & lh) const override;
+    virtual void ApplyM (CoefficientFunction * rho, BaseVector & vec,
+                         LocalHeap & lh) const override;
+
+    template <int DIM>
+    void SolveMPiola (CoefficientFunction * rho, BaseVector & vec,
+                      LocalHeap & lh) const;
+    template <int DIM>
+    void SolveMCovariant (CoefficientFunction * rho, BaseVector & vec,
+                          LocalHeap & lh) const;
+
+
+    template <int DIM>
+    void ApplyMPiola (CoefficientFunction * rho, BaseVector & vec,
+                      LocalHeap & lh) const;
+    template <int DIM>
+    void ApplyMCovariant (CoefficientFunction * rho, BaseVector & vec,
+                          LocalHeap & lh) const;
+
   };
 
 }

@@ -13,30 +13,32 @@
 
 namespace ngla
 {
-
+  
+  template <typename TM> AutoVector MasterInverse<TM> :: CreateVector () const
+  { return make_shared<ParallelVVector<double>> (paralleldofs->GetNDofLocal(), paralleldofs); }
+  
   template <typename TM>
   MasterInverse<TM> :: MasterInverse (const SparseMatrixTM<TM> & mat, 
 				      shared_ptr<BitArray> subset, 
 				      shared_ptr<ParallelDofs> hpardofs)
     
-    : loc2glob(MyMPI_GetNTasks (hpardofs -> GetCommunicator())),
-      pardofs(hpardofs)
+    : BaseMatrix(hpardofs), loc2glob(MyMPI_GetNTasks (hpardofs -> GetCommunicator()))
   {
     inv = nullptr;
     
-    MPI_Comm comm = pardofs->GetCommunicator();
+    MPI_Comm comm = paralleldofs->GetCommunicator();
     int id = MyMPI_GetId (comm);
     int ntasks = MyMPI_GetNTasks(comm);
 
     // consistent enumeration
     
-    int ndof = pardofs->GetNDofLocal();
+    int ndof = paralleldofs->GetNDofLocal();
 
     Array<int> global_nums(ndof);
     global_nums = -1;
     int num_master_dofs = 0;
     for (int i = 0; i < ndof; i++)
-      if (pardofs -> IsMasterDof (i) && (!subset || (subset && subset->Test(i))))
+      if (paralleldofs -> IsMasterDof (i) && (!subset || (subset && subset->Test(i))))
 	global_nums[i] = num_master_dofs++;
     
 
@@ -58,7 +60,7 @@ namespace ngla
       if (global_nums[i] != -1)
 	global_nums[i] += first_master_dof[id];
 
-    pardofs -> ScatterDofData (global_nums);
+    paralleldofs -> ScatterDofData (global_nums);
 
 
     /*
@@ -120,7 +122,7 @@ namespace ngla
       {
 	// const MeshAccess & ma = nodaldofs -> GetMeshAccess();
 
-	int ndof = pardofs->GetNDofLocal();
+	int ndof = paralleldofs->GetNDofLocal();
 
 	Array<int> rows, cols;
 	Array<TM> vals;
@@ -267,12 +269,12 @@ namespace ngla
   {
     typedef typename mat_traits<TM>::TV_ROW TV;
     
-    MPI_Comm comm = pardofs->GetCommunicator();
+    MPI_Comm comm = paralleldofs->GetCommunicator();
     int id = MyMPI_GetId(comm);
     int ntasks = MyMPI_GetNTasks(comm);
 
     bool is_x_cum = (dynamic_cast_ParallelBaseVector(x) . Status() == CUMULATED);
-    x.Distribute();
+    // x.Distribute();
     y.Cumulate();
 
     if (id > 0)
@@ -318,8 +320,14 @@ namespace ngla
 	    Array<TV> lx(selecti.Size());
 	    MyMPI_Recv (lx, src, MPI_TAG_SOLVE, comm);
 
-	    for (int i = 0; i < selecti.Size(); i++)
-	      hx(selecti[i]) += lx[i];
+	    if(is_x_cum) {
+	      for (int i = 0; i < selecti.Size(); i++)
+		hx(selecti[i]) = lx[i];
+	    }
+	    else {
+	      for (int i = 0; i < selecti.Size(); i++)
+		hx(selecti[i]) += lx[i];
+	    }
 	  }
 
 	hy = (*inv) * hx;
@@ -335,20 +343,50 @@ namespace ngla
 	MyMPI_WaitAll (requ);
       }
 
-    if (is_x_cum)
-      dynamic_cast_ParallelBaseVector(x) . Cumulate(); // AllReduce(&hoprocs);
+    // if (is_x_cum)
+    // dynamic_cast_ParallelBaseVector(x) . Cumulate(); // AllReduce(&hoprocs);
 
   }
-
-  ParallelMatrix :: ParallelMatrix (shared_ptr<BaseMatrix> amat, shared_ptr<ParallelDofs> apardofs)
-    : BaseMatrix(apardofs), mat(amat)
-  { 
-    mat->SetParallelDofs (apardofs);
+  
+  ParallelMatrix :: ParallelMatrix (shared_ptr<BaseMatrix> amat,
+				    shared_ptr<ParallelDofs> arpardofs,
+				    shared_ptr<ParallelDofs> acpardofs)
+    : BaseMatrix((arpardofs==acpardofs) ? arpardofs : nullptr), mat(amat),
+      row_paralleldofs(arpardofs), col_paralleldofs(acpardofs)
+  {
+    if(row_paralleldofs==col_paralleldofs)
+      mat->SetParallelDofs (arpardofs);
 #ifdef USE_MUMPS
     mat->SetInverseType(MUMPS);
 #else
     mat->SetInverseType(MASTERINVERSE);
 #endif
+  }
+
+  ParallelMatrix :: ParallelMatrix (shared_ptr<BaseMatrix> amat,
+				    shared_ptr<ParallelDofs> apardofs)
+    : ParallelMatrix(amat, apardofs, apardofs)
+  { }
+
+  
+  AutoVector ParallelMatrix :: CreateRowVector () const
+  {
+    if (!dynamic_cast<const SparseMatrix<double>*> (mat.get()))
+      throw Exception("ParallelMatrix::CreateRowVector only implemented for sparse matrices!");
+    if (row_paralleldofs==nullptr)
+      return make_shared<VVector<double>> (mat->Width());
+    return make_shared<ParallelVVector<double>> (mat->Width(), row_paralleldofs);
+    return shared_ptr<BaseVector>();
+  }
+  
+  AutoVector ParallelMatrix :: CreateColVector () const
+  {
+    if (!dynamic_cast<const SparseMatrix<double>*> (mat.get()))
+      throw Exception("ParallelMatrix::CreateColVector only implemented for sparse matrices!");
+    if (col_paralleldofs==nullptr)
+      return make_shared<VVector<double>> (mat->Height());
+    return make_shared<ParallelVVector<double>> (mat->Height(), col_paralleldofs);
+    return shared_ptr<BaseVector>();
   }
 
 
@@ -378,13 +416,12 @@ namespace ngla
 
   AutoVector ParallelMatrix :: CreateVector () const
   {
+    if(row_paralleldofs != col_paralleldofs) {
+      throw Exception("ParallelMatrix::CreateVector called for nonsymmetric case (use CreateRowVector of CreateColVector)!");
+    }
     if (dynamic_cast<const SparseMatrix<double>*> (mat.get()))
       return make_shared<ParallelVVector<double>> (mat->Height(), paralleldofs);
-
-    cerr << "ParallelMatrix::CreateVector not implemented for matrix type " 
-	 << typeid(mat).name()
-	 << endl;
-    return shared_ptr<BaseVector>();
+    throw Exception("ParallelMatrix::CreateColVector only implemented for sparse matrices!");
   }
 
   ostream & ParallelMatrix :: Print (ostream & ost) const
@@ -485,15 +522,97 @@ namespace ngla
 
 
 
+  FETI_Jump_Matrix :: FETI_Jump_Matrix (shared_ptr<ParallelDofs> apardofs, shared_ptr<ParallelDofs> au_paralleldofs)
+    : BaseMatrix(apardofs), u_paralleldofs(au_paralleldofs)
+  {
+    
+    size_t njs = 0;
+    for (auto p:paralleldofs->GetDistantProcs())
+      njs += paralleldofs->GetExchangeDofs(p).Size();
 
+    Array<size_t> ones(njs);
+    ones = 1;
+    Table<int> dps(ones);
+    njs = 0;
+    for (auto p:paralleldofs->GetDistantProcs()) {
+      for (auto d:paralleldofs->GetExchangeDofs(p)) {
+	dps[njs++][0] = p;
+      }
+    }    
+
+    this->jump_paralleldofs = make_shared<ParallelDofs>(paralleldofs->GetCommunicator(), move(dps));
+
+    return;
+  }
 
 
   void FETI_Jump_Matrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
-  { ; }
+  {
+    y.Distribute();
+    size_t count = 0;
+    /*
+      for (auto p:paralleldofs->GetDistantProcs()) {
+      auto exdofs = paralleldofs->GetExchangeDofs(p);
+      if (p<MyMPI_GetId(paralleldofs->GetCommunicator())) {
+      for (auto k:Range(exdofs.Size())) {
+      y.FVDouble()[count++] -= s*x.FVDouble()[exdofs[k]];
+      }
+      }
+      else {
+      for (auto k:Range(exdofs.Size())) {
+      y.FVDouble()[count++] += s*x.FVDouble()[exdofs[k]];
+      }
+      }
+      }
+    */
+    auto me = MyMPI_GetId(paralleldofs->GetCommunicator());
+    auto fx = x.FVDouble();
+    auto fy = y.FVDouble();
+    for (auto p : paralleldofs->GetDistantProcs())
+      {
+        double signed_s = (p < me) ? -s : s;
+        for (auto exdof : paralleldofs->GetExchangeDofs(p))
+          fy[count++] += signed_s * fx[exdof];
+      }
+  }
 
   void FETI_Jump_Matrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
-  { ; }
+  {
+    x.Cumulate();
+    size_t count = 0;
+    for (auto p:paralleldofs->GetDistantProcs()) {
+      auto exdofs = paralleldofs->GetExchangeDofs(p);
+      if (p<MyMPI_GetId(paralleldofs->GetCommunicator())) {
+	for (auto k:Range(exdofs.Size())) {
+	  y.FVDouble()[exdofs[k]] -= s*x.FVDouble()[count++];
+	}
+      }
+      else {
+	for (auto k:Range(exdofs.Size())) {
+	  y.FVDouble()[exdofs[k]] += s*x.FVDouble()[count++];
+	}
+      }
+    }
+  }
 
+  
+  AutoVector FETI_Jump_Matrix :: CreateRowVector () const
+  {
+    // throw Exception("Called FETI_Jump_Matrix :: CreateRowVector, this is not well defined");
+    if (u_paralleldofs==nullptr) {
+      return make_shared<VVector<double>>(VHeight());
+    }
+    return make_shared<ParallelVVector<double>> (u_paralleldofs->GetNDofLocal(),
+						 u_paralleldofs);
+  }
+  
+  AutoVector FETI_Jump_Matrix :: CreateColVector () const
+  {
+    return make_shared<ParallelVVector<double>> (jump_paralleldofs->GetNDofLocal(),
+						 jump_paralleldofs);
+  }
+  
+  
 }
 
 #endif

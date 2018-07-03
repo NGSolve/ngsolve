@@ -48,6 +48,7 @@ namespace ngcomp
     if (flags.NumFlagDefined("order_policy"))
       SetOrderPolicy(ORDER_POLICY(int(flags.GetNumFlag("order_policy",1))));
 
+    /*
     if (flags.NumFlagDefined("order_left"))
       {
         auto order_left = int(flags.GetNumFlag("order_left", 1));
@@ -62,7 +63,7 @@ namespace ngcomp
         for (auto et : element_types)
           SetOrderRight (et, order_right);
       }
-    
+    */
     
     dimension = int (flags.GetNumFlag ("dim", 1));
 
@@ -313,7 +314,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       delete specialelements[i]; 
     specialelements.SetSize(0);
 
-
+    ma->UpdateBuffers();  // is free if netgen-mesh did not change
     int dim = ma->GetDimension();
     
     dirichlet_vertex.SetSize (ma->GetNV());
@@ -465,7 +466,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     external_free_dofs = make_shared<BitArray>(GetNDof());
     *external_free_dofs = *free_dofs;
     for (auto i : Range(ctofdof))
-      if (ctofdof[i] & LOCAL_DOF)
+      if (ctofdof[i] & CONDENSATABLE_DOF)
 	external_free_dofs->Clear(i);
 
     if (print)
@@ -960,6 +961,24 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
   }
 
+  void FESpace :: GetDofNrs (ElementId ei, Array<int> & dnums, COUPLING_TYPE ctype) const
+  {
+    ArrayMem<int,100> alldnums; 
+    GetDofNrs(ei, alldnums);
+    dnums.SetSize(0);
+    
+    if (ctofdof.Size() == 0)
+      {
+        if ( (INTERFACE_DOF & ctype) != 0)
+          dnums = alldnums;
+      }
+    else
+      for (auto d : alldnums)
+        if ( (d != -1) && ((ctofdof[d] & ctype) != 0) )
+          dnums.Append(d);
+  }
+
+
   void FESpace :: GetNodeDofNrs (NODE_TYPE nt, int nr, Array<int> & dnums) const
   {
     GetDofNrs(NodeId(nt,nr),dnums);
@@ -1102,6 +1121,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     // ntype[ctofdof[i]]++;
     for (auto ct : ctofdof) ntype[ct]++;
     if (ntype[UNUSED_DOF]) ost << "unused = " << ntype[UNUSED_DOF] << endl;
+    if (ntype[HIDDEN_DOF]) ost << "hidden = " << ntype[HIDDEN_DOF] << endl;
     if (ntype[LOCAL_DOF])  ost << "local  = " << ntype[LOCAL_DOF] << endl;
 
     int nfree = 0;
@@ -1127,7 +1147,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
   
   std::list<std::tuple<std::string,double>> FESpace :: Timing () const
   {
-    double starttime;
     double time;
     std::list<std::tuple<std::string,double>> results;
     LocalHeap lh (100000, "FESpace - Timing");
@@ -1212,8 +1231,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     
 #ifdef TIMINGSEQUENTIAL
 
-
-    starttime = WallTime();
+    double starttime = WallTime();
     int steps = 0;
     do
       {
@@ -1529,7 +1547,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
     switch (ct)
       {
       case UNUSED_DOF: ost << "unused"; break;
+      case HIDDEN_DOF:  ost << "hidden"; break;
       case LOCAL_DOF:  ost << "local"; break;
+      case CONDENSATABLE_DOF:  ost << "condensable"; break;
       case INTERFACE_DOF: ost << "interface"; break;
       case NONWIREBASKET_DOF: ost << "non-wirebasket"; break;
       case WIREBASKET_DOF: ost << "wirebasket"; break;
@@ -1539,33 +1559,40 @@ lot of new non-zero entries in the matrix!\n" << endl;
     return ost;
   }
 
-  void FESpace :: SolveM (CoefficientFunction & rho, BaseVector & vec,
+  void FESpace :: SolveM (CoefficientFunction * rho, BaseVector & vec,
                           LocalHeap & lh) const
   {
     cout << "SolveM is only available for L2-space, not for " << typeid(*this).name() << endl;
   }
 
+  void FESpace :: ApplyM (CoefficientFunction * rho, BaseVector & vec,
+                          LocalHeap & lh) const
+  {
+    cout << "ApplyM is only available for L2-space, not for " << typeid(*this).name() << endl;
+  }
+
   void FESpace :: UpdateParallelDofs ( )
   {
-    if (MyMPI_GetNTasks() == 1) return;
+    if (MyMPI_GetNTasks(ma->GetCommunicator()) == 1) return;
+
+    static Timer timer ("FESpace::UpdateParallelDofs"); RegionTimer reg(timer);
 
     Array<NodeId> dofnodes (GetNDof());
     dofnodes = NodeId (NT_VERTEX, -1);
+    
     Array<int> dnums;
-
-    // for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
     for (NODE_TYPE nt : { NT_VERTEX, NT_EDGE, NT_FACE, NT_CELL })
-      for ( int nr = 0; nr < ma->GetNNodes (nt); nr++ )
+      for (NodeId ni : ma->Nodes(nt))
 	{
-	  GetDofNrs (NodeId(nt, nr), dnums);
+	  GetDofNrs (ni, dnums);
 	  for (auto d : dnums)
-	    dofnodes[d] = NodeId (nt, nr);
+	    if (d != -1) dofnodes[d] = ni;
 	} 
 
     paralleldofs = make_shared<ParallelMeshDofs> (ma, dofnodes, dimension, iscomplex);
 
-    if (MyMPI_AllReduce (ctofdof.Size(), MPI_SUM))
-      AllReduceDofData (ctofdof, MPI_MAX, GetParallelDofs());
+    if (MyMPI_AllReduce (ctofdof.Size(), MPI_SUM, ma->GetCommunicator())) 
+      paralleldofs -> AllReduceDofData (ctofdof, MPI_MAX);
   }
 
 
@@ -1692,6 +1719,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
           case ET_PYRAMID: return *(new (lh) FE_Pyramid1);
           case ET_HEX:     return *(new (lh) FE_Hex1);
           case ET_POINT:   return *(new (lh) FE_Point);
+          default:
             throw Exception ("Inconsistent element type in NodalFESpace::GetFE");
           }
       }
@@ -2453,7 +2481,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
         external_free_dofs = make_shared<BitArray>(GetNDof());
         *external_free_dofs = *free_dofs;
         for (int i = 0; i < ctofdof.Size(); i++)
-          if (ctofdof[i] & LOCAL_DOF)
+          if (ctofdof[i] & CONDENSATABLE_DOF)
             external_free_dofs->Clear(i);
 
 
@@ -2593,6 +2621,27 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
   
 
+  void CompoundFESpace :: SolveM(CoefficientFunction * rho, BaseVector & vec,
+                                 LocalHeap & lh) const
+  {
+    for (size_t i = 0; i < spaces.Size(); i++)
+      {
+        auto veci = vec.Range (GetRange(i));
+        spaces[i] -> SolveM (rho, veci, lh);
+      }
+  }
+    
+  void CompoundFESpace :: ApplyM(CoefficientFunction * rho, BaseVector & vec,
+                                 LocalHeap & lh) const
+  {
+    for (size_t i = 0; i < spaces.Size(); i++)
+      {
+        auto veci = vec.Range (GetRange(i));
+        spaces[i] -> ApplyM (rho, veci, lh);
+      }
+  }
+    
+
 
 
 
@@ -2676,8 +2725,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
 
-  Table<int> * Nodes2Table (const MeshAccess & ma,
-			    const Array<NodeId> & dofnodes)
+  Table<int> Nodes2Table (const MeshAccess & ma,
+                          const Array<NodeId> & dofnodes)
   {
     int ndof = dofnodes.Size();
 
@@ -2690,14 +2739,14 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	ma.GetDistantProcs (dofnodes[i], distprocs);
 	ndistprocs[i] = distprocs.Size();
       }
-
-    Table<int> * dist_procs = new Table<int> (ndistprocs);
+    
+    Table<int> dist_procs(ndistprocs);
 
     for (int i = 0; i < ndof; i++)
       {
 	if (dofnodes[i].GetNr() == -1) continue;
 	ma.GetDistantProcs (dofnodes[i], distprocs);
-	(*dist_procs)[i] = distprocs;
+	dist_procs[i] = distprocs;
       }
 
     return dist_procs;

@@ -276,7 +276,8 @@ namespace ngcomp
 		  {
 		  case ET_TET: ndof += 4*(order+1)*2; break;
 		  case ET_PRISM: ndof += 2 * (2*(order+1)+3*(2*order+1)); break;
-		  default: throw Exception (string("VectorFacetFESpace: Element type not implemented"));
+		  case ET_HEX: ndof += 6*(2*order+1)*2; break;
+		  default: throw Exception (string("VectorFacetFESpace: Element type not implemented"));		  
 		  }
 	      }
 	    first_inner_dof[ne] = ndof;
@@ -327,7 +328,7 @@ namespace ngcomp
       for(int el=0; el<ma->GetNE(); el++)	      
 	{
 	  for (int k = first_inner_dof[el]; k < first_inner_dof[el+1]; k++)
-	    ctofdof[k] = LOCAL_DOF;
+	    ctofdof[k] = HIDDEN_DOF;
 	}	  
     *testout << " VECTORFACETFESPACE - ctofdof = \n" << ctofdof << endl;
   }
@@ -388,7 +389,7 @@ namespace ngcomp
               return fe;
             });
         }
-      case BBND: case BBBND:
+      case BBND: case BBBND: default:
         throw Exception ("VectorFacetFESpace::GetFE does not support BBND or BBBND");
       }
   }

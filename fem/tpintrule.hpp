@@ -194,7 +194,7 @@ namespace ngfem
     ///
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const;
     ///
-    virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const;
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<double> values) const;
     virtual void EvaluateStdRule (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const;
   };
   

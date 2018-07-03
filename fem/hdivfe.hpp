@@ -122,6 +122,7 @@ namespace ngfem
     virtual void GetFacetDofs(int i, Array<int> & dnums) const;
     // { cout  << " GetFacetDofs for nothing " << endl; dnums.SetSize(0);}; 
 
+    virtual void CalcDualShape (const MappedIntegrationPoint<DIM,DIM> & mip, SliceMatrix<> shape) const;
 
   protected:
 

@@ -13,17 +13,17 @@ namespace ngla
 
   class Projector : public BaseMatrix
   {
-    const BitArray & bits;
+    shared_ptr<BitArray> bits;
     bool keep_values;
   public:
     // projector on true / false bits
-    Projector (const BitArray & abits, bool akeep_values = true)
+    Projector (shared_ptr<BitArray> abits, bool akeep_values = true)
       : bits(abits), keep_values(akeep_values) { ; }
 
     virtual bool IsComplex() const { return false; } 
 
-    virtual int VHeight() const { return bits.Size(); }
-    virtual int VWidth() const { return bits.Size(); }
+    virtual int VHeight() const { return bits->Size(); }
+    virtual int VWidth() const { return bits->Size(); }
 
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;    
   };
@@ -80,6 +80,36 @@ namespace ngla
   };
 
 
+  class BlockMatrix : public BaseMatrix
+  {
+    Array<Array<shared_ptr<BaseMatrix>>> mats;
+    size_t h, w;
+
+    // one matrix per row/col that can be used to create vectors etc.
+    Array<shared_ptr<BaseMatrix>> row_reps;
+    Array<shared_ptr<BaseMatrix>> col_reps;
+
+  public:
+    BlockMatrix (const Array<Array<shared_ptr<BaseMatrix>>> & amats);
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
+
+    const shared_ptr<BaseMatrix> & operator()(size_t i, size_t j)
+    {
+      if (i >= h) throw Exception("Tried to access BlockMatrix row that is out of range");
+      if (j >= w) throw Exception("Tried to access BlockMatrix col that is out of range");
+      return mats[i][j];
+    }
+
+    size_t BlockRows() const { return h; }
+    size_t BlockCols() const { return w; }
+
+    virtual int VHeight() const override { throw Exception("VHeight does not make sense for BlockMatrix");}
+    virtual int VWidth() const override { throw Exception("VWidth does not make sense for BlockMatrix");}
+
+    virtual AutoVector CreateRowVector () const override;
+    virtual AutoVector CreateColVector () const override;
+  };
 }
 
 

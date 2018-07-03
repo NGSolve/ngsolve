@@ -101,7 +101,7 @@ namespace ngfem
   ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
                BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
   {
-      int size = (bmir.Size()+1)*2000;
+      int size = (bmir.Size()+1)*500*SIMD<double>::Size();
       STACK_ARRAY(char, data, size);
       LocalHeap lh(data, size);
 
@@ -115,6 +115,7 @@ namespace ngfem
       FlatMatrix<SIMD<double>> hxrr(D, mir.IR().Size(), lh);
       FlatMatrix<SIMD<double>> hx(D, mir.IR().Size(), lh);
 
+      
       for (int k = 0; k < mir.Size(); k++)
         for (int m = 0; m < D*D; m++)
           y(m, k) = SIMD<double> (0.0);
@@ -187,7 +188,7 @@ namespace ngfem
   AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
                   BareSliceMatrix<SIMD<double>> x, BareSliceVector<double> y)
   {
-      size_t size = (bmir.Size()+1)*2000;
+      size_t size = (bmir.Size()+1)*500*SIMD<double>::Size();
       STACK_ARRAY(char, data, size);
       LocalHeap lh(data, size);
 
@@ -266,7 +267,7 @@ namespace ngfem
   }
 
   template class DiffOpHesseBoundary<3,ScalarFiniteElement<2>>;
-
+  template class DiffOpHesseBoundary<2,ScalarFiniteElement<1>>;
   
   // standard integratos:
   

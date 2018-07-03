@@ -20,7 +20,7 @@ macro(add_unit_test name sources)
   if (WIN32)
     target_link_libraries(test_${name} ngsolve catch_main)
   else(WIN32)
-    target_link_libraries(test_${name} ngfem ngstd ngcomp catch_main)
+    target_link_libraries(test_${name} ngfem ngstd ngcomp catch_main visual)
   endif(WIN32)
 
   add_dependencies(unit_tests test_${name})

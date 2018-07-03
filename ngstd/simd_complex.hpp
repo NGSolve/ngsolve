@@ -83,7 +83,10 @@ namespace ngstd
       h2.Store((double*)(p+SIMD<double>::Size()/2), Mask128(nr-SIMD<double>::Size()/2));
     }
   };
-    
+
+  inline SIMD<double> Real(SIMD<Complex> a) { return a.real(); }
+  inline SIMD<double> Imag(SIMD<Complex> a) { return a.imag(); }
+
   INLINE SIMD<Complex> operator+ (SIMD<Complex> a, SIMD<Complex> b)
   { return SIMD<Complex> (a.real()+b.real(), a.imag()+b.imag()); }
   INLINE SIMD<Complex> & operator+= (SIMD<Complex> & a, SIMD<Complex> b)

@@ -81,9 +81,9 @@ namespace ngcomp
     virtual void FinalizeUpdate(LocalHeap & lh) override;
     virtual void Update(LocalHeap & lh) override;
     /// 
-    virtual void UpdateDofTables();
+    virtual void UpdateDofTables() override;
     ///
-    virtual void UpdateCouplingDofArray();    
+    virtual void UpdateCouplingDofArray() override;    
     ///
     virtual size_t GetNDof () const throw() override;
     ///
@@ -100,7 +100,7 @@ namespace ngcomp
 
     void GetSliceDofNrs(ngfem::ElementId ei, int direction, ngstd::Array<int>& dnums ,LocalHeap & lh) const;
     ///
-    virtual int GetSpacialDimension() const override { return space_x->GetSpacialDimension() + spaces_y[0]->GetSpacialDimension();}
+    virtual int GetSpatialDimension() const override { return space_x->GetSpatialDimension() + spaces_y[0]->GetSpatialDimension();}
     ///
     virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
     
@@ -111,7 +111,7 @@ namespace ngcomp
     void ReduceToXSpace(shared_ptr<GridFunction> gf_in, shared_ptr<GridFunction> gf_out,LocalHeap & lh,const function<void(shared_ptr<FESpace>,const FiniteElement &, const ElementTransformation & ,FlatVector<>,FlatVector<>,LocalHeap&)> & func);
     void ProlongateFromXSpace(shared_ptr<GridFunction> gf_in, shared_ptr<GridFunction> gf_out, LocalHeap & lh);
 
-    virtual void SolveM (CoefficientFunction & rho, BaseVector & vec,
+    virtual void SolveM (CoefficientFunction * rho, BaseVector & vec,
                          LocalHeap & lh) const override;
   };
 

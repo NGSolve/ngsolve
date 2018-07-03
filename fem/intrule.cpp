@@ -180,6 +180,73 @@ namespace ngfem
       }
   }
 
+  template <int S, int R, typename SCAL>
+  void MappedIntegrationPoint<S,R,SCAL> ::
+  CalcHesse (Mat<1> & ddx1, Mat<1> & ddx2) const
+  {
+    //if (S == R)
+    //  {
+    //    this -> CalcHesse(ddx1, ddx2);
+    //    return;
+    //  }
+
+    // for 1D -> 2D
+
+    double eps = 1e-6;
+
+    Mat<2,1> jacr, jacl;
+    for (int dir = 0; dir < 1; dir++)
+      {
+	IntegrationPoint ipr = this->ip;
+	IntegrationPoint ipl = this->ip;
+	ipr(dir) += eps;
+	ipl(dir) -= eps;
+	this->eltrans->CalcJacobian (ipr, jacr);
+	this->eltrans->CalcJacobian (ipl, jacl);
+
+	for (int j = 0; j < 1; j++)
+	  {
+	    ddx1(dir,j) = (jacr(0,j) - jacl(0,j) ) / (2*eps);
+	    ddx2(dir,j) = (jacr(1,j) - jacl(1,j) ) / (2*eps);
+	  }
+      }
+  }
+
+
+  template <int S, int R, typename SCAL>
+  void MappedIntegrationPoint<S,R,SCAL> ::
+  CalcHesse (Mat<1> & ddx1, Mat<1> & ddx2, Mat<1> & ddx3) const
+  {
+    //if (S == R)
+    //  {
+    //    this -> CalcHesse(ddx1, ddx2);
+    //    return;
+    //  }
+
+    // for 1D -> 3D
+
+    double eps = 1e-6;
+
+    Mat<3,1> jacr, jacl;
+    for (int dir = 0; dir < 1; dir++)
+      {
+	IntegrationPoint ipr = this->ip;
+	IntegrationPoint ipl = this->ip;
+	ipr(dir) += eps;
+	ipl(dir) -= eps;
+	this->eltrans->CalcJacobian (ipr, jacr);
+	this->eltrans->CalcJacobian (ipl, jacl);
+
+	for (int j = 0; j < 1; j++)
+	  {
+	    ddx1(dir,j) = (jacr(0,j) - jacl(0,j) ) / (2*eps);
+	    ddx2(dir,j) = (jacr(1,j) - jacl(1,j) ) / (2*eps);
+            ddx3(dir,j) = (jacr(2,j) - jacl(2,j) ) / (2*eps);
+	  }
+      }
+  }
+
+
 
 
   template <int S, int R, typename SCAL>
@@ -370,11 +437,29 @@ namespace ngfem
         if (DIM_ELEMENT == DIM_SPACE)
           {
             mip.SetNV(normal);
+            if (DIM_SPACE == 2)
+              mip.SetTV(Vec<2>(-normal(1),normal(0)));
           }
         else
           {
-            Vec<3> tang = Cross(Vec<3> (normal), Vec<3> (mip.GetNV()));
-            mip.SetTV(tang);
+            if(DIM_SPACE == 3 && DIM_ELEMENT == 1)
+              {
+                mip.SetTV(Vec<3>(normal));
+              }
+            else if( DIM_SPACE == 3 && DIM_ELEMENT == 2)
+              {
+                Vec<3> tang = Cross(Vec<3> (normal), Vec<3> (mip.GetNV()));
+                mip.SetTV(tang);
+              }
+            else if( DIM_SPACE == 2 && DIM_ELEMENT == 1)
+              {
+                mip.SetTV(Vec<2>(normal));
+              }
+            else
+              {
+                throw Exception("In ComputeNormalsAndMeasure: not implemented yet!");
+              }
+            
           }
       }
   }
@@ -3190,11 +3275,28 @@ namespace ngfem
         if (DIM_ELEMENT == DIM_SPACE)
           {
             mip.SetNV(normal);
+            if (DIM_SPACE == 2)
+              mip.SetTV(Vec<2,SIMD<double>>(-normal(1),normal(0)));
           }
         else
           {
-            Vec<3,SIMD<double>> tang = Cross(Vec<3,SIMD<double>> (normal), Vec<3,SIMD<double>> (mip.GetNV()));
-            mip.SetTV(tang);
+            if(DIM_SPACE == 3 && DIM_ELEMENT == 1)
+              {
+                mip.SetTV(Vec<3,SIMD<double>>(normal));
+              }
+            else if( DIM_SPACE == 3 && DIM_ELEMENT == 2)
+              {
+                Vec<3,SIMD<double>> tang = Cross(Vec<3,SIMD<double>> (normal), Vec<3,SIMD<double>> (mip.GetNV()));
+                mip.SetTV(tang);
+              }
+            else if( DIM_SPACE == 2 && DIM_ELEMENT == 1)
+              {
+                mip.SetTV(Vec<2,SIMD<double>>(normal));
+              }
+            else
+              {
+                throw Exception("In ComputeNormalsAndMeasure SIMD: not implemented yet!");
+              }
           }
         
       }

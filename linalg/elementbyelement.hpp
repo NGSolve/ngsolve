@@ -99,15 +99,16 @@ namespace ngla
     virtual shared_ptr<BaseMatrix> 
     InverseMatrix (BitArray * subset = 0) const;
 
-    int GetNZE () const
+    size_t GetNZE () const
     {
-      int nze = 0;
-      for (int i = 0; i < elmats.Size(); i++)
+      size_t nze = 0;
+      for (size_t i = 0; i < elmats.Size(); i++)
 	if (!clone.Test(i))
 	  nze += elmats[i].Height()*elmats[i].Width();
       return nze;
     }
-
+    
+    virtual size_t NZE () const { return GetNZE(); }
   };  
 
 }

@@ -12,13 +12,13 @@ namespace ngcomp
     shared_ptr<BilinearForm> bfa;
     shared_ptr<FESpace> fes;
 
-    BaseMatrix *harmonicext, *harmonicexttrans, 
-      *innersolve;
+    shared_ptr<BaseMatrix> harmonicext, harmonicexttrans, 
+      innersolve;
 
     shared_ptr<BaseMatrix> pwbmat;    
 
-    SparseMatrix<SCAL,TV,TV> *sparse_innersolve, 
-      *sparse_harmonicext, *sparse_harmonicexttrans;
+    shared_ptr<SparseMatrix<SCAL,TV,TV>> sparse_innersolve, 
+      sparse_harmonicext, sparse_harmonicexttrans;
 
 
     Array<double> weight;
@@ -26,7 +26,8 @@ namespace ngcomp
     bool block;
     bool hypre;
     bool coarse;
-
+    bool local; // act as bddc for the local matrix
+    
     shared_ptr<BaseMatrix> inv;
     shared_ptr<BaseMatrix> inv_coarse;
     string inversetype;   //sparsecholesky or pardiso or ....
@@ -59,6 +60,8 @@ namespace ngcomp
 
       hypre = ahypre;
 
+      local = flags.GetDefineFlag("local");
+      
       // pwbmat = NULL;
       inv = NULL;
 
@@ -90,7 +93,7 @@ namespace ngcomp
                  if (d == -1) continue;
                  if (!freedofs.Test(d)) continue;
                  COUPLING_TYPE ct = fes->GetDofCouplingType(d);
-                 if (ct == LOCAL_DOF && bfa -> UsesEliminateInternal()) continue;
+                 if ( ((ct & CONDENSATABLE_DOF) != 0) && bfa->UsesEliminateInternal()) continue;
 		
                  int ii = base + el.Nr();
                  if (ct == WIREBASKET_DOF)
@@ -117,7 +120,7 @@ namespace ngcomp
                  if (d == -1) continue;
                  if (!freedofs.Test(d)) continue;
                  COUPLING_TYPE ct = fes->GetDofCouplingType(d);
-                 if (ct == LOCAL_DOF && bfa->UsesEliminateInternal()) continue;
+                 if ( ((ct & CONDENSATABLE_DOF) != 0) && bfa->UsesEliminateInternal()) continue;
 		
                  int ii = base + el.Nr();
                  if (ct == WIREBASKET_DOF)
@@ -145,20 +148,20 @@ namespace ngcomp
       if (!bfa->SymmetricStorage()) 
 	{
 	  harmonicexttrans = sparse_harmonicexttrans =
-	    new SparseMatrix<SCAL,TV,TV>(ndof, el2wbdofs, el2ifdofs, false);
+	    make_shared<SparseMatrix<SCAL,TV,TV>>(ndof, el2wbdofs, el2ifdofs, false);
 	  harmonicexttrans -> AsVector() = 0.0;
 	}
       else
-	harmonicexttrans = sparse_harmonicexttrans = NULL;
+	harmonicexttrans = sparse_harmonicexttrans = nullptr;
 
 
       innersolve = sparse_innersolve = bfa->SymmetricStorage() 
-	? new SparseMatrixSymmetric<SCAL,TV>(ndof, el2ifdofs)
-	: new SparseMatrix<SCAL,TV,TV>(ndof, el2ifdofs, el2ifdofs, false); // bfa.IsSymmetric());
+	? make_shared<SparseMatrixSymmetric<SCAL,TV>>(ndof, el2ifdofs)
+	: make_shared<SparseMatrix<SCAL,TV,TV>>(ndof, el2ifdofs, el2ifdofs, false); // bfa.IsSymmetric());
       innersolve->AsVector() = 0.0;
 
       harmonicext = sparse_harmonicext =
-	new SparseMatrix<SCAL,TV,TV>(ndof, el2ifdofs, el2wbdofs, false);
+	make_shared<SparseMatrix<SCAL,TV,TV>>(ndof, el2ifdofs, el2wbdofs, false);
       harmonicext->AsVector() = 0.0;
       if (bfa->SymmetricStorage() && !hypre)
         pwbmat = make_shared<SparseMatrixSymmetric<SCAL,TV>>(ndof, el2wbdofs);
@@ -304,7 +307,8 @@ namespace ngcomp
 
 
 #ifdef PARALLEL
-      AllReduceDofData (weight, MPI_SUM, fes->GetParallelDofs());
+      if(!local)
+	AllReduceDofData (weight, MPI_SUM, fes->GetParallelDofs());
 #endif
       ParallelFor (weight.Size(),
                    [&] (size_t i)
@@ -377,7 +381,7 @@ namespace ngcomp
       else
 	{
 #ifdef PARALLEL
-	  if (bfa->GetFESpace()->IsParallel())
+	  if (bfa->GetFESpace()->IsParallel() && !local)
 	    {
 	      shared_ptr<ParallelDofs> pardofs = bfa->GetFESpace()->GetParallelDofs();
 
@@ -397,10 +401,10 @@ namespace ngcomp
                   inv = pwbmat -> InverseMatrix (wb_free_dofs);
 
 	      tmp = new ParallelVVector<TV>(ndof, pardofs);
-	      innersolve = new ParallelMatrix (shared_ptr<BaseMatrix> (innersolve, NOOP_Deleter), pardofs);
-	      harmonicext = new ParallelMatrix (shared_ptr<BaseMatrix> (harmonicext, NOOP_Deleter), pardofs);
+	      innersolve = make_shared<ParallelMatrix> (innersolve, pardofs);
+	      harmonicext = make_shared<ParallelMatrix> (harmonicext, pardofs);
 	      if (harmonicexttrans)
-		harmonicexttrans = new ParallelMatrix (shared_ptr<BaseMatrix> (harmonicexttrans, NOOP_Deleter), pardofs);
+		harmonicexttrans = make_shared<ParallelMatrix> (harmonicexttrans, pardofs);
 	    }
 	  else
 #endif
@@ -434,9 +438,9 @@ namespace ngcomp
       // delete inv;
       // delete pwbmat;
       // delete inv_coarse;
-      delete harmonicext;
-      delete harmonicexttrans;
-      delete innersolve;
+      // delete harmonicext;
+      // delete harmonicexttrans;
+      // delete innersolve;
       // delete wb_free_dofs;
 
       delete tmp;

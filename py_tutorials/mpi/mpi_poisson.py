@@ -9,16 +9,19 @@ from netgen.csg import unit_cube
 import netgen.meshing as netgen
 
 # ngsolve-imports
-#  - MPIManager provides some basic MPI functionality
-#  - DISTRIBUTED/CUMULATED describes the parallel status of a
-#    parallel vector
 from ngsolve import *
-from ngsolve.ngstd import MPIManager
+
+# initialize MPI
+comm = MPI_Init()
+rank = comm.rank
+np = comm.size
+
+do_vtk = False
+
+# DISTRIBUTED/CUMULATED describes the parallel status of a
+# parallel vector
 from ngsolve.la import DISTRIBUTED
 from ngsolve.la import CUMULATED
-
-rank = MPIManager.GetRank()
-np = MPIManager.GetNP()
 
 print("Hello from rank "+str(rank)+" of "+str(np))
 
@@ -29,7 +32,7 @@ if rank==0:
     mesh.Save("some_mesh.vol")
 
 # wait for master to be done meshing
-MPIManager.Barrier()
+comm.Barrier()
 
 # now load mesh from file
 ngmesh = netgen.Mesh(dim=3)
@@ -57,10 +60,10 @@ a = BilinearForm (V, symmetric=False)
 a += SymbolicBFI(grad(u)*grad(v))
 
 # Some possible preconditioners: 
-#c = Preconditioner(a, type="direct", inverse = "mumps") # direct solve with mumps
+c = Preconditioner(a, type="direct", inverse = "masterinverse") # direct solve with mumps
 #c = Preconditioner(a, type="bddc", inverse = "mumps")   # BBDC + mumps for coarse inverse
 #c = Preconditioner(a, type="hypre")                             # BoomerAMG (use only for order 1)
-c = Preconditioner(a, type="bddc", usehypre = True)     # BDDC + BoomerAMG for coarse matrix
+#c = Preconditioner(a, type="bddc", usehypre = True)     # BDDC + BoomerAMG for coarse matrix
 
 a.Assemble()
 
@@ -79,13 +82,13 @@ error = Integrate ( (u-exact)*(u-exact) , mesh)
 if rank==0:
     print("L2-error", error )
 
+if do_vtk:
+    # do VTK-output
+    import os
+    output_path = os.path.dirname(os.path.realpath(__file__)) + "/poisson_output"
+    if rank==0 and not os.path.exists(output_path):
+        os.mkdir(output_path)
+    comm.Barrier() #wait until master has created the directory!!
 
-# do VTK-output
-import os
-output_path = os.path.dirname(os.path.realpath(__file__)) + "/poisson_output"
-if rank==0 and not os.path.exists(output_path):
-    os.mkdir(output_path)
-MPIManager.Barrier() #wait until master has created the directory!!
-
-vtk = VTKOutput(ma=mesh, coefs=[u], names=["sol"], filename=output_path+"/vtkout_p"+str(rank), subdivision=2)
-vtk.Do()
+    vtk = VTKOutput(ma=mesh, coefs=[u], names=["sol"], filename=output_path+"/vtkout_p"+str(rank), subdivision=2)
+    vtk.Do()

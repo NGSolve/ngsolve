@@ -31,6 +31,7 @@ namespace ngcomp
   {
     ElementId ei;
   public:
+    static string defaultstring;
     Ngs_Element (const netgen::Ng_Element & el, ElementId id) 
       : netgen::Ng_Element(el), ei(id) { ; }
     AOWrapper<decltype(vertices)> Vertices() const { return vertices; }
@@ -38,7 +39,7 @@ namespace ngcomp
     AOWrapper<decltype(edges)> Edges() const { return edges; }
     AOWrapper<decltype(faces)> Faces() const { return faces; }
     AOWrapper<decltype(facets)> Facets() const { return facets; }
-    const string & GetMaterial() const { return *mat; }
+    const string & GetMaterial() const { return mat ? *mat : defaultstring; }
     operator ElementId() const { return ei; }
     auto VB() const { return ei.VB(); }
     auto Nr() const { return ei.Nr(); }
@@ -225,6 +226,7 @@ namespace ngcomp
     /// max boundary index for co dim 2
     // int & nbboundaries = nregions[2];
 
+    int mesh_timestamp = -1; // timestamp of Netgen-mesh
     size_t timestamp = 0;
     
     /// for ALE
@@ -631,6 +633,7 @@ namespace ngcomp
     }
 
     void Refine ();
+    void Curve (int order);
     void SetDeformation (shared_ptr<GridFunction> def = nullptr)
     {
       deformation = def;
@@ -641,7 +644,8 @@ namespace ngcomp
       return deformation;
     }
 
-    void SetPML (shared_ptr<PML_Transformation> pml_trafo, int _domnr)
+    void SetPML (const shared_ptr<PML_Transformation> & pml_trafo, int _domnr);
+    /*
     {
       if (_domnr>=nregions[VOL])
         throw Exception("MeshAccess::SetPML: was not able to set PML, domain index too high!");
@@ -649,23 +653,26 @@ namespace ngcomp
         throw Exception("MeshAccess::SetPML: dimension of PML = "+ToString(pml_trafo->GetDimension())+" does not fit mesh dimension!");
       pml_trafos[_domnr] = pml_trafo; 
     }
-    
-    void UnSetPML (int _domnr)
+    */
+    void UnSetPML (int _domnr);
+    /*
     {
       if (_domnr>=nregions[VOL])
         throw Exception("MeshAccess::UnSetPML: was not able to unset PML, domain index too high!");
       pml_trafos[_domnr] = nullptr; 
     }
-    Array<shared_ptr<PML_Transformation>> & GetPMLTrafos()
-    { return pml_trafos; }
+    */
+    Array<shared_ptr<PML_Transformation>> & GetPMLTrafos();
+    // { return pml_trafos; }
 
-    shared_ptr<PML_Transformation> GetPML(int _domnr)
+    shared_ptr<PML_Transformation> GetPML(int _domnr);
+    /*
     {
       if (_domnr>=nregions[VOL])
         throw Exception("MeshAccess::GetPML: was not able to get PML, domain index too high!");
       return pml_trafos[_domnr];
     }
-    
+    */
     shared_ptr<netgen::Mesh> GetNetgenMesh () const
     { return mesh.GetMesh(); }
       
@@ -926,22 +933,20 @@ namespace ngcomp
     /// the two parent vertices of a vertex. -1 for coarse-grid vertices
     void GetParentNodes (int pi, int * parents) const
     { 
-      Ng_GetParentNodes (pi+1, parents);
-      parents[0]--; parents[1]--; 
+      mesh.GetParentNodes (pi, parents);
     }
     INT<2> GetParentNodes (int pi) const
     {
       INT<2,int> parents;
-      Ng_GetParentNodes (pi+1, &parents[0]);
-      parents[0]--; parents[1]--;
+      mesh.GetParentNodes (pi, &parents[0]);
       return parents;
     }
     /// number of parent element on next coarser mesh
     int GetParentElement (int ei) const
-    { return Ng_GetParentElement (ei+1)-1; }
+    { return mesh.GetParentElement (ei); }
     /// number of parent boundary element on next coarser mesh
     int GetParentSElement (int ei) const
-    { return Ng_GetParentSElement (ei+1)-1; }
+    { return mesh.GetParentSElement (ei); }
   
     /// representant of vertex for anisotropic meshes
     int GetClusterRepVertex (int pi) const
@@ -1020,18 +1025,34 @@ namespace ngcomp
     bool IsElementCurved (int elnr) const
     { return GetElement(ElementId(VOL,elnr)).is_curved; }
       // { return bool (Ng_IsElementCurved (elnr+1)); }
-    
-    
+
+    [[deprecated("Use GetPeriodicNodes(NT_VERTEX, pairs) instead!")]]
     void GetPeriodicVertices ( Array<ngstd::INT<2> > & pairs) const;
+    [[deprecated("Use GetNPeriodicNodes(NT_VERTEX) instead!")]]
     int GetNPairsPeriodicVertices () const;
+    [[deprecated("Use GetPeriodicNodes(NT_VERTEX, idnr) instead")]]
     void GetPeriodicVertices (int idnr, Array<ngstd::INT<2> > & pairs) const;
+    [[deprecated("Use GetPeriodicNodes(NT_VERTEX, idnr).Size() instead")]]
     int GetNPairsPeriodicVertices (int idnr) const;  
 
+    [[deprecated("Use GetPeriodicNodes(NT_EDGE, pairs) instead!")]]
     void GetPeriodicEdges ( Array<ngstd::INT<2> > & pairs) const;
+    [[deprecated("Use GetNPeriodicNodes(NT_EDGE) instead!")]]
     int GetNPairsPeriodicEdges () const;
+    [[deprecated("Use GetPeriodicNodes(NT_EDGE, idnr) instead")]]
     void GetPeriodicEdges (int idnr, Array<ngstd::INT<2> > & pairs) const;
+    [[deprecated("Use GetPeriodicNodes(NT_EDGE, idnr).Size() instead")]]
     int GetNPairsPeriodicEdges (int idnr) const;
 
+    int GetNPeriodicIdentifications() const
+    {
+      return periodic_node_pairs[NT_VERTEX]->Size();
+    }
+    // get number of all periodic nodes of nodetype nt
+    size_t GetNPeriodicNodes(NODE_TYPE nt) const;
+    // write all the node pairs of type nt into array pairs
+    void GetPeriodicNodes(NODE_TYPE nt, Array<INT<2>>& pairs) const;
+    // Uses 0 based identification numbers! Returns periodic node pairs of given identifcation number
     const Array<INT<2>>& GetPeriodicNodes(NODE_TYPE nt, int idnr) const;
 
 
@@ -1125,9 +1146,8 @@ namespace ngcomp
     VorB vb;
     BitArray mask;
   public:
-    NGS_DLL_HEADER Region (shared_ptr<MeshAccess> amesh, VorB avb, string pattern);
-    Region (shared_ptr<MeshAccess> amesh, VorB avb, const BitArray & amask)
-      : mesh(amesh), vb(avb), mask(amask) { ; }
+    NGS_DLL_HEADER Region (const shared_ptr<MeshAccess> & amesh, VorB avb, string pattern);
+    NGS_DLL_HEADER Region (const shared_ptr<MeshAccess> & amesh, VorB avb, const BitArray & amask);
     Region (const Region &) = default;
     explicit operator VorB () const { return vb; }
     VorB VB() const { return vb; }

@@ -43,41 +43,29 @@ namespace ngcomp
         }
     }
 
-    /*
-      // not ready yet ...
     static void GenerateMatrixSIMDIR (const FiniteElement & fel,
                                       const SIMD_BaseMappedIntegrationRule & mir,
                                       BareSliceMatrix<SIMD<double>> mat)
     {
-      int facetnr = mip.IP().FacetNr();
+      int facetnr = mir.IR()[0].FacetNr();
       if (facetnr >= 0)
         {
-          mat = 0.0;
-          const FacetVolumeFiniteElement<D> & fel_facet = static_cast<const FacetVolumeFiniteElement<D>&> (bfel);
-          fel_facet.Facet(facetnr).CalcShape(mip.IP(), 
-                                             mat.Row(0).Range(fel_facet.GetFacetDofs(facetnr)));
+          mat.AddSize(fel.GetNDof(), mir.Size()) = 0.0;
+          const FacetVolumeFiniteElement<D> & fel_facet = static_cast<const FacetVolumeFiniteElement<D>&> (fel);
+          fel_facet.Facet(facetnr).CalcShape(mir.IR(), 
+                                             mat.Rows(fel_facet.GetFacetDofs(facetnr)));
         }
       else
         {
-          if (mip.BaseMappedIntegrationPoint::VB() == BND) 
-            {
-              const BaseScalarFiniteElement & fel = static_cast<const BaseScalarFiniteElement&> (bfel);
-              fel.CalcShape (mip.IP(), mat.Row(0));
-            }
-          else
-            throw Exception("cannot evaluate facet-fe inside element");
+          throw ExceptionNOSIMD("facet-simd-bnd not ready");
         }
-      // Cast(fel).CalcMappedDShape (mir, mat);      
     }
-    */
 
     
     using DiffOp<DiffOpIdFacet<D>>::ApplySIMDIR;          
     static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
-                             BareSliceVector<double> x, ABareSliceMatrix<double> y)
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
-      // Cast(fel).Evaluate (mir.IR(), x, y.Row(0));
-
       const FacetVolumeFiniteElement<D> & fel_facet = static_cast<const FacetVolumeFiniteElement<D>&> (bfel);
 
       int facetnr = mir.IR()[0].FacetNr();
@@ -91,9 +79,8 @@ namespace ngcomp
 
     using DiffOp<DiffOpIdFacet<D>>::AddTransSIMDIR;          
     static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
-                                ABareSliceMatrix<double> y, BareSliceVector<double> x)
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
-      // Cast(fel).AddTrans (mir.IR(), y.Row(0), x);
       const FacetVolumeFiniteElement<D> & fel_facet = static_cast<const FacetVolumeFiniteElement<D>&> (bfel);
 
       int facetnr = mir.IR()[0].FacetNr();
@@ -104,8 +91,6 @@ namespace ngcomp
                                           y.Row(0),
                                           x.Range(fel_facet.GetFacetDofs(facetnr)));
     }
-    
-    
   }; 
 
 
@@ -228,13 +213,18 @@ namespace ngcomp
     order_facet = p;
 
     fine_facet.SetSize(nfa);
-    fine_facet = 0; 
+    fine_facet = false; 
     
     Array<int> fanums;
-        
+
+    for (Ngs_Element el : ma->Elements<BND>())
+      if (DefinedOn(el))
+	fine_facet[el.Facets()] = true;
+    
     for (int i = 0; i < nel; i++)
       {
         ElementId ei(VOL, i);
+        if (!DefinedOn(ei)) continue;
 	ELEMENT_TYPE eltype=ma->GetElType(ei); 
 	const POINT3D * points = ElementTopology :: GetVertices (eltype);	
 	
@@ -438,13 +428,10 @@ namespace ngcomp
     Array<bool> fine_facet(ma->GetNFacets());
     fine_facet = false;
     
-    if(ma->GetDimension() == 3)
-      for(ElementId ei : ma->Elements<VOL>())
-				fine_facet[(*ma)[ei].Faces()] = true;
-    else
-      for(ElementId ei : ma->Elements<VOL>())
-        fine_facet[(*ma)[ei].Edges()] = true;
-    
+    for (Ngs_Element el : ma->Elements<VOL>())
+      if (DefinedOn(el))
+        fine_facet[el.Facets()] = true;
+      
     if (!AllDofsTogether())
       {
         for(int facet = 0; facet < ma->GetNFacets(); facet++)
@@ -468,7 +455,7 @@ namespace ngcomp
       }
     
     if(highest_order_dc)
-      ctofdof.Range(first_inner_dof[0],ndof) = LOCAL_DOF;
+      ctofdof.Range(first_inner_dof[0],ndof) = HIDDEN_DOF;
     
     if(print)
       *testout << "FacetFESpace, ctofdof = " << endl << ctofdof << endl;
@@ -495,6 +482,16 @@ namespace ngcomp
   // ------------------------------------------------------------------------
   FiniteElement & FacetFESpace :: GetFE (ElementId ei, Allocator  & lh) const
   {
+    if (!DefinedOn (ei))
+      {
+        return
+          SwitchET (ma->GetElType(ei), [&] (auto et) -> FiniteElement&
+                      {
+                        return *new (lh) ScalarDummyFE<et.ElementType()> ();
+                      });
+      }
+    
+    
     switch(ei.VB())
       {
       case VOL:
@@ -594,7 +591,7 @@ namespace ngcomp
                              ElementTopology::GetElementName(ma->GetElType(ei)));
           }
      
-        ArrayMem<int,4> ednums;
+        // ArrayMem<int,4> ednums;
     
         auto vnums = ma->GetElVertices(ei);
         switch (ma->GetElType(ei))
@@ -602,7 +599,7 @@ namespace ngcomp
           case ET_SEGM:
             {
               fe1d -> SetVertexNumbers (vnums);
-              ednums = ma->GetElEdges(ei);
+              auto ednums = ma->GetElEdges(ei);
               int p = order_facet[ednums[0]][0];
               if (highest_order_dc) p--;
               fe1d -> SetOrder (p); 
@@ -628,7 +625,7 @@ namespace ngcomp
         }
       case BBND:
         throw Exception("No BBND GetFE implemented for FacetFESpace");
-      case BBBND:
+      case BBBND: default:
         throw Exception("No BBBND GetFE implemented for FacetFESpace");
       }
   }
@@ -688,12 +685,14 @@ namespace ngcomp
   // ------------------------------------------------------------------------
   void FacetFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
+    dnums.SetSize0();
+    if (!DefinedOn (ei)) return;
+    
     switch (ei.VB())
       {
       case VOL:
 	{
 	  auto fanums = ma->GetElFacets(ei);
-	  dnums.SetSize0();
 	  
 	  if(!highest_order_dc)
 	    {

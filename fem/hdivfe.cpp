@@ -434,7 +434,16 @@ namespace ngfem
   }
 
 
-
+  template <int D>
+  void HDivFiniteElement<D> ::
+  CalcDualShape (const MappedIntegrationPoint<DIM,DIM> & mip, SliceMatrix<> shape) const
+  {
+    // throw Exception(string("CalcDualShape not implemented for H(div) element ")+typeid(*this).name());
+    static bool first = true;
+    if (first)
+      cerr << "CalcDualShape not implemented for H(div) element " << typeid(*this).name() << endl;
+    first = false;
+  }
 
   template class HDivFiniteElement<0>;
   template class HDivFiniteElement<1>;

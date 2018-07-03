@@ -3,6 +3,9 @@
 
 // copied from netgen
 
+#include <vector>
+#include <map>
+
 namespace ngstd
 {
 
@@ -57,6 +60,65 @@ namespace ngstd
     // { for (size_t j = 0; j < n; j++) { (*this) & str[j]; }; return *this; };
     // virtual Archive & operator & (char *& str) = 0;
 
+
+    // archive a pointer ...
+
+    int cnt = 0;
+    std::map<void*,int> ptr2nr;
+    std::vector<void*> nr2ptr;
+    
+    template <typename T>
+    Archive & operator& (T *& p)
+    {
+      if (Output())
+        {
+          if (!p)
+            {
+              int m2 = -2;
+              (*this) & m2;
+              return *this;
+            }
+          auto pos = ptr2nr.find( (void*) p);
+          if (pos == ptr2nr.end())
+            {
+              ptr2nr[p] = cnt;
+              int m1 = -1;
+              (*this) & m1;
+              cnt++;
+              (*this) & (*p);
+            }
+          else
+            {
+              (*this) & pos->second;
+            }
+        }
+      else
+        {
+          int nr;
+          (*this) & nr;
+          cout << "in, got nr " << nr << endl;
+          if (nr == -2)
+            {
+              p = nullptr;
+            }
+          else if (nr == -1)
+            {
+              p = new T;
+              cout << "create new ptr, p = " << p << endl;
+              (*this) & *p;
+              nr2ptr.push_back(p);
+            }
+          else
+            {
+              p = (T*)nr2ptr[nr];
+              cout << "reuse ptr " << nr << ": " << p << endl;
+            }
+        }
+      return *this;
+    }
+
+
+    
     template <typename T>
     Archive & operator << (const T & t)
     {

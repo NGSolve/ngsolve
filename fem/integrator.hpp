@@ -649,6 +649,7 @@ namespace ngfem
       return evaluators[name];
     }
 
+    const auto & GetEvaluators() const { return evaluators; }
     /*
     virtual const IntegrationRule & GetIntegrationRule (const FiniteElement & fel,
 							const bool use_higher_integration_order = false) const;

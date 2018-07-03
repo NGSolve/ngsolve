@@ -32,14 +32,27 @@ namespace ngcomp
      - a wirebasket degree of freedom
   */
   enum COUPLING_TYPE {  UNUSED_DOF = 0,
-			LOCAL_DOF = 1,
-			INTERFACE_DOF = 2,
-			NONWIREBASKET_DOF = 3,
-			WIREBASKET_DOF = 4,
-			EXTERNAL_DOF = 6,
-			ANY_DOF = 7
+			HIDDEN_DOF = 1,
+			LOCAL_DOF = 2,
+			CONDENSATABLE_DOF = 3,
+			INTERFACE_DOF = 4,
+			NONWIREBASKET_DOF = 6,
+			WIREBASKET_DOF = 8,
+			EXTERNAL_DOF = 12,
+			ANY_DOF = 15
 		      };
-		     
+/*
+Bit encoding:          
+UNUSED                     0 |  0
+HIDDEN                     1 |  1
+LOCAL                    1 0 |  2
+CONDENSATABLE            1 1 |  3
+INTERFACE              1 0 0 |  4
+NONWIREBASKET          1 1 0 |  6
+WIREBASKET           1 0 0 0 |  8
+EXTERNAL             1 1 0 0 | 12
+ANY                  1 1 1 1 | 15
+*/
 
   /**
      constant_order .... one order for everything
@@ -184,14 +197,16 @@ namespace ngcomp
       We can give different orders for the left and right space for different
       element-types (like trig or quad)
      */
-    int et_order_left[30];  // order for range of diff-op from the left 
-    int et_order_right[30]; // order for domain of diff-op to the right
-    
+    // int et_order_left[30];  // order for range of diff-op from the left 
+    // int et_order_right[30]; // order for domain of diff-op to the right
+
+    /*
     Array<TORDER> order_edge; 
     Array<INT<2,TORDER>> order_face_left;
     Array<INT<2,TORDER>> order_face_right; 
     Array<INT<3,TORDER>> order_cell_left;
     Array<INT<3,TORDER>> order_cell_right;
+    */
     size_t order_timestamp = 0;
     BitArray is_atomic_dof;
 
@@ -204,7 +219,6 @@ namespace ngcomp
     void SetNDof (size_t _ndof);
     
   public:
-    virtual int GetSpacialDimension() const { return ma->GetDimension();}
     string type;
 
     /**
@@ -222,6 +236,9 @@ namespace ngcomp
 
     /// update dof-table
     virtual void Update(LocalHeap & lh);
+
+    virtual void UpdateDofTables() { ; } 
+    virtual void UpdateCouplingDofArray() { ; } 
 
     /// update element coloring
     virtual void FinalizeUpdate(LocalHeap & lh);
@@ -251,12 +268,14 @@ namespace ngcomp
       order_policy = op;
     }
     
-    void SetOrder (ELEMENT_TYPE et, TORDER order)
+    virtual void SetOrder (ELEMENT_TYPE et, TORDER order)
     {
       if (order_policy == CONSTANT_ORDER || order_policy == OLDSTYLE_ORDER)
         order_policy = NODE_TYPE_ORDER;
-      et_order_left[et] = et_order_right[et] = order;
+      et_bonus_order[et] = order - this->order;
+      // et_order_left[et] = et_order_right[et] = order;
     }
+    /*
     void SetOrderLeft (ELEMENT_TYPE et, TORDER order)
     {
       if (order_policy == CONSTANT_ORDER || order_policy == OLDSTYLE_ORDER)
@@ -269,8 +288,10 @@ namespace ngcomp
         order_policy = NODE_TYPE_ORDER;
       et_order_right[et] = order;
     }
-
-    void SetOrder (NodeId ni, TORDER order)
+    */
+    virtual void SetOrder (NodeId ni, int order) { ; }
+    virtual int GetOrder (NodeId ni) const { return 0; }
+    /*
     {
       switch (ni.GetType())
         {
@@ -293,12 +314,14 @@ namespace ngcomp
           break;
         }
     }
+    */
     /// how many components
     int GetDimension () const { return dimension; }
 
     /// complex space ?
     bool IsComplex () const { return iscomplex; }
 
+    virtual int GetSpatialDimension() const { return ma->GetDimension();}
 
     /// number of (process-local) dofs
     virtual size_t GetNDof () const { return ndof; } 
@@ -478,8 +501,13 @@ namespace ngcomp
     
     void CheckCouplingTypes() const;
 
+    [[deprecated("Use GetDofNrs with element-id instead of elnr!")]]
+    void GetDofNrs (int elnr, Array<DofId> & dnums, COUPLING_TYPE ctype) const;
+      
     /// get dof-nrs of the element of certain coupling type
-    void GetDofNrs (int elnr, Array<DofId> & dnums, COUPLING_TYPE ctype) const;    
+    void GetDofNrs (ElementId ei, Array<DofId> & dnums, COUPLING_TYPE ctype) const;
+
+
 
     /// get dofs on nr'th node of type nt.
     [[deprecated("Use GetDofNrs with NodeId instead of nt/nr")]]    
@@ -785,7 +813,9 @@ namespace ngcomp
 
     const Array<SpecialElement*> & GetSpecialElements() const {return specialelements;}
 
-    virtual void SolveM(CoefficientFunction & rho, BaseVector & vec,
+    virtual void SolveM(CoefficientFunction * rho, BaseVector & vec,
+                        LocalHeap & lh) const;
+    virtual void ApplyM(CoefficientFunction * rho, BaseVector & vec,
                         LocalHeap & lh) const;
       
     shared_ptr<ParallelDofs> GetParallelDofs () const { return paralleldofs; }
@@ -1162,6 +1192,10 @@ namespace ngcomp
     virtual void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const;
     virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const;
 
+    virtual void SolveM(CoefficientFunction * rho, BaseVector & vec,
+                        LocalHeap & lh) const;
+    virtual void ApplyM(CoefficientFunction * rho, BaseVector & vec,
+                        LocalHeap & lh) const;
     
     template <class T> NGS_DLL_HEADER
       void T_TransformMat (ElementId ei, 

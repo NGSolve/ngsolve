@@ -19,6 +19,9 @@ namespace ngfem
     INLINE BaseScalarFiniteElement (int andof, int aorder)
       : FiniteElement (andof, aorder) { ; }
 
+    /// the name
+    HD NGS_DLL_HEADER
+    virtual string ClassName() const override;
 
     /// compute shape
     HD NGS_DLL_HEADER 
@@ -56,6 +59,15 @@ namespace ngfem
     virtual void CalcShape (const SIMD_IntegrationRule & ir, 
                             BareSliceMatrix<SIMD<double>> shape) const;
 
+    HD NGS_DLL_HEADER 
+    virtual void CalcMappedDShape (const BaseMappedIntegrationPoint & mip, 
+                                   BareSliceMatrix<> dshape) const = 0;
+
+
+    HD NGS_DLL_HEADER 
+    virtual void CalcMappedDShape (const BaseMappedIntegrationRule & mir, 
+                                   BareSliceMatrix<> dshapes) const = 0;
+    
     // rows dim*ndof, cols .. nip
     // rows:  phi0/dx, phi0/dy, phi0/dz, phi1/dx ... 
     HD NGS_DLL_HEADER 
@@ -99,6 +111,7 @@ namespace ngfem
 
 
     NGS_DLL_HEADER virtual void CalcDualShape (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const;
+    HD NGS_DLL_HEADER virtual void GetDiagMassMatrix (FlatVector<> mass) const;
   };
 
   /**
@@ -111,12 +124,6 @@ namespace ngfem
   public:
     using BaseScalarFiniteElement::BaseScalarFiniteElement;
 
-    /// the name
-    NGS_DLL_HEADER virtual string ClassName() const override;
-
-    HD NGS_DLL_HEADER virtual int Dim () const override { return D; } 
-
-
     /**
        returns derivatives in point ip.
     */
@@ -128,23 +135,17 @@ namespace ngfem
       return dshape;
     }
 
-    using BaseScalarFiniteElement::CalcShape;
-    using BaseScalarFiniteElement::CalcDShape;
     using BaseScalarFiniteElement::CalcMappedDShape;    
-
-    
 
     /// compute dshape, matrix: ndof x spacedim
     HD NGS_DLL_HEADER 
-    virtual void CalcMappedDShape (const MappedIntegrationPoint<D,D> & mip, 
-                                   BareSliceMatrix<> dshape) const;
+    virtual void CalcMappedDShape (const BaseMappedIntegrationPoint & mip, 
+                                   BareSliceMatrix<> dshape) const override;
 
 
     HD NGS_DLL_HEADER 
-    virtual void CalcMappedDShape (const MappedIntegrationRule<D,D> & mir, 
-                                   BareSliceMatrix<> dshapes) const;
-
-
+    virtual void CalcMappedDShape (const BaseMappedIntegrationRule & mir, 
+                                   BareSliceMatrix<> dshapes) const override;
 
 
     /**
@@ -163,7 +164,7 @@ namespace ngfem
                                              BareSliceMatrix<> ddshape) const;
     
     /// compute dshape, matrix: ndof x (spacedim spacedim)
-    NGS_DLL_HEADER virtual void CalcMappedDDShape (const MappedIntegrationPoint<D,D> & mip, 
+    NGS_DLL_HEADER virtual void CalcMappedDDShape (const BaseMappedIntegrationPoint & mip, 
                                                    BareSliceMatrix<> ddshape) const;
 
 
@@ -174,9 +175,7 @@ namespace ngfem
      */
     HD NGS_DLL_HEADER virtual Vec<D> EvaluateGrad (const IntegrationPoint & ip, BareSliceVector<> x) const;
 
-    using BaseScalarFiniteElement::Evaluate;
     using BaseScalarFiniteElement::EvaluateGrad;
-    using BaseScalarFiniteElement::AddGradTrans;
 
     /**
        Evaluate gradient in points of integrationrule ir.
@@ -191,8 +190,6 @@ namespace ngfem
     HD NGS_DLL_HEADER virtual void EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<D> values, BareSliceVector<> coefs) const;
 
     HD NGS_DLL_HEADER virtual void EvaluateGradTrans (const IntegrationRule & ir, SliceMatrix<> values, SliceMatrix<> coefs) const;
-
-    HD NGS_DLL_HEADER virtual void GetPolOrders (FlatArray<PolOrder<D> > orders) const;
 
   public:
     NGS_DLL_HEADER virtual std::list<std::tuple<std::string,double>> Timing () const override;

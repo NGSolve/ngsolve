@@ -29,17 +29,18 @@ namespace ngfem
     return coef->Evaluate(ip);
   }
 
-  void ProlongateCoefficientFunction :: Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
+  void ProlongateCoefficientFunction :: Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<double> values) const
   {
     const TPMappedIntegrationRule * tpmir = static_cast<const TPMappedIntegrationRule *>(&ir);
     auto & irs = tpmir->GetIRs();
-    coef->Evaluate(*irs[1-prolongateto],values.Rows(0,irs[1-prolongateto]->Size()) );
+    auto tempvals = values.AddSize(irs[0]->Size()*irs[1]->Size(),Dimension());
+    coef->Evaluate(*irs[1-prolongateto],tempvals.Rows(0,irs[1-prolongateto]->Size()) );        
     if(prolongateto == 1)
       for(int i=irs[0]->Size()-1;i>=0;i--)
-        values.Rows(i*irs[1]->Size(),(i+1)*irs[1]->Size()) = values.Row(i)(0);
+        tempvals.Rows(i*irs[1]->Size(),(i+1)*irs[1]->Size()) = tempvals.Row(i)(0);
     if(prolongateto == 0)
       for(int i=1;i<irs[0]->Size();i++)
-        values.Rows(i*irs[1]->Size(),(i+1)*irs[1]->Size()) = values.Rows(0,irs[1]->Size());
+        tempvals.Rows(i*irs[1]->Size(),(i+1)*irs[1]->Size()) = tempvals.Rows(0,irs[1]->Size());
   }
 
   void ProlongateCoefficientFunction :: EvaluateStdRule (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
@@ -168,12 +169,12 @@ namespace ngfem
     if(dimx == 1)
     {
       FlatMatrix<> resultmat(nipx*dimx,x.Width(), &flux(0,0));
-      resultmat = bmatx*x;
+      resultmat = bmatx*x | Lapack;
     }
     else
     {
       FlatMatrix<> resultmat(nipx*dimx,x.Width(), lh);
-      resultmat = bmatx*x;
+      resultmat = bmatx*x | Lapack;
       // cout << "resultmat = "<<endl<<resultmat<<endl;
       for(int k=0;k<flux.Height()/nipy;k++)
         flux.Rows(k*nipy,(k+1)*nipy) = Trans(resultmat.Rows(dimx*k,dimx*(k+1)));
@@ -198,7 +199,7 @@ namespace ngfem
     {
       FlatMatrix<> proxyvaluesasmat(nipx, nipy*dimy, &flux(0,0));
       // cout << "Input as mat = "<<endl<<proxyvaluesasmat<<endl;
-      x = Trans(bmatx)*proxyvaluesasmat;
+      x = Trans(bmatx)*proxyvaluesasmat | Lapack;
     }
     else
     {
@@ -207,7 +208,7 @@ namespace ngfem
       for(int i=0;i<nipy;i++)
         for(int j=0;j<nipx;j++)
           proxyvaluesasmat1.Rows(dimx*j,dimx*(j+1)).Col(i) = (proxyvaluesasmat.Cols(dimx*i,dimx*(i+1)).Row(j));
-      x = proxyvaluesasmat1*bmatx;
+      x = proxyvaluesasmat1*bmatx | Lapack;
     }
   }
 
@@ -253,7 +254,7 @@ namespace ngfem
     if(dimx == 1)
     {
       FlatMatrix<> proxyvaluesasmat(nipx, nipy*dimy, &flux(0,0));
-      x = proxyvaluesasmat*bmaty;
+      x = proxyvaluesasmat*bmaty | Lapack;
     }
     else
     {
@@ -262,7 +263,7 @@ namespace ngfem
       for(int i=0;i<nipy;i++)
         for(int j=0;j<nipx;j++)
           proxyvaluesasmat1.Rows(dimx*j,dimx*(j+1)).Col(i) = (proxyvaluesasmat.Cols(dimx*i,dimx*(i+1)).Row(j));
-      x = proxyvaluesasmat1*bmaty;
+      x = proxyvaluesasmat1*bmaty | Lapack;
     }
   }
 

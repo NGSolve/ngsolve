@@ -68,7 +68,7 @@ namespace ngcomp
     Array<shared_ptr<FacetBilinearFormIntegrator>> facetwise_skeleton_parts[2];
 
     // loop over elements
-    Array<shared_ptr<BilinearFormIntegrator>> elementwise_skeleton_parts;
+    Array<shared_ptr<FacetBilinearFormIntegrator>> elementwise_skeleton_parts;
 
 #ifdef PARALLEL
     Array<shared_ptr<FacetBilinearFormIntegrator> > mpi_facet_parts;
@@ -215,15 +215,15 @@ namespace ngcomp
     virtual void ApplyLinearizedMatrixAdd (double val,
 					   const BaseVector & lin,
 					   const BaseVector & x,
-					   BaseVector & y) const = 0;
+					   BaseVector & y, LocalHeap & lh) const = 0;
     /// y += val * lin.mat * x
     virtual void ApplyLinearizedMatrixAdd (Complex val,
 					   const BaseVector & lin,
 					   const BaseVector & x,
-					   BaseVector & y) const = 0;
+					   BaseVector & y, LocalHeap & lh) const = 0;
 
     /// evaulates internal energy (usually  1/2 x^T A x)
-    virtual double Energy (const BaseVector & x) const = 0;
+    virtual double Energy (const BaseVector & x, LocalHeap & lh) const = 0;
 
     /// returns the assembled matrix
     const BaseMatrix & GetMatrix () const { return *mats.Last(); }
@@ -472,26 +472,26 @@ namespace ngcomp
     void ApplyLinearizedMatrixAdd1 (SCAL val,
 				    const BaseVector & lin,
 				    const BaseVector & x,
-				    BaseVector & y) const;
+				    BaseVector & y, LocalHeap & lh) const;
   
     virtual void ApplyLinearizedMatrixAdd (double val,
 					   const BaseVector & lin,
 					   const BaseVector & x,
-					   BaseVector & y) const
+					   BaseVector & y, LocalHeap & lh) const
     {
-      ApplyLinearizedMatrixAdd1 (val, lin, x, y);
+      ApplyLinearizedMatrixAdd1 (val, lin, x, y, lh);
     }
   
     virtual void ApplyLinearizedMatrixAdd (Complex val,
 					   const BaseVector & lin,
 					   const BaseVector & x,
-					   BaseVector & y) const
+					   BaseVector & y, LocalHeap & lh) const
     {
-      ApplyLinearizedMatrixAdd1 (ConvertTo<SCAL> (val), lin, x, y);
+      ApplyLinearizedMatrixAdd1 (ConvertTo<SCAL> (val), lin, x, y, lh);
     }
   
 
-    virtual double Energy (const BaseVector & x) const;
+    virtual double Energy (const BaseVector & x, LocalHeap & lh) const;
 
     virtual void ComputeInternal (BaseVector & u, const BaseVector & f, LocalHeap & lh) const;
 
@@ -787,13 +787,13 @@ namespace ngcomp
     virtual void ApplyLinearizedMatrixAdd (double val,
 					   const BaseVector & lin,
 					   const BaseVector & x,
-					   BaseVector & y) const 
+					   BaseVector & y, LocalHeap & lh) const 
     { throw Exception ("comp-bf - AddMatrix is illegal"); }
 
     virtual void ApplyLinearizedMatrixAdd (Complex val,
 					   const BaseVector & lin,
 					   const BaseVector & x,
-					   BaseVector & y) const 
+					   BaseVector & y, LocalHeap & lh) const 
     { throw Exception ("comp-bf - AddMatrix is illegal"); }
 
     virtual shared_ptr<BaseMatrix> GetHarmonicExtension () const 
@@ -815,7 +815,7 @@ namespace ngcomp
     { throw Exception ("comp-bf - DoAssemble is illegal"); } 
     virtual void AllocateMatrix ()
     { throw Exception ("comp-bf - AllocateMatrix is illegal"); } 
-    virtual double Energy (const BaseVector & x) const 
+    virtual double Energy (const BaseVector & x, LocalHeap & lh) const 
     { throw Exception ("comp-bf - Energy is illegal"); } 
 
     /*
@@ -862,26 +862,26 @@ namespace ngcomp
     ///
     BilinearFormApplication (shared_ptr<BilinearForm> abf);
 
-    virtual bool IsComplex() const
+    virtual bool IsComplex() const override
     {
       return bf->GetFESpace()->IsComplex();
     }
     
     ///
-    virtual void Mult (const BaseVector & v, BaseVector & prod) const;
+    virtual void Mult (const BaseVector & v, BaseVector & prod) const override;
     ///
-    virtual void MultAdd (double val, const BaseVector & v, BaseVector & prod) const;
+    virtual void MultAdd (double val, const BaseVector & v, BaseVector & prod) const override;
     ///
-    virtual void MultAdd (Complex val, const BaseVector & v, BaseVector & prod) const;
+    virtual void MultAdd (Complex val, const BaseVector & v, BaseVector & prod) const override;
     ///
-    virtual AutoVector CreateVector () const;
+    virtual AutoVector CreateVector () const override;
     ///
-    virtual int VHeight() const
+    virtual int VHeight() const override
     {
       return bf->GetFESpace()->GetNDof(); 
     }
     ///
-    virtual int VWidth() const
+    virtual int VWidth() const override
     {
       return bf->GetFESpace()->GetNDof(); 
     }
@@ -902,11 +902,11 @@ namespace ngcomp
 				       const BaseVector * aveclin);
 
     ///
-    virtual void Mult (const BaseVector & v, BaseVector & prod) const;
+    virtual void Mult (const BaseVector & v, BaseVector & prod, LocalHeap & lh) const;
     ///
-    virtual void MultAdd (double val, const BaseVector & v, BaseVector & prod) const;
+    virtual void MultAdd (double val, const BaseVector & v, BaseVector & prod, LocalHeap & lh) const;
     ///
-    virtual void MultAdd (Complex val, const BaseVector & v, BaseVector & prod) const;
+    virtual void MultAdd (Complex val, const BaseVector & v, BaseVector & prod, LocalHeap & lh) const;
   };
 
 

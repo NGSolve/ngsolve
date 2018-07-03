@@ -16,10 +16,11 @@ add_library(ngfem ${NGS_LIB_TYPE}
         intrule.cpp fastmat.cpp finiteelement.cpp elementtransformation.cpp
         scalarfe.cpp generic_recpol.cpp hdivfe.cpp recursive_pol.cpp
         hybridDG.cpp diffop.cpp l2hofefo.cpp h1hofefo.cpp
-        facethofe.cpp python_fem.cpp DGIntegrators.cpp pml.cpp
-        h1hofe_segm.cpp h1hofe_trig.cpp hdivdivfe.cpp symbolicintegrator.cpp tpdiffop.cpp
+        facethofe.cpp DGIntegrators.cpp pml.cpp
+        h1hofe_segm.cpp h1hofe_trig.cpp hdivdivfe.cpp hcurlcurlfe.cpp symbolicintegrator.cpp tpdiffop.cpp
         tensorproductintegrator.cpp code_generation.cpp
         )
+# python_fem.cpp
 
 target_compile_definitions(ngfem PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
 target_compile_definitions(ngfem PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})

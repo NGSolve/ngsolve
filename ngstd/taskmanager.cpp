@@ -568,7 +568,7 @@ namespace ngstd
             ParallelJob ( [&sl] (TaskInfo ti)
                           {
                             for (auto i : sl)
-                              ; 
+                              (void)i;  // silence warning
                           } );
           }
         steps += 1000;
@@ -588,15 +588,15 @@ namespace ngstd
             ParallelJob ( [&sl1, &sl2, &sl3, &sl4, &sl5] (TaskInfo ti)
                           {
                             for (auto i : sl1)
-                              ;
+                              (void)i;  // silence warning
                             for (auto i : sl2)
-                              ;
+                              (void)i;  // silence warning
                             for (auto i : sl3)
-                              ;
+                              (void)i;  // silence warning
                             for (auto i : sl4)
-                              ;
+                              (void)i;  // silence warning
                             for (auto i : sl5)
-                              ;
+                              (void)i;  // silence warning
                           } );
           }
         steps += 1000;
@@ -617,7 +617,7 @@ namespace ngstd
             ParallelJob ( [&sl2] (TaskInfo ti)
                           {
                             for (auto i : sl2)
-                              ; 
+                              (void)i;  // silence warning                              
                           } );
           }
         steps += 1000;
@@ -642,15 +642,15 @@ namespace ngstd
             ParallelJob ( [&sl1,&sl2,&sl3,&sl4,&sl5] (TaskInfo ti)
                           {
                             for (auto i : sl1)
-                              ; 
+                              (void)i;  // silence warning                              
                             for (auto i : sl2)
-                              ; 
+                              (void)i;  // silence warning                              
                             for (auto i : sl3)
-                              ; 
+                              (void)i;  // silence warning                              
                             for (auto i : sl4)
-                              ; 
+                              (void)i;  // silence warning                              
                             for (auto i : sl5)
-                              ; 
+                              (void)i;  // silence warning                              
                           } );
           }
         steps += 1000;
@@ -673,7 +673,7 @@ namespace ngstd
             ParallelJob ( [&sl] (TaskInfo ti)
                           {
                             for (auto i : sl)
-                              ; 
+                              (void)i;  // silence warning                               
                           } );
             steps += 1000;
           }
@@ -693,7 +693,7 @@ namespace ngstd
         ParallelJob ( [&sl] (TaskInfo ti)
                       {
                         for (auto i : sl)
-                          ; 
+                          (void)i;  // silence warning
                       } );
         steps += 1000000;
         time = WallTime()-starttime;

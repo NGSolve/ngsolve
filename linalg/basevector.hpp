@@ -9,9 +9,9 @@
 
 
 
-
 namespace ngla
 {
+
 
   class BaseVector;
   class AutoVector;
@@ -193,8 +193,7 @@ namespace ngla
     size_t Size() const throw () { return size; }
     T_Range<size_t> Range() const { return T_Range<size_t> (0, size); }
     int EntrySize() const throw () { return entrysize; }
-    virtual void * Memory () const throw () = 0;
-
+    virtual void * Memory () const = 0;
     virtual FlatVector<double> FVDouble () const = 0;
     virtual FlatVector<Complex> FVComplex () const = 0;
 
@@ -220,7 +219,7 @@ namespace ngla
     virtual Complex InnerProductC (const BaseVector & v2) const;
 
     virtual double L2Norm () const;
-    virtual bool IsComplex() const = 0;
+    virtual bool IsComplex() const { return false; }
 
     virtual BaseVector & Scale (double scal);
     virtual BaseVector & Scale (Complex scal);
@@ -559,6 +558,7 @@ namespace ngla
     virtual ~S_BaseVector() { ; }
 
     S_BaseVector & operator= (double s);
+    virtual BaseVector & SetScalar (double scal);
 
     virtual bool IsComplex() const 
     { return typeid(SCAL) == typeid(Complex); }
@@ -660,6 +660,58 @@ namespace ngla
 
 
 
+
+
+
+
+
+  class BlockVector;
+  extern NGS_DLL_HEADER BlockVector & dynamic_cast_BlockVector (BaseVector & x);
+  extern NGS_DLL_HEADER const BlockVector & dynamic_cast_BlockVector (const BaseVector & x);
+
+  class BlockVector : public BaseVector
+  {
+    Array<shared_ptr<BaseVector>> vecs;
+    BitArray ispar;
+    MPI_Comm comm = MPI_COMM_NULL;
+  public:
+    BlockVector (const Array<shared_ptr<BaseVector>> & avecs);
+
+    size_t NBlocks() const throw () { return vecs.Size(); }
+    
+    shared_ptr<BaseVector> & operator[] (size_t i) const { return vecs[i]; }
+
+    virtual void * Memory () const;
+    virtual FlatVector<double> FVDouble () const;
+    virtual FlatVector<Complex> FVComplex () const;
+    virtual void GetIndirect (FlatArray<int> ind, 
+                              FlatVector<double> v) const;
+    virtual void GetIndirect (FlatArray<int> ind, 
+                              FlatVector<Complex> v) const;
+
+    virtual bool IsComplex() const;
+
+    virtual AutoVector CreateVector () const;
+
+    virtual double InnerProductD (const BaseVector & v2) const;
+    virtual BaseVector & Scale (double scal);
+    virtual BaseVector & SetScalar (double scal);
+
+    virtual ostream & Print (ostream & ost) const;
+
+    virtual BaseVector & Set (double scal, const BaseVector & v);
+    virtual BaseVector & Add (double scal, const BaseVector & v);
+  };
+
+  
+
+
+
+
+
+
+
+  
 
   /* ********************* Expression templates ***************** */
 

@@ -180,7 +180,7 @@ namespace ngfem
 
   template<ELEMENT_TYPE ET>
   void FacetFE<ET>::AddTransFacetVolIp(int fnr, const SIMD_IntegrationRule & ir,
-                                       ABareVector<double> values, BareSliceVector<> coefs) const
+                                       BareVector<SIMD<double>> values, BareSliceVector<> coefs) const
   {
     FlatArray<SIMD<IntegrationPoint>> hir = ir;
     for (int i = 0; i < hir.Size(); i++)
@@ -188,7 +188,7 @@ namespace ngfem
         SIMD<double> pt[DIM];
         for (int j = 0; j < DIM; j++) pt[j] = hir[i](j);
         
-        SIMD<double> val = values.Get(i);
+        SIMD<double> val = values(i);
         static_cast<const FacetFE<ET>*>(this)->T_CalcShapeFNr
 		  (fnr, pt, SBLambda([&](int j, SIMD<double> shape) { coefs(j) += HSum(val*shape); }));
       }
@@ -196,7 +196,7 @@ namespace ngfem
   
   template <ELEMENT_TYPE ET>
   void FacetFE<ET>::EvaluateFacetVolIp(int fnr, const SIMD_IntegrationRule & ir,
-                                       BareSliceVector<> coefs, ABareVector<double> values) const
+                                       BareSliceVector<> coefs, BareVector<SIMD<double>> values) const
   {
     FlatArray<SIMD<IntegrationPoint>> hir = ir;
     for (int i = 0; i < hir.Size(); i++)
@@ -207,7 +207,7 @@ namespace ngfem
         SIMD<double> sum = 0;
         static_cast<const FacetFE<ET>*>(this)->T_CalcShapeFNr
           (fnr, pt, SBLambda([&](int j, SIMD<double> shape) { sum += coefs(j)*shape; }));
-        values.Get(i) = sum.Data();
+        values(i) = sum;
       }
   }
   
@@ -220,6 +220,21 @@ namespace ngfem
     static_cast<const FacetFE<ET>*>(this)->T_CalcShapeFNr(fnr, pt, shape);
   }
   
+  template<ELEMENT_TYPE ET>
+  void FacetFE<ET>::CalcFacetShapeVolIR (int fnr, const SIMD_IntegrationRule & ir, 
+                                         BareSliceMatrix<SIMD<double>> shape) const 
+  {
+    for (size_t i = 0; i < ir.Size(); i++)
+      {
+        SIMD<double> pt[DIM];
+        for (int j = 0; j < DIM; j++) pt[j] = ir[i](j);
+        static_cast<const FacetFE<ET>*>(this)->T_CalcShapeFNr(fnr, pt, shape.Col(i));
+      }
+  }
+  
+
+
+
   template class FacetFE<ET_SEGM>;
   template class FacetFE<ET_TRIG>;
   template class FacetFE<ET_QUAD>;

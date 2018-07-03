@@ -26,7 +26,7 @@ namespace ngstd
     /// numerical flags
     SymbolTable<double> numflags;
     /// define flags
-    SymbolTable<int> defflags;
+    SymbolTable<bool> defflags;
     /// string list flags
     SymbolTable<shared_ptr<Array<string>>> strlistflags;
     /// numerical list flags
@@ -56,19 +56,30 @@ namespace ngstd
 
     /// Sets string flag, overwrite if exists
     Flags & SetFlag (const char * name, const string & val);
+    /// Sets string flag, overwrite if exists
+    Flags & SetFlag (const char * name, const char * str)
+    { return SetFlag (name, string(str)); }
     /// Sets numerical flag, overwrite if exists
     Flags & SetFlag (const char * name, double val) &;
+    /// Sets numerical flag, overwrite if exists    
+    Flags & SetFlag (const char * name, int val)
+    { return SetFlag (name, double(val)); }
     /// Sets boolean flag
-    Flags & SetFlag (const char * name) &;
+    Flags & SetFlag (const char * name, bool b = true) &;
     /// Sets numerical flag, overwrite if exists
     Flags & SetFlag (const char * name, Flags & val) &;
 
     /// Sets string flag, overwrite if exists
     Flags & SetFlag (const string & name, const string & val);
+    Flags & SetFlag (const string & name, const char * str)
+    { return SetFlag (name, string(str)); }
     /// Sets numerical flag, overwrite if exists
     Flags &  SetFlag (const string & name, double val);
+    /// Sets numerical flag, overwrite if exists    
+    Flags &  SetFlag (const string & name, int val)
+    { return SetFlag (name, double(val)); }
     /// Sets boolean flag
-    Flags &  SetFlag (const string & name);
+    Flags &  SetFlag (const string & name, bool b = true);
     /// Sets numerical flag, overwrite if exists
     Flags &  SetFlag (const string & name, Flags & val);
     /// Sets string array flag
@@ -77,7 +88,7 @@ namespace ngstd
     Flags &  SetFlag (const string & name, const Array<double> & val);
 
 
-    Flags SetFlag (const char * name) &&;
+    Flags SetFlag (const char * name, bool b = true) &&;
     Flags SetFlag (const char * name, double val) &&;
 
 
@@ -109,6 +120,7 @@ namespace ngstd
     /// Returns boolean flag
     // int GetDefineFlag (const char * name) const;
     bool GetDefineFlag (const string & name) const throw();
+    xbool GetDefineFlagX (const string & name) const throw();
     /// Returns string list flag, empty array if not exist
     const Array<string> & GetStringListFlag (const string & name) const;
     /// Returns num list flag, empty array if not exist
@@ -146,8 +158,8 @@ namespace ngstd
     { name = strflags.GetName(i); return strflags[i]; }
     double GetNumFlag (int i, string & name) const
     { name = numflags.GetName(i); return numflags[i]; }
-    void GetDefineFlag (int i, string & name) const
-    { name = defflags.GetName(i); }
+    bool GetDefineFlag (int i, string & name) const
+    { name = defflags.GetName(i); return defflags[i]; }
     const shared_ptr<Array<double>> GetNumListFlag (int i, string & name) const
     { name = numlistflags.GetName(i).c_str(); return numlistflags[i]; }
     const shared_ptr<Array<string>> GetStringListFlag (int i, string & name) const

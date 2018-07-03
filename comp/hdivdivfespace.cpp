@@ -468,7 +468,7 @@ namespace ngcomp
     int incrorder_xx1_bd = HDivDivFE<ET_PRISM>::incrorder_xx1_bd;
     int incrorder_xx2_bd = HDivDivFE<ET_PRISM>::incrorder_xx2_bd;
     int incrorder_zz1_bd = HDivDivFE<ET_PRISM>::incrorder_zz1_bd;
-    int incrorder_zz2_bd = HDivDivFE<ET_PRISM>::incrorder_zz2_bd;
+    // int incrorder_zz2_bd = HDivDivFE<ET_PRISM>::incrorder_zz2_bd;
     first_facet_dof.SetSize (ma->GetNFacets()+1);
     first_element_dof.SetSize (ma->GetNE()+1);
 

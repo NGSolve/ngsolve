@@ -24,6 +24,60 @@
 namespace ngcomp
 {
 
+  template <int D>
+  class DiffOpHDivDual : public DiffOp<DiffOpHDivDual<D> >
+  {
+  public:
+    typedef DiffOp<DiffOpHDivDual<D>> BASE;
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D };
+    enum { DIM_DMAT = D };
+    enum { DIFFORDER = 0 };
+
+    static auto & Cast (const FiniteElement & fel) 
+    { return static_cast<const HDivFiniteElement<D>&> (fel); }
+
+    
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      Cast(fel).CalcDualShape (mip, Trans(mat));
+    }
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      // fel.CalcDualShape (mip, mat);
+      throw Exception(string("DiffOpHDivDual not available for mat ")+typeid(mat).name());
+    }
+
+    /*static void GenerateMatrixSIMDIR (const FiniteElement & fel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      Cast(fel).CalcDualShape (static_cast<const SIMD_MappedIntegrationRule<D,D>&>(mir), mat);      
+    }
+
+    using BASE::ApplySIMDIR;    
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      Cast(fel).EvaluateDual (static_cast<const SIMD_MappedIntegrationRule<D,D>&> (mir), x, y);
+    }
+
+    using BASE::AddTransSIMDIR;        
+    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      Cast(fel).AddDualTrans (static_cast<const SIMD_MappedIntegrationRule<D,D>&> (mir), y, x);
+    }    */
+        
+  };
+  
   HDivHighOrderFESpace ::  
   HDivHighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags)
     : FESpace (ama, flags)
@@ -161,7 +215,24 @@ namespace ngcomp
     ;
   }
 
-
+  void HDivHighOrderFESpace :: Average (BaseVector & vec) const
+  {
+    // auto & pairs = GetDCPairs();
+    auto fu = vec.FV<double>();
+    for (auto pair : dc_pairs)
+      {
+        auto f1 = pair[0];
+        auto f2 = pair[1];
+        if (f2 != -1)
+          {
+            double mean = 0.5 * (fu(f1) + fu(f2));
+            fu(f1) = fu(f2) = mean;
+          }
+        else if (f1 != -1)
+          fu(f1) = 0.0;
+      }
+  }
+  
   void HDivHighOrderFESpace :: Update(LocalHeap & lh)
   {
     FESpace::Update(lh);
@@ -931,6 +1002,7 @@ namespace ngcomp
   {
     dnums.SetSize0();
 
+    /*
     if (order_policy == NODE_TYPE_ORDER)
       {
         auto et = ma->GetElType(ei);
@@ -939,7 +1011,7 @@ namespace ngcomp
              << ", or = " << et_order_right[et]
              << endl;
       }
-
+    */
     
     if(discont) 
       {
@@ -1485,14 +1557,11 @@ namespace ngcomp
       
       size_t nd_u = fel.GetNDof();
 
-      STACK_ARRAY(SIMD<double>, mem1, 6*D*nd_u);
-      FlatMatrix<SIMD<double>> shape_ul(nd_u*D, 1, &mem1[0]);
-      FlatMatrix<SIMD<double>> shape_ur(nd_u*D, 1, &mem1[D*nd_u]);
-      FlatMatrix<SIMD<double>> shape_ull(nd_u*D, 1, &mem1[2*D*nd_u]);
-      FlatMatrix<SIMD<double>> shape_urr(nd_u*D, 1, &mem1[3*D*nd_u]);
+      STACK_ARRAY(SIMD<double>, mem1, 2*D*nd_u);
+      FlatMatrix<SIMD<double>> shape_u_tmp(nd_u*D, 1, &mem1[0]);
 
-      FlatMatrix<SIMD<double>> dshape_u_ref(nd_u*D, 1, &mem1[4*D*nd_u]);
-      FlatMatrix<SIMD<double>> dshape_u(nd_u*D, 1, &mem1[5*D*nd_u]);
+      FlatMatrix<SIMD<double>> dshape_u_ref(nd_u*D, 1, &mem1[D*nd_u]);
+      // FlatMatrix<SIMD<double>> dshape_u(nd_u*D, 1, &mem1[0]);
 
       LocalHeapMem<10000> lh("diffopgrad-lh");
 
@@ -1519,12 +1588,16 @@ namespace ngcomp
               SIMD_IntegrationRule ir(4, ipts);
               SIMD_MappedIntegrationRule<D,D> mirl(ir, eltrans, lh);
 
-              fel.CalcMappedShape (mirl[0], shape_ul);
-              fel.CalcMappedShape (mirl[1], shape_ur);
-              fel.CalcMappedShape (mirl[2], shape_ull);
-              fel.CalcMappedShape (mirl[3], shape_urr);
+              fel.CalcMappedShape (mirl[2], shape_u_tmp);
+              dshape_u_ref = 1.0/(12.0*eps()) * shape_u_tmp;
+              fel.CalcMappedShape (mirl[3], shape_u_tmp);
+              dshape_u_ref -= 1.0/(12.0*eps()) * shape_u_tmp;
+              fel.CalcMappedShape (mirl[0], shape_u_tmp);
+              dshape_u_ref -= 8.0/(12.0*eps()) * shape_u_tmp;
+              fel.CalcMappedShape (mirl[1], shape_u_tmp);
+              dshape_u_ref += 8.0/(12.0*eps()) * shape_u_tmp;
 
-              dshape_u_ref = (1.0/(12.0*eps())) * (8.0*shape_ur-8.0*shape_ul-shape_urr+shape_ull);
+              // dshape_u_ref =  (8.0*shape_ur-8.0*shape_ul-shape_urr+shape_ull);
               for (size_t l = 0; l < D; l++)
                 for (size_t k = 0; k < nd_u; k++)
                   mat(k*D*D+j*D+l, i) = dshape_u_ref(k*D+l, 0);
@@ -1831,9 +1904,13 @@ namespace ngcomp
       case 1:
         additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHdiv<1>>> ()); break;
       case 2:
-        additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHdiv<2>>> ()); break;
+        additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHdiv<2>>> ());
+	additional.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHDivDual<2>>> ());
+	break;
       case 3:
-        additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHdiv<3>>> ()); break;
+        additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHdiv<3>>> ());
+	additional.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHDivDual<3>>> ());
+	break;
       default:
         ;
       }

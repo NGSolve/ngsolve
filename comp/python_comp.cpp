@@ -8,6 +8,7 @@
 #include "hdivdivfespace.hpp"
 #include "hcurldivfespace.hpp"
 #include "hdivdivsurfacespace.hpp"
+#include "hcurlcurlfespace.hpp"
 #include "numberfespace.hpp"
 using namespace ngcomp;
 
@@ -15,26 +16,22 @@ using ngfem::ELEMENT_TYPE;
 
 typedef GridFunction GF;
 
+
+
+
+/*
+static size_t global_heapsize = 1000000;
+static LocalHeap glh(global_heapsize, "python-comp lh", true);
+*/
+
+/*
 template <> class cl_NonElement<ElementId>
 {
 public:
   static ElementId Val() { return ElementId(VOL,-1); }
 };
+*/
 
-
-template <typename T>
-py::tuple MakePyTuple (const BaseArrayObject<T> & ao)
-{
-  size_t s = ao.Size();
-  py::tuple tup(s);
-  for (size_t i = 0; i < s; i++)
-    tup[i] = ao[i];
-  return tup;
-}
-
-inline auto Nr2Vert(size_t nr) {  return NodeId(NT_VERTEX,nr); };
-inline auto Nr2Edge(size_t nr) {  return NodeId(NT_EDGE,nr); };
-inline auto Nr2Face(size_t nr) {  return NodeId(NT_FACE,nr); };
 
 
 /*
@@ -170,397 +167,69 @@ public:
 };
 static GlobalDummyVariables globvar;
 
+
+auto fesPickle = [](const FESpace& fes)
+{
+  auto flags = fes.GetFlags();
+  auto mesh = fes.GetMeshAccess();
+  auto type = fes.type;
+  // TODO: pickle order policies
+  return py::make_tuple(type,mesh,flags);
+};
+
+
 template<typename FESPACE>
 shared_ptr<FESPACE> fesUnpickle(py::tuple state)
 {
   auto fes = CreateFESpace(state[0].cast<string>(),
                            state[1].cast<shared_ptr<MeshAccess>>(),
                            state[2].cast<Flags>());
-  LocalHeap lh (1000000, "FESpace::Update-heap");
-  fes->Update(lh);
-  fes->FinalizeUpdate(lh);
+
+  LocalHeap glh(10000000, "Unpickl-lh");
+  fes->Update(glh);
+  fes->FinalizeUpdate(glh);
   return dynamic_pointer_cast<FESPACE>(fes);
 };
 
-void ExportPml(py::module &m)
+template <typename FES, typename BASE=FESpace>
+auto ExportFESpace (py::module & m, string pyname)
 {
-  typedef CoefficientFunction CF;
-  typedef PML_Transformation PML;
-  py::class_<PML, shared_ptr<PML>>(m, "PML", R"raw_string(Base PML object
-
-can only be created by generator functions. Use PML(x, [y, z]) to evaluate the scaling.)raw_string")
-    .def("__call__",  [](py::args varargs) {
-                      auto self = py::extract<shared_ptr<PML>>(varargs[0])();
-                      int dim = self->GetDimension();
-                      Vector<double> hpoint(dim);
-                      hpoint = 0.;
-                      for (int i : Range(min(int(py::len(varargs)-1),dim)))
-                        hpoint[i] = py::extract<double>(varargs[i+1])();
-                      Vector<Complex> point(dim);
-                      Matrix<Complex> jac(dim,dim);
-                      self->MapPointV(hpoint,point,jac);
-                      return point;
-                    },"map a point")
-    .def("__str__", [] (shared_ptr<PML> self) { return ToString(*self); } )
-    .def("call_jacobian",  [](py::args varargs) {
-                      auto self = py::extract<shared_ptr<PML>>(varargs[0])();
-                      int dim = self->GetDimension();
-                      Vector<double> hpoint(dim);
-                      hpoint = 0.;
-                      for (int i : Range(min(int(py::len(varargs)-1),dim)))
-                        hpoint[i] = py::extract<double>(varargs[i+1])();
-                      Vector<Complex> point(dim);
-                      Matrix<Complex> jac(dim,dim);
-                      self->MapPointV(hpoint,point,jac);
-                      return jac;
-                    },"evaluate PML jacobian at point x, [y, z]")
-    .def_property_readonly("dim", [] (shared_ptr<PML> self) {return self->GetDimension(); },
-        "dimension")
-    .def_property_readonly("PML_CF", [](shared_ptr<PML> self)->shared_ptr<CF> {
-        return make_shared<PML_CF> (self);
-      },
-      "the scaling as coefficient function")
-    .def_property_readonly("Jac_CF", [](shared_ptr<PML>self)->shared_ptr<CF> {
-        return make_shared<PML_Jac> (self);
-      },
-      "the jacobian of the PML as coefficient function")
-    .def_property_readonly("Det_CF", [](shared_ptr<PML> self)->shared_ptr<CF> {
-        return make_shared<PML_Det> (self);
-      },
-      "the determinant of the jacobian as coefficient function")
-    .def_property_readonly("JacInv_CF", [](shared_ptr<PML> self)->shared_ptr<CF> {
-        return make_shared<PML_JacInv> (self);
-      },
-      "the inverse of the jacobian as coefficient function")
-    .def("__add__", [](shared_ptr<PML> pml1, shared_ptr<PML> pml2)
-         -> shared_ptr<PML>
-         {
-        int dim = pml1->GetDimension();
-        if (pml2->GetDimension() != dim)
-          throw Exception("Dimensions do not match");
-        switch (dim)
-          {
-          case 1:
-            return make_shared<SumPML<1>> (pml1,pml2);
-          case 2:
-            return make_shared<SumPML<2>> (pml1,pml2);
-          case 3:
-            return make_shared<SumPML<3>> (pml1,pml2);
-          }
-        throw Exception("No valid dimension");
-      })
+  auto pyspace = py::class_<FES, shared_ptr<FES>,BASE> (m, pyname.c_str());
+  pyspace
+    .def(py::init([pyspace](shared_ptr<MeshAccess> ma, py::kwargs kwargs)
+                  {
+                    py::list info;
+                    info.append(ma);
+                    auto flags = CreateFlagsFromKwArgs(pyspace, kwargs, info);
+                    auto fes = make_shared<FES>(ma,flags);
+                    LocalHeap glh(10000000, "init-fes-lh");                    
+                    fes->Update(glh);
+                    fes->FinalizeUpdate(glh);
+                    return fes;
+                  }),py::arg("mesh"))
+    
+    .def(py::pickle(fesPickle,
+                    (shared_ptr<FES>(*)(py::tuple)) fesUnpickle<FES>))
     ;
-
-  m.def("Radial", [](py::object _origin, double rad, Complex alpha) -> shared_ptr<PML>{
-      Vector<double> origin;
-      int dim = 0;
-      if (py::extract<double>(_origin).check())
-        {
-          dim = 1;
-          origin.SetSize(1);
-          origin(0)=py::extract<double>(_origin)();
-        }
-      else if (py::extract<py::tuple>(_origin).check())
-        {
-          py::tuple torigin(_origin);
-          dim = py::len(torigin);
-          origin.SetSize(dim);
-          for (int j : Range(dim))
-            origin(j)=py::extract<double>(torigin[j])();
-        }
-      switch (dim)
-        {
-        case 1:
-          return make_shared<RadialPML_Transformation<1>> (rad,alpha,origin);
-        case 2:
-          return make_shared<RadialPML_Transformation<2>> (rad,alpha,origin);
-        case 3:
-          return make_shared<RadialPML_Transformation<3>> (rad,alpha,origin);
-        }
-      throw Exception("No valid dimension");
-    },
-    py::arg("origin"),py::arg("rad")=1,py::arg("alpha")=Complex(0,1),
-    R"raw_string(radial pml transformation
-
-origin is a list/tuple determining the dimenson)raw_string");
-
-  m.def("Custom", [](shared_ptr<CF> trafo, shared_ptr<CF> jac) -> shared_ptr<PML>{
-      switch (trafo->Dimension())
-        {
-        case 1:
-          return make_shared<CustomPML_Transformation<1>> (trafo,jac);
-        case 2:
-          return make_shared<CustomPML_Transformation<2>> (trafo,jac);
-        case 3:
-          return make_shared<CustomPML_Transformation<3>> (trafo,jac);
-        }
-      throw Exception("No valid dimension");
-    },
-    py::arg("trafo"),py::arg("jac"),
-    R"raw_string(custom pml transformation
-
-trafo and jac are coefficient functions of the scaling and the jacobian)raw_string")
-    ;
-  m.def("Cartesian", [](py::object mins,py::object maxs, Complex alpha) -> shared_ptr<PML>{
-      int dim = 0;
-      Matrix<double> bounds;
-      if (py::extract<double>(mins).check())
-        {
-          dim = 1;
-          bounds.SetSize(dim,2);
-          bounds = 0.;
-          bounds(0,0)=py::extract<double>(mins)();
-        }
-      else if (py::extract<py::tuple>(mins).check())
-        {
-          py::tuple tmins(mins);
-          dim = py::len(tmins);
-          bounds.SetSize(dim,2);
-          bounds = 0.;
-          for (int j : Range(dim))
-            bounds(j,0)=py::extract<double>(tmins[j])();
-        }
-
-      if (py::extract<double>(maxs).check())
-        bounds(0,1)=py::extract<double>(maxs)();
-
-          else if (py::extract<py::tuple>(maxs).check())
-          {
-            py::tuple tmax(maxs);
-            for (int j : Range(min(int(py::len(tmax)),dim)))
-              bounds(j,1)=py::extract<double>(tmax[j])();
-          }
-          switch (dim)
-          {
-            case 1:
-              return make_shared<CartesianPML_Transformation<1>> (bounds,alpha);
-            case 2:
-              return make_shared<CartesianPML_Transformation<2>> (bounds,alpha);
-            case 3:
-              return make_shared<CartesianPML_Transformation<3>> (bounds,alpha);
-           }
-          throw Exception("No valid dimension");
-        },
-        py::arg("mins"),py::arg("maxs"), py::arg("alpha")=Complex(0,1),
-        R"raw_string(cartesian pml transformation
-
-mins and maxs are tuples/lists determining the dimension)raw_string")
-    ;
-  m.def("HalfSpace", [](py::object point,py::object normal, Complex alpha) -> shared_ptr<PML>{
-          int dim = 0;
-          Vector<double> vpoint;
-          Vector<double> vnormal;
-          if (py::extract<double>(point).check())
-          {
-            dim = 1;
-            vpoint.SetSize(dim);
-            vpoint = 0.;
-            vnormal.SetSize(dim);
-            vnormal = 0.;
-            vpoint(0)=py::extract<double>(point)();
-          }
-          else if (py::extract<py::tuple>(point).check())
-          {
-            py::tuple tpoint(point);
-            dim = py::len(tpoint);
-            vpoint.SetSize(dim);
-            vnormal.SetSize(dim);
-            vpoint = 0.;
-            vnormal = 0.;
-            for (int j : Range(dim))
-              vpoint(j)=py::extract<double>(tpoint[j])();
-          }
-
-          if(py::extract<double>(normal).check())
-          {
-            dim = 1;
-            vnormal(0)=py::extract<double>(normal)();
-          }
-          else if (py::extract<py::tuple>(normal).check())
-          {
-            py::tuple tnormal(normal);
-            dim = py::len(tnormal);
-            for (int j : Range(min(int(py::len(tnormal)),dim)))
-              vnormal(j)=py::extract<double>(tnormal[j])();
-          }
-          switch (dim)
-          {
-            case 1:
-              return make_shared<HalfSpacePML_Transformation<1>> (vpoint,vnormal,alpha);
-            case 2:
-              return make_shared<HalfSpacePML_Transformation<2>> (vpoint,vnormal,alpha);
-            case 3:
-              return make_shared<HalfSpacePML_Transformation<3>> (vpoint,vnormal,alpha);
-          }
-          throw Exception("No valid dimension");
-        },
-        py::arg("point"),py::arg("normal"), py::arg("alpha")=Complex(0,1),
-        R"raw_string(half space pml
-
-scales orthogonal to specified plane in direction of normal point and normal are given as tuples/lists determining the dimension)raw_string")
-    ;
-    m.def("BrickRadial", [](py::object mins,py::object maxs,py::object _origin, Complex alpha) {
-          int dim = 0;
-          Matrix<double> bounds;
-          if (py::extract<double>(mins).check())
-          {
-            dim = 1;
-            bounds.SetSize(dim,2);
-            bounds = 0.;
-            bounds(0,0)=py::extract<double>(mins)();
-          }
-          else if (py::extract<py::tuple>(mins).check())
-          {
-            py::tuple tmins(mins);
-            dim = py::len(tmins);
-            bounds.SetSize(dim,2);
-            bounds = 0.;
-            for (int j : Range(dim))
-              bounds(j,0)=py::extract<double>(tmins[j])();
-          }
-
-          if (py::extract<double>(maxs).check())
-              bounds(0,1)=py::extract<double>(maxs)();
-
-          else if (py::extract<py::tuple>(maxs).check())
-          {
-            py::tuple tmax(maxs);
-            for (int j : Range(min(int(py::len(tmax)),dim)))
-              bounds(j,1)=py::extract<double>(tmax[j])();
-          }
-          Vector<double> vorigin(dim);
-          vorigin = 0.;
-          if (py::extract<double>(_origin).check())
-          {
-            vorigin(0)=py::extract<double>(_origin)();
-          }
-          else if (py::extract<py::tuple>(_origin).check())
-          {
-            py::tuple torigin(_origin);
-            for (int j : Range(min(int(py::len(torigin)),dim)))
-              vorigin(j)=py::extract<double>(torigin[j])();
-          }
-          switch (dim)
-          {
-            case 1:
-              return shared_ptr<PML>(make_shared<BrickRadialPML_Transformation<1>> (bounds,alpha,vorigin));
-            case 2:
-              return shared_ptr<PML>(make_shared<BrickRadialPML_Transformation<2>> (bounds,alpha,vorigin));
-            case 3:
-              return shared_ptr<PML>(make_shared<BrickRadialPML_Transformation<3>> (bounds,alpha,vorigin));
-          }
-          throw Exception("No valid dimension");
-        },
-        py::arg("mins"),py::arg("maxs"), py::arg("origin")=py::make_tuple(0.,0.,0.),py::arg("alpha")=Complex(0,1),
-        R"raw_string(radial pml on a brick
-
-mins, maxs and origin are given as tuples/lists)raw_string")
-      ;
-    m.def("Compound", [](shared_ptr<PML> pml1,shared_ptr<PML> pml2,py::object dims1,py::object dims2)
-          ->shared_ptr<PML>
-          {
-          int dim1 = pml1->GetDimension();
-          int dim2 = pml2->GetDimension();
-          int dim = dim1 + dim2;
-          Vector<int> vdims1;
-          Vector<int> vdims2;
-          
-          if (py::extract<double>(dims1).check())
-          {
-            vdims1.SetSize(1);
-            vdims1=py::extract<double>(dims1)();
-          }
-          else if (py::extract<py::tuple>(dims1).check())
-          {
-            py::tuple tdims1(dims1);
-            vdims1.SetSize(py::len(tdims1));
-            for (int j : Range(py::len(tdims1)))
-              vdims1(j)=py::extract<double>(tdims1[j])();
-          }
-          else 
-          {
-            vdims1.SetSize(dim1);
-            for (int j : Range(dim1))
-              vdims1(j)=j+1;
-          }
-          if (py::extract<double>(dims2).check())
-          {
-            vdims2.SetSize(1);
-            vdims2=py::extract<double>(dims2)();
-          }
-          else if (py::extract<py::tuple>(dims2).check())
-          {
-            py::tuple tdims2(dims2);
-            vdims2.SetSize(py::len(tdims2));
-            for (int j : Range(py::len(tdims2)))
-              vdims2(j)=py::extract<double>(tdims2[j])();
-          }
-          else
-          {
-            vdims2.SetSize(dim2);
-            for (int j : Range(dim2))
-              vdims2(j)=j+dim1+1;
-          }
-          if (vdims1.Size()!=dim1 || vdims2.Size()!=dim2)
-          {
-            throw Exception("Dimensions do not match");
-          }
-          switch (dim)
-          {
-            case 1:
-              if (dim1==1)
-                return pml1;
-              else
-                return pml2;
-            case 2:
-              switch(dim1)
-              {
-                case 0:
-                  return shared_ptr<PML>(make_shared<CompoundPML<2,0,2>> (pml1,pml2,vdims1,vdims2));
-                case 1:
-                  return shared_ptr<PML>(make_shared<CompoundPML<2,1,1>> (pml1,pml2,vdims1,vdims2));
-                case 2:
-                  return shared_ptr<PML>(make_shared<CompoundPML<2,2,0>> (pml1,pml2,vdims1,vdims2));
-              }
-            case 3:
-              switch(dim1)
-              {
-                case 0:
-                  return shared_ptr<PML>(make_shared<CompoundPML<3,0,3>> (pml1,pml2,vdims1,vdims2));
-                case 1:
-                  return shared_ptr<PML>(make_shared<CompoundPML<3,1,2>> (pml1,pml2,vdims1,vdims2));
-                case 2:
-                  return shared_ptr<PML>(make_shared<CompoundPML<3,2,1>> (pml1,pml2,vdims1,vdims2));
-                case 3:
-                  return shared_ptr<PML>(make_shared<CompoundPML<3,3,0>> (pml1,pml2,vdims1,vdims2));
-              }
-          }
-          throw Exception("No valid dimension");
-        },
-        py::arg("pml1"),py::arg("pml2"), 
-        py::arg("dims1")=DummyArgument(),py::arg("dims2")=DummyArgument(),
-        R"raw_string(tensor product of two pml transformations
-
-        dimensions are optional, given as tuples/lists and start with 1)raw_string")
-      ;
+  
+  return pyspace;
 }
 
 
 
+
+void ExportNgcompMesh (py::module &m);
+
 void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 {
 
-  py::module pml = m.def_submodule("pml", "module for perfectly matched layers");
-  ExportPml(pml);
+  ExportNgcompMesh(m);
   //////////////////////////////////////////////////////////////////////////////////////////
 
-  py::enum_<VorB>(m, "VorB", "Enum specifying the codimension. VOL is volume, BND is boundary and BBND is codimension 2 (edges in 3D, points in 2D)")
-    .value("VOL", VOL)
-    .value("BND", BND)
-    .value("BBND", BBND)
-    .value("BBBND", BBBND)
-    .export_values()
-    ;
+  static size_t global_heapsize = 1000000;
+  static LocalHeap glh(global_heapsize, "python-comp lh", true);
+
+  
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
@@ -573,7 +242,17 @@ UNUSED_DOF: Dof is not used, i.e the slave dofs in a :any:`Periodic` finite
     element space.
 
 LOCAL_DOF: Inner degree of freedom, will be eliminated by static
-    condensation.
+    condensation and reconstructed afterwards.
+
+HIDDEN_DOF: Inner degree of freedom, that will be eliminated by static
+    condensation and *not* reconstruced afterwards(spares some entries).
+    Note: 
+     * without static condensation a HIDDEN_DOF is treated as any other
+       DOF, e.g. as a LOCAL_DOF
+     * To a HIDDEN_DOF the r.h.s. vector must have zero entries.
+
+CONDENSATABLE_DOF: Inner degree of freedom, that will be eliminated by static
+    condensation (LOCAL_DOF or HIDDEN_DOF)
 
 INTERFACE_DOF: Degree of freedom between two elements, these will not be
     eliminated by static condensation, but not be put into the wirebasket
@@ -592,7 +271,9 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
 
 )raw_string"))
     .value("UNUSED_DOF", UNUSED_DOF)
+    .value("HIDDEN_DOF", HIDDEN_DOF)
     .value("LOCAL_DOF", LOCAL_DOF)
+    .value("CONDENSATABLE_DOF", CONDENSATABLE_DOF)
     .value("INTERFACE_DOF", INTERFACE_DOF)
     .value("NONWIREBASKET_DOF", NONWIREBASKET_DOF)
     .value("WIREBASKET_DOF", WIREBASKET_DOF)
@@ -618,108 +299,6 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
-  py::class_<ElementId> (m, "ElementId", 
-                         "an element identifier containing element number and Volume/Boundary flag")
-    .def(py::init<VorB,size_t>())
-    .def(py::init<size_t>())
-    .def(py::init<Ngs_Element>())
-    .def("__str__", &ToString<ElementId>)
-    .def_property_readonly("nr", &ElementId::Nr, "the element number")    
-    .def("VB", &ElementId::VB, "VorB of element")
-    .def(py::self!=py::self)
-    .def(py::self==py::self)
-    .def("__hash__" , &ElementId::Nr)
-    ;
-  
-  m.def("BndElementId",[] (int nr) { return ElementId(BND,nr); },
-          py::arg("nr"),
-          "creates an element-id for a boundary element")
-    ;
-
-  py::class_<NodeId> (m, "NodeId",
-                      "an node identifier containing node type and node nr")
-    .def(py::init<NODE_TYPE,size_t>())
-    .def("__str__", &ToString<NodeId>)
-    .def("__repr__", &ToString<NodeId>)
-    /*
-    .def("__repr__", [](NodeId & self)
-         { return string("NodeId(")+ToString(self.GetType())+","+ToString(self.GetNr())+")"; })
-    */
-    .def(py::self!=py::self)
-    .def(py::self==py::self)
-    .def("__hash__" , &NodeId::GetNr)    
-    .def_property_readonly("type", &NodeId::GetType, "the node type")        
-    .def_property_readonly("nr", &NodeId::GetNr, "the node number")    
-    ;
-
-  class MeshNode : public NodeId
-  {
-    const MeshAccess & ma;
-  public:
-    MeshNode (NodeId _ni, const MeshAccess & _ma)
-      : NodeId(_ni), ma(_ma) { ; }
-    auto & Mesh() { return ma; }
-    MeshNode operator++ (int) { return MeshNode(NodeId::operator++(0),ma); }
-    MeshNode operator++ () { return MeshNode(NodeId::operator++(), ma); }
-  };
-
-  py::class_<MeshNode, NodeId> (m, "MeshNode", "a node within a mesh")
-    .def_property_readonly("vertices", [](MeshNode & node) -> py::tuple
-                           {
-                             const MeshAccess & mesh = node.Mesh();
-                             if (node.GetType() == NT_EDGE)
-                               {
-                                 /*
-                                 auto verts = node.Mesh().GetEdgePNums(node.GetNr());
-                                 py::tuple tup(2);
-                                 for (size_t i = 0; i < 2; i++)
-                                   tup[i] = py::cast(NodeId(NT_VERTEX, verts[i]));
-                                 return tup;
-                                 */
-                                 
-                                 auto Nr2MeshVert = [&mesh] (size_t nr)
-                                   { return MeshNode(NodeId(NT_VERTEX,nr), mesh); };
-                                 auto verts = node.Mesh().GetEdgePNums(node.GetNr());
-                                 return MakePyTuple (Substitute(ArrayObject(verts), Nr2MeshVert));
-                               }
-                             if (node.GetType() == NT_FACE)
-                               {
-                                 /*
-                                 auto verts = node.Mesh().GetFacePNums(node.GetNr());
-                                 py::tuple tup(verts.Size());
-                                 for (size_t i = 0; i < verts.Size(); i++)
-                                   tup[i] = py::cast(NodeId(NT_VERTEX, verts[i]));
-                                 return tup;
-                                 */
-                                 auto verts = node.Mesh().GetFacePNums(node.GetNr());
-                                 return MakePyTuple (Substitute(verts, Nr2Vert));
-                               }
-                             throw py::type_error("vertices only available for edge and face nodes\n");
-                           },
-                           "tuple of global vertex numbers")
-    
-    ;
-
-  /*
-  py::class_<ngstd::T_Range<NodeId>> py_intrange (m, "NodeRange");
-  py_intrange.def("__iter__", [] (ngstd::T_Range<NodeId> & r)
-      { return py::make_iterator(r.begin(), r.end()); },
-      py::keep_alive<0,1>()
-    );
-  */
-  py::class_<ngstd::T_Range<NodeId>> (m, "NodeRange")
-    .def("__len__", &T_Range<NodeId>::Size)
-    .def("__iter__", [] (ngstd::T_Range<NodeId> & r)
-         { return py::make_iterator(r.begin(), r.end()); },
-         py::keep_alive<0,1>())
-    ;
-
-  py::class_<ngstd::T_Range<MeshNode>> (m, "MeshNodeRange")
-    .def("__len__", &T_Range<MeshNode>::Size)
-    .def("__iter__", [] (ngstd::T_Range<MeshNode> & r)
-         { return py::make_iterator(r.begin(), r.end()); },
-         py::keep_alive<0,1>())
-    ;
   
   py::enum_<ORDER_POLICY>(m, "ORDER_POLICY")
     .value("CONSTANT", CONSTANT_ORDER)
@@ -731,7 +310,8 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
-
+  /*
+    // where do we need that ? 
   py::class_<FlatArray<NodeId> > class_flatarrayNI (m, "FlatArrayNI");
   PyDefVector<FlatArray<NodeId>, NodeId>(m, class_flatarrayNI);
   PyDefToString<FlatArray<NodeId> >(m, class_flatarrayNI);
@@ -740,73 +320,38 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
   py::class_<Array<NodeId>, FlatArray<NodeId> >(m, "ArrayNI")
     .def(py::init<size_t>())
     ;
-
+  */
   
-  // TODO: make tuple not doing the right thing
-  py::class_<Ngs_Element>(m, "Ngs_Element")
-    .def_property_readonly("nr", &Ngs_Element::Nr, "the element number")    
-    .def("VB", &Ngs_Element::VB, "VorB of element")   
-    .def_property_readonly("vertices", [](Ngs_Element &el)
-                           {
-                             return MakePyTuple(Substitute(el.Vertices(), Nr2Vert));
-                           },
-                           "tuple of global vertex numbers")
-    .def_property_readonly("edges", [](Ngs_Element &el)
-                           {
-                             return MakePyTuple(Substitute(el.Edges(), Nr2Edge));
-                           },
-                           "tuple of global edge numbers")
-    .def_property_readonly("faces", [](Ngs_Element &el)
-                           {
-                             return MakePyTuple(Substitute(el.Faces(), Nr2Face));
-                           },
-                           "tuple of global face numbers")
-    .def_property_readonly("type", [](Ngs_Element &self)
-        { return self.GetType(); },
-        "geometric shape of element")
-    .def_property_readonly("index", [](Ngs_Element &self)
-        { return self.GetIndex(); },
-        "material or boundary condition index")
-    .def_property_readonly("mat", [](Ngs_Element & el)
-                           { return el.GetMaterial(); },
-                           "material or boundary condition label")
-    ;
-
-  py::implicitly_convertible <Ngs_Element, ElementId> ();
-  // py::implicitly_convertible <ElementId, Ngs_Element> ();
 
   py::class_<FESpace::Element,Ngs_Element>(m, "FESpaceElement")
     .def_property_readonly("dofs",
-                  [](FESpace::Element & el) 
-                   {
-                     py::list res;
-                     Array<int> tmp (el.GetDofs());
-                     for (int i : tmp)
-                       res.append(py::cast(i));
-                     return res;
-                   },
-                  "degrees of freedom of element"
-                  )
+                           [](FESpace::Element & el) 
+                           { return MakePyList (el.GetDofs()); },
+                           "degrees of freedom of element"
+                           )
 
+    /*
+      // don't give LocalHeap to Python !
     .def("GetLH",[](FESpace::Element & el) -> LocalHeap & 
                                   {
                                     return el.GetLH();
                                   },
          py::return_value_policy::reference
          )
+    */
     
     .def("GetFE",[](FESpace::Element & el)
-                                  {
-                                    return shared_ptr<FiniteElement>(const_cast<FiniteElement*>(&el.GetFE()), NOOP_Deleter);
-                                  },
+         {
+           return shared_ptr<FiniteElement>(const_cast<FiniteElement*>(&el.GetFE()), NOOP_Deleter);
+         },
          py::return_value_policy::reference,
          "the finite element containing shape functions"
          )
 
     .def("GetTrafo",[](FESpace::Element & el)
-                                     {
-                                       return shared_ptr<ElementTransformation>(const_cast<ElementTransformation*>(&el.GetTrafo()), NOOP_Deleter);
-                                     },
+         {
+           return shared_ptr<ElementTransformation>(const_cast<ElementTransformation*>(&el.GetTrafo()), NOOP_Deleter);
+         },
          py::return_value_policy::reference,
          "the transformation from reference element to physical element"
          )
@@ -851,363 +396,13 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
 
 
 
-  //////////////////////////////////////////////////////////////////////////////////////////
 
-  py::class_<Region> (m, "Region", "a subset of volume or boundary elements")
-    .def(py::init<shared_ptr<MeshAccess>,VorB,string>())
-    .def(py::init<shared_ptr<MeshAccess>,VorB,BitArray>())
-    .def("Mask",[](Region & reg)->BitArray { return reg.Mask(); })
-    .def("VB", [](Region & reg) { return VorB(reg); })
-    .def(py::self + py::self)
-    .def(py::self + string())
-    .def(py::self - py::self)
-    .def(py::self - string())
-    .def(~py::self)
-    ;
-
-  py::implicitly_convertible <Region, BitArray> ();
-
-
-  //////////////////////////////////////////////////////////////////////////////////////////
-  
-  
-  typedef PML_Transformation PML;
-  py::class_<MeshAccess, shared_ptr<MeshAccess>>(m, "Mesh", docu_string(R"raw_string(
-NGSolve interface to the Netgen mesh. Provides access and functionality
-to use the mesh for finite element calculations.
-
-Parameters
-
-mesh (netgen.Mesh): a mesh generated from Netgen
-
-
-)raw_string") , py::dynamic_attr())
-    .def(py::init<shared_ptr<netgen::Mesh>>())
-    
-#ifndef PARALLEL
-    /*
-    .def("__init__",
-         [](MeshAccess *instance, const string & filename)
-                           { 
-                             new (instance) MeshAccess(filename);
-                           },
-          py::arg("filename"))
-    */
-    .def(py::init([](const string & filename)
-                  { return make_shared<MeshAccess>(filename); }),
-          py::arg("filename"))
-#else
-
-    .def("__init__",
-         [](MeshAccess *instance, const string & filename)
-                           { 
-                             ngs_comm = MPI_COMM_WORLD;
-
-                             NGSOStream::SetGlobalActive (MyMPI_GetId()==0);
-                             new (instance) MeshAccess (filename, ngs_comm);
-                           },
-          py::arg("filename"))
-#endif
-
-    
-    .def("__eq__",
-         [] (shared_ptr<MeshAccess> self, shared_ptr<MeshAccess> other)
-           {
-             return self == other;
-           })
-    .def(py::pickle([](const MeshAccess& ma)
-                    {
-                      stringstream ss;
-                      ma.SaveMesh(ss);
-                      return py::make_tuple(ss.str());
-                    },
-                    [] (py::tuple state)
-                    {
-                      auto ma = make_shared<MeshAccess>();
-                      stringstream ss(state[0].cast<string>());
-                      ma->LoadMesh(ss);
-                      return ma;
-                    }))
-    .def("LoadMesh", static_cast<void(MeshAccess::*)(const string &)>(&MeshAccess::LoadMesh),
-         "Load mesh from file")
-    
-    .def("Elements", static_cast<ElementRange(MeshAccess::*)(VorB)const> (&MeshAccess::Elements),
-	 (py::arg("VOL_or_BND")=VOL), docu_string("Returns an iterator over ElementIds on VorB"))
-
-    .def("__getitem__", static_cast<Ngs_Element(MeshAccess::*)(ElementId)const> (&MeshAccess::operator[]))
-    .def("__getitem__", [](MeshAccess & self, NodeId ni) { return MeshNode(ni, self); })
-
-    .def ("GetNE", static_cast<size_t(MeshAccess::*)(VorB)const> (&MeshAccess::GetNE), docu_string("Number of elements of codimension VorB."))
-    .def_property_readonly ("nv", &MeshAccess::GetNV, "Number of vertices")
-    .def_property_readonly ("ne",  static_cast<size_t(MeshAccess::*)()const> (&MeshAccess::GetNE), "Number of volume elements")
-    .def_property_readonly ("nedge", &MeshAccess::GetNEdges, "Number of edges")
-    .def_property_readonly ("nface", &MeshAccess::GetNFaces, "Number of faces")    
-    .def_property_readonly ("dim", &MeshAccess::GetDimension, "Mesh dimension")
-    .def_property_readonly ("ngmesh", &MeshAccess::GetNetgenMesh, "Get the Netgen mesh")
-
-    .def_property_readonly ("vertices", [] (shared_ptr<MeshAccess> mesh)
-          {
-            // return mesh->Nodes(NT_VERTEX);
-            return T_Range<MeshNode> (MeshNode(NodeId(NT_VERTEX, 0), *mesh),
-                                      MeshNode(NodeId(NT_VERTEX, mesh->GetNNodes(NT_VERTEX)), *mesh));
-          }, "iterable of mesh vertices")
-    .def_property_readonly ("edges", [] (shared_ptr<MeshAccess> mesh)
-          {
-            return T_Range<MeshNode> (MeshNode(NodeId(NT_EDGE, 0), *mesh),
-                                      MeshNode(NodeId(NT_EDGE, mesh->GetNNodes(NT_EDGE)), *mesh));
-            /*
-            return T_Range<NodeId> (NodeId(NT_EDGE, 0),
-                                    NodeId(NT_EDGE, mesh->GetNNodes(NT_EDGE)));
-            */
-            // return mesh->Nodes(NT_EDGE);
-          }, "iterable of mesh edges")
-    .def_property_readonly ("faces", [] (shared_ptr<MeshAccess> mesh)
-          {
-            // return mesh->Nodes(NT_FACE);
-            return T_Range<MeshNode> (MeshNode(NodeId(NT_FACE, 0), *mesh),
-                                      MeshNode(NodeId(NT_FACE, mesh->GetNNodes(NT_FACE)), *mesh));
-          }, "iterable of mesh faces")
-    
-    .def ("GetTrafo", 
-          static_cast<ElementTransformation&(MeshAccess::*)(ElementId,Allocator&)const>
-          (&MeshAccess::GetTrafo), 
-          py::return_value_policy::reference)
-
-    .def ("GetTrafo",
-          [](MeshAccess & ma, ElementId id)
-          { return &ma.GetTrafo(id, global_alloc); },
-          py::return_value_policy::take_ownership)
-
-    .def("SetDeformation", 
-	 [](MeshAccess & ma, shared_ptr<GF> gf)
-         { ma.SetDeformation(gf); },
-         docu_string("Deform the mesh with the given GridFunction"))
-
-    .def("SetPML", 
-	 [](MeshAccess & ma,  shared_ptr<PML> apml, py::object definedon)
-          {
-            if (py::extract<int>(definedon).check())
-              {
-                ma.SetPML(apml, py::extract<int>(definedon)()-1);
-              }
-
-            if (py::isinstance<py::str>(definedon))
-              {
-                std::regex pattern(definedon.cast<string>());
-                for (int i = 0; i < ma.GetNDomains(); i++)
-                  if (std::regex_match (ma.GetMaterial(VOL,i), pattern))
-                    ma.SetPML(apml, i);
-              }
-          },
-         py::arg("pmltrafo"),py::arg("definedon"),
-         "set PML transformation on domain"
-         )
-    .def("UnSetPML", [](MeshAccess & ma, py::object definedon)
-          {
-            if (py::extract<int>(definedon).check())
-                ma.UnSetPML(py::extract<int>(definedon)()-1);
-
-            if (py::isinstance<py::str>(definedon))
-              {
-                std::regex pattern(definedon.cast<string>());
-                for (int i = 0; i < ma.GetNDomains(); i++)
-                  if (std::regex_match (ma.GetMaterial(VOL,i), pattern))
-                    ma.UnSetPML(i);
-              }
-          })
-    
-    .def("GetPMLTrafos", [](MeshAccess & ma) 
-      {
-        py::list pml_trafos(ma.GetNDomains());
-        for (int i : Range(ma.GetNDomains()))
-        {
-          if (ma.GetPMLTrafos()[i])
-            pml_trafos[i] = shared_ptr<PML>(ma.GetPMLTrafos()[i]);
-          else
-            pml_trafos[i] = py::none();
-        }
-        return pml_trafos;
-      },
-        "returns list of pml transformations"
-    )
-    .def("GetPMLTrafo", [](MeshAccess & ma, int domnr) {
-        if (ma.GetPMLTrafos()[domnr])
-     	  return ma.GetPMLTrafos()[domnr-1];
-        else
-          throw Exception("No PML Trafo set"); 
-        },
-        py::arg("dom")=1,
-        "returns pml transformation on domain dom"
-        )
-
-    .def("UnsetDeformation", [](MeshAccess & ma){ ma.SetDeformation(nullptr);})
-    
-    .def("GetMaterials",
-	 [](const MeshAccess & ma)
-	  {
-            return MakePyTuple(ma.GetMaterials(VOL));
-            // return py::cast(ma.GetMaterials(VOL));
-	  },
-	 "Returns list of materials"
-         )
-
-    .def("Materials",
-	 [](shared_ptr<MeshAccess> ma, string pattern) 
-	  {
-            return Region (ma, VOL, pattern);
-	  },
-         py::arg("pattern"),
-	 "Returns mesh-region matching the given regex pattern"
-         )
-    .def("Materials",
-	 [](shared_ptr<MeshAccess> ma, vector<int> domains)
-	  {
-            BitArray mask(ma->GetNDomains());
-            mask.Clear();
-            for (auto i : domains)
-              if (i >= 0 && i < mask.Size())
-                mask.Set(i);
-              else
-                throw Exception ("index "+ToString(i)+" out of range [0,"+ToString(mask.Size())+")");
-            return Region (ma, VOL, mask);
-	  },
-         py::arg("domains"),
-	 "Generate mesh-region by domain numbers"
-         )
-    
-    
-    .def("GetBoundaries",
-	 [](const MeshAccess & ma)
-	  {
-            return MakePyTuple(ma.GetMaterials(BND));
-	  },
-	 "Returns list of boundary conditions"
-         )
-
-    .def("Boundaries",
-	 [](shared_ptr<MeshAccess> ma, string pattern)
-	  {
-            return Region (ma, BND, pattern);
-	  },
-         py::arg("pattern"),
-	 "Returns boundary mesh-region matching the given regex pattern"
-         )
-    .def("Boundaries",
-	 [](shared_ptr<MeshAccess> ma, vector<int> bnds)
-	  {
-            BitArray mask(ma->GetNBoundaries());
-            mask.Clear();
-            for (auto i : bnds)
-              if (i >= 0 && i < mask.Size())
-                mask.Set(i);
-              else
-                throw Exception ("boundary index "+ToString(i)+" out of range [0,"+ToString(mask.Size())+")");
-            return Region (ma, BND, mask);
-	  },
-         py::arg("bnds"),
-	 "Generate boundary mesh-region by boundary condition numbers"
-         )
-
-    .def("GetBBoundaries",
-	 [](const MeshAccess & ma)
-	  {
-            return MakePyTuple(ma.GetMaterials(BBND));
-	  },
-	 "Returns list of boundary conditions for co dimension 2"
-	 )
-    .def("BBoundaries", [](shared_ptr<MeshAccess> ma, string pattern)
-	  {
-	    return Region (ma, BBND, pattern);
-	  },
-	 (py::arg("self"), py::arg("pattern")),
-	 "Returns co dim 2 boundary mesh-region matching the given regex pattern"
-	 )
-
-    // TODO: explain how to mark elements
-    .def("Refine",
-         [](MeshAccess & ma)
-          {
-            ma.Refine();
-          },
-	 "Local mesh refinement based on marked elements, uses element-bisection algorithm")
-
-    // TODO: explain how to mark vertices and edges, explain how factor is used
-    .def("RefineHP",
-         [](MeshAccess & ma, int levels, double factor)
-          {
-            Ng_HPRefinement(levels, factor);
-            ma.UpdateBuffers();
-          },
-         py::arg("levels"), py::arg("factor")=0.125,
-	 "Geometric mesh refinement towards marked vertices and edges, uses factor for placement of new points"
-         )
-
-    // TODO: Docu string says nothing... what does refinement flag do?
-    .def("SetRefinementFlag", &MeshAccess::SetRefinementFlag,
-	 "Set refinementflag for mesh-refinement")
-
-    // TODO: Docu
-    .def("GetParentElement", &MeshAccess::GetParentElement)
-    // TODO: Docu
-    .def("GetParentVertices", [](MeshAccess & ma, int vnum)
-          {
-            Array<int> parents(2);
-            ma.GetParentNodes (vnum, &parents[0]);
-            return py::make_tuple(parents[0], parents[1]);
-          })
-
-    .def("SetElementOrder",
-         [](MeshAccess & ma, ElementId id, int order)
-         {
-           ma.SetElOrder(id.Nr(), order);
-         })
-    
-    // TODO: Docu
-    .def("Curve",
-         [](MeshAccess & ma, int order)
-          {
-            Ng_HighOrder(order);
-          },
-         py::arg("order"))
-
-    .def("__call__",
-         [](MeshAccess & ma, double x, double y, double z, VorB vb) 
-          {
-            IntegrationPoint ip;
-            int elnr;
-            if (vb == VOL)
-              elnr = ma.FindElementOfPoint(Vec<3>(x, y, z), ip, true);
-            else
-              elnr = ma.FindSurfaceElementOfPoint(Vec<3>(x, y, z), ip, true);
-              
-            if (elnr < 0) throw Exception ("point out of domain");
-
-            ElementTransformation & trafo = ma.GetTrafo(ElementId(vb, elnr), global_alloc);
-            BaseMappedIntegrationPoint & mip = trafo(ip, global_alloc);
-            mip.SetOwnsTrafo(true);
-            return &mip;
-          } 
-          , 
-         py::arg("x") = 0.0, py::arg("y") = 0.0, py::arg("z") = 0.0,
-         py::arg("VOL_or_BND") = VOL,
-	 docu_string("Get a MappedIntegrationPoint in the point (x,y,z) on the matching volume (VorB=VOL, default) or surface (VorB=BND) element. BBND elements aren't supported"))
-
-    .def("Contains",
-         [](MeshAccess & ma, double x, double y, double z) 
-          {
-            IntegrationPoint ip;
-            int elnr = ma.FindElementOfPoint(Vec<3>(x, y, z), ip, true);
-            return (elnr >= 0);
-          }, 
-         py::arg("x") = 0.0, py::arg("y") = 0.0, py::arg("z") = 0.0
-	 ,"Checks if the point (x,y,z) is in the meshed domain (is inside a volume element)")
-
-    ;
 
   //////////////////////////////////////////////////////////////////////////////////////////
   
   py::class_<NGS_Object, shared_ptr<NGS_Object>>(m, "NGS_Object")
-    .def_property_readonly("name", [](const NGS_Object & self)->string { return self.GetName();})
+    // .def_property_readonly("name", [](const NGS_Object & self)->string { return self.GetName();})
+    .def_property("name", &NGS_Object::GetName, &NGS_Object::SetName)
     ;
 
   //////////////////////////////////////////////////////////////////////////////////////////
@@ -1262,7 +457,7 @@ when building the system matrices.
 
 
 
-
+  /*
   struct OrderProxy 
   {
     FESpace & fes;
@@ -1332,10 +527,8 @@ when building the system matrices.
             cout << "(not implemented)" << endl;
           })
     ;
+  */
 
-
-  static size_t global_heapsize = 1000000;
-  static LocalHeap glh(global_heapsize, "python-comp lh", true);
   m.def("SetHeapSize",
         [](size_t heapsize)
         {
@@ -1355,14 +548,6 @@ when building the system matrices.
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
-  auto fesPickle = [](const FESpace& fes)
-    {
-      auto flags = fes.GetFlags();
-      auto mesh = fes.GetMeshAccess();
-      auto type = fes.type;
-      // TODO: pickle order policies
-      return py::make_tuple(type,mesh,flags);
-    };
 
   auto fes_class = py::class_<FESpace, shared_ptr<FESpace>>(m, "FESpace",
 		    docu_string(R"raw_string(Finite Element Space
@@ -1426,14 +611,15 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                         throw Exception("Compound space of spaces with complex and real spaces is not allowed");
                     if (is_complex)
                       flags.SetFlag ("complex");
-                    shared_ptr<FESpace> fes = make_shared<CompoundFESpace> (spaces[0]->GetMeshAccess(), spaces, flags);
+                    shared_ptr<FESpace>
+                      fes = make_shared<CompoundFESpace> (spaces[0]->GetMeshAccess(), spaces, flags);
                     fes->Update(glh);
                     fes->FinalizeUpdate(glh);
                     return fes;
                     //                              py::cast(*instance).attr("flags") = bpflags;
                   }),
                   py::arg("spaces"),
-                  "construct compound-FESpace from list of component spaces"
+                  "construct product space (compound-space) from list of component spaces"
                   )
     .def(py::init([fes_class] (const string & type, shared_ptr<MeshAccess> ma,
                       py::kwargs kwargs)
@@ -1552,6 +738,13 @@ kwargs : For a description of the possible kwargs have a look a bit further down
            self->FinalizeUpdate(glh);
          },
          "update space after mesh-refinement")
+     .def("UpdateDofTables", [](shared_ptr<FESpace> self)
+         {
+           self->UpdateDofTables();
+           self->UpdateCouplingDofArray();
+           self->FinalizeUpdate(glh);
+         },
+         "update dof-tables after changing polynomial order distribution")
      .def("FinalizeUpdate", [](shared_ptr<FESpace> self)
          { 
            self->FinalizeUpdate(glh);
@@ -1563,16 +756,16 @@ kwargs : For a description of the possible kwargs have a look a bit further down
     .def_property_readonly ("ndofglobal",
                             [](shared_ptr<FESpace> self) { return self->GetNDofGlobal(); },
                             "global number of dofs on MPI-distributed mesh")
-    // .def("__str__", &ToString<FESpace>)
     .def("__str__", [] (shared_ptr<FESpace> self) { return ToString(*self); } )
     .def("__timing__", [] (shared_ptr<FESpace> self) { return py::cast(self->Timing()); })
-
+    .def_property_readonly("lospace", [](shared_ptr<FESpace> self) -> shared_ptr<FESpace>
+			   { return self->LowOrderFESpacePtr(); })
     .def_property_readonly("mesh",
                            [](shared_ptr<FESpace> self) -> shared_ptr<MeshAccess>
                            { return self->GetMeshAccess(); })
 
-    .def_property_readonly("order", [] (shared_ptr<FESpace> self) { return OrderProxy(*self); },
-                  "proxy to set order for individual nodes")
+    // .def_property_readonly("order", [] (shared_ptr<FESpace> self) { return OrderProxy(*self); },
+    // "proxy to set order for individual nodes")
     .def_property_readonly("globalorder", [] (shared_ptr<FESpace> self) { return self->GetOrder(); },
                   "query global order of space")    
     .def_property_readonly("type", [] (shared_ptr<FESpace> self) { return self->type; },
@@ -1586,22 +779,27 @@ kwargs : For a description of the possible kwargs have a look a bit further down
          }, py::arg("Region"))
 
     .def("SetOrder",
-         [](shared_ptr<FESpace> self, ELEMENT_TYPE et, py::object order, py::object order_left, py::object order_right)
+         [](shared_ptr<FESpace> self, ELEMENT_TYPE et, int order /*, py::object order_left, py::object order_right*/)
          {
+           self->SetOrder (et, order);
+           /*
            if (py::isinstance<py::int_> (order))
              {
                self->SetOrderLeft (et, order.cast<py::int_>());
                self->SetOrderRight (et, order.cast<py::int_>());
              }
+           */
+           /*
            if (py::isinstance<py::int_> (order_left))
              self->SetOrderLeft (et, order_left.cast<py::int_>());
            if (py::isinstance<py::int_> (order_right))
              self->SetOrderRight (et, order_right.cast<int>());
+           */
          },
          py::arg("element_type"),
-         py::arg("order")=DummyArgument(),
-         py::arg("order_left")=DummyArgument(),
-         py::arg("order_right")=DummyArgument()
+         py::arg("order")
+         // py::arg("order_left")=DummyArgument(),
+         // py::arg("order_right")=DummyArgument()
          )
 
     .def("SetOrder",
@@ -1620,13 +818,13 @@ kwargs : For a description of the possible kwargs have a look a bit further down
 
     .def("GetDofNrs", [](shared_ptr<FESpace> self, ElementId ei)
          {
-           Array<int> tmp; self->GetDofNrs(ei,tmp);
+           Array<DofId> tmp; self->GetDofNrs(ei,tmp);
            return MakePyTuple(tmp);           
          })
 
     .def("GetDofNrs", [](shared_ptr<FESpace> self, NodeId ni)
          {
-           Array<int> tmp; self->GetDofNrs(ni,tmp);
+           Array<DofId> tmp; self->GetDofNrs(ni,tmp);
            return MakePyTuple(tmp);
          })
 
@@ -1654,24 +852,34 @@ kwargs : For a description of the possible kwargs have a look a bit further down
             
             auto scalfe = dynamic_pointer_cast<BaseScalarFiniteElement> (fe);
             if (scalfe) return py::cast(scalfe);
+
+            auto hcurlfe = dynamic_pointer_cast<BaseHCurlFiniteElement> (fe);
+            if (hcurlfe) return py::cast(hcurlfe);
             
             return py::cast(fe);
           })
-          
+
+    /*
     .def ("GetFE", [](shared_ptr<FESpace> self, ElementId ei, LocalHeap & lh)
           {
             return shared_ptr<FiniteElement>(&self->GetFE(ei, lh), NOOP_Deleter);
           },
           py::return_value_policy::reference)
+    */
     
     .def("FreeDofs",
          [] (const shared_ptr<FESpace>self, bool coupling)
          { return self->GetFreeDofs(coupling); },
-         py::arg("coupling")=false)
+         py::arg("coupling")=false,
+         "Return BitArray of free (non-Dirichlet) dofs\n"
+         "coupling=False ... all free dofs including local dofs\n"
+         "coupling=True .... only element-boundary free dofs"
+         )
 
     .def("ParallelDofs",
          [] (const shared_ptr<FESpace>self)
-         { return self->GetParallelDofs(); })
+         { return self->GetParallelDofs(); },
+         "Return dof-identification for MPI-distributed meshes")
 
     .def("Range",
          [] (const shared_ptr<FESpace> self, int comp) -> py::slice
@@ -1681,8 +889,10 @@ kwargs : For a description of the possible kwargs have a look a bit further down
              throw py::type_error("'Range' is available only for product spaces");
            IntRange r = compspace->GetRange(comp);
            return py::slice(py::int_(r.First()), py::int_(r.Next()),1);
-         })
-
+         },
+         "component"_a,
+         "Return interval of dofs of a component of a product space")
+    
     .def_property_readonly("components", 
                   [](shared_ptr<FESpace> self)-> py::tuple
                    { 
@@ -1694,86 +904,47 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                        vecs[i]= py::cast((*compspace)[i]);
                      return vecs;
                    },
-                  "list of gridfunctions for compound gridfunction")
+                  "Return a list of the components of a product space")
 
     .def("TrialFunction",
          [] (const shared_ptr<FESpace> self)
          {
            return MakeProxyFunction (self, false);
          },
-         docu_string("Gives a proxy to be used as a trialfunction in :any:`Symbolic Integrators<symbolic-integrators>`"))
+         docu_string("Return a proxy to be used as a trialfunction in :any:`Symbolic Integrators<symbolic-integrators>`"))
     
     .def("TestFunction",
          [] (const shared_ptr<FESpace> self)
            {
              return MakeProxyFunction (self, true);
            },
-         docu_string("Gives a proxy to be used as a testfunction for :any:`Symbolic Integrators<symbolic-integrators>`"))
+         docu_string("Return a proxy to be used as a testfunction for :any:`Symbolic Integrators<symbolic-integrators>`"))
 
     .def("TnT",
          [] (const shared_ptr<FESpace> self)
          {
            return std::make_tuple(MakeProxyFunction (self, false), MakeProxyFunction (self, true));
          },
-         docu_string("Gives a tuple of trial and testfunction"))
+         docu_string("Return a tuple of trial and testfunction"))
 
     .def("SolveM",
          [] (const shared_ptr<FESpace> self,
-             spCF rho, BaseVector& vec, int heapsize)
-          {
-            if (heapsize > global_heapsize)
-              {
-                global_heapsize = heapsize;
-                glh = LocalHeap(heapsize, "python-comp lh", true);
-                bool first_time = true;
-                if (first_time)
-                  { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }
-              }
-            self->SolveM(*rho, vec, glh);
-          },
-         py::arg("rho"), py::arg("vec"), py::arg("heapsize")=1000000)
+             BaseVector& vec, spCF rho)
+         { self->SolveM(rho.get(), vec, glh); },
+         py::arg("vec"), py::arg("rho")=nullptr,
+         "Solve with the mass-matrix. Available only for L2-like spaces")
+    .def("ApplyM",
+         [] (const shared_ptr<FESpace> self,
+             BaseVector& vec, spCF rho)
+         { self->ApplyM(rho.get(), vec, glh); },
+         py::arg("vec"), py::arg("rho")=nullptr,
+         "Apply mass-matrix. Available only for L2-like spaces")
         
     .def("__eq__",
          [] (shared_ptr<FESpace> self, shared_ptr<FESpace> other)
          {
            return self == other;
          })
-    ;
-
-  auto hcurl = py::class_<HCurlHighOrderFESpace, shared_ptr<HCurlHighOrderFESpace>,FESpace>
-    (m, "HCurl");
-  hcurl
-    .def(py::init([hcurl](shared_ptr<MeshAccess> ma, py::kwargs kwargs)
-                  {
-                    py::list info;
-                    info.append(ma);
-                    auto flags = CreateFlagsFromKwArgs(hcurl, kwargs, info);
-                    auto fes = make_shared<HCurlHighOrderFESpace>(ma,flags);
-                    fes->Update(glh);
-                    fes->FinalizeUpdate(glh);
-                    return fes;
-                  }),py::arg("mesh"))
-    .def(py::pickle(fesPickle, (shared_ptr<HCurlHighOrderFESpace>(*)(py::tuple))
-                    fesUnpickle<HCurlHighOrderFESpace>))
-    .def_static("__flags_doc__", [] ()
-                {
-                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
-                                                  attr("FESpace").
-                                                  attr("__flags_doc__")());
-                  flags_doc["nograds"] = "bool = False\n"
-                    "  Remove higher order gradients of H1 basis functions from HCurl FESpace";
-		  flags_doc["type1"] = "bool = False\n"
-                    "  Use type 1 Nedelec elements";
-		  flags_doc["discontinuous"] = "bool = False\n"
-                    "  Create discontinuous HCurl space";
-
-                  return flags_doc;
-                })
-    .def("CreateGradient", [](shared_ptr<HCurlHighOrderFESpace> self) {
-	  auto fesh1 = self->CreateGradientSpace();
-	  shared_ptr<BaseMatrix> grad = self->CreateGradient(*fesh1);
-	  return py::make_tuple(grad, shared_ptr<FESpace>(fesh1));
-	})
     ;
 
   py::class_<CompoundFESpace, shared_ptr<CompoundFESpace>, FESpace>
@@ -1784,9 +955,7 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                       auto flags = fes->GetFlags();
                       py::list lst;
                       for(auto i : Range(fes->GetNSpaces()))
-                        {
-                          lst.append((*fes)[i]);
-                        }
+                        lst.append((*fes)[i]);
                       return py::make_tuple(lst,flags,pyfes.attr("__dict__"));
                     },
                     [] (py::tuple state)
@@ -1803,216 +972,60 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                       return fes;
                     }))
     ;
+
   
-  auto hdiv = py::class_<HDivHighOrderFESpace, shared_ptr<HDivHighOrderFESpace>,FESpace>
-    (m, "HDiv");
-  hdiv
-    .def(py::init([hdiv](shared_ptr<MeshAccess> ma, py::kwargs kwargs)
-                  {
-                    py::list info;
-                    info.append(ma);
-                    auto flags = CreateFlagsFromKwArgs(hdiv, kwargs, info);
-                    auto fes = make_shared<HDivHighOrderFESpace>(ma,flags);
-                    fes->Update(glh);
-                    fes->FinalizeUpdate(glh);
-                    return fes;
-                  }),py::arg("mesh"))
-    .def(py::pickle(fesPickle,(shared_ptr<HDivHighOrderFESpace>(*)(py::tuple))
-                    fesUnpickle<HDivHighOrderFESpace>))
+  ExportFESpace<HCurlHighOrderFESpace> (m, "HCurl")
     .def_static("__flags_doc__", [] ()
                 {
                   auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
-                                                  attr("FESpace").
-                                                  attr("__flags_doc__")());
+                                                      attr("FESpace").
+                                                      attr("__flags_doc__")());
+                  flags_doc["nograds"] = "bool = False\n"
+                    "  Remove higher order gradients of H1 basis functions from HCurl FESpace";
+                  flags_doc["type1"] = "bool = False\n"
+                    "  Use type 1 Nedelec elements";
                   flags_doc["discontinuous"] = "bool = False\n"
-                    "  Create discontinuous HDiv space";
-		  flags_doc["hodivfree"] = "bool = False\n"
-		    "  Remove high order element bubbles with non zero divergence";
-		  flags_doc["highest_order_dc"] = "bool = False\n"
-                    "  Activates relaxed H(div)-conformity. Allows normal discontinuity of highest order facet basis functions";
+                    "  Create discontinuous HCurl space";
                   return flags_doc;
                 })
-    .def("Average",
-         [] (shared_ptr<HDivHighOrderFESpace> hdivfes, BaseVector & bv)
-         {
-           auto & pairs = hdivfes->GetDCPairs();
-           auto fu = bv.FV<double>();
-           for (auto pair : pairs)
-             {
-               auto f1 = pair[0];
-               auto f2 = pair[1];
-               if (f2 != -1)
-                 {
-                   double mean = 0.5 * (fu(f1) + fu(f2));
-                   fu(f1) = fu(f2) = mean;
-                 }
-               else if (f1 != -1)
-                 fu(f1) = 0.0;
-             }
-         },
-         py::arg("vector"))
+    .def("CreateGradient", [](shared_ptr<HCurlHighOrderFESpace> self) {
+        auto fesh1 = self->CreateGradientSpace();
+        shared_ptr<BaseMatrix> grad = self->CreateGradient(*fesh1);
+        return py::make_tuple(grad, shared_ptr<FESpace>(fesh1));
+      })
     ;
-
-
-  auto h1 = py::class_<H1HighOrderFESpace, shared_ptr<H1HighOrderFESpace>,FESpace>
-    (m, "H1");
-  h1
-    .def(py::init([h1](shared_ptr<MeshAccess> ma, py::kwargs kwargs)
-                  {
-                    py::list info;
-                    info.append(ma);
-                    auto flags = CreateFlagsFromKwArgs(h1, kwargs, info);
-                    auto fes = make_shared<H1HighOrderFESpace>(ma,flags);
-                    fes->Update(glh);
-                    fes->FinalizeUpdate(glh);
-                    return fes;
-                  }),py::arg("mesh"))
-    .def(py::pickle(fesPickle,(shared_ptr<H1HighOrderFESpace>(*)(py::tuple))
-                    fesUnpickle<H1HighOrderFESpace>))
+  
+  ExportFESpace<HDivHighOrderFESpace> (m, "HDiv")
     .def_static("__flags_doc__", [] ()
-                {
-                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
-                                                  attr("FESpace").
-                                                  attr("__flags_doc__")());
-                  return flags_doc;
-                })
-    ;
+              {
+                auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
+                                                    attr("FESpace").
+                                                    attr("__flags_doc__")());
+                flags_doc["discontinuous"] = "bool = False\n"
+                  "  Create discontinuous HDiv space";
+                flags_doc["hodivfree"] = "bool = False\n"
+                  "  Remove high order element bubbles with non zero divergence";
+                flags_doc["highest_order_dc"] = "bool = False\n"
+                  "  Activates relaxed H(div)-conformity. Allows normal discontinuity of highest order facet basis functions";
+                return flags_doc;
+              })
+    .def("Average", &HDivHighOrderFESpace::Average,
+          py::arg("vector"))
+     ;
+  
+  auto h1 = ExportFESpace<H1HighOrderFESpace> (m, "H1");
 
-  auto vectorh1 = py::class_<VectorH1FESpace, shared_ptr<VectorH1FESpace>,FESpace>
-    (m, "VectorH1");
-  vectorh1
-    .def(py::init([vectorh1](shared_ptr<MeshAccess> ma, py::kwargs kwargs)
-                  {
-                    py::list info;
-                    info.append(ma);
-                    auto flags = CreateFlagsFromKwArgs(vectorh1, kwargs, info);
-                    auto fes = make_shared<VectorH1FESpace>(ma,flags);
-                    fes->Update(glh);
-                    fes->FinalizeUpdate(glh);
-                    return fes;
-                  }),py::arg("mesh"))
-    .def(py::pickle(fesPickle,(shared_ptr<VectorH1FESpace>(*)(py::tuple))
-                    fesUnpickle<VectorH1FESpace>))
-    .def_static("__flags_doc__", [] ()
-                {
-                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
-                                                  attr("FESpace").
-                                                  attr("__flags_doc__")());
-                  return flags_doc;
-                })
-    ;
+  auto vectorh1 = ExportFESpace<VectorH1FESpace, CompoundFESpace> (m, "VectorH1");
+ 
+  auto l2 = ExportFESpace<L2HighOrderFESpace> (m, "L2");
 
-  auto l2 = py::class_<L2HighOrderFESpace, shared_ptr<L2HighOrderFESpace>,FESpace>
-    (m, "L2");
-  l2
-    .def(py::init([l2](shared_ptr<MeshAccess> ma, py::kwargs kwargs)
-                  {
-                    py::list info;
-                    info.append(ma);
-                    auto flags = CreateFlagsFromKwArgs(l2, kwargs, info);
-                    auto fes = make_shared<L2HighOrderFESpace>(ma,flags);
-                    fes->Update(glh);
-                    fes->FinalizeUpdate(glh);
-                    return fes;
-                  }),py::arg("mesh"))
-    .def(py::pickle(fesPickle,(shared_ptr<L2HighOrderFESpace>(*)(py::tuple))
-                    fesUnpickle<L2HighOrderFESpace>))
-    .def_static("__flags_doc__", [] ()
-                {
-                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
-                                                  attr("FESpace").
-                                                  attr("__flags_doc__")());
-                  return flags_doc;
-                })
-    ;
+  auto vectorl2 = ExportFESpace<VectorL2FESpace, CompoundFESpace> (m, "VectorL2");
 
-  auto vectorl2 = py::class_<VectorL2FESpace, shared_ptr<VectorL2FESpace>,FESpace>
-    (m, "VectorL2");
-  vectorl2
-    .def(py::init([vectorl2](shared_ptr<MeshAccess> ma, py::kwargs kwargs)
-                  {
-                    py::list info;
-                    info.append(ma);
-                    auto flags = CreateFlagsFromKwArgs(vectorl2, kwargs, info);
-                    auto fes = make_shared<VectorL2FESpace>(ma,flags);
-                    fes->Update(glh);
-                    fes->FinalizeUpdate(glh);
-                    return fes;
-                  }),py::arg("mesh"))
-    .def(py::pickle(fesPickle,(shared_ptr<VectorL2FESpace>(*)(py::tuple))
-                    fesUnpickle<VectorL2FESpace>))
-    .def_static("__flags_doc__", [] ()
-                {
-                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
-                                                  attr("FESpace").
-                                                  attr("__flags_doc__")());
-                  return flags_doc;
-                })
-    ;
+  auto l2surface = ExportFESpace<L2SurfaceHighOrderFESpace> (m, "SurfaceL2");
 
-  auto l2surface = py::class_<L2SurfaceHighOrderFESpace, shared_ptr<L2SurfaceHighOrderFESpace>,FESpace>
-    (m, "SurfaceL2");
-  l2surface
-    .def(py::init([l2surface](shared_ptr<MeshAccess> ma, py::kwargs kwargs)
-                  {
-                    py::list info;
-                    info.append(ma);
-                    auto flags = CreateFlagsFromKwArgs(l2surface, kwargs, info);
-                    auto fes = make_shared<L2SurfaceHighOrderFESpace>(ma,flags);
-                    fes->Update(glh);
-                    fes->FinalizeUpdate(glh);
-                    return fes;
-                  }),py::arg("mesh"))
-    .def(py::pickle(fesPickle,(shared_ptr<L2SurfaceHighOrderFESpace>(*)(py::tuple))
-                    fesUnpickle<L2SurfaceHighOrderFESpace>))
-    .def_static("__flags_doc__", [] ()
-                {
-                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
-                                                  attr("FESpace").
-                                                  attr("__flags_doc__")());
-                  return flags_doc;
-                })
-    ;
+  auto numberfes = ExportFESpace<NumberFESpace> (m, "NumberSpace");
 
-  auto numberfes = py::class_<NumberFESpace, shared_ptr<NumberFESpace>,FESpace>
-    (m, "NumberSpace");
-  numberfes
-    .def(py::init([numberfes](shared_ptr<MeshAccess> ma, py::kwargs kwargs)
-                  {
-                    py::list info;
-                    info.append(ma);
-                    auto flags = CreateFlagsFromKwArgs(numberfes, kwargs, info);
-                    auto fes = make_shared<NumberFESpace>(ma,flags);
-                    fes->Update(glh);
-                    fes->FinalizeUpdate(glh);
-                    return fes;
-                  }),py::arg("mesh"))
-    .def(py::pickle(fesPickle,(shared_ptr<NumberFESpace>(*)(py::tuple))
-                    fesUnpickle<NumberFESpace>))
-    .def_static("__flags_doc__", [] ()
-                {
-                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
-                                                  attr("FESpace").
-                                                  attr("__flags_doc__")());
-                  return flags_doc;
-                })
-    ;
-
-  auto hdivdiv = py::class_<HDivDivFESpace, shared_ptr<HDivDivFESpace>,FESpace>
-    (m, "HDivDiv");
-  hdivdiv
-    .def(py::init([hdivdiv](shared_ptr<MeshAccess> ma, py::kwargs kwargs)
-                  {
-                    py::list info;
-                    info.append(ma);
-                    auto flags = CreateFlagsFromKwArgs(hdivdiv, kwargs, info);
-                    auto fes = make_shared<HDivDivFESpace>(ma,flags);
-                    fes->Update(glh);
-                    fes->FinalizeUpdate(glh);
-                    return fes;
-                  }),py::arg("mesh"))
-    .def(py::pickle(fesPickle,(shared_ptr<HDivDivFESpace>(*)(py::tuple))
-                    fesUnpickle<HDivDivFESpace>))
+  ExportFESpace<HDivDivFESpace> (m, "HDivDiv")
     .def_static("__flags_doc__", [] ()
                 {
                   auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
@@ -2027,21 +1040,19 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                 })
     ;
 
-  auto hcurldiv = py::class_<HCurlDivFESpace, shared_ptr<HCurlDivFESpace>,FESpace>
-    (m, "HCurlDiv");
-  hcurldiv
-    .def(py::init([hcurldiv](shared_ptr<MeshAccess> ma, py::kwargs kwargs)
-                  {
-                    py::list info;
-                    info.append(ma);
-                    auto flags = CreateFlagsFromKwArgs(hcurldiv, kwargs, info);
-                    auto fes = make_shared<HCurlDivFESpace>(ma,flags);
-                    fes->Update(glh);
-                    fes->FinalizeUpdate(glh);
-                    return fes;
-                  }),py::arg("mesh"))
-    .def(py::pickle(fesPickle,(shared_ptr<HCurlDivFESpace>(*)(py::tuple))
-                    fesUnpickle<HCurlDivFESpace>))
+  ExportFESpace<HDivDivSurfaceSpace> (m, "HDivDivSurface")    
+    .def_static("__flags_doc__", [] ()
+                {
+                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
+                                                  attr("FESpace").
+                                                  attr("__flags_doc__")());
+		  flags_doc["discontinuous"] = "bool = False\n"
+                    "  Create discontinuous HDivDiv space";
+                  return flags_doc;
+                })
+    ;
+
+ExportFESpace<HCurlDivSpace> (m, "HCurlDiv")    
     .def_static("__flags_doc__", [] ()
                 {
                   auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
@@ -2049,127 +1060,17 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                                                   attr("__flags_doc__")());
 		  flags_doc["discontinuous"] = "bool = False\n"
                     "  Create discontinuous HCurlDiv space";
-		  flags_doc["ordertrace"] = "bool = False\n"
-                    "  Set polynomial order of trace, default is -1";
-
                   return flags_doc;
                 })
     ;
 
+  ExportFESpace<VectorFacetFESpace> (m, "VectorFacet");
 
-  auto hdivdivsurf = py::class_<HDivDivSurfaceSpace, shared_ptr<HDivDivSurfaceSpace>,FESpace>
-    (m, "HDivDivSurface");
-  hdivdivsurf
-    .def(py::init([hdivdivsurf](shared_ptr<MeshAccess> ma, py::kwargs kwargs)
-                  {
-                    py::list info;
-                    info.append(ma);
-                    auto flags = CreateFlagsFromKwArgs(hdivdivsurf, kwargs, info);
-                    auto fes = make_shared<HDivDivSurfaceSpace>(ma,flags);
-                    fes->Update(glh);
-                    fes->FinalizeUpdate(glh);
-                    return fes;
-                  }),py::arg("mesh"))
-    .def(py::pickle(fesPickle,(shared_ptr<HDivDivSurfaceSpace>(*)(py::tuple))
-                    fesUnpickle<HDivDivSurfaceSpace>))
-    .def_static("__flags_doc__", [] ()
-                {
-                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
-                                                  attr("FESpace").
-                                                  attr("__flags_doc__")());
-		  flags_doc["discontinuous"] = "bool = False\n"
-                    "  Create discontinuous HDivDivSurface space";
-                  return flags_doc;
-                })
-    ;
+  ExportFESpace<FacetFESpace> (m, "FacetFESpace");
 
-  auto vectorfacet = py::class_<VectorFacetFESpace, shared_ptr<VectorFacetFESpace>,FESpace>
-    (m, "VectorFacet");
-  vectorfacet
-    .def(py::init([vectorfacet](shared_ptr<MeshAccess> ma, py::kwargs kwargs)
-                  {
-                    py::list info;
-                    info.append(ma);
-                    auto flags = CreateFlagsFromKwArgs(vectorfacet, kwargs, info);
-                    auto fes = make_shared<VectorFacetFESpace>(ma,flags);
-                    fes->Update(glh);
-                    fes->FinalizeUpdate(glh);
-                    return fes;
-                  }),py::arg("mesh"))
-    .def(py::pickle(fesPickle,(shared_ptr<VectorFacetFESpace>(*)(py::tuple))
-                    fesUnpickle<VectorFacetFESpace>))
-    .def_static("__flags_doc__", [] ()
-                {
-                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
-                                                  attr("FESpace").
-                                                  attr("__flags_doc__")());
-                  return flags_doc;
-                })
-    ;
+  ExportFESpace<FacetSurfaceFESpace> (m, "FacetSurface");
 
-  auto facetfes = py::class_<FacetFESpace, shared_ptr<FacetFESpace>,FESpace>
-    (m, "FacetFESpace");
-  facetfes
-    .def(py::init([facetfes](shared_ptr<MeshAccess> ma, py::kwargs kwargs)
-                  {
-                    py::list info;
-                    info.append(ma);
-                    auto flags = CreateFlagsFromKwArgs(facetfes, kwargs, info);
-                    auto fes = make_shared<FacetFESpace>(ma,flags);
-                    fes->Update(glh);
-                    fes->FinalizeUpdate(glh);
-                    return fes;
-                  }),py::arg("mesh"))
-    .def(py::pickle(fesPickle,(shared_ptr<FacetFESpace>(*)(py::tuple))
-                    fesUnpickle<FacetFESpace>))
-    .def_static("__flags_doc__", [] ()
-                {
-                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
-                                                  attr("FESpace").
-                                                  attr("__flags_doc__")());
-                  return flags_doc;
-                })
-    ;
-
-  auto facetsurface = py::class_<FacetSurfaceFESpace, shared_ptr<FacetSurfaceFESpace>,FESpace>
-    (m, "FacetSurface");
-  facetsurface
-    .def(py::init([facetsurface](shared_ptr<MeshAccess> ma, py::kwargs kwargs)
-                  {
-                    py::list info;
-                    info.append(ma);
-                    auto flags = CreateFlagsFromKwArgs(facetsurface, kwargs, info);
-                    auto fes = make_shared<FacetSurfaceFESpace>(ma,flags);
-                    fes->Update(glh);
-                    fes->FinalizeUpdate(glh);
-                    return fes;
-                  }),py::arg("mesh"))
-    .def(py::pickle(fesPickle,(shared_ptr<FacetSurfaceFESpace>(*)(py::tuple))
-                    fesUnpickle<FacetSurfaceFESpace>))
-    .def_static("__flags_doc__", [] ()
-                {
-                  auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
-                                                  attr("FESpace").
-                                                  attr("__flags_doc__")());
-                  return flags_doc;
-                })
-    ;
-   
-  auto hdivsurf = py::class_<HDivHighOrderSurfaceFESpace, shared_ptr<HDivHighOrderSurfaceFESpace>,FESpace>
-    (m, "HDivSurface");
-  hdivsurf
-    .def(py::init([hdivsurf](shared_ptr<MeshAccess> ma, py::kwargs kwargs)
-                  {
-                    py::list info;
-                    info.append(ma);
-                    auto flags = CreateFlagsFromKwArgs(hdivsurf, kwargs, info);
-                    auto fes = make_shared<HDivHighOrderSurfaceFESpace>(ma,flags);
-                    fes->Update(glh);
-                    fes->FinalizeUpdate(glh);
-                    return fes;
-                  }),py::arg("mesh"))
-    .def(py::pickle(fesPickle,(shared_ptr<HDivHighOrderSurfaceFESpace>(*)(py::tuple))
-                    fesUnpickle<HDivHighOrderSurfaceFESpace>))
+  ExportFESpace<HDivHighOrderSurfaceFESpace> (m, "HDivSurface")
     .def_static("__flags_doc__", [] ()
                 {
                   auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
@@ -2179,24 +1080,7 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                     "  Create discontinuous HDivSurface space";
                   return flags_doc;
                 })
-    .def("Average",
-         [] (shared_ptr<HDivHighOrderSurfaceFESpace> hdivsurffes, BaseVector & bv)
-         {
-           auto & pairs = hdivsurffes->GetDCPairs();
-           auto fu = bv.FV<double>();
-           for (auto pair : pairs)
-             {
-               auto f1 = pair[0];
-               auto f2 = pair[1];
-               if (f2 != -1)
-                 {
-                   double mean = 0.5 * (fu(f1) + fu(f2));
-                   fu(f1) = fu(f2) = mean;
-                 }
-               else if (f1 != -1)
-                 fu(f1) = 0.0;
-             }
-         },
+    .def("Average", &HDivHighOrderSurfaceFESpace::Average,
          py::arg("vector"))
     ;
 
@@ -2306,6 +1190,53 @@ used_idnrs : list of int = None
                       return fes;
                     }))
     ;
+
+  /////////////////////////////// GridFunctionCoefficientFunction /////////////
+
+  py::class_<GridFunctionCoefficientFunction, shared_ptr<GridFunctionCoefficientFunction>, CoefficientFunction>
+    (m, "CoefficientFunction")
+    .def(py::pickle([] (const GridFunctionCoefficientFunction & gfcf)
+                    {
+                      return py::make_tuple(gfcf.GetGridFunctionPtr(),
+                                            gfcf.generated_from_deriv,
+                                            gfcf.generated_from_operator);
+                    },
+                    [] (py::tuple state) -> shared_ptr<GridFunctionCoefficientFunction>
+                    {
+                      auto gf = state[0].cast<shared_ptr<GridFunction>>();
+                      auto fes = gf->GetFESpace();
+                      bool generated_from_deriv = state[1].cast<bool>();
+                      string generated_from_operator = state[2].cast<string>();
+                      if (generated_from_deriv)
+                        return make_shared<GridFunctionCoefficientFunction> (gf,
+                                                                             fes->GetFluxEvaluator(),
+                                                                             fes->GetFluxEvaluator(BND),
+                                                                             fes->GetFluxEvaluator(BBND));
+                      
+                      if (fes->GetAdditionalEvaluators().Used(generated_from_operator))
+                        {
+                          auto diffop = fes->GetAdditionalEvaluators()[generated_from_operator];
+                          shared_ptr<GridFunctionCoefficientFunction> coef;
+                          switch(diffop->VB())
+                            {
+                            case VOL:
+                              return make_shared<GridFunctionCoefficientFunction> (gf, diffop);
+                            case BND:
+                              return make_shared<GridFunctionCoefficientFunction> (gf, nullptr,diffop);
+                            case BBND:
+                              return make_shared<GridFunctionCoefficientFunction> (gf, nullptr,nullptr,diffop);
+                              break;
+                            case BBBND:
+                              throw Exception ("there are no Operators with BBBND");
+                            }
+                        }
+
+                      throw Exception("cannot unpickle GridFunctionCoefficientFunction");
+                    }))
+    ;
+    
+
+  ////////////////////////////////////// GridFunction //////////////////////////
   
   auto gf_class = py::class_<GF,shared_ptr<GF>, CoefficientFunction, NGS_Object>
     (m, "GridFunction",  "a field approximated in some finite element space", py::dynamic_attr());
@@ -2332,13 +1263,10 @@ used_idnrs : list of int = None
                 })
     .def(py::pickle([] (const GridFunction& gf)
                     {
-                      auto fes = gf.GetFESpace();
-                      auto flags = gf.GetFlags();
-                      auto name = gf.GetName();
-                      py::list lst;
-                      for(auto val : gf.GetVector().FVDouble())
-                        lst.append(val);
-                      return py::make_tuple(fes,name,flags, lst);
+                      return py::make_tuple(gf.GetFESpace(),
+                                            gf.GetName(),
+                                            gf.GetFlags(),
+                                            gf.GetVectorPtr());
                     },
                     [] (py::tuple state)
                     {
@@ -2346,9 +1274,7 @@ used_idnrs : list of int = None
                                                    state[1].cast<string>(),
                                                    state[2].cast<Flags>());
                       gf->Update();
-                      auto lst = state[3].cast<py::list>();
-                      for(auto i : Range(py::len(lst)))
-                        gf->GetVector().FVDouble()[i] = lst[i].cast<double>();
+                      gf->GetVector() = *py::cast<shared_ptr<BaseVector>>(state[3]);
                       return gf;
                     }
                     ))
@@ -2381,37 +1307,13 @@ used_idnrs : list of int = None
          
     .def("Set", 
          [](shared_ptr<GF> self, spCF cf,
-            VorB boundary, py::object definedon, int heapsize, py::object heap)
+            VorB vb, py::object definedon)
          {
            shared_ptr<TPHighOrderFESpace> tpspace = dynamic_pointer_cast<TPHighOrderFESpace>(self->GetFESpace());          
             Region * reg = nullptr;
             if (py::extract<Region&> (definedon).check())
               reg = &py::extract<Region&>(definedon)();
             
-            if (py::extract<LocalHeap&> (heap).check())
-              {
-                LocalHeap & lh = py::extract<LocalHeap&> (heap)();
-                if(tpspace)
-                {
-                  Transfer2TPMesh(cf.get(),self.get(),lh);
-                  return;
-                }
-                if (reg)
-                  SetValues (cf, *self, *reg, NULL, lh);
-                else
-                  SetValues (cf, *self, boundary, NULL, lh);
-                return;
-              }
-
-            if (heapsize > global_heapsize)
-              {
-                global_heapsize = heapsize;
-                glh = LocalHeap(heapsize, "python-comp lh", true);
-                bool first_time = true;
-                if (first_time)
-                  { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }
-              }
-            // LocalHeap lh(heapsize, "GridFunction::Set-lh", true);
             if(tpspace)
             {
               Transfer2TPMesh(cf.get(),self.get(),glh);
@@ -2420,15 +1322,14 @@ used_idnrs : list of int = None
             if (reg)
               SetValues (cf, *self, *reg, NULL, glh);
             else
-              SetValues (cf, *self, boundary, NULL, glh);
+              SetValues (cf, *self, vb, NULL, glh);
          },
           py::arg("coefficient"),
           py::arg("VOL_or_BND")=VOL,
-          py::arg("definedon")=DummyArgument(),
-          py::arg("heapsize")=1000000, py::arg("heap")=DummyArgument(),
+         py::arg("definedon")=DummyArgument(),
          "Set values"
       )
-
+    .def_property_readonly("name", &GridFunction::GetName)
 
     .def_property_readonly("components",
                            [](shared_ptr<GF> self)-> py::tuple
@@ -2455,26 +1356,10 @@ used_idnrs : list of int = None
                    },
                   "list of coefficient vectors for multi-dim gridfunction")
 
-    /*
-    .def("CF", [](shared_ptr<GF> self) -> shared_ptr<CoefficientFunction>
-          {
-            return make_shared<GridFunctionCoefficientFunction> (self);
-          })
-
-    .def("CF", [](shared_ptr<GF> self, shared_ptr<DifferentialOperator> diffop)
-          -> shared_ptr<CoefficientFunction>
-          {
-            return make_shared<GridFunctionCoefficientFunction> (self, diffop);
-          })
-    */
     .def("Deriv",
          [](shared_ptr<GF> self) -> spCF
           {
-            auto sp = make_shared<GridFunctionCoefficientFunction> (self,
-                                                                    self->GetFESpace()->GetFluxEvaluator(),
-                                                                    self->GetFESpace()->GetFluxEvaluator(BND));
-            // sp->SetDimensions(sp->Dimensions());
-            return sp;
+            return self->GetDeriv();
           })
 
     .def("Operator",
@@ -2499,10 +1384,11 @@ used_idnrs : list of int = None
                     throw Exception ("there are no Operators with BBBND");
                   }
                 coef->SetDimensions(diffop->Dimensions());
+                coef->generated_from_operator = name;
                 return py::cast(shared_ptr<CoefficientFunction>(coef));
               }
-            return py::none(); //  shared_ptr<CoefficientFunction>();
-          }, py::arg("name"), py::arg("VB")=VOL)
+            return py::none(); 
+          }, py::arg("name"), py::arg("VOL_or_BND")=VOL)
 
     
     .def_property_readonly("derivname", 
@@ -2559,10 +1445,7 @@ used_idnrs : list of int = None
             auto space = self->GetFESpace();
 
             ElementId ei = mip.GetTransformation().GetElementId();
-            // auto evaluator = space->GetEvaluator(ei.IsBoundary());
             auto evaluator = space->GetEvaluator(VorB(ei));
-
-            // int elnr = mip.GetTransformation().GetElementNr();
             const FiniteElement & fel = space->GetFE(ei, glh);
 
             Array<int> dnums(fel.GetNDof());
@@ -2588,7 +1471,7 @@ used_idnrs : list of int = None
           }, 
         py::arg("mip"))
     
-
+    /*
     .def("D", 
          [](shared_ptr<GF> self, const double &x, const double &y, const double &z)
           {
@@ -2649,7 +1532,7 @@ used_idnrs : list of int = None
               }
           },
          py::arg("x") = 0.0, py::arg("y") = 0.0, py::arg("z") = 0.0)
-
+    */
 
     .def("CF", 
          [](shared_ptr<GF> self, shared_ptr<DifferentialOperator> diffop) -> spCF
@@ -2663,9 +1546,8 @@ used_idnrs : list of int = None
 
 
 
-  //////////////////////////////////////////////////////////////////////////////////////////
+  ///////////////////////////// BilinearForm   ////////////////////////////////////////
 
-//   PyExportArray<shared_ptr<BilinearFormIntegrator>> ();
 
   typedef BilinearForm BF;
   auto bf_class = py::class_<BF, shared_ptr<BilinearForm>>(m, "BilinearForm",
@@ -2682,37 +1564,32 @@ space : ngsolve.FESpace
   The finite element space the bilinearform is defined on. This
   can be a compound FESpace for a mixed formulation.
 
-name : string
-  Give a name to the BilinearForm - not really a use case in Python
-
 check_unused : bool
   If set prints warnings if not UNUSED_DOFS are not used
 
 )raw_string"));
   bf_class
-    .def(py::init([bf_class] (shared_ptr<FESpace> fespace, bool check_unused,
-                      string name, py::kwargs kwargs)
+    .def(py::init([bf_class] (shared_ptr<FESpace> fespace, /* bool check_unused, */
+                              py::kwargs kwargs)
                   {
                     auto flags = CreateFlagsFromKwArgs(bf_class,kwargs);
-                    auto biform = CreateBilinearForm (fespace, name, flags);
-                    biform -> SetCheckUnused (check_unused);
+                    auto biform = CreateBilinearForm (fespace, "biform_from_py", flags);
+                    // biform -> SetCheckUnused (check_unused);
                     return biform;
                   }),
-         py::arg("space"),
-         py::arg("check_unused")=true,
-         py::arg("name")="bfa")
+         py::arg("space"))
     .def(py::init([bf_class](shared_ptr<FESpace> trial_space,
-                     shared_ptr<FESpace> test_space, string name,
-                     bool check_unused, py::kwargs kwargs)
+                             shared_ptr<FESpace> test_space, 
+                             /* bool check_unused, */ py::kwargs kwargs)
                   {
                     auto flags = CreateFlagsFromKwArgs(bf_class,kwargs);
-                    auto biform = CreateBilinearForm (trial_space, test_space, name, flags);
-                    biform -> SetCheckUnused (check_unused);
+                    auto biform = CreateBilinearForm (trial_space, test_space, "biform_from_py", flags);
+                    // biform -> SetCheckUnused (check_unused);
                     return biform;
                   }),
          py::arg("trialspace"),
-         py::arg("testspace"),
-         py::arg("name")="bfa", py::arg("check_unused")=true)
+         py::arg("testspace"))
+    // py::arg("check_unused")=true
 
     .def_static("__flags_doc__", [] ()
                 {
@@ -2757,26 +1634,13 @@ check_unused : bool
     .def_property_readonly("space", [](BF& self) { return self.GetFESpace(); })
 
     .def_property_readonly("integrators", [](BF & self)
-                   {
-                     py::list igts;
-                     for (auto igt : self.Integrators())
-                       igts.append(igt);
-                     return igts;
-                   } )
+                           { return MakePyTuple (self.Integrators()); })
     
-    .def("Assemble", [](BF & self, int heapsize, bool reallocate)
-                                     {
-                                       if (heapsize > global_heapsize)
-                                         {
-                                           global_heapsize = heapsize;
-                                           glh = LocalHeap(heapsize, "python-comp lh", true);
-                                           bool first_time = true;
-                                           if (first_time)
-                                             { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }                                           
-                                         }
-                                       self.ReAssemble(glh,reallocate);
-                                     }, py::call_guard<py::gil_scoped_release>(),
-         py::arg("heapsize")=1000000,py::arg("reallocate")=false)
+    .def("Assemble", [](BF & self, bool reallocate)
+         {
+           self.ReAssemble(glh,reallocate);
+         }, py::call_guard<py::gil_scoped_release>(),
+         py::arg("reallocate")=false)
 
     .def_property_readonly("mat", [](BF & self)
                                          {
@@ -2785,14 +1649,6 @@ check_unused : bool
                                              throw py::type_error("matrix not ready - assemble bilinearform first");
                                            return mat;
                                          })
-
-    .def("__getitem__",  [](BF & self, py::tuple t)
-                                         {
-                                           int ind1 = py::extract<int>(t[0])();
-                                           int ind2 = py::extract<int>(t[1])();
-                                           cout << "get bf, ind = " << ind1 << "," << ind2 << endl;
-                                         })
-    
 
     .def_property_readonly("components", [](shared_ptr<BilinearForm> self)-> py::list
                    { 
@@ -2803,7 +1659,6 @@ check_unused : bool
                        
                      int ncomp = fes->GetNSpaces();
                      for (int i = 0; i < ncomp; i++)
-                       // bfs.append(shared_ptr<BilinearForm> (new ComponentBilinearForm(self.get(), i, ncomp)));
                        bfs.append(shared_ptr<BilinearForm>(make_shared<ComponentBilinearForm>(self, i, ncomp)));
                      return bfs;
                    },
@@ -2818,22 +1673,14 @@ check_unused : bool
 
     .def("Energy",[](BF & self, shared_ptr<BaseVector> x)
           {
-            return self.Energy(*x);
+            return self.Energy(*x, glh);
           }, py::call_guard<py::gil_scoped_release>())
     
-    .def("Apply", [](BF & self, BaseVector& x, BaseVector & y, int heapsize)
+    .def("Apply", [](BF & self, BaseVector& x, BaseVector & y)
 	  {
-            if (heapsize > global_heapsize)
-              {
-                global_heapsize = heapsize;
-                glh = LocalHeap(heapsize, "python-comp lh", true);
-                bool first_time = true;
-                if (first_time)
-                  { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }                
-              }
 	    self.ApplyMatrix (x, y, glh);
 	  }, py::call_guard<py::gil_scoped_release>(),
-         py::arg("x"),py::arg("y"),py::arg("heapsize")=1000000,docu_string(R"raw_string(
+         py::arg("x"),py::arg("y"), docu_string(R"raw_string(
 Applies a (non-)linear variational formulation to x and stores the result in y.
 
 Parameters
@@ -2844,40 +1691,19 @@ x : ngsolve.BaseVector
 y : ngsolve.BaseVector
   output vector
 
-heapsize : int
-  Size of the LocalHeap for that operation. If you get an error about not
-  enough heapsize increase this value.
-
 )raw_string"))
 
-    .def("ComputeInternal", [](BF & self, BaseVector & u, BaseVector & f, int heapsize)
+    .def("ComputeInternal", [](BF & self, BaseVector & u, BaseVector & f)
 	  {
-            if (heapsize > global_heapsize)
-              {
-                global_heapsize = heapsize;
-                glh = LocalHeap(heapsize, "python-comp lh", true);
-                bool first_time = true;
-                if (first_time)
-                  { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }
-                
-              }
 	    self.ComputeInternal (u, f, glh );
 	  }, py::call_guard<py::gil_scoped_release>(),
-         py::arg("u"),py::arg("f"),py::arg("heapsize")=1000000)
+         py::arg("u"),py::arg("f"))
 
-    .def("AssembleLinearization", [](BF & self, BaseVector & ulin, int heapsize)
+    .def("AssembleLinearization", [](BF & self, BaseVector & ulin)
 	  {
-            if (heapsize > global_heapsize)
-              {
-                global_heapsize = heapsize;
-                glh = LocalHeap(heapsize, "python-comp lh", true);
-                bool first_time = true;
-                if (first_time)
-                  { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }
-              }
 	    self.AssembleLinearization (ulin, glh);
 	  }, py::call_guard<py::gil_scoped_release>(),
-         py::arg("ulin"),py::arg("heapsize")=1000000)
+         py::arg("ulin"))
 
     .def("Flux", [](BF & self, shared_ptr<GridFunction> gf) -> spCF
           {
@@ -2906,10 +1732,7 @@ heapsize : int
                   )
     ;
 
-  //////////////////////////////////////////////////////////////////////////////////////////
-
-//   PyExportArray<shared_ptr<LinearFormIntegrator>> ();
-//
+  ///////////////////////////////// LinearForm //////////////////////////////////////////
 
   typedef LinearForm LF;
   auto lf_class = py::class_<LF, shared_ptr<LF>, NGS_Object>(m, "LinearForm", docu_string(R"raw_string(
@@ -2922,9 +1745,6 @@ space : ngsolve.FESpace
   The space the linearform is defined on. Can be a compound
   FESpace for a mixed formulation.
 
-name : string
-  The name of the linearform (in python not really in use...)
-
 flags : dict
   Additional options for the linearform, for example:
 
@@ -2935,14 +1755,14 @@ flags : dict
 
 )raw_string"));
   lf_class
-    .def(py::init([lf_class] (shared_ptr<FESpace> fespace, string name, py::kwargs kwargs)
+    .def(py::init([lf_class] (shared_ptr<FESpace> fespace, py::kwargs kwargs)
                   {
                     auto flags = CreateFlagsFromKwArgs(lf_class,kwargs);
-                    auto f = CreateLinearForm (fespace, name, flags);
+                    auto f = CreateLinearForm (fespace, "lff_from_py", flags);
                     f->AllocateVector();
                     return f;
                   }),
-         py::arg("space"), py::arg("name")="lff")
+         py::arg("space"))
     .def_static("__flags_doc__", [] ()
                 {
                   return py::dict
@@ -2958,7 +1778,7 @@ flags : dict
     .def("__str__",  [](LF & self ) { return ToString<LinearForm>(self); } )
 
     .def_property_readonly("vec", [] (shared_ptr<LF> self)
-                                                  { return self->GetVectorPtr();})
+                           { return self->GetVectorPtr();})
 
     .def("Add", [](shared_ptr<LF> self, shared_ptr<LinearFormIntegrator> lfi)
           { 
@@ -2966,30 +1786,16 @@ flags : dict
             return self; 
           },
          py::arg("integrator"))
+    
+    .def("__iadd__",[](shared_ptr<LF> self, shared_ptr<LinearFormIntegrator> lfi)
+         { (*self)+=lfi; return self; })
 
-    .def("__iadd__",[](shared_ptr<LF> self, shared_ptr<LinearFormIntegrator> other) { (*self)+=other; return self; })
+    .def_property_readonly("integrators", [](shared_ptr<LF> self)
+                           { return MakePyTuple (self->Integrators()); })
 
-    .def_property_readonly("integrators",  [](shared_ptr<LF> self)
-                   {
-                     py::list igts;
-                     for (auto igt : self->Integrators())
-                       igts.append (igt);
-                     return igts;
-                   })
-
-    .def("Assemble",  [](shared_ptr<LF> self, int heapsize)
-         {
-           if (heapsize > global_heapsize)
-             {
-               global_heapsize = heapsize;
-               glh = LocalHeap(heapsize, "python-comp lh", true);
-               bool first_time = true;
-               if (first_time)
-                 { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }                
-             }
-           self->Assemble(glh);
-         }, py::call_guard<py::gil_scoped_release>(), py::arg("heapsize")=1000000)
-
+    .def("Assemble", [](shared_ptr<LF> self)
+         { self->Assemble(glh); }, py::call_guard<py::gil_scoped_release>())
+    
     .def_property_readonly("components", [](shared_ptr<LF> self)
                    { 
                      py::list lfs;
@@ -3010,7 +1816,7 @@ flags : dict
 
     ;
 
-  //////////////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////// Preconditioner /////////////////////////////////////////////
 
   auto prec_class = py::class_<Preconditioner, shared_ptr<Preconditioner>, BaseMatrix>(m, "Preconditioner");
   prec_class
@@ -3067,20 +1873,22 @@ flags : dict
   //////////////////////////////////////////////////////////////////////////////////////////
 
   py::class_<NumProc, NGS_Object, shared_ptr<NumProc>> (m, "NumProc")
-    .def("Do", [](NumProc & self, int heapsize)
-                               {
-                                 LocalHeap lh (heapsize, "NumProc::Do-heap");
-                                 self.Do(lh);
-                               }, py::call_guard<py::gil_scoped_release>(),
-         py::arg("heapsize")=1000000)
+    .def("Do", [](NumProc & self)
+         {
+           self.Do(glh);
+         }, py::call_guard<py::gil_scoped_release>())
     ;
 
   py::class_<PyNumProc, NumProc, shared_ptr<PyNumProc>> (m, "PyNumProc")
+    /*
     .def("__init__",
          [](NumProc *instance, shared_ptr<PDE> pde, Flags & flags)
                            {
                              new (instance) PyNumProc(pde, flags);
                            })
+    */
+    .def(py::init<> ([](shared_ptr<PDE> pde, Flags & flags)
+                     { return new PyNumProc(pde, flags); }))
     .def_property_readonly("pde", [](NumProc &self) { return self.GetPDE(); })
     .def("Do", [](NumProc & self, LocalHeap & lh)
                                {
@@ -3283,220 +2091,208 @@ flags : dict
   
   m.def("Integrate", 
         [](spCF cf,
-             shared_ptr<MeshAccess> ma, 
-	     VorB vb, int order, py::object definedon,
-	   bool region_wise, bool element_wise, int heapsize)
-                          {
-                            static Timer t("Integrate CF"); RegionTimer reg(t);
-                            // static mutex addcomplex_mutex;
-			    if (heapsize > global_heapsize)
-			      {
-				global_heapsize = heapsize;
-				glh = LocalHeap(heapsize, "python-comp lh", true);
-                                bool first_time = true;
-                                if (first_time)
-                                  { first_time = false; cerr << "warning: use SetHeapSize(size) instead of heapsize=size" << endl; }                                                
-			      }
-                           BitArray mask(ma->GetNRegions(vb));
-                           mask.Set();
-                            {
-                              py::gil_scoped_acquire aquire;
-                              py::extract<Region> defon_region(definedon);
-                              if (defon_region.check())
-                                vb = VorB(defon_region());
-                              if(defon_region.check())
-                                for(auto i : Range(ma->GetNRegions(vb)))
-                                  if(!defon_region().Mask().Test(i))
-                                    mask.Clear(i);
-                            }
-			   int dim = cf->Dimension();
-			   if((region_wise || element_wise) && dim != 1)
-			     throw Exception("region_wise and element_wise only implemented for 1 dimensional coefficientfunctions");
-
-                            if (!cf->IsComplex())
-                              {
-                                Vector<> sum(dim);
-				sum = 0.0;
-			        Vector<> region_sum(region_wise ? ma->GetNRegions(vb) : 0);
-                                Vector<> element_sum(element_wise ? ma->GetNE(vb) : 0);
-                                region_sum = 0;
-                                element_sum = 0;
-				bool use_simd = true;
-				
-                                
-                                ma->IterateElements
-                                  (vb, glh, [&] (Ngs_Element el, LocalHeap & lh)
-                                   {
-				     if(!mask.Test(el.GetIndex())) return;
-                                     auto & trafo = ma->GetTrafo (el, lh);
-                                     FlatVector<> hsum(dim, lh);
-				     hsum = 0.0;
-                                     bool this_simd = use_simd;
-                                     
-                                     if (this_simd)
-                                       {
-                                         try
-                                           {
-                                             SIMD_IntegrationRule ir(trafo.GetElementType(), order);
-                                             auto & mir = trafo(ir, lh);
-                                             FlatMatrix<SIMD<double>> values(dim,ir.Size(), lh);
-                                             cf -> Evaluate (mir, values);
-                                             FlatVector<SIMD<double>> vsum(dim, lh);
-					     vsum = 0;
-                                             for (size_t j = 0; j < dim; j++)
-                                               for (size_t i = 0; i < values.Width(); i++)
-                                                 vsum(j) += mir[i].GetWeight() * values(j,i);
-					     for(int i = 0; i< dim; i++)
-					       hsum[i] = HSum(vsum[i]);
-                                           }
-                                         catch (ExceptionNOSIMD e)
-                                           {
-                                             this_simd = false;
-                                             use_simd = false;
-                                             hsum = 0.0;
-                                           }
-                                       }
-                                     if (!this_simd)
-                                       {
-                                         IntegrationRule ir(trafo.GetElementType(), order);
-                                         BaseMappedIntegrationRule & mir = trafo(ir, lh);
-                                         FlatMatrix<> values(ir.Size(), dim, lh);
-                                         cf -> Evaluate (mir, values);
-                                         for (int i = 0; i < values.Height(); i++)
-                                           hsum += mir[i].GetWeight() * values.Row(i);
-                                       }
-				     for(size_t i = 0; i<dim;i++)
-				       AsAtomic(sum(i)) += hsum(i);
-				     if(region_wise)
-				       AsAtomic(region_sum(el.GetIndex())) += hsum(0);
-                                     if (element_wise)
-                                       element_sum(el.Nr()) = hsum(0);
-                                   });
-                                py::object result;
-                                if (region_wise) {
+           shared_ptr<MeshAccess> ma, 
+           VorB vb, int order, py::object definedon,
+	   bool region_wise, bool element_wise)
+        {
+          static Timer t("Integrate CF"); RegionTimer reg(t);
+          // static mutex addcomplex_mutex;
+          BitArray mask;
+          {
+            py::gil_scoped_acquire aquire;
+            py::extract<Region> defon_region(definedon);
+            if (defon_region.check())
+              {
+                vb = VorB(defon_region());
+                mask = BitArray(defon_region().Mask());
+              }
+          }
+          if(!mask.Size()){
+            mask = BitArray(ma->GetNRegions(vb));
+            mask.Set();
+          }
+          int dim = cf->Dimension();
+          if((region_wise || element_wise) && dim != 1)
+            throw Exception("region_wise and element_wise only implemented for 1 dimensional coefficientfunctions");
+          
+          if (!cf->IsComplex())
+            {
+              Vector<> sum(dim);
+              sum = 0.0;
+              Vector<> region_sum(region_wise ? ma->GetNRegions(vb) : 0);
+              Vector<> element_sum(element_wise ? ma->GetNE(vb) : 0);
+              region_sum = 0;
+              element_sum = 0;
+              bool use_simd = true;
+              
+              ma->IterateElements
+                (vb, glh, [&] (Ngs_Element el, LocalHeap & lh)
+                 {
+                   if(!mask.Test(el.GetIndex())) return;
+                   auto & trafo = ma->GetTrafo (el, lh);
+                   FlatVector<> hsum(dim, lh);
+                   hsum = 0.0;
+                   bool this_simd = use_simd;
+                   
+                   if (this_simd)
+                     {
+                       try
+                         {
+                           SIMD_IntegrationRule ir(trafo.GetElementType(), order);
+                           auto & mir = trafo(ir, lh);
+                           FlatMatrix<SIMD<double>> values(dim,ir.Size(), lh);
+                           cf -> Evaluate (mir, values);
+                           FlatVector<SIMD<double>> vsum(dim, lh);
+                           vsum = 0;
+                           for (size_t j = 0; j < dim; j++)
+                             for (size_t i = 0; i < values.Width(); i++)
+                               vsum(j) += mir[i].GetWeight() * values(j,i);
+                           for(int i = 0; i< dim; i++)
+                             hsum[i] = HSum(vsum[i]);
+                         }
+                       catch (ExceptionNOSIMD e)
+                         {
+                           this_simd = false;
+                           use_simd = false;
+                           hsum = 0.0;
+                         }
+                     }
+                   if (!this_simd)
+                     {
+                       IntegrationRule ir(trafo.GetElementType(), order);
+                       BaseMappedIntegrationRule & mir = trafo(ir, lh);
+                       FlatMatrix<> values(ir.Size(), dim, lh);
+                       cf -> Evaluate (mir, values);
+                       for (int i = 0; i < values.Height(); i++)
+                         hsum += mir[i].GetWeight() * values.Row(i);
+                     }
+                   for(size_t i = 0; i<dim;i++)
+                     AsAtomic(sum(i)) += hsum(i);
+                   if(region_wise)
+                     AsAtomic(region_sum(el.GetIndex())) += hsum(0);
+                   if (element_wise)
+                     element_sum(el.Nr()) = hsum(0);
+                 });
+              py::object result;
+              if (region_wise) {
 #ifdef PARALLEL
-				  Vector<> rs2(ma->GetNRegions(vb));
-				  MPI_Allreduce(&region_sum(0), &rs2(0), ma->GetNRegions(vb), MPI_DOUBLE, MPI_SUM, ngs_comm);
-				  region_sum = rs2;
+                Vector<> rs2(ma->GetNRegions(vb));
+                MPI_Allreduce(&region_sum(0), &rs2(0), ma->GetNRegions(vb), MPI_DOUBLE, MPI_SUM, ngs_comm);
+                region_sum = rs2;
 #endif
-                                  result = py::list(py::cast(region_sum));
-				}
-                                else if (element_wise)
-				  result = py::cast(element_sum);
-                                else if(dim==1) {
+                result = py::list(py::cast(region_sum));
+              }
+              else if (element_wise)
+                result = py::cast(element_sum);
+              else if(dim==1) {
+                sum(0) = MyMPI_AllReduce(sum(0));
+                result = py::cast(sum(0));
+              }
+              else {
 #ifdef PARALLEL
-				  sum(0) = MyMPI_AllReduce(sum(0));
+                Vector<> gsum(dim);
+                MPI_Allreduce(&sum(0), &gsum(0), dim, MPI_DOUBLE, MPI_SUM, ngs_comm);
+                sum = gsum;
 #endif
-				  result = py::cast(sum(0));
-                                }
-				else {
+                result = py::cast(sum);
+              }
+              return result;
+            }
+          else
+            {
+              Vector<Complex> sum(dim);
+              sum = 0.0;
+              Vector<Complex> region_sum(region_wise ? ma->GetNRegions(vb) : 0);
+              Vector<Complex> element_sum(element_wise ? ma->GetNE(vb) : 0);
+              region_sum = 0;
+              element_sum = 0;
+              
+              bool use_simd = true;
+              
+              ma->IterateElements
+                (vb, glh, [&] (Ngs_Element el, LocalHeap & lh)
+                 {
+                   if(!mask.Test(el.GetIndex())) return;
+                   auto & trafo = ma->GetTrafo (el, lh);
+                   FlatVector<Complex> hsum(dim, lh);
+                   hsum = 0.0;
+                   
+                   bool this_simd = use_simd;
+                   
+                   if (this_simd)
+                     {
+                       try
+                         {
+                           SIMD_IntegrationRule ir(trafo.GetElementType(), order);
+                           auto & mir = trafo(ir, lh);
+                           FlatMatrix<SIMD<Complex>> values(dim, ir.Size(), lh);
+                           cf -> Evaluate (mir, values);
+                           FlatVector<SIMD<Complex>> vsum(dim,lh);
+                           vsum = Complex(0.0);
+                           for (size_t j = 0; j < dim; j++)
+                             for (size_t i = 0; i < values.Width(); i++)
+                               vsum(j) += mir[i].GetWeight() * values(j,i);
+                           for(size_t i = 0; i < dim; i++)
+                             hsum[i] = HSum(vsum[i]);
+                         }
+                       catch (ExceptionNOSIMD e)
+                         {
+                           this_simd = false;
+                           use_simd = false;
+                           hsum = 0.0;
+                         }
+                     }
+                   if (!this_simd)
+                     {
+                       IntegrationRule ir(trafo.GetElementType(), order);
+                       BaseMappedIntegrationRule & mir = trafo(ir, lh);
+                       FlatMatrix<Complex> values(ir.Size(), dim, lh);
+                       cf -> Evaluate (mir, values);
+                       for (int i = 0; i < values.Height(); i++)
+                         hsum += mir[i].GetWeight() * values.Row(i);
+                     }
+                   for(size_t i = 0; i<dim; i++)
+                     MyAtomicAdd (sum(i), hsum(i));
+                   if(region_wise)
+                     MyAtomicAdd (region_sum(el.GetIndex()), hsum(0));
+                   if (element_wise)
+                     element_sum(el.Nr()) = hsum(0);
+                 });
+              
+              py::object result;
+              if (region_wise) {
 #ifdef PARALLEL
-				  Vector<> gsum(dim);
-				  MPI_Allreduce(&sum(0), &gsum(0), dim, MPI_DOUBLE, MPI_SUM, ngs_comm);
-				  sum = gsum;
+                Vector<Complex> rs2(ma->GetNRegions(vb));
+                MPI_Allreduce(&region_sum(0), &rs2(0), ma->GetNRegions(vb), MPI_Traits<Complex>::MPIType(), MPI_SUM, ngs_comm);
+                region_sum = rs2;
 #endif
-				  result = py::cast(sum);
-				}
-                                return result;
-                              }
-                            else
-                              {
-                                Vector<Complex> sum(dim);
-				sum = 0.0;
-                                Vector<Complex> region_sum(region_wise ? ma->GetNRegions(vb) : 0);
-                                Vector<Complex> element_sum(element_wise ? ma->GetNE(vb) : 0);
-                                region_sum = 0;
-                                element_sum = 0;
-
-                                bool use_simd = true;
-                                
-                                ma->IterateElements
-                                  (vb, glh, [&] (Ngs_Element el, LocalHeap & lh)
-                                   {
-				     if(!mask.Test(el.GetIndex())) return;
-                                     auto & trafo = ma->GetTrafo (el, lh);
-                                     FlatVector<Complex> hsum(dim, lh);
-				     hsum = 0.0;
-                                     
-                                     bool this_simd = use_simd;
-
-                                     if (this_simd)
-                                       {
-                                         try
-                                           {
-                                             SIMD_IntegrationRule ir(trafo.GetElementType(), order);
-                                             auto & mir = trafo(ir, lh);
-                                             FlatMatrix<SIMD<Complex>> values(dim, ir.Size(), lh);
-                                             cf -> Evaluate (mir, values);
-                                             FlatVector<SIMD<Complex>> vsum(dim,lh);
-					     vsum = Complex(0.0);
-                                             for (size_t j = 0; j < dim; j++)
-                                               for (size_t i = 0; i < values.Width(); i++)
-                                                 vsum(j) += mir[i].GetWeight() * values(j,i);
-					     for(size_t i = 0; i < dim; i++)
-					       hsum[i] = HSum(vsum[i]);
-                                           }
-                                         catch (ExceptionNOSIMD e)
-                                           {
-                                             this_simd = false;
-                                             use_simd = false;
-                                             hsum = 0.0;
-                                           }
-                                       }
-                                     if (!this_simd)
-                                       {
-                                         IntegrationRule ir(trafo.GetElementType(), order);
-                                         BaseMappedIntegrationRule & mir = trafo(ir, lh);
-                                         FlatMatrix<Complex> values(ir.Size(), dim, lh);
-                                         cf -> Evaluate (mir, values);
-                                         for (int i = 0; i < values.Height(); i++)
-                                           hsum += mir[i].GetWeight() * values.Row(i);
-                                       }
-                                     for(size_t i = 0; i<dim; i++)
-				       MyAtomicAdd (sum(i), hsum(i));
-				     if(region_wise)
-				       MyAtomicAdd (region_sum(el.GetIndex()), hsum(0));
-                                     if (element_wise)
-                                       element_sum(el.Nr()) = hsum(0);
-                                   });
-                                
-                                py::object result;
-                                if (region_wise) {
+                result = py::list(py::cast(region_sum));
+              }
+              else if (element_wise)
+                result = py::cast(element_sum);
+              else if(dim==1) {
+                sum(0) = MyMPI_AllReduce(sum(0));
+                result = py::cast(sum(0));
+              }
+              else {
 #ifdef PARALLEL
-				  Vector<Complex> rs2(ma->GetNRegions(vb));
-				  MPI_Allreduce(&region_sum(0), &rs2(0), ma->GetNRegions(vb), MPI_Traits<Complex>::MPIType(), MPI_SUM, ngs_comm);
-				  region_sum = rs2;
+                Vector<Complex> gsum(dim);
+                MPI_Allreduce(&sum(0), &gsum(0), dim, MPI_Traits<Complex>::MPIType(), MPI_SUM, ngs_comm);
+                sum = gsum;
 #endif
-                                  result = py::list(py::cast(region_sum));
-				}
-                                else if (element_wise)
-                                  result = py::cast(element_sum);
-                                else if(dim==1) {
-#ifdef PARALLEL
-				  sum(0) = MyMPI_AllReduce(sum(0));
-#endif
-				  result = py::cast(sum(0));
-				}
-				else {
-#ifdef PARALLEL
-				  Vector<Complex> gsum(dim);
-				  MPI_Allreduce(&sum(0), &gsum(0), dim, MPI_Traits<Complex>::MPIType(), MPI_SUM, ngs_comm);
-				  sum = gsum;
-#endif
-				  result = py::cast(sum);
-				}
-                                return result;
-                              }
-                          },
+                result = py::cast(sum);
+              }
+              return result;
+            }
+        },
 	py::arg("cf"), py::arg("mesh"), py::arg("VOL_or_BND")=VOL, 
 	py::arg("order")=5,
 	py::arg("definedon")=DummyArgument(),
-           py::arg("region_wise")=false,
+        py::arg("region_wise")=false,
 	py::arg("element_wise")=false,
-	py::arg("heapsize") = 1000000,
         py::call_guard<py::gil_scoped_release>())
     ;
-
+  
   m.def("SymbolicLFI",
           [](spCF cf, VorB vb, bool element_boundary,
              bool skeleton, py::object definedon,
@@ -3683,7 +2479,26 @@ flags : dict
         py::arg("simd_evaluate")=true
           );
 
-
+   m.def("KSpaceCoeffs", [](shared_ptr<GF> gf_tp,shared_ptr<GF> gf_k, double x, double y)
+           {
+			 HeapReset hr(glh);
+             auto tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp->GetFESpace());
+             IntegrationPoint ip;
+             int elnr = tpfes->Spaces(0)[0]->GetMeshAccess()->FindElementOfPoint(Vec<2>(x,y),ip,false);
+             int ndofx = tpfes->Spaces(0)[0]->GetFE(elnr,glh).GetNDof();
+             int ndofy = tpfes->Spaces(0)[1]->GetFE(0,glh).GetNDof();
+             Array<int> indices(2);
+             Array<int> dofs(ndofx*ndofy);
+             tpfes->GetDofNrs(tpfes->GetIndex(elnr,0),dofs);
+             FlatMatrix<> elmat(ndofx,ndofy,glh);
+             gf_tp->GetVector().GetIndirect(dofs,elmat.AsVector());
+             FlatVector<> shape(ndofx,glh);
+             dynamic_cast<const BaseScalarFiniteElement& >(tpfes->Spaces(0)[0]->GetFE(elnr,glh)).CalcShape(ip,shape);
+             FlatVector<> result(ndofy,glh);
+             result = Trans(elmat)*shape;
+             gf_k->GetVector().FVDouble() = result;
+             
+           });
   
    m.def("TensorProductFESpace", [](py::list spaces_list, const Flags & flags ) -> shared_ptr<FESpace>
             {
@@ -3713,7 +2528,7 @@ flags : dict
              LocalHeap lh(10000000,"TensorProductIntegrate");
              shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp->GetFESpace());
              const Array<shared_ptr<FESpace> > & spaces = tpfes->Spaces(0);
-             FlatVector<> x0(spaces[0]->GetSpacialDimension(),&x0_help[0]);
+             FlatVector<> x0(spaces[0]->GetSpatialDimension(),&x0_help[0]);
              IntegrationPoint ip;
              int elnr = spaces[0]->GetMeshAccess()->FindElementOfPoint(x0,ip,true);
              auto & felx = spaces[0]->GetFE(ElementId(elnr),lh);
@@ -3882,24 +2697,18 @@ flags : dict
                 tpfes->ProlongateFromXSpace(gf_x,gf_tp,lh);
               else
                 cout << "GridFunction gf_x is not defined on first space"<<endl;
-              },
-        py::call_guard<py::gil_scoped_release>());
+            },
+         py::call_guard<py::gil_scoped_release>());
    m.def("Transfer2StdMesh", [](const shared_ptr<GF> gfutp,
-                                shared_ptr<GF> gfustd, int heapsize )
+                                shared_ptr<GF> gfustd)
             {
-              if (heapsize > global_heapsize)
-              {
-                global_heapsize = heapsize;
-                glh = LocalHeap(heapsize, "python-comp lh", true);
-              }
               static Timer tall("comp.Transfer2StdMesh"); RegionTimer rall(tall);
               Transfer2StdMesh(gfutp.get(),gfustd.get(),glh);
               return;
              },
              py::arg("gftp"),
              py::arg("gfstd"),
-             py::arg() = 1000000,
-        py::call_guard<py::gil_scoped_release>()
+         py::call_guard<py::gil_scoped_release>()
         );
    
    m.def("Transfer2StdMesh", [](const spCF cftp, shared_ptr<GF> gfustd )
@@ -3930,25 +2739,20 @@ flags : dict
          py::arg("names") = py::list(),
          py::arg("filename") = "vtkout",
          py::arg("subdivision") = 0,
-         py::arg("only_element") = -1,
-        py::call_guard<py::gil_scoped_release>()
+         py::arg("only_element") = -1
          )
-    .def("Do", [](shared_ptr<BaseVTKOutput> self, int heapsize)
-                               { 
-                                 LocalHeap lh (heapsize, "VTKOutput-heap");
-                                 self->Do(lh);
-                               },
-         py::arg("heapsize")=1000000,
-        py::call_guard<py::gil_scoped_release>())
-    .def("Do", [](shared_ptr<BaseVTKOutput> self, const BitArray * drawelems, int heapsize)
-                               { 
-                                 LocalHeap lh (heapsize, "VTKOutput-heap");
-                                 self->Do(lh, drawelems);
-                               },
-         py::arg("drawelems"),py::arg("heapsize")=1000000,
-        py::call_guard<py::gil_scoped_release>())
-    
-    ;
+     .def("Do", [](shared_ptr<BaseVTKOutput> self)
+          { 
+            self->Do(glh);
+          },
+          py::call_guard<py::gil_scoped_release>())
+     .def("Do", [](shared_ptr<BaseVTKOutput> self, const BitArray * drawelems)
+          { 
+            self->Do(glh, drawelems);
+          },
+          py::arg("drawelems"),
+          py::call_guard<py::gil_scoped_release>())
+     ;
 
   /////////////////////////////////////////////////////////////////////////////////////
 }
