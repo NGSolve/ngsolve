@@ -9,7 +9,9 @@
 #include "hcurldivfespace.hpp"
 #include "hdivdivsurfacespace.hpp"
 #include "hcurlcurlfespace.hpp"
+#include "hcurldivfespace.hpp"
 #include "numberfespace.hpp"
+
 using namespace ngcomp;
 
 using ngfem::ELEMENT_TYPE;
@@ -1052,7 +1054,7 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                 })
     ;
 
-ExportFESpace<HCurlDivSpace> (m, "HCurlDiv")    
+ExportFESpace<HCurlDivFESpace> (m, "HCurlDiv")    
     .def_static("__flags_doc__", [] ()
                 {
                   auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
