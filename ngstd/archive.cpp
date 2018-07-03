@@ -19,48 +19,61 @@ namespace ngstd
 
   Archive & BinaryOutArchive :: operator & (double & d) 
   {
+    return Write(d);
+    /*
     fout->write(reinterpret_cast<char*>(&d), sizeof(double));
     return *this;
+    */
   }
   
   Archive & BinaryOutArchive :: operator & (int & i)
   {
+    return Write(i);
+    /*
     fout->write(reinterpret_cast<char*>(&i), sizeof(int));
     return *this;
+    */
   }
 
   Archive & BinaryOutArchive :: operator & (short & i)
   {
-    fout->write(reinterpret_cast<char*>(&i), sizeof(short));
-    return *this;
+    return Write(i);
+    // fout->write(reinterpret_cast<char*>(&i), sizeof(short));
+    // return *this;
   }
   
   Archive & BinaryOutArchive :: operator & (long & i)
   {
-    fout->write(reinterpret_cast<char*>(&i), sizeof(long));
-    return *this;
+    return Write(i);
+    // fout->write(reinterpret_cast<char*>(&i), sizeof(long));
+    // return *this;
   }
 
   Archive & BinaryOutArchive :: operator & (size_t & i)
   {
-    fout->write(reinterpret_cast<char*>(&i), sizeof(size_t));
-    return *this;
+    return Write(i);
+    // fout->write(reinterpret_cast<char*>(&i), sizeof(size_t));
+    // return *this;
   }
 
   Archive & BinaryOutArchive :: operator & (unsigned char & i)
   {
-    fout->write(reinterpret_cast<char *>(&i), sizeof(unsigned char));
-    return *this;
+    return Write(i);
+    // fout->write(reinterpret_cast<char *>(&i), sizeof(unsigned char));
+    // return *this;
   }
   
   Archive & BinaryOutArchive :: operator & (bool & b) 
   {
-    fout->write(reinterpret_cast<char*>(&b), sizeof(bool));
-    return *this;
+    return Write(b);
+    // fout->write(reinterpret_cast<char*>(&b), sizeof(bool));
+    // return *this;
   }
   
   Archive & BinaryOutArchive :: operator & (string & str)
   {
+    if (ptr > 0) FlushBuffer();    
+
     int len = str.length();
     fout->write (reinterpret_cast<char*>(&len), sizeof(int));
     fout->write (&str[0], len);
@@ -69,13 +82,42 @@ namespace ngstd
 
   Archive & BinaryOutArchive :: operator & (char *& str)
   {
+    if (ptr > 0) FlushBuffer();
+
     int len = strlen (str);
     fout->write (reinterpret_cast<char*>(&len), sizeof(int));
     fout->write (&str[0], len);
     return *this;
   }
 
+  
+  template <typename T>
+  Archive & BinaryOutArchive :: Write (T x)
+  {
+    if (unlikely(ptr > BUFFERSIZE-sizeof(T)))
+      {
+        fout->write(&buffer[0], ptr);
+        * (T*) (&buffer[0]) = x;        
+        ptr = sizeof(T);
+        return *this;
+      }
+    * (T*) (&buffer[ptr]) = x;
+    ptr += sizeof(T);
+    return *this;
+    /*
+    fout->write(reinterpret_cast<char*>(&x), sizeof(T));
+    return *this;
+    */
+  }
 
+  void BinaryOutArchive :: FlushBuffer()
+  {
+    if (ptr > 0)
+      {
+        fout->write(&buffer[0], ptr);
+        ptr = 0;
+      }
+  }
 
 
 

@@ -162,7 +162,7 @@ namespace ngfem
           INT<2> e = this->GetEdgeSort (i, vnums);
           
           //Nedelec low order edge shape function 
-          shape[i] = uDv_minus_vDu<2> (lami[e[0]], lami[e[1]]);
+          shape[i] = uDv_minus_vDu (lami[e[0]], lami[e[1]]);
           
           //HO-Edge shapes (Gradient Fields)   
           if(ORDER > 0) //  && usegrad_edge[i]) 
@@ -174,7 +174,7 @@ namespace ngfem
                                 lami[e[0]]*lami[e[1]], 
                                 SBLambda([&](int i, Tx v)
                                          {
-                                           shape[ii++] = Du<2>(v);
+                                           shape[ii++] = Du(v);
                                          }));
               /*
               AutoDiff<2> eta = 1 - lami[e[1]] - lami[e[0]]; 
@@ -204,7 +204,7 @@ namespace ngfem
           // rotated gradients:
           for (int j = 0; j < ORDER-1; j++)
             for (int k = 0; k < ORDER-1-j; k++, ii++)
-              shape[ii] = Du<2> (adpol1[j] * adpol2[k]);
+              shape[ii] = Du (adpol1[j] * adpol2[k]);
 	  }
 	  
 	  if (!ho_div_free)
@@ -212,11 +212,11 @@ namespace ngfem
 	      // other combination
 	      for (int j = 0; j < ORDER-1; j++)
 		for (int k = 0; k < ORDER-1-j; k++, ii++)
-		  shape[ii] = uDv_minus_vDu<2> (adpol2[k], adpol1[j]);
+		  shape[ii] = uDv_minus_vDu (adpol2[k], adpol1[j]);
 	      
 	      // rec_pol * Nedelec0 
 	      for (int j = 0; j < ORDER-1; j++, ii++)
-		shape[ii] = wuDv_minus_wvDu<2> (lami[fav[1]], lami[fav[2]], adpol2[j]);
+		shape[ii] = wuDv_minus_wvDu (lami[fav[1]], lami[fav[2]], adpol2[j]);
 	    }
 	}
     }

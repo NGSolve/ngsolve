@@ -441,6 +441,13 @@ INLINE AutoDiff<D,SCAL> exp (AutoDiff<D,SCAL> x)
   return res;
 }
 
+using std::pow;
+template <int D, typename SCAL>
+INLINE AutoDiff<D,SCAL> pow (AutoDiff<D,SCAL> x, AutoDiff<D,SCAL> y )
+{
+  return exp(log(x)*y);
+}
+
 using std::sin;
 template <int D, typename SCAL>
 INLINE AutoDiff<D,SCAL> sin (AutoDiff<D,SCAL> x)
@@ -563,7 +570,7 @@ INLINE AutoDiff<D,SCAL> asin (AutoDiff<D,SCAL> x)
 
   
   template <int D, typename SCAL = double>
-  class AutoDiffRec
+  class AutoDiffRec : public AlignedAlloc<AutoDiffRec<D,SCAL>>
   {
     AutoDiffRec<D-1, SCAL> rec;
     SCAL last;
@@ -594,9 +601,14 @@ INLINE AutoDiff<D,SCAL> asin (AutoDiff<D,SCAL> x)
     }
   };
 
-  
+  template<int D, typename SCAL>
+  ostream & operator<< (ostream & ost, AutoDiffRec<D,SCAL> ad)
+  {
+    return ost << AutoDiff<D,SCAL> (ad);
+  }
+
   template <typename SCAL>
-  class AutoDiffRec<0,SCAL>
+  class AutoDiffRec<0,SCAL> : public AlignedAlloc<AutoDiffRec<0,SCAL>>
   {
     SCAL val;
   public:
@@ -620,7 +632,7 @@ INLINE AutoDiff<D,SCAL> asin (AutoDiff<D,SCAL> x)
 
 
   template <typename SCAL>
-  class AutoDiffRec<1,SCAL>
+  class AutoDiffRec<1,SCAL> : public AlignedAlloc<AutoDiffRec<1,SCAL>>
   {
     SCAL val;
     SCAL last;

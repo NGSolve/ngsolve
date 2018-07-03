@@ -851,6 +851,17 @@ namespace ngbla
       data[3] = s4;
     }
 
+    INLINE Vec (const T & s1, const T & s2, const T & s3, const T & s4, const T & s5, const T & s6)
+    {
+      static_assert (S==6, "Init Vec<S> with 6 elements, but S != 6");
+      data[0] = s1;
+      data[1] = s2;
+      data[2] = s3;
+      data[3] = s4;
+      data[4] = s5;
+      data[5] = s6;
+    }
+
 
   
     /// copy vector
@@ -1460,11 +1471,11 @@ namespace ngbla
     T & operator[] (size_t i) const { return data[i*dist];  }
     BareSliceVector<T> operator+(size_t i) const { return BareSliceVector<T> (data+i*dist, dist); }
     T * Addr (size_t i) const { return data+i*dist; }
-    BareSliceVector Range (size_t first, size_t next) const
+    SliceVector<T> Range (size_t first, size_t next) const
     {
-      return BareSliceVector (data+first*dist, dist);
+      return SliceVector<T> (next-first, dist, data+first*dist);
     }
-    BareSliceVector Range (T_Range<size_t> range) const
+    SliceVector<T> Range (T_Range<size_t> range) const
     {
       return Range(range.First(), range.Next());
     }    
@@ -1785,7 +1796,16 @@ namespace ngbla
   
 }
 
-
+namespace ngstd
+{
+  template <int S, typename T>
+  inline Archive & operator& (Archive & ar, ngbla::Vec<S,T> & v)
+  {
+    for (int i = 0; i < S; i++)
+      ar & v(i);
+    return ar;
+  }
+}
 
 
 #ifdef PARALLEL

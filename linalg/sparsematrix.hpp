@@ -137,6 +137,7 @@ namespace ngla
     { return FlatArray<int> (int(firsti[i+1]-firsti[i]), colnr+firsti[i]); }
 
     size_t First (int i) const { return firsti[i]; }
+    FlatArray<size_t> GetFirstArray () const  { return firsti; } 
 
     void FindSameNZE();
     void CalcBalancing ();
@@ -247,6 +248,7 @@ namespace ngla
 
     void SetSPD (bool aspd = true) { spd = aspd; }
     bool IsSPD () const { return spd; }
+    virtual size_t NZE () const override { return nze; }
   };
 
   /// A general, sparse matrix
@@ -298,6 +300,9 @@ namespace ngla
     { 
       AsVector() = amat.AsVector(); 
     }
+
+    static shared_ptr<SparseMatrixTM> CreateFromCOO (FlatArray<int> i, FlatArray<int> j,
+                                                     FlatArray<TSCAL> val, size_t h, size_t w);
       
     virtual ~SparseMatrixTM ();
 
@@ -409,7 +414,9 @@ namespace ngla
     // virtual BaseMatrix * CreateMatrix (const Array<int> & elsperrow) const;
     ///
     virtual AutoVector CreateVector () const override;
-
+    virtual AutoVector CreateRowVector () const override;
+    virtual AutoVector CreateColVector () const override;
+    
     virtual shared_ptr<BaseJacobiPrecond>
       CreateJacobiPrecond (shared_ptr<BitArray> inner) const override
     { 
@@ -430,10 +437,8 @@ namespace ngla
 
     virtual shared_ptr<BaseSparseMatrix> Restrict (const SparseMatrixTM<double> & prol,
 					 shared_ptr<BaseSparseMatrix> cmat = nullptr) const override;
-
   
     ///
-    // template<class TEL>
     inline TVY RowTimesVector (int row, const FlatVector<TVX> vec) const
     {
       typedef typename mat_traits<TVY>::TSCAL TTSCAL;
@@ -441,59 +446,19 @@ namespace ngla
       for (size_t j = firsti[row]; j < firsti[row+1]; j++)
 	sum += data[j] * vec(colnr[j]);
       return sum;
-
-      /*
-        // no need for low-level tuning anymore thx compiler-tech
-      int nj = firsti[row+1] - firsti[row];
-      const int * colpi = &colnr[0]+firsti[row];
-      const TM * datap = &data[0]+firsti[row];
-      // FlatVector<TVX> hvec = vec;
-      const TVX * vecp = vec.Addr(0);
-    
-      typedef typename mat_traits<TVY>::TSCAL TTSCAL;
-      TVY sum = TTSCAL(0);
-      for (int j = 0; j < nj; j++, colpi++, datap++)
-        sum += *datap * vecp[*colpi];
-      // for (int j = 0; j < nj; j++)
-      // sum += datap[j] * vecp[colpi[j]];
-      return sum;
-      */
     }
 
     ///
     void AddRowTransToVector (int row, TVY el, FlatVector<TVX> vec) const
     {
-      // cannot be optimized by the compiler, since hvec could alias
-      // the matrix --> keyword 'restrict' will hopefully solve this problem
-
-      // size_t first = firsti[row];
-      // size_t last = firsti[row+1];
-      // for (size_t j = first; j < last; j++)
-      // vec(colnr[j]) += Trans(data[j]) * el;
-
-      /*
-      const int * colpi = &colnr[0];
-      const TM * datap = &data[0];
-      TVX * vecp = vec.Addr(0);
-      for (size_t j = first; j < last; j++)
-        vecp[colpi[j]] += Trans(datap[j]) * el; 
-      */
-
       size_t first = firsti[row];
       size_t last = firsti[row+1];
-      // TVX * vecp = vec.Addr(0);
-      // const int * colpi = &colnr[0];
-      // const TM * datap = &data[0];
+
       const int * colpi = colnr.Addr(0);
       const TM * datap = data.Addr(0);
 
-      // int d = vec.Addr(1)-vec.Addr(0);
-      // if (d == 1)
-        for (size_t j = first; j < last; j++)
-          vec[colpi[j]] += Trans(datap[j]) * el; 
-        // else
-        // for (size_t j = first; j < last; j++)
-        // vec[d*colnr[j]] += Trans(data[j]) * el; 
+      for (size_t j = first; j < last; j++)
+        vec[colpi[j]] += Trans(datap[j]) * el; 
     }
 
 
@@ -502,6 +467,10 @@ namespace ngla
     virtual void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const override;
     virtual void MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const override;
 
+    virtual void MultAdd1 (double s, const BaseVector & x, BaseVector & y,
+			   const BitArray * ainner = NULL,
+			   const Array<int> * acluster = NULL) const override;
+    
     virtual void DoArchive (Archive & ar) override;
   };
 
@@ -694,47 +663,18 @@ namespace ngla
       for (size_t j = first; j < last; j++)
 	sum += data[j] * vec(colnr[j]);
       return sum;
-
-      /*
-      const int * colpi = &colnr[0]; // +firsti[row];
-      const TM * datap = &data[0]; // +firsti[row];
-      const TVX * vecp = vec.Addr(0);
-
-      // for (int j = first; j < last; j++, colpi++, datap++)
-      // sum += *datap * vecp[*colpi];
-      for (int j = first; j < last; j++)
-	sum += datap[j] * vecp[colpi[j]];
-      return sum;
-      */
     }
 
     void AddRowTransToVectorNoDiag (int row, TVY el, FlatVector<TVX> vec) const
     {
       size_t first = firsti[row];
       size_t last = firsti[row+1];
+
       if (first == last) return;
       if (this->colnr[last-1] == row) last--;
-      
-      /*
-      for (size_t j = first; j < last; j++)
-        vec(colnr[j]) += Trans(data[j]) * el;
-      */
-      /*
-      // hand tuning
-      const int * colpi = &colnr[0]; // +firsti[row];
-      const TM * datap = &data[0]; // +firsti[row];
-      TVX * vecp = vec.Addr(0);
-      for (size_t j = first; j < last; j++)
-	vecp[colpi[j]] += Trans(datap[j]) * el;
-      */
-      // TVX * vecp = vec.Addr(0);
-      // int d = vec.Addr(1)-vec.Addr(0);
-      // if (d == 1)
+
       for (size_t j = first; j < last; j++)
         vec[colnr[j]] += Trans(data[j]) * el;
-        // else
-        // for (size_t j = first; j < last; j++)
-        // vecp[d*colnr[j]] += Trans(data[j]) * el;
     }
   
     BaseSparseMatrix & AddMerge (double s, const SparseMatrixSymmetric  & m2);

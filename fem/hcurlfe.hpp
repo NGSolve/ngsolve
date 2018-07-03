@@ -33,8 +33,28 @@ namespace ngfem
   /**
      H(Curl) finite element of dimension D
   */
+
+  
+  class BaseHCurlFiniteElement : public FiniteElement
+  {
+  public:
+    INLINE BaseHCurlFiniteElement () { ; } 
+    INLINE BaseHCurlFiniteElement (int andof, int aorder)
+      : FiniteElement (andof, aorder) { ; }
+
+    virtual void CalcShape (const IntegrationPoint & ip, 
+			    SliceMatrix<> shape) const = 0;
+
+    virtual void CalcMappedShape (const BaseMappedIntegrationPoint & mip,
+				  SliceMatrix<> shape) const = 0;
+
+    virtual void CalcMappedCurlShape (const BaseMappedIntegrationPoint & mip,
+				      SliceMatrix<> curlshape) const = 0;
+  };
+
+  
   template <int D>
-  class HCurlFiniteElement : public FiniteElement
+  class HCurlFiniteElement : public BaseHCurlFiniteElement
   {
 
   public:
@@ -49,23 +69,20 @@ namespace ngfem
 
     /// 
     INLINE HCurlFiniteElement (int andof, int aorder)
-      : FiniteElement (andof, aorder) { ; } 
+      : BaseHCurlFiniteElement (andof, aorder) { ; } 
   
     HD virtual ~HCurlFiniteElement () { ; }
 
-    virtual string ClassName() const;
+    virtual string ClassName() const override;
 
-    /// compute shape
-    virtual void CalcShape (const IntegrationPoint & ip, 
-			    SliceMatrix<> shape) const = 0;
   
     /// compute curl of shape, default: numerical diff
     virtual void CalcCurlShape (const IntegrationPoint & ip, 
 				SliceMatrix<> curlshape) const;
 
     /// compute shape
-    virtual void CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
-				  SliceMatrix<> shape) const;
+    virtual void CalcMappedShape (const BaseMappedIntegrationPoint & mip,
+				  SliceMatrix<> shape) const override;
 
     virtual void CalcMappedShape (const MappedIntegrationRule<DIM,DIM> & mir, 
                                   SliceMatrix<> shape) const;
@@ -74,8 +91,8 @@ namespace ngfem
                                   BareSliceMatrix<SIMD<double>> shapes) const;
     
     /// compute curl of shape
-    virtual void CalcMappedCurlShape (const MappedIntegrationPoint<DIM,DIM> & mip,
-				      SliceMatrix<> curlshape) const;
+    virtual void CalcMappedCurlShape (const BaseMappedIntegrationPoint & mip,
+				      SliceMatrix<> curlshape) const override;
 
     virtual void CalcMappedCurlShape (const MappedIntegrationRule<DIM,DIM> & mir, 
                                       SliceMatrix<> curlshape) const;
@@ -127,21 +144,21 @@ namespace ngfem
 
 
     NGS_DLL_HEADER virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const
-    { throw ExceptionNOSIMD("HCurlFE - simd eval not overloaded"); }
+    { throw ExceptionNOSIMD(string("HCurlFE - simd eval not overloaded, eltype = ")+typeid(*this).name()); }
     NGS_DLL_HEADER virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<Complex> coefs, BareSliceMatrix<SIMD<Complex>> values) const
-    { throw ExceptionNOSIMD("HCurlFE - simd<complex> eval not overloaded"); }
+    { throw ExceptionNOSIMD(string("HCurlFE - simd<complex> eval not overloaded")+typeid(*this).name()); }
     NGS_DLL_HEADER virtual void EvaluateCurl (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const
-    { throw ExceptionNOSIMD("HCurlFE - simd evalcurl not overloaded"); }      
+    { throw ExceptionNOSIMD(string("HCurlFE - simd evalcurl not overloaded")+typeid(*this).name()); }      
 
     NGS_DLL_HEADER virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
                                              BareSliceVector<> coefs) const
-    { throw ExceptionNOSIMD("HCurlFE - simd addtrans not overloaded"); }
+    { throw ExceptionNOSIMD(string("HCurlFE - simd addtrans not overloaded")+typeid(*this).name()); }
     NGS_DLL_HEADER virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values,
                                              BareSliceVector<Complex> coefs) const
-    { throw ExceptionNOSIMD("HCurlFE - simd addtrans complex not overloaded"); }
+    { throw ExceptionNOSIMD(string("HCurlFE - simd addtrans complex not overloaded")+typeid(*this).name()); }
     NGS_DLL_HEADER virtual void AddCurlTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
                                                  BareSliceVector<> coefs) const
-    { throw ExceptionNOSIMD("HCurlFE - simd addcurltrans not overloaded"); }
+    { throw ExceptionNOSIMD(string("HCurlFE - simd addcurltrans not overloaded")+typeid(*this).name()); }
 
     NGS_DLL_HEADER virtual void CalcDualShape (const MappedIntegrationPoint<DIM,DIM> & mip, SliceMatrix<> shape) const;
 

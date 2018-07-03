@@ -74,6 +74,58 @@ namespace ngcomp
             throw Exception("cannot evaluate facet-fe inside element");
         }
     }
+
+
+   static void GenerateMatrixSIMDIR (const FiniteElement & fel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      int facetnr = mir.IR()[0].FacetNr();
+      if (facetnr >= 0)
+        {
+          mat.AddSize(fel.GetNDof(), mir.Size()) = 0.0;
+          const FacetVolumeFiniteElement<D-1> & fel_facet = static_cast<const FacetVolumeFiniteElement<D-1>&> (fel);
+          fel_facet.Facet(facetnr).CalcShape(mir.IR(), 
+                                             mat.Rows(fel_facet.GetFacetDofs(facetnr)));
+        }
+      else
+        {
+          throw ExceptionNOSIMD("facet-simd-bnd not ready");
+        }
+    }
+
+    
+    using DiffOp<DiffOpIdFacetSurface<D>>::ApplySIMDIR;          
+    static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      const FacetVolumeFiniteElement<D-1> & fel_facet = static_cast<const FacetVolumeFiniteElement<D-1>&> (bfel);
+
+      int facetnr = mir.IR()[0].FacetNr();
+      if (facetnr < 0)
+        throw Exception("cannot evaluate facet-fe inside element, apply simd");
+      else
+        fel_facet.Facet(facetnr).Evaluate(mir.IR(),
+                                          x.Range(fel_facet.GetFacetDofs(facetnr)),
+                                          y.Row(0));
+    }
+
+    using DiffOp<DiffOpIdFacetSurface<D>>::AddTransSIMDIR;          
+    static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      const FacetVolumeFiniteElement<D-1> & fel_facet = static_cast<const FacetVolumeFiniteElement<D-1>&> (bfel);
+
+      int facetnr = mir.IR()[0].FacetNr();
+      if (facetnr < 0)
+        throw Exception("cannot evaluate facet-fe inside element, add trans simd");
+      else
+        fel_facet.Facet(facetnr).AddTrans(mir.IR(),
+                                          y.Row(0),
+                                          x.Range(fel_facet.GetFacetDofs(facetnr)));
+    }
+
+
     
   };
 
@@ -235,6 +287,8 @@ namespace ngcomp
     while (ma->GetNLevels() > ndlevel.Size())
       ndlevel.Append (ndof);
     ndlevel.Last() = ndof;
+
+    UpdateCouplingDofArray();
     
     if(print)
       {
@@ -242,6 +296,17 @@ namespace ngcomp
 	*testout << " order edge (edge) " << order << endl; 
 	*testout << " first_edge_dof (edge)  " << first_edge_dof << endl; 
       } 
+  }
+
+   void FacetSurfaceFESpace :: UpdateCouplingDofArray()
+  {
+    ctofdof.SetSize(ndof);
+    ctofdof = UNUSED_DOF;
+
+    for (ElementId ei : ma->Elements(BND))
+      if (DefinedOn(ei))
+        for (auto ed : ma->GetElEdges (ei))
+          ctofdof[GetEdgeDofs(ed)] = WIREBASKET_DOF;
   }
 
     template <ELEMENT_TYPE ET>
@@ -321,6 +386,9 @@ namespace ngcomp
         //throw Exception("No BBBND GetFE implemented for FacetSurfaceFESpace");
 	return * new (lh) DummyFE<ET_POINT>();
 	break;
+
+      default:
+        __assume(false);
       }
   }
 
@@ -342,6 +410,10 @@ namespace ngcomp
   void FacetSurfaceFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
     dnums.SetSize0();
+
+    if (!DefinedOn (ei))
+      return;
+
     switch (ei.VB())
       {
       case VOL:

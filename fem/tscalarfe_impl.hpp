@@ -644,7 +644,8 @@ namespace ngfem
         T_CalcShape (tip, // TIP<DIM, AutoDiff<DIM>> (adp),
                      SBLambda ([&] (int j, AD2Vec<DIM> shape)
                                { sum += coefs(j) * shape; }));
-        vals.Row(i).AddSize(DIM) = sum;
+        // vals.Row(i).AddSize(DIM) = sum;
+        FlatVec<DIM>(vals.Addr(i,0)) = sum;
       }
   }
 
@@ -879,9 +880,10 @@ namespace ngfem
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
-  CalcMappedDShape (const MappedIntegrationPoint<DIM,DIM> & mip, 
+  CalcMappedDShape (const BaseMappedIntegrationPoint & bmip, 
 		    BareSliceMatrix<> dshape) const
   {
+    auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM> &> (bmip);
     Vec<DIM, AutoDiff<DIM>> adp = mip;
 
     T_CalcShape (TIP<DIM, AutoDiff<DIM>> (adp),
@@ -892,10 +894,11 @@ namespace ngfem
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
-  CalcMappedDShape (const MappedIntegrationRule<DIM,DIM> & mir, 
+  CalcMappedDShape (const BaseMappedIntegrationRule & bmir, 
 		    BareSliceMatrix<> dshape) const
   {
-    for (int i = 0; i < mir.Size(); i++)
+    auto & mir = static_cast<const MappedIntegrationRule<DIM,DIM> &> (bmir);
+    for (size_t i = 0; i < mir.Size(); i++)
       T_ScalarFiniteElement::CalcMappedDShape (mir[i], dshape.Cols(i*DIM,(i+1)*DIM));
   }
 

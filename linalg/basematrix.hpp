@@ -54,7 +54,7 @@ namespace ngla
     }
 
     /// is matrix complex ?
-    virtual bool IsComplex() const = 0;
+    virtual bool IsComplex() const { return false; }
     
     /// scalar assignment
     BaseMatrix & operator= (double s)
@@ -72,7 +72,7 @@ namespace ngla
 
     virtual ostream & Print (ostream & ost) const;
     virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
-
+    virtual size_t NZE () const;
     // virtual const void * Data() const;
     // virtual void * Data();
     
@@ -240,87 +240,327 @@ namespace ngla
   */
   class Transpose : public BaseMatrix
   {
-    shared_ptr<BaseMatrix> bm;
+    const BaseMatrix & bm;
+    shared_ptr<BaseMatrix> spbm;
   public:
     ///
-    Transpose (shared_ptr<BaseMatrix> abm) : bm(abm) { ; }
-    Transpose (const BaseMatrix & abm) : bm(const_cast<BaseMatrix&>(abm).shared_from_this()) { ; }
+    Transpose (const BaseMatrix & abm) : bm(abm) { ; }
+    Transpose (shared_ptr<BaseMatrix> aspbm) : bm(*aspbm), spbm(aspbm) { ; }
     ///
-    virtual bool IsComplex() const { return bm->IsComplex(); }
+    virtual bool IsComplex() const override { return bm.IsComplex(); }
 
+    virtual AutoVector CreateRowVector () const override { return bm.CreateColVector(); }
+    virtual AutoVector CreateColVector () const override { return bm.CreateRowVector(); }
+    
     ///
-    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override
     {
-      bm->MultTransAdd (s, x, y);
+      bm.MultTransAdd (s, x, y);
     }
     ///
-    virtual void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const 
+    virtual void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const override
     {
-      bm->MultTransAdd (s, x, y);
+      bm.MultTransAdd (s, x, y);
     }
     ///
-    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override
     {
-      bm->MultAdd (s, x, y);
+      bm.MultAdd (s, x, y);
     }
     ///
-    virtual void MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const
+    virtual void MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const override
     {
-      bm->MultAdd (s, x, y);
+      bm.MultAdd (s, x, y);
     }  
 
-    virtual int VHeight() const { return bm->VWidth(); }
-    virtual int VWidth() const { return bm->VHeight(); }
+    virtual int VHeight() const override { return bm.VWidth(); }
+    virtual int VWidth() const override { return bm.VHeight(); }
 
 
-    virtual ostream & Print (ostream & ost) const
+    virtual ostream & Print (ostream & ost) const override
     {
       ost << "Transpose of " << endl;
-      bm->Print(ost);
+      bm.Print(ost);
       return ost;
     }
   };
 
 
 
+  /* ************************** Product ************************* */
+
+  /// action of product of two matrices 
+  class ProductMatrix : public BaseMatrix
+  {
+    const BaseMatrix & bma;
+    const BaseMatrix & bmb;
+    shared_ptr<BaseMatrix> spbma;
+    shared_ptr<BaseMatrix> spbmb;
+    mutable AutoVector tempvec;
+  public:
+    ///
+    ProductMatrix (const BaseMatrix & abma, const BaseMatrix & abmb)
+      : bma(abma), bmb(abmb), tempvec(abmb.CreateColVector())
+    { ; }
+    ProductMatrix (shared_ptr<BaseMatrix> aspbma, shared_ptr<BaseMatrix> aspbmb)
+      : bma(*aspbma), bmb(*aspbmb), spbma(aspbma), spbmb(aspbmb),
+        tempvec(aspbmb->CreateColVector())
+    { ; }
+    ///
+    virtual bool IsComplex() const override { return bma.IsComplex() || bmb.IsComplex(); }
+
+    virtual AutoVector CreateRowVector () const override { return bmb.CreateRowVector(); }
+    virtual AutoVector CreateColVector () const override { return bma.CreateColVector(); }
+    
+    ///
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override
+    {
+      bmb.Mult (x, tempvec);
+      bma.MultAdd (s, tempvec, y);
+    }
+    ///
+    virtual void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const override
+    {
+      bmb.Mult (x, tempvec);
+      bma.MultAdd (s, tempvec, y);
+    }
+    ///
+    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override
+    {
+      tempvec = 0.0;
+      bma.MultTransAdd (1, x, tempvec);
+      bmb.MultTransAdd (s, tempvec, y);
+    }
+    ///
+    virtual void MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const override
+    {
+      tempvec = 0.0;      
+      bma.MultTransAdd (1, x, tempvec);
+      bmb.MultTransAdd (s, tempvec, y);
+    }  
+
+    virtual int VHeight() const override { return bma.VHeight(); }
+    virtual int VWidth() const override { return bmb.VWidth(); }
+
+    virtual ostream & Print (ostream & ost) const override
+    {
+      ost << "Product of" << endl;
+      bma.Print(ost);
+      bmb.Print(ost);
+      return ost;
+    }
+  };
+
+
+  /* ************************** Sum ************************* */
+
+  /// action of product of two matrices 
+  class SumMatrix : public BaseMatrix
+  {
+    const BaseMatrix & bma;
+    const BaseMatrix & bmb;
+    shared_ptr<BaseMatrix> spbma;
+    shared_ptr<BaseMatrix> spbmb;
+    double a, b;
+  public:
+    ///
+    SumMatrix (const BaseMatrix & abma, const BaseMatrix & abmb,
+               double aa = 1, double ab = 1)
+      : bma(abma), bmb(abmb), a(aa), b(ab)
+    { ; }
+    SumMatrix (shared_ptr<BaseMatrix> aspbma, shared_ptr<BaseMatrix> aspbmb,
+                   double aa = 1, double ab = 1)
+      : bma(*aspbma), bmb(*aspbmb), spbma(aspbma), spbmb(aspbmb), a(aa), b(ab)
+    { ; }
+    ///
+    virtual bool IsComplex() const override { return bma.IsComplex() || bmb.IsComplex(); }
+
+    virtual AutoVector CreateRowVector () const override
+    {
+      try
+        {
+          return bma.CreateRowVector();
+        }
+      catch (Exception e)
+        {
+          return bmb.CreateRowVector();          
+        }
+    }
+    virtual AutoVector CreateColVector () const override
+    {
+      try
+        {
+          return bma.CreateColVector();
+        }
+      catch (Exception e)
+        {
+          return bmb.CreateColVector();          
+        }
+    }
+    
+    ///
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override
+    {
+      bma.MultAdd (a*s, x, y);
+      bmb.MultAdd (b*s, x, y);
+    }
+    ///
+    virtual void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const override
+    {
+      bma.MultAdd (a*s, x, y);
+      bmb.MultAdd (b*s, x, y);
+    }
+    ///
+    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override
+    {
+      bma.MultTransAdd (a*s, x, y);
+      bmb.MultTransAdd (b*s, x, y);
+    }
+    ///
+    virtual void MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const override
+    {
+      bma.MultTransAdd (a*s, x, y);
+      bmb.MultTransAdd (b*s, x, y);
+    }  
+
+    virtual int VHeight() const override { return bma.VHeight(); }
+    virtual int VWidth() const override { return bma.VWidth(); }
+
+    virtual ostream & Print (ostream & ost) const override
+    {
+      ost << "Sum of" << endl;
+      ost << "Scale a = " << a << endl;
+      bma.Print(ost);
+      ost << "Scale b = " << b << endl;
+      bmb.Print(ost);
+      return ost;
+    }
+  };
+
+
+  /* ************************** Scale ************************* */
+
+  template <typename TSCAL>
   class VScaleMatrix : public BaseMatrix
   {
     const BaseMatrix & bm;
-    double scale;
+    shared_ptr<BaseMatrix> spbm;
+    TSCAL scale;
   public:
     ///
-    VScaleMatrix (const BaseMatrix & abm, double ascale) : bm(abm), scale(ascale) { ; }
-    virtual bool IsComplex() const { return bm.IsComplex(); } 
+    VScaleMatrix (const BaseMatrix & abm, TSCAL ascale) : bm(abm), scale(ascale) { ; }
+    VScaleMatrix (shared_ptr<BaseMatrix> aspbm, TSCAL ascale)
+      : bm(*aspbm), spbm(aspbm), scale(ascale) { ; }
+    virtual bool IsComplex() const override
+    { return bm.IsComplex() || typeid(TSCAL)==typeid(Complex); } 
     ///
-    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override
     {
       bm.MultAdd (s*scale, x, y);
     }
     ///
-    virtual void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const 
+    virtual void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const override
     {
       bm.MultAdd (s*scale, x, y);
     }
     ///
-    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override
     {
       bm.MultTransAdd (s*scale, x, y);
     }
     ///
-    virtual void MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const
+    virtual void MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const override
     {
       bm.MultTransAdd (s*scale, x, y);
     }  
 
-    virtual int VHeight() const { return bm.VHeight(); }
-    virtual int VWidth() const { return bm.VWidth(); }
+    virtual int VHeight() const override { return bm.VHeight(); }
+    virtual int VWidth() const override { return bm.VWidth(); }
+    virtual AutoVector CreateRowVector () const override { return bm.CreateRowVector(); }
+    virtual AutoVector CreateColVector () const override { return bm.CreateColVector(); }
+    virtual ostream & Print (ostream & ost) const override
+    {
+      ost << "Scale with " << scale << ":" << endl;
+      bm.Print(ost);
+      return ost;
+    }
+    
   };
-
-  inline VScaleMatrix operator* (double d, const BaseMatrix & m)
+  
+  inline VScaleMatrix<double> operator* (double d, const BaseMatrix & m)
   {
-    return VScaleMatrix (m, d);
+    return VScaleMatrix<double> (m, d);
   }
 
+
+  /* ************************** Identity ************************* */
+  
+  class IdentityMatrix : public BaseMatrix
+  {
+    bool has_format;
+    size_t size;
+    bool is_complex;
+  public:
+    ///
+    IdentityMatrix ()
+      : has_format(false), is_complex(false) { ; }
+    IdentityMatrix (size_t asize, bool ais_complex)
+      : has_format(true), size(asize), is_complex(ais_complex) { ; }
+    
+    virtual bool IsComplex() const override { return is_complex; }
+    ///
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override
+    {
+      y += s*x;
+    }
+    ///
+    virtual void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const override
+    {
+      y += s*x;
+    }
+    ///
+    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override
+    {
+      y += s*x;
+    }
+    ///
+    virtual void MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const override
+    {
+      y += s*x;      
+    }  
+
+    virtual int VHeight() const override
+    {
+      if (has_format) return size;
+      throw Exception("Identity: no Height");
+    }
+    virtual int VWidth() const override
+    {
+      if (has_format) return size;
+      throw Exception("Identity: no Width");
+    }
+    virtual AutoVector CreateRowVector () const override
+    {
+      if (has_format)
+        return CreateBaseVector(size, is_complex, 1);
+      throw Exception("Identity: no RowVector");
+    }
+    virtual AutoVector CreateColVector () const override
+    {
+      if (has_format)
+        return CreateBaseVector(size, is_complex, 1);
+      throw Exception("Identity: no ColVector");
+    }
+
+    virtual ostream & Print (ostream & ost) const override
+    {
+      ost << "Identity" << endl;
+      return ost;
+    }
+    
+  };
+
+  
   /* *********************** operator<< ********************** */
 
   /// output operator for matrices

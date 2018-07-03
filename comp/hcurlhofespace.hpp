@@ -128,8 +128,8 @@ namespace ngcomp
     int GetSmoothingType() const {return smoother;} 
 
     bool GetNoGrads() const {return nograds;};
-    virtual void UpdateDofTables(); 
-    virtual void UpdateCouplingDofArray();
+    virtual void UpdateDofTables() override; 
+    virtual void UpdateCouplingDofArray() override;
     int GetMaxOrder() const {return maxorder;}; 
     int GetMinOrder() const {return minorder;};
 

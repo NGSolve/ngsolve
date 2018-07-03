@@ -16,7 +16,7 @@ namespace ngstd
 
     // virtual bool Output ();
     // virtual bool Input ();
-
+    using Archive::operator&;
     virtual Archive & operator & (double & d);
     virtual Archive & operator & (int & i);
     virtual Archive & operator & (short & i);
@@ -38,7 +38,7 @@ namespace ngstd
 
     // virtual bool Output ();
     // virtual bool Input ();
-
+    using Archive::operator&;
     virtual Archive & operator & (double & d);
     virtual Archive & operator & (int & i);
     virtual Archive & operator & (short & i);
@@ -54,10 +54,13 @@ namespace ngstd
   class BinaryOutArchive : public Archive
   {
     shared_ptr<ostream> fout;
+    size_t ptr = 0;
+    enum { BUFFERSIZE = 1024 };
+    char buffer[BUFFERSIZE];
   public:
     BinaryOutArchive (string filename);
     BinaryOutArchive (shared_ptr<ostream> afout) : Archive(true), fout(afout) { ; }
-
+    virtual ~BinaryOutArchive () { FlushBuffer(); }
     // virtual bool Output ();
     // virtual bool Input ();
 
@@ -70,6 +73,10 @@ namespace ngstd
     virtual Archive & operator & (bool & b);
     virtual Archive & operator & (string & str);
     virtual Archive & operator & (char *& str);
+
+    template <typename T>
+    Archive & Write (T x);
+    void FlushBuffer();
   };
 
 
@@ -106,8 +113,8 @@ namespace ngstd
 
 
 
-
-
+  
+  /*
   // archive a pointer ...
   template <typename T>
   Archive & operator& (Archive & ar, T *& p)
@@ -121,7 +128,9 @@ namespace ngstd
       }
     return ar;
   }
+  */
 
+  
   // archive a shared pointer ...
   template <typename T>
   Archive & operator& (Archive & ar, shared_ptr<T> & p)
@@ -137,7 +146,7 @@ namespace ngstd
   }
 
 
-
+  /*
   // cannot archive type T
   template <typename T>
   Archive & operator& (Archive & ar, T & t)
@@ -155,6 +164,7 @@ namespace ngstd
       }
     return ar;
   }
+  */
 }
 
 

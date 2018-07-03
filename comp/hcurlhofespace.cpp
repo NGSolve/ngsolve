@@ -531,6 +531,7 @@ namespace ngcomp
       delete specialelements[i];
     specialelements.DeleteAll();
 
+    /*
     if (order_policy == VARIABLE_ORDER &&
         ma->GetTimeStamp() > order_timestamp)
       {
@@ -546,7 +547,7 @@ namespace ngcomp
         FESpace::order_cell_right = order;
         order_timestamp = ma->GetTimeStamp();
       }
-
+    */
     
     order_edge.SetSize (ned);   
     order_face.SetSize (nfa); 
@@ -797,17 +798,22 @@ namespace ngcomp
         for (auto i : Range(nedge))
           {
             first_edge_dof[i] = ndof;
-            if(FESpace::order_edge[i] > 0)
-              ndof += FESpace::order_edge[i];
+            if(order_edge[i] > 0)
+              ndof += order_edge[i];
           }
         first_edge_dof[nedge] = ndof;
 
         first_face_dof.SetSize (nface+1);
         for (auto i : Range(nface))
           { 
-            first_face_dof[i] = ndof; 
+            first_face_dof[i] = ndof;
+            /*
             INT<2> pl = FESpace::order_face_left[i];
             INT<2> pr = FESpace::order_face_right[i];
+            */
+            INT<2> pl = order_face[i];
+            INT<2> pr = order_face[i];
+            
             int ngrad = 0, ncurl = 0;
             switch (ma->GetFaceType(i))
               {
@@ -1221,8 +1227,8 @@ namespace ngcomp
              << int(FESpace::order_edge[ngel.Edges()[2]]) << endl;
         cout << "order-face = " << FESpace::order_face_right[ngel.Faces()] << endl;
         */
-        hofe -> SetOrderEdge (FESpace::order_edge[ngel.Edges()]);
-        hofe -> SetOrderFace (FESpace::order_face_right[ngel.Faces()]);
+        hofe -> SetOrderEdge (order_edge[ngel.Edges()]);
+        hofe -> SetOrderFace (order_face[ngel.Faces()]);
         hofe -> SetType1 (false);
         hofe -> ComputeNDof();
         // cout << "                                neldof = " << hofe->GetNDof() << ", order = " << hofe->Order() << endl;
@@ -2573,11 +2579,11 @@ namespace ngcomp
   shared_ptr<Array<int>> HCurlHighOrderFESpace :: CreateDirectSolverClusters (const Flags & precflags) const
   {
     // int nv = ma->GetNV();
-    int ne = ma->GetNE();
+    size_t ne = ma->GetNE();
     // int nse = ma->GetNSE();
 
-    int ned = ma->GetNEdges();
-    int nfa = (ma->GetDimension() == 2) ? 0 : ma->GetNFaces();
+    size_t ned = ma->GetNEdges();
+    size_t nfa = (ma->GetDimension() == 2) ? 0 : ma->GetNFaces();
 
 
     cout << "called createdirectsolverclusters" << endl;
@@ -2590,11 +2596,11 @@ namespace ngcomp
 	Array<int> & clusters = *spclusters;
 	clusters = 0;
 	
-	int ned = ma->GetNEdges();
+	size_t ned = ma->GetNEdges();
 	for (int i = 0; i < ned; i++)
 	  clusters[i] = 1;
 
-	for (int i = 0; i < ned; i++)
+	for (size_t i = 0; i < ned; i++)
 	  {
 	    int first = first_edge_dof[i];
 	    int next = first_edge_dof[i+1];
@@ -2602,8 +2608,8 @@ namespace ngcomp
 	      clusters[first+j] = 1;
 	  }
 
-	int nfa = ma->GetNFaces();
-	for (int i = 0; i < nfa; i++)
+	size_t nfa = ma->GetNFaces();
+	for (size_t i = 0; i < nfa; i++)
 	  {
 	    int first = first_face_dof[i];
 	    // int next = first_face_dof[i+1];
@@ -2666,10 +2672,10 @@ namespace ngcomp
 
 
 
-    int i, j, k;
+    // int i, j, k;
     bool hasprism = false;
 
-    for (i = 0; !hasprism && i < ne; i++)
+    for (size_t i = 0; !hasprism && i < ne; i++)
       if (ma->GetElType(ElementId(VOL, i)) == ET_PRISM)
 	hasprism = true;
     
@@ -2686,19 +2692,19 @@ namespace ngcomp
        directfaceclusters.Size() != 0 ||
        directelementclusters.Size() != 0)
       {
-	for(i=0; i<directedgeclusters.Size(); i++)
-	  for(j=first_edge_dof[directedgeclusters[i]]; j<first_edge_dof[directedgeclusters[i]+1]; j++)
+	for(size_t i=0; i<directedgeclusters.Size(); i++)
+	  for(size_t j=first_edge_dof[directedgeclusters[i]]; j<first_edge_dof[directedgeclusters[i]+1]; j++)
 	    clusters[j] = 6;
 
-	for(i=0; i<directfaceclusters.Size(); i++)
+	for(size_t i=0; i<directfaceclusters.Size(); i++)
 	  {
-	    for(j=first_face_dof[directfaceclusters[i]];  j< first_face_dof[directfaceclusters[i]] + face_ngrad[directfaceclusters[i]]; j++)
+	    for(size_t j=first_face_dof[directfaceclusters[i]];  j< first_face_dof[directfaceclusters[i]] + face_ngrad[directfaceclusters[i]]; j++)
 	      clusters[j] = 6;
 	  }
 
-	for(i=0; i<directelementclusters.Size(); i++)
+	for(size_t i=0; i<directelementclusters.Size(); i++)
 	  {
-	    for(j=first_inner_dof[directelementclusters[i]];  j< first_inner_dof[directelementclusters[i]] + cell_ngrad[directelementclusters[i]]; j++)
+	    for(size_t j=first_inner_dof[directelementclusters[i]];  j< first_inner_dof[directelementclusters[i]] + cell_ngrad[directelementclusters[i]]; j++)
 	      clusters[j] = 6;
 	  }	    
       }
@@ -2714,30 +2720,30 @@ namespace ngcomp
 	    break; 
 	  case 1:
 	    //clusters = 0;
-	    for (i = 0; i < ne; i++)
+	    for (size_t i = 0; i < ne; i++)
 	      {
                 ElementId ei(VOL, i);
 		if (ma->GetElType(ei) == ET_PRISM)
 		  {
 		    auto ednums = ma->GetElEdges (ei);
 		
-		    for (j = 6; j < 9; j++)  //vertical Edges 
+		    for (int j = 6; j < 9; j++)  //vertical Edges 
 		      { 
 			int first = first_edge_dof[ednums[j]];
 			int next = first_edge_dof[ednums[j]+1];
-			for (k = first; k < next; k++)
+			for (int k = first; k < next; k++)
 			  clusters[k] = 1;      //verthoedge
 			clusters[ednums[j]] = 1;
 		      }
 
 		    fnums = ma->GetElFaces (ei); 
 
-		    for (j=2; j<5 ; j++)  // vertical faces
+		    for (int j=2; j<5 ; j++)  // vertical faces
 		      {
 			int first = first_face_dof[fnums[j]]; 
 			int next = first_face_dof[fnums[j]+1]; 
 		    
-			for(k=first; k<next; k++)
+			for(int k=first; k<next; k++)
 			  clusters[k] = 1;
 		    
 			// INT<2> p = order_face[fnums[j]]; 
@@ -2748,7 +2754,7 @@ namespace ngcomp
 		    int first = first_inner_dof[i]; 
 		    int next = first_inner_dof[i+1]; 
 
-		    for(k=first; k<next; k++)
+		    for(int k=first; k<next; k++)
 		      clusters[k] = 1;
 		  }
 	      }
@@ -2760,11 +2766,11 @@ namespace ngcomp
 	
 	
 	    //lo 
-	    for(i=0;i<ma->GetNEdges();i++)
+	    for(size_t i=0;i<ma->GetNEdges();i++)
 	      clusters[i]=1; 
 
        
-	    for (i = 0; i < ne; i++)
+	    for (size_t i = 0; i < ne; i++)
 	      {
                 ElementId ei(VOL, i);
 		/*if (ma->GetElType(i) == ET_PYRAMID)
@@ -2777,42 +2783,42 @@ namespace ngcomp
 		if (ma->GetElType(ei) == ET_PRISM)
 		  {
 		    auto ednums = ma->GetElEdges (ei);
-		    for (j = 0; j < 6; j++)  //horizontal Edges 
+		    for (int j = 0; j < 6; j++)  //horizontal Edges 
 		      { 
 			int first = first_edge_dof[ednums[j]];
 			int next = first_edge_dof[ednums[j]+1];
-			for (k = first; k < next; k++)
+			for (int k = first; k < next; k++)
 			  clusters[k] = 1; 
 			clusters[ednums[j]]=1;
 		      }
 		
 		
-		    for (j = 6; j < 9; j++)  //vertical Edges 
+		    for (int j = 6; j < 9; j++)  //vertical Edges 
 		      { 
 			int first = first_edge_dof[ednums[j]];
 			int next = first_edge_dof[ednums[j]+1];
-			for (k = first; k < next; k++)
+			for (int k = first; k < next; k++)
 			  clusters[k] = 1;      //verthoedge
 			clusters[ednums[j]]=1; //ned
 		      }
 		    fnums = ma->GetElFaces (ei); 
 		
-		    for (j=2; j<5 ; j++)  // vertical faces
+		    for (int j=2; j<5 ; j++)  // vertical faces
 		      {
 		    
 			int first = first_face_dof[fnums[j]]; 
 			int next = first_face_dof[fnums[j]+1]; 
 		    
 			// TEST SZ eigentlich nurin eine richtung konst ausreichend
-			for (k=first; k < next; k++) 
+			for (int k=first; k < next; k++) 
 			  clusters[k]=1; 
 		    
 		    
 			INT<2> p = order_face[fnums[j]]; 
 		    
-			for(k=next-p[0]-p[1]; k<next; k++)
+			for(int k=next-p[0]-p[1]; k<next; k++)
 			  clusters[k] = 1;
-			for(k=0; k<4; k++)
+			for(int k=0; k<4; k++)
 			  clusters[k] = 1;
 		    
 		    
@@ -2820,13 +2826,13 @@ namespace ngcomp
 			//   clusters[k]=3; 
 		    
 		      }
-		    for (j=0; j<2 ; j++)  // horizontal faces
+		    for (int j=0; j<2 ; j++)  // horizontal faces
 		      {
 		    
 			int first = first_face_dof[fnums[j]]; 
 			int next = first_face_dof[fnums[j]+1]; 
 		    
-			for (k=first; k < next; k++) 
+			for (int k=first; k < next; k++) 
 			  clusters[k]=1; 
 		      }
 		  }
@@ -2835,28 +2841,28 @@ namespace ngcomp
 		  {
 		    auto ednums = ma->GetElEdges (ei);
 		
-		    for(j=0;j<8;j++) // horizontal edges
+		    for(int j=0;j<8;j++) // horizontal edges
 		      {	
 			int first = first_edge_dof[ednums[j]];
 			int next = first_edge_dof[ednums[j]+1];
-			for (k = first; k < next; k++)
+			for (int k = first; k < next; k++)
 			  clusters[k] = 0;
 		
 			clusters[ednums[j]]=0; 
 		    
 		      }
 			
-		    for (j = 8; j < 12; j++)  // vertical edges 
+		    for (int j = 8; j < 12; j++)  // vertical edges 
 		      {	
 			int first = first_edge_dof[ednums[j]];
 			int next = first_edge_dof[ednums[j]+1];
-			for (k = first; k < next; k++)
+			for (int k = first; k < next; k++)
 			  clusters[k] = 3;
 			clusters[ednums[j]]=0; 
 		      }
 		
 		    fnums = ma->GetElFaces(ei); // vertical faces 
-		    for(j=2;j<6;j++) 
+		    for(int j=2;j<6;j++) 
 		      {
 		    
 			int first = first_face_dof[fnums[j]]; 
@@ -2870,22 +2876,22 @@ namespace ngcomp
 			  clusters[k]=3;  
 			*/ 
 			// TEST SZ  eigentlich in eine richtung konstante nur benoetigt
-			for (k=first; k < next; k++) 
+			for (int k=first; k < next; k++) 
 			  clusters[k]=3; 
 		    
 		      }
-		    for(j=0;j<2;j++)  //horizontal faces 
+		    for(int j=0;j<2;j++)  //horizontal faces 
 		      {
 		    
 			int first = first_face_dof[fnums[j]]; 
 			int next = first_face_dof[fnums[j]+1]; 
 		    
-			for (k=first; k < next; k++) 
+			for (int k=first; k < next; k++) 
 			  clusters[k]=0; 
 		      } 
 		  }
 	    
-		for(k=first_inner_dof[i];k<first_inner_dof[i+1];k++) 
+		for(int k=first_inner_dof[i];k<first_inner_dof[i+1];k++) 
 		  clusters[k]=0; 
 	    
 	      }
@@ -2896,32 +2902,32 @@ namespace ngcomp
 	    //for(i=0;i<ma->GetNEdges();i++)
 	    //  clusters[i]=0; 
 	
-	    for (i = 0; i < ne; i++)
+	    for (size_t i = 0; i < ne; i++)
 	      {
                 ElementId ei(VOL, i);
-		auto pnums = ma->GetElPNums(ei); 
+		// auto pnums = ma->GetElPNums(ei); 
 		if (ma->GetElType(ei) == ET_PRISM)
 		  {
 		    auto ednums = ma->GetElEdges (ei);
-		    for (j = 0; j < 6; j++)  //horizontal Edges 
+		    for (int j = 0; j < 6; j++)  //horizontal Edges 
 		      { 
 			int first = first_edge_dof[ednums[j]];
 			int next = first_edge_dof[ednums[j]+1];
-			for (k = first; k < next; k++)
+			for (int k = first; k < next; k++)
 			  clusters[k] = 0;
 			clusters[ednums[j]]=0; 
 		      }
-		    for (j = 6; j < 9; j++)  //vertical Edges 
+		    for (int j = 6; j < 9; j++)  //vertical Edges 
 		      { 
 			int first = first_edge_dof[ednums[j]];
 			int next = first_edge_dof[ednums[j]+1];
-			for (k = first; k < next; k++)
+			for (int k = first; k < next; k++)
 			  clusters[k] = 3;      //verthoedge
 			clusters[ednums[j]]=0; //ned
 		      }
 		    fnums = ma->GetElFaces (ei); 
 		
-		    for (j=2; j<5 ; j++)  // vertical faces
+		    for (int j=2; j<5 ; j++)  // vertical faces
 		      {
 		    
 			int first = first_face_dof[fnums[j]]; 
@@ -2937,17 +2943,17 @@ namespace ngcomp
 		       
 			*/
 		    
-			for (k=first; k < next; k++) 
+			for (int k=first; k < next; k++) 
 			  clusters[k]=3; 
 		    
 		      }
-		    for (j=0; j<2 ; j++)  // horizontal faces
+		    for (int j=0; j<2 ; j++)  // horizontal faces
 		      {
 		    
 			int first = first_face_dof[fnums[j]]; 
 			int next = first_face_dof[fnums[j]+1]; 
 		    
-			for (k=first; k < next; k++) 
+			for (int k=first; k < next; k++) 
 			  clusters[k]=0; 
 		      }
 		  }
@@ -2955,27 +2961,27 @@ namespace ngcomp
 		else if (ma->GetElType(ei) == ET_HEX)
 		  {
 		    auto ednums = ma->GetElEdges (ei);
-		    for(j=0;j<8;j++) // horizontal edges
+		    for(int j=0;j<8;j++) // horizontal edges
 		      {	
 			int first = first_edge_dof[ednums[j]];
 			int next = first_edge_dof[ednums[j]+1];
-			for (k = first; k < next; k++)
+			for (int k = first; k < next; k++)
 			  clusters[k] = 0;
 		    
 			clusters[ednums[j]]=0; 
 		    
 		      }
-		    for (j = 8; j < 12; j++)  // vertical edges 
+		    for (int j = 8; j < 12; j++)  // vertical edges 
 		      {	
 			int first = first_edge_dof[ednums[j]];
 			int next = first_edge_dof[ednums[j]+1];
-			for (k = first; k < next; k++)
+			for (int k = first; k < next; k++)
 			  clusters[k] = 3;
 			clusters[ednums[j]]=0; 
 		      }
 		
 		    fnums = ma->GetElFaces(ei); // vertical faces 
-		    for(j=2;j<6;j++) 
+		    for(int j=2;j<6;j++) 
 		      {
 		    
 			int first = first_face_dof[fnums[j]]; 
@@ -2989,35 +2995,35 @@ namespace ngcomp
 			  clusters[k]=3;  
 			*/ 
 			// TEST SZ  eigentlich in eine richtung konstante nur benoetigt
-			for (k=first; k < next; k++) 
+			for (int k=first; k < next; k++) 
 			  clusters[k]=3; 
 		    
 		      }
-		    for(j=0;j<2;j++)  //horizontal faces 
+		    for(int j=0;j<2;j++)  //horizontal faces 
 		      {
 		    
 			int first = first_face_dof[fnums[j]]; 
 			int next = first_face_dof[fnums[j]+1]; 
 		    
-			for (k=first; k < next; k++) 
+			for (int k=first; k < next; k++) 
 			  clusters[k]=0; 
 		      } 
 		  }
 	    
-		for(k=first_inner_dof[i];k<first_inner_dof[i+1];k++) 
+		for(int k=first_inner_dof[i];k<first_inner_dof[i+1];k++) 
 		  clusters[k]=0; 
 	    
 	      }
     
 	    //  (*testout) << "direct clusters = " << endl << clusters << endl;
 	
-	    for(i=0; directsolverclustered.Size() > 0 && i<ne; i++)
+	    for(size_t i=0; directsolverclustered.Size() > 0 && i<ne; i++)
 	      {
                 ElementId ei(VOL,i);
 		if(directsolverclustered[ma->GetElIndex(ei)])
 		  {
 		    GetDofNrs(i,ednums);
-		    for(k=0; k<ednums.Size(); k++)
+		    for(int k=0; k<ednums.Size(); k++)
 		      {
 			clusters[ednums[k]] = 4;
 		      }
@@ -3028,7 +3034,7 @@ namespace ngcomp
 	  case 4:  // just like the old hcurl 
 	    //lo 
 	    //clusters = 0; 
-	    for(i=0;i<ned;i++) 
+	    for(size_t i=0;i<ned;i++) 
 	      { 
 		// int pi1,pi2; 
 		// ma->GetEdgePNums(i,pi1,pi2);
@@ -3040,11 +3046,11 @@ namespace ngcomp
 		if(pi1 == pi2) 
 		  // stack of horizontal edge-blocks (without low-order)
 		  // -> decoupled 
-		  for(j=first_edge_dof[i];j <first_edge_dof[i+1];j++) 
+		  for(int j=first_edge_dof[i];j <first_edge_dof[i+1];j++) 
 		    clusters[j] = 1; 
 	      }
 
-	    for(i=0;i<nfa;i++)
+	    for(size_t i=0;i<nfa;i++)
 	      {
 		// Attenzione das is zuviel !!! 
 
@@ -3057,7 +3063,7 @@ namespace ngcomp
 		    // Ned_0*pol_z 
 		    // int first = next - p[0] - p[1]; 
 	
-		    for(j= first ; j<next; j++)
+		    for(int j= first ; j<next; j++)
 		      clusters[j] = 1; 
 		  } 
 	      }
@@ -3065,7 +3071,7 @@ namespace ngcomp
 	  case 5:  // just like the old hcurl horizontal only constant ... 
 	    //lo 
 	    //clusters = 0; 
-	    for(i=0;i<ned;i++) 
+	    for(size_t i=0;i<ned;i++) 
 	      { 
 		// int pi1,pi2; 
 		// ma->GetEdgePNums(i,pi1,pi2);
@@ -3079,12 +3085,12 @@ namespace ngcomp
 		  // -> decoupled 
 		  {
 		    //clusters[i] = 1; 
-		    for(j=first_edge_dof[i];j <first_edge_dof[i+1];j++) 
+		    for(int j=first_edge_dof[i];j <first_edge_dof[i+1];j++) 
 		      clusters[j] = 1; 
 		  }
 	      }
 
-	    for(i=0;i<nfa;i++)
+	    for(size_t i=0;i<nfa;i++)
 	      {
 		// Attenzione das is zuviel !!! 
 
@@ -3097,7 +3103,7 @@ namespace ngcomp
 		    // Ned_0*pol_z 
 		    int first = next - p[0] - p[1]; 
 	
-		    for(j= first ; j<next; j++)
+		    for(int j= first ; j<next; j++)
 		      clusters[j] = 1; 
 		  } 
 	  
@@ -3108,7 +3114,7 @@ namespace ngcomp
 
 	    //  (*testout) << "direct clusters = " << endl << clusters << endl;
 	
-	    for(i=0; directsolverclustered.Size() > 0 && i<ne; i++)
+	    for(size_t i=0; directsolverclustered.Size() > 0 && i<ne; i++)
 	      {
                 ElementId ei(VOL, i);
 		if(directsolverclustered[ma->GetElIndex(ei)])
@@ -3117,7 +3123,7 @@ namespace ngcomp
 		    if(eltype != ET_PRISM) continue; 
 		
 		    GetDofNrs(i,ednums);
-		    for(k=0; k<ednums.Size(); k++)
+		    for(int k=0; k<ednums.Size(); k++)
 		      if(ednums[k]>=0) clusters[ednums[k]] = 2;
 		  }
 	      }
@@ -3133,7 +3139,7 @@ namespace ngcomp
 
     //int numadd = 0;
 
-    for(i=0; i< adddirectsolverdofs.Size(); i++)
+    for(size_t i=0; i< adddirectsolverdofs.Size(); i++)
       {
 	//if(clusters[adddirectsolverdofs[i]] != 5)
 	//  numadd++;

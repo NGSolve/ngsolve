@@ -38,7 +38,7 @@ namespace ngla
     virtual int VHeight() const { return pmat->Height(); }
     virtual int VWidth() const { return pmat->Width(); }
 
-    virtual int NZE() const = 0;
+    virtual size_t NZE() const = 0;
     virtual AutoVector CreateVector () const
     {
       return pmat->CreateVector();
@@ -58,7 +58,7 @@ namespace ngla
     virtual ~AMG_H1 ();
 
     virtual void ComputeMatrices (const BaseSparseMatrix & mat);
-    virtual int NZE() const;
+    virtual size_t NZE() const;
 
     virtual void Mult (const BaseVector & x, BaseVector & y) const;
   };
@@ -86,7 +86,7 @@ namespace ngla
     virtual ~AMG_HCurl ();
 
     virtual void ComputeMatrices (const BaseSparseMatrix & mat);
-    virtual int NZE() const;
+    virtual size_t NZE() const;
 
     virtual void Mult (const BaseVector & x, BaseVector & y) const;
   };

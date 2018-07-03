@@ -3,11 +3,9 @@ include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 if(NOT WIN32)
     set(solve_object_libs
         $<TARGET_OBJECTS:ngmg> 
-        $<TARGET_OBJECTS:parallel> 
         )
     set(ngslib_object_libs
         $<TARGET_OBJECTS:ngmg> 
-        $<TARGET_OBJECTS:parallel> 
         )
 endif(NOT WIN32)
 
@@ -67,7 +65,6 @@ if (NETGEN_USE_GUI)
     endif(WIN32)
     add_library( ngsolve SHARED
             $<TARGET_OBJECTS:ngmg>
-            $<TARGET_OBJECTS:parallel> 
             ${ngsolve_object_libs}
             ngsolve.cpp shapetester.cpp 
             )

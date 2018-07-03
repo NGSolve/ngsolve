@@ -25,12 +25,12 @@ namespace ngfem
   { ; }
   */
 
-  template <int D>
-  string ScalarFiniteElement<D> :: ClassName() const 
+  string BaseScalarFiniteElement :: ClassName() const 
   {
     return "ScalarFiniteElement"; 
   }
 
+  /*
   template <int D>
   void ScalarFiniteElement<D> :: 
   GetPolOrders (FlatArray<PolOrder<D> > orders) const
@@ -39,55 +39,8 @@ namespace ngfem
     throw Exception (string ("GetPolOrders not implemnted for element") + ClassName());
 #endif
   }
+  */
 
-
-
-#ifdef UNSUPPORTED
-  template <int D>
-  void ScalarFiniteElement<D> ::
-  CalcDShape (const IntegrationPoint & ip, 
-	      FlatMatrixFixWidth<D> dshape) const
-  
-  {
-    static bool firsttime = true;
-    if (firsttime)
-      {
-	cout << "WARNING: CalcDShape not overloaded for class, using numerical differentiation " << typeid(this).name() << ", ndof = " << ndof << endl;
-        firsttime = false;
-      }
-    
-    int nd = GetNDof();
-    int sdim = D;
-
-    double eps = 2e-5;
-    ArrayMem<double, 100> hm1(nd), hm2(nd), hm3(nd), hm4(nd);
-    FlatVector<> 
-      shape1(nd, &hm1[0]), 
-      shape2(nd, &hm2[0]), 
-      shape3(nd, &hm3[0]), 
-      shape4(nd, &hm4[0]);
-
-    for (int i = 0; i < sdim; i++)
-      {
-	IntegrationPoint ip1 = ip;
-	IntegrationPoint ip2 = ip;
-        ip1(i) -= eps;
-        ip2(i) += eps;
-	CalcShape (ip1, shape1);
-	CalcShape (ip2, shape2);
-
-        ip1(i) -= eps;
-        ip2(i) += eps;
-	CalcShape (ip1, shape3);
-	CalcShape (ip2, shape4);
-
-	for (int j = 0; j < nd; j++)
-	  dshape(j, i) = 
-	    2/(3*eps) * (shape2(j) - shape1(j)) 
-	    -1/(12*eps) * (shape4(j) - shape3(j));
-      }
-  }
-#endif 
  
   /*
     a ( eps - (-eps) ) + b ( 2 eps - (-2eps) )  = 1
@@ -145,11 +98,13 @@ namespace ngfem
 
   template<int D>
   void ScalarFiniteElement<D> :: 
-  CalcMappedDShape (const MappedIntegrationPoint<D,D> & mip, 
+  CalcMappedDShape (const BaseMappedIntegrationPoint & bmip, 
                     BareSliceMatrix<> dshape) const
   {
+    auto & mip = static_cast<const MappedIntegrationPoint<D,D> &> (bmip);
     CalcDShape (mip.IP(), dshape);
-    for (int i = 0; i < dshape.Height(); i++)
+    size_t ndof = GetNDof();
+    for (size_t i = 0; i < ndof; i++)
       {
         Vec<D> hv = dshape.Row(i);
         FlatVec<D> (&dshape(i,0)) = Trans (mip.GetJacobianInverse ()) * hv;
@@ -160,10 +115,11 @@ namespace ngfem
 
   template<int D>
   void ScalarFiniteElement<D> :: 
-  CalcMappedDShape (const MappedIntegrationRule<D,D> & mir, 
+  CalcMappedDShape (const BaseMappedIntegrationRule & bmir, 
                     BareSliceMatrix<> dshapes) const
   {
-    for (int i = 0; i < mir.Size(); i++)
+    auto & mir = static_cast<const MappedIntegrationRule<D,D> &> (bmir);    
+    for (size_t i = 0; i < mir.Size(); i++)
       CalcMappedDShape (mir[i], dshapes.Cols(i*D,(i+1)*D));
   }
 
@@ -444,9 +400,10 @@ namespace ngfem
 
 
   template<int D>
-  void ScalarFiniteElement<D> :: CalcMappedDDShape (const MappedIntegrationPoint<D,D> & mip, 
+  void ScalarFiniteElement<D> :: CalcMappedDDShape (const BaseMappedIntegrationPoint & bmip, 
                                                     BareSliceMatrix<> hddshape) const
   {
+    auto & mip = static_cast<const MappedIntegrationPoint<D,D> &> (bmip);    
     int nd = GetNDof();
     auto ddshape = hddshape.AddSize(nd, D*D);
     double eps = 1e-7;
@@ -489,6 +446,10 @@ namespace ngfem
 
 
 
+  void BaseScalarFiniteElement :: GetDiagMassMatrix (FlatVector<> mass) const
+  {
+    throw Exception (string("mass matrix certainly not diagonal for element ")+typeid(*this).name());
+  }
 
 
 
@@ -511,13 +472,6 @@ namespace ngfem
       }
 #endif
   }
-
-  /*
-  void MyFunc(int order)
-  {
-    L2HighOrderFE<ET_SEGM> fe;
-  }
-  */
 
 
   template <int D>

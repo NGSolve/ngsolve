@@ -16,23 +16,19 @@ namespace ngla
 
   void Projector :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    /*
-    FlatMatrix<> mx(x.Size(), x.EntrySize(), (double*)x.Memory());
-    FlatMatrix<> my(y.Size(), y.EntrySize(), (double*)y.Memory());
-    */
     FlatSysVector<> sx = x.SV<double>();
     FlatSysVector<> sy = y.SV<double>();
 
     if (keep_values)
       {
-        for (int i : Range(bits))
-          if (bits[i])
+        for (size_t i : Range(*bits))
+          if ((*bits)[i])
             sy(i) += s * sx(i);
       }
     else
       {
-        for (int i : Range(bits))
-          if (!bits[i])
+        for (size_t i : Range(*bits))
+          if (!(*bits)[i])
             sy(i) += s * sx(i);
       }
   }
@@ -346,12 +342,102 @@ namespace ngla
   }
 
 
-
-
-
   template class Small2BigNonSymMatrix<double, Vec<2,double> >;
   template class Small2BigNonSymMatrix<Vec<2,double>, Vec<4,double> >;
   template class Small2BigNonSymMatrix<Vec<3,double>, Vec<6,double> >;
   template class Small2BigNonSymMatrix<Vec<4,double>, Vec<8,double> >;
 
+
+
+  
+  BlockMatrix :: BlockMatrix (const Array<Array<shared_ptr<BaseMatrix>>> & amats)
+    : mats(amats)
+  {
+    h = mats.Size();
+    w = (h > 0) ? mats[0].Size() : 0;
+    // check if nr of blocks per row is consistent
+    for (auto k:Range(h))
+      if (mats[k].Size()!=h)
+	throw Exception("Tried to construct a BlockMatrix with unequal nr. of blocks per row");
+    // check if there is at least one block per row/col
+    BitArray rowhas(h);
+    rowhas.Clear();
+    BitArray colhas(w);
+    colhas.Clear();
+    for (auto k:Range(h))
+      for (auto j:Range(w))
+	if (mats[k][j]!=nullptr) {
+	  rowhas.Set(k);
+	  colhas.Set(j);
+	}
+    if (rowhas.NumSet()!=h)
+      throw Exception("BlockMatrix needs at least one block per row");
+    if (colhas.NumSet()!=w)
+      throw Exception("BlockMatrix needs at least one block per col");
+    row_reps.SetSize(h);
+    row_reps = nullptr;
+    for (auto k:Range(h)) {
+      size_t col = 0;
+      while(row_reps[k]==nullptr) {
+	if (mats[k][col++]!=nullptr) {
+	  row_reps[k] = mats[k][col-1];
+	}
+      }
+    }
+    col_reps.SetSize(w);
+    col_reps = nullptr;
+    for (auto k:Range(w)) {
+      size_t row = 0;
+      while (col_reps[k]==nullptr) {
+	if (mats[row++][k]!=nullptr) {
+	  col_reps[k] = mats[row-1][k];
+	}
+      }
+    }
+  }
+  
+  void BlockMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    auto & bvx = dynamic_cast_BlockVector(x);
+    auto & bvy = dynamic_cast_BlockVector(y);
+    for (size_t i = 0; i < h; i++)
+      for (size_t j = 0; j < w; j++)
+        {
+          auto & spmat = mats[i][j];
+          if (spmat)
+              spmat->MultAdd(s, *bvx[j], *bvy[i]);
+        }
+  }
+
+  void BlockMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    auto & bvx = dynamic_cast_BlockVector(x);
+    auto & bvy = dynamic_cast_BlockVector(y);
+    for (size_t i = 0; i < h; i++)
+      for (size_t j = 0; j < w; j++)
+        {
+          auto & spmat = mats[i][j];
+          if (spmat)
+              spmat->MultTransAdd(s, *bvx[i], *bvy[j]);
+        }
+  }
+
+  AutoVector BlockMatrix :: CreateRowVector () const {
+    Array<shared_ptr<BaseVector>> vecs(w);
+    for(auto col:Range(w)) {
+      vecs[col] = col_reps[col]->CreateRowVector();
+    }
+    return make_shared<BlockVector>(vecs);
+  }
+  
+  AutoVector BlockMatrix :: CreateColVector () const {
+    Array<shared_ptr<BaseVector>> vecs(h);
+    for (auto row:Range(h)) {
+      vecs[row] = row_reps[row]->CreateColVector();
+    }
+    return make_shared<BlockVector>(vecs);
+  }
+
+
+  
 }

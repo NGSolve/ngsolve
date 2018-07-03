@@ -10,6 +10,18 @@
 #pragma clang diagnostic ignored "-Wunused-value"
 #endif
 
+// BEGIN EVIL HACK: Patch PyThread_get_key_value inside pybind11 to avoid deadlocks
+// see https://github.com/pybind/pybind11/pull/1211
+#include <Python.h>
+#include <pythread.h>
+namespace pybind11 {
+    inline void * PyThread_get_key_value(int state) {
+        PyThreadState *tstate = (PyThreadState *) ::PyThread_get_key_value(state);
+        if (!tstate) tstate = PyGILState_GetThisThreadState();
+        return tstate;
+    }
+}
+// END EVIL HACK
 #include <pybind11/pybind11.h>
 #include <pybind11/eval.h>
 #include <pybind11/operators.h>
@@ -182,6 +194,7 @@ void PyDefToString( py::module &m, TCLASS &c )
     c.def("__repr__", &ToString<T>);
 }
 
+/*
 template <typename T>
 class cl_NonElement 
 {
@@ -191,7 +204,7 @@ public:
 
 template <typename T>
 inline T NonElement() { return cl_NonElement<T>::Val(); }
-
+*/
 
 //////////////////////////////////////////////////////////////////////
 // read-only bracket operator
@@ -308,6 +321,30 @@ Array<decltype(std::declval<T>().Get())> makeCArrayUnpackWrapper(const py::list 
     C_vdL[i] = py::extract<T>(obj[i])().Get();
   return std::move(C_vdL);
 }
+
+template <typename T>
+py::tuple MakePyTuple (const BaseArrayObject<T> & ao)
+{
+  size_t s = ao.Size();
+  py::tuple tup(s);
+  for (size_t i = 0; i < s; i++)
+    tup[i] = ao[i];
+  return tup;
+}
+
+template <typename T>
+py::list MakePyList (const BaseArrayObject<T> & ao)
+{
+  size_t s = ao.Size();
+  py::list l;
+  for (size_t i = 0; i < s; i++)
+    l.append (ao[i]);
+  return l;
+}
+
+
+
+
 template<typename T>
 struct PyNameTraits<SymbolTable<T>> {
   static string GetName() { return string("SymbolTable_") + GetPyName<T>(); }
@@ -392,6 +429,60 @@ namespace ngstd
     void* Ptr() const { return ptr; }
   };
 }
+
+
+
+class PyOutArchive : public Archive
+{
+  py::list list;
+public:
+  PyOutArchive () : Archive(true) { ; }
+  py::list GetList() const { return list; }
+  virtual Archive & operator & (double & d) { list.append(py::cast(d)); return *this; }
+  virtual Archive & operator & (int & i) { list.append(py::cast(i)); return *this; }
+  virtual Archive & operator & (short & i) { list.append(py::cast(i)); return *this; }
+  virtual Archive & operator & (long & i) { list.append(py::cast(i)); return *this; }
+  virtual Archive & operator & (size_t & i) { list.append(py::cast(i)); return *this; }
+  virtual Archive & operator & (unsigned char & i) { list.append(py::cast(i)); return *this; }
+  virtual Archive & operator & (bool & b) { list.append(py::cast(b)); return *this; }
+  virtual Archive & operator & (string & str) { list.append(py::cast(str)); return *this; }
+  virtual Archive & operator & (char *& str) { list.append(py::cast(string(str))); return *this; }
+};
+
+
+class PyInArchive : public Archive
+  {
+    py::list list;
+    // decltype(list.begin())auto iter;
+    size_t iter;
+  public:
+    PyInArchive (py::list alist) : Archive(false), list(alist), iter(0) { ; }
+
+    virtual Archive & operator & (double & d) { d = py::cast<double> (list[iter]); iter++; return *this; }
+    virtual Archive & operator & (int & d) { d = py::cast<int> (list[iter]); iter++; return *this; }
+    virtual Archive & operator & (short & d) { d = py::cast<short> (list[iter]); iter++; return *this; }
+    virtual Archive & operator & (long & d) { d = py::cast<long> (list[iter]); iter++; return *this; }
+    virtual Archive & operator & (size_t & d) { d = py::cast<size_t> (list[iter]); iter++; return *this; }
+    virtual Archive & operator & (unsigned char & d) { d = py::cast<unsigned char> (list[iter]); iter++; return *this; }
+    virtual Archive & operator & (bool & d) { d = py::cast<bool> (list[iter]); iter++; return *this; }
+    virtual Archive & operator & (string & d) { d = py::cast<string> (list[iter]); iter++; return *this; }
+    virtual Archive & operator & (char *& d) { throw Exception("unpickl char* not implemented"); }    // do a string copy ...
+
+    /*
+    virtual Archive & operator & (int & i);
+    virtual Archive & operator & (short & i);
+    virtual Archive & operator & (long & i);
+    virtual Archive & operator & (size_t & i);
+    virtual Archive & operator & (unsigned char & i);
+    virtual Archive & operator & (bool & b);
+    virtual Archive & operator & (string & str);
+    virtual Archive & operator & (char *& str);
+    */
+  };
+
+
+
+
 
 #endif // NGS_PYTHON
 #endif // PYTHON_NGSTD_HPP___

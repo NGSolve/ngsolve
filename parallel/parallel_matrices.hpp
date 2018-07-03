@@ -21,16 +21,18 @@ namespace ngla
     DynamicTable<int> loc2glob;
     Array<int> select;
     string invtype;
-    shared_ptr<ParallelDofs> pardofs;
+    //shared_ptr<ParallelDofs> pardofs;
   public:
     MasterInverse (const SparseMatrixTM<TM> & mat, shared_ptr<BitArray> asubset, 
 		   shared_ptr<ParallelDofs> apardofs);
-    virtual ~MasterInverse ();
-    virtual bool IsComplex() const { return inv->IsComplex(); } 
-    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
+    virtual ~MasterInverse () override;
+    virtual bool IsComplex() const override { return inv->IsComplex(); } 
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
 
-    virtual int VHeight() const { return pardofs->GetNDofLocal(); }
-    virtual int VWidth() const { return pardofs->GetNDofLocal(); }
+    virtual int VHeight() const override { return paralleldofs->GetNDofLocal(); }
+    virtual int VWidth() const override { return paralleldofs->GetNDofLocal(); }
+
+    virtual AutoVector CreateVector () const override;
   };
 
 
@@ -38,50 +40,74 @@ namespace ngla
   {
     shared_ptr<BaseMatrix> mat;
     // const ParallelDofs & pardofs;
+
+    shared_ptr<ParallelDofs> row_paralleldofs, col_paralleldofs;
+
   public:
     ParallelMatrix (shared_ptr<BaseMatrix> amat, shared_ptr<ParallelDofs> apardofs);
     // : mat(*amat), pardofs(*apardofs) 
     // {const_cast<BaseMatrix&>(mat).SetParallelDofs (apardofs);}
 
-    virtual ~ParallelMatrix ();
-    virtual bool IsComplex() const { return mat->IsComplex(); } 
-    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
-    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const;
+    ParallelMatrix (shared_ptr<BaseMatrix> amat, shared_ptr<ParallelDofs> arpardofs,
+		    shared_ptr<ParallelDofs> acpardofs);
 
-    virtual BaseVector & AsVector() { return mat->AsVector(); }
-    virtual const BaseVector & AsVector() const { return mat->AsVector(); }
+    virtual ~ParallelMatrix () override;
+    virtual bool IsComplex() const override { return mat->IsComplex(); } 
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override ;
+    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
+
+    virtual BaseVector & AsVector() override { return mat->AsVector(); }
+    virtual const BaseVector & AsVector() const override { return mat->AsVector(); }
 
     shared_ptr<BaseMatrix> GetMatrix() const { return mat; }
-    virtual shared_ptr<BaseMatrix> CreateMatrix () const;
-    virtual AutoVector CreateVector () const;
+    virtual shared_ptr<BaseMatrix> CreateMatrix () const override;
+    virtual AutoVector CreateVector () const override;
+    virtual AutoVector CreateRowVector () const override;
+    virtual AutoVector CreateColVector () const override;
 
-    virtual ostream & Print (ostream & ost) const;
+    virtual ostream & Print (ostream & ost) const override;
 
-    virtual int VHeight() const;
-    virtual int VWidth() const;
+    virtual int VHeight() const override;
+    virtual int VWidth() const override;
 
     // virtual const ParallelDofs * GetParallelDofs () const {return &pardofs;}
+    shared_ptr<ParallelDofs> GetRowParallelDofs () const { return row_paralleldofs; }
+    shared_ptr<ParallelDofs> GetColParallelDofs () const { return col_paralleldofs; }
 
-
-    virtual shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<BitArray> subset = 0) const;
+    virtual shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<BitArray> subset = 0) const override;
     template <typename TM>
     shared_ptr<BaseMatrix> InverseMatrixTM (shared_ptr<BitArray> subset = 0) const;
 
     virtual shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<const Array<int>> clusters) const override;
-    virtual INVERSETYPE SetInverseType ( INVERSETYPE ainversetype ) const;
-    virtual INVERSETYPE SetInverseType ( string ainversetype ) const;
-    virtual INVERSETYPE  GetInverseType () const;
+    virtual INVERSETYPE SetInverseType ( INVERSETYPE ainversetype ) const override;
+    virtual INVERSETYPE SetInverseType ( string ainversetype ) const override;
+    virtual INVERSETYPE GetInverseType () const override;
   };
 
+  
   class FETI_Jump_Matrix : public BaseMatrix
   {
   public:
-    FETI_Jump_Matrix (shared_ptr<ParallelDofs> pardofs)
-      : BaseMatrix(pardofs) { ; }
+    FETI_Jump_Matrix (shared_ptr<ParallelDofs> pardofs, shared_ptr<ParallelDofs> au_paralleldofs = nullptr);
+    
+    virtual bool IsComplex() const override { return false; }
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    
+    virtual AutoVector CreateRowVector () const override;
+    virtual AutoVector CreateColVector () const override;
 
-    virtual bool IsComplex() const { return false; }
-    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
-    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const;
+    shared_ptr<ParallelDofs> GetRowParallelDofs () const { return u_paralleldofs; }
+    shared_ptr<ParallelDofs> GetColParallelDofs () const { return jump_paralleldofs; }
+    
+    virtual int VHeight() const override { return paralleldofs->GetNDofLocal(); }
+    virtual int VWidth()  const override { return jump_paralleldofs->GetNDofLocal(); }
+
+  protected:
+
+    shared_ptr<ParallelDofs> jump_paralleldofs;
+    shared_ptr<ParallelDofs> u_paralleldofs;
+
   };
 
 #endif

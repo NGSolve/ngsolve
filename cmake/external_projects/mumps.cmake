@@ -19,8 +19,9 @@ ExternalProject_Add(project_mumps
   PREFIX ${CMAKE_CURRENT_BINARY_DIR}/dependencies
 #   URL "http://mumps.enseeiht.fr/MUMPS_5.0.2.tar.gz"
 #   URL_MD5 591bcb2c205dcb0283872608cdf04927
-  URL "http://mumps.enseeiht.fr/MUMPS_5.0.1.tar.gz"
-  URL_MD5 b477573fdcc87babe861f62316833db0
+# URL_MD5 b477573fdcc87babe861f62316833db0
+  URL "http://mumps.enseeiht.fr/MUMPS_5.1.2.tar.gz"
+  URL_MD5 6ac4f52380ce4d74126be2d7c530e533
   DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies
   BUILD_IN_SOURCE 1
   UPDATE_COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/dependencies/Makefile_mumps.inc ${MUMPS_SRC_DIR}/Makefile.inc

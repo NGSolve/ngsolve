@@ -18,7 +18,7 @@ namespace ngla
 
   extern void MyFunction();
   
-  ParallelDofs :: ParallelDofs (MPI_Comm acomm, Table<int> * adist_procs, 
+  ParallelDofs :: ParallelDofs (MPI_Comm acomm, Table<int> && adist_procs, 
 				int dim, bool iscomplex)
     : comm(acomm), dist_procs(adist_procs)
     
@@ -26,7 +26,7 @@ namespace ngla
     int ntasks = MyMPI_GetNTasks(comm);
     int id = MyMPI_GetId(comm);
       
-    ndof = dist_procs->Size();
+    ndof = dist_procs.Size();
     
     if (ntasks == 1)
       {
@@ -34,8 +34,8 @@ namespace ngla
 	nexdofs = 0;
 	ndistprocs = 0;
 	
-	exchangedofs = new Table<int> (nexdofs);
-	dist_procs = new Table<int> (ndistprocs);
+	exchangedofs = Table<int> (nexdofs);
+	dist_procs = Table<int> (ndistprocs);
 	
 	ismasterdof.SetSize(ndof);
 	ismasterdof.Set();
@@ -49,22 +49,21 @@ namespace ngla
     nexdofs = 0;
     
     for (int i = 0; i < ndof; i++)
-      for (int d : (*dist_procs)[i])
+      for (int d : dist_procs[i])
 	nexdofs[d]++;
     
-    exchangedofs = new Table<int> (nexdofs);
+    exchangedofs = Table<int>(nexdofs);
     nexdofs = 0;
 
     for (int i = 0; i < ndof; i++)
-      for (int d : (*dist_procs)[i])
-	(*exchangedofs)[d][nexdofs[d]++] = i;
-
+      for (int d : dist_procs[i])
+	exchangedofs[d][nexdofs[d]++] = i;
       
     ismasterdof.SetSize (ndof);
     ismasterdof.Set();
 
     for (int i = 0; i < id; i++)
-      for (int ex : (*exchangedofs)[i])
+      for (int ex : exchangedofs[i])
 	ismasterdof.Clear (ex);
 
 
@@ -110,8 +109,19 @@ namespace ngla
     global_ndof = MyMPI_AllReduce (nlocal, MPI_SUM, comm);
   }
 
+  shared_ptr<ParallelDofs> ParallelDofs :: SubSet (shared_ptr<BitArray> take_dofs) const
+  {
+    auto ndloc = this->GetNDofLocal();
+    Array<size_t> s(ndloc);
+    for(auto k:Range(ndloc))
+      if(take_dofs->Test(k)) s[k] = this->GetDistantProcs(k).Size();
+      else s[k] = 0;
+    Table<int> tab(s);
+    for(auto k:Range(ndloc))
+      if(take_dofs->Test(k)) tab[k] = this->GetDistantProcs(k);
+    return make_shared<ParallelDofs>(this->GetCommunicator(), move(tab));
+  }
 
-  
   void ParallelDofs :: EnumerateGlobally (shared_ptr<BitArray> freedofs, 
 					  Array<int> & global_nums,
 					  int & num_glob_dofs) const

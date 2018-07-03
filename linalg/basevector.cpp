@@ -12,9 +12,17 @@
 
 #include <la.hpp>
 
+#ifdef PARALLEL
+#include "../parallel/parallelvector.hpp"
+#endif
+
 
 namespace ngla
 {
+
+#ifdef PARALLEL
+  class ParallelBaseVector;
+#endif
 
   double BaseVector :: L2Norm () const
   {
@@ -101,6 +109,8 @@ namespace ngla
     auto me = FVDouble();
     auto you = v.FVDouble();
 
+    if (&me(0) == &you(0) && scal==1.0) return *this;
+    
     t.AddFlops (me.Size());
 
     ParallelFor ( me.Range(),
@@ -614,7 +624,13 @@ namespace ngla
     return *this;
   }
 
-
+  template <class SCAL>  
+  BaseVector & S_BaseVector<SCAL> :: SetScalar (double scal)
+  {
+    FVScal() = scal;
+    return *this;
+  }
+  
   template <class SCAL>
   SCAL S_BaseVector<SCAL> :: InnerProduct (const BaseVector & v2) const
   {
@@ -685,6 +701,121 @@ namespace ngla
 
 
 
+  BlockVector & dynamic_cast_BlockVector (BaseVector & x)
+  {
+    AutoVector * ax = dynamic_cast<AutoVector*> (&x);
+    if (ax) return dynamic_cast<BlockVector&> (**ax);
+    return dynamic_cast<BlockVector&> (x);
+  }
+  
+  const BlockVector & dynamic_cast_BlockVector (const BaseVector & x)
+  {
+    const AutoVector * ax = dynamic_cast<const AutoVector*> (&x);
+    if (ax) return dynamic_cast<const BlockVector&> (**ax);
+    return dynamic_cast<const BlockVector&> (x);
+  }
+
+
+  BlockVector :: BlockVector (const Array<shared_ptr<BaseVector>> & avecs)
+    : vecs(avecs), ispar(vecs.Size())
+  {
+    size = 0;
+    for (auto & vec:vecs)
+      size += vec->Size();
+#ifdef PARALLEL
+    ispar.Clear();
+    for (size_t k = 0; k<vecs.Size(); k++) {
+      auto stat = vecs[k]->GetParallelStatus();
+      if ( stat==NOT_PARALLEL ) continue;
+      ispar.Set(k);
+      auto * pv = dynamic_cast_ParallelBaseVector(vecs[k].get());
+      auto vcomm = pv->GetParallelDofs()->GetCommunicator();
+      if (comm==MPI_COMM_NULL)
+	comm = vcomm;
+      else if (comm != vcomm)
+	throw Exception("Tried to construct a BlockVector with components in different MPI-Communicators!!");
+    }
+#endif
+  }
+
+  void * BlockVector :: Memory () const
+  { throw Exception("BlockVector::Memory is not useful"); }
+  FlatVector<double> BlockVector :: FVDouble () const 
+  { throw Exception("BlockVector::FVDouble is not useful"); }
+  FlatVector<Complex> BlockVector :: FVComplex () const
+  { throw Exception("BlockVector::FVComplex is not useful"); }
+  void BlockVector :: GetIndirect (FlatArray<int> ind, 
+                                   FlatVector<double> v) const
+  { throw Exception("BlockVector::GetIndirect is not useful"); }      
+  void BlockVector :: GetIndirect (FlatArray<int> ind, 
+                                   FlatVector<Complex> v) const 
+  { throw Exception("BlockVector::GetIndirect is not useful"); }      
+  
+  // not yet implemented properly for complex components!!
+  bool BlockVector :: IsComplex() const
+  { return false; }
+  
+  AutoVector BlockVector :: CreateVector () const
+  {
+    Array<shared_ptr<BaseVector>> v2;
+    for (auto & v : vecs)
+      v2 += v->CreateVector();
+    return make_shared<BlockVector> (v2);
+  }
+  
+  double BlockVector :: InnerProductD (const BaseVector & v2) const
+  {
+    double pp = 0;
+    double ps = 0;
+    const auto & v2b = dynamic_cast_BlockVector(v2);
+    for (size_t k = 0; k<vecs.Size(); k++) {
+      auto p = vecs[k]->InnerProductD(*v2b[k]);
+      if (ispar.Test(k)) pp += p;
+      else ps += p;
+    }
+    // if all vectors are sequential, do not reduce reduce
+    if (comm == MPI_COMM_NULL) return ps;
+    return pp + MyMPI_AllReduce(ps, MPI_SUM, comm);
+  }
+  
+  BaseVector & BlockVector :: Scale (double scal)
+  {
+    for (auto i : ::Range(vecs))
+      *vecs[i] *= scal;
+    return *this;
+  }
+  
+  BaseVector & BlockVector :: SetScalar (double scal)
+  {
+    for (auto i : ::Range(vecs))
+      vecs[i]->SetScalar(scal);
+    return *this;
+  }
+  
+  ostream & BlockVector :: Print (ostream & ost) const
+  {
+    for (auto i : ::Range(vecs))
+      vecs[i] -> Print(ost);
+    return ost;
+  }
+  
+  BaseVector & BlockVector :: Set (double scal, const BaseVector & v)
+  {
+    auto & bv = dynamic_cast_BlockVector(v);
+    for (size_t i : ::Range(vecs))
+      vecs[i] -> Set(scal, *bv[i]);
+    return *this;
+  }
+  
+  BaseVector & BlockVector :: Add (double scal, const BaseVector & v)
+  {
+    auto & bv = dynamic_cast_BlockVector(v);
+    for (size_t i : ::Range(vecs))
+      vecs[i] -> Add(scal, *bv[i]);
+    return *this;
+  }
+  
+  
 
 
   template <typename TSCAL>

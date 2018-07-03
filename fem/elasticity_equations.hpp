@@ -45,13 +45,18 @@ namespace ngfem
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
     {
+      HeapReset hr(lh);
       typedef typename MAT::TSCAL TSCAL;
       int nd = fel.GetNDof();
 
       FlatMatrixFixHeight<2, TSCAL> grad (nd, lh);
+      FlatMatrixFixWidth<2> dshape(nd, lh);
+      static_cast<const FEL&>(fel).CalcDShape(mip.IP(), dshape);
+      grad = Trans (mip.GetJacobianInverse ()) * Trans (dshape);
+      /*
       grad = Trans (mip.GetJacobianInverse ()) * 
 	Trans (static_cast<const FEL&>(fel).GetDShape(mip.IP(), lh));
-    
+      */
       mat = TSCAL (0);
       for (int i = 0; i < nd; i++)
 	{
@@ -108,9 +113,14 @@ namespace ngfem
       */      
       int nd = fel.GetNDof();
       FlatMatrixFixHeight<3,TSCAL> grad (nd, lh);
+      FlatMatrixFixWidth<3> dshape(nd, lh);
+      static_cast<const FEL&>(fel).CalcDShape(mip.IP(), dshape);
+      grad = Trans (mip.GetJacobianInverse ()) * Trans (dshape);
+      
+      /*
       grad =  Trans (mip.GetJacobianInverse ()) * 
 	Trans (static_cast<const FEL &>(fel).GetDShape(mip.IP(),lh));
-
+      */
       mat = TSCAL (0);
       for (int i = 0; i < nd; i++)
 	{

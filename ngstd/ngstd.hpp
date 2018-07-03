@@ -143,6 +143,7 @@ namespace ngstd
 
 #include "array.hpp"
 #include "taskmanager.hpp"
+#include "xbool.hpp"
 
 #include "table.hpp"
 #include "symboltable.hpp"
@@ -153,7 +154,6 @@ namespace ngstd
 #include "autoptr.hpp"
 #include "memusage.hpp"
 #include "flags.hpp"
-#include "xbool.hpp"
 
 #include "evalfunc.hpp"
 #include "sample_sort.hpp"

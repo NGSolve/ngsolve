@@ -195,6 +195,65 @@ namespace ngcomp
           }              
     }
   }
+
+  /// Fill principil lattices (points and connections on subdivided reference hexahedron) in 3D
+  template<int D>
+  void VTKOutput<D>::FillReferenceHex(Array<IntegrationPoint> & ref_coords,Array<INT<ELEMENT_MAXPOINTS+1>> & ref_elems)
+  {
+    if(subdivision == 0)
+    {
+      ref_coords.Append(IntegrationPoint(0.0,0.0,0.0));
+      ref_coords.Append(IntegrationPoint(1.0,0.0,0.0));
+      ref_coords.Append(IntegrationPoint(1.0,1.0,0.0));
+      ref_coords.Append(IntegrationPoint(0.0,1.0,0.0));
+      ref_coords.Append(IntegrationPoint(0.0,0.0,1.0));
+      ref_coords.Append(IntegrationPoint(1.0,0.0,1.0));
+      ref_coords.Append(IntegrationPoint(1.0,1.0,1.0));
+      ref_coords.Append(IntegrationPoint(0.0,1.0,1.0));      
+      INT<ELEMENT_MAXPOINTS+1> hex;
+      hex[0] = 8;
+      hex[1] = 0;
+      hex[2] = 1;
+      hex[3] = 2;
+      hex[4] = 3;
+      hex[5] = 4;
+      hex[6] = 5;
+      hex[7] = 6;
+      hex[8] = 7;      
+      ref_elems.Append(hex);
+    }
+    else
+    {
+      const int r = 1<<subdivision;
+      // const int s = r + 1;
+
+      const double h = 1.0/r;
+
+      int pidx = 0;
+      for(int i = 0; i <= r; ++i)
+        for(int j = 0; j <= r; ++j)
+          for(int k = 0; k <= r; ++k)
+          {
+            ref_coords.Append(IntegrationPoint(k*h,j*h,i*h));
+          }
+
+      for(int i = 0; i < r; ++i)
+      {
+        int incr_i = (r+1)*(r+1);
+        for(int j = 0; j < r; ++j)
+        {
+          int incr_j = r+1;
+          pidx = i*incr_i + j*incr_j;
+          for(int k = 0; k < r; ++k, pidx++)
+          {
+            ref_elems.Append(INT<ELEMENT_MAXPOINTS+1>(8, pidx, pidx+1, pidx+incr_j+1, pidx+incr_j,
+                                                         pidx+incr_i, pidx+incr_i+1, pidx+incr_i+incr_j+1, pidx+incr_j+incr_i));
+          }          
+        } 
+      }
+    }
+  }
+
   
   template <int D> 
   void VTKOutput<D>::FillReferencePrism(Array<IntegrationPoint> & ref_coords,Array<INT<ELEMENT_MAXPOINTS+1>> & ref_elems)
@@ -316,6 +375,10 @@ namespace ngcomp
         for(int i=0; i<factor; i++)
           *fileout << "13 " << endl;
         break;
+      case ET_HEX:
+        for(int i=0; i<factor; i++)
+          *fileout << "12 " << endl;
+        break;        
       default:
         cout << "VTKOutput Element Type " << ma->GetElType(e) << " not supported!" << endl;
       }
@@ -361,8 +424,8 @@ namespace ngcomp
 
     ResetArrays();
 
-    Array<IntegrationPoint> ref_vertices_tet(0), ref_vertices_prism(0), ref_vertices_trig(0), ref_vertices_quad(0);
-    Array<INT<ELEMENT_MAXPOINTS+1>> ref_tets(0), ref_prisms(0), ref_trigs(0), ref_quads(0);
+    Array<IntegrationPoint> ref_vertices_tet(0), ref_vertices_prism(0), ref_vertices_trig(0), ref_vertices_quad(0), ref_vertices_hex(0);
+    Array<INT<ELEMENT_MAXPOINTS+1>> ref_tets(0), ref_prisms(0), ref_trigs(0), ref_quads(0), ref_hexes(0);
     FlatArray<IntegrationPoint> ref_vertices;
     FlatArray<INT<ELEMENT_MAXPOINTS+1>> ref_elems;
     /*
@@ -375,6 +438,7 @@ namespace ngcomp
     FillReferencePrism(ref_vertices_prism,ref_prisms);
     FillReferenceQuad(ref_vertices_quad,ref_quads);
     FillReferenceTrig(ref_vertices_trig,ref_trigs);
+    FillReferenceHex(ref_vertices_hex,ref_hexes);
       
     // header:
     *fileout << "# vtk DataFile Version 3.0" << endl;
@@ -411,12 +475,16 @@ namespace ngcomp
         ref_vertices.Assign(ref_vertices_tet);
         ref_elems.Assign(ref_tets);
         break;
+      case ET_HEX:
+        ref_vertices.Assign(ref_vertices_hex);
+        ref_elems.Assign(ref_hexes);
+        break;        
       case ET_PRISM:
         ref_vertices.Assign(ref_vertices_prism);
         ref_elems.Assign(ref_prisms);
         break;
       default:
-        throw Exception("VTK outout for element-type"+ToString(eltype)+"not supported");
+        throw Exception("VTK output for element-type"+ToString(eltype)+"not supported");
       }
 
       int offset = points.Size();

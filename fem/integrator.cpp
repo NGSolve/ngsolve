@@ -1529,7 +1529,13 @@ namespace ngfem
 
   CompoundBilinearFormIntegrator :: 
   CompoundBilinearFormIntegrator (shared_ptr<BilinearFormIntegrator> abfi, int acomp)
-    : bfi(abfi), comp(acomp) { ; }
+    : bfi(abfi), comp(acomp)
+  {
+    auto & comp_evaluators = bfi->GetEvaluators();
+    for (size_t i = 0; i < comp_evaluators.Size(); i++)
+      evaluators.Set(comp_evaluators.GetName(i),
+                     make_shared<CompoundDifferentialOperator>(comp_evaluators[i], comp));
+  }
   
 
   void CompoundBilinearFormIntegrator :: 

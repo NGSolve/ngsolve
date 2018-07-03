@@ -394,7 +394,7 @@ namespace ngcomp
       }
   }
   
-  void TPHighOrderFESpace::SolveM (CoefficientFunction & rho, BaseVector & vec,
+  void TPHighOrderFESpace::SolveM (CoefficientFunction * rho, BaseVector & vec,
                          LocalHeap & clh) const
   {
     static Timer tall("TPHighOrderFESpace::SolveM"); RegionTimer rall(tall);
@@ -559,7 +559,12 @@ namespace ngcomp
       int niptp = ir(0).Size()*ir(1).Size();
       // Evaluate \int u_tp * v_std :
       FlatMatrix<double> flux(niptp,tpfes->GetDimension(),lh);
-      gfutp->Evaluate(tpmir, flux);
+      FlatVector<> elvectp(tpfel.GetNDof(),lh);
+      Array<int> tpdofs(tpfel.GetNDof(),lh);
+      gfutp->GetFESpace()->GetDofNrs(ElementId(elnr), tpdofs);
+      gfutp->GetVector().GetIndirect(tpdofs, elvectp);
+      dynamic_cast<const TPDifferentialOperator *>(gfutp->GetFESpace()->GetEvaluator().get())->Apply(tpfel, tpmir, elvectp, flux, lh);      
+      //gfutp->Evaluate(tpmir, flux);
       FlatMatrix<> elmat(fel.GetNDof(),lh);
       elmat = 0.0;
       FlatMatrix<> shapes(fel.GetNDof(),mirstd.Size(),lh);
@@ -647,7 +652,7 @@ namespace ngcomp
             shapes.Col(ii) *= (*ttpmir.GetIRs()[0])[i].GetWeight()*(*ttpmir.GetIRs()[1])[j].GetWeight();
         FlatMatrix<> elmat(tpfel.GetNDof(),lh),elvecy(tpfel.GetNDof(),tpfes->GetDimension(),lh);
         elmat = 0.0;
-        elmat = shapes1*Trans(shapes);
+        elmat = shapes1*Trans(shapes) | Lapack;
         elvecx = shapes*result;
         //CalcInverse(elmat);
         //elvecy = elmat * elvecx;

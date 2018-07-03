@@ -19,8 +19,9 @@ def TmpRedraw(*args, **kwargs):
     try:
         import netgen
         import tkinter
-        while(netgen.gui.win.tk.dooneevent(tkinter._tkinter.DONT_WAIT)):
-            pass
+        cnt = 0
+        while(netgen.gui.win.tk.dooneevent(tkinter._tkinter.DONT_WAIT) and cnt < 100):
+            cnt += 1
     except:
         pass
 
@@ -31,13 +32,13 @@ del TmpRedraw
 
 ngstd.__all__ = ['ArrayD', 'ArrayI', 'BitArray', 'Flags', 'HeapReset', 'IntRange', 'LocalHeap', 'Timers', 'RunWithTaskManager', 'TaskManager', 'SetNumThreads', 'MPI_Init']
 bla.__all__ = ['Matrix', 'Vector', 'InnerProduct', 'Norm']
-la.__all__ = ['BaseMatrix', 'BaseVector', 'CreateVVector', 'InnerProduct', 'CGSolver', 'QMRSolver', 'GMRESSolver', 'ArnoldiSolver', 'Projector']
+la.__all__ = ['BaseMatrix', 'BaseVector', 'BlockVector', 'BlockMatrix', 'CreateVVector', 'InnerProduct', 'CGSolver', 'QMRSolver', 'GMRESSolver', 'ArnoldiSolver', 'Projector', 'IdentityMatrix']
 fem.__all__ =  ['BFI', 'CoefficientFunction', 'Parameter', 'CoordCF', 'ET', 'ElementTransformation', 'ElementTopology', 'FiniteElement', 'ScalarFE', 'H1FE', 'HEX', 'L2FE', 'LFI', 'POINT', 'PRISM', 'PYRAMID', 'QUAD', 'SEGM', 'TET', 'TRIG', 'VERTEX', 'EDGE', 'FACE', 'CELL', 'ELEMENT', 'FACET', 'SetPMLParameters', 'sin', 'cos', 'tan', 'atan', 'acos', 'asin', 'exp', 'log', 'sqrt', 'floor', 'ceil', 'Conj', 'atan2', 'pow', 'specialcf', \
            'BlockBFI', 'BlockLFI', 'CompoundBFI', 'CompoundLFI', 'BSpline', \
            'IntegrationRule', 'IfPos' \
            ]
 # TODO: fem:'PythonCF' comp:'PyNumProc'
-comp.__all__ =  ['BBBND', 'BBND','BND', 'BilinearForm', 'COUPLING_TYPE', 'ElementId', 'BndElementId', 'FESpace','HCurl' , 'GridFunction', 'LinearForm', 'Mesh', 'NodeId', 'ORDER_POLICY', 'Preconditioner', 'MultiGridPreconditioner', 'VOL', 'NumProc', 'PDE', 'Integrate', 'SymbolicLFI', 'SymbolicBFI', 'SymbolicEnergy', 'VTKOutput', 'SetHeapSize', 'SetTestoutFile', 'ngsglobals','pml','Periodic','H1','VectorH1','L2','VectorL2','SurfaceL2','HDivDiv','HDivDivSurface', 'HCurlDiv', 'VectorFacet','FacetFESpace','FacetSurface','HDiv','NumberSpace','HDivSurface','HCurl']           
+comp.__all__ =  ['BBBND', 'BBND','BND', 'BilinearForm', 'COUPLING_TYPE', 'ElementId', 'BndElementId', 'FESpace','HCurl' , 'HCurlDiv', 'GridFunction', 'LinearForm', 'Mesh', 'NodeId', 'ORDER_POLICY', 'Preconditioner', 'MultiGridPreconditioner', 'VOL', 'NumProc', 'PDE', 'Integrate', 'Region', 'SymbolicLFI', 'SymbolicBFI', 'SymbolicEnergy', 'VTKOutput', 'SetHeapSize', 'SetTestoutFile', 'ngsglobals','pml','Periodic','H1','VectorH1','L2','VectorL2','SurfaceL2','HDivDiv','HDivDivSurface','VectorFacet','FacetFESpace','FacetSurface','HDiv','NumberSpace','HDivSurface','HCurl']           
 solve.__all__ =  ['Redraw', 'BVP', 'CalcFlux', 'Draw', 'DrawFlux', 'SetVisualization']
 
 from ngsolve.ngstd import *
@@ -66,6 +67,7 @@ for classname in all_classes:
 
 # from ngsolve.ngstd import MPIManager
 # MPIManager.InitMPI()
+MPI_Init()
 
 from . import __expr
 BaseVector.expr = property(__expr.VecExpr)
@@ -77,9 +79,9 @@ BaseVector.__rmul__ = __expr.expr_rmul
 
 BaseMatrix.expr = property(__expr.MatExpr)
 BaseMatrix.data = property(__expr.Expr, __expr.expr_data)
-BaseMatrix.T = property(__expr.TransExpr)
+# BaseMatrix.T = property(__expr.TransExpr)
 BaseMatrix.__mul__ = __expr.expr_mul
-BaseMatrix.__rmul__ = __expr.expr_rmul
+# BaseMatrix.__rmul__ = __expr.expr_rmul
 BaseMatrix.__neg__ = __expr.expr_neg
 
 Timing = timing.Timing
@@ -101,7 +103,7 @@ pickle.Pickler, pickle.Unpickler = pickle._Pickler, pickle._Unpickler
 pickle.dump, pickle.dumps, pickle.load, pickle.loads = pickle._dump, pickle._dumps, pickle._load, pickle._loads
 
 
-__all__ = ngstd.__all__ + bla.__all__ +la.__all__ + fem.__all__ + comp.__all__ + solve.__all__ + utils.__all__ + ["Timing"]
+__all__ = ngstd.__all__ + bla.__all__ +la.__all__ + fem.__all__ + comp.__all__ + solve.__all__ + utils.__all__ + ["Timing", "solvers"]
 
 
 

@@ -61,15 +61,18 @@ namespace ngcomp
     ///
     virtual ~HDivHighOrderFESpace ();
 
-    void UpdateDofTables(); 
+    virtual void UpdateDofTables() override;  
 
-    void UpdateCouplingDofArray();   
+    virtual void UpdateCouplingDofArray() override;   
     
     virtual string GetClassName () const override
     {
       return "HDivHighOrderFESpace";
     }
 
+    /// averaging over high-order dc dofs
+    void Average (BaseVector & vec) const;
+    
     ///
     virtual void Update(LocalHeap & lh) override;
     ///

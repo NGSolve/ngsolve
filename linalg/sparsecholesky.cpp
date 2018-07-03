@@ -63,9 +63,11 @@ namespace ngla
     mdo = new MinimumDegreeOrdering (n);
 
     if (inner)
-      for (int i = 0; i < n; i++)
-        if (!inner->Test(i))
-          mdo->SetUnusedVertex(i);
+      ParallelFor (n, [&] (size_t i)
+                   {
+                     if (!inner->Test(i))
+                       mdo->SetUnusedVertex(i);
+                   });
     if (cluster)
       for (int i = 0; i < n; i++)
         if (!(*cluster)[i])
@@ -83,14 +85,23 @@ namespace ngla
 	  }
 
     else if (inner)
-      for (int i = 0; i < n; i++)
-	for (int j = 0; j < a.GetRowIndices(i).Size(); j++)
-	  {
-	    int col = a.GetRowIndices(i)[j];
-	    if (col <= i)
-	      if ( (inner->Test(i) && inner->Test(col)) ) //  || i==col)
-		mdo->AddEdge (i, col);
-	  }
+      {
+        for (int i = 0; i < n; i++)
+          if (inner->Test(i))
+            for (auto col : a.GetRowIndices(i))
+              if (col <= i)
+                if (inner->Test(col)) //  || i==col)
+                  mdo->AddEdge (i, col);
+            /*
+            for (int j = 0; j < a.GetRowIndices(i).Size(); j++)
+              {
+                int col = a.GetRowIndices(i)[j];
+                if (col <= i)
+                if (inner->Test(col)) //  || i==col)
+                mdo->AddEdge (i, col);
+                }
+            */
+      }
 
     else 
       for (int i = 0; i < n; i++)
@@ -179,21 +190,22 @@ namespace ngla
       ParallelFor 
         (Range(n), [&](int i)
          {
-           for (int j = 0; j < a.GetRowIndices(i).Size(); j++)
-             {
-               int col = a.GetRowIndices(i)[j];
-               if (col <= i)
-                 {
-                   if ( (inner->Test(i) && inner->Test(col)) )
-                     SetOrig (i, col, a.GetRowValues(i)[j]);
-                   /*
-                   else
-                     if (i==col)
+           if (inner->Test(i))
+             for (int j = 0; j < a.GetRowIndices(i).Size(); j++)
+               {
+                 int col = a.GetRowIndices(i)[j];
+                 if (col <= i)
+                   {
+                     if (inner->Test(col))
+                       SetOrig (i, col, a.GetRowValues(i)[j]);
+                     /*
+                       else
+                       if (i==col)
                        SetOrig (i, col, id);
-                   */
-                 }
-             }
-         });
+                     */
+                   }
+               }
+         }, TasksPerThread(5));
     else
       for (int i = 0; i < n; i++)
 	{
@@ -271,11 +283,17 @@ namespace ngla
     order.SetSize (n);
     blocknrs.SetSize (nused);
     
-    // order: now inverse map 
-    order = -1;
+    // order: now inverse map
+    ParallelForRange (order.Size(), [&] (IntRange r)
+                      {
+                        order.Range(r) = -1;
+                      });
     for (int i = 0; i < nused; i++)
       order[aorder[i]] = i;
 
+    inv_order.SetSize(nused);
+    inv_order = aorder;
+    
     for (int i = 0; i < nused; i++)
       blocknrs[i] = in_blocknr[i];
 
@@ -392,11 +410,16 @@ namespace ngla
     Array<int> first_microtask;
     for (int i = 0; i < blocks.Size()-1; i++)
       {
-        auto extdofs = BlockExtDofs (i);
+        // auto extdofs = BlockExtDofs (i);
         first_microtask.Append (microtasks.Size());
 
         // int nb = extdofs.Size() / 256 + 1;
-        int nb = (extdofs.Size()+255) / 256;
+        // int nb = (extdofs.Size()+255) / 256;
+	int nb = 0;
+	if(BlockDofs(i).Size()) {
+	  auto extdofs = BlockExtDofs (i);
+	  nb = (extdofs.Size()+255) / 256;
+	}
 
         if (nb == 1)
           // if (false)
@@ -1062,168 +1085,6 @@ namespace ngla
   
 
 
-  // #define OLD_MULTADD
-#ifdef OLD_MULTADD
-
-  
-  template <class TM, class TV_ROW, class TV_COL>
-  void SparseCholesky<TM, TV_ROW, TV_COL> :: 
-  MultAdd (TSCAL_VEC s, const BaseVector & x, BaseVector & y) const
-  {
-    static Timer timer("SparseCholesky::MultAdd");
-    RegionTimer reg (timer);
-    timer.AddFlops (2.0*lfact.Size());
-
-    int n = Height();
-    
-    const FlatVector<TVX> fx = x.FV<TVX> ();
-    FlatVector<TVX> fy = y.FV<TVX> ();
-
-    
-    Vector<TVX> hy(n);
-    for (int i = 0; i < n; i++)
-      hy(order[i]) = fx(i);
-
-    TVX hv;
-
-    // TVX * hhy = hy.Addr(0);
-    FlatVector<TVX> hhy = hy;
-
-
-
-    const TM * hlfact = &lfact[0];
-    const TM * hdiag = &diag[0];
-    // const int * hrowindex = &rowindex[0];
-    const int * hrowindex2 = &rowindex2[0];
-    const int * hfirstinrow = &firstinrow[0];
-    const int * hfirstinrow_ri = &firstinrow_ri[0];
-    
-    int j = 0;
-    for (int i = 0; i < n; i++)
-      {
-	TVX val = hy(i);
-	int last = hfirstinrow[i+1];
-	int j_ri = hfirstinrow_ri[i];
-	while (j < last)
-	  {
-	    // hhy[hrowindex[j]] -= Trans (hlfact[j]) * val;
-	    hhy[hrowindex2[j_ri]] -= Trans (hlfact[j]) * val;
-	    j++;
-	    j_ri++;
-	  }
-      }
-  
-    for (int i = 0; i < n; i++)
-      {
-	hv = hdiag[i] * hhy[i];
-	hhy[i] = hv;
-      }
-
-    for (int i = n-1; i >= 0; i--)
-      {
-	int minj = hfirstinrow[i];
-	int maxj = hfirstinrow[i+1];
-	int j_ri = hfirstinrow_ri[i];
-
-	TVX sum;
-	sum = 0.0;
-	
-	for (j = minj; j < maxj; j++, j_ri++)
-	  sum += lfact[j] * hy(rowindex2[j_ri]);
-	
-	hy(i) -= sum;
-      }
-
-
-
-
-
-    /*
-      const TM * hlfact = &lfact[0];
-      const TM * hdiag = &diag[0];
-      const int * hrowindex = &rowindex[0];
-      const int * hfirstinrow = &firstinrow[0];
-    
-      int j = 0;
-      for (int i = 0; i < n; i++)
-      {
-      TVX val = hy(i);
-      int last = hfirstinrow[i+1];
-      while (j < last)
-      {
-      hhy[hrowindex[j]] -= Trans (hlfact[j]) * val;
-      j++;
-      }
-      }
-  
-      for (int i = 0; i < n; i++)
-      {
-      hv = hdiag[i] * hhy[i];
-      hhy[i] = hv;
-      }
-
-      for (int i = n-1; i >= 0; i--)
-      {
-      const int minj = hfirstinrow[i];
-      const int maxj = hfirstinrow[i+1];
-
-      TVX sum;
-      sum = 0.0;
-	
-      for (j = minj; j < maxj; j++)
-      sum += lfact[j] * hy(rowindex[j]);
-	
-      hy(i) -= sum;
-      }
-    */
-
-
-
-
-
-    if (inner)
-      {
-	for (int i = 0; i < n; i++)
-	  if (inner->Test(i))
-	    fy(i) += s * hy(order[i]);
-      }
-    else if (cluster)
-      {
-	for (int i = 0; i < n; i++)
-	  if ((*cluster)[i])
-	    fy(i) += s * hy(order[i]);
-      }
-    else
-      {
-	for (int i = 0; i < n; i++)
-	  fy(i) += s * hy(order[i]);
-      }
-
-  }
-  
-#endif
-
-
-  /*
-  INLINE void MyAtomicAdd (double & sum, double val)
-  {
-    auto & asum = reinterpret_cast<atomic<double>&>(sum);
-    auto current = asum.load();
-    while (!asum.compare_exchange_weak(current, current + val))
-      ;
-  }
-  */
-  
-  /*
-  inline void MyAtomicAdd (double & x, double y)
-  {
-#pragma omp atomic
-    x += y;
-  }
-  */
-
-
-
   // template <>
   // void SparseCholesky<double, double, double> :: 
 
@@ -1265,10 +1126,6 @@ namespace ngla
     for (int j : Range(extdofs))
       {
         auto val = temp(j);
-        /*
-#pragma omp atomic
-        hy(extdofs[j]) -= val;
-        */
         MyAtomicAdd (hy(extdofs[j]), -val);
       }
   }
@@ -1360,20 +1217,6 @@ namespace ngla
                               TFUNC func)
   {
     Array<atomic<int>> cnt_dep(dag.Size());
-    /*
-    for (auto & d : cnt_dep) 
-      d.store (0, memory_order_relaxed);
-
-    static Timer t_cntdep("count dep");
-    t_cntdep.Start();
-    ParallelFor (Range(dag),
-                 [&] (int i)
-                 {
-                   for (int j : dag[i])
-                     cnt_dep[j]++;
-                 });
-    t_cntdep.Stop();    
-    */
     for (auto i : Range(cnt_dep))
       cnt_dep[i].store (trans_dag[i].Size(), memory_order_relaxed);
     
@@ -1448,37 +1291,12 @@ namespace ngla
 
 
 
-
   template <class TM, class TV_ROW, class TV_COL>
   void SparseCholesky<TM, TV_ROW, TV_COL> :: 
-  MultAdd (TSCAL_VEC s, const BaseVector & x, BaseVector & y) const
+  SolveReordered (FlatVector<TVX> hy) const
   {
-    static Timer timer("SparseCholesky<d,d,d>::MultAdd");
     static Timer timer1("SparseCholesky<d,d,d>::MultAdd fac1");
     static Timer timer2("SparseCholesky<d,d,d>::MultAdd fac2");
-    RegionTimer reg (timer);
-    timer.AddFlops (2.0*lfact.Size());
-
-    // int n = Height();
-    
-    const FlatVector<TVX> fx = x.FV<TVX> ();
-    FlatVector<TVX> fy = y.FV<TVX> ();
-
-    int nused = this->nused;
-    Vector<TVX> hy1(nused);
-    FlatVector<TVX> hy(hy1);
-
-    /*
-    for (int i = 0; i < n; i++)
-      hy(order[i]) = fx(i);
-    */
-    ParallelFor (Range(height), [&] (int i)
-                 {
-                   if (order[i] != -1)
-                     hy(order[i]) = fx(i);
-                 });
-
-
 
     /*
     // sequential verision 
@@ -1550,14 +1368,15 @@ namespace ngla
     timer0.Stop();    
     */
     timer1.Start();
-    
+
     RunParallelDependency (micro_dependency, micro_dependency_trans,
                            [&,hy] (int nr) 
                            {
                              auto task = microtasks[nr];
                              size_t blocknr = task.blocknr;
                              auto range = BlockDofs (blocknr);
-                            
+                             if (range.Size()==0) return;
+                             
                              // if (task.solveL)
                              if (task.type == MicroTask::LB_BLOCK)
                                { // first L, then B
@@ -1646,7 +1465,7 @@ namespace ngla
 
     // solve with the diagonal
     const TM * hdiag = &diag[0];
-    ParallelFor (Range(nused), [&] (int i)
+    ParallelFor (hy.Size(), [&] (int i)
                  {
                    TVX tmp = hdiag[i] * hy[i];
                    hy[i] = tmp;
@@ -1668,6 +1487,7 @@ namespace ngla
                              auto task = microtasks[nr];
                              int blocknr = task.blocknr;
                              auto range = BlockDofs (blocknr);
+                             if (range.Size()==0) return;
                              
                              if (task.type == MicroTask::LB_BLOCK)
                                { // first B then L
@@ -1751,8 +1571,34 @@ namespace ngla
 
     timer2.Stop();
 
+    
+  }
+
+  template <class TM, class TV_ROW, class TV_COL>
+  void SparseCholesky<TM, TV_ROW, TV_COL> :: 
+  MultAdd (TSCAL_VEC s, const BaseVector & x, BaseVector & y) const
+  {
+    static Timer timer("SparseCholesky<d,d,d>::MultAdd");
+    RegionTimer reg (timer);
+    timer.AddFlops (2.0*lfact.Size());
+
+    // int n = Height();
+    
+    const FlatVector<TVX> fx = x.FV<TVX> ();
+    FlatVector<TVX> fy = y.FV<TVX> ();
+
+    int nused = this->nused;
+    Vector<TVX> hy1(nused);
+    FlatVector<TVX> hy(hy1);
+
+    ParallelFor (Range(height), [&] (int i)
+                 {
+                   if (order[i] != -1)
+                     hy(order[i]) = fx(i);
+                 });
 
 
+    SolveReordered(hy);
 
     if (inner)
       {
@@ -1789,6 +1635,38 @@ namespace ngla
   
 
 
+  template <class TM, class TV_ROW, class TV_COL>
+  void SparseCholesky<TM, TV_ROW, TV_COL> :: 
+  Smooth (BaseVector & u, const BaseVector & f, BaseVector & y) const
+  {
+    static Timer t("SparseCholesky::Smooth");
+    RegionTimer reg(t);
+
+    if (dynamic_cast<const SparseMatrixSymmetric<TM,TV>*> (&(this->mat)))
+      {
+        // use the original one ...
+        SparseFactorization::Smooth(u,f,y);
+        return;
+      }
+
+    const FlatVector<TVX> fu = u.FV<TVX> ();
+    FlatVector<TVX> fy = y.FV<TVX> ();
+    
+    Vector<TVX> hy(this->nused);
+    auto & hmat = dynamic_cast<const SparseMatrix<TM,TV,TV>&> (this->mat);
+    
+    ParallelFor (this->nused, [&] (int i)
+                 {
+                   hy(i) = fy(inv_order[i]) - hmat.RowTimesVector(inv_order[i], fu);
+                 });
+    
+    SolveReordered(hy);
+
+    ParallelFor (this->nused, [&] (int i)
+                 {
+                   fu(inv_order[i]) += hy(i);
+                 });
+  }
 
   
 
@@ -1825,6 +1703,9 @@ namespace ngla
   void SparseFactorization  :: 
   Smooth (BaseVector & u, const BaseVector & /* f */, BaseVector & y) const
   {
+    static Timer t("SparseFactorization::Smooth");
+    RegionTimer reg(t);
+    {
     auto hvec1 = u.CreateVector();
     auto hvec2 = u.CreateVector();
 
@@ -1835,6 +1716,7 @@ namespace ngla
     u += hvec2;
     
     matrix.lock()->MultAdd2 (-1, hvec2, y, inner.get(), cluster.get());
+    }
   }
   
 
