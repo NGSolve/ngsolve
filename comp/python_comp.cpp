@@ -1348,7 +1348,16 @@ used_idnrs : list of int = None
           {
             return self->GetDeriv();
           })
-
+    .def("Operators", [] (shared_ptr<GF> self)
+         {
+           py::list l;
+           auto ops = self->GetFESpace()->GetAdditionalEvaluators();
+           for (size_t i = 0; i < ops.Size(); i++)
+             l.append (ops.GetName(i));
+           return l;
+         },
+         "returns list of available differential operators")
+    
     .def("Operator",
          [](shared_ptr<GF> self, string name, VorB vb) -> py::object // shared_ptr<CoefficientFunction>
           {
@@ -2284,15 +2293,17 @@ flags : dict
           [](spCF cf, VorB vb, bool element_boundary,
              bool skeleton, py::object definedon,
              IntegrationRule ir, int bonus_intorder, py::object definedonelem,
-             bool simd_evaluate) 
+             bool simd_evaluate, VorB element_vb) 
            {
              py::extract<Region> defon_region(definedon);
              if (defon_region.check())
                vb = VorB(defon_region());
 
+             if (element_boundary) element_vb = BND;
+             
              shared_ptr<LinearFormIntegrator> lfi;
              if (!skeleton)
-               lfi = make_shared<SymbolicLinearFormIntegrator> (cf, vb, element_boundary);
+               lfi = make_shared<SymbolicLinearFormIntegrator> (cf, vb, element_vb);
              else
                lfi = make_shared<SymbolicFacetLinearFormIntegrator> (cf, vb /* , element_boundary */);
              
@@ -2329,7 +2340,8 @@ flags : dict
 	   py::arg("intrule")=IntegrationRule(),
            py::arg("bonus_intorder")=0,
            py::arg("definedonelements")=DummyArgument(),
-           py::arg("simd_evaluate")=true
+           py::arg("simd_evaluate")=true,
+           py::arg("element_vb")=VOL        
           );
 
   m.def("SymbolicBFI",
@@ -2440,14 +2452,17 @@ flags : dict
           
   m.def("SymbolicEnergy",
         [](spCF cf, VorB vb, py::object definedon, bool element_boundary,
-           int bonus_intorder, py::object definedonelem, bool simd_evaluate)
+           int bonus_intorder, py::object definedonelem, bool simd_evaluate,
+           VorB element_vb)
         -> shared_ptr<BilinearFormIntegrator>
            {
              py::extract<Region> defon_region(definedon);
              if (defon_region.check())
                vb = VorB(defon_region());
 
-             auto bfi = make_shared<SymbolicEnergy> (cf, vb, element_boundary);
+             if (element_boundary) element_vb = BND;
+             
+             auto bfi = make_shared<SymbolicEnergy> (cf, vb, element_vb);
              bfi -> SetBonusIntegrationOrder(bonus_intorder);
              if (defon_region.check())
                {
@@ -2463,7 +2478,8 @@ flags : dict
         py::arg("definedon")=DummyArgument(), py::arg("element_boundary")=false,
         py::arg("bonus_intorder")=0,
         py::arg("definedonelements")=DummyArgument(),
-        py::arg("simd_evaluate")=true
+        py::arg("simd_evaluate")=true,
+        py::arg("element_vb")=VOL        
           );
 
    m.def("KSpaceCoeffs", [](shared_ptr<GF> gf_tp,shared_ptr<GF> gf_k, double x, double y)
@@ -2472,15 +2488,15 @@ flags : dict
              auto tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp->GetFESpace());
              IntegrationPoint ip;
              int elnr = tpfes->Spaces(0)[0]->GetMeshAccess()->FindElementOfPoint(Vec<2>(x,y),ip,false);
-             int ndofx = tpfes->Spaces(0)[0]->GetFE(elnr,glh).GetNDof();
-             int ndofy = tpfes->Spaces(0)[1]->GetFE(0,glh).GetNDof();
+             int ndofx = tpfes->Spaces(0)[0]->GetFE(ElementId(VOL,elnr),glh).GetNDof();
+             int ndofy = tpfes->Spaces(0)[1]->GetFE(ElementId(VOL,0),glh).GetNDof();
              Array<int> indices(2);
              Array<int> dofs(ndofx*ndofy);
              tpfes->GetDofNrs(tpfes->GetIndex(elnr,0),dofs);
              FlatMatrix<> elmat(ndofx,ndofy,glh);
              gf_tp->GetVector().GetIndirect(dofs,elmat.AsVector());
              FlatVector<> shape(ndofx,glh);
-             dynamic_cast<const BaseScalarFiniteElement& >(tpfes->Spaces(0)[0]->GetFE(elnr,glh)).CalcShape(ip,shape);
+             dynamic_cast<const BaseScalarFiniteElement& >(tpfes->Spaces(0)[0]->GetFE(ElementId(VOL,elnr),glh)).CalcShape(ip,shape);
              FlatVector<> result(ndofy,glh);
              result = Trans(elmat)*shape;
              gf_k->GetVector().FVDouble() = result;
