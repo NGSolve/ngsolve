@@ -3939,20 +3939,15 @@ namespace ngfem
         Facet2ElementTrafo transform(eltype, element_vb); 
         int nfacet = transform.GetNFacets();
         
-        cout << "elementvb = " << element_vb << endl;
         for (int k = 0; k < nfacet; k++)
           {
             HeapReset hr(lh);
             ngfem::ELEMENT_TYPE etfacet = transform.FacetType (k);
             
             const IntegrationRule & ir_facet = GetIntegrationRule(etfacet, 2*fel.Order()+bonus_intorder);
-            cout << "ir_facet = " << ir_facet << endl;
             IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
-            cout << "ir_facet_vol = " << ir_facet_vol << endl;
             BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
             mir.ComputeNormalsAndMeasure (eltype, k);
-            cout << "symbolicbfi, calclinearized, facet" << endl;
-            cout << "mir = " << mir << endl;
             
             ProxyUserData ud(trial_proxies.Size(), lh);    
             const_cast<ElementTransformation&>(trafo).userdata = &ud;
