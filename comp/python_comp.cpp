@@ -1047,7 +1047,6 @@ component : int
          [] (const shared_ptr<FESpace> self,
              BaseVector& vec, spCF rho)
          { self->SolveM(rho.get(), vec, glh); },
-<<<<<<< variant A
          py::arg("vec"), py::arg("rho")=nullptr, docu_string(R"raw_string(
          Solve with the mass-matrix. Available only for L2-like spaces.
 
@@ -1060,16 +1059,12 @@ rho : ngsolve.fem.CoefficientFunction
   input CF
 
 )raw_string"))
->>>>>>> variant B
-         py::arg("vec"), py::arg("rho")=nullptr,
-         "Solve with the mass-matrix. Available only for L2-like spaces")
     .def("ApplyM",
          [] (const shared_ptr<FESpace> self,
              BaseVector& vec, spCF rho)
          { self->ApplyM(rho.get(), vec, glh); },
          py::arg("vec"), py::arg("rho")=nullptr,
          "Apply mass-matrix. Available only for L2-like spaces")
-======= end
         
     .def("__eq__",
          [] (shared_ptr<FESpace> self, shared_ptr<FESpace> other)
@@ -1513,11 +1508,8 @@ definedon : object
          [](shared_ptr<GF> self) -> spCF
           {
             return self->GetDeriv();
-<<<<<<< variant A
           }, "Returns the canonical derivative of the space behind the GridFunction if possible.")
 
->>>>>>> variant B
-          })
     .def("Operators", [] (shared_ptr<GF> self)
          {
            py::list l;
@@ -1528,7 +1520,6 @@ definedon : object
          },
          "returns list of available differential operators")
     
-======= end
     .def("Operator",
          [](shared_ptr<GF> self, string name, VorB vb) -> py::object // shared_ptr<CoefficientFunction>
           {
@@ -2612,7 +2603,7 @@ element_wise : bool
            py::arg("bonus_intorder")=0,
            py::arg("definedonelements")=DummyArgument(),
            py::arg("simd_evaluate")=true,
-<<<<<<< variant A
+           py::arg("element_vb")=VOL,
         docu_string(R"raw_string(
 A symbolic linear form integrator, where test and trial functions, CoefficientFunctions, etc. can be used to formulate right hand sides in a symbolic way.
 
@@ -2645,10 +2636,10 @@ definedonelements : object
 simd_evaluate : bool
   input simd_evaluate. True -> tries to use SIMD for faster evaluation
 
+element_vb : ngsolve.fem.VorB
+  input element VorB
+
 )raw_string")
->>>>>>> variant B
-           py::arg("element_vb")=VOL        
-======= end
           );
 
   m.def("SymbolicBFI",
@@ -2822,7 +2813,7 @@ element_vb : ngsolve.comp.VorB
         py::arg("bonus_intorder")=0,
         py::arg("definedonelements")=DummyArgument(),
         py::arg("simd_evaluate")=true,
-<<<<<<< variant A
+        py::arg("element_vb")=VOL,
         docu_string(R"raw_string(
 A symbolic energy form integrator, where test and trial functions, CoefficientFunctions, etc. can be used to formulate PDEs in a symbolic way.
 
@@ -2849,10 +2840,10 @@ definedonelements : object
 simd_evaluate : bool
   input simd_evaluate. True -> tries to use SIMD for faster evaluation
 
+element_vb : ngsolve.fem.VorB
+  input eleemnt VorB
+
 )raw_string")
->>>>>>> variant B
-        py::arg("element_vb")=VOL        
-======= end
           );
 
    m.def("KSpaceCoeffs", [](shared_ptr<GF> gf_tp,shared_ptr<GF> gf_k, double x, double y)
