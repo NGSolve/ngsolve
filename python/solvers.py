@@ -313,7 +313,7 @@ def Newton(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="umfpack", el_i
       A string of the sparse direct solver which should be solved for inverting the assembled Newton matrix.
 
     el_int : bool
-      Flag if eliminate internal flag is used. If this is set to True than Newton uses static condensation to invert the matrix.
+      Flag if eliminate internal flag is used. If this is set to True than Newton uses static condensation to invert the matrix. If freedofs is not None, the user has to take care that the local dofs are set to zero in the freedofs array.
 
     dampfactor : float
       Set the damping factor for Newton's method. If it is 1 then no damping is done. If value is < 1 then the damping is done by the formula 'min(1,dampfactor*it)' for the correction, where 'it' denotes the Newton iteration.
@@ -397,7 +397,7 @@ def NewtonMinimization(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="um
       A string of the sparse direct solver which should be solved for inverting the assembled Newton matrix.
 
     el_int : bool
-      Flag if eliminate internal flag is used. If this is set to True than Newton uses static condensation to invert the matrix.
+      Flag if eliminate internal flag is used. If this is set to True than Newton uses static condensation to invert the matrix. If freedofs is not None, the user has to take care that the local dofs are set to zero in the freedofs array.
 
     dampfactor : float
       Set the damping factor for Newton's method. If it is 1 then no damping is done. If value is < 1 then the damping is done by the formula 'min(1,dampfactor*it)' for the correction, where 'it' denotes the Newton iteration.
