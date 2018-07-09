@@ -81,9 +81,9 @@ namespace ngcomp
     virtual void FinalizeUpdate(LocalHeap & lh) override;
     virtual void Update(LocalHeap & lh) override;
     /// 
-    virtual void UpdateDofTables();
+    virtual void UpdateDofTables() override;
     ///
-    virtual void UpdateCouplingDofArray();    
+    virtual void UpdateCouplingDofArray() override;    
     ///
     virtual size_t GetNDof () const throw() override;
     ///

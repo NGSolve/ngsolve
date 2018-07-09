@@ -2,7 +2,7 @@ from ngsolve.TensorProductTools import *
 from ngsolve.comp import *
 from ngsolve import *
 from netgen.geom2d import unit_square
-
+import netgen.gui
 
 mesh1 = Mesh(SegMesh(20,0,1))
 mesh2 = Mesh(unit_square.GenerateMesh(maxh=0.15))
@@ -34,7 +34,7 @@ gradv = CoefficientFunction((vx,vy))
 
 a = BilinearForm(tpfes)
 
-n = specialcf.normal(tpmesh.dim)
+n = CoefficientFunction(( ProlongateCoefficientFunction(specialcf.normal(1)[0],1,tpfes),ProlongateCoefficientFunction(specialcf.normal(2)[0],0,tpfes),ProlongateCoefficientFunction(specialcf.normal(2)[1],0,tpfes)))
 bn = b*n
 
 a += SymbolicTPBFI ( -u * b*gradv )
@@ -68,6 +68,6 @@ def Run(nsteps):
             print("Step ",i+1, "/",nsteps)
             Step()
 
-Run(100)
+#Run(100)
 for t in Timers():
     print(t["counts"], t["time"], t["name"])

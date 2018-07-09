@@ -7,6 +7,7 @@
 
 #include "hdivdivfespace.hpp"
 #include "hdivdivsurfacespace.hpp"
+#include "hcurlcurlfespace.hpp"
 #include "numberfespace.hpp"
 using namespace ngcomp;
 
@@ -751,6 +752,13 @@ kwargs : kwargs
            self->FinalizeUpdate(glh);
          },
          "update space after mesh-refinement")
+     .def("UpdateDofTables", [](shared_ptr<FESpace> self)
+         {
+           self->UpdateDofTables();
+           self->UpdateCouplingDofArray();
+           self->FinalizeUpdate(glh);
+         },
+         "update dof-tables after changing polynomial order distribution")
      .def("FinalizeUpdate", [](shared_ptr<FESpace> self)
          { 
            self->FinalizeUpdate(glh);
@@ -793,22 +801,25 @@ region : ngsolve.comp.Region
 )raw_string"))
 
     .def("SetOrder",
-         [](shared_ptr<FESpace> self, ELEMENT_TYPE et, py::object order, py::object order_left, py::object order_right)
+         [](shared_ptr<FESpace> self, ELEMENT_TYPE et, int order /*, py::object order_left, py::object order_right*/)
          {
+           self->SetOrder (et, order);
+           /*
            if (py::isinstance<py::int_> (order))
              {
                self->SetOrderLeft (et, order.cast<py::int_>());
                self->SetOrderRight (et, order.cast<py::int_>());
              }
+           */
+           /*
            if (py::isinstance<py::int_> (order_left))
              self->SetOrderLeft (et, order_left.cast<py::int_>());
            if (py::isinstance<py::int_> (order_right))
              self->SetOrderRight (et, order_right.cast<int>());
+           */
          },
          py::arg("element_type"),
-         py::arg("order")=DummyArgument(),
-         py::arg("order_left")=DummyArgument(),
-         py::arg("order_right")=DummyArgument(), docu_string(R"raw_string(
+         py::arg("order"), docu_string(R"raw_string(
 
 Parameters:
 
@@ -1036,6 +1047,7 @@ component : int
          [] (const shared_ptr<FESpace> self,
              BaseVector& vec, spCF rho)
          { self->SolveM(rho.get(), vec, glh); },
+<<<<<<< variant A
          py::arg("vec"), py::arg("rho")=nullptr, docu_string(R"raw_string(
          Solve with the mass-matrix. Available only for L2-like spaces.
 
@@ -1048,6 +1060,16 @@ rho : ngsolve.fem.CoefficientFunction
   input CF
 
 )raw_string"))
+>>>>>>> variant B
+         py::arg("vec"), py::arg("rho")=nullptr,
+         "Solve with the mass-matrix. Available only for L2-like spaces")
+    .def("ApplyM",
+         [] (const shared_ptr<FESpace> self,
+             BaseVector& vec, spCF rho)
+         { self->ApplyM(rho.get(), vec, glh); },
+         py::arg("vec"), py::arg("rho")=nullptr,
+         "Apply mass-matrix. Available only for L2-like spaces")
+======= end
         
     .def("__eq__",
          [] (shared_ptr<FESpace> self, shared_ptr<FESpace> other)
@@ -1491,8 +1513,22 @@ definedon : object
          [](shared_ptr<GF> self) -> spCF
           {
             return self->GetDeriv();
+<<<<<<< variant A
           }, "Returns the canonical derivative of the space behind the GridFunction if possible.")
 
+>>>>>>> variant B
+          })
+    .def("Operators", [] (shared_ptr<GF> self)
+         {
+           py::list l;
+           auto ops = self->GetFESpace()->GetAdditionalEvaluators();
+           for (size_t i = 0; i < ops.Size(); i++)
+             l.append (ops.GetName(i));
+           return l;
+         },
+         "returns list of available differential operators")
+    
+======= end
     .def("Operator",
          [](shared_ptr<GF> self, string name, VorB vb) -> py::object // shared_ptr<CoefficientFunction>
           {
@@ -2528,15 +2564,17 @@ element_wise : bool
           [](spCF cf, VorB vb, bool element_boundary,
              bool skeleton, py::object definedon,
              IntegrationRule ir, int bonus_intorder, py::object definedonelem,
-             bool simd_evaluate) 
+             bool simd_evaluate, VorB element_vb) 
            {
              py::extract<Region> defon_region(definedon);
              if (defon_region.check())
                vb = VorB(defon_region());
 
+             if (element_boundary) element_vb = BND;
+             
              shared_ptr<LinearFormIntegrator> lfi;
              if (!skeleton)
-               lfi = make_shared<SymbolicLinearFormIntegrator> (cf, vb, element_boundary);
+               lfi = make_shared<SymbolicLinearFormIntegrator> (cf, vb, element_vb);
              else
                lfi = make_shared<SymbolicFacetLinearFormIntegrator> (cf, vb /* , element_boundary */);
              
@@ -2574,6 +2612,7 @@ element_wise : bool
            py::arg("bonus_intorder")=0,
            py::arg("definedonelements")=DummyArgument(),
            py::arg("simd_evaluate")=true,
+<<<<<<< variant A
         docu_string(R"raw_string(
 A symbolic linear form integrator, where test and trial functions, CoefficientFunctions, etc. can be used to formulate right hand sides in a symbolic way.
 
@@ -2607,6 +2646,9 @@ simd_evaluate : bool
   input simd_evaluate. True -> tries to use SIMD for faster evaluation
 
 )raw_string")
+>>>>>>> variant B
+           py::arg("element_vb")=VOL        
+======= end
           );
 
   m.def("SymbolicBFI",
@@ -2753,14 +2795,17 @@ element_vb : ngsolve.comp.VorB
           
   m.def("SymbolicEnergy",
         [](spCF cf, VorB vb, py::object definedon, bool element_boundary,
-           int bonus_intorder, py::object definedonelem, bool simd_evaluate)
+           int bonus_intorder, py::object definedonelem, bool simd_evaluate,
+           VorB element_vb)
         -> shared_ptr<BilinearFormIntegrator>
            {
              py::extract<Region> defon_region(definedon);
              if (defon_region.check())
                vb = VorB(defon_region());
 
-             auto bfi = make_shared<SymbolicEnergy> (cf, vb, element_boundary);
+             if (element_boundary) element_vb = BND;
+             
+             auto bfi = make_shared<SymbolicEnergy> (cf, vb, element_vb);
              bfi -> SetBonusIntegrationOrder(bonus_intorder);
              if (defon_region.check())
                {
@@ -2777,6 +2822,7 @@ element_vb : ngsolve.comp.VorB
         py::arg("bonus_intorder")=0,
         py::arg("definedonelements")=DummyArgument(),
         py::arg("simd_evaluate")=true,
+<<<<<<< variant A
         docu_string(R"raw_string(
 A symbolic energy form integrator, where test and trial functions, CoefficientFunctions, etc. can be used to formulate PDEs in a symbolic way.
 
@@ -2804,9 +2850,31 @@ simd_evaluate : bool
   input simd_evaluate. True -> tries to use SIMD for faster evaluation
 
 )raw_string")
+>>>>>>> variant B
+        py::arg("element_vb")=VOL        
+======= end
           );
 
-
+   m.def("KSpaceCoeffs", [](shared_ptr<GF> gf_tp,shared_ptr<GF> gf_k, double x, double y)
+           {
+			 HeapReset hr(glh);
+             auto tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp->GetFESpace());
+             IntegrationPoint ip;
+             int elnr = tpfes->Spaces(0)[0]->GetMeshAccess()->FindElementOfPoint(Vec<2>(x,y),ip,false);
+             int ndofx = tpfes->Spaces(0)[0]->GetFE(ElementId(VOL,elnr),glh).GetNDof();
+             int ndofy = tpfes->Spaces(0)[1]->GetFE(ElementId(VOL,0),glh).GetNDof();
+             Array<int> indices(2);
+             Array<int> dofs(ndofx*ndofy);
+             tpfes->GetDofNrs(tpfes->GetIndex(elnr,0),dofs);
+             FlatMatrix<> elmat(ndofx,ndofy,glh);
+             gf_tp->GetVector().GetIndirect(dofs,elmat.AsVector());
+             FlatVector<> shape(ndofx,glh);
+             dynamic_cast<const BaseScalarFiniteElement& >(tpfes->Spaces(0)[0]->GetFE(ElementId(VOL,elnr),glh)).CalcShape(ip,shape);
+             FlatVector<> result(ndofy,glh);
+             result = Trans(elmat)*shape;
+             gf_k->GetVector().FVDouble() = result;
+             
+           });
   
    m.def("TensorProductFESpace", [](py::list spaces_list, const Flags & flags ) -> shared_ptr<FESpace>
             {

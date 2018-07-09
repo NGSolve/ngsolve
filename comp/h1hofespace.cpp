@@ -127,7 +127,8 @@ namespace ngcomp
 
     wb_loedge = ma->GetDimension() == 3;
     if (flags.GetDefineFlag("wb_withedges")) wb_loedge = true;
-    if (flags.GetDefineFlag("wb_withoutedges")) wb_loedge = false;
+    if (flags.GetDefineFlag("wb_withoutedges") ||
+        flags.GetDefineFlagX("wb_withedges").IsFalse()) wb_loedge = false;
     wb_edge = flags.GetDefineFlag ("wb_fulledges");
     
     // Variable order space: 
@@ -206,7 +207,8 @@ namespace ngcomp
       }
     if (dimension > 1)
       {
-        for (auto vb : { VOL,BND, BBND, BBBND })
+        auto vbs = { VOL,BND, BBND, BBBND };
+        for (auto vb : vbs)
           {
             if (evaluator[vb])
               evaluator[vb] = make_shared<BlockDifferentialOperator> (evaluator[vb], dimension);
@@ -390,7 +392,8 @@ namespace ngcomp
         }
     
     else  // not var_order
-      
+
+      {
       // for (Ngs_Element el : ma->Elements<VOL>())
       ParallelFor (ma->GetNE(VOL), [&] (size_t nr)
                    {
@@ -409,7 +412,7 @@ namespace ngcomp
 
                      order_inner[el.Nr()] = p + et_bonus_order[el.GetType()];
                    });
-
+      }
     /* 
        if (ma->GetDimension() == 2 && uniform_order_trig != -1 && uniform_order_quad != -1)
        {
@@ -817,6 +820,53 @@ namespace ngcomp
         e.Append (string("in H1HoFESpace::GetElement, ei = ")+ToString(ei));
         throw;
       }
+  }
+  
+  void H1HighOrderFESpace :: SetOrder (NodeId ni, int order) 
+  {
+    switch (ni.GetType())
+      {
+      case NT_VERTEX:
+        break;
+      case NT_EDGE:
+        if (ni.GetNr() < order_edge.Size())
+          order_edge[ni.GetNr()] = order;
+        break;
+      case NT_FACE:
+        if (ni.GetNr() < order_face.Size())
+          order_face[ni.GetNr()] = order;
+        break;
+      case NT_CELL: case NT_ELEMENT:
+        if (ni.GetNr() < order_inner.Size())
+          order_inner[ni.GetNr()] = order;
+        break;
+      case NT_FACET:
+        break;
+      }
+  }
+  
+  int H1HighOrderFESpace :: GetOrder (NodeId ni) const
+  {
+    switch (ni.GetType())
+      {
+      case NT_VERTEX:
+        return 0;
+      case NT_EDGE:
+        if (ni.GetNr() < order_edge.Size())
+          return order_edge[ni.GetNr()];
+        break;
+      case NT_FACE:
+        if (ni.GetNr() < order_face.Size())
+          return order_face[ni.GetNr()][0];
+        break;
+      case NT_CELL: case NT_ELEMENT:
+        if (ni.GetNr() < order_inner.Size())
+          return order_inner[ni.GetNr()][0];
+        break;
+      case NT_FACET:
+        break;
+      }
+    return 0;
   }
 
 
@@ -1838,6 +1888,7 @@ namespace ngcomp
           additional_evaluators.Set ("divfree_reconstruction", make_shared<T_DifferentialOperator<DiffOpDivFreeReconstructVectorH1<2>>> ());
           
           break;
+          
         case 3:
           evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdVectorH1<3>>>();
           flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradVectorH1<3>>>();
@@ -1845,16 +1896,16 @@ namespace ngcomp
           flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpGradBoundaryVectorH1<3>>>();          
           additional_evaluators.Set ("div", make_shared<T_DifferentialOperator<DiffOpDivVectorH1<3>>> ()); 
           break;
-          // auto one = make_shared<ConstantCoefficientFunction>(1);
-          // integrator[VOL] = make_shared<VectorH1MassIntegrator<2>>(one);
         }
     }
     
+  void VectorH1FESpace::SetOrder (ELEMENT_TYPE et, TORDER order)
+  {
+    FESpace::SetOrder(et, order);
+    for (auto & spc : spaces)
+      spc->SetOrder (et, order);
+  }
 
-
-
-  
-    
   
   static RegisterFESpace<H1HighOrderFESpace> init ("h1ho");
   static RegisterFESpace<VectorH1FESpace> initvec ("VectorH1");

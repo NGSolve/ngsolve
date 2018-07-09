@@ -531,6 +531,7 @@ namespace ngcomp
       delete specialelements[i];
     specialelements.DeleteAll();
 
+    /*
     if (order_policy == VARIABLE_ORDER &&
         ma->GetTimeStamp() > order_timestamp)
       {
@@ -546,7 +547,7 @@ namespace ngcomp
         FESpace::order_cell_right = order;
         order_timestamp = ma->GetTimeStamp();
       }
-
+    */
     
     order_edge.SetSize (ned);   
     order_face.SetSize (nfa); 
@@ -797,17 +798,22 @@ namespace ngcomp
         for (auto i : Range(nedge))
           {
             first_edge_dof[i] = ndof;
-            if(FESpace::order_edge[i] > 0)
-              ndof += FESpace::order_edge[i];
+            if(order_edge[i] > 0)
+              ndof += order_edge[i];
           }
         first_edge_dof[nedge] = ndof;
 
         first_face_dof.SetSize (nface+1);
         for (auto i : Range(nface))
           { 
-            first_face_dof[i] = ndof; 
+            first_face_dof[i] = ndof;
+            /*
             INT<2> pl = FESpace::order_face_left[i];
             INT<2> pr = FESpace::order_face_right[i];
+            */
+            INT<2> pl = order_face[i];
+            INT<2> pr = order_face[i];
+            
             int ngrad = 0, ncurl = 0;
             switch (ma->GetFaceType(i))
               {
@@ -1221,8 +1227,8 @@ namespace ngcomp
              << int(FESpace::order_edge[ngel.Edges()[2]]) << endl;
         cout << "order-face = " << FESpace::order_face_right[ngel.Faces()] << endl;
         */
-        hofe -> SetOrderEdge (FESpace::order_edge[ngel.Edges()]);
-        hofe -> SetOrderFace (FESpace::order_face_right[ngel.Faces()]);
+        hofe -> SetOrderEdge (order_edge[ngel.Edges()]);
+        hofe -> SetOrderFace (order_face[ngel.Faces()]);
         hofe -> SetType1 (false);
         hofe -> ComputeNDof();
         // cout << "                                neldof = " << hofe->GetNDof() << ", order = " << hofe->Order() << endl;

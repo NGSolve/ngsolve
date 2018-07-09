@@ -37,6 +37,8 @@ namespace ngcomp
     }
 
     virtual void Update(LocalHeap & lh);
+
+    virtual void UpdateCouplingDofArray();
   
     virtual size_t GetNDof () const
     {
