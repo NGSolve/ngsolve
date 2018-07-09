@@ -132,7 +132,7 @@ namespace ngfem
               EdgeOrthoPol::
                 EvalScaledMult (order_edge[i]-2, 
                                 lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
-                                1.0/mip.GetMeasure()*lam[e[0]]*lam[e[1]], shape+ii);
+                                1.0/mip.GetMeasure() /* *lam[e[0]]*lam[e[1]]*/, shape+ii);
             }
           ii += order_edge[i]-1;
 	}
@@ -292,7 +292,7 @@ namespace ngfem
 	    EdgeOrthoPol::
 	      EvalScaledMult (order_edge[i]-2, 
 			      lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
-			      1.0/mip.GetMeasure()*lam[e[0]]*lam[e[1]], shape+ii);
+			      1.0/mip.GetMeasure() /* *lam[e[0]]*lam[e[1]] */, shape+ii);
 	  }
 	
 	ii += order_edge[i]-1;
