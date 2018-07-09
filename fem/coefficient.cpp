@@ -2745,6 +2745,43 @@ public:
     Evaluate (ip, res);
     return res(0);
   }
+
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatVector<bool> nonzero,
+                               FlatVector<bool> nonzero_deriv,
+                               FlatVector<bool> nonzero_dderiv) const override
+  {
+    size_t dim = Dimension();
+    STACK_ARRAY(bool, mem, 3*dim);
+    FlatVector<bool> nzi(dim, &mem[0]);
+    FlatVector<bool> nzdi(dim, &mem[dim]);
+    FlatVector<bool> nzddi(dim, &mem[2*dim]);
+    nonzero = false;
+    nonzero_deriv = false;
+    nonzero_dderiv = false;
+    for (auto & aci : ci)
+      if (aci)
+        {
+          aci -> NonZeroPattern(ud, nzi, nzdi, nzddi);
+          for (size_t i = 0; i < nonzero.Size(); i++)
+            {
+              nonzero(i) |= nzi(i);
+              nonzero_deriv(i) |= nzdi(i);
+              nonzero_dderiv(i) |= nzddi(i);
+            }
+        }
+  }
+  
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override 
+  {
+    values = AutoDiffDiff<1,bool> (false);
+    for (auto ini : input)
+      for (size_t i = 0; i < values.Size(); i++)
+        values(i) += ini(i);
+  }
+  
   virtual CF_Type GetType() const override { return CF_Type_domainwise; }
 };
 

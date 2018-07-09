@@ -55,9 +55,9 @@ namespace ngcomp
     ///
     virtual void Update(LocalHeap & lh) override;
     /// 
-    virtual void UpdateDofTables();
+    virtual void UpdateDofTables() override;
     ///
-    virtual void UpdateCouplingDofArray();    
+    virtual void UpdateCouplingDofArray() override;    
     ///
     virtual size_t GetNDof () const throw() override;
     ///
@@ -75,6 +75,11 @@ namespace ngcomp
     virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
 
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
+
+    virtual void SetOrder (NodeId ni, int order) override;
+    virtual int GetOrder (NodeId ni) const override;
+    using FESpace::GetOrder;
+    
     ///
     virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & precflags) const override;
     /// 
@@ -91,6 +96,8 @@ namespace ngcomp
     }
 
     virtual void SolveM (CoefficientFunction * rho, BaseVector & vec,
+                         LocalHeap & lh) const override;
+    virtual void ApplyM (CoefficientFunction * rho, BaseVector & vec,
                          LocalHeap & lh) const override;
 
 
@@ -148,7 +155,7 @@ namespace ngcomp
     ///
     virtual void Update(LocalHeap & lh) override;
     /// 
-    virtual void UpdateCouplingDofArray();    
+    virtual void UpdateCouplingDofArray() override;    
     //virtual void UpdateDofTables();
     ///
     virtual size_t GetNDof () const throw() override;
@@ -187,6 +194,8 @@ namespace ngcomp
     void GetDofNrs (ElementId ei, Array<int> & dnums) const override;
     virtual void SolveM (CoefficientFunction * rho, BaseVector & vec,
                          LocalHeap & lh) const override;
+    virtual void ApplyM (CoefficientFunction * rho, BaseVector & vec,
+                         LocalHeap & lh) const override;
 
     template <int DIM>
     void SolveMPiola (CoefficientFunction * rho, BaseVector & vec,
@@ -194,6 +203,15 @@ namespace ngcomp
     template <int DIM>
     void SolveMCovariant (CoefficientFunction * rho, BaseVector & vec,
                           LocalHeap & lh) const;
+
+
+    template <int DIM>
+    void ApplyMPiola (CoefficientFunction * rho, BaseVector & vec,
+                      LocalHeap & lh) const;
+    template <int DIM>
+    void ApplyMCovariant (CoefficientFunction * rho, BaseVector & vec,
+                          LocalHeap & lh) const;
+
   };
 
 }

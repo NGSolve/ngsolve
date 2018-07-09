@@ -1,34 +1,44 @@
+#ifndef FILE_HCURLCURLFESPACE
+#define FILE_HCURLCURLFESPACE
+
+
 /*********************************************************************/
-/* File:   hdivdivfespace.h                                          */
-/* Author: Joachim (cpp), Astrid                                     */
-/* Date:   2017                                                      */
+/* File:   hcurlcurlfespace.h                                        */
+/* Author: Michael Neunteufel                                        */
+/* Date:   2018                                                      */
 /*********************************************************************/
+
+#if defined(WIN32) && defined(__AVX__)
+
+#else
 
 namespace ngcomp
 {
 
   typedef size_t index_edge;
 
-  class HDivDivFESpace : public FESpace
+  class HCurlCurlFESpace : public FESpace
   {
     size_t ndof;
     Array<int> first_facet_dof;
     Array<int> first_element_dof;
+    Array<int> first_edge_dof;
+    Array<INT<1,int> > order_edge;
     Array<INT<2,int> > order_facet;
     Array<INT<3,int> > order_inner;
     
-    // add divdiv-free inner bubbles
-    bool plus;
+
     bool discontinuous;
     int uniform_order_facet;
     int uniform_order_inner;
+    int uniform_order_edge;
 
   public:
-    HDivDivFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags=false);
+    HCurlCurlFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags=false);
 
     virtual string GetClassName () const override
     {
-      return "HDivDivFESpace";
+      return "HCurlCurlFESpace";
     }
 
     virtual void Update(LocalHeap & lh) override;
@@ -51,7 +61,9 @@ namespace ngcomp
     
     virtual void UpdateCouplingDofArray() override;
 
-    virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const override;
   };
 
 }
+
+#endif
+#endif

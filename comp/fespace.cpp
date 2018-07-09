@@ -48,6 +48,7 @@ namespace ngcomp
     if (flags.NumFlagDefined("order_policy"))
       SetOrderPolicy(ORDER_POLICY(int(flags.GetNumFlag("order_policy",1))));
 
+    /*
     if (flags.NumFlagDefined("order_left"))
       {
         auto order_left = int(flags.GetNumFlag("order_left", 1));
@@ -62,7 +63,7 @@ namespace ngcomp
         for (auto et : element_types)
           SetOrderRight (et, order_right);
       }
-    
+    */
     
     dimension = int (flags.GetNumFlag ("dim", 1));
 
@@ -960,6 +961,24 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
   }
 
+  void FESpace :: GetDofNrs (ElementId ei, Array<int> & dnums, COUPLING_TYPE ctype) const
+  {
+    ArrayMem<int,100> alldnums; 
+    GetDofNrs(ei, alldnums);
+    dnums.SetSize(0);
+    
+    if (ctofdof.Size() == 0)
+      {
+        if ( (INTERFACE_DOF & ctype) != 0)
+          dnums = alldnums;
+      }
+    else
+      for (auto d : alldnums)
+        if ( (d != -1) && ((ctofdof[d] & ctype) != 0) )
+          dnums.Append(d);
+  }
+
+
   void FESpace :: GetNodeDofNrs (NODE_TYPE nt, int nr, Array<int> & dnums) const
   {
     GetDofNrs(NodeId(nt,nr),dnums);
@@ -1544,6 +1563,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
                           LocalHeap & lh) const
   {
     cout << "SolveM is only available for L2-space, not for " << typeid(*this).name() << endl;
+  }
+
+  void FESpace :: ApplyM (CoefficientFunction * rho, BaseVector & vec,
+                          LocalHeap & lh) const
+  {
+    cout << "ApplyM is only available for L2-space, not for " << typeid(*this).name() << endl;
   }
 
   void FESpace :: UpdateParallelDofs ( )
@@ -2603,6 +2628,16 @@ lot of new non-zero entries in the matrix!\n" << endl;
       {
         auto veci = vec.Range (GetRange(i));
         spaces[i] -> SolveM (rho, veci, lh);
+      }
+  }
+    
+  void CompoundFESpace :: ApplyM(CoefficientFunction * rho, BaseVector & vec,
+                                 LocalHeap & lh) const
+  {
+    for (size_t i = 0; i < spaces.Size(); i++)
+      {
+        auto veci = vec.Range (GetRange(i));
+        spaces[i] -> ApplyM (rho, veci, lh);
       }
   }
     

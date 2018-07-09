@@ -375,6 +375,7 @@ namespace ngla
     if (colhas.NumSet()!=w)
       throw Exception("BlockMatrix needs at least one block per col");
     row_reps.SetSize(h);
+    row_reps = nullptr;
     for (auto k:Range(h)) {
       size_t col = 0;
       while(row_reps[k]==nullptr) {
@@ -384,6 +385,7 @@ namespace ngla
       }
     }
     col_reps.SetSize(w);
+    col_reps = nullptr;
     for (auto k:Range(w)) {
       size_t row = 0;
       while (col_reps[k]==nullptr) {

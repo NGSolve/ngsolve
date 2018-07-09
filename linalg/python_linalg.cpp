@@ -672,6 +672,8 @@ inverse : string
                        return make_shared<BlockMatrix> (m2);
                      }), py::arg("mats"), "Make BlockMatrix with given array of matrices")
     .def("__getitem__", [](BlockMatrix & self, int row, int col) { return self(row,row); }, py::arg("row") , py::arg("col"), "Return value at given position")
+    .def_property_readonly("row_nblocks", [](BlockMatrix & mat) { return mat.BlockRows(); })
+    .def_property_readonly("col_nblocks", [](BlockMatrix & mat) { return mat.BlockCols(); })
     ;
 
 
@@ -691,7 +693,16 @@ inverse : string
 
   py::class_<FETI_Jump_Matrix, shared_ptr<FETI_Jump_Matrix>, BaseMatrix>
     (m, "FETI_Jump", "B-matrix of the FETI-system")
+<<<<<<< variant A
     .def(py::init<shared_ptr<ParallelDofs>>(), py::arg("parallel_dofs"))
+>>>>>>> variant B
+    .def(py::init<shared_ptr<ParallelDofs>>(),
+	 py::arg("pardofs"))
+    .def(py::init<shared_ptr<ParallelDofs>, shared_ptr<ParallelDofs>>(),
+	 py::arg("pardofs"), py::arg("u_pardofs"))
+    .def_property_readonly("row_pardofs", [](FETI_Jump_Matrix & mat) { return mat.GetRowParallelDofs(); })
+    .def_property_readonly("col_pardofs", [](FETI_Jump_Matrix & mat) { return mat.GetColParallelDofs(); })
+======= end
     ;
 #endif
   
@@ -708,10 +719,10 @@ inverse : string
     (m, "BlockSmoother",
      "block Jacobi and block Gauss-Seidel smoothing")
     .def("Smooth", &BaseBlockJacobiPrecond::GSSmooth,
-         py::arg("x"), py::arg("b"), py::arg("steps"),
+         py::arg("x"), py::arg("b"), py::arg("steps")=1,
          "performs steps block-Gauss-Seidel iterations for the linear system A x = b")
     .def("SmoothBack", &BaseBlockJacobiPrecond::GSSmoothBack,
-         py::arg("x"), py::arg("b"), py::arg("steps"),
+         py::arg("x"), py::arg("b"), py::arg("steps")=1,
          "performs steps block-Gauss-Seidel iterations for the linear system A x = b in reverse order")
     ;
 
@@ -739,12 +750,16 @@ inverse : string
   py::class_<SparseCholesky<Complex>, shared_ptr<SparseCholesky<Complex>>, SparseFactorization> (m, "SparseCholesky_c");
   
   py::class_<Projector, shared_ptr<Projector>, BaseMatrix> (m, "Projector")
-    .def(py::init<shared_ptr<BitArray>,bool>());
+    .def(py::init<shared_ptr<BitArray>,bool>(),
+         py::arg("mask"), py::arg("range"),
+         "Linear operator projecting to true/false bits of BitArray mask, depending on argument range");
     ;
 
     py::class_<ngla::IdentityMatrix, shared_ptr<ngla::IdentityMatrix>, BaseMatrix> (m, "IdentityMatrix")
-    .def(py::init<>())
-    ;
+      .def(py::init<>())
+      .def(py::init<size_t, bool>(),
+           py::arg("size"), py::arg("complex")=false)
+      ;
 
   py::class_<KrylovSpaceSolver, shared_ptr<KrylovSpaceSolver>, BaseMatrix> (m, "KrylovSpaceSolver")
     .def("GetSteps", &KrylovSpaceSolver::GetSteps)
@@ -831,15 +846,19 @@ maxsteps : int
 )raw_string"))
     ;
 
-  m.def("TestPC", [](const BaseMatrix & mat, const BaseMatrix & pre) {
+  m.def("EigenValues_Preconditioner", [](const BaseMatrix & mat, const BaseMatrix & pre) {
       EigenSystem eigen(mat, pre);
       eigen.Calc();
-      cout << IM(1) << " Min Eigenvalue : "  << eigen.EigenValue(1) << endl; 
-      cout << IM(1) << " Max Eigenvalue : " << eigen.MaxEigenValue() << endl; 
-      cout << IM(1) << " Condition   " << eigen.MaxEigenValue()/eigen.EigenValue(1) << endl; 
-      return;
+      Vector<double> ev(eigen.NumEigenValues());
+      for (size_t i = 0; i < ev.Size(); i++)
+        ev[i] = eigen.EigenValue(i+1);
+      return ev;
     },
-    py::arg("mat"), py::arg("pre"));
+    py::arg("mat"), py::arg("pre"),
+    "Calculate eigenvalues of pre * mat, where pre and mat are positive definite matrices.\n"
+    "The typical usecase of this function is to calculate the condition number of a preconditioner."
+    "It uses the Lanczos algorithm and bisection for the tridiagonal matrix"
+    );
   
   py::class_<QMRSolver<double>, shared_ptr<QMRSolver<double>>, BaseMatrix> (m, "QMRSolverD")
     ;

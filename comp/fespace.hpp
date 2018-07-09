@@ -197,14 +197,16 @@ ANY                  1 1 1 1 | 15
       We can give different orders for the left and right space for different
       element-types (like trig or quad)
      */
-    int et_order_left[30];  // order for range of diff-op from the left 
-    int et_order_right[30]; // order for domain of diff-op to the right
-    
+    // int et_order_left[30];  // order for range of diff-op from the left 
+    // int et_order_right[30]; // order for domain of diff-op to the right
+
+    /*
     Array<TORDER> order_edge; 
     Array<INT<2,TORDER>> order_face_left;
     Array<INT<2,TORDER>> order_face_right; 
     Array<INT<3,TORDER>> order_cell_left;
     Array<INT<3,TORDER>> order_cell_right;
+    */
     size_t order_timestamp = 0;
     BitArray is_atomic_dof;
 
@@ -235,6 +237,9 @@ ANY                  1 1 1 1 | 15
     /// update dof-table
     virtual void Update(LocalHeap & lh);
 
+    virtual void UpdateDofTables() { ; } 
+    virtual void UpdateCouplingDofArray() { ; } 
+
     /// update element coloring
     virtual void FinalizeUpdate(LocalHeap & lh);
 
@@ -263,12 +268,14 @@ ANY                  1 1 1 1 | 15
       order_policy = op;
     }
     
-    void SetOrder (ELEMENT_TYPE et, TORDER order)
+    virtual void SetOrder (ELEMENT_TYPE et, TORDER order)
     {
       if (order_policy == CONSTANT_ORDER || order_policy == OLDSTYLE_ORDER)
         order_policy = NODE_TYPE_ORDER;
-      et_order_left[et] = et_order_right[et] = order;
+      et_bonus_order[et] = order - this->order;
+      // et_order_left[et] = et_order_right[et] = order;
     }
+    /*
     void SetOrderLeft (ELEMENT_TYPE et, TORDER order)
     {
       if (order_policy == CONSTANT_ORDER || order_policy == OLDSTYLE_ORDER)
@@ -281,8 +288,10 @@ ANY                  1 1 1 1 | 15
         order_policy = NODE_TYPE_ORDER;
       et_order_right[et] = order;
     }
-
-    void SetOrder (NodeId ni, TORDER order)
+    */
+    virtual void SetOrder (NodeId ni, int order) { ; }
+    virtual int GetOrder (NodeId ni) const { return 0; }
+    /*
     {
       switch (ni.GetType())
         {
@@ -305,6 +314,7 @@ ANY                  1 1 1 1 | 15
           break;
         }
     }
+    */
     /// how many components
     int GetDimension () const { return dimension; }
 
@@ -491,8 +501,13 @@ ANY                  1 1 1 1 | 15
     
     void CheckCouplingTypes() const;
 
+    [[deprecated("Use GetDofNrs with element-id instead of elnr!")]]
+    void GetDofNrs (int elnr, Array<DofId> & dnums, COUPLING_TYPE ctype) const;
+      
     /// get dof-nrs of the element of certain coupling type
-    void GetDofNrs (int elnr, Array<DofId> & dnums, COUPLING_TYPE ctype) const;    
+    void GetDofNrs (ElementId ei, Array<DofId> & dnums, COUPLING_TYPE ctype) const;
+
+
 
     /// get dofs on nr'th node of type nt.
     [[deprecated("Use GetDofNrs with NodeId instead of nt/nr")]]    
@@ -799,6 +814,8 @@ ANY                  1 1 1 1 | 15
     const Array<SpecialElement*> & GetSpecialElements() const {return specialelements;}
 
     virtual void SolveM(CoefficientFunction * rho, BaseVector & vec,
+                        LocalHeap & lh) const;
+    virtual void ApplyM(CoefficientFunction * rho, BaseVector & vec,
                         LocalHeap & lh) const;
       
     shared_ptr<ParallelDofs> GetParallelDofs () const { return paralleldofs; }
@@ -1176,6 +1193,8 @@ ANY                  1 1 1 1 | 15
     virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const;
 
     virtual void SolveM(CoefficientFunction * rho, BaseVector & vec,
+                        LocalHeap & lh) const;
+    virtual void ApplyM(CoefficientFunction * rho, BaseVector & vec,
                         LocalHeap & lh) const;
     
     template <class T> NGS_DLL_HEADER

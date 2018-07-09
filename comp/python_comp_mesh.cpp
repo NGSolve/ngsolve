@@ -9,6 +9,7 @@ using namespace ngcomp;
 inline auto Nr2Vert(size_t nr) {  return NodeId(NT_VERTEX,nr); };
 inline auto Nr2Edge(size_t nr) {  return NodeId(NT_EDGE,nr); };
 inline auto Nr2Face(size_t nr) {  return NodeId(NT_FACE,nr); };
+inline auto Nr2VolElement(size_t nr) {  return ElementId(VOL,nr); };
 
 void ExportPml(py::module &m);
 
@@ -129,6 +130,16 @@ nr : int
                              auto& mesh = node.Mesh();
                              switch(node.GetType())
                                {
+                               case NT_VERTEX:
+                                 {
+                                   Array<int> enums;
+                                   for (auto el : mesh.GetVertexElements(node.GetNr()))
+                                     for (auto edge : mesh.GetElement(ElementId(VOL,el)).Edges())
+                                       if (!enums.Contains(edge))
+                                         enums.Append(edge);
+                                   QuickSort (enums);
+                                   return MakePyTuple(Substitute(enums, Nr2Edge));
+                                 }
                                case NT_FACE:
                                  return MakePyTuple(Substitute(mesh.GetFaceEdges(node.GetNr()), Nr2Edge));
                                case NT_CELL:
@@ -171,6 +182,32 @@ nr : int
                                  }
                              throw py::type_error("point only available for vertex nodes\n");
                            }, "vertex coordinates")
+
+
+    .def_property_readonly("elements",[](MeshNode & node) -> py::tuple
+                           {
+                             auto& mesh = node.Mesh();
+                             switch(node.GetType())
+                               {
+                               case NT_VERTEX:
+                                 return MakePyTuple(Substitute(mesh.GetVertexElements(node.GetNr()), Nr2VolElement));
+                               case NT_EDGE:
+                                 {
+                                   Array<int> elnums;
+                                   mesh.GetEdgeElements(node.GetNr(), elnums);
+                                   return MakePyTuple(Substitute(elnums, Nr2VolElement));
+                                 }
+                               case NT_FACE:
+                                 {
+                                   Array<int> elnums;
+                                   mesh.GetFaceElements(node.GetNr(), elnums);
+                                   return MakePyTuple(Substitute(elnums, Nr2VolElement));
+                                 }
+                               default:
+                                 throw py::type_error("elements only available for vertex nodes\n");
+                               }
+                           }, "tuple of global element-ids")
+    
     ;
 
   py::class_<ngstd::T_Range<NodeId>> (m, "NodeRange")
@@ -208,6 +245,21 @@ nr : int
                              return MakePyTuple(Substitute(el.Faces(), Nr2Face));
                            },
                            "tuple of global face numbers")
+    .def_property_readonly("facets", [](Ngs_Element &el)
+                           {
+                             switch (ElementTopology::GetSpaceDim(el.GetType()))
+                               {
+                               case 1:
+                                 return MakePyTuple(Substitute(el.Vertices(), Nr2Vert));
+                               case 2:
+                                 return MakePyTuple(Substitute(el.Edges(), Nr2Edge));
+                               case 3:
+                                 return MakePyTuple(Substitute(el.Faces(), Nr2Face));
+                               default:
+                                 throw Exception ("Illegal dimension in Ngs_Element.faces");
+                               }
+                           },
+                           "tuple of global face, edge or vertex numbers")
     .def_property_readonly("type", [](Ngs_Element &self)
         { return self.GetType(); },
         "geometric shape of element")
@@ -343,7 +395,12 @@ mesh (netgen.Mesh): a mesh generated from Netgen
     .def("__getitem__", static_cast<Ngs_Element(MeshAccess::*)(ElementId)const> (&MeshAccess::operator[]),
          "Return Ngs_Element from given ElementId")
     
-    .def("__getitem__", [](MeshAccess & self, NodeId ni) { return MeshNode(ni, self); },
+    .def("__getitem__", [](MeshAccess & self, NodeId ni)
+         {
+           if (ni.GetNr() >= self.GetNNodes(ni.GetType()))
+             throw py::index_error("illegal node number");
+           return MeshNode(ni, self);
+         },
          "Return MeshNode from given NodeId")
 
     .def ("GetNE", static_cast<size_t(MeshAccess::*)(VorB)const> (&MeshAccess::GetNE),

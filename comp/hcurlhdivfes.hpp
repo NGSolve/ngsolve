@@ -47,7 +47,7 @@ public:
   ///
   virtual void DoArchive (Archive & archive) override;
   /// 
-  virtual void UpdateCouplingDofArray();
+  virtual void UpdateCouplingDofArray() override;
 
   virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
 

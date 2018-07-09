@@ -78,10 +78,10 @@ namespace ngfem
                                       BareSliceMatrix<SIMD<double>> shape) const override;
     
     virtual void EvaluateFacetVolIp (int fnr, const SIMD_IntegrationRule & ir,
-                                     BareSliceVector<> coefs, ABareVector<double> values) const override;
+                                     BareSliceVector<> coefs, BareVector<SIMD<double>> values) const override;
     
     virtual void AddTransFacetVolIp (int fnr, const SIMD_IntegrationRule & ir,
-                                     ABareVector<double> values, BareSliceVector<> coefs) const override;
+                                     BareVector<SIMD<double>> values, BareSliceVector<> coefs) const override;
     
 
   private:

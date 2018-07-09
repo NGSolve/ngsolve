@@ -538,11 +538,12 @@ public:
     shared_ptr<CoefficientFunction> cf;
     Array<ProxyFunction*> proxies;
     VorB vb;
-    bool element_boundary;
+    // bool element_boundary;
+    VorB element_vb;
 
   public:
     NGS_DLL_HEADER SymbolicLinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb,
-                                  bool aelement_boundary);
+                                                 VorB aelement_vb);
 
     virtual VorB VB() const override { return vb; }
     virtual string Name () const override { return string ("Symbolic LFI"); }
@@ -780,7 +781,7 @@ public:
     shared_ptr<CoefficientFunction> cf;
     VorB vb;
     Array<ProxyFunction*> trial_proxies;
-    bool element_boundary;    
+    VorB element_vb;    
 
     Timer timer{"SymbolicEnergy",2};
     Array<int> trial_cum;     // cumulated dimension of proxies
@@ -788,7 +789,7 @@ public:
     Matrix<bool> nonzeros_proxies; // do proxies interact ?
     
   public:
-    SymbolicEnergy (shared_ptr<CoefficientFunction> acf, VorB avb, bool aelement_boundary);
+    SymbolicEnergy (shared_ptr<CoefficientFunction> acf, VorB avb, VorB aelement_vb);
 
     virtual VorB VB() const { return vb; }
     virtual xbool IsSymmetric() const { return true; } 
