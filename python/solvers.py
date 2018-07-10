@@ -274,7 +274,7 @@ def QMR(mat, rhs, fdofs, pre1=None, pre2=None, sol=None, maxsteps = 100, printra
 
 #Source: Michael Kolmbauer https://www.numa.uni-linz.ac.at/Teaching/PhD/Finished/kolmbauer-diss.pdf
 def MinRes(mat, rhs, pre=None, sol=None, maxsteps = 100, printrates = True, initialize = True, tol = 1e-7):
-"""Minimal Residuum method
+    """Minimal Residuum method
 
 
     Parameters
@@ -311,7 +311,6 @@ def MinRes(mat, rhs, pre=None, sol=None, maxsteps = 100, printrates = True, init
       Solution vector of the QMR method.
 
     """
-
     u = sol if sol else rhs.CreateVector()
 
     v_new = rhs.CreateVector()
