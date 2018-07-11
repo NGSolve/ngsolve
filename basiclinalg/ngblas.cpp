@@ -134,7 +134,9 @@ namespace ngbla
             s0 += xi * SIMD<double>(pa0+j, mask);
             s1 += xi * SIMD<double>(pa1+j, mask);
           }
-        SIMD<double,2> sum = HSum(s0,s1);
+        // SIMD<double,2> sum = HSum(s0,s1);
+        auto scal = HSum(s0,s1);
+        SIMD<double,2> sum(get<0>(scal), get<1>(scal));
         sum.Store(&y(i));
       }
 
