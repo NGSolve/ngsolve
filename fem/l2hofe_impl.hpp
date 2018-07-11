@@ -175,7 +175,8 @@ namespace ngfem
       {
         FlatMatrix<> gmat = *precomp_grad.Get (bnr, pos);
         FlatVector<> vgrad(grad.Height()*DIM, &grad(0,0));
-        vgrad = gmat * coefs;
+        // vgrad = gmat * coefs;
+        MultMatVec (gmat, coefs, vgrad);
       }
     else
 #endif
@@ -193,7 +194,8 @@ namespace ngfem
       {
         FlatMatrix<> gmat = *precomp_grad.Get (bnr, pos);
         FlatVector<> vgrad(grad.Height()*DIM, &grad(0,0));
-        coefs = Trans(gmat) * vgrad;
+        // coefs = Trans(gmat) * vgrad;
+        MultMatTransVec (gmat, vgrad, coefs);        
       }
     else
 #endif
