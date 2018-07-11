@@ -438,7 +438,7 @@ def Newton(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="umfpack", el_i
       Flag if eliminate internal flag is used. If this is set to True then Newton uses static condensation to invert the matrix. If freedofs is not None, the user has to take care that the local dofs are set to zero in the freedofs array.
 
     dampfactor : float
-      Set the damping factor for Newton's method. If it is 1 then no damping is done. If value is < 1 then the damping is done by the formula 'min(1,dampfactor*it)' for the correction, where 'it' denotes the Newton iteration.
+      Set the damping factor for Newton's method. If dampfactor is 1 then no damping is done. If value is < 1 then the damping is done by the formula 'min(1,dampfactor*numit)' for the correction, where 'numit' denotes the Newton iteration.
 
     printing : bool
       Set if Newton's method should print informations about the actual iteration like the error. 
@@ -482,7 +482,7 @@ def Newton(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="umfpack", el_i
             print("err = ", err)
 
         energy = a.Energy(u.vec)
-        u.vec.data -= min(1, it*dampfactor)*w
+        u.vec.data -= min(1, numit*dampfactor)*w
         
         if abs(err) < maxerr: break
     else:
@@ -522,7 +522,7 @@ def NewtonMinimization(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="um
       Flag if eliminate internal flag is used. If this is set to True then Newton uses static condensation to invert the matrix. If freedofs is not None, the user has to take care that the local dofs are set to zero in the freedofs array.
 
     dampfactor : float
-      Set the damping factor for Newton's method. If it is 1 then no damping is done. If value is < 1 then the damping is done by the formula 'min(1,dampfactor*it)' for the correction, where 'it' denotes the Newton iteration.
+      Set the damping factor for Newton's method. If dampfactor is 1 then no damping is done. If value is < 1 then the damping is done by the formula 'min(1,dampfactor*numit)' for the correction, where 'numit' denotes the Newton iteration.
 
     linesearch : bool
       If True then linesearch is used to guarantee that the energy decreases in every Newton iteration.
@@ -570,9 +570,9 @@ def NewtonMinimization(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="um
             print("err = ", err)
 
         energy = a.Energy(u.vec)
-        uh.data = u.vec - min(1, it*dampfactor)*w
+        uh.data = u.vec - min(1, numit*dampfactor)*w
             
-        tau = min(1, it*dampfactor)
+        tau = min(1, numit*dampfactor)
         if linesearch:
             while a.Energy(uh) > energy+1e-15:
                 tau *= 0.5
