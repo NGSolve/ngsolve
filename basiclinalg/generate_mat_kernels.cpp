@@ -414,8 +414,11 @@ int main ()
   GenerateScalAB (out, 6, 4);  
   GenerateScalAB (out, 3, 4);  
   GenerateScalAB (out, 1, 4);
+  GenerateScalAB (out, 8, 1);  
   GenerateScalAB (out, 6, 1);  
+  GenerateScalAB (out, 4, 1);  
   GenerateScalAB (out, 3, 1);  
+  GenerateScalAB (out, 2, 1);  
   GenerateScalAB (out, 1, 1);  
 
 
