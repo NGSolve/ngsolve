@@ -220,7 +220,8 @@ namespace ngfem
       if (precomp_trace.Used (INT<2> (order, classnr), bnr, pos))
 	{
 	  FlatMatrix<> trace = *precomp_trace.Get (bnr, pos);
-	  fcoefs = trace * coefs;
+	  // fcoefs = trace * coefs;
+          MultMatVec (trace, coefs, fcoefs);
 	}
       else
 #endif
@@ -235,7 +236,9 @@ namespace ngfem
       int classnr =  ET_trait<ET>::GetFacetClassNr (facet, vnums);
       if (precomp_trace.Used (INT<2> (order, classnr)))
 	{
-	  coefs = Trans(*precomp_trace.Get (INT<2> (order, classnr))) * fcoefs;
+	  FlatMatrix<> trace = *precomp_trace.Get (INT<2> (order, classnr));          
+	  // coefs = Trans(*precomp_trace.Get (INT<2> (order, classnr))) * fcoefs;
+          MultMatTransVec (trace, fcoefs, coefs);
 	}
       else
 #endif
