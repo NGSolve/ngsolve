@@ -78,10 +78,11 @@ def CG(mat, rhs, pre=None, sol=None, tol=1e-12, maxsteps = 100, printrates = Tru
         s.data += w
 
         err = sqrt(abs(wd))
-        if err < tol*err0: break
-            
         if printrates:
             print ("it = ", it, " err = ", err)
+        if err < tol*err0: break
+    else:
+        print("Warning: CG did not converge to TOL")
 
     return u
 
@@ -260,13 +261,15 @@ def QMR(mat, rhs, fdofs, pre1=None, pre2=None, sol=None, maxsteps = 100, printra
         #Projected residuum: Better terminating condition necessary?
         ResNorm = sqrt( np.dot(r.FV().NumPy()[fdofs],r.FV().NumPy()[fdofs]))
         #ResNorm = sqrt(InnerProduct(r,r))
-        
-        if (ResNorm <= tol):
-            break
-                
+
         if (printrates):
             print ("it = ", i, " err = ", ResNorm)
             
+        if (ResNorm <= tol):
+            break
+    else:
+        print("Warning: QMR did not converge to TOL")
+
     return u
 
 
@@ -308,7 +311,7 @@ def MinRes(mat, rhs, pre=None, sol=None, maxsteps = 100, printrates = True, init
     Returns
     -------
     (vector)
-      Solution vector of the QMR method.
+      Solution vector of the MinRes method.
 
     """
     u = sol if sol else rhs.CreateVector()
@@ -404,6 +407,8 @@ def MinRes(mat, rhs, pre=None, sol=None, maxsteps = 100, printrates = True, init
 
         gamma = gamma_new
         ResNorm_old = ResNorm
+    else:
+        print("Warning: MinRes did not converge to TOL")
 
     return u
 
@@ -423,7 +428,7 @@ def Newton(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="umfpack", el_i
       The GridFunction where the solution is saved. The values are used as initial guess for Newton's method.
 
     freedofs : BitArray
-      The FreeDofs on which the assembled matrix is inverted. If argument is 'None' then the FreeDofs of the underlining FESpace is used.
+      The FreeDofs on which the assembled matrix is inverted. If argument is 'None' then the FreeDofs of the underlying FESpace is used.
 
     maxit : int
       Number of maximal iteration for Newton. If the maximal number is reached before the maximal error Newton might no converge and a warning is displayed.
@@ -464,10 +469,7 @@ def Newton(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="umfpack", el_i
         a.Apply(u.vec, r)
         a.AssembleLinearization(u.vec)
 
-        if freedofs == None:
-            inv = a.mat.Inverse(u.space.FreeDofs(el_int), inverse=inverse)
-        else:
-            inv = a.mat.Inverse(freedofs, inverse=inverse)
+        inv = a.mat.Inverse(freedofs if freedofs else u.space.FreeDofs(el_int), inverse=inverse)
 
         if el_int:
             r.data += a.harmonic_extension_trans * r
@@ -507,7 +509,7 @@ def NewtonMinimization(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="um
       The GridFunction where the solution is saved. The values are used as initial guess for Newton's method.
 
     freedofs : BitArray
-      The FreeDofs on which the assembled matrix is inverted. If argument is 'None' then the FreeDofs of the underlining FESpace is used.
+      The FreeDofs on which the assembled matrix is inverted. If argument is 'None' then the FreeDofs of the underlying FESpace is used.
 
     maxit : int
       Number of maximal iteration for Newton. If the maximal number is reached before the maximal error Newton might no converge and a warning is displayed.
@@ -552,10 +554,7 @@ def NewtonMinimization(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="um
         a.Apply(u.vec, r)
         a.AssembleLinearization(u.vec)
 
-        if freedofs == None:
-            inv = a.mat.Inverse(u.space.FreeDofs(el_int),inverse=inverse)
-        else:
-            inv = a.mat.Inverse(freedofs,inverse=inverse)
+        inv = a.mat.Inverse(freedofs if freedofs else u.space.FreeDofs(el_int), inverse=inverse)
 
         if el_int:
             r.data += a.harmonic_extension_trans * r
