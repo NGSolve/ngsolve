@@ -212,6 +212,11 @@ namespace ngcomp
     void ApplyMCovariant (CoefficientFunction * rho, BaseVector & vec,
                           LocalHeap & lh) const;
 
+    virtual string GetClassName () const override
+    {
+      return "VectorL2FESpace";
+    }
+
   };
 
 }

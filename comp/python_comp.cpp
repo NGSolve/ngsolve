@@ -1560,9 +1560,6 @@ space : ngsolve.FESpace
   The finite element space the bilinearform is defined on. This
   can be a compound FESpace for a mixed formulation.
 
-check_unused : bool
-  If set prints warnings if not UNUSED_DOFS are not used
-
 )raw_string"));
   bf_class
     .def(py::init([bf_class] (shared_ptr<FESpace> fespace, /* bool check_unused, */
@@ -1615,7 +1612,9 @@ check_unused : bool
                      "  of the matrix on the finest grid. This is needed to use the multigrid\n"
                      "  preconditioner with a changing bilinearform.",
 		     py::arg("nonsym_storage") = "bool = False\n"
-		     " The full matrix is stored, even if the symmetric flag is set."
+		     " The full matrix is stored, even if the symmetric flag is set.",
+                     py::arg("check_unused") = "bool = True\n"
+		     " If set prints warnings if not UNUSED_DOFS are not used."
                      );
                 })
 

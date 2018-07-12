@@ -78,10 +78,11 @@ def CG(mat, rhs, pre=None, sol=None, tol=1e-12, maxsteps = 100, printrates = Tru
         s.data += w
 
         err = sqrt(abs(wd))
-        if err < tol*err0: break
-            
         if printrates:
             print ("it = ", it, " err = ", err)
+        if err < tol*err0: break
+    else:
+        print("Warning: CG did not converge to TOL")
 
     return u
 
@@ -260,13 +261,15 @@ def QMR(mat, rhs, fdofs, pre1=None, pre2=None, sol=None, maxsteps = 100, printra
         #Projected residuum: Better terminating condition necessary?
         ResNorm = sqrt( np.dot(r.FV().NumPy()[fdofs],r.FV().NumPy()[fdofs]))
         #ResNorm = sqrt(InnerProduct(r,r))
-        
-        if (ResNorm <= tol):
-            break
-                
+
         if (printrates):
             print ("it = ", i, " err = ", ResNorm)
             
+        if (ResNorm <= tol):
+            break
+    else:
+        print("Warning: QMR did not converge to TOL")
+
     return u
 
 
@@ -308,7 +311,7 @@ def MinRes(mat, rhs, pre=None, sol=None, maxsteps = 100, printrates = True, init
     Returns
     -------
     (vector)
-      Solution vector of the QMR method.
+      Solution vector of the MinRes method.
 
     """
     u = sol if sol else rhs.CreateVector()
@@ -404,6 +407,8 @@ def MinRes(mat, rhs, pre=None, sol=None, maxsteps = 100, printrates = True, init
 
         gamma = gamma_new
         ResNorm_old = ResNorm
+    else:
+        print("Warning: MinRes did not converge to TOL")
 
     return u
 
@@ -423,7 +428,7 @@ def Newton(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="umfpack", el_i
       The GridFunction where the solution is saved. The values are used as initial guess for Newton's method.
 
     freedofs : BitArray
-      The FreeDofs on which the assembled matrix is inverted. If argument is 'None' then the FreeDofs of the underlining FESpace is used.
+      The FreeDofs on which the assembled matrix is inverted. If argument is 'None' then the FreeDofs of the underlying FESpace is used.
 
     maxit : int
       Number of maximal iteration for Newton. If the maximal number is reached before the maximal error Newton might no converge and a warning is displayed.
@@ -438,7 +443,7 @@ def Newton(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="umfpack", el_i
       Flag if eliminate internal flag is used. If this is set to True then Newton uses static condensation to invert the matrix. If freedofs is not None, the user has to take care that the local dofs are set to zero in the freedofs array.
 
     dampfactor : float
-      Set the damping factor for Newton's method. If it is 1 then no damping is done. If value is < 1 then the damping is done by the formula 'min(1,dampfactor*it)' for the correction, where 'it' denotes the Newton iteration.
+      Set the damping factor for Newton's method. If dampfactor is 1 then no damping is done. If value is < 1 then the damping is done by the formula 'min(1,dampfactor*numit)' for the correction, where 'numit' denotes the Newton iteration.
 
     printing : bool
       Set if Newton's method should print informations about the actual iteration like the error. 
@@ -464,10 +469,7 @@ def Newton(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="umfpack", el_i
         a.Apply(u.vec, r)
         a.AssembleLinearization(u.vec)
 
-        if freedofs == None:
-            inv = a.mat.Inverse(u.space.FreeDofs(el_int), inverse=inverse)
-        else:
-            inv = a.mat.Inverse(freedofs, inverse=inverse)
+        inv = a.mat.Inverse(freedofs if freedofs else u.space.FreeDofs(el_int), inverse=inverse)
 
         if el_int:
             r.data += a.harmonic_extension_trans * r
@@ -482,7 +484,7 @@ def Newton(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="umfpack", el_i
             print("err = ", err)
 
         energy = a.Energy(u.vec)
-        u.vec.data -= min(1, it*dampfactor)*w
+        u.vec.data -= min(1, numit*dampfactor)*w
         
         if abs(err) < maxerr: break
     else:
@@ -507,7 +509,7 @@ def NewtonMinimization(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="um
       The GridFunction where the solution is saved. The values are used as initial guess for Newton's method.
 
     freedofs : BitArray
-      The FreeDofs on which the assembled matrix is inverted. If argument is 'None' then the FreeDofs of the underlining FESpace is used.
+      The FreeDofs on which the assembled matrix is inverted. If argument is 'None' then the FreeDofs of the underlying FESpace is used.
 
     maxit : int
       Number of maximal iteration for Newton. If the maximal number is reached before the maximal error Newton might no converge and a warning is displayed.
@@ -522,7 +524,7 @@ def NewtonMinimization(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="um
       Flag if eliminate internal flag is used. If this is set to True then Newton uses static condensation to invert the matrix. If freedofs is not None, the user has to take care that the local dofs are set to zero in the freedofs array.
 
     dampfactor : float
-      Set the damping factor for Newton's method. If it is 1 then no damping is done. If value is < 1 then the damping is done by the formula 'min(1,dampfactor*it)' for the correction, where 'it' denotes the Newton iteration.
+      Set the damping factor for Newton's method. If dampfactor is 1 then no damping is done. If value is < 1 then the damping is done by the formula 'min(1,dampfactor*numit)' for the correction, where 'numit' denotes the Newton iteration.
 
     linesearch : bool
       If True then linesearch is used to guarantee that the energy decreases in every Newton iteration.
@@ -552,10 +554,7 @@ def NewtonMinimization(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="um
         a.Apply(u.vec, r)
         a.AssembleLinearization(u.vec)
 
-        if freedofs == None:
-            inv = a.mat.Inverse(u.space.FreeDofs(el_int),inverse=inverse)
-        else:
-            inv = a.mat.Inverse(freedofs,inverse=inverse)
+        inv = a.mat.Inverse(freedofs if freedofs else u.space.FreeDofs(el_int), inverse=inverse)
 
         if el_int:
             r.data += a.harmonic_extension_trans * r
@@ -570,9 +569,9 @@ def NewtonMinimization(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="um
             print("err = ", err)
 
         energy = a.Energy(u.vec)
-        uh.data = u.vec - min(1, it*dampfactor)*w
+        uh.data = u.vec - min(1, numit*dampfactor)*w
             
-        tau = min(1, it*dampfactor)
+        tau = min(1, numit*dampfactor)
         if linesearch:
             while a.Energy(uh) > energy+1e-15:
                 tau *= 0.5
