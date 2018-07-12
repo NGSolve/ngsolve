@@ -1,5 +1,6 @@
 from ngsolve.la import InnerProduct
 from math import sqrt
+from ngsolve import Projector, Norm
 
 def CG(mat, rhs, pre=None, sol=None, tol=1e-12, maxsteps = 100, printrates = True, initialize = True, conjugate=False):
     """preconditioned conjugate gradient method
@@ -585,3 +586,75 @@ def NewtonMinimization(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="um
         print("Warning: Newton might not converge!")
         return (-1,numit)
     return (0,numit)
+
+
+
+def PreconditionedRichardson(a, rhs, pre=None, freedofs=None, maxit=100, tol=1e-8, el_int=False, dampfactor=1.0, printing=True):
+    """ Preconditioned Richardson Iteration
+
+    Parameters
+    ----------
+    a : BilinearForm
+      The left hand side of the equation to solve
+
+    rhs : Vector
+      The right hand side of the equation.
+
+    pre : Preconditioner
+      If provided the preconditioner is used.
+    
+    freedofs : BitArray
+      The FreeDofs on which the Richardson iteration acts. If argument is 'None' then the FreeDofs of the underlying FESpace is used.
+
+    maxit : int
+      Number of maximal iteration for Richardson iteration. If the maximal number is reached before the tolerance is reached a warning is displayed.
+
+    tol : double
+      Tolerance of the residuum. Richardson iteration stops if residuum < tolerance*initial_residuum is reached.
+
+    el_int : bool
+      Flag if eliminate internal flag is used. If this is set to True then Richardson iteration acts only on the non-local dofs. If freedofs is not None, the user has to take care that the local dofs are set to zero in the freedofs array.
+
+    dampfactor : float
+      Set the damping factor for the Richardson iteration. If it is 1 then no damping is done. Values greater than 1 are allowed.
+
+    printing : bool
+      Set if Richardson iteration should print informations about the actual iteration like the residuum. 
+
+    Returns
+    -------
+    (vector)
+      Solution vector of the Preconditioned Richardson iteration.
+
+    """
+
+    u = rhs.CreateVector()
+    r = rhs.CreateVector()
+    u[:] = 0
+
+    projector = Projector(freedofs if freedofs else a.space.FreeDofs(coupling=el_int), False)
+    
+    r.data = rhs # r.data = rhs - a.mat*u
+    r.data -= projector*r
+
+    it = 0
+    initial_res_norm = Norm(r)
+    if printing:
+        print("it =", it, " ||res||_2 =", initial_res_norm) 
+    
+    for it in range(1, maxit+1):
+        u.data += dampfactor*(pre*r if pre else r)
+        r.data = rhs - a.mat*u
+        r.data -= projector*r
+
+        res_norm = Norm(r)
+        if printing:
+            print("it =", it, " ||res||_2 =", res_norm)  
+        if res_norm < tol*initial_res_norm:
+            break
+    else:
+        print("Warning: Preconditioned Richardson did not converge to TOL")    
+
+    return u   
+
+
