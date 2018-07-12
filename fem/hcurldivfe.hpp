@@ -502,7 +502,7 @@ namespace ngfem
   auto Sigma_gradu_v (AutoDiffDiff<D,T> au, AutoDiffDiff<D,T> av ) { return T_Sigma_gradu_v<D,T>(au,av); }
 
   /* ############### Type 1.1 (for QUAD) - inner basis functions - not div-free ############### */
-  /* grad(u) * Curl(v) */
+  /* dev ( grad(u) * Curl(v) ) */
   template <int D, typename T> class T_Gradu_Curlv;
   template <typename T>  class T_Gradu_Curlv<2,T>
   {
@@ -511,10 +511,13 @@ namespace ngfem
     T_Gradu_Curlv  (AutoDiffDiff<2,T> au, AutoDiffDiff<2,T> av) : u(au), v(av){ ; }
 
     Vec<4,T> Shape() {
-      return Vec<4,T> (-  v.DValue(1)*u.DValue(0),
+
+      auto trace = (-  v.DValue(1)*u.DValue(0) + v.DValue(0)*u.DValue(1)) / 2.0;
+      
+      return Vec<4,T> (-  v.DValue(1)*u.DValue(0) - trace,
 		      v.DValue(0)*u.DValue(0),
 		     - v.DValue(1)*u.DValue(1),
-		     v.DValue(0)*u.DValue(1)
+		     v.DValue(0)*u.DValue(1) - trace
 		     );
     }
 
@@ -525,7 +528,7 @@ namespace ngfem
       T ux = u.DValue(0), uy = u.DValue(1);
       T vx = v.DValue(0), vy = v.DValue(1);
       
-      return Vec<2,T> (-vy*uxx + vx*uxy,-vy*uxy + vx * uyy);
+      return Vec<2,T> (-vy*uxx + vx*uxy - 0.5*(-vxy*ux - vy*uxx + vxx*uy + vx*uxy),-vy*uxy + vx * uyy - 0.5*(-vyy*ux - vy*uxy + vxy*uy + vx*uyy));
     }
 
     Vec<2,T> CurlShape()
@@ -553,6 +556,7 @@ namespace ngfem
     T_u_Sigma_gradv  (AutoDiffDiff<2,T> au,AutoDiffDiff<2,T> av) : u(au),v(av){ ; }
     
     Vec<4,T> Shape() {
+      
       return Vec<4,T> (-u.Value() * v.DDValue(0,1), u.Value() *  v.DDValue(0,0),
 		     -u.Value() * v.DDValue(1,1), u.Value() * v.DDValue(0,1)
 		     );
@@ -958,11 +962,17 @@ namespace ngfem
 	  order = max2(order, order_facet[i]);
 	}
       
-      int ninner = 2*(order_inner+1)*(order_inner+1) + (order_inner+2)*(order_inner) *2;
+      int ninner = (order_inner+1)*(order_inner+1) + (order_inner+2)*(order_inner) *2;    
       
       order = max2(order, order_inner);
       order += 4;
-      ndof += ninner;     
+      ndof += ninner;
+
+      if (order_trace > -1)
+	{
+	  ndof += (order_trace+1)*(order_trace+1);
+	  order = max2(order, order_trace);
+	}
      
     }
     
@@ -973,11 +983,14 @@ namespace ngfem
       Tx lx[4] ={1-x, x, x, 1-x};
       Tx ly[4] = {1-y, 1-y, y, y};
       //Tx lam[4] = {(1-x)*(1-y),x*(1-y),x*y,(1-x)*y};
-      Tx edgebubbles[4] = {(1-x)*x, x*(1-x), y*(1-y), (1-y)*y}; 
+      Tx edgebubbles[4] = {(1-x)*x, x*(1-x), y*(1-y), (1-y)*y};
+
+      typedef decltype(x.Value()+x.Value()) T;
       
       int ii = 0;
       
       int oi=order_inner;
+      int ot = order_trace;
       
       int maxorder_facet =
         max2(order_facet[3],max2(order_facet[0],max2(order_facet[1],order_facet[2])));
@@ -1004,8 +1017,15 @@ namespace ngfem
 
       // constants in diagonal
       // off-diagonal constant functions are provided by edge functions
-      shape[ii++] = Sigma_gradu_v(lx[0],ly[0]);      
-      shape[ii++] = Sigma_gradu_v(ly[0],lx[0]);
+
+      
+      shape[ii++] = u_Sigma_gradv(AutoDiffDiff<2,T>(1.0), lx[0]*ly[0]);
+      //shape[ii++] = u_Sigma_gradv(lx[0]-lx[1], lx[0]*ly[0]);
+	
+      //shape[ii++] = Sigma_gradu_v(lx[0],ly[0]);
+
+      if (ot>-1)
+	shape[ii++] = Sigma_gradu_v(ly[0],lx[0]);
 
       //provide mixed functions in the diagonal
       for(int i = 0; i <= oi-1; i++)
@@ -1013,7 +1033,8 @@ namespace ngfem
         for(int j = 0; j <= oi-1; j++)
         {
           shape[ii++] = Sigma_gradv(u[i]*v[j]);
-	  shape[ii++] = Sigma_gradu_v(u[i],v[j]);
+	  if (ot>-1)
+	    shape[ii++] = Sigma_gradu_v(u[i],v[j]);
 	}
       }
 
@@ -1030,8 +1051,11 @@ namespace ngfem
       // lienar (and high order) parts in the diagonal
       for(int i = 0; i <= oi-1; i++)
        {
-	 shape[ii++] = Sigma_gradu_v(ly[0],u[i]);
-	 shape[ii++] = Sigma_gradu_v(lx[0],v[i]);
+	 if (ot>-1)
+	   {
+	     shape[ii++] = Sigma_gradu_v(ly[0],u[i]);
+	     shape[ii++] = Sigma_gradu_v(lx[0],v[i]);
+	   }
 
 	 shape[ii++] = Gradu_Curlv(u[i],ly[0]);
 	 shape[ii++] = Gradu_Curlv(v[i],lx[0]);	 
