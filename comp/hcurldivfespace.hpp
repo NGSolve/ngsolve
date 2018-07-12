@@ -19,6 +19,8 @@ namespace ngcomp
     Array<int> order_facet;
     Array<int> order_inner;
     Array<int> order_trace;
+
+    bool hiddeneldofs;
     
     // add curldiv-free inner bubbles
     bool discontinuous;
