@@ -533,8 +533,10 @@ namespace ngcomp
         }
         break;
       case ET_QUAD:
-	ndof += 2*(oi+1)*(oi+1) + (oi + 2) * oi * 2;
-
+	ndof += (oi+1)*(oi+1) + (oi + 2) * oi * 2;
+	if (ot>-1)
+	  ndof += (ot + 1) * (ot + 1);
+	
         if(discontinuous)
         {
           for (auto f : ma->GetElFacets(ei))
@@ -588,13 +590,20 @@ namespace ngcomp
       switch(ma->GetElType(e.Nr()))
 	{
 	case ET_TRIG:
-	  ctofdof[innerdofs[0]] = INTERFACE_DOF;
-	  offset = 1;
+	  if(order_trace[e.Nr()]>-1)
+	    {
+	      ctofdof[innerdofs[0]] = INTERFACE_DOF;
+	      offset = 1;
+	    }
 	  break;
 	case ET_QUAD:
 	  ctofdof[innerdofs[0]] = INTERFACE_DOF;
-	  ctofdof[innerdofs[1]] = INTERFACE_DOF;
-	  offset = 2;
+	  offset = 1;
+	  if(order_trace[e.Nr()]>-1)
+	    {
+	      ctofdof[innerdofs[1]] = INTERFACE_DOF;
+	      offset += 1;
+	    }
 	  break;
 	case ET_TET:
 	  ctofdof[innerdofs[0]] = INTERFACE_DOF; 
