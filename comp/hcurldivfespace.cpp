@@ -448,8 +448,8 @@ namespace ngcomp
     : FESpace(ama,flags)
   {
     order = int (flags.GetNumFlag ("order",1));
-    //plus = flags.GetDefineFlag ("plus");
-    //withtrace = flags.GetDefineFlag ("withtrace");
+
+    hiddeneldofs = flags.GetDefineFlag("hidden_elementdofs");
     
     discontinuous = flags.GetDefineFlag("discontinuous");
     uniform_order_facet = int(flags.GetNumFlag("orderfacet",order));
@@ -614,7 +614,10 @@ namespace ngcomp
       
       for (int dof = offset; dof < innerdofs.Size(); dof++)
       {
-        ctofdof[innerdofs[dof]] = LOCAL_DOF;
+	if (hiddeneldofs)	  
+	  ctofdof[innerdofs[dof]] = HIDDEN_DOF;
+	else
+	  ctofdof[innerdofs[dof]] = LOCAL_DOF;
       }
     }
 
