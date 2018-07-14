@@ -529,7 +529,7 @@ namespace ngfem
     */
   }
 
-#ifdef __AVX__
+
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   AddTrans (const SIMD_IntegrationRule & ir,
@@ -565,6 +565,7 @@ namespace ngfem
       case 1: AddTrans (ir, values.Row(j), coefs.Col(j)); break;
       case 2:
         {
+          /*
           for (size_t i = 0; i < hir.Size(); i++)
             {
               TIP<DIM,SIMD<double>> pt = hir[i].TIp<DIM>();
@@ -582,25 +583,61 @@ namespace ngfem
                                         pcoefs += dist;
                                       } ));
             }
+          */
+          /*
+          SIMD<mask64,4> mask(2);
+          for (size_t i = 0; i < hir.Size(); i++)
+            {
+              TIP<DIM,SIMD<double>> pt = hir[i].TIp<DIM>();
+              SIMD<double> val1 = values(j,i);
+              SIMD<double> val2 = values(j+1,i);
+              double * pcoefs = &coefs(j);
+              size_t dist = coefs.Dist();
+              T_CalcShape (pt, 
+                           SBLambda ( [val1,val2,mask,&pcoefs,dist](int j, SIMD<double> shape)
+                                      {
+                                        auto val = HSum(shape*val1, shape*val2, shape*val2, shape*val2);
+                                        val += SIMD<double,4> (pcoefs, mask);
+                                        val.Store(pcoefs, mask);
+                                        pcoefs += dist;
+                                      } ));
+            }
+          */
+          for (size_t i = 0; i < hir.Size(); i++)
+            {
+              TIP<DIM,SIMD<double>> pt = hir[i].TIp<DIM>();
+              SIMD<double> val1 = values(j,i);
+              SIMD<double> val2 = values(j+1,i);
+              double * pcoefs = &coefs(j);
+              size_t dist = coefs.Dist();
+              T_CalcShape (pt, 
+                           SBLambda ( [val1,val2,&pcoefs,dist](int j, SIMD<double> shape)
+                                      {
+                                        auto val = HSum(shape*val1, shape*val2);
+                                        val += SIMD<double,2> (pcoefs);
+                                        val.Store(pcoefs);
+                                        pcoefs += dist;
+                                      } ));
+            }
           break;
         }
       case 3:
         {
+          SIMD<mask64,4> mask(3);
           for (size_t i = 0; i < hir.Size(); i++)
             {
               TIP<DIM,SIMD<double>> pt = hir[i].TIp<DIM>();
               SIMD<double> val1 = values(j,i);
               SIMD<double> val2 = values(j+1,i);
               SIMD<double> val3 = values(j+2,i);
-              __m256i mask = _mm256_set_epi64x(0, -1, -1, -1);
               double * pcoefs = &coefs(j);
               size_t dist = coefs.Dist();
               T_CalcShape (pt, 
-                           SBLambda ( [&](int j, SIMD<double> shape)
+                           SBLambda ( [val1,val2,val3,mask,dist,&pcoefs](int j, SIMD<double> shape)
                                       {
                                         auto val = HSum(shape*val1, shape*val2, shape*val3, shape*val3);
-                                        val += SIMD<double,4> (_mm256_maskload_pd (pcoefs, mask));
-                                        _mm256_maskstore_pd (pcoefs, mask, val.Data());
+                                        val += SIMD<double,4> (pcoefs, mask); 
+                                        val.Store(pcoefs, mask);
                                         pcoefs += dist;
                                       } ));
             }
@@ -612,7 +649,6 @@ namespace ngfem
       Evaluate (ir, coefs.Col(j), values.Row(j));
         */
   }
-#endif
   
 
   
