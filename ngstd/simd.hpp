@@ -718,7 +718,7 @@ namespace ngstd
 
   INLINE auto HSum (SIMD<double,8> sd1, SIMD<double,8> sd2)
   {
-    return std::make_tuple(HSum(sd1), HSum(sd2));
+    return SIMD<double,2>(HSum(sd1), HSum(sd2));
   }
 
   INLINE SIMD<double,4> HSum (SIMD<double,8> v1, SIMD<double,8> v2, SIMD<double,8> v3, SIMD<double,8> v4)
