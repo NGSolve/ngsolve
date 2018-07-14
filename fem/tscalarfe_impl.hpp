@@ -554,7 +554,8 @@ namespace ngfem
                                     {
                                       auto val = HSum(shape*val1, shape*val2, shape*val3, shape*val4);
                                       val += SIMD<double,4> (pcoefs);
-                                      _mm256_storeu_pd (pcoefs, val.Data());
+                                      // _mm256_storeu_pd (pcoefs, val.Data());
+                                      val.Store(pcoefs);
                                       pcoefs += dist;
                                     } ));
           }
