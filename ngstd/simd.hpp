@@ -203,11 +203,7 @@ namespace ngstd
   {
     SIMD<mask64,2> lo, hi;
   public:
-    SIMD (int i)
-    {
-      lo = SIMD<mask64,2> (i);
-      hi = SIMD<mask64,2> (i-2);
-    }
+    SIMD (int i) : lo(i), hi(i-2) { ; } 
     SIMD<mask64,2> Lo() const { return lo; }
     SIMD<mask64,2> Hi() const { return hi; }
     static constexpr int Size() { return 4; }    
