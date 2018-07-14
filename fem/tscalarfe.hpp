@@ -74,11 +74,11 @@ namespace ngfem
     HD NGS_DLL_HEADER virtual void AddTrans (const SIMD_IntegrationRule & ir,
                                              BareVector<SIMD<double>> values,
                                              BareSliceVector<> coefs) const override;
-#ifdef __AVX__
+
     HD NGS_DLL_HEADER virtual void AddTrans (const SIMD_IntegrationRule & ir,
                                              BareSliceMatrix<SIMD<double>> values,
                                              SliceMatrix<> coefs) const override; 
-#endif
+
     HD NGS_DLL_HEADER virtual Vec<DIM> EvaluateGrad (const IntegrationPoint & ip, 
                                                      BareSliceVector<> x) const override;
 

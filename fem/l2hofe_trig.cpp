@@ -5,7 +5,7 @@
 /*********************************************************************/
 
 #define FILE_L2HOFE_CPP
-
+ 
 #include <fem.hpp>
 #include <tscalarfe_impl.hpp>
 #include <l2hofe_impl.hpp>
