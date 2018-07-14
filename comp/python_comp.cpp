@@ -2285,6 +2285,37 @@ flags : dict
 	py::arg("definedon")=DummyArgument(),
         py::arg("region_wise")=false,
 	py::arg("element_wise")=false,
+        R"raw(
+Parameters
+----------
+
+cf: ngsolve.CoefficientFunction
+  Function to be integrated. Can be vector valued, then the result is an array. If you want to integrate
+  a lot of functions on the same domain, it will be faster to put them into a vector valued function,
+  NGSolve will then be able to use parallelization and SIMD vectorization more efficiently.
+
+mesh: ngsolve.Mesh
+  The mesh to be integrated on.
+
+VOL_or_BND: ngsolve.VorB = VOL
+  Co-dimension to be integrated on. Historically this could be volume (VOL) or boundary (BND). If your mesh
+  contains co-dim 2 elements this can now be BBND (edges in 3d) as well.
+
+order: int = 5
+  Integration order, polynomials up to this order will be integrated exactly.
+
+definedon: ngsolve.Region
+  Region to be integrated on. Such region can be created with mesh.Boundaries('bcname') or mesh.Materials('matname')
+  it will overwrite the VOL_or_BND argument if given.
+
+region_wise: bool = False
+  Integrates region wise on the co-dimension given by VOL_or_BND. Returns results as an array, matching the array
+  returned by mesh.GetMaterials() or mesh.GetBoundaries(). Does not support vector valued CoefficientFunctions.
+
+element_wise: bool = False
+  Integrates element wise and returns result in a list. This is typically used for local error estimators.
+  Does not support vector valued CoefficientFunctions
+)raw",
         py::call_guard<py::gil_scoped_release>())
     ;
   
