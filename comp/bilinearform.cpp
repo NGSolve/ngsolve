@@ -1068,7 +1068,7 @@ namespace ngcomp
                              
                              Array<int> idofs1(dnums.Size(), lh);
                              
-                             fespace->GetDofNrs (el, idofs1, CONDENSATABLE_DOF);
+                             fespace->GetDofNrs (el, idofs1, CONDENSABLE_DOF);
                              for (int j = 0; j < idofs1.Size(); j++)
                                idofs1[j] = dnums.Pos(idofs1[j]);
                              
@@ -1132,7 +1132,7 @@ namespace ngcomp
                                      Array<int> idnums1(dnums.Size(), lh), 
                                        ednums1(dnums.Size(), lh),
                                        hdnums1(dnums.Size(), lh);
-                                     fespace->GetDofNrs(el,idnums1,CONDENSATABLE_DOF);
+                                     fespace->GetDofNrs(el,idnums1,CONDENSABLE_DOF);
                                      fespace->GetDofNrs(el,ednums1,EXTERNAL_DOF);
                                      fespace->GetDofNrs(el,hdnums1,HIDDEN_DOF);
                                      int count = 0;
@@ -2532,7 +2532,7 @@ namespace ngcomp
                      ArrayMem<int,100> idofs, idofs1, odofs;
                      int i = el.Nr();
 
-                     fespace->GetDofNrs (el, idofs1, CONDENSATABLE_DOF);
+                     fespace->GetDofNrs (el, idofs1, CONDENSABLE_DOF);
                      for (int j = 0; j < idofs1.Size(); j++)
                        idofs1[j] = dnums.Pos(idofs1[j]);
                           
@@ -2593,7 +2593,7 @@ namespace ngcomp
                              ArrayMem<int,50> hdnums1;
                              ArrayMem<int,50> ednums1, ednums;
                              
-                             fespace->GetDofNrs(el,idnums1,CONDENSATABLE_DOF);
+                             fespace->GetDofNrs(el,idnums1,CONDENSABLE_DOF);
                              fespace->GetDofNrs(el,ednums1,EXTERNAL_DOF);
                              fespace->GetDofNrs(el,hdnums1,HIDDEN_DOF);
 

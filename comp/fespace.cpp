@@ -466,7 +466,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     external_free_dofs = make_shared<BitArray>(GetNDof());
     *external_free_dofs = *free_dofs;
     for (auto i : Range(ctofdof))
-      if (ctofdof[i] & CONDENSATABLE_DOF)
+      if (ctofdof[i] & CONDENSABLE_DOF)
 	external_free_dofs->Clear(i);
 
     if (print)
@@ -1549,7 +1549,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       case UNUSED_DOF: ost << "unused"; break;
       case HIDDEN_DOF:  ost << "hidden"; break;
       case LOCAL_DOF:  ost << "local"; break;
-      case CONDENSATABLE_DOF:  ost << "condensable"; break;
+      case CONDENSABLE_DOF:  ost << "condensable"; break;
       case INTERFACE_DOF: ost << "interface"; break;
       case NONWIREBASKET_DOF: ost << "non-wirebasket"; break;
       case WIREBASKET_DOF: ost << "wirebasket"; break;
@@ -2481,7 +2481,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
         external_free_dofs = make_shared<BitArray>(GetNDof());
         *external_free_dofs = *free_dofs;
         for (int i = 0; i < ctofdof.Size(); i++)
-          if (ctofdof[i] & CONDENSATABLE_DOF)
+          if (ctofdof[i] & CONDENSABLE_DOF)
             external_free_dofs->Clear(i);
 
 

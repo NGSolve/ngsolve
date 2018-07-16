@@ -250,7 +250,7 @@ HIDDEN_DOF: Inner degree of freedom, that will be eliminated by static
        DOF, e.g. as a LOCAL_DOF
      * To a HIDDEN_DOF the r.h.s. vector must have zero entries.
 
-CONDENSATABLE_DOF: Inner degree of freedom, that will be eliminated by static
+CONDENSABLE_DOF: Inner degree of freedom, that will be eliminated by static
     condensation (LOCAL_DOF or HIDDEN_DOF)
 
 INTERFACE_DOF: Degree of freedom between two elements, these will not be
@@ -272,7 +272,7 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
     .value("UNUSED_DOF", UNUSED_DOF)
     .value("HIDDEN_DOF", HIDDEN_DOF)
     .value("LOCAL_DOF", LOCAL_DOF)
-    .value("CONDENSATABLE_DOF", CONDENSATABLE_DOF)
+    .value("CONDENSABLE_DOF", CONDENSABLE_DOF)
     .value("INTERFACE_DOF", INTERFACE_DOF)
     .value("NONWIREBASKET_DOF", NONWIREBASKET_DOF)
     .value("WIREBASKET_DOF", WIREBASKET_DOF)
