@@ -302,12 +302,12 @@ void GetValues( const CoefficientFunction &cf, LocalHeap &lh, const TMIR &mir, F
 }
 
 void ExportVisFunctions(py::module &m) {
-    m.def("_GetVisualizationData", [] (shared_ptr<ngcomp::MeshAccess> ma, map<ELEMENT_TYPE, IntegrationRule> irs) {
+    m.def("_GetVisualizationData", [] (shared_ptr<ngcomp::MeshAccess> ma, map<ngfem::ELEMENT_TYPE, IntegrationRule> irs) {
             struct ElementInformation {
-                ElementInformation( ELEMENT_TYPE type_, bool curved_=false)
+                ElementInformation( ngfem::ELEMENT_TYPE type_, bool curved_=false)
                   : type(type_), curved(curved_), nelements(0) { }
                 Array<int> data; // the data that will go into the gpu texture buffer
-                ELEMENT_TYPE type;
+                ngfem::ELEMENT_TYPE type;
                 bool curved;
                 int nelements;
             };
@@ -522,18 +522,18 @@ void ExportVisFunctions(py::module &m) {
             return py_eldata;
          });
 
-    m.def("_GetValues", [] (shared_ptr<ngfem::CoefficientFunction> cf, shared_ptr<ngcomp::MeshAccess> ma, VorB vb, map<ELEMENT_TYPE, IntegrationRule> irs) {
+    m.def("_GetValues", [] (shared_ptr<ngfem::CoefficientFunction> cf, shared_ptr<ngcomp::MeshAccess> ma, VorB vb, map<ngfem::ELEMENT_TYPE, IntegrationRule> irs) {
               auto tm = task_manager;
               task_manager = nullptr;
               LocalHeap lh(10000000, "GetValues");
               int dim = ma->GetDimension();
               if(vb==BND) dim-=1;
 
-              map<ELEMENT_TYPE, SIMD_IntegrationRule> simd_irs;
+              map<ngfem::ELEMENT_TYPE, SIMD_IntegrationRule> simd_irs;
               for (auto & p : irs ) {
                 simd_irs[p.first] = p.second;
               }
-              typedef std::pair<ELEMENT_TYPE,bool> T_ET;
+              typedef std::pair<ngfem::ELEMENT_TYPE,bool> T_ET;
               map<T_ET, Array<float>> values_real;
               map<T_ET, Array<float>> values_imag;
 
