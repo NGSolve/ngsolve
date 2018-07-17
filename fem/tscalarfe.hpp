@@ -106,6 +106,10 @@ namespace ngfem
                                                  BareSliceMatrix<SIMD<double>> values,
                                                  BareSliceVector<> coefs) const override;
 
+    HD NGS_DLL_HEADER virtual void AddGradTrans (const SIMD_BaseMappedIntegrationRule & ir,
+                                                 BareSliceMatrix<SIMD<double>> values,
+                                                 SliceMatrix<> coefs) const override;
+
 /*    
     virtual void CalcDShape (const IntegrationPoint & ip, 
 			     const std::function<void(int,Vec<DIM>)> & callback) const;
