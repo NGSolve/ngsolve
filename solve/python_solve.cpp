@@ -224,7 +224,7 @@ void NGS_DLL_HEADER ExportNgsolve(py::module &m ) {
 //////////////////////////////////////////////////////////////////////////////
 
 template <typename TSCAL>
-void ExtractRealImag(const TSCAL val, int i, float &real, float &imag);
+static void ExtractRealImag(const TSCAL val, int i, float &real, float &imag);
 
 template<> void ExtractRealImag(const SIMD<Complex> val, int i, float &real, float &imag) {
     real = val.real()[i];
@@ -240,7 +240,7 @@ template<> void ExtractRealImag(const SIMD<double> val, int i, float &real, floa
 template<> void ExtractRealImag(const double val, int i, float &real, float &imag) { real = val; }
 
 template<typename TSCAL, typename TMIR>
-void GetValues( const CoefficientFunction &cf, LocalHeap &lh, const TMIR &mir, FlatArray<float> values_real, FlatArray<float> values_imag , FlatArray<float> min, FlatArray<float> max) {
+static void GetValues( const CoefficientFunction &cf, LocalHeap &lh, const TMIR &mir, FlatArray<float> values_real, FlatArray<float> values_imag , FlatArray<float> min, FlatArray<float> max) {
     static_assert( is_same<TSCAL, SIMD<double>>::value || is_same<TSCAL, SIMD<Complex>>::value || is_same<TSCAL, double>::value || is_same<TSCAL, Complex>::value, "Unsupported type in GetValues");
 
     HeapReset hr(lh);
@@ -301,6 +301,40 @@ void GetValues( const CoefficientFunction &cf, LocalHeap &lh, const TMIR &mir, F
 
 }
 
+template<int S, int R>
+static BaseMappedIntegrationRule &T_GetMappedIR (IntegrationRule & ir, ElementTransformation & eltrans, LocalHeap &lh ) {
+    void *p = lh.Alloc(sizeof(MappedIntegrationRule<S,R>));
+    return *new (p) MappedIntegrationRule<S,R> (ir, eltrans, lh);
+}
+
+template<int S, int R>
+static SIMD_BaseMappedIntegrationRule &T_GetMappedIR (SIMD_IntegrationRule & ir, ElementTransformation & eltrans, LocalHeap &lh ) {
+    void *p = lh.Alloc(sizeof(SIMD_MappedIntegrationRule<S,R>));
+    return *new (p) SIMD_MappedIntegrationRule<S,R> (ir, eltrans, lh);
+}
+
+
+template<typename TIR>
+static auto &GetMappedIR (shared_ptr<MeshAccess> ma, Ngs_Element &el, TIR & ir, LocalHeap &lh ) {
+    ElementTransformation & eltrans = ma->GetTrafo (el, lh);
+    const int dim = ma->GetDimension();
+    const auto vb = el.VB();
+
+    if(dim==1) {
+        if(vb==VOL) return T_GetMappedIR<1,1>(ir, eltrans, lh);
+    }
+    if(dim==2) {
+        if(vb==BND) return T_GetMappedIR<1,2>(ir, eltrans, lh);
+        if(vb==VOL) return T_GetMappedIR<2,2>(ir, eltrans, lh);
+    }
+    if(dim==3) {
+        if(vb==BBND) return T_GetMappedIR<1,3>(ir, eltrans, lh);
+        if(vb==BND) return T_GetMappedIR<2,3>(ir, eltrans, lh);
+        if(vb==VOL) return T_GetMappedIR<3,3>(ir, eltrans, lh);
+    }
+    throw Exception("GetMappedIR: unknown dimension/VorB combination: " + ToString(vb) + ","+ToString(dim));
+}
+
 void ExportVisFunctions(py::module &m) {
     m.def("_GetVisualizationData", [] (shared_ptr<ngcomp::MeshAccess> ma, map<ngfem::ELEMENT_TYPE, IntegrationRule> irs) {
             struct ElementInformation {
@@ -348,14 +382,16 @@ void ExportVisFunctions(py::module &m) {
               return res;
             };
 
+            const int dim = ma->GetDimension();
+
             std::map<VorB, py::list> element_data;
             ElementInformation points(ET_POINT);
             points.nelements = ma->GetNV();
-            element_data[getVB(ma->GetDimension())].append(toDict(points));
+            element_data[getVB(dim)].append(toDict(points));
 
             ElementInformation edges(ET_SEGM);
 
-            if(ma->GetDimension()>=2) {
+            if(dim>=2) {
                 // collect edges
                 edges.nelements = ma->GetNEdges();
                 edges.data.SetAllocSize(edges.nelements*4);
@@ -374,11 +410,11 @@ void ExportVisFunctions(py::module &m) {
                 for (const auto& pair : ma->GetPeriodicNodes(NT_VERTEX, idnr))
                     periodic_vertices.data.Append({idnr, -1, pair[0],pair[1]});
 
-            if(ma->GetDimension()>=1) {
+            if(dim>=1) {
                 ElementInformation edges[2] = { {ET_SEGM}, {ET_SEGM, true } };
 
                 // 1d Elements
-                VorB vb = getVB(ma->GetDimension()-1);
+                VorB vb = getVB(dim-1);
                 for (auto el : ma->Elements(vb)) {
                     auto verts = el.Vertices();
                     auto &ei = edges[el.is_curved];
@@ -389,9 +425,8 @@ void ExportVisFunctions(py::module &m) {
                         ei.data.Append(vertices.Size()/3);
 
                         HeapReset hr(lh);
-                        ElementTransformation & eltrans = ma->GetTrafo (el, lh);
                         IntegrationRule &ir = irs[el.GetType()];
-                        auto & mir = eltrans(ir ,lh );
+                        auto & mir = GetMappedIR(ma, el, ir, lh);
                         // normals of corner vertices
                         for (auto j : ngcomp::Range(2)) {
                             auto p = static_cast<DimMappedIntegrationPoint<1>&>(mir[j]);
@@ -408,12 +443,12 @@ void ExportVisFunctions(py::module &m) {
                 if(edges[0].nelements>0) element_data[vb].append(toDict(edges[0]));
                 if(edges[1].nelements>0) element_data[vb].append(toDict(edges[1]));
             }
-            if(ma->GetDimension()>=2) {
+            if(dim>=2) {
                 // 2d Elements
                 ElementInformation trigs[2] = { {ET_TRIG}, {ET_TRIG, true } };
                 ElementInformation quads[2] = { {ET_QUAD}, {ET_QUAD, true } };
 
-                VorB vb = getVB(ma->GetDimension()-2);
+                VorB vb = getVB(dim-2);
                 for (auto el : ma->Elements(vb)) {
                     auto verts = el.Vertices();
                     auto nverts = verts.Size();
@@ -427,9 +462,8 @@ void ExportVisFunctions(py::module &m) {
                     if(el.is_curved) {
                         ei.data.Append(vertices.Size()/3);
                         HeapReset hr(lh);
-                        ElementTransformation & eltrans = ma->GetTrafo (el, lh);
                         IntegrationRule &ir = irs[el.GetType()];
-                        auto & mir = eltrans(ir ,lh );
+                        auto & mir = GetMappedIR(ma, el, ir, lh);
                         // normals of corner vertices
                         for (auto j : ngcomp::Range(nverts)) {
                             Vec<3> n(0,0,1);
@@ -453,7 +487,7 @@ void ExportVisFunctions(py::module &m) {
                 }
             }
 
-            if(ma->GetDimension()==3) {
+            if(dim==3) {
                 ElementInformation tets[2] = { {ET_TET}, {ET_TET, true } };
                 ElementInformation pyramids[2] = { {ET_PYRAMID}, {ET_PYRAMID, true } };
                 ElementInformation prisms[2] = { {ET_PRISM}, {ET_PRISM, true } };
@@ -483,8 +517,7 @@ void ExportVisFunctions(py::module &m) {
                     if(el.is_curved) {
                         ei.data.Append(vertices.Size()/3);
                         HeapReset hr(lh);
-                        ElementTransformation & eltrans = ma->GetTrafo (el, lh);
-                        auto & mir = eltrans(ir ,lh );
+                        auto & mir = GetMappedIR(ma, el, ir, lh);
                         // mapped coordinates of edge midpoints (for P2 interpolation)
                         for (auto &ip : mir) {
                           auto p = ip.GetPoint();
@@ -573,12 +606,11 @@ void ExportVisFunctions(py::module &m) {
                   size_t next = first + values_per_element;
                   vals_real.SetSize(next);
                   if(cf->IsComplex()) vals_imag.SetSize(next);
-                  ElementTransformation & eltrans = ma->GetTrafo (el, mlh);
                   if(use_simd)
                     {
                       try
                         {
-                          auto & mir = eltrans(simd_ir ,lh );
+                          auto & mir = GetMappedIR(ma, el, simd_ir, lh);
                           if(cf->IsComplex())
                             GetValues<SIMD<Complex>>( *cf, mlh, mir, vals_real.Range(first,next), vals_imag.Range(first,next), min_local, max_local);
                           else
@@ -591,8 +623,7 @@ void ExportVisFunctions(py::module &m) {
                     }
                   if(!use_simd)
                     {
-                      ElementTransformation & eltrans = ma->GetTrafo (el, mlh);
-                      auto & mir = eltrans(ir ,lh );
+                      auto & mir = GetMappedIR(ma, el, ir, lh);
                       if(cf->IsComplex())
                         GetValues<Complex>( *cf, mlh, mir, vals_real.Range(first,next), vals_imag.Range(first,next), min_local, max_local);
                       else
