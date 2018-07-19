@@ -460,13 +460,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
     free_dofs->Invert();
     
     for (auto i : Range(ctofdof))
-      if (ctofdof[i] == UNUSED_DOF)
+      if (!(ctofdof[i] & VISIBLE_DOF)) //hidden or unused
 	free_dofs->Clear(i);
 
     external_free_dofs = make_shared<BitArray>(GetNDof());
     *external_free_dofs = *free_dofs;
     for (auto i : Range(ctofdof))
-      if (ctofdof[i] & CONDENSATABLE_DOF)
+      if (ctofdof[i] & CONDENSABLE_DOF)
 	external_free_dofs->Clear(i);
 
     if (print)
@@ -939,29 +939,27 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void FESpace :: GetDofNrs (int elnr, Array<int> & dnums, COUPLING_TYPE ctype) const
   {
-    ArrayMem<int,100> alldnums; 
-    GetDofNrs(ElementId(VOL,elnr), alldnums);
+    GetDofNrs(ElementId(VOL,elnr),dnums,ctype);
+  }
 
+  void FESpace :: GetDofNrs (ElementId ei, Array<int> & dnums, COUPLING_TYPE ctype) const
+  {
+    ArrayMem<int,100> alldnums; 
+    GetDofNrs(ei, alldnums);
     dnums.SetSize(0);
+
     if (ctofdof.Size() == 0)
       {
 	if ( (INTERFACE_DOF & ctype) != 0)
           dnums = alldnums;
       }
     else
-      {
-        /*
-	for (int i = 0; i < alldnums.Size(); i++)
-	  if ( (ctofdof[alldnums[i]] & ctype) != 0)
-	    dnums.Append(alldnums[i]);
-        */
         for (auto d : alldnums)
 	  if ( (d != -1) && ((ctofdof[d] & ctype) != 0) )
             dnums.Append(d);
       }
-  }
 
-  void FESpace :: GetDofNrs (ElementId ei, Array<int> & dnums, COUPLING_TYPE ctype) const
+  void FESpace :: GetElementDofsOfType (ElementId ei, Array<DofId> & dnums, COUPLING_TYPE ctype) const
   {
     ArrayMem<int,100> alldnums; 
     GetDofNrs(ei, alldnums);
@@ -970,13 +968,21 @@ lot of new non-zero entries in the matrix!\n" << endl;
     if (ctofdof.Size() == 0)
       {
         if ( (INTERFACE_DOF & ctype) != 0)
+        {
           dnums = alldnums;
+          for (int i : Range(alldnums.Size()))
+            dnums[i] = i;
+      }
       }
     else
-      for (auto d : alldnums)
+      for (int i : Range(alldnums.Size()))
+      {
+        auto d = alldnums[i];
         if ( (d != -1) && ((ctofdof[d] & ctype) != 0) )
-          dnums.Append(d);
+          dnums.Append(i);
+      }
   }
+
 
 
   void FESpace :: GetNodeDofNrs (NODE_TYPE nt, int nr, Array<int> & dnums) const
@@ -1549,11 +1555,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
       case UNUSED_DOF: ost << "unused"; break;
       case HIDDEN_DOF:  ost << "hidden"; break;
       case LOCAL_DOF:  ost << "local"; break;
-      case CONDENSATABLE_DOF:  ost << "condensable"; break;
+      case CONDENSABLE_DOF:  ost << "condensable"; break;
       case INTERFACE_DOF: ost << "interface"; break;
       case NONWIREBASKET_DOF: ost << "non-wirebasket"; break;
       case WIREBASKET_DOF: ost << "wirebasket"; break;
       case EXTERNAL_DOF: ost << "external"; break;
+      case VISIBLE_DOF: ost << "visible"; break;
       case ANY_DOF: ost << "any"; break;
       };
     return ost;
@@ -2481,7 +2488,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
         external_free_dofs = make_shared<BitArray>(GetNDof());
         *external_free_dofs = *free_dofs;
         for (int i = 0; i < ctofdof.Size(); i++)
-          if (ctofdof[i] & CONDENSATABLE_DOF)
+          if (ctofdof[i] & CONDENSABLE_DOF)
             external_free_dofs->Clear(i);
 
 
@@ -2619,6 +2626,27 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    dnums.Append (-1);
       }
   }
+  
+  void CompoundFESpace :: GetElementDofsOfType (ElementId ei, Array<DofId> & dnums, 
+                                                COUPLING_TYPE ctype) const
+  {
+    ArrayMem<int,500> hdnums;
+    dnums.SetSize(0);
+    int offset = 0;
+    for (int i = 0; i < spaces.Size(); i++)
+      {
+        spaces[i]->GetElementDofsOfType (ei, hdnums, ctype);
+        for (int j = 0; j < hdnums.Size(); j++)
+          dnums.Append (hdnums[j]+offset);
+
+        if (i+1 < spaces.Size())
+        {
+          spaces[i]->GetDofNrs (ei, hdnums);
+          offset += hdnums.Size();
+        }
+      }      
+  }
+
   
 
   void CompoundFESpace :: SolveM(CoefficientFunction * rho, BaseVector & vec,

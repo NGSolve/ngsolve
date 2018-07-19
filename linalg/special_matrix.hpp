@@ -26,6 +26,7 @@ namespace ngla
     virtual int VWidth() const { return bits->Size(); }
 
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;    
+    virtual void Project (BaseVector & x) const;    
   };
 
   template <class TVR, class TVC>

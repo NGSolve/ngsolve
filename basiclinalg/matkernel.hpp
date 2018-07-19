@@ -6903,6 +6903,98 @@ FMAasm(a0,b3,sum03);
 }
 return make_tuple(HSum(sum00,sum01,sum02,sum03));
 }
+template <> INLINE auto MatKernelScalAB<8, 1>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum10(0);
+SIMD<double> sum20(0);
+SIMD<double> sum30(0);
+SIMD<double> sum40(0);
+SIMD<double> sum50(0);
+SIMD<double> sum60(0);
+SIMD<double> sum70(0);
+size_t i = 0;
+for ( ; i+SW <= n; i+=SW) {
+SIMD<double> a0(pa+0*da+i);
+SIMD<double> a1(pa+1*da+i);
+SIMD<double> a2(pa+2*da+i);
+SIMD<double> a3(pa+3*da+i);
+SIMD<double> a4(pa+4*da+i);
+SIMD<double> a5(pa+5*da+i);
+SIMD<double> a6(pa+6*da+i);
+SIMD<double> a7(pa+7*da+i);
+SIMD<double> b0(pb+0*db+i);
+FMAasm(a0,b0,sum00);
+FMAasm(a1,b0,sum10);
+FMAasm(a2,b0,sum20);
+FMAasm(a3,b0,sum30);
+FMAasm(a4,b0,sum40);
+FMAasm(a5,b0,sum50);
+FMAasm(a6,b0,sum60);
+FMAasm(a7,b0,sum70);
+}
+size_t r = n % SW;
+if (r) {
+SIMD<mask64> mask(r);
+SIMD<double> a0(pa+0*da+i, mask);
+SIMD<double> a1(pa+1*da+i, mask);
+SIMD<double> a2(pa+2*da+i, mask);
+SIMD<double> a3(pa+3*da+i, mask);
+SIMD<double> a4(pa+4*da+i, mask);
+SIMD<double> a5(pa+5*da+i, mask);
+SIMD<double> a6(pa+6*da+i, mask);
+SIMD<double> a7(pa+7*da+i, mask);
+SIMD<double> b0(pb+0*db+i, mask);
+FMAasm(a0,b0,sum00);
+FMAasm(a1,b0,sum10);
+FMAasm(a2,b0,sum20);
+FMAasm(a3,b0,sum30);
+FMAasm(a4,b0,sum40);
+FMAasm(a5,b0,sum50);
+FMAasm(a6,b0,sum60);
+FMAasm(a7,b0,sum70);
+}
+return make_tuple(HSum(sum00),HSum(sum10),HSum(sum20),HSum(sum30),HSum(sum40),HSum(sum50),HSum(sum60),HSum(sum70));
+}
+template <> INLINE auto MatKernelScalAB<8, 1>
+    (size_t n,
+     SIMD<double> * pa, size_t da,
+     SIMD<double> * pb, size_t db)
+{
+SIMD<double> sum00(0);
+SIMD<double> sum10(0);
+SIMD<double> sum20(0);
+SIMD<double> sum30(0);
+SIMD<double> sum40(0);
+SIMD<double> sum50(0);
+SIMD<double> sum60(0);
+SIMD<double> sum70(0);
+size_t i = 0;
+for ( ; i < n; i++) {
+SIMD<double> a0(pa[0*da+i]);
+SIMD<double> a1(pa[1*da+i]);
+SIMD<double> a2(pa[2*da+i]);
+SIMD<double> a3(pa[3*da+i]);
+SIMD<double> a4(pa[4*da+i]);
+SIMD<double> a5(pa[5*da+i]);
+SIMD<double> a6(pa[6*da+i]);
+SIMD<double> a7(pa[7*da+i]);
+SIMD<double> b0(pb[0*db+i]);
+FMAasm(a0,b0,sum00);
+FMAasm(a1,b0,sum10);
+FMAasm(a2,b0,sum20);
+FMAasm(a3,b0,sum30);
+FMAasm(a4,b0,sum40);
+FMAasm(a5,b0,sum50);
+FMAasm(a6,b0,sum60);
+FMAasm(a7,b0,sum70);
+}
+return make_tuple(HSum(sum00),HSum(sum10),HSum(sum20),HSum(sum30),HSum(sum40),HSum(sum50),HSum(sum60),HSum(sum70));
+}
 template <> INLINE auto MatKernelScalAB<6, 1>
     (size_t n,
      double * pa, size_t da,
@@ -6979,6 +7071,66 @@ FMAasm(a5,b0,sum50);
 }
 return make_tuple(HSum(sum00),HSum(sum10),HSum(sum20),HSum(sum30),HSum(sum40),HSum(sum50));
 }
+template <> INLINE auto MatKernelScalAB<4, 1>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum10(0);
+SIMD<double> sum20(0);
+SIMD<double> sum30(0);
+size_t i = 0;
+for ( ; i+SW <= n; i+=SW) {
+SIMD<double> a0(pa+0*da+i);
+SIMD<double> a1(pa+1*da+i);
+SIMD<double> a2(pa+2*da+i);
+SIMD<double> a3(pa+3*da+i);
+SIMD<double> b0(pb+0*db+i);
+FMAasm(a0,b0,sum00);
+FMAasm(a1,b0,sum10);
+FMAasm(a2,b0,sum20);
+FMAasm(a3,b0,sum30);
+}
+size_t r = n % SW;
+if (r) {
+SIMD<mask64> mask(r);
+SIMD<double> a0(pa+0*da+i, mask);
+SIMD<double> a1(pa+1*da+i, mask);
+SIMD<double> a2(pa+2*da+i, mask);
+SIMD<double> a3(pa+3*da+i, mask);
+SIMD<double> b0(pb+0*db+i, mask);
+FMAasm(a0,b0,sum00);
+FMAasm(a1,b0,sum10);
+FMAasm(a2,b0,sum20);
+FMAasm(a3,b0,sum30);
+}
+return make_tuple(HSum(sum00),HSum(sum10),HSum(sum20),HSum(sum30));
+}
+template <> INLINE auto MatKernelScalAB<4, 1>
+    (size_t n,
+     SIMD<double> * pa, size_t da,
+     SIMD<double> * pb, size_t db)
+{
+SIMD<double> sum00(0);
+SIMD<double> sum10(0);
+SIMD<double> sum20(0);
+SIMD<double> sum30(0);
+size_t i = 0;
+for ( ; i < n; i++) {
+SIMD<double> a0(pa[0*da+i]);
+SIMD<double> a1(pa[1*da+i]);
+SIMD<double> a2(pa[2*da+i]);
+SIMD<double> a3(pa[3*da+i]);
+SIMD<double> b0(pb[0*db+i]);
+FMAasm(a0,b0,sum00);
+FMAasm(a1,b0,sum10);
+FMAasm(a2,b0,sum20);
+FMAasm(a3,b0,sum30);
+}
+return make_tuple(HSum(sum00),HSum(sum10),HSum(sum20),HSum(sum30));
+}
 template <> INLINE auto MatKernelScalAB<3, 1>
     (size_t n,
      double * pa, size_t da,
@@ -7030,6 +7182,50 @@ FMAasm(a1,b0,sum10);
 FMAasm(a2,b0,sum20);
 }
 return make_tuple(HSum(sum00),HSum(sum10),HSum(sum20));
+}
+template <> INLINE auto MatKernelScalAB<2, 1>
+    (size_t n,
+     double * pa, size_t da,
+     double * pb, size_t db)
+{
+constexpr int SW = SIMD<double>::Size();
+SIMD<double> sum00(0);
+SIMD<double> sum10(0);
+size_t i = 0;
+for ( ; i+SW <= n; i+=SW) {
+SIMD<double> a0(pa+0*da+i);
+SIMD<double> a1(pa+1*da+i);
+SIMD<double> b0(pb+0*db+i);
+FMAasm(a0,b0,sum00);
+FMAasm(a1,b0,sum10);
+}
+size_t r = n % SW;
+if (r) {
+SIMD<mask64> mask(r);
+SIMD<double> a0(pa+0*da+i, mask);
+SIMD<double> a1(pa+1*da+i, mask);
+SIMD<double> b0(pb+0*db+i, mask);
+FMAasm(a0,b0,sum00);
+FMAasm(a1,b0,sum10);
+}
+return make_tuple(HSum(sum00),HSum(sum10));
+}
+template <> INLINE auto MatKernelScalAB<2, 1>
+    (size_t n,
+     SIMD<double> * pa, size_t da,
+     SIMD<double> * pb, size_t db)
+{
+SIMD<double> sum00(0);
+SIMD<double> sum10(0);
+size_t i = 0;
+for ( ; i < n; i++) {
+SIMD<double> a0(pa[0*da+i]);
+SIMD<double> a1(pa[1*da+i]);
+SIMD<double> b0(pb[0*db+i]);
+FMAasm(a0,b0,sum00);
+FMAasm(a1,b0,sum10);
+}
+return make_tuple(HSum(sum00),HSum(sum10));
 }
 template <> INLINE auto MatKernelScalAB<1, 1>
     (size_t n,

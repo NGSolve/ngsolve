@@ -9,6 +9,7 @@
 #include "hdivdivsurfacespace.hpp"
 #include "hcurlcurlfespace.hpp"
 #include "numberfespace.hpp"
+#include "compressedfespace.hpp"
 using namespace ngcomp;
 
 using ngfem::ELEMENT_TYPE;
@@ -250,7 +251,7 @@ HIDDEN_DOF: Inner degree of freedom, that will be eliminated by static
        DOF, e.g. as a LOCAL_DOF
      * To a HIDDEN_DOF the r.h.s. vector must have zero entries.
 
-CONDENSATABLE_DOF: Inner degree of freedom, that will be eliminated by static
+CONDENSABLE_DOF: Inner degree of freedom, that will be eliminated by static
     condensation (LOCAL_DOF or HIDDEN_DOF)
 
 INTERFACE_DOF: Degree of freedom between two elements, these will not be
@@ -266,17 +267,20 @@ WIREBASKET_DOF: Degree of freedom coupling with many elements (more than
 
 EXTERNAL_DOF: Either INTERFACE_DOF or WIREBASKET_DOF
 
+VISIBLE_DOF: not UNUSED_DOF or HIDDEN_DOF
+
 ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
 
 )raw_string"))
     .value("UNUSED_DOF", UNUSED_DOF)
     .value("HIDDEN_DOF", HIDDEN_DOF)
     .value("LOCAL_DOF", LOCAL_DOF)
-    .value("CONDENSATABLE_DOF", CONDENSATABLE_DOF)
+    .value("CONDENSABLE_DOF", CONDENSABLE_DOF)
     .value("INTERFACE_DOF", INTERFACE_DOF)
     .value("NONWIREBASKET_DOF", NONWIREBASKET_DOF)
     .value("WIREBASKET_DOF", WIREBASKET_DOF)
     .value("EXTERNAL_DOF", EXTERNAL_DOF)
+    .value("VISIBLE_DOF", VISIBLE_DOF)
     .value("ANY_DOF", ANY_DOF)
     // .export_values()
     ;
@@ -1178,6 +1182,41 @@ used_idnrs : list of int = None
                     }))
     ;
 
+
+  py::class_<CompressedFESpace, shared_ptr<CompressedFESpace>, FESpace>(m, "Compress",
+	docu_string(R"delimiter(Wrapper Finite Element Spaces.
+The compressed fespace is a wrapper around a standard fespace which removes
+certain dofs (e.g. UNUSED_DOFs).
+
+Parameters:
+
+fespace : ngsolve.comp.FESpace
+    finite element space
+
+active_dofs : BitArray or None
+    don't use the COUPLING_TYPEs of dofs to compress the FESpace, 
+    but use a BitArray directly to compress the FESpace
+)delimiter"))
+    .def(py::init([] (shared_ptr<FESpace> & fes,
+                      py::object active_dofs)
+                  {
+                    auto ret = make_shared<CompressedFESpace> (fes);
+                    shared_ptr<BitArray> actdofs = nullptr;
+                    if (! py::extract<DummyArgument> (active_dofs).check())
+                      ret->SetActiveDofs(py::extract<shared_ptr<BitArray>>(active_dofs)());
+                    ret->Update(glh);
+                    return ret;                    
+                  }), py::arg("fespace"), py::arg("active_dofs")=DummyArgument())
+    .def("SetActiveDofs", [](CompressedFESpace & self, shared_ptr<BitArray> active_dofs)
+         {
+           self.SetActiveDofs(active_dofs);
+         },
+         py::arg("dofs"))
+    ;
+
+
+
+
   /////////////////////////////// GridFunctionCoefficientFunction /////////////
 
   py::class_<GridFunctionCoefficientFunction, shared_ptr<GridFunctionCoefficientFunction>, CoefficientFunction>
@@ -1348,7 +1387,16 @@ used_idnrs : list of int = None
           {
             return self->GetDeriv();
           })
-
+    .def("Operators", [] (shared_ptr<GF> self)
+         {
+           py::list l;
+           auto ops = self->GetFESpace()->GetAdditionalEvaluators();
+           for (size_t i = 0; i < ops.Size(); i++)
+             l.append (ops.GetName(i));
+           return l;
+         },
+         "returns list of available differential operators")
+    
     .def("Operator",
          [](shared_ptr<GF> self, string name, VorB vb) -> py::object // shared_ptr<CoefficientFunction>
           {
@@ -1551,9 +1599,6 @@ space : ngsolve.FESpace
   The finite element space the bilinearform is defined on. This
   can be a compound FESpace for a mixed formulation.
 
-check_unused : bool
-  If set prints warnings if not UNUSED_DOFS are not used
-
 )raw_string"));
   bf_class
     .def(py::init([bf_class] (shared_ptr<FESpace> fespace, /* bool check_unused, */
@@ -1606,7 +1651,9 @@ check_unused : bool
                      "  of the matrix on the finest grid. This is needed to use the multigrid\n"
                      "  preconditioner with a changing bilinearform.",
 		     py::arg("nonsym_storage") = "bool = False\n"
-		     " The full matrix is stored, even if the symmetric flag is set."
+		     " The full matrix is stored, even if the symmetric flag is set.",
+                     py::arg("check_unused") = "bool = True\n"
+		     " If set prints warnings if not UNUSED_DOFS are not used."
                      );
                 })
 
@@ -2277,6 +2324,37 @@ flags : dict
 	py::arg("definedon")=DummyArgument(),
         py::arg("region_wise")=false,
 	py::arg("element_wise")=false,
+        R"raw(
+Parameters
+----------
+
+cf: ngsolve.CoefficientFunction
+  Function to be integrated. Can be vector valued, then the result is an array. If you want to integrate
+  a lot of functions on the same domain, it will be faster to put them into a vector valued function,
+  NGSolve will then be able to use parallelization and SIMD vectorization more efficiently.
+
+mesh: ngsolve.Mesh
+  The mesh to be integrated on.
+
+VOL_or_BND: ngsolve.VorB = VOL
+  Co-dimension to be integrated on. Historically this could be volume (VOL) or boundary (BND). If your mesh
+  contains co-dim 2 elements this can now be BBND (edges in 3d) as well.
+
+order: int = 5
+  Integration order, polynomials up to this order will be integrated exactly.
+
+definedon: ngsolve.Region
+  Region to be integrated on. Such region can be created with mesh.Boundaries('bcname') or mesh.Materials('matname')
+  it will overwrite the VOL_or_BND argument if given.
+
+region_wise: bool = False
+  Integrates region wise on the co-dimension given by VOL_or_BND. Returns results as an array, matching the array
+  returned by mesh.GetMaterials() or mesh.GetBoundaries(). Does not support vector valued CoefficientFunctions.
+
+element_wise: bool = False
+  Integrates element wise and returns result in a list. This is typically used for local error estimators.
+  Does not support vector valued CoefficientFunctions
+)raw",
         py::call_guard<py::gil_scoped_release>())
     ;
   
@@ -2284,15 +2362,17 @@ flags : dict
           [](spCF cf, VorB vb, bool element_boundary,
              bool skeleton, py::object definedon,
              IntegrationRule ir, int bonus_intorder, py::object definedonelem,
-             bool simd_evaluate) 
+             bool simd_evaluate, VorB element_vb) 
            {
              py::extract<Region> defon_region(definedon);
              if (defon_region.check())
                vb = VorB(defon_region());
 
+             if (element_boundary) element_vb = BND;
+             
              shared_ptr<LinearFormIntegrator> lfi;
              if (!skeleton)
-               lfi = make_shared<SymbolicLinearFormIntegrator> (cf, vb, element_boundary);
+               lfi = make_shared<SymbolicLinearFormIntegrator> (cf, vb, element_vb);
              else
                lfi = make_shared<SymbolicFacetLinearFormIntegrator> (cf, vb /* , element_boundary */);
              
@@ -2329,7 +2409,8 @@ flags : dict
 	   py::arg("intrule")=IntegrationRule(),
            py::arg("bonus_intorder")=0,
            py::arg("definedonelements")=DummyArgument(),
-           py::arg("simd_evaluate")=true
+           py::arg("simd_evaluate")=true,
+           py::arg("element_vb")=VOL        
           );
 
   m.def("SymbolicBFI",
@@ -2440,14 +2521,17 @@ flags : dict
           
   m.def("SymbolicEnergy",
         [](spCF cf, VorB vb, py::object definedon, bool element_boundary,
-           int bonus_intorder, py::object definedonelem, bool simd_evaluate)
+           int bonus_intorder, py::object definedonelem, bool simd_evaluate,
+           VorB element_vb)
         -> shared_ptr<BilinearFormIntegrator>
            {
              py::extract<Region> defon_region(definedon);
              if (defon_region.check())
                vb = VorB(defon_region());
 
-             auto bfi = make_shared<SymbolicEnergy> (cf, vb, element_boundary);
+             if (element_boundary) element_vb = BND;
+             
+             auto bfi = make_shared<SymbolicEnergy> (cf, vb, element_vb);
              bfi -> SetBonusIntegrationOrder(bonus_intorder);
              if (defon_region.check())
                {
@@ -2463,7 +2547,8 @@ flags : dict
         py::arg("definedon")=DummyArgument(), py::arg("element_boundary")=false,
         py::arg("bonus_intorder")=0,
         py::arg("definedonelements")=DummyArgument(),
-        py::arg("simd_evaluate")=true
+        py::arg("simd_evaluate")=true,
+        py::arg("element_vb")=VOL        
           );
 
    m.def("KSpaceCoeffs", [](shared_ptr<GF> gf_tp,shared_ptr<GF> gf_k, double x, double y)
@@ -2472,15 +2557,15 @@ flags : dict
              auto tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp->GetFESpace());
              IntegrationPoint ip;
              int elnr = tpfes->Spaces(0)[0]->GetMeshAccess()->FindElementOfPoint(Vec<2>(x,y),ip,false);
-             int ndofx = tpfes->Spaces(0)[0]->GetFE(elnr,glh).GetNDof();
-             int ndofy = tpfes->Spaces(0)[1]->GetFE(0,glh).GetNDof();
+             int ndofx = tpfes->Spaces(0)[0]->GetFE(ElementId(VOL,elnr),glh).GetNDof();
+             int ndofy = tpfes->Spaces(0)[1]->GetFE(ElementId(VOL,0),glh).GetNDof();
              Array<int> indices(2);
              Array<int> dofs(ndofx*ndofy);
              tpfes->GetDofNrs(tpfes->GetIndex(elnr,0),dofs);
              FlatMatrix<> elmat(ndofx,ndofy,glh);
              gf_tp->GetVector().GetIndirect(dofs,elmat.AsVector());
              FlatVector<> shape(ndofx,glh);
-             dynamic_cast<const BaseScalarFiniteElement& >(tpfes->Spaces(0)[0]->GetFE(elnr,glh)).CalcShape(ip,shape);
+             dynamic_cast<const BaseScalarFiniteElement& >(tpfes->Spaces(0)[0]->GetFE(ElementId(VOL,elnr),glh)).CalcShape(ip,shape);
              FlatVector<> result(ndofy,glh);
              result = Trans(elmat)*shape;
              gf_k->GetVector().FVDouble() = result;

@@ -197,6 +197,19 @@ namespace ngstd
     static constexpr int Size() { return 4; }    
     mask64 operator[] (int i) const { return ((mask64*)(&mask))[i]; }    
   };
+#else
+  template <> 
+  class SIMD<mask64,4>
+  {
+    SIMD<mask64,2> lo, hi;
+  public:
+    SIMD (int i) : lo(i), hi(i-2) { ; } 
+    SIMD<mask64,2> Lo() const { return lo; }
+    SIMD<mask64,2> Hi() const { return hi; }
+    static constexpr int Size() { return 4; }    
+    // mask64 operator[] (int i) const { return ((mask64*)(&mask))[i]; }    
+  };
+  
 #endif
 
 
@@ -395,11 +408,18 @@ namespace ngstd
     SIMD (size_t val) : data{val,val} { ; } 
 
     SIMD (double const * p) : data{p,p+2} { ; }
-    // SIMD (double const * p, SIMD<mask64,4> mask) { data = _mm256_maskload_pd(p, mask.Data()); }
-    // SIMD (__m256d _data) { data = _data; }
+    SIMD (double const * p, SIMD<mask64,4> mask)
+      {
+        data[0] = SIMD<double,2> (p, mask.Lo());
+        data[1] = SIMD<double,2> (p+2, mask.Hi());
+      }
 
     void Store (double * p) { data[0].Store(p); data[1].Store(p+2); }
-    // void Store (double * p, SIMD<mask64,4> mask) { _mm256_maskstore_pd(p, mask.Data(), data); }    
+    void Store (double * p, SIMD<mask64,4> mask)
+    {
+      data[0].Store(p, mask.Lo());
+      data[1].Store(p, mask.Hi());
+    }    
 
     /*
     template<typename T, typename std::enable_if<std::is_convertible<T, std::function<double(int)>>::value, int>::type = 0>                                                                    SIMD (const T & func)
@@ -694,7 +714,7 @@ namespace ngstd
 
   INLINE auto HSum (SIMD<double,8> sd1, SIMD<double,8> sd2)
   {
-    return std::make_tuple(HSum(sd1), HSum(sd2));
+    return SIMD<double,2>(HSum(sd1), HSum(sd2));
   }
 
   INLINE SIMD<double,4> HSum (SIMD<double,8> v1, SIMD<double,8> v2, SIMD<double,8> v3, SIMD<double,8> v4)
