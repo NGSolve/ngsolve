@@ -606,8 +606,8 @@ namespace ngfem
 
   SymbolicLinearFormIntegrator ::
   SymbolicLinearFormIntegrator(shared_ptr<CoefficientFunction> acf, VorB avb,
-                               bool aelement_boundary)
-    : cf(acf), vb(avb), element_boundary(aelement_boundary)
+                               VorB aelement_vb)
+    : cf(acf), vb(avb), element_vb(aelement_vb)
   {
     simd_evaluate = true;
     
@@ -680,19 +680,18 @@ namespace ngfem
                        FlatVector<SCAL> elvec,
                        LocalHeap & lh) const
   {
-    if (element_boundary)
+    if (element_vb != VOL)
       { // not yet simded
         elvec = 0;
     
         auto eltype = trafo.GetElementType();
-        int nfacet = ElementTopology::GetNFacets(eltype);
-        
-        Facet2ElementTrafo transform(eltype); 
+        Facet2ElementTrafo transform(eltype, element_vb); 
+        int nfacet = transform.GetNFacets();
         
         for (int k = 0; k < nfacet; k++)
           {
             HeapReset hr(lh);
-            ngfem::ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype, k);
+            ngfem::ELEMENT_TYPE etfacet = transform.FacetType (k);
             
             const IntegrationRule& ir_facet = GetIntegrationRule(etfacet, 2*fel.Order()+bonus_intorder);
             IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
@@ -3733,8 +3732,8 @@ namespace ngfem
   
   
   SymbolicEnergy :: SymbolicEnergy (shared_ptr<CoefficientFunction> acf,
-                                    VorB avb, bool aelement_boundary)
-    : cf(acf), vb(avb), element_boundary(aelement_boundary)
+                                    VorB avb, VorB aelement_vb)
+    : cf(acf), vb(avb), element_vb(aelement_vb)
   {
     simd_evaluate = true;
     // if (element_boundary) simd_evaluate = false;
@@ -3849,7 +3848,7 @@ namespace ngfem
       {
         try
           {
-            if (!element_boundary)
+            if (element_vb == VOL)
               {
                 const SIMD_IntegrationRule& ir = Get_SIMD_IntegrationRule(fel, lh);
                 auto & mir = trafo(ir, lh);
@@ -3871,14 +3870,14 @@ namespace ngfem
               {
                 elmat = 0;
                 auto eltype = trafo.GetElementType();
-                int nfacet = ElementTopology::GetNFacets(eltype);
         
-                Facet2ElementTrafo transform(eltype); 
+                Facet2ElementTrafo transform(eltype, element_vb); 
+                int nfacet = transform.GetNFacets();
                 
                 for (int k = 0; k < nfacet; k++)
                   {
                     HeapReset hr(lh);
-                    ngfem::ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype, k);
+                    ngfem::ELEMENT_TYPE etfacet = transform.FacetType (k);
                     
                     auto & ir_facet = GetSIMDIntegrationRule(etfacet, 2*fel.Order()+bonus_intorder);
                     auto & ir_facet_vol = transform(k, ir_facet, lh);
@@ -3911,7 +3910,7 @@ namespace ngfem
 
 
 
-    if (!element_boundary)
+    if (element_vb == VOL)
       {
         // const IntegrationRule& ir = GetIntegrationRule(trafo.GetElementType(), 2*fel.Order());
         const IntegrationRule& ir = GetIntegrationRule(fel, lh);
@@ -3936,20 +3935,19 @@ namespace ngfem
       {
         elmat = 0;
         auto eltype = trafo.GetElementType();
-        int nfacet = ElementTopology::GetNFacets(eltype);
-        
-        Facet2ElementTrafo transform(eltype); 
+
+        Facet2ElementTrafo transform(eltype, element_vb); 
+        int nfacet = transform.GetNFacets();
         
         for (int k = 0; k < nfacet; k++)
           {
             HeapReset hr(lh);
-            ngfem::ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype, k);
+            ngfem::ELEMENT_TYPE etfacet = transform.FacetType (k);
             
             const IntegrationRule & ir_facet = GetIntegrationRule(etfacet, 2*fel.Order()+bonus_intorder);
             IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
             BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
             mir.ComputeNormalsAndMeasure (eltype, k);
-            
             
             ProxyUserData ud(trial_proxies.Size(), lh);    
             const_cast<ElementTransformation&>(trafo).userdata = &ud;
@@ -4227,7 +4225,7 @@ namespace ngfem
                                    FlatVector<double> elx, 
                                    LocalHeap & lh) const
   {
-    if (simd_evaluate && !element_boundary)
+    if (simd_evaluate && (element_vb == VOL))
       {
         try
           {
@@ -4261,7 +4259,7 @@ namespace ngfem
           }
       }
 
-    if (!element_boundary)
+    if (element_vb == VOL)
       {
         const IntegrationRule& ir = GetIntegrationRule(fel, lh);
         BaseMappedIntegrationRule & mir = trafo(ir, lh);
@@ -4287,14 +4285,14 @@ namespace ngfem
       {
         double sum = 0;
         auto eltype = trafo.GetElementType();
-        int nfacet = ElementTopology::GetNFacets(eltype);
         
-        Facet2ElementTrafo transform(eltype); 
+        Facet2ElementTrafo transform(eltype, element_vb); 
+        int nfacet = transform.GetNFacets();
         
         for (int k = 0; k < nfacet; k++)
           {
             HeapReset hr(lh);
-            ngfem::ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype, k);
+            ngfem::ELEMENT_TYPE etfacet = transform.FacetType (k);
             
             const IntegrationRule & ir_facet = GetIntegrationRule(etfacet, 2*fel.Order()+bonus_intorder);
             IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
@@ -4335,7 +4333,7 @@ namespace ngfem
       {
         try
           {
-            if (!element_boundary)
+            if (element_vb == VOL)
               {
                 HeapReset hr(lh);
                 
@@ -4377,14 +4375,14 @@ namespace ngfem
 
                 ely = 0;
                 auto eltype = trafo.GetElementType();
-                int nfacet = ElementTopology::GetNFacets(eltype);
-        
-                Facet2ElementTrafo transform(eltype); 
+                
+                Facet2ElementTrafo transform(eltype, element_vb); 
+                int nfacet = transform.GetNFacets();
                 
                 for (int k = 0; k < nfacet; k++)
                   {
                     HeapReset hr(lh);
-                    ngfem::ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype, k);
+                    ngfem::ELEMENT_TYPE etfacet = transform.FacetType (k);
 
                     auto & ir_facet = GetSIMDIntegrationRule(etfacet, 2*fel.Order()+bonus_intorder);
                     auto & ir_facet_vol = transform(k, ir_facet, lh);
@@ -4432,8 +4430,8 @@ namespace ngfem
         return;
       }
 
-
-    if (!element_boundary)
+    
+    if (element_vb == VOL)
       {
         HeapReset hr(lh);
         
@@ -4478,14 +4476,14 @@ namespace ngfem
       {
         ely = 0;
         auto eltype = trafo.GetElementType();
-        int nfacet = ElementTopology::GetNFacets(eltype);
-        
-        Facet2ElementTrafo transform(eltype); 
+
+        Facet2ElementTrafo transform(eltype, element_vb); 
+        int nfacet = transform.GetNFacets();
         
         for (int k = 0; k < nfacet; k++)
           {
             HeapReset hr(lh);
-            ngfem::ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype, k);
+            ngfem::ELEMENT_TYPE etfacet = transform.FacetType (k);
             
             const IntegrationRule & ir_facet = GetIntegrationRule(etfacet, 2*fel.Order()+bonus_intorder);
             IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);

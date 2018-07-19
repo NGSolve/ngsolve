@@ -63,6 +63,161 @@ namespace ngbla
       }
   }
 
+  /* ************************ Matrix * Vector ************************** */
+
+  void MultMatVec (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
+  {
+    constexpr int SW = SIMD<double>::Size();
+    size_t h = y.Size();
+    size_t w = x.Size();
+    size_t i = 0;
+    SIMD<mask64> mask(w % SW);
+
+    double * pa = &a(i,0);
+    for ( ; i+8 <= h; i+=8, pa += 8*a.Dist())
+      {
+        auto scal = MatKernelScalAB<8,1> (w, pa, a.Dist(), &x(0), 0);
+        SIMD<double,4> sum1(get<0>(scal), get<1>(scal), get<2>(scal), get<3>(scal));
+        SIMD<double,4> sum2(get<4>(scal), get<5>(scal), get<6>(scal), get<7>(scal));
+        sum1.Store(&y(i));        
+        sum2.Store(&y(i+4));        
+      }
+    
+    for ( ; i+4 <= h; i+=4, pa += 4*a.Dist())
+      {
+        /*
+        SIMD<double> s0(0), s1(0), s2(0), s3(0);
+        double * pa0 = &a(i,0);
+        double * pa1 = pa0 + a.Dist();
+        double * pa2 = pa0 + 2*a.Dist();
+        double * pa3 = pa0 + 3*a.Dist();
+        size_t j = 0;
+        for ( ; j+SW <= w; j+=SW)
+          {
+            SIMD<double> xi(&x(j));
+            s0 += xi * SIMD<double>(pa0+j);
+            s1 += xi * SIMD<double>(pa1+j);
+            s2 += xi * SIMD<double>(pa2+j);
+            s3 += xi * SIMD<double>(pa3+j);
+          }
+        if (j < w)
+          {
+            SIMD<double> xi(&x(j), mask);
+            s0 += xi * SIMD<double>(pa0+j, mask);
+            s1 += xi * SIMD<double>(pa1+j, mask);
+            s2 += xi * SIMD<double>(pa2+j, mask);
+            s3 += xi * SIMD<double>(pa3+j, mask);
+          }
+        SIMD<double,4> sum = HSum(s0,s1,s2,s3);
+        sum.Store(&y(i));
+        */
+        auto scal = MatKernelScalAB<4,1> (w, pa, a.Dist(), &x(0), 0);
+        SIMD<double,4> sum(get<0>(scal), get<1>(scal), get<2>(scal), get<3>(scal));
+        sum.Store(&y(i));        
+      }
+
+    for ( ; i+2 <= h; i+=2, pa += 2*a.Dist())
+      {
+        SIMD<double> s0(0), s1(0);
+        double * pa0 = pa;
+        double * pa1 = pa0 + a.Dist();
+        size_t j = 0;
+        for ( ; j+SW <= w; j+=SW)
+          {
+            SIMD<double> xi(&x(j));
+            s0 += xi * SIMD<double>(pa0+j);
+            s1 += xi * SIMD<double>(pa1+j);
+          }
+        if (j < w)
+          {
+            SIMD<double> xi(&x(j), mask);
+            s0 += xi * SIMD<double>(pa0+j, mask);
+            s1 += xi * SIMD<double>(pa1+j, mask);
+          }
+        // SIMD<double,2> sum = HSum(s0,s1);
+        auto scal = HSum(s0,s1);
+        SIMD<double,2> sum(get<0>(scal), get<1>(scal));
+        sum.Store(&y(i));
+      }
+
+    for ( ; i+1 <= h; i++)
+      {
+        SIMD<double> s0(0), s1(0);
+        double * pa0 = pa;
+        size_t j = 0;
+        for ( ; j+SW <= w; j+=SW)
+          {
+            SIMD<double> xi(&x(j));
+            s0 += xi * SIMD<double>(pa0+j);
+          }
+        if (j < w)
+          {
+            SIMD<double> xi(&x(j), mask);
+            s0 += xi * SIMD<double>(pa0+j, mask);
+          }
+        y(i) = HSum(s0);
+      }
+
+  }
+
+
+  void MultMatTransVec (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
+  {
+    constexpr int SW = SIMD<double>::Size();
+    size_t h = x.Size();
+    size_t w = y.Size();
+    size_t dist = a.Dist();
+
+    size_t i = 0;
+    for ( ; i+SW <= w; i+= SW)
+      {
+        SIMD<double> s0(0), s1(0), s2(0), s3(0);
+        size_t j = 0;
+        double * pa = &a(0,i);
+        for ( ; j+4 <= h; j += 4, pa += 4*dist)
+          {
+            s0 += SIMD<double>(x(j)) * SIMD<double>(pa);
+            s1 += SIMD<double>(x(j+1)) * SIMD<double>(pa+dist);
+            s2 += SIMD<double>(x(j+2)) * SIMD<double>(pa+2*dist);
+            s3 += SIMD<double>(x(j+3)) * SIMD<double>(pa+3*dist);
+          }
+        for ( ; j+2 <= h; j += 2, pa += 2*dist)
+          {
+            s0 += SIMD<double>(x(j)) * SIMD<double>(pa);
+            s1 += SIMD<double>(x(j+1)) * SIMD<double>(pa+dist);
+          }
+        for ( ; j+1 <= h; j += 1, pa += dist)
+          s2 += SIMD<double>(x(j)) * SIMD<double>(pa);
+        SIMD<double> sum = (s0+s1)+(s2+s3);
+        sum.Store(&y(i));
+      }
+    
+    if (i < w)
+      {
+        SIMD<mask64> mask(w % SW);
+        SIMD<double> s0(0), s1(0), s2(0), s3(0);
+        size_t j = 0;
+        double * pa = &a(0,i);
+        for ( ; j+4 <= h; j += 4, pa += 4*dist)
+          {
+            s0 += SIMD<double>(x(j)) * SIMD<double>(pa, mask);
+            s1 += SIMD<double>(x(j+1)) * SIMD<double>(pa+dist, mask);
+            s2 += SIMD<double>(x(j+2)) * SIMD<double>(pa+2*dist, mask);
+            s3 += SIMD<double>(x(j+3)) * SIMD<double>(pa+3*dist, mask);
+          }
+        for ( ; j+2 <= h; j += 2, pa += 2*dist)
+          {
+            s0 += SIMD<double>(x(j)) * SIMD<double>(pa, mask);
+            s1 += SIMD<double>(x(j+1)) * SIMD<double>(pa+dist, mask);
+          }
+        for ( ; j+1 <= h; j += 1, pa += dist)
+          s2 += SIMD<double>(x(j)) * SIMD<double>(pa, mask);
+        SIMD<double> sum = (s0+s1)+(s2+s3);
+        sum.Store(&y(i), mask);
+      }
+  }  
+
+  
   /* *********************** C = A * B ********************************* */
   
   // b.Width() = W * SIMD
@@ -1366,6 +1521,7 @@ namespace ngbla
           "0 ... run all timings\n"
           "1 ... A = B,   A,B = n*m,   A = aligned, fixed dist\n"
           "2 ... A = 0,   A = n*m,     but sliced\n"
+          "5 ... y = A*x,   A = n*m\n"
           "10 .. C = A * B,   A=n*m, B=m*k, C=n*k\n"
           // "20 .. C = A * B    A=n*m, B=n*k', C=n*k', k'=round(k), B aligned\n"
           "50 .. C += A * B^t,   A=n*k, B=m*k, C=n*m\n"
@@ -1427,6 +1583,52 @@ namespace ngbla
         }
       }
 
+    if (what == 0 || what == 5)
+      {
+        // y = A*x
+        Matrix<> a(n,m);
+        Vector<> x(m), y(n);
+        a = 1; x = 2;
+        double tot = n*m;
+        int its = 1e10 / tot + 1;
+        {
+          Timer t("y = A*x");
+          t.Start();
+          for (int j = 0; j < its; j++)
+            MultMatVec(a,x,y);
+          t.Stop();
+          cout << "MultMatVec GFlops = " << 1e-9 * n*m*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("MultMatVec", 1e-9 * n*m*its / t.GetTime()));
+        }
+        {
+          Timer t("y = A*x, Lapack");
+          t.Start();
+          for (int j = 0; j < its; j++)
+            LapackMultAx (a, x, y);
+          t.Stop();
+          cout << "MultMatVec Lapack GFlops = " << 1e-9 * n*m*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("MultMatVecLapack", 1e-9 * n*m*its / t.GetTime()));
+        }
+      }
+
+    if (what == 0 || what == 6)
+      {
+        // y = A*x
+        Matrix<> a(n,m);
+        Vector<> x(n), y(m);
+        a = 1; x = 2;
+        double tot = n*m;
+        int its = 1e10 / tot + 1;
+        {
+          Timer t("y = A*x");
+          t.Start();
+          for (int j = 0; j < its; j++)
+            MultMatTransVec(a,x,y);
+          t.Stop();
+          cout << "MultMatTransVec GFlops = " << 1e-9 * n*m*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("MultMatVec", 1e-9 * n*m*its / t.GetTime()));
+        }
+      }
 
     
     if (what == 0 || what == 10)

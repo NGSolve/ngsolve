@@ -27,6 +27,7 @@ namespace pybind11 {
 #include <pybind11/operators.h>
 #include <pybind11/complex.h>
 #include <pybind11/stl.h>
+#include<pybind11/numpy.h>
 
 #ifdef __clang__
 #pragma clang diagnostic pop
@@ -143,6 +144,20 @@ inline void InitSlice( const py::slice &inds, size_t len, size_t &start, size_t 
       size_t stop;
       if (!inds.compute(len, &start, &stop, &step, &n))                                          
         throw py::error_already_set();
+}
+
+template<typename T>
+py::object MoveToNumpyArray( Array<T> &a )
+{
+  if(a.Size()) {
+      py::capsule free_when_done(&a[0], [](void *f) {
+                                 delete [] reinterpret_cast<T *>(f);
+                                 });
+      a.NothingToDelete();
+      return py::array_t<T>(a.Size(), &a[0], free_when_done);
+  }
+  else
+      return py::array_t<T>(0, nullptr);
 }
 
 

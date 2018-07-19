@@ -749,7 +749,8 @@ inverse : string
   py::class_<Projector, shared_ptr<Projector>, BaseMatrix> (m, "Projector")
     .def(py::init<shared_ptr<BitArray>,bool>(),
          py::arg("mask"), py::arg("range"),
-         "Linear operator projecting to true/false bits of BitArray mask, depending on argument range");
+         "Linear operator projecting to true/false bits of BitArray mask, depending on argument range")
+    .def("Project", &Projector::Project, "project vector inline")
     ;
 
     py::class_<ngla::IdentityMatrix, shared_ptr<ngla::IdentityMatrix>, BaseMatrix> (m, "IdentityMatrix")

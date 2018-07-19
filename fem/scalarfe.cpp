@@ -360,6 +360,15 @@ namespace ngfem
   }
 
 
+  void BaseScalarFiniteElement :: 
+  AddGradTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
+                SliceMatrix<> coefs) const
+  {
+    size_t dim = Dim();
+    for (size_t i = 0; i < coefs.Width(); i++)
+      AddGradTrans (ir, values.Rows(i*dim, (i+1)*dim), coefs.Col(i));
+  }
+
   
 
 
