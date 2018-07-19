@@ -266,6 +266,8 @@ WIREBASKET_DOF: Degree of freedom coupling with many elements (more than
 
 EXTERNAL_DOF: Either INTERFACE_DOF or WIREBASKET_DOF
 
+VISIBLE_DOF: not UNUSED_DOF or HIDDEN_DOF
+
 ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
 
 )raw_string"))
@@ -277,6 +279,7 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
     .value("NONWIREBASKET_DOF", NONWIREBASKET_DOF)
     .value("WIREBASKET_DOF", WIREBASKET_DOF)
     .value("EXTERNAL_DOF", EXTERNAL_DOF)
+    .value("VISIBLE_DOF", VISIBLE_DOF)
     .value("ANY_DOF", ANY_DOF)
     // .export_values()
     ;
