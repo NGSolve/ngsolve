@@ -33,7 +33,7 @@ void NGS_DLL_HEADER ExportNgsolve(py::module &m ) {
              );
 
 
-    m.def ("Draw",[](shared_ptr<MeshAccess> mesh) 
+    m.def ("Draw",[](shared_ptr<MeshAccess> mesh, py::kwargs kwargs)
                                      {
                                        mesh->SelectMesh();
                                        Ng_TclCmd ("set ::selectvisual mesh;\n");
@@ -102,7 +102,7 @@ void NGS_DLL_HEADER ExportNgsolve(py::module &m ) {
       ;
     
     m.def ("Draw",
-           [](shared_ptr<GridFunction> gf, int sd, bool autoscale, double min, double max)
+           [](shared_ptr<GridFunction> gf, int sd, bool autoscale, double min, double max, py::kwargs kwargs)
               {
                 // cout << "in draw" << endl;
                 // cout << "gf in draw = " << *gf << endl;
@@ -155,7 +155,7 @@ void NGS_DLL_HEADER ExportNgsolve(py::module &m ) {
     
     m.def ("Draw", [](shared_ptr<CoefficientFunction> cf, shared_ptr<MeshAccess> ma, string name,
                  int sd, bool autoscale, double min, double max,
-                 bool draw_vol, bool draw_surf) 
+                      bool draw_vol, bool draw_surf, py::kwargs kwargs)
               {
                 ma->SelectMesh();
                 netgen::SolutionData * vis;
