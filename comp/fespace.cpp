@@ -1554,6 +1554,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       case NONWIREBASKET_DOF: ost << "non-wirebasket"; break;
       case WIREBASKET_DOF: ost << "wirebasket"; break;
       case EXTERNAL_DOF: ost << "external"; break;
+      case VISIBLE_DOF: ost << "visible"; break;
       case ANY_DOF: ost << "any"; break;
       };
     return ost;
