@@ -9,6 +9,7 @@
 #include "hdivdivsurfacespace.hpp"
 #include "hcurlcurlfespace.hpp"
 #include "numberfespace.hpp"
+#include "compressedfespace.hpp"
 using namespace ngcomp;
 
 using ngfem::ELEMENT_TYPE;
@@ -266,6 +267,8 @@ WIREBASKET_DOF: Degree of freedom coupling with many elements (more than
 
 EXTERNAL_DOF: Either INTERFACE_DOF or WIREBASKET_DOF
 
+VISIBLE_DOF: not UNUSED_DOF or HIDDEN_DOF
+
 ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
 
 )raw_string"))
@@ -277,6 +280,7 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
     .value("NONWIREBASKET_DOF", NONWIREBASKET_DOF)
     .value("WIREBASKET_DOF", WIREBASKET_DOF)
     .value("EXTERNAL_DOF", EXTERNAL_DOF)
+    .value("VISIBLE_DOF", VISIBLE_DOF)
     .value("ANY_DOF", ANY_DOF)
     // .export_values()
     ;
@@ -1177,6 +1181,41 @@ used_idnrs : list of int = None
                       return fes;
                     }))
     ;
+
+
+  py::class_<CompressedFESpace, shared_ptr<CompressedFESpace>, FESpace>(m, "Compress",
+	docu_string(R"delimiter(Wrapper Finite Element Spaces.
+The compressed fespace is a wrapper around a standard fespace which removes
+certain dofs (e.g. UNUSED_DOFs).
+
+Parameters:
+
+fespace : ngsolve.comp.FESpace
+    finite element space
+
+active_dofs : BitArray or None
+    don't use the COUPLING_TYPEs of dofs to compress the FESpace, 
+    but use a BitArray directly to compress the FESpace
+)delimiter"))
+    .def(py::init([] (shared_ptr<FESpace> & fes,
+                      py::object active_dofs)
+                  {
+                    auto ret = make_shared<CompressedFESpace> (fes);
+                    shared_ptr<BitArray> actdofs = nullptr;
+                    if (! py::extract<DummyArgument> (active_dofs).check())
+                      ret->SetActiveDofs(py::extract<shared_ptr<BitArray>>(active_dofs)());
+                    ret->Update(glh);
+                    return ret;                    
+                  }), py::arg("fespace"), py::arg("active_dofs")=DummyArgument())
+    .def("SetActiveDofs", [](CompressedFESpace & self, shared_ptr<BitArray> active_dofs)
+         {
+           self.SetActiveDofs(active_dofs);
+         },
+         py::arg("dofs"))
+    ;
+
+
+
 
   /////////////////////////////// GridFunctionCoefficientFunction /////////////
 
