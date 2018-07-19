@@ -310,7 +310,7 @@ namespace ngstd
     for (int i = 0; i < numflags.Size(); i++)
       str << numflags.GetName(i) << " = " << numflags[i] << endl;
     for (int i = 0; i < defflags.Size(); i++)
-      str << defflags.GetName(i) << endl;
+      str << defflags.GetName(i) << " = " << (defflags[i] ? "_TRUE" : "_FALSE") << endl;
     for (int i = 0; i < flaglistflags.Size(); i++)
       str << flaglistflags.GetName(i) << " =*" << flaglistflags[i] << endl;
     for (int i = 0; i < numlistflags.Size(); i++)
@@ -424,6 +424,11 @@ namespace ngstd
                   }
                 else
                   {
+                    if(content == "_TRUE" || content == "_FALSE")
+                      {
+                        SetFlag(name, (content =="_TRUE") ? true : false);
+                        continue;
+                      }
                     char* endptr;
                     double vald = strtod (content.c_str(), &endptr);
                     if (endptr != content.c_str())
