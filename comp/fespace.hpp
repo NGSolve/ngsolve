@@ -510,6 +510,8 @@ ANY                  1 1 1 1 | 15
     /// get dof-nrs of the element of certain coupling type
     void GetDofNrs (ElementId ei, Array<DofId> & dnums, COUPLING_TYPE ctype) const;
 
+    /// get dofs (local numbering) of a certain type
+    virtual void GetElementDofsOfType (ElementId ei, Array<DofId> & dnums, COUPLING_TYPE ctype) const;
 
 
     /// get dofs on nr'th node of type nt.
@@ -1187,6 +1189,7 @@ ANY                  1 1 1 1 | 15
     ///
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const;
     virtual void GetDofNrs (NodeId ni, Array<DofId> & dnums) const;
+    virtual void GetElementDofsOfType (ElementId ei, Array<DofId> & dnums, COUPLING_TYPE ctype) const;
     ///
     [[deprecated("Use GetDofNrs(NODE_TYPE(NT_VERTEX,nr) instead")]]    
     virtual void GetVertexDofNrs (int vnr, Array<DofId> & dnums) const;
