@@ -460,7 +460,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     free_dofs->Invert();
     
     for (auto i : Range(ctofdof))
-      if (ctofdof[i] == UNUSED_DOF)
+      if (!(ctofdof[i] & VISIBLE_DOF)) //hidden or unused
 	free_dofs->Clear(i);
 
     external_free_dofs = make_shared<BitArray>(GetNDof());
