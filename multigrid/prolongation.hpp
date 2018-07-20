@@ -22,7 +22,7 @@ namespace ngmg
     virtual ~Prolongation();
   
     ///
-    virtual void Update () = 0;
+    virtual void Update (const FESpace & fes) = 0;
 
     ///
     virtual SparseMatrix< double >* CreateProlongationMatrix( int finelevel ) const = 0;
@@ -39,97 +39,21 @@ namespace ngmg
      Standard Prolongation.
      Child nodes between 2 parent nodes.
   */
-  // template <class TV>
   class LinearProlongation : public Prolongation
   {
-    ///
     shared_ptr<MeshAccess> ma;
-    ///
-    const FESpace & space;
-    ///
-    Array<int> nvlevel;
+    Array<size_t> nvlevel;
   public:
-    ///
-    LinearProlongation(shared_ptr<MeshAccess> ama,
-		       const FESpace & aspace)
-      : ma(ama), space(aspace) { ; }
-    ///
-    LinearProlongation(const FESpace & aspace)
-      : ma(aspace.GetMeshAccess()), space(aspace) { ; }
+    LinearProlongation(shared_ptr<MeshAccess> ama)
+      : ma(ama) { ; }
     
     virtual ~LinearProlongation(); 
-    
-                      ///
-    virtual void Update () 
-    { 
-      if (ma->GetNLevels() > nvlevel.Size())
-	nvlevel.Append (ma->GetNV());
-    }
 
+    virtual void Update (const FESpace & fes) override;
 
-    /// 
-    virtual SparseMatrix< double >* CreateProlongationMatrix( int finelevel ) const;
-
-
-    ///
-    virtual void ProlongateInline (int finelevel, BaseVector & v) const
-    {
-      int parents[2];
-
-      int nc = nvlevel[finelevel-1];
-      int nf = nvlevel[finelevel];
-    
-      //    FlatVector<TV> & fv = 
-      //      dynamic_cast<VFlatVector<TV> &> (v).FV();
-      //    FlatVector<TV> fv = 
-      //      dynamic_cast<T_BaseVector<TV> &> (v).FV();
-
-      FlatSysVector<> fv (v.Size(), v.EntrySize(), static_cast<double*>(v.Memory()));
-
-
-      int i;
-      for (i = nf; i < fv.Size(); i++)
-	fv(i) = 0;
-
-      for (i = nc; i < nf; i++)
-	{
-	  ma->GetParentNodes (i, parents);
-	  fv(i) = 0.5 * (fv(parents[0]) + fv(parents[1]));
-	}
-    }
-
-
-    ///
-    virtual void RestrictInline (int finelevel, BaseVector & v) const
-    {
-      int parents[2];
-      // int nc = space.GetNDofLevel (finelevel-1);
-      // int nf = space.GetNDofLevel (finelevel);
-      int nc = nvlevel[finelevel-1];
-      int nf = nvlevel[finelevel];
-
-      /*
-	cout << "rest, h1, typeid(v) = " << typeid(v).name() << endl;
-	cout << "nvlevel = " << nvlevel << ", level = " << finelevel << endl;
-	cout << "nc = " << nc << ", nf = " << nf << endl;
-	cout << "v.size = " << v.Size() << ", entrysize = " << v.EntrySize() << endl;
-      */
-
-      // FlatVector<TV> fv = dynamic_cast<T_BaseVector<TV> &> (v).FV();
-
-      FlatSysVector<> fv (v.Size(), v.EntrySize(), static_cast<double*>(v.Memory()));
-
-      int i;
-      for (i = nf-1; i >= nc; i--)
-	{
-	  ma->GetParentNodes (i, parents);
-	  fv(parents[0]) += 0.5 * fv(i);
-	  fv(parents[1]) += 0.5 * fv(i);
-	}
-
-      for (i = nf; i < fv.Size(); i++)
-	fv(i) = 0;  
-    }
+    virtual SparseMatrix< double >* CreateProlongationMatrix( int finelevel ) const override;
+    virtual void ProlongateInline (int finelevel, BaseVector & v) const override;
+    virtual void RestrictInline (int finelevel, BaseVector & v) const override;
   };
 
 
@@ -177,7 +101,7 @@ namespace ngmg
     virtual ~ElementProlongation();
   
     ///
-    virtual void Update ()
+    virtual void Update (const FESpace & fes)
     { ; }
 
     ///
@@ -240,7 +164,7 @@ namespace ngmg
     virtual ~SurfaceElementProlongation();
   
     ///
-    virtual void Update ();
+    virtual void Update (const FESpace & fes);
 
     ///
     virtual SparseMatrix< double >* CreateProlongationMatrix( int finelevel ) const
@@ -269,7 +193,7 @@ namespace ngmg
     virtual ~EdgeProlongation() { ; }
   
     ///
-    virtual void Update () { ; }
+    virtual void Update (const FESpace & fes) { ; }
 
     ///
     virtual SparseMatrix< double >* CreateProlongationMatrix( int finelevel ) const
@@ -387,7 +311,7 @@ namespace ngmg
     virtual ~L2HoProlongation()
     { ; }
     ///
-    virtual void Update ()
+    virtual void Update (const FESpace & fes)
 	{ ; }
 
     ///
@@ -425,7 +349,7 @@ namespace ngmg
     // { ; }
   
     ///
-    virtual void Update ();
+    virtual void Update (const FESpace & fes);
 
     void AddProlongation (shared_ptr<Prolongation> prol)
     {

@@ -20,19 +20,18 @@ namespace ngla
 
     height = mat.Height();
     invdiag.SetSize (height); 
-    invdiag = TM(0.0);
 
-    // for (int i = 0; i < height; i++)
     ParallelFor (height, [&](size_t i)
 		 {
 		   if (!inner || inner->Test(i))
 		     invdiag[i] = mat(i,i);
+                   else
+                     invdiag[i] = TM(0.0);
 		 });
     
-    if(paralleldofs!=nullptr && use_par)
-	AllReduceDofData (invdiag, MPI_SUM, paralleldofs);  
+    if (paralleldofs!=nullptr && use_par)
+      AllReduceDofData (invdiag, MPI_SUM, paralleldofs);  
     
-    // for (int i = 0; i < height; i++)
     ParallelFor (height, [&](size_t i)
 		 {
 		   if (!inner || inner->Test(i))

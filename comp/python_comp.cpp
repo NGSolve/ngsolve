@@ -4,6 +4,7 @@
 
 #include "../ngstd/python_ngstd.hpp"
 #include <comp.hpp>
+#include <multigrid.hpp> 
 
 #include "hdivdivfespace.hpp"
 #include "hdivdivsurfacespace.hpp"
@@ -880,9 +881,14 @@ kwargs : For a description of the possible kwargs have a look a bit further down
          )
 
     .def("ParallelDofs",
-         [] (const shared_ptr<FESpace>self)
+         [] (const shared_ptr<FESpace> self)
          { return self->GetParallelDofs(); },
          "Return dof-identification for MPI-distributed meshes")
+
+    .def("Prolongation",
+         [] (const shared_ptr<FESpace> self)
+         { return self->GetProlongation(); },
+         "Return prolongation operator for use in multi-grid")
 
     .def("Range",
          [] (const shared_ptr<FESpace> self, int comp) -> py::slice
@@ -1874,6 +1880,13 @@ flags : dict
 
     ;
 
+  ////////////////////////////// Prolongation ///////////////////////////////
+
+  py::class_<Prolongation, shared_ptr<Prolongation>> (m, "Prolongation")
+    .def ("Prolongate", &Prolongation::ProlongateInline, py::arg("finelevel"), py::arg("vec"))
+    .def ("Restrict", &Prolongation::RestrictInline, py::arg("finelevel"), py::arg("vec"))
+    ;
+  
   /////////////////////////////// Preconditioner /////////////////////////////////////////////
 
   auto prec_class = py::class_<Preconditioner, shared_ptr<Preconditioner>, BaseMatrix>(m, "Preconditioner");

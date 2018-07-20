@@ -1081,11 +1081,11 @@ namespace ngla
   void SparseMatrix<TM,TV_ROW,TV_COL> ::
   MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
+    static Timer t("SparseMatrix::MultAdd"); RegionTimer reg(t);
+    t.AddFlops (this->NZE());
+
     if (task_manager)
       {
-        static Timer t("SparseMatrix::MultAdd (taskhandler)"); RegionTimer reg(t);
-	t.AddFlops (this->NZE());
-
 	FlatVector<TVX> fx = x.FV<TVX>(); 
 	FlatVector<TVY> fy = y.FV<TVY>(); 
 

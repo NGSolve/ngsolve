@@ -294,7 +294,7 @@ namespace ngcomp
       }
     
     
-    prol->Update();
+    prol->Update(*this);
     UpdateCouplingDofArray();
   }
 
