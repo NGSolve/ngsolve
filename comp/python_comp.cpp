@@ -756,6 +756,33 @@ kwargs : For a description of the possible kwargs have a look a bit further down
            self->FinalizeUpdate(glh);
          },
          "finalize update")
+     .def("HideAllDofs", [](shared_ptr<FESpace> self, py::object acomp)
+         {
+           shared_ptr<FESpace> space = self;
+           if (! py::extract<DummyArgument> (acomp).check())
+           {
+             auto comp = py::extract<int>(acomp)();
+             auto compspace = dynamic_pointer_cast<CompoundFESpace> (self);
+             if (!compspace)
+               throw py::type_error("'components' is available only for product spaces");
+             space = (*compspace)[comp];
+             IntRange range = compspace->GetRange(comp);
+             for (auto d : range)
+             {
+               auto doftype = compspace->GetDofCouplingType(d);
+               if (doftype != UNUSED_DOF)
+                 compspace->SetDofCouplingType(d,HIDDEN_DOF);
+             }
+           }
+           for (DofId d : Range(space->GetNDof()))
+             {
+               auto doftype = space->GetDofCouplingType(d);
+               if (doftype != UNUSED_DOF)
+                 space->SetDofCouplingType(d,HIDDEN_DOF);
+             }
+           self->FinalizeUpdate(glh); //Update FreeDofs
+         }, py::arg("component")=DummyArgument(), 
+         "set all visible coupling types to HIDDEN_DOFs")
     .def_property_readonly ("ndof", [](shared_ptr<FESpace> self) { return self->GetNDof(); },
                             "number of degrees of freedom")
 
