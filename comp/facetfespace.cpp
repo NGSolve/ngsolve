@@ -164,6 +164,8 @@ namespace ngcomp
     highest_order_dc = flags.GetDefineFlag("highest_order_dc");
     if (order == 0)
       highest_order_dc = false;
+
+    hide_highest_order_dc = flags.GetDefineFlag("hide_highest_order_dc");
     
     nowirebasket = flags.GetDefineFlag ("nowirebasket");
     
@@ -455,7 +457,7 @@ namespace ngcomp
       }
     
     if(highest_order_dc)
-      ctofdof.Range(first_inner_dof[0],ndof) = HIDDEN_DOF;
+      ctofdof.Range(first_inner_dof[0],ndof) = hide_highest_order_dc ? HIDDEN_DOF : LOCAL_DOF;
     
     if(print)
       *testout << "FacetFESpace, ctofdof = " << endl << ctofdof << endl;
