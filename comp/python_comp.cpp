@@ -782,7 +782,7 @@ kwargs : For a description of the possible kwargs have a look a bit further down
              }
            self->FinalizeUpdate(glh); //Update FreeDofs
          }, py::arg("component")=DummyArgument(), 
-         "set all visible coupling types to HIDDEN_DOFs")
+         "set all visible coupling types to HIDDEN_DOFs (will be overwritten by any Update())")
     .def_property_readonly ("ndof", [](shared_ptr<FESpace> self) { return self->GetNDof(); },
                             "number of degrees of freedom")
 
