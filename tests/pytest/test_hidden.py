@@ -92,6 +92,3 @@ def test_hidden():
                             error = Norm(diff)
                             print("comparing ({:1},{:1},{:1}) with ({:1},{:1},{:1}), difference is {}".format(elim_internal,use_hidden,compress,elim_internal2,use_hidden2,compress2,error))
                             assert error < 1e-14
-
-
-test_hidden()
