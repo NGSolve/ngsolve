@@ -292,8 +292,8 @@ ANY                  1 1 1 1 | 15
       et_order_right[et] = order;
     }
     */
-    virtual void SetOrder (NodeId ni, int order) { ; }
-    virtual int GetOrder (NodeId ni) const { return 0; }
+    virtual void SetOrder (NodeId ni, int order); //  { ; }
+    virtual int GetOrder (NodeId ni) const; //  { return 0; }
     /*
     {
       switch (ni.GetType())
