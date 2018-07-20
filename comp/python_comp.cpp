@@ -1085,9 +1085,33 @@ kwargs : For a description of the possible kwargs have a look a bit further down
                 })
     ;
 
-  ExportFESpace<VectorFacetFESpace> (m, "VectorFacet");
+  ExportFESpace<VectorFacetFESpace> (m, "VectorFacet")
+    .def_static("__flags_doc__", [] ()
+              {
+                auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
+                                                    attr("FESpace").
+                                                    attr("__flags_doc__")());
+                flags_doc["highest_order_dc"] = "bool = False\n"
+                  "  Splits highest order facet functions into two which are associated with\n  the corresponding neighbors and are local dofs on the corresponding element\n (used to realize projected jumps)";
+                flags_doc["hide_highest_order_dc"] = "bool = False\n"
+                  "  if highest_order_dc is used this flag marks the corresponding local dofs\n  as hidden dofs (reduces number of non-zero entries in a matrix). These dofs\n  can also be compressed.";
+                return flags_doc;
+              })
+    ;
 
-  ExportFESpace<FacetFESpace> (m, "FacetFESpace");
+  ExportFESpace<FacetFESpace> (m, "FacetFESpace")
+    .def_static("__flags_doc__", [] ()
+              {
+                auto flags_doc = py::cast<py::dict>(py::module::import("ngsolve").
+                                                    attr("FESpace").
+                                                    attr("__flags_doc__")());
+                flags_doc["highest_order_dc"] = "bool = False\n"
+                  "  Splits highest order facet functions into two which are associated with\n  the corresponding neighbors and are local dofs on the corresponding element\n (used to realize projected jumps)";
+                flags_doc["hide_highest_order_dc"] = "bool = False\n"
+                  "  if highest_order_dc is used this flag marks the corresponding local dofs\n  as hidden dofs (reduces number of non-zero entries in a matrix). These dofs\n  can also be compressed.";
+                return flags_doc;
+              })
+    ;
 
   ExportFESpace<FacetSurfaceFESpace> (m, "FacetSurface");
 
