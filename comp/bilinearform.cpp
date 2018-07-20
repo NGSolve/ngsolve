@@ -401,7 +401,11 @@ namespace ngcomp
                 if(facet2 > i)
                 {
                   ma->GetFacetElements (facet2, elnums_per);
-                  elnums.Append(elnums_per[0]);
+		  // if the facet is identified across subdomain
+		  // boundary, we only have the surface element
+		  // and not the other volume element!
+		  if (elnums_per.Size())
+		    elnums.Append(elnums_per[0]);
                 }
               }
               
