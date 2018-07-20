@@ -1143,9 +1143,13 @@ namespace ngcomp
                                      Array<int> idnums1(dnums.Size(), lh), 
                                        ednums1(dnums.Size(), lh),
                                        hdnums1(dnums.Size(), lh);
-                                     fespace->GetDofNrs(el,idnums1,CONDENSABLE_DOF);
-                                     fespace->GetDofNrs(el,ednums1,EXTERNAL_DOF);
+                                     fespace->GetElementDofsOfType(el,idnums1,CONDENSABLE_DOF);
+                                     fespace->GetElementDofsOfType(el,ednums1,EXTERNAL_DOF);
                                      fespace->GetElementDofsOfType(el,hdnums1,HIDDEN_DOF);
+                                     for (auto d : Range(idnums1.Size()))
+                                       idnums1[d] = dnums[idnums1[d]];
+                                     for (auto d : Range(ednums1.Size()))
+                                       ednums1[d] = dnums[ednums1[d]];
                                      for (auto ldof : hdnums1)
                                        idnums1[ldof] = -1;
                                      
@@ -1159,6 +1163,7 @@ namespace ngcomp
                                        else
                                          for (size_t k = 0; k < dim; k++)
                                            idnums += -1;
+
                                      for (size_t j = 0; j < ednums1.Size(); j++)
                                        ednums += dim * IntRange(ednums1[j], ednums1[j]+1);
                                      
@@ -2601,9 +2606,13 @@ namespace ngcomp
                              ArrayMem<int,50> hdnums1;
                              ArrayMem<int,50> ednums1, ednums;
                              
-                             fespace->GetDofNrs(el,idnums1,CONDENSABLE_DOF);
-                             fespace->GetDofNrs(el,ednums1,EXTERNAL_DOF);
+                             fespace->GetElementDofsOfType(el,idnums1,CONDENSABLE_DOF);
+                             fespace->GetElementDofsOfType(el,ednums1,EXTERNAL_DOF);
                              fespace->GetElementDofsOfType(el,hdnums1,HIDDEN_DOF);
+                             for (auto d : Range(idnums1.Size()))
+                               idnums1[d] = dnums[idnums1[d]];
+                             for (auto d : Range(ednums1.Size()))
+                               ednums1[d] = dnums[ednums1[d]];
                              for (auto ldof : hdnums1)
                                idnums1[ldof] = -1;
                              
