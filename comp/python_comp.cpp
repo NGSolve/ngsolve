@@ -250,6 +250,9 @@ HIDDEN_DOF: Inner degree of freedom, that will be eliminated by static
      * without static condensation a HIDDEN_DOF is treated as any other
        DOF, e.g. as a LOCAL_DOF
      * To a HIDDEN_DOF the r.h.s. vector must have zero entries.
+     * When static condensation is applied (eliminate_hidden/
+       eliminate_internal) the block corresponding to HIDDEN_DOFs
+       has to be invertible.
 
 CONDENSABLE_DOF: Inner degree of freedom, that will be eliminated by static
     condensation (LOCAL_DOF or HIDDEN_DOF)
@@ -1633,6 +1636,9 @@ space : ngsolve.FESpace
                      "  this enables only the use of the members harmonic_extension,\n"
                      "  harmonic_extension_trans and inner_solve. Have a look at the\n"
                      "  documentation for further information.",
+                     py::arg("eliminate_hidden") = "bool = False\n"
+                     "  Set up BilinearForm for static condensation of hidden\n"
+                     "  dofs. May be overruled by eliminate_internal.",
                      py::arg("print") = "bool = False\n"
                      "  Write additional information to testout file. \n"
                      "  This file must be set by ngsolve.SetTestoutFile. Use \n"
