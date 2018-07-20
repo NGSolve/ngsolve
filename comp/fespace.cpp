@@ -79,7 +79,8 @@ namespace ngcomp
     timing = flags.GetDefineFlag("timing");
     print = flags.GetDefineFlag("print");
     dgjumps = flags.GetDefineFlag("dgjumps");
-    no_low_order_space = flags.GetDefineFlag("no_low_order_space");
+    no_low_order_space = flags.GetDefineFlagX("low_order_space").IsFalse() ||
+      flags.GetDefineFlag("no_low_order_space");
     if (dgjumps) 
       *testout << "ATTENTION: flag dgjumps is used!\n This leads to a \
 lot of new non-zero entries in the matrix!\n" << endl;
@@ -1648,7 +1649,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   {
     name="NodalFESpace";
     
-    prol = make_shared<LinearProlongation> (*this);
+    prol = make_shared<LinearProlongation> (GetMeshAccess());
 
     if (order >= 2)
       {
@@ -1804,7 +1805,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
         SetNDof(ndof);
       }
 
-    prol->Update();
+      prol->Update(*this);
 
     if (dirichlet_boundaries.Size())
       {
@@ -2443,7 +2444,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     // cout << "AtomicDofs = " << endl << is_atomic_dof << endl;
 
-    prol -> Update();
+    prol -> Update(*this);
 
     UpdateCouplingDofArray();
 
