@@ -44,6 +44,7 @@ namespace ngcomp
     // Array<int> ndlevel;
     bool var_order; 
     bool highest_order_dc;
+    bool hide_highest_order_dc;
     bool nowirebasket;
     bool all_dofs_together;
   public:
