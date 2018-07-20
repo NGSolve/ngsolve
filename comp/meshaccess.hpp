@@ -386,8 +386,9 @@ namespace ngcomp
             {
               HeapReset hr(clh);
               ElementId ei(vb, i);
-              Ngs_Element el(GetElement(ei), ei);
-              func (move(el), clh);
+              // Ngs_Element el(GetElement(ei), ei);
+	      func (GetElement(ei), clh);
+              // func (move(el), clh);
             }
         }
     }
