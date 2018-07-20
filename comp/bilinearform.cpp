@@ -369,11 +369,10 @@ namespace ngcomp
                      
                      if (vb == VOL && eliminate_internal)
                        fespace->GetDofNrs (eid, dnums, EXTERNAL_DOF);
-                     else 
-                       if (eliminate_hidden)
-                         fespace->GetDofNrs (eid, dnums, VISIBLE_DOF);
-                       else
-                         fespace->GetDofNrs (eid, dnums);
+                     else if (vb == VOL && eliminate_hidden)
+                       fespace->GetDofNrs (eid, dnums, VISIBLE_DOF);
+                     else
+                       fespace->GetDofNrs (eid, dnums);
                          
                      
                      for (DofId d : dnums)
@@ -457,9 +456,9 @@ namespace ngcomp
 		    
 		    if (vb == VOL && eliminate_internal)
 		      fespace2->GetDofNrs (eid, dnums, EXTERNAL_DOF);
-		    else if (eliminate_hidden)
+		    else if (vb == VOL && eliminate_hidden)
 		      fespace2->GetDofNrs (eid, dnums, VISIBLE_DOF);
-        else
+		    else
 		      fespace2->GetDofNrs (eid, dnums);
 		    
 		    int shift = (vb==VOL) ? 0 : ((vb==BND) ? neV : neV + neB);
