@@ -22,16 +22,16 @@ def test_hidden():
                 i +=1 
                 order = 4
                 fes1 = HDiv(mesh, order=order, discontinuous=True)
-                if use_hidden:
+                if compress and use_hidden:
                     fes1.HideAllDofs()
-                if compress:
                     fes1 = Compress(fes1)
+                    
                 fes2 = L2(mesh, order=order-1)
                 fes3 = FacetFESpace(mesh, order=order, dirichlet=[1,2,3])
                 fes = FESpace([fes1,fes2,fes3])
-
-                if use_hidden:
+                if not compress and use_hidden:
                     fes.HideAllDofs(component=0)
+
                     
                 sigma,u,uhat = fes.TrialFunction()
                 tau,v,vhat = fes.TestFunction()
@@ -91,4 +91,4 @@ def test_hidden():
                             diff.data = my - solutions[(elim_internal2,use_hidden2,compress2)].components[1].vec
                             error = Norm(diff)
                             print("comparing ({:1},{:1},{:1}) with ({:1},{:1},{:1}), difference is {}".format(elim_internal,use_hidden,compress,elim_internal2,use_hidden2,compress2,error))
-                            assert error < 1e-14
+                            assert error < 1e-13
