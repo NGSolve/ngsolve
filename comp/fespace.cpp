@@ -679,7 +679,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
     // CheckCouplingTypes();
   }
 
-
   const Table<int> & FESpace :: FacetColoring() const
   {
     if (facet_coloring.Size()) return facet_coloring;
@@ -848,8 +847,21 @@ lot of new non-zero entries in the matrix!\n" << endl;
   //       __assume(false);
   //     }
   // }
-  
 
+
+  void FESpace :: SetOrder (NodeId ni, int order)
+  {
+    throw Exception (string("FESpace::SetOrder not overloaded for space") + typeid(*this).name());
+  }
+
+  int FESpace :: GetOrder (NodeId ni) const
+  {
+    throw Exception (string("FESpace::GetOrder not overloaded for space") + typeid(*this).name());
+  }
+    
+
+
+  
   const FiniteElement & FESpace :: GetFE (int elnr, LocalHeap & lh) const
   {
     return const_cast<FiniteElement&>(GetFE(ElementId(VOL,elnr),lh));

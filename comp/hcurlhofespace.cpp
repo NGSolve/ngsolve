@@ -519,10 +519,13 @@ namespace ngcomp
     if (low_order_space)
       low_order_space -> Update(lh);
 
+    bool first_update = GetTimeStamp() < ma->GetTimeStamp();
+    if (first_update) timestamp = NGS_Object::GetNextTimeStamp();
+
     int ne = ma->GetNE();
     int nse = ma->GetNSE();
     int ned = ma->GetNEdges();
-    int nfa = (ma->GetDimension() == 3) ? ma->GetNFaces() : 0;
+    int nfa = (ma->GetDimension() == 3 || order_policy == VARIABLE_ORDER) ? ma->GetNFaces() : 0;
 
     maxorder = -1; 
     minorder = 99; 
@@ -548,216 +551,220 @@ namespace ngcomp
         order_timestamp = ma->GetTimeStamp();
       }
     */
-    
-    order_edge.SetSize (ned);   
-    order_face.SetSize (nfa); 
-    order_inner.SetSize (ne);
-    usegrad_edge.SetSize (ned);                                
-    usegrad_face.SetSize (nfa); 
-    usegrad_cell.SetSize (ne);
-    fine_edge.SetSize (ned); 
-    fine_face.SetSize (nfa); 
 
-    int p = var_order ? 0 : order; 
-    order_edge = p - (type1 ? 1 : 0); 
-    // order_inner = INT<3> (p,p,p); 
-    order_inner = INT<3> (0,0,0); 
-
-    fine_edge = 0; 
-    if (dim==3) 
-      { 
-	fine_face = 0; 
-	order_face = INT<2> (p,p);
-	usegrad_face = 0; 
-      } 
-
-    usegrad_edge = false;                                
-    usegrad_cell = false; 
-
-    Array<int> elfaces;
-
-    /*
-    for(int i = 0; i < ne; i++) 
-      if(gradientdomains[ma->GetElIndex(i)]) 
-	{
+    if (first_update)
+      {
+        order_edge.SetSize (ned);   
+        order_face.SetSize (nfa); 
+        order_inner.SetSize (ne);
+        usegrad_edge.SetSize (ned);                                
+        usegrad_face.SetSize (nfa); 
+        usegrad_cell.SetSize (ne);
+        fine_edge.SetSize (ned); 
+        fine_face.SetSize (nfa); 
+        
+        int p = var_order ? 0 : order; 
+        order_edge = p - (type1 ? 1 : 0); 
+        // order_inner = INT<3> (p,p,p); 
+        order_inner = INT<3> (0,0,0); 
+        
+        fine_edge = 0; 
+        // if (nfa > 0)
+        { 
+          fine_face = 0; 
+          order_face = INT<2> (p,p);
+          usegrad_face = 0; 
+        } 
+        
+        usegrad_edge = false;                                
+        usegrad_cell = false; 
+        
+        Array<int> elfaces;
+        
+        /*
+          for(int i = 0; i < ne; i++) 
+          if(gradientdomains[ma->GetElIndex(i)]) 
+          {
 	  ma->GetElEdges(i,eledges);
 	  
 	  for(int j=0;j<eledges.Size();j++)
-	    usegrad_edge[eledges[j]]=1;
+          usegrad_edge[eledges[j]]=1;
 	  
 	  if(ma->GetDimension()==3)
-	    {
-	      ma->GetElFaces(i, elfaces);
-	      for(int j = 0; j < elfaces.Size(); j++)
-		usegrad_face[elfaces[j]]=1; 
-	    }
+          {
+          ma->GetElFaces(i, elfaces);
+          for(int j = 0; j < elfaces.Size(); j++)
+          usegrad_face[elfaces[j]]=1; 
+          }
 	  usegrad_cell[i] = 1; 
-	} 
-    */
-
-    /*
-    for (Ngs_Element el : ma->Elements(VOL))
-      if (gradientdomains[el.GetIndex()]) 
-        {
+          } 
+        */
+        
+        /*
+          for (Ngs_Element el : ma->Elements(VOL))
+          if (gradientdomains[el.GetIndex()]) 
+          {
           usegrad_edge[el.Edges()] = true;
           if (ma->GetDimension() == 3)
-            usegrad_face[el.Faces()] = true;
+          usegrad_face[el.Faces()] = true;
           usegrad_cell[el.Nr()] = true;
-        }
-    */
-    ma -> IterateElements
-      (VOL, lh,
-       [&](auto el, LocalHeap & lh)
-       {
-         if (gradientdomains[el.GetIndex()]) 
+          }
+        */
+        ma -> IterateElements
+          (VOL, lh,
+           [&](auto el, LocalHeap & lh)
            {
-             usegrad_edge[el.Edges()] = true;
-             if (ma->GetDimension() == 3)
-               usegrad_face[el.Faces()] = true;
-             usegrad_cell[el.Nr()] = true;
-           }
-       });
-    
-    if (gradientboundaries.Size())
-      // for (int i = 0; i < nse; i++)
-      for (ElementId ei : ma->Elements(BND))
-        if (gradientboundaries[ma->GetElIndex(ei)])
+             if (gradientdomains[el.GetIndex()]) 
+               {
+                 usegrad_edge[el.Edges()] = true;
+                 // if (ma->GetDimension() == 3)
+                 if (nfa)
+                   usegrad_face[el.Faces()] = true;
+                 usegrad_cell[el.Nr()] = true;
+               }
+           });
+        
+        if (gradientboundaries.Size())
+          // for (int i = 0; i < nse; i++)
+          for (ElementId ei : ma->Elements(BND))
+            if (gradientboundaries[ma->GetElIndex(ei)])
+              {
+                auto eledges = ma->GetElEdges(ei);
+                for(int j=0; j<eledges.Size();j++)
+                  usegrad_edge[eledges[j]] = 1;
+                
+                if(ma->GetDimension()==3)
+                  usegrad_face[ma->GetSElFace(ei.Nr())] = 1;
+              }
+        
+        ma->AllReduceNodalData (NT_EDGE, usegrad_edge, MPI_LOR);
+        ma->AllReduceNodalData (NT_FACE, usegrad_face, MPI_LOR);
+        
+	
+        for (int i = 0; i < ne; i++)
           {
-            auto eledges = ma->GetElEdges(ei);
-            for(int j=0; j<eledges.Size();j++)
-              usegrad_edge[eledges[j]] = 1;
-	
-            if(ma->GetDimension()==3)
-              usegrad_face[ma->GetSElFace(ei.Nr())] = 1;
-	}
-
-    ma->AllReduceNodalData (NT_EDGE, usegrad_edge, MPI_LOR);
-    ma->AllReduceNodalData (NT_FACE, usegrad_face, MPI_LOR);
-
-	
-    for (int i = 0; i < ne; i++)
-      {
-        ElementId ei(VOL, i);
-	int index = ma->GetElIndex(ei);
-	if (!DefinedOn (VOL, index)) continue;
-
-	order_inner[i] = INT<3> (p,p,p); 	
-	INT<3,TORDER> el_orders = ma->GetElOrders(i);
-	
-	ELEMENT_TYPE eltype=ma->GetElType(ei); 
-	const FACE * faces = ElementTopology::GetFaces (eltype);
-	const EDGE * edges = ElementTopology::GetEdges (eltype);
-	const POINT3D * points = ElementTopology :: GetVertices (eltype);
-	auto vnums = ma->GetElVertices (ei);
-	
-	auto eledges = ma->GetElEdges (ei);		
-	for(int j=0;j<eledges.Size();j++) fine_edge[eledges[j]] = 1; 
-	
-	if (dim == 3)
-	  {
-            elfaces = ma->GetElFaces(ei);
-	    for(int j=0;j<elfaces.Size();j++) fine_face[elfaces[j]] = 1; 
-	  }
-
-	for(int j=0;j<3;j++)
-	  {
-	    el_orders[j] = el_orders[j]+rel_order;
-	    if(el_orders[j] > maxorder) maxorder=el_orders[j];
-	    if(el_orders[j] < minorder) minorder=el_orders[j];
-	  }
-
-	
-	if(!var_order) continue; // for fixed order find only fine-edges-faces! 
-	
-	     
-
-	for(int j=0;j<eledges.Size();j++)
-	  for(int k=0;k<dim;k++)
-	    if(points[edges[j][0]][k] != points[edges[j][1]][k]) // find edge-dir x,y,z
-	      { 
-		order_edge[eledges[j]] = max2(el_orders[k],order_edge[eledges[j]]);
-		break; 
-	      }
-	
-	for(int j=0;j<dim;j++)
-	  order_inner[i][j] = int(max2(order_inner[i][j],el_orders[j]));
-	
-	if(dim==2) continue; 
-	
-	for(int j=0;j<elfaces.Size();j++)
-	  {
-	    if(faces[j][3]==-1) 
-	      {
-		
-		order_face[elfaces[j]][0] = int(max2(order_face[elfaces[j]][0], 
-						     el_orders[0]));
-		order_face[elfaces[j]][1] = order_face[elfaces[j]][0]; 
-	      }
-	    else //quad_face
-	      {
-		int fmax = 0;
-		for(int k = 1; k < 4; k++) 
-		  if(vnums[faces[j][k]] > vnums[faces[j][fmax]]) fmax = k;   
-		
-		
-		INT<2> f((fmax+3)%4,(fmax+1)%4); 
-		if(vnums[faces[j][f[1]]] > vnums[faces[j][f[0]]]) swap(f[0],f[1]);
-		
-		// fmax > f[0] > f[1]
-		// p[0] for direction fmax,f[0] 
-		// p[1] for direction fmax,f[1] 
-		for(int l=0;l<2;l++)
-		  for(int k=0;k<3;k++)
-		    if(points[faces[j][fmax]][k] != points[faces[j][f[l] ]][k])
-		      {
-			order_face[elfaces[j]][l] = int(max2(order_face[elfaces[j]][l], 
-							     el_orders[k]));
-			break; 
-		      } 
-	      }  
-	  }
-      }
-
-    for (int i = 0; i < nse; i++)
-      {
-        ElementId sei(BND, i);
-	if (!DefinedOn (BND, ma->GetElIndex (sei))) continue;
-	
-        // auto eledges = ma->GetElEdges (sei);		
-	// for (int j=0;j<eledges.Size();j++) fine_edge[eledges[j]] = 1;
-        fine_edge[ma->GetElEdges(sei)] = true;
-	if(dim==3) 
-          fine_face[ma->GetSElFace(i)] = true; 
-      }
-
-    ma->AllReduceNodalData (NT_EDGE, fine_edge, MPI_LOR);
-    ma->AllReduceNodalData (NT_FACE, fine_face, MPI_LOR);
-
+            ElementId ei(VOL, i);
+            int index = ma->GetElIndex(ei);
+            if (!DefinedOn (VOL, index)) continue;
+            
+            order_inner[i] = INT<3> (p,p,p); 	
+            INT<3,TORDER> el_orders = ma->GetElOrders(i);
+            
+            ELEMENT_TYPE eltype=ma->GetElType(ei); 
+            const FACE * faces = ElementTopology::GetFaces (eltype);
+            const EDGE * edges = ElementTopology::GetEdges (eltype);
+            const POINT3D * points = ElementTopology :: GetVertices (eltype);
+            auto vnums = ma->GetElVertices (ei);
+            
+            auto eledges = ma->GetElEdges (ei);		
+            for(int j=0;j<eledges.Size();j++) fine_edge[eledges[j]] = 1; 
+            
+            if (dim == 3)
+              {
+                elfaces = ma->GetElFaces(ei);
+                for(int j=0;j<elfaces.Size();j++) fine_face[elfaces[j]] = 1; 
+              }
+            
+            for(int j=0;j<3;j++)
+              {
+                el_orders[j] = el_orders[j]+rel_order;
+                if(el_orders[j] > maxorder) maxorder=el_orders[j];
+                if(el_orders[j] < minorder) minorder=el_orders[j];
+              }
+            
+            
+            if(!var_order) continue; // for fixed order find only fine-edges-faces! 
+            
+	    
+            
+            for(int j=0;j<eledges.Size();j++)
+              for(int k=0;k<dim;k++)
+                if(points[edges[j][0]][k] != points[edges[j][1]][k]) // find edge-dir x,y,z
+                  { 
+                    order_edge[eledges[j]] = max2(el_orders[k],order_edge[eledges[j]]);
+                    break; 
+                  }
+            
+            for(int j=0;j<dim;j++)
+              order_inner[i][j] = int(max2(order_inner[i][j],el_orders[j]));
+            
+            if(dim==2) continue; 
+            
+            for(int j=0;j<elfaces.Size();j++)
+              {
+                if(faces[j][3]==-1) 
+                  {
+                    
+                    order_face[elfaces[j]][0] = int(max2(order_face[elfaces[j]][0], 
+                                                         el_orders[0]));
+                    order_face[elfaces[j]][1] = order_face[elfaces[j]][0]; 
+                  }
+                else //quad_face
+                  {
+                    int fmax = 0;
+                    for(int k = 1; k < 4; k++) 
+                      if(vnums[faces[j][k]] > vnums[faces[j][fmax]]) fmax = k;   
+                    
+                    
+                    INT<2> f((fmax+3)%4,(fmax+1)%4); 
+                    if(vnums[faces[j][f[1]]] > vnums[faces[j][f[0]]]) swap(f[0],f[1]);
+                    
+                    // fmax > f[0] > f[1]
+                    // p[0] for direction fmax,f[0] 
+                    // p[1] for direction fmax,f[1] 
+                    for(int l=0;l<2;l++)
+                      for(int k=0;k<3;k++)
+                        if(points[faces[j][fmax]][k] != points[faces[j][f[l] ]][k])
+                          {
+                            order_face[elfaces[j]][l] = int(max2(order_face[elfaces[j]][l], 
+                                                                 el_orders[k]));
+                            break; 
+                          } 
+                  }  
+              }
+          }
+        
+        for (int i = 0; i < nse; i++)
+          {
+            ElementId sei(BND, i);
+            if (!DefinedOn (BND, ma->GetElIndex (sei))) continue;
+            
+            // auto eledges = ma->GetElEdges (sei);		
+            // for (int j=0;j<eledges.Size();j++) fine_edge[eledges[j]] = 1;
+            fine_edge[ma->GetElEdges(sei)] = true;
+            if(dim==3) 
+              fine_face[ma->GetSElFace(i)] = true; 
+          }
+        
+        ma->AllReduceNodalData (NT_EDGE, fine_edge, MPI_LOR);
+        ma->AllReduceNodalData (NT_FACE, fine_face, MPI_LOR);
+        
       	
-    if(!var_order) { maxorder = order; minorder = order;} 
+        if(!var_order) { maxorder = order; minorder = order;} 
     
-    if(uniform_order_inner>-1) 
-      order_inner = INT<3> (uniform_order_inner,uniform_order_inner,uniform_order_inner); 
-    if(uniform_order_edge>-1) 
-      order_edge = uniform_order_edge; 
-    if(uniform_order_face>-1 && dim == 3) 
-      order_face = INT<2> (uniform_order_face, uniform_order_face);
-    /*
-    Array<int> pnums;
-    for (int i = 0; i < order_face.Size(); i++)
-      {
-	ma->GetFacePNums (i,pnums);  
-        if (pnums.Size()==4)
+        if(uniform_order_inner>-1) 
+          order_inner = INT<3> (uniform_order_inner,uniform_order_inner,uniform_order_inner); 
+        if(uniform_order_edge>-1) 
+          order_edge = uniform_order_edge; 
+        if(uniform_order_face>-1 && dim == 3) 
+          order_face = INT<2> (uniform_order_face, uniform_order_face);
+        /*
+          Array<int> pnums;
+          for (int i = 0; i < order_face.Size(); i++)
+          {
+          ma->GetFacePNums (i,pnums);  
+          if (pnums.Size()==4)
           order_face[i] = uniform_order_face+1;
+          }
+        */
+        // order of FINE FACES and EDGES for safety reasons set to 0 
+        for(int i=0;i<order_edge.Size();i++) 
+          if(!fine_edge[i]) order_edge[i] = 0;  
+        
+        for(int i=0;i<order_face.Size();i++) 
+          if(!fine_face[i]) order_face[i] = INT<2> (0,0);  
       }
-    */
-    // order of FINE FACES and EDGES for safety reasons set to 0 
-    for(int i=0;i<order_edge.Size();i++) 
-      if(!fine_edge[i]) order_edge[i] = 0;  
     
-    for(int i=0;i<order_face.Size();i++) 
-      if(!fine_face[i]) order_face[i] = INT<2> (0,0);  
-
     UpdateDofTables(); 
     UpdateCouplingDofArray();
   }
@@ -788,7 +795,7 @@ namespace ngcomp
   {
     if (order_policy == VARIABLE_ORDER)
       {
-        size_t nedge = ma->GetNEdges();
+        size_t nedge = ma->GetNEdges(); 
         size_t nface = ma->GetNFaces();
         // size_t ncell = ma->GetNNodes(NT_CELL);
 
@@ -805,7 +812,7 @@ namespace ngcomp
 
         first_face_dof.SetSize (nface+1);
         for (auto i : Range(nface))
-          { 
+          {
             first_face_dof[i] = ndof;
             /*
             INT<2> pl = FESpace::order_face_left[i];
@@ -813,7 +820,6 @@ namespace ngcomp
             */
             INT<2> pl = order_face[i];
             INT<2> pr = order_face[i];
-            
             int ngrad = 0, ncurl = 0;
             switch (ma->GetFaceType(i))
               {
@@ -839,7 +845,7 @@ namespace ngcomp
             if (ncurl < 0) ncurl = 0;
             ndof += ngrad + ncurl;
           } 
-        first_face_dof[nface] = ndof;   
+        first_face_dof[nface] = ndof;
         return;
       }
 
@@ -1183,6 +1189,54 @@ namespace ngcomp
       UpdateCouplingDofArray();
     }
 
+  void HCurlHighOrderFESpace :: SetOrder (NodeId ni, int order) 
+  {
+    switch (ni.GetType())
+      {
+      case NT_VERTEX:
+        break;
+      case NT_EDGE:
+        if (ni.GetNr() < order_edge.Size())
+          order_edge[ni.GetNr()] = order;
+        break;
+      case NT_FACE:
+        if (ni.GetNr() < order_face.Size())
+          order_face[ni.GetNr()] = order;
+        break;
+      case NT_CELL: case NT_ELEMENT:
+        if (ni.GetNr() < order_inner.Size())
+          order_inner[ni.GetNr()] = order;
+        break;
+      case NT_FACET:
+        break;
+      }
+  }
+  
+  int HCurlHighOrderFESpace :: GetOrder (NodeId ni) const
+  {
+    switch (ni.GetType())
+      {
+      case NT_VERTEX:
+        return 0;
+      case NT_EDGE:
+        if (ni.GetNr() < order_edge.Size())
+          return order_edge[ni.GetNr()];
+        break;
+      case NT_FACE:
+        if (ni.GetNr() < order_face.Size())
+          return order_face[ni.GetNr()][0];
+        break;
+      case NT_CELL: case NT_ELEMENT:
+        if (ni.GetNr() < order_inner.Size())
+          return order_inner[ni.GetNr()][0];
+        break;
+      case NT_FACET:
+        break;
+      }
+    return 0;
+  }
+
+  
 
   FiniteElement & HCurlHighOrderFESpace :: GetFE (ElementId ei, Allocator & lh) const
   {
