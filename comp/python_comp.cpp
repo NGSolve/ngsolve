@@ -251,6 +251,9 @@ HIDDEN_DOF: Inner degree of freedom, that will be eliminated by static
      * without static condensation a HIDDEN_DOF is treated as any other
        DOF, e.g. as a LOCAL_DOF
      * To a HIDDEN_DOF the r.h.s. vector must have zero entries.
+     * When static condensation is applied (eliminate_hidden/
+       eliminate_internal) the block corresponding to HIDDEN_DOFs
+       has to be invertible.
 
 CONDENSABLE_DOF: Inner degree of freedom, that will be eliminated by static
     condensation (LOCAL_DOF or HIDDEN_DOF)
@@ -754,6 +757,33 @@ kwargs : For a description of the possible kwargs have a look a bit further down
            self->FinalizeUpdate(glh);
          },
          "finalize update")
+     .def("HideAllDofs", [](shared_ptr<FESpace> self, py::object acomp)
+         {
+           shared_ptr<FESpace> space = self;
+           if (! py::extract<DummyArgument> (acomp).check())
+           {
+             auto comp = py::extract<int>(acomp)();
+             auto compspace = dynamic_pointer_cast<CompoundFESpace> (self);
+             if (!compspace)
+               throw py::type_error("'components' is available only for product spaces");
+             space = (*compspace)[comp];
+             IntRange range = compspace->GetRange(comp);
+             for (auto d : range)
+             {
+               auto doftype = compspace->GetDofCouplingType(d);
+               if (doftype != UNUSED_DOF)
+                 compspace->SetDofCouplingType(d,HIDDEN_DOF);
+             }
+           }
+           for (DofId d : Range(space->GetNDof()))
+             {
+               auto doftype = space->GetDofCouplingType(d);
+               if (doftype != UNUSED_DOF)
+                 space->SetDofCouplingType(d,HIDDEN_DOF);
+             }
+           self->FinalizeUpdate(glh); //Update FreeDofs
+         }, py::arg("component")=DummyArgument(), 
+         "set all visible coupling types to HIDDEN_DOFs (will be overwritten by any Update())")
     .def_property_readonly ("ndof", [](shared_ptr<FESpace> self) { return self->GetNDof(); },
                             "number of degrees of freedom")
 
@@ -1230,6 +1260,10 @@ active_dofs : BitArray or None
     .def(py::init([] (shared_ptr<FESpace> & fes,
                       py::object active_dofs)
                   {
+                    auto compspace = dynamic_pointer_cast<CompoundFESpace> (fes);
+                    if (compspace)
+                       throw py::type_error("cannot apply compression on CompoundFESpace");
+
                     auto ret = make_shared<CompressedFESpace> (fes);
                     shared_ptr<BitArray> actdofs = nullptr;
                     if (! py::extract<DummyArgument> (active_dofs).check())
@@ -1663,6 +1697,9 @@ space : ngsolve.FESpace
                      "  this enables only the use of the members harmonic_extension,\n"
                      "  harmonic_extension_trans and inner_solve. Have a look at the\n"
                      "  documentation for further information.",
+                     py::arg("eliminate_hidden") = "bool = False\n"
+                     "  Set up BilinearForm for static condensation of hidden\n"
+                     "  dofs. May be overruled by eliminate_internal.",
                      py::arg("print") = "bool = False\n"
                      "  Write additional information to testout file. \n"
                      "  This file must be set by ngsolve.SetTestoutFile. Use \n"
