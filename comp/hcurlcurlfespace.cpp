@@ -34,9 +34,6 @@ namespace ngcomp
     static void GenerateMatrix(const FEL & bfel,const SIP & mip,
       SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
     {
-      //Necessary?
-      mat = 0;
-
       const HCurlCurlFiniteElement<D> & fel =
         dynamic_cast<const HCurlCurlFiniteElement<D>&> (bfel);
       fel.CalcMappedShape_Matrix (mip,Trans(mat));
@@ -46,9 +43,6 @@ namespace ngcomp
     static void GenerateMatrix(const FEL & bfel,const SIP & sip,
       MAT & mat,LocalHeap & lh)
     {
-      //Necessary?
-      mat = 0;
-
       const HCurlCurlFiniteElement<D> & fel =
         dynamic_cast<const HCurlCurlFiniteElement<D>&> (bfel);
       int nd = fel.GetNDof();
@@ -57,8 +51,6 @@ namespace ngcomp
       for(int i=0; i<nd; i++)
         for(int j = 0; j <DIM_DMAT; j++)
           mat(j,i) = shape(i,j);
-
-
     }
   };
 
@@ -79,7 +71,6 @@ namespace ngcomp
     enum { DIFFORDER = 1 };
 
     static string Name() { return "curl"; }
-
 
     template <typename FEL,typename SIP>
     static void GenerateMatrix(const FEL & bfel,const SIP & sip,
@@ -105,9 +96,7 @@ namespace ngcomp
       for (int i=0; i<nd; i++)
         for (int j=0; j<2; j++)
           mat(j,i) = curlshape(i,j);
-
     }
-
   };
 
   template<>
@@ -148,9 +137,7 @@ namespace ngcomp
       for (int i=0; i<nd; i++)
         for (int j=0; j<9; j++)
           mat(j,i) = curlshape(i,j);
-
     }
-
   };
 
   
