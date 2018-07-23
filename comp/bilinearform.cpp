@@ -1627,7 +1627,8 @@ namespace ngcomp
                                      // if (bfi.VB()!=VOL) continue;
                                      // if (!bfi.SkeletonForm()) continue;
                                      // if (!bfi.GetDGFormulation().element_boundary) continue;
-
+                                     if (!bfi->DefinedOnElement (el1)) continue;
+                                     
                                      if (check_unused)
                                        for (auto d : dnums)
                                          if (d != -1) useddof[d] = true;
@@ -3365,6 +3366,7 @@ namespace ngcomp
                    for (auto & bfi : VB_parts[vb])
                      {
                        if (!bfi->DefinedOn (el.GetIndex())) continue;
+                       if (!bfi->DefinedOnElement (el.Nr())) continue;
                        bfi->ApplyElementMatrix (fel, trafo, elvecx, elvecy, 0, lh);
                        
                        this->fespace->TransformVec (el, elvecy, TRANSFORM_RHS);
@@ -3519,6 +3521,7 @@ namespace ngcomp
                            for (auto & bfi : facetwise_skeleton_parts[BND])
                              {
                                if (!bfi->DefinedOn (seltrans.GetElementIndex())) continue;
+                               if (!bfi->DefinedOnElement (facet)) continue;
                                          
                                FlatVector<SCAL> elx(dnums.Size()*this->fespace->GetDimension(), lh),
                                  ely(dnums.Size()*this->fespace->GetDimension(), lh);
@@ -3569,6 +3572,7 @@ namespace ngcomp
                          {
                            if (!bfi->DefinedOn (ma->GetElIndex (ei1))) continue; 
                            if (!bfi->DefinedOn (ma->GetElIndex (ei2))) continue; 
+                           if (!bfi->DefinedOnElement (facet) ) continue;
                            
                            bfi->ApplyFacetMatrix (fel1, facnr1, eltrans1, vnums1,
                                                   fel2, facnr2, eltrans2, vnums2, elx, ely, lh);
@@ -3644,6 +3648,7 @@ namespace ngcomp
                            
                            for (auto & bfi : elementwise_skeleton_parts)
                              {
+                               if (!bfi->DefinedOnElement (el1) ) continue;
                                FlatVector<SCAL> elx(dnums.Size()*fespace->GetDimension(), lh),
                                  ely(dnums.Size()*fespace->GetDimension(), lh);
                                x.GetIndirect(dnums, elx);
@@ -3708,7 +3713,7 @@ namespace ngcomp
                          {
                            if (!bfi->DefinedOn (ma->GetElIndex (ei1))) continue; //TODO: treat as surface element
                            if (!bfi->DefinedOn (ma->GetElIndex (ei2))) continue; //TODO    
-                           
+                           if (!bfi->DefinedOnElement (el1) ) continue;
                            // FacetBilinearFormIntegrator * fbfi = 
                            // dynamic_cast<FacetBilinearFormIntegrator*>(bfi.get());
                            
