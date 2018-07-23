@@ -80,6 +80,7 @@ namespace ngcomp
 
     static string Name() { return "curl"; }
 
+
     template <typename FEL,typename SIP>
     static void GenerateMatrix(const FEL & bfel,const SIP & sip,
       SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
@@ -118,6 +119,8 @@ namespace ngcomp
     enum { DIM_ELEMENT = 3 };
     enum { DIM_DMAT = 9 };
     enum { DIFFORDER = 1 };
+
+    static Array<int> GetDimensions() { return Array<int> ({3,3}); }
 
     static string Name() { return "curl"; }
 
@@ -159,7 +162,8 @@ namespace ngcomp
     enum { DIM_ELEMENT = 2 };
     enum { DIM_DMAT = 9 };//??????
     enum { DIFFORDER = 1 };
-    
+
+    static Array<int> GetDimensions() { return Array<int> ({3,3}); }
     
     template <typename FEL,typename SIP>
     static void GenerateMatrix(const FEL & bfel,const SIP & sip,
