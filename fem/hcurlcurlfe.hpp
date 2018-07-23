@@ -1311,6 +1311,8 @@ namespace ngfem
     virtual void CalcMappedShape_Vector (const MappedIntegrationPoint<DIM,DIM+1> & mip,
       BareSliceMatrix<double> shape) const = 0;
 
+    virtual void CalcMappedCurlShape (const MappedIntegrationPoint<DIM,DIM+1> & mip,
+      BareSliceMatrix<double> shape) const = 0;
   };
 
 
@@ -1324,6 +1326,7 @@ namespace ngfem
   protected:
     enum { DIM = ET_trait<ET>::DIM };
     enum { DIM_STRESS = ((DIM+2)*(DIM+1))/2 };
+    enum { DIM_DMAT = 7*DIM-5 };
     
     using VertexOrientedFE<ET>::vnums;
     using HCurlCurlSurfaceFiniteElement<ET_trait<ET>::DIM>::ndof;
@@ -1384,6 +1387,30 @@ namespace ngfem
         BareVector<double> matshape = shape.Row(nr);
         VecToSymMat<DIM+1> (vecshape, matshape);
       }));
+    }
+
+    virtual void CalcMappedCurlShape (const MappedIntegrationPoint<DIM,DIM+1> & mip,
+                                     BareSliceMatrix<double> shape) const override
+    {
+      Vec<DIM, AutoDiff<DIM+1>> adp = mip;
+      Vec<DIM, AutoDiffDiff<DIM+1>> addp;
+      for (int i=0; i<DIM+1; i++)
+      {
+        addp[i] = adp[i].Value();
+        addp[i].LoadGradient(&adp[i].DValue(0));
+      }
+
+      if(!mip.GetTransformation().IsCurvedElement()) // non-curved element
+      {
+        Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM+1>> (addp),SBLambda([&](int nr,auto val)
+        {
+          shape.Row(nr).AddSize(DIM_DMAT) = val.CurlShape();
+        }));
+      }
+      else // curved element
+      {
+        throw Exception("CalcMappedCurlShape not implemented for curved elements!");
+      }
     }
 
 
