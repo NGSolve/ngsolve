@@ -841,7 +841,7 @@ namespace ngbla
 
     template <class... T2>
     Vec(const TELEM &v, T2... rest) {
-      static_assert(sizeof...(rest)==0 || S==1+sizeof...(rest),"Vec<S> ctor with wrong number of arguments called");
+      static_assert(S==1+sizeof...(rest),"Vec<S> ctor with wrong number of arguments called");
       Set<0>(v, rest...);
     }
 
