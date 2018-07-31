@@ -674,7 +674,7 @@ inverse : string
                      }))
     .def("__getitem__", [](BlockMatrix & self, py::tuple inds) { 
         if (py::len(inds) != 2)
-          throw Exception ("BlockMatrix needs two indeces to access block");
+          throw Exception ("BlockMatrix needs two indices to access block");
 
         int row = inds[0].cast<int>();
         int col = inds[1].cast<int>();
