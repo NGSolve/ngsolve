@@ -672,7 +672,14 @@ inverse : string
                          }
                        return make_shared<BlockMatrix> (m2);
                      }))
-    .def("__getitem__", [](BlockMatrix & self, int row, int col) { return self(row,row); })
+    .def("__getitem__", [](BlockMatrix & self, py::tuple inds) { 
+        if (py::len(inds) != 2)
+          throw Exception ("BlockMatrix needs two indeces to access block");
+
+        int row = inds[0].cast<int>();
+        int col = inds[1].cast<int>();
+        return self(row,col); 
+        })
     .def_property_readonly("row_nblocks", [](BlockMatrix & mat) { return mat.BlockRows(); })
     .def_property_readonly("col_nblocks", [](BlockMatrix & mat) { return mat.BlockCols(); })
     ;
