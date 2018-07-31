@@ -3743,6 +3743,8 @@ namespace ngcomp
 	if( (MyMPI_GetNTasks()>1) &&
 	    (mpi_facet_parts.Size()) )
 	  {
+	    // cout << endl << endl << "-------- MPI FACETS --------------" << endl << endl;
+	    
 	    RegionTimer rt(timerDGparallelfacets);
 	    
 	    //cout << "apply parallel DG facets, " << elementwise_skeleton_parts.Size() << " el-bound and " << facetwise_skeleton_parts[VOL].Size() << " facet parts" << ", " << mpi_facet_parts.Size() << " total parts " << endl;
@@ -3758,11 +3760,16 @@ namespace ngcomp
 	    int mrank, mnp;
 	    MPI_Comm_rank(mcomm, &mrank);
 	    MPI_Comm_size(mcomm, &mnp);
-	    Array<int> cnt(mnp);
+	    Array<int> cnt_in(mnp), cnt_per(mnp);
+	    if(!have_mpi_facet_data) {
+	      os_per = Array<int>(mnp);
+	      os_per = 0;
+	    }
 	    Array<MPI_Request> reqs;
 	    Array<MPI_Request> reqr;
 	    LocalHeap &lh(clh);
 	    Array<int> elnums(2, lh), fnums(6, lh), vnums(8, lh);
+	    Array<int> elnums2(2, lh), vnums2(8, lh);
 
 	    size_t ne = ma->GetNE(VOL);
 	    BitArray fine_facet(ma->GetNFacets());
@@ -3776,7 +3783,8 @@ namespace ngcomp
 	    auto mpi_loop_range = (have_mpi_facet_data)?Range(1,3):Range(0,3);
 	    
 	    for(auto loop:mpi_loop_range) {
-	      cnt = 0;
+	      cnt_in = 0;
+	      cnt_per = 0;
 	      for(auto facet:Range(ma->GetNFacets())) {
 		NodeId facet_id(StdNodeType(NT_FACET, ma->GetDimension()), facet);
 		if(!fine_facet.Test(facet)) continue;
@@ -3789,6 +3797,14 @@ namespace ngcomp
 		
 		ma->GetFacetElements(facet, elnums);
 
+		auto facet2 = ma->GetPeriodicFacet(facet);
+		// bool periodic_facet = (facet!=facet2);
+
+		ma->GetFacetSurfaceElements (facet, elnums2);
+		bool periodic_facet = elnums2.Size()!=0;
+		
+		
+		
 		ElementId eiv(VOL, elnums[0]);
 
 		fnums = ma->GetElFacets(eiv);
@@ -3800,6 +3816,29 @@ namespace ngcomp
 		Array<int> dnums(fel.GetNDof(), lh);
 		vnums = ma->GetElVertices(eiv);
 
+		// if(loop!=0) {
+		//   cout << "facet " << facet << " is MPI, shared with " << d
+		//        << ", vnums: " << endl;
+		//   ma->GetFacetPNums(facet, vnums2);
+		//   cout << vnums2 << endl;
+		//   ma->GetFacetSurfaceElements (facet, elnums2);
+		//   if(elnums2.Size()) {
+		//     cout << "surfel:  " << endl
+		// 	 << elnums2;
+		//   }
+		//   if(facet2!=facet) {
+		//     cout << "Periodic facet: " << facet << "  "
+		// 	 << facet2 << ", vnums: " << endl;
+		//     ma->GetFacetPNums(facet2, vnums2);
+		//     cout << vnums2 << endl;
+		//     ma->GetFacetSurfaceElements (facet2, elnums2);
+		//     if(elnums2.Size()) {
+		//       cout << "surfel:  " << endl
+		// 	   << elnums2;
+		//     }
+		//   }
+		// }
+		
 		ElementTransformation & eltrans = ma->GetTrafo (eiv, lh);
 		fespace->GetDofNrs (eiv, dnums);
 
@@ -3811,17 +3850,26 @@ namespace ngcomp
 		  dynamic_cast<const FacetBilinearFormIntegrator*>(igt.get())->  
 		    CalcTraceValues(fel,facetnr,eltrans,vnums, trace_values, elx, lh);
 		  if (loop == 0) {
-		    cnt[d] += trace_values.Size();
+		    os_per[d] += trace_values.Size();
+		    if(periodic_facet) cnt_per[d] += trace_values.Size();
+		    else cnt_in[d] += trace_values.Size();
 		  }
 		  else if (loop == 1) {
-		    FlatVector<SCAL> tmp(trace_values.Size(), &( send_table[d][cnt[d]] ));
+		    auto offset = periodic_facet ? (os_per[d] + cnt_per[d]) : cnt_in[d];
+		    FlatVector<SCAL> tmp(trace_values.Size(), &( send_table[d][offset] ));
+		    //cout << "computed trace values for facet " << facet << endl << trace_values << endl;
+		    // if(MyMPI_GetId()!=2)
+		    //   trace_values = 0.0;
 		    tmp = trace_values;
-
-		    cnt[d] += trace_values.Size();
+		    if(periodic_facet) cnt_per[d] += trace_values.Size();
+		    else cnt_in[d] += trace_values.Size();
 		  }
 		  else {
-		    FlatVector<SCAL> trace_other(trace_values.Size(), &( recv_table[d][cnt[d]] ));
-		    cnt[d]+= trace_values.Size();
+		    auto offset = periodic_facet ? (os_per[d] + cnt_per[d]) : cnt_in[d];
+		    FlatVector<SCAL> trace_other(trace_values.Size(), &( recv_table[d][offset] ));
+		    if(periodic_facet) cnt_per[d] += trace_values.Size();
+		    else cnt_in[d] += trace_values.Size();
+		    //cout << "got trace values for facet " << facet << endl << trace_other << endl;
 
 		    FlatVector<SCAL> ely(dnums.Size()*this->fespace->GetDimension(), lh);
 		    dynamic_cast<const FacetBilinearFormIntegrator*>(igt.get())->  
@@ -3833,8 +3881,9 @@ namespace ngcomp
 	      }
 	      
 	      if(loop==0) {
-		send_table = Table<SCAL> (cnt);
-		recv_table = Table<SCAL> (cnt);
+		send_table = Table<SCAL> (os_per);
+		recv_table = Table<SCAL> (os_per);
+		os_per = cnt_in;
 		for(auto r:send_table)
 		  r = -1;
 		for(auto r:recv_table)
