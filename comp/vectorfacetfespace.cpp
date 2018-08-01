@@ -127,8 +127,15 @@ namespace ngcomp
     order_facet = p;
     fine_facet = 0; 
     
-    //     Array<int> fanums;
-        
+    for (Ngs_Element el : ma->Elements<BND>())
+      if (DefinedOn(el))
+	fine_facet[el.Facets()] = true;
+#ifdef PARALLEL
+    if(var_order)
+      throw Exception("MPI + variable order for VectorFacetFESpace is not implemented.");
+#endif
+
+
     for (size_t i = 0; i < nel; i++)
       {
         ElementId ei(VOL,i);
