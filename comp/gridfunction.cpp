@@ -816,20 +816,18 @@ namespace ngcomp
     this -> vec.SetSize (gf_parent.GetMultiDim());
     GridFunction::multidim = gf_parent.GetMultiDim();
 
+#ifdef PARALLEL
     if (MyMPI_GetNTasks()>1)
       {
-#ifdef PARALLEL
 	auto pds = cfes[comp]->GetParallelDofs();
 	for (int i = 0; i < gf_parent.GetMultiDim(); i++)
 	  {
 	    auto fvec = gf_parent.GetVector(i).Range (cfes.GetRange(comp));
 	    (this->vec)[i] = make_shared<ParallelVFlatVector<SCAL>> (fvec.Size(), (SCAL*)fvec.Memory(), pds, CUMULATED);
 	  }
-#else
-	throw Exception("MyMPI_GetNTasks()>1, but PARALLEL not defined!!");
-#endif
       }
     else
+#endif
       {
 	for (int i = 0; i < gf_parent.GetMultiDim(); i++)
 	  (this->vec)[i] = gf_parent.GetVector(i).Range (cfes.GetRange(comp));
