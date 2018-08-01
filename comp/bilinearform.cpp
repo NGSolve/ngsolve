@@ -3782,7 +3782,7 @@ namespace ngcomp
 	    Array<MPI_Request> reqs;
 	    Array<MPI_Request> reqr;
 	    LocalHeap &lh(clh);
-	    Array<int> elnums(2, lh), fnums(6, lh), vnums(8, lh);
+	    Array<int> elnums(2, lh), elnums2(2, lh), fnums(6, lh), vnums(8, lh);
 
 	    size_t ne = ma->GetNE(VOL);
 	    BitArray fine_facet(ma->GetNFacets());
